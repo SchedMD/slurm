@@ -404,7 +404,7 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			   maintenance then we add the time to planned
 			   down time.
 			*/
-			
+
 
 			/* only record time for the clusters that have
 			   registered.  This continue should rarely if
@@ -1036,9 +1036,9 @@ extern int mysql_daily_rollup(mysql_conn_t *mysql_conn,
 		if(track_wckey) {
 			xstrfmtcat(query,
 				   "insert into %s_%s (creation_time, "
-				   "mod_time, id, time_start, "
+				   "mod_time, id_wckey, time_start, "
 				   "alloc_cpu_secs) select %d, %d, "
-				   "id, %d, @ASUM:=SUM(alloc_cpu_secs) "
+				   "id_wckey, %d, @ASUM:=SUM(alloc_cpu_secs) "
 				   "from %s_%s where (time_start < %d && "
 				   "time_start >= %d) "
 				   "group by id_wckey on duplicate key update "
@@ -1107,12 +1107,12 @@ extern int mysql_monthly_rollup(mysql_conn_t *mysql_conn,
 /* 		info("start %s", ctime(&curr_start)); */
 /* 		info("end %s", ctime(&curr_end)); */
 		query = xstrdup_printf(
-			"insert into %s_%s (creation_time, mod_time, id, "
-			"time_start, alloc_cpu_secs) select %d, %d, id, "
+			"insert into %s_%s (creation_time, mod_time, id_assoc, "
+			"time_start, alloc_cpu_secs) select %d, %d, id_assoc, "
 			"%d, @ASUM:=SUM(alloc_cpu_secs) from %s_%s where "
 			"(time_start < %d && time_start >= %d) "
-			"group by id on duplicate key update mod_time=%d, "
-			"alloc_cpu_secs=@ASUM;",
+			"group by id_assoc on duplicate key update "
+			"mod_time=%d, alloc_cpu_secs=@ASUM;",
 			cluster_name, assoc_month_table, now, now, curr_start,
 			cluster_name, assoc_day_table,
 			curr_end, curr_start, now);
@@ -1143,12 +1143,12 @@ extern int mysql_monthly_rollup(mysql_conn_t *mysql_conn,
 			xstrfmtcat(query,
 				   "insert into %s_%s "
 				   "(creation_time, mod_time, "
-				   "id, time_start, alloc_cpu_secs) "
-				   "select %d, %d, id, %d, "
+				   "id_wckey, time_start, alloc_cpu_secs) "
+				   "select %d, %d, id_wckey, %d, "
 				   "@ASUM:=SUM(alloc_cpu_secs) "
 				   "from %s_%s where (time_start < %d && "
 				   "time_start >= %d) "
-				   "group by id on duplicate key update "
+				   "group by id_wckey on duplicate key update "
 				   "mod_time=%d, alloc_cpu_secs=@ASUM;",
 				   cluster_name, wckey_month_table,
 				   now, now, curr_start,
