@@ -8042,6 +8042,7 @@ extern int job_restart(checkpoint_msg_t *ckpt_ptr, uid_t uid, slurm_fd conn_fd)
 
  unpack_error:
 	free_buf(buffer);
+	xfree(ver_str);
 	xfree(image_dir);
 	xfree(alloc_nodes);
 	xfree(ckpt_file);
