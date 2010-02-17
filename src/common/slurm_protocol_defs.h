@@ -2,7 +2,7 @@
  *  slurm_protocol_defs.h - definitions used for RPCs
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Kevin Tew <tew1@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -671,7 +671,10 @@ typedef struct return_code_msg {
  * the event of some launch failure or race condition preventing slurmd
  * from getting the MPIRUN_PARTITION at that time. It is needed for
  * the job epilog. */
-#define SIG_TIME_LIMIT	996	/* Dummy signal value i time limit reached */
+
+#define SIG_DEBUG_WAKE	995	/* Dummy signal value to wake procs stopped 
+				 * for debugger */
+#define SIG_TIME_LIMIT	996	/* Dummy signal value for time limit reached */
 #define SIG_ABORT	997	/* Dummy signal value to abort a job */
 #define SIG_NODE_FAIL	998	/* Dummy signal value to signify node failure */
 #define SIG_FAILURE	999	/* Dummy signal value to signify sys failure */
