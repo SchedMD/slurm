@@ -1,8 +1,7 @@
-#!/usr/bin/perl -w
+#!/usr/bin/perl -Tw
 ###############################################################################
 #
 #  chart_stats.cgi - display job usage statistics and cluster utilization
-#  $Id: chart_stats.cgi lipari $
 #
 # chart_stats creates bar charts of batch job usage and machine utilization
 # It initially presents a page that allows the user to specify the chart
@@ -48,17 +47,19 @@
 use strict;
 use warnings;
 
-use CGI qw(:standard escapeHTML);
-#use CGI::Carp qw(fatalsToBrowser);
+use CGI qw(:standard);
+use CGI::Carp qw(fatalsToBrowser);
 use GD;
 use Chart::StackedBars;
 use Expect;
 use Time::Local;
 
+delete @ENV{qw( BASH_ENV CDPATH ENV IFS PATH )};
 
 my $obj = Chart::StackedBars->new(600, 400);
 my ($time_begin, $time_end);
 my ($yb, $mb, $db, $ye, $me, $de);
+my ($user, $account, $x_axis, $y_axis, $cluster);
 
 
 if (param) {
@@ -96,8 +97,8 @@ sub print_form {
     my %labels = (
 		  user_usage => 'Usage - Single User: ',
 		  acct_usage => 'Usage - Single Account: ',
-		  top_user   => 'Usage - Top Users',
-		  top_acct   => 'Usage - Top Accounts',
+		  top_user   => 'Usage - Top Ten Users',
+		  top_acct   => 'Usage - Top Ten Accounts',
 		  job_size   => 'Job Size',
 		  size_acct  => 'Job Size by Accounts',
 		  utilizatn  => 'Cluster Utilization',
@@ -105,6 +106,7 @@ sub print_form {
 
     print start_form;
 
+    print h2("SLURM Accounting Reports");
     print h3("Cluster"),
     popup_menu(-name=>'cluster',
 	       -values=>cluster_list());
@@ -184,16 +186,40 @@ sub print_form {
     print end_html;
 }
 
+sub untaint_user_input {
+    my ($user_input) = @_;
+
+    if ($user_input =~ /^(\w+)$/) {
+	return $1;
+    }
+    else {
+	print_msg("Invalid User Input: $user_input");
+	exit;
+    }
+}
+
+sub untaint_digits {
+    my ($user_input) = @_;
+
+    if ($user_input =~ /^(\d+)$/) {
+	return $1;
+    }
+    else {
+	print_msg("Invalid Numeric Value: $user_input");
+	exit;
+    }
+}
+
 #
 # Manually validate the calendar fields
 #
 sub valid_input {
-    $yb = param('year_begin');  $yb =~ s/^0*//;
-    $mb = param('month_begin'); $mb =~ s/^0*//;
-    $db = param('day_begin');   $db =~ s/^0*//;
-    $ye = param('year_end');    $ye =~ s/^0*//;
-    $me = param('month_end');   $me =~ s/^0*//;
-    $de = param('day_end');     $de =~ s/^0*//;
+    $yb = untaint_digits(param('year_begin'));  $yb =~ s/^0*//;
+    $mb = untaint_digits(param('month_begin')); $mb =~ s/^0*//;
+    $db = untaint_digits(param('day_begin'));   $db =~ s/^0*//;
+    $ye = untaint_digits(param('year_end'));    $ye =~ s/^0*//;
+    $me = untaint_digits(param('month_end'));   $me =~ s/^0*//;
+    $de = untaint_digits(param('day_end'));     $de =~ s/^0*//;
     my (undef,undef,undef,$mday,$mon,$year,undef,undef,undef) = localtime();
 
     if ($ye > ($year - 100)) {
@@ -209,40 +235,57 @@ sub valid_input {
     }
 
     if ($yb < 0 || $yb > $ye) {
-	print_msg("Invalid From Year: " . param('year_begin'));
+	print_msg("Invalid From Year: $yb");
 	return 0;
     }
     elsif ($ye < 0) {
-	print_msg("Invalid To Year: " . param('year_end'));
+	print_msg("Invalid To Year: $ye");
 	return 0;
     }
     elsif ($mb < 1 || $mb > 12) {
-	print_msg("Invalid From Month: " . param('month_begin'));
+	print_msg("Invalid From Month: $mb");
 	return 0;
     }
     elsif ($me < 1 || $me > 12) {
-	print_msg("Invalid To Month: " . param('month_end'));
+	print_msg("Invalid To Month: $me");
 	return 0;
     }
     elsif ($db < 1 || $db > 31) {
-	print_msg("Invalid From Day: " . param('day_begin'));
+	print_msg("Invalid From Day: $db");
 	return 0;
     }
     elsif ($de < 1 || $de > 31) {
-	print_msg("Invalid To Day: " . param('day_end'));
+	print_msg("Invalid To Day: $de");
 	return 0;
     }
-    elsif ((param('report') =~ /user_usage/) && !param('user')) {
-	print_msg("User not specified");
-	return 0;
-    }
-    elsif ((param('report') =~ /acct_usage/) && !param('account')) {
-	print_msg("Account not specified");
+
+    if (timelocal(0, 0, 0, $db, $mb - 1, $yb + 100) >=
+	timelocal(0, 0, 0, $de, $me - 1, $ye + 100)) {
+	print_msg("From Date Must be Less Than To Date");
 	return 0;
     }
 
     $time_begin = sprintf "%.2d/%.2d/%.2d", $mb, $db, $yb;
     $time_end   = sprintf "%.2d/%.2d/%.2d", $me, $de, $ye;
+
+    if (param('report') =~ /user_usage/) {
+	if (!param('user')) {
+	    print_msg("User not specified");
+	    return 0;
+	}
+	$user = untaint_user_input(param('user'));
+    }
+    elsif (param('report') =~ /acct_usage/) {
+	if (!param('account')) {
+	    print_msg("Account not specified");
+	    return 0;
+	}
+	$account = untaint_user_input(param('account'));
+    }
+
+    $cluster = untaint_user_input(param('cluster'));
+    $x_axis = untaint_user_input(param('x_axis'));
+    $y_axis = untaint_user_input(param('y_axis'));
 
     return 1;
 }
@@ -255,7 +298,7 @@ sub next_time {
     my $new_time;
     my $end_time = timelocal(0, 0, 0, $de, $me - 1, $ye + 100);
 
-    if ($_ = param('x_axis')) {
+    if ($_ = $x_axis) {
 	/Years/ && do {
 	    $yn++;
 	    $new_time = timelocal(0, 0, 0, $dn, $mn - 1, $yn + 100);
@@ -305,7 +348,7 @@ sub add_bars {
     my ($cmd_base, $request) = @_;
     my ($consumer, $usage, $valid_data, $cmd, @results);
 
-    if (param('x_axis') eq 'aggregate') {
+    if ($x_axis eq 'aggregate') {
 	$obj->set ('legend' => 'none');
 	$obj->set ('x_label' => "$time_begin To $time_end");
 
@@ -315,7 +358,7 @@ sub add_bars {
 	for (@results) {
 	    ($consumer, $usage) = split;
 	    if ($usage) {
-		chop($usage) if (param('y_axis') =~ /percent/);
+		chop($usage) if ($y_axis =~ /percent/);
 		$obj->add_pt($consumer, $usage);
 	    }
 	}
@@ -346,7 +389,8 @@ sub add_bars {
 	    for (@results) {
 		($consumer, $usage) = split;
 		if ($usage) {
-		    chop($usage) if (param('y_axis') =~ /percent/);
+		    chop($usage) if ($y_axis =~ /percent/);
+		    $consumer = untaint_user_input($consumer);
 		    unless ($consum_id{$consumer}) {
 			$consum_id{$consumer} = $j;
 			$legend_labels[$j++ - 1] = $consumer;
@@ -383,7 +427,7 @@ sub add_utilizatn_bars {
     my ($cmd_base, $request) = @_;
     my ($allocated, $reserved, $idle, $down, $cmd, $results);
 
-    if (param('x_axis') eq 'aggregate') {
+    if ($x_axis eq 'aggregate') {
 	$obj->set ('legend' => 'none');
 	$obj->set ('x_label' => "$time_begin To $time_end");
 
@@ -392,7 +436,7 @@ sub add_utilizatn_bars {
 
 	($allocated, $reserved, $idle, $down) = split ' ', $results;
 	chop($allocated, $reserved, $idle, $down)
-	    if (param('y_axis') =~ /percent/);
+	    if ($y_axis =~ /percent/);
 
 	$obj->add_pt('Allocated', $allocated);
 	$obj->add_pt('Reserved', $reserved);
@@ -425,7 +469,7 @@ sub add_utilizatn_bars {
 
 	    ($allocated, $reserved, $idle, $down) = split ' ', $results;
 	    chop($allocated, $reserved, $idle, $down)
-		if (param('y_axis') =~ /percent/);
+		if ($y_axis =~ /percent/);
 
 	    $data_points[$i][0] = $start;
 	    $data_points[$i][1] = $allocated;
@@ -471,19 +515,18 @@ sub cluster_list {
 # Charts the user usage requests
 #
 sub chart_user {
-    my $title = param('user') . " Usage of " . param('cluster');
+    my $title = "$user Usage of $cluster";
     $obj->set ('title' => $title);
 
-    my $cmd = "/usr/bin/sreport -nt " . param('y_axis');
+    my $cmd = "/usr/bin/sreport -nt $y_axis";
     my $request = " cluster UserUtilizationByAccount" .
-	" cluster=" . param('cluster') . " user=" . param('user') .
-	" format=Account,Used";
+	" cluster=$cluster user=$user format=Account,Used";
 
     if (add_bars($cmd, $request)) {
 	$obj->cgi_png();
     }
     else {
-	print_msg("No significant usage found for user " . param('user') .
+	print_msg("No significant usage found for user $user" .
 		  " from $time_begin to $time_end");
     }
 }
@@ -492,19 +535,18 @@ sub chart_user {
 # Charts the account usage requests
 #
 sub chart_account {
-    my $title = param('account') . " Usage of " . param('cluster');
+    my $title = "$account Usage of $cluster";
     $obj->set ('title' => $title);
 
-    my $cmd = "/usr/bin/sreport -nt " . param('y_axis');
+    my $cmd = "/usr/bin/sreport -nt $y_axis";
     my $request = " cluster AccountUtilizationByUser" .
-	" cluster=" . param('cluster') . " account=" . param('account') .
-	" format=Login,Used";
+	" cluster=$cluster account=$account format=Login,Used";
 
     if (add_bars($cmd, $request)) {
 	$obj->cgi_png();
     }
     else {
-	print_msg("No significant usage found for account " . param('account') .
+	print_msg("No significant usage found for account $account" .
 		  " from $time_begin to $time_end");
     }
 }
@@ -514,12 +556,11 @@ sub chart_account {
 # usage from all the accounts the user charged.
 #
 sub chart_top_users {
-    my $title = param('cluster') . " Top Users";
+    my $title = "$cluster Top Users";
     $obj->set ('title' => $title);
 
-    my $cmd = "/usr/bin/sreport -nt " . param('y_axis');
-    my $request = " user TopUsage Group cluster=" . param('cluster') .
-	" format=Login,Used";
+    my $cmd = "/usr/bin/sreport -nt $y_axis";
+    my $request = " user TopUsage Group cluster=$cluster format=Login,Used";
 
     if (add_bars($cmd, $request)) {
 	$obj->cgi_png();
@@ -531,8 +572,8 @@ sub chart_top_users {
 
 sub chart_top_accounts {
     print_msg("Not Yet Implemented");
-#    print "/usr/bin/sreport -npt ", param('y_axis'),
-#    " cluster AccountUtilizationByUser cluster=", param('cluster'),
+#    print "/usr/bin/sreport -npt ", $y_axis,
+#    " cluster AccountUtilizationByUser cluster=$cluster",
 #    " format=Account,Used",
 #    " start=$time_begin", " end=$time_end", br;
 }
@@ -540,14 +581,14 @@ sub chart_top_accounts {
 sub chart_job_size {
     print_msg("Not Yet Implemented");
 #    print "/usr/bin/sreport -npt minutes",
-#    " job SizesByAccount FlatView cluster=", param('cluster'),
+#    " job SizesByAccount FlatView cluster=$cluster",
 #    " start=$time_begin", " end=$time_end", br;
 }
 
 sub chart_size_accounts {
     print_msg("Not Yet Implemented");
 #    print "/usr/bin/sreport -npt minutes",
-#    " job SizesByAccount FlatView cluster=", param('cluster'),
+#    " job SizesByAccount FlatView cluster=$cluster",
 #    " start=$time_begin", " end=$time_end", br;
 }
 
@@ -555,18 +596,18 @@ sub chart_size_accounts {
 # Charts the cluster utilization
 #
 sub chart_utilizatn {
-    my $title = "Utilization of " . param('cluster');
+    my $title = "Utilization of $cluster";
     $obj->set ('title' => $title);
 
-    my $cmd = "/usr/bin/sreport -nt " . param('y_axis');
-    my $request = " cluster Utilization cluster=" . param('cluster') .
+    my $cmd = "/usr/bin/sreport -nt $y_axis";
+    my $request = " cluster Utilization cluster=$cluster" .
 	" format=Allocated,Reserved,Idle,Down";
 
     if (add_utilizatn_bars($cmd, $request)) {
 	$obj->cgi_png();
     }
     else {
-	print_msg("Failed to return Utilization for " . param('cluster') .
+	print_msg("Failed to return Utilization for $cluster" .
 		  " from $time_begin to $time_end");
     }
 }
@@ -578,8 +619,8 @@ sub chart_utilizatn {
 sub plot_results {
     my $sub_title = "From $time_begin To $time_end";
     $obj->set ('sub_title' => $sub_title);
-    $obj->set ('x_label' => param('x_axis'));
-    if (param('y_axis') =~ /percent/) {
+    $obj->set ('x_label' => $x_axis);
+    if ($y_axis =~ /percent/) {
 	$obj->set ('y_label' => 'Percent of Cluster');
     } else {
 	$obj->set ('y_label' => 'Processor - Hours');
