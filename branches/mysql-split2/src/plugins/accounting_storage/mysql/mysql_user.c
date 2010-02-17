@@ -50,7 +50,8 @@ static int _get_user_coords(mysql_conn_t *mysql_conn, acct_user_rec_t *user)
 	acct_coord_rec_t *coord = NULL;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
-	ListIterator itr = NULL;
+	ListIterator itr = NULL, itr2 = NULL;
+	char *cluster_name = NULL;
 
 	if(!user) {
 		error("We need a user to fill in.");
@@ -70,31 +71,55 @@ static int _get_user_coords(mysql_conn_t *mysql_conn, acct_user_rec_t *user)
 		return SLURM_ERROR;
 	}
 	xfree(query);
+
 	while((row = mysql_fetch_row(result))) {
 		coord = xmalloc(sizeof(acct_coord_rec_t));
 		list_append(user->coord_accts, coord);
 		coord->name = xstrdup(row[0]);
 		coord->direct = 1;
-		if(query)
-			xstrcat(query, " || ");
-		else
-			query = xstrdup_printf(
-				"select distinct t1.acct from "
-				"%s as t1, %s as t2 where t1.deleted=0 && ",
-				assoc_table, assoc_table);
-		/* Make sure we don't get the same
-		 * account back since we want to keep
-		 * track of the sub-accounts.
-		 */
-		xstrfmtcat(query, "(t2.acct=\"%s\" "
-			   "&& t1.lft between t2.lft "
-			   "and t2.rgt && t1.user='' "
-			   "&& t1.acct!=\"%s\")",
-			   coord->name, coord->name);
 	}
 	mysql_free_result(result);
 
+	if(!list_count(user->coord_accts))
+		return SLURM_SUCCESS;
+
+	slurm_mutex_lock(&mysql_cluster_list_lock);
+	itr2 = list_iterator_create(mysql_cluster_list);
+	itr = list_iterator_create(user->coord_accts);
+	while((cluster_name = list_next(itr2))) {
+		int set = 0;
+		if(query)
+			xstrcat(query, " union ");
+
+		while((coord = list_next(itr))) {
+			if(set)
+				xstrcat(query, " || ");
+			else
+				xstrfmtcat(query,
+					   "select distinct t1.acct from "
+					   "%s_%s as t1, %s_%s as t2 where "
+					   "t1.deleted=0 && ",
+					   cluster_name, assoc_table,
+					   cluster_name, assoc_table);
+			/* Make sure we don't get the same
+			 * account back since we want to keep
+			 * track of the sub-accounts.
+			 */
+			xstrfmtcat(query, "(t2.acct=\"%s\" "
+				   "&& t1.lft between t2.lft "
+				   "and t2.rgt && t1.user='' "
+				   "&& t1.acct!=\"%s\")",
+				   coord->name, coord->name);
+			set = 1;
+		}
+		list_iterator_reset(itr);
+	}
+	list_iterator_destroy(itr2);
+	slurm_mutex_unlock(&mysql_cluster_list_lock);
+
 	if(query) {
+		debug4("%d(%s:%d) query\n%s",
+		       mysql_conn->conn, THIS_FILE, __LINE__, query);
 		if(!(result = mysql_db_query_ret(
 			     mysql_conn->db_conn, query, 0))) {
 			xfree(query);
@@ -102,14 +127,13 @@ static int _get_user_coords(mysql_conn_t *mysql_conn, acct_user_rec_t *user)
 		}
 		xfree(query);
 
-		itr = list_iterator_create(user->coord_accts);
 		while((row = mysql_fetch_row(result))) {
-
+			list_iterator_reset(itr);
 			while((coord = list_next(itr))) {
 				if(!strcmp(coord->name, row[0]))
 					break;
 			}
-			list_iterator_reset(itr);
+
 			if(coord)
 				continue;
 
@@ -118,9 +142,10 @@ static int _get_user_coords(mysql_conn_t *mysql_conn, acct_user_rec_t *user)
 			coord->name = xstrdup(row[0]);
 			coord->direct = 0;
 		}
-		list_iterator_destroy(itr);
 		mysql_free_result(result);
 	}
+	list_iterator_destroy(itr);
+
 	return SLURM_SUCCESS;
 }
 

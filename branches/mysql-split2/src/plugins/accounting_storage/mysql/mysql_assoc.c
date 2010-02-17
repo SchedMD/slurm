@@ -162,17 +162,10 @@ enum {
 	RASSOC_COUNT
 };
 
-static int _assoc_sort_cluster_acct(acct_association_rec_t *rec_a,
-				    acct_association_rec_t *rec_b)
+static int _assoc_sort_cluster(acct_association_rec_t *rec_a,
+			       acct_association_rec_t *rec_b)
 {
 	int diff = strcmp(rec_a->cluster, rec_b->cluster);
-
-	if (diff < 0)
-		return -1;
-	else if (diff > 0)
-		return 1;
-
-	diff = strcmp(rec_a->acct, rec_b->acct);
 
 	if (diff < 0)
 		return -1;
@@ -1962,7 +1955,7 @@ extern int mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 	local_cluster_list = list_create(NULL);
 	user_name = uid_to_string((uid_t) uid);
 	/* these need to be in a specific order */
-	list_sort(association_list, (ListCmpF)_assoc_sort_cluster_acct);
+	list_sort(association_list, (ListCmpF)_assoc_sort_cluster);
 
 	itr = list_iterator_create(association_list);
 	while((object = list_next(itr))) {
