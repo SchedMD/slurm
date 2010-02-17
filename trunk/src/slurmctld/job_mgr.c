@@ -98,7 +98,9 @@
 #define JOB_2_2_STATE_VERSION  "VER010"		/* SLURM version 2.2 */
 #define JOB_2_1_STATE_VERSION  "VER009"		/* SLURM version 2.1 */
 
-#define JOB_CKPT_VERSION      "JOB_CKPT_001"
+#define JOB_CKPT_VERSION      "JOB_CKPT_002"
+#define JOB_2_2_CKPT_VERSION  "JOB_CKPT_002"	/* SLURM version 2.2 */
+#define JOB_2_1_CKPT_VERSION  "JOB_CKPT_001"	/* SLURM version 2.1 */
 
 /* Global variables */
 List   job_list = NULL;		/* job_record list */
@@ -126,14 +128,13 @@ static int  _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 					 bitstr_t ** exc_bitmap,
 					 bitstr_t ** req_bitmap);
 static job_desc_msg_t * _copy_job_record_to_job_desc(
-	struct job_record *job_ptr);
+				struct job_record *job_ptr);
 static char *_copy_nodelist_no_dup(char *node_list);
 static void _del_batch_list_rec(void *x);
 static void _delete_job_desc_files(uint32_t job_id);
 static acct_qos_rec_t *_determine_and_validate_qos(
-	acct_association_rec_t *assoc_ptr,
-	acct_qos_rec_t *qos_rec,
-	int *error_code);
+				acct_association_rec_t *assoc_ptr,
+				acct_qos_rec_t *qos_rec, int *error_code);
 static void _dump_job_details(struct job_details *detail_ptr,
 			      Buf buffer);
 static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer);
@@ -8381,6 +8382,7 @@ static void _pack_job_for_ckpt (struct job_record *job_ptr, Buf buffer)
 	/* save job req */
 	job_desc = _copy_job_record_to_job_desc(job_ptr);
 	msg.msg_type = REQUEST_SUBMIT_BATCH_JOB;
+	msg.protocol_version = SLURM_PROTOCOL_VERSION;
 	msg.data = job_desc;
 	pack_msg(&msg, buffer);
 
@@ -8431,15 +8433,14 @@ _copy_job_record_to_job_desc(struct job_record *job_ptr)
 	job_desc->cpu_bind          = xstrdup(details->cpu_bind);
 	job_desc->cpu_bind_type     = details->cpu_bind_type;
 	job_desc->dependency        = xstrdup(details->dependency);
+	job_desc->end_time          = 0; /* Unused today */
 	job_desc->environment       = get_job_env(job_ptr,
 						  &job_desc->env_size);
-	job_desc->std_err           = xstrdup(details->std_err);
 	job_desc->exc_nodes         = xstrdup(details->exc_nodes);
 	job_desc->features          = xstrdup(details->features);
 	job_desc->group_id          = job_ptr->group_id;
 	job_desc->immediate         = 0; /* nowhere to get this value */
-	job_desc->std_in            = xstrdup(details->std_in);
-	job_desc->job_id            = job_ptr->job_id; /* XXX */
+	job_desc->job_id            = job_ptr->job_id;
 	job_desc->kill_on_node_fail = job_ptr->kill_on_node_fail;
 	job_desc->licenses          = xstrdup(job_ptr->licenses);
 	job_desc->mail_type         = job_ptr->mail_type;
@@ -8452,21 +8453,35 @@ _copy_job_record_to_job_desc(struct job_record *job_ptr)
 	job_desc->num_tasks         = details->num_tasks;
 	job_desc->open_mode         = details->open_mode;
 	job_desc->other_port        = job_ptr->other_port;
-	job_desc->std_out           = xstrdup(details->std_out);
 	job_desc->overcommit        = details->overcommit;
 	job_desc->partition         = xstrdup(job_ptr->partition);
 	job_desc->plane_size        = details->plane_size;
 	job_desc->priority          = job_ptr->priority;
+	if (job_ptr->qos_ptr) {
+		acct_qos_rec_t *qos_ptr = (acct_qos_rec_t *)job_ptr->qos_ptr;
+		job_desc->qos       = xstrdup(qos_ptr->name);
+	}
 	job_desc->resp_host         = xstrdup(job_ptr->resp_host);
 	job_desc->req_nodes         = xstrdup(details->req_nodes);
 	job_desc->requeue           = details->requeue;
 	job_desc->reservation       = xstrdup(job_ptr->resv_name);
 	job_desc->script            = get_job_script(job_ptr);
 	job_desc->shared            = details->shared;
+	job_desc->spank_job_env_size = job_ptr->spank_job_env_size;
+	job_desc->spank_job_env      = xmalloc(sizeof(char *) * 
+					       job_desc->spank_job_env_size);
+	for (i = 0; i < job_desc->spank_job_env_size; i ++)
+		job_desc->spank_job_env[i]= xstrdup(job_ptr->spank_job_env[i]);
+	job_desc->std_err           = xstrdup(details->std_err);
+	job_desc->std_in            = xstrdup(details->std_in);
+	job_desc->std_out           = xstrdup(details->std_out);
 	job_desc->task_dist         = details->task_dist;
 	job_desc->time_limit        = job_ptr->time_limit;
 	job_desc->time_min          = job_ptr->time_min;
 	job_desc->user_id           = job_ptr->user_id;
+	job_desc->warn_signal       = job_ptr->warn_signal;
+	job_desc->warn_time         = job_ptr->warn_time;
+	job_desc->wckey             = xstrdup(job_ptr->wckey);
 	job_desc->work_dir          = xstrdup(details->work_dir);
 	job_desc->pn_min_cpus       = details->pn_min_cpus;
 	job_desc->pn_min_memory     = details->pn_min_memory;
@@ -8477,12 +8492,11 @@ _copy_job_record_to_job_desc(struct job_record *job_ptr)
 	job_desc->max_nodes         = details->max_nodes;
 	job_desc->min_sockets       = mc_ptr->min_sockets;
 	job_desc->min_cores         = mc_ptr->min_cores;
-	job_desc->min_threads       = mc_ptr->min_threads;;
+	job_desc->min_threads       = mc_ptr->min_threads;
 	job_desc->cpus_per_task     = details->cpus_per_task;
 	job_desc->ntasks_per_node   = details->ntasks_per_node;
 	job_desc->ntasks_per_socket = mc_ptr->ntasks_per_socket;
 	job_desc->ntasks_per_core   = mc_ptr->ntasks_per_core;
-	job_desc->wckey             = xstrdup(job_ptr->wckey);
 #if 0
 	/* select_jobinfo is unused at job submit time, only it's
 	 * components are set. We recover those from the structure below.
@@ -8492,24 +8506,30 @@ _copy_job_record_to_job_desc(struct job_record *job_ptr)
 	/* The following fields are used only on BlueGene systems.
 	 * Since BlueGene does not use the checkpoint/restart logic today,
 	 * we do not them. */
-	select_g_select_jobinfo_get(job_ptr->select_jobinfo, SELECT_JOBDATA_GEOMETRY,
-			     &job_desc->geometry);
-	select_g_select_jobinfo_get(job_ptr->select_jobinfo, SELECT_JOBDATA_CONN_TYPE,
-			     &job_desc->conn_type);
-	select_g_select_jobinfo_get(job_ptr->select_jobinfo, SELECT_JOBDATA_REBOOT,
-			     &job_desc->reboot);
-	select_g_select_jobinfo_get(job_ptr->select_jobinfo, SELECT_JOBDATA_ROTATE,
-			     &job_desc->rotate);
-	select_g_select_jobinfo_get(job_ptr->select_jobinfo, SELECT_JOBDATA_BLRTS_IMAGE,
-			     &job_desc->blrtsimage);
-	select_g_select_jobinfo_get(job_ptr->select_jobinfo, SELECT_JOBDATA_LINUX_IMAGE,
-			     &job_desc->linuximage);
+	select_g_select_jobinfo_get(job_ptr->select_jobinfo, 
+				    SELECT_JOBDATA_GEOMETRY,
+				    &job_desc->geometry);
 	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
-			     SELECT_JOBDATA_MLOADER_IMAGE,
-			     &job_desc->mloaderimage);
+				    SELECT_JOBDATA_CONN_TYPE,
+				    &job_desc->conn_type);
+	select_g_select_jobinfo_get(job_ptr->select_jobinfo, 
+				    SELECT_JOBDATA_REBOOT,
+				    &job_desc->reboot);
+	select_g_select_jobinfo_get(job_ptr->select_jobinfo, 
+				    SELECT_JOBDATA_ROTATE,
+				    &job_desc->rotate);
+	select_g_select_jobinfo_get(job_ptr->select_jobinfo, 
+				    SELECT_JOBDATA_BLRTS_IMAGE,
+				    &job_desc->blrtsimage);
+	select_g_select_jobinfo_get(job_ptr->select_jobinfo, 
+				    SELECT_JOBDATA_LINUX_IMAGE,
+				    &job_desc->linuximage);
 	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
-			     SELECT_JOBDATA_RAMDISK_IMAGE,
-			     &job_desc->ramdiskimage);
+				    SELECT_JOBDATA_MLOADER_IMAGE,
+				    &job_desc->mloaderimage);
+	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
+				    SELECT_JOBDATA_RAMDISK_IMAGE,
+				    &job_desc->ramdiskimage);
 #endif
 
 	return job_desc;
@@ -8542,6 +8562,7 @@ extern int job_restart(checkpoint_msg_t *ckpt_ptr, uid_t uid, slurm_fd conn_fd,
 	return_code_msg_t rc_msg;
 	job_desc_msg_t *job_desc = NULL;
 	int rc = SLURM_SUCCESS;
+	uint16_t ckpt_version = (uint16_t) NO_VAL;
 
 	if (ckpt_ptr->step_id != SLURM_BATCH_SCRIPT) {
 		rc = ESLURM_NOT_SUPPORTED;
@@ -8570,7 +8591,15 @@ extern int job_restart(checkpoint_msg_t *ckpt_ptr, uid_t uid, slurm_fd conn_fd,
 	/* unpack version string */
 	safe_unpackstr_xmalloc(&ver_str, &tmp_uint32, buffer);
 	debug3("Version string in job_ckpt header is %s", ver_str);
-	if ((!ver_str) || (strcmp(ver_str, JOB_CKPT_VERSION) != 0)) {
+	if (ver_str) {
+		if (!strcmp(ver_str, JOB_CKPT_VERSION)) {
+			ckpt_version = SLURM_PROTOCOL_VERSION;
+		} else if (!strcmp(ver_str, JOB_2_1_CKPT_VERSION)) {
+			ckpt_version = SLURM_2_1_PROTOCOL_VERSION;
+		}
+	}
+
+	if (ckpt_version == (uint16_t)NO_VAL) {
 		error("***************************************************");
 		error("Can not restart from job ckpt, incompatible version");
 		error("***************************************************");
@@ -8586,9 +8615,9 @@ extern int job_restart(checkpoint_msg_t *ckpt_ptr, uid_t uid, slurm_fd conn_fd,
 
 	/* unpack the job req */
 	msg.msg_type = REQUEST_SUBMIT_BATCH_JOB;
-	if (unpack_msg(&msg, buffer) != SLURM_SUCCESS) {
+	msg.protocol_version = ckpt_version;
+	if (unpack_msg(&msg, buffer) != SLURM_SUCCESS)
 		goto unpack_error;
-	}
 
 	job_desc = msg.data;
 
@@ -8649,6 +8678,7 @@ extern int job_restart(checkpoint_msg_t *ckpt_ptr, uid_t uid, slurm_fd conn_fd,
 
  unpack_error:
 	free_buf(buffer);
+	xfree(ver_str);
 	xfree(image_dir);
 	xfree(alloc_nodes);
 	xfree(ckpt_file);
