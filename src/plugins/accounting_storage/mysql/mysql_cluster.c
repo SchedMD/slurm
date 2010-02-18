@@ -64,33 +64,11 @@ extern int mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 	user_name = uid_to_string((uid_t) uid);
 	itr = list_iterator_create(cluster_list);
 	while((object = list_next(itr))) {
-		int i = 0;
 		if(!object->name || !object->name[0]) {
 			error("We need a cluster name to add.");
 			rc = SLURM_ERROR;
 			continue;
 		}
-		/* Sanity check to make sure we can create a table
-		   with this name. */
-		while(object->name[i]) {
-			if(((object->name[i] >= '0')
-			    && (object->name[i] <= '9'))
-			   || ((object->name[i] >= 'A')
-			       && (object->name[i] <= 'Z'))
-			   || ((object->name[i] >= 'a')
-			       && (object->name[i] <= 'z'))) {
-				i++;
-				continue;
-			}
-			error("Cluster names have to be alpha numeric, "
-			      "'%s' won't work.", object->name);
-			rc = SLURM_ERROR;
-			i = -1;
-			break;
-		}
-
-		if(i == -1)
-			continue;
 
 		xstrcat(cols, "creation_time, mod_time, acct");
 		xstrfmtcat(vals, "%d, %d, 'root'",
