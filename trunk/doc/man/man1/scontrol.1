@@ -325,7 +325,7 @@ Repeat the last command executed.
 Account name to be changed for this job's resource use.
 Value may be cleared with blank data value, "Account=".
 .TP
-\fIConnection\fP=<type>
+\fIConn-Type\fP=<type>
 Reset the node connection type.
 Possible values on Blue Gene are "MESH", "TORUS" and "NAV"
 (mesh else torus).
@@ -388,12 +388,11 @@ On Blue Gene the value should be three digits separated by
 "x" or ",". The digits represent the allocation size in
 X, Y and Z dimensions (e.g. "2x3x4").
 .TP
-\fIRotate\fP=<yes|no>
-Permit the job's geometry to be rotated.
-Possible values are "YES" and "NO".
-.TP
 \fIJobId\fP=<id>
 Identify the job to be updated. This specification is required.
+.TP
+\fIMinCPUsNode\fP=<count>
+Set the job's minimum number of CPUs per node to the specified value.
 .TP
 \fIMinMemoryCPU\fP=<megabytes>
 Set the job's minimum real memory required per allocated CPU to the specified
@@ -403,9 +402,6 @@ Either \fIMinMemoryCPU\fP or \fIMinMemoryNode\fP may be set, but not both.
 \fIMinMemoryNode\fP=<megabytes>
 Set the job's minimum real memory required per node to the specified value.
 Either \fIMinMemoryCPU\fP or \fIMinMemoryNode\fP may be set, but not both.
-.TP
-\fIMinCPUsNode\fP=<count>
-Set the job's minimum number of CPUs per node to the specified value.
 .TP
 \fIMinTmpDiskNode\fP=<megabytes>
 Set the job's minimum temporary disk space required per node to the specified value.
@@ -430,7 +426,7 @@ Set the job's minimum and optionally maximum count of nodes to be allocated.
 \fINumTasks\fP=<count>
 Set the job's count of required tasks to the specified value.
 .TP
-\fIPartition\fP=<name>
+\fIPartitionName\fP=<name>
 Set the job's partition to the specified value.
 .TP
 \fIPriority\fP=<number>
@@ -453,6 +449,10 @@ Set the job's count of minimum sockets per node to the specified value.
 .TP
 \fIReqThreads\fP=<count>
 Set the job's count of minimum threads per core to the specified value.
+.TP
+\fIRotate\fP=<yes|no>
+Permit the job's geometry to be rotated.
+Possible values are "YES" and "NO".
 .TP
 \fIShared\fP=<yes|no>
 Set the job's ability to share nodes with other jobs. Possible values are
