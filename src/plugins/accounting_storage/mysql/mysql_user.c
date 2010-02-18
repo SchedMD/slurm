@@ -62,7 +62,7 @@ static int _get_user_coords(mysql_conn_t *mysql_conn, acct_user_rec_t *user)
 		user->coord_accts = list_create(destroy_acct_coord_rec);
 
 	query = xstrdup_printf(
-		"select acct from %s where user=\"%s\" && deleted=0",
+		"select acct from %s where user='%s' && deleted=0",
 		acct_coord_table, user->name);
 
 	if(!(result =
@@ -105,10 +105,10 @@ static int _get_user_coords(mysql_conn_t *mysql_conn, acct_user_rec_t *user)
 			 * account back since we want to keep
 			 * track of the sub-accounts.
 			 */
-			xstrfmtcat(query, "(t2.acct=\"%s\" "
+			xstrfmtcat(query, "(t2.acct='%s' "
 				   "&& t1.lft between t2.lft "
 				   "and t2.rgt && t1.user='' "
-				   "&& t1.acct!=\"%s\")",
+				   "&& t1.acct!='%s')",
 				   coord->name, coord->name);
 			set = 1;
 		}
@@ -191,8 +191,8 @@ extern int mysql_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 
 		if(object->default_wckey) {
 			xstrcat(cols, ", default_wckey");
-			xstrfmtcat(vals, ", \"%s\"", object->default_wckey);
-			xstrfmtcat(extra, ", default_wckey=\"%s\"",
+			xstrfmtcat(vals, ", '%s'", object->default_wckey);
+			xstrfmtcat(extra, ", default_wckey='%s'",
 				   object->default_wckey);
 		}
 
@@ -228,14 +228,14 @@ extern int mysql_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 
 		if(txn_query)
 			xstrfmtcat(txn_query,
-				   ", (%d, %u, \"%s\", \"%s\", \"%s\")",
+				   ", (%d, %u, '%s', '%s', '%s')",
 				   now, DBD_ADD_USERS, object->name,
 				   user_name, tmp_extra);
 		else
 			xstrfmtcat(txn_query,
 				   "insert into %s "
 				   "(timestamp, action, name, actor, info) "
-				   "values (%d, %u, \"%s\", \"%s\", \"%s\")",
+				   "values (%d, %u, '%s', '%s', '%s')",
 				   txn_table,
 				   now, DBD_ADD_USERS, object->name,
 				   user_name, tmp_extra);
@@ -317,19 +317,19 @@ extern int mysql_add_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 			if(!acct[0])
 				continue;
 			if(query)
-				xstrfmtcat(query, ", (%d, %d, \"%s\", \"%s\")",
+				xstrfmtcat(query, ", (%d, %d, '%s', '%s')",
 					   now, now, acct, user);
 			else
 				query = xstrdup_printf(
 					"insert into %s (creation_time, "
 					"mod_time, acct, user) values "
-					"(%d, %d, \"%s\", \"%s\")",
+					"(%d, %d, '%s', '%s')",
 					acct_coord_table,
 					now, now, acct, user);
 
 			if(txn_query)
 				xstrfmtcat(txn_query,
-					   ", (%d, %u, \"%s\", \"%s\", \"%s\")",
+					   ", (%d, %u, '%s', '%s', '%s')",
 					   now, DBD_ADD_ACCOUNT_COORDS, user,
 					   user_name, acct);
 			else
@@ -337,8 +337,8 @@ extern int mysql_add_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 					   "insert into %s "
 					   "(timestamp, action, name, "
 					   "actor, info) "
-					   "values (%d, %u, \"%s\", "
-					   "\"%s\", \"%s\")",
+					   "values (%d, %u, '%s', "
+					   "'%s', '%s')",
 					   txn_table,
 					   now, DBD_ADD_ACCOUNT_COORDS, user,
 					   user_name, acct);
@@ -410,7 +410,7 @@ extern List mysql_modify_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		while((object = list_next(itr))) {
 			if(set)
 				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "name=\"%s\"", object);
+			xstrfmtcat(extra, "name='%s'", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -424,7 +424,7 @@ extern List mysql_modify_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		while((object = list_next(itr))) {
 			if(set)
 				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "default_acct=\"%s\"", object);
+			xstrfmtcat(extra, "default_acct='%s'", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -438,7 +438,7 @@ extern List mysql_modify_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		while((object = list_next(itr))) {
 			if(set)
 				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "default_wckey=\"%s\"", object);
+			xstrfmtcat(extra, "default_wckey='%s'", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -450,10 +450,10 @@ extern List mysql_modify_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	}
 
 	if(user->default_acct)
-		xstrfmtcat(vals, ", default_acct=\"%s\"", user->default_acct);
+		xstrfmtcat(vals, ", default_acct='%s'", user->default_acct);
 
 	if(user->default_wckey)
-		xstrfmtcat(vals, ", default_wckey=\"%s\"", user->default_wckey);
+		xstrfmtcat(vals, ", default_wckey='%s'", user->default_wckey);
 
 	if(user->admin_level != ACCT_ADMIN_NOTSET)
 		xstrfmtcat(vals, ", admin_level=%u", user->admin_level);
@@ -480,10 +480,10 @@ extern List mysql_modify_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		object = xstrdup(row[0]);
 		list_append(ret_list, object);
 		if(!rc) {
-			xstrfmtcat(name_char, "(name=\"%s\"", object);
+			xstrfmtcat(name_char, "(name='%s'", object);
 			rc = 1;
 		} else  {
-			xstrfmtcat(name_char, " || name=\"%s\"", object);
+			xstrfmtcat(name_char, " || name='%s'", object);
 		}
 		user_rec = xmalloc(sizeof(acct_user_rec_t));
 		user_rec->name = xstrdup(object);
@@ -559,7 +559,7 @@ extern List mysql_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 				continue;
 			if(set)
 				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "name=\"%s\"", object);
+			xstrfmtcat(extra, "name='%s'", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -575,7 +575,7 @@ extern List mysql_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 				continue;
 			if(set)
 				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "default_acct=\"%s\"", object);
+			xstrfmtcat(extra, "default_acct='%s'", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -591,7 +591,7 @@ extern List mysql_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 				continue;
 			if(set)
 				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "default_wckey=\"%s\"", object);
+			xstrfmtcat(extra, "default_wckey='%s'", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -633,12 +633,12 @@ extern List mysql_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		list_append(assoc_cond.user_list, object);
 
 		if(!rc) {
-			xstrfmtcat(name_char, "name=\"%s\"", object);
-			xstrfmtcat(assoc_char, "t2.user=\"%s\"", object);
+			xstrfmtcat(name_char, "name='%s'", object);
+			xstrfmtcat(assoc_char, "t2.user='%s'", object);
 			rc = 1;
 		} else {
-			xstrfmtcat(name_char, " || name=\"%s\"", object);
-			xstrfmtcat(assoc_char, " || t2.user=\"%s\"", object);
+			xstrfmtcat(name_char, " || name='%s'", object);
+			xstrfmtcat(assoc_char, " || t2.user='%s'", object);
 		}
 		user_rec = xmalloc(sizeof(acct_user_rec_t));
 		user_rec->name = xstrdup(object);
@@ -762,7 +762,7 @@ extern List mysql_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 				continue;
 			if(set)
 				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "user=\"%s\"", object);
+			xstrfmtcat(extra, "user='%s'", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -782,7 +782,7 @@ extern List mysql_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 				continue;
 			if(set)
 				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "acct=\"%s\"", object);
+			xstrfmtcat(extra, "acct='%s'", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -953,7 +953,7 @@ extern List mysql_get_users(mysql_conn_t *mysql_conn, uid_t uid,
 		while((object = list_next(itr))) {
 			if(set)
 				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "name=\"%s\"", object);
+			xstrfmtcat(extra, "name='%s'", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -967,7 +967,7 @@ extern List mysql_get_users(mysql_conn_t *mysql_conn, uid_t uid,
 		while((object = list_next(itr))) {
 			if(set)
 				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "default_acct=\"%s\"", object);
+			xstrfmtcat(extra, "default_acct='%s'", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -981,7 +981,7 @@ extern List mysql_get_users(mysql_conn_t *mysql_conn, uid_t uid,
 		while((object = list_next(itr))) {
 			if(set)
 				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "default_wckey=\"%s\"", object);
+			xstrfmtcat(extra, "default_wckey='%s'", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -997,7 +997,7 @@ empty:
 	 * if this flag is set.
 	 */
 	if(!is_admin && (private_data & PRIVATE_DATA_USERS)) {
-		xstrfmtcat(extra, " && name=\"%s\"", user.name);
+		xstrfmtcat(extra, " && name='%s'", user.name);
 	}
 
 	xfree(tmp);

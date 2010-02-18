@@ -103,7 +103,7 @@ extern int mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		xstrfmtcat(query,
 			   "insert into %s (creation_time, mod_time, "
 			   "name, classification) "
-			   "values (%d, %d, \"%s\", %u) "
+			   "values (%d, %d, '%s', %u) "
 			   "on duplicate key update deleted=0, mod_time=%d, "
 			   "control_host='', control_port=0, classification=%u",
 			   cluster_table,
@@ -171,7 +171,7 @@ extern int mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		xstrfmtcat(query,
 			   "insert into %s "
 			   "(timestamp, action, name, actor, info) "
-			   "values (%d, %u, \"%s\", \"%s\", \"%s\");",
+			   "values (%d, %u, '%s', '%s', '%s');",
 			   txn_table, now, DBD_ADD_CLUSTERS,
 			   object->name, user_name, tmp_extra);
 		xfree(tmp_extra);
@@ -414,7 +414,7 @@ extern List mysql_remove_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 				continue;
 			if(set)
 				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "name=\"%s\"", object);
+			xstrfmtcat(extra, "name='%s'", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -453,7 +453,7 @@ extern List mysql_remove_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		list_append(ret_list, object);
 
 		xfree(name_char);
-		xstrfmtcat(name_char, "name=\"%s\"", object);
+		xstrfmtcat(name_char, "name='%s'", object);
 
 		/* We should not need to delete any cluster usage just set it
 		 * to deleted */
@@ -591,7 +591,7 @@ extern List mysql_get_clusters(mysql_conn_t *mysql_conn, uid_t uid,
 		while((object = list_next(itr))) {
 			if(set)
 				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "name=\"%s\"", object);
+			xstrfmtcat(extra, "name='%s'", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -822,7 +822,7 @@ extern List mysql_get_cluster_events(mysql_conn_t *mysql_conn, uint32_t uid,
 		while((object = list_next(itr))) {
 			if(set)
 				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "node_name=\"%s\"", object);
+			xstrfmtcat(extra, "node_name='%s'", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -855,7 +855,7 @@ extern List mysql_get_cluster_events(mysql_conn_t *mysql_conn, uint32_t uid,
 		while((object = list_next(itr))) {
 			if(set)
 				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "reason like \"%%%s%%\"", object);
+			xstrfmtcat(extra, "reason like '%%%s%%'", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -873,7 +873,7 @@ extern List mysql_get_cluster_events(mysql_conn_t *mysql_conn, uint32_t uid,
 		while((object = list_next(itr))) {
 			if(set)
 				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "state=\"%s\"", object);
+			xstrfmtcat(extra, "state='%s'", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -962,16 +962,16 @@ extern int mysql_node_down(mysql_conn_t *mysql_conn,
 		cpus = node_ptr->cpus;
 
 	if (reason)
-		my_reason = reason;
+		my_reason = fix_double_quotes(reason);
 	else
-		my_reason = node_ptr->reason;
+		my_reason = fix_double_quotes(node_ptr->reason);
 
 	debug2("inserting %s(%s) with %u cpus",
 	       node_ptr->name, mysql_conn->cluster_name, cpus);
 
 	query = xstrdup_printf(
 		"update %s_%s set time_end=%d where "
-		"time_end=0 and node_name=\"%s\";",
+		"time_end=0 and node_name='%s';",
 		mysql_conn->cluster_name, event_table,
 		event_time, node_ptr->name);
 	/* If you are clean-restarting the controller over and over again you
@@ -984,8 +984,9 @@ extern int mysql_node_down(mysql_conn_t *mysql_conn,
 	 */
 	xstrfmtcat(query,
 		   "insert into %s_%s "
-		   "(node_name, state, cpu_count, time_start, reason) "
-		   "values (\"%s\", %u, %u, %d, \"%s\", %u) "
+		   "(node_name, state, cpu_count, time_start, "
+		   "reason, reason_uid) "
+		   "values ('%s', %u, %u, %d, '%s', %u) "
 		   "on duplicate key update time_end=0;",
 		   mysql_conn->cluster_name, event_table,
 		   node_ptr->name, node_ptr->node_state,
@@ -994,7 +995,7 @@ extern int mysql_node_down(mysql_conn_t *mysql_conn,
 	       mysql_conn->conn, THIS_FILE, __LINE__, query);
 	rc = mysql_db_query(mysql_conn->db_conn, query);
 	xfree(query);
-
+	xfree(my_reason);
 	return rc;
 }
 
@@ -1010,7 +1011,7 @@ extern int mysql_node_up(mysql_conn_t *mysql_conn,
 
 	query = xstrdup_printf(
 		"update %s_%s set time_end=%d where "
-		"time_end=0 and node_name=\"%s\";",
+		"time_end=0 and node_name='%s';",
 		mysql_conn->cluster_name, event_table,
 		event_time, node_ptr->name);
 	debug4("%d(%s:%d) query\n%s",
@@ -1059,7 +1060,7 @@ extern int mysql_register_ctld(mysql_conn_t *mysql_conn,
 	xstrfmtcat(query,
 		   "insert into %s "
 		   "(timestamp, action, name, actor, info) "
-		   "values (%d, %d, \"%s\", \"%s\", \"%s %u\");",
+		   "values (%d, %d, '%s', '%s', '%s %u');",
 		   txn_table,
 		   now, DBD_MODIFY_CLUSTERS, cluster,
 		   slurmctld_conf.slurm_user_name, address, port);
@@ -1123,7 +1124,7 @@ extern int mysql_cluster_cpus(mysql_conn_t *mysql_conn,
 				      "last instance of cluster '%s'.",
 				      cluster_nodes, mysql_conn->cluster_name);
 				query = xstrdup_printf(
-					"update %s_%s set cluster_nodes=\"%s\" "
+					"update %s_%s set cluster_nodes='%s' "
 					"where time_end=0 and node_name=''",
 					mysql_conn->cluster_name,
 					event_table, cluster_nodes);
@@ -1157,7 +1158,7 @@ add_it:
 	query = xstrdup_printf(
 		"insert into %s_%s (cluster_nodes, cpu_count, "
 		"time_start, reason) "
-		"values (\"%s\", %u, %d, 'Cluster processor count')",
+		"values ('%s', %u, %d, 'Cluster processor count')",
 		mysql_conn->cluster_name, event_table,
 		cluster_nodes, cpus, event_time);
 	rc = mysql_db_query(mysql_conn->db_conn, query);

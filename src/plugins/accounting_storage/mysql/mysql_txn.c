@@ -99,11 +99,11 @@ extern List mysql_get_txn(mysql_conn_t *mysql_conn, uid_t uid,
 				xstrcat(name_extra, " || ");
 			}
 
-			xstrfmtcat(assoc_extra, "acct=\"%s\"", object);
+			xstrfmtcat(assoc_extra, "acct='%s'", object);
 
-			xstrfmtcat(name_extra, "(name like \"%%\\\"%s\\\"%%\""
-				   " || name=\"%s\")"
-				   " || (info like \"%%acct=\\\"%s\\\"%%\")",
+			xstrfmtcat(name_extra, "(name like '%%\\'%s\\'%%'"
+				   " || name='%s')"
+				   " || (info like '%%acct=\\'%s\\'%%')",
 				   object, object, object);
 			set = 1;
 		}
@@ -130,11 +130,11 @@ extern List mysql_get_txn(mysql_conn_t *mysql_conn, uid_t uid,
 				xstrcat(assoc_extra, " || ");
 				xstrcat(name_extra, " || ");
 			}
-			xstrfmtcat(assoc_extra, "cluster=\"%s\"", object);
+			xstrfmtcat(assoc_extra, "cluster='%s'", object);
 
-			xstrfmtcat(name_extra, "(name like \"%%\\\"%s\\\"%%\""
-				   " || name=\"%s\")"
-				   " || (info like \"%%cluster=\\\"%s\\\"%%\")",
+			xstrfmtcat(name_extra, "(name like '%%\\'%s\\'%%'"
+				   " || name='%s')"
+				   " || (info like '%%cluster=\\'%s\\'%%')",
 				   object, object, object);
 			set = 1;
 		}
@@ -161,11 +161,11 @@ extern List mysql_get_txn(mysql_conn_t *mysql_conn, uid_t uid,
 				xstrcat(assoc_extra, " || ");
 				xstrcat(name_extra, " || ");
 			}
-			xstrfmtcat(assoc_extra, "user=\"%s\"", object);
+			xstrfmtcat(assoc_extra, "user='%s'", object);
 
-			xstrfmtcat(name_extra, "(name like \"%%\\\"%s\\\"%%\""
-				   " || name=\"%s\")"
-				   " || (info like \"%%user=\\\"%s\\\"%%\")",
+			xstrfmtcat(name_extra, "(name like '%%\\'%s\\'%%'"
+				   " || name='%s')"
+				   " || (info like '%%user=\\'%s\\'%%')",
 				   object, object, object);
 
 			set = 1;
@@ -232,7 +232,7 @@ extern List mysql_get_txn(mysql_conn_t *mysql_conn, uid_t uid,
 		while((object = list_next(itr))) {
 			if(set)
 				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "action=\"%s\"", object);
+			xstrfmtcat(extra, "action='%s'", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -249,7 +249,7 @@ extern List mysql_get_txn(mysql_conn_t *mysql_conn, uid_t uid,
 		while((object = list_next(itr))) {
 			if(set)
 				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "actor=\"%s\"", object);
+			xstrfmtcat(extra, "actor='%s'", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);

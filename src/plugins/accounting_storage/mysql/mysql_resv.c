@@ -57,8 +57,8 @@ static int _setup_resv_limits(acct_reservation_rec_t *resv,
 			resv->assocs[len] = '\0';
 
 		xstrcat(*cols, ", assoclist");
-		xstrfmtcat(*vals, ", \"%s\"", resv->assocs+start);
-		xstrfmtcat(*extra, ", assoclist=\"%s\"", resv->assocs+start);
+		xstrfmtcat(*vals, ", '%s'", resv->assocs+start);
+		xstrfmtcat(*extra, ", assoclist='%s'", resv->assocs+start);
 	}
 
 	if(resv->cpus != (uint32_t)NO_VAL) {
@@ -75,20 +75,20 @@ static int _setup_resv_limits(acct_reservation_rec_t *resv,
 
 	if(resv->name) {
 		xstrcat(*cols, ", resv_name");
-		xstrfmtcat(*vals, ", \"%s\"", resv->name);
-		xstrfmtcat(*extra, ", resv_name=\"%s\"", resv->name);
+		xstrfmtcat(*vals, ", '%s'", resv->name);
+		xstrfmtcat(*extra, ", resv_name='%s'", resv->name);
 	}
 
 	if(resv->nodes) {
 		xstrcat(*cols, ", nodelist");
-		xstrfmtcat(*vals, ", \"%s\"", resv->nodes);
-		xstrfmtcat(*extra, ", nodelist=\"%s\"", resv->nodes);
+		xstrfmtcat(*vals, ", '%s'", resv->nodes);
+		xstrfmtcat(*extra, ", nodelist='%s'", resv->nodes);
 	}
 
 	if(resv->node_inx) {
 		xstrcat(*cols, ", node_inx");
-		xstrfmtcat(*vals, ", \"%s\"", resv->node_inx);
-		xstrfmtcat(*extra, ", node_inx=\"%s\"", resv->node_inx);
+		xstrfmtcat(*vals, ", '%s'", resv->node_inx);
+		xstrfmtcat(*extra, ", node_inx='%s'", resv->node_inx);
 	}
 
 	if(resv->time_end) {
@@ -145,7 +145,7 @@ static int _setup_resv_cond_limits(acct_reservation_cond_t *resv_cond,
 		while((object = list_next(itr))) {
 			if(set)
 				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "%s.resv_name=\"%s\"",
+			xstrfmtcat(*extra, "%s.resv_name='%s'",
 				   prefix, object);
 			set = 1;
 		}

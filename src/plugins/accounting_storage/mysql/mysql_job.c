@@ -389,24 +389,24 @@ no_rollup_change:
 			   "job_name, track_steps, "
 			   "state, priority, cpus_req, "
 			   "cpus_alloc, nodes_alloc) "
-			   "values (%u, %u, %u, %u, %u, \"%s\", %u, %u, ",
+			   "values (%u, %u, %u, %u, %u, '%s', %u, %u, ",
 			   job_ptr->job_id, job_ptr->assoc_id, wckeyid,
 			   job_ptr->user_id, job_ptr->group_id, nodes,
 			   job_ptr->resv_id, job_ptr->time_limit);
 
 		if(job_ptr->account)
-			xstrfmtcat(query, "\"%s\", ", job_ptr->account);
+			xstrfmtcat(query, "'%s', ", job_ptr->account);
 		if(job_ptr->partition)
-			xstrfmtcat(query, "\"%s\", ", job_ptr->partition);
+			xstrfmtcat(query, "'%s', ", job_ptr->partition);
 		if(block_id)
-			xstrfmtcat(query, "\"%s\", ", block_id);
+			xstrfmtcat(query, "'%s', ", block_id);
 		if(job_ptr->wckey)
-			xstrfmtcat(query, "\"%s\", ", job_ptr->wckey);
+			xstrfmtcat(query, "'%s', ", job_ptr->wckey);
 		if(node_inx)
-			xstrfmtcat(query, "\"%s\", ", node_inx);
+			xstrfmtcat(query, "'%s', ", node_inx);
 
 		xstrfmtcat(query,
-			   "%d, %d, %d, \"%s\", %u, %u, %u, %u, %u, %u) "
+			   "%d, %d, %d, '%s', %u, %u, %u, %u, %u, %u) "
 			   "on duplicate key update "
 			   "job_db_inx=LAST_INSERT_ID(job_db_inx), state=%u, "
 			   "id_assoc=%u, id_wckey=%u, id_resv=%u, timelimit=%u",
@@ -422,16 +422,16 @@ no_rollup_change:
 			   job_ptr->time_limit);
 
 		if(job_ptr->account)
-			xstrfmtcat(query, ", account=\"%s\"", job_ptr->account);
+			xstrfmtcat(query, ", account='%s'", job_ptr->account);
 		if(job_ptr->partition)
-			xstrfmtcat(query, ", partition=\"%s\"",
+			xstrfmtcat(query, ", partition='%s'",
 				   job_ptr->partition);
 		if(block_id)
-			xstrfmtcat(query, ", id_block=\"%s\"", block_id);
+			xstrfmtcat(query, ", id_block='%s'", block_id);
 		if(job_ptr->wckey)
-			xstrfmtcat(query, ", wckey=\"%s\"", job_ptr->wckey);
+			xstrfmtcat(query, ", wckey='%s'", job_ptr->wckey);
 		if(node_inx)
-			xstrfmtcat(query, ", node_inx=\"%s\"", node_inx);
+			xstrfmtcat(query, ", node_inx='%s'", node_inx);
 
 		debug3("%d(%s:%d) query\n%s",
 		       mysql_conn->conn, THIS_FILE, __LINE__, query);
@@ -451,23 +451,23 @@ no_rollup_change:
 				rc = SLURM_ERROR;
 		}
 	} else {
-		query = xstrdup_printf("update %s_%s set nodelist=\"%s\", ",
+		query = xstrdup_printf("update %s_%s set nodelist='%s', ",
 				       mysql_conn->cluster_name,
 				       job_table, nodes);
 
 		if(job_ptr->account)
-			xstrfmtcat(query, "account=\"%s\", ", job_ptr->account);
+			xstrfmtcat(query, "account='%s', ", job_ptr->account);
 		if(job_ptr->partition)
-			xstrfmtcat(query, "partition=\"%s\", ",
+			xstrfmtcat(query, "partition='%s', ",
 				   job_ptr->partition);
 		if(block_id)
-			xstrfmtcat(query, "id_block=\"%s\", ", block_id);
+			xstrfmtcat(query, "id_block='%s', ", block_id);
 		if(job_ptr->wckey)
-			xstrfmtcat(query, "wckey=\"%s\", ", job_ptr->wckey);
+			xstrfmtcat(query, "wckey='%s', ", job_ptr->wckey);
 		if(node_inx)
-			xstrfmtcat(query, "node_inx=\"%s\", ", node_inx);
+			xstrfmtcat(query, "node_inx='%s', ", node_inx);
 
-		xstrfmtcat(query, "time_start=%d, job_name=\"%s\", state=%u, "
+		xstrfmtcat(query, "time_start=%d, job_name='%s', state=%u, "
 			   "cpus_alloc=%u, nodes_alloc=%u, "
 			   "id_assoc=%u, id_wckey=%u, id_resv=%u, timelimit=%u "
 			   "where job_db_inx=%d",
@@ -555,7 +555,7 @@ extern int mysql_job_complete(mysql_conn_t *mysql_conn,
 	}
 
 	query = xstrdup_printf("update %s_%s set time_start=%d, time_end=%d, "
-			       "state=%d, nodelist=\"%s\", exit_code=%d, "
+			       "state=%d, nodelist='%s', exit_code=%d, "
 			       "kill_requid=%d where job_db_inx=%d",
 			       mysql_conn->cluster_name, job_table,
 			       (int)start_time,
@@ -665,11 +665,11 @@ extern int mysql_step_start(mysql_conn_t *mysql_conn,
 		"step_name, state, "
 		"cpus_alloc, nodes_alloc, task_cnt, nodelist, "
 		"node_inx, task_dist) "
-		"values (%d, %d, %d, \"%s\", %d, %d, %d, %d, "
-		"\"%s\", \"%s\", %d) "
+		"values (%d, %d, %d, '%s', %d, %d, %d, %d, "
+		"'%s', '%s', %d) "
 		"on duplicate key update cpus_alloc=%d, nodes_alloc=%d, "
 		"task_cnt=%d, time_end=0, state=%d, "
-		"nodelist=\"%s\", node_inx=\"%s\", task_dist=%d",
+		"nodelist='%s', node_inx='%s', task_dist=%d",
 		mysql_conn->cluster_name, step_table,
 		step_ptr->job_ptr->db_index,
 		step_ptr->step_id,

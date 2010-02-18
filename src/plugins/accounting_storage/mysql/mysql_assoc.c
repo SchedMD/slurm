@@ -190,7 +190,7 @@ static int _move_account(mysql_conn_t *mysql_conn, uint32_t *lft, uint32_t *rgt,
 	int diff = 0;
 	int width = 0;
 	char *query = xstrdup_printf(
-		"SELECT lft from %s_%s where acct=\"%s\" && user='';",
+		"SELECT lft from %s_%s where acct='%s' && user='';",
 		cluster, assoc_table, parent);
 	debug3("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, THIS_FILE, __LINE__, query);
@@ -256,7 +256,7 @@ static int _move_account(mysql_conn_t *mysql_conn, uint32_t *lft, uint32_t *rgt,
 		   cluster, assoc_table, now);
 	xstrfmtcat(query,
 		   "update %s_%s set mod_time=%d, "
-		   "parent_acct=\"%s\" where id_assoc = %s;",
+		   "parent_acct='%s' where id_assoc = %s;",
 		   cluster, assoc_table, now, parent, id);
 	/* get the new lft and rgt if changed */
 	xstrfmtcat(query,
@@ -303,7 +303,7 @@ static int _move_parent(mysql_conn_t *mysql_conn, uid_t uid,
 	query = xstrdup_printf(
 		"select id_assoc, lft, rgt from %s_%s "
 		"where lft between %d and %d "
-		"&& acct=\"%s\" && user='' order by lft;",
+		"&& acct='%s' && user='' order by lft;",
 		cluster, assoc_table, *lft, *rgt,
 		new_parent);
 	debug3("%d(%s:%d) query\n%s",
@@ -371,7 +371,7 @@ static uint32_t _get_parent_id(
 	xassert(cluster);
 
 	query = xstrdup_printf("select id_assoc from %s_%s where user='' "
-			       "and deleted = 0 and acct=\"%s\";",
+			       "and deleted = 0 and acct='%s';",
 			       cluster, assoc_table, parent);
 	debug4("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, THIS_FILE, __LINE__, query);
@@ -458,8 +458,8 @@ static int _set_assoc_limits_for_add(
 	else
 		return SLURM_SUCCESS;
 
-	query = xstrdup_printf("call get_parent_limits(\"%s\", "
-			       "\"%s\", \"%s\", %u);"
+	query = xstrdup_printf("call get_parent_limits('%s', "
+			       "'%s', '%s', %u);"
 			       "select @par_id, @mj, @msj, @mcpj, "
 			       "@mnpj, @mwpj, @mcmpj, @qos, @delta_qos;",
 			       assoc_table, parent, assoc->cluster, 0);
@@ -596,8 +596,8 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 	/* We want all the sub accounts and user accounts */
 	query = xstrdup_printf("select distinct %s from %s_%s where deleted=0 "
 			       "&& lft between %d and %d && "
-			       "((user = '' && parent_acct = \"%s\") || "
-			       "(user != '' && acct = \"%s\")) "
+			       "((user = '' && parent_acct = '%s') || "
+			       "(user != '' && acct = '%s')) "
 			       "order by lft;",
 			       object, assoc->cluster, assoc_table,
 			       lft, rgt, acct, acct);
@@ -831,7 +831,7 @@ static int _setup_association_cond_limits(acct_association_cond_t *assoc_cond,
 		while((object = list_next(itr))) {
 			if(set)
 				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "%s.acct=\"%s\"", prefix, object);
+			xstrfmtcat(*extra, "%s.acct='%s'", prefix, object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -846,7 +846,7 @@ static int _setup_association_cond_limits(acct_association_cond_t *assoc_cond,
 		while((object = list_next(itr))) {
 			if(set)
 				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "%s.shares=\"%s\"",
+			xstrfmtcat(*extra, "%s.shares='%s'",
 				   prefix, object);
 			set = 1;
 		}
@@ -862,7 +862,7 @@ static int _setup_association_cond_limits(acct_association_cond_t *assoc_cond,
 		while((object = list_next(itr))) {
 			if(set)
 				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "%s.grp_cpu_mins=\"%s\"",
+			xstrfmtcat(*extra, "%s.grp_cpu_mins='%s'",
 				   prefix, object);
 			set = 1;
 		}
@@ -878,7 +878,7 @@ static int _setup_association_cond_limits(acct_association_cond_t *assoc_cond,
 		while((object = list_next(itr))) {
 			if(set)
 				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "%s.grp_cpus=\"%s\"",
+			xstrfmtcat(*extra, "%s.grp_cpus='%s'",
 				   prefix, object);
 			set = 1;
 		}
@@ -894,7 +894,7 @@ static int _setup_association_cond_limits(acct_association_cond_t *assoc_cond,
 		while((object = list_next(itr))) {
 			if(set)
 				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "%s.grp_jobs=\"%s\"",
+			xstrfmtcat(*extra, "%s.grp_jobs='%s'",
 				   prefix, object);
 			set = 1;
 		}
@@ -910,7 +910,7 @@ static int _setup_association_cond_limits(acct_association_cond_t *assoc_cond,
 		while((object = list_next(itr))) {
 			if(set)
 				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "%s.grp_nodes=\"%s\"",
+			xstrfmtcat(*extra, "%s.grp_nodes='%s'",
 				   prefix, object);
 			set = 1;
 		}
@@ -926,7 +926,7 @@ static int _setup_association_cond_limits(acct_association_cond_t *assoc_cond,
 		while((object = list_next(itr))) {
 			if(set)
 				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "%s.grp_submit_jobs=\"%s\"",
+			xstrfmtcat(*extra, "%s.grp_submit_jobs='%s'",
 				   prefix, object);
 			set = 1;
 		}
@@ -942,7 +942,7 @@ static int _setup_association_cond_limits(acct_association_cond_t *assoc_cond,
 		while((object = list_next(itr))) {
 			if(set)
 				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "%s.grp_wall=\"%s\"",
+			xstrfmtcat(*extra, "%s.grp_wall='%s'",
 				   prefix, object);
 			set = 1;
 		}
@@ -958,7 +958,7 @@ static int _setup_association_cond_limits(acct_association_cond_t *assoc_cond,
 		while((object = list_next(itr))) {
 			if(set)
 				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "%s.max_cpu_mins_pj=\"%s\"",
+			xstrfmtcat(*extra, "%s.max_cpu_mins_pj='%s'",
 				   prefix, object);
 			set = 1;
 		}
@@ -974,7 +974,7 @@ static int _setup_association_cond_limits(acct_association_cond_t *assoc_cond,
 		while((object = list_next(itr))) {
 			if(set)
 				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "%s.max_cpus_pj=\"%s\"",
+			xstrfmtcat(*extra, "%s.max_cpus_pj='%s'",
 				   prefix, object);
 			set = 1;
 		}
@@ -990,7 +990,7 @@ static int _setup_association_cond_limits(acct_association_cond_t *assoc_cond,
 		while((object = list_next(itr))) {
 			if(set)
 				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "%s.max_jobs=\"%s\"",
+			xstrfmtcat(*extra, "%s.max_jobs='%s'",
 				   prefix, object);
 			set = 1;
 		}
@@ -1006,7 +1006,7 @@ static int _setup_association_cond_limits(acct_association_cond_t *assoc_cond,
 		while((object = list_next(itr))) {
 			if(set)
 				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "%s.max_nodes_pj=\"%s\"",
+			xstrfmtcat(*extra, "%s.max_nodes_pj='%s'",
 				   prefix, object);
 			set = 1;
 		}
@@ -1022,7 +1022,7 @@ static int _setup_association_cond_limits(acct_association_cond_t *assoc_cond,
 		while((object = list_next(itr))) {
 			if(set)
 				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "%s.max_submit_jobs=\"%s\"",
+			xstrfmtcat(*extra, "%s.max_submit_jobs='%s'",
 				   prefix, object);
 			set = 1;
 		}
@@ -1039,7 +1039,7 @@ static int _setup_association_cond_limits(acct_association_cond_t *assoc_cond,
 			if(set)
 				xstrcat(*extra, " || ");
 			xstrfmtcat(*extra,
-				   "%s.max_wall_pj=\"%s\"",
+				   "%s.max_wall_pj='%s'",
 				   prefix, object);
 			set = 1;
 		}
@@ -1054,7 +1054,7 @@ static int _setup_association_cond_limits(acct_association_cond_t *assoc_cond,
 		while((object = list_next(itr))) {
 			if(set)
 				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "%s.user=\"%s\"", prefix, object);
+			xstrfmtcat(*extra, "%s.user='%s'", prefix, object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -1073,7 +1073,7 @@ static int _setup_association_cond_limits(acct_association_cond_t *assoc_cond,
 		while((object = list_next(itr))) {
 			if(set)
 				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "%s.partition=\"%s\"",
+			xstrfmtcat(*extra, "%s.partition='%s'",
 				   prefix, object);
 			set = 1;
 		}
@@ -1103,7 +1103,7 @@ static int _setup_association_cond_limits(acct_association_cond_t *assoc_cond,
 		while((object = list_next(itr))) {
 			if(set)
 				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "%s.parent_acct=\"%s\"",
+			xstrfmtcat(*extra, "%s.parent_acct='%s'",
 				   prefix, object);
 			set = 1;
 		}
@@ -1180,7 +1180,7 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 					error("User %s(%d) can not modify "
 					      "account (%s) because they "
 					      "are not coordinators of "
-					      "parent account \"%s\".",
+					      "parent account '%s'.",
 					      user->name, user->uid,
 					      row[MASSOC_ACCT],
 					      row[MASSOC_PACCT]);
@@ -1317,7 +1317,7 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 						   ", qos=if(qos='', '', "
 						   "concat_ws(',', "
 						   "replace(qos, ',%s', ''), "
-						   "\"%s\")), delta_qos=if("
+						   "'%s')), delta_qos=if("
 						   "qos='', concat("
 						   "replace(replace("
 						   "delta_qos, ',+%s', ''), "
@@ -1572,13 +1572,13 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 	 */
 	if(!is_admin && (private_data & PRIVATE_DATA_USERS)) {
 		int set = 0;
-		query = xstrdup_printf("select lft from %s where user=\"%s\"",
+		query = xstrdup_printf("select lft from %s where user='%s'",
 				       assoc_table, user->name);
 		if(user->coord_accts) {
 			acct_coord_rec_t *coord = NULL;
 			itr = list_iterator_create(user->coord_accts);
 			while((coord = list_next(itr))) {
-				xstrfmtcat(query, " || acct=\"%s\"",
+				xstrfmtcat(query, " || acct='%s'",
 					   coord->name);
 			}
 			list_iterator_destroy(itr);
@@ -1701,8 +1701,8 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 		    || strcmp(parent_acct, last_acct)
 		    || strcmp(cluster_name, last_cluster))) {
 			query = xstrdup_printf(
-				"call get_parent_limits(\"%s\", "
-				"\"%s\", \"%s\", %u);"
+				"call get_parent_limits('%s', "
+				"'%s', '%s', %u);"
 				"select @par_id, @mj, @msj, @mcpj, "
 				"@mnpj, @mwpj, @mcmpj, @qos, @delta_qos;",
 				assoc_table, parent_acct,
@@ -1978,24 +1978,24 @@ extern int mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 		}
 
 		xstrcat(cols, "creation_time, mod_time, acct");
-		xstrfmtcat(vals, "%d, %d, \"%s\"",
+		xstrfmtcat(vals, "%d, %d, '%s'",
 			   now, now, object->acct);
-		xstrfmtcat(update, "where acct=\"%s\"", object->acct);
+		xstrfmtcat(update, "where acct='%s'", object->acct);
 
-		xstrfmtcat(extra, ", mod_time=%d, acct=\"%s\"",
+		xstrfmtcat(extra, ", mod_time=%d, acct='%s'",
 			   now, object->acct);
 		if(!object->user) {
 			xstrcat(cols, ", parent_acct");
-			xstrfmtcat(vals, ", \"%s\"", parent);
-			xstrfmtcat(extra, ", parent_acct=\"%s\", user=\"\"",
+			xstrfmtcat(vals, ", '%s'", parent);
+			xstrfmtcat(extra, ", parent_acct='%s', user=''",
 				   parent);
-			xstrfmtcat(update, " && user=\"\"");
+			xstrfmtcat(update, " && user=''");
 		} else {
 			char *part = object->partition;
 			xstrcat(cols, ", user");
-			xstrfmtcat(vals, ", \"%s\"", object->user);
-			xstrfmtcat(update, " && user=\"%s\"", object->user);
-			xstrfmtcat(extra, ", user=\"%s\"", object->user);
+			xstrfmtcat(vals, ", '%s'", object->user);
+			xstrfmtcat(update, " && user='%s'", object->user);
+			xstrfmtcat(extra, ", user='%s'", object->user);
 
 			/* We need to give a partition whether it be
 			 * '' or the actual partition name given
@@ -2003,9 +2003,9 @@ extern int mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 			if(!part)
 				part = "";
 			xstrcat(cols, ", partition");
-			xstrfmtcat(vals, ", \"%s\"", part);
-			xstrfmtcat(update, " && partition=\"%s\"", part);
-			xstrfmtcat(extra, ", partition=\"%s\"", part);
+			xstrfmtcat(vals, ", '%s'", part);
+			xstrfmtcat(update, " && partition='%s'", part);
+			xstrfmtcat(extra, ", partition='%s'", part);
 		}
 
 		setup_association_limits(object, &cols, &vals, &extra,
@@ -2054,7 +2054,7 @@ extern int mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 			   || strcasecmp(object->cluster, old_cluster)) {
 				char *sel_query = xstrdup_printf(
 					"SELECT lft FROM %s_%s WHERE "
-					"acct = \"%s\" and user = '' "
+					"acct = '%s' and user = '' "
 					"order by lft;",
 					object->cluster, assoc_table,
 					parent);
@@ -2137,8 +2137,8 @@ extern int mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 			/* definantly works but slow */
 /* 			xstrfmtcat(query, */
 /* 				   "SELECT @myLeft := lft FROM %s WHERE " */
-/* 				   "acct = \"%s\" " */
-/* 				   "and cluster = \"%s\" and user = '';", */
+/* 				   "acct = '%s' " */
+/* 				   "and cluster = '%s' and user = '';", */
 /* 				   assoc_table, */
 /* 				   parent, */
 /* 				   object->cluster); */
@@ -2259,14 +2259,14 @@ extern int mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 
 		if(txn_query)
 			xstrfmtcat(txn_query,
-				   ", (%d, %d, '%d', \"%s\", \"%s\")",
+				   ", (%d, %d, '%d', '%s', '%s')",
 				   now, DBD_ADD_ASSOCS, assoc_id, user_name,
 				   tmp_extra);
 		else
 			xstrfmtcat(txn_query,
 				   "insert into %s "
 				   "(timestamp, action, name, actor, info) "
-				   "values (%d, %d, '%d', \"%s\", \"%s\")",
+				   "values (%d, %d, '%d', '%s', '%s')",
 				   txn_table,
 				   now, DBD_ADD_ASSOCS, assoc_id, user_name,
 				   tmp_extra);

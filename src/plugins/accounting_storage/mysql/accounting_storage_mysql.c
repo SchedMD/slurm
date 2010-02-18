@@ -445,7 +445,7 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		"end if; "
 		"set @s = concat(@s, ' @my_acct := parent_acct from ', "
 		"cluster, '_', my_table, ' where "
-		"acct = \"', @my_acct, '\" && user=\"\"'); "
+		"acct = '', @my_acct, '' && user='''); "
 		"prepare query from @s; "
 		"execute query; "
 		"deallocate prepare query; "
@@ -1202,14 +1202,14 @@ extern int setup_association_limits(acct_association_rec_t *assoc,
 		if(qos_val) {
 			xstrfmtcat(*cols, ", %s", qos_type);
 			xstrfmtcat(*vals, ", '%s'", qos_val);
-			xstrfmtcat(*extra, ", %s=\"%s\"", qos_type, qos_val);
+			xstrfmtcat(*extra, ", %s='%s'", qos_type, qos_val);
 			xfree(qos_val);
 		}
 	} else if((qos_level == QOS_LEVEL_SET) && default_qos_str) {
 		/* Add default qos to the account */
 		xstrcat(*cols, ", qos");
 		xstrfmtcat(*vals, ", '%s'", default_qos_str);
-		xstrfmtcat(*extra, ", qos=\"%s\"", default_qos_str);
+		xstrfmtcat(*extra, ", qos='%s'", default_qos_str);
 		if(!assoc->qos_list)
 			assoc->qos_list = list_create(slurm_destroy_char);
 		slurm_addto_char_list(assoc->qos_list, default_qos_str);
@@ -1217,7 +1217,7 @@ extern int setup_association_limits(acct_association_rec_t *assoc,
 		/* clear the qos */
 		xstrcat(*cols, ", qos, delta_qos");
 		xstrcat(*vals, ", '', ''");
-		xstrcat(*extra, ", qos=\"\", delta_qos=\"\"");
+		xstrcat(*extra, ", qos='', delta_qos=''");
 	}
 end_qos:
 
@@ -1265,7 +1265,7 @@ extern int modify_common(mysql_conn_t *mysql_conn,
 	xstrfmtcat(query,
 		   "insert into %s "
 		   "(timestamp, action, name, actor, info) "
-		   "values (%d, %d, \"%s\", \"%s\", \"%s\");",
+		   "values (%d, %d, '%s', '%s', '%s');",
 		   txn_table,
 		   now, type, tmp_cond_char, user_name, tmp_vals);
 	xfree(tmp_cond_char);
@@ -1365,7 +1365,7 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 	}
 	xstrfmtcat(query,
 		   "insert into %s (timestamp, action, name, actor) "
-		   "values (%d, %d, \"%s\", \"%s\");",
+		   "values (%d, %d, '%s', '%s');",
 		   txn_table,
 		   now, type, tmp_name_char, user_name);
 	xfree(tmp_name_char);
