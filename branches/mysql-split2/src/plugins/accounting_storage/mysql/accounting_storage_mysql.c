@@ -132,6 +132,8 @@ char *wckey_table = "wckey_table";
 
 static char *default_qos_str = NULL;
 
+extern int acct_storage_p_close_connection(mysql_conn_t **mysql_conn);
+
 static List _get_cluster_names(MYSQL *db_conn)
 {
 	MYSQL_RES *result = NULL;
@@ -444,9 +446,9 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		"@s, '@qos := qos, "
 		"@delta_qos := CONCAT(delta_qos, @delta_qos), '); "
 		"end if; "
-		"set @s = concat(@s, ' @my_acct := parent_acct from ', "
-		"cluster, '_', my_table, ' where "
-		"acct = '', @my_acct, '' && user='''); "
+		"set @s = concat(@s, '@my_acct := parent_acct from \"', "
+		"cluster, '_', my_table, '\" where "
+		"acct = \\\'', @my_acct, '\\\' && user=\\\'\\\''); "
 		"prepare query from @s; "
 		"execute query; "
 		"deallocate prepare query; "
@@ -618,6 +620,19 @@ extern int check_connection(mysql_conn_t *mysql_conn)
 			error("unable to re-connect to mysql database");
 			errno = ESLURM_DB_CONNECTION;
 			return ESLURM_DB_CONNECTION;
+		} else {
+			int rc;
+			if(mysql_conn->rollback)
+				mysql_autocommit(mysql_conn->db_conn, 0);
+			rc = mysql_db_query(mysql_conn->db_conn,
+					    "SET session "
+					    "sql_mode='ANSI_QUOTES';");
+			if(rc != SLURM_SUCCESS) {
+				error("couldn't set sql_mode on reconnect");
+				acct_storage_p_close_connection(&mysql_conn);
+				errno = ESLURM_DB_CONNECTION;
+				return ESLURM_DB_CONNECTION;
+			}
 		}
 	}
 	return SLURM_SUCCESS;
@@ -1648,8 +1663,10 @@ extern int init ( void )
 	   != SLURM_SUCCESS)
 		fatal("The database must be up when starting "
 		      "the MYSQL plugin.");
-
-	rc = _mysql_acct_check_tables(db_conn);
+	rc = mysql_db_query(db_conn,
+			    "SET session sql_mode='ANSI_QUOTES';");
+	if(rc == SLURM_SUCCESS)
+		rc = _mysql_acct_check_tables(db_conn);
 
 	mysql_close_db_connection(&db_conn);
 
@@ -1689,9 +1706,17 @@ extern void *acct_storage_p_get_connection(bool make_agent, int conn_num,
 	mysql_get_db_connection(&mysql_conn->db_conn,
 				mysql_db_name, mysql_db_info);
 
-	if(mysql_conn->db_conn) {
+       	if(mysql_conn->db_conn) {
+		int rc;
 		if(rollback)
 			mysql_autocommit(mysql_conn->db_conn, 0);
+		rc = mysql_db_query(mysql_conn->db_conn,
+				    "SET session sql_mode='ANSI_QUOTES';");
+		if(rc != SLURM_SUCCESS) {
+			error("couldn't set sql_mode");
+			acct_storage_p_close_connection(&mysql_conn);
+			errno = rc;
+		}
 	}
 
 	return (void *)mysql_conn;
