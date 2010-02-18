@@ -171,7 +171,7 @@ static int _compute_plane_dist(struct job_record *job_ptr)
  * virtual CPUs (hyperthreads)
  */
 static void _block_sync_core_bitmap(struct job_record *job_ptr,
-				    const select_type_plugin_info_t cr_type)
+				    const uint16_t cr_type)
 {
 	uint32_t c, i, n, size, csize, core_cnt;
 	uint16_t cpus, num_bits, vpus = 1;
@@ -182,13 +182,13 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 	if (!job_res)
 		return;
 
-	if ((cr_type == CR_CORE)   || (cr_type == CR_CORE_MEMORY))
+	if (cr_type & CR_CORE)
 		alloc_cores = true;
 #ifdef ALLOCATE_FULL_SOCKET
-	if ((cr_type == CR_SOCKET) || (cr_type == CR_SOCKET_MEMORY))
+	if (cr_type & CR_SOCKET)
 		alloc_sockets = true;
 #else
-	if ((cr_type == CR_SOCKET) || (cr_type == CR_SOCKET_MEMORY))
+	if (cr_type & CR_SOCKET)
 		alloc_cores = true;
 #endif
 
@@ -253,7 +253,7 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
  * virtual CPUs (hyperthreads)
  */
 static void _cyclic_sync_core_bitmap(struct job_record *job_ptr,
-				     const select_type_plugin_info_t cr_type)
+				     const uint16_t cr_type)
 {
 	uint32_t c, i, j, s, n, *sock_start, *sock_end, size, csize, core_cnt;
 	uint16_t cps = 0, cpus, vpus, sockets, sock_size;
@@ -265,13 +265,13 @@ static void _cyclic_sync_core_bitmap(struct job_record *job_ptr,
 	if ((job_res == NULL) || (job_res->core_bitmap == NULL))
 		return;
 
-	if ((cr_type == CR_CORE)   || (cr_type == CR_CORE_MEMORY))
+	if (cr_type & CR_CORE)
 		alloc_cores = true;
 #ifdef ALLOCATE_FULL_SOCKET
-	if ((cr_type == CR_SOCKET) || (cr_type == CR_SOCKET_MEMORY))
+	if (cr_type & CR_SOCKET)
 		alloc_sockets = true;
 #else
-	if ((cr_type == CR_SOCKET) || (cr_type == CR_SOCKET_MEMORY))
+	if (cr_type & CR_SOCKET)
 		alloc_cores = true;
 #endif
 	core_map = job_res->core_bitmap;
@@ -400,8 +400,7 @@ static void _cyclic_sync_core_bitmap(struct job_record *job_ptr,
  * - "block" removes cores from the "last" socket(s)
  * - "plane" removes cores "in chunks"
  */
-extern int cr_dist(struct job_record *job_ptr,
-		   const select_type_plugin_info_t cr_type)
+extern int cr_dist(struct job_record *job_ptr, const uint16_t cr_type)
 {
 	int error_code, cr_cpu = 1;
 
@@ -432,8 +431,7 @@ extern int cr_dist(struct job_record *job_ptr,
 
 	/* now sync up the core_bitmap with the allocated 'cpus' array
 	 * based on the given distribution AND resource setting */
-	if ((cr_type == CR_CORE)   || (cr_type == CR_CORE_MEMORY) ||
-	    (cr_type == CR_SOCKET) || (cr_type == CR_SOCKET_MEMORY))
+	if ((cr_type & CR_CORE) || (cr_type & CR_SOCKET))
 		cr_cpu = 0;
 
 	if (cr_cpu) {

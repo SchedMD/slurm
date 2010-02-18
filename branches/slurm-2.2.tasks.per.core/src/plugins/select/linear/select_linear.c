@@ -4,7 +4,7 @@
  *  of sets of consecutive nodes using a best-fit algorithm.
  *****************************************************************************
  *  Copyright (C) 2004-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -428,8 +428,7 @@ static uint16_t _get_avail_cpus(struct job_record *job_ptr, int index)
 			min_sockets, min_cores, cpus_per_task,
 			ntasks_per_node, ntasks_per_socket, ntasks_per_core,
 	    		&cpus, &sockets, &cores, &threads, NULL,
-			SELECT_TYPE_INFO_NONE,
-			job_ptr->job_id, node_ptr->name);
+			0, job_ptr->job_id, node_ptr->name);
 
 #if SELECT_DEBUG
 	debug3("avail_cpus index %d = %d (out of %d %d %d %d)",
@@ -1928,8 +1927,7 @@ extern int init ( void )
 	error("%s is incompatible with BlueGene", plugin_name);
 	fatal("Use SelectType=select/bluegene");
 #endif
-	cr_type = (select_type_plugin_info_t)
-			slurmctld_conf.select_type_param;
+	cr_type = slurmctld_conf.select_type_param;
 	return rc;
 }
 

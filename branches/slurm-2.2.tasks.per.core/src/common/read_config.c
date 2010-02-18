@@ -2486,19 +2486,19 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
         if (s_p_get_string(&temp_str,
 			   "SelectTypeParameters", hashtbl)) {
-		select_type_plugin_info_t type_param;
+		uint16_t type_param;
 		if ((parse_select_type_param(temp_str, &type_param) < 0)) {
 			xfree(temp_str);
 			fatal("Bad SelectTypeParameter: %s",
 			      conf->select_type_param);
 		}
-		conf->select_type_param = (uint16_t) type_param;
+		conf->select_type_param = type_param;
 		xfree(temp_str);
 	} else {
 		if (strcmp(conf->select_type,"select/cons_res") == 0)
 			conf->select_type_param = CR_CPU;
 		else
-			conf->select_type_param = SELECT_TYPE_INFO_NONE;
+			conf->select_type_param = 0;
 	}
 
 	if (!s_p_get_string( &conf->slurm_user_name, "SlurmUser", hashtbl)) {
