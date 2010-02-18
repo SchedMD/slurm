@@ -3307,11 +3307,11 @@ _set_multi_core_data(job_desc_msg_t * job_desc)
 		mc_ptr->min_threads        = job_desc->min_threads;
 	else
 		mc_ptr->min_threads        = 1;
-	if (mc_ptr->ntasks_per_socket != (uint16_t) NO_VAL)
+	if (job_desc->ntasks_per_socket != (uint16_t) NO_VAL)
 		mc_ptr->ntasks_per_socket  = job_desc->ntasks_per_socket;
 	else
 		mc_ptr->ntasks_per_socket  = 0;
-	if (mc_ptr->ntasks_per_core != (uint16_t) NO_VAL)
+	if (job_desc->ntasks_per_core != (uint16_t) NO_VAL)
 		mc_ptr->ntasks_per_core    = job_desc->ntasks_per_core;
 	else
 		mc_ptr->ntasks_per_core    = 0;
