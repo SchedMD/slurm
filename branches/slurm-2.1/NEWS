@@ -1,8 +1,11 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in SLURM 2.1.4
+========================
+
 * Changes in SLURM 2.1.3
-=============================
+========================
  -- BLUEGENE - Fix issues on static/overlap systems where if a midplane
     was drained you would not be able to create new blocks on it.
  -- In sched/wiki2 (for Moab): Add excluded host list to job information
@@ -34,7 +37,7 @@ documents those changes that are of interest to users and admins.
  -- Fix accounting when comment of down/drained node has double quotes in it.
 
 * Changes in SLURM 2.1.2
-=============================
+========================
  -- Added nodelist to sview for jobs on non-bluegene systems
  -- Correction in value of batch job environment variable SLURM_TASKS_PER_NODE
     under some conditions.
@@ -64,7 +67,7 @@ documents those changes that are of interest to users and admins.
  -- Adjust get_wckeys call in slurmdbd to allow operators to list wckeys.
 
 * Changes in SLURM 2.1.1
-=============================
+========================
  -- Fix for case sensitive databases when a slurmctld has a mixed case
     clustername to lower case the string to easy compares.
  -- Fix squeue if job is completing and failed to print remaining
@@ -105,7 +108,7 @@ documents those changes that are of interest to users and admins.
     viewing the jobs tab.
 
 * Changes in SLURM 2.1.0
-=============================
+========================
  -- Improve sview layout of blocks in use.
  -- A user can now change the dimensions of the grid in sview.
  -- BLUEGENE - improved startup speed further for large numbers of defined
