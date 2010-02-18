@@ -325,7 +325,7 @@ Repeat the last command executed.
 Account name to be changed for this job's resource use.
 Value may be cleared with blank data value, "Account=".
 .TP
-\fIConn-Type\fP=<type>
+\fIConn\-Type\fP=<type>
 Reset the node connection type.
 Possible values on Blue Gene are "MESH", "TORUS" and "NAV"
 (mesh else torus).
@@ -394,7 +394,7 @@ X, Y and Z dimensions (e.g. "2x3x4").
 \fIJobId\fP=<id>
 Identify the job to be updated. This specification is required.
 .TP
-\fILicenses\fP
+\fILicenses\fP=<name>
 Specification of licenses (or other resources available on all nodes
 of the cluster) as described in salloc/sbatch/srun man pages.
 .TP
@@ -430,7 +430,7 @@ Set the job's minimum and optionally maximum count of nodes to be allocated.
 \fINumTasks\fP=<count>
 Set the job's count of required tasks to the specified value.
 .TP
-\fIPartitionName\fP=<name>
+\fIPartition\fP=<name>
 Set the job's partition to the specified value.
 .TP
 \fIPriority\fP=<number>
