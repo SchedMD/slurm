@@ -31,6 +31,7 @@ documents those changes that are of interest to users and admins.
  -- Adjustment made to init message to the slurmdbd to allow backwards
     compatibility with future 2.2 release. YOU NEED TO UPGRADE SLURMDBD
     BEFORE ANYTHING ELSE.
+ -- Fix accounting when comment of down/drained node has double quotes in it.
 
 * Changes in SLURM 2.1.2
 =============================
