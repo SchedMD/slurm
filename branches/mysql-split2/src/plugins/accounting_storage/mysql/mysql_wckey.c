@@ -78,7 +78,7 @@ static int _setup_wckey_cond_limits(acct_wckey_cond_t *wckey_cond, char **extra)
 		while((object = list_next(itr))) {
 			if(set)
 				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "%s.wckey_name=\"%s\"",
+			xstrfmtcat(*extra, "%s.wckey_name='%s'",
 				   prefix, object);
 			set = 1;
 		}
@@ -107,7 +107,7 @@ static int _setup_wckey_cond_limits(acct_wckey_cond_t *wckey_cond, char **extra)
 		while((object = list_next(itr))) {
 			if(set)
 				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "%s.user=\"%s\"", prefix, object);
+			xstrfmtcat(*extra, "%s.user='%s'", prefix, object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -142,9 +142,9 @@ static int _cluster_remove_wckeys(mysql_conn_t *mysql_conn,
 
 		list_append(ret_list, xstrdup(row[1]));
 		if(!assoc_char)
-			xstrfmtcat(assoc_char, "id_wckey=\"%s\"", row[0]);
+			xstrfmtcat(assoc_char, "id_wckey='%s'", row[0]);
 		else
-			xstrfmtcat(assoc_char, " || id_wckey=\"%s\"", row[0]);
+			xstrfmtcat(assoc_char, " || id_wckey='%s'", row[0]);
 
 		wckey_rec = xmalloc(sizeof(acct_wckey_rec_t));
 		/* we only need id when removing no real need to init */
@@ -263,15 +263,15 @@ extern int mysql_add_wckeys(mysql_conn_t *mysql_conn, uint32_t uid,
 			continue;
 		}
 		xstrcat(cols, "creation_time, mod_time, user");
-		xstrfmtcat(vals, "%d, %d, \"%s\"",
+		xstrfmtcat(vals, "%d, %d, '%s'",
 			   now, now, object->user);
-		xstrfmtcat(extra, ", mod_time=%d, user=\"%s\"",
+		xstrfmtcat(extra, ", mod_time=%d, user='%s'",
 			   now, object->user);
 
 		if(object->name) {
 			xstrcat(cols, ", wckey_name");
-			xstrfmtcat(vals, ", \"%s\"", object->name);
-			xstrfmtcat(extra, ", wckey_name=\"%s\"", object->name);
+			xstrfmtcat(vals, ", '%s'", object->name);
+			xstrfmtcat(extra, ", wckey_name='%s'", object->name);
 		}
 
 		xstrfmtcat(query,
@@ -309,7 +309,7 @@ extern int mysql_add_wckeys(mysql_conn_t *mysql_conn, uint32_t uid,
 		xstrfmtcat(query,
 			   "insert into %s "
 			   "(timestamp, action, name, actor, info) "
-			   "values (%d, %u, '%d', \"%s\", \"%s\");",
+			   "values (%d, %u, '%d', '%s', '%s');",
 			   txn_table,
 			   now, DBD_ADD_WCKEYS, object->id, user_name,
 			   tmp_extra);

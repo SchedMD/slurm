@@ -62,7 +62,7 @@ static int _get_account_coords(mysql_conn_t *mysql_conn,
 		acct->coordinators = list_create(destroy_acct_coord_rec);
 
 	query = xstrdup_printf(
-		"select user from %s where acct=\"%s\" && deleted=0",
+		"select user from %s where acct='%s' && deleted=0",
 		acct_coord_table, acct->name);
 
 	if(!(result =
@@ -89,8 +89,8 @@ static int _get_account_coords(mysql_conn_t *mysql_conn,
 			   "%s_%s as t1, %s_%s as t2 "
 			   "where t0.acct=t1.acct && "
 			   "t1.lft<t2.lft && t1.rgt>t2.lft && "
-			   "t1.user='' && t2.acct=\"%s\" "
-			   "&& t1.acct!=\"%s\" && !t0.deleted",
+			   "t1.user='' && t2.acct='%s' "
+			   "&& t1.acct!='%s' && !t0.deleted",
 			   acct_coord_table, cluster_name, assoc_table,
 			   cluster_name, assoc_table,
 			   acct->name, acct->name);
@@ -150,10 +150,10 @@ extern int mysql_add_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 		}
 		xstrcat(cols, "creation_time, mod_time, name, "
 			"description, organization");
-		xstrfmtcat(vals, "%d, %d, \"%s\", \"%s\", \"%s\"",
+		xstrfmtcat(vals, "%d, %d, '%s', '%s', '%s'",
 			   now, now, object->name,
 			   object->description, object->organization);
-		xstrfmtcat(extra, ", description=\"%s\", organization=\"%s\"",
+		xstrfmtcat(extra, ", description='%s', organization='%s'",
 			   object->description, object->organization);
 
 		query = xstrdup_printf(
@@ -186,14 +186,14 @@ extern int mysql_add_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 
 		if(txn_query)
 			xstrfmtcat(txn_query,
-				   ", (%d, %u, \"%s\", \"%s\", \"%s\")",
+				   ", (%d, %u, '%s', '%s', '%s')",
 				   now, DBD_ADD_ACCOUNTS, object->name,
 				   user_name, tmp_extra);
 		else
 			xstrfmtcat(txn_query,
 				   "insert into %s "
 				   "(timestamp, action, name, actor, info) "
-				   "values (%d, %u, \"%s\", \"%s\", \"%s\")",
+				   "values (%d, %u, '%s', '%s', '%s')",
 				   txn_table,
 				   now, DBD_ADD_ACCOUNTS, object->name,
 				   user_name, tmp_extra);
@@ -267,7 +267,7 @@ extern List mysql_modify_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 		while((object = list_next(itr))) {
 			if(set)
 				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "name=\"%s\"", object);
+			xstrfmtcat(extra, "name='%s'", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -282,7 +282,7 @@ extern List mysql_modify_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 		while((object = list_next(itr))) {
 			if(set)
 				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "description=\"%s\"", object);
+			xstrfmtcat(extra, "description='%s'", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -297,7 +297,7 @@ extern List mysql_modify_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 		while((object = list_next(itr))) {
 			if(set)
 				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "organization=\"%s\"", object);
+			xstrfmtcat(extra, "organization='%s'", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -305,9 +305,9 @@ extern List mysql_modify_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 	}
 
 	if(acct->description)
-		xstrfmtcat(vals, ", description=\"%s\"", acct->description);
+		xstrfmtcat(vals, ", description='%s'", acct->description);
 	if(acct->organization)
-		xstrfmtcat(vals, ", organization=\"%s\"", acct->organization);
+		xstrfmtcat(vals, ", organization='%s'", acct->organization);
 
 	if(!extra || !vals) {
 		errno = SLURM_NO_CHANGE_IN_DATA;
@@ -332,10 +332,10 @@ extern List mysql_modify_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 		object = xstrdup(row[0]);
 		list_append(ret_list, object);
 		if(!rc) {
-			xstrfmtcat(name_char, "(name=\"%s\"", object);
+			xstrfmtcat(name_char, "(name='%s'", object);
 			rc = 1;
 		} else  {
-			xstrfmtcat(name_char, " || name=\"%s\"", object);
+			xstrfmtcat(name_char, " || name='%s'", object);
 		}
 
 	}
@@ -404,7 +404,7 @@ extern List mysql_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 				continue;
 			if(set)
 				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "name=\"%s\"", object);
+			xstrfmtcat(extra, "name='%s'", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -419,7 +419,7 @@ extern List mysql_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 		while((object = list_next(itr))) {
 			if(set)
 				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "description=\"%s\"", object);
+			xstrfmtcat(extra, "description='%s'", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -434,7 +434,7 @@ extern List mysql_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 		while((object = list_next(itr))) {
 			if(set)
 				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "organization=\"%s\"", object);
+			xstrfmtcat(extra, "organization='%s'", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -460,12 +460,12 @@ extern List mysql_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 		char *object = xstrdup(row[0]);
 		list_append(ret_list, object);
 		if(!rc) {
-			xstrfmtcat(name_char, "name=\"%s\"", object);
-			xstrfmtcat(assoc_char, "t2.acct=\"%s\"", object);
+			xstrfmtcat(name_char, "name='%s'", object);
+			xstrfmtcat(assoc_char, "t2.acct='%s'", object);
 			rc = 1;
 		} else  {
-			xstrfmtcat(name_char, " || name=\"%s\"", object);
-			xstrfmtcat(assoc_char, " || t2.acct=\"%s\"", object);
+			xstrfmtcat(name_char, " || name='%s'", object);
+			xstrfmtcat(assoc_char, " || t2.acct='%s'", object);
 		}
 	}
 	mysql_free_result(result);
@@ -577,7 +577,7 @@ extern List mysql_get_accts(mysql_conn_t *mysql_conn, uid_t uid,
 		while((object = list_next(itr))) {
 			if(set)
 				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "name=\"%s\"", object);
+			xstrfmtcat(extra, "name='%s'", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -592,7 +592,7 @@ extern List mysql_get_accts(mysql_conn_t *mysql_conn, uid_t uid,
 		while((object = list_next(itr))) {
 			if(set)
 				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "description=\"%s\"", object);
+			xstrfmtcat(extra, "description='%s'", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -607,7 +607,7 @@ extern List mysql_get_accts(mysql_conn_t *mysql_conn, uid_t uid,
 		while((object = list_next(itr))) {
 			if(set)
 				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "organization=\"%s\"", object);
+			xstrfmtcat(extra, "organization='%s'", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -632,11 +632,11 @@ empty:
 		itr = list_iterator_create(user.coord_accts);
 		while((coord = list_next(itr))) {
 			if(set) {
-				xstrfmtcat(extra, " || name=\"%s\"",
+				xstrfmtcat(extra, " || name='%s'",
 					   coord->name);
 			} else {
 				set = 1;
-				xstrfmtcat(extra, " && (name=\"%s\"",
+				xstrfmtcat(extra, " && (name='%s'",
 					   coord->name);
 			}
 		}

@@ -85,8 +85,8 @@ static int _setup_qos_limits(acct_qos_rec_t *qos,
 
 	if(qos->description) {
 		xstrcat(*cols, ", description");
-		xstrfmtcat(*vals, ", \"%s\"", qos->description);
-		xstrfmtcat(*extra, ", description=\"%s\"",
+		xstrfmtcat(*vals, ", '%s'", qos->description);
+		xstrfmtcat(*extra, ", description='%s'",
 			   qos->description);
 
 	}
@@ -268,8 +268,8 @@ static int _setup_qos_limits(acct_qos_rec_t *qos,
 		}
 		list_iterator_destroy(preempt_itr);
 
-		xstrfmtcat(*vals, ", \"%s\"", preempt_val);
-		xstrfmtcat(*extra, ", preempt=\"%s\"", preempt_val);
+		xstrfmtcat(*vals, ", '%s'", preempt_val);
+		xstrfmtcat(*extra, ", preempt='%s'", preempt_val);
 		xfree(preempt_val);
 	}
 
@@ -312,7 +312,7 @@ extern int mysql_add_qos(mysql_conn_t *mysql_conn, uint32_t uid, List qos_list)
 			continue;
 		}
 		xstrcat(cols, "creation_time, mod_time, name");
-		xstrfmtcat(vals, "%d, %d, \"%s\"",
+		xstrfmtcat(vals, "%d, %d, '%s'",
 			   now, now, object->name);
 		xstrfmtcat(extra, ", mod_time=%d", now);
 
@@ -359,7 +359,7 @@ extern int mysql_add_qos(mysql_conn_t *mysql_conn, uint32_t uid, List qos_list)
 		xstrfmtcat(query,
 			   "insert into %s "
 			   "(timestamp, action, name, actor, info) "
-			   "values (%d, %u, \"%s\", \"%s\", \"%s\");",
+			   "values (%d, %u, '%s', '%s', '%s');",
 			   txn_table,
 			   now, DBD_ADD_QOS, object->name, user_name,
 			   tmp_extra);
@@ -431,7 +431,7 @@ extern List mysql_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 		while((object = list_next(itr))) {
 			if(set)
 				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "description=\"%s\"", object);
+			xstrfmtcat(extra, "description='%s'", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -446,7 +446,7 @@ extern List mysql_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 		while((object = list_next(itr))) {
 			if(set)
 				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "id=\"%s\"", object);
+			xstrfmtcat(extra, "id='%s'", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -461,7 +461,7 @@ extern List mysql_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 		while((object = list_next(itr))) {
 			if(set)
 				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "name=\"%s\"", object);
+			xstrfmtcat(extra, "name='%s'", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -635,7 +635,7 @@ extern List mysql_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 		while((object = list_next(itr))) {
 			if(set)
 				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "description=\"%s\"", object);
+			xstrfmtcat(extra, "description='%s'", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -652,7 +652,7 @@ extern List mysql_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 				continue;
 			if(set)
 				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "id=\"%s\"", object);
+			xstrfmtcat(extra, "id='%s'", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -669,7 +669,7 @@ extern List mysql_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 				continue;
 			if(set)
 				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "name=\"%s\"", object);
+			xstrfmtcat(extra, "name='%s'", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -696,13 +696,13 @@ extern List mysql_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 
 		list_append(ret_list, xstrdup(row[1]));
 		if(!name_char)
-			xstrfmtcat(name_char, "id=\"%s\"", row[0]);
+			xstrfmtcat(name_char, "id='%s'", row[0]);
 		else
-			xstrfmtcat(name_char, " || id=\"%s\"", row[0]);
+			xstrfmtcat(name_char, " || id='%s'", row[0]);
 		if(!assoc_char)
-			xstrfmtcat(assoc_char, "qos=\"%s\"", row[0]);
+			xstrfmtcat(assoc_char, "qos='%s'", row[0]);
 		else
-			xstrfmtcat(assoc_char, " || qos=\"%s\"", row[0]);
+			xstrfmtcat(assoc_char, " || qos='%s'", row[0]);
 		xstrfmtcat(extra,
 			   ", qos=replace(qos, ',%s', '')"
 			   ", delta_qos=replace(delta_qos, ',+%s', '')"
@@ -846,7 +846,7 @@ extern List mysql_get_qos(mysql_conn_t *mysql_conn, uid_t uid,
 		while((object = list_next(itr))) {
 			if(set)
 				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "description=\"%s\"", object);
+			xstrfmtcat(extra, "description='%s'", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -861,7 +861,7 @@ extern List mysql_get_qos(mysql_conn_t *mysql_conn, uid_t uid,
 		while((object = list_next(itr))) {
 			if(set)
 				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "id=\"%s\"", object);
+			xstrfmtcat(extra, "id='%s'", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -876,7 +876,7 @@ extern List mysql_get_qos(mysql_conn_t *mysql_conn, uid_t uid,
 		while((object = list_next(itr))) {
 			if(set)
 				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "name=\"%s\"", object);
+			xstrfmtcat(extra, "name='%s'", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);

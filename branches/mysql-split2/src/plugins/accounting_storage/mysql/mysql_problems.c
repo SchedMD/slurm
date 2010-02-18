@@ -60,7 +60,7 @@ static int _setup_association_cond_limits(acct_association_cond_t *assoc_cond,
 		while((object = list_next(itr))) {
 			if(set)
 				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "acct=\"%s\"", object);
+			xstrfmtcat(*extra, "acct='%s'", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -74,7 +74,7 @@ static int _setup_association_cond_limits(acct_association_cond_t *assoc_cond,
 		while((object = list_next(itr))) {
 			if(set)
 				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "user=\"%s\"", object);
+			xstrfmtcat(*extra, "user='%s'", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -93,7 +93,7 @@ static int _setup_association_cond_limits(acct_association_cond_t *assoc_cond,
 		while((object = list_next(itr))) {
 			if(set)
 				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "partition=\"%s\"", object);
+			xstrfmtcat(*extra, "partition='%s'", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -127,7 +127,7 @@ extern int mysql_acct_no_assocs(mysql_conn_t *mysql_conn,
 		while((object = list_next(itr))) {
 			if(set)
 				xstrcat(query, " || ");
-			xstrfmtcat(query, "name=\"%s\"", object);
+			xstrfmtcat(query, "name='%s'", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -296,7 +296,7 @@ extern int mysql_user_no_assocs_or_no_uid(mysql_conn_t *mysql_conn,
 		while((object = list_next(itr))) {
 			if(set)
 				xstrcat(query, " || ");
-			xstrfmtcat(query, "name=\"%s\"", object);
+			xstrfmtcat(query, "name='%s'", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
