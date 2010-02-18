@@ -54,9 +54,12 @@ use Chart::StackedBars;
 use Expect;
 use Time::Local;
 
+#
+# Sanitize the environment
+#
 delete @ENV{qw( BASH_ENV CDPATH ENV IFS PATH )};
 
-my $obj = Chart::StackedBars->new(600, 400);
+my $obj = Chart::StackedBars->new(600, 400) or die "Failed to create bar chart: $!\n";
 my ($time_begin, $time_end);
 my ($yb, $mb, $db, $ye, $me, $de);
 my ($user, $account, $x_axis, $y_axis, $cluster);
@@ -368,7 +371,7 @@ sub add_bars {
 	my ($yn, $mn, $dn);
 	my ($start, $end);
 
-	my $exp = new Expect;
+	my $exp = new Expect or die "Failed to initiate Expect session: $!\n";
 	$exp->raw_pty(1);
 	$exp->log_stdout(0);
 	$exp->spawn($cmd_base) or die "Cannot spawn sreport: $!\n";
@@ -381,7 +384,7 @@ sub add_bars {
 	    $start = sprintf "%.2d/%.2d/%.2d", $mb, $db, $yb;
 	    $end   = sprintf "%.2d/%.2d/%.2d", $mn, $dn, $yn;
 	    $exp->send("$request start=$start end=$end\n");
-	    $exp->expect(5, 'sreport:');
+	    $exp->expect(30, 'sreport:');
 	    $before = $exp->before();
 	    @results = split "\n", $before;
 
@@ -407,7 +410,125 @@ sub add_bars {
 
 	for ($k = 0; $k < $i; $k++) {
 	    for ($l = 0; $l < $j; $l++) {
-#		Chart.pm complains if you pass it null data points.
+		# Chart.pm complains if you pass it null data points.
+		$data_points[$k][$l] = 0 unless ($data_points[$k][$l]);
+	    }
+	    $obj->add_pt(@{$data_points[$k]});
+	}
+
+	$obj->set ('legend_labels' => \@legend_labels);
+	$valid_data = ($j > 0);
+    }
+
+    return $valid_data;
+}
+
+#
+# There is currently no "account TopUsage" command available in sreport.
+# If there were we could use add_bars().  Instead, we must use sreport's
+# "cluster AccountUtilizationByUser" command and sift through the copious
+# output.  We have to carefully ignore all the lines of user usage as well
+# as the parent accounts of accounts.  I.e., we only want to report "leaf"
+# accounts.  Then we have to sort the accounts by usage and only report the
+# top ten.
+# add_top_account_bars() is essentially add_bars() that has been modified to
+# do all this.  The %last_account saves each account's usage and is only
+# copied to %top_accounts when it is a leaf account.
+#
+sub add_top_account_bars {
+    my ($cmd_base, $request) = @_;
+    my ($account, $usage, $valid_data, $cmd, @results);
+    my (%last_account, %top_accounts, $m, $key);
+
+    if ($x_axis eq 'aggregate') {
+	$obj->set ('legend' => 'none');
+	$obj->set ('x_label' => "$time_begin To $time_end");
+
+	$cmd = "$cmd_base $request start=$time_begin end=$time_end";
+	@results = `$cmd`;
+
+	for (@results) {
+	    ($account, $usage) = split;
+	    if ($usage) {
+		chop($usage) if ($y_axis =~ /percent/);
+		if ($last_account{$account} > 0) {
+		    $top_accounts{$account} = $last_account{$account};
+		    $last_account{$account} = -1;
+		}
+		elsif (!$last_account{$account}) {
+		    $last_account{$account} = $usage;
+		}
+	    }
+	}
+
+	$m = 1;
+	foreach $key (sort { $top_accounts{$b} <=> $top_accounts{$a} } keys
+		      %top_accounts)
+	{
+	    $obj->add_pt($key, $top_accounts{$key});
+	    last if ($m++ > 9);
+	}
+	$valid_data = ($m > 1);
+    } else {
+	my ($i, $j, $k, $l, @data_points, %acct_id, @legend_labels, $before);
+	my ($yn, $mn, $dn);
+	my ($start, $end);
+
+	my $exp = new Expect or die "Failed to initiate Expect session: $!\n";
+	$exp->raw_pty(1);
+	$exp->log_stdout(0);
+	$exp->spawn($cmd_base) or die "Cannot spawn sreport: $!\n";
+	$exp->expect(30, 'sreport:');
+
+	$i = 0; $j = 1;
+	while (($i < 12) && ($yb < $ye || $mb < $me || $db < $de)) {
+	    ($yn, $mn, $dn) = next_time($yb, $mb, $db);
+
+	    $start = sprintf "%.2d/%.2d/%.2d", $mb, $db, $yb;
+	    $end   = sprintf "%.2d/%.2d/%.2d", $mn, $dn, $yn;
+	    $exp->send("$request start=$start end=$end\n");
+	    $exp->expect(20, 'sreport:');
+	    $before = $exp->before();
+	    @results = split "\n", $before;
+
+	    $data_points[$i][0] = $start;
+	    for (@results) {
+		($account, $usage) = split;
+		if ($usage) {
+		    chop($usage) if ($y_axis =~ /percent/);
+		    if ($last_account{$account} > 0) {
+			$top_accounts{$account} = $last_account{$account};
+			$last_account{$account} = -1;
+		    }
+		    elsif (!$last_account{$account}) {
+			$last_account{$account} = $usage;
+		    }
+		}
+	    }
+
+	    $m = 1;
+	    foreach $key (sort { $top_accounts{$b} <=> $top_accounts{$a} } keys
+			  %top_accounts)
+	    {
+		unless ($acct_id{$key}) {
+		    $acct_id{$key} = $j;
+		    $legend_labels[$j++ - 1] = $key;
+		}
+		$data_points[$i][$acct_id{$key}] = $top_accounts{$key};
+		last if ($m++ > 9);
+	    }
+
+	    %last_account = ();
+	    %top_accounts = ();
+	    ($yb, $mb, $db) = ($yn, $mn, $dn);
+	    $i++;
+	}
+	$exp->send("quit\n");
+	$exp->soft_close();
+
+	for ($k = 0; $k < $i; $k++) {
+	    for ($l = 0; $l < $j; $l++) {
+		# Chart.pm complains if you pass it null data points.
 		$data_points[$k][$l] = 0 unless ($data_points[$k][$l]);
 	    }
 	    $obj->add_pt(@{$data_points[$k]});
@@ -447,15 +568,15 @@ sub add_utilizatn_bars {
 	my ($yn, $mn, $dn);
 	my ($start, $end);
 
-	my $exp = new Expect;
+	my $exp = new Expect or die "Failed to initiate Expect session: $!\n";
 	$exp->raw_pty(1);
 	$exp->log_stdout(0);
 	$exp->spawn($cmd_base) or die "Cannot spawn sreport: $!\n";
 	$exp->expect(5, 'sreport:');
 
 	@legend_labels = qw(
-		    Allocated Reserved Idle Down
-		    );
+			    Allocated Reserved Idle Down
+			    );
 
 	$i = 0;
 	while (($i < 12) && ($yb < $ye || $mb < $me || $db < $de)) {
@@ -464,7 +585,7 @@ sub add_utilizatn_bars {
 	    $start = sprintf "%.2d/%.2d/%.2d", $mb, $db, $yb;
 	    $end   = sprintf "%.2d/%.2d/%.2d", $mn, $dn, $yn;
 	    $exp->send("$request start=$start end=$end\n");
-	    $exp->expect(5, 'sreport:');
+	    $exp->expect(30, 'sreport:');
 	    $results = $exp->before();
 
 	    ($allocated, $reserved, $idle, $down) = split ' ', $results;
@@ -498,9 +619,7 @@ sub add_utilizatn_bars {
 #
 sub cluster_list {
     my @clusters;
-    my $cmd = "/usr/bin/sacctmgr -nr show cluster" .
-	" format=cluster";
-    my @results = `$cmd`;
+    my @results = `/usr/bin/sacctmgr -nr show cluster format=cluster`;
 
     for (@results) {
 	chomp;
@@ -571,11 +690,19 @@ sub chart_top_users {
 }
 
 sub chart_top_accounts {
-    print_msg("Not Yet Implemented");
-#    print "/usr/bin/sreport -npt ", $y_axis,
-#    " cluster AccountUtilizationByUser cluster=$cluster",
-#    " format=Account,Used",
-#    " start=$time_begin", " end=$time_end", br;
+    my $title = "$cluster Top Accounts";
+    $obj->set ('title' => $title);
+
+    my $cmd = "/usr/bin/sreport -nt $y_axis";
+    my $request = " cluster AccountUtilizationByUser" .
+	" cluster=$cluster format=Account,Used";
+
+    if (add_top_account_bars($cmd, $request)) {
+	$obj->cgi_png();
+    }
+    else {
+	print_msg("Failed to report top accounts from $time_begin to $time_end");
+    }
 }
 
 sub chart_job_size {
