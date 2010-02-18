@@ -167,7 +167,7 @@ static int _cluster_remove_wckeys(mysql_conn_t *mysql_conn,
 			   user_name, wckey_table, assoc_char, assoc_char,
 			   cluster_name);
 	xfree(assoc_char);
-	xfree(user_name);
+
 	if (rc == SLURM_ERROR) {
 		list_destroy(ret_list);
 		return SLURM_ERROR;
@@ -269,9 +269,9 @@ extern int mysql_add_wckeys(mysql_conn_t *mysql_conn, uint32_t uid,
 			   now, object->user);
 
 		if(object->name) {
-			xstrcat(cols, ", name");
+			xstrcat(cols, ", wckey_name");
 			xstrfmtcat(vals, ", \"%s\"", object->name);
-			xstrfmtcat(extra, ", name=\"%s\"", object->name);
+			xstrfmtcat(extra, ", wckey_name=\"%s\"", object->name);
 		}
 
 		xstrfmtcat(query,
