@@ -242,7 +242,7 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 		 * except things with the maintainance flag set in the
 		 * state.  We handle those later with the reservations.
 		 */
-		query = xstrdup_printf("select %s from %s_%s where "
+		query = xstrdup_printf("select %s from \"%s_%s\" where "
 				       "!(state & %d) && (time_start < %d "
 				       "&& (time_end >= %d "
 				       "|| time_end = 0)) "
@@ -336,7 +336,7 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 		mysql_free_result(result);
 
 		// now get the reservations during this time
-		query = xstrdup_printf("select %s from %s_%s where "
+		query = xstrdup_printf("select %s from \"%s_%s\" where "
 				       "(time_start < %d && time_end >= %d) "
 				       "order by time_start",
 				       resv_str, cluster_name, resv_table,
@@ -430,7 +430,7 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 		mysql_free_result(result);
 
 		/* now get the jobs during this time only  */
-		query = xstrdup_printf("select %s from %s_%s where "
+		query = xstrdup_printf("select %s from \"%s_%s\" where "
 				       "(time_eligible < %d && (time_end >= %d "
 				       "|| time_end = 0)) "
 				       "order by id_assoc, time_eligible",
@@ -477,7 +477,7 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 				MYSQL_ROW row2;
 				/* get the suspended time for this job */
 				query = xstrdup_printf(
-					"select %s from %s_%s where "
+					"select %s from \"%s_%s\" where "
 					"(time_start < %d && (time_end >= %d "
 					"|| time_end = 0)) && job_db_inx=%s "
 					"order by start",
@@ -814,7 +814,7 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 					   c_usage->r_cpu);
 			} else {
 				xstrfmtcat(query,
-					   "insert into %s_%s (creation_time, "
+					   "insert into \"%s_%s\" (creation_time, "
 					   "mod_time, time_start, "
 					   "cpu_count, alloc_cpu_secs, "
 					   "down_cpu_secs, pdown_cpu_secs, "
@@ -871,7 +871,7 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 					   a_usage->a_cpu);
 			} else {
 				xstrfmtcat(query,
-					   "insert into %s_%s (creation_time, "
+					   "insert into \"%s_%s\" (creation_time, "
 					   "mod_time, id_assoc, time_start, "
 					   "alloc_cpu_secs) values "
 					   "(%d, %d, %d, %d, %llu)",
@@ -914,7 +914,7 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 					   w_usage->a_cpu);
 			} else {
 				xstrfmtcat(query,
-					   "insert into %s_%s (creation_time, "
+					   "insert into \"%s_%s\" (creation_time, "
 					   "mod_time, id_wckey, time_start, "
 					   "alloc_cpu_secs) values "
 					   "(%d, %d, %d, %d, %llu)",
@@ -999,11 +999,11 @@ extern int mysql_daily_rollup(mysql_conn_t *mysql_conn,
 /* 		info("start %s", ctime(&curr_start)); */
 /* 		info("end %s", ctime(&curr_end)); */
 		query = xstrdup_printf(
-			"insert into %s_%s (creation_time, mod_time, "
+			"insert into \"%s_%s\" (creation_time, mod_time, "
 			"id_assoc, "
 			"time_start, alloc_cpu_secs) select %d, %d, "
 			"id_assoc, "
-			"%d, @ASUM:=SUM(alloc_cpu_secs) from %s_%s where "
+			"%d, @ASUM:=SUM(alloc_cpu_secs) from \"%s_%s\" where "
 			"(time_start < %d && time_start >= %d) "
 			"group by id_assoc on duplicate key update "
 			"mod_time=%d, alloc_cpu_secs=@ASUM;",
@@ -1011,7 +1011,7 @@ extern int mysql_daily_rollup(mysql_conn_t *mysql_conn,
 			cluster_name, assoc_hour_table,
 			curr_end, curr_start, now);
 		xstrfmtcat(query,
-			   "insert into %s_%s (creation_time, "
+			   "insert into \"%s_%s\" (creation_time, "
 			   "mod_time, time_start, cpu_count, "
 			   "alloc_cpu_secs, down_cpu_secs, pdown_cpu_secs, "
 			   "idle_cpu_secs, over_cpu_secs, resv_cpu_secs) "
@@ -1022,7 +1022,7 @@ extern int mysql_daily_rollup(mysql_conn_t *mysql_conn,
 			   "@PDSUM:=SUM(pdown_cpu_secs), "
 			   "@ISUM:=SUM(idle_cpu_secs), "
 			   "@OSUM:=SUM(over_cpu_secs), "
-			   "@RSUM:=SUM(resv_cpu_secs) from %s_%s where "
+			   "@RSUM:=SUM(resv_cpu_secs) from \"%s_%s\" where "
 			   "(time_start < %d && time_start >= %d) "
 			   "on duplicate key update "
 			   "mod_time=%d, cpu_count=@CPU, "
@@ -1035,11 +1035,11 @@ extern int mysql_daily_rollup(mysql_conn_t *mysql_conn,
 			   curr_end, curr_start, now);
 		if(track_wckey) {
 			xstrfmtcat(query,
-				   "insert into %s_%s (creation_time, "
+				   "insert into \"%s_%s\" (creation_time, "
 				   "mod_time, id_wckey, time_start, "
 				   "alloc_cpu_secs) select %d, %d, "
 				   "id_wckey, %d, @ASUM:=SUM(alloc_cpu_secs) "
-				   "from %s_%s where (time_start < %d && "
+				   "from \"%s_%s\" where (time_start < %d && "
 				   "time_start >= %d) "
 				   "group by id_wckey on duplicate key update "
 				   "mod_time=%d, alloc_cpu_secs=@ASUM;",
@@ -1107,9 +1107,9 @@ extern int mysql_monthly_rollup(mysql_conn_t *mysql_conn,
 /* 		info("start %s", ctime(&curr_start)); */
 /* 		info("end %s", ctime(&curr_end)); */
 		query = xstrdup_printf(
-			"insert into %s_%s (creation_time, mod_time, id_assoc, "
+			"insert into \"%s_%s\" (creation_time, mod_time, id_assoc, "
 			"time_start, alloc_cpu_secs) select %d, %d, id_assoc, "
-			"%d, @ASUM:=SUM(alloc_cpu_secs) from %s_%s where "
+			"%d, @ASUM:=SUM(alloc_cpu_secs) from \"%s_%s\" where "
 			"(time_start < %d && time_start >= %d) "
 			"group by id_assoc on duplicate key update "
 			"mod_time=%d, alloc_cpu_secs=@ASUM;",
@@ -1117,7 +1117,7 @@ extern int mysql_monthly_rollup(mysql_conn_t *mysql_conn,
 			cluster_name, assoc_day_table,
 			curr_end, curr_start, now);
 		xstrfmtcat(query,
-			   "insert into %s_%s (creation_time, "
+			   "insert into \"%s_%s\" (creation_time, "
 			   "mod_time, time_start, cpu_count, "
 			   "alloc_cpu_secs, down_cpu_secs, pdown_cpu_secs, "
 			   "idle_cpu_secs, over_cpu_secs, resv_cpu_secs) "
@@ -1128,7 +1128,7 @@ extern int mysql_monthly_rollup(mysql_conn_t *mysql_conn,
 			   "@PDSUM:=SUM(pdown_cpu_secs), "
 			   "@ISUM:=SUM(idle_cpu_secs), "
 			   "@OSUM:=SUM(over_cpu_secs), "
-			   "@RSUM:=SUM(resv_cpu_secs) from %s_%s where "
+			   "@RSUM:=SUM(resv_cpu_secs) from \"%s_%s\" where "
 			   "(time_start < %d && time_start >= %d) "
 			   "on duplicate key update "
 			   "mod_time=%d, cpu_count=@CPU, "
@@ -1141,12 +1141,12 @@ extern int mysql_monthly_rollup(mysql_conn_t *mysql_conn,
 			   curr_end, curr_start, now);
 		if(track_wckey) {
 			xstrfmtcat(query,
-				   "insert into %s_%s "
+				   "insert into \"%s_%s\" "
 				   "(creation_time, mod_time, "
 				   "id_wckey, time_start, alloc_cpu_secs) "
 				   "select %d, %d, id_wckey, %d, "
 				   "@ASUM:=SUM(alloc_cpu_secs) "
-				   "from %s_%s where (time_start < %d && "
+				   "from \"%s_%s\" where (time_start < %d && "
 				   "time_start >= %d) "
 				   "group by id_wckey on duplicate key update "
 				   "mod_time=%d, alloc_cpu_secs=@ASUM;",

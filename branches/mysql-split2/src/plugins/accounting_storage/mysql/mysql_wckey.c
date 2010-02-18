@@ -129,7 +129,7 @@ static int _cluster_remove_wckeys(mysql_conn_t *mysql_conn,
 	char *assoc_char = NULL;
 	time_t now = time(NULL);
 	char *query = xstrdup_printf("select t1.id_wckey, t1.wckey_name "
-				     "from %s_%s as t1%s;",
+				     "from \"%s_%s\" as t1%s;",
 				     cluster_name, wckey_table, extra);
 	if(!(result = mysql_db_query_ret(
 		     mysql_conn->db_conn, query, 0))) {
@@ -192,7 +192,7 @@ static int _cluster_get_wckeys(mysql_conn_t *mysql_conn,
 	if(wckey_cond)
 		with_usage = wckey_cond->with_usage;
 
-	xstrfmtcat(query, "select distinct %s from %s_%s as t1%s "
+	xstrfmtcat(query, "select distinct %s from \"%s_%s\" as t1%s "
 		   "order by wckey_name, user;",
 		   fields, cluster_name, wckey_table, extra);
 
@@ -275,7 +275,7 @@ extern int mysql_add_wckeys(mysql_conn_t *mysql_conn, uint32_t uid,
 		}
 
 		xstrfmtcat(query,
-			   "insert into %s_%s (%s) values (%s) "
+			   "insert into \"%s_%s\" (%s) values (%s) "
 			   "on duplicate key update deleted=0, "
 			   "id_wckey=LAST_INSERT_ID(id_wckey)%s;",
 			   object->cluster, wckey_table, cols, vals, extra);

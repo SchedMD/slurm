@@ -52,7 +52,7 @@ static int _get_db_index(mysql_conn_t *mysql_conn,
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 	int db_index = 0;
-	char *query = xstrdup_printf("select job_db_inx from %s_%s where "
+	char *query = xstrdup_printf("select job_db_inx from \"%s_%s\" where "
 				     "submit=%d and id_job=%u and id_assoc=%u",
 				     mysql_conn->cluster_name, job_table,
 				     (int)submit, jobid, associd);
@@ -92,7 +92,7 @@ static char *_get_user_from_associd(mysql_conn_t *mysql_conn,
 	   this should sort of be a rare case
 	   this isn't too bad.
 	*/
-	query = xstrdup_printf("select user from %s_%s where id_assoc=%u",
+	query = xstrdup_printf("select user from \"%s_%s\" where id_assoc=%u",
 			       cluster, assoc_table, associd);
 
 	debug4("%d(%s:%d) query\n%s",
@@ -247,7 +247,7 @@ extern int mysql_job_start(mysql_conn_t *mysql_conn,
 		 * first time.
 		 */
 		query = xstrdup_printf("select job_db_inx "
-				       "from %s_%s where id_job=%u and "
+				       "from \"%s_%s\" where id_job=%u and "
 				       "time_submit=%d and time_eligible=%d "
 				       "and time_start=%d;",
 				       mysql_conn->cluster_name,
@@ -368,7 +368,7 @@ no_rollup_change:
 			job_ptr->details->begin_time =
 				job_ptr->details->submit_time;
 		query = xstrdup_printf(
-			"insert into %s_%s "
+			"insert into \"%s_%s\" "
 			"(id_job, id_assoc, id_wckey, id_user, "
 			"id_group, nodelist, id_resv, timelimit, ",
 			mysql_conn->cluster_name, job_table);
@@ -451,7 +451,7 @@ no_rollup_change:
 				rc = SLURM_ERROR;
 		}
 	} else {
-		query = xstrdup_printf("update %s_%s set nodelist='%s', ",
+		query = xstrdup_printf("update \"%s_%s\" set nodelist='%s', ",
 				       mysql_conn->cluster_name,
 				       job_table, nodes);
 
@@ -554,7 +554,7 @@ extern int mysql_job_complete(mysql_conn_t *mysql_conn,
 		}
 	}
 
-	query = xstrdup_printf("update %s_%s set time_start=%d, time_end=%d, "
+	query = xstrdup_printf("update \"%s_%s\" set time_start=%d, time_end=%d, "
 			       "state=%d, nodelist='%s', exit_code=%d, "
 			       "kill_requid=%d where job_db_inx=%d",
 			       mysql_conn->cluster_name, job_table,
@@ -661,7 +661,7 @@ extern int mysql_step_start(mysql_conn_t *mysql_conn,
 	/* we want to print a -1 for the requid so leave it a
 	   %d */
 	query = xstrdup_printf(
-		"insert into %s_%s (job_db_inx, id_step, time_start, "
+		"insert into \"%s_%s\" (job_db_inx, id_step, time_start, "
 		"step_name, state, "
 		"cpus_alloc, nodes_alloc, task_cnt, nodelist, "
 		"node_inx, task_dist) "
@@ -786,7 +786,7 @@ extern int mysql_step_complete(mysql_conn_t *mysql_conn,
 	}
 
 	query = xstrdup_printf(
-		"update %s_%s set time_end=%d, state=%d, "
+		"update \"%s_%s\" set time_end=%d, state=%d, "
 		"kill_requid=%d, exit_code=%d, "
 		"user_sec=%u, user_usec=%u, "
 		"sys_sec=%u, sys_usec=%u, "
@@ -866,7 +866,7 @@ extern int mysql_suspend(mysql_conn_t *mysql_conn, struct job_record *job_ptr)
 		suspended = true;
 
 	xstrfmtcat(query,
-		   "update %s_%s set time_suspended=%d-time_suspended, "
+		   "update \"%s_%s\" set time_suspended=%d-time_suspended, "
 		   "state=%d where job_db_inx=%d;",
 		   mysql_conn->cluster_name, job_table,
 		   (int)job_ptr->suspend_time,
@@ -874,14 +874,14 @@ extern int mysql_suspend(mysql_conn_t *mysql_conn, struct job_record *job_ptr)
 		   job_ptr->db_index);
 	if(suspended)
 		xstrfmtcat(query,
-			   "insert into %s_%s (job_db_inx, id_assoc, "
+			   "insert into \"%s_%s\" (job_db_inx, id_assoc, "
 			   "time_start, time_end) values (%u, %u, %d, 0);",
 			   mysql_conn->cluster_name, suspend_table,
 			   job_ptr->db_index, job_ptr->assoc_id,
 			   (int)job_ptr->suspend_time);
 	else
 		xstrfmtcat(query,
-			   "update %s_%s set time_end=%d where "
+			   "update \"%s_%s\" set time_end=%d where "
 			   "job_db_inx=%u && time_end=0;",
 			   mysql_conn->cluster_name, suspend_table,
 			   (int)job_ptr->suspend_time, job_ptr->db_index);
@@ -893,7 +893,7 @@ extern int mysql_suspend(mysql_conn_t *mysql_conn, struct job_record *job_ptr)
 	xfree(query);
 	if(rc != SLURM_ERROR) {
 		xstrfmtcat(query,
-			   "update %s_%s set time_suspended=%u-time_suspended, "
+			   "update \"%s_%s\" set time_suspended=%u-time_suspended, "
 			   "state=%d where job_db_inx=%u and time_end=0",
 			   mysql_conn->cluster_name, step_table,
 			   (int)job_ptr->suspend_time,
@@ -923,7 +923,7 @@ extern int mysql_flush_jobs_on_cluster(
 	 * the suspend table and the step table
 	 */
 	query = xstrdup_printf(
-		"select distinct t1.job_db_inx, t1.state from %s_%s "
+		"select distinct t1.job_db_inx, t1.state from \"%s_%s\" "
 		"as t1 where t1.time_end=0;",
 		mysql_conn->cluster_name, job_table);
 	debug3("%d(%s:%d) query\n%s",
@@ -955,17 +955,17 @@ extern int mysql_flush_jobs_on_cluster(
 
 	if(suspended_char) {
 		xstrfmtcat(query,
-			   "update %s_%s set time_suspended=%d-time_suspended "
+			   "update \"%s_%s\" set time_suspended=%d-time_suspended "
 			   "where %s;",
 			   mysql_conn->cluster_name, job_table,
 			   event_time, suspended_char);
 		xstrfmtcat(query,
-			   "update %s_%s set time_suspended=%d-time_suspended "
+			   "update \"%s_%s\" set time_suspended=%d-time_suspended "
 			   "where %s;",
 			   mysql_conn->cluster_name, step_table,
 			   event_time, suspended_char);
 		xstrfmtcat(query,
-			   "update %s_%s set time_end=%d where (%s) "
+			   "update \"%s_%s\" set time_end=%d where (%s) "
 			   "&& time_end=0;",
 			   mysql_conn->cluster_name, suspend_table,
 			   event_time, suspended_char);
@@ -973,11 +973,11 @@ extern int mysql_flush_jobs_on_cluster(
 	}
 	if(id_char) {
 		xstrfmtcat(query,
-			   "update %s_%s set state=%d, time_end=%u where %s;",
+			   "update \"%s_%s\" set state=%d, time_end=%u where %s;",
 			   mysql_conn->cluster_name, job_table,
 			   JOB_CANCELLED, event_time, id_char);
 		xstrfmtcat(query,
-			   "update %s_%s set state=%d, time_end=%u where %s;",
+			   "update \"%s_%s\" set state=%d, time_end=%u where %s;",
 			   mysql_conn->cluster_name, step_table,
 			   JOB_CANCELLED, event_time, id_char);
 		xfree(id_char);

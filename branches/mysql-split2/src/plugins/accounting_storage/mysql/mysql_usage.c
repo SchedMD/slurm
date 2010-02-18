@@ -96,7 +96,7 @@ static int _get_cluster_usage(mysql_conn_t *mysql_conn, uid_t uid,
 	}
 
 	query = xstrdup_printf(
-		"select %s from %s_%s where (time_start < %d "
+		"select %s from \"%s_%s\" where (time_start < %d "
 		"&& time_start >= %d)",
 		tmp, cluster_rec->name, my_usage_table, end, start);
 
@@ -242,7 +242,7 @@ extern int get_usage_for_list(mysql_conn_t *mysql_conn,
 	switch (type) {
 	case DBD_GET_ASSOC_USAGE:
 		query = xstrdup_printf(
-			"select %s from %s_%s as t1, %s_%s as t2, %s_%s as t3 "
+			"select %s from \"%s_%s\" as t1, \"%s_%s\" as t2, \"%s_%s\" as t3 "
 			"where (t1.time_start < %d && t1.time_start >= %d) "
 			"&& t1.id_assoc=t2.id_assoc && (%s) && "
 			"t2.lft between t3.lft and t3.rgt "
@@ -253,7 +253,7 @@ extern int get_usage_for_list(mysql_conn_t *mysql_conn,
 		break;
 	case DBD_GET_WCKEY_USAGE:
 		query = xstrdup_printf(
-			"select %s from %s_%s "
+			"select %s from \"%s_%s\" "
 			"where (time_start < %d && time_start >= %d) "
 			"&& (%s) order by id_wckey, time_start;",
 			tmp, cluster_name, my_usage_table, end, start, id_str);
@@ -494,7 +494,7 @@ is_user:
 	switch (type) {
 	case DBD_GET_ASSOC_USAGE:
 		query = xstrdup_printf(
-			"select %s from %s_%s as t1, %s_%s as t2, %s_%s as t3 "
+			"select %s from \"%s_%s\" as t1, \"%s_%s\" as t2, \"%s_%s\" as t3 "
 			"where (t1.time_start < %d && t1.time_start >= %d) "
 			"&& t1.id_assoc=t2.id_assoc && t3.id_assoc=%d && "
 			"t2.lft between t3.lft and t3.rgt "
@@ -505,7 +505,7 @@ is_user:
 		break;
 	case DBD_GET_WCKEY_USAGE:
 		query = xstrdup_printf(
-			"select %s from %s_%s "
+			"select %s from \"%s_%s\" "
 			"where (time_start < %d && time_start >= %d) "
 			"&& id_wckey=%d order by id_wckey, time_start;",
 			tmp, cluster_name, my_usage_table, end, start, id);
@@ -614,7 +614,7 @@ extern int mysql_roll_usage(mysql_conn_t *mysql_conn,
 			itr = list_iterator_create(mysql_cluster_list);
 			while((tmp = list_next(itr))) {
 				query = xstrdup_printf(
-					"select time_start from %s_%s "
+					"select time_start from \"%s_%s\" "
 					"where node_name='' order by "
 					"time_start asc limit 1;",
 					tmp, event_table);

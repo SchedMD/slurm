@@ -573,7 +573,7 @@ static char *_make_archive_name(time_t period_start, time_t period_end,
 		 time_tm.tm_sec);
 
 	/* write the buffer to file */
-	return xstrdup_printf("%s/%s_%s_archive_%s_%s",
+	return xstrdup_printf("%s/\"%s_%s\"_archive_\"%s_%s\"",
 			      arch_dir, cluster_name, arch_type,
 			      start_char, end_char);
 
@@ -660,7 +660,7 @@ static uint32_t _archive_events(mysql_conn_t *mysql_conn, char *cluster_name,
 	}
 
 	/* get all the events started before this time listed */
-	query = xstrdup_printf("select %s from %s_%s where time_start <= %d "
+	query = xstrdup_printf("select %s from \"%s_%s\" where time_start <= %d "
 			       "&& time_end != 0 order by time_start asc",
 			       tmp, cluster_name, event_table, period_end);
 	xfree(tmp);
@@ -727,7 +727,7 @@ static char *_load_events(uint16_t rpc_version, Buf buffer,
 	local_event_t object;
 	int i = 0;
 
-	xstrfmtcat(insert, "insert into %s_%s (%s",
+	xstrfmtcat(insert, "insert into \"%s_%s\" (%s",
 		   cluster_name, event_table, event_req_inx[0]);
 	xstrcat(format, "('%s'");
 	for(i=1; i<EVENT_REQ_COUNT; i++) {
@@ -786,7 +786,7 @@ static uint32_t _archive_jobs(mysql_conn_t *mysql_conn, char *cluster_name,
 	}
 
 	/* get all the events started before this time listed */
-	query = xstrdup_printf("select %s from %s_%s where "
+	query = xstrdup_printf("select %s from \"%s_%s\" where "
 			       "submit < %d && end != 0 && !deleted "
 			       "order by submit asc",
 			       tmp, cluster_name, job_table, period_end);
@@ -874,7 +874,7 @@ static char *_load_jobs(uint16_t rpc_version, Buf buffer,
 	local_job_t object;
 	int i = 0;
 
-	xstrfmtcat(insert, "insert into %s_%s (%s",
+	xstrfmtcat(insert, "insert into \"%s_%s\" (%s",
 		   cluster_name, job_table, job_req_inx[0]);
 	xstrcat(format, "('%s'");
 	for(i=1; i<JOB_REQ_COUNT; i++) {
@@ -953,7 +953,7 @@ static uint32_t _archive_steps(mysql_conn_t *mysql_conn, char *cluster_name,
 	}
 
 	/* get all the events started before this time listed */
-	query = xstrdup_printf("select %s from %s_%s where "
+	query = xstrdup_printf("select %s from \"%s_%s\" where "
 			       "start <= %d && end != 0 "
 			       "&& !deleted order by start asc",
 			       tmp, cluster_name, step_table, period_end);
@@ -1048,7 +1048,7 @@ static char *_load_steps(uint16_t rpc_version, Buf buffer,
 	local_step_t object;
 	int i = 0;
 
-	xstrfmtcat(insert, "insert into %s_%s (%s",
+	xstrfmtcat(insert, "insert into \"%s_%s\" (%s",
 		   cluster_name, step_table, step_req_inx[0]);
 	xstrcat(format, "('%s'");
 	for(i=1; i<STEP_REQ_COUNT; i++) {
@@ -1134,7 +1134,7 @@ static uint32_t _archive_suspend(mysql_conn_t *mysql_conn, char *cluster_name,
 	}
 
 	/* get all the events started before this time listed */
-	query = xstrdup_printf("select %s from %s_%s where "
+	query = xstrdup_printf("select %s from \"%s_%s\" where "
 			       "start <= %d && end != 0 "
 			       "order by start asc",
 			       tmp, cluster_name, suspend_table, period_end);
@@ -1198,7 +1198,7 @@ static char *_load_suspend(uint16_t rpc_version, Buf buffer,
 	local_suspend_t object;
 	int i = 0;
 
-	xstrfmtcat(insert, "insert into %s_%s (%s",
+	xstrfmtcat(insert, "insert into \"%s_%s\" (%s",
 		   cluster_name, suspend_table, suspend_req_inx[0]);
 	xstrcat(format, "('%s'");
 	for(i=1; i<SUSPEND_REQ_COUNT; i++) {
@@ -1398,7 +1398,7 @@ static int _execute_archive(mysql_conn_t *mysql_conn, time_t last_submit,
 			else if(rc == SLURM_ERROR)
 				return rc;
 		}
-		query = xstrdup_printf("delete from %s_%s where "
+		query = xstrdup_printf("delete from \"%s_%s\" where "
 				       "time_start <= %d && time_end != 0",
 				       cluster_name, event_table, curr_end);
 		debug3("%d(%s:%d) query\n%s",
@@ -1443,7 +1443,7 @@ exit_events:
 			else if(rc == SLURM_ERROR)
 				return rc;
 		}
-		query = xstrdup_printf("delete from %s_%s where start <= %d "
+		query = xstrdup_printf("delete from \"%s_%s\" where start <= %d "
 				       "&& end != 0",
 				       cluster_name, suspend_table, curr_end);
 		debug3("%d(%s:%d) query\n%s",
@@ -1489,7 +1489,7 @@ exit_suspend:
 				return rc;
 		}
 
-		query = xstrdup_printf("delete from %s_%s where start <= %d "
+		query = xstrdup_printf("delete from \"%s_%s\" where start <= %d "
 				       "&& end != 0",
 				       cluster_name, step_table, curr_end);
 		debug3("%d(%s:%d) query\n%s",
@@ -1534,7 +1534,7 @@ exit_steps:
 				return rc;
 		}
 
-		query = xstrdup_printf("delete from %s_%s where submit <= %d "
+		query = xstrdup_printf("delete from \"%s_%s\" where submit <= %d "
 				       "&& end != 0",
 				       cluster_name, job_table, curr_end);
 		debug3("%d(%s:%d) query\n%s",

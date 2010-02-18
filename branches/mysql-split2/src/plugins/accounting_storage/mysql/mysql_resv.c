@@ -206,7 +206,7 @@ extern int mysql_add_resv(mysql_conn_t *mysql_conn,
 	_setup_resv_limits(resv, &cols, &vals, &extra);
 
 	xstrfmtcat(query,
-		   "insert into %s_%s (id%s) values (%u%s) "
+		   "insert into \"%s_%s\" (id%s) values (%u%s) "
 		   "on duplicate key update deleted=0%s;",
 		   resv->cluster, resv_table, cols, resv->id, vals, extra);
 	debug3("%d(%s:%d) query\n%s",
@@ -291,7 +291,7 @@ extern int mysql_modify_resv(mysql_conn_t *mysql_conn,
 	   likely the start time hasn't changed, but something else
 	   may have since the last time we did an update to the
 	   reservation. */
-	query = xstrdup_printf("select %s from %s_%s where id_resv=%u "
+	query = xstrdup_printf("select %s from \"%s_%s\" where id_resv=%u "
 			       "and (time_start=%d || time_start=%d) "
 			       "and deleted=0 order by time_start desc "
 			       "limit 1 FOR UPDATE;",
@@ -319,7 +319,7 @@ try_again:
 			   not deleted that hasn't ended yet. */
 			xfree(query);
 			query = xstrdup_printf(
-				"select %s from %s_%s where id_resv=%u "
+				"select %s from \"%s_%s\" where id_resv=%u "
 				"and time_start <= %d and cluster='%s' "
 				"and deleted=0 order by time_start desc "
 				"limit 1;",
@@ -384,7 +384,7 @@ try_again:
 		/* we haven't started the reservation yet, or
 		   we are changing the associations or end
 		   time which we can just update it */
-		query = xstrdup_printf("update %s_%s set deleted=0%s "
+		query = xstrdup_printf("update \"%s_%s\" set deleted=0%s "
 				       "where deleted=0 and id_resv=%u "
 				       "and time_start=%d and cluster='%s';",
 				       resv->cluster, resv_table,
@@ -393,14 +393,14 @@ try_again:
 		/* time_start is already done above and we
 		 * changed something that is in need on a new
 		 * entry. */
-		query = xstrdup_printf("update %s_%s set time_end=%d "
+		query = xstrdup_printf("update \"%s_%s\" set time_end=%d "
 				       "where deleted=0 && id_resv=%u "
 				       "&& time_start=%d and cluster='%s';",
 				       resv->cluster, resv_table,
 				       resv->time_start-1,
 				       resv->id, start);
 		xstrfmtcat(query,
-			   "insert into %s_%s (id%s) "
+			   "insert into \"%s_%s\" (id%s) "
 			   "values (%u%s) "
 			   "on duplicate key update deleted=0%s;",
 			   resv->cluster, resv_table, cols, resv->id,
@@ -443,7 +443,7 @@ extern int mysql_remove_resv(mysql_conn_t *mysql_conn,
 
 
 	/* first delete the resv that hasn't happened yet. */
-	query = xstrdup_printf("delete from %s_%s where time_start > %d "
+	query = xstrdup_printf("delete from \"%s_%s\" where time_start > %d "
 			       "and id_resv=%u and time_start=%d;",
 			       resv->cluster, resv_table, resv->time_start_prev,
 			       resv->id,
@@ -452,7 +452,7 @@ extern int mysql_remove_resv(mysql_conn_t *mysql_conn,
 	 * time of the time_start_prev which is set to when the
 	 * command was issued */
 	xstrfmtcat(query,
-		   "update %s_%s set time_end=%d, "
+		   "update \"%s_%s\" set time_end=%d, "
 		   "deleted=1 where deleted=0 and "
 		   "id_resv=%u and time_start=%d;'",
 		   resv->cluster, resv_table, resv->time_start_prev,
@@ -571,7 +571,7 @@ empty:
 			xstrcat(query, " union ");
 		//START_TIMER;
 		xstrfmtcat(query, "select distinct %s,'%s' as cluster "
-			   "from %s_%s as t1%s",
+			   "from \"%s_%s\" as t1%s",
 			   tmp, cluster_name, cluster_name, resv_table, extra);
 	}
 	list_iterator_destroy(itr);
