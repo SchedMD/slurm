@@ -86,7 +86,7 @@ static int _get_account_coords(mysql_conn_t *mysql_conn,
 			xstrcat(query, " union ");
 		xstrfmtcat(query,
 			   "select distinct t0.user from %s as t0, "
-			   "%s_%s as t1, %s_%s as t2 "
+			   "\"%s_%s\" as t1, \"%s_%s\" as t2 "
 			   "where t0.acct=t1.acct && "
 			   "t1.lft<t2.lft && t1.rgt>t2.lft && "
 			   "t1.user='' && t2.acct='%s' "

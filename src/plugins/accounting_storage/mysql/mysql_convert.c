@@ -488,7 +488,7 @@ extern int mysql_convert_tables(MYSQL *db_conn)
 			int diff;
 
 			xstrfmtcat(query,
-				   "insert into %s_%s (creation_time, "
+				   "insert into \"%s_%s\" (creation_time, "
 				   "mod_time, deleted, id_assoc, user, "
 				   "acct, partition, parent_acct, lft, "
 				   "rgt, shares, max_jobs, max_submit_jobs, "
@@ -518,7 +518,7 @@ extern int mysql_convert_tables(MYSQL *db_conn)
 				break;
 			}
 
-			query = xstrdup_printf("select lft from %s_%s "
+			query = xstrdup_printf("select lft from \"%s_%s\" "
 					       "where acct='root' and user=''",
 					       cluster_name, assoc_table);
 			if(!(result = mysql_db_query_ret(db_conn, query, 0))) {
@@ -547,7 +547,7 @@ extern int mysql_convert_tables(MYSQL *db_conn)
 			   these were the first cluster added to the
 			   system.
 			*/
-			query = xstrdup_printf("update %s_%s set "
+			query = xstrdup_printf("update \"%s_%s\" set "
 					       "lft=(lft-%d), rgt=(rgt-%d)",
 					       cluster_name, assoc_table,
 					       diff, diff);
@@ -564,7 +564,7 @@ extern int mysql_convert_tables(MYSQL *db_conn)
 			   the assoc_table for this cluster and query
 			   against that.
 			*/
-			query = xstrdup_printf("select id_assoc from %s_%s",
+			query = xstrdup_printf("select id_assoc from \"%s_%s\"",
 					       cluster_name, assoc_table);
 			debug3("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
 			if(!(result = mysql_db_query_ret(db_conn, query, 0))) {
@@ -589,7 +589,7 @@ extern int mysql_convert_tables(MYSQL *db_conn)
 
 			if(assoc_ids) {
 				xstrfmtcat(query,
-					   "insert into %s_%s (creation_time, "
+					   "insert into \"%s_%s\" (creation_time, "
 					   "mod_time, deleted, id_assoc, "
 					   "time_start, alloc_cpu_secs) "
 					   "select creation_time, mod_time, "
@@ -602,7 +602,7 @@ extern int mysql_convert_tables(MYSQL *db_conn)
 					   cluster_name, assoc_day_table,
 					   assoc_day_table, assoc_ids);
 				xstrfmtcat(query,
-					   "insert into %s_%s (creation_time, "
+					   "insert into \"%s_%s\" (creation_time, "
 					   "mod_time, deleted, id_assoc, "
 					   "time_start, alloc_cpu_secs) "
 					   "select creation_time, mod_time, "
@@ -615,7 +615,7 @@ extern int mysql_convert_tables(MYSQL *db_conn)
 					   cluster_name, assoc_hour_table,
 					   assoc_hour_table, assoc_ids);
 				xstrfmtcat(query,
-					   "insert into %s_%s (creation_time, "
+					   "insert into \"%s_%s\" (creation_time, "
 					   "mod_time, deleted, id_assoc, "
 					   "time_start, alloc_cpu_secs) "
 					   "select creation_time, mod_time, "
@@ -642,7 +642,7 @@ extern int mysql_convert_tables(MYSQL *db_conn)
 
 		if(events) {
 			query = xstrdup_printf(
-				"insert into %s_%s (node_name, cpu_count, "
+				"insert into \"%s_%s\" (node_name, cpu_count, "
 				"state, time_start, time_end, reason, "
 				"reason_uid, cluster_nodes) "
 				"select node_name, cpu_count, state, "
@@ -664,7 +664,7 @@ extern int mysql_convert_tables(MYSQL *db_conn)
 
 		if(jobs) {
 			query = xstrdup_printf(
-				"insert into %s_%s (job_db_inx, "
+				"insert into \"%s_%s\" (job_db_inx, "
 				"deleted, account, "
 				"cpus_req, cpus_alloc, exit_code, job_name, "
 				"id_assoc, id_block, id_job, id_resv, "
@@ -701,7 +701,7 @@ extern int mysql_convert_tables(MYSQL *db_conn)
 			   the job_table for this cluster and query
 			   against that.
 			*/
-			query = xstrdup_printf("select job_db_inx from %s_%s",
+			query = xstrdup_printf("select job_db_inx from \"%s_%s\"",
 					       cluster_name, job_table);
 			debug3("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
 			if(!(result = mysql_db_query_ret(db_conn, query, 0))) {
@@ -727,7 +727,7 @@ extern int mysql_convert_tables(MYSQL *db_conn)
 
 		if(resvs) {
 			query = xstrdup_printf(
-				"insert into %s_%s (id_resv, "
+				"insert into \"%s_%s\" (id_resv, "
 				"deleted, assoclist, "
 				"cpus, flags, nodelist, node_inx, "
 				"resv_name, time_start, time_end) "
@@ -752,7 +752,7 @@ extern int mysql_convert_tables(MYSQL *db_conn)
 
 		if(steps && id_str) {
 			query = xstrdup_printf(
-				"insert into %s_%s (job_db_inx, "
+				"insert into \"%s_%s\" (job_db_inx, "
 				"deleted, cpus_alloc, "
 				"exit_code, id_step, kill_requid, nodelist, "
 				"nodes_alloc, node_inx, state, step_name, "
@@ -791,7 +791,7 @@ extern int mysql_convert_tables(MYSQL *db_conn)
 
 		if(suspends && id_str) {
 			query = xstrdup_printf(
-				"insert into %s_%s (job_db_inx, id_assoc, "
+				"insert into \"%s_%s\" (job_db_inx, id_assoc, "
 				"time_start, time_end) "
 				"select id, associd, start, end "
 				"from %s where %s on duplicate key update "
@@ -811,7 +811,7 @@ extern int mysql_convert_tables(MYSQL *db_conn)
 
 		if(usage) {
 			query = xstrdup_printf(
-				"insert into %s_%s (creation_time, mod_time, "
+				"insert into \"%s_%s\" (creation_time, mod_time, "
 				"deleted, time_start, cpu_count, "
 				"alloc_cpu_secs, down_cpu_secs, "
 				"pdown_cpu_secs, idle_cpu_secs, "
@@ -827,7 +827,7 @@ extern int mysql_convert_tables(MYSQL *db_conn)
 				cluster_name, cluster_day_table,
 				cluster_day_table, cluster_name);
 			xstrfmtcat(query,
-				   "insert into %s_%s (creation_time, "
+				   "insert into \"%s_%s\" (creation_time, "
 				   "mod_time, deleted, time_start, cpu_count, "
 				   "alloc_cpu_secs, down_cpu_secs, "
 				   "pdown_cpu_secs, idle_cpu_secs, "
@@ -844,7 +844,7 @@ extern int mysql_convert_tables(MYSQL *db_conn)
 				   cluster_name, cluster_hour_table,
 				   cluster_hour_table, cluster_name);
 			xstrfmtcat(query,
-				   "insert into %s_%s (creation_time, "
+				   "insert into \"%s_%s\" (creation_time, "
 				   "mod_time, deleted, time_start, cpu_count, "
 				   "alloc_cpu_secs, down_cpu_secs, "
 				   "pdown_cpu_secs, idle_cpu_secs, "
@@ -874,7 +874,7 @@ extern int mysql_convert_tables(MYSQL *db_conn)
 			char *wckey_ids = NULL;
 
 			xstrfmtcat(query,
-				   "insert into %s_%s (creation_time, "
+				   "insert into \"%s_%s\" (creation_time, "
 				   "mod_time, deleted, id_wckey, wckey_name, "
 				   "user) "
 				   "select creation_time, mod_time, deleted, "
@@ -897,7 +897,7 @@ extern int mysql_convert_tables(MYSQL *db_conn)
 			   the wckey_table for this cluster and query
 			   against that.
 			*/
-			query = xstrdup_printf("select id_wckey from %s_%s",
+			query = xstrdup_printf("select id_wckey from \"%s_%s\"",
 					       cluster_name, wckey_table);
 			debug3("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
 			if(!(result = mysql_db_query_ret(db_conn, query, 0))) {
@@ -922,7 +922,7 @@ extern int mysql_convert_tables(MYSQL *db_conn)
 
 			if(wckey_ids) {
 				xstrfmtcat(query,
-					   "insert into %s_%s (creation_time, "
+					   "insert into \"%s_%s\" (creation_time, "
 					   "mod_time, deleted, id_wckey, "
 					   "time_start, alloc_cpu_secs, "
 					   "resv_cpu_secs, over_cpu_secs) "
@@ -937,7 +937,7 @@ extern int mysql_convert_tables(MYSQL *db_conn)
 					   cluster_name, wckey_day_table,
 					   wckey_day_table, wckey_ids);
 				xstrfmtcat(query,
-					   "insert into %s_%s (creation_time, "
+					   "insert into \"%s_%s\" (creation_time, "
 					   "mod_time, deleted, id_wckey, "
 					   "time_start, alloc_cpu_secs, "
 					   "resv_cpu_secs, over_cpu_secs) "
@@ -952,7 +952,7 @@ extern int mysql_convert_tables(MYSQL *db_conn)
 					   cluster_name, wckey_hour_table,
 					   wckey_hour_table, wckey_ids);
 				xstrfmtcat(query,
-					   "insert into %s_%s (creation_time, "
+					   "insert into \"%s_%s\" (creation_time, "
 					   "mod_time, deleted, id_wckey, "
 					   "time_start, alloc_cpu_secs, "
 					   "resv_cpu_secs, over_cpu_secs) "

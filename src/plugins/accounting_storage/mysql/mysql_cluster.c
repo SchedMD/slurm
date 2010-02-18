@@ -142,7 +142,7 @@ extern int mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 			break;
 		}
 		xstrfmtcat(query,
-			   "insert into %s_%s (%s, lft, rgt) "
+			   "insert into \"%s_%s\" (%s, lft, rgt) "
 			   "values (%s, 1, 2) "
 			   "on duplicate key update deleted=0, "
 			   "id_assoc=LAST_INSERT_ID(id_assoc)%s;",
@@ -458,10 +458,10 @@ extern List mysql_remove_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		/* We should not need to delete any cluster usage just set it
 		 * to deleted */
 		xstrfmtcat(query,
-			   "update %s_%s set time_end=%d where time_end=0;"
-			   "update %s_%s set mod_time=%d, deleted=1;"
-			   "update %s_%s set mod_time=%d, deleted=1;"
-			   "update %s_%s set mod_time=%d, deleted=1;",
+			   "update \"%s_%s\" set time_end=%d where time_end=0;"
+			   "update \"%s_%s\" set mod_time=%d, deleted=1;"
+			   "update \"%s_%s\" set mod_time=%d, deleted=1;"
+			   "update \"%s_%s\" set mod_time=%d, deleted=1;",
 			   object, event_table, now,
 			   object, cluster_day_table, now,
 			   object, cluster_hour_table, now,
@@ -659,7 +659,7 @@ empty:
 		cluster->rpc_version = atoi(row[CLUSTER_REQ_VERSION]);
 		query = xstrdup_printf(
 			"select cpu_count, cluster_nodes from "
-			"%s_%s where time_end=0 and node_name='' limit 1",
+			"\"%s_%s\" where time_end=0 and node_name='' limit 1",
 			cluster->name, event_table);
 		debug4("%d(%s:%d) query\n%s",
 		       mysql_conn->conn, THIS_FILE, __LINE__, query);
@@ -897,7 +897,7 @@ empty:
 
 	itr = list_iterator_create(use_cluster_list);
 	while((object = list_next(itr))) {
-		query = xstrdup_printf("select %s from %s_%s",
+		query = xstrdup_printf("select %s from \"%s_%s\"",
 				       tmp, object, event_table);
 		if(extra)
 			xstrfmtcat(query, " %s", extra);
@@ -970,7 +970,7 @@ extern int mysql_node_down(mysql_conn_t *mysql_conn,
 	       node_ptr->name, mysql_conn->cluster_name, cpus);
 
 	query = xstrdup_printf(
-		"update %s_%s set time_end=%d where "
+		"update \"%s_%s\" set time_end=%d where "
 		"time_end=0 and node_name='%s';",
 		mysql_conn->cluster_name, event_table,
 		event_time, node_ptr->name);
@@ -983,7 +983,7 @@ extern int mysql_node_down(mysql_conn_t *mysql_conn,
 	 * This way we only get one for the last time we let it run.
 	 */
 	xstrfmtcat(query,
-		   "insert into %s_%s "
+		   "insert into \"%s_%s\" "
 		   "(node_name, state, cpu_count, time_start, "
 		   "reason, reason_uid) "
 		   "values ('%s', %u, %u, %d, '%s', %u) "
@@ -1010,7 +1010,7 @@ extern int mysql_node_up(mysql_conn_t *mysql_conn,
 		return ESLURM_DB_CONNECTION;
 
 	query = xstrdup_printf(
-		"update %s_%s set time_end=%d where "
+		"update \"%s_%s\" set time_end=%d where "
 		"time_end=0 and node_name='%s';",
 		mysql_conn->cluster_name, event_table,
 		event_time, node_ptr->name);
@@ -1086,7 +1086,7 @@ extern int mysql_cluster_cpus(mysql_conn_t *mysql_conn,
 
 	/* Record the processor count */
 	query = xstrdup_printf(
-		"select cpu_count, cluster_nodes from %s_%s where "
+		"select cpu_count, cluster_nodes from \"%s_%s\" where "
 		"time_end=0 and node_name='' limit 1",
 		mysql_conn->cluster_name, event_table);
 	if(!(result = mysql_db_query_ret(
@@ -1124,7 +1124,7 @@ extern int mysql_cluster_cpus(mysql_conn_t *mysql_conn,
 				      "last instance of cluster '%s'.",
 				      cluster_nodes, mysql_conn->cluster_name);
 				query = xstrdup_printf(
-					"update %s_%s set cluster_nodes='%s' "
+					"update \"%s_%s\" set cluster_nodes='%s' "
 					"where time_end=0 and node_name=''",
 					mysql_conn->cluster_name,
 					event_table, cluster_nodes);
@@ -1147,7 +1147,7 @@ extern int mysql_cluster_cpus(mysql_conn_t *mysql_conn,
 	   changed some of the downed nodes may have gone away.
 	   Request them again with ACCOUNTING_FIRST_REG */
 	query = xstrdup_printf(
-		"update %s_%s set time_end=%d where time_end=0",
+		"update \"%s_%s\" set time_end=%d where time_end=0",
 		mysql_conn->cluster_name, event_table, event_time);
 	rc = mysql_db_query(mysql_conn->db_conn, query);
 	xfree(query);
@@ -1156,7 +1156,7 @@ extern int mysql_cluster_cpus(mysql_conn_t *mysql_conn,
 		goto end_it;
 add_it:
 	query = xstrdup_printf(
-		"insert into %s_%s (cluster_nodes, cpu_count, "
+		"insert into \"%s_%s\" (cluster_nodes, cpu_count, "
 		"time_start, reason) "
 		"values ('%s', %u, %d, 'Cluster processor count')",
 		mysql_conn->cluster_name, event_table,

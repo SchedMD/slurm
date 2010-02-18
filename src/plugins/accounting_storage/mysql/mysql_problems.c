@@ -227,7 +227,7 @@ extern int mysql_acct_no_users(mysql_conn_t *mysql_conn,
 		if(query)
 			xstrcat(query, " union ");
 		xstrfmtcat(query, "select distinct %s, '%s' as cluster "
-			   "from %s_%s %s && user='' && lft=(rgt-1)"
+			   "from \"%s_%s\" %s && user='' && lft=(rgt-1)"
 			   "order by cluster, acct;",
 			   tmp, cluster_name, cluster_name,
 			   assoc_table, extra);

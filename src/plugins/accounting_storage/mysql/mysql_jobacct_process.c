@@ -319,7 +319,7 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 	 * coordinator of.
 	 */
 	if(!is_admin && (private_data & PRIVATE_DATA_JOBS)) {
-		query = xstrdup_printf("select lft from %s_%s where user='%s'",
+		query = xstrdup_printf("select lft from \"%s_%s\" where user='%s'",
 				       cluster_name, assoc_table, user->name);
 		if(user->coord_accts) {
 			acct_coord_rec_t *coord = NULL;
@@ -367,8 +367,8 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 		mysql_free_result(result);
 	}
 
-	query = xstrdup_printf("select %s from %s_%s as t1 "
-			       "left join %s_%s as t2 "
+	query = xstrdup_printf("select %s from \"%s_%s\" as t1 "
+			       "left join \"%s_%s\" as t2 "
 			       "on t1.id_assoc=t2.id_assoc",
 			       job_fields, cluster_name, job_table,
 			       cluster_name, assoc_table);
@@ -478,7 +478,7 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 				/* get the suspended time for this job */
 				query = xstrdup_printf(
 					"select time_start, time_end from "
-					"%s_%s where "
+					"\"%s_%s\" where "
 					"(time_start < %d && (time_end >= %d "
 					"|| time_end = 0)) && job_db_inx=%s "
 					"order by time_start",
@@ -596,7 +596,7 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 			if(set)
 				xstrcat(extra, ")");
 		}
-		query =	xstrdup_printf("select %s from %s_%s t1 "
+		query =	xstrdup_printf("select %s from \"%s_%s\" t1 "
 				       "where t1.job_db_inx=%s",
 				       step_fields, cluster_name,
 				       step_table, id);
@@ -791,7 +791,7 @@ extern List setup_cluster_list_with_inx(mysql_conn_t *mysql_conn,
 	h_itr = hostlist_iterator_create(temp_hl);
 
 	query = xstrdup_printf("select cluster_nodes, time_start, "
-			       "time_end from %s_%s where node_name='' "
+			       "time_end from \"%s_%s\" where node_name='' "
 			       "&& cluster_nodes !=''",
 			       list_peek(job_cond->cluster_list), event_table);
 
@@ -909,7 +909,7 @@ extern char *setup_job_cluster_cond_limits(mysql_conn_t *mysql_conn,
 
 	if(job_cond->associd_list && list_count(job_cond->associd_list)) {
 		set = 0;
-		xstrfmtcat(extra, ", %s_%s as t3 where (",
+		xstrfmtcat(extra, ", \"%s_%s\" as t3 where (",
 			   cluster_name, assoc_table);
 		itr = list_iterator_create(job_cond->associd_list);
 		while((object = list_next(itr))) {
@@ -932,7 +932,7 @@ extern char *setup_job_cluster_cond_limits(mysql_conn_t *mysql_conn,
 	   resvid_list up here */
 	if(job_cond->resv_list && list_count(job_cond->resv_list)) {
 		char *query = xstrdup_printf(
-			"select distinct job_db_inx from %s_%s where (",
+			"select distinct job_db_inx from \"%s_%s\" where (",
 			cluster_name, job_table);
 		int my_set = 0;
 		MYSQL_RES *result = NULL;

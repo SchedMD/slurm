@@ -190,7 +190,7 @@ static int _move_account(mysql_conn_t *mysql_conn, uint32_t *lft, uint32_t *rgt,
 	int diff = 0;
 	int width = 0;
 	char *query = xstrdup_printf(
-		"SELECT lft from %s_%s where acct='%s' && user='';",
+		"SELECT lft from \"%s_%s\" where acct='%s' && user='';",
 		cluster, assoc_table, parent);
 	debug3("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, THIS_FILE, __LINE__, query);
@@ -221,15 +221,15 @@ static int _move_account(mysql_conn_t *mysql_conn, uint32_t *lft, uint32_t *rgt,
 	/* every thing below needs to be a %d not a %u because we are
 	   looking for -1 */
 	xstrfmtcat(query,
-		   "update %s_%s set mod_time=%d, deleted = deleted + 2, "
+		   "update \"%s_%s\" set mod_time=%d, deleted = deleted + 2, "
 		   "lft = lft + %d, rgt = rgt + %d "
 		   "WHERE lft BETWEEN %d AND %d;",
 		   cluster, assoc_table, now, diff, diff, *lft, *rgt);
 
 	xstrfmtcat(query,
-		   "UPDATE %s_%s SET mod_time=%d, rgt = rgt + %d WHERE "
+		   "UPDATE \"%s_%s\" SET mod_time=%d, rgt = rgt + %d WHERE "
 		   "rgt > %d && deleted < 2;"
-		   "UPDATE %s_%s SET mod_time=%d, lft = lft + %d WHERE "
+		   "UPDATE \"%s_%s\" SET mod_time=%d, lft = lft + %d WHERE "
 		   "lft > %d && deleted < 2;",
 		   cluster, assoc_table, now, width,
 		   par_left,
@@ -237,10 +237,10 @@ static int _move_account(mysql_conn_t *mysql_conn, uint32_t *lft, uint32_t *rgt,
 		   par_left);
 
 	xstrfmtcat(query,
-		   "UPDATE %s_%s SET mod_time=%d, rgt = rgt - %d WHERE "
+		   "UPDATE \"%s_%s\" SET mod_time=%d, rgt = rgt - %d WHERE "
 		   "(%d < 0 && rgt > %d && deleted < 2) "
 		   "|| (%d > 0 && rgt > %d);"
-		   "UPDATE %s_%s SET mod_time=%d, lft = lft - %d WHERE "
+		   "UPDATE \"%s_%s\" SET mod_time=%d, lft = lft - %d WHERE "
 		   "(%d < 0 && lft > %d && deleted < 2) "
 		   "|| (%d > 0 && lft > %d);",
 		   cluster, assoc_table, now, width,
@@ -251,16 +251,16 @@ static int _move_account(mysql_conn_t *mysql_conn, uint32_t *lft, uint32_t *rgt,
 		   diff, *lft);
 
 	xstrfmtcat(query,
-		   "update %s_%s set mod_time=%d, "
+		   "update \"%s_%s\" set mod_time=%d, "
 		   "deleted = deleted - 2 WHERE deleted > 1;",
 		   cluster, assoc_table, now);
 	xstrfmtcat(query,
-		   "update %s_%s set mod_time=%d, "
+		   "update \"%s_%s\" set mod_time=%d, "
 		   "parent_acct='%s' where id_assoc = %s;",
 		   cluster, assoc_table, now, parent, id);
 	/* get the new lft and rgt if changed */
 	xstrfmtcat(query,
-		   "select lft, rgt from %s_%s where id_assoc = %s",
+		   "select lft, rgt from \"%s_%s\" where id_assoc = %s",
 		   cluster, assoc_table, id);
 	debug3("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, THIS_FILE, __LINE__, query);
@@ -301,7 +301,7 @@ static int _move_parent(mysql_conn_t *mysql_conn, uid_t uid,
 	 * accounts parent and then do the move.
 	 */
 	query = xstrdup_printf(
-		"select id_assoc, lft, rgt from %s_%s "
+		"select id_assoc, lft, rgt from \"%s_%s\" "
 		"where lft between %d and %d "
 		"&& acct='%s' && user='' order by lft;",
 		cluster, assoc_table, *lft, *rgt,
@@ -334,7 +334,7 @@ static int _move_parent(mysql_conn_t *mysql_conn, uid_t uid,
 	 * have changed.
 	 */
 	query = xstrdup_printf(
-		"select lft, rgt from %s_%s where id_assoc=%s;",
+		"select lft, rgt from \"%s_%s\" where id_assoc=%s;",
 		cluster, assoc_table, id);
 	debug3("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, THIS_FILE, __LINE__, query);
@@ -370,7 +370,7 @@ static uint32_t _get_parent_id(
 	xassert(parent);
 	xassert(cluster);
 
-	query = xstrdup_printf("select id_assoc from %s_%s where user='' "
+	query = xstrdup_printf("select id_assoc from \"%s_%s\" where user='' "
 			       "and deleted = 0 and acct='%s';",
 			       cluster, assoc_table, parent);
 	debug4("%d(%s:%d) query\n%s",
@@ -404,7 +404,7 @@ static int _set_assoc_lft_rgt(
 	xassert(assoc->cluster);
 	xassert(assoc->id);
 
-	query = xstrdup_printf("select lft, rgt from %s_%s where id_assoc=%u;",
+	query = xstrdup_printf("select lft, rgt from \"%s_%s\" where id_assoc=%u;",
 			       assoc->cluster, assoc_table, assoc->id);
 	debug4("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, THIS_FILE, __LINE__, query);
@@ -594,7 +594,7 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 	}
 
 	/* We want all the sub accounts and user accounts */
-	query = xstrdup_printf("select distinct %s from %s_%s where deleted=0 "
+	query = xstrdup_printf("select distinct %s from \"%s_%s\" where deleted=0 "
 			       "&& lft between %d and %d && "
 			       "((user = '' && parent_acct = '%s') || "
 			       "(user != '' && acct = '%s')) "
@@ -778,7 +778,7 @@ static char *_setup_association_cond_qos(acct_association_cond_t *assoc_cond,
 		   really most likely a parent thing */
 		assoc_cond->with_sub_accts = 1;
 		prefix = "t2";
-		xstrfmtcat(extra, ", %s_%s as t2 where "
+		xstrfmtcat(extra, ", \"%s_%s\" as t2 where "
 			   "(t1.lft between t2.lft and t2.rgt) && (",
 			   cluster_name, assoc_table);
 		set = 0;
@@ -1614,7 +1614,7 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 
 
 	//START_TIMER;
-	query = xstrdup_printf("select distinct %s from %s_%s as t1%s%s "
+	query = xstrdup_printf("select distinct %s from \"%s_%s\" as t1%s%s "
 			       "order by lft;",
 			       fields, cluster_name, assoc_table,
 			       qos_extra, extra);
@@ -2018,7 +2018,7 @@ extern int mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 		}
 
 		xstrfmtcat(query,
-			   "select distinct %s from %s_%s %s order by lft "
+			   "select distinct %s from \"%s_%s\" %s order by lft "
 			   "FOR UPDATE;",
 			   tmp_char, object->cluster, assoc_table, update);
 		xfree(tmp_char);
@@ -2053,7 +2053,7 @@ extern int mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 			   || strcasecmp(parent, old_parent)
 			   || strcasecmp(object->cluster, old_cluster)) {
 				char *sel_query = xstrdup_printf(
-					"SELECT lft FROM %s_%s WHERE "
+					"SELECT lft FROM \"%s_%s\" WHERE "
 					"acct = '%s' and user = '' "
 					"order by lft;",
 					object->cluster, assoc_table,
@@ -2062,12 +2062,12 @@ extern int mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 
 				if(incr) {
 					char *up_query = xstrdup_printf(
-						"UPDATE %s_%s SET rgt = rgt+%d "
+						"UPDATE \"%s_%s\" SET rgt = rgt+%d "
 						"WHERE rgt > %d && deleted < 2;"
-						"UPDATE %s_%s SET lft = lft+%d "
+						"UPDATE \"%s_%s\" SET lft = lft+%d "
 						"WHERE lft > %d "
 						"&& deleted < 2;"
-						"UPDATE %s_%s SET deleted = 0 "
+						"UPDATE \"%s_%s\" SET deleted = 0 "
 						"WHERE deleted = 2;",
 						old_cluster, assoc_table,
 						incr, my_left,
@@ -2129,7 +2129,7 @@ extern int mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 			}
 			incr += 2;
 			xstrfmtcat(query,
-				   "insert into %s_%s (%s, lft, rgt, deleted) "
+				   "insert into \"%s_%s\" (%s, lft, rgt, deleted) "
 				   "values (%s, %d, %d, 2);",
 				   object->cluster, assoc_table, cols,
 				   vals, my_left+(incr-1), my_left+incr);
@@ -2194,7 +2194,7 @@ extern int mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 
 			affect_rows = 2;
 			xstrfmtcat(query,
-				   "update %s_%s set deleted=0, "
+				   "update \"%s_%s\" set deleted=0, "
 				   "id_assoc=LAST_INSERT_ID(id_assoc)%s %s;",
 				   object->cluster, assoc_table,
 				   extra, update);
@@ -2281,12 +2281,12 @@ extern int mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	if(incr) {
 		char *up_query = xstrdup_printf(
-			"UPDATE %s_%s SET rgt = rgt+%d "
+			"UPDATE \"%s_%s\" SET rgt = rgt+%d "
 			"WHERE rgt > %d && deleted < 2;"
-			"UPDATE %s_%s SET lft = lft+%d "
+			"UPDATE \"%s_%s\" SET lft = lft+%d "
 			"WHERE lft > %d "
 			"&& deleted < 2;"
-			"UPDATE %s_%s SET deleted = 0 "
+			"UPDATE \"%s_%s\" SET deleted = 0 "
 			"WHERE deleted = 2;",
 			old_cluster, assoc_table, incr,
 			my_left,
@@ -2455,7 +2455,7 @@ extern List mysql_modify_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 			assoc_cond, cluster_name);
 
 		xstrfmtcat(query, "select distinct %s "
-			   "from %s_%s as t1%s%s "
+			   "from \"%s_%s\" as t1%s%s "
 			   "order by lft FOR UPDATE;",
 			   object, cluster_name,
 			   assoc_table, qos_extra, extra);
@@ -2565,7 +2565,7 @@ extern List mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 			assoc_cond, cluster_name);
 
 		query = xstrdup_printf("select distinct t1.lft, t1.rgt from "
-				       "%s_%s as t1%s%s order by "
+				       "\"%s_%s\" as t1%s%s order by "
 				       "lft FOR UPDATE;",
 				       cluster_name, assoc_table,
 				       qos_extra, extra);
@@ -2596,7 +2596,7 @@ extern List mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 		mysql_free_result(result);
 
 		query = xstrdup_printf("select distinct %s "
-				       "from %s_%s where (%s) order by lft;",
+				       "from \"%s_%s\" where (%s) order by lft;",
 				       object,
 				       cluster_name, assoc_table, name_char);
 		debug3("%d(%s:%d) query\n%s",
