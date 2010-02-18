@@ -198,8 +198,9 @@ static bool _check_jobs_before_remove(mysql_conn_t *mysql_conn,
 	bool rc = 0;
 	MYSQL_RES *result = NULL;
 
-	query = xstrdup_printf("select t0.id_assoc from %s_%s as t0, "
-			       "%s_%s as t1, %s_%s as t2 where t1.lft between "
+	query = xstrdup_printf("select t0.id_assoc from \"%s_%s\" as t0, "
+			       "\"%s_%s\" as t1, \"%s_%s\" as t2 "
+			       "where t1.lft between "
 			       "t2.lft and t2.rgt && (%s) "
 			       "and t0.id_assoc=t1.id_assoc limit 1;",
 			       cluster_name, job_table,
@@ -233,8 +234,8 @@ static bool _check_jobs_before_remove_assoc(mysql_conn_t *mysql_conn,
 	bool rc = 0;
 	MYSQL_RES *result = NULL;
 
-	query = xstrdup_printf("select t1.id_assoc from %s_%s as t1, "
-			       "%s_%s as t2 where (%s) "
+	query = xstrdup_printf("select t1.id_assoc from \"%s_%s\" as t1, "
+			       "\"%s_%s\" as t2 where (%s) "
 			       "and t1.id_assoc=t2.id_assoc limit 1;",
 			       cluster_name, job_table,
 			       cluster_name, assoc_table,
@@ -267,7 +268,7 @@ static bool _check_jobs_before_remove_without_assoctable(
 	bool rc = 0;
 	MYSQL_RES *result = NULL;
 
-	query = xstrdup_printf("select id_assoc from %s_%s where (%s) limit 1;",
+	query = xstrdup_printf("select id_assoc from \"%s_%s\" where (%s) limit 1;",
 			       cluster_name, job_table, where_char);
 
 	debug3("%d(%s:%d) query\n%s",
@@ -834,7 +835,7 @@ extern int create_cluster_tables(MYSQL *db_conn, char *cluster_name)
 
 	char table_name[200];
 
-	snprintf(table_name, sizeof(table_name), "%s_%s",
+	snprintf(table_name, sizeof(table_name), "\"%s_%s\"",
 		 cluster_name, assoc_table);
 	if(mysql_db_create_table(db_conn, table_name,
 				 assoc_table_fields,
@@ -844,7 +845,7 @@ extern int create_cluster_tables(MYSQL *db_conn, char *cluster_name)
 	   == SLURM_ERROR)
 		return SLURM_ERROR;
 
-	snprintf(table_name, sizeof(table_name), "%s_%s",
+	snprintf(table_name, sizeof(table_name), "\"%s_%s\"",
 		 cluster_name, assoc_day_table);
 	if(mysql_db_create_table(db_conn, table_name,
 				 assoc_usage_table_fields,
@@ -853,7 +854,7 @@ extern int create_cluster_tables(MYSQL *db_conn, char *cluster_name)
 	   == SLURM_ERROR)
 		return SLURM_ERROR;
 
-	snprintf(table_name, sizeof(table_name), "%s_%s",
+	snprintf(table_name, sizeof(table_name), "\"%s_%s\"",
 		 cluster_name, assoc_hour_table);
 	if(mysql_db_create_table(db_conn, table_name,
 				 assoc_usage_table_fields,
@@ -862,7 +863,7 @@ extern int create_cluster_tables(MYSQL *db_conn, char *cluster_name)
 	   == SLURM_ERROR)
 		return SLURM_ERROR;
 
-	snprintf(table_name, sizeof(table_name), "%s_%s",
+	snprintf(table_name, sizeof(table_name), "\"%s_%s\"",
 		 cluster_name, assoc_month_table);
 	if(mysql_db_create_table(db_conn, table_name,
 				 assoc_usage_table_fields,
@@ -871,7 +872,7 @@ extern int create_cluster_tables(MYSQL *db_conn, char *cluster_name)
 	   == SLURM_ERROR)
 		return SLURM_ERROR;
 
-	snprintf(table_name, sizeof(table_name), "%s_%s",
+	snprintf(table_name, sizeof(table_name), "\"%s_%s\"",
 		 cluster_name, cluster_day_table);
 	if(mysql_db_create_table(db_conn, table_name,
 				 cluster_usage_table_fields,
@@ -879,7 +880,7 @@ extern int create_cluster_tables(MYSQL *db_conn, char *cluster_name)
 	   == SLURM_ERROR)
 		return SLURM_ERROR;
 
-	snprintf(table_name, sizeof(table_name), "%s_%s",
+	snprintf(table_name, sizeof(table_name), "\"%s_%s\"",
 		 cluster_name, cluster_hour_table);
 	if(mysql_db_create_table(db_conn, table_name,
 				 cluster_usage_table_fields,
@@ -887,7 +888,7 @@ extern int create_cluster_tables(MYSQL *db_conn, char *cluster_name)
 	   == SLURM_ERROR)
 		return SLURM_ERROR;
 
-	snprintf(table_name, sizeof(table_name), "%s_%s",
+	snprintf(table_name, sizeof(table_name), "\"%s_%s\"",
 		 cluster_name, cluster_month_table);
 	if(mysql_db_create_table(db_conn, table_name,
 				 cluster_usage_table_fields,
@@ -895,7 +896,7 @@ extern int create_cluster_tables(MYSQL *db_conn, char *cluster_name)
 	   == SLURM_ERROR)
 		return SLURM_ERROR;
 
-	snprintf(table_name, sizeof(table_name), "%s_%s",
+	snprintf(table_name, sizeof(table_name), "\"%s_%s\"",
 		 cluster_name, event_table);
 	if(mysql_db_create_table(db_conn, table_name,
 				 event_table_fields,
@@ -904,7 +905,7 @@ extern int create_cluster_tables(MYSQL *db_conn, char *cluster_name)
 	   == SLURM_ERROR)
 		return SLURM_ERROR;
 
-	snprintf(table_name, sizeof(table_name), "%s_%s",
+	snprintf(table_name, sizeof(table_name), "\"%s_%s\"",
 		 cluster_name, job_table);
 	if(mysql_db_create_table(db_conn, table_name, job_table_fields,
 				 ", primary key (job_db_inx), "
@@ -913,7 +914,7 @@ extern int create_cluster_tables(MYSQL *db_conn, char *cluster_name)
 	   == SLURM_ERROR)
 		return SLURM_ERROR;
 
-	snprintf(table_name, sizeof(table_name), "%s_%s",
+	snprintf(table_name, sizeof(table_name), "\"%s_%s\"",
 		 cluster_name, resv_table);
 	if(mysql_db_create_table(db_conn, table_name,
 				 resv_table_fields,
@@ -921,7 +922,7 @@ extern int create_cluster_tables(MYSQL *db_conn, char *cluster_name)
 	   == SLURM_ERROR)
 		return SLURM_ERROR;
 
-	snprintf(table_name, sizeof(table_name), "%s_%s",
+	snprintf(table_name, sizeof(table_name), "\"%s_%s\"",
 		 cluster_name, step_table);
 	if(mysql_db_create_table(db_conn, table_name,
 				 step_table_fields,
@@ -929,14 +930,14 @@ extern int create_cluster_tables(MYSQL *db_conn, char *cluster_name)
 	   == SLURM_ERROR)
 		return SLURM_ERROR;
 
-	snprintf(table_name, sizeof(table_name), "%s_%s",
+	snprintf(table_name, sizeof(table_name), "\"%s_%s\"",
 		 cluster_name, suspend_table);
 	if(mysql_db_create_table(db_conn, table_name,
 				 suspend_table_fields,
 				 ")") == SLURM_ERROR)
 		return SLURM_ERROR;
 
-	snprintf(table_name, sizeof(table_name), "%s_%s",
+	snprintf(table_name, sizeof(table_name), "\"%s_%s\"",
 		 cluster_name, wckey_table);
 	if(mysql_db_create_table(db_conn, table_name,
 				 wckey_table_fields,
@@ -946,7 +947,7 @@ extern int create_cluster_tables(MYSQL *db_conn, char *cluster_name)
 	   == SLURM_ERROR)
 		return SLURM_ERROR;
 
-	snprintf(table_name, sizeof(table_name), "%s_%s",
+	snprintf(table_name, sizeof(table_name), "\"%s_%s\"",
 		 cluster_name, wckey_day_table);
 	if(mysql_db_create_table(db_conn, table_name,
 				 wckey_usage_table_fields,
@@ -955,7 +956,7 @@ extern int create_cluster_tables(MYSQL *db_conn, char *cluster_name)
 	   == SLURM_ERROR)
 		return SLURM_ERROR;
 
-	snprintf(table_name, sizeof(table_name), "%s_%s",
+	snprintf(table_name, sizeof(table_name), "\"%s_%s\"",
 		 cluster_name, wckey_hour_table);
 	if(mysql_db_create_table(db_conn, table_name,
 				 wckey_usage_table_fields,
@@ -964,7 +965,7 @@ extern int create_cluster_tables(MYSQL *db_conn, char *cluster_name)
 	   == SLURM_ERROR)
 		return SLURM_ERROR;
 
-	snprintf(table_name, sizeof(table_name), "%s_%s",
+	snprintf(table_name, sizeof(table_name), "\"%s_%s\"",
 		 cluster_name, wckey_month_table);
 	if(mysql_db_create_table(db_conn, table_name,
 				 wckey_usage_table_fields,
@@ -982,7 +983,7 @@ extern int remove_cluster_tables(MYSQL *db_conn, char *cluster_name)
 	int rc = SLURM_SUCCESS;
 	MYSQL_RES *result = NULL;
 
-	query = xstrdup_printf("select id_assoc from %s_%s limit 1;",
+	query = xstrdup_printf("select id_assoc from \"%s_%s\" limit 1;",
 			       cluster_name, assoc_table);
 	if(!(result = mysql_db_query_ret(db_conn, query, 0))) {
 		xfree(query);
@@ -997,9 +998,9 @@ extern int remove_cluster_tables(MYSQL *db_conn, char *cluster_name)
 		return SLURM_SUCCESS;
 	}
 	mysql_free_result(result);
-	query = xstrdup_printf("drop table %s_%s, %s_%s, %s_%s, %s_%s, "
-			       "%s_%s, %s_%s, %s_%s, %s_%s, %s_%s, %s_%s, "
-			       "%s_%s, %s_%s, %s_%s, %s_%s, %s_%s, %s_%s;",
+	query = xstrdup_printf("drop table \"%s_%s\", \"%s_%s\", \"%s_%s\", \"%s_%s\", "
+			       "\"%s_%s\", \"%s_%s\", \"%s_%s\", \"%s_%s\", \"%s_%s\", \"%s_%s\", "
+			       "\"%s_%s\", \"%s_%s\", \"%s_%s\", \"%s_%s\", \"%s_%s\", \"%s_%s\";",
 			       cluster_name, assoc_table,
 			       cluster_name, assoc_day_table,
 			       cluster_name, assoc_hour_table,
@@ -1254,7 +1255,7 @@ extern int modify_common(mysql_conn_t *mysql_conn,
 	if(cluster_centric) {
 		xassert(cluster_name);
 		xstrfmtcat(query,
-			   "update %s_%s set mod_time=%d%s "
+			   "update \"%s_%s\" set mod_time=%d%s "
 			   "where deleted=0 && %s;",
 			   cluster_name, table, now, vals, cond_char);
 	} else
@@ -1334,10 +1335,10 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 	/* we want to remove completely all that is less than a day old */
 	if(!has_jobs && table != assoc_table) {
 		if(cluster_centric)
-			query = xstrdup_printf("delete from %s_%s where "
+			query = xstrdup_printf("delete from \"%s_%s\" where "
 					       "creation_time>%d "
 					       "&& (%s);"
-					       "alter table %s_%s "
+					       "alter table \"%s_%s\" "
 					       "AUTO_INCREMENT=0;",
 					       cluster_name, table, day_old,
 					       name_char, cluster_name, table);
@@ -1354,7 +1355,7 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 	if(table != assoc_table) {
 		if(cluster_centric)
 			xstrfmtcat(query,
-				   "update %s_%s set mod_time=%d, deleted=1 "
+				   "update \"%s_%s\" set mod_time=%d, deleted=1 "
 				   "where deleted=0 && (%s);",
 				   cluster_name, table, now, name_char);
 		else
@@ -1404,7 +1405,7 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 /* 				       "from %s as t2 where %s order by lft;", */
 /* 				       assoc_table, assoc_char); */
 		query = xstrdup_printf("select distinct t1.id_assoc "
-				       "from %s_%s as t1, %s_%s as t2 "
+				       "from \"%s_%s\" as t1, \"%s_%s\" as t2 "
 				       "where (%s) && t1.lft between "
 				       "t2.lft and t2.rgt && t1.deleted=0 "
 				       " && t2.deleted=0;",
@@ -1453,9 +1454,9 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 	 * only delete things that are typos.
 	 */
 	xstrfmtcat(query,
-		   "update %s_%s set mod_time=%d, deleted=1 where (%s);"
-		   "update %s_%s set mod_time=%d, deleted=1 where (%s);"
-		   "update %s_%s set mod_time=%d, deleted=1 where (%s);",
+		   "update \"%s_%s\" set mod_time=%d, deleted=1 where (%s);"
+		   "update \"%s_%s\" set mod_time=%d, deleted=1 where (%s);"
+		   "update \"%s_%s\" set mod_time=%d, deleted=1 where (%s);",
 		   cluster_name, assoc_day_table, now, loc_assoc_char,
 		   cluster_name, assoc_hour_table, now, loc_assoc_char,
 		   cluster_name, assoc_month_table, now, loc_assoc_char);
@@ -1483,7 +1484,7 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 	 * day, since they are most likely nothing we really wanted in
 	 * the first place.
 	 */
-	query = xstrdup_printf("select id_assoc from %s_%s as t1 where "
+	query = xstrdup_printf("select id_assoc from \"%s_%s\" as t1 where "
 			       "creation_time>%d && (%s);",
 			       cluster_name, assoc_table,
 			       day_old, loc_assoc_char);
@@ -1511,7 +1512,7 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 		   in the association. */
 		xstrfmtcat(query,
 			   "SELECT lft, rgt, (rgt - lft + 1) "
-			   "FROM %s_%s WHERE id_assoc = %s;",
+			   "FROM \"%s_%s\" WHERE id_assoc = %s;",
 			   cluster_name, assoc_table, row[0]);
 		debug3("%d(%s:%d) query\n%s",
 		       mysql_conn->conn, THIS_FILE, __LINE__, query);
@@ -1528,13 +1529,13 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 		}
 
 		xstrfmtcat(query,
-			   "delete quick from %s_%s where "
+			   "delete quick from \"%s_%s\" where "
 			   "lft between %s AND %s;",
 			   cluster_name, assoc_table, row2[0], row2[1]);
 
 		xstrfmtcat(query,
-			   "UPDATE %s_%s SET rgt = rgt - %s WHERE rgt > %s;"
-			   "UPDATE %s_%s SET lft = lft - %s WHERE lft > %s;",
+			   "UPDATE \"%s_%s\" SET rgt = rgt - %s WHERE rgt > %s;"
+			   "UPDATE \"%s_%s\" SET lft = lft - %s WHERE lft > %s;",
 			   cluster_name, assoc_table, row2[2], row2[1],
 			   cluster_name, assoc_table, row2[2], row2[1]);
 
@@ -1564,13 +1565,13 @@ just_update:
 	 * we don't want any residue from past associations lingering
 	 * around.
 	 */
-	query = xstrdup_printf("update %s_%s as t1 set mod_time=%d, deleted=1, "
+	query = xstrdup_printf("update \"%s_%s\" as t1 set mod_time=%d, deleted=1, "
 			       "shares=1, max_jobs=NULL, "
 			       "max_nodes_pj=NULL, "
 			       "max_wall_pj=NULL, "
 			       "max_cpu_mins_pj=NULL "
 			       "where (%s);"
-			       "alter table %s_%s AUTO_INCREMENT=0;",
+			       "alter table \"%s_%s\" AUTO_INCREMENT=0;",
 			       cluster_name, assoc_table, now,
 			       loc_assoc_char,
 			       cluster_name, assoc_table);
