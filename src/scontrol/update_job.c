@@ -401,8 +401,7 @@ scontrol_update_job (int argc, char *argv[])
 				(uint32_t) strtol(val, (char **) NULL, 10);
 			update_cnt++;
 		}
-		else if (strncasecmp(tag, "PartitionName",
-				     MAX(taglen, 2)) == 0) {
+		else if (strncasecmp(tag, "Partition", MAX(taglen, 2)) == 0) {
 			job_msg.partition = val;
 			update_cnt++;
 		}
