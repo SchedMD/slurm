@@ -451,12 +451,12 @@ sub add_top_account_bars {
 	    ($account, $usage) = split;
 	    if ($usage) {
 		chop($usage) if ($y_axis =~ /percent/);
-		if ($last_account{$account} > 0) {
+		if (!$last_account{$account}) {
+		    $last_account{$account} = $usage;
+		}
+		elsif ($last_account{$account} > 0) {
 		    $top_accounts{$account} = $last_account{$account};
 		    $last_account{$account} = -1;
-		}
-		elsif (!$last_account{$account}) {
-		    $last_account{$account} = $usage;
 		}
 	    }
 	}
@@ -496,12 +496,12 @@ sub add_top_account_bars {
 		($account, $usage) = split;
 		if ($usage) {
 		    chop($usage) if ($y_axis =~ /percent/);
-		    if ($last_account{$account} > 0) {
+		    if (!$last_account{$account}) {
+			$last_account{$account} = $usage;
+		    }
+		    elsif ($last_account{$account} > 0) {
 			$top_accounts{$account} = $last_account{$account};
 			$last_account{$account} = -1;
-		    }
-		    elsif (!$last_account{$account}) {
-			$last_account{$account} = $usage;
 		    }
 		}
 	    }
