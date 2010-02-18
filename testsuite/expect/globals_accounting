@@ -131,7 +131,7 @@ proc add_cluster {name qos fairshare grpcpu grpjob grpnode grpsubmit maxcpumin m
 			incr exit_code 1
 		}
 		-re "Problem adding" {
-			send_user "FAILURE: there was an unknwon problem\n"
+			send_user "FAILURE: there was an unknown problem\n"
 			incr exit_code 1
 		}
 		-re "No associations" {
@@ -196,7 +196,7 @@ proc remove_cluster {name} {
 			incr exit_code 1
 		}
 		-re "Problem adding" {
-			send_user "FAILURE: there was an unknwon problem\n"
+			send_user "FAILURE: there was an unknown problem\n"
 			incr exit_code 1
 		}
 		-re "No associations" {
@@ -357,7 +357,7 @@ proc add_acct { cluster parent name desc org qos fairshare grpcpumin grpcpu grpj
 			incr exit_code 1
 		}
 		-re "Problem adding" {
-			send_user "FAILURE: there was an unknwon problem\n"
+			send_user "FAILURE: there was an unknown problem\n"
 			incr exit_code 1
 		}
 		-re "No associations" {
@@ -429,7 +429,7 @@ proc remove_acct { cluster name } {
 			incr exit_code 1
 		}
 		-re "Problem adding" {
-			send_user "FAILURE: there was an unknwon problem\n"
+			send_user "FAILURE: there was an unknown problem\n"
 			incr exit_code 1
 		}
 		-re "No associations" {
@@ -611,7 +611,7 @@ proc mod_acct { cluster wparent name wdesc worg qos fairshare grpcpumin grpcpu g
 			incr exit_code 1
 		}
 		-re "Problem adding" {
-			send_user "FAILURE: there was an unknwon problem\n"
+			send_user "FAILURE: there was an unknown problem\n"
 			incr exit_code 1
 		}
 		-re "No associations" {
@@ -776,7 +776,7 @@ proc add_user { cluster account name part admin dacct dwckey wckey qos fairshare
 			incr exit_code 1
 		}
 		-re "Problem adding" {
-			send_user "FAILURE: there was an unknwon problem\n"
+			send_user "FAILURE: there was an unknown problem\n"
 			incr exit_code 1
 		}
 		-re "No associations" {
@@ -1252,7 +1252,7 @@ proc add_coor { accounts names } {
 			incr exit_code 1
 		}
 		-re "Problem adding" {
-			send_user "FAILURE: there was an unknwon problem\n"
+			send_user "FAILURE: there was an unknown problem\n"
 			incr exit_code 1
 		}
 		-re "No associations" {

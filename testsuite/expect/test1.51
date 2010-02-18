@@ -51,7 +51,7 @@ if {[test_front_end] != 0} {
 make_bash_script $file_in "umask"
 
 make_bash_script $file_script "
-  umask 0123
+  umask 023
   $srun -N1 -t1 ./$file_in
 "
 
@@ -62,7 +62,7 @@ set matches 0
 set timeout $max_job_delay
 set srun_pid [spawn ./$file_script]
 expect {
-	-re (0123|123) {
+	-re (0023|023) {
 		set matches 1
 		exp_continue
 	}
