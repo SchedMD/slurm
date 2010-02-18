@@ -10190,9 +10190,9 @@ extern int clusteracct_storage_p_node_down(mysql_conn_t *mysql_conn,
 		cpus = node_ptr->cpus;
 
 	if (reason)
-		my_reason = reason;
+		my_reason = _fix_double_quotes(reason);
 	else
-		my_reason = node_ptr->reason;
+		my_reason = _fix_double_quotes(node_ptr->reason);
 
 	debug2("inserting %s(%s) with %u cpus", node_ptr->name, cluster, cpus);
 
@@ -10217,6 +10217,7 @@ extern int clusteracct_storage_p_node_down(mysql_conn_t *mysql_conn,
 		   "update period_end=0;",
 		   event_table, node_ptr->name,  node_ptr->node_state, cluster,
 		   cpus, event_time, my_reason);
+	xfree(my_reason);
 	debug4("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
 	rc = mysql_db_query(mysql_conn->db_conn, query);
 	xfree(query);
