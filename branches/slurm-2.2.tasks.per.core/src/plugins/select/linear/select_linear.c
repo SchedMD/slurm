@@ -428,12 +428,11 @@ static uint16_t _get_avail_cpus(struct job_record *job_ptr, int index)
 			min_sockets, min_cores, cpus_per_task,
 			ntasks_per_node, ntasks_per_socket, ntasks_per_core,
 	    		&cpus, &sockets, &cores, &threads, NULL,
-			0, job_ptr->job_id, node_ptr->name);
+			CR_CPU, job_ptr->job_id, node_ptr->name);
 
 #if SELECT_DEBUG
-	debug3("avail_cpus index %d = %d (out of %d %d %d %d)",
-				index, avail_cpus,
-				cpus, sockets, cores, threads);
+	debug("avail_cpus index %d = %d (out of %d %d %d %d)",
+	      index, avail_cpus, cpus, sockets, cores, threads);
 #endif
 	return(avail_cpus);
 }

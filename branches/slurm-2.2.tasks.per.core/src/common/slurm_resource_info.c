@@ -242,20 +242,20 @@ int slurm_get_avail_procs(const uint16_t min_sockets,
 		/*** honor any availability maximum ***/
 		max_cpus = MIN(max_cpus, max_avail_cpus);
 	} else {	/* CR_CPU (default) */
-		if (*cpus >= allocated_cpus)
-			*cpus -= allocated_cpus;
-		else {
-			*cpus = 0;
-			error("cons_res: *cpus underflow");
+		if ((cr_type & CR_CPU) ||
+		    (!(cr_type & CR_MEMORY))) {
+			if (*cpus >= allocated_cpus)
+				*cpus -= allocated_cpus;
+			else {
+				*cpus = 0;
+				error("cons_res: *cpus underflow");
+			}
 		}
 
-		if (cr_type & CR_MEMORY) {
-			/* compute an overall maximum cpu count 
-			 * honoring ntasks */
-			max_cpus  = *cpus;
-			if (ntaskspernode > 0) {
-				max_cpus = MIN(max_cpus, ntaskspernode);
-			}
+		/*** compute an overall maximum cpu count honoring ntasks* ***/
+		max_cpus  = *cpus;
+		if (ntaskspernode > 0) {
+			max_cpus = MIN(max_cpus, ntaskspernode);
 		}
 	}
 
