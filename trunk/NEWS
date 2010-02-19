@@ -29,6 +29,7 @@ documents those changes that are of interest to users and admins.
  -- Add proctrack/cgroup plugin which uses Linux control groups (aka cgroup)
     to track processes on Linux systems having this feature enabled (kernel
     >= 2.6.24).
+ -- Add logging of license transations including job_id.
 
 * Changes in SLURM 2.2.0.pre1
 =============================
