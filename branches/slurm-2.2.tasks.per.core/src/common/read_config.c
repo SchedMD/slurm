@@ -2488,9 +2488,8 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 			   "SelectTypeParameters", hashtbl)) {
 		uint16_t type_param;
 		if ((parse_select_type_param(temp_str, &type_param) < 0)) {
+			fatal("Bad SelectTypeParameter: %s", temp_str);
 			xfree(temp_str);
-			fatal("Bad SelectTypeParameter: %s",
-			      conf->select_type_param);
 		}
 		conf->select_type_param = type_param;
 		xfree(temp_str);
