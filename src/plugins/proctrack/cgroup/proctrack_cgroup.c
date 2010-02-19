@@ -360,29 +360,29 @@ int _slurm_cgroup_create(slurmd_job_t *job,uint32_t id,uid_t uid,gid_t gid)
 
 	/* set cores constraints if required by conf */
 	if ( slurm_cgroup_conf->constrain_cores && 
-	     job->step_alloc_cores ) {
+	     job->job_alloc_cores ) {
 		/*
 		 * abstract mapping of cores in slurm must
 		 * first be mapped into the machine one
 		 */
 		char* mach;
-		if ( xcpuinfo_abs_to_mac(job->step_alloc_cores,&mach) !=
+		if ( xcpuinfo_abs_to_mac(job->job_alloc_cores,&mach) !=
 		     XCPUINFO_SUCCESS ) {
 			error("unable to convert abstract slurm allocated "
 			      "cores '%s' into a valid machine map",
-			      job->step_alloc_cores);
+			      job->job_alloc_cores);
 		}
 		else {
 			debug3("allocated cores conversion done : "
 			       "%s (abstract) -> %s (machine)",
-			       job->step_alloc_cores,mach);
+			       job->job_alloc_cores,mach);
 			xcgroup_set_cpuset_cpus(job_cgroup_path,
 						mach);
 			xfree(mach);
 		}
 	}
-	else if ( ! job->step_alloc_cores ) {
-		error("alloc_cores not defined for this job! ancestor's conf"
+	else if ( ! job->job_alloc_cores ) {
+		error("job_alloc_cores not defined for this job! ancestor's conf"
 		      " will be used instead");
 	}
 
