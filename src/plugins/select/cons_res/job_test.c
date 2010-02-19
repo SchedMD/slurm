@@ -553,32 +553,20 @@ fini:
 uint16_t _can_job_run_on_node(struct job_record *job_ptr, bitstr_t *core_map,
 			      const uint32_t node_i,
 			      struct node_use_record *node_usage,
-			      select_type_plugin_info_t cr_type,
+			      uint16_t cr_type,
 			      bool test_only)
 {
 	uint16_t cpus;
 	uint32_t avail_mem, req_mem;
 
-	switch (cr_type) {
-	case CR_CORE:
-	case CR_CORE_MEMORY:
+	if (cr_type & CR_CORE)
 		cpus = _allocate_cores(job_ptr, core_map, node_i, 0);
-		break;
-	case CR_SOCKET:
-	case CR_SOCKET_MEMORY:
+	else if (cr_type & CR_SOCKET)
 		cpus = _allocate_sockets(job_ptr, core_map, node_i);
-		break;
-	case SELECT_TYPE_INFO_NONE:
-		/* Default for select/linear */
-	case CR_CPU:
-	case CR_CPU_MEMORY:
-	case CR_MEMORY:
-	default:
+	else
 		cpus = _allocate_cores(job_ptr, core_map, node_i, 1);
-	}
 
-	if ((cr_type != CR_CPU_MEMORY)    && (cr_type != CR_CORE_MEMORY) &&
-	    (cr_type != CR_SOCKET_MEMORY) && (cr_type != CR_MEMORY))
+	if (!(cr_type & CR_MEMORY))
 		return cpus;
 
 	/* Memory Check: check pn_min_memory to see if:
@@ -663,7 +651,7 @@ static int _is_node_busy(struct part_res_record *p_ptr, uint32_t node_i,
  */
 static int _verify_node_state(struct part_res_record *cr_part_ptr,
 			      struct job_record *job_ptr, bitstr_t * bitmap,
-			      select_type_plugin_info_t cr_type,
+			      uint16_t cr_type,
 			      struct node_use_record *node_usage,
 			      enum node_cr_state job_node_req)
 {
@@ -677,10 +665,7 @@ static int _verify_node_state(struct part_res_record *cr_part_ptr,
 
 		/* node-level memory check */
 		if ((job_ptr->details->pn_min_memory) &&
-		    ((cr_type == CR_CORE_MEMORY) ||
-		     (cr_type == CR_CPU_MEMORY)  ||
-		     (cr_type == CR_MEMORY)      ||
-		     (cr_type == CR_SOCKET_MEMORY))) {
+		    (cr_type & CR_MEMORY)) {
 			free_mem  = select_node_record[i].real_memory;
 			free_mem -= node_usage[i].alloc_memory;
 			if (free_mem < min_mem) {
@@ -812,9 +797,8 @@ static int _get_cpu_cnt(struct job_record *job_ptr, const int node_index,
 uint32_t _get_res_usage(struct job_record *job_ptr, bitstr_t *node_map,
 			bitstr_t *core_map, uint32_t cr_node_cnt,
 			struct node_use_record *node_usage,
-			select_type_plugin_info_t cr_type,
-			uint16_t **cpu_cnt_ptr, uint32_t **freq_ptr,
-			bool test_only)
+			uint16_t cr_type, uint16_t **cpu_cnt_ptr, 
+			uint32_t **freq_ptr, bool test_only)
 {
 	uint16_t *cpu_cnt, cpu_count;
 	uint32_t *freq;
@@ -1598,8 +1582,7 @@ static uint16_t *_select_nodes(struct job_record *job_ptr, uint32_t min_nodes,
 				bitstr_t *node_map, uint32_t cr_node_cnt,
 				bitstr_t *core_map,
 				struct node_use_record *node_usage,
-				select_type_plugin_info_t cr_type,
-				bool test_only)
+				uint16_t cr_type, bool test_only)
 {
 	int rc;
 	uint16_t *cpu_cnt, *cpus = NULL;
@@ -1695,8 +1678,8 @@ static uint16_t *_select_nodes(struct job_record *job_ptr, uint32_t min_nodes,
 extern int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			uint32_t min_nodes, uint32_t max_nodes,
 			uint32_t req_nodes, int mode,
-			select_type_plugin_info_t cr_type,
-			enum node_cr_state job_node_req, uint32_t cr_node_cnt,
+			uint16_t cr_type, enum node_cr_state job_node_req, 
+			uint32_t cr_node_cnt,
 			struct part_res_record *cr_part_ptr,
 			struct node_use_record *node_usage)
 {
@@ -2135,8 +2118,7 @@ alloc_job:
 	else
 		job_ptr->total_cpus = total_cpus;	/* best guess */
 
-	if ((cr_type != CR_CPU_MEMORY)    && (cr_type != CR_CORE_MEMORY) &&
-	    (cr_type != CR_SOCKET_MEMORY) && (cr_type != CR_MEMORY))
+	if (!(cr_type & CR_MEMORY))
 		return error_code;
 
 	/* load memory allocated array */

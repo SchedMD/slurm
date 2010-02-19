@@ -210,17 +210,13 @@ static void _print_jobs(struct gs_part *p_ptr)
 
 static uint16_t _get_gr_type(void)
 {
-	switch (slurmctld_conf.select_type_param) {
-		case CR_CORE:
-		case CR_CORE_MEMORY:
-			return GS_CORE;
-		case CR_CPU:
-		case CR_CPU_MEMORY:
-			return GS_CPU;
-		case CR_SOCKET:
-		case CR_SOCKET_MEMORY:
-			return GS_SOCKET;
-	}
+	if (slurmctld_conf.select_type_param & CR_CORE)
+		return GS_CORE;
+	if (slurmctld_conf.select_type_param & CR_CPU)
+		return GS_CPU;
+	if (slurmctld_conf.select_type_param & CR_SOCKET)
+		return GS_SOCKET;
+
 	/* note that CR_MEMORY is node-level scheduling with
 	 * memory management */
 	return GS_NODE;

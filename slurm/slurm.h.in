@@ -486,22 +486,24 @@ enum ctx_keys {
 	SLURM_STEP_CTX_USER_MANAGED_SOCKETS
 };
 
-typedef enum select_type_plugin_info {
-	SELECT_TYPE_INFO_NONE = 0, /* Initiatlization value */
-	CR_CPU,    /* Resources are shared down to the level of
-		    * logical processors which can be socket,
-		    * core, or thread depending on the system.*/
-	CR_SOCKET, /* Resources are shared down to the socket level.
-		    *  Jobs will not be co-allocated within a sockets */
-	CR_CORE,   /* Resources are shared down to the core level
-		    * Jobs will not be co-allocated within a core */
-	CR_MEMORY, /* Memory as consumable resources, Memory is not
-		    * over-commited when selected as a CR.  Jobs could
-		    * be co-allocated within cores */
-	CR_SOCKET_MEMORY, /* Socket and Memory are CRs */
-	CR_CORE_MEMORY,   /* Core and Memory are CRs */
-	CR_CPU_MEMORY     /* CPU and Memory are CRs */
-} select_type_plugin_info_t ;
+/* CR_CPU, CR_SOCKET and CR_CORE are mututally exclusive
+ * CR_MEMORY may be added to any of the above values or used by itself
+ * CR_ONE_TASK_PER_CORE may also be added to any of the above values */
+#define CR_CPU		0x0001	/* Resources are shared down to the level of
+				 * logical processors which can be socket,
+				 * core, or thread depending on the system. */
+#define CR_SOCKET	0x0002	/* Resources are shared down to the socket 
+				 * level. Jobs will not be co-allocated
+				 * within a socket. */
+#define CR_CORE		0x0004	/* Resources are shared down to the core level.
+				 * Jobs will not be co-allocated within a 
+				 * core. */
+#define CR_MEMORY	0x0010	/* Memory as consumable resources. Memory is 
+				 * not over-commited when selected as a CR. */
+#define CR_ONE_TASK_PER_CORE 0x0100
+				/* By default, schedule only one task per core.
+				 * Without this option, tasks would be 
+				 * allocated threads. */
 
 #define MEM_PER_CPU  0x80000000
 #define SHARED_FORCE 0x8000
