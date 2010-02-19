@@ -18,6 +18,10 @@ documents those changes that are of interest to users and admins.
     --time-min option if doing so permits earlier job initiation.
  -- Add support for TotalView symbol MPIR_partial_attach_ok with srun support
     to release processes which TotalView does not attach to.
+ -- Add new option for SelectTypeParameters of CR_ONE_TASK_PER_CORE. This 
+    option will allocate one task per core by default. Without this option, 
+    by default one task will be allocated per thread on nodes with more than 
+    one ThreadsPerCore configured.
 
 * Changes in SLURM 2.2.0.pre1
 =============================

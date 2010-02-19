@@ -70,26 +70,37 @@ extern long slurm_api_version (void)
 static char *
 _select_info(uint16_t select_type_param)
 {
-	switch (select_type_param) {
-		case SELECT_TYPE_INFO_NONE:
-			return "NONE";
-		case CR_CPU:
-			return "CR_CPU";
-		case CR_SOCKET:
-			return "CR_SOCKET";
-		case CR_CORE:
-			return "CR_CORE";
-		case CR_MEMORY:
-			return "CR_MEMORY";
-		case CR_SOCKET_MEMORY:
-			return "CR_SOCKET_MEMORY";
-		case CR_CORE_MEMORY:
-			return "CR_CORE_MEMORY";
-		case CR_CPU_MEMORY:
-			return "CR_CPU_MEMORY";
-		default:
-			return "unknown";
+	static char select_str[64];
+
+	select_str[0] = '\0';
+	if ((select_type_param & CR_CPU) &&
+	    (select_type_param & CR_MEMORY))
+		strcat(select_str, "CR_CPU_MEMORY");
+	else if ((select_type_param & CR_CORE) &&
+		 (select_type_param & CR_MEMORY))
+		strcat(select_str, "CR_CORE_MEMORY");
+	else if ((select_type_param & CR_SOCKET) &&
+		 (select_type_param & CR_MEMORY))
+		strcat(select_str, "CR_SOCKET_MEMORY");
+	else if (select_type_param & CR_CPU)
+		strcat(select_str, "CR_CPU");
+	else if (select_type_param & CR_CORE)
+		strcat(select_str, "CR_CORE");
+	else if (select_type_param & CR_SOCKET)
+		strcat(select_str, "CR_SOCKET");
+	else if (select_type_param & CR_MEMORY)
+		strcat(select_str, "CR_MEMORY");
+
+	if (select_type_param & CR_ONE_TASK_PER_CORE) {
+		if (select_str[0])
+			strcat(select_str, ",");
+		strcat(select_str, "CR_ONE_TASK_PER_CORE");
 	}
+
+	if (select_str[0] == '\0')
+		strcat(select_str, "NONE");
+
+	return select_str;
 }
 
 static char *

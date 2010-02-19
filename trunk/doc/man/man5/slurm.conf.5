@@ -1318,7 +1318,8 @@ The default value is "select/bluegene" for BlueGene systems.
 The permitted values of \fBSelectTypeParameters\fR depend upon the
 configured value of \fBSelectType\fR.
 \fBSelectType=select/bluegene\fR supports no \fBSelectTypeParameters\fR.
-The only supported option for \fBSelectType=select/linear\fR is
+The only supported option for \fBSelectType=select/linear\fR are
+\fBCR_ONE_TASK_PER_CORE\fR and 
 \fBCR_Memory\fR, which treats memory as a consumable resource and
 prevents memory over subscription with job preemption or gang scheduling.
 The following values are supported for \fBSelectType=select/cons_res\fR:
@@ -1355,6 +1356,11 @@ On nodes with hyper\-threads, each thread is counted as a CPU to
 satisfy a job's resource requirement, but multiple jobs are not
 allocated threads on the same core.
 Setting a value for \fBDefMemPerCPU\fR is strongly recommended.
+.TP
+\fBCR_ONE_TASK_PER_CORE\fR
+Allocate one task per core by default.
+Without this option, by default one task will be allocated per 
+thread on nodes with more than one \fBThreadsPerCore\fR configured.
 .TP
 \fBCR_Socket\fR
 Sockets are consumable resources.

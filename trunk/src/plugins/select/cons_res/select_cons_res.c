@@ -161,7 +161,7 @@ const char plugin_type[] = "select/cons_res";
 const uint32_t plugin_version = 91;
 const uint32_t pstate_version = 7;	/* version control on saved state */
 
-select_type_plugin_info_t cr_type = CR_CPU; /* cr_type is overwritten in init() */
+uint16_t cr_type = CR_CPU; /* cr_type is overwritten in init() */
 
 uint16_t select_fast_schedule;
 
@@ -1477,8 +1477,8 @@ extern int init(void)
 	error("%s is incompatible with BlueGene", plugin_name);
 	fatal("Use SelectType=select/bluegene");
 #endif
-	cr_type = (select_type_plugin_info_t)slurmctld_conf.select_type_param;
-	verbose("%s loaded with argument %d ", plugin_name, cr_type);
+	cr_type = slurmctld_conf.select_type_param;
+	verbose("%s loaded with argument %u", plugin_name, cr_type);
 
 	return SLURM_SUCCESS;
 }

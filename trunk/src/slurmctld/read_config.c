@@ -92,8 +92,7 @@ static int  _build_bitmaps(void);
 static void _build_bitmaps_pre_select(void);
 static int  _init_all_slurm_conf(void);
 static int  _preserve_select_type_param(slurm_ctl_conf_t * ctl_conf_ptr,
-					select_type_plugin_info_t
-					old_select_type_p);
+					uint16_t old_select_type_p);
 static int  _preserve_plugins(slurm_ctl_conf_t * ctl_conf_ptr,
 				char *old_auth_type, char *old_checkpoint_type,
 				char *old_crypto_type, char *old_sched_type,
@@ -610,8 +609,7 @@ int read_slurm_conf(int recover, bool reconfig)
 	char *old_switch_type     = xstrdup(slurmctld_conf.switch_type);
 	char *state_save_dir      = xstrdup(slurmctld_conf.state_save_location);
 	char *mpi_params;
-	select_type_plugin_info_t old_select_type_p =
-		(select_type_plugin_info_t) slurmctld_conf.select_type_param;
+	uint16_t old_select_type_p = slurmctld_conf.select_type_param;
 
 	/* initialization */
 	START_TIMER;
@@ -779,8 +777,7 @@ int read_slurm_conf(int recover, bool reconfig)
 	error_code = MAX(error_code, rc);	/* not fatal */
 
 	/* Update plugin parameters as possible */
-	rc = _preserve_select_type_param(&slurmctld_conf,
-					 old_select_type_p);
+	rc = _preserve_select_type_param(&slurmctld_conf, old_select_type_p);
 	error_code = MAX(error_code, rc);	/* not fatal */
 
 	/* Restore job accounting info if file missing or corrupted,
@@ -1085,16 +1082,15 @@ static void _purge_old_part_state(List old_part_list, char *old_def_part_name)
  * RET zero or error code
  */
 static int  _preserve_select_type_param(slurm_ctl_conf_t *ctl_conf_ptr,
-		   select_type_plugin_info_t old_select_type_p)
+					uint16_t old_select_type_p)
 {
 	int rc = SLURM_SUCCESS;
 
         /* SelectTypeParameters cannot change */
 	if (old_select_type_p) {
 		if (old_select_type_p != ctl_conf_ptr->select_type_param) {
-			ctl_conf_ptr->select_type_param = (uint16_t)
-				old_select_type_p;
-			rc =  ESLURM_INVALID_SELECTTYPE_CHANGE;
+			ctl_conf_ptr->select_type_param = old_select_type_p;
+			rc = ESLURM_INVALID_SELECTTYPE_CHANGE;
 		}
 	}
 	return rc;

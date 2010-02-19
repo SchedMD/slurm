@@ -47,6 +47,12 @@ CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
 * Added VSizeFactor to enforce virtual memory limits for jobs and job steps as
   a percentage of their real memory allocation.
 
+* Added new option for SelectTypeParameters of CR_ONE_TASK_PER_CORE. This 
+  option will allocate one task per core by default. Without this option, 
+  by default one task will be allocated per thread on nodes with more than 
+  one ThreadsPerCore configured (i.e. no change in behavior without this 
+  option).
+
 COMMAND CHANGES (see man pages for details)
 ===========================================
 * sinfo -R now has the user and timestamp in separate fields from the reason.

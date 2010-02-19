@@ -2626,10 +2626,7 @@ static bool _is_mem_resv(void)
 	if (!mem_resv_tested) {
 		mem_resv_tested = true;
 		slurm_ctl_conf_t *conf = slurm_conf_lock();
-		if ((conf->select_type_param == CR_MEMORY)        ||
-		    (conf->select_type_param == CR_SOCKET_MEMORY) ||
-		    (conf->select_type_param == CR_CORE_MEMORY)   ||
-		    (conf->select_type_param == CR_CPU_MEMORY))
+		if (conf->select_type_param & CR_MEMORY)
 			mem_resv_value = true;
 		slurm_conf_unlock();
 	}

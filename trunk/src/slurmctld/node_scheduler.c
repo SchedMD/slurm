@@ -3,7 +3,7 @@
  *	Note: there is a global node table (node_record_table_ptr)
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -619,7 +619,6 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 	bool tried_sched = false;	/* Tried to schedule with avail nodes */
 	static uint32_t cr_enabled = NO_VAL;
 	bool preempt_flag = false;
-	select_type_plugin_info_t cr_type = SELECT_TYPE_INFO_NONE;
 	int shared = 0, select_mode;
 
 	if (test_only)
@@ -657,9 +656,6 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 		 * its ability to share resources */
 		job_ptr->cr_enabled = cr_enabled; /* CR enabled for this job */
 
-		cr_type = (select_type_plugin_info_t) slurmctld_conf.
-							select_type_param;
-
 		/* Set the partially_idle_node_bitmap to reflect the
 		 * idle and partially idle nodes */
 		error_code = select_g_get_info_from_plugin (SELECT_BITMAP,
@@ -668,10 +664,11 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 			FREE_NULL_BITMAP(partially_idle_node_bitmap);
 			return error_code;
 		}
-                debug3("Job %u shared %d CR type %d cpus %u-%u nbits %d",
-		     job_ptr->job_id, shared, cr_enabled, cr_type,
-		     job_ptr->details->min_cpus, job_ptr->details->max_cpus,
-		     bit_set_count(partially_idle_node_bitmap));
+                debug3("Job %u shared %d CR type %u cpus %u-%u nbits %d",
+		       job_ptr->job_id, shared, cr_enabled, 
+		       slurmctld_conf.select_type_param,
+		       job_ptr->details->min_cpus, job_ptr->details->max_cpus,
+		       bit_set_count(partially_idle_node_bitmap));
         }
 
 	if (job_ptr->details->req_node_bitmap) {  /* specific nodes required */
