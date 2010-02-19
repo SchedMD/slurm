@@ -394,6 +394,8 @@ if [ -d /etc/init.d ]; then
    install -D -m755 etc/init.d.slurm    $RPM_BUILD_ROOT/etc/init.d/slurm
    install -D -m755 etc/init.d.slurmdbd $RPM_BUILD_ROOT/etc/init.d/slurmdbd
 fi
+install -D -m644 etc/cgroup.conf.example ${RPM_BUILD_ROOT}%{_sysconfdir}/cgroup.conf.example
+install -D -m755 etc/cgroup.release_agent ${RPM_BUILD_ROOT}%{_sysconfdir}/cgroup.release_agent
 install -D -m644 etc/slurm.conf.example ${RPM_BUILD_ROOT}%{_sysconfdir}/slurm.conf.example
 install -D -m644 etc/slurmdbd.conf.example ${RPM_BUILD_ROOT}%{_sysconfdir}/slurmdbd.conf.example
 install -D -m755 etc/slurm.epilog.clean ${RPM_BUILD_ROOT}%{_sysconfdir}/slurm.epilog.clean
@@ -519,6 +521,8 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man8/spank*
 %dir %{_sysconfdir}
 %dir %{_libdir}/slurm/src
+%config %{_sysconfdir}/cgroup.conf.example
+%config %{_sysconfdir}/cgroup.release_agent
 %config %{_sysconfdir}/slurm.conf.example
 %config %{_sysconfdir}/slurm.epilog.clean
 %if %{slurm_with blcr}
@@ -634,6 +638,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/slurm/preempt_qos.so
 %{_libdir}/slurm/priority_basic.so
 %{_libdir}/slurm/priority_multifactor.so
+%{_libdir}/slurm/proctrack_cgroup.so
 %{_libdir}/slurm/proctrack_pgid.so
 %{_libdir}/slurm/proctrack_linuxproc.so
 %{_libdir}/slurm/sched_backfill.so
