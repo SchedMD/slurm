@@ -195,10 +195,8 @@ sub untaint_user_input {
     if ($user_input =~ /^(\w+)$/) {
 	return $1;
     }
-    else {
-	print_msg("Invalid User Input: $user_input");
-	exit;
-    }
+    print_msg("Invalid User Input: $user_input");
+    exit;
 }
 
 sub untaint_digits {
@@ -207,10 +205,8 @@ sub untaint_digits {
     if ($user_input =~ /^(\d+)$/) {
 	return $1;
     }
-    else {
-	print_msg("Invalid Numeric Value: $user_input");
-	exit;
-    }
+    print_msg("Invalid Numeric Value: $user_input");
+    exit;
 }
 
 #
@@ -478,7 +474,7 @@ sub add_top_account_bars {
 	$exp->raw_pty(1);
 	$exp->log_stdout(0);
 	$exp->spawn($cmd_base) or die "Cannot spawn sreport: $!\n";
-	$exp->expect(30, 'sreport:');
+	$exp->expect(5, 'sreport:');
 
 	$i = 0; $j = 1;
 	while (($i < 12) && ($yb < $ye || $mb < $me || $db < $de)) {
@@ -487,7 +483,7 @@ sub add_top_account_bars {
 	    $start = sprintf "%.2d/%.2d/%.2d", $mb, $db, $yb;
 	    $end   = sprintf "%.2d/%.2d/%.2d", $mn, $dn, $yn;
 	    $exp->send("$request start=$start end=$end\n");
-	    $exp->expect(20, 'sreport:');
+	    $exp->expect(30, 'sreport:');
 	    $before = $exp->before();
 	    @results = split "\n", $before;
 
@@ -539,6 +535,117 @@ sub add_top_account_bars {
     }
 
     return $valid_data;
+}
+
+#
+# add_job_size_bars() presents a report of cluster usage based on the
+# size of the jobs that were allocated the cycles.  Four job size
+# groups have been pre-selected and are based on the percentage of the
+# cluster's processors the job was allocated: 1 to 10%, 10 to 29%, 30
+# to 74%, and 75 to 100%.
+#
+# There is currently no sreport command that returns job size reports
+# for the entire cluster.  Instead, this routine has to sum the
+# reports for each account and chart the results for the whole
+# cluster.
+#
+sub add_job_size_bars {
+    my ($cmd_base, $request, $cpus) = @_;
+    my ($cmd, @results, @field, @group, $i, $upper_range);
+
+    $obj->set ('y_label' => 'Percent of Allocated Cycles') if ($y_axis =~ /percent/);
+
+    if ($x_axis eq 'aggregate') {
+	$obj->set ('legend' => 'none');
+	$obj->set ('x_label' =>
+		   "Job Size as a Portion of $cluster ($cpus total processors)");
+
+	$cmd = "$cmd_base $request start=$time_begin end=$time_end";
+	@results = `$cmd`;
+
+	for (@results) {
+	    (undef, $field[0], $field[1], $field[2], $field[3], undef) = split;
+	    for ($i = 0; $i < 4; $i++) {
+		$group[$i] += $field[$i];
+	    }
+	    @field = ();
+	}
+
+	if ($y_axis =~ /percent/) {
+	    my $total_used = $group[0] + $group[1] + $group[2] +  $group[3];
+	    $obj->add_pt('1 - 9%',    100 * $group[0] / $total_used);
+	    $obj->add_pt('10 - 29%',  100 * $group[1] / $total_used);
+	    $obj->add_pt('30 - 74%',  100 * $group[2] / $total_used);
+	    $obj->add_pt('75 - 100%', 100 * $group[3] / $total_used);
+	}
+	else {
+	    $obj->add_pt('1 - 9%',    $group[0]);
+	    $obj->add_pt('10 - 29%',  $group[1]);
+	    $obj->add_pt('30 - 74%',  $group[2]);
+	    $obj->add_pt('75 - 100%', $group[3]);
+	}
+    } else {
+	my ($i, $k, $g, @data_points, @legend_labels, $before);
+	my ($yn, $mn, $dn);
+	my ($start, $end);
+
+	my $exp = new Expect or die "Failed to initiate Expect session: $!\n";
+	$exp->raw_pty(1);
+	$exp->log_stdout(0);
+	$exp->spawn($cmd_base) or die "Cannot spawn sreport: $!\n";
+	$exp->expect(5, 'sreport:');
+
+	@legend_labels = ('1 - 9%', '10 - 29%', '30 - 74%', '75 - 100%');
+
+	$i = 0;
+	while (($i < 12) && ($yb < $ye || $mb < $me || $db < $de)) {
+	    ($yn, $mn, $dn) = next_time($yb, $mb, $db);
+
+	    $start = sprintf "%.2d/%.2d/%.2d", $mb, $db, $yb;
+	    $end   = sprintf "%.2d/%.2d/%.2d", $mn, $dn, $yn;
+	    $exp->send("$request start=$start end=$end\n");
+	    $exp->expect(30, 'sreport:');
+	    $before = $exp->before();
+	    @results = split "\n", $before;
+
+	    for (@results) {
+		(undef, $field[0], $field[1], $field[2], $field[3], undef) = split;
+		for ($g = 0; $g < 4; $g++) {
+		    $group[$g] += $field[$g];
+		}
+		@field = ();
+	    }
+
+	    $data_points[$i][0] = $start;
+	    if ($y_axis =~ /percent/) {
+		my $total_used = $group[0] + $group[1] + $group[2] +  $group[3];
+		$data_points[$i][1] = 100 * $group[0] / $total_used;
+		$data_points[$i][2] = 100 * $group[1] / $total_used;
+		$data_points[$i][3] = 100 * $group[2] / $total_used;
+		$data_points[$i][4] = 100 * $group[3] / $total_used;
+	    }
+	    else {
+		$data_points[$i][1] = $group[0];
+		$data_points[$i][2] = $group[1];
+		$data_points[$i][3] = $group[2];
+		$data_points[$i][4] = $group[3];
+	    }
+	    @group = ();
+
+	    ($yb, $mb, $db) = ($yn, $mn, $dn);
+	    $i++;
+	}
+	$exp->send("quit\n");
+	$exp->soft_close();
+
+	for ($k = 0; $k < $i; $k++) {
+	    $obj->add_pt(@{$data_points[$k]});
+	}
+
+	$obj->set ('legend_labels' => \@legend_labels);
+    }
+
+    return 1;
 }
 
 #
@@ -689,6 +796,9 @@ sub chart_top_users {
     }
 }
 
+#
+# Charts the top ten accounts.
+#
 sub chart_top_accounts {
     my $title = "$cluster Top Accounts";
     $obj->set ('title' => $title);
@@ -705,11 +815,35 @@ sub chart_top_accounts {
     }
 }
 
+#
+# Provides a chart of cluster usage based on job size.
+#
 sub chart_job_size {
-    print_msg("Not Yet Implemented");
-#    print "/usr/bin/sreport -npt minutes",
-#    " job SizesByAccount FlatView cluster=$cluster",
-#    " start=$time_begin", " end=$time_end", br;
+    my @brink;
+    my $cpus = `/usr/bin/sacctmgr -nr show cluster cluster=$cluster format=cpucount`;
+    chomp;
+    $cpus =~ s/^\s+//;
+    $cpus =~ s/\s+$//;
+    $cpus = untaint_digits($cpus);
+
+    my $title = "$cluster Usage Grouped by Job Size";
+    $obj->set ('title' => $title);
+
+    $brink[0] = int(0.1 * $cpus);
+    $brink[1] = int(0.3 * $cpus);
+    $brink[2] = int(0.75 * $cpus);
+
+    my $cmd = "/usr/bin/sreport -nt hours";
+    my $request = " job SizesByAccount cluster=$cluster" .
+	" format=Account grouping=$brink[0],$brink[1],$brink[2]";
+
+    if (add_job_size_bars($cmd, $request, $cpus)) {
+	$obj->cgi_png();
+    }
+    else {
+	print_msg("Failed to return Job Sizes for $cluster" .
+		  " from $time_begin to $time_end");
+    }
 }
 
 sub chart_size_accounts {
