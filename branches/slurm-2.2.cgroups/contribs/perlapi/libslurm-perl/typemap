@@ -1,0 +1,58 @@
+slurm_t		T_SLURM
+hostlist_t	T_HOSTLIST
+slurm_step_ctx_t * T_STEPCTX
+signo_t		T_SIGNO
+slurm_cred_t	* T_PTRREF
+switch_jobinfo_t * T_PTRREF
+
+#####################################
+OUTPUT
+
+T_SLURM
+	sv_setref_pv( $arg, \"${Package}\", (void*)$var );
+
+T_STEPCTX
+	sv_setref_pv( $arg, \"${Package}\", (void*)$var );
+	
+T_HOSTLIST
+	sv_setref_pv( $arg, \"${Package}\", (void*)$var );
+
+#####################################
+INPUT
+
+T_SLURM
+	if (sv_isobject($arg) && (SvTYPE(SvRV($arg)) == SVt_PVMG) && sv_derived_from($arg, \"${Package}\") )
+		$var = SINGLETON;
+	else if(SvPOK($arg) && !strcmp(\"${Package}\", SvPV_nolen($arg)))
+		$var = SINGLETON;
+	else {
+		Perl_croak(aTHX_ \"${Package}::$func_name() -- $var is not a blessed SV reference or correct package name\" );
+        }
+
+T_STEPCTX
+	if (sv_isobject($arg) && (SvTYPE(SvRV($arg)) == SVt_PVMG) && sv_derived_from($arg, \"${Package}\") )
+		$var = ($type)SvIV((SV*)SvRV( $arg ));
+	else {
+		Perl_croak(aTHX_ \"${Package}::$func_name() -- $var is not a blessed SV reference or correct package name\" );
+	}
+
+T_HOSTLIST
+	if (sv_isobject($arg) && (SvTYPE(SvRV($arg)) == SVt_PVMG) && sv_derived_from($arg, \"${Package}\") )
+		$var = ($type)SvIV((SV*)SvRV( $arg ));
+	else {
+		Perl_croak(aTHX_ \"${Package}::$func_name() -- $var is not a blessed SV reference or correct package name\" );
+	}
+
+T_SIGNO
+	if( SvIOK($arg) ) {
+		$var = ($type)SvIV($arg);
+	} 
+	else if( SvPOK($arg) ) {
+		$var = signame_to_no(SvPV_nolen($arg));
+	} 
+	else {
+	                Perl_croak(aTHX_ \"${Package}::$func_name() -- $var is not a valid signal name or number\" );
+	}
+	if($var < 1 || $var > 64) {
+	                Perl_croak(aTHX_ \"${Package}::$func_name() -- $var is not a valid signal name or number\" );
+	}

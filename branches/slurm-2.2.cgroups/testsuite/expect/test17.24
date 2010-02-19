@@ -1,0 +1,119 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          Test of --partition and --verbose options.
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2002-2006 The Regents of the University of California.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Morris Jette <jette1@llnl.gov>
+# CODE-OCEC-09-009. All rights reserved.
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <https://computing.llnl.gov/linux/slurm/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
+############################################################################
+source ./globals
+
+set test_id     "17.24"
+set exit_code   0
+set file_in     "test$test_id.input"
+
+print_header $test_id
+
+#
+# Delete left-over stdin/out/err files
+# Build stdin file
+#
+exec $bin_rm -f $file_in
+make_bash_script $file_in "$bin_id"
+
+#
+# Test that sbatch prints "debug" messages with "-vvv" option
+#
+set job_id 0
+set debug  0
+spawn $sbatch -N1 --output=none --error=none -t1 -vvv $file_in
+expect {
+	-re "debug:" {
+		set debug 1
+		exp_continue
+	}
+	-re "Submitted batch job ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sbatch not responding\n"
+		set exit_code 1
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+if { $job_id == 0 } {
+	send_user "\nFAILURE: failed to submit job\n"
+	exit 1
+} else {
+	if { $debug == 0 } {
+		send_user "\nFAILURE: failed to process --verbose option\n"
+		set exit_code 1
+	}
+	cancel_job $job_id
+}
+
+#
+# Submit job to dummy partition name just to see that --partition gets
+# processed
+#
+set job_id  0
+set matches 0
+spawn $sbatch -N1 --output=none --error=none -t1 -vv --partition=$test_id $file_in
+expect {
+	-re "partition *: $test_id" {
+		incr matches
+		exp_continue
+	}
+	-re "Invalid partition name" {
+		incr matches
+		send_user "\nNo worries, this error is expected\n"
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sbatch not responding\n"
+		set exit_code 1
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+if { $matches != 2 } {
+	send_user "\nFAILURE: failed to set partition name\n"
+	set exit_code 1
+}
+
+
+if {$exit_code == 0} {
+	exec $bin_rm -f $file_in
+	send_user "\nSUCCESS\n"
+}
+exit $exit_code

@@ -1,0 +1,133 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          Test srun stdin/out routing with specific task number (--input
+#          and --output options with numeric argument).
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2002-2007 The Regents of the University of California.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Morris Jette <jette1@llnl.gov>
+# CODE-OCEC-09-009. All rights reserved.
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <https://computing.llnl.gov/linux/slurm/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id          "1.21"
+set exit_code        0
+set job_id           0
+set matches          0
+set task_id          3
+
+print_header $test_id
+
+#
+# Spawn a shell via srun with stdout forwarding disabled
+#
+set timeout $max_job_delay
+set srun_pid [spawn $srun --input=$task_id -N1 -n10 -O -v --wait=2 -t1 $bin_bash]
+expect {
+	-re "launching ($number).0 on host" {
+		set job_id $expect_out(1,string)
+		send "$bin_env\r"
+		exp_continue
+	}
+	-re "SLURM_PROCID=($number)" {
+		set proc_id $expect_out(1,string)
+		if {$task_id == $proc_id} {
+			incr matches
+		} else {
+			send_user "\nFAILURE: wrong task_id responded\n"
+			set exit_code 1
+		}
+		send "exit\r"
+		exp_continue
+	}
+	-re "error: First task exited" {
+		send_user "This error is expected, no worries\n"
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		slow_kill $srun_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 1} {
+	send_user "\nFAILURE: stdin to specific task_id failed\n"
+	set exit_code 1
+}
+
+if {[test_bluegene]} {
+	if {$exit_code == 0} {
+		send_user "\nSUCCESS\n"
+	}
+	exit $exit_code
+}
+
+if {$exit_code == 0} {
+	send_user "\nSo far... stdin to specific task worked fine\n\n\n"
+}
+
+#
+# Spawn program to print task number, we only expect to see output from task 2
+#
+set job_id  0
+set matches 0
+set srun_pid [spawn $srun --output=$task_id -N1 -n10 -O -v env]
+expect {
+	-re "launching ($number).0 on host" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	-re "SLURM_PROCID=($number)" {
+		set proc_id $expect_out(1,string)
+		if {$task_id == $proc_id} {
+			incr matches
+		} else {
+			send_user "\nFAILURE: wrong task_id responded\n"
+			set exit_code 1
+		}
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		slow_kill $srun_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 1} {
+	send_user "\nFAILURE: stdout from specific task_id failed\n"
+	set exit_code 1
+}
+
+if {$exit_code == 0} {
+	send_user "\nSUCCESS\n"
+}
+exit $exit_code
