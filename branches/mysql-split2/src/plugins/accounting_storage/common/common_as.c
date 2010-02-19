@@ -68,9 +68,16 @@ extern char *fix_double_quotes(char *str)
 		return NULL;
 
 	while(str[i]) {
-		if(str[i] == '"') {
+		if((str[i] == '"')) {
 			char *tmp = xstrndup(str+start, i-start);
 			xstrfmtcat(fixed, "%s\\\"", tmp);
+			xfree(tmp);
+			start = i+1;
+		}
+
+		if((str[i] == '\'')) {
+			char *tmp = xstrndup(str+start, i-start);
+			xstrfmtcat(fixed, "%s\\\'", tmp);
 			xfree(tmp);
 			start = i+1;
 		}
