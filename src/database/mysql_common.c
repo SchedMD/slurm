@@ -266,13 +266,12 @@ static int _mysql_make_table_current(MYSQL *mysql_db, char *table_name,
 	/* see if we have already done this definition */
 	if(!adding) {
 		char *query2 = xstrdup_printf("select table_name from "
-					      "%s where definition=\"%s\"",
+					      "%s where definition='%s'",
 					      table_defs_table, query);
 		MYSQL_RES *result = NULL;
 		MYSQL_ROW row;
 
 		run_update = 1;
-
 		if((result = mysql_db_query_ret(mysql_db, query2, 0))) {
 			if((row = mysql_fetch_row(result)))
 				run_update = 0;
@@ -295,9 +294,9 @@ static int _mysql_make_table_current(MYSQL *mysql_db, char *table_name,
 
 		query2 = xstrdup_printf("insert into %s (creation_time, "
 					"mod_time, table_name, definition) "
-					"values (%d, %d, \"%s\", \"%s\") "
+					"values (%d, %d, '%s', '%s') "
 					"on duplicate key update "
-					"definition=\"%s\", mod_time=%d;",
+					"definition='%s', mod_time=%d;",
 					table_defs_table, now, now,
 					table_name, correct_query,
 					correct_query, now);

@@ -73,6 +73,7 @@
  * for details.
  */
 strong_alias(_xstrcat,		slurm_xstrcat);
+strong_alias(_xstrncat,		slurm_xstrncat);
 strong_alias(_xstrcatchar,	slurm_xstrcatchar);
 strong_alias(_xslurm_strerrorcat, slurm_xslurm_strerrorcat);
 strong_alias(_xstrftimecat,	slurm_xstrftimecat);
@@ -123,6 +124,21 @@ void _xstrcat(char **str1, const char *str2)
 
 	makespace(str1, strlen(str2));
 	strcat(*str1, str2);
+}
+
+/*
+ * Concatenate len of str2 onto str1, expanding str1 as needed.
+ *   str1 (IN/OUT)	target string (pointer to in case of expansion)
+ *   str2 (IN)		source string
+ *   len (IN)		len of str2 to concat
+ */
+void _xstrncat(char **str1, const char *str2, size_t len)
+{
+	if (str2 == NULL)
+		str2 = "(null)";
+
+	makespace(str1, len);
+	strncat(*str1, str2, len);
 }
 
 /*

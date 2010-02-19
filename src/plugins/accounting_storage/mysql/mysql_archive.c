@@ -538,6 +538,386 @@ static int _unpack_local_suspend(local_suspend_t *object,
 	return SLURM_SUCCESS;
 }
 
+static int _process_old_sql_line(char **data, bool delete)
+{
+	int start = 0, i = 12;
+	char *data_in = *data;
+	char *beginning = NULL;
+	char *data_out = NULL;
+	char *tmp;
+	char *table = NULL;
+	char *fields = NULL;
+	char *cluster_name = NULL;
+	int rc = SLURM_SUCCESS;
+	int cnt = 0, cluster_inx = 0;;
+
+	if(!delete)
+		beginning = xstrndup(data_in, i);
+
+	/* get table name */
+	if(!strncmp("cluster_event_table", data_in+i, 19)) {
+		i+=19;
+		table = event_table;
+	} else if(!strncmp("job_table", data_in+i, 9)) {
+		i+=9;
+		table = job_table;
+	} else if(!strncmp("step_table", data_in+i, 10)) {
+		i+=10;
+		table = step_table;
+	} else if(!strncmp("suspend_table", data_in+i, 13)) {
+		i+=13;
+		table = suspend_table;
+	} else {
+		error("unknown table in sql %s", data_in);
+		rc = SLURM_ERROR;
+		goto end_it;
+	}
+	/* get to the columns */
+	while(data_in[i] && data_in[i-1] != '(' && data_in[i-1] != ';')
+		i++;
+	while(data_in[i] && data_in[i] != ')') {
+		if(!strncmp("period_start", data_in+i, 12)) {
+			xstrcat(fields, "time_start");
+			i+=12;
+		} else if(!strncmp("period_end", data_in+i, 10)) {
+			xstrcat(fields, "time_end");
+			i+=10;
+		} else if(!strncmp("jobid", data_in+i, 5)) {
+			xstrcat(fields, "id_job");
+			i+=5;
+		} else if(!strncmp("stepid", data_in+i, 6)) {
+			xstrcat(fields, "id_step");
+			i+=6;
+		} else if(!strncmp("associd", data_in+i, 7)) {
+			xstrcat(fields, "id_assoc");
+			i+=7;
+		} else if(!strncmp("blockid", data_in+i, 7)) {
+			xstrcat(fields, "id_block");
+			i+=7;
+		} else if(!strncmp("wckeyid", data_in+i, 7)) {
+			xstrcat(fields, "id_wckey");
+			i+=7;
+		} else if(!strncmp("uid", data_in+i, 3)) {
+			xstrcat(fields, "id_user");
+			i+=3;
+		} else if(!strncmp("gid", data_in+i, 3)) {
+			xstrcat(fields, "id_group");
+			i+=3;
+		} else if(!strncmp("submit", data_in+i, 6)) {
+			xstrcat(fields, "time_submit");
+			i+=6;
+		} else if(!strncmp("eligible", data_in+i, 8)) {
+			xstrcat(fields, "time_submit");
+			i+=8;
+		} else if(!strncmp("start", data_in+i, 5)) {
+			xstrcat(fields, "time_submit");
+			i+=5;
+		} else if(!strncmp("suspend", data_in+i, 7)) {
+			xstrcat(fields, "time_suspend");
+			i+=7;
+		} else if(!strncmp("end", data_in+i, 3)) {
+			xstrcat(fields, "time_end");
+			i+=3;
+		} else if(!strncmp("comp_code", data_in+i, 9)) {
+			xstrcat(fields, "end_code");
+			i+=9;
+		} else if(!strncmp("alloc_cpus", data_in+i, 10)) {
+			xstrcat(fields, "cpus_alloc");
+			i+=10;
+		} else if(!strncmp("req_cpus", data_in+i, 8)) {
+			xstrcat(fields, "cpus_req");
+			i+=8;
+		} else if(!strncmp("alloc_nodes", data_in+i, 11)) {
+			xstrcat(fields, "nodes_alloc");
+			i+=11;
+		} else if(!strncmp("name", data_in+i, 4)) {
+			if(table == job_table)
+				xstrcat(fields, "job_name");
+			else if(table == step_table)
+				xstrcat(fields, "step_name");
+			i+=4;
+		} else if(!strncmp("id", data_in+i, 2)) {
+			xstrcat(fields, "job_db_inx");
+			i+=2;
+		} else if(!strncmp("cluster", data_in+i, 7)) {
+			i+=7;
+			if(!delete) {
+				cluster_inx = cnt;
+				if(cnt)
+					fields[strlen(fields)-2] = '\0';
+			} else {
+				while(data_in[i] && data_in[i] != ' ')
+					i++;
+				while(data_in[i] && data_in[i] != '=')
+					i++;
+				while(data_in[i] && data_in[i] != ' ')
+					i++;
+				start = i;
+				while(data_in[i]
+				      && data_in[i] != ','
+				      && data_in[i] != ';')
+					i++;
+				info("got here %c", data_in[i]);
+				if(!data_in[i]) {
+					rc = SLURM_ERROR;
+					goto end_it;
+				}
+
+				cluster_name = xstrndup(data_in+start,
+							(i-start));
+				info("cluster name is %s '%c'", cluster_name, data_in[i]);
+			}
+		} else {
+			start = i;
+			while(data_in[i]
+			      && data_in[i] != ',' && data_in[i] != ')') {
+				i++;
+			}
+			if(!data_in[i]) {
+				rc = SLURM_ERROR;
+				goto end_it;
+			}
+			xstrncat(fields, data_in+start, (i-start));
+		}
+		if(data_in[i]) {
+			if(data_in[i] == ',')
+				xstrcat(fields, ", ");
+			else if(data_in[i] == ')') {
+				break;
+			} else {
+				error("unknown char '%s'", data_in+i);
+				rc = SLURM_ERROR;
+				goto end_it;
+			}
+			i++;
+			while(data_in[i] && data_in[i] == ' ')
+				i++;
+		}
+		cnt++;
+
+	}
+
+	/* get values */
+	/* while(data_in[i]) { */
+	/* 	start = i; */
+	/* 	/\* get table name *\/ */
+	/* 	while(data_in[i] && data_in[i] != ' ') { */
+	/* 		i++; */
+	/* 	} */
+	/* } */
+	if(!delete)
+		xstrfmtcat(data_out, "%s \"%s_%s\" (%s);",
+			   beginning, cluster_name, table, fields);
+	else {
+		if(fields)
+			xstrfmtcat(data_out, "%s \"%s_%s\" (%s);",
+				   beginning, cluster_name, table, fields);
+		else
+			xstrfmtcat(data_out, "drop table \"%s_%s\";",
+				   cluster_name, table);
+	}
+	xfree(beginning);
+	xfree(fields);
+	info("returning\n%s", data_out);
+	rc = SLURM_ERROR;
+end_it:
+	xfree(data_in);
+	if(rc != SLURM_SUCCESS)
+		xfree(data_out);
+	*data = data_out;
+	return rc;
+}
+static int _process_old_sql(char **data, bool delete)
+{
+	int start = 0, i = 12;
+	char *data_in = *data;
+	char *beginning = NULL;
+	char *data_out = NULL;
+	char *tmp;
+	char *table = NULL;
+	char *fields = NULL;
+	char *cluster_name = NULL;
+	int rc = SLURM_SUCCESS;
+	int cnt = 0, cluster_inx = 0;;
+
+	if(!delete)
+		beginning = xstrndup(data_in, i);
+	info("processing %s", data_in);
+	/* get table name */
+	if(!strncmp("cluster_event_table", data_in+i, 19)) {
+		i+=19;
+		table = event_table;
+	} else if(!strncmp("job_table", data_in+i, 9)) {
+		i+=9;
+		table = job_table;
+	} else if(!strncmp("step_table", data_in+i, 10)) {
+		i+=10;
+		table = step_table;
+	} else if(!strncmp("suspend_table", data_in+i, 13)) {
+		i+=13;
+		table = suspend_table;
+	} else {
+		error("unknown table in sql %s", data_in);
+		rc = SLURM_ERROR;
+		goto end_it;
+	}
+	/* get to the columns */
+	if(!delete)
+		while(data_in[i] && data_in[i-1] != '(' && data_in[i-1] != ';')
+			i++;
+	else
+		while(data_in[i] && data_in[i-1] != ' ')
+			i++;
+	info("table is %s '%s'", table, data_in+i);
+	while(data_in[i] && data_in[i] != ')') {
+		if(delete && !strncmp("where ", data_in+i, 6)) {
+			i+=6;
+			continue;
+		} else if(!strncmp("period_start", data_in+i, 12)) {
+			xstrcat(fields, "time_start");
+			i+=12;
+		} else if(!strncmp("period_end", data_in+i, 10)) {
+			xstrcat(fields, "time_end");
+			i+=10;
+		} else if(!strncmp("jobid", data_in+i, 5)) {
+			xstrcat(fields, "id_job");
+			i+=5;
+		} else if(!strncmp("stepid", data_in+i, 6)) {
+			xstrcat(fields, "id_step");
+			i+=6;
+		} else if(!strncmp("associd", data_in+i, 7)) {
+			xstrcat(fields, "id_assoc");
+			i+=7;
+		} else if(!strncmp("blockid", data_in+i, 7)) {
+			xstrcat(fields, "id_block");
+			i+=7;
+		} else if(!strncmp("wckeyid", data_in+i, 7)) {
+			xstrcat(fields, "id_wckey");
+			i+=7;
+		} else if(!strncmp("uid", data_in+i, 3)) {
+			xstrcat(fields, "id_user");
+			i+=3;
+		} else if(!strncmp("gid", data_in+i, 3)) {
+			xstrcat(fields, "id_group");
+			i+=3;
+		} else if(!strncmp("submit", data_in+i, 6)) {
+			xstrcat(fields, "time_submit");
+			i+=6;
+		} else if(!strncmp("eligible", data_in+i, 8)) {
+			xstrcat(fields, "time_submit");
+			i+=8;
+		} else if(!strncmp("start", data_in+i, 5)) {
+			xstrcat(fields, "time_submit");
+			i+=5;
+		} else if(!strncmp("suspend", data_in+i, 7)) {
+			xstrcat(fields, "time_suspend");
+			i+=7;
+		} else if(!strncmp("end", data_in+i, 3)) {
+			xstrcat(fields, "time_end");
+			i+=3;
+		} else if(!strncmp("comp_code", data_in+i, 9)) {
+			xstrcat(fields, "end_code");
+			i+=9;
+		} else if(!strncmp("alloc_cpus", data_in+i, 10)) {
+			xstrcat(fields, "cpus_alloc");
+			i+=10;
+		} else if(!strncmp("req_cpus", data_in+i, 8)) {
+			xstrcat(fields, "cpus_req");
+			i+=8;
+		} else if(!strncmp("alloc_nodes", data_in+i, 11)) {
+			xstrcat(fields, "nodes_alloc");
+			i+=11;
+		} else if(!strncmp("name", data_in+i, 4)) {
+			if(table == job_table)
+				xstrcat(fields, "job_name");
+			else if(table == step_table)
+				xstrcat(fields, "step_name");
+			i+=4;
+		} else if(!strncmp("id", data_in+i, 2)) {
+			xstrcat(fields, "job_db_inx");
+			i+=2;
+		} else if(!strncmp("cluster", data_in+i, 7)) {
+			i+=7;
+			if(!delete) {
+				cluster_inx = cnt;
+				if(cnt)
+					fields[strlen(fields)-2] = '\0';
+			} else {
+				while(data_in[i] && data_in[i-1] != '\'')
+					i++;
+				start = i;
+				while(data_in[i] && data_in[i] != '\'')
+					i++;
+				if(!data_in[i]) {
+					rc = SLURM_ERROR;
+					goto end_it;
+				}
+
+				cluster_name = xstrndup(data_in+start,
+							(i-start));
+				i++;
+			}
+		} else {
+			start = i;
+			while(data_in[i]
+			      && data_in[i] != ',' && data_in[i] != ')') {
+				i++;
+			}
+			if(!data_in[i]) {
+				rc = SLURM_ERROR;
+				goto end_it;
+			}
+			xstrncat(fields, data_in+start, (i-start));
+		}
+		if(data_in[i]) {
+			if(data_in[i] == ',')
+				xstrcat(fields, ", ");
+			else if(data_in[i] == ')' || data_in[i] == ';') {
+				break;
+			} else {
+				error("unknown char '%s'", data_in+i);
+				rc = SLURM_ERROR;
+				goto end_it;
+			}
+			i++;
+			while(data_in[i] && data_in[i] == ' ')
+				i++;
+		}
+		cnt++;
+
+	}
+
+	/* get values */
+	/* while(data_in[i]) { */
+	/* 	start = i; */
+	/* 	/\* get table name *\/ */
+	/* 	while(data_in[i] && data_in[i] != ' ') { */
+	/* 		i++; */
+	/* 	} */
+	/* } */
+	if(!delete)
+		xstrfmtcat(data_out, "%s \"%s_%s\" (%s);",
+			   beginning, cluster_name, table, fields);
+	else {
+		if(fields)
+			xstrfmtcat(data_out, "%s \"%s_%s\" (%s);",
+				   beginning, cluster_name, table, fields);
+		else
+			xstrfmtcat(data_out, "drop table \"%s_%s\";",
+				   cluster_name, table);
+	}
+	xfree(beginning);
+	xfree(fields);
+	info("returning\n%s", data_out);
+	rc = SLURM_ERROR;
+end_it:
+	xfree(data_in);
+	if(rc != SLURM_SUCCESS)
+		xfree(data_out);
+	*data = data_out;
+	return rc;
+}
+
 static char *_make_archive_name(time_t period_start, time_t period_end,
 				char *cluster_name,
 				char *arch_dir, char *arch_type)
@@ -1666,11 +2046,13 @@ extern int mysql_jobacct_process_archive_load(mysql_conn_t *mysql_conn,
 
 	/* this is the old version of an archive file where the file
 	   was straight sql. */
-	if((strlen(data) >= 12) &&
-	   (!strncmp("insert into ", data, 12)
-	    || (!strncmp("delete from ", data, 12))))
+	if((strlen(data) >= 12)) {
+		if(!strncmp("insert into ", data, 12))
+			_process_old_sql(&data, 0);
+		else if(!strncmp("delete from ", data, 12))
+			_process_old_sql(&data, 1);
 		goto got_sql;
-
+	}
 	buffer = create_buf(data, data_size);
 
 	safe_unpack16(&ver, buffer);
