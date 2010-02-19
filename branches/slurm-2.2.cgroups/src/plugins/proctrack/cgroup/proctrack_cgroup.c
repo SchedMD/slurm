@@ -55,6 +55,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <stdlib.h>
 
 #include "read_config.h"
 #include "xcgroup.h"
@@ -152,10 +153,6 @@ int _slurm_cgroup_init()
 int _slurm_cgroup_create(slurmd_job_t *job,uint32_t id,uid_t uid,gid_t gid)
 {
 	int fstatus;
-	char file_path[PATH_MAX];
-	char tstr[256];
-	int fd;
-	int rc;
 
 	xcgroup_opts_t opts;
 	uint32_t cur_memlimit,cur_memswlimit;
@@ -363,28 +360,28 @@ int _slurm_cgroup_create(slurmd_job_t *job,uint32_t id,uid_t uid,gid_t gid)
 
 	/* set cores constraints if required by conf */
 	if ( slurm_cgroup_conf->constrain_cores && 
-	     job->alloc_cores ) {
+	     job->step_alloc_cores ) {
 		/*
 		 * abstract mapping of cores in slurm must
 		 * first be mapped into the machine one
 		 */
 		char* mach;
-		if ( xcpuinfo_abs_to_mac(job->alloc_cores,&mach) !=
+		if ( xcpuinfo_abs_to_mac(job->step_alloc_cores,&mach) !=
 		     XCPUINFO_SUCCESS ) {
 			error("unable to convert abstract slurm allocated "
 			      "cores '%s' into a valid machine map",
-			      job->alloc_cores);
+			      job->step_alloc_cores);
 		}
 		else {
 			debug3("allocated cores conversion done : "
 			       "%s (abstract) -> %s (machine)",
-			       job->alloc_cores,mach);
+			       job->step_alloc_cores,mach);
 			xcgroup_set_cpuset_cpus(job_cgroup_path,
 						mach);
 			xfree(mach);
 		}
 	}
-	else if ( ! job->alloc_cores ) {
+	else if ( ! job->step_alloc_cores ) {
 		error("alloc_cores not defined for this job! ancestor's conf"
 		      " will be used instead");
 	}
@@ -494,8 +491,6 @@ _slurm_cgroup_find_by_pid(uint32_t* pcont_id, pid_t pid)
  */
 extern int init ( void )
 {
-	int fstatus;
-
 	/* read cgroup configuration */
 	if ( read_slurm_cgroup_conf() )
 		return SLURM_ERROR;
@@ -530,10 +525,6 @@ extern int fini ( void )
 extern int slurm_container_create ( slurmd_job_t *job )
 {
 	int fstatus;
-	char file_path[PATH_MAX];
-	char tstr[256];
-	int fd;
-	int rc;
 
 	/* create a new cgroup for that container */ 
 	fstatus = _slurm_cgroup_create(job,(uint32_t)job->jmgr_pid,
@@ -610,7 +601,6 @@ extern uint32_t slurm_container_find(pid_t pid)
 extern bool slurm_container_has_pid(uint32_t cont_id, pid_t pid)
 {
 	int fstatus;
-	bool rc;
 	uint32_t lid;
 
 	fstatus = _slurm_cgroup_find_by_pid(&lid,pid);

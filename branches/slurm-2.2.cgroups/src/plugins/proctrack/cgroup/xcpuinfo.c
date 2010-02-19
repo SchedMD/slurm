@@ -47,7 +47,9 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <ctype.h>
 #include <fcntl.h>
+#include <stdlib.h>
 #include <string.h>
 #include <strings.h>
 
@@ -64,6 +66,8 @@ bool     initialized = false;
 uint16_t procs, sockets, cores, threads;
 uint16_t block_map_size;
 uint16_t *block_map, *block_map_inv;
+
+int _ranges_conv(char* lrange,char** prange,int mode);
 
 /* for testing purpose */
 /* uint16_t block_map_size=8; */
@@ -132,9 +136,9 @@ _range_to_map(char* range,uint16_t *map,uint16_t map_size)
 
 	char *dup;
 	char *p;
-	char *s;
+	char *s=NULL;
 
-	uint16_t start,end,i;
+	uint16_t start=0,end=0,i;
 
 	/* duplicate input range */
 	dup = xstrdup(range);
@@ -206,7 +210,7 @@ _map_to_range(uint16_t *map,uint16_t map_size,char** prange)
 	char id[12];
 	char *str;
 
-	uint16_t start,end,i;
+	uint16_t start=0,end=0,i;
 
 	str = xstrdup("");
 	for ( i = 0 ; i < map_size ; i++ ) {
@@ -268,7 +272,6 @@ _ranges_conv(char* lrange,char** prange,int mode)
 	uint16_t *amap;
 	uint16_t *map;
 	uint16_t *map_out;
-	char* str;
 
 	/* init internal data if not already done */
 	if ( xcpuinfo_init() != XCPUINFO_SUCCESS )

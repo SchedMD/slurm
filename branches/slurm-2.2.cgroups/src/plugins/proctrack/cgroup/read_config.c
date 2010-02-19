@@ -114,7 +114,6 @@ extern int read_slurm_cgroup_conf(void)
 		{NULL} };
 	s_p_hashtbl_t *tbl = NULL;
 	char *conf_path = NULL;
-	char *temp_str = NULL;
 	struct stat buf;
 
 	/* Set initial values */

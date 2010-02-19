@@ -48,6 +48,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <stdlib.h>
 #include <string.h>
 #include <strings.h>
 
@@ -159,11 +160,6 @@ int xcgroup_mount(char* mount_opts)
 int xcgroup_create(char* file_path,xcgroup_opts_t* opts)
 {
 	int fstatus;
-	char path[PATH_MAX];
-	char tstr[256];
-	int fd;
-	int rc;
-
 	uid_t uid;
 	gid_t gid;
 	int create_only;
@@ -247,11 +243,6 @@ int xcgroup_add_pids(char* cpath,pid_t* pids,int npids)
 {
 	int fstatus;
 	char file_path[PATH_MAX];
-	char tstr[256];
-	int fd;
-	int rc;
-	int pid;
-	int i;
 	
 	fstatus = XCGROUP_ERROR;
 
@@ -473,8 +464,6 @@ int xcgroup_set_cpuset_cpus(char* cpath,char* range)
 {
 	int fstatus;
 	char file_path[PATH_MAX];
-	int fd;
-	int rc;
 	
 	fstatus = XCGROUP_ERROR;
 	
@@ -500,7 +489,6 @@ int xcgroup_set_params(char* cpath,char* parameters)
 	int fstatus;
 	char file_path[PATH_MAX];
 	char* params;
-	char* param;
 	char* value;
 	char* p;
 	char* next;
@@ -552,11 +540,6 @@ int xcgroup_get_param(char* cpath,char* parameter,char **content,size_t *csize)
 {
 	int fstatus;
 	char file_path[PATH_MAX];
-	char* params;
-	char* param;
-	char* value;
-	char* p;
-	char* next;
 
 	fstatus = XCGROUP_ERROR;
 
@@ -630,7 +613,8 @@ _file_write_uint64s(char* file_path,uint64_t* values,int nb)
 		
 		value = values[i];
 		
-		rc = snprintf(tstr, sizeof(tstr), "%llu",value);
+		rc = snprintf(tstr, sizeof(tstr), "%llu",
+			      (long long unsigned int)value);
 		if ( rc < 0 ) {
 			debug2("unable to build %llu string value, skipping",
 			       value);
@@ -667,7 +651,7 @@ _file_read_uint64s(char* file_path,uint64_t** pvalues,int* pnb)
 	char* buf;
 	char* p;
 
-	uint64_t* pa;
+	uint64_t* pa=NULL;
 	int i;
 	
 	/* check input pointers */
@@ -714,9 +698,10 @@ _file_read_uint64s(char* file_path,uint64_t** pvalues,int* pnb)
 		p = buf;
 		i = 0;
 		while ( index(p,'\n') != NULL ) {
-			sscanf(p,"%llu",pa+i);
+			long long unsigned int ll_tmp;
+			sscanf(p,"%llu",&ll_tmp);
+			pa[i++] = ll_tmp;
 			p = index(p,'\n') + 1;
-			i++;
 		}
 	}
 	
@@ -791,7 +776,7 @@ _file_read_uint32s(char* file_path,uint32_t** pvalues,int* pnb)
 	char* buf;
 	char* p;
 
-	uint32_t* pa;
+	uint32_t* pa=NULL;
 	int i;
 	
 	/* check input pointers */
@@ -860,8 +845,6 @@ _file_write_content(char* file_path,char* content,size_t csize)
 	int fstatus;
 	int rc;
 	int fd;
-	char tstr[256];
-	int i;
 	
 	/* open file for writing */
 	fd = open(file_path, O_WRONLY, 0700);
@@ -901,7 +884,6 @@ _file_read_content(char* file_path,char** content,size_t *csize)
 
 	size_t fsize;
 	char* buf;
-	char* p;
 
 	fstatus = XCGROUP_ERROR;
 
