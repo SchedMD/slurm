@@ -105,11 +105,12 @@ static bool pgid_plugin = false;
 /* Finally, pre-define all local routines. */
 
 static void _acct_kill_step(void);
-static void _get_offspring_data(List prec_list, prec_t *ancestor, pid_t pid);
-static void _get_process_data();
-static int _get_process_data_line(int in, prec_t *prec);
-static void *_watch_tasks(void *arg);
 static void _destroy_prec(void *object);
+static int  _is_a_lwp(uint32_t pid);
+static void _get_offspring_data(List prec_list, prec_t *ancestor, pid_t pid);
+static void _get_process_data(void);
+static int  _get_process_data_line(int in, prec_t *prec);
+static void *_watch_tasks(void *arg);
 
 /*
  * _get_offspring_data() -- collect memory usage data for the offspring
@@ -405,6 +406,51 @@ static void _acct_kill_step(void)
 	slurm_send_only_controller_msg(&msg);
 }
 
+static int _is_a_lwp(uint32_t pid) {
+
+	FILE		*status_fp = NULL;
+	char		proc_status_file[256];
+		
+	uint32_t        tgid;
+	int             rc;
+
+	if ( snprintf(proc_status_file, 256,
+		      "/proc/%d/status",pid) > 256 ) {
+ 	        debug("jobacct_gather_linux: unable to build proc_status "
+		      "fpath");
+	        return -1;
+	}
+	if ((status_fp = fopen(proc_status_file, "r"))==NULL) {
+	        debug3("jobacct_gather_linux: unable to open %s",
+		       proc_status_file);
+	        return -1;
+	}
+
+
+	do {
+		rc = fscanf(status_fp,
+			    "Name:\t%*s\n%*[ \ta-zA-Z0-9:()]\nTgid:\t%d\n",
+			    &tgid);
+	} while ( rc < 0 && errno == EINTR );
+	fclose(status_fp);
+
+	/* unable to read /proc/[pid]/status content */
+	if ( rc != 1 ) {
+	        debug3("jobacct_gather_linux: unable to read requested "
+		       "pattern in %s",proc_status_file);
+	        return -1;
+	}
+
+	/* if tgid differs from pid, this is a LWP (Thread POSIX) */
+	if ( (uint32_t) tgid != (uint32_t) pid ) {
+	        debug3("jobacct_gather_linux: pid=%d is a lightweight process",
+		       tgid,pid);
+		return 1;
+	} else
+	        return 0;
+
+}
+
 /* _get_process_data_line() - get line of data from /proc/<pid>/stat
  *
  * IN:	in - input file descriptor
@@ -451,6 +497,11 @@ static int _get_process_data_line(int in, prec_t *prec) {
 	/* There are some additional fields, which we do not scan or use */
 	if ((nvals < 22) || (rss < 0))
 		return 0;
+
+	/* If current pid corresponds to a Light Weight Process (Thread POSIX) */
+	/* skip it, we will only account the original process (pid==tgid) */
+	if (_is_a_lwp(prec->pid) > 0)
+  	        return 0;
 
 	/* Copy the values that slurm records into our data structure */
 	prec->ppid  = ppid;
