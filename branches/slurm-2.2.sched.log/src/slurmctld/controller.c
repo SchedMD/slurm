@@ -144,6 +144,8 @@
 
 /* Log to stderr and syslog until becomes a daemon */
 log_options_t log_opts = LOG_OPTS_INITIALIZER;
+/* Scheduler Log options */
+log_options_t sched_log_opts = SCHEDLOG_OPTS_INITIALIZER;
 
 /* Global variables */
 slurmctld_config_t slurmctld_config;
@@ -188,6 +190,7 @@ static void         _kill_old_slurmctld(void);
 static void         _parse_commandline(int argc, char *argv[]);
 static void         _remove_assoc(acct_association_rec_t *rec);
 inline static int   _report_locks_set(void);
+static void         _sched_update_logging(void);
 static void *       _service_connection(void *arg);
 static int          _shutdown_backup_controller(int wait_time);
 static void *       _slurmctld_background(void *no_data);
@@ -220,12 +223,14 @@ int main(int argc, char *argv[])
 	 */
 	_init_config();
 	log_init(argv[0], log_opts, LOG_DAEMON, NULL);
+	sched_log_init(argv[0], sched_log_opts, LOG_DAEMON, NULL);
 	slurmctld_pid = getpid();
 	_parse_commandline(argc, argv);
 	init_locks();
 	slurm_conf_reinit(slurm_conf_filename);
 
 	update_logging();
+	_sched_update_logging();
 	_kill_old_slurmctld();
 
 	/*
@@ -272,8 +277,12 @@ int main(int argc, char *argv[])
 			error("daemon(): %m");
 		log_alter(log_opts, LOG_DAEMON,
 			  slurmctld_conf.slurmctld_logfile);
-		if (slurmctld_conf.slurmctld_logfile
-		&&  (slurmctld_conf.slurmctld_logfile[0] == '/')) {
+		sched_log_alter(sched_log_opts, LOG_DAEMON,
+				slurmctld_conf.sched_logfile);
+		schedlog("sched: slurmctld starting");
+
+		if (slurmctld_conf.slurmctld_logfile &&
+		    (slurmctld_conf.slurmctld_logfile[0] == '/')) {
 			char *slash_ptr, *work_dir;
 			work_dir = xstrdup(slurmctld_conf.slurmctld_logfile);
 			slash_ptr = strrchr(work_dir, '/');
@@ -640,6 +649,7 @@ int main(int argc, char *argv[])
 		     "thread", cnt);
 	}
 	log_fini();
+	sched_log_fini();
 
 	if (dump_core)
 		abort();
@@ -1444,10 +1454,11 @@ static int _report_locks_set(void)
 
 	lock_count = strlen(config) + strlen(job) +
 	    strlen(node) + strlen(partition);
-	if (lock_count > 0)
-		error
-		    ("Locks left set config:%s, job:%s, node:%s, partition:%s",
-		     config, job, node, partition);
+	if (lock_count > 0) {
+		error("Locks left set "
+		      "config:%s, job:%s, node:%s, partition:%s",
+		      config, job, node, partition);
+	}
 	return lock_count;
 }
 
@@ -1457,6 +1468,7 @@ static int _report_locks_set(void)
  */
 int slurmctld_shutdown(void)
 {
+	schedlog("sched: slurmctld terminating");
 	if (slurmctld_config.thread_id_rpc) {
 		pthread_kill(slurmctld_config.thread_id_rpc, SIGUSR1);
 		return SLURM_SUCCESS;
@@ -1657,6 +1669,18 @@ void update_logging(void)
 
 	log_alter(log_opts, SYSLOG_FACILITY_DAEMON,
 		  slurmctld_conf.slurmctld_logfile);
+}
+
+/* Reset scheduler logging based upon configuration parameters
+ *   uses common slurmctld_conf data structure
+ * NOTE: READ lock_slurmctld config before entry */
+static void _sched_update_logging(void)
+{
+	if (slurmctld_conf.sched_log_level != (uint16_t) NO_VAL)
+		sched_log_opts.logfile_level = slurmctld_conf.sched_log_level;
+
+	sched_log_alter(sched_log_opts, SYSLOG_FACILITY_DAEMON,
+			slurmctld_conf.sched_logfile);
 }
 
 /* Kill the currently running slurmctld

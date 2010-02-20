@@ -2,7 +2,8 @@
  *  log.c - slurm logging facilities
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <mgrondona@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -130,9 +131,10 @@ typedef struct {
   static int              log_lock;
 #endif /* WITH_PTHREADS */
 static log_t            *log = NULL;
+static log_t            *sched_log = NULL;      /* Bull Scheduler log */
 
 #define LOG_INITIALIZED ((log != NULL) && (log->initialized))
-
+#define SCHED_LOG_INITIALIZED ((sched_log != NULL) && (sched_log->initialized))
 /* define a default argv0 */
 #if HAVE_PROGRAM_INVOCATION_NAME
 /* This used to use program_invocation_short_name, but on some systems
@@ -160,7 +162,7 @@ static bool at_forked = false;
 #else
 #  define atfork_install_handlers() (NULL)
 #endif
-static void _log_flush();
+static void _log_flush(log_t *log);
 
 /*
  * Initialize log with
@@ -252,6 +254,89 @@ _log_init(char *prog, log_options_t opt, log_facility_t fac, char *logfile )
 	return rc;
 }
 
+/*
+ * Initialize scheduler log with
+ * prog = program name to tag error messages with
+ * opt  = log_options_t specifying max log levels for syslog, stderr, and file
+ * fac  = log facility for syslog (unused if syslog level == LOG_QUIET)
+ * logfile = logfile name if logfile level > LOG_QUIET
+ */
+static int
+_sched_log_init(char *prog, log_options_t opt, log_facility_t fac, 
+		char *logfile)
+{
+	int rc = 0;
+
+	if (!sched_log) {
+		sched_log = (log_t *)xmalloc(sizeof(log_t));
+		atfork_install_handlers();
+	}
+
+	if (prog) {
+		xfree(sched_log->argv0);
+		sched_log->argv0 = xstrdup(xbasename(prog));
+	} else if (!sched_log->argv0) {
+		char *short_name = strrchr(default_name, '/');
+		if (short_name) 
+			short_name++;
+		else
+			short_name = default_name;
+		sched_log->argv0 = xstrdup(short_name);
+	}
+
+	if (!sched_log->fpfx)
+		sched_log->fpfx = xstrdup("");
+
+	sched_log->opt = opt;
+
+	if (sched_log->buf)
+		cbuf_destroy(sched_log->buf);
+	if (sched_log->fbuf)
+		cbuf_destroy(sched_log->fbuf);
+
+	if (sched_log->opt.buffered) {
+		sched_log->buf  = cbuf_create(128, 8192);
+		sched_log->fbuf = cbuf_create(128, 8192);
+	}
+
+	if (sched_log->opt.syslog_level > LOG_LEVEL_QUIET)
+		sched_log->facility = fac;
+
+	if (logfile && (sched_log->opt.logfile_level > LOG_LEVEL_QUIET)) {
+		FILE *fp;
+
+		fp = safeopen(logfile, "a", SAFEOPEN_LINK_OK);
+
+		if (!fp) {
+			char *errmsg = NULL;
+			slurm_mutex_unlock(&log_lock);
+			xslurm_strerrorcat(errmsg);
+			fprintf(stderr,
+				"%s: sched_log_init(): Unable to open logfile"
+			        "`%s': %s\n", prog, logfile, errmsg);
+			xfree(errmsg);
+			rc = errno;
+			goto out;
+		}
+
+		if (sched_log->logfp)
+			fclose(sched_log->logfp); /* Ignore errors */
+
+		sched_log->logfp = fp;
+	}
+
+	if (sched_log->logfp) {
+		int fd;
+		if ((fd = fileno(sched_log->logfp)) < 0)
+			sched_log->logfp = NULL;
+		else
+			fd_set_close_on_exec(fd);
+	}
+
+	sched_log->initialized = 1;
+ out:
+	return rc;
+}
 
 /* initialize log mutex, then initialize log data structures
  */
@@ -265,13 +350,25 @@ int log_init(char *prog, log_options_t opt, log_facility_t fac, char *logfile)
 	return rc;
 }
 
+/* initialize log mutex, then initialize scheduler log data structures
+ */
+int sched_log_init(char *prog, log_options_t opt, log_facility_t fac, char *logfile)
+{
+	int rc = 0;
+
+	slurm_mutex_lock(&log_lock);
+	rc = _sched_log_init(prog, opt, fac, logfile);
+	slurm_mutex_unlock(&log_lock);
+	return rc;
+}
+
 void log_fini()
 {
 	if (!log)
 		return;
 
 	slurm_mutex_lock(&log_lock);
-	_log_flush();
+	_log_flush(log);
 	xfree(log->argv0);
 	xfree(log->fpfx);
 	if (log->buf)
@@ -285,7 +382,26 @@ void log_fini()
 	slurm_mutex_unlock(&log_lock);
 }
 
-void log_reinit()
+void sched_log_fini(void)
+{
+	if (!sched_log)
+		return;
+
+	slurm_mutex_lock(&log_lock);
+	_log_flush(sched_log);
+	xfree(sched_log->argv0);
+	xfree(sched_log->fpfx);
+	if (sched_log->buf)
+		cbuf_destroy(sched_log->buf);
+	if (sched_log->fbuf)
+		cbuf_destroy(sched_log->fbuf);
+	if (sched_log->logfp)
+		fclose(sched_log->logfp);
+	xfree(sched_log);
+	slurm_mutex_unlock(&log_lock);
+}
+
+void log_reinit(void)
 {
 	slurm_mutex_init(&log_lock);
 }
@@ -323,6 +439,18 @@ int log_alter(log_options_t opt, log_facility_t fac, char *logfile)
 	int rc = 0;
 	slurm_mutex_lock(&log_lock);
 	rc = _log_init(NULL, opt, fac, logfile);
+	slurm_mutex_unlock(&log_lock);
+	return rc;
+}
+
+/* reinitialize scheduler log data structures. Like sched_log_init,
+ * but do not init the log mutex
+ */
+int sched_log_alter(log_options_t opt, log_facility_t fac, char *logfile)
+{
+	int rc = 0;
+	slurm_mutex_lock(&log_lock);
+	rc = _sched_log_init(NULL, opt, fac, logfile);
 	slurm_mutex_unlock(&log_lock);
 	return rc;
 }
@@ -552,7 +680,7 @@ static void xlogfmtcat(char **dst, const char *fmt, ...)
 }
 
 static void
-_log_printf(cbuf_t cb, FILE *stream, const char *fmt, ...)
+_log_printf(log_t *log, cbuf_t cb, FILE *stream, const char *fmt, ...)
 {
 	va_list ap;
 
@@ -590,10 +718,21 @@ static void log_msg(log_level_t level, const char *fmt, va_list args)
 		_log_init(NULL, opts, 0, NULL);
 	}
 
-	if (level > log->opt.syslog_level  &&
-	    level > log->opt.logfile_level &&
-	    level > log->opt.stderr_level) {
+	if (SCHED_LOG_INITIALIZED &&
+	    (sched_log->opt.logfile_level > LOG_LEVEL_QUIET) &&
+	    (strncmp(fmt, "sched: ", 7) == 0)) {
+		buf = vxstrfmt(fmt, args);
+		xlogfmtcat(&msgbuf, "[%M] %s%s%s", sched_log->fpfx, pfx, buf);
+		_log_printf(sched_log, sched_log->fbuf, sched_log->logfp, 
+			    "%s\n", msgbuf);
+		fflush(sched_log->logfp);
+		xfree(msgbuf);
+	}
+	if ((level > log->opt.syslog_level)  &&
+	    (level > log->opt.logfile_level) &&
+	    (level > log->opt.stderr_level)) {
 		slurm_mutex_unlock(&log_lock);
+		xfree(buf);
 		return;
 	}
 
@@ -609,6 +748,7 @@ static void log_msg(log_level_t level, const char *fmt, va_list args)
 			pfx = "error: ";
 			break;
 
+		case LOG_LEVEL_SCHED:
 		case LOG_LEVEL_INFO:
 		case LOG_LEVEL_VERBOSE:
 			priority = LOG_INFO;
@@ -647,28 +787,22 @@ static void log_msg(log_level_t level, const char *fmt, va_list args)
 
 	}
 
-	/* format the basic message */
-	buf = vxstrfmt(fmt, args);
+	if (!buf) {
+		/* format the basic message,
+		 * if not already done for scheduling log */
+		buf = vxstrfmt(fmt, args);
+	}
 
 	if (level <= log->opt.stderr_level) {
 		fflush(stdout);
-		if (strlen(buf) > 0 && buf[strlen(buf) - 1] == '\n')
-			_log_printf( log->buf, stderr, "%s: %s%s",
-				     log->argv0, pfx, buf);
-		else
-			_log_printf( log->buf, stderr, "%s: %s%s\n",
-				     log->argv0, pfx, buf);
+		_log_printf(log, log->buf, stderr, "%s: %s%s\n", 
+			    log->argv0, pfx, buf);
 		fflush(stderr);
 	}
 
 	if (level <= log->opt.logfile_level && log->logfp != NULL) {
-		xlogfmtcat(&msgbuf, "[%M] %s%s%s",
-				    log->fpfx, pfx, buf);
-
-		if (strlen(buf) > 0 && buf[strlen(buf) - 1] == '\n')
-			_log_printf(log->fbuf, log->logfp, "%s", msgbuf);
-		else
-			_log_printf(log->fbuf, log->logfp, "%s\n", msgbuf);
+		xlogfmtcat(&msgbuf, "[%M] %s%s%s", log->fpfx, pfx, buf);
+		_log_printf(log, log->fbuf, log->logfp, "%s\n", msgbuf);
 		fflush(log->logfp);
 
 		xfree(msgbuf);
@@ -701,7 +835,7 @@ log_has_data()
 }
 
 static void
-_log_flush()
+_log_flush(log_t *log)
 {
 	if (!log->opt.buffered)
 		return;
@@ -716,7 +850,7 @@ void
 log_flush()
 {
 	slurm_mutex_lock(&log_lock);
-	_log_flush();
+	_log_flush(log);
 	slurm_mutex_unlock(&log_lock);
 }
 
@@ -832,6 +966,15 @@ void debug5(const char *fmt, ...)
 
 	va_start(ap, fmt);
 	log_msg(LOG_LEVEL_DEBUG5, fmt, ap);
+	va_end(ap);
+}
+
+void schedlog(const char *fmt, ...)
+{
+	va_list ap;
+
+	va_start(ap, fmt);
+	log_msg(LOG_LEVEL_SCHED, fmt, ap);
 	va_end(ap);
 }
 

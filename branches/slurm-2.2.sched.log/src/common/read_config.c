@@ -258,6 +258,8 @@ s_p_options_t slurm_conf_options[] = {
 	{"SlurmdPort", S_P_UINT32},
 	{"SlurmdSpoolDir", S_P_STRING},
 	{"SlurmdTimeout", S_P_UINT16},
+	{"SlurmSchedLogFile", S_P_STRING},
+	{"SlurmSchedLogLevel", S_P_UINT16},
 	{"SrunEpilog", S_P_STRING},
 	{"SrunProlog", S_P_STRING},
 	{"StateSaveLocation", S_P_STRING},
@@ -1426,6 +1428,7 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->propagate_rlimits_except);
 	xfree (ctl_conf_ptr->resume_program);
 	xfree (ctl_conf_ptr->salloc_default_command);
+	xfree (ctl_conf_ptr->sched_logfile);
 	xfree (ctl_conf_ptr->sched_params);
 	xfree (ctl_conf_ptr->schedtype);
 	xfree (ctl_conf_ptr->select_type);
@@ -1553,6 +1556,8 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->slurmd_user_name);
 	ctl_conf_ptr->slurmctld_debug		= (uint16_t) NO_VAL;
 	xfree (ctl_conf_ptr->slurmctld_logfile);
+	xfree (ctl_conf_ptr->sched_logfile);
+	ctl_conf_ptr->sched_log_level		= (uint16_t) NO_VAL;
 	xfree (ctl_conf_ptr->slurmctld_pidfile);
 	ctl_conf_ptr->slurmctld_port		= (uint32_t) NO_VAL;
 	ctl_conf_ptr->slurmctld_timeout		= (uint16_t) NO_VAL;
@@ -2558,6 +2563,12 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 	if (!s_p_get_uint32(&conf->slurmd_port, "SlurmdPort", hashtbl))
 		conf->slurmd_port = SLURMD_PORT;
+
+	s_p_get_string(&conf->sched_logfile, "SlurmSchedLogFile", hashtbl);
+
+	if (!s_p_get_uint16(&conf->sched_log_level, 
+			   "SlurmSchedLogLevel", hashtbl))
+		conf->sched_log_level = DEFAULT_SCHED_LOG_LEVEL;
 
 	if (!s_p_get_string(&conf->slurmd_spooldir, "SlurmdSpoolDir", hashtbl))
 		conf->slurmd_spooldir = xstrdup(DEFAULT_SPOOLDIR);

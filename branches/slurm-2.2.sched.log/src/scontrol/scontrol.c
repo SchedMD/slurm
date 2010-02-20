@@ -746,6 +746,55 @@ _process_command (int argc, char *argv[])
 			}
 		}
 	}
+	else if (strncasecmp (tag, "schedloglevel", MAX(taglen, 2)) == 0) {
+		if (argc > 2) {
+			exit_code = 1;
+			if (quiet_flag != 1)
+				fprintf(stderr,
+					"too many arguments for keyword:%s\n",
+					tag);
+		} else if (argc < 2) {
+			exit_code = 1;
+			if (quiet_flag != 1)
+				fprintf(stderr,
+					"too few arguments for keyword:%s\n",
+					tag);
+		} else {
+			int level = -1;
+			char *endptr;
+			char *levels[] = {
+				"disable", "enable", NULL};
+			int index = 0;
+			while (levels[index]) {
+				if (strcasecmp(argv[1], levels[index]) == 0) {
+					level = index;
+					break;
+				}
+				index ++;
+			}
+			if (level == -1) {
+				/* effective levels: 0 - 1 */
+				level = (int)strtoul (argv[1], &endptr, 10);
+				if (*endptr != '\0' || level > 1) {
+					level = -1;
+					exit_code = 1;
+					if (quiet_flag != 1)
+						fprintf(stderr, "invalid schedlog "
+							"level: %s\n", argv[1]);
+				}
+			}
+			if (level != -1) {
+				error_code = slurm_set_schedlog_level(level);
+				if (error_code) {
+					exit_code = 1;
+					if (quiet_flag != 1)
+						slurm_perror(
+							"slurm_set_schedlog_level"
+							" error");
+				}
+			}
+		}
+	}
 	else if (strncasecmp (tag, "show", MAX(taglen, 3)) == 0) {
 		_show_it (argc, argv);
 	}
@@ -1392,6 +1441,7 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
      reconfigure              re-read configuration files.                 \n\
      requeue <job_id>         re-queue a batch job                         \n\
      setdebug <level>         set slurmctld debug level                    \n\
+	 schedloglevel <slevel>   set scheduler log level                      \n\
      show <ENTITY> [<ID>]     display state of identified entity, default  \n\
                               is all records.                              \n\
      shutdown <OPTS>          shutdown slurm daemons                       \n\
@@ -1421,6 +1471,9 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
   <LEVEL> may be an integer value like SlurmctldDebug in the slurm.conf    \n\
        file or the name of the most detailed errors to report (e.g. \"info\",\n\
        \"verbose\", \"debug\", \"debug2\", etc.).                          \n\
+                                                                           \n\
+  <SLEVEL> may be an integer value like SlurmSchedLogLevel in the          \n\
+       slurm.conf file or \"enable\" or \"disable\".                       \n\
                                                                            \n\
   <OPTS> may be \"slurmctld\" to shutdown just the slurmctld daemon,       \n\
        otherwise all slurm daemons are shutdown                            \n\

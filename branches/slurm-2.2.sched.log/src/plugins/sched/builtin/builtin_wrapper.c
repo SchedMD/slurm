@@ -59,7 +59,7 @@ static int plugin_errno = SLURM_SUCCESS;
 /**************************************************************************/
 int init( void )
 {
-	verbose( "Built-in scheduler plugin loaded" );
+	verbose( "sched: Built-in scheduler plugin loaded" ); /* Bull Scheduler log */
 	return SLURM_SUCCESS;
 }
 

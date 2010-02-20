@@ -2237,6 +2237,10 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 		job_ptr->exit_code  = 1;
 		job_ptr->start_time = job_ptr->end_time = now;
 	}
+
+	schedlog("sched: JobId=%u allocated resources: NodeList=%s\n",  /* Bull Scheduler log */
+			job_ptr->job_id, job_ptr->nodes);                       /* Bull Scheduler log */
+
 	return SLURM_SUCCESS;
 }
 
@@ -2565,7 +2569,7 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 	last_job_update = now;
 	if (job_comp_flag) 	/* job was running */
 		deallocate_nodes(job_ptr, false, suspended);
-	info("job_complete for JobId=%u successful", job_id);
+	info("sched: job_complete for JobId=%u successful", job_id); /* Bull Scheduler log */
 
 	return SLURM_SUCCESS;
 }
@@ -5290,14 +5294,14 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 
 	job_ptr = find_job_record(job_specs->job_id);
 	if (job_ptr == NULL) {
-		error("update_job: job_id %u does not exist.",
+		error("sched: update_job: job_id %u does not exist.", /* Bull Scheduler log */
 		      job_specs->job_id);
 		return ESLURM_INVALID_JOB_ID;
 	}
 	if ((uid == 0) || (uid == slurmctld_conf.slurm_user_id))
 		super_user = 1;
 	if ((job_ptr->user_id != uid) && (super_user == 0)) {
-		error("Security violation, JOB_UPDATE RPC from uid %d",
+		error("sched: Security violation, JOB_UPDATE RPC from uid %d", /* Bull Scheduler log */
 		      uid);
 		return ESLURM_USER_ID_MISSING;
 	}
@@ -5587,8 +5591,8 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		if (IS_JOB_FINISHED(job_ptr))
 			error_code = ESLURM_DISABLED;
 		else if (job_ptr->time_limit == job_specs->time_limit) {
-			debug("update_job: new time limit identical to old "
-			      "time limit %u", job_specs->job_id);
+			debug("sched: update_job: new time limit identical to "
+			      "old time limit %u", job_specs->job_id);
 		} else if (super_user ||
 			   (job_ptr->time_limit > job_specs->time_limit)) {
 			time_t old_time =  job_ptr->time_limit;
@@ -5615,7 +5619,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 					_xmit_new_end_time(job_ptr);
 				}
 			}
-			info("update_job: setting time_limit to %u for "
+			info("sched: update_job: setting time_limit to %u for " /* Bull Scheduler log */
 			     "job_id %u", job_specs->time_limit,
 			     job_specs->job_id);
 			update_accounting = true;
@@ -5623,12 +5627,12 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			   (job_ptr->part_ptr->max_time >=
 			    job_specs->time_limit)) {
 			job_ptr->time_limit = job_specs->time_limit;
-			info("update_job: setting time_limit to %u for "
+			info("sched: update_job: setting time_limit to %u for " /* Bull Scheduler log */
 			     "job_id %u", job_specs->time_limit,
 			     job_specs->job_id);
 			update_accounting = true;
 		} else {
-			info("Attempt to increase time limit for job %u",
+			info("sched: Attempt to increase time limit for job %u", /* Bull Scheduler log */
 			     job_specs->job_id);
 			error_code = ESLURM_ACCESS_DENIED;
 		}
@@ -5659,7 +5663,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			int delta_t  = job_specs->end_time - job_ptr->end_time;
 			job_ptr->end_time = job_specs->end_time;
 			job_ptr->time_limit += (delta_t+30)/60; /* Sec->min */
-			info("update_job: setting time_limit to %u for "
+			info("sched: update_job: setting time_limit to %u for " /* Bull Scheduler log */
 			     "job_id %u", job_ptr->time_limit,
 			     job_specs->job_id);
 			update_accounting = true;
@@ -5675,7 +5679,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			job_ptr->resv_name = job_specs->reservation;
 			rc = validate_job_resv(job_ptr);
 			if (rc == SLURM_SUCCESS) {
-				info("update_job: setting reservation to %s "
+				info("sched: update_job: setting reservation to %s " /* Bull Scheduler log */
 				     "for job_id %u", job_ptr->resv_name,
 				     job_ptr->job_id);
 				xfree(save_resv_name);
@@ -5691,7 +5695,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 
 	if (job_specs->requeue != (uint16_t) NO_VAL) {
 		detail_ptr->requeue = job_specs->requeue;
-		info("update_job: setting requeue to %u for job_id %u",
+		info("sched: update_job: setting requeue to %u for job_id %u", /* Bull Scheduler log */
 		     job_specs->requeue, job_specs->job_id);
 	}
 
@@ -5712,12 +5716,12 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 				job_ptr->direct_set_prio = 1;
 				job_ptr->priority = job_specs->priority;
 			}
-			info("update_job: setting priority to %u for "
+			info("sched: update_job: setting priority to %u for " /* Bull Scheduler log */
 			     "job_id %u", job_ptr->priority,
 			     job_specs->job_id);
 			update_accounting = true;
 		} else {
-			error("Attempt to increase priority for job %u",
+			error("sched: Attempt to increase priority for job %u", /* Bull Scheduler log */
 			      job_specs->job_id);
 			error_code = ESLURM_ACCESS_DENIED;
 		}
@@ -5732,13 +5736,12 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			new_prio -= job_specs->nice;
 			job_ptr->priority = MAX(new_prio, 2);
 			job_ptr->details->nice = job_specs->nice;
-
-			info("update_job: setting priority to %u for "
+			info("sched: update_job: setting priority to %u for " /* Bull Scheduler log */
 			     "job_id %u", job_ptr->priority,
 			     job_specs->job_id);
 			update_accounting = true;
 		} else {
-			error("Attempt to increase priority for job %u",
+			error("sched: Attempt to increase job_min_cpus for job %u", /* Bull Scheduler log */
 			      job_specs->job_id);
 			error_code = ESLURM_ACCESS_DENIED;
 		}
@@ -5753,13 +5756,14 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 				entity = "cpu";
 			else
 				entity = "job";
+
 			detail_ptr->pn_min_memory = job_specs->pn_min_memory;
-			info("update_job: setting min_memory_%s to %u for "
+			info("sched: update_job: setting min_memory_%s to %u for " /* Bull Scheduler log */
 			     "job_id %u", entity,
 			     (job_specs->pn_min_memory & (~MEM_PER_CPU)),
 			     job_specs->job_id);
 		} else {
-			error("Attempt to increase pn_min_memory for job %u",
+			error("sched: Attempt to increase pn_min_memory for job %u", /* Bull Scheduler log */
 			      job_specs->job_id);
 			error_code = ESLURM_ACCESS_DENIED;
 		}
@@ -5773,11 +5777,12 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			     > job_specs->pn_min_tmp_disk)) {
 			detail_ptr->pn_min_tmp_disk =
 				job_specs->pn_min_tmp_disk;
-			info("update_job: setting pn_min_tmp_disk to %u for "
+			info("sched: update_job: setting job_min_tmp_disk to %u for " /* Bull Scheduler log */
 			     "job_id %u", job_specs->pn_min_tmp_disk,
 			     job_specs->job_id);
 		} else {
-			error("Attempt to increase pn_min_tmp_disk "
+
+			error("sched: Attempt to increase pn_min_tmp_disk " /* Bull Scheduler log */
 			      "for job %u",
 			      job_specs->job_id);
 			error_code = ESLURM_ACCESS_DENIED;
@@ -5789,7 +5794,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			error_code = ESLURM_DISABLED;
 		else {
 			mc_ptr->min_sockets = job_specs->min_sockets;
-			info("update_job: setting min_sockets to %u for "
+			info("sched: update_job: setting min_sockets to %u for " /* Bull Scheduler log */
 			     "job_id %u", job_specs->min_sockets,
 			     job_specs->job_id);
 		}
@@ -5800,7 +5805,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			error_code = ESLURM_DISABLED;
 		else {
 			mc_ptr->min_cores = job_specs->min_cores;
-			info("update_job: setting min_cores to %u for "
+			info("sched: update_job: setting min_cores to %u for " /* Bull Scheduler log */
 			     "job_id %u", job_specs->min_cores,
 			     job_specs->job_id);
 		}
@@ -5811,7 +5816,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			error_code = ESLURM_DISABLED;
 		else {
 			mc_ptr->min_threads = job_specs->min_threads;
-			info("update_job: setting min_threads to %u for "
+			info("sched: update_job: setting min_threads to %u for " /* Bull Scheduler log */
 			     "job_id %u", job_specs->min_threads,
 			     job_specs->job_id);
 		}
@@ -5823,10 +5828,10 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		else if (super_user
 			 ||       (detail_ptr->shared > job_specs->shared)) {
 			detail_ptr->shared = job_specs->shared;
-			info("update_job: setting shared to %u for job_id %u",
+			info("sched: update_job: setting shared to %u for job_id %u", /* Bull Scheduler log */
 			     job_specs->shared, job_specs->job_id);
 		} else {
-			error("Attempt to remove sharing for job %u",
+			error("sched: Attempt to remove sharing for job %u", /* Bull Scheduler log */
 			      job_specs->job_id);
 			error_code = ESLURM_ACCESS_DENIED;
 		}
@@ -5838,11 +5843,11 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		else if (super_user
 			 || (detail_ptr->contiguous > job_specs->contiguous)) {
 			detail_ptr->contiguous = job_specs->contiguous;
-			info("update_job: setting contiguous to %u for "
+			info("sched: update_job: setting contiguous to %u for " /* Bull Scheduler log */
 			     "job_id %u", job_specs->contiguous,
 			     job_specs->job_id);
 		} else {
-			error("Attempt to add contiguous for job %u",
+			error("sched: Attempt to add contiguous for job %u", /* Bull Scheduler log */
 			      job_specs->job_id);
 			error_code = ESLURM_ACCESS_DENIED;
 		}
@@ -5857,7 +5862,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			detail_ptr->features = job_specs->features;
 			detail_ptr->feature_list = NULL;
 			if (build_feature_list(job_ptr)) {
-				info("update_job: invalid features"
+				info("sched: update_job: invalid features" /* Bull Scheduler log */
 			 	     "(%s) for job_id %u",
 				     job_specs->features, job_specs->job_id);
 				if (detail_ptr->feature_list)
@@ -5866,7 +5871,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 				detail_ptr->feature_list = old_list;
 				error_code = ESLURM_INVALID_FEATURE;
 			} else {
-				info("update_job: setting features to "
+				info("sched: update_job: setting features to " /* Bull Scheduler log */
 			 	     "%s for job_id %u",
 				     job_specs->features, job_specs->job_id);
 				xfree(old_features);
@@ -5875,7 +5880,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 				job_specs->features = NULL;
 			}
 		} else {
-			info("update_job: cleared features for job %u",
+			info("sched: update_job: cleared features for job %u", /* Bull Scheduler log */
 			     job_specs->job_id);
 			xfree(detail_ptr->features);
 			if (detail_ptr->feature_list) {
@@ -5892,7 +5897,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			job_ptr->name = job_specs->name;
 			job_specs->name = NULL;
 
-			info("update_job: setting name to %s for job_id %u",
+			info("sched: update_job: setting name to %s for job_id %u", /* Bull Scheduler log */
 			     job_ptr->name, job_specs->job_id);
 			update_accounting = true;
 		}
@@ -5921,7 +5926,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		} else {
 			if (node_name2bitmap(job_specs->exc_nodes, false,
 					     &exc_bitmap)) {
-				error("Invalid node list for job_update: %s",
+				error("sched: Invalid node list for job_update: %s", /* Bull Scheduler log */
 				      job_specs->exc_nodes);
 				FREE_NULL_BITMAP(exc_bitmap);
 				error_code = ESLURM_INVALID_NODE_NAME;
@@ -5932,7 +5937,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 					job_specs->exc_nodes;
 				FREE_NULL_BITMAP(detail_ptr->exc_node_bitmap);
 				detail_ptr->exc_node_bitmap = exc_bitmap;
-				info("update_job: setting exc_nodes to %s "
+				info("sched: update_job: setting exc_nodes to %s " /* Bull Scheduler log */
 				     "for job_id %u", job_specs->exc_nodes,
 				     job_specs->job_id);
 				job_specs->exc_nodes = NULL;
@@ -5950,7 +5955,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		} else {
 			if (node_name2bitmap(job_specs->req_nodes, false,
 					     &req_bitmap)) {
-				error("Invalid node list for job_update: %s",
+				error("sched: Invalid node list for job_update: %s", /* Bull Scheduler log */
 				      job_specs->req_nodes);
 				FREE_NULL_BITMAP(req_bitmap);
 				error_code = ESLURM_INVALID_NODE_NAME;
@@ -5962,7 +5967,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 				FREE_NULL_BITMAP(detail_ptr->req_node_bitmap);
 				xfree(detail_ptr->req_node_layout);
 				detail_ptr->req_node_bitmap = req_bitmap;
-				info("update_job: setting req_nodes to %s "
+				info("sched: update_job: setting req_nodes to %s " /* Bull Scheduler log */
 				     "for job_id %u", job_specs->req_nodes,
 				     job_specs->job_id);
 				job_specs->req_nodes = NULL;
@@ -5974,13 +5979,12 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
 			error_code = ESLURM_DISABLED;
 		else if (super_user) {
-			detail_ptr->ntasks_per_node =
-				job_specs->ntasks_per_node;
-			info("update_job: setting ntasks_per_node to %u for "
+			detail_ptr->ntasks_per_node = job_specs->ntasks_per_node;
+			info("sched: update_job: setting ntasks_per_node to %u for " /* Bull Scheduler log */
 			     "job_id %u", job_specs->ntasks_per_node,
 			     job_specs->job_id);
 		} else {
-			error("Not super user: setting ntasks_oper_node to "
+			error("sched: Not super user: setting ntasks_oper_node to " /* Bull Scheduler log */
 			      "job %u", job_specs->job_id);
 			error_code = ESLURM_ACCESS_DENIED;
 		}
@@ -5993,7 +5997,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			 != SLURM_SUCCESS) {
 			error_code = ESLURM_DEPENDENCY;
 		} else {
-			info("update_job: setting dependency to %s for "
+			info("sched: update_job: setting dependency to %s for " /* Bull Scheduler log */
 			     "job_id %u",  job_ptr->details->dependency,
 			     job_ptr->job_id);
 		}
@@ -6024,7 +6028,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 
 		license_list = license_validate(job_specs->licenses, &valid);
 		if (!valid) {
-			info("update_job: invalid licenses: %s",
+			info("sched: update_job: invalid licenses: %s", /* Bull Scheduler log */
 			     job_specs->licenses);
 			error_code = ESLURM_INVALID_LICENSES;
 		} else if (IS_JOB_PENDING(job_ptr)) {
@@ -6034,7 +6038,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			xfree(job_ptr->licenses);
 			job_ptr->licenses = job_specs->licenses;
 			job_specs->licenses = NULL; /* nothing to free */
-			info("update_job: setting licenses to %s for job %u",
+			info("sched: update_job: setting licenses to %s for job %u", /* Bull Scheduler log */
 			     job_ptr->licenses, job_ptr->job_id);
 		} else if (IS_JOB_RUNNING(job_ptr) && super_user) {
 			/* NOTE: This can result in oversubscription of
@@ -6043,7 +6047,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			if (job_ptr->license_list)
 				list_destroy(job_ptr->license_list);
 			job_ptr->license_list = license_list;
-			info("update_job: changing licenses from %s to %s for "
+			info("sched: update_job: changing licenses from %s to %s for " /* Bull Scheduler log */
 			     " running job %u",
 			     job_ptr->licenses, job_specs->licenses,
 			     job_ptr->job_id);
@@ -6054,7 +6058,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		} else {
 			/* licenses are valid, but job state or user not
 			 * allowed to make changes */
-			info("update_job: could not change licenses for "
+			info("sched: update_job: could not change licenses for " /* Bull Scheduler log */
 			     "job %u", job_ptr->job_id);
 			error_code = ESLURM_DISABLED;
 			list_destroy(license_list);
@@ -6122,7 +6126,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		if (!IS_JOB_PENDING(job_ptr))
 			error_code = ESLURM_DISABLED;
 		else {
-			info("update_job: setting rotate to %u for "
+			info("sched: update_job: setting rotate to %u for " /* Bull Scheduler log */
 			      "jobid %u", rotate, job_ptr->job_id);
 			 select_g_select_jobinfo_set(
 				 job_ptr->select_jobinfo,
@@ -6136,7 +6140,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		 if (!IS_JOB_PENDING(job_ptr))
 			 error_code = ESLURM_DISABLED;
 		 else {
-			 info("update_job: setting reboot to %u for "
+			 info("sched: update_job: setting reboot to %u for " /* Bull Scheduler log */
 			      "jobid %u", reboot, job_ptr->job_id);
 			 select_g_select_jobinfo_set(
 				 job_ptr->select_jobinfo,
@@ -6153,7 +6157,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			 uint32_t i, tot = 1;
 			 for (i=0; i<SYSTEM_DIMENSIONS; i++)
 				 tot *= geometry[i];
-			 info("update_job: setting geometry to %ux%ux%u "
+			 info("sched: update_job: setting geometry to %ux%ux%u " /* Bull Scheduler log */
 			      "min_nodes=%u for jobid %u",
 			      geometry[0], geometry[1],
 			      geometry[2], tot, job_ptr->job_id);
@@ -6162,7 +6166,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 						     geometry);
 			 detail_ptr->min_nodes = tot;
 		 } else {
-			 error("Attempt to change geometry for job %u",
+			 error("sched: Attempt to change geometry for job %u", /* Bull Scheduler log */
 			       job_specs->job_id);
 			 error_code = ESLURM_ACCESS_DENIED;
 		 }
@@ -6174,7 +6178,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		 if (!IS_JOB_PENDING(job_ptr))
 			 error_code = ESLURM_DISABLED;
 		 else {
-			 info("update_job: setting BlrtsImage to %s for "
+			 info("sched: update_job: setting BlrtsImage to %s for " /* Bull Scheduler log */
 			      "jobid %u", image, job_ptr->job_id);
 			 select_g_select_jobinfo_set(
 				 job_ptr->select_jobinfo,
@@ -6188,7 +6192,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		 if (!IS_JOB_PENDING(job_ptr))
 			 error_code = ESLURM_DISABLED;
 		 else {
-			 info("update_job: setting LinuxImage to %s for "
+			 info("sched: update_job: setting LinuxImage to %s for " /* Bull Scheduler log */
 			      "jobid %u", image, job_ptr->job_id);
 			 select_g_select_jobinfo_set(
 					job_ptr->select_jobinfo,     
@@ -6201,7 +6205,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		 if (!IS_JOB_PENDING(job_ptr))
 			 error_code = ESLURM_DISABLED;
 		 else {
-			 info("update_job: setting MloaderImage to %s for "
+			 info("sched: update_job: setting MloaderImage to %s for " /* Bull Scheduler log */
 			      "jobid %u", image, job_ptr->job_id);
 			 select_g_select_jobinfo_set(
 				 job_ptr->select_jobinfo,
@@ -6215,7 +6219,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		 if (!IS_JOB_PENDING(job_ptr))
 			 error_code = ESLURM_DISABLED;
 		 else {
-			 info("update_job: setting RamdiskImage to %s for "
+			 info("sched: update_job: setting RamdiskImage to %s for " /* Bull Scheduler log */
 			      "jobid %u", image, job_ptr->job_id);
 			 select_g_select_jobinfo_set(
 				 job_ptr->select_jobinfo,

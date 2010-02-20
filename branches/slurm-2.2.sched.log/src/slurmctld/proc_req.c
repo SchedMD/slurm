@@ -130,6 +130,7 @@ inline static void  _slurm_rpc_resv_show(slurm_msg_t * msg);
 inline static void  _slurm_rpc_requeue(slurm_msg_t * msg);
 inline static void  _slurm_rpc_takeover(slurm_msg_t * msg);
 inline static void  _slurm_rpc_set_debug_level(slurm_msg_t *msg);
+inline static void  _slurm_rpc_set_schedlog_level(slurm_msg_t *msg); /* Bull Scheduler log */
 inline static void  _slurm_rpc_shutdown_controller(slurm_msg_t * msg);
 inline static void  _slurm_rpc_shutdown_controller_immediate(slurm_msg_t *
 							     msg);
@@ -374,6 +375,10 @@ void slurmctld_req (slurm_msg_t * msg)
 		_slurm_rpc_set_debug_level(msg);
 		slurm_free_set_debug_level_msg(msg->data);
 		break;
+	case REQUEST_SET_SCHEDLOG_LEVEL:
+		_slurm_rpc_set_schedlog_level(msg);
+		slurm_free_set_debug_level_msg(msg->data);
+		break;
 	case ACCOUNTING_UPDATE_MSG:
 		_slurm_rpc_accounting_update_msg(msg);
 		slurm_free_accounting_update_msg(msg->data);
@@ -531,6 +536,8 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 		conf_ptr->sched_params = slurm_sched_p_get_conf();
 	conf_ptr->schedport           = conf->schedport;
 	conf_ptr->schedrootfltr       = conf->schedrootfltr;
+    conf_ptr->sched_logfile       = xstrdup(conf->sched_logfile);        /* Bull Scheduler log */
+	conf_ptr->sched_log_level     = conf->sched_log_level;               /* Bull Scheduler log */
 	conf_ptr->sched_time_slice    = conf->sched_time_slice;
 	conf_ptr->schedtype           = xstrdup(conf->schedtype);
 	conf_ptr->select_type         = xstrdup(conf->select_type);
@@ -686,7 +693,7 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 		error("Security violation, RESOURCE_ALLOCATE from uid=%u",
 			(unsigned int) uid);
 	}
-	debug2("Processing RPC: REQUEST_RESOURCE_ALLOCATION from uid=%u",
+	debug2("sched: Processing RPC: REQUEST_RESOURCE_ALLOCATION from uid=%u", /* Bull Scheduler log */
 		(unsigned int) uid);
 
 	/* do RPC call */
@@ -721,7 +728,7 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 	if ((error_code == SLURM_SUCCESS)
 	||  ((immediate == 0) && job_waiting)) {
 		xassert(job_ptr);
-		info("_slurm_rpc_allocate_resources JobId=%u NodeList=%s %s",
+		info("sched: _slurm_rpc_allocate_resources JobId=%u NodeList=%s %s", /* Bull Scheduler log */
 			job_ptr->job_id, job_ptr->nodes, TIME_STR);
 
 		/* send job_ID and node_name_ptr */
@@ -1190,7 +1197,7 @@ static void _slurm_rpc_job_step_kill(slurm_msg_t * msg)
 			slurm_send_rc_msg(msg, error_code);
 		} else {
 			if (job_step_kill_msg->signal == SIGKILL) {
-				info("Cancel of JobId=%u by UID=%u, %s",
+				info("sched: Cancel of JobId=%u by UID=%u, %s", /* Bull Scheduler log */
 				     job_step_kill_msg->job_id, uid, TIME_STR);
 			} else {
 				info("Signal %u of JobId=%u by UID=%u, %s",
@@ -1220,7 +1227,7 @@ static void _slurm_rpc_job_step_kill(slurm_msg_t * msg)
 			slurm_send_rc_msg(msg, error_code);
 		} else {
 			if (job_step_kill_msg->signal == SIGKILL) {
-				info("Cancel of StepId=%u.%u by UID=%u %s",
+				info("sched: Cancel of StepId=%u.%u by UID=%u %s", /* Bull Scheduler log */
 				     job_step_kill_msg->job_id,
 				     job_step_kill_msg->job_step_id, uid,
 				     TIME_STR);
@@ -1431,7 +1438,7 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 	} else {
 		slurm_step_layout_t *layout = step_rec->step_layout;
 
-		info("_slurm_rpc_job_step_create: StepId=%u.%u %s %s",
+		info("sched: _slurm_rpc_job_step_create: StepId=%u.%u %s %s", /* Bull Scheduler log */
 			step_rec->job_ptr->job_id, step_rec->step_id,
 			req_step_msg->node_list, TIME_STR);
 
@@ -2094,7 +2101,7 @@ static void _slurm_rpc_step_complete(slurm_msg_t *msg)
 				req->job_id, slurm_strerror(error_code));
 			slurm_send_rc_msg(msg, error_code);
 		} else {
-			debug2("_slurm_rpc_step_complete JobId=%u: %s",
+			debug2("sched: _slurm_rpc_step_complete JobId=%u: %s", /* Bull Scheduler log */
 				 req->job_id, TIME_STR);
 			slurm_send_rc_msg(msg, SLURM_SUCCESS);
 			dump_job = true;
@@ -2112,7 +2119,7 @@ static void _slurm_rpc_step_complete(slurm_msg_t *msg)
 				slurm_strerror(error_code));
 			slurm_send_rc_msg(msg, error_code);
 		} else {
-			info("_slurm_rpc_step_complete StepId=%u.%u %s",
+			info("sched: _slurm_rpc_step_complete StepId=%u.%u %s", /* Bull Scheduler log */
 				req->job_id, req->job_step_id,
 				TIME_STR);
 			slurm_send_rc_msg(msg, SLURM_SUCCESS);
@@ -3563,6 +3570,53 @@ inline static void  _slurm_rpc_set_debug_level(slurm_msg_t *msg)
 	conf->slurmctld_debug = debug_level;
 	slurm_conf_unlock();
 	slurmctld_conf.last_update = time(NULL);
+
+	slurm_send_rc_msg(msg, SLURM_SUCCESS);
+}
+
+inline static void  _slurm_rpc_set_schedlog_level(slurm_msg_t *msg)
+{
+	int schedlog_level;
+	int old_schedlog_level;
+	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
+	slurmctld_lock_t config_read_lock =
+		{ READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
+	set_debug_level_msg_t *request_msg =
+		(set_debug_level_msg_t *) msg->data;
+	log_options_t log_opts = SCHEDLOG_OPTS_INITIALIZER;
+	slurm_ctl_conf_t *conf;
+
+	debug2("Processing RPC: REQUEST_SET_SCHEDLOG_LEVEL from uid=%u",
+		(unsigned int) uid);
+	if (!validate_super_user(uid)) {
+		error("set scheduler log level request from non-super user uid=%d",
+		      uid);
+		slurm_send_rc_msg(msg, EACCES);
+		return;
+	}
+
+	schedlog_level = MIN (request_msg->debug_level, (LOG_LEVEL_QUIET + 1));
+	schedlog_level = MAX (schedlog_level, LOG_LEVEL_QUIET);
+	conf = slurm_conf_lock();
+	old_schedlog_level = conf->sched_log_level;
+	slurm_conf_unlock();
+	if (schedlog_level != old_schedlog_level)
+ 	    info ("sched: Setting scheduler log level to %d", schedlog_level);
+
+	lock_slurmctld (config_read_lock);
+	log_opts.logfile_level = schedlog_level;
+	sched_log_alter(log_opts, LOG_DAEMON, slurmctld_conf.sched_logfile);
+ 	unlock_slurmctld (config_read_lock);
+
+	conf = slurm_conf_lock();
+	conf->sched_log_level = schedlog_level;
+	slurm_conf_unlock();
+	slurmctld_conf.last_update = time(NULL);
+
+	if (schedlog_level != old_schedlog_level) {
+		schedlog("sched: Setting scheduler log level to %d", 
+			 schedlog_level);
+	}
 
 	slurm_send_rc_msg(msg, SLURM_SUCCESS);
 }

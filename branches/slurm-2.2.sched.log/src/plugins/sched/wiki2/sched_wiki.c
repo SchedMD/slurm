@@ -56,7 +56,7 @@ static int plugin_errno = SLURM_SUCCESS;
 /**************************************************************************/
 extern int init( void )
 {
-	verbose( "Wiki2 scheduler plugin loaded" );
+	verbose( "sched: Wiki2 scheduler plugin loaded" ); /* Bull Scheduler log */
 	return spawn_msg_thread();
 }
 
