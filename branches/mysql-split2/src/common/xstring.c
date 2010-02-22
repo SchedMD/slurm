@@ -155,7 +155,6 @@ static void strcatchar(char *str, char c)
 /*
  * Add a character to str, expanding str1 as needed.
  *   str1 (IN/OUT)	target string (pointer to in case of expansion)
- *   size (IN/OUT)	size of str1 (pointer to in case of expansion)
  *   c (IN)		character to add
  */
 void _xstrcatchar(char **str, char c)

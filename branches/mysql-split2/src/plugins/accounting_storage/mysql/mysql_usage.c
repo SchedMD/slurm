@@ -242,11 +242,12 @@ extern int get_usage_for_list(mysql_conn_t *mysql_conn,
 	switch (type) {
 	case DBD_GET_ASSOC_USAGE:
 		query = xstrdup_printf(
-			"select %s from \"%s_%s\" as t1, \"%s_%s\" as t2, \"%s_%s\" as t3 "
+			"select %s from \"%s_%s\" as t1, "
+			"\"%s_%s\" as t2, \"%s_%s\" as t3 "
 			"where (t1.time_start < %d && t1.time_start >= %d) "
 			"&& t1.id_assoc=t2.id_assoc && (%s) && "
 			"t2.lft between t3.lft and t3.rgt "
-			"order by t3.id, time_start;",
+			"order by t3.id_assoc, time_start;",
 			tmp, cluster_name, my_usage_table,
 			cluster_name, assoc_table, cluster_name, assoc_table,
 			end, start, id_str);
