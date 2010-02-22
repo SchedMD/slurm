@@ -799,9 +799,9 @@ static char *_setup_association_cond_qos(acct_association_cond_t *assoc_cond,
 		xstrcat(extra, ") &&");
 	} else if(assoc_cond->with_sub_accts) {
 		prefix = "t2";
-		xstrfmtcat(extra, ", %s as t2 where "
+		xstrfmtcat(extra, ", \"%s_%s\" as t2 where "
 			   "(t1.lft between t2.lft and t2.rgt) &&",
-			   assoc_table);
+			   cluster_name, assoc_table);
 	} else
 		xstrcat(extra, " where");
 	return extra;
