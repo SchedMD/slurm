@@ -557,10 +557,26 @@ static int _process_old_sql_line(const char *data_in, char **data_full_out)
 
 	while(data_in[i]) {
 		if(!strncmp("insert into ", data_in+i, 12)) {
+			beginning = xstrndup(data_in+i, 11);
 			break;
 		} else if(!strncmp("delete from ", data_in+i, 12)) {
+			beginning = xstrndup(data_in+i, 11);
 			delete = 1;
 			break;
+		} else if(!strncmp("drop table ", data_in+i, 11)) {
+			start = i;
+			i+=11;
+			while(data_in[i] && data_in[i-1] != ';')
+				i++;
+			xstrncat(data_out, data_in+start, i-start);
+			goto end_it;
+		} else if(!strncmp("truncate table ", data_in+i, 15)) {
+			start = i;
+			i+=15;
+			while(data_in[i] && data_in[i-1] != ';')
+				i++;
+			xstrncat(data_out, data_in+start, i-start);
+			goto end_it;
 		}
 		i++;
 	}
@@ -663,7 +679,7 @@ static int _process_old_sql_line(const char *data_in, char **data_full_out)
 			xstrcat(fields, "time_end");
 			i+=3;
 		} else if(!strncmp("comp_code", data_in+i, 9)) {
-			xstrcat(fields, "end_code");
+			xstrcat(fields, "exit_code");
 			i+=9;
 		} else if(!strncmp("alloc_cpus", data_in+i, 10)) {
 			xstrcat(fields, "cpus_alloc");
@@ -777,28 +793,121 @@ static int _process_old_sql_line(const char *data_in, char **data_full_out)
 
 	if(data_in[i] && data_in[i] == ')') {
 		ending_end = i;
-		start = 0;
+		ending_start = 0;
 		while(data_in[ending_end] && data_in[ending_end-1] != ';') {
 			if(!strncmp(data_in+ending_end,
 				    "on duplicate key", 16)) {
 				ending_start = ending_end;
 			}
+			if(ending_start) {
+				if(!strncmp("period_start",
+					    data_in+ending_end, 12)) {
+					xstrcat(ending, "time_start");
+					ending_end+=12;
+				} else if(!strncmp("period_end",
+						   data_in+ending_end, 10)) {
+					xstrcat(ending, "time_end");
+					ending_end+=10;
+				} else if(!strncmp("jobid",
+						   data_in+ending_end, 5)) {
+					xstrcat(ending, "id_job");
+					ending_end+=5;
+				} else if(!strncmp("stepid",
+						   data_in+ending_end, 6)) {
+					xstrcat(ending, "id_step");
+					ending_end+=6;
+				} else if(!strncmp("associd",
+						   data_in+ending_end, 7)) {
+					xstrcat(ending, "id_assoc");
+					ending_end+=7;
+				} else if(!strncmp("blockid",
+						   data_in+ending_end, 7)) {
+					xstrcat(ending, "id_block");
+					ending_end+=7;
+				} else if(!strncmp("wckeyid",
+						   data_in+ending_end, 7)) {
+					xstrcat(ending, "id_wckey");
+					ending_end+=7;
+				} else if(!strncmp("uid",
+						   data_in+ending_end, 3)) {
+					xstrcat(ending, "id_user");
+					ending_end+=3;
+				} else if(!strncmp("gid",
+						   data_in+ending_end, 3)) {
+					xstrcat(ending, "id_group");
+					ending_end+=3;
+				} else if(!strncmp("submit",
+						   data_in+ending_end, 6)) {
+					xstrcat(ending, "time_submit");
+					ending_end+=6;
+				} else if(!strncmp("eligible",
+						   data_in+ending_end, 8)) {
+					xstrcat(ending, "time_eligible");
+					ending_end+=8;
+				} else if(!strncmp("start",
+						   data_in+ending_end, 5)) {
+					xstrcat(ending, "time_start");
+					ending_end+=5;
+				} else if(!strncmp("suspended",
+						   data_in+ending_end, 9)) {
+					xstrcat(ending, "time_suspended");
+					ending_end+=9;
+				} else if(!strncmp("end",
+						   data_in+ending_end, 3)) {
+					xstrcat(ending, "time_end");
+					ending_end+=3;
+				} else if(!strncmp("comp_code",
+						   data_in+ending_end, 9)) {
+					xstrcat(ending, "exit_code");
+					ending_end+=9;
+				} else if(!strncmp("alloc_cpus",
+						   data_in+ending_end, 10)) {
+					xstrcat(ending, "cpus_alloc");
+					ending_end+=10;
+				} else if(!strncmp("req_cpus",
+						   data_in+ending_end, 8)) {
+					xstrcat(ending, "cpus_req");
+					ending_end+=8;
+				} else if(!strncmp("alloc_nodes",
+						   data_in+ending_end, 11)) {
+					xstrcat(ending, "nodes_alloc");
+					ending_end+=11;
+				} else if(!strncmp("name",
+						   data_in+ending_end, 4)) {
+					if(table == job_table)
+						xstrcat(ending, "job_name");
+					else if(table == step_table)
+						xstrcat(ending, "step_name");
+					ending_end+=4;
+				} else if(!strncmp("id",
+						   data_in+ending_end, 2)) {
+					if((table == assoc_day_table)
+					   || (table == assoc_hour_table)
+					   || (table == assoc_month_table))
+						xstrcat(ending, "id_assoc");
+					else
+						xstrcat(ending, "job_db_inx");
+					ending_end+=2;
+				}
+
+				if(data_in[ending_end])
+					xstrcatchar(ending,
+						    data_in[ending_end]);
+			}
 			ending_end++;
 		}
-		ending = xstrndup(data_in+ending_start,
-				  ending_end-ending_start);
 
 		/* get values */
-		while(data_in[i] && i < ending_start) {
+		while((i < ending_start) && i < ending_start) {
 			/* get to the start of the values */
-			while(data_in[i] && data_in[i-1] != '(')
+			while((i < ending_start) && data_in[i-1] != '(')
 				i++;
 
 			/* find the values */
 			cnt = 0;
-			while(data_in[i] && data_in[i] != ')') {
+			while((i < ending_start) && data_in[i] != ')') {
 				start = i;
-				while(data_in[i]
+				while((i < ending_start)
 				      && data_in[i] != ','
 				      && data_in[i] != ')') {
 					i++;
@@ -842,13 +951,15 @@ static int _process_old_sql_line(const char *data_in, char **data_full_out)
 					}
 				}
 				i++;
-				while(data_in[i] && data_in[i] == ' ')
+				while((i < ending_start) && data_in[i] == ' ')
 					i++;
 				cnt++;
 			}
 			if(new_cluster) {
-				info("new cluster, adding insert\n%s \"%s_%s\" (%s) values %s %s",
-				     beginning, cluster_name, table, fields, vals, ending);
+				/* info("new cluster, adding insert\n%s " */
+				/*      "\"%s_%s\" (%s) values %s %s", */
+				/*      beginning, cluster_name, table, */
+				/*      fields, vals, ending); */
 				xstrfmtcat(data_out,
 					   "%s \"%s_%s\" (%s) values %s %s",
 					   beginning, cluster_name,
@@ -860,11 +971,13 @@ static int _process_old_sql_line(const char *data_in, char **data_full_out)
 				new_cluster_name = NULL;
 			}
 
-			if(vals)
-				xstrfmtcat(vals, ", (%s)", new_vals);
-			else
-				xstrfmtcat(vals, "(%s)", new_vals);
-			xfree(new_vals);
+			if(new_vals) {
+				if(vals)
+					xstrfmtcat(vals, ", (%s)", new_vals);
+				else
+					xstrfmtcat(vals, "(%s)", new_vals);
+				xfree(new_vals);
+			}
 		}
 		i = ending_end;
 	}
@@ -875,20 +988,20 @@ static int _process_old_sql_line(const char *data_in, char **data_full_out)
 	}
 
 	if(!delete) {
-		info("adding insert\n%s \"%s_%s\" (%s) values %s %s",
-		     beginning, cluster_name, table, fields, vals, ending);
+		/* info("adding insert\n%s \"%s_%s\" (%s) values %s %s",
+		     beginning, cluster_name, table, fields, vals, ending); */
 		xstrfmtcat(data_out, "%s \"%s_%s\" (%s) values %s %s",
 			   beginning, cluster_name, table, fields,
 			   vals, ending);
 	} else {
 		if(fields) {
-			info("adding delete\n%s \"%s_%s\" %s",
-			     beginning, cluster_name, table, fields);
+			/* info("adding delete\n%s \"%s_%s\" %s", */
+			/*      beginning, cluster_name, table, fields); */
 			xstrfmtcat(data_out, "%s \"%s_%s\" %s",
 				   beginning, cluster_name, table, fields);
 		} else {
-			info("adding drop\ndrop table \"%s_%s\";",
-			     cluster_name, table);
+			/* info("adding drop\ndrop table \"%s_%s\";", */
+			/*      cluster_name, table); */
 			xstrfmtcat(data_out, "drop table \"%s_%s\";",
 				   cluster_name, table);
 		}
@@ -900,7 +1013,7 @@ end_it:
 	xfree(ending);
 	xfree(fields);
 	xfree(vals);
-
+	*data_full_out = data_out;
 	//info("returning\n%s", data_out);
 	if(rc == SLURM_ERROR)
 		return -1;
@@ -918,12 +1031,12 @@ static int _process_old_sql(char **data)
 			break;
 		i += rc;
 	}
-	info("returning\n%s", data_out);
-	rc = SLURM_ERROR;
+	//rc = -1;
 
 	xfree(data_in);
-	if(rc != SLURM_SUCCESS)
+	if(rc == -1)
 		xfree(data_out);
+	info("returning\n%s", data_out);
 	*data = data_out;
 	return rc;
 }
@@ -1050,7 +1163,8 @@ static uint32_t _archive_events(mysql_conn_t *mysql_conn, char *cluster_name,
 	}
 
 	/* get all the events started before this time listed */
-	query = xstrdup_printf("select %s from \"%s_%s\" where time_start <= %d "
+	query = xstrdup_printf("select %s from \"%s_%s\" where "
+			       "time_start <= %d "
 			       "&& time_end != 0 order by time_start asc",
 			       tmp, cluster_name, event_table, period_end);
 	xfree(tmp);
@@ -1177,8 +1291,8 @@ static uint32_t _archive_jobs(mysql_conn_t *mysql_conn, char *cluster_name,
 
 	/* get all the events started before this time listed */
 	query = xstrdup_printf("select %s from \"%s_%s\" where "
-			       "submit < %d && end != 0 && !deleted "
-			       "order by submit asc",
+			       "time_submit < %d && time_end != 0 && !deleted "
+			       "order by time_submit asc",
 			       tmp, cluster_name, job_table, period_end);
 	xfree(tmp);
 
@@ -1344,8 +1458,8 @@ static uint32_t _archive_steps(mysql_conn_t *mysql_conn, char *cluster_name,
 
 	/* get all the events started before this time listed */
 	query = xstrdup_printf("select %s from \"%s_%s\" where "
-			       "start <= %d && end != 0 "
-			       "&& !deleted order by start asc",
+			       "time_start <= %d && time_end != 0 "
+			       "&& !deleted order by time_start asc",
 			       tmp, cluster_name, step_table, period_end);
 	xfree(tmp);
 
@@ -1525,8 +1639,8 @@ static uint32_t _archive_suspend(mysql_conn_t *mysql_conn, char *cluster_name,
 
 	/* get all the events started before this time listed */
 	query = xstrdup_printf("select %s from \"%s_%s\" where "
-			       "start <= %d && end != 0 "
-			       "order by start asc",
+			       "time_start <= %d && time_end != 0 "
+			       "order by time_start asc",
 			       tmp, cluster_name, suspend_table, period_end);
 	xfree(tmp);
 
@@ -2058,7 +2172,9 @@ extern int mysql_jobacct_process_archive_load(mysql_conn_t *mysql_conn,
 	   was straight sql. */
 	if((strlen(data) >= 12)
 	   && (!strncmp("insert into ", data, 12)
-	       || !strncmp("delete from ", data, 12))) {
+	       || !strncmp("delete from ", data, 12)
+	       || !strncmp("drop table ", data, 11)
+	       || !strncmp("truncate table ", data, 15))) {
 		_process_old_sql(&data);
 		goto got_sql;
 	}

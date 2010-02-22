@@ -480,7 +480,7 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 					"select %s from \"%s_%s\" where "
 					"(time_start < %d && (time_end >= %d "
 					"|| time_end = 0)) && job_db_inx=%s "
-					"order by start",
+					"order by time_start",
 					suspend_str, cluster_name,
 					suspend_table,
 					curr_end, curr_start,
