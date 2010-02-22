@@ -263,19 +263,19 @@ extern int mysql_convert_tables(MYSQL *db_conn)
 					 "cluster(20), partition(20)))")
 		   == SLURM_ERROR)
 			goto end_it;
-		if(mysql_db_create_table(db_conn, assoc_day_table,
+		if(mysql_db_create_table(db_conn, "assoc_day_usage_table",
 					 assoc_usage_table_fields_2_1,
 					 ", primary key (id, period_start))")
 		   == SLURM_ERROR)
 			goto end_it;
 
-		if(mysql_db_create_table(db_conn, assoc_hour_table,
+		if(mysql_db_create_table(db_conn, "assoc_hour_usage_table",
 					 assoc_usage_table_fields_2_1,
 					 ", primary key (id, period_start))")
 		   == SLURM_ERROR)
 			goto end_it;
 
-		if(mysql_db_create_table(db_conn, assoc_month_table,
+		if(mysql_db_create_table(db_conn, "assoc_month_usage_table",
 					 assoc_usage_table_fields_2_1,
 					 ", primary key (id, period_start))")
 		   == SLURM_ERROR)
@@ -400,7 +400,7 @@ extern int mysql_convert_tables(MYSQL *db_conn)
 	result = NULL;
 
 	/* now do usage */
-	query = xstrdup_printf("show tables like '%s';", cluster_hour_table);
+	query = xstrdup("show tables like 'cluster_hour_usage_table';");
 
 	debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
 	if(!(result = mysql_db_query_ret(db_conn, query, 0))) {
@@ -411,21 +411,21 @@ extern int mysql_convert_tables(MYSQL *db_conn)
 
 	if((row = mysql_fetch_row(result))) {
 		/* make it up to date */
-		if(mysql_db_create_table(db_conn, cluster_day_table,
+		if(mysql_db_create_table(db_conn, "cluster_day_usage_table",
 					 cluster_usage_table_fields_2_1,
 					 ", primary key (cluster(20), "
 					 "period_start))")
 		   == SLURM_ERROR)
 			goto end_it;
 
-		if(mysql_db_create_table(db_conn, cluster_hour_table,
+		if(mysql_db_create_table(db_conn, "cluster_hour_usage_table",
 					 cluster_usage_table_fields_2_1,
 					 ", primary key (cluster(20), "
 					 "period_start))")
 		   == SLURM_ERROR)
 			goto end_it;
 
-		if(mysql_db_create_table(db_conn, cluster_month_table,
+		if(mysql_db_create_table(db_conn, "cluster_month_usage_table",
 					 cluster_usage_table_fields_2_1,
 					 ", primary key (cluster(20), "
 					 "period_start))")
@@ -456,19 +456,19 @@ extern int mysql_convert_tables(MYSQL *db_conn)
 					 "cluster(20)))")
 		   == SLURM_ERROR)
 			goto end_it;
-		if(mysql_db_create_table(db_conn, wckey_day_table,
+		if(mysql_db_create_table(db_conn, "wckey_day_usage_table",
 					 wckey_usage_table_fields_2_1,
 					 ", primary key (id, period_start))")
 		   == SLURM_ERROR)
 			goto end_it;
 
-		if(mysql_db_create_table(db_conn, wckey_hour_table,
+		if(mysql_db_create_table(db_conn, "wckey_hour_usage_table",
 					 wckey_usage_table_fields_2_1,
 					 ", primary key (id, period_start))")
 		   == SLURM_ERROR)
 			goto end_it;
 
-		if(mysql_db_create_table(db_conn, wckey_month_table,
+		if(mysql_db_create_table(db_conn, "wckey_month_usage_table",
 					 wckey_usage_table_fields_2_1,
 					 ", primary key (id, period_start))")
 		   == SLURM_ERROR)
@@ -589,7 +589,8 @@ extern int mysql_convert_tables(MYSQL *db_conn)
 
 			if(assoc_ids) {
 				xstrfmtcat(query,
-					   "insert into \"%s_%s\" (creation_time, "
+					   "insert into \"%s_%s\" "
+					   "(creation_time, "
 					   "mod_time, deleted, id_assoc, "
 					   "time_start, alloc_cpu_secs) "
 					   "select creation_time, mod_time, "
@@ -600,9 +601,10 @@ extern int mysql_convert_tables(MYSQL *db_conn)
 					   "deleted=VALUES(deleted), "
 					   "time_start=VALUES(time_start);",
 					   cluster_name, assoc_day_table,
-					   assoc_day_table, assoc_ids);
+					   "assoc_day_usage_table", assoc_ids);
 				xstrfmtcat(query,
-					   "insert into \"%s_%s\" (creation_time, "
+					   "insert into \"%s_%s\" "
+					   "(creation_time, "
 					   "mod_time, deleted, id_assoc, "
 					   "time_start, alloc_cpu_secs) "
 					   "select creation_time, mod_time, "
@@ -613,9 +615,10 @@ extern int mysql_convert_tables(MYSQL *db_conn)
 					   "deleted=VALUES(deleted), "
 					   "time_start=VALUES(time_start);",
 					   cluster_name, assoc_hour_table,
-					   assoc_hour_table, assoc_ids);
+					   "assoc_hour_usage_table", assoc_ids);
 				xstrfmtcat(query,
-					   "insert into \"%s_%s\" (creation_time, "
+					   "insert into \"%s_%s\" "
+					   "(creation_time, "
 					   "mod_time, deleted, id_assoc, "
 					   "time_start, alloc_cpu_secs) "
 					   "select creation_time, mod_time, "
@@ -626,7 +629,8 @@ extern int mysql_convert_tables(MYSQL *db_conn)
 					   "deleted=VALUES(deleted), "
 					   "time_start=VALUES(time_start);",
 					   cluster_name, assoc_month_table,
-					   assoc_month_table, assoc_ids);
+					   "assoc_month_usage_table",
+					   assoc_ids);
 				xfree(assoc_ids);
 				debug4("(%s:%d) query\n%s",
 				      THIS_FILE, __LINE__, query);
@@ -701,7 +705,8 @@ extern int mysql_convert_tables(MYSQL *db_conn)
 			   the job_table for this cluster and query
 			   against that.
 			*/
-			query = xstrdup_printf("select job_db_inx from \"%s_%s\"",
+			query = xstrdup_printf("select job_db_inx "
+					       "from \"%s_%s\"",
 					       cluster_name, job_table);
 			debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
 			if(!(result = mysql_db_query_ret(db_conn, query, 0))) {
@@ -811,7 +816,8 @@ extern int mysql_convert_tables(MYSQL *db_conn)
 
 		if(usage) {
 			query = xstrdup_printf(
-				"insert into \"%s_%s\" (creation_time, mod_time, "
+				"insert into \"%s_%s\" "
+				"(creation_time, mod_time, "
 				"deleted, time_start, cpu_count, "
 				"alloc_cpu_secs, down_cpu_secs, "
 				"pdown_cpu_secs, idle_cpu_secs, "
@@ -825,7 +831,7 @@ extern int mysql_convert_tables(MYSQL *db_conn)
 				"deleted=VALUES(deleted), "
 				"time_start=VALUES(time_start);",
 				cluster_name, cluster_day_table,
-				cluster_day_table, cluster_name);
+				"cluster_day_usage_table", cluster_name);
 			xstrfmtcat(query,
 				   "insert into \"%s_%s\" (creation_time, "
 				   "mod_time, deleted, time_start, cpu_count, "
@@ -842,7 +848,7 @@ extern int mysql_convert_tables(MYSQL *db_conn)
 				   "deleted=VALUES(deleted), "
 				   "time_start=VALUES(time_start);",
 				   cluster_name, cluster_hour_table,
-				   cluster_hour_table, cluster_name);
+				   "cluster_hour_usage_table", cluster_name);
 			xstrfmtcat(query,
 				   "insert into \"%s_%s\" (creation_time, "
 				   "mod_time, deleted, time_start, cpu_count, "
@@ -859,7 +865,7 @@ extern int mysql_convert_tables(MYSQL *db_conn)
 				   "deleted=VALUES(deleted), "
 				   "time_start=VALUES(time_start);",
 				   cluster_name, cluster_month_table,
-				   cluster_month_table, cluster_name);
+				   "cluster_month_usage_table", cluster_name);
 			debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
 			rc = mysql_db_query(db_conn, query);
 			xfree(query);
@@ -922,7 +928,8 @@ extern int mysql_convert_tables(MYSQL *db_conn)
 
 			if(wckey_ids) {
 				xstrfmtcat(query,
-					   "insert into \"%s_%s\" (creation_time, "
+					   "insert into \"%s_%s\" "
+					   "(creation_time, "
 					   "mod_time, deleted, id_wckey, "
 					   "time_start, alloc_cpu_secs, "
 					   "resv_cpu_secs, over_cpu_secs) "
@@ -935,9 +942,10 @@ extern int mysql_convert_tables(MYSQL *db_conn)
 					   "deleted=VALUES(deleted), "
 					   "time_start=VALUES(time_start);",
 					   cluster_name, wckey_day_table,
-					   wckey_day_table, wckey_ids);
+					   "wckey_day_usage_table", wckey_ids);
 				xstrfmtcat(query,
-					   "insert into \"%s_%s\" (creation_time, "
+					   "insert into \"%s_%s\" "
+					   "(creation_time, "
 					   "mod_time, deleted, id_wckey, "
 					   "time_start, alloc_cpu_secs, "
 					   "resv_cpu_secs, over_cpu_secs) "
@@ -950,9 +958,10 @@ extern int mysql_convert_tables(MYSQL *db_conn)
 					   "deleted=VALUES(deleted), "
 					   "time_start=VALUES(time_start);",
 					   cluster_name, wckey_hour_table,
-					   wckey_hour_table, wckey_ids);
+					   "wckey_hour_usage_table", wckey_ids);
 				xstrfmtcat(query,
-					   "insert into \"%s_%s\" (creation_time, "
+					   "insert into \"%s_%s\" "
+					   "(creation_time, "
 					   "mod_time, deleted, id_wckey, "
 					   "time_start, alloc_cpu_secs, "
 					   "resv_cpu_secs, over_cpu_secs) "
@@ -965,7 +974,8 @@ extern int mysql_convert_tables(MYSQL *db_conn)
 					   "deleted=VALUES(deleted), "
 					   "time_start=VALUES(time_start);",
 					   cluster_name, wckey_month_table,
-					   wckey_month_table, wckey_ids);
+					   "wckey_month_usage_table",
+					   wckey_ids);
 				xfree(wckey_ids);
 				debug4("(%s:%d) query\n%s",
 				      THIS_FILE, __LINE__, query);
@@ -989,11 +999,12 @@ extern int mysql_convert_tables(MYSQL *db_conn)
 				       "%s to %s_old, %s to %s_old,"
 				       "%s to %s_old;",
 				       assoc_table, assoc_table,
-				       assoc_day_table, assoc_day_table,
-				       assoc_hour_table,
-				       assoc_hour_table,
-				       assoc_month_table,
-				       assoc_month_table);
+				       "assoc_day_usage_table",
+				       "assoc_day_usage_table",
+				       "assoc_hour_usage_table",
+				       "assoc_hour_usage_table",
+				       "assoc_month_usage_table",
+				       "assoc_month_usage_table");
 		rc = mysql_db_query(db_conn, query);
 		xfree(query);
 		if(rc != SLURM_SUCCESS) {
@@ -1060,11 +1071,12 @@ extern int mysql_convert_tables(MYSQL *db_conn)
 	if(usage) {
 		query = xstrdup_printf("rename table %s to %s_old,"
 				       "%s to %s_old, %s to %s_old;",
-				       cluster_day_table, cluster_day_table,
-				       cluster_hour_table,
-				       cluster_hour_table,
-				       cluster_month_table,
-				       cluster_month_table);
+				       "cluster_day_usage_table",
+				       "cluster_day_usage_table",
+				       "cluster_hour_usage_table",
+				       "cluster_hour_usage_table",
+				       "cluster_month_usage_table",
+				       "cluster_month_usage_table");
 		rc = mysql_db_query(db_conn, query);
 		xfree(query);
 		if(rc != SLURM_SUCCESS) {
@@ -1078,11 +1090,12 @@ extern int mysql_convert_tables(MYSQL *db_conn)
 				       "%s to %s_old, %s to %s_old,"
 				       "%s to %s_old;",
 				       wckey_table, wckey_table,
-				       wckey_day_table, wckey_day_table,
-				       wckey_hour_table,
-				       wckey_hour_table,
-				       wckey_month_table,
-				       wckey_month_table);
+				       "wckey_day_usage_table",
+				       "wckey_day_usage_table",
+				       "wckey_hour_usage_table",
+				       "wckey_hour_usage_table",
+				       "wckey_month_usage_table",
+				       "wckey_month_usage_table");
 		rc = mysql_db_query(db_conn, query);
 		xfree(query);
 		if(rc != SLURM_SUCCESS) {
