@@ -1686,7 +1686,7 @@ extern int assoc_mgr_update_assocs(acct_update_object_t *update)
 				continue;
 			}
 		} else if(assoc_mgr_cluster_name) {
-			error("we don't have a cluster here, no "
+			error("We don't have a cluster here, no "
 			      "idea if this is our association.");
 			continue;
 		}
@@ -1987,8 +1987,8 @@ extern int assoc_mgr_update_wckeys(acct_update_object_t *update)
 				continue;
 			}
 		} else if(assoc_mgr_cluster_name) {
-			error("we don't have a cluster here, no "
-			      "idea if this is our association.");
+			error("We don't have a cluster here, no "
+			      "idea if this is our wckey.");
 			continue;
 		}
 

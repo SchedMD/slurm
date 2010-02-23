@@ -268,6 +268,7 @@ addto_update_list(List update_list, acct_update_type_t type, void *object)
 	case ACCT_ADD_ASSOC:
 	case ACCT_MODIFY_ASSOC:
 	case ACCT_REMOVE_ASSOC:
+		xassert(((acct_association_rec_t *)object)->cluster);
 		update_object->objects = list_create(
 			destroy_acct_association_rec);
 		break;
@@ -280,6 +281,7 @@ addto_update_list(List update_list, acct_update_type_t type, void *object)
 	case ACCT_ADD_WCKEY:
 	case ACCT_MODIFY_WCKEY:
 	case ACCT_REMOVE_WCKEY:
+		xassert(((acct_wckey_rec_t *)object)->cluster);
 		update_object->objects = list_create(
 			destroy_acct_wckey_rec);
 		break;

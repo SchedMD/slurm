@@ -147,8 +147,10 @@ static int _cluster_remove_wckeys(mysql_conn_t *mysql_conn,
 			xstrfmtcat(assoc_char, " || id_wckey='%s'", row[0]);
 
 		wckey_rec = xmalloc(sizeof(acct_wckey_rec_t));
-		/* we only need id when removing no real need to init */
+		/* we only need id and cluster when removing
+		   no real need to init */
 		wckey_rec->id = atoi(row[0]);
+		wckey_rec->cluster = xstrdup(cluster_name);
 		addto_update_list(mysql_conn->update_list, ACCT_REMOVE_WCKEY,
 				  wckey_rec);
 	}
