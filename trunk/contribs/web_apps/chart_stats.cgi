@@ -3,7 +3,7 @@
 #
 #  chart_stats.cgi - display job usage statistics and cluster utilization
 #
-# chart_stats creates bar charts of batch job usage and machine utilization
+# chart_stats creates bar charts of batch job usage and cluster utilization
 # It initially presents a page that allows the user to specify the chart
 # s/he wants to see.  It then invokes sreport to retrieve the data from the
 # SLURM database and creates a page containing a chart of this data.
@@ -59,7 +59,8 @@ use Time::Local;
 #
 delete @ENV{qw( BASH_ENV CDPATH ENV IFS PATH )};
 
-my $obj = Chart::StackedBars->new(600, 400) or die "Failed to create bar chart: $!\n";
+my $obj = Chart::StackedBars->new(600, 400)
+    or die "Failed to create bar chart: $!\n";
 my ($time_begin, $time_end);
 my ($yb, $mb, $db, $ye, $me, $de);
 my ($user, $account, $x_axis, $y_axis, $cluster);
@@ -551,9 +552,10 @@ sub add_top_account_bars {
 #
 sub add_job_size_bars {
     my ($cmd_base, $request, $cpus) = @_;
-    my ($cmd, @results, @field, @group, $i, $upper_range);
+    my ($cmd, @results, @field, @group, $i);
 
-    $obj->set ('y_label' => 'Percent of Allocated Cycles') if ($y_axis =~ /percent/);
+    $obj->set ('y_label' => 'Percent of Allocated Cycles')
+	if ($y_axis =~ /percent/);
 
     if ($x_axis eq 'aggregate') {
 	$obj->set ('legend' => 'none');
@@ -649,6 +651,65 @@ sub add_job_size_bars {
 }
 
 #
+# add_job_size_account_bars charts usage for the top ten accounts,
+# with each bar divided into job size ranges.  There are a fixed
+# number of job size bins which are based on a percentage of the
+# cluster: '1 - 9%', '10 - 29%', '30 - 74%', and '75 - 100%'
+#
+# In order to accommodate both account and job size data on the same
+# chart, we must ignore the x_axis selection and provide an aggregate
+# picture only.
+#
+sub add_job_size_account_bars {
+    my ($cmd_base, $request) = @_;
+    my ($cmd, @results, $account, @field);
+    my ($i, $j, $m, @data_points, @top_data, @legend_labels, $total_used);
+
+    $obj->set ('x_label' => 'Accounts');
+    $obj->set ('y_label' => 'Percent of Allocated Cycles')
+	if ($y_axis =~ /percent/);
+    @legend_labels = ('1 - 9%', '10 - 29%', '30 - 74%', '75 - 100%');
+
+    $cmd = "$cmd_base $request start=$time_begin end=$time_end";
+    @results = `$cmd`;
+
+    $i = 0;
+    for (@results) {
+	($account, $field[0], $field[1], $field[2], $field[3], undef) = split;
+	chop  @field if ($y_axis =~ /percent/);
+	$data_points[$i][0] = $account;
+	$data_points[$i][1] = $field[0];
+	$data_points[$i][2] = $field[1];
+	$data_points[$i][3] = $field[2];
+	$data_points[$i][4] = $field[3];
+	$data_points[$i][5] = $field[0] + $field[1] + $field[2] +  $field[3];
+	$total_used += $data_points[$i][5];
+	@field = ();
+	$i++;
+    }
+
+    $m = 1;
+    foreach $i (sort { @$b[5] <=> @$a[5] } @data_points) {
+	$top_data[0] = @$i[0];
+	for ($j = 1; $j < 5; $j++) {
+	    if ($y_axis =~ /percent/) {
+		$top_data[$j] = @$i[$j] * 100 / $total_used;
+	    }
+	    else {
+		$top_data[$j] = @$i[$j];
+	    }
+	}
+	$obj->add_pt(@top_data);
+	last if ($m++ > 9);
+	@top_data = ();
+    }
+
+    $obj->set ('legend_labels' => \@legend_labels);
+
+    return ($m > 1);
+}
+
+#
 # Cluster Utilization queries return 4 values per line
 #
 sub add_utilizatn_bars {
@@ -738,7 +799,7 @@ sub cluster_list {
 }
 
 #
-# Charts the user usage requests
+# Charts the user usage request
 #
 sub chart_user {
     my $title = "$user Usage of $cluster";
@@ -758,7 +819,7 @@ sub chart_user {
 }
 
 #
-# Charts the account usage requests
+# Charts the account usage request
 #
 sub chart_account {
     my $title = "$account Usage of $cluster";
@@ -778,8 +839,8 @@ sub chart_account {
 }
 
 #
-# Charts the top ten users.  Use the "Group" option to retrieve the combined
-# usage from all the accounts the user charged.
+# Charts the usage of the top ten users.  Use the "Group" option to
+# retrieve the combined usage from all the accounts the user charged.
 #
 sub chart_top_users {
     my $title = "$cluster Top Users";
@@ -797,7 +858,7 @@ sub chart_top_users {
 }
 
 #
-# Charts the top ten accounts.
+# Charts the usage of the top ten accounts.
 #
 sub chart_top_accounts {
     my $title = "$cluster Top Accounts";
@@ -816,7 +877,7 @@ sub chart_top_accounts {
 }
 
 #
-# Provides a chart of cluster usage based on job size.
+# Charts the cluster usage based on job size.
 #
 sub chart_job_size {
     my @brink;
@@ -846,11 +907,37 @@ sub chart_job_size {
     }
 }
 
+#
+# Charts the usage of the top ten accounts broken down by job size
+# categories.  We're unable to provide an interval option - only the
+# aggregate form is supported.
+#
 sub chart_size_accounts {
-    print_msg("Not Yet Implemented");
-#    print "/usr/bin/sreport -npt minutes",
-#    " job SizesByAccount FlatView cluster=$cluster",
-#    " start=$time_begin", " end=$time_end", br;
+    my @brink;
+    my $cpus = `/usr/bin/sacctmgr -nr show cluster cluster=$cluster format=cpucount`;
+    chomp;
+    $cpus =~ s/^\s+//;
+    $cpus =~ s/\s+$//;
+    $cpus = untaint_digits($cpus);
+
+    my $title = "$cluster Usage Grouped by Job Size and Accounts";
+    $obj->set ('title' => $title);
+
+    $brink[0] = int(0.1 * $cpus);
+    $brink[1] = int(0.3 * $cpus);
+    $brink[2] = int(0.75 * $cpus);
+
+    my $cmd = "/usr/bin/sreport -nt hours";
+    my $request = " job SizesByAccount FlatView cluster=$cluster" .
+	" format=Account grouping=$brink[0],$brink[1],$brink[2]";
+
+    if (add_job_size_account_bars($cmd, $request, $cpus)) {
+	$obj->cgi_png();
+    }
+    else {
+	print_msg("Failed to return Job Sizes/Accounts for $cluster" .
+		  " from $time_begin to $time_end");
+    }
 }
 
 #
