@@ -1312,7 +1312,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 	slurm_make_time_str(&resv_ptr->start_time, start_time,
 			    sizeof(start_time));
 	slurm_make_time_str(&resv_ptr->end_time, end_time, sizeof(end_time));
-	info("sched: Created reservation %s accounts=%s users=%s " /* Bull Scheduler log */
+	info("sched: Created reservation %s accounts=%s users=%s "
 	     "nodes=%s start=%s end=%s",
 	     resv_ptr->name, resv_ptr->accounts, resv_ptr->users,
 	     resv_ptr->node_list, start_time, end_time);
@@ -1562,7 +1562,7 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 	slurm_make_time_str(&resv_ptr->start_time, start_time,
 			    sizeof(start_time));
 	slurm_make_time_str(&resv_ptr->end_time, end_time, sizeof(end_time));
-	info("sched: Update reservation %s accounts=%s users=%s " /* Bull Scheduler log */
+	info("sched: Update reservation %s accounts=%s users=%s "
 	     "nodes=%s start=%s end=%s",
 	     resv_ptr->name, resv_ptr->accounts, resv_ptr->users,
 	     resv_ptr->node_list, start_time, end_time);

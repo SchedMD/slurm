@@ -156,9 +156,9 @@ slurm_ctl_conf_to_hv(slurm_ctl_conf_t* conf, HV* hv)
 	STORE_FIELD(hv, conf, slurmctld_debug, uint16_t);
 	if(conf->slurmctld_logfile)
 		STORE_FIELD(hv, conf, slurmctld_logfile, charp);
-	if(conf->sched_logfile)                                         /* Bull Scheduler log */
-		STORE_FIELD(hv, conf, sched_logfile, charp);                /* Bull Scheduler log */
-	STORE_FIELD(hv, conf, sched_log_level, uint16_t);               /* Bull Scheduler log */
+	if(conf->sched_logfile)
+		STORE_FIELD(hv, conf, sched_logfile, charp);
+	STORE_FIELD(hv, conf, sched_log_level, uint16_t);
 	if(conf->slurmctld_pidfile)
 		STORE_FIELD(hv, conf, slurmctld_pidfile, charp);
 	STORE_FIELD(hv, conf, slurmctld_port, uint16_t);

@@ -130,7 +130,7 @@ inline static void  _slurm_rpc_resv_show(slurm_msg_t * msg);
 inline static void  _slurm_rpc_requeue(slurm_msg_t * msg);
 inline static void  _slurm_rpc_takeover(slurm_msg_t * msg);
 inline static void  _slurm_rpc_set_debug_level(slurm_msg_t *msg);
-inline static void  _slurm_rpc_set_schedlog_level(slurm_msg_t *msg); /* Bull Scheduler log */
+inline static void  _slurm_rpc_set_schedlog_level(slurm_msg_t *msg);
 inline static void  _slurm_rpc_shutdown_controller(slurm_msg_t * msg);
 inline static void  _slurm_rpc_shutdown_controller_immediate(slurm_msg_t *
 							     msg);
@@ -536,8 +536,8 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 		conf_ptr->sched_params = slurm_sched_p_get_conf();
 	conf_ptr->schedport           = conf->schedport;
 	conf_ptr->schedrootfltr       = conf->schedrootfltr;
-    conf_ptr->sched_logfile       = xstrdup(conf->sched_logfile);        /* Bull Scheduler log */
-	conf_ptr->sched_log_level     = conf->sched_log_level;               /* Bull Scheduler log */
+	conf_ptr->sched_logfile       = xstrdup(conf->sched_logfile);
+	conf_ptr->sched_log_level     = conf->sched_log_level;
 	conf_ptr->sched_time_slice    = conf->sched_time_slice;
 	conf_ptr->schedtype           = xstrdup(conf->schedtype);
 	conf_ptr->select_type         = xstrdup(conf->select_type);
@@ -693,12 +693,12 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 		error("Security violation, RESOURCE_ALLOCATE from uid=%u",
 			(unsigned int) uid);
 	}
-	debug2("sched: Processing RPC: REQUEST_RESOURCE_ALLOCATION from uid=%u", /* Bull Scheduler log */
+	debug2("sched: Processing RPC: REQUEST_RESOURCE_ALLOCATION from uid=%u",
 		(unsigned int) uid);
 
 	/* do RPC call */
-	if ((job_desc_msg->alloc_node == NULL)
-	||  (job_desc_msg->alloc_node[0] == '\0')) {
+	if ((job_desc_msg->alloc_node == NULL) ||
+	    (job_desc_msg->alloc_node[0] == '\0')) {
 		error_code = ESLURM_INVALID_NODE_NAME;
 		error("REQUEST_RESOURCE_ALLOCATE lacks alloc_node from uid=%u",
 			(unsigned int) uid);
@@ -725,11 +725,11 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 	    (error_code == ESLURM_JOB_HELD))
 		job_waiting = true;
 
-	if ((error_code == SLURM_SUCCESS)
-	||  ((immediate == 0) && job_waiting)) {
+	if ((error_code == SLURM_SUCCESS) ||
+	    ((immediate == 0) && job_waiting)) {
 		xassert(job_ptr);
-		info("sched: _slurm_rpc_allocate_resources JobId=%u NodeList=%s %s", /* Bull Scheduler log */
-			job_ptr->job_id, job_ptr->nodes, TIME_STR);
+		info("sched: _slurm_rpc_allocate_resources JobId=%u "
+		     "NodeList=%s %s",job_ptr->job_id, job_ptr->nodes, TIME_STR);
 
 		/* send job_ID and node_name_ptr */
 		if (job_ptr->job_resrcs && job_ptr->job_resrcs->cpu_array_cnt) {
@@ -1197,7 +1197,7 @@ static void _slurm_rpc_job_step_kill(slurm_msg_t * msg)
 			slurm_send_rc_msg(msg, error_code);
 		} else {
 			if (job_step_kill_msg->signal == SIGKILL) {
-				info("sched: Cancel of JobId=%u by UID=%u, %s", /* Bull Scheduler log */
+				info("sched: Cancel of JobId=%u by UID=%u, %s",
 				     job_step_kill_msg->job_id, uid, TIME_STR);
 			} else {
 				info("Signal %u of JobId=%u by UID=%u, %s",
@@ -1227,7 +1227,7 @@ static void _slurm_rpc_job_step_kill(slurm_msg_t * msg)
 			slurm_send_rc_msg(msg, error_code);
 		} else {
 			if (job_step_kill_msg->signal == SIGKILL) {
-				info("sched: Cancel of StepId=%u.%u by UID=%u %s", /* Bull Scheduler log */
+				info("sched: Cancel of StepId=%u.%u by UID=%u %s",
 				     job_step_kill_msg->job_id,
 				     job_step_kill_msg->job_step_id, uid,
 				     TIME_STR);
@@ -1438,9 +1438,9 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 	} else {
 		slurm_step_layout_t *layout = step_rec->step_layout;
 
-		info("sched: _slurm_rpc_job_step_create: StepId=%u.%u %s %s", /* Bull Scheduler log */
-			step_rec->job_ptr->job_id, step_rec->step_id,
-			req_step_msg->node_list, TIME_STR);
+		info("sched: _slurm_rpc_job_step_create: StepId=%u.%u %s %s",
+		     step_rec->job_ptr->job_id, step_rec->step_id,
+		     req_step_msg->node_list, TIME_STR);
 
 		job_step_resp.job_step_id = step_rec->step_id;
 		job_step_resp.resv_ports  = xstrdup(step_rec->resv_ports);
@@ -2101,8 +2101,8 @@ static void _slurm_rpc_step_complete(slurm_msg_t *msg)
 				req->job_id, slurm_strerror(error_code));
 			slurm_send_rc_msg(msg, error_code);
 		} else {
-			debug2("sched: _slurm_rpc_step_complete JobId=%u: %s", /* Bull Scheduler log */
-				 req->job_id, TIME_STR);
+			debug2("sched: _slurm_rpc_step_complete JobId=%u: %s",
+			       req->job_id, TIME_STR);
 			slurm_send_rc_msg(msg, SLURM_SUCCESS);
 			dump_job = true;
 		}
@@ -2115,13 +2115,12 @@ static void _slurm_rpc_step_complete(slurm_msg_t *msg)
 		/* return result */
 		if (error_code) {
 			info("_slurm_rpc_step_complete 1 StepId=%u.%u %s",
-				req->job_id, req->job_step_id,
-				slurm_strerror(error_code));
+			     req->job_id, req->job_step_id,
+			     slurm_strerror(error_code));
 			slurm_send_rc_msg(msg, error_code);
 		} else {
-			info("sched: _slurm_rpc_step_complete StepId=%u.%u %s", /* Bull Scheduler log */
-				req->job_id, req->job_step_id,
-				TIME_STR);
+			info("sched: _slurm_rpc_step_complete StepId=%u.%u %s",
+			     req->job_id, req->job_step_id, TIME_STR);
 			slurm_send_rc_msg(msg, SLURM_SUCCESS);
 			dump_job = true;
 		}

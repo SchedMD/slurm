@@ -131,7 +131,7 @@ typedef struct {
   static int              log_lock;
 #endif /* WITH_PTHREADS */
 static log_t            *log = NULL;
-static log_t            *sched_log = NULL;      /* Bull Scheduler log */
+static log_t            *sched_log = NULL;
 
 #define LOG_INITIALIZED ((log != NULL) && (log->initialized))
 #define SCHED_LOG_INITIALIZED ((sched_log != NULL) && (sched_log->initialized))

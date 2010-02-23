@@ -1441,7 +1441,7 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
      reconfigure              re-read configuration files.                 \n\
      requeue <job_id>         re-queue a batch job                         \n\
      setdebug <level>         set slurmctld debug level                    \n\
-	 schedloglevel <slevel>   set scheduler log level                      \n\
+     schedloglevel <slevel>   set scheduler log level                      \n\
      show <ENTITY> [<ID>]     display state of identified entity, default  \n\
                               is all records.                              \n\
      shutdown <OPTS>          shutdown slurm daemons                       \n\
