@@ -190,7 +190,6 @@ static void         _kill_old_slurmctld(void);
 static void         _parse_commandline(int argc, char *argv[]);
 static void         _remove_assoc(acct_association_rec_t *rec);
 inline static int   _report_locks_set(void);
-static void         _sched_update_logging(void);
 static void *       _service_connection(void *arg);
 static int          _shutdown_backup_controller(int wait_time);
 static void *       _slurmctld_background(void *no_data);
@@ -230,7 +229,6 @@ int main(int argc, char *argv[])
 	slurm_conf_reinit(slurm_conf_filename);
 
 	update_logging();
-	_sched_update_logging();
 	_kill_old_slurmctld();
 
 	/*
@@ -279,7 +277,7 @@ int main(int argc, char *argv[])
 			  slurmctld_conf.slurmctld_logfile);
 		sched_log_alter(sched_log_opts, LOG_DAEMON,
 				slurmctld_conf.sched_logfile);
-		schedlog("sched: slurmctld starting");
+		debug("sched: slurmctld starting");
 
 		if (slurmctld_conf.slurmctld_logfile &&
 		    (slurmctld_conf.slurmctld_logfile[0] == '/')) {
@@ -1468,7 +1466,7 @@ static int _report_locks_set(void)
  */
 int slurmctld_shutdown(void)
 {
-	schedlog("sched: slurmctld terminating");
+	debug("sched: slurmctld terminating");
 	if (slurmctld_config.thread_id_rpc) {
 		pthread_kill(slurmctld_config.thread_id_rpc, SIGUSR1);
 		return SLURM_SUCCESS;
@@ -1669,17 +1667,14 @@ void update_logging(void)
 
 	log_alter(log_opts, SYSLOG_FACILITY_DAEMON,
 		  slurmctld_conf.slurmctld_logfile);
-}
 
-/* Reset scheduler logging based upon configuration parameters
- *   uses common slurmctld_conf data structure
- * NOTE: READ lock_slurmctld config before entry */
-static void _sched_update_logging(void)
-{
+	/*
+	 * SchedLogLevel restore
+	 */
 	if (slurmctld_conf.sched_log_level != (uint16_t) NO_VAL)
 		sched_log_opts.logfile_level = slurmctld_conf.sched_log_level;
 
-	sched_log_alter(sched_log_opts, SYSLOG_FACILITY_DAEMON,
+	sched_log_alter(sched_log_opts, LOG_DAEMON,
 			slurmctld_conf.sched_logfile);
 }
 
