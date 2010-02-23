@@ -3516,7 +3516,7 @@ inline static void  _slurm_rpc_job_notify(slurm_msg_t * msg)
 /* defined in controller.c */
 inline static void  _slurm_rpc_set_debug_level(slurm_msg_t *msg)
 {
-	int debug_level;
+	int debug_level, old_debug_level;
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
 	slurmctld_lock_t config_read_lock =
 		{ READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
@@ -3539,10 +3539,7 @@ inline static void  _slurm_rpc_set_debug_level(slurm_msg_t *msg)
 	debug_level = MIN (request_msg->debug_level, (LOG_LEVEL_END - 1));
 	debug_level = MAX (debug_level, LOG_LEVEL_QUIET);
 
-	info ("Setting debug level to %d", debug_level);
-
 	lock_slurmctld (config_read_lock);
-
 	if (slurmctld_config.daemonize) {
 		log_opts.stderr_level = LOG_LEVEL_QUIET;
 		if (slurmctld_conf.slurmctld_logfile) {
@@ -3560,23 +3557,23 @@ inline static void  _slurm_rpc_set_debug_level(slurm_msg_t *msg)
 		else
 			log_opts.logfile_level = LOG_LEVEL_QUIET;
 	}
-
 	log_alter(log_opts, LOG_DAEMON, slurmctld_conf.slurmctld_logfile);
-
 	unlock_slurmctld (config_read_lock);
 
 	conf = slurm_conf_lock();
+	old_debug_level = conf->slurmctld_debug;
 	conf->slurmctld_debug = debug_level;
 	slurm_conf_unlock();
 	slurmctld_conf.last_update = time(NULL);
+	if (debug_level != old_debug_level)
+		info("Set debug level to %d", debug_level);
 
 	slurm_send_rc_msg(msg, SLURM_SUCCESS);
 }
 
 inline static void  _slurm_rpc_set_schedlog_level(slurm_msg_t *msg)
 {
-	int schedlog_level;
-	int old_schedlog_level;
+	int schedlog_level, old_schedlog_level;
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
 	slurmctld_lock_t config_read_lock =
 		{ READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
@@ -3588,19 +3585,14 @@ inline static void  _slurm_rpc_set_schedlog_level(slurm_msg_t *msg)
 	debug2("Processing RPC: REQUEST_SET_SCHEDLOG_LEVEL from uid=%u",
 		(unsigned int) uid);
 	if (!validate_super_user(uid)) {
-		error("set scheduler log level request from non-super user uid=%d",
-		      uid);
+		error("set scheduler log level request from non-super user "
+		      "uid=%d", uid);
 		slurm_send_rc_msg(msg, EACCES);
 		return;
 	}
 
 	schedlog_level = MIN (request_msg->debug_level, (LOG_LEVEL_QUIET + 1));
 	schedlog_level = MAX (schedlog_level, LOG_LEVEL_QUIET);
-	conf = slurm_conf_lock();
-	old_schedlog_level = conf->sched_log_level;
-	slurm_conf_unlock();
-	if (schedlog_level != old_schedlog_level)
- 	    info ("sched: Setting scheduler log level to %d", schedlog_level);
 
 	lock_slurmctld (config_read_lock);
 	log_opts.logfile_level = schedlog_level;
@@ -3608,14 +3600,12 @@ inline static void  _slurm_rpc_set_schedlog_level(slurm_msg_t *msg)
  	unlock_slurmctld (config_read_lock);
 
 	conf = slurm_conf_lock();
+	old_schedlog_level = conf->sched_log_level;
 	conf->sched_log_level = schedlog_level;
 	slurm_conf_unlock();
 	slurmctld_conf.last_update = time(NULL);
-
-	if (schedlog_level != old_schedlog_level) {
-		schedlog("sched: Setting scheduler log level to %d", 
-			 schedlog_level);
-	}
+	if (schedlog_level != old_schedlog_level)
+		info("sched: Set scheduler log level to %d", schedlog_level);
 
 	slurm_send_rc_msg(msg, SLURM_SUCCESS);
 }
