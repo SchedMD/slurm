@@ -1493,6 +1493,25 @@ The default value is 300 seconds.
 The value may not exceed 65533 seconds.
 
 .TP
+\fBSlurmSchedLogFile\fR
+Fully qualified pathname of the scheduling event logging file. 
+The syntax of this parameter is the same as for \fBSlurmctldLogFile\fR. 
+In order to configure scheduler logging, set both the \fBSlurmSchedLogFile\fR
+and \fBSlurmSchedLogLevel\fR parameters.
+
+.TP
+\fBSlurmSchedLogLevel\fR
+The initial level of scheduling event logging, similar to the 
+\fBSlurmctlDebug\fR parameter used to control the initial level of 
+\fBslurmctld\fR logging.  
+Valid values for \fBSlurmSchedLogLevel\fR are "0" (scheduler logging 
+disabled) and "1" (scheduler logging enabled).  
+If this parameter is omitted, the value defaults to "0" (disabled). 
+In order to configure scheduler logging, set both the \fBSlurmSchedLogFile\fR
+and \fBSlurmSchedLogLevel\fR parameters.
+The scheduler logging level can be changed dynamically using \fBscontrol\fR.
+
+.TP
 \fBSrunEpilog\fR
 Fully qualified pathname of an executable to be run by srun following
 the completion of a job step.  The command line arguments for the
