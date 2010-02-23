@@ -3,6 +3,7 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 2.1.4
 ========================
+ -- Fix for purge script in accounting to use correct options.
 
 * Changes in SLURM 2.1.3-2
 ==========================
