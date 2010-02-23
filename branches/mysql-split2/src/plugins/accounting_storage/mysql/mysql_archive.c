@@ -1036,7 +1036,7 @@ static int _process_old_sql(char **data)
 	xfree(data_in);
 	if(rc == -1)
 		xfree(data_out);
-	info("returning\n%s", data_out);
+	//info("returning\n%s", data_out);
 	*data = data_out;
 	return rc;
 }
