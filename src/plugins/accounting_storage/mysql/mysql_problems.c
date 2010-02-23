@@ -112,6 +112,9 @@ extern int mysql_acct_no_assocs(mysql_conn_t *mysql_conn,
 	char *query = NULL;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
+	List use_cluster_list = mysql_cluster_list;
+	ListIterator itr = NULL;
+	char *cluster_name = NULL;
 
 	xassert(ret_list);
 
@@ -141,15 +144,30 @@ extern int mysql_acct_no_assocs(mysql_conn_t *mysql_conn,
 	}
 	xfree(query);
 
+	if(assoc_cond &&
+	   assoc_cond->cluster_list && list_count(assoc_cond->cluster_list))
+		use_cluster_list = assoc_cond->cluster_list;
+	else
+		slurm_mutex_lock(&mysql_cluster_list_lock);
+
+	itr = list_iterator_create(use_cluster_list);
 	while((row = mysql_fetch_row(result))) {
 		MYSQL_RES *result2 = NULL;
 		int cnt = 0;
 		acct_association_rec_t *assoc = NULL;
+
 		/* See if we have at least 1 association in the system */
-		query = xstrdup_printf("select distinct id from %s "
-				       "where deleted=0 && "
-				       "acct='%s' limit 1;",
-				       assoc_table, row[0]);
+		while((cluster_name = list_next(itr))) {
+			if(query)
+				xstrcat(query, " union ");
+			xstrfmtcat(query,
+				   "select distinct id_assoc from \"%s_%s\" "
+				   "where deleted=0 && "
+				   "acct='%s' limit 1",
+				   cluster_name, assoc_table, row[0]);
+		}
+		list_iterator_reset(itr);
+
 		if(!(result2 = mysql_db_query_ret(
 			     mysql_conn->db_conn, query, 0))) {
 			xfree(query);
@@ -171,6 +189,10 @@ extern int mysql_acct_no_assocs(mysql_conn_t *mysql_conn,
 		assoc->acct = xstrdup(row[0]);
 	}
 	mysql_free_result(result);
+
+	list_iterator_destroy(itr);
+	if(use_cluster_list == mysql_cluster_list)
+		slurm_mutex_unlock(&mysql_cluster_list_lock);
 
 	return rc;
 }
@@ -227,8 +249,7 @@ extern int mysql_acct_no_users(mysql_conn_t *mysql_conn,
 		if(query)
 			xstrcat(query, " union ");
 		xstrfmtcat(query, "select distinct %s, '%s' as cluster "
-			   "from \"%s_%s\" %s && user='' && lft=(rgt-1)"
-			   "order by cluster, acct;",
+			   "from \"%s_%s\" %s && user='' && lft=(rgt-1) ",
 			   tmp, cluster_name, cluster_name,
 			   assoc_table, extra);
 	}
@@ -237,7 +258,7 @@ extern int mysql_acct_no_users(mysql_conn_t *mysql_conn,
 		slurm_mutex_unlock(&mysql_cluster_list_lock);
 
 	if(query)
-		xstrcat(query, "order by cluster, acct;");
+		xstrcat(query, " order by cluster, acct;");
 
 	xfree(tmp);
 	xfree(extra);
@@ -282,6 +303,10 @@ extern int mysql_user_no_assocs_or_no_uid(mysql_conn_t *mysql_conn,
 	char *query = NULL;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
+	List use_cluster_list = mysql_cluster_list;
+	ListIterator itr = NULL;
+	char *cluster_name = NULL;
+
 	xassert(ret_list);
 
 	query = xstrdup_printf("select name from %s where deleted=0",
@@ -289,7 +314,6 @@ extern int mysql_user_no_assocs_or_no_uid(mysql_conn_t *mysql_conn,
 	if(assoc_cond &&
 	   assoc_cond->user_list && list_count(assoc_cond->user_list)) {
 		int set = 0;
-		ListIterator itr = NULL;
 		char *object = NULL;
 		xstrcat(query, " && (");
 		itr = list_iterator_create(assoc_cond->user_list);
@@ -310,6 +334,13 @@ extern int mysql_user_no_assocs_or_no_uid(mysql_conn_t *mysql_conn,
 	}
 	xfree(query);
 
+	if(assoc_cond &&
+	   assoc_cond->cluster_list && list_count(assoc_cond->cluster_list))
+		use_cluster_list = assoc_cond->cluster_list;
+	else
+		slurm_mutex_lock(&mysql_cluster_list_lock);
+
+	itr = list_iterator_create(use_cluster_list);
 	while((row = mysql_fetch_row(result))) {
 		MYSQL_RES *result2 = NULL;
 		int cnt = 0;
@@ -327,10 +358,17 @@ extern int mysql_user_no_assocs_or_no_uid(mysql_conn_t *mysql_conn,
 		}
 
 		/* See if we have at least 1 association in the system */
-		query = xstrdup_printf("select distinct id from %s "
-				       "where deleted=0 && "
-				       "user='%s' limit 1;",
-				       assoc_table, row[0]);
+		while((cluster_name = list_next(itr))) {
+			if(query)
+				xstrcat(query, " union ");
+			xstrfmtcat(query,
+				   "select distinct id_assoc from \"%s_%s\" "
+				   "where deleted=0 && "
+				   "user='%s' limit 1",
+				   cluster_name, assoc_table, row[0]);
+		}
+		list_iterator_reset(itr);
+
 		if(!(result2 = mysql_db_query_ret(
 			     mysql_conn->db_conn, query, 0))) {
 			xfree(query);
@@ -352,6 +390,10 @@ extern int mysql_user_no_assocs_or_no_uid(mysql_conn_t *mysql_conn,
 		assoc->user = xstrdup(row[0]);
 	}
 	mysql_free_result(result);
+
+	list_iterator_destroy(itr);
+	if(use_cluster_list == mysql_cluster_list)
+		slurm_mutex_unlock(&mysql_cluster_list_lock);
 
 	return rc;
 }
