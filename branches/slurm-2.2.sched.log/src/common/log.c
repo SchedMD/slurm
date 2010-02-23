@@ -225,7 +225,6 @@ _log_init(char *prog, log_options_t opt, log_facility_t fac, char *logfile )
 
 		if (!fp) {
 			char *errmsg = NULL;
-			slurm_mutex_unlock(&log_lock);
 			xslurm_strerrorcat(errmsg);
 			fprintf(stderr,
 				"%s: log_init(): Unable to open logfile"
@@ -302,19 +301,12 @@ _sched_log_init(char *prog, log_options_t opt, log_facility_t fac,
 	if (sched_log->opt.syslog_level > LOG_LEVEL_QUIET)
 		sched_log->facility = fac;
 
-	if (logfile && (sched_log->opt.logfile_level > LOG_LEVEL_QUIET)) {
+	if (logfile) {
 		FILE *fp;
 
 		fp = safeopen(logfile, "a", SAFEOPEN_LINK_OK);
 
 		if (!fp) {
-			char *errmsg = NULL;
-			slurm_mutex_unlock(&log_lock);
-			xslurm_strerrorcat(errmsg);
-			fprintf(stderr,
-				"%s: sched_log_init(): Unable to open logfile"
-			        "`%s': %s\n", prog, logfile, errmsg);
-			xfree(errmsg);
 			rc = errno;
 			goto out;
 		}
@@ -359,6 +351,8 @@ int sched_log_init(char *prog, log_options_t opt, log_facility_t fac, char *logf
 	slurm_mutex_lock(&log_lock);
 	rc = _sched_log_init(prog, opt, fac, logfile);
 	slurm_mutex_unlock(&log_lock);
+	if (rc)
+		fatal("sched_log_alter could not open %s: %m", logfile);
 	return rc;
 }
 
@@ -452,6 +446,8 @@ int sched_log_alter(log_options_t opt, log_facility_t fac, char *logfile)
 	slurm_mutex_lock(&log_lock);
 	rc = _sched_log_init(NULL, opt, fac, logfile);
 	slurm_mutex_unlock(&log_lock);
+	if (rc)
+		fatal("sched_log_alter could not open %s: %m", logfile);
 	return rc;
 }
 
