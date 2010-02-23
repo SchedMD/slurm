@@ -139,7 +139,7 @@ int get_cpuset(cpu_set_t *mask, slurmd_job_t *job)
 	char buftype[1024];
 
 	slurm_sprint_cpu_bind_type(buftype, job->cpu_bind_type);
-	debug3("get_cpuset (%s[%d]) %s\n", buftype, job->cpu_bind_type,
+	debug3("get_cpuset (%s[%d]) %s", buftype, job->cpu_bind_type,
 		job->cpu_bind);
 	CPU_ZERO(mask);
 

@@ -949,7 +949,7 @@ _create_it (int argc, char *argv[])
 
 	if (i >= argc) {
 		exit_code = 1;
-		error("Invalid creation entity: %s\n", argv[0]);
+		error("Invalid creation entity: %s", argv[0]);
 	} else if (error_code)
 		exit_code = 1;
 }
@@ -969,7 +969,7 @@ _delete_it (int argc, char *argv[])
 	int taglen = 0;
 
 	if (argc != 1) {
-		error("Only one option follows delete.  %d given.\n", argc);
+		error("Only one option follows delete.  %d given.", argc);
 		exit_code = 1;
 		return;
 	}
@@ -981,7 +981,7 @@ _delete_it (int argc, char *argv[])
 		val++;
 	} else {
 		error("Proper format is 'delete Partition=p'"
-		      " or 'delete Reservation=r'\n");
+		      " or 'delete Reservation=r'");
 		exit_code = 1;
 		return;
 	}

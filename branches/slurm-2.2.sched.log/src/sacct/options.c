@@ -896,7 +896,7 @@ void parse_command_line(int argc, char **argv)
 			end_char[strlen(end_char)-1] = '\0';
 		} else
 			end_char = xstrdup("Now");
-		info("Jobs eligible from %s - %s\n", start_char, end_char);
+		info("Jobs eligible from %s - %s", start_char, end_char);
 		xfree(start_char);
 		xfree(end_char);
 	}
@@ -908,7 +908,7 @@ void parse_command_line(int argc, char **argv)
 	      "\topt_fdump=%d\n"
 	      "\topt_field_list=%s\n"
 	      "\topt_help=%d\n"
-	      "\topt_allocs=%d\n",
+	      "\topt_allocs=%d",
 	      params.opt_completion,
 	      params.opt_dump,
 	      params.opt_dup,
@@ -952,13 +952,13 @@ void parse_command_line(int argc, char **argv)
 			list_destroy(job_cond->cluster_list);
 			job_cond->cluster_list = NULL;
 		}
-		debug2("Clusters requested:\tall\n");
+		debug2("Clusters requested:\tall");
 	} else if (job_cond->cluster_list
 		   && list_count(job_cond->cluster_list)) {
-		debug2( "Clusters requested:\n");
+		debug2( "Clusters requested:");
 		itr = list_iterator_create(job_cond->cluster_list);
 		while((start = list_next(itr)))
-			debug2("\t: %s\n", start);
+			debug2("\t: %s", start);
 		list_iterator_destroy(itr);
 	} else if(!job_cond->cluster_list
 		  || !list_count(job_cond->cluster_list)) {
@@ -983,7 +983,7 @@ void parse_command_line(int argc, char **argv)
 			list_destroy(job_cond->userid_list);
 			job_cond->userid_list = NULL;
 		}
-		debug2("Userids requested:\tall\n");
+		debug2("Userids requested:\tall");
 	} else if (job_cond->userid_list && list_count(job_cond->userid_list)) {
 		debug2("Userids requested:");
 		itr = list_iterator_create(job_cond->userid_list);
@@ -1000,10 +1000,10 @@ void parse_command_line(int argc, char **argv)
 	}
 
 	if (job_cond->groupid_list && list_count(job_cond->groupid_list)) {
-		debug2("Groupids requested:\n");
+		debug2("Groupids requested:");
 		itr = list_iterator_create(job_cond->groupid_list);
 		while((start = list_next(itr)))
-			debug2("\t: %s\n", start);
+			debug2("\t: %s", start);
 		list_iterator_destroy(itr);
 	}
 
@@ -1012,7 +1012,7 @@ void parse_command_line(int argc, char **argv)
 		debug2("Partitions requested:");
 		itr = list_iterator_create(job_cond->partition_list);
 		while((start = list_next(itr)))
-			debug2("\t: %s\n", start);
+			debug2("\t: %s", start);
 		list_iterator_destroy(itr);
 	}
 
@@ -1343,7 +1343,7 @@ void do_help(void)
 		_usage();
 		break;
 	default:
-		debug2("sacct bug: params.opt_help=%d\n",
+		debug2("sacct bug: params.opt_help=%d",
 			params.opt_help);
 	}
 }

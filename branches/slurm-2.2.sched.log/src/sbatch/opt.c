@@ -944,8 +944,8 @@ _get_argument(const char *file, int lineno, const char *line, int *skipped)
 	argument[i] = '\0';
 
 	if (quoted) /* Unmatched quote */
-		fatal ("%s: line %d: Unmatched `%c` in [%s]\n",
-				file, lineno, q_char, line);
+		fatal("%s: line %d: Unmatched `%c` in [%s]",
+		      file, lineno, q_char, line);
 
 	*skipped = ptr - line;
 
@@ -1994,14 +1994,14 @@ static bool _opt_verify(void)
 	}
 
 	if (opt.cpus_per_task <= 0) {
-		error("invalid number of cpus per task (-c %d)\n",
+		error("invalid number of cpus per task (-c %d)",
 		      opt.cpus_per_task);
 		verified = false;
 	}
 
 	if ((opt.min_nodes < 0) || (opt.max_nodes < 0) ||
 	    (opt.max_nodes && (opt.min_nodes > opt.max_nodes))) {
-		error("invalid number of nodes (-N %d-%d)\n",
+		error("invalid number of nodes (-N %d-%d)",
 		      opt.min_nodes, opt.max_nodes);
 		verified = false;
 	}

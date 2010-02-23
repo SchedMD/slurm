@@ -2346,7 +2346,7 @@ fed_load_table(fed_jobinfo_t *jp, int uid, int pid)
 				jp->tableinfo[i].table);
 		}
 		if(err != NTBL_SUCCESS) {
-			error("unable to load table: [%d] %s\n",
+			error("unable to load table: [%d] %s",
 			      err, _lookup_fed_status_tab(err));
 			return SLURM_ERROR;
 		}

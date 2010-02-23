@@ -376,7 +376,7 @@ static char *adapter_name_check(char *network)
         char *name;
 
 	if (regcomp(&re, pattern, REG_EXTENDED) != 0) {
-                error("sockname regex compilation failed\n");
+                error("sockname regex compilation failed");
                 return NULL;
         }
 	memset(pmatch, 0, sizeof(regmatch_t)*nmatch);
