@@ -2238,8 +2238,8 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 		job_ptr->start_time = job_ptr->end_time = now;
 	}
 
-	schedlog("sched: JobId=%u allocated resources: NodeList=%s",
-		 job_ptr->job_id, job_ptr->nodes);
+	debug2("sched: JobId=%u allocated resources: NodeList=%s",
+	       job_ptr->job_id, job_ptr->nodes);
 
 	return SLURM_SUCCESS;
 }
@@ -5293,14 +5293,14 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 
 	job_ptr = find_job_record(job_specs->job_id);
 	if (job_ptr == NULL) {
-		error("sched: update_job: job_id %u does not exist.",
+		error("update_job: job_id %u does not exist.",
 		      job_specs->job_id);
 		return ESLURM_INVALID_JOB_ID;
 	}
 	if ((uid == 0) || (uid == slurmctld_conf.slurm_user_id))
 		super_user = 1;
 	if ((job_ptr->user_id != uid) && (super_user == 0)) {
-		error("sched: Security violation, JOB_UPDATE RPC from uid %d",
+		error("Security violation, JOB_UPDATE RPC from uid %d",
 		      uid);
 		return ESLURM_USER_ID_MISSING;
 	}
@@ -5984,8 +5984,8 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			     " for job_id %u", job_specs->ntasks_per_node,
 			     job_specs->job_id);
 		} else {
-			error("sched: Not super user: setting ntasks_oper_node"
-			      " to job %u", job_specs->job_id);
+			error("sched: Not super user: ignore ntasks_oper_node "
+			      "change for job %u", job_specs->job_id);
 			error_code = ESLURM_ACCESS_DENIED;
 		}
 	}
@@ -6039,7 +6039,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			job_ptr->licenses = job_specs->licenses;
 			job_specs->licenses = NULL; /* nothing to free */
 			info("sched: update_job: setting licenses to %s for "
-			     "job %u",job_ptr->licenses, job_ptr->job_id);
+			     "job %u", job_ptr->licenses, job_ptr->job_id);
 		} else if (IS_JOB_RUNNING(job_ptr) && super_user) {
 			/* NOTE: This can result in oversubscription of
 			 * licenses */
