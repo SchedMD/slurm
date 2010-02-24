@@ -2091,7 +2091,10 @@ void inline slurmdbd_free_acct_coord_msg(dbd_acct_coord_msg_t *msg)
 
 void inline slurmdbd_free_cluster_cpus_msg(dbd_cluster_cpus_msg_t *msg)
 {
-	xfree(msg);
+	if (msg) {
+		xfree(msg->cluster_nodes);
+		xfree(msg);
+	}
 }
 
 void inline slurmdbd_free_rec_msg(slurmdbd_msg_type_t type,
