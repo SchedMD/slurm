@@ -137,6 +137,12 @@ static int _cluster_remove_wckeys(mysql_conn_t *mysql_conn,
 		return SLURM_ERROR;
 	}
 
+	if(!mysql_num_rows(result)) {
+		mysql_free_result(result);
+		xfree(query);
+		return SLURM_SUCCESS;
+	}
+
 	while((row = mysql_fetch_row(result))) {
 		acct_wckey_rec_t *wckey_rec = NULL;
 
@@ -163,7 +169,6 @@ static int _cluster_remove_wckeys(mysql_conn_t *mysql_conn,
 		xfree(assoc_char);
 		return SLURM_SUCCESS;
 	}
-	xfree(query);
 
 	rc = remove_common(mysql_conn, DBD_REMOVE_WCKEYS, now,
 			   user_name, wckey_table, assoc_char, assoc_char,
@@ -206,6 +211,11 @@ static int _cluster_get_wckeys(mysql_conn_t *mysql_conn,
 		return SLURM_ERROR;
 	}
 	xfree(query);
+
+	if(!mysql_num_rows(result)) {
+		mysql_free_result(result);
+		return SLURM_SUCCESS;
+	}
 
 	wckey_list = list_create(destroy_acct_wckey_rec);
 
@@ -310,11 +320,11 @@ extern int mysql_add_wckeys(mysql_conn_t *mysql_conn, uint32_t uid,
 
 		xstrfmtcat(query,
 			   "insert into %s "
-			   "(timestamp, action, name, actor, info) "
-			   "values (%d, %u, '%d', '%s', '%s');",
+			   "(timestamp, action, name, actor, info, cluster) "
+			   "values (%d, %u, 'id_wckey=%d', '%s', '%s', '%s');",
 			   txn_table,
 			   now, DBD_ADD_WCKEYS, object->id, user_name,
-			   tmp_extra);
+			   tmp_extra, object->cluster);
 
 		xfree(tmp_extra);
 		xfree(cols);

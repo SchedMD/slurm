@@ -512,7 +512,6 @@ extern int mysql_db_query(MYSQL *mysql_db, char *query)
 			       "mysql_query failed: %d %s\n%s",
 			       mysql_errno(mysql_db),
 			       mysql_error(mysql_db), query);
-			errno = 0;
 			goto end_it;
 		}
 		error("mysql_query failed: %d %s\n%s",
@@ -607,9 +606,15 @@ extern MYSQL_RES *mysql_db_query_ret(MYSQL *mysql_db, char *query, bool last)
 		else
 			result = _get_first_result(mysql_db);
 		if(!result && mysql_field_count(mysql_db)) {
-			/* should have returned data */
-			error("We should have gotten a result: %s",
-			      mysql_error(mysql_db));
+			if(errno == ER_NO_SUCH_TABLE)
+				debug4("We should have gotten a result, "
+				       "but the calling table "
+				       "doesn't exist: %s\n%s",
+				       mysql_error(mysql_db), query);
+			else
+				/* should have returned data */
+				error("We should have gotten a result: %s",
+				      mysql_error(mysql_db));
 		}
 	}
 

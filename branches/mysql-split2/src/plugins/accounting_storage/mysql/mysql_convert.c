@@ -485,6 +485,7 @@ extern int mysql_convert_tables(MYSQL *db_conn)
 
 		if(assocs) {
 			char *assoc_ids = NULL;
+			char *txn_ids = NULL;
 			int diff;
 
 			xstrfmtcat(query,
@@ -576,14 +577,23 @@ extern int mysql_convert_tables(MYSQL *db_conn)
 
 			if(mysql_num_rows(result)) {
 				while((row = mysql_fetch_row(result))) {
-					if(assoc_ids)
+					if(assoc_ids) {
 						xstrcat(assoc_ids, " || ");
-					else
+						xstrcat(txn_ids, " || ");
+					} else {
 						xstrcat(assoc_ids, "(");
+						xstrcat(txn_ids, "(");
+					}
 					xstrfmtcat(assoc_ids, "(id=%s)",
 						   row[0]);
+					xstrfmtcat(txn_ids,
+						   "(name like '%%id=%s %%' "
+						   "|| name like '%%id=%s)' "
+						   "|| name=%s)",
+						   row[0], row[0], row[0]);
 				}
 				xstrcat(assoc_ids, ")");
+				xstrcat(txn_ids, ")");
 			}
 			mysql_free_result(result);
 
@@ -639,6 +649,25 @@ extern int mysql_convert_tables(MYSQL *db_conn)
 				if(rc != SLURM_SUCCESS) {
 					error("Couldn't update assoc usage "
 					      "table correctly");
+					xfree(txn_ids);
+					break;
+				}
+
+				query = xstrdup_printf(
+					"update %s set cluster='%s' where "
+					"(action= %d || action = %d "
+					"|| action = %d) && %s;",
+					txn_table, cluster_name,
+					DBD_ADD_ASSOCS, DBD_MODIFY_ASSOCS,
+					DBD_REMOVE_ASSOCS, txn_ids);
+				xfree(txn_ids);
+				debug4("(%s:%d) query\n%s",
+				      THIS_FILE, __LINE__, query);
+				rc = mysql_db_query(db_conn, query);
+				xfree(query);
+				if(rc != SLURM_SUCCESS) {
+					error("Couldn't update assoc "
+					      "txn's correctly");
 					break;
 				}
 			}
@@ -878,6 +907,7 @@ extern int mysql_convert_tables(MYSQL *db_conn)
 
 		if(wckeys) {
 			char *wckey_ids = NULL;
+			char *txn_ids = NULL;
 
 			xstrfmtcat(query,
 				   "insert into \"%s_%s\" (creation_time, "
@@ -915,14 +945,23 @@ extern int mysql_convert_tables(MYSQL *db_conn)
 
 			if(mysql_num_rows(result)) {
 				while((row = mysql_fetch_row(result))) {
-					if(wckey_ids)
+					if(wckey_ids) {
 						xstrcat(wckey_ids, " || ");
-					else
+						xstrcat(txn_ids, " || ");
+					} else {
 						xstrcat(wckey_ids, "(");
+						xstrcat(txn_ids, "(");
+					}
 					xstrfmtcat(wckey_ids, "(id=%s)",
 						   row[0]);
+					xstrfmtcat(txn_ids,
+						   "(name like '%%id=%s %%' "
+						   "|| name like '%%id=%s)' "
+						   "|| name=%s)",
+						   row[0], row[0], row[0]);
 				}
 				xstrcat(wckey_ids, ")");
+				xstrcat(txn_ids, ")");
 			}
 			mysql_free_result(result);
 
@@ -986,6 +1025,24 @@ extern int mysql_convert_tables(MYSQL *db_conn)
 					      "table correctly");
 					break;
 				}
+
+				query = xstrdup_printf(
+					"update %s set cluster='%s' where "
+					"(action= %d || action = %d "
+					"|| action = %d) && %s;",
+					txn_table, cluster_name,
+					DBD_ADD_WCKEYS, DBD_MODIFY_WCKEYS,
+					DBD_REMOVE_WCKEYS, txn_ids);
+				xfree(txn_ids);
+				debug4("(%s:%d) query\n%s",
+				      THIS_FILE, __LINE__, query);
+				rc = mysql_db_query(db_conn, query);
+				xfree(query);
+				if(rc != SLURM_SUCCESS) {
+					error("Couldn't update wckey "
+					      "txn's correctly");
+					break;
+				}
 			}
 		}
 	}
@@ -1005,6 +1062,17 @@ extern int mysql_convert_tables(MYSQL *db_conn)
 				       "assoc_hour_usage_table",
 				       "assoc_month_usage_table",
 				       "assoc_month_usage_table");
+
+		xstrfmtcat(query, "update %s set name=replace(name, 'id=', "
+			   "'id_assoc=') where (action = %d || action = %d);",
+			   txn_table, cluster_name,
+			   DBD_MODIFY_ASSOCS, DBD_REMOVE_ASSOCS);
+
+		xstrfmtcat(query,
+			   "update %s set name=concat('id_assoc=', name) "
+			   "where action = %d;",
+			   txn_table, cluster_name, DBD_ADD_ASSOCS);
+
 		rc = mysql_db_query(db_conn, query);
 		xfree(query);
 		if(rc != SLURM_SUCCESS) {
@@ -1096,6 +1164,16 @@ extern int mysql_convert_tables(MYSQL *db_conn)
 				       "wckey_hour_usage_table",
 				       "wckey_month_usage_table",
 				       "wckey_month_usage_table");
+
+		xstrfmtcat(query, "update %s set name=replace(name, 'id=', "
+			   "'id_wckey=') where (action = %d || action = %d);",
+			   txn_table, DBD_MODIFY_WCKEYS, DBD_REMOVE_WCKEYS);
+
+		xstrfmtcat(query,
+			   "update %s set name=concat('id_wckey=', name) "
+			   "where action = %d;",
+			   txn_table, DBD_ADD_WCKEYS);
+
 		rc = mysql_db_query(db_conn, query);
 		xfree(query);
 		if(rc != SLURM_SUCCESS) {

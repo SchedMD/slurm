@@ -1629,6 +1629,11 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 	}
 	xfree(query);
 
+	if(!mysql_num_rows(result)) {
+		mysql_free_result(result);
+		return SLURM_SUCCESS;
+	}
+
 	assoc_list = list_create(destroy_acct_association_rec);
 	delta_qos_list = list_create(slurm_destroy_char);
 	while((row = mysql_fetch_row(result))) {
@@ -2259,17 +2264,19 @@ extern int mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 
 		if(txn_query)
 			xstrfmtcat(txn_query,
-				   ", (%d, %d, '%d', '%s', '%s')",
+				   ", (%d, %d, 'id_assoc=%d', "
+				   "'%s', '%s', '%s')",
 				   now, DBD_ADD_ASSOCS, assoc_id, user_name,
-				   tmp_extra);
+				   tmp_extra, object->cluster);
 		else
 			xstrfmtcat(txn_query,
 				   "insert into %s "
-				   "(timestamp, action, name, actor, info) "
-				   "values (%d, %d, '%d', '%s', '%s')",
+				   "(timestamp, action, name, actor, "
+				   "info, cluster) values (%d, %d, "
+				   "'id_assoc=%d', '%s', '%s', '%s')",
 				   txn_table,
 				   now, DBD_ADD_ASSOCS, assoc_id, user_name,
-				   tmp_extra);
+				   tmp_extra, object->cluster);
 		xfree(tmp_extra);
 		xfree(extra);
 	}
@@ -2308,7 +2315,8 @@ end_it:
 		if(txn_query) {
 			xstrcat(txn_query, ";");
 			debug4("%d(%s:%d) query\n%s",
-			       mysql_conn->conn, THIS_FILE, __LINE__, txn_query);
+			       mysql_conn->conn, THIS_FILE,
+			       __LINE__, txn_query);
 			rc = mysql_db_query(mysql_conn->db_conn,
 					    txn_query);
 			xfree(txn_query);
