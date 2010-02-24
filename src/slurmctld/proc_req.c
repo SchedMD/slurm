@@ -2637,8 +2637,13 @@ static void _slurm_rpc_resv_create(slurm_msg_t * msg)
 
 	/* return result */
 	if (error_code) {
-		info("_slurm_rpc_resv_create reservation=%s: %s",
-			resv_desc_ptr->name, slurm_strerror(error_code));
+		if (resv_desc_ptr->name) {
+			info("_slurm_rpc_resv_create reservation=%s: %s",
+			     resv_desc_ptr->name, slurm_strerror(error_code));
+		} else {
+			info("_slurm_rpc_resv_create: %s", 
+			     slurm_strerror(error_code));
+		}
 		slurm_send_rc_msg(msg, error_code);
 	} else {
 		slurm_msg_t response_msg;
