@@ -179,9 +179,9 @@ BEGIN_C_DECLS
 /*****************************************************************************\
  *      DEFINITIONS FOR VERSION MANAGEMENT
 \*****************************************************************************/
-/* Define SLURM version number. 
+/* Define SLURM version number.
  * High-order byte is major version.
- * Middle byte     is minor version. 
+ * Middle byte     is minor version.
  * Low-order byte  is micro version (NOTE: excludes "-pre#" component
  #                 of micro version used in pre-releases).
  * Use SLURM_VERSION_NUM macro to compare versions, for example
@@ -1935,14 +1935,14 @@ void slurm_print_key_pairs PARAMS((
 		FILE* out, void* key_pairs, char *title));
 
 /*
- * slurm_init_update_step_msg - initialize step update message with default 
+ * slurm_init_update_step_msg - initialize step update message with default
  *	values before calling slurm_update_step()
  * OUT step_msg - step update messasge descriptor
  */
 extern void slurm_init_update_step_msg PARAMS((
 		step_update_request_msg_t * step_msg));
 
-/* Update the time limit of a job step, 
+/* Update the time limit of a job step,
  * IN step_msg - step update messasge descriptor
  * RET 0 or -1 on error */
 extern int slurm_update_step PARAMS(( step_update_request_msg_t * step_msg ));
