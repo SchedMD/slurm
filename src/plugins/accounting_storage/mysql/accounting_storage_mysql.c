@@ -379,6 +379,7 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		{ "action", "smallint not null" },
 		{ "name", "text not null" },
 		{ "actor", "tinytext not null" },
+		{ "cluster", "tinytext not null default ''" },
 		{ "info", "blob" },
 		{ NULL, NULL}
 	};
@@ -467,6 +468,13 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 	if(mysql_db_create_table(db_conn, cluster_table,
 				 cluster_table_fields,
 				 ", primary key (name(20)))") == SLURM_ERROR)
+		return SLURM_ERROR;
+
+	/* This table needs to be made before conversions also since
+	   we add a cluster column.
+	*/
+	if(mysql_db_create_table(db_conn, txn_table, txn_table_fields,
+				 ", primary key (id))") == SLURM_ERROR)
 		return SLURM_ERROR;
 
 	slurm_mutex_lock(&mysql_cluster_list_lock);
@@ -567,10 +575,6 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		if(_set_qos_cnt(db_conn) != SLURM_SUCCESS)
 			return SLURM_ERROR;
 	}
-
-	if(mysql_db_create_table(db_conn, txn_table, txn_table_fields,
-				 ", primary key (id))") == SLURM_ERROR)
-		return SLURM_ERROR;
 
 	if(mysql_db_create_table(db_conn, user_table, user_table_fields,
 				 ", primary key (name(20)))") == SLURM_ERROR)
@@ -1267,23 +1271,32 @@ extern int modify_common(mysql_conn_t *mysql_conn,
 
 	if(vals[1])
 		tmp_vals = fix_double_quotes(vals+2);
+
 	if(cluster_centric) {
 		xassert(cluster_name);
 		xstrfmtcat(query,
 			   "update \"%s_%s\" set mod_time=%d%s "
 			   "where deleted=0 && %s;",
 			   cluster_name, table, now, vals, cond_char);
-	} else
+		xstrfmtcat(query,
+			   "insert into %s "
+			   "(timestamp, action, name, cluster, actor, info) "
+			   "values (%d, %d, '%s', '%s', '%s', '%s');",
+			   txn_table,
+			   now, type, tmp_cond_char, cluster_name,
+			   user_name, tmp_vals);
+	} else {
 		xstrfmtcat(query,
 			   "update %s set mod_time=%d%s "
 			   "where deleted=0 && %s;",
 			   table, now, vals, cond_char);
-	xstrfmtcat(query,
-		   "insert into %s "
-		   "(timestamp, action, name, actor, info) "
-		   "values (%d, %d, '%s', '%s', '%s');",
-		   txn_table,
-		   now, type, tmp_cond_char, user_name, tmp_vals);
+		xstrfmtcat(query,
+			   "insert into %s "
+			   "(timestamp, action, name, actor, info) "
+			   "values (%d, %d, '%s', '%s', '%s');",
+			   txn_table,
+			   now, type, tmp_cond_char, user_name, tmp_vals);
+	}
 	xfree(tmp_cond_char);
 	xfree(tmp_vals);
 	debug3("%d(%s:%d) query\n%s",
@@ -1370,8 +1383,8 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 	if(table != assoc_table) {
 		if(cluster_centric)
 			xstrfmtcat(query,
-				   "update \"%s_%s\" set mod_time=%d, deleted=1 "
-				   "where deleted=0 && (%s);",
+				   "update \"%s_%s\" set mod_time=%d, "
+				   "deleted=1 where deleted=0 && (%s);",
 				   cluster_name, table, now, name_char);
 		else
 			xstrfmtcat(query,
@@ -1379,11 +1392,20 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 				   "where deleted=0 && (%s);",
 				   table, now, name_char);
 	}
-	xstrfmtcat(query,
-		   "insert into %s (timestamp, action, name, actor) "
-		   "values (%d, %d, '%s', '%s');",
-		   txn_table,
-		   now, type, tmp_name_char, user_name);
+
+	if(cluster_centric)
+		xstrfmtcat(query,
+			   "insert into %s (timestamp, action, name, "
+			   "actor, cluster) values (%d, %d, '%s', '%s', '%s');",
+			   txn_table,
+			   now, type, tmp_name_char, user_name, cluster_name);
+	else
+		xstrfmtcat(query,
+			   "insert into %s (timestamp, action, name, actor) "
+			   "values (%d, %d, '%s', '%s');",
+			   txn_table,
+			   now, type, tmp_name_char, user_name);
+
 	xfree(tmp_name_char);
 
 	debug3("%d(%s:%d) query\n%s",

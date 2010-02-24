@@ -799,7 +799,7 @@ expect {
 		wait
 	}
 }
-exit;
+
 if {$matches != 2} {
 	send_user "\nFAILURE:  File load 3 incorrect with only $matches.\n"
 	incr exit_code 1

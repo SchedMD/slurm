@@ -319,7 +319,8 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 	 * coordinator of.
 	 */
 	if(!is_admin && (private_data & PRIVATE_DATA_JOBS)) {
-		query = xstrdup_printf("select lft from \"%s_%s\" where user='%s'",
+		query = xstrdup_printf("select lft from \"%s_%s\" "
+				       "where user='%s'",
 				       cluster_name, assoc_table, user->name);
 		if(user->coord_accts) {
 			acct_coord_rec_t *coord = NULL;

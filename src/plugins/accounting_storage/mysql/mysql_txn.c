@@ -54,6 +54,8 @@ extern List mysql_get_txn(mysql_conn_t *mysql_conn, uid_t uid,
 	int i=0;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
+	List use_cluster_list = mysql_cluster_list;
+	bool locked = 0;
 
 	/* if this changes you will need to edit the corresponding enum */
 	char *txn_req_inx[] = {
@@ -62,7 +64,8 @@ extern List mysql_get_txn(mysql_conn_t *mysql_conn, uid_t uid,
 		"action",
 		"name",
 		"actor",
-		"info"
+		"info",
+		"cluster"
 	};
 	enum {
 		TXN_REQ_ID,
@@ -71,6 +74,7 @@ extern List mysql_get_txn(mysql_conn_t *mysql_conn, uid_t uid,
 		TXN_REQ_NAME,
 		TXN_REQ_ACTOR,
 		TXN_REQ_INFO,
+		TXN_REQ_CLUSTER,
 		TXN_REQ_COUNT
 	};
 
@@ -114,11 +118,6 @@ extern List mysql_get_txn(mysql_conn_t *mysql_conn, uid_t uid,
 
 	if(txn_cond->cluster_list && list_count(txn_cond->cluster_list)) {
 		set = 0;
-		if(assoc_extra)
-			xstrcat(assoc_extra, " && (");
-		else
-			xstrcat(assoc_extra, " where (");
-
 		if(name_extra)
 			xstrcat(name_extra, " && (");
 		else
@@ -127,20 +126,18 @@ extern List mysql_get_txn(mysql_conn_t *mysql_conn, uid_t uid,
 		itr = list_iterator_create(txn_cond->cluster_list);
 		while((object = list_next(itr))) {
 			if(set) {
-				xstrcat(assoc_extra, " || ");
 				xstrcat(name_extra, " || ");
 			}
-			xstrfmtcat(assoc_extra, "cluster='%s'", object);
-
-			xstrfmtcat(name_extra, "(name like '%%\\'%s\\'%%'"
-				   " || name='%s')"
+			xstrfmtcat(name_extra, "(cluster='%s' || "
+				   "name like '%%\\'%s\\'%%' || name='%s')"
 				   " || (info like '%%cluster=\\'%s\\'%%')",
-				   object, object, object);
+				   object, object, object, object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
 		xstrcat(assoc_extra, ")");
 		xstrcat(name_extra, ")");
+		use_cluster_list = txn_cond->cluster_list;
 	}
 
 	if(txn_cond->user_list && list_count(txn_cond->user_list)) {
@@ -176,50 +173,62 @@ extern List mysql_get_txn(mysql_conn_t *mysql_conn, uid_t uid,
 	}
 
 	if(assoc_extra) {
-		query = xstrdup_printf("select id from %s%s",
-				       assoc_table, assoc_extra);
-		xfree(assoc_extra);
-
-		debug3("%d(%s:%d) query\n%s",
-		       mysql_conn->conn, THIS_FILE, __LINE__, query);
-		if(!(result = mysql_db_query_ret(
-			     mysql_conn->db_conn, query, 0))) {
-			xfree(query);
-			return NULL;
+		if(!locked && (use_cluster_list == mysql_cluster_list)) {
+			slurm_mutex_lock(&mysql_cluster_list_lock);
+			locked = 1;
 		}
-		xfree(query);
 
-		if(extra)
-			xstrcat(extra, " && (");
-		else
-			xstrcat(extra, " where (");
-
-		set = 0;
-
-		if(mysql_num_rows(result)) {
-			if(name_extra) {
-				xstrfmtcat(extra, "(%s) || (", name_extra);
-				xfree(name_extra);
-			} else
-				xstrcat(extra, "(");
-			while((row = mysql_fetch_row(result))) {
-				if(set)
-					xstrcat(extra, " || ");
-
-				xstrfmtcat(extra, "(name like '%%id=%s %%' "
-					   "|| name like '%%id=%s)' "
-					   "|| name=%s)",
-					   row[0], row[0], row[0]);
-				set = 1;
+		itr = list_iterator_create(use_cluster_list);
+		while((object = list_next(itr))) {
+			xstrfmtcat(query, "select id_assoc from \"%s_%s\"%s",
+				   object, assoc_table, assoc_extra);
+			debug3("%d(%s:%d) query\n%s",
+			       mysql_conn->conn, THIS_FILE, __LINE__, query);
+			if(!(result = mysql_db_query_ret(
+				     mysql_conn->db_conn, query, 0))) {
+				xfree(query);
+				break;
 			}
-			xstrcat(extra, "))");
-		} else if(name_extra) {
-			xstrfmtcat(extra, "(%s))", name_extra);
-			xfree(name_extra);
+			xfree(query);
+
+			if(mysql_num_rows(result)) {
+				if(extra)
+					xstrfmtcat(extra,
+						   " || (cluster='%s' && (");
+				else
+					xstrfmtcat(extra,
+						   " where (cluster='%s' && (");
+
+				set = 0;
+
+				while((row = mysql_fetch_row(result))) {
+					if(set)
+						xstrcat(extra, " || ");
+
+					xstrfmtcat(extra,
+						   "(name like "
+						   "'%%id_assoc=%s %%' "
+						   "|| name like "
+						   "'%%id_assoc=%s)')",
+						   row[0], row[0]);
+					set = 1;
+				}
+				xstrcat(extra, "))");
+			}
+			mysql_free_result(result);
 		}
-		mysql_free_result(result);
+		list_iterator_destroy(itr);
+
+		xfree(assoc_extra);
 	}
 
+	if(name_extra) {
+		if(extra)
+			xstrfmtcat(extra, " && (%s)", name_extra);
+		else
+			xstrfmtcat(extra, " where (%s)", name_extra);
+		xfree(name_extra);
+	}
 	/*******************************************/
 
 	if(txn_cond->action_list && list_count(txn_cond->action_list)) {
@@ -271,7 +280,7 @@ extern List mysql_get_txn(mysql_conn_t *mysql_conn, uid_t uid,
 				      object);
 				xfree(extra);
 				list_iterator_destroy(itr);
-				return NULL;
+				goto end_it;
 			}
 
 			if(set)
@@ -347,6 +356,11 @@ extern List mysql_get_txn(mysql_conn_t *mysql_conn, uid_t uid,
 			       "set session group_concat_max_len=65536;");
 
 empty:
+	if(!locked && (use_cluster_list == mysql_cluster_list)) {
+		slurm_mutex_lock(&mysql_cluster_list_lock);
+		locked = 1;
+	}
+
 	xfree(tmp);
 	xstrfmtcat(tmp, "%s", txn_req_inx[i]);
 	for(i=1; i<TXN_REQ_COUNT; i++) {
@@ -368,7 +382,7 @@ empty:
 	if(!(result = mysql_db_query_ret(
 		     mysql_conn->db_conn, query, 0))) {
 		xfree(query);
-		return NULL;
+		goto end_it;
 	}
 	xfree(query);
 
@@ -385,6 +399,7 @@ empty:
 		txn->set_info = xstrdup(row[TXN_REQ_INFO]);
 		txn->timestamp = atoi(row[TXN_REQ_TS]);
 		txn->where_query = xstrdup(row[TXN_REQ_NAME]);
+		txn->clusters = xstrdup(row[TXN_REQ_CLUSTER]);
 
 		if(txn_cond && txn_cond->with_assoc_info
 		   && (txn->action == DBD_ADD_ASSOCS
@@ -392,35 +407,41 @@ empty:
 		       || txn->action == DBD_REMOVE_ASSOCS)) {
 			MYSQL_RES *result2 = NULL;
 			MYSQL_ROW row2;
-
-			query = xstrdup_printf(
+			if(txn->clusters) {
+				query = xstrdup_printf(
 				"select "
 				"group_concat(distinct user order by user), "
-				"group_concat(distinct acct order by acct), "
-				"group_concat(distinct cluster "
-				"order by cluster) from %s where %s",
-				assoc_table, row[TXN_REQ_NAME]);
-			debug4("%d(%s:%d) query\n%s", mysql_conn->conn,
-			       THIS_FILE, __LINE__, query);
-			if(!(result2 = mysql_db_query_ret(
-				     mysql_conn->db_conn, query, 0))) {
+				"group_concat(distinct acct order by acct) "
+				"from \"%s_%s\" where %s",
+				txn->clusters, assoc_table, row[TXN_REQ_NAME]);
+				debug4("%d(%s:%d) query\n%s", mysql_conn->conn,
+				       THIS_FILE, __LINE__, query);
+				if(!(result2 = mysql_db_query_ret(
+					     mysql_conn->db_conn, query, 0))) {
+					xfree(query);
+					continue;
+				}
 				xfree(query);
-				continue;
-			}
-			xfree(query);
 
-			if((row2 = mysql_fetch_row(result2))) {
-				if(row2[0] && row2[0][0])
-					txn->users = xstrdup(row2[0]);
-				if(row2[1] && row2[1][0])
-					txn->accts = xstrdup(row2[1]);
-				if(row2[2] && row2[2][0])
-					txn->clusters = xstrdup(row2[2]);
+				if((row2 = mysql_fetch_row(result2))) {
+					if(row2[0] && row2[0][0])
+						txn->users = xstrdup(row2[0]);
+					if(row2[1] && row2[1][0])
+						txn->accts = xstrdup(row2[1]);
+				}
+				mysql_free_result(result2);
+			} else {
+				error("We can't handle associations "
+				      "from action %s yet.",
+				      slurmdbd_msg_type_2_str(txn->action, 1));
 			}
-			mysql_free_result(result2);
 		}
 	}
 	mysql_free_result(result);
+
+end_it:
+	if(locked)
+		slurm_mutex_unlock(&mysql_cluster_list_lock);
 
 	return txn_list;
 }
