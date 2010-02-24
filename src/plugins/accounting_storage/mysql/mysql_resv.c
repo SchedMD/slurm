@@ -206,7 +206,7 @@ extern int mysql_add_resv(mysql_conn_t *mysql_conn,
 	_setup_resv_limits(resv, &cols, &vals, &extra);
 
 	xstrfmtcat(query,
-		   "insert into \"%s_%s\" (id%s) values (%u%s) "
+		   "insert into \"%s_%s\" (id_resv%s) values (%u%s) "
 		   "on duplicate key update deleted=0%s;",
 		   resv->cluster, resv_table, cols, resv->id, vals, extra);
 	debug3("%d(%s:%d) query\n%s",
@@ -320,8 +320,8 @@ try_again:
 			xfree(query);
 			query = xstrdup_printf(
 				"select %s from \"%s_%s\" where id_resv=%u "
-				"and time_start <= %d and cluster='%s' "
-				"and deleted=0 order by time_start desc "
+				"and time_start <= %d and deleted=0 "
+				"order by time_start desc "
 				"limit 1;",
 				cols, resv->cluster, resv_table, resv->id,
 				resv->time_end);
@@ -386,7 +386,7 @@ try_again:
 		   time which we can just update it */
 		query = xstrdup_printf("update \"%s_%s\" set deleted=0%s "
 				       "where deleted=0 and id_resv=%u "
-				       "and time_start=%d and cluster='%s';",
+				       "and time_start=%d;",
 				       resv->cluster, resv_table,
 				       extra, resv->id, start);
 	} else {
@@ -395,12 +395,12 @@ try_again:
 		 * entry. */
 		query = xstrdup_printf("update \"%s_%s\" set time_end=%d "
 				       "where deleted=0 && id_resv=%u "
-				       "&& time_start=%d and cluster='%s';",
+				       "&& time_start=%d;",
 				       resv->cluster, resv_table,
 				       resv->time_start-1,
 				       resv->id, start);
 		xstrfmtcat(query,
-			   "insert into \"%s_%s\" (id%s) "
+			   "insert into \"%s_%s\" (id_resv%s) "
 			   "values (%u%s) "
 			   "on duplicate key update deleted=0%s;",
 			   resv->cluster, resv_table, cols, resv->id,
