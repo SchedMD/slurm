@@ -338,6 +338,7 @@ Summary: PAM module for restricting access to compute nodes via SLURM.
 Group: System Environment/Base
 Requires: slurm slurm-devel
 BuildRequires: pam-devel
+Obsoletes: pam_slurm
 %description pam_slurm
 This module restricts access to compute nodes in a cluster where the Simple
 Linux Utility for Resource Managment (SLURM) is in use.  Access is granted
