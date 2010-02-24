@@ -597,7 +597,7 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 			if(set)
 				xstrcat(extra, ")");
 		}
-		query =	xstrdup_printf("select %s from \"%s_%s\" t1 "
+		query =	xstrdup_printf("select %s from \"%s_%s\" as t1 "
 				       "where t1.job_db_inx=%s",
 				       step_fields, cluster_name,
 				       step_table, id);
@@ -606,7 +606,9 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 			xfree(extra);
 		}
 
-		//info("query = %s", query);
+		debug4("%d(%s:%d) query\n%s",
+		       mysql_conn->conn, THIS_FILE, __LINE__, query);
+
 		if(!(step_result = mysql_db_query_ret(
 			     mysql_conn->db_conn, query, 0))) {
 			xfree(query);
@@ -1246,7 +1248,7 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 
 	xfree(tmp2);
 	xstrfmtcat(tmp2, "%s", step_req_inx[0]);
-	for(i=0; i<STEP_REQ_COUNT; i++) {
+	for(i=1; i<STEP_REQ_COUNT; i++) {
 		xstrfmtcat(tmp2, ", %s", step_req_inx[i]);
 	}
 

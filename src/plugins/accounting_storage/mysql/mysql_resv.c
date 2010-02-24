@@ -281,10 +281,9 @@ extern int mysql_modify_resv(mysql_conn_t *mysql_conn,
 		return SLURM_ERROR;
 	}
 
-	for(i=0; i<RESV_COUNT; i++) {
-		if(i)
-			xstrcat(cols, ", ");
-		xstrcat(cols, resv_req_inx[i]);
+	xstrfmtcat(cols, "%s", resv_req_inx[0]);
+	for(i=1; i<RESV_COUNT; i++) {
+		xstrfmtcat(cols, ", %s", resv_req_inx[i]);
 	}
 
 	/* check for both the last start and the start because most
