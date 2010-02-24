@@ -4,6 +4,9 @@ documents those changes that are of interest to users and admins.
 * Changes in SLURM 2.1.4
 ========================
  -- Fix for purge script in accounting to use correct options.
+ -- If SelectType=select/linear and SelectTypeParameters=CR_Memory fix bug that
+    would fail to release memory reserved for a job if "scontrol reconfigure" 
+    is executed while the job is in completing state.
 
 * Changes in SLURM 2.1.3-2
 ==========================

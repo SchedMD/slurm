@@ -1551,8 +1551,7 @@ static void _init_node_cr(void)
 	/* record running and suspended jobs in node_cr_records */
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
-		if (!IS_JOB_RUNNING(job_ptr) && !IS_JOB_SUSPENDED(job_ptr) &&
-		    !IS_JOB_COMPLETING(job_ptr))
+		if (!IS_JOB_RUNNING(job_ptr) && !IS_JOB_SUSPENDED(job_ptr))
 			continue;
 		if ((job_resrcs_ptr = job_ptr->job_resrcs) == NULL) {
 			error("job %u lacks a job_resources struct",
@@ -1606,8 +1605,7 @@ static void _init_node_cr(void)
 					continue;
 				}
 				part_cr_ptr->tot_job_cnt++;
-				if (IS_JOB_RUNNING(job_ptr) ||
-				    IS_JOB_COMPLETING(job_ptr)) {
+				if (IS_JOB_RUNNING(job_ptr)) {
 					_add_run_job(part_cr_ptr,
 						     job_ptr->job_id);
 					part_cr_ptr->run_job_cnt++;
