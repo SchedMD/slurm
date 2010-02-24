@@ -20,8 +20,9 @@ a message.</li>
 <li><b>Munge</b> (recommended)<br>
 In order to compile the "auth/munge" authentication plugin for SLURM,
 you will need to build and install Munge, available from
-<a href="http://home.gna.org/munge/">http://home.gna.org/munge/</a> or
-<a href="http://packages.debian.org/src:munge">Debian</a> or
+<a href="http://home.gna.org/munge/">http://home.gna.org/munge/</a> and
+<a href="http://packages.debian.org/src:munge">Debian</a> and
+<a href="http://fedoraproject.org/">Fedora</a> and
 <a href="http://packages.ubuntu.com/src:munge">Ubuntu</a>.
 </li>
 </ul><br>
@@ -184,6 +185,6 @@ Portable Linux Processor Affinity (PLPA)</a></li>
 
 </ul>
 
-<p style="text-align:center;">Last modified 6 January 2010</p>
+<p style="text-align:center;">Last modified 19 February 2010</p>
 
 <!--#include virtual="footer.txt"-->
