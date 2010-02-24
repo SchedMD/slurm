@@ -61,7 +61,7 @@ static MYSQL_RES *_get_first_result(MYSQL *mysql_db)
 
 		/* more results? -1 = no, >0 = error, 0 = yes (keep looping) */
 		if ((rc = mysql_next_result(mysql_db)) > 0)
-			debug3("error: Could not execute statement %d\n", rc);
+			debug3("error: Could not execute statement %d", rc);
 
 	} while (rc == 0);
 
@@ -82,7 +82,7 @@ static MYSQL_RES *_get_last_result(MYSQL *mysql_db)
 		}
 		/* more results? -1 = no, >0 = error, 0 = yes (keep looping) */
 		if ((rc = mysql_next_result(mysql_db)) > 0)
-			debug3("error: Could not execute statement %d\n", rc);
+			debug3("error: Could not execute statement %d", rc);
 	} while (rc == 0);
 
 	return last_result;
@@ -368,7 +368,7 @@ static int _create_db(char *db_name, mysql_db_info_t *db_info)
 #ifdef MYSQL_NOT_THREAD_SAFE
 			slurm_mutex_unlock(&mysql_lock);
 #endif
-			error("mysql_real_connect failed: %d %s\n",
+			error("mysql_real_connect failed: %d %s",
 			      mysql_errno(mysql_db),
 			      mysql_error(mysql_db));
 			rc = SLURM_ERROR;
@@ -483,7 +483,7 @@ extern int mysql_clear_results(MYSQL *mysql_db)
 
 		/* more results? -1 = no, >0 = error, 0 = yes (keep looping) */
 		if ((rc = mysql_next_result(mysql_db)) > 0)
-			error("Could not execute statement %d %s\n",
+			error("Could not execute statement %d %s",
 			      mysql_errno(mysql_db),
 			      mysql_error(mysql_db));
 	} while (rc == 0);

@@ -30,6 +30,8 @@ documents those changes that are of interest to users and admins.
     to track processes on Linux systems having this feature enabled (kernel
     >= 2.6.24).
  -- Add logging of license transations including job_id.
+ -- Add configuration parameters SlurmSchedLogFile and SlurmSchedLogLevel to
+    support writing scheduling events to a separate log file.
 
 * Changes in SLURM 2.2.0.pre1
 =============================

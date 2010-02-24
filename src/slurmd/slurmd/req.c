@@ -336,7 +336,7 @@ slurmd_req(slurm_msg_t *msg)
 		/* No body to free */
 		break;
 	default:
-		error("slurmd_req: invalid request msg type %d\n",
+		error("slurmd_req: invalid request msg type %d",
 		      msg->msg_type);
 		slurm_send_rc_msg(msg, EINVAL);
 		break;

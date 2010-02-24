@@ -956,7 +956,7 @@ job_manager(slurmd_job_t *job)
 
 	debug2("Before call to spank_fini()");
 	if (spank_fini (job)  < 0) {
-		error ("spank_fini failed\n");
+		error ("spank_fini failed");
 	}
 	debug2("After call to spank_fini()");
 
@@ -1023,7 +1023,7 @@ _fork_all_tasks(slurmd_job_t *job)
 
 	debug2("Before call to spank_init()");
 	if (spank_init (job) < 0) {
-		error ("Plugin stack initialization failed.\n");
+		error ("Plugin stack initialization failed.");
 		return SLURM_ERROR;
 	}
 	debug2("After call to spank_init()");

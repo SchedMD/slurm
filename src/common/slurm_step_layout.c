@@ -443,7 +443,7 @@ static int _init_task_layout(slurm_step_layout_t *step_layout,
 		step_layout->node_cnt = i;
 	hostlist_destroy(hl);
 #endif
-	debug("laying out the %u tasks on %u hosts %s\n",
+	debug("laying out the %u tasks on %u hosts %s",
 	      step_layout->task_cnt, step_layout->node_cnt,
 	      step_layout->node_list);
 	if(step_layout->node_cnt < 1) {
@@ -533,9 +533,7 @@ static int _task_layout_hostfile(slurm_step_layout_t *step_layout,
 			if(task_cnt >= step_layout->task_cnt)
 				break;
 		}
-		debug3("%s got %u tasks\n",
-		       host,
-		       step_layout->tasks[i]);
+		debug3("%s got %u tasks", host, step_layout->tasks[i]);
 		if(step_layout->tasks[i] == 0)
 			goto reset_hosts;
 		step_layout->tids[i] = xmalloc(sizeof(uint32_t)

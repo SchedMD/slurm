@@ -430,7 +430,7 @@ static void _jobcomp_child (char * script, struct jobcomp_info *job)
 	/*
 	 * Failure of execve implies error
 	 */
-	error ("jobcomp/script: execve(%s): %m\n", script);
+	error ("jobcomp/script: execve(%s): %m", script);
 	exit (1);
 }
 
@@ -458,7 +458,7 @@ static int _jobcomp_exec_child (char *script, struct jobcomp_info *job)
 		error ("jobcomp/script: waitpid: %m");
 
 	if (WEXITSTATUS(status))
-		error ("jobcomp/script: script %s exited with status %d\n",
+		error ("jobcomp/script: script %s exited with status %d",
 		       script, WEXITSTATUS(status));
 
 	return (0);

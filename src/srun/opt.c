@@ -1084,7 +1084,7 @@ static void set_options(const int argc, char **argv)
 		case LONG_OPT_CORE:
 			opt.core_type = core_format_type (optarg);
 			if (opt.core_type == CORE_INVALID)
-				error ("--core=\"%s\" Invalid -- ignoring.\n",
+				error ("--core=\"%s\" Invalid -- ignoring.",
 				       optarg);
 			break;
 		case LONG_OPT_MINCPUS:
@@ -1714,14 +1714,14 @@ static bool _opt_verify(void)
 	}
 
 	if (opt.cpus_per_task < 0) {
-		error("invalid number of cpus per task (-c %d)\n",
+		error("invalid number of cpus per task (-c %d)",
 		      opt.cpus_per_task);
 		verified = false;
 	}
 
 	if ((opt.min_nodes <= 0) || (opt.max_nodes < 0) ||
 	    (opt.max_nodes && (opt.min_nodes > opt.max_nodes))) {
-		error("invalid number of nodes (-N %d-%d)\n",
+		error("invalid number of nodes (-N %d-%d)",
 		      opt.min_nodes, opt.max_nodes);
 		verified = false;
 	}

@@ -53,6 +53,9 @@ CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
   one ThreadsPerCore configured (i.e. no change in behavior without this 
   option).
 
+ * Added new configuration parameters SlurmSchedLogFile and SlurmSchedLogLevel
+   to support writing scheduling events to a separate log file.
+
 COMMAND CHANGES (see man pages for details)
 ===========================================
 * sinfo -R now has the user and timestamp in separate fields from the reason.

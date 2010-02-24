@@ -936,7 +936,7 @@ int init ( void )
 		      "'accounting_storage/slurmdbd' "
 		      "or 'accounting_storage/mysql' enabled.  "
 		      "If you want multifactor priority without fairshare "
-		      "ignore this message.\n",
+		      "ignore this message.",
 		      temp);
 		calc_fairshare = 0;
 		weight_fs = 0;

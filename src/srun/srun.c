@@ -342,7 +342,7 @@ int srun(int ac, char **av)
 	 *  Become --uid user
 	 */
 	if (_become_user () < 0)
-		info ("Warning: Unable to assume uid=%lu\n", opt.uid);
+		info ("Warning: Unable to assume uid=%lu", opt.uid);
 
 	/*
 	 *  Enhance environment for job

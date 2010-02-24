@@ -219,6 +219,16 @@ Resume a previously suspended job.
 Requeue a running or pending SLURM batch job.
 
 .TP
+\fBschedloglevel\fP \fILEVEL\fP
+Enable or disable scheduler logging.
+\fILEVEL\fP may be "0", "1", "disable" or "enable". "0" has the same 
+effect as "disable". "1" has the same effect as "enable".
+This value is temporary and will be overwritten when the slurmctld 
+daemon reads the slurm.conf configuration file (e.g. when the daemon 
+is restarted or \fBscontrol reconfigure\fR is executed) if the
+SlurmSchedLogLevel parameter is present.
+
+.TP
 \fBsetdebug\fP \fILEVEL\fP
 Change the debug level of the slurmctld daemon.
 \fILEVEL\fP may be an integer value between zero and nine (using the

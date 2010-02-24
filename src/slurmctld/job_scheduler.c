@@ -152,6 +152,15 @@ extern int build_job_queue(struct job_queue **job_queue)
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		xassert (job_ptr->magic == JOB_MAGIC);
+		if (job_ptr->priority == 0)	{ /* held */
+			job_ptr->state_reason = WAIT_HELD;
+			debug3("sched: JobId=%u. State=%s. Reason=%s. "
+			       "Priority=%u.",
+			       job_ptr->job_id,
+			       job_state_string(job_ptr->job_state),
+			       job_reason_string(job_ptr->state_reason),
+			       job_ptr->priority);
+		}
 		if ((!IS_JOB_PENDING(job_ptr))   ||
 		    IS_JOB_COMPLETING(job_ptr)   ||
 		    (job_ptr->priority == 0))	/* held */
@@ -315,12 +324,13 @@ extern int schedule(void)
 	/* Avoid resource fragmentation if important */
 	if ((!wiki_sched) && job_is_completing()) {
 		unlock_slurmctld(job_write_lock);
-		debug("schedule() returning, some job still completing");
+		debug("sched: schedule() returning, some job still completing");
 		return SLURM_SUCCESS;
 	}
-	debug("Running job scheduler");
+	debug("sched: Running job scheduler");
 	job_queue_size = build_job_queue(&job_queue);
 	if (job_queue_size == 0) {
+		debug3("sched: Job queue is empty");
 		unlock_slurmctld(job_write_lock);
 		return SLURM_SUCCESS;
 	}
@@ -330,16 +340,30 @@ extern int schedule(void)
 			       list_count(part_list));
 	save_avail_node_bitmap = bit_copy(avail_node_bitmap);
 
+	debug3("sched: Processing job queue...");
 	for (i = 0; i < job_queue_size; i++) {
 		job_ptr = job_queue[i].job_ptr;
-		if (job_ptr->priority == 0)	/* held */
+		if (job_ptr->priority == 0)	{ /* held */
+			debug3("sched: JobId=%u. State=%s. Reason=%s. "
+			       "Priority=%u.",
+			       job_ptr->job_id,
+			       job_state_string(job_ptr->job_state),
+			       job_reason_string(job_ptr->state_reason),
+			       job_ptr->priority);
 			continue;
-
+		}
 		if ((job_ptr->resv_name == NULL) &&
 		    _failed_partition(job_ptr->part_ptr, failed_parts,
 				      failed_part_cnt)) {
 			job_ptr->state_reason = WAIT_PRIORITY;
 			xfree(job_ptr->state_desc);
+			debug3("sched: JobId=%u. State=%s. Reason=%s. "
+			       "Priority=%u. Partition=%s.",
+			       job_ptr->job_id,
+			       job_state_string(job_ptr->job_state),
+			       job_reason_string(job_ptr->state_reason),
+			       job_ptr->priority,
+			       job_ptr->partition);
 			continue;
 		}
 		if (bit_overlap(avail_node_bitmap,
@@ -347,11 +371,24 @@ extern int schedule(void)
 			/* All nodes DRAIN, DOWN, or
 			 * reserved for jobs in higher priority partition */
 			job_ptr->state_reason = WAIT_RESOURCES;
+			debug3("sched: JobId=%u. State=%s. Reason=%s. "
+			       "Priority=%u. Partition=%s.",
+			       job_ptr->job_id,
+			       job_state_string(job_ptr->job_state),
+			       job_reason_string(job_ptr->state_reason),
+			       job_ptr->priority,
+			       job_ptr->partition);
 			continue;
 		}
 		if (license_job_test(job_ptr, time(NULL)) != SLURM_SUCCESS) {
 			job_ptr->state_reason = WAIT_LICENSES;
 			xfree(job_ptr->state_desc);
+			debug3("sched: JobId=%u. State=%s. Reason=%s. "
+			       "Priority=%u.",
+			       job_ptr->job_id,
+			       job_state_string(job_ptr->job_state),
+			       job_reason_string(job_ptr->state_reason),
+			       job_ptr->priority);
 			continue;
 		}
 
@@ -362,8 +399,8 @@ extern int schedule(void)
 			 * disabled between when the job was submitted and
 			 * the time we consider running it. It should be
 			 * very rare. */
-			info("schedule: JobId=%u has invalid account",
-				job_ptr->job_id);
+			info("sched: JobId=%u has invalid account", 
+			     job_ptr->job_id);
 			last_job_update = time(NULL);
 			job_ptr->job_state = JOB_FAILED;
 			job_ptr->exit_code = 1;
@@ -377,6 +414,12 @@ extern int schedule(void)
 
 		error_code = select_nodes(job_ptr, false, NULL);
 		if (error_code == ESLURM_NODES_BUSY) {
+			debug3("sched: JobId=%u. State=%s. Reason=%s. "
+			       "Priority=%u. Partition=%s.",
+			       job_ptr->job_id,
+			       job_state_string(job_ptr->job_state),
+			       job_reason_string(job_ptr->state_reason),
+			       job_ptr->priority, job_ptr->partition);
 			bool fail_by_part = true;
 #ifdef HAVE_BG
 			/* When we use static or overlap partitioning on
@@ -399,8 +442,14 @@ extern int schedule(void)
 				bit_not(job_ptr->part_ptr->node_bitmap);
 			}
 		} else if (error_code == ESLURM_RESERVATION_NOT_USABLE) {
-			if (job_ptr->resv_ptr
-			    && job_ptr->resv_ptr->node_bitmap) {
+			if (job_ptr->resv_ptr &&
+			    job_ptr->resv_ptr->node_bitmap) {
+				debug3("sched: JobId=%u. State=%s. "
+				       "Reason=%s. Priority=%u.",
+				       job_ptr->job_id,
+				       job_state_string(job_ptr->job_state),
+				       job_reason_string(job_ptr->state_reason),
+				       job_ptr->priority);
 				bit_not(job_ptr->resv_ptr->node_bitmap);
 				bit_and(avail_node_bitmap,
 					job_ptr->resv_ptr->node_bitmap);
@@ -410,9 +459,15 @@ extern int schedule(void)
 				 * nodes that are currently in some reservation
 				 * so just skip over this job and try running
 				 * the next lower priority job */
+				debug3("sched: JobId=%u State=%s. "
+				       "Reason=Required nodes are reserved."
+				       "Priority=%u",job_ptr->job_id,
+				       job_state_string(job_ptr->job_state),
+				       job_ptr->priority);
 			}
 		} else if (error_code == SLURM_SUCCESS) {
 			/* job initiated */
+			debug3("sched: JobId=%u initiated", job_ptr->job_id);
 			last_job_update = now;
 #ifdef HAVE_BG
 			select_g_select_jobinfo_get(job_ptr->select_jobinfo,
@@ -424,12 +479,13 @@ extern int schedule(void)
 			} else {
 				sprintf(tmp_char,"%s",job_ptr->nodes);
 			}
-			info("schedule: JobId=%u BPList=%s",
+			info("sched: Allocate JobId=%u BPList=%s",
 			     job_ptr->job_id, tmp_char);
 			xfree(ionodes);
 #else
-			info("schedule: JobId=%u NodeList=%s",
-			     job_ptr->job_id, job_ptr->nodes);
+			info("sched: Allocate JobId=%u NodeList=%s #CPUs=%u",
+			     job_ptr->job_id, job_ptr->nodes, 
+			     job_ptr->total_cpus);
 #endif
 			if (job_ptr->batch_flag == 0)
 				srun_allocate(job_ptr->job_id);
@@ -439,9 +495,8 @@ extern int schedule(void)
 		} else if ((error_code != ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE) &&
 			   (error_code != ESLURM_NODE_NOT_AVAIL) &&
 			   (error_code != ESLURM_ACCOUNTING_POLICY)) {
-			info("schedule: JobId=%u non-runnable: %s",
-				job_ptr->job_id,
-				slurm_strerror(error_code));
+			info("sched: schedule: JobId=%u non-runnable: %s",
+			     job_ptr->job_id, slurm_strerror(error_code));
 			if (!wiki_sched) {
 				last_job_update = now;
 				job_ptr->job_state = JOB_FAILED;
@@ -455,7 +510,7 @@ extern int schedule(void)
 		}
 
 		if ((time(NULL) - now) >= sched_timeout) {
-			debug("schedule: loop taking to long breaking out");
+			debug("sched: loop taking to long breaking out");
 			break;
 		}
 	}

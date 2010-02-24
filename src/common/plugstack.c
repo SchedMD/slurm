@@ -265,12 +265,12 @@ static struct spank_plugin *_spank_plugin_create(char *path, int ac,
 	struct spank_plugin_operations ops;
 
 	if ((e = plugin_load_from_file(&p, path)) != EPLUGIN_SUCCESS) {
-		error ("spank: %s: %s\n", path, plugin_strerror(e));
+		error ("spank: %s: %s", path, plugin_strerror(e));
 		return NULL;
 	}
 
 	if (plugin_get_syms(p, n_spank_syms, spank_syms, (void **)&ops) == 0) {
-		error("spank: \"%s\" exports 0 symbols\n", path);
+		error("spank: \"%s\" exports 0 symbols", path);
 		return NULL;
 	}
 
@@ -420,13 +420,13 @@ static int _spank_stack_create(const char *path, List * listp)
 	char buf[4096];
 	FILE *fp;
 
-	verbose("spank: opening plugin stack %s\n", path);
+	verbose("spank: opening plugin stack %s", path);
 
 	if (!(fp = safeopen(path, "r", SAFEOPEN_NOCREATE))) {
 		if (errno == ENOENT)
-			debug("spank: Failed to open %s: %m\n", path);
+			debug("spank: Failed to open %s: %m", path);
 		else
-			error("spank: Failed to open %s: %m\n", path);
+			error("spank: Failed to open %s: %m", path);
 		return -1;
 	}
 
@@ -578,7 +578,7 @@ static int _do_call_stack(step_fn_t type, void * job, int taskid)
 			if (sp->ops.init) {
 				rc = (*sp->ops.init) (spank, sp->ac,
 						      sp->argv);
-				debug2("spank: %s: %s = %d\n", name,
+				debug2("spank: %s: %s = %d", name,
 				       fn_name, rc);
 			}
 			break;
@@ -586,7 +586,7 @@ static int _do_call_stack(step_fn_t type, void * job, int taskid)
 			if (sp->ops.init_post_opt) {
 				rc = (*sp->ops.init_post_opt) (spank, sp->ac,
 						      sp->argv);
-				debug2("spank: %s: %s = %d\n", name,
+				debug2("spank: %s: %s = %d", name,
 				       fn_name, rc);
 			}
 			break;
@@ -594,15 +594,14 @@ static int _do_call_stack(step_fn_t type, void * job, int taskid)
 			if (sp->ops.local_user_init) {
 				rc = (*sp->ops.local_user_init) (spank, sp->ac,
 			 				         sp->argv);
-				debug2("spank: %s: %s = %d\n", name,
-						fn_name, rc);
+				debug2("spank: %s: %s = %d", name, fn_name, rc);
 			}
 			break;
 		case STEP_USER_INIT:
 			if (sp->ops.user_init) {
 				rc = (*sp->ops.user_init) (spank, sp->ac,
 							   sp->argv);
-				debug2("spank: %s: %s = %d\n", name,
+				debug2("spank: %s: %s = %d", name,
 				       fn_name, rc);
 			}
 			break;
@@ -610,7 +609,7 @@ static int _do_call_stack(step_fn_t type, void * job, int taskid)
 			if (sp->ops.task_init_privileged) {
 				rc = (*sp->ops.task_init_privileged)
 					(spank, sp->ac, sp->argv);
-				debug2("spank: %s: %s = %d\n", name,
+				debug2("spank: %s: %s = %d", name,
 				       fn_name, rc);
 			}
 			break;
@@ -619,7 +618,7 @@ static int _do_call_stack(step_fn_t type, void * job, int taskid)
 				rc = (*sp->ops.user_task_init) (spank,
 								sp->ac,
 								sp->argv);
-				debug2("spank: %s: %s = %d\n", name,
+				debug2("spank: %s: %s = %d", name,
 				       fn_name, rc);
 			}
 			break;
@@ -628,7 +627,7 @@ static int _do_call_stack(step_fn_t type, void * job, int taskid)
 				rc = (*sp->ops.task_post_fork) (spank,
 								sp->ac,
 								sp->argv);
-				debug2("spank: %s: %s = %d\n", name,
+				debug2("spank: %s: %s = %d", name,
 				       fn_name, rc);
 			}
 			break;
@@ -644,7 +643,7 @@ static int _do_call_stack(step_fn_t type, void * job, int taskid)
 			if (sp->ops.exit) {
 				rc = (*sp->ops.exit) (spank, sp->ac,
 						      sp->argv);
-				debug2("spank: %s: %s = %d\n", name,
+				debug2("spank: %s: %s = %d", name,
 				       fn_name, rc);
 			}
 			break;
@@ -901,7 +900,7 @@ _spank_option_register(struct spank_plugin *p, struct spank_option *opt)
 		return (ESPANK_NOSPACE);
 	}
 
-	verbose("SPANK: appending plugin option \"%s\"\n", opt->name);
+	verbose("SPANK: appending plugin option \"%s\"", opt->name);
 	list_append(option_cache, _spank_plugin_opt_create(p, opt, disabled));
 
 	return (ESPANK_SUCCESS);

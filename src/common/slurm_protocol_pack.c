@@ -1057,6 +1057,7 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 				 msg->protocol_version);
 		break;
 	case REQUEST_SET_DEBUG_LEVEL:
+	case REQUEST_SET_SCHEDLOG_LEVEL:
 		_pack_set_debug_level_msg(
 			(set_debug_level_msg_t *)msg->data, buffer,
 			msg->protocol_version);
@@ -1559,6 +1560,7 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 					 msg->protocol_version);
 		break;
 	case REQUEST_SET_DEBUG_LEVEL:
+	case REQUEST_SET_SCHEDLOG_LEVEL:
 		rc = _unpack_set_debug_level_msg(
 			(set_debug_level_msg_t **)&(msg->data), buffer,
 			msg->protocol_version);
@@ -2491,7 +2493,6 @@ _pack_update_partition_msg(update_part_msg_t * msg, Buf buffer,
 		pack32(msg-> min_nodes,    buffer);
 		packstr(msg->name,         buffer);
 		packstr(msg->nodes,        buffer);
-
 		pack16(msg-> hidden,       buffer);
 		pack16(msg-> max_share,    buffer);
 		pack16(msg-> priority,     buffer);
@@ -3591,6 +3592,8 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		packstr(build_ptr->sched_params, buffer);
 		pack16(build_ptr->schedport, buffer);
 		pack16(build_ptr->schedrootfltr, buffer);
+		packstr(build_ptr->sched_logfile, buffer);
+		pack16(build_ptr->sched_log_level, buffer);
 		pack16(build_ptr->sched_time_slice, buffer);
 		packstr(build_ptr->schedtype, buffer);
 		packstr(build_ptr->select_type, buffer);
@@ -3632,7 +3635,6 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 #endif
 		packstr(build_ptr->slurmd_spooldir, buffer);
 		pack16(build_ptr->slurmd_timeout, buffer);
-
 		packstr(build_ptr->srun_epilog, buffer);
 		packstr(build_ptr->srun_prolog, buffer);
 		packstr(build_ptr->state_save_location, buffer);
@@ -4030,6 +4032,9 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 				       &uint32_tmp, buffer);
 		safe_unpack16(&build_ptr->schedport, buffer);
 		safe_unpack16(&build_ptr->schedrootfltr, buffer);
+		safe_unpackstr_xmalloc(&build_ptr->sched_logfile,
+				       &uint32_tmp, buffer);
+		safe_unpack16(&build_ptr->sched_log_level, buffer);
 		safe_unpack16(&build_ptr->sched_time_slice, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->schedtype,
 				       &uint32_tmp, buffer);
