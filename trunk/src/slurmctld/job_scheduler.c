@@ -152,6 +152,8 @@ extern int build_job_queue(struct job_queue **job_queue)
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		xassert (job_ptr->magic == JOB_MAGIC);
+		if ((!IS_JOB_PENDING(job_ptr)) || IS_JOB_COMPLETING(job_ptr))
+			continue;
 		if (job_ptr->priority == 0)	{ /* held */
 			job_ptr->state_reason = WAIT_HELD;
 			debug3("sched: JobId=%u. State=%s. Reason=%s. "
@@ -160,11 +162,8 @@ extern int build_job_queue(struct job_queue **job_queue)
 			       job_state_string(job_ptr->job_state),
 			       job_reason_string(job_ptr->state_reason),
 			       job_ptr->priority);
-		}
-		if ((!IS_JOB_PENDING(job_ptr))   ||
-		    IS_JOB_COMPLETING(job_ptr)   ||
-		    (job_ptr->priority == 0))	/* held */
 			continue;
+		}
 		if (!job_independent(job_ptr, 0))	/* can not run now */
 			continue;
 		if (job_buffer_size <= job_queue_size) {
@@ -324,7 +323,8 @@ extern int schedule(void)
 	/* Avoid resource fragmentation if important */
 	if ((!wiki_sched) && job_is_completing()) {
 		unlock_slurmctld(job_write_lock);
-		debug("sched: schedule() returning, some job still completing");
+		debug("sched: schedule() returning, some job is still "
+		       "completing");
 		return SLURM_SUCCESS;
 	}
 	debug("sched: Running job scheduler");
@@ -448,7 +448,8 @@ extern int schedule(void)
 				       "Reason=%s. Priority=%u.",
 				       job_ptr->job_id,
 				       job_state_string(job_ptr->job_state),
-				       job_reason_string(job_ptr->state_reason),
+				       job_reason_string(job_ptr->
+							 state_reason),
 				       job_ptr->priority);
 				bit_not(job_ptr->resv_ptr->node_bitmap);
 				bit_and(avail_node_bitmap,
@@ -492,8 +493,9 @@ extern int schedule(void)
 			else if (job_ptr->details->prolog_running == 0)
 				launch_job(job_ptr);
 			job_cnt++;
-		} else if ((error_code != ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE) &&
-			   (error_code != ESLURM_NODE_NOT_AVAIL) &&
+		} else if ((error_code != 
+			    ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE) &&
+			   (error_code != ESLURM_NODE_NOT_AVAIL)      &&
 			   (error_code != ESLURM_ACCOUNTING_POLICY)) {
 			info("sched: schedule: JobId=%u non-runnable: %s",
 			     job_ptr->job_id, slurm_strerror(error_code));

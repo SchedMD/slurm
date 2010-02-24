@@ -630,7 +630,8 @@ static int _find_job_mate(struct job_record *job_ptr, bitstr_t *bitmap,
 	while ((job_scan_ptr = (struct job_record *) list_next(job_iterator))) {
 		if ((!IS_JOB_RUNNING(job_scan_ptr))			||
 		    (job_scan_ptr->node_cnt   != req_nodes)		||
-		    (job_scan_ptr->total_cpus < job_ptr->details->min_cpus)	||
+		    (job_scan_ptr->total_cpus < 
+		     job_ptr->details->min_cpus)			||
 		    (!bit_super_set(job_scan_ptr->node_bitmap, bitmap)))
 			continue;
 		if (job_scan_ptr->details && job_ptr->details &&
@@ -766,12 +767,11 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	debug3("rem_cpus=%d, rem_nodes=%d", rem_cpus, rem_nodes);
 	for (i = 0; i < consec_index; i++) {
 		if (consec_req[i] != -1)
-			debug3
-			    ("start=%s, end=%s, nodes=%d, cpus=%d, req=%s",
-			     select_node_ptr[consec_start[i]].name,
-			     select_node_ptr[consec_end[i]].name,
-			     consec_nodes[i], consec_cpus[i],
-			     select_node_ptr[consec_req[i]].name);
+			debug3("start=%s, end=%s, nodes=%d, cpus=%d, req=%s",
+			       select_node_ptr[consec_start[i]].name,
+			       select_node_ptr[consec_end[i]].name,
+			       consec_nodes[i], consec_cpus[i],
+			       select_node_ptr[consec_req[i]].name);
 		else
 			debug3("start=%s, end=%s, nodes=%d, cpus=%d",
 			       select_node_ptr[consec_start[i]].name,
@@ -1569,8 +1569,9 @@ static void _init_node_cr(void)
 		}
 		exclusive = (job_ptr->details->shared == 0);
 
-		/* Use job_resrcs_ptr->node_bitmap rather than job_ptr->node_bitmap
-		 * which can have DOWN nodes cleared from the bitmap */
+		/* Use job_resrcs_ptr->node_bitmap rather than 
+		 * job_ptr->node_bitmap which can have DOWN nodes 
+		 * cleared from the bitmap */
 		if (job_resrcs_ptr->node_bitmap == NULL)
 			continue;
 		i_first = bit_ffs(job_resrcs_ptr->node_bitmap);
