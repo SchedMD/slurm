@@ -589,7 +589,7 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 
 	xstrcat(object, assoc_req_inx[0]);
 	for(i=1; i<ASSOC_COUNT; i++)
-		xstrcat(object, assoc_req_inx[i]);
+		xstrfmtcat(object, ", %s", assoc_req_inx[i]);
 
 	/* We want all the sub accounts and user accounts */
 	query = xstrdup_printf("select distinct %s from \"%s_%s\" "
@@ -2019,8 +2019,8 @@ extern int mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 
 		xstrcat(tmp_char, aassoc_req_inx[0]);
 		for(i=1; i<AASSOC_COUNT; i++)
-			xstrcat(tmp_char, aassoc_req_inx[i]);
-	       
+			xstrfmtcat(tmp_char, ", %s", aassoc_req_inx[i]);
+
 		xstrfmtcat(query,
 			   "select distinct %s from \"%s_%s\" %s order by lft "
 			   "FOR UPDATE;",
@@ -2554,7 +2554,7 @@ extern List mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	xstrcat(object, rassoc_req_inx[0]);
 	for(i=1; i<RASSOC_COUNT; i++)
-		xstrcat(object, rassoc_req_inx[i]);
+		xstrfmtcat(object, ", %s", rassoc_req_inx[i]);
 
 	ret_list = list_create(slurm_destroy_char);
 
