@@ -453,7 +453,7 @@ extern int mysql_remove_resv(mysql_conn_t *mysql_conn,
 	xstrfmtcat(query,
 		   "update \"%s_%s\" set time_end=%d, "
 		   "deleted=1 where deleted=0 and "
-		   "id_resv=%u and time_start=%d;'",
+		   "id_resv=%u and time_start=%d;",
 		   resv->cluster, resv_table, resv->time_start_prev,
 		   resv->id, resv->time_start);
 
