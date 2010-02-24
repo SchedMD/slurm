@@ -37,7 +37,7 @@ JobStepCgroupParams=""
 #--
 # Slurm cgroup proctrack plugin can constrain memory usage at the job
 # level. The constraints correspond to the amount of RAM space allowed
-# to the whole job as well as the amount of additionnal swap space.
+# to the whole job as well as the amount of additional swap space.
 #
 # The amount of space of these two notions are expressed in percent of
 # the memory limit set to the job on the execution node.
