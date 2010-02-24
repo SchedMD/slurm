@@ -2842,6 +2842,122 @@ extern char * slurm_hostlist_shift PARAMS(( hostlist_t hl ));
 extern void slurm_hostlist_uniq PARAMS((hostlist_t hl));
 
 /*****************************************************************************\
+ *      SLURM LIST FUNCTIONS
+\*****************************************************************************/
+
+#ifndef   __list_datatypes_defined
+#  define __list_datatypes_defined
+typedef struct list * List;
+/*
+ *  List opaque data type.
+ */
+
+typedef struct listIterator * ListIterator;
+/*
+ *  List Iterator opaque data type.
+ */
+
+typedef void (*ListDelF) (void *x);
+/*
+ *  Function prototype to deallocate data stored in a list.
+ *    This function is responsible for freeing all memory associated
+ *    with an item, including all subordinate items (if applicable).
+ */
+
+typedef int (*ListCmpF) (void *x, void *y);
+/*
+ *  Function prototype for comparing two items in a list.
+ *  Returns less-than-zero if (x<y), zero if (x==y), and
+ *    greather-than-zero if (x>y).
+ */
+
+typedef int (*ListFindF) (void *x, void *key);
+/*
+ *  Function prototype for matching items in a list.
+ *  Returns non-zero if (x==key); o/w returns zero.
+ */
+
+typedef int (*ListForF) (void *x, void *arg);
+/*
+ *  Function prototype for operating on each item in a list.
+ *  Returns less-than-zero on error.
+ */
+#endif
+
+/* slurm_list_append():
+ *
+ *  Inserts data [x] at the end of list [l].
+ *  Returns the data's ptr, or lsd_nomem_error() if insertion failed.
+ */
+extern void * slurm_list_append PARAMS((List l, void *x));
+
+/* slurm_list_count():
+ *
+ *  Returns the number of items in list [l].
+ */
+extern int slurm_list_count PARAMS((List l));
+
+/* slurm_list_create():
+ *
+ *  Creates and returns a new empty list, or lsd_nomem_error() on failure.
+ *  The deletion function [f] is used to deallocate memory used by items
+ *    in the list; if this is NULL, memory associated with these items
+ *    will not be freed when the list is destroyed.
+ *  Note: Abandoning a list without calling slurm_list_destroy() will result
+ *    in a memory leak.
+ */
+extern List slurm_list_create PARAMS((ListDelF f));
+
+/* slurm_list_destroy():
+ *
+ *  Destroys list [l], freeing memory used for list iterators and the
+ *    list itself; if a deletion function was specified when the list
+ *    was created, it will be called for each item in the list.
+ */
+extern void slurm_list_destroy PARAMS((List l));
+
+/* slurm_list_find():
+ *
+ *  Traverses the list from the point of the list iterator [i]
+ *    using [f] to match each item with [key].
+ *  Returns a ptr to the next item for which the function [f]
+ *    returns non-zero, or NULL once the end of the list is reached.
+ *  Example: i=slurm_list_iterator_reset(i);
+ *	     while ((x=slurm_list_find(i,f,k))) {...}
+ */
+extern void * slurm_list_find PARAMS((ListIterator i, ListFindF f, void *key));
+
+/* slurm_list_is_empty():
+ *
+ *  Returns non-zero if list [l] is empty; o/w returns zero.
+ */
+extern int slurm_list_is_empty PARAMS((List l));
+
+/* slurm_list_iterator_reset():
+ *
+ *  Resets the list iterator [i] to start traversal at the beginning
+ *    of the list.
+ */
+extern void slurm_list_iterator_reset PARAMS((ListIterator i));
+
+/* slurm_list_next():
+ *
+ *  Returns a ptr to the next item's data,
+ *    or NULL once the end of the list is reached.
+ *  Example: i=slurm_list_iterator_create(i);
+ *	     while ((x=slurm_list_next(i))) {...}
+ */
+extern void * slurm_list_next PARAMS((ListIterator i));
+
+/* slurm_list_sort():
+ *
+ *  Sorts list [l] into ascending order according to the function [f].
+ *  Note: Sorting a list resets all iterators associated with the list.
+ *  Note: The sort algorithm is stable.
+ */
+extern void slurm_list_sort PARAMS((List l, ListCmpF f));
+
+/*****************************************************************************\
  *      SLURM TRIGGER FUNCTIONS
 \*****************************************************************************/
 
