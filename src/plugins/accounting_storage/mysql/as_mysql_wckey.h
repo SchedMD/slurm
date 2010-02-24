@@ -1,13 +1,11 @@
 /*****************************************************************************\
- *  mysql_rollup.h - functions for rolling up data for associations
- *                   and machines from the mysql storage.
+ *  as_mysql_wckey.h - functions dealing with the wckey.
  *****************************************************************************
  *
  *  Copyright (C) 2004-2007 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
- *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
@@ -39,18 +37,20 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _HAVE_MYSQL_ROLLUP_H
-#define _HAVE_MYSQL_ROLLUP_H
+#ifndef _HAVE_MYSQL_WCKEY_H
+#define _HAVE_MYSQL_WCKEY_H
 
 #include "accounting_storage_mysql.h"
 
-extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
-			       char *cluster_name, time_t start, time_t end);
-extern int mysql_daily_rollup(mysql_conn_t *mysql_conn,
-			      char *cluster_name,
-			      time_t start, time_t end, uint16_t archive_data);
-extern int mysql_monthly_rollup(mysql_conn_t *mysql_conn,
-				char *cluster_name,
-				time_t start, time_t end,
-				uint16_t archive_data);
+extern int as_mysql_add_wckeys(mysql_conn_t *mysql_conn, uint32_t uid,
+			    List wckey_list);
+extern List as_mysql_modify_wckeys(mysql_conn_t *mysql_conn,
+				uint32_t uid,
+				acct_wckey_cond_t *wckey_cond,
+				acct_wckey_rec_t *wckey);
+extern List as_mysql_remove_wckeys(mysql_conn_t *mysql_conn,
+				uint32_t uid,
+				acct_wckey_cond_t *wckey_cond);
+extern List as_mysql_get_wckeys(mysql_conn_t *mysql_conn, uid_t uid,
+			     acct_wckey_cond_t *wckey_cond);
 #endif

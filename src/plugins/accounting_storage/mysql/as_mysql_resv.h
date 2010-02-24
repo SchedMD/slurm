@@ -1,6 +1,5 @@
 /*****************************************************************************\
- *  mysql_convert.c - functions dealing with converting from tables in
- *                    slurm <= 2.1.
+ *  as_mysql_resv.h - functions dealing with reservations.
  *****************************************************************************
  *
  *  Copyright (C) 2004-2007 The Regents of the University of California.
@@ -37,13 +36,20 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
-
-#ifndef _HAVE_MYSQL_CONVERT_H
-#define _HAVE_MYSQL_CONVERT_H
+#ifndef _HAVE_MYSQL_RESV_H
+#define _HAVE_MYSQL_RESV_H
 
 #include "accounting_storage_mysql.h"
 
-extern int mysql_convert_tables(MYSQL *db_conn);
+extern int as_mysql_add_resv(mysql_conn_t *mysql_conn,
+			  acct_reservation_rec_t *resv);
 
+extern int as_mysql_modify_resv(mysql_conn_t *mysql_conn,
+			     acct_reservation_rec_t *resv);
 
+extern int as_mysql_remove_resv(mysql_conn_t *mysql_conn,
+			     acct_reservation_rec_t *resv);
+
+extern List as_mysql_get_resvs(mysql_conn_t *mysql_conn, uid_t uid,
+			    acct_reservation_cond_t *resv_cond);
 #endif

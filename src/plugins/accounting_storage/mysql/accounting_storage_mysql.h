@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  accounting_storage_mysql.h - accounting interface to mysql header file.
+ *  accounting_storage_mysql.h - accounting interface to as_mysql header file.
  *
  *  $Id: accounting_storage_mysql.h 13061 2008-01-22 21:23:56Z da $
  *****************************************************************************
@@ -82,8 +82,8 @@ extern char *wckey_table;
 /* Since tables are cluster centric we have a global cluster list to
  * go off of.
  */
-extern List mysql_cluster_list;
-extern pthread_mutex_t mysql_cluster_list_lock;
+extern List as_mysql_cluster_list;
+extern pthread_mutex_t as_mysql_cluster_list_lock;
 
 
 typedef enum {

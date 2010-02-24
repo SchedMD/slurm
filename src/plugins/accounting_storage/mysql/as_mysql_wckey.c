@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  mysql_wckey.c - functions dealing with the wckey.
+ *  as_mysql_wckey.c - functions dealing with the wckey.
  *****************************************************************************
  *
  *  Copyright (C) 2004-2007 The Regents of the University of California.
@@ -37,8 +37,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include "mysql_wckey.h"
-#include "mysql_usage.h"
+#include "as_mysql_wckey.h"
+#include "as_mysql_usage.h"
 
 /* if this changes you will need to edit the corresponding enum */
 char *wckey_req_inx[] = {
@@ -249,7 +249,7 @@ static int _cluster_get_wckeys(mysql_conn_t *mysql_conn,
 
 /* extern functions */
 
-extern int mysql_add_wckeys(mysql_conn_t *mysql_conn, uint32_t uid,
+extern int as_mysql_add_wckeys(mysql_conn_t *mysql_conn, uint32_t uid,
 			    List wckey_list)
 {
 	ListIterator itr = NULL;
@@ -358,7 +358,7 @@ extern int mysql_add_wckeys(mysql_conn_t *mysql_conn, uint32_t uid,
 	return rc;
 }
 
-extern List mysql_modify_wckeys(mysql_conn_t *mysql_conn,
+extern List as_mysql_modify_wckeys(mysql_conn_t *mysql_conn,
 				uint32_t uid,
 				acct_wckey_cond_t *wckey_cond,
 				acct_wckey_rec_t *wckey)
@@ -366,7 +366,7 @@ extern List mysql_modify_wckeys(mysql_conn_t *mysql_conn,
 	return NULL;
 }
 
-extern List mysql_remove_wckeys(mysql_conn_t *mysql_conn,
+extern List as_mysql_remove_wckeys(mysql_conn_t *mysql_conn,
 				uint32_t uid,
 				acct_wckey_cond_t *wckey_cond)
 {
@@ -375,7 +375,7 @@ extern List mysql_remove_wckeys(mysql_conn_t *mysql_conn,
 	char *extra = NULL, *object = NULL;
 	char *user_name = NULL;
 	int set = 0;
-	List use_cluster_list = mysql_cluster_list;
+	List use_cluster_list = as_mysql_cluster_list;
 	ListIterator itr;
 
 	if(!wckey_cond) {
@@ -399,7 +399,7 @@ empty:
 	if(wckey_cond->cluster_list && list_count(wckey_cond->cluster_list))
 		use_cluster_list = wckey_cond->cluster_list;
 	else
-		slurm_mutex_lock(&mysql_cluster_list_lock);
+		slurm_mutex_lock(&as_mysql_cluster_list_lock);
 
 	ret_list = list_create(slurm_destroy_char);
 	itr = list_iterator_create(use_cluster_list);
@@ -413,8 +413,8 @@ empty:
 	xfree(extra);
 	xfree(user_name);
 
-	if(use_cluster_list == mysql_cluster_list)
-		slurm_mutex_unlock(&mysql_cluster_list_lock);
+	if(use_cluster_list == as_mysql_cluster_list)
+		slurm_mutex_unlock(&as_mysql_cluster_list_lock);
 
 	if (rc == SLURM_ERROR) {
 		list_destroy(ret_list);
@@ -424,7 +424,7 @@ empty:
 	return ret_list;
 }
 
-extern List mysql_get_wckeys(mysql_conn_t *mysql_conn, uid_t uid,
+extern List as_mysql_get_wckeys(mysql_conn_t *mysql_conn, uid_t uid,
 			     acct_wckey_cond_t *wckey_cond)
 {
 	//DEF_TIMERS;
@@ -436,7 +436,7 @@ extern List mysql_get_wckeys(mysql_conn_t *mysql_conn, uid_t uid,
 	int i=0, is_admin=1;
 	uint16_t private_data = 0;
 	acct_user_rec_t user;
-	List use_cluster_list = mysql_cluster_list;
+	List use_cluster_list = as_mysql_cluster_list;
 	ListIterator itr;
 
 	if(!wckey_cond) {
@@ -478,7 +478,7 @@ empty:
 	if(wckey_cond->cluster_list && list_count(wckey_cond->cluster_list))
 		use_cluster_list = wckey_cond->cluster_list;
 	else
-		slurm_mutex_lock(&mysql_cluster_list_lock);
+		slurm_mutex_lock(&as_mysql_cluster_list_lock);
 
 	//START_TIMER;
 	itr = list_iterator_create(use_cluster_list);
@@ -493,8 +493,8 @@ empty:
 	}
 	list_iterator_destroy(itr);
 
-	if(use_cluster_list == mysql_cluster_list)
-		slurm_mutex_unlock(&mysql_cluster_list_lock);
+	if(use_cluster_list == as_mysql_cluster_list)
+		slurm_mutex_unlock(&as_mysql_cluster_list_lock);
 
 	xfree(tmp);
 	xfree(extra);

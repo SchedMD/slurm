@@ -1,6 +1,6 @@
 /*****************************************************************************\
- *  mysql_rollup.c - functions for rolling up data for associations
- *                   and machines from the mysql storage.
+ *  as_mysql_rollup.c - functions for rolling up data for associations
+ *                   and machines from the as_mysql storage.
  *****************************************************************************
  *  Copyright (C) 2004-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
@@ -38,8 +38,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include "mysql_rollup.h"
-#include "mysql_archive.h"
+#include "as_mysql_rollup.h"
+#include "as_mysql_archive.h"
 
 typedef struct {
 	int id;
@@ -96,7 +96,7 @@ static void _destroy_local_resv_usage(void *object)
 	}
 }
 
-extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
+extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			       char *cluster_name,
 			       time_t start, time_t end)
 {
@@ -968,7 +968,7 @@ end_it:
 /* 	info("stop end %s", ctime(&curr_end)); */
 	return rc;
 }
-extern int mysql_daily_rollup(mysql_conn_t *mysql_conn,
+extern int as_mysql_daily_rollup(mysql_conn_t *mysql_conn,
 			      char *cluster_name,
 			      time_t start, time_t end, uint16_t archive_data)
 {
@@ -1076,7 +1076,7 @@ extern int mysql_daily_rollup(mysql_conn_t *mysql_conn,
 
 	return SLURM_SUCCESS;
 }
-extern int mysql_monthly_rollup(mysql_conn_t *mysql_conn,
+extern int as_mysql_monthly_rollup(mysql_conn_t *mysql_conn,
 				char *cluster_name,
 				time_t start, time_t end, uint16_t archive_data)
 {
@@ -1204,7 +1204,7 @@ extern int mysql_monthly_rollup(mysql_conn_t *mysql_conn,
 	list_append(job_cond.cluster_list, cluster_name);
 
 	arch_cond.job_cond = &job_cond;
-	rc = mysql_jobacct_process_archive(mysql_conn, &arch_cond);
+	rc = as_mysql_jobacct_process_archive(mysql_conn, &arch_cond);
 	list_destroy(job_cond.cluster_list);
 
 	return rc;

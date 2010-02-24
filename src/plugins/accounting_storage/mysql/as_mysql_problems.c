@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  mysql_problems.c - functions for finding out problems in the
+ *  as_mysql_problems.c - functions for finding out problems in the
  *                     associations and other places in the database.
  *****************************************************************************
  *
@@ -38,7 +38,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include "mysql_problems.h"
+#include "as_mysql_problems.h"
 #include "src/common/uid.h"
 
 static int _setup_association_cond_limits(acct_association_cond_t *assoc_cond,
@@ -104,7 +104,7 @@ static int _setup_association_cond_limits(acct_association_cond_t *assoc_cond,
 }
 
 
-extern int mysql_acct_no_assocs(mysql_conn_t *mysql_conn,
+extern int as_mysql_acct_no_assocs(mysql_conn_t *mysql_conn,
 				acct_association_cond_t *assoc_cond,
 				List ret_list)
 {
@@ -112,7 +112,7 @@ extern int mysql_acct_no_assocs(mysql_conn_t *mysql_conn,
 	char *query = NULL;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
-	List use_cluster_list = mysql_cluster_list;
+	List use_cluster_list = as_mysql_cluster_list;
 	ListIterator itr = NULL;
 	char *cluster_name = NULL;
 
@@ -148,7 +148,7 @@ extern int mysql_acct_no_assocs(mysql_conn_t *mysql_conn,
 	   assoc_cond->cluster_list && list_count(assoc_cond->cluster_list))
 		use_cluster_list = assoc_cond->cluster_list;
 	else
-		slurm_mutex_lock(&mysql_cluster_list_lock);
+		slurm_mutex_lock(&as_mysql_cluster_list_lock);
 
 	itr = list_iterator_create(use_cluster_list);
 	while((row = mysql_fetch_row(result))) {
@@ -191,13 +191,13 @@ extern int mysql_acct_no_assocs(mysql_conn_t *mysql_conn,
 	mysql_free_result(result);
 
 	list_iterator_destroy(itr);
-	if(use_cluster_list == mysql_cluster_list)
-		slurm_mutex_unlock(&mysql_cluster_list_lock);
+	if(use_cluster_list == as_mysql_cluster_list)
+		slurm_mutex_unlock(&as_mysql_cluster_list_lock);
 
 	return rc;
 }
 
-extern int mysql_acct_no_users(mysql_conn_t *mysql_conn,
+extern int as_mysql_acct_no_users(mysql_conn_t *mysql_conn,
 				acct_association_cond_t *assoc_cond,
 				List ret_list)
 {
@@ -207,7 +207,7 @@ extern int mysql_acct_no_users(mysql_conn_t *mysql_conn,
 	int i = 0;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
-	List use_cluster_list = mysql_cluster_list;
+	List use_cluster_list = as_mysql_cluster_list;
 	ListIterator itr = NULL;
 	char *cluster_name;
 
@@ -241,7 +241,7 @@ extern int mysql_acct_no_users(mysql_conn_t *mysql_conn,
 	if(assoc_cond->cluster_list && list_count(assoc_cond->cluster_list))
 		use_cluster_list = assoc_cond->cluster_list;
 	else
-		slurm_mutex_lock(&mysql_cluster_list_lock);
+		slurm_mutex_lock(&as_mysql_cluster_list_lock);
 
 	itr = list_iterator_create(use_cluster_list);
 	while((cluster_name = list_next(itr))) {
@@ -254,8 +254,8 @@ extern int mysql_acct_no_users(mysql_conn_t *mysql_conn,
 			   assoc_table, extra);
 	}
 	list_iterator_destroy(itr);
-	if(use_cluster_list == mysql_cluster_list)
-		slurm_mutex_unlock(&mysql_cluster_list_lock);
+	if(use_cluster_list == as_mysql_cluster_list)
+		slurm_mutex_unlock(&as_mysql_cluster_list_lock);
 
 	if(query)
 		xstrcat(query, " order by cluster, acct;");
@@ -295,7 +295,7 @@ extern int mysql_acct_no_users(mysql_conn_t *mysql_conn,
 	return rc;
 }
 
-extern int mysql_user_no_assocs_or_no_uid(mysql_conn_t *mysql_conn,
+extern int as_mysql_user_no_assocs_or_no_uid(mysql_conn_t *mysql_conn,
 					  acct_association_cond_t *assoc_cond,
 					  List ret_list)
 {
@@ -303,7 +303,7 @@ extern int mysql_user_no_assocs_or_no_uid(mysql_conn_t *mysql_conn,
 	char *query = NULL;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
-	List use_cluster_list = mysql_cluster_list;
+	List use_cluster_list = as_mysql_cluster_list;
 	ListIterator itr = NULL;
 	char *cluster_name = NULL;
 
@@ -338,7 +338,7 @@ extern int mysql_user_no_assocs_or_no_uid(mysql_conn_t *mysql_conn,
 	   assoc_cond->cluster_list && list_count(assoc_cond->cluster_list))
 		use_cluster_list = assoc_cond->cluster_list;
 	else
-		slurm_mutex_lock(&mysql_cluster_list_lock);
+		slurm_mutex_lock(&as_mysql_cluster_list_lock);
 
 	itr = list_iterator_create(use_cluster_list);
 	while((row = mysql_fetch_row(result))) {
@@ -392,8 +392,8 @@ extern int mysql_user_no_assocs_or_no_uid(mysql_conn_t *mysql_conn,
 	mysql_free_result(result);
 
 	list_iterator_destroy(itr);
-	if(use_cluster_list == mysql_cluster_list)
-		slurm_mutex_unlock(&mysql_cluster_list_lock);
+	if(use_cluster_list == as_mysql_cluster_list)
+		slurm_mutex_unlock(&as_mysql_cluster_list_lock);
 
 	return rc;
 }

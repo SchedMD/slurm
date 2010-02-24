@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  mysql_acct.c - functions dealing with accounts.
+ *  as_mysql_acct.c - functions dealing with accounts.
  *****************************************************************************
  *
  *  Copyright (C) 2004-2007 The Regents of the University of California.
@@ -37,9 +37,9 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include "mysql_assoc.h"
-#include "mysql_acct.h"
-#include "mysql_user.h"
+#include "as_mysql_assoc.h"
+#include "as_mysql_acct.h"
+#include "as_mysql_user.h"
 
 /* Fill in all the users that are coordinator for this account.  This
  * will fill in if there are coordinators from a parent account also.
@@ -79,8 +79,8 @@ static int _get_account_coords(mysql_conn_t *mysql_conn,
 	}
 	mysql_free_result(result);
 
-	slurm_mutex_lock(&mysql_cluster_list_lock);
-	itr = list_iterator_create(mysql_cluster_list);
+	slurm_mutex_lock(&as_mysql_cluster_list_lock);
+	itr = list_iterator_create(as_mysql_cluster_list);
 	while((cluster_name = list_next(itr))) {
 		if(query)
 			xstrcat(query, " union ");
@@ -96,7 +96,7 @@ static int _get_account_coords(mysql_conn_t *mysql_conn,
 			   acct->name, acct->name);
 	}
 	list_iterator_destroy(itr);
-	slurm_mutex_unlock(&mysql_cluster_list_lock);
+	slurm_mutex_unlock(&as_mysql_cluster_list_lock);
 
 	if(!query) {
 		error("No clusters defined?  How could there be accts?");
@@ -118,7 +118,7 @@ static int _get_account_coords(mysql_conn_t *mysql_conn,
 	return SLURM_SUCCESS;
 }
 
-extern int mysql_add_accts(mysql_conn_t *mysql_conn, uint32_t uid,
+extern int as_mysql_add_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 			   List acct_list)
 {
 	ListIterator itr = NULL;
@@ -223,7 +223,7 @@ extern int mysql_add_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 		xfree(txn_query);
 
 	if(list_count(assoc_list)) {
-		if(mysql_add_assocs(mysql_conn, uid, assoc_list)
+		if(as_mysql_add_assocs(mysql_conn, uid, assoc_list)
 		   == SLURM_ERROR) {
 			error("Problem adding user associations");
 			rc = SLURM_ERROR;
@@ -234,7 +234,7 @@ extern int mysql_add_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 	return rc;
 }
 
-extern List mysql_modify_accts(mysql_conn_t *mysql_conn, uint32_t uid,
+extern List as_mysql_modify_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 			       acct_account_cond_t *acct_cond,
 			       acct_account_rec_t *acct)
 {
@@ -368,7 +368,7 @@ extern List mysql_modify_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 	return ret_list;
 }
 
-extern List mysql_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
+extern List as_mysql_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 			       acct_account_cond_t *acct_cond)
 {
 	ListIterator itr = NULL;
@@ -479,15 +479,15 @@ extern List mysql_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 	xfree(query);
 
 	/* We need to remove these accounts from the coord's that have it */
-	coord_list = mysql_remove_coord(
+	coord_list = as_mysql_remove_coord(
 		mysql_conn, uid, ret_list, NULL);
 	if(coord_list)
 		list_destroy(coord_list);
 
 	user_name = uid_to_string((uid_t) uid);
 
-	slurm_mutex_lock(&mysql_cluster_list_lock);
-	itr = list_iterator_create(mysql_cluster_list);
+	slurm_mutex_lock(&as_mysql_cluster_list_lock);
+	itr = list_iterator_create(as_mysql_cluster_list);
 	while((object = list_next(itr))) {
 		if((rc = remove_common(mysql_conn, DBD_REMOVE_ACCOUNTS, now,
 				       user_name, acct_table, name_char,
@@ -496,7 +496,7 @@ extern List mysql_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 			break;
 	}
 	list_iterator_destroy(itr);
-	slurm_mutex_unlock(&mysql_cluster_list_lock);
+	slurm_mutex_unlock(&as_mysql_cluster_list_lock);
 
 	xfree(user_name);
 	xfree(name_char);
@@ -509,7 +509,7 @@ extern List mysql_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 	return ret_list;
 }
 
-extern List mysql_get_accts(mysql_conn_t *mysql_conn, uid_t uid,
+extern List as_mysql_get_accts(mysql_conn_t *mysql_conn, uid_t uid,
 			    acct_account_cond_t *acct_cond)
 {
 	char *query = NULL;
@@ -699,7 +699,7 @@ empty:
 		ListIterator assoc_itr = NULL;
 		acct_account_rec_t *acct = NULL;
 		acct_association_rec_t *assoc = NULL;
-		List assoc_list = mysql_get_assocs(
+		List assoc_list = as_mysql_get_assocs(
 			mysql_conn, uid, acct_cond->assoc_cond);
 
 		if(!assoc_list) {

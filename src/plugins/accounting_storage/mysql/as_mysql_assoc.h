@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  mysql_resv.h - functions dealing with reservations.
+ *  as_mysql_assoc.h - functions dealing with associations.
  *****************************************************************************
  *
  *  Copyright (C) 2004-2007 The Regents of the University of California.
@@ -36,20 +36,24 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
-#ifndef _HAVE_MYSQL_RESV_H
-#define _HAVE_MYSQL_RESV_H
+
+#ifndef _HAVE_MYSQL_ASSOC_H
+#define _HAVE_MYSQL_ASSOC_H
 
 #include "accounting_storage_mysql.h"
 
-extern int mysql_add_resv(mysql_conn_t *mysql_conn,
-			  acct_reservation_rec_t *resv);
+extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn,
+			    uint32_t uid,
+			    List association_list);
 
-extern int mysql_modify_resv(mysql_conn_t *mysql_conn,
-			     acct_reservation_rec_t *resv);
+extern List as_mysql_modify_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
+				acct_association_cond_t *assoc_cond,
+				acct_association_rec_t *assoc);
 
-extern int mysql_remove_resv(mysql_conn_t *mysql_conn,
-			     acct_reservation_rec_t *resv);
+extern List as_mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
+				acct_association_cond_t *assoc_cond);
 
-extern List mysql_get_resvs(mysql_conn_t *mysql_conn, uid_t uid,
-			    acct_reservation_cond_t *resv_cond);
+extern List as_mysql_get_assocs(mysql_conn_t *mysql_conn, uid_t uid,
+			     acct_association_cond_t *assoc_cond);
+
 #endif

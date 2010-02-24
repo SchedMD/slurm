@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  mysql_qos.c - functions dealing with qos.
+ *  as_mysql_qos.c - functions dealing with qos.
  *****************************************************************************
  *
  *  Copyright (C) 2004-2007 The Regents of the University of California.
@@ -37,7 +37,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include "mysql_qos.h"
+#include "as_mysql_qos.h"
 
 static int _preemption_loop(mysql_conn_t *mysql_conn, int begin_qosid,
 			    bitstr_t *preempt_bitstr)
@@ -287,7 +287,7 @@ static int _setup_qos_limits(acct_qos_rec_t *qos,
 
 }
 
-extern int mysql_add_qos(mysql_conn_t *mysql_conn, uint32_t uid, List qos_list)
+extern int as_mysql_add_qos(mysql_conn_t *mysql_conn, uint32_t uid, List qos_list)
 {
 	ListIterator itr = NULL;
 	int rc = SLURM_SUCCESS;
@@ -395,7 +395,7 @@ extern int mysql_add_qos(mysql_conn_t *mysql_conn, uint32_t uid, List qos_list)
 	return rc;
 }
 
-extern List mysql_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
+extern List as_mysql_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 			     acct_qos_cond_t *qos_cond,
 			     acct_qos_rec_t *qos)
 {
@@ -603,7 +603,7 @@ extern List mysql_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 	return ret_list;
 }
 
-extern List mysql_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
+extern List as_mysql_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 			     acct_qos_cond_t *qos_cond)
 {
 	ListIterator itr = NULL;
@@ -744,8 +744,8 @@ extern List mysql_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	user_name = uid_to_string((uid_t) uid);
 
-	slurm_mutex_lock(&mysql_cluster_list_lock);
-	itr = list_iterator_create(mysql_cluster_list);
+	slurm_mutex_lock(&as_mysql_cluster_list_lock);
+	itr = list_iterator_create(as_mysql_cluster_list);
 	while((object = list_next(itr))) {
 		if((rc = remove_common(mysql_conn, DBD_REMOVE_QOS, now,
 				       user_name, qos_table, name_char,
@@ -754,7 +754,7 @@ extern List mysql_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 			break;
 	}
 	list_iterator_destroy(itr);
-	slurm_mutex_unlock(&mysql_cluster_list_lock);
+	slurm_mutex_unlock(&as_mysql_cluster_list_lock);
 
 	xfree(assoc_char);
 	xfree(name_char);
@@ -767,7 +767,7 @@ extern List mysql_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 	return ret_list;
 }
 
-extern List mysql_get_qos(mysql_conn_t *mysql_conn, uid_t uid,
+extern List as_mysql_get_qos(mysql_conn_t *mysql_conn, uid_t uid,
 			  acct_qos_cond_t *qos_cond)
 {
 	char *query = NULL;

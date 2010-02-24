@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  mysql_cluster.c - functions dealing with clusters.
+ *  as_mysql_cluster.c - functions dealing with clusters.
  *****************************************************************************
  *
  *  Copyright (C) 2004-2007 The Regents of the University of California.
@@ -37,11 +37,11 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include "mysql_assoc.h"
-#include "mysql_cluster.h"
-#include "mysql_wckey.h"
+#include "as_mysql_assoc.h"
+#include "as_mysql_cluster.h"
+#include "as_mysql_wckey.h"
 
-extern int mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
+extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 			      List cluster_list)
 {
 	ListIterator itr = NULL;
@@ -164,11 +164,11 @@ extern int mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		} else {
 			added++;
 			/* add it to the list and sort */
-			slurm_mutex_lock(&mysql_cluster_list_lock);
-			list_append(mysql_cluster_list, xstrdup(object->name));
-			list_sort(mysql_cluster_list,
+			slurm_mutex_lock(&as_mysql_cluster_list_lock);
+			list_append(as_mysql_cluster_list, xstrdup(object->name));
+			list_sort(as_mysql_cluster_list,
 				  (ListCmpF)slurm_sort_char_list_asc);
-			slurm_mutex_unlock(&mysql_cluster_list_lock);
+			slurm_mutex_unlock(&as_mysql_cluster_list_lock);
 		}
 		/* Add user root by default to run from the root
 		 * association.  This gets popped off so we need to
@@ -182,7 +182,7 @@ extern int mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		assoc->user = xstrdup("root");
 		assoc->acct = xstrdup("root");
 
-		if(mysql_add_assocs(mysql_conn, uid, assoc_list)
+		if(as_mysql_add_assocs(mysql_conn, uid, assoc_list)
 		   == SLURM_ERROR) {
 			error("Problem adding root user association");
 			rc = SLURM_ERROR;
@@ -203,7 +203,7 @@ extern int mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 	return rc;
 }
 
-extern List mysql_modify_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
+extern List as_mysql_modify_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 				  acct_cluster_cond_t *cluster_cond,
 				  acct_cluster_rec_t *cluster)
 {
@@ -356,7 +356,7 @@ end_it:
 	return ret_list;
 }
 
-extern List mysql_remove_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
+extern List as_mysql_remove_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 				  acct_cluster_cond_t *cluster_cond)
 {
 	ListIterator itr = NULL, itr2 = NULL;
@@ -476,12 +476,12 @@ extern List mysql_remove_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 	/* We need to remove these clusters from the wckey table */
 	memset(&wckey_cond, 0, sizeof(acct_wckey_cond_t));
 	wckey_cond.cluster_list = ret_list;
-	tmp_list = mysql_remove_wckeys(mysql_conn, uid, &wckey_cond);
+	tmp_list = as_mysql_remove_wckeys(mysql_conn, uid, &wckey_cond);
 	if(tmp_list)
 		list_destroy(tmp_list);
 
-	slurm_mutex_lock(&mysql_cluster_list_lock);
-	itr2 = list_iterator_create(mysql_cluster_list);
+	slurm_mutex_lock(&as_mysql_cluster_list_lock);
+	itr2 = list_iterator_create(as_mysql_cluster_list);
 
 	itr = list_iterator_create(ret_list);
 	while((object = list_next(itr))) {
@@ -498,7 +498,7 @@ extern List mysql_remove_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 	}
 	list_iterator_destroy(itr);
 	list_iterator_destroy(itr2);
-	slurm_mutex_unlock(&mysql_cluster_list_lock);
+	slurm_mutex_unlock(&as_mysql_cluster_list_lock);
 
 	if(rc != SLURM_SUCCESS) {
 		if(mysql_conn->rollback) {
@@ -511,7 +511,7 @@ extern List mysql_remove_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 	return ret_list;
 }
 
-extern List mysql_get_clusters(mysql_conn_t *mysql_conn, uid_t uid,
+extern List as_mysql_get_clusters(mysql_conn_t *mysql_conn, uid_t uid,
 			       acct_cluster_cond_t *cluster_cond)
 {
 	char *query = NULL;
@@ -667,7 +667,7 @@ empty:
 	assoc_cond.user_list = list_create(NULL);
 	list_append(assoc_cond.user_list, "");
 
-	assoc_list = mysql_get_assocs(mysql_conn, uid, &assoc_cond);
+	assoc_list = as_mysql_get_assocs(mysql_conn, uid, &assoc_cond);
 	list_destroy(assoc_cond.cluster_list);
 	list_destroy(assoc_cond.acct_list);
 	list_destroy(assoc_cond.user_list);
@@ -702,7 +702,7 @@ empty:
 	return cluster_list;
 }
 
-extern List mysql_get_cluster_events(mysql_conn_t *mysql_conn, uint32_t uid,
+extern List as_mysql_get_cluster_events(mysql_conn_t *mysql_conn, uint32_t uid,
 				     acct_event_cond_t *event_cond)
 {
 	char *query = NULL;
@@ -716,7 +716,7 @@ extern List mysql_get_cluster_events(mysql_conn_t *mysql_conn, uint32_t uid,
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 	time_t now = time(NULL);
-	List use_cluster_list = mysql_cluster_list;
+	List use_cluster_list = as_mysql_cluster_list;
 
 	/* if this changes you will need to edit the corresponding enum */
 	char *event_req_inx[] = {
@@ -869,7 +869,7 @@ empty:
 	if(event_cond->cluster_list && list_count(event_cond->cluster_list))
 		use_cluster_list = event_cond->cluster_list;
 	else
-		slurm_mutex_lock(&mysql_cluster_list_lock);
+		slurm_mutex_lock(&as_mysql_cluster_list_lock);
 
 	ret_list = list_create(destroy_acct_event_rec);
 
@@ -910,13 +910,13 @@ empty:
 	xfree(tmp);
 	xfree(extra);
 
-	if(use_cluster_list == mysql_cluster_list)
-		slurm_mutex_unlock(&mysql_cluster_list_lock);
+	if(use_cluster_list == as_mysql_cluster_list)
+		slurm_mutex_unlock(&as_mysql_cluster_list_lock);
 
 	return ret_list;
 }
 
-extern int mysql_node_down(mysql_conn_t *mysql_conn,
+extern int as_mysql_node_down(mysql_conn_t *mysql_conn,
 			   struct node_record *node_ptr,
 			   time_t event_time, char *reason,
 			   uint32_t reason_uid)
@@ -977,7 +977,7 @@ extern int mysql_node_down(mysql_conn_t *mysql_conn,
 	return rc;
 }
 
-extern int mysql_node_up(mysql_conn_t *mysql_conn,
+extern int as_mysql_node_up(mysql_conn_t *mysql_conn,
 			 struct node_record *node_ptr,
 			 time_t event_time)
 {
@@ -999,7 +999,7 @@ extern int mysql_node_up(mysql_conn_t *mysql_conn,
 	return rc;
 }
 
-extern int mysql_register_ctld(mysql_conn_t *mysql_conn,
+extern int as_mysql_register_ctld(mysql_conn_t *mysql_conn,
 			       char *cluster, uint16_t port)
 {
 	char *query = NULL;
@@ -1049,7 +1049,7 @@ extern int mysql_register_ctld(mysql_conn_t *mysql_conn,
 	return mysql_db_query(mysql_conn->db_conn, query);
 }
 
-extern int mysql_cluster_cpus(mysql_conn_t *mysql_conn,
+extern int as_mysql_cluster_cpus(mysql_conn_t *mysql_conn,
 			      char *cluster_nodes, uint32_t cpus,
 			      time_t event_time)
 {

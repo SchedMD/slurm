@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  mysql_resv.c - functions dealing with reservations.
+ *  as_mysql_resv.c - functions dealing with reservations.
  *****************************************************************************
  *
  *  Copyright (C) 2004-2007 The Regents of the University of California.
@@ -37,8 +37,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include "mysql_resv.h"
-#include "mysql_jobacct_process.h"
+#include "as_mysql_resv.h"
+#include "as_mysql_jobacct_process.h"
 
 static int _setup_resv_limits(acct_reservation_rec_t *resv,
 			      char **cols, char **vals,
@@ -178,8 +178,8 @@ static int _setup_resv_cond_limits(acct_reservation_cond_t *resv_cond,
 	return set;
 }
 
-extern int mysql_add_resv(mysql_conn_t *mysql_conn,
-			  acct_reservation_rec_t *resv)
+extern int as_mysql_add_resv(mysql_conn_t *mysql_conn,
+			     acct_reservation_rec_t *resv)
 {
 	int rc = SLURM_SUCCESS;
 	char *cols = NULL, *vals = NULL, *extra = NULL,
@@ -224,7 +224,7 @@ extern int mysql_add_resv(mysql_conn_t *mysql_conn,
 	return rc;
 }
 
-extern int mysql_modify_resv(mysql_conn_t *mysql_conn,
+extern int as_mysql_modify_resv(mysql_conn_t *mysql_conn,
 			     acct_reservation_rec_t *resv)
 {
 	MYSQL_RES *result = NULL;
@@ -423,7 +423,7 @@ end_it:
 	return rc;
 }
 
-extern int mysql_remove_resv(mysql_conn_t *mysql_conn,
+extern int as_mysql_remove_resv(mysql_conn_t *mysql_conn,
 			    acct_reservation_rec_t *resv)
 {
 	int rc = SLURM_SUCCESS;
@@ -469,7 +469,7 @@ extern int mysql_remove_resv(mysql_conn_t *mysql_conn,
 	return rc;
 }
 
-extern List mysql_get_resvs(mysql_conn_t *mysql_conn, uid_t uid,
+extern List as_mysql_get_resvs(mysql_conn_t *mysql_conn, uid_t uid,
 			    acct_reservation_cond_t *resv_cond)
 {
 	//DEF_TIMERS;
@@ -485,7 +485,7 @@ extern List mysql_get_resvs(mysql_conn_t *mysql_conn, uid_t uid,
 	acct_job_cond_t job_cond;
 	void *curr_cluster = NULL;
 	List local_cluster_list = NULL;
-	List use_cluster_list = mysql_cluster_list;
+	List use_cluster_list = as_mysql_cluster_list;
 	ListIterator itr = NULL;
 	char *cluster_name = NULL;
 	/* needed if we don't have an resv_cond */
@@ -562,7 +562,7 @@ empty:
 	if(resv_cond->cluster_list && list_count(resv_cond->cluster_list))
 		use_cluster_list = resv_cond->cluster_list;
 	else
-		slurm_mutex_lock(&mysql_cluster_list_lock);
+		slurm_mutex_lock(&as_mysql_cluster_list_lock);
 
 	itr = list_iterator_create(use_cluster_list);
 	while((cluster_name = list_next(itr))) {
@@ -574,8 +574,8 @@ empty:
 			   tmp, cluster_name, cluster_name, resv_table, extra);
 	}
 	list_iterator_destroy(itr);
-	if(use_cluster_list == mysql_cluster_list)
-		slurm_mutex_unlock(&mysql_cluster_list_lock);
+	if(use_cluster_list == as_mysql_cluster_list)
+		slurm_mutex_unlock(&as_mysql_cluster_list_lock);
 
 	if(query)
 		xstrcat(query, " order by cluster, resv_name;");
@@ -624,7 +624,7 @@ empty:
 		list_destroy(local_cluster_list);
 
 	if(with_usage && resv_list && list_count(resv_list)) {
-		List job_list = mysql_jobacct_process_get_jobs(
+		List job_list = as_mysql_jobacct_process_get_jobs(
 			mysql_conn, uid, &job_cond);
 		ListIterator itr = NULL, itr2 = NULL;
 		jobacct_job_rec_t *job = NULL;

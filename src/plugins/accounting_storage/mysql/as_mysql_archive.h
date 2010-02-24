@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  mysql_archive.h - functions dealing with the archiving.
+ *  as_mysql_archive.h - functions dealing with the archiving.
  *****************************************************************************
  *
  *  Copyright (C) 2004-2007 The Regents of the University of California.
@@ -43,9 +43,9 @@
 #include "accounting_storage_mysql.h"
 
 
-extern int mysql_jobacct_process_archive(mysql_conn_t *mysql_conn,
+extern int as_mysql_jobacct_process_archive(mysql_conn_t *mysql_conn,
 					 acct_archive_cond_t *arch_cond);
 
-extern int mysql_jobacct_process_archive_load(mysql_conn_t *mysql_conn,
+extern int as_mysql_jobacct_process_archive_load(mysql_conn_t *mysql_conn,
 					      acct_archive_rec_t *arch_rec);
 #endif

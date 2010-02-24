@@ -1,11 +1,12 @@
 /*****************************************************************************\
- *  mysql_job.h - functions dealing with jobs and job steps.
+ *  as_mysql_problems.h - functions for finding out problems in the
+ *                     associations and other places in the database.
  *****************************************************************************
  *
- *  Copyright (C) 2004-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
+ *  Copyright (C) 2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
+ *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
@@ -37,25 +38,19 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _HAVE_MYSQL_JOB_H
-#define _HAVE_MYSQL_JOB_H
+#ifndef _HAVE_MYSQL_PROBLEMS_H
+#define _HAVE_MYSQL_PROBLEMS_H
 
 #include "accounting_storage_mysql.h"
 
-extern int mysql_job_start(mysql_conn_t *mysql_conn,
-			   struct job_record *job_ptr);
+extern int as_mysql_acct_no_assocs(mysql_conn_t *mysql_conn,
+				acct_association_cond_t *assoc_cond,
+				List ret_list);
+extern int as_mysql_acct_no_users(mysql_conn_t *mysql_conn,
+			       acct_association_cond_t *assoc_cond,
+			       List ret_list);
+extern int as_mysql_user_no_assocs_or_no_uid(
+	mysql_conn_t *mysql_conn, acct_association_cond_t *assoc_cond,
+	List ret_list);
 
-extern int mysql_job_complete(mysql_conn_t *mysql_conn,
-			      struct job_record *job_ptr);
-
-extern int mysql_step_start(mysql_conn_t *mysql_conn,
-			    struct step_record *step_ptr);
-
-extern int mysql_step_complete(mysql_conn_t *mysql_conn,
-			       struct step_record *step_ptr);
-
-extern int mysql_suspend(mysql_conn_t *mysql_conn, struct job_record *job_ptr);
-
-extern int mysql_flush_jobs_on_cluster(
-	mysql_conn_t *mysql_conn, time_t event_time);
 #endif

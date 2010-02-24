@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  mysql_wckey.h - functions dealing with the wckey.
+ *  as_mysql_txn.h - functions dealing with transactions.
  *****************************************************************************
  *
  *  Copyright (C) 2004-2007 The Regents of the University of California.
@@ -37,20 +37,12 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _HAVE_MYSQL_WCKEY_H
-#define _HAVE_MYSQL_WCKEY_H
+#ifndef _HAVE_MYSQL_TXN_H
+#define _HAVE_MYSQL_TXN_H
 
 #include "accounting_storage_mysql.h"
 
-extern int mysql_add_wckeys(mysql_conn_t *mysql_conn, uint32_t uid,
-			    List wckey_list);
-extern List mysql_modify_wckeys(mysql_conn_t *mysql_conn,
-				uint32_t uid,
-				acct_wckey_cond_t *wckey_cond,
-				acct_wckey_rec_t *wckey);
-extern List mysql_remove_wckeys(mysql_conn_t *mysql_conn,
-				uint32_t uid,
-				acct_wckey_cond_t *wckey_cond);
-extern List mysql_get_wckeys(mysql_conn_t *mysql_conn, uid_t uid,
-			     acct_wckey_cond_t *wckey_cond);
+extern List as_mysql_get_txn(mysql_conn_t *mysql_conn, uid_t uid,
+			  acct_txn_cond_t *txn_cond);
+
 #endif

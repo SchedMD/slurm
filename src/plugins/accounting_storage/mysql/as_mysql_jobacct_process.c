@@ -1,6 +1,6 @@
 /*****************************************************************************\
- *  mysql_jobacct_process.c - functions the processing of
- *                               information from the mysql jobacct
+ *  as_mysql_jobacct_process.c - functions the processing of
+ *                               information from the as_mysql jobacct
  *                               storage.
  *****************************************************************************
  *
@@ -42,7 +42,7 @@
  *  Copyright (C) 2002 The Regents of the University of California.
 \*****************************************************************************/
 
-#include "mysql_jobacct_process.h"
+#include "as_mysql_jobacct_process.h"
 
 typedef struct {
 	hostlist_t hl;
@@ -1189,7 +1189,7 @@ extern int setup_job_cond_limits(mysql_conn_t *mysql_conn,
 	return set;
 }
 
-extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
+extern List as_mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 					   acct_job_cond_t *job_cond)
 {
 	char *extra = NULL;
@@ -1204,7 +1204,7 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 	local_cluster_t *curr_cluster = NULL;
 	List local_cluster_list = NULL;
 	int only_pending = 0;
-	List use_cluster_list = mysql_cluster_list;
+	List use_cluster_list = as_mysql_cluster_list;
 	char *cluster_name;
 
 	memset(&user, 0, sizeof(acct_user_rec_t));
@@ -1255,7 +1255,7 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 	if(job_cond->cluster_list && list_count(job_cond->cluster_list))
 		use_cluster_list = job_cond->cluster_list;
 	else
-		slurm_mutex_lock(&mysql_cluster_list_lock);
+		slurm_mutex_lock(&as_mysql_cluster_list_lock);
 
 	job_list = list_create(destroy_jobacct_job_rec);
 	itr = list_iterator_create(use_cluster_list);
@@ -1272,8 +1272,8 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 	}
 	list_iterator_destroy(itr);
 
-	if(use_cluster_list == mysql_cluster_list)
-		slurm_mutex_unlock(&mysql_cluster_list_lock);
+	if(use_cluster_list == as_mysql_cluster_list)
+		slurm_mutex_unlock(&as_mysql_cluster_list_lock);
 
 	xfree(tmp);
 	xfree(tmp2);
