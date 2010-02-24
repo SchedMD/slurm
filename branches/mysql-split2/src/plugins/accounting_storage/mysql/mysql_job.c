@@ -53,7 +53,8 @@ static int _get_db_index(mysql_conn_t *mysql_conn,
 	MYSQL_ROW row;
 	int db_index = 0;
 	char *query = xstrdup_printf("select job_db_inx from \"%s_%s\" where "
-				     "submit=%d and id_job=%u and id_assoc=%u",
+				     "time_submit=%d and id_job=%u "
+				     "and id_assoc=%u",
 				     mysql_conn->cluster_name, job_table,
 				     (int)submit, jobid, associd);
 
@@ -67,7 +68,7 @@ static int _get_db_index(mysql_conn_t *mysql_conn,
 	if(!row) {
 		mysql_free_result(result);
 		error("We can't get a db_index for this combo, "
-		      "submit=%d and id_job=%u and id_assoc=%u.",
+		      "time_submit=%d and id_job=%u and id_assoc=%u.",
 		      (int)submit, jobid, associd);
 		return 0;
 	}

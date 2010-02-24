@@ -1114,7 +1114,7 @@ get_wckeys:
 
 		if(!wckey_list)
 			return user_list;
-		
+
 		itr = list_iterator_create(user_list);
 		wckey_itr = list_iterator_create(wckey_list);
 		while((user = list_next(itr))) {
