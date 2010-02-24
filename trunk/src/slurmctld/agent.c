@@ -481,9 +481,8 @@ static void _update_wdog_state(thd_t *thread_ptr,
 	case DSH_ACTIVE:
 		thd_comp->work_done = false;
 		if (thread_ptr->end_time <= thd_comp->now) {
-			debug3("agent thread %lu timed out\n",
-			       (unsigned long)
-			       thread_ptr->thread);
+			debug3("agent thread %lu timed out",
+			       (unsigned long) thread_ptr->thread);
 			if (pthread_kill(thread_ptr->thread, SIGUSR1) == ESRCH)
 				*state = DSH_NO_RESP;
 			else

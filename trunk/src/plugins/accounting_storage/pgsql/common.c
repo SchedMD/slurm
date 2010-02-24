@@ -407,7 +407,7 @@ aspg_remove_common(pgsql_conn_t *pg_conn, uint16_t type, time_t now,
 	}
 
 	if(!loc_assoc_char) {
-		debug2("No associations with object being deleted\n");
+		debug2("No associations with object being deleted");
 		return rc;
 	}
 

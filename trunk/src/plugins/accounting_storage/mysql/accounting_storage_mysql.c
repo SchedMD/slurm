@@ -1978,7 +1978,7 @@ static int _last_affected_rows(MYSQL *mysql_db)
 					rows = status;
 			}
 		if ((status = mysql_next_result(mysql_db)) > 0)
-			debug3("Could not execute statement\n");
+			debug3("Could not execute statement");
 	} while (status == 0);
 
 	return rows;
@@ -2478,7 +2478,7 @@ static int _remove_common(mysql_conn_t *mysql_conn,
 		loc_assoc_char = assoc_char;
 
 	if(!loc_assoc_char) {
-		debug2("No associations with object being deleted\n");
+		debug2("No associations with object being deleted");
 		return rc;
 	}
 
@@ -4535,7 +4535,7 @@ extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 				}
 
 				if(!(row = mysql_fetch_row(sel_result))) {
-					error("Couldn't get left from query\n",
+					error("Couldn't get left from query",
 					      sel_query);
 					mysql_free_result(sel_result);
 					xfree(cols);

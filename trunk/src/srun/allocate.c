@@ -302,7 +302,7 @@ static int _blocks_dealloc(void)
 	}
 
 	if (error_code) {
-		error("slurm_load_partitions: %s\n",
+		error("slurm_load_partitions: %s",
 		      slurm_strerror(slurm_get_errno()));
 		return -1;
 	}

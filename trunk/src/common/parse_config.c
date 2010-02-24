@@ -212,7 +212,7 @@ static void _keyvalue_regex_init(void)
 		if (regcomp(&keyvalue_re, keyvalue_pattern,
 			    REG_EXTENDED) != 0) {
 			/* FIXME - should be fatal? */
-			error("keyvalue regex compilation failed\n");
+			error("keyvalue regex compilation failed");
 		}
 		keyvalue_initialized = true;
 	}
@@ -897,7 +897,7 @@ int s_p_get_string(char **str, const char *key, const s_p_hashtbl_t *hashtbl)
 		return 0;
 	}
 	if (p->type != S_P_STRING) {
-		error("Key \"%s\" is not a string\n", key);
+		error("Key \"%s\" is not a string", key);
 		return 0;
 	}
 	if (p->data_count == 0) {
@@ -935,7 +935,7 @@ int s_p_get_long(long *num, const char *key, const s_p_hashtbl_t *hashtbl)
 		return 0;
 	}
 	if (p->type != S_P_LONG) {
-		error("Key \"%s\" is not a long\n", key);
+		error("Key \"%s\" is not a long", key);
 		return 0;
 	}
 	if (p->data_count == 0) {
@@ -974,7 +974,7 @@ int s_p_get_uint16(uint16_t *num, const char *key,
 		return 0;
 	}
 	if (p->type != S_P_UINT16) {
-		error("Key \"%s\" is not a uint16_t\n", key);
+		error("Key \"%s\" is not a uint16_t", key);
 		return 0;
 	}
 	if (p->data_count == 0) {
@@ -1013,7 +1013,7 @@ int s_p_get_uint32(uint32_t *num, const char *key,
 		return 0;
 	}
 	if (p->type != S_P_UINT32) {
-		error("Key \"%s\" is not a uint32_t\n", key);
+		error("Key \"%s\" is not a uint32_t", key);
 		return 0;
 	}
 	if (p->data_count == 0) {
@@ -1051,7 +1051,7 @@ int s_p_get_pointer(void **ptr, const char *key, const s_p_hashtbl_t *hashtbl)
 		return 0;
 	}
 	if (p->type != S_P_POINTER) {
-		error("Key \"%s\" is not a pointer\n", key);
+		error("Key \"%s\" is not a pointer", key);
 		return 0;
 	}
 	if (p->data_count == 0) {
@@ -1096,7 +1096,7 @@ int s_p_get_array(void **ptr_array[], int *count,
 		return 0;
 	}
 	if (p->type != S_P_ARRAY) {
-		error("Key \"%s\" is not an array\n", key);
+		error("Key \"%s\" is not an array", key);
 		return 0;
 	}
 	if (p->data_count == 0) {
@@ -1135,7 +1135,7 @@ int s_p_get_boolean(bool *flag, const char *key, const s_p_hashtbl_t *hashtbl)
 		return 0;
 	}
 	if (p->type != S_P_BOOLEAN) {
-		error("Key \"%s\" is not a boolean\n", key);
+		error("Key \"%s\" is not a boolean", key);
 		return 0;
 	}
 	if (p->data_count == 0) {

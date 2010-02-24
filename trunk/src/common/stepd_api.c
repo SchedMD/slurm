@@ -479,7 +479,7 @@ _sockname_regex_init(regex_t *re, const char *nodename)
 	xstrcat(pattern, "_([[:digit:]]*)\\.([[:digit:]]*)$");
 
 	if (regcomp(re, pattern, REG_EXTENDED) != 0) {
-		error("sockname regex compilation failed\n");
+		error("sockname regex compilation failed");
 		return -1;
 	}
 

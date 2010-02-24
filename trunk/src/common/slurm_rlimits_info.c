@@ -167,7 +167,7 @@ parse_rlimits( char *rlimits_str, int propagate_flag )
 				break;
 			}
 			if (found == FALSE) {
-				error( "Bad rlimit name: %s\n", tp );
+				error( "Bad rlimit name: %s", tp );
 				xfree( rlimits_str_dup );
 				return( -1 );
 			}

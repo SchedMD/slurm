@@ -1174,21 +1174,21 @@ extern List filetxt_jobacct_process_get_jobs(acct_job_cond_t *job_cond)
 		switch(rec_type) {
 		case JOB_START:
 			if(i < F_JOB_ACCOUNT) {
-				error("Bad data on a Job Start\n");
+				error("Bad data on a Job Start");
 				_show_rec(f);
 			} else
 				_process_start(job_list, f, lc, show_full, i);
 			break;
 		case JOB_STEP:
 			if(i < F_MAX_VSIZE) {
-				error("Bad data on a Step entry\n");
+				error("Bad data on a Step entry");
 				_show_rec(f);
 			} else
 				_process_step(job_list, f, lc, show_full, i);
 			break;
 		case JOB_SUSPEND:
 			if(i < F_JOB_REQUID) {
-				error("Bad data on a Suspend entry\n");
+				error("Bad data on a Suspend entry");
 				_show_rec(f);
 			} else
 				_process_suspend(job_list, f, lc,
@@ -1196,7 +1196,7 @@ extern List filetxt_jobacct_process_get_jobs(acct_job_cond_t *job_cond)
 			break;
 		case JOB_TERMINATED:
 			if(i < F_JOB_REQUID) {
-				error("Bad data on a Job Term\n");
+				error("Bad data on a Job Term");
 				_show_rec(f);
 			} else
 				_process_terminated(job_list, f, lc,
@@ -1296,7 +1296,7 @@ extern int filetxt_jobacct_process_archive(acct_archive_cond_t *arch_cond)
 
 	expiry = time(NULL) - job_cond->usage_end;
 
-	debug("Purging jobs completed prior to %d\n", (int)expiry);
+	debug("Purging jobs completed prior to %d", (int)expiry);
 
 	/* Open the current or specified logfile, or quit */
 	fd = _open_log_file(filein);
@@ -1306,12 +1306,12 @@ extern int filetxt_jobacct_process_archive(acct_archive_cond_t *arch_cond)
 	}
 	if ((statbuf.st_mode & S_IFLNK) == S_IFLNK) {
 		error("%s is a symbolic link; --expire requires "
-			"a hard-linked file name\n", filein);
+		      "a hard-linked file name", filein);
 		goto finished;
 	}
 	if (!(statbuf.st_mode & S_IFREG)) {
 		error("%s is not a regular file; --expire "
-			"only works on accounting log files\n",
+			"only works on accounting log files",
 			filein);
 		goto finished;
 	}
@@ -1328,7 +1328,7 @@ extern int filetxt_jobacct_process_archive(acct_archive_cond_t *arch_cond)
 		}
 	} else {
 		error("Warning! %s exists -- please remove "
-			"or rename it before proceeding\n",
+			"or rename it before proceeding",
 			old_logfile_name);
 		goto finished;
 	}
@@ -1430,14 +1430,9 @@ extern int filetxt_jobacct_process_archive(acct_archive_cond_t *arch_cond)
 	/* if (params->opt_verbose > 2) { */
 /* 		error("--- contents of exp_list ---"); */
 /* 		itr = list_iterator_create(exp_list); */
-/* 		while((exp_rec = list_next(itr))) { */
-/* 			if (!(i%5)) */
-/* 				error("\n"); */
-/* 			else */
-/* 				error("\t"); */
+/* 		while((exp_rec = list_next(itr))) */
 /* 			error("%d", exp_rec->job); */
-/* 		} */
-/* 		error("\n---- end of exp_list ---\n"); */
+/* 		error("---- end of exp_list ---"); */
 /* 		list_iterator_destroy(itr); */
 /* 	} */
 	/* write the expired file */
@@ -1519,7 +1514,7 @@ extern int filetxt_jobacct_process_archive(acct_archive_cond_t *arch_cond)
 			error("SEVERE ERROR: Current accounting "
 				"log may have been renamed %s;\n"
 				"please rename it to \"%s\" if necessary, "
-			        "and try again\n",
+			        "and try again",
 				old_logfile_name, filein);
 		goto finished2;
 	}
@@ -1529,8 +1524,7 @@ extern int filetxt_jobacct_process_archive(acct_archive_cond_t *arch_cond)
 	file_err = slurm_reconfigure();
 	if (file_err) {
 		file_err = 1;
-		error("Error: Attempt to reconfigure "
-			"SLURM failed.\n");
+		error("Error: Attempt to reconfigure SLURM failed.");
 		if (rename(old_logfile_name, filein)) {
 			perror("renaming logfile from .old.");
 			goto finished2;
