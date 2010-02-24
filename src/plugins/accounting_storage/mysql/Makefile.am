@@ -21,8 +21,7 @@ AS_MYSQL_SOURCES = accounting_storage_mysql.c accounting_storage_mysql.h \
 		as_mysql_txn.c as_mysql_txn.h \
 		as_mysql_usage.c as_mysql_usage.h \
 		as_mysql_user.c as_mysql_user.h \
-		as_mysql_wckey.c as_mysql_wckey.h \
-		../common/common_as.c ../common/common_as.h
+		as_mysql_wckey.c as_mysql_wckey.h
 
 if WITH_MYSQL
 pkglib_LTLIBRARIES = accounting_storage_mysql.la
@@ -32,7 +31,8 @@ accounting_storage_mysql_la_SOURCES = $(AS_MYSQL_SOURCES)
 accounting_storage_mysql_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 accounting_storage_mysql_la_CFLAGS = $(MYSQL_CFLAGS)
 accounting_storage_mysql_la_LIBADD = \
-	$(top_builddir)/src/database/libslurm_mysql.la $(MYSQL_LIBS)
+	$(top_builddir)/src/database/libslurm_mysql.la $(MYSQL_LIBS) \
+	../common/libaccounting_storage_common.la
 
 force:
 $(accounting_storage_mysql_la_LIBADD) : force

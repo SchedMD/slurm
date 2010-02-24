@@ -105,13 +105,12 @@ am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 am__DEPENDENCIES_1 =
 @WITH_PGSQL_TRUE@accounting_storage_pgsql_la_DEPENDENCIES = $(top_builddir)/src/database/libslurm_pgsql.la \
-@WITH_PGSQL_TRUE@	$(am__DEPENDENCIES_1)
+@WITH_PGSQL_TRUE@	$(am__DEPENDENCIES_1) \
+@WITH_PGSQL_TRUE@	../common/libaccounting_storage_common.la
 am__accounting_storage_pgsql_la_SOURCES_DIST =  \
 	accounting_storage_pgsql.c common.c common.h account.c \
 	association.c cluster.c clusteracct.c jobacct.c problem.c \
-	qos.c reservation.c rollup.c txn.c usage.c user.c wckey.c \
-	$(top_srcdir)/src/plugins/accounting_storage/common/common_as.h \
-	$(top_srcdir)/src/plugins/accounting_storage/common/common_as.c
+	qos.c reservation.c rollup.c txn.c usage.c user.c wckey.c
 am__objects_1 =  \
 	accounting_storage_pgsql_la-accounting_storage_pgsql.lo \
 	accounting_storage_pgsql_la-common.lo \
@@ -127,16 +126,13 @@ am__objects_1 =  \
 	accounting_storage_pgsql_la-txn.lo \
 	accounting_storage_pgsql_la-usage.lo \
 	accounting_storage_pgsql_la-user.lo \
-	accounting_storage_pgsql_la-wckey.lo \
-	accounting_storage_pgsql_la-common_as.lo
+	accounting_storage_pgsql_la-wckey.lo
 @WITH_PGSQL_TRUE@am_accounting_storage_pgsql_la_OBJECTS =  \
 @WITH_PGSQL_TRUE@	$(am__objects_1)
 am__EXTRA_accounting_storage_pgsql_la_SOURCES_DIST =  \
 	accounting_storage_pgsql.c common.c common.h account.c \
 	association.c cluster.c clusteracct.c jobacct.c problem.c \
-	qos.c reservation.c rollup.c txn.c usage.c user.c wckey.c \
-	$(top_srcdir)/src/plugins/accounting_storage/common/common_as.h \
-	$(top_srcdir)/src/plugins/accounting_storage/common/common_as.c
+	qos.c reservation.c rollup.c txn.c usage.c user.c wckey.c
 accounting_storage_pgsql_la_OBJECTS =  \
 	$(am_accounting_storage_pgsql_la_OBJECTS)
 accounting_storage_pgsql_la_LINK = $(LIBTOOL) --tag=CC \
@@ -355,9 +351,7 @@ INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
 AS_PG_SOURCES = accounting_storage_pgsql.c common.c common.h \
 		account.c association.c cluster.c clusteracct.c  \
 		jobacct.c problem.c qos.c reservation.c rollup.c \
-		txn.c usage.c user.c wckey.c \
-		$(top_srcdir)/src/plugins/accounting_storage/common/common_as.h \
-		$(top_srcdir)/src/plugins/accounting_storage/common/common_as.c
+		txn.c usage.c user.c wckey.c
 
 @WITH_PGSQL_TRUE@pkglib_LTLIBRARIES = accounting_storage_pgsql.la
 
@@ -366,7 +360,8 @@ AS_PG_SOURCES = accounting_storage_pgsql.c common.c common.h \
 @WITH_PGSQL_TRUE@accounting_storage_pgsql_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 @WITH_PGSQL_TRUE@accounting_storage_pgsql_la_CFLAGS = $(PGSQL_CFLAGS)
 @WITH_PGSQL_TRUE@accounting_storage_pgsql_la_LIBADD = \
-@WITH_PGSQL_TRUE@	$(top_builddir)/src/database/libslurm_pgsql.la $(PGSQL_LIBS)
+@WITH_PGSQL_TRUE@	$(top_builddir)/src/database/libslurm_pgsql.la $(PGSQL_LIBS) \
+@WITH_PGSQL_TRUE@	../common/libaccounting_storage_common.la
 
 @WITH_PGSQL_FALSE@EXTRA_accounting_storage_pgsql_la_SOURCES = $(AS_PG_SOURCES)
 all: all-am
@@ -449,7 +444,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/accounting_storage_pgsql_la-cluster.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/accounting_storage_pgsql_la-clusteracct.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/accounting_storage_pgsql_la-common.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/accounting_storage_pgsql_la-common_as.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/accounting_storage_pgsql_la-jobacct.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/accounting_storage_pgsql_la-problem.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/accounting_storage_pgsql_la-qos.Plo@am__quote@
@@ -585,13 +579,6 @@ accounting_storage_pgsql_la-wckey.lo: wckey.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='wckey.c' object='accounting_storage_pgsql_la-wckey.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(accounting_storage_pgsql_la_CFLAGS) $(CFLAGS) -c -o accounting_storage_pgsql_la-wckey.lo `test -f 'wckey.c' || echo '$(srcdir)/'`wckey.c
-
-accounting_storage_pgsql_la-common_as.lo: $(top_srcdir)/src/plugins/accounting_storage/common/common_as.c
-@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(accounting_storage_pgsql_la_CFLAGS) $(CFLAGS) -MT accounting_storage_pgsql_la-common_as.lo -MD -MP -MF $(DEPDIR)/accounting_storage_pgsql_la-common_as.Tpo -c -o accounting_storage_pgsql_la-common_as.lo `test -f '$(top_srcdir)/src/plugins/accounting_storage/common/common_as.c' || echo '$(srcdir)/'`$(top_srcdir)/src/plugins/accounting_storage/common/common_as.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/accounting_storage_pgsql_la-common_as.Tpo $(DEPDIR)/accounting_storage_pgsql_la-common_as.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(top_srcdir)/src/plugins/accounting_storage/common/common_as.c' object='accounting_storage_pgsql_la-common_as.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(accounting_storage_pgsql_la_CFLAGS) $(CFLAGS) -c -o accounting_storage_pgsql_la-common_as.lo `test -f '$(top_srcdir)/src/plugins/accounting_storage/common/common_as.c' || echo '$(srcdir)/'`$(top_srcdir)/src/plugins/accounting_storage/common/common_as.c
 
 mostlyclean-libtool:
 	-rm -f *.lo
