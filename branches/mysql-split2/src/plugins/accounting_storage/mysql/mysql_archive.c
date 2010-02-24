@@ -582,7 +582,7 @@ static int _process_old_sql_line(const char *data_in, char **data_full_out)
 	}
 
 	if(!data_in[i])
-		return i;
+		goto end_it;
 
 	beginning = xstrndup(data_in+i, 11);
 	i+=12;

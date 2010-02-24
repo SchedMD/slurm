@@ -587,14 +587,13 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 	if(!ret_list || !acct)
 		return SLURM_ERROR;
 
-	for(i=0; i<ASSOC_COUNT; i++) {
-		if(i)
-			xstrcat(object, ", ");
+	xstrcat(object, assoc_req_inx[0]);
+	for(i=1; i<ASSOC_COUNT; i++)
 		xstrcat(object, assoc_req_inx[i]);
-	}
 
 	/* We want all the sub accounts and user accounts */
-	query = xstrdup_printf("select distinct %s from \"%s_%s\" where deleted=0 "
+	query = xstrdup_printf("select distinct %s from \"%s_%s\" "
+			       "where deleted=0 "
 			       "&& lft between %d and %d && "
 			       "((user = '' && parent_acct = '%s') || "
 			       "(user != '' && acct = '%s')) "
@@ -1126,13 +1125,15 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 	int rc = SLURM_SUCCESS;
 	int set_qos_vals = 0;
 	int moved_parent = 0;
-	char *vals = xstrdup(sent_vals), *object = NULL, *name_char = NULL;
+	char *vals = NULL, *object = NULL, *name_char = NULL;
 	time_t now = time(NULL);
 
 	xassert(result);
 
 	if(!mysql_num_rows(result))
 		return SLURM_SUCCESS;
+
+	vals = xstrdup(sent_vals);
 
 	while((row = mysql_fetch_row(result))) {
 		acct_association_rec_t *mod_assoc = NULL;
@@ -2016,12 +2017,10 @@ extern int mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 		setup_association_limits(object, &cols, &vals, &extra,
 					  QOS_LEVEL_NONE, 1);
 
-		for(i=0; i<AASSOC_COUNT; i++) {
-			if(i)
-				xstrcat(tmp_char, ", ");
+		xstrcat(tmp_char, aassoc_req_inx[0]);
+		for(i=1; i<AASSOC_COUNT; i++)
 			xstrcat(tmp_char, aassoc_req_inx[i]);
-		}
-
+	       
 		xstrfmtcat(query,
 			   "select distinct %s from \"%s_%s\" %s order by lft "
 			   "FOR UPDATE;",
@@ -2438,17 +2437,15 @@ extern List mysql_modify_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	if(!extra || (!vals && !assoc->parent_acct
 		      && (!assoc->qos_list || !list_count(assoc->qos_list)))) {
+		xfree(vals);
 		errno = SLURM_NO_CHANGE_IN_DATA;
 		error("Nothing to change");
 		return NULL;
 	}
 
-	for(i=0; i<MASSOC_COUNT; i++) {
-		if(i)
-			xstrcat(object, ", ");
+	xstrfmtcat(object, "t1.%s", massoc_req_inx[0]);
+	for(i=1; i<MASSOC_COUNT; i++)
 		xstrfmtcat(object, "t1.%s", massoc_req_inx[i]);
-	}
-
 
 	ret_list = list_create(slurm_destroy_char);
 
@@ -2492,6 +2489,7 @@ extern List mysql_modify_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 	list_iterator_destroy(itr);
 	if(use_cluster_list == mysql_cluster_list)
 		slurm_mutex_unlock(&mysql_cluster_list_lock);
+	xfree(vals);
 	xfree(object);
 	xfree(extra);
 
@@ -2554,11 +2552,9 @@ extern List mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	set = _setup_association_cond_limits(assoc_cond, prefix, &extra);
 
-	for(i=0; i<RASSOC_COUNT; i++) {
-		if(i)
-			xstrcat(object, ", ");
+	xstrcat(object, rassoc_req_inx[0]);
+	for(i=1; i<RASSOC_COUNT; i++)
 		xstrcat(object, rassoc_req_inx[i]);
-	}
 
 	ret_list = list_create(slurm_destroy_char);
 
@@ -2589,8 +2585,10 @@ extern List mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 		}
 		xfree(query);
 
-		if(!mysql_num_rows(result))
+		if(!mysql_num_rows(result)) {
+			mysql_free_result(result);
 			continue;
+		}
 
 		while((row = mysql_fetch_row(result))) {
 			if(name_char)
