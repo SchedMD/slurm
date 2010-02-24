@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  mysql_txn.c - functions dealing with transactions.
+ *  as_mysql_txn.c - functions dealing with transactions.
  *****************************************************************************
  *
  *  Copyright (C) 2004-2007 The Regents of the University of California.
@@ -37,9 +37,9 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include "mysql_txn.h"
+#include "as_mysql_txn.h"
 
-extern List mysql_get_txn(mysql_conn_t *mysql_conn, uid_t uid,
+extern List as_mysql_get_txn(mysql_conn_t *mysql_conn, uid_t uid,
 			  acct_txn_cond_t *txn_cond)
 {
 	char *query = NULL;
@@ -54,7 +54,7 @@ extern List mysql_get_txn(mysql_conn_t *mysql_conn, uid_t uid,
 	int i=0;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
-	List use_cluster_list = mysql_cluster_list;
+	List use_cluster_list = as_mysql_cluster_list;
 	bool locked = 0;
 
 	/* if this changes you will need to edit the corresponding enum */
@@ -173,8 +173,8 @@ extern List mysql_get_txn(mysql_conn_t *mysql_conn, uid_t uid,
 	}
 
 	if(assoc_extra) {
-		if(!locked && (use_cluster_list == mysql_cluster_list)) {
-			slurm_mutex_lock(&mysql_cluster_list_lock);
+		if(!locked && (use_cluster_list == as_mysql_cluster_list)) {
+			slurm_mutex_lock(&as_mysql_cluster_list_lock);
 			locked = 1;
 		}
 
@@ -356,8 +356,8 @@ extern List mysql_get_txn(mysql_conn_t *mysql_conn, uid_t uid,
 			       "set session group_concat_max_len=65536;");
 
 empty:
-	if(!locked && (use_cluster_list == mysql_cluster_list)) {
-		slurm_mutex_lock(&mysql_cluster_list_lock);
+	if(!locked && (use_cluster_list == as_mysql_cluster_list)) {
+		slurm_mutex_lock(&as_mysql_cluster_list_lock);
 		locked = 1;
 	}
 
@@ -441,7 +441,7 @@ empty:
 
 end_it:
 	if(locked)
-		slurm_mutex_unlock(&mysql_cluster_list_lock);
+		slurm_mutex_unlock(&as_mysql_cluster_list_lock);
 
 	return txn_list;
 }

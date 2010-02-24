@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  mysql_user.c - functions dealing with users and coordinators.
+ *  as_mysql_user.c - functions dealing with users and coordinators.
  *****************************************************************************
  *
  *  Copyright (C) 2004-2007 The Regents of the University of California.
@@ -37,9 +37,9 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include "mysql_assoc.h"
-#include "mysql_user.h"
-#include "mysql_wckey.h"
+#include "as_mysql_assoc.h"
+#include "as_mysql_user.h"
+#include "as_mysql_wckey.h"
 
 /* Fill in all the accounts this user is coordinator over.  This
  * will fill in all the sub accounts they are coordinator over also.
@@ -83,8 +83,8 @@ static int _get_user_coords(mysql_conn_t *mysql_conn, acct_user_rec_t *user)
 	if(!list_count(user->coord_accts))
 		return SLURM_SUCCESS;
 
-	slurm_mutex_lock(&mysql_cluster_list_lock);
-	itr2 = list_iterator_create(mysql_cluster_list);
+	slurm_mutex_lock(&as_mysql_cluster_list_lock);
+	itr2 = list_iterator_create(as_mysql_cluster_list);
 	itr = list_iterator_create(user->coord_accts);
 	while((cluster_name = list_next(itr2))) {
 		int set = 0;
@@ -115,7 +115,7 @@ static int _get_user_coords(mysql_conn_t *mysql_conn, acct_user_rec_t *user)
 		list_iterator_reset(itr);
 	}
 	list_iterator_destroy(itr2);
-	slurm_mutex_unlock(&mysql_cluster_list_lock);
+	slurm_mutex_unlock(&as_mysql_cluster_list_lock);
 
 	if(query) {
 		debug4("%d(%s:%d) query\n%s",
@@ -149,7 +149,7 @@ static int _get_user_coords(mysql_conn_t *mysql_conn, acct_user_rec_t *user)
 	return SLURM_SUCCESS;
 }
 
-extern int mysql_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
+extern int as_mysql_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 			   List user_list)
 {
 	ListIterator itr = NULL;
@@ -266,7 +266,7 @@ extern int mysql_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		xfree(txn_query);
 
 	if(list_count(assoc_list)) {
-		if(mysql_add_assocs(mysql_conn, uid, assoc_list)
+		if(as_mysql_add_assocs(mysql_conn, uid, assoc_list)
 		   == SLURM_ERROR) {
 			error("Problem adding user associations");
 			rc = SLURM_ERROR;
@@ -275,7 +275,7 @@ extern int mysql_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	list_destroy(assoc_list);
 
 	if(list_count(wckey_list)) {
-		if(mysql_add_wckeys(mysql_conn, uid, wckey_list)
+		if(as_mysql_add_wckeys(mysql_conn, uid, wckey_list)
 		   == SLURM_ERROR) {
 			error("Problem adding user wckeys");
 			rc = SLURM_ERROR;
@@ -286,7 +286,7 @@ extern int mysql_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	return rc;
 }
 
-extern int mysql_add_coord(mysql_conn_t *mysql_conn, uint32_t uid,
+extern int as_mysql_add_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 			   List acct_list, acct_user_cond_t *user_cond)
 {
 	char *query = NULL, *user = NULL, *acct = NULL;
@@ -378,7 +378,7 @@ extern int mysql_add_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 	return SLURM_SUCCESS;
 }
 
-extern List mysql_modify_users(mysql_conn_t *mysql_conn, uint32_t uid,
+extern List as_mysql_modify_users(mysql_conn_t *mysql_conn, uint32_t uid,
 			       acct_user_cond_t *user_cond,
 			       acct_user_rec_t *user)
 {
@@ -520,7 +520,7 @@ extern List mysql_modify_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	return ret_list;
 }
 
-extern List mysql_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
+extern List as_mysql_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 			       acct_user_cond_t *user_cond)
 {
 	ListIterator itr = NULL;
@@ -658,7 +658,7 @@ extern List mysql_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	xfree(query);
 
 	/* We need to remove these accounts from the coord's that have it */
-	coord_list = mysql_remove_coord(
+	coord_list = as_mysql_remove_coord(
 		mysql_conn, uid, NULL, &user_coord_cond);
 	if(coord_list)
 		list_destroy(coord_list);
@@ -666,7 +666,7 @@ extern List mysql_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	/* We need to remove these users from the wckey table */
 	memset(&wckey_cond, 0, sizeof(acct_wckey_cond_t));
 	wckey_cond.user_list = assoc_cond.user_list;
-	coord_list = mysql_remove_wckeys(
+	coord_list = as_mysql_remove_wckeys(
 		mysql_conn, uid, &wckey_cond);
 	if(coord_list)
 		list_destroy(coord_list);
@@ -674,8 +674,8 @@ extern List mysql_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	list_destroy(assoc_cond.user_list);
 
 	user_name = uid_to_string((uid_t) uid);
-	slurm_mutex_lock(&mysql_cluster_list_lock);
-	itr = list_iterator_create(mysql_cluster_list);
+	slurm_mutex_lock(&as_mysql_cluster_list_lock);
+	itr = list_iterator_create(as_mysql_cluster_list);
 	while((object = list_next(itr))) {
 		if((rc = remove_common(mysql_conn, DBD_REMOVE_USERS, now,
 				       user_name, user_table, name_char,
@@ -684,7 +684,7 @@ extern List mysql_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 			break;
 	}
 	list_iterator_destroy(itr);
-	slurm_mutex_unlock(&mysql_cluster_list_lock);
+	slurm_mutex_unlock(&as_mysql_cluster_list_lock);
 
 	xfree(user_name);
 	xfree(name_char);
@@ -710,7 +710,7 @@ extern List mysql_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	return ret_list;
 }
 
-extern List mysql_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
+extern List as_mysql_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 			       List acct_list, acct_user_cond_t *user_cond)
 {
 	char *query = NULL, *object = NULL, *extra = NULL, *last_user = NULL;
@@ -853,8 +853,8 @@ extern List mysql_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 	mysql_free_result(result);
 
 	user_name = uid_to_string((uid_t) uid);
-	slurm_mutex_lock(&mysql_cluster_list_lock);
-	itr = list_iterator_create(mysql_cluster_list);
+	slurm_mutex_lock(&as_mysql_cluster_list_lock);
+	itr = list_iterator_create(as_mysql_cluster_list);
 	while((object = list_next(itr))) {
 		if((rc = remove_common(mysql_conn, DBD_REMOVE_ACCOUNT_COORDS,
 				       now, user_name, acct_coord_table,
@@ -863,7 +863,7 @@ extern List mysql_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 			break;
 	}
 	list_iterator_destroy(itr);
-	slurm_mutex_unlock(&mysql_cluster_list_lock);
+	slurm_mutex_unlock(&as_mysql_cluster_list_lock);
 
 	xfree(user_name);
 	xfree(extra);
@@ -889,7 +889,7 @@ extern List mysql_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 	return ret_list;
 }
 
-extern List mysql_get_users(mysql_conn_t *mysql_conn, uid_t uid,
+extern List as_mysql_get_users(mysql_conn_t *mysql_conn, uid_t uid,
 			    acct_user_cond_t *user_cond)
 {
 	char *query = NULL;
@@ -1065,7 +1065,7 @@ empty:
 		if(!user_cond->assoc_cond->user_list)
 			user_cond->assoc_cond->user_list = list_create(NULL);
 
-		assoc_list = mysql_get_assocs(
+		assoc_list = as_mysql_get_assocs(
 			mysql_conn, uid, user_cond->assoc_cond);
 
 		if(!assoc_list) {
@@ -1109,7 +1109,7 @@ get_wckeys:
 			wckey_cond.cluster_list =
 				user_cond->assoc_cond->cluster_list;
 		}
-		wckey_list = mysql_get_wckeys(
+		wckey_list = as_mysql_get_wckeys(
 			mysql_conn, uid, &wckey_cond);
 
 		if(!wckey_list)

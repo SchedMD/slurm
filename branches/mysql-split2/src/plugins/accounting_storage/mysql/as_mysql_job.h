@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  mysql_qos.h - functions dealing with qos.
+ *  as_mysql_job.h - functions dealing with jobs and job steps.
  *****************************************************************************
  *
  *  Copyright (C) 2004-2007 The Regents of the University of California.
@@ -37,21 +37,25 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _HAVE_MYSQL_QOS_H
-#define _HAVE_MYSQL_QOS_H
+#ifndef _HAVE_MYSQL_JOB_H
+#define _HAVE_MYSQL_JOB_H
 
 #include "accounting_storage_mysql.h"
 
-extern int mysql_add_qos(mysql_conn_t *mysql_conn, uint32_t uid, List qos_list);
+extern int as_mysql_job_start(mysql_conn_t *mysql_conn,
+			   struct job_record *job_ptr);
 
-extern List mysql_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
-			     acct_qos_cond_t *qos_cond,
-			     acct_qos_rec_t *qos);
+extern int as_mysql_job_complete(mysql_conn_t *mysql_conn,
+			      struct job_record *job_ptr);
 
-extern List mysql_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
-			     acct_qos_cond_t *qos_cond);
+extern int as_mysql_step_start(mysql_conn_t *mysql_conn,
+			    struct step_record *step_ptr);
 
-extern List mysql_get_qos(mysql_conn_t *mysql_conn, uid_t uid,
-			  acct_qos_cond_t *qos_cond);
+extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
+			       struct step_record *step_ptr);
 
+extern int as_mysql_suspend(mysql_conn_t *mysql_conn, struct job_record *job_ptr);
+
+extern int as_mysql_flush_jobs_on_cluster(
+	mysql_conn_t *mysql_conn, time_t event_time);
 #endif

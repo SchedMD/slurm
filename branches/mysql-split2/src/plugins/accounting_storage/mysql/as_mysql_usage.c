@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  mysql_usage.c - functions dealing with usage.
+ *  as_mysql_usage.c - functions dealing with usage.
  *****************************************************************************
  *
  *  Copyright (C) 2004-2007 The Regents of the University of California.
@@ -37,8 +37,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include "mysql_usage.h"
-#include "mysql_rollup.h"
+#include "as_mysql_usage.h"
+#include "as_mysql_rollup.h"
 
 time_t global_last_rollup = 0;
 pthread_mutex_t rollup_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -353,7 +353,7 @@ extern int get_usage_for_list(mysql_conn_t *mysql_conn,
 	return rc;
 }
 
-extern int mysql_get_usage(mysql_conn_t *mysql_conn, uid_t uid,
+extern int as_mysql_get_usage(mysql_conn_t *mysql_conn, uid_t uid,
 			   void *in, slurmdbd_msg_type_t type,
 			   time_t start, time_t end)
 {
@@ -543,7 +543,7 @@ is_user:
 	return rc;
 }
 
-extern int mysql_roll_usage(mysql_conn_t *mysql_conn,
+extern int as_mysql_roll_usage(mysql_conn_t *mysql_conn,
 			    time_t sent_start, time_t sent_end,
 			    uint16_t archive_data)
 {
@@ -611,8 +611,8 @@ extern int mysql_roll_usage(mysql_conn_t *mysql_conn,
 
 			mysql_free_result(result);
 
-			slurm_mutex_lock(&mysql_cluster_list_lock);
-			itr = list_iterator_create(mysql_cluster_list);
+			slurm_mutex_lock(&as_mysql_cluster_list_lock);
+			itr = list_iterator_create(as_mysql_cluster_list);
 			while((tmp = list_next(itr))) {
 				query = xstrdup_printf(
 					"select time_start from \"%s_%s\" "
@@ -635,7 +635,7 @@ extern int mysql_roll_usage(mysql_conn_t *mysql_conn,
 				mysql_free_result(result);
 			}
 			list_iterator_destroy(itr);
-			slurm_mutex_unlock(&mysql_cluster_list_lock);
+			slurm_mutex_unlock(&as_mysql_cluster_list_lock);
 
 			/* If we don't have any events like adding a
 			 * cluster this will not work correctly, so we
@@ -720,16 +720,16 @@ extern int mysql_roll_usage(mysql_conn_t *mysql_conn,
 
 	if(end_time-start_time > 0) {
 		START_TIMER;
-		slurm_mutex_lock(&mysql_cluster_list_lock);
-		itr = list_iterator_create(mysql_cluster_list);
+		slurm_mutex_lock(&as_mysql_cluster_list_lock);
+		itr = list_iterator_create(as_mysql_cluster_list);
 		while((tmp = list_next(itr))) {
-			if((rc = mysql_hourly_rollup(mysql_conn, tmp,
+			if((rc = as_mysql_hourly_rollup(mysql_conn, tmp,
 						     start_time, end_time))
 			   != SLURM_SUCCESS)
 				break;
 		}
 		list_iterator_destroy(itr);
-		slurm_mutex_unlock(&mysql_cluster_list_lock);
+		slurm_mutex_unlock(&as_mysql_cluster_list_lock);
 		if(rc != SLURM_SUCCESS)
 			return rc;
 		END_TIMER3("hourly_rollup", 5000000);
@@ -761,17 +761,17 @@ extern int mysql_roll_usage(mysql_conn_t *mysql_conn,
 
 	if(end_time-start_time > 0) {
 		START_TIMER;
-		slurm_mutex_lock(&mysql_cluster_list_lock);
-		itr = list_iterator_create(mysql_cluster_list);
+		slurm_mutex_lock(&as_mysql_cluster_list_lock);
+		itr = list_iterator_create(as_mysql_cluster_list);
 		while((tmp = list_next(itr))) {
-			if((rc = mysql_daily_rollup(mysql_conn, tmp,
+			if((rc = as_mysql_daily_rollup(mysql_conn, tmp,
 						    start_time, end_time,
 						    archive_data))
 			   != SLURM_SUCCESS)
 				break;
 		}
 		list_iterator_destroy(itr);
-		slurm_mutex_unlock(&mysql_cluster_list_lock);
+		slurm_mutex_unlock(&as_mysql_cluster_list_lock);
 		if(rc != SLURM_SUCCESS)
 			return rc;
 
@@ -812,17 +812,17 @@ extern int mysql_roll_usage(mysql_conn_t *mysql_conn,
 
 	if(end_time-start_time > 0) {
 		START_TIMER;
-		slurm_mutex_lock(&mysql_cluster_list_lock);
-		itr = list_iterator_create(mysql_cluster_list);
+		slurm_mutex_lock(&as_mysql_cluster_list_lock);
+		itr = list_iterator_create(as_mysql_cluster_list);
 		while((tmp = list_next(itr))) {
-			if((rc = mysql_monthly_rollup(
+			if((rc = as_mysql_monthly_rollup(
 				    mysql_conn, tmp,
 				    start_time, end_time, archive_data))
 			   != SLURM_SUCCESS)
 				break;
 		}
 		list_iterator_destroy(itr);
-		slurm_mutex_unlock(&mysql_cluster_list_lock);
+		slurm_mutex_unlock(&as_mysql_cluster_list_lock);
 		if(rc != SLURM_SUCCESS)
 			return rc;
 

@@ -1,9 +1,10 @@
 /*****************************************************************************\
- *  mysql_problems.h - functions for finding out problems in the
- *                     associations and other places in the database.
+ *  as_mysql_rollup.h - functions for rolling up data for associations
+ *                   and machines from the as_mysql storage.
  *****************************************************************************
  *
- *  Copyright (C) 2009 Lawrence Livermore National Security.
+ *  Copyright (C) 2004-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -38,19 +39,18 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _HAVE_MYSQL_PROBLEMS_H
-#define _HAVE_MYSQL_PROBLEMS_H
+#ifndef _HAVE_MYSQL_ROLLUP_H
+#define _HAVE_MYSQL_ROLLUP_H
 
 #include "accounting_storage_mysql.h"
 
-extern int mysql_acct_no_assocs(mysql_conn_t *mysql_conn,
-				acct_association_cond_t *assoc_cond,
-				List ret_list);
-extern int mysql_acct_no_users(mysql_conn_t *mysql_conn,
-			       acct_association_cond_t *assoc_cond,
-			       List ret_list);
-extern int mysql_user_no_assocs_or_no_uid(
-	mysql_conn_t *mysql_conn, acct_association_cond_t *assoc_cond,
-	List ret_list);
-
+extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
+			       char *cluster_name, time_t start, time_t end);
+extern int as_mysql_daily_rollup(mysql_conn_t *mysql_conn,
+			      char *cluster_name,
+			      time_t start, time_t end, uint16_t archive_data);
+extern int as_mysql_monthly_rollup(mysql_conn_t *mysql_conn,
+				char *cluster_name,
+				time_t start, time_t end,
+				uint16_t archive_data);
 #endif

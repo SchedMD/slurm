@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  mysql_job.c - functions dealing with jobs and job steps.
+ *  as_mysql_job.c - functions dealing with jobs and job steps.
  *****************************************************************************
  *
  *  Copyright (C) 2004-2007 The Regents of the University of California.
@@ -37,9 +37,9 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include "mysql_job.h"
-#include "mysql_usage.h"
-#include "mysql_wckey.h"
+#include "as_mysql_job.h"
+#include "as_mysql_usage.h"
+#include "as_mysql_wckey.h"
 
 #include "src/common/jobacct_common.h"
 
@@ -183,7 +183,7 @@ static uint32_t _get_wckeyid(mysql_conn_t *mysql_conn, char **name,
 			/* we have already checked to make
 			   sure this was the slurm user before
 			   calling this */
-			if(mysql_add_wckeys(mysql_conn,
+			if(as_mysql_add_wckeys(mysql_conn,
 					    slurm_get_slurm_user_id(),
 					    wckey_list)
 			   == SLURM_SUCCESS)
@@ -205,7 +205,7 @@ no_wckeyid:
 
 /* extern functions */
 
-extern int mysql_job_start(mysql_conn_t *mysql_conn,
+extern int as_mysql_job_start(mysql_conn_t *mysql_conn,
 			   struct job_record *job_ptr)
 {
 	int rc=SLURM_SUCCESS;
@@ -219,7 +219,7 @@ extern int mysql_job_start(mysql_conn_t *mysql_conn,
 	int node_cnt = 0;
 
 	if (!job_ptr->details || !job_ptr->details->submit_time) {
-		error("mysql_job_start: "
+		error("as_mysql_job_start: "
 		      "Not inputing this job, it has no submit time.");
 		return SLURM_ERROR;
 	}
@@ -227,7 +227,7 @@ extern int mysql_job_start(mysql_conn_t *mysql_conn,
 	if(check_connection(mysql_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
 
-	debug2("mysql_jobacct_job_start() called");
+	debug2("as_mysql_jobacct_job_start() called");
 
 	/* See what we are hearing about here if no start time. If
 	 * this job latest time is before the last roll up we will
@@ -489,7 +489,7 @@ no_rollup_change:
 	return rc;
 }
 
-extern int mysql_job_complete(mysql_conn_t *mysql_conn,
+extern int as_mysql_job_complete(mysql_conn_t *mysql_conn,
 			      struct job_record *job_ptr)
 {
 	char *query = NULL, *nodes = NULL;
@@ -498,20 +498,20 @@ extern int mysql_job_complete(mysql_conn_t *mysql_conn,
 
 	if (!job_ptr->db_index
 	    && (!job_ptr->details || !job_ptr->details->submit_time)) {
-		error("mysql_job_complete: "
+		error("as_mysql_job_complete: "
 		      "Not inputing this job, it has no submit time.");
 		return SLURM_ERROR;
 	}
 
 	if(check_connection(mysql_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
-	debug2("mysql_jobacct_job_complete() called");
+	debug2("as_mysql_jobacct_job_complete() called");
 
 	/* If we get an error with this just fall through to avoid an
 	 * infinite loop
 	 */
 	if (job_ptr->end_time == 0) {
-		debug("mysql_jobacct: job %u never started", job_ptr->job_id);
+		debug("as_mysql_jobacct: job %u never started", job_ptr->job_id);
 		return SLURM_SUCCESS;
 	} else if(start_time > job_ptr->end_time)
 		start_time = 0;
@@ -546,7 +546,7 @@ extern int mysql_job_complete(mysql_conn_t *mysql_conn,
 			/* If we get an error with this just fall
 			 * through to avoid an infinite loop
 			 */
-			if(mysql_job_start(
+			if(as_mysql_job_start(
 				   mysql_conn, job_ptr) == SLURM_ERROR) {
 				error("couldn't add job %u at job completion",
 				      job_ptr->job_id);
@@ -572,7 +572,7 @@ extern int mysql_job_complete(mysql_conn_t *mysql_conn,
 	return rc;
 }
 
-extern int mysql_step_start(mysql_conn_t *mysql_conn,
+extern int as_mysql_step_start(mysql_conn_t *mysql_conn,
 			    struct step_record *step_ptr)
 {
 	int cpus = 0, tasks = 0, nodes = 0, task_dist = 0;
@@ -587,7 +587,7 @@ extern int mysql_step_start(mysql_conn_t *mysql_conn,
 	if (!step_ptr->job_ptr->db_index
 	    && (!step_ptr->job_ptr->details
 		|| !step_ptr->job_ptr->details->submit_time)) {
-		error("mysql_step_start: "
+		error("as_mysql_step_start: "
 		      "Not inputing this job, it has no submit time.");
 		return SLURM_ERROR;
 	}
@@ -650,7 +650,7 @@ extern int mysql_step_start(mysql_conn_t *mysql_conn,
 			/* If we get an error with this just fall
 			 * through to avoid an infinite loop
 			 */
-			if(mysql_job_start(mysql_conn, step_ptr->job_ptr)
+			if(as_mysql_job_start(mysql_conn, step_ptr->job_ptr)
 			   == SLURM_ERROR) {
 				error("couldn't add job %u at step start",
 				      step_ptr->job_ptr->job_id);
@@ -686,7 +686,7 @@ extern int mysql_step_start(mysql_conn_t *mysql_conn,
 	return rc;
 }
 
-extern int mysql_step_complete(mysql_conn_t *mysql_conn,
+extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 			       struct step_record *step_ptr)
 {
 	time_t now;
@@ -704,7 +704,7 @@ extern int mysql_step_complete(mysql_conn_t *mysql_conn,
 	if (!step_ptr->job_ptr->db_index
 	    && (!step_ptr->job_ptr->details
 		|| !step_ptr->job_ptr->details->submit_time)) {
-		error("mysql_step_complete: "
+		error("as_mysql_step_complete: "
 		      "Not inputing this job, it has no submit time.");
 		return SLURM_ERROR;
 	}
@@ -776,7 +776,7 @@ extern int mysql_step_complete(mysql_conn_t *mysql_conn,
 			/* If we get an error with this just fall
 			 * through to avoid an infinite loop
 			 */
-			if(mysql_job_start(mysql_conn, step_ptr->job_ptr)
+			if(as_mysql_job_start(mysql_conn, step_ptr->job_ptr)
 			   == SLURM_ERROR) {
 				error("couldn't add job %u "
 				      "at step completion",
@@ -837,7 +837,7 @@ extern int mysql_step_complete(mysql_conn_t *mysql_conn,
 	return rc;
 }
 
-extern int mysql_suspend(mysql_conn_t *mysql_conn, struct job_record *job_ptr)
+extern int as_mysql_suspend(mysql_conn_t *mysql_conn, struct job_record *job_ptr)
 {
 	char *query = NULL;
 	int rc = SLURM_SUCCESS;
@@ -854,7 +854,7 @@ extern int mysql_suspend(mysql_conn_t *mysql_conn, struct job_record *job_ptr)
 			/* If we get an error with this just fall
 			 * through to avoid an infinite loop
 			 */
-			if(mysql_job_start(
+			if(as_mysql_job_start(
 				   mysql_conn, job_ptr) == SLURM_ERROR) {
 				error("couldn't suspend job %u",
 				      job_ptr->job_id);
@@ -906,7 +906,7 @@ extern int mysql_suspend(mysql_conn_t *mysql_conn, struct job_record *job_ptr)
 	return rc;
 }
 
-extern int mysql_flush_jobs_on_cluster(
+extern int as_mysql_flush_jobs_on_cluster(
 	mysql_conn_t *mysql_conn, time_t event_time)
 {
 	int rc = SLURM_SUCCESS;

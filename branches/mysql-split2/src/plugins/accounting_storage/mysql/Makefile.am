@@ -7,21 +7,21 @@ PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
 
 AS_MYSQL_SOURCES = accounting_storage_mysql.c accounting_storage_mysql.h \
-		mysql_acct.c mysql_acct.h \
-		mysql_archive.c mysql_arvhive.h \
-		mysql_assoc.c mysql_accoc.h \
-		mysql_cluster.c mysql_cluster.h \
-		mysql_convert.c mysql_convert.h \
-		mysql_job.c mysql_job.h \
-		mysql_jobacct_process.c mysql_jobacct_process.h \
-		mysql_problems.c mysql_problems.h \
-		mysql_qos.c mysql_qos.h \
-		mysql_resv.c mysql_resv.h \
-		mysql_rollup.c mysql_rollup.h \
-		mysql_txn.c mysql_txn.h \
-		mysql_usage.c mysql_usage.h \
-		mysql_user.c mysql_user.h \
-		mysql_wckey.c mysql_wckey.h \
+		as_mysql_acct.c as_mysql_acct.h \
+		as_mysql_archive.c as_mysql_arvhive.h \
+		as_mysql_assoc.c as_mysql_accoc.h \
+		as_mysql_cluster.c as_mysql_cluster.h \
+		as_mysql_convert.c as_mysql_convert.h \
+		as_mysql_job.c as_mysql_job.h \
+		as_mysql_jobacct_process.c as_mysql_jobacct_process.h \
+		as_mysql_problems.c as_mysql_problems.h \
+		as_mysql_qos.c as_mysql_qos.h \
+		as_mysql_resv.c as_mysql_resv.h \
+		as_mysql_rollup.c as_mysql_rollup.h \
+		as_mysql_txn.c as_mysql_txn.h \
+		as_mysql_usage.c as_mysql_usage.h \
+		as_mysql_user.c as_mysql_user.h \
+		as_mysql_wckey.c as_mysql_wckey.h \
 		../common/common_as.c ../common/common_as.h
 
 if WITH_MYSQL

@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  mysql_archive.c - functions dealing with the archiving.
+ *  as_mysql_archive.c - functions dealing with the archiving.
  *****************************************************************************
  *
  *  Copyright (C) 2004-2007 The Regents of the University of California.
@@ -42,7 +42,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-#include "mysql_archive.h"
+#include "as_mysql_archive.h"
 #include "src/common/env.h"
 #include "src/common/jobacct_common.h"
 
@@ -1754,14 +1754,14 @@ static int _archive_script(acct_archive_cond_t *arch_cond, char *cluster_name,
 #endif
 	if (stat(arch_cond->archive_script, &st) < 0) {
 		errno = errno;
-		error("mysql_jobacct_process_run_script: failed to stat %s: %m",
+		error("as_mysql_jobacct_process_run_script: failed to stat %s: %m",
 		      arch_cond->archive_script);
 		return SLURM_ERROR;
 	}
 
 	if (!(st.st_mode & S_IFREG)) {
 		errno = EACCES;
-		error("mysql_jobacct_process_run_script: "
+		error("as_mysql_jobacct_process_run_script: "
 		      "%s isn't a regular file",
 		      arch_cond->archive_script);
 		return SLURM_ERROR;
@@ -1769,7 +1769,7 @@ static int _archive_script(acct_archive_cond_t *arch_cond, char *cluster_name,
 
 	if (access(arch_cond->archive_script, X_OK) < 0) {
 		errno = EACCES;
-		error("mysql_jobacct_process_run_script: "
+		error("as_mysql_jobacct_process_run_script: "
 		      "%s is not executable", arch_cond->archive_script);
 		return SLURM_ERROR;
 	}
@@ -2054,14 +2054,14 @@ exit_jobs:
 	return SLURM_SUCCESS;
 }
 
-extern int mysql_jobacct_process_archive(mysql_conn_t *mysql_conn,
+extern int as_mysql_jobacct_process_archive(mysql_conn_t *mysql_conn,
 					 acct_archive_cond_t *arch_cond)
 {
 	int rc = SLURM_SUCCESS;
 	char *cluster_name = NULL;
 	time_t last_submit = time(NULL);
 	struct tm time_tm;
-	List use_cluster_list = mysql_cluster_list;
+	List use_cluster_list = as_mysql_cluster_list;
 	ListIterator itr = NULL;
 
 //	DEF_TIMERS;
@@ -2090,7 +2090,7 @@ extern int mysql_jobacct_process_archive(mysql_conn_t *mysql_conn,
 	   && list_count(arch_cond->job_cond->cluster_list))
 		use_cluster_list = arch_cond->job_cond->cluster_list;
 	else
-		slurm_mutex_lock(&mysql_cluster_list_lock);
+		slurm_mutex_lock(&as_mysql_cluster_list_lock);
 
 	itr = list_iterator_create(use_cluster_list);
 	while((cluster_name = list_next(itr))) {
@@ -2100,14 +2100,14 @@ extern int mysql_jobacct_process_archive(mysql_conn_t *mysql_conn,
 			break;
 	}
 	list_iterator_destroy(itr);
-	if(use_cluster_list == mysql_cluster_list)
-		slurm_mutex_unlock(&mysql_cluster_list_lock);
+	if(use_cluster_list == as_mysql_cluster_list)
+		slurm_mutex_unlock(&as_mysql_cluster_list_lock);
 
 
 	return rc;
 }
 
-extern int mysql_jobacct_process_archive_load(mysql_conn_t *mysql_conn,
+extern int as_mysql_jobacct_process_archive_load(mysql_conn_t *mysql_conn,
 					      acct_archive_rec_t *arch_rec)
 {
 	char *data = NULL, *cluster_name = NULL;

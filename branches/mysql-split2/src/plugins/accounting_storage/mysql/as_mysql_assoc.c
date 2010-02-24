@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  mysql_assoc.c - functions dealing with associations.
+ *  as_mysql_assoc.c - functions dealing with associations.
  *****************************************************************************
  *
  *  Copyright (C) 2004-2007 The Regents of the University of California.
@@ -37,8 +37,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include "mysql_assoc.h"
-#include "mysql_usage.h"
+#include "as_mysql_assoc.h"
+#include "as_mysql_usage.h"
 
 /* if this changes you will need to edit the corresponding enum */
 char *assoc_req_inx[] = {
@@ -1399,13 +1399,13 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 		memset(&local_assoc_cond, 0, sizeof(acct_association_cond_t));
 		local_assoc_cond.cluster_list = list_create(NULL);
 		list_append(local_assoc_cond.cluster_list, cluster_name);
-		local_assoc_list = mysql_get_assocs(
+		local_assoc_list = as_mysql_get_assocs(
 			mysql_conn, user->uid, &local_assoc_cond);
 		list_destroy(local_assoc_cond.cluster_list);
 		if(!local_assoc_list)
 			   goto end_it;
 		/* NOTE: you can not use list_pop, or list_push
-		   anywhere either, since mysql is
+		   anywhere either, since as_mysql is
 		   exporting something of the same type as a macro,
 		   which messes everything up (my_list.h is
 		   the bad boy).
@@ -1927,7 +1927,7 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 }
 
 
-extern int mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
+extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 			    List association_list)
 {
 	ListIterator itr = NULL;
@@ -2342,12 +2342,12 @@ end_it:
 			memset(&assoc_cond, 0, sizeof(acct_association_cond_t));
 			assoc_cond.cluster_list = local_cluster_list;
 			if(!(assoc_list =
-			     mysql_get_assocs(mysql_conn, uid, NULL))) {
+			     as_mysql_get_assocs(mysql_conn, uid, NULL))) {
 				list_destroy(local_cluster_list);
 				return rc;
 			}
 			/* NOTE: you can not use list_pop, or list_push
-			   anywhere either, since mysql is
+			   anywhere either, since as_mysql is
 			   exporting something of the same type as a macro,
 			   which messes everything up (my_list.h is
 			   the bad boy).
@@ -2375,7 +2375,7 @@ end_it:
 	return rc;
 }
 
-extern List mysql_modify_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
+extern List as_mysql_modify_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 				acct_association_cond_t *assoc_cond,
 				acct_association_rec_t *assoc)
 {
@@ -2390,7 +2390,7 @@ extern List mysql_modify_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 	char *tmp_char1=NULL, *tmp_char2=NULL;
 	char *cluster_name = NULL;
 	char *prefix = "t1";
-	List use_cluster_list = mysql_cluster_list;
+	List use_cluster_list = as_mysql_cluster_list;
 
 	if(!assoc_cond || !assoc) {
 		error("we need something to change");
@@ -2452,7 +2452,7 @@ extern List mysql_modify_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 	if(assoc_cond->cluster_list && list_count(assoc_cond->cluster_list))
 		use_cluster_list = assoc_cond->cluster_list;
 	else
-		slurm_mutex_lock(&mysql_cluster_list_lock);
+		slurm_mutex_lock(&as_mysql_cluster_list_lock);
 
 	itr = list_iterator_create(use_cluster_list);
 	while((cluster_name = list_next(itr))) {
@@ -2487,8 +2487,8 @@ extern List mysql_modify_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 		}
 	}
 	list_iterator_destroy(itr);
-	if(use_cluster_list == mysql_cluster_list)
-		slurm_mutex_unlock(&mysql_cluster_list_lock);
+	if(use_cluster_list == as_mysql_cluster_list)
+		slurm_mutex_unlock(&as_mysql_cluster_list_lock);
 	xfree(vals);
 	xfree(object);
 	xfree(extra);
@@ -2510,7 +2510,7 @@ extern List mysql_modify_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 	return ret_list;
 }
 
-extern List mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
+extern List as_mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 					 acct_association_cond_t *assoc_cond)
 {
 	ListIterator itr = NULL;
@@ -2523,7 +2523,7 @@ extern List mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 	MYSQL_ROW row;
 	acct_user_rec_t user;
 	char *prefix = "t1";
-	List use_cluster_list = mysql_cluster_list;
+	List use_cluster_list = as_mysql_cluster_list;
 
 	if(!assoc_cond) {
 		error("we need something to change");
@@ -2561,7 +2561,7 @@ extern List mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 	if(assoc_cond->cluster_list && list_count(assoc_cond->cluster_list))
 		use_cluster_list = assoc_cond->cluster_list;
 	else
-		slurm_mutex_lock(&mysql_cluster_list_lock);
+		slurm_mutex_lock(&as_mysql_cluster_list_lock);
 
 	itr = list_iterator_create(use_cluster_list);
 	while((cluster_name = list_next(itr))) {
@@ -2632,8 +2632,8 @@ extern List mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 		}
 	}
 	list_iterator_destroy(itr);
-	if(use_cluster_list == mysql_cluster_list)
-		slurm_mutex_unlock(&mysql_cluster_list_lock);
+	if(use_cluster_list == as_mysql_cluster_list)
+		slurm_mutex_unlock(&as_mysql_cluster_list_lock);
 	xfree(object);
 	xfree(extra);
 
@@ -2654,7 +2654,7 @@ extern List mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 	return ret_list;
 }
 
-extern List mysql_get_assocs(mysql_conn_t *mysql_conn, uid_t uid,
+extern List as_mysql_get_assocs(mysql_conn_t *mysql_conn, uid_t uid,
 			     acct_association_cond_t *assoc_cond)
 {
 	//DEF_TIMERS;
@@ -2667,7 +2667,7 @@ extern List mysql_get_assocs(mysql_conn_t *mysql_conn, uid_t uid,
 	uint16_t private_data = 0;
 	acct_user_rec_t user;
 	char *prefix = "t1";
-	List use_cluster_list = mysql_cluster_list;
+	List use_cluster_list = as_mysql_cluster_list;
 	char *cluster_name = NULL;
 
 	if(!assoc_cond) {
@@ -2705,7 +2705,7 @@ empty:
 	if(assoc_cond->cluster_list && list_count(assoc_cond->cluster_list))
 		use_cluster_list = assoc_cond->cluster_list;
 	else
-		slurm_mutex_lock(&mysql_cluster_list_lock);
+		slurm_mutex_lock(&as_mysql_cluster_list_lock);
 
 	itr = list_iterator_create(use_cluster_list);
 	while((cluster_name = list_next(itr))) {
@@ -2720,8 +2720,8 @@ empty:
 		}
 	}
 	list_iterator_destroy(itr);
-	if(use_cluster_list == mysql_cluster_list)
-		slurm_mutex_unlock(&mysql_cluster_list_lock);
+	if(use_cluster_list == as_mysql_cluster_list)
+		slurm_mutex_unlock(&as_mysql_cluster_list_lock);
 	xfree(tmp);
 	xfree(extra);
 

@@ -1,9 +1,10 @@
 /*****************************************************************************\
- *  mysql_txn.h - functions dealing with transactions.
+ *  as_mysql_jobacct_process.h - functions the processing of
+ *                               information from the as_mysql jobacct
+ *                               storage.
  *****************************************************************************
  *
  *  Copyright (C) 2004-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *
@@ -35,14 +36,28 @@
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+ *
+ *  This file is patterned after jobcomp_linux.c, written by Morris Jette and
+ *  Copyright (C) 2002 The Regents of the University of California.
 \*****************************************************************************/
 
-#ifndef _HAVE_MYSQL_TXN_H
-#define _HAVE_MYSQL_TXN_H
+#ifndef _HAVE_MYSQL_JOBACCT_PROCESS_H
+#define _HAVE_MYSQL_JOBACCT_PROCESS_H
 
 #include "accounting_storage_mysql.h"
+#include "src/common/jobacct_common.h"
 
-extern List mysql_get_txn(mysql_conn_t *mysql_conn, uid_t uid,
-			  acct_txn_cond_t *txn_cond);
+extern List setup_cluster_list_with_inx(mysql_conn_t *mysql_conn,
+					acct_job_cond_t *job_cond,
+					void **curr_cluster);
+extern int good_nodes_from_inx(List local_cluster_list,
+			       void **object, char *node_inx,
+			       int submit);
+extern int setup_job_cond_limits(mysql_conn_t *mysql_conn,
+				 acct_job_cond_t *job_cond,
+				 const char *prefix, char **extra);
+
+extern List as_mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
+					   acct_job_cond_t *job_cond);
 
 #endif

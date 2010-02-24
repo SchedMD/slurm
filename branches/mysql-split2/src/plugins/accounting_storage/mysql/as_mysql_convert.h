@@ -1,5 +1,6 @@
 /*****************************************************************************\
- *  mysql_user.h - functions dealing with users and coordinators.
+ *  as_mysql_convert.c - functions dealing with converting from tables in
+ *                    slurm <= 2.1.
  *****************************************************************************
  *
  *  Copyright (C) 2004-2007 The Regents of the University of California.
@@ -37,28 +38,12 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _HAVE_MYSQL_USER_H
-#define _HAVE_MYSQL_USER_H
+#ifndef _HAVE_MYSQL_CONVERT_H
+#define _HAVE_MYSQL_CONVERT_H
 
 #include "accounting_storage_mysql.h"
 
-extern int mysql_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
-			   List user_list);
+extern int as_mysql_convert_tables(MYSQL *db_conn);
 
-extern int mysql_add_coord(mysql_conn_t *mysql_conn, uint32_t uid,
-			   List acct_list, acct_user_cond_t *user_cond);
-
-extern List mysql_modify_users(mysql_conn_t *mysql_conn, uint32_t uid,
-			       acct_user_cond_t *user_cond,
-			       acct_user_rec_t *user);
-
-extern List mysql_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
-			       acct_user_cond_t *user_cond);
-
-extern List mysql_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
-			       List acct_list, acct_user_cond_t *user_cond);
-
-extern List mysql_get_users(mysql_conn_t *mysql_conn, uid_t uid,
-			    acct_user_cond_t *user_cond);
 
 #endif

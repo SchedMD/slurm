@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  mysql_convert.c - functions dealing with converting from tables in
+ *  as_mysql_convert.c - functions dealing with converting from tables in
  *                    slurm <= 2.1.
  *****************************************************************************
  *
@@ -38,9 +38,9 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include "mysql_convert.h"
+#include "as_mysql_convert.h"
 
-extern int mysql_convert_tables(MYSQL *db_conn)
+extern int as_mysql_convert_tables(MYSQL *db_conn)
 {
 	storage_field_t assoc_table_fields_2_1[] = {
 		{ "creation_time", "int unsigned not null" },
@@ -242,7 +242,7 @@ extern int mysql_convert_tables(MYSQL *db_conn)
 	bool assocs=0, events=0, jobs=0, resvs=0, steps=0,
 		suspends=0, usage=0, wckeys=0;
 
-	slurm_mutex_lock(&mysql_cluster_list_lock);
+	slurm_mutex_lock(&as_mysql_cluster_list_lock);
 
 	/* now do associations */
 	query = xstrdup_printf("show tables like '%s';", assoc_table);
@@ -479,7 +479,7 @@ extern int mysql_convert_tables(MYSQL *db_conn)
 	result = NULL;
 
 	/* now convert to new form */
-	itr = list_iterator_create(mysql_cluster_list);
+	itr = list_iterator_create(as_mysql_cluster_list);
 	while((cluster_name = list_next(itr))) {
 		xfree(id_str);
 
@@ -1049,7 +1049,7 @@ extern int mysql_convert_tables(MYSQL *db_conn)
 
 	xfree(id_str);
 	list_iterator_destroy(itr);
-	slurm_mutex_unlock(&mysql_cluster_list_lock);
+	slurm_mutex_unlock(&as_mysql_cluster_list_lock);
 
 	if(assocs) {
 		query = xstrdup_printf("rename table %s to %s_old,"
@@ -1187,7 +1187,7 @@ extern int mysql_convert_tables(MYSQL *db_conn)
 end_it:
 	if(result)
 		mysql_free_result(result);
-	slurm_mutex_unlock(&mysql_cluster_list_lock);
+	slurm_mutex_unlock(&as_mysql_cluster_list_lock);
 
 	return SLURM_ERROR;
 }

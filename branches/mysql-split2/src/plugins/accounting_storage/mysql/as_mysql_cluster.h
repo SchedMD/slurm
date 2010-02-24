@@ -1,10 +1,9 @@
 /*****************************************************************************\
- *  mysql_jobacct_process.h - functions the processing of
- *                               information from the mysql jobacct
- *                               storage.
+ *  as_mysql_cluster.h - functions dealing with clusters.
  *****************************************************************************
  *
  *  Copyright (C) 2004-2007 The Regents of the University of California.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *
@@ -36,28 +35,41 @@
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
- *
- *  This file is patterned after jobcomp_linux.c, written by Morris Jette and
- *  Copyright (C) 2002 The Regents of the University of California.
 \*****************************************************************************/
-
-#ifndef _HAVE_MYSQL_JOBACCT_PROCESS_H
-#define _HAVE_MYSQL_JOBACCT_PROCESS_H
+#ifndef _HAVE_MYSQL_CLUSTER_H
+#define _HAVE_MYSQL_CLUSTER_H
 
 #include "accounting_storage_mysql.h"
-#include "src/common/jobacct_common.h"
 
-extern List setup_cluster_list_with_inx(mysql_conn_t *mysql_conn,
-					acct_job_cond_t *job_cond,
-					void **curr_cluster);
-extern int good_nodes_from_inx(List local_cluster_list,
-			       void **object, char *node_inx,
-			       int submit);
-extern int setup_job_cond_limits(mysql_conn_t *mysql_conn,
-				 acct_job_cond_t *job_cond,
-				 const char *prefix, char **extra);
+extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
+			      List cluster_list);
 
-extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
-					   acct_job_cond_t *job_cond);
+extern List as_mysql_modify_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
+				  acct_cluster_cond_t *cluster_cond,
+				  acct_cluster_rec_t *cluster);
 
+extern List as_mysql_remove_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
+				  acct_cluster_cond_t *cluster_cond);
+
+extern List as_mysql_get_clusters(mysql_conn_t *mysql_conn, uid_t uid,
+			       acct_cluster_cond_t *cluster_cond);
+
+extern List as_mysql_get_cluster_events(mysql_conn_t *mysql_conn, uint32_t uid,
+				     acct_event_cond_t *event_cond);
+
+extern int as_mysql_node_down(mysql_conn_t *mysql_conn,
+			   struct node_record *node_ptr,
+			   time_t event_time, char *reason,
+			   uint32_t reason_uid);
+
+extern int as_mysql_node_up(mysql_conn_t *mysql_conn,
+			 struct node_record *node_ptr,
+			 time_t event_time);
+
+extern int as_mysql_register_ctld(mysql_conn_t *mysql_conn,
+			       char *cluster, uint16_t port);
+
+extern int as_mysql_cluster_cpus(mysql_conn_t *mysql_conn,
+			      char *cluster_nodes, uint32_t cpus,
+			      time_t event_time);
 #endif

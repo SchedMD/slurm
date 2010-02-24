@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  mysql_assoc.h - functions dealing with associations.
+ *  as_mysql_user.h - functions dealing with users and coordinators.
  *****************************************************************************
  *
  *  Copyright (C) 2004-2007 The Regents of the University of California.
@@ -37,23 +37,28 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _HAVE_MYSQL_ASSOC_H
-#define _HAVE_MYSQL_ASSOC_H
+#ifndef _HAVE_MYSQL_USER_H
+#define _HAVE_MYSQL_USER_H
 
 #include "accounting_storage_mysql.h"
 
-extern int mysql_add_assocs(mysql_conn_t *mysql_conn,
-			    uint32_t uid,
-			    List association_list);
+extern int as_mysql_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
+			   List user_list);
 
-extern List mysql_modify_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
-				acct_association_cond_t *assoc_cond,
-				acct_association_rec_t *assoc);
+extern int as_mysql_add_coord(mysql_conn_t *mysql_conn, uint32_t uid,
+			   List acct_list, acct_user_cond_t *user_cond);
 
-extern List mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
-				acct_association_cond_t *assoc_cond);
+extern List as_mysql_modify_users(mysql_conn_t *mysql_conn, uint32_t uid,
+			       acct_user_cond_t *user_cond,
+			       acct_user_rec_t *user);
 
-extern List mysql_get_assocs(mysql_conn_t *mysql_conn, uid_t uid,
-			     acct_association_cond_t *assoc_cond);
+extern List as_mysql_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
+			       acct_user_cond_t *user_cond);
+
+extern List as_mysql_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
+			       List acct_list, acct_user_cond_t *user_cond);
+
+extern List as_mysql_get_users(mysql_conn_t *mysql_conn, uid_t uid,
+			    acct_user_cond_t *user_cond);
 
 #endif
