@@ -32,6 +32,9 @@ documents those changes that are of interest to users and admins.
  -- Add logging of license transations including job_id.
  -- Add configuration parameters SlurmSchedLogFile and SlurmSchedLogLevel to
     support writing scheduling events to a separate log file.
+ -- Added contribs/web_apps/chart_stats.cgi, a web app that invokes sreport to
+    retrieve from the accounting storage db a user's request for job usage or
+    machine utilization statistics and charts the results to a browser.
 
 * Changes in SLURM 2.2.0.pre1
 =============================
