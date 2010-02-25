@@ -11,6 +11,8 @@ documents those changes that are of interest to users and admins.
     in pending state.
  -- Fixed display of Ave/MaxCPU in sacct for jobs.  Steps were printed
     correctly.
+ -- When node current features differs from slurm.conf, log the node names
+    using a hostlist expression rather than listing individual node names.
 
 * Changes in SLURM 2.1.3-2
 ==========================

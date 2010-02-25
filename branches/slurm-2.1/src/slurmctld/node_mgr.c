@@ -866,6 +866,7 @@ extern void restore_node_features(void)
 	int i, j;
 	char *node_list;
 	struct node_record *node_ptr1, *node_ptr2;
+	hostlist_t hl;
 
 	for (i=0, node_ptr1=node_record_table_ptr; i<node_record_count; 
 	     i++, node_ptr1++) {
@@ -878,20 +879,23 @@ extern void restore_node_features(void)
 			continue;	/* Identical feature value */
 		}
 
-		node_list = xstrdup(node_ptr1->name);
+		hl = hostlist_create(node_ptr1->name);
 		for (j=(i+1), node_ptr2=(node_ptr1+1); j<node_record_count; 
 		     j++, node_ptr2++) {
 			if (!node_ptr2->features ||
 			    strcmp(node_ptr1->features, node_ptr2->features))
 				continue;
-			xstrcat(node_list, ",");
-			xstrcat(node_list, node_ptr2->name);
+			hostlist_push(hl, node_ptr2->name);
 		}
+
+		node_list = xmalloc(2048);
+		hostlist_ranged_string(hl, 2048, node_list);
 		error("Node %s Features(%s) differ from slurm.conf",
 		      node_list, node_ptr1->features);
 		_update_node_features(node_list, node_ptr1->features);
 		xfree(node_ptr1->features);
 		xfree(node_list);
+		hostlist_destroy(hl);
 	}
 }
 
