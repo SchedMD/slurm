@@ -48,7 +48,8 @@ use strict;
 use warnings;
 
 use CGI qw(:standard);
-use CGI::Carp qw(fatalsToBrowser);
+# uncomment to debug...
+# use CGI::Carp qw(fatalsToBrowser);
 use GD;
 use Chart::StackedBars;
 use Expect;

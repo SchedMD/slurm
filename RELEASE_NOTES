@@ -42,6 +42,10 @@ HIGHLIGHTS
 * Support has been added for TotalView to attach to a subset of launched tasks
   instead of requiring that all tasks be attached to.
 
+* A web application (chart_stats.cgi) has been added that invokes sreport to
+  retrieve from the accounting storage db a user's request for job usage or
+  machine utilization statistics and charts the results to a browser.
+
 CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
 =============================================================
 * Added VSizeFactor to enforce virtual memory limits for jobs and job steps as
