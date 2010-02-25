@@ -93,7 +93,7 @@ print_field_t fields[] = {
 	{19, "Submit", print_fields_date, PRINT_SUBMIT},
 	{10, "Suspended", print_fields_time_from_secs, PRINT_SUSPENDED},
 	{10, "SystemCPU", print_fields_str, PRINT_SYSTEMCPU},
-	{10, "Timelimit", print_fields_time_from_secs, PRINT_TIMELIMIT},
+	{10, "Timelimit", print_fields_str, PRINT_TIMELIMIT},
 	{10, "TotalCPU", print_fields_str, PRINT_TOTALCPU},
 	{6,  "UID", print_fields_int, PRINT_UID},
 	{9,  "User", print_fields_str, PRINT_USER},
