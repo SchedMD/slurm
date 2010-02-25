@@ -209,7 +209,7 @@ void print_fields(type_t type, void *object)
 				break;
 			}
 			if(tmp_dub != (double)NO_VAL)
-				tmp_char = _elapsed_time((int)tmp_dub, 0);
+				tmp_char = _elapsed_time((long)tmp_dub, 0);
 
 			field->print_routine(field,
 					     tmp_char,
@@ -741,7 +741,7 @@ void print_fields(type_t type, void *object)
 				break;
 			}
 			if(tmp_dub != (double)NO_VAL)
-				tmp_char = _elapsed_time((int)tmp_dub, 0);
+				tmp_char = _elapsed_time((long)tmp_dub, 0);
 			field->print_routine(field,
 					     tmp_char,
 					     (curr_inx == field_count));
