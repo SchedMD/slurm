@@ -521,6 +521,11 @@ seconds between sampling job state.
 The default value is 30 seconds.
 A value of zero disables real the periodic job sampling and provides accounting
 information only on job termination (reducing SLURM interference with the job).
+Smaller (non\-zero) values have a greater impact upon job performance, but 
+a value of 30 seconds is not likely to be noticeable for applications having
+less than 10,000 tasks. 
+Users can override this value on a per job basis using the \fB\-\-acctg\-freq\fR 
+option when submitting the job.
 
 .TP
 \fBJobCheckpointDir\fR
