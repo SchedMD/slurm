@@ -40,6 +40,524 @@
 
 #include "as_mysql_convert.h"
 
+static bool assocs=0, events=0, jobs=0, resvs=0, steps=0,
+	suspends=0, usage=0, wckeys=0;
+
+static int converted = 0;
+static pthread_mutex_t converted_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t converted_cond;
+
+static void *_convert_cluster_tables(void *arg)
+{
+	char *cluster_name = (char *)arg;
+	//char *id_str;
+	int rc = SLURM_SUCCESS;
+	char *query = NULL;
+	MYSQL_RES *result = NULL;
+	MYSQL_ROW row;
+	MYSQL *db_conn = NULL;
+	mysql_conn_t mysql_conn;
+
+	memset(&mysql_conn, 0, sizeof(mysql_conn_t));
+	mysql_conn.rollback = 1;
+	/* each thread needs it's own connection */
+	rc = check_connection(&mysql_conn);
+	if(rc != SLURM_SUCCESS)
+		goto end_it;
+	db_conn = mysql_conn.db_conn;
+	info("using cluster name %s", cluster_name);
+	if(assocs) {
+		int diff;
+		info("Converting old association tables, "
+		     "this may take some time, please do not restart.");
+		xstrfmtcat(query,
+			   "insert into \"%s_%s\" (creation_time, "
+			   "mod_time, deleted, id_assoc, user, "
+			   "acct, partition, parent_acct, lft, "
+			   "rgt, shares, max_jobs, max_submit_jobs, "
+			   "max_cpus_pj, max_nodes_pj, max_wall_pj, "
+			   "max_cpu_mins_pj, grp_jobs, "
+			   "grp_submit_jobs, grp_cpus, grp_nodes, "
+			   "grp_wall, grp_cpu_mins, qos, delta_qos) "
+			   "select creation_time, mod_time, deleted, "
+			   "id, user, acct, partition, "
+			   "parent_acct, lft, rgt, fairshare, "
+			   "max_jobs, max_submit_jobs, "
+			   "max_cpus_per_job, max_nodes_per_job, "
+			   "max_wall_duration_per_job, "
+			   "max_cpu_mins_per_job, grp_jobs, "
+			   "grp_submit_jobs, grp_cpus, grp_nodes, "
+			   "grp_wall, grp_cpu_mins, qos, delta_qos "
+			   "from %s where cluster='%s' "
+			   "on duplicate key update "
+			   "deleted=VALUES(deleted);",
+			   cluster_name, assoc_table,
+			   assoc_table, cluster_name);
+		debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
+		rc = mysql_db_query(db_conn, query);
+		xfree(query);
+		if(rc != SLURM_SUCCESS) {
+			error("Couldn't update assoc table correctly");
+			goto end_it;
+		}
+
+		query = xstrdup_printf("select lft from \"%s_%s\" "
+				       "where acct='root' and user=''",
+				       cluster_name, assoc_table);
+		if(!(result = mysql_db_query_ret(db_conn, query, 0))) {
+			xfree(query);
+			rc = SLURM_ERROR;
+			goto end_it;
+		}
+		xfree(query);
+
+		if(!(row = mysql_fetch_row(result))) {
+			mysql_free_result(result);
+			error("Couldn't find root association "
+			      "for cluster %s", cluster_name);
+			rc = SLURM_ERROR;
+			goto end_it;
+		}
+		diff = atoi(row[0]) - 1;
+		mysql_free_result(result);
+		if(diff < 0) {
+			error("lft was %s that can't happen!", diff+1);
+			rc = SLURM_ERROR;
+			goto end_it;
+		}
+
+		/* This will set the lft and rgts back as if
+		   these were the first cluster added to the
+		   system.
+		*/
+		query = xstrdup_printf("update \"%s_%s\" set "
+				       "lft=(lft-%d), rgt=(rgt-%d)",
+				       cluster_name, assoc_table,
+				       diff, diff);
+		debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
+		rc = mysql_db_query(db_conn, query);
+		xfree(query);
+		if(rc != SLURM_SUCCESS) {
+			error("Couldn't update assoc table correctly");
+			goto end_it;
+		}
+
+		xstrfmtcat(query,
+			   "insert into \"%s_%s\" "
+			   "(creation_time, "
+			   "mod_time, deleted, id_assoc, "
+			   "time_start, alloc_cpu_secs) "
+			   "select t1.creation_time, t1.mod_time, "
+			   "t1.deleted, id, period_start, "
+			   "alloc_cpu_secs "
+			   "from %s as t1, \"%s_%s\" as t2 where "
+			   "(t1.id=t2.id_assoc) "
+			   "on duplicate key update "
+			   "deleted=VALUES(deleted), "
+			   "time_start=VALUES(time_start);",
+			   cluster_name, assoc_day_table,
+			   "assoc_day_usage_table",
+			   cluster_name, assoc_table);
+		xstrfmtcat(query,
+			   "insert into \"%s_%s\" "
+			   "(creation_time, "
+			   "mod_time, deleted, id_assoc, "
+			   "time_start, alloc_cpu_secs) "
+			   "select t1.creation_time, t1.mod_time, "
+			   "t1.deleted, id, period_start, "
+			   "alloc_cpu_secs "
+			   "from %s as t1, \"%s_%s\" as t2 where "
+			   "(t1.id=t2.id_assoc) "
+			   "on duplicate key update "
+			   "deleted=VALUES(deleted), "
+			   "time_start=VALUES(time_start);",
+			   cluster_name, assoc_hour_table,
+			   "assoc_hour_usage_table",
+			   cluster_name, assoc_table);
+		xstrfmtcat(query,
+			   "insert into \"%s_%s\" "
+			   "(creation_time, "
+			   "mod_time, deleted, id_assoc, "
+			   "time_start, alloc_cpu_secs) "
+			   "select t1.creation_time, t1.mod_time, "
+			   "t1.deleted, id, period_start, "
+			   "alloc_cpu_secs "
+			   "from %s as t1, \"%s_%s\" as t2 where "
+			   "(t1.id=t2.id_assoc) "
+			   "on duplicate key update "
+			   "deleted=VALUES(deleted), "
+			   "time_start=VALUES(time_start);",
+			   cluster_name, assoc_month_table,
+			   "assoc_month_usage_table",
+			   cluster_name, assoc_table);
+		debug4("(%s:%d) query\n%s",
+		       THIS_FILE, __LINE__, query);
+		rc = mysql_db_query(db_conn, query);
+		xfree(query);
+		if(rc != SLURM_SUCCESS) {
+			error("Couldn't update assoc usage "
+			      "table correctly");
+			goto end_it;
+		}
+	}
+
+	if(events) {
+		info("Converting old event table, "
+		     "this may take some time, please do not restart.");
+		query = xstrdup_printf(
+			"insert into \"%s_%s\" (node_name, cpu_count, "
+			"state, time_start, time_end, reason, "
+			"reason_uid, cluster_nodes) "
+			"select node_name, cpu_count, state, "
+			"period_start, period_end, reason, "
+			"reason_uid, cluster_nodes from %s where "
+			"cluster='%s' on duplicate key update "
+			"time_start=VALUES(time_start), "
+			"time_end=VALUES(time_end);",
+			cluster_name, event_table,
+			"cluster_event_table", cluster_name);
+		debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
+		rc = mysql_db_query(db_conn, query);
+		xfree(query);
+		if(rc != SLURM_SUCCESS) {
+			error("Couldn't update event table correctly");
+			goto end_it;
+		}
+	}
+
+	if(jobs) {
+		info("Converting old job table, "
+		     "this may take some time, please do not restart.");
+		query = xstrdup_printf(
+			"insert into \"%s_%s\" (job_db_inx, "
+			"deleted, account, "
+			"cpus_req, cpus_alloc, exit_code, job_name, "
+			"id_assoc, id_block, id_job, id_resv, "
+			"id_wckey, id_user, id_group, kill_requid, "
+			"nodelist, nodes_alloc, node_inx, "
+			"partition, priority, qos, state, timelimit, "
+			"time_submit, time_eligible, time_start, "
+			"time_end, time_suspended, track_steps, wckey) "
+			"select id, deleted, account, req_cpus, "
+			"alloc_cpus, comp_code, name, associd, "
+			"blockid, jobid, resvid, wckeyid, uid, gid, "
+			"kill_requid, nodelist, alloc_nodes, "
+			"node_inx, partition, priority, qos, state, "
+			"timelimit, submit, eligible, start, end, "
+			"suspended, track_steps, wckey from %s where "
+			"cluster='%s' on duplicate key update "
+			"deleted=VALUES(deleted), "
+			"time_start=VALUES(time_start), "
+			"time_end=VALUES(time_end);",
+			cluster_name, job_table,
+			job_table, cluster_name);
+		debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
+		rc = mysql_db_query(db_conn, query);
+		xfree(query);
+		if(rc != SLURM_SUCCESS) {
+			error("Couldn't update job table correctly");
+			goto end_it;
+		}
+	}
+
+	/* if(steps || suspends) { */
+	/* 	/\* Since there isn't a cluster name in the */
+	/* 	   step table we need to get all the ids from */
+	/* 	   the job_table for this cluster and query */
+	/* 	   against that. */
+	/* 	*\/ */
+	/* 	query = xstrdup_printf("select job_db_inx " */
+	/* 			       "from \"%s_%s\"", */
+	/* 			       cluster_name, job_table); */
+	/* 	debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query); */
+	/* 	if(!(result = mysql_db_query_ret(db_conn, query, 0))) { */
+	/* 		xfree(query); */
+	/* 		rc = SLURM_ERROR; */
+	/* 		goto end_it; */
+	/* 	} */
+	/* 	xfree(query); */
+
+	/* 	if(mysql_num_rows(result)) { */
+	/* 		while((row = mysql_fetch_row(result))) { */
+	/* 			if(id_str) */
+	/* 				xstrcat(id_str, " || "); */
+	/* 			else */
+	/* 				xstrcat(id_str, "("); */
+	/* 			xstrfmtcat(id_str, "(id=%s)", */
+	/* 				   row[0]); */
+	/* 		} */
+	/* 		xstrcat(id_str, ")"); */
+	/* 	} */
+	/* 	mysql_free_result(result); */
+	/* } */
+
+	if(resvs) {
+		info("Converting old reservation table, "
+		     "this may take some time, please do not restart.");
+		query = xstrdup_printf(
+			"insert into \"%s_%s\" (id_resv, "
+			"deleted, assoclist, "
+			"cpus, flags, nodelist, node_inx, "
+			"resv_name, time_start, time_end) "
+			"select id, deleted, assoclist, cpus, "
+			"flags, nodelist, node_inx, name, start, end "
+			"from %s where cluster='%s' "
+			"on duplicate key update "
+			"deleted=VALUES(deleted), "
+			"time_start=VALUES(time_start), "
+			"time_end=VALUES(time_end);",
+			cluster_name, resv_table,
+			resv_table, cluster_name);
+		debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
+		rc = mysql_db_query(db_conn, query);
+		xfree(query);
+		if(rc != SLURM_SUCCESS) {
+			error("Couldn't update reserve "
+			      "table correctly");
+			goto end_it;
+		}
+	}
+
+	if(steps) {
+		info("Converting old step table, "
+		     "this may take some time, please do not restart.");
+		query = xstrdup_printf(
+			"insert into \"%s_%s\" (job_db_inx, "
+			"deleted, cpus_alloc, "
+			"exit_code, id_step, kill_requid, nodelist, "
+			"nodes_alloc, node_inx, state, step_name, "
+			"task_cnt, task_dist, time_start, time_end, "
+			"time_suspended, user_sec, user_usec, "
+			"sys_sec, sys_usec, max_pages, "
+			"max_pages_task, max_pages_node, ave_pages, "
+			"max_rss, max_rss_task, max_rss_node, "
+			"ave_rss, max_vsize, max_vsize_task, "
+			"max_vsize_node, ave_vsize, min_cpu, "
+			"min_cpu_task, min_cpu_node, ave_cpu) "
+			"select id, t1.deleted, cpus, "
+			"comp_code, stepid, t1.kill_requid, t1.nodelist, "
+			"nodes, t1.node_inx, t1.state, name, tasks, "
+			"task_dist, start, end, suspended, user_sec, "
+			"user_usec, sys_sec, sys_usec, max_pages, "
+			"max_pages_task, max_pages_node, ave_pages, "
+			"max_rss, max_rss_task, max_rss_node, "
+			"ave_rss, max_vsize, max_vsize_task, "
+			"max_vsize_node, ave_vsize, min_cpu, "
+			"min_cpu_task, min_cpu_node, ave_cpu "
+			"from %s as t1, \"%s_%s\" as t2 where "
+			"(t2.job_db_inx=t1.id) on duplicate key update "
+			"deleted=VALUES(deleted), "
+			"time_start=VALUES(time_start), "
+			"time_end=VALUES(time_end);",
+			cluster_name, step_table,
+			step_table, cluster_name, job_table);
+		debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
+		rc = mysql_db_query(db_conn, query);
+		xfree(query);
+		if(rc != SLURM_SUCCESS) {
+			error("Couldn't update step table correctly");
+			goto end_it;
+		}
+	}
+
+	if(suspends) {
+		info("Converting old suspend table, "
+		     "this may take some time, please do not restart.");
+		query = xstrdup_printf(
+			"insert into \"%s_%s\" (job_db_inx, id_assoc, "
+			"time_start, time_end) "
+			"select id, associd, start, end "
+			"from %s as t1, \"%s_%s\" as t2 where "
+			"(t2.job_db_inx=t1.id) on duplicate key update "
+			"time_start=VALUES(time_start), "
+			"time_end=VALUES(time_end);",
+			cluster_name, suspend_table,
+			suspend_table, cluster_name, job_table);
+		debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
+		rc = mysql_db_query(db_conn, query);
+		xfree(query);
+		if(rc != SLURM_SUCCESS) {
+			error("Couldn't update suspend "
+			      "table correctly");
+			goto end_it;
+		}
+	}
+
+	if(usage) {
+		info("Converting old usage tables, "
+		     "this may take some time, please do not restart.");
+		query = xstrdup_printf(
+			"insert into \"%s_%s\" "
+			"(creation_time, mod_time, "
+			"deleted, time_start, cpu_count, "
+			"alloc_cpu_secs, down_cpu_secs, "
+			"pdown_cpu_secs, idle_cpu_secs, "
+			"resv_cpu_secs, over_cpu_secs) "
+			"select creation_time, mod_time, deleted, "
+			"period_start, cpu_count, alloc_cpu_secs, "
+			"down_cpu_secs, pdown_cpu_secs, "
+			"idle_cpu_secs, resv_cpu_secs, over_cpu_secs "
+			"from %s where cluster='%s' "
+			"on duplicate key update "
+			"deleted=VALUES(deleted), "
+			"time_start=VALUES(time_start);",
+			cluster_name, cluster_day_table,
+			"cluster_day_usage_table", cluster_name);
+		xstrfmtcat(query,
+			   "insert into \"%s_%s\" (creation_time, "
+			   "mod_time, deleted, time_start, cpu_count, "
+			   "alloc_cpu_secs, down_cpu_secs, "
+			   "pdown_cpu_secs, idle_cpu_secs, "
+			   "resv_cpu_secs, over_cpu_secs) "
+			   "select creation_time, mod_time, deleted, "
+			   "period_start, cpu_count, alloc_cpu_secs, "
+			   "down_cpu_secs, pdown_cpu_secs, "
+			   "idle_cpu_secs, resv_cpu_secs, "
+			   "over_cpu_secs "
+			   "from %s where cluster='%s' "
+			   "on duplicate key update "
+			   "deleted=VALUES(deleted), "
+			   "time_start=VALUES(time_start);",
+			   cluster_name, cluster_hour_table,
+			   "cluster_hour_usage_table", cluster_name);
+		xstrfmtcat(query,
+			   "insert into \"%s_%s\" (creation_time, "
+			   "mod_time, deleted, time_start, cpu_count, "
+			   "alloc_cpu_secs, down_cpu_secs, "
+			   "pdown_cpu_secs, idle_cpu_secs, "
+			   "resv_cpu_secs, over_cpu_secs) "
+			   "select creation_time, mod_time, deleted, "
+			   "period_start, cpu_count, alloc_cpu_secs, "
+			   "down_cpu_secs, pdown_cpu_secs, "
+			   "idle_cpu_secs, resv_cpu_secs, "
+			   "over_cpu_secs "
+			   "from %s where cluster='%s' "
+			   "on duplicate key update "
+			   "deleted=VALUES(deleted), "
+			   "time_start=VALUES(time_start);",
+			   cluster_name, cluster_month_table,
+			   "cluster_month_usage_table", cluster_name);
+		debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
+		rc = mysql_db_query(db_conn, query);
+		xfree(query);
+		if(rc != SLURM_SUCCESS) {
+			error("Couldn't update cluster usage "
+			      "tables correctly");
+			goto end_it;
+		}
+	}
+
+	if(wckeys) {
+		info("Converting old wckey tables, "
+		     "this may take some time, please do not restart.");
+		xstrfmtcat(query,
+			   "insert into \"%s_%s\" (creation_time, "
+			   "mod_time, deleted, id_wckey, wckey_name, "
+			   "user) "
+			   "select creation_time, mod_time, deleted, "
+			   "id, name, user "
+			   "from %s where cluster='%s' "
+			   "on duplicate key update "
+			   "deleted=VALUES(deleted);",
+			   cluster_name, wckey_table,
+			   wckey_table, cluster_name);
+		debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
+		rc = mysql_db_query(db_conn, query);
+		xfree(query);
+		if(rc != SLURM_SUCCESS) {
+			error("Couldn't update wckey table correctly");
+			goto end_it;
+		}
+
+		xstrfmtcat(query,
+			   "insert into \"%s_%s\" "
+			   "(creation_time, "
+			   "mod_time, deleted, id_wckey, "
+			   "time_start, alloc_cpu_secs, "
+			   "resv_cpu_secs, over_cpu_secs) "
+			   "select t1.creation_time, t1.mod_time, "
+			   "t1.deleted, id, period_start, "
+			   "alloc_cpu_secs, resv_cpu_secs, "
+			   "over_cpu_secs "
+			   "from %s as t1, \"%s_%s\" as t2 where "
+			   "(t1.id=t2.id_wckey) "
+			   "on duplicate key update "
+			   "deleted=VALUES(deleted), "
+			   "time_start=VALUES(time_start);",
+			   cluster_name, wckey_day_table,
+			   "wckey_day_usage_table",
+			   cluster_name, wckey_table);
+		xstrfmtcat(query,
+			   "insert into \"%s_%s\" "
+			   "(creation_time, "
+			   "mod_time, deleted, id_wckey, "
+			   "time_start, alloc_cpu_secs, "
+			   "resv_cpu_secs, over_cpu_secs) "
+			   "select t1.creation_time, t1.mod_time, "
+			   "t1.deleted, id, period_start, "
+			   "alloc_cpu_secs, resv_cpu_secs, "
+			   "over_cpu_secs "
+			   "from %s as t1, \"%s_%s\" as t2 where "
+			   "(t1.id=t2.id_wckey) "
+			   "on duplicate key update "
+			   "deleted=VALUES(deleted), "
+			   "time_start=VALUES(time_start);",
+			   cluster_name, wckey_hour_table,
+			   "wckey_hour_usage_table", cluster_name, wckey_table);
+		xstrfmtcat(query,
+			   "insert into \"%s_%s\" "
+			   "(creation_time, "
+			   "mod_time, deleted, id_wckey, "
+			   "time_start, alloc_cpu_secs, "
+			   "resv_cpu_secs, over_cpu_secs) "
+			   "select t1.creation_time, t1.mod_time, "
+			   "t1.deleted, id, period_start, "
+			   "alloc_cpu_secs, resv_cpu_secs, "
+			   "over_cpu_secs "
+			   "from %s as t1, \"%s_%s\" as t2 where "
+			   "(t1.id=t2.id_wckey) "
+			   "on duplicate key update "
+			   "deleted=VALUES(deleted), "
+			   "time_start=VALUES(time_start);",
+			   cluster_name, wckey_month_table,
+			   "wckey_month_usage_table",
+			   cluster_name, wckey_table);
+		debug4("(%s:%d) query\n%s",
+		       THIS_FILE, __LINE__, query);
+		rc = mysql_db_query(db_conn, query);
+		xfree(query);
+		if(rc != SLURM_SUCCESS) {
+			error("Couldn't update wckey usage "
+			      "table correctly");
+			goto end_it;
+		}
+
+	}
+
+end_it:
+	if(rc == SLURM_SUCCESS) {
+		if(mysql_db_commit(db_conn)) {
+			error("commit failed, didn't update cluster %s",
+			      cluster_name);
+			rc = SLURM_ERROR;
+		} else
+			verbose("cluster %s updated", cluster_name);
+	} else {
+		verbose("cluster %s update failed", cluster_name);
+		if(mysql_db_rollback(db_conn))
+			error("rollback failed");
+	}
+
+	mysql_close_db_connection(&db_conn);
+
+	slurm_mutex_lock(&converted_lock);
+	converted++;
+	pthread_cond_signal(&converted_cond);
+	slurm_mutex_unlock(&converted_lock);
+
+	return NULL;
+}
+
 extern int as_mysql_convert_tables(MYSQL *db_conn)
 {
 	storage_field_t assoc_table_fields_2_1[] = {
@@ -236,13 +754,8 @@ extern int as_mysql_convert_tables(MYSQL *db_conn)
 	char *cluster_name;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
-	char *id_str = NULL;
 	char *query = NULL;
 	int rc = SLURM_SUCCESS;
-	bool assocs=0, events=0, jobs=0, resvs=0, steps=0,
-		suspends=0, usage=0, wckeys=0;
-
-	slurm_mutex_lock(&as_mysql_cluster_list_lock);
 
 	/* now do associations */
 	query = xstrdup_printf("show tables like '%s';", assoc_table);
@@ -478,88 +991,41 @@ extern int as_mysql_convert_tables(MYSQL *db_conn)
 	mysql_free_result(result);
 	result = NULL;
 
+	slurm_mutex_init(&converted_lock);
+	pthread_cond_init(&converted_cond, NULL);
+
+	slurm_mutex_lock(&as_mysql_cluster_list_lock);
 	/* now convert to new form */
 	itr = list_iterator_create(as_mysql_cluster_list);
 	while((cluster_name = list_next(itr))) {
-		xfree(id_str);
+		pthread_t convert_tid;
+		pthread_attr_t convert_attr;
+		slurm_attr_init(&convert_attr);
+		/* _convert_cluster_tables(cluster_name); */
+		if (pthread_create(&convert_tid, &convert_attr,
+				   _convert_cluster_tables,
+				   (void *)cluster_name))
+			fatal("pthread_create: %m");
+		slurm_attr_destroy(&convert_attr);
+	}
 
+	list_iterator_reset(itr);
+	slurm_mutex_lock(&converted_lock);
+
+	while(converted < list_count(as_mysql_cluster_list)) {
+		pthread_cond_wait(&converted_cond, &converted_lock);
+		debug2("Got %d converted", converted);
+	}
+	slurm_mutex_unlock(&converted_lock);
+	debug2("Everything converted");
+	slurm_mutex_destroy(&converted_lock);
+	pthread_cond_destroy(&converted_cond);
+
+	/* this has to be done after the threads because of a locking
+	   issue on this table */
+	while((cluster_name = list_next(itr))) {
+		char *txn_ids = NULL;
 		if(assocs) {
-			char *assoc_ids = NULL;
-			char *txn_ids = NULL;
-			int diff;
-
-			xstrfmtcat(query,
-				   "insert into \"%s_%s\" (creation_time, "
-				   "mod_time, deleted, id_assoc, user, "
-				   "acct, partition, parent_acct, lft, "
-				   "rgt, shares, max_jobs, max_submit_jobs, "
-				   "max_cpus_pj, max_nodes_pj, max_wall_pj, "
-				   "max_cpu_mins_pj, grp_jobs, "
-				   "grp_submit_jobs, grp_cpus, grp_nodes, "
-				   "grp_wall, grp_cpu_mins, qos, delta_qos) "
-				   "select creation_time, mod_time, deleted, "
-				   "id, user, acct, partition, "
-				   "parent_acct, lft, rgt, fairshare, "
-				   "max_jobs, max_submit_jobs, "
-				   "max_cpus_per_job, max_nodes_per_job, "
-				   "max_wall_duration_per_job, "
-				   "max_cpu_mins_per_job, grp_jobs, "
-				   "grp_submit_jobs, grp_cpus, grp_nodes, "
-				   "grp_wall, grp_cpu_mins, qos, delta_qos "
-				   "from %s where cluster='%s' "
-				   "on duplicate key update "
-				   "deleted=VALUES(deleted);",
-				   cluster_name, assoc_table,
-				   assoc_table, cluster_name);
-			debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
-			rc = mysql_db_query(db_conn, query);
-			xfree(query);
-			if(rc != SLURM_SUCCESS) {
-				error("Couldn't update assoc table correctly");
-				break;
-			}
-
-			query = xstrdup_printf("select lft from \"%s_%s\" "
-					       "where acct='root' and user=''",
-					       cluster_name, assoc_table);
-			if(!(result = mysql_db_query_ret(db_conn, query, 0))) {
-				xfree(query);
-				rc = SLURM_ERROR;
-				break;
-			}
-			xfree(query);
-
-			if(!(row = mysql_fetch_row(result))) {
-				mysql_free_result(result);
-				error("Couldn't find root association "
-				      "for cluster %s", cluster_name);
-				rc = SLURM_ERROR;
-				break;
-			}
-			diff = atoi(row[0]) - 1;
-			mysql_free_result(result);
-			if(diff < 0) {
-				error("lft was %s that can't happen!", diff+1);
-				rc = SLURM_ERROR;
-				break;
-			}
-
-			/* This will set the lft and rgts back as if
-			   these were the first cluster added to the
-			   system.
-			*/
-			query = xstrdup_printf("update \"%s_%s\" set "
-					       "lft=(lft-%d), rgt=(rgt-%d)",
-					       cluster_name, assoc_table,
-					       diff, diff);
-			debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
-			rc = mysql_db_query(db_conn, query);
-			xfree(query);
-			if(rc != SLURM_SUCCESS) {
-				error("Couldn't update assoc table correctly");
-				break;
-			}
-
 			/* Since there isn't a cluster name in the
 			   assoc usage tables we need to get all the ids from
 			   the assoc_table for this cluster and query
@@ -571,363 +1037,52 @@ extern int as_mysql_convert_tables(MYSQL *db_conn)
 			if(!(result = mysql_db_query_ret(db_conn, query, 0))) {
 				xfree(query);
 				rc = SLURM_ERROR;
-				break;
+				goto end_it;
 			}
 			xfree(query);
 
 			if(mysql_num_rows(result)) {
 				while((row = mysql_fetch_row(result))) {
-					if(assoc_ids) {
-						xstrcat(assoc_ids, " || ");
+					if(txn_ids) {
+						//xstrcat(assoc_ids, " || ");
 						xstrcat(txn_ids, " || ");
 					} else {
-						xstrcat(assoc_ids, "(");
+						//xstrcat(assoc_ids, "(");
 						xstrcat(txn_ids, "(");
 					}
-					xstrfmtcat(assoc_ids, "(id=%s)",
-						   row[0]);
+					/* xstrfmtcat(assoc_ids, "(id=%s)", */
+					/* 	   row[0]); */
 					xstrfmtcat(txn_ids,
 						   "(name like '%%id=%s %%' "
 						   "|| name like '%%id=%s)' "
 						   "|| name=%s)",
 						   row[0], row[0], row[0]);
 				}
-				xstrcat(assoc_ids, ")");
+				/* xstrcat(assoc_ids, ")"); */
 				xstrcat(txn_ids, ")");
 			}
 			mysql_free_result(result);
 
-			if(assoc_ids) {
-				xstrfmtcat(query,
-					   "insert into \"%s_%s\" "
-					   "(creation_time, "
-					   "mod_time, deleted, id_assoc, "
-					   "time_start, alloc_cpu_secs) "
-					   "select creation_time, mod_time, "
-					   "deleted, id, period_start, "
-					   "alloc_cpu_secs "
-					   "from %s where %s "
-					   "on duplicate key update "
-					   "deleted=VALUES(deleted), "
-					   "time_start=VALUES(time_start);",
-					   cluster_name, assoc_day_table,
-					   "assoc_day_usage_table", assoc_ids);
-				xstrfmtcat(query,
-					   "insert into \"%s_%s\" "
-					   "(creation_time, "
-					   "mod_time, deleted, id_assoc, "
-					   "time_start, alloc_cpu_secs) "
-					   "select creation_time, mod_time, "
-					   "deleted, id, period_start, "
-					   "alloc_cpu_secs "
-					   "from %s where %s "
-					   "on duplicate key update "
-					   "deleted=VALUES(deleted), "
-					   "time_start=VALUES(time_start);",
-					   cluster_name, assoc_hour_table,
-					   "assoc_hour_usage_table", assoc_ids);
-				xstrfmtcat(query,
-					   "insert into \"%s_%s\" "
-					   "(creation_time, "
-					   "mod_time, deleted, id_assoc, "
-					   "time_start, alloc_cpu_secs) "
-					   "select creation_time, mod_time, "
-					   "deleted, id, period_start, "
-					   "alloc_cpu_secs "
-					   "from %s where %s "
-					   "on duplicate key update "
-					   "deleted=VALUES(deleted), "
-					   "time_start=VALUES(time_start);",
-					   cluster_name, assoc_month_table,
-					   "assoc_month_usage_table",
-					   assoc_ids);
-				xfree(assoc_ids);
-				debug4("(%s:%d) query\n%s",
-				      THIS_FILE, __LINE__, query);
-				rc = mysql_db_query(db_conn, query);
-				xfree(query);
-				if(rc != SLURM_SUCCESS) {
-					error("Couldn't update assoc usage "
-					      "table correctly");
-					xfree(txn_ids);
-					break;
-				}
-
-				query = xstrdup_printf(
-					"update %s set cluster='%s' where "
-					"(action= %d || action = %d "
-					"|| action = %d) && %s;",
-					txn_table, cluster_name,
-					DBD_ADD_ASSOCS, DBD_MODIFY_ASSOCS,
-					DBD_REMOVE_ASSOCS, txn_ids);
-				xfree(txn_ids);
-				debug4("(%s:%d) query\n%s",
-				      THIS_FILE, __LINE__, query);
-				rc = mysql_db_query(db_conn, query);
-				xfree(query);
-				if(rc != SLURM_SUCCESS) {
-					error("Couldn't update assoc "
-					      "txn's correctly");
-					break;
-				}
-			}
-		}
-
-		if(events) {
 			query = xstrdup_printf(
-				"insert into \"%s_%s\" (node_name, cpu_count, "
-				"state, time_start, time_end, reason, "
-				"reason_uid, cluster_nodes) "
-				"select node_name, cpu_count, state, "
-				"period_start, period_end, reason, "
-				"reason_uid, cluster_nodes from %s where "
-				"cluster='%s' on duplicate key update "
-				"time_start=VALUES(time_start), "
-				"time_end=VALUES(time_end);",
-				cluster_name, event_table,
-				"cluster_event_table", cluster_name);
-			debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
+				"update %s set cluster='%s' where "
+				"(action= %d || action = %d "
+				"|| action = %d) && %s;",
+				txn_table, cluster_name,
+				DBD_ADD_ASSOCS, DBD_MODIFY_ASSOCS,
+				DBD_REMOVE_ASSOCS, txn_ids);
+			xfree(txn_ids);
+			debug4("(%s:%d) query\n%s",
+			       THIS_FILE, __LINE__, query);
 			rc = mysql_db_query(db_conn, query);
 			xfree(query);
 			if(rc != SLURM_SUCCESS) {
-				error("Couldn't update event table correctly");
-				break;
-			}
-		}
-
-		if(jobs) {
-			query = xstrdup_printf(
-				"insert into \"%s_%s\" (job_db_inx, "
-				"deleted, account, "
-				"cpus_req, cpus_alloc, exit_code, job_name, "
-				"id_assoc, id_block, id_job, id_resv, "
-				"id_wckey, id_user, id_group, kill_requid, "
-				"nodelist, nodes_alloc, node_inx, "
-				"partition, priority, qos, state, timelimit, "
-				"time_submit, time_eligible, time_start, "
-				"time_end, time_suspended, track_steps, wckey) "
-				"select id, deleted, account, req_cpus, "
-				"alloc_cpus, comp_code, name, associd, "
-				"blockid, jobid, resvid, wckeyid, uid, gid, "
-				"kill_requid, nodelist, alloc_nodes, "
-				"node_inx, partition, priority, qos, state, "
-				"timelimit, submit, eligible, start, end, "
-				"suspended, track_steps, wckey from %s where "
-				"cluster='%s' on duplicate key update "
-				"deleted=VALUES(deleted), "
-				"time_start=VALUES(time_start), "
-				"time_end=VALUES(time_end);",
-				cluster_name, job_table,
-				job_table, cluster_name);
-			debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
-			rc = mysql_db_query(db_conn, query);
-			xfree(query);
-			if(rc != SLURM_SUCCESS) {
-				error("Couldn't update job table correctly");
-				break;
-			}
-		}
-
-		if(steps || suspends) {
-			/* Since there isn't a cluster name in the
-			   step table we need to get all the ids from
-			   the job_table for this cluster and query
-			   against that.
-			*/
-			query = xstrdup_printf("select job_db_inx "
-					       "from \"%s_%s\"",
-					       cluster_name, job_table);
-			debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
-			if(!(result = mysql_db_query_ret(db_conn, query, 0))) {
-				xfree(query);
-				rc = SLURM_ERROR;
-				break;
-			}
-			xfree(query);
-
-			if(mysql_num_rows(result)) {
-				while((row = mysql_fetch_row(result))) {
-					if(id_str)
-						xstrcat(id_str, " || ");
-					else
-						xstrcat(id_str, "(");
-					xstrfmtcat(id_str, "(id=%s)",
-						   row[0]);
-				}
-				xstrcat(id_str, ")");
-			}
-			mysql_free_result(result);
-		}
-
-		if(resvs) {
-			query = xstrdup_printf(
-				"insert into \"%s_%s\" (id_resv, "
-				"deleted, assoclist, "
-				"cpus, flags, nodelist, node_inx, "
-				"resv_name, time_start, time_end) "
-				"select id, deleted, assoclist, cpus, "
-				"flags, nodelist, node_inx, name, start, end "
-				"from %s where cluster='%s' "
-				"on duplicate key update "
-				"deleted=VALUES(deleted), "
-				"time_start=VALUES(time_start), "
-				"time_end=VALUES(time_end);",
-				cluster_name, resv_table,
-				resv_table, cluster_name);
-			debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
-			rc = mysql_db_query(db_conn, query);
-			xfree(query);
-			if(rc != SLURM_SUCCESS) {
-				error("Couldn't update reserve "
-				      "table correctly");
-				break;
-			}
-		}
-
-		if(steps && id_str) {
-			query = xstrdup_printf(
-				"insert into \"%s_%s\" (job_db_inx, "
-				"deleted, cpus_alloc, "
-				"exit_code, id_step, kill_requid, nodelist, "
-				"nodes_alloc, node_inx, state, step_name, "
-				"task_cnt, task_dist, time_start, time_end, "
-				"time_suspended, user_sec, user_usec, "
-				"sys_sec, sys_usec, max_pages, "
-				"max_pages_task, max_pages_node, ave_pages, "
-				"max_rss, max_rss_task, max_rss_node, "
-				"ave_rss, max_vsize, max_vsize_task, "
-				"max_vsize_node, ave_vsize, min_cpu, "
-				"min_cpu_task, min_cpu_node, ave_cpu) "
-				"select id, deleted, cpus, "
-				"comp_code, stepid, kill_requid, nodelist, "
-				"nodes, node_inx, state, name, tasks, "
-				"task_dist, start, end, suspended, user_sec, "
-				"user_usec, sys_sec, sys_usec, max_pages, "
-				"max_pages_task, max_pages_node, ave_pages, "
-				"max_rss, max_rss_task, max_rss_node, "
-				"ave_rss, max_vsize, max_vsize_task, "
-				"max_vsize_node, ave_vsize, min_cpu, "
-				"min_cpu_task, min_cpu_node, ave_cpu "
-				"from %s where %s on duplicate key update "
-				"deleted=VALUES(deleted), "
-				"time_start=VALUES(time_start), "
-				"time_end=VALUES(time_end);",
-				cluster_name, step_table,
-				step_table, id_str);
-			debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
-			rc = mysql_db_query(db_conn, query);
-			xfree(query);
-			if(rc != SLURM_SUCCESS) {
-				error("Couldn't update step table correctly");
-				break;
-			}
-		}
-
-		if(suspends && id_str) {
-			query = xstrdup_printf(
-				"insert into \"%s_%s\" (job_db_inx, id_assoc, "
-				"time_start, time_end) "
-				"select id, associd, start, end "
-				"from %s where %s on duplicate key update "
-				"time_start=VALUES(time_start), "
-				"time_end=VALUES(time_end);",
-				cluster_name, suspend_table,
-				suspend_table, id_str);
-			debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
-			rc = mysql_db_query(db_conn, query);
-			xfree(query);
-			if(rc != SLURM_SUCCESS) {
-				error("Couldn't update suspend "
-				      "table correctly");
-				break;
-			}
-		}
-
-		if(usage) {
-			query = xstrdup_printf(
-				"insert into \"%s_%s\" "
-				"(creation_time, mod_time, "
-				"deleted, time_start, cpu_count, "
-				"alloc_cpu_secs, down_cpu_secs, "
-				"pdown_cpu_secs, idle_cpu_secs, "
-				"resv_cpu_secs, over_cpu_secs) "
-				"select creation_time, mod_time, deleted, "
-				"period_start, cpu_count, alloc_cpu_secs, "
-				"down_cpu_secs, pdown_cpu_secs, "
-				"idle_cpu_secs, resv_cpu_secs, over_cpu_secs "
-				"from %s where cluster='%s' "
-				"on duplicate key update "
-				"deleted=VALUES(deleted), "
-				"time_start=VALUES(time_start);",
-				cluster_name, cluster_day_table,
-				"cluster_day_usage_table", cluster_name);
-			xstrfmtcat(query,
-				   "insert into \"%s_%s\" (creation_time, "
-				   "mod_time, deleted, time_start, cpu_count, "
-				   "alloc_cpu_secs, down_cpu_secs, "
-				   "pdown_cpu_secs, idle_cpu_secs, "
-				   "resv_cpu_secs, over_cpu_secs) "
-				   "select creation_time, mod_time, deleted, "
-				   "period_start, cpu_count, alloc_cpu_secs, "
-				   "down_cpu_secs, pdown_cpu_secs, "
-				   "idle_cpu_secs, resv_cpu_secs, "
-				   "over_cpu_secs "
-				   "from %s where cluster='%s' "
-				   "on duplicate key update "
-				   "deleted=VALUES(deleted), "
-				   "time_start=VALUES(time_start);",
-				   cluster_name, cluster_hour_table,
-				   "cluster_hour_usage_table", cluster_name);
-			xstrfmtcat(query,
-				   "insert into \"%s_%s\" (creation_time, "
-				   "mod_time, deleted, time_start, cpu_count, "
-				   "alloc_cpu_secs, down_cpu_secs, "
-				   "pdown_cpu_secs, idle_cpu_secs, "
-				   "resv_cpu_secs, over_cpu_secs) "
-				   "select creation_time, mod_time, deleted, "
-				   "period_start, cpu_count, alloc_cpu_secs, "
-				   "down_cpu_secs, pdown_cpu_secs, "
-				   "idle_cpu_secs, resv_cpu_secs, "
-				   "over_cpu_secs "
-				   "from %s where cluster='%s' "
-				   "on duplicate key update "
-				   "deleted=VALUES(deleted), "
-				   "time_start=VALUES(time_start);",
-				   cluster_name, cluster_month_table,
-				   "cluster_month_usage_table", cluster_name);
-			debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
-			rc = mysql_db_query(db_conn, query);
-			xfree(query);
-			if(rc != SLURM_SUCCESS) {
-				error("Couldn't update cluster usage "
-				      "tables correctly");
-				break;
+				error("Couldn't update assoc "
+				      "txn's correctly");
+				goto end_it;
 			}
 		}
 
 		if(wckeys) {
-			char *wckey_ids = NULL;
-			char *txn_ids = NULL;
-
-			xstrfmtcat(query,
-				   "insert into \"%s_%s\" (creation_time, "
-				   "mod_time, deleted, id_wckey, wckey_name, "
-				   "user) "
-				   "select creation_time, mod_time, deleted, "
-				   "id, name, user "
-				   "from %s where cluster='%s' "
-				   "on duplicate key update "
-				   "deleted=VALUES(deleted);",
-				   cluster_name, wckey_table,
-				   wckey_table, cluster_name);
-			debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
-			rc = mysql_db_query(db_conn, query);
-			xfree(query);
-			if(rc != SLURM_SUCCESS) {
-				error("Couldn't update wckey table correctly");
-				break;
-			}
-
 			/* Since there isn't a cluster name in the
 			   wckey usage tables we need to get all the ids from
 			   the wckey_table for this cluster and query
@@ -939,119 +1094,53 @@ extern int as_mysql_convert_tables(MYSQL *db_conn)
 			if(!(result = mysql_db_query_ret(db_conn, query, 0))) {
 				xfree(query);
 				rc = SLURM_ERROR;
-				break;
+				goto end_it;
 			}
 			xfree(query);
 
 			if(mysql_num_rows(result)) {
 				while((row = mysql_fetch_row(result))) {
-					if(wckey_ids) {
-						xstrcat(wckey_ids, " || ");
+					if(txn_ids) {
 						xstrcat(txn_ids, " || ");
 					} else {
-						xstrcat(wckey_ids, "(");
 						xstrcat(txn_ids, "(");
 					}
-					xstrfmtcat(wckey_ids, "(id=%s)",
-						   row[0]);
+
 					xstrfmtcat(txn_ids,
 						   "(name like '%%id=%s %%' "
 						   "|| name like '%%id=%s)' "
 						   "|| name=%s)",
 						   row[0], row[0], row[0]);
 				}
-				xstrcat(wckey_ids, ")");
 				xstrcat(txn_ids, ")");
 			}
 			mysql_free_result(result);
 
-			if(wckey_ids) {
-				xstrfmtcat(query,
-					   "insert into \"%s_%s\" "
-					   "(creation_time, "
-					   "mod_time, deleted, id_wckey, "
-					   "time_start, alloc_cpu_secs, "
-					   "resv_cpu_secs, over_cpu_secs) "
-					   "select creation_time, mod_time, "
-					   "deleted, id, period_start, "
-					   "alloc_cpu_secs, resv_cpu_secs, "
-					   "over_cpu_secs "
-					   "from %s where %s "
-					   "on duplicate key update "
-					   "deleted=VALUES(deleted), "
-					   "time_start=VALUES(time_start);",
-					   cluster_name, wckey_day_table,
-					   "wckey_day_usage_table", wckey_ids);
-				xstrfmtcat(query,
-					   "insert into \"%s_%s\" "
-					   "(creation_time, "
-					   "mod_time, deleted, id_wckey, "
-					   "time_start, alloc_cpu_secs, "
-					   "resv_cpu_secs, over_cpu_secs) "
-					   "select creation_time, mod_time, "
-					   "deleted, id, period_start, "
-					   "alloc_cpu_secs, resv_cpu_secs, "
-					   "over_cpu_secs "
-					   "from %s where %s "
-					   "on duplicate key update "
-					   "deleted=VALUES(deleted), "
-					   "time_start=VALUES(time_start);",
-					   cluster_name, wckey_hour_table,
-					   "wckey_hour_usage_table", wckey_ids);
-				xstrfmtcat(query,
-					   "insert into \"%s_%s\" "
-					   "(creation_time, "
-					   "mod_time, deleted, id_wckey, "
-					   "time_start, alloc_cpu_secs, "
-					   "resv_cpu_secs, over_cpu_secs) "
-					   "select creation_time, mod_time, "
-					   "deleted, id, period_start, "
-					   "alloc_cpu_secs, resv_cpu_secs, "
-					   "over_cpu_secs "
-					   "from %s where %s "
-					   "on duplicate key update "
-					   "deleted=VALUES(deleted), "
-					   "time_start=VALUES(time_start);",
-					   cluster_name, wckey_month_table,
-					   "wckey_month_usage_table",
-					   wckey_ids);
-				xfree(wckey_ids);
-				debug4("(%s:%d) query\n%s",
-				      THIS_FILE, __LINE__, query);
-				rc = mysql_db_query(db_conn, query);
-				xfree(query);
-				if(rc != SLURM_SUCCESS) {
-					error("Couldn't update wckey usage "
-					      "table correctly");
-					break;
-				}
-
-				query = xstrdup_printf(
-					"update %s set cluster='%s' where "
-					"(action= %d || action = %d "
-					"|| action = %d) && %s;",
-					txn_table, cluster_name,
-					DBD_ADD_WCKEYS, DBD_MODIFY_WCKEYS,
-					DBD_REMOVE_WCKEYS, txn_ids);
-				xfree(txn_ids);
-				debug4("(%s:%d) query\n%s",
-				      THIS_FILE, __LINE__, query);
-				rc = mysql_db_query(db_conn, query);
-				xfree(query);
-				if(rc != SLURM_SUCCESS) {
-					error("Couldn't update wckey "
-					      "txn's correctly");
-					break;
-				}
+			query = xstrdup_printf(
+				"update %s set cluster='%s' where "
+				"(action= %d || action = %d "
+				"|| action = %d) && %s;",
+				txn_table, cluster_name,
+				DBD_ADD_WCKEYS, DBD_MODIFY_WCKEYS,
+				DBD_REMOVE_WCKEYS, txn_ids);
+			xfree(txn_ids);
+			debug4("(%s:%d) query\n%s",
+			       THIS_FILE, __LINE__, query);
+			rc = mysql_db_query(db_conn, query);
+			xfree(query);
+			if(rc != SLURM_SUCCESS) {
+				error("Couldn't update wckey "
+				      "txn's correctly");
+				goto end_it;
 			}
 		}
 	}
-
-	xfree(id_str);
 	list_iterator_destroy(itr);
 	slurm_mutex_unlock(&as_mysql_cluster_list_lock);
 
 	if(assocs) {
+		info("renaming old tables, "
+		     "this may take some time, please do not restart.");
 		query = xstrdup_printf("rename table %s to %s_old,"
 				       "%s to %s_old, %s to %s_old,"
 				       "%s to %s_old;",
@@ -1077,7 +1166,7 @@ extern int as_mysql_convert_tables(MYSQL *db_conn)
 		xfree(query);
 		if(rc != SLURM_SUCCESS) {
 			error("Couldn't rename assoc tables");
-			return rc;
+			goto end_it;
 		}
 	}
 
@@ -1088,7 +1177,7 @@ extern int as_mysql_convert_tables(MYSQL *db_conn)
 		xfree(query);
 		if(rc != SLURM_SUCCESS) {
 			error("Couldn't rename event table");
-			return rc;
+			goto end_it;
 		}
 	}
 
@@ -1099,7 +1188,7 @@ extern int as_mysql_convert_tables(MYSQL *db_conn)
 		xfree(query);
 		if(rc != SLURM_SUCCESS) {
 			error("Couldn't rename job table");
-			return rc;
+			goto end_it;
 		}
 	}
 
@@ -1110,7 +1199,7 @@ extern int as_mysql_convert_tables(MYSQL *db_conn)
 		xfree(query);
 		if(rc != SLURM_SUCCESS) {
 			error("Couldn't rename resv table");
-			return rc;
+			goto end_it;
 		}
 	}
 
@@ -1121,7 +1210,7 @@ extern int as_mysql_convert_tables(MYSQL *db_conn)
 		xfree(query);
 		if(rc != SLURM_SUCCESS) {
 			error("Couldn't rename step table");
-			return rc;
+			goto end_it;
 		}
 	}
 
@@ -1132,7 +1221,7 @@ extern int as_mysql_convert_tables(MYSQL *db_conn)
 		xfree(query);
 		if(rc != SLURM_SUCCESS) {
 			error("Couldn't rename suspend table");
-			return rc;
+			goto end_it;
 		}
 	}
 
@@ -1149,7 +1238,7 @@ extern int as_mysql_convert_tables(MYSQL *db_conn)
 		xfree(query);
 		if(rc != SLURM_SUCCESS) {
 			error("Couldn't rename cluster usage tables");
-			return rc;
+			goto end_it;
 		}
 	}
 
@@ -1178,7 +1267,7 @@ extern int as_mysql_convert_tables(MYSQL *db_conn)
 		xfree(query);
 		if(rc != SLURM_SUCCESS) {
 			error("Couldn't rename wckey tables");
-			return rc;
+			goto end_it;
 		}
 	}
 
@@ -1187,7 +1276,6 @@ extern int as_mysql_convert_tables(MYSQL *db_conn)
 end_it:
 	if(result)
 		mysql_free_result(result);
-	slurm_mutex_unlock(&as_mysql_cluster_list_lock);
 
 	return SLURM_ERROR;
 }
