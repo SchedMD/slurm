@@ -38,13 +38,11 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
  *****************************************************************************
  * Notes on as_mysql configuration
- *	Assumes as_mysql is installed as user root
+ *	Assumes mysql is installed as user root
  *	Assumes SlurmUser is configured as user slurm
- * # as_mysqladmin create <db_name>
- *	The <db_name> goes into slurmdbd.conf as StorageLoc
- * # as_mysql --user=root -p
- * as_mysql> GRANT ALL ON *.* TO 'slurm'@'localhost' IDENTIFIED BY PASSWORD 'pw';
- * as_mysql> GRANT SELECT, INSERT ON *.* TO 'slurm'@'localhost';
+ * # mysql --user=root -p
+ * mysql> GRANT ALL ON *.* TO 'slurm'@'localhost' IDENTIFIED BY PASSWORD 'pw';
+ * mysql> GRANT SELECT, INSERT ON *.* TO 'slurm'@'localhost';
 \*****************************************************************************/
 
 #include "accounting_storage_mysql.h"
@@ -496,9 +494,12 @@ static int _as_mysql_acct_check_tables(MYSQL *db_conn)
 	slurm_mutex_unlock(&as_mysql_cluster_list_lock);
 	if(rc != SLURM_SUCCESS)
 		return rc;
-
+	DEF_TIMERS;
+	START_TIMER;
 	if(as_mysql_convert_tables(db_conn) != SLURM_SUCCESS)
 		return SLURM_ERROR;
+	END_TIMER;
+	info("conversion took %s", TIME_STR);
 
 	if(mysql_db_create_table(db_conn, acct_coord_table,
 				 acct_coord_table_fields,
@@ -1685,17 +1686,27 @@ extern int init ( void )
 	   != SLURM_SUCCESS)
 		fatal("The database must be up when starting "
 		      "the MYSQL plugin.");
+
+	/* make it so this can be rolled back if failed */
+	mysql_autocommit(db_conn, 0);
 	rc = mysql_db_query(db_conn,
 			    "SET session sql_mode='ANSI_QUOTES';");
 	if(rc == SLURM_SUCCESS)
 		rc = _as_mysql_acct_check_tables(db_conn);
 
-	mysql_close_db_connection(&db_conn);
-
-	if(rc == SLURM_SUCCESS)
-		verbose("%s loaded", plugin_name);
-	else
+	if(rc == SLURM_SUCCESS) {
+		if(mysql_db_commit(db_conn)) {
+			error("commit failed, meaning %s failed", plugin_name);
+			rc = SLURM_ERROR;
+		} else
+			verbose("%s loaded", plugin_name);
+	} else {
 		verbose("%s failed", plugin_name);
+		if(mysql_db_rollback(db_conn))
+			error("rollback failed");
+	}
+
+	mysql_close_db_connection(&db_conn);
 
 	return rc;
 }
