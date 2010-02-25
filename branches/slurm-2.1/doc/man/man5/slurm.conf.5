@@ -42,7 +42,7 @@ in the \fIslurm.conf\fR file, such as log files and job accounting files,
 may need to be created/owned by the "SlurmUser" uid to be successfully
 accessed.  Use the "chown" and "chmod" commands to set the ownership
 and permissions appropriately.
-See the section \fBFILE AND DIRECTORY PERMISSIONS\fR for information 
+See the section \fBFILE AND DIRECTORY PERMISSIONS\fR for information
 about the various files and directories used by SLURM.
 
 .SH "PARAMETERS"
@@ -521,18 +521,18 @@ seconds between sampling job state.
 The default value is 30 seconds.
 A value of zero disables real the periodic job sampling and provides accounting
 information only on job termination (reducing SLURM interference with the job).
-Smaller (non\-zero) values have a greater impact upon job performance, but 
+Smaller (non\-zero) values have a greater impact upon job performance, but
 a value of 30 seconds is not likely to be noticeable for applications having
-less than 10,000 tasks. 
-Users can override this value on a per job basis using the \fB\-\-acctg\-freq\fR 
+less than 10,000 tasks.
+Users can override this value on a per job basis using the \fB\-\-acctg\-freq\fR
 option when submitting the job.
 
 .TP
 \fBJobCheckpointDir\fR
-Specifies the default directory for storing or reading job checkpoint 
-information. The data stored here is only a few thousand bytes per job 
+Specifies the default directory for storing or reading job checkpoint
+information. The data stored here is only a few thousand bytes per job
 and includes information needed to resubmit the job request, not job's
-memory image. The directory must be readable and writable by 
+memory image. The directory must be readable and writable by
 \fBSlurmUser\fR, but not writable by regular users. The job memory images
 may be in a different location as specified by \fB\-\-checkpoint\-dir\fR
 option at job submit time or scontrol's \fBImageDir\fR option.
@@ -2525,17 +2525,17 @@ PartitionName=long Nodes=dev[9\-17] MaxTime=120 AllowGroups=admin
 There are three classes of files:
 Files used by \fBslurmctld\fR must be accessible by user \fBSlurmUser\fR
 and accessible by the primary and backup control machines.
-Files used by \fBslurmd\fR must be accessible by user root and 
+Files used by \fBslurmd\fR must be accessible by user root and
 accessible from every compute node.
-A few files need to be accessible by normal users on all login and 
+A few files need to be accessible by normal users on all login and
 compute nodes.
-While many files and directories are listed below, most of them will 
+While many files and directories are listed below, most of them will
 not be used with most configurations.
 .TP
 \fBAccountingStorageLoc\fR
 If this specifies a file, it must be writable by user \fBSlurmUser\fR.
 The file must be accessible by the primary and backup control machines.
-It is recommended that the file be readable by all users from login and 
+It is recommended that the file be readable by all users from login and
 compute nodes.
 .TP
 \fBEpilog\fR
@@ -2601,7 +2601,7 @@ Must be writable by user \fBSlurmUser\fR.
 The file must be accessible by the primary and backup control machines.
 .TP
 \fBSlurmctldPidFile\fR
-Must be writable by user root. 
+Must be writable by user root.
 Preferably writable and removable by \fBSlurmUser\fR.
 The file must be accessible by the primary and backup control machines.
 .TP
