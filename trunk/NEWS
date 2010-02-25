@@ -70,6 +70,8 @@ documents those changes that are of interest to users and admins.
  -- If SelectType=select/linear and SelectTypeParameters=CR_Memory fix bug that
     would fail to release memory reserved for a job if "scontrol reconfigure" 
     is executed while the job is in completing state.
+ -- Fix bug in handling event trigger for job time limit while job is still 
+    in pending state.
 
 * Changes in SLURM 2.1.3-2
 ==========================
