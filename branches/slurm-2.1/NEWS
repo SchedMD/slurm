@@ -14,6 +14,9 @@ documents those changes that are of interest to users and admins.
  -- When node current features differs from slurm.conf, log the node names
     using a hostlist expression rather than listing individual node names.
  -- Improve ability of srun to abort job step for some task launch failures.
+ -- Fix mvapich plugin logic to release the created job allocation on 
+    initialization failure (previously the failures would cancel job step, 
+    but retain job allocation).
 
 * Changes in SLURM 2.1.3-2
 ==========================
