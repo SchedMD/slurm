@@ -97,8 +97,8 @@ static void _destroy_local_resv_usage(void *object)
 }
 
 extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
-			       char *cluster_name,
-			       time_t start, time_t end)
+				  char *cluster_name,
+				  time_t start, time_t end)
 {
 	int rc = SLURM_SUCCESS;
 	int add_sec = 3600;
@@ -969,8 +969,8 @@ end_it:
 	return rc;
 }
 extern int as_mysql_daily_rollup(mysql_conn_t *mysql_conn,
-			      char *cluster_name,
-			      time_t start, time_t end, uint16_t archive_data)
+				 char *cluster_name,
+				 time_t start, time_t end, uint16_t archive_data)
 {
 	/* can't just add 86400 since daylight savings starts and ends every
 	 * once in a while
@@ -1077,8 +1077,9 @@ extern int as_mysql_daily_rollup(mysql_conn_t *mysql_conn,
 	return SLURM_SUCCESS;
 }
 extern int as_mysql_monthly_rollup(mysql_conn_t *mysql_conn,
-				char *cluster_name,
-				time_t start, time_t end, uint16_t archive_data)
+				   char *cluster_name,
+				   time_t start, time_t end,
+				   uint16_t archive_data)
 {
 	int rc = SLURM_SUCCESS;
 	struct tm start_tm;
