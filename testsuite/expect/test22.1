@@ -261,14 +261,18 @@ close $file
 exec $bin_rm -f $sql_rem
 set file [open $sql_rem "w"]
 
-puts $file "delete from cluster_event_table where cluster='$cluster';"
-puts $file "delete from job_table where cluster='$cluster';"
-puts $file "delete from cluster_day_usage_table where cluster='$cluster';"
-puts $file "delete from cluster_hour_usage_table where cluster='$cluster';"
-puts $file "delete from cluster_month_usage_table where cluster='$cluster';"
-puts $file "delete from assoc_day_usage_table where id=$user1acct1 || id=$user1acct2 || id=$user1acct3 || id=$user2acct1 || id=$user2acct2 || id=$user2acct3;"
-puts $file "delete from assoc_hour_usage_table where id=$user1acct1 || id=$user1acct2 || id=$user1acct3 || id=$user2acct1 || id=$user2acct2 || id=$user2acct3;"
-puts $file "delete from assoc_month_usage_table where id=$user1acct1 || id=$user1acct2 || id=$user1acct3 || id=$user2acct1 || id=$user2acct2 || id=$user2acct3;"
+puts $file [format "%s%s%s" "truncate table \"" $cluster "_event_table\";"]
+puts $file [format "%s%s%s" "truncate table \"" $cluster "_job_table\";"]
+puts $file [format "%s%s%s" "truncate table \"" $cluster "_step_table\";"]
+puts $file [format "%s%s%s" "truncate table \"" $cluster "_usage_day_table\";"]
+puts $file [format "%s%s%s" "truncate table \"" $cluster "_usage_hour_table\";"]
+puts $file [format "%s%s%s" "truncate table \"" $cluster "_usage_month_table\";"]
+puts $file [format "%s%s%s" "truncate table \"" $cluster "_assoc_usage_day_table\";"]
+puts $file [format "%s%s%s" "truncate table \"" $cluster "_assoc_usage_hour_table\";"]
+puts $file [format "%s%s%s" "truncate table \"" $cluster "_assoc_usage_month_table\";"]
+puts $file [format "%s%s%s" "truncate table \"" $cluster "_wckey_usage_day_table\";"]
+puts $file [format "%s%s%s" "truncate table \"" $cluster "_wckey_usage_hour_table\";"]
+puts $file [format "%s%s%s" "truncate table \"" $cluster "_wckey_usage_month_table\";"]
 close $file
 
 #

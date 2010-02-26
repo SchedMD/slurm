@@ -1685,7 +1685,12 @@ extern int assoc_mgr_update_assocs(acct_update_object_t *update)
 				destroy_acct_association_rec(object);
 				continue;
 			}
+		} else if(assoc_mgr_cluster_name) {
+			error("We don't have a cluster here, no "
+			      "idea if this is our association.");
+			continue;
 		}
+
 		list_iterator_reset(itr);
 		while((rec = list_next(itr))) {
 			if(object->id) {
@@ -1981,7 +1986,12 @@ extern int assoc_mgr_update_wckeys(acct_update_object_t *update)
 				destroy_acct_wckey_rec(object);
 				continue;
 			}
+		} else if(assoc_mgr_cluster_name) {
+			error("We don't have a cluster here, no "
+			      "idea if this is our wckey.");
+			continue;
 		}
+
 		list_iterator_reset(itr);
 		while((rec = list_next(itr))) {
 			if(object->id) {
@@ -2907,7 +2917,7 @@ extern int load_assoc_mgr_state(char *state_save_location)
 			      list_count(assoc_mgr_association_list));
 			slurm_mutex_unlock(&assoc_mgr_association_lock);
 			msg->my_list = NULL;
-			slurmdbd_free_list_msg(SLURMDBD_VERSION, msg);
+			slurmdbd_free_list_msg(msg);
 			break;
 		case DBD_ADD_USERS:
 			error_code = slurmdbd_unpack_list_msg(
@@ -2927,7 +2937,7 @@ extern int load_assoc_mgr_state(char *state_save_location)
 			      list_count(assoc_mgr_user_list));
 			slurm_mutex_unlock(&assoc_mgr_user_lock);
 			msg->my_list = NULL;
-			slurmdbd_free_list_msg(SLURMDBD_VERSION, msg);
+			slurmdbd_free_list_msg(msg);
 			break;
 		case DBD_ADD_QOS:
 			error_code = slurmdbd_unpack_list_msg(
@@ -2947,7 +2957,7 @@ extern int load_assoc_mgr_state(char *state_save_location)
 			      list_count(assoc_mgr_qos_list));
 			slurm_mutex_unlock(&assoc_mgr_qos_lock);
 			msg->my_list = NULL;
-			slurmdbd_free_list_msg(SLURMDBD_VERSION, msg);
+			slurmdbd_free_list_msg(msg);
 			break;
 		case DBD_ADD_WCKEYS:
 			error_code = slurmdbd_unpack_list_msg(
@@ -2966,7 +2976,7 @@ extern int load_assoc_mgr_state(char *state_save_location)
 			      list_count(assoc_mgr_wckey_list));
 			slurm_mutex_unlock(&assoc_mgr_wckey_lock);
 			msg->my_list = NULL;
-			slurmdbd_free_list_msg(SLURMDBD_VERSION, msg);
+			slurmdbd_free_list_msg(msg);
 			break;
 		default:
 			error("unknown type %u given", type);

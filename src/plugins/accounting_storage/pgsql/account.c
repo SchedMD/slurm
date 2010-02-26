@@ -490,7 +490,8 @@ as_p_get_accts(pgsql_conn_t *pg_conn, uid_t uid,
 
 	private_data = slurm_get_private_data();
 	if (private_data & PRIVATE_DATA_ACCOUNTS) {
-		is_admin = is_user_admin(pg_conn, uid);
+		is_admin = is_user_min_admin_level(
+			pg_conn, uid, ACCT_ADMIN_OPERATOR);
 		if (!is_admin && ! is_user_any_coord(pg_conn, &user)) {
 			errno = ESLURM_ACCESS_DENIED;
 			return NULL;

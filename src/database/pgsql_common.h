@@ -59,6 +59,7 @@
 #include <libpq-fe.h>
 
 typedef struct {
+	char *cluster_name;
 	PGconn *db_conn;
 	bool rollback;
 	List update_list;
