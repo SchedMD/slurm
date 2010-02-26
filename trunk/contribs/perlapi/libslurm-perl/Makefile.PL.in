@@ -231,16 +231,6 @@ if (eval {require ExtUtils::Constant; 1}) {
 		SLURM_STEP_CTX_JOBID
 		SLURM_STEP_CTX_USER_MANAGED_SOCKETS
 		/];
-	$enums{select_type_plugin_info} = [qw /
-		SELECT_TYPE_INFO_NONE
-		CR_CPU
-		CR_SOCKET
-		CR_CORE
-		CR_MEMORY
-		CR_SOCKET_MEMORY
-		CR_CORE_MEMORY
-		CR_CPU_MEMORY
-		/];
 	my @names = @$macros;
 	foreach (values(%enums)) {
 		foreach my $key (@$_) {
