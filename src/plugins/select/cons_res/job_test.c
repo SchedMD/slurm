@@ -144,8 +144,12 @@ uint16_t _allocate_sockets(struct job_record *job_ptr, bitstr_t *core_map,
 	if (job_ptr->details && job_ptr->details->mc_ptr) {
 		min_cores   = job_ptr->details->mc_ptr->min_cores;
 		min_sockets = job_ptr->details->mc_ptr->min_sockets;
-		ntasks_per_core = job_ptr->details->mc_ptr->ntasks_per_core;
-		ntasks_per_socket = job_ptr->details->mc_ptr->ntasks_per_socket;
+		if (job_ptr->details->mc_ptr->ntasks_per_core) {
+			ntasks_per_core = job_ptr->details->mc_ptr->
+					  ntasks_per_core;
+		}
+		ntasks_per_socket = job_ptr->details->mc_ptr->
+				    ntasks_per_socket;
 	}
 
 	/* These are the job parameters that we must respect:
@@ -373,7 +377,10 @@ uint16_t _allocate_cores(struct job_record *job_ptr, bitstr_t *core_map,
 	if (!cpu_type && job_ptr->details && job_ptr->details->mc_ptr) {
 		min_cores   = job_ptr->details->mc_ptr->min_cores;
 		min_sockets = job_ptr->details->mc_ptr->min_sockets;
-		ntasks_per_core = job_ptr->details->mc_ptr->ntasks_per_core;
+		if (job_ptr->details->mc_ptr->ntasks_per_core) {
+			ntasks_per_core = job_ptr->details->mc_ptr->
+					  ntasks_per_core;
+		}
 	}
 
 	/* These are the job parameters that we must respect:
