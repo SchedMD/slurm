@@ -5639,7 +5639,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	if ((job_specs->time_min != NO_VAL) && IS_JOB_PENDING(job_ptr)) {
 		if (job_specs->time_min > job_ptr->time_limit) {
 			info("update_job: attempt to set TimeMin > TimeLimit "
-			     "(%u > %u)", 
+			     "(%u > %u)",
 			     job_specs->time_min, job_ptr->time_limit);
 			error_code = ESLURM_INVALID_TIME_LIMIT;
 		} else {
@@ -5827,7 +5827,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			 ||       (detail_ptr->shared > job_specs->shared)) {
 			detail_ptr->shared = job_specs->shared;
 			info("sched: update_job: setting shared to %u for "
-			     "job_id %u", 
+			     "job_id %u",
 			     job_specs->shared, job_specs->job_id);
 		} else {
 			error("sched: Attempt to remove sharing for job %u",
@@ -6194,7 +6194,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			 info("sched: update_job: setting LinuxImage to %s "
 			      "for jobid %u", image, job_ptr->job_id);
 			 select_g_select_jobinfo_set(
-					job_ptr->select_jobinfo,     
+					job_ptr->select_jobinfo,
 					SELECT_JOBDATA_LINUX_IMAGE, image);
 		 }
 	 }
@@ -7269,7 +7269,7 @@ extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
 			wiki_sched_test = true;
 		}
 		if ((job_ptr->time_limit != INFINITE) && (!wiki2_sched)) {
- 			info("Job %u resumed, updating end_time", 
+ 			info("Job %u resumed, updating end_time",
  			     job_ptr->job_id);
 			job_ptr->end_time = now +
 				(job_ptr->time_limit * 60)
@@ -8468,7 +8468,7 @@ _copy_job_record_to_job_desc(struct job_record *job_ptr)
 	job_desc->script            = get_job_script(job_ptr);
 	job_desc->shared            = details->shared;
 	job_desc->spank_job_env_size = job_ptr->spank_job_env_size;
-	job_desc->spank_job_env      = xmalloc(sizeof(char *) * 
+	job_desc->spank_job_env      = xmalloc(sizeof(char *) *
 					       job_desc->spank_job_env_size);
 	for (i = 0; i < job_desc->spank_job_env_size; i ++)
 		job_desc->spank_job_env[i]= xstrdup(job_ptr->spank_job_env[i]);
@@ -8506,22 +8506,22 @@ _copy_job_record_to_job_desc(struct job_record *job_ptr)
 	/* The following fields are used only on BlueGene systems.
 	 * Since BlueGene does not use the checkpoint/restart logic today,
 	 * we do not them. */
-	select_g_select_jobinfo_get(job_ptr->select_jobinfo, 
+	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
 				    SELECT_JOBDATA_GEOMETRY,
 				    &job_desc->geometry);
 	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
 				    SELECT_JOBDATA_CONN_TYPE,
 				    &job_desc->conn_type);
-	select_g_select_jobinfo_get(job_ptr->select_jobinfo, 
+	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
 				    SELECT_JOBDATA_REBOOT,
 				    &job_desc->reboot);
-	select_g_select_jobinfo_get(job_ptr->select_jobinfo, 
+	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
 				    SELECT_JOBDATA_ROTATE,
 				    &job_desc->rotate);
-	select_g_select_jobinfo_get(job_ptr->select_jobinfo, 
+	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
 				    SELECT_JOBDATA_BLRTS_IMAGE,
 				    &job_desc->blrtsimage);
-	select_g_select_jobinfo_get(job_ptr->select_jobinfo, 
+	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
 				    SELECT_JOBDATA_LINUX_IMAGE,
 				    &job_desc->linuximage);
 	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
