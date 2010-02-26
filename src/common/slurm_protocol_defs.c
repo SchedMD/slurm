@@ -121,6 +121,42 @@ extern void slurm_destroy_uint32_ptr(void *object)
 	xfree(tmp);
 }
 
+/* here to add \\ to all \" in a string this needs to be xfreed later */
+extern char *slurm_add_slash_to_quotes(char *str)
+{
+	int i=0, start=0;
+	char *fixed = NULL;
+
+	if(!str)
+		return NULL;
+
+	while(str[i]) {
+		if((str[i] == '"')) {
+			char *tmp = xstrndup(str+start, i-start);
+			xstrfmtcat(fixed, "%s\\\"", tmp);
+			xfree(tmp);
+			start = i+1;
+		}
+
+		if((str[i] == '\'')) {
+			char *tmp = xstrndup(str+start, i-start);
+			xstrfmtcat(fixed, "%s\\\'", tmp);
+			xfree(tmp);
+			start = i+1;
+		}
+
+		i++;
+	}
+
+	if((i-start) > 0) {
+		char *tmp = xstrndup(str+start, i-start);
+		xstrcat(fixed, tmp);
+		xfree(tmp);
+	}
+
+	return fixed;
+}
+
 /* returns number of objects added to list */
 extern int slurm_addto_char_list(List char_list, char *names)
 {

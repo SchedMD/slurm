@@ -1108,7 +1108,8 @@ extern int as_mysql_monthly_rollup(mysql_conn_t *mysql_conn,
 /* 		info("start %s", ctime(&curr_start)); */
 /* 		info("end %s", ctime(&curr_end)); */
 		query = xstrdup_printf(
-			"insert into \"%s_%s\" (creation_time, mod_time, id_assoc, "
+			"insert into \"%s_%s\" (creation_time, "
+			"mod_time, id_assoc, "
 			"time_start, alloc_cpu_secs) select %d, %d, id_assoc, "
 			"%d, @ASUM:=SUM(alloc_cpu_secs) from \"%s_%s\" where "
 			"(time_start < %d && time_start >= %d) "

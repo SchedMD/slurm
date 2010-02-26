@@ -43,6 +43,111 @@
 time_t global_last_rollup = 0;
 pthread_mutex_t rollup_lock = PTHREAD_MUTEX_INITIALIZER;
 
+static pthread_mutex_t usage_rollup_lock = PTHREAD_MUTEX_INITIALIZER;
+
+typedef struct {
+	uint16_t archive_data;
+	char *cluster_name;
+	time_t hour_start;
+	time_t hour_end;
+	time_t day_start;
+	time_t day_end;
+	time_t month_start;
+	time_t month_end;
+	mysql_conn_t *mysql_conn;
+	int *rc;
+	int *rolledup;
+	pthread_mutex_t *rolledup_lock;
+	pthread_cond_t *rolledup_cond;
+} local_rollup_t;
+
+static void *_cluster_rollup_usage(void *arg)
+{
+	local_rollup_t *local_rollup = (local_rollup_t *)arg;
+	int rc = SLURM_SUCCESS;
+	char timer_str[128];
+	mysql_conn_t mysql_conn;
+	DEF_TIMERS;
+
+	memset(&mysql_conn, 0, sizeof(mysql_conn_t));
+	mysql_conn.rollback = 1;
+	mysql_conn.conn = local_rollup->mysql_conn->conn;
+
+	/* Each thread needs it's own connection we can't use the one
+	 * sent from the parent thread. */
+	rc = check_connection(&mysql_conn);
+
+	if(rc != SLURM_SUCCESS)
+		goto end_it;
+
+	if((local_rollup->hour_end - local_rollup->hour_start) > 0) {
+		START_TIMER;
+		rc = as_mysql_hourly_rollup(&mysql_conn,
+					    local_rollup->cluster_name,
+					    local_rollup->hour_start,
+					    local_rollup->hour_end);
+		snprintf(timer_str, sizeof(timer_str),
+			 "hourly_rollup for %s", local_rollup->cluster_name);
+		END_TIMER3(timer_str, 5000000);
+		if(rc != SLURM_SUCCESS)
+			goto end_it;
+	}
+
+	if((local_rollup->day_end - local_rollup->day_start) > 0) {
+		START_TIMER;
+		rc = as_mysql_daily_rollup(&mysql_conn,
+					   local_rollup->cluster_name,
+					   local_rollup->day_start,
+					   local_rollup->day_end,
+					   local_rollup->archive_data);
+		snprintf(timer_str, sizeof(timer_str),
+			 "daily_rollup for %s", local_rollup->cluster_name);
+		END_TIMER3(timer_str, 5000000);
+		if(rc != SLURM_SUCCESS)
+			goto end_it;
+	}
+
+	if((local_rollup->month_end - local_rollup->month_start) > 0) {
+		START_TIMER;
+		rc = as_mysql_monthly_rollup(&mysql_conn,
+					     local_rollup->cluster_name,
+					     local_rollup->month_start,
+					     local_rollup->month_end,
+					     local_rollup->archive_data);
+		snprintf(timer_str, sizeof(timer_str),
+			 "monthly_rollup for %s", local_rollup->cluster_name);
+		END_TIMER3(timer_str, 5000000);
+		if(rc != SLURM_SUCCESS)
+			goto end_it;
+	}
+
+end_it:
+	if(rc == SLURM_SUCCESS) {
+		if(mysql_db_commit(mysql_conn.db_conn)) {
+			error("Couldn't commit rollup of cluster %s",
+			      local_rollup->cluster_name);
+			rc = SLURM_ERROR;
+		}
+	} else {
+		error("Cluster %s rollup failed", local_rollup->cluster_name);
+		if(mysql_conn.db_conn && mysql_db_rollback(mysql_conn.db_conn))
+			error("rollback failed");
+	}
+
+	mysql_close_db_connection(&mysql_conn.db_conn);
+
+	slurm_mutex_lock(local_rollup->rolledup_lock);
+	(*local_rollup->rolledup)++;
+	if((rc != SLURM_SUCCESS) && ((*local_rollup->rc) == SLURM_SUCCESS))
+		(*local_rollup->rc) = rc;
+	pthread_cond_signal(local_rollup->rolledup_cond);
+	slurm_mutex_unlock(local_rollup->rolledup_lock);
+	xfree(local_rollup);
+
+	return NULL;
+}
+
+
 static int _get_cluster_usage(mysql_conn_t *mysql_conn, uid_t uid,
 			      acct_cluster_rec_t *cluster_rec,
 			      slurmdbd_msg_type_t type,
@@ -495,7 +600,8 @@ is_user:
 	switch (type) {
 	case DBD_GET_ASSOC_USAGE:
 		query = xstrdup_printf(
-			"select %s from \"%s_%s\" as t1, \"%s_%s\" as t2, \"%s_%s\" as t3 "
+			"select %s from \"%s_%s\" as t1, "
+			"\"%s_%s\" as t2, \"%s_%s\" as t3 "
 			"where (t1.time_start < %d && t1.time_start >= %d) "
 			"&& t1.id_assoc=t2.id_assoc && t3.id_assoc=%d && "
 			"t2.lft between t3.lft and t3.rgt "
@@ -548,7 +654,7 @@ extern int as_mysql_roll_usage(mysql_conn_t *mysql_conn,
 			       uint16_t archive_data)
 {
 	int rc = SLURM_SUCCESS;
-	int i = 0;
+	int i = 0, rolledup = 0;
 	time_t my_time = sent_end;
 	struct tm start_tm;
 	struct tm end_tm;
@@ -559,10 +665,17 @@ extern int as_mysql_roll_usage(mysql_conn_t *mysql_conn,
 	time_t last_hour = sent_start;
 	time_t last_day = sent_start;
 	time_t last_month = sent_start;
-	time_t start_time = 0;
-  	time_t end_time = 0;
+	time_t hour_start;
+	time_t hour_end;
+	time_t day_start;
+	time_t day_end;
+	time_t month_start;
+	time_t month_end;
+
 	ListIterator itr;
-	DEF_TIMERS;
+	pthread_mutex_t rolledup_lock = PTHREAD_MUTEX_INITIALIZER;
+	pthread_cond_t rolledup_cond;
+	//DEF_TIMERS;
 
 	char *update_req_inx[] = {
 		"hourly_rollup",
@@ -695,7 +808,7 @@ extern int as_mysql_roll_usage(mysql_conn_t *mysql_conn,
 		return SLURM_ERROR;
 	}
 
-	/* below and anywhere in a rollup plugin when dealing with
+	/* Below and anywhere in a rollup plugin when dealing with
 	 * epoch times we need to set the tm_isdst = -1 so we don't
 	 * have to worry about the time changes.  Not setting it to -1
 	 * will cause problems in the day and month with the date change.
@@ -704,88 +817,42 @@ extern int as_mysql_roll_usage(mysql_conn_t *mysql_conn,
 	start_tm.tm_sec = 0;
 	start_tm.tm_min = 0;
 	start_tm.tm_isdst = -1;
-	start_time = mktime(&start_tm);
+	hour_start = mktime(&start_tm);
+
 	end_tm.tm_sec = 0;
 	end_tm.tm_min = 0;
 	end_tm.tm_isdst = -1;
-	end_time = mktime(&end_tm);
+	hour_end = mktime(&end_tm);
 
-/* 	info("hour start %s", ctime(&start_time)); */
-/* 	info("hour end %s", ctime(&end_time)); */
-/* 	info("diff is %d", end_time-start_time); */
+/* 	info("hour start %s", ctime(&hour_start)); */
+/* 	info("hour end %s", ctime(&hour_end)); */
+/* 	info("diff is %d", hour_end-hour_start); */
 
 	slurm_mutex_lock(&rollup_lock);
-	global_last_rollup = end_time;
+	global_last_rollup = hour_end;
 	slurm_mutex_unlock(&rollup_lock);
 
-	if(end_time-start_time > 0) {
-		START_TIMER;
-		slurm_mutex_lock(&as_mysql_cluster_list_lock);
-		itr = list_iterator_create(as_mysql_cluster_list);
-		while((tmp = list_next(itr))) {
-			if((rc = as_mysql_hourly_rollup(mysql_conn, tmp,
-							start_time, end_time))
-			   != SLURM_SUCCESS)
-				break;
-		}
-		list_iterator_destroy(itr);
-		slurm_mutex_unlock(&as_mysql_cluster_list_lock);
-		if(rc != SLURM_SUCCESS)
-			return rc;
-		END_TIMER3("hourly_rollup", 5000000);
-		/* If we have a sent_end do not update the last_run_table */
-		if(!sent_end)
-			query = xstrdup_printf("update %s set hourly_rollup=%d",
-					       last_ran_table, end_time);
-	} else {
-		debug2("no need to run this hour %d <= %d",
-		       end_time, start_time);
-	}
-
+	/* set up the day period */
 	if(!localtime_r(&last_day, &start_tm)) {
 		error("Couldn't get localtime from day %d", last_day);
 		return SLURM_ERROR;
 	}
+
 	start_tm.tm_sec = 0;
 	start_tm.tm_min = 0;
 	start_tm.tm_hour = 0;
 	start_tm.tm_isdst = -1;
-	start_time = mktime(&start_tm);
+	day_start = mktime(&start_tm);
+
 	end_tm.tm_hour = 0;
 	end_tm.tm_isdst = -1;
-	end_time = mktime(&end_tm);
+	day_end = mktime(&end_tm);
 
-/* 	info("day start %s", ctime(&start_time)); */
-/* 	info("day end %s", ctime(&end_time)); */
-/* 	info("diff is %d", end_time-start_time); */
+/* 	info("day start %s", ctime(&day_start)); */
+/* 	info("day end %s", ctime(&day_end)); */
+/* 	info("diff is %d", day_end-day_start); */
 
-	if(end_time-start_time > 0) {
-		START_TIMER;
-		slurm_mutex_lock(&as_mysql_cluster_list_lock);
-		itr = list_iterator_create(as_mysql_cluster_list);
-		while((tmp = list_next(itr))) {
-			if((rc = as_mysql_daily_rollup(mysql_conn, tmp,
-						       start_time, end_time,
-						       archive_data))
-			   != SLURM_SUCCESS)
-				break;
-		}
-		list_iterator_destroy(itr);
-		slurm_mutex_unlock(&as_mysql_cluster_list_lock);
-		if(rc != SLURM_SUCCESS)
-			return rc;
-
-		END_TIMER2("daily_rollup");
-		if(query && !sent_end)
-			xstrfmtcat(query, ", daily_rollup=%d", end_time);
-		else if(!sent_end)
-			query = xstrdup_printf("update %s set daily_rollup=%d",
-					       last_ran_table, end_time);
-	} else {
-		debug2("no need to run this day %d <= %d",
-		       end_time, start_time);
-	}
-
+	/* set up the month period */
 	if(!localtime_r(&last_month, &start_tm)) {
 		error("Couldn't get localtime from month %d", last_month);
 		return SLURM_ERROR;
@@ -796,47 +863,108 @@ extern int as_mysql_roll_usage(mysql_conn_t *mysql_conn,
 	start_tm.tm_hour = 0;
 	start_tm.tm_mday = 1;
 	start_tm.tm_isdst = -1;
-	start_time = mktime(&start_tm);
-	end_time = mktime(&end_tm);
+	month_start = mktime(&start_tm);
 
 	end_tm.tm_sec = 0;
 	end_tm.tm_min = 0;
 	end_tm.tm_hour = 0;
 	end_tm.tm_mday = 1;
 	end_tm.tm_isdst = -1;
-	end_time = mktime(&end_tm);
+	month_end = mktime(&end_tm);
 
-/* 	info("month start %s", ctime(&start_time)); */
-/* 	info("month end %s", ctime(&end_time)); */
-/* 	info("diff is %d", end_time-start_time); */
+/* 	info("month start %s", ctime(&month_start)); */
+/* 	info("month end %s", ctime(&month_end)); */
+/* 	info("diff is %d", month_end-month_start); */
 
-	if(end_time-start_time > 0) {
-		START_TIMER;
-		slurm_mutex_lock(&as_mysql_cluster_list_lock);
-		itr = list_iterator_create(as_mysql_cluster_list);
-		while((tmp = list_next(itr))) {
-			if((rc = as_mysql_monthly_rollup(
-				    mysql_conn, tmp,
-				    start_time, end_time, archive_data))
-			   != SLURM_SUCCESS)
-				break;
-		}
-		list_iterator_destroy(itr);
-		slurm_mutex_unlock(&as_mysql_cluster_list_lock);
-		if(rc != SLURM_SUCCESS)
-			return rc;
+	slurm_mutex_lock(&usage_rollup_lock);
 
-		END_TIMER2("monthly_rollup");
+	slurm_mutex_init(&rolledup_lock);
+	pthread_cond_init(&rolledup_cond, NULL);
 
+	//START_TIMER;
+	slurm_mutex_lock(&as_mysql_cluster_list_lock);
+	itr = list_iterator_create(as_mysql_cluster_list);
+	while((tmp = list_next(itr))) {
+		pthread_t rollup_tid;
+		pthread_attr_t rollup_attr;
+		local_rollup_t *local_rollup = xmalloc(sizeof(local_rollup_t));
+
+		local_rollup->archive_data = archive_data;
+		local_rollup->cluster_name = tmp;
+
+		local_rollup->hour_start = hour_start;
+		local_rollup->hour_end = hour_end;
+
+		local_rollup->day_start = day_start;
+		local_rollup->day_end = day_end;
+
+		local_rollup->month_start = month_start;
+		local_rollup->month_end = month_end;
+
+		local_rollup->mysql_conn = mysql_conn;
+		local_rollup->rc = &rc;
+		local_rollup->rolledup = &rolledup;
+		local_rollup->rolledup_lock = &rolledup_lock;
+		local_rollup->rolledup_cond = &rolledup_cond;
+
+		slurm_attr_init(&rollup_attr);
+		/* _cluster_rollup_usage is responsible for freeing
+		   this local_rollup */
+		/* _cluster_rollup_usage(local_rollup); */
+		if (pthread_create(&rollup_tid, &rollup_attr,
+				   _cluster_rollup_usage,
+				   (void *)local_rollup))
+			fatal("pthread_create: %m");
+		slurm_attr_destroy(&rollup_attr);
+	}
+	slurm_mutex_lock(&rolledup_lock);
+	list_iterator_destroy(itr);
+	slurm_mutex_unlock(&as_mysql_cluster_list_lock);
+
+	while(rolledup < list_count(as_mysql_cluster_list)) {
+		pthread_cond_wait(&rolledup_cond, &rolledup_lock);
+		debug2("Got %d rolled up", rolledup);
+	}
+	slurm_mutex_unlock(&rolledup_lock);
+	debug2("Everything rolled up");
+	slurm_mutex_destroy(&rolledup_lock);
+	pthread_cond_destroy(&rolledup_cond);
+	/* END_TIMER; */
+	/* info("total time was %s", TIME_STR); */
+
+	if(rc != SLURM_SUCCESS)
+		goto end_it;
+
+	if(hour_end-hour_start > 0) {
+		/* If we have a sent_end do not update the last_run_table */
+		if(!sent_end)
+			query = xstrdup_printf("update %s set hourly_rollup=%d",
+					       last_ran_table, hour_end);
+	} else
+		debug2("no need to run this hour %d <= %d",
+		       hour_end, hour_start);
+
+	if(day_end-day_start > 0) {
 		if(query && !sent_end)
-			xstrfmtcat(query, ", monthly_rollup=%d", end_time);
+			xstrfmtcat(query, ", daily_rollup=%d", day_end);
+		else if(!sent_end)
+			query = xstrdup_printf("update %s set daily_rollup=%d",
+					       last_ran_table, day_end);
+	} else {
+		debug2("no need to run this day %d <= %d",
+		       day_end, day_start);
+	}
+
+	if(month_end-month_start > 0) {
+		if(query && !sent_end)
+			xstrfmtcat(query, ", monthly_rollup=%d", month_end);
 		else if(!sent_end)
 			query = xstrdup_printf(
 				"update %s set monthly_rollup=%d",
-				last_ran_table, end_time);
+				last_ran_table, month_end);
 	} else {
 		debug2("no need to run this month %d <= %d",
-		       end_time, start_time);
+		       month_end, month_start);
 	}
 
 	if(query) {
@@ -845,5 +973,9 @@ extern int as_mysql_roll_usage(mysql_conn_t *mysql_conn,
 		rc = mysql_db_query(mysql_conn->db_conn, query);
 		xfree(query);
 	}
+
+end_it:
+	slurm_mutex_unlock(&usage_rollup_lock);
+
 	return rc;
 }

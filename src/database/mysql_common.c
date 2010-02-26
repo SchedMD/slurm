@@ -147,6 +147,7 @@ static int _mysql_make_table_current(MYSQL *mysql_db, char *table_name,
 	START_TIMER;
 	while(fields[i].name) {
 		int found = 0;
+
 		list_iterator_reset(itr);
 		while((col = list_next(itr))) {
 			if(!strcmp(col, fields[i].name)) {
@@ -265,12 +266,14 @@ static int _mysql_make_table_current(MYSQL *mysql_db, char *table_name,
 
 	/* see if we have already done this definition */
 	if(!adding) {
+		char *quoted = slurm_add_slash_to_quotes(query);
 		char *query2 = xstrdup_printf("select table_name from "
 					      "%s where definition='%s'",
-					      table_defs_table, query);
+					      table_defs_table, quoted);
 		MYSQL_RES *result = NULL;
 		MYSQL_ROW row;
 
+		xfree(quoted);
 		run_update = 1;
 		if((result = mysql_db_query_ret(mysql_db, query2, 0))) {
 			if((row = mysql_fetch_row(result)))
@@ -278,28 +281,44 @@ static int _mysql_make_table_current(MYSQL *mysql_db, char *table_name,
 			mysql_free_result(result);
 		}
 		xfree(query2);
+		if(run_update) {
+			run_update = 2;
+			query2 = xstrdup_printf("select table_name from "
+						"%s where table_name='%s'",
+						table_defs_table, table_name);
+			if((result = mysql_db_query_ret(mysql_db, query2, 0))) {
+				if((row = mysql_fetch_row(result)))
+					run_update = 1;
+				mysql_free_result(result);
+			}
+			xfree(query2);
+		}
 	}
 
 	/* if something has changed run the alter line */
 	if(run_update || adding) {
 		time_t now = time(NULL);
 		char *query2 = NULL;
+		char *quoted = NULL;
 
-		debug("Table %s has changed.  Updating...", table_name);
-
+		if(run_update == 2)
+			debug4("Table %s doesn't exist, adding", table_name);
+		else
+			debug("Table %s has changed.  Updating...", table_name);
 		if(mysql_db_query(mysql_db, query)) {
 			xfree(query);
 			return SLURM_ERROR;
 		}
-
+		quoted = slurm_add_slash_to_quotes(correct_query);
 		query2 = xstrdup_printf("insert into %s (creation_time, "
 					"mod_time, table_name, definition) "
 					"values (%d, %d, '%s', '%s') "
 					"on duplicate key update "
 					"definition='%s', mod_time=%d;",
 					table_defs_table, now, now,
-					table_name, correct_query,
-					correct_query, now);
+					table_name, quoted,
+					quoted, now);
+		xfree(quoted);
 		if(mysql_db_query(mysql_db, query2)) {
 			xfree(query2);
 			return SLURM_ERROR;

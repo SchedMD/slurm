@@ -520,7 +520,7 @@ end_it:
 			verbose("Cluster %s updated", cluster_name);
 	} else {
 		verbose("Cluster %s update failed", cluster_name);
-		if(mysql_db_rollback(db_conn))
+		if(db_conn && mysql_db_rollback(db_conn))
 			error("rollback failed");
 	}
 
@@ -733,6 +733,9 @@ extern int as_mysql_convert_tables(MYSQL *db_conn)
 	char *query = NULL;
 	char *drop_query = NULL;
 	int rc = SLURM_ERROR;
+	pthread_mutex_t rolledup_lock = PTHREAD_MUTEX_INITIALIZER;
+	pthread_cond_t rolledup_cond;
+
 
 	/* now do associations */
 	query = xstrdup_printf("show tables like '%s';", assoc_table);
