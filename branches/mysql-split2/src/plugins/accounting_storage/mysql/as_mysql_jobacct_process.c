@@ -70,6 +70,7 @@ char *job_req_inx[] = {
 	"t1.time_start",
 	"t1.time_end",
 	"t1.time_suspended",
+	"t1.timelimit",
 	"t1.job_name",
 	"t1.track_steps",
 	"t1.state",
@@ -104,6 +105,7 @@ enum {
 	JOB_REQ_START,
 	JOB_REQ_END,
 	JOB_REQ_SUSPENDED,
+	JOB_REQ_TIMELIMIT,
 	JOB_REQ_NAME,
 	JOB_REQ_TRACKSTEPS,
 	JOB_REQ_STATE,
@@ -452,6 +454,7 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 		job->submit = submit;
 		job->start = atoi(row[JOB_REQ_START]);
 		job->end = atoi(row[JOB_REQ_END]);
+		job->timelimit = atoi(row[JOB_REQ_TIMELIMIT]);
 
 		/* since the job->end could be set later end it here */
 		if(job->end) {
