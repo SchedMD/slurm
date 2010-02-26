@@ -57,43 +57,6 @@ extern char *wckey_hour_table;
 extern char *wckey_day_table;
 extern char *wckey_month_table;
 
-
-/* here to add \\ to all \" in a string */
-extern char *fix_double_quotes(char *str)
-{
-	int i=0, start=0;
-	char *fixed = NULL;
-
-	if(!str)
-		return NULL;
-
-	while(str[i]) {
-		if((str[i] == '"')) {
-			char *tmp = xstrndup(str+start, i-start);
-			xstrfmtcat(fixed, "%s\\\"", tmp);
-			xfree(tmp);
-			start = i+1;
-		}
-
-		if((str[i] == '\'')) {
-			char *tmp = xstrndup(str+start, i-start);
-			xstrfmtcat(fixed, "%s\\\'", tmp);
-			xfree(tmp);
-			start = i+1;
-		}
-
-		i++;
-	}
-
-	if((i-start) > 0) {
-		char *tmp = xstrndup(str+start, i-start);
-		xstrcat(fixed, tmp);
-		xfree(tmp);
-	}
-
-	return fixed;
-}
-
 /*
  * send_accounting_update - send update to controller of cluster
  * IN update_list: updates to send

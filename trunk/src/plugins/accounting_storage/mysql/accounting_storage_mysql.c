@@ -1260,7 +1260,7 @@ extern int modify_common(mysql_conn_t *mysql_conn,
 {
 	char *query = NULL;
 	int rc = SLURM_SUCCESS;
-	char *tmp_cond_char = fix_double_quotes(cond_char);
+	char *tmp_cond_char = slurm_add_slash_to_quotes(cond_char);
 	char *tmp_vals = NULL;
 	bool cluster_centric = true;
 
@@ -1271,7 +1271,7 @@ extern int modify_common(mysql_conn_t *mysql_conn,
 		cluster_centric = false;
 
 	if(vals[1])
-		tmp_vals = fix_double_quotes(vals+2);
+		tmp_vals = slurm_add_slash_to_quotes(vals+2);
 
 	if(cluster_centric) {
 		xassert(cluster_name);
@@ -1334,7 +1334,7 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 	MYSQL_ROW row;
 	time_t day_old = now - DELETE_SEC_BACK;
 	bool has_jobs = false;
-	char *tmp_name_char = fix_double_quotes(name_char);
+	char *tmp_name_char = slurm_add_slash_to_quotes(name_char);
 	bool cluster_centric = true;
 
 	/* figure out which tables we need to append the cluster name to */
