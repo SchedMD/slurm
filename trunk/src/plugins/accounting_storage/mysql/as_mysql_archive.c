@@ -1793,7 +1793,7 @@ static int _archive_script(acct_archive_cond_t *arch_cond, char *cluster_name,
 			      last_submit);
 			return SLURM_ERROR;
 		}
-		time_tm.tm_mon -= arch_cond->purge_step;
+		time_tm.tm_mon -= arch_cond->purge_event;
 		time_tm.tm_isdst = -1;
 		curr_end = mktime(&time_tm);
 		env_array_append_fmt(&env, "SLURM_ARCHIVE_EVENTS", "%u",
@@ -1843,7 +1843,7 @@ static int _archive_script(acct_archive_cond_t *arch_cond, char *cluster_name,
 			      last_submit);
 			return SLURM_ERROR;
 		}
-		time_tm.tm_mon -= arch_cond->purge_step;
+		time_tm.tm_mon -= arch_cond->purge_suspend;
 		time_tm.tm_isdst = -1;
 		curr_end = mktime(&time_tm);
 		env_array_append_fmt(&env, "SLURM_ARCHIVE_SUSPEND", "%u",
