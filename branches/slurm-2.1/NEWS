@@ -17,6 +17,7 @@ documents those changes that are of interest to users and admins.
  -- Fix mvapich plugin logic to release the created job allocation on 
     initialization failure (previously the failures would cancel job step, 
     but retain job allocation).
+ -- Fix bug in srun for task count so large that it overflows int data type.
 
 * Changes in SLURM 2.1.3-2
 ==========================
