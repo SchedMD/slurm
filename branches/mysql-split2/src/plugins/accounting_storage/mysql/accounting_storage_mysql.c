@@ -494,12 +494,12 @@ static int _as_mysql_acct_check_tables(MYSQL *db_conn)
 	slurm_mutex_unlock(&as_mysql_cluster_list_lock);
 	if(rc != SLURM_SUCCESS)
 		return rc;
-	DEF_TIMERS;
-	START_TIMER;
+	/* DEF_TIMERS; */
+	/* START_TIMER; */
 	if(as_mysql_convert_tables(db_conn) != SLURM_SUCCESS)
 		return SLURM_ERROR;
-	END_TIMER;
-	info("conversion took %s", TIME_STR);
+	/* END_TIMER; */
+	/* info("conversion took %s", TIME_STR); */
 
 	if(mysql_db_create_table(db_conn, acct_coord_table,
 				 acct_coord_table_fields,

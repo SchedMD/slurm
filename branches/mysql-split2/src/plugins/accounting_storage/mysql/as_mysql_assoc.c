@@ -2445,7 +2445,7 @@ extern List as_mysql_modify_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	xstrfmtcat(object, "t1.%s", massoc_req_inx[0]);
 	for(i=1; i<MASSOC_COUNT; i++)
-		xstrfmtcat(object, "t1.%s", massoc_req_inx[i]);
+		xstrfmtcat(object, ", t1.%s", massoc_req_inx[i]);
 
 	ret_list = list_create(slurm_destroy_char);
 
