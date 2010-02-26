@@ -18,6 +18,9 @@ documents those changes that are of interest to users and admins.
     initialization failure (previously the failures would cancel job step, 
     but retain job allocation).
  -- Fix bug in srun for task count so large that it overflows int data type.
+ -- Fix important bug in select/cons_res handling of ntasks-per-core parameter
+    that was revealed by a bug fixed in v2.1.3. Bug produced fatal error for
+    slurmctld: "cons_res: cpus computation error".
 
 * Changes in SLURM 2.1.3-2
 ==========================
