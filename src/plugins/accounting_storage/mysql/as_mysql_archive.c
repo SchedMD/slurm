@@ -82,6 +82,7 @@ typedef struct {
 	char *state;
 	char *submit;
 	char *suspended;
+	char *timelimit;
 	char *track_steps;
 	char *uid;
 	char *wckey;
@@ -167,6 +168,7 @@ static char *job_req_inx[] = {
 	"id_assoc",
 	"id_block",
 	"exit_code",
+	"timelimit",
 	"time_eligible",
 	"time_end",
 	"id_group",
@@ -198,6 +200,7 @@ enum {
 	JOB_REQ_ASSOCID,
 	JOB_REQ_BLOCKID,
 	JOB_REQ_COMP_CODE,
+	JOB_REQ_TIMELIMIT,
 	JOB_REQ_ELIGIBLE,
 	JOB_REQ_END,
 	JOB_REQ_GID,
@@ -365,6 +368,7 @@ static void _pack_local_job(local_job_t *object,
 	packstr(object->associd, buffer);
 	packstr(object->blockid, buffer);
 	packstr(object->comp_code, buffer);
+	packstr(object->timelimit, buffer);
 	packstr(object->eligible, buffer);
 	packstr(object->end, buffer);
 	packstr(object->gid, buffer);
@@ -402,6 +406,7 @@ static int _unpack_local_job(local_job_t *object,
 	unpackstr_ptr(&object->associd, &tmp32, buffer);
 	unpackstr_ptr(&object->blockid, &tmp32, buffer);
 	unpackstr_ptr(&object->comp_code, &tmp32, buffer);
+	unpackstr_ptr(&object->timelimit, &tmp32, buffer);
 	unpackstr_ptr(&object->eligible, &tmp32, buffer);
 	unpackstr_ptr(&object->end, &tmp32, buffer);
 	unpackstr_ptr(&object->gid, &tmp32, buffer);
@@ -1329,6 +1334,7 @@ static uint32_t _archive_jobs(mysql_conn_t *mysql_conn, char *cluster_name,
 		job.associd = row[JOB_REQ_ASSOCID];
 		job.blockid = row[JOB_REQ_BLOCKID];
 		job.comp_code = row[JOB_REQ_COMP_CODE];
+		job.timelimit = row[JOB_REQ_TIMELIMIT];
 		job.eligible = row[JOB_REQ_ELIGIBLE];
 		job.end = row[JOB_REQ_END];
 		job.gid = row[JOB_REQ_GID];
@@ -1406,6 +1412,7 @@ static char *_load_jobs(uint16_t rpc_version, Buf buffer,
 			   object.associd,
 			   object.blockid,
 			   object.comp_code,
+			   object.timelimit,
 			   object.eligible,
 			   object.end,
 			   object.gid,

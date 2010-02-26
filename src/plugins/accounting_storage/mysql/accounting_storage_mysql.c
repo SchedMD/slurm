@@ -1573,7 +1573,8 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 
 		xstrfmtcat(query,
 			   "UPDATE \"%s_%s\" SET rgt = rgt - %s WHERE rgt > %s;"
-			   "UPDATE \"%s_%s\" SET lft = lft - %s WHERE lft > %s;",
+			   "UPDATE \"%s_%s\" SET "
+			   "lft = lft - %s WHERE lft > %s;",
 			   cluster_name, assoc_table, row2[2], row2[1],
 			   cluster_name, assoc_table, row2[2], row2[1]);
 
@@ -1603,7 +1604,8 @@ just_update:
 	 * we don't want any residue from past associations lingering
 	 * around.
 	 */
-	query = xstrdup_printf("update \"%s_%s\" as t1 set mod_time=%d, deleted=1, "
+	query = xstrdup_printf("update \"%s_%s\" as t1 set "
+			       "mod_time=%d, deleted=1, "
 			       "shares=1, max_jobs=NULL, "
 			       "max_nodes_pj=NULL, "
 			       "max_wall_pj=NULL, "

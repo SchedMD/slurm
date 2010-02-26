@@ -97,8 +97,8 @@ static int _get_user_coords(mysql_conn_t *mysql_conn, acct_user_rec_t *user)
 			else
 				xstrfmtcat(query,
 					   "select distinct t1.acct from "
-					   "\"%s_%s\" as t1, \"%s_%s\" as t2 where "
-					   "t1.deleted=0 && ",
+					   "\"%s_%s\" as t1, \"%s_%s\" "
+					   "as t2 where t1.deleted=0 && ",
 					   cluster_name, assoc_table,
 					   cluster_name, assoc_table);
 			/* Make sure we don't get the same
