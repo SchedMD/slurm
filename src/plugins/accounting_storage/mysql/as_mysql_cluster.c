@@ -144,7 +144,7 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		}
 
 		/* we always have a ', ' as the first 2 chars */
-		tmp_extra = fix_double_quotes(extra+2);
+		tmp_extra = slurm_add_slash_to_quotes(extra+2);
 
 		xstrfmtcat(query,
 			   "insert into %s "
@@ -940,9 +940,9 @@ extern int as_mysql_node_down(mysql_conn_t *mysql_conn,
 		cpus = node_ptr->cpus;
 
 	if (reason)
-		my_reason = fix_double_quotes(reason);
+		my_reason = slurm_add_slash_to_quotes(reason);
 	else
-		my_reason = fix_double_quotes(node_ptr->reason);
+		my_reason = slurm_add_slash_to_quotes(node_ptr->reason);
 
 	debug2("inserting %s(%s) with %u cpus",
 	       node_ptr->name, mysql_conn->cluster_name, cpus);

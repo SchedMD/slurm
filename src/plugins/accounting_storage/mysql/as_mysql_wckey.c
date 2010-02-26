@@ -317,7 +317,7 @@ extern int as_mysql_add_wckeys(mysql_conn_t *mysql_conn, uint32_t uid,
 		}
 
 		/* we always have a ', ' as the first 2 chars */
-		tmp_extra = fix_double_quotes(extra+2);
+		tmp_extra = slurm_add_slash_to_quotes(extra+2);
 
 		xstrfmtcat(query,
 			   "insert into %s "
