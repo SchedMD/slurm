@@ -103,7 +103,7 @@ void slurm_init_job_desc_msg(job_desc_msg_t * job_desc_msg)
 }
 
 /*
- * slurm_init_update_step_msg - initialize step update message with default 
+ * slurm_init_update_step_msg - initialize step update message with default
  *	values before calling slurm_update_step()
  * OUT step_msg - step update messasge descriptor
  */
