@@ -328,43 +328,64 @@ done:
 	return rc;
 }
 
+static void _step_abort(slurm_step_ctx_t *ctx)
+{
+	struct step_launch_state *sls = ctx->launch_state;
+
+	if (!sls->abort_action_taken) {
+		slurm_kill_job_step(ctx->job_id, ctx->step_resp->job_step_id,
+				    SIGKILL);
+		sls->abort_action_taken = true;
+	}
+}
+
 /*
  * Block until all tasks have started.
  */
 int slurm_step_launch_wait_start(slurm_step_ctx_t *ctx)
 {
 	struct step_launch_state *sls = ctx->launch_state;
+	struct timespec ts;
+
+	ts.tv_sec  = time(NULL);
+	ts.tv_nsec = 0;
+	ts.tv_sec += 600;	/* 10 min allowed for launch */
+
 	/* Wait for all tasks to start */
 	pthread_mutex_lock(&sls->lock);
 	while (bit_set_count(sls->tasks_started) < sls->tasks_requested) {
 		if (sls->abort) {
-			if (!sls->abort_action_taken) {
-				slurm_kill_job_step(ctx->job_id,
-						    ctx->step_resp->
-						    job_step_id,
-						    SIGKILL);
-				sls->abort_action_taken = true;
-			}
+			_step_abort(ctx);
 			pthread_mutex_unlock(&sls->lock);
 			return SLURM_ERROR;
 		}
-		pthread_cond_wait(&sls->cond, &sls->lock);
+		if (pthread_cond_timedwait(&sls->cond, &sls->lock, &ts) ==
+		    ETIMEDOUT) {
+			error("timeout waiting for task launch");
+			sls->abort = true;
+			_step_abort(ctx);
+			pthread_cond_broadcast(&sls->cond);
+			pthread_mutex_unlock(&sls->lock);
+			return SLURM_ERROR;
+		}
 	}
 
 	if (sls->user_managed_io) {
-		while(sls->io.user->connected < sls->tasks_requested) {
+		while (sls->io.user->connected < sls->tasks_requested) {
 			if (sls->abort) {
-				if (!sls->abort_action_taken) {
-					slurm_kill_job_step(
-						ctx->job_id,
-						ctx->step_resp->job_step_id,
-						SIGKILL);
-					sls->abort_action_taken = true;
-				}
+				_step_abort(ctx);
 				pthread_mutex_unlock(&sls->lock);
 				return SLURM_ERROR;
 			}
-			pthread_cond_wait(&sls->cond, &sls->lock);
+			if (pthread_cond_timedwait(&sls->cond, &sls->lock,
+						   &ts) == ETIMEDOUT) {
+				error("timeout waiting for I/O connect");
+				sls->abort = true;
+				_step_abort(ctx);
+				pthread_cond_broadcast(&sls->cond);
+				pthread_mutex_unlock(&sls->lock);
+				return SLURM_ERROR;
+			}
 		}
 	}
 
