@@ -651,7 +651,6 @@ extern void mins2time_str(uint32_t time, char *string, int size)
 		minutes = time % 60;
 		hours = time / 60 % 24;
 		days = time / 1440;
-
 		if (days)
 			snprintf(string, size,
 				"%ld-%2.2ld:%2.2ld:%2.2ld",

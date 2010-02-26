@@ -353,6 +353,7 @@ AC_CONFIG_FILES([Makefile
 		 src/sview/Makefile
 		 src/plugins/Makefile
 		 src/plugins/accounting_storage/Makefile
+		 src/plugins/accounting_storage/common/Makefile
 		 src/plugins/accounting_storage/filetxt/Makefile
 		 src/plugins/accounting_storage/mysql/Makefile
 		 src/plugins/accounting_storage/pgsql/Makefile

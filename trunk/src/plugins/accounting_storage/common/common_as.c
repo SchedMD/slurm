@@ -4,7 +4,7 @@
  *  $Id: common_as.c 13061 2008-01-22 21:23:56Z da $
  *****************************************************************************
  *  Copyright (C) 2004-2007 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *
@@ -42,6 +42,7 @@
 #include "src/common/slurmdbd_defs.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/xstring.h"
+#include "src/slurmdbd/read_config.h"
 #include "common_as.h"
 
 extern char *assoc_hour_table;
@@ -57,6 +58,42 @@ extern char *wckey_day_table;
 extern char *wckey_month_table;
 
 
+/* here to add \\ to all \" in a string */
+extern char *fix_double_quotes(char *str)
+{
+	int i=0, start=0;
+	char *fixed = NULL;
+
+	if(!str)
+		return NULL;
+
+	while(str[i]) {
+		if((str[i] == '"')) {
+			char *tmp = xstrndup(str+start, i-start);
+			xstrfmtcat(fixed, "%s\\\"", tmp);
+			xfree(tmp);
+			start = i+1;
+		}
+
+		if((str[i] == '\'')) {
+			char *tmp = xstrndup(str+start, i-start);
+			xstrfmtcat(fixed, "%s\\\'", tmp);
+			xfree(tmp);
+			start = i+1;
+		}
+
+		i++;
+	}
+
+	if((i-start) > 0) {
+		char *tmp = xstrndup(str+start, i-start);
+		xstrcat(fixed, tmp);
+		xfree(tmp);
+	}
+
+	return fixed;
+}
+
 /*
  * send_accounting_update - send update to controller of cluster
  * IN update_list: updates to send
@@ -66,9 +103,8 @@ extern char *wckey_month_table;
  * IN rpc_version: rpc version of cluster
  * RET:  error code
  */
-extern int
-send_accounting_update(List update_list, char *cluster, char *host,
-		       uint16_t port, uint16_t rpc_version)
+extern int send_accounting_update(List update_list, char *cluster, char *host,
+				  uint16_t port, uint16_t rpc_version)
 {
 	accounting_update_msg_t msg;
 	slurm_msg_t req;
@@ -81,6 +117,7 @@ send_accounting_update(List update_list, char *cluster, char *host,
 		      SLURMDBD_VERSION);
 		return SLURM_ERROR;
 	}
+	memset(&msg, 0, sizeof(accounting_update_msg_t));
 	msg.rpc_version = rpc_version;
 	msg.update_list = update_list;
 
@@ -90,7 +127,8 @@ send_accounting_update(List update_list, char *cluster, char *host,
 	slurm_msg_t_init(&req);
 	slurm_set_addr_char(&req.address, port, host);
 	req.msg_type = ACCOUNTING_UPDATE_MSG;
-	req.flags = SLURM_GLOBAL_AUTH_KEY;
+	if(slurmdbd_conf)
+		req.flags = SLURM_GLOBAL_AUTH_KEY;
 	req.data = &msg;
 	slurm_msg_t_init(&resp);
 
@@ -110,7 +148,8 @@ send_accounting_update(List update_list, char *cluster, char *host,
 		slurm_free_return_code_msg(resp.data);
 		break;
 	default:
-		error("Unknown response message %u", resp.msg_type);
+		if(rc != SLURM_ERROR)
+			error("Unknown response message %u", resp.msg_type);
 		rc = SLURM_ERROR;
 		break;
 	}
@@ -124,13 +163,19 @@ send_accounting_update(List update_list, char *cluster, char *host,
  * RET: error code
  * NOTE: the items in update_list are not deleted
  */
-extern int
-update_assoc_mgr(List update_list)
+extern int update_assoc_mgr(List update_list)
 {
 	int rc = SLURM_SUCCESS;
 	ListIterator itr = NULL;
 	acct_update_object_t *object = NULL;
 
+	/* NOTE: you can not use list_pop, or list_push
+	   anywhere either, since mysql is
+	   exporting something of the same type as a macro,
+	   which messes everything up (my_list.h is the bad boy).
+	   So we are just going to delete each item as it
+	   comes out.
+	*/
 	itr = list_iterator_create(update_list);
 	while((object = list_next(itr))) {
 		if(!object->objects || !list_count(object->objects)) {
@@ -178,6 +223,9 @@ update_assoc_mgr(List update_list)
  * IN type: update type
  * IN object: object updated
  * RET: error code
+ *
+ * NOTE: This function will take the object given and free it later so it
+ *       needed to be removed from a list if in one before.
  */
 extern int
 addto_update_list(List update_list, acct_update_type_t type, void *object)
@@ -220,6 +268,7 @@ addto_update_list(List update_list, acct_update_type_t type, void *object)
 	case ACCT_ADD_ASSOC:
 	case ACCT_MODIFY_ASSOC:
 	case ACCT_REMOVE_ASSOC:
+		xassert(((acct_association_rec_t *)object)->cluster);
 		update_object->objects = list_create(
 			destroy_acct_association_rec);
 		break;
@@ -232,6 +281,7 @@ addto_update_list(List update_list, acct_update_type_t type, void *object)
 	case ACCT_ADD_WCKEY:
 	case ACCT_MODIFY_WCKEY:
 	case ACCT_REMOVE_WCKEY:
+		xassert(((acct_wckey_rec_t *)object)->cluster);
 		update_object->objects = list_create(
 			destroy_acct_wckey_rec);
 		break;
@@ -240,7 +290,7 @@ addto_update_list(List update_list, acct_update_type_t type, void *object)
 		error("unknown type set in update_object: %d", type);
 		return SLURM_ERROR;
 	}
-	debug3("XXX: update object with type %d added", type);
+	debug4("XXX: update object with type %d added", type);
 	list_append(update_object->objects, object);
 	return SLURM_SUCCESS;
 }
@@ -273,7 +323,8 @@ dump_update_list(List update_list)
 	itr = list_iterator_create(update_list);
 	while((object = list_next(itr))) {
 		if(!object->objects || !list_count(object->objects)) {
-			debug3("\tUPDATE OBJECT WITH NO RECORDS, type: %d", object->type);
+			debug3("\tUPDATE OBJECT WITH NO RECORDS, type: %d",
+			       object->type);
 			continue;
 		}
 		switch(object->type) {
@@ -511,3 +562,55 @@ merge_delta_qos_list(List qos_list, List delta_qos_list)
 	list_iterator_destroy(new_itr);
 	list_iterator_destroy(curr_itr);
 }
+
+extern bool is_user_min_admin_level(void *db_conn, uid_t uid,
+				    acct_admin_level_t min_level)
+{
+	bool is_admin = 1;
+	/* This only works when running though the slurmdbd.
+	 * THERE IS NO AUTHENTICATION WHEN RUNNNING OUT OF THE
+	 * SLURMDBD!
+	 */
+	if(slurmdbd_conf) {
+		/* We have to check the authentication here in the
+		 * plugin since we don't know what accounts are being
+		 * referenced until after the query.
+		 */
+		if((uid != slurmdbd_conf->slurm_user_id && uid != 0)
+		   && assoc_mgr_get_admin_level(db_conn, uid) < min_level)
+			is_admin = 0;
+	}
+	return is_admin;
+}
+
+extern bool is_user_coord(acct_user_rec_t *user, char *account)
+{
+	ListIterator itr;
+	acct_coord_rec_t *coord;
+
+	xassert(user);
+	xassert(account);
+
+	if (!user->coord_accts || !list_count(user->coord_accts))
+		return 0;
+
+	itr = list_iterator_create(user->coord_accts);
+	while((coord = list_next(itr))) {
+		if(!strcasecmp(coord->name, account))
+			break;
+	}
+	list_iterator_destroy(itr);
+	return coord ? 1 : 0;
+}
+
+extern bool is_user_any_coord(void *db_conn, acct_user_rec_t *user)
+{
+	xassert(user);
+	if(assoc_mgr_fill_in_user(db_conn, user, 1, NULL) != SLURM_SUCCESS) {
+		error("couldn't get information for this user %s(%d)",
+		      user->name, user->uid);
+		return 0;
+	}
+	return (user->coord_accts && list_count(user->coord_accts));
+}
+

@@ -1,12 +1,11 @@
 /*****************************************************************************\
- *  mysql_problems.h - functions for finding out problems in the
- *                     associations and other places in the database.
+ *  as_mysql_usage.h - functions dealing with usage.
  *****************************************************************************
  *
- *  Copyright (C) 2009 Lawrence Livermore National Security.
+ *  Copyright (C) 2004-2007 The Regents of the University of California.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
- *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
@@ -38,19 +37,22 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _HAVE_MYSQL_PROBLEMS_H
-#define _HAVE_MYSQL_PROBLEMS_H
+#ifndef _HAVE_MYSQL_USAGE_H
+#define _HAVE_MYSQL_USAGE_H
 
-#include "mysql_jobacct_process.h"
+#include "accounting_storage_mysql.h"
 
-extern int mysql_acct_no_assocs(mysql_conn_t *mysql_conn,
-				acct_association_cond_t *assoc_cond,
-				List ret_list);
-extern int mysql_acct_no_users(mysql_conn_t *mysql_conn,
-			       acct_association_cond_t *assoc_cond,
-			       List ret_list);
-extern int mysql_user_no_assocs_or_no_uid(
-	mysql_conn_t *mysql_conn, acct_association_cond_t *assoc_cond,
-	List ret_list);
+extern time_t global_last_rollup;
+extern pthread_mutex_t rollup_lock;
+
+extern int get_usage_for_list(mysql_conn_t *mysql_conn,
+			      slurmdbd_msg_type_t type, List object_list,
+			      char *cluster_name, time_t start, time_t end);
+extern int as_mysql_get_usage(mysql_conn_t *mysql_conn, uid_t uid,
+			  void *in, slurmdbd_msg_type_t type,
+			  time_t start, time_t end);
+extern int as_mysql_roll_usage(mysql_conn_t *mysql_conn,
+			    time_t sent_start, time_t sent_end,
+			    uint16_t archive_data);
 
 #endif

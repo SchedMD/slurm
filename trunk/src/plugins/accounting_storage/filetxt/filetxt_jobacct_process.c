@@ -1228,7 +1228,8 @@ extern List filetxt_jobacct_process_get_jobs(acct_job_cond_t *job_cond)
 					if (curr_job->jobid ==
 					    jobacct_job->jobid) {
 						list_delete_item(itr2);
-						info("removing job %d", jobacct_job->jobid);
+						info("removing job %d",
+						     jobacct_job->jobid);
 						break;
 					}
 				}

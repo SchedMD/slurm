@@ -938,7 +938,7 @@ void parse_command_line(int argc, char **argv)
 			exit(1);
 		}
 		xfree(acct_type);
-		acct_db_conn = acct_storage_g_get_connection(false, 0, false);
+		acct_db_conn = acct_storage_g_get_connection(false, 0, false, NULL);
 		if(errno != SLURM_SUCCESS) {
 			error("Problem talking to the database: %m");
 			exit(1);

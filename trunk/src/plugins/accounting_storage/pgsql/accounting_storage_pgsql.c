@@ -216,7 +216,7 @@ extern int fini ( void )
 }
 
 extern void *acct_storage_p_get_connection(bool make_agent, int conn_num,
-					   bool rollback)
+					   bool rollback, char *cluster_name)
 {
 	pgsql_conn_t *pg_conn = xmalloc(sizeof(pgsql_conn_t));
 
@@ -227,6 +227,7 @@ extern void *acct_storage_p_get_connection(bool make_agent, int conn_num,
 
 	pg_conn->rollback = rollback;
 	pg_conn->conn = conn_num;
+	pg_conn->cluster_name = xstrdup(cluster_name);
 	pg_conn->update_list = list_create(destroy_acct_update_object);
 
 	errno = SLURM_SUCCESS;
@@ -247,6 +248,7 @@ extern int acct_storage_p_close_connection(pgsql_conn_t **pg_conn)
 	acct_storage_p_commit((*pg_conn), 0); /* discard changes */
 	pgsql_close_db_connection(&(*pg_conn)->db_conn);
 	list_destroy((*pg_conn)->update_list);
+	xfree((*pg_conn)->cluster_name);
 	xfree((*pg_conn));
 
 	return SLURM_SUCCESS;
@@ -358,7 +360,7 @@ extern List acct_storage_p_modify_users(pgsql_conn_t *pg_conn, uint32_t uid,
 	return as_p_modify_users(pg_conn, uid, user_cond, user);
 }
 
-extern List acct_storage_p_modify_accounts(pgsql_conn_t *pg_conn, uint32_t uid,
+extern List acct_storage_p_modify_accts(pgsql_conn_t *pg_conn, uint32_t uid,
 					   acct_account_cond_t *acct_cond,
 					   acct_account_rec_t *acct)
 {
@@ -531,36 +533,52 @@ extern int acct_storage_p_roll_usage(pgsql_conn_t *pg_conn,
 }
 
 extern int clusteracct_storage_p_node_down(pgsql_conn_t *pg_conn,
-					   char *cluster,
 					   struct node_record *node_ptr,
 					   time_t event_time, char *reason,
 					   uint32_t reason_uid)
 {
-	return cs_p_node_down(pg_conn, cluster, node_ptr, event_time,
+	if(!pg_conn->cluster_name) {
+		error("%s:%d no cluster name", THIS_FILE, __LINE__);
+		return SLURM_ERROR;
+	}
+
+	return cs_p_node_down(pg_conn, node_ptr, event_time,
 			      reason, reason_uid);
 }
 extern int clusteracct_storage_p_node_up(pgsql_conn_t *pg_conn,
-					 char *cluster,
 					 struct node_record *node_ptr,
 					 time_t event_time)
 {
-	return cs_p_node_up(pg_conn, cluster, node_ptr, event_time);
+	if(!pg_conn->cluster_name) {
+		error("%s:%d no cluster name", THIS_FILE, __LINE__);
+		return SLURM_ERROR;
+	}
+
+	return cs_p_node_up(pg_conn, node_ptr, event_time);
 }
 
 extern int clusteracct_storage_p_register_ctld(pgsql_conn_t *pg_conn,
-					       char *cluster,
 					       uint16_t port)
 {
-	return cs_pg_register_ctld(pg_conn, cluster, port);
+	if(!pg_conn->cluster_name) {
+		error("%s:%d no cluster name", THIS_FILE, __LINE__);
+		return SLURM_ERROR;
+	}
+
+	return cs_pg_register_ctld(pg_conn, pg_conn->cluster_name, port);
 }
 
 extern int clusteracct_storage_p_cluster_cpus(pgsql_conn_t *pg_conn,
-					       char *cluster,
 					       char *cluster_nodes,
 					       uint32_t cpus,
 					       time_t event_time)
 {
-	return cs_p_cluster_cpus(pg_conn, cluster, cluster_nodes,
+	if(!pg_conn->cluster_name) {
+		error("%s:%d no cluster name", THIS_FILE, __LINE__);
+		return SLURM_ERROR;
+	}
+
+	return cs_p_cluster_cpus(pg_conn, cluster_nodes,
 				 cpus, event_time);
 }
 
@@ -576,10 +594,14 @@ extern int clusteracct_storage_p_get_usage(
  * load into the storage the start of a job
  */
 extern int jobacct_storage_p_job_start(pgsql_conn_t *pg_conn,
-				       char *cluster_name,
 				       struct job_record *job_ptr)
 {
-	return js_p_job_start(pg_conn, cluster_name, job_ptr);
+	if(!pg_conn->cluster_name) {
+		error("%s:%d no cluster name", THIS_FILE, __LINE__);
+		return SLURM_ERROR;
+	}
+
+	return js_p_job_start(pg_conn, job_ptr);
 }
 
 /*
@@ -588,6 +610,11 @@ extern int jobacct_storage_p_job_start(pgsql_conn_t *pg_conn,
 extern int jobacct_storage_p_job_complete(pgsql_conn_t *pg_conn,
 					  struct job_record *job_ptr)
 {
+	if(!pg_conn->cluster_name) {
+		error("%s:%d no cluster name", THIS_FILE, __LINE__);
+		return SLURM_ERROR;
+	}
+
 	return js_p_job_complete(pg_conn, job_ptr);
 }
 
@@ -597,6 +624,11 @@ extern int jobacct_storage_p_job_complete(pgsql_conn_t *pg_conn,
 extern int jobacct_storage_p_step_start(pgsql_conn_t *pg_conn,
 					struct step_record *step_ptr)
 {
+	if(!pg_conn->cluster_name) {
+		error("%s:%d no cluster name", THIS_FILE, __LINE__);
+		return SLURM_ERROR;
+	}
+
 	return js_p_step_start(pg_conn, step_ptr);
 }
 
@@ -606,6 +638,11 @@ extern int jobacct_storage_p_step_start(pgsql_conn_t *pg_conn,
 extern int jobacct_storage_p_step_complete(pgsql_conn_t *pg_conn,
 					   struct step_record *step_ptr)
 {
+	if(!pg_conn->cluster_name) {
+		error("%s:%d no cluster name", THIS_FILE, __LINE__);
+		return SLURM_ERROR;
+	}
+
 	return js_p_step_complete(pg_conn, step_ptr);
 }
 
@@ -615,6 +652,11 @@ extern int jobacct_storage_p_step_complete(pgsql_conn_t *pg_conn,
 extern int jobacct_storage_p_suspend(pgsql_conn_t *pg_conn,
 				     struct job_record *job_ptr)
 {
+	if(!pg_conn->cluster_name) {
+		error("%s:%d no cluster name", THIS_FILE, __LINE__);
+		return SLURM_ERROR;
+	}
+
 	return js_p_suspend(pg_conn, job_ptr);
 }
 
@@ -657,7 +699,6 @@ extern int acct_storage_p_update_shares_used(void *db_conn,
 }
 
 extern int acct_storage_p_flush_jobs_on_cluster(pgsql_conn_t *pg_conn,
-						char *cluster,
 						time_t event_time)
 {
 	/* put end times for a clean start */

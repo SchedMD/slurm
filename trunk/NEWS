@@ -35,6 +35,17 @@ documents those changes that are of interest to users and admins.
  -- Added contribs/web_apps/chart_stats.cgi, a web app that invokes sreport to
     retrieve from the accounting storage db a user's request for job usage or
     machine utilization statistics and charts the results to a browser.
+ -- Massive change to the schema in the storage_accounting/mysql plugin.  When
+    starting the slurmdbd the process of conversion may take a few minutes.
+    You might also see some errors such as 'error: mysql_query failed: 1206
+    The total number of locks exceeds the lock table size'.  If you get this,
+    do not worry, it is because your setting of innodb_buffer_pool_size in
+    your my.cnf file is not set or set too low.  A decent value there should
+    be 64M or higher depending on the system you are running on.  See
+    RELEASE_NOTES for more information.  But setting this and then
+    restarting the mysqld and slurmdbd will put things right.  After this
+    change we have noticed 50-75% increase in performance with sreport and
+    sacct.
 
 * Changes in SLURM 2.2.0.pre1
 =============================
