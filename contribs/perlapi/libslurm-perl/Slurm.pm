@@ -157,17 +157,6 @@ $constants{ctx_keys} = [qw /
 		SLURM_STEP_CTX_USER_MANAGED_SOCKETS
 		/];
 
-$constants{select_type_plugin_info} = [qw /
-		SELECT_TYPE_INFO_NONE
-		CR_CPU
-		CR_SOCKET
-		CR_CORE
-		CR_MEMORY
-		CR_SOCKET_MEMORY
-		CR_CORE_MEMORY
-		CR_CPU_MEMORY
-		/];
-
 foreach my $const(values(%constants)) {
     push @{$constants{all}}, @$const;
 }
