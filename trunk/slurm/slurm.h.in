@@ -492,17 +492,17 @@ enum ctx_keys {
 #define CR_CPU		0x0001	/* Resources are shared down to the level of
 				 * logical processors which can be socket,
 				 * core, or thread depending on the system. */
-#define CR_SOCKET	0x0002	/* Resources are shared down to the socket 
+#define CR_SOCKET	0x0002	/* Resources are shared down to the socket
 				 * level. Jobs will not be co-allocated
 				 * within a socket. */
 #define CR_CORE		0x0004	/* Resources are shared down to the core level.
-				 * Jobs will not be co-allocated within a 
+				 * Jobs will not be co-allocated within a
 				 * core. */
-#define CR_MEMORY	0x0010	/* Memory as consumable resources. Memory is 
+#define CR_MEMORY	0x0010	/* Memory as consumable resources. Memory is
 				 * not over-commited when selected as a CR. */
 #define CR_ONE_TASK_PER_CORE 0x0100
 				/* By default, schedule only one task per core.
-				 * Without this option, tasks would be 
+				 * Without this option, tasks would be
 				 * allocated threads. */
 
 #define MEM_PER_CPU  0x80000000
