@@ -950,10 +950,9 @@ extern int as_mysql_roll_usage(mysql_conn_t *mysql_conn,
 		else if(!sent_end)
 			query = xstrdup_printf("update %s set daily_rollup=%d",
 					       last_ran_table, day_end);
-	} else {
+	} else
 		debug2("no need to run this day %d <= %d",
 		       day_end, day_start);
-	}
 
 	if(month_end-month_start > 0) {
 		if(query && !sent_end)
@@ -962,10 +961,9 @@ extern int as_mysql_roll_usage(mysql_conn_t *mysql_conn,
 			query = xstrdup_printf(
 				"update %s set monthly_rollup=%d",
 				last_ran_table, month_end);
-	} else {
+	} else
 		debug2("no need to run this month %d <= %d",
 		       month_end, month_start);
-	}
 
 	if(query) {
 		debug3("%d(%s:%d) query\n%s",
