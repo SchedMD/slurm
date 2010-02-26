@@ -544,8 +544,8 @@ is_user:
 }
 
 extern int as_mysql_roll_usage(mysql_conn_t *mysql_conn,
-			    time_t sent_start, time_t sent_end,
-			    uint16_t archive_data)
+			       time_t sent_start, time_t sent_end,
+			       uint16_t archive_data)
 {
 	int rc = SLURM_SUCCESS;
 	int i = 0;
@@ -724,7 +724,7 @@ extern int as_mysql_roll_usage(mysql_conn_t *mysql_conn,
 		itr = list_iterator_create(as_mysql_cluster_list);
 		while((tmp = list_next(itr))) {
 			if((rc = as_mysql_hourly_rollup(mysql_conn, tmp,
-						     start_time, end_time))
+							start_time, end_time))
 			   != SLURM_SUCCESS)
 				break;
 		}
@@ -765,8 +765,8 @@ extern int as_mysql_roll_usage(mysql_conn_t *mysql_conn,
 		itr = list_iterator_create(as_mysql_cluster_list);
 		while((tmp = list_next(itr))) {
 			if((rc = as_mysql_daily_rollup(mysql_conn, tmp,
-						    start_time, end_time,
-						    archive_data))
+						       start_time, end_time,
+						       archive_data))
 			   != SLURM_SUCCESS)
 				break;
 		}
