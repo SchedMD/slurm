@@ -1814,6 +1814,8 @@ static bool _opt_verify(void)
 		core_format_enable (opt.core_type);
 		/* massage the numbers */
 		if (opt.nodelist) {
+			if (hl)	/* possibly built above */
+				hostlist_destroy(hl);
 			hl = hostlist_create(opt.nodelist);
 			if (!hl) {
 				error("memory allocation failure");
@@ -1849,12 +1851,10 @@ static bool _opt_verify(void)
 		/*
 		 *  make sure # of procs >= min_nodes
 		 */
-		if (opt.nprocs < opt.min_nodes) {
-
+		if ((opt.nprocs < opt.min_nodes) && (opt.nprocs > 0)) {
 			info ("Warning: can't run %d processes on %d "
 			      "nodes, setting nnodes to %d",
 			      opt.nprocs, opt.min_nodes, opt.nprocs);
-
 			opt.min_nodes = opt.nprocs;
 			opt.nodes_set_opt = true;
 			if (opt.max_nodes
