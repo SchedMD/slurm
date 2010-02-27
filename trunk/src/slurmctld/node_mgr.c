@@ -978,7 +978,7 @@ extern void restore_node_features(void)
 			     !strcmp(node_ptr1->features, 
 				     node_ptr2->features))) {
 				/* Reset this job's feature at same time */
-				hostlist_push(hl, node_ptr2->name)
+				hostlist_push(hl, node_ptr2->name);
 			}
 		}
 
