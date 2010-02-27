@@ -269,8 +269,6 @@ static int _match_feature(char *seek, struct node_set *node_set_ptr)
  * IN part_max_share - current partition's node sharing policy
  * IN cons_res_flag - 1 if the consumable resources flag is enable, 0 otherwise
  *
- * RET - 1 if nodes can be shared, 0 if nodes cannot be shared
- *
  *
  * The followed table details the node SHARED state for the various scenarios
  *
@@ -312,6 +310,7 @@ _resolve_shared_status(uint16_t user_flag, uint16_t part_max_share,
 	/* no sharing if part=EXCLUSIVE */
 	if (part_max_share == 0)
 		return 0;
+
 	/* sharing if part=FORCE with count > 1 */
 	if ((part_max_share & SHARED_FORCE) &&
 	    ((part_max_share & (~SHARED_FORCE)) > 1))
