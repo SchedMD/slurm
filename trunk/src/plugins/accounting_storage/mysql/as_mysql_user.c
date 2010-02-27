@@ -716,7 +716,7 @@ extern List as_mysql_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 	char *query = NULL, *object = NULL, *extra = NULL, *last_user = NULL;
 	char *user_name = NULL;
 	time_t now = time(NULL);
-	int set = 0, is_admin=0, rc;
+	int set = 0, is_admin=0, rc = SLURM_SUCCESS;
 	ListIterator itr = NULL;
 	acct_user_rec_t *user_rec = NULL;
 	List ret_list = NULL;
