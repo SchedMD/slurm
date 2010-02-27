@@ -29,55 +29,11 @@ hv_to_job_desc_msg(HV* hv, job_desc_msg_t* job_desc_msg)
 
 	slurm_init_job_desc_msg(job_desc_msg);
 
-	FETCH_FIELD(hv, job_desc_msg, contiguous, uint16_t, FALSE);
-	FETCH_FIELD(hv, job_desc_msg, kill_on_node_fail, uint16_t, FALSE);
-	/* environment, env_size */
-	if((svp = hv_fetch(hv, "environment", 11, FALSE))) {
-		if(SvROK(*svp) && SvTYPE(SvRV(*svp)) == SVt_PVHV) {
-			environ_hv = (HV*)SvRV(*svp);
-			num_keys = HvKEYS(environ_hv);
-			job_desc_msg->env_size = num_keys;
-			Newz(0, job_desc_msg->environment, num_keys + 1, char*);
-
-			hv_iterinit(environ_hv);
-			i = 0;
-			while((val = hv_iternextsv(environ_hv, &env_key, &klen))) {
-				env_val = SvPV(val, vlen);
-				Newz(0, (*(job_desc_msg->environment + i)), klen + vlen + 2, char);
-				sprintf(*(job_desc_msg->environment + i), "%s=%s", env_key, env_val);
-				i ++;
-			}
-		}
-		else {
-			Perl_warn(aTHX_ "`environment' of job descriptor is not a hash reference, ignored");
-		}
-	}
-	FETCH_FIELD(hv, job_desc_msg, features, charp, FALSE);
-	FETCH_FIELD(hv, job_desc_msg, reservation, charp, FALSE);
-	FETCH_FIELD(hv, job_desc_msg, immediate, uint16_t, FALSE);
-	FETCH_FIELD(hv, job_desc_msg, job_id, uint32_t, FALSE);
-	FETCH_FIELD(hv, job_desc_msg, name, charp, FALSE);
-	FETCH_FIELD(hv, job_desc_msg, pn_min_cpus, uint16_t, FALSE);
-	FETCH_FIELD(hv, job_desc_msg, pn_min_memory, uint16_t, FALSE);
-	FETCH_FIELD(hv, job_desc_msg, pn_min_tmp_disk, uint16_t, FALSE);
-	FETCH_FIELD(hv, job_desc_msg, partition, charp, FALSE);
-	FETCH_FIELD(hv, job_desc_msg, priority, uint32_t, FALSE);
-	FETCH_FIELD(hv, job_desc_msg, req_nodes, charp, FALSE);
-	FETCH_FIELD(hv, job_desc_msg, exc_nodes, charp, FALSE);
-	FETCH_FIELD(hv, job_desc_msg, shared, uint16_t, FALSE);
-	FETCH_FIELD(hv, job_desc_msg, time_limit, uint32_t, FALSE);
-	FETCH_FIELD(hv, job_desc_msg, min_cpus, uint32_t, FALSE);
-	FETCH_FIELD(hv, job_desc_msg, max_cpus, uint32_t, FALSE);
-	FETCH_FIELD(hv, job_desc_msg, min_nodes, uint32_t, FALSE);
-	FETCH_FIELD(hv, job_desc_msg, max_nodes, uint32_t, FALSE);
-	FETCH_FIELD(hv, job_desc_msg, min_sockets, uint16_t, FALSE);
-	FETCH_FIELD(hv, job_desc_msg, min_cores, uint16_t, FALSE);
-	FETCH_FIELD(hv, job_desc_msg, min_threads, uint16_t, FALSE);
-	FETCH_FIELD(hv, job_desc_msg, cpus_per_task, uint16_t, FALSE);
-	FETCH_FIELD(hv, job_desc_msg, ntasks_per_node, uint16_t, FALSE);
-	FETCH_FIELD(hv, job_desc_msg, ntasks_per_socket, uint16_t, FALSE);
-	FETCH_FIELD(hv, job_desc_msg, ntasks_per_core, uint16_t, FALSE);
-	FETCH_FIELD(hv, job_desc_msg, script, charp, FALSE);
+	FETCH_FIELD(hv, job_desc_msg, account, charp, FALSE);
+	FETCH_FIELD(hv, job_desc_msg, acctg_freq, uint16_t, FALSE);
+	FETCH_FIELD(hv, job_desc_msg, alloc_node, charp, FALSE);
+	FETCH_FIELD(hv, job_desc_msg, alloc_resp_port, uint16_t, FALSE);
+	FETCH_FIELD(hv, job_desc_msg, alloc_sid, uint32_t, FALSE);
 	/* argv, argc */
 	if((svp = hv_fetch(hv, "argv", 4, FALSE))) {
 		if(SvROK(*svp) && SvTYPE(SvRV(*svp)) == SVt_PVAV) {
@@ -99,30 +55,91 @@ hv_to_job_desc_msg(HV* hv, job_desc_msg_t* job_desc_msg)
 			Perl_warn(aTHX_ "`argv' of job descriptor is not an array reference, ignored");
 		}
 	}
-	FETCH_FIELD(hv, job_desc_msg, std_err, charp, FALSE);
-	FETCH_FIELD(hv, job_desc_msg, std_in, charp, FALSE);
-	FETCH_FIELD(hv, job_desc_msg, std_out, charp, FALSE);
-	FETCH_FIELD(hv, job_desc_msg, user_id, uint32_t, FALSE);
-	FETCH_FIELD(hv, job_desc_msg, group_id, uint32_t, FALSE);
-	FETCH_FIELD(hv, job_desc_msg, work_dir, charp, FALSE);
-	FETCH_FIELD(hv, job_desc_msg, alloc_node, charp, FALSE);
-	FETCH_FIELD(hv, job_desc_msg, alloc_sid, uint32_t, FALSE);
-	FETCH_FIELD(hv, job_desc_msg, resp_host, charp, FALSE);
-	FETCH_FIELD(hv, job_desc_msg, alloc_resp_port, uint16_t, FALSE);
-	FETCH_FIELD(hv, job_desc_msg, other_port, uint16_t, FALSE);
-	FETCH_FIELD(hv, job_desc_msg, dependency, charp, FALSE);
-	FETCH_FIELD(hv, job_desc_msg, overcommit, uint16_t, FALSE);
-	FETCH_FIELD(hv, job_desc_msg, num_tasks, uint32_t, FALSE);
-	FETCH_FIELD(hv, job_desc_msg, nice, uint16_t, FALSE);
-	FETCH_FIELD(hv, job_desc_msg, account, charp, FALSE);
-	FETCH_FIELD(hv, job_desc_msg, network, charp, FALSE);
-	FETCH_FIELD(hv, job_desc_msg, comment, charp, FALSE);
-	FETCH_FIELD(hv, job_desc_msg, task_dist, uint16_t, FALSE);
-	FETCH_FIELD(hv, job_desc_msg, plane_size, uint16_t, FALSE);
 	FETCH_FIELD(hv, job_desc_msg, begin_time, time_t, FALSE);
+	FETCH_FIELD(hv, job_desc_msg, ckpt_interval, uint16_t, FALSE);
+	FETCH_FIELD(hv, job_desc_msg, ckpt_dir, charp, FALSE);
+	FETCH_FIELD(hv, job_desc_msg, comment, charp, FALSE);
+	FETCH_FIELD(hv, job_desc_msg, contiguous, uint16_t, FALSE);
+	FETCH_FIELD(hv, job_desc_msg, cpu_bind, charp, FALSE);
+	FETCH_FIELD(hv, job_desc_msg, cpu_bind_type, uint16_t, FALSE);
+	FETCH_FIELD(hv, job_desc_msg, dependency, charp, FALSE);
+	FETCH_FIELD(hv, job_desc_msg, end_time, time_t, FALSE);
+
+	/* environment, env_size */
+	if((svp = hv_fetch(hv, "environment", 11, FALSE))) {
+		if(SvROK(*svp) && SvTYPE(SvRV(*svp)) == SVt_PVHV) {
+			environ_hv = (HV*)SvRV(*svp);
+			num_keys = HvKEYS(environ_hv);
+			job_desc_msg->env_size = num_keys;
+			Newz(0, job_desc_msg->environment, num_keys + 1, char*);
+
+			hv_iterinit(environ_hv);
+			i = 0;
+			while((val = hv_iternextsv(environ_hv, &env_key, &klen))) {
+				env_val = SvPV(val, vlen);
+				Newz(0, (*(job_desc_msg->environment + i)), klen + vlen + 2, char);
+				sprintf(*(job_desc_msg->environment + i), "%s=%s", env_key, env_val);
+				i ++;
+			}
+		}
+		else {
+			Perl_warn(aTHX_ "`environment' of job descriptor is not a hash reference, ignored");
+		}
+	}
+
+	FETCH_FIELD(hv, job_desc_msg, exc_nodes, charp, FALSE);
+	FETCH_FIELD(hv, job_desc_msg, features, charp, FALSE);
+	FETCH_FIELD(hv, job_desc_msg, group_id, uint32_t, FALSE);
+	FETCH_FIELD(hv, job_desc_msg, immediate, uint16_t, FALSE);
+	FETCH_FIELD(hv, job_desc_msg, job_id, uint32_t, FALSE);
+	FETCH_FIELD(hv, job_desc_msg, kill_on_node_fail, uint16_t, FALSE);
+	FETCH_FIELD(hv, job_desc_msg, licenses, charp, FALSE);
 	FETCH_FIELD(hv, job_desc_msg, mail_type, uint16_t, FALSE);
 	FETCH_FIELD(hv, job_desc_msg, mail_user, charp, FALSE);
+	FETCH_FIELD(hv, job_desc_msg, mem_bind, charp, FALSE);
+	FETCH_FIELD(hv, job_desc_msg, mem_bind_type, uint16_t, FALSE);
+	FETCH_FIELD(hv, job_desc_msg, name, charp, FALSE);
+	FETCH_FIELD(hv, job_desc_msg, network, charp, FALSE);
+	FETCH_FIELD(hv, job_desc_msg, nice, uint16_t, FALSE);
+	FETCH_FIELD(hv, job_desc_msg, num_tasks, uint32_t, FALSE);
+	FETCH_FIELD(hv, job_desc_msg, open_mode, uint8_t, FALSE);
+	FETCH_FIELD(hv, job_desc_msg, other_port, uint16_t, FALSE);
+	FETCH_FIELD(hv, job_desc_msg, overcommit, uint16_t, FALSE);
+	FETCH_FIELD(hv, job_desc_msg, partition, charp, FALSE);
+	FETCH_FIELD(hv, job_desc_msg, plane_size, uint16_t, FALSE);
+	FETCH_FIELD(hv, job_desc_msg, priority, uint32_t, FALSE);
+	FETCH_FIELD(hv, job_desc_msg, qos, charp, FALSE);
+	FETCH_FIELD(hv, job_desc_msg, resp_host, charp, FALSE);
+	FETCH_FIELD(hv, job_desc_msg, req_nodes, charp, FALSE);
 	FETCH_FIELD(hv, job_desc_msg, requeue, uint16_t, FALSE);
+	FETCH_FIELD(hv, job_desc_msg, reservation, charp, FALSE);
+	FETCH_FIELD(hv, job_desc_msg, script, charp, FALSE);
+	FETCH_FIELD(hv, job_desc_msg, shared, uint16_t, FALSE);
+	/* TODO: spank_job_env / spank_job_env_size */
+	FETCH_FIELD(hv, job_desc_msg, task_dist, uint16_t, FALSE);
+	FETCH_FIELD(hv, job_desc_msg, time_limit, uint32_t, FALSE);
+	FETCH_FIELD(hv, job_desc_msg, time_min, uint32_t, FALSE);
+	FETCH_FIELD(hv, job_desc_msg, user_id, uint32_t, FALSE);
+	FETCH_FIELD(hv, job_desc_msg, warn_signal, uint16_t, FALSE);
+	FETCH_FIELD(hv, job_desc_msg, warn_time, uint16_t, FALSE);
+	FETCH_FIELD(hv, job_desc_msg, work_dir, charp, FALSE);
+	/* job constraints: */
+	FETCH_FIELD(hv, job_desc_msg, cpus_per_task, uint16_t, FALSE);
+	FETCH_FIELD(hv, job_desc_msg, min_cpus, uint32_t, FALSE);
+	FETCH_FIELD(hv, job_desc_msg, max_cpus, uint32_t, FALSE);
+	FETCH_FIELD(hv, job_desc_msg, min_nodes, uint32_t, FALSE);
+	FETCH_FIELD(hv, job_desc_msg, max_nodes, uint32_t, FALSE);
+	FETCH_FIELD(hv, job_desc_msg, min_sockets, uint16_t, FALSE);
+	FETCH_FIELD(hv, job_desc_msg, min_cores, uint16_t, FALSE);
+	FETCH_FIELD(hv, job_desc_msg, min_threads, uint16_t, FALSE);
+	FETCH_FIELD(hv, job_desc_msg, ntasks_per_node, uint16_t, FALSE);
+	FETCH_FIELD(hv, job_desc_msg, ntasks_per_socket, uint16_t, FALSE);
+	FETCH_FIELD(hv, job_desc_msg, ntasks_per_core, uint16_t, FALSE);
+	FETCH_FIELD(hv, job_desc_msg, pn_min_cpus, uint16_t, FALSE);
+	FETCH_FIELD(hv, job_desc_msg, pn_min_memory, uint32_t, FALSE);
+	FETCH_FIELD(hv, job_desc_msg, pn_min_tmp_disk, uint32_t, FALSE);
+
+
 	/* geometry */
 #if SYSTEM_DIMENSIONS
 	if((svp = hv_fetch(hv, "geometry", 8, FALSE))) {
@@ -153,6 +170,11 @@ hv_to_job_desc_msg(HV* hv, job_desc_msg_t* job_desc_msg)
 	/* TODO: select_jobinfo */
 	/* Don't know how to manage memory of select_jobinfo, since it's storage size is unknown. */
 	/* Maybe we can do it if select_g_copy_jobinfo and select_g_free_jobinfo are exported. */
+
+	FETCH_FIELD(hv, job_desc_msg, std_err, charp, FALSE);
+	FETCH_FIELD(hv, job_desc_msg, std_in, charp, FALSE);
+	FETCH_FIELD(hv, job_desc_msg, std_out, charp, FALSE);
+	FETCH_FIELD(hv, job_desc_msg, wckey, charp, FALSE);
 	return 0;
 }
 
