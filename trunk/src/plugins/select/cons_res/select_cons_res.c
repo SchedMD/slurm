@@ -1084,22 +1084,23 @@ static uint16_t _get_job_node_req(struct job_record *job_ptr)
 {
 	int max_share = job_ptr->part_ptr->max_share;
 
-	if (max_share == 0)
+	if (max_share == 0)		    /* Partition Shared=EXCLUSIVE */
 		return NODE_CR_RESERVED;
 
-	/* sharing if part=FORCE with count > 1 */
+	/* Partition Shared=FORCE with count > 1 */
 	if ((max_share & SHARED_FORCE) &&
 	    ((max_share & (~SHARED_FORCE)) > 1))
 		return NODE_CR_AVAILABLE;
 
-	/* Shared=NO or Shared=YES */
+	/* Partition is Shared=NO or Shared=YES */
 	if (job_ptr->details->shared == 0)
 		/* user has requested exclusive nodes */
 		return NODE_CR_RESERVED;
+
 	if ((max_share > 1) && (job_ptr->details->shared == 1))
-		/* part allows sharing, and
-		 * the user has requested it */
+		/* part allows sharing, and the user has requested it */
 		return NODE_CR_AVAILABLE;
+
 	return NODE_CR_ONE_ROW;
 }
 

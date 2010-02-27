@@ -144,8 +144,12 @@ uint16_t _allocate_sockets(struct job_record *job_ptr, bitstr_t *core_map,
 	if (job_ptr->details && job_ptr->details->mc_ptr) {
 		min_cores   = job_ptr->details->mc_ptr->min_cores;
 		min_sockets = job_ptr->details->mc_ptr->min_sockets;
-		ntasks_per_core = job_ptr->details->mc_ptr->ntasks_per_core;
-		ntasks_per_socket = job_ptr->details->mc_ptr->ntasks_per_socket;
+		if (job_ptr->details->mc_ptr->ntasks_per_core) {
+			ntasks_per_core = job_ptr->details->mc_ptr->
+					  ntasks_per_core;
+		}
+		ntasks_per_socket = job_ptr->details->mc_ptr->
+				    ntasks_per_socket;
 	}
 
 	/* These are the job parameters that we must respect:
@@ -373,7 +377,10 @@ uint16_t _allocate_cores(struct job_record *job_ptr, bitstr_t *core_map,
 	if (!cpu_type && job_ptr->details && job_ptr->details->mc_ptr) {
 		min_cores   = job_ptr->details->mc_ptr->min_cores;
 		min_sockets = job_ptr->details->mc_ptr->min_sockets;
-		ntasks_per_core = job_ptr->details->mc_ptr->ntasks_per_core;
+		if (job_ptr->details->mc_ptr->ntasks_per_core) {
+			ntasks_per_core = job_ptr->details->mc_ptr->
+					  ntasks_per_core;
+		}
 	}
 
 	/* These are the job parameters that we must respect:
@@ -603,19 +610,21 @@ uint16_t _can_job_run_on_node(struct job_record *job_ptr, bitstr_t *core_map,
 }
 
 
-/* Test to see if a node already has running jobs.
- * if (sharing_only) then only check sharing partitions. This is because
+/* Test to see if a node already has running jobs for _other_ partitions.
+ * If (sharing_only) then only check sharing partitions. This is because
  * the job was submitted to a single-row partition which does not share
  * allocated CPUs with multi-row partitions.
  */
 static int _is_node_busy(struct part_res_record *p_ptr, uint32_t node_i,
-			 int sharing_only)
+			 int sharing_only, struct part_record *my_part_ptr)
 {
 	uint32_t r, cpu_begin = cr_get_coremap_offset(node_i);
 	uint32_t i, cpu_end   = cr_get_coremap_offset(node_i+1);
 
 	for (; p_ptr; p_ptr = p_ptr->next) {
-		if (sharing_only && p_ptr->num_rows < 2)
+		if (sharing_only && 
+		    ((p_ptr->num_rows < 2) || 
+		     (p_ptr->part_ptr == my_part_ptr)))
 			continue;
 		if (!p_ptr->row)
 			continue;
@@ -692,7 +701,8 @@ static int _verify_node_state(struct part_res_record *cr_part_ptr,
 			}
 			/* cannot use this node if it is running jobs
 			 * in sharing partitions */
-			if ( _is_node_busy(cr_part_ptr, i, 1) ) {
+			if (_is_node_busy(cr_part_ptr, i, 1,
+					  job_ptr->part_ptr)) {
 				debug3("cons_res: _vns: node %s sharing?",
 					select_node_record[i].node_ptr->name);
 				goto clear_bit;
@@ -701,7 +711,8 @@ static int _verify_node_state(struct part_res_record *cr_part_ptr,
 		/* node is NODE_CR_AVAILABLE - check job request */
 		} else {
 			if (job_node_req == NODE_CR_RESERVED) {
-				if ( _is_node_busy(cr_part_ptr, i, 0) ) {
+				if (_is_node_busy(cr_part_ptr, i, 0,
+						  job_ptr->part_ptr)) {
 					debug3("cons_res: _vns: node %s busy",
 					       select_node_record[i].
 					       node_ptr->name);
@@ -710,7 +721,8 @@ static int _verify_node_state(struct part_res_record *cr_part_ptr,
 			} else if (job_node_req == NODE_CR_ONE_ROW) {
 				/* cannot use this node if it is running jobs
 				 * in sharing partitions */
-				if ( _is_node_busy(cr_part_ptr, i, 1) ) {
+				if (_is_node_busy(cr_part_ptr, i, 1, 
+						  job_ptr->part_ptr)) {
 					debug3("cons_res: _vns: node %s vbusy",
 					       select_node_record[i].
 					       node_ptr->name);
