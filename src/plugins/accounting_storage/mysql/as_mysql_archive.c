@@ -1954,8 +1954,8 @@ exit_events:
 			else if(rc == SLURM_ERROR)
 				return rc;
 		}
-		query = xstrdup_printf("delete from \"%s_%s\" where start <= %d "
-				       "&& end != 0",
+		query = xstrdup_printf("delete from \"%s_%s\" where "
+				       "time_start <= %d && time_end != 0",
 				       cluster_name, suspend_table, curr_end);
 		debug3("%d(%s:%d) query\n%s",
 		       mysql_conn->conn, THIS_FILE, __LINE__, query);
@@ -2000,8 +2000,8 @@ exit_suspend:
 				return rc;
 		}
 
-		query = xstrdup_printf("delete from \"%s_%s\" where start <= %d "
-				       "&& end != 0",
+		query = xstrdup_printf("delete from \"%s_%s\" where "
+				       "time_start <= %d && time_end != 0",
 				       cluster_name, step_table, curr_end);
 		debug3("%d(%s:%d) query\n%s",
 		       mysql_conn->conn, THIS_FILE, __LINE__, query);
@@ -2045,8 +2045,9 @@ exit_steps:
 				return rc;
 		}
 
-		query = xstrdup_printf("delete from \"%s_%s\" where submit <= %d "
-				       "&& end != 0",
+		query = xstrdup_printf("delete from \"%s_%s\" "
+				       "where time_submit <= %d "
+				       "&& time_end != 0",
 				       cluster_name, job_table, curr_end);
 		debug3("%d(%s:%d) query\n%s",
 		       mysql_conn->conn, THIS_FILE, __LINE__, query);
