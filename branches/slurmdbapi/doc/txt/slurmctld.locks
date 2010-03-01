@@ -1,0 +1,67 @@
+slurmctld/controller.c
+RPC's and required locks	Moe Jette
+
+============================================================================
+Locks (in priority order): Config, Job, Node, Partition
+
+RPC code			Frequency	Function to service
+	Locks needed
+============================================================================
+
+REQUEST_BUILD_INFO:		Rare		controller.c:fill_ctld_conf
+	Read	Config	
+
+
+REQUEST_NODE_INFO:		V Common	node_mgr.c:pack_all_node
+	Read	Node
+
+
+REQUEST_JOB_INFO:		V Common	job_mgr.c:pack_all_jobs
+	Read	Job
+
+
+REQUEST_PARTITION_INFO:		V Common	partition_mgr.c:pack_all_part
+	Read	Partition
+
+
+REQUEST_JOB_STEP_CREATE:
+REQUEST_RESOURCE_ALLOCATION :	Common		job_mgr.c:job_allocate
+REQUEST_IMMEDIATE_RESOURCE_ALLOCATION : 	(Both use slurm_rpc_allocate_resources)	
+	Read	Node, Partition
+	Write	Job
+
+
+REQUEST_JOB_WILL_RUN :		Common		job_mgr.c:job_allocate
+	Read	Node, Partition
+	Write	Job
+
+
+REQUEST_CANCEL_JOB_STEP:	Common		job_mgr.c:job_cancel or job_step_cancel
+	Write Job, Node
+
+
+REQUEST_SUBMIT_BATCH_JOB: 	Common		job_mgr.c:job_allocate
+	Read	Config, Node, Partition
+	Write	Job
+
+
+MESSAGE_NODE_REGISTRATION_STATUS: Common	node_mgr.c:validate_node_specs
+	Write	Node
+
+
+REQUEST_RECONFIGURE:		V Rare		read_config.c:read_slurm_conf
+	Write	Config, Job, Node, Partition
+
+
+REQUEST_UPDATE_JOB:		Rare		job_mgr.c:update_job
+	Write	Job
+	Read	Node, Partition
+
+
+REQUEST_UPDATE_NODE:		Rare		node_mgr.c:update_node
+	Write	Node
+
+
+REQUEST_UPDATE_PARTITION:	Rare		partition_mgr.c:update_part
+	Write	Partition
+	Read	Node
