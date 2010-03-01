@@ -840,6 +840,24 @@ extern List as_mysql_get_cluster_events(mysql_conn_t *mysql_conn, uint32_t uid,
 		xstrcat(extra, ")");
 	}
 
+	if(event_cond->reason_uid_list
+	   && list_count(event_cond->reason_uid_list)) {
+		set = 0;
+		if(extra)
+			xstrcat(extra, " && (");
+		else
+			xstrcat(extra, " where (");
+		itr = list_iterator_create(event_cond->reason_uid_list);
+		while((object = list_next(itr))) {
+			if(set)
+				xstrcat(extra, " || ");
+			xstrfmtcat(extra, "reason_uid='%s'", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(extra, ")");
+	}
+
 	if(event_cond->state_list
 	   && list_count(event_cond->state_list)) {
 		set = 0;

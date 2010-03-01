@@ -729,7 +729,8 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 	    ((immediate == 0) && job_waiting)) {
 		xassert(job_ptr);
 		info("sched: _slurm_rpc_allocate_resources JobId=%u "
-		     "NodeList=%s %s",job_ptr->job_id, job_ptr->nodes, TIME_STR);
+		     "NodeList=%s %s",job_ptr->job_id,
+		     job_ptr->nodes, TIME_STR);
 
 		/* send job_ID and node_name_ptr */
 		if (job_ptr->job_resrcs && job_ptr->job_resrcs->cpu_array_cnt) {
