@@ -93,7 +93,7 @@ am_sacctmgr_OBJECTS = account_functions.$(OBJEXT) \
 sacctmgr_OBJECTS = $(am_sacctmgr_OBJECTS)
 am__DEPENDENCIES_1 =
 sacctmgr_DEPENDENCIES = $(top_builddir)/src/api/libslurm.o \
-	$(am__DEPENDENCIES_1)
+	$(top_builddir)/src/db_api/libslurmdb.la $(am__DEPENDENCIES_1)
 sacctmgr_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(sacctmgr_LDFLAGS) \
 	$(LDFLAGS) -o $@
@@ -303,7 +303,8 @@ AUTOMAKE_OPTIONS = foreign
 CLEANFILES = core.*
 INCLUDES = -I$(top_srcdir)
 sacctmgr_LDADD = \
-	$(top_builddir)/src/api/libslurm.o -ldl\
+	$(top_builddir)/src/api/libslurm.o \
+	$(top_builddir)/src/db_api/libslurmdb.la -ldl\
 	$(READLINE_LIBS)
 
 sacctmgr_SOURCES = \

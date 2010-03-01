@@ -326,6 +326,7 @@ AC_CONFIG_FILES([Makefile
 		 src/Makefile
 		 src/api/Makefile
 		 src/common/Makefile
+		 src/db_api/Makefile
 		 src/database/Makefile
 		 src/sacct/Makefile
 		 src/sacctmgr/Makefile
