@@ -1083,7 +1083,13 @@ static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 				if (avail_cpus <= 0)
 					continue;
 
-				if(avail_cpus > rem_cpus)
+				/* This could result in 0, but if the
+				   user requested nodes here we will
+				   still give them and then the step
+				   layout will sort things out.
+				*/
+				if((job_ptr->details->shared != 0)
+				   && (avail_cpus > rem_cpus))
 					avail_cpus = rem_cpus;
 
 				total_cpus += avail_cpus;
@@ -1114,7 +1120,13 @@ static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 				if (avail_cpus <= 0)
 					continue;
 
-				if(avail_cpus > rem_cpus)
+				/* This could result in 0, but if the
+				   user requested nodes here we will
+				   still give them and then the step
+				   layout will sort things out.
+				*/
+				if((job_ptr->details->shared != 0)
+				   && (avail_cpus > rem_cpus))
 					avail_cpus = rem_cpus;
 
 				total_cpus += avail_cpus;
@@ -1152,7 +1164,13 @@ static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 					continue;
 				}
 
-				if(avail_cpus > rem_cpus)
+				/* This could result in 0, but if the
+				   user requested nodes here we will
+				   still give them and then the step
+				   layout will sort things out.
+				*/
+				if((job_ptr->details->shared != 0)
+				   && (avail_cpus > rem_cpus))
 					avail_cpus = rem_cpus;
 
 				total_cpus += avail_cpus;
