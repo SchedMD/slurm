@@ -1541,14 +1541,12 @@ static int _check_all_blocks_error(int node_inx, time_t event_time,
 			reason = "update block: setting partial node down.";
 		send_node.node_state = NODE_STATE_ERROR;
 		rc = clusteracct_storage_g_node_down(acct_db_conn,
-						     slurmctld_cluster_name,
 						     &send_node, event_time,
 						     reason,
 						     slurm_get_slurm_user_id());
 	} else {
 		send_node.node_state = NODE_STATE_IDLE;
 		rc = clusteracct_storage_g_node_up(acct_db_conn,
-						   slurmctld_cluster_name,
 						   &send_node, event_time);
 	}
 
