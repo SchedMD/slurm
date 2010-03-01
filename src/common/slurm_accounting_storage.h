@@ -293,6 +293,7 @@ typedef struct {
 	time_t period_end;      /* period end of events */
 	time_t period_start;    /* period start of events */
 	List reason_list;       /* list of char * */
+	List reason_uid_list;   /* list of char * */
 	List state_list;        /* list of char * */
 } acct_event_cond_t;
 

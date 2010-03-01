@@ -750,6 +750,8 @@ extern void destroy_acct_event_cond(void *object)
 			list_destroy(acct_event->node_list);
 		if(acct_event->reason_list)
 			list_destroy(acct_event->reason_list);
+		if(acct_event->reason_uid_list)
+			list_destroy(acct_event->reason_uid_list);
 		if(acct_event->state_list)
 			list_destroy(acct_event->state_list);
 		xfree(acct_event);
@@ -5101,6 +5103,7 @@ extern void pack_acct_event_cond(void *in, uint16_t rpc_version, Buf buffer)
 		pack_time(0, buffer);
 		pack32(NO_VAL, buffer);
 		pack32(NO_VAL, buffer);
+		pack32(NO_VAL, buffer);
 		return;
 	}
 
@@ -5143,6 +5146,19 @@ extern void pack_acct_event_cond(void *in, uint16_t rpc_version, Buf buffer)
 	pack32(count, buffer);
 	if(count && count != NO_VAL) {
 		itr = list_iterator_create(object->reason_list);
+		while((tmp_info = list_next(itr))) {
+			packstr(tmp_info, buffer);
+		}
+		list_iterator_destroy(itr);
+	}
+	count = NO_VAL;
+
+	if(object->reason_uid_list)
+		count = list_count(object->reason_uid_list);
+
+	pack32(count, buffer);
+	if(count && count != NO_VAL) {
+		itr = list_iterator_create(object->reason_uid_list);
 		while((tmp_info = list_next(itr))) {
 			packstr(tmp_info, buffer);
 		}
@@ -5208,6 +5224,16 @@ extern int unpack_acct_event_cond(void **object, uint16_t rpc_version,
 			safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 					       buffer);
 			list_append(object_ptr->reason_list, tmp_info);
+		}
+	}
+
+	safe_unpack32(&count, buffer);
+	if(count != NO_VAL) {
+		object_ptr->reason_uid_list = list_create(slurm_destroy_char);
+		for(i=0; i<count; i++) {
+			safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
+					       buffer);
+			list_append(object_ptr->reason_uid_list, tmp_info);
 		}
 	}
 
