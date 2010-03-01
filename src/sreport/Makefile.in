@@ -89,7 +89,7 @@ am_sreport_OBJECTS = sreport.$(OBJEXT) cluster_reports.$(OBJEXT) \
 sreport_OBJECTS = $(am_sreport_OBJECTS)
 am__DEPENDENCIES_1 =
 sreport_DEPENDENCIES = $(top_builddir)/src/api/libslurm.o \
-	$(am__DEPENDENCIES_1)
+	$(top_builddir)/src/db_api/libslurmdb.la $(am__DEPENDENCIES_1)
 sreport_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(sreport_LDFLAGS) \
 	$(LDFLAGS) -o $@
@@ -308,7 +308,8 @@ sreport_SOURCES = \
 	common.c
 
 sreport_LDADD = \
-	$(top_builddir)/src/api/libslurm.o -ldl\
+	$(top_builddir)/src/api/libslurm.o \
+	$(top_builddir)/src/db_api/libslurmdb.la -ldl\
 	$(READLINE_LIBS)
 
 sreport_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
