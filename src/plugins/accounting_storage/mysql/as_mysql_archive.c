@@ -556,7 +556,7 @@ static int _process_old_sql_line(const char *data_in, char **data_full_out)
 	char *new_cluster_name = NULL;
 	char *cluster_name = NULL;
 	int rc = SLURM_SUCCESS;
-	int cnt = 0, cluster_inx = 0, ending_start = 0, ending_end = 0;
+	int cnt = 0, cluster_inx = -1, ending_start = 0, ending_end = 0;
 	bool delete = 0;
 	bool new_cluster = 0;
 
@@ -736,6 +736,11 @@ static int _process_old_sql_line(const char *data_in, char **data_full_out)
 				xfree(id_assoc);
 			} else
 				xstrcat(fields, "job_db_inx");
+		} else if(!strncmp("cluster_nodes", data_in+i, 13)) {
+			/* this is here just to make it easier to
+			   handle the cluster field. */
+			xstrcat(fields, "cluster_nodes");
+			i+=13;
 		} else if(!strncmp("cluster", data_in+i, 7)) {
 			i+=7;
 			if(!delete) {
