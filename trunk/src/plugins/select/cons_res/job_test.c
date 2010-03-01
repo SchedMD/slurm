@@ -1080,12 +1080,18 @@ static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 					continue;
 				avail_cpus = _get_cpu_cnt(job_ptr, i, cpu_cnt,
 							  freq, size);
+				if (avail_cpus <= 0)
+					continue;
+
+				if(avail_cpus > rem_cpus)
+					avail_cpus = rem_cpus;
+
 				total_cpus += avail_cpus;
 				/* check to make sure we don't over
 				   step the max_cpus limit */
 				if((job_ptr->details->max_cpus != NO_VAL) &&
 				   (total_cpus > job_ptr->details->max_cpus)) {
-					debug2("can't use this node "
+					debug2("1 can't use this node "
 					       "since it would put us "
 					       "over the limit");
 					total_cpus -= avail_cpus;
@@ -1108,12 +1114,15 @@ static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 				if (avail_cpus <= 0)
 					continue;
 
+				if(avail_cpus > rem_cpus)
+					avail_cpus = rem_cpus;
+
 				total_cpus += avail_cpus;
 				/* check to make sure we don't over
 				   step the max_cpus limit */
 				if((job_ptr->details->max_cpus != NO_VAL) &&
 				   (total_cpus > job_ptr->details->max_cpus)) {
-					debug2("can't use this node "
+					debug2("2 can't use this node "
 					       "since it would put us "
 					       "over the limit");
 					total_cpus -= avail_cpus;
@@ -1143,12 +1152,15 @@ static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 					continue;
 				}
 
+				if(avail_cpus > rem_cpus)
+					avail_cpus = rem_cpus;
+
 				total_cpus += avail_cpus;
 				/* check to make sure we don't over
 				   step the max_cpus limit */
 				if((job_ptr->details->max_cpus != NO_VAL) &&
 				   (total_cpus > job_ptr->details->max_cpus)) {
-					debug2("can't use this node "
+					debug2("3 can't use this node "
 					       "since it would put us "
 					       "over the limit");
 					total_cpus -= avail_cpus;
