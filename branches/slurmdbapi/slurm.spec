@@ -540,7 +540,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libpmi.la
 %{_libdir}/libslurm.a
 %{_libdir}/libslurm.la
+%{_libdir}/libslurmdb.la
 %{_mandir}/man3/slurm_*
+#%{_mandir}/man3/slurmdb_*
 #############################################################################
 
 %if %{slurm_with auth_none}
