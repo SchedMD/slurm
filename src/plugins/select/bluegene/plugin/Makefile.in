@@ -150,7 +150,9 @@ am__sfree_SOURCES_DIST = sfree.c sfree.h opts.c \
 @BLUEGENE_LOADED_TRUE@am_sfree_OBJECTS = sfree.$(OBJEXT) \
 @BLUEGENE_LOADED_TRUE@	opts.$(OBJEXT) bridge_linker.$(OBJEXT)
 sfree_OBJECTS = $(am_sfree_OBJECTS)
-@BLUEGENE_LOADED_TRUE@sfree_DEPENDENCIES = $(top_builddir)/src/api/libslurmhelper.la
+@BLUEGENE_LOADED_TRUE@am__DEPENDENCIES_1 =  \
+@BLUEGENE_LOADED_TRUE@	$(top_builddir)/src/api/libslurm.o
+@BLUEGENE_LOADED_TRUE@sfree_DEPENDENCIES = $(am__DEPENDENCIES_1)
 sfree_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(sfree_LDFLAGS) \
 	$(LDFLAGS) -o $@
@@ -158,7 +160,8 @@ am__slurm_epilog_SOURCES_DIST = slurm_epilog.c
 @BLUEGENE_LOADED_TRUE@am_slurm_epilog_OBJECTS =  \
 @BLUEGENE_LOADED_TRUE@	slurm_epilog.$(OBJEXT)
 slurm_epilog_OBJECTS = $(am_slurm_epilog_OBJECTS)
-@BLUEGENE_LOADED_TRUE@slurm_epilog_DEPENDENCIES = $(top_builddir)/src/api/libslurmhelper.la
+@BLUEGENE_LOADED_TRUE@slurm_epilog_DEPENDENCIES =  \
+@BLUEGENE_LOADED_TRUE@	$(am__DEPENDENCIES_1)
 slurm_epilog_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(slurm_epilog_LDFLAGS) $(LDFLAGS) -o $@
@@ -166,7 +169,8 @@ am__slurm_prolog_SOURCES_DIST = slurm_prolog.c
 @BLUEGENE_LOADED_TRUE@am_slurm_prolog_OBJECTS =  \
 @BLUEGENE_LOADED_TRUE@	slurm_prolog.$(OBJEXT)
 slurm_prolog_OBJECTS = $(am_slurm_prolog_OBJECTS)
-@BLUEGENE_LOADED_TRUE@slurm_prolog_DEPENDENCIES = $(top_builddir)/src/api/libslurmhelper.la
+@BLUEGENE_LOADED_TRUE@slurm_prolog_DEPENDENCIES =  \
+@BLUEGENE_LOADED_TRUE@	$(am__DEPENDENCIES_1)
 slurm_prolog_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(slurm_prolog_LDFLAGS) $(LDFLAGS) -o $@
@@ -406,9 +410,12 @@ INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common $(BG_INCLUDES)
 # MPIRUN dynamic lib.
 @BLUEGENE_LOADED_TRUE@libsched_if64_la_SOURCES = libsched_if64.c
 @BLUEGENE_LOADED_TRUE@libsched_if64_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
-@BLUEGENE_LOADED_TRUE@sfree_LDADD = $(top_builddir)/src/api/libslurmhelper.la
-@BLUEGENE_LOADED_TRUE@slurm_prolog_LDADD = $(top_builddir)/src/api/libslurmhelper.la
-@BLUEGENE_LOADED_TRUE@slurm_epilog_LDADD = $(top_builddir)/src/api/libslurmhelper.la
+@BLUEGENE_LOADED_TRUE@convenience_libs = \
+@BLUEGENE_LOADED_TRUE@	$(top_builddir)/src/api/libslurm.o -ldl
+
+@BLUEGENE_LOADED_TRUE@sfree_LDADD = $(convenience_libs)
+@BLUEGENE_LOADED_TRUE@slurm_prolog_LDADD = $(convenience_libs)
+@BLUEGENE_LOADED_TRUE@slurm_epilog_LDADD = $(convenience_libs)
 @BLUEGENE_LOADED_TRUE@sfree_SOURCES = sfree.c sfree.h opts.c \
 @BLUEGENE_LOADED_TRUE@		../block_allocator/bridge_linker.c \
 @BLUEGENE_LOADED_TRUE@		../block_allocator/bridge_linker.h
