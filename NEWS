@@ -46,6 +46,8 @@ documents those changes that are of interest to users and admins.
     restarting the mysqld and slurmdbd will put things right.  After this
     change we have noticed 50-75% increase in performance with sreport and
     sacct.
+ -- Fix for MaxCPUs to honor partitions of 1 node that have more than the
+    maxcpus for a job.
 
 * Changes in SLURM 2.2.0.pre1
 =============================
