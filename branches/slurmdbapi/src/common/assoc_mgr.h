@@ -75,6 +75,10 @@ extern pthread_mutex_t assoc_mgr_user_lock;
 extern pthread_mutex_t assoc_mgr_file_lock;
 extern pthread_mutex_t assoc_mgr_wckey_lock;
 
+extern uint32_t g_qos_max_priority; /* max priority in all qos's */
+extern uint32_t g_qos_count; /* count used for generating qos bitstr's */
+
+
 /*
  * get info from the storage
  * IN:  assoc - acct_association_rec_t with at least cluster and
