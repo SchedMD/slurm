@@ -2113,7 +2113,8 @@ extern int clusteracct_storage_p_register_ctld(mysql_conn_t *mysql_conn,
 		return SLURM_ERROR;
 	}
 
-	return as_mysql_register_ctld(mysql_conn, mysql_conn->cluster_name, port);
+	return as_mysql_register_ctld(
+		mysql_conn, mysql_conn->cluster_name, port);
 }
 
 extern int clusteracct_storage_p_cluster_cpus(mysql_conn_t *mysql_conn,
@@ -2135,7 +2136,8 @@ extern int clusteracct_storage_p_get_usage(
 	acct_cluster_rec_t *cluster_rec, slurmdbd_msg_type_t type,
 	time_t start, time_t end)
 {
-	return as_mysql_get_usage(mysql_conn, uid, cluster_rec, type, start, end);
+	return as_mysql_get_usage(mysql_conn, uid, cluster_rec,
+				  type, start, end);
 }
 
 /*

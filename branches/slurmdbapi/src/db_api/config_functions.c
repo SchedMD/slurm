@@ -1,6 +1,6 @@
 /*****************************************************************************\
- *  account_functions.c - Interface to functions dealing with accounts
- *                        in the database.
+ *  config_functions.c - Interface to functions dealing with configuration
+ *                       of the database.
  ******************************************************************************
  *  Copyright (C) 2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -47,13 +47,3 @@
 #include <slurm/slurmdb.h>
 
 #include "src/common/slurm_accounting_storage.h"
-
-/*
- * add accounts to accounting system
- * IN:  account_list List of slurmdb_account_rec_t *
- * RET: SLURM_SUCCESS on success SLURM_ERROR else
- */
-extern int slurmdb_add_accounts(void *db_conn, List acct_list)
-{
-
-}
