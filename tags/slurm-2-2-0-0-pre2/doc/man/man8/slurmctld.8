@@ -1,0 +1,88 @@
+.TH SLURMCTLD "8" "June 2006" "slurmctld 12.0" "Slurm components"
+.SH "NAME"
+slurmctld \- The central management daemon of Slurm.
+.SH "SYNOPSIS"
+\fBslurmctld\fR [\fIOPTIONS\fR...]
+.SH "DESCRIPTION"
+\fBslurmctld\fR is the central management daemon of Slurm. It monitors
+all other Slurm daemons and resources, accepts work (jobs), and allocates
+resources to those jobs. Given the critical functionality of \fBslurmctld\fR,
+there may be a backup server to assume these functions in the event that
+the primary server fails.
+.TP
+OPTIONS
+
+.TP
+\fB\-c\fR
+Clear all previous \fBslurmctld\fR state from its last checkpoint.
+Without this option, previously running jobs will be preserved along
+with node \fIState\fR of DOWN, DRAINED and DRAINING nodes and the associated
+\fIReason\fR field for those nodes.
+
+.TP
+\fB\-D\fR
+Debug mode. Execute \fBslurmctld\fR in the foreground with logging to stdout.
+.TP
+\fB\-f <file>\fR
+Read configuration from the specified file. See \fBNOTES\fR below.
+.TP
+\fB\-h\fR
+Help; print a brief summary of command options.
+.TP
+\fB\-L <file>\fR
+Write log messages to the specified file.
+
+.TP
+\fB\-R\fR
+Recover full state from last checkpoint: jobs, node, and partition state. 
+Without this option, previously running jobs will be preserved along
+with node \fIState\fR of DOWN, DRAINED and DRAINING nodes and the associated
+\fIReason\fR field for those nodes. No other node or partition state will 
+be preserved.
+
+.TP
+\fB\-v\fR
+Verbose operation. Multiple \fB\-v\fR's increase verbosity.
+.TP
+\fB\-V\fR
+Print version information and exit.
+
+.SH "ENVIRONMENT VARIABLES"
+The following environment variables can be used to override settings
+compiled into slurmctld.
+.TP 20
+\fBSLURM_CONF\fR
+The location of the SLURM configuration file. This is overridden by
+explicitly naming a configuration file on the command line.
+
+.SH "NOTES"
+It may be useful to experiment with different \fBslurmctld\fR specific
+configuration parameters using a distinct configuration file
+(e.g. timeouts).  However, this special configuration file will not be
+used by the \fBslurmd\fR daemon or the Slurm programs, unless you
+specifically tell each of them to use it. If you desire changing
+communication ports, the location of the temporary file system, or
+other parameters used by other Slurm components, change the common
+configuration file, \fBslurm.conf\fR.
+
+.SH "COPYING"
+Copyright (C) 2002\-2007 The Regents of the University of California.
+Copyright (C) 2008\-2010 Lawrence Livermore National Security.
+Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+CODE\-OCEC\-09\-009. All rights reserved.
+.LP
+This file is part of SLURM, a resource management program.
+For details, see <https://computing.llnl.gov/linux/slurm/>.
+.LP
+SLURM is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free
+Software Foundation; either version 2 of the License, or (at your option)
+any later version.
+.LP
+SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+details.
+
+.SH "SEE ALSO"
+\fBslurm.conf\fR(5), \fBslurmd\fR(8)
