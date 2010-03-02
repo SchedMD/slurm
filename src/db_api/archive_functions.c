@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  account_functions.c - Interface to functions dealing with accounts
+ *  archive_functions.c - Interface to functions dealing with archiving
  *                        in the database.
  ******************************************************************************
  *  Copyright (C) 2010 Lawrence Livermore National Security.
