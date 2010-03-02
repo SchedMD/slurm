@@ -48,6 +48,7 @@ documents those changes that are of interest to users and admins.
     sacct.
  -- Fix for MaxCPUs to honor partitions of 1 node that have more than the
     maxcpus for a job.
+ -- Add support for "scontrol notify <message>" to work for batch jobs.
 
 * Changes in SLURM 2.2.0.pre1
 =============================

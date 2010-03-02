@@ -338,6 +338,32 @@ rwfail:
 }
 
 /*
+ * Send job notification message to a batch job
+ */
+int
+stepd_notify_job(int fd, char *message)
+{
+	int req = REQUEST_JOB_NOTIFY;
+	int rc;
+
+	safe_write(fd, &req, sizeof(int));
+	if (message) {
+		rc = strlen(message) + 1;
+		safe_write(fd, &rc, sizeof(int));
+		safe_write(fd, message, rc);
+	} else {
+		rc = 0;
+		safe_write(fd, &rc, sizeof(int));
+	}
+
+	/* Receive the return code */
+	safe_read(fd, &rc, sizeof(int));
+	return rc;
+ rwfail:
+	return -1;
+}
+
+/*
  * Send a checkpoint request to all tasks of a job step.
  */
 int
