@@ -1,6 +1,6 @@
 /*****************************************************************************\
- *  config_functions.c - Interface to functions dealing with configuration
- *                       of the database.
+ *  connection_functions.c - Interface to functions dealing with connections
+ *                           to the database.
  ******************************************************************************
  *  Copyright (C) 2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
