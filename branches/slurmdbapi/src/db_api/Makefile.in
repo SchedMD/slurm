@@ -348,7 +348,19 @@ lib_LTLIBRARIES = libslurmdb.la
 # BUILT_SOURCES tells automake that when "make" is called, these targets
 # need to be built before anything else.
 BUILT_SOURCES = $(VERSION_SCRIPT) libslurmdb.la
-slurmdbapi_src = 
+slurmdbapi_src = \
+	account_functions.c \
+	assoc_functions.c \
+	cluster_functions.c \
+	cluster_report_functions.c \
+	job_functions.c \
+	job_report_functions.c \
+	qos_functions.c \
+	txn_functions.c \
+	user_functions.c \
+	user_report_functions.c \
+	wckey_functions.c
+
 libslurmdb_la_SOURCES = 
 libslurmdb_la_LIBADD = $(top_builddir)/src/api/libslurm.la
 libslurmdb_la_LDFLAGS = \
