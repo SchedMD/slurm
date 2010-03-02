@@ -126,6 +126,7 @@ static int  _terminate_all_steps(uint32_t jobid, bool batch);
 static void _rpc_launch_tasks(slurm_msg_t *);
 static void _rpc_abort_job(slurm_msg_t *);
 static void _rpc_batch_job(slurm_msg_t *);
+static void _rpc_job_notify(slurm_msg_t *);
 static void _rpc_signal_tasks(slurm_msg_t *);
 static void _rpc_checkpoint_tasks(slurm_msg_t *);
 static void _rpc_terminate_tasks(slurm_msg_t *);
@@ -334,6 +335,10 @@ slurmd_req(slurm_msg_t *msg)
 	case REQUEST_DAEMON_STATUS:
 		_rpc_daemon_status(msg);
 		/* No body to free */
+		break;
+	case REQUEST_JOB_NOTIFY:
+		_rpc_job_notify(msg);
+		slurm_free_job_notify_msg(msg->data);
 		break;
 	default:
 		error("slurmd_req: invalid request msg type %d",
@@ -1290,6 +1295,68 @@ _rpc_batch_job(slurm_msg_t *msg)
 	if ((rc == ESLURMD_PROLOG_FAILED) ||
 	    (rc == SLURM_COMMUNICATIONS_SEND_ERROR))
 		send_registration_msg(rc, false);
+}
+/*
+ * Send notification message to batch job
+ */
+static void
+_rpc_job_notify(slurm_msg_t *msg)
+{
+	job_notify_msg_t *req = msg->data;
+	uid_t req_uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
+	long job_uid;
+	List steps;
+	ListIterator i;
+	step_loc_t *stepd = NULL;
+	int step_cnt  = 0;
+	int fd;
+
+	debug("_rpc_job_notify, uid = %d, jobid = %u", req_uid, req->job_id);
+	job_uid = _get_job_uid(req->job_id);
+	if (job_uid < 0)
+		goto no_job;
+
+	/*
+	 * check that requesting user ID is the SLURM UID or root
+	 */
+	if ((req_uid != job_uid) && (!_slurm_authorized_user(req_uid))) {
+		error("Security violation: job_notify(%ld) from uid %ld",
+		      req->job_id, (long) req_uid);
+		return;
+	}
+
+	steps = stepd_available(conf->spooldir, conf->node_name);
+	i = list_iterator_create(steps);
+	while ((stepd = list_next(i))) {
+		if ((stepd->jobid  != req->job_id) ||
+		    (stepd->stepid != SLURM_BATCH_SCRIPT)) {
+			continue;
+		}
+
+		step_cnt++;
+
+		fd = stepd_connect(stepd->directory, stepd->nodename,
+				   stepd->jobid, stepd->stepid);
+		if (fd == -1) {
+			debug3("Unable to connect to step %u.%u",
+			       stepd->jobid, stepd->stepid);
+			continue;
+		}
+
+		info("send notification to job %u.%u",
+		     stepd->jobid, stepd->stepid);
+		if (stepd_notify_job(fd, req->message) < 0)
+			debug("notify jobid=%u failed: %m", stepd->jobid);
+		close(fd);
+	}
+	list_iterator_destroy(i);
+	list_destroy(steps);
+
+ no_job:
+	if (step_cnt == 0) {
+		debug2("Can't find jobid %u to send notification message",
+		       req->job_id);
+	}
 }
 
 static int

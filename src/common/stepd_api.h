@@ -133,6 +133,11 @@ slurmstepd_state_t stepd_state(int fd);
 slurmstepd_info_t *stepd_get_info(int fd);
 
 /*
+ * Send job notification message to a batch job
+ */
+int stepd_notify_job(int fd, char *message);
+
+/*
  * Send a signal to the process group of a job step.
  */
 int stepd_signal(int fd, int signal);

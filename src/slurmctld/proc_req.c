@@ -3509,9 +3509,10 @@ inline static void  _slurm_rpc_job_notify(slurm_msg_t * msg)
 		struct job_record *job_ptr;
 		lock_slurmctld(job_read_lock);
 		job_ptr = find_job_record(notify_msg->job_id);
-		if (job_ptr)
-			srun_user_message(job_ptr, notify_msg->message);
-		else
+		if (job_ptr) {
+			error_code = srun_user_message(job_ptr, 
+						       notify_msg->message);
+		} else
 			error_code = ESLURM_INVALID_JOB_ID;
 		unlock_slurmctld(job_read_lock);
 	}

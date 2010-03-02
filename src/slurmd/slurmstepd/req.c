@@ -79,6 +79,7 @@ static int _handle_checkpoint_tasks(int fd, slurmd_job_t *job, uid_t uid);
 static int _handle_attach(int fd, slurmd_job_t *job, uid_t uid);
 static int _handle_pid_in_container(int fd, slurmd_job_t *job);
 static int _handle_daemon_pid(int fd, slurmd_job_t *job);
+static int _handle_notify_job(int fd, slurmd_job_t *job, uid_t uid);
 static int _handle_suspend(int fd, slurmd_job_t *job, uid_t uid);
 static int _handle_resume(int fd, slurmd_job_t *job, uid_t uid);
 static int _handle_terminate(int fd, slurmd_job_t *job, uid_t uid);
@@ -531,6 +532,10 @@ _handle_request(int fd, slurmd_job_t *job, uid_t uid, gid_t gid)
 		debug("Handling REQUEST_STEP_RECONFIGURE");
 		rc = _handle_reconfig(fd, job, uid);
 		break;
+	case REQUEST_JOB_NOTIFY:
+		debug("Handling REQUEST_JOB_NOTIFY");
+		rc = _handle_notify_job(fd, job, uid);
+		break;
 	default:
 		error("Unrecognized request: %d", req);
 		rc = SLURM_FAILURE;
@@ -873,52 +878,90 @@ _handle_checkpoint_tasks(int fd, slurmd_job_t *job, uid_t uid)
 		goto done;
 	}
 
-       /*
-	* Sanity checks
-	*/
-       if (job->pgid <= (pid_t)1) {
-	       debug ("step %u.%u invalid [jmgr_pid:%d pgid:%u]",
+	/*
+	 * Sanity checks
+	 */
+	if (job->pgid <= (pid_t)1) {
+		debug ("step %u.%u invalid [jmgr_pid:%d pgid:%u]",
 		       job->jobid, job->stepid, job->jmgr_pid, job->pgid);
-	       rc = ESLURMD_JOB_NOTRUNNING;
-	       goto done;
-       }
+		rc = ESLURMD_JOB_NOTRUNNING;
+		goto done;
+	}
 
-       /*
-	* Signal the process group
-	*/
-       pthread_mutex_lock(&suspend_mutex);
-       if (suspended) {
-	       rc = ESLURMD_STEP_SUSPENDED;
-	       pthread_mutex_unlock(&suspend_mutex);
-	       goto done;
-       }
+	/*
+	 * Signal the process group
+	 */
+	pthread_mutex_lock(&suspend_mutex);
+	if (suspended) {
+		rc = ESLURMD_STEP_SUSPENDED;
+		pthread_mutex_unlock(&suspend_mutex);
+		goto done;
+	}
 
-       /* set timestamp in case another request comes */
-       job->ckpt_timestamp = timestamp;
+	/* set timestamp in case another request comes */
+	job->ckpt_timestamp = timestamp;
 
-       /* TODO: do we need job->ckpt_dir any more, except for checkpoint/xlch? */
+	/* TODO: do we need job->ckpt_dir any more, 
+	 *	except for checkpoint/xlch? */
 /*	if (! image_dir) { */
 /*		image_dir = xstrdup(job->ckpt_dir); */
 /*	} */
 
-       /* call the plugin to send the request */
-       if (checkpoint_signal_tasks(job, image_dir) != SLURM_SUCCESS) {
-	       rc = -1;
-	       verbose("Error sending checkpoint request to %u.%u: %s",
-		     job->jobid, job->stepid, slurm_strerror(rc));
-       } else {
-	       verbose("Sent checkpoint request to %u.%u",
-		       job->jobid, job->stepid);
-       }
+	/* call the plugin to send the request */
+	if (checkpoint_signal_tasks(job, image_dir) != SLURM_SUCCESS) {
+		rc = -1;
+		verbose("Error sending checkpoint request to %u.%u: %s",
+			job->jobid, job->stepid, slurm_strerror(rc));
+	} else {
+		verbose("Sent checkpoint request to %u.%u",
+			job->jobid, job->stepid);
+	}
 
-       pthread_mutex_unlock(&suspend_mutex);
+	pthread_mutex_unlock(&suspend_mutex);
 
 done:
-       /* Send the return code */
-       safe_write(fd, &rc, sizeof(int));
-       return SLURM_SUCCESS;
+	/* Send the return code */
+	safe_write(fd, &rc, sizeof(int));
+	xfree(image_dir);
+	return SLURM_SUCCESS;
 rwfail:
-       return SLURM_FAILURE;
+	return SLURM_FAILURE;
+}
+
+static int
+_handle_notify_job(int fd, slurmd_job_t *job, uid_t uid)
+{
+	int rc = SLURM_SUCCESS;
+	int len;
+	char *message = NULL;
+
+	debug3("_handle_notify_job for job %u.%u",
+	       job->jobid, job->stepid);
+
+	safe_read(fd, &len, sizeof(int));
+	if (len) {
+		message = xmalloc (len);
+		safe_read(fd, message, len); /* '\0' terminated */
+	}
+
+	debug3("  uid = %d", uid);
+	if ((uid != job->uid) && !_slurm_authorized_user(uid)) {
+		debug("notify req from uid %ld for job %u.%u "
+		      "owned by uid %ld",
+		      (long)uid, job->jobid, job->stepid, (long)job->uid);
+		rc = EPERM;
+		goto done;
+	}
+	error("%s", message);
+	xfree(message);
+
+done:
+	/* Send the return code */
+	safe_write(fd, &rc, sizeof(int));
+	xfree(message);
+	return SLURM_SUCCESS;
+rwfail:
+	return SLURM_FAILURE;
 }
 
 static int
