@@ -1,6 +1,9 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in SLURM 2.2.0.pre3
+=============================
+
 * Changes in SLURM 2.2.0.pre2
 =============================
  -- Add support for spank_get_item() to get S_STEP_ALLOC_CORES and 
