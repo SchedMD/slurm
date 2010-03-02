@@ -1,6 +1,6 @@
 /*****************************************************************************\
- *  txn_functions.c - Interface to functions dealing with transactions
- *                        in the database.
+ *  helper_functions.c - Interface to functions dealing with
+ *                       helping initializing structures and such.
  ******************************************************************************
  *  Copyright (C) 2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).

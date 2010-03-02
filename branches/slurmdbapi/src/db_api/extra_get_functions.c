@@ -1,6 +1,7 @@
 /*****************************************************************************\
- *  job_functions.c - Interface to functions dealing with jobs
- *                    in the database.
+ *  extra_get_functions.c - Interface to functions dealing with
+ *                          getting info from the database, and this
+ *                          these were unrelated to other functionality.
  ******************************************************************************
  *  Copyright (C) 2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
