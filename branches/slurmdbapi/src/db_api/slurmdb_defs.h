@@ -1,6 +1,5 @@
 /*****************************************************************************\
- *  account_functions.c - Interface to functions dealing with accounts
- *                        in the database.
+ *  slurmdb_defs.h - definitions used by slurmdb api
  ******************************************************************************
  *  Copyright (C) 2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -36,63 +35,42 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
+#ifndef _SLURMDB_DEFS_H
+#define _SLURMDB_DEFS_H
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
+extern void destroy_acct_user_rec(void *object);
+extern void destroy_acct_account_rec(void *object);
+extern void destroy_acct_coord_rec(void *object);
+extern void destroy_cluster_accounting_rec(void *object);
+extern void destroy_acct_cluster_rec(void *object);
+extern void destroy_acct_accounting_rec(void *object);
+extern void destroy_acct_association_rec(void *object);
+extern void destroy_acct_event_rec(void *object);
+extern void destroy_acct_qos_rec(void *object);
+extern void destroy_acct_reservation_rec(void *object);
+extern void destroy_acct_txn_rec(void *object);
+extern void destroy_acct_wckey_rec(void *object);
+extern void destroy_acct_archive_rec(void *object);
+
+extern void destroy_acct_user_cond(void *object);
+extern void destroy_acct_account_cond(void *object);
+extern void destroy_acct_cluster_cond(void *object);
+extern void destroy_acct_association_cond(void *object);
+extern void destroy_acct_event_cond(void *object);
+extern void destroy_acct_job_cond(void *object);
+extern void destroy_acct_qos_cond(void *object);
+extern void destroy_acct_reservation_cond(void *object);
+extern void destroy_acct_txn_cond(void *object);
+extern void destroy_acct_wckey_cond(void *object);
+extern void destroy_acct_archive_cond(void *object);
+
+extern void destroy_acct_update_object(void *object);
+extern void destroy_acct_used_limits(void *object);
+extern void destroy_update_shares_rec(void *object);
+extern void destroy_acct_print_tree(void *object);
+extern void destroy_acct_hierarchical_rec(void *object);
+
+extern void init_acct_association_rec(acct_association_rec_t *assoc);
+extern void init_acct_qos_rec(acct_qos_rec_t *qos);
+
 #endif
-
-#include <slurm/slurm.h>
-#include <slurm/slurm_errno.h>
-
-#include <slurm/slurmdb.h>
-
-#include "src/common/slurm_accounting_storage.h"
-
-/*
- * add accounts to accounting system
- * IN:  account_list List of slurmdb_account_rec_t *
- * RET: SLURM_SUCCESS on success SLURM_ERROR else
- */
-extern int slurmdb_add_accounts(void *db_conn, List acct_list)
-{
-	return acct_storage_g_add_accounts(db_conn, getuid(), acct_list);
-}
-
-/*
- * get info from the storage
- * IN:  slurmdb_account_cond_t *
- * IN:  params void *
- * returns List of slurmdb_account_rec_t *
- * note List needs to be freed when called
- */
-extern List slurmdb_accounts_get(void *db_conn,
-				 slurmdb_account_cond_t *acct_cond)
-{
-	return acct_storage_g_get_accounts(db_conn, getuid(), acct_cond);
-}
-
-/*
- * modify existing accounts in the accounting system
- * IN:  slurmdb_acct_cond_t *acct_cond
- * IN:  slurmdb_account_rec_t *acct
- * RET: List containing (char *'s) else NULL on error
- */
-extern List slurmdb_accounts_modify(void *db_conn,
-				    slurmdb_account_cond_t *acct_cond,
-				    slurmdb_account_rec_t *acct)
-{
-	return acct_storage_g_modify_accounts(db_conn, getuid(),
-					      acct_cond, acct);
-}
-
-/*
- * remove accounts from accounting system
- * IN:  slurmdb_account_cond_t *acct_cond
- * RET: List containing (char *'s) else NULL on error
- */
-extern List slurmdb_accounts_remove(void *db_conn,
-				    slurmdb_account_cond_t *acct_cond)
-{
-	return acct_storage_g_remove_accounts(db_conn, getuid(), acct_cond);
-}
-
