@@ -5,6 +5,7 @@ documents those changes that are of interest to users and admins.
 ========================
  -- BLUEGENE - Fixed display of draining nodes for sinfo -R.
  -- Fixes to scontrol and sview when setting a job to an impossible start time.
+ -- Added -h to srun for help.
 
 * Changes in SLURM 2.1.4
 ========================
