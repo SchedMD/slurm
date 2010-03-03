@@ -894,12 +894,12 @@ static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 				 * (in req_bitmap) */
 	int consec_index, consec_size, sufficient;
 	int rem_cpus, rem_nodes;	/* remaining resources desired */
-	int total_cpus = 0;
+	int total_cpus = 0;	/* #CPUs allocated to job */
 	int best_fit_nodes, best_fit_cpus, best_fit_req;
 	int best_fit_sufficient, best_fit_index = 0;
 	int avail_cpus, ll;	/* ll = layout array index */
 	bool required_node;
-	bitstr_t *req_map      = job_ptr->details->req_node_bitmap;
+	bitstr_t *req_map    = job_ptr->details->req_node_bitmap;
 	uint16_t *layout_ptr = job_ptr->details->req_node_layout;
 
 	xassert(node_map);
@@ -955,7 +955,7 @@ static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 			if (consec_nodes[consec_index] == 0)
 				consec_start[consec_index] = index;
 			avail_cpus = cpu_cnt[i];
-			if (layout_ptr && required_node){
+			if (layout_ptr && required_node) {
 				avail_cpus = MIN(avail_cpus, layout_ptr[ll]);
 			} else if (layout_ptr) {
 				avail_cpus = 0; /* should not happen? */
@@ -1003,10 +1003,15 @@ static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 		       consec_end[i], consec_req[i]);
 	}
 
-	/* Keep Track of the total amount of cpus given to the job to
-	   make sure they don't overstep a limit if one exists.
-	*/
-	total_cpus = 0;
+	/* Compute CPUs already allocated to required nodes */
+	total_cpus = job_ptr->details->min_cpus - MAX(rem_cpus, 0);
+	if ((job_ptr->details->max_cpus != NO_VAL) &&
+	    (total_cpus > job_ptr->details->max_cpus)) {
+		info("Job %u can't use required node due to max CPU limit",
+		     job_ptr->job_id);
+		goto fini;
+	}
+
 	/* accumulate nodes from these sets of consecutive nodes until */
 	/*   sufficient resources have been accumulated */
 	while (consec_index && (max_nodes > 0)) {
@@ -1076,8 +1081,10 @@ static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 				if ((max_nodes <= 0) ||
 				    ((rem_nodes <= 0) && (rem_cpus <= 0)))
 					break;
-				if (bit_test(node_map, i))
+				if (bit_test(node_map, i)) {
+					/* required node already in set */
 					continue;
+				}
 				avail_cpus = _get_cpu_cnt(job_ptr, i, cpu_cnt,
 							  freq, size);
 				if (avail_cpus <= 0)
@@ -1204,7 +1211,7 @@ static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 	    _enough_nodes(0, rem_nodes, min_nodes, req_nodes))
 		error_code = SLURM_SUCCESS;
 
-	xfree(consec_cpus);
+fini:	xfree(consec_cpus);
 	xfree(consec_nodes);
 	xfree(consec_start);
 	xfree(consec_end);
@@ -1531,10 +1538,8 @@ static int _choose_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 				}
 				bit_clear(node_map, b);
 			}
-			/* Make sure we don't say we can use a node
-			   exclusively that is bigger than our max
-			   cpu count.
-			*/
+			/* Make sure we don't say we can use a node exclusively
+			 * that is bigger than our max cpu count. */
 			if ((!job_ptr->details->shared)
 			    && (job_ptr->details->max_cpus != NO_VAL)
 			    && (job_ptr->details->max_cpus < cpu_cnt[i])) {
