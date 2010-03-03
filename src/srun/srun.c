@@ -1390,9 +1390,11 @@ static void _handle_signal(int signo)
 		info ("forcing job termination");
 		slurm_step_launch_abort(job->step_ctx);
 		break;
-	/* case SIGTSTP: */
-/* 		debug3("got SIGTSTP"); */
-/* 		break; */
+#if 0
+	case SIGTSTP:
+		debug3("got SIGTSTP");
+		break;
+#endif
 	case SIGCONT:
 		debug3("got SIGCONT");
 		break;
