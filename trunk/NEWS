@@ -3,6 +3,7 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 2.2.0.pre3
 =============================
+ -- Refine support for TotalView partial attach. More work is still needed.
 
 * Changes in SLURM 2.2.0.pre2
 =============================
