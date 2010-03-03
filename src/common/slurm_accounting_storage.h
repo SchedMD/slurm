@@ -142,24 +142,6 @@ typedef struct {
 } acct_association_cond_t;
 
 typedef struct {
-	acct_association_cond_t *assoc_cond;/* use acct_list here for
-						names */
-	List description_list; /* list of char * */
-	List organization_list; /* list of char * */
-	uint16_t with_assocs;
-	uint16_t with_coords;
-	uint16_t with_deleted;
-} acct_account_cond_t;
-
-typedef struct {
-	List assoc_list; /* list of acct_association_rec_t *'s */
-	List coordinators; /* list of acct_coord_rec_t *'s */
-	char *description;
-	char *name;
-	char *organization;
-} acct_account_rec_t;
-
-typedef struct {
 	uint64_t alloc_secs; /* number of cpu seconds allocated */
 	uint32_t id;	/* association/wckey ID		*/
 	time_t period_start; /* when this record was started */
