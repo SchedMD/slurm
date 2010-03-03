@@ -819,7 +819,7 @@ static void set_options(const int argc, char **argv)
 		{"wckey",            required_argument, 0, LONG_OPT_WCKEY},
 		{NULL,               0,                 0, 0}
 	};
-	char *opt_string = "+aA:bB:c:C:d:D:e:Eg:Hi:IjJ:kKlL:m:n:N:"
+	char *opt_string = "+aA:bB:c:C:d:D:e:Eg:hHi:IjJ:kKlL:m:n:N:"
 		"o:Op:P:qQr:Rst:T:uU:vVw:W:x:XZ";
 #ifdef HAVE_PTY_H
 	char *tmp_str;
@@ -1208,6 +1208,7 @@ static void set_options(const int argc, char **argv)
 			pmi_server_max_threads(opt.max_threads);
 			opt.msg_timeout     = 15;
 			break;
+		case 'h':
 		case LONG_OPT_HELP:
 			_help();
 			exit(0);
@@ -2325,10 +2326,10 @@ static void _help(void)
 "      --resv-ports            reserve communication ports\n"
 "\n"
 "Affinity/Multi-core options: (when the task/affinity plugin is enabled)\n"
-"  -B  --extra-node-info=S[:C[:T]]            Expands to:\n"
-"       --sockets-per-node=S   number of sockets per node to allocate\n"
-"       --cores-per-socket=C   number of cores per socket to allocate\n"
-"       --threads-per-core=T   number of threads per core to allocate\n"
+"  -B, --extra-node-info=S[:C[:T]]           Expands to:\n"
+"      --sockets-per-node=S    number of sockets per node to allocate\n"
+"      --cores-per-socket=C    number of cores per socket to allocate\n"
+"      --threads-per-core=T    number of threads per core to allocate\n"
 "                              each field can be 'min' or wildcard '*'\n"
 "                              total cpus requested = (N x S x C x T)\n"
 "\n"
@@ -2380,7 +2381,7 @@ static void _help(void)
 "\n"
 "Help options:\n"
 "  -h, --help                  show this help message\n"
-"  -u, --usage                 display brief usage message\n"
+"      --usage                 display brief usage message\n"
 "\n"
 "Other options:\n"
 "  -V, --version               output version information and exit\n"
