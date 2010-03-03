@@ -360,7 +360,7 @@ static const char *_set_part_msg(update_part_msg_t *part_msg,
 	char *type = "";
 	int temp_int = 0;
 
-	errno = 0;
+	global_edit_error = 0;
 
 	if(!part_msg)
 		return NULL;
@@ -389,7 +389,7 @@ static const char *_set_part_msg(update_part_msg_t *part_msg,
 			temp_int = time_str2mins((char *)new_text);
 
 		type = "timelimit";
-		if(temp_int <= 0 && temp_int != INFINITE)
+		if((temp_int <= 0) && (temp_int != INFINITE))
 			goto return_error;
 		part_msg->max_time = (uint32_t)temp_int;
 		break;
@@ -478,7 +478,7 @@ static const char *_set_part_msg(update_part_msg_t *part_msg,
 	return type;
 
 return_error:
-	errno = 1;
+	global_edit_error = 1;
 	return type;
 
 }
@@ -517,10 +517,21 @@ static gboolean _admin_focus_out_part(GtkEntry *entry,
 				      update_part_msg_t *part_msg)
 {
 	if(global_entry_changed) {
+		const char *col_name = NULL;
 		int type = gtk_entry_get_max_length(entry);
 		const char *name = gtk_entry_get_text(entry);
 		type -= DEFAULT_ENTRY_LENGTH;
-		_set_part_msg(part_msg, name, type);
+		col_name = _set_part_msg(part_msg, name, type);
+		if(global_edit_error) {
+			if(global_edit_error_msg)
+				g_free(global_edit_error_msg);
+			global_edit_error_msg = g_strdup_printf(
+				"Partition %s %s can't be set to %s",
+				part_msg->name,
+				col_name,
+				name);
+		}
+
 		global_entry_changed = 0;
 	}
 	return false;
@@ -1763,7 +1774,7 @@ extern void admin_edit_part(GtkCellRendererText *cell,
 	}
 
 	type = _set_part_msg(part_msg, new_text, column);
-	if(errno)
+	if(global_edit_error)
 		goto print_error;
 	if(got_edit_signal) {
 		temp = got_edit_signal;
@@ -2402,7 +2413,9 @@ extern void admin_part(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 	response = gtk_dialog_run (GTK_DIALOG(popup));
 
 	if (response == GTK_RESPONSE_OK) {
-		if(!global_send_update_msg) {
+		if(global_edit_error)
+			temp = global_edit_error_msg;
+		else if(!global_send_update_msg) {
 			temp = g_strdup_printf("No change detected.");
 		} else if(slurm_update_partition(part_msg) == SLURM_SUCCESS) {
 			temp = g_strdup_printf(
