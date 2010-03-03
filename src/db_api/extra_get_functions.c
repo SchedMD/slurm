@@ -48,3 +48,84 @@
 #include <slurm/slurmdb.h>
 
 #include "src/common/slurm_accounting_storage.h"
+
+/*
+ * get info from the storage
+ * RET: List of config_key_pairs_t *
+ * note List needs to be freed when called
+ */
+extern List slurmdb_config_get(void *db_conn)
+{
+	List ret_list = NULL;
+
+	return ret_list;
+}
+
+/*
+ * get info from the storage
+ * IN:  slurmdb_event_cond_t *
+ * RET: List of slurmdb_event_rec_t *
+ * note List needs to be freed when called
+ */
+extern List slurmdb_events_get(void *db_conn,
+			       slurmdb_event_cond_t *event_cond)
+{
+	List ret_list = NULL;
+
+	return ret_list;
+}
+
+/*
+ * get info from the storage
+ * returns List of slurmdb_job_rec_t *
+ * note List needs to be freed when called
+ */
+extern List slurmdb_jobs_get(void *db_conn, slurmdb_job_cond_t *job_cond)
+{
+	List ret_list = NULL;
+
+	return ret_list;
+}
+
+/*
+ * get info from the storage
+ * IN:  slurmdb_association_cond_t *
+ * RET: List of slurmdb_association_rec_t *
+ * note List needs to be freed when called
+ */
+extern List slurmdb_problems_get(void *db_conn,
+				 slurmdb_association_cond_t *assoc_cond)
+{
+	List ret_list = NULL;
+
+	return ret_list;
+}
+
+/*
+ * get info from the storage
+ * IN:  slurmdb_reservation_cond_t *
+ * RET: List of slurmdb_reservation_rec_t *
+ * note List needs to be freed when called
+ */
+extern List slurmdb_reservations_get(void *db_conn,
+				     slurmdb_reservation_cond_t *resv_cond)
+{
+	List ret_list = NULL;
+
+	return ret_list;
+}
+
+/*
+ * get info from the storage
+ * IN:  slurmdb_txn_cond_t *
+ * RET: List of slurmdb_txn_rec_t *
+ * note List needs to be freed when called
+ */
+extern List slurmdb_txn_get(void *db_conn, slurmdb_txn_cond_t *txn_cond)
+{
+	List ret_list = NULL;
+
+	return ret_list;
+}
+
+

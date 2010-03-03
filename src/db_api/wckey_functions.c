@@ -47,3 +47,60 @@
 #include <slurm/slurmdb.h>
 
 #include "src/common/slurm_accounting_storage.h"
+
+/*
+ * add wckey's to accounting system
+ * IN:  wckey_list List of slurmdb_wckey_rec_t *
+ * RET: SLURM_SUCCESS on success SLURM_ERROR else
+ */
+extern int slurmdb_wckeys_add(void *db_conn, List wckey_list)
+{
+	int rc = SLURM_SUCCESS;
+
+	return rc;
+}
+
+/*
+ * get info from the storage
+ * IN:  slurmdb_wckey_cond_t *
+ * RET: List of slurmdb_wckey_rec_t *
+ * note List needs to be freed with slurm_list_destroy() when called
+ */
+extern List slurmdb_wckeys_get(void *db_conn,
+			       slurmdb_wckey_cond_t *wckey_cond)
+{
+	List ret_list = NULL;
+
+	return ret_list;
+}
+
+/*
+ * modify existing wckey in the accounting system
+ * IN:  slurmdb_wckey_cond_t *wckey_cond
+ * IN:  slurmdb_wckey_rec_t *wckey
+ * RET: List containing (char *'s) else NULL on error
+ * note List needs to be freed with slurm_list_destroy() when called
+ */
+extern List slurmdb_wckeys_modify(void *db_conn,
+				  slurmdb_wckey_cond_t *wckey_cond,
+				  slurmdb_wckey_rec_t *wckey)
+{
+	List ret_list = NULL;
+
+	return ret_list;
+}
+
+/*
+ * remove wckey from accounting system
+ * IN:  slurmdb_wckey_cond_t *assoc_wckey
+ * RET: List containing (char *'s) else NULL on error
+ * note List needs to be freed with slurm_list_destroy() when called
+ */
+extern List slurmdb_wckeys_remove(void *db_conn,
+				  slurmdb_wckey_cond_t *wckey_cond)
+{
+	List ret_list = NULL;
+
+	return ret_list;
+}
+

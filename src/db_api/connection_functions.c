@@ -47,3 +47,24 @@
 #include <slurm/slurmdb.h>
 
 #include "src/common/slurm_accounting_storage.h"
+/*
+ * get a new connection to the slurmdb
+ * RET: pointer used to access db
+ */
+extern void *slurmdb_connection_get()
+{
+	return NULL;
+}
+
+/*
+ * release connection to the storage unit
+ * IN/OUT: void ** pointer returned from
+ *         slurmdb_connection_get() which will be freed.
+ * RET: SLURM_SUCCESS on success SLURM_ERROR else
+ */
+extern int slurmdb_connection_close(void **db_conn)
+{
+	int rc = SLURM_SUCCESS;
+
+	return rc;
+}

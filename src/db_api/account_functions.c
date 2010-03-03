@@ -55,5 +55,51 @@
  */
 extern int slurmdb_add_accounts(void *db_conn, List acct_list)
 {
+	int rc = SLURM_SUCCESS;
 
+	return rc;
 }
+
+/*
+ * get info from the storage
+ * IN:  slurmdb_account_cond_t *
+ * IN:  params void *
+ * returns List of slurmdb_account_rec_t *
+ * note List needs to be freed when called
+ */
+extern List slurmdb_accounts_get(void *db_conn,
+				 slurmdb_account_cond_t *acct_cond)
+{
+	List ret_list = NULL;
+
+	return ret_list;
+}
+
+/*
+ * modify existing accounts in the accounting system
+ * IN:  slurmdb_acct_cond_t *acct_cond
+ * IN:  slurmdb_account_rec_t *acct
+ * RET: List containing (char *'s) else NULL on error
+ */
+extern List slurmdb_accounts_modify(void *db_conn,
+				    slurmdb_account_cond_t *acct_cond,
+				    slurmdb_account_rec_t *acct)
+{
+	List ret_list = NULL;
+
+	return ret_list;
+}
+
+/*
+ * remove accounts from accounting system
+ * IN:  slurmdb_account_cond_t *acct_cond
+ * RET: List containing (char *'s) else NULL on error
+ */
+extern List slurmdb_accounts_remove(void *db_conn,
+				    slurmdb_account_cond_t *acct_cond)
+{
+	List ret_list = NULL;
+
+	return ret_list;
+}
+

@@ -47,3 +47,41 @@
 #include <slurm/slurmdb.h>
 
 #include "src/common/slurm_accounting_storage.h"
+
+extern void slurmdb_init_association_rec(slurmdb_association_rec_t *assoc)
+{
+
+}
+
+extern void slurmdb_init_qos_rec(slurmdb_qos_rec_t *qos)
+{
+
+}
+
+/* The next two functions have pointers to assoc_list so do not
+ * destroy assoc_list before using the list returned from this function.
+ */
+extern List slurmdb_get_hierarchical_sorted_assoc_list(List assoc_list)
+{
+	List ret_list = NULL;
+
+	return ret_list;
+}
+
+extern List slurmdb_get_acct_hierarchical_rec_list(List assoc_list)
+{
+	List ret_list = NULL;
+
+	return ret_list;
+}
+
+
+/* IN/OUT: tree_list a list of acct_print_tree_t's */
+extern char *slurmdb_get_tree_acct_name(char *name, char *parent,
+					List tree_list)
+{
+	char *ret_name = NULL;
+
+	return ret_name;
+}
+
