@@ -47,3 +47,38 @@
 #include <slurm/slurmdb.h>
 
 #include "src/common/slurm_accounting_storage.h"
+
+/*
+ * get info from the storage
+ * IN/OUT:  in void * (slurmdb_association_rec_t *) or
+ *          (slurmdb_wckey_rec_t *) of (slurmdb_cluster_rec_t *) with
+ *          the id, and cluster set.
+ * IN:  type what type is 'in'
+ * IN:  start time stamp for records >=
+ * IN:  end time stamp for records <=
+ * RET: SLURM_SUCCESS on success SLURM_ERROR else
+ */
+extern int slurmdb_usage_get(void *db_conn,  void *in, int type,
+			     time_t start, time_t end)
+{
+	int rc = SLURM_SUCCESS;
+
+	return rc;
+}
+
+/*
+ * roll up data in the storage
+ * IN: sent_start (option time to do a re-roll or start from this point)
+ * IN: sent_end (option time to do a re-roll or end at this point)
+ * IN: archive_data (if 0 old data is not archived in a monthly rollup)
+ * RET: SLURM_SUCCESS on success SLURM_ERROR else
+ */
+extern int slurmdb_usage_roll(void *db_conn,
+			      time_t sent_start, time_t sent_end,
+			      uint16_t archive_data)
+{
+	int rc = SLURM_SUCCESS;
+
+	return rc;
+}
+

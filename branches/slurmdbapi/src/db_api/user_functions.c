@@ -47,3 +47,61 @@
 #include <slurm/slurmdb.h>
 
 #include "src/common/slurm_accounting_storage.h"
+
+/*
+ * add users to accounting system
+ * IN:  user_list List of slurmdb_user_rec_t *
+ * RET: SLURM_SUCCESS on success SLURM_ERROR else
+ */
+extern int slurmdb_users_add(void *db_conn, List user_list)
+{
+	int rc = SLURM_SUCCESS;
+
+	return rc;
+}
+
+/*
+ * get info from the storage
+ * IN:  slurmdb_user_cond_t *
+ * IN:  params void *
+ * returns List of slurmdb_user_rec_t *
+ * note List needs to be freed with slurm_list_destroy() when called
+ */
+extern List slurmdb_users_get(void *db_conn, slurmdb_user_cond_t *user_cond)
+{
+	List ret_list = NULL;
+
+	return ret_list;
+}
+
+/*
+ * modify existing users in the accounting system
+ * IN:  slurmdb_user_cond_t *user_cond
+ * IN:  slurmdb_user_rec_t *user
+ * RET: List containing (char *'s) else NULL on error
+ * note List needs to be freed with slurm_list_destroy() when called
+ */
+extern List slurmdb_users_modify(void *db_conn,
+				 slurmdb_user_cond_t *user_cond,
+				 slurmdb_user_rec_t *user)
+{
+	List ret_list = NULL;
+
+	return ret_list;
+}
+
+/*
+ * remove users from accounting system
+ * IN:  slurmdb_user_cond_t *user_cond
+ * RET: List containing (char *'s) else NULL on error
+ * note List needs to be freed with slurm_list_destroy() when called
+ */
+extern List slurmdb_users_remove(void *db_conn,
+				 slurmdb_user_cond_t *user_cond)
+{
+	List ret_list = NULL;
+
+	return ret_list;
+}
+
+

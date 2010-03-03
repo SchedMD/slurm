@@ -47,3 +47,58 @@
 #include <slurm/slurmdb.h>
 
 #include "src/common/slurm_accounting_storage.h"
+
+/*
+ * add qos's to accounting system
+ * IN:  qos_list List of char *
+ * RET: SLURM_SUCCESS on success SLURM_ERROR else
+ */
+extern int slurmdb_qos_add(void *db_conn, uint32_t uid, List qos_list)
+{
+	int rc = SLURM_SUCCESS;
+
+	return rc;
+}
+
+/*
+ * get info from the storage
+ * IN:  slurmdb_qos_cond_t *
+ * RET: List of slurmdb_qos_rec_t *
+ * note List needs to be freed with slurm_list_destroy() when called
+ */
+extern List slurmdb_qos_get(void *db_conn, slurmdb_qos_cond_t *qos_cond)
+{
+	List ret_list = NULL;
+
+	return ret_list;
+}
+
+/*
+ * modify existing qos in the accounting system
+ * IN:  slurmdb_qos_cond_t *qos_cond
+ * IN:  slurmdb_qos_rec_t *qos
+ * RET: List containing (char *'s) else NULL on error
+ * note List needs to be freed with slurm_list_destroy() when called
+ */
+extern List slurmdb_qos_modify(void *db_conn,
+			       slurmdb_qos_cond_t *qos_cond,
+			       slurmdb_qos_rec_t *qos)
+{
+	List ret_list = NULL;
+
+	return ret_list;
+}
+
+/*
+ * remove qos from accounting system
+ * IN:  slurmdb_qos_cond_t *assoc_qos
+ * RET: List containing (char *'s) else NULL on error
+ * note List needs to be freed with slurm_list_destroy() when called
+ */
+extern List slurmdb_qos_remove(void *db_conn, slurmdb_qos_cond_t *qos_cond)
+{
+	List ret_list = NULL;
+
+	return ret_list;
+}
+

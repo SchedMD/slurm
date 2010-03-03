@@ -47,3 +47,59 @@
 #include <slurm/slurmdb.h>
 
 #include "src/common/slurm_accounting_storage.h"
+
+/*
+ * add clusters to accounting system
+ * IN:  cluster_list List of slurmdb_cluster_rec_t *
+ * RET: SLURM_SUCCESS on success SLURM_ERROR else
+ */
+extern int slurmdb_clusters_add(void *db_conn, List cluster_list)
+{
+	int rc = SLURM_SUCCESS;
+
+	return rc;
+}
+
+/*
+ * get info from the storage
+ * IN:  slurmdb_cluster_cond_t *
+ * IN:  params void *
+ * returns List of slurmdb_cluster_rec_t *
+ * note List needs to be freed when called
+ */
+extern List slurmdb_clusters_get(void *db_conn,
+				 slurmdb_cluster_cond_t *cluster_cond)
+{
+	List ret_list = NULL;
+
+	return ret_list;
+}
+
+/*
+ * modify existing clusters in the accounting system
+ * IN:  slurmdb_cluster_cond_t *cluster_cond
+ * IN:  slurmdb_cluster_rec_t *cluster
+ * RET: List containing (char *'s) else NULL on error
+ */
+extern List slurmdb_clusters_modify(void *db_conn,
+				    slurmdb_cluster_cond_t *cluster_cond,
+				    slurmdb_cluster_rec_t *cluster)
+{
+	List ret_list = NULL;
+
+	return ret_list;
+}
+
+/*
+ * remove clusters from accounting system
+ * IN:  slurmdb_cluster_cond_t *cluster_cond
+ * RET: List containing (char *'s) else NULL on error
+ */
+extern List slurmdb_clusters_remove(void *db_conn,
+				    slurmdb_cluster_cond_t *cluster_cond)
+{
+	List ret_list = NULL;
+
+	return ret_list;
+}
+

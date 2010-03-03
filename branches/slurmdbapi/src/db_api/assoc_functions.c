@@ -47,3 +47,59 @@
 #include <slurm/slurmdb.h>
 
 #include "src/common/slurm_accounting_storage.h"
+
+/*
+ * add associations to accounting system
+ * IN:  association_list List of slurmdb_association_rec_t *
+ * RET: SLURM_SUCCESS on success SLURM_ERROR else
+ */
+extern int slurmdb_associations_add(void *db_conn, List association_list)
+{
+	int rc = SLURM_SUCCESS;
+
+	return rc;
+}
+
+/*
+ * get info from the storage
+ * IN:  slurmdb_association_cond_t *
+ * RET: List of slurmdb_association_rec_t *
+ * note List needs to be freed when called
+ */
+extern List slurmdb_associations_get(void *db_conn,
+				     slurmdb_association_cond_t *assoc_cond)
+{
+	List ret_list = NULL;
+
+	return ret_list;
+}
+
+
+/*
+ * modify existing associations in the accounting system
+ * IN:  slurmdb_association_cond_t *assoc_cond
+ * IN:  slurmdb_association_rec_t *assoc
+ * RET: List containing (char *'s) else NULL on error
+ */
+extern List slurmdb_associations_modify(void *db_conn,
+					slurmdb_association_cond_t *assoc_cond,
+					slurmdb_association_rec_t *assoc)
+{
+	List ret_list = NULL;
+
+	return ret_list;
+}
+
+/*
+ * remove associations from accounting system
+ * IN:  slurmdb_association_cond_t *assoc_cond
+ * RET: List containing (char *'s) else NULL on error
+ */
+extern List slurmdb_associations_remove(
+	void *db_conn, slurmdb_association_cond_t *assoc_cond)
+{
+	List ret_list = NULL;
+
+	return ret_list;
+}
+

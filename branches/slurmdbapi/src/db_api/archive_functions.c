@@ -49,11 +49,23 @@
 #include "src/common/slurm_accounting_storage.h"
 
 /*
- * add accounts to accounting system
- * IN:  account_list List of slurmdb_account_rec_t *
- * RET: SLURM_SUCCESS on success SLURM_ERROR else
+ * expire old info from the storage
  */
-extern int slurmdb_add_accounts(void *db_conn, List acct_list)
+extern int slurmdb_archive(void *db_conn, slurmdb_archive_cond_t *arch_cond)
 {
+	int rc = SLURM_SUCCESS;
 
+	return rc;
 }
+
+/*
+ * expire old info from the storage
+ */
+extern int slurmdb_archive_load(void *db_conn,
+				slurmdb_archive_rec_t *arch_rec)
+{
+	int rc = SLURM_SUCCESS;
+
+	return rc;
+}
+

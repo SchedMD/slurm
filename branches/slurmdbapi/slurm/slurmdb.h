@@ -200,7 +200,7 @@ typedef struct {
 	uint32_t requid;
 	time_t start;
 	enum job_states	state;
-	slurmdbd_stats_t stats;
+	slurmdb_stats_t stats;
 	uint32_t stepid;	/* job's step number */
 	char *stepname;
 	uint32_t suspended;
@@ -375,9 +375,9 @@ typedef struct slurmdb_association_rec {
 				    * (DON'T PACK) */
 
 	char *user;		/* user associated to association */
-	bitstr_t *valid_qos;    /* qos available for this association
-				 * derived from the qos_list.
-				 * (DON'T PACK) */
+	/* bitstr_t *valid_qos;    /\* qos available for this association */
+	/* 			 * derived from the qos_list. */
+	/* 			 * (DON'T PACK) *\/ */
 } slurmdb_association_rec_t;
 
 typedef struct {
@@ -505,7 +505,7 @@ typedef struct {
 
 	char *name;
 	double norm_priority;/* normalized priority (DON'T PACK) */
-	bitstr_t *preempt_bitstr; /* other qos' this qos can preempt */
+	//bitstr_t *preempt_bitstr; /* other qos' this qos can preempt */
 	List preempt_list; /* list of char *'s only used to add or
 			    * change the other qos' this can preempt,
 			    * when doing a get use the preempt_bitstr */
@@ -654,11 +654,6 @@ typedef struct {
 } slurmdb_wckey_rec_t;
 
 typedef struct {
-	uint32_t assoc_id;	/* association ID		*/
-	uint32_t shares_used;	/* measure of recent usage	*/
-} shares_used_object_t;
-
-typedef struct {
 	uint64_t alloc_secs; /* number of cpu seconds allocated */
 	uint32_t cpu_count; /* number of cpus during time period */
 	uint64_t down_secs; /* number of cpu seconds down */
@@ -667,7 +662,7 @@ typedef struct {
 	uint64_t pdown_secs; /* number of cpu seconds planned down */
 	time_t period_start; /* when this record was started */
 	uint64_t resv_secs; /* number of cpu seconds reserved */
-} cluster_accounting_rec_t;
+} slurmdb_cluster_accounting_rec_t;
 
 typedef struct {
 	char *name;
@@ -721,35 +716,37 @@ typedef struct {
  * IN:  account_list List of slurmdb_account_rec_t *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int slurmdbd_accounts_add(void *db_conn, List acct_list);
+extern int slurmdb_accounts_add(void *db_conn, List acct_list);
 
 /*
  * get info from the storage
  * IN:  slurmdb_account_cond_t *
  * IN:  params void *
  * returns List of slurmdb_account_rec_t *
- * note List needs to be freed when called
+ * note List needs to be freed with slurm_list_destroy() when called
  */
-extern List slurmdbd_accounts_get(void *db_conn,
-				  slurmdb_account_cond_t *acct_cond);
+extern List slurmdb_accounts_get(void *db_conn,
+				 slurmdb_account_cond_t *acct_cond);
 
 /*
  * modify existing accounts in the accounting system
  * IN:  slurmdb_acct_cond_t *acct_cond
  * IN:  slurmdb_account_rec_t *acct
  * RET: List containing (char *'s) else NULL on error
+ * note List needs to be freed with slurm_list_destroy() when called
  */
-extern List slurmdbd_accounts_modify(void *db_conn,
-				     slurmdb_account_cond_t *acct_cond,
-				     slurmdb_account_rec_t *acct);
+extern List slurmdb_accounts_modify(void *db_conn,
+				    slurmdb_account_cond_t *acct_cond,
+				    slurmdb_account_rec_t *acct);
 
 /*
  * remove accounts from accounting system
  * IN:  slurmdb_account_cond_t *acct_cond
  * RET: List containing (char *'s) else NULL on error
+ * note List needs to be freed with slurm_list_destroy() when called
  */
-extern List slurmdbd_accounts_remove(void *db_conn,
-				     slurmdb_account_cond_t *acct_cond);
+extern List slurmdb_accounts_remove(void *db_conn,
+				    slurmdb_account_cond_t *acct_cond);
 
 
 /************** archive functions **************/
@@ -762,8 +759,8 @@ extern int slurmdb_archive(void *db_conn, slurmdb_archive_cond_t *arch_cond);
 /*
  * expire old info from the storage
  */
-extern int slurmdbd_archive_load(void *db_conn,
-				 slurmdb_archive_rec_t *arch_rec);
+extern int slurmdb_archive_load(void *db_conn,
+				slurmdb_archive_rec_t *arch_rec);
 
 
 /************** association functions **************/
@@ -773,33 +770,35 @@ extern int slurmdbd_archive_load(void *db_conn,
  * IN:  association_list List of slurmdb_association_rec_t *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int slurmdbd_associations_add(void *db_conn, List association_list);
+extern int slurmdb_associations_add(void *db_conn, List association_list);
 
 /*
  * get info from the storage
  * IN:  slurmdb_association_cond_t *
  * RET: List of slurmdb_association_rec_t *
- * note List needs to be freed when called
+ * note List needs to be freed with slurm_list_destroy() when called
  */
-extern List slurmdbd_associations_get(void *db_conn,
-				      slurmdb_association_cond_t *assoc_cond);
+extern List slurmdb_associations_get(void *db_conn,
+				     slurmdb_association_cond_t *assoc_cond);
 
 /*
  * modify existing associations in the accounting system
  * IN:  slurmdb_association_cond_t *assoc_cond
  * IN:  slurmdb_association_rec_t *assoc
  * RET: List containing (char *'s) else NULL on error
+ * note List needs to be freed with slurm_list_destroy() when called
  */
-extern List slurmdbd_associations_modify(void *db_conn,
-					 slurmdb_association_cond_t *assoc_cond,
-					 slurmdb_association_rec_t *assoc);
+extern List slurmdb_associations_modify(void *db_conn,
+					slurmdb_association_cond_t *assoc_cond,
+					slurmdb_association_rec_t *assoc);
 
 /*
  * remove associations from accounting system
  * IN:  slurmdb_association_cond_t *assoc_cond
  * RET: List containing (char *'s) else NULL on error
+ * note List needs to be freed with slurm_list_destroy() when called
  */
-extern List slurmdbd_associations_remove(
+extern List slurmdb_associations_remove(
 	void *db_conn, slurmdb_association_cond_t *assoc_cond);
 
 /************** cluster functions **************/
@@ -809,35 +808,37 @@ extern List slurmdbd_associations_remove(
  * IN:  cluster_list List of slurmdb_cluster_rec_t *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int slurmdbd_clusters_add(void *db_conn, List cluster_list);
+extern int slurmdb_clusters_add(void *db_conn, List cluster_list);
 
 /*
  * get info from the storage
  * IN:  slurmdb_cluster_cond_t *
  * IN:  params void *
  * returns List of slurmdb_cluster_rec_t *
- * note List needs to be freed when called
+ * note List needs to be freed with slurm_list_destroy() when called
  */
-extern List slurmdbd_clusters_get(void *db_conn,
-				  slurmdb_cluster_cond_t *cluster_cond);
+extern List slurmdb_clusters_get(void *db_conn,
+				 slurmdb_cluster_cond_t *cluster_cond);
 
 /*
  * modify existing clusters in the accounting system
  * IN:  slurmdb_cluster_cond_t *cluster_cond
  * IN:  slurmdb_cluster_rec_t *cluster
  * RET: List containing (char *'s) else NULL on error
+ * note List needs to be freed with slurm_list_destroy() when called
  */
-extern List slurmdbd_clusters_modify(void *db_conn,
-				     slurmdb_cluster_cond_t *cluster_cond,
-				     slurmdb_cluster_rec_t *cluster);
+extern List slurmdb_clusters_modify(void *db_conn,
+				    slurmdb_cluster_cond_t *cluster_cond,
+				    slurmdb_cluster_rec_t *cluster);
 
 /*
  * remove clusters from accounting system
  * IN:  slurmdb_cluster_cond_t *cluster_cond
  * RET: List containing (char *'s) else NULL on error
+ * note List needs to be freed with slurm_list_destroy() when called
  */
-extern List slurmdbd_clusters_remove(void *db_conn,
-				     slurmdb_cluster_cond_t *cluster_cond);
+extern List slurmdb_clusters_remove(void *db_conn,
+				    slurmdb_cluster_cond_t *cluster_cond);
 
 /************** cluster report functions **************/
 
@@ -848,14 +849,14 @@ extern List slurmdbd_clusters_remove(void *db_conn,
  * get a new connection to the slurmdb
  * RET: pointer used to access db
  */
-extern void *slurmdbd_connection_get();
+extern void *slurmdb_connection_get();
 /*
  * release connection to the storage unit
  * IN/OUT: void ** pointer returned from
- *         slurmdbd_connection_get() which will be freed.
+ *         slurmdb_connection_get() which will be freed.
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int slurmdbd_connection_close(void **db_conn);
+extern int slurmdb_connection_close(void **db_conn);
 
 
 /************** coordinator functions **************/
@@ -866,40 +867,41 @@ extern int slurmdbd_connection_close(void **db_conn);
  * IN:  slurmdb_user_cond_t *user_cond
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int slurmdbd_coord_add(void *db_conn, List acct_list,
-			      slurmdb_user_cond_t *user_cond);
+extern int slurmdb_coord_add(void *db_conn, List acct_list,
+			     slurmdb_user_cond_t *user_cond);
 
 /*
  * remove users from being a coordinator of an account
  * IN: acct_list list of char *'s of names of accounts
  * IN: slurmdb_user_cond_t *user_cond
  * RET: List containing (char *'s) else NULL on error
+ * note List needs to be freed with slurm_list_destroy() when called
  */
-extern List slurmdbd_coord_remove(void *db_conn, List acct_list,
-				  slurmdb_user_cond_t *user_cond);
+extern List slurmdb_coord_remove(void *db_conn, List acct_list,
+				 slurmdb_user_cond_t *user_cond);
 
 /************** extra get functions **************/
 
 /*
  * get info from the storage
  * RET: List of config_key_pairs_t *
- * note List needs to be freed when called
+ * note List needs to be freed with slurm_list_destroy() when called
  */
-extern List slurmdbd_config_get(void *db_conn);
+extern List slurmdb_config_get(void *db_conn);
 
 /*
  * get info from the storage
  * IN:  slurmdb_event_cond_t *
  * RET: List of slurmdb_event_rec_t *
- * note List needs to be freed when called
+ * note List needs to be freed with slurm_list_destroy() when called
  */
-extern List slurmdbd_events_get(void *db_conn,
-				slurmdb_event_cond_t *event_cond);
+extern List slurmdb_events_get(void *db_conn,
+			       slurmdb_event_cond_t *event_cond);
 
 /*
  * get info from the storage
  * returns List of slurmdb_job_rec_t *
- * note List needs to be freed when called
+ * note List needs to be freed with slurm_list_destroy() when called
  */
 extern List slurmdb_jobs_get(void *db_conn, slurmdb_job_cond_t *job_cond);
 
@@ -907,27 +909,27 @@ extern List slurmdb_jobs_get(void *db_conn, slurmdb_job_cond_t *job_cond);
  * get info from the storage
  * IN:  slurmdb_association_cond_t *
  * RET: List of slurmdb_association_rec_t *
- * note List needs to be freed when called
+ * note List needs to be freed with slurm_list_destroy() when called
  */
-extern List slurmdbd_problems_get(void *db_conn,
-				  slurmdb_association_cond_t *assoc_cond);
+extern List slurmdb_problems_get(void *db_conn,
+				 slurmdb_association_cond_t *assoc_cond);
 
 /*
  * get info from the storage
  * IN:  slurmdb_reservation_cond_t *
  * RET: List of slurmdb_reservation_rec_t *
- * note List needs to be freed when called
+ * note List needs to be freed with slurm_list_destroy() when called
  */
-extern List slurmdbd_reservations_get(void *db_conn,
-				      slurmdb_reservation_cond_t *resv_cond);
+extern List slurmdb_reservations_get(void *db_conn,
+				     slurmdb_reservation_cond_t *resv_cond);
 
 /*
  * get info from the storage
  * IN:  slurmdb_txn_cond_t *
  * RET: List of slurmdb_txn_rec_t *
- * note List needs to be freed when called
+ * note List needs to be freed with slurm_list_destroy() when called
  */
-extern List slurmdbd_txn_get(void *db_conn, slurmdb_txn_cond_t *txn_cond);
+extern List slurmdb_txn_get(void *db_conn, slurmdb_txn_cond_t *txn_cond);
 
 
 /************** helper functions **************/
@@ -956,31 +958,34 @@ extern char *slurmdb_get_tree_acct_name(char *name, char *parent,
  * IN:  qos_list List of char *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int slurmdbd_qos_add(void *db_conn, uint32_t uid, List qos_list);
+extern int slurmdb_qos_add(void *db_conn, uint32_t uid, List qos_list);
 
 /*
  * get info from the storage
  * IN:  slurmdb_qos_cond_t *
  * RET: List of slurmdb_qos_rec_t *
- * note List needs to be freed when called
+ * note List needs to be freed with slurm_list_destroy() when called
  */
-extern List slurmdbd_qos_get(void *db_conn, slurmdb_qos_cond_t *qos_cond);
+extern List slurmdb_qos_get(void *db_conn, slurmdb_qos_cond_t *qos_cond);
 
 /*
  * modify existing qos in the accounting system
  * IN:  slurmdb_qos_cond_t *qos_cond
  * IN:  slurmdb_qos_rec_t *qos
  * RET: List containing (char *'s) else NULL on error
+ * note List needs to be freed with slurm_list_destroy() when called
  */
-extern List slurmdbd_qos_modify(void *db_conn,
-				slurmdb_qos_cond_t *qos_cond,
-				slurmdb_qos_rec_t *qos);
+extern List slurmdb_qos_modify(void *db_conn,
+			       slurmdb_qos_cond_t *qos_cond,
+			       slurmdb_qos_rec_t *qos);
+
 /*
  * remove qos from accounting system
  * IN:  slurmdb_qos_cond_t *assoc_qos
  * RET: List containing (char *'s) else NULL on error
+ * note List needs to be freed with slurm_list_destroy() when called
  */
-extern List slurmdbd_qos_remove(void *db_conn, slurmdb_qos_cond_t *qos_cond);
+extern List slurmdb_qos_remove(void *db_conn, slurmdb_qos_cond_t *qos_cond);
 
 /************** usage functions **************/
 
@@ -994,8 +999,8 @@ extern List slurmdbd_qos_remove(void *db_conn, slurmdb_qos_cond_t *qos_cond);
  * IN:  end time stamp for records <=
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int slurmdbd_usage_get(void *db_conn,  void *in, int type,
-			      time_t start, time_t end);
+extern int slurmdb_usage_get(void *db_conn,  void *in, int type,
+			     time_t start, time_t end);
 
 /*
  * roll up data in the storage
@@ -1004,9 +1009,9 @@ extern int slurmdbd_usage_get(void *db_conn,  void *in, int type,
  * IN: archive_data (if 0 old data is not archived in a monthly rollup)
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int slurmdbd_usage_roll(void *db_conn,
-			       time_t sent_start, time_t sent_end,
-			       uint16_t archive_data);
+extern int slurmdb_usage_roll(void *db_conn,
+			      time_t sent_start, time_t sent_end,
+			      uint16_t archive_data);
 
 /************** user functions **************/
 
@@ -1015,33 +1020,36 @@ extern int slurmdbd_usage_roll(void *db_conn,
  * IN:  user_list List of slurmdb_user_rec_t *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int slurmdbd_users_add(void *db_conn, List user_list);
+extern int slurmdb_users_add(void *db_conn, List user_list);
 
 /*
  * get info from the storage
  * IN:  slurmdb_user_cond_t *
  * IN:  params void *
  * returns List of slurmdb_user_rec_t *
- * note List needs to be freed when called
+ * note List needs to be freed with slurm_list_destroy() when called
  */
-extern List slurmdbd_users_get(void *db_conn, slurmdb_user_cond_t *user_cond);
+extern List slurmdb_users_get(void *db_conn, slurmdb_user_cond_t *user_cond);
 
 /*
  * modify existing users in the accounting system
  * IN:  slurmdb_user_cond_t *user_cond
  * IN:  slurmdb_user_rec_t *user
  * RET: List containing (char *'s) else NULL on error
+ * note List needs to be freed with slurm_list_destroy() when called
  */
-extern List slurmdbd_users_modify(void *db_conn,
-				  slurmdb_user_cond_t *user_cond,
-				  slurmdb_user_rec_t *user);
+extern List slurmdb_users_modify(void *db_conn,
+				 slurmdb_user_cond_t *user_cond,
+				 slurmdb_user_rec_t *user);
+
 /*
  * remove users from accounting system
  * IN:  slurmdb_user_cond_t *user_cond
  * RET: List containing (char *'s) else NULL on error
+ * note List needs to be freed with slurm_list_destroy() when called
  */
-extern List slurmdbd_users_remove(void *db_conn,
-				  slurmdb_user_cond_t *user_cond);
+extern List slurmdb_users_remove(void *db_conn,
+				 slurmdb_user_cond_t *user_cond);
 
 
 /************** user report functions **************/
@@ -1054,34 +1062,36 @@ extern List slurmdbd_users_remove(void *db_conn,
  * IN:  wckey_list List of slurmdb_wckey_rec_t *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int slurmdbd_wckeys_add(void *db_conn, List wckey_list);
+extern int slurmdb_wckeys_add(void *db_conn, List wckey_list);
 
 /*
  * get info from the storage
  * IN:  slurmdb_wckey_cond_t *
  * RET: List of slurmdb_wckey_rec_t *
- * note List needs to be freed when called
+ * note List needs to be freed with slurm_list_destroy() when called
  */
-extern List slurmdbd_wckeys_get(void *db_conn,
-				slurmdb_wckey_cond_t *wckey_cond);
+extern List slurmdb_wckeys_get(void *db_conn,
+			       slurmdb_wckey_cond_t *wckey_cond);
 
 /*
  * modify existing wckey in the accounting system
  * IN:  slurmdb_wckey_cond_t *wckey_cond
  * IN:  slurmdb_wckey_rec_t *wckey
  * RET: List containing (char *'s) else NULL on error
+ * note List needs to be freed with slurm_list_destroy() when called
  */
-extern List slurmdbd_wckeys_modify(void *db_conn,
-				   slurmdb_wckey_cond_t *wckey_cond,
-				   slurmdb_wckey_rec_t *wckey);
+extern List slurmdb_wckeys_modify(void *db_conn,
+				  slurmdb_wckey_cond_t *wckey_cond,
+				  slurmdb_wckey_rec_t *wckey);
 
 /*
  * remove wckey from accounting system
  * IN:  slurmdb_wckey_cond_t *assoc_wckey
  * RET: List containing (char *'s) else NULL on error
+ * note List needs to be freed with slurm_list_destroy() when called
  */
-extern List slurmdbd_wckeys_remove(void *db_conn,
-				   slurmdb_wckey_cond_t *wckey_cond);
+extern List slurmdb_wckeys_remove(void *db_conn,
+				  slurmdb_wckey_cond_t *wckey_cond);
 
 END_C_DECLS
 

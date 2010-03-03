@@ -47,3 +47,32 @@
 #include <slurm/slurmdb.h>
 
 #include "src/common/slurm_accounting_storage.h"
+
+/*
+ * add users as account coordinators
+ * IN: acct_list list of char *'s of names of accounts
+ * IN:  slurmdb_user_cond_t *user_cond
+ * RET: SLURM_SUCCESS on success SLURM_ERROR else
+ */
+extern int slurmdb_coord_add(void *db_conn, List acct_list,
+			     slurmdb_user_cond_t *user_cond)
+{
+	int rc = SLURM_SUCCESS;
+
+	return rc;
+}
+
+/*
+ * remove users from being a coordinator of an account
+ * IN: acct_list list of char *'s of names of accounts
+ * IN: slurmdb_user_cond_t *user_cond
+ * RET: List containing (char *'s) else NULL on error
+ */
+extern List slurmdb_coord_remove(void *db_conn, List acct_list,
+				 slurmdb_user_cond_t *user_cond)
+{
+	List ret_list = NULL;
+
+	return ret_list;
+}
+
