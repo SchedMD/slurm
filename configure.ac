@@ -81,7 +81,7 @@ AC_CHECK_HEADERS(mcheck.h values.h socket.h sys/socket.h  \
                  sys/systemcfg.h ncurses.h curses.h sys/dr.h sys/vfs.h \
                  pam/pam_appl.h security/pam_appl.h sys/sysctl.h \
                  pty.h utmp.h \
-		 sys/syslog.h \
+		 sys/syslog.h linux/sched.h \
 		 kstat.h paths.h limits.h sys/statfs.h sys/ptrace.h sys/termios.h \
 		)
 AC_HEADER_SYS_WAIT

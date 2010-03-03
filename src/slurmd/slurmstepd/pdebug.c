@@ -38,6 +38,14 @@
 \*****************************************************************************/
 #include "pdebug.h"
 
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+
+#ifdef HAVE_LINUX_SCHED_H
+#  include <linux/sched.h>
+#endif
+
 /*
  * Prepare task for parallel debugger attach
  * Returns SLURM_SUCCESS or SLURM_ERROR.
@@ -124,16 +132,47 @@ pdebug_stop_current(slurmd_job_t *job)
 		error("ptrace: %m");
 }
 
+/* Check if this PID should be woken for TotalView partitial attach */
+static bool _pid_to_wake(pid_t pid)
+{
+#ifdef CLONE_PTRACE
+	char proc_stat[1024], proc_name[22], state[1], *str_ptr;
+	int proc_fd, ppid, pgrp, session, tty, tpgid;
+	long unsigned flags;
+
+	sprintf (proc_name, "/proc/%d/stat", (int) pid);
+	if ((proc_fd = open(proc_name, O_RDONLY, 0)) == -1)
+		return false;  /* process is now gone */
+	read(proc_fd, proc_stat, sizeof(proc_stat));
+	close(proc_fd);
+	/* skip over "PID (CMD) " */
+	if ((str_ptr = (char *)strrchr(proc_stat, ')')) == NULL)
+		return false;
+	if (sscanf(str_ptr + 2, 
+		   "%c %d %d %d %d %d %lu ", 
+		   state, &ppid, &pgrp, &session, &tty, &tpgid, &flags) != 7)
+		return false;
+	if ((flags & CLONE_PTRACE) == 0)
+		return true;
+	return false;
+#else
+	int status;
+
+	waitpid(pid, &status, (WUNTRACED | WNOHANG));
+	if (WIFSTOPPED(status))
+		return true;
+	return false;
+#endif
+}
+
 /*
  * Wake tasks currently stopped for parallel debugger attach
  */
 void pdebug_wake_process(slurmd_job_t *job, pid_t pid)
 {
-	if (job->task_flags & TASK_PARALLEL_DEBUG) {
-		int status;
-		waitpid(pid, &status, (WUNTRACED | WNOHANG));
-		if (WIFSTOPPED(status)) {
-			if ((pid > (pid_t) 0) && (kill(pid, SIGCONT) < 0))
+	if ((job->task_flags & TASK_PARALLEL_DEBUG) && (pid > (pid_t) 0)) {
+		if (_pid_to_wake(pid)) {
+			if (kill(pid, SIGCONT) < 0)
 				error("kill(%lu): %m", (unsigned long) pid);
 			else
 				debug("woke pid %lu", (unsigned long) pid);
