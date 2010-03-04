@@ -7,6 +7,9 @@ documents those changes that are of interest to users and admins.
  -- Fixes to scontrol and sview when setting a job to an impossible start time.
  -- Added -h to srun for help.
  -- Fix for sacctmgr man page to remove erroneous 'with' statements.
+ -- Fix for unpacking jobs with accounting statistics, previously it appears
+    only steps were unpacked correctly, for the most case sacct would only
+    display this information making this fix a very minor one.
 
 * Changes in SLURM 2.1.4
 ========================

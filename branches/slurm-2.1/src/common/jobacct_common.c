@@ -444,7 +444,9 @@ extern int unpack_jobacct_job_rec(void **job, uint16_t rpc_version, Buf buffer)
 		safe_unpack32(&job_ptr->resvid, buffer);
 		safe_unpack32(&job_ptr->req_cpus, buffer);
 		safe_unpack32(&job_ptr->requid, buffer);
-		_pack_sacct(&job_ptr->sacct, rpc_version, buffer);
+		if(_unpack_sacct(&job_ptr->sacct, rpc_version, buffer)
+		   != SLURM_SUCCESS)
+			goto unpack_error;
 		safe_unpack32(&job_ptr->show_full, buffer);
 		safe_unpack_time(&job_ptr->start, buffer);
 		safe_unpack16(&uint16_tmp, buffer);
@@ -498,7 +500,9 @@ extern int unpack_jobacct_job_rec(void **job, uint16_t rpc_version, Buf buffer)
 		safe_unpack16(&job_ptr->qos, buffer);
 		safe_unpack32(&job_ptr->req_cpus, buffer);
 		safe_unpack32(&job_ptr->requid, buffer);
-		_pack_sacct(&job_ptr->sacct, rpc_version, buffer);
+		if(_unpack_sacct(&job_ptr->sacct, rpc_version, buffer)
+		   != SLURM_SUCCESS)
+			goto unpack_error;
 		safe_unpack32(&job_ptr->show_full, buffer);
 		safe_unpack_time(&job_ptr->start, buffer);
 		safe_unpack16(&uint16_tmp, buffer);
@@ -552,7 +556,9 @@ extern int unpack_jobacct_job_rec(void **job, uint16_t rpc_version, Buf buffer)
 		safe_unpack16(&job_ptr->qos, buffer);
 		safe_unpack32(&job_ptr->req_cpus, buffer);
 		safe_unpack32(&job_ptr->requid, buffer);
-		_pack_sacct(&job_ptr->sacct, rpc_version, buffer);
+		if(_unpack_sacct(&job_ptr->sacct, rpc_version, buffer)
+		   != SLURM_SUCCESS)
+			goto unpack_error;
 		safe_unpack32(&job_ptr->show_full, buffer);
 		safe_unpack_time(&job_ptr->start, buffer);
 		safe_unpack16(&uint16_tmp, buffer);
@@ -659,7 +665,9 @@ extern int unpack_jobacct_step_rec(jobacct_step_rec_t **step,
 		safe_unpackstr_xmalloc(&step_ptr->nodes, &uint32_tmp, buffer);
 		safe_unpack32(&step_ptr->ntasks, buffer);
 		safe_unpack32(&step_ptr->requid, buffer);
-		_unpack_sacct(&step_ptr->sacct, rpc_version, buffer);
+		if(_unpack_sacct(&step_ptr->sacct, rpc_version, buffer)
+		   != SLURM_SUCCESS)
+			goto unpack_error;
 		safe_unpack_time(&step_ptr->start, buffer);
 		safe_unpack16(&uint16_tmp, buffer);
 		step_ptr->state = uint16_tmp;
@@ -683,7 +691,9 @@ extern int unpack_jobacct_step_rec(jobacct_step_rec_t **step,
 		safe_unpack32(&step_ptr->ncpus, buffer);
 		safe_unpackstr_xmalloc(&step_ptr->nodes, &uint32_tmp, buffer);
 		safe_unpack32(&step_ptr->requid, buffer);
-		_unpack_sacct(&step_ptr->sacct, rpc_version, buffer);
+		if(_unpack_sacct(&step_ptr->sacct, rpc_version, buffer)
+		   != SLURM_SUCCESS)
+			goto unpack_error;
 		safe_unpack_time(&step_ptr->start, buffer);
 		safe_unpack16(&uint16_tmp, buffer);
 		step_ptr->state = uint16_tmp;
