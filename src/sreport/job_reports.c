@@ -42,7 +42,7 @@
 
 typedef struct {
 	List jobs; /* This should be a NULL destroy since we are just
-		    * putting a pointer to a jobacct_job_rect_t here
+		    * putting a pointer to a slurmdb_job_rect_t here
 		    * not allocating any new memory */
 	uint32_t min_size; /* smallest size of job in cpus here 0 if first */
 	uint32_t max_size; /* largest size of job in cpus here INFINITE if
@@ -272,7 +272,7 @@ extern int _addto_uid_char_list(List char_list, char *names)
 }
 
 static int _set_cond(int *start, int argc, char *argv[],
-		     acct_job_cond_t *job_cond,
+		     slurmdb_job_cond_t *job_cond,
 		     List format_list, List grouping_list)
 {
 	int i;
@@ -348,7 +348,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 		} else if (!strncasecmp (argv[i], "Jobs",
 					 MAX(command_len, 1))) {
 			char *end_char = NULL, *start_char = argv[i]+end;
-			jobacct_selected_step_t *selected_step = NULL;
+			slurmdb_selected_step_t *selected_step = NULL;
 			char *dot = NULL;
 			if(!job_cond->step_list)
 				job_cond->step_list =
@@ -362,7 +362,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 				if(!(int)*start_char)
 					continue;
 				selected_step = xmalloc(
-					sizeof(jobacct_selected_step_t));
+					sizeof(slurmdb_selected_step_t));
 				list_append(job_cond->step_list, selected_step);
 
 				dot = strstr(start_char, ".");
@@ -621,9 +621,9 @@ static int _setup_grouping_print_fields_list(List grouping_list)
 extern int job_sizes_grouped_by_top_acct(int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
-	acct_job_cond_t *job_cond = xmalloc(sizeof(acct_job_cond_t));
-	acct_association_cond_t assoc_cond;
-	acct_association_rec_t *assoc = NULL;
+	slurmdb_job_cond_t *job_cond = xmalloc(sizeof(slurmdb_job_cond_t));
+	slurmdb_association_cond_t assoc_cond;
+	slurmdb_association_rec_t *assoc = NULL;
 	int i=0;
 
 	ListIterator itr = NULL;
@@ -634,7 +634,7 @@ extern int job_sizes_grouped_by_top_acct(int argc, char *argv[])
 	ListIterator group_itr = NULL;
 
 
-	jobacct_job_rec_t *job = NULL;
+	slurmdb_job_rec_t *job = NULL;
 	cluster_grouping_t *cluster_group = NULL;
 	acct_grouping_t *acct_group = NULL;
 	local_grouping_t *local_group = NULL;
@@ -718,7 +718,7 @@ extern int job_sizes_grouped_by_top_acct(int argc, char *argv[])
 	if(flat_view)
 		goto no_assocs;
 
-	memset(&assoc_cond, 0, sizeof(acct_association_cond_t));
+	memset(&assoc_cond, 0, sizeof(slurmdb_association_cond_t));
 	assoc_cond.id_list = job_cond->associd_list;
 	assoc_cond.cluster_list = job_cond->cluster_list;
 	/* don't limit associations to having the partition_list */
@@ -986,7 +986,7 @@ end_it:
 	if(print_job_count)
 		print_job_count = 0;
 
-	destroy_acct_job_cond(job_cond);
+	slurmdb_destroy_job_cond(job_cond);
 
 	if(job_list) {
 		list_destroy(job_list);
@@ -1019,9 +1019,9 @@ end_it:
 extern int job_sizes_grouped_by_wckey(int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
-	acct_job_cond_t *job_cond = xmalloc(sizeof(acct_job_cond_t));
-	acct_wckey_cond_t wckey_cond;
-	acct_wckey_rec_t *wckey = NULL;
+	slurmdb_job_cond_t *job_cond = xmalloc(sizeof(slurmdb_job_cond_t));
+	slurmdb_wckey_cond_t wckey_cond;
+	slurmdb_wckey_rec_t *wckey = NULL;
 	int i=0;
 
 	ListIterator itr = NULL;
@@ -1031,7 +1031,7 @@ extern int job_sizes_grouped_by_wckey(int argc, char *argv[])
 	ListIterator acct_itr = NULL;
 	ListIterator group_itr = NULL;
 
-	jobacct_job_rec_t *job = NULL;
+	slurmdb_job_rec_t *job = NULL;
 	cluster_grouping_t *cluster_group = NULL;
 	acct_grouping_t *acct_group = NULL;
 	local_grouping_t *local_group = NULL;
@@ -1079,7 +1079,7 @@ extern int job_sizes_grouped_by_wckey(int argc, char *argv[])
 		goto end_it;
 	}
 
-	memset(&wckey_cond, 0, sizeof(acct_wckey_cond_t));
+	memset(&wckey_cond, 0, sizeof(slurmdb_wckey_cond_t));
 	wckey_cond.name_list = job_cond->wckey_list;
 	wckey_cond.cluster_list = job_cond->cluster_list;
 
@@ -1321,7 +1321,7 @@ end_it:
 	if(print_job_count)
 		print_job_count = 0;
 
-	destroy_acct_job_cond(job_cond);
+	slurmdb_destroy_job_cond(job_cond);
 
 	if(job_list) {
 		list_destroy(job_list);

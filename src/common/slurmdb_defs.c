@@ -926,7 +926,7 @@ extern List get_slurmdb_hierarchical_rec_list(List assoc_list)
 }
 
 /* IN/OUT: tree_list a list of slurmdb_print_tree_t's */
-extern char *get_tree_slurmdb_name(char *name, char *parent, List tree_list)
+extern char *slurmdb_tree_name_get(char *name, char *parent, List tree_list)
 {
 	ListIterator itr = NULL;
 	slurmdb_print_tree_t *slurmdb_print_tree = NULL;

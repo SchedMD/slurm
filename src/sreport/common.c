@@ -445,8 +445,8 @@ extern int sort_assoc_dec(sreport_assoc_rec_t *assoc_a,
  * returns: 1: resv_a > resv_b   0: resv_a == resv_b   -1: resv_a < resv_b
  *
  */
-extern int sort_reservations_dec(acct_reservation_rec_t *resv_a,
-				 acct_reservation_rec_t *resv_b)
+extern int sort_reservations_dec(slurmdb_reservation_rec_t *resv_a,
+				 slurmdb_reservation_rec_t *resv_b)
 {
 	int diff = 0;
 

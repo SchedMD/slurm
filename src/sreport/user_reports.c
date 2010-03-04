@@ -53,18 +53,18 @@ static bool group_accts = false;
 static uint32_t top_limit = 10;
 
 static int _set_cond(int *start, int argc, char *argv[],
-		     acct_user_cond_t *user_cond, List format_list)
+		     slurmdb_user_cond_t *user_cond, List format_list)
 {
 	int i;
 	int set = 0;
 	int end = 0;
 	int local_cluster_flag = all_clusters_flag;
-	acct_association_cond_t *assoc_cond = NULL;
+	slurmdb_association_cond_t *assoc_cond = NULL;
 	time_t start_time, end_time;
 	int command_len = 0;
 
 	if(!user_cond) {
-		error("We need an acct_user_cond to call this");
+		error("We need an slurmdb_user_cond to call this");
 		return SLURM_ERROR;
 	}
 
@@ -72,7 +72,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 	user_cond->with_assocs = 1;
 	if(!user_cond->assoc_cond) {
 		user_cond->assoc_cond =
-			xmalloc(sizeof(acct_association_cond_t));
+			xmalloc(sizeof(slurmdb_association_cond_t));
 		user_cond->assoc_cond->with_usage = 1;
 	}
 	assoc_cond = user_cond->assoc_cond;
@@ -239,8 +239,8 @@ static int _setup_print_fields_list(List format_list)
 extern int user_top(int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
-	acct_user_cond_t *user_cond = xmalloc(sizeof(acct_user_cond_t));
-	acct_cluster_cond_t cluster_cond;
+	slurmdb_user_cond_t *user_cond = xmalloc(sizeof(slurmdb_user_cond_t));
+	slurmdb_cluster_cond_t cluster_cond;
 	ListIterator itr = NULL;
 	ListIterator itr2 = NULL;
 	ListIterator itr3 = NULL;
@@ -252,10 +252,10 @@ extern int user_top(int argc, char *argv[])
 	char *object = NULL;
 
 	int i=0;
-	acct_user_rec_t *user = NULL;
-	acct_cluster_rec_t *cluster = NULL;
-	acct_association_rec_t *assoc = NULL;
-	acct_accounting_rec_t *assoc_acct = NULL;
+	slurmdb_user_rec_t *user = NULL;
+	slurmdb_cluster_rec_t *cluster = NULL;
+	slurmdb_association_rec_t *assoc = NULL;
+	slurmdb_accounting_rec_t *assoc_acct = NULL;
 	sreport_user_rec_t *sreport_user = NULL;
 	sreport_cluster_rec_t *sreport_cluster = NULL;
 	print_field_t *field = NULL;
@@ -283,7 +283,7 @@ extern int user_top(int argc, char *argv[])
 	   get the correct total time for the cluster if associations
 	   are not enforced.
 	*/
-	memset(&cluster_cond, 0, sizeof(acct_cluster_cond_t));
+	memset(&cluster_cond, 0, sizeof(slurmdb_cluster_cond_t));
 	cluster_cond.with_usage = 1;
 	cluster_cond.with_deleted = 1;
 	cluster_cond.usage_end = user_cond->assoc_cond->usage_end;
@@ -299,7 +299,7 @@ extern int user_top(int argc, char *argv[])
 
 	itr = list_iterator_create(usage_cluster_list);
 	while((cluster = list_next(itr))) {
-		cluster_accounting_rec_t *accting = NULL;
+		slurmdb_cluster_accounting_rec_t *accting = NULL;
 
 		/* check to see if this cluster is around during the
 		   time we are looking at */
@@ -559,7 +559,7 @@ end_it:
 	 * to be cleared here, or anytime _set_cond is called.
 	 */
 	group_accts = 0;
-	destroy_acct_user_cond(user_cond);
+	slurmdb_destroy_user_cond(user_cond);
 
 	if(user_list) {
 		list_destroy(user_list);
