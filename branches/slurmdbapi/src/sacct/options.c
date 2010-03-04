@@ -274,8 +274,8 @@ static int _addto_step_list(List step_list, char *names)
 {
 	int i=0, start=0;
 	char *name = NULL, *dot = NULL;
-	jobacct_selected_step_t *selected_step = NULL;
-	jobacct_selected_step_t *curr_step = NULL;
+	slurmdb_selected_step_t *selected_step = NULL;
+	slurmdb_selected_step_t *curr_step = NULL;
 
 	ListIterator itr = NULL;
 	char quote_c = '\0';
@@ -308,7 +308,7 @@ static int _addto_step_list(List step_list, char *names)
 					memcpy(name, names+start, (i-start));
 
 					selected_step = xmalloc(
-						sizeof(jobacct_selected_step_t));
+						sizeof(slurmdb_selected_step_t));
 					dot = strstr(name, ".");
 					if (dot == NULL) {
 						debug2("No jobstep requested");
@@ -335,7 +335,7 @@ static int _addto_step_list(List step_list, char *names)
 							    selected_step);
 						count++;
 					} else
-						destroy_jobacct_selected_step(
+						slurmdb_destroy_selected_step(
 							selected_step);
 					list_iterator_reset(itr);
 				}
@@ -349,7 +349,7 @@ static int _addto_step_list(List step_list, char *names)
 			memcpy(name, names+start, (i-start));
 
 			selected_step =
-				xmalloc(sizeof(jobacct_selected_step_t));
+				xmalloc(sizeof(slurmdb_selected_step_t));
 			dot = strstr(name, ".");
 			if (dot == NULL) {
 				debug2("No jobstep requested");
@@ -372,7 +372,7 @@ static int _addto_step_list(List step_list, char *names)
 				list_append(step_list, selected_step);
 				count++;
 			} else
-				destroy_jobacct_selected_step(
+				slurmdb_destroy_selected_step(
 					selected_step);
 		}
 	}
@@ -506,7 +506,7 @@ void _usage(void)
 void _init_params()
 {
 	memset(&params, 0, sizeof(sacct_parameters_t));
-	params.job_cond = xmalloc(sizeof(acct_job_cond_t));
+	params.job_cond = xmalloc(sizeof(slurmdb_job_cond_t));
 	params.job_cond->without_usage_truncation = 1;
 }
 
@@ -534,12 +534,12 @@ int decode_state_char(char *state)
 
 int get_data(void)
 {
-	jobacct_job_rec_t *job = NULL;
-	jobacct_step_rec_t *step = NULL;
+	slurmdb_job_rec_t *job = NULL;
+	slurmdb_step_rec_t *step = NULL;
 
 	ListIterator itr = NULL;
 	ListIterator itr_step = NULL;
-	acct_job_cond_t *job_cond = params.job_cond;
+	slurmdb_job_cond_t *job_cond = params.job_cond;
 
 	if(params.opt_completion) {
 		jobs = g_slurm_jobcomp_get_jobs(job_cond);
@@ -585,7 +585,7 @@ int get_data(void)
 			job->sys_cpu_usec +=
 				step->sys_cpu_usec;
 			/* get the max for all the sacct_t struct */
-			aggregate_sacct(&job->sacct, &step->sacct);
+			aggregate_stats(&job->stats, &step->stats);
 		}
 		list_iterator_destroy(itr_step);
 	}
@@ -599,14 +599,14 @@ void parse_command_line(int argc, char **argv)
 	extern int optind;
 	int c, i, optionIndex = 0;
 	char *end = NULL, *start = NULL, *acct_type = NULL;
-	jobacct_selected_step_t *selected_step = NULL;
+	slurmdb_selected_step_t *selected_step = NULL;
 	ListIterator itr = NULL;
 	struct stat stat_buf;
 	char *dot = NULL;
 	bool brief_output = FALSE, long_output = FALSE;
 	bool all_users = 0;
 	bool all_clusters = 0;
-	acct_job_cond_t *job_cond = params.job_cond;
+	slurmdb_job_cond_t *job_cond = params.job_cond;
 	log_options_t opts = LOG_OPTS_STDERR_ONLY ;
 	int verbosity;		/* count of -v options */
 	bool set;
@@ -756,7 +756,7 @@ void parse_command_line(int argc, char **argv)
 
 			if(!job_cond->step_list)
 				job_cond->step_list = list_create(
-					destroy_jobacct_selected_step);
+					slurmdb_destroy_selected_step);
 			_addto_step_list(job_cond->step_list, optarg);
 			break;
 		case 'L':
@@ -1142,20 +1142,20 @@ void do_dump(void)
 {
 	ListIterator itr = NULL;
 	ListIterator itr_step = NULL;
-	jobacct_job_rec_t *job = NULL;
-	jobacct_step_rec_t *step = NULL;
+	slurmdb_job_rec_t *job = NULL;
+	slurmdb_step_rec_t *step = NULL;
 	struct tm ts;
 
 	itr = list_iterator_create(jobs);
 	while((job = list_next(itr))) {
-		if(job->sacct.min_cpu == NO_VAL)
-			job->sacct.min_cpu = 0;
+		if(job->stats.cpu_min == NO_VAL)
+			job->stats.cpu_min = 0;
 
 		if(list_count(job->steps)) {
-			job->sacct.ave_cpu /= list_count(job->steps);
-			job->sacct.ave_rss /= list_count(job->steps);
-			job->sacct.ave_vsize /= list_count(job->steps);
-			job->sacct.ave_pages /= list_count(job->steps);
+			job->stats.cpu_ave /= list_count(job->steps);
+			job->stats.rss_ave /= list_count(job->steps);
+			job->stats.vsize_ave /= list_count(job->steps);
+			job->stats.pages_ave /= list_count(job->steps);
 		}
 
 		/* JOB_START */
@@ -1221,25 +1221,25 @@ void do_dump(void)
 			       (int)step->user_cpu_usec,
 			       (int)step->sys_cpu_sec,
 			       (int)step->sys_cpu_usec,
-			       step->sacct.max_vsize/1024,
-			       step->sacct.max_rss/1024);
+			       step->stats.vsize_max/1024,
+			       step->stats.rss_max/1024);
 			/* Data added in Slurm v1.1 */
 			printf("%u %u %.2f %u %u %.2f %d %u %u %.2f "
 			       "%.u %u %u %.2f %s %s %s\n",
-			       step->sacct.max_vsize_id.nodeid,
-			       step->sacct.max_vsize_id.taskid,
-			       step->sacct.ave_vsize/1024,
-			       step->sacct.max_rss_id.nodeid,
-			       step->sacct.max_rss_id.taskid,
-			       step->sacct.ave_rss/1024,
-			       step->sacct.max_pages,
-			       step->sacct.max_pages_id.nodeid,
-			       step->sacct.max_pages_id.taskid,
-			       step->sacct.ave_pages,
-			       step->sacct.min_cpu,
-			       step->sacct.min_cpu_id.nodeid,
-			       step->sacct.min_cpu_id.taskid,
-			       step->sacct.ave_cpu,
+			       step->stats.vsize_max_nodeid,
+			       step->stats.vsize_max_taskid,
+			       step->stats.vsize_ave/1024,
+			       step->stats.rss_max_nodeid,
+			       step->stats.rss_max_taskid,
+			       step->stats.rss_ave/1024,
+			       step->stats.pages_max,
+			       step->stats.pages_max_nodeid,
+			       step->stats.pages_max_taskid,
+			       step->stats.pages_ave,
+			       step->stats.cpu_min,
+			       step->stats.cpu_min_nodeid,
+			       step->stats.cpu_min_taskid,
+			       step->stats.cpu_ave,
 			       step->stepname,
 			       step->nodes,
 			       job->account);
@@ -1279,25 +1279,25 @@ void do_dump(void)
 			       (int)job->user_cpu_usec,
 			       (int)job->sys_cpu_sec,
 			       (int)job->sys_cpu_usec,
-			       job->sacct.max_vsize/1024,
-			       job->sacct.max_rss/1024);
+			       job->stats.vsize_max/1024,
+			       job->stats.rss_max/1024);
 			/* Data added in Slurm v1.1 */
 			printf("%u %u %.2f %u %u %.2f %d %u %u %.2f "
 			       "%.u %u %u %.2f %s %s %s %d\n",
-			       job->sacct.max_vsize_id.nodeid,
-			       job->sacct.max_vsize_id.taskid,
-			       job->sacct.ave_vsize/1024,
-			       job->sacct.max_rss_id.nodeid,
-			       job->sacct.max_rss_id.taskid,
-			       job->sacct.ave_rss/1024,
-			       job->sacct.max_pages,
-			       job->sacct.max_pages_id.nodeid,
-			       job->sacct.max_pages_id.taskid,
-			       job->sacct.ave_pages,
-			       job->sacct.min_cpu,
-			       job->sacct.min_cpu_id.nodeid,
-			       job->sacct.min_cpu_id.taskid,
-			       job->sacct.ave_cpu,
+			       job->stats.vsize_max_nodeid,
+			       job->stats.vsize_max_taskid,
+			       job->stats.vsize_ave/1024,
+			       job->stats.rss_max_nodeid,
+			       job->stats.rss_max_taskid,
+			       job->stats.rss_ave/1024,
+			       job->stats.pages_max,
+			       job->stats.pages_max_nodeid,
+			       job->stats.pages_max_taskid,
+			       job->stats.pages_ave,
+			       job->stats.cpu_min,
+			       job->stats.cpu_min_nodeid,
+			       job->stats.cpu_min_taskid,
+			       job->stats.cpu_ave,
 			       "-",
 			       job->nodes,
 			       job->account,
@@ -1360,23 +1360,23 @@ void do_list(void)
 {
 	ListIterator itr = NULL;
 	ListIterator itr_step = NULL;
-	jobacct_job_rec_t *job = NULL;
-	jobacct_step_rec_t *step = NULL;
+	slurmdb_job_rec_t *job = NULL;
+	slurmdb_step_rec_t *step = NULL;
 
 	if(!jobs)
 		return;
 
 	itr = list_iterator_create(jobs);
 	while((job = list_next(itr))) {
-		if(job->sacct.min_cpu == NO_VAL)
-			job->sacct.min_cpu = 0;
+		if(job->stats.cpu_min == NO_VAL)
+			job->stats.cpu_min = 0;
 
 		if(list_count(job->steps)) {
 			int cnt = list_count(job->steps);
-			job->sacct.ave_cpu /= (double)cnt;
-			job->sacct.ave_rss /= (double)cnt;
-			job->sacct.ave_vsize /= (double)cnt;
-			job->sacct.ave_pages /= (double)cnt;
+			job->stats.cpu_ave /= (double)cnt;
+			job->stats.rss_ave /= (double)cnt;
+			job->stats.vsize_ave /= (double)cnt;
+			job->stats.pages_ave /= (double)cnt;
 		}
 
 		if (job->show_full)
@@ -1445,5 +1445,5 @@ void sacct_fini()
 	}
 	xfree(params.opt_field_list);
 	xfree(params.opt_filein);
-	destroy_acct_job_cond(params.job_cond);
+	slurmdb_destroy_job_cond(params.job_cond);
 }

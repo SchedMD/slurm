@@ -313,7 +313,7 @@ static void _cluster_rep (int argc, char *argv[])
 	int error_code = SLURM_SUCCESS;
 
 	if (strncasecmp (argv[0], "AccountUtilizationByUser", 1) == 0) {
-		error_code = cluster_account_by_user((argc - 1), &argv[1]);
+		error_code = slurmdb_cluster_account_by_user((argc - 1), &argv[1]);
 	} else if ((strncasecmp (argv[0], "UserUtilizationByAccount", 18) == 0)
 		   || (strncasecmp (argv[0], "UA", 2) == 0)) {
 		error_code = cluster_user_by_account((argc - 1), &argv[1]);

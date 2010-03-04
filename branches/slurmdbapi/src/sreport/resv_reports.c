@@ -69,7 +69,7 @@ typedef enum {
 static List print_fields_list = NULL; /* types are of print_field_t */
 
 static int _set_resv_cond(int *start, int argc, char *argv[],
-			  acct_reservation_cond_t *resv_cond,
+			  slurmdb_reservation_cond_t *resv_cond,
 			  List format_list)
 {
 	int i;
@@ -81,7 +81,7 @@ static int _set_resv_cond(int *start, int argc, char *argv[],
 	int option = 0;
 
 	if(!resv_cond) {
-		error("We need an acct_reservation_cond to call this");
+		error("We need an slurmdb_reservation_cond to call this");
 		return SLURM_ERROR;
 	}
 
@@ -314,8 +314,8 @@ static int _setup_print_fields_list(List format_list)
 static List _get_resv_list(int argc, char *argv[],
 			   char *report_name, List format_list)
 {
-	acct_reservation_cond_t *resv_cond =
-		xmalloc(sizeof(acct_reservation_cond_t));
+	slurmdb_reservation_cond_t *resv_cond =
+		xmalloc(sizeof(slurmdb_reservation_cond_t));
 	int i=0;
 	List resv_list = NULL;
 
@@ -357,7 +357,7 @@ static List _get_resv_list(int argc, char *argv[],
 		       "----------------------------------------\n");
 	}
 
-	destroy_acct_reservation_cond(resv_cond);
+	slurmdb_destroy_reservation_cond(resv_cond);
 
 	return resv_list;
 }
@@ -368,8 +368,8 @@ extern int resv_utilization(int argc, char *argv[])
 	ListIterator itr = NULL;
 	ListIterator tot_itr = NULL;
 	ListIterator itr2 = NULL;
-	acct_reservation_rec_t *resv = NULL;
-	acct_reservation_rec_t *tot_resv = NULL;
+	slurmdb_reservation_rec_t *resv = NULL;
+	slurmdb_reservation_rec_t *tot_resv = NULL;
 
 	print_field_t *field = NULL;
 	int32_t total_time = 0;

@@ -197,8 +197,8 @@ extern slurmdb_wckey_rec_t *sacctmgr_find_wckey_from_list(
 extern int print_file_add_limits_to_line(char **line,
 					 slurmdb_association_rec_t *assoc);
 
-extern int print_file_acct_hierarchical_rec_list(FILE *fd,
-					  List acct_hierarchical_rec_list,
+extern int print_file_slurmdb_hierarchical_rec_list(FILE *fd,
+					  List slurmdb_hierarchical_rec_list,
 					  List user_list,
 					  List acct_list);
 

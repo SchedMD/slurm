@@ -41,7 +41,7 @@
 #include "src/common/uid.h"
 
 static int _set_cond(int *start, int argc, char *argv[],
-		     acct_wckey_cond_t *wckey_cond,
+		     slurmdb_wckey_cond_t *wckey_cond,
 		     List format_list)
 {
 	int i;
@@ -150,12 +150,12 @@ static int _set_cond(int *start, int argc, char *argv[],
 extern int sacctmgr_list_wckey(int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
-	acct_wckey_cond_t *wckey_cond = xmalloc(sizeof(acct_wckey_cond_t));
+	slurmdb_wckey_cond_t *wckey_cond = xmalloc(sizeof(slurmdb_wckey_cond_t));
 	List wckey_list = NULL;
 	int i=0;
 	ListIterator itr = NULL;
 	ListIterator itr2 = NULL;
-	acct_wckey_rec_t *wckey = NULL;
+	slurmdb_wckey_rec_t *wckey = NULL;
 	char *object;
 
 	print_field_t *field = NULL;
@@ -180,7 +180,7 @@ extern int sacctmgr_list_wckey(int argc, char *argv[])
 	}
 
 	if(exit_code) {
-		destroy_acct_wckey_cond(wckey_cond);
+		slurmdb_destroy_wckey_cond(wckey_cond);
 		list_destroy(format_list);
 		return SLURM_ERROR;
 	}
@@ -244,13 +244,13 @@ extern int sacctmgr_list_wckey(int argc, char *argv[])
 	list_destroy(format_list);
 
 	if(exit_code) {
-		destroy_acct_wckey_cond(wckey_cond);
+		slurmdb_destroy_wckey_cond(wckey_cond);
 		list_destroy(print_fields_list);
 		return SLURM_ERROR;
 	}
 
 	wckey_list = acct_storage_g_get_wckeys(db_conn, my_uid, wckey_cond);
-	destroy_acct_wckey_cond(wckey_cond);
+	slurmdb_destroy_wckey_cond(wckey_cond);
 
 	if(!wckey_list) {
 		exit_code=1;

@@ -71,7 +71,7 @@ typedef enum {
 static List print_fields_list = NULL; /* types are of print_field_t */
 
 static int _set_wckey_cond(int *start, int argc, char *argv[],
-			   acct_wckey_cond_t *wckey_cond,
+			   slurmdb_wckey_cond_t *wckey_cond,
 			   List format_list)
 {
 	int i;
@@ -176,7 +176,7 @@ static int _set_wckey_cond(int *start, int argc, char *argv[],
 }
 
 static int _set_assoc_cond(int *start, int argc, char *argv[],
-			   acct_association_cond_t *assoc_cond,
+			   slurmdb_association_cond_t *assoc_cond,
 			   List format_list)
 {
 	int i;
@@ -188,7 +188,7 @@ static int _set_assoc_cond(int *start, int argc, char *argv[],
 	int option = 0;
 
 	if(!assoc_cond) {
-		error("We need an acct_association_cond to call this");
+		error("We need an slurmdb_association_cond to call this");
 		return SLURM_ERROR;
 	}
 
@@ -277,7 +277,7 @@ static int _set_assoc_cond(int *start, int argc, char *argv[],
 }
 
 static int _set_cluster_cond(int *start, int argc, char *argv[],
-			     acct_cluster_cond_t *cluster_cond,
+			     slurmdb_cluster_cond_t *cluster_cond,
 			     List format_list)
 {
 	int i;
@@ -289,7 +289,7 @@ static int _set_cluster_cond(int *start, int argc, char *argv[],
 	int option = 0;
 
 	if(!cluster_cond) {
-		error("We need an acct_cluster_cond to call this");
+		error("We need an slurmdb_cluster_cond to call this");
 		return SLURM_ERROR;
 	}
 
@@ -531,8 +531,8 @@ static int _setup_print_fields_list(List format_list)
 static List _get_cluster_list(int argc, char *argv[], uint32_t *total_time,
 			      char *report_name, List format_list)
 {
-	acct_cluster_cond_t *cluster_cond =
-		xmalloc(sizeof(acct_cluster_cond_t));
+	slurmdb_cluster_cond_t *cluster_cond =
+		xmalloc(sizeof(slurmdb_cluster_cond_t));
 	int i=0;
 	List cluster_list = NULL;
 
@@ -578,17 +578,17 @@ static List _get_cluster_list(int argc, char *argv[], uint32_t *total_time,
 	}
 	(*total_time) = cluster_cond->usage_end - cluster_cond->usage_start;
 
-	destroy_acct_cluster_cond(cluster_cond);
+	slurmdb_destroy_cluster_cond(cluster_cond);
 
 	return cluster_list;
 }
 
-extern int cluster_account_by_user(int argc, char *argv[])
+extern int slurmdb_cluster_account_by_user(int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
-	acct_association_cond_t *assoc_cond =
-		xmalloc(sizeof(acct_association_cond_t));
-	acct_cluster_cond_t cluster_cond;
+	slurmdb_association_cond_t *assoc_cond =
+		xmalloc(sizeof(slurmdb_association_cond_t));
+	slurmdb_cluster_cond_t cluster_cond;
 	ListIterator itr = NULL;
 	ListIterator itr2 = NULL;
 	ListIterator assoc_itr = NULL;
@@ -600,8 +600,8 @@ extern int cluster_account_by_user(int argc, char *argv[])
 	List sreport_cluster_list = list_create(destroy_sreport_cluster_rec);
 	List tree_list = NULL;
 	int i=0;
-	acct_cluster_rec_t *cluster = NULL;
-	acct_association_rec_t *assoc = NULL;
+	slurmdb_cluster_rec_t *cluster = NULL;
+	slurmdb_association_rec_t *assoc = NULL;
 	sreport_assoc_rec_t *sreport_assoc = NULL;
 	sreport_cluster_rec_t *sreport_cluster = NULL;
 	print_field_t *field = NULL;
@@ -610,7 +610,7 @@ extern int cluster_account_by_user(int argc, char *argv[])
 
 	print_fields_list = list_create(destroy_print_field);
 
-	memset(&cluster_cond, 0, sizeof(acct_cluster_cond_t));
+	memset(&cluster_cond, 0, sizeof(slurmdb_cluster_cond_t));
 
 	assoc_cond->with_sub_accts = 1;
 
@@ -651,7 +651,7 @@ extern int cluster_account_by_user(int argc, char *argv[])
 	itr = list_iterator_create(cluster_list);
 	assoc_itr = list_iterator_create(assoc_list);
 	while((cluster = list_next(itr))) {
-		cluster_accounting_rec_t *accting = NULL;
+		slurmdb_cluster_accounting_rec_t *accting = NULL;
 
 		/* check to see if this cluster is around during the
 		   time we are looking at */
@@ -683,7 +683,7 @@ extern int cluster_account_by_user(int argc, char *argv[])
 
 		/* now add the associations of interest here by user */
 		while((assoc = list_next(assoc_itr))) {
-			acct_accounting_rec_t *accting2 = NULL;
+			slurmdb_accounting_rec_t *accting2 = NULL;
 
 			if(!assoc->accounting_list
 			   || !list_count(assoc->accounting_list)) {
@@ -766,7 +766,7 @@ extern int cluster_account_by_user(int argc, char *argv[])
 		if(tree_list)
 			list_flush(tree_list);
 		else
-			tree_list = list_create(destroy_acct_print_tree);
+			tree_list = list_create(slurmdb_destroy_print_tree);
 
 		itr = list_iterator_create(sreport_cluster->assoc_list);
 		while((sreport_assoc = list_next(itr))) {
@@ -794,10 +794,11 @@ extern int cluster_account_by_user(int argc, char *argv[])
 							parent_acct = sreport_assoc->
 								parent_acct;
 						}
-						print_acct = get_tree_acct_name(
-							local_acct,
-							parent_acct,
-							tree_list);
+						print_acct =
+							slurmdb_tree_name_get(
+								local_acct,
+								parent_acct,
+								tree_list);
 						xfree(local_acct);
 					} else {
 						print_acct =
@@ -860,7 +861,7 @@ extern int cluster_account_by_user(int argc, char *argv[])
 	}
 	list_iterator_destroy(cluster_itr);
 end_it:
-	destroy_acct_association_cond(assoc_cond);
+	slurmdb_destroy_association_cond(assoc_cond);
 
 	if(assoc_list) {
 		list_destroy(assoc_list);
@@ -893,9 +894,9 @@ end_it:
 extern int cluster_user_by_account(int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
-	acct_association_cond_t *assoc_cond =
-		xmalloc(sizeof(acct_association_cond_t));
-	acct_cluster_cond_t cluster_cond;
+	slurmdb_association_cond_t *assoc_cond =
+		xmalloc(sizeof(slurmdb_association_cond_t));
+	slurmdb_cluster_cond_t cluster_cond;
 	ListIterator itr = NULL;
 	ListIterator itr2 = NULL;
 	ListIterator assoc_itr = NULL;
@@ -905,8 +906,8 @@ extern int cluster_user_by_account(int argc, char *argv[])
 	List cluster_list = NULL;
 	List sreport_cluster_list = list_create(destroy_sreport_cluster_rec);
 	int i=0;
-	acct_cluster_rec_t *cluster = NULL;
-	acct_association_rec_t *assoc = NULL;
+	slurmdb_cluster_rec_t *cluster = NULL;
+	slurmdb_association_rec_t *assoc = NULL;
 	sreport_user_rec_t *sreport_user = NULL;
 	sreport_cluster_rec_t *sreport_cluster = NULL;
 	print_field_t *field = NULL;
@@ -914,7 +915,7 @@ extern int cluster_user_by_account(int argc, char *argv[])
 
 	print_fields_list = list_create(destroy_print_field);
 
-	memset(&cluster_cond, 0, sizeof(acct_cluster_cond_t));
+	memset(&cluster_cond, 0, sizeof(slurmdb_cluster_cond_t));
 
 	_set_assoc_cond(&i, argc, argv, assoc_cond, format_list);
 
@@ -950,7 +951,7 @@ extern int cluster_user_by_account(int argc, char *argv[])
 	itr = list_iterator_create(cluster_list);
 	assoc_itr = list_iterator_create(assoc_list);
 	while((cluster = list_next(itr))) {
-		cluster_accounting_rec_t *accting = NULL;
+		slurmdb_cluster_accounting_rec_t *accting = NULL;
 
 		/* check to see if this cluster is around during the
 		   time we are looking at */
@@ -985,7 +986,7 @@ extern int cluster_user_by_account(int argc, char *argv[])
 			struct passwd *passwd_ptr = NULL;
 			uid_t uid = NO_VAL;
 			ListIterator user_itr = NULL;
-			acct_accounting_rec_t *accting2 = NULL;
+			slurmdb_accounting_rec_t *accting2 = NULL;
 
 			if(!assoc->accounting_list
 			   || !list_count(assoc->accounting_list)
@@ -1152,7 +1153,7 @@ extern int cluster_user_by_account(int argc, char *argv[])
 	}
 	list_iterator_destroy(cluster_itr);
 end_it:
-	destroy_acct_association_cond(assoc_cond);
+	slurmdb_destroy_association_cond(assoc_cond);
 
 	if(assoc_list) {
 		list_destroy(assoc_list);
@@ -1180,9 +1181,9 @@ end_it:
 extern int cluster_user_by_wckey(int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
-	acct_wckey_cond_t *wckey_cond =
-		xmalloc(sizeof(acct_wckey_cond_t));
-	acct_cluster_cond_t cluster_cond;
+	slurmdb_wckey_cond_t *wckey_cond =
+		xmalloc(sizeof(slurmdb_wckey_cond_t));
+	slurmdb_cluster_cond_t cluster_cond;
 	ListIterator itr = NULL;
 	ListIterator itr2 = NULL;
 	ListIterator wckey_itr = NULL;
@@ -1192,8 +1193,8 @@ extern int cluster_user_by_wckey(int argc, char *argv[])
 	List cluster_list = NULL;
 	List sreport_cluster_list = list_create(destroy_sreport_cluster_rec);
 	int i=0;
-	acct_cluster_rec_t *cluster = NULL;
-	acct_wckey_rec_t *wckey = NULL;
+	slurmdb_cluster_rec_t *cluster = NULL;
+	slurmdb_wckey_rec_t *wckey = NULL;
 	sreport_user_rec_t *sreport_user = NULL;
 	sreport_cluster_rec_t *sreport_cluster = NULL;
 	print_field_t *field = NULL;
@@ -1201,7 +1202,7 @@ extern int cluster_user_by_wckey(int argc, char *argv[])
 
 	print_fields_list = list_create(destroy_print_field);
 
-	memset(&cluster_cond, 0, sizeof(acct_cluster_cond_t));
+	memset(&cluster_cond, 0, sizeof(slurmdb_cluster_cond_t));
 
 	_set_wckey_cond(&i, argc, argv, wckey_cond, format_list);
 
@@ -1237,7 +1238,7 @@ extern int cluster_user_by_wckey(int argc, char *argv[])
 	itr = list_iterator_create(cluster_list);
 	wckey_itr = list_iterator_create(wckey_list);
 	while((cluster = list_next(itr))) {
-		cluster_accounting_rec_t *accting = NULL;
+		slurmdb_cluster_accounting_rec_t *accting = NULL;
 
 		/* check to see if this cluster is around during the
 		   time we are looking at */
@@ -1271,7 +1272,7 @@ extern int cluster_user_by_wckey(int argc, char *argv[])
 		while((wckey = list_next(wckey_itr))) {
 			struct passwd *passwd_ptr = NULL;
 			uid_t uid = NO_VAL;
-			acct_accounting_rec_t *accting2 = NULL;
+			slurmdb_accounting_rec_t *accting2 = NULL;
 
 			if(!wckey->accounting_list
 			   || !list_count(wckey->accounting_list)
@@ -1421,7 +1422,7 @@ extern int cluster_user_by_wckey(int argc, char *argv[])
 	}
 	list_iterator_destroy(cluster_itr);
 end_it:
-	destroy_acct_wckey_cond(wckey_cond);
+	slurmdb_destroy_wckey_cond(wckey_cond);
 
 	if(wckey_list) {
 		list_destroy(wckey_list);
@@ -1452,7 +1453,7 @@ extern int cluster_utilization(int argc, char *argv[])
 	ListIterator itr = NULL;
 	ListIterator itr2 = NULL;
 	ListIterator itr3 = NULL;
-	acct_cluster_rec_t *cluster = NULL;
+	slurmdb_cluster_rec_t *cluster = NULL;
 
 	print_field_t *field = NULL;
 	uint32_t total_time = 0;
@@ -1484,8 +1485,8 @@ extern int cluster_utilization(int argc, char *argv[])
 	field_count = list_count(print_fields_list);
 
 	while((cluster = list_next(itr))) {
-		cluster_accounting_rec_t *accting = NULL;
-		cluster_accounting_rec_t total_acct;
+		slurmdb_cluster_accounting_rec_t *accting = NULL;
+		slurmdb_cluster_accounting_rec_t total_acct;
 		uint64_t total_reported = 0;
 		uint64_t local_total_time = 0;
 		int curr_inx = 1;
@@ -1494,7 +1495,7 @@ extern int cluster_utilization(int argc, char *argv[])
 		   || !list_count(cluster->accounting_list))
 			continue;
 
-		memset(&total_acct, 0, sizeof(cluster_accounting_rec_t));
+		memset(&total_acct, 0, sizeof(slurmdb_cluster_accounting_rec_t));
 
 		itr3 = list_iterator_create(cluster->accounting_list);
 		while((accting = list_next(itr3))) {
@@ -1611,9 +1612,9 @@ end_it:
 extern int cluster_wckey_by_user(int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
-	acct_wckey_cond_t *wckey_cond =
-		xmalloc(sizeof(acct_wckey_cond_t));
-	acct_cluster_cond_t cluster_cond;
+	slurmdb_wckey_cond_t *wckey_cond =
+		xmalloc(sizeof(slurmdb_wckey_cond_t));
+	slurmdb_cluster_cond_t cluster_cond;
 	ListIterator itr = NULL;
 	ListIterator itr2 = NULL;
 	ListIterator wckey_itr = NULL;
@@ -1624,8 +1625,8 @@ extern int cluster_wckey_by_user(int argc, char *argv[])
 	List sreport_cluster_list = list_create(destroy_sreport_cluster_rec);
 	List tree_list = NULL;
 	int i=0;
-	acct_cluster_rec_t *cluster = NULL;
-	acct_wckey_rec_t *wckey = NULL;
+	slurmdb_cluster_rec_t *cluster = NULL;
+	slurmdb_wckey_rec_t *wckey = NULL;
 	sreport_assoc_rec_t *sreport_assoc = NULL;
 	sreport_cluster_rec_t *sreport_cluster = NULL;
 	print_field_t *field = NULL;
@@ -1633,7 +1634,7 @@ extern int cluster_wckey_by_user(int argc, char *argv[])
 
 	print_fields_list = list_create(destroy_print_field);
 
-	memset(&cluster_cond, 0, sizeof(acct_cluster_cond_t));
+	memset(&cluster_cond, 0, sizeof(slurmdb_cluster_cond_t));
 
 	_set_wckey_cond(&i, argc, argv, wckey_cond, format_list);
 
@@ -1668,7 +1669,7 @@ extern int cluster_wckey_by_user(int argc, char *argv[])
 	itr = list_iterator_create(cluster_list);
 	wckey_itr = list_iterator_create(wckey_list);
 	while((cluster = list_next(itr))) {
-		cluster_accounting_rec_t *accting = NULL;
+		slurmdb_cluster_accounting_rec_t *accting = NULL;
 
 		/* check to see if this cluster is around during the
 		   time we are looking at */
@@ -1700,7 +1701,7 @@ extern int cluster_wckey_by_user(int argc, char *argv[])
 
 		/* now add the wckeys of interest here by user */
 		while((wckey = list_next(wckey_itr))) {
-			acct_accounting_rec_t *accting2 = NULL;
+			slurmdb_accounting_rec_t *accting2 = NULL;
 			sreport_assoc_rec_t *parent_assoc = NULL;
 			ListIterator par_itr = NULL;
 
@@ -1801,7 +1802,7 @@ extern int cluster_wckey_by_user(int argc, char *argv[])
 		if(tree_list)
 			list_flush(tree_list);
 		else
-			tree_list = list_create(destroy_acct_print_tree);
+			tree_list = list_create(slurmdb_destroy_print_tree);
 
 		itr = list_iterator_create(sreport_cluster->assoc_list);
 		while((sreport_assoc = list_next(itr))) {
@@ -1870,7 +1871,7 @@ extern int cluster_wckey_by_user(int argc, char *argv[])
 	}
 	list_iterator_destroy(cluster_itr);
 end_it:
-	destroy_acct_wckey_cond(wckey_cond);
+	slurmdb_destroy_wckey_cond(wckey_cond);
 
 	if(wckey_list) {
 		list_destroy(wckey_list);
