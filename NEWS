@@ -10,6 +10,8 @@ documents those changes that are of interest to users and admins.
  -- Fix for unpacking jobs with accounting statistics, previously it appears
     only steps were unpacked correctly, for the most case sacct would only
     display this information making this fix a very minor one.
+ -- Changed scontrol and sview output for jobs with unknown end times from
+    'NONE' to 'Unknown'.
 
 * Changes in SLURM 2.1.4
 ========================
