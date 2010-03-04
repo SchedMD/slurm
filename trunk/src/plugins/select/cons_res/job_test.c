@@ -965,7 +965,8 @@ static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 					/* first required node in set */
 					consec_req[consec_index] = index;
 				}
-				rem_cpus -= avail_cpus;
+				total_cpus += avail_cpus;
+				rem_cpus   -= avail_cpus;
 				rem_nodes--;
 				/* leaving bitmap set, decrement max limit */
 				max_nodes--;
@@ -1004,10 +1005,9 @@ static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 	}
 
 	/* Compute CPUs already allocated to required nodes */
-	total_cpus = job_ptr->details->min_cpus - MAX(rem_cpus, 0);
 	if ((job_ptr->details->max_cpus != NO_VAL) &&
 	    (total_cpus > job_ptr->details->max_cpus)) {
-		info("Job %u can't use required node due to max CPU limit",
+		info("Job %u can't use required nodes due to max CPU limit",
 		     job_ptr->job_id);
 		goto fini;
 	}
@@ -1090,13 +1090,12 @@ static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 				if (avail_cpus <= 0)
 					continue;
 
-				/* This could result in 0, but if the
-				   user requested nodes here we will
-				   still give them and then the step
-				   layout will sort things out.
-				*/
-				if((job_ptr->details->shared != 0)
-				   && (avail_cpus > rem_cpus))
+				/* This could result in 0, but if the user
+				 * requested nodes here we will still give
+				 * them and then the step layout will sort
+				 * things out. */
+				if ((job_ptr->details->shared != 0)
+				    && (avail_cpus > rem_cpus))
 					avail_cpus = rem_cpus;
 
 				total_cpus += avail_cpus;
@@ -1127,13 +1126,12 @@ static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 				if (avail_cpus <= 0)
 					continue;
 
-				/* This could result in 0, but if the
-				   user requested nodes here we will
-				   still give them and then the step
-				   layout will sort things out.
-				*/
-				if((job_ptr->details->shared != 0)
-				   && (avail_cpus > rem_cpus))
+				/* This could result in 0, but if the user
+				 * requested nodes here we will still give
+				 * them and then the step layout will sort
+				 * things out. */
+				if ((job_ptr->details->shared != 0)
+				    && (avail_cpus > rem_cpus))
 					avail_cpus = rem_cpus;
 
 				total_cpus += avail_cpus;
@@ -1171,13 +1169,12 @@ static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 					continue;
 				}
 
-				/* This could result in 0, but if the
-				   user requested nodes here we will
-				   still give them and then the step
-				   layout will sort things out.
-				*/
-				if((job_ptr->details->shared != 0)
-				   && (avail_cpus > rem_cpus))
+				/* This could result in 0, but if the user
+				 * requested nodes here we will still give
+				 * them and then the step layout will sort
+				 * things out. */
+				if ((job_ptr->details->shared != 0)
+				    && (avail_cpus > rem_cpus))
 					avail_cpus = rem_cpus;
 
 				total_cpus += avail_cpus;
@@ -1238,6 +1235,7 @@ static int _eval_nodes_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 	bitstr_t  *req_nodes_bitmap   = NULL;
 	int rem_cpus, rem_nodes;	/* remaining resources desired */
 	int avail_cpus;
+	int total_cpus = 0;	/* #CPUs allocated to job */
 	int i, j, rc = SLURM_SUCCESS;
 	int best_fit_inx, first, last;
 	int best_fit_nodes, best_fit_cpus;
@@ -1324,6 +1322,15 @@ static int _eval_nodes_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 			max_nodes--;
 			avail_cpus = _get_cpu_cnt(job_ptr, i, cpu_cnt,
 						  freq, size);
+			/* This could result in 0, but if the user
+			 * requested nodes here we will still give
+			 * them and then the step layout will sort
+			 * things out. */
+			if ((job_ptr->details->shared != 0)
+			    && (avail_cpus > rem_cpus))
+				avail_cpus = rem_cpus;
+
+			total_cpus += avail_cpus;
 			rem_cpus   -= avail_cpus;
 			for (j=0; j<switch_record_cnt; j++) {
 				if (!bit_test(switches_bitmap[j], i))
@@ -1331,6 +1338,14 @@ static int _eval_nodes_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 				bit_clear(switches_bitmap[j], i);
 				switches_node_cnt[j]--;
 			}
+		}
+		/* Compute CPUs already allocated to required nodes */
+		if ((job_ptr->details->max_cpus != NO_VAL) &&
+		    (total_cpus > job_ptr->details->max_cpus)) {
+			info("Job %u can't use required node due to max CPU "
+			     "limit", job_ptr->job_id);
+			rc = SLURM_ERROR;
+			goto fini;
 		}
 		if ((rem_nodes <= 0) && (rem_cpus <= 0))
 			goto fini;
@@ -1355,13 +1370,33 @@ static int _eval_nodes_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 					 * and already selected */
 					continue;
 				}
+
+				avail_cpus = _get_cpu_cnt(job_ptr, i, cpu_cnt,
+							  freq, size);
+				/* This could result in 0, but if the user
+				 * requested nodes here we will still give
+				 * them and then the step layout will sort
+				 * things out. */
+				if ((job_ptr->details->shared != 0)
+				    && (avail_cpus > rem_cpus))
+					avail_cpus = rem_cpus;
+
+				total_cpus += avail_cpus;
+				/* check to make sure we don't over
+				 * step the max_cpus limit */
+				if((job_ptr->details->max_cpus != NO_VAL) &&
+				   (total_cpus > job_ptr->details->max_cpus)) {
+					debug2("4 can't use this node since "
+					       "it would put us over the "
+					       "limit");
+					total_cpus -= avail_cpus;
+					continue;
+				}
+				rem_cpus   -= avail_cpus;
 				bit_set(bitmap, i);
 				bit_clear(avail_nodes_bitmap, i);
 				rem_nodes--;
 				max_nodes--;
-				avail_cpus = _get_cpu_cnt(job_ptr, i, cpu_cnt,
-							  freq, size);
-				rem_cpus   -= avail_cpus;
 			}
 		}
 		if ((rem_nodes <= 0) && (rem_cpus <= 0))
@@ -1480,12 +1515,30 @@ static int _eval_nodes_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 						  freq, size);
 			switches_cpu_cnt[best_fit_location] -= avail_cpus;
 
+			/* This could result in 0, but if the user
+			 * requested nodes here we will still give
+			 * them and then the step layout will sort
+			 * things out. */
+			if ((job_ptr->details->shared != 0)
+			    && (avail_cpus > rem_cpus))
+				avail_cpus = rem_cpus;
+
+			total_cpus += avail_cpus;
+			/* check to make sure we don't over
+			 * step the max_cpus limit */
+			if((job_ptr->details->max_cpus != NO_VAL) &&
+			   (total_cpus > job_ptr->details->max_cpus)) {
+				debug2("5 can't use this node since it "
+				       "would put us over the limit");
+				total_cpus -= avail_cpus;
+				continue;
+			}
+
 			if (bit_test(bitmap, i)) {
 				/* node on multiple leaf switches
 				 * and already selected */
 				continue;
 			}
-
 			bit_set(bitmap, i);
 			rem_nodes--;
 			max_nodes--;
