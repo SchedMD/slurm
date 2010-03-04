@@ -232,8 +232,8 @@ static const char *_set_resv_msg(resv_desc_msg_t *resv_msg,
 	int temp_int = 0;
 	uint32_t f;
 
-	/* need to clear errno here (just in case) */
-	errno = 0;
+	/* need to clear global_edit_error here (just in case) */
+	global_edit_error = 0;
 
 	if(!resv_msg)
 		return NULL;
@@ -311,7 +311,7 @@ static const char *_set_resv_msg(resv_desc_msg_t *resv_msg,
 	return type;
 
 return_error:
-	errno = 1;
+	global_edit_error = 1;
 	return type;
 }
 
@@ -360,10 +360,20 @@ static gboolean _admin_focus_out_resv(GtkEntry *entry,
 				      resv_desc_msg_t *resv_msg)
 {
 	if(global_entry_changed) {
+		const char *col_name = NULL;
 		int type = gtk_entry_get_max_length(entry);
 		const char *name = gtk_entry_get_text(entry);
 		type -= DEFAULT_ENTRY_LENGTH;
-		_set_resv_msg(resv_msg, name, type);
+		col_name = _set_resv_msg(resv_msg, name, type);
+		if(global_edit_error) {
+			if(global_edit_error_msg)
+				g_free(global_edit_error_msg);
+			global_edit_error_msg = g_strdup_printf(
+				"Reservation %s %s can't be set to %s",
+				resv_msg->name,
+				col_name,
+				name);
+		}
 		global_entry_changed = 0;
 	}
 	return false;
@@ -868,7 +878,7 @@ extern void admin_edit_resv(GtkCellRendererText *cell,
 	g_free(temp);
 
 	type = _set_resv_msg(resv_msg, new_text, column);
-	if(errno)
+	if(global_edit_error)
 		goto print_error;
 
 	if(got_edit_signal) {
