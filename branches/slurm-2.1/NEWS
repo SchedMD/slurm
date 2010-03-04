@@ -12,6 +12,8 @@ documents those changes that are of interest to users and admins.
     display this information making this fix a very minor one.
  -- Changed scontrol and sview output for jobs with unknown end times from
     'NONE' to 'Unknown'.
+ -- Fixed mysql plugin to reset classification when adding a
+    previously deleted cluster.
 
 * Changes in SLURM 2.1.4
 ========================
