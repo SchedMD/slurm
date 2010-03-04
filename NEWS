@@ -14,6 +14,9 @@ documents those changes that are of interest to users and admins.
     'NONE' to 'Unknown'.
  -- Fixed mysql plugin to reset classification when adding a
     previously deleted cluster.
+ -- Permit a batch script to reset umask and have that propagate to tasks
+    spawed by subsequent srun. Previously the umask in effect when sbatch was
+    executed was propagated to tasks spawed by srun.
 
 * Changes in SLURM 2.1.4
 ========================
