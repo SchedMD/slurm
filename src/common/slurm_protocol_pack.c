@@ -1658,7 +1658,7 @@ static int _unpack_assoc_shares_object(void **object, Buf buffer,
 	return SLURM_SUCCESS;
 
 unpack_error:
-	destroy_update_shares_rec(object_ptr);
+	slurmdb_destroy_update_shares_rec(object_ptr);
 	*object = NULL;
 	return SLURM_ERROR;
 }
@@ -7283,7 +7283,7 @@ static void _pack_accounting_update_msg(accounting_update_msg_t *msg,
 {
 	uint32_t count = 0;
 	ListIterator itr = NULL;
-	acct_update_object_t *rec = NULL;
+	slurmdb_update_object_t *rec = NULL;
 
 	if(msg->update_list)
 		count = list_count(msg->update_list);
@@ -7293,7 +7293,8 @@ static void _pack_accounting_update_msg(accounting_update_msg_t *msg,
 	if(count) {
 		itr = list_iterator_create(msg->update_list);
 		while((rec = list_next(itr))) {
-			pack_acct_update_object(rec, msg->rpc_version, buffer);
+			slurmdb_pack_update_object(rec, msg->rpc_version,
+						   buffer);
 		}
 		list_iterator_destroy(itr);
 	}
@@ -7307,18 +7308,18 @@ static int _unpack_accounting_update_msg(accounting_update_msg_t **msg,
 	int i = 0;
 	accounting_update_msg_t *msg_ptr =
 		xmalloc(sizeof(accounting_update_msg_t));
-	acct_update_object_t *rec = NULL;
+	slurmdb_update_object_t *rec = NULL;
 
 	*msg = msg_ptr;
 
 	safe_unpack32(&count, buffer);
-	msg_ptr->update_list = list_create(destroy_acct_update_object);
+	msg_ptr->update_list = list_create(slurmdb_destroy_update_object);
 	for(i=0; i<count; i++) {
 		/* this is only ran in the slurmctld so we can just
 		   use the version here.
 		*/
-		if((unpack_acct_update_object(&rec, SLURMDBD_VERSION,
-					      buffer))
+		if((slurmdb_unpack_update_object(&rec, SLURMDBD_VERSION,
+						 buffer))
 		   == SLURM_ERROR)
 			goto unpack_error;
 		list_append(msg_ptr->update_list, rec);

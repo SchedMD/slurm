@@ -119,6 +119,23 @@ typedef enum {
 #define SLURMDB_CLASSIFIED_FLAG 0x0100
 #define SLURMDB_CLASS_BASE      0x00ff
 
+/* Define assoc_mgr_association_usage_t below to avoid including
+ * extraneous slurmdb headers */
+#ifndef __assoc_mgr_association_usage_t_defined
+#  define  __assoc_mgr_association_usage_t_defined
+/* opaque data type */
+   typedef struct assoc_mgr_association_usage assoc_mgr_association_usage_t;
+#endif
+
+/* Define assoc_mgr_qos_usage_t below to avoid including
+ * extraneous slurmdb headers */
+#ifndef __assoc_mgr_qos_usage_t_defined
+#  define  __assoc_mgr_qos_usage_t_defined
+/* opaque data type */
+   typedef struct assoc_mgr_qos_usage assoc_mgr_qos_usage_t;
+#endif
+
+
 /* job info structures */
 typedef struct {
 	double cpu_ave;
@@ -150,7 +167,7 @@ typedef struct {
 	time_t eligible;
 	time_t end;
 	int32_t	exitcode;
-	void *first_step_ptr; /* this pointer to a jobacct_step_rec_t
+	void *first_step_ptr; /* this pointer to a slurmdb_step_rec_t
 				 is set up on the
 				 client side so does not need to
 				 be packed */
@@ -169,7 +186,7 @@ typedef struct {
 	time_t start;
 	enum job_states	state;
 	slurmdb_stats_t stats;
-	List    steps; /* list of jobacct_step_rec_t *'s */
+	List    steps; /* list of slurmdb_step_rec_t *'s */
 	time_t submit;
 	uint32_t suspended;
 	uint32_t sys_cpu_sec;
@@ -291,8 +308,6 @@ typedef struct {
 typedef struct slurmdb_association_rec {
 	List accounting_list; 	/* list of slurmdb_accounting_rec_t *'s */
 	char *acct;		/* account/project associated to association */
-	List childern_list;     /* list of childern associations
-				 * (DON'T PACK) */
 	char *cluster;		/* cluster associated to association
 				 * */
 
@@ -316,18 +331,8 @@ typedef struct slurmdb_association_rec {
 			    * underlying group of
 			    * associations can run for */
 
-	uint32_t grp_used_cpus; /* count of active jobs in the group
-				 * (DON'T PACK) */
-	uint32_t grp_used_nodes; /* count of active jobs in the group
-				  * (DON'T PACK) */
-	double grp_used_wall;   /* group count of time used in
-				 * running jobs (DON'T PACK) */
-
 	uint32_t id;		/* id identifing a combination of
 				 * user-account-cluster(-partition) */
-
-	uint32_t level_shares;  /* number of shares on this level of
-				 * the tree (DON'T PACK) */
 
 	uint32_t lft;		/* lft used for grouping sub
 				 * associations and jobs as a left
@@ -347,10 +352,6 @@ typedef struct slurmdb_association_rec {
 			       * association can run a job */
 
 	char *parent_acct;	/* name of parent account */
-	struct slurmdb_association_rec *parent_assoc_ptr; /* ptr to parent acct
-							   * set in
-							   * slurmctld
-							   * (DON'T PACK) */
 	uint32_t parent_id;	/* id of parent account */
 	char *partition;	/* optional partition in a cluster
 				 * associated to association */
@@ -361,23 +362,11 @@ typedef struct slurmdb_association_rec {
 				 * associations and jobs as a right
 				 * most container used with lft */
 
-	double shares_norm;     /* normalized shares (DON'T PACK) */
 	uint32_t shares_raw;	/* number of shares allocated to association */
 
 	uint32_t uid;		/* user ID */
-
-	long double usage_efctv;/* effective, normalized usage (DON'T PACK) */
-	long double usage_norm;	/* normalized usage (DON'T PACK) */
-	long double usage_raw;	/* measure of resource usage (DON'T PACK) */
-
-	uint32_t used_jobs;	/* count of active jobs (DON'T PACK) */
-	uint32_t used_submit_jobs; /* count of jobs pending or running
-				    * (DON'T PACK) */
-
+	assoc_mgr_association_usage_t *usage;
 	char *user;		/* user associated to association */
-	/* bitstr_t *valid_qos;    /\* qos available for this association */
-	/* 			 * derived from the qos_list. */
-	/* 			 * (DON'T PACK) *\/ */
 } slurmdb_association_rec_t;
 
 typedef struct {
@@ -390,7 +379,7 @@ typedef struct {
 } slurmdb_cluster_cond_t;
 
 typedef struct {
-	List accounting_list; /* list of cluster_accounting_rec_t *'s */
+	List accounting_list; /* list of slurmdb_cluster_accounting_rec_t *'s */
 	uint16_t classification; /* how this machine is classified */
 	char *control_host;
 	uint32_t control_port;
@@ -465,9 +454,6 @@ typedef struct {
 typedef struct {
 	char *description;
 	uint32_t id;
-	List job_list; /* list of job pointers to submitted/running
-			  jobs (DON'T PACK) */
-
 	uint64_t grp_cpu_mins; /* max number of cpu minutes all jobs
 				* running under this qos can run for */
 	uint32_t grp_cpus; /* max number of cpus this qos
@@ -479,16 +465,6 @@ typedef struct {
 	uint32_t grp_submit_jobs; /* max number of jobs this qos can submit at
 				   * one time */
 	uint32_t grp_wall; /* total time in hours this qos can run for */
-
-	uint32_t grp_used_cpus; /* count of cpus in use in this qos
-				 * (DON'T PACK) */
-	uint32_t grp_used_jobs;	/* count of active jobs (DON'T PACK) */
-	uint32_t grp_used_nodes; /* count of nodes in use in this qos
-				  * (DON'T PACK) */
-	uint32_t grp_used_submit_jobs; /* count of jobs pending or running
-					* (DON'T PACK) */
-	double grp_used_wall;   /* group count of time (minutes) used in
-				 * running jobs (DON'T PACK) */
 
 	uint64_t max_cpu_mins_pj; /* max number of cpu mins a user can
 				   * use with this qos */
@@ -504,17 +480,14 @@ typedef struct {
 			       * qos can run a job */
 
 	char *name;
-	double norm_priority;/* normalized priority (DON'T PACK) */
-	//bitstr_t *preempt_bitstr; /* other qos' this qos can preempt */
+	bitstr_t *preempt_bitstr; /* other qos' this qos can preempt */
 	List preempt_list; /* list of char *'s only used to add or
 			    * change the other qos' this can preempt,
 			    * when doing a get use the preempt_bitstr */
 	uint32_t priority;  /* ranged int needs to be a unint for
 			     * heterogeneous systems */
+	assoc_mgr_qos_usage_t *usage;
 	double usage_factor; /* factor to apply to usage in this qos */
-	long double usage_raw;	/* measure of resource usage (DON'T PACK) */
-
-	List user_limit_list; /* slurmdb_used_limits_t's (DON'T PACK) */
 } slurmdb_qos_rec_t;
 
 typedef struct {
@@ -567,7 +540,7 @@ typedef struct {
 				 packing purposes needs to be uint16_t */
 	slurmdb_association_cond_t *assoc_cond; /* use user_list here for
 						   names */
-	List def_slurmdb_list; /* list of char * */
+	List def_acct_list; /* list of char * */
 	List def_wckey_list; /* list of char * */
 	uint16_t with_assocs;
 	uint16_t with_coords;
@@ -944,7 +917,7 @@ extern List slurmdb_get_hierarchical_sorted_assoc_list(List assoc_list);
 extern List slurmdb_get_acct_hierarchical_rec_list(List assoc_list);
 
 
-/* IN/OUT: tree_list a list of acct_print_tree_t's */
+/* IN/OUT: tree_list a list of slurmdb_print_tree_t's */
 extern char *slurmdb_get_tree_acct_name(char *name, char *parent,
 					List tree_list);
 

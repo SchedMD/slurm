@@ -38,6 +38,11 @@
 #ifndef _SLURMDB_PACK_H
 #define _SLURMDB_PACK_H
 
+#include <slurm/slurmdb.h>
+#include "slurmdb_defs.h"
+#include "pack.h"
+#include "xmalloc.h"
+
 extern void slurmdb_pack_user_rec(void *in,
 				  uint16_t rpc_version, Buf buffer);
 extern int slurmdb_unpack_user_rec(void **object,
@@ -119,6 +124,9 @@ extern void slurmdb_pack_job_cond(void *in,
 				  uint16_t rpc_version, Buf buffer);
 extern int slurmdb_unpack_job_cond(void **object, uint16_t rpc_version,
 				   Buf buffer);
+extern void slurmdb_pack_job_rec(void *object,
+				 uint16_t rpc_version, Buf buffer);
+extern int slurmdb_unpack_job_rec(void **job, uint16_t rpc_version, Buf buffer);
 extern void slurmdb_pack_qos_cond(void *in,
 				  uint16_t rpc_version, Buf buffer);
 extern int slurmdb_unpack_qos_cond(void **object, uint16_t rpc_version,
@@ -128,6 +136,14 @@ extern void slurmdb_pack_reservation_cond(void *in,
 					  Buf buffer);
 extern int slurmdb_unpack_reservation_cond(void **object, uint16_t rpc_version,
 					   Buf buffer);
+extern void slurmdb_pack_selected_step(slurmdb_selected_step_t *step,
+				       uint16_t rpc_version, Buf buffer);
+extern int slurmdb_unpack_selected_step(slurmdb_selected_step_t **step,
+					uint16_t rpc_version, Buf buffer);
+extern void slurmdb_pack_step_rec(slurmdb_step_rec_t *step,
+				  uint16_t rpc_version, Buf buffer);
+extern int slurmdb_unpack_step_rec(slurmdb_step_rec_t **step,
+				   uint16_t rpc_version, Buf buffer);
 extern void slurmdb_pack_txn_cond(void *in,
 				  uint16_t rpc_version, Buf buffer);
 extern int slurmdb_unpack_txn_cond(void **object, uint16_t rpc_version,
@@ -140,14 +156,11 @@ extern void slurmdb_pack_archive_cond(void *in,
 				      uint16_t rpc_version, Buf buffer);
 extern int slurmdb_unpack_archive_cond(void **object, uint16_t rpc_version,
 				       Buf buffer);
-
-extern void slurmdb_pack_update_object(acct_update_object_t *object,
+extern void slurmdb_pack_update_object(slurmdb_update_object_t *object,
 				       uint16_t rpc_version, Buf buffer);
-extern int slurmdb_unpack_update_object(acct_update_object_t **object,
+extern int slurmdb_unpack_update_object(slurmdb_update_object_t **object,
 					uint16_t rpc_version, Buf buffer);
-
 extern void slurmdb_pack_used_limits(void *in,
-
 				     uint16_t rpc_version, Buf buffer);
 extern int slurmdb_unpack_used_limits(void **object,
 				      uint16_t rpc_version, Buf buffer);
