@@ -4,8 +4,9 @@ documents those changes that are of interest to users and admins.
 * Changes in SLURM 2.2.0.pre3
 =============================
  -- Refine support for TotalView partial attach. More work is still needed.
- -- In select/cons_res, the count of CPUs on required nodes was formerly 
-    ignored in enforcing the maximum CPU limit.
+ -- In select/cons_res, the count of CPUs on required nodes was formerly
+    ignored in enforcing the maximum CPU limit. Also enforce maximum CPU
+    limit when the topology/tree plugin is configured (previously ignored).
 
 * Changes in SLURM 2.2.0.pre2
 =============================
