@@ -350,12 +350,12 @@ static void _generate_resv_name(resv_desc_msg_t *resv_ptr)
 /* Validate an account name */
 static bool _is_account_valid(char *account)
 {
-	acct_association_rec_t assoc_rec, *assoc_ptr;
+	slurmdb_association_rec_t assoc_rec, *assoc_ptr;
 
 	if (!(accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS))
 		return true;	/* don't worry about account validity */
 
-	memset(&assoc_rec, 0, sizeof(acct_association_rec_t));
+	memset(&assoc_rec, 0, sizeof(slurmdb_association_rec_t));
 	assoc_rec.uid       = NO_VAL;
 	assoc_rec.acct      = account;
 
@@ -366,10 +366,10 @@ static bool _is_account_valid(char *account)
 	return true;
 }
 
-static int _append_assoc_list(List assoc_list, acct_association_rec_t *assoc)
+static int _append_assoc_list(List assoc_list, slurmdb_association_rec_t *assoc)
 {
 	int rc = ESLURM_INVALID_ACCOUNT;
-	acct_association_rec_t *assoc_ptr = NULL;
+	slurmdb_association_rec_t *assoc_ptr = NULL;
 	if (assoc_mgr_fill_in_assoc(
 		    acct_db_conn, assoc,
 		    accounting_enforce,
@@ -396,7 +396,7 @@ static int _set_assoc_list(slurmctld_resv_t *resv_ptr)
 {
 	int rc = SLURM_SUCCESS, i = 0, j = 0;
 	List assoc_list = NULL;
-	acct_association_rec_t assoc, *assoc_ptr = NULL;
+	slurmdb_association_rec_t assoc, *assoc_ptr = NULL;
 
 	/* no need to do this if we can't ;) */
 	if(!association_based_accounting)
@@ -404,14 +404,14 @@ static int _set_assoc_list(slurmctld_resv_t *resv_ptr)
 
 	assoc_list = list_create(NULL);
 
-	memset(&assoc, 0, sizeof(acct_association_rec_t));
+	memset(&assoc, 0, sizeof(slurmdb_association_rec_t));
 
 	if(resv_ptr->user_cnt) {
 		for(i=0; i < resv_ptr->user_cnt; i++) {
 			if(resv_ptr->account_cnt) {
 				for(j=0; j < resv_ptr->account_cnt; j++) {
 					memset(&assoc, 0,
-					       sizeof(acct_association_rec_t));
+					       sizeof(slurmdb_association_rec_t));
 					assoc.uid = resv_ptr->user_list[i];
 					assoc.acct = resv_ptr->account_list[j];
 					if((rc = _append_assoc_list(
@@ -422,7 +422,7 @@ static int _set_assoc_list(slurmctld_resv_t *resv_ptr)
 				}
 			} else {
 				memset(&assoc, 0,
-				       sizeof(acct_association_rec_t));
+				       sizeof(slurmdb_association_rec_t));
 				assoc.uid = resv_ptr->user_list[i];
 				if((rc = assoc_mgr_get_user_assocs(
 					    acct_db_conn, &assoc,
@@ -436,7 +436,7 @@ static int _set_assoc_list(slurmctld_resv_t *resv_ptr)
 	} else if(resv_ptr->account_cnt) {
 		for(i=0; i < resv_ptr->account_cnt; i++) {
 			memset(&assoc, 0,
-			       sizeof(acct_association_rec_t));
+			       sizeof(slurmdb_association_rec_t));
 			assoc.uid = (uint32_t)NO_VAL;
 			assoc.acct = resv_ptr->account_list[j];
 			if((rc = _append_assoc_list(assoc_list, &assoc))
@@ -473,10 +473,10 @@ end_it:
 static int _post_resv_create(slurmctld_resv_t *resv_ptr)
 {
 	int rc = SLURM_SUCCESS;
-	acct_reservation_rec_t resv;
+	slurmdb_reservation_rec_t resv;
 	char temp_bit[BUF_SIZE];
 
-	memset(&resv, 0, sizeof(acct_reservation_rec_t));
+	memset(&resv, 0, sizeof(slurmdb_reservation_rec_t));
 
 	resv.assocs = resv_ptr->assoc_list;
 	resv.cluster = slurmctld_cluster_name;
@@ -502,8 +502,8 @@ static int _post_resv_create(slurmctld_resv_t *resv_ptr)
 static int _post_resv_delete(slurmctld_resv_t *resv_ptr)
 {
 	int rc = SLURM_SUCCESS;
-	acct_reservation_rec_t resv;
-	memset(&resv, 0, sizeof(acct_reservation_rec_t));
+	slurmdb_reservation_rec_t resv;
+	memset(&resv, 0, sizeof(slurmdb_reservation_rec_t));
 
 	resv.cluster = slurmctld_cluster_name;
 	resv.id = resv_ptr->resv_id;
@@ -523,10 +523,10 @@ static int _post_resv_update(slurmctld_resv_t *resv_ptr,
 			     slurmctld_resv_t *old_resv_ptr)
 {
 	int rc = SLURM_SUCCESS;
-	acct_reservation_rec_t resv;
+	slurmdb_reservation_rec_t resv;
 	char temp_bit[BUF_SIZE];
 
-	memset(&resv, 0, sizeof(acct_reservation_rec_t));
+	memset(&resv, 0, sizeof(slurmdb_reservation_rec_t));
 
 	resv.cluster = slurmctld_cluster_name;
 	resv.id = resv_ptr->resv_id;

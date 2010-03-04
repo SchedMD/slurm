@@ -45,10 +45,10 @@
  * will fill in if there are coordinators from a parent account also.
  */
 static int _get_account_coords(mysql_conn_t *mysql_conn,
-			       acct_account_rec_t *acct)
+			       slurmdb_account_rec_t *acct)
 {
 	char *query = NULL, *cluster_name = NULL;
-	acct_coord_rec_t *coord = NULL;
+	slurmdb_coord_rec_t *coord = NULL;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 	ListIterator itr;
@@ -59,11 +59,11 @@ static int _get_account_coords(mysql_conn_t *mysql_conn,
 	}
 
 	if(!acct->coordinators)
-		acct->coordinators = list_create(destroy_acct_coord_rec);
+		acct->coordinators = list_create(slurmdb_destroy_coord_rec);
 
 	query = xstrdup_printf(
 		"select user from %s where acct='%s' && deleted=0",
-		acct_coord_table, acct->name);
+		slurmdb_coord_table, acct->name);
 
 	if(!(result =
 	     mysql_db_query_ret(mysql_conn->db_conn, query, 0))) {
@@ -72,7 +72,7 @@ static int _get_account_coords(mysql_conn_t *mysql_conn,
 	}
 	xfree(query);
 	while((row = mysql_fetch_row(result))) {
-		coord = xmalloc(sizeof(acct_coord_rec_t));
+		coord = xmalloc(sizeof(slurmdb_coord_rec_t));
 		list_append(acct->coordinators, coord);
 		coord->name = xstrdup(row[0]);
 		coord->direct = 1;
@@ -91,7 +91,7 @@ static int _get_account_coords(mysql_conn_t *mysql_conn,
 			   "t1.lft<t2.lft && t1.rgt>t2.lft && "
 			   "t1.user='' && t2.acct='%s' "
 			   "&& t1.acct!='%s' && !t0.deleted",
-			   acct_coord_table, cluster_name, assoc_table,
+			   slurmdb_coord_table, cluster_name, assoc_table,
 			   cluster_name, assoc_table,
 			   acct->name, acct->name);
 	}
@@ -110,7 +110,7 @@ static int _get_account_coords(mysql_conn_t *mysql_conn,
 	}
 	xfree(query);
 	while((row = mysql_fetch_row(result))) {
-		coord = xmalloc(sizeof(acct_coord_rec_t));
+		coord = xmalloc(sizeof(slurmdb_coord_rec_t));
 		list_append(acct->coordinators, coord);
 		coord->name = xstrdup(row[0]);
 		coord->direct = 0;
@@ -123,14 +123,14 @@ extern int as_mysql_add_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 {
 	ListIterator itr = NULL;
 	int rc = SLURM_SUCCESS;
-	acct_account_rec_t *object = NULL;
+	slurmdb_account_rec_t *object = NULL;
 	char *cols = NULL, *vals = NULL, *query = NULL, *txn_query = NULL;
 	time_t now = time(NULL);
 	char *user_name = NULL;
 	char *extra = NULL, *tmp_extra = NULL;
 
 	int affect_rows = 0;
-	List assoc_list = list_create(destroy_acct_association_rec);
+	List assoc_list = list_create(slurmdb_destroy_association_rec);
 
 	if(check_connection(mysql_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
@@ -235,8 +235,8 @@ extern int as_mysql_add_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 }
 
 extern List as_mysql_modify_accts(mysql_conn_t *mysql_conn, uint32_t uid,
-			       acct_account_cond_t *acct_cond,
-			       acct_account_rec_t *acct)
+			       slurmdb_account_cond_t *acct_cond,
+			       slurmdb_account_rec_t *acct)
 {
 	ListIterator itr = NULL;
 	List ret_list = NULL;
@@ -369,7 +369,7 @@ extern List as_mysql_modify_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 }
 
 extern List as_mysql_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
-			       acct_account_cond_t *acct_cond)
+			       slurmdb_account_cond_t *acct_cond)
 {
 	ListIterator itr = NULL;
 	List ret_list = NULL;
@@ -510,7 +510,7 @@ extern List as_mysql_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 }
 
 extern List as_mysql_get_accts(mysql_conn_t *mysql_conn, uid_t uid,
-			    acct_account_cond_t *acct_cond)
+			    slurmdb_account_cond_t *acct_cond)
 {
 	char *query = NULL;
 	char *extra = NULL;
@@ -523,7 +523,7 @@ extern List as_mysql_get_accts(mysql_conn_t *mysql_conn, uid_t uid,
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 	uint16_t private_data = 0;
-	acct_user_rec_t user;
+	slurmdb_user_rec_t user;
 
 	/* if this changes you will need to edit the corresponding enum */
 	char *acct_req_inx[] = {
@@ -532,23 +532,23 @@ extern List as_mysql_get_accts(mysql_conn_t *mysql_conn, uid_t uid,
 		"organization"
 	};
 	enum {
-		ACCT_REQ_NAME,
-		ACCT_REQ_DESC,
-		ACCT_REQ_ORG,
-		ACCT_REQ_COUNT
+		SLURMDB_REQ_NAME,
+		SLURMDB_REQ_DESC,
+		SLURMDB_REQ_ORG,
+		SLURMDB_REQ_COUNT
 	};
 
 	if(check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
 
-	memset(&user, 0, sizeof(acct_user_rec_t));
+	memset(&user, 0, sizeof(slurmdb_user_rec_t));
 	user.uid = uid;
 
 	private_data = slurm_get_private_data();
 
 	if (private_data & PRIVATE_DATA_ACCOUNTS) {
 		if(!(is_admin = is_user_min_admin_level(
-			     mysql_conn, uid, ACCT_ADMIN_OPERATOR))) {
+			     mysql_conn, uid, SLURMDB_ADMIN_OPERATOR))) {
 			if(!is_user_any_coord(mysql_conn, &user)) {
 				error("Only admins/coordinators "
 				      "can look at account usage");
@@ -618,7 +618,7 @@ empty:
 
 	xfree(tmp);
 	xstrfmtcat(tmp, "%s", acct_req_inx[i]);
-	for(i=1; i<ACCT_REQ_COUNT; i++) {
+	for(i=1; i<SLURMDB_REQ_COUNT; i++) {
 		xstrfmtcat(tmp, ", %s", acct_req_inx[i]);
 	}
 
@@ -627,7 +627,7 @@ empty:
 	 * coordinator of.
 	 */
 	if(!is_admin && (private_data & PRIVATE_DATA_ACCOUNTS)) {
-		acct_coord_rec_t *coord = NULL;
+		slurmdb_coord_rec_t *coord = NULL;
 		set = 0;
 		itr = list_iterator_create(user.coord_accts);
 		while((coord = list_next(itr))) {
@@ -658,7 +658,7 @@ empty:
 	}
 	xfree(query);
 
-	acct_list = list_create(destroy_acct_account_rec);
+	acct_list = list_create(slurmdb_destroy_account_rec);
 
 	if(acct_cond && acct_cond->with_assocs) {
 		/* We are going to be freeing the inners of
@@ -671,12 +671,12 @@ empty:
 	}
 
 	while((row = mysql_fetch_row(result))) {
-		acct_account_rec_t *acct = xmalloc(sizeof(acct_account_rec_t));
+		slurmdb_account_rec_t *acct = xmalloc(sizeof(slurmdb_account_rec_t));
 		list_append(acct_list, acct);
 
-		acct->name =  xstrdup(row[ACCT_REQ_NAME]);
-		acct->description = xstrdup(row[ACCT_REQ_DESC]);
-		acct->organization = xstrdup(row[ACCT_REQ_ORG]);
+		acct->name =  xstrdup(row[SLURMDB_REQ_NAME]);
+		acct->description = xstrdup(row[SLURMDB_REQ_DESC]);
+		acct->organization = xstrdup(row[SLURMDB_REQ_ORG]);
 
 		if(acct_cond && acct_cond->with_coords) {
 			_get_account_coords(mysql_conn, acct);
@@ -685,7 +685,7 @@ empty:
 		if(acct_cond && acct_cond->with_assocs) {
 			if(!acct_cond->assoc_cond) {
 				acct_cond->assoc_cond = xmalloc(
-					sizeof(acct_association_cond_t));
+					sizeof(slurmdb_association_cond_t));
 			}
 
 			list_append(acct_cond->assoc_cond->acct_list,
@@ -697,8 +697,8 @@ empty:
 	if(acct_cond && acct_cond->with_assocs
 	   && list_count(acct_cond->assoc_cond->acct_list)) {
 		ListIterator assoc_itr = NULL;
-		acct_account_rec_t *acct = NULL;
-		acct_association_rec_t *assoc = NULL;
+		slurmdb_account_rec_t *acct = NULL;
+		slurmdb_association_rec_t *assoc = NULL;
 		List assoc_list = as_mysql_get_assocs(
 			mysql_conn, uid, acct_cond->assoc_cond);
 
@@ -716,7 +716,7 @@ empty:
 
 				if(!acct->assoc_list)
 					acct->assoc_list = list_create(
-						destroy_acct_association_rec);
+						slurmdb_destroy_association_rec);
 				list_append(acct->assoc_list, assoc);
 				list_remove(assoc_itr);
 			}

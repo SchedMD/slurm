@@ -45,13 +45,13 @@ extern int as_mysql_add_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 			   List acct_list);
 
 extern List as_mysql_modify_accts(mysql_conn_t *mysql_conn, uint32_t uid,
-			       acct_account_cond_t *acct_cond,
-			       acct_account_rec_t *acct);
+			       slurmdb_account_cond_t *acct_cond,
+			       slurmdb_account_rec_t *acct);
 
 extern List as_mysql_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
-			       acct_account_cond_t *acct_cond);
+			       slurmdb_account_cond_t *acct_cond);
 
 extern List as_mysql_get_accts(mysql_conn_t *mysql_conn, uid_t uid,
-			    acct_account_cond_t *acct_cond);
+			    slurmdb_account_cond_t *acct_cond);
 
 #endif

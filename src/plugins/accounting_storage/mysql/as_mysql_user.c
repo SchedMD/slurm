@@ -44,10 +44,10 @@
 /* Fill in all the accounts this user is coordinator over.  This
  * will fill in all the sub accounts they are coordinator over also.
  */
-static int _get_user_coords(mysql_conn_t *mysql_conn, acct_user_rec_t *user)
+static int _get_user_coords(mysql_conn_t *mysql_conn, slurmdb_user_rec_t *user)
 {
 	char *query = NULL;
-	acct_coord_rec_t *coord = NULL;
+	slurmdb_coord_rec_t *coord = NULL;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 	ListIterator itr = NULL, itr2 = NULL;
@@ -59,11 +59,11 @@ static int _get_user_coords(mysql_conn_t *mysql_conn, acct_user_rec_t *user)
 	}
 
 	if(!user->coord_accts)
-		user->coord_accts = list_create(destroy_acct_coord_rec);
+		user->coord_accts = list_create(slurmdb_destroy_coord_rec);
 
 	query = xstrdup_printf(
 		"select acct from %s where user='%s' && deleted=0",
-		acct_coord_table, user->name);
+		slurmdb_coord_table, user->name);
 
 	if(!(result =
 	     mysql_db_query_ret(mysql_conn->db_conn, query, 0))) {
@@ -73,7 +73,7 @@ static int _get_user_coords(mysql_conn_t *mysql_conn, acct_user_rec_t *user)
 	xfree(query);
 
 	while((row = mysql_fetch_row(result))) {
-		coord = xmalloc(sizeof(acct_coord_rec_t));
+		coord = xmalloc(sizeof(slurmdb_coord_rec_t));
 		list_append(user->coord_accts, coord);
 		coord->name = xstrdup(row[0]);
 		coord->direct = 1;
@@ -137,7 +137,7 @@ static int _get_user_coords(mysql_conn_t *mysql_conn, acct_user_rec_t *user)
 			if(coord)
 				continue;
 
-			coord = xmalloc(sizeof(acct_coord_rec_t));
+			coord = xmalloc(sizeof(slurmdb_coord_rec_t));
 			list_append(user->coord_accts, coord);
 			coord->name = xstrdup(row[0]);
 			coord->direct = 0;
@@ -154,14 +154,14 @@ extern int as_mysql_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 {
 	ListIterator itr = NULL;
 	int rc = SLURM_SUCCESS;
-	acct_user_rec_t *object = NULL;
+	slurmdb_user_rec_t *object = NULL;
 	char *cols = NULL, *vals = NULL, *query = NULL, *txn_query = NULL;
 	time_t now = time(NULL);
 	char *user_name = NULL;
 	char *extra = NULL, *tmp_extra = NULL;
 	int affect_rows = 0;
-	List assoc_list = list_create(destroy_acct_association_rec);
-	List wckey_list = list_create(destroy_acct_wckey_rec);
+	List assoc_list = list_create(slurmdb_destroy_association_rec);
+	List wckey_list = list_create(slurmdb_destroy_wckey_rec);
 
 	if(check_connection(mysql_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
@@ -182,7 +182,7 @@ extern int as_mysql_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		xstrfmtcat(extra, ", default_acct='%s'",
 			   object->default_acct);
 
-		if(object->admin_level != ACCT_ADMIN_NOTSET) {
+		if(object->admin_level != SLURMDB_ADMIN_NOTSET) {
 			xstrcat(cols, ", admin_level");
 			xstrfmtcat(vals, ", %u", object->admin_level);
 			xstrfmtcat(extra, ", admin_level=%u",
@@ -219,7 +219,7 @@ extern int as_mysql_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 			continue;
 		}
 
-		if(addto_update_list(mysql_conn->update_list, ACCT_ADD_USER,
+		if(addto_update_list(mysql_conn->update_list, SLURMDB_ADD_USER,
 				      object) == SLURM_SUCCESS)
 			list_remove(itr);
 
@@ -287,14 +287,14 @@ extern int as_mysql_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 }
 
 extern int as_mysql_add_coord(mysql_conn_t *mysql_conn, uint32_t uid,
-			   List acct_list, acct_user_cond_t *user_cond)
+			   List acct_list, slurmdb_user_cond_t *user_cond)
 {
 	char *query = NULL, *user = NULL, *acct = NULL;
 	char *user_name = NULL, *txn_query = NULL;
 	ListIterator itr, itr2;
 	time_t now = time(NULL);
 	int rc = SLURM_SUCCESS;
-	acct_user_rec_t *user_rec = NULL;
+	slurmdb_user_rec_t *user_rec = NULL;
 
 	if(!user_cond || !user_cond->assoc_cond
 	   || !user_cond->assoc_cond->user_list
@@ -324,7 +324,7 @@ extern int as_mysql_add_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 					"insert into %s (creation_time, "
 					"mod_time, acct, user) values "
 					"(%d, %d, '%s', '%s')",
-					acct_coord_table,
+					slurmdb_coord_table,
 					now, now, acct, user);
 
 			if(txn_query)
@@ -366,11 +366,11 @@ extern int as_mysql_add_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 		/* get the update list set */
 		itr = list_iterator_create(user_cond->assoc_cond->user_list);
 		while((user = list_next(itr))) {
-			user_rec = xmalloc(sizeof(acct_user_rec_t));
+			user_rec = xmalloc(sizeof(slurmdb_user_rec_t));
 			user_rec->name = xstrdup(user);
 			_get_user_coords(mysql_conn, user_rec);
 			addto_update_list(mysql_conn->update_list,
-					   ACCT_ADD_COORD, user_rec);
+					   SLURMDB_ADD_COORD, user_rec);
 		}
 		list_iterator_destroy(itr);
 	}
@@ -379,8 +379,8 @@ extern int as_mysql_add_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 }
 
 extern List as_mysql_modify_users(mysql_conn_t *mysql_conn, uint32_t uid,
-			       acct_user_cond_t *user_cond,
-			       acct_user_rec_t *user)
+			       slurmdb_user_cond_t *user_cond,
+			       slurmdb_user_rec_t *user)
 {
 	ListIterator itr = NULL;
 	List ret_list = NULL;
@@ -445,7 +445,7 @@ extern List as_mysql_modify_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		xstrcat(extra, ")");
 	}
 
-	if(user_cond->admin_level != ACCT_ADMIN_NOTSET) {
+	if(user_cond->admin_level != SLURMDB_ADMIN_NOTSET) {
 		xstrfmtcat(extra, " && admin_level=%u", user_cond->admin_level);
 	}
 
@@ -455,7 +455,7 @@ extern List as_mysql_modify_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	if(user->default_wckey)
 		xstrfmtcat(vals, ", default_wckey='%s'", user->default_wckey);
 
-	if(user->admin_level != ACCT_ADMIN_NOTSET)
+	if(user->admin_level != SLURMDB_ADMIN_NOTSET)
 		xstrfmtcat(vals, ", admin_level=%u", user->admin_level);
 
 	if(!extra || !vals) {
@@ -475,7 +475,7 @@ extern List as_mysql_modify_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	rc = 0;
 	ret_list = list_create(slurm_destroy_char);
 	while((row = mysql_fetch_row(result))) {
-		acct_user_rec_t *user_rec = NULL;
+		slurmdb_user_rec_t *user_rec = NULL;
 
 		object = xstrdup(row[0]);
 		list_append(ret_list, object);
@@ -485,12 +485,12 @@ extern List as_mysql_modify_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		} else  {
 			xstrfmtcat(name_char, " || name='%s'", object);
 		}
-		user_rec = xmalloc(sizeof(acct_user_rec_t));
+		user_rec = xmalloc(sizeof(slurmdb_user_rec_t));
 		user_rec->name = xstrdup(object);
 		user_rec->default_acct = xstrdup(user->default_acct);
 		user_rec->default_wckey = xstrdup(user->default_wckey);
 		user_rec->admin_level = user->admin_level;
-		addto_update_list(mysql_conn->update_list, ACCT_MODIFY_USER,
+		addto_update_list(mysql_conn->update_list, SLURMDB_MODIFY_USER,
 				   user_rec);
 	}
 	mysql_free_result(result);
@@ -521,7 +521,7 @@ extern List as_mysql_modify_users(mysql_conn_t *mysql_conn, uint32_t uid,
 }
 
 extern List as_mysql_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
-			       acct_user_cond_t *user_cond)
+			       slurmdb_user_cond_t *user_cond)
 {
 	ListIterator itr = NULL;
 	List ret_list = NULL;
@@ -535,9 +535,9 @@ extern List as_mysql_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	int set = 0;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
-	acct_user_cond_t user_coord_cond;
-	acct_association_cond_t assoc_cond;
-	acct_wckey_cond_t wckey_cond;
+	slurmdb_user_cond_t user_coord_cond;
+	slurmdb_association_cond_t assoc_cond;
+	slurmdb_wckey_cond_t wckey_cond;
 
 	if(!user_cond) {
 		error("we need something to remove");
@@ -598,7 +598,7 @@ extern List as_mysql_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		xstrcat(extra, ")");
 	}
 
-	if(user_cond->admin_level != ACCT_ADMIN_NOTSET) {
+	if(user_cond->admin_level != SLURMDB_ADMIN_NOTSET) {
 		xstrfmtcat(extra, " && admin_level=%u", user_cond->admin_level);
 	}
 
@@ -615,8 +615,8 @@ extern List as_mysql_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		return NULL;
 	}
 
-	memset(&user_coord_cond, 0, sizeof(acct_user_cond_t));
-	memset(&assoc_cond, 0, sizeof(acct_association_cond_t));
+	memset(&user_coord_cond, 0, sizeof(slurmdb_user_cond_t));
+	memset(&assoc_cond, 0, sizeof(slurmdb_association_cond_t));
 	/* we do not need to free the objects we put in here since
 	   they are also placed in a list that will be freed
 	*/
@@ -627,7 +627,7 @@ extern List as_mysql_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	ret_list = list_create(slurm_destroy_char);
 	while((row = mysql_fetch_row(result))) {
 		char *object = xstrdup(row[0]);
-		acct_user_rec_t *user_rec = NULL;
+		slurmdb_user_rec_t *user_rec = NULL;
 
 		list_append(ret_list, object);
 		list_append(assoc_cond.user_list, object);
@@ -640,9 +640,9 @@ extern List as_mysql_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 			xstrfmtcat(name_char, " || name='%s'", object);
 			xstrfmtcat(assoc_char, " || t2.user='%s'", object);
 		}
-		user_rec = xmalloc(sizeof(acct_user_rec_t));
+		user_rec = xmalloc(sizeof(slurmdb_user_rec_t));
 		user_rec->name = xstrdup(object);
-		addto_update_list(mysql_conn->update_list, ACCT_REMOVE_USER,
+		addto_update_list(mysql_conn->update_list, SLURMDB_REMOVE_USER,
 				   user_rec);
 
 	}
@@ -664,7 +664,7 @@ extern List as_mysql_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		list_destroy(coord_list);
 
 	/* We need to remove these users from the wckey table */
-	memset(&wckey_cond, 0, sizeof(acct_wckey_cond_t));
+	memset(&wckey_cond, 0, sizeof(slurmdb_wckey_cond_t));
 	wckey_cond.user_list = assoc_cond.user_list;
 	coord_list = as_mysql_remove_wckeys(
 		mysql_conn, uid, &wckey_cond);
@@ -696,7 +696,7 @@ extern List as_mysql_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	query = xstrdup_printf(
 		"update %s as t2 set deleted=1, mod_time=%d where %s",
-		acct_coord_table, now, assoc_char);
+		slurmdb_coord_table, now, assoc_char);
 	xfree(assoc_char);
 
 	rc = mysql_db_query(mysql_conn->db_conn, query);
@@ -711,19 +711,19 @@ extern List as_mysql_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 }
 
 extern List as_mysql_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
-			       List acct_list, acct_user_cond_t *user_cond)
+			       List acct_list, slurmdb_user_cond_t *user_cond)
 {
 	char *query = NULL, *object = NULL, *extra = NULL, *last_user = NULL;
 	char *user_name = NULL;
 	time_t now = time(NULL);
 	int set = 0, is_admin=0, rc = SLURM_SUCCESS;
 	ListIterator itr = NULL;
-	acct_user_rec_t *user_rec = NULL;
+	slurmdb_user_rec_t *user_rec = NULL;
 	List ret_list = NULL;
 	List user_list = NULL;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
-	acct_user_rec_t user;
+	slurmdb_user_rec_t user;
 
 	if(!user_cond && !acct_list) {
 		error("we need something to remove");
@@ -734,11 +734,11 @@ extern List as_mysql_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 	if(check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
 
-	memset(&user, 0, sizeof(acct_user_rec_t));
+	memset(&user, 0, sizeof(slurmdb_user_rec_t));
 	user.uid = uid;
 
 	if(!(is_admin = is_user_min_admin_level(
-		     mysql_conn, uid, ACCT_ADMIN_OPERATOR))) {
+		     mysql_conn, uid, SLURMDB_ADMIN_OPERATOR))) {
 		if(!is_user_any_coord(mysql_conn, &user)) {
 			error("Only admins/coordinators can "
 			      "remove coordinators");
@@ -797,7 +797,7 @@ extern List as_mysql_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	query = xstrdup_printf(
 		"select user, acct from %s where deleted=0 && %s order by user",
-		acct_coord_table, extra);
+		slurmdb_coord_table, extra);
 
 	debug3("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, THIS_FILE, __LINE__, query);
@@ -813,7 +813,7 @@ extern List as_mysql_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 	user_list = list_create(slurm_destroy_char);
 	while((row = mysql_fetch_row(result))) {
 		if(!is_admin) {
-			acct_coord_rec_t *coord = NULL;
+			slurmdb_coord_rec_t *coord = NULL;
 			if(!user.coord_accts) { // This should never
 						// happen
 				error("We are here with no coord accts");
@@ -857,7 +857,7 @@ extern List as_mysql_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 	itr = list_iterator_create(as_mysql_cluster_list);
 	while((object = list_next(itr))) {
 		if((rc = remove_common(mysql_conn, DBD_REMOVE_ACCOUNT_COORDS,
-				       now, user_name, acct_coord_table,
+				       now, user_name, slurmdb_coord_table,
 				       extra, NULL, object))
 		   != SLURM_SUCCESS)
 			break;
@@ -877,11 +877,11 @@ extern List as_mysql_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 	/* get the update list set */
 	itr = list_iterator_create(user_list);
 	while((last_user = list_next(itr))) {
-		user_rec = xmalloc(sizeof(acct_user_rec_t));
+		user_rec = xmalloc(sizeof(slurmdb_user_rec_t));
 		user_rec->name = xstrdup(last_user);
 		_get_user_coords(mysql_conn, user_rec);
 		addto_update_list(mysql_conn->update_list,
-				   ACCT_REMOVE_COORD, user_rec);
+				   SLURMDB_REMOVE_COORD, user_rec);
 	}
 	list_iterator_destroy(itr);
 	list_destroy(user_list);
@@ -890,7 +890,7 @@ extern List as_mysql_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 }
 
 extern List as_mysql_get_users(mysql_conn_t *mysql_conn, uid_t uid,
-			    acct_user_cond_t *user_cond)
+			    slurmdb_user_cond_t *user_cond)
 {
 	char *query = NULL;
 	char *extra = NULL;
@@ -903,7 +903,7 @@ extern List as_mysql_get_users(mysql_conn_t *mysql_conn, uid_t uid,
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 	uint16_t private_data = 0;
-	acct_user_rec_t user;
+	slurmdb_user_rec_t user;
 
 	/* if this changes you will need to edit the corresponding enum */
 	char *user_req_inx[] = {
@@ -923,13 +923,13 @@ extern List as_mysql_get_users(mysql_conn_t *mysql_conn, uid_t uid,
 	if(check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
 
-	memset(&user, 0, sizeof(acct_user_rec_t));
+	memset(&user, 0, sizeof(slurmdb_user_rec_t));
 	user.uid = uid;
 
 	private_data = slurm_get_private_data();
 	if (private_data & PRIVATE_DATA_USERS) {
 		if(!(is_admin = is_user_min_admin_level(
-			     mysql_conn, uid, ACCT_ADMIN_OPERATOR)))
+			     mysql_conn, uid, SLURMDB_ADMIN_OPERATOR)))
 			is_user_any_coord(mysql_conn, &user);
 	}
 
@@ -988,7 +988,7 @@ extern List as_mysql_get_users(mysql_conn_t *mysql_conn, uid_t uid,
 		xstrcat(extra, ")");
 	}
 
-	if(user_cond->admin_level != ACCT_ADMIN_NOTSET) {
+	if(user_cond->admin_level != SLURMDB_ADMIN_NOTSET) {
 		xstrfmtcat(extra, " && admin_level=%u",
 			   user_cond->admin_level);
 	}
@@ -1019,10 +1019,10 @@ empty:
 	}
 	xfree(query);
 
-	user_list = list_create(destroy_acct_user_rec);
+	user_list = list_create(slurmdb_destroy_user_rec);
 
 	while((row = mysql_fetch_row(result))) {
-		acct_user_rec_t *user = xmalloc(sizeof(acct_user_rec_t));
+		slurmdb_user_rec_t *user = xmalloc(sizeof(slurmdb_user_rec_t));
 /* 		uid_t pw_uid; */
 		list_append(user_list, user);
 
@@ -1051,8 +1051,8 @@ empty:
 
 	if(user_cond && user_cond->with_assocs) {
 		ListIterator assoc_itr = NULL;
-		acct_user_rec_t *user = NULL;
-		acct_association_rec_t *assoc = NULL;
+		slurmdb_user_rec_t *user = NULL;
+		slurmdb_association_rec_t *assoc = NULL;
 		List assoc_list = NULL;
 
 		/* Make sure we don't get any non-user associations
@@ -1060,7 +1060,7 @@ empty:
 		 * defined */
 		if(!user_cond->assoc_cond)
 			user_cond->assoc_cond =
-				xmalloc(sizeof(acct_association_cond_t));
+				xmalloc(sizeof(slurmdb_association_cond_t));
 
 		if(!user_cond->assoc_cond->user_list)
 			user_cond->assoc_cond->user_list = list_create(NULL);
@@ -1082,7 +1082,7 @@ empty:
 
 				if(!user->assoc_list)
 					user->assoc_list = list_create(
-						destroy_acct_association_rec);
+						slurmdb_destroy_association_rec);
 				list_append(user->assoc_list, assoc);
 				list_remove(assoc_itr);
 			}
@@ -1097,12 +1097,12 @@ empty:
 get_wckeys:
 	if(user_cond && user_cond->with_wckeys) {
 		ListIterator wckey_itr = NULL;
-		acct_user_rec_t *user = NULL;
-		acct_wckey_rec_t *wckey = NULL;
+		slurmdb_user_rec_t *user = NULL;
+		slurmdb_wckey_rec_t *wckey = NULL;
 		List wckey_list = NULL;
-		acct_wckey_cond_t wckey_cond;
+		slurmdb_wckey_cond_t wckey_cond;
 
-		memset(&wckey_cond, 0, sizeof(acct_wckey_cond_t));
+		memset(&wckey_cond, 0, sizeof(slurmdb_wckey_cond_t));
 		if(user_cond->assoc_cond) {
 			wckey_cond.user_list =
 				user_cond->assoc_cond->user_list;
@@ -1124,7 +1124,7 @@ get_wckeys:
 
 				if(!user->wckey_list)
 					user->wckey_list = list_create(
-						destroy_acct_wckey_rec);
+						slurmdb_destroy_wckey_rec);
 				list_append(user->wckey_list, wckey);
 				list_remove(wckey_itr);
 			}

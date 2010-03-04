@@ -103,28 +103,6 @@ struct jobacctinfo {
    typedef struct jobacctinfo jobacctinfo_t;     /* opaque data type */
 #endif
 
-extern slurmdb_step_rec_t *slurmdb_create_step_rec();
-extern slurmdb_job_rec_t *slurmdb_create_job_rec();
-extern void slurmdb_free_header(void *object);
-extern void slurmdb_destroy_job_rec(void *object);
-extern void slurmdb_destroy_step_rec(void *object);
-extern void slurmdb_destroy_selected_step(void *object);
-
-extern void slurmdb_pack_job_rec(void *object,
-				 uint16_t rpc_version, Buf buffer);
-extern int slurmdb_unpack_job_rec(void **object, uint16_t rpc_version,
-				  Buf buffer);
-
-extern void slurmdb_pack_step_rec(slurmdb_step_rec_t *step,
-				  uint16_t rpc_version, Buf buffer);
-extern int slurmdb_unpack_step_rec(slurmdb_step_rec_t **step,
-				   uint16_t rpc_version, Buf buffer);
-
-extern void slurmdb_pack_selected_step(slurmdb_selected_step_t *step,
-				       uint16_t rpc_version, Buf buffer);
-extern int slurmdb_unpack_selected_step(slurmdb_selected_step_t **step,
-					uint16_t rpc_version, Buf buffer);
-
 /* These should only be called from the jobacct-gather plugin */
 extern int jobacct_common_init_struct(struct jobacctinfo *jobacct,
 				      jobacct_id_t *jobacct_id);

@@ -42,7 +42,7 @@
 static int _preemption_loop(mysql_conn_t *mysql_conn, int begin_qosid,
 			    bitstr_t *preempt_bitstr)
 {
-	acct_qos_rec_t qos_rec;
+	slurmdb_qos_rec_t qos_rec;
 	int rc = 0, i=0;
 
 	xassert(preempt_bitstr);
@@ -76,7 +76,7 @@ static int _preemption_loop(mysql_conn_t *mysql_conn, int begin_qosid,
 	return rc;
 }
 
-static int _setup_qos_limits(acct_qos_rec_t *qos,
+static int _setup_qos_limits(slurmdb_qos_rec_t *qos,
 			     char **cols, char **vals,
 			     char **extra, char **added_preempt)
 {
@@ -291,7 +291,7 @@ extern int as_mysql_add_qos(mysql_conn_t *mysql_conn, uint32_t uid, List qos_lis
 {
 	ListIterator itr = NULL;
 	int rc = SLURM_SUCCESS;
-	acct_qos_rec_t *object = NULL;
+	slurmdb_qos_rec_t *object = NULL;
 	char *cols = NULL, *extra = NULL, *vals = NULL, *query = NULL,
 		*tmp_extra = NULL;
 	time_t now = time(NULL);
@@ -375,7 +375,7 @@ extern int as_mysql_add_qos(mysql_conn_t *mysql_conn, uint32_t uid, List qos_lis
 			error("Couldn't add txn");
 		} else {
 			if(addto_update_list(mysql_conn->update_list,
-					      ACCT_ADD_QOS,
+					      SLURMDB_ADD_QOS,
 					      object) == SLURM_SUCCESS)
 				list_remove(itr);
 			added++;
@@ -396,8 +396,8 @@ extern int as_mysql_add_qos(mysql_conn_t *mysql_conn, uint32_t uid, List qos_lis
 }
 
 extern List as_mysql_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
-			     acct_qos_cond_t *qos_cond,
-			     acct_qos_rec_t *qos)
+			     slurmdb_qos_cond_t *qos_cond,
+			     slurmdb_qos_rec_t *qos)
 {
 	ListIterator itr = NULL;
 	List ret_list = NULL;
@@ -495,7 +495,7 @@ extern List as_mysql_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 	rc = 0;
 	ret_list = list_create(slurm_destroy_char);
 	while((row = mysql_fetch_row(result))) {
-		acct_qos_rec_t *qos_rec = NULL;
+		slurmdb_qos_rec_t *qos_rec = NULL;
 		if(preempt_bitstr) {
 			if(_preemption_loop(mysql_conn,
 					    atoi(row[2]), preempt_bitstr))
@@ -510,7 +510,7 @@ extern List as_mysql_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 			xstrfmtcat(name_char, " || name='%s'", object);
 		}
 
-		qos_rec = xmalloc(sizeof(acct_qos_rec_t));
+		qos_rec = xmalloc(sizeof(slurmdb_qos_rec_t));
 		qos_rec->name = xstrdup(object);
 
 		qos_rec->grp_cpus = qos->grp_cpus;
@@ -561,7 +561,7 @@ extern List as_mysql_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 			list_iterator_destroy(new_preempt_itr);
 		}
 
-		addto_update_list(mysql_conn->update_list, ACCT_MODIFY_QOS,
+		addto_update_list(mysql_conn->update_list, SLURMDB_MODIFY_QOS,
 				   qos_rec);
 	}
 	mysql_free_result(result);
@@ -604,7 +604,7 @@ extern List as_mysql_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 }
 
 extern List as_mysql_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
-			     acct_qos_cond_t *qos_cond)
+			     slurmdb_qos_cond_t *qos_cond)
 {
 	ListIterator itr = NULL;
 	List ret_list = NULL;
@@ -692,7 +692,7 @@ extern List as_mysql_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 	name_char = NULL;
 	ret_list = list_create(slurm_destroy_char);
 	while((row = mysql_fetch_row(result))) {
-		acct_qos_rec_t *qos_rec = NULL;
+		slurmdb_qos_rec_t *qos_rec = NULL;
 
 		list_append(ret_list, xstrdup(row[1]));
 		if(!name_char)
@@ -709,10 +709,10 @@ extern List as_mysql_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 			   ", delta_qos=replace(delta_qos, ',-%s', '')",
 			   row[0], row[0], row[0]);
 
-		qos_rec = xmalloc(sizeof(acct_qos_rec_t));
+		qos_rec = xmalloc(sizeof(slurmdb_qos_rec_t));
 		/* we only need id when removing no real need to init */
 		qos_rec->id = atoi(row[0]);
-		addto_update_list(mysql_conn->update_list, ACCT_REMOVE_QOS,
+		addto_update_list(mysql_conn->update_list, SLURMDB_REMOVE_QOS,
 				   qos_rec);
 	}
 	mysql_free_result(result);
@@ -768,7 +768,7 @@ extern List as_mysql_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 }
 
 extern List as_mysql_get_qos(mysql_conn_t *mysql_conn, uid_t uid,
-			  acct_qos_cond_t *qos_cond)
+			  slurmdb_qos_cond_t *qos_cond)
 {
 	char *query = NULL;
 	char *extra = NULL;
@@ -904,10 +904,10 @@ empty:
 	}
 	xfree(query);
 
-	qos_list = list_create(destroy_acct_qos_rec);
+	qos_list = list_create(slurmdb_destroy_qos_rec);
 
 	while((row = mysql_fetch_row(result))) {
-		acct_qos_rec_t *qos = xmalloc(sizeof(acct_qos_rec_t));
+		slurmdb_qos_rec_t *qos = xmalloc(sizeof(slurmdb_qos_rec_t));
 		list_append(qos_list, qos);
 
 		if(row[QOS_REQ_DESC] && row[QOS_REQ_DESC][0])

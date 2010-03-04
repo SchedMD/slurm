@@ -40,7 +40,7 @@
 #include "as_mysql_txn.h"
 
 extern List as_mysql_get_txn(mysql_conn_t *mysql_conn, uid_t uid,
-			  acct_txn_cond_t *txn_cond)
+			  slurmdb_txn_cond_t *txn_cond)
 {
 	char *query = NULL;
 	char *assoc_extra = NULL;
@@ -386,10 +386,10 @@ empty:
 	}
 	xfree(query);
 
-	txn_list = list_create(destroy_acct_txn_rec);
+	txn_list = list_create(slurmdb_destroy_txn_rec);
 
 	while((row = mysql_fetch_row(result))) {
-		acct_txn_rec_t *txn = xmalloc(sizeof(acct_txn_rec_t));
+		slurmdb_txn_rec_t *txn = xmalloc(sizeof(slurmdb_txn_rec_t));
 
 		list_append(txn_list, txn);
 

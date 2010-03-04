@@ -191,7 +191,8 @@ extern int acct_storage_p_add_users(void *db_conn, uint32_t uid, List user_list)
 }
 
 extern int acct_storage_p_add_coord(void *db_conn, uint32_t uid,
-				    List acct_list, acct_user_cond_t *user_cond)
+				    List acct_list,
+				    slurmdb_user_cond_t *user_cond)
 {
 	slurmdbd_msg_t req;
 	dbd_acct_coord_msg_t get_msg;
@@ -318,7 +319,7 @@ extern int acct_storage_p_add_wckeys(void *db_conn, uint32_t uid,
 }
 
 extern int acct_storage_p_add_reservation(void *db_conn,
-					   acct_reservation_rec_t *resv)
+					   slurmdb_reservation_rec_t *resv)
 {
 	slurmdbd_msg_t req;
 	dbd_rec_msg_t get_msg;
@@ -340,8 +341,8 @@ extern int acct_storage_p_add_reservation(void *db_conn,
 }
 
 extern List acct_storage_p_modify_users(void *db_conn, uint32_t uid,
-					acct_user_cond_t *user_cond,
-					acct_user_rec_t *user)
+					slurmdb_user_cond_t *user_cond,
+					slurmdb_user_rec_t *user)
 {
 	slurmdbd_msg_t req, resp;
 	dbd_modify_msg_t get_msg;
@@ -381,8 +382,8 @@ extern List acct_storage_p_modify_users(void *db_conn, uint32_t uid,
 }
 
 extern List acct_storage_p_modify_accts(void *db_conn, uint32_t uid,
-					   acct_account_cond_t *acct_cond,
-					   acct_account_rec_t *acct)
+					   slurmdb_account_cond_t *acct_cond,
+					   slurmdb_account_rec_t *acct)
 {
 	slurmdbd_msg_t req, resp;
 	dbd_modify_msg_t get_msg;
@@ -422,8 +423,8 @@ extern List acct_storage_p_modify_accts(void *db_conn, uint32_t uid,
 }
 
 extern List acct_storage_p_modify_clusters(void *db_conn, uint32_t uid,
-					   acct_cluster_cond_t *cluster_cond,
-					   acct_cluster_rec_t *cluster)
+					   slurmdb_cluster_cond_t *cluster_cond,
+					   slurmdb_cluster_rec_t *cluster)
 {
 	slurmdbd_msg_t req;
 	dbd_modify_msg_t get_msg;
@@ -466,8 +467,8 @@ extern List acct_storage_p_modify_clusters(void *db_conn, uint32_t uid,
 
 extern List acct_storage_p_modify_associations(
 	void *db_conn, uint32_t uid,
-	acct_association_cond_t *assoc_cond,
-	acct_association_rec_t *assoc)
+	slurmdb_association_cond_t *assoc_cond,
+	slurmdb_association_rec_t *assoc)
 {
 	slurmdbd_msg_t req;
 	dbd_modify_msg_t get_msg;
@@ -509,8 +510,8 @@ extern List acct_storage_p_modify_associations(
 }
 
 extern List acct_storage_p_modify_qos(void *db_conn, uint32_t uid,
-				      acct_qos_cond_t *qos_cond,
-				      acct_qos_rec_t *qos)
+				      slurmdb_qos_cond_t *qos_cond,
+				      slurmdb_qos_rec_t *qos)
 {
 	slurmdbd_msg_t req, resp;
 	dbd_modify_msg_t get_msg;
@@ -550,8 +551,8 @@ extern List acct_storage_p_modify_qos(void *db_conn, uint32_t uid,
 }
 
 extern List acct_storage_p_modify_wckeys(void *db_conn, uint32_t uid,
-				      acct_wckey_cond_t *wckey_cond,
-				      acct_wckey_rec_t *wckey)
+				      slurmdb_wckey_cond_t *wckey_cond,
+				      slurmdb_wckey_rec_t *wckey)
 {
 	slurmdbd_msg_t req, resp;
 	dbd_modify_msg_t get_msg;
@@ -591,7 +592,7 @@ extern List acct_storage_p_modify_wckeys(void *db_conn, uint32_t uid,
 }
 
 extern int acct_storage_p_modify_reservation(void *db_conn,
-					   acct_reservation_rec_t *resv)
+					   slurmdb_reservation_rec_t *resv)
 {
 	slurmdbd_msg_t req;
 	dbd_rec_msg_t get_msg;
@@ -613,7 +614,7 @@ extern int acct_storage_p_modify_reservation(void *db_conn,
 }
 
 extern List acct_storage_p_remove_users(void *db_conn, uint32_t uid,
-					acct_user_cond_t *user_cond)
+					slurmdb_user_cond_t *user_cond)
 {
 	slurmdbd_msg_t req;
 	dbd_cond_msg_t get_msg;
@@ -654,7 +655,7 @@ extern List acct_storage_p_remove_users(void *db_conn, uint32_t uid,
 
 extern List acct_storage_p_remove_coord(void *db_conn, uint32_t uid,
 					List acct_list,
-					acct_user_cond_t *user_cond)
+					slurmdb_user_cond_t *user_cond)
 {
 	slurmdbd_msg_t req;
 	dbd_acct_coord_msg_t get_msg;
@@ -695,7 +696,7 @@ extern List acct_storage_p_remove_coord(void *db_conn, uint32_t uid,
 }
 
 extern List acct_storage_p_remove_accts(void *db_conn, uint32_t uid,
-					acct_account_cond_t *acct_cond)
+					slurmdb_account_cond_t *acct_cond)
 {
 	slurmdbd_msg_t req;
 	dbd_cond_msg_t get_msg;
@@ -735,7 +736,7 @@ extern List acct_storage_p_remove_accts(void *db_conn, uint32_t uid,
 }
 
 extern List acct_storage_p_remove_clusters(void *db_conn, uint32_t uid,
-					   acct_account_cond_t *cluster_cond)
+					   slurmdb_account_cond_t *cluster_cond)
 {
 	slurmdbd_msg_t req;
 	dbd_cond_msg_t get_msg;
@@ -776,7 +777,7 @@ extern List acct_storage_p_remove_clusters(void *db_conn, uint32_t uid,
 
 extern List acct_storage_p_remove_associations(
 	void *db_conn, uint32_t uid,
-	acct_association_cond_t *assoc_cond)
+	slurmdb_association_cond_t *assoc_cond)
 {
 	slurmdbd_msg_t req;
 	dbd_cond_msg_t get_msg;
@@ -818,7 +819,7 @@ extern List acct_storage_p_remove_associations(
 
 extern List acct_storage_p_remove_qos(
 	void *db_conn, uint32_t uid,
-	acct_qos_cond_t *qos_cond)
+	slurmdb_qos_cond_t *qos_cond)
 {
 	slurmdbd_msg_t req;
 	dbd_cond_msg_t get_msg;
@@ -860,7 +861,7 @@ extern List acct_storage_p_remove_qos(
 
 extern List acct_storage_p_remove_wckeys(
 	void *db_conn, uint32_t uid,
-	acct_wckey_cond_t *wckey_cond)
+	slurmdb_wckey_cond_t *wckey_cond)
 {
 	slurmdbd_msg_t req;
 	dbd_cond_msg_t get_msg;
@@ -901,7 +902,7 @@ extern List acct_storage_p_remove_wckeys(
 }
 
 extern int acct_storage_p_remove_reservation(void *db_conn,
-					   acct_reservation_rec_t *resv)
+					   slurmdb_reservation_rec_t *resv)
 {
 	slurmdbd_msg_t req;
 	dbd_rec_msg_t get_msg;
@@ -923,7 +924,7 @@ extern int acct_storage_p_remove_reservation(void *db_conn,
 }
 
 extern List acct_storage_p_get_users(void *db_conn, uid_t uid,
-				     acct_user_cond_t *user_cond)
+				     slurmdb_user_cond_t *user_cond)
 {
 	slurmdbd_msg_t req, resp;
 	dbd_cond_msg_t get_msg;
@@ -962,7 +963,7 @@ extern List acct_storage_p_get_users(void *db_conn, uid_t uid,
 }
 
 extern List acct_storage_p_get_accts(void *db_conn, uid_t uid,
-				     acct_account_cond_t *acct_cond)
+				     slurmdb_account_cond_t *acct_cond)
 {
 	slurmdbd_msg_t req, resp;
 	dbd_cond_msg_t get_msg;
@@ -1002,7 +1003,7 @@ extern List acct_storage_p_get_accts(void *db_conn, uid_t uid,
 }
 
 extern List acct_storage_p_get_clusters(void *db_conn, uid_t uid,
-					acct_account_cond_t *cluster_cond)
+					slurmdb_account_cond_t *cluster_cond)
 {
 	slurmdbd_msg_t req, resp;
 	dbd_cond_msg_t get_msg;
@@ -1076,7 +1077,7 @@ extern List acct_storage_p_get_config(void)
 }
 
 extern List acct_storage_p_get_associations(void *db_conn, uid_t uid,
-					    acct_association_cond_t *assoc_cond)
+					    slurmdb_association_cond_t *assoc_cond)
 {
 	slurmdbd_msg_t req, resp;
 	dbd_cond_msg_t get_msg;
@@ -1115,7 +1116,7 @@ extern List acct_storage_p_get_associations(void *db_conn, uid_t uid,
 }
 
 extern List acct_storage_p_get_events(void *db_conn, uint32_t uid,
-				      acct_event_cond_t *event_cond)
+				      slurmdb_event_cond_t *event_cond)
 {
 	slurmdbd_msg_t req, resp;
 	dbd_cond_msg_t get_msg;
@@ -1154,7 +1155,7 @@ extern List acct_storage_p_get_events(void *db_conn, uint32_t uid,
 }
 
 extern List acct_storage_p_get_problems(void *db_conn, uid_t uid,
-					acct_association_cond_t *assoc_cond)
+					slurmdb_association_cond_t *assoc_cond)
 {
 	slurmdbd_msg_t req, resp;
 	dbd_cond_msg_t get_msg;
@@ -1193,7 +1194,7 @@ extern List acct_storage_p_get_problems(void *db_conn, uid_t uid,
 }
 
 extern List acct_storage_p_get_qos(void *db_conn, uid_t uid,
-				   acct_qos_cond_t *qos_cond)
+				   slurmdb_qos_cond_t *qos_cond)
 {
 	slurmdbd_msg_t req, resp;
 	dbd_cond_msg_t get_msg;
@@ -1239,7 +1240,7 @@ extern List acct_storage_p_get_qos(void *db_conn, uid_t uid,
 }
 
 extern List acct_storage_p_get_wckeys(void *db_conn, uid_t uid,
-				      acct_wckey_cond_t *wckey_cond)
+				      slurmdb_wckey_cond_t *wckey_cond)
 {
 	slurmdbd_msg_t req, resp;
 	dbd_cond_msg_t get_msg;
@@ -1285,7 +1286,7 @@ extern List acct_storage_p_get_wckeys(void *db_conn, uid_t uid,
 }
 
 extern List acct_storage_p_get_reservations(void *mysql_conn, uid_t uid,
-					    acct_reservation_cond_t *resv_cond)
+					    slurmdb_reservation_cond_t *resv_cond)
 {
 	slurmdbd_msg_t req, resp;
 	dbd_cond_msg_t get_msg;
@@ -1331,7 +1332,7 @@ extern List acct_storage_p_get_reservations(void *mysql_conn, uid_t uid,
 }
 
 extern List acct_storage_p_get_txn(void *db_conn, uid_t uid,
-				   acct_txn_cond_t *txn_cond)
+				   slurmdb_txn_cond_t *txn_cond)
 {
 	slurmdbd_msg_t req, resp;
 	dbd_cond_msg_t get_msg;
@@ -1376,8 +1377,8 @@ extern int acct_storage_p_get_usage(void *db_conn, uid_t uid,
 	slurmdbd_msg_t req, resp;
 	dbd_usage_msg_t get_msg;
 	dbd_usage_msg_t *got_msg;
-	acct_association_rec_t *got_assoc = (acct_association_rec_t *)in;
-	acct_wckey_rec_t *got_wckey = (acct_wckey_rec_t *)in;
+	slurmdb_association_rec_t *got_assoc = (slurmdb_association_rec_t *)in;
+	slurmdb_wckey_rec_t *got_wckey = (slurmdb_wckey_rec_t *)in;
 	List *my_list = NULL;
 	int rc;
 
@@ -1421,12 +1422,12 @@ extern int acct_storage_p_get_usage(void *db_conn, uid_t uid,
 		got_msg = (dbd_usage_msg_t *) resp.data;
 		switch (type) {
 		case DBD_GET_ASSOC_USAGE:
-			got_assoc = (acct_association_rec_t *)got_msg->rec;
+			got_assoc = (slurmdb_association_rec_t *)got_msg->rec;
 			(*my_list) = got_assoc->accounting_list;
 			got_assoc->accounting_list = NULL;
 			break;
 		case DBD_GET_WCKEY_USAGE:
-			got_wckey = (acct_wckey_rec_t *)got_msg->rec;
+			got_wckey = (slurmdb_wckey_rec_t *)got_msg->rec;
 			(*my_list) = got_wckey->accounting_list;
 			got_wckey->accounting_list = NULL;
 			break;
@@ -1569,13 +1570,13 @@ extern int clusteracct_storage_p_register_ctld(void *db_conn, uint16_t port)
 
 extern int clusteracct_storage_p_get_usage(
 	void *db_conn, uid_t uid,
-	acct_cluster_rec_t *cluster_rec, int type,
+	slurmdb_cluster_rec_t *cluster_rec, int type,
 	time_t start, time_t end)
 {
 	slurmdbd_msg_t req, resp;
 	dbd_usage_msg_t get_msg;
 	dbd_usage_msg_t *got_msg;
-	acct_cluster_rec_t *got_rec;
+	slurmdb_cluster_rec_t *got_rec;
 	int rc;
 
 	memset(&get_msg, 0, sizeof(dbd_usage_msg_t));
@@ -1604,7 +1605,7 @@ extern int clusteracct_storage_p_get_usage(
 		      resp.msg_type);
 	} else {
 		got_msg = (dbd_usage_msg_t *) resp.data;
-		got_rec = (acct_cluster_rec_t *)got_msg->rec;
+		got_rec = (slurmdb_cluster_rec_t *)got_msg->rec;
 		cluster_rec->accounting_list = got_rec->accounting_list;
 		got_rec->accounting_list = NULL;
 		slurmdbd_free_usage_msg(resp.msg_type, got_msg);
@@ -1947,7 +1948,7 @@ extern int jobacct_storage_p_suspend(void *db_conn,
  * note List needs to be freed when called
  */
 extern List jobacct_storage_p_get_jobs_cond(void *db_conn, uid_t uid,
-					    acct_job_cond_t *job_cond)
+					    slurmdb_job_cond_t *job_cond)
 {
 	slurmdbd_msg_t req, resp;
 	dbd_cond_msg_t get_msg;
@@ -1991,7 +1992,7 @@ extern List jobacct_storage_p_get_jobs_cond(void *db_conn, uid_t uid,
  * Not applicable for any database
  */
 extern int jobacct_storage_p_archive(void *db_conn,
-				     acct_archive_cond_t *arch_cond)
+				     slurmdb_archive_cond_t *arch_cond)
 {
 	slurmdbd_msg_t req, resp;
 	dbd_cond_msg_t msg;
@@ -2029,7 +2030,7 @@ extern int jobacct_storage_p_archive(void *db_conn,
  * load old info into the storage
  */
 extern int jobacct_storage_p_archive_load(void *db_conn,
-					  acct_archive_rec_t *arch_rec)
+					  slurmdb_archive_rec_t *arch_rec)
 {
 	slurmdbd_msg_t req, resp;
 	int rc = SLURM_SUCCESS;

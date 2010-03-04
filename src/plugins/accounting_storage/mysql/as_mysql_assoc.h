@@ -47,13 +47,13 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn,
 			    List association_list);
 
 extern List as_mysql_modify_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
-				acct_association_cond_t *assoc_cond,
-				acct_association_rec_t *assoc);
+				slurmdb_association_cond_t *assoc_cond,
+				slurmdb_association_rec_t *assoc);
 
 extern List as_mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
-				acct_association_cond_t *assoc_cond);
+				slurmdb_association_cond_t *assoc_cond);
 
 extern List as_mysql_get_assocs(mysql_conn_t *mysql_conn, uid_t uid,
-			     acct_association_cond_t *assoc_cond);
+			     slurmdb_association_cond_t *assoc_cond);
 
 #endif

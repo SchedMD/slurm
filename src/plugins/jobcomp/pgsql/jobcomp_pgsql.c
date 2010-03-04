@@ -437,7 +437,7 @@ extern char *slurm_jobcomp_strerror(int errnum)
  * in/out job_list List of job_rec_t *
  * note List needs to be freed when called
  */
-extern List slurm_jobcomp_get_jobs(acct_job_cond_t *job_cond)
+extern List slurm_jobcomp_get_jobs(slurmdb_job_cond_t *job_cond)
 {
 	List job_list = NULL;
 
@@ -458,7 +458,7 @@ extern List slurm_jobcomp_get_jobs(acct_job_cond_t *job_cond)
 /*
  * expire old info from the storage
  */
-extern int slurm_jobcomp_archive(acct_archive_cond_t *arch_cond)
+extern int slurm_jobcomp_archive(slurmdb_archive_cond_t *arch_cond)
 {
 	if(!jobcomp_pgsql_db || PQstatus(jobcomp_pgsql_db) != CONNECTION_OK) {
 		char *loc = slurm_get_jobcomp_loc();

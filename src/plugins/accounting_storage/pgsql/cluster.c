@@ -114,16 +114,16 @@ as_p_add_clusters(pgsql_conn_t *pg_conn, uint32_t uid,
 {
 	ListIterator itr = NULL;
 	int rc = SLURM_SUCCESS, added = 0;
-	acct_cluster_rec_t *object = NULL;
+	slurmdb_cluster_rec_t *object = NULL;
 	time_t now = time(NULL);
 	List assoc_list = NULL;
-	acct_association_rec_t *assoc = NULL;
+	slurmdb_association_rec_t *assoc = NULL;
 	char *txn_info = NULL, *query = NULL, *user_name = NULL;
 
 	if (check_db_connection(pg_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
 
-	assoc_list = list_create(destroy_acct_association_rec);
+	assoc_list = list_create(slurmdb_destroy_association_rec);
 
 	user_name = uid_to_string((uid_t) uid);
 	itr = list_iterator_create(cluster_list);
@@ -166,8 +166,8 @@ as_p_add_clusters(pgsql_conn_t *pg_conn, uint32_t uid,
 		 * association.  This gets popped off so we need to
 		 * read it every time here.
 		 */
-		assoc = xmalloc(sizeof(acct_association_rec_t));
-		init_acct_association_rec(assoc);
+		assoc = xmalloc(sizeof(slurmdb_association_rec_t));
+		slurmdb_init_association_rec(assoc);
 		list_append(assoc_list, assoc);
 
 		assoc->cluster = xstrdup(object->name);
@@ -208,8 +208,8 @@ as_p_add_clusters(pgsql_conn_t *pg_conn, uint32_t uid,
  */
 extern List
 as_p_modify_clusters(pgsql_conn_t *pg_conn, uint32_t uid,
-		     acct_cluster_cond_t *cluster_cond,
-		     acct_cluster_rec_t *cluster)
+		     slurmdb_cluster_cond_t *cluster_cond,
+		     slurmdb_cluster_rec_t *cluster)
 {
 	List ret_list = NULL;
 	int rc = SLURM_SUCCESS, set = 0;
@@ -338,7 +338,7 @@ end_it:
  */
 extern List
 as_p_remove_clusters(pgsql_conn_t *pg_conn, uint32_t uid,
-		     acct_cluster_cond_t *cluster_cond)
+		     slurmdb_cluster_cond_t *cluster_cond)
 {
 	List ret_list = NULL;
 	List tmp_list = NULL;
@@ -347,7 +347,7 @@ as_p_remove_clusters(pgsql_conn_t *pg_conn, uint32_t uid,
 		*name_char = NULL, *assoc_char = NULL;
 	time_t now = time(NULL);
 	char *user_name = NULL;
-	acct_wckey_cond_t wckey_cond;
+	slurmdb_wckey_cond_t wckey_cond;
 	PGresult *result = NULL;
 
 	if(!cluster_cond) {
@@ -398,7 +398,7 @@ as_p_remove_clusters(pgsql_conn_t *pg_conn, uint32_t uid,
 	}
 
 	/* remove these clusters from the wckey table */
-	memset(&wckey_cond, 0, sizeof(acct_wckey_cond_t));
+	memset(&wckey_cond, 0, sizeof(slurmdb_wckey_cond_t));
 	wckey_cond.cluster_list = ret_list;
 	tmp_list = acct_storage_p_remove_wckeys(pg_conn, uid, &wckey_cond);
 	if(tmp_list)
@@ -454,13 +454,13 @@ as_p_remove_clusters(pgsql_conn_t *pg_conn, uint32_t uid,
  */
 extern List
 as_p_get_clusters(pgsql_conn_t *pg_conn, uid_t uid,
-		  acct_cluster_cond_t *cluster_cond)
+		  slurmdb_cluster_cond_t *cluster_cond)
 {
 	char *query = NULL, *cond = NULL;
 	PGresult *result = NULL;
-	acct_association_cond_t assoc_cond;
-	acct_cluster_rec_t *cluster = NULL;
-	acct_association_rec_t *assoc = NULL;
+	slurmdb_association_cond_t assoc_cond;
+	slurmdb_cluster_rec_t *cluster = NULL;
+	slurmdb_association_rec_t *assoc = NULL;
 	List cluster_list = NULL, assoc_list = NULL;
 	ListIterator itr = NULL, assoc_itr = NULL;
 
@@ -499,8 +499,8 @@ empty:
 		return NULL;
 	}
 
-	cluster_list = list_create(destroy_acct_cluster_rec);
-	memset(&assoc_cond, 0, sizeof(acct_association_cond_t));
+	cluster_list = list_create(slurmdb_destroy_cluster_rec);
+	memset(&assoc_cond, 0, sizeof(slurmdb_association_cond_t));
 	if(cluster_cond) {
 		/* I don't think we want the with_usage flag here.
 		 * We do need the with_deleted though. */
@@ -511,7 +511,7 @@ empty:
 	assoc_cond.cluster_list = list_create(NULL);
 
 	FOR_EACH_ROW {
-		cluster = xmalloc(sizeof(acct_cluster_rec_t));
+		cluster = xmalloc(sizeof(slurmdb_cluster_rec_t));
 		list_append(cluster_list, cluster);
 
 		cluster->name = xstrdup(ROW(GC_NAME));

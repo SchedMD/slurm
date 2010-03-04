@@ -118,7 +118,7 @@ extern char *default_qos_str;
 
 /* table names */
 extern char *acct_table;
-extern char *acct_coord_table;
+extern char *slurmdb_coord_table;
 extern char *assoc_table;
 extern char *assoc_hour_table;
 extern char *assoc_day_table;
@@ -161,7 +161,7 @@ extern int check_table(PGconn *db_conn, char *table, storage_field_t *fields,
 		       char *constraint, char *user);
 
 extern List setup_cluster_list_with_inx(pgsql_conn_t *pg_conn,
-					acct_job_cond_t *job_cond,
+					slurmdb_job_cond_t *job_cond,
 					void **curr_cluster);
 extern int good_nodes_from_inx(List local_cluster_list, void **object,
 			       char *node_inx, int submit);
@@ -178,13 +178,13 @@ extern char * get_user_from_associd(pgsql_conn_t *pg_conn, uint32_t associd);
 
 /* problem functions */
 extern int get_acct_no_assocs(pgsql_conn_t *pg_conn,
-			      acct_association_cond_t *assoc_q,
+			      slurmdb_association_cond_t *assoc_q,
 			      List ret_list);
 extern int get_acct_no_users(pgsql_conn_t *pg_conn,
-			     acct_association_cond_t *assoc_q,
+			     slurmdb_association_cond_t *assoc_q,
 			     List ret_list);
 extern int get_user_no_assocs_or_no_uid(pgsql_conn_t *pg_conn,
-					acct_association_cond_t *assoc_q,
+					slurmdb_association_cond_t *assoc_q,
 					List ret_list);
 
 /* rollup functions */
@@ -199,7 +199,7 @@ extern int check_acct_tables(PGconn *db_conn, char *user);
 extern int check_assoc_tables(PGconn *db_conn, char *user);
 extern int check_clusteracct_tables(PGconn *db_conn, char *user);
 extern int check_cluster_tables(PGconn *db_conn, char *user);
-extern int check_jobacct_tables(PGconn *db_conn, char *user);
+extern int check_slurmdb_tables(PGconn *db_conn, char *user);
 extern int check_qos_tables(PGconn *db_conn, char *user);
 extern int check_resv_tables(PGconn *db_conn, char *user);
 extern int check_txn_tables(PGconn *db_conn, char *user);
@@ -223,10 +223,10 @@ extern int as_p_add_users(pgsql_conn_t *pg_conn, uint32_t uid,
 
 extern int acct_storage_p_add_coord(pgsql_conn_t *pg_conn,
 				    uint32_t uid, List acct_list,
-				    acct_user_cond_t *user_cond);
+				    slurmdb_user_cond_t *user_cond);
 extern int as_p_add_coord(pgsql_conn_t *pg_conn,
 			  uint32_t uid, List acct_list,
-			  acct_user_cond_t *user_cond);
+			  slurmdb_user_cond_t *user_cond);
 
 extern int acct_storage_p_add_accts(pgsql_conn_t *pg_conn, uint32_t uid,
 				    List acct_list);
@@ -254,155 +254,155 @@ extern int as_p_add_wckeys(pgsql_conn_t *pg_conn, uint32_t uid,
 			   List wckey_list);
 
 extern int acct_storage_p_add_reservation(pgsql_conn_t *pg_conn,
-					  acct_reservation_rec_t *resv);
+					  slurmdb_reservation_rec_t *resv);
 extern int as_p_add_reservation(pgsql_conn_t *pg_conn,
-				acct_reservation_rec_t *resv);
+				slurmdb_reservation_rec_t *resv);
 
 extern List acct_storage_p_modify_users(pgsql_conn_t *pg_conn, uint32_t uid,
-					acct_user_cond_t *user_cond,
-					acct_user_rec_t *user);
+					slurmdb_user_cond_t *user_cond,
+					slurmdb_user_rec_t *user);
 extern List as_p_modify_users(pgsql_conn_t *pg_conn, uint32_t uid,
-			      acct_user_cond_t *user_cond,
-			      acct_user_rec_t *user);
+			      slurmdb_user_cond_t *user_cond,
+			      slurmdb_user_rec_t *user);
 
 extern List acct_storage_p_modify_accounts(pgsql_conn_t *pg_conn, uint32_t uid,
-					   acct_account_cond_t *acct_cond,
-					   acct_account_rec_t *acct);
+					   slurmdb_account_cond_t *acct_cond,
+					   slurmdb_account_rec_t *acct);
 extern List as_p_modify_accounts(pgsql_conn_t *pg_conn, uint32_t uid,
-				 acct_account_cond_t *acct_cond,
-				 acct_account_rec_t *acct);
+				 slurmdb_account_cond_t *acct_cond,
+				 slurmdb_account_rec_t *acct);
 
 extern List acct_storage_p_modify_clusters(pgsql_conn_t *pg_conn, uint32_t uid,
-					   acct_cluster_cond_t *cluster_cond,
-					   acct_cluster_rec_t *cluster);
+					   slurmdb_cluster_cond_t *cluster_cond,
+					   slurmdb_cluster_rec_t *cluster);
 extern List as_p_modify_clusters(pgsql_conn_t *pg_conn, uint32_t uid,
-				 acct_cluster_cond_t *cluster_cond,
-				 acct_cluster_rec_t *cluster);
+				 slurmdb_cluster_cond_t *cluster_cond,
+				 slurmdb_cluster_rec_t *cluster);
 
 extern List acct_storage_p_modify_associations(
 	pgsql_conn_t *pg_conn, uint32_t uid,
-	acct_association_cond_t *assoc_cond,
-	acct_association_rec_t *assoc);
+	slurmdb_association_cond_t *assoc_cond,
+	slurmdb_association_rec_t *assoc);
 extern List as_p_modify_associations(
 	pgsql_conn_t *pg_conn, uint32_t uid,
-	acct_association_cond_t *assoc_cond,
-	acct_association_rec_t *assoc);
+	slurmdb_association_cond_t *assoc_cond,
+	slurmdb_association_rec_t *assoc);
 
 extern List acct_storage_p_modify_qos(pgsql_conn_t *pg_conn, uint32_t uid,
-				      acct_qos_cond_t *qos_cond,
-				      acct_qos_rec_t *qos);
+				      slurmdb_qos_cond_t *qos_cond,
+				      slurmdb_qos_rec_t *qos);
 extern List as_p_modify_qos(pgsql_conn_t *pg_conn, uint32_t uid,
-			    acct_qos_cond_t *qos_cond,
-			    acct_qos_rec_t *qos);
+			    slurmdb_qos_cond_t *qos_cond,
+			    slurmdb_qos_rec_t *qos);
 
 extern List acct_storage_p_modify_wckeys(pgsql_conn_t *pg_conn, uint32_t uid,
-					 acct_wckey_cond_t *wckey_cond,
-					 acct_wckey_rec_t *wckey);
+					 slurmdb_wckey_cond_t *wckey_cond,
+					 slurmdb_wckey_rec_t *wckey);
 extern List as_p_modify_wckeys(pgsql_conn_t *pg_conn, uint32_t uid,
-			       acct_wckey_cond_t *wckey_cond,
-			       acct_wckey_rec_t *wckey);
+			       slurmdb_wckey_cond_t *wckey_cond,
+			       slurmdb_wckey_rec_t *wckey);
 
 extern int acct_storage_p_modify_reservation(pgsql_conn_t *pg_conn,
-					     acct_reservation_rec_t *resv);
+					     slurmdb_reservation_rec_t *resv);
 extern int as_p_modify_reservation(pgsql_conn_t *pg_conn,
-				   acct_reservation_rec_t *resv);
+				   slurmdb_reservation_rec_t *resv);
 
 extern List acct_storage_p_remove_users(pgsql_conn_t *pg_conn, uint32_t uid,
-					acct_user_cond_t *user_cond);
+					slurmdb_user_cond_t *user_cond);
 extern List as_p_remove_users(pgsql_conn_t *pg_conn, uint32_t uid,
-			      acct_user_cond_t *user_cond);
+			      slurmdb_user_cond_t *user_cond);
 
 extern List acct_storage_p_remove_coord(pgsql_conn_t *pg_conn, uint32_t uid,
 					List acct_list,
-					acct_user_cond_t *user_cond);
+					slurmdb_user_cond_t *user_cond);
 extern List as_p_remove_coord(pgsql_conn_t *pg_conn, uint32_t uid,
 			      List acct_list,
-			      acct_user_cond_t *user_cond);
+			      slurmdb_user_cond_t *user_cond);
 
 extern List acct_storage_p_remove_accts(pgsql_conn_t *pg_conn, uint32_t uid,
-					acct_account_cond_t *acct_cond);
+					slurmdb_account_cond_t *acct_cond);
 extern List as_p_remove_accts(pgsql_conn_t *pg_conn, uint32_t uid,
-			      acct_account_cond_t *acct_cond);
+			      slurmdb_account_cond_t *acct_cond);
 
 extern List acct_storage_p_remove_clusters(pgsql_conn_t *pg_conn, uint32_t uid,
-					   acct_cluster_cond_t *cluster_cond);
+					   slurmdb_cluster_cond_t *cluster_cond);
 extern List as_p_remove_clusters(pgsql_conn_t *pg_conn, uint32_t uid,
-				 acct_cluster_cond_t *cluster_cond);
+				 slurmdb_cluster_cond_t *cluster_cond);
 
 extern List acct_storage_p_remove_associations(
 	pgsql_conn_t *pg_conn, uint32_t uid,
-	acct_association_cond_t *assoc_cond);
+	slurmdb_association_cond_t *assoc_cond);
 extern List as_p_remove_associations(
 	pgsql_conn_t *pg_conn, uint32_t uid,
-	acct_association_cond_t *assoc_cond);
+	slurmdb_association_cond_t *assoc_cond);
 
 extern List acct_storage_p_remove_qos(pgsql_conn_t *pg_conn, uint32_t uid,
-				      acct_qos_cond_t *qos_cond);
+				      slurmdb_qos_cond_t *qos_cond);
 extern List as_p_remove_qos(pgsql_conn_t *pg_conn, uint32_t uid,
-			    acct_qos_cond_t *qos_cond);
+			    slurmdb_qos_cond_t *qos_cond);
 
 extern List acct_storage_p_remove_wckeys(pgsql_conn_t *pg_conn, uint32_t uid,
-					 acct_wckey_cond_t *wckey_cond);
+					 slurmdb_wckey_cond_t *wckey_cond);
 extern List as_p_remove_wckeys(pgsql_conn_t *pg_conn, uint32_t uid,
-			       acct_wckey_cond_t *wckey_cond);
+			       slurmdb_wckey_cond_t *wckey_cond);
 
 extern int acct_storage_p_remove_reservation(pgsql_conn_t *pg_conn,
-					     acct_reservation_rec_t *resv);
+					     slurmdb_reservation_rec_t *resv);
 extern int as_p_remove_reservation(pgsql_conn_t *pg_conn,
-				   acct_reservation_rec_t *resv);
+				   slurmdb_reservation_rec_t *resv);
 
 extern List acct_storage_p_get_users(pgsql_conn_t *pg_conn, uid_t uid,
-				     acct_user_cond_t *user_cond);
+				     slurmdb_user_cond_t *user_cond);
 extern List as_p_get_users(pgsql_conn_t *pg_conn, uid_t uid,
-			   acct_user_cond_t *user_cond);
+			   slurmdb_user_cond_t *user_cond);
 
 extern List acct_storage_p_get_accts(pgsql_conn_t *pg_conn, uid_t uid,
-				     acct_account_cond_t *acct_cond);
+				     slurmdb_account_cond_t *acct_cond);
 extern List as_p_get_accts(pgsql_conn_t *pg_conn, uid_t uid,
-			   acct_account_cond_t *acct_cond);
+			   slurmdb_account_cond_t *acct_cond);
 
 extern List acct_storage_p_get_clusters(pgsql_conn_t *pg_conn, uid_t uid,
-					acct_cluster_cond_t *cluster_cond);
+					slurmdb_cluster_cond_t *cluster_cond);
 extern List as_p_get_clusters(pgsql_conn_t *pg_conn, uid_t uid,
-			      acct_cluster_cond_t *cluster_cond);
+			      slurmdb_cluster_cond_t *cluster_cond);
 
 extern List acct_storage_p_get_config(pgsql_conn_t *pg_conn);
 extern List as_p_get_config(pgsql_conn_t *pg_conn);
 
 extern List acct_storage_p_get_associations(pgsql_conn_t *pg_conn, uid_t uid,
-					    acct_association_cond_t *assoc_cond);
+					    slurmdb_association_cond_t *assoc_cond);
 extern List as_p_get_associations(pgsql_conn_t *pg_conn, uid_t uid,
-				  acct_association_cond_t *assoc_cond);
+				  slurmdb_association_cond_t *assoc_cond);
 extern int add_cluster_root_assoc(pgsql_conn_t *pg_conn, time_t now,
-				  acct_cluster_rec_t *cluster, char **txn_info);
+				  slurmdb_cluster_rec_t *cluster, char **txn_info);
 
 extern List acct_storage_p_get_problems(pgsql_conn_t *pg_conn, uid_t uid,
-					acct_association_cond_t *assoc_q);
+					slurmdb_association_cond_t *assoc_q);
 extern List as_p_get_problems(pgsql_conn_t *pg_conn, uid_t uid,
-			      acct_association_cond_t *assoc_q);
+			      slurmdb_association_cond_t *assoc_q);
 
 extern List acct_storage_p_get_qos(pgsql_conn_t *pg_conn, uid_t uid,
-				   acct_qos_cond_t *qos_cond);
+				   slurmdb_qos_cond_t *qos_cond);
 extern List as_p_get_qos(pgsql_conn_t *pg_conn, uid_t uid,
-			 acct_qos_cond_t *qos_cond);
+			 slurmdb_qos_cond_t *qos_cond);
 
 extern List acct_storage_p_get_wckeys(pgsql_conn_t *pg_conn, uid_t uid,
-				      acct_wckey_cond_t *wckey_cond);
+				      slurmdb_wckey_cond_t *wckey_cond);
 extern List as_p_get_wckeys(pgsql_conn_t *pg_conn, uid_t uid,
-			    acct_wckey_cond_t *wckey_cond);
+			    slurmdb_wckey_cond_t *wckey_cond);
 
 extern uint32_t get_wckeyid(pgsql_conn_t *pg_conn, char **name,
 			    uid_t uid, char *cluster, uint32_t associd);
 
 extern List acct_storage_p_get_reservations(pgsql_conn_t *pg_conn, uid_t uid,
-					    acct_reservation_cond_t *resv_cond);
+					    slurmdb_reservation_cond_t *resv_cond);
 extern List as_p_get_reservations(pgsql_conn_t *pg_conn, uid_t uid,
-				  acct_reservation_cond_t *resv_cond);
+				  slurmdb_reservation_cond_t *resv_cond);
 
 extern List acct_storage_p_get_txn(pgsql_conn_t *pg_conn, uid_t uid,
-				   acct_txn_cond_t *txn_cond);
+				   slurmdb_txn_cond_t *txn_cond);
 extern List as_p_get_txn(pgsql_conn_t *pg_conn, uid_t uid,
-			 acct_txn_cond_t *txn_cond);
+			 slurmdb_txn_cond_t *txn_cond);
 
 extern int add_txn(pgsql_conn_t *pg_conn, time_t now,
 		   slurmdbd_msg_type_t action,
@@ -432,7 +432,7 @@ get_usage_for_wckey_list(pgsql_conn_t *pg_conn, List wckey_list,
 			 time_t start, time_t end);
 
 extern int get_cluster_cpu_nodes(pgsql_conn_t *pg_conn,
-				 acct_cluster_rec_t *cluster);
+				 slurmdb_cluster_rec_t *cluster);
 extern int clusteracct_storage_p_node_down(pgsql_conn_t *pg_conn,
 					   struct node_record *node_ptr,
 					   time_t event_time, char *reason,
@@ -466,10 +466,10 @@ extern int cs_p_cluster_cpus(pgsql_conn_t *pg_conn,
 
 extern int clusteracct_storage_p_get_usage(
 	pgsql_conn_t *pg_conn, uid_t uid,
-	acct_cluster_rec_t *cluster_rec, int type, time_t start, time_t end);
+	slurmdb_cluster_rec_t *cluster_rec, int type, time_t start, time_t end);
 extern int cs_p_get_usage(
 	pgsql_conn_t *pg_conn, uid_t uid,
-	acct_cluster_rec_t *cluster_rec, int type, time_t start, time_t end);
+	slurmdb_cluster_rec_t *cluster_rec, int type, time_t start, time_t end);
 
 extern int jobacct_storage_p_job_start(pgsql_conn_t *pg_conn,
 				       struct job_record *job_ptr);
@@ -497,19 +497,19 @@ extern int js_p_suspend(pgsql_conn_t *pg_conn,
 			struct job_record *job_ptr);
 
 extern List jobacct_storage_p_get_jobs_cond(pgsql_conn_t *pg_conn, uid_t uid,
-					    acct_job_cond_t *job_cond);
+					    slurmdb_job_cond_t *job_cond);
 extern List js_p_get_jobs_cond(pgsql_conn_t *pg_conn, uid_t uid,
-			       acct_job_cond_t *job_cond);
+			       slurmdb_job_cond_t *job_cond);
 
 extern int jobacct_storage_p_archive(pgsql_conn_t *pg_conn,
-				     acct_archive_cond_t *arch_cond);
+				     slurmdb_archive_cond_t *arch_cond);
 extern int js_p_archive(pgsql_conn_t *pg_conn,
-			acct_archive_cond_t *arch_cond);
+			slurmdb_archive_cond_t *arch_cond);
 
 extern int jobacct_storage_p_archive_load(pgsql_conn_t *pg_conn,
-					  acct_archive_rec_t *arch_rec);
+					  slurmdb_archive_rec_t *arch_rec);
 extern int js_p_archive_load(pgsql_conn_t *pg_conn,
-			     acct_archive_rec_t *arch_rec);
+			     slurmdb_archive_rec_t *arch_rec);
 
 extern int acct_storage_p_update_shares_used(void *db_conn,
 					     List shares_used);

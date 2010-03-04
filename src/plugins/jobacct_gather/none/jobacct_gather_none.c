@@ -175,7 +175,7 @@ extern jobacctinfo_t *jobacct_gather_p_remove_task(pid_t pid)
 	return NULL;
 }
 
-extern void jobacct_gather_p_2_sacct(sacct_t *sacct,
+extern void jobacct_gather_p_2_stats(slurmdb_stats_t *stats,
 				     struct jobacctinfo *jobacct)
 {
 	return;
