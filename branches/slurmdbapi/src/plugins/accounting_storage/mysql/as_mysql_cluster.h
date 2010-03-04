@@ -45,17 +45,17 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 			      List cluster_list);
 
 extern List as_mysql_modify_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
-				  acct_cluster_cond_t *cluster_cond,
-				  acct_cluster_rec_t *cluster);
+				  slurmdb_cluster_cond_t *cluster_cond,
+				  slurmdb_cluster_rec_t *cluster);
 
 extern List as_mysql_remove_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
-				  acct_cluster_cond_t *cluster_cond);
+				  slurmdb_cluster_cond_t *cluster_cond);
 
 extern List as_mysql_get_clusters(mysql_conn_t *mysql_conn, uid_t uid,
-			       acct_cluster_cond_t *cluster_cond);
+			       slurmdb_cluster_cond_t *cluster_cond);
 
 extern List as_mysql_get_cluster_events(mysql_conn_t *mysql_conn, uint32_t uid,
-				     acct_event_cond_t *event_cond);
+				     slurmdb_event_cond_t *event_cond);
 
 extern int as_mysql_node_down(mysql_conn_t *mysql_conn,
 			   struct node_record *node_ptr,

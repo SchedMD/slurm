@@ -46,11 +46,11 @@ extern int as_mysql_add_wckeys(mysql_conn_t *mysql_conn, uint32_t uid,
 			    List wckey_list);
 extern List as_mysql_modify_wckeys(mysql_conn_t *mysql_conn,
 				uint32_t uid,
-				acct_wckey_cond_t *wckey_cond,
-				acct_wckey_rec_t *wckey);
+				slurmdb_wckey_cond_t *wckey_cond,
+				slurmdb_wckey_rec_t *wckey);
 extern List as_mysql_remove_wckeys(mysql_conn_t *mysql_conn,
 				uint32_t uid,
-				acct_wckey_cond_t *wckey_cond);
+				slurmdb_wckey_cond_t *wckey_cond);
 extern List as_mysql_get_wckeys(mysql_conn_t *mysql_conn, uid_t uid,
-			     acct_wckey_cond_t *wckey_cond);
+			     slurmdb_wckey_cond_t *wckey_cond);
 #endif

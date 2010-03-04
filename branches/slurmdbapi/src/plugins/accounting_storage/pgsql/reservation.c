@@ -119,7 +119,7 @@ _create_function_modify_resv(PGconn *db_conn)
  * RET: record string
  */
 static char *
-_make_resv_record(acct_reservation_rec_t *resv)
+_make_resv_record(slurmdb_reservation_rec_t *resv)
 {
 	char *rec;
 	char *assoc_list;
@@ -155,7 +155,7 @@ _make_resv_record(acct_reservation_rec_t *resv)
  * OUT cond: SQL query condition string
  */
 static void
-_make_resv_cond(acct_reservation_cond_t *resv_cond, char **cond)
+_make_resv_cond(slurmdb_reservation_cond_t *resv_cond, char **cond)
 {
 	time_t now = time(NULL);
 
@@ -203,7 +203,7 @@ check_resv_tables(PGconn *db_conn, char *user)
  * RET: error code
  */
 extern int
-as_p_add_reservation(pgsql_conn_t *pg_conn, acct_reservation_rec_t *resv)
+as_p_add_reservation(pgsql_conn_t *pg_conn, slurmdb_reservation_rec_t *resv)
 {
 	int rc = SLURM_SUCCESS;
 	char *query = NULL, *rec = NULL;
@@ -245,7 +245,7 @@ as_p_add_reservation(pgsql_conn_t *pg_conn, acct_reservation_rec_t *resv)
  */
 extern int
 as_p_modify_reservation(pgsql_conn_t *pg_conn,
-			acct_reservation_rec_t *resv)
+			slurmdb_reservation_rec_t *resv)
 {
 	PGresult *result = NULL;
 	int rc = SLURM_SUCCESS, set = 0;
@@ -407,7 +407,7 @@ end_it:
  */
 extern int
 as_p_remove_reservation(pgsql_conn_t *pg_conn,
-			acct_reservation_rec_t *resv)
+			slurmdb_reservation_rec_t *resv)
 {
 	int rc = SLURM_SUCCESS;
 	char *query = NULL;//, *tmp_extra = NULL;
@@ -453,7 +453,7 @@ as_p_remove_reservation(pgsql_conn_t *pg_conn,
  */
 extern List
 as_p_get_reservations(pgsql_conn_t *pg_conn, uid_t uid,
-		      acct_reservation_cond_t *resv_cond)
+		      slurmdb_reservation_cond_t *resv_cond)
 {
 	//DEF_TIMERS;
 	char *query = NULL, *cond = NULL;
@@ -461,7 +461,7 @@ as_p_get_reservations(pgsql_conn_t *pg_conn, uid_t uid,
 	int is_admin=0;
 	PGresult *result = NULL;
 	uint16_t private_data = 0;
-	acct_job_cond_t job_cond;
+	slurmdb_job_cond_t job_cond;
 	void *curr_cluster = NULL;
 	List local_cluster_list = NULL;
 	/* needed if we don't have an resv_cond */
@@ -490,7 +490,7 @@ as_p_get_reservations(pgsql_conn_t *pg_conn, uid_t uid,
 	private_data = slurm_get_private_data();
 	if (private_data & PRIVATE_DATA_RESERVATIONS) {
 		is_admin = is_user_min_admin_level(
-			pg_conn, uid, ACCT_ADMIN_OPERATOR);
+			pg_conn, uid, SLURMDB_ADMIN_OPERATOR);
 		if (! is_admin) {
 			error("as/pg: get_reservations: Only admins can look"
 			      " at reservation usage");
@@ -504,7 +504,7 @@ as_p_get_reservations(pgsql_conn_t *pg_conn, uid_t uid,
 
 	with_usage = resv_cond->with_usage;
 
-	memset(&job_cond, 0, sizeof(acct_job_cond_t));
+	memset(&job_cond, 0, sizeof(slurmdb_job_cond_t));
 	if(resv_cond->nodes) {
 		job_cond.usage_start = resv_cond->time_start;
 		job_cond.usage_end = resv_cond->time_end;
@@ -533,11 +533,11 @@ empty:
 		return NULL;
 	}
 
-	resv_list = list_create(destroy_acct_reservation_rec);
+	resv_list = list_create(slurmdb_destroy_reservation_rec);
 
 	FOR_EACH_ROW {
-		acct_reservation_rec_t *resv =
-			xmalloc(sizeof(acct_reservation_rec_t));
+		slurmdb_reservation_rec_t *resv =
+			xmalloc(sizeof(slurmdb_reservation_rec_t));
 		int start;
 
 		list_append(resv_list, resv);
@@ -568,8 +568,8 @@ empty:
 
 	if(with_usage && resv_list && list_count(resv_list)) {
 		ListIterator itr = NULL, itr2 = NULL;
-		jobacct_job_rec_t *job = NULL;
-		acct_reservation_rec_t *resv = NULL;
+		slurmdb_job_rec_t *job = NULL;
+		slurmdb_reservation_rec_t *resv = NULL;
 		List job_list = jobacct_storage_p_get_jobs_cond(
 			pg_conn, uid, &job_cond);
 

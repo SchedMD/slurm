@@ -131,6 +131,37 @@ static int _append_hierarchical_childern_ret_list(
 	return SLURM_SUCCESS;
 }
 
+extern slurmdb_job_rec_t *slurmdb_create_job_rec()
+{
+	slurmdb_job_rec_t *job = xmalloc(sizeof(slurmdb_job_rec_t));
+	memset(&job->stats, 0, sizeof(slurmdb_stats_t));
+	job->stats.cpu_min = NO_VAL;
+	job->state = JOB_PENDING;
+	job->steps = list_create(slurmdb_destroy_step_rec);
+	job->requid = -1;
+	job->lft = (uint32_t)NO_VAL;
+	job->resvid = (uint32_t)NO_VAL;
+
+      	return job;
+}
+
+extern slurmdb_step_rec_t *slurmdb_create_step_rec()
+{
+	slurmdb_step_rec_t *step = xmalloc(sizeof(slurmdb_job_rec_t));
+	memset(&step->stats, 0, sizeof(slurmdb_stats_t));
+	step->stepid = (uint32_t)NO_VAL;
+	step->state = NO_VAL;
+	step->exitcode = NO_VAL;
+	step->ncpus = (uint32_t)NO_VAL;
+	step->elapsed = (uint32_t)NO_VAL;
+	step->tot_cpu_sec = (uint32_t)NO_VAL;
+	step->tot_cpu_usec = (uint32_t)NO_VAL;
+	step->requid = -1;
+
+	return step;
+}
+
+
 extern void slurmdb_destroy_user_rec(void *object)
 {
 	slurmdb_user_rec_t *slurmdb_user = (slurmdb_user_rec_t *)object;

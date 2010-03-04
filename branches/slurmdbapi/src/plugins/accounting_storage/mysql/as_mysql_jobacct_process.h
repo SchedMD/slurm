@@ -41,23 +41,22 @@
  *  Copyright (C) 2002 The Regents of the University of California.
 \*****************************************************************************/
 
-#ifndef _HAVE_MYSQL_JOBACCT_PROCESS_H
-#define _HAVE_MYSQL_JOBACCT_PROCESS_H
+#ifndef _HAVE_MYSQL_JOBSLURMDB_PROCESS_H
+#define _HAVE_MYSQL_JOBSLURMDB_PROCESS_H
 
 #include "accounting_storage_mysql.h"
-#include "src/common/jobacct_common.h"
 
 extern List setup_cluster_list_with_inx(mysql_conn_t *mysql_conn,
-					acct_job_cond_t *job_cond,
+					slurmdb_job_cond_t *job_cond,
 					void **curr_cluster);
 extern int good_nodes_from_inx(List local_cluster_list,
 			       void **object, char *node_inx,
 			       int submit);
 extern int setup_job_cond_limits(mysql_conn_t *mysql_conn,
-				 acct_job_cond_t *job_cond,
+				 slurmdb_job_cond_t *job_cond,
 				 const char *prefix, char **extra);
 
 extern List as_mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
-					   acct_job_cond_t *job_cond);
+					   slurmdb_job_cond_t *job_cond);
 
 #endif

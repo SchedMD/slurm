@@ -40,6 +40,9 @@
 
 #include <slurm/slurmdb.h>
 
+extern slurmdb_step_rec_t *slurmdb_create_step_rec();
+extern slurmdb_job_rec_t *slurmdb_create_job_rec();
+
 extern void slurmdb_destroy_user_rec(void *object);
 extern void slurmdb_destroy_account_rec(void *object);
 extern void slurmdb_destroy_coord_rec(void *object);

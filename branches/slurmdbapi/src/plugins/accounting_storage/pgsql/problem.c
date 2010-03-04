@@ -50,14 +50,14 @@
  */
 extern List
 as_p_get_problems(pgsql_conn_t *pg_conn, uid_t uid,
-		  acct_association_cond_t *assoc_q)
+		  slurmdb_association_cond_t *assoc_q)
 {
 	List ret_list = NULL;
 
 	if(check_db_connection(pg_conn) != SLURM_SUCCESS)
 		return NULL;
 
-	ret_list = list_create(destroy_acct_association_rec);
+	ret_list = list_create(slurmdb_destroy_association_rec);
 
 	if(get_acct_no_assocs(pg_conn, assoc_q, ret_list)
 	   != SLURM_SUCCESS)

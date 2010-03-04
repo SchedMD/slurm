@@ -104,7 +104,7 @@ static char *mysql_db_name = NULL;
 
 #define DELETE_SEC_BACK 86400
 
-char *acct_coord_table = "acct_coord_table";
+char *slurmdb_coord_table = "slurmdb_coord_table";
 char *acct_table = "acct_table";
 char *assoc_day_table = "assoc_usage_day_table";
 char *assoc_hour_table = "assoc_usage_hour_table";
@@ -308,7 +308,7 @@ static mysql_db_info_t *_as_mysql_acct_create_db_info()
 /* Any time a new table is added set it up here */
 static int _as_mysql_acct_check_tables(MYSQL *db_conn)
 {
-	storage_field_t acct_coord_table_fields[] = {
+	storage_field_t slurmdb_coord_table_fields[] = {
 		{ "creation_time", "int unsigned not null" },
 		{ "mod_time", "int unsigned default 0 not null" },
 		{ "deleted", "tinyint default 0" },
@@ -501,8 +501,8 @@ static int _as_mysql_acct_check_tables(MYSQL *db_conn)
 	/* END_TIMER; */
 	/* info("conversion took %s", TIME_STR); */
 
-	if(mysql_db_create_table(db_conn, acct_coord_table,
-				 acct_coord_table_fields,
+	if(mysql_db_create_table(db_conn, slurmdb_coord_table,
+				 slurmdb_coord_table_fields,
 				 ", primary key (acct(20), user(20)))")
 	   == SLURM_ERROR)
 		return SLURM_ERROR;
@@ -593,7 +593,7 @@ static int _as_mysql_acct_check_tables(MYSQL *db_conn)
 		"insert into %s (creation_time, mod_time, name, default_acct, "
 		"admin_level) values (0, %d, 'root', 'root', %u) "
 		"on duplicate key update name='root';",
-		user_table, now, ACCT_ADMIN_SUPER_USER, now);
+		user_table, now, SLURMDB_ADMIN_SUPER_USER, now);
 	xstrfmtcat(query,
 		   "insert into %s (creation_time, mod_time, name, "
 		   "description, organization) values (0, %d, 'root', "
@@ -1045,7 +1045,7 @@ extern int remove_cluster_tables(MYSQL *db_conn, char *cluster_name)
 	return rc;
 }
 
-extern int setup_association_limits(acct_association_rec_t *assoc,
+extern int setup_association_limits(slurmdb_association_rec_t *assoc,
 				    char **cols, char **vals,
 				    char **extra, qos_level_t qos_level,
 				    bool get_fs)
@@ -1265,7 +1265,7 @@ extern int modify_common(mysql_conn_t *mysql_conn,
 	bool cluster_centric = true;
 
 	/* figure out which tables we need to append the cluster name to */
-	if((table == cluster_table) || (table == acct_coord_table)
+	if((table == cluster_table) || (table == slurmdb_coord_table)
 	   || (table == acct_table) || (table == qos_table)
 	   || (table == txn_table) || (table == user_table))
 		cluster_centric = false;
@@ -1338,7 +1338,7 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 	bool cluster_centric = true;
 
 	/* figure out which tables we need to append the cluster name to */
-	if((table == cluster_table) || (table == acct_coord_table)
+	if((table == cluster_table) || (table == slurmdb_coord_table)
 	   || (table == acct_table) || (table == qos_table)
 	   || (table == txn_table) || (table == user_table))
 		cluster_centric = false;
@@ -1347,7 +1347,7 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 	 * really delete it for accounting purposes.  This is for
 	 * corner cases most of the time this won't matter.
 	 */
-	if(table == acct_coord_table) {
+	if(table == slurmdb_coord_table) {
 		/* This doesn't apply for these tables since we are
 		 * only looking for association type tables.
 		 */
@@ -1420,7 +1420,7 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 		list_flush(mysql_conn->update_list);
 
 		return SLURM_ERROR;
-	} else if((table == acct_coord_table)
+	} else if((table == slurmdb_coord_table)
 		  || (table == qos_table)
 		  || (table == wckey_table))
 		return SLURM_SUCCESS;
@@ -1466,16 +1466,16 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 		rc = 0;
 		loc_assoc_char = NULL;
 		while((row = mysql_fetch_row(result))) {
-			acct_association_rec_t *rem_assoc = NULL;
+			slurmdb_association_rec_t *rem_assoc = NULL;
 			if(loc_assoc_char)
 				xstrcat(loc_assoc_char, " || ");
 			xstrfmtcat(loc_assoc_char, "id_assoc=%s", row[0]);
 
-			rem_assoc = xmalloc(sizeof(acct_association_rec_t));
+			rem_assoc = xmalloc(sizeof(slurmdb_association_rec_t));
 			rem_assoc->id = atoi(row[0]);
 			rem_assoc->cluster = xstrdup(cluster_name);
 			if(addto_update_list(mysql_conn->update_list,
-					      ACCT_REMOVE_ASSOC,
+					      SLURMDB_REMOVE_ASSOC,
 					      rem_assoc) != SLURM_SUCCESS)
 				error("couldn't add to the update list");
 		}
@@ -1735,7 +1735,7 @@ extern void *acct_storage_p_get_connection(bool make_agent, int conn_num,
 	mysql_conn->rollback = rollback;
 	mysql_conn->conn = conn_num;
 	mysql_conn->cluster_name = xstrdup(cluster_name);
-	mysql_conn->update_list = list_create(destroy_acct_update_object);
+	mysql_conn->update_list = list_create(slurmdb_destroy_update_object);
 
 	errno = SLURM_SUCCESS;
 	mysql_get_db_connection(&mysql_conn->db_conn,
@@ -1830,7 +1830,7 @@ extern int acct_storage_p_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 }
 
 extern int acct_storage_p_add_coord(mysql_conn_t *mysql_conn, uint32_t uid,
-				    List acct_list, acct_user_cond_t *user_cond)
+				    List acct_list, slurmdb_user_cond_t *user_cond)
 {
 	return as_mysql_add_coord(mysql_conn, uid, acct_list, user_cond);
 }
@@ -1867,154 +1867,154 @@ extern int acct_storage_p_add_wckeys(mysql_conn_t *mysql_conn, uint32_t uid,
 }
 
 extern int acct_storage_p_add_reservation(mysql_conn_t *mysql_conn,
-					  acct_reservation_rec_t *resv)
+					  slurmdb_reservation_rec_t *resv)
 {
 	return as_mysql_add_resv(mysql_conn, resv);
 }
 
 extern List acct_storage_p_modify_users(mysql_conn_t *mysql_conn, uint32_t uid,
-					acct_user_cond_t *user_cond,
-					acct_user_rec_t *user)
+					slurmdb_user_cond_t *user_cond,
+					slurmdb_user_rec_t *user)
 {
 	return as_mysql_modify_users(mysql_conn, uid, user_cond, user);
 }
 
 extern List acct_storage_p_modify_accts(mysql_conn_t *mysql_conn, uint32_t uid,
-					acct_account_cond_t *acct_cond,
-					acct_account_rec_t *acct)
+					slurmdb_account_cond_t *acct_cond,
+					slurmdb_account_rec_t *acct)
 {
 	return as_mysql_modify_accts(mysql_conn, uid, acct_cond, acct);
 }
 
 extern List acct_storage_p_modify_clusters(mysql_conn_t *mysql_conn,
 					   uint32_t uid,
-					   acct_cluster_cond_t *cluster_cond,
-					   acct_cluster_rec_t *cluster)
+					   slurmdb_cluster_cond_t *cluster_cond,
+					   slurmdb_cluster_rec_t *cluster)
 {
 	return as_mysql_modify_clusters(mysql_conn, uid, cluster_cond, cluster);
 }
 
 extern List acct_storage_p_modify_associations(
 	mysql_conn_t *mysql_conn, uint32_t uid,
-	acct_association_cond_t *assoc_cond,
-	acct_association_rec_t *assoc)
+	slurmdb_association_cond_t *assoc_cond,
+	slurmdb_association_rec_t *assoc)
 {
 	return as_mysql_modify_assocs(mysql_conn, uid, assoc_cond, assoc);
 }
 
 extern List acct_storage_p_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
-				      acct_qos_cond_t *qos_cond,
-				      acct_qos_rec_t *qos)
+				      slurmdb_qos_cond_t *qos_cond,
+				      slurmdb_qos_rec_t *qos)
 {
 	return as_mysql_modify_qos(mysql_conn, uid, qos_cond, qos);
 }
 
 extern List acct_storage_p_modify_wckeys(mysql_conn_t *mysql_conn,
 					 uint32_t uid,
-					 acct_wckey_cond_t *wckey_cond,
-					 acct_wckey_rec_t *wckey)
+					 slurmdb_wckey_cond_t *wckey_cond,
+					 slurmdb_wckey_rec_t *wckey)
 {
 	return as_mysql_modify_wckeys(mysql_conn, uid, wckey_cond, wckey);
 }
 
 extern int acct_storage_p_modify_reservation(mysql_conn_t *mysql_conn,
-					     acct_reservation_rec_t *resv)
+					     slurmdb_reservation_rec_t *resv)
 {
 	return as_mysql_modify_resv(mysql_conn, resv);
 }
 
 extern List acct_storage_p_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
-					acct_user_cond_t *user_cond)
+					slurmdb_user_cond_t *user_cond)
 {
 	return as_mysql_remove_users(mysql_conn, uid, user_cond);
 }
 
 extern List acct_storage_p_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 					List acct_list,
-					acct_user_cond_t *user_cond)
+					slurmdb_user_cond_t *user_cond)
 {
 	return as_mysql_remove_coord(mysql_conn, uid, acct_list, user_cond);
 }
 
 extern List acct_storage_p_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
-					acct_account_cond_t *acct_cond)
+					slurmdb_account_cond_t *acct_cond)
 {
 	return as_mysql_remove_accts(mysql_conn, uid, acct_cond);
 }
 
 extern List acct_storage_p_remove_clusters(mysql_conn_t *mysql_conn,
 					   uint32_t uid,
-					   acct_cluster_cond_t *cluster_cond)
+					   slurmdb_cluster_cond_t *cluster_cond)
 {
 	return as_mysql_remove_clusters(mysql_conn, uid, cluster_cond);
 }
 
 extern List acct_storage_p_remove_associations(
 	mysql_conn_t *mysql_conn, uint32_t uid,
-	acct_association_cond_t *assoc_cond)
+	slurmdb_association_cond_t *assoc_cond)
 {
 	return as_mysql_remove_assocs(mysql_conn, uid, assoc_cond);
 }
 
 extern List acct_storage_p_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
-				      acct_qos_cond_t *qos_cond)
+				      slurmdb_qos_cond_t *qos_cond)
 {
 	return as_mysql_remove_qos(mysql_conn, uid, qos_cond);
 }
 
 extern List acct_storage_p_remove_wckeys(mysql_conn_t *mysql_conn,
 					 uint32_t uid,
-					 acct_wckey_cond_t *wckey_cond)
+					 slurmdb_wckey_cond_t *wckey_cond)
 {
 	return as_mysql_remove_wckeys(mysql_conn, uid, wckey_cond);
 }
 
 extern int acct_storage_p_remove_reservation(mysql_conn_t *mysql_conn,
-					     acct_reservation_rec_t *resv)
+					     slurmdb_reservation_rec_t *resv)
 {
 	return as_mysql_remove_resv(mysql_conn, resv);
 }
 
 extern List acct_storage_p_get_users(mysql_conn_t *mysql_conn, uid_t uid,
-				     acct_user_cond_t *user_cond)
+				     slurmdb_user_cond_t *user_cond)
 {
 	return as_mysql_get_users(mysql_conn, uid, user_cond);
 }
 
 extern List acct_storage_p_get_accts(mysql_conn_t *mysql_conn, uid_t uid,
-				     acct_account_cond_t *acct_cond)
+				     slurmdb_account_cond_t *acct_cond)
 {
 	return as_mysql_get_accts(mysql_conn, uid, acct_cond);
 }
 
 extern List acct_storage_p_get_clusters(mysql_conn_t *mysql_conn, uid_t uid,
-					acct_cluster_cond_t *cluster_cond)
+					slurmdb_cluster_cond_t *cluster_cond)
 {
 	return as_mysql_get_clusters(mysql_conn, uid, cluster_cond);
 }
 
 extern List acct_storage_p_get_associations(mysql_conn_t *mysql_conn,
 					    uid_t uid,
-					    acct_association_cond_t *assoc_cond)
+					    slurmdb_association_cond_t *assoc_cond)
 {
 	return as_mysql_get_assocs(mysql_conn, uid, assoc_cond);
 }
 
 extern List acct_storage_p_get_events(mysql_conn_t *mysql_conn, uint32_t uid,
-				      acct_event_cond_t *event_cond)
+				      slurmdb_event_cond_t *event_cond)
 {
 	return as_mysql_get_cluster_events(mysql_conn, uid, event_cond);
 }
 
 extern List acct_storage_p_get_problems(mysql_conn_t *mysql_conn, uint32_t uid,
-					acct_association_cond_t *assoc_cond)
+					slurmdb_association_cond_t *assoc_cond)
 {
 	List ret_list = NULL;
 
 	if(check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
 
-	ret_list = list_create(destroy_acct_association_rec);
+	ret_list = list_create(slurmdb_destroy_association_rec);
 
 	if(as_mysql_acct_no_assocs(mysql_conn, assoc_cond, ret_list)
 	   != SLURM_SUCCESS)
@@ -2039,25 +2039,25 @@ extern List acct_storage_p_get_config(void *db_conn)
 }
 
 extern List acct_storage_p_get_qos(mysql_conn_t *mysql_conn, uid_t uid,
-				   acct_qos_cond_t *qos_cond)
+				   slurmdb_qos_cond_t *qos_cond)
 {
 	return as_mysql_get_qos(mysql_conn, uid, qos_cond);
 }
 
 extern List acct_storage_p_get_wckeys(mysql_conn_t *mysql_conn, uid_t uid,
-				      acct_wckey_cond_t *wckey_cond)
+				      slurmdb_wckey_cond_t *wckey_cond)
 {
 	return as_mysql_get_wckeys(mysql_conn, uid, wckey_cond);
 }
 
 extern List acct_storage_p_get_reservations(mysql_conn_t *mysql_conn, uid_t uid,
-					    acct_reservation_cond_t *resv_cond)
+					    slurmdb_reservation_cond_t *resv_cond)
 {
 	return as_mysql_get_resvs(mysql_conn, uid, resv_cond);
 }
 
 extern List acct_storage_p_get_txn(mysql_conn_t *mysql_conn, uid_t uid,
-				   acct_txn_cond_t *txn_cond)
+				   slurmdb_txn_cond_t *txn_cond)
 {
 	return as_mysql_get_txn(mysql_conn, uid, txn_cond);
 }
@@ -2133,7 +2133,7 @@ extern int clusteracct_storage_p_cluster_cpus(mysql_conn_t *mysql_conn,
 
 extern int clusteracct_storage_p_get_usage(
 	mysql_conn_t *mysql_conn, uid_t uid,
-	acct_cluster_rec_t *cluster_rec, slurmdbd_msg_type_t type,
+	slurmdb_cluster_rec_t *cluster_rec, slurmdbd_msg_type_t type,
 	time_t start, time_t end)
 {
 	return as_mysql_get_usage(mysql_conn, uid, cluster_rec,
@@ -2192,7 +2192,7 @@ extern int jobacct_storage_p_suspend(mysql_conn_t *mysql_conn,
  */
 extern List jobacct_storage_p_get_jobs_cond(mysql_conn_t *mysql_conn,
 					    uid_t uid,
-					    acct_job_cond_t *job_cond)
+					    slurmdb_job_cond_t *job_cond)
 {
 	List job_list = NULL;
 
@@ -2208,7 +2208,7 @@ extern List jobacct_storage_p_get_jobs_cond(mysql_conn_t *mysql_conn,
  * expire old info from the storage
  */
 extern int jobacct_storage_p_archive(mysql_conn_t *mysql_conn,
-				     acct_archive_cond_t *arch_cond)
+				     slurmdb_archive_cond_t *arch_cond)
 {
 	if(check_connection(mysql_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
@@ -2220,7 +2220,7 @@ extern int jobacct_storage_p_archive(mysql_conn_t *mysql_conn,
  * load old info into the storage
  */
 extern int jobacct_storage_p_archive_load(mysql_conn_t *mysql_conn,
-					  acct_archive_rec_t *arch_rec)
+					  slurmdb_archive_rec_t *arch_rec)
 {
 	if(check_connection(mysql_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;

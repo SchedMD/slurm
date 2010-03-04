@@ -140,7 +140,7 @@ _create_function_add_qos(PGconn *db_conn)
  * RET: error code. *rec and *txn will be xfree-ed on error.
  */
 static int
-_make_qos_record_for_add(acct_qos_rec_t *object, time_t now,
+_make_qos_record_for_add(slurmdb_qos_rec_t *object, time_t now,
 			 char **rec, char **txn)
 {
 	*rec = xstrdup_printf("(%d, %d, 0, %d, '%s', '%s', ",
@@ -225,7 +225,7 @@ _make_qos_record_for_add(acct_qos_rec_t *object, time_t now,
  * NOTE: the string should be xfree-ed by caller
  */
 static char *
-_make_qos_cond(acct_qos_cond_t *qos_cond)
+_make_qos_cond(slurmdb_qos_cond_t *qos_cond)
 {
 	char *cond = NULL;
 	concat_cond_list(qos_cond->description_list, NULL,
@@ -243,7 +243,7 @@ _make_qos_cond(acct_qos_cond_t *qos_cond)
  * OUT added_preempt: preempt qos newly added
  */
 static void
-_make_qos_vals_for_modify(acct_qos_rec_t *qos, char **vals,
+_make_qos_vals_for_modify(slurmdb_qos_rec_t *qos, char **vals,
 			  char **added_preempt)
 {
 	if (qos->description)
@@ -324,7 +324,7 @@ static int
 _preemption_loop(pgsql_conn_t *pg_conn, int begin_qosid,
 		 bitstr_t *preempt_bitstr)
 {
-	acct_qos_rec_t qos_rec;
+	slurmdb_qos_rec_t qos_rec;
 	int rc = 0, i=0;
 
 	xassert(preempt_bitstr);
@@ -461,7 +461,7 @@ extern int
 as_p_add_qos(pgsql_conn_t *pg_conn, uint32_t uid, List qos_list)
 {
 	ListIterator itr = NULL;
-	acct_qos_rec_t *object = NULL;
+	slurmdb_qos_rec_t *object = NULL;
 	int rc = SLURM_SUCCESS, added = 0;
 	char *query = NULL, *rec = NULL, *txn = NULL, *user_name = NULL;
 	time_t now = time(NULL);
@@ -500,7 +500,7 @@ as_p_add_qos(pgsql_conn_t *pg_conn, uint32_t uid, List qos_list)
 			error("Couldn't add txn");
 		} else {
 			if(addto_update_list(pg_conn->update_list,
-					     ACCT_ADD_QOS,
+					     SLURMDB_ADD_QOS,
 					     object) == SLURM_SUCCESS)
 				list_remove(itr);
 			added++;
@@ -529,7 +529,7 @@ as_p_add_qos(pgsql_conn_t *pg_conn, uint32_t uid, List qos_list)
  */
 extern List
 as_p_modify_qos(pgsql_conn_t *pg_conn, uint32_t uid,
-		acct_qos_cond_t *qos_cond, acct_qos_rec_t *qos)
+		slurmdb_qos_cond_t *qos_cond, slurmdb_qos_rec_t *qos)
 {
 	List ret_list = NULL;
 	char *object = NULL, *user_name = NULL, *added_preempt = NULL;
@@ -577,7 +577,7 @@ as_p_modify_qos(pgsql_conn_t *pg_conn, uint32_t uid,
 	rc = 0;
 	ret_list = list_create(slurm_destroy_char);
 	FOR_EACH_ROW {
-		acct_qos_rec_t *qos_rec = NULL;
+		slurmdb_qos_rec_t *qos_rec = NULL;
 		if (preempt_bitstr &&
 		    _preemption_loop(pg_conn,
 				     atoi(ROW(2)),
@@ -593,7 +593,7 @@ as_p_modify_qos(pgsql_conn_t *pg_conn, uint32_t uid,
 		} else  {
 			xstrfmtcat(name_char, " OR name='%s'", object);
 		}
-		qos_rec = xmalloc(sizeof(acct_qos_rec_t));
+		qos_rec = xmalloc(sizeof(slurmdb_qos_rec_t));
 		qos_rec->name = xstrdup(object);
 
 		qos_rec->grp_cpus = qos->grp_cpus;
@@ -644,7 +644,7 @@ as_p_modify_qos(pgsql_conn_t *pg_conn, uint32_t uid,
 			}
 			list_iterator_destroy(new_preempt_itr);
 		}
-		addto_update_list(pg_conn->update_list, ACCT_MODIFY_QOS,
+		addto_update_list(pg_conn->update_list, SLURMDB_MODIFY_QOS,
 				  qos_rec);
 	} END_EACH_ROW;
 	PQclear(result);
@@ -690,7 +690,7 @@ as_p_modify_qos(pgsql_conn_t *pg_conn, uint32_t uid,
  */
 extern List
 as_p_remove_qos(pgsql_conn_t *pg_conn, uint32_t uid,
-		acct_qos_cond_t *qos_cond)
+		slurmdb_qos_cond_t *qos_cond)
 {
 	List ret_list = NULL;
 	PGresult *result = NULL;
@@ -726,7 +726,7 @@ as_p_remove_qos(pgsql_conn_t *pg_conn, uint32_t uid,
 	delta_qos = xstrdup("delta_qos");
 	ret_list = list_create(slurm_destroy_char);
 	FOR_EACH_ROW {
-		acct_qos_rec_t *qos_rec = NULL;
+		slurmdb_qos_rec_t *qos_rec = NULL;
 		char *id = ROW(0);
 		char *name = ROW(1);
 
@@ -749,10 +749,10 @@ as_p_remove_qos(pgsql_conn_t *pg_conn, uint32_t uid,
 		xfree(delta_qos);
 		delta_qos = tmp;
 
-		qos_rec = xmalloc(sizeof(acct_qos_rec_t));
+		qos_rec = xmalloc(sizeof(slurmdb_qos_rec_t));
 		/* we only need id when removing no real need to init */
 		qos_rec->id = atoi(id);
-		addto_update_list(pg_conn->update_list, ACCT_REMOVE_QOS,
+		addto_update_list(pg_conn->update_list, SLURMDB_REMOVE_QOS,
 				  qos_rec);
 	} END_EACH_ROW;
 	PQclear(result);
@@ -802,7 +802,7 @@ as_p_remove_qos(pgsql_conn_t *pg_conn, uint32_t uid,
  */
 extern List
 as_p_get_qos(pgsql_conn_t *pg_conn, uid_t uid,
-	     acct_qos_cond_t *qos_cond)
+	     slurmdb_qos_cond_t *qos_cond)
 {
 	char *query = NULL, *cond = NULL;
 	List qos_list = NULL;
@@ -861,9 +861,9 @@ as_p_get_qos(pgsql_conn_t *pg_conn, uid_t uid,
 	if (!result)
 		return NULL;
 
-	qos_list = list_create(destroy_acct_qos_rec);
+	qos_list = list_create(slurmdb_destroy_qos_rec);
 	FOR_EACH_ROW {
-		acct_qos_rec_t *qos = xmalloc(sizeof(acct_qos_rec_t));
+		slurmdb_qos_rec_t *qos = xmalloc(sizeof(slurmdb_qos_rec_t));
 		list_append(qos_list, qos);
 
 		if(! ISEMPTY(GQ_DESC))

@@ -44,7 +44,6 @@
 
 #include "as_mysql_archive.h"
 #include "src/common/env.h"
-#include "src/common/jobacct_common.h"
 
 typedef struct {
 	char *cluster_nodes;
@@ -1029,6 +1028,7 @@ end_it:
 		return -1;
 	return i;
 }
+
 static int _process_old_sql(char **data)
 {
 	int i = 0;
@@ -1749,7 +1749,7 @@ static char *_load_suspend(uint16_t rpc_version, Buf buffer,
 	return insert;
 }
 
-static int _archive_script(acct_archive_cond_t *arch_cond, char *cluster_name,
+static int _archive_script(slurmdb_archive_cond_t *arch_cond, char *cluster_name,
 			   time_t last_submit)
 {
 	char * args[] = {arch_cond->archive_script, NULL};
@@ -1870,7 +1870,7 @@ static int _archive_script(acct_archive_cond_t *arch_cond, char *cluster_name,
 }
 
 static int _execute_archive(mysql_conn_t *mysql_conn, time_t last_submit,
-			    char *cluster_name, acct_archive_cond_t *arch_cond)
+			    char *cluster_name, slurmdb_archive_cond_t *arch_cond)
 {
 	int rc = SLURM_SUCCESS;
 	char *query = NULL;
@@ -2068,7 +2068,7 @@ exit_jobs:
 }
 
 extern int as_mysql_jobacct_process_archive(mysql_conn_t *mysql_conn,
-					 acct_archive_cond_t *arch_cond)
+					 slurmdb_archive_cond_t *arch_cond)
 {
 	int rc = SLURM_SUCCESS;
 	char *cluster_name = NULL;
@@ -2121,7 +2121,7 @@ extern int as_mysql_jobacct_process_archive(mysql_conn_t *mysql_conn,
 }
 
 extern int as_mysql_jobacct_process_archive_load(mysql_conn_t *mysql_conn,
-					      acct_archive_rec_t *arch_rec)
+					      slurmdb_archive_rec_t *arch_rec)
 {
 	char *data = NULL, *cluster_name = NULL;
 	int error_code = SLURM_SUCCESS;
@@ -2131,7 +2131,7 @@ extern int as_mysql_jobacct_process_archive_load(mysql_conn_t *mysql_conn,
 	uint32_t data_size = 0, rec_cnt = 0, tmp32 = 0;
 
 	if(!arch_rec) {
-		error("We need a acct_archive_rec to load anything.");
+		error("We need a slurmdb_archive_rec to load anything.");
 		return SLURM_ERROR;
 	}
 
@@ -2172,7 +2172,7 @@ extern int as_mysql_jobacct_process_archive_load(mysql_conn_t *mysql_conn,
 		}
 	} else {
 		error("Nothing was set in your "
-		      "acct_archive_rec so I am unable to process.");
+		      "slurmdb_archive_rec so I am unable to process.");
 		return SLURM_ERROR;
 	}
 

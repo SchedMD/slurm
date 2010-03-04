@@ -42,14 +42,14 @@
 #include "accounting_storage_mysql.h"
 
 extern int as_mysql_add_resv(mysql_conn_t *mysql_conn,
-			  acct_reservation_rec_t *resv);
+			  slurmdb_reservation_rec_t *resv);
 
 extern int as_mysql_modify_resv(mysql_conn_t *mysql_conn,
-			     acct_reservation_rec_t *resv);
+			     slurmdb_reservation_rec_t *resv);
 
 extern int as_mysql_remove_resv(mysql_conn_t *mysql_conn,
-			     acct_reservation_rec_t *resv);
+			     slurmdb_reservation_rec_t *resv);
 
 extern List as_mysql_get_resvs(mysql_conn_t *mysql_conn, uid_t uid,
-			    acct_reservation_cond_t *resv_cond);
+			    slurmdb_reservation_cond_t *resv_cond);
 #endif

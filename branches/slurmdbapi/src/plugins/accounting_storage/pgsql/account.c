@@ -85,7 +85,7 @@ _create_function_add_acct(PGconn *db_conn)
 }
 
 /*
- * _get_acct_coords - fill in all the users that are coordinator for
+ * _get_slurmdb_coords - fill in all the users that are coordinator for
  *  this account. Also fill in coordinators from parent accounts.
  *
  * IN pg_conn: database connection
@@ -93,30 +93,30 @@ _create_function_add_acct(PGconn *db_conn)
  * RET: error code
  */
 static int
-_get_acct_coords(pgsql_conn_t *pg_conn, acct_account_rec_t *acct)
+_get_slurmdb_coords(pgsql_conn_t *pg_conn, slurmdb_account_rec_t *acct)
 {
 	char *query = NULL;
-	acct_coord_rec_t *coord = NULL;
+	slurmdb_coord_rec_t *coord = NULL;
 	PGresult *result = NULL;
 
 	if(!acct) {
-		error("as/pg: _get_acct_coords: account not given");
+		error("as/pg: _get_slurmdb_coords: account not given");
 		return SLURM_ERROR;
 	}
 
 	if(!acct->coordinators)
-		acct->coordinators = list_create(destroy_acct_coord_rec);
+		acct->coordinators = list_create(slurmdb_destroy_coord_rec);
 
 	/* get direct coords */
 	query = xstrdup_printf("SELECT user_name FROM %s "
 			       "WHERE acct='%s' AND deleted=0",
-			       acct_coord_table, acct->name);
+			       slurmdb_coord_table, acct->name);
 	result = DEF_QUERY_RET;
 	if(!result)
 		return SLURM_ERROR;
 
 	FOR_EACH_ROW {
-		coord = xmalloc(sizeof(acct_coord_rec_t));
+		coord = xmalloc(sizeof(slurmdb_coord_rec_t));
 		list_append(acct->coordinators, coord);
 		coord->name = xstrdup(ROW(0));
 		coord->direct = 1;
@@ -130,14 +130,14 @@ _get_acct_coords(pgsql_conn_t *pg_conn, acct_account_rec_t *acct)
 		"  AND (t1.lft>t2.lft AND t1.rgt < t2.rgt)) "
 		"  AND t0.deleted=0 AND t0.acct=t2.acct "
 		"  AND t2.acct != '%s'",
-		acct_coord_table, assoc_table, assoc_table,
+		slurmdb_coord_table, assoc_table, assoc_table,
 		acct->name, acct->name);
 	result = DEF_QUERY_RET;
 	if(!result)
 		return SLURM_ERROR;
 
 	FOR_EACH_ROW {
-		coord = xmalloc(sizeof(acct_coord_rec_t));
+		coord = xmalloc(sizeof(slurmdb_coord_rec_t));
 		list_append(acct->coordinators, coord);
 		coord->name = xstrdup(ROW(0));
 		coord->direct = 0;
@@ -175,7 +175,7 @@ extern int
 as_p_add_accts(pgsql_conn_t *pg_conn, uint32_t uid, List acct_list)
 {
 	ListIterator itr = NULL;
-	acct_account_rec_t *object = NULL;
+	slurmdb_account_rec_t *object = NULL;
 	List assoc_list = NULL;
 	int rc = SLURM_SUCCESS;
 	char *user_name = NULL, *query = NULL, *txn_query = NULL;
@@ -185,7 +185,7 @@ as_p_add_accts(pgsql_conn_t *pg_conn, uint32_t uid, List acct_list)
 	if (check_db_connection(pg_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
 
-	assoc_list = list_create(destroy_acct_association_rec);
+	assoc_list = list_create(slurmdb_destroy_association_rec);
 	user_name = uid_to_string((uid_t) uid);
 
 	itr = list_iterator_create(acct_list);
@@ -275,8 +275,8 @@ as_p_add_accts(pgsql_conn_t *pg_conn, uint32_t uid, List acct_list)
  */
 extern List
 as_p_modify_accounts(pgsql_conn_t *pg_conn, uint32_t uid,
-		     acct_account_cond_t *acct_cond,
-		     acct_account_rec_t *acct)
+		     slurmdb_account_cond_t *acct_cond,
+		     slurmdb_account_rec_t *acct)
 {
 	List ret_list = NULL;
 	int rc = SLURM_SUCCESS;
@@ -375,7 +375,7 @@ as_p_modify_accounts(pgsql_conn_t *pg_conn, uint32_t uid,
  */
 extern List
 as_p_remove_accts(pgsql_conn_t *pg_conn, uint32_t uid,
-			    acct_account_cond_t *acct_cond)
+			    slurmdb_account_cond_t *acct_cond)
 {
 	List ret_list = NULL;
 	List coord_list = NULL;
@@ -463,7 +463,7 @@ as_p_remove_accts(pgsql_conn_t *pg_conn, uint32_t uid,
  */
 extern List
 as_p_get_accts(pgsql_conn_t *pg_conn, uid_t uid,
-			 acct_account_cond_t *acct_cond)
+			 slurmdb_account_cond_t *acct_cond)
 {
 	char *query = NULL;
 	char *cond = NULL;
@@ -472,7 +472,7 @@ as_p_get_accts(pgsql_conn_t *pg_conn, uid_t uid,
 	int set=0, is_admin=1;
 	PGresult *result = NULL;
 	uint16_t private_data = 0;
-	acct_user_rec_t user;	/* no need to free lists */
+	slurmdb_user_rec_t user;	/* no need to free lists */
 
 	char *ga_fields = "name, description, organization";
 	enum {
@@ -485,13 +485,13 @@ as_p_get_accts(pgsql_conn_t *pg_conn, uid_t uid,
 	if (check_db_connection(pg_conn) != SLURM_SUCCESS)
 		return NULL;
 
-	memset(&user, 0, sizeof(acct_user_rec_t));
+	memset(&user, 0, sizeof(slurmdb_user_rec_t));
 	user.uid = uid;
 
 	private_data = slurm_get_private_data();
 	if (private_data & PRIVATE_DATA_ACCOUNTS) {
 		is_admin = is_user_min_admin_level(
-			pg_conn, uid, ACCT_ADMIN_OPERATOR);
+			pg_conn, uid, SLURMDB_ADMIN_OPERATOR);
 		if (!is_admin && ! is_user_any_coord(pg_conn, &user)) {
 			errno = ESLURM_ACCESS_DENIED;
 			return NULL;
@@ -518,7 +518,7 @@ as_p_get_accts(pgsql_conn_t *pg_conn, uid_t uid,
 
 empty:
 	if(!is_admin && (private_data & PRIVATE_DATA_ACCOUNTS)) {
-		acct_coord_rec_t *coord = NULL;
+		slurmdb_coord_rec_t *coord = NULL;
 		set = 0;
 		itr = list_iterator_create(user.coord_accts);
 		while((coord = list_next(itr))) {
@@ -543,26 +543,26 @@ empty:
 	if (!result)
 		return NULL;
 
-	acct_list = list_create(destroy_acct_account_rec);
+	acct_list = list_create(slurmdb_destroy_account_rec);
 
 	if(acct_cond && acct_cond->with_assocs) {
 		if(!acct_cond->assoc_cond)
 			acct_cond->assoc_cond = xmalloc(
-				sizeof(acct_association_cond_t));
+				sizeof(slurmdb_association_cond_t));
 		else if(acct_cond->assoc_cond->acct_list)
 			list_destroy(acct_cond->assoc_cond->acct_list);
 		acct_cond->assoc_cond->acct_list = list_create(NULL);
 	}
 
 	FOR_EACH_ROW {
-		acct_account_rec_t *acct = xmalloc(sizeof(acct_account_rec_t));
+		slurmdb_account_rec_t *acct = xmalloc(sizeof(slurmdb_account_rec_t));
 		list_append(acct_list, acct);
 
 		acct->name =  xstrdup(ROW(GA_NAME));
 		acct->description = xstrdup(ROW(GA_DESC));
 		acct->organization = xstrdup(ROW(GA_ORG));
 		if(acct_cond && acct_cond->with_coords)
-			_get_acct_coords(pg_conn, acct);
+			_get_slurmdb_coords(pg_conn, acct);
 		if(acct_cond && acct_cond->with_assocs) {
 			list_append(acct_cond->assoc_cond->acct_list,
 				    acct->name);
@@ -574,8 +574,8 @@ empty:
 	if(acct_cond && acct_cond->with_assocs &&
 	   list_count(acct_cond->assoc_cond->acct_list)) {
 		ListIterator assoc_itr = NULL;
-		acct_account_rec_t *acct = NULL;
-		acct_association_rec_t *assoc = NULL;
+		slurmdb_account_rec_t *acct = NULL;
+		slurmdb_association_rec_t *assoc = NULL;
 		List assoc_list = acct_storage_p_get_associations(
 			pg_conn, uid, acct_cond->assoc_cond);
 
@@ -593,7 +593,7 @@ empty:
 
 				if(!acct->assoc_list)
 					acct->assoc_list = list_create(
-						destroy_acct_association_rec);
+						slurmdb_destroy_association_rec);
 				list_append(acct->assoc_list, assoc);
 				list_remove(assoc_itr);
 			}
@@ -617,7 +617,7 @@ empty:
  * RET: error code
  */
 extern int
-get_acct_no_assocs(pgsql_conn_t *pg_conn, acct_association_cond_t *assoc_q,
+get_acct_no_assocs(pgsql_conn_t *pg_conn, slurmdb_association_cond_t *assoc_q,
 		   List ret_list)
 {
 	int rc = SLURM_SUCCESS;
@@ -637,7 +637,7 @@ get_acct_no_assocs(pgsql_conn_t *pg_conn, acct_association_cond_t *assoc_q,
 
 	FOR_EACH_ROW {
 		PGresult *result2 = NULL;
-		acct_association_rec_t *assoc = NULL;
+		slurmdb_association_rec_t *assoc = NULL;
 		/* See if we have at least 1 association in the system */
 		query = xstrdup_printf("SELECT id FROM %s "
 				       "WHERE deleted=0 AND "
@@ -649,9 +649,9 @@ get_acct_no_assocs(pgsql_conn_t *pg_conn, acct_association_cond_t *assoc_q,
 			break;
 		}
 		if (PQntuples(result2) == 0) {
-			assoc =	xmalloc(sizeof(acct_association_rec_t));
+			assoc =	xmalloc(sizeof(slurmdb_association_rec_t));
 			list_append(ret_list, assoc);
-			assoc->id = ACCT_PROBLEM_ACCT_NO_ASSOC;
+			assoc->id = SLURMDB_PROBLEM_ACCT_NO_ASSOC;
 			assoc->acct = xstrdup(ROW(0));
 		}
 		PQclear(result2);
@@ -670,7 +670,7 @@ get_acct_no_assocs(pgsql_conn_t *pg_conn, acct_association_cond_t *assoc_q,
  * RET: error code
  */
 extern int
-get_acct_no_users(pgsql_conn_t *pg_conn, acct_association_cond_t *assoc_q,
+get_acct_no_users(pgsql_conn_t *pg_conn, slurmdb_association_cond_t *assoc_q,
 		   List ret_list)
 {
 	int rc = SLURM_SUCCESS;
@@ -709,10 +709,10 @@ get_acct_no_users(pgsql_conn_t *pg_conn, acct_association_cond_t *assoc_q,
 		return SLURM_ERROR;
 
 	FOR_EACH_ROW {
-		acct_association_rec_t *assoc =
-			xmalloc(sizeof(acct_association_rec_t));
+		slurmdb_association_rec_t *assoc =
+			xmalloc(sizeof(slurmdb_association_rec_t));
 		list_append(ret_list, assoc);
-		assoc->id = ACCT_PROBLEM_ACCT_NO_USERS;
+		assoc->id = SLURMDB_PROBLEM_ACCT_NO_USERS;
 /* 		if(ROW(GA_USER)[0]) */
 /* 			assoc->user = xstrdup(ROW(GA_USER)); */
 		assoc->acct = xstrdup(ROW(GA_ACCT));

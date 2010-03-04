@@ -46,7 +46,7 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 {
 	ListIterator itr = NULL;
 	int rc = SLURM_SUCCESS;
-	acct_cluster_rec_t *object = NULL;
+	slurmdb_cluster_rec_t *object = NULL;
 	char *cols = NULL, *vals = NULL, *extra = NULL,
 		*query = NULL, *tmp_extra = NULL;
 	time_t now = time(NULL);
@@ -54,12 +54,12 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 	int affect_rows = 0;
 	int added = 0;
 	List assoc_list = NULL;
-	acct_association_rec_t *assoc = NULL;
+	slurmdb_association_rec_t *assoc = NULL;
 
 	if(check_connection(mysql_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
 
-	assoc_list = list_create(destroy_acct_association_rec);
+	assoc_list = list_create(slurmdb_destroy_association_rec);
 
 	user_name = uid_to_string((uid_t) uid);
 	itr = list_iterator_create(cluster_list);
@@ -174,8 +174,8 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		 * association.  This gets popped off so we need to
 		 * read it every time here.
 		 */
-		assoc = xmalloc(sizeof(acct_association_rec_t));
-		init_acct_association_rec(assoc);
+		assoc = xmalloc(sizeof(slurmdb_association_rec_t));
+		slurmdb_init_association_rec(assoc);
 		list_append(assoc_list, assoc);
 
 		assoc->cluster = xstrdup(object->name);
@@ -204,8 +204,8 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 }
 
 extern List as_mysql_modify_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
-				  acct_cluster_cond_t *cluster_cond,
-				  acct_cluster_rec_t *cluster)
+				  slurmdb_cluster_cond_t *cluster_cond,
+				  slurmdb_cluster_rec_t *cluster)
 {
 	ListIterator itr = NULL;
 	List ret_list = NULL;
@@ -357,7 +357,7 @@ end_it:
 }
 
 extern List as_mysql_remove_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
-				  acct_cluster_cond_t *cluster_cond)
+				  slurmdb_cluster_cond_t *cluster_cond)
 {
 	ListIterator itr = NULL, itr2 = NULL;
 	List ret_list = NULL;
@@ -369,7 +369,7 @@ extern List as_mysql_remove_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 	time_t now = time(NULL);
 	char *user_name = NULL;
 	int set = 0;
-	acct_wckey_cond_t wckey_cond;
+	slurmdb_wckey_cond_t wckey_cond;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 
@@ -474,7 +474,7 @@ extern List as_mysql_remove_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 	}
 
 	/* We need to remove these clusters from the wckey table */
-	memset(&wckey_cond, 0, sizeof(acct_wckey_cond_t));
+	memset(&wckey_cond, 0, sizeof(slurmdb_wckey_cond_t));
 	wckey_cond.cluster_list = ret_list;
 	tmp_list = as_mysql_remove_wckeys(mysql_conn, uid, &wckey_cond);
 	if(tmp_list)
@@ -512,7 +512,7 @@ extern List as_mysql_remove_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 }
 
 extern List as_mysql_get_clusters(mysql_conn_t *mysql_conn, uid_t uid,
-			       acct_cluster_cond_t *cluster_cond)
+			       slurmdb_cluster_cond_t *cluster_cond)
 {
 	char *query = NULL;
 	char *extra = NULL;
@@ -524,10 +524,10 @@ extern List as_mysql_get_clusters(mysql_conn_t *mysql_conn, uid_t uid,
 	int i=0;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
-	acct_association_cond_t assoc_cond;
+	slurmdb_association_cond_t assoc_cond;
 	ListIterator assoc_itr = NULL;
-	acct_cluster_rec_t *cluster = NULL;
-	acct_association_rec_t *assoc = NULL;
+	slurmdb_cluster_rec_t *cluster = NULL;
+	slurmdb_association_rec_t *assoc = NULL;
 	List assoc_list = NULL;
 
 	/* if this changes you will need to edit the corresponding enum */
@@ -599,9 +599,9 @@ empty:
 	}
 	xfree(query);
 
-	cluster_list = list_create(destroy_acct_cluster_rec);
+	cluster_list = list_create(slurmdb_destroy_cluster_rec);
 
-	memset(&assoc_cond, 0, sizeof(acct_association_cond_t));
+	memset(&assoc_cond, 0, sizeof(slurmdb_association_cond_t));
 
 	if(cluster_cond) {
 		/* I don't think we want the with_usage flag here.
@@ -615,7 +615,7 @@ empty:
 		MYSQL_RES *result2 = NULL;
 		MYSQL_ROW row2;
 
-		cluster = xmalloc(sizeof(acct_cluster_rec_t));
+		cluster = xmalloc(sizeof(slurmdb_cluster_rec_t));
 		list_append(cluster_list, cluster);
 
 		cluster->name = xstrdup(row[CLUSTER_REQ_NAME]);
@@ -703,7 +703,7 @@ empty:
 }
 
 extern List as_mysql_get_cluster_events(mysql_conn_t *mysql_conn, uint32_t uid,
-				     acct_event_cond_t *event_cond)
+				     slurmdb_event_cond_t *event_cond)
 {
 	char *query = NULL;
 	char *extra = NULL;
@@ -766,9 +766,9 @@ extern List as_mysql_get_cluster_events(mysql_conn_t *mysql_conn, uint32_t uid,
 	}
 
 	switch(event_cond->event_type) {
-	case ACCT_EVENT_ALL:
+	case SLURMDB_EVENT_ALL:
 		break;
-	case ACCT_EVENT_CLUSTER:
+	case SLURMDB_EVENT_CLUSTER:
 		if(extra)
 			xstrcat(extra, " && (");
 		else
@@ -776,7 +776,7 @@ extern List as_mysql_get_cluster_events(mysql_conn_t *mysql_conn, uint32_t uid,
 		xstrcat(extra, "node_name = '')");
 
 		break;
-	case ACCT_EVENT_NODE:
+	case SLURMDB_EVENT_NODE:
 		if(extra)
 			xstrcat(extra, " && (");
 		else
@@ -889,7 +889,7 @@ empty:
 	else
 		slurm_mutex_lock(&as_mysql_cluster_list_lock);
 
-	ret_list = list_create(destroy_acct_event_rec);
+	ret_list = list_create(slurmdb_destroy_event_rec);
 
 	itr = list_iterator_create(use_cluster_list);
 	while((object = list_next(itr))) {
@@ -899,8 +899,8 @@ empty:
 			xstrfmtcat(query, " %s", extra);
 
 		while((row = mysql_fetch_row(result))) {
-			acct_event_rec_t *event =
-				xmalloc(sizeof(acct_event_rec_t));
+			slurmdb_event_rec_t *event =
+				xmalloc(sizeof(slurmdb_event_rec_t));
 
 			list_append(ret_list, event);
 

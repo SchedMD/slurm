@@ -333,13 +333,13 @@ _create_function_get_job_suspend_time(PGconn *db_conn)
 }
 
 /*
- * check_jobacct_tables - check jobacct related tables and functions
+ * check_slurmdb_tables - check jobacct related tables and functions
  * IN pg_conn: database connection
  * IN user: database owner
  * RET: error code
  */
 extern int
-check_jobacct_tables(PGconn *db_conn, char *user)
+check_slurmdb_tables(PGconn *db_conn, char *user)
 {
 	int rc;
 
@@ -823,7 +823,7 @@ js_p_step_complete(pgsql_conn_t *pg_conn,
 		return ESLURM_DB_CONNECTION;
 
 	if (jobacct == NULL) {
-		/* JobAcctGather=jobacct_gather/none, no data to process */
+		/* JobAcctGather=slurmdb_gather/none, no data to process */
 		memset(&dummy_jobacct, 0, sizeof(dummy_jobacct));
 		jobacct = &dummy_jobacct;
 	}
@@ -1071,14 +1071,14 @@ static void _state_time_string(char **extra, uint32_t state,
  * OUT cond: condition string
  */
 static void
-_make_job_cond_str(pgsql_conn_t *pg_conn, acct_job_cond_t *job_cond,
+_make_job_cond_str(pgsql_conn_t *pg_conn, slurmdb_job_cond_t *job_cond,
 		   char **extra_table, char **cond)
 {
 	int set = 0;
 	ListIterator itr = NULL;
 	char *object = NULL;
 	char *table_level = "t2";
-	jobacct_selected_step_t *selected_step = NULL;
+	slurmdb_selected_step_t *selected_step = NULL;
 
 	xstrcat (*cond, " WHERE TRUE");
 
@@ -1248,20 +1248,20 @@ no_resv:
  */
 extern List
 js_p_get_jobs_cond(pgsql_conn_t *pg_conn, uid_t uid,
-		   acct_job_cond_t *job_cond)
+		   slurmdb_job_cond_t *job_cond)
 {
 
 	char *query = NULL, *extra_table = NULL, *tmp = NULL, *cond = NULL,
 		*table_level = "t2";
 	int set = 0, is_admin = 1, last_id = -1, curr_id = -1;
-	jobacct_selected_step_t *selected_step = NULL;
-	jobacct_job_rec_t *job = NULL;
-	jobacct_step_rec_t *step = NULL;
+	slurmdb_selected_step_t *selected_step = NULL;
+	slurmdb_job_rec_t *job = NULL;
+	slurmdb_step_rec_t *step = NULL;
 	time_t now = time(NULL);
 	uint16_t private_data = 0;
-	acct_user_rec_t user;
+	slurmdb_user_rec_t user;
 	local_cluster_t *curr_cluster = NULL;
-	List job_list = list_create(destroy_jobacct_job_rec);
+	List job_list = list_create(slurmdb_destroy_job_rec);
 	List local_cluster_list = NULL;
 	ListIterator itr = NULL;
 	PGresult *result = NULL, *result2 = NULL;
@@ -1422,13 +1422,13 @@ js_p_get_jobs_cond(pgsql_conn_t *pg_conn, uid_t uid,
 	if(check_db_connection(pg_conn) != SLURM_SUCCESS)
 		return NULL;
 
-	memset(&user, 0, sizeof(acct_user_rec_t));
+	memset(&user, 0, sizeof(slurmdb_user_rec_t));
 	user.uid = uid;
 
 	private_data = slurm_get_private_data();
 	if (private_data & PRIVATE_DATA_JOBS) {
 		is_admin = is_user_min_admin_level(
-			pg_conn, uid, ACCT_ADMIN_OPERATOR);
+			pg_conn, uid, SLURMDB_ADMIN_OPERATOR);
 		if (!is_admin)
 			assoc_mgr_fill_in_user(pg_conn, &user, 1, NULL);
 	}
@@ -1469,7 +1469,7 @@ js_p_get_jobs_cond(pgsql_conn_t *pg_conn, uid_t uid,
 		query = xstrdup_printf("SELECT lft FROM %s WHERE user_name='%s'",
 				       assoc_table, user.name);
 		if(user.coord_accts) {
-			acct_coord_rec_t *coord = NULL;
+			slurmdb_coord_rec_t *coord = NULL;
 			itr = list_iterator_create(user.coord_accts);
 			while((coord = list_next(itr))) {
 				xstrfmtcat(query, " OR acct='%s'",
@@ -1557,7 +1557,7 @@ js_p_get_jobs_cond(pgsql_conn_t *pg_conn, uid_t uid,
 
 		debug3("as/pg: get_job_conditions: job %d past node test", curr_id);
 
-		job = create_jobacct_job_rec();
+		job = slurmdb_create_job_rec();
 		list_append(job_list, job);
 
 		job->alloc_cpus = atoi(ROW(JOB_REQ_ALLOC_CPUS));
@@ -1764,7 +1764,7 @@ js_p_get_jobs_cond(pgsql_conn_t *pg_conn, uid_t uid,
 						submit))
 				continue;
 
-			step = create_jobacct_step_rec();
+			step = slurmdb_create_step_rec();
 			step->job_ptr = job;
 			if(!job->first_step_ptr)
 				job->first_step_ptr = step;
@@ -1828,38 +1828,38 @@ js_p_get_jobs_cond(pgsql_conn_t *pg_conn, uid_t uid,
 			job->tot_cpu_usec +=
 				step->tot_cpu_usec +=
 				step->user_cpu_usec + step->sys_cpu_usec;
-			step->sacct.max_vsize =
+			step->stats.vsize_max =
 				atoi(ROW2(STEP_REQ_MAX_VSIZE));
-			step->sacct.max_vsize_id.taskid =
+			step->stats.vsize_max_taskid =
 				atoi(ROW2(STEP_REQ_MAX_VSIZE_TASK));
-			step->sacct.ave_vsize =
+			step->stats.vsize_ave =
 				atof(ROW2(STEP_REQ_AVE_VSIZE));
-			step->sacct.max_rss =
+			step->stats.rss_max =
 				atoi(ROW2(STEP_REQ_MAX_RSS));
-			step->sacct.max_rss_id.taskid =
+			step->stats.rss_max_taskid =
 				atoi(ROW2(STEP_REQ_MAX_RSS_TASK));
-			step->sacct.ave_rss =
+			step->stats.rss_ave =
 				atof(ROW2(STEP_REQ_AVE_RSS));
-			step->sacct.max_pages =
+			step->stats.pages_max =
 				atoi(ROW2(STEP_REQ_MAX_PAGES));
-			step->sacct.max_pages_id.taskid =
+			step->stats.pages_max_taskid =
 				atoi(ROW2(STEP_REQ_MAX_PAGES_TASK));
-			step->sacct.ave_pages =
+			step->stats.pages_ave =
 				atof(ROW2(STEP_REQ_AVE_PAGES));
-			step->sacct.min_cpu =
+			step->stats.cpu_min =
 				atoi(ROW2(STEP_REQ_MIN_CPU));
-			step->sacct.min_cpu_id.taskid =
+			step->stats.cpu_min_taskid =
 				atoi(ROW2(STEP_REQ_MIN_CPU_TASK));
-			step->sacct.ave_cpu = atof(ROW2(STEP_REQ_AVE_CPU));
+			step->stats.cpu_ave = atof(ROW2(STEP_REQ_AVE_CPU));
 			step->stepname = xstrdup(ROW2(STEP_REQ_NAME));
 			step->nodes = xstrdup(ROW2(STEP_REQ_NODELIST));
-			step->sacct.max_vsize_id.nodeid =
+			step->stats.vsize_max_nodeid =
 				atoi(ROW2(STEP_REQ_MAX_VSIZE_NODE));
-			step->sacct.max_rss_id.nodeid =
+			step->stats.rss_max_nodeid =
 				atoi(ROW2(STEP_REQ_MAX_RSS_NODE));
-			step->sacct.max_pages_id.nodeid =
+			step->stats.pages_max_nodeid =
 				atoi(ROW2(STEP_REQ_MAX_PAGES_NODE));
-			step->sacct.min_cpu_id.nodeid =
+			step->stats.cpu_min_nodeid =
 				atoi(ROW2(STEP_REQ_MIN_CPU_NODE));
 
 			step->requid = atoi(ROW2(STEP_REQ_KILL_REQUID));
@@ -1902,7 +1902,7 @@ js_p_get_jobs_cond(pgsql_conn_t *pg_conn, uid_t uid,
  */
 extern int
 js_p_archive(pgsql_conn_t *pg_conn,
-	     acct_archive_cond_t *arch_cond)
+	     slurmdb_archive_cond_t *arch_cond)
 {
 	if (check_db_connection(pg_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
@@ -1920,7 +1920,7 @@ js_p_archive(pgsql_conn_t *pg_conn,
  */
 extern int
 js_p_archive_load(pgsql_conn_t *pg_conn,
-		  acct_archive_rec_t *arch_rec)
+		  slurmdb_archive_rec_t *arch_rec)
 {
 	if (check_db_connection(pg_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;

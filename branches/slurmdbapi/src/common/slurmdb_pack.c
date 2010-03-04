@@ -520,7 +520,7 @@ extern void slurmdb_pack_cluster_rec(void *in, uint16_t rpc_version, Buf buffer)
 		if(count && count != NO_VAL) {
 			itr = list_iterator_create(object->accounting_list);
 			while((slurmdb_info = list_next(itr))) {
-				pack_cluster_accounting_rec(
+				slurmdb_pack_cluster_accounting_rec(
 					slurmdb_info, rpc_version, buffer);
 			}
 			list_iterator_destroy(itr);
@@ -560,7 +560,7 @@ extern int slurmdb_unpack_cluster_rec(void **object, uint16_t rpc_version,
 			object_ptr->accounting_list = list_create(
 				slurmdb_destroy_cluster_accounting_rec);
 			for(i=0; i<count; i++) {
-				unpack_cluster_accounting_rec(
+				slurmdb_unpack_cluster_accounting_rec(
 					(void *)&slurmdb_info,
 					rpc_version, buffer);
 				list_append(object_ptr->accounting_list,
