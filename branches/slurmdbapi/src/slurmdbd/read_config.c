@@ -490,7 +490,7 @@ static char * _get_conf_path(void)
 }
 
 /* Dump the configuration in name,value pairs for output to
- *	"sacctmgr show config", caller must call list_destroy() */
+ *	"statsmgr show config", caller must call list_destroy() */
 extern List dump_config(void)
 {
 	config_key_pair_t *key_pair;
