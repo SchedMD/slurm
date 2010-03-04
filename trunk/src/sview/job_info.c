@@ -618,9 +618,8 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 	char* geometry_tmp = xstrdup(new_text);
 	char* original_ptr = geometry_tmp;
 #endif
-	/* need to clear errno here (just in case) */
-	errno = 0;
-
+	/* need to clear global_edit_error here (just in case) */
+	global_edit_error = 0;
 	if(!job_msg)
 		return NULL;
 
@@ -931,10 +930,13 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 #endif
 	case SORTID_TIME_ELIGIBLE:
 	case SORTID_TIME_START:
+		type = "start time";
 		job_msg->begin_time = parse_time((char *)new_text, 0);
+		if(!job_msg->begin_time)
+			goto return_error;
+
 		if(job_msg->begin_time < time(NULL))
 			job_msg->begin_time = time(NULL);
-		type = "start time";
 		break;
 	default:
 		type = "unknown";
@@ -953,7 +955,7 @@ return_error:
 #ifdef HAVE_BG
 	xfree(original_ptr);
 #endif
-	errno = 1;
+	global_edit_error = 1;
 	return type;
 }
 
@@ -991,11 +993,21 @@ static gboolean _admin_focus_out_job(GtkEntry *entry,
 				     job_desc_msg_t *job_msg)
 {
 	if(global_entry_changed) {
+		const char *col_name = NULL;
 		int type = gtk_entry_get_max_length(entry);
 		const char *name = gtk_entry_get_text(entry);
 		type -= DEFAULT_ENTRY_LENGTH;
 
-		_set_job_msg(job_msg, name, type);
+		col_name = _set_job_msg(job_msg, name, type);
+		if(global_edit_error) {
+			if(global_edit_error_msg)
+				g_free(global_edit_error_msg);
+			global_edit_error_msg = g_strdup_printf(
+				"Job %d %s can't be set to %s",
+				job_msg->job_id,
+				col_name,
+				name);
+		}
 		global_entry_changed = 0;
 	}
 	return false;
@@ -1518,7 +1530,7 @@ static void _layout_job_record(GtkTreeView *treeview,
 				   tmp_char);
 	if ((job_ptr->time_limit == INFINITE) &&
 	    (job_ptr->end_time > time(NULL)))
-		sprintf(tmp_char, "NONE");
+		sprintf(tmp_char, "Unknown");
 	else
 		slurm_make_time_str((time_t *)&job_ptr->end_time, tmp_char,
 				    sizeof(tmp_char));
@@ -1635,7 +1647,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 	gtk_tree_store_set(treestore, iter, SORTID_TIME_START, tmp_char, -1);
 	if ((job_ptr->time_limit == INFINITE) &&
 	    (job_ptr->end_time > time(NULL)))
-		sprintf(tmp_char, "NONE");
+		sprintf(tmp_char, "Unknown");
 	else
 		slurm_make_time_str((time_t *)&job_ptr->end_time, tmp_char,
 				    sizeof(tmp_char));
@@ -2765,7 +2777,7 @@ extern void admin_edit_job(GtkCellRendererText *cell,
 	}
 
 	type = _set_job_msg(job_msg, new_text, column);
-	if(errno)
+	if(global_edit_error)
 		goto print_error;
 
 	if(got_edit_signal) {
@@ -3555,7 +3567,9 @@ extern void admin_job(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 			if(got_edit_signal)
 				goto end_it;
 
-			if(!global_send_update_msg) {
+			if(global_edit_error)
+				tmp_char_ptr = global_edit_error_msg;
+			else if(!global_send_update_msg) {
 				tmp_char_ptr = g_strdup_printf(
 					"No change detected.");
 			} else if(slurm_update_job(job_msg) == SLURM_SUCCESS) {

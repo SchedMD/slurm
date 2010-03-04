@@ -88,6 +88,20 @@ documents those changes that are of interest to users and admins.
     like postgres over mysql for some reason here you go. (Work done
     primarily by Hongjia Cao, NUDT.)
 
+* Changes in SLURM 2.1.5
+========================
+ -- BLUEGENE - Fixed display of draining nodes for sinfo -R.
+ -- Fixes to scontrol and sview when setting a job to an impossible start time.
+ -- Added -h to srun for help.
+ -- Fix for sacctmgr man page to remove erroneous 'with' statements.
+ -- Fix for unpacking jobs with accounting statistics, previously it appears
+    only steps were unpacked correctly, for the most case sacct would only
+    display this information making this fix a very minor one.
+ -- Changed scontrol and sview output for jobs with unknown end times from
+    'NONE' to 'Unknown'.
+ -- Fixed mysql plugin to reset classification when adding a
+    previously deleted cluster.
+
 * Changes in SLURM 2.1.4
 ========================
  -- Fix for purge script in accounting to use correct options.
