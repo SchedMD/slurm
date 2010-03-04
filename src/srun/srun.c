@@ -146,7 +146,6 @@ static int   _run_srun_script (srun_job_t *job, char *script);
 static void  _set_cpu_env_var(resource_allocation_response_msg_t *resp);
 static void  _set_exit_code(void);
 static int   _setup_signals(void);
-static void  _spawn_mpir_thread(void);
 static void  _step_opt_exclusive(void);
 static void  _set_stdio_fds(srun_job_t *job, slurm_step_io_fds_t *cio_fds);
 static void  _set_submit_dir_env(void);
@@ -157,7 +156,6 @@ static int   _slurm_debug_env_val (void);
 static void  _task_start(launch_tasks_response_msg_t *msg);
 static void  _task_finish(task_exit_msg_t *msg);
 static char *_uint16_array_to_str(int count, const uint16_t *array);
-static void *_wait_mpir_gate(void *arg);
 
 /*
  * from libvirt-0.6.2 GPL2
@@ -475,9 +473,8 @@ int srun(int ac, char **av)
 					    launch_params.argv[0]);
 		else
 			mpir_set_executable_names(launch_params.argv[0]);
-		_spawn_mpir_thread();
 		MPIR_debug_state = MPIR_DEBUG_SPAWNED;
-		MPIR_Breakpoint();
+		MPIR_Breakpoint(job);
 		if (opt.debugger_test)
 			mpir_dump_proctable();
 	} else {
@@ -521,45 +518,6 @@ cleanup:
 	if (WIFEXITED(global_rc))
 		global_rc = WEXITSTATUS(global_rc);
 	return (int)global_rc;
-}
-
-static void _spawn_mpir_thread(void)
-{
-	int i;
-	pthread_t thread_id;
-	pthread_attr_t attr;
-	bool launched = false;
-
-	if (!MPIR_being_debugged)
-		return;
-
-	slurm_attr_init(&attr);
-	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-	for (i=0; i<3; i++) {
-		if (i)
-			usleep(100000);
-		if (pthread_create(&thread_id, &attr, &_wait_mpir_gate, 
-				   NULL) == 0) {
-			launched = true;
-			break;
-		}
-	}
-	slurm_attr_destroy(&attr);
-	if (!launched)
-		fatal("pthread_create: %m");
-}
-
-static void *_wait_mpir_gate(void *arg)
-{
-	while (job->state == SRUN_JOB_RUNNING) {
-		if (MPIR_debug_gate) {
-			slurm_step_launch_fwd_signal(job->step_ctx, 
-						     SIG_DEBUG_WAKE);
-			break;
-		}
-		usleep(100000);
-	}
-	pthread_exit(NULL);
 }
 
 static slurm_step_layout_t *

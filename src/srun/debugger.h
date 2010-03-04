@@ -73,7 +73,6 @@ extern int MPIR_proctable_size;
  *    now free to run.
  */
 extern VOLATILE int MPIR_debug_state;
-extern VOLATILE int MPIR_debug_gate;
 extern int          MPIR_partial_attach_ok;
 extern int          MPIR_being_debugged; /* Cause extra info on internal state
 					  * to be maintained
@@ -89,7 +88,7 @@ extern int          MPIR_being_debugged; /* Cause extra info on internal state
 extern int MPIR_i_am_starter;
 extern int MPIR_acquired_pre_main;
 
-extern void MPIR_Breakpoint(void);
+extern void MPIR_Breakpoint(srun_job_t *job);
 
 /* Value for totalview %J expansion in bulk launch string
  */
