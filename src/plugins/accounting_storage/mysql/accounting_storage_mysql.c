@@ -4226,10 +4226,10 @@ extern int acct_storage_p_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 			   "name, classification) "
 			   "values (%d, %d, \"%s\", %u) "
 			   "on duplicate key update deleted=0, mod_time=%d, "
-			   "control_host='', control_port=0;",
+			   "control_host='', control_port=0, classification=%u",
 			   cluster_table,
 			   now, now, object->name, object->classification,
-			   now);
+			   now, object->classification);
 		debug3("%d(%d) query\n%s",
 		       mysql_conn->conn, __LINE__, query);
 		rc = mysql_db_query(mysql_conn->db_conn, query);
