@@ -414,6 +414,9 @@ static int _post_qos_list(List qos_list)
 	g_qos_max_priority = 0;
 
 	while((qos = list_next(itr))) {
+		if(qos->usage)
+			destroy_assoc_mgr_qos_usage(qos->usage);
+		qos->usage = create_assoc_mgr_qos_usage();
 		/* get the highest qos value to create bitmaps
 		   from */
 		if(qos->id > g_qos_count)
@@ -1293,9 +1296,6 @@ extern int assoc_mgr_fill_in_qos(void *db_conn, slurmdb_qos_rec_t *qos,
 
 	qos->id = found_qos->id;
 
-	if(!qos->usage->job_list)
-		qos->usage->job_list = found_qos->usage->job_list;
-
 	qos->grp_cpu_mins    = found_qos->grp_cpu_mins;
 	qos->grp_cpus        = found_qos->grp_cpus;
 	qos->grp_jobs        = found_qos->grp_jobs;
@@ -1331,6 +1331,9 @@ extern int assoc_mgr_fill_in_qos(void *db_conn, slurmdb_qos_rec_t *qos,
 	/* qos->usage->grp_used_submit_jobs = */
 	/* 	found_qos->usage->grp_used_submit_jobs; */
 	/* qos->usage->grp_used_wall   = found_qos->usage->grp_used_wall; */
+
+	/* if(!qos->usage->job_list) */
+	/* 	qos->usage->job_list = found_qos->usage->job_list; */
 
 	/* qos->usage->norm_priority = found_qos->usage->norm_priority; */
 
