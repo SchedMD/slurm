@@ -45,6 +45,7 @@
 #include "src/common/log.h"
 
 #include "src/srun/debugger.h"
+#include "src/srun/srun_job.h"
 
 /*
  *  Instantiate extern variables from debugger.h
@@ -52,20 +53,20 @@
 MPIR_PROCDESC *MPIR_proctable;
 int MPIR_proctable_size;
 VOLATILE int MPIR_debug_state;
-VOLATILE int MPIR_debug_gate;
 int MPIR_being_debugged;
 int MPIR_i_am_starter;
 int MPIR_acquired_pre_main;
 int MPIR_partial_attach_ok;
 char *totalview_jobid;
 
-void MPIR_Breakpoint(void)
+void MPIR_Breakpoint(srun_job_t *job)
 {
 	/*
 	 * This just notifies parallel debugger that some event of
 	 *  interest occurred.
 	 */
 	debug("In MPIR_Breakpoint");
+	slurm_step_launch_fwd_signal(job->step_ctx, SIG_DEBUG_WAKE);
 }
 
 
