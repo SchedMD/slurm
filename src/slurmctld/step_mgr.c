@@ -612,7 +612,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 
 	if (step_spec->mem_per_cpu && _is_mem_resv()) {
 		int node_inx = 0, usable_mem;
-		for (i=bit_ffs(job_resrcs_ptr->node_bitmap); 
+		for (i=bit_ffs(job_resrcs_ptr->node_bitmap);
 		     i<node_record_count; i++) {
 			if (!bit_test(job_resrcs_ptr->node_bitmap, i))
 				continue;
@@ -796,7 +796,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 		nodes_picked_cnt = bit_set_count(nodes_picked);
 		if (slurm_get_debug_flags() & DEBUG_FLAG_STEPS) {
 			verbose("got %u %d", step_spec->node_count,
-			        nodes_picked_cnt);
+				nodes_picked_cnt);
 		}
 		if (nodes_idle &&
 		    (bit_set_count(nodes_idle) >= step_spec->node_count) &&
@@ -1349,7 +1349,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 	}
 	if (slurm_get_debug_flags() & DEBUG_FLAG_STEPS) {
 		verbose("got %s and %s looking for %d nodes", step_node_list,
-		        step_specs->node_list, step_specs->node_count);
+			step_specs->node_list, step_specs->node_count);
 	}
 	step_ptr->step_node_bitmap = nodeset;
 
@@ -1765,7 +1765,7 @@ extern int kill_step_on_node(struct job_record  *job_ptr,
  * RET 0 on success, otherwise ESLURM error code
  */
 extern int job_step_checkpoint(checkpoint_msg_t *ckpt_ptr,
-			       uid_t uid, slurm_fd conn_fd, 
+			       uid_t uid, slurm_fd conn_fd,
 			       uint16_t protocol_version)
 {
 	int rc = SLURM_SUCCESS;
@@ -1928,7 +1928,7 @@ extern int job_step_checkpoint_task_comp(checkpoint_task_comp_msg_t *ckpt_ptr,
 		rc = ESLURM_JOB_PENDING;
 		goto reply;
 	} else if (!IS_JOB_RUNNING(job_ptr) &&
-	           !IS_JOB_SUSPENDED(job_ptr)) {
+		   !IS_JOB_SUSPENDED(job_ptr)) {
 		rc = ESLURM_ALREADY_DONE;
 		goto reply;
 	}
@@ -2037,7 +2037,7 @@ extern int step_partial_comp(step_complete_msg_t *req, uid_t uid,
 		step_ptr->exit_code = MAX(step_ptr->exit_code, req->step_rc);
 	}
 
-	bit_nset(step_ptr->exit_node_bitmap, 
+	bit_nset(step_ptr->exit_node_bitmap,
 		 req->range_first, req->range_last);
 	rem_nodes = bit_clear_count(step_ptr->exit_node_bitmap);
 	if (rem)
@@ -2655,15 +2655,15 @@ extern int update_step(step_update_request_msg_t *req, uid_t uid)
 		return ESLURM_USER_ID_MISSING;
 	}
 
-	/* No need to limit step time limit as job time limit will kill 
+	/* No need to limit step time limit as job time limit will kill
 	 * any steps with any time limit */
 	if (req->step_id == NO_VAL) {
 		step_iterator = list_iterator_create (job_ptr->step_list);
-		while ((step_ptr = (struct step_record *) 
+		while ((step_ptr = (struct step_record *)
 				   list_next (step_iterator))) {
 			step_ptr->time_limit = req->time_limit;
 			mod_cnt++;
-			info("Updating step %u.%u time limit to %u", 
+			info("Updating step %u.%u time limit to %u",
 			     req->job_id, step_ptr->step_id, req->time_limit);
 		}
 		list_iterator_destroy (step_iterator);
@@ -2672,7 +2672,7 @@ extern int update_step(step_update_request_msg_t *req, uid_t uid)
 		if (step_ptr) {
 			step_ptr->time_limit = req->time_limit;
 			mod_cnt++;
-			info("Updating step %u.%u time limit to %u", 
+			info("Updating step %u.%u time limit to %u",
 			     req->job_id, req->step_id, req->time_limit);
 		} else
 			return ESLURM_INVALID_JOB_ID;
