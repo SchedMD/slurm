@@ -38,39 +38,72 @@
 #ifndef _SLURMDB_DEFS_H
 #define _SLURMDB_DEFS_H
 
-extern void destroy_acct_user_rec(void *object);
-extern void destroy_acct_account_rec(void *object);
-extern void destroy_acct_coord_rec(void *object);
-extern void destroy_cluster_accounting_rec(void *object);
-extern void destroy_acct_cluster_rec(void *object);
-extern void destroy_acct_accounting_rec(void *object);
-extern void destroy_acct_association_rec(void *object);
-extern void destroy_acct_event_rec(void *object);
-extern void destroy_acct_qos_rec(void *object);
-extern void destroy_acct_reservation_rec(void *object);
-extern void destroy_acct_txn_rec(void *object);
-extern void destroy_acct_wckey_rec(void *object);
-extern void destroy_acct_archive_rec(void *object);
+#include <slurm/slurmdb.h>
 
-extern void destroy_acct_user_cond(void *object);
-extern void destroy_acct_account_cond(void *object);
-extern void destroy_acct_cluster_cond(void *object);
-extern void destroy_acct_association_cond(void *object);
-extern void destroy_acct_event_cond(void *object);
-extern void destroy_acct_job_cond(void *object);
-extern void destroy_acct_qos_cond(void *object);
-extern void destroy_acct_reservation_cond(void *object);
-extern void destroy_acct_txn_cond(void *object);
-extern void destroy_acct_wckey_cond(void *object);
-extern void destroy_acct_archive_cond(void *object);
+extern void slurmdb_destroy_user_rec(void *object);
+extern void slurmdb_destroy_account_rec(void *object);
+extern void slurmdb_destroy_coord_rec(void *object);
+extern void slurmdb_destroy_cluster_accounting_rec(void *object);
+extern void slurmdb_destroy_cluster_rec(void *object);
+extern void slurmdb_destroy_accounting_rec(void *object);
+extern void slurmdb_destroy_association_rec(void *object);
+extern void slurmdb_destroy_event_rec(void *object);
+extern void slurmdb_destroy_job_rec(void *object);
+extern void slurmdb_destroy_qos_rec(void *object);
+extern void slurmdb_destroy_reservation_rec(void *object);
+extern void slurmdb_destroy_step_rec(void *object);
+extern void slurmdb_destroy_txn_rec(void *object);
+extern void slurmdb_destroy_wckey_rec(void *object);
+extern void slurmdb_destroy_archive_rec(void *object);
 
-extern void destroy_acct_update_object(void *object);
-extern void destroy_acct_used_limits(void *object);
-extern void destroy_update_shares_rec(void *object);
-extern void destroy_acct_print_tree(void *object);
-extern void destroy_acct_hierarchical_rec(void *object);
+extern void slurmdb_destroy_user_cond(void *object);
+extern void slurmdb_destroy_account_cond(void *object);
+extern void slurmdb_destroy_cluster_cond(void *object);
+extern void slurmdb_destroy_association_cond(void *object);
+extern void slurmdb_destroy_event_cond(void *object);
+extern void slurmdb_destroy_job_cond(void *object);
+extern void slurmdb_destroy_qos_cond(void *object);
+extern void slurmdb_destroy_reservation_cond(void *object);
+extern void slurmdb_destroy_txn_cond(void *object);
+extern void slurmdb_destroy_wckey_cond(void *object);
+extern void slurmdb_destroy_archive_cond(void *object);
 
-extern void init_acct_association_rec(acct_association_rec_t *assoc);
-extern void init_acct_qos_rec(acct_qos_rec_t *qos);
+extern void slurmdb_destroy_update_object(void *object);
+extern void slurmdb_destroy_used_limits(void *object);
+extern void slurmdb_destroy_update_shares_rec(void *object);
+extern void slurmdb_destroy_print_tree(void *object);
+extern void slurmdb_destroy_hierarchical_rec(void *object);
+extern void slurmdb_destroy_selected_step(void *object);
+
+extern void slurmdb_init_association_rec(slurmdb_association_rec_t *assoc);
+extern void slurmdb_init_qos_rec(slurmdb_qos_rec_t *qos);
+
+extern char *slurmdb_qos_str(List qos_list, uint32_t level);
+extern uint32_t str_2_slurmdb_qos(List qos_list, char *level);
+extern char *slurmdb_admin_level_str(slurmdb_admin_level_t level);
+extern slurmdb_admin_level_t str_2_slurmdb_admin_level(char *level);
+
+/* The next two functions have pointers to assoc_list so do not
+ * destroy assoc_list before using the list returned from this function.
+ */
+extern List get_hierarchical_sorted_assoc_list(List assoc_list);
+extern List get_slurmdb_hierarchical_rec_list(List assoc_list);
+
+/* IN/OUT: tree_list a list of slurmdb_print_tree_t's */
+extern char *get_tree_slurmdb_name(char *name, char *parent, List tree_list);
+
+extern int set_qos_bitstr_from_list(bitstr_t *valid_qos, List qos_list);
+extern char *get_qos_complete_str_bitstr(List qos_list, bitstr_t *valid_qos);
+extern char *get_qos_complete_str(List qos_list, List num_qos_list);
+
+extern char *get_classification_str(uint16_t class);
+extern uint16_t str_2_classification(char *class);
+
+extern char *slurmdb_problem_str_get(uint16_t problem);
+extern uint16_t str_2_slurmdb_problem(char *problem);
+
+extern void log_assoc_rec(slurmdb_association_rec_t *assoc_ptr, List qos_list);
+
+
 
 #endif
