@@ -276,7 +276,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	xstrcat(out, tmp_line);
 	if ((job_ptr->time_limit == INFINITE) &&
 	    (job_ptr->end_time > time(NULL)))
-		sprintf(tmp_line, "NONE");
+		sprintf(tmp_line, "Unknown");
 	else {
 		slurm_make_time_str ((time_t *)&job_ptr->end_time, time_str,
 				     sizeof(time_str));

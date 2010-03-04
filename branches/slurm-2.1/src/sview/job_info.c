@@ -1520,7 +1520,7 @@ static void _layout_job_record(GtkTreeView *treeview,
 				   tmp_char);
 	if ((job_ptr->time_limit == INFINITE) &&
 	    (job_ptr->end_time > time(NULL)))
-		sprintf(tmp_char, "NONE");
+		sprintf(tmp_char, "Unknown");
 	else
 		slurm_make_time_str((time_t *)&job_ptr->end_time, tmp_char,
 				    sizeof(tmp_char));
@@ -1637,7 +1637,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 	gtk_tree_store_set(treestore, iter, SORTID_TIME_START, tmp_char, -1);
 	if ((job_ptr->time_limit == INFINITE) &&
 	    (job_ptr->end_time > time(NULL)))
-		sprintf(tmp_char, "NONE");
+		sprintf(tmp_char, "Unknown");
 	else
 		slurm_make_time_str((time_t *)&job_ptr->end_time, tmp_char,
 				    sizeof(tmp_char));
