@@ -75,7 +75,7 @@ extern int scontrol_update_step (int argc, char *argv[])
 			char *end_ptr;
 			step_msg.job_id = (uint32_t) strtol(val, &end_ptr, 10);
 			if (end_ptr[0] == '.') {
-				step_msg.step_id = (uint32_t) 
+				step_msg.step_id = (uint32_t)
 					strtol(end_ptr+1, (char **) NULL, 10);
 			} else if (end_ptr[0] != '\0') {
 				exit_code = 1;
