@@ -284,7 +284,7 @@ static slurm_errtab_t slurm_errtab[] = {
 	{ ESLURMD_CREDENTIAL_REPLAYED,
 	  "Job credential replayed"                             },
 	{ ESLURMD_CREATE_BATCH_DIR_ERROR,
-	  "Slurmd could not create a batch directory"		},
+	  "Slurmd could not create a batch directory or file"	},
 	{ ESLURMD_MODIFY_BATCH_DIR_ERROR,
 	  "Slurmd could not chown or chmod a batch directory"	},
 	{ ESLURMD_CREATE_BATCH_SCRIPT_ERROR,

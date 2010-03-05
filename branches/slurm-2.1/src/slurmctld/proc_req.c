@@ -1320,10 +1320,10 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t * msg)
 		if (error_code == SLURM_SUCCESS) {
 			update_node_msg_t update_node_msg;
 			memset(&update_node_msg, 0, sizeof(update_node_msg_t));
-			update_node_msg.node_names =
-				comp_msg->node_name;
+			update_node_msg.node_names = comp_msg->node_name;
 			update_node_msg.node_state = NODE_STATE_DRAIN;
-			update_node_msg.reason = "step complete failure";
+			update_node_msg.reason = "batch job complete failure";
+			update_node_msg.weight = NO_VAL;
 			error_code = update_node(&update_node_msg);
 			if (comp_msg->job_rc != SLURM_SUCCESS)
 				job_requeue = true;
