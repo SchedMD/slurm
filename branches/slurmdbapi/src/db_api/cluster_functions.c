@@ -55,9 +55,7 @@
  */
 extern int slurmdb_clusters_add(void *db_conn, List cluster_list)
 {
-	int rc = SLURM_SUCCESS;
-
-	return rc;
+	return acct_storage_g_add_clusters(db_conn, getuid(), cluster_list);
 }
 
 /*
@@ -70,9 +68,7 @@ extern int slurmdb_clusters_add(void *db_conn, List cluster_list)
 extern List slurmdb_clusters_get(void *db_conn,
 				 slurmdb_cluster_cond_t *cluster_cond)
 {
-	List ret_list = NULL;
-
-	return ret_list;
+	return acct_storage_g_get_clusters(db_conn, getuid(), cluster_cond);
 }
 
 /*
@@ -85,9 +81,8 @@ extern List slurmdb_clusters_modify(void *db_conn,
 				    slurmdb_cluster_cond_t *cluster_cond,
 				    slurmdb_cluster_rec_t *cluster)
 {
-	List ret_list = NULL;
-
-	return ret_list;
+	return acct_storage_g_modify_clusters(db_conn, getuid(),
+					      cluster_cond, cluster);
 }
 
 /*
@@ -98,8 +93,6 @@ extern List slurmdb_clusters_modify(void *db_conn,
 extern List slurmdb_clusters_remove(void *db_conn,
 				    slurmdb_cluster_cond_t *cluster_cond)
 {
-	List ret_list = NULL;
-
-	return ret_list;
+	return acct_storage_g_remove_clusters(db_conn, getuid(), cluster_cond);
 }
 

@@ -743,7 +743,7 @@ extern int slurmdb_archive_load(void *db_conn,
  * IN:  association_list List of slurmdb_association_rec_t *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int slurmdb_associations_add(void *db_conn, List association_list);
+extern int slurmdb_associations_add(void *db_conn, List assoc_list);
 
 /*
  * get info from the storage
