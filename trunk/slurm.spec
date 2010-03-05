@@ -73,9 +73,11 @@
 %if %{?chaos}0
 %slurm_with_opt mysql
 %slurm_with_opt lua
+%slurm_with_opt partial_attach
 %else
 %slurm_without_opt sgijob
 %slurm_without_opt lua
+%slurm_without_opt partial-attach
 %endif
 
 %if %{?chaos}0 && 0%{?chaos} < 5
@@ -364,6 +366,7 @@ Gives the ability for SLURM to use Berkeley Lab Checkpoint/Restart
 %configure --program-prefix=%{?_program_prefix:%{_program_prefix}} \
 	%{?slurm_with_cray_xt:--enable-cray-xt} \
 	%{?slurm_with_debug:--enable-debug} \
+	%{?slurm_with_partial_attach:--enable-partial-attach} \
 	%{?slurm_with_sun_const:--enable-sun-const} \
 	%{?with_db2_dir} \
 	%{?with_pam_dir}	\
