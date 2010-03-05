@@ -66,6 +66,8 @@ CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
 * Added new configuration parameters SlurmSchedLogFile and SlurmSchedLogLevel
   to support writing scheduling events to a separate log file.
 
+* Added "--enable-partial-attach" option to configure (build) script.
+
 COMMAND CHANGES (see man pages for details)
 ===========================================
 * sinfo -R now has the user and timestamp in separate fields from the reason.
@@ -96,6 +98,9 @@ OTHER CHANGES
   "Requested time limit is invalid (exceeds some limit)". The error can be
   triggered by a time limit exceeding the user/bank limit or the time-min
   exceeding the job or partition's time limit.
+
+* Added support for debugger partial task attach if the option 
+  "--enable-partial-attach" is passed to the configure (build) script.
 
 API CHANGES
 ===========
