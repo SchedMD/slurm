@@ -77,10 +77,9 @@ struct assoc_mgr_association_usage {
 	uint32_t level_shares;  /* number of shares on this level of
 				 * the tree (DON'T PACK) */
 
-	struct slurmdb_association_rec *parent_assoc_ptr; /* ptr to parent acct
-							   * set in
-							   * slurmctld
-							   * (DON'T PACK) */
+	slurmdb_association_rec_t *parent_assoc_ptr; /* ptr to parent acct
+						      * set in slurmctld
+						      * (DON'T PACK) */
 
 	double shares_norm;     /* normalized shares (DON'T PACK) */
 

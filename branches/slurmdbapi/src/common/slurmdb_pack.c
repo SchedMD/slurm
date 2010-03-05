@@ -2699,6 +2699,9 @@ extern void slurmdb_pack_job_rec(void *object, uint16_t rpc_version, Buf buffer)
 		pack_time(job->eligible, buffer);
 		pack_time(job->end, buffer);
 		pack32(job->exitcode, buffer);
+		/* the first_step_ptr
+		   is set up on the client side so does
+		   not need to be packed */
 		pack32(job->gid, buffer);
 		pack32(job->jobid, buffer);
 		packstr(job->jobname, buffer);
@@ -3078,6 +3081,8 @@ extern void slurmdb_pack_step_rec(slurmdb_step_rec_t *step,
 		pack32(step->elapsed, buffer);
 		pack_time(step->end, buffer);
 		pack32((uint32_t)step->exitcode, buffer);
+		 /* the job_ptr is set up on the client side so does
+		    not need to be packed */
 		pack32(step->ncpus, buffer);
 		pack32(step->nnodes, buffer);
 		packstr(step->nodes, buffer);

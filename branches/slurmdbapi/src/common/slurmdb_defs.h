@@ -58,6 +58,9 @@ extern void slurmdb_destroy_step_rec(void *object);
 extern void slurmdb_destroy_txn_rec(void *object);
 extern void slurmdb_destroy_wckey_rec(void *object);
 extern void slurmdb_destroy_archive_rec(void *object);
+extern void slurmdb_destroy_report_assoc_rec(void *object);
+extern void slurmdb_destroy_report_user_rec(void *object);
+extern void slurmdb_destroy_report_cluster_rec(void *object);
 
 extern void slurmdb_destroy_user_cond(void *object);
 extern void slurmdb_destroy_account_cond(void *object);

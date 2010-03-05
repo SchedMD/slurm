@@ -519,11 +519,10 @@ empty:
 
 		/* get the usage if requested */
 		if(cluster_cond && cluster_cond->with_usage) {
-			clusteracct_storage_p_get_usage(
-				pg_conn, uid, cluster,
-				DBD_GET_CLUSTER_USAGE,
-				cluster_cond->usage_start,
-				cluster_cond->usage_end);
+			cs_p_get_usage(pg_conn, uid, cluster,
+				       DBD_GET_CLUSTER_USAGE,
+				       cluster_cond->usage_start,
+				       cluster_cond->usage_end);
 		}
 
 		cluster->classification = atoi(ROW(GC_CLASS));
