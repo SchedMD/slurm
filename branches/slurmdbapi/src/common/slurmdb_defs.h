@@ -89,8 +89,8 @@ extern slurmdb_admin_level_t str_2_slurmdb_admin_level(char *level);
 /* The next two functions have pointers to assoc_list so do not
  * destroy assoc_list before using the list returned from this function.
  */
-extern List get_hierarchical_sorted_assoc_list(List assoc_list);
-extern List get_slurmdb_hierarchical_rec_list(List assoc_list);
+extern List slurmdb_get_hierarchical_sorted_assoc_list(List assoc_list);
+extern List slurmdb_get_acct_hierarchical_rec_list(List assoc_list);
 
 /* IN/OUT: tree_list a list of slurmdb_print_tree_t's */
 extern char *slurmdb_tree_name_get(char *name, char *parent, List tree_list);

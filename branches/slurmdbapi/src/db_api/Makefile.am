@@ -55,7 +55,6 @@ libslurmdb_la_SOURCES =	\
 	coord_functions.c \
 	connection_functions.c \
 	extra_get_functions.c \
-	helper_functions.c \
 	job_report_functions.c \
 	qos_functions.c \
 	usage_functions.c \

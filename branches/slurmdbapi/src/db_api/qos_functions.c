@@ -55,9 +55,7 @@
  */
 extern int slurmdb_qos_add(void *db_conn, uint32_t uid, List qos_list)
 {
-	int rc = SLURM_SUCCESS;
-
-	return rc;
+	return acct_storage_g_add_qos(db_conn, getuid(), qos_list);
 }
 
 /*
@@ -68,9 +66,7 @@ extern int slurmdb_qos_add(void *db_conn, uint32_t uid, List qos_list)
  */
 extern List slurmdb_qos_get(void *db_conn, slurmdb_qos_cond_t *qos_cond)
 {
-	List ret_list = NULL;
-
-	return ret_list;
+	return acct_storage_g_get_qos(db_conn, getuid(), qos_cond);
 }
 
 /*
@@ -84,9 +80,8 @@ extern List slurmdb_qos_modify(void *db_conn,
 			       slurmdb_qos_cond_t *qos_cond,
 			       slurmdb_qos_rec_t *qos)
 {
-	List ret_list = NULL;
-
-	return ret_list;
+	return acct_storage_g_modify_qos(db_conn, getuid(),
+					 qos_cond, qos);
 }
 
 /*
@@ -97,8 +92,6 @@ extern List slurmdb_qos_modify(void *db_conn,
  */
 extern List slurmdb_qos_remove(void *db_conn, slurmdb_qos_cond_t *qos_cond)
 {
-	List ret_list = NULL;
-
-	return ret_list;
+	return acct_storage_g_remove_qos(db_conn, getuid(), qos_cond);
 }
 

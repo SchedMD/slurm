@@ -2132,15 +2132,6 @@ extern int clusteracct_storage_p_cluster_cpus(mysql_conn_t *mysql_conn,
 				  cluster_nodes, cpus, event_time);
 }
 
-extern int clusteracct_storage_p_get_usage(
-	mysql_conn_t *mysql_conn, uid_t uid,
-	slurmdb_cluster_rec_t *cluster_rec, slurmdbd_msg_type_t type,
-	time_t start, time_t end)
-{
-	return as_mysql_get_usage(mysql_conn, uid, cluster_rec,
-				  type, start, end);
-}
-
 /*
  * load into the storage the start of a job
  */

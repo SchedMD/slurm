@@ -828,10 +828,10 @@ extern slurmdb_admin_level_t str_2_slurmdb_admin_level(char *level)
 
 /* This reorders the list into a alphabetical hierarchy returned in a
  * separate list.  The orginal list is not affected */
-extern List get_hierarchical_sorted_assoc_list(List assoc_list)
+extern List slurmdb_get_hierarchical_sorted_assoc_list(List assoc_list)
 {
 	List slurmdb_hierarchical_rec_list =
-		get_slurmdb_hierarchical_rec_list(assoc_list);
+		slurmdb_get_acct_hierarchical_rec_list(assoc_list);
 	List ret_list = list_create(NULL);
 
 	_append_hierarchical_childern_ret_list(ret_list,
@@ -841,7 +841,7 @@ extern List get_hierarchical_sorted_assoc_list(List assoc_list)
 	return ret_list;
 }
 
-extern List get_slurmdb_hierarchical_rec_list(List assoc_list)
+extern List slurmdb_get_acct_hierarchical_rec_list(List assoc_list)
 {
 	slurmdb_hierarchical_rec_t *par_arch_rec = NULL;
 	slurmdb_hierarchical_rec_t *last_slurmdb_parent = NULL;

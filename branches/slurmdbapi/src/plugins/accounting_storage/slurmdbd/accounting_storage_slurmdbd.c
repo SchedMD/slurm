@@ -1379,6 +1379,7 @@ extern int acct_storage_p_get_usage(void *db_conn, uid_t uid,
 	dbd_usage_msg_t *got_msg;
 	slurmdb_association_rec_t *got_assoc = (slurmdb_association_rec_t *)in;
 	slurmdb_wckey_rec_t *got_wckey = (slurmdb_wckey_rec_t *)in;
+	slurmdb_cluster_rec_t *got_cluster = (slurmdb_cluster_rec_t *)in;
 	List *my_list = NULL;
 	int rc;
 
@@ -1395,6 +1396,9 @@ extern int acct_storage_p_get_usage(void *db_conn, uid_t uid,
 	case DBD_GET_WCKEY_USAGE:
 		my_list = &got_wckey->accounting_list;
 		break;
+	case DBD_GET_CLUSTER_USAGE:
+		my_list = &got_cluster->accounting_list;
+		break;
 	default:
 		error("slurmdbd: Unknown usage type %d", type);
 		return SLURM_ERROR;
@@ -1405,7 +1409,8 @@ extern int acct_storage_p_get_usage(void *db_conn, uid_t uid,
 	rc = slurm_send_recv_slurmdbd_msg(SLURMDBD_VERSION, &req, &resp);
 
 	if (rc != SLURM_SUCCESS)
-		error("slurmdbd: DBD_GET_ASSOC_USAGE failure: %m");
+		error("slurmdbd: %s failure: %m",
+		      slurmdbd_msg_type_2_str(type, 1));
 	else if (resp.msg_type == DBD_RC) {
 		dbd_rc_msg_t *msg = resp.data;
 		if(msg->return_code == SLURM_SUCCESS) {
@@ -1415,8 +1420,9 @@ extern int acct_storage_p_get_usage(void *db_conn, uid_t uid,
 			error("%s", msg->comment);
 		slurmdbd_free_rc_msg(msg);
 	} else if (resp.msg_type != DBD_GOT_ASSOC_USAGE
-		   && resp.msg_type != DBD_GOT_WCKEY_USAGE) {
-		error("slurmdbd: response type not DBD_GOT_ASSOC_USAGE: %u",
+		   && resp.msg_type != DBD_GOT_WCKEY_USAGE
+		   && resp.msg_type != DBD_GOT_CLUSTER_USAGE) {
+		error("slurmdbd: response type not DBD_GOT_*_USAGE: %u",
 		      resp.msg_type);
 	} else {
 		got_msg = (dbd_usage_msg_t *) resp.data;
@@ -1430,6 +1436,11 @@ extern int acct_storage_p_get_usage(void *db_conn, uid_t uid,
 			got_wckey = (slurmdb_wckey_rec_t *)got_msg->rec;
 			(*my_list) = got_wckey->accounting_list;
 			got_wckey->accounting_list = NULL;
+			break;
+		case DBD_GET_CLUSTER_USAGE:
+			got_cluster = (slurmdb_cluster_rec_t *)got_msg->rec;
+			(*my_list) = got_cluster->accounting_list;
+			got_cluster->accounting_list = NULL;
 			break;
 		default:
 			error("slurmdbd: Unknown usage type %d", type);
@@ -1566,53 +1577,6 @@ extern int clusteracct_storage_p_register_ctld(void *db_conn, uint16_t port)
 		return SLURM_ERROR;
 
 	return SLURM_SUCCESS;
-}
-
-extern int clusteracct_storage_p_get_usage(
-	void *db_conn, uid_t uid,
-	slurmdb_cluster_rec_t *cluster_rec, int type,
-	time_t start, time_t end)
-{
-	slurmdbd_msg_t req, resp;
-	dbd_usage_msg_t get_msg;
-	dbd_usage_msg_t *got_msg;
-	slurmdb_cluster_rec_t *got_rec;
-	int rc;
-
-	memset(&get_msg, 0, sizeof(dbd_usage_msg_t));
-
-	get_msg.rec = cluster_rec;
-	get_msg.start = start;
-	get_msg.end = end;
-
-	req.msg_type = DBD_GET_CLUSTER_USAGE;
-
-	req.data = &get_msg;
-	rc = slurm_send_recv_slurmdbd_msg(SLURMDBD_VERSION, &req, &resp);
-
-	if (rc != SLURM_SUCCESS)
-		error("slurmdbd: DBD_GET_CLUSTER_USAGE failure: %m");
-	else if (resp.msg_type == DBD_RC) {
-		dbd_rc_msg_t *msg = resp.data;
-		if(msg->return_code == SLURM_SUCCESS) {
-			info("%s", msg->comment);
-			cluster_rec->accounting_list = list_create(NULL);
-		} else
-			error("%s", msg->comment);
-		slurmdbd_free_rc_msg(msg);
-	} else if (resp.msg_type != DBD_GOT_CLUSTER_USAGE) {
-		error("slurmdbd: response type not DBD_GOT_CLUSTER_USAGE: %u",
-		      resp.msg_type);
-	} else {
-		got_msg = (dbd_usage_msg_t *) resp.data;
-		got_rec = (slurmdb_cluster_rec_t *)got_msg->rec;
-		cluster_rec->accounting_list = got_rec->accounting_list;
-		got_rec->accounting_list = NULL;
-		slurmdbd_free_usage_msg(resp.msg_type, got_msg);
-	}
-
-
-	return rc;
 }
 
 /*
