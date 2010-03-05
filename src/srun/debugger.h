@@ -73,10 +73,12 @@ extern int MPIR_proctable_size;
  *    now free to run.
  */
 extern VOLATILE int MPIR_debug_state;
-extern int          MPIR_partial_attach_ok;
 extern int          MPIR_being_debugged; /* Cause extra info on internal state
 					  * to be maintained
 					  */
+#ifdef DEBUGGER_PARTIAL_ATTACH
+extern int          MPIR_partial_attach_ok;
+#endif
 
 /* Values for the debug_state, this seems to be all we need at the moment
  * but that may change...

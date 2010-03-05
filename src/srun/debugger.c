@@ -56,8 +56,10 @@ VOLATILE int MPIR_debug_state;
 int MPIR_being_debugged;
 int MPIR_i_am_starter;
 int MPIR_acquired_pre_main;
-int MPIR_partial_attach_ok;
 char *totalview_jobid;
+#ifdef DEBUGGER_PARTIAL_ATTACH
+  int MPIR_partial_attach_ok;
+#endif
 
 void MPIR_Breakpoint(srun_job_t *job)
 {

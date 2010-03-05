@@ -21,6 +21,9 @@
 /* Define location of cpuset directory */
 #undef CPUSET_DIR
 
+/* Define to 1 for debugger partial task attach support. */
+#undef DEBUGGER_PARTIAL_ATTACH
+
 /* Define to 1 if licensed under terms of the GNU General Public License. */
 #undef GPL_LICENSED
 
