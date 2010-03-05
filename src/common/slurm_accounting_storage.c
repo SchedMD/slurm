@@ -161,9 +161,6 @@ typedef struct slurm_acct_storage_ops {
 				    time_t event_time);
 	int  (*cluster_cpus)      (void *db_conn, char *cluster_nodes,
 				   uint32_t cpus, time_t event_time);
-	int  (*c_get_usage)        (void *db_conn, uint32_t uid,
-				    void *cluster_rec, int type,
-				    time_t start, time_t end);
 	int  (*register_ctld)      (void *db_conn, uint16_t port);
 	int  (*job_start)          (void *db_conn, struct job_record *job_ptr);
 	int  (*job_complete)       (void *db_conn,
@@ -260,7 +257,6 @@ static slurm_acct_storage_ops_t * _acct_storage_get_ops(
 		"clusteracct_storage_p_node_down",
 		"clusteracct_storage_p_node_up",
 		"clusteracct_storage_p_cluster_cpus",
-		"clusteracct_storage_p_get_usage",
 		"clusteracct_storage_p_register_ctld",
 		"jobacct_storage_p_job_start",
 		"jobacct_storage_p_job_complete",
@@ -842,16 +838,6 @@ extern int clusteracct_storage_g_cluster_cpus(void *db_conn,
 		(db_conn, cluster_nodes, cpus, event_time);
 }
 
-
-extern int clusteracct_storage_g_get_usage(
-	void *db_conn, uint32_t uid, void *cluster_rec, int type,
-	time_t start, time_t end)
-{
-	if (slurm_acct_storage_init(NULL) < 0)
-		return SLURM_ERROR;
-	return (*(g_acct_storage_context->ops.c_get_usage))
-		(db_conn, uid, cluster_rec, type, start, end);
-}
 
 extern int clusteracct_storage_g_register_ctld(void *db_conn, uint16_t port)
 {

@@ -61,9 +61,8 @@
 extern int slurmdb_usage_get(void *db_conn, void *in, int type,
 			     time_t start, time_t end)
 {
-	int rc = SLURM_SUCCESS;
-
-	return rc;
+	return acct_storage_g_get_usage(db_conn, getuid(),
+					in, type, start, end);
 }
 
 /*
@@ -77,8 +76,7 @@ extern int slurmdb_usage_roll(void *db_conn,
 			      time_t sent_start, time_t sent_end,
 			      uint16_t archive_data)
 {
-	int rc = SLURM_SUCCESS;
-
-	return rc;
+	return acct_storage_g_roll_usage(db_conn, sent_start,
+					 sent_end, archive_data);
 }
 

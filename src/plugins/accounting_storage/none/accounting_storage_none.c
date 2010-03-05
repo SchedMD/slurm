@@ -360,14 +360,6 @@ extern int clusteracct_storage_p_cluster_cpus(void *db_conn,
 	return SLURM_SUCCESS;
 }
 
-extern int clusteracct_storage_p_get_usage(
-	void *db_conn, uid_t uid,
-	slurmdb_cluster_rec_t *cluster_rec, int type, time_t start, time_t end)
-{
-
-	return SLURM_SUCCESS;
-}
-
 /*
  * load into the storage the start of a job
  */

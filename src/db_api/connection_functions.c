@@ -53,7 +53,11 @@
  */
 extern void *slurmdb_connection_get()
 {
-	return NULL;
+	char *cluster_name = slurm_get_cluster_name();
+	void *db_conn = acct_storage_g_get_connection(false, 0,
+						      1, cluster_name);
+	xfree(cluster_name);
+	return db_conn;
 }
 
 /*
@@ -64,7 +68,5 @@ extern void *slurmdb_connection_get()
  */
 extern int slurmdb_connection_close(void **db_conn)
 {
-	int rc = SLURM_SUCCESS;
-
-	return rc;
+	return acct_storage_g_close_connection(db_conn);
 }

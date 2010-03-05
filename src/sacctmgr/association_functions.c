@@ -569,7 +569,7 @@ extern int sacctmgr_list_association(int argc, char *argv[])
 		return SLURM_ERROR;
 	}
 	first_list = assoc_list;
-	assoc_list = get_hierarchical_sorted_assoc_list(first_list);
+	assoc_list = slurmdb_get_hierarchical_sorted_assoc_list(first_list);
 
 	itr = list_iterator_create(assoc_list);
 	itr2 = list_iterator_create(print_fields_list);

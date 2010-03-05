@@ -1410,8 +1410,6 @@ static int _get_usage(uint16_t type, slurmdbd_conn_t *slurmdbd_conn,
 	dbd_usage_msg_t *get_msg = NULL;
 	dbd_usage_msg_t got_msg;
 	uint16_t ret_type = 0;
-	int (*my_function) (void *db_conn, uid_t uid, void *object, int type,
-			    time_t start, time_t end);
 	int rc = SLURM_SUCCESS;
 	char *comment = NULL;
 
@@ -1430,15 +1428,12 @@ static int _get_usage(uint16_t type, slurmdbd_conn_t *slurmdbd_conn,
 	switch(type) {
 	case DBD_GET_ASSOC_USAGE:
 		ret_type = DBD_GOT_ASSOC_USAGE;
-		my_function = acct_storage_g_get_usage;
 		break;
 	case DBD_GET_WCKEY_USAGE:
 		ret_type = DBD_GOT_WCKEY_USAGE;
-		my_function = acct_storage_g_get_usage;
 		break;
 	case DBD_GET_CLUSTER_USAGE:
 		ret_type = DBD_GOT_CLUSTER_USAGE;
-		my_function = clusteracct_storage_g_get_usage;
 		break;
 	default:
 		comment = "Unknown type of usage to get";
@@ -1448,8 +1443,9 @@ static int _get_usage(uint16_t type, slurmdbd_conn_t *slurmdbd_conn,
 		return SLURM_ERROR;
 	}
 
-	rc = (*(my_function))(slurmdbd_conn->db_conn, *uid, get_msg->rec, type,
-			      get_msg->start, get_msg->end);
+	rc = acct_storage_g_get_usage(slurmdbd_conn->db_conn,
+				      *uid, get_msg->rec, type,
+				      get_msg->start, get_msg->end);
 	slurmdbd_free_usage_msg(type, get_msg);
 
 	if(rc != SLURM_SUCCESS) {

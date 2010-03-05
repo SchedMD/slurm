@@ -1255,7 +1255,7 @@ extern int sacctmgr_dump_cluster (int argc, char *argv[])
 		return SLURM_ERROR;
 	}
 
-	slurmdb_hierarchical_rec_list = get_slurmdb_hierarchical_rec_list(assoc_list);
+	slurmdb_hierarchical_rec_list = slurmdb_get_acct_hierarchical_rec_list(assoc_list);
 
 	acct_list = acct_storage_g_get_accounts(db_conn, my_uid, NULL);
 

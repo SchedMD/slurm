@@ -412,7 +412,7 @@ extern int delete_assoc_usage(pgsql_conn_t *pg_conn, time_t now,
 			      char *assoc_cond);
 
 extern int acct_storage_p_get_usage(pgsql_conn_t *pg_conn, uid_t uid,
-				    void *in, int type,
+				    void *in, slurmdbd_msg_type_t type,
 				    time_t start, time_t end);
 extern int as_p_get_usage(pgsql_conn_t *pg_conn, uid_t uid,
 			  void *in, slurmdbd_msg_type_t type,

@@ -645,7 +645,7 @@ extern int slurmdb_cluster_account_by_user(int argc, char *argv[])
 	}
 
 	first_list = assoc_list;
-	assoc_list = get_hierarchical_sorted_assoc_list(first_list);
+	assoc_list = slurmdb_get_hierarchical_sorted_assoc_list(first_list);
 
 	/* set up the structures for easy retrieval later */
 	itr = list_iterator_create(cluster_list);

@@ -494,18 +494,6 @@ extern int clusteracct_storage_g_cluster_cpus(void *db_conn,
 extern int clusteracct_storage_g_register_ctld(void *db_conn, uint16_t port);
 
 /*
- * get info from the storage
- * IN/OUT:  cluster_rec void * (acct_cluster_rec_t *) with the name set
- * IN:  start time stamp for records >=
- * IN:  end time stamp for records <
- * IN:  params void *
- * RET: SLURM_SUCCESS on success SLURM_ERROR else
- */
-extern int clusteracct_storage_g_get_usage(
-	void *db_conn, uint32_t uid, void *cluster_rec, int type,
-	time_t start, time_t end);
-
-/*
  * load into the storage the start of a job
  */
 extern int jobacct_storage_g_job_start (void *db_conn,

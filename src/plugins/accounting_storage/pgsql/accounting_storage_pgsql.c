@@ -518,11 +518,17 @@ extern List acct_storage_p_get_txn(pgsql_conn_t *pg_conn, uid_t uid,
 }
 
 extern int acct_storage_p_get_usage(pgsql_conn_t *pg_conn, uid_t uid,
-				    void *in, int type,
+				    void *in, slurmdbd_msg_type_t type,
 				    time_t start, time_t end)
 {
-	return as_p_get_usage(pg_conn, uid, in, (slurmdbd_msg_type_t)type,
-			      start, end);
+	int rc = SLURM_SUCCESS;
+
+	if(type == DBD_GET_CLUSTER_USAGE)
+		cs_p_get_usage(pg_conn, uid, in, type, start, end);
+	else
+		as_p_get_usage(pg_conn, uid, in, type, start, end);
+
+	return rc;
 }
 
 extern int acct_storage_p_roll_usage(pgsql_conn_t *pg_conn,
