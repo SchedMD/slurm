@@ -568,9 +568,9 @@ static int _setup_grouping_print_fields_list(List grouping_list)
 		else
 			field->type = PRINT_JOB_SIZE;
 		field->name = xstrdup_printf("%u-%u cpus", last_size, size-1);
-		if(time_format == SREPORT_TIME_SECS_PER
-		   || time_format == SREPORT_TIME_MINS_PER
-		   || time_format == SREPORT_TIME_HOURS_PER)
+		if(time_format == SLURMDB_REPORT_TIME_SECS_PER
+		   || time_format == SLURMDB_REPORT_TIME_MINS_PER
+		   || time_format == SLURMDB_REPORT_TIME_HOURS_PER)
 			field->len = 20;
 		else
 			field->len = 13;
@@ -578,7 +578,7 @@ static int _setup_grouping_print_fields_list(List grouping_list)
 		if(print_job_count)
 			field->print_routine = print_fields_uint;
 		else
-			field->print_routine = sreport_print_time;
+			field->print_routine = slurmdb_report_print_time;
 		last_size = size;
 		last_object = object;
 		if((tmp_char = strstr(object, "\%"))) {
@@ -597,16 +597,16 @@ static int _setup_grouping_print_fields_list(List grouping_list)
 		else
 			field->type = PRINT_JOB_SIZE;
 		field->name = xstrdup_printf(">= %u cpus", last_size);
-		if(time_format == SREPORT_TIME_SECS_PER
-		   || time_format == SREPORT_TIME_MINS_PER
-		   || time_format == SREPORT_TIME_HOURS_PER)
+		if(time_format == SLURMDB_REPORT_TIME_SECS_PER
+		   || time_format == SLURMDB_REPORT_TIME_MINS_PER
+		   || time_format == SLURMDB_REPORT_TIME_HOURS_PER)
 			field->len = 20;
 		else
 			field->len = 13;
 		if(print_job_count)
 			field->print_routine = print_fields_uint;
 		else
-			field->print_routine = sreport_print_time;
+			field->print_routine = slurmdb_report_print_time;
 		if((tmp_char = strstr(last_object, "\%"))) {
 			int newlen = atoi(tmp_char+1);
 			if(newlen)
@@ -642,7 +642,7 @@ extern int job_sizes_grouped_by_top_acct(int argc, char *argv[])
 	print_field_t *field = NULL;
 	print_field_t total_field;
 	uint32_t total_time = 0;
-	sreport_time_format_t temp_format;
+	slurmdb_report_time_format_t temp_format;
 
 	List job_list = NULL;
 	List cluster_list = NULL;
@@ -655,7 +655,7 @@ extern int job_sizes_grouped_by_top_acct(int argc, char *argv[])
 
 	List header_list = list_create(NULL);
 
-//	sreport_time_format_t temp_time_format = time_format;
+//	slurmdb_report_time_format_t temp_time_format = time_format;
 
 	print_fields_list = list_create(destroy_print_field);
 
@@ -800,7 +800,7 @@ no_assocs:
 	total_field.type = PRINT_JOB_SIZE;
 	total_field.name = xstrdup("% of cluster");
 	total_field.len = 12;
-	total_field.print_routine = sreport_print_time;
+	total_field.print_routine = slurmdb_report_print_time;
 	list_append(header_list, &total_field);
 
 	print_fields_header(header_list);
@@ -908,7 +908,7 @@ no_assocs:
 	list_destroy(grouping_list);
 	list_iterator_destroy(itr);
 
-//	time_format = SREPORT_TIME_PERCENT;
+//	time_format = SLURMDB_REPORT_TIME_PERCENT;
 
 	itr = list_iterator_create(print_fields_list);
 	itr2 = list_iterator_create(grouping_print_fields_list);
@@ -969,7 +969,7 @@ no_assocs:
 			list_iterator_destroy(local_itr);
 
 			temp_format = time_format;
-			time_format = SREPORT_TIME_PERCENT;
+			time_format = SLURMDB_REPORT_TIME_PERCENT;
 			total_field.print_routine(&total_field,
 						  acct_group->cpu_secs,
 						  cluster_group->cpu_secs, 1);
@@ -1039,7 +1039,7 @@ extern int job_sizes_grouped_by_wckey(int argc, char *argv[])
 	print_field_t *field = NULL;
 	print_field_t total_field;
 	uint32_t total_time = 0;
-	sreport_time_format_t temp_format;
+	slurmdb_report_time_format_t temp_format;
 
 	List job_list = NULL;
 	List cluster_list = NULL;
@@ -1050,7 +1050,7 @@ extern int job_sizes_grouped_by_wckey(int argc, char *argv[])
 
 	List header_list = list_create(NULL);
 
-//	sreport_time_format_t temp_time_format = time_format;
+//	slurmdb_report_time_format_t temp_time_format = time_format;
 
 	print_fields_list = list_create(destroy_print_field);
 
@@ -1178,7 +1178,7 @@ no_assocs:
 	total_field.type = PRINT_JOB_SIZE;
 	total_field.name = xstrdup("% of cluster");
 	total_field.len = 12;
-	total_field.print_routine = sreport_print_time;
+	total_field.print_routine = slurmdb_report_print_time;
 	list_append(header_list, &total_field);
 
 	print_fields_header(header_list);
@@ -1244,7 +1244,7 @@ no_assocs:
 	list_destroy(grouping_list);
 	list_iterator_destroy(itr);
 
-//	time_format = SREPORT_TIME_PERCENT;
+//	time_format = SLURMDB_REPORT_TIME_PERCENT;
 
 	itr = list_iterator_create(print_fields_list);
 	itr2 = list_iterator_create(grouping_print_fields_list);
@@ -1304,7 +1304,7 @@ no_assocs:
 			list_iterator_destroy(local_itr);
 
 			temp_format = time_format;
-			time_format = SREPORT_TIME_PERCENT;
+			time_format = SLURMDB_REPORT_TIME_PERCENT;
 			total_field.print_routine(&total_field,
 						  acct_group->cpu_secs,
 						  cluster_group->cpu_secs, 1);

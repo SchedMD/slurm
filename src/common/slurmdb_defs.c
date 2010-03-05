@@ -161,7 +161,6 @@ extern slurmdb_step_rec_t *slurmdb_create_step_rec()
 	return step;
 }
 
-
 extern void slurmdb_destroy_user_rec(void *object)
 {
 	slurmdb_user_rec_t *slurmdb_user = (slurmdb_user_rec_t *)object;
@@ -375,6 +374,46 @@ extern void slurmdb_destroy_archive_rec(void *object)
 		xfree(arch_rec->archive_file);
 		xfree(arch_rec->insert);
 		xfree(arch_rec);
+	}
+}
+
+extern void slurmdb_destroy_report_assoc_rec(void *object)
+{
+	slurmdb_report_assoc_rec_t *slurmdb_report_assoc =
+		(slurmdb_report_assoc_rec_t *)object;
+	if(slurmdb_report_assoc) {
+		xfree(slurmdb_report_assoc->acct);
+		xfree(slurmdb_report_assoc->cluster);
+		xfree(slurmdb_report_assoc->parent_acct);
+		xfree(slurmdb_report_assoc->user);
+		xfree(slurmdb_report_assoc);
+	}
+}
+
+extern void slurmdb_destroy_report_user_rec(void *object)
+{
+	slurmdb_report_user_rec_t *slurmdb_report_user =
+		(slurmdb_report_user_rec_t *)object;
+	if(slurmdb_report_user) {
+		xfree(slurmdb_report_user->acct);
+		if(slurmdb_report_user->acct_list)
+			list_destroy(slurmdb_report_user->acct_list);
+		xfree(slurmdb_report_user->name);
+		xfree(slurmdb_report_user);
+	}
+}
+
+extern void slurmdb_destroy_report_cluster_rec(void *object)
+{
+	slurmdb_report_cluster_rec_t *slurmdb_report_cluster =
+		(slurmdb_report_cluster_rec_t *)object;
+	if(slurmdb_report_cluster) {
+		if(slurmdb_report_cluster->assoc_list)
+			list_destroy(slurmdb_report_cluster->assoc_list);
+		xfree(slurmdb_report_cluster->name);
+		if(slurmdb_report_cluster->user_list)
+			list_destroy(slurmdb_report_cluster->user_list);
+		xfree(slurmdb_report_cluster);
 	}
 }
 

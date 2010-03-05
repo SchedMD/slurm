@@ -214,13 +214,13 @@ static int _setup_print_fields_list(List format_list)
 				MAX(command_len, 2))) {
 			field->type = PRINT_RESV_ACPU;
 			field->name = xstrdup("Allocated");
-			if(time_format == SREPORT_TIME_SECS_PER
-			   || time_format == SREPORT_TIME_MINS_PER
-			   || time_format == SREPORT_TIME_HOURS_PER)
+			if(time_format == SLURMDB_REPORT_TIME_SECS_PER
+			   || time_format == SLURMDB_REPORT_TIME_MINS_PER
+			   || time_format == SLURMDB_REPORT_TIME_HOURS_PER)
 				field->len = 20;
 			else
 				field->len = 9;
-			field->print_routine = sreport_print_time;
+			field->print_routine = slurmdb_report_print_time;
 		} else if(!strncasecmp("Associations",
 				       object, MAX(command_len, 2))) {
 			field->type = PRINT_RESV_ASSOCS;
@@ -242,23 +242,23 @@ static int _setup_print_fields_list(List format_list)
 		} else if(!strncasecmp("down", object, MAX(command_len, 1))) {
 			field->type = PRINT_RESV_DCPU;
 			field->name = xstrdup("Down");
-			if(time_format == SREPORT_TIME_SECS_PER
-			   || time_format == SREPORT_TIME_MINS_PER
-			   || time_format == SREPORT_TIME_HOURS_PER)
+			if(time_format == SLURMDB_REPORT_TIME_SECS_PER
+			   || time_format == SLURMDB_REPORT_TIME_MINS_PER
+			   || time_format == SLURMDB_REPORT_TIME_HOURS_PER)
 				field->len = 20;
 			else
 				field->len = 9;
-			field->print_routine = sreport_print_time;
+			field->print_routine = slurmdb_report_print_time;
 		} else if(!strncasecmp("idle", object, MAX(command_len, 1))) {
 			field->type = PRINT_RESV_ICPU;
 			field->name = xstrdup("Idle");
-			if(time_format == SREPORT_TIME_SECS_PER
-			   || time_format == SREPORT_TIME_MINS_PER
-			   || time_format == SREPORT_TIME_HOURS_PER)
+			if(time_format == SLURMDB_REPORT_TIME_SECS_PER
+			   || time_format == SLURMDB_REPORT_TIME_MINS_PER
+			   || time_format == SLURMDB_REPORT_TIME_HOURS_PER)
 				field->len = 20;
 			else
 				field->len = 9;
-			field->print_routine = sreport_print_time;
+			field->print_routine = slurmdb_report_print_time;
 		} else if(!strncasecmp("Nodes", object, MAX(command_len, 2))) {
 			field->type = PRINT_RESV_NODES;
 			field->name = xstrdup("Nodes");
@@ -346,7 +346,7 @@ static List _get_resv_list(int argc, char *argv[],
 		printf("%s %s - %s\n",
 		       report_name, start_char, end_char);
 		switch(time_format) {
-		case SREPORT_TIME_PERCENT:
+		case SLURMDB_REPORT_TIME_PERCENT:
 			printf("Time reported in %s\n", time_format_string);
 			break;
 		default:

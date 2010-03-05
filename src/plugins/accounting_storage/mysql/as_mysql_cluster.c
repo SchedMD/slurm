@@ -39,6 +39,7 @@
 
 #include "as_mysql_assoc.h"
 #include "as_mysql_cluster.h"
+#include "as_mysql_usage.h"
 #include "as_mysql_wckey.h"
 
 extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
@@ -624,7 +625,7 @@ empty:
 
 		/* get the usage if requested */
 		if(cluster_cond && cluster_cond->with_usage) {
-			clusteracct_storage_p_get_usage(
+			as_mysql_get_usage(
 				mysql_conn, uid, cluster,
 				DBD_GET_CLUSTER_USAGE,
 				cluster_cond->usage_start,

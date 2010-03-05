@@ -588,14 +588,6 @@ extern int clusteracct_storage_p_cluster_cpus(pgsql_conn_t *pg_conn,
 				 cpus, event_time);
 }
 
-extern int clusteracct_storage_p_get_usage(
-	pgsql_conn_t *pg_conn, uid_t uid,
-	slurmdb_cluster_rec_t *cluster_rec, int type, time_t start, time_t end)
-{
-
-	return cs_p_get_usage(pg_conn, uid, cluster_rec, type, start, end);
-}
-
 /*
  * load into the storage the start of a job
  */

@@ -212,13 +212,13 @@ static int _setup_print_fields_list(List format_list)
 		} else if(!strncasecmp("Used", object, MAX(command_len, 1))) {
 			field->type = PRINT_USER_USED;
 			field->name = xstrdup("Used");
-			if(time_format == SREPORT_TIME_SECS_PER
-			   || time_format == SREPORT_TIME_MINS_PER
-			   || time_format == SREPORT_TIME_HOURS_PER)
+			if(time_format == SLURMDB_REPORT_TIME_SECS_PER
+			   || time_format == SLURMDB_REPORT_TIME_MINS_PER
+			   || time_format == SLURMDB_REPORT_TIME_HOURS_PER)
 				field->len = 18;
 			else
 				field->len = 10;
-			field->print_routine = sreport_print_time;
+			field->print_routine = slurmdb_report_print_time;
 		} else {
 			exit_code=1;
 			fprintf(stderr, " Unknown field '%s'\n", object);
@@ -248,7 +248,7 @@ extern int user_top(int argc, char *argv[])
 	List format_list = list_create(slurm_destroy_char);
 	List user_list = NULL;
 	List usage_cluster_list = NULL;
-	List cluster_list = list_create(destroy_sreport_cluster_rec);
+	List cluster_list = list_create(slurmdb_destroy_report_cluster_rec);
 	char *object = NULL;
 
 	int i=0;
@@ -256,8 +256,8 @@ extern int user_top(int argc, char *argv[])
 	slurmdb_cluster_rec_t *cluster = NULL;
 	slurmdb_association_rec_t *assoc = NULL;
 	slurmdb_accounting_rec_t *assoc_acct = NULL;
-	sreport_user_rec_t *sreport_user = NULL;
-	sreport_cluster_rec_t *sreport_cluster = NULL;
+	slurmdb_report_user_rec_t *slurmdb_report_user = NULL;
+	slurmdb_report_cluster_rec_t *slurmdb_report_cluster = NULL;
 	print_field_t *field = NULL;
 	int field_count = 0;
 
@@ -307,26 +307,26 @@ extern int user_top(int argc, char *argv[])
 		   || !list_count(cluster->accounting_list))
 			continue;
 
-		sreport_cluster = xmalloc(sizeof(sreport_cluster_rec_t));
+		slurmdb_report_cluster = xmalloc(sizeof(slurmdb_report_cluster_rec_t));
 
-		list_append(cluster_list, sreport_cluster);
+		list_append(cluster_list, slurmdb_report_cluster);
 
-		sreport_cluster->name = xstrdup(cluster->name);
-		sreport_cluster->user_list =
-			list_create(destroy_sreport_user_rec);
+		slurmdb_report_cluster->name = xstrdup(cluster->name);
+		slurmdb_report_cluster->user_list =
+			list_create(slurmdb_destroy_report_user_rec);
 
 		/* get the amount of time and the average cpu count
 		   during the time we are looking at */
 		cluster_itr = list_iterator_create(cluster->accounting_list);
 		while((accting = list_next(cluster_itr))) {
-			sreport_cluster->cpu_secs += accting->alloc_secs
+			slurmdb_report_cluster->cpu_secs += accting->alloc_secs
 				+ accting->down_secs + accting->idle_secs
 				+ accting->resv_secs;
-			sreport_cluster->cpu_count += accting->cpu_count;
+			slurmdb_report_cluster->cpu_count += accting->cpu_count;
 		}
 		list_iterator_destroy(cluster_itr);
 
-		sreport_cluster->cpu_count /=
+		slurmdb_report_cluster->cpu_count /=
 			list_count(cluster->accounting_list);
 	}
 	list_iterator_destroy(itr);
@@ -348,7 +348,7 @@ extern int user_top(int argc, char *argv[])
 			- user_cond->assoc_cond->usage_start));
 
 		switch(time_format) {
-		case SREPORT_TIME_PERCENT:
+		case SLURMDB_REPORT_TIME_PERCENT:
 			printf("Time reported in %s\n", time_format_string);
 			break;
 		default:
@@ -379,73 +379,73 @@ extern int user_top(int argc, char *argv[])
 			   || !list_count(assoc->accounting_list))
 				continue;
 
-			while((sreport_cluster = list_next(cluster_itr))) {
-				if(!strcmp(sreport_cluster->name,
+			while((slurmdb_report_cluster = list_next(cluster_itr))) {
+				if(!strcmp(slurmdb_report_cluster->name,
 					   assoc->cluster)) {
 					ListIterator user_itr = NULL;
 					if(!group_accts) {
-						sreport_user = NULL;
+						slurmdb_report_user = NULL;
 						goto new_user;
 					}
 					user_itr = list_iterator_create
-						(sreport_cluster->user_list);
-					while((sreport_user
+						(slurmdb_report_cluster->user_list);
+					while((slurmdb_report_user
 					       = list_next(user_itr))) {
-						if(sreport_user->uid
+						if(slurmdb_report_user->uid
 						   != NO_VAL) {
-							if(sreport_user->uid
+							if(slurmdb_report_user->uid
 							   == user->uid)
 								break;
-						} else if(sreport_user->name
+						} else if(slurmdb_report_user->name
 							  && !strcasecmp(
-								  sreport_user->
+								  slurmdb_report_user->
 								  name,
 								  user->name))
 							break;
 					}
 					list_iterator_destroy(user_itr);
 				new_user:
-					if(!sreport_user) {
-						sreport_user = xmalloc(
+					if(!slurmdb_report_user) {
+						slurmdb_report_user = xmalloc(
 							sizeof
-							(sreport_user_rec_t));
-						sreport_user->name =
+							(slurmdb_report_user_rec_t));
+						slurmdb_report_user->name =
 							xstrdup(assoc->user);
-						sreport_user->uid =
+						slurmdb_report_user->uid =
 							user->uid;
-						sreport_user->acct_list =
+						slurmdb_report_user->acct_list =
 							list_create
 							(slurm_destroy_char);
-						list_append(sreport_cluster->
+						list_append(slurmdb_report_cluster->
 							    user_list,
-							    sreport_user);
+							    slurmdb_report_user);
 					}
 					break;
 				}
 			}
-			if(!sreport_cluster) {
+			if(!slurmdb_report_cluster) {
 				error("This cluster '%s' hasn't "
 				      "registered yet, but we have jobs "
 				      "that ran?", assoc->cluster);
-				sreport_cluster =
-					xmalloc(sizeof(sreport_cluster_rec_t));
-				list_append(cluster_list, sreport_cluster);
+				slurmdb_report_cluster =
+					xmalloc(sizeof(slurmdb_report_cluster_rec_t));
+				list_append(cluster_list, slurmdb_report_cluster);
 
-				sreport_cluster->name = xstrdup(assoc->cluster);
-				sreport_cluster->user_list =
-					list_create(destroy_sreport_user_rec);
-				sreport_user =
-					xmalloc(sizeof(sreport_user_rec_t));
-				sreport_user->name = xstrdup(assoc->user);
-				sreport_user->uid = user->uid;
-				sreport_user->acct_list =
+				slurmdb_report_cluster->name = xstrdup(assoc->cluster);
+				slurmdb_report_cluster->user_list =
+					list_create(slurmdb_destroy_report_user_rec);
+				slurmdb_report_user =
+					xmalloc(sizeof(slurmdb_report_user_rec_t));
+				slurmdb_report_user->name = xstrdup(assoc->user);
+				slurmdb_report_user->uid = user->uid;
+				slurmdb_report_user->acct_list =
 					list_create(slurm_destroy_char);
-				list_append(sreport_cluster->user_list,
-					    sreport_user);
+				list_append(slurmdb_report_cluster->user_list,
+					    slurmdb_report_user);
 			}
 			list_iterator_reset(cluster_itr);
 
-			itr3 = list_iterator_create(sreport_user->acct_list);
+			itr3 = list_iterator_create(slurmdb_report_user->acct_list);
 			while((object = list_next(itr3))) {
 				if(!strcmp(object, assoc->acct))
 					break;
@@ -453,13 +453,13 @@ extern int user_top(int argc, char *argv[])
 			list_iterator_destroy(itr3);
 
 			if(!object)
-				list_append(sreport_user->acct_list,
+				list_append(slurmdb_report_user->acct_list,
 					    xstrdup(assoc->acct));
 			itr3 = list_iterator_create(assoc->accounting_list);
 			while((assoc_acct = list_next(itr3))) {
-				sreport_user->cpu_secs +=
+				slurmdb_report_user->cpu_secs +=
 					(uint64_t)assoc_acct->alloc_secs;
-/* 				sreport_cluster->cpu_secs +=  */
+/* 				slurmdb_report_cluster->cpu_secs +=  */
 /* 					(uint64_t)assoc_acct->alloc_secs; */
 			}
 			list_iterator_destroy(itr3);
@@ -474,12 +474,12 @@ extern int user_top(int argc, char *argv[])
 	field_count = list_count(print_fields_list);
 
 	list_iterator_reset(cluster_itr);
-	while((sreport_cluster = list_next(cluster_itr))) {
+	while((slurmdb_report_cluster = list_next(cluster_itr))) {
 		int count = 0;
-		list_sort(sreport_cluster->user_list, (ListCmpF)sort_user_dec);
+		list_sort(slurmdb_report_cluster->user_list, (ListCmpF)sort_user_dec);
 
-		itr = list_iterator_create(sreport_cluster->user_list);
-		while((sreport_user = list_next(itr))) {
+		itr = list_iterator_create(slurmdb_report_cluster->user_list);
+		while((slurmdb_report_user = list_next(itr))) {
 			int curr_inx = 1;
 			while((field = list_next(itr2))) {
 				char *tmp_char = NULL;
@@ -487,7 +487,7 @@ extern int user_top(int argc, char *argv[])
 				switch(field->type) {
 				case PRINT_USER_ACCT:
 					itr3 = list_iterator_create(
-						sreport_user->acct_list);
+						slurmdb_report_user->acct_list);
 					while((object = list_next(itr3))) {
 						if(tmp_char)
 							xstrfmtcat(tmp_char,
@@ -507,17 +507,17 @@ extern int user_top(int argc, char *argv[])
 				case PRINT_USER_CLUSTER:
 					field->print_routine(
 						field,
-						sreport_cluster->name,
+						slurmdb_report_cluster->name,
 						(curr_inx == field_count));
 					break;
 				case PRINT_USER_LOGIN:
 					field->print_routine(field,
-							     sreport_user->name,
+							     slurmdb_report_user->name,
 							     (curr_inx ==
 							      field_count));
 					break;
 				case PRINT_USER_PROPER:
-					pwd = getpwnam(sreport_user->name);
+					pwd = getpwnam(slurmdb_report_user->name);
 					if(pwd) {
 						tmp_char = strtok(pwd->pw_gecos,
 								  ",");
@@ -533,8 +533,8 @@ extern int user_top(int argc, char *argv[])
 				case PRINT_USER_USED:
 					field->print_routine(
 						field,
-						sreport_user->cpu_secs,
-						sreport_cluster->cpu_secs,
+						slurmdb_report_user->cpu_secs,
+						slurmdb_report_cluster->cpu_secs,
 						(curr_inx == field_count));
 					break;
 				default:

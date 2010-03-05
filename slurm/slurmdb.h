@@ -75,6 +75,43 @@ typedef enum {
 } slurmdb_admin_level_t;
 
 typedef enum {
+	SLURMDB_CLASS_NONE, /* no class given */
+	SLURMDB_CLASS_CAPABILITY, /* capability cluster */
+	SLURMDB_CLASS_CAPACITY, /* capacity cluster */
+	SLURMDB_CLASS_CAPAPACITY, /* a cluster that is both capability
+				   * and capacity */
+} slurmdb_classification_type_t;
+
+typedef enum {
+	SLURMDB_EVENT_ALL,
+	SLURMDB_EVENT_CLUSTER,
+	SLURMDB_EVENT_NODE
+} slurmdb_event_type_t;
+
+typedef enum {
+	SLURMDB_PROBLEM_NOT_SET,
+	SLURMDB_PROBLEM_ACCT_NO_ASSOC,
+	SLURMDB_PROBLEM_ACCT_NO_USERS,
+	SLURMDB_PROBLEM_USER_NO_ASSOC,
+	SLURMDB_PROBLEM_USER_NO_UID,
+} slurmdb_problem_type_t;
+
+typedef enum {
+	SLURMDB_REPORT_SORT_TIME,
+	SLURMDB_REPORT_SORT_NAME
+} slurmdb_report_sort_t;
+
+typedef enum {
+	SLURMDB_REPORT_TIME_SECS,
+	SLURMDB_REPORT_TIME_MINS,
+	SLURMDB_REPORT_TIME_HOURS,
+	SLURMDB_REPORT_TIME_PERCENT,
+	SLURMDB_REPORT_TIME_SECS_PER,
+	SLURMDB_REPORT_TIME_MINS_PER,
+	SLURMDB_REPORT_TIME_HOURS_PER,
+} slurmdb_report_time_format_t;
+
+typedef enum {
 	SLURMDB_UPDATE_NOTSET,
 	SLURMDB_ADD_USER,
 	SLURMDB_ADD_ASSOC,
@@ -91,28 +128,6 @@ typedef enum {
 	SLURMDB_REMOVE_WCKEY,
 	SLURMDB_MODIFY_WCKEY,
 } slurmdb_update_type_t;
-
-typedef enum {
-	SLURMDB_CLASS_NONE, /* no class given */
-	SLURMDB_CLASS_CAPABILITY, /* capability cluster */
-	SLURMDB_CLASS_CAPACITY, /* capacity cluster */
-	SLURMDB_CLASS_CAPAPACITY, /* a cluster that is both capability
-				   * and capacity */
-} slurmdb_classification_type_t;
-
-typedef enum {
-	SLURMDB_PROBLEM_NOT_SET,
-	SLURMDB_PROBLEM_ACCT_NO_ASSOC,
-	SLURMDB_PROBLEM_ACCT_NO_USERS,
-	SLURMDB_PROBLEM_USER_NO_ASSOC,
-	SLURMDB_PROBLEM_USER_NO_UID,
-} slurmdb_problem_type_t;
-
-typedef enum {
-	SLURMDB_EVENT_ALL,
-	SLURMDB_EVENT_CLUSTER,
-	SLURMDB_EVENT_NODE
-} slurmdb_event_type_t;
 
 
 
@@ -135,111 +150,13 @@ typedef enum {
    typedef struct assoc_mgr_qos_usage assoc_mgr_qos_usage_t;
 #endif
 
-
-/* job info structures */
-typedef struct {
-	double cpu_ave;
-	uint32_t cpu_min;
-	uint32_t cpu_min_nodeid; /* contains which node number it was on */
-	uint16_t cpu_min_taskid; /* contains which task number it was on */
-	double pages_ave;
-	uint32_t pages_max;
-	uint32_t pages_max_nodeid; /* contains which node number it was on */
-	uint16_t pages_max_taskid; /* contains which task number it was on */
-	double rss_ave;
-	uint32_t rss_max;
-	uint32_t rss_max_nodeid; /* contains which node number it was on */
-	uint16_t rss_max_taskid; /* contains which task number it was on */
-	double vsize_ave;
-	uint32_t vsize_max;
-	uint32_t vsize_max_nodeid; /* contains which node number it was on */
-	uint16_t vsize_max_taskid; /* contains which task number it was on */
-} slurmdb_stats_t;
-
-typedef struct {
-	uint32_t alloc_cpus;
-	uint32_t alloc_nodes;
-	char    *account;
-	uint32_t associd;
-	char	*blockid;
-	char    *cluster;
-	uint32_t elapsed;
-	time_t eligible;
-	time_t end;
-	int32_t	exitcode;
-	void *first_step_ptr; /* this pointer to a slurmdb_step_rec_t
-				 is set up on the
-				 client side so does not need to
-				 be packed */
-	uint32_t gid;
-	uint32_t jobid;
-	char	*jobname;
-	uint32_t lft;
-	char	*partition;
-	char	*nodes;
-	uint32_t priority;
-	uint16_t qos;
-	uint32_t req_cpus;
-	uint32_t requid;
-	uint32_t resvid;
-	uint32_t show_full;
-	time_t start;
-	enum job_states	state;
-	slurmdb_stats_t stats;
-	List    steps; /* list of slurmdb_step_rec_t *'s */
-	time_t submit;
-	uint32_t suspended;
-	uint32_t sys_cpu_sec;
-	uint32_t sys_cpu_usec;
-	uint32_t timelimit;
-	uint32_t tot_cpu_sec;
-	uint32_t tot_cpu_usec;
-	uint16_t track_steps;
-	uint32_t uid;
-	char    *user;
-	uint32_t user_cpu_sec;
-	uint32_t user_cpu_usec;
-	char    *wckey;
-	uint32_t wckeyid;
-} slurmdb_job_rec_t;
-
-typedef struct {
-	uint32_t elapsed;
-	time_t end;
-	int32_t exitcode;
-	slurmdb_job_rec_t *job_ptr; /* this pointer is set up on the
-				       client side so does not need to
-				       be packed */
-	uint32_t ncpus;
-	uint32_t nnodes;
-	char *nodes;
-	uint32_t ntasks;
-	uint32_t requid;
-	time_t start;
-	enum job_states	state;
-	slurmdb_stats_t stats;
-	uint32_t stepid;	/* job's step number */
-	char *stepname;
-	uint32_t suspended;
-	uint32_t sys_cpu_sec;
-	uint32_t sys_cpu_usec;
-	uint16_t task_dist;
-	uint32_t tot_cpu_sec;
-	uint32_t tot_cpu_usec;
-	uint32_t user_cpu_sec;
-	uint32_t user_cpu_usec;
-} slurmdb_step_rec_t;
-
-typedef struct {
-	uint32_t jobid;
-	uint32_t stepid;
-} slurmdb_selected_step_t;
-
 /********************************************/
 
-
-
 /* Association conditions used for queries of the database */
+
+/* slurmdb_association_cond_t is used in other structures below so
+ * this needs to be declared first.
+ */
 typedef struct {
 	List acct_list;		/* list of char * */
 	List cluster_list;	/* list of char * */
@@ -281,6 +198,61 @@ typedef struct {
 					 * parents */
 } slurmdb_association_cond_t;
 
+/* slurmdb_job_cond_t is used by slurmdb_archive_cond_t so it needs to
+ * be defined before hand.
+ */
+typedef struct {
+	List acct_list;		/* list of char * */
+	List associd_list;	/* list of char */
+	List cluster_list;	/* list of char * */
+	uint32_t cpus_max;      /* number of cpus high range */
+	uint32_t cpus_min;      /* number of cpus low range */
+	uint16_t duplicates;    /* report duplicate job entries */
+	List groupid_list;	/* list of char * */
+	uint32_t nodes_max;     /* number of nodes high range */
+	uint32_t nodes_min;     /* number of nodes low range */
+	List partition_list;	/* list of char * */
+	List resv_list;		/* list of char * */
+	List resvid_list;	/* list of char * */
+	List step_list;         /* list of jobacct_selected_step_t */
+	List state_list;        /* list of char * */
+	time_t usage_end;
+	time_t usage_start;
+	char *used_nodes;       /* a ranged node string where jobs ran */
+	List userid_list;		/* list of char * */
+	List wckey_list;		/* list of char * */
+	uint16_t without_steps; /* don't give me step info */
+	uint16_t without_usage_truncation; /* give me the information
+					    * without truncating the
+					    * time to the usage_start
+					    * and usage_end */
+} slurmdb_job_cond_t;
+
+/* slurmdb_stats_t needs to be defined before slurmdb_job_rec_t and
+ * slurmdb_step_rec_t.
+ */
+typedef struct {
+	double cpu_ave;
+	uint32_t cpu_min;
+	uint32_t cpu_min_nodeid; /* contains which node number it was on */
+	uint16_t cpu_min_taskid; /* contains which task number it was on */
+	double pages_ave;
+	uint32_t pages_max;
+	uint32_t pages_max_nodeid; /* contains which node number it was on */
+	uint16_t pages_max_taskid; /* contains which task number it was on */
+	double rss_ave;
+	uint32_t rss_max;
+	uint32_t rss_max_nodeid; /* contains which node number it was on */
+	uint16_t rss_max_taskid; /* contains which task number it was on */
+	double vsize_ave;
+	uint32_t vsize_max;
+	uint32_t vsize_max_nodeid; /* contains which node number it was on */
+	uint16_t vsize_max_taskid; /* contains which task number it was on */
+} slurmdb_stats_t;
+
+
+/************** alphabetical order of structures **************/
+
 typedef struct {
 	slurmdb_association_cond_t *assoc_cond;/* use acct_list here for
 						  names */
@@ -305,7 +277,40 @@ typedef struct {
 	time_t period_start; /* when this record was started */
 } slurmdb_accounting_rec_t;
 
-typedef struct slurmdb_association_rec {
+typedef struct {
+	char *archive_dir;     /* location to place archive file */
+	uint16_t archive_events; /* whether or not to keep an archive
+				    file of events that can be loaded
+				    later */
+	uint16_t archive_jobs; /* whether or not to keep an archive
+				  file of jobs that can be loaded
+				  later */
+	char *archive_script;  /* script to run instead of default
+				  actions */
+	uint16_t archive_steps; /* whether or not to keep an archive
+				   file of steps that can be loaded
+				   later */
+	uint16_t archive_suspend; /* whether or not to keep an archive
+				     file of suspend data that can be loaded
+				     later */
+	slurmdb_job_cond_t *job_cond; /* conditions for the jobs to archive */
+	uint16_t purge_event; /* purge events older than this in months */
+	uint16_t purge_job; /* purge jobs older than this in months */
+	uint16_t purge_step; /* purge steps older than this in months */
+	uint16_t purge_suspend; /* purge suspend data older than this
+				 * in months */
+} slurmdb_archive_cond_t;
+
+typedef struct {
+	char *archive_file;  /* archive file containing data that was
+				once flushed from the database */
+	char *insert;     /* an sql statement to be ran containing the
+			     insert of jobs since past */
+} slurmdb_archive_rec_t;
+
+/* slurmdb_association_cond_t is defined above alphabetical */
+
+typedef struct {
 	List accounting_list; 	/* list of slurmdb_accounting_rec_t *'s */
 	char *acct;		/* account/project associated to association */
 	char *cluster;		/* cluster associated to association
@@ -386,9 +391,21 @@ typedef struct {
 	uint32_t cpu_count;
 	char *name;
 	char *nodes;
-	slurmdb_association_rec_t *root_assoc; /* root association for cluster */
+	slurmdb_association_rec_t *root_assoc; /* root association for
+						* cluster */
 	uint16_t rpc_version; /* version of rpc this cluter is running */
 } slurmdb_cluster_rec_t;
+
+typedef struct {
+	uint64_t alloc_secs; /* number of cpu seconds allocated */
+	uint32_t cpu_count; /* number of cpus during time period */
+	uint64_t down_secs; /* number of cpu seconds down */
+	uint64_t idle_secs; /* number of cpu seconds idle */
+	uint64_t over_secs; /* number of cpu seconds overcommitted */
+	uint64_t pdown_secs; /* number of cpu seconds planned down */
+	time_t period_start; /* when this record was started */
+	uint64_t resv_secs; /* number of cpu seconds reserved */
+} slurmdb_cluster_accounting_rec_t;
 
 typedef struct {
 	char *name;
@@ -424,32 +441,51 @@ typedef struct {
 				   period (only set in a node event) */
 } slurmdb_event_rec_t;
 
+/* slurmdb_job_cond_t is defined above alphabetical */
+
 typedef struct {
-	List acct_list;		/* list of char * */
-	List associd_list;	/* list of char */
-	List cluster_list;	/* list of char * */
-	uint32_t cpus_max;      /* number of cpus high range */
-	uint32_t cpus_min;      /* number of cpus low range */
-	uint16_t duplicates;    /* report duplicate job entries */
-	List groupid_list;	/* list of char * */
-	uint32_t nodes_max;     /* number of nodes high range */
-	uint32_t nodes_min;     /* number of nodes low range */
-	List partition_list;	/* list of char * */
-	List resv_list;		/* list of char * */
-	List resvid_list;	/* list of char * */
-	List step_list;         /* list of jobacct_selected_step_t */
-	List state_list;        /* list of char * */
-	time_t usage_end;
-	time_t usage_start;
-	char *used_nodes;       /* a ranged node string where jobs ran */
-	List userid_list;		/* list of char * */
-	List wckey_list;		/* list of char * */
-	uint16_t without_steps; /* don't give me step info */
-	uint16_t without_usage_truncation; /* give me the information
-					    * without truncating the
-					    * time to the usage_start
-					    * and usage_end */
-} slurmdb_job_cond_t;
+	uint32_t alloc_cpus;
+	uint32_t alloc_nodes;
+	char    *account;
+	uint32_t associd;
+	char	*blockid;
+	char    *cluster;
+	uint32_t elapsed;
+	time_t eligible;
+	time_t end;
+	int32_t	exitcode;
+	void *first_step_ptr;
+	uint32_t gid;
+	uint32_t jobid;
+	char	*jobname;
+	uint32_t lft;
+	char	*partition;
+	char	*nodes;
+	uint32_t priority;
+	uint16_t qos;
+	uint32_t req_cpus;
+	uint32_t requid;
+	uint32_t resvid;
+	uint32_t show_full;
+	time_t start;
+	enum job_states	state;
+	slurmdb_stats_t stats;
+	List    steps; /* list of slurmdb_step_rec_t *'s */
+	time_t submit;
+	uint32_t suspended;
+	uint32_t sys_cpu_sec;
+	uint32_t sys_cpu_usec;
+	uint32_t timelimit;
+	uint32_t tot_cpu_sec;
+	uint32_t tot_cpu_usec;
+	uint16_t track_steps;
+	uint32_t uid;
+	char    *user;
+	uint32_t user_cpu_sec;
+	uint32_t user_cpu_usec;
+	char    *wckey;
+	uint32_t wckeyid;
+} slurmdb_job_rec_t;
 
 typedef struct {
 	char *description;
@@ -527,43 +563,37 @@ typedef struct {
 				 * for accounting */
 } slurmdb_reservation_rec_t;
 
-/* Right now this is used in the slurmdb_qos_rec_t structure.  In the
- * user_limit_list. */
 typedef struct {
-	uint32_t jobs;	/* count of active jobs */
-	uint32_t submit_jobs; /* count of jobs pending or running */
-	uint32_t uid;
-} slurmdb_used_limits_t;
+	uint32_t jobid;
+	uint32_t stepid;
+} slurmdb_selected_step_t;
 
 typedef struct {
-	uint16_t admin_level; /* really slurmdb_admin_level_t but for
-				 packing purposes needs to be uint16_t */
-	slurmdb_association_cond_t *assoc_cond; /* use user_list here for
-						   names */
-	List def_acct_list; /* list of char * */
-	List def_wckey_list; /* list of char * */
-	uint16_t with_assocs;
-	uint16_t with_coords;
-	uint16_t with_deleted;
-	uint16_t with_wckeys;
-} slurmdb_user_cond_t;
+	uint32_t elapsed;
+	time_t end;
+	int32_t exitcode;
+	slurmdb_job_rec_t *job_ptr;
+	uint32_t ncpus;
+	uint32_t nnodes;
+	char *nodes;
+	uint32_t ntasks;
+	uint32_t requid;
+	time_t start;
+	enum job_states	state;
+	slurmdb_stats_t stats;
+	uint32_t stepid;	/* job's step number */
+	char *stepname;
+	uint32_t suspended;
+	uint32_t sys_cpu_sec;
+	uint32_t sys_cpu_usec;
+	uint16_t task_dist;
+	uint32_t tot_cpu_sec;
+	uint32_t tot_cpu_usec;
+	uint32_t user_cpu_sec;
+	uint32_t user_cpu_usec;
+} slurmdb_step_rec_t;
 
-/* If there is something that can be altered here it will need to
- * added as something to check for when modifying a user since a user
- * can modify there default account, and default wckey but nothing else in
- * src/slurmdbd/proc_req.c.
- */
-typedef struct {
-	uint16_t admin_level; /* really slurmdb_admin_level_t but for
-				 packing purposes needs to be uint16_t */
-	List assoc_list; /* list of slurmdb_association_rec_t *'s */
-	List coord_accts; /* list of slurmdb_coord_rec_t *'s */
-	char *default_acct;
-	char *default_wckey;
-	char *name;
-	uint32_t uid;
-	List wckey_list; /* list of slurmdb_wckey_rec_t *'s */
-} slurmdb_user_rec_t;
+/* slurmdb_stats_t defined above alphabetical */
 
 typedef struct {
 	List acct_list; /* list of char * */
@@ -590,6 +620,44 @@ typedef struct {
 	char *users;
 	char *where_query;
 } slurmdb_txn_rec_t;
+
+/* Right now this is used in the slurmdb_qos_rec_t structure.  In the
+ * user_limit_list. */
+typedef struct {
+	uint32_t jobs;	/* count of active jobs */
+	uint32_t submit_jobs; /* count of jobs pending or running */
+	uint32_t uid;
+} slurmdb_used_limits_t;
+
+typedef struct {
+	uint16_t admin_level; /* really slurmdb_admin_level_t but for
+				 packing purposes needs to be uint16_t */
+	slurmdb_association_cond_t *assoc_cond; /* use user_list here for
+						   names */
+	List def_acct_list; /* list of char * */
+	List def_wckey_list; /* list of char * */
+	uint16_t with_assocs;
+	uint16_t with_coords;
+	uint16_t with_deleted;
+	uint16_t with_wckeys;
+} slurmdb_user_cond_t;
+
+/* If there is something else that can be altered here a check will need to
+ * added when modifying a user since a user
+ * can modify their default account, and default wckey but nothing else in
+ * src/slurmdbd/proc_req.c.
+ */
+typedef struct {
+	uint16_t admin_level; /* really slurmdb_admin_level_t but for
+				 packing purposes needs to be uint16_t */
+	List assoc_list; /* list of slurmdb_association_rec_t *'s */
+	List coord_accts; /* list of slurmdb_coord_rec_t *'s */
+	char *default_acct;
+	char *default_wckey;
+	char *name;
+	uint32_t uid;
+	List wckey_list; /* list of slurmdb_wckey_rec_t *'s */
+} slurmdb_user_rec_t;
 
 typedef struct {
 	List objects; /* depending on type */
@@ -627,17 +695,6 @@ typedef struct {
 } slurmdb_wckey_rec_t;
 
 typedef struct {
-	uint64_t alloc_secs; /* number of cpu seconds allocated */
-	uint32_t cpu_count; /* number of cpus during time period */
-	uint64_t down_secs; /* number of cpu seconds down */
-	uint64_t idle_secs; /* number of cpu seconds idle */
-	uint64_t over_secs; /* number of cpu seconds overcommitted */
-	uint64_t pdown_secs; /* number of cpu seconds planned down */
-	time_t period_start; /* when this record was started */
-	uint64_t resv_secs; /* number of cpu seconds reserved */
-} slurmdb_cluster_accounting_rec_t;
-
-typedef struct {
 	char *name;
 	char *print_name;
 	char *spaces;
@@ -651,36 +708,34 @@ typedef struct {
 	List childern;
 } slurmdb_hierarchical_rec_t;
 
-typedef struct {
-	char *archive_dir;     /* location to place archive file */
-	uint16_t archive_events; /* whether or not to keep an archive
-				    file of events that can be loaded
-				    later */
-	uint16_t archive_jobs; /* whether or not to keep an archive
-				  file of jobs that can be loaded
-				  later */
-	char *archive_script;  /* script to run instead of default
-				  actions */
-	uint16_t archive_steps; /* whether or not to keep an archive
-				   file of steps that can be loaded
-				   later */
-	uint16_t archive_suspend; /* whether or not to keep an archive
-				     file of suspend data that can be loaded
-				     later */
-	slurmdb_job_cond_t *job_cond; /* conditions for the jobs to archive */
-	uint16_t purge_event; /* purge events older than this in months */
-	uint16_t purge_job; /* purge jobs older than this in months */
-	uint16_t purge_step; /* purge steps older than this in months */
-	uint16_t purge_suspend; /* purge suspend data older than this
-				 * in months */
-} slurmdb_archive_cond_t;
+/************** report specific structures **************/
 
 typedef struct {
-	char *archive_file;  /* archive file containing data that was
-				once flushed from the database */
-	char *insert;     /* an sql statement to be ran containing the
-			     insert of jobs since past */
-} slurmdb_archive_rec_t;
+	char *acct;
+	char *cluster;
+	uint64_t cpu_secs;
+	char *parent_acct;
+	char *user;
+} slurmdb_report_assoc_rec_t;
+
+typedef struct {
+	char *acct;
+	List acct_list; /* list of char *'s */
+	List assoc_list; /* list of slurmdb_association_rec_t's */
+	uint64_t cpu_secs;
+	char *name;
+	uid_t uid;
+} slurmdb_report_user_rec_t;
+
+typedef struct {
+	List assoc_list; /* list of slurmdb_report_assoc_rec_t *'s */
+	uint32_t cpu_count;
+	uint64_t cpu_secs;
+	char *name;
+	List user_list; /* list of slurmdb_report_user_rec_t *'s */
+} slurmdb_report_cluster_rec_t;
+
+
 
 /************** account functions **************/
 
@@ -815,6 +870,14 @@ extern List slurmdb_clusters_remove(void *db_conn,
 
 /************** cluster report functions **************/
 
+/* report for clusters of account per user
+ * IN: slurmdb_association_cond_t *assoc_cond
+ * RET: List containing (slurmdb_report_cluster_rec_t *'s) else NULL on error
+ * note List needs to be freed with slurm_list_destroy() when called
+ */
+extern List slurmdb_report_cluster_account_by_user(
+	slurmdb_association_cond_t *assoc_cond);
+
 
 /************** connection functions **************/
 
@@ -918,8 +981,7 @@ extern List slurmdb_get_acct_hierarchical_rec_list(List assoc_list);
 
 
 /* IN/OUT: tree_list a list of slurmdb_print_tree_t's */
-extern char *slurmdb_get_tree_acct_name(char *name, char *parent,
-					List tree_list);
+extern char *slurmdb_tree_name_get(char *name, char *parent, List tree_list);
 
 /************** job report functions **************/
 
