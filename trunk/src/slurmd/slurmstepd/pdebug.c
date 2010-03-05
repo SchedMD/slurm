@@ -137,14 +137,16 @@ static bool _pid_to_wake(pid_t pid)
 {
 #ifdef CLONE_PTRACE
 	char proc_stat[1024], proc_name[22], state[1], *str_ptr;
-	int proc_fd, ppid, pgrp, session, tty, tpgid;
+	int len, proc_fd, ppid, pgrp, session, tty, tpgid;
 	long unsigned flags;
 
 	sprintf (proc_name, "/proc/%d/stat", (int) pid);
 	if ((proc_fd = open(proc_name, O_RDONLY, 0)) == -1)
 		return false;  /* process is now gone */
-	read(proc_fd, proc_stat, sizeof(proc_stat));
+	len = read(proc_fd, proc_stat, sizeof(proc_stat));
 	close(proc_fd);
+	if (len < 14)
+		return false;
 	/* skip over "PID (CMD) " */
 	if ((str_ptr = (char *)strrchr(proc_stat, ')')) == NULL)
 		return false;
