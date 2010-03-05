@@ -57,9 +57,8 @@
 extern int slurmdb_coord_add(void *db_conn, List acct_list,
 			     slurmdb_user_cond_t *user_cond)
 {
-	int rc = SLURM_SUCCESS;
-
-	return rc;
+	return acct_storage_g_add_coord(db_conn, getuid(),
+					acct_list, user_cond);
 }
 
 /*
@@ -71,8 +70,7 @@ extern int slurmdb_coord_add(void *db_conn, List acct_list,
 extern List slurmdb_coord_remove(void *db_conn, List acct_list,
 				 slurmdb_user_cond_t *user_cond)
 {
-	List ret_list = NULL;
-
-	return ret_list;
+	return acct_storage_g_remove_coord(db_conn, getuid(),
+					acct_list, user_cond);
 }
 

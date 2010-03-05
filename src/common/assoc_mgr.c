@@ -329,9 +329,8 @@ static int _post_association_list(List assoc_list)
 
 	//START_TIMER;
 	while((assoc = list_next(itr))) {
-		if(assoc->usage)
-			destroy_assoc_mgr_association_usage(assoc->usage);
-		assoc->usage = create_assoc_mgr_association_usage();
+		if(!assoc->usage)
+			assoc->usage = create_assoc_mgr_association_usage();
 		_set_assoc_parent_and_user(assoc, assoc_list, reset);
 		reset = 0;
 	}
@@ -414,9 +413,8 @@ static int _post_qos_list(List qos_list)
 	g_qos_max_priority = 0;
 
 	while((qos = list_next(itr))) {
-		if(qos->usage)
-			destroy_assoc_mgr_qos_usage(qos->usage);
-		qos->usage = create_assoc_mgr_qos_usage();
+		if(!qos->usage)
+			qos->usage = create_assoc_mgr_qos_usage();
 		/* get the highest qos value to create bitmaps
 		   from */
 		if(qos->id > g_qos_count)
@@ -1900,6 +1898,9 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update)
 				//rc = SLURM_ERROR;
 				break;
 			}
+			if(!object->usage)
+				object->usage =
+					create_assoc_mgr_association_usage();
 			list_append(assoc_mgr_association_list, object);
 			object = NULL;
 			parents_changed = 1; // set since we need to
@@ -1949,7 +1950,8 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update)
 		if(setup_childern) {
 			while((object = list_next(itr))) {
 				if(object->usage->childern_list)
-					list_flush(object->usage->childern_list);
+					list_flush(object->usage->
+						   childern_list);
 			}
 			list_iterator_reset(itr);
 		}
@@ -2267,6 +2269,9 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update)
 				//rc = SLURM_ERROR;
 				break;
 			}
+
+			if(!object->usage)
+				object->usage = create_assoc_mgr_qos_usage();
 			list_append(assoc_mgr_qos_list, object);
 /* 			char *tmp = get_qos_complete_str_bitstr( */
 /* 				assoc_mgr_qos_list, */

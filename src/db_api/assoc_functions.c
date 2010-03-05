@@ -53,11 +53,9 @@
  * IN:  association_list List of slurmdb_association_rec_t *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int slurmdb_associations_add(void *db_conn, List association_list)
+extern int slurmdb_associations_add(void *db_conn, List assoc_list)
 {
-	int rc = SLURM_SUCCESS;
-
-	return rc;
+	return acct_storage_g_add_associations(db_conn, getuid(), assoc_list);
 }
 
 /*
@@ -69,9 +67,7 @@ extern int slurmdb_associations_add(void *db_conn, List association_list)
 extern List slurmdb_associations_get(void *db_conn,
 				     slurmdb_association_cond_t *assoc_cond)
 {
-	List ret_list = NULL;
-
-	return ret_list;
+	return acct_storage_g_get_associations(db_conn, getuid(), assoc_cond);
 }
 
 
@@ -85,9 +81,8 @@ extern List slurmdb_associations_modify(void *db_conn,
 					slurmdb_association_cond_t *assoc_cond,
 					slurmdb_association_rec_t *assoc)
 {
-	List ret_list = NULL;
-
-	return ret_list;
+	return acct_storage_g_modify_associations(db_conn, getuid(),
+						  assoc_cond, assoc);
 }
 
 /*
@@ -98,8 +93,6 @@ extern List slurmdb_associations_modify(void *db_conn,
 extern List slurmdb_associations_remove(
 	void *db_conn, slurmdb_association_cond_t *assoc_cond)
 {
-	List ret_list = NULL;
-
-	return ret_list;
+	return acct_storage_g_remove_associations(db_conn, getuid(), assoc_cond);
 }
 

@@ -48,16 +48,6 @@
 
 #include "src/common/slurm_accounting_storage.h"
 
-extern void slurmdb_init_association_rec(slurmdb_association_rec_t *assoc)
-{
-
-}
-
-extern void slurmdb_init_qos_rec(slurmdb_qos_rec_t *qos)
-{
-
-}
-
 /* The next two functions have pointers to assoc_list so do not
  * destroy assoc_list before using the list returned from this function.
  */

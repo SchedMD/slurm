@@ -1870,7 +1870,8 @@ static int _archive_script(slurmdb_archive_cond_t *arch_cond, char *cluster_name
 }
 
 static int _execute_archive(mysql_conn_t *mysql_conn, time_t last_submit,
-			    char *cluster_name, slurmdb_archive_cond_t *arch_cond)
+			    char *cluster_name,
+			    slurmdb_archive_cond_t *arch_cond)
 {
 	int rc = SLURM_SUCCESS;
 	char *query = NULL;
@@ -2068,7 +2069,7 @@ exit_jobs:
 }
 
 extern int as_mysql_jobacct_process_archive(mysql_conn_t *mysql_conn,
-					 slurmdb_archive_cond_t *arch_cond)
+					    slurmdb_archive_cond_t *arch_cond)
 {
 	int rc = SLURM_SUCCESS;
 	char *cluster_name = NULL;
@@ -2120,8 +2121,8 @@ extern int as_mysql_jobacct_process_archive(mysql_conn_t *mysql_conn,
 	return rc;
 }
 
-extern int as_mysql_jobacct_process_archive_load(mysql_conn_t *mysql_conn,
-					      slurmdb_archive_rec_t *arch_rec)
+extern int as_mysql_jobacct_process_archive_load(
+	mysql_conn_t *mysql_conn, slurmdb_archive_rec_t *arch_rec)
 {
 	char *data = NULL, *cluster_name = NULL;
 	int error_code = SLURM_SUCCESS;

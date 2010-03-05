@@ -58,7 +58,7 @@
  * IN:  end time stamp for records <=
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int slurmdb_usage_get(void *db_conn,  void *in, int type,
+extern int slurmdb_usage_get(void *db_conn, void *in, int type,
 			     time_t start, time_t end)
 {
 	int rc = SLURM_SUCCESS;
