@@ -689,6 +689,7 @@ static void _preempt_job_dequeue(void)
 	uint32_t job_id, *tmp_id;
 	uint16_t preempt_mode = slurm_get_preempt_mode();
 
+	xassert(preempt_job_list);
 	preempt_mode &= (~PREEMPT_MODE_GANG);
 	while ((tmp_id = list_pop(preempt_job_list))) {
 		job_id = *tmp_id;
@@ -1342,6 +1343,12 @@ extern int gs_reconfig(void)
 	int i;
 	struct gs_part *p_ptr, *old_part_list, *newp_ptr;
 	struct job_record *job_ptr;
+
+	if (!timeslicer_thread_id) {
+		/* gs_init() will be called later from read_slurm_conf()
+		 * if we are enabling gang scheduling via reconfiguration */
+		return SLURM_SUCCESS;
+	}
 
 	debug3("gang: entering gs_reconfig");
 	pthread_mutex_lock(&data_mutex);
