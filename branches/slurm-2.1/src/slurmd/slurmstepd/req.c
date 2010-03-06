@@ -280,9 +280,12 @@ _msg_socket_readable(eio_obj_t *obj)
 {
 	debug3("Called _msg_socket_readable");
 	if (obj->shutdown == true) {
+		/* All spawned tasks have been completed by this point */
 		if (obj->fd != -1) {
 			debug2("  false, shutdown");
 			_domain_socket_destroy(obj->fd);
+			/* slurmd considers the job step done now that
+			 * the domain name socket is destroyed */
 			obj->fd = -1;
 			_wait_for_connections();
 		} else {
