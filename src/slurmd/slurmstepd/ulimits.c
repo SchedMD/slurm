@@ -131,6 +131,7 @@ set_umask(slurmd_job_t *job)
 		return SLURM_ERROR;
 	}
 
+	unsetenvp(job->env, "SLURM_UMASK");
 	mask = strtol(val, (char **)NULL, 8);
 	umask(mask);
 	return SLURM_SUCCESS;
