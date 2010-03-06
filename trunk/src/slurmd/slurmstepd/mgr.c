@@ -1553,6 +1553,7 @@ _make_batch_script(batch_job_launch_msg_t *msg, char *path)
 	}
 
 	if (fputs(msg->script, fp) < 0) {
+		(void) fclose(fp);
 		error("fputs: %m");
 		goto error;
 	}
@@ -1573,6 +1574,7 @@ _make_batch_script(batch_job_launch_msg_t *msg, char *path)
 	return xstrdup(script);
 
   error:
+	(void) unlink(script);
 	return NULL;
 
 }
