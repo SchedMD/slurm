@@ -1070,16 +1070,17 @@ extern int slurm_job_cpus_allocated_on_node_id(
 	int start_node=-1; /* start with -1 less so the array reps
 			    * lines up correctly */
 
-	if (!job_resrcs_ptr) {
-		error("slurm_cpus_used_on_node_id: job_resources not set");
-		return -1;
-	}
+	if (!job_resrcs_ptr || node_id < 0)
+		slurm_seterrno_ret(EINVAL);
 
 	for (i = 0; i < job_resrcs_ptr->cpu_array_cnt; i++) {
 		start_node += job_resrcs_ptr->cpu_array_reps[i];
 		if(start_node >= node_id)
 			break;
 	}
+
+	if (i >= job_resrcs_ptr->cpu_array_cnt)
+		return (0); /* nodeid not in this job */
 
 	return job_resrcs_ptr->cpu_array_value[i];
 }
@@ -1089,22 +1090,11 @@ extern int slurm_job_cpus_allocated_on_node(
 {
 	int node_id;
 
-	if (!job_resrcs_ptr) {
-		error("slurm_cpus_used_on_node: job_resources not set");
-		return -1;
-	} else if(!node) {
-		error("slurm_cpus_used_on_node: no node given");
-		return -1;
-	} else if(!job_resrcs_ptr->node_hl) {
-		error("slurm_cpus_used_on_node: "
-		      "hostlist not set in job_resources");
-		return -1;
-	} else if((node_id = hostlist_find(job_resrcs_ptr->node_hl, node))
-		  == -1) {
-		error("slurm_cpus_used_on_node: "
-		      "node %s is not in this allocation", node);
-		return -1;
-	}
+	if (!job_resrcs_ptr || !node || !job_resrcs_ptr->node_hl)
+		slurm_seterrno_ret(EINVAL);
+
+	if ((node_id = hostlist_find(job_resrcs_ptr->node_hl, node)) == -1)
+		return (0); /* No cpus allocated on this node */
 
 	return slurm_job_cpus_allocated_on_node_id(job_resrcs_ptr, node_id);
 }

@@ -60,7 +60,6 @@ array set good_vars {
     SLURM_TASK_PID 1
     SLURM_TOPOLOGY_ADDR 0
     SLURM_TOPOLOGY_ADDR_PATTERN 0
-    SLURM_UMASK 0
 }
 
 #

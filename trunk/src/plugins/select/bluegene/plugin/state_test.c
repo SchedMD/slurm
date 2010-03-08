@@ -139,7 +139,12 @@ static void _configure_node_down(rm_bp_id_t bp_id, my_bluegene_t *my_bg)
 	}
 }
 
-static int _test_down_nodecards(rm_BP_t *bp_ptr)
+/*
+ * This could potentially lock the node lock in the slurmctld with
+ * slurm_drain_node, so if nodes_locked is called we will call the
+ * drainning function without locking the lock again.
+ */
+static int _test_down_nodecards(rm_BP_t *bp_ptr, bool slurmctld_locked)
 {
 	rm_bp_id_t bp_id = NULL;
 	rm_nodecard_id_t nc_name = NULL;
@@ -296,7 +301,8 @@ static int _test_down_nodecards(rm_BP_t *bp_ptr)
 /* 		bit_nset(ionode_bitmap, io_start, io_start+io_cnt); */
 		/* we have to handle each nodecard separately to make
 		   sure we don't create holes in the system */
-		if(down_nodecard(node_name, io_start) == SLURM_SUCCESS) {
+		if(down_nodecard(node_name, io_start, slurmctld_locked)
+		   == SLURM_SUCCESS) {
 			debug("nodecard %s on %s is in an error state",
 			      nc_name, node_name);
 		}
@@ -388,7 +394,7 @@ static void _test_down_nodes(my_bluegene_t *my_bg)
 			}
 		}
 
-		_test_down_nodecards(my_bp);
+		_test_down_nodecards(my_bp, 0);
 	}
 }
 
@@ -494,7 +500,13 @@ extern void test_mmcs_failures(void)
 #endif
 }
 
-extern int check_block_bp_states(char *bg_block_id)
+
+/*
+ * This could potentially lock the node lock in the slurmctld with
+ * slurm_drain_node, so if slurmctld_locked is called we will call the
+ * drainning function without locking the lock again.
+ */
+extern int check_block_bp_states(char *bg_block_id, bool slurmctld_locked)
 {
 	int rc = SLURM_SUCCESS;
 #ifdef HAVE_BG_FILES
@@ -541,7 +553,7 @@ extern int check_block_bp_states(char *bg_block_id)
 			}
 		}
 
-		_test_down_nodecards(bp_ptr);
+		_test_down_nodecards(bp_ptr, slurmctld_locked);
 	}
 
 cleanup:
