@@ -1,5 +1,5 @@
 RELEASE NOTES FOR SLURM VERSION 2.1
-05 January 2010 (through SLURM 2.1.0)
+8 March 2010
 
 
 IMPORTANT NOTE:
@@ -70,6 +70,7 @@ CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
 COMMAND CHANGES (see man pages for details)
 * Added "sacctmgr show problems" command to display problems in the accounting
   database (e.g. accounts with no users, users with no UID, etc.).
+* Add support for job step time limits.
 * Several redundant squeue output and sorting options have been removed:
   "%o" (use %D"), "%b" (use "%S"), "%X", %Y, and "%Z" (use "%z").
 * Standardized on the use of the '-Q' flag for all commands that offer the
