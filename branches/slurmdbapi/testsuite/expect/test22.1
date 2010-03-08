@@ -44,6 +44,7 @@ set account1   [format "%s%s" $test_id "acct1"]
 set account2   [format "%s%s" $test_id "acct2"]
 set account3   [format "%s%s" $test_id "acct3"]
 set accounts   [format "%s,%s,%s" $account1 $account2 $account3]
+set wckey1     [format "%s%s" $test_id "wckey"]
 set user1      [format "%s%s" $test_id "user1"]
 set user2      [format "%s%s" $test_id "user2"]
 set users      [format "%s,%s" $user1 $user2]
@@ -123,9 +124,9 @@ set acct3_alloc $job2_alloc
 set acct2_alloc [expr $acct3_alloc + $job3_alloc]
 set total_alloc [expr $job1_alloc + $job2_alloc + $job3_alloc]
 
-set size2_alloc [expr $job1_alloc + $job3_alloc]
-set size4_alloc $job3_alloc
-
+set wckey1_alloc [expr $job1_alloc + $job2_alloc + $job3_alloc]
+set user1_wckey1_alloc [expr $job1_alloc + $job3_alloc]
+set user2_wckey1_alloc $job2_alloc
 #node0 down
 set node0_down_start [expr $period_start+(60*45)]
 set node0_down_end [expr $period_start+(60*75)]
@@ -170,7 +171,7 @@ if { $exit_code } {
 }
 
 #add users
-incr exit_code [add_user "$cluster" $accounts $users "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ]
+incr exit_code [add_user "$cluster" $accounts $users "" "" "" $wckey1 "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ]
 if { $exit_code } {
 	remove_user "" "" $users
 	remove_acct "" $accounts
@@ -234,6 +235,42 @@ if {!$user1acct1 || !$user1acct2 || !$user1acct3 || !$user2acct1 || !$user2acct2
 	exit $exit_code
 }
 
+#get the user association ids for the jobs we plan to add
+set user1wckey1 0
+set user2wckey1 0
+set my_pid [eval spawn $sacctmgr -n -p list wckeys users=$users wckeys=$wckey1 cluster=$cluster format="user,wckey,id"]
+expect {
+	-re "There was a problem" {
+	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
+	    	incr exit_code 1
+	}
+	-re "$user1.$wckey1.($number)." {
+		set user1wckey1 $expect_out(1,string)
+		exp_continue
+	}
+	-re "$user2.$wckey1.($number)." {
+		set user2wckey1 $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr list associations not responding\n"
+		slow_kill $my_pid
+		incr exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {!$user1wckey1 || !$user1wckey1} {
+	send_user "\nFAILURE:  Didn't get one of the user wckeys $user1wckey1 $user2wckey1.\n"
+	incr exit_code 1
+	remove_user "" "" $users
+	remove_acct "" $accounts
+	remove_cluster "$cluster"
+	exit $exit_code
+}
+
 exec $bin_rm -f $sql_in
 set file [open $sql_in "w"]
 
@@ -252,10 +289,10 @@ puts $file "on duplicate key update period_start=VALUES(period_start), period_en
 
 #now we will put in a job running for an hour and 5 minutes
 puts $file "insert into job_table (jobid, associd, wckey, wckeyid, uid, gid, partition, blockid, cluster, account, eligible, submit, start, end, suspended, name, track_steps, state, comp_code, priority, req_cpus, alloc_cpus, nodelist, kill_requid, qos, deleted) values"
-puts $file "('65537', '$user1acct1', '', '0', '$uid', '$gid', 'debug', '', '$cluster', '$job1_acct', $job1_start, $job1_start, $job1_start, $job1_end, '0', 'test_job1', '0', '3', '0', '$job1_cpus', '$job1_cpus', '$job1_cpus', '$job1_nodes', '0', '0', '0')"
-puts $file ", ('65538', '$user2acct3', '', '0', '$uid', '$gid', 'debug', '', '$cluster', '$job2_acct', $job2_elig, $job2_elig, $job2_start, $job2_end, '0', 'test_job2', '0', '3', '0', '$job2_cpus', '$job2_cpus', '$job2_cpus', '$job2_nodes', '0', '0', '0')"
-puts $file ", ('65539', '$user1acct2', '', '0', '$uid', '$gid', 'debug', '', '$cluster', '$job3_acct', $job3_elig, $job3_elig, $job3_start, $job3_end, '0', 'test_job3', '0', '3', '0', '$job3_cpus', '$job3_cpus', '$job3_cpus', '$job3_nodes', '0', '0', '0')"
-puts $file "on duplicate key update id=LAST_INSERT_ID(id), eligible=VALUES(eligible), submit=VALUES(submit), start=VALUES(start), end=VALUES(end), associd=VALUES(associd), alloc_cpus=VALUES(alloc_cpus);";
+puts $file "('65537', '$user1acct1', '$wckey1', '$user1wckey1', '$uid', '$gid', 'debug', '', '$cluster', '$job1_acct', $job1_start, $job1_start, $job1_start, $job1_end, '0', 'test_job1', '0', '3', '0', '$job1_cpus', '$job1_cpus', '$job1_cpus', '$job1_nodes', '0', '0', '0')"
+puts $file ", ('65538', '$user2acct3', '$wckey1', '$user2wckey1', '$uid', '$gid', 'debug', '', '$cluster', '$job2_acct', $job2_elig, $job2_elig, $job2_start, $job2_end, '0', 'test_job2', '0', '3', '0', '$job2_cpus', '$job2_cpus', '$job2_cpus', '$job2_nodes', '0', '0', '0')"
+puts $file ", ('65539', '$user1acct2', '$wckey1', '$user1wckey1', '$uid', '$gid', 'debug', '', '$cluster', '$job3_acct', $job3_elig, $job3_elig, $job3_start, $job3_end, '0', 'test_job3', '0', '3', '0', '$job3_cpus', '$job3_cpus', '$job3_cpus', '$job3_nodes', '0', '0', '0')"
+puts $file "on duplicate key update id=LAST_INSERT_ID(id), eligible=VALUES(eligible), submit=VALUES(submit), start=VALUES(start), end=VALUES(end), associd=VALUES(associd), alloc_cpus=VALUES(alloc_cpus), wckey=VALUES(wckey), wckeyid=VALUES(wckeyid);";
 close $file
 
 exec $bin_rm -f $sql_rem
@@ -292,23 +329,23 @@ if { $exit_code } {
 # Use sacct to see if the job loaded
 #
 set matches 0
-set my_pid [eval spawn $sacct -p -C $cluster --fields=cluster,account,associd,start,end,elapsed --noheader --start=$start_str --end=$end_str]
+set my_pid [eval spawn $sacct -p -C $cluster --fields=cluster,account,associd,wckey,wckeyid,start,end,elapsed --noheader --start=$start_str --end=$end_str]
 expect {
 	-re "There was a problem" {
 	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
 	    	incr exit_code 1
 	}
-	-re "$cluster.$account1.$user1acct1.$job1_start_str.$job1_end_str.$job1_diff_str." {
+	-re "$cluster.$account1.$user1acct1.$wckey1.$user1wckey1.$job1_start_str.$job1_end_str.$job1_diff_str." {
 		send_user "got 1\n"
 		incr matches
 		exp_continue
 	}
-	-re "$cluster.$account3.$user2acct3.$job2_start_str.$job2_end_str.$job2_diff_str." {
+	-re "$cluster.$account3.$user2acct3.$wckey1.$user2wckey1.$job2_start_str.$job2_end_str.$job2_diff_str." {
 		send_user "got 2\n"
 		incr matches
 		exp_continue
 	}
-	-re "$cluster.$account2.$user1acct2.$job3_start_str.$job3_end_str.$job3_diff_str." {
+	-re "$cluster.$account2.$user1acct2.$wckey1.$user1wckey1.$job3_start_str.$job3_end_str.$job3_diff_str." {
 		send_user "got 3\n"
 		incr matches
 		exp_continue
@@ -515,6 +552,80 @@ if { $exit_code } {
 	exit $exit_code
 }
 
+# test the UserUtilizationByWcKey report
+set matches 0
+set my_pid [eval spawn $sreport cluster UserUtilizationByWckey cluster='$cluster' start=$start_str end=$end_str -tsecper -p -n format=cluster,login,wckey,used]
+expect {
+	-re "There was a problem" {
+	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
+	    	incr exit_code 1
+	}
+	-re "$cluster.$user1.$wckey1.$alloc." {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr archive load not responding\n"
+		slow_kill $my_pid
+		incr exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$matches != 1} {
+	send_user "\nFAILURE:  sreport didn't give good info 4.\n"
+	incr exit_code 1
+}
+
+if { $exit_code } {
+	incr exit_code [archive_load $sql_rem]
+	remove_user "" "" $users
+	remove_acct "" $accounts
+	remove_cluster "$cluster"
+	exit $exit_code
+}
+
+# test the WckeyUtilizationByUser report
+set matches 0
+set my_pid [eval spawn $sreport cluster WckeyUtilizationByUser cluster='$cluster' start=$start_str end=$end_str -tsecper -p -n format=cluster,wckey,login,used]
+expect {
+	-re "There was a problem" {
+	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
+	    	incr exit_code 1
+	}
+	-re "$cluster.$wckey1..$alloc." {
+		incr matches
+		exp_continue
+	}
+	-re "$cluster.$wckey1.$user1.$alloc." {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sreport not responding\n"
+		slow_kill $my_pid
+		incr exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$matches != 2} {
+	send_user "\nFAILURE:  sreport didn't give good info 5.\n"
+	incr exit_code 1
+}
+
+if { $exit_code } {
+	incr exit_code [archive_load $sql_rem]
+	remove_user "" "" $users
+	remove_acct "" $accounts
+	remove_cluster "$cluster"
+	exit $exit_code
+}
+
 # test the User Top report
 set matches 0
 set my_pid [eval spawn $sreport user top cluster='$cluster' start=$start_str end=$end_str -tsecper -p -n format=cluster,account,login,used]
@@ -538,7 +649,7 @@ expect {
 }
 
 if {$matches != 1} {
-	send_user "\nFAILURE:  sreport didn't give good info 3.\n"
+	send_user "\nFAILURE:  sreport didn't give good info 6.\n"
 	incr exit_code 1
 }
 
@@ -577,7 +688,7 @@ expect {
 }
 
 if {$matches != 2} {
-	send_user "\nFAILURE:  sreport didn't give good info 4 $matches.\n"
+	send_user "\nFAILURE:  sreport didn't give good info 7 $matches.\n"
 	incr exit_code 1
 }
 
@@ -644,7 +755,7 @@ expect {
 }
 
 if {$matches != 1} {
-	send_user "\nFAILURE:  sreport didn't give good info 5 $matches.\n"
+	send_user "\nFAILURE:  sreport didn't give good info 8 $matches.\n"
 	send_user "we are looking for $cluster.$idle.$down.$alloc.$resv.$reported.\n"
 	incr exit_code 1
 }
@@ -680,7 +791,7 @@ expect {
 }
 
 if {$matches != 1} {
-	send_user "\nFAILURE:  sreport didn't give good info 6.\n"
+	send_user "\nFAILURE:  sreport didn't give good info 9.\n"
 	incr exit_code 1
 }
 
@@ -723,7 +834,81 @@ expect {
 }
 
 if {$matches != 3} {
-	send_user "\nFAILURE:  sreport didn't give good info 7.\n"
+	send_user "\nFAILURE:  sreport didn't give good info 10.\n"
+	incr exit_code 1
+}
+
+if { $exit_code } {
+	incr exit_code [archive_load $sql_rem]
+	remove_user "" "" $users
+	remove_acct "" $accounts
+	remove_cluster "$cluster"
+	exit $exit_code
+}
+
+# test the UserUtilizationByWckey report
+set matches 0
+set my_pid [eval spawn $sreport cluster UserUtilizationByWckey cluster='$cluster' start=$start_str end=$end_str -tsecper -p -n format=cluster,login,wckey,used]
+expect {
+	-re "There was a problem" {
+	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
+	    	incr exit_code 1
+	}
+	-re "$cluster.$user1.$wckey1.$alloc." {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr archive load not responding\n"
+		slow_kill $my_pid
+		incr exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$matches != 1} {
+	send_user "\nFAILURE:  sreport didn't give good info 11.\n"
+	incr exit_code 1
+}
+
+if { $exit_code } {
+	incr exit_code [archive_load $sql_rem]
+	remove_user "" "" $users
+	remove_acct "" $accounts
+	remove_cluster "$cluster"
+	exit $exit_code
+}
+
+# test the WckeyUtilizationByUser report
+set matches 0
+set my_pid [eval spawn $sreport cluster WckeyUtilizationByUser cluster='$cluster' start=$start_str end=$end_str -tsecper -p -n format=cluster,wckey,login,used]
+expect {
+	-re "There was a problem" {
+	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
+	    	incr exit_code 1
+	}
+	-re "$cluster.$wckey1..$alloc." {
+		incr matches
+		exp_continue
+	}
+	-re "$cluster.$wckey1.$user1.$alloc." {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr archive load not responding\n"
+		slow_kill $my_pid
+		incr exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$matches != 2} {
+	send_user "\nFAILURE:  sreport didn't give good info 12.\n"
 	incr exit_code 1
 }
 
@@ -758,7 +943,7 @@ expect {
 }
 
 if {$matches != 1} {
-	send_user "\nFAILURE:  sreport didn't give good info 8.\n"
+	send_user "\nFAILURE:  sreport didn't give good info 13.\n"
 	incr exit_code 1
 }
 
@@ -797,7 +982,7 @@ expect {
 }
 
 if {$matches != 2} {
-	send_user "\nFAILURE:  sreport didn't give good info 9 $matches.\n"
+	send_user "\nFAILURE:  sreport didn't give good info 14 $matches.\n"
 	incr exit_code 1
 }
 
@@ -853,7 +1038,12 @@ set total_alloc_str [format "%d\\\(%.2f%%\\\)" $total_alloc [expr double($total_
 set acct1_alloc_str [format "%d\\\(%.2f%%\\\)" $acct1_alloc [expr double($acct1_alloc * 100)/$reported]]
 set acct2_alloc_str [format "%d\\\(%.2f%%\\\)" $acct2_alloc [expr double($acct2_alloc * 100)/$reported]]
 set acct3_alloc_str [format "%d\\\(%.2f%%\\\)" $acct3_alloc [expr double($acct3_alloc * 100)/$reported]]
+set wckey1_alloc_str [format "%d\\\(%.2f%%\\\)" $wckey1_alloc [expr double($wckey1_alloc * 100)/$reported]]
+set user1_wckey1_alloc_str [format "%d\\\(%.2f%%\\\)" $user1_wckey1_alloc [expr double($user1_wckey1_alloc * 100)/$reported]]
+set user2_wckey1_alloc_str [format "%d\\\(%.2f%%\\\)" $user2_wckey1_alloc [expr double($user2_wckey1_alloc * 100)/$reported]]
+
 set reported [format "%d\\\(%.2f%%\\\)" $reported 100]
+
 
 send_user "\nTesting sreport for 3 days\n"
 set matches 0
@@ -925,7 +1115,7 @@ expect {
 }
 
 if {$matches != 3} {
-	send_user "\nFAILURE:  sreport didn't give good info 11 $matches.\n"
+	send_user "\nFAILURE:  sreport didn't give good info 15 $matches.\n"
 	incr exit_code 1
 }
 
@@ -984,7 +1174,91 @@ expect {
 }
 
 if {$matches != 7} {
-	send_user "\nFAILURE:  sreport didn't give good info 11 $matches.\n"
+	send_user "\nFAILURE:  sreport didn't give good info 16 $matches.\n"
+	incr exit_code 1
+}
+
+if { $exit_code } {
+	incr exit_code [archive_load $sql_rem]
+	remove_user "" "" $users
+	remove_acct "" $accounts
+	remove_cluster "$cluster"
+	exit $exit_code
+}
+
+# test the UserUtilizationByWckey report
+set matches 0
+set my_pid [eval spawn $sreport cluster UserUtilizationByWckey cluster='$cluster' start=$start_str end=$end_str -tsecper -p -n format=cluster,login,wckey,used]
+expect {
+	-re "There was a problem" {
+	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
+	    	incr exit_code 1
+	}
+	-re "$cluster.$user2.$wckey1.$user2_wckey1_alloc_str." {
+		send_user "got 2\n"
+		incr matches
+		exp_continue
+	}
+	-re "$cluster.$user1.$wckey1.$user1_wckey1_alloc_str." {
+		send_user "got 1\n"
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr archive load not responding\n"
+		slow_kill $my_pid
+		incr exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$matches != 2} {
+	send_user "\nFAILURE:  sreport didn't give good info 17 $matches.\n"
+	incr exit_code 1
+}
+
+if { $exit_code } {
+	incr exit_code [archive_load $sql_rem]
+	remove_user "" "" $users
+	remove_acct "" $accounts
+	remove_cluster "$cluster"
+	exit $exit_code
+}
+
+# test the WckeyUtilizationByUser report
+set matches 0
+set my_pid [eval spawn $sreport cluster WckeyUtilizationByUser cluster='$cluster' start=$start_str end=$end_str -tsecper -p -n format=cluster,wckey,login,used]
+expect {
+	-re "There was a problem" {
+	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
+	    	incr exit_code 1
+	}
+	-re "$cluster.$wckey1..$wckey1_alloc_str." {
+		incr matches
+		exp_continue
+	}
+	-re "$cluster.$wckey1.$user1.$user1_wckey1_alloc_str." {
+		incr matches
+		exp_continue
+	}
+	-re "$cluster.$wckey1.$user2.$user2_wckey1_alloc_str." {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr archive load not responding\n"
+		slow_kill $my_pid
+		incr exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$matches != 3} {
+	send_user "\nFAILURE:  sreport didn't give good info 18 $matches.\n"
 	incr exit_code 1
 }
 
@@ -1027,7 +1301,7 @@ expect {
 }
 
 if {$matches != 3} {
-	send_user "\nFAILURE:  sreport didn't give good info 12 $matches.\n"
+	send_user "\nFAILURE:  sreport didn't give good info 19 $matches.\n"
 	incr exit_code 1
 }
 
@@ -1066,7 +1340,7 @@ expect {
 }
 
 if {$matches != 2} {
-	send_user "\nFAILURE:  sreport didn't give good info 13 $matches.\n"
+	send_user "\nFAILURE:  sreport didn't give good info 20 $matches.\n"
 	incr exit_code 1
 }
 
@@ -1101,7 +1375,7 @@ expect {
 }
 
 if {$matches != 1} {
-	send_user "\nFAILURE:  sreport didn't give good info 14 $matches.\n"
+	send_user "\nFAILURE:  sreport didn't give good info 21 $matches.\n"
 	incr exit_code 1
 }
 

@@ -127,16 +127,155 @@ static void _process_au(List assoc_list, slurmdb_association_rec_t *assoc)
 
 }
 
-static List _process_util_by_report(void *cond, cluster_report_t type)
+static void _process_uw(List user_list, slurmdb_wckey_rec_t *wckey)
+{
+	ListIterator itr = NULL;
+	slurmdb_report_user_rec_t *slurmdb_report_user = NULL;
+	slurmdb_accounting_rec_t *accting = NULL;
+	struct passwd *passwd_ptr = NULL;
+	uid_t uid = NO_VAL;
+
+	passwd_ptr = getpwnam(wckey->user);
+	if(passwd_ptr)
+		uid = passwd_ptr->pw_uid;
+	/* In this report we are using the slurmdb_report user
+	   structure to store the information we want
+	   since it is already available and will do
+	   pretty much what we want.
+	*/
+	slurmdb_report_user =
+		xmalloc(sizeof(slurmdb_report_user_rec_t));
+	slurmdb_report_user->name = xstrdup(wckey->user);
+	slurmdb_report_user->uid = uid;
+	slurmdb_report_user->acct = xstrdup(wckey->name);
+
+	list_append(user_list, slurmdb_report_user);
+
+	/* get the amount of time this wckey used
+	   during the time we are looking at */
+	itr = list_iterator_create(wckey->accounting_list);
+	while((accting = list_next(itr))) {
+		slurmdb_report_user->cpu_secs +=
+			(uint64_t)accting->alloc_secs;
+	}
+	list_iterator_destroy(itr);
+}
+
+static void _process_wu(List assoc_list, slurmdb_wckey_rec_t *wckey)
+{
+	slurmdb_report_assoc_rec_t *slurmdb_report_assoc = NULL,
+		*parent_assoc = NULL;
+	ListIterator itr = NULL;
+	slurmdb_accounting_rec_t *accting = NULL;
+
+	/* find the parent */
+	itr = list_iterator_create(assoc_list);
+	while((parent_assoc = list_next(itr))) {
+		if(!parent_assoc->user
+		   && !strcmp(parent_assoc->acct, wckey->name))
+			break;
+	}
+	list_iterator_destroy(itr);
+	if(!parent_assoc) {
+		parent_assoc = xmalloc(sizeof(slurmdb_report_assoc_rec_t));
+
+		list_append(assoc_list,
+			    parent_assoc);
+		parent_assoc->acct = xstrdup(wckey->name);
+	}
+
+	/* now add one for the user */
+	slurmdb_report_assoc = xmalloc(sizeof(slurmdb_report_assoc_rec_t));
+	list_append(assoc_list, slurmdb_report_assoc);
+
+	slurmdb_report_assoc->acct = xstrdup(wckey->name);
+	slurmdb_report_assoc->user = xstrdup(wckey->user);
+
+	/* get the amount of time this wckey used
+	   during the time we are looking at */
+	itr = list_iterator_create(wckey->accounting_list);
+	while((accting = list_next(itr))) {
+		slurmdb_report_assoc->cpu_secs +=
+			(uint64_t)accting->alloc_secs;
+		parent_assoc->cpu_secs +=
+			(uint64_t)accting->alloc_secs;
+	}
+	list_iterator_destroy(itr);
+}
+
+static void _process_assoc_type(
+	ListIterator itr,
+	slurmdb_report_cluster_rec_t *slurmdb_report_cluster,
+	char *cluster_name,
+	cluster_report_t type)
+{
+	slurmdb_association_rec_t *assoc = NULL;
+
+	/* now add the associations of interest here by user */
+	while((assoc = list_next(itr))) {
+		if(!assoc->accounting_list
+		   || !list_count(assoc->accounting_list)
+		   || ((type == CLUSTER_REPORT_UA) && !assoc->user)) {
+			list_delete_item(itr);
+			continue;
+		}
+
+		if(strcmp(cluster_name, assoc->cluster))
+			continue;
+
+		if(type == CLUSTER_REPORT_UA)
+			_process_ua(slurmdb_report_cluster->user_list,
+				    assoc);
+		else if(type == CLUSTER_REPORT_AU)
+			_process_au(slurmdb_report_cluster->assoc_list,
+				    assoc);
+
+		list_delete_item(itr);
+	}
+	list_iterator_reset(itr);
+}
+
+static void _process_wckey_type(
+	ListIterator itr,
+	slurmdb_report_cluster_rec_t *slurmdb_report_cluster,
+	char *cluster_name,
+	cluster_report_t type)
+{
+	slurmdb_wckey_rec_t *wckey = NULL;
+
+	/* now add the wckeyiations of interest here by user */
+	while((wckey = list_next(itr))) {
+		if(!wckey->accounting_list
+		   || !list_count(wckey->accounting_list)
+		   || ((type == CLUSTER_REPORT_UW) && !wckey->user)) {
+			list_delete_item(itr);
+			continue;
+		}
+
+		if(strcmp(cluster_name, wckey->cluster))
+			continue;
+
+		if(type == CLUSTER_REPORT_UW)
+			_process_uw(slurmdb_report_cluster->user_list,
+				    wckey);
+		else if(type == CLUSTER_REPORT_WU)
+			_process_wu(slurmdb_report_cluster->assoc_list,
+				    wckey);
+
+		list_delete_item(itr);
+	}
+	list_iterator_reset(itr);
+}
+
+static List _process_util_by_report(char *calling_name, void *cond,
+				    cluster_report_t type)
 {	ListIterator itr = NULL;
 	ListIterator itr2 = NULL;
-	ListIterator assoc_itr = NULL;
+	ListIterator type_itr = NULL;
 	slurmdb_cluster_cond_t cluster_cond;
-	List assoc_list = NULL;
-	List first_list = NULL;
+	List type_list = NULL;
 	List cluster_list = NULL;
 	slurmdb_cluster_rec_t *cluster = NULL;
-	slurmdb_association_rec_t *assoc = NULL;
 	slurmdb_report_cluster_rec_t *slurmdb_report_cluster = NULL;
 
 	int exit_code = 0;
@@ -156,35 +295,51 @@ static List _process_util_by_report(void *cond, cluster_report_t type)
 			((slurmdb_association_cond_t *)cond)->usage_start;
 		cluster_cond.cluster_list =
 			((slurmdb_association_cond_t *)cond)->cluster_list;
+	} else if((type == CLUSTER_REPORT_UW) || (type == CLUSTER_REPORT_WU)) {
+		cluster_cond.usage_end =
+			((slurmdb_wckey_cond_t *)cond)->usage_end;
+		cluster_cond.usage_start =
+			((slurmdb_wckey_cond_t *)cond)->usage_start;
+		cluster_cond.cluster_list =
+			((slurmdb_wckey_cond_t *)cond)->cluster_list;
+	} else {
+		error("unknown report type %d", type);
+		return NULL;
 	}
 	cluster_list = acct_storage_g_get_clusters(
 		db_conn, my_uid, &cluster_cond);
 
 	if(!cluster_list) {
 		exit_code=1;
-		fprintf(stderr, "slurmdb_report_cluster_account_by_user: "
-			"Problem with cluster query.\n");
+		fprintf(stderr, "%s: Problem with cluster query.\n",
+			calling_name);
 		goto end_it;
 	}
 
 	if((type == CLUSTER_REPORT_UA) || (type == CLUSTER_REPORT_AU)) {
-		assoc_list = acct_storage_g_get_associations(
+		type_list = acct_storage_g_get_associations(
+			db_conn, my_uid, cond);
+	} else if((type == CLUSTER_REPORT_UW) || (type == CLUSTER_REPORT_WU)) {
+		type_list = acct_storage_g_get_wckeys(
 			db_conn, my_uid, cond);
 	}
 
-	if(!assoc_list) {
+	if(!type_list) {
 		exit_code=1;
-		fprintf(stderr, "slurmdb_report_cluster_account_by_user: "
-			" Problem with assoc query.\n");
+		fprintf(stderr, "%s: Problem with get query.\n", calling_name);
 		goto end_it;
 	}
 
-	first_list = assoc_list;
-	assoc_list = slurmdb_get_hierarchical_sorted_assoc_list(first_list);
+	if((type == CLUSTER_REPORT_UA) || (type == CLUSTER_REPORT_AU)) {
+		List first_list = type_list;
+		type_list = slurmdb_get_hierarchical_sorted_assoc_list(
+			first_list);
+		list_destroy(first_list);
+	}
 
 	/* set up the structures for easy retrieval later */
 	itr = list_iterator_create(cluster_list);
-	assoc_itr = list_iterator_create(assoc_list);
+	type_itr = list_iterator_create(type_list);
 	while((cluster = list_next(itr))) {
 		slurmdb_cluster_accounting_rec_t *accting = NULL;
 
@@ -200,10 +355,11 @@ static List _process_util_by_report(void *cond, cluster_report_t type)
 		list_append(ret_list, slurmdb_report_cluster);
 
 		slurmdb_report_cluster->name = xstrdup(cluster->name);
-		if(type == CLUSTER_REPORT_UA)
+		if((type == CLUSTER_REPORT_UA) || (type == CLUSTER_REPORT_UW))
 			slurmdb_report_cluster->user_list =
 				list_create(slurmdb_destroy_report_user_rec);
-		else if(type == CLUSTER_REPORT_AU)
+		else if((type == CLUSTER_REPORT_AU)
+			|| (type == CLUSTER_REPORT_WU))
 			slurmdb_report_cluster->assoc_list =
 				list_create(slurmdb_destroy_report_assoc_rec);
 
@@ -220,43 +376,22 @@ static List _process_util_by_report(void *cond, cluster_report_t type)
 
 		slurmdb_report_cluster->cpu_count /=
 			list_count(cluster->accounting_list);
-
-		/* now add the associations of interest here by user */
-		while((assoc = list_next(assoc_itr))) {
-			if(!assoc->accounting_list
-			   || !list_count(assoc->accounting_list)
-			   || ((type == CLUSTER_REPORT_UA) && !assoc->user)) {
-				list_delete_item(assoc_itr);
-				continue;
-			}
-
-			if(strcmp(cluster->name, assoc->cluster))
-				continue;
-
-			if(type == CLUSTER_REPORT_UA)
-				_process_ua(slurmdb_report_cluster->user_list,
-					    assoc);
-			else if(type == CLUSTER_REPORT_AU)
-				_process_au(slurmdb_report_cluster->assoc_list,
-					    assoc);
-
-			list_delete_item(assoc_itr);
-		}
-		list_iterator_reset(assoc_itr);
+		if((type == CLUSTER_REPORT_UA) || (type == CLUSTER_REPORT_AU))
+			_process_assoc_type(type_itr, slurmdb_report_cluster,
+					    cluster->name, type);
+		else if((type == CLUSTER_REPORT_UW)
+			|| (type == CLUSTER_REPORT_WU))
+			_process_wckey_type(type_itr, slurmdb_report_cluster,
+					    cluster->name, type);
 	}
-	list_iterator_destroy(assoc_itr);
+	list_iterator_destroy(type_itr);
 	list_iterator_destroy(itr);
 
 end_it:
 
-	if(assoc_list) {
-		list_destroy(assoc_list);
-		assoc_list = NULL;
-	}
-
-	if(first_list) {
-		list_destroy(first_list);
-		first_list = NULL;
+	if(type_list) {
+		list_destroy(type_list);
+		type_list = NULL;
 	}
 
 	if(cluster_list) {
@@ -280,11 +415,27 @@ end_it:
 extern List slurmdb_report_cluster_account_by_user(
 	slurmdb_association_cond_t *assoc_cond)
 {
-	return _process_util_by_report(assoc_cond, CLUSTER_REPORT_AU);
+	return _process_util_by_report("slurmdb_report_cluster_account_by_user",
+				       assoc_cond, CLUSTER_REPORT_AU);
 }
 
 extern List slurmdb_report_cluster_user_by_account(
 	slurmdb_association_cond_t *assoc_cond)
 {
-	return _process_util_by_report(assoc_cond, CLUSTER_REPORT_UA);
+	return _process_util_by_report("slurmdb_report_cluster_user_by_account",
+				       assoc_cond, CLUSTER_REPORT_UA);
+}
+
+extern List slurmdb_report_cluster_wckey_by_user(
+	slurmdb_wckey_cond_t *wckey_cond)
+{
+	return _process_util_by_report("slurmdb_report_cluster_wckey_by_user",
+				       wckey_cond, CLUSTER_REPORT_WU);
+}
+
+extern List slurmdb_report_cluster_user_by_wckey(
+	slurmdb_wckey_cond_t *wckey_cond)
+{
+	return _process_util_by_report("slurmdb_report_cluster_user_by_wckey",
+				       wckey_cond, CLUSTER_REPORT_UW);
 }

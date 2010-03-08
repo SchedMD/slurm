@@ -128,7 +128,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 					 MAX(command_len, 1))) {
 			wckey_cond->usage_start = parse_time(argv[i]+end, 1);
 			set = 1;
-		} else if (!strncasecmp (argv[i], "User",
+		} else if (!strncasecmp (argv[i], "Users",
 					 MAX(command_len, 1))) {
 			if(!wckey_cond->user_list)
 				wckey_cond->user_list =
@@ -206,24 +206,24 @@ extern int sacctmgr_list_wckey(int argc, char *argv[])
 		command_len = strlen(object);
 
 		field = xmalloc(sizeof(print_field_t));
-		if(!strncasecmp("WCKey", object, MAX(command_len, 1))
-		   || !strncasecmp("Name", object, MAX(command_len, 1))) {
+		if(!strncasecmp("WCKeys", object, MAX(command_len, 1))
+		   || !strncasecmp("Names", object, MAX(command_len, 1))) {
 			field->type = PRINT_NAME;
 			field->name = xstrdup("WCKey");
 			field->len = 10;
 			field->print_routine = print_fields_str;
-		} else if(!strncasecmp("Cluster", object,
+		} else if(!strncasecmp("Clusters", object,
 				       MAX(command_len, 2))) {
 			field->type = PRINT_CLUSTER;
 			field->name = xstrdup("Cluster");
 			field->len = 10;
 			field->print_routine = print_fields_str;
-		} else if(!strncasecmp("ID", object, MAX(command_len, 1))) {
+		} else if(!strncasecmp("IDs", object, MAX(command_len, 1))) {
 			field->type = PRINT_ID;
 			field->name = xstrdup("ID");
 			field->len = 6;
 			field->print_routine = print_fields_uint;
-		} else if(!strncasecmp("User", object, MAX(command_len, 1))) {
+		} else if(!strncasecmp("Users", object, MAX(command_len, 1))) {
 			field->type = PRINT_USER;
 			field->name = xstrdup("User");
 			field->len = 10;
