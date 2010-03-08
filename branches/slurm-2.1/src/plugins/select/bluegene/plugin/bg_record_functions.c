@@ -1025,7 +1025,13 @@ extern int format_node_name(bg_record_t *bg_record, char *buf, int buf_size)
 	return SLURM_SUCCESS;
 }
 
-extern int down_nodecard(char *bp_name, bitoff_t io_start)
+/*
+ * This could potentially lock the node lock in the slurmctld with
+ * slurm_drain_node, or slurm_fail_job so if slurmctld_locked is called we
+ * will call the functions without locking the locks again.
+ */
+extern int down_nodecard(char *bp_name, bitoff_t io_start,
+			 bool slurmctld_locked)
 {
 	List requests = NULL;
 	List delete_list = NULL;
@@ -1046,7 +1052,11 @@ extern int down_nodecard(char *bp_name, bitoff_t io_start)
 	slurm_make_time_str(&now, time_str, sizeof(time_str));
 	snprintf(reason, sizeof(reason),
 		 "select_bluegene: nodecard down [SLURM@%s]", time_str);
-
+	if(slurmctld_locked)
+		drain_nodes(bp_name, reason);
+	else
+		slurm_drain_nodes(bp_name, reason);
+	return SLURM_SUCCESS;
 	if(io_cnt == NO_VAL) {
 		io_cnt = 1;
 		/* Translate 1 nodecard count to ionode count */
@@ -1106,9 +1116,13 @@ extern int down_nodecard(char *bp_name, bitoff_t io_start)
 		if(!blocks_overlap(bg_record, &tmp_record))
 			continue;
 
-		if(bg_record->job_running > NO_JOB_RUNNING)
-			slurm_fail_job(bg_record->job_running);
+		if(bg_record->job_running > NO_JOB_RUNNING) {
+			if(slurmctld_locked)
+				job_fail(bg_record->job_running);
+			else
+				slurm_fail_job(bg_record->job_running);
 
+		}
 		/* If Running Dynamic mode and the the block is
 		   smaller than the create size just continue on.
 		*/
@@ -1154,7 +1168,10 @@ extern int down_nodecard(char *bp_name, bitoff_t io_start)
 		debug("No block under 1 midplane available for this nodecard.  "
 		      "Draining the whole node.");
 		if(!node_already_down(bp_name)) {
-			slurm_drain_nodes(bp_name, reason);
+			if(slurmctld_locked)
+				drain_nodes(bp_name, reason);
+			else
+				slurm_drain_nodes(bp_name, reason);
 		}
 		rc = SLURM_SUCCESS;
 		goto cleanup;
@@ -1282,7 +1299,10 @@ extern int down_nodecard(char *bp_name, bitoff_t io_start)
 					 "select_bluegene: "
 					 "nodecard down [SLURM@%s]",
 					 time_str);
-				slurm_drain_nodes(bp_name, reason);
+				if(slurmctld_locked)
+					drain_nodes(bp_name, reason);
+				else
+					slurm_drain_nodes(bp_name, reason);
 			}
 			rc = SLURM_SUCCESS;
 			goto cleanup;

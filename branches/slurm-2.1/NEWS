@@ -21,6 +21,10 @@ documents those changes that are of interest to users and admins.
     slurm_job_cpus_allocated_on_node() functions to not write explanation of 
     failures to stderr. Only return -1 and set errno.
  -- Correction in configurator.html script. Prolog and Epilog were reversed.
+ -- BLUEGENE - Fixed race condition where if a nodecard has an error on an
+    un-booted block when a job comes to use it before the state checking
+    thread notices it which could cause the slurmctld to lock up on a
+    non-dynamic system.
 
 * Changes in SLURM 2.1.4
 ========================

@@ -991,7 +991,7 @@ static int _find_best_block_match(List block_list,
 		if (bg_record) {
 			if(!is_test) {
 				if(check_block_bp_states(
-					   bg_record->bg_block_id)
+					   bg_record->bg_block_id, 1)
 				   == SLURM_ERROR) {
 					error("_find_best_block_match: Marking "
 					      "block %s in an error state "
