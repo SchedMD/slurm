@@ -799,15 +799,12 @@ extern int cluster_user_by_account(int argc, char *argv[])
 	slurmdb_cluster_cond_t cluster_cond;
 	ListIterator itr = NULL;
 	ListIterator itr2 = NULL;
-	ListIterator assoc_itr = NULL;
 	ListIterator cluster_itr = NULL;
 	List format_list = list_create(slurm_destroy_char);
 	List assoc_list = NULL;
 	List cluster_list = NULL;
-	List slurmdb_report_cluster_list = list_create(slurmdb_destroy_report_cluster_rec);
+	List slurmdb_report_cluster_list = NULL;
 	int i=0;
-	slurmdb_cluster_rec_t *cluster = NULL;
-	slurmdb_association_rec_t *assoc = NULL;
 	slurmdb_report_user_rec_t *slurmdb_report_user = NULL;
 	slurmdb_report_cluster_rec_t *slurmdb_report_cluster = NULL;
 	print_field_t *field = NULL;
@@ -826,132 +823,11 @@ extern int cluster_user_by_account(int argc, char *argv[])
 	_setup_print_fields_list(format_list);
 	list_destroy(format_list);
 
-	cluster_cond.with_deleted = 1;
-	cluster_cond.with_usage = 1;
-	cluster_cond.usage_end = assoc_cond->usage_end;
-	cluster_cond.usage_start = assoc_cond->usage_start;
-	cluster_cond.cluster_list = assoc_cond->cluster_list;
-	cluster_list = acct_storage_g_get_clusters(
-		db_conn, my_uid, &cluster_cond);
-
-	if(!cluster_list) {
-		exit_code=1;
-		fprintf(stderr, " Problem with cluster query.\n");
+	if(!(slurmdb_report_cluster_list =
+	     slurmdb_report_cluster_user_by_account(assoc_cond))) {
+		exit_code = 1;
 		goto end_it;
 	}
-	assoc_list = acct_storage_g_get_associations(db_conn, my_uid,
-						     assoc_cond);
-	if(!assoc_list) {
-		exit_code=1;
-		fprintf(stderr, " Problem with assoc query.\n");
-		goto end_it;
-	}
-
-	/* set up the structures for easy reteval later */
-	itr = list_iterator_create(cluster_list);
-	assoc_itr = list_iterator_create(assoc_list);
-	while((cluster = list_next(itr))) {
-		slurmdb_cluster_accounting_rec_t *accting = NULL;
-
-		/* check to see if this cluster is around during the
-		   time we are looking at */
-		if(!cluster->accounting_list
-		   || !list_count(cluster->accounting_list))
-			continue;
-
-		slurmdb_report_cluster =
-			xmalloc(sizeof(slurmdb_report_cluster_rec_t));
-
-		list_append(slurmdb_report_cluster_list,
-			    slurmdb_report_cluster);
-
-		slurmdb_report_cluster->name = xstrdup(cluster->name);
-		slurmdb_report_cluster->user_list =
-			list_create(slurmdb_destroy_report_user_rec);
-
-		/* get the amount of time and the average cpu count
-		   during the time we are looking at */
-		itr2 = list_iterator_create(cluster->accounting_list);
-		while((accting = list_next(itr2))) {
-			slurmdb_report_cluster->cpu_secs += accting->alloc_secs
-				+ accting->down_secs + accting->idle_secs
-				+ accting->resv_secs;
-			slurmdb_report_cluster->cpu_count += accting->cpu_count;
-		}
-		list_iterator_destroy(itr2);
-
-		slurmdb_report_cluster->cpu_count /=
-			list_count(cluster->accounting_list);
-
-		/* now add the associations of interest here by user */
-		while((assoc = list_next(assoc_itr))) {
-			struct passwd *passwd_ptr = NULL;
-			uid_t uid = NO_VAL;
-			ListIterator user_itr = NULL;
-			slurmdb_accounting_rec_t *accting2 = NULL;
-
-			if(!assoc->accounting_list
-			   || !list_count(assoc->accounting_list)
-			   || !assoc->user) {
-				list_delete_item(assoc_itr);
-				continue;
-			}
-
-			if(strcmp(cluster->name, assoc->cluster))
-				continue;
-
-			/* make sure we add all associations to this
-			   user rec because we could have some in
-			   partitions which would create another
-			   record otherwise
-			*/
-			user_itr = list_iterator_create(
-				slurmdb_report_cluster->user_list);
-			while((slurmdb_report_user = list_next(user_itr))) {
-				if(!strcmp(slurmdb_report_user->name, assoc->user)
-				   && !strcmp(slurmdb_report_user->acct, assoc->acct))
-					break;
-			}
-			list_iterator_destroy(user_itr);
-
-			if(!slurmdb_report_user) {
-				passwd_ptr = getpwnam(assoc->user);
-				if(passwd_ptr)
-					uid = passwd_ptr->pw_uid;
-				/* In this report we are using the slurmdb_report user
-				   structure to store the information we want
-				   since it is already available and will do
-				   pretty much what we want.
-				*/
-				slurmdb_report_user =
-					xmalloc(sizeof(slurmdb_report_user_rec_t));
-				slurmdb_report_user->name = xstrdup(assoc->user);
-				slurmdb_report_user->uid = uid;
-				slurmdb_report_user->acct = xstrdup(assoc->acct);
-
-				list_append(slurmdb_report_cluster->user_list,
-					    slurmdb_report_user);
-			}
-
-			/* get the amount of time this assoc used
-			   during the time we are looking at */
-			itr2 = list_iterator_create(assoc->accounting_list);
-			while((accting2 = list_next(itr2))) {
-				slurmdb_report_user->cpu_secs +=
-					(uint64_t)accting2->alloc_secs;
-			}
-			list_iterator_destroy(itr2);
-			list_delete_item(assoc_itr);
-		}
-		list_iterator_reset(assoc_itr);
-	}
-	list_iterator_destroy(assoc_itr);
-	list_iterator_destroy(itr);
-
-	list_destroy(cluster_list);
-	cluster_list = NULL;
-	list_destroy(assoc_list);
-	assoc_list = NULL;
 
 	if(print_fields_have_header) {
 		char start_char[20];

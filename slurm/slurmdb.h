@@ -878,6 +878,14 @@ extern List slurmdb_clusters_remove(void *db_conn,
 extern List slurmdb_report_cluster_account_by_user(
 	slurmdb_association_cond_t *assoc_cond);
 
+/* report for clusters of users per account
+ * IN: slurmdb_association_cond_t *assoc_cond
+ * RET: List containing (slurmdb_report_cluster_rec_t *'s) else NULL on error
+ * note List needs to be freed with slurm_list_destroy() when called
+ */
+extern List slurmdb_report_cluster_user_by_account(
+	slurmdb_association_cond_t *assoc_cond);
+
 
 /************** connection functions **************/
 

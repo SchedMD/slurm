@@ -57,21 +57,22 @@ typedef enum {
 
 static void _process_ua(List user_list, slurmdb_association_rec_t *assoc)
 {
-	ListIterator user_itr = NULL;
+	ListIterator itr = NULL;
 	slurmdb_report_user_rec_t *slurmdb_report_user = NULL;
+	slurmdb_accounting_rec_t *accting = NULL;
 
 	/* make sure we add all associations to this
 	   user rec because we could have some in
 	   partitions which would create another
 	   record otherwise
 	*/
-	user_itr = list_iterator_create(user_list);
-	while((slurmdb_report_user = list_next(user_itr))) {
+	itr = list_iterator_create(user_list);
+	while((slurmdb_report_user = list_next(itr))) {
 		if(!strcmp(slurmdb_report_user->name, assoc->user)
 		   && !strcmp(slurmdb_report_user->acct, assoc->acct))
 			break;
 	}
-	list_iterator_destroy(user_itr);
+	list_iterator_destroy(itr);
 
 	if(!slurmdb_report_user) {
 		struct passwd *passwd_ptr = NULL;
@@ -92,18 +93,38 @@ static void _process_ua(List user_list, slurmdb_association_rec_t *assoc)
 
 		list_append(user_list, slurmdb_report_user);
 	}
+	/* get the amount of time this assoc used
+	   during the time we are looking at */
+	itr = list_iterator_create(assoc->accounting_list);
+	while((accting = list_next(itr))) {
+		slurmdb_report_user->cpu_secs +=
+			(uint64_t)accting->alloc_secs;
+	}
+	list_iterator_destroy(itr);
 }
 
 static void _process_au(List assoc_list, slurmdb_association_rec_t *assoc)
 {
 	slurmdb_report_assoc_rec_t *slurmdb_report_assoc =
 		xmalloc(sizeof(slurmdb_report_assoc_rec_t));
+	ListIterator itr = NULL;
+	slurmdb_accounting_rec_t *accting = NULL;
 
 	list_append(assoc_list, slurmdb_report_assoc);
 
 	slurmdb_report_assoc->acct = xstrdup(assoc->acct);
 	slurmdb_report_assoc->parent_acct = xstrdup(assoc->parent_acct);
 	slurmdb_report_assoc->user = xstrdup(assoc->user);
+
+	/* get the amount of time this assoc used
+	   during the time we are looking at */
+	itr = list_iterator_create(assoc->accounting_list);
+	while((accting = list_next(itr))) {
+		slurmdb_report_assoc->cpu_secs +=
+			(uint64_t)accting->alloc_secs;
+	}
+	list_iterator_destroy(itr);
+
 }
 
 static List _process_util_by_report(void *cond, cluster_report_t type)
@@ -116,7 +137,6 @@ static List _process_util_by_report(void *cond, cluster_report_t type)
 	List cluster_list = NULL;
 	slurmdb_cluster_rec_t *cluster = NULL;
 	slurmdb_association_rec_t *assoc = NULL;
-	slurmdb_report_assoc_rec_t *slurmdb_report_assoc = NULL;
 	slurmdb_report_cluster_rec_t *slurmdb_report_cluster = NULL;
 
 	int exit_code = 0;
@@ -203,7 +223,6 @@ static List _process_util_by_report(void *cond, cluster_report_t type)
 
 		/* now add the associations of interest here by user */
 		while((assoc = list_next(assoc_itr))) {
-			slurmdb_accounting_rec_t *accting2 = NULL;
 			if(!assoc->accounting_list
 			   || !list_count(assoc->accounting_list)
 			   || ((type == CLUSTER_REPORT_UA) && !assoc->user)) {
@@ -221,14 +240,6 @@ static List _process_util_by_report(void *cond, cluster_report_t type)
 				_process_au(slurmdb_report_cluster->assoc_list,
 					    assoc);
 
-			/* get the amount of time this assoc used
-			   during the time we are looking at */
-			itr2 = list_iterator_create(assoc->accounting_list);
-			while((accting2 = list_next(itr2))) {
-				slurmdb_report_assoc->cpu_secs +=
-					(uint64_t)accting2->alloc_secs;
-			}
-			list_iterator_destroy(itr2);
 			list_delete_item(assoc_itr);
 		}
 		list_iterator_reset(assoc_itr);
@@ -270,4 +281,10 @@ extern List slurmdb_report_cluster_account_by_user(
 	slurmdb_association_cond_t *assoc_cond)
 {
 	return _process_util_by_report(assoc_cond, CLUSTER_REPORT_AU);
+}
+
+extern List slurmdb_report_cluster_user_by_account(
+	slurmdb_association_cond_t *assoc_cond)
+{
+	return _process_util_by_report(assoc_cond, CLUSTER_REPORT_UA);
 }
