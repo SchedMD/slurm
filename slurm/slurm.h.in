@@ -1968,8 +1968,8 @@ extern int slurm_update_step PARAMS(( step_update_request_msg_t * step_msg ));
  *                        get the number of cpus allocated to a job
  *			  on a node by node id
  * IN job_resrcs_ptr	- pointer to job_resources structure
- * IN node_id		- node id in allocation
- * RET cpus used or -1 on error
+ * IN node_id		- zero-origin node id in allocation
+ * RET number of CPUs allocated to job on this node or -1 on error
  */
 extern int slurm_job_cpus_allocated_on_node_id PARAMS(
 	(job_resources_t *job_resrcs_ptr, int node_id));
@@ -1980,7 +1980,7 @@ extern int slurm_job_cpus_allocated_on_node_id PARAMS(
  *			  on a node by node name
  * IN job_resrcs_ptr	- pointer to job_resources structure
  * IN node_name		- name of node
- * RET cpus used or -1 on error
+ * RET number of CPUs allocated to job on this node or -1 on error
  */
 extern int slurm_job_cpus_allocated_on_node PARAMS(
 	(job_resources_t *job_resrcs_ptr, const char *node_name));

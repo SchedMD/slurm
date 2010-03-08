@@ -574,7 +574,7 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 		lock_slurmctld(job_write_lock);
 		if((rc = job_requeue(0, bg_update_ptr->job_ptr->job_id,
 				     -1, (uint16_t)NO_VAL))) {
-			error("couldn't requeue job %u, failing it: %s",
+			error("1 couldn't requeue job %u, failing it: %s",
 			      bg_update_ptr->job_ptr->job_id,
 			      slurm_strerror(rc));
 			job_fail(bg_update_ptr->job_ptr->job_id);
@@ -658,7 +658,7 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 		lock_slurmctld(job_write_lock);
 		if((rc = job_requeue(0, bg_update_ptr->job_ptr->job_id,
 				     -1, (uint16_t)NO_VAL))) {
-			error("couldn't requeue job %u, failing it: %s",
+			error("2 couldn't requeue job %u, failing it: %s",
 			      bg_update_ptr->job_ptr->job_id,
 			      slurm_strerror(rc));
 			job_fail(bg_update_ptr->job_ptr->job_id);
@@ -875,7 +875,8 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 			if((rc = job_requeue(
 				    0, bg_update_ptr->job_ptr->job_id,
 				    -1, (uint16_t)NO_VAL))) {
-				error("couldn't requeue job %u, failing it: %s",
+				error("3 couldn't requeue job %u, "
+				      "failing it: %s",
 				      bg_update_ptr->job_ptr->job_id,
 				      slurm_strerror(rc));
 				job_fail(bg_update_ptr->job_ptr->job_id);
