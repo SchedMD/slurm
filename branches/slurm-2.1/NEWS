@@ -20,6 +20,7 @@ documents those changes that are of interest to users and admins.
  -- Modify slurm_job_cpus_allocated_on_node_id() and 
     slurm_job_cpus_allocated_on_node() functions to not write explanation of 
     failures to stderr. Only return -1 and set errno.
+ -- Correction in configurator.html script. Prolog and Epilog were reversed.
 
 * Changes in SLURM 2.1.4
 ========================

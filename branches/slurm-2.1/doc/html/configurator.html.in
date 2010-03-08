@@ -670,8 +670,8 @@ root on every node of a user's job before the job's tasks
 will be initiated there and after that job has terminated.
 These parameters are optional.
 <DL>
-<DT> <input type="text" name="epilog" value="" size=40> <B>Prolog</B>
-<DT> <input type="text" name="prolog" value="" size=40> <B>Epilog</B>
+<DT> <input type="text" name="prolog" value="" size=40> <B>Prolog</B>
+<DT> <input type="text" name="epilog" value="" size=40> <B>Epilog</B>
 </DL>
 
 <P>
