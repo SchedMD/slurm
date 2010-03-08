@@ -1052,11 +1052,12 @@ extern int down_nodecard(char *bp_name, bitoff_t io_start,
 	slurm_make_time_str(&now, time_str, sizeof(time_str));
 	snprintf(reason, sizeof(reason),
 		 "select_bluegene: nodecard down [SLURM@%s]", time_str);
+
 	if(slurmctld_locked)
 		drain_nodes(bp_name, reason);
 	else
 		slurm_drain_nodes(bp_name, reason);
-	return SLURM_SUCCESS;
+
 	if(io_cnt == NO_VAL) {
 		io_cnt = 1;
 		/* Translate 1 nodecard count to ionode count */
