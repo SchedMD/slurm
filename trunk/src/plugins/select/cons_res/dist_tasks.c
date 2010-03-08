@@ -165,7 +165,8 @@ static int _compute_plane_dist(struct job_record *job_ptr)
 	return SLURM_SUCCESS;
 }
 
-/* sync up core bitmap with new CPU count
+/* sync up core bitmap with new CPU count using a best-fit approach
+ * on the available sockets
  *
  * The CPU array contains the distribution of CPUs, which can include
  * virtual CPUs (hyperthreads)
@@ -173,11 +174,19 @@ static int _compute_plane_dist(struct job_record *job_ptr)
 static void _block_sync_core_bitmap(struct job_record *job_ptr,
 				    const uint16_t cr_type)
 {
-	uint32_t c, i, n, size, csize, core_cnt;
+	uint32_t c, s, i, j, n, size, csize, core_cnt;
 	uint16_t cpus, num_bits, vpus = 1;
 	job_resources_t *job_res = job_ptr->job_resrcs;
 	bool alloc_cores = false, alloc_sockets = false;
 	uint16_t ntasks_per_core = 0xffff;
+	int* sockets_cpu_cnt;
+	bool* sockets_used;
+	uint16_t sockets_nb;
+	uint16_t ncores_nb;
+	uint16_t nsockets_nb;
+	uint16_t req_cpus,best_fit_cpus = 0;
+	uint32_t best_fit_location = 0;
+	bool sufficient,best_fit_sufficient;
 
 	if (!job_res)
 		return;
@@ -198,53 +207,157 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 
 	size  = bit_size(job_res->node_bitmap);
 	csize = bit_size(job_res->core_bitmap);
+
+	sockets_nb  = select_node_record[0].sockets;
+	sockets_cpu_cnt = xmalloc(sockets_nb * sizeof(int));	
+	sockets_used = xmalloc(sockets_nb * sizeof(bool));
+
 	for (c = 0, i = 0, n = 0; n < size; n++) {
 
 		if (bit_test(job_res->node_bitmap, n) == 0)
 			continue;
+
 		core_cnt = 0;
-		num_bits = select_node_record[n].sockets *
-				select_node_record[n].cores;
+		ncores_nb = select_node_record[n].cores;
+		nsockets_nb = select_node_record[n].sockets;
+		num_bits =  nsockets_nb * ncores_nb;
+				
 		if ((c + num_bits) > csize)
 			fatal ("cons_res: _block_sync_core_bitmap index error");
 
 		cpus  = job_res->cpus[i];
 		vpus  = MIN(select_node_record[n].vpus, ntasks_per_core);
 
-		while ((cpus > 0) && (num_bits > 0)) {
-			if (bit_test(job_res->core_bitmap, c++)) {
-				core_cnt++;
-				if (cpus < vpus)
-					cpus = 0;
-				else
-					cpus -= vpus;
-			}
-			num_bits--;
+		if ( nsockets_nb > sockets_nb) {
+			sockets_nb = nsockets_nb;
+			xrealloc(sockets_cpu_cnt, sockets_nb * sizeof(int));
+			xrealloc(sockets_used,sockets_nb * sizeof(bool));
 		}
+
+		/* count cores provided by each socket */
+		for (s = 0; s < nsockets_nb; s++) {
+			sockets_cpu_cnt[s]=0;
+			sockets_used[s]=false;
+			for ( j = c + (s * ncores_nb) ; 
+			      j < c + ((s+1) * ncores_nb) ; 
+			      j++ ) {
+				if ( bit_test(job_res->core_bitmap,j) )
+					sockets_cpu_cnt[s]++;
+			}
+		}
+
+		/* select cores in the sockets using a best-fit approach */
+		while( cpus > 0 ) {
+			
+			best_fit_cpus = 0;
+			best_fit_sufficient = false;
+
+			/* compute still required cores on the node */
+			req_cpus = cpus / vpus;
+			if ( cpus % vpus )
+				req_cpus++;
+			
+			/* search for the best socket, */
+			/* starting from the last one to let more room */
+			/* in the first one for system usage */
+			for ( s = nsockets_nb - 1 ; (int) s >= (int) 0 ; s-- ) {
+				sufficient = sockets_cpu_cnt[s] >= req_cpus ;
+				if ( (best_fit_cpus == 0) ||
+				     (sufficient && !best_fit_sufficient ) ||
+				     (sufficient && (sockets_cpu_cnt[s] < 
+						     best_fit_cpus)) ||
+				     (!sufficient && (sockets_cpu_cnt[s] >
+						      best_fit_cpus)) ) {
+					best_fit_cpus = sockets_cpu_cnt[s];
+					best_fit_location = s;
+					best_fit_sufficient = sufficient;
+				}
+			}
+
+			/* check that we have found a usable socket */
+			if ( best_fit_cpus == 0 )
+				break;
+
+			debug3("dist_task: best_fit : using node[%lu]:"
+			       "socket[%lu] : %u cores available",
+			       n,best_fit_location,
+			       sockets_cpu_cnt[best_fit_location]);
+			
+			/* select socket cores from last to first */
+			/* socket[0]:Core[0] would be the last one */
+			sockets_used[best_fit_location] = true;
+			
+			for ( j = c + ((best_fit_location+1) * ncores_nb) 
+				      - 1 ;
+			      (int) j >= (int) (c + (best_fit_location * 
+						     ncores_nb)) ;
+			      j-- ) {
+
+				/*
+				 * if no more cpus to select
+				 * release remaining cores unless
+				 * we are allocating whole sockets
+				 */
+				if ( cpus == 0 && alloc_sockets ) {
+					if ( bit_test(job_res->core_bitmap,j) )
+						core_cnt++;
+					continue;
+				}
+				else if ( cpus == 0 ) {
+					bit_clear(job_res->core_bitmap,j);
+					continue;
+				}
+				
+				/*
+				 * remove cores from socket count and 
+				 * cpus count using hyperthreading requirement
+				 */
+				if ( bit_test(job_res->core_bitmap,j) ) {
+					sockets_cpu_cnt[best_fit_location]--;
+					core_cnt++;
+					if (cpus < vpus)
+						cpus = 0;
+					else
+						cpus -= vpus;
+				}
+
+			}
+			
+			/* loop again if more cpus required */
+			if ( cpus > 0 )
+				continue;
+
+			/* release remaining cores of the unused sockets */
+			for (s = 0; s < nsockets_nb; s++) {
+				if ( sockets_used[s] ) 
+					continue;
+				bit_nclear(job_res->core_bitmap,
+					   c+(s*ncores_nb),
+					   c+((s+1)*ncores_nb)-1);
+			}
+			
+		}
+
 		if (cpus > 0)
 			/* cpu count should NEVER be greater than the number
 			 * of set bits in the core bitmap for a given node */
 			fatal("cons_res: cpus computation error");
 
-		if (alloc_sockets) {	/* Advance to end of socket */
-			while ((num_bits > 0) &&
-			       (c % select_node_record[n].cores)) {
-				if (bit_test(job_res->core_bitmap, c++))
-					core_cnt++;
-				num_bits--;
-			}
-		}
-		while (num_bits > 0) {
-			bit_clear(job_res->core_bitmap, c++);
-			num_bits--;
-		}
+		/* adjust cpus count of the current node */
 		if ((alloc_cores || alloc_sockets) &&
 		    (select_node_record[n].vpus > 1)) {
 			job_res->cpus[i] = core_cnt *
-					   select_node_record[n].vpus;
+				select_node_record[n].vpus;
 		}
 		i++;
+		
+		/* move c to the next node in core_bitmap */
+		c += num_bits;
+
 	}
+
+	xfree(sockets_cpu_cnt);
+	xfree(sockets_used);
 }
 
 
