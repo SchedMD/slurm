@@ -704,7 +704,7 @@ typedef struct job_info {
 	uint16_t ntasks_per_socket;/* number of tasks to invoke on each socket */
 
 	uint32_t num_nodes;	/* minimum number of nodes required by job */
-	uint32_t num_procs;	/* number of processors required by job */
+	uint32_t num_procs;	/* njob_resourcesumber of processors required by job */
 	char *partition;	/* name of assigned partition */
 	time_t pre_sus_time;	/* time job ran prior to last suspend */
 	uint32_t priority;	/* relative priority of the job,
@@ -1925,8 +1925,8 @@ void slurm_print_key_pairs PARAMS((
  *                        get the number of cpus allocated to a job
  *			  on a node by node id
  * IN job_resrcs_ptr	- pointer to job_resources structure
- * IN node_id		- node id in allocation
- * RET cpus used or -1 on error
+ * IN node_id		- zero-origin node id in allocation
+ * RET number of CPUs allocated to job on this node or -1 on error
  */
 extern int slurm_job_cpus_allocated_on_node_id PARAMS(
 	(job_resources_t *job_resrcs_ptr, int node_id));
@@ -1937,7 +1937,7 @@ extern int slurm_job_cpus_allocated_on_node_id PARAMS(
  *			  on a node by node name
  * IN job_resrcs_ptr	- pointer to job_resources structure
  * IN node_name		- name of node
- * RET cpus used or -1 on error
+ * RET number of CPUs allocated to job on this node or -1 on error
  */
 extern int slurm_job_cpus_allocated_on_node PARAMS(
 	(job_resources_t *job_resrcs_ptr, const char *node_name));
