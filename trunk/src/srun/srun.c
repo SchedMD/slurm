@@ -474,9 +474,10 @@ int srun(int ac, char **av)
 		else
 			mpir_set_executable_names(launch_params.argv[0]);
 		MPIR_debug_state = MPIR_DEBUG_SPAWNED;
-		MPIR_Breakpoint(job);
 		if (opt.debugger_test)
 			mpir_dump_proctable();
+		else
+			MPIR_Breakpoint(job);
 	} else {
 		info("Job step %u.%u aborted before step completely launched.",
 		     job->jobid, job->stepid);
