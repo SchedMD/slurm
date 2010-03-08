@@ -35,7 +35,9 @@ int \fBslurm_load_job\fR (
 .br
 	job_info_msg_t **\fIjob_info_msg_pptr\fP,
 .br
-	uint32_t \fIjob_id\fP
+	uint32_t \fIjob_id\fP,
+.br
+	uint16_t \fIshow_flags\fP,
 .br
 );
 .LP
@@ -99,6 +101,22 @@ int \fBslurm_get_select_jobinfo\fR (
 	enum select_data_type \fIdata_type\fP,
 .br
 	void *\fIdata\fP
+);
+.LP
+int \fBslurm_job_cpus_allocated_on_node_id\fR (
+.br
+	job_resources_t *\fIjob_resrcs_ptr\fP,
+.br
+	int \fInode_id\fP
+.br
+);
+.LP
+int \fBslurm_job_cpus_allocated_on_node\fR (
+.br
+	job_resources_t *\fIjob_resrcs_ptr\fP,
+.br
+	const char *\fInode_name\fP
+.br
 );
 
 .SH "FORTRAN EXTENSION"
@@ -166,6 +184,16 @@ Specifies a process id of some process on the current node.
 Specifies a pointer to a single job records from the \fIjob_info_msg_ptr\fP
 data structure.
 .TP
+\fIjob_resrcs_ptr\fP
+Pointer to a job_resources_t structure previously using the function
+\fBslurm_load_job\fR with a \fIshow_flags\fP value of \fBSHOW_DETAIL\fP.
+.TP
+\fInode_id\fP
+Zero origin ID of a node allocated to a job.
+.TP
+\fInode_name\fP
+Name of a node allocated to a job.
+.TP
 \fIone_liner\fP
 Print one record per line if non\-zero.
 .TP
@@ -179,12 +207,15 @@ hidden and partitions that the user's group is unable to utilize
 are not reported by default.
 The \fBSHOW_ALL\fP flag will cause information about jobs in all
 partitions to be displayed.
+The \fBSHOW_DETAIL\fP flag will cause detailed resource allocation information
+to be reported (e.g. the could of CPUs allocated to a job on each node).
 .TP
 \fIupdate_time\fP
 For all of the following informational calls, if update_time is equal to or
 greater than the last time changes where made to that information, new
 information is not returned.  Otherwise all the configuration. job, node,
 or partition records are returned.
+
 .SH "DESCRIPTION"
 .LP
 \fBslurm_free_resource_allocation_response_msg\fR Free slurm resource
@@ -202,6 +233,10 @@ SLURM controller once per minute.
 expected termination time of a specified SLURM job id. The time corresponds
 to the exhaustion of the job\'s or partition\'s time limit. NOTE: The data is
 cached locally and only retrieved from the SLURM controller once per minute.
+.LP
+\fBslurm_job_cpus_allocated_on_node\fR and 
+\fBslurm_job_cpus_allocated_on_node_id\fR return the number of CPUs allocated
+to a job on a specific node allocated to a job.
 .LP
 \fBslurm_load_job\fR Returns a job_info_msg_t that contains an update time,
 record count, and array of job_table records for some specific job ID.
@@ -354,7 +389,7 @@ expressions into a collection of individual node names.
 
 .SH "COPYING"
 Copyright (C) 2002\-2006 The Regents of the University of California.
-Copyright (C) 2008 Lawrence Livermore National Security.
+Copyright (C) 2008\-2010 Lawrence Livermore National Security.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 CODE\-OCEC\-09\-009. All rights reserved.
 .LP
