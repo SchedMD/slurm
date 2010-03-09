@@ -27,6 +27,8 @@ documents those changes that are of interest to users and admins.
     non-dynamic system.
  -- Correct TaskEpilog logic. Previously could kill other user tasks on that
     node which remained running.
+ -- Fix accounting Purge to remove correct period of time.  Previously would
+    remove n+1 leaving an extra time period around.
 
 * Changes in SLURM 2.1.4
 ========================
