@@ -1742,13 +1742,15 @@ extern int mysql_jobacct_process_archive(mysql_conn_t *mysql_conn,
 		      last_submit);
 		return SLURM_ERROR;
 	}
+
+	/* get to the beginning of the current month */
 	time_tm.tm_sec = 0;
 	time_tm.tm_min = 0;
 	time_tm.tm_hour = 0;
 	time_tm.tm_mday = 1;
 	time_tm.tm_isdst = -1;
 	last_submit = mktime(&time_tm);
-	last_submit--;
+
 	debug("archive: adjusted last submit is (%d)", last_submit);
 
 	if(arch_cond->archive_script)
