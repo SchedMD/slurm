@@ -8,7 +8,9 @@ documents those changes that are of interest to users and admins.
  -- In select/cons_res, the count of CPUs on required nodes was formerly
     ignored in enforcing the maximum CPU limit. Also enforce maximum CPU
     limit when the topology/tree plugin is configured (previously ignored).
- -- In select/cons_res, allocated cores for a job using a best-fit approach.
+ -- In select/cons_res, allocate cores for a job using a best-fit approach.
+ -- In select/cons_res, for jobs that can run on a single node, use a best-fit
+    packing approach.
 
 * Changes in SLURM 2.2.0.pre2
 =============================
@@ -114,10 +116,6 @@ documents those changes that are of interest to users and admins.
     un-booted block when a job comes to use it before the state checking
     thread notices it which could cause the slurmctld to lock up on a
     non-dynamic system.
- -- Correct TaskEpilog logic. Previously could kill other user tasks on that
-    node which remained running.
- -- Fix accounting Purge to remove correct period of time.  Previously would
-    remove n+1 leaving an extra time period around.
 
 * Changes in SLURM 2.1.4
 ========================

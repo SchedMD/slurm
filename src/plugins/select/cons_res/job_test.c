@@ -892,7 +892,7 @@ static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 			uint32_t req_nodes, uint32_t cr_node_cnt,
 			uint16_t *cpu_cnt, uint32_t *freq, uint32_t size)
 {
-	int i, f, index, error_code = SLURM_ERROR;
+	int i, j, f, index, error_code = SLURM_ERROR;
 	int *consec_nodes;	/* how many nodes we can add from this
 				 * consecutive set of nodes */
 	int *consec_cpus;	/* how many nodes we can add from this
@@ -1158,17 +1158,57 @@ static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 				max_nodes--;
 			}
 		} else {
-			for (i = consec_start[best_fit_index];
-			     i <= consec_end[best_fit_index]; i++) {
+			/* No required nodes, try best fit single node */
+			int *cpus_array = NULL, array_len;
+			int best_fit = -1, best_size = 0;
+			int first = consec_start[best_fit_index];
+			int last  = consec_end[best_fit_index];
+			if (rem_nodes <= 1) {
+				array_len =  last - first + 1;
+				cpus_array = xmalloc(sizeof(int) * array_len);
+				for (i = first, j = 0; i <= last; i++, j++) {
+					if (bit_test(node_map, i))
+						continue;
+					cpus_array[j] = _get_cpu_cnt(job_ptr,
+								i, cpu_cnt,
+								freq, size);
+					if (cpus_array[j] < rem_cpus)
+						continue;
+					if ((best_fit == -1) ||
+					    (cpus_array[j] < best_size)) {
+						best_fit = j;
+						best_size = cpus_array[j];
+						if (best_size == rem_cpus)
+							break;
+					}
+				}
+				/* If we found a single node to use, 
+				 * clear cpu counts for all other nodes */
+				for (i = first, j = 0;
+				     ((i <= last) && (best_fit != -1)); 
+				     i++, j++) {
+					if (j != best_fit)
+						cpus_array[j] = 0;
+				}
+			}
+
+			for (i = first, j = 0; i <= last; i++, j++) {
 				if ((max_nodes <= 0) ||
 				    ((rem_nodes <= 0) && (rem_cpus <= 0)))
 					break;
 				if (bit_test(node_map, i))
 					continue;
-				avail_cpus = _get_cpu_cnt(job_ptr, i, cpu_cnt,
-							  freq, size);
+
+				if (cpus_array)
+					avail_cpus = cpus_array[j];
+				else {
+					avail_cpus = _get_cpu_cnt(job_ptr, i,
+								  cpu_cnt,
+								  freq, size);
+				}
 				if (avail_cpus <= 0)
 					continue;
+
 				if ((max_nodes == 1) &&
 				    (avail_cpus < rem_cpus)) {
 					/* Job can only take one more node and
@@ -1199,6 +1239,7 @@ static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 				rem_nodes--;
 				max_nodes--;
 			}
+			xfree(cpus_array);
 		}
 
 		if (job_ptr->details->contiguous ||
