@@ -232,7 +232,6 @@ static void _process_assoc_type(
 
 		list_delete_item(itr);
 	}
-	list_iterator_reset(itr);
 }
 
 static void _process_wckey_type(
@@ -264,7 +263,6 @@ static void _process_wckey_type(
 
 		list_delete_item(itr);
 	}
-	list_iterator_reset(itr);
 }
 
 static List _process_util_by_report(char *calling_name, void *cond,
@@ -275,6 +273,7 @@ static List _process_util_by_report(char *calling_name, void *cond,
 	slurmdb_cluster_cond_t cluster_cond;
 	List type_list = NULL;
 	List cluster_list = NULL;
+	List first_list = NULL;
 	slurmdb_cluster_rec_t *cluster = NULL;
 	slurmdb_report_cluster_rec_t *slurmdb_report_cluster = NULL;
 
@@ -331,10 +330,9 @@ static List _process_util_by_report(char *calling_name, void *cond,
 	}
 
 	if((type == CLUSTER_REPORT_UA) || (type == CLUSTER_REPORT_AU)) {
-		List first_list = type_list;
+		first_list = type_list;
 		type_list = slurmdb_get_hierarchical_sorted_assoc_list(
 			first_list);
-		list_destroy(first_list);
 	}
 
 	/* set up the structures for easy retrieval later */
@@ -383,6 +381,7 @@ static List _process_util_by_report(char *calling_name, void *cond,
 			|| (type == CLUSTER_REPORT_WU))
 			_process_wckey_type(type_itr, slurmdb_report_cluster,
 					    cluster->name, type);
+		list_iterator_reset(type_itr);
 	}
 	list_iterator_destroy(type_itr);
 	list_iterator_destroy(itr);
@@ -392,6 +391,11 @@ end_it:
 	if(type_list) {
 		list_destroy(type_list);
 		type_list = NULL;
+	}
+
+	if(first_list) {
+		list_destroy(first_list);
+		first_list = NULL;
 	}
 
 	if(cluster_list) {
