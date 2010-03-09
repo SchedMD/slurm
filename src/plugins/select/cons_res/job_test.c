@@ -1099,8 +1099,7 @@ static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 					avail_cpus = rem_cpus;
 
 				total_cpus += avail_cpus;
-				/* check to make sure we don't over
-				   step the max_cpus limit */
+				/* enforce the max_cpus limit */
 				if((job_ptr->details->max_cpus != NO_VAL) &&
 				   (total_cpus > job_ptr->details->max_cpus)) {
 					debug2("1 can't use this node "
@@ -1135,8 +1134,7 @@ static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 					avail_cpus = rem_cpus;
 
 				total_cpus += avail_cpus;
-				/* check to make sure we don't over
-				   step the max_cpus limit */
+				/* enforce the max_cpus limit */
 				if((job_ptr->details->max_cpus != NO_VAL) &&
 				   (total_cpus > job_ptr->details->max_cpus)) {
 					debug2("2 can't use this node "
@@ -1178,8 +1176,7 @@ static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 					avail_cpus = rem_cpus;
 
 				total_cpus += avail_cpus;
-				/* check to make sure we don't over
-				   step the max_cpus limit */
+				/* enforce the max_cpus limit */
 				if((job_ptr->details->max_cpus != NO_VAL) &&
 				   (total_cpus > job_ptr->details->max_cpus)) {
 					debug2("3 can't use this node "
@@ -1382,8 +1379,7 @@ static int _eval_nodes_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 					avail_cpus = rem_cpus;
 
 				total_cpus += avail_cpus;
-				/* check to make sure we don't over
-				 * step the max_cpus limit */
+				/* enforce the max_cpus limit */
 				if((job_ptr->details->max_cpus != NO_VAL) &&
 				   (total_cpus > job_ptr->details->max_cpus)) {
 					debug2("4 can't use this node since "
@@ -1524,8 +1520,7 @@ static int _eval_nodes_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 				avail_cpus = rem_cpus;
 
 			total_cpus += avail_cpus;
-			/* check to make sure we don't over
-			 * step the max_cpus limit */
+			/* enforce the max_cpus limit */
 			if((job_ptr->details->max_cpus != NO_VAL) &&
 			   (total_cpus > job_ptr->details->max_cpus)) {
 				debug2("5 can't use this node since it "
@@ -1866,7 +1861,7 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	 * let's factor in the existing allocations and seek the optimal set
 	 * of resources for this job. Here is the procedure:
 	 *
-	 * Step 1: Seek idle nodes across all partitions. If successful then
+	 * Step 1: Seek idle CPUs across all partitions. If successful then
 	 *         place job and exit. If not successful, then continue. Two
 	 *         related items to note:
 	 *          1. Jobs that don't share CPUs finish with step 1.
