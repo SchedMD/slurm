@@ -25,6 +25,8 @@ documents those changes that are of interest to users and admins.
     un-booted block when a job comes to use it before the state checking
     thread notices it which could cause the slurmctld to lock up on a
     non-dynamic system.
+ -- Correct TaskEpilog logic. Previously could kill other user tasks on that
+    node which remained running.
 
 * Changes in SLURM 2.1.4
 ========================
