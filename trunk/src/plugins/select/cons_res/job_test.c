@@ -767,12 +767,19 @@ bitstr_t *_make_core_bitmap(bitstr_t *node_map)
 }
 
 
-/* return the number of cpus that the given
- * job can run on the indexed node */
+/*
+ * Determine the number of CPUs that a given job can use on a specific node
+ * IN: job_ptr - pointer to job we are attempting to start
+ * IN: node_index - zero origin node being considered for use
+ * IN: cpu_cnt - array with count of CPU's availble to job on each node
+ * IN: freq - array with repetition counts for each cpu_cnt entry
+ * IN: size - length of cpu_cnt and freq arrays
+ * RET: number of usable CPUs on the identified node
+ */
 static int _get_cpu_cnt(struct job_record *job_ptr, const int node_index,
-			 uint16_t *cpu_cnt, uint32_t *freq, uint32_t size)
+			uint16_t *cpu_cnt, uint32_t *freq, uint32_t size)
 {
-	int i, pos, cpus;
+	int i, offset, pos, cpus;
 	uint16_t *layout_ptr = job_ptr->details->req_node_layout;
 
 	pos = 0;
@@ -782,15 +789,17 @@ static int _get_cpu_cnt(struct job_record *job_ptr, const int node_index,
 		pos += freq[i];
 	}
 	cpus = cpu_cnt[i];
-	if (layout_ptr && bit_test(job_ptr->details->req_node_bitmap, i)) {
-		pos = bit_get_pos_num(job_ptr->details->req_node_bitmap, i);
-		cpus = MIN(cpus, layout_ptr[pos]);
+
+	if (layout_ptr && 
+	    bit_test(job_ptr->details->req_node_bitmap, node_index)) {
+		offset = bit_get_pos_num(job_ptr->details->req_node_bitmap,
+					 node_index);
+		cpus = MIN(cpus, layout_ptr[offset]);
 	} else if (layout_ptr) {
 		cpus = 0; /* should not happen? */
 	}
 	return cpus;
 }
-
 
 #define CR_FREQ_ARRAY_INCREMENT 16
 
