@@ -1521,6 +1521,8 @@ static int _eval_nodes_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 
 	/* Select resources from these leafs on a best-fit basis */
 	while ((max_nodes > 0) && ((rem_nodes > 0) || (rem_cpus > 0))) {
+		int *cpus_array = NULL, array_len;
+		int best_fit = -1, best_size = 0;
 		best_fit_cpus = best_fit_nodes = best_fit_sufficient = 0;
 		for (j=0; j<switch_record_cnt; j++) {
 			if (switches_node_cnt[j] == 0)
@@ -1551,14 +1553,50 @@ static int _eval_nodes_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 		/* Use select nodes from this leaf */
 		first = bit_ffs(switches_bitmap[best_fit_location]);
 		last  = bit_fls(switches_bitmap[best_fit_location]);
-		for (i=first; ((i<=last) && (first>=0)); i++) {
+		if (rem_nodes <= 1) {
+			array_len = last - first + 1;
+			cpus_array = xmalloc(sizeof(int) * array_len);
+			for (i=first, j=0; ((i<=last) && (first>=0)); 
+			     i++, j++) {
+				if (!bit_test(switches_bitmap
+					      [best_fit_location], i))
+					continue;
+				cpus_array[j] = _get_cpu_cnt(job_ptr, i, 
+							     cpu_cnt, freq, 
+							     size);
+				if (cpus_array[j] < rem_cpus)
+					continue;
+				if ((best_fit == -1) ||
+				    (cpus_array[j] < best_size)) {
+					best_fit = j;
+					best_size = cpus_array[j];
+					if (best_size == rem_cpus)
+						break;
+				}
+			}
+			/* If we found a single node to use, 
+			 * clear node bitmap for all other nodes */
+			for (i=first, j=0;
+			     ((i <= last) && (first>=0) && (best_fit != -1)); 
+			     i++, j++) {
+				if (j != best_fit) {
+					bit_clear(switches_bitmap
+						  [best_fit_location], i);
+				}
+			}
+		}
+		for (i=first, j=0; ((i<=last) && (first>=0)); i++, j++) {
 			if (!bit_test(switches_bitmap[best_fit_location], i))
 				continue;
 
 			bit_clear(switches_bitmap[best_fit_location], i);
 			switches_node_cnt[best_fit_location]--;
-			avail_cpus = _get_cpu_cnt(job_ptr, i, cpu_cnt,
-						  freq, size);
+			if (cpus_array)
+				avail_cpus = cpus_array[j];
+			else {
+				avail_cpus = _get_cpu_cnt(job_ptr, i, cpu_cnt,
+							  freq, size);
+			}
 			switches_cpu_cnt[best_fit_location] -= avail_cpus;
 
 			/* This could result in 0, but if the user
@@ -1593,6 +1631,7 @@ static int _eval_nodes_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 				break;
 		}
 		switches_node_cnt[best_fit_location] = 0;
+		xfree(cpus_array);
 	}
 	if ((rem_cpus <= 0) &&
 	    _enough_nodes(0, rem_nodes, min_nodes, req_nodes)) {
