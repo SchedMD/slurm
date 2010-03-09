@@ -1009,7 +1009,8 @@ _fork_all_tasks(slurmd_job_t *job)
 
 	xassert(job != NULL);
 
-	if (slurm_container_create(job) == SLURM_ERROR) {
+	if ((job->cont_id == 0) &&
+	    (slurm_container_create(job) != SLURM_SUCCESS)) {
 		error("slurm_container_create: %m");
 		return SLURM_ERROR;
 	}
@@ -1969,7 +1970,8 @@ _run_script_as_user(const char *name, const char *path, slurmd_job_t *job,
 		return -1;
 	}
 
-	if (slurm_container_create(job) != SLURM_SUCCESS)
+	if ((job->cont_id == 0) &&
+	    (slurm_container_create(job) != SLURM_SUCCESS))
 		error("slurm_container_create: %m");
 
 	if ((cpid = fork()) < 0) {
@@ -2036,7 +2038,6 @@ _run_script_as_user(const char *name, const char *path, slurmd_job_t *job,
 	}
 	/* Insure that all child processes get killed, one last time */
 	killpg(cpid, SIGKILL);
-	slurm_container_signal(job->cont_id, SIGKILL);
 
 	return status;
 }
