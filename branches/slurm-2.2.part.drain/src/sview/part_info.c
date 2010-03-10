@@ -64,6 +64,7 @@ enum {
 /* These need to be in alpha order (except POS and CNT) */
 enum {
 	SORTID_POS = POS_LOC,
+	SORTID_ALTERNATE,
 #ifdef HAVE_BG
 	SORTID_NODELIST,
 	SORTID_NODES_ALLOWED,
@@ -101,6 +102,8 @@ enum {
 
 static display_data_t display_data_part[] = {
 	{G_TYPE_INT, SORTID_POS, NULL, FALSE, EDIT_NONE, refresh_part},
+	{G_TYPE_STRING, SORTID_ALTERNATE, "Alternate", FALSE,
+	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_NAME, "Partition", TRUE,
 	 EDIT_NONE, refresh_part, create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_COLOR, NULL, TRUE, EDIT_NONE, refresh_part,
@@ -366,6 +369,10 @@ static const char *_set_part_msg(update_part_msg_t *part_msg,
 		return NULL;
 
 	switch(column) {
+	case SORTID_ALTERNATE:
+		type = "alternate";
+		part_msg->alternate = xstrdup(new_text);
+		break;
 	case SORTID_DEFAULT:
 		if (!strcasecmp(new_text, "yes"))
 			part_msg->default_part = 1;
@@ -435,10 +442,10 @@ static const char *_set_part_msg(update_part_msg_t *part_msg,
 		} else if (!strcasecmp(new_text, "force")) {
 			part_msg->max_share =
 				_set_part_share_popup() | SHARED_FORCE;
-		} else if (!strcasecmp(new_text, "no))
+		} else if (!strcasecmp(new_text, "no"))
 			part_msg->max_share = 1;
 		else
-			goto return_error
+			goto return_error;
 		type = "share";
 		break;
 	case SORTID_GROUPS:
@@ -762,6 +769,12 @@ static void _layout_part_record(GtkTreeView *treeview,
 		case SORTID_PART_STATE:
 			up_down = part_ptr->state_up;
 			break;
+		case SORTID_ALTERNATE:
+			if(part_ptr->alternate)
+				temp_char = part_ptr->alternate;
+			else
+				temp_char = "";
+			break;
 		case SORTID_CPUS:
 			convert_num_unit((float)part_ptr->total_cpus,
 					 tmp_cnt, sizeof(tmp_cnt),
@@ -930,6 +943,12 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 		temp_char = "no";
 	gtk_tree_store_set(treestore, iter, SORTID_HIDDEN, temp_char, -1);
 
+	if(part_ptr->alternate)
+		temp_char = part_ptr->alternate;
+	else
+		temp_char = "";
+	gtk_tree_store_set(treestore, iter, SORTID_ALTERNATE, temp_char, -1);
+
 	if (part_ptr->state_up == PARTITION_UP)
 		temp_char = "up";
 	else if (part_ptr->state_up == PARTITION_DOWN)
@@ -940,7 +959,6 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 		temp_char = "drain";
 	else
 		temp_char = "unk";
-
 	gtk_tree_store_set(treestore, iter, SORTID_PART_STATE, temp_char, -1);
 
 	if (part_ptr->max_time == INFINITE)
