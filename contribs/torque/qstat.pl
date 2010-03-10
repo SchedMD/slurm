@@ -126,6 +126,7 @@ chomp $hostname;
 # 	}
 # }
 my $now_time = time();
+my $job_flags = SHOW_ALL | SHOW_DETAIL;
 
 if(defined($queueList)) {
 	my @queueIds = split(/,/, $queueList) if $queueList;
@@ -150,7 +151,7 @@ if(defined($queueList)) {
 		$rc = 0;
 	}
 } elsif($queueStatus) {
-	my $jresp = Slurm->load_jobs(1);
+	my $jresp = Slurm->load_jobs($job_flags);
 	die "Problem loading jobs.\n" if(!$jresp);
 	my $resp = Slurm->load_partitions(1);
 	die "Problem loading partitions.\n" if(!$resp);
@@ -179,7 +180,7 @@ if(defined($queueList)) {
 	my @jobIds = @ARGV;
 	my @userIds = split(/,/, $userList) if $userList;
 
-	my $resp = Slurm->load_jobs(1);
+	my $resp = Slurm->load_jobs($job_flags);
 	if(!$resp) {
 		die "Problem loading jobs.\n";
 	}
@@ -416,14 +417,9 @@ sub get_exec_host
 		my $inx = 0;
 		my $cpu_cnt = 0;
 		while((my $host = Slurm::Hostlist::shift($hl))) {
-			push(@allocNodes,
-			     "$host/" . $job->{'cpus_per_node'}[$inx]);
-
-			$cpu_cnt++;
-			if($cpu_cnt >= $job->{'cpu_count_reps'}[$inx]) {
-				$cpu_cnt = 0;
-				$inx++;
-			}
+			push(@allocNodes, "$host/" .
+			     Slurm->job_cpus_allocated_on_node_id(
+				     $job->{'job_resrcs'}, $inx++));
 		}
 		$execHost = join '+', @allocNodes;
 	}
@@ -457,24 +453,24 @@ sub print_job_select
 	if (!defined $header_printed) {
 		print "\n${hostname}:\n";
 
-		printf("%-20s %-8s %-8s %-20s %-6s %-5s %-3s %-6s %-5s %-1s %-5s\n",
+		printf("%-20s %-8s %-8s %-20s %-6s %-5s %-5s %-6s %-5s %-1s %-5s\n",
 		       "", "", "", "", "", "", "", "Req'd", "Req'd", "", "Elap");
 		printf(
-			"%-20s %-8s %-8s %-20s %-6s %-5s %-3s %-6s %-5s %-1s %-5s\n",
+			"%-20s %-8s %-8s %-20s %-6s %-5s %-5s %-6s %-5s %-1s %-5s\n",
 			"Job ID", "Username", "Queue", "Jobname", "SessID", "NDS",
 			"TSK",    "Memory",   "Time",  "S",       "Time"
 			);
 		printf(
-			"%-20s %-8s %-8s %-20s %-6s %-5s %-3s %-6s %-5s %-1s %-5s\n",
+			"%-20s %-8s %-8s %-20s %-6s %-5s %-5s %-6s %-5s %-1s %-5s\n",
 			'-' x 20, '-' x 8, '-' x 8, '-' x 20, '-' x 6, '-' x 5,
-			'-' x 3,  '-' x 6, '-' x 5, '-',      '-' x 5
+			'-' x 5,  '-' x 6, '-' x 5, '-',      '-' x 5
 			);
 		$header_printed = 1;
 	}
 	$execHost = get_exec_host($job) if $nodes;
 
 	printf("%-20.20s %-8.8s %-8.8s %-20.20s " .
-	       "%-6.6s %5.5s %3.3s %6.6s %-5.5s %-1s %-5.5s",
+	       "%-6.6s %5.5s %5.5s %6.6s %-5.5s %-1s %-5.5s",
 	       $job->{'job_id'},
 	       $job->{'user_name'},
 	       $job->{'partition'},

@@ -539,7 +539,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 			}
 
 			snprintf(tmp_line, sizeof(tmp_line), "%d",
-				 job_resrcs->cpu_array_value[i]);
+				 job_resrcs->cpus[i]);
 			xstrcat(out, tmp_line);
 			length += strlen(tmp_line);
 		    	if (job_resrcs->cpu_array_reps[i] > 1) {

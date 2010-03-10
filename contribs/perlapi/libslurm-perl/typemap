@@ -4,7 +4,10 @@ slurm_step_ctx_t * T_STEPCTX
 signo_t		T_SIGNO
 slurm_cred_t	* T_PTRREF
 switch_jobinfo_t * T_PTRREF
-
+job_resources_t * T_PTRREF
+select_jobinfo_t * T_PTRREF
+select_nodeinfo_t * T_PTRREF
+jobacctinfo_t * T_PTRREF
 #####################################
 OUTPUT
 

@@ -168,8 +168,9 @@ hv_to_job_desc_msg(HV* hv, job_desc_msg_t* job_desc_msg)
 	FETCH_FIELD(hv, job_desc_msg, mloaderimage, charp, FALSE);
 	FETCH_FIELD(hv, job_desc_msg, ramdiskimage, charp, FALSE);
 	/* TODO: select_jobinfo */
-	/* Don't know how to manage memory of select_jobinfo, since it's storage size is unknown. */
-	/* Maybe we can do it if select_g_copy_jobinfo and select_g_free_jobinfo are exported. */
+	/* The api does not currently export the
+	 * slurm_set_select_jobinfo.  If it ever does we should be
+	 * able to handle this. */
 
 	FETCH_FIELD(hv, job_desc_msg, std_err, charp, FALSE);
 	FETCH_FIELD(hv, job_desc_msg, std_in, charp, FALSE);
@@ -231,7 +232,8 @@ resource_allocation_response_msg_to_hv(resource_allocation_response_msg_t* resp_
 	}
 	STORE_FIELD(hv, resp_msg, node_cnt, uint32_t);
 	STORE_FIELD(hv, resp_msg, error_code, uint32_t);
-	/* TODO: select_jobinfo */
+	STORE_FIELD(hv, resp_msg, select_jobinfo, ptr);
+
 	return 0;
 }
 
@@ -271,7 +273,7 @@ job_alloc_info_response_msg_to_hv(job_alloc_info_response_msg_t *resp_msg, HV* h
 		hv_store_sv(hv, "node_addr", newRV_noinc((SV*)avp));
 	}
 	STORE_FIELD(hv, resp_msg, error_code, uint32_t);
-	/* TODO: select_jobinfo */
+	STORE_FIELD(hv, resp_msg, select_jobinfo, ptr);
 	return 0;
 }
 

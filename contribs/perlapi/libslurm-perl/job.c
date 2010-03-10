@@ -33,6 +33,8 @@ job_info_to_hv(job_info_t* job_info, HV* hv)
 	STORE_FIELD(hv, job_info, cpus_per_task, uint16_t);
 	if(job_info->dependency)
 		STORE_FIELD(hv, job_info, dependency, charp);
+	if(job_info->eligible_time)
+		STORE_FIELD(hv, job_info, eligible_time, time_t);
 	STORE_FIELD(hv, job_info, end_time, time_t);
 	if(job_info->exc_nodes)
 		STORE_FIELD(hv, job_info, exc_nodes, charp);
@@ -64,6 +66,8 @@ job_info_to_hv(job_info_t* job_info, HV* hv)
 		STORE_FIELD(hv, job_info, name, charp);
 	if(job_info->network)
 		STORE_FIELD(hv, job_info, network, charp);
+	if(job_info->nice)
+		STORE_FIELD(hv, job_info, nice, uint16_t);
 	if(job_info->nodes)
 		STORE_FIELD(hv, job_info, nodes, charp);
 	avp = newAV();
@@ -77,12 +81,21 @@ job_info_to_hv(job_info_t* job_info, HV* hv)
 	STORE_FIELD(hv, job_info, ntasks_per_core, uint16_t);
 	STORE_FIELD(hv, job_info, ntasks_per_node, uint16_t);
 	STORE_FIELD(hv, job_info, ntasks_per_socket, uint16_t);
+#ifdef HAVE_BG
+	slurm_get_select_jobinfo(job_info->select_jobinfo,
+				 SELECT_JOBDATA_NODE_CNT,
+				 &job_info->num_nodes);
+
+#endif
 	STORE_FIELD(hv, job_info, num_nodes, uint32_t);
 	STORE_FIELD(hv, job_info, num_cpus, uint32_t);
+
 	if(job_info->partition)
 		STORE_FIELD(hv, job_info, partition, charp);
 	STORE_FIELD(hv, job_info, pre_sus_time, time_t);
 	STORE_FIELD(hv, job_info, priority, uint32_t);
+	if(job_info->qos)
+		STORE_FIELD(hv, job_info, qos, charp);
 	if(job_info->req_nodes)
 		STORE_FIELD(hv, job_info, req_nodes, charp);
 	avp = newAV();
@@ -97,8 +110,8 @@ job_info_to_hv(job_info_t* job_info, HV* hv)
 	STORE_FIELD(hv, job_info, restart_cnt, uint16_t);
 	if(job_info->resv_name)
 		STORE_FIELD(hv, job_info, resv_name, charp);
-	/* TODO: select_jobinfo */
-	/* TODO: select_job_res */
+	STORE_FIELD(hv, job_info, select_jobinfo, ptr);
+	STORE_FIELD(hv, job_info, job_resrcs, ptr);
 	STORE_FIELD(hv, job_info, shared, uint16_t);
 	STORE_FIELD(hv, job_info, start_time, time_t);
 	if(job_info->state_desc)
@@ -112,7 +125,7 @@ job_info_to_hv(job_info_t* job_info, HV* hv)
 		STORE_FIELD(hv, job_info, wckey, charp);
 	if(job_info->work_dir)
 		STORE_FIELD(hv, job_info, work_dir, charp);
-			
+
 	return 0;
 }
 
@@ -186,18 +199,20 @@ job_step_info_to_hv(job_step_info_t* step_info, HV* hv)
  * convert job_step_info_response_msg_t to perl HV
  */
 int
-job_step_info_response_msg_to_hv(job_step_info_response_msg_t* job_step_info_msg, HV* hv)
+job_step_info_response_msg_to_hv(
+	job_step_info_response_msg_t* job_step_info_msg, HV* hv)
 {
 	int i;
 	AV* avp;
 	HV* hvp;
-	
+
 	STORE_FIELD(hv, job_step_info_msg, last_update, time_t);
 	/* job_step_count implied in job_steps */
 	avp = newAV();
 	for(i = 0; i < job_step_info_msg->job_step_count; i ++) {
 		hvp = newHV();
-		if (job_step_info_to_hv(job_step_info_msg->job_steps + i, hvp) < 0) {
+		if (job_step_info_to_hv(
+			    job_step_info_msg->job_steps + i, hvp) < 0) {
 			SvREFCNT_dec(hvp);
 			SvREFCNT_dec(avp);
 			return -1;
@@ -234,11 +249,11 @@ slurm_step_layout_to_hv(slurm_step_layout_t* step_layout, HV* hv)
 	avp = newAV();
 	for(i = 0; i < step_layout->node_cnt; i ++) {
 		avp2 = newAV();
-		for(j = 0; j < step_layout->tasks[i]; j ++) 
+		for(j = 0; j < step_layout->tasks[i]; j ++)
 			av_store(avp2, i, newSVuv(step_layout->tids[i][j]));
 		av_store(avp, i, newRV_noinc((SV*)avp2));
 	}
 	hv_store_sv(hv, "tids", newRV_noinc((SV*)avp));
-	
+
 	return 0;
 }
