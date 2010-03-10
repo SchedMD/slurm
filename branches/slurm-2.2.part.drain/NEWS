@@ -11,6 +11,7 @@ documents those changes that are of interest to users and admins.
  -- In select/cons_res, allocate cores for a job using a best-fit approach.
  -- In select/cons_res, for jobs that can run on a single node, use a best-fit
     packing approach.
+ -- Add support for new partition states of DRAIN and INACTIVE.
 
 * Changes in SLURM 2.2.0.pre2
 =============================

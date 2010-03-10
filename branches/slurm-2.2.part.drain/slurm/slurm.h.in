@@ -247,7 +247,8 @@ enum job_state_reason {
 	WAIT_RESOURCES,		/* required resources not available */
 	WAIT_PART_NODE_LIMIT,	/* request exceeds partition node limit */
 	WAIT_PART_TIME_LIMIT,	/* request exceeds partition time limit */
-	WAIT_PART_STATE,	/* requested partition is down */
+	WAIT_PART_DOWN,		/* requested partition is down */
+	WAIT_PART_INACTIVE,	/* requested partition is inactive */
 	WAIT_HELD,		/* job is held, priority==0 */
 	WAIT_TIME,		/* job waiting for specific begin time */
 	WAIT_LICENSES,		/* job is waiting for licenses */
@@ -275,6 +276,16 @@ enum job_acct_types {
 	JOB_SUSPEND,
 	JOB_TERMINATED
 };
+
+/* Partition state flags */
+#define PARTITION_SUBMIT	0x01	/* Allow job submission to partition */
+#define PARTITION_SCHED 	0x02	/* Allow job startup from partition */
+
+/* Actual partition states based upon state flags */
+#define PARTITION_DOWN		(PARTITION_SUBMIT)
+#define PARTITION_UP		(PARTITION_SUBMIT | PARTITION_SCHED)
+#define PARTITION_DRAIN		(PARTITION_SCHED)
+#define PARTITION_INACTIVE	0x00
 
 enum connection_type {
 	SELECT_MESH, 		/* nodes wired in mesh */
@@ -1008,6 +1019,7 @@ typedef struct partition_info {
 	char *allow_alloc_nodes;/* list names of allowed allocating nodes */
 	char *allow_groups;	/* comma delimited list of groups,
 				 * null indicates all */
+	char *alternate; 	/* name of alternate partition */
 	uint16_t default_part;	/* 1 if this is default partition */
 	uint32_t default_time;	/* minutes, NO_VAL or INFINITE */
 	uint16_t disable_root_jobs; /* 1 if user root jobs disabled */
@@ -1023,7 +1035,7 @@ typedef struct partition_info {
 	char *nodes;		/* list names of nodes in partition */
 	uint16_t priority;	/* scheduling priority for jobs */
 	uint16_t root_only;	/* 1 if allocate must come for user root */
-	uint16_t state_up;	/* 1 if state is up, 0 if down */
+	uint16_t state_up;	/* 0=down, 1=up, 2=drain */
 	uint32_t total_cpus;	/* total number of cpus in the partition */
 	uint32_t total_nodes;	/* total number of nodes in the partition */
 } partition_info_t;

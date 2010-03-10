@@ -235,6 +235,7 @@ struct part_record *create_part_record(void)
 
 	xassert (part_ptr->magic = PART_MAGIC);  /* set value */
 	part_ptr->name              = xstrdup("DEFAULT");
+	part_ptr->alternate         = xstrdup(default_part.alternate);
 	part_ptr->disable_root_jobs = default_part.disable_root_jobs;
 	part_ptr->hidden            = default_part.hidden;
 	part_ptr->max_time          = default_part.max_time;
@@ -419,6 +420,7 @@ static void _dump_part_state(struct part_record *part_ptr, Buf buffer)
 	pack16(part_ptr->state_up,       buffer);
 	packstr(part_ptr->allow_groups,  buffer);
 	packstr(part_ptr->allow_alloc_nodes, buffer);
+	packstr(part_ptr->alternate,     buffer);
 	packstr(part_ptr->nodes,         buffer);
 }
 
@@ -474,6 +476,7 @@ int load_all_part_state(void)
 	char *ver_str = NULL;
 	char* allow_alloc_nodes = NULL;
 	uint16_t protocol_version = (uint16_t)NO_VAL;
+	char* alternate= NULL;
 
 	/* read the file */
 	lock_state_files();
@@ -531,7 +534,7 @@ int load_all_part_state(void)
 	safe_unpack_time(&time, buffer);
 
 	while (remaining_buf(buffer) > 0) {
-		if(protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
+		if(protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
 			safe_unpackstr_xmalloc(&part_name, &name_len, buffer);
 			safe_unpack32(&max_time, buffer);
 			safe_unpack32(&default_time, buffer);
@@ -552,15 +555,40 @@ int load_all_part_state(void)
 					       &name_len, buffer);
 			safe_unpackstr_xmalloc(&allow_alloc_nodes,
 					       &name_len, buffer);
+			safe_unpackstr_xmalloc(&alternate, &name_len, buffer);
+			safe_unpackstr_xmalloc(&nodes, &name_len, buffer);
+		} else {
+			safe_unpackstr_xmalloc(&part_name, &name_len, buffer);
+			safe_unpack32(&max_time, buffer);
+			safe_unpack32(&default_time, buffer);
+			safe_unpack32(&max_nodes, buffer);
+			safe_unpack32(&min_nodes, buffer);
+
+			safe_unpack16(&def_part_flag, buffer);
+			safe_unpack16(&hidden,    buffer);
+			safe_unpack16(&root_only, buffer);
+			safe_unpack16(&max_share, buffer);
+			safe_unpack16(&priority,  buffer);
+
+			if(priority > part_max_priority)
+				part_max_priority = priority;
+
+			safe_unpack16(&state_up, buffer);
+			if (state_up == 0)
+				state_up = PARTITION_DOWN;
+			else
+				state_up = PARTITION_UP;
+			safe_unpackstr_xmalloc(&allow_groups,
+					       &name_len, buffer);
+			safe_unpackstr_xmalloc(&allow_alloc_nodes,
+					       &name_len, buffer);
 			safe_unpackstr_xmalloc(&nodes, &name_len, buffer);
 		}
 		/* validity test as possible */
-		if ((def_part_flag > 1) ||
-		    (root_only > 1) || (hidden > 1) ||
-		    (state_up > 1)) {
-			error("Invalid data for partition %s: "
-			      "def_part_flag=%u, "
-			      "hidden=%u root_only=%u, state_up=%u",
+		if ((def_part_flag > 1) || (root_only > 1) || (hidden > 1) || 
+		    (state_up > PARTITION_UP)) {
+			error("Invalid data for partition %s: def_part_flag=%u,"
+			      " hidden=%u root_only=%u, state_up=%u",
 			      part_name, def_part_flag, hidden, root_only,
 			      state_up);
 			error("No more partition data will be processed from "
@@ -602,6 +630,8 @@ int load_all_part_state(void)
 		part_ptr->allow_groups   = allow_groups;
 		xfree(part_ptr->allow_alloc_nodes);
 		part_ptr->allow_alloc_nodes   = allow_alloc_nodes;
+		xfree(part_ptr->alternate);
+		part_ptr->alternate      = alternate;
 		xfree(part_ptr->nodes);
 		part_ptr->nodes = nodes;
 
@@ -654,7 +684,7 @@ int init_part_conf(void)
 	default_part.min_nodes      = 1;
 	default_part.min_nodes_orig = 1;
 	default_part.root_only      = 0;
-	default_part.state_up       = 1;
+	default_part.state_up       = PARTITION_UP;
 	default_part.max_share      = 1;
 	default_part.priority       = 1;
 	default_part.norm_priority  = 0;
@@ -664,6 +694,7 @@ int init_part_conf(void)
 	xfree(default_part.allow_groups);
 	xfree(default_part.allow_uids);
 	xfree(default_part.allow_alloc_nodes);
+	xfree(default_part.alternate); 	
 	FREE_NULL_BITMAP(default_part.node_bitmap);
 
 	if (part_list)		/* delete defunct partitions */
@@ -706,10 +737,12 @@ static void _list_delete_part(void *part_entry)
 			break;
 		}
 	}
-	xfree(part_ptr->name);
+
+	xfree(part_ptr->allow_alloc_nodes);
 	xfree(part_ptr->allow_groups);
 	xfree(part_ptr->allow_uids);
-	xfree(part_ptr->allow_alloc_nodes);
+	xfree(part_ptr->alternate);
+	xfree(part_ptr->name);
 	xfree(part_ptr->nodes);
 	FREE_NULL_BITMAP(part_ptr->node_bitmap);
 	xfree(part_entry);
@@ -840,7 +873,7 @@ void pack_part(struct part_record *part_ptr, Buf buffer,
 	uint16_t default_part_flag;
 	uint32_t altered;
 
-	if(protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
+	if(protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
 		if (default_part_loc == part_ptr)
 			default_part_flag = 1;
 		else
@@ -864,6 +897,40 @@ void pack_part(struct part_record *part_ptr, Buf buffer,
 		pack16(part_ptr->priority,   buffer);
 
 		pack16(part_ptr->state_up, buffer);
+		packstr(part_ptr->allow_groups, buffer);
+		packstr(part_ptr->allow_alloc_nodes, buffer);
+		packstr(part_ptr->alternate, buffer);
+		packstr(part_ptr->nodes, buffer);
+		pack_bit_fmt(part_ptr->node_bitmap, buffer);
+	} else {
+		uint16_t state;
+		if (default_part_loc == part_ptr)
+			default_part_flag = 1;
+		else
+			default_part_flag = 0;
+
+		packstr(part_ptr->name, buffer);
+		pack32(part_ptr->max_time, buffer);
+		pack32(part_ptr->default_time, buffer);
+		pack32(part_ptr->max_nodes_orig, buffer);
+		pack32(part_ptr->min_nodes_orig, buffer);
+		altered = part_ptr->total_nodes;
+		select_g_alter_node_cnt(SELECT_APPLY_NODE_MAX_OFFSET,
+					&altered);
+		pack32(altered, buffer);
+		pack32(part_ptr->total_cpus, buffer);
+		pack16(default_part_flag,    buffer);
+		pack16(part_ptr->disable_root_jobs, buffer);
+		pack16(part_ptr->hidden,     buffer);
+		pack16(part_ptr->root_only,  buffer);
+		pack16(part_ptr->max_share,  buffer);
+		pack16(part_ptr->priority,   buffer);
+
+		if (part_ptr->state_up == PARTITION_UP)
+			state = 1;
+		else	/* DOWN, DRAIN, and INACTIVE */
+			state = 0;
+		pack16(state, buffer);
 		packstr(part_ptr->allow_groups, buffer);
 		packstr(part_ptr->allow_alloc_nodes, buffer);
 		packstr(part_ptr->nodes, buffer);
@@ -1061,6 +1128,18 @@ extern int update_part (update_part_msg_t * part_desc, bool create_flag)
 			     part_ptr->allow_alloc_nodes, part_desc->name);
 		}
 	}
+	if (part_desc->alternate != NULL) {
+		xfree(part_ptr->alternate);
+		if (strcasecmp(part_desc->alternate, "NONE") == 0)
+			part_ptr->alternate = NULL;
+		else
+		    part_ptr->alternate = xstrdup(part_desc->alternate);
+		part_desc->alternate = NULL;
+		info("update_part: setting alternate to %s for "
+		     "partition %s",
+		     part_ptr->alternate, part_desc->name);
+	}
+
 
 	if (part_desc->nodes != NULL) {
 		char *backup_node_list = part_ptr->nodes;

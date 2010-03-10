@@ -435,9 +435,10 @@ static const char *_set_part_msg(update_part_msg_t *part_msg,
 		} else if (!strcasecmp(new_text, "force")) {
 			part_msg->max_share =
 				_set_part_share_popup() | SHARED_FORCE;
-		} else {	/* "no" */
+		} else if (!strcasecmp(new_text, "no))
 			part_msg->max_share = 1;
-		}
+		else
+			goto return_error
 		type = "share";
 		break;
 	case SORTID_GROUPS:
@@ -454,10 +455,17 @@ static const char *_set_part_msg(update_part_msg_t *part_msg,
 		break;
 	case SORTID_PART_STATE:
 		if (!strcasecmp(new_text, "up"))
-			part_msg->state_up = 1;
+			part_msg->state_up = PARTITION_UP;
+		else if (!strcasecmp(new_text, "down"))
+			part_msg->state_up = PARTITION_DOWN;
+		else if (!strcasecmp(new_text, "inactive"))
+			part_msg->state_up = PARTITION_INACTIVE;
+		else if (!strcasecmp(new_text, "drain"))
+			part_msg->state_up = PARTITION_DRAIN;
 		else
-			part_msg->state_up = 0;
-		type = "part state";
+			goto return_error;
+		type = "availability";
+
 		break;
 	case SORTID_NODE_STATE:
 		type = (char *)new_text;
@@ -922,10 +930,17 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 		temp_char = "no";
 	gtk_tree_store_set(treestore, iter, SORTID_HIDDEN, temp_char, -1);
 
-	if (part_ptr->state_up)
+	if (part_ptr->state_up == PARTITION_UP)
 		temp_char = "up";
-	else
+	else if (part_ptr->state_up == PARTITION_DOWN)
 		temp_char = "down";
+	else if (part_ptr->state_up == PARTITION_INACTIVE)
+		temp_char = "inact";
+	else if (part_ptr->state_up == PARTITION_DRAIN)
+		temp_char = "drain";
+	else
+		temp_char = "unk";
+
 	gtk_tree_store_set(treestore, iter, SORTID_PART_STATE, temp_char, -1);
 
 	if (part_ptr->max_time == INFINITE)
@@ -2358,10 +2373,10 @@ extern void admin_part(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 		gtk_tree_model_get(model, iter, SORTID_PART_STATE, &state, -1);
 		if(!strcasecmp("down", state)) {
 			temp = "up";
-			part_msg->state_up = 1;
+			part_msg->state_up = PARTITION_UP;
 		} else {
 			temp = "down";
-			part_msg->state_up = 0;
+			part_msg->state_up = PARTITION_DOWN;
 		}
 		g_free(state);
 		snprintf(tmp_char, sizeof(tmp_char),

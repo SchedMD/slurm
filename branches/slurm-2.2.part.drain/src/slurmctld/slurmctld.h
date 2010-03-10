@@ -194,36 +194,36 @@ extern bitstr_t *up_node_bitmap;	/* bitmap of up nodes, not DOWN */
 #define PART_MAGIC 0xaefe8495
 
 struct part_record {
-	uint16_t disable_root_jobs; /* if set then user root can't run jobs */
-	uint32_t magic;		/* magic cookie to test data integrity */
-	char *name;		/* name of the partition */
-	uint16_t hidden;	/* 1 if hidden by default */
-	uint32_t max_time;	/* minutes or INFINITE */
-	uint32_t default_time;	/* minutes, NO_VAL or INFINITE */
-	uint32_t max_nodes;	/* per job or INFINITE */
-	uint32_t max_nodes_orig;/* unscaled value (c-nodes on BlueGene) */
-	uint32_t min_nodes;	/* per job */
-	uint32_t min_nodes_orig;/* unscaled value (c-nodes on BlueGene) */
-	uint32_t total_nodes;	/* total number of nodes in the partition */
-	uint32_t total_cpus;	/* total number of cpus in the partition */
-	uint32_t min_offset;	/* select plugin min offset */
-	uint32_t max_offset;	/* select plugin max offset */
-	uint16_t root_only;	/* 1 if allocate/submit RPC can only be
-				   issued by user root */
-	uint16_t max_share;	/* number of jobs to gang schedule */
-	double   norm_priority;	/* normalized scheduling priority for
-				 * jobs (DON'T PACK) */
-	uint16_t priority;	/* scheduling priority for jobs */
-	uint16_t state_up;	/* 1 if state is up, 0 if down */
-	char *nodes;		/* comma delimited list names of nodes */
-	char *allow_groups;	/* comma delimited list of groups,
-				 * NULL indicates all */
 	char *allow_alloc_nodes;/* comma delimited list of allowed
 				 * allocating nodes
 				 * NULL indicates all */
-
+	char *allow_groups;	/* comma delimited list of groups,
+				 * NULL indicates all */
 	uid_t *allow_uids;	/* zero terminated list of allowed users */
+	char *alternate; 	/* name of alternate partition */
+	uint32_t default_time;	/* minutes, NO_VAL or INFINITE */
+	uint16_t disable_root_jobs; /* if set then user root can't run jobs */
+	uint16_t hidden;	/* 1 if hidden by default */
+	uint32_t magic;		/* magic cookie to test data integrity */
+	uint32_t max_nodes;	/* per job or INFINITE */
+	uint32_t max_nodes_orig;/* unscaled value (c-nodes on BlueGene) */
+	uint32_t max_offset;	/* select plugin max offset */
+	uint16_t max_share;	/* number of jobs to gang schedule */
+	uint32_t max_time;	/* minutes or INFINITE */
+	uint32_t min_nodes;	/* per job */
+	uint32_t min_offset;	/* select plugin min offset */
+	uint32_t min_nodes_orig;/* unscaled value (c-nodes on BlueGene) */
+	char *name;		/* name of the partition */
 	bitstr_t *node_bitmap;	/* bitmap of nodes in partition */
+	char *nodes;		/* comma delimited list names of nodes */
+	double   norm_priority;	/* normalized scheduling priority for
+				 * jobs (DON'T PACK) */
+	uint16_t priority;	/* scheduling priority for jobs */
+	uint16_t state_up;	/* See PARTITION_* states in slurm.h */
+	uint32_t total_nodes;	/* total number of nodes in the partition */
+	uint32_t total_cpus;	/* total number of cpus in the partition */
+	uint16_t root_only;	/* 1 if allocate/submit RPC can only be
+				   issued by user root */
 };
 
 extern List part_list;			/* list of part_record entries */

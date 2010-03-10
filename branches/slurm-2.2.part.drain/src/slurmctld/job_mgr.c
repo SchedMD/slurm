@@ -2596,7 +2596,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	int error_code = SLURM_SUCCESS, i, qos_error;
 	struct job_details *detail_ptr;
 	enum job_state_reason fail_reason;
-	struct part_record *part_ptr;
+	struct part_record *part_ptr, *orig_part_ptr;
 	bitstr_t *req_bitmap = NULL, *exc_bitmap = NULL;
 	struct job_record *job_ptr = NULL;
 	uint32_t total_nodes;
@@ -2635,6 +2635,41 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 			return error_code;
 		}
 		part_ptr = default_part_loc;
+	}
+
+	if ((part_ptr->state_up & PARTITION_SUBMIT) == 0) {
+		info("_job_create: original partition is not available "
+		     "(drain or inactive): %s", job_desc->partition);
+		orig_part_ptr = part_ptr;
+		xfree(job_desc->partition);
+		job_desc->partition = xstrdup(part_ptr->alternate);
+		while ((job_desc->partition != NULL)) {
+			part_ptr = list_find_first(part_list, &list_find_part,
+						   job_desc->partition);
+			if (part_ptr == NULL) {
+				info("_job_create: invalid alternate partition "
+				     "name specified: %s", job_desc->partition);
+				error_code = ESLURM_INVALID_PARTITION_NAME;
+				return error_code;
+			}
+			if (part_ptr == orig_part_ptr) {
+				info("_job_create: no valid alternate partition"
+				     " is available");
+				error_code = ESLURM_PARTITION_NOT_AVAIL;
+				return error_code;
+			}
+			if (part_ptr->state_up & PARTITION_SUBMIT)
+				break;
+			/* Try next alternate in the sequence */
+			xfree(job_desc->partition);
+			job_desc->partition = xstrdup(part_ptr->alternate);
+		}
+		if ((job_desc->partition == NULL)) {
+			info("_job_create: no valid alternate partition is "
+			     "available");
+	    		error_code = ESLURM_PARTITION_NOT_AVAIL;
+	    		return error_code;
+		}
 	}
 
 	if (job_desc->min_nodes == NO_VAL)
@@ -2913,8 +2948,8 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 
 	if (job_desc->max_nodes == NO_VAL)
 		job_desc->max_nodes = 0;
-	if ((part_ptr->state_up)
-	    &&  (job_desc->min_cpus > part_ptr->total_cpus)) {
+	if ((part_ptr->state_up & PARTITION_SCHED) &&
+	    (job_desc->min_cpus > part_ptr->total_cpus)) {
 		info("Job requested too many cpus (%u) of partition %s(%u)",
 		     job_desc->min_cpus, part_ptr->name,
 		     part_ptr->total_cpus);
@@ -2924,10 +2959,10 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	total_nodes = part_ptr->total_nodes;
 	select_g_alter_node_cnt(SELECT_APPLY_NODE_MIN_OFFSET,
 				&total_nodes);
-	if ((part_ptr->state_up) &&  (job_desc->min_nodes > total_nodes)) {
+	if ((part_ptr->state_up & PARTITION_SCHED) &&
+	    (job_desc->min_nodes > total_nodes)) {
 		info("Job requested too many nodes (%u) of partition %s(%u)",
-		     job_desc->min_nodes, part_ptr->name,
-		     total_nodes);
+		     job_desc->min_nodes, part_ptr->name, total_nodes);
 		error_code = ESLURM_INVALID_NODE_COUNT;
 		goto cleanup_fail;
 	}
@@ -3022,10 +3057,14 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		     job_ptr->job_id, job_desc->max_nodes,
 		     part_ptr->name, part_ptr->min_nodes);
 		fail_reason = WAIT_PART_NODE_LIMIT;
-	} else if (part_ptr->state_up == 0) {
+	} else if (part_ptr->state_up == PARTITION_DOWN) {
 		info("Job %u requested down partition %s",
 		     job_ptr->job_id, part_ptr->name);
-		fail_reason = WAIT_PART_STATE;
+		fail_reason = WAIT_PART_DOWN;
+	} else if (part_ptr->state_up == PARTITION_INACTIVE) {
+		info("Job %u requested inactive partition %s",
+		     job_ptr->job_id, part_ptr->name);
+		fail_reason = WAIT_PART_INACTIVE;
 	} else if ((job_ptr->time_limit != NO_VAL) &&
 		   (job_ptr->time_limit > part_ptr->max_time)) {
 		info("Job %u exceeds partition time limit", job_ptr->job_id);
@@ -5339,6 +5378,8 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			error_code = ESLURM_DISABLED;
 		else if (tmp_part_ptr == NULL)
 			error_code = ESLURM_INVALID_PARTITION_NAME;
+		else if ((tmp_part_ptr->state_up & PARTITION_SUBMIT) == 0)
+			error_code = ESLURM_PARTITION_NOT_AVAIL;
 		else if (super_user) {
 			acct_association_rec_t assoc_rec;
 			memset(&assoc_rec, 0, sizeof(acct_association_rec_t));

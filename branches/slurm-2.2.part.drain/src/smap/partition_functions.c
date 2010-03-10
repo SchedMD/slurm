@@ -586,16 +586,19 @@ static int _print_text_part(partition_info_t *part_ptr,
 				  part_ptr->name);
 			main_xcord += 10;
 			if (params.display != BGPART) {
-				if (part_ptr->state_up)
-					mvwprintw(text_win,
-						  main_ycord,
-						  main_xcord,
-						  "up");
+				char *tmp_state;
+				if (part_ptr->state_up == PARTITION_INACTIVE)
+					tmp_state = "inact";
+				else if (part_ptr->state_up == PARTITION_UP)
+					tmp_state = "up";
+				else if (part_ptr->state_up == PARTITION_DOWN)
+					tmp_state = "down";
+				else if (part_ptr->state_up == PARTITION_DRAIN)
+					tmp_state = "drain";
 				else
-					mvwprintw(text_win,
-						  main_ycord,
-						  main_xcord,
-						  "down");
+					tmp_state = "unk";
+				mvwprintw(text_win, main_ycord, main_xcord,
+					  tmp_state);
 				main_xcord += 7;
 
 				if (part_ptr->max_time == INFINITE)
@@ -751,10 +754,16 @@ static int _print_text_part(partition_info_t *part_ptr,
 			printf("%9.9s ", part_ptr->name);
 
 			if (params.display != BGPART) {
-				if (part_ptr->state_up)
+				if (part_ptr->state_up == PARTITION_INACTIVE)
+					printf(" inact ");
+				else if (part_ptr->state_up == PARTITION_UP)
 					printf("   up ");
-				else
+				else if (part_ptr->state_up == PARTITION_DOWN)
 					printf(" down ");
+				else if (part_ptr->state_up == PARTITION_DOWN)
+					printf(" drain ");
+				else
+					printf(" unk ");
 
 				if (part_ptr->max_time == INFINITE)
 					snprintf(time_buf, sizeof(time_buf),

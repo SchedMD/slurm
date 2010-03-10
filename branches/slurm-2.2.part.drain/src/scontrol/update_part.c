@@ -205,15 +205,19 @@ scontrol_parse_part_options (int argc, char *argv[], int *update_cnt_ptr,
 			(*update_cnt_ptr)++;
 		}
 		else if (strncasecmp(tag, "State", MAX(taglen, 2)) == 0) {
-			if (strncasecmp(val, "DOWN", MAX(vallen, 1)) == 0)
-				part_msg_ptr->state_up = 0;
+			if (strncasecmp(val, "INACTIVE", MAX(vallen, 1)) == 0)
+				part_msg_ptr->state_up = PARTITION_INACTIVE;
+			else if (strncasecmp(val, "DOWN", MAX(vallen, 1)) == 0)
+				part_msg_ptr->state_up = PARTITION_DOWN;
 			else if (strncasecmp(val, "UP", MAX(vallen, 1)) == 0)
-				part_msg_ptr->state_up = 1;
+				part_msg_ptr->state_up = PARTITION_UP;
+			else if (strncasecmp(val, "DRAIN", MAX(vallen, 1)) == 0)
+				part_msg_ptr->state_up = PARTITION_DRAIN;
 			else {
 				exit_code = 1;
 				error("Invalid input: %s", argv[i]);
 				error("Acceptable State values "
-					"are UP and DOWN");
+					"are UP, DOWN, DRAIN and INACTIVE");
 				return -1;
 			}
 			(*update_cnt_ptr)++;
@@ -222,12 +226,16 @@ scontrol_parse_part_options (int argc, char *argv[], int *update_cnt_ptr,
 			part_msg_ptr->nodes = val;
 			(*update_cnt_ptr)++;
 		}
-		else if (strncasecmp(tag, "AllowGroups", MAX(taglen, 1)) == 0){
+		else if (strncasecmp(tag, "AllowGroups", MAX(taglen, 5)) == 0){
 			part_msg_ptr->allow_groups = val;
 			(*update_cnt_ptr)++;
 		}
-		else if (strncasecmp(tag, "AllocNodes", MAX(taglen, 1)) == 0) {
+		else if (strncasecmp(tag, "AllocNodes", MAX(taglen, 5)) == 0) {
 			part_msg_ptr->allow_alloc_nodes = val;
+			(*update_cnt_ptr)++;
+		}
+		else if (strncasecmp(tag, "Alternate", MAX(taglen, 3)) == 0) {
+			part_msg_ptr->alternate = val;
 			(*update_cnt_ptr)++;
 		}
 		else {

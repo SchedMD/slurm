@@ -181,6 +181,7 @@ enum {
 	ESLURM_QOS_PREEMPTION_LOOP,
 	ESLURM_NODE_NOT_AVAIL,
 	ESLURM_INVALID_CPU_COUNT,
+	ESLURM_PARTITION_NOT_AVAIL,
 
 	/* switch specific error codes, specific values defined in plugin module */
 	ESLURM_SWITCH_MIN = 3000,
