@@ -276,6 +276,7 @@ static List _process_util_by_report(char *calling_name, void *cond,
 	List first_list = NULL;
 	slurmdb_cluster_rec_t *cluster = NULL;
 	slurmdb_report_cluster_rec_t *slurmdb_report_cluster = NULL;
+	time_t start_time, end_time;
 
 	int exit_code = 0;
 
@@ -288,23 +289,31 @@ static List _process_util_by_report(char *calling_name, void *cond,
 	cluster_cond.with_deleted = 1;
 	cluster_cond.with_usage = 1;
 	if((type == CLUSTER_REPORT_UA) || (type == CLUSTER_REPORT_AU)) {
-		cluster_cond.usage_end =
-			((slurmdb_association_cond_t *)cond)->usage_end;
-		cluster_cond.usage_start =
-			((slurmdb_association_cond_t *)cond)->usage_start;
+		start_time = ((slurmdb_association_cond_t *)cond)->usage_start;
+		end_time = ((slurmdb_association_cond_t *)cond)->usage_end;
+
 		cluster_cond.cluster_list =
 			((slurmdb_association_cond_t *)cond)->cluster_list;
 	} else if((type == CLUSTER_REPORT_UW) || (type == CLUSTER_REPORT_WU)) {
-		cluster_cond.usage_end =
-			((slurmdb_wckey_cond_t *)cond)->usage_end;
-		cluster_cond.usage_start =
-			((slurmdb_wckey_cond_t *)cond)->usage_start;
+		start_time = ((slurmdb_wckey_cond_t *)cond)->usage_start;
+		end_time = ((slurmdb_wckey_cond_t *)cond)->usage_end;
+
 		cluster_cond.cluster_list =
 			((slurmdb_wckey_cond_t *)cond)->cluster_list;
 	} else {
 		error("unknown report type %d", type);
 		return NULL;
 	}
+
+	/* This needs to be done on some systems to make sure
+	   cluster_cond isn't messed.  This has happened on some 64
+	   bit machines and this is here to be on the safe side.
+	*/
+	slurmdb_report_set_start_end_time(&start_time, &end_time);
+	cluster_cond.usage_end = end_time;
+	cluster_cond.usage_start = start_time;
+
+
 	cluster_list = acct_storage_g_get_clusters(
 		db_conn, my_uid, &cluster_cond);
 
@@ -316,9 +325,13 @@ static List _process_util_by_report(char *calling_name, void *cond,
 	}
 
 	if((type == CLUSTER_REPORT_UA) || (type == CLUSTER_REPORT_AU)) {
+		((slurmdb_association_cond_t *)cond)->usage_start = start_time;
+		((slurmdb_association_cond_t *)cond)->usage_end = end_time;
 		type_list = acct_storage_g_get_associations(
 			db_conn, my_uid, cond);
 	} else if((type == CLUSTER_REPORT_UW) || (type == CLUSTER_REPORT_WU)) {
+		((slurmdb_wckey_cond_t *)cond)->usage_start = start_time;
+		((slurmdb_wckey_cond_t *)cond)->usage_end = end_time;
 		type_list = acct_storage_g_get_wckeys(
 			db_conn, my_uid, cond);
 	}

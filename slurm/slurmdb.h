@@ -735,6 +735,34 @@ typedef struct {
 	List user_list; /* list of slurmdb_report_user_rec_t *'s */
 } slurmdb_report_cluster_rec_t;
 
+typedef struct {
+	List jobs; /* This should be a NULL destroy since we are just
+		    * putting a pointer to a slurmdb_job_rec_t here
+		    * not allocating any new memory */
+	uint32_t min_size; /* smallest size of job in cpus here 0 if first */
+	uint32_t max_size; /* largest size of job in cpus here INFINITE if
+			    * last */
+	uint32_t count; /* count of jobs */
+	uint64_t cpu_secs; /* how many cpus secs taken up by this
+			    * grouping */
+} slurmdb_report_job_grouping_t;
+
+typedef struct {
+	char *acct; /*account name */
+	uint64_t cpu_secs; /* how many cpus secs taken up by this
+			    * acct */
+	List groups; /* containing slurmdb_report_job_grouping_t's*/
+	uint32_t lft;
+	uint32_t rgt;
+} slurmdb_report_acct_grouping_t;
+
+typedef struct {
+	char *cluster; /*cluster name */
+	uint64_t cpu_secs; /* how many cpus secs taken up by this
+			    * cluster */
+	List acct_list; /* containing slurmdb_report_acct_grouping_t's */
+} slurmdb_report_cluster_grouping_t;
+
 
 
 /************** account functions **************/
@@ -902,6 +930,23 @@ extern List slurmdb_report_cluster_wckey_by_user(
 extern List slurmdb_report_cluster_user_by_wckey(
 	slurmdb_wckey_cond_t *wckey_cond);
 
+
+extern List slurmdb_report_job_sizes_grouped_by_top_account(
+	slurmdb_job_cond_t *job_cond);
+
+extern List slurmdb_report_job_sizes_grouped_by_wckey(
+	slurmdb_job_cond_t *job_cond);
+
+/* report on users with top usage
+ * IN: slurmdb_user_cond_t *user_cond 
+ * IN: group_accounts - Whether or not to group all accounts together
+ *                      for each  user. If 0 a separate entry for each
+ *                      user and account reference is displayed.
+ * RET: List containing (slurmdb_report_cluster_rec_t *'s) else NULL on error
+ * note List needs to be freed with slurm_list_destroy() when called
+ */
+extern List slurmdb_report_user_top_usage(slurmdb_user_cond_t *user_cond,
+					  bool group_accounts);
 
 /************** connection functions **************/
 
