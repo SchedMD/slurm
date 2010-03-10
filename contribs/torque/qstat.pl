@@ -126,6 +126,7 @@ chomp $hostname;
 # 	}
 # }
 my $now_time = time();
+my $job_flags = SHOW_ALL | SHOW_DETAIL;
 
 if(defined($queueList)) {
 	my @queueIds = split(/,/, $queueList) if $queueList;
@@ -150,7 +151,7 @@ if(defined($queueList)) {
 		$rc = 0;
 	}
 } elsif($queueStatus) {
-	my $jresp = Slurm->load_jobs(1);
+	my $jresp = Slurm->load_jobs($job_flags);
 	die "Problem loading jobs.\n" if(!$jresp);
 	my $resp = Slurm->load_partitions(1);
 	die "Problem loading partitions.\n" if(!$resp);
@@ -179,7 +180,7 @@ if(defined($queueList)) {
 	my @jobIds = @ARGV;
 	my @userIds = split(/,/, $userList) if $userList;
 
-	my $resp = Slurm->load_jobs(1);
+	my $resp = Slurm->load_jobs($job_flags);
 	if(!$resp) {
 		die "Problem loading jobs.\n";
 	}
@@ -416,14 +417,9 @@ sub get_exec_host
 		my $inx = 0;
 		my $cpu_cnt = 0;
 		while((my $host = Slurm::Hostlist::shift($hl))) {
-			push(@allocNodes,
-			     "$host/" . $job->{'cpus_per_node'}[$inx]);
-
-			$cpu_cnt++;
-			if($cpu_cnt >= $job->{'cpu_count_reps'}[$inx]) {
-				$cpu_cnt = 0;
-				$inx++;
-			}
+			push(@allocNodes, "$host/" .
+			     Slurm->job_cpus_allocated_on_node_id(
+				     $job->{'job_resrcs'}, $inx++));
 		}
 		$execHost = join '+', @allocNodes;
 	}

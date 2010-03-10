@@ -10,7 +10,7 @@
 #include "msg.h"
 
 /*
- * convert node_info_t to perl HV 
+ * convert node_info_t to perl HV
  */
 int
 node_info_to_hv(node_info_t* node_info, HV* hv)
@@ -37,13 +37,13 @@ node_info_to_hv(node_info_t* node_info, HV* hv)
 	STORE_FIELD(hv, node_info, threads, uint16_t);
 	STORE_FIELD(hv, node_info, tmp_disk, uint32_t);
 
-	/* TODO: select_nodeinfo */
+	STORE_FIELD(hv, node_info, select_nodeinfo, ptr);
 
 	STORE_FIELD(hv, node_info, weight, uint32_t);
 	return 0;
 }
 /*
- * convert node_info_msg_t to perl HV 
+ * convert node_info_msg_t to perl HV
  */
 int
 node_info_msg_to_hv(node_info_msg_t* node_info_msg, HV* hv)
@@ -70,7 +70,7 @@ node_info_msg_to_hv(node_info_msg_t* node_info_msg, HV* hv)
 }
 
 /*
- * convert perl HV to update_node_msg_t 
+ * convert perl HV to update_node_msg_t
  */
 int
 hv_to_update_node_msg(HV* hv, update_node_msg_t *update_msg)

@@ -32,6 +32,8 @@ documents those changes that are of interest to users and admins.
  -- In select/cons_res with FastSchedule=0 and Procs=# defined for the node, 
     but no specific socket/core/thread count configured, avoid fatal error if 
     the number of cores on a node is less than the number of Procs configured.
+ -- Added ability for the perlapi to utilize opaque data types returned from
+    the C api.
 
 * Changes in SLURM 2.1.4
 ========================
