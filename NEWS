@@ -116,6 +116,9 @@ documents those changes that are of interest to users and admins.
     un-booted block when a job comes to use it before the state checking
     thread notices it which could cause the slurmctld to lock up on a
     non-dynamic system.
+ -- In select/cons_res with FastSchedule=0 and Procs=# defined for the node, 
+    but no specific socket/core/thread count configured, avoid fatal error if 
+    the number of cores on a node is less than the number of Procs configured.
 
 * Changes in SLURM 2.1.4
 ========================
