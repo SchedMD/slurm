@@ -237,7 +237,7 @@ extern void set_job_elig_time(void)
 			continue;
 		if ((job_ptr->details == NULL) || job_ptr->details->begin_time)
 			continue;
-		if (part_ptr->state_up == 0)
+		if ((part_ptr->state_up & PARTITION_SCHED) == 0)
 			continue;
 		if ((job_ptr->time_limit != NO_VAL) &&
 		    (job_ptr->time_limit > part_ptr->max_time))

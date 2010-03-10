@@ -1062,8 +1062,10 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 
 	/* Confirm that partition is up and has compatible nodes limits */
 	fail_reason = WAIT_NO_REASON;
-	if (part_ptr->state_up == 0)
-		fail_reason = WAIT_PART_STATE;
+	if (part_ptr->state_up == PARTITION_DOWN)
+		fail_reason = WAIT_PART_DOWN;
+	else if (part_ptr->state_up == PARTITION_INACTIVE)
+		fail_reason = WAIT_PART_INACTIVE;
 	else if (job_ptr->priority == 0)       /* user or administrator hold */
 		fail_reason = WAIT_HELD;
 	else if ((job_ptr->time_limit != NO_VAL) &&

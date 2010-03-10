@@ -68,6 +68,10 @@ CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
 
 * Added "--enable-partial-attach" option to configure (build) script.
 
+* Added support for new partition states of DRAIN and INACTIVE and new partition
+  option of "Alternate" (alternate partition to use for jobs submitted to
+  partitions that are currently in a state of DRAIN or INACTIVE).
+
 COMMAND CHANGES (see man pages for details)
 ===========================================
 * sinfo -R now has the user and timestamp in separate fields from the reason.
@@ -117,6 +121,9 @@ job_desc_msg_t
 	job_min_memory -> pn_min_memory
 	job_min_tmp_disk -> pn_min_tmp_disk
 
+partition_info_t
+	state_up (new states added PARTITION_DRAIN and PARTITION_INACTIVE)
+
 * Added the following struct definitions:
 job_info_t
 	time_min
@@ -128,6 +135,9 @@ job_desc_msg_t
 node_info_t
 	reason_time
 	reason_uid
+
+partition_info_t
+	alternate
 
 update_node_msg_t
 	reason_uid

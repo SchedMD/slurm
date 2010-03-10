@@ -466,7 +466,7 @@ static int _build_single_partitionline_info(slurm_conf_partition_t *part)
 	part_ptr->min_nodes_orig = part->min_nodes;
 	part_ptr->priority       = part->priority;
 	part_ptr->root_only      = part->root_only_flag ? 1 : 0;
-	part_ptr->state_up       = part->state_up_flag ? 1 : 0;
+	part_ptr->state_up       = part->state_up;
 	if (part->allow_groups) {
 		xfree(part_ptr->allow_groups);
 		part_ptr->allow_groups = xstrdup(part->allow_groups);
@@ -497,6 +497,10 @@ static int _build_single_partitionline_info(slurm_conf_partition_t *part)
 					xstrdup(part->allow_alloc_nodes);
  		}
  	}
+	if (part->alternate) {
+		xfree(part_ptr->alternate);
+		part_ptr->alternate = xstrdup(part->alternate);
+	}
 	if (part->nodes) {
 		if (part_ptr->nodes) {
 			int cnt_tot, cnt_uniq, buf_size;

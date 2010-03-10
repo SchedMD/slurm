@@ -615,6 +615,7 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 	char *tmp = NULL;
 	static s_p_options_t _partition_options[] = {
 		{"AllowGroups", S_P_STRING},
+		{"Alternate", S_P_STRING},
 		{"Default", S_P_BOOLEAN}, /* YES or NO */
 		{"DefaultTime", S_P_STRING},
 		{"DisableRootJobs", S_P_BOOLEAN}, /* YES or NO */
@@ -626,7 +627,7 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 		{"Priority", S_P_UINT16},
 		{"RootOnly", S_P_BOOLEAN}, /* YES or NO */
 		{"Shared", S_P_STRING}, /* YES, NO, or FORCE */
-		{"State", S_P_BOOLEAN}, /* UP or DOWN */
+		{"State", S_P_STRING}, /* UP, DOWN, INACTIVE or DRAIN */		
 		{"AllocNodes", S_P_STRING},
 		{NULL}
 	};
@@ -664,6 +665,9 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 				xfree(p->allow_alloc_nodes);
 			}
 		}
+
+		if (!s_p_get_string(&p->alternate, "Alternate", tbl))
+			s_p_get_string(&p->alternate, "Alternate", dflt);
 
 		if (!s_p_get_boolean(&p->default_flag, "Default", tbl)
 		    && !s_p_get_boolean(&p->default_flag, "Default", dflt))
@@ -772,14 +776,30 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 				xfree(tmp);
 				return -1;
 			}
+			xfree(tmp);
 		} else
 			p->max_share = 1;
 
-		xfree(tmp);
-
-		if (!s_p_get_boolean(&p->state_up_flag, "State", tbl)
-		    && !s_p_get_boolean(&p->state_up_flag, "State", dflt))
-			p->state_up_flag = true;
+		if (s_p_get_string(&tmp, "State", tbl) ||
+		    s_p_get_string(&tmp, "State", dflt)) {
+			if (strncasecmp(tmp, "DOWN", 4) == 0)
+				p->state_up = PARTITION_DOWN;
+			else if (strncasecmp(tmp, "UP", 2) == 0)
+				p->state_up = PARTITION_UP;
+			else if (strncasecmp(tmp, "DRAIN", 5) == 0)
+				p->state_up = PARTITION_DRAIN;
+			else if (strncasecmp(tmp, "INACTIVE", 8) == 0)
+				 p->state_up = PARTITION_INACTIVE;
+			else {
+				error("Bad value \"%s\" for State", tmp);
+				_destroy_partitionname(p);
+				s_p_hashtbl_destroy(tbl);
+				xfree(tmp);
+				return -1;
+			}
+			xfree(tmp);
+		} else
+			p->state_up = PARTITION_UP;
 
 		s_p_hashtbl_destroy(tbl);
 
@@ -797,6 +817,7 @@ static void _destroy_partitionname(void *ptr)
 
 	xfree(p->allow_alloc_nodes);
 	xfree(p->allow_groups);
+	xfree(p->alternate);
 	xfree(p->name);
 	xfree(p->nodes);
 	xfree(ptr);

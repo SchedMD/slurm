@@ -2109,25 +2109,39 @@ Identifies the reason for a node being in state "DOWN", "DRAIN",
 State of the node with respect to the initiation of user jobs.
 Acceptable values are "BUSY", "DOWN", "DRAIN", "FAIL",
 "FAILING, "IDLE", and "UNKNOWN".
-"DOWN" indicates the node failed and is unavailable to be allocated work.
-"DRAIN" indicates the node is unavailable to be allocated work.
-"FAIL" indicates the node is expected to fail soon, has
+.RS
+.TP 10
+\fBDOWN\fP
+Indicates the node failed and is unavailable to be allocated work.
+.TP
+\fBDRAIN\fP
+Indicates the node is unavailable to be allocated work.on.
+.TP
+\fBFAIL\fP
+Indicates the node is expected to fail soon, has
 no jobs allocated to it, and will not be allocated
 to any new jobs.
-"FAILING" indicates the node is expected to fail soon, has
+.TP
+\fBFAILING\fP
+Indicates the node is expected to fail soon, has
 one or more jobs allocated to it, but will not be allocated
 to any new jobs.
-"FUTURE" indicates the node is defined for future use and need not
+.TP
+\fBFUTURE\fP
+Indicates the node is defined for future use and need not
 exist when the SLURM daemons are started. These nodes can be made available
 for use simply by updating the node state using the scontrol command rather
 than restarting the slurmctld daemon. After these nodes are made available,
 change their \fRState\fR in the slurm.conf file. Until these nodes are made
 available, they will not be seen using any SLURM commands or Is nor will
 any attempt be made to contact them.
-"UNKNOWN" indicates the node's state is undefined (BUSY or IDLE),
+.TP
+\fBUNKNOWN\fP
+Indicates the node's state is undefined (BUSY or IDLE),
 but will be established when the \fBslurmd\fR daemon on that node
 registers.
 The default value is "UNKNOWN".
+.RE
 
 .LP
 The partition configuration permits you to establish different job
@@ -2169,6 +2183,11 @@ If user root attempts to execute a job as another user (e.g. using
 srun's \-\-uid option), this other user must be in one of groups
 identified by AllowGroups for the job to successfully execute.
 The default value is "ALL".
+
+.TP
+\fBAlternate\fR
+Partition name of alternate partition to be used if the state of this partition
+is "DRAIN" or "INACTIVE."
 
 .TP
 \fBDefault\fR
@@ -2330,7 +2349,31 @@ allocated to more than one job.
 .TP
 \fBState\fR
 State of partition or availability for use.  Possible values
-are "UP" or "DOWN". The default value is "UP".
+are "UP", "DOWN", "DRAIN" and "INACTIVE". The default value is "UP".
+See also the related "Alternate" keyword.
+.RS
+.TP 10
+\fBUP\fP
+Designates that new jobs may queued on the partition, and that
+jobs may be allocated nodes and run from the partition.
+.TP
+\fBDOWN\fP
+Designates that new jobs may be queued on the partition, but
+queued jobs may not be allocated nodes and run from the partition. Jobs
+already running on the partition continue to run. The jobs
+must be explicitly canceled to force their termination.
+.TP
+\fBDRAIN\fP
+Designates that no new jobs may be queued on the partition (job
+submission requests will be denied with an error message), but jobs
+already queued on the partition may be allocated nodes and run.
+See also the "Alternate" partition specification.
+.TP
+\fBINACTIVE\fP
+Designates that no new jobs may be queued on the partition,
+and jobs already queued may not be allocated nodes and run.
+See also the "Alternate" partition specification.
+.RE
 
 .SH "Prolog and Epilog Scripts"
 There are a variety of prolog and epilog program options that
