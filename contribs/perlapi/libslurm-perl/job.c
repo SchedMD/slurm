@@ -33,6 +33,8 @@ job_info_to_hv(job_info_t* job_info, HV* hv)
 	STORE_FIELD(hv, job_info, cpus_per_task, uint16_t);
 	if(job_info->dependency)
 		STORE_FIELD(hv, job_info, dependency, charp);
+	if(job_info->eligible_time)
+		STORE_FIELD(hv, job_info, eligible_time, time_t);
 	STORE_FIELD(hv, job_info, end_time, time_t);
 	if(job_info->exc_nodes)
 		STORE_FIELD(hv, job_info, exc_nodes, charp);
@@ -64,6 +66,8 @@ job_info_to_hv(job_info_t* job_info, HV* hv)
 		STORE_FIELD(hv, job_info, name, charp);
 	if(job_info->network)
 		STORE_FIELD(hv, job_info, network, charp);
+	if(job_info->nice)
+		STORE_FIELD(hv, job_info, nice, uint16_t);
 	if(job_info->nodes)
 		STORE_FIELD(hv, job_info, nodes, charp);
 	avp = newAV();
@@ -83,6 +87,8 @@ job_info_to_hv(job_info_t* job_info, HV* hv)
 		STORE_FIELD(hv, job_info, partition, charp);
 	STORE_FIELD(hv, job_info, pre_sus_time, time_t);
 	STORE_FIELD(hv, job_info, priority, uint32_t);
+	if(job_info->qos)
+		STORE_FIELD(hv, job_info, qos, charp);
 	if(job_info->req_nodes)
 		STORE_FIELD(hv, job_info, req_nodes, charp);
 	avp = newAV();
