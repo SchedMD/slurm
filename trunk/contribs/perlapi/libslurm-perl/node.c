@@ -9,6 +9,16 @@
 #include <slurm/slurm.h>
 #include "msg.h"
 
+#ifdef HAVE_BG
+/* These are just helper functions from slurm proper that don't get
+ * exported regularly.  Copied from src/common/slurm_protocol_defs.h.
+ */
+#define IS_NODE_ALLOCATED(_X)		\
+	((_X->node_state & NODE_STATE_BASE) == NODE_STATE_ALLOCATED)
+#define IS_NODE_COMPLETING(_X)	\
+	(_X->node_state & NODE_STATE_COMPLETING)
+#endif
+
 /*
  * convert node_info_t to perl HV
  */
@@ -16,11 +26,12 @@ int
 node_info_to_hv(node_info_t* node_info, uint16_t node_scaling, HV* hv)
 {
 	uint16_t err_cpus = 0, alloc_cpus = 0;
+#ifdef HAVE_BG
 	int cpus_per_node = 1;
 
 	if(node_scaling)
 		cpus_per_node = node_info->cpus / node_scaling;
-
+#endif
 	if(node_info->arch)
 		STORE_FIELD(hv, node_info, arch, charp);
 	STORE_FIELD(hv, node_info, cores, uint16_t);
@@ -66,7 +77,7 @@ node_info_to_hv(node_info_t* node_info, uint16_t node_scaling, HV* hv)
 	hv_store_uint16_t(hv, "alloc_cpus", alloc_cpus);
 	hv_store_uint16_t(hv, "err_cpus", err_cpus);
 
-	/* TODO: select_nodeinfo */
+	STORE_FIELD(hv, node_info, select_nodeinfo, ptr);
 
 	STORE_FIELD(hv, node_info, weight, uint32_t);
 	return 0;

@@ -1311,7 +1311,10 @@ static void _build_select_struct(struct job_record *job_ptr,
 		fatal("bit_copy malloc failure");
 
 	job_resrcs_ptr->cpu_array_cnt = 1;
-	job_resrcs_ptr->cpu_array_value[0] = bg_conf->cpu_ratio;
+	if(job_ptr->details->min_cpus < bg_conf->cpus_per_bp)
+		job_resrcs_ptr->cpu_array_value[0] = job_ptr->details->min_cpus;
+	else
+		job_resrcs_ptr->cpu_array_value[0] = bg_conf->cpus_per_bp;
 	job_resrcs_ptr->cpu_array_reps[0] = node_cnt;
 	total_cpus = bg_conf->cpu_ratio * node_cnt;
 

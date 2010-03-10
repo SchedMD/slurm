@@ -468,11 +468,108 @@ slurm_update_job(slurm_t self, HV* job_info = NULL)
 	OUTPUT:
 		RETVAL
 
-#int
-#slurm_get_select_jobinfo(slurm_t self, select_jobinfo_t *jobinfo, int data_type, void* data)
+int
+slurm_get_select_jobinfo_int_type(slurm_t self, SV* jobinfo = NULL, int data_type)
+	CODE:
+		if(jobinfo) {
+			uint32_t data;
+			RETVAL = slurm_get_select_jobinfo(
+				(select_jobinfo_t *)SV2ptr(jobinfo),
+				 data_type, &data);
+			RETVAL = data;
+		} else {
+			RETVAL = -1;
+		}
+	OUTPUT:
+		RETVAL
 
-#int
-#slurm_get_select_nodeinfo(slurm_t self, select_nodeinfo_t *nodeinfo, int data_type, int state, void* data)
+char *
+slurm_get_select_jobinfo_char_type(slurm_t self, SV* jobinfo = NULL, int data_type)
+	CODE:
+		if(jobinfo) {
+			char *data = NULL;
+			slurm_get_select_jobinfo(
+				(select_jobinfo_t *)SV2ptr(jobinfo),
+				data_type, &data);
+			RETVAL = data;
+		} else {
+			RETVAL = NULL;
+		}
+	OUTPUT:
+		RETVAL
+
+U16
+slurm_get_select_nodeinfo_subcnt(slurm_t self, SV *nodeinfo, int state)
+	CODE:
+		if(nodeinfo) {
+			uint16_t tmp16;
+			RETVAL = slurm_get_select_nodeinfo(
+				(select_nodeinfo_t *)SV2ptr(nodeinfo),
+				 SELECT_NODEDATA_SUBCNT, state, &tmp16);
+			if(RETVAL != -1) {
+				RETVAL = tmp16;
+			}
+		} else {
+			RETVAL = -1;
+		}
+	OUTPUT:
+		RETVAL
+
+U16
+slurm_get_select_nodeinfo_subgrp_size(slurm_t self, SV *nodeinfo)
+	CODE:
+		if(nodeinfo) {
+			uint16_t tmp16;
+			RETVAL = slurm_get_select_nodeinfo(
+				(select_nodeinfo_t *)SV2ptr(nodeinfo),
+				SELECT_NODEDATA_SUBGRP_SIZE, 0, &tmp16);
+			if(RETVAL != -1) {
+				RETVAL = tmp16;
+			}
+		} else {
+			RETVAL = -1;
+		}
+	OUTPUT:
+		RETVAL
+
+char *
+slurm_get_select_nodeinfo_cpuids(slurm_t self, SV *nodeinfo)
+	CODE:
+		if(nodeinfo) {
+			char *tmp_char = NULL;
+			slurm_get_select_nodeinfo(
+				(select_nodeinfo_t *)SV2ptr(nodeinfo),
+				SELECT_NODEDATA_STR, 0, &tmp_char);
+			RETVAL = tmp_char;
+                } else {
+			RETVAL = NULL;
+		}
+	OUTPUT:
+		RETVAL
+
+int
+slurm_job_cpus_allocated_on_node_id(slurm_t self, SV* job_res = NULL, int node_id)
+	CODE:
+		if(job_res) {
+			RETVAL = slurm_job_cpus_allocated_on_node_id(
+				(job_resources_t *)SV2ptr(job_res), node_id);
+		} else {
+			RETVAL = 0;
+		}
+	OUTPUT:
+		RETVAL
+
+int
+slurm_job_cpus_allocated_on_node(slurm_t self, SV* job_res = NULL, char *node_name)
+	CODE:
+		if(job_res) {
+			RETVAL = slurm_job_cpus_allocated_on_node(
+				(job_resources_t *)SV2ptr(job_res), node_name);
+		} else {
+			RETVAL = 0;
+		}
+	OUTPUT:
+		RETVAL
 
 
 ######################################################################

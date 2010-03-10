@@ -204,12 +204,33 @@ inline static int hv_store_sv(HV* hv, const char *key, SV* sv)
 	return 0;
 }
 
+/*
+ * store a PTR into HV
+ */
+inline static int hv_store_ptr(HV* hv, const char *key, void* ptr)
+{
+	SV* sv = NULL;
+
+	if(ptr) {
+		sv = NEWSV(0, 0);
+		sv_setref_pv(sv, key, ptr);
+	}
+
+	if (!key || hv_store(hv, key, (I32)strlen(key), sv, 0) == NULL) {
+		SvREFCNT_dec(sv);
+		return -1;
+	}
+
+	return 0;
+}
+
 #define SV2uint32_t(sv) SvUV(sv)
 #define SV2uint16_t(sv) SvUV(sv)
 #define SV2uint8_t(sv)  SvUV(sv)
 #define SV2time_t(sv)   SvUV(sv)
 #define SV2charp(sv)    SvPV_nolen(sv)
 #define SV2bool(sv)     SvTRUE(sv)
+#define SV2ptr(sv)      SvIV(SvRV(sv))
 
 
 #define FETCH_FIELD(hv, ptr, field, type, required) \
