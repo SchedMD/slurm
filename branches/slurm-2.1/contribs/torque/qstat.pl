@@ -453,24 +453,24 @@ sub print_job_select
 	if (!defined $header_printed) {
 		print "\n${hostname}:\n";
 
-		printf("%-20s %-8s %-8s %-20s %-6s %-5s %-3s %-6s %-5s %-1s %-5s\n",
+		printf("%-20s %-8s %-8s %-20s %-6s %-5s %-5s %-6s %-5s %-1s %-5s\n",
 		       "", "", "", "", "", "", "", "Req'd", "Req'd", "", "Elap");
 		printf(
-			"%-20s %-8s %-8s %-20s %-6s %-5s %-3s %-6s %-5s %-1s %-5s\n",
+			"%-20s %-8s %-8s %-20s %-6s %-5s %-5s %-6s %-5s %-1s %-5s\n",
 			"Job ID", "Username", "Queue", "Jobname", "SessID", "NDS",
 			"TSK",    "Memory",   "Time",  "S",       "Time"
 			);
 		printf(
-			"%-20s %-8s %-8s %-20s %-6s %-5s %-3s %-6s %-5s %-1s %-5s\n",
+			"%-20s %-8s %-8s %-20s %-6s %-5s %-5s %-6s %-5s %-1s %-5s\n",
 			'-' x 20, '-' x 8, '-' x 8, '-' x 20, '-' x 6, '-' x 5,
-			'-' x 3,  '-' x 6, '-' x 5, '-',      '-' x 5
+			'-' x 5,  '-' x 6, '-' x 5, '-',      '-' x 5
 			);
 		$header_printed = 1;
 	}
 	$execHost = get_exec_host($job) if $nodes;
 
 	printf("%-20.20s %-8.8s %-8.8s %-20.20s " .
-	       "%-6.6s %5.5s %3.3s %6.6s %-5.5s %-1s %-5.5s",
+	       "%-6.6s %5.5s %5.5s %6.6s %-5.5s %-1s %-5.5s",
 	       $job->{'job_id'},
 	       $job->{'user_name'},
 	       $job->{'partition'},

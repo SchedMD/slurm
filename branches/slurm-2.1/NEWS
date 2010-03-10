@@ -34,6 +34,8 @@ documents those changes that are of interest to users and admins.
     the number of cores on a node is less than the number of Procs configured.
  -- Added ability for the perlapi to utilize opaque data types returned from
     the C api.
+ -- BLUEGENE - made the perlapi get correct values for cpus per node,
+    Previously it would give the number of cpus per cnode instead of midplane.
 
 * Changes in SLURM 2.1.4
 ========================

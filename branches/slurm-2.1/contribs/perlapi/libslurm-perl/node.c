@@ -9,12 +9,29 @@
 #include <slurm/slurm.h>
 #include "msg.h"
 
+#ifdef HAVE_BG
+/* These are just helper functions from slurm proper that don't get
+ * exported regularly.  Copied from src/common/slurm_protocol_defs.h.
+ */
+#define IS_NODE_ALLOCATED(_X)		\
+	((_X->node_state & NODE_STATE_BASE) == NODE_STATE_ALLOCATED)
+#define IS_NODE_COMPLETING(_X)	\
+	(_X->node_state & NODE_STATE_COMPLETING)
+#endif
+
 /*
  * convert node_info_t to perl HV
  */
 int
-node_info_to_hv(node_info_t* node_info, HV* hv)
+node_info_to_hv(node_info_t* node_info, uint16_t node_scaling, HV* hv)
 {
+	uint16_t err_cpus = 0, alloc_cpus = 0;
+#ifdef HAVE_BG
+	int cpus_per_node = 1;
+
+	if(node_scaling)
+		cpus_per_node = node_info->cpus / node_scaling;
+#endif
 	if(node_info->arch)
 		STORE_FIELD(hv, node_info, arch, charp);
 	STORE_FIELD(hv, node_info, cores, uint16_t);
@@ -37,6 +54,29 @@ node_info_to_hv(node_info_t* node_info, HV* hv)
 	STORE_FIELD(hv, node_info, threads, uint16_t);
 	STORE_FIELD(hv, node_info, tmp_disk, uint32_t);
 
+	slurm_get_select_nodeinfo(node_info->select_nodeinfo,
+				  SELECT_NODEDATA_SUBCNT,
+				  NODE_STATE_ALLOCATED,
+				  &alloc_cpus);
+#ifdef HAVE_BG
+	if(!alloc_cpus
+	   && (IS_NODE_ALLOCATED(node_info) || IS_NODE_COMPLETING(node_info)))
+		alloc_cpus = node_info->cpus;
+	else
+		alloc_cpus *= cpus_per_node;
+#endif
+
+	slurm_get_select_nodeinfo(node_info->select_nodeinfo,
+				  SELECT_NODEDATA_SUBCNT,
+				  NODE_STATE_ERROR,
+				  &err_cpus);
+#ifdef HAVE_BG
+	err_cpus *= cpus_per_node;
+#endif
+
+	hv_store_uint16_t(hv, "alloc_cpus", alloc_cpus);
+	hv_store_uint16_t(hv, "err_cpus", err_cpus);
+
 	STORE_FIELD(hv, node_info, select_nodeinfo, ptr);
 
 	STORE_FIELD(hv, node_info, weight, uint32_t);
@@ -58,7 +98,8 @@ node_info_msg_to_hv(node_info_msg_t* node_info_msg, HV* hv)
 	avp = newAV();
 	for(i = 0; i < node_info_msg->record_count; i ++) {
 		hvp =newHV();
-		if (node_info_to_hv(node_info_msg->node_array + i, hvp) < 0) {
+		if (node_info_to_hv(node_info_msg->node_array + i,
+				    node_info_msg->node_scaling, hvp) < 0) {
 			SvREFCNT_dec((SV*)hvp);
 			SvREFCNT_dec((SV*)avp);
 			return -1;
