@@ -1661,7 +1661,7 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	bitstr_t *orig_map, *avail_cores, *free_cores;
 	bitstr_t *tmpcore = NULL, *reqmap = NULL;
 	bool test_only;
-	uint32_t c, i, n, csize, total_cpus, save_mem = 0;
+	uint32_t c, i, k, n, csize, total_cpus, save_mem = 0;
 	int32_t build_cnt;
 	job_resources_t *job_res;
 	struct part_res_record *p_ptr, *jp_ptr;
@@ -2041,11 +2041,21 @@ alloc_job:
 		if (bit_test(bitmap, n) == 0)
 			continue;
 		j = cr_get_coremap_offset(n);
-		for (; j < cr_get_coremap_offset(n+1); j++, c++) {
+		k = cr_get_coremap_offset(n+1);
+		for (; j < k; j++, c++) {
 			if (bit_test(free_cores, j)) {
 				if (c >= csize)	{
-					fatal("cons_res: cr_job_test "
-					      "core_bitmap index error");
+					error("cons_res: cr_job_test "
+					      "core_bitmap index error on "
+					      "node %s", 
+					      select_node_record[n].node_ptr->
+					      name);
+					drain_nodes(select_node_record[n].
+						    node_ptr->name,
+						    "Bad core count");
+					free_job_resources(&job_res);
+					FREE_NULL_BITMAP(free_cores);
+					return SLURM_ERROR;
 				}
 				bit_set(job_res->core_bitmap, c);
 			}

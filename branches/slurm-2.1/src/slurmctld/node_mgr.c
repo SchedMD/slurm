@@ -1247,6 +1247,12 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 			error_code = EINVAL;
 			reason_down = "Low socket*core*thread count";
 		} else if ((slurmctld_conf.fast_schedule == 0) &&
+			   ((cr_flag == 1) || gang_flag) && (cores1 < cores2)) {
+			error("Node %s has low socket*core count %u",
+			      reg_msg->node_name, cores1);
+			error_code = EINVAL;
+			reason_down = "Low socket*core count";
+		} else if ((slurmctld_conf.fast_schedule == 0) &&
 			   ((cr_flag == 1) || gang_flag) &&
 			   ((sockets1 > sockets2) || (cores1 > cores2) ||
 			    (threads1 > threads2))) {

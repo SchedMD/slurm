@@ -29,6 +29,9 @@ documents those changes that are of interest to users and admins.
     node which remained running.
  -- Fix accounting Purge to remove correct period of time.  Previously would
     remove n+1 leaving an extra time period around.
+ -- In select/cons_res with FastSchedule=0 and Procs=# defined for the node, 
+    but no specific socket/core/thread count configured, avoid fatal error if 
+    the number of cores on a node is less than the number of Procs configured.
 
 * Changes in SLURM 2.1.4
 ========================
