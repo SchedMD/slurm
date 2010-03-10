@@ -664,6 +664,11 @@ described above.
 The default value is "ALL".
 
 .TP
+\fIAlternate\fP=<partition name>
+Alternate partition to be used if the state of this partition is "DRAIN" or
+"INACTIVE."  The value "NONE" will clear a previously set alternate partition.
+
+.TP
 \fIDefault\fP=<yes|no>
 Specify if this partition is to be used by jobs which do not explicitly
 identify a partition to use.
@@ -739,12 +744,32 @@ An optional job count specifies how many jobs can be allocated to use
 each resource.
 
 .TP
-\fIState\fP=<up|down>
-Specify if jobs can be allocated nodes in this partition.
-Possible values are"UP" and "DOWN".
-If a partition allocated nodes to running jobs, those jobs will continue
-execution even after the partition's state is set to "DOWN". The jobs
+\fIState\fP=<up|down|drain|inactive>
+Specify if jobs can be allocated nodes or queued in this partition. 
+Possible values are "UP", "DOWN", "DRAIN" and "INACTIVE".
+.RS
+.TP 10
+\fIUP\fP
+Designates that new jobs may queued on the partition, and that
+jobs may be allocated nodes and run from the partition.
+.TP
+\fIDOWN\fP
+Designates that new jobs may be queued on the partition, but
+queued jobs may not be allocated nodes and run from the partition. Jobs
+already running on the partition continue to run. The jobs
 must be explicitly canceled to force their termination.
+.TP
+\fIDRAIN\fP
+Designates that no new jobs may be queued on the partition (job
+submission requests will be denied with an error message), but jobs
+already queued on the partition may be allocated nodes and run.
+See also the "Alternate" partition specification.
+.TP
+\fIINACTIVE\fP
+Designates that no new jobs may be queued on the partition,
+and jobs already queued may not be allocated nodes and run.
+See also the "Alternate" partition specification.
+.RE
 
 .TP
 \fBSPECIFICATIONS FOR CREATE, UPDATE, AND DELETE COMMANDS, RESERVATIONS\fR
