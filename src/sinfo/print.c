@@ -286,10 +286,16 @@ int _print_avail(sinfo_data_t * sinfo_data, int width,
 	if (sinfo_data) {
 		if (sinfo_data->part_info == NULL)
 			_print_str("n/a", width, right_justify, true);
-		else if (sinfo_data->part_info->state_up)
+		else if (sinfo_data->part_info->state_up == PARTITION_UP)
 			_print_str("up", width, right_justify, true);
-		else
+		else if (sinfo_data->part_info->state_up == PARTITION_DOWN)
 			_print_str("down", width, right_justify, true);
+		else if (sinfo_data->part_info->state_up == PARTITION_DRAIN)
+			_print_str("drain", width, right_justify, true);
+		else if (sinfo_data->part_info->state_up == PARTITION_INACTIVE)
+			_print_str("inactive", width, right_justify, true);
+		else
+			_print_str("unknown", width, right_justify, true);
 	} else
 		_print_str("AVAIL", width, right_justify, true);
 

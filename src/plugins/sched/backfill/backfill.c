@@ -428,7 +428,7 @@ static void _attempt_backfill(void)
 			error("partition pointer reset for job %u, part %s",
 			      job_ptr->job_id, job_ptr->partition);
 		}
-		if ((part_ptr->state_up == 0) ||
+		if (((part_ptr->state_up & PARTITION_SCHED) == 0) ||
 		    (part_ptr->node_bitmap == NULL))
 		 	continue;
 		if ((part_ptr->root_only) && filter_root)

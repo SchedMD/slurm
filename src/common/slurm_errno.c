@@ -264,6 +264,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Required node not available (down or drained)"	},
 	{ ESLURM_INVALID_CPU_COUNT,
 	  "CPU count specification invalid"             	},
+	{ ESLURM_PARTITION_NOT_AVAIL,
+	  "Required partition not available (inactive or drain)"},
 
 	/* slurmd error codes */
 

@@ -167,6 +167,7 @@ typedef struct slurm_conf_partition {
 				 * NULL indicates all */
 	char *allow_groups;	/* comma delimited list of groups,
 				 * NULL indicates all */
+	char *alternate;	/* name of alternate partition */
 	bool default_flag;	/* Set if default partition */
 	uint32_t default_time;	/* minutes or INFINITE */
 	uint16_t disable_root_jobs; /* if set then user root can't run
@@ -183,7 +184,7 @@ typedef struct slurm_conf_partition {
 	uint16_t priority;	/* scheduling priority for jobs */
 	bool     root_only_flag;/* 1 if allocate/submit RPC can only be
 				   issued by user root */
-	bool     state_up_flag;	/* 1 if state is up, 0 if down */
+	uint16_t state_up;	/* for states see PARTITION_* in slurm.h */
 	uint32_t total_nodes;	/* total number of nodes in the partition */
 	uint32_t total_cpus;	/* total number of cpus in the partition */
 } slurm_conf_partition_t;

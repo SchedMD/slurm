@@ -814,8 +814,10 @@ extern char *job_reason_string(enum job_state_reason inx)
 		return "PartitionNodeLimit";
 	case WAIT_PART_TIME_LIMIT:
 		return "PartitionTimeLimit";
-	case WAIT_PART_STATE:
+	case WAIT_PART_DOWN:
 		return "PartitionDown";
+	case WAIT_PART_INACTIVE:
+		return "PartitionInactive";
 	case WAIT_HELD:
 		return "JobHeld";
 	case WAIT_TIME:
@@ -1628,6 +1630,7 @@ void slurm_free_partition_info_members(partition_info_t * part)
 	if (part) {
 		xfree(part->allow_alloc_nodes);
 		xfree(part->allow_groups);
+		xfree(part->alternate);
 		xfree(part->name);
 		xfree(part->nodes);
 		xfree(part->node_inx);
