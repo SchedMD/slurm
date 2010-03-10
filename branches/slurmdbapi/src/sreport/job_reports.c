@@ -124,7 +124,7 @@ static void _destroy_cluster_grouping(void *object)
  *           -1: cluster_a < cluster_b
  *
  */
-extern int _sort_cluster_grouping_dec(cluster_grouping_t *cluster_a,
+static int _sort_cluster_grouping_dec(cluster_grouping_t *cluster_a,
 				      cluster_grouping_t *cluster_b)
 {
 	int diff = 0;
@@ -150,7 +150,7 @@ extern int _sort_cluster_grouping_dec(cluster_grouping_t *cluster_a,
  *           -1: acct_a < acct_b
  *
  */
-extern int _sort_acct_grouping_dec(acct_grouping_t *acct_a,
+static int _sort_acct_grouping_dec(acct_grouping_t *acct_a,
 				   acct_grouping_t *acct_b)
 {
 	int diff = 0;
@@ -169,7 +169,7 @@ extern int _sort_acct_grouping_dec(acct_grouping_t *acct_a,
 }
 
 /* returns number of objects added to list */
-extern int _addto_uid_char_list(List char_list, char *names)
+static int _addto_uid_char_list(List char_list, char *names)
 {
 	int i=0, start=0;
 	char *name = NULL, *tmp_char = NULL;
