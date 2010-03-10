@@ -1035,7 +1035,7 @@ typedef struct partition_info {
 	char *nodes;		/* list names of nodes in partition */
 	uint16_t priority;	/* scheduling priority for jobs */
 	uint16_t root_only;	/* 1 if allocate must come for user root */
-	uint16_t state_up;	/* 0=down, 1=up, 2=drain */
+	uint16_t state_up;	/* see PARTITION_ stats above */
 	uint32_t total_cpus;	/* total number of cpus in the partition */
 	uint32_t total_nodes;	/* total number of nodes in the partition */
 } partition_info_t;

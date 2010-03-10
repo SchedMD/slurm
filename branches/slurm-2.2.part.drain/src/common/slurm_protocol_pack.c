@@ -3119,6 +3119,10 @@ _unpack_partition_info_members(partition_info_t * part, Buf buffer,
 		safe_unpack16(&part->priority,     buffer);
 
 		safe_unpack16(&part->state_up, buffer);
+		if (part->state_up)
+			part->state_up = PARTITION_UP;
+		else
+			part->state_up = PARTITION_DOWN;
 		safe_unpackstr_xmalloc(&part->allow_groups, &uint32_tmp,
 				       buffer);
 		safe_unpackstr_xmalloc(&part->allow_alloc_nodes, &uint32_tmp,

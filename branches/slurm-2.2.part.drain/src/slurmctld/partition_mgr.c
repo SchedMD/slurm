@@ -476,7 +476,7 @@ int load_all_part_state(void)
 	char *ver_str = NULL;
 	char* allow_alloc_nodes = NULL;
 	uint16_t protocol_version = (uint16_t)NO_VAL;
-	char* alternate= NULL;
+	char* alternate = NULL;
 
 	/* read the file */
 	lock_state_files();
@@ -1130,10 +1130,11 @@ extern int update_part (update_part_msg_t * part_desc, bool create_flag)
 	}
 	if (part_desc->alternate != NULL) {
 		xfree(part_ptr->alternate);
-		if (strcasecmp(part_desc->alternate, "NONE") == 0)
+		if ((strcasecmp(part_desc->alternate, "NONE") == 0) ||
+		    (part_desc->alternate[0] == '\0'))
 			part_ptr->alternate = NULL;
 		else
-		    part_ptr->alternate = xstrdup(part_desc->alternate);
+			part_ptr->alternate = xstrdup(part_desc->alternate);
 		part_desc->alternate = NULL;
 		info("update_part: setting alternate to %s for "
 		     "partition %s",

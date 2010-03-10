@@ -760,7 +760,7 @@ static int _print_text_part(partition_info_t *part_ptr,
 					printf("   up ");
 				else if (part_ptr->state_up == PARTITION_DOWN)
 					printf(" down ");
-				else if (part_ptr->state_up == PARTITION_DOWN)
+				else if (part_ptr->state_up == PARTITION_DRAIN)
 					printf(" drain ");
 				else
 					printf(" unk ");
