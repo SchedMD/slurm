@@ -101,23 +101,28 @@ Valid \fItype\fR specifications include:
 .TP 4
 \fB%a\fR
 Account associated with the job.
+(Valid for jobs only)
 .TP
 \fB%A\fR
 Number of tasks created by a job step.
 This reports the value of the \fBsrun \-\-ntasks\fR option.
+(Valid for job steps only)
 .TP
 \fB%c\fR
 Minimum number of CPUs (processors) per node requested by the job.
 This reports the value of the \fBsrun \-\-mincpus\fR option with a
 default value of zero.
+(Valid for jobs only)
 .TP
 \fB%C\fR
 Number of CPUs (processors) requested by the job or allocated to
 it if already running.  As a job is completing this number will
 reflect the current number of CPUs allocated.
+(Valid for jobs only)
 .TP
 \fB%d\fR
 Minimum size of temporary disk space (in MB) requested by the job.
+(Valid for jobs only)
 .TP
 \fB%D\fR
 Number of nodes allocated to the job or the minimum number of nodes
@@ -127,58 +132,75 @@ minimum and maximum node counts) or the the job specifies a processor
 count instead of a node count and the cluster contains nodes with varying
 processor counts. As a job is completing this number will reflect the
 current number of nodes allocated.
+(Valid for jobs only)
 .TP
 \fB%e\fR
-Time at which the job ended or is expected to end (based upon its time limit)
+Time at which the job ended or is expected to end (based upon its time limit).
+(Valid for jobs only)
 .TP
 \fB%E\fR
 Job dependency. This job will not begin execution until the dependent job
 completes.  A value of zero implies this job has no dependencies.
+(Valid for jobs only)
 .TP
 \fB%f\fR
 Features required by the job.
+(Valid for jobs only)
 .TP
 \fB%g\fR
 Group name of the job.
+(Valid for jobs only)
 .TP
 \fB%G\fR
 Group ID of the job.
+(Valid for jobs only)
 .TP
 \fB%h\fR
 Can the nodes allocated to the job be shared with other jobs.
+(Valid for jobs only)
 .TP
 \fB%H\fR
 Minimum number of sockets per node requested by the job.
 This reports the value of the \fBsrun \-\-sockets\-per\-node\fR option.
+(Valid for jobs only)
 .TP
 \fB%i\fR
 Job or job step id.
+(Valid for jobs and job steps)
 .TP
 \fB%I\fR
 Minimum number of cores per socket requested by the job.
 This reports the value of the \fBsrun \-\-cores\-per\-socket\fR option.
+(Valid for jobs only)
 .TP
 \fB%j\fR
 Job or job step name.
+(Valid for jobs and job steps)
 .TP
 \fB%J\fR
 Minimum number of threads per core requested by the job.
 This reports the value of the \fBsrun \-\-threads\-per\-core\fR option.
+(Valid for jobs only)
 .TP
 \fB%k\fR
 Comment associated with the job.
+(Valid for jobs only)
+.TP
 \fB%l\fR
 Time limit of the job or job step in days\-hours:minutes:seconds.
 The value may be "NOT_SET" if not yet established or "UNLIMITED" for no limit.
+(Valid for jobs and job steps)
 .TP
 \fB%L\fR
 Time left for the job to execute in days\-hours:minutes:seconds.
 This value is calculated by subtracting the job's time used from its time
 limit.
 The value may be "NOT_SET" if not yet established or "UNLIMITED" for no limit.
+(Valid for jobs only)
 .TP
 \fB%m\fR
-Minimum size of memory (in MB) requested by the job
+Minimum size of memory (in MB) requested by the job.
+(Valid for jobs only)
 .TP
 \fB%M\fR
 Time used by the job or job step in days\-hours:minutes:seconds.
@@ -187,36 +209,45 @@ For job steps this field shows the elapsed time since execution began
 and thus will be inaccurate for job steps which have been suspended.
 Clock skew between nodes in the cluster will cause the time to be inaccurate.
 If the time is obviously wrong (e.g. negative), it displays as "INVALID".
+(Valid for jobs and job steps)
 .TP
 \fB%n\fR
 List of node names (or base partitions on BlueGene systems) explicitly
-requested by the job
+requested by the job.
+(Valid for jobs only)
 .TP
 \fB%N\fR
 List of nodes allocated to the job or job step. In the case of a
 \fICOMPLETING\fR job, the list of nodes will comprise only those
 nodes that have not yet been returned to service.
+(Valid for jobs and job steps)
 .TP
 \fB%O\fR
 Are contiguous nodes requested by the job.
+(Valid for jobs only)
 .TP
 \fB%p\fR
 Priority of the job (converted to a floating point number between 0.0 and 1.0).
 Also see \fB%Q\fR.
+(Valid for jobs only)
 .TP
 \fB%P\fR
 Partition of the job or job step.
+(Valid for jobs and job steps)
 .TP
 \fB%q\fR
 Quality of service associated with the job.
+(Valid for jobs only)
 .TP
 \fB%Q\fR
 Priority of the job (generally a very large unsigned integer).
 Also see \fB%p\fR.
+(Valid for jobs only)
 .TP
 \fB%r\fR
 The reason a job is in its current state.
 See the \fBJOB REASON CODES\fR section below for more information.
+(Valid for jobs only)
 .TP
 \fB%R\fR
 For pending jobs: the reason a job is waiting for execution
@@ -225,17 +256,19 @@ For terminated jobs with failure: an explanation as to why the
 job failed is printed within parenthesis.
 For all other job states: the list of allocate nodes.
 See the \fBJOB REASON CODES\fR section below for more information.
+(Valid for jobs only)
 .TP
 \fB%s\fR
 Node selection plugin specific data for a job. Possible data includes:
 Geometry requirement of resource allocation (X,Y,Z dimensions),
 Connection type (TORUS, MESH, or NAV == torus else mesh),
 Permit rotation of geometry (yes or no),
-Node use (VIRTUAL or COPROCESSOR),
-etc.
+Node use (VIRTUAL or COPROCESSOR), etc.
+(Valid for jobs only)
 .TP
 \fB%S\fR
 Actual or expected start time of the job or job step.
+(Valid for jobs and job steps)
 .TP
 \fB%t\fR
 Job state, compact form:
@@ -243,28 +276,34 @@ PD (pending), R (running), CA (cancelled), CF(configuring),
 CG (completing), CD (completed),
 F (failed), TO (timeout), and NF (node failure).
 See the \fBJOB STATE CODES\fR section below for more information.
+(Valid for jobs only)
 .TP
 \fB%T\fR
 Job state, extended form:
 PENDING, RUNNING, SUSPENDED, CANCELLED, COMPLETING, COMPLETED, CONFIGURING,
 FAILED, TIMEOUT, and NODE_FAIL.
 See the \fBJOB STATE CODES\fR section below for more information.
+(Valid for jobs only)
 .TP
 \fB%u\fR
 User name for a job or job step.
+(Valid for jobs and job steps)
 .TP
 \fB%U\fR
 User ID for a job or job step.
+(Valid for jobs and job steps)
 .TP
 \fB%v\fR
 Reservation for the job.
+(Valid for jobs only)
 .TP
 \fB%x\fR
 List of node names explicitly excluded by the job.
+(Valid for jobs only)
 .TP
 \fB%z\fR
-Number of requested sockets, cores, and threads (S:C:T) per node for
-the job.
+Number of requested sockets, cores, and threads (S:C:T) per node for the job.
+(Valid for jobs only)
 .RE
 
 .TP
