@@ -96,7 +96,11 @@ Main:
 	    my $rCProc    = $node->{'cpus'};
 	    my $features  = $node->{'features'};
 	    my $rAMem     = $node->{'real_memory'};
-	    my $rAProc    = ($node->{'cpus'}) - ($node->{'used_cpus'});
+	    my $used_cpus = Slurm->get_select_nodeinfo_subcnt(
+		    $node->{'select_nodeinfo'},
+		    NODE_STATE_ALLOCATED);
+	    $used_cpus = 0 if $used_cpus == -1;
+	    my $rAProc    = ($node->{'cpus'}) - $used_cpus;
 	    my $state = lc(Slurm::node_state_string($node->{'node_state'}));
 
 #these aren't really defined in slurm, so I am not sure what to get them from

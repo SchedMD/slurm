@@ -19,6 +19,7 @@ $constants{macros} = [qw /
 		NO_VAL
 		SLURM_BATCH_SCRIPT
 		SHOW_ALL
+                SHOW_DETAIL
 		JOB_COMPLETING
 
 		NODE_STATE_BASE
@@ -167,6 +168,32 @@ $constants{select_type_plugin_info} = [qw /
 		CR_CORE_MEMORY
 		CR_CPU_MEMORY
 		/];
+
+$constants{select_jobdata_type} = [qw /
+                SELECT_JOBDATA_GEOMETRY
+	        SELECT_JOBDATA_ROTATE
+	        SELECT_JOBDATA_CONN_TYPE
+	        SELECT_JOBDATA_BLOCK_ID
+	        SELECT_JOBDATA_NODES
+	        SELECT_JOBDATA_IONODES
+	        SELECT_JOBDATA_NODE_CNT
+	        SELECT_JOBDATA_ALTERED
+	        SELECT_JOBDATA_MAX_CPUS
+	        SELECT_JOBDATA_BLRTS_IMAGE
+	        SELECT_JOBDATA_LINUX_IMAGE
+	        SELECT_JOBDATA_MLOADER_IMAGE
+	        SELECT_JOBDATA_RAMDISK_IMAGE
+	        SELECT_JOBDATA_REBOOT
+	        SELECT_JOBDATA_RESV_ID
+                /];
+
+$constants{select_nodedata_type} = [qw /
+                SELECT_NODEDATA_BITMAP_SIZE
+	        SELECT_NODEDATA_SUBGRP_SIZE
+	        SELECT_NODEDATA_SUBCNT
+	        SELECT_NODEDATA_BITMAP
+	        SELECT_NODEDATA_STR
+                /];
 
 foreach my $const(values(%constants)) {
     push @{$constants{all}}, @$const;
