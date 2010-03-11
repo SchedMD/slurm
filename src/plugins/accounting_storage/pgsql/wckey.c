@@ -97,7 +97,7 @@ _create_function_add_wckey(PGconn *db_conn)
  * NOTE: the string should be xfree-ed by caller
  */
 static char *
-_make_wckey_cond(acct_wckey_cond_t *wckey_cond)
+_make_wckey_cond(slurmdb_wckey_cond_t *wckey_cond)
 {
 	char *cond = NULL;
 	concat_cond_list(wckey_cond->name_list, NULL, "name", &cond);
@@ -138,7 +138,7 @@ as_p_add_wckeys(pgsql_conn_t *pg_conn, uint32_t uid, List wckey_list)
 {
 	ListIterator itr = NULL;
 	int rc = SLURM_SUCCESS, added=0;
-	acct_wckey_rec_t *object = NULL;
+	slurmdb_wckey_rec_t *object = NULL;
 	char *rec = NULL, *info = NULL, *query = NULL, *user_name = NULL;
 	char *id_str = NULL;
 	time_t now = time(NULL);
@@ -184,7 +184,7 @@ as_p_add_wckeys(pgsql_conn_t *pg_conn, uint32_t uid, List wckey_list)
 			error("Couldn't add txn");
 		} else {
 			if(addto_update_list(pg_conn->update_list,
-					     ACCT_ADD_WCKEY,
+					     SLURMDB_ADD_WCKEY,
 					     object) == SLURM_SUCCESS)
 				list_remove(itr);
 			added++;
@@ -213,8 +213,8 @@ as_p_add_wckeys(pgsql_conn_t *pg_conn, uint32_t uid, List wckey_list)
  */
 extern List
 as_p_modify_wckeys(pgsql_conn_t *pg_conn, uint32_t uid,
-		   acct_wckey_cond_t *wckey_cond,
-		   acct_wckey_rec_t *wckey)
+		   slurmdb_wckey_cond_t *wckey_cond,
+		   slurmdb_wckey_rec_t *wckey)
 {
 	/* TODO: complete this */
 	return NULL;
@@ -230,7 +230,7 @@ as_p_modify_wckeys(pgsql_conn_t *pg_conn, uint32_t uid,
  */
 extern List
 as_p_remove_wckeys(pgsql_conn_t *pg_conn, uint32_t uid,
-		   acct_wckey_cond_t *wckey_cond)
+		   slurmdb_wckey_cond_t *wckey_cond)
 {
 	List ret_list = NULL;
 	PGresult *result = NULL;
@@ -271,7 +271,7 @@ as_p_remove_wckeys(pgsql_conn_t *pg_conn, uint32_t uid,
 	name_char = NULL;
 	ret_list = list_create(slurm_destroy_char);
 	FOR_EACH_ROW {
-		acct_wckey_rec_t *wckey_rec = NULL;
+		slurmdb_wckey_rec_t *wckey_rec = NULL;
 		list_append(ret_list, xstrdup(ROW(1)));
 		if(!name_char)
 			xstrfmtcat(name_char, "id='%s'",
@@ -286,10 +286,10 @@ as_p_remove_wckeys(pgsql_conn_t *pg_conn, uint32_t uid,
 			xstrfmtcat(assoc_char, " OR wckeyid='%s'",
 				   ROW(0));
 
-		wckey_rec = xmalloc(sizeof(acct_wckey_rec_t));
+		wckey_rec = xmalloc(sizeof(slurmdb_wckey_rec_t));
 		/* we only need id when removing no real need to init */
 		wckey_rec->id = atoi(ROW(0));
-		addto_update_list(pg_conn->update_list, ACCT_REMOVE_WCKEY,
+		addto_update_list(pg_conn->update_list, SLURMDB_REMOVE_WCKEY,
 				  wckey_rec);
 	} END_EACH_ROW;
 	PQclear(result);
@@ -323,7 +323,7 @@ as_p_remove_wckeys(pgsql_conn_t *pg_conn, uint32_t uid,
  */
 extern List
 as_p_get_wckeys(pgsql_conn_t *pg_conn, uid_t uid,
-		acct_wckey_cond_t *wckey_cond)
+		slurmdb_wckey_cond_t *wckey_cond)
 {
 	char *query = NULL;
 	char *cond = NULL;
@@ -331,7 +331,7 @@ as_p_get_wckeys(pgsql_conn_t *pg_conn, uid_t uid,
 	int is_admin=1;
 	PGresult *result = NULL;
 	uint16_t private_data = 0;
-	acct_user_rec_t user;
+	slurmdb_user_rec_t user;
 	/* needed if we don't have an wckey_cond */
 	uint16_t with_usage = 0;
 
@@ -347,13 +347,13 @@ as_p_get_wckeys(pgsql_conn_t *pg_conn, uid_t uid,
 	if (check_db_connection(pg_conn) != SLURM_SUCCESS)
 		return NULL;
 
-	memset(&user, 0, sizeof(acct_user_rec_t));
+	memset(&user, 0, sizeof(slurmdb_user_rec_t));
 	user.uid = uid;
 
 	private_data = slurm_get_private_data();
 	if (private_data & PRIVATE_DATA_USERS) {
 		is_admin = is_user_min_admin_level(
-			pg_conn, uid, ACCT_ADMIN_OPERATOR);
+			pg_conn, uid, SLURMDB_ADMIN_OPERATOR);
 		if (!is_admin) {
 			if(assoc_mgr_fill_in_user(pg_conn, &user, 1, NULL)
 			   != SLURM_SUCCESS) {
@@ -382,9 +382,9 @@ as_p_get_wckeys(pgsql_conn_t *pg_conn, uid_t uid,
 		return NULL;
 	}
 
-	wckey_list = list_create(destroy_acct_wckey_rec);
+	wckey_list = list_create(slurmdb_destroy_wckey_rec);
 	FOR_EACH_ROW {
-		acct_wckey_rec_t *wckey = xmalloc(sizeof(acct_wckey_rec_t));
+		slurmdb_wckey_rec_t *wckey = xmalloc(sizeof(slurmdb_wckey_rec_t));
 		list_append(wckey_list, wckey);
 
 		wckey->id = atoi(ROW(GW_ID));
@@ -436,7 +436,7 @@ get_wckeyid(pgsql_conn_t *pg_conn, char **name,
 	 * slow down getting the db_index back to the
 	 * controller.
 	 */
-	acct_wckey_rec_t wckey_rec;
+	slurmdb_wckey_rec_t wckey_rec;
 	char *user = NULL;
 
 	/* since we are unable to rely on uids here (someone could
@@ -449,8 +449,8 @@ get_wckeyid(pgsql_conn_t *pg_conn, char **name,
 
 	/* get the default key */
 	if(!*name) {
-		acct_user_rec_t user_rec;
-		memset(&user_rec, 0, sizeof(acct_user_rec_t));
+		slurmdb_user_rec_t user_rec;
+		memset(&user_rec, 0, sizeof(slurmdb_user_rec_t));
 		user_rec.uid = NO_VAL;
 		user_rec.name = user;
 		if(assoc_mgr_fill_in_user(pg_conn, &user_rec,
@@ -468,7 +468,7 @@ get_wckeyid(pgsql_conn_t *pg_conn, char **name,
 			*name = xstrdup_printf("*");
 	}
 
-	memset(&wckey_rec, 0, sizeof(acct_wckey_rec_t));
+	memset(&wckey_rec, 0, sizeof(slurmdb_wckey_rec_t));
 	wckey_rec.name = (*name);
 	wckey_rec.uid = NO_VAL;
 	wckey_rec.user = user;
@@ -477,11 +477,11 @@ get_wckeyid(pgsql_conn_t *pg_conn, char **name,
 				   ACCOUNTING_ENFORCE_WCKEYS,
 				   NULL) != SLURM_SUCCESS) {
 		List wckey_list = NULL;
-		acct_wckey_rec_t *wckey_ptr = NULL;
+		slurmdb_wckey_rec_t *wckey_ptr = NULL;
 
-		wckey_list = list_create(destroy_acct_wckey_rec);
+		wckey_list = list_create(slurmdb_destroy_wckey_rec);
 
-		wckey_ptr = xmalloc(sizeof(acct_wckey_rec_t));
+		wckey_ptr = xmalloc(sizeof(slurmdb_wckey_rec_t));
 		wckey_ptr->name = xstrdup((*name));
 		wckey_ptr->user = xstrdup(user);
 		wckey_ptr->cluster = xstrdup(cluster);

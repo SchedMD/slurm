@@ -55,7 +55,7 @@
 
 #include "../common/common_as.h"
 
-extern char *acct_coord_table;
+extern char *slurmdb_coord_table;
 extern char *acct_table;
 extern char *assoc_day_table;
 extern char *assoc_hour_table;
@@ -98,7 +98,7 @@ extern char *fix_double_quotes(char *str);
 extern int last_affected_rows(MYSQL *mysql_db);
 extern int create_cluster_tables(MYSQL *mysql_db, char *cluster_name);
 extern int remove_cluster_tables(MYSQL *mysql_db, char *cluster_name);
-extern int setup_association_limits(acct_association_rec_t *assoc,
+extern int setup_association_limits(slurmdb_association_rec_t *assoc,
 				    char **cols, char **vals,
 				    char **extra, qos_level_t qos_level,
 				    bool get_fs);
@@ -131,10 +131,10 @@ extern int acct_storage_p_add_wckeys(mysql_conn_t *mysql_conn, uint32_t uid,
 
 extern List acct_storage_p_get_associations(
 	mysql_conn_t *mysql_conn, uid_t uid,
-	acct_association_cond_t *assoc_cond);
+	slurmdb_association_cond_t *assoc_cond);
 
 extern List acct_storage_p_get_wckeys(mysql_conn_t *mysql_conn, uid_t uid,
-				      acct_wckey_cond_t *wckey_cond);
+				      slurmdb_wckey_cond_t *wckey_cond);
 
 extern int acct_storage_p_get_usage(mysql_conn_t *mysql_conn, uid_t uid,
 				    void *in, slurmdbd_msg_type_t type,
@@ -142,15 +142,15 @@ extern int acct_storage_p_get_usage(mysql_conn_t *mysql_conn, uid_t uid,
 
 extern int clusteracct_storage_p_get_usage(
 	mysql_conn_t *mysql_conn, uid_t uid,
-	acct_cluster_rec_t *cluster_rec,  slurmdbd_msg_type_t type,
+	slurmdb_cluster_rec_t *cluster_rec,  slurmdbd_msg_type_t type,
 	time_t start, time_t end);
 
 extern List acct_storage_p_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 					List acct_list,
-					acct_user_cond_t *user_cond);
+					slurmdb_user_cond_t *user_cond);
 
 extern List acct_storage_p_remove_wckeys(mysql_conn_t *mysql_conn,
 					 uint32_t uid,
-					 acct_wckey_cond_t *wckey_cond);
+					 slurmdb_wckey_cond_t *wckey_cond);
 
 #endif

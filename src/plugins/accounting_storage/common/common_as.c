@@ -130,7 +130,7 @@ extern int update_assoc_mgr(List update_list)
 {
 	int rc = SLURM_SUCCESS;
 	ListIterator itr = NULL;
-	acct_update_object_t *object = NULL;
+	slurmdb_update_object_t *object = NULL;
 
 	/* NOTE: you can not use list_pop, or list_push
 	   anywhere either, since mysql is
@@ -146,29 +146,29 @@ extern int update_assoc_mgr(List update_list)
 			continue;
 		}
 		switch(object->type) {
-		case ACCT_MODIFY_USER:
-		case ACCT_ADD_USER:
-		case ACCT_REMOVE_USER:
-		case ACCT_ADD_COORD:
-		case ACCT_REMOVE_COORD:
+		case SLURMDB_MODIFY_USER:
+		case SLURMDB_ADD_USER:
+		case SLURMDB_REMOVE_USER:
+		case SLURMDB_ADD_COORD:
+		case SLURMDB_REMOVE_COORD:
 			rc = assoc_mgr_update_users(object);
 			break;
-		case ACCT_ADD_ASSOC:
-		case ACCT_MODIFY_ASSOC:
-		case ACCT_REMOVE_ASSOC:
+		case SLURMDB_ADD_ASSOC:
+		case SLURMDB_MODIFY_ASSOC:
+		case SLURMDB_REMOVE_ASSOC:
 			rc = assoc_mgr_update_assocs(object);
 			break;
-		case ACCT_ADD_QOS:
-		case ACCT_MODIFY_QOS:
-		case ACCT_REMOVE_QOS:
+		case SLURMDB_ADD_QOS:
+		case SLURMDB_MODIFY_QOS:
+		case SLURMDB_REMOVE_QOS:
 			rc = assoc_mgr_update_qos(object);
 			break;
-		case ACCT_ADD_WCKEY:
-		case ACCT_MODIFY_WCKEY:
-		case ACCT_REMOVE_WCKEY:
+		case SLURMDB_ADD_WCKEY:
+		case SLURMDB_MODIFY_WCKEY:
+		case SLURMDB_REMOVE_WCKEY:
 			rc = assoc_mgr_update_wckeys(object);
 			break;
-		case ACCT_UPDATE_NOTSET:
+		case SLURMDB_UPDATE_NOTSET:
 		default:
 			error("unknown type set in "
 			      "update_object: %d",
@@ -191,9 +191,9 @@ extern int update_assoc_mgr(List update_list)
  *       needed to be removed from a list if in one before.
  */
 extern int
-addto_update_list(List update_list, acct_update_type_t type, void *object)
+addto_update_list(List update_list, slurmdb_update_type_t type, void *object)
 {
-	acct_update_object_t *update_object = NULL;
+	slurmdb_update_object_t *update_object = NULL;
 	ListIterator itr = NULL;
 	if(!update_list) {
 		error("no update list given");
@@ -214,41 +214,41 @@ addto_update_list(List update_list, acct_update_type_t type, void *object)
 		list_prepend(update_object->objects, object);
 		return SLURM_SUCCESS;
 	}
-	update_object = xmalloc(sizeof(acct_update_object_t));
+	update_object = xmalloc(sizeof(slurmdb_update_object_t));
 
 	list_append(update_list, update_object);
 
 	update_object->type = type;
 
 	switch(type) {
-	case ACCT_MODIFY_USER:
-	case ACCT_ADD_USER:
-	case ACCT_REMOVE_USER:
-	case ACCT_ADD_COORD:
-	case ACCT_REMOVE_COORD:
-		update_object->objects = list_create(destroy_acct_user_rec);
+	case SLURMDB_MODIFY_USER:
+	case SLURMDB_ADD_USER:
+	case SLURMDB_REMOVE_USER:
+	case SLURMDB_ADD_COORD:
+	case SLURMDB_REMOVE_COORD:
+		update_object->objects = list_create(slurmdb_destroy_user_rec);
 		break;
-	case ACCT_ADD_ASSOC:
-	case ACCT_MODIFY_ASSOC:
-	case ACCT_REMOVE_ASSOC:
-		xassert(((acct_association_rec_t *)object)->cluster);
+	case SLURMDB_ADD_ASSOC:
+	case SLURMDB_MODIFY_ASSOC:
+	case SLURMDB_REMOVE_ASSOC:
+		xassert(((slurmdb_association_rec_t *)object)->cluster);
 		update_object->objects = list_create(
-			destroy_acct_association_rec);
+			slurmdb_destroy_association_rec);
 		break;
-	case ACCT_ADD_QOS:
-	case ACCT_MODIFY_QOS:
-	case ACCT_REMOVE_QOS:
+	case SLURMDB_ADD_QOS:
+	case SLURMDB_MODIFY_QOS:
+	case SLURMDB_REMOVE_QOS:
 		update_object->objects = list_create(
-			destroy_acct_qos_rec);
+			slurmdb_destroy_qos_rec);
 		break;
-	case ACCT_ADD_WCKEY:
-	case ACCT_MODIFY_WCKEY:
-	case ACCT_REMOVE_WCKEY:
-		xassert(((acct_wckey_rec_t *)object)->cluster);
+	case SLURMDB_ADD_WCKEY:
+	case SLURMDB_MODIFY_WCKEY:
+	case SLURMDB_REMOVE_WCKEY:
+		xassert(((slurmdb_wckey_rec_t *)object)->cluster);
 		update_object->objects = list_create(
-			destroy_acct_wckey_rec);
+			slurmdb_destroy_wckey_rec);
 		break;
-	case ACCT_UPDATE_NOTSET:
+	case SLURMDB_UPDATE_NOTSET:
 	default:
 		error("unknown type set in update_object: %d", type);
 		return SLURM_ERROR;
@@ -260,9 +260,9 @@ addto_update_list(List update_list, acct_update_type_t type, void *object)
 
 
 static void
-_dump_acct_assoc_records(List assoc_list)
+_dump_slurmdb_assoc_records(List assoc_list)
 {
-	acct_association_rec_t *assoc = NULL;
+	slurmdb_association_rec_t *assoc = NULL;
 	ListIterator itr = NULL;
 
 	itr = list_iterator_create(assoc_list);
@@ -280,7 +280,7 @@ extern void
 dump_update_list(List update_list)
 {
 	ListIterator itr = NULL;
-	acct_update_object_t *object = NULL;
+	slurmdb_update_object_t *object = NULL;
 
 	debug3("========== DUMP UPDATE LIST ==========");
 	itr = list_iterator_create(update_list);
@@ -291,30 +291,30 @@ dump_update_list(List update_list)
 			continue;
 		}
 		switch(object->type) {
-		case ACCT_MODIFY_USER:
-		case ACCT_ADD_USER:
-		case ACCT_REMOVE_USER:
-		case ACCT_ADD_COORD:
-		case ACCT_REMOVE_COORD:
+		case SLURMDB_MODIFY_USER:
+		case SLURMDB_ADD_USER:
+		case SLURMDB_REMOVE_USER:
+		case SLURMDB_ADD_COORD:
+		case SLURMDB_REMOVE_COORD:
 			debug3("\tUSER RECORDS");
 			break;
-		case ACCT_ADD_ASSOC:
-		case ACCT_MODIFY_ASSOC:
-		case ACCT_REMOVE_ASSOC:
+		case SLURMDB_ADD_ASSOC:
+		case SLURMDB_MODIFY_ASSOC:
+		case SLURMDB_REMOVE_ASSOC:
 			debug3("\tASSOC RECORDS");
-			_dump_acct_assoc_records(object->objects);
+			_dump_slurmdb_assoc_records(object->objects);
 			break;
-		case ACCT_ADD_QOS:
-		case ACCT_MODIFY_QOS:
-		case ACCT_REMOVE_QOS:
+		case SLURMDB_ADD_QOS:
+		case SLURMDB_MODIFY_QOS:
+		case SLURMDB_REMOVE_QOS:
 			debug3("\tQOS RECORDS");
 			break;
-		case ACCT_ADD_WCKEY:
-		case ACCT_MODIFY_WCKEY:
-		case ACCT_REMOVE_WCKEY:
+		case SLURMDB_ADD_WCKEY:
+		case SLURMDB_MODIFY_WCKEY:
+		case SLURMDB_REMOVE_WCKEY:
 			debug3("\tWCKEY RECORDS");
 			break;
-		case ACCT_UPDATE_NOTSET:
+		case SLURMDB_UPDATE_NOTSET:
 		default:
 			error("unknown type set in "
 			      "update_object: %d",
@@ -527,7 +527,7 @@ merge_delta_qos_list(List qos_list, List delta_qos_list)
 }
 
 extern bool is_user_min_admin_level(void *db_conn, uid_t uid,
-				    acct_admin_level_t min_level)
+				    slurmdb_admin_level_t min_level)
 {
 	bool is_admin = 1;
 	/* This only works when running though the slurmdbd.
@@ -546,10 +546,10 @@ extern bool is_user_min_admin_level(void *db_conn, uid_t uid,
 	return is_admin;
 }
 
-extern bool is_user_coord(acct_user_rec_t *user, char *account)
+extern bool is_user_coord(slurmdb_user_rec_t *user, char *account)
 {
 	ListIterator itr;
-	acct_coord_rec_t *coord;
+	slurmdb_coord_rec_t *coord;
 
 	xassert(user);
 	xassert(account);
@@ -566,7 +566,7 @@ extern bool is_user_coord(acct_user_rec_t *user, char *account)
 	return coord ? 1 : 0;
 }
 
-extern bool is_user_any_coord(void *db_conn, acct_user_rec_t *user)
+extern bool is_user_any_coord(void *db_conn, slurmdb_user_rec_t *user)
 {
 	xassert(user);
 	if(assoc_mgr_fill_in_user(db_conn, user, 1, NULL) != SLURM_SUCCESS) {

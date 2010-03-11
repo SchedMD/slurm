@@ -727,21 +727,21 @@ delete_assoc_usage(pgsql_conn_t *pg_conn, time_t now, char *assoc_cond)
  *
  * IN pg_conn: database connection
  * IN uid: user performing get operation
- * IN/OUT acct_assoc: data of which association to get
+ * IN/OUT slurmdb_assoc: data of which association to get
  * IN start: start time
  * IN end: end time
  * RET: error code
  */
 static int
 _get_assoc_usage(pgsql_conn_t *pg_conn, uid_t uid,
-		 acct_association_rec_t *acct_assoc,
+		 slurmdb_association_rec_t *slurmdb_assoc,
 		 time_t start, time_t end)
 {
 	int rc = SLURM_SUCCESS, is_admin=1;
 	PGresult *result = NULL;
 	char *usage_table = NULL, *query = NULL;
 	uint16_t private_data = 0;
-	acct_user_rec_t user;
+	slurmdb_user_rec_t user;
 	enum {
 		USAGE_ID,
 		USAGE_START,
@@ -749,32 +749,32 @@ _get_assoc_usage(pgsql_conn_t *pg_conn, uid_t uid,
 		USAGE_COUNT
 	};
 
-	if(!acct_assoc->id) {
+	if(!slurmdb_assoc->id) {
 		error("We need an assoc id to set data for getting usage");
 		return SLURM_ERROR;
 	}
 
-	memset(&user, 0, sizeof(acct_user_rec_t));
+	memset(&user, 0, sizeof(slurmdb_user_rec_t));
 	user.uid = uid;
 
 	private_data = slurm_get_private_data();
 	if (private_data & PRIVATE_DATA_USAGE) {
 		is_admin = is_user_min_admin_level(
-			pg_conn, uid, ACCT_ADMIN_OPERATOR);
+			pg_conn, uid, SLURMDB_ADMIN_OPERATOR);
 		if (!is_admin) {
 			ListIterator itr = NULL;
-			acct_coord_rec_t *coord = NULL;
+			slurmdb_coord_rec_t *coord = NULL;
 			assoc_mgr_fill_in_user(pg_conn, &user, 1, NULL);
 
-			if(acct_assoc->user &&
-			   !strcmp(acct_assoc->user, user.name))
+			if(slurmdb_assoc->user &&
+			   !strcmp(slurmdb_assoc->user, user.name))
 				goto is_user;
 
 			if(!user.coord_accts) {
 				debug4("This user isn't a coord.");
 				goto bad_user;
 			}
-			if(!acct_assoc->acct) {
+			if(!slurmdb_assoc->acct) {
 				debug("No account name given "
 				      "in association.");
 				goto bad_user;
@@ -782,7 +782,7 @@ _get_assoc_usage(pgsql_conn_t *pg_conn, uid_t uid,
 			itr = list_iterator_create(user.coord_accts);
 			while((coord = list_next(itr))) {
 				if(!strcasecmp(coord->name,
-					       acct_assoc->acct))
+					       slurmdb_assoc->acct))
 					break;
 			}
 			list_iterator_destroy(itr);
@@ -809,22 +809,22 @@ is_user:
 		"(t2.lft BETWEEN t3.lft AND t3.rgt) "
 		"ORDER BY t3.id, t1.period_start;",
 		usage_table, assoc_table, assoc_table,
-		end, start, acct_assoc->id);
+		end, start, slurmdb_assoc->id);
 	result = DEF_QUERY_RET;
 	if(!result)
 		return SLURM_ERROR;
 
-	if(!acct_assoc->accounting_list)
-		acct_assoc->accounting_list =
-			list_create(destroy_acct_accounting_rec);
+	if(!slurmdb_assoc->accounting_list)
+		slurmdb_assoc->accounting_list =
+			list_create(slurmdb_destroy_accounting_rec);
 
 	FOR_EACH_ROW {
-		acct_accounting_rec_t *accounting_rec =
-			xmalloc(sizeof(acct_accounting_rec_t));
+		slurmdb_accounting_rec_t *accounting_rec =
+			xmalloc(sizeof(slurmdb_accounting_rec_t));
 		accounting_rec->id = atoi(ROW(USAGE_ID));
 		accounting_rec->period_start = atoi(ROW(USAGE_START));
 		accounting_rec->alloc_secs = atoll(ROW(USAGE_ACPU));
-		list_append(acct_assoc->accounting_list, accounting_rec);
+		list_append(slurmdb_assoc->accounting_list, accounting_rec);
 	} END_EACH_ROW;
 	PQclear(result);
 
@@ -836,21 +836,21 @@ is_user:
  *
  * IN pg_conn: database connection
  * IN uid: user performing get operation
- * IN/OUT acct_wckey: usage data of which wckey to get
+ * IN/OUT slurmdb_wckey: usage data of which wckey to get
  * IN start: start time
  * IN end: end time
  * RET: error code
  */
 static int
 _get_wckey_usage(pgsql_conn_t *pg_conn, uid_t uid,
-		 acct_wckey_rec_t *acct_wckey,
+		 slurmdb_wckey_rec_t *slurmdb_wckey,
 		 time_t start, time_t end)
 {
 	int rc = SLURM_SUCCESS, is_admin=1;
 	PGresult *result = NULL;
 	char *usage_table = NULL, *query = NULL;
 	uint16_t private_data = 0;
-	acct_user_rec_t user;
+	slurmdb_user_rec_t user;
 	enum {
 		USAGE_ID,
 		USAGE_START,
@@ -858,22 +858,22 @@ _get_wckey_usage(pgsql_conn_t *pg_conn, uid_t uid,
 		USAGE_COUNT
 	};
 
-	if(!acct_wckey->id) {
+	if(!slurmdb_wckey->id) {
 		error("We need an wckey id to set data for getting usage");
 		return SLURM_ERROR;
 	}
 
-	memset(&user, 0, sizeof(acct_user_rec_t));
+	memset(&user, 0, sizeof(slurmdb_user_rec_t));
 	user.uid = uid;
 
 	private_data = slurm_get_private_data();
 	if (private_data & PRIVATE_DATA_USAGE) {
 		is_admin = is_user_min_admin_level(
-			pg_conn, uid, ACCT_ADMIN_OPERATOR);
+			pg_conn, uid, SLURMDB_ADMIN_OPERATOR);
 		if (!is_admin) {
 			assoc_mgr_fill_in_user(pg_conn, &user, 1, NULL);
-			if(! acct_wckey->user ||
-			   strcmp(acct_wckey->user, user.name)) {
+			if(! slurmdb_wckey->user ||
+			   strcmp(slurmdb_wckey->user, user.name)) {
 				errno = ESLURM_ACCESS_DENIED;
 				return SLURM_ERROR;
 			}
@@ -890,22 +890,22 @@ _get_wckey_usage(pgsql_conn_t *pg_conn, uid_t uid,
 		"SELECT id, period_start, alloc_cpu_secs FROM %s "
 		"WHERE (period_start < %d AND period_start >= %d) "
 		"AND id=%d ORDER BY id, period_start;",
-		usage_table, end, start, acct_wckey->id);
+		usage_table, end, start, slurmdb_wckey->id);
 	result = DEF_QUERY_RET;
 	if(!result)
 		return SLURM_ERROR;
 
-	if(!acct_wckey->accounting_list)
-		acct_wckey->accounting_list =
-			list_create(destroy_acct_accounting_rec);
+	if(!slurmdb_wckey->accounting_list)
+		slurmdb_wckey->accounting_list =
+			list_create(slurmdb_destroy_accounting_rec);
 
 	FOR_EACH_ROW {
-		acct_accounting_rec_t *accounting_rec =
-			xmalloc(sizeof(acct_accounting_rec_t));
+		slurmdb_accounting_rec_t *accounting_rec =
+			xmalloc(sizeof(slurmdb_accounting_rec_t));
 		accounting_rec->id = atoi(ROW(USAGE_ID));
 		accounting_rec->period_start = atoi(ROW(USAGE_START));
 		accounting_rec->alloc_secs = atoll(ROW(USAGE_ACPU));
-		list_append(acct_wckey->accounting_list, accounting_rec);
+		list_append(slurmdb_wckey->accounting_list, accounting_rec);
 	} END_EACH_ROW;
 	PQclear(result);
 	return rc;
@@ -1183,8 +1183,8 @@ get_usage_for_assoc_list(pgsql_conn_t *pg_conn, List assoc_list,
 	char *usage_table = NULL, *query = NULL, *id_str = NULL;
 	List usage_list = NULL;
 	ListIterator itr = NULL, u_itr = NULL;
-	acct_association_rec_t *assoc = NULL;
-	acct_accounting_rec_t *accounting_rec = NULL;
+	slurmdb_association_rec_t *assoc = NULL;
+	slurmdb_accounting_rec_t *accounting_rec = NULL;
 	enum {
 		USAGE_ID,
 		USAGE_START,
@@ -1225,10 +1225,10 @@ get_usage_for_assoc_list(pgsql_conn_t *pg_conn, List assoc_list,
 	if(!result)
 		return SLURM_ERROR;
 
-	usage_list = list_create(destroy_acct_accounting_rec);
+	usage_list = list_create(slurmdb_destroy_accounting_rec);
 	FOR_EACH_ROW {
-		acct_accounting_rec_t *accounting_rec =
-			xmalloc(sizeof(acct_accounting_rec_t));
+		slurmdb_accounting_rec_t *accounting_rec =
+			xmalloc(sizeof(slurmdb_accounting_rec_t));
 		accounting_rec->id = atoi(ROW(USAGE_ID));
 		accounting_rec->period_start = atoi(ROW(USAGE_START));
 		accounting_rec->alloc_secs = atoll(ROW(USAGE_ACPU));
@@ -1242,7 +1242,7 @@ get_usage_for_assoc_list(pgsql_conn_t *pg_conn, List assoc_list,
 		int found = 0;
 		if(!assoc->accounting_list)
 			assoc->accounting_list = list_create(
-				destroy_acct_accounting_rec);
+				slurmdb_destroy_accounting_rec);
 		while((accounting_rec = list_next(u_itr))) {
 			if(assoc->id == accounting_rec->id) {
 				list_append(assoc->accounting_list,
@@ -1294,8 +1294,8 @@ get_usage_for_wckey_list(pgsql_conn_t *pg_conn, List wckey_list,
 	char *usage_table = NULL, *query = NULL, *id_str = NULL;
 	List usage_list = NULL;
 	ListIterator itr = NULL, u_itr = NULL;
-	acct_wckey_rec_t *wckey = NULL;
-	acct_accounting_rec_t *accounting_rec = NULL;
+	slurmdb_wckey_rec_t *wckey = NULL;
+	slurmdb_accounting_rec_t *accounting_rec = NULL;
 	enum {
 		USAGE_ID,
 		USAGE_START,
@@ -1333,10 +1333,10 @@ get_usage_for_wckey_list(pgsql_conn_t *pg_conn, List wckey_list,
 	if(!result)
 		return SLURM_ERROR;
 
-	usage_list = list_create(destroy_acct_accounting_rec);
+	usage_list = list_create(slurmdb_destroy_accounting_rec);
 	FOR_EACH_ROW {
-		acct_accounting_rec_t *accounting_rec =
-			xmalloc(sizeof(acct_accounting_rec_t));
+		slurmdb_accounting_rec_t *accounting_rec =
+			xmalloc(sizeof(slurmdb_accounting_rec_t));
 		accounting_rec->id = atoi(ROW(USAGE_ID));
 		accounting_rec->period_start = atoi(ROW(USAGE_START));
 		accounting_rec->alloc_secs = atoll(ROW(USAGE_ACPU));
@@ -1350,7 +1350,7 @@ get_usage_for_wckey_list(pgsql_conn_t *pg_conn, List wckey_list,
 		int found = 0;
 		if(!wckey->accounting_list)
 			wckey->accounting_list = list_create(
-				destroy_acct_accounting_rec);
+				slurmdb_destroy_accounting_rec);
 		while((accounting_rec = list_next(u_itr))) {
 			if(wckey->id == accounting_rec->id) {
 				list_append(wckey->accounting_list,

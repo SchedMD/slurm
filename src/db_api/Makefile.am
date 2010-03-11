@@ -46,9 +46,22 @@ lib_LTLIBRARIES = libslurmdb.la
 # need to be built before anything else.
 BUILT_SOURCES = $(VERSION_SCRIPT) libslurmdb.la
 
-slurmdbapi_src =           
-
-libslurmdb_la_SOURCES =
+libslurmdb_la_SOURCES =	\
+	account_functions.c \
+	archive_functions.c \
+	assoc_functions.c \
+	cluster_functions.c \
+	cluster_report_functions.c \
+	coord_functions.c \
+	connection_functions.c \
+	extra_get_functions.c \
+	job_report_functions.c \
+	qos_functions.c \
+	resv_report_functions.c \
+	usage_functions.c \
+	user_functions.c \
+	user_report_functions.c \
+	wckey_functions.c
 libslurmdb_la_LIBADD = $(top_builddir)/src/api/libslurm.la
 libslurmdb_la_LDFLAGS        = \
         $(LIB_LDFLAGS) \

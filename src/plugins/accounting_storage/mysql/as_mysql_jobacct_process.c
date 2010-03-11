@@ -291,8 +291,8 @@ static void _destroy_local_cluster(void *object)
 }
 
 static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
-			     acct_user_rec_t *user,
-			     acct_job_cond_t *job_cond,
+			     slurmdb_user_rec_t *user,
+			     slurmdb_job_cond_t *job_cond,
 			     char *cluster_name,
 			     char *job_fields, char *step_fields,
 			     char *sent_extra,
@@ -301,13 +301,13 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 	char *query = NULL;
 	char *extra = xstrdup(sent_extra);
 	uint16_t private_data = slurm_get_private_data();
-	jobacct_selected_step_t *selected_step = NULL;
+	slurmdb_selected_step_t *selected_step = NULL;
 	MYSQL_RES *result = NULL, *step_result = NULL;
 	MYSQL_ROW row, step_row;
-	jobacct_job_rec_t *job = NULL;
-	jobacct_step_rec_t *step = NULL;
+	slurmdb_job_rec_t *job = NULL;
+	slurmdb_step_rec_t *step = NULL;
 	time_t now = time(NULL);
-	List job_list = list_create(destroy_jobacct_job_rec);
+	List job_list = list_create(slurmdb_destroy_job_rec);
 	ListIterator itr = NULL;
 	List local_cluster_list = NULL;
 	int set = 0;
@@ -325,7 +325,7 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 				       "where user='%s'",
 				       cluster_name, assoc_table, user->name);
 		if(user->coord_accts) {
-			acct_coord_rec_t *coord = NULL;
+			slurmdb_coord_rec_t *coord = NULL;
 			itr = list_iterator_create(user->coord_accts);
 			while((coord = list_next(itr))) {
 				xstrfmtcat(query, " || acct='%s'",
@@ -416,7 +416,7 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 					row[JOB_REQ_NODE_INX], submit))
 			continue;
 
-		job = create_jobacct_job_rec();
+		job = slurmdb_create_job_rec();
 		list_append(job_list, job);
 
 		job->state = atoi(row[JOB_REQ_STATE]);
@@ -633,7 +633,7 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 						submit))
 				continue;
 
-			step = create_jobacct_step_rec();
+			step = slurmdb_create_step_rec();
 			step->job_ptr = job;
 			if(!job->first_step_ptr)
 				job->first_step_ptr = step;
@@ -697,38 +697,38 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 			job->tot_cpu_usec +=
 				step->tot_cpu_usec +=
 				step->user_cpu_usec + step->sys_cpu_usec;
-			step->sacct.max_vsize =
+			step->stats.vsize_max =
 				atoi(step_row[STEP_REQ_MAX_VSIZE]);
-			step->sacct.max_vsize_id.taskid =
+			step->stats.vsize_max_taskid =
 				atoi(step_row[STEP_REQ_MAX_VSIZE_TASK]);
-			step->sacct.ave_vsize =
+			step->stats.vsize_ave =
 				atof(step_row[STEP_REQ_AVE_VSIZE]);
-			step->sacct.max_rss =
+			step->stats.rss_max =
 				atoi(step_row[STEP_REQ_MAX_RSS]);
-			step->sacct.max_rss_id.taskid =
+			step->stats.rss_max_taskid =
 				atoi(step_row[STEP_REQ_MAX_RSS_TASK]);
-			step->sacct.ave_rss =
+			step->stats.rss_ave =
 				atof(step_row[STEP_REQ_AVE_RSS]);
-			step->sacct.max_pages =
+			step->stats.pages_max =
 				atoi(step_row[STEP_REQ_MAX_PAGES]);
-			step->sacct.max_pages_id.taskid =
+			step->stats.pages_max_taskid =
 				atoi(step_row[STEP_REQ_MAX_PAGES_TASK]);
-			step->sacct.ave_pages =
+			step->stats.pages_ave =
 				atof(step_row[STEP_REQ_AVE_PAGES]);
-			step->sacct.min_cpu =
+			step->stats.cpu_min =
 				atoi(step_row[STEP_REQ_MIN_CPU]);
-			step->sacct.min_cpu_id.taskid =
+			step->stats.cpu_min_taskid =
 				atoi(step_row[STEP_REQ_MIN_CPU_TASK]);
-			step->sacct.ave_cpu = atof(step_row[STEP_REQ_AVE_CPU]);
+			step->stats.cpu_ave = atof(step_row[STEP_REQ_AVE_CPU]);
 			step->stepname = xstrdup(step_row[STEP_REQ_NAME]);
 			step->nodes = xstrdup(step_row[STEP_REQ_NODELIST]);
-			step->sacct.max_vsize_id.nodeid =
+			step->stats.vsize_max_nodeid =
 				atoi(step_row[STEP_REQ_MAX_VSIZE_NODE]);
-			step->sacct.max_rss_id.nodeid =
+			step->stats.rss_max_nodeid =
 				atoi(step_row[STEP_REQ_MAX_RSS_NODE]);
-			step->sacct.max_pages_id.nodeid =
+			step->stats.pages_max_nodeid =
 				atoi(step_row[STEP_REQ_MAX_PAGES_NODE]);
-			step->sacct.min_cpu_id.nodeid =
+			step->stats.cpu_min_nodeid =
 				atoi(step_row[STEP_REQ_MIN_CPU_NODE]);
 
 			step->requid = atoi(step_row[STEP_REQ_KILL_REQUID]);
@@ -768,7 +768,7 @@ end_it:
 }
 
 extern List setup_cluster_list_with_inx(mysql_conn_t *mysql_conn,
-					acct_job_cond_t *job_cond,
+					slurmdb_job_cond_t *job_cond,
 					void **curr_cluster)
 {
 	List local_cluster_list = NULL;
@@ -902,7 +902,7 @@ extern int good_nodes_from_inx(List local_cluster_list,
 }
 
 extern char *setup_job_cluster_cond_limits(mysql_conn_t *mysql_conn,
-					   acct_job_cond_t *job_cond,
+					   slurmdb_job_cond_t *job_cond,
 					   char *cluster_name)
 {
 	int set = 0;
@@ -990,13 +990,13 @@ extern char *setup_job_cluster_cond_limits(mysql_conn_t *mysql_conn,
 }
 
 extern int setup_job_cond_limits(mysql_conn_t *mysql_conn,
-				 acct_job_cond_t *job_cond,
+				 slurmdb_job_cond_t *job_cond,
 				 const char *prefix, char **extra)
 {
 	int set = 0;
 	ListIterator itr = NULL;
 	char *object = NULL;
-	jobacct_selected_step_t *selected_step = NULL;
+	slurmdb_selected_step_t *selected_step = NULL;
 
 	if(!job_cond)
 		return 0;
@@ -1193,7 +1193,7 @@ extern int setup_job_cond_limits(mysql_conn_t *mysql_conn,
 }
 
 extern List as_mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
-					   acct_job_cond_t *job_cond)
+					   slurmdb_job_cond_t *job_cond)
 {
 	char *extra = NULL;
 	char *tmp = NULL, *tmp2 = NULL;
@@ -1203,20 +1203,20 @@ extern List as_mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t ui
 	int i;
 	List job_list = NULL;
 	uint16_t private_data = 0;
-	acct_user_rec_t user;
+	slurmdb_user_rec_t user;
 	local_cluster_t *curr_cluster = NULL;
 	List local_cluster_list = NULL;
 	int only_pending = 0;
 	List use_cluster_list = as_mysql_cluster_list;
 	char *cluster_name;
 
-	memset(&user, 0, sizeof(acct_user_rec_t));
+	memset(&user, 0, sizeof(slurmdb_user_rec_t));
 	user.uid = uid;
 
 	private_data = slurm_get_private_data();
 	if (private_data & PRIVATE_DATA_JOBS) {
 		if(!(is_admin = is_user_min_admin_level(
-			     mysql_conn, uid, ACCT_ADMIN_OPERATOR)))
+			     mysql_conn, uid, SLURMDB_ADMIN_OPERATOR)))
 			is_user_any_coord(mysql_conn, &user);
 	}
 
@@ -1260,7 +1260,7 @@ extern List as_mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t ui
 	else
 		slurm_mutex_lock(&as_mysql_cluster_list_lock);
 
-	job_list = list_create(destroy_jobacct_job_rec);
+	job_list = list_create(slurmdb_destroy_job_rec);
 	itr = list_iterator_create(use_cluster_list);
 	while((cluster_name = list_next(itr))) {
 		int rc;

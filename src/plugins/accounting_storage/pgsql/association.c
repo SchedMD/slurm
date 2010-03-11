@@ -468,7 +468,7 @@ _dump_assoc(pgsql_conn_t *pg_conn)
  * OUT txn: txn string
  */
 static void
-_make_assoc_rec(acct_association_rec_t *assoc, time_t now, int deleted,
+_make_assoc_rec(slurmdb_association_rec_t *assoc, time_t now, int deleted,
 		char **rec, char **txn)
 {
 	*rec = xstrdup_printf("(%d, %d, %d, %d, '%s', '%s', ",
@@ -561,7 +561,7 @@ _make_assoc_rec(acct_association_rec_t *assoc, time_t now, int deleted,
  * OUT txn: txn string for cluster addition
  */
 static void
-_make_cluster_root_assoc_rec(time_t now, acct_cluster_rec_t *cluster,
+_make_cluster_root_assoc_rec(time_t now, slurmdb_cluster_rec_t *cluster,
 			     char **rec, char **txn)
 {
 	*rec = xstrdup_printf(
@@ -595,7 +595,7 @@ _make_cluster_root_assoc_rec(time_t now, acct_cluster_rec_t *cluster,
 			   "'')",	/* delta_qos */
 			   default_qos_str ?: "");
 	} else {
-		acct_association_rec_t *ra;
+		slurmdb_association_rec_t *ra;
 		ra = cluster->root_assoc;
 
 		if ((int)(ra->shares_raw) >= 0) {
@@ -886,7 +886,7 @@ _move_parent(pgsql_conn_t *pg_conn, char *id, uint32_t *lft, uint32_t  *rgt,
  * XXX: the returned string must be immediately after "FROM assoc_table AS t1"
  */
 static char *
-_make_assoc_cond(acct_association_cond_t *assoc_cond)
+_make_assoc_cond(slurmdb_association_cond_t *assoc_cond)
 {
 	ListIterator itr = NULL;
 	char *object = NULL, *cond = NULL;
@@ -992,7 +992,7 @@ _make_assoc_cond(acct_association_cond_t *assoc_cond)
  * RET: error code
  */
 static int
-_make_assoc_limit_vals(acct_association_rec_t *assoc, char **vals)
+_make_assoc_limit_vals(slurmdb_association_rec_t *assoc, char **vals)
 {
 	char *tmp = NULL;
 
@@ -1030,7 +1030,7 @@ _make_assoc_limit_vals(acct_association_rec_t *assoc, char **vals)
  * IN src: source assoc
  */
 inline static void
-_copy_assoc_limits(acct_association_rec_t *dest, acct_association_rec_t *src)
+_copy_assoc_limits(slurmdb_association_rec_t *dest, slurmdb_association_rec_t *src)
 {
 	dest->shares_raw = src->shares_raw;
 
@@ -1054,7 +1054,7 @@ _copy_assoc_limits(acct_association_rec_t *dest, acct_association_rec_t *src)
  * a previous change to it's parent.
  */
 static int
-_modify_unset_users(pgsql_conn_t *pg_conn, acct_association_rec_t *assoc,
+_modify_unset_users(pgsql_conn_t *pg_conn, slurmdb_association_rec_t *assoc,
 		    char *acct, uint32_t lft, uint32_t rgt,
 		    List ret_list, int moved_parent)
 {
@@ -1098,11 +1098,11 @@ _modify_unset_users(pgsql_conn_t *pg_conn, acct_association_rec_t *assoc,
 		return SLURM_ERROR;
 
 	FOR_EACH_ROW {
-		acct_association_rec_t *mod_assoc = NULL;
+		slurmdb_association_rec_t *mod_assoc = NULL;
 		int modified = 0;
 
-		mod_assoc = xmalloc(sizeof(acct_association_rec_t));
-		init_acct_association_rec(mod_assoc);
+		mod_assoc = xmalloc(sizeof(slurmdb_association_rec_t));
+		slurmdb_init_association_rec(mod_assoc);
 
 		mod_assoc->id = atoi(ROW(MA_ID));
 
@@ -1201,7 +1201,7 @@ _modify_unset_users(pgsql_conn_t *pg_conn, acct_association_rec_t *assoc,
 						    atoi(ROW(MA_LFT)),
 						    atoi(ROW(MA_RGT)),
 						    ret_list, moved_parent);
-				destroy_acct_association_rec(mod_assoc);
+				slurmdb_destroy_association_rec(mod_assoc);
 				continue;
 			}
 			/* We do want to send all user accounts though */
@@ -1222,16 +1222,16 @@ _modify_unset_users(pgsql_conn_t *pg_conn, acct_association_rec_t *assoc,
 			list_append(ret_list, object);
 
 			if(moved_parent)
-				destroy_acct_association_rec(mod_assoc);
+				slurmdb_destroy_association_rec(mod_assoc);
 			else
 				if(addto_update_list(pg_conn->update_list,
-						      ACCT_MODIFY_ASSOC,
+						      SLURMDB_MODIFY_ASSOC,
 						      mod_assoc)
 				   != SLURM_SUCCESS)
 					error("couldn't add to "
 					      "the update list");
 		} else
-			destroy_acct_association_rec(mod_assoc);
+			slurmdb_destroy_association_rec(mod_assoc);
 
 	} END_EACH_ROW;
 	PQclear(result);
@@ -1244,7 +1244,7 @@ _modify_unset_users(pgsql_conn_t *pg_conn, acct_association_rec_t *assoc,
  * IN/OUT passoc: parent association record
  */
 static void
-_init_parent_limits(acct_association_rec_t *passoc)
+_init_parent_limits(slurmdb_association_rec_t *passoc)
 {
 	passoc->max_jobs = INFINITE;
 	passoc->max_submit_jobs = INFINITE;
@@ -1266,7 +1266,7 @@ _init_parent_limits(acct_association_rec_t *passoc)
  */
 static int
 _get_parent_limits(pgsql_conn_t *pg_conn, char *cluster,
-		   char *pacct, acct_association_rec_t *passoc,
+		   char *pacct, slurmdb_association_rec_t *passoc,
 		   char **qos, char **delta_qos)
 {
 	PGresult *result = NULL;
@@ -1373,7 +1373,7 @@ as_p_add_associations(pgsql_conn_t *pg_conn, uint32_t uid,
 {
 	ListIterator itr = NULL;
 	int rc = SLURM_SUCCESS;
-	acct_association_rec_t *object = NULL;
+	slurmdb_association_rec_t *object = NULL;
 	char *rec = NULL, *txn = NULL, *cond = NULL, *query = NULL;
 	char *parent = NULL, *user_name = NULL, *txn_query = NULL;
 	int incr = 0, p_lft = 0, p_id = 0, moved_parent = 0;
@@ -1532,7 +1532,7 @@ as_p_add_associations(pgsql_conn_t *pg_conn, uint32_t uid,
 			object->parent_id = p_id;
 
 			if(addto_update_list(pg_conn->update_list,
-					     ACCT_ADD_ASSOC,
+					     SLURMDB_ADD_ASSOC,
 					     object) == SLURM_SUCCESS) {
 				list_remove(itr);
 			}
@@ -1581,7 +1581,7 @@ as_p_add_associations(pgsql_conn_t *pg_conn, uint32_t uid,
 
 			List assoc_list = NULL;
 			ListIterator itr = NULL;
-			acct_association_rec_t *assoc = NULL;
+			slurmdb_association_rec_t *assoc = NULL;
 			if(!(assoc_list =
 			     acct_storage_p_get_associations(pg_conn,
 							     uid, NULL)))
@@ -1589,7 +1589,7 @@ as_p_add_associations(pgsql_conn_t *pg_conn, uint32_t uid,
 			itr = list_iterator_create(assoc_list);
 			while((assoc = list_next(itr))) {
 				if(addto_update_list(pg_conn->update_list,
-						     ACCT_MODIFY_ASSOC,
+						     SLURMDB_MODIFY_ASSOC,
 						     assoc) == SLURM_SUCCESS)
 					list_remove(itr);
 			}
@@ -1618,8 +1618,8 @@ as_p_add_associations(pgsql_conn_t *pg_conn, uint32_t uid,
  */
 extern List
 as_p_modify_associations(pgsql_conn_t *pg_conn, uint32_t uid,
-			 acct_association_cond_t *assoc_cond,
-			 acct_association_rec_t *assoc)
+			 slurmdb_association_cond_t *assoc_cond,
+			 slurmdb_association_rec_t *assoc)
 {
 	List ret_list = NULL;
 	char *object = NULL, *user_name = NULL;
@@ -1627,7 +1627,7 @@ as_p_modify_associations(pgsql_conn_t *pg_conn, uint32_t uid,
 	time_t now = time(NULL);
 	int set = 0, i = 0, is_admin=0, rc = SLURM_SUCCESS;
 	PGresult *result = NULL;
-	acct_user_rec_t user;
+	slurmdb_user_rec_t user;
 	int set_qos_vals = 0;
 	int moved_parent = 0;
 
@@ -1655,11 +1655,11 @@ as_p_modify_associations(pgsql_conn_t *pg_conn, uint32_t uid,
 	if (check_db_connection(pg_conn) != SLURM_SUCCESS)
 		return NULL;
 
-	memset(&user, 0, sizeof(acct_user_rec_t));
+	memset(&user, 0, sizeof(slurmdb_user_rec_t));
 	user.uid = uid;
 
 	is_admin = is_user_min_admin_level(
-		pg_conn, uid, ACCT_ADMIN_OPERATOR);
+		pg_conn, uid, SLURMDB_ADMIN_OPERATOR);
 	if (!is_admin && !is_user_any_coord(pg_conn, &user))
 		return NULL;
 
@@ -1716,7 +1716,7 @@ as_p_modify_associations(pgsql_conn_t *pg_conn, uint32_t uid,
 	set = 0;
 	ret_list = list_create(slurm_destroy_char);
 	FOR_EACH_ROW {
-		acct_association_rec_t *mod_assoc = NULL;
+		slurmdb_association_rec_t *mod_assoc = NULL;
 		int account_type=0;
 		/* If parent changes these also could change
 		   so we need to keep track of the latest
@@ -1812,8 +1812,8 @@ as_p_modify_associations(pgsql_conn_t *pg_conn, uint32_t uid,
 			xstrfmtcat(name_char, " OR id=%s", ROW(MA_ID));
 		}
 
-		mod_assoc = xmalloc(sizeof(acct_association_rec_t));
-		init_acct_association_rec(mod_assoc);
+		mod_assoc = xmalloc(sizeof(slurmdb_association_rec_t));
+		slurmdb_init_association_rec(mod_assoc);
 		mod_assoc->id = atoi(ROW(MA_ID));
 		_copy_assoc_limits(mod_assoc, assoc);
 
@@ -1898,7 +1898,7 @@ as_p_modify_associations(pgsql_conn_t *pg_conn, uint32_t uid,
 		}
 
 		if(addto_update_list(pg_conn->update_list,
-				      ACCT_MODIFY_ASSOC,
+				      SLURMDB_MODIFY_ASSOC,
 				      mod_assoc) != SLURM_SUCCESS)
 			error("couldn't add to the update list");
 		if(account_type) { /* propagate change to sub account and users */
@@ -1961,8 +1961,8 @@ as_p_modify_associations(pgsql_conn_t *pg_conn, uint32_t uid,
 	if(moved_parent) {	/* some assoc parent changed */
 		List local_assoc_list = NULL;
 		ListIterator local_itr = NULL;
-		acct_association_rec_t *local_assoc = NULL;
-		//acct_association_cond_t local_assoc_cond;
+		slurmdb_association_rec_t *local_assoc = NULL;
+		//slurmdb_association_cond_t local_assoc_cond;
 		/* now we need to send the update of the new parents and
 		 * limits, so just to be safe, send the whole
 		 * tree because we could have some limits that
@@ -1974,7 +1974,7 @@ as_p_modify_associations(pgsql_conn_t *pg_conn, uint32_t uid,
 		 * want to rewrite code to make it happen
 		 */
 
-		//memset(&local_assoc_cond, 0, sizeof(acct_association_cond_t));
+		//memset(&local_assoc_cond, 0, sizeof(slurmdb_association_cond_t));
 
 		if(!(local_assoc_list =
 		     acct_storage_p_get_associations(pg_conn,
@@ -1984,7 +1984,7 @@ as_p_modify_associations(pgsql_conn_t *pg_conn, uint32_t uid,
 		local_itr = list_iterator_create(local_assoc_list);
 		while((local_assoc = list_next(local_itr))) {
 			if(addto_update_list(pg_conn->update_list,
-					      ACCT_MODIFY_ASSOC,
+					      SLURMDB_MODIFY_ASSOC,
 					      local_assoc) == SLURM_SUCCESS)
 				list_remove(local_itr);
 		}
@@ -2009,7 +2009,7 @@ end_it:
  */
 extern List
 as_p_remove_associations(pgsql_conn_t *pg_conn, uint32_t uid,
-			 acct_association_cond_t *assoc_cond)
+			 slurmdb_association_cond_t *assoc_cond)
 {
 	ListIterator itr = NULL;
 	List ret_list = NULL;
@@ -2021,7 +2021,7 @@ as_p_remove_associations(pgsql_conn_t *pg_conn, uint32_t uid,
 	char *user_name = NULL;
 	int is_admin=0;
 	PGresult *result = NULL;
-	acct_user_rec_t user;
+	slurmdb_user_rec_t user;
 
 	char *ra_fields = "id, acct, parent_acct, cluster, user_name, partition, lft";
 	enum {
@@ -2043,11 +2043,11 @@ as_p_remove_associations(pgsql_conn_t *pg_conn, uint32_t uid,
 	if (check_db_connection(pg_conn) != SLURM_SUCCESS)
 		return NULL;
 
-	memset(&user, 0, sizeof(acct_user_rec_t));
+	memset(&user, 0, sizeof(slurmdb_user_rec_t));
 	user.uid = uid;
 
 	is_admin = is_user_min_admin_level(
-		pg_conn, uid, ACCT_ADMIN_OPERATOR);
+		pg_conn, uid, SLURMDB_ADMIN_OPERATOR);
 	if (!is_admin && !is_user_any_coord(pg_conn, &user))
 		return NULL;
 
@@ -2100,9 +2100,9 @@ as_p_remove_associations(pgsql_conn_t *pg_conn, uint32_t uid,
 	rc = 0;
 	ret_list = list_create(slurm_destroy_char);
 	FOR_EACH_ROW {
-		acct_association_rec_t *rem_assoc = NULL;
+		slurmdb_association_rec_t *rem_assoc = NULL;
 		if(!is_admin) {
-			acct_coord_rec_t *coord = NULL;
+			slurmdb_coord_rec_t *coord = NULL;
 			itr = list_iterator_create(user.coord_accts);
 			while((coord = list_next(itr))) {
 				if(!strcasecmp(coord->name,
@@ -2149,11 +2149,11 @@ as_p_remove_associations(pgsql_conn_t *pg_conn, uint32_t uid,
 			xstrfmtcat(assoc_char, " OR id=%s", ROW(RA_ID));
 		}
 
-		rem_assoc = xmalloc(sizeof(acct_association_rec_t));
-		init_acct_association_rec(rem_assoc);
+		rem_assoc = xmalloc(sizeof(slurmdb_association_rec_t));
+		slurmdb_init_association_rec(rem_assoc);
 		rem_assoc->id = atoi(ROW(RA_ID));
 		if(addto_update_list(pg_conn->update_list,
-				     ACCT_REMOVE_ASSOC,
+				     SLURMDB_REMOVE_ASSOC,
 				     rem_assoc) != SLURM_SUCCESS)
 			error("couldn't add to the update list");
 	} END_EACH_ROW;
@@ -2194,7 +2194,7 @@ end_it:
  */
 extern List
 as_p_get_associations(pgsql_conn_t *pg_conn, uid_t uid,
-		      acct_association_cond_t *assoc_cond)
+		      slurmdb_association_cond_t *assoc_cond)
 {
 	char *query = NULL, *cond = NULL;
 	List assoc_list = NULL;
@@ -2202,7 +2202,7 @@ as_p_get_associations(pgsql_conn_t *pg_conn, uid_t uid,
 	ListIterator itr = NULL;
 	int set = 0, is_admin=1;
 	PGresult *result = NULL;
-	acct_association_rec_t p_assoc;
+	slurmdb_association_rec_t p_assoc;
 	char *p_qos = NULL;
 	char *p_delta = NULL;
 	char *parent_acct = NULL;
@@ -2210,7 +2210,7 @@ as_p_get_associations(pgsql_conn_t *pg_conn, uid_t uid,
 	char *last_cluster = NULL;
 	uint32_t parent_id = 0;
 	uint16_t private_data = 0;
-	acct_user_rec_t user;
+	slurmdb_user_rec_t user;
 
 	/* needed if we don't have an assoc_cond */
 	uint16_t without_parent_info = 0;
@@ -2258,13 +2258,13 @@ as_p_get_associations(pgsql_conn_t *pg_conn, uid_t uid,
 		goto empty;
 	}
 
-	memset(&user, 0, sizeof(acct_user_rec_t));
+	memset(&user, 0, sizeof(slurmdb_user_rec_t));
 	user.uid = uid;
 
 	private_data = slurm_get_private_data();
 	if (private_data & PRIVATE_DATA_USERS) {
 		is_admin = is_user_min_admin_level(
-			pg_conn, uid, ACCT_ADMIN_OPERATOR);
+			pg_conn, uid, SLURMDB_ADMIN_OPERATOR);
 		if (!is_admin)
 			assoc_mgr_fill_in_user(pg_conn, &user, 1, NULL);
 	}
@@ -2285,7 +2285,7 @@ empty:
 		query = xstrdup_printf("SELECT lft FROM %s WHERE user_name='%s'",
 				       assoc_table, user.name);
 		if(user.coord_accts) {
-			acct_coord_rec_t *coord = NULL;
+			slurmdb_coord_rec_t *coord = NULL;
 			itr = list_iterator_create(user.coord_accts);
 			while((coord = list_next(itr))) {
 				xstrfmtcat(query, " OR acct='%s'",
@@ -2326,11 +2326,11 @@ empty:
 	if(!result)
 		return NULL;
 
-	assoc_list = list_create(destroy_acct_association_rec);
+	assoc_list = list_create(slurmdb_destroy_association_rec);
 	delta_qos_list = list_create(slurm_destroy_char);
 	FOR_EACH_ROW {
-		acct_association_rec_t *assoc =
-			xmalloc(sizeof(acct_association_rec_t));
+		slurmdb_association_rec_t *assoc =
+			xmalloc(sizeof(slurmdb_association_rec_t));
 		list_append(assoc_list, assoc);
 
 		assoc->id = atoi(ROW(GA_ID));
@@ -2462,7 +2462,7 @@ empty:
  */
 extern int
 add_cluster_root_assoc(pgsql_conn_t *pg_conn, time_t now,
-		       acct_cluster_rec_t *cluster, char **txn_info)
+		       slurmdb_cluster_rec_t *cluster, char **txn_info)
 {
 	int rc = SLURM_SUCCESS;
 	char *rec = NULL, *query;

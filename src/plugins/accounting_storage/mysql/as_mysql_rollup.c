@@ -1088,8 +1088,8 @@ extern int as_mysql_monthly_rollup(mysql_conn_t *mysql_conn,
 	time_t now = time(NULL);
 	char *query = NULL;
 	uint16_t track_wckey = slurm_get_track_wckey();
-	acct_archive_cond_t arch_cond;
-	acct_job_cond_t job_cond;
+	slurmdb_archive_cond_t arch_cond;
+	slurmdb_job_cond_t job_cond;
 
 	if(!localtime_r(&curr_start, &start_tm)) {
 		error("Couldn't get localtime from month start %d", curr_start);

@@ -127,7 +127,7 @@ static uint32_t _get_wckeyid(mysql_conn_t *mysql_conn, char **name,
 		 * slow down getting the db_index back to the
 		 * controller.
 		 */
-		acct_wckey_rec_t wckey_rec;
+		slurmdb_wckey_rec_t wckey_rec;
 		char *user = NULL;
 
 		/* since we are unable to rely on uids here (someone could
@@ -140,8 +140,8 @@ static uint32_t _get_wckeyid(mysql_conn_t *mysql_conn, char **name,
 		}
 		/* get the default key */
 		if(!*name) {
-			acct_user_rec_t user_rec;
-			memset(&user_rec, 0, sizeof(acct_user_rec_t));
+			slurmdb_user_rec_t user_rec;
+			memset(&user_rec, 0, sizeof(slurmdb_user_rec_t));
 			user_rec.uid = NO_VAL;
 			user_rec.name = user;
 			if(assoc_mgr_fill_in_user(mysql_conn, &user_rec,
@@ -159,7 +159,7 @@ static uint32_t _get_wckeyid(mysql_conn_t *mysql_conn, char **name,
 				*name = xstrdup_printf("*");
 		}
 
-		memset(&wckey_rec, 0, sizeof(acct_wckey_rec_t));
+		memset(&wckey_rec, 0, sizeof(slurmdb_wckey_rec_t));
 		wckey_rec.name = (*name);
 		wckey_rec.uid = NO_VAL;
 		wckey_rec.user = user;
@@ -168,11 +168,11 @@ static uint32_t _get_wckeyid(mysql_conn_t *mysql_conn, char **name,
 					   ACCOUNTING_ENFORCE_WCKEYS,
 					   NULL) != SLURM_SUCCESS) {
 			List wckey_list = NULL;
-			acct_wckey_rec_t *wckey_ptr = NULL;
+			slurmdb_wckey_rec_t *wckey_ptr = NULL;
 
-			wckey_list = list_create(destroy_acct_wckey_rec);
+			wckey_list = list_create(slurmdb_destroy_wckey_rec);
 
-			wckey_ptr = xmalloc(sizeof(acct_wckey_rec_t));
+			wckey_ptr = xmalloc(sizeof(slurmdb_wckey_rec_t));
 			wckey_ptr->name = xstrdup((*name));
 			wckey_ptr->user = xstrdup(user);
 			wckey_ptr->cluster = xstrdup(cluster);
@@ -227,7 +227,7 @@ extern int as_mysql_job_start(mysql_conn_t *mysql_conn,
 	if(check_connection(mysql_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
 
-	debug2("as_mysql_jobacct_job_start() called");
+	debug2("as_mysql_slurmdb_job_start() called");
 
 	/* See what we are hearing about here if no start time. If
 	 * this job latest time is before the last roll up we will
@@ -505,7 +505,7 @@ extern int as_mysql_job_complete(mysql_conn_t *mysql_conn,
 
 	if(check_connection(mysql_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
-	debug2("as_mysql_jobacct_job_complete() called");
+	debug2("as_mysql_slurmdb_job_complete() called");
 
 	/* If we get an error with this just fall through to avoid an
 	 * infinite loop
@@ -710,7 +710,7 @@ extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 	}
 
 	if (jobacct == NULL) {
-		/* JobAcctGather=jobacct_gather/none, no data to process */
+		/* JobAcctGather=slurmdb_gather/none, no data to process */
 		memset(&dummy_jobacct, 0, sizeof(dummy_jobacct));
 		jobacct = &dummy_jobacct;
 	}

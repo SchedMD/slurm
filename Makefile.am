@@ -29,6 +29,7 @@ EXTRA_DIST =			\
 pkginclude_HEADERS =		\
 	slurm/pmi.h		\
 	slurm/slurm.h 		\
+	slurm/slurmdb.h 		\
 	slurm/slurm_errno.h	\
 	slurm/spank.h
 

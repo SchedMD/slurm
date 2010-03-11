@@ -40,7 +40,7 @@
 #include "as_mysql_resv.h"
 #include "as_mysql_jobacct_process.h"
 
-static int _setup_resv_limits(acct_reservation_rec_t *resv,
+static int _setup_resv_limits(slurmdb_reservation_rec_t *resv,
 			      char **cols, char **vals,
 			      char **extra)
 {
@@ -106,7 +106,7 @@ static int _setup_resv_limits(acct_reservation_rec_t *resv,
 
 	return SLURM_SUCCESS;
 }
-static int _setup_resv_cond_limits(acct_reservation_cond_t *resv_cond,
+static int _setup_resv_cond_limits(slurmdb_reservation_cond_t *resv_cond,
 				   char **extra)
 {
 	int set = 0;
@@ -179,7 +179,7 @@ static int _setup_resv_cond_limits(acct_reservation_cond_t *resv_cond,
 }
 
 extern int as_mysql_add_resv(mysql_conn_t *mysql_conn,
-			     acct_reservation_rec_t *resv)
+			     slurmdb_reservation_rec_t *resv)
 {
 	int rc = SLURM_SUCCESS;
 	char *cols = NULL, *vals = NULL, *extra = NULL,
@@ -225,7 +225,7 @@ extern int as_mysql_add_resv(mysql_conn_t *mysql_conn,
 }
 
 extern int as_mysql_modify_resv(mysql_conn_t *mysql_conn,
-			     acct_reservation_rec_t *resv)
+			     slurmdb_reservation_rec_t *resv)
 {
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
@@ -424,7 +424,7 @@ end_it:
 }
 
 extern int as_mysql_remove_resv(mysql_conn_t *mysql_conn,
-			    acct_reservation_rec_t *resv)
+			    slurmdb_reservation_rec_t *resv)
 {
 	int rc = SLURM_SUCCESS;
 	char *query = NULL;//, *tmp_extra = NULL;
@@ -470,7 +470,7 @@ extern int as_mysql_remove_resv(mysql_conn_t *mysql_conn,
 }
 
 extern List as_mysql_get_resvs(mysql_conn_t *mysql_conn, uid_t uid,
-			    acct_reservation_cond_t *resv_cond)
+			    slurmdb_reservation_cond_t *resv_cond)
 {
 	//DEF_TIMERS;
 	char *query = NULL;
@@ -482,7 +482,7 @@ extern List as_mysql_get_resvs(mysql_conn_t *mysql_conn, uid_t uid,
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 	uint16_t private_data = 0;
-	acct_job_cond_t job_cond;
+	slurmdb_job_cond_t job_cond;
 	void *curr_cluster = NULL;
 	List local_cluster_list = NULL;
 	List use_cluster_list = as_mysql_cluster_list;
@@ -528,14 +528,14 @@ extern List as_mysql_get_resvs(mysql_conn_t *mysql_conn, uid_t uid,
 	private_data = slurm_get_private_data();
 	if (private_data & PRIVATE_DATA_RESERVATIONS) {
 		if(!(is_admin = is_user_min_admin_level(
-			     mysql_conn, uid, ACCT_ADMIN_OPERATOR))) {
+			     mysql_conn, uid, SLURMDB_ADMIN_OPERATOR))) {
 			error("Only admins can look at reservations");
 			errno = ESLURM_ACCESS_DENIED;
 			return NULL;
 		}
 	}
 
-	memset(&job_cond, 0, sizeof(acct_job_cond_t));
+	memset(&job_cond, 0, sizeof(slurmdb_job_cond_t));
 	if(resv_cond->nodes) {
 		job_cond.usage_start = resv_cond->time_start;
 		job_cond.usage_end = resv_cond->time_end;
@@ -592,11 +592,11 @@ empty:
 	}
 	xfree(query);
 
-	resv_list = list_create(destroy_acct_reservation_rec);
+	resv_list = list_create(slurmdb_destroy_reservation_rec);
 
 	while((row = mysql_fetch_row(result))) {
-		acct_reservation_rec_t *resv =
-			xmalloc(sizeof(acct_reservation_rec_t));
+		slurmdb_reservation_rec_t *resv =
+			xmalloc(sizeof(slurmdb_reservation_rec_t));
 		int start = atoi(row[RESV_REQ_START]);
 		list_append(resv_list, resv);
 
@@ -627,8 +627,8 @@ empty:
 		List job_list = as_mysql_jobacct_process_get_jobs(
 			mysql_conn, uid, &job_cond);
 		ListIterator itr = NULL, itr2 = NULL;
-		jobacct_job_rec_t *job = NULL;
-		acct_reservation_rec_t *resv = NULL;
+		slurmdb_job_rec_t *job = NULL;
+		slurmdb_reservation_rec_t *resv = NULL;
 
 		if(!job_list || !list_count(job_list))
 			goto no_jobs;

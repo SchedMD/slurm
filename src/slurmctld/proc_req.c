@@ -3625,7 +3625,7 @@ inline static void  _slurm_rpc_accounting_update_msg(slurm_msg_t *msg)
 	ListIterator itr = NULL;
 	accounting_update_msg_t *update_ptr =
 		(accounting_update_msg_t *) msg->data;
-	acct_update_object_t *object = NULL;
+	slurmdb_update_object_t *object = NULL;
 
 	DEF_TIMERS;
 

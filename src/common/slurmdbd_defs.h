@@ -174,7 +174,7 @@ typedef struct slurmdbd_msg {
 
 typedef struct {
 	List acct_list; /* list of account names (char *'s) */
-	acct_user_cond_t *cond;
+	slurmdb_user_cond_t *cond;
 } dbd_acct_coord_msg_t;
 
 typedef struct dbd_cluster_cpus_msg {

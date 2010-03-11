@@ -113,7 +113,7 @@ static uint32_t weight_part; /* weight for Partition factor */
 static uint32_t weight_qos; /* weight for QOS factor */
 
 extern int priority_p_set_max_cluster_usage(uint32_t procs, uint32_t half_life);
-extern void priority_p_set_assoc_usage(acct_association_rec_t *assoc);
+extern void priority_p_set_assoc_usage(slurmdb_association_rec_t *assoc);
 
 /*
  * apply decay factor to all associations usage_raw
@@ -125,8 +125,8 @@ extern void priority_p_set_assoc_usage(acct_association_rec_t *assoc);
 static int _apply_decay(double decay_factor)
 {
 	ListIterator itr = NULL;
-	acct_association_rec_t *assoc = NULL;
-	acct_qos_rec_t *qos = NULL;
+	slurmdb_association_rec_t *assoc = NULL;
+	slurmdb_qos_rec_t *qos = NULL;
 
 	/* continue if decay_factor is 0 or 1 since that doesn't help
 	   us at all. 1 means no decay and 0 will just zero
@@ -144,8 +144,8 @@ static int _apply_decay(double decay_factor)
 	while((assoc = list_next(itr))) {
 		if (assoc == assoc_mgr_root_assoc)
 			continue;
-		assoc->usage_raw *= decay_factor;
-		assoc->grp_used_wall *= decay_factor;
+		assoc->usage->usage_raw *= decay_factor;
+		assoc->usage->grp_used_wall *= decay_factor;
 	}
 	list_iterator_destroy(itr);
 	slurm_mutex_unlock(&assoc_mgr_association_lock);
@@ -153,8 +153,8 @@ static int _apply_decay(double decay_factor)
 	slurm_mutex_lock(&assoc_mgr_qos_lock);
 	itr = list_iterator_create(assoc_mgr_qos_list);
 	while((qos = list_next(itr))) {
-		qos->usage_raw *= decay_factor;
-		qos->grp_used_wall *= decay_factor;
+		qos->usage->usage_raw *= decay_factor;
+		qos->usage->grp_used_wall *= decay_factor;
 	}
 	list_iterator_destroy(itr);
 	slurm_mutex_unlock(&assoc_mgr_qos_lock);
@@ -170,8 +170,8 @@ static int _apply_decay(double decay_factor)
 static int _reset_usage()
 {
 	ListIterator itr = NULL;
-	acct_association_rec_t *assoc = NULL;
-	acct_qos_rec_t *qos = NULL;
+	slurmdb_association_rec_t *assoc = NULL;
+	slurmdb_qos_rec_t *qos = NULL;
 
 	if(!calc_fairshare)
 		return SLURM_SUCCESS;
@@ -183,8 +183,8 @@ static int _reset_usage()
 	while((assoc = list_next(itr))) {
 		if (assoc == assoc_mgr_root_assoc)
 			continue;
-		assoc->usage_raw = 0;
-		assoc->grp_used_wall = 0;
+		assoc->usage->usage_raw = 0;
+		assoc->usage->grp_used_wall = 0;
 	}
 	list_iterator_destroy(itr);
 	slurm_mutex_unlock(&assoc_mgr_association_lock);
@@ -192,8 +192,8 @@ static int _reset_usage()
 	slurm_mutex_lock(&assoc_mgr_qos_lock);
 	itr = list_iterator_create(assoc_mgr_qos_list);
 	while((qos = list_next(itr))) {
-		qos->usage_raw = 0;
-		qos->grp_used_wall = 0;
+		qos->usage->usage_raw = 0;
+		qos->usage->grp_used_wall = 0;
 	}
 	list_iterator_destroy(itr);
 	slurm_mutex_unlock(&assoc_mgr_qos_lock);
@@ -343,7 +343,7 @@ static int _write_last_decay_ran(time_t last_ran, time_t last_reset)
  */
 static int _set_children_usage_efctv(List childern_list)
 {
-	acct_association_rec_t *assoc = NULL;
+	slurmdb_association_rec_t *assoc = NULL;
 	ListIterator itr = NULL;
 
 	if(!childern_list || !list_count(childern_list))
@@ -352,11 +352,11 @@ static int _set_children_usage_efctv(List childern_list)
 	itr = list_iterator_create(childern_list);
 	while((assoc = list_next(itr))) {
 		if(assoc->user) {
-			assoc->usage_efctv = (long double)NO_VAL;
+			assoc->usage->usage_efctv = (long double)NO_VAL;
 			continue;
 		}
 		priority_p_set_assoc_usage(assoc);
-		_set_children_usage_efctv(assoc->childern_list);
+		_set_children_usage_efctv(assoc->usage->childern_list);
 	}
 	list_iterator_destroy(itr);
 	return SLURM_SUCCESS;
@@ -367,8 +367,8 @@ static int _set_children_usage_efctv(List childern_list)
  */
 static double _get_fairshare_priority( struct job_record *job_ptr)
 {
-	acct_association_rec_t *assoc =
-		(acct_association_rec_t *)job_ptr->assoc_ptr;
+	slurmdb_association_rec_t *assoc =
+		(slurmdb_association_rec_t *)job_ptr->assoc_ptr;
 	double priority_fs = 0.0;
 
 	if(!calc_fairshare)
@@ -381,16 +381,16 @@ static double _get_fairshare_priority( struct job_record *job_ptr)
 	}
 
 	slurm_mutex_lock(&assoc_mgr_association_lock);
-	if(assoc->usage_efctv == (long double)NO_VAL)
+	if(assoc->usage->usage_efctv == (long double)NO_VAL)
 		priority_p_set_assoc_usage(assoc);
 
 	// Priority is 0 -> 1
 	priority_fs =
-		(assoc->shares_norm - (double)assoc->usage_efctv + 1.0) / 2.0;
+		(assoc->usage->shares_norm - (double)assoc->usage->usage_efctv + 1.0) / 2.0;
 	debug4("Fairshare priority for user %s in acct %s"
 	       "((%f - %Lf) + 1) / 2 = %f",
-	       assoc->user, assoc->acct, assoc->shares_norm,
-	       assoc->usage_efctv, priority_fs);
+	       assoc->user, assoc->acct, assoc->usage->shares_norm,
+	       assoc->usage->usage_efctv, priority_fs);
 
 	slurm_mutex_unlock(&assoc_mgr_association_lock);
 
@@ -404,12 +404,12 @@ static void _get_priority_factors(time_t start_time, struct job_record *job_ptr,
 				  priority_factors_object_t* factors,
 				  bool status_only)
 {
-	acct_qos_rec_t *qos_ptr = NULL;
+	slurmdb_qos_rec_t *qos_ptr = NULL;
 
 	xassert(factors);
 	xassert(job_ptr);
 
-	qos_ptr = (acct_qos_rec_t *)job_ptr->qos_ptr;
+	qos_ptr = (slurmdb_qos_rec_t *)job_ptr->qos_ptr;
 
 	memset(factors, 0, sizeof(priority_factors_object_t));
 
@@ -480,7 +480,7 @@ static void _get_priority_factors(time_t start_time, struct job_record *job_ptr,
 	}
 
 	if(qos_ptr && qos_ptr->priority && weight_qos) {
-		factors->priority_qos = qos_ptr->norm_priority;
+		factors->priority_qos = qos_ptr->usage->norm_priority;
 	}
 
 	factors->nice = job_ptr->details->nice;
@@ -733,10 +733,10 @@ static void *_decay_thread(void *no_data)
 			/* apply new usage */
 			if(!IS_JOB_PENDING(job_ptr) &&
 			   job_ptr->start_time && job_ptr->assoc_ptr) {
-				acct_qos_rec_t *qos =
-					(acct_qos_rec_t *)job_ptr->qos_ptr;
-				acct_association_rec_t *assoc =
-					(acct_association_rec_t *)
+				slurmdb_qos_rec_t *qos =
+					(slurmdb_qos_rec_t *)job_ptr->qos_ptr;
+				slurmdb_association_rec_t *assoc =
+					(slurmdb_association_rec_t *)
 					job_ptr->assoc_ptr;
 				time_t start_period = last_ran;
 				time_t end_period = start_time;
@@ -774,8 +774,8 @@ static void *_decay_thread(void *no_data)
 						real_decay *= qos->usage_factor;
 						run_decay *= qos->usage_factor;
 					}
-					qos->grp_used_wall += run_decay;
-					qos->usage_raw +=
+					qos->usage->grp_used_wall += run_decay;
+					qos->usage->usage_raw +=
 						(long double)real_decay;
 					slurm_mutex_unlock(&assoc_mgr_qos_lock);
 				}
@@ -788,8 +788,8 @@ static void *_decay_thread(void *no_data)
 					*/
 					if (assoc == assoc_mgr_root_assoc)
 						break;
-					assoc->grp_used_wall += run_decay;
-					assoc->usage_raw +=
+					assoc->usage->grp_used_wall += run_decay;
+					assoc->usage->usage_raw +=
 						(long double)real_decay;
 					debug4("adding %f new usage to "
 					       "assoc %u (user='%s' acct='%s') "
@@ -797,10 +797,10 @@ static void *_decay_thread(void *no_data)
 					       "wall added %d making it %d.",
 					       real_decay, assoc->id,
 					       assoc->user, assoc->acct,
-					       assoc->usage_raw, run_delta,
-					       assoc->grp_used_wall);
+					       assoc->usage->usage_raw, run_delta,
+					       assoc->usage->grp_used_wall);
 
-					assoc = assoc->parent_assoc_ptr;
+					assoc = assoc->usage->parent_assoc_ptr;
 				}
 				slurm_mutex_unlock(&assoc_mgr_association_lock);
 			}
@@ -826,7 +826,7 @@ static void *_decay_thread(void *no_data)
 	get_usage:
 		/* now calculate all the normalized usage here */
 		slurm_mutex_lock(&assoc_mgr_association_lock);
-		_set_children_usage_efctv(assoc_mgr_root_assoc->childern_list);
+		_set_children_usage_efctv(assoc_mgr_root_assoc->usage->childern_list);
 		slurm_mutex_unlock(&assoc_mgr_association_lock);
 
 		last_ran = start_time;
@@ -1034,17 +1034,17 @@ extern int priority_p_set_max_cluster_usage(uint32_t procs, uint32_t half_life)
 	last_half_life = half_life;
 
 	/* get the total decay for the entire cluster */
-	assoc_mgr_root_assoc->usage_raw =
+	assoc_mgr_root_assoc->usage->usage_raw =
 		(long double)procs * (long double)half_life * (long double)2;
-	assoc_mgr_root_assoc->usage_norm = 1.0;
+	assoc_mgr_root_assoc->usage->usage_norm = 1.0;
 	debug3("Total possible cpu usage for half_life of %d secs "
 	       "on the system is %.0Lf",
-	       half_life, assoc_mgr_root_assoc->usage_raw);
+	       half_life, assoc_mgr_root_assoc->usage->usage_raw);
 
 	return SLURM_SUCCESS;
 }
 
-extern void priority_p_set_assoc_usage(acct_association_rec_t *assoc)
+extern void priority_p_set_assoc_usage(slurmdb_association_rec_t *assoc)
 {
 	char *child = "account";
 	char *child_str = assoc->acct;
@@ -1057,38 +1057,38 @@ extern void priority_p_set_assoc_usage(acct_association_rec_t *assoc)
 	}
 
 	xassert(assoc_mgr_root_assoc);
-	xassert(assoc_mgr_root_assoc->usage_raw);
-	xassert(assoc->parent_assoc_ptr);
+	xassert(assoc_mgr_root_assoc->usage->usage_raw);
+	xassert(assoc->usage->parent_assoc_ptr);
 
-	assoc->usage_norm = assoc->usage_raw / assoc_mgr_root_assoc->usage_raw;
+	assoc->usage->usage_norm = assoc->usage->usage_raw / assoc_mgr_root_assoc->usage->usage_raw;
 	debug4("Normalized usage for %s %s off %s %Lf / %Lf = %Lf",
-	       child, child_str, assoc->parent_assoc_ptr->acct,
-	       assoc->usage_raw, assoc_mgr_root_assoc->usage_raw,
-	       assoc->usage_norm);
+	       child, child_str, assoc->usage->parent_assoc_ptr->acct,
+	       assoc->usage->usage_raw, assoc_mgr_root_assoc->usage->usage_raw,
+	       assoc->usage->usage_norm);
 	/* This is needed in case someone changes the half-life on the
 	   fly and now we have used more time than is available under
 	   the new config */
-	if (assoc->usage_norm > 1.0)
-		assoc->usage_norm = 1.0;
+	if (assoc->usage->usage_norm > 1.0)
+		assoc->usage->usage_norm = 1.0;
 
-	if (assoc->parent_assoc_ptr == assoc_mgr_root_assoc) {
-		assoc->usage_efctv = assoc->usage_norm;
+	if (assoc->usage->parent_assoc_ptr == assoc_mgr_root_assoc) {
+		assoc->usage->usage_efctv = assoc->usage->usage_norm;
 		debug4("Effective usage for %s %s off %s %Lf %Lf",
-		       child, child_str, assoc->parent_assoc_ptr->acct,
-		       assoc->usage_efctv, assoc->usage_norm);
+		       child, child_str, assoc->usage->parent_assoc_ptr->acct,
+		       assoc->usage->usage_efctv, assoc->usage->usage_norm);
 	} else {
-		assoc->usage_efctv = assoc->usage_norm +
-			((assoc->parent_assoc_ptr->usage_efctv -
-			  assoc->usage_norm) *
+		assoc->usage->usage_efctv = assoc->usage->usage_norm +
+			((assoc->usage->parent_assoc_ptr->usage->usage_efctv -
+			  assoc->usage->usage_norm) *
 			 assoc->shares_raw /
-			 (long double)assoc->level_shares);
+			 (long double)assoc->usage->level_shares);
 		debug4("Effective usage for %s %s off %s "
 		       "%Lf + ((%Lf - %Lf) * %d / %d) = %Lf",
-		       child, child_str, assoc->parent_assoc_ptr->acct,
-		       assoc->usage_norm,
-		       assoc->parent_assoc_ptr->usage_efctv,
-		       assoc->usage_norm, assoc->shares_raw,
-		       assoc->level_shares, assoc->usage_efctv);
+		       child, child_str, assoc->usage->parent_assoc_ptr->acct,
+		       assoc->usage->usage_norm,
+		       assoc->usage->parent_assoc_ptr->usage->usage_efctv,
+		       assoc->usage->usage_norm, assoc->shares_raw,
+		       assoc->usage->level_shares, assoc->usage->usage_efctv);
 	}
 }
 

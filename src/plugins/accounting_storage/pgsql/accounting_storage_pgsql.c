@@ -128,7 +128,7 @@ _pgsql_acct_check_tables(PGconn *db_conn, char *user)
 	if (rc == SLURM_SUCCESS)
 		rc = check_cluster_tables(db_conn, user);
 	if (rc == SLURM_SUCCESS)
-		rc = check_jobacct_tables(db_conn, user);
+		rc = check_slurmdb_tables(db_conn, user);
 	if (rc == SLURM_SUCCESS)
 		rc = check_qos_tables(db_conn, user);
 	if (rc == SLURM_SUCCESS)
@@ -228,7 +228,7 @@ extern void *acct_storage_p_get_connection(bool make_agent, int conn_num,
 	pg_conn->rollback = rollback;
 	pg_conn->conn = conn_num;
 	pg_conn->cluster_name = xstrdup(cluster_name);
-	pg_conn->update_list = list_create(destroy_acct_update_object);
+	pg_conn->update_list = list_create(slurmdb_destroy_update_object);
 
 	errno = SLURM_SUCCESS;
 	pgsql_get_db_connection(&pg_conn->db_conn,
@@ -312,7 +312,7 @@ extern int acct_storage_p_add_users(pgsql_conn_t *pg_conn, uint32_t uid,
 }
 
 extern int acct_storage_p_add_coord(pgsql_conn_t *pg_conn, uint32_t uid,
-				    List acct_list, acct_user_cond_t *user_cond)
+				    List acct_list, slurmdb_user_cond_t *user_cond)
 {
 	return as_p_add_coord(pg_conn, uid, acct_list, user_cond);
 }
@@ -348,124 +348,124 @@ extern int acct_storage_p_add_wckeys(pgsql_conn_t *pg_conn, uint32_t uid,
 }
 
 extern int acct_storage_p_add_reservation(pgsql_conn_t *pg_conn,
-					   acct_reservation_rec_t *resv)
+					   slurmdb_reservation_rec_t *resv)
 {
 	return as_p_add_reservation(pg_conn, resv);
 }
 
 extern List acct_storage_p_modify_users(pgsql_conn_t *pg_conn, uint32_t uid,
-					acct_user_cond_t *user_cond,
-					acct_user_rec_t *user)
+					slurmdb_user_cond_t *user_cond,
+					slurmdb_user_rec_t *user)
 {
 	return as_p_modify_users(pg_conn, uid, user_cond, user);
 }
 
 extern List acct_storage_p_modify_accts(pgsql_conn_t *pg_conn, uint32_t uid,
-					   acct_account_cond_t *acct_cond,
-					   acct_account_rec_t *acct)
+					   slurmdb_account_cond_t *acct_cond,
+					   slurmdb_account_rec_t *acct)
 {
 	return as_p_modify_accounts(pg_conn, uid, acct_cond, acct);
 }
 
 extern List acct_storage_p_modify_clusters(pgsql_conn_t *pg_conn, uint32_t uid,
-					   acct_cluster_cond_t *cluster_cond,
-					   acct_cluster_rec_t *cluster)
+					   slurmdb_cluster_cond_t *cluster_cond,
+					   slurmdb_cluster_rec_t *cluster)
 {
 	return as_p_modify_clusters(pg_conn, uid, cluster_cond, cluster);
 }
 
 extern List acct_storage_p_modify_associations(
 	pgsql_conn_t *pg_conn, uint32_t uid,
-	acct_association_cond_t *assoc_cond,
-	acct_association_rec_t *assoc)
+	slurmdb_association_cond_t *assoc_cond,
+	slurmdb_association_rec_t *assoc)
 {
 	return as_p_modify_associations(pg_conn, uid, assoc_cond, assoc);
 }
 
 extern List acct_storage_p_modify_qos(pgsql_conn_t *pg_conn, uint32_t uid,
-				      acct_qos_cond_t *qos_cond,
-				      acct_qos_rec_t *qos)
+				      slurmdb_qos_cond_t *qos_cond,
+				      slurmdb_qos_rec_t *qos)
 {
 	return as_p_modify_qos(pg_conn, uid, qos_cond, qos);
 }
 
 extern List acct_storage_p_modify_wckeys(pgsql_conn_t *pg_conn, uint32_t uid,
-				      acct_wckey_cond_t *wckey_cond,
-				      acct_wckey_rec_t *wckey)
+				      slurmdb_wckey_cond_t *wckey_cond,
+				      slurmdb_wckey_rec_t *wckey)
 {
 	return as_p_modify_wckeys(pg_conn, uid, wckey_cond, wckey);
 }
 
 extern int acct_storage_p_modify_reservation(pgsql_conn_t *pg_conn,
-					     acct_reservation_rec_t *resv)
+					     slurmdb_reservation_rec_t *resv)
 {
 	return as_p_modify_reservation(pg_conn, resv);
 }
 
 extern List acct_storage_p_remove_users(pgsql_conn_t *pg_conn, uint32_t uid,
-					acct_user_cond_t *user_cond)
+					slurmdb_user_cond_t *user_cond)
 {
 	return as_p_remove_users(pg_conn, uid, user_cond);
 }
 
 extern List acct_storage_p_remove_coord(pgsql_conn_t *pg_conn, uint32_t uid,
 					List acct_list,
-					acct_user_cond_t *user_cond)
+					slurmdb_user_cond_t *user_cond)
 {
 	return as_p_remove_coord(pg_conn, uid, acct_list, user_cond);
 }
 
 extern List acct_storage_p_remove_accts(pgsql_conn_t *pg_conn, uint32_t uid,
-					acct_account_cond_t *acct_cond)
+					slurmdb_account_cond_t *acct_cond)
 {
 	return as_p_remove_accts(pg_conn, uid, acct_cond);
 }
 
 extern List acct_storage_p_remove_clusters(pgsql_conn_t *pg_conn, uint32_t uid,
-					   acct_cluster_cond_t *cluster_cond)
+					   slurmdb_cluster_cond_t *cluster_cond)
 {
 	return as_p_remove_clusters(pg_conn, uid, cluster_cond);
 }
 
 extern List acct_storage_p_remove_associations(
 	pgsql_conn_t *pg_conn, uint32_t uid,
-	acct_association_cond_t *assoc_cond)
+	slurmdb_association_cond_t *assoc_cond)
 {
 	return as_p_remove_associations(pg_conn, uid, assoc_cond);
 }
 
 extern List acct_storage_p_remove_qos(pgsql_conn_t *pg_conn, uint32_t uid,
-				      acct_qos_cond_t *qos_cond)
+				      slurmdb_qos_cond_t *qos_cond)
 {
 	return as_p_remove_qos(pg_conn, uid, qos_cond);
 }
 
 extern List acct_storage_p_remove_wckeys(pgsql_conn_t *pg_conn, uint32_t uid,
-					 acct_wckey_cond_t *wckey_cond)
+					 slurmdb_wckey_cond_t *wckey_cond)
 {
 	return as_p_remove_wckeys(pg_conn, uid, wckey_cond);
 }
 
 extern int acct_storage_p_remove_reservation(pgsql_conn_t *pg_conn,
-					     acct_reservation_rec_t *resv)
+					     slurmdb_reservation_rec_t *resv)
 {
 	return as_p_remove_reservation(pg_conn, resv);
 }
 
 extern List acct_storage_p_get_users(pgsql_conn_t *pg_conn, uid_t uid,
-				     acct_user_cond_t *user_cond)
+				     slurmdb_user_cond_t *user_cond)
 {
 	return as_p_get_users(pg_conn, uid, user_cond);
 }
 
 extern List acct_storage_p_get_accts(pgsql_conn_t *pg_conn, uid_t uid,
-				     acct_account_cond_t *acct_cond)
+				     slurmdb_account_cond_t *acct_cond)
 {
 	return as_p_get_accts(pg_conn, uid, acct_cond);
 }
 
 extern List acct_storage_p_get_clusters(pgsql_conn_t *pg_conn, uid_t uid,
-					acct_cluster_cond_t *cluster_cond)
+					slurmdb_cluster_cond_t *cluster_cond)
 {
 	return as_p_get_clusters(pg_conn, uid, cluster_cond);
 }
@@ -476,53 +476,59 @@ extern List acct_storage_p_get_config(pgsql_conn_t *pg_conn)
 }
 
 extern List acct_storage_p_get_associations(pgsql_conn_t *pg_conn, uid_t uid,
-					    acct_association_cond_t *assoc_cond)
+					    slurmdb_association_cond_t *assoc_cond)
 {
 	return as_p_get_associations(pg_conn, uid, assoc_cond);
 }
 
 extern List acct_storage_p_get_events(pgsql_conn_t *pg_conn, uint32_t uid,
-				      acct_event_cond_t *event_cond)
+				      slurmdb_event_cond_t *event_cond)
 {
 	return NULL;
 }
 
 extern List acct_storage_p_get_problems(pgsql_conn_t *pg_conn, uid_t uid,
-					acct_association_cond_t *assoc_q)
+					slurmdb_association_cond_t *assoc_q)
 {
 	return as_p_get_problems(pg_conn, uid, assoc_q);
 }
 
 extern List acct_storage_p_get_qos(pgsql_conn_t *pg_conn, uid_t uid,
-				   acct_qos_cond_t *qos_cond)
+				   slurmdb_qos_cond_t *qos_cond)
 {
 	return as_p_get_qos(pg_conn, uid, qos_cond);
 }
 
 extern List acct_storage_p_get_wckeys(pgsql_conn_t *pg_conn, uid_t uid,
-				      acct_wckey_cond_t *wckey_cond)
+				      slurmdb_wckey_cond_t *wckey_cond)
 {
 	return as_p_get_wckeys(pg_conn, uid, wckey_cond);
 }
 
 extern List acct_storage_p_get_reservations(pgsql_conn_t *pg_conn, uid_t uid,
-					    acct_reservation_cond_t *resv_cond)
+					    slurmdb_reservation_cond_t *resv_cond)
 {
 	return as_p_get_reservations(pg_conn, uid, resv_cond);
 }
 
 extern List acct_storage_p_get_txn(pgsql_conn_t *pg_conn, uid_t uid,
-				   acct_txn_cond_t *txn_cond)
+				   slurmdb_txn_cond_t *txn_cond)
 {
 	return as_p_get_txn(pg_conn, uid, txn_cond);
 }
 
 extern int acct_storage_p_get_usage(pgsql_conn_t *pg_conn, uid_t uid,
-				    void *in, int type,
+				    void *in, slurmdbd_msg_type_t type,
 				    time_t start, time_t end)
 {
-	return as_p_get_usage(pg_conn, uid, in, (slurmdbd_msg_type_t)type,
-			      start, end);
+	int rc = SLURM_SUCCESS;
+
+	if(type == DBD_GET_CLUSTER_USAGE)
+		cs_p_get_usage(pg_conn, uid, in, type, start, end);
+	else
+		as_p_get_usage(pg_conn, uid, in, type, start, end);
+
+	return rc;
 }
 
 extern int acct_storage_p_roll_usage(pgsql_conn_t *pg_conn,
@@ -580,14 +586,6 @@ extern int clusteracct_storage_p_cluster_cpus(pgsql_conn_t *pg_conn,
 
 	return cs_p_cluster_cpus(pg_conn, cluster_nodes,
 				 cpus, event_time);
-}
-
-extern int clusteracct_storage_p_get_usage(
-	pgsql_conn_t *pg_conn, uid_t uid,
-	acct_cluster_rec_t *cluster_rec, int type, time_t start, time_t end)
-{
-
-	return cs_p_get_usage(pg_conn, uid, cluster_rec, type, start, end);
 }
 
 /*
@@ -666,7 +664,7 @@ extern int jobacct_storage_p_suspend(pgsql_conn_t *pg_conn,
  * note List needs to be freed when called
  */
 extern List jobacct_storage_p_get_jobs_cond(pgsql_conn_t *pg_conn, uid_t uid,
-					    acct_job_cond_t *job_cond)
+					    slurmdb_job_cond_t *job_cond)
 {
 	return js_p_get_jobs_cond(pg_conn, uid, job_cond);
 }
@@ -675,7 +673,7 @@ extern List jobacct_storage_p_get_jobs_cond(pgsql_conn_t *pg_conn, uid_t uid,
  * expire old info from the storage
  */
 extern int jobacct_storage_p_archive(pgsql_conn_t *pg_conn,
-				      acct_archive_cond_t *arch_cond)
+				      slurmdb_archive_cond_t *arch_cond)
 {
 	return js_p_archive(pg_conn, arch_cond);
 }
@@ -684,7 +682,7 @@ extern int jobacct_storage_p_archive(pgsql_conn_t *pg_conn,
  * load old info into the storage
  */
 extern int jobacct_storage_p_archive_load(pgsql_conn_t *pg_conn,
-					  acct_archive_rec_t *arch_rec)
+					  slurmdb_archive_rec_t *arch_rec)
 {
 	return js_p_archive_load(pg_conn, arch_rec);
 }

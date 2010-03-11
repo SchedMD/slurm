@@ -92,7 +92,7 @@ _concat_txn_cond_list(List cond_list, char *col, char **cond)
  * RET: SQL query condition string, in format of "AND () AND ()..."
  */
 static char *
-_make_txn_cond(pgsql_conn_t *pg_conn, acct_txn_cond_t *txn_cond)
+_make_txn_cond(pgsql_conn_t *pg_conn, slurmdb_txn_cond_t *txn_cond)
 {
 	char *cond = NULL, *assoc_cond = NULL, *id = NULL;
 	int set = 0;
@@ -170,7 +170,7 @@ check_txn_tables(PGconn *db_conn, char *user)
  */
 extern List
 as_p_get_txn(pgsql_conn_t *pg_conn, uid_t uid,
-	     acct_txn_cond_t *txn_cond)
+	     slurmdb_txn_cond_t *txn_cond)
 {
 	char *query = NULL, *cond = NULL;
 	List txn_list = NULL;
@@ -201,9 +201,9 @@ as_p_get_txn(pgsql_conn_t *pg_conn, uid_t uid,
 	if(!result)
 		return NULL;
 
-	txn_list = list_create(destroy_acct_txn_rec);
+	txn_list = list_create(slurmdb_destroy_txn_rec);
 	FOR_EACH_ROW {
-		acct_txn_rec_t *txn = xmalloc(sizeof(acct_txn_rec_t));
+		slurmdb_txn_rec_t *txn = xmalloc(sizeof(slurmdb_txn_rec_t));
 		list_append(txn_list, txn);
 
 		txn->action = atoi(ROW(GT_ACTION));
