@@ -46,7 +46,6 @@
 
 #include <ctype.h>
 #include <errno.h>
-#include <pwd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -62,21 +61,12 @@
 #include "src/common/uid.h"
 #include "src/common/xstring.h"
 
+#include "src/slurmctld/groups.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/proc_req.h"
 #include "src/slurmctld/sched_plugin.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/state_save.h"
-
-/* needed for getgrent_r */
-#ifndef   _GNU_SOURCE
-#  define _GNU_SOURCE
-#endif
-#ifndef   __USE_GNU
-#define   __USE_GNU
-#endif
-
-#include <grp.h>
 
 
 /* Change PART_STATE_VERSION value when changing the state save format */
@@ -97,7 +87,6 @@ static int    _delete_part_record(char *name);
 static void   _dump_part_state(struct part_record *part_ptr,
 			       Buf buffer);
 static uid_t *_get_groups_members(char *group_names);
-static uid_t *_get_group_members(char *group_name);
 static time_t _get_group_tlm(void);
 static void   _list_delete_part(void *part_entry);
 static int    _open_part_state_file(char **state_file);
@@ -1108,6 +1097,7 @@ extern int update_part (update_part_msg_t * part_desc, bool create_flag)
 				part_ptr->allow_groups, part_desc->name);
 			part_ptr->allow_uids =
 				_get_groups_members(part_ptr->allow_groups);
+			clear_group_cache();
 		}
 	}
 
@@ -1265,6 +1255,7 @@ void load_part_uid_allow_list(int force)
 		part_ptr->allow_uids =
 			_get_groups_members(part_ptr->allow_groups);
 	}
+	clear_group_cache();
 	list_iterator_destroy(part_iterator);
 }
 
@@ -1289,7 +1280,7 @@ uid_t *_get_groups_members(char *group_names)
 	tmp_names = xstrdup(group_names);
 	one_group_name = strtok_r(tmp_names, ",", &name_ptr);
 	while (one_group_name) {
-		temp_uids = _get_group_members(one_group_name);
+		temp_uids = get_group_members(one_group_name);
 		if (temp_uids == NULL)
 			;
 		else if (group_uids == NULL) {
@@ -1310,118 +1301,6 @@ uid_t *_get_groups_members(char *group_names)
 	return group_uids;
 }
 
-/*
- * _get_group_members - indentify the users in a given group name
- * IN group_name - a single group name
- * RET a zero terminated list of its UIDs or NULL on error
- * NOTE: User root has implicitly access to every group
- * NOTE: The caller must xfree non-NULL return values
- */
-uid_t *_get_group_members(char *group_name)
-{
-	char grp_buffer[PW_BUF_SIZE];
-	char pw_buffer[PW_BUF_SIZE];
-  	struct group grp,  *grp_result = NULL;
-	struct passwd pw, *pwd_result = NULL;
-	uid_t *group_uids, my_uid;
-	gid_t my_gid;
-	int i, j, uid_cnt;
-#ifdef HAVE_AIX
-	FILE *fp = NULL;
-#endif
-
-	/* We need to check for !grp_result, since it appears some
-	 * versions of this function do not return an error on failure.
-	 */
-	if (getgrnam_r(group_name, &grp, grp_buffer, PW_BUF_SIZE,
-		       &grp_result) || (grp_result == NULL)) {
-		error("Could not find configured group %s", group_name);
-		return NULL;
-	}
-
-	my_gid = grp_result->gr_gid;
-
-	/* MH-CEA workaround to handle different group entries with
-	 * the same gid */
-	uid_cnt=0;
-#ifdef HAVE_AIX
-	setgrent_r(&fp);
-	while (!getgrent_r(&grp, grp_buffer, PW_BUF_SIZE, &fp)) {
-		grp_result = &grp;
-#else
-	setgrent();
-	while (getgrent_r(&grp, grp_buffer, PW_BUF_SIZE,
-			  &grp_result) == 0 && grp_result != NULL) {
-#endif
-	        if (grp_result->gr_gid == my_gid) {
-		        for (i=0 ; grp_result->gr_mem[i] != NULL ; i++) {
-				uid_cnt++;
-			}
-		}
-	}
-
-	group_uids = (uid_t *) xmalloc(sizeof(uid_t) * (uid_cnt + 1));
-
-	j=0;
-#ifdef HAVE_AIX
-	setgrent_r(&fp);
-	while (!getgrent_r(&grp, grp_buffer, PW_BUF_SIZE, &fp)) {
-		grp_result = &grp;
-#else
-	setgrent();
-	while (getgrent_r(&grp, grp_buffer, PW_BUF_SIZE,
-			  &grp_result) == 0 && grp_result != NULL) {
-#endif
-	        if (grp_result->gr_gid == my_gid) {
-			if (strcmp(grp_result->gr_name, group_name))
-				debug("including members of group '%s' as it "
-				      "corresponds to the same gid as group"
-				      " '%s'",grp_result->gr_name,group_name);
-
-		        for (i=0; j < uid_cnt; i++) {
-			        if (grp_result->gr_mem[i] == NULL)
-			                break;
-				if (uid_from_string(grp_result->gr_mem[i],
-						    &my_uid) < 0)
-				        error("Could not find user %s in "
-					      "configured group %s",
-					      grp_result->gr_mem[i],
-					      group_name);
-				else if (my_uid)
-				        group_uids[j++] = my_uid;
-			}
-		}
-	}
-#ifdef HAVE_AIX
-	endgrent_r(&fp);
-	setpwent_r(&fp);
-	while (!getpwent_r(&pw, pw_buffer, PW_BUF_SIZE, &fp)) {
-		pwd_result = &pw;
-#else
-	endgrent();
-	setpwent();
-#if defined (__sun)
-	while ((pwd_result = getpwent_r(&pw, pw_buffer, PW_BUF_SIZE)) != NULL) {
-#else
-
-	while (!getpwent_r(&pw, pw_buffer, PW_BUF_SIZE, &pwd_result)) {
-#endif
-#endif
- 		if (pwd_result->pw_gid != my_gid)
-			continue;
-		j++;
- 		xrealloc(group_uids, ((j+1) * sizeof(uid_t)));
-		group_uids[j-1] = pwd_result->pw_uid;
-	}
-#ifdef HAVE_AIX
-	endpwent_r(&fp);
-#else
-	endpwent();
-#endif
-
-	return group_uids;
-}
-
 /* _get_group_tlm - return the time of last modification for the GROUP_FILE */
 time_t _get_group_tlm(void)
 {
@@ -1433,21 +1312,6 @@ time_t _get_group_tlm(void)
 	}
 	return stat_buf.st_mtime;
 }
-
-#if EXTREME_LOGGING
-/* _print_group_members - print the members of a uid list */
-static void _print_group_members(uid_t * uid_list)
-{
-	int i;
-
-	if (uid_list) {
-		for (i = 0; uid_list[i]; i++) {
-			debug3("%u", (unsigned int) uid_list[i]);
-		}
-	}
-	printf("\n\n");
-}
-#endif
 
 /* _uid_list_size - return the count of uid's in a zero terminated list */
 static int _uid_list_size(uid_t * uid_list_ptr)

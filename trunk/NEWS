@@ -14,6 +14,8 @@ documents those changes that are of interest to users and admins.
  -- Add support for new partition states of DRAIN and INACTIVE and new partition
     option of "Alternate" (alternate partition to use for jobs submitted to 
     partitions that are currently in a state of DRAIN or INACTIVE).
+ -- Add group membership cache. This can substantially speed up slurmctld
+    startup or reconfiguration if many partitions have AllowGroups configured.
 
 * Changes in SLURM 2.2.0.pre2
 =============================
