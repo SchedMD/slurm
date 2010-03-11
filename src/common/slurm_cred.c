@@ -1141,6 +1141,7 @@ slurm_cred_get_signature(slurm_cred_t *cred, char **datap, uint32_t *datalen)
 	return SLURM_SUCCESS;
 }
 
+#ifndef HAVE_BG
 /* Convert bitmap to string representation with brackets removed */
 static char *_core_format(bitstr_t *core_bitmap)
 {
@@ -1156,6 +1157,7 @@ static char *_core_format(bitstr_t *core_bitmap)
 		bracket_ptr[0] = '\0';
 	return xstrdup(str+1);
 }
+#endif
 
 /*
  * Retrieve the set of cores that were allocated to the job and step then 
