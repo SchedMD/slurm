@@ -932,13 +932,13 @@ extern List slurmdb_report_cluster_user_by_wckey(
 
 
 extern List slurmdb_report_job_sizes_grouped_by_top_account(
-	slurmdb_job_cond_t *job_cond);
+	slurmdb_job_cond_t *job_cond, List grouping_list, bool flat_view);
 
 extern List slurmdb_report_job_sizes_grouped_by_wckey(
-	slurmdb_job_cond_t *job_cond);
+	slurmdb_job_cond_t *job_cond, List grouping_list);
 
 /* report on users with top usage
- * IN: slurmdb_user_cond_t *user_cond 
+ * IN: slurmdb_user_cond_t *user_cond
  * IN: group_accounts - Whether or not to group all accounts together
  *                      for each  user. If 0 a separate entry for each
  *                      user and account reference is displayed.

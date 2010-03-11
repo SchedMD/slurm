@@ -109,8 +109,9 @@ am_libslurmdb_la_OBJECTS = account_functions.lo archive_functions.lo \
 	assoc_functions.lo cluster_functions.lo \
 	cluster_report_functions.lo coord_functions.lo \
 	connection_functions.lo extra_get_functions.lo \
-	job_report_functions.lo qos_functions.lo usage_functions.lo \
-	user_functions.lo user_report_functions.lo wckey_functions.lo
+	job_report_functions.lo qos_functions.lo \
+	resv_report_functions.lo usage_functions.lo user_functions.lo \
+	user_report_functions.lo wckey_functions.lo
 libslurmdb_la_OBJECTS = $(am_libslurmdb_la_OBJECTS)
 libslurmdb_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
@@ -369,6 +370,7 @@ libslurmdb_la_SOURCES = \
 	extra_get_functions.c \
 	job_report_functions.c \
 	qos_functions.c \
+	resv_report_functions.c \
 	usage_functions.c \
 	user_functions.c \
 	user_report_functions.c \
@@ -471,6 +473,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/extra_get_functions.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_report_functions.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/qos_functions.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/resv_report_functions.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/usage_functions.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/user_functions.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/user_report_functions.Plo@am__quote@

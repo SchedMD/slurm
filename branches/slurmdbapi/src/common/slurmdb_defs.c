@@ -714,6 +714,43 @@ extern void slurmdb_destroy_selected_step(void *object)
 	}
 }
 
+extern void slurmdb_destroy_report_job_grouping(void *object)
+{
+	slurmdb_report_job_grouping_t *job_grouping =
+		(slurmdb_report_job_grouping_t *)object;
+	if(job_grouping) {
+		if(job_grouping->jobs)
+			list_destroy(job_grouping->jobs);
+		xfree(job_grouping);
+	}
+}
+
+extern void slurmdb_destroy_report_acct_grouping(void *object)
+{
+	slurmdb_report_acct_grouping_t *acct_grouping =
+		(slurmdb_report_acct_grouping_t *)object;
+	if(acct_grouping) {
+		xfree(acct_grouping->acct);
+		if(acct_grouping->groups)
+			list_destroy(acct_grouping->groups);
+		xfree(acct_grouping);
+	}
+}
+
+extern void slurmdb_destroy_report_cluster_grouping(void *object)
+{
+	slurmdb_report_cluster_grouping_t *cluster_grouping =
+		(slurmdb_report_cluster_grouping_t *)object;
+	if(cluster_grouping) {
+		xfree(cluster_grouping->cluster);
+		if(cluster_grouping->acct_list)
+			list_destroy(cluster_grouping->acct_list);
+		xfree(cluster_grouping);
+	}
+}
+
+
+
 extern void slurmdb_init_association_rec(slurmdb_association_rec_t *assoc)
 {
 	if(!assoc)

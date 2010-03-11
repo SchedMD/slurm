@@ -81,6 +81,10 @@ extern void slurmdb_destroy_print_tree(void *object);
 extern void slurmdb_destroy_hierarchical_rec(void *object);
 extern void slurmdb_destroy_selected_step(void *object);
 
+extern void slurmdb_destroy_report_job_grouping(void *object);
+extern void slurmdb_destroy_report_acct_grouping(void *object);
+extern void slurmdb_destroy_report_cluster_grouping(void *object);
+
 extern void slurmdb_init_association_rec(slurmdb_association_rec_t *assoc);
 extern void slurmdb_init_qos_rec(slurmdb_qos_rec_t *qos);
 
