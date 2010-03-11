@@ -146,21 +146,21 @@ extern int _addto_uid_char_list(List char_list, char *names)
 }
 
 static int _set_cond(int *start, int argc, char *argv[],
-		     acct_archive_cond_t *arch_cond)
+		     slurmdb_archive_cond_t *arch_cond)
 {
 	int i;
 	int set = 0;
 	int end = 0;
 	int command_len = 0;
 	int option = 0;
-	acct_job_cond_t *job_cond = NULL;
+	slurmdb_job_cond_t *job_cond = NULL;
 
 	if(!arch_cond) {
 		error("No arch_cond given");
 		return -1;
 	}
 	if(!arch_cond->job_cond)
-		arch_cond->job_cond = xmalloc(sizeof(acct_job_cond_t));
+		arch_cond->job_cond = xmalloc(sizeof(slurmdb_job_cond_t));
 	job_cond = arch_cond->job_cond;
 
 	for (i=(*start); i<argc; i++) {
@@ -234,7 +234,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 		} else if (!strncasecmp (argv[i], "Jobs",
 					 MAX(command_len, 1))) {
 			char *end_char = NULL, *start_char = argv[i]+end;
-			jobacct_selected_step_t *selected_step = NULL;
+			slurmdb_selected_step_t *selected_step = NULL;
 			char *dot = NULL;
 			if(!job_cond->step_list)
 				job_cond->step_list =
@@ -248,7 +248,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 				if(!(int)*start_char)
 					continue;
 				selected_step = xmalloc(
-					sizeof(jobacct_selected_step_t));
+					sizeof(slurmdb_selected_step_t));
 				list_append(job_cond->step_list, selected_step);
 
 				dot = strstr(start_char, ".");
@@ -335,7 +335,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 extern int sacctmgr_archive_dump(int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
-	acct_archive_cond_t *arch_cond = xmalloc(sizeof(acct_archive_cond_t));
+	slurmdb_archive_cond_t *arch_cond = xmalloc(sizeof(slurmdb_archive_cond_t));
 	int i=0;
 	struct stat st;
 
@@ -357,7 +357,7 @@ extern int sacctmgr_archive_dump(int argc, char *argv[])
 	}
 
 	if(exit_code) {
-		destroy_acct_archive_cond(arch_cond);
+		slurmdb_destroy_archive_cond(arch_cond);
 		return SLURM_ERROR;
 	}
 
@@ -428,7 +428,7 @@ extern int sacctmgr_archive_dump(int argc, char *argv[])
 		fprintf(stderr, " Problem dumping archive\n");
 		rc = SLURM_ERROR;
 	}
-	destroy_acct_archive_cond(arch_cond);
+	slurmdb_destroy_archive_cond(arch_cond);
 
 	return rc;
 }
@@ -436,7 +436,7 @@ extern int sacctmgr_archive_dump(int argc, char *argv[])
 extern int sacctmgr_archive_load(int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
-	acct_archive_rec_t *arch_rec = xmalloc(sizeof(acct_archive_rec_t));
+	slurmdb_archive_rec_t *arch_rec = xmalloc(sizeof(slurmdb_archive_rec_t));
 	int i=0, command_len = 0, option = 0;
 	struct stat st;
 
@@ -466,7 +466,7 @@ extern int sacctmgr_archive_load(int argc, char *argv[])
 	}
 
 	if(exit_code) {
-		destroy_acct_archive_rec(arch_rec);
+		slurmdb_destroy_archive_rec(arch_rec);
 		return SLURM_ERROR;
 	}
 
@@ -508,7 +508,7 @@ extern int sacctmgr_archive_load(int argc, char *argv[])
 		rc = SLURM_ERROR;
 	}
 
-	destroy_acct_archive_rec(arch_rec);
+	slurmdb_destroy_archive_rec(arch_rec);
 
 	return rc;
 }

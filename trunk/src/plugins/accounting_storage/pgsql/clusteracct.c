@@ -82,7 +82,7 @@ check_clusteracct_tables(PGconn *db_conn, char *user)
  * RET: error code
  */
 extern int
-get_cluster_cpu_nodes(pgsql_conn_t *pg_conn, acct_cluster_rec_t *cluster)
+get_cluster_cpu_nodes(pgsql_conn_t *pg_conn, slurmdb_cluster_rec_t *cluster)
 {
 	PGresult *result;
 	char *query = xstrdup_printf(
@@ -344,7 +344,7 @@ end_it:
  */
 extern int
 cs_p_get_usage(pgsql_conn_t *pg_conn, uid_t uid,
-	       acct_cluster_rec_t *cluster_rec,
+	       slurmdb_cluster_rec_t *cluster_rec,
 	       int type, time_t start, time_t end)
 {
 	PGresult *result = NULL;
@@ -384,10 +384,10 @@ cs_p_get_usage(pgsql_conn_t *pg_conn, uid_t uid,
 
 	if(!cluster_rec->accounting_list)
 		cluster_rec->accounting_list =
-			list_create(destroy_cluster_accounting_rec);
+			list_create(slurmdb_destroy_cluster_accounting_rec);
 	FOR_EACH_ROW {
-		cluster_accounting_rec_t *accounting_rec =
-			xmalloc(sizeof(cluster_accounting_rec_t));
+		slurmdb_cluster_accounting_rec_t *accounting_rec =
+			xmalloc(sizeof(slurmdb_cluster_accounting_rec_t));
 
 		accounting_rec->alloc_secs = atoll(ROW(CU_ACPU));
 		accounting_rec->down_secs = atoll(ROW(CU_DCPU));

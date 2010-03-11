@@ -986,7 +986,7 @@ pgsql_monthly_rollup(pgsql_conn_t *pg_conn,
 {
 	int rc = SLURM_SUCCESS;
 	char *query = NULL;
-	acct_archive_cond_t arch_cond;
+	slurmdb_archive_cond_t arch_cond;
 	struct tm start_tm;
 	time_t curr_end;
 	time_t now = time(NULL);

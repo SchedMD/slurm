@@ -6,32 +6,32 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <mgrondona@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
+ *  In addition, as a special exception, the copyright holders give permission
  *  to link the code of portions of this program with the OpenSSL library under
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -54,7 +54,7 @@ int
 pdebug_trace_process(slurmd_job_t *job, pid_t pid)
 {
 	/*  If task to be debugged, wait for it to stop via
-	 *  child's ptrace(PTRACE_TRACEME), then SIGSTOP, and 
+	 *  child's ptrace(PTRACE_TRACEME), then SIGSTOP, and
 	 *  ptrace(PTRACE_DETACH). This requires a kernel patch,
 	 *  which you may already have in place for TotalView.
 	 *  If not, apply the kernel patch in contribs/ptrace.patch
@@ -116,8 +116,8 @@ pdebug_trace_process(slurmd_job_t *job, pid_t pid)
 void
 pdebug_stop_current(slurmd_job_t *job)
 {
-	/* 
-	 * Stop the task on exec for TotalView to connect 
+	/*
+	 * Stop the task on exec for TotalView to connect
 	 */
 	if ( (job->task_flags & TASK_PARALLEL_DEBUG)
 #ifdef PT_TRACE_ME

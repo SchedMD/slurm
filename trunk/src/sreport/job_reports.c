@@ -40,34 +40,6 @@
 
 #include "job_reports.h"
 
-typedef struct {
-	List jobs; /* This should be a NULL destroy since we are just
-		    * putting a pointer to a jobacct_job_rect_t here
-		    * not allocating any new memory */
-	uint32_t min_size; /* smallest size of job in cpus here 0 if first */
-	uint32_t max_size; /* largest size of job in cpus here INFINITE if
-			    * last */
-	uint32_t count; /* count of jobs */
-	uint64_t cpu_secs; /* how many cpus secs taken up by this
-			    * grouping */
-} local_grouping_t;
-
-typedef struct {
-	char *acct; /*account name */
-	uint64_t cpu_secs; /* how many cpus secs taken up by this
-			    * acct */
-	List groups; /* Names of what are being grouped char *'s*/
-	uint32_t lft;
-	uint32_t rgt;
-} acct_grouping_t;
-
-typedef struct {
-	char *cluster; /*cluster name */
-	uint64_t cpu_secs; /* how many cpus secs taken up by this
-			    * cluster */
-	List acct_list; /* containing acct_grouping_t's */
-} cluster_grouping_t;
-
 enum {
 	PRINT_JOB_ACCOUNT,
 	PRINT_JOB_CLUSTER,
@@ -85,37 +57,6 @@ static List grouping_print_fields_list = NULL; /* types are of print_field_t */
 static int print_job_count = 0;
 static bool flat_view = false;
 
-static void _destroy_local_grouping(void *object)
-{
-	local_grouping_t *local_grouping = (local_grouping_t *)object;
-	if(local_grouping) {
-		list_destroy(local_grouping->jobs);
-		xfree(local_grouping);
-	}
-}
-
-static void _destroy_acct_grouping(void *object)
-{
-	acct_grouping_t *acct_grouping = (acct_grouping_t *)object;
-	if(acct_grouping) {
-		xfree(acct_grouping->acct);
-		if(acct_grouping->groups)
-			list_destroy(acct_grouping->groups);
-		xfree(acct_grouping);
-	}
-}
-
-static void _destroy_cluster_grouping(void *object)
-{
-	cluster_grouping_t *cluster_grouping = (cluster_grouping_t *)object;
-	if(cluster_grouping) {
-		xfree(cluster_grouping->cluster);
-		if(cluster_grouping->acct_list)
-			list_destroy(cluster_grouping->acct_list);
-		xfree(cluster_grouping);
-	}
-}
-
 /*
  * Comparator used for sorting clusters alphabetically
  *
@@ -124,8 +65,9 @@ static void _destroy_cluster_grouping(void *object)
  *           -1: cluster_a < cluster_b
  *
  */
-extern int _sort_cluster_grouping_dec(cluster_grouping_t *cluster_a,
-				      cluster_grouping_t *cluster_b)
+static int _sort_cluster_grouping_dec(
+	slurmdb_report_cluster_grouping_t *cluster_a,
+	slurmdb_report_cluster_grouping_t *cluster_b)
 {
 	int diff = 0;
 
@@ -150,8 +92,8 @@ extern int _sort_cluster_grouping_dec(cluster_grouping_t *cluster_a,
  *           -1: acct_a < acct_b
  *
  */
-extern int _sort_acct_grouping_dec(acct_grouping_t *acct_a,
-				   acct_grouping_t *acct_b)
+static int _sort_acct_grouping_dec(slurmdb_report_acct_grouping_t *acct_a,
+				   slurmdb_report_acct_grouping_t *acct_b)
 {
 	int diff = 0;
 
@@ -169,7 +111,7 @@ extern int _sort_acct_grouping_dec(acct_grouping_t *acct_a,
 }
 
 /* returns number of objects added to list */
-extern int _addto_uid_char_list(List char_list, char *names)
+static int _addto_uid_char_list(List char_list, char *names)
 {
 	int i=0, start=0;
 	char *name = NULL, *tmp_char = NULL;
@@ -272,7 +214,7 @@ extern int _addto_uid_char_list(List char_list, char *names)
 }
 
 static int _set_cond(int *start, int argc, char *argv[],
-		     acct_job_cond_t *job_cond,
+		     slurmdb_job_cond_t *job_cond,
 		     List format_list, List grouping_list)
 {
 	int i;
@@ -348,7 +290,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 		} else if (!strncasecmp (argv[i], "Jobs",
 					 MAX(command_len, 1))) {
 			char *end_char = NULL, *start_char = argv[i]+end;
-			jobacct_selected_step_t *selected_step = NULL;
+			slurmdb_selected_step_t *selected_step = NULL;
 			char *dot = NULL;
 			if(!job_cond->step_list)
 				job_cond->step_list =
@@ -362,7 +304,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 				if(!(int)*start_char)
 					continue;
 				selected_step = xmalloc(
-					sizeof(jobacct_selected_step_t));
+					sizeof(slurmdb_selected_step_t));
 				list_append(job_cond->step_list, selected_step);
 
 				dot = strstr(start_char, ".");
@@ -568,9 +510,9 @@ static int _setup_grouping_print_fields_list(List grouping_list)
 		else
 			field->type = PRINT_JOB_SIZE;
 		field->name = xstrdup_printf("%u-%u cpus", last_size, size-1);
-		if(time_format == SREPORT_TIME_SECS_PER
-		   || time_format == SREPORT_TIME_MINS_PER
-		   || time_format == SREPORT_TIME_HOURS_PER)
+		if(time_format == SLURMDB_REPORT_TIME_SECS_PER
+		   || time_format == SLURMDB_REPORT_TIME_MINS_PER
+		   || time_format == SLURMDB_REPORT_TIME_HOURS_PER)
 			field->len = 20;
 		else
 			field->len = 13;
@@ -578,7 +520,7 @@ static int _setup_grouping_print_fields_list(List grouping_list)
 		if(print_job_count)
 			field->print_routine = print_fields_uint;
 		else
-			field->print_routine = sreport_print_time;
+			field->print_routine = slurmdb_report_print_time;
 		last_size = size;
 		last_object = object;
 		if((tmp_char = strstr(object, "\%"))) {
@@ -597,16 +539,16 @@ static int _setup_grouping_print_fields_list(List grouping_list)
 		else
 			field->type = PRINT_JOB_SIZE;
 		field->name = xstrdup_printf(">= %u cpus", last_size);
-		if(time_format == SREPORT_TIME_SECS_PER
-		   || time_format == SREPORT_TIME_MINS_PER
-		   || time_format == SREPORT_TIME_HOURS_PER)
+		if(time_format == SLURMDB_REPORT_TIME_SECS_PER
+		   || time_format == SLURMDB_REPORT_TIME_MINS_PER
+		   || time_format == SLURMDB_REPORT_TIME_HOURS_PER)
 			field->len = 20;
 		else
 			field->len = 13;
 		if(print_job_count)
 			field->print_routine = print_fields_uint;
 		else
-			field->print_routine = sreport_print_time;
+			field->print_routine = slurmdb_report_print_time;
 		if((tmp_char = strstr(last_object, "\%"))) {
 			int newlen = atoi(tmp_char+1);
 			if(newlen)
@@ -621,9 +563,8 @@ static int _setup_grouping_print_fields_list(List grouping_list)
 extern int job_sizes_grouped_by_top_acct(int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
-	acct_job_cond_t *job_cond = xmalloc(sizeof(acct_job_cond_t));
-	acct_association_cond_t assoc_cond;
-	acct_association_rec_t *assoc = NULL;
+	slurmdb_job_cond_t *job_cond = xmalloc(sizeof(slurmdb_job_cond_t));
+
 	int i=0;
 
 	ListIterator itr = NULL;
@@ -631,31 +572,26 @@ extern int job_sizes_grouped_by_top_acct(int argc, char *argv[])
 	ListIterator cluster_itr = NULL;
 	ListIterator local_itr = NULL;
 	ListIterator acct_itr = NULL;
-	ListIterator group_itr = NULL;
 
-
-	jobacct_job_rec_t *job = NULL;
-	cluster_grouping_t *cluster_group = NULL;
-	acct_grouping_t *acct_group = NULL;
-	local_grouping_t *local_group = NULL;
+	slurmdb_report_cluster_grouping_t *cluster_group = NULL;
+	slurmdb_report_acct_grouping_t *acct_group = NULL;
+	slurmdb_report_job_grouping_t *job_group = NULL;
 
 	print_field_t *field = NULL;
 	print_field_t total_field;
 	uint32_t total_time = 0;
-	sreport_time_format_t temp_format;
+	slurmdb_report_time_format_t temp_format;
 
 	List job_list = NULL;
-	List cluster_list = NULL;
+	List slurmdb_report_cluster_grouping_list = NULL;
 	List assoc_list = NULL;
-
-	List tmp_acct_list = NULL;
 
 	List format_list = list_create(slurm_destroy_char);
 	List grouping_list = list_create(slurm_destroy_char);
 
-	List header_list = list_create(NULL);
+	List header_list = NULL;
 
-//	sreport_time_format_t temp_time_format = time_format;
+//	slurmdb_report_time_format_t temp_time_format = time_format;
 
 	print_fields_list = list_create(destroy_print_field);
 
@@ -672,19 +608,10 @@ extern int job_sizes_grouped_by_top_acct(int argc, char *argv[])
 
 	_setup_grouping_print_fields_list(grouping_list);
 
-	/* we don't want to actually query by accounts in the jobs
-	   here since we may be looking for sub accounts of a specific
-	   account.
-	*/
-	tmp_acct_list = job_cond->acct_list;
-	job_cond->acct_list = NULL;
-	job_list = jobacct_storage_g_get_jobs_cond(db_conn, my_uid, job_cond);
-	job_cond->acct_list = tmp_acct_list;
-	tmp_acct_list = NULL;
-
-	if(!job_list) {
-		exit_code=1;
-		fprintf(stderr, " Problem with job query.\n");
+	if(!(slurmdb_report_cluster_grouping_list =
+	     slurmdb_report_job_sizes_grouped_by_top_account(
+		     job_cond, grouping_list, flat_view))) {
+		exit_code = 1;
 		goto end_it;
 	}
 
@@ -710,89 +637,7 @@ extern int job_sizes_grouped_by_top_acct(int argc, char *argv[])
 	}
 	total_time = job_cond->usage_end - job_cond->usage_start;
 
-	cluster_list = list_create(_destroy_cluster_grouping);
-
-	cluster_itr = list_iterator_create(cluster_list);
-	group_itr = list_iterator_create(grouping_list);
-
-	if(flat_view)
-		goto no_assocs;
-
-	memset(&assoc_cond, 0, sizeof(acct_association_cond_t));
-	assoc_cond.id_list = job_cond->associd_list;
-	assoc_cond.cluster_list = job_cond->cluster_list;
-	/* don't limit associations to having the partition_list */
-	//assoc_cond.partition_list = job_cond->partition_list;
-	if(!job_cond->acct_list || !list_count(job_cond->acct_list)) {
-		if(job_cond->acct_list)
-			list_destroy(job_cond->acct_list);
-		job_cond->acct_list = list_create(NULL);
-		list_append(job_cond->acct_list, "root");
-	}
-	assoc_cond.parent_acct_list = job_cond->acct_list;
-	assoc_list = acct_storage_g_get_associations(db_conn, my_uid,
-						     &assoc_cond);
-
-	if(!assoc_list) {
-		debug2(" No assoc list given.\n");
-		goto no_assocs;
-	}
-
-	itr = list_iterator_create(assoc_list);
-	while((assoc = list_next(itr))) {
-		while((cluster_group = list_next(cluster_itr))) {
-			if(!strcmp(assoc->cluster, cluster_group->cluster))
-				break;
-		}
-		if(!cluster_group) {
-			cluster_group =
-				xmalloc(sizeof(cluster_grouping_t));
-			cluster_group->cluster = xstrdup(assoc->cluster);
-			cluster_group->acct_list =
-				list_create(_destroy_acct_grouping);
-			list_append(cluster_list, cluster_group);
-		}
-
-		acct_itr = list_iterator_create(cluster_group->acct_list);
-		while((acct_group = list_next(acct_itr))) {
-			if(!strcmp(assoc->acct, acct_group->acct))
-				break;
-		}
-		list_iterator_destroy(acct_itr);
-
-		if(!acct_group) {
-			uint32_t last_size = 0;
-			char *group = NULL;
-			acct_group = xmalloc(sizeof(acct_grouping_t));
-			acct_group->acct = xstrdup(assoc->acct);
-			acct_group->lft = assoc->lft;
-			acct_group->rgt = assoc->rgt;
-			acct_group->groups =
-				list_create(_destroy_local_grouping);
-			list_append(cluster_group->acct_list, acct_group);
-			while((group = list_next(group_itr))) {
-				local_group = xmalloc(sizeof(local_grouping_t));
-				local_group->jobs = list_create(NULL);
-				local_group->min_size = last_size;
-				last_size = atoi(group);
-				local_group->max_size = last_size-1;
-				list_append(acct_group->groups, local_group);
-			}
-			if(last_size) {
-				local_group = xmalloc(sizeof(local_grouping_t));
-				local_group->jobs = list_create(NULL);
-				local_group->min_size = last_size;
-				local_group->max_size = INFINITE;
-				list_append(acct_group->groups, local_group);
-			}
-			list_iterator_reset(group_itr);
-		}
-		list_iterator_reset(cluster_itr);
-	}
-	list_iterator_destroy(itr);
-no_assocs:
-	itr = list_iterator_create(job_list);
-
+	header_list = list_create(NULL);
 	list_append_list(header_list, print_fields_list);
 	list_append_list(header_list, grouping_print_fields_list);
 
@@ -800,122 +645,21 @@ no_assocs:
 	total_field.type = PRINT_JOB_SIZE;
 	total_field.name = xstrdup("% of cluster");
 	total_field.len = 12;
-	total_field.print_routine = sreport_print_time;
+	total_field.print_routine = slurmdb_report_print_time;
 	list_append(header_list, &total_field);
 
 	print_fields_header(header_list);
 	list_destroy(header_list);
 
-	while((job = list_next(itr))) {
-		char *local_cluster = "UNKNOWN";
-		char *local_account = "UNKNOWN";
-
-		if(!job->elapsed) {
-			/* here we don't care about jobs that didn't
-			 * really run here */
-			continue;
-		}
-		if(job->cluster)
-			local_cluster = job->cluster;
-		if(job->account)
-			local_account = job->account;
-
-		list_iterator_reset(cluster_itr);
-		while((cluster_group = list_next(cluster_itr))) {
-			if(!strcmp(local_cluster, cluster_group->cluster))
-				break;
-		}
-		if(!cluster_group) {
-			/* here we are only looking for groups that
-			 * were added with the associations above
-			 */
-			if(!flat_view)
-				continue;
-			cluster_group =
-				xmalloc(sizeof(cluster_grouping_t));
-			cluster_group->cluster = xstrdup(local_cluster);
-			cluster_group->acct_list =
-				list_create(_destroy_acct_grouping);
-			list_append(cluster_list, cluster_group);
-		}
-
-		acct_itr = list_iterator_create(cluster_group->acct_list);
-		while((acct_group = list_next(acct_itr))) {
-			if(!flat_view
-			   && (acct_group->lft != (uint32_t)NO_VAL)
-			   && (job->lft != (uint32_t)NO_VAL)) {
-				/* keep separate since we don't want
-				 * to so a strcmp if we don't have to
-				 */
-				if(job->lft > acct_group->lft
-				   && job->lft < acct_group->rgt)
-					break;
-			} else if(!strcmp(acct_group->acct, local_account))
-				break;
-		}
-		list_iterator_destroy(acct_itr);
-
-		if(!acct_group) {
-			char *group = NULL;
-			uint32_t last_size = 0;
-			/* here we are only looking for groups that
-			 * were added with the associations above
-			 */
-			if(!flat_view)
-				continue;
-
-			acct_group = xmalloc(sizeof(acct_grouping_t));
-			acct_group->acct = xstrdup(local_account);
-			acct_group->groups =
-				list_create(_destroy_local_grouping);
-			list_append(cluster_group->acct_list, acct_group);
-
-			while((group = list_next(group_itr))) {
-				local_group = xmalloc(sizeof(local_grouping_t));
-				local_group->jobs = list_create(NULL);
-				local_group->min_size = last_size;
-				last_size = atoi(group);
-				local_group->max_size = last_size-1;
-				list_append(acct_group->groups, local_group);
-			}
-			if(last_size) {
-				local_group = xmalloc(sizeof(local_grouping_t));
-				local_group->jobs = list_create(NULL);
-				local_group->min_size = last_size;
-				local_group->max_size = INFINITE;
-				list_append(acct_group->groups, local_group);
-			}
-			list_iterator_reset(group_itr);
-		}
-
-		local_itr = list_iterator_create(acct_group->groups);
-		while((local_group = list_next(local_itr))) {
-			uint64_t total_secs = 0;
-			if((job->alloc_cpus < local_group->min_size)
-			   || (job->alloc_cpus > local_group->max_size))
-				continue;
-			list_append(local_group->jobs, job);
-			local_group->count++;
-			total_secs = (uint64_t)job->elapsed
-				* (uint64_t)job->alloc_cpus;
-			local_group->cpu_secs += total_secs;
-			acct_group->cpu_secs += total_secs;
-			cluster_group->cpu_secs += total_secs;
-		}
-		list_iterator_destroy(local_itr);
-	}
-	list_iterator_destroy(group_itr);
-	list_destroy(grouping_list);
-	list_iterator_destroy(itr);
-
-//	time_format = SREPORT_TIME_PERCENT;
+//	time_format = SLURMDB_REPORT_TIME_PERCENT;
 
 	itr = list_iterator_create(print_fields_list);
 	itr2 = list_iterator_create(grouping_print_fields_list);
-	list_sort(cluster_list, (ListCmpF)_sort_cluster_grouping_dec);
-	list_iterator_reset(cluster_itr);
+	list_sort(slurmdb_report_cluster_grouping_list,
+		  (ListCmpF)_sort_cluster_grouping_dec);
+	cluster_itr =
+		list_iterator_create(slurmdb_report_cluster_grouping_list);
 	while((cluster_group = list_next(cluster_itr))) {
-
 		list_sort(cluster_group->acct_list,
 			  (ListCmpF)_sort_acct_grouping_dec);
 		acct_itr = list_iterator_create(cluster_group->acct_list);
@@ -942,20 +686,20 @@ no_assocs:
 			}
 			list_iterator_reset(itr);
 			local_itr = list_iterator_create(acct_group->groups);
-			while((local_group = list_next(local_itr))) {
+			while((job_group = list_next(local_itr))) {
 				field = list_next(itr2);
 				switch(field->type) {
 				case PRINT_JOB_SIZE:
 					field->print_routine(
 						field,
-						local_group->cpu_secs,
+						job_group->cpu_secs,
 						acct_group->cpu_secs,
 						0);
 					break;
 				case PRINT_JOB_COUNT:
 					field->print_routine(
 						field,
-						local_group->count,
+						job_group->count,
 						0);
 					break;
 				default:
@@ -969,7 +713,7 @@ no_assocs:
 			list_iterator_destroy(local_itr);
 
 			temp_format = time_format;
-			time_format = SREPORT_TIME_PERCENT;
+			time_format = SLURMDB_REPORT_TIME_PERCENT;
 			total_field.print_routine(&total_field,
 						  acct_group->cpu_secs,
 						  cluster_group->cpu_secs, 1);
@@ -986,7 +730,12 @@ end_it:
 	if(print_job_count)
 		print_job_count = 0;
 
-	destroy_acct_job_cond(job_cond);
+	slurmdb_destroy_job_cond(job_cond);
+
+	if(grouping_list) {
+		list_destroy(grouping_list);
+		grouping_list = NULL;
+	}
 
 	if(job_list) {
 		list_destroy(job_list);
@@ -998,9 +747,9 @@ end_it:
 		assoc_list = NULL;
 	}
 
-	if(cluster_list) {
-		list_destroy(cluster_list);
-		cluster_list = NULL;
+	if(slurmdb_report_cluster_grouping_list) {
+		list_destroy(slurmdb_report_cluster_grouping_list);
+		slurmdb_report_cluster_grouping_list = NULL;
 	}
 
 	if(print_fields_list) {
@@ -1019,9 +768,7 @@ end_it:
 extern int job_sizes_grouped_by_wckey(int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
-	acct_job_cond_t *job_cond = xmalloc(sizeof(acct_job_cond_t));
-	acct_wckey_cond_t wckey_cond;
-	acct_wckey_rec_t *wckey = NULL;
+	slurmdb_job_cond_t *job_cond = xmalloc(sizeof(slurmdb_job_cond_t));
 	int i=0;
 
 	ListIterator itr = NULL;
@@ -1029,28 +776,26 @@ extern int job_sizes_grouped_by_wckey(int argc, char *argv[])
 	ListIterator cluster_itr = NULL;
 	ListIterator local_itr = NULL;
 	ListIterator acct_itr = NULL;
-	ListIterator group_itr = NULL;
 
-	jobacct_job_rec_t *job = NULL;
-	cluster_grouping_t *cluster_group = NULL;
-	acct_grouping_t *acct_group = NULL;
-	local_grouping_t *local_group = NULL;
+	slurmdb_report_cluster_grouping_t *cluster_group = NULL;
+	slurmdb_report_acct_grouping_t *acct_group = NULL;
+	slurmdb_report_job_grouping_t *job_group = NULL;
 
 	print_field_t *field = NULL;
 	print_field_t total_field;
 	uint32_t total_time = 0;
-	sreport_time_format_t temp_format;
+	slurmdb_report_time_format_t temp_format;
 
 	List job_list = NULL;
-	List cluster_list = NULL;
+	List slurmdb_report_cluster_grouping_list = NULL;
 	List wckey_list = NULL;
 
 	List format_list = list_create(slurm_destroy_char);
 	List grouping_list = list_create(slurm_destroy_char);
 
-	List header_list = list_create(NULL);
+	List header_list = NULL;
 
-//	sreport_time_format_t temp_time_format = time_format;
+//	slurmdb_report_time_format_t temp_time_format = time_format;
 
 	print_fields_list = list_create(destroy_print_field);
 
@@ -1067,23 +812,12 @@ extern int job_sizes_grouped_by_wckey(int argc, char *argv[])
 
 	_setup_grouping_print_fields_list(grouping_list);
 
-	/* we don't want to actually query by wckeys in the jobs
-	   here since we may be looking for sub accounts of a specific
-	   account.
-	*/
-	job_list = jobacct_storage_g_get_jobs_cond(db_conn, my_uid, job_cond);
-
-	if(!job_list) {
-		exit_code=1;
-		fprintf(stderr, " Problem with job query.\n");
+	if(!(slurmdb_report_cluster_grouping_list =
+	     slurmdb_report_job_sizes_grouped_by_wckey(
+		     job_cond, grouping_list))) {
+		exit_code = 1;
 		goto end_it;
 	}
-
-	memset(&wckey_cond, 0, sizeof(acct_wckey_cond_t));
-	wckey_cond.name_list = job_cond->wckey_list;
-	wckey_cond.cluster_list = job_cond->cluster_list;
-
-	wckey_list = acct_storage_g_get_wckeys(db_conn, my_uid, &wckey_cond);
 
 	if(print_fields_have_header) {
 		char start_char[20];
@@ -1107,70 +841,7 @@ extern int job_sizes_grouped_by_wckey(int argc, char *argv[])
 	}
 	total_time = job_cond->usage_end - job_cond->usage_start;
 
-	cluster_list = list_create(_destroy_cluster_grouping);
-
-	cluster_itr = list_iterator_create(cluster_list);
-	group_itr = list_iterator_create(grouping_list);
-
-	if(!wckey_list) {
-		debug2(" No wckey list given.\n");
-		goto no_assocs;
-	}
-
-	itr = list_iterator_create(wckey_list);
-	while((wckey = list_next(itr))) {
-		while((cluster_group = list_next(cluster_itr))) {
-			if(!strcmp(wckey->cluster, cluster_group->cluster))
-				break;
-		}
-		if(!cluster_group) {
-			cluster_group =
-				xmalloc(sizeof(cluster_grouping_t));
-			cluster_group->cluster = xstrdup(wckey->cluster);
-			cluster_group->acct_list =
-				list_create(_destroy_acct_grouping);
-			list_append(cluster_list, cluster_group);
-		}
-
-		acct_itr = list_iterator_create(cluster_group->acct_list);
-		while((acct_group = list_next(acct_itr))) {
-			if(!strcmp(wckey->name, acct_group->acct))
-				break;
-		}
-		list_iterator_destroy(acct_itr);
-
-		if(!acct_group) {
-			uint32_t last_size = 0;
-			char *group = NULL;
-			acct_group = xmalloc(sizeof(acct_grouping_t));
-			acct_group->acct = xstrdup(wckey->name);
-			acct_group->lft = wckey->id;
-			acct_group->groups =
-				list_create(_destroy_local_grouping);
-			list_append(cluster_group->acct_list, acct_group);
-			while((group = list_next(group_itr))) {
-				local_group = xmalloc(sizeof(local_grouping_t));
-				local_group->jobs = list_create(NULL);
-				local_group->min_size = last_size;
-				last_size = atoi(group);
-				local_group->max_size = last_size-1;
-				list_append(acct_group->groups, local_group);
-			}
-			if(last_size) {
-				local_group = xmalloc(sizeof(local_grouping_t));
-				local_group->jobs = list_create(NULL);
-				local_group->min_size = last_size;
-				local_group->max_size = INFINITE;
-				list_append(acct_group->groups, local_group);
-			}
-			list_iterator_reset(group_itr);
-		}
-		list_iterator_reset(cluster_itr);
-	}
-	list_iterator_destroy(itr);
-no_assocs:
-	itr = list_iterator_create(job_list);
-
+	header_list = list_create(NULL);
 	list_append_list(header_list, print_fields_list);
 	list_append_list(header_list, grouping_print_fields_list);
 
@@ -1178,78 +849,20 @@ no_assocs:
 	total_field.type = PRINT_JOB_SIZE;
 	total_field.name = xstrdup("% of cluster");
 	total_field.len = 12;
-	total_field.print_routine = sreport_print_time;
+	total_field.print_routine = slurmdb_report_print_time;
 	list_append(header_list, &total_field);
 
 	print_fields_header(header_list);
 	list_destroy(header_list);
 
-	while((job = list_next(itr))) {
-		char *local_cluster = "UNKNOWN";
-		char *local_account = "UNKNOWN";
-
-		if(!job->elapsed) {
-			/* here we don't care about jobs that didn't
-			 * really run here */
-			continue;
-		}
-		if(job->cluster)
-			local_cluster = job->cluster;
-		if(job->account)
-			local_account = job->account;
-
-		list_iterator_reset(cluster_itr);
-		while((cluster_group = list_next(cluster_itr))) {
-			if(!strcmp(local_cluster, cluster_group->cluster))
-				break;
-		}
-		if(!cluster_group) {
-			/* here we are only looking for groups that
-			 * were added with the associations above
-			 */
-			continue;
-		}
-
-		acct_itr = list_iterator_create(cluster_group->acct_list);
-		while((acct_group = list_next(acct_itr))) {
-			if(!strcmp(job->wckey, acct_group->acct))
-				break;
-		}
-		list_iterator_destroy(acct_itr);
-
-		if(!acct_group) {
-			/* here we are only looking for groups that
-			 * were added with the associations above
-			 */
-			continue;
-		}
-
-		local_itr = list_iterator_create(acct_group->groups);
-		while((local_group = list_next(local_itr))) {
-			uint64_t total_secs = 0;
-			if((job->alloc_cpus < local_group->min_size)
-			   || (job->alloc_cpus > local_group->max_size))
-				continue;
-			list_append(local_group->jobs, job);
-			local_group->count++;
-			total_secs = (uint64_t)job->elapsed
-				* (uint64_t)job->alloc_cpus;
-			local_group->cpu_secs += total_secs;
-			acct_group->cpu_secs += total_secs;
-			cluster_group->cpu_secs += total_secs;
-		}
-		list_iterator_destroy(local_itr);
-	}
-	list_iterator_destroy(group_itr);
-	list_destroy(grouping_list);
-	list_iterator_destroy(itr);
-
-//	time_format = SREPORT_TIME_PERCENT;
+//	time_format = SLURMDB_REPORT_TIME_PERCENT;
 
 	itr = list_iterator_create(print_fields_list);
 	itr2 = list_iterator_create(grouping_print_fields_list);
-	list_sort(cluster_list, (ListCmpF)_sort_cluster_grouping_dec);
-	list_iterator_reset(cluster_itr);
+	list_sort(slurmdb_report_cluster_grouping_list,
+		  (ListCmpF)_sort_cluster_grouping_dec);
+	cluster_itr = list_iterator_create(
+		slurmdb_report_cluster_grouping_list);
 	while((cluster_group = list_next(cluster_itr))) {
 		list_sort(cluster_group->acct_list,
 			  (ListCmpF)_sort_acct_grouping_dec);
@@ -1277,20 +890,20 @@ no_assocs:
 			}
 			list_iterator_reset(itr);
 			local_itr = list_iterator_create(acct_group->groups);
-			while((local_group = list_next(local_itr))) {
+			while((job_group = list_next(local_itr))) {
 				field = list_next(itr2);
 				switch(field->type) {
 				case PRINT_JOB_SIZE:
 					field->print_routine(
 						field,
-						local_group->cpu_secs,
+						job_group->cpu_secs,
 						acct_group->cpu_secs,
 						0);
 					break;
 				case PRINT_JOB_COUNT:
 					field->print_routine(
 						field,
-						local_group->count,
+						job_group->count,
 						0);
 					break;
 				default:
@@ -1304,7 +917,7 @@ no_assocs:
 			list_iterator_destroy(local_itr);
 
 			temp_format = time_format;
-			time_format = SREPORT_TIME_PERCENT;
+			time_format = SLURMDB_REPORT_TIME_PERCENT;
 			total_field.print_routine(&total_field,
 						  acct_group->cpu_secs,
 						  cluster_group->cpu_secs, 1);
@@ -1321,7 +934,12 @@ end_it:
 	if(print_job_count)
 		print_job_count = 0;
 
-	destroy_acct_job_cond(job_cond);
+	slurmdb_destroy_job_cond(job_cond);
+
+	if(grouping_list) {
+		list_destroy(grouping_list);
+		grouping_list = NULL;
+	}
 
 	if(job_list) {
 		list_destroy(job_list);
@@ -1333,9 +951,9 @@ end_it:
 		wckey_list = NULL;
 	}
 
-	if(cluster_list) {
-		list_destroy(cluster_list);
-		cluster_list = NULL;
+	if(slurmdb_report_cluster_grouping_list) {
+		list_destroy(slurmdb_report_cluster_grouping_list);
+		slurmdb_report_cluster_grouping_list = NULL;
 	}
 
 	if(print_fields_list) {

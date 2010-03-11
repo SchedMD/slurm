@@ -40,8 +40,8 @@
 
 #include "common.h"
 
-char *acct_coord_table = "acct_coord_table";
-static storage_field_t acct_coord_table_fields[] = {
+char *slurmdb_coord_table = "slurmdb_coord_table";
+static storage_field_t slurmdb_coord_table_fields[] = {
 	{ "creation_time", "INTEGER NOT NULL" },
 	{ "mod_time", "INTEGER DEFAULT 0 NOT NULL" },
 	{ "deleted", "INTEGER DEFAULT 0" },
@@ -49,7 +49,7 @@ static storage_field_t acct_coord_table_fields[] = {
 	{ "user_name", "TEXT NOT NULL" },
 	{ NULL, NULL}
 };
-static char *acct_coord_table_constraints = ", "
+static char *slurmdb_coord_table_constraints = ", "
 	"PRIMARY KEY (acct, user_name) "
 	")";
 
@@ -120,7 +120,7 @@ _create_function_add_coord(PGconn *db_conn)
 		"    IF FOUND THEN RETURN; END IF; "
 		"  END; "
 		"END LOOP; END; $$ LANGUAGE PLPGSQL;",
-		acct_coord_table, acct_coord_table, acct_coord_table);
+		slurmdb_coord_table, slurmdb_coord_table, slurmdb_coord_table);
 	return create_function_xfree(db_conn, create_line);
 }
 
@@ -143,7 +143,7 @@ _create_function_add_coords(PGconn *db_conn)
 		"  EXIT WHEN rec IS NULL;"
 		"  PERFORM add_coord(rec); "
 		"END LOOP; END; $$ LANGUAGE PLPGSQL;",
-		acct_coord_table, acct_coord_table);
+		slurmdb_coord_table, slurmdb_coord_table);
 	return create_function_xfree(db_conn, create_line);
 }
 
@@ -155,7 +155,7 @@ _create_function_add_coords(PGconn *db_conn)
  * OUT txn: transaction info string
  */
 static void
-_make_user_record(acct_user_rec_t *object, time_t now, char **rec, char **txn)
+_make_user_record(slurmdb_user_rec_t *object, time_t now, char **rec, char **txn)
 {
 	xfree(*rec);
 	/* XXX: order of vals must match structure of USER_TABLE */
@@ -172,7 +172,7 @@ _make_user_record(acct_user_rec_t *object, time_t now, char **rec, char **txn)
 		xstrfmtcat(*rec, ", ''");
 	}
 
-	if(object->admin_level != ACCT_ADMIN_NOTSET) {
+	if(object->admin_level != SLURMDB_ADMIN_NOTSET) {
 		xstrfmtcat(*rec, ", %u)", object->admin_level);
 		xstrfmtcat(*txn, ", admin_level=%u",
 			   object->admin_level);
@@ -191,10 +191,10 @@ _make_user_record(acct_user_rec_t *object, time_t now, char **rec, char **txn)
  * RET: error code
  */
 static int
-_get_user_coords(pgsql_conn_t *pg_conn, acct_user_rec_t *user)
+_get_user_coords(pgsql_conn_t *pg_conn, slurmdb_user_rec_t *user)
 {
 	char *query = NULL;
-	acct_coord_rec_t *coord = NULL;
+	slurmdb_coord_rec_t *coord = NULL;
 	PGresult *result = NULL;
 	ListIterator itr = NULL;
 
@@ -204,17 +204,17 @@ _get_user_coords(pgsql_conn_t *pg_conn, acct_user_rec_t *user)
 	}
 
 	if(!user->coord_accts)
-		user->coord_accts = list_create(destroy_acct_coord_rec);
+		user->coord_accts = list_create(slurmdb_destroy_coord_rec);
 
 	query = xstrdup_printf(
 		"SELECT acct FROM %s WHERE user_name='%s' AND deleted=0",
-		acct_coord_table, user->name);
+		slurmdb_coord_table, user->name);
 	result = DEF_QUERY_RET;
 	if (!result)
 		return SLURM_ERROR;
 
 	FOR_EACH_ROW {
-		coord = xmalloc(sizeof(acct_coord_rec_t));
+		coord = xmalloc(sizeof(slurmdb_coord_rec_t));
 		list_append(user->coord_accts, coord);
 		coord->name = xstrdup(ROW(0));
 		coord->direct = 1;
@@ -250,7 +250,7 @@ _get_user_coords(pgsql_conn_t *pg_conn, acct_user_rec_t *user)
 			if(coord) /* already in list */
 				continue;
 
-			coord = xmalloc(sizeof(acct_coord_rec_t));
+			coord = xmalloc(sizeof(slurmdb_coord_rec_t));
 			list_append(user->coord_accts, coord);
 			coord->name = xstrdup(acct);
 			coord->direct = 0;
@@ -269,7 +269,7 @@ _get_user_coords(pgsql_conn_t *pg_conn, acct_user_rec_t *user)
  * OUT: cond: condition string
  */
 static void
-_make_user_cond(acct_user_cond_t *user_cond, char **cond)
+_make_user_cond(slurmdb_user_cond_t *user_cond, char **cond)
 {
 	if(user_cond->assoc_cond) {
 		concat_cond_list(user_cond->assoc_cond->user_list,
@@ -277,7 +277,7 @@ _make_user_cond(acct_user_cond_t *user_cond, char **cond)
 	}
 	concat_cond_list(user_cond->def_acct_list, NULL, "default_acct", cond);
 	concat_cond_list(user_cond->def_wckey_list, NULL, "default_wckey", cond);
-	if(user_cond->admin_level != ACCT_ADMIN_NOTSET) {
+	if(user_cond->admin_level != SLURMDB_ADMIN_NOTSET) {
 		xstrfmtcat(*cond, " AND admin_level=%u", user_cond->admin_level);
 	}
 }
@@ -295,8 +295,8 @@ check_user_tables(PGconn *db_conn, char *user)
 
 	rc = check_table(db_conn, user_table, user_table_fields,
 			 user_table_constraints, user);
-	rc |= check_table(db_conn, acct_coord_table, acct_coord_table_fields,
-			  acct_coord_table_constraints, user);
+	rc |= check_table(db_conn, slurmdb_coord_table, slurmdb_coord_table_fields,
+			  slurmdb_coord_table_constraints, user);
 	rc |= _create_function_add_user(db_conn);
 	rc |= _create_function_add_coord(db_conn);
 	rc |= _create_function_add_coords(db_conn);
@@ -316,12 +316,12 @@ as_p_add_users(pgsql_conn_t *pg_conn, uint32_t uid, List user_list)
 {
 	ListIterator itr = NULL;
 	int rc = SLURM_SUCCESS;
-	acct_user_rec_t *object = NULL;
+	slurmdb_user_rec_t *object = NULL;
 	char *rec = NULL, *info = NULL, *user_name = NULL,
 		*query = NULL, *txn_query = NULL;
 	time_t now = time(NULL);
-	List assoc_list = list_create(destroy_acct_association_rec);
-	List wckey_list = list_create(destroy_acct_wckey_rec);
+	List assoc_list = list_create(slurmdb_destroy_association_rec);
+	List wckey_list = list_create(slurmdb_destroy_wckey_rec);
 
 	if (check_db_connection(pg_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
@@ -348,7 +348,7 @@ as_p_add_users(pgsql_conn_t *pg_conn, uint32_t uid, List user_list)
 		}
 
 		/* object moved to update_list, remove from user_list */
-		if(addto_update_list(pg_conn->update_list, ACCT_ADD_USER,
+		if(addto_update_list(pg_conn->update_list, SLURMDB_ADD_USER,
 				     object) == SLURM_SUCCESS)
 			list_remove(itr);
 
@@ -420,7 +420,7 @@ as_p_add_users(pgsql_conn_t *pg_conn, uint32_t uid, List user_list)
  */
 extern List
 as_p_modify_users(pgsql_conn_t *pg_conn, uint32_t uid,
-		  acct_user_cond_t *user_cond, acct_user_rec_t *user)
+		  slurmdb_user_cond_t *user_cond, slurmdb_user_rec_t *user)
 {
 	List ret_list = NULL;
 	int rc = SLURM_SUCCESS;
@@ -445,7 +445,7 @@ as_p_modify_users(pgsql_conn_t *pg_conn, uint32_t uid,
 		xstrfmtcat(vals, ", default_acct='%s'", user->default_acct);
 	if(user->default_wckey)
 		xstrfmtcat(vals, ", default_wckey='%s'", user->default_wckey);
-	if(user->admin_level != ACCT_ADMIN_NOTSET)
+	if(user->admin_level != SLURMDB_ADMIN_NOTSET)
 		xstrfmtcat(vals, ", admin_level=%u", user->admin_level);
 
 	if (!cond || !vals) {
@@ -467,7 +467,7 @@ as_p_modify_users(pgsql_conn_t *pg_conn, uint32_t uid,
 	rc = 0;
 	ret_list = list_create(slurm_destroy_char);
 	FOR_EACH_ROW {
-		acct_user_rec_t *user_rec = NULL;
+		slurmdb_user_rec_t *user_rec = NULL;
 		object = xstrdup(ROW(0));
 		list_append(ret_list, object);
 		if (!rc) {
@@ -476,12 +476,12 @@ as_p_modify_users(pgsql_conn_t *pg_conn, uint32_t uid,
 		} else  {
 			xstrfmtcat(name_char, " OR name='%s'", object);
 		}
-		user_rec = xmalloc(sizeof(acct_user_rec_t));
+		user_rec = xmalloc(sizeof(slurmdb_user_rec_t));
 		user_rec->name = xstrdup(object);
 		user_rec->default_acct = xstrdup(user->default_acct);
 		user_rec->default_wckey = xstrdup(user->default_wckey);
 		user_rec->admin_level = user->admin_level;
-		addto_update_list(pg_conn->update_list, ACCT_MODIFY_USER,
+		addto_update_list(pg_conn->update_list, SLURMDB_MODIFY_USER,
 				  user_rec);
 	} END_EACH_ROW;
 	PQclear(result);
@@ -519,7 +519,7 @@ as_p_modify_users(pgsql_conn_t *pg_conn, uint32_t uid,
  */
 extern List
 as_p_remove_users(pgsql_conn_t *pg_conn, uint32_t uid,
-		  acct_user_cond_t *user_cond)
+		  slurmdb_user_cond_t *user_cond)
 {
 	List ret_list = NULL, coord_list = NULL;
 	char *user_name = NULL, *assoc_char = NULL;
@@ -527,9 +527,9 @@ as_p_remove_users(pgsql_conn_t *pg_conn, uint32_t uid,
 	time_t now = time(NULL);
 	int rc = SLURM_SUCCESS;
 	PGresult *result = NULL;
-	acct_user_cond_t user_coord_cond;
-	acct_association_cond_t assoc_cond;
-	acct_wckey_cond_t wckey_cond;
+	slurmdb_user_cond_t user_coord_cond;
+	slurmdb_association_cond_t assoc_cond;
+	slurmdb_wckey_cond_t wckey_cond;
 
 	if (!user_cond) {
 		error("as/pg: remove_users: we need something to remove");
@@ -555,9 +555,9 @@ as_p_remove_users(pgsql_conn_t *pg_conn, uint32_t uid,
 		return NULL;
 	}
 
-	memset(&user_coord_cond, 0, sizeof(acct_user_cond_t));
-	memset(&wckey_cond, 0, sizeof(acct_wckey_cond_t));
-	memset(&assoc_cond, 0, sizeof(acct_association_cond_t));
+	memset(&user_coord_cond, 0, sizeof(slurmdb_user_cond_t));
+	memset(&wckey_cond, 0, sizeof(slurmdb_wckey_cond_t));
+	memset(&assoc_cond, 0, sizeof(slurmdb_association_cond_t));
 	/*
 	 * objects in assoc_cond.user_list also in ret_list.
 	 * DO NOT xfree them. Hence the NULL parameter.
@@ -568,7 +568,7 @@ as_p_remove_users(pgsql_conn_t *pg_conn, uint32_t uid,
 	rc = 0;
 	ret_list = list_create(slurm_destroy_char);
 	FOR_EACH_ROW {
-		acct_user_rec_t *user_rec = NULL;
+		slurmdb_user_rec_t *user_rec = NULL;
 		char *object = xstrdup(ROW(0));
 
 		list_append(ret_list, object);
@@ -582,9 +582,9 @@ as_p_remove_users(pgsql_conn_t *pg_conn, uint32_t uid,
 			xstrfmtcat(name_char, " OR name='%s'", object);
 			xstrfmtcat(assoc_char, " OR t1.user_name='%s'", object);
 		}
-		user_rec = xmalloc(sizeof(acct_user_rec_t));
+		user_rec = xmalloc(sizeof(slurmdb_user_rec_t));
 		user_rec->name = xstrdup(object);
-		addto_update_list(pg_conn->update_list, ACCT_REMOVE_USER,
+		addto_update_list(pg_conn->update_list, SLURMDB_REMOVE_USER,
 				  user_rec);
 	} END_EACH_ROW;
 	PQclear(result);
@@ -622,7 +622,7 @@ as_p_remove_users(pgsql_conn_t *pg_conn, uint32_t uid,
 
 	/* TODO: why execute this query after remove_coords */
 /* 	query = xstrdup_printf("UPDATE %s AS t2 SET deleted=1, mod_time=%d " */
-/* 			       "WHERE %s", acct_coord_table, */
+/* 			       "WHERE %s", slurmdb_coord_table, */
 /* 			       now, assoc_char); */
 /* 	xfree(assoc_char); */
 /* 	rc = pgsql_db_query(pg_conn->db_conn, query); */
@@ -645,7 +645,7 @@ as_p_remove_users(pgsql_conn_t *pg_conn, uint32_t uid,
  * RET: the users
  */
 extern List
-as_p_get_users(pgsql_conn_t *pg_conn, uid_t uid, acct_user_cond_t *user_cond)
+as_p_get_users(pgsql_conn_t *pg_conn, uid_t uid, slurmdb_user_cond_t *user_cond)
 {
 	char *query = NULL, *cond = NULL;
 	List user_list = NULL;
@@ -653,7 +653,7 @@ as_p_get_users(pgsql_conn_t *pg_conn, uid_t uid, acct_user_cond_t *user_cond)
 	int is_admin = 1;
 	PGresult *result = NULL;
 	uint16_t private_data = 0;
-	acct_user_rec_t user;
+	slurmdb_user_rec_t user;
 	char *gu_fields = "name, default_acct, default_wckey, admin_level";
 	enum {
 		GU_NAME,
@@ -666,13 +666,13 @@ as_p_get_users(pgsql_conn_t *pg_conn, uid_t uid, acct_user_cond_t *user_cond)
 	if (check_db_connection(pg_conn) != SLURM_SUCCESS)
 		return NULL;
 
-	memset(&user, 0, sizeof(acct_user_rec_t));
+	memset(&user, 0, sizeof(slurmdb_user_rec_t));
 	user.uid = uid;
 
 	private_data = slurm_get_private_data();
 	if (private_data & PRIVATE_DATA_USERS) {
 		is_admin = is_user_min_admin_level(
-			pg_conn, uid, ACCT_ADMIN_OPERATOR);
+			pg_conn, uid, SLURMDB_ADMIN_OPERATOR);
 		if (!is_admin)
 			assoc_mgr_fill_in_user(pg_conn, &user, 1, NULL);
 	}
@@ -701,9 +701,9 @@ as_p_get_users(pgsql_conn_t *pg_conn, uid_t uid, acct_user_cond_t *user_cond)
 	if(!result)
 		return NULL;
 
-	user_list = list_create(destroy_acct_user_rec);
+	user_list = list_create(slurmdb_destroy_user_rec);
 	FOR_EACH_ROW {
-		acct_user_rec_t *user = xmalloc(sizeof(acct_user_rec_t));
+		slurmdb_user_rec_t *user = xmalloc(sizeof(slurmdb_user_rec_t));
 		list_append(user_list, user);
 
 		user->name = xstrdup(ROW(GU_NAME));
@@ -726,8 +726,8 @@ as_p_get_users(pgsql_conn_t *pg_conn, uid_t uid, acct_user_cond_t *user_cond)
 	/* get associations for users */
 	if(user_cond && user_cond->with_assocs) {
 		ListIterator assoc_itr = NULL;
-		acct_user_rec_t *user = NULL;
-		acct_association_rec_t *assoc = NULL;
+		slurmdb_user_rec_t *user = NULL;
+		slurmdb_association_rec_t *assoc = NULL;
 		List assoc_list = NULL;
 
 		/* Make sure we don't get any non-user associations
@@ -735,7 +735,7 @@ as_p_get_users(pgsql_conn_t *pg_conn, uid_t uid, acct_user_cond_t *user_cond)
 		 * defined */
 		if(!user_cond->assoc_cond)
 			user_cond->assoc_cond =
-				xmalloc(sizeof(acct_association_cond_t));
+				xmalloc(sizeof(slurmdb_association_cond_t));
 		if(!user_cond->assoc_cond->user_list)
 			user_cond->assoc_cond->user_list = list_create(NULL);
 
@@ -756,7 +756,7 @@ as_p_get_users(pgsql_conn_t *pg_conn, uid_t uid, acct_user_cond_t *user_cond)
 
 				if(!user->assoc_list)
 					user->assoc_list = list_create(
-						destroy_acct_association_rec);
+						slurmdb_destroy_association_rec);
 				list_append(user->assoc_list, assoc);
 				list_remove(assoc_itr);
 			}
@@ -771,12 +771,12 @@ get_wckeys:
 	/* get wckey for users */
 	if(user_cond && user_cond->with_wckeys) {
 		ListIterator wckey_itr = NULL;
-		acct_user_rec_t *user = NULL;
-		acct_wckey_rec_t *wckey = NULL;
+		slurmdb_user_rec_t *user = NULL;
+		slurmdb_wckey_rec_t *wckey = NULL;
 		List wckey_list = NULL;
-		acct_wckey_cond_t wckey_cond;
+		slurmdb_wckey_cond_t wckey_cond;
 
-		memset(&wckey_cond, 0, sizeof(acct_wckey_cond_t));
+		memset(&wckey_cond, 0, sizeof(slurmdb_wckey_cond_t));
 		if(user_cond->assoc_cond) {
 			wckey_cond.user_list =
 				user_cond->assoc_cond->user_list;
@@ -800,7 +800,7 @@ get_wckeys:
 
 				if(!user->wckey_list)
 					user->wckey_list = list_create(
-						destroy_acct_wckey_rec);
+						slurmdb_destroy_wckey_rec);
 				list_append(user->wckey_list, wckey);
 				list_remove(wckey_itr);
 			}
@@ -825,14 +825,14 @@ get_wckeys:
  */
 extern int
 as_p_add_coord(pgsql_conn_t *pg_conn, uint32_t uid,
-	       List acct_list, acct_user_cond_t *user_cond)
+	       List acct_list, slurmdb_user_cond_t *user_cond)
 {
 	char *query = NULL, *user = NULL, *acct = NULL;
 	char *user_name = NULL, *vals = NULL, *txn_query = NULL;
 	ListIterator itr, itr2;
 	time_t now = time(NULL);
 	int rc = SLURM_SUCCESS;
-	acct_user_rec_t *user_rec = NULL;
+	slurmdb_user_rec_t *user_rec = NULL;
 
 	if(!user_cond || !user_cond->assoc_cond
 	   || !user_cond->assoc_cond->user_list
@@ -852,14 +852,14 @@ as_p_add_coord(pgsql_conn_t *pg_conn, uint32_t uid,
 		while((acct = list_next(itr2))) {
 			/*
 			 * order of vals must match structure of
-			 * acct_coord_table: creation_time, mod_time, deleted,
+			 * slurmdb_coord_table: creation_time, mod_time, deleted,
 			 * acct, user_name
 			 * CAST is required in ARRAY
 			 */
 			if(vals)
 				xstrcat(vals, ", ");
 			xstrfmtcat(vals, "CAST((%d, %d, 0, '%s', '%s') AS %s)",
-				   now, now, acct, user, acct_coord_table);
+				   now, now, acct, user, slurmdb_coord_table);
 
 			if(txn_query)
 				xstrfmtcat(txn_query,
@@ -896,11 +896,11 @@ as_p_add_coord(pgsql_conn_t *pg_conn, uint32_t uid,
 		/* get the update list set */
 		itr = list_iterator_create(user_cond->assoc_cond->user_list);
 		while((user = list_next(itr))) {
-			user_rec = xmalloc(sizeof(acct_user_rec_t));
+			user_rec = xmalloc(sizeof(slurmdb_user_rec_t));
 			user_rec->name = xstrdup(user);
 			_get_user_coords(pg_conn, user_rec);
 			addto_update_list(pg_conn->update_list,
-					  ACCT_ADD_COORD, user_rec);
+					  SLURMDB_ADD_COORD, user_rec);
 		}
 		list_iterator_destroy(itr);
 	}
@@ -919,16 +919,16 @@ as_p_add_coord(pgsql_conn_t *pg_conn, uint32_t uid,
  */
 extern List
 as_p_remove_coord(pgsql_conn_t *pg_conn, uint32_t uid,
-		  List acct_list, acct_user_cond_t *user_cond)
+		  List acct_list, slurmdb_user_cond_t *user_cond)
 {
 	List user_list = NULL;
-	acct_user_rec_t user;
+	slurmdb_user_rec_t user;
 	char *query = NULL, *cond = NULL, *last_user = NULL;
 	char *user_name = NULL;
 	time_t now = time(NULL);
 	int is_admin=0, rc;
 	ListIterator itr = NULL;
-	acct_user_rec_t *user_rec = NULL;
+	slurmdb_user_rec_t *user_rec = NULL;
 	List ret_list = NULL;
 	PGresult *result = NULL;
 
@@ -941,11 +941,11 @@ as_p_remove_coord(pgsql_conn_t *pg_conn, uint32_t uid,
 	if (check_db_connection(pg_conn) != SLURM_SUCCESS)
 		return NULL;
 
-	memset(&user, 0, sizeof(acct_user_rec_t));
+	memset(&user, 0, sizeof(slurmdb_user_rec_t));
 	user.uid = uid;
 
 	is_admin = is_user_min_admin_level(
-		pg_conn, uid, ACCT_ADMIN_OPERATOR);
+		pg_conn, uid, SLURMDB_ADMIN_OPERATOR);
 	if (!is_admin && ! is_user_any_coord(pg_conn, &user)) {
 		error("as/pg: remove_coord: user not admin or any coord");
 		return NULL;
@@ -961,7 +961,7 @@ as_p_remove_coord(pgsql_conn_t *pg_conn, uint32_t uid,
 
 	query = xstrdup_printf("SELECT user_name, acct FROM %s "
 			       "WHERE deleted=0 %s ORDER BY user_name",
-			       acct_coord_table, cond);
+			       slurmdb_coord_table, cond);
 	/* cond used below */
 	result = DEF_QUERY_RET;
 	if(!result) {
@@ -974,7 +974,7 @@ as_p_remove_coord(pgsql_conn_t *pg_conn, uint32_t uid,
 	user_list = list_create(slurm_destroy_char);
 	FOR_EACH_ROW {
 		if(!is_admin) {
-			acct_coord_rec_t *coord = NULL;
+			slurmdb_coord_rec_t *coord = NULL;
 			itr = list_iterator_create(user.coord_accts);
 			while((coord = list_next(itr))) {
 				if(!strcasecmp(coord->name, ROW(1)))
@@ -1008,7 +1008,7 @@ as_p_remove_coord(pgsql_conn_t *pg_conn, uint32_t uid,
 	/* cond begins with "AND ()" since constructed with concat_cond_list() */
 	/* TODO: fix this */
 	rc = aspg_remove_common(pg_conn, DBD_REMOVE_ACCOUNT_COORDS, now,
-				user_name, acct_coord_table, (cond + 4), NULL);
+				user_name, slurmdb_coord_table, (cond + 4), NULL);
 	xfree(user_name);
 	xfree(cond);
 	if (rc != SLURM_SUCCESS) {
@@ -1021,11 +1021,11 @@ as_p_remove_coord(pgsql_conn_t *pg_conn, uint32_t uid,
 	/* get the update list set */
 	itr = list_iterator_create(user_list);
 	while((last_user = list_next(itr))) {
-		user_rec = xmalloc(sizeof(acct_user_rec_t));
+		user_rec = xmalloc(sizeof(slurmdb_user_rec_t));
 		user_rec->name = xstrdup(last_user);
 		_get_user_coords(pg_conn, user_rec);
 		addto_update_list(pg_conn->update_list,
-				  ACCT_REMOVE_COORD, user_rec);
+				  SLURMDB_REMOVE_COORD, user_rec);
 	}
 	list_iterator_destroy(itr);
 	list_destroy(user_list);
@@ -1044,7 +1044,7 @@ as_p_remove_coord(pgsql_conn_t *pg_conn, uint32_t uid,
  */
 extern int
 get_user_no_assocs_or_no_uid(pgsql_conn_t *pg_conn,
-			     acct_association_cond_t *assoc_q,
+			     slurmdb_association_cond_t *assoc_q,
 			     List ret_list)
 {
 	int rc = SLURM_SUCCESS;
@@ -1064,14 +1064,14 @@ get_user_no_assocs_or_no_uid(pgsql_conn_t *pg_conn,
 
 	FOR_EACH_ROW {
 		PGresult *result2 = NULL;
-		acct_association_rec_t *assoc = NULL;
+		slurmdb_association_rec_t *assoc = NULL;
 		uid_t pw_uid;
 		char *name = ROW(0);
 
 		if (uid_from_string (name, &pw_uid) < 0) {
-			assoc =	xmalloc(sizeof(acct_association_rec_t));
+			assoc =	xmalloc(sizeof(slurmdb_association_rec_t));
 			list_append(ret_list, assoc);
-			assoc->id = ACCT_PROBLEM_USER_NO_UID;
+			assoc->id = SLURMDB_PROBLEM_USER_NO_UID;
 			assoc->user = xstrdup(name);
 			continue;
 		}
@@ -1086,9 +1086,9 @@ get_user_no_assocs_or_no_uid(pgsql_conn_t *pg_conn,
 			break;
 		}
 		if (PQntuples(result2) == 0) {
-			assoc =	xmalloc(sizeof(acct_association_rec_t));
+			assoc =	xmalloc(sizeof(slurmdb_association_rec_t));
 			list_append(ret_list, assoc);
-			assoc->id = ACCT_PROBLEM_USER_NO_ASSOC;
+			assoc->id = SLURMDB_PROBLEM_USER_NO_ASSOC;
 			assoc->user = xstrdup(name);
 		}
 		PQclear(result2);

@@ -321,7 +321,7 @@ aspg_remove_common(pgsql_conn_t *pg_conn, uint16_t type, time_t now,
 	 * check if there are jobs associated with the related associations.
 	 * if true, do not deleted the entities physically for accouting.
 	 */
-	if (table == acct_coord_table) {
+	if (table == slurmdb_coord_table) {
 		/* jobs not directly relate to coordinators. */
 	} else if (table == qos_table || table == wckey_table) {
 		has_jobs = _check_jobs_before_remove_without_assoctable(
@@ -362,7 +362,7 @@ aspg_remove_common(pgsql_conn_t *pg_conn, uint16_t type, time_t now,
 
 	/* done if not assoc related entities */
 	if(table == qos_table ||
-	   table == acct_coord_table ||
+	   table == slurmdb_coord_table ||
 	   table == wckey_table)
 		return SLURM_SUCCESS;
 
@@ -387,7 +387,7 @@ aspg_remove_common(pgsql_conn_t *pg_conn, uint16_t type, time_t now,
 		}
 		itr = list_iterator_create(assoc_list);
 		while((id = list_next(itr))) {
-			acct_association_rec_t *rem_assoc;
+			slurmdb_association_rec_t *rem_assoc;
 
 			if(!rc) {
 				xstrfmtcat(loc_assoc_char, "t1.id=%s", id);
@@ -395,12 +395,12 @@ aspg_remove_common(pgsql_conn_t *pg_conn, uint16_t type, time_t now,
 			} else {
 				xstrfmtcat(loc_assoc_char, " OR t1.id=%s", id);
 			}
-			rem_assoc = xmalloc(sizeof(acct_association_rec_t));
-			init_acct_association_rec(rem_assoc);
+			rem_assoc = xmalloc(sizeof(slurmdb_association_rec_t));
+			slurmdb_init_association_rec(rem_assoc);
 
 			rem_assoc->id = atoi(id);
 			if(addto_update_list(pg_conn->update_list,
-				     ACCT_REMOVE_ASSOC,
+				     SLURMDB_REMOVE_ASSOC,
 				     rem_assoc) != SLURM_SUCCESS)
 				error("couldn't add to the update list");
 		}
@@ -570,7 +570,7 @@ static void _destroy_local_cluster(void *object)
  * RET: cluster record list
  */
 extern List
-setup_cluster_list_with_inx(pgsql_conn_t *pg_conn, acct_job_cond_t *job_cond,
+setup_cluster_list_with_inx(pgsql_conn_t *pg_conn, slurmdb_job_cond_t *job_cond,
 			    void **curr_cluster)
 {
 	List local_cluster_list = NULL;

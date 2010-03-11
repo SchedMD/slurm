@@ -188,7 +188,7 @@ static void         _init_config(void);
 static void         _init_pidfile(void);
 static void         _kill_old_slurmctld(void);
 static void         _parse_commandline(int argc, char *argv[]);
-static void         _remove_assoc(acct_association_rec_t *rec);
+static void         _remove_assoc(slurmdb_association_rec_t *rec);
 inline static int   _report_locks_set(void);
 static void *       _service_connection(void *arg);
 static int          _shutdown_backup_controller(int wait_time);
@@ -1122,7 +1122,7 @@ static int _accounting_mark_all_nodes_down(char *reason)
 	return rc;
 }
 
-static void _remove_assoc(acct_association_rec_t *rec)
+static void _remove_assoc(slurmdb_association_rec_t *rec)
 {
 	int cnt = 0;
 
@@ -1752,8 +1752,8 @@ static void *_assoc_cache_mgr(void *no_data)
 {
 	ListIterator itr = NULL;
 	struct job_record *job_ptr = NULL;
-	acct_qos_rec_t qos_rec;
-	acct_association_rec_t assoc_rec;
+	slurmdb_qos_rec_t qos_rec;
+	slurmdb_association_rec_t assoc_rec;
 	/* Write lock on jobs, read lock on nodes and partitions */
 	slurmctld_lock_t job_write_lock =
 		{ NO_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
@@ -1781,7 +1781,7 @@ static void *_assoc_cache_mgr(void *no_data)
 	itr = list_iterator_create(job_list);
 	while ((job_ptr = list_next(itr))) {
 		if(job_ptr->assoc_id) {
-			memset(&assoc_rec, 0, sizeof(acct_association_rec_t));
+			memset(&assoc_rec, 0, sizeof(slurmdb_association_rec_t));
 			assoc_rec.id = job_ptr->assoc_id;
 
 			debug("assoc is %x (%d) for job %u",
@@ -1791,7 +1791,7 @@ static void *_assoc_cache_mgr(void *no_data)
 			if (assoc_mgr_fill_in_assoc(
 				    acct_db_conn, &assoc_rec,
 				    accounting_enforce,
-				    (acct_association_rec_t **)
+				    (slurmdb_association_rec_t **)
 				    &job_ptr->assoc_ptr)) {
 				verbose("Invalid association id %u "
 					"for job id %u",
@@ -1805,12 +1805,12 @@ static void *_assoc_cache_mgr(void *no_data)
 			      job_ptr->job_id);
 		}
 		if(job_ptr->qos) {
-			memset(&qos_rec, 0, sizeof(acct_qos_rec_t));
+			memset(&qos_rec, 0, sizeof(slurmdb_qos_rec_t));
 			qos_rec.id = job_ptr->qos;
 			if((assoc_mgr_fill_in_qos(
 				    acct_db_conn, &qos_rec,
 				    accounting_enforce,
-				    (acct_qos_rec_t **)&job_ptr->qos_ptr))
+				    (slurmdb_qos_rec_t **)&job_ptr->qos_ptr))
 			   != SLURM_SUCCESS) {
 				verbose("Invalid qos (%u) for job_id %u",
 					job_ptr->qos, job_ptr->job_id);

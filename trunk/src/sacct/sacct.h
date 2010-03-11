@@ -150,7 +150,7 @@ typedef enum {
 } sacct_print_types_t;
 
 typedef struct {
-	acct_job_cond_t *job_cond;
+	slurmdb_job_cond_t *job_cond;
 	int opt_completion;	/* --completion */
 	int opt_dump;		/* --dump */
 	int opt_dup;		/* --duplicates; +1 = explicitly set */
@@ -176,7 +176,7 @@ extern List qos_list;
 
 /* process.c */
 char *find_hostname(uint32_t pos, char *hosts);
-void aggregate_sacct(sacct_t *dest, sacct_t *from);
+void aggregate_stats(slurmdb_stats_t *dest, slurmdb_stats_t *from);
 
 /* print.c */
 void print_fields(type_t type, void *object);

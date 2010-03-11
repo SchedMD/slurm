@@ -442,12 +442,13 @@ extern Buf pack_slurmdbd_msg(uint16_t rpc_version, slurmdbd_msg_t *req)
 		break;
 	case DBD_ADD_ACCOUNT_COORDS:
 	case DBD_REMOVE_ACCOUNT_COORDS:
-		slurmdbd_pack_acct_coord_msg(rpc_version,
-					     (dbd_acct_coord_msg_t *)req->data,
-					     buffer);
+		slurmdbd_pack_acct_coord_msg(
+			rpc_version,
+			(dbd_acct_coord_msg_t *)req->data,
+			buffer);
 		break;
 	case DBD_ARCHIVE_LOAD:
-		pack_acct_archive_rec(req->data, rpc_version, buffer);
+		slurmdb_pack_archive_rec(req->data, rpc_version, buffer);
 		break;
 	case DBD_CLUSTER_CPUS:
 	case DBD_FLUSH_JOBS:
@@ -618,7 +619,7 @@ extern int unpack_slurmdbd_msg(uint16_t rpc_version,
 			(dbd_acct_coord_msg_t **)&resp->data, buffer);
 		break;
 	case DBD_ARCHIVE_LOAD:
-		rc = unpack_acct_archive_rec(&resp->data, rpc_version, buffer);
+		rc = slurmdb_unpack_archive_rec(&resp->data, rpc_version, buffer);
 		break;
 	case DBD_CLUSTER_CPUS:
 	case DBD_FLUSH_JOBS:
@@ -2085,7 +2086,7 @@ void inline slurmdbd_free_acct_coord_msg(dbd_acct_coord_msg_t *msg)
 			list_destroy(msg->acct_list);
 			msg->acct_list = NULL;
 		}
-		destroy_acct_user_cond(msg->cond);
+		slurmdb_destroy_user_cond(msg->cond);
 		xfree(msg);
 	}
 }
@@ -2108,7 +2109,7 @@ void inline slurmdbd_free_rec_msg(slurmdbd_msg_type_t type,
 		case DBD_ADD_RESV:
 		case DBD_REMOVE_RESV:
 		case DBD_MODIFY_RESV:
-			my_destroy = destroy_acct_reservation_rec;
+			my_destroy = slurmdb_destroy_reservation_rec;
 			break;
 		default:
 			fatal("Unknown rec type");
@@ -2129,43 +2130,43 @@ void inline slurmdbd_free_cond_msg(slurmdbd_msg_type_t type,
 		switch(type) {
 		case DBD_GET_ACCOUNTS:
 		case DBD_REMOVE_ACCOUNTS:
-			my_destroy = destroy_acct_account_cond;
+			my_destroy = slurmdb_destroy_account_cond;
 			break;
 		case DBD_GET_ASSOCS:
 		case DBD_GET_PROBS:
 		case DBD_REMOVE_ASSOCS:
-			my_destroy = destroy_acct_association_cond;
+			my_destroy = slurmdb_destroy_association_cond;
 			break;
 		case DBD_GET_CLUSTERS:
 		case DBD_REMOVE_CLUSTERS:
-			my_destroy = destroy_acct_cluster_cond;
+			my_destroy = slurmdb_destroy_cluster_cond;
 			break;
 		case DBD_GET_JOBS_COND:
-			my_destroy = destroy_acct_job_cond;
+			my_destroy = slurmdb_destroy_job_cond;
 			break;
 		case DBD_GET_QOS:
 		case DBD_REMOVE_QOS:
-			my_destroy = destroy_acct_qos_cond;
+			my_destroy = slurmdb_destroy_qos_cond;
 			break;
 		case DBD_GET_WCKEYS:
 		case DBD_REMOVE_WCKEYS:
-			my_destroy = destroy_acct_wckey_cond;
+			my_destroy = slurmdb_destroy_wckey_cond;
 			break;
 		case DBD_GET_TXN:
-			my_destroy = destroy_acct_txn_cond;
+			my_destroy = slurmdb_destroy_txn_cond;
 			break;
 		case DBD_GET_USERS:
 		case DBD_REMOVE_USERS:
-			my_destroy = destroy_acct_user_cond;
+			my_destroy = slurmdb_destroy_user_cond;
 			break;
 		case DBD_ARCHIVE_DUMP:
-			my_destroy = destroy_acct_archive_cond;
+			my_destroy = slurmdb_destroy_archive_cond;
 			break;
 		case DBD_GET_RESVS:
-			my_destroy = destroy_acct_reservation_cond;
+			my_destroy = slurmdb_destroy_reservation_cond;
 			break;
 		case DBD_GET_EVENTS:
-			my_destroy = destroy_acct_event_cond;
+			my_destroy = slurmdb_destroy_event_cond;
 			break;
 		default:
 			fatal("Unknown cond type");
@@ -2253,24 +2254,24 @@ void inline slurmdbd_free_modify_msg(slurmdbd_msg_type_t type,
 	if (msg) {
 		switch(type) {
 		case DBD_MODIFY_ACCOUNTS:
-			destroy_cond = destroy_acct_account_cond;
-			destroy_rec = destroy_acct_account_rec;
+			destroy_cond = slurmdb_destroy_account_cond;
+			destroy_rec = slurmdb_destroy_account_rec;
 			break;
 		case DBD_MODIFY_ASSOCS:
-			destroy_cond = destroy_acct_association_cond;
-			destroy_rec = destroy_acct_association_rec;
+			destroy_cond = slurmdb_destroy_association_cond;
+			destroy_rec = slurmdb_destroy_association_rec;
 			break;
 		case DBD_MODIFY_CLUSTERS:
-			destroy_cond = destroy_acct_cluster_cond;
-			destroy_rec = destroy_acct_cluster_rec;
+			destroy_cond = slurmdb_destroy_cluster_cond;
+			destroy_rec = slurmdb_destroy_cluster_rec;
 			break;
 		case DBD_MODIFY_QOS:
-			destroy_cond = destroy_acct_qos_cond;
-			destroy_rec = destroy_acct_qos_rec;
+			destroy_cond = slurmdb_destroy_qos_cond;
+			destroy_rec = slurmdb_destroy_qos_rec;
 			break;
 		case DBD_MODIFY_USERS:
-			destroy_cond = destroy_acct_user_cond;
-			destroy_rec = destroy_acct_user_rec;
+			destroy_cond = slurmdb_destroy_user_cond;
+			destroy_rec = slurmdb_destroy_user_rec;
 			break;
 		default:
 			fatal("Unknown modify type");
@@ -2338,15 +2339,15 @@ void inline slurmdbd_free_usage_msg(slurmdbd_msg_type_t type,
 		switch(type) {
 		case DBD_GET_ASSOC_USAGE:
 		case DBD_GOT_ASSOC_USAGE:
-			destroy_rec = destroy_acct_association_rec;
+			destroy_rec = slurmdb_destroy_association_rec;
 			break;
 		case DBD_GET_CLUSTER_USAGE:
 		case DBD_GOT_CLUSTER_USAGE:
-			destroy_rec = destroy_acct_cluster_rec;
+			destroy_rec = slurmdb_destroy_cluster_rec;
 			break;
 		case DBD_GET_WCKEY_USAGE:
 		case DBD_GOT_WCKEY_USAGE:
-			destroy_rec = destroy_acct_wckey_rec;
+			destroy_rec = slurmdb_destroy_wckey_rec;
 			break;
 		default:
 			fatal("Unknown usuage type");
@@ -2383,7 +2384,7 @@ slurmdbd_pack_acct_coord_msg(uint16_t rpc_version,
 	}
 	count = 0;
 
-	pack_acct_user_cond(msg->cond, rpc_version, buffer);
+	slurmdb_pack_user_cond(msg->cond, rpc_version, buffer);
 }
 
 int inline
@@ -2406,7 +2407,7 @@ slurmdbd_unpack_acct_coord_msg(uint16_t rpc_version,
 		}
 	}
 
-	if(unpack_acct_user_cond((void *)&msg_ptr->cond, rpc_version, buffer)
+	if(slurmdb_unpack_user_cond((void *)&msg_ptr->cond, rpc_version, buffer)
 	   == SLURM_ERROR)
 		goto unpack_error;
 	return SLURM_SUCCESS;
@@ -2475,7 +2476,7 @@ void inline slurmdbd_pack_rec_msg(uint16_t rpc_version,
 	case DBD_ADD_RESV:
 	case DBD_REMOVE_RESV:
 	case DBD_MODIFY_RESV:
-		my_function = pack_acct_reservation_rec;
+		my_function = slurmdb_pack_reservation_rec;
 		break;
 	default:
 		fatal("Unknown pack type");
@@ -2496,7 +2497,7 @@ int inline slurmdbd_unpack_rec_msg(uint16_t rpc_version,
 	case DBD_ADD_RESV:
 	case DBD_REMOVE_RESV:
 	case DBD_MODIFY_RESV:
-		my_function = unpack_acct_reservation_rec;
+		my_function = slurmdb_unpack_reservation_rec;
 		break;
 	default:
 		fatal("Unknown unpack type");
@@ -2526,43 +2527,43 @@ void inline slurmdbd_pack_cond_msg(uint16_t rpc_version,
 	switch(type) {
 	case DBD_GET_ACCOUNTS:
 	case DBD_REMOVE_ACCOUNTS:
-		my_function = pack_acct_account_cond;
+		my_function = slurmdb_pack_account_cond;
 		break;
 	case DBD_GET_ASSOCS:
 	case DBD_GET_PROBS:
 	case DBD_REMOVE_ASSOCS:
-		my_function = pack_acct_association_cond;
+		my_function = slurmdb_pack_association_cond;
 		break;
 	case DBD_GET_CLUSTERS:
 	case DBD_REMOVE_CLUSTERS:
-		my_function = pack_acct_cluster_cond;
+		my_function = slurmdb_pack_cluster_cond;
 		break;
 	case DBD_GET_JOBS_COND:
-		my_function = pack_acct_job_cond;
+		my_function = slurmdb_pack_job_cond;
 		break;
 	case DBD_GET_QOS:
 	case DBD_REMOVE_QOS:
-		my_function = pack_acct_qos_cond;
+		my_function = slurmdb_pack_qos_cond;
 		break;
 	case DBD_GET_WCKEYS:
 	case DBD_REMOVE_WCKEYS:
-		my_function = pack_acct_wckey_cond;
+		my_function = slurmdb_pack_wckey_cond;
 		break;
 	case DBD_GET_USERS:
 	case DBD_REMOVE_USERS:
-		my_function = pack_acct_user_cond;
+		my_function = slurmdb_pack_user_cond;
 		break;
 	case DBD_GET_TXN:
-		my_function = pack_acct_txn_cond;
+		my_function = slurmdb_pack_txn_cond;
 		break;
 	case DBD_ARCHIVE_DUMP:
-		my_function = pack_acct_archive_cond;
+		my_function = slurmdb_pack_archive_cond;
 		break;
 	case DBD_GET_RESVS:
-		my_function = pack_acct_reservation_cond;
+		my_function = slurmdb_pack_reservation_cond;
 		break;
 	case DBD_GET_EVENTS:
-		my_function = pack_acct_event_cond;
+		my_function = slurmdb_pack_event_cond;
 		break;
 	default:
 		fatal("Unknown pack type");
@@ -2582,43 +2583,43 @@ int inline slurmdbd_unpack_cond_msg(uint16_t rpc_version,
 	switch(type) {
 	case DBD_GET_ACCOUNTS:
 	case DBD_REMOVE_ACCOUNTS:
-		my_function = unpack_acct_account_cond;
+		my_function = slurmdb_unpack_account_cond;
 		break;
 	case DBD_GET_ASSOCS:
 	case DBD_GET_PROBS:
 	case DBD_REMOVE_ASSOCS:
-		my_function = unpack_acct_association_cond;
+		my_function = slurmdb_unpack_association_cond;
 		break;
 	case DBD_GET_CLUSTERS:
 	case DBD_REMOVE_CLUSTERS:
-		my_function = unpack_acct_cluster_cond;
+		my_function = slurmdb_unpack_cluster_cond;
 		break;
 	case DBD_GET_JOBS_COND:
-		my_function = unpack_acct_job_cond;
+		my_function = slurmdb_unpack_job_cond;
 		break;
 	case DBD_GET_QOS:
 	case DBD_REMOVE_QOS:
-		my_function = unpack_acct_qos_cond;
+		my_function = slurmdb_unpack_qos_cond;
 		break;
 	case DBD_GET_WCKEYS:
 	case DBD_REMOVE_WCKEYS:
-		my_function = unpack_acct_wckey_cond;
+		my_function = slurmdb_unpack_wckey_cond;
 		break;
 	case DBD_GET_USERS:
 	case DBD_REMOVE_USERS:
-		my_function = unpack_acct_user_cond;
+		my_function = slurmdb_unpack_user_cond;
 		break;
 	case DBD_GET_TXN:
-		my_function = unpack_acct_txn_cond;
+		my_function = slurmdb_unpack_txn_cond;
 		break;
 	case DBD_ARCHIVE_DUMP:
-		my_function = unpack_acct_archive_cond;
+		my_function = slurmdb_unpack_archive_cond;
 		break;
 	case DBD_GET_RESVS:
-		my_function = unpack_acct_reservation_cond;
+		my_function = slurmdb_unpack_reservation_cond;
 		break;
 	case DBD_GET_EVENTS:
-		my_function = unpack_acct_event_cond;
+		my_function = slurmdb_unpack_event_cond;
 		break;
 	default:
 		fatal("Unknown unpack type");
@@ -2644,7 +2645,7 @@ void inline slurmdbd_pack_get_jobs_msg(uint16_t rpc_version,
 {
 	uint32_t i = 0;
 	ListIterator itr = NULL;
-	jobacct_selected_step_t *job = NULL;
+	slurmdb_selected_step_t *job = NULL;
 	char *part = NULL;
 
 	packstr(msg->cluster_name, buffer);
@@ -2662,7 +2663,7 @@ void inline slurmdbd_pack_get_jobs_msg(uint16_t rpc_version,
 	if(i) {
 		itr = list_iterator_create(msg->selected_steps);
 		while((job = list_next(itr))) {
-			pack_jobacct_selected_step(job, rpc_version, buffer);
+			slurmdb_pack_selected_step(job, rpc_version, buffer);
 		}
 		list_iterator_destroy(itr);
 	}
@@ -2689,7 +2690,7 @@ int inline slurmdbd_unpack_get_jobs_msg(uint16_t rpc_version,
 	uint32_t count = 0;
 	uint32_t uint32_tmp;
 	dbd_get_jobs_msg_t *msg_ptr;
-	jobacct_selected_step_t *job = NULL;
+	slurmdb_selected_step_t *job = NULL;
 	char *part = NULL;
 
 	msg_ptr = xmalloc(sizeof(dbd_get_jobs_msg_t));
@@ -2706,9 +2707,9 @@ int inline slurmdbd_unpack_get_jobs_msg(uint16_t rpc_version,
 	safe_unpack32(&count, buffer);
 	if(count) {
 		msg_ptr->selected_steps =
-			list_create(destroy_jobacct_selected_step);
+			list_create(slurmdb_destroy_selected_step);
 		for(i=0; i<count; i++) {
-			unpack_jobacct_selected_step(&job, rpc_version, buffer);
+			slurmdb_unpack_selected_step(&job, rpc_version, buffer);
 			list_append(msg_ptr->selected_steps, job);
 		}
 	}
@@ -2849,16 +2850,6 @@ slurmdbd_pack_job_complete_msg(uint16_t rpc_version,
 		pack32(msg->req_uid, buffer);
 		pack_time(msg->start_time, buffer);
 		pack_time(msg->submit_time, buffer);
-	} else {
-		pack32(msg->assoc_id, buffer);
-		pack32(msg->db_index, buffer);
-		pack_time(msg->end_time, buffer);
-		pack32(msg->exit_code, buffer);
-		pack32(msg->job_id, buffer);
-		pack16(msg->job_state, buffer);
-		packstr(msg->nodes, buffer);
-		pack_time(msg->start_time, buffer);
-		pack_time(msg->submit_time, buffer);
 	}
 }
 
@@ -2879,16 +2870,6 @@ slurmdbd_unpack_job_complete_msg(uint16_t rpc_version,
 		safe_unpack16(&msg_ptr->job_state, buffer);
 		safe_unpackstr_xmalloc(&msg_ptr->nodes, &uint32_tmp, buffer);
 		safe_unpack32(&msg_ptr->req_uid, buffer);
-		safe_unpack_time(&msg_ptr->start_time, buffer);
-		safe_unpack_time(&msg_ptr->submit_time, buffer);
-	} else {
-		safe_unpack32(&msg_ptr->assoc_id, buffer);
-		safe_unpack32(&msg_ptr->db_index, buffer);
-		safe_unpack_time(&msg_ptr->end_time, buffer);
-		safe_unpack32(&msg_ptr->exit_code, buffer);
-		safe_unpack32(&msg_ptr->job_id, buffer);
-		safe_unpack16(&msg_ptr->job_state, buffer);
-		safe_unpackstr_xmalloc(&msg_ptr->nodes, &uint32_tmp, buffer);
 		safe_unpack_time(&msg_ptr->start_time, buffer);
 		safe_unpack_time(&msg_ptr->submit_time, buffer);
 	}
@@ -3090,46 +3071,46 @@ void inline slurmdbd_pack_list_msg(uint16_t rpc_version,
 	switch(type) {
 	case DBD_ADD_ACCOUNTS:
 	case DBD_GOT_ACCOUNTS:
-		my_function = pack_acct_account_rec;
+		my_function = slurmdb_pack_account_rec;
 		break;
 	case DBD_ADD_ASSOCS:
 	case DBD_GOT_ASSOCS:
 	case DBD_GOT_PROBS:
-		my_function = pack_acct_association_rec;
+		my_function = slurmdb_pack_association_rec;
 		break;
 	case DBD_ADD_CLUSTERS:
 	case DBD_GOT_CLUSTERS:
-		my_function = pack_acct_cluster_rec;
+		my_function = slurmdb_pack_cluster_rec;
 		break;
 	case DBD_GOT_CONFIG:
 		my_function = pack_config_key_pair;
 		break;
 	case DBD_GOT_JOBS:
-		my_function = pack_jobacct_job_rec;
+		my_function = slurmdb_pack_job_rec;
 		break;
 	case DBD_GOT_LIST:
 		my_function = _slurmdbd_packstr;
 		break;
 	case DBD_ADD_QOS:
 	case DBD_GOT_QOS:
-		my_function = pack_acct_qos_rec;
+		my_function = slurmdb_pack_qos_rec;
 		break;
 	case DBD_GOT_RESVS:
-		my_function = pack_acct_reservation_rec;
+		my_function = slurmdb_pack_reservation_rec;
 		break;
 	case DBD_ADD_WCKEYS:
 	case DBD_GOT_WCKEYS:
-		my_function = pack_acct_wckey_rec;
+		my_function = slurmdb_pack_wckey_rec;
 		break;
 	case DBD_ADD_USERS:
 	case DBD_GOT_USERS:
-		my_function = pack_acct_user_rec;
+		my_function = slurmdb_pack_user_rec;
 		break;
 	case DBD_GOT_TXN:
-		my_function = pack_acct_txn_rec;
+		my_function = slurmdb_pack_txn_rec;
 		break;
 	case DBD_GOT_EVENTS:
-		my_function = pack_acct_event_rec;
+		my_function = slurmdb_pack_event_rec;
 		break;
 	default:
 		fatal("Unknown pack type");
@@ -3165,27 +3146,27 @@ int inline slurmdbd_unpack_list_msg(uint16_t rpc_version,
 	switch(type) {
 	case DBD_ADD_ACCOUNTS:
 	case DBD_GOT_ACCOUNTS:
-		my_function = unpack_acct_account_rec;
-		my_destroy = destroy_acct_account_rec;
+		my_function = slurmdb_unpack_account_rec;
+		my_destroy = slurmdb_destroy_account_rec;
 		break;
 	case DBD_ADD_ASSOCS:
 	case DBD_GOT_ASSOCS:
 	case DBD_GOT_PROBS:
-		my_function = unpack_acct_association_rec;
-		my_destroy = destroy_acct_association_rec;
+		my_function = slurmdb_unpack_association_rec;
+		my_destroy = slurmdb_destroy_association_rec;
 		break;
 	case DBD_ADD_CLUSTERS:
 	case DBD_GOT_CLUSTERS:
-		my_function = unpack_acct_cluster_rec;
-		my_destroy = destroy_acct_cluster_rec;
+		my_function = slurmdb_unpack_cluster_rec;
+		my_destroy = slurmdb_destroy_cluster_rec;
 		break;
 	case DBD_GOT_CONFIG:
 		my_function = unpack_config_key_pair;
 		my_destroy = destroy_config_key_pair;
 		break;
 	case DBD_GOT_JOBS:
-		my_function = unpack_jobacct_job_rec;
-		my_destroy = destroy_jobacct_job_rec;
+		my_function = slurmdb_unpack_job_rec;
+		my_destroy = slurmdb_destroy_job_rec;
 		break;
 	case DBD_GOT_LIST:
 		my_function = _slurmdbd_unpackstr;
@@ -3193,30 +3174,30 @@ int inline slurmdbd_unpack_list_msg(uint16_t rpc_version,
 		break;
 	case DBD_ADD_QOS:
 	case DBD_GOT_QOS:
-		my_function = unpack_acct_qos_rec;
-		my_destroy = destroy_acct_qos_rec;
+		my_function = slurmdb_unpack_qos_rec;
+		my_destroy = slurmdb_destroy_qos_rec;
 		break;
 	case DBD_GOT_RESVS:
-		my_function = unpack_acct_reservation_rec;
-		my_destroy = destroy_acct_reservation_rec;
+		my_function = slurmdb_unpack_reservation_rec;
+		my_destroy = slurmdb_destroy_reservation_rec;
 		break;
 	case DBD_ADD_WCKEYS:
 	case DBD_GOT_WCKEYS:
-		my_function = unpack_acct_wckey_rec;
-		my_destroy = destroy_acct_wckey_rec;
+		my_function = slurmdb_unpack_wckey_rec;
+		my_destroy = slurmdb_destroy_wckey_rec;
 		break;
 	case DBD_ADD_USERS:
 	case DBD_GOT_USERS:
-		my_function = unpack_acct_user_rec;
-		my_destroy = destroy_acct_user_rec;
+		my_function = slurmdb_unpack_user_rec;
+		my_destroy = slurmdb_destroy_user_rec;
 		break;
 	case DBD_GOT_TXN:
-		my_function = unpack_acct_txn_rec;
-		my_destroy = destroy_acct_txn_rec;
+		my_function = slurmdb_unpack_txn_rec;
+		my_destroy = slurmdb_destroy_txn_rec;
 		break;
 	case DBD_GOT_EVENTS:
-		my_function = unpack_acct_event_rec;
-		my_destroy = destroy_acct_event_rec;
+		my_function = slurmdb_unpack_event_rec;
+		my_destroy = slurmdb_destroy_event_rec;
 		break;
 	default:
 		fatal("Unknown unpack type");
@@ -3256,24 +3237,24 @@ void inline slurmdbd_pack_modify_msg(uint16_t rpc_version,
 
 	switch(type) {
 	case DBD_MODIFY_ACCOUNTS:
-		my_cond = pack_acct_account_cond;
-		my_rec = pack_acct_account_rec;
+		my_cond = slurmdb_pack_account_cond;
+		my_rec = slurmdb_pack_account_rec;
 		break;
 	case DBD_MODIFY_ASSOCS:
-		my_cond = pack_acct_association_cond;
-		my_rec = pack_acct_association_rec;
+		my_cond = slurmdb_pack_association_cond;
+		my_rec = slurmdb_pack_association_rec;
 		break;
 	case DBD_MODIFY_CLUSTERS:
-		my_cond = pack_acct_cluster_cond;
-		my_rec = pack_acct_cluster_rec;
+		my_cond = slurmdb_pack_cluster_cond;
+		my_rec = slurmdb_pack_cluster_rec;
 		break;
 	case DBD_MODIFY_QOS:
-		my_cond = pack_acct_qos_cond;
-		my_rec = pack_acct_qos_rec;
+		my_cond = slurmdb_pack_qos_cond;
+		my_rec = slurmdb_pack_qos_rec;
 		break;
 	case DBD_MODIFY_USERS:
-		my_cond = pack_acct_user_cond;
-		my_rec = pack_acct_user_rec;
+		my_cond = slurmdb_pack_user_cond;
+		my_rec = slurmdb_pack_user_rec;
 		break;
 	default:
 		fatal("Unknown pack type");
@@ -3296,24 +3277,24 @@ int inline slurmdbd_unpack_modify_msg(uint16_t rpc_version,
 
 	switch(type) {
 	case DBD_MODIFY_ACCOUNTS:
-		my_cond = unpack_acct_account_cond;
-		my_rec = unpack_acct_account_rec;
+		my_cond = slurmdb_unpack_account_cond;
+		my_rec = slurmdb_unpack_account_rec;
 		break;
 	case DBD_MODIFY_ASSOCS:
-		my_cond = unpack_acct_association_cond;
-		my_rec = unpack_acct_association_rec;
+		my_cond = slurmdb_unpack_association_cond;
+		my_rec = slurmdb_unpack_association_rec;
 		break;
 	case DBD_MODIFY_CLUSTERS:
-		my_cond = unpack_acct_cluster_cond;
-		my_rec = unpack_acct_cluster_rec;
+		my_cond = slurmdb_unpack_cluster_cond;
+		my_rec = slurmdb_unpack_cluster_rec;
 		break;
 	case DBD_MODIFY_QOS:
-		my_cond = unpack_acct_qos_cond;
-		my_rec = unpack_acct_qos_rec;
+		my_cond = slurmdb_unpack_qos_cond;
+		my_rec = slurmdb_unpack_qos_rec;
 		break;
 	case DBD_MODIFY_USERS:
-		my_cond = unpack_acct_user_cond;
-		my_rec = unpack_acct_user_rec;
+		my_cond = slurmdb_unpack_user_cond;
+		my_rec = slurmdb_unpack_user_rec;
 		break;
 	default:
 		fatal("Unknown unpack type");
@@ -3465,8 +3446,6 @@ slurmdbd_pack_roll_usage_msg(uint16_t rpc_version,
 		pack16(msg->archive_data, buffer);
 		pack_time(msg->end, buffer);
 		pack_time(msg->start, buffer);
-	} else {
-		pack_time(msg->start, buffer);
 	}
 }
 
@@ -3481,8 +3460,6 @@ slurmdbd_unpack_roll_usage_msg(uint16_t rpc_version,
 	if(rpc_version >= 5) {
 		safe_unpack16(&msg_ptr->archive_data, buffer);
 		safe_unpack_time(&msg_ptr->end, buffer);
-		safe_unpack_time(&msg_ptr->start, buffer);
-	} else {
 		safe_unpack_time(&msg_ptr->start, buffer);
 	}
 	return SLURM_SUCCESS;
@@ -3501,7 +3478,8 @@ slurmdbd_pack_step_complete_msg(uint16_t rpc_version,
 	pack32(msg->db_index, buffer);
 	pack_time(msg->end_time, buffer);
 	pack32(msg->exit_code, buffer);
-	jobacct_common_pack((struct jobacctinfo *)msg->jobacct, rpc_version, buffer);
+	jobacct_common_pack((struct jobacctinfo *)msg->jobacct,
+			    rpc_version, buffer);
 	pack32(msg->job_id, buffer);
 	pack32(msg->req_uid, buffer);
 	pack_time(msg->start_time, buffer);
@@ -3520,7 +3498,8 @@ slurmdbd_unpack_step_complete_msg(uint16_t rpc_version,
 	safe_unpack32(&msg_ptr->db_index, buffer);
 	safe_unpack_time(&msg_ptr->end_time, buffer);
 	safe_unpack32(&msg_ptr->exit_code, buffer);
-	jobacct_common_unpack((struct jobacctinfo **)&msg_ptr->jobacct, rpc_version, buffer);
+	jobacct_common_unpack((struct jobacctinfo **)&msg_ptr->jobacct,
+			      rpc_version, buffer);
 	safe_unpack32(&msg_ptr->job_id, buffer);
 	safe_unpack32(&msg_ptr->req_uid, buffer);
 	safe_unpack_time(&msg_ptr->start_time, buffer);
@@ -3553,16 +3532,6 @@ slurmdbd_pack_step_start_msg(uint16_t rpc_version, dbd_step_start_msg_t *msg,
 		pack16(msg->task_dist, buffer);
 		pack32(msg->total_cpus, buffer);
 		pack32(msg->total_tasks, buffer);
-	} else {
-		pack32(msg->assoc_id, buffer);
-		pack32(msg->db_index, buffer);
-		pack32(msg->job_id, buffer);
-		packstr(msg->name, buffer);
-		packstr(msg->nodes, buffer);
-		pack_time(msg->start_time, buffer);
-		pack_time(msg->job_submit_time, buffer);
-		pack32(msg->step_id, buffer);
-		pack32(msg->total_cpus, buffer);
 	}
 }
 
@@ -3587,16 +3556,6 @@ slurmdbd_unpack_step_start_msg(uint16_t rpc_version,
 		safe_unpack16(&msg_ptr->task_dist, buffer);
 		safe_unpack32(&msg_ptr->total_cpus, buffer);
 		safe_unpack32(&msg_ptr->total_tasks, buffer);
-	} else {
-		safe_unpack32(&msg_ptr->assoc_id, buffer);
-		safe_unpack32(&msg_ptr->db_index, buffer);
-		safe_unpack32(&msg_ptr->job_id, buffer);
-		safe_unpackstr_xmalloc(&msg_ptr->name, &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&msg_ptr->nodes, &uint32_tmp, buffer);
-		safe_unpack_time(&msg_ptr->start_time, buffer);
-		safe_unpack_time(&msg_ptr->job_submit_time, buffer);
-		safe_unpack32(&msg_ptr->step_id, buffer);
-		safe_unpack32(&msg_ptr->total_cpus, buffer);
 	}
 
 	return SLURM_SUCCESS;
@@ -3616,15 +3575,15 @@ void inline slurmdbd_pack_usage_msg(uint16_t rpc_version,
 	switch(type) {
 	case DBD_GET_ASSOC_USAGE:
 	case DBD_GOT_ASSOC_USAGE:
-		my_rec = pack_acct_association_rec;
+		my_rec = slurmdb_pack_association_rec;
 		break;
 	case DBD_GET_CLUSTER_USAGE:
 	case DBD_GOT_CLUSTER_USAGE:
-		my_rec = pack_acct_cluster_rec;
+		my_rec = slurmdb_pack_cluster_rec;
 		break;
 	case DBD_GET_WCKEY_USAGE:
 	case DBD_GOT_WCKEY_USAGE:
-		my_rec = pack_acct_wckey_rec;
+		my_rec = slurmdb_pack_wckey_rec;
 		break;
 	default:
 		fatal("Unknown pack type");
@@ -3649,15 +3608,15 @@ int inline slurmdbd_unpack_usage_msg(uint16_t rpc_version,
 	switch(type) {
 	case DBD_GET_ASSOC_USAGE:
 	case DBD_GOT_ASSOC_USAGE:
-		my_rec = unpack_acct_association_rec;
+		my_rec = slurmdb_unpack_association_rec;
 		break;
 	case DBD_GET_CLUSTER_USAGE:
 	case DBD_GOT_CLUSTER_USAGE:
-		my_rec = unpack_acct_cluster_rec;
+		my_rec = slurmdb_unpack_cluster_rec;
 		break;
 	case DBD_GET_WCKEY_USAGE:
 	case DBD_GOT_WCKEY_USAGE:
-		my_rec = unpack_acct_wckey_rec;
+		my_rec = slurmdb_unpack_wckey_rec;
 		break;
 	default:
 		fatal("Unknown pack type");

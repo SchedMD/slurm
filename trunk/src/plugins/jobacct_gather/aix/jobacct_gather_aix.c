@@ -601,8 +601,8 @@ extern struct jobacctinfo *jobacct_gather_p_remove_task(pid_t pid)
 	return jobacct_common_remove_task(pid, task_list);
 }
 
-extern void jobacct_gather_p_2_sacct(sacct_t *sacct,
+extern void jobacct_gather_p_2_stats(slurmdb_stats_t *stats,
 				     struct jobacctinfo *jobacct)
 {
-	jobacct_common_2_sacct(sacct, jobacct);
+	jobacct_common_2_stats(stats, jobacct);
 }

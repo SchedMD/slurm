@@ -149,7 +149,7 @@ end_it:
 
 
 static int _get_cluster_usage(mysql_conn_t *mysql_conn, uid_t uid,
-			      acct_cluster_rec_t *cluster_rec,
+			      slurmdb_cluster_rec_t *cluster_rec,
 			      slurmdbd_msg_type_t type,
 			      time_t start, time_t end)
 {
@@ -217,11 +217,11 @@ static int _get_cluster_usage(mysql_conn_t *mysql_conn, uid_t uid,
 
 	if(!cluster_rec->accounting_list)
 		cluster_rec->accounting_list =
-			list_create(destroy_cluster_accounting_rec);
+			list_create(slurmdb_destroy_cluster_accounting_rec);
 
 	while((row = mysql_fetch_row(result))) {
-		cluster_accounting_rec_t *accounting_rec =
-			xmalloc(sizeof(cluster_accounting_rec_t));
+		slurmdb_cluster_accounting_rec_t *accounting_rec =
+			xmalloc(sizeof(slurmdb_cluster_accounting_rec_t));
 		accounting_rec->alloc_secs = atoll(row[CLUSTER_ACPU]);
 		accounting_rec->down_secs = atoll(row[CLUSTER_DCPU]);
 		accounting_rec->pdown_secs = atoll(row[CLUSTER_PDCPU]);
@@ -257,9 +257,9 @@ extern int get_usage_for_list(mysql_conn_t *mysql_conn,
 	char *id_str = NULL;
 	ListIterator itr = NULL, u_itr = NULL;
 	void *object = NULL;
-	acct_association_rec_t *assoc = NULL;
-	acct_wckey_rec_t *wckey = NULL;
-	acct_accounting_rec_t *accounting_rec = NULL;
+	slurmdb_association_rec_t *assoc = NULL;
+	slurmdb_wckey_rec_t *wckey = NULL;
+	slurmdb_accounting_rec_t *accounting_rec = NULL;
 
 	/* Since for id in association table we
 	   use t3 and in wckey table we use t1 we can't define it here */
@@ -383,11 +383,11 @@ extern int get_usage_for_list(mysql_conn_t *mysql_conn,
 	}
 	xfree(query);
 
-	usage_list = list_create(destroy_acct_accounting_rec);
+	usage_list = list_create(slurmdb_destroy_accounting_rec);
 
 	while((row = mysql_fetch_row(result))) {
-		acct_accounting_rec_t *accounting_rec =
-			xmalloc(sizeof(acct_accounting_rec_t));
+		slurmdb_accounting_rec_t *accounting_rec =
+			xmalloc(sizeof(slurmdb_accounting_rec_t));
 		accounting_rec->id = atoi(row[USAGE_ID]);
 		accounting_rec->period_start = atoi(row[USAGE_START]);
 		accounting_rec->alloc_secs = atoll(row[USAGE_ACPU]);
@@ -404,18 +404,18 @@ extern int get_usage_for_list(mysql_conn_t *mysql_conn,
 
 		switch (type) {
 		case DBD_GET_ASSOC_USAGE:
-			assoc = (acct_association_rec_t *)object;
+			assoc = (slurmdb_association_rec_t *)object;
 			if(!assoc->accounting_list)
 				assoc->accounting_list = list_create(
-					destroy_acct_accounting_rec);
+					slurmdb_destroy_accounting_rec);
 			acct_list = assoc->accounting_list;
 			id = assoc->id;
 			break;
 		case DBD_GET_WCKEY_USAGE:
-			wckey = (acct_wckey_rec_t *)object;
+			wckey = (slurmdb_wckey_rec_t *)object;
 			if(!wckey->accounting_list)
 				wckey->accounting_list = list_create(
-					destroy_acct_accounting_rec);
+					slurmdb_destroy_accounting_rec);
 			acct_list = wckey->accounting_list;
 			id = wckey->id;
 			break;
@@ -468,12 +468,12 @@ extern int as_mysql_get_usage(mysql_conn_t *mysql_conn, uid_t uid,
 	MYSQL_ROW row;
 	char *tmp = NULL;
 	char *my_usage_table = NULL;
-	acct_association_rec_t *acct_assoc = in;
-	acct_wckey_rec_t *acct_wckey = in;
+	slurmdb_association_rec_t *slurmdb_assoc = in;
+	slurmdb_wckey_rec_t *slurmdb_wckey = in;
 	char *query = NULL;
 	char *username = NULL;
 	uint16_t private_data = 0;
-	acct_user_rec_t user;
+	slurmdb_user_rec_t user;
 	List *my_list;
 	uint32_t id = NO_VAL;
 	char *cluster_name = NULL;
@@ -496,10 +496,10 @@ extern int as_mysql_get_usage(mysql_conn_t *mysql_conn, uid_t uid,
 		};
 		usage_req_inx = temp_usage;
 
-		id = acct_assoc->id;
-		cluster_name = acct_assoc->cluster;
-		username = acct_assoc->user;
-		my_list = &acct_assoc->accounting_list;
+		id = slurmdb_assoc->id;
+		cluster_name = slurmdb_assoc->cluster;
+		username = slurmdb_assoc->user;
+		my_list = &slurmdb_assoc->accounting_list;
 		my_usage_table = assoc_day_table;
 		break;
 	}
@@ -512,10 +512,10 @@ extern int as_mysql_get_usage(mysql_conn_t *mysql_conn, uid_t uid,
 		};
 		usage_req_inx = temp_usage;
 
-		id = acct_wckey->id;
-		cluster_name = acct_wckey->cluster;
-		username = acct_wckey->user;
-		my_list = &acct_wckey->accounting_list;
+		id = slurmdb_wckey->id;
+		cluster_name = slurmdb_wckey->cluster;
+		username = slurmdb_wckey->user;
+		my_list = &slurmdb_wckey->accounting_list;
 		my_usage_table = wckey_day_table;
 		break;
 	}
@@ -542,18 +542,18 @@ extern int as_mysql_get_usage(mysql_conn_t *mysql_conn, uid_t uid,
 	if(check_connection(mysql_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
 
-	memset(&user, 0, sizeof(acct_user_rec_t));
+	memset(&user, 0, sizeof(slurmdb_user_rec_t));
 	user.uid = uid;
 
 	private_data = slurm_get_private_data();
 	if (private_data & PRIVATE_DATA_USAGE) {
 		if(!(is_admin = is_user_min_admin_level(
-			     mysql_conn, uid, ACCT_ADMIN_OPERATOR))) {
+			     mysql_conn, uid, SLURMDB_ADMIN_OPERATOR))) {
 			ListIterator itr = NULL;
-			acct_coord_rec_t *coord = NULL;
+			slurmdb_coord_rec_t *coord = NULL;
 			is_user_any_coord(mysql_conn, &user);
 
-			if(username && !strcmp(acct_assoc->user, user.name))
+			if(username && !strcmp(slurmdb_assoc->user, user.name))
 				goto is_user;
 
 			if(type != DBD_GET_ASSOC_USAGE)
@@ -564,7 +564,7 @@ extern int as_mysql_get_usage(mysql_conn_t *mysql_conn, uid_t uid,
 				goto bad_user;
 			}
 
-			if(!acct_assoc->acct) {
+			if(!slurmdb_assoc->acct) {
 				debug("No account name given "
 				      "in association.");
 				goto bad_user;
@@ -572,7 +572,7 @@ extern int as_mysql_get_usage(mysql_conn_t *mysql_conn, uid_t uid,
 
 			itr = list_iterator_create(user.coord_accts);
 			while((coord = list_next(itr)))
-				if(!strcasecmp(coord->name, acct_assoc->acct))
+				if(!strcasecmp(coord->name, slurmdb_assoc->acct))
 					break;
 			list_iterator_destroy(itr);
 
@@ -634,11 +634,11 @@ is_user:
 	xfree(query);
 
 	if(!(*my_list))
-		(*my_list) = list_create(destroy_acct_accounting_rec);
+		(*my_list) = list_create(slurmdb_destroy_accounting_rec);
 
 	while((row = mysql_fetch_row(result))) {
-		acct_accounting_rec_t *accounting_rec =
-			xmalloc(sizeof(acct_accounting_rec_t));
+		slurmdb_accounting_rec_t *accounting_rec =
+			xmalloc(sizeof(slurmdb_accounting_rec_t));
 		accounting_rec->id = atoi(row[USAGE_ID]);
 		accounting_rec->period_start = atoi(row[USAGE_START]);
 		accounting_rec->alloc_secs = atoll(row[USAGE_ACPU]);
@@ -885,8 +885,8 @@ extern int as_mysql_roll_usage(mysql_conn_t *mysql_conn,
 	slurm_mutex_lock(&as_mysql_cluster_list_lock);
 	itr = list_iterator_create(as_mysql_cluster_list);
 	while((tmp = list_next(itr))) {
-		pthread_t rollup_tid;
-		pthread_attr_t rollup_attr;
+		/* pthread_t rollup_tid; */
+		/* pthread_attr_t rollup_attr; */
 		local_rollup_t *local_rollup = xmalloc(sizeof(local_rollup_t));
 
 		local_rollup->archive_data = archive_data;
@@ -907,15 +907,21 @@ extern int as_mysql_roll_usage(mysql_conn_t *mysql_conn,
 		local_rollup->rolledup_lock = &rolledup_lock;
 		local_rollup->rolledup_cond = &rolledup_cond;
 
-		slurm_attr_init(&rollup_attr);
 		/* _cluster_rollup_usage is responsible for freeing
 		   this local_rollup */
-		/* _cluster_rollup_usage(local_rollup); */
-		if (pthread_create(&rollup_tid, &rollup_attr,
-				   _cluster_rollup_usage,
-				   (void *)local_rollup))
-			fatal("pthread_create: %m");
-		slurm_attr_destroy(&rollup_attr);
+		_cluster_rollup_usage(local_rollup);
+		/* It turns out doing this with threads only buys a
+		   very small victory, and can skew the timings.  So
+		   just doing them one after the other isn't too bad.
+		   If you really want to do this in threads you can
+		   just uncomment this, and comment the call above.
+		*/
+		/* slurm_attr_init(&rollup_attr); */
+		/* if (pthread_create(&rollup_tid, &rollup_attr, */
+		/* 		   _cluster_rollup_usage, */
+		/* 		   (void *)local_rollup)) */
+		/* 	fatal("pthread_create: %m"); */
+		/* slurm_attr_destroy(&rollup_attr); */
 	}
 	slurm_mutex_lock(&rolledup_lock);
 	list_iterator_destroy(itr);

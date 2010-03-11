@@ -41,7 +41,7 @@
 #include "as_mysql_problems.h"
 #include "src/common/uid.h"
 
-static int _setup_association_cond_limits(acct_association_cond_t *assoc_cond,
+static int _setup_association_cond_limits(slurmdb_association_cond_t *assoc_cond,
 					  char **extra, bool user_query)
 {
 	int set = 0;
@@ -105,7 +105,7 @@ static int _setup_association_cond_limits(acct_association_cond_t *assoc_cond,
 
 
 extern int as_mysql_acct_no_assocs(mysql_conn_t *mysql_conn,
-				acct_association_cond_t *assoc_cond,
+				slurmdb_association_cond_t *assoc_cond,
 				List ret_list)
 {
 	int rc = SLURM_SUCCESS;
@@ -154,7 +154,7 @@ extern int as_mysql_acct_no_assocs(mysql_conn_t *mysql_conn,
 	while((row = mysql_fetch_row(result))) {
 		MYSQL_RES *result2 = NULL;
 		int cnt = 0;
-		acct_association_rec_t *assoc = NULL;
+		slurmdb_association_rec_t *assoc = NULL;
 
 		/* See if we have at least 1 association in the system */
 		while((cluster_name = list_next(itr))) {
@@ -182,10 +182,10 @@ extern int as_mysql_acct_no_assocs(mysql_conn_t *mysql_conn,
 		if(cnt)
 			continue;
 
-		assoc =	xmalloc(sizeof(acct_association_rec_t));
+		assoc =	xmalloc(sizeof(slurmdb_association_rec_t));
 		list_append(ret_list, assoc);
 
-		assoc->id = ACCT_PROBLEM_ACCT_NO_ASSOC;
+		assoc->id = SLURMDB_PROBLEM_ACCT_NO_ASSOC;
 		assoc->acct = xstrdup(row[0]);
 	}
 	mysql_free_result(result);
@@ -198,7 +198,7 @@ extern int as_mysql_acct_no_assocs(mysql_conn_t *mysql_conn,
 }
 
 extern int as_mysql_acct_no_users(mysql_conn_t *mysql_conn,
-				acct_association_cond_t *assoc_cond,
+				slurmdb_association_cond_t *assoc_cond,
 				List ret_list)
 {
 	int rc = SLURM_SUCCESS;
@@ -272,12 +272,12 @@ extern int as_mysql_acct_no_users(mysql_conn_t *mysql_conn,
 	xfree(query);
 
 	while((row = mysql_fetch_row(result))) {
-		acct_association_rec_t *assoc =
-			xmalloc(sizeof(acct_association_rec_t));
+		slurmdb_association_rec_t *assoc =
+			xmalloc(sizeof(slurmdb_association_rec_t));
 
 		list_append(ret_list, assoc);
 
-		assoc->id = ACCT_PROBLEM_ACCT_NO_USERS;
+		assoc->id = SLURMDB_PROBLEM_ACCT_NO_USERS;
 
 		if(row[ASSOC_REQ_USER][0])
 			assoc->user = xstrdup(row[ASSOC_REQ_USER]);
@@ -296,7 +296,7 @@ extern int as_mysql_acct_no_users(mysql_conn_t *mysql_conn,
 }
 
 extern int as_mysql_user_no_assocs_or_no_uid(mysql_conn_t *mysql_conn,
-					  acct_association_cond_t *assoc_cond,
+					  slurmdb_association_cond_t *assoc_cond,
 					  List ret_list)
 {
 	int rc = SLURM_SUCCESS;
@@ -344,14 +344,14 @@ extern int as_mysql_user_no_assocs_or_no_uid(mysql_conn_t *mysql_conn,
 	while((row = mysql_fetch_row(result))) {
 		MYSQL_RES *result2 = NULL;
 		int cnt = 0;
-		acct_association_rec_t *assoc = NULL;
+		slurmdb_association_rec_t *assoc = NULL;
 		uid_t pw_uid;
 
 		if (uid_from_string (row[0], &pw_uid) < 0) {
-			assoc =	xmalloc(sizeof(acct_association_rec_t));
+			assoc =	xmalloc(sizeof(slurmdb_association_rec_t));
 			list_append(ret_list, assoc);
 
-			assoc->id = ACCT_PROBLEM_USER_NO_UID;
+			assoc->id = SLURMDB_PROBLEM_USER_NO_UID;
 			assoc->user = xstrdup(row[0]);
 
 			continue;
@@ -383,10 +383,10 @@ extern int as_mysql_user_no_assocs_or_no_uid(mysql_conn_t *mysql_conn,
 		if(cnt)
 			continue;
 
-		assoc =	xmalloc(sizeof(acct_association_rec_t));
+		assoc =	xmalloc(sizeof(slurmdb_association_rec_t));
 		list_append(ret_list, assoc);
 
-		assoc->id = ACCT_PROBLEM_USER_NO_ASSOC;
+		assoc->id = SLURMDB_PROBLEM_USER_NO_ASSOC;
 		assoc->user = xstrdup(row[0]);
 	}
 	mysql_free_result(result);
