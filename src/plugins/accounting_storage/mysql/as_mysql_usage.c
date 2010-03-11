@@ -885,8 +885,8 @@ extern int as_mysql_roll_usage(mysql_conn_t *mysql_conn,
 	slurm_mutex_lock(&as_mysql_cluster_list_lock);
 	itr = list_iterator_create(as_mysql_cluster_list);
 	while((tmp = list_next(itr))) {
-		pthread_t rollup_tid;
-		pthread_attr_t rollup_attr;
+		/* pthread_t rollup_tid; */
+		/* pthread_attr_t rollup_attr; */
 		local_rollup_t *local_rollup = xmalloc(sizeof(local_rollup_t));
 
 		local_rollup->archive_data = archive_data;
@@ -907,15 +907,21 @@ extern int as_mysql_roll_usage(mysql_conn_t *mysql_conn,
 		local_rollup->rolledup_lock = &rolledup_lock;
 		local_rollup->rolledup_cond = &rolledup_cond;
 
-		slurm_attr_init(&rollup_attr);
 		/* _cluster_rollup_usage is responsible for freeing
 		   this local_rollup */
-		/* _cluster_rollup_usage(local_rollup); */
-		if (pthread_create(&rollup_tid, &rollup_attr,
-				   _cluster_rollup_usage,
-				   (void *)local_rollup))
-			fatal("pthread_create: %m");
-		slurm_attr_destroy(&rollup_attr);
+		_cluster_rollup_usage(local_rollup);
+		/* It turns out doing this with threads only buys a
+		   very small victory, and can skew the timings.  So
+		   just doing them one after the other isn't too bad.
+		   If you really want to do this in threads you can
+		   just uncomment this, and comment the call above.
+		*/
+		/* slurm_attr_init(&rollup_attr); */
+		/* if (pthread_create(&rollup_tid, &rollup_attr, */
+		/* 		   _cluster_rollup_usage, */
+		/* 		   (void *)local_rollup)) */
+		/* 	fatal("pthread_create: %m"); */
+		/* slurm_attr_destroy(&rollup_attr); */
 	}
 	slurm_mutex_lock(&rolledup_lock);
 	list_iterator_destroy(itr);

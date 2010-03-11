@@ -40,100 +40,329 @@
 #  include "config.h"
 #endif
 
+#include <stdlib.h>
+
 #include <slurm/slurm.h>
 #include <slurm/slurm_errno.h>
 
 #include <slurm/slurmdb.h>
 
 #include "src/common/slurm_accounting_storage.h"
+#include "src/common/xstring.h"
 
-/* typedef struct { */
-/* 	List jobs; /\* This should be a NULL destroy since we are just */
-/* 		    * putting a pointer to a slurmdb_job_rect_t here */
-/* 		    * not allocating any new memory *\/ */
-/* 	uint32_t min_size; /\* smallest size of job in cpus here 0 if first *\/ */
-/* 	uint32_t max_size; /\* largest size of job in cpus here INFINITE if */
-/* 			    * last *\/ */
-/* 	uint32_t count; /\* count of jobs *\/ */
-/* 	uint64_t cpu_secs; /\* how many cpus secs taken up by this */
-/* 			    * grouping *\/ */
-/* } local_grouping_t; */
+static List _process_grouped_report(
+	slurmdb_job_cond_t *job_cond, List grouping_list,
+	bool flat_view, bool wckey_type)
+{
+	int exit_code = 0;
+	void *object = NULL;
 
-/* typedef struct { */
-/* 	char *acct; /\*account name *\/ */
-/* 	uint64_t cpu_secs; /\* how many cpus secs taken up by this */
-/* 			    * acct *\/ */
-/* 	List groups; /\* Names of what are being grouped char *'s*\/ */
-/* 	uint32_t lft; */
-/* 	uint32_t rgt; */
-/* } acct_grouping_t; */
-
-/* typedef struct { */
-/* 	char *cluster; /\*cluster name *\/ */
-/* 	uint64_t cpu_secs; /\* how many cpus secs taken up by this */
-/* 			    * cluster *\/ */
-/* 	List acct_list; /\* containing acct_grouping_t's *\/ */
-/* } cluster_grouping_t; */
+	ListIterator itr = NULL;
+	ListIterator cluster_itr = NULL;
+	ListIterator local_itr = NULL;
+	ListIterator acct_itr = NULL;
+	ListIterator group_itr = NULL;
 
 
-/* static void _destroy_local_grouping(void *object) */
-/* { */
-/* 	local_grouping_t *local_grouping = (local_grouping_t *)object; */
-/* 	if(local_grouping) { */
-/* 		list_destroy(local_grouping->jobs); */
-/* 		xfree(local_grouping); */
-/* 	} */
-/* } */
+	slurmdb_job_rec_t *job = NULL;
+	slurmdb_report_cluster_grouping_t *cluster_group = NULL;
+	slurmdb_report_acct_grouping_t *acct_group = NULL;
+	slurmdb_report_job_grouping_t *job_group = NULL;
 
-/* static void _destroy_acct_grouping(void *object) */
-/* { */
-/* 	acct_grouping_t *acct_grouping = (acct_grouping_t *)object; */
-/* 	if(acct_grouping) { */
-/* 		xfree(acct_grouping->acct); */
-/* 		if(acct_grouping->groups) */
-/* 			list_destroy(acct_grouping->groups); */
-/* 		xfree(acct_grouping); */
-/* 	} */
-/* } */
+	List job_list = NULL;
+	List cluster_list = NULL;
+	List object_list = NULL;
 
-/* static void _destroy_cluster_grouping(void *object) */
-/* { */
-/* 	cluster_grouping_t *cluster_grouping = (cluster_grouping_t *)object; */
-/* 	if(cluster_grouping) { */
-/* 		xfree(cluster_grouping->cluster); */
-/* 		if(cluster_grouping->acct_list) */
-/* 			list_destroy(cluster_grouping->acct_list); */
-/* 		xfree(cluster_grouping); */
-/* 	} */
-/* } */
+	List tmp_acct_list = NULL;
+	bool destroy_job_cond = 0;
+	bool destroy_grouping_list = 0;
+
+	uid_t my_uid = getuid();
+	void *db_conn = slurmdb_connection_get();
+
+	/* we don't want to actually query by accounts in the jobs
+	   here since we may be looking for sub accounts of a specific
+	   account.
+	*/
+	if(!job_cond) {
+		destroy_job_cond = 1;
+		job_cond = xmalloc(sizeof(slurmdb_job_cond_t));
+	}
+	if(!grouping_list) {
+		destroy_grouping_list = 1;
+		grouping_list = list_create(slurm_destroy_char);
+		slurm_addto_char_list(grouping_list, "50,250,500,1000");
+	}
+	tmp_acct_list = job_cond->acct_list;
+	job_cond->acct_list = NULL;
+
+	job_list = jobacct_storage_g_get_jobs_cond(db_conn, my_uid, job_cond);
+	job_cond->acct_list = tmp_acct_list;
+	tmp_acct_list = NULL;
+
+	if(!job_list) {
+		exit_code=1;
+		fprintf(stderr, " Problem with job query.\n");
+		goto end_it;
+	}
+
+	cluster_list = list_create(slurmdb_destroy_report_cluster_grouping);
+
+	cluster_itr = list_iterator_create(cluster_list);
+	group_itr = list_iterator_create(grouping_list);
+
+	if(flat_view)
+		goto no_objects;
+
+	if(wckey_type) {
+		slurmdb_wckey_cond_t wckey_cond;
+		memset(&wckey_cond, 0, sizeof(slurmdb_wckey_cond_t));
+		wckey_cond.name_list = job_cond->wckey_list;
+		wckey_cond.cluster_list = job_cond->cluster_list;
+
+		object_list = acct_storage_g_get_wckeys(db_conn, my_uid,
+							&wckey_cond);
+	} else {
+		slurmdb_association_cond_t assoc_cond;
+		memset(&assoc_cond, 0, sizeof(slurmdb_association_cond_t));
+		assoc_cond.id_list = job_cond->associd_list;
+		assoc_cond.cluster_list = job_cond->cluster_list;
+		/* don't limit associations to having the partition_list */
+		//assoc_cond.partition_list = job_cond->partition_list;
+		if(!job_cond->acct_list || !list_count(job_cond->acct_list)) {
+			if(job_cond->acct_list)
+				list_destroy(job_cond->acct_list);
+			job_cond->acct_list = list_create(NULL);
+			list_append(job_cond->acct_list, "root");
+		}
+		assoc_cond.parent_acct_list = job_cond->acct_list;
+		object_list = acct_storage_g_get_associations(db_conn, my_uid,
+							      &assoc_cond);
+	}
+
+	if(!object_list) {
+		debug2(" No join list given.\n");
+		goto no_objects;
+	}
+
+	itr = list_iterator_create(object_list);
+	while((object = list_next(itr))) {
+		char *cluster = NULL, *name = NULL;
+		slurmdb_wckey_rec_t *wckey = (slurmdb_wckey_rec_t *)object;
+		slurmdb_association_rec_t *assoc =
+			(slurmdb_association_rec_t *)object;
+
+		if(wckey_type) {
+			cluster = wckey->cluster;
+			name = wckey->name;
+		} else {
+			cluster = assoc->cluster;
+			name = assoc->acct;
+		}
+
+		while((cluster_group = list_next(cluster_itr))) {
+			if(!strcmp(cluster, cluster_group->cluster))
+				break;
+		}
+		if(!cluster_group) {
+			cluster_group = xmalloc(
+				sizeof(slurmdb_report_cluster_grouping_t));
+			cluster_group->cluster = xstrdup(cluster);
+			cluster_group->acct_list = list_create(
+				slurmdb_destroy_report_acct_grouping);
+			list_append(cluster_list, cluster_group);
+		}
+
+		acct_itr = list_iterator_create(cluster_group->acct_list);
+		while((acct_group = list_next(acct_itr))) {
+			if(!strcmp(name, acct_group->acct))
+				break;
+		}
+		list_iterator_destroy(acct_itr);
+
+		if(!acct_group) {
+			uint32_t last_size = 0;
+			char *group = NULL;
+			acct_group = xmalloc(
+				sizeof(slurmdb_report_acct_grouping_t));
+			acct_group->acct = xstrdup(name);
+			if(wckey_type)
+				acct_group->lft = wckey->id;
+			else {
+				acct_group->lft = assoc->lft;
+				acct_group->rgt = assoc->rgt;
+			}
+			acct_group->groups = list_create(
+				slurmdb_destroy_report_job_grouping);
+			list_append(cluster_group->acct_list, acct_group);
+			while((group = list_next(group_itr))) {
+				job_group = xmalloc(
+					sizeof(slurmdb_report_job_grouping_t));
+				job_group->jobs = list_create(NULL);
+				job_group->min_size = last_size;
+				last_size = atoi(group);
+				job_group->max_size = last_size-1;
+				list_append(acct_group->groups, job_group);
+			}
+			if(last_size) {
+				job_group = xmalloc(
+					sizeof(slurmdb_report_job_grouping_t));
+				job_group->jobs = list_create(NULL);
+				job_group->min_size = last_size;
+				job_group->max_size = INFINITE;
+				list_append(acct_group->groups, job_group);
+			}
+			list_iterator_reset(group_itr);
+		}
+		list_iterator_reset(cluster_itr);
+	}
+	list_iterator_destroy(itr);
+no_objects:
+	itr = list_iterator_create(job_list);
+
+	while((job = list_next(itr))) {
+		char *local_cluster = "UNKNOWN";
+		char *local_account = "UNKNOWN";
+
+		if(!job->elapsed) {
+			/* here we don't care about jobs that didn't
+			 * really run here */
+			continue;
+		}
+		if(job->cluster)
+			local_cluster = job->cluster;
+		if(job->account)
+			local_account = job->account;
+
+		list_iterator_reset(cluster_itr);
+		while((cluster_group = list_next(cluster_itr))) {
+			if(!strcmp(local_cluster, cluster_group->cluster))
+				break;
+		}
+		if(!cluster_group) {
+			/* here we are only looking for groups that
+			 * were added with the associations above
+			 */
+			if(!flat_view)
+				continue;
+			cluster_group = xmalloc(
+				sizeof(slurmdb_report_cluster_grouping_t));
+			cluster_group->cluster = xstrdup(local_cluster);
+			cluster_group->acct_list = list_create(
+				slurmdb_destroy_report_acct_grouping);
+			list_append(cluster_list, cluster_group);
+		}
+
+		acct_itr = list_iterator_create(cluster_group->acct_list);
+		while((acct_group = list_next(acct_itr))) {
+			if(wckey_type) {
+				if(!strcmp(job->wckey, acct_group->acct))
+					break;
+				continue;
+			}
+
+			if(!flat_view
+			   && (acct_group->lft != (uint32_t)NO_VAL)
+			   && (job->lft != (uint32_t)NO_VAL)) {
+				/* keep separate since we don't want
+				 * to so a strcmp if we don't have to
+				 */
+				if(job->lft > acct_group->lft
+				   && job->lft < acct_group->rgt)
+					break;
+			} else if(!strcmp(acct_group->acct, local_account))
+				break;
+		}
+		list_iterator_destroy(acct_itr);
+
+		if(!acct_group) {
+			char *group = NULL;
+			uint32_t last_size = 0;
+			/* here we are only looking for groups that
+			 * were added with the associations above
+			 */
+			if(!flat_view)
+				continue;
+
+			acct_group = xmalloc(
+				sizeof(slurmdb_report_acct_grouping_t));
+			acct_group->acct = xstrdup(local_account);
+			acct_group->groups = list_create(
+				slurmdb_destroy_report_job_grouping);
+			list_append(cluster_group->acct_list, acct_group);
+
+			while((group = list_next(group_itr))) {
+				job_group = xmalloc(
+					sizeof(slurmdb_report_job_grouping_t));
+				job_group->jobs = list_create(NULL);
+				job_group->min_size = last_size;
+				last_size = atoi(group);
+				job_group->max_size = last_size-1;
+				list_append(acct_group->groups, job_group);
+			}
+			if(last_size) {
+				job_group = xmalloc(
+					sizeof(slurmdb_report_job_grouping_t));
+				job_group->jobs = list_create(NULL);
+				job_group->min_size = last_size;
+				job_group->max_size = INFINITE;
+				list_append(acct_group->groups, job_group);
+			}
+			list_iterator_reset(group_itr);
+		}
+
+		local_itr = list_iterator_create(acct_group->groups);
+		while((job_group = list_next(local_itr))) {
+			uint64_t total_secs = 0;
+			if((job->alloc_cpus < job_group->min_size)
+			   || (job->alloc_cpus > job_group->max_size))
+				continue;
+			list_append(job_group->jobs, job);
+			job_group->count++;
+			total_secs = (uint64_t)job->elapsed
+				* (uint64_t)job->alloc_cpus;
+			job_group->cpu_secs += total_secs;
+			acct_group->cpu_secs += total_secs;
+			cluster_group->cpu_secs += total_secs;
+		}
+		list_iterator_destroy(local_itr);
+	}
+	list_iterator_destroy(itr);
+	list_iterator_destroy(group_itr);
+	list_iterator_destroy(cluster_itr);
+
+end_it:
+	if(object_list)
+		list_destroy(object_list);
+
+	if(destroy_job_cond)
+		slurmdb_destroy_job_cond(job_cond);
+
+	if(destroy_grouping_list && grouping_list)
+		list_destroy(grouping_list);
+
+	slurmdb_connection_close(&db_conn);
+
+	if(exit_code) {
+		if(cluster_list) {
+			list_destroy(cluster_list);
+			cluster_list = NULL;
+		}
+	}
+
+	return cluster_list;
+}
 
 
-/* extern List slurmdb_report_job_sizes_grouped_by_top_account( */
-/* 	slurmdb_job_cond_t *job_cond, List grouping_list) */
-/* { */
+extern List slurmdb_report_job_sizes_grouped_by_top_account(
+	slurmdb_job_cond_t *job_cond, List grouping_list, bool flat_view)
+{
+	return _process_grouped_report(job_cond, grouping_list, flat_view, 0);
+}
 
-/* 	/\* we don't want to actually query by accounts in the jobs */
-/* 	   here since we may be looking for sub accounts of a specific */
-/* 	   account. */
-/* 	*\/ */
-/* 	tmp_acct_list = job_cond->acct_list; */
-/* 	job_cond->acct_list = NULL; */
-/* 	job_list = jobacct_storage_g_get_jobs_cond(db_conn, my_uid, job_cond); */
-/* 	job_cond->acct_list = tmp_acct_list; */
-/* 	tmp_acct_list = NULL; */
+extern List slurmdb_report_job_sizes_grouped_by_wckey(
+	slurmdb_job_cond_t *job_cond, List grouping_list)
+{
 
-/* 	if(!job_list) { */
-/* 		exit_code=1; */
-/* 		fprintf(stderr, " Problem with job query.\n"); */
-/* 		goto end_it; */
-/* 	} */
-
-
-
-/* } */
-
-/* extern List slurmdb_report_job_sizes_grouped_by_wckey( */
-/* 	slurmdb_job_cond_t *job_cond) */
-/* { */
-
-/* } */
+	return _process_grouped_report(job_cond, grouping_list, 0, 1);
+}
