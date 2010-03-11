@@ -501,16 +501,15 @@ slurm_get_select_jobinfo_char_type(slurm_t self, SV* jobinfo = NULL, int data_ty
 U16
 slurm_get_select_nodeinfo_subcnt(slurm_t self, SV *nodeinfo, int state)
 	CODE:
+		RETVAL = -1;
 		if(nodeinfo) {
-			uint16_t tmp16;
-			RETVAL = slurm_get_select_nodeinfo(
-				(select_nodeinfo_t *)SV2ptr(nodeinfo),
-				 SELECT_NODEDATA_SUBCNT, state, &tmp16);
-			if(RETVAL != -1) {
+	                uint16_t tmp16;
+			int rc = slurm_get_select_nodeinfo(
+			   	(select_nodeinfo_t *)SV2ptr(nodeinfo),
+				SELECT_NODEDATA_SUBCNT, state, &tmp16);
+			if(rc != -1) {
 				RETVAL = tmp16;
 			}
-		} else {
-			RETVAL = -1;
 		}
 	OUTPUT:
 		RETVAL
@@ -518,16 +517,15 @@ slurm_get_select_nodeinfo_subcnt(slurm_t self, SV *nodeinfo, int state)
 U16
 slurm_get_select_nodeinfo_subgrp_size(slurm_t self, SV *nodeinfo)
 	CODE:
+		RETVAL = -1;
 		if(nodeinfo) {
 			uint16_t tmp16;
-			RETVAL = slurm_get_select_nodeinfo(
+			int rc = slurm_get_select_nodeinfo(
 				(select_nodeinfo_t *)SV2ptr(nodeinfo),
 				SELECT_NODEDATA_SUBGRP_SIZE, 0, &tmp16);
-			if(RETVAL != -1) {
+			if(rc != -1) {
 				RETVAL = tmp16;
 			}
-		} else {
-			RETVAL = -1;
 		}
 	OUTPUT:
 		RETVAL
