@@ -59,7 +59,7 @@ job_info_to_hv(job_info_t* job_info, HV* hv)
 	if(job_info->licenses)
 		STORE_FIELD(hv, job_info, licenses, charp);
 	if(job_info->max_cpus)
-		STORE_FIELD(hv, job_info, max_cpus, charp);
+		STORE_FIELD(hv, job_info, max_cpus, uint32_t);
 	STORE_FIELD(hv, job_info, max_nodes, uint32_t);
 	STORE_FIELD(hv, job_info, min_cores, uint16_t);
 	STORE_FIELD(hv, job_info, min_sockets, uint16_t);
