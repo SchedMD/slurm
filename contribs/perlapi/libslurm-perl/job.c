@@ -58,6 +58,8 @@ job_info_to_hv(job_info_t* job_info, HV* hv)
 	STORE_FIELD(hv, job_info, job_state, uint16_t);
 	if(job_info->licenses)
 		STORE_FIELD(hv, job_info, licenses, charp);
+	if(job_info->max_cpus)
+		STORE_FIELD(hv, job_info, max_cpus, charp);
 	STORE_FIELD(hv, job_info, max_nodes, uint32_t);
 	STORE_FIELD(hv, job_info, min_cores, uint16_t);
 	STORE_FIELD(hv, job_info, min_sockets, uint16_t);
@@ -120,6 +122,8 @@ job_info_to_hv(job_info_t* job_info, HV* hv)
 	STORE_FIELD(hv, job_info, submit_time, time_t);
 	STORE_FIELD(hv, job_info, suspend_time, time_t);
 	STORE_FIELD(hv, job_info, time_limit, uint32_t);
+	if(job_info->time_min)
+		STORE_FIELD(hv, job_info, time_min, uint32_t);
 	STORE_FIELD(hv, job_info, user_id, uint32_t);
 	if(job_info->wckey)
 		STORE_FIELD(hv, job_info, wckey, charp);
