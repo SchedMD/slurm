@@ -443,10 +443,9 @@ void slurm_step_launch_wait_finish(slurm_step_ctx_t *ctx)
 				 *   be made smart enough to really ensure
 				 *   that a killed step never starts.
 				 */
-				slurm_kill_job_step(
-					ctx->job_id,
-					ctx->step_resp->job_step_id,
-					SIGKILL);
+				slurm_kill_job_step(ctx->job_id,
+						    ctx->step_resp->job_step_id,
+						    SIGKILL);
 				if (!sls->user_managed_io) {
 					client_io_handler_abort(sls->
 								io.normal);
@@ -471,12 +470,12 @@ void slurm_step_launch_wait_finish(slurm_step_ctx_t *ctx)
 		     ctx->job_id, ctx->step_resp->job_step_id);
 
 	/* task_exit_signal != 0 when srun receives a message that a task
-	   exited with a SIGTERM or SIGKILL.  Without this test, a hang in srun
-	   might occur when a node gets a hard power failure, and TCP does not
-	   indicate that the I/O connection closed.  The I/O thread could
-	   block waiting for an EOF message, even though the remote process
-	   has died.  In this case, use client_io_handler_abort to force the
-	   I/O thread to stop listening for stdout or stderr and shutdown.*/
+	 * exited with a SIGTERM or SIGKILL.  Without this test, a hang in srun
+	 * might occur when a node gets a hard power failure, and TCP does not
+	 * indicate that the I/O connection closed.  The I/O thread could
+	 * block waiting for an EOF message, even though the remote process
+	 * has died.  In this case, use client_io_handler_abort to force the
+	 * I/O thread to stop listening for stdout or stderr and shutdown. */
 	if (task_exit_signal && !sls->user_managed_io) {
 		client_io_handler_abort(sls->io.normal);
 	}
