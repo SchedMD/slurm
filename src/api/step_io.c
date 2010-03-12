@@ -352,9 +352,21 @@ _server_read(eio_obj_t *obj, List objs)
 		if ((n = read(obj->fd, buf, s->in_remaining)) < 0) {
 			if (errno == EINTR)
 				goto again;
-			if (errno == EAGAIN || errno == EWOULDBLOCK)
+			if ((errno == EAGAIN) || (errno == EWOULDBLOCK))
 				return SLURM_SUCCESS;
-			debug3("_server_read error: %m");
+			if (errno == ECONNRESET) {
+				/* The slurmstepd writes the message (header
+				 * plus data) in a single write(). We read the
+				 * header above OK, but the data can't be read.
+				 * I've confirmed the full write completes and
+				 * the file is closed at slurmstepd shutdown.
+				 * The reason for this error is unknown. -Moe */
+				debug("Stdout/err from task %u may be "
+				      "incomplete due to a network error",
+				      s->header.gtaskid);
+			} else {
+				debug3("_server_read error: %m");
+			}
 		}
 		if (n <= 0) { /* got eof or unhandled error */
 			if (s->cio->sls)
