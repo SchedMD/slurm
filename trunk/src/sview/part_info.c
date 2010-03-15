@@ -189,7 +189,7 @@ static display_data_t options_data_part[] = {
 	{G_TYPE_STRING, PART_PAGE, "Make Nodes Idle", TRUE, ADMIN_PAGE},
 	{G_TYPE_STRING, PART_PAGE, "Update Node Features", TRUE, ADMIN_PAGE},
 #endif
-	{G_TYPE_STRING, PART_PAGE, "Change Part State Up/Down",
+	{G_TYPE_STRING, PART_PAGE, "Change Part State",
 	 TRUE, ADMIN_PAGE},
 	{G_TYPE_STRING, PART_PAGE, "Edit Part", TRUE, ADMIN_PAGE},
 	{G_TYPE_STRING, JOB_PAGE, "Jobs", TRUE, PART_PAGE},
@@ -278,6 +278,10 @@ static void _set_active_combo_part(GtkComboBox *combo,
 			action = 0;
 		else if(!strcmp(temp_char, "down"))
 			action = 1;
+		else if(!strcmp(temp_char, "inactive"))
+			action = 2;
+		else if(!strcmp(temp_char, "drain"))
+			action = 3;
 		else
 			action = 0;
 		break;
@@ -523,8 +527,8 @@ static void _admin_edit_combo_box_part(GtkComboBox *combo,
 	gtk_tree_model_get(model, &iter, 1, &column, -1);
 
 	_set_part_msg(part_msg, name, column);
-
-	g_free(name);
+	if(name)
+		g_free(name);
 }
 
 static gboolean _admin_focus_out_part(GtkEntry *entry,
@@ -767,7 +771,23 @@ static void _layout_part_record(GtkTreeView *treeview,
 	for(i = 0; i < SORTID_CNT; i++) {
 		switch(i) {
 		case SORTID_PART_STATE:
-			up_down = part_ptr->state_up;
+			switch(part_ptr->state_up) {
+			case PARTITION_UP:
+				temp_char = "up";
+				break;
+			case PARTITION_DOWN:
+				temp_char = "down";
+				break;
+			case PARTITION_INACTIVE:
+				temp_char = "inactive";
+				break;
+			case PARTITION_DRAIN:
+				temp_char = "drain";
+				break;
+			default:
+				temp_char = "unknown";
+				break;
+			}
 			break;
 		case SORTID_ALTERNATE:
 			if(part_ptr->alternate)
@@ -1742,6 +1762,16 @@ extern GtkListStore *create_model_part(int type)
 				   0, "down",
 				   1, SORTID_PART_STATE,
 				   -1);
+		gtk_list_store_append(model, &iter);
+		gtk_list_store_set(model, &iter,
+				   0, "inactive",
+				   1, SORTID_PART_STATE,
+				   -1);
+		gtk_list_store_append(model, &iter);
+		gtk_list_store_set(model, &iter,
+				   0, "drain",
+				   1, SORTID_PART_STATE,
+				   -1);
 		break;
 	case SORTID_NODE_STATE:
 		model = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_INT);
@@ -2381,25 +2411,40 @@ extern void admin_part(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 
 	part_msg->name = xstrdup(partid);
 
-	if(!strcasecmp("Change Part State Up/Down", type)) {
-		char *state = NULL;
+	if(!strcasecmp("Change Part State", type)) {
+		GtkCellRenderer *renderer = NULL;
+		GtkTreeModel *model2 = GTK_TREE_MODEL(
+			create_model_part(SORTID_PART_STATE));
+		if(!model2) {
+			g_print("In change part, no model set up for %d(%s)\n",
+				SORTID_PART_STATE, partid);
+			return;
+		}
+		entry = gtk_combo_box_new_with_model(model2);
+		g_object_unref(model2);
+
+		_set_active_combo_part(GTK_COMBO_BOX(entry),
+				       model, iter, SORTID_PART_STATE);
+
+		g_signal_connect(entry, "changed",
+				 G_CALLBACK(_admin_edit_combo_box_part),
+				 part_msg);
+
+		renderer = gtk_cell_renderer_text_new();
+		gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(entry),
+					   renderer, TRUE);
+		gtk_cell_layout_add_attribute(GTK_CELL_LAYOUT(entry),
+					      renderer, "text", 0);
+
 		label = gtk_dialog_add_button(GTK_DIALOG(popup),
 					      GTK_STOCK_YES, GTK_RESPONSE_OK);
 		gtk_window_set_default(GTK_WINDOW(popup), label);
 		gtk_dialog_add_button(GTK_DIALOG(popup),
 				      GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL);
-		gtk_tree_model_get(model, iter, SORTID_PART_STATE, &state, -1);
-		if(!strcasecmp("down", state)) {
-			temp = "up";
-			part_msg->state_up = PARTITION_UP;
-		} else {
-			temp = "down";
-			part_msg->state_up = PARTITION_DOWN;
-		}
-		g_free(state);
+
 		snprintf(tmp_char, sizeof(tmp_char),
-			 "Are you sure you want to set partition %s %s?",
-			 partid, temp);
+			 "Which state would you like to set partition '%s' to?",
+			 partid);
 		label = gtk_label_new(tmp_char);
 		edit_type = EDIT_PART_STATE;
 	} else if(!strcasecmp("Edit Part", type)) {
