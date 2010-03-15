@@ -17,6 +17,9 @@ documents those changes that are of interest to users and admins.
  -- Add group membership cache. This can substantially speed up slurmctld
     startup or reconfiguration if many partitions have AllowGroups configured.
  -- Added slurmdb api for accessing slurm DB information.
+ -- In select/linear: Modify data structures for better performance and to 
+    avoid underflow error messages when slurmctld restarts while jobs are
+    in completing state.
 
 * Changes in SLURM 2.2.0.pre2
 =============================
