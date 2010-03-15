@@ -1,7 +1,7 @@
 AUTOMAKE_OPTIONS = foreign
 # copied from pidgin
 #
-perl_dir = libslurm-perl
+perl_dir = perl
 perlpath = /usr/bin/perl
 perl_sources = \
 	       $(perl_dir)/Makefile.PL.in \
