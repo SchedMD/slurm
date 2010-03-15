@@ -270,10 +270,13 @@ static int _set_assoc_parent_and_user(slurmdb_association_rec_t *assoc,
 			list_iterator_destroy(itr);
 		}
 		if(assoc->usage->parent_assoc_ptr && setup_childern) {
-			if(!assoc->usage->parent_assoc_ptr->usage->childern_list)
-				assoc->usage->parent_assoc_ptr->usage->childern_list =
+			if(!assoc->usage->
+			   parent_assoc_ptr->usage->childern_list)
+				assoc->usage->
+					parent_assoc_ptr->usage->childern_list =
 					list_create(NULL);
-			list_append(assoc->usage->parent_assoc_ptr->usage->childern_list,
+			list_append(assoc->usage->
+				    parent_assoc_ptr->usage->childern_list,
 				    assoc);
 		}
 
@@ -972,7 +975,8 @@ extern int assoc_mgr_get_user_assocs(void *db_conn,
 	}
 }
 
-extern int assoc_mgr_fill_in_assoc(void *db_conn, slurmdb_association_rec_t *assoc,
+extern int assoc_mgr_fill_in_assoc(void *db_conn,
+				   slurmdb_association_rec_t *assoc,
 				   int enforce,
 				   slurmdb_association_rec_t **assoc_pptr)
 {
@@ -1714,9 +1718,10 @@ extern List assoc_mgr_get_shares(void *db_conn,
 			share->user = 1;
 		} else {
 			share->name = xstrdup(assoc->acct);
-			if(!assoc->parent_acct && assoc->usage->parent_assoc_ptr)
-				share->parent =
-					xstrdup(assoc->usage->parent_assoc_ptr->acct);
+			if(!assoc->parent_acct
+			   && assoc->usage->parent_assoc_ptr)
+				share->parent = xstrdup(
+					assoc->usage->parent_assoc_ptr->acct);
 			else
 				share->parent = xstrdup(assoc->parent_acct);
 		}
@@ -1882,7 +1887,8 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update)
 							bit_alloc(g_qos_count);
 					}
 					set_qos_bitstr_from_list(
-						rec->usage->valid_qos, rec->qos_list);
+						rec->usage->valid_qos,
+						rec->qos_list);
 				}
 			}
 
