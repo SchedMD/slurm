@@ -42,11 +42,12 @@
    * make certain they match the rm_api.h values on the Service Node */
   enum rm_partition_state {RM_PARTITION_FREE,
 			   RM_PARTITION_CONFIGURING,
-			   RM_PARTITION_READY,
 #ifdef HAVE_BGL
+			   RM_PARTITION_READY,
 			   RM_PARTITION_BUSY,
 #else
 			   RM_PARTITION_REBOOTING,
+			   RM_PARTITION_READY,
 #endif
 			   RM_PARTITION_DEALLOCATING,
 			   RM_PARTITION_ERROR,
