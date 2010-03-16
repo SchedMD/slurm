@@ -773,8 +773,10 @@ _check_job_credential(launch_tasks_request_msg_t *req, uid_t uid,
 			error("step credential has no CPUs selected");
 		else {
 			i = conf->cpus / (i_last_bit - i_first_bit);
-			if (i > 1)
+			if (i > 1) {
+				info("scaling CPU count by factor of %d", i);
 				alloc_lps *= i;
+			}
 		}
 	} else
 		alloc_lps = 1;
