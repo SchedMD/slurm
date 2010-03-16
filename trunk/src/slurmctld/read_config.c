@@ -101,7 +101,7 @@ static void _purge_old_node_state(struct node_record *old_node_table_ptr,
 				int old_node_record_count);
 static void _purge_old_part_state(List old_part_list, char *old_def_part_name);
 static int  _restore_job_dependencies(void);
-static int  _restore_node_state(int recover, 
+static int  _restore_node_state(int recover,
 				struct node_record *old_node_table_ptr,
 				int old_node_record_count);
 static int  _restore_part_state(List old_part_list, char *old_def_part_name);
@@ -626,7 +626,7 @@ int read_slurm_conf(int recover, bool reconfig)
 		/* save node and partition states for reconfig RPC */
 		old_node_record_count = node_record_count;
 		old_node_table_ptr    = node_record_table_ptr;
-		for (i=0, node_ptr=old_node_table_ptr; i<node_record_count; 
+		for (i=0, node_ptr=old_node_table_ptr; i<node_record_count;
 		     i++, node_ptr++) {
 			xfree(node_ptr->arch);
 			xfree(node_ptr->features);
@@ -634,7 +634,7 @@ int read_slurm_conf(int recover, bool reconfig)
 			node_ptr->features = xstrdup(
 				node_ptr->config_ptr->feature);
 			/* Store the original configured CPU count somwhere
-			 * (port is reused here for that purpose) so we can 
+			 * (port is reused here for that purpose) so we can
 			 * report changes in its configuration. */
 			node_ptr->port   = node_ptr->config_ptr->cpus;
 			node_ptr->weight = node_ptr->config_ptr->weight;
@@ -692,7 +692,7 @@ int read_slurm_conf(int recover, bool reconfig)
 		}
 		if (old_part_list && (recover > 1)) {
 			info("restoring original partition state");
-			rc = _restore_part_state(old_part_list, 
+			rc = _restore_part_state(old_part_list,
 						 old_def_part_name);
 			error_code = MAX(error_code, rc);  /* not fatal */
 		}
@@ -803,10 +803,10 @@ int read_slurm_conf(int recover, bool reconfig)
 
 
 /* Restore node state and size information from saved records which match
- * the node registration message. If a node was re-configured to be down or 
- * drained, we set those states. We only recover a node's Features if 
+ * the node registration message. If a node was re-configured to be down or
+ * drained, we set those states. We only recover a node's Features if
  * recover==2. */
-static int _restore_node_state(int recover, 
+static int _restore_node_state(int recover,
 			       struct node_record *old_node_table_ptr,
 			       int old_node_record_count)
 {
@@ -820,7 +820,7 @@ static int _restore_node_state(int recover,
 		power_save_mode = true;
 	slurm_conf_unlock();
 
-	for (i=0, old_node_ptr=old_node_table_ptr; i<old_node_record_count; 
+	for (i=0, old_node_ptr=old_node_table_ptr; i<old_node_record_count;
 	     i++, old_node_ptr++) {
 		uint16_t drain_flag = false, down_flag = false;
 		node_ptr  = find_node_record(old_node_ptr->name);
@@ -937,14 +937,14 @@ static int  _restore_part_state(List old_part_list, char *old_def_part_name)
 	part_iterator = list_iterator_create(old_part_list);
 	if (!part_iterator)
 		fatal("list_iterator_create malloc");
-	while ((old_part_ptr = (struct part_record *) 
+	while ((old_part_ptr = (struct part_record *)
 			       list_next(part_iterator))) {
 		xassert(old_part_ptr->magic == PART_MAGIC);
 		part_ptr = find_part_record(old_part_ptr->name);
 		if (part_ptr) {
 			/* Current partition found in slurm.conf,
 			 * report differences from slurm.conf configuration */
-			if (_strcmp(part_ptr->allow_groups, 
+			if (_strcmp(part_ptr->allow_groups,
 				    old_part_ptr->allow_groups)) {
 				error("Partition %s AllowGroups differs from "
 				      "slurm.conf", part_ptr->name);
@@ -952,7 +952,7 @@ static int  _restore_part_state(List old_part_list, char *old_def_part_name)
 				part_ptr->allow_groups = xstrdup(old_part_ptr->
 								 allow_groups);
 			}
-			if (_strcmp(part_ptr->allow_alloc_nodes, 
+			if (_strcmp(part_ptr->allow_alloc_nodes,
 				    old_part_ptr->allow_alloc_nodes)) {
 				error("Partition %s AllowNodes differs from "
 				      "slurm.conf", part_ptr->name);
@@ -960,14 +960,14 @@ static int  _restore_part_state(List old_part_list, char *old_def_part_name)
 				part_ptr->allow_groups = xstrdup(old_part_ptr->
 							 allow_alloc_nodes);
 			}
-			if (part_ptr->default_time != 
+			if (part_ptr->default_time !=
 			    old_part_ptr->default_time) {
 				error("Partition %s DefaultTime differs from "
 				      "slurm.conf", part_ptr->name);
 				part_ptr->default_time = old_part_ptr->
 							 default_time;
 			}
-			if (part_ptr->disable_root_jobs != 
+			if (part_ptr->disable_root_jobs !=
 			    old_part_ptr->disable_root_jobs) {
 				error("Partition %s DisableRootJobs differs "
 				      "from slurm.conf", part_ptr->name);
@@ -1058,7 +1058,7 @@ static int  _restore_part_state(List old_part_list, char *old_def_part_name)
 	     strcmp(old_def_part_name, default_part_name))) {
 		part_ptr = find_part_record(old_def_part_name);
 		if (part_ptr) {
-			error("Default partition reset to %s", 
+			error("Default partition reset to %s",
 			      old_def_part_name);
 			default_part_loc  = part_ptr;
 			xfree(default_part_name);
@@ -1090,7 +1090,7 @@ static int  _preserve_select_type_param(slurm_ctl_conf_t *ctl_conf_ptr,
 {
 	int rc = SLURM_SUCCESS;
 
-        /* SelectTypeParameters cannot change */
+	/* SelectTypeParameters cannot change */
 	if (old_select_type_p) {
 		if (old_select_type_p != ctl_conf_ptr->select_type_param) {
 			ctl_conf_ptr->select_type_param = old_select_type_p;

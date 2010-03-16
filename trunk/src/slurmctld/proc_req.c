@@ -453,6 +453,7 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 
 	conf_ptr->inactive_limit      = conf->inactive_limit;
 
+	conf_ptr->hash_val            = conf->hash_val;
 	conf_ptr->health_check_interval = conf->health_check_interval;
 	conf_ptr->health_check_program = xstrdup(conf->health_check_program);
 
@@ -1624,6 +1625,17 @@ static void _slurm_rpc_node_registration(slurm_msg_t * msg)
 	}
 	if (error_code == SLURM_SUCCESS) {
 		/* do RPC call */
+		if(!(slurm_get_debug_flags() & DEBUG_FLAG_NO_CONF_HASH)
+		   && (node_reg_stat_msg->hash_val != NO_VAL)
+		   && (node_reg_stat_msg->hash_val != slurm_get_hash_val())) {
+			error("Node %s appears to have a different slurm.conf "
+			      "than the slurmctld.  This could cause issues "
+			      "with communication and functionality.  "
+			      "Please review both files and make sure they "
+			      "are the same.  If this is expected ignore, and "
+			      "set DebugFlags=NO_CONF_HASH in your slurm.conf.",
+			      node_reg_stat_msg->node_name);
+		}
 		lock_slurmctld(job_write_lock);
 #ifdef HAVE_FRONT_END		/* Operates only on front-end */
 		error_code = validate_nodes_via_front_end(node_reg_stat_msg);

@@ -20,6 +20,10 @@ documents those changes that are of interest to users and admins.
  -- In select/linear: Modify data structures for better performance and to 
     avoid underflow error messages when slurmctld restarts while jobs are
     in completing state.
+ -- Added hash for slurm.conf so when nodes check in to the controller it can
+    verify the slurm.conf is the same as the one it is running.  If not an
+    error message is displayed.  To silence this message add NO_CONF_HASH
+    to DebugFlags in your slurm.conf.
 
 * Changes in SLURM 2.2.0.pre2
 =============================

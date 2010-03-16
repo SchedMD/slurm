@@ -2064,29 +2064,56 @@ _pack_node_registration_status_msg(slurm_node_registration_status_msg_t *
 	int i;
 	xassert(msg != NULL);
 
-	pack_time(msg->timestamp, buffer);
-	pack32(msg->status, buffer);
-	packstr(msg->node_name, buffer);
-	packstr(msg->arch, buffer);
-	packstr(msg->os, buffer);
-	pack16(msg->cpus, buffer);
-	pack16(msg->sockets, buffer);
-	pack16(msg->cores, buffer);
-	pack16(msg->threads, buffer);
-	pack32(msg->real_memory, buffer);
-	pack32(msg->tmp_disk, buffer);
-	pack32(msg->up_time, buffer);
+	if(protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
+		pack_time(msg->timestamp, buffer);
+		pack32(msg->status, buffer);
+		packstr(msg->node_name, buffer);
+		packstr(msg->arch, buffer);
+		packstr(msg->os, buffer);
+		pack16(msg->cpus, buffer);
+		pack16(msg->sockets, buffer);
+		pack16(msg->cores, buffer);
+		pack16(msg->threads, buffer);
+		pack32(msg->real_memory, buffer);
+		pack32(msg->tmp_disk, buffer);
+		pack32(msg->up_time, buffer);
+		pack32(msg->hash_val, buffer);
 
-	pack32(msg->job_count, buffer);
-	for (i = 0; i < msg->job_count; i++) {
-		pack32(msg->job_id[i], buffer);
+		pack32(msg->job_count, buffer);
+		for (i = 0; i < msg->job_count; i++) {
+			pack32(msg->job_id[i], buffer);
+		}
+		for (i = 0; i < msg->job_count; i++) {
+			pack32(msg->step_id[i], buffer);
+		}
+		pack16(msg->startup, buffer);
+		if (msg->startup)
+			switch_g_pack_node_info(msg->switch_nodeinfo, buffer);
+	} else {
+		pack_time(msg->timestamp, buffer);
+		pack32(msg->status, buffer);
+		packstr(msg->node_name, buffer);
+		packstr(msg->arch, buffer);
+		packstr(msg->os, buffer);
+		pack16(msg->cpus, buffer);
+		pack16(msg->sockets, buffer);
+		pack16(msg->cores, buffer);
+		pack16(msg->threads, buffer);
+		pack32(msg->real_memory, buffer);
+		pack32(msg->tmp_disk, buffer);
+		pack32(msg->up_time, buffer);
+
+		pack32(msg->job_count, buffer);
+		for (i = 0; i < msg->job_count; i++) {
+			pack32(msg->job_id[i], buffer);
+		}
+		for (i = 0; i < msg->job_count; i++) {
+			pack32(msg->step_id[i], buffer);
+		}
+		pack16(msg->startup, buffer);
+		if (msg->startup)
+			switch_g_pack_node_info(msg->switch_nodeinfo, buffer);
 	}
-	for (i = 0; i < msg->job_count; i++) {
-		pack32(msg->step_id[i], buffer);
-	}
-	pack16(msg->startup, buffer);
-	if (msg->startup)
-		switch_g_pack_node_info(msg->switch_nodeinfo, buffer);
 }
 
 static int
@@ -2103,39 +2130,85 @@ _unpack_node_registration_status_msg(slurm_node_registration_status_msg_t
 	node_reg_ptr = xmalloc(sizeof(slurm_node_registration_status_msg_t));
 	*msg = node_reg_ptr;
 
-	/* unpack timestamp of snapshot */
-	safe_unpack_time(&node_reg_ptr->timestamp, buffer);
-	/* load the data values */
-	safe_unpack32(&node_reg_ptr->status, buffer);
-	safe_unpackstr_xmalloc(&node_reg_ptr->node_name, &uint32_tmp, buffer);
-	safe_unpackstr_xmalloc(&node_reg_ptr->arch, &uint32_tmp, buffer);
-	safe_unpackstr_xmalloc(&node_reg_ptr->os, &uint32_tmp, buffer);
-	safe_unpack16(&node_reg_ptr->cpus, buffer);
-	safe_unpack16(&node_reg_ptr->sockets, buffer);
-	safe_unpack16(&node_reg_ptr->cores, buffer);
-	safe_unpack16(&node_reg_ptr->threads, buffer);
-	safe_unpack32(&node_reg_ptr->real_memory, buffer);
-	safe_unpack32(&node_reg_ptr->tmp_disk, buffer);
-	safe_unpack32(&node_reg_ptr->up_time, buffer);
+	if(protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
+		/* unpack timestamp of snapshot */
+		safe_unpack_time(&node_reg_ptr->timestamp, buffer);
+		/* load the data values */
+		safe_unpack32(&node_reg_ptr->status, buffer);
+		safe_unpackstr_xmalloc(&node_reg_ptr->node_name,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&node_reg_ptr->arch,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&node_reg_ptr->os, &uint32_tmp, buffer);
+		safe_unpack16(&node_reg_ptr->cpus, buffer);
+		safe_unpack16(&node_reg_ptr->sockets, buffer);
+		safe_unpack16(&node_reg_ptr->cores, buffer);
+		safe_unpack16(&node_reg_ptr->threads, buffer);
+		safe_unpack32(&node_reg_ptr->real_memory, buffer);
+		safe_unpack32(&node_reg_ptr->tmp_disk, buffer);
+		safe_unpack32(&node_reg_ptr->up_time, buffer);
+		safe_unpack32(&node_reg_ptr->hash_val, buffer);
 
-	safe_unpack32(&node_reg_ptr->job_count, buffer);
-	node_reg_ptr->job_id =
-		xmalloc(sizeof(uint32_t) * node_reg_ptr->job_count);
-	for (i = 0; i < node_reg_ptr->job_count; i++) {
-		safe_unpack32(&node_reg_ptr->job_id[i], buffer);
+		safe_unpack32(&node_reg_ptr->job_count, buffer);
+		node_reg_ptr->job_id =
+			xmalloc(sizeof(uint32_t) * node_reg_ptr->job_count);
+		for (i = 0; i < node_reg_ptr->job_count; i++) {
+			safe_unpack32(&node_reg_ptr->job_id[i], buffer);
+		}
+		node_reg_ptr->step_id =
+			xmalloc(sizeof(uint32_t) * node_reg_ptr->job_count);
+		for (i = 0; i < node_reg_ptr->job_count; i++) {
+			safe_unpack32(&node_reg_ptr->step_id[i], buffer);
+		}
+
+		safe_unpack16(&node_reg_ptr->startup, buffer);
+		if (node_reg_ptr->startup
+		    &&  (switch_g_alloc_node_info(
+				 &node_reg_ptr->switch_nodeinfo)
+			 ||   switch_g_unpack_node_info(
+				 node_reg_ptr->switch_nodeinfo, buffer)))
+			goto unpack_error;
+	} else {
+		/* initialize this so we don't check for those not sending it */
+		node_reg_ptr->hash_val = NO_VAL;
+
+		/* unpack timestamp of snapshot */
+		safe_unpack_time(&node_reg_ptr->timestamp, buffer);
+		/* load the data values */
+		safe_unpack32(&node_reg_ptr->status, buffer);
+		safe_unpackstr_xmalloc(&node_reg_ptr->node_name,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&node_reg_ptr->arch,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&node_reg_ptr->os, &uint32_tmp, buffer);
+		safe_unpack16(&node_reg_ptr->cpus, buffer);
+		safe_unpack16(&node_reg_ptr->sockets, buffer);
+		safe_unpack16(&node_reg_ptr->cores, buffer);
+		safe_unpack16(&node_reg_ptr->threads, buffer);
+		safe_unpack32(&node_reg_ptr->real_memory, buffer);
+		safe_unpack32(&node_reg_ptr->tmp_disk, buffer);
+		safe_unpack32(&node_reg_ptr->up_time, buffer);
+
+		safe_unpack32(&node_reg_ptr->job_count, buffer);
+		node_reg_ptr->job_id =
+			xmalloc(sizeof(uint32_t) * node_reg_ptr->job_count);
+		for (i = 0; i < node_reg_ptr->job_count; i++) {
+			safe_unpack32(&node_reg_ptr->job_id[i], buffer);
+		}
+		node_reg_ptr->step_id =
+			xmalloc(sizeof(uint32_t) * node_reg_ptr->job_count);
+		for (i = 0; i < node_reg_ptr->job_count; i++) {
+			safe_unpack32(&node_reg_ptr->step_id[i], buffer);
+		}
+
+		safe_unpack16(&node_reg_ptr->startup, buffer);
+		if (node_reg_ptr->startup
+		    &&  (switch_g_alloc_node_info(
+				 &node_reg_ptr->switch_nodeinfo)
+			 ||   switch_g_unpack_node_info(
+				 node_reg_ptr->switch_nodeinfo, buffer)))
+			goto unpack_error;
 	}
-	node_reg_ptr->step_id =
-		xmalloc(sizeof(uint32_t) * node_reg_ptr->job_count);
-	for (i = 0; i < node_reg_ptr->job_count; i++) {
-		safe_unpack32(&node_reg_ptr->step_id[i], buffer);
-	}
-
-	safe_unpack16(&node_reg_ptr->startup, buffer);
-	if (node_reg_ptr->startup
-	    &&  (switch_g_alloc_node_info(&node_reg_ptr->switch_nodeinfo)
-		 ||   switch_g_unpack_node_info(node_reg_ptr->switch_nodeinfo, buffer)))
-		goto unpack_error;
-
 	return SLURM_SUCCESS;
 
 unpack_error:
@@ -3602,6 +3675,8 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 
 		pack16(build_ptr->get_env_timeout, buffer);
 
+		pack32(build_ptr->hash_val, buffer);
+
 		pack16(build_ptr->health_check_interval, buffer);
 		packstr(build_ptr->health_check_program, buffer);
 
@@ -3955,6 +4030,9 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 	build_ptr = xmalloc(sizeof(slurm_ctl_conf_t));
 	*build_buffer_ptr = build_ptr;
 
+	/* initialize this so we don't check for those not sending it */
+	build_ptr->hash_val = NO_VAL;
+
 	/* load the data values */
 	if(protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
 		/* unpack timestamp of snapshot */
@@ -4013,6 +4091,8 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpack32(&build_ptr->first_job_id, buffer);
 
 		safe_unpack16(&build_ptr->get_env_timeout, buffer);
+
+		safe_unpack32(&build_ptr->hash_val, buffer);
 
 		safe_unpack16(&build_ptr->health_check_interval, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->health_check_program,

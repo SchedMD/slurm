@@ -7,32 +7,32 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <mgrondona@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  In addition, as a special exception, the copyright holders give permission
+ *  to link the code of portions of this program with the OpenSSL library under
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -103,7 +103,7 @@ typedef struct slurmd_config {
 	char         *node_topo_pattern;/* node's topology address pattern */
 	char         *conffile;		/* config filename                 */
 	char         *logfile;		/* slurmd logfile, if any          */
-	char         *spooldir;		/* SlurmdSpoolDir	           */
+	char         *spooldir;		/* SlurmdSpoolDir		   */
 	char         *pidfile;		/* PidFile location		   */
 	char         *health_check_program;	/* run on RPC request      */
 	char         *tmpfs;		/* directory of tmp FS             */
@@ -113,12 +113,12 @@ typedef struct slurmd_config {
 	char         *stepd_loc;	/* Non-standard slurmstepd path    */
 	char         *task_prolog;	/* per-task prolog script          */
 	char         *task_epilog;	/* per-task epilog script          */
-	int           port;	        /* local slurmd port               */
+	int           port;		/* local slurmd port               */
 	slurm_fd      lfd;		/* slurmd listen file descriptor   */
 	pid_t         pid;		/* server pid                      */
 	log_options_t log_opts;         /* current logging options         */
-	int           debug_level;	/* logging detail level            */ 
-	int           daemonize:1;	/* daemonize flag	           */ 
+	int           debug_level;	/* logging detail level            */
+	int           daemonize:1;	/* daemonize flag		   */
 	int	      cleanstart:1;     /* clean start requested (-c)      */
 	int           mlock_pages:1;	/* mlock() slurmd  */
 
@@ -133,7 +133,7 @@ typedef struct slurmd_config {
 					 * using cpu_bind_type_t flags */
 	uint16_t	propagate_prio;	/* PropagatePrioProcess flag       */
 
-	List		starting_steps; /* steps that are starting but cannot 
+	List		starting_steps; /* steps that are starting but cannot
 					   receive RPCs yet */
 	pthread_mutex_t	starting_steps_lock;
 	pthread_cond_t	starting_steps_cond;
