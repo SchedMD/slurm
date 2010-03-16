@@ -1275,7 +1275,7 @@ _task_finish(task_exit_msg_t *msg)
 	xfree(hosts);
 
 	_update_task_exit_state(msg->num_tasks, msg->task_id_list,
-			!normal_exit);
+				!normal_exit);
 
 	if (task_state_first_abnormal_exit(task_state) && _kill_on_bad_exit())
   		_terminate_job_step(job->step_ctx);

@@ -149,6 +149,7 @@ static int _test_down_nodecards(rm_BP_t *bp_ptr, bool slurmctld_locked)
 	rm_bp_id_t bp_id = NULL;
 	rm_nodecard_id_t nc_name = NULL;
 	int num = 0;
+	int marked_down = 0;
 	int i=0;
 	int rc = SLURM_SUCCESS;
 	rm_nodecard_list_t *ncard_list = NULL;
@@ -246,6 +247,11 @@ static int _test_down_nodecards(rm_BP_t *bp_ptr, bool slurmctld_locked)
 
 		if(state == RM_NODECARD_UP)
 			continue;
+
+		/* Here we want to keep track of any nodecard that
+		   isn't up and return error if this is not 0 since
+		   we could be checking to see if we could run here. */
+		marked_down++;
 
 		if ((rc = bridge_get_data(ncard,
 					  RM_NodeCardID,
@@ -363,6 +369,9 @@ clean_up:
 /* 		FREE_NULL_BITMAP(ionode_bitmap); */
 	free(bp_id);
 
+	/* If we marked any nodecard down we need to state it here */
+	if((rc == SLURM_SUCCESS) && marked_down)
+		rc = SLURM_ERROR;
 	return rc;
 }
 
@@ -553,7 +562,13 @@ extern int check_block_bp_states(char *bg_block_id, bool slurmctld_locked)
 			}
 		}
 
-		_test_down_nodecards(bp_ptr, slurmctld_locked);
+		/* If we find any nodecards in an error state just
+		   break here since we are seeing if we can run.  If
+		   any nodecard is down this can't happen.
+		*/
+		if((rc = _test_down_nodecards(bp_ptr, slurmctld_locked))
+		   != SLURM_SUCCESS)
+			break;
 	}
 
 cleanup:

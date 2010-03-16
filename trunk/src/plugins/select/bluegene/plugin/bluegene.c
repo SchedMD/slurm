@@ -485,6 +485,17 @@ extern int bg_free_block(bg_record_t *bg_record, bool wait, bool locked)
 					      bg_record->bg_block_id);
 					break;
 				} else if(rc == INCOMPATIBLE_STATE) {
+#ifndef HAVE_BGL
+					/* If the state is error and
+					   we get an incompatible
+					   state back here, it means
+					   we set it ourselves so
+					   break out.
+					*/
+					if(bg_record->state
+					   == RM_PARTITION_ERROR)
+						break;
+#endif
 					debug2("bridge_destroy_partition"
 					       "(%s): %s State = %d",
 					       bg_record->bg_block_id,
