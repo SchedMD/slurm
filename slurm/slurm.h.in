@@ -1238,6 +1238,9 @@ typedef struct reservation_name_msg {
 #define DEBUG_FLAG_TRIGGERS	0x00000004	/* slurmctld triggers */
 #define DEBUG_FLAG_CPU_BIND	0x00000008	/* CPU binding */
 #define DEBUG_FLAG_WIKI		0x00000010	/* wiki communications */
+#define DEBUG_FLAG_NO_CONF_HASH	0x00000012	/* don't print error
+						 * warning about slurm.conf
+						 * files not matching */
 
 #define PREEMPT_MODE_OFF	0x0000	/* disable job preemption */
 #define PREEMPT_MODE_SUSPEND	0x0001	/* suspend jobs to preempt */
@@ -1287,6 +1290,7 @@ typedef struct slurm_ctl_conf {
 				 * (only check configuration file, faster) */
 	uint32_t first_job_id;	/* first slurm generated job_id to assign */
 	uint16_t get_env_timeout; /* timeout for srun --get-user-env option */
+	uint32_t hash_val;      /* Hash value of the slurm.conf file */
 	uint16_t health_check_interval;	/* secs between health checks */
 	char * health_check_program;	/* pathname of health check program */
 	uint16_t inactive_limit;/* seconds of inactivity before a

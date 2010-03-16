@@ -182,8 +182,16 @@ int inline slurm_api_set_default_config();
  * execute this only at program termination to free all memory */
 void inline slurm_api_clear_config(void);
 
+/* slurm_get_hash_val
+ * get hash val of the slurm.conf from slurmctld_conf object from
+ * slurmctld_conf object
+ * RET uint32_t  - hash_val
+ */
+uint32_t slurm_get_hash_val(void);
+
 /* slurm_get_health_check_program
- * get health_check_program from slurmctld_conf object from slurmctld_conf object
+ * get health_check_program from slurmctld_conf object from
+ * slurmctld_conf object
  * RET char *   - health_check_program, MUST be xfreed by caller
  */
 char *slurm_get_health_check_program(void);

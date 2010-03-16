@@ -908,8 +908,29 @@ extern int slurm_set_auth_type(char *auth_type)
 	return 0;
 }
 
+/* slurm_get_hash_val
+ * get hash val of the slurm.conf from slurmctld_conf object from
+ * slurmctld_conf object
+ * RET uint32_t  - hash_val
+ */
+uint32_t slurm_get_hash_val(void)
+{
+	uint32_t hash_val;
+	slurm_ctl_conf_t *conf;
+
+	if(slurmdbd_conf) {
+		hash_val = NO_VAL;
+	} else {
+		conf = slurm_conf_lock();
+		hash_val = conf->hash_val;
+		slurm_conf_unlock();
+	}
+	return hash_val;
+}
+
 /* slurm_get_health_check_program
- * get health_check_program from slurmctld_conf object from slurmctld_conf object
+ * get health_check_program from slurmctld_conf object from
+ * slurmctld_conf object
  * RET char *   - health_check_program, MUST be xfreed by caller
  */
 char *slurm_get_health_check_program(void)

@@ -853,33 +853,35 @@ typedef struct pty_winsz {
 
 typedef struct will_run_response_msg {
 	uint32_t job_id;	/* ID of job to start */
-	uint32_t proc_cnt;	/* CPUs allocated to job at start */
-	time_t start_time;	/* time when job will start */
 	char *node_list;	/* nodes where job will start */
 	List preemptee_job_id;	/* jobs preempted to start this job */
+	uint32_t proc_cnt;	/* CPUs allocated to job at start */
+	time_t start_time;	/* time when job will start */
 } will_run_response_msg_t;
 
 /*****************************************************************************\
  * Slurm API Message Types
 \*****************************************************************************/
 typedef struct slurm_node_registration_status_msg {
-	time_t timestamp;
-	char *node_name;
 	char *arch;
-	char *os;
-	uint16_t cpus;
-	uint16_t sockets;
 	uint16_t cores;
-	uint16_t threads;
-	uint32_t real_memory;
-	uint32_t tmp_disk;
+	uint16_t cpus;
+	uint32_t hash_val;      /* hash value of slurm.conf file
+				   existing on node */
 	uint32_t job_count;	/* number of associate job_id's */
 	uint32_t *job_id;	/* IDs of running job (if any) */
-	uint32_t *step_id;	/* IDs of running job steps (if any) */
+	char *node_name;
+	char *os;
+	uint32_t real_memory;
 	uint32_t status;	/* node status code, same as return codes */
 	uint16_t startup;	/* slurmd just restarted */
-	uint32_t up_time;	/* seconds since reboot */
+	uint32_t *step_id;	/* IDs of running job steps (if any) */
+	uint16_t sockets;
 	switch_node_info_t *switch_nodeinfo;	/* set only if startup != 0 */
+	uint16_t threads;
+	time_t timestamp;
+	uint32_t tmp_disk;
+	uint32_t up_time;	/* seconds since reboot */
 } slurm_node_registration_status_msg_t;
 
 

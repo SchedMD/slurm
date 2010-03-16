@@ -1521,6 +1521,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->fast_schedule		= (uint16_t) NO_VAL;
 	ctl_conf_ptr->first_job_id		= (uint32_t) NO_VAL;
 	ctl_conf_ptr->get_env_timeout		= 0;
+	ctl_conf_ptr->hash_val          	= (uint32_t) NO_VAL;
 	ctl_conf_ptr->health_check_interval	= 0;
 	xfree(ctl_conf_ptr->health_check_program);
 	ctl_conf_ptr->inactive_limit		= (uint16_t) NO_VAL;
@@ -1634,7 +1635,11 @@ static void _init_slurm_conf(const char *file_name)
 	}
 	conf_hashtbl = s_p_hashtbl_create(slurm_conf_options);
 	conf_ptr->last_update = time(NULL);
-	if(s_p_parse_file(conf_hashtbl, name) == SLURM_ERROR)
+
+	/* init hash to 0 */
+	conf_ptr->hash_val = 0;
+	if(s_p_parse_file(conf_hashtbl, &conf_ptr->hash_val, name)
+	   == SLURM_ERROR)
 		fatal("something wrong with opening/reading conf file");
 	/* s_p_dump_values(conf_hashtbl, slurm_conf_options); */
 	_validate_and_set_defaults(conf_ptr, conf_hashtbl);
@@ -2797,6 +2802,8 @@ extern uint32_t debug_str2flags(char *debug_flags)
 	while (tok) {
 		if      (strcasecmp(tok, "CPU_Bind") == 0)
 			rc |= DEBUG_FLAG_CPU_BIND;
+		else if (strcasecmp(tok, "NO_CONF_HASH") == 0)
+			rc |= DEBUG_FLAG_NO_CONF_HASH;
 		else if (strcasecmp(tok, "SelectType") == 0)
 			rc |= DEBUG_FLAG_SELECT_TYPE;
 		else if (strcasecmp(tok, "Steps") == 0)

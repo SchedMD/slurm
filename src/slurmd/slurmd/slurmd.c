@@ -575,6 +575,7 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 	msg->threads	 = conf->threads;
 	msg->real_memory = conf->real_memory_size;
 	msg->tmp_disk    = conf->tmp_disk_space;
+	msg->hash_val    = slurm_get_hash_val();
 
 	get_up_time(&conf->up_time);
 	msg->up_time     = conf->up_time;

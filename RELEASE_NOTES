@@ -52,15 +52,20 @@ HIGHLIGHTS
   retrieve from the accounting storage db a user's request for job usage or
   machine utilization statistics and charts the results to a browser.
 
+* A hash of the slurm.conf running on each node in the cluster is sent when
+  registering with the slurmctld so it can verify the slurm.conf is the same
+  as the one it is running.  If not an error message is displayed.  To
+  silence this message add NO_CONF_HASH to DebugFlags in your slurm.conf.
+
 CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
 =============================================================
 * Added VSizeFactor to enforce virtual memory limits for jobs and job steps as
   a percentage of their real memory allocation.
 
-* Added new option for SelectTypeParameters of CR_ONE_TASK_PER_CORE. This 
-  option will allocate one task per core by default. Without this option, 
-  by default one task will be allocated per thread on nodes with more than 
-  one ThreadsPerCore configured (i.e. no change in behavior without this 
+* Added new option for SelectTypeParameters of CR_ONE_TASK_PER_CORE. This
+  option will allocate one task per core by default. Without this option,
+  by default one task will be allocated per thread on nodes with more than
+  one ThreadsPerCore configured (i.e. no change in behavior without this
   option).
 
 * Added new configuration parameters SlurmSchedLogFile and SlurmSchedLogLevel
@@ -76,7 +81,7 @@ COMMAND CHANGES (see man pages for details)
 ===========================================
 * sinfo -R now has the user and timestamp in separate fields from the reason.
 
-* Job submission commands (salloc, sbatch and srun) have a new option, 
+* Job submission commands (salloc, sbatch and srun) have a new option,
   --time-min, that permits the job's time limit to be reduced to the extent
   required to start early through backfill scheduling with the minimum value
   as specified.
@@ -103,7 +108,7 @@ OTHER CHANGES
   triggered by a time limit exceeding the user/bank limit or the time-min
   exceeding the job or partition's time limit.
 
-* Added support for debugger partial task attach if the option 
+* Added support for debugger partial task attach if the option
   "--enable-partial-attach" is passed to the configure (build) script.
 
 API CHANGES

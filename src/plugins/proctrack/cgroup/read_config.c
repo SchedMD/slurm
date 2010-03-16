@@ -3,32 +3,32 @@
  *****************************************************************************
  *  Copyright (C) 2009 CEA/DAM/DIF
  *  Written by Matthieu Hautreux <matthieu.hautreux@cea.fr>
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  In addition, as a special exception, the copyright holders give permission
+ *  to link the code of portions of this program with the OpenSSL library under
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -61,7 +61,7 @@ static void _clear_slurm_cgroup_conf(void);
 static char * _get_conf_path(void);
 
 /*
- * free_slurm_cgroup_conf - free storage associated with the global variable 
+ * free_slurm_cgroup_conf - free storage associated with the global variable
  *	slurm_cgroup_conf
  */
 extern void free_slurm_cgroup_conf(void)
@@ -130,7 +130,7 @@ extern int read_slurm_cgroup_conf(void)
 		debug("Reading cgroup.conf file %s", conf_path);
 
 		tbl = s_p_hashtbl_create(options);
-		if (s_p_parse_file(tbl, conf_path) == SLURM_ERROR) {
+		if (s_p_parse_file(tbl, NULL, conf_path) == SLURM_ERROR) {
 			fatal("Could not open/read/parse cgroup.conf file %s",
 			      conf_path);
 		}
@@ -144,7 +144,7 @@ extern int read_slurm_cgroup_conf(void)
 		s_p_get_string(&slurm_cgroup_conf->cgroup_release_agent,
 			       "CgroupReleaseAgent", tbl);
 		if ( ! slurm_cgroup_conf->cgroup_release_agent )
-			slurm_cgroup_conf->cgroup_release_agent = 
+			slurm_cgroup_conf->cgroup_release_agent =
 				xstrdup("memory,cpuset");
 
 		/* job and jobsteps cgroup parameters */
@@ -168,7 +168,7 @@ extern int read_slurm_cgroup_conf(void)
 		if (!s_p_get_uint32(&slurm_cgroup_conf->allowed_swap_space,
 				    "AllowedSwapSpace", tbl))
 			slurm_cgroup_conf->allowed_swap_space = 0;
-		
+
 		/* Cores constraints */
 		if (!s_p_get_boolean(&slurm_cgroup_conf->constrain_cores,
 				     "ConstrainCores", tbl))
