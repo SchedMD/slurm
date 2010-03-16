@@ -21,7 +21,7 @@ perl_sources = \
 $(perl_dir)/Makefile:	$(perl_dir)/Makefile.PL
 	@if test "x${top_srcdir}" != "x${top_builddir}"; then \
 		for f in ${perl_sources}; do \
-			${LN_S} -f ../${srcdir}/$$f $$f; \
+			${LN_S} -f ${abs_srcdir}/$$f $$f; \
 		done; \
 	fi
 	@cd $(perl_dir) && $(perlpath) Makefile.PL $(PERL_MM_PARAMS) prefix=${prefix}
@@ -84,7 +84,7 @@ distclean-generic:
 
 	@if test "x${top_srcdir}" != "x${top_builddir}"; then \
 		for f in ${perl_sources}; do \
-			${LN_S} -f ../${srcdir}/$$f $$f; \
+			${LN_S} -f ${abs_srcdir}/$$f $$f; \
 		done; \
 	fi
 
