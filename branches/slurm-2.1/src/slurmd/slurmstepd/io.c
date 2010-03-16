@@ -1427,6 +1427,7 @@ io_close_local_fds(slurmd_job_t *job)
 			}
 		}
 	}
+	list_iterator_destroy(clients);
 }
 
 
