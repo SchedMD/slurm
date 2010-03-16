@@ -487,7 +487,11 @@ again:
 			return SLURM_SUCCESS;
 		}
 	}
-	debug5("Wrote %d bytes to socket", n);
+	if (n < client->out_remaining) {
+		error("Only wrote %d of %d bytes to socket", 
+		      n, client->out_remaining);
+	} else
+		debug5("Wrote %d bytes to socket", n);
 	client->out_remaining -= n;
 	if (client->out_remaining > 0)
 		return SLURM_SUCCESS;
@@ -1423,6 +1427,7 @@ io_close_local_fds(slurmd_job_t *job)
 			}
 		}
 	}
+	list_iterator_destroy(clients);
 }
 
 

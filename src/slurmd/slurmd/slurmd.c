@@ -681,6 +681,8 @@ _read_config(void)
 {
 	char *path_pubkey = NULL;
 	slurm_ctl_conf_t *cf = NULL;
+	bool cr_flag = false, gang_flag = false;
+
 	slurm_conf_reinit(conf->conffile);
 	cf = slurm_conf_lock();
 
@@ -697,6 +699,11 @@ _read_config(void)
 
 	if (!conf->logfile)
 		conf->logfile = xstrdup(cf->slurmd_logfile);
+
+	if (!strcmp(cf->select_type, "select/cons_res"))
+		cr_flag = true;
+	if (cf->preempt_mode & PREEMPT_MODE_GANG)
+		gang_flag = true;
 
 	slurm_conf_unlock();
 	/* node_name may already be set from a command line parameter */
@@ -741,7 +748,8 @@ _read_config(void)
 		    &conf->block_map_size,
 		    &conf->block_map, &conf->block_map_inv);
 
-	if((cf->fast_schedule == 0) || (conf->actual_cpus < conf->conf_cpus)) {
+	if (((cf->fast_schedule == 0) && !cr_flag && !gang_flag) || 
+	    (conf->actual_cpus < conf->conf_cpus)) {
 		conf->cpus    = conf->actual_cpus;
 		conf->sockets = conf->actual_sockets;
 		conf->cores   = conf->actual_cores;
