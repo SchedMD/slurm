@@ -28,6 +28,7 @@ documents those changes that are of interest to users and admins.
     dependencies (e.g. job 12 dependent upon job 11 AND job 11 is dependent
     upon job 12).
  -- Add BootTime and SlurmdStartTime to available node information.
+ -- Fixed moab_2_slurmdb to work correctly under new database schema.
 
 * Changes in SLURM 2.2.0.pre2
 =============================
