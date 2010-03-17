@@ -24,6 +24,9 @@ documents those changes that are of interest to users and admins.
     verify the slurm.conf is the same as the one it is running.  If not an
     error message is displayed.  To silence this message add NO_CONF_HASH
     to DebugFlags in your slurm.conf.
+ -- Added error code ESLURM_CIRCULAR_DEPENDENCY and prevent circular job
+    dependencies (e.g. job 12 dependent upon job 11 AND job 11 is dependent
+    upon job 12). 
 
 * Changes in SLURM 2.2.0.pre2
 =============================

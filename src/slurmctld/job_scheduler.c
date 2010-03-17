@@ -78,6 +78,7 @@ static void	_depend_list_del(void *dep_ptr);
 static void	_feature_list_delete(void *x);
 static void *	_run_epilog(void *arg);
 static void *	_run_prolog(void *arg);
+static bool	_scan_depend(List dependency_list, uint32_t job_id);
 static int	_valid_feature_list(uint32_t job_id, List feature_list);
 static int	_valid_node_feature(char *feature);
 
@@ -873,6 +874,9 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 	}
 
 	new_depend_list = list_create(_depend_list_del);
+	if (new_depend_list == NULL)
+		fatal("list_create: malloc failure");
+
 	/* validate new dependency string */
 	while (rc == SLURM_SUCCESS) {
 
@@ -888,7 +892,7 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 				      "failure for singleton");
 			}
 			if ( *(tok + 9 ) == ',' ) {
-				tok+=10;
+				tok += 10;
 				continue;
 			}
 			else
@@ -900,7 +904,7 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 			job_id = strtol(tok, &sep_ptr, 10);
 			if ((sep_ptr == NULL) || (sep_ptr[0] != '\0') ||
 			    (job_id == 0) || (job_id == job_ptr->job_id)) {
-				rc = EINVAL;
+				rc = ESLURM_DEPENDENCY;
 				break;
 			}
 			/* old format, just a single job_id */
@@ -918,7 +922,7 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 				fatal("list_append memory allocation failure");
 			break;
 		} else if (sep_ptr == NULL) {
-			rc = EINVAL;
+			rc = ESLURM_DEPENDENCY;
 			break;
 		}
 
@@ -931,7 +935,7 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 		else if (strncasecmp(tok, "after", 5) == 0)
 			depend_type = SLURM_DEPEND_AFTER;
 		else {
-			rc = EINVAL;
+			rc = ESLURM_DEPENDENCY;
 			break;
 		}
 		sep_ptr++;	/* skip over ":" */
@@ -941,7 +945,7 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 			    (job_id == 0) || (job_id == job_ptr->job_id) ||
 			    ((sep_ptr2[0] != '\0') && (sep_ptr2[0] != ',') &&
 			     (sep_ptr2[0] != ':'))) {
-				rc = EINVAL;
+				rc = ESLURM_DEPENDENCY;
 				break;
 			}
 			dep_job_ptr = find_job_record(job_id);
@@ -966,6 +970,12 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 	}
 
 	if (rc == SLURM_SUCCESS) {
+		/* test for circular dependencies (e.g. A -> B -> A) */
+		if (_scan_depend(new_depend_list, job_ptr->job_id))
+			rc = ESLURM_CIRCULAR_DEPENDENCY;
+	}
+
+	if (rc == SLURM_SUCCESS) {
 		xfree(job_ptr->details->dependency);
 		job_ptr->details->dependency = xstrdup(new_depend);
 		if (job_ptr->details->depend_list)
@@ -977,6 +987,39 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 	} else {
 		list_destroy(new_depend_list);
 	}
+	return rc;
+}
+
+/* Return TRUE if job_id is found in dependency_list.
+ * Execute recursively for each dependent job */
+static bool _scan_depend(List dependency_list, uint32_t job_id)
+{
+	bool rc = false;
+	ListIterator iter;
+	struct depend_spec *dep_ptr;
+
+	xassert(job_id);
+	xassert(dependency_list);
+
+	iter = list_iterator_create(dependency_list);
+	if (iter == NULL)
+		fatal("list_iterator_create malloc failure");
+	while (!rc && (dep_ptr = (struct depend_spec *) list_next(iter))) {
+		if (dep_ptr->job_id == 0)	/* Singleton */
+			continue;
+		if (dep_ptr->job_id == job_id)
+			rc = true;
+		else if (dep_ptr->job_ptr->details &&
+			 dep_ptr->job_ptr->details->depend_list) {
+			rc = _scan_depend(dep_ptr->job_ptr->details->
+					  depend_list, job_id);
+			if (rc) {
+				info("circular dependency: job %u is dependent "
+				     "upon job %u", dep_ptr->job_id, job_id);
+			}
+		}
+	}
+	list_iterator_destroy(iter);
 	return rc;
 }
 

@@ -3014,10 +3014,10 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	 * NO_VAL if not set. */
 	job_ptr->priority = job_desc->priority;
 
-	if (update_job_dependency(job_ptr, job_desc->dependency)) {
-		error_code = ESLURM_DEPENDENCY;
+	error_code = update_job_dependency(job_ptr, job_desc->dependency);
+	if (error_code != SLURM_SUCCESS)
 		goto cleanup_fail;
-	}
+
 	if (build_feature_list(job_ptr)) {
 		error_code = ESLURM_INVALID_FEATURE;
 		goto cleanup_fail;
@@ -6033,13 +6033,18 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	if (job_specs->dependency) {
 		if ((!IS_JOB_PENDING(job_ptr)) || (job_ptr->details == NULL))
 			error_code = ESLURM_DISABLED;
-		else if (update_job_dependency(job_ptr, job_specs->dependency)
-			 != SLURM_SUCCESS) {
-			error_code = ESLURM_DEPENDENCY;
-		} else {
-			info("sched: update_job: setting dependency to %s for "
-			     "job_id %u",  job_ptr->details->dependency,
-			     job_ptr->job_id);
+		else {
+			int rc;
+			rc = update_job_dependency(job_ptr, 
+						   job_specs->dependency);
+			if (rc != SLURM_SUCCESS)
+				error_code = rc;
+			else {
+				info("sched: update_job: setting dependency to "
+				     "%s for job_id %u",
+				     job_ptr->details->dependency,
+				     job_ptr->job_id);
+			}
 		}
 	}
 
