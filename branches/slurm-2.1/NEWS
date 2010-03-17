@@ -36,6 +36,10 @@ documents those changes that are of interest to users and admins.
     the C api.
  -- BLUEGENE - made the perlapi get correct values for cpus per node,
     Previously it would give the number of cpus per cnode instead of midplane.
+ -- BLEUGENE - Fixed issue where if a block being selected for a job to use
+    and during the process a hardware failure happens, previously the block
+    would still be allowed to be used which would fail or requeue the job
+    depending on the configuration.
  -- For SPANK job environment, avoid duplicate "SPANK_" prefix for environment
     set by sbatch jobs.
 
