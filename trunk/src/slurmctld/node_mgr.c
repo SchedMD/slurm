@@ -633,7 +633,10 @@ static void _pack_node (struct node_record *dump_node_ptr, Buf buffer,
 		}
 		pack32(dump_node_ptr->config_ptr->weight, buffer);
 		pack32(dump_node_ptr->reason_uid, buffer);
+
+		pack_time(dump_node_ptr->boot_time, buffer);
 		pack_time(dump_node_ptr->reason_time, buffer);
+		pack_time(dump_node_ptr->slurmd_start_time, buffer);
 
 		select_g_select_nodeinfo_pack(dump_node_ptr->select_nodeinfo,
 					      buffer, protocol_version);
@@ -1306,7 +1309,6 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 	time_t now = time(NULL);
 	bool gang_flag = false;
 	static uint32_t cr_flag = NO_VAL;
-	time_t last_restart = now - reg_msg->up_time;
 
 	node_ptr = find_node_record (reg_msg->node_name);
 	if (node_ptr == NULL)
@@ -1499,7 +1501,7 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 					acct_db_conn, node_ptr, now);
 			}
 		} else if (node_ptr->last_response
-			   && (last_restart > node_ptr->last_response)
+			   && (node_ptr->boot_time > node_ptr->last_response)
 			   && (slurmctld_conf.ret2service != 2)) {
 			last_node_update = now;
 			if(!node_ptr->reason) {
@@ -1561,6 +1563,12 @@ extern int validate_nodes_via_front_end(
 	hostlist_t prolog_hostlist = NULL;
 	char host_str[64];
 	uint16_t node_flags;
+
+	if (reg_msg->up_time > now) {
+		error("Node up_time is invalid: %u>%u", reg_msg->up_time,
+		      (uint32_t) now);
+		reg_msg->up_time = 0;
+	}
 
 	/* First validate the job info */
 	node_ptr = &node_record_table_ptr[0];	/* All msg send to node zero,
@@ -1649,6 +1657,12 @@ extern int validate_nodes_via_front_end(
 		config_ptr = node_ptr->config_ptr;
 		jobs_on_node = node_ptr->run_job_cnt + node_ptr->comp_job_cnt;
 		node_ptr->last_response = time (NULL);
+
+		if (reg_msg->up_time) {
+			node_ptr->up_time = reg_msg->up_time;
+			node_ptr->boot_time = now - reg_msg->up_time;
+			node_ptr->slurmd_start_time = reg_msg->slurmd_start_time;
+		}
 
 		if (IS_NODE_NO_RESPOND(node_ptr)) {
 			updated_job = true;

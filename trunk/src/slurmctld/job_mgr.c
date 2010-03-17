@@ -6313,7 +6313,15 @@ validate_jobs_on_node(slurm_node_registration_status_msg_t *reg_msg)
 		verbose("Node %s rebooted %u secs ago",
 			reg_msg->node_name, reg_msg->up_time);
 	}
-	node_ptr->up_time = reg_msg->up_time;
+	
+	if (reg_msg->up_time <= now) {
+		node_ptr->up_time = reg_msg->up_time;
+		node_ptr->boot_time = now - reg_msg->up_time;
+		node_ptr->slurmd_start_time = reg_msg->slurmd_start_time;
+	} else {
+		error("Node up_time is invalid: %u>%u", reg_msg->up_time, 
+		      (uint32_t) now);
+	}
 
 	node_inx = node_ptr - node_record_table_ptr;
 
@@ -6432,10 +6440,9 @@ static void _purge_missing_jobs(int node_inx, time_t now)
 	uint32_t suspend_time		= slurm_get_suspend_time();
 	time_t batch_startup_time, node_boot_time = (time_t) 0, startup_time;
 
-	if (node_ptr->up_time) {
-		node_boot_time = now - node_ptr->up_time;
-		node_boot_time -= msg_timeout;
-		node_boot_time -= 5;	/* allow for other delays */
+	if (node_ptr->boot_time > (msg_timeout + 5)) {
+		/* allow for message timeout and other delays */
+		node_boot_time = node_ptr->boot_time - (msg_timeout + 5);
 	}
 	batch_startup_time  = now - batch_start_timeout;
 	batch_startup_time -= msg_timeout;

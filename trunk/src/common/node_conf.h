@@ -95,6 +95,9 @@ struct node_record {
 					 * responding */
 	bool not_responding;		/* set if fails to respond,
 					 * clear after logging this */
+	time_t boot_time;		/* Time of node boot, 
+					 * computed from up_time */
+	time_t slurmd_start_time;	/* Time of slurmd startup */
 	time_t last_response;		/* last response from the node */
 	time_t last_idle;		/* time node last become idle */
 	uint16_t cpus;			/* count of processors on the node */

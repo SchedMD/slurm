@@ -138,8 +138,10 @@ job_desc_msg_t
 	time_min
 
 node_info_t
+	boot_time
 	reason_time
 	reason_uid
+	slurmd_start_time
 
 partition_info_t
 	alternate

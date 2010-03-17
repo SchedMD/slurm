@@ -26,7 +26,8 @@ documents those changes that are of interest to users and admins.
     to DebugFlags in your slurm.conf.
  -- Added error code ESLURM_CIRCULAR_DEPENDENCY and prevent circular job
     dependencies (e.g. job 12 dependent upon job 11 AND job 11 is dependent
-    upon job 12). 
+    upon job 12).
+ -- Add BootTime and SlurmdStartTime to available node information.
 
 * Changes in SLURM 2.2.0.pre2
 =============================
