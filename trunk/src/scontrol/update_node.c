@@ -37,6 +37,7 @@
 \*****************************************************************************/
 
 #include "scontrol.h"
+#include "src/common/uid.h"
 
 /*
  * scontrol_update_node - update the slurm node configuration per the supplied
@@ -123,7 +124,8 @@ scontrol_update_node (int argc, char *argv[])
 				reason_str[len] = '\0';
 
 			node_msg.reason = reason_str;
-			node_msg.reason_uid = getuid();
+			if (uid_from_string(getlogin(), &node_msg.reason_uid) < 0)
+				node_msg.reason_uid = getuid();
 			update_cnt++;
 		}
 		else if (strncasecmp(tag, "State", MAX(taglen, 1)) == 0) {
