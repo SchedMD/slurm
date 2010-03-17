@@ -138,7 +138,7 @@ _print_job ( void )
 	uint16_t show_flags = 0;
 	uint32_t job_id = 0;
 
-	if (params.all_flag)
+	if (params.all_flag || (params.job_list && list_count(params.job_list)))
 		show_flags |= SHOW_ALL;
 
 	/* We require detail data when CPUs are requested */
