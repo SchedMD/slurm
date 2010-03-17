@@ -567,6 +567,7 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 	char *arch, *os;
 	struct utsname buf;
 	static bool first_msg = true;
+	static time_t slurmd_start_time = 0;
 
 	msg->node_name  = xstrdup (conf->node_name);
 	msg->cpus	 = conf->cpus;
@@ -579,6 +580,9 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 
 	get_up_time(&conf->up_time);
 	msg->up_time     = conf->up_time;
+	if (slurmd_start_time == 0)
+		slurmd_start_time = time(NULL);
+	msg->slurmd_start_time = slurmd_start_time;
 
 	if (first_msg) {
 		first_msg = false;

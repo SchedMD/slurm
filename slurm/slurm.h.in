@@ -964,6 +964,7 @@ typedef struct job_step_info_response_msg {
 
 typedef struct node_info {
 	char *arch;		/* computer architecture */
+	time_t boot_time;	/* time of node boot */
 	uint16_t cores;         /* number of cores per CPU */
 	uint16_t cpus;		/* configured count of cpus running on
 				 * the node */
@@ -977,6 +978,7 @@ typedef struct node_info {
 				 * no reason is set. */
 	uint32_t reason_uid;   	/* User that set the reason, ignore if
 				 * no reason is set. */
+	time_t slurmd_start_time;/* time of slurmd startup */
 	uint16_t sockets;       /* number of sockets per node */
 	uint16_t threads;       /* number of threads per core */
 	uint32_t tmp_disk;	/* configured MB of total disk in TMP_FS */

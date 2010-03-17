@@ -2066,6 +2066,7 @@ _pack_node_registration_status_msg(slurm_node_registration_status_msg_t *
 
 	if(protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
 		pack_time(msg->timestamp, buffer);
+		pack_time(msg->slurmd_start_time, buffer);
 		pack32(msg->status, buffer);
 		packstr(msg->node_name, buffer);
 		packstr(msg->arch, buffer);
@@ -2133,6 +2134,7 @@ _unpack_node_registration_status_msg(slurm_node_registration_status_msg_t
 	if(protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
 		/* unpack timestamp of snapshot */
 		safe_unpack_time(&node_reg_ptr->timestamp, buffer);
+		safe_unpack_time(&node_reg_ptr->slurmd_start_time, buffer);
 		/* load the data values */
 		safe_unpack32(&node_reg_ptr->status, buffer);
 		safe_unpackstr_xmalloc(&node_reg_ptr->node_name,
@@ -2208,6 +2210,11 @@ _unpack_node_registration_status_msg(slurm_node_registration_status_msg_t
 			 ||   switch_g_unpack_node_info(
 				 node_reg_ptr->switch_nodeinfo, buffer)))
 			goto unpack_error;
+
+		/* Compute slurmd_start_time, assuming it started at same
+		 * time that the node booted */
+		node_reg_ptr->slurmd_start_time = time(NULL) - 
+						  node_reg_ptr->up_time;
 	}
 	return SLURM_SUCCESS;
 
@@ -2515,7 +2522,9 @@ _unpack_node_info_members(node_info_t * node, Buf buffer,
 		safe_unpack32(&node->weight, buffer);
 		safe_unpack32(&node->reason_uid, buffer);
 
+		safe_unpack_time(&node->boot_time, buffer);
 		safe_unpack_time(&node->reason_time, buffer);
+		safe_unpack_time(&node->slurmd_start_time, buffer);
 
 		select_g_select_nodeinfo_unpack(&node->select_nodeinfo, buffer,
 						protocol_version);
