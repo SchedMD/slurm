@@ -266,6 +266,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "CPU count specification invalid"             	},
 	{ ESLURM_PARTITION_NOT_AVAIL,
 	  "Required partition not available (inactive or drain)"},
+	{ ESLURM_CIRCULAR_DEPENDENCY,
+	  "Circular job dependency"				},
 
 	/* slurmd error codes */
 
