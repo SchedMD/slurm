@@ -42,6 +42,7 @@ documents those changes that are of interest to users and admins.
     depending on the configuration.
  -- For SPANK job environment, avoid duplicate "SPANK_" prefix for environment
     set by sbatch jobs.
+ -- Make squeue select jobs on hidden partitions when requesting more than one.
 
 * Changes in SLURM 2.1.4
 ========================
