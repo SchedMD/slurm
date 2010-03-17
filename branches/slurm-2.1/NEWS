@@ -36,6 +36,8 @@ documents those changes that are of interest to users and admins.
     the C api.
  -- BLUEGENE - made the perlapi get correct values for cpus per node,
     Previously it would give the number of cpus per cnode instead of midplane.
+ -- For SPANK job environment, avoid duplicate "SPANK_" prefix for environment
+    set by sbatch jobs.
 
 * Changes in SLURM 2.1.4
 ========================
