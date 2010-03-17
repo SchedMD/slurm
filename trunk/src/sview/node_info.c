@@ -38,6 +38,7 @@ int g_node_scaling = 1;
 /* These need to be in alpha order (except POS and CNT) */
 enum {
 	SORTID_POS = POS_LOC,
+	SORTID_BOOT_TIME,
 	SORTID_COLOR,
 	SORTID_CPUS,
 	SORTID_CORES,
@@ -47,6 +48,7 @@ enum {
 	SORTID_MEMORY,
 	SORTID_NAME,
 	SORTID_REASON,
+	SORTID_SLURMD_START_TIME,
 	SORTID_SOCKETS,
 	SORTID_STATE,
 	SORTID_STATE_NUM,
@@ -88,6 +90,10 @@ static display_data_t display_data_node[] = {
 	 create_model_node, admin_edit_node},
 	{G_TYPE_STRING, SORTID_FEATURES, "Features", FALSE,
 	 EDIT_TEXTBOX, refresh_node, create_model_node, admin_edit_node},
+	{G_TYPE_STRING, SORTID_BOOT_TIME, "BootTime", FALSE, 
+	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
+	{G_TYPE_STRING, SORTID_SLURMD_START_TIME, "SlurmdStartTime", FALSE, 
+	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
 	{G_TYPE_STRING, SORTID_REASON, "Reason", FALSE,
 	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
 	{G_TYPE_INT, SORTID_UPDATED, NULL, FALSE, EDIT_NONE, refresh_node,
@@ -240,6 +246,14 @@ static void _layout_node_record(GtkTreeView *treeview,
 				   node_ptr->features);
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_node,
+						 SORTID_BOOT_TIME),
+				   sview_node_info_ptr->boot_time);
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_node,
+						 SORTID_SLURMD_START_TIME),
+				   sview_node_info_ptr->slurmd_start_time);
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_node,
 						 SORTID_REASON),
 				   sview_node_info_ptr->reason);
 	return;
@@ -322,6 +336,10 @@ static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 			   node_ptr->weight, -1);
 	gtk_tree_store_set(treestore, iter, SORTID_FEATURES,
 			   node_ptr->features, -1);
+	gtk_tree_store_set(treestore, iter, SORTID_BOOT_TIME,
+			   sview_node_info_ptr->boot_time, -1);
+	gtk_tree_store_set(treestore, iter, SORTID_SLURMD_START_TIME,
+			   sview_node_info_ptr->slurmd_start_time, -1);
 	gtk_tree_store_set(treestore, iter, SORTID_REASON,
 			   sview_node_info_ptr->reason, -1);
 	gtk_tree_store_set(treestore, iter, SORTID_UPDATED, 1, -1);
@@ -496,6 +514,7 @@ extern List create_node_info_list(node_info_msg_t *node_info_ptr, int changed)
 	int i = 0;
 	sview_node_info_t *sview_node_info_ptr = NULL;
 	node_info_t *node_ptr = NULL;
+	char user[32], time_str[32];
 
 	if(!changed && info_list) {
 		goto update_color;
@@ -521,20 +540,30 @@ extern List create_node_info_list(node_info_msg_t *node_info_ptr, int changed)
 		sview_node_info_ptr->pos = i;
 		if(node_ptr->reason &&
 		   (node_ptr->reason_uid != NO_VAL) && node_ptr->reason_time) {
-			char user[32], time_str[32];
 			struct passwd *pw = NULL;
 
 			if ((pw=getpwuid(node_ptr->reason_uid)))
 				snprintf(user, sizeof(user), "%s", pw->pw_name);
 			else
 				snprintf(user, sizeof(user), "Unk(%u)",
-				 node_ptr->reason_uid);
+					 node_ptr->reason_uid);
 			slurm_make_time_str(&node_ptr->reason_time,
 					    time_str, sizeof(time_str));
 			sview_node_info_ptr->reason = xstrdup_printf(
 				"%s [%s@%s]", node_ptr->reason, user, time_str);
 		} else
 			sview_node_info_ptr->reason = xstrdup(node_ptr->reason);
+		if(node_ptr->boot_time) {
+			slurm_make_time_str(&node_ptr->boot_time,
+					    time_str, sizeof(time_str));
+			sview_node_info_ptr->boot_time = xstrdup(time_str);
+		}
+		if(node_ptr->slurmd_start_time) {
+			slurm_make_time_str(&node_ptr->slurmd_start_time,
+					    time_str, sizeof(time_str));
+			sview_node_info_ptr->slurmd_start_time = 
+					xstrdup(time_str);
+		}
 	}
 update_color:
 
