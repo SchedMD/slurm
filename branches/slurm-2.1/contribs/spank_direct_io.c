@@ -20,6 +20,16 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ ****************************************************************************
+ * Two options are added for salloc, sbatch, and srun: --cache-io and
+ * --direct-io. These options will set a SPANK_DIRECT_IO environment variable
+ * for the job's Prolog and Epilog scripts. If neither option (or their
+ * corresponding environment variables) are set, then SPANK_DIRECT_IO
+ * will not exist. NOTE: Command line options take precidence over the 
+ * environment variables.
+ *
+ * --cache-io  or SLURM_CACHE_IO  env var will set SPANK_DIRECT_IO=0
+ * --direct-io or SLURM_DIRECT_IO env var will set SPANK_DIRECT_IO=1
  ****************************************************************************/
 
 #include <stdlib.h>
@@ -43,7 +53,7 @@ static int _opt_process (int val, const char *optarg, int remote);
 /*
  *  Provide a --cache-io/--direct-io option for srun:
  */
-struct spank_option spank_options[] =
+struct spank_option spank_option_array[] =
 {
 	{ "cache-io",     NULL, "Cache I/O", 
 		0, CACHE_IO, (spank_opt_cb_f) _opt_process },
@@ -51,6 +61,22 @@ struct spank_option spank_options[] =
 		0, DIRECT_IO,  (spank_opt_cb_f) _opt_process },
 	SPANK_OPTIONS_TABLE_END
 };
+
+int slurm_spank_init(spank_t sp, int ac, char **av)
+{
+	int i, j, rc = ESPANK_SUCCESS;
+
+	for (i=0; spank_option_array[i].name; i++) {
+		j = spank_option_register(sp, &spank_option_array[i]);
+		if (j != ESPANK_SUCCESS) {
+			slurm_error("Could not register Spank option %s",
+				    spank_option_array[i].name);
+			rc = j;
+		}
+	}
+
+	return rc;
+}
 
 /*
  *  Called from both srun and slurmd.
