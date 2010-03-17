@@ -210,7 +210,6 @@ int main(int argc, char *argv[])
 	int cnt, error_code, i;
 	pthread_attr_t thread_attr;
 	struct stat stat_buf;
-	char *dir_name;
 	/* Locks: Write configuration, job, node, and partition */
 	slurmctld_lock_t config_write_lock = {
 		WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, WRITE_LOCK };
@@ -548,12 +547,6 @@ int main(int argc, char *argv[])
 			slurm_mutex_unlock(&assoc_cache_mutex);
 			pthread_join(assoc_cache_thread, NULL);
 		}
-
-		dir_name = slurm_get_state_save_location();
-		if (select_g_state_save(dir_name) != SLURM_SUCCESS)
-			error("failed to save node selection state");
-		switch_save(dir_name);
-		xfree(dir_name);
 
 		/* Save any pending state save RPCs */
 		acct_storage_g_close_connection(&acct_db_conn);
