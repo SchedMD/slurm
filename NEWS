@@ -110,6 +110,9 @@ documents those changes that are of interest to users and admins.
     like postgres over mysql for some reason here you go. (Work done
     primarily by Hongjia Cao, NUDT.)
 
+* Changes in SLURM 2.1.6
+========================
+
 * Changes in SLURM 2.1.5
 ========================
  -- BLUEGENE - Fixed display of draining nodes for sinfo -R.
@@ -147,6 +150,9 @@ documents those changes that are of interest to users and admins.
     depending on the configuration.
  -- For SPANK job environment, avoid duplicate "SPANK_" prefix for environment
     set by sbatch jobs.
+ -- Make squeue select jobs on hidden partitions when requesting more than one.
+ -- Avoid automatically cancelling job steps when all of the tasks on some node
+    have gracefully terminated.
 
 * Changes in SLURM 2.1.4
 ========================
