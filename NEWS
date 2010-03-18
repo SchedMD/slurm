@@ -1,9 +1,6 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
-* Changes in SLURM 2.2.0.pre4
-=============================
-
 * Changes in SLURM 2.2.0.pre3
 =============================
  -- Refine support for TotalView partial attach. Add parameter to configure
@@ -32,6 +29,7 @@ documents those changes that are of interest to users and admins.
     upon job 12).
  -- Add BootTime and SlurmdStartTime to available node information.
  -- Fixed moab_2_slurmdb to work correctly under new database schema.
+ -- Slurmd will drain a compute node when the SlurmdSpoolDir is full.
 
 * Changes in SLURM 2.2.0.pre2
 =============================
