@@ -83,10 +83,10 @@ $other_ld_flags = " -brtl -G -bnoentry -bgcbypass:1000 -bexpfull"
 
 WriteMakefile(
 	NAME              => 'Slurm',
-	VERSION_FROM      => '@abs_srcdir@/Slurm.pm', # finds $VERSION
+	VERSION_FROM      => 'Slurm.pm', # finds $VERSION
 	PREREQ_PM         => {}, # e.g., Module::Name => 1.1
 	($] >= 5.005 ?     ## Add these new keywords supported since 5.005
-	(ABSTRACT_FROM    => '@abs_srcdir@/Slurm.pm', # retrieve abstract from module
+	(ABSTRACT_FROM    => 'Slurm.pm', # retrieve abstract from module
 	 AUTHOR           => 'Hongjia Cao <hjcao@nudt.edu.cn>') : ()),
 	LIBS              => ["-L@top_builddir@/src/api/.libs -L@prefix@/lib -lslurm"], # e.g., '-lm'
 	DEFINE            => '', # e.g., '-DHAVE_SOMETHING'
@@ -94,7 +94,7 @@ WriteMakefile(
 	# Un-comment this if you add C files to link with later:
 	OBJECT            => '$(O_FILES)', # link all the C files too
 	CCFLAGS           => '-g',
-	PM                => {'@abs_srcdir@/Slurm.pm' => '$(INST_LIBDIR)/Slurm.pm'},
+	PM                => {'Slurm.pm' => '$(INST_LIBDIR)/Slurm.pm'},
 	dynamic_lib       => {'OTHERLDFLAGS' => $other_ld_flags},
 );
 

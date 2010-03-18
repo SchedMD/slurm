@@ -2,24 +2,28 @@ AUTOMAKE_OPTIONS = foreign
 # copied from pidgin
 #
 perl_dir = perl
-perl_src_dir = ${abs_srcdir}/${perl_dir}
 perlpath = /usr/bin/perl
 perl_sources = \
-	       $(perl_src_dir)/Makefile.PL.in \
-	       $(perl_src_dir)/ppport.h \
-	       $(perl_src_dir)/Slurm.pm \
-	       $(perl_src_dir)/Slurm.xs \
-	       $(perl_src_dir)/typemap \
-	       $(perl_src_dir)/msg.h \
-	       $(perl_src_dir)/alloc.c \
-	       $(perl_src_dir)/conf.c \
-	       $(perl_src_dir)/job.c \
-	       $(perl_src_dir)/launch.c \
-	       $(perl_src_dir)/node.c \
-	       $(perl_src_dir)/partition.c \
-	       $(perl_src_dir)/trigger.c
+	       $(perl_dir)/Makefile.PL.in \
+	       $(perl_dir)/ppport.h \
+	       $(perl_dir)/Slurm.pm \
+	       $(perl_dir)/Slurm.xs \
+	       $(perl_dir)/typemap \
+	       $(perl_dir)/msg.h \
+	       $(perl_dir)/alloc.c \
+	       $(perl_dir)/conf.c \
+	       $(perl_dir)/job.c \
+	       $(perl_dir)/launch.c \
+	       $(perl_dir)/node.c \
+	       $(perl_dir)/partition.c \
+	       $(perl_dir)/trigger.c
 
 $(perl_dir)/Makefile:	$(perl_dir)/Makefile.PL
+	@if test "x${top_srcdir}" != "x${top_builddir}"; then \
+		for f in ${perl_sources}; do \
+			${LN_S} -f ${abs_srcdir}/$$f $$f; \
+		done; \
+	fi
 	@cd $(perl_dir) && $(perlpath) Makefile.PL $(PERL_MM_PARAMS) prefix=${prefix}
 
 #
