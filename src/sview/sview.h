@@ -70,6 +70,7 @@
 #include "src/common/list.h"
 #include "src/common/macros.h"
 #include "src/common/node_select.h"
+#include "src/common/uid.h"
 #include "src/plugins/select/bluegene/block_allocator/block_allocator.h"
 #include "src/plugins/select/bluegene/plugin/bluegene.h"
 //#include "src/plugins/select/bluegene/wrap_rm_api.h"
