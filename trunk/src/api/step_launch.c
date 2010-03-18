@@ -1051,31 +1051,12 @@ _step_missing_handler(struct step_launch_state *sls, slurm_msg_t *missing_msg)
 		node = hostlist_next(fail_itr);
 		node_id = hostset_find(all_nodes, node);
 		if (node_id < 0) {
-			error(  "Internal error: bad SRUN_STEP_MISSING message. "
-				"Node %s not part of this job step", node);
+			error("Internal error: bad SRUN_STEP_MISSING message. "
+			      "Node %s not part of this job step", node);
 			free(node);
 			continue;
 		}
 		free(node);
-
-		/* If this is true, an I/O error has already occurred on the
-		   stepd for the current node, and the job should abort */
-		if (bit_test(sls->node_io_error, node_id)) {
-			error("Aborting, step missing and io error on node %d",
-			      node_id);
-			sls->abort = true;
-			pthread_cond_broadcast(&sls->cond);
-			break;
-		}
-
-		/*
-		 * A test is already is progress. Ignore message for this node.
-		 */
-		if (sls->io_deadline[node_id] != NO_VAL) {
-			debug("Test in progress for node %d, ignoring message",
-			      node_id);
-			continue;
-		}
 
 		/*
 		 * If all tasks for this node have either not started or already
@@ -1095,6 +1076,24 @@ _step_missing_handler(struct step_launch_state *sls, slurm_msg_t *missing_msg)
 		if (!active)
 			continue;
 
+		/* If this is true, an I/O error has already occurred on the
+		 * stepd for the current node, and the job should abort */
+		if (bit_test(sls->node_io_error, node_id)) {
+			error("Aborting, step missing and io error on node %d",
+			      node_id);
+			sls->abort = true;
+			pthread_cond_broadcast(&sls->cond);
+			break;
+		}
+
+		/*
+		 * A test is already is progress. Ignore message for this node.
+		 */
+		if (sls->io_deadline[node_id] != NO_VAL) {
+			debug("Test in progress for node %d, ignoring message",
+			      node_id);
+			continue;
+		}
 
 		sls->io_deadline[node_id] = time(NULL) + sls->io_timeout;
 
