@@ -134,6 +134,7 @@ static void      _atfork_prepare(void);
 static void      _create_msg_socket(void);
 static void      _decrement_thd_count(void);
 static void      _destroy_conf(void);
+static int       _drain_node(char *reason);
 static void      _fill_registration_msg(slurm_node_registration_status_msg_t *);
 static void      _handle_connection(slurm_fd fd, slurm_addr *client);
 static void      _hup_handler(int);
@@ -1296,7 +1297,7 @@ _slurmd_fini(void)
 int save_cred_state(slurm_cred_ctx_t ctx)
 {
 	char *old_file, *new_file, *reg_file;
-	int cred_fd = -1, error_code = SLURM_SUCCESS;
+	int cred_fd = -1, error_code = SLURM_SUCCESS, rc;
 	Buf buffer = NULL;
 	static pthread_mutex_t state_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -1310,15 +1311,19 @@ int save_cred_state(slurm_cred_ctx_t ctx)
 	slurm_mutex_lock(&state_mutex);
 	if ((cred_fd = creat(new_file, 0600)) < 0) {
 		error("creat(%s): %m", new_file);
+		if (errno == ENOSPC)
+			_drain_node("SlurmdSpoolDir is full");
 		error_code = errno;
 		goto cleanup;
 	}
 	buffer = init_buf(1024);
 	slurm_cred_ctx_pack(ctx, buffer);
-	if (write(cred_fd, get_buf_data(buffer),
-		  get_buf_offset(buffer)) != get_buf_offset(buffer)) {
+	rc = write(cred_fd, get_buf_data(buffer), get_buf_offset(buffer));
+	if (rc != get_buf_offset(buffer)) {
 		error("write %s error %m", new_file);
 		(void) unlink(new_file);
+		if ((rc < 0) && (errno == ENOSPC))
+			_drain_node("SlurmdSpoolDir is full");
 		error_code = errno;
 		goto cleanup;
 	}
@@ -1342,6 +1347,27 @@ cleanup:
 	if (cred_fd > 0)
 		close(cred_fd);
 	return error_code;
+}
+
+static int _drain_node(char *reason)
+{
+	slurm_msg_t req_msg;
+	update_node_msg_t update_node_msg;
+
+	memset(&update_node_msg, 0, sizeof(update_node_msg_t));
+	update_node_msg.node_names = conf->node_name;
+	update_node_msg.node_state = NODE_STATE_DRAIN;
+	update_node_msg.reason = reason;
+	update_node_msg.reason_uid = getuid();
+	update_node_msg.weight = NO_VAL;
+	slurm_msg_t_init(&req_msg);
+	req_msg.msg_type = REQUEST_UPDATE_NODE;
+	req_msg.data = &update_node_msg;
+
+	if (slurm_send_only_controller_msg(&req_msg) < 0)
+		return SLURM_ERROR;
+
+	return SLURM_SUCCESS;
 }
 
 static void
