@@ -863,7 +863,10 @@ extern int update_state_node(GtkDialog *dialog,
 				g_free(lower);
 				goto end_it;
 			}
-			node_msg->reason_uid = getuid();
+			if (uid_from_string(getlogin(), &node_msg->reason_uid)
+			     < 0) { 
+				node_msg->reason_uid = getuid();
+			}
 		}
 		if(slurm_update_node(node_msg) == SLURM_SUCCESS) {
 			lower = g_strdup_printf(
