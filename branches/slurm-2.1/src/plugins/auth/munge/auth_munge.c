@@ -527,6 +527,8 @@ _decode_cred(slurm_auth_credential_t *c, char *socket)
 			error ("Munge decode failed: %s",
 			       munge_ctx_strerror(ctx));
 			_print_cred(ctx);
+			if (e == EMUNGE_CRED_REWOUND)
+				error("Check for out of sync clocks");
 
 			c->cr_errno = e + MUNGE_ERRNO_OFFSET;
 #ifdef MULTIPLE_SLURMD
