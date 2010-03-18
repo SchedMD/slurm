@@ -1,0 +1,8 @@
+Most of these diagrams (with the ".dia" suffix) were built using the 
+tool "dia" (http://www.gnome.org/projects/dia/).
+
+gnuplot is used with "times.gpl" and ".dat" suffix files to build a 
+timing plot.
+
+The PostScript images of these can be built as needed by the Makefile 
+in "../jsspp" and "../pubdesign". 
