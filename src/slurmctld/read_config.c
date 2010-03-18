@@ -342,6 +342,8 @@ static int _handle_downnodes_line(slurm_conf_downnodes_t *down)
 		if (down->reason) {
 			xfree(node_rec->reason);
 			node_rec->reason = xstrdup(down->reason);
+			node_rec->reason_time = time(NULL);
+			node_rec->reason_uid = getuid();
 		}
 		free(alias);
 	}
