@@ -91,14 +91,13 @@ int backfilled_jobs = 0;
 static bool new_work      = false;
 static bool stop_backfill = false;
 static pthread_mutex_t thread_flag_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t term_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t  term_cond = PTHREAD_COND_INITIALIZER;
+
 static int max_backfill_job_cnt = 50;
 
 #ifndef BACKFILL_INTERVAL
-#  ifdef HAVE_BG
-#    define BACKFILL_INTERVAL	5
-#  else
-#    define BACKFILL_INTERVAL	10
-#  endif
+#  define BACKFILL_INTERVAL	5
 #endif
 
 /* Set __DEBUG to get detailed logging for this thread without
@@ -119,6 +118,7 @@ static void _diff_tv_str(struct timeval *tv1,struct timeval *tv2,
 		char *tv_str, int len_tv_str);
 static bool _job_is_completing(void);
 static bool _more_work(void);
+static void _my_sleep(int secs);
 static int  _num_feature_count(struct job_record *job_ptr);
 static void _reset_job_time_limit(struct job_record *job_ptr, time_t now,
 				  node_space_map_t *node_space);
@@ -316,9 +316,21 @@ static int  _try_sched(struct job_record *job_ptr, bitstr_t **avail_bitmap,
 /* Terminate backfill_agent */
 extern void stop_backfill_agent(void)
 {
+	pthread_mutex_lock(&term_lock);
 	stop_backfill = true;
+	pthread_cond_signal(&term_cond);
+	pthread_mutex_unlock(&term_lock);
 }
 
+static void _my_sleep(int secs)
+{
+	struct timespec ts = {0, 0};
+
+	ts.tv_sec = time(NULL) + secs;
+	pthread_mutex_lock(&term_lock);
+	pthread_cond_timedwait(&term_cond, &term_lock, &ts);
+	pthread_mutex_unlock(&term_lock);
+}
 
 /* backfill_agent - detached thread periodically attempts to backfill jobs */
 extern void *backfill_agent(void *args)
@@ -326,7 +338,7 @@ extern void *backfill_agent(void *args)
 	struct timeval tv1, tv2;
 	char tv_str[20], *sched_params, *tmp_ptr;
 	time_t now;
-	int backfill_interval = BACKFILL_INTERVAL, i, iter;
+	int backfill_interval = BACKFILL_INTERVAL;
 	static time_t last_backfill_time = 0;
 	/* Read config, and partitions; Write jobs and nodes */
 	slurmctld_lock_t all_locks = {
@@ -347,19 +359,14 @@ extern void *backfill_agent(void *args)
 	}
 
 	while (!stop_backfill) {
-		iter = (BACKFILL_CHECK_SEC * 1000000) /
-		       STOP_CHECK_USEC;
-		for (i=0; ((i<iter) && (!stop_backfill)); i++) {
-			/* test stop_backfill every 0.2 sec for
-			 * 5.0 secs to avoid running continuously */
-			usleep(STOP_CHECK_USEC);
-		}
+		_my_sleep(BACKFILL_INTERVAL);
 		if (stop_backfill)
 			break;
 
 		now = time(NULL);
-		if (!_more_work() || _job_is_completing() ||
-		    (difftime(now, last_backfill_time) < backfill_interval))
+		if ((difftime(now, last_backfill_time) < backfill_interval) ||
+		    _job_is_completing() || 
+		    !_more_work())	/* _more_work() test must be last */
 			continue;
 		last_backfill_time = now;
 
