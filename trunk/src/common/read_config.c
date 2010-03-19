@@ -2437,8 +2437,8 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 	if (!s_p_get_uint16(&conf->propagate_prio_process,
 			"PropagatePrioProcess", hashtbl)) {
-		conf->propagate_prio_process = DEFAULT_PROPAGATE_PRIO_PROCESS;
-	} else if (conf->propagate_prio_process > 1) {
+		conf->propagate_prio_process = PROP_PRIO_OFF;
+	} else if (conf->propagate_prio_process > PROP_PRIO_NICER) {
 		fatal("Bad PropagatePrioProcess: %u",
 			conf->propagate_prio_process);
 	}

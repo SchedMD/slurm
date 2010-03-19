@@ -3,6 +3,10 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 2.2.0.pre4
 =============================
+ -- Add support for a PropagatePrioProcess configuration parameter value of 2
+    to restrict spawned task nice values to that of the slurmd daemon plus 1.
+    This insures that the slurmd daemon always have a higher scheduling
+    priority than spawned tasks.
 
 * Changes in SLURM 2.2.0.pre3
 =============================

@@ -1038,11 +1038,25 @@ See \fBProlog and Epilog Scripts\fR for more information.
 
 .TP
 \fBPropagatePrioProcess\fR
-Setting \fBPropagatePrioProcess\fR to "1", will cause a users job to run
-with the same priority (aka nice value) as the users process which
-launched the job on the submit node.
-If set to "0", or left unset, the users job will inherit the
-scheduling priority from the slurm daemon.
+Controls the scheduling priority (nice value) of user spawned tasks.
+.RS
+.TP 5
+\fB0\fR
+The tasks will inherit the scheduling priority from the slurm daemon.
+This is the default value.
+.TP
+\fB1\fR
+The tasks will inherit the scheduling priority of the command used to
+submit them (e.g. \fBsrun\fR or \fBsbatch\fR).
+Unless the job is submitted by user root, the tasks will have a scheduling
+priority no higher than the slurm daemon spawning them.
+.TP
+\fB2\fR
+The tasks will inherit the scheduling priority of the command used to
+submit them (e.g. \fBsrun\fR or \fBsbatch\fR) with the restriction that
+their nice value will always be one higher than the slurm daemon (i.e.
+the tasks scheduling priority will be lower than the slurm daemon).
+.RE
 
 .TP
 \fBPropagateResourceLimits\fR

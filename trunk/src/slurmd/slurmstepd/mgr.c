@@ -1120,7 +1120,7 @@ _fork_all_tasks(slurmd_job_t *job)
 			/* jobacct_gather_g_endpoll();
 			 * closing jobacct files here causes deadlock */
 
-			if (conf->propagate_prio == 1)
+			if (conf->propagate_prio)
 				_set_prio_process(job);
 
 			/*
@@ -1851,23 +1851,24 @@ static void _set_prio_process (slurmd_job_t *job)
 {
 	char *env_name = "SLURM_PRIO_PROCESS";
 	char *env_val;
-
-	int prio_process;
+	int prio_daemon, prio_process;
 
 	if (!(env_val = getenvp( job->env, env_name ))) {
 		error( "Couldn't find %s in environment", env_name );
-		return;
+		prio_process = 0;
+	} else {
+		/* Users shouldn't get this in their environment */
+		unsetenvp( job->env, env_name );
+		prio_process = atoi( env_val );
 	}
 
-	/*
-	 * Users shouldn't get this in their environ
-	 */
-	unsetenvp( job->env, env_name );
-
-	prio_process = atoi( env_val );
+	if (conf->propagate_prio == PROP_PRIO_NICER) {
+		prio_daemon = getpriority( PRIO_PROCESS, 0 );
+		prio_process = MAX( prio_process, (prio_daemon + 1) );
+	}
 
 	if (setpriority( PRIO_PROCESS, 0, prio_process ))
-		error( "setpriority(PRIO_PROCESS): %m" );
+		error( "setpriority(PRIO_PROCESS, %d): %m", prio_process );
 	else {
 		debug2( "_set_prio_process: setpriority %d succeeded",
 			prio_process);
