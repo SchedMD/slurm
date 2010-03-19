@@ -535,6 +535,10 @@ enum ctx_keys {
 #define PRIORITY_RESET_QUARTERLY 0x0005	/* clear quarterly on first at 00:00 */
 #define PRIORITY_RESET_YEARLY	0x0006	/* clear yearly on first at 00:00 */
 
+#define PROP_PRIO_OFF		0x0000	/* Do not propagage user nice value */
+#define PROP_PRIO_ON		0x0001	/* Propagate user nice value */
+#define PROP_PRIO_NICER		0x0002	/* Insure that user tasks have a nice
+					 * value that is higher than slurmd */
 /*****************************************************************************\
  *	PROTOCOL DATA STRUCTURE DEFINITIONS
 \*****************************************************************************/
@@ -1356,8 +1360,8 @@ typedef struct slurm_ctl_conf {
 	char *proctrack_type;	/* process tracking plugin type */
 	char *prolog;		/* pathname of job prolog run by slurmd */
 	char *prolog_slurmctld;	/* pathname of job prolog run by slurmctld */
-	uint16_t propagate_prio_process; /* 1 if process priority should
-					  * be propagated */
+	uint16_t propagate_prio_process; /* process priority propagation,
+					  * see PROP_PRIO_* */
 	char *propagate_rlimits;/* Propagate (all/specific) resource limits */
 	char *propagate_rlimits_except;/* Propagate all rlimits except these */
 	char *resume_program;	/* program to make nodes full power */
