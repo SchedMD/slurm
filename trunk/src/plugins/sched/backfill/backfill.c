@@ -97,7 +97,11 @@ static pthread_cond_t  term_cond = PTHREAD_COND_INITIALIZER;
 static int max_backfill_job_cnt = 50;
 
 #ifndef BACKFILL_INTERVAL
-#  define BACKFILL_INTERVAL	5
+#  ifdef HAVE_BG
+#    define BACKFILL_INTERVAL	5
+#  else
+#    define BACKFILL_INTERVAL	10
+#  endif
 #endif
 
 /* Set __DEBUG to get detailed logging for this thread without
