@@ -53,7 +53,7 @@
  * IN:  account_list List of slurmdb_account_rec_t *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int slurmdb_add_accounts(void *db_conn, List acct_list)
+extern int slurmdb_accounts_add(void *db_conn, List acct_list)
 {
 	return acct_storage_g_add_accounts(db_conn, getuid(), acct_list);
 }
