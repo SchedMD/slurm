@@ -4288,9 +4288,10 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer)
 	pack_time(begin_time, buffer);
 
 	/* Actual or expected start time */
-	if(dump_job_ptr->start_time >= begin_time)
+	if((dump_job_ptr->start_time) ||  /* estimated start time set OR */
+	   (begin_time <= time(NULL)))    /* earliest start time in past */
 		pack_time(dump_job_ptr->start_time, buffer);
-	else
+	else	/* earliest start time in the future */ 
 		pack_time(begin_time, buffer);
 
 	pack_time(dump_job_ptr->end_time, buffer);
