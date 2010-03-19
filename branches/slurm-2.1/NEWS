@@ -3,6 +3,9 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 2.1.6
 ========================
+ -- For newly submitted jobs, report expected start time in squeue --start as
+    "N/A" rather than current time.
+ -- Correct sched/backfill logic so that it runs in a more timely fashion.
 
 * Changes in SLURM 2.1.5
 ========================
