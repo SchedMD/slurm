@@ -282,8 +282,18 @@ static int _set_assoc_parent_and_user(acct_association_rec_t *assoc,
 			error("association %u was pointing to "
 			      "itself as it's parent");
 		}
-	} else
+	} else {
+		acct_association_rec_t *last_root = assoc_mgr_root_assoc;
+
 		assoc_mgr_root_assoc = assoc;
+		/* set up new root since if running off cache the
+		   total usage for the cluster doesn't get set up again */
+		if(last_root) {
+			assoc_mgr_root_assoc->usage_raw = last_root->usage_raw;
+			assoc_mgr_root_assoc->usage_norm =
+				last_root->usage_norm;
+		}
+	}
 
 	if(assoc->user) {
 		uid_t pw_uid;
