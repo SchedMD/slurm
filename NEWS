@@ -7,6 +7,8 @@ documents those changes that are of interest to users and admins.
     to restrict spawned task nice values to that of the slurmd daemon plus 1.
     This insures that the slurmd daemon always have a higher scheduling
     priority than spawned tasks.
+ -- Fixed slurm_load_slurmd_status and slurm_pid2jobid to work correctly when
+    multiple slurmds are in use.
 
 * Changes in SLURM 2.2.0.pre3
 =============================

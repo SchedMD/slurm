@@ -43,6 +43,7 @@
 
 #include <errno.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include <slurm/slurm.h>
 
@@ -1144,11 +1145,24 @@ slurm_load_slurmd_status(slurmd_status_t **slurmd_status_ptr)
 	int rc;
 	slurm_msg_t req_msg;
 	slurm_msg_t resp_msg;
-	char this_host[256], *this_addr;
+#ifndef MULTIPLE_SLURMD
+	char this_host[256];
+#endif
+	char *this_addr;
 
 	slurm_msg_t_init(&req_msg);
 	slurm_msg_t_init(&resp_msg);
 
+#ifdef MULTIPLE_SLURMD
+	if((this_addr = getenv("SLURMD_NODENAME"))) {
+		slurm_conf_get_addr(this_addr, &req_msg.address);
+	} else {
+		this_addr = "localhost";
+		slurm_set_addr(&req_msg.address,
+			       (uint16_t)slurm_get_slurmd_port(),
+			       this_addr);
+	}
+#else
 	/*
 	 *  Set request message address to slurmd on localhost
 	 */
@@ -1159,7 +1173,7 @@ slurm_load_slurmd_status(slurmd_status_t **slurmd_status_ptr)
 	slurm_set_addr(&req_msg.address, (uint16_t)slurm_get_slurmd_port(),
 		       this_addr);
 	xfree(this_addr);
-
+#endif
 	req_msg.msg_type = REQUEST_DAEMON_STATUS;
 	req_msg.data     = NULL;
 
