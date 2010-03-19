@@ -9,6 +9,9 @@ documents those changes that are of interest to users and admins.
     priority than spawned tasks.
  -- Fixed slurm_load_slurmd_status and slurm_pid2jobid to work correctly when
     multiple slurmds are in use.
+ -- Altered srun to set max_nodes to min_nodes if not set when doing an
+    allocation to mimic that which salloc and sbatch do.  If running a step if
+    the max isn't set it remains unset.
 
 * Changes in SLURM 2.2.0.pre3
 =============================
