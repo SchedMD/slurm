@@ -1842,8 +1842,10 @@ static void _set_prio_process (slurmd_job_t *job)
 
 	if (setpriority( PRIO_PROCESS, 0, prio_process ))
 		error( "setpriority(PRIO_PROCESS): %m" );
-
-	debug2( "_set_prio_process: setpriority %d succeeded", prio_process);
+	else {
+		debug2( "_set_prio_process: setpriority %d succeeded",
+			prio_process);
+	}
 }
 
 static int
