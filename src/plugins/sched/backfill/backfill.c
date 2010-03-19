@@ -356,8 +356,9 @@ extern void *backfill_agent(void *args)
 			break;
 
 		now = time(NULL);
-		if (!_more_work() || _job_is_completing() ||
-		    (difftime(now, last_backfill_time) < backfill_interval))
+		if ((difftime(now, last_backfill_time) < backfill_interval) ||
+		    _job_is_completing() ||
+		    !_more_work())	/* _more_work() test must be last */
 			continue;
 		last_backfill_time = now;
 
