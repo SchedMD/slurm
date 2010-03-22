@@ -522,16 +522,17 @@ _pick_step_nodes (struct job_record  *job_ptr,
 						      false,
 						      &selected_nodes);
 			if (error_code) {
-				info("_pick_step_nodes: invalid node list %s",
-				     step_spec->node_list);
+				info("_pick_step_nodes: invalid node list (%s) "
+				     "for job step %u",
+				     step_spec->node_list, job_ptr->job_id);
 				bit_free(selected_nodes);
 				goto cleanup;
 			}
 			if (!bit_super_set(selected_nodes,
 					   job_ptr->node_bitmap)) {
-				info("_pick_step_nodes: selected node is not "
-				     "in job %u", step_spec->node_list,
-				     job_ptr->job_id);
+				info("_pick_step_nodes: selected nodes (%s) "
+				     "not in job %u", 
+				     step_spec->node_list, job_ptr->job_id);
 				bit_free(selected_nodes);
 				goto cleanup;
 			}
