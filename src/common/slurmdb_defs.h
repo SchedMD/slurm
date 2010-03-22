@@ -40,6 +40,19 @@
 
 #include <slurm/slurmdb.h>
 
+/* Defined purge macros */
+#define SLURMDB_PURGE_GET_UNITS(_X) \
+	(_X & SLURMDB_PURGE_BASE)
+#define SLURMDB_PURGE_ARCHIVE_SET(_X) \
+	(_X & SLURMDB_PURGE_ARCHIVE)
+#define SLURMDB_PURGE_IN_HOURS(_X) \
+	(_X & SLURMDB_PURGE_HOURS)
+#define SLURMDB_PURGE_IN_DAYS(_X) \
+	(_X & SLURMDB_PURGE_DAYS)
+#define SLURMDB_PURGE_IN_MONTHS(_X) \
+	(_X & SLURMDB_PURGE_MONTHS)
+
+
 extern slurmdb_step_rec_t *slurmdb_create_step_rec();
 extern slurmdb_job_rec_t *slurmdb_create_job_rec();
 
@@ -116,6 +129,9 @@ extern void log_assoc_rec(slurmdb_association_rec_t *assoc_ptr, List qos_list);
 
 extern int slurmdb_report_set_start_end_time(time_t *start, time_t *end);
 
+extern uint32_t slurmdb_parse_purge(char *string);
+extern char *slurmdb_purge_string(uint32_t purge, char *string, int len,
+				  bool with_archive);
 
 
 #endif

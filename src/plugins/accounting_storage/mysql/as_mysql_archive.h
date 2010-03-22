@@ -42,10 +42,10 @@
 
 #include "accounting_storage_mysql.h"
 
-
 extern int as_mysql_jobacct_process_archive(mysql_conn_t *mysql_conn,
-					 slurmdb_archive_cond_t *arch_cond);
+ 					    slurmdb_archive_cond_t *arch_cond);
 
 extern int as_mysql_jobacct_process_archive_load(mysql_conn_t *mysql_conn,
 					      slurmdb_archive_rec_t *arch_rec);
+
 #endif

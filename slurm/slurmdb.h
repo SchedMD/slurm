@@ -129,6 +129,15 @@ typedef enum {
 	SLURMDB_MODIFY_WCKEY,
 } slurmdb_update_type_t;
 
+/* Archive / Purge time flags */
+#define SLURMDB_PURGE_BASE    0x0000ffff   /* Apply to get the number
+					    * of units */
+#define SLURMDB_PURGE_FLAGS   0xffff0000   /* apply to get the flags */
+#define SLURMDB_PURGE_HOURS   0x00010000   /* Purge units are in hours */
+#define SLURMDB_PURGE_DAYS    0x00020000   /* Purge units are in days */
+#define SLURMDB_PURGE_MONTHS  0x00040000   /* Purge units are in months,
+					    * the default */
+#define SLURMDB_PURGE_ARCHIVE 0x00080000   /* Archive before purge */
 
 
 #define SLURMDB_CLASSIFIED_FLAG 0x0100
@@ -279,26 +288,25 @@ typedef struct {
 
 typedef struct {
 	char *archive_dir;     /* location to place archive file */
-	uint16_t archive_events; /* whether or not to keep an archive
-				    file of events that can be loaded
-				    later */
-	uint16_t archive_jobs; /* whether or not to keep an archive
-				  file of jobs that can be loaded
-				  later */
 	char *archive_script;  /* script to run instead of default
 				  actions */
-	uint16_t archive_steps; /* whether or not to keep an archive
-				   file of steps that can be loaded
-				   later */
-	uint16_t archive_suspend; /* whether or not to keep an archive
-				     file of suspend data that can be loaded
-				     later */
 	slurmdb_job_cond_t *job_cond; /* conditions for the jobs to archive */
-	uint16_t purge_event; /* purge events older than this in months */
-	uint16_t purge_job; /* purge jobs older than this in months */
-	uint16_t purge_step; /* purge steps older than this in months */
-	uint16_t purge_suspend; /* purge suspend data older than this
-				 * in months */
+	uint32_t purge_event; /* purge events older than this in
+			       * months by default set the
+			       * SLURMDB_PURGE_ARCHIVE bit for
+			       * archiving */
+	uint32_t purge_job; /* purge jobs older than this in months
+			     * by default set the
+			     * SLURMDB_PURGE_ARCHIVE bit for
+			     * archiving */
+	uint32_t purge_step; /* purge steps older than this in months
+			      * by default set the
+			      * SLURMDB_PURGE_ARCHIVE bit for
+			      * archiving */
+	uint32_t purge_suspend; /* purge suspend data older than this
+				 * in months by default set the
+				 * SLURMDB_PURGE_ARCHIVE bit for
+				 * archiving */
 } slurmdb_archive_cond_t;
 
 typedef struct {

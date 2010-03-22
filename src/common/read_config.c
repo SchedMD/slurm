@@ -627,7 +627,7 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 		{"Priority", S_P_UINT16},
 		{"RootOnly", S_P_BOOLEAN}, /* YES or NO */
 		{"Shared", S_P_STRING}, /* YES, NO, or FORCE */
-		{"State", S_P_STRING}, /* UP, DOWN, INACTIVE or DRAIN */		
+		{"State", S_P_STRING}, /* UP, DOWN, INACTIVE or DRAIN */
 		{"AllocNodes", S_P_STRING},
 		{NULL}
 	};
@@ -1521,7 +1521,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->fast_schedule		= (uint16_t) NO_VAL;
 	ctl_conf_ptr->first_job_id		= (uint32_t) NO_VAL;
 	ctl_conf_ptr->get_env_timeout		= 0;
-	ctl_conf_ptr->hash_val          	= (uint32_t) NO_VAL;
+	ctl_conf_ptr->hash_val			= (uint32_t) NO_VAL;
 	ctl_conf_ptr->health_check_interval	= 0;
 	xfree(ctl_conf_ptr->health_check_program);
 	ctl_conf_ptr->inactive_limit		= (uint16_t) NO_VAL;
@@ -2443,21 +2443,21 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 			conf->propagate_prio_process);
 	}
 
-        if (s_p_get_string(&conf->propagate_rlimits_except,
+	if (s_p_get_string(&conf->propagate_rlimits_except,
 			   "PropagateResourceLimitsExcept", hashtbl)) {
-                if ((parse_rlimits(conf->propagate_rlimits_except,
-                                   NO_PROPAGATE_RLIMITS)) < 0)
-                        fatal("Bad PropagateResourceLimitsExcept: %s",
+		if ((parse_rlimits(conf->propagate_rlimits_except,
+				   NO_PROPAGATE_RLIMITS)) < 0)
+			fatal("Bad PropagateResourceLimitsExcept: %s",
 			      conf->propagate_rlimits_except);
-        } else {
-                if (!s_p_get_string(&conf->propagate_rlimits,
+	} else {
+		if (!s_p_get_string(&conf->propagate_rlimits,
 				    "PropagateResourceLimits", hashtbl))
-                        conf->propagate_rlimits = xstrdup( "ALL" );
-                if ((parse_rlimits(conf->propagate_rlimits,
-                                   PROPAGATE_RLIMITS )) < 0)
-                        fatal("Bad PropagateResourceLimits: %s",
+			conf->propagate_rlimits = xstrdup( "ALL" );
+		if ((parse_rlimits(conf->propagate_rlimits,
+				   PROPAGATE_RLIMITS )) < 0)
+			fatal("Bad PropagateResourceLimits: %s",
 			      conf->propagate_rlimits);
-        }
+	}
 
 	if (!s_p_get_uint16(&conf->ret2service, "ReturnToService", hashtbl))
 		conf->ret2service = DEFAULT_RETURN_TO_SERVICE;
@@ -2515,7 +2515,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	if (!s_p_get_string(&conf->select_type, "SelectType", hashtbl))
 		conf->select_type = xstrdup(DEFAULT_SELECT_TYPE);
 
-        if (s_p_get_string(&temp_str,
+	if (s_p_get_string(&temp_str,
 			   "SelectTypeParameters", hashtbl)) {
 		uint16_t type_param;
 		if ((parse_select_type_param(temp_str, &type_param) < 0)) {
@@ -2592,7 +2592,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 	s_p_get_string(&conf->sched_logfile, "SlurmSchedLogFile", hashtbl);
 
-	if (!s_p_get_uint16(&conf->sched_log_level, 
+	if (!s_p_get_uint16(&conf->sched_log_level,
 			   "SlurmSchedLogLevel", hashtbl))
 		conf->sched_log_level = DEFAULT_SCHED_LOG_LEVEL;
 

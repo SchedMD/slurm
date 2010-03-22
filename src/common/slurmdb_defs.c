@@ -1466,3 +1466,76 @@ extern int slurmdb_report_set_start_end_time(time_t *start, time_t *end)
 /* 	info("which is %s - %s", start_char, end_char); */
 	return SLURM_SUCCESS;
 }
+
+/* Convert a string to a duration in Months or Days
+ * input formats:
+ *   <integer>                defaults to Months
+ *   <integer>Months
+ *   <integer>Days
+ *   <integer>H
+ *
+ * output:
+ *   SLURMDB_PURGE_MONTHS | <integer>  if input is in Months
+ *   SLURMDB_PURGE_DAYS   | <integer>  if input is in Days
+ *   SLURMDB_PURGE_HOURS  | <integer>  if input in in Hours
+ *   0 on error
+ */
+extern uint32_t slurmdb_parse_purge(char *string)
+{
+	int i = 0;
+	uint32_t purge = 0;
+
+	xassert(string);
+
+	while(string[i]) {
+		if ((string[i] >= '0') && (string[i] <= '9')) {
+                        purge = (purge * 10) + (string[i] - '0');
+                } else
+			break;
+		i++;
+	}
+
+	if (purge) {
+		switch(string[i]) {
+		case 'd':
+		case 'D':
+			purge = purge | SLURMDB_PURGE_DAYS;
+		        break;
+		case 'h':
+		case 'H':
+			purge = purge | SLURMDB_PURGE_HOURS;
+		        break;
+		default:
+			purge = purge | SLURMDB_PURGE_MONTHS;
+			break;
+		}
+	} else
+		error("Invalid purge string '%s'", string);
+
+	return purge;
+}
+
+extern char *slurmdb_purge_string(uint32_t purge, char *string, int len,
+				  bool with_archive)
+{
+	uint32_t units = SLURMDB_PURGE_GET_UNITS(purge);
+
+	if(SLURMDB_PURGE_IN_HOURS(purge)) {
+		if(with_archive && SLURMDB_PURGE_ARCHIVE_SET(purge))
+			snprintf(string, len, "%u hours*", units);
+		else
+			snprintf(string, len, "%u hours", units);
+	} else if(SLURMDB_PURGE_IN_DAYS(purge)) {
+		if(with_archive && SLURMDB_PURGE_ARCHIVE_SET(purge))
+			snprintf(string, len, "%u days*", units);
+		else
+			snprintf(string, len, "%u days", units);
+	} else {
+		if(with_archive && SLURMDB_PURGE_ARCHIVE_SET(purge))
+			snprintf(string, len, "%u months*", units);
+		else
+			snprintf(string, len, "%u months", units);
+	}
+
+	return string;
+}

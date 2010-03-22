@@ -1052,8 +1052,8 @@ static int _process_old_sql(char **data)
 }
 
 static char *_make_archive_name(time_t period_start, time_t period_end,
-				char *cluster_name,
-				char *arch_dir, char *arch_type)
+				char *cluster_name, char *arch_dir,
+				char *arch_type, uint32_t archive_period)
 {
 	struct tm time_tm;
 	char start_char[32];
@@ -1062,8 +1062,16 @@ static char *_make_archive_name(time_t period_start, time_t period_end,
 	localtime_r((time_t *)&period_start, &time_tm);
 	time_tm.tm_sec = 0;
 	time_tm.tm_min = 0;
-	time_tm.tm_hour = 0;
-	time_tm.tm_mday = 1;
+
+	/* set up the start time based off the period we are purging */
+	if(SLURMDB_PURGE_IN_HOURS(archive_period)) {
+	} else if(SLURMDB_PURGE_IN_DAYS(archive_period)) {
+		time_tm.tm_hour = 0;
+	} else {
+		time_tm.tm_hour = 0;
+		time_tm.tm_mday = 1;
+	}
+
 	snprintf(start_char, sizeof(start_char),
 		 "%4.4u-%2.2u-%2.2u"
 		 "T%2.2u:%2.2u:%2.2u",
@@ -1094,10 +1102,11 @@ static char *_make_archive_name(time_t period_start, time_t period_end,
 
 static int _write_archive_file(Buf buffer, char *cluster_name,
 			       time_t period_start, time_t period_end,
-			       char *arch_dir, char *arch_type)
+			       char *arch_dir, char *arch_type,
+			       uint32_t archive_period)
 {
 	int fd = 0;
-	int error_code = SLURM_SUCCESS;
+	int rc = SLURM_SUCCESS;
 	char *old_file = NULL, *new_file = NULL, *reg_file = NULL;
 
 	xassert(buffer);
@@ -1105,8 +1114,9 @@ static int _write_archive_file(Buf buffer, char *cluster_name,
 	slurm_mutex_lock(&local_file_lock);
 
 	/* write the buffer to file */
-	reg_file = _make_archive_name(
-		period_start, period_end, cluster_name, arch_dir, arch_type);
+	reg_file = _make_archive_name(period_start, period_end,
+				      cluster_name, arch_dir,
+				      arch_type, archive_period);
 
 	debug("Storing %s archive for %s at %s",
 	      arch_type, cluster_name, reg_file);
@@ -1116,7 +1126,7 @@ static int _write_archive_file(Buf buffer, char *cluster_name,
 	fd = creat(new_file, 0600);
 	if (fd < 0) {
 		error("Can't save archive, create file %s error %m", new_file);
-		error_code = errno;
+		rc = SLURM_ERROR;
 	} else {
 		int pos = 0, nwrite = get_buf_offset(buffer), amount;
 		char *data = (char *)get_buf_data(buffer);
@@ -1125,7 +1135,7 @@ static int _write_archive_file(Buf buffer, char *cluster_name,
 			amount = write(fd, &data[pos], nwrite);
 			if ((amount < 0) && (errno != EINTR)) {
 				error("Error writing file %s, %m", new_file);
-				error_code = errno;
+				rc = SLURM_ERROR;
 				break;
 			}
 			nwrite -= amount;
@@ -1135,7 +1145,7 @@ static int _write_archive_file(Buf buffer, char *cluster_name,
 		close(fd);
 	}
 
-	if (error_code)
+	if (rc)
 		(void) unlink(new_file);
 	else {			/* file shuffle */
 		int ign;	/* avoid warning */
@@ -1150,12 +1160,13 @@ static int _write_archive_file(Buf buffer, char *cluster_name,
 	xfree(new_file);
 	slurm_mutex_unlock(&local_file_lock);
 
-	return error_code;
+	return rc;
 }
 
 /* returns count of events archived or SLURM_ERROR on error */
 static uint32_t _archive_events(mysql_conn_t *mysql_conn, char *cluster_name,
-				time_t period_end, char *arch_dir)
+				time_t period_end, char *arch_dir,
+				uint32_t archive_period)
 {
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
@@ -1224,7 +1235,7 @@ static uint32_t _archive_events(mysql_conn_t *mysql_conn, char *cluster_name,
 
 	error_code = _write_archive_file(buffer, cluster_name,
 					 period_start, period_end,
-					 arch_dir, "event");
+					 arch_dir, "event", archive_period);
 	free_buf(buffer);
 
 	if(error_code != SLURM_SUCCESS)
@@ -1282,7 +1293,8 @@ static char *_load_events(uint16_t rpc_version, Buf buffer,
 
 /* returns count of jobs archived or SLURM_ERROR on error */
 static uint32_t _archive_jobs(mysql_conn_t *mysql_conn, char *cluster_name,
-			      time_t period_end, char *arch_dir)
+			      time_t period_end, char *arch_dir,
+			      uint32_t archive_period)
 {
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
@@ -1372,7 +1384,7 @@ static uint32_t _archive_jobs(mysql_conn_t *mysql_conn, char *cluster_name,
 
 	error_code = _write_archive_file(buffer, cluster_name,
 					 period_start, period_end,
-					 arch_dir, "job");
+					 arch_dir, "job", archive_period);
 	free_buf(buffer);
 
 	if(error_code != SLURM_SUCCESS)
@@ -1451,7 +1463,8 @@ static char *_load_jobs(uint16_t rpc_version, Buf buffer,
 
 /* returns count of steps archived or SLURM_ERROR on error */
 static uint32_t _archive_steps(mysql_conn_t *mysql_conn, char *cluster_name,
-			       time_t period_end, char *arch_dir)
+			       time_t period_end, char *arch_dir,
+			       uint32_t archive_period)
 {
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
@@ -1547,7 +1560,7 @@ static uint32_t _archive_steps(mysql_conn_t *mysql_conn, char *cluster_name,
 
 	error_code = _write_archive_file(buffer, cluster_name,
 					 period_start, period_end,
-					 arch_dir, "event");
+					 arch_dir, "event", archive_period);
 	free_buf(buffer);
 
 	if(error_code != SLURM_SUCCESS)
@@ -1632,7 +1645,8 @@ static char *_load_steps(uint16_t rpc_version, Buf buffer,
 
 /* returns count of events archived or SLURM_ERROR on error */
 static uint32_t _archive_suspend(mysql_conn_t *mysql_conn, char *cluster_name,
-				 time_t period_end, char *arch_dir)
+				 time_t period_end, char *arch_dir,
+				 uint32_t archive_period)
 {
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
@@ -1697,7 +1711,7 @@ static uint32_t _archive_suspend(mysql_conn_t *mysql_conn, char *cluster_name,
 
 	error_code = _write_archive_file(buffer, cluster_name,
 					 period_start, period_end,
-					 arch_dir, "suspend");
+					 arch_dir, "suspend", archive_period);
 	free_buf(buffer);
 
 	if(error_code != SLURM_SUCCESS)
@@ -1749,8 +1763,8 @@ static char *_load_suspend(uint16_t rpc_version, Buf buffer,
 	return insert;
 }
 
-static int _archive_script(slurmdb_archive_cond_t *arch_cond, char *cluster_name,
-			   time_t last_submit)
+static int _archive_script(slurmdb_archive_cond_t *arch_cond,
+			   char *cluster_name, time_t last_submit)
 {
 	char * args[] = {arch_cond->archive_script, NULL};
 	const char *tmpdir;
@@ -1758,6 +1772,7 @@ static int _archive_script(slurmdb_archive_cond_t *arch_cond, char *cluster_name
 	char **env = NULL;
 	struct tm time_tm;
 	time_t curr_end;
+	uint32_t units;
 
 #ifdef _PATH_TMP
 	tmpdir = _PATH_TMP;
@@ -1766,7 +1781,8 @@ static int _archive_script(slurmdb_archive_cond_t *arch_cond, char *cluster_name
 #endif
 	if (stat(arch_cond->archive_script, &st) < 0) {
 		errno = errno;
-		error("as_mysql_jobacct_process_run_script: failed to stat %s: %m",
+		error("as_mysql_jobacct_process_run_script: "
+		      "failed to stat %s: %m",
 		      arch_cond->archive_script);
 		return SLURM_ERROR;
 	}
@@ -1790,7 +1806,7 @@ static int _archive_script(slurmdb_archive_cond_t *arch_cond, char *cluster_name
 	env_array_append_fmt(&env, "SLURM_ARCHIVE_CLUSTER", "%s",
 			     cluster_name);
 
-	if(arch_cond->purge_event) {
+	if((units = SLURMDB_PURGE_GET_UNITS(arch_cond->purge_event))) {
 		/* use localtime to avoid any daylight savings issues */
 		if(!localtime_r(&last_submit, &time_tm)) {
 			error("Couldn't get localtime from "
@@ -1798,49 +1814,94 @@ static int _archive_script(slurmdb_archive_cond_t *arch_cond, char *cluster_name
 			      last_submit);
 			return SLURM_ERROR;
 		}
-		time_tm.tm_mon -= arch_cond->purge_event;
+
+		time_tm.tm_sec = 0;
+		time_tm.tm_min = 0;
+
+		if(SLURMDB_PURGE_IN_HOURS(arch_cond->purge_event))
+ 			time_tm.tm_hour -= units;
+ 		else if(SLURMDB_PURGE_IN_DAYS(arch_cond->purge_event)) {
+			time_tm.tm_hour = 0;
+			time_tm.tm_mday -= units;
+		} else {
+			time_tm.tm_hour = 0;
+			time_tm.tm_mday = 1;
+			time_tm.tm_mon -= units;
+		}
+
 		time_tm.tm_isdst = -1;
 		curr_end = mktime(&time_tm);
 		env_array_append_fmt(&env, "SLURM_ARCHIVE_EVENTS", "%u",
-				     arch_cond->archive_events);
+				     SLURMDB_PURGE_ARCHIVE_SET(
+					     arch_cond->purge_event));
 		env_array_append_fmt(&env, "SLURM_ARCHIVE_LAST_EVENT", "%d",
 				     curr_end);
 	}
 
-	if(arch_cond->purge_job) {
+	if((units = SLURMDB_PURGE_GET_UNITS(arch_cond->purge_job))) {
 		/* use localtime to avoid any daylight savings issues */
 		if(!localtime_r(&last_submit, &time_tm)) {
 			error("Couldn't get localtime from first start %d",
 			      last_submit);
 			return SLURM_ERROR;
 		}
-		time_tm.tm_mon -= arch_cond->purge_job;
+
+		time_tm.tm_sec = 0;
+		time_tm.tm_min = 0;
+
+ 		if(SLURMDB_PURGE_IN_HOURS(arch_cond->purge_job))
+ 			time_tm.tm_hour -= units;
+ 		else if(SLURMDB_PURGE_IN_DAYS(arch_cond->purge_job)) {
+			time_tm.tm_hour = 0;
+			time_tm.tm_mday -= units;
+		} else {
+			time_tm.tm_hour = 0;
+			time_tm.tm_mday = 1;
+			time_tm.tm_mon -= units;
+		}
+
 		time_tm.tm_isdst = -1;
 		curr_end = mktime(&time_tm);
 
 		env_array_append_fmt(&env, "SLURM_ARCHIVE_JOBS", "%u",
-				     arch_cond->archive_jobs);
+				     SLURMDB_PURGE_ARCHIVE_SET(
+					     arch_cond->purge_job));
 		env_array_append_fmt (&env, "SLURM_ARCHIVE_LAST_JOB", "%d",
 				      curr_end);
 	}
 
-	if(arch_cond->purge_step) {
+	if((units = SLURMDB_PURGE_GET_UNITS(arch_cond->purge_step))) {
 		/* use localtime to avoid any daylight savings issues */
 		if(!localtime_r(&last_submit, &time_tm)) {
 			error("Couldn't get localtime from first step start %d",
 			      last_submit);
 			return SLURM_ERROR;
 		}
-		time_tm.tm_mon -= arch_cond->purge_step;
+
+		time_tm.tm_sec = 0;
+		time_tm.tm_min = 0;
+
+ 		if(SLURMDB_PURGE_IN_HOURS(arch_cond->purge_step))
+ 			time_tm.tm_hour -= units;
+ 		else if(SLURMDB_PURGE_IN_DAYS(arch_cond->purge_step)) {
+			time_tm.tm_hour = 0;
+			time_tm.tm_mday -= units;
+		} else {
+			time_tm.tm_hour = 0;
+			time_tm.tm_mday = 1;
+			time_tm.tm_mon -= units;
+		}
+
 		time_tm.tm_isdst = -1;
 		curr_end = mktime(&time_tm);
 		env_array_append_fmt(&env, "SLURM_ARCHIVE_STEPS", "%u",
-				     arch_cond->archive_steps);
+				     SLURMDB_PURGE_ARCHIVE_SET(
+					     arch_cond->purge_step));
 		env_array_append_fmt(&env, "SLURM_ARCHIVE_LAST_STEP", "%d",
 				     curr_end);
 	}
 
-	if(arch_cond->purge_suspend) {
+	if((units = SLURMDB_PURGE_GET_UNITS(arch_cond->purge_suspend))) {
 		/* use localtime to avoid any daylight savings issues */
 		if(!localtime_r(&last_submit, &time_tm)) {
 			error("Couldn't get localtime from first "
@@ -1848,11 +1909,26 @@ static int _archive_script(slurmdb_archive_cond_t *arch_cond, char *cluster_name
 			      last_submit);
 			return SLURM_ERROR;
 		}
-		time_tm.tm_mon -= arch_cond->purge_suspend;
+
+		time_tm.tm_sec = 0;
+		time_tm.tm_min = 0;
+
+ 		if(SLURMDB_PURGE_IN_HOURS(arch_cond->purge_suspend))
+ 			time_tm.tm_hour -= units;
+ 		else if(SLURMDB_PURGE_IN_DAYS(arch_cond->purge_suspend)) {
+			time_tm.tm_hour = 0;
+			time_tm.tm_mday -= units;
+		} else {
+			time_tm.tm_hour = 0;
+			time_tm.tm_mday = 1;
+			time_tm.tm_mon -= units;
+		}
+
 		time_tm.tm_isdst = -1;
 		curr_end = mktime(&time_tm);
 		env_array_append_fmt(&env, "SLURM_ARCHIVE_SUSPEND", "%u",
-				     arch_cond->archive_steps);
+				     SLURMDB_PURGE_ARCHIVE_SET(
+					     arch_cond->purge_suspend));
 		env_array_append_fmt(&env, "SLURM_ARCHIVE_LAST_SUSPEND", "%d",
 				     curr_end);
 	}
@@ -1869,7 +1945,7 @@ static int _archive_script(slurmdb_archive_cond_t *arch_cond, char *cluster_name
 	return SLURM_SUCCESS;
 }
 
-static int _execute_archive(mysql_conn_t *mysql_conn, time_t last_submit,
+static int _execute_archive(mysql_conn_t *mysql_conn,
 			    char *cluster_name,
 			    slurmdb_archive_cond_t *arch_cond)
 {
@@ -1877,6 +1953,8 @@ static int _execute_archive(mysql_conn_t *mysql_conn, time_t last_submit,
 	char *query = NULL;
 	time_t curr_end;
 	struct tm time_tm;
+	uint32_t units;
+	time_t last_submit = time(NULL);
 
 	if(arch_cond->archive_script)
 		return _archive_script(arch_cond, cluster_name, last_submit);
@@ -1885,8 +1963,8 @@ static int _execute_archive(mysql_conn_t *mysql_conn, time_t last_submit,
 		return SLURM_ERROR;
 	}
 
-	if(arch_cond->purge_event) {
-		/* remove all data from step table that was older than
+	if((units = SLURMDB_PURGE_GET_UNITS(arch_cond->purge_event))) {
+		/* remove all data from event table that was older than
 		 * period_start * arch_cond->purge_event.
 		 */
 		/* use localtime to avoid any daylight savings issues */
@@ -1897,19 +1975,29 @@ static int _execute_archive(mysql_conn_t *mysql_conn, time_t last_submit,
 		}
 		time_tm.tm_sec = 0;
 		time_tm.tm_min = 0;
-		time_tm.tm_hour = 0;
-		time_tm.tm_mday = 1;
-		time_tm.tm_mon -= arch_cond->purge_event;
+
+		if(SLURMDB_PURGE_IN_HOURS(arch_cond->purge_event))
+ 			time_tm.tm_hour -= units;
+ 		else if(SLURMDB_PURGE_IN_DAYS(arch_cond->purge_event)) {
+			time_tm.tm_hour = 0;
+			time_tm.tm_mday -= units;
+		} else {
+			time_tm.tm_hour = 0;
+			time_tm.tm_mday = 1;
+			time_tm.tm_mon -= units;
+		}
+
 		time_tm.tm_isdst = -1;
 		curr_end = mktime(&time_tm);
 		curr_end--;
 
-		debug4("from %d - %d months purging events from before %d",
+		debug4("from %d - %d days/months purging events from before %d",
 		       last_submit, arch_cond->purge_event, curr_end);
 
-		if(arch_cond->archive_events) {
+		if(SLURMDB_PURGE_ARCHIVE_SET(arch_cond->purge_event)) {
 			rc = _archive_events(mysql_conn, cluster_name,
-					     curr_end, arch_cond->archive_dir);
+					     curr_end, arch_cond->archive_dir,
+					     arch_cond->purge_event);
 			if(!rc)
 				goto exit_events;
 			else if(rc == SLURM_ERROR)
@@ -1930,8 +2018,8 @@ static int _execute_archive(mysql_conn_t *mysql_conn, time_t last_submit,
 
 exit_events:
 
-	if(arch_cond->purge_suspend) {
-		/* remove all data from step table that was older than
+	if((units = SLURMDB_PURGE_GET_UNITS(arch_cond->purge_suspend))) {
+		/* remove all data from suspend table that was older than
 		 * period_start * arch_cond->purge_suspend.
 		 */
 		/* use localtime to avoid any daylight savings issues */
@@ -1942,9 +2030,18 @@ exit_events:
 		}
 		time_tm.tm_sec = 0;
 		time_tm.tm_min = 0;
-		time_tm.tm_hour = 0;
-		time_tm.tm_mday = 1;
-		time_tm.tm_mon -= arch_cond->purge_suspend;
+
+ 		if(SLURMDB_PURGE_IN_HOURS(arch_cond->purge_suspend))
+ 			time_tm.tm_hour -= units;
+ 		else if(SLURMDB_PURGE_IN_DAYS(arch_cond->purge_suspend)) {
+			time_tm.tm_hour = 0;
+			time_tm.tm_mday -= units;
+		} else {
+			time_tm.tm_hour = 0;
+			time_tm.tm_mday = 1;
+			time_tm.tm_mon -= units;
+		}
+
 		time_tm.tm_isdst = -1;
 		curr_end = mktime(&time_tm);
 		curr_end--;
@@ -1952,9 +2049,10 @@ exit_events:
 		debug4("from %d - %d months purging suspend from before %d",
 		       last_submit, arch_cond->purge_suspend, curr_end);
 
-		if(arch_cond->archive_suspend) {
+		if(SLURMDB_PURGE_ARCHIVE_SET(arch_cond->purge_suspend)) {
 			rc = _archive_suspend(mysql_conn, cluster_name,
-					      curr_end, arch_cond->archive_dir);
+					      curr_end, arch_cond->archive_dir,
+					      arch_cond->purge_suspend);
 			if(!rc)
 				goto exit_suspend;
 			else if(rc == SLURM_ERROR)
@@ -1975,7 +2073,7 @@ exit_events:
 
 exit_suspend:
 
-	if(arch_cond->purge_step) {
+	if((units = SLURMDB_PURGE_GET_UNITS(arch_cond->purge_step))) {
 		/* remove all data from step table that was older than
 		 * start * arch_cond->purge_step.
 		 */
@@ -1987,9 +2085,18 @@ exit_suspend:
 		}
 		time_tm.tm_sec = 0;
 		time_tm.tm_min = 0;
-		time_tm.tm_hour = 0;
-		time_tm.tm_mday = 1;
-		time_tm.tm_mon -= arch_cond->purge_step;
+
+		if(SLURMDB_PURGE_IN_HOURS(arch_cond->purge_step))
+ 			time_tm.tm_hour -= units;
+ 		else if(SLURMDB_PURGE_IN_DAYS(arch_cond->purge_step)) {
+			time_tm.tm_hour = 0;
+			time_tm.tm_mday -= units;
+		} else {
+			time_tm.tm_hour = 0;
+			time_tm.tm_mday = 1;
+			time_tm.tm_mon -= units;
+		}
+
 		time_tm.tm_isdst = -1;
 		curr_end = mktime(&time_tm);
 		curr_end--;
@@ -1997,9 +2104,10 @@ exit_suspend:
 		debug4("from %d - %d months purging steps from before %d",
 		       last_submit, arch_cond->purge_step, curr_end);
 
-		if(arch_cond->archive_steps) {
+		if(SLURMDB_PURGE_ARCHIVE_SET(arch_cond->purge_step)) {
 			rc = _archive_steps(mysql_conn, cluster_name,
-					    curr_end, arch_cond->archive_dir);
+					    curr_end, arch_cond->archive_dir,
+					    arch_cond->purge_step);
 			if(!rc)
 				goto exit_steps;
 			else if(rc == SLURM_ERROR)
@@ -2020,8 +2128,8 @@ exit_suspend:
 	}
 exit_steps:
 
-	if(arch_cond->purge_job) {
-		/* remove all data from step table that was older than
+	if((units = SLURMDB_PURGE_GET_UNITS(arch_cond->purge_job))) {
+		/* remove all data from job table that was older than
 		 * last_submit * arch_cond->purge_job.
 		 */
 		/* use localtime to avoid any daylight savings issues */
@@ -2032,19 +2140,29 @@ exit_steps:
 		}
 		time_tm.tm_sec = 0;
 		time_tm.tm_min = 0;
-		time_tm.tm_hour = 0;
-		time_tm.tm_mday = 1;
-		time_tm.tm_mon -= arch_cond->purge_job;
-		time_tm.tm_isdst = -1;
+
+		if(SLURMDB_PURGE_IN_HOURS(arch_cond->purge_job))
+ 			time_tm.tm_hour -= units;
+ 		else if(SLURMDB_PURGE_IN_DAYS(arch_cond->purge_job)) {
+			time_tm.tm_hour = 0;
+			time_tm.tm_mday -= units;
+		} else {
+			time_tm.tm_hour = 0;
+			time_tm.tm_mday = 1;
+			time_tm.tm_mon -= units;
+		}
+
+ 		time_tm.tm_isdst = -1;
 		curr_end = mktime(&time_tm);
 		curr_end--;
 
 		debug4("from %d - %d months purging jobs from before %d",
 		       last_submit, arch_cond->purge_job, curr_end);
 
-		if(arch_cond->archive_jobs) {
+		if(SLURMDB_PURGE_ARCHIVE_SET(arch_cond->purge_job)) {
 			rc = _archive_jobs(mysql_conn, cluster_name,
-					   curr_end, arch_cond->archive_dir);
+					   curr_end, arch_cond->archive_dir,
+					   arch_cond->purge_job);
 			if(!rc)
 				goto exit_jobs;
 			else if(rc == SLURM_ERROR)
@@ -2073,8 +2191,6 @@ extern int as_mysql_jobacct_process_archive(mysql_conn_t *mysql_conn,
 {
 	int rc = SLURM_SUCCESS;
 	char *cluster_name = NULL;
-	time_t last_submit = time(NULL);
-	struct tm time_tm;
 	List use_cluster_list = as_mysql_cluster_list;
 	ListIterator itr = NULL;
 
@@ -2085,23 +2201,6 @@ extern int as_mysql_jobacct_process_archive(mysql_conn_t *mysql_conn,
 		return SLURM_ERROR;
 	}
 
-	if(!localtime_r(&last_submit, &time_tm)) {
-		error("Couldn't get localtime from first start %d",
-		      last_submit);
-		return SLURM_ERROR;
-	}
-
-	/* get to the beginning of the current month */
-	time_tm.tm_sec = 0;
-	time_tm.tm_min = 0;
-	time_tm.tm_hour = 0;
-	time_tm.tm_mday = 1;
-	time_tm.tm_isdst = -1;
-	last_submit = mktime(&time_tm);
-
-	debug("archive: adjusted last submit is (%d)", last_submit);
-
-
 	if(arch_cond->job_cond && arch_cond->job_cond->cluster_list
 	   && list_count(arch_cond->job_cond->cluster_list))
 		use_cluster_list = arch_cond->job_cond->cluster_list;
@@ -2110,15 +2209,13 @@ extern int as_mysql_jobacct_process_archive(mysql_conn_t *mysql_conn,
 
 	itr = list_iterator_create(use_cluster_list);
 	while((cluster_name = list_next(itr))) {
-		if((rc = _execute_archive(mysql_conn, last_submit,
-					  cluster_name, arch_cond))
+		if((rc = _execute_archive(mysql_conn, cluster_name, arch_cond))
 		   != SLURM_SUCCESS)
 			break;
 	}
 	list_iterator_destroy(itr);
 	if(use_cluster_list == as_mysql_cluster_list)
 		slurm_mutex_unlock(&as_mysql_cluster_list_lock);
-
 
 	return rc;
 }

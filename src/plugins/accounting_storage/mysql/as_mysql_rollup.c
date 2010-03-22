@@ -96,9 +96,52 @@ static void _destroy_local_resv_usage(void *object)
 	}
 }
 
+static int _process_purge(mysql_conn_t *mysql_conn,
+			  char *cluster_name,
+			  uint16_t archive_data,
+			  uint32_t purge_period)
+{
+	int rc = SLURM_SUCCESS;
+	slurmdb_archive_cond_t arch_cond;
+	slurmdb_job_cond_t job_cond;
+
+	/* if we didn't ask for archive data return here and don't do
+	   anything extra just rollup */
+
+	if(!archive_data)
+		return SLURM_SUCCESS;
+
+	if(!slurmdbd_conf)
+		return SLURM_SUCCESS;
+
+	memset(&job_cond, 0, sizeof(job_cond));
+	memset(&arch_cond, 0, sizeof(arch_cond));
+	arch_cond.archive_dir = slurmdbd_conf->archive_dir;
+	arch_cond.archive_script = slurmdbd_conf->archive_script;
+
+	if(purge_period & slurmdbd_conf->purge_event)
+		arch_cond.purge_event = slurmdbd_conf->purge_event;
+	if(purge_period & slurmdbd_conf->purge_job)
+		arch_cond.purge_job = slurmdbd_conf->purge_job;
+	if(purge_period & slurmdbd_conf->purge_step)
+		arch_cond.purge_step = slurmdbd_conf->purge_step;
+	if(purge_period & slurmdbd_conf->purge_suspend)
+		arch_cond.purge_suspend = slurmdbd_conf->purge_suspend;
+
+	job_cond.cluster_list = list_create(NULL);
+	list_append(job_cond.cluster_list, cluster_name);
+
+	arch_cond.job_cond = &job_cond;
+	rc = as_mysql_jobacct_process_archive(mysql_conn, &arch_cond);
+	list_destroy(job_cond.cluster_list);
+
+	return rc;
+}
+
 extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 				  char *cluster_name,
-				  time_t start, time_t end)
+				  time_t start, time_t end,
+				  uint16_t archive_data)
 {
 	int rc = SLURM_SUCCESS;
 	int add_sec = 3600;
@@ -814,7 +857,8 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 					   c_usage->r_cpu);
 			} else {
 				xstrfmtcat(query,
-					   "insert into \"%s_%s\" (creation_time, "
+					   "insert into \"%s_%s\" "
+					   "(creation_time, "
 					   "mod_time, time_start, "
 					   "cpu_count, alloc_cpu_secs, "
 					   "down_cpu_secs, pdown_cpu_secs, "
@@ -871,7 +915,8 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 					   a_usage->a_cpu);
 			} else {
 				xstrfmtcat(query,
-					   "insert into \"%s_%s\" (creation_time, "
+					   "insert into \"%s_%s\" "
+					   "(creation_time, "
 					   "mod_time, id_assoc, time_start, "
 					   "alloc_cpu_secs) values "
 					   "(%d, %d, %d, %d, %llu)",
@@ -914,7 +959,8 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 					   w_usage->a_cpu);
 			} else {
 				xstrfmtcat(query,
-					   "insert into \"%s_%s\" (creation_time, "
+					   "insert into \"%s_%s\" "
+					   "(creation_time, "
 					   "mod_time, id_wckey, time_start, "
 					   "alloc_cpu_secs) values "
 					   "(%d, %d, %d, %d, %llu)",
@@ -966,11 +1012,19 @@ end_it:
 
 /* 	info("stop start %s", ctime(&curr_start)); */
 /* 	info("stop end %s", ctime(&curr_end)); */
+
+	/* go check to see if we archive and purge */
+
+	if( rc == SLURM_SUCCESS)
+		rc = _process_purge(mysql_conn, cluster_name, archive_data,
+				    SLURMDB_PURGE_HOURS);
+
 	return rc;
 }
 extern int as_mysql_daily_rollup(mysql_conn_t *mysql_conn,
 				 char *cluster_name,
-				 time_t start, time_t end, uint16_t archive_data)
+				 time_t start, time_t end,
+				 uint16_t archive_data)
 {
 	/* can't just add 86400 since daylight savings starts and ends every
 	 * once in a while
@@ -1074,7 +1128,10 @@ extern int as_mysql_daily_rollup(mysql_conn_t *mysql_conn,
 /* 	info("stop start %s", ctime(&curr_start)); */
 /* 	info("stop end %s", ctime(&curr_end)); */
 
-	return SLURM_SUCCESS;
+	/* go check to see if we archive and purge */
+	rc = _process_purge(mysql_conn, cluster_name, archive_data,
+			    SLURMDB_PURGE_DAYS);
+	return rc;
 }
 extern int as_mysql_monthly_rollup(mysql_conn_t *mysql_conn,
 				   char *cluster_name,
@@ -1088,8 +1145,6 @@ extern int as_mysql_monthly_rollup(mysql_conn_t *mysql_conn,
 	time_t now = time(NULL);
 	char *query = NULL;
 	uint16_t track_wckey = slurm_get_track_wckey();
-	slurmdb_archive_cond_t arch_cond;
-	slurmdb_job_cond_t job_cond;
 
 	if(!localtime_r(&curr_start, &start_tm)) {
 		error("Couldn't get localtime from month start %d", curr_start);
@@ -1180,34 +1235,9 @@ extern int as_mysql_monthly_rollup(mysql_conn_t *mysql_conn,
 		curr_end = mktime(&start_tm);
 	}
 
-	/* if we didn't ask for archive data return here and don't do
-	   anything extra just rollup */
-
-	if(!archive_data)
-		return SLURM_SUCCESS;
-
-	if(!slurmdbd_conf)
-		return SLURM_SUCCESS;
-
-	memset(&job_cond, 0, sizeof(job_cond));
-	memset(&arch_cond, 0, sizeof(arch_cond));
-	arch_cond.archive_dir = slurmdbd_conf->archive_dir;
-	arch_cond.archive_events = slurmdbd_conf->archive_events;
-	arch_cond.archive_jobs = slurmdbd_conf->archive_jobs;
-	arch_cond.archive_script = slurmdbd_conf->archive_script;
-	arch_cond.archive_steps = slurmdbd_conf->archive_steps;
-	arch_cond.archive_suspend = slurmdbd_conf->archive_suspend;
-	arch_cond.purge_event = slurmdbd_conf->purge_event;
-	arch_cond.purge_job = slurmdbd_conf->purge_job;
-	arch_cond.purge_step = slurmdbd_conf->purge_step;
-	arch_cond.purge_suspend = slurmdbd_conf->purge_suspend;
-
-	job_cond.cluster_list = list_create(NULL);
-	list_append(job_cond.cluster_list, cluster_name);
-
-	arch_cond.job_cond = &job_cond;
-	rc = as_mysql_jobacct_process_archive(mysql_conn, &arch_cond);
-	list_destroy(job_cond.cluster_list);
+	/* go check to see if we archive and purge */
+	rc = _process_purge(mysql_conn, cluster_name, archive_data,
+			    SLURMDB_PURGE_MONTHS);
 
 	return rc;
 }
