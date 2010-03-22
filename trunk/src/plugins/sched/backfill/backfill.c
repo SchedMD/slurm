@@ -332,7 +332,8 @@ static void _my_sleep(int secs)
 
 	ts.tv_sec = time(NULL) + secs;
 	pthread_mutex_lock(&term_lock);
-	pthread_cond_timedwait(&term_cond, &term_lock, &ts);
+	if (!stop_backfill)
+		pthread_cond_timedwait(&term_cond, &term_lock, &ts);
 	pthread_mutex_unlock(&term_lock);
 }
 
