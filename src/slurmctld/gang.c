@@ -55,6 +55,8 @@
 /* global timeslicer thread variables */
 static bool thread_running = false;
 static bool thread_shutdown = false;
+static pthread_mutex_t term_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t  term_cond = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t thread_flag_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_t timeslicer_thread_id = (pthread_t) 0;
 static List preempt_job_list = (List) NULL;
@@ -1193,7 +1195,10 @@ extern int gs_fini(void)
 	debug3("gang: entering gs_fini");
 	pthread_mutex_lock(&thread_flag_mutex);
 	if (thread_running) {
+		pthread_mutex_lock(&term_lock);
 		thread_shutdown = true;
+		pthread_cond_signal(&term_cond);
+		pthread_mutex_unlock(&term_lock);
 		usleep(120000);
 		if (timeslicer_thread_id)
 			error("gang: timeslicer pthread still running");
@@ -1535,10 +1540,13 @@ static void _cycle_job_list(struct gs_part *p_ptr)
 
 static void _slice_sleep(void)
 {
-	int i, cycles = timeslicer_seconds * 10;
+	struct timespec ts = {0, 0};
 
-	for (i=0; ((i<cycles) && !thread_shutdown); i++)
-		usleep(100000);
+	ts.tv_sec = time(NULL) + timeslicer_seconds;
+	pthread_mutex_lock(&term_lock);
+	if (!thread_shutdown)
+		pthread_cond_timedwait(&term_cond, &term_lock, &ts);
+	pthread_mutex_unlock(&term_lock);
 }
 
 /* The timeslicer thread */
