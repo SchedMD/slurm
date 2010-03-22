@@ -12,6 +12,9 @@ documents those changes that are of interest to users and admins.
  -- Altered srun to set max_nodes to min_nodes if not set when doing an
     allocation to mimic that which salloc and sbatch do.  If running a step if
     the max isn't set it remains unset.
+ -- Applied patch from David Egolf (David.Egolf@Bull.com) Added the ability
+    to purge/archive accounting data on a day or hour basis, previously
+    it was only available on a monthly basis.
 
 * Changes in SLURM 2.2.0.pre3
 =============================

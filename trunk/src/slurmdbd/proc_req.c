@@ -867,25 +867,14 @@ static int _archive_dump(slurmdbd_conn_t *slurmdbd_conn,
 	/* set up some defaults */
 	if(!arch_cond->archive_dir)
 		arch_cond->archive_dir = xstrdup(slurmdbd_conf->archive_dir);
-	if(arch_cond->archive_events == (uint16_t)NO_VAL)
-		arch_cond->archive_events = slurmdbd_conf->archive_events;
-	if(arch_cond->archive_jobs == (uint16_t)NO_VAL)
-		arch_cond->archive_jobs = slurmdbd_conf->archive_jobs;
 	if(!arch_cond->archive_script)
 		arch_cond->archive_script =
 			xstrdup(slurmdbd_conf->archive_script);
-	if(arch_cond->archive_steps == (uint16_t)NO_VAL)
-		arch_cond->archive_steps = slurmdbd_conf->archive_steps;
-	if(arch_cond->archive_suspend == (uint16_t)NO_VAL)
-		arch_cond->archive_suspend = slurmdbd_conf->archive_suspend;
-	if(arch_cond->purge_event == (uint16_t)NO_VAL)
-		arch_cond->purge_event = slurmdbd_conf->purge_event;
-	if(arch_cond->purge_job == (uint16_t)NO_VAL)
-		arch_cond->purge_job = slurmdbd_conf->purge_job;
-	if(arch_cond->purge_step == (uint16_t)NO_VAL)
-		arch_cond->purge_step = slurmdbd_conf->purge_step;
-	if(arch_cond->purge_suspend == (uint16_t)NO_VAL)
-		arch_cond->purge_suspend = slurmdbd_conf->purge_suspend;
+
+	arch_cond->purge_event = slurmdbd_conf->purge_event;
+	arch_cond->purge_job = slurmdbd_conf->purge_job;
+	arch_cond->purge_step = slurmdbd_conf->purge_step;
+	arch_cond->purge_suspend = slurmdbd_conf->purge_suspend;
 
 	rc = jobacct_storage_g_archive(slurmdbd_conn->db_conn, arch_cond);
 	if(rc != SLURM_SUCCESS) {

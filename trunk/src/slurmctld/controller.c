@@ -1320,7 +1320,7 @@ static void *_slurmctld_background(void *no_data)
 		if (difftime(now, last_sched_time) >= PERIODIC_SCHEDULE) {
 			last_sched_time = now;
 			if (schedule())
-				last_checkpoint_time = 0;  /* force state save */
+				last_checkpoint_time = 0; /* force state save */
 			set_job_elig_time();
 		}
 

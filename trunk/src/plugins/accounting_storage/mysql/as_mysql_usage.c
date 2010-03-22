@@ -85,7 +85,8 @@ static void *_cluster_rollup_usage(void *arg)
 		rc = as_mysql_hourly_rollup(&mysql_conn,
 					    local_rollup->cluster_name,
 					    local_rollup->hour_start,
-					    local_rollup->hour_end);
+					    local_rollup->hour_end,
+					    local_rollup->archive_data);
 		snprintf(timer_str, sizeof(timer_str),
 			 "hourly_rollup for %s", local_rollup->cluster_name);
 		END_TIMER3(timer_str, 5000000);

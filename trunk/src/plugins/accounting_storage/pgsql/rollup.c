@@ -1050,11 +1050,7 @@ pgsql_monthly_rollup(pgsql_conn_t *pg_conn,
 
 	memset(&arch_cond, 0, sizeof(arch_cond));
 	arch_cond.archive_dir = slurmdbd_conf->archive_dir;
-	arch_cond.archive_events = slurmdbd_conf->archive_events;
-	arch_cond.archive_jobs = slurmdbd_conf->archive_jobs;
 	arch_cond.archive_script = slurmdbd_conf->archive_script;
-	arch_cond.archive_steps = slurmdbd_conf->archive_steps;
-	arch_cond.archive_suspend = slurmdbd_conf->archive_suspend;
 	arch_cond.purge_event = slurmdbd_conf->purge_event;
 	arch_cond.purge_job = slurmdbd_conf->purge_job;
 	arch_cond.purge_step = slurmdbd_conf->purge_step;

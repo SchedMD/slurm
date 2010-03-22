@@ -101,4 +101,15 @@ extern void mins2time_str(uint32_t time, char *string, int size);
 /* used to get a 2 char abbriviated month name from int 0-11 */
 extern char *mon_abbr(int mon);
 
+/* Convert a string to a duration in Months or Days
+ * input formats:
+ *   <integer>                defaults to Months
+ *   <integer>Months
+ *   <integer>Days
+ * output:
+ *   <integer>                if input is in Months
+ *   PURGE_DAYS || <integer>  if input is in Days
+ */
+extern int time_str2duration(char *string);
+
 #endif
