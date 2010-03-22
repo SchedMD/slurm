@@ -1,0 +1,41 @@
+div.figure {
+  /*float: right;*/
+  margin: 0 0 15px 20px;
+  padding: 15px;
+  /*border: 1px solid gray;*/
+  text-align: center;
+  font-style: italic;
+  overflow: auto;
+}
+
+pre {
+  /*width: 90%;*/
+  margin: 0 0 15px 20px;
+  padding: 15px;
+  border: 1px solid gray;
+  background-color: #ddd;
+  white-space: pre;
+  overflow: auto;
+}
+
+a:visited {
+  /*color: #6633FF;*/
+  color: #581C90;
+}
+
+a.nav:visited {
+  /*color: #6633FF;*/
+  color: #581C90;
+}
+
+/* When printing, eliminate the nagivation column on the left,
+ * and make the content section fill the width of the page.
+ */
+@media print {
+  #navigation { display: none }
+  #content {
+    margin-left: 0px;
+    border-left: 0px solid gray;
+    width: 90%;
+  }
+}

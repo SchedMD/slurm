@@ -1,0 +1,1093 @@
+% This is LLNCS.DEM the demonstration file of
+% the LaTeX macro package from Springer-Verlag
+% for Lecture Notes in Computer Science,
+% version 2.2 for LaTeX2e
+%
+\documentclass{llncs}
+%
+\usepackage{makeidx}  % allows for indexgeneration
+%
+\begin{document}
+%
+\frontmatter          % for the preliminaries
+%
+\pagestyle{headings}  % switches on printing of running heads
+\addtocmark{Hamiltonian Mechanics} % additional mark in the TOC
+%
+\chapter*{Preface}
+%
+This textbook is intended for use by students of physics, physical
+chemistry, and theoretical chemistry. The reader is presumed to have a
+basic knowledge of atomic and quantum physics at the level provided, for
+example, by the first few chapters in our book {\it The Physics of Atoms
+and Quanta}. The student of physics will find here material which should
+be included in the basic education of every physicist. This book should
+furthermore allow students to acquire an appreciation of the breadth and
+variety within the field of molecular physics and its future as a
+fascinating area of research.
+
+For the student of chemistry, the concepts introduced in this book will
+provide a theoretical framework for that entire field of study. With the
+help of these concepts, it is at least in principle possible to reduce
+the enormous body of empirical chemical knowledge to a few basic
+principles: those of quantum mechanics. In addition, modern physical
+methods whose fundamentals are introduced here are becoming increasingly
+important in chemistry and now represent indispensable tools for the
+chemist. As examples, we might mention the structural analysis of
+complex organic compounds, spectroscopic investigation of very rapid
+reaction processes or, as a practical application, the remote detection
+of pollutants in the air.
+
+\vspace{1cm}
+\begin{flushright}\noindent
+April 1995\hfill Walter Olthoff\\
+Program Chair\\
+ECOOP'95
+\end{flushright}
+%
+\chapter*{Organization}
+ECOOP'95 is organized by the department of Computer Science, Univeristy
+of \AA rhus and AITO (association Internationa pour les Technologie
+Object) in cooperation with ACM/SIGPLAN.
+%
+\section*{Executive Commitee}
+\begin{tabular}{@{}p{5cm}@{}p{7.2cm}@{}}
+Conference Chair:&Ole Lehrmann Madsen (\AA rhus University, DK)\\
+Program Chair:   &Walter Olthoff (DFKI GmbH, Germany)\\
+Organizing Chair:&J\o rgen Lindskov Knudsen (\AA rhus University, DK)\\
+Tutorials:&Birger M\o ller-Pedersen\hfil\break
+(Norwegian Computing Center, Norway)\\
+Workshops:&Eric Jul (University of Kopenhagen, Denmark)\\
+Panels:&Boris Magnusson (Lund University, Sweden)\\
+Exhibition:&Elmer Sandvad (\AA rhus University, DK)\\
+Demonstrations:&Kurt N\o rdmark (\AA rhus University, DK)
+\end{tabular}
+%
+\section*{Program Commitee}
+\begin{tabular}{@{}p{5cm}@{}p{7.2cm}@{}}
+Conference Chair:&Ole Lehrmann Madsen (\AA rhus University, DK)\\
+Program Chair:   &Walter Olthoff (DFKI GmbH, Germany)\\
+Organizing Chair:&J\o rgen Lindskov Knudsen (\AA rhus University, DK)\\
+Tutorials:&Birger M\o ller-Pedersen\hfil\break
+(Norwegian Computing Center, Norway)\\
+Workshops:&Eric Jul (University of Kopenhagen, Denmark)\\
+Panels:&Boris Magnusson (Lund University, Sweden)\\
+Exhibition:&Elmer Sandvad (\AA rhus University, DK)\\
+Demonstrations:&Kurt N\o rdmark (\AA rhus University, DK)
+\end{tabular}
+%
+\begin{multicols}{3}[\section*{Referees}]
+V.~Andreev\\
+B\"arwolff\\
+E.~Barrelet\\
+H.P.~Beck\\
+G.~Bernardi\\
+E.~Binder\\
+P.C.~Bosetti\\
+Braunschweig\\
+F.W.~B\"usser\\
+T.~Carli\\
+A.B.~Clegg\\
+G.~Cozzika\\
+S.~Dagoret\\
+Del~Buono\\
+P.~Dingus\\
+H.~Duhm\\
+J.~Ebert\\
+S.~Eichenberger\\
+R.J.~Ellison\\
+Feltesse\\
+W.~Flauger\\
+A.~Fomenko\\
+G.~Franke\\
+J.~Garvey\\
+M.~Gennis\\
+L.~Goerlich\\
+P.~Goritchev\\
+H.~Greif\\
+E.M.~Hanlon\\
+R.~Haydar\\
+R.C.W.~Henderso\\
+P.~Hill\\
+H.~Hufnagel\\
+A.~Jacholkowska\\
+Johannsen\\
+S.~Kasarian\\
+I.R.~Kenyon\\
+C.~Kleinwort\\
+T.~K\"ohler\\
+S.D.~Kolya\\
+P.~Kostka\\
+U.~Kr\"uger\\
+J.~Kurzh\"ofer\\
+M.P.J.~Landon\\
+A.~Lebedev\\
+Ch.~Ley\\
+F.~Linsel\\
+H.~Lohmand\\
+Martin\\
+S.~Masson\\
+K.~Meier\\
+C.A.~Meyer\\
+S.~Mikocki\\
+J.V.~Morris\\
+B.~Naroska\\
+Nguyen\\
+U.~Obrock\\
+G.D.~Patel\\
+Ch.~Pichler\\
+S.~Prell\\
+F.~Raupach\\
+V.~Riech\\
+P.~Robmann\\
+N.~Sahlmann\\
+P.~Schleper\\
+Sch\"oning\\
+B.~Schwab\\
+A.~Semenov\\
+G.~Siegmon\\
+J.R.~Smith\\
+M.~Steenbock\\
+U.~Straumann\\
+C.~Thiebaux\\
+P.~Van~Esch\\
+from Yerevan Ph\\
+L.R.~West\\
+G.-G.~Winter\\
+T.P.~Yiou\\
+M.~Zimmer\end{multicols}
+%
+\section*{Sponsoring Institutions}
+%
+Bernauer-Budiman Inc., Reading, Mass.\\
+The Hofmann-International Company, San Louis Obispo, Cal.\\
+Kramer Industries, Heidelberg, Germany
+%
+\tableofcontents
+%
+\mainmatter              % start of the contributions
+%
+\title{Hamiltonian Mechanics unter besonderer Ber\"ucksichtigung der
+h\"ohreren Lehranstalten}
+%
+\titlerunning{Hamiltonian Mechanics}  % abbreviated title (for running head)
+%                                     also used for the TOC unless
+%                                     \toctitle is used
+%
+\author{Ivar Ekeland\inst{1} \and Roger Temam\inst{2}
+Jeffrey Dean \and David Grove \and Craig Chambers \and Kim~B.~Bruce \and
+Elsa Bertino}
+%
+\authorrunning{Ivar Ekeland et al.}   % abbreviated author list (for running head)
+%
+%%%% modified list of authors for the TOC (add the affiliations)
+\tocauthor{Ivar Ekeland (Princeton University),
+Roger Temam (Universit\'{e} de Paris-Sud),
+Jeffrey Dean, David Grove, Craig Chambers (Universit\`a di Geova),
+Kim B. Bruce (Stanford University),
+Elisa Bertino (Digita Research Center)}
+%
+\institute{Princeton University, Princeton NJ 08544, USA,\\
+\email{I.Ekeland@princeton.edu},\\ WWW home page:
+\texttt{http://users/\homedir iekeland/web/welcome.html}
+\and
+Universit\'{e} de Paris-Sud,
+Laboratoire d'Analyse Num\'{e}rique, B\^{a}timent 425,\\
+F-91405 Orsay Cedex, France}
+
+\maketitle              % typeset the title of the contribution
+
+\begin{abstract}
+The abstract should summarize the contents of the paper
+using at least 70 and at most 150 words. It will be set in 9-point
+font size and be inset 1.0 cm from the right and left margins.
+There will be two blank lines before and after the Abstract. \dots
+\end{abstract}
+%
+\section{Fixed-Period Problems: The Sublinear Case}
+%
+With this chapter, the preliminaries are over, and we begin the search
+for periodic solutions to Hamiltonian systems. All this will be done in
+the convex case; that is, we shall study the boundary-value problem
+\begin{eqnarray*}
+  \dot{x}&=&JH' (t,x)\\
+  x(0) &=& x(T)
+\end{eqnarray*}
+with $H(t,\cdot)$ a convex function of $x$, going to $+\infty$ when
+$\left\|x\right\| \to \infty$.
+
+%
+\subsection{Autonomous Systems}
+%
+In this section, we will consider the case when the Hamiltonian $H(x)$
+is autonomous. For the sake of simplicity, we shall also assume that it
+is $C^{1}$.
+
+We shall first consider the question of nontriviality, within the
+general framework of
+$\left(A_{\infty},B_{\infty}\right)$-subquadratic Hamiltonians. In
+the second subsection, we shall look into the special case when $H$ is
+$\left(0,b_{\infty}\right)$-subquadratic,
+and we shall try to derive additional information.
+%
+\subsubsection{The General Case: Nontriviality.}
+%
+We assume that $H$ is
+$\left(A_{\infty},B_{\infty}\right)$-sub\-qua\-dra\-tic at infinity,
+for some constant symmetric matrices $A_{\infty}$ and $B_{\infty}$,
+with $B_{\infty}-A_{\infty}$ positive definite. Set:
+\begin{eqnarray}
+\gamma :&=&{\rm smallest\ eigenvalue\ of}\ \ B_{\infty} - A_{\infty} \\
+  \lambda : &=& {\rm largest\ negative\ eigenvalue\ of}\ \
+  J \frac{d}{dt} +A_{\infty}\ .
+\end{eqnarray}
+
+Theorem~\ref{ghou:pre} tells us that if $\lambda +\gamma < 0$, the
+boundary-value problem:
+\begin{equation}
+\begin{array}{rcl}
+  \dot{x}&=&JH' (x)\\
+  x(0)&=&x (T)
+\end{array}
+\end{equation}
+has at least one solution
+$\overline{x}$, which is found by minimizing the dual
+action functional:
+\begin{equation}
+  \psi (u) = \int_{o}^{T} \left[\frac{1}{2}
+  \left(\Lambda_{o}^{-1} u,u\right) + N^{\ast} (-u)\right] dt
+\end{equation}
+on the range of $\Lambda$, which is a subspace $R (\Lambda)_{L}^{2}$
+with finite codimension. Here
+\begin{equation}
+  N(x) := H(x) - \frac{1}{2} \left(A_{\infty} x,x\right)
+\end{equation}
+is a convex function, and
+\begin{equation}
+  N(x) \le \frac{1}{2}
+  \left(\left(B_{\infty} - A_{\infty}\right) x,x\right)
+  + c\ \ \ \forall x\ .
+\end{equation}
+
+%
+\begin{proposition}
+Assume $H'(0)=0$ and $ H(0)=0$. Set:
+\begin{equation}
+  \delta := \liminf_{x\to 0} 2 N (x) \left\|x\right\|^{-2}\ .
+  \label{eq:one}
+\end{equation}
+
+If $\gamma < - \lambda < \delta$,
+the solution $\overline{u}$ is non-zero:
+\begin{equation}
+  \overline{x} (t) \ne 0\ \ \ \forall t\ .
+\end{equation}
+\end{proposition}
+%
+\begin{proof}
+Condition (\ref{eq:one}) means that, for every
+$\delta ' > \delta$, there is some $\varepsilon > 0$ such that
+\begin{equation}
+  \left\|x\right\| \le \varepsilon \Rightarrow N (x) \le
+  \frac{\delta '}{2} \left\|x\right\|^{2}\ .
+\end{equation}
+
+It is an exercise in convex analysis, into which we shall not go, to
+show that this implies that there is an $\eta > 0$ such that
+\begin{equation}
+  f\left\|x\right\| \le \eta
+  \Rightarrow N^{\ast} (y) \le \frac{1}{2\delta '}
+  \left\|y\right\|^{2}\ .
+  \label{eq:two}
+\end{equation}
+
+\begin{figure}
+\vspace{2.5cm}
+\caption{This is the caption of the figure displaying a white eagle and
+a white horse on a snow field}
+\end{figure}
+
+Since $u_{1}$ is a smooth function, we will have
+$\left\|hu_{1}\right\|_\infty \le \eta$
+for $h$ small enough, and inequality (\ref{eq:two}) will hold,
+yielding thereby:
+\begin{equation}
+  \psi (hu_{1}) \le \frac{h^{2}}{2}
+  \frac{1}{\lambda} \left\|u_{1} \right\|_{2}^{2} + \frac{h^{2}}{2}
+  \frac{1}{\delta '} \left\|u_{1}\right\|^{2}\ .
+\end{equation}
+
+If we choose $\delta '$ close enough to $\delta$, the quantity
+$\left(\frac{1}{\lambda} + \frac{1}{\delta '}\right)$
+will be negative, and we end up with
+\begin{equation}
+  \psi (hu_{1}) < 0\ \ \ \ \ {\rm for}\ \ h\ne 0\ \ {\rm small}\ .
+\end{equation}
+
+On the other hand, we check directly that $\psi (0) = 0$. This shows
+that 0 cannot be a minimizer of $\psi$, not even a local one.
+So $\overline{u} \ne 0$ and
+$\overline{u} \ne \Lambda_{o}^{-1} (0) = 0$. \qed
+\end{proof}
+%
+\begin{corollary}
+Assume $H$ is $C^{2}$ and
+$\left(a_{\infty},b_{\infty}\right)$-subquadratic at infinity. Let
+$\xi_{1},\allowbreak\dots,\allowbreak\xi_{N}$  be the
+equilibria, that is, the solutions of $H' (\xi ) = 0$.
+Denote by $\omega_{k}$
+the smallest eigenvalue of $H'' \left(\xi_{k}\right)$, and set:
+\begin{equation}
+  \omega : = {\rm Min\,} \left\{\omega_{1},\dots,\omega_{k}\right\}\ .
+\end{equation}
+If:
+\begin{equation}
+  \frac{T}{2\pi} b_{\infty} <
+  - E \left[- \frac{T}{2\pi}a_{\infty}\right] <
+  \frac{T}{2\pi}\omega
+  \label{eq:three}
+\end{equation}
+then minimization of $\psi$ yields a non-constant $T$-periodic solution
+$\overline{x}$.
+\end{corollary}
+%
+
+We recall once more that by the integer part $E [\alpha ]$ of
+$\alpha \in \bbbr$, we mean the $a\in \bbbz$
+such that $a< \alpha \le a+1$. For instance,
+if we take $a_{\infty} = 0$, Corollary 2 tells
+us that $\overline{x}$ exists and is
+non-constant provided that:
+
+\begin{equation}
+  \frac{T}{2\pi} b_{\infty} < 1 < \frac{T}{2\pi}
+\end{equation}
+or
+\begin{equation}
+  T\in \left(\frac{2\pi}{\omega},\frac{2\pi}{b_{\infty}}\right)\ .
+  \label{eq:four}
+\end{equation}
+
+%
+\begin{proof}
+The spectrum of $\Lambda$ is $\frac{2\pi}{T} \bbbz +a_{\infty}$. The
+largest negative eigenvalue $\lambda$ is given by
+$\frac{2\pi}{T}k_{o} +a_{\infty}$,
+where
+\begin{equation}
+  \frac{2\pi}{T}k_{o} + a_{\infty} < 0
+  \le \frac{2\pi}{T} (k_{o} +1) + a_{\infty}\ .
+\end{equation}
+Hence:
+\begin{equation}
+  k_{o} = E \left[- \frac{T}{2\pi} a_{\infty}\right] \ .
+\end{equation}
+
+The condition $\gamma < -\lambda < \delta$ now becomes:
+\begin{equation}
+  b_{\infty} - a_{\infty} <
+  - \frac{2\pi}{T} k_{o} -a_{\infty} < \omega -a_{\infty}
+\end{equation}
+which is precisely condition (\ref{eq:three}).\qed
+\end{proof}
+%
+
+\begin{lemma}
+Assume that $H$ is $C^{2}$ on $\bbbr^{2n} \setminus \{ 0\}$ and
+that $H'' (x)$ is non-de\-gen\-er\-ate for any $x\ne 0$. Then any local
+minimizer $\widetilde{x}$ of $\psi$ has minimal period $T$.
+\end{lemma}
+%
+\begin{proof}
+We know that $\widetilde{x}$, or
+$\widetilde{x} + \xi$ for some constant $\xi
+\in \bbbr^{2n}$, is a $T$-periodic solution of the Hamiltonian system:
+\begin{equation}
+  \dot{x} = JH' (x)\ .
+\end{equation}
+
+There is no loss of generality in taking $\xi = 0$. So
+$\psi (x) \ge \psi (\widetilde{x} )$
+for all $\widetilde{x}$ in some neighbourhood of $x$ in
+$W^{1,2} \left(\bbbr / T\bbbz ; \bbbr^{2n}\right)$.
+
+But this index is precisely the index
+$i_{T} (\widetilde{x} )$ of the $T$-periodic
+solution $\widetilde{x}$ over the interval
+$(0,T)$, as defined in Sect.~2.6. So
+\begin{equation}
+  i_{T} (\widetilde{x} ) = 0\ .
+  \label{eq:five}
+\end{equation}
+
+Now if $\widetilde{x}$ has a lower period, $T/k$ say,
+we would have, by Corollary 31:
+\begin{equation}
+  i_{T} (\widetilde{x} ) =
+  i_{kT/k}(\widetilde{x} ) \ge
+  ki_{T/k} (\widetilde{x} ) + k-1 \ge k-1 \ge 1\ .
+\end{equation}
+
+This would contradict (\ref{eq:five}), and thus cannot happen.\qed
+\end{proof}
+%
+\paragraph{Notes and Comments.}
+The results in this section are a
+refined version of \cite{clar:eke};
+the minimality result of Proposition
+14 was the first of its kind.
+
+To understand the nontriviality conditions, such as the one in formula
+(\ref{eq:four}), one may think of a one-parameter family
+$x_{T}$, $T\in \left(2\pi\omega^{-1}, 2\pi b_{\infty}^{-1}\right)$
+of periodic solutions, $x_{T} (0) = x_{T} (T)$,
+with $x_{T}$ going away to infinity when $T\to 2\pi \omega^{-1}$,
+which is the period of the linearized system at 0.
+
+\begin{table}
+\caption{This is the example table taken out of {\it The
+\TeX{}book,} p.\,246}
+\begin{center}
+\begin{tabular}{r@{\quad}rl}
+\hline
+\multicolumn{1}{l}{\rule{0pt}{12pt}
+                   Year}&\multicolumn{2}{l}{World population}\\[2pt]
+\hline\rule{0pt}{12pt}
+8000 B.C.  &     5,000,000& \\
+  50 A.D.  &   200,000,000& \\
+1650 A.D.  &   500,000,000& \\
+1945 A.D.  & 2,300,000,000& \\
+1980 A.D.  & 4,400,000,000& \\[2pt]
+\hline
+\end{tabular}
+\end{center}
+\end{table}
+%
+\begin{theorem} [Ghoussoub-Preiss]\label{ghou:pre}
+Assume $H(t,x)$ is
+$(0,\varepsilon )$-subquadratic at
+infinity for all $\varepsilon > 0$, and $T$-periodic in $t$
+\begin{equation}
+  H (t,\cdot )\ \ \ \ \ {\rm is\ convex}\ \ \forall t
+\end{equation}
+\begin{equation}
+  H (\cdot ,x)\ \ \ \ \ {\rm is}\ \ T{\rm -periodic}\ \ \forall x
+\end{equation}
+\begin{equation}
+  H (t,x)\ge n\left(\left\|x\right\|\right)\ \ \ \ \
+  {\rm with}\ \ n (s)s^{-1}\to \infty\ \ {\rm as}\ \ s\to \infty
+\end{equation}
+\begin{equation}
+  \forall \varepsilon > 0\ ,\ \ \ \exists c\ :\
+  H(t,x) \le \frac{\varepsilon}{2}\left\|x\right\|^{2} + c\ .
+\end{equation}
+
+Assume also that $H$ is $C^{2}$, and $H'' (t,x)$ is positive definite
+everywhere. Then there is a sequence $x_{k}$, $k\in \bbbn$, of
+$kT$-periodic solutions of the system
+\begin{equation}
+  \dot{x} = JH' (t,x)
+\end{equation}
+such that, for every $k\in \bbbn$, there is some $p_{o}\in\bbbn$ with:
+\begin{equation}
+  p\ge p_{o}\Rightarrow x_{pk} \ne x_{k}\ .
+\end{equation}
+\qed
+\end{theorem}
+%
+\begin{example} [{{\rm External forcing}}]
+Consider the system:
+\begin{equation}
+  \dot{x} = JH' (x) + f(t)
+\end{equation}
+where the Hamiltonian $H$ is
+$\left(0,b_{\infty}\right)$-subquadratic, and the
+forcing term is a distribution on the circle:
+\begin{equation}
+  f = \frac{d}{dt} F + f_{o}\ \ \ \ \
+  {\rm with}\ \ F\in L^{2} \left(\bbbr / T\bbbz; \bbbr^{2n}\right)\ ,
+\end{equation}
+where $f_{o} : = T^{-1}\int_{o}^{T} f (t) dt$. For instance,
+\begin{equation}
+  f (t) = \sum_{k\in \bbbn} \delta_{k} \xi\ ,
+\end{equation}
+where $\delta_{k}$ is the Dirac mass at $t= k$ and
+$\xi \in \bbbr^{2n}$ is a
+constant, fits the prescription. This means that the system
+$\dot{x} = JH' (x)$ is being excited by a
+series of identical shocks at interval $T$.
+\end{example}
+%
+\begin{definition}
+Let $A_{\infty} (t)$ and $B_{\infty} (t)$ be symmetric
+operators in $\bbbr^{2n}$, depending continuously on
+$t\in [0,T]$, such that
+$A_{\infty} (t) \le B_{\infty} (t)$ for all $t$.
+
+A Borelian function
+$H: [0,T]\times \bbbr^{2n} \to \bbbr$
+is called
+$\left(A_{\infty} ,B_{\infty}\right)$-{\it subquadratic at infinity}
+if there exists a function $N(t,x)$ such that:
+\begin{equation}
+  H (t,x) = \frac{1}{2} \left(A_{\infty} (t) x,x\right) + N(t,x)
+\end{equation}
+\begin{equation}
+  \forall t\ ,\ \ \ N(t,x)\ \ \ \ \
+  {\rm is\ convex\ with\  respect\  to}\ \ x
+\end{equation}
+\begin{equation}
+  N(t,x) \ge n\left(\left\|x\right\|\right)\ \ \ \ \
+  {\rm with}\ \ n(s)s^{-1}\to +\infty\ \ {\rm as}\ \ s\to +\infty
+\end{equation}
+\begin{equation}
+  \exists c\in \bbbr\ :\ \ \ H (t,x) \le
+  \frac{1}{2} \left(B_{\infty} (t) x,x\right) + c\ \ \ \forall x\ .
+\end{equation}
+
+If $A_{\infty} (t) = a_{\infty} I$ and
+$B_{\infty} (t) = b_{\infty} I$, with
+$a_{\infty} \le b_{\infty} \in \bbbr$,
+we shall say that $H$ is
+$\left(a_{\infty},b_{\infty}\right)$-subquadratic
+at infinity. As an example, the function
+$\left\|x\right\|^{\alpha}$, with
+$1\le \alpha < 2$, is $(0,\varepsilon )$-subquadratic at infinity
+for every $\varepsilon > 0$. Similarly, the Hamiltonian
+\begin{equation}
+H (t,x) = \frac{1}{2} k \left\|k\right\|^{2} +\left\|x\right\|^{\alpha}
+\end{equation}
+is $(k,k+\varepsilon )$-subquadratic for every $\varepsilon > 0$.
+Note that, if $k<0$, it is not convex.
+\end{definition}
+%
+
+\paragraph{Notes and Comments.}
+The first results on subharmonics were
+obtained by Rabinowitz in \cite{rab}, who showed the existence of
+infinitely many subharmonics both in the subquadratic and superquadratic
+case, with suitable growth conditions on $H'$. Again the duality
+approach enabled Clarke and Ekeland in \cite{clar:eke:2} to treat the
+same problem in the convex-subquadratic case, with growth conditions on
+$H$ only.
+
+Recently, Michalek and Tarantello (see \cite{mich:tar} and \cite{tar})
+have obtained lower bound on the number of subharmonics of period $kT$,
+based on symmetry considerations and on pinching estimates, as in
+Sect.~5.2 of this article.
+
+%
+% ---- Bibliography ----
+%
+\begin{thebibliography}{5}
+%
+\bibitem {clar:eke}
+Clarke, F., Ekeland, I.:
+Nonlinear oscillations and
+boundary-value problems for Hamiltonian systems.
+Arch. Rat. Mech. Anal. {\bf 78} (1982) 315--333
+
+\bibitem {clar:eke:2}
+Clarke, F., Ekeland, I.:
+Solutions p\'{e}riodiques, du
+p\'{e}riode donn\'{e}e, des \'{e}quations hamiltoniennes.
+Note CRAS Paris {\bf 287} (1978) 1013--1015
+
+\bibitem {mich:tar}
+Michalek, R., Tarantello, G.:
+Subharmonic solutions with prescribed minimal
+period for nonautonomous Hamiltonian systems.
+J. Diff. Eq. {\bf 72} (1988) 28--55
+
+\bibitem {tar}
+Tarantello, G.:
+Subharmonic solutions for Hamiltonian
+systems via a $\bbbz_{p}$ pseudoindex theory.
+Annali di Matematica Pura (to appear)
+
+\bibitem {rab}
+Rabinowitz, P.:
+On subharmonic solutions of a Hamiltonian system.
+Comm. Pure Appl. Math. {\bf 33} (1980) 609--633
+
+\end{thebibliography}
+
+%
+% second contribution with nearly identical text,
+% slightly changed contribution head (all entries
+% appear as defaults), and modified bibliography
+%
+\title{Hamiltonian Mechanics2}
+
+\author{Ivar Ekeland\inst{1} \and Roger Temam\inst{2}}
+
+\institute{Princeton University, Princeton NJ 08544, USA
+\and
+Universit\'{e} de Paris-Sud,
+Laboratoire d'Analyse Num\'{e}rique, B\^{a}timent 425,\\
+F-91405 Orsay Cedex, France}
+
+\maketitle
+%
+% Modify the bibliography environment to call for the author-year
+% system. This is done normally with the citeauthoryear option
+% for a particular contribution.
+\makeatletter
+\renewenvironment{thebibliography}[1]
+     {\section*{\refname}
+      \small
+      \list{}%
+           {\settowidth\labelwidth{}%
+            \leftmargin\parindent
+            \itemindent=-\parindent
+            \labelsep=\z@
+            \if@openbib
+              \advance\leftmargin\bibindent
+              \itemindent -\bibindent
+              \listparindent \itemindent
+              \parsep \z@
+            \fi
+            \usecounter{enumiv}%
+            \let\p@enumiv\@empty
+            \renewcommand\theenumiv{}}%
+      \if@openbib
+        \renewcommand\newblock{\par}%
+      \else
+        \renewcommand\newblock{\hskip .11em \@plus.33em \@minus.07em}%
+      \fi
+      \sloppy\clubpenalty4000\widowpenalty4000%
+      \sfcode`\.=\@m}
+     {\def\@noitemerr
+       {\@latex@warning{Empty `thebibliography' environment}}%
+      \endlist}
+      \def\@cite#1{#1}%
+      \def\@lbibitem[#1]#2{\item[]\if@filesw
+        {\def\protect##1{\string ##1\space}\immediate
+      \write\@auxout{\string\bibcite{#2}{#1}}}\fi\ignorespaces}
+\makeatother
+%
+\begin{abstract}
+The abstract should summarize the contents of the paper
+using at least 70 and at most 150 words. It will be set in 9-point
+font size and be inset 1.0 cm from the right and left margins.
+There will be two blank lines before and after the Abstract. \dots
+\end{abstract}
+%
+\section{Fixed-Period Problems: The Sublinear Case}
+%
+With this chapter, the preliminaries are over, and we begin the search
+for periodic solutions to Hamiltonian systems. All this will be done in
+the convex case; that is, we shall study the boundary-value problem
+\begin{eqnarray*}
+  \dot{x}&=&JH' (t,x)\\
+  x(0) &=& x(T)
+\end{eqnarray*}
+with $H(t,\cdot)$ a convex function of $x$, going to $+\infty$ when
+$\left\|x\right\| \to \infty$.
+
+%
+\subsection{Autonomous Systems}
+%
+In this section, we will consider the case when the Hamiltonian $H(x)$
+is autonomous. For the sake of simplicity, we shall also assume that it
+is $C^{1}$.
+
+We shall first consider the question of nontriviality, within the
+general framework of
+$\left(A_{\infty},B_{\infty}\right)$-subquadratic Hamiltonians. In
+the second subsection, we shall look into the special case when $H$ is
+$\left(0,b_{\infty}\right)$-subquadratic,
+and we shall try to derive additional information.
+%
+\subsubsection{The General Case: Nontriviality.}
+%
+We assume that $H$ is
+$\left(A_{\infty},B_{\infty}\right)$-sub\-qua\-dra\-tic at infinity,
+for some constant symmetric matrices $A_{\infty}$ and $B_{\infty}$,
+with $B_{\infty}-A_{\infty}$ positive definite. Set:
+\begin{eqnarray}
+\gamma :&=&{\rm smallest\ eigenvalue\ of}\ \ B_{\infty} - A_{\infty} \\
+  \lambda : &=& {\rm largest\ negative\ eigenvalue\ of}\ \
+  J \frac{d}{dt} +A_{\infty}\ .
+\end{eqnarray}
+
+Theorem 21 tells us that if $\lambda +\gamma < 0$, the boundary-value
+problem:
+\begin{equation}
+\begin{array}{rcl}
+  \dot{x}&=&JH' (x)\\
+  x(0)&=&x (T)
+\end{array}
+\end{equation}
+has at least one solution
+$\overline{x}$, which is found by minimizing the dual
+action functional:
+\begin{equation}
+  \psi (u) = \int_{o}^{T} \left[\frac{1}{2}
+  \left(\Lambda_{o}^{-1} u,u\right) + N^{\ast} (-u)\right] dt
+\end{equation}
+on the range of $\Lambda$, which is a subspace $R (\Lambda)_{L}^{2}$
+with finite codimension. Here
+\begin{equation}
+  N(x) := H(x) - \frac{1}{2} \left(A_{\infty} x,x\right)
+\end{equation}
+is a convex function, and
+\begin{equation}
+  N(x) \le \frac{1}{2}
+  \left(\left(B_{\infty} - A_{\infty}\right) x,x\right)
+  + c\ \ \ \forall x\ .
+\end{equation}
+
+%
+\begin{proposition}
+Assume $H'(0)=0$ and $ H(0)=0$. Set:
+\begin{equation}
+  \delta := \liminf_{x\to 0} 2 N (x) \left\|x\right\|^{-2}\ .
+  \label{2eq:one}
+\end{equation}
+
+If $\gamma < - \lambda < \delta$,
+the solution $\overline{u}$ is non-zero:
+\begin{equation}
+  \overline{x} (t) \ne 0\ \ \ \forall t\ .
+\end{equation}
+\end{proposition}
+%
+\begin{proof}
+Condition (\ref{2eq:one}) means that, for every
+$\delta ' > \delta$, there is some $\varepsilon > 0$ such that
+\begin{equation}
+  \left\|x\right\| \le \varepsilon \Rightarrow N (x) \le
+  \frac{\delta '}{2} \left\|x\right\|^{2}\ .
+\end{equation}
+
+It is an exercise in convex analysis, into which we shall not go, to
+show that this implies that there is an $\eta > 0$ such that
+\begin{equation}
+  f\left\|x\right\| \le \eta
+  \Rightarrow N^{\ast} (y) \le \frac{1}{2\delta '}
+  \left\|y\right\|^{2}\ .
+  \label{2eq:two}
+\end{equation}
+
+\begin{figure}
+\vspace{2.5cm}
+\caption{This is the caption of the figure displaying a white eagle and
+a white horse on a snow field}
+\end{figure}
+
+Since $u_{1}$ is a smooth function, we will have
+$\left\|hu_{1}\right\|_\infty \le \eta$
+for $h$ small enough, and inequality (\ref{2eq:two}) will hold,
+yielding thereby:
+\begin{equation}
+  \psi (hu_{1}) \le \frac{h^{2}}{2}
+  \frac{1}{\lambda} \left\|u_{1} \right\|_{2}^{2} + \frac{h^{2}}{2}
+  \frac{1}{\delta '} \left\|u_{1}\right\|^{2}\ .
+\end{equation}
+
+If we choose $\delta '$ close enough to $\delta$, the quantity
+$\left(\frac{1}{\lambda} + \frac{1}{\delta '}\right)$
+will be negative, and we end up with
+\begin{equation}
+  \psi (hu_{1}) < 0\ \ \ \ \ {\rm for}\ \ h\ne 0\ \ {\rm small}\ .
+\end{equation}
+
+On the other hand, we check directly that $\psi (0) = 0$. This shows
+that 0 cannot be a minimizer of $\psi$, not even a local one.
+So $\overline{u} \ne 0$ and
+$\overline{u} \ne \Lambda_{o}^{-1} (0) = 0$. \qed
+\end{proof}
+%
+\begin{corollary}
+Assume $H$ is $C^{2}$ and
+$\left(a_{\infty},b_{\infty}\right)$-subquadratic at infinity. Let
+$\xi_{1},\allowbreak\dots,\allowbreak\xi_{N}$  be the
+equilibria, that is, the solutions of $H' (\xi ) = 0$.
+Denote by $\omega_{k}$
+the smallest eigenvalue of $H'' \left(\xi_{k}\right)$, and set:
+\begin{equation}
+  \omega : = {\rm Min\,} \left\{\omega_{1},\dots,\omega_{k}\right\}\ .
+\end{equation}
+If:
+\begin{equation}
+  \frac{T}{2\pi} b_{\infty} <
+  - E \left[- \frac{T}{2\pi}a_{\infty}\right] <
+  \frac{T}{2\pi}\omega
+  \label{2eq:three}
+\end{equation}
+then minimization of $\psi$ yields a non-constant $T$-periodic solution
+$\overline{x}$.
+\end{corollary}
+%
+
+We recall once more that by the integer part $E [\alpha ]$ of
+$\alpha \in \bbbr$, we mean the $a\in \bbbz$
+such that $a< \alpha \le a+1$. For instance,
+if we take $a_{\infty} = 0$, Corollary 2 tells
+us that $\overline{x}$ exists and is
+non-constant provided that:
+
+\begin{equation}
+  \frac{T}{2\pi} b_{\infty} < 1 < \frac{T}{2\pi}
+\end{equation}
+or
+\begin{equation}
+  T\in \left(\frac{2\pi}{\omega},\frac{2\pi}{b_{\infty}}\right)\ .
+  \label{2eq:four}
+\end{equation}
+
+%
+\begin{proof}
+The spectrum of $\Lambda$ is $\frac{2\pi}{T} \bbbz +a_{\infty}$. The
+largest negative eigenvalue $\lambda$ is given by
+$\frac{2\pi}{T}k_{o} +a_{\infty}$,
+where
+\begin{equation}
+  \frac{2\pi}{T}k_{o} + a_{\infty} < 0
+  \le \frac{2\pi}{T} (k_{o} +1) + a_{\infty}\ .
+\end{equation}
+Hence:
+\begin{equation}
+  k_{o} = E \left[- \frac{T}{2\pi} a_{\infty}\right] \ .
+\end{equation}
+
+The condition $\gamma < -\lambda < \delta$ now becomes:
+\begin{equation}
+  b_{\infty} - a_{\infty} <
+  - \frac{2\pi}{T} k_{o} -a_{\infty} < \omega -a_{\infty}
+\end{equation}
+which is precisely condition (\ref{2eq:three}).\qed
+\end{proof}
+%
+
+\begin{lemma}
+Assume that $H$ is $C^{2}$ on $\bbbr^{2n} \setminus \{ 0\}$ and
+that $H'' (x)$ is non-de\-gen\-er\-ate for any $x\ne 0$. Then any local
+minimizer $\widetilde{x}$ of $\psi$ has minimal period $T$.
+\end{lemma}
+%
+\begin{proof}
+We know that $\widetilde{x}$, or
+$\widetilde{x} + \xi$ for some constant $\xi
+\in \bbbr^{2n}$, is a $T$-periodic solution of the Hamiltonian system:
+\begin{equation}
+  \dot{x} = JH' (x)\ .
+\end{equation}
+
+There is no loss of generality in taking $\xi = 0$. So
+$\psi (x) \ge \psi (\widetilde{x} )$
+for all $\widetilde{x}$ in some neighbourhood of $x$ in
+$W^{1,2} \left(\bbbr / T\bbbz ; \bbbr^{2n}\right)$.
+
+But this index is precisely the index
+$i_{T} (\widetilde{x} )$ of the $T$-periodic
+solution $\widetilde{x}$ over the interval
+$(0,T)$, as defined in Sect.~2.6. So
+\begin{equation}
+  i_{T} (\widetilde{x} ) = 0\ .
+  \label{2eq:five}
+\end{equation}
+
+Now if $\widetilde{x}$ has a lower period, $T/k$ say,
+we would have, by Corollary 31:
+\begin{equation}
+  i_{T} (\widetilde{x} ) =
+  i_{kT/k}(\widetilde{x} ) \ge
+  ki_{T/k} (\widetilde{x} ) + k-1 \ge k-1 \ge 1\ .
+\end{equation}
+
+This would contradict (\ref{2eq:five}), and thus cannot happen.\qed
+\end{proof}
+%
+\paragraph{Notes and Comments.}
+The results in this section are a
+refined version of \cite{2clar:eke};
+the minimality result of Proposition
+14 was the first of its kind.
+
+To understand the nontriviality conditions, such as the one in formula
+(\ref{2eq:four}), one may think of a one-parameter family
+$x_{T}$, $T\in \left(2\pi\omega^{-1}, 2\pi b_{\infty}^{-1}\right)$
+of periodic solutions, $x_{T} (0) = x_{T} (T)$,
+with $x_{T}$ going away to infinity when $T\to 2\pi \omega^{-1}$,
+which is the period of the linearized system at 0.
+
+\begin{table}
+\caption{This is the example table taken out of {\it The
+\TeX{}book,} p.\,246}
+\begin{center}
+\begin{tabular}{r@{\quad}rl}
+\hline
+\multicolumn{1}{l}{\rule{0pt}{12pt}
+                   Year}&\multicolumn{2}{l}{World population}\\[2pt]
+\hline\rule{0pt}{12pt}
+8000 B.C.  &     5,000,000& \\
+  50 A.D.  &   200,000,000& \\
+1650 A.D.  &   500,000,000& \\
+1945 A.D.  & 2,300,000,000& \\
+1980 A.D.  & 4,400,000,000& \\[2pt]
+\hline
+\end{tabular}
+\end{center}
+\end{table}
+%
+\begin{theorem} [Ghoussoub-Preiss]
+Assume $H(t,x)$ is
+$(0,\varepsilon )$-subquadratic at
+infinity for all $\varepsilon > 0$, and $T$-periodic in $t$
+\begin{equation}
+  H (t,\cdot )\ \ \ \ \ {\rm is\ convex}\ \ \forall t
+\end{equation}
+\begin{equation}
+  H (\cdot ,x)\ \ \ \ \ {\rm is}\ \ T{\rm -periodic}\ \ \forall x
+\end{equation}
+\begin{equation}
+  H (t,x)\ge n\left(\left\|x\right\|\right)\ \ \ \ \
+  {\rm with}\ \ n (s)s^{-1}\to \infty\ \ {\rm as}\ \ s\to \infty
+\end{equation}
+\begin{equation}
+  \forall \varepsilon > 0\ ,\ \ \ \exists c\ :\
+  H(t,x) \le \frac{\varepsilon}{2}\left\|x\right\|^{2} + c\ .
+\end{equation}
+
+Assume also that $H$ is $C^{2}$, and $H'' (t,x)$ is positive definite
+everywhere. Then there is a sequence $x_{k}$, $k\in \bbbn$, of
+$kT$-periodic solutions of the system
+\begin{equation}
+  \dot{x} = JH' (t,x)
+\end{equation}
+such that, for every $k\in \bbbn$, there is some $p_{o}\in\bbbn$ with:
+\begin{equation}
+  p\ge p_{o}\Rightarrow x_{pk} \ne x_{k}\ .
+\end{equation}
+\qed
+\end{theorem}
+%
+\begin{example} [{{\rm External forcing}}]
+Consider the system:
+\begin{equation}
+  \dot{x} = JH' (x) + f(t)
+\end{equation}
+where the Hamiltonian $H$ is
+$\left(0,b_{\infty}\right)$-subquadratic, and the
+forcing term is a distribution on the circle:
+\begin{equation}
+  f = \frac{d}{dt} F + f_{o}\ \ \ \ \
+  {\rm with}\ \ F\in L^{2} \left(\bbbr / T\bbbz; \bbbr^{2n}\right)\ ,
+\end{equation}
+where $f_{o} : = T^{-1}\int_{o}^{T} f (t) dt$. For instance,
+\begin{equation}
+  f (t) = \sum_{k\in \bbbn} \delta_{k} \xi\ ,
+\end{equation}
+where $\delta_{k}$ is the Dirac mass at $t= k$ and
+$\xi \in \bbbr^{2n}$ is a
+constant, fits the prescription. This means that the system
+$\dot{x} = JH' (x)$ is being excited by a
+series of identical shocks at interval $T$.
+\end{example}
+%
+\begin{definition}
+Let $A_{\infty} (t)$ and $B_{\infty} (t)$ be symmetric
+operators in $\bbbr^{2n}$, depending continuously on
+$t\in [0,T]$, such that
+$A_{\infty} (t) \le B_{\infty} (t)$ for all $t$.
+
+A Borelian function
+$H: [0,T]\times \bbbr^{2n} \to \bbbr$
+is called
+$\left(A_{\infty} ,B_{\infty}\right)$-{\it subquadratic at infinity}
+if there exists a function $N(t,x)$ such that:
+\begin{equation}
+  H (t,x) = \frac{1}{2} \left(A_{\infty} (t) x,x\right) + N(t,x)
+\end{equation}
+\begin{equation}
+  \forall t\ ,\ \ \ N(t,x)\ \ \ \ \
+  {\rm is\ convex\ with\  respect\  to}\ \ x
+\end{equation}
+\begin{equation}
+  N(t,x) \ge n\left(\left\|x\right\|\right)\ \ \ \ \
+  {\rm with}\ \ n(s)s^{-1}\to +\infty\ \ {\rm as}\ \ s\to +\infty
+\end{equation}
+\begin{equation}
+  \exists c\in \bbbr\ :\ \ \ H (t,x) \le
+  \frac{1}{2} \left(B_{\infty} (t) x,x\right) + c\ \ \ \forall x\ .
+\end{equation}
+
+If $A_{\infty} (t) = a_{\infty} I$ and
+$B_{\infty} (t) = b_{\infty} I$, with
+$a_{\infty} \le b_{\infty} \in \bbbr$,
+we shall say that $H$ is
+$\left(a_{\infty},b_{\infty}\right)$-subquadratic
+at infinity. As an example, the function
+$\left\|x\right\|^{\alpha}$, with
+$1\le \alpha < 2$, is $(0,\varepsilon )$-subquadratic at infinity
+for every $\varepsilon > 0$. Similarly, the Hamiltonian
+\begin{equation}
+H (t,x) = \frac{1}{2} k \left\|k\right\|^{2} +\left\|x\right\|^{\alpha}
+\end{equation}
+is $(k,k+\varepsilon )$-subquadratic for every $\varepsilon > 0$.
+Note that, if $k<0$, it is not convex.
+\end{definition}
+%
+
+\paragraph{Notes and Comments.}
+The first results on subharmonics were
+obtained by Rabinowitz in \cite{2rab}, who showed the existence of
+infinitely many subharmonics both in the subquadratic and superquadratic
+case, with suitable growth conditions on $H'$. Again the duality
+approach enabled Clarke and Ekeland in \cite{2clar:eke:2} to treat the
+same problem in the convex-subquadratic case, with growth conditions on
+$H$ only.
+
+Recently, Michalek and Tarantello (see Michalek, R., Tarantello, G.
+\cite{2mich:tar} and Tarantello, G. \cite{2tar}) have obtained lower
+bound on the number of subharmonics of period $kT$, based on symmetry
+considerations and on pinching estimates, as in Sect.~5.2 of this
+article.
+
+%
+% ---- Bibliography ----
+%
+\begin{thebibliography}{}
+%
+\bibitem[1980]{2clar:eke}
+Clarke, F., Ekeland, I.:
+Nonlinear oscillations and
+boundary-value problems for Hamiltonian systems.
+Arch. Rat. Mech. Anal. {\bf 78} (1982) 315--333
+
+\bibitem[1981]{2clar:eke:2}
+Clarke, F., Ekeland, I.:
+Solutions p\'{e}riodiques, du
+p\'{e}riode donn\'{e}e, des \'{e}quations hamiltoniennes.
+Note CRAS Paris {\bf 287} (1978) 1013--1015
+
+\bibitem[1982]{2mich:tar}
+Michalek, R., Tarantello, G.:
+Subharmonic solutions with prescribed minimal
+period for nonautonomous Hamiltonian systems.
+J. Diff. Eq. {\bf 72} (1988) 28--55
+
+\bibitem[1983]{2tar}
+Tarantello, G.:
+Subharmonic solutions for Hamiltonian
+systems via a $\bbbz_{p}$ pseudoindex theory.
+Annali di Matematica Pura (to appear)
+
+\bibitem[1985]{2rab}
+Rabinowitz, P.:
+On subharmonic solutions of a Hamiltonian system.
+Comm. Pure Appl. Math. {\bf 33} (1980) 609--633
+
+\end{thebibliography}
+\clearpage
+\addtocmark[2]{Author Index} % additional numbered TOC entry
+\renewcommand{\indexname}{Author Index}
+\printindex
+\clearpage
+\addtocmark[2]{Subject Index} % additional numbered TOC entry
+\markboth{Subject Index}{Subject Index}
+\renewcommand{\indexname}{Subject Index}
+\input{subjidx.ind}
+\end{document}

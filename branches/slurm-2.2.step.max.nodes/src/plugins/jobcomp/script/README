@@ -1,0 +1,19 @@
+This job completion plugin runs a program after the job is completed.
+
+The JobCompType is jobcomp/script and the JobCompLoc is the pathname of the script to run.
+
+The plugin sets up the environment for the program to contain the following variables:
+ACCOUNT:   Job's account value
+BATCH:     Was the job submitted as a batch job ("yes" or "no")
+END:       The end time of the job (seconds since Epoch)
+JOBID:     The job id of the slurm job
+JOBNAME:   The name of the job
+JOBSTATE:  The state of the job when it ended
+LIMIT:     The time limit of the job (minutes or "UNLIMITED")
+NODES:     The nodes the job ran on or an empty string if it wasn't assigned
+PARTITION: The partiton the job ran on
+PROCS:     Number of processors allocated to the job
+PATH:      Sets to the standard path
+START:     The start time of the job (seconds since Epoch)
+SUBMIT:    The submit time of the job (seconds since Epoch)
+UID:       The uid of the user the job was run for
