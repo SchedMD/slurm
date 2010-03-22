@@ -563,13 +563,18 @@ _send_exit_msg(slurmd_job_t *job, uint32_t *tid, int n, int status)
 		_random_sleep(job);
 
 	/*
-	 * XXX: Should srun_list be associated with each task?
+	 * Notify each srun and sattach.
+	 * No message for poe or batch jobs
 	 */
 	i = list_iterator_create(job->sruns);
 	while ((srun = list_next(i))) {
 		resp.address = srun->resp_addr;
-		if (resp.address.sin_family != 0)
-			slurm_send_only_node_msg(&resp);
+		if ((resp.address.sin_family == 0) &&
+		    (resp.address.sin_port == 0)   &&
+		    (resp.address.sin_addr.s_addr == 0))
+			continue;	/* no srun or sattach here */
+		if (slurm_send_only_node_msg(&resp) != SLURM_SUCCESS)
+			error("Failed to send MESSAGE_TASK_EXIT: %m");
 	}
 	list_iterator_destroy(i);
 
@@ -1608,7 +1613,8 @@ _send_launch_failure (launch_tasks_request_msg_t *msg, slurm_addr *cli, int rc)
 	resp.return_code   = rc ? rc : -1;
 	resp.count_of_pids = 0;
 
-	slurm_send_only_node_msg(&resp_msg);
+	if (slurm_send_only_node_msg(&resp_msg) != SLURM_SUCCESS)
+		error("Failed to send RESPONSE_LAUNCH_TASKS: %m"); 
 	xfree(name);
 	return;
 }
@@ -1642,7 +1648,8 @@ _send_launch_resp(slurmd_job_t *job, int rc)
 		resp.task_ids[i] = job->task[i]->gtid;
 	}
 
-	slurm_send_only_node_msg(&resp_msg);
+	if (slurm_send_only_node_msg(&resp_msg) != SLURM_SUCCESS)
+		error("failed to send RESPONSE_LAUNCH_TASKS: %m");
 
 	xfree(resp.local_pids);
 	xfree(resp.task_ids);
