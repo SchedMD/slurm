@@ -228,9 +228,10 @@ delete_step_record (struct job_record *job_ptr, uint32_t step_id)
 void
 dump_step_desc(job_step_create_request_msg_t *step_spec)
 {
-	debug3("StepDesc: user_id=%u job_id=%u node_count=%u cpu_count=%u",
+	debug3("StepDesc: user_id=%u job_id=%u node_count=%u-%u cpu_count=%u",
 	       step_spec->user_id, step_spec->job_id,
-	       step_spec->node_count, step_spec->cpu_count);
+	       step_spec->min_nodes, step_spec->max_nodes, 
+	       step_spec->cpu_count);
 	debug3("   num_tasks=%u relative=%u task_dist=%u node_list=%s",
 	       step_spec->num_tasks, step_spec->relative,
 	       step_spec->task_dist, step_spec->node_list);
@@ -580,7 +581,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 			}
 			if ((avail_tasks <= 0) ||
 			    ((selected_nodes == NULL) &&
-			     (nodes_picked_cnt >= step_spec->node_count) &&
+			     (nodes_picked_cnt >= step_spec->min_nodes) &&
 			     (tasks_picked_cnt > 0) &&
 			     (tasks_picked_cnt >= step_spec->num_tasks)))
 				bit_clear(nodes_avail, i);
@@ -623,7 +624,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 			if (cpus_per_task > 0)
 				task_cnt /= cpus_per_task;
 			if (task_cnt <= 0) {
-				if (step_spec->node_count == INFINITE) {
+				if (step_spec->min_nodes == INFINITE) {
 					FREE_NULL_BITMAP(nodes_avail);
 					*return_code =
 						ESLURM_INVALID_TASK_MEMORY;
@@ -643,7 +644,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 		}
 	}
 
-	if (step_spec->node_count == INFINITE)	/* use all nodes */
+	if (step_spec->min_nodes == INFINITE)	/* use all nodes */
 		return nodes_avail;
 
 	if (step_spec->node_list) {
@@ -689,10 +690,10 @@ _pick_step_nodes (struct job_record  *job_ptr,
 				xfree(step_spec->node_list);
 				step_spec->task_dist = SLURM_DIST_BLOCK;
 				FREE_NULL_BITMAP(selected_nodes);
-				step_spec->node_count =
+				step_spec->min_nodes =
 					bit_set_count(nodes_avail);
 			} else {
-				step_spec->node_count =
+				step_spec->min_nodes =
 					bit_set_count(selected_nodes);
 			}
 		}
@@ -707,9 +708,9 @@ _pick_step_nodes (struct job_record  *job_ptr,
 			 * Other than that copy the nodes selected as
 			 * the nodes we want.
 			 */
-			if (step_spec->node_count &&
+			if (step_spec->min_nodes &&
 			    (bit_set_count(selected_nodes) >
-			     step_spec->node_count)) {
+			     step_spec->min_nodes)) {
 				nodes_picked =
 					bit_alloc(bit_size(nodes_avail));
 				if (nodes_picked == NULL)
@@ -773,7 +774,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 		temp1 = bitmap2node_name(nodes_avail);
 		temp2 = bitmap2node_name(nodes_idle);
 		info("step pick %u nodes, avail:%s idle:%s",
-		     step_spec->node_count, temp1, temp2);
+		     step_spec->min_nodes, temp1, temp2);
 		xfree(temp1);
 		xfree(temp2);
 	}
@@ -787,22 +788,22 @@ _pick_step_nodes (struct job_record  *job_ptr,
 		i = (step_spec->cpu_count +
 		     (job_ptr->job_resrcs->cpu_array_value[0] - 1)) /
 		    job_ptr->job_resrcs->cpu_array_value[0];
-		step_spec->node_count = (i > step_spec->node_count) ?
-					 i : step_spec->node_count ;
+		step_spec->min_nodes = (i > step_spec->min_nodes) ?
+					i : step_spec->min_nodes ;
 		//step_spec->cpu_count = 0;
 	}
 
-	if (step_spec->node_count) {
+	if (step_spec->min_nodes) {
 		nodes_picked_cnt = bit_set_count(nodes_picked);
 		if (slurm_get_debug_flags() & DEBUG_FLAG_STEPS) {
-			verbose("got %u %d", step_spec->node_count,
+			verbose("got %u %d", step_spec->min_nodes,
 				nodes_picked_cnt);
 		}
 		if (nodes_idle &&
-		    (bit_set_count(nodes_idle) >= step_spec->node_count) &&
-		    (step_spec->node_count > nodes_picked_cnt)) {
+		    (bit_set_count(nodes_idle) >= step_spec->min_nodes) &&
+		    (step_spec->min_nodes > nodes_picked_cnt)) {
 			node_tmp = bit_pick_cnt(nodes_idle,
-						(step_spec->node_count -
+						(step_spec->min_nodes -
 						 nodes_picked_cnt));
 			if (node_tmp == NULL)
 				goto cleanup;
@@ -812,14 +813,14 @@ _pick_step_nodes (struct job_record  *job_ptr,
 			bit_and (nodes_avail, node_tmp);
 			bit_free (node_tmp);
 			node_tmp = NULL;
-			nodes_picked_cnt = step_spec->node_count;
+			nodes_picked_cnt = step_spec->min_nodes;
 		}
-		if (step_spec->node_count > nodes_picked_cnt) {
+		if (step_spec->min_nodes > nodes_picked_cnt) {
 			node_tmp = bit_pick_cnt(nodes_avail,
-						(step_spec->node_count -
+						(step_spec->min_nodes -
 						 nodes_picked_cnt));
 			if (node_tmp == NULL) {
-				if (step_spec->node_count <=
+				if (step_spec->min_nodes <=
 				    (bit_set_count(nodes_avail) +
 				     nodes_picked_cnt +
 				     mem_blocked_nodes)) {
@@ -833,7 +834,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 			bit_and (nodes_avail, node_tmp);
 			bit_free (node_tmp);
 			node_tmp = NULL;
-			nodes_picked_cnt = step_spec->node_count;
+			nodes_picked_cnt = step_spec->min_nodes;
 		}
 	}
 
@@ -1348,8 +1349,8 @@ step_create(job_step_create_request_msg_t *step_specs,
 		step_specs->node_list = xstrdup(step_node_list);
 	}
 	if (slurm_get_debug_flags() & DEBUG_FLAG_STEPS) {
-		verbose("got %s and %s looking for %d nodes", step_node_list,
-			step_specs->node_list, step_specs->node_count);
+		verbose("got %s and %s looking for %u nodes", step_node_list,
+			step_specs->node_list, step_specs->min_nodes);
 	}
 	step_ptr->step_node_bitmap = nodeset;
 
@@ -1412,7 +1413,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 		step_ptr->step_layout =
 			step_layout_create(step_ptr,
 					   step_node_list,
-					   step_specs->node_count,
+					   step_specs->min_nodes,
 					   step_specs->num_tasks,
 					   (uint16_t)cpus_per_task,
 					   step_specs->task_dist,

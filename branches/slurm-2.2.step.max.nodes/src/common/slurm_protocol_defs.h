@@ -563,7 +563,10 @@ typedef struct job_step_specs {
 	uint32_t mem_per_cpu;	/* MB memory required per CPU, 0=no limit */
 	char *name;		/* name of the job step, default "" */
 	char *network;		/* network use spec */
-	uint32_t node_count;	/* count of required nodes */
+	uint32_t min_nodes;	/* minimum number of nodes required by job,
+				 * default=0 */
+	uint32_t max_nodes;	/* maximum number of nodes usable by job,
+				 * default=0 */
 	uint8_t no_kill;	/* 1 if no kill on node failure */
 	char *node_list;	/* list of required nodes */
 	uint32_t num_tasks;	/* number of tasks required */
