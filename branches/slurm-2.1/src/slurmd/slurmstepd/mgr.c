@@ -543,7 +543,6 @@ _send_exit_msg(slurmd_job_t *job, uint32_t *tid, int n, int status)
 	task_exit_msg_t msg;
 	ListIterator    i       = NULL;
 	srun_info_t    *srun    = NULL;
-	int             mc;
 
 	debug3("sending task exit msg for %d tasks", n);
 
@@ -574,9 +573,9 @@ _send_exit_msg(slurmd_job_t *job, uint32_t *tid, int n, int status)
 		    (resp.address.sin_port == 0)   &&
 		    (resp.address.sin_addr.s_addr == 0))
 			continue;	/* no srun or sattach here */
-		if ((mc = slurm_send_only_node_msg(&resp)) != SLURM_SUCCESS) {
-			error("Failed to send MESSAGE_TASK_EXIT: %s",
-			      slurm_strerror(mc));
+		if (slurm_send_only_node_msg(&resp) != SLURM_SUCCESS) {
+			verbose("Failed to send MESSAGE_TASK_EXIT: %s",
+				slurm_strerror(errno));
 		}
 	}
 	list_iterator_destroy(i);
@@ -1593,7 +1592,7 @@ _send_launch_failure (launch_tasks_request_msg_t *msg, slurm_addr *cli, int rc)
 {
 	slurm_msg_t resp_msg;
 	launch_tasks_response_msg_t resp;
-	int nodeid = 0, mc;
+	int nodeid = 0;
 	char *name = NULL;
 #ifndef HAVE_FRONT_END
 	nodeid = nodelist_find(msg->complete_nodelist, conf->node_name);
@@ -1616,9 +1615,9 @@ _send_launch_failure (launch_tasks_request_msg_t *msg, slurm_addr *cli, int rc)
 	resp.return_code   = rc ? rc : -1;
 	resp.count_of_pids = 0;
 
-	if ((mc = slurm_send_only_node_msg(&resp_msg)) != SLURM_SUCCESS) {
+	if (slurm_send_only_node_msg(&resp_msg) != SLURM_SUCCESS) {
 		error("Failed to send RESPONSE_LAUNCH_TASKS: %s",
-		      slurm_strerror(mc));
+		      slurm_strerror(errno));
 	} 
 	xfree(name);
 	return;
@@ -1627,7 +1626,7 @@ _send_launch_failure (launch_tasks_request_msg_t *msg, slurm_addr *cli, int rc)
 static void
 _send_launch_resp(slurmd_job_t *job, int rc)
 {
-	int i, mc;
+	int i;
 	slurm_msg_t resp_msg;
 	launch_tasks_response_msg_t resp;
 	srun_info_t *srun = list_peek(job->sruns);
@@ -1653,9 +1652,9 @@ _send_launch_resp(slurmd_job_t *job, int rc)
 		resp.task_ids[i] = job->task[i]->gtid;
 	}
 
-	if ((mc = slurm_send_only_node_msg(&resp_msg)) != SLURM_SUCCESS) {
+	if (slurm_send_only_node_msg(&resp_msg) != SLURM_SUCCESS) {
 		error("failed to send RESPONSE_LAUNCH_TASKS: %s", 
-		      slurm_strerror(mc));
+		      slurm_strerror(errno));
 	}
 
 	xfree(resp.local_pids);
