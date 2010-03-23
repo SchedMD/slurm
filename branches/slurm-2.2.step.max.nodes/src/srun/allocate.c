@@ -646,11 +646,12 @@ job_desc_msg_create_from_opts ()
 
 	if (opt.max_nodes)
 		j->max_nodes    = opt.max_nodes;
-	else
+	else if (opt.nodes_set) {
 		/* On an allocation if the max nodes isn't set set it
-		   to do the same behavior as with salloc or sbatch.
-		*/
+		 * to do the same behavior as with salloc or sbatch.
+		 */
 		j->max_nodes    = opt.min_nodes;
+	}
 	if (opt.pn_min_cpus != NO_VAL)
 		j->pn_min_cpus    = opt.pn_min_cpus;
 	if (opt.pn_min_memory != NO_VAL)
