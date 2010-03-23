@@ -72,7 +72,7 @@
 
 #define MAX_RETRIES 10
 
-static int  _count_cpus(bitstr_t *bitmap);
+static int  _count_cpus(struct job_record *job_ptr, bitstr_t *bitmap);
 static struct step_record * _create_step_record (struct job_record *job_ptr);
 static void _dump_step_layout(struct step_record *step_ptr);
 static void _free_step_rec(struct step_record *step_ptr);
@@ -754,8 +754,8 @@ _pick_step_nodes (struct job_record  *job_ptr,
 		/* Remove first (step_spec->relative) nodes from
 		 * available list */
 		bitstr_t *relative_nodes = NULL;
-		relative_nodes =
-			bit_pick_cnt(nodes_avail, step_spec->relative);
+		relative_nodes = bit_pick_cnt(nodes_avail, 
+					      step_spec->relative);
 		if (relative_nodes == NULL) {
 			info ("_pick_step_nodes: "
 			      "Invalid relative value (%u) for job %u",
@@ -769,8 +769,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 		nodes_idle = bit_alloc (bit_size (nodes_avail) );
 		if (nodes_idle == NULL)
 			fatal("bit_alloc malloc failure");
-		step_iterator =
-			list_iterator_create(job_ptr->step_list);
+		step_iterator = list_iterator_create(job_ptr->step_list);
 		while ((step_p = (struct step_record *)
 			list_next(step_iterator))) {
 			bit_or(nodes_idle, step_p->step_node_bitmap);
@@ -811,6 +810,8 @@ _pick_step_nodes (struct job_record  *job_ptr,
 					i : step_spec->min_nodes ;
 		if (step_spec->max_nodes &&
 		    (step_spec->max_nodes < step_spec->min_nodes)) {
+			info("Job step %u max node count incompatable with CPU "
+			     "count", job_ptr->job_id);
 			*return_code = ESLURM_TOO_MANY_REQUESTED_CPUS;
 			goto cleanup;
 		}
@@ -864,11 +865,10 @@ _pick_step_nodes (struct job_record  *job_ptr,
 
 	if (step_spec->cpu_count) {
 		/* make sure the selected nodes have enough cpus */
-		cpus_picked_cnt = _count_cpus(nodes_picked);
-
+		cpus_picked_cnt = _count_cpus(job_ptr, nodes_picked);
 		if ((step_spec->cpu_count > cpus_picked_cnt) &&
 		    ((step_spec->max_nodes == 0) ||
-		     (step_spec->max_nodes < nodes_picked_cnt))) {
+		     (step_spec->max_nodes > nodes_picked_cnt))) {
 			/* Attempt to add more nodes to allocation */
 			nodes_picked_cnt = bit_set_count(nodes_picked);
 			while (step_spec->cpu_count > cpus_picked_cnt) {
@@ -881,7 +881,8 @@ _pick_step_nodes (struct job_record  *job_ptr,
 				bit_free (node_tmp);
 				node_tmp = NULL;
 				nodes_picked_cnt += 1;
-				cpus_picked_cnt = _count_cpus(nodes_picked);
+				cpus_picked_cnt = _count_cpus(job_ptr, 
+							      nodes_picked);
 				if (step_spec->max_nodes &&
 				    (nodes_picked_cnt >= step_spec->max_nodes))
 					break;
@@ -918,25 +919,41 @@ cleanup:
 }
 
 /*
- * _count_cpus - report how many cpus are associated with the identified nodes
+ * _count_cpus - report how many cpus are allocated to this job for the 
+ *		 identified nodes
+ * IN job_ptr - 
  * IN bitmap - map of nodes to tally
  * RET cpu count
- * globals: node_record_count - number of nodes configured
- *	node_record_table_ptr - pointer to global node table
  */
-static int _count_cpus(bitstr_t *bitmap)
+static int _count_cpus(struct job_record *job_ptr, bitstr_t *bitmap)
 {
-	int i, sum;
+	int i, sum = 0;
+	struct node_record *node_ptr;
 
-	sum = 0;
-	for (i = 0; i < node_record_count; i++) {
-		if (bit_test(bitmap, i) != 1)
-			continue;
-		if (slurmctld_conf.fast_schedule)
-			sum += node_record_table_ptr[i].config_ptr->cpus;
-		else
-			sum += node_record_table_ptr[i].cpus;
+	if (job_ptr->job_resrcs && job_ptr->job_resrcs->cpus) {
+		int node_inx = 0;
+		for (i = 0, node_ptr = node_record_table_ptr; 
+		     i < node_record_count; i++, node_ptr++) {
+			if (!bit_test(job_ptr->node_bitmap, i))
+				continue;
+			node_inx++;
+			if (!bit_test(bitmap, i))	/* step bitmap */
+				continue;
+			sum += job_ptr->job_resrcs->cpus[node_inx-1];
+		}
+	} else {
+		error("job %u lacks cpus array", job_ptr->job_id);
+		for (i = 0, node_ptr = node_record_table_ptr; 
+		     i < node_record_count; i++, node_ptr++) {
+			if (!bit_test(bitmap, i))
+				continue;
+			if (slurmctld_conf.fast_schedule)
+				sum += node_ptr->config_ptr->cpus;
+			else
+				sum += node_ptr->cpus;
+		}
 	}
+
 	return sum;
 }
 

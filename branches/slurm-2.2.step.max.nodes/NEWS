@@ -13,6 +13,8 @@ documents those changes that are of interest to users and admins.
     allocation to mimic that which salloc and sbatch do.  If running a step if
     the max isn't set it remains unset.
  -- Add support for maximum node count in job step request.
+ -- Fix bug in CPU count logic for job step allocation (used count of CPUS per
+    node rather than CPUs allocated to the job).
 
 * Changes in SLURM 2.2.0.pre3
 =============================
