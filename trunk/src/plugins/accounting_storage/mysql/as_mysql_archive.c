@@ -542,6 +542,53 @@ static int _unpack_local_suspend(local_suspend_t *object,
 	return SLURM_SUCCESS;
 }
 
+static time_t _setup_end_time(time_t last_submit, uint32_t purge)
+{
+	struct tm time_tm;
+	int16_t units;
+
+	if(purge == NO_VAL) {
+		error("Invalid purge set");
+		return 0;
+	}
+
+	units = SLURMDB_PURGE_GET_UNITS(purge);
+	if(units < 0) {
+		error("invalid units from purge '%d'", units);
+		return 0;
+	}
+
+	/* use localtime to avoid any daylight savings issues */
+	if(!localtime_r(&last_submit, &time_tm)) {
+		error("Couldn't get localtime from first "
+		      "suspend start %d",
+		      last_submit);
+		return 0;
+	}
+
+	time_tm.tm_sec = 0;
+	time_tm.tm_min = 0;
+
+	if(SLURMDB_PURGE_IN_HOURS(purge))
+		time_tm.tm_hour -= units;
+	else if(SLURMDB_PURGE_IN_DAYS(purge)) {
+		time_tm.tm_hour = 0;
+		time_tm.tm_mday -= units;
+	} else if(SLURMDB_PURGE_IN_MONTHS(purge)) {
+		time_tm.tm_hour = 0;
+		time_tm.tm_mday = 1;
+		time_tm.tm_mon -= units;
+	} else {
+		error("No known unit given for purge, "
+		      "we are guessing mistake and returning error");
+		return 0;
+	}
+
+	time_tm.tm_isdst = -1;
+	return (mktime(&time_tm) - 1);
+}
+
+
 static int _process_old_sql_line(const char *data_in, char **data_full_out)
 {
 	int start = 0, i = 0;
@@ -1770,9 +1817,7 @@ static int _archive_script(slurmdb_archive_cond_t *arch_cond,
 	const char *tmpdir;
 	struct stat st;
 	char **env = NULL;
-	struct tm time_tm;
 	time_t curr_end;
-	uint32_t units;
 
 #ifdef _PATH_TMP
 	tmpdir = _PATH_TMP;
@@ -1806,31 +1851,13 @@ static int _archive_script(slurmdb_archive_cond_t *arch_cond,
 	env_array_append_fmt(&env, "SLURM_ARCHIVE_CLUSTER", "%s",
 			     cluster_name);
 
-	if((units = SLURMDB_PURGE_GET_UNITS(arch_cond->purge_event))) {
-		/* use localtime to avoid any daylight savings issues */
-		if(!localtime_r(&last_submit, &time_tm)) {
-			error("Couldn't get localtime from "
-			      "first event start %d",
-			      last_submit);
+	if(arch_cond->purge_event != NO_VAL) {
+		if(!(curr_end = _setup_end_time(
+			     last_submit, arch_cond->purge_event))) {
+			error("Parsing purge events");
 			return SLURM_ERROR;
 		}
 
-		time_tm.tm_sec = 0;
-		time_tm.tm_min = 0;
-
-		if(SLURMDB_PURGE_IN_HOURS(arch_cond->purge_event))
- 			time_tm.tm_hour -= units;
- 		else if(SLURMDB_PURGE_IN_DAYS(arch_cond->purge_event)) {
-			time_tm.tm_hour = 0;
-			time_tm.tm_mday -= units;
-		} else {
-			time_tm.tm_hour = 0;
-			time_tm.tm_mday = 1;
-			time_tm.tm_mon -= units;
-		}
-
-		time_tm.tm_isdst = -1;
-		curr_end = mktime(&time_tm);
 		env_array_append_fmt(&env, "SLURM_ARCHIVE_EVENTS", "%u",
 				     SLURMDB_PURGE_ARCHIVE_SET(
 					     arch_cond->purge_event));
@@ -1838,30 +1865,12 @@ static int _archive_script(slurmdb_archive_cond_t *arch_cond,
 				     curr_end);
 	}
 
-	if((units = SLURMDB_PURGE_GET_UNITS(arch_cond->purge_job))) {
-		/* use localtime to avoid any daylight savings issues */
-		if(!localtime_r(&last_submit, &time_tm)) {
-			error("Couldn't get localtime from first start %d",
-			      last_submit);
+	if(arch_cond->purge_job != NO_VAL) {
+		if(!(curr_end = _setup_end_time(
+			     last_submit, arch_cond->purge_job))) {
+			error("Parsing purge job");
 			return SLURM_ERROR;
 		}
-
-		time_tm.tm_sec = 0;
-		time_tm.tm_min = 0;
-
- 		if(SLURMDB_PURGE_IN_HOURS(arch_cond->purge_job))
- 			time_tm.tm_hour -= units;
- 		else if(SLURMDB_PURGE_IN_DAYS(arch_cond->purge_job)) {
-			time_tm.tm_hour = 0;
-			time_tm.tm_mday -= units;
-		} else {
-			time_tm.tm_hour = 0;
-			time_tm.tm_mday = 1;
-			time_tm.tm_mon -= units;
-		}
-
-		time_tm.tm_isdst = -1;
-		curr_end = mktime(&time_tm);
 
 		env_array_append_fmt(&env, "SLURM_ARCHIVE_JOBS", "%u",
 				     SLURMDB_PURGE_ARCHIVE_SET(
@@ -1870,30 +1879,13 @@ static int _archive_script(slurmdb_archive_cond_t *arch_cond,
 				      curr_end);
 	}
 
-	if((units = SLURMDB_PURGE_GET_UNITS(arch_cond->purge_step))) {
-		/* use localtime to avoid any daylight savings issues */
-		if(!localtime_r(&last_submit, &time_tm)) {
-			error("Couldn't get localtime from first step start %d",
-			      last_submit);
+	if(arch_cond->purge_step != NO_VAL) {
+		if(!(curr_end = _setup_end_time(
+			     last_submit, arch_cond->purge_step))) {
+			error("Parsing purge step");
 			return SLURM_ERROR;
 		}
 
-		time_tm.tm_sec = 0;
-		time_tm.tm_min = 0;
-
- 		if(SLURMDB_PURGE_IN_HOURS(arch_cond->purge_step))
- 			time_tm.tm_hour -= units;
- 		else if(SLURMDB_PURGE_IN_DAYS(arch_cond->purge_step)) {
-			time_tm.tm_hour = 0;
-			time_tm.tm_mday -= units;
-		} else {
-			time_tm.tm_hour = 0;
-			time_tm.tm_mday = 1;
-			time_tm.tm_mon -= units;
-		}
-
-		time_tm.tm_isdst = -1;
-		curr_end = mktime(&time_tm);
 		env_array_append_fmt(&env, "SLURM_ARCHIVE_STEPS", "%u",
 				     SLURMDB_PURGE_ARCHIVE_SET(
 					     arch_cond->purge_step));
@@ -1901,31 +1893,13 @@ static int _archive_script(slurmdb_archive_cond_t *arch_cond,
 				     curr_end);
 	}
 
-	if((units = SLURMDB_PURGE_GET_UNITS(arch_cond->purge_suspend))) {
-		/* use localtime to avoid any daylight savings issues */
-		if(!localtime_r(&last_submit, &time_tm)) {
-			error("Couldn't get localtime from first "
-			      "suspend start %d",
-			      last_submit);
+	if(arch_cond->purge_suspend != NO_VAL) {
+		if(!(curr_end = _setup_end_time(
+			     last_submit, arch_cond->purge_suspend))) {
+			error("Parsing purge suspend");
 			return SLURM_ERROR;
 		}
 
-		time_tm.tm_sec = 0;
-		time_tm.tm_min = 0;
-
- 		if(SLURMDB_PURGE_IN_HOURS(arch_cond->purge_suspend))
- 			time_tm.tm_hour -= units;
- 		else if(SLURMDB_PURGE_IN_DAYS(arch_cond->purge_suspend)) {
-			time_tm.tm_hour = 0;
-			time_tm.tm_mday -= units;
-		} else {
-			time_tm.tm_hour = 0;
-			time_tm.tm_mday = 1;
-			time_tm.tm_mon -= units;
-		}
-
-		time_tm.tm_isdst = -1;
-		curr_end = mktime(&time_tm);
 		env_array_append_fmt(&env, "SLURM_ARCHIVE_SUSPEND", "%u",
 				     SLURMDB_PURGE_ARCHIVE_SET(
 					     arch_cond->purge_suspend));
@@ -1952,8 +1926,6 @@ static int _execute_archive(mysql_conn_t *mysql_conn,
 	int rc = SLURM_SUCCESS;
 	char *query = NULL;
 	time_t curr_end;
-	struct tm time_tm;
-	uint32_t units;
 	time_t last_submit = time(NULL);
 
 	if(arch_cond->archive_script)
@@ -1963,36 +1935,18 @@ static int _execute_archive(mysql_conn_t *mysql_conn,
 		return SLURM_ERROR;
 	}
 
-	if((units = SLURMDB_PURGE_GET_UNITS(arch_cond->purge_event))) {
+	if(arch_cond->purge_event != NO_VAL) {
 		/* remove all data from event table that was older than
 		 * period_start * arch_cond->purge_event.
 		 */
-		/* use localtime to avoid any daylight savings issues */
-		if(!localtime_r(&last_submit, &time_tm)) {
-			error("Couldn't get localtime from first submit %d",
-			      last_submit);
+		if(!(curr_end = _setup_end_time(
+			     last_submit, arch_cond->purge_event))) {
+			error("Parsing purge event");
 			return SLURM_ERROR;
 		}
-		time_tm.tm_sec = 0;
-		time_tm.tm_min = 0;
 
-		if(SLURMDB_PURGE_IN_HOURS(arch_cond->purge_event))
- 			time_tm.tm_hour -= units;
- 		else if(SLURMDB_PURGE_IN_DAYS(arch_cond->purge_event)) {
-			time_tm.tm_hour = 0;
-			time_tm.tm_mday -= units;
-		} else {
-			time_tm.tm_hour = 0;
-			time_tm.tm_mday = 1;
-			time_tm.tm_mon -= units;
-		}
-
-		time_tm.tm_isdst = -1;
-		curr_end = mktime(&time_tm);
-		curr_end--;
-
-		debug4("from %d - %d days/months purging events from before %d",
-		       last_submit, arch_cond->purge_event, curr_end);
+		debug4("Purging event entries before %d for %s",
+		       curr_end, cluster_name);
 
 		if(SLURMDB_PURGE_ARCHIVE_SET(arch_cond->purge_event)) {
 			rc = _archive_events(mysql_conn, cluster_name,
@@ -2018,36 +1972,18 @@ static int _execute_archive(mysql_conn_t *mysql_conn,
 
 exit_events:
 
-	if((units = SLURMDB_PURGE_GET_UNITS(arch_cond->purge_suspend))) {
+	if(arch_cond->purge_suspend != NO_VAL) {
 		/* remove all data from suspend table that was older than
 		 * period_start * arch_cond->purge_suspend.
 		 */
-		/* use localtime to avoid any daylight savings issues */
-		if(!localtime_r(&last_submit, &time_tm)) {
-			error("Couldn't get localtime from first submit %d",
-			      last_submit);
+		if(!(curr_end = _setup_end_time(
+			     last_submit, arch_cond->purge_suspend))) {
+			error("Parsing purge suspend");
 			return SLURM_ERROR;
 		}
-		time_tm.tm_sec = 0;
-		time_tm.tm_min = 0;
 
- 		if(SLURMDB_PURGE_IN_HOURS(arch_cond->purge_suspend))
- 			time_tm.tm_hour -= units;
- 		else if(SLURMDB_PURGE_IN_DAYS(arch_cond->purge_suspend)) {
-			time_tm.tm_hour = 0;
-			time_tm.tm_mday -= units;
-		} else {
-			time_tm.tm_hour = 0;
-			time_tm.tm_mday = 1;
-			time_tm.tm_mon -= units;
-		}
-
-		time_tm.tm_isdst = -1;
-		curr_end = mktime(&time_tm);
-		curr_end--;
-
-		debug4("from %d - %d months purging suspend from before %d",
-		       last_submit, arch_cond->purge_suspend, curr_end);
+		debug4("Purging suspend entries before %d for %s",
+		       curr_end, cluster_name);
 
 		if(SLURMDB_PURGE_ARCHIVE_SET(arch_cond->purge_suspend)) {
 			rc = _archive_suspend(mysql_conn, cluster_name,
@@ -2073,36 +2009,18 @@ exit_events:
 
 exit_suspend:
 
-	if((units = SLURMDB_PURGE_GET_UNITS(arch_cond->purge_step))) {
+	if(arch_cond->purge_step != NO_VAL) {
 		/* remove all data from step table that was older than
 		 * start * arch_cond->purge_step.
 		 */
-		/* use localtime to avoid any daylight savings issues */
-		if(!localtime_r(&last_submit, &time_tm)) {
-			error("Couldn't get localtime from first start %d",
-			      last_submit);
+		if(!(curr_end = _setup_end_time(
+			     last_submit, arch_cond->purge_step))) {
+			error("Parsing purge step");
 			return SLURM_ERROR;
 		}
-		time_tm.tm_sec = 0;
-		time_tm.tm_min = 0;
 
-		if(SLURMDB_PURGE_IN_HOURS(arch_cond->purge_step))
- 			time_tm.tm_hour -= units;
- 		else if(SLURMDB_PURGE_IN_DAYS(arch_cond->purge_step)) {
-			time_tm.tm_hour = 0;
-			time_tm.tm_mday -= units;
-		} else {
-			time_tm.tm_hour = 0;
-			time_tm.tm_mday = 1;
-			time_tm.tm_mon -= units;
-		}
-
-		time_tm.tm_isdst = -1;
-		curr_end = mktime(&time_tm);
-		curr_end--;
-
-		debug4("from %d - %d months purging steps from before %d",
-		       last_submit, arch_cond->purge_step, curr_end);
+		debug4("Purging step entries before %d for %s",
+		       curr_end, cluster_name);
 
 		if(SLURMDB_PURGE_ARCHIVE_SET(arch_cond->purge_step)) {
 			rc = _archive_steps(mysql_conn, cluster_name,
@@ -2128,36 +2046,18 @@ exit_suspend:
 	}
 exit_steps:
 
-	if((units = SLURMDB_PURGE_GET_UNITS(arch_cond->purge_job))) {
+	if(arch_cond->purge_job != NO_VAL) {
 		/* remove all data from job table that was older than
 		 * last_submit * arch_cond->purge_job.
 		 */
-		/* use localtime to avoid any daylight savings issues */
-		if(!localtime_r(&last_submit, &time_tm)) {
-			error("Couldn't get localtime from first submit %d",
-			      last_submit);
+		if(!(curr_end = _setup_end_time(
+			     last_submit, arch_cond->purge_job))) {
+			error("Parsing purge job");
 			return SLURM_ERROR;
 		}
-		time_tm.tm_sec = 0;
-		time_tm.tm_min = 0;
 
-		if(SLURMDB_PURGE_IN_HOURS(arch_cond->purge_job))
- 			time_tm.tm_hour -= units;
- 		else if(SLURMDB_PURGE_IN_DAYS(arch_cond->purge_job)) {
-			time_tm.tm_hour = 0;
-			time_tm.tm_mday -= units;
-		} else {
-			time_tm.tm_hour = 0;
-			time_tm.tm_mday = 1;
-			time_tm.tm_mon -= units;
-		}
-
- 		time_tm.tm_isdst = -1;
-		curr_end = mktime(&time_tm);
-		curr_end--;
-
-		debug4("from %d - %d months purging jobs from before %d",
-		       last_submit, arch_cond->purge_job, curr_end);
+		debug4("Purging job entires before %d for %s",
+		       curr_end, cluster_name);
 
 		if(SLURMDB_PURGE_ARCHIVE_SET(arch_cond->purge_job)) {
 			rc = _archive_jobs(mysql_conn, cluster_name,

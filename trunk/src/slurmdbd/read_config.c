@@ -455,28 +455,28 @@ extern void log_config(void)
 
 	debug2("PrivateData       = %s", tmp_str);
 
-	if(slurmdbd_conf->purge_event)
+	if(slurmdbd_conf->purge_event != NO_VAL)
 		slurmdb_purge_string(slurmdbd_conf->purge_event,
 				    tmp_str, sizeof(tmp_str), 1);
 	else
 		sprintf(tmp_str, "NONE");
 	debug2("PurgeEventAfter   = %s", tmp_str);
 
-	if(slurmdbd_conf->purge_job)
+	if(slurmdbd_conf->purge_job != NO_VAL)
 		slurmdb_purge_string(slurmdbd_conf->purge_job,
 				    tmp_str, sizeof(tmp_str), 1);
 	else
 		sprintf(tmp_str, "NONE");
 	debug2("PurgeJobAfter     = %s", tmp_str);
 
-	if(slurmdbd_conf->purge_step)
+	if(slurmdbd_conf->purge_step != NO_VAL)
 		slurmdb_purge_string(slurmdbd_conf->purge_step,
 				    tmp_str, sizeof(tmp_str), 1);
 	else
 		sprintf(tmp_str, "NONE");
 	debug2("PurgeStepAfter    = %s", tmp_str);
 
-	if(slurmdbd_conf->purge_suspend)
+	if(slurmdbd_conf->purge_suspend != NO_VAL)
 		slurmdb_purge_string(slurmdbd_conf->purge_suspend,
 				    tmp_str, sizeof(tmp_str), 1);
 	else
@@ -560,8 +560,36 @@ extern List dump_config(void)
 	list_append(my_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("ArchiveEvents");
+	key_pair->value = xmalloc(16);
+	snprintf(key_pair->value, 16, "%u",
+		 SLURMDB_PURGE_ARCHIVE_SET(slurmdbd_conf->purge_event) ? 1 : 0);
+	list_append(my_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("ArchiveJobs");
+	key_pair->value = xmalloc(16);
+	snprintf(key_pair->value, 16, "%u",
+		 SLURMDB_PURGE_ARCHIVE_SET(slurmdbd_conf->purge_job) ? 1 : 0);
+	list_append(my_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("ArchiveScript");
 	key_pair->value = xstrdup(slurmdbd_conf->archive_script);
+	list_append(my_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("ArchiveSteps");
+	key_pair->value = xmalloc(16);
+	snprintf(key_pair->value, 16, "%u",
+		 SLURMDB_PURGE_ARCHIVE_SET(slurmdbd_conf->purge_step) ? 1 : 0);
+	list_append(my_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("ArchiveSupend");
+	key_pair->value = xmalloc(16);
+	snprintf(key_pair->value, 16, "%u", SLURMDB_PURGE_ARCHIVE_SET(
+			 slurmdbd_conf->purge_suspend) ? 1 : 0);
 	list_append(my_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
@@ -642,7 +670,7 @@ extern List dump_config(void)
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("PurgeEventAfter");
-	if(slurmdbd_conf->purge_event) {
+	if(slurmdbd_conf->purge_event != NO_VAL) {
 		key_pair->value = xmalloc(32);
 		slurmdb_purge_string(slurmdbd_conf->purge_event,
 				     key_pair->value, 32, 1);
@@ -652,7 +680,7 @@ extern List dump_config(void)
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("PurgeJobAfter");
-	if(slurmdbd_conf->purge_job) {
+	if(slurmdbd_conf->purge_job != NO_VAL) {
 		key_pair->value = xmalloc(32);
 		slurmdb_purge_string(slurmdbd_conf->purge_job,
 				     key_pair->value, 32, 1);
@@ -662,7 +690,7 @@ extern List dump_config(void)
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("PurgeStepAfter");
-	if(slurmdbd_conf->purge_step) {
+	if(slurmdbd_conf->purge_step != NO_VAL) {
 		key_pair->value = xmalloc(32);
 		slurmdb_purge_string(slurmdbd_conf->purge_step,
 				     key_pair->value, 32, 1);
@@ -672,7 +700,7 @@ extern List dump_config(void)
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("PurgeSuspendAfter");
-	if(slurmdbd_conf->purge_suspend) {
+	if(slurmdbd_conf->purge_suspend != NO_VAL) {
 		key_pair->value = xmalloc(32);
 		slurmdb_purge_string(slurmdbd_conf->purge_suspend,
 				     key_pair->value, 32, 1);

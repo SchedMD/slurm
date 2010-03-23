@@ -275,7 +275,8 @@ static int _set_cond(int *start, int argc, char *argv[],
 			set = 1;
 		} else if (!strncasecmp (argv[i], "PurgeEventAfter",
 					 MAX(command_len, 10))) {
-			if (!(tmp = slurmdb_parse_purge(argv[i]+end))) {
+			if ((tmp = slurmdb_parse_purge(argv[i]+end))
+			    == NO_VAL) {
 				exit_code = 1;
 			} else {
 				arch_cond->purge_event |= tmp;
@@ -283,7 +284,8 @@ static int _set_cond(int *start, int argc, char *argv[],
 			}
 		} else if (!strncasecmp (argv[i], "PurgeJobAfter",
 					 MAX(command_len, 10))) {
-			if (!(tmp = slurmdb_parse_purge(argv[i]+end))) {
+			if ((tmp = slurmdb_parse_purge(argv[i]+end))
+			    == NO_VAL) {
 				exit_code = 1;
 			} else {
 				arch_cond->purge_job |= tmp;
@@ -291,7 +293,8 @@ static int _set_cond(int *start, int argc, char *argv[],
 			}
 		} else if (!strncasecmp (argv[i], "PurgeStepAfter",
 					 MAX(command_len, 10))) {
-			if (!(tmp = slurmdb_parse_purge(argv[i]+end))) {
+			if ((tmp = slurmdb_parse_purge(argv[i]+end))
+			    == NO_VAL) {
 				exit_code = 1;
 			} else {
 				arch_cond->purge_step |= tmp;
@@ -299,7 +302,8 @@ static int _set_cond(int *start, int argc, char *argv[],
 			}
 		} else if (!strncasecmp (argv[i], "PurgeSuspendAfter",
 					 MAX(command_len, 10))) {
-			if (!(tmp = slurmdb_parse_purge(argv[i]+end))) {
+			if ((tmp = slurmdb_parse_purge(argv[i]+end))
+			    == NO_VAL) {
 				exit_code = 1;
 			} else {
 				arch_cond->purge_suspend |= tmp;
@@ -389,6 +393,15 @@ extern int sacctmgr_archive_dump(int argc, char *argv[])
 			i++;
 		_set_cond(&i, argc, argv, arch_cond);
 	}
+
+	if(!arch_cond->purge_event)
+		arch_cond->purge_event = NO_VAL;
+	if(!arch_cond->purge_job)
+		arch_cond->purge_job = NO_VAL;
+	if(!arch_cond->purge_step)
+		arch_cond->purge_step = NO_VAL;
+	if(!arch_cond->purge_suspend)
+		arch_cond->purge_suspend = NO_VAL;
 
 	if(exit_code) {
 		slurmdb_destroy_archive_cond(arch_cond);
