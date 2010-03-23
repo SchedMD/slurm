@@ -1097,7 +1097,6 @@ extern int load_state_file(List curr_block_list, char *dir_name)
 
 	non_usable_nodes = bitmap2node_name(bitmap);
 	FREE_NULL_BITMAP(bitmap);
-	removable_set_bps(non_usable_nodes);
 
 	node_bitmap = bit_alloc(node_record_count);
 	ionode_bitmap = bit_alloc(bg_conf->numpsets);
@@ -1199,14 +1198,27 @@ extern int load_state_file(List curr_block_list, char *dir_name)
 		if((bg_conf->layout_mode == LAYOUT_OVERLAP)
 		   || bg_record->full_block) {
 			reset_ba_system(false);
-			removable_set_bps(non_usable_nodes);
 		}
 
+		removable_set_bps(non_usable_nodes);
+		/* we want the bps that aren't
+		 * in this record to mark them as used
+		 */
+		if(set_all_bps_except(bg_record->nodes)
+		   != SLURM_SUCCESS)
+			fatal("something happened in "
+			      "the load of %s.  "
+			      "Did you use smap to "
+			      "make the "
+			      "bluegene.conf file?",
+			      bg_record->bg_block_id);
 		results = list_create(NULL);
 		name = set_bg_block(results,
 				    bg_record->start,
 				    geo,
 				    bg_record->conn_type);
+		reset_all_removed_bps();
+
 		if(!name) {
 			error("I was unable to "
 			      "make the "

@@ -8,6 +8,9 @@ documents those changes that are of interest to users and admins.
  -- Correct sched/backfill logic so that it runs in a more timely fashion.
  -- Fixed issue if running on accounting cache and priority/multifactor to
     initialize the root association when the database comes back up.
+ -- Emulated BLUEGENE - fixed issue where blocks weren't always created
+    correctly when loading from state.  This does not apply to a real
+    bluegene system, only emulated.
 
 * Changes in SLURM 2.1.5
 ========================
