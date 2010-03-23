@@ -848,10 +848,12 @@ _pick_step_nodes (struct job_record  *job_ptr,
 			if (node_tmp == NULL) {
 				if (step_spec->min_nodes <=
 				    (bit_set_count(nodes_avail) +
-				     nodes_picked_cnt +
-				     mem_blocked_nodes)) {
+				     nodes_picked_cnt + mem_blocked_nodes)) {
 					*return_code =
 						ESLURM_INVALID_TASK_MEMORY;
+				} else if (!bit_super_set(job_ptr->node_bitmap, 
+							  up_node_bitmap)) {
+					*return_code = ESLURM_NODE_NOT_AVAIL;
 				}
 				goto cleanup;
 			}
@@ -895,9 +897,13 @@ _pick_step_nodes (struct job_record  *job_ptr,
 		/* user is requesting more cpus than we got from the
 		 * picked nodes we should return with an error */
 		if (step_spec->cpu_count > cpus_picked_cnt) {
-			if (step_spec->cpu_count <=
-			    (cpus_picked_cnt + mem_blocked_cpus)) {
+			if (step_spec->cpu_count &&
+			    (step_spec->cpu_count <=
+			     (cpus_picked_cnt + mem_blocked_cpus))) {
 				*return_code = ESLURM_INVALID_TASK_MEMORY;
+			} else if (!bit_super_set(job_ptr->node_bitmap, 
+						  up_node_bitmap)) {
+				*return_code = ESLURM_NODE_NOT_AVAIL;
 			}
 			debug2("Have %d nodes with %d cpus which is less "
 			       "than what the user is asking for (%d cpus) "
