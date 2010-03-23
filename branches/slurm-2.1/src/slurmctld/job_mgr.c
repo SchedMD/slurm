@@ -3886,7 +3886,7 @@ extern int job_update_cpu_cnt(struct job_record *job_ptr, int node_inx)
 			   before a for loop will incr automatically.
 			*/
 			for(curr_node_inx=last_inx;
-			    curr_node_inx<=bitmap_len;
+			    curr_node_inx<bitmap_len;
 			    ++curr_node_inx) {
 				if (!bit_test(node_bitmap, curr_node_inx))
 					continue;
@@ -3908,7 +3908,8 @@ extern int job_update_cpu_cnt(struct job_record *job_ptr, int node_inx)
 			error("job_update_cpu_cnt: we went past for %d",
 			      node_inx);
 		}
-		/* info("removing %u from %u", cpu_cnt, job_ptr->cpu_cnt); */
+		/* info("removing %u from %u for %d", */
+		/*      cpu_cnt, job_ptr->cpu_cnt, node_inx); */
 		if(cpu_cnt > job_ptr->cpu_cnt) {
 			error("job_update_cpu_cnt: "
 			      "cpu_cnt underflow on job_id %u",
