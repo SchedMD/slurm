@@ -3266,7 +3266,8 @@ int _launch_batch_step(job_desc_msg_t *job_desc_msg, uid_t uid,
 	memset(&req_step_msg, 0, sizeof(job_step_create_request_msg_t));
 	req_step_msg.job_id = job_desc_msg->job_id;
 	req_step_msg.user_id = uid;
-	req_step_msg.node_count = 1;
+	req_step_msg.min_nodes = 1;
+	req_step_msg.max_nodes = 0;
 	req_step_msg.cpu_count = 1;
 	req_step_msg.num_tasks = 1;
 	req_step_msg.task_dist = SLURM_DIST_CYCLIC;

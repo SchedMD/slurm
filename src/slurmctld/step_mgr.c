@@ -72,7 +72,7 @@
 
 #define MAX_RETRIES 10
 
-static int  _count_cpus(bitstr_t *bitmap);
+static int  _count_cpus(struct job_record *job_ptr, bitstr_t *bitmap);
 static struct step_record * _create_step_record (struct job_record *job_ptr);
 static void _dump_step_layout(struct step_record *step_ptr);
 static void _free_step_rec(struct step_record *step_ptr);
@@ -228,9 +228,10 @@ delete_step_record (struct job_record *job_ptr, uint32_t step_id)
 void
 dump_step_desc(job_step_create_request_msg_t *step_spec)
 {
-	debug3("StepDesc: user_id=%u job_id=%u node_count=%u cpu_count=%u",
+	debug3("StepDesc: user_id=%u job_id=%u node_count=%u-%u cpu_count=%u",
 	       step_spec->user_id, step_spec->job_id,
-	       step_spec->node_count, step_spec->cpu_count);
+	       step_spec->min_nodes, step_spec->max_nodes, 
+	       step_spec->cpu_count);
 	debug3("   num_tasks=%u relative=%u task_dist=%u node_list=%s",
 	       step_spec->num_tasks, step_spec->relative,
 	       step_spec->task_dist, step_spec->node_list);
@@ -464,6 +465,12 @@ _pick_step_nodes (struct job_record  *job_ptr,
 		return NULL;
 	}
 
+	if (step_spec->max_nodes &&
+	    (step_spec->max_nodes < step_spec->min_nodes)) {
+		*return_code = ESLURM_INVALID_NODE_COUNT;
+		return NULL;
+	}
+
 	nodes_avail = bit_copy (job_ptr->node_bitmap);
 	if (nodes_avail == NULL)
 		fatal("bit_copy malloc failure");
@@ -579,17 +586,21 @@ _pick_step_nodes (struct job_record  *job_ptr,
 					task_cnt /= cpus_per_task;
 				total_tasks = MIN(total_tasks, task_cnt);
 			}
-			if ((avail_tasks <= 0) ||
-			    ((selected_nodes == NULL) &&
-			     (nodes_picked_cnt >= step_spec->node_count) &&
-			     (tasks_picked_cnt > 0) &&
-			     (tasks_picked_cnt >= step_spec->num_tasks)))
+			if (step_spec->max_nodes &&
+			    (nodes_picked_cnt >= step_spec->max_nodes))
 				bit_clear(nodes_avail, i);
-			else {
+			else if ((avail_tasks <= 0) ||
+				 ((selected_nodes == NULL) &&
+				  (nodes_picked_cnt >= step_spec->min_nodes) &&
+				  (tasks_picked_cnt > 0)   &&
+				  (tasks_picked_cnt >= step_spec->num_tasks))) {
+				bit_clear(nodes_avail, i);
+				total_task_cnt += total_tasks;
+			} else {
 				nodes_picked_cnt++;
 				tasks_picked_cnt += avail_tasks;
+				total_task_cnt += total_tasks;
 			}
-			total_task_cnt += total_tasks;
 		}
 
 		if (selected_nodes) {
@@ -624,7 +635,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 			if (cpus_per_task > 0)
 				task_cnt /= cpus_per_task;
 			if (task_cnt <= 0) {
-				if (step_spec->node_count == INFINITE) {
+				if (step_spec->min_nodes == INFINITE) {
 					FREE_NULL_BITMAP(nodes_avail);
 					*return_code =
 						ESLURM_INVALID_TASK_MEMORY;
@@ -644,16 +655,16 @@ _pick_step_nodes (struct job_record  *job_ptr,
 		}
 	}
 
-	if (step_spec->node_count == INFINITE)	/* use all nodes */
+	if (step_spec->min_nodes == INFINITE)	/* use all nodes */
 		return nodes_avail;
 
 	if (step_spec->node_list) {
 		bitstr_t *selected_nodes = NULL;
 		if (slurm_get_debug_flags() & DEBUG_FLAG_STEPS)
 			info("selected nodelist is %s", step_spec->node_list);
+
 		error_code = node_name2bitmap(step_spec->node_list, false,
 					      &selected_nodes);
-
 		if (error_code) {
 			info("_pick_step_nodes: invalid node list %s",
 				step_spec->node_list);
@@ -684,20 +695,21 @@ _pick_step_nodes (struct job_record  *job_ptr,
 			 */
 			if (!strcmp(slurmctld_conf.switch_type,
 				    "switch/elan")) {
-				error("Can't do an ARBITRARY task layout with "
-				      "switch type elan. Switching DIST type "
-				      "to BLOCK");
+				info("Can't do an ARBITRARY task layout with "
+				     "switch type elan. Switching DIST type "
+				     "to BLOCK");
 				xfree(step_spec->node_list);
 				step_spec->task_dist = SLURM_DIST_BLOCK;
 				FREE_NULL_BITMAP(selected_nodes);
-				step_spec->node_count =
+				step_spec->min_nodes =
 					bit_set_count(nodes_avail);
 			} else {
-				step_spec->node_count =
+				step_spec->min_nodes =
 					bit_set_count(selected_nodes);
 			}
 		}
 		if (selected_nodes) {
+			int node_cnt = 0;
 			/* use selected nodes to run the job and
 			 * make them unavailable for future use */
 
@@ -708,9 +720,17 @@ _pick_step_nodes (struct job_record  *job_ptr,
 			 * Other than that copy the nodes selected as
 			 * the nodes we want.
 			 */
-			if (step_spec->node_count &&
-			    (bit_set_count(selected_nodes) >
-			     step_spec->node_count)) {
+			if (step_spec->min_nodes || step_spec->max_nodes)
+				node_cnt = bit_set_count(selected_nodes);
+			if (step_spec->max_nodes &&
+			    (node_cnt > step_spec->max_nodes)) {
+				info("_pick_step_nodes: requested nodes %s "
+				     "exceed max node count for job step %u",
+				     step_spec->node_list, job_ptr->job_id);
+				bit_free(selected_nodes);
+				goto cleanup;
+			} else if (step_spec->min_nodes &&
+				   (node_cnt > step_spec->min_nodes)) {
 				nodes_picked =
 					bit_alloc(bit_size(nodes_avail));
 				if (nodes_picked == NULL)
@@ -735,8 +755,8 @@ _pick_step_nodes (struct job_record  *job_ptr,
 		/* Remove first (step_spec->relative) nodes from
 		 * available list */
 		bitstr_t *relative_nodes = NULL;
-		relative_nodes =
-			bit_pick_cnt(nodes_avail, step_spec->relative);
+		relative_nodes = bit_pick_cnt(nodes_avail, 
+					      step_spec->relative);
 		if (relative_nodes == NULL) {
 			info ("_pick_step_nodes: "
 			      "Invalid relative value (%u) for job %u",
@@ -750,8 +770,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 		nodes_idle = bit_alloc (bit_size (nodes_avail) );
 		if (nodes_idle == NULL)
 			fatal("bit_alloc malloc failure");
-		step_iterator =
-			list_iterator_create(job_ptr->step_list);
+		step_iterator = list_iterator_create(job_ptr->step_list);
 		while ((step_p = (struct step_record *)
 			list_next(step_iterator))) {
 			bit_or(nodes_idle, step_p->step_node_bitmap);
@@ -773,8 +792,8 @@ _pick_step_nodes (struct job_record  *job_ptr,
 		char *temp1, *temp2;
 		temp1 = bitmap2node_name(nodes_avail);
 		temp2 = bitmap2node_name(nodes_idle);
-		info("step pick %u nodes, avail:%s idle:%s",
-		     step_spec->node_count, temp1, temp2);
+		info("step pick %u-%u nodes, avail:%s idle:%s",
+		     step_spec->min_nodes, step_spec->max_nodes, temp1, temp2);
 		xfree(temp1);
 		xfree(temp2);
 	}
@@ -788,22 +807,29 @@ _pick_step_nodes (struct job_record  *job_ptr,
 		i = (step_spec->cpu_count +
 		     (job_ptr->job_resrcs->cpu_array_value[0] - 1)) /
 		    job_ptr->job_resrcs->cpu_array_value[0];
-		step_spec->node_count = (i > step_spec->node_count) ?
-					 i : step_spec->node_count ;
+		step_spec->min_nodes = (i > step_spec->min_nodes) ?
+					i : step_spec->min_nodes ;
+		if (step_spec->max_nodes &&
+		    (step_spec->max_nodes < step_spec->min_nodes)) {
+			info("Job step %u max node count incompatable with CPU "
+			     "count", job_ptr->job_id);
+			*return_code = ESLURM_TOO_MANY_REQUESTED_CPUS;
+			goto cleanup;
+		}
 		//step_spec->cpu_count = 0;
 	}
 
-	if (step_spec->node_count) {
+	if (step_spec->min_nodes) {
 		nodes_picked_cnt = bit_set_count(nodes_picked);
 		if (slurm_get_debug_flags() & DEBUG_FLAG_STEPS) {
-			verbose("got %u %d", step_spec->node_count,
+			verbose("got %u %d", step_spec->min_nodes,
 				nodes_picked_cnt);
 		}
 		if (nodes_idle &&
-		    (bit_set_count(nodes_idle) >= step_spec->node_count) &&
-		    (step_spec->node_count > nodes_picked_cnt)) {
+		    (bit_set_count(nodes_idle) >= step_spec->min_nodes) &&
+		    (step_spec->min_nodes > nodes_picked_cnt)) {
 			node_tmp = bit_pick_cnt(nodes_idle,
-						(step_spec->node_count -
+						(step_spec->min_nodes -
 						 nodes_picked_cnt));
 			if (node_tmp == NULL)
 				goto cleanup;
@@ -813,14 +839,14 @@ _pick_step_nodes (struct job_record  *job_ptr,
 			bit_and (nodes_avail, node_tmp);
 			bit_free (node_tmp);
 			node_tmp = NULL;
-			nodes_picked_cnt = step_spec->node_count;
+			nodes_picked_cnt = step_spec->min_nodes;
 		}
-		if (step_spec->node_count > nodes_picked_cnt) {
+		if (step_spec->min_nodes > nodes_picked_cnt) {
 			node_tmp = bit_pick_cnt(nodes_avail,
-						(step_spec->node_count -
+						(step_spec->min_nodes -
 						 nodes_picked_cnt));
 			if (node_tmp == NULL) {
-				if (step_spec->node_count <=
+				if (step_spec->min_nodes <=
 				    (bit_set_count(nodes_avail) +
 				     nodes_picked_cnt +
 				     mem_blocked_nodes)) {
@@ -834,13 +860,38 @@ _pick_step_nodes (struct job_record  *job_ptr,
 			bit_and (nodes_avail, node_tmp);
 			bit_free (node_tmp);
 			node_tmp = NULL;
-			nodes_picked_cnt = step_spec->node_count;
+			nodes_picked_cnt = step_spec->min_nodes;
 		}
 	}
 
 	if (step_spec->cpu_count) {
 		/* make sure the selected nodes have enough cpus */
-		cpus_picked_cnt = _count_cpus(nodes_picked);
+		cpus_picked_cnt = _count_cpus(job_ptr, nodes_picked);
+		if ((step_spec->cpu_count > cpus_picked_cnt) &&
+		    ((step_spec->max_nodes == 0) ||
+		     (step_spec->max_nodes > nodes_picked_cnt))) {
+			/* Attempt to add more nodes to allocation */
+			nodes_picked_cnt = bit_set_count(nodes_picked);
+			while (step_spec->cpu_count > cpus_picked_cnt) {
+				node_tmp = bit_pick_cnt(nodes_avail, 1);
+				if (node_tmp == NULL)
+					break;
+				bit_or  (nodes_picked, node_tmp);
+				bit_not (node_tmp);
+				bit_and (nodes_avail, node_tmp);
+				bit_free (node_tmp);
+				node_tmp = NULL;
+				nodes_picked_cnt += 1;
+				if (step_spec->min_nodes)
+					step_spec->min_nodes = nodes_picked_cnt;
+				cpus_picked_cnt = _count_cpus(job_ptr, 
+							      nodes_picked);
+				if (step_spec->max_nodes &&
+				    (nodes_picked_cnt >= step_spec->max_nodes))
+					break;
+			}
+		}
+
 		/* user is requesting more cpus than we got from the
 		 * picked nodes we should return with an error */
 		if (step_spec->cpu_count > cpus_picked_cnt) {
@@ -871,25 +922,41 @@ cleanup:
 }
 
 /*
- * _count_cpus - report how many cpus are associated with the identified nodes
+ * _count_cpus - report how many cpus are allocated to this job for the 
+ *		 identified nodes
+ * IN job_ptr - 
  * IN bitmap - map of nodes to tally
  * RET cpu count
- * globals: node_record_count - number of nodes configured
- *	node_record_table_ptr - pointer to global node table
  */
-static int _count_cpus(bitstr_t *bitmap)
+static int _count_cpus(struct job_record *job_ptr, bitstr_t *bitmap)
 {
-	int i, sum;
+	int i, sum = 0;
+	struct node_record *node_ptr;
 
-	sum = 0;
-	for (i = 0; i < node_record_count; i++) {
-		if (bit_test(bitmap, i) != 1)
-			continue;
-		if (slurmctld_conf.fast_schedule)
-			sum += node_record_table_ptr[i].config_ptr->cpus;
-		else
-			sum += node_record_table_ptr[i].cpus;
+	if (job_ptr->job_resrcs && job_ptr->job_resrcs->cpus) {
+		int node_inx = 0;
+		for (i = 0, node_ptr = node_record_table_ptr; 
+		     i < node_record_count; i++, node_ptr++) {
+			if (!bit_test(job_ptr->node_bitmap, i))
+				continue;
+			node_inx++;
+			if (!bit_test(bitmap, i))	/* step bitmap */
+				continue;
+			sum += job_ptr->job_resrcs->cpus[node_inx-1];
+		}
+	} else {
+		error("job %u lacks cpus array", job_ptr->job_id);
+		for (i = 0, node_ptr = node_record_table_ptr; 
+		     i < node_record_count; i++, node_ptr++) {
+			if (!bit_test(bitmap, i))
+				continue;
+			if (slurmctld_conf.fast_schedule)
+				sum += node_ptr->config_ptr->cpus;
+			else
+				sum += node_ptr->cpus;
+		}
 	}
+
 	return sum;
 }
 
@@ -1349,8 +1416,8 @@ step_create(job_step_create_request_msg_t *step_specs,
 		step_specs->node_list = xstrdup(step_node_list);
 	}
 	if (slurm_get_debug_flags() & DEBUG_FLAG_STEPS) {
-		verbose("got %s and %s looking for %d nodes", step_node_list,
-			step_specs->node_list, step_specs->node_count);
+		verbose("got %s and %s looking for %u nodes", step_node_list,
+			step_specs->node_list, step_specs->min_nodes);
 	}
 	step_ptr->step_node_bitmap = nodeset;
 
@@ -1413,7 +1480,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 		step_ptr->step_layout =
 			step_layout_create(step_ptr,
 					   step_node_list,
-					   step_specs->node_count,
+					   step_specs->min_nodes,
 					   step_specs->num_tasks,
 					   (uint16_t)cpus_per_task,
 					   step_specs->task_dist,

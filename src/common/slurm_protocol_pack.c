@@ -2817,31 +2817,61 @@ _pack_job_step_create_request_msg(job_step_create_request_msg_t
 {
 	xassert(msg != NULL);
 
-	pack32(msg->job_id, buffer);
-	pack32(msg->user_id, buffer);
-	pack32(msg->node_count, buffer);
-	pack32(msg->cpu_count, buffer);
-	pack32(msg->num_tasks, buffer);
-	pack32(msg->mem_per_cpu, buffer);
-	pack32(msg->time_limit, buffer);
+	if(protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
+		pack32(msg->job_id, buffer);
+		pack32(msg->user_id, buffer);
+		pack32(msg->min_nodes, buffer);
+		pack32(msg->max_nodes, buffer);
+		pack32(msg->cpu_count, buffer);
+		pack32(msg->num_tasks, buffer);
+		pack32(msg->mem_per_cpu, buffer);
+		pack32(msg->time_limit, buffer);
 
-	pack16(msg->relative, buffer);
-	pack16(msg->task_dist, buffer);
-	pack16(msg->plane_size, buffer);
-	pack16(msg->port, buffer);
-	pack16(msg->ckpt_interval, buffer);
-	pack16(msg->exclusive, buffer);
-	pack16(msg->immediate, buffer);
-	pack16(msg->resv_port_cnt, buffer);
+		pack16(msg->relative, buffer);
+		pack16(msg->task_dist, buffer);
+		pack16(msg->plane_size, buffer);
+		pack16(msg->port, buffer);
+		pack16(msg->ckpt_interval, buffer);
+		pack16(msg->exclusive, buffer);
+		pack16(msg->immediate, buffer);
+		pack16(msg->resv_port_cnt, buffer);
 
-	packstr(msg->host, buffer);
-	packstr(msg->name, buffer);
-	packstr(msg->network, buffer);
-	packstr(msg->node_list, buffer);
-	packstr(msg->ckpt_dir, buffer);
+		packstr(msg->host, buffer);
+		packstr(msg->name, buffer);
+		packstr(msg->network, buffer);
+		packstr(msg->node_list, buffer);
+		packstr(msg->ckpt_dir, buffer);
 
-	pack8(msg->no_kill, buffer);
-	pack8(msg->overcommit, buffer);
+		pack8(msg->no_kill, buffer);
+		pack8(msg->overcommit, buffer);
+	} else {
+		pack32(msg->job_id, buffer);
+		pack32(msg->user_id, buffer);
+		pack32(msg->min_nodes, buffer);
+		pack32(msg->cpu_count, buffer);
+		pack32(msg->num_tasks, buffer);
+		pack32(msg->mem_per_cpu, buffer);
+		pack32(msg->time_limit, buffer);
+
+		pack16(msg->relative, buffer);
+		pack16(msg->task_dist, buffer);
+		pack16(msg->plane_size, buffer);
+		pack16(msg->port, buffer);
+		pack16(msg->ckpt_interval, buffer);
+		pack16(msg->exclusive, buffer);
+		pack16(msg->immediate, buffer);
+		pack16(msg->resv_port_cnt, buffer);
+
+		packstr(msg->host, buffer);
+		packstr(msg->name, buffer);
+		packstr(msg->network, buffer);
+		packstr(msg->node_list, buffer);
+		packstr(msg->ckpt_dir, buffer);
+
+		pack8(msg->no_kill, buffer);
+		pack8(msg->overcommit, buffer);
+	}
+
 }
 
 static int
@@ -2857,31 +2887,67 @@ _unpack_job_step_create_request_msg(job_step_create_request_msg_t ** msg,
 	tmp_ptr = xmalloc(sizeof(job_step_create_request_msg_t));
 	*msg = tmp_ptr;
 
-	safe_unpack32(&(tmp_ptr->job_id), buffer);
-	safe_unpack32(&(tmp_ptr->user_id), buffer);
-	safe_unpack32(&(tmp_ptr->node_count), buffer);
-	safe_unpack32(&(tmp_ptr->cpu_count), buffer);
-	safe_unpack32(&(tmp_ptr->num_tasks), buffer);
-	safe_unpack32(&(tmp_ptr->mem_per_cpu), buffer);
-	safe_unpack32(&(tmp_ptr->time_limit), buffer);
+	if(protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
+		safe_unpack32(&(tmp_ptr->job_id), buffer);
+		safe_unpack32(&(tmp_ptr->user_id), buffer);
+		safe_unpack32(&(tmp_ptr->min_nodes), buffer);
+		safe_unpack32(&(tmp_ptr->max_nodes), buffer);
+		safe_unpack32(&(tmp_ptr->cpu_count), buffer);
+		safe_unpack32(&(tmp_ptr->num_tasks), buffer);
+		safe_unpack32(&(tmp_ptr->mem_per_cpu), buffer);
+		safe_unpack32(&(tmp_ptr->time_limit), buffer);
 
-	safe_unpack16(&(tmp_ptr->relative), buffer);
-	safe_unpack16(&(tmp_ptr->task_dist), buffer);
-	safe_unpack16(&(tmp_ptr->plane_size), buffer);
-	safe_unpack16(&(tmp_ptr->port), buffer);
-	safe_unpack16(&(tmp_ptr->ckpt_interval), buffer);
-	safe_unpack16(&(tmp_ptr->exclusive), buffer);
-	safe_unpack16(&(tmp_ptr->immediate), buffer);
-	safe_unpack16(&(tmp_ptr->resv_port_cnt), buffer);
+		safe_unpack16(&(tmp_ptr->relative), buffer);
+		safe_unpack16(&(tmp_ptr->task_dist), buffer);
+		safe_unpack16(&(tmp_ptr->plane_size), buffer);
+		safe_unpack16(&(tmp_ptr->port), buffer);
+		safe_unpack16(&(tmp_ptr->ckpt_interval), buffer);
+		safe_unpack16(&(tmp_ptr->exclusive), buffer);
+		safe_unpack16(&(tmp_ptr->immediate), buffer);
+		safe_unpack16(&(tmp_ptr->resv_port_cnt), buffer);
 
-	safe_unpackstr_xmalloc(&(tmp_ptr->host), &uint32_tmp, buffer);
-	safe_unpackstr_xmalloc(&(tmp_ptr->name), &uint32_tmp, buffer);
-	safe_unpackstr_xmalloc(&(tmp_ptr->network), &uint32_tmp, buffer);
-	safe_unpackstr_xmalloc(&(tmp_ptr->node_list), &uint32_tmp, buffer);
-	safe_unpackstr_xmalloc(&(tmp_ptr->ckpt_dir), &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&(tmp_ptr->host), &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&(tmp_ptr->name), &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&(tmp_ptr->network), &uint32_tmp, 
+				       buffer);
+		safe_unpackstr_xmalloc(&(tmp_ptr->node_list), &uint32_tmp, 
+				       buffer);
+		safe_unpackstr_xmalloc(&(tmp_ptr->ckpt_dir), &uint32_tmp, 
+				       buffer);
 
-	safe_unpack8(&(tmp_ptr->no_kill), buffer);
-	safe_unpack8(&(tmp_ptr->overcommit), buffer);
+		safe_unpack8(&(tmp_ptr->no_kill), buffer);
+		safe_unpack8(&(tmp_ptr->overcommit), buffer);
+	} else {
+		safe_unpack32(&(tmp_ptr->job_id), buffer);
+		safe_unpack32(&(tmp_ptr->user_id), buffer);
+		safe_unpack32(&(tmp_ptr->min_nodes), buffer);
+		tmp_ptr->max_nodes = NO_VAL;
+		safe_unpack32(&(tmp_ptr->cpu_count), buffer);
+		safe_unpack32(&(tmp_ptr->num_tasks), buffer);
+		safe_unpack32(&(tmp_ptr->mem_per_cpu), buffer);
+		safe_unpack32(&(tmp_ptr->time_limit), buffer);
+
+		safe_unpack16(&(tmp_ptr->relative), buffer);
+		safe_unpack16(&(tmp_ptr->task_dist), buffer);
+		safe_unpack16(&(tmp_ptr->plane_size), buffer);
+		safe_unpack16(&(tmp_ptr->port), buffer);
+		safe_unpack16(&(tmp_ptr->ckpt_interval), buffer);
+		safe_unpack16(&(tmp_ptr->exclusive), buffer);
+		safe_unpack16(&(tmp_ptr->immediate), buffer);
+		safe_unpack16(&(tmp_ptr->resv_port_cnt), buffer);
+
+		safe_unpackstr_xmalloc(&(tmp_ptr->host), &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&(tmp_ptr->name), &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&(tmp_ptr->network), &uint32_tmp, 
+				       buffer);
+		safe_unpackstr_xmalloc(&(tmp_ptr->node_list), &uint32_tmp, 
+				       buffer);
+		safe_unpackstr_xmalloc(&(tmp_ptr->ckpt_dir), &uint32_tmp, 
+				       buffer);
+
+		safe_unpack8(&(tmp_ptr->no_kill), buffer);
+		safe_unpack8(&(tmp_ptr->overcommit), buffer);
+	}
 
 	return SLURM_SUCCESS;
 

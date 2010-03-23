@@ -15,6 +15,9 @@ documents those changes that are of interest to users and admins.
  -- Applied patch from David Egolf (David.Egolf@Bull.com) Added the ability
     to purge/archive accounting data on a day or hour basis, previously
     it was only available on a monthly basis.
+ -- Add support for maximum node count in job step request.
+ -- Fix bug in CPU count logic for job step allocation (used count of CPUS per
+    node rather than CPUs allocated to the job).
 
 * Changes in SLURM 2.2.0.pre3
 =============================
@@ -133,6 +136,11 @@ documents those changes that are of interest to users and admins.
  -- Correct sched/backfill logic so that it runs in a more timely fashion.
  -- Fixed issue if running on accounting cache and priority/multifactor to
     initialize the root association when the database comes back up.
+ -- Emulated BLUEGENE - fixed issue where blocks weren't always created
+    correctly when loading from state.  This does not apply to a real
+    bluegene system, only emulated.
+ -- Fixed bug when job is completing where you could get cpu_cnt underflow on
+    completing jobs.
 
 * Changes in SLURM 2.1.5
 ========================
