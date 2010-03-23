@@ -137,7 +137,7 @@ exec $sacctmgr $sho $pro
 	}
 
 	if {$matches != 6} {
-		send_user "\nFAILURE: sacctmgr did not find enough problems\n"
+		send_user "\nFAILURE: sacctmgr found $matches of 6 problems\n"
 		incr exit_code 1
 	}
 
