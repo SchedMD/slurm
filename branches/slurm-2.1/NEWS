@@ -11,6 +11,8 @@ documents those changes that are of interest to users and admins.
  -- Emulated BLUEGENE - fixed issue where blocks weren't always created
     correctly when loading from state.  This does not apply to a real
     bluegene system, only emulated.
+ -- Fixed bug when job is completing where you could get cpu_cnt underflow on
+    completing jobs.
 
 * Changes in SLURM 2.1.5
 ========================
