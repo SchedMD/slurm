@@ -726,11 +726,13 @@ create_job_step(srun_job_t *job, bool use_all_cpus)
 	/* Validate minimum and maximum node counts */
 	if (opt.min_nodes && opt.max_nodes &&
 	    (opt.min_nodes > opt.max_nodes)) {
-		error ("Minimum node count > maximum node count");
+		error ("Minimum node count > maximum node count (%d > %d)",
+		       opt.min_nodes, opt.max_nodes);
 		return -1;
 	}
 	if (opt.min_nodes && (opt.min_nodes > job->nhosts)) {
-		error ("Minimum node count > allocated node count");
+		error ("Minimum node count > allocated node count (%d > %d)",
+		       opt.min_nodes, job->nhosts);
 		return -1;
 	}
 	job->ctx_params.min_nodes = job->nhosts;
