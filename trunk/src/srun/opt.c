@@ -1686,6 +1686,10 @@ static bool _opt_verify(void)
 		if(count > opt.max_nodes) {
 			int i = 0;
 			char buf[8192];
+			error("Required nodelist includes more nodes than "
+			      "permitted by max-node count (%d > %d). "
+			      "Eliminating nodes from the nodelist.",
+			      count, opt.max_nodes);
 			count -= opt.max_nodes;
 			while(i<count) {
 				char *name = hostlist_pop(hl);

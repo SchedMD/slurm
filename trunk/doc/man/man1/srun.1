@@ -1223,6 +1223,9 @@ will consider this an error, as 15 processes cannot run across 16 nodes.
 By default, stdout and stderr will be redirected from all tasks to the
 stdout and stderr of \fBsrun\fR, and stdin will be redirected from the
 standard input of \fBsrun\fR to all remote tasks.
+If stdin is only to be read by a subset of the spawned tasks, specifying a
+file to read from rather than forwarding stdin from the \fBsrun\fR command may
+be preferable as it avoids moving and storing data that will never be read.
 For OS X, the poll() function does not support stdin, so input from
 a terminal is not possible.
 This behavior may be changed with the

@@ -860,7 +860,10 @@ typedef struct {
 	char *name;		/* name of the job step */
 	char *network;		/* network use spec */
 	uint8_t no_kill;	/* 1 if no kill on node failure */
-	uint32_t node_count;	/* number of required nodes */
+	uint32_t min_nodes;	/* minimum number of nodes required by job,
+				 * default=0 */
+	uint32_t max_nodes;	/* maximum number of nodes usable by job,
+				 * default=0 */
 	char *node_list;	/* list of required nodes */
 	bool overcommit;	/* "true" to allow the allocation of more tasks
 				 * to a node than available processors,

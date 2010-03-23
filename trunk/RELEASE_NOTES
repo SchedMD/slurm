@@ -129,6 +129,9 @@ job_desc_msg_t
 partition_info_t
 	state_up (new states added PARTITION_DRAIN and PARTITION_INACTIVE)
 
+slurm_step_ctx_params_t
+	node_count ->min_nodes
+
 * Added the following struct definitions:
 job_info_t
 	time_min
@@ -145,6 +148,9 @@ node_info_t
 
 partition_info_t
 	alternate
+
+slurm_step_ctx_params_t
+	max_nodes
 
 update_node_msg_t
 	reason_uid

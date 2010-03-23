@@ -105,7 +105,8 @@ static job_step_create_request_msg_t *_create_step_request(
 		xmalloc(sizeof(job_step_create_request_msg_t));
 	step_req->job_id = step_params->job_id;
 	step_req->user_id = (uint32_t)step_params->uid;
-	step_req->node_count = step_params->node_count;
+	step_req->min_nodes = step_params->min_nodes;
+	step_req->max_nodes = step_params->max_nodes;
 	step_req->cpu_count = step_params->cpu_count;
 	step_req->num_tasks = step_params->task_count;
 	step_req->relative = step_params->relative;
@@ -227,7 +228,7 @@ slurm_step_ctx_create_no_alloc (const slurm_step_ctx_params_t *step_params,
 	step_resp->step_layout = fake_slurm_step_layout_create(
 		step_req->node_list,
 		NULL, NULL,
-		step_req->node_count,
+		step_req->min_nodes,
 		step_req->num_tasks);
 
 	if (switch_alloc_jobinfo(&step_resp->switch_job) < 0)
@@ -427,7 +428,7 @@ slurm_step_ctx_daemon_per_node_hack(slurm_step_ctx_t *ctx)
 	}
 
 	/* hack the context node count */
-	ctx->step_req->num_tasks = ctx->step_req->node_count;
+	ctx->step_req->num_tasks = ctx->step_req->min_nodes;
 
 	/* hack the context step layout */
 	old_layout = ctx->step_resp->step_layout;
