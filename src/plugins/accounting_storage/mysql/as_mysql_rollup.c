@@ -121,12 +121,20 @@ static int _process_purge(mysql_conn_t *mysql_conn,
 
 	if(purge_period & slurmdbd_conf->purge_event)
 		arch_cond.purge_event = slurmdbd_conf->purge_event;
+	else
+		arch_cond.purge_event = NO_VAL;
 	if(purge_period & slurmdbd_conf->purge_job)
 		arch_cond.purge_job = slurmdbd_conf->purge_job;
+	else
+		arch_cond.purge_job = NO_VAL;
 	if(purge_period & slurmdbd_conf->purge_step)
 		arch_cond.purge_step = slurmdbd_conf->purge_step;
+	else
+		arch_cond.purge_step = NO_VAL;
 	if(purge_period & slurmdbd_conf->purge_suspend)
 		arch_cond.purge_suspend = slurmdbd_conf->purge_suspend;
+	else
+		arch_cond.purge_suspend = NO_VAL;
 
 	job_cond.cluster_list = list_create(NULL);
 	list_append(job_cond.cluster_list, cluster_name);

@@ -3556,10 +3556,10 @@ extern void slurmdb_pack_archive_cond(void *in, uint16_t rpc_version,
 			packnull(buffer);
 			packnull(buffer);
 			slurmdb_pack_job_cond(NULL, rpc_version, buffer);
-			pack32((uint16_t)0, buffer);
-			pack32((uint16_t)0, buffer);
-			pack32((uint16_t)0, buffer);
-			pack32((uint16_t)0, buffer);
+			pack32((uint16_t)NO_VAL, buffer);
+			pack32((uint16_t)NO_VAL, buffer);
+			pack32((uint16_t)NO_VAL, buffer);
+			pack32((uint16_t)NO_VAL, buffer);
 			return;
 		}
 
@@ -3579,19 +3579,23 @@ extern void slurmdb_pack_archive_cond(void *in, uint16_t rpc_version,
 			pack16((uint16_t)0, buffer);
 			pack16((uint16_t)0, buffer);
 			slurmdb_pack_job_cond(NULL, rpc_version, buffer);
-			pack16((uint16_t)0, buffer);
-			pack16((uint16_t)0, buffer);
-			pack16((uint16_t)0, buffer);
-			pack16((uint16_t)0, buffer);
+			pack16((uint16_t)NO_VAL, buffer);
+			pack16((uint16_t)NO_VAL, buffer);
+			pack16((uint16_t)NO_VAL, buffer);
+			pack16((uint16_t)NO_VAL, buffer);
 			return;
 		}
 
 		packstr(object->archive_dir, buffer);
-		pack16(0, buffer);
-		pack16(0, buffer);
+		pack16((uint16_t)SLURMDB_PURGE_ARCHIVE_SET(
+			       object->purge_event) ? 1 : 0, buffer);
+		pack16((uint16_t)SLURMDB_PURGE_ARCHIVE_SET(
+			       object->purge_job) ? 1 : 0, buffer);
 		packstr(object->archive_script, buffer);
-		pack16(0, buffer);
-		pack16(0, buffer);
+		pack16((uint16_t)SLURMDB_PURGE_ARCHIVE_SET(
+			       object->purge_step) ? 1 : 0, buffer);
+		pack16((uint16_t)SLURMDB_PURGE_ARCHIVE_SET(
+			       object->purge_suspend) ? 1 : 0, buffer);
 		slurmdb_pack_job_cond(object->job_cond, rpc_version, buffer);
 		pack16((uint16_t)object->purge_event, buffer);
 		pack16((uint16_t)object->purge_job, buffer);
@@ -3636,30 +3640,30 @@ extern int slurmdb_unpack_archive_cond(void **object, uint16_t rpc_version,
 					   rpc_version, buffer) == SLURM_ERROR)
 			goto unpack_error;
 		safe_unpack16(&tmp16, buffer);
+		object_ptr->purge_event = tmp16;
 		if(tmp16 != (uint16_t)NO_VAL) {
-			object_ptr->purge_event = tmp16;
 			object_ptr->purge_event |= SLURMDB_PURGE_MONTHS;
 			if(a_events)
 				object_ptr->purge_event |=
 					SLURMDB_PURGE_ARCHIVE;
 		}
 		safe_unpack16(&tmp16, buffer);
+		object_ptr->purge_job = tmp16;
 		if(tmp16 != (uint16_t)NO_VAL) {
-			object_ptr->purge_job = tmp16;
 			object_ptr->purge_job |= SLURMDB_PURGE_MONTHS;
 			if(a_jobs)
 				object_ptr->purge_job |= SLURMDB_PURGE_ARCHIVE;
 		}
 		safe_unpack16(&tmp16, buffer);
+		object_ptr->purge_step = tmp16;
 		if(tmp16 != (uint16_t)NO_VAL) {
-			object_ptr->purge_step = tmp16;
 			object_ptr->purge_step |= SLURMDB_PURGE_MONTHS;
 			if(a_steps)
 				object_ptr->purge_step |= SLURMDB_PURGE_ARCHIVE;
 		}
 		safe_unpack16(&tmp16, buffer);
+		object_ptr->purge_suspend = tmp16;
 		if(tmp16 != (uint16_t)NO_VAL) {
-			object_ptr->purge_suspend = tmp16;
 			object_ptr->purge_suspend |= SLURMDB_PURGE_MONTHS;
 			if(a_suspend)
 				object_ptr->purge_suspend |=
