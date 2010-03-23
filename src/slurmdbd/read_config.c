@@ -210,8 +210,13 @@ extern int read_slurmdbd_conf(void)
 		s_p_get_uint16(&slurmdbd_conf->dbd_port, "DbdPort", tbl);
 		s_p_get_uint16(&slurmdbd_conf->debug_level, "DebugLevel", tbl);
 		s_p_get_string(&slurmdbd_conf->default_qos, "DefaultQOS", tbl);
-		if(s_p_get_uint32(&slurmdbd_conf->purge_job, "JobPurge", tbl))
-			slurmdbd_conf->purge_job |= SLURMDB_PURGE_MONTHS;
+		if(s_p_get_uint32(&slurmdbd_conf->purge_job, "JobPurge", tbl)) {
+			if(!slurmdbd_conf->purge_job)
+				slurmdbd_conf->purge_job = NO_VAL;
+			else
+				slurmdbd_conf->purge_job |=
+					SLURMDB_PURGE_MONTHS;
+		}
 
 		s_p_get_string(&slurmdbd_conf->log_file, "LogFile", tbl);
 		if (!s_p_get_uint16(&slurmdbd_conf->msg_timeout,
@@ -286,26 +291,52 @@ extern int read_slurmdbd_conf(void)
 			xfree(temp_str);
 		}
 		if(s_p_get_uint32(&slurmdbd_conf->purge_event,
-				  "PurgeEventMonths", tbl))
-			slurmdbd_conf->purge_event |= SLURMDB_PURGE_MONTHS;
+				  "PurgeEventMonths", tbl)) {
+			if(!slurmdbd_conf->purge_event)
+				slurmdbd_conf->purge_event = NO_VAL;
+			else
+				slurmdbd_conf->purge_event |=
+					SLURMDB_PURGE_MONTHS;
+		}
 
 		if(s_p_get_uint32(&slurmdbd_conf->purge_job,
-				  "PurgeJobMonths", tbl))
-			slurmdbd_conf->purge_job |= SLURMDB_PURGE_MONTHS;
+				  "PurgeJobMonths", tbl)) {
+			if(!slurmdbd_conf->purge_job)
+				slurmdbd_conf->purge_job = NO_VAL;
+			else
+				slurmdbd_conf->purge_job |=
+					SLURMDB_PURGE_MONTHS;
+		}
 
 		if(s_p_get_uint32(&slurmdbd_conf->purge_step,
-				  "PurgeStepMonths", tbl))
-			slurmdbd_conf->purge_step |= SLURMDB_PURGE_MONTHS;
+				  "PurgeStepMonths", tbl)) {
+			if(!slurmdbd_conf->purge_step)
+				slurmdbd_conf->purge_step = NO_VAL;
+			else
+				slurmdbd_conf->purge_step |=
+					SLURMDB_PURGE_MONTHS;
+		}
 
 		if(s_p_get_uint32(&slurmdbd_conf->purge_suspend,
-				  "PurgeSuspendMonths", tbl))
-			slurmdbd_conf->purge_suspend |= SLURMDB_PURGE_MONTHS;
+				  "PurgeSuspendMonths", tbl)) {
+			if(!slurmdbd_conf->purge_suspend)
+				slurmdbd_conf->purge_suspend = NO_VAL;
+			else
+				slurmdbd_conf->purge_suspend
+					|= SLURMDB_PURGE_MONTHS;
+		}
 
 		s_p_get_string(&slurmdbd_conf->slurm_user_name,
 			       "SlurmUser", tbl);
 
-		if(s_p_get_uint32(&slurmdbd_conf->purge_step, "StepPurge", tbl))
-			slurmdbd_conf->purge_step |= SLURMDB_PURGE_MONTHS;
+		if(s_p_get_uint32(&slurmdbd_conf->purge_step,
+				  "StepPurge", tbl)) {
+			if(!slurmdbd_conf->purge_step)
+				slurmdbd_conf->purge_step = NO_VAL;
+			else
+				slurmdbd_conf->purge_step |=
+					SLURMDB_PURGE_MONTHS;
+		}
 
 		s_p_get_string(&slurmdbd_conf->storage_backup_host,
 			       "StorageBackupHost", tbl);
