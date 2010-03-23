@@ -881,6 +881,8 @@ _pick_step_nodes (struct job_record  *job_ptr,
 				bit_free (node_tmp);
 				node_tmp = NULL;
 				nodes_picked_cnt += 1;
+				if (step_spec->min_nodes)
+					step_spec->min_nodes = nodes_picked_cnt;
 				cpus_picked_cnt = _count_cpus(job_ptr, 
 							      nodes_picked);
 				if (step_spec->max_nodes &&
