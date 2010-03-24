@@ -3854,78 +3854,35 @@ void job_time_limit(void)
 
 extern int job_update_cpu_cnt(struct job_record *job_ptr, int node_inx)
 {
-	uint16_t cpu_cnt=0, i=0;
-	int curr_node_inx, bitmap_len, last_inx;
-	bitstr_t *node_bitmap = NULL;
+	int offset;
+
+	xassert(job_ptr);
 
 #ifdef HAVE_BG
 	/* This function doesn't apply to a bluegene system since the
-	   cpu count isn't set up on that system. */
+	 * cpu count isn't set up on that system. */
 	return SLURM_SUCCESS;
 #endif
-	xassert(job_ptr);
-	if(!job_ptr->job_resrcs || !job_ptr->job_resrcs->node_bitmap) {
-		error("job_update_cpu_cnt: "
-		      "no job_resrcs or node_bitmap for job %u",
+	if((offset = job_resources_node_inx_to_cpu_array_inx(
+		    job_ptr->job_resrcs, node_inx)) < 0) {
+		error("job_update_cpu_cnt: problem getting offset of job %u",
 		      job_ptr->job_id);
 		return SLURM_ERROR;
 	}
-	/* Figure out what the first bit is in the job to get the
-	   correct offset. unlike the job_ptr->node_bitmap which gets
-	   cleared, job_ptr->job_resrcs->node_bitmap never gets cleared.
-	*/
-	node_bitmap = job_ptr->job_resrcs->node_bitmap;
-	last_inx = curr_node_inx = bit_ffs(node_bitmap);
-	bitmap_len = bit_size(node_bitmap);
-	if(curr_node_inx != -1) {
-		for (i=0; i<job_ptr->job_resrcs->cpu_array_cnt; i++) {
-			int count = 0;
-			/* Figure out the new node_inx based off the
-			   cpu reps and the node bitmap.  Take mind to
-			   increment the curr_node_inx since we break
-			   before a for loop will incr automatically.
-			*/
-			for(curr_node_inx=last_inx;
-			    curr_node_inx<bitmap_len;
-			    ++curr_node_inx) {
-				if (!bit_test(node_bitmap, curr_node_inx))
-					continue;
-				if(++count >=
-				   job_ptr->job_resrcs->cpu_array_reps[i])
-					break;
-			}
+	/* info("cpu for %d is %d out of %d", */
+	/*      node_inx, job_ptr->job_resrcs->cpu_array_value[offset], */
+	/*      job_ptr->cpu_cnt); */
 
-			cpu_cnt = job_ptr->job_resrcs->cpu_array_value[i];
-			if(curr_node_inx >= node_inx)
-				break;
-			/* info("%d to %d gets me an index of %d looking for %d", */
-			/*      job_ptr->job_resrcs->cpu_array_reps[i], */
-			/*      last_inx, curr_node_inx, node_inx); */
-			last_inx = curr_node_inx + 1;
-		}
-		if(i>=job_ptr->job_resrcs->cpu_array_cnt) {
-			/* This should never happen */
-			error("job_update_cpu_cnt: we went past for %d",
-			      node_inx);
-		}
-		/* info("removing %u from %u for %d", */
-		/*      cpu_cnt, job_ptr->cpu_cnt, node_inx); */
-		if(cpu_cnt > job_ptr->cpu_cnt) {
-			error("job_update_cpu_cnt: "
-			      "cpu_cnt underflow on job_id %u",
-			      job_ptr->job_id);
-			job_ptr->cpu_cnt = 0;
-			return SLURM_ERROR;
-		}
-		job_ptr->cpu_cnt -= cpu_cnt;
-	} else {
-		error("job_update_cpu_cnt: "
-		      "no nodes set yet in job %u", job_ptr->job_id);
+	if (job_ptr->job_resrcs->cpu_array_value[offset] > job_ptr->cpu_cnt) {
+		error("job_update_cpu_cnt: cpu_cnt underflow on job_id %u",
+		      job_ptr->job_id);
+		job_ptr->cpu_cnt = 0;
 		return SLURM_ERROR;
 	}
+
+	job_ptr->cpu_cnt -= job_ptr->job_resrcs->cpu_array_value[offset];
 	return SLURM_SUCCESS;
 }
-
 
 /* Terminate a job that has exhausted its time limit */
 static void _job_timed_out(struct job_record *job_ptr)
