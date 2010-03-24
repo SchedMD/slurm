@@ -187,7 +187,7 @@ daemon gets paged from memory.
 
 .TP
 \fBCacheGroups\fR
-If set to 1, the slurmd daemon will  cache /etc/groups entries.
+If set to 1, the slurmd daemon will cache /etc/groups entries.
 This can improve performance for highly parallel jobs if NIS servers
 are used and unable to respond very quickly.
 The default value is 0 to disable caching group data.
@@ -463,6 +463,25 @@ the user's environment from the cache file.
 The default value is 2 seconds.
 
 .TP
+\fBGroupUpdateForce\fR
+If set to a non\-zero value, then information about which users are members
+of groups allowed to use a partition will be updated periodically, even when
+there have been no changes to the /etc/group file.
+Otherwise group member information will be updated periodically only after the
+/etc/group file is updated
+The default vaue is 0.
+Also see the \fBGroupUpdateTime\fR parameter.
+
+.TP
+\fBGroupUpdateTime\fR
+Controls how frequently information about which users are members of groups
+allowed to use a partition will be updated.
+The time interval is given in seconds with a default value of 600 seconds and
+a maximum value of 4095 seconds.
+A value of zero will prevent periodic updating of group membership information.
+Also see the \fBGroupUpdateForce\fR parameter.
+
+.TP
 \fBHealthCheckInterval\fR
 The interval in seconds between executions of \fBHealthCheckProgram\fR.
 The default value is zero, which disables execution.
@@ -474,7 +493,8 @@ on all compute nodes that are not in the DOWN state. This may be used to
 verify the node is fully operational and DRAIN the node or send email
 if a problem is detected.
 Any action to be taken must be explicitly performed by the program
-(e.g. execute "scontrol update NodeName=foo State=drain Reason=tmp_file_system_full"
+(e.g. execute
+"scontrol update NodeName=foo State=drain Reason=tmp_file_system_full"
 to drain a node).
 The interval is controlled using the \fBHealthCheckInterval\fR parameter.
 Note that the \fBHealthCheckProgram\fR will be executed at the same time

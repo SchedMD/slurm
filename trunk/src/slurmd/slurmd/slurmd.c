@@ -3,7 +3,7 @@
  *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Portions Copyright (C) 2008 Vijay Ramasubramanian.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <mgrondona@llnl.gov>.
@@ -847,7 +847,10 @@ _reconfigure(void)
 	 * Reinitialize the groups cache
 	 */
 	cf = slurm_conf_lock();
-	init_gids_cache(cf->cache_groups);
+	if (cf->group_info & GROUP_CACHE)
+		init_gids_cache(1);
+	else
+		init_gids_cache(0);
 	slurm_conf_unlock();
 
 	/* send reconfig to each stepd so they can refresh their log
@@ -886,7 +889,11 @@ _print_conf(void)
 	debug3("NodeName    = %s",       conf->node_name);
 	debug3("TopoAddr    = %s",       conf->node_topo_addr);
 	debug3("TopoPattern = %s",       conf->node_topo_pattern);
-	debug3("CacheGroups = %d",       cf->cache_groups);
+	if (cf->group_info & GROUP_CACHE)
+		i = 1;
+	else
+		i = 0;
+	debug3("CacheGroups = %d",       i);
 	debug3("Confile     = `%s'",     conf->conffile);
 	debug3("Debug       = %d",       cf->slurmd_debug);
 	debug3("CPUs        = %-2u (CF: %2u, HW: %2u)",
@@ -1192,7 +1199,10 @@ _slurmd_init(void)
 	 * Cache the group access list
 	 */
 	cf = slurm_conf_lock();
-	init_gids_cache(cf->cache_groups);
+	if (cf->group_info & GROUP_CACHE)
+		init_gids_cache(1);
+	else
+		init_gids_cache(0);
 	slurm_conf_unlock();
 
 	if ((devnull = open("/dev/null", O_RDWR)) < 0) {

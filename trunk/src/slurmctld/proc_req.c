@@ -431,7 +431,6 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->batch_start_timeout = conf->batch_start_timeout;
 	conf_ptr->boot_time           = slurmctld_config.boot_time;
 
-	conf_ptr->cache_groups        = conf->cache_groups;
 	conf_ptr->checkpoint_type     = xstrdup(conf->checkpoint_type);
 	conf_ptr->cluster_name        = xstrdup(conf->cluster_name);
 	conf_ptr->complete_wait       = conf->complete_wait;
@@ -450,6 +449,8 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 
 	conf_ptr->fast_schedule       = conf->fast_schedule;
 	conf_ptr->first_job_id        = conf->first_job_id;
+
+	conf_ptr->group_info          = conf->group_info;
 
 	conf_ptr->inactive_limit      = conf->inactive_limit;
 

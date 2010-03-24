@@ -156,6 +156,8 @@ function displayfile()
    get_field("JobCredentialPrivateKey", document.config.private_key) + "<br>" +
    get_field("JobCredentialPublicCertificate", document.config.public_key) + "<br>" +
    "#JobFileAppend=0 <br>" +
+   "#GroupUpdateForce=0 <br>" +
+   "#GroupUpdateTime=600 <br>" +
    "#JobRequeue=1 <br>" +
    "#KillOnBadExit=0 <br>" +
    "#Licenses=foo*4,bar <br>" +

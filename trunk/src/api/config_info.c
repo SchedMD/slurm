@@ -284,11 +284,12 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
 	key_pair->value = xstrdup(tmp_str);
 	list_append(ret_list, key_pair);
 
-	snprintf(tmp_str, sizeof(tmp_str), "%u",
-		 slurm_ctl_conf_ptr->cache_groups);
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("CacheGroups");
-	key_pair->value = xstrdup(tmp_str);
+	if (slurm_ctl_conf_ptr->group_info & GROUP_CACHE)
+		key_pair->value = xstrdup("1");
+	else
+		key_pair->value = xstrdup("0");
 	list_append(ret_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
@@ -398,11 +399,30 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
 	key_pair->value = xstrdup(tmp_str);
 	list_append(ret_list, key_pair);
 
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("GroupUpdateForce");
+	if (slurm_ctl_conf_ptr->group_info & GROUP_FORCE)
+		key_pair->value = xstrdup("1");
+	else
+		key_pair->value = xstrdup("0");
+	list_append(ret_list, key_pair);
+
+	snprintf(tmp_str, sizeof(tmp_str), "%u sec",
+		 slurm_ctl_conf_ptr->group_info & GROUP_TIME_MASK);
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("GroupUpdateTime");
+	key_pair->value = xstrdup(tmp_str);
+	list_append(ret_list, key_pair);
+
 	if(slurm_ctl_conf_ptr->hash_val != NO_VAL) {
 		if(slurm_ctl_conf_ptr->hash_val == slurm_get_hash_val())
 			snprintf(tmp_str, sizeof(tmp_str), "Match");
-		else
-			snprintf(tmp_str, sizeof(tmp_str), "Different Ours=0x%x Slurmctld=0x%x", slurm_get_hash_val(), slurm_ctl_conf_ptr->hash_val);
+		else {
+			snprintf(tmp_str, sizeof(tmp_str), 
+				 "Different Ours=0x%x Slurmctld=0x%x", 
+				 slurm_get_hash_val(), 
+				 slurm_ctl_conf_ptr->hash_val);
+		}
 		key_pair = xmalloc(sizeof(config_key_pair_t));
 		key_pair->name = xstrdup("HashVal");
 		key_pair->value = xstrdup(tmp_str);

@@ -38,7 +38,6 @@ slurm_ctl_conf_to_hv(slurm_ctl_conf_t* conf, HV* hv)
 	if(conf->backup_controller)
 		STORE_FIELD(hv, conf, backup_controller, charp);
 	STORE_FIELD(hv, conf, boot_time, time_t);
-	STORE_FIELD(hv, conf, cache_groups, uint16_t);
 	if(conf->checkpoint_type)
 		STORE_FIELD(hv, conf, checkpoint_type, charp);
 	if(conf->cluster_name)
@@ -60,6 +59,7 @@ slurm_ctl_conf_to_hv(slurm_ctl_conf_t* conf, HV* hv)
 		STORE_FIELD(hv, conf, epilog_slurmctld, charp);
 	STORE_FIELD(hv, conf, fast_schedule, uint16_t);
 	STORE_FIELD(hv, conf, first_job_id, uint32_t);
+	STORE_FIELD(hv, conf, group_info, uint16_t);
 	STORE_FIELD(hv, conf, health_check_interval, uint16_t);
 	if(conf->health_check_program)
 		STORE_FIELD(hv, conf, health_check_program, charp);

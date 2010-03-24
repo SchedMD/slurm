@@ -68,6 +68,11 @@ CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
   one ThreadsPerCore configured (i.e. no change in behavior without this
   option).
 
+* Add new configuration parameters GroupUpdateForce and GroupUpdateTime. These 
+  control when slurmctld updates its information of which users are in the
+  groups allowed to use partitions. NOTE: There is no change in the default
+  behavior.
+
 * Added new configuration parameters SlurmSchedLogFile and SlurmSchedLogLevel
   to support writing scheduling events to a separate log file.
 

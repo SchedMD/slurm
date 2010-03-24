@@ -1150,6 +1150,7 @@ static void *_slurmctld_background(void *no_data)
 	static time_t last_node_acct;
 	time_t now;
 	int no_resp_msg_interval, ping_interval;
+	int group_time, group_force;
 	DEF_TIMERS;
 
 	/* Locks: Read config */
@@ -1302,10 +1303,16 @@ static void *_slurmctld_background(void *no_data)
 		/* Process any pending agent work */
 		agent_retry(RPC_RETRY_INTERVAL, true);
 
-		if (difftime(now, last_group_time) >= PERIODIC_GROUP_CHECK) {
+		group_time  = slurmctld_conf.group_info & GROUP_TIME_MASK;
+		if (group_time &&
+		    (difftime(now, last_group_time) >= group_time)) {
+			if (slurmctld_conf.group_info & GROUP_FORCE)
+				group_force = 1;
+			else
+				group_force = 0;
 			last_group_time = now;
 			lock_slurmctld(part_write_lock);
-			load_part_uid_allow_list(0);
+			load_part_uid_allow_list(group_force);
 			unlock_slurmctld(part_write_lock);
 		}
 

@@ -1251,6 +1251,14 @@ typedef struct reservation_name_msg {
 						 * warning about slurm.conf
 						 * files not matching */
 
+#define GROUP_FORCE		0x8000	/* if set, update group membership
+					 * info even if no updates to
+					 * /etc/group file */
+#define GROUP_CACHE		0x4000	/* if set, cache /etc/groups to avoid
+					 * initgroups(2) */
+#define GROUP_TIME_MASK		0x0fff	/* group membership update interval
+					 * in seconds */
+
 #define PREEMPT_MODE_OFF	0x0000	/* disable job preemption */
 #define PREEMPT_MODE_SUSPEND	0x0001	/* suspend jobs to preempt */
 #define PREEMPT_MODE_REQUEUE	0x0002	/* requeue or kill jobs to preempt */
@@ -1278,7 +1286,6 @@ typedef struct slurm_ctl_conf {
 	char *backup_controller;/* name of slurmctld secondary server */
 	uint16_t batch_start_timeout;	/* max secs for batch job to start */
 	time_t boot_time;	/* time slurmctld last booted */
-	uint16_t cache_groups;	/* cache /etc/groups to avoid initgroups(2) */
 	char *checkpoint_type;	/* checkpoint plugin type */
 	char *cluster_name;     /* general name of the entire cluster */
 	uint16_t complete_wait;	/* seconds to wait for job completion before
@@ -1299,6 +1306,7 @@ typedef struct slurm_ctl_conf {
 				 * (only check configuration file, faster) */
 	uint32_t first_job_id;	/* first slurm generated job_id to assign */
 	uint16_t get_env_timeout; /* timeout for srun --get-user-env option */
+	uint16_t group_info;	/* see GROUP_* fields above */
 	uint32_t hash_val;      /* Hash value of the slurm.conf file */
 	uint16_t health_check_interval;	/* secs between health checks */
 	char * health_check_program;	/* pathname of health check program */

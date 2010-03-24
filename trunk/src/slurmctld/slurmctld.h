@@ -2,7 +2,7 @@
  *  slurmctld.h - definitions of functions and structures for slurmcltd use
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov> et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -117,10 +117,6 @@
 
 /* Pathname of group file record for checking update times */
 #define GROUP_FILE	"/etc/group"
-
-/* Check for updates to GROUP_FILE every PERIODIC_GROUP_CHECK seconds,
- * Update the group uid_t access list as needed */
-#define	PERIODIC_GROUP_CHECK	600
 
 /* Seconds to wait for backup controller response to REQUEST_CONTROL RPC */
 #define CONTROL_TIMEOUT 4	/* seconds */

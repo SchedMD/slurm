@@ -61,13 +61,13 @@ extern char *default_plugstack;
 #define DEFAULT_ACCOUNTING_STORAGE_TYPE "accounting_storage/none"
 #define DEFAULT_AUTH_TYPE          "auth/munge"
 #define DEFAULT_BATCH_START_TIMEOUT 10
-#define DEFAULT_CACHE_GROUPS        0
 #define DEFAULT_COMPLETE_WAIT       0
 #define DEFAULT_CRYPTO_TYPE        "crypto/munge"
 #define DEFAULT_EPILOG_MSG_TIME     2000
 #define DEFAULT_FAST_SCHEDULE       1
 #define DEFAULT_FIRST_JOB_ID        1
 #define DEFAULT_GET_ENV_TIMEOUT     2
+#define DEFAULT_GROUP_INFO          600
 /* NOTE: DEFAULT_INACTIVE_LIMIT must be 0 for Blue Gene/L systems */
 #define DEFAULT_INACTIVE_LIMIT      0
 #define DEFAULT_JOB_ACCT_GATHER_TYPE  "jobacct_gather/none"
