@@ -258,7 +258,7 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 		xstrcat(out, tmp_line);
 		xfree(user_name);
 	} else {
-		snprintf(tmp_line, sizeof(tmp_line), "Reason=%s", 
+		snprintf(tmp_line, sizeof(tmp_line), "Reason=%s",
 			 node_ptr->reason);
 		xstrcat(out, tmp_line);
 	}
@@ -283,17 +283,17 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 extern int slurm_load_node (time_t update_time,
 			    node_info_msg_t **resp, uint16_t show_flags)
 {
-        int rc;
-        slurm_msg_t req_msg;
-        slurm_msg_t resp_msg;
-        node_info_request_msg_t req;
+	int rc;
+	slurm_msg_t req_msg;
+	slurm_msg_t resp_msg;
+	node_info_request_msg_t req;
 
 	slurm_msg_t_init(&req_msg);
 	slurm_msg_t_init(&resp_msg);
-        req.last_update  = update_time;
+	req.last_update  = update_time;
 	req.show_flags   = show_flags;
-        req_msg.msg_type = REQUEST_NODE_INFO;
-        req_msg.data     = &req;
+	req_msg.msg_type = REQUEST_NODE_INFO;
+	req_msg.data     = &req;
 
 	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
 		return SLURM_ERROR;
@@ -314,5 +314,5 @@ extern int slurm_load_node (time_t update_time,
 		break;
 	}
 
-        return SLURM_PROTOCOL_SUCCESS;
+	return SLURM_PROTOCOL_SUCCESS;
 }

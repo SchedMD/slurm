@@ -836,6 +836,7 @@ extern void slurmdb_pack_event_rec(void *in, uint16_t rpc_version, Buf buffer)
 		packnull(buffer);
 		packnull(buffer);
 		pack32(NO_VAL, buffer);
+		pack16(0, buffer);
 		packnull(buffer);
 		pack_time(0, buffer);
 		pack_time(0, buffer);
@@ -848,6 +849,7 @@ extern void slurmdb_pack_event_rec(void *in, uint16_t rpc_version, Buf buffer)
 	packstr(object->cluster, buffer);
 	packstr(object->cluster_nodes, buffer);
 	pack32(object->cpu_count, buffer);
+	pack16(object->event_type, buffer);
 	packstr(object->node_name, buffer);
 	pack_time(object->period_start, buffer);
 	pack_time(object->period_end, buffer);
@@ -862,9 +864,12 @@ extern int slurmdb_unpack_event_rec(void **object, uint16_t rpc_version,
 	uint32_t uint32_tmp;
 	slurmdb_event_rec_t *object_ptr = xmalloc(sizeof(slurmdb_event_rec_t));
 
+	*object = object_ptr;
+
 	safe_unpackstr_xmalloc(&object_ptr->cluster, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&object_ptr->cluster_nodes, &uint32_tmp, buffer);
 	safe_unpack32(&object_ptr->cpu_count, buffer);
+	safe_unpack16(&object_ptr->event_type, buffer);
 	safe_unpackstr_xmalloc(&object_ptr->node_name, &uint32_tmp, buffer);
 	safe_unpack_time(&object_ptr->period_start, buffer);
 	safe_unpack_time(&object_ptr->period_end, buffer);

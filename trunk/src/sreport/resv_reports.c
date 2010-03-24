@@ -173,7 +173,7 @@ static int _set_resv_cond(int *start, int argc, char *argv[],
 	*/
 	start_time = resv_cond->time_start;
 	end_time = resv_cond->time_end;
-	set_start_end_time(&start_time, &end_time);
+	slurmdb_report_set_start_end_time(&start_time, &end_time);
 	resv_cond->time_start = start_time;
 	resv_cond->time_end = end_time;
 

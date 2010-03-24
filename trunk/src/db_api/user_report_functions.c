@@ -96,7 +96,7 @@ extern List slurmdb_report_user_top_usage(slurmdb_user_cond_t *user_cond,
 	user_cond->assoc_cond->without_parent_info = 1;
 
 	/* This needs to be done on some systems to make sure
-	   cluster_cond isn't messed.  This has happened on some 64
+	   assoc_cond isn't messed up.  This has happened on some 64
 	   bit machines and this is here to be on the safe side.
 	*/
 	start_time = user_cond->assoc_cond->usage_start;

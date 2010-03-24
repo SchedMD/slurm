@@ -163,12 +163,12 @@ static int _set_wckey_cond(int *start, int argc, char *argv[],
 	}
 
 	/* This needs to be done on some systems to make sure
-	   cluster_cond isn't messed.  This has happened on some 64
+	   wckey_cond isn't messed.  This has happened on some 64
 	   bit machines and this is here to be on the safe side.
 	*/
 	start_time = wckey_cond->usage_start;
 	end_time = wckey_cond->usage_end;
-	set_start_end_time(&start_time, &end_time);
+	slurmdb_report_set_start_end_time(&start_time, &end_time);
 	wckey_cond->usage_start = start_time;
 	wckey_cond->usage_end = end_time;
 
@@ -264,12 +264,12 @@ static int _set_assoc_cond(int *start, int argc, char *argv[],
 	}
 
 	/* This needs to be done on some systems to make sure
-	   cluster_cond isn't messed.  This has happened on some 64
+	   assoc_cond isn't messed.  This has happened on some 64
 	   bit machines and this is here to be on the safe side.
 	*/
 	start_time = assoc_cond->usage_start;
 	end_time = assoc_cond->usage_end;
-	set_start_end_time(&start_time, &end_time);
+	slurmdb_report_set_start_end_time(&start_time, &end_time);
 	assoc_cond->usage_start = start_time;
 	assoc_cond->usage_end = end_time;
 
@@ -351,7 +351,7 @@ static int _set_cluster_cond(int *start, int argc, char *argv[],
 	*/
 	start_time = cluster_cond->usage_start;
 	end_time = cluster_cond->usage_end;
-	set_start_end_time(&start_time, &end_time);
+	slurmdb_report_set_start_end_time(&start_time, &end_time);
 	cluster_cond->usage_start = start_time;
 	cluster_cond->usage_end = end_time;
 

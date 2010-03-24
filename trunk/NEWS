@@ -22,6 +22,8 @@ documents those changes that are of interest to users and admins.
     See "man slurm.conf" for details about how these control when slurmctld
     updates its information of which users are in the groups allowed to use
     partitions.
+ -- Added sacctmgr list events which will list events that have happened on
+    clusters in accounting.
 
 * Changes in SLURM 2.2.0.pre3
 =============================
