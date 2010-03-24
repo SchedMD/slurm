@@ -62,14 +62,14 @@ SLURM_SUCCESS. </p>
 <p style="margin-left:.2in"><b>Description</b>: Specify the location to be used for job logging.</p>
 <p style="margin-left:.2in"><b>Argument</b>:<span class="commandline"> location</span>&nbsp;
 &nbsp;&nbsp;(input) specification of where logging should be done. The interpretation of
-this string is at the discresion of the plugin implementation.</p>
+this string is at the discretion of the plugin implementation.</p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
 the plugin should return SLURM_ERROR and set the errno to an appropriate value
 to indicate the reason for failure.</p>
 <p class="footer"><a href="#top">top</a></p>
 
 <p class="commandline">int slurm_jobcomp_log_record (struct job_record *job_ptr);</p>
-<p style="margin-left:.2in"><b>Description</b>: Note termin ation of a job
+<p style="margin-left:.2in"><b>Description</b>: Note termination of a job
 with the specified characteristics.</p>
 <p style="margin-left:.2in"><b>Argument</b>: <br>
 <span class="commandline"> job_ptr</span>&nbsp;&nbsp;&nbsp;(input) Pointer to job record as defined
@@ -96,19 +96,18 @@ or NULL if no description found in this plugin.</p>
 <p class="footer"><a href="#top">top</a></p>
 
 <p class="commandline">
-void slurm_jobcomp_get_jobs(List job_list, List selected_steps, List selected_parts, void *paramsint errnum);</a></p>
-<p style="margin-left:.2in"><b>Description</b>: Get completed job info from the storage.</p>
+List slurm_jobcomp_get_jobs(acct_job_cond_t *job_cond);</a></p>
+<p style="margin-left:.2in"><b>Description</b>: Get completed job info from
+storage.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:<br>
-<span class="commandline"> job_list</span>
-(input/output) List of job_rec_t pointers of requested jobs.<br>
-<span class="commandline">selected_steps </span>
-(input) list containing type jobacct_select_step_t to query against.<br>
-<span class="commandline">selected_parts </span>
-(input) list containing char *'s of names of partitions to query against.<br>
-<span class="commandline">params </span>
-(input) to be cast as sacct_parameters_t in the plugin.
-<p style="margin-left:.2in">jobcomp_job_rec_t is defined in common/slurm_jobcomp.h
-<p style="margin-left:.2in"><b>Returns</b>: None</p>
+<span class="commandline"> job_cond</span>&nbsp; &nbsp;&nbsp;
+(input) specification of filters to identify the jobs we wish information about
+(start time, end time, cluster name, user id, etc).
+acct_job_cond_t is defined in common/slurm_accounting_storage.h.
+<p style="margin-left:.2in"><b>Returns</b>: A list of job records or NULL on 
+error. Elements on the list are of type jobcomp_job_rec_t, which is
+defined in common/slurm_jobcomp.h.
+Any returned list must be destroyed to avoid memory leaks.
 <p class="footer"><a href="#top">top</a></p>
 
 <p class="commandline">
@@ -129,6 +128,6 @@ releases of SLURM may revise this API. A job completion plugin conveys its abili
 to implement a particular API version using the mechanism outlined for SLURM plugins.</p>
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 10 September 2007</p>
+<p style="text-align:center;">Last modified 24 March 2010</p>
 
 <!--#include virtual="footer.txt"-->
