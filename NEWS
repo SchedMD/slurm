@@ -13,6 +13,8 @@ documents those changes that are of interest to users and admins.
     bluegene system, only emulated.
  -- Fixed bug when job is completing where you could get cpu_cnt underflow on
     completing jobs.
+ -- Fixed bug where if there are pending jobs in a partition which was
+    updated to have no nodes in it the slurmctld would dump core.
 
 * Changes in SLURM 2.1.5
 ========================
