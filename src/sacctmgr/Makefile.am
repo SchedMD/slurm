@@ -19,6 +19,7 @@ sacctmgr_SOURCES =	\
 	config_functions.c	\
 	cluster_functions.c	\
 	common.c                \
+	event_functions.c	\
 	file_functions.c	\
 	sacctmgr.c sacctmgr.h	\
 	qos_functions.c		\

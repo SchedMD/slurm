@@ -80,6 +80,8 @@ static int   _get_clusters(slurmdbd_conn_t *slurmdbd_conn,
 			   Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _get_config(slurmdbd_conn_t *slurmdbd_conn,
 			 Buf in_buffer, Buf *out_buffer, uint32_t *uid);
+static int   _get_events(slurmdbd_conn_t *slurmdbd_conn,
+			 Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _get_jobs(slurmdbd_conn_t *slurmdbd_conn,
 		       Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _get_jobs_cond(slurmdbd_conn_t *slurmdbd_conn,
@@ -246,6 +248,10 @@ proc_req(slurmdbd_conn_t *slurmdbd_conn,
 			break;
 		case DBD_GET_CONFIG:
 			rc = _get_config(slurmdbd_conn,
+					 in_buffer, out_buffer, uid);
+			break;
+		case DBD_GET_EVENTS:
+			rc = _get_events(slurmdbd_conn,
 					 in_buffer, out_buffer, uid);
 			break;
 		case DBD_GET_JOBS:
@@ -1119,6 +1125,52 @@ static int _get_config(slurmdbd_conn_t *slurmdbd_conn,
 		list_destroy(list_msg.my_list);
 
 	return SLURM_SUCCESS;
+}
+
+static int _get_events(slurmdbd_conn_t *slurmdbd_conn,
+		       Buf in_buffer, Buf *out_buffer, uint32_t *uid)
+{
+	dbd_cond_msg_t *get_msg = NULL;
+	dbd_list_msg_t list_msg;
+	char *comment = NULL;
+	int rc = SLURM_SUCCESS;
+
+	debug2("DBD_GET_EVENTS: called");
+	if (slurmdbd_unpack_cond_msg(slurmdbd_conn->rpc_version,
+				     DBD_GET_EVENTS, &get_msg, in_buffer) !=
+	    SLURM_SUCCESS) {
+		comment = "Failed to unpack DBD_GET_EVENTS message";
+		error("%s", comment);
+		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
+					      SLURM_ERROR, comment,
+					      DBD_GET_EVENTS);
+		return SLURM_ERROR;
+	}
+
+	list_msg.my_list = acct_storage_g_get_events(
+		slurmdbd_conn->db_conn, *uid, get_msg->cond);
+
+	if(!errno) {
+		if(!list_msg.my_list)
+			list_msg.my_list = list_create(NULL);
+		*out_buffer = init_buf(1024);
+		pack16((uint16_t) DBD_GOT_EVENTS, *out_buffer);
+		slurmdbd_pack_list_msg(slurmdbd_conn->rpc_version,
+				       DBD_GOT_EVENTS, &list_msg,
+				       *out_buffer);
+	} else {
+		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
+					      errno, slurm_strerror(errno),
+					      DBD_GET_EVENTS);
+		rc = SLURM_ERROR;
+	}
+
+	slurmdbd_free_cond_msg(DBD_GET_EVENTS, get_msg);
+
+	if(list_msg.my_list)
+		list_destroy(list_msg.my_list);
+
+	return rc;
 }
 
 static int _get_jobs(slurmdbd_conn_t *slurmdbd_conn,

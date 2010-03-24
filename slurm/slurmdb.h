@@ -439,6 +439,7 @@ typedef struct {
 	char *cluster_nodes;    /* node list in cluster during time
 				 * period (only set in a cluster event) */
 	uint32_t cpu_count;     /* Number of CPUs effected by event */
+	uint16_t event_type;    /* type of event (slurmdb_event_type_t) */
 	char *node_name;        /* Name of node (only set in a node event) */
 	time_t period_end;      /* End of period */
 	time_t period_start;    /* Start of period */

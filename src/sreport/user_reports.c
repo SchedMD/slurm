@@ -151,7 +151,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 	*/
 	start_time = assoc_cond->usage_start;
 	end_time = assoc_cond->usage_end;
-	set_start_end_time(&start_time, &end_time);
+	slurmdb_report_set_start_end_time(&start_time, &end_time);
 	assoc_cond->usage_start = start_time;
 	assoc_cond->usage_end = end_time;
 

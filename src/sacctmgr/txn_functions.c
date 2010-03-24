@@ -239,7 +239,7 @@ extern int sacctmgr_list_txn(int argc, char *argv[])
 			field->name = xstrdup("ActionRaw");
 			field->len = 10;
 			field->print_routine = print_fields_uint;
-		} else if(!strncasecmp("ActionRaw", object,
+		} else if(!strncasecmp("Action", object,
 				       MAX(command_len, 4))) {
 			field->type = PRINT_ACTION;
 			field->name = xstrdup("Action");

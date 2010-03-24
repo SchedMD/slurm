@@ -704,7 +704,7 @@ empty:
 }
 
 extern List as_mysql_get_cluster_events(mysql_conn_t *mysql_conn, uint32_t uid,
-				     slurmdb_event_cond_t *event_cond)
+					slurmdb_event_cond_t *event_cond)
 {
 	char *query = NULL;
 	char *extra = NULL;
@@ -721,7 +721,7 @@ extern List as_mysql_get_cluster_events(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	/* if this changes you will need to edit the corresponding enum */
 	char *event_req_inx[] = {
-		"cluster_nodes"
+		"cluster_nodes",
 		"cpu_count",
 		"node_name",
 		"state",
@@ -880,7 +880,7 @@ extern List as_mysql_get_cluster_events(mysql_conn_t *mysql_conn, uint32_t uid,
 
 empty:
 	xfree(tmp);
-	xstrfmtcat(tmp, "%s", event_req_inx[i]);
+	xstrfmtcat(tmp, "%s", event_req_inx[0]);
 	for(i=1; i<EVENT_REQ_COUNT; i++) {
 		xstrfmtcat(tmp, ", %s", event_req_inx[i]);
 	}
@@ -899,6 +899,15 @@ empty:
 		if(extra)
 			xstrfmtcat(query, " %s", extra);
 
+		debug3("%d(%s:%d) query\n%s",
+		       mysql_conn->conn, THIS_FILE, __LINE__, query);
+		if(!(result = mysql_db_query_ret(
+			     mysql_conn->db_conn, query, 0))) {
+			xfree(query);
+			return NULL;
+		}
+		xfree(query);
+
 		while((row = mysql_fetch_row(result))) {
 			slurmdb_event_rec_t *event =
 				xmalloc(sizeof(slurmdb_event_rec_t));
@@ -907,8 +916,11 @@ empty:
 
 			event->cluster = xstrdup(object);
 
-			if(row[EVENT_REQ_NODE] && row[EVENT_REQ_NODE][0])
+			if(row[EVENT_REQ_NODE] && row[EVENT_REQ_NODE][0]) {
 				event->node_name = xstrdup(row[EVENT_REQ_NODE]);
+				event->event_type = SLURMDB_EVENT_NODE;
+			} else
+				event->event_type = SLURMDB_EVENT_CLUSTER;
 
 			event->cpu_count = atoi(row[EVENT_REQ_CPU]);
 			event->state = atoi(row[EVENT_REQ_STATE]);
