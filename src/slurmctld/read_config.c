@@ -134,8 +134,11 @@ static void _build_bitmaps_pre_select(void)
 	while ((part_ptr = (struct part_record *) list_next(part_iterator))) {
 		FREE_NULL_BITMAP(part_ptr->node_bitmap);
 
-		if ((part_ptr->nodes == NULL) || (part_ptr->nodes[0] == '\0'))
+		if ((part_ptr->nodes == NULL) || (part_ptr->nodes[0] == '\0')) {
+			/* Partitions need a bitmap, even if empty */
+			part_ptr->node_bitmap = bit_alloc(node_record_count);
 			continue;
+		}
 
 		if (node_name2bitmap(part_ptr->nodes, false,
 				     &part_ptr->node_bitmap)) {

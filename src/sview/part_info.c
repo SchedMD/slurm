@@ -1504,8 +1504,6 @@ static List _create_part_info_list(partition_info_msg_t *part_info_ptr,
 
 	for (i=0; i<part_info_ptr->record_count; i++) {
 		part_ptr = &(part_info_ptr->partition_array[i]);
-		if (!part_ptr->nodes || (part_ptr->nodes[0] == '\0'))
-			continue;	/* empty partition */
 
 		sview_part_info = _create_sview_part_info(part_ptr);
 		list_append(info_list, sview_part_info);
