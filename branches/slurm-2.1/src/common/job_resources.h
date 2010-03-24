@@ -232,4 +232,9 @@ extern void add_job_to_cores(job_resources_t *job_resrcs_ptr,
 			     const uint16_t *cores_per_node,
 			     const uint32_t *core_rep_count);
 
+/* Given a job pointer and a global node index, return the index of that
+ * node in the job_resrcs_ptr->cpu_array_value. Return -1 if invalid */
+extern int job_resources_node_inx_to_cpu_array_inx(
+	job_resources_t *job_resrcs_ptr, int node_inx);
+
 #endif /* !_JOB_RESOURCES_H */
