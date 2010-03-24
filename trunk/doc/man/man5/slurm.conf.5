@@ -2197,6 +2197,15 @@ If user root attempts to execute a job as another user (e.g. using
 srun's \-\-uid option), this other user must be in one of groups
 identified by AllowGroups for the job to successfully execute.
 The default value is "ALL".
+\fBNOTE:\fR For performance reasons, SLURM maintains a list of user IDs
+allowed to use each partition and this is checked at job submission time.
+This list of user IDs is updated when the \fBslurmctld\fR daemon is restarted,
+reconfigured (e.g. "scontrol reconfig") or the partition's \fBAllowGroups\fR
+value is reset, even if is value is unchanged
+(e.g. "scontrol update PartitionName=name AllowGroups=group").
+For a user's access to a partition to change, both his group membership must
+change and SLURM's internal user ID list must change using one of the methods
+described above.
 
 .TP
 \fBAlternate\fR
