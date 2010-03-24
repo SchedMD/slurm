@@ -172,6 +172,8 @@ s_p_options_t slurm_conf_options[] = {
 	{"FastSchedule", S_P_UINT16},
 	{"FirstJobId", S_P_UINT32},
 	{"GetEnvTimeout", S_P_UINT16},
+	{"GroupUpdateForce", S_P_UINT16},
+	{"GroupUpdateTime", S_P_UINT16},
 	{"HashBase", S_P_LONG, _defunct_option},
 	{"HeartbeatInterval", S_P_LONG, _defunct_option},
 	{"HealthCheckInterval", S_P_UINT16},
@@ -1493,7 +1495,6 @@ void
 init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 {
 	ctl_conf_ptr->last_update		= time(NULL);
-	ctl_conf_ptr->cache_groups		= (uint16_t) NO_VAL;
 	xfree (ctl_conf_ptr->accounting_storage_backup_host);
 	xfree (ctl_conf_ptr->accounting_storage_host);
 	xfree (ctl_conf_ptr->accounting_storage_loc);
@@ -1505,7 +1506,6 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->backup_addr);
 	xfree (ctl_conf_ptr->backup_controller);
 	ctl_conf_ptr->batch_start_timeout	= 0;
-	ctl_conf_ptr->cache_groups		= 0;
 	xfree (ctl_conf_ptr->checkpoint_type);
 	xfree (ctl_conf_ptr->cluster_name);
 	ctl_conf_ptr->complete_wait		= (uint16_t) NO_VAL;
@@ -1521,6 +1521,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->fast_schedule		= (uint16_t) NO_VAL;
 	ctl_conf_ptr->first_job_id		= (uint32_t) NO_VAL;
 	ctl_conf_ptr->get_env_timeout		= 0;
+	ctl_conf_ptr->group_info		= (uint16_t) NO_VAL;
 	ctl_conf_ptr->hash_val			= (uint32_t) NO_VAL;
 	ctl_conf_ptr->health_check_interval	= 0;
 	xfree(ctl_conf_ptr->health_check_program);
@@ -1819,6 +1820,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	char *default_storage_user = NULL, *default_storage_pass = NULL;
 	char *default_storage_loc = NULL;
 	uint32_t default_storage_port = 0;
+	uint16_t uint16_tmp;
 
 	if (s_p_get_string(&conf->backup_controller, "BackupController",
 			   hashtbl)
@@ -1900,8 +1902,19 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	if (!s_p_get_string(&conf->authtype, "AuthType", hashtbl))
 		conf->authtype = xstrdup(DEFAULT_AUTH_TYPE);
 
-	if (!s_p_get_uint16(&conf->cache_groups, "CacheGroups", hashtbl))
-		conf->cache_groups = DEFAULT_CACHE_GROUPS;
+	if (s_p_get_uint16(&uint16_tmp, "GroupUpdateTime", hashtbl)) {
+		if (uint16_tmp > GROUP_TIME_MASK) {
+			fatal("GroupUpdateTime exceeds limit of %u",
+			      GROUP_TIME_MASK);
+		}
+		conf->group_info = uint16_tmp;
+	} else
+		conf->group_info = DEFAULT_GROUP_INFO;
+	if (s_p_get_uint16(&uint16_tmp, "CacheGroups", hashtbl) && uint16_tmp)
+		conf->group_info |= GROUP_CACHE;
+	if (s_p_get_uint16(&uint16_tmp, "GroupUpdateForce", hashtbl) &&
+	    uint16_tmp)
+		conf->group_info |= GROUP_FORCE;
 
 	if (!s_p_get_string(&conf->checkpoint_type, "CheckpointType", hashtbl))
 		conf->checkpoint_type = xstrdup(DEFAULT_CHECKPOINT_TYPE);

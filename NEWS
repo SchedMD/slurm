@@ -18,6 +18,10 @@ documents those changes that are of interest to users and admins.
  -- Add support for maximum node count in job step request.
  -- Fix bug in CPU count logic for job step allocation (used count of CPUS per
     node rather than CPUs allocated to the job).
+ -- Add new configuration parameters GroupUpdateForce and GroupUpdateTime.
+    See "man slurm.conf" for details about how these control when slurmctld
+    updates its information of which users are in the groups allowed to use
+    partitions.
 
 * Changes in SLURM 2.2.0.pre3
 =============================
