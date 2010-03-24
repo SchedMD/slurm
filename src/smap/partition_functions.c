@@ -138,8 +138,6 @@ extern void get_slurm_part()
 		j = 0;
 		part = new_part_ptr->partition_array[i];
 
-		if (!part.nodes || (part.nodes[0] == '\0'))
-			continue;	/* empty partition */
 		if(nodes_req) {
 			int overlap = 0;
 			bitstr_t *loc_bitmap = bit_alloc(bit_size(nodes_req));
