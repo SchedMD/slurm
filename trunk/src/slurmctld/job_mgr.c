@@ -149,6 +149,8 @@ static int  _list_find_job_old(void *job_entry, void *key);
 static int  _load_job_details(struct job_record *job_ptr, Buf buffer,
 			      uint16_t protocol_version);
 static int  _load_job_state(Buf buffer,	uint16_t protocol_version);
+static int  _node_inx_to_cpu_array_inx(struct job_record *job_ptr,
+				       int node_inx);
 static void _notify_srun_missing_step(struct job_record *job_ptr, int node_inx,
 				      time_t now, time_t node_boot_time);
 static int  _open_job_state_file(char **state_file);
@@ -4126,77 +4128,74 @@ void job_time_limit(void)
 	fini_job_resv_check();
 }
 
-extern int job_update_cpu_cnt(struct job_record *job_ptr, int node_inx)
+/* Given a job pointer and a global node index, return the index of that
+ * node in the job_ptr->job_resrcs->cpu_array_value. Return -1 if invalid */
+static int _node_inx_to_cpu_array_inx(struct job_record *job_ptr, int node_inx)
 {
-	uint16_t cpu_cnt=0, i=0;
-	int curr_node_inx, bitmap_len, last_inx;
-	bitstr_t *node_bitmap = NULL;
+	int first_inx, i, node_cnt, node_sum;
 
-#ifdef HAVE_BG
-	/* This function doesn't apply to a bluegene system since the
-	   cpu count isn't set up on that system. */
-	return SLURM_SUCCESS;
-#endif
-	xassert(job_ptr);
-	if(!job_ptr->job_resrcs || !job_ptr->job_resrcs->node_bitmap) {
+	/* Test for error cases */
+	if (!job_ptr->job_resrcs || !job_ptr->job_resrcs->node_bitmap) {
 		error("job_update_cpu_cnt: "
 		      "no job_resrcs or node_bitmap for job %u",
 		      job_ptr->job_id);
-		return SLURM_ERROR;
+		return -1;
 	}
-	/* Figure out what the first bit is in the job to get the
-	   correct offset. unlike the job_ptr->node_bitmap which gets
-	   cleared, job_ptr->job_resrcs->node_bitmap never gets cleared.
-	*/
-	node_bitmap = job_ptr->job_resrcs->node_bitmap;
-	last_inx = curr_node_inx = bit_ffs(node_bitmap);
-	bitmap_len = bit_size(node_bitmap);
-	if(curr_node_inx != -1) {
-		for (i=0; i<job_ptr->job_resrcs->cpu_array_cnt; i++) {
-			int count = 0;
-			/* Figure out the new node_inx based off the
-			   cpu reps and the node bitmap.  Take mind to
-			   increment the curr_node_inx since we break
-			   before a for loop will incr automatically.
-			*/
-			for(curr_node_inx=last_inx;
-			    curr_node_inx<bitmap_len;
-			    ++curr_node_inx) {
-				if (!bit_test(node_bitmap, curr_node_inx))
-					continue;
-				if(++count >=
-				   job_ptr->job_resrcs->cpu_array_reps[i])
-					break;
-			}
+	if (!bit_test(job_ptr->job_resrcs->node_bitmap, node_inx)) {
+		error("job_update_cpu_cnt: Invalid node_inx for job %u",
+		      job_ptr->job_id);
+		return -1;
+	}
+	if (job_ptr->job_resrcs->cpu_array_cnt == 0) {
+		error("job_update_cpu_cnt: Invalid cpu_array_cnt for job %u",
+		      job_ptr->job_id);
+		return -1;
+	}
 
-			cpu_cnt = job_ptr->job_resrcs->cpu_array_value[i];
-			if(curr_node_inx >= node_inx)
-				break;
-			/* info("%d to %d gets me an index of %d looking for %d", */
-			/*      job_ptr->job_resrcs->cpu_array_reps[i], */
-			/*      last_inx, curr_node_inx, node_inx); */
-			last_inx = curr_node_inx + 1;
-		}
-		if(i>=job_ptr->job_resrcs->cpu_array_cnt) {
-			/* This should never happen */
-			error("job_update_cpu_cnt: we went past for %d",
-			      node_inx);
-		}
-		/* info("removing %u from %u for %d", */
-		/*      cpu_cnt, job_ptr->cpu_cnt, node_inx); */
-		if(cpu_cnt > job_ptr->cpu_cnt) {
-			error("job_update_cpu_cnt: "
-			      "cpu_cnt underflow on job_id %u",
-			      job_ptr->job_id);
-			job_ptr->cpu_cnt = 0;
-			return SLURM_ERROR;
-		}
-		job_ptr->cpu_cnt -= cpu_cnt;
-	} else {
-		error("job_update_cpu_cnt: "
-		      "no nodes set yet in job %u", job_ptr->job_id);
+	/* Only one record, no need to search */
+	if (job_ptr->job_resrcs->cpu_array_cnt == 1)
+		return 0;
+
+	/* Scan bitmap, convert node_inx to node_cnt within job's allocation */
+	first_inx = bit_ffs(job_ptr->job_resrcs->node_bitmap);
+	for (i=first_inx, node_cnt=0; i<node_inx; i++) {
+		if (bit_test(job_ptr->job_resrcs->node_bitmap, i))
+			node_cnt++;
+	}
+	/* if (bit_test(job_ptr->job_resrcs->node_bitmap, node_inx)) */
+	node_cnt++;
+
+	for (i=0, node_sum=0; i<job_ptr->job_resrcs->cpu_array_cnt; i++) {
+		node_sum += job_ptr->job_resrcs->cpu_array_reps[i];
+		if (node_sum >= node_cnt)
+			return i;
+	}
+}
+
+extern int job_update_cpu_cnt(struct job_record *job_ptr, int node_inx)
+{
+	int offset;
+
+	xassert(job_ptr);
+
+#ifdef HAVE_BG
+	/* This function doesn't apply to a bluegene system since the
+	 * cpu count isn't set up on that system. */
+	return SLURM_SUCCESS;
+#endif
+
+	offset = _node_inx_to_cpu_array_inx(job_ptr, node_inx);
+	if (offset < 0)
+		return SLURM_ERROR;
+
+	if (job_ptr->job_resrcs->cpu_array_value[offset] > job_ptr->cpu_cnt) {
+		error("job_update_cpu_cnt: cpu_cnt underflow on job_id %u",
+		      job_ptr->job_id);
+		job_ptr->cpu_cnt = 0;
 		return SLURM_ERROR;
 	}
+
+	job_ptr->cpu_cnt -= job_ptr->job_resrcs->cpu_array_value[offset];
 	return SLURM_SUCCESS;
 }
 
