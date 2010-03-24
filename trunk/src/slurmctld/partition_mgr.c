@@ -1241,7 +1241,9 @@ void load_part_uid_allow_list(int force)
 	time_t temp_time;
 	ListIterator part_iterator;
 	struct part_record *part_ptr;
+	DEF_TIMERS;
 
+	START_TIMER;
 	temp_time = _get_group_tlm();
 	if ((force == 0) && (temp_time == last_update_time))
 		return;
@@ -1257,6 +1259,7 @@ void load_part_uid_allow_list(int force)
 	}
 	clear_group_cache();
 	list_iterator_destroy(part_iterator);
+	END_TIMER2("load_part_uid_allow_list");
 }
 
 
