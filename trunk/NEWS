@@ -143,8 +143,11 @@ documents those changes that are of interest to users and admins.
  -- Emulated BLUEGENE - fixed issue where blocks weren't always created
     correctly when loading from state.  This does not apply to a real
     bluegene system, only emulated.
- -- Fixed bug when job is completing where you could get cpu_cnt underflow on
-    completing jobs.
+ -- Fixed bug when job is completing and its cpu_cnt would be calculated
+    incorrectly, possibly resulting in an underflow being logged.
+ -- Fixed bug where if there are pending jobs in a partition which was
+    updated to have no nodes in it the slurmctld would dump core.
+ -- Fixed smap and sview to display partitions with no nodes in them
 
 * Changes in SLURM 2.1.5
 ========================
