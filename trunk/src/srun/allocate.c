@@ -731,11 +731,13 @@ create_job_step(srun_job_t *job, bool use_all_cpus)
 		       opt.min_nodes, opt.max_nodes);
 		return -1;
 	}
+#ifndef HAVE_FRONT_END
 	if (opt.min_nodes && (opt.min_nodes > job->nhosts)) {
 		error ("Minimum node count > allocated node count (%d > %d)",
 		       opt.min_nodes, job->nhosts);
 		return -1;
 	}
+#endif
 	job->ctx_params.min_nodes = job->nhosts;
 	if (opt.min_nodes && (opt.min_nodes < job->ctx_params.min_nodes))
 		job->ctx_params.min_nodes = opt.min_nodes;
