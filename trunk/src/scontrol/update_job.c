@@ -468,7 +468,8 @@ scontrol_update_job (int argc, char *argv[])
 			job_msg.exc_nodes = val;
 			update_cnt++;
 		}
-		else if (strncasecmp(tag, "ReqNodeList", MAX(taglen, 8)) == 0){
+		else if (!strncasecmp(tag, "NodeList",    MAX(taglen, 8)) ||
+			 !strncasecmp(tag, "ReqNodeList", MAX(taglen, 8))) {
 			job_msg.req_nodes = val;
 			update_cnt++;
 		}

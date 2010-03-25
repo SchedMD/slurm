@@ -93,6 +93,11 @@ COMMAND CHANGES (see man pages for details)
 
 * scontrol now has the ability to change a job step's time limit.
 
+* scontrol now has the ability to shrink a job's size. Use a command of
+  "scontrol update JobId=# NumNodes=#" or
+  "scontrol update JobId=# NodeList=<names>". Subsequent job steps must
+  explicitly specify an appropriate node count to work properly.
+
 * Add support for slurmctld and slurmd option of "-n <value>" to reset the
   daemon's nice value.
 
