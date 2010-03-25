@@ -817,7 +817,7 @@ extern List as_mysql_get_cluster_events(mysql_conn_t *mysql_conn, uint32_t uid,
 		else
 			xstrcat(extra, " where (");
 
-		xstrfmtcat(query,
+		xstrfmtcat(extra,
 			   "(time_start < %d) "
 			   "&& (time_end >= %d || time_end = 0))",
 			   event_cond->period_end, event_cond->period_start);
@@ -904,7 +904,9 @@ empty:
 		if(!(result = mysql_db_query_ret(
 			     mysql_conn->db_conn, query, 0))) {
 			xfree(query);
-			return NULL;
+			list_destroy(ret_list);
+			ret_list = NULL;
+			break;
 		}
 		xfree(query);
 
