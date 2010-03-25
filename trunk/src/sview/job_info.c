@@ -2555,6 +2555,7 @@ extern int get_new_info_job(job_info_msg_t **info_ptr,
 	time_t now = time(NULL);
 	static time_t last;
 	static bool changed = 0;
+	static uint16_t last_flags = 0;
 
 	if(!force && ((now - last) < global_sleep_time)) {
 		if(*info_ptr != job_info_ptr)
@@ -2565,8 +2566,12 @@ extern int get_new_info_job(job_info_msg_t **info_ptr,
 		return error_code;
 	}
 	last = now;
-	show_flags |= SHOW_ALL;
+
+	if(global_show_hidden)
+		show_flags |= SHOW_ALL;
 	if (job_info_ptr) {
+		if(show_flags != last_flags)
+			job_info_ptr->last_update = 0;
 		error_code = slurm_load_jobs(job_info_ptr->last_update,
 					     &new_job_ptr, show_flags);
 		if (error_code == SLURM_SUCCESS) {
@@ -2582,6 +2587,8 @@ extern int get_new_info_job(job_info_msg_t **info_ptr,
 					     show_flags);
 		changed = 1;
 	}
+
+	last_flags = show_flags;
 	job_info_ptr = new_job_ptr;
 
 	if(*info_ptr != job_info_ptr)
@@ -2611,6 +2618,10 @@ extern int get_new_info_job_step(job_step_info_response_msg_t **info_ptr,
 		return error_code;
 	}
 	last = now;
+
+	/* This needs to always be like this even if you are only
+	   looking for non-hidden jobs or you will get an error below.
+	*/
 	show_flags |= SHOW_ALL;
 	if (old_step_ptr) {
 		error_code = slurm_get_job_steps(old_step_ptr->last_update,
@@ -2629,6 +2640,7 @@ extern int get_new_info_job_step(job_step_info_response_msg_t **info_ptr,
 						 &new_step_ptr, show_flags);
 		changed = 1;
 	}
+
 	old_step_ptr = new_step_ptr;
 
 	if(*info_ptr != old_step_ptr)

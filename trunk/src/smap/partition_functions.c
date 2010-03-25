@@ -90,11 +90,17 @@ extern void get_slurm_part()
 	static partition_info_msg_t *part_info_ptr = NULL;
 	static partition_info_msg_t *new_part_ptr = NULL;
 	partition_info_t part;
+	uint16_t show_flags = 0;
 	bitstr_t *nodes_req = NULL;
+	static uint16_t last_flags = 0;
 
+	if(params.all_flag)
+		show_flags |= SHOW_ALL;
 	if (part_info_ptr) {
+		if(show_flags != last_flags)
+			part_info_ptr->last_update = 0;
 		error_code = slurm_load_partitions(part_info_ptr->last_update,
-						   &new_part_ptr, SHOW_ALL);
+						   &new_part_ptr, show_flags);
 		if (error_code == SLURM_SUCCESS)
 			slurm_free_partition_info_msg(part_info_ptr);
 		else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
@@ -103,8 +109,10 @@ extern void get_slurm_part()
 		}
 	} else {
 		error_code = slurm_load_partitions((time_t) NULL,
-						   &new_part_ptr, SHOW_ALL);
+						   &new_part_ptr, show_flags);
 	}
+
+	last_flags = show_flags;
 	if (error_code) {
 		if (quiet_flag != 1) {
 			if(!params.commandline) {

@@ -578,6 +578,7 @@ extern int get_new_info_node(node_info_msg_t **info_ptr, int force)
 	time_t now = time(NULL);
 	static time_t last;
 	static bool changed = 0;
+	static uint16_t last_flags = 0;
 
 	if(!force && ((now - last) < global_sleep_time)) {
 		if(*info_ptr != node_info_ptr)
@@ -590,8 +591,11 @@ extern int get_new_info_node(node_info_msg_t **info_ptr, int force)
 	}
 	last = now;
 
-	show_flags |= SHOW_ALL;
+	if(global_show_hidden)
+		show_flags |= SHOW_ALL;
 	if (node_info_ptr) {
+		if(show_flags != last_flags)
+			node_info_ptr->last_update = 0;
 		error_code = slurm_load_node(node_info_ptr->last_update,
 					     &new_node_ptr, show_flags);
 		if (error_code == SLURM_SUCCESS) {
@@ -607,6 +611,8 @@ extern int get_new_info_node(node_info_msg_t **info_ptr, int force)
 					     show_flags);
 		changed = 1;
 	}
+
+	last_flags = show_flags;
 	node_info_ptr = new_node_ptr;
 
 	if(*info_ptr != node_info_ptr)

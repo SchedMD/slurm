@@ -369,6 +369,14 @@ static int _get_option()
 		return 1;
 		break;
 
+	case 'H':
+	case 'h':
+		if(params.all_flag)
+			params.all_flag = 0;
+		else
+			params.all_flag = 1;
+		return 1;
+	        break;
 	case 's':
 		text_line_cnt = 0;
 		grid_line_cnt = 0;
