@@ -192,6 +192,10 @@ This should be a trusted person since they can change limits on
 account and user associations inside their realm.
 
 .TP
+\fIevent\fR
+Events like downed or draining nodes on clusters.
+
+.TP
 \fIqos\fR
 Quality of Service.
 
@@ -418,15 +422,15 @@ in the \fILIST/SHOW ASSOCIATION FORMAT OPTIONS\fP section.
 .SH "SPECIFICATIONS FOR ASSOCIATIONS"
 
 .TP
-\fICluster\fP=<comma separated list of cluster names>
+\fIClusters\fP=<comma separated list of cluster names>
 List the associations of the cluster(s).
 
 .TP
-\fIAccount\fP=<comma separated list of account names>
+\fIAccounts\fP=<comma separated list of account names>
 List the associations of the account(s).
 
 .TP
-\fIUser\fP=<comma separated list of user names>
+\fIUsers\fP=<comma separated list of user names>
 List the associations of the user(s).
 
 .TP
@@ -656,6 +660,133 @@ Names of coordinators.
 .SH ""
 NOTE: To list coordinators use the WithCoordinator options with list
 account or list user.
+.RE
+
+
+.SH "SPECIFICATIONS FOR EVENTS"
+
+.TP
+\fIAll_Clusters\fP
+Get information on all cluster shortcut.
+
+.TP
+\fIAll_Time\fP
+Get time period for all time shortcut.
+
+.TP
+\fIClusters\fP=<comma separated list of cluster names>
+List the events of the cluster(s).  Default is the cluster where the
+command was run.
+
+.TP
+\fIEnd\fP=<OPT>
+Period ending of events. Default is now.
+Valid time formats are...
+HH:MM[:SS] [AM|PM]
+MMDD[YY] or MM/DD[/YY] or MM.DD[.YY]
+MM/DD[/YY]-HH:MM[:SS]
+YYYY-MM-DD[THH:MM[:SS]]
+
+.TP
+\fIEvent\fP=<OPT>
+Specific events to look for, valid options are Cluster or Node,
+default is both.
+
+.TP
+\fIMaxCPUs\fP=<OPT>
+Max number of cpus affected by an event.
+
+.TP
+\fIMinCPUs\fP=<OPT>
+Min number of cpus affected by an event.
+
+.TP
+\fINodes\fP=<comma separated list of node names>
+Node names affected by an event.
+
+.TP
+\fIReason\fP=<comma separated list of reasons>
+Reason an event happened.
+
+.TP
+\fIStart\fP=<OPT>
+Period start of events.  Default is 00:00:00 of previous day, unless
+states are given with the States= spec events.  If this is the case
+the default behavior is to return events currently in
+the states specified.
+
+Valid time formats are...
+HH:MM[:SS] [AM|PM]
+MMDD[YY] or MM/DD[/YY] or MM.DD[.YY]
+MM/DD[/YY]-HH:MM[:SS]
+YYYY-MM-DD[THH:MM[:SS]]
+
+.TP
+\fIStates\fP=<comma separated list of states>
+State of a node in a node event.  If this is set, the event type is
+set automatically to Node.
+
+.TP
+\fIUser\fP=<comma separated list of users>
+Query against users who set the event.  If this is set, the event type is
+set automatically to Node since only user slurm can preform a cluster event.
+
+.RE
+
+.SH "LIST/SHOW EVENT FORMAT OPTIONS"
+
+.TP
+\fICluster\fP
+The name of the cluster event happened on.
+
+.TP
+\fIClusterNodes\fP
+The hostlist of nodes on a cluster in a cluster event.
+
+.TP
+\fICPUs\fP
+Number of cpus involved with the event.
+
+.TP
+\fIDuration\fP
+Time period the event was around for.
+
+.TP
+\fIEnd\fP
+Period when event ended.
+
+.TP
+\fIEvent\fP
+Name of the event.
+
+.TP
+\fIEventRaw\fP
+Numeric value of the name of the event.
+
+.TP
+\fINodeName\fP
+The node effected by the event.  In a cluster event, this is blank.
+
+.TP
+\fIReason\fP
+The reason an event happened.
+
+.TP
+\fIStart\fP
+Period when event started.
+
+.TP
+\fIState\fP
+On a node event this is the formatted state of the node during the event.
+
+.TP
+\fIStateRaw\fP
+On a node event this is the numeric value of the state of the node
+during the event.
+
+.TP
+\fIUser\fP
+On a node event this is the user who caused the event to happen.
 .RE
 
 

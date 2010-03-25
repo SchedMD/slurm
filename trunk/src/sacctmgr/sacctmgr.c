@@ -851,6 +851,10 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
        add coordinator    - Accounts=, and Names=                          \n\
        delete coordinator - Accounts=, and Names=                          \n\
                                                                            \n\
+       list events        - All_Clusters, All_Time, Clusters=, End=, Events=,\n\
+                            Format=, MaxCpus=, MinCpus=, Nodes=, Reason=,  \n\
+                            Start=, States=, and User=                     \n\
+                                                                           \n\
        list qos           - Descriptions=, Format=, Ids=, Names=,          \n\
                             and WithDeleted                                \n\
        add qos            - Description=, GrpCPUMins=, GrpCPUs=, GrpJobs=, \n\
@@ -915,6 +919,10 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                             GrpNodes, GrpSubmitJob, MaxCPUMins,            \n\
                             MaxCPUs, MaxJobs, MaxNodes, MaxSubmitJobs,     \n\
                             MaxWall, NodeCount, NodeNames                  \n\
+                                                                           \n\
+       Event              - Cluster, ClusterNodes, CPUs, Duration, End,    \n\
+                            Event, EventRaw, NodeName, Reason, Start,      \n\
+                            State, StateRaw, User                          \n\
                                                                            \n\
        QOS                - Description, GrpCPUMins, GrpCPUs, GrpJobs,     \n\
                             GrpNodes, GrpSubmitJob, GrpWall, ID,           \n\
