@@ -157,7 +157,11 @@ documents those changes that are of interest to users and admins.
     incorrectly, possibly resulting in an underflow being logged.
  -- Fixed bug where if there are pending jobs in a partition which was
     updated to have no nodes in it the slurmctld would dump core.
- -- Fixed smap and sview to display partitions with no nodes in them
+ -- Fixed smap and sview to display partitions with no nodes in them.
+ -- Improve configure script's logic to detect LUA libraries.
+ -- Fix bug that could cause slurmctld to abort if select/cons_res is used AND a
+    job is submitted using the --no-kill option AND one of the job's nodes goes
+    DOWN AND slurmctld restarts while that job is still running.
 
 * Changes in SLURM 2.1.5
 ========================
