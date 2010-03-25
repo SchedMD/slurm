@@ -228,7 +228,9 @@ extern void reset_node_bitmap(job_resources_t *job_resrcs_ptr,
 		if (new_node_bitmap) {
 			job_resrcs_ptr->node_bitmap =
 				bit_copy(new_node_bitmap);
-		}
+			job_resrcs_ptr->nhosts = bit_set_count(new_node_bitmap);
+		} else
+			job_resrcs_ptr->nhosts = 0;
 	}
 }
 
@@ -902,6 +904,7 @@ extern void add_job_to_cores(job_resources_t *job_resrcs_ptr,
 {
 	uint32_t i, n, count = 1, last_bit = 0;
 	uint32_t c = 0, j = 0, k = 0;
+	int node_len;
 
 	if (!job_resrcs_ptr->core_bitmap)
 		return;
@@ -917,11 +920,16 @@ extern void add_job_to_cores(job_resources_t *job_resrcs_ptr,
 			fatal("add_job_to_cores: bitmap memory error");
 	}
 
+	node_len = bit_size(job_resrcs_ptr->node_bitmap);
 	for (i = 0, n = 0; i < job_resrcs_ptr->nhosts; n++) {
 		last_bit += cores_per_node[k];
 		if (++count > core_rep_count[k]) {
 			k++;
 			count = 1;
+		}
+		if (n >= node_len) {
+			error("add_job_to_cores: Invalid nhosts");
+			break;
 		}
 		if (bit_test(job_resrcs_ptr->node_bitmap, n) == 0) {
 			c = last_bit;
