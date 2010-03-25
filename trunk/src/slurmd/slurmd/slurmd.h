@@ -3,7 +3,7 @@
  * $Id$
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <mgrondona@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -94,9 +94,10 @@ typedef struct slurmd_config {
 	uint16_t     block_map_size;	/* size of block map               */
 	uint16_t     *block_map;	/* abstract->machine block map     */
 	uint16_t     *block_map_inv;	/* machine->abstract (inverse) map */
-	uint16_t      cr_type;           /* Consumable Resource Type:       *
+	uint16_t      cr_type;		/* Consumable Resource Type:       *
 					 * CR_SOCKET, CR_CORE, CR_MEMORY,  *
 					 * CR_DEFAULT, etc.                */
+	int           nice;		/* command line nice value spec    */
 	char         *node_name;	/* node name                       */
 	char         *node_addr;	/* node's address                  */
 	char         *node_topo_addr;   /* node's topology address         */

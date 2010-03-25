@@ -24,6 +24,8 @@ documents those changes that are of interest to users and admins.
     partitions.
  -- Added sacctmgr list events which will list events that have happened on
     clusters in accounting.
+ -- Add support for slurmctld and slurmd option of "-n <value>" to reset the
+    daemon's nice value.
 
 * Changes in SLURM 2.2.0.pre3
 =============================
