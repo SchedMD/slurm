@@ -265,8 +265,10 @@ static int lua_job_table_create (slurmd_job_t *job)
 	lua_pushnumber (L, job->job_mem);
 	lua_setfield (L, -2, "mem");
 
-	lua_pushstring (L, job->alloc_cores ? job->alloc_cores : "");
-	lua_setfield (L, -2, "CPUs");
+	lua_pushstring (L, job->job_alloc_cores ? job->job_alloc_cores : "");
+	lua_setfield (L, -2, "JobCPUs");
+	lua_pushstring (L, job->step_alloc_cores ? job->step_alloc_cores : "");
+	lua_setfield (L, -2, "StepCPUs");
 	lua_pushstring (L, job->cwd ? job->cwd : "");
 	lua_setfield (L, -2, "cwd");
 
