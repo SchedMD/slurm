@@ -376,9 +376,10 @@ struct job_record {
 	time_t ckpt_time;	        /* last time job was periodically
 					 * checkpointed */
 	char *comment;			/* arbitrary comment */
-	uint32_t cpu_cnt;		/* current count of cpus held
-					 * by the job (N/A for
-					 * bluegene systems) */
+	uint32_t cpu_cnt;		/* current count of CPUs held
+					 * by the job, decremented while job is
+					 * completing (N/A for bluegene
+					 * systems) */
 	uint16_t cr_enabled;            /* specify if if Consumable Resources
                                          * is enabled. Needed since CR deals
                                          * with a finer granularity in its

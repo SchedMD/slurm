@@ -26,6 +26,10 @@ documents those changes that are of interest to users and admins.
     clusters in accounting.
  -- Add support for slurmctld and slurmd option of "-n <value>" to reset the
     daemon's nice value.
+ -- Permit a running job to shrink in size using a command of
+    "scontrol update JobId=# NumNodes=#" or
+    "scontrol update JobId=# NodeList=<names>". Subsequent job steps must
+    explicitly specify an appropriate node count to work properly.
 
 * Changes in SLURM 2.2.0.pre3
 =============================
