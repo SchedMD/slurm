@@ -1628,10 +1628,12 @@ extern int get_new_info_part(partition_info_msg_t **part_ptr, int force)
 {
 	static partition_info_msg_t *part_info_ptr = NULL;
 	static partition_info_msg_t *new_part_ptr = NULL;
+	uint16_t show_flags = 0;
 	int error_code = SLURM_NO_CHANGE_IN_DATA;
 	time_t now = time(NULL);
 	static time_t last;
 	static bool changed = 0;
+	static uint16_t last_flags = 0;
 
 	if(!force && ((now - last) < global_sleep_time)) {
 		if(*part_ptr != part_info_ptr)
@@ -1642,9 +1644,15 @@ extern int get_new_info_part(partition_info_msg_t **part_ptr, int force)
 		return error_code;
 	}
 	last = now;
+
+	if(global_show_hidden)
+		show_flags |= SHOW_ALL;
+
 	if (part_info_ptr) {
+		if(show_flags != last_flags)
+			part_info_ptr->last_update = 0;
 		error_code = slurm_load_partitions(part_info_ptr->last_update,
-						   &new_part_ptr, SHOW_ALL);
+						   &new_part_ptr, show_flags);
 		if (error_code == SLURM_SUCCESS) {
 			slurm_free_partition_info_msg(part_info_ptr);
 			changed = 1;
@@ -1654,11 +1662,12 @@ extern int get_new_info_part(partition_info_msg_t **part_ptr, int force)
 				changed = 0;
 		}
 	} else {
-		error_code = slurm_load_partitions((time_t) NULL,
-						   &new_part_ptr, SHOW_ALL);
+		error_code = slurm_load_partitions((time_t) NULL, &new_part_ptr,
+						   show_flags);
 		changed = 1;
 	}
 
+	last_flags = show_flags;
 	part_info_ptr = new_part_ptr;
 
 	if(*part_ptr != part_info_ptr)

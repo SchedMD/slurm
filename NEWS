@@ -30,6 +30,8 @@ documents those changes that are of interest to users and admins.
     "scontrol update JobId=# NumNodes=#" or
     "scontrol update JobId=# NodeList=<names>". Subsequent job steps must
     explicitly specify an appropriate node count to work properly.
+ -- sview/smap now hides hidden partitions and their jobs by default, with an
+    option to display them.
 
 * Changes in SLURM 2.2.0.pre3
 =============================

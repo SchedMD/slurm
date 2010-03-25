@@ -58,9 +58,13 @@ extern void get_job(void)
 	job_info_t *job_ptr = NULL;
 	uint16_t show_flags = 0;
 	bitstr_t *nodes_req = NULL;
+	static uint16_t last_flags = 0;
 
-	show_flags |= SHOW_ALL;
+	if(params.all_flag)
+		show_flags |= SHOW_ALL;
 	if (job_info_ptr) {
+		if(show_flags != last_flags)
+			job_info_ptr->last_update = 0;
 		error_code = slurm_load_jobs(job_info_ptr->last_update,
 				&new_job_ptr, show_flags);
 		if (error_code == SLURM_SUCCESS)
@@ -73,6 +77,7 @@ extern void get_job(void)
 		error_code = slurm_load_jobs((time_t) NULL, &new_job_ptr,
 					     show_flags);
 
+	last_flags = show_flags;
 	if (error_code) {
 		if (quiet_flag != 1) {
 			if(!params.commandline) {
@@ -472,7 +477,7 @@ static int   _max_cpus_per_node(void)
 	node_info_msg_t *node_info_ptr = NULL;
 
 	error_code = slurm_load_node ((time_t) NULL, &node_info_ptr,
-				params.all_flag);
+				      params.all_flag ? 1 : 0);
 	if (error_code == SLURM_SUCCESS) {
 		int i;
 		node_info_t *node_ptr = node_info_ptr->node_array;

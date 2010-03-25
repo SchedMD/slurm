@@ -63,6 +63,7 @@ int global_vertical = 10;
 bool global_entry_changed = 0;
 bool global_send_update_msg = 0;
 bool global_edit_error = 0;
+bool global_show_hidden = 0;
 gchar *global_edit_error_msg = NULL;
 bool admin_mode = FALSE;
 GtkWidget *main_notebook = NULL;
@@ -329,6 +330,24 @@ static void _set_grid(GtkToggleAction *action)
 	return;
 }
 
+static void _set_hidden(GtkToggleAction *action)
+{
+	char *tmp;
+	if(global_show_hidden) {
+		tmp = g_strdup_printf(
+			"Hidden partitions and their jobs are now hidden");
+		global_show_hidden = 0;
+	} else {
+		tmp = g_strdup_printf(
+			"Hidden partitions and their jobs are now visible");
+		global_show_hidden = 1;
+	}
+	refresh_main(NULL, NULL);
+	display_edit_note(tmp);
+	g_free(tmp);
+	return;
+}
+
 static void _reconfigure(GtkToggleAction *action)
 {
 	char *temp = NULL;
@@ -480,6 +499,7 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 		"    </menu>"
 		"    <menu action='options'>"
 		"      <menuitem action='grid'/>"
+		"      <menuitem action='hidden'/>"
 #ifndef HAVE_BG
 		"      <menuitem action='grid_specs'/>"
 #endif
@@ -615,6 +635,9 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 		{"grid", GTK_STOCK_SELECT_COLOR, "Show _Grid",
 		 "<control>g", "Visual display of cluster",
 		 G_CALLBACK(_set_grid), TRUE},
+		{"hidden", GTK_STOCK_SELECT_COLOR, "Show _Hidden",
+		 "<control>h", "Display Hidden Partitions/Jobs",
+		 G_CALLBACK(_set_hidden), FALSE},
 		{"admin", GTK_STOCK_PREFERENCES,
 		 "_Admin Mode", "<control>a",
 		 "Allows user to change or update information",

@@ -284,6 +284,7 @@ extern int global_vertical;
 extern bool global_entry_changed;
 extern bool global_send_update_msg;
 extern bool global_edit_error;
+extern bool global_show_hidden;
 extern gchar *global_edit_error_msg;
 extern bool admin_mode;
 extern GtkWidget *main_statusbar;
