@@ -93,6 +93,9 @@ COMMAND CHANGES (see man pages for details)
 
 * scontrol now has the ability to change a job step's time limit.
 
+* Add support for slurmctld and slurmd option of "-n <value>" to reset the
+  daemon's nice value.
+
 BLUEGENE SPECIFIC CHANGES
 =========================
 

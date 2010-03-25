@@ -162,6 +162,7 @@ static int	daemonize = DEFAULT_DAEMONIZE;
 static int	debug_level = 0;
 static char	*debug_logfile = NULL;
 static bool     dump_core = false;
+static int	new_nice = 0;
 static char	node_name[MAX_SLURM_NAME];
 static int	recover   = DEFAULT_RECOVER;
 static pthread_cond_t server_thread_cond = PTHREAD_COND_INITIALIZER;
@@ -196,6 +197,7 @@ static void *       _slurmctld_background(void *no_data);
 static void *       _slurmctld_rpc_mgr(void *no_data);
 static void *       _slurmctld_signal_hand(void *no_data);
 inline static void  _update_cred_key(void);
+static void         _update_nice(void);
 inline static void  _usage(char *prog_name);
 static bool         _valid_controller(void);
 static bool         _wait_for_server_thread(void);
@@ -228,6 +230,7 @@ int main(int argc, char *argv[])
 	slurm_conf_reinit(slurm_conf_filename);
 
 	update_logging();
+	_update_nice();
 	_kill_old_slurmctld();
 
 	/*
@@ -1488,9 +1491,10 @@ extern int optind, opterr, optopt;
 static void _parse_commandline(int argc, char *argv[])
 {
 	int c = 0;
+	char *tmp_char;
 
 	opterr = 0;
-	while ((c = getopt(argc, argv, "cdDf:hL:rRvV")) != -1)
+	while ((c = getopt(argc, argv, "cdDf:hL:n:rRvV")) != -1)
 		switch (c) {
 		case 'c':
 			recover = 0;
@@ -1511,6 +1515,11 @@ static void _parse_commandline(int argc, char *argv[])
 			break;
 		case 'L':
 			debug_logfile = xstrdup(optarg);
+			break;
+		case 'n':
+			new_nice = strtol(optarg, &tmp_char, 10);
+			if (tmp_char[0] != '\0')
+				new_nice = NO_VAL;
 			break;
 		case 'r':
 			recover = 1;
@@ -1674,6 +1683,25 @@ void update_logging(void)
 
 	sched_log_alter(sched_log_opts, LOG_DAEMON,
 			slurmctld_conf.sched_logfile);
+}
+
+/* Reset slurmd nice value */
+static void _update_nice(void)
+{
+	int cur_nice;
+	id_t pid;
+
+	if (new_nice == NO_VAL) {
+		error("Invalid option for -n option (nice value), ignored");
+		return;
+	}
+
+	pid = getpid();
+	cur_nice = getpriority(PRIO_PROCESS, pid);
+	if (cur_nice == new_nice)
+		return;
+	if (setpriority(PRIO_PROCESS, pid, new_nice))
+		error("Unable to reset nice value to %d: %m", new_nice);
 }
 
 /* Kill the currently running slurmctld

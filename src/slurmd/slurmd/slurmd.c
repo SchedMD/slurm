@@ -93,7 +93,7 @@
 #include "src/slurmd/common/task_plugin.h"
 #include "src/slurmd/common/set_oomadj.h"
 
-#define GETOPT_ARGS	"cd:Df:hL:MN:vV"
+#define GETOPT_ARGS	"cd:Df:hL:Mn:N:vV"
 
 #ifndef MAXHOSTNAMELEN
 #  define MAXHOSTNAMELEN	64
@@ -157,6 +157,7 @@ static int       _slurmd_fini(void);
 static void      _spawn_registration_engine(void);
 static void      _term_handler(int);
 static void      _update_logging(void);
+static void      _update_nice(void);
 static void      _usage(void);
 static void      _wait_for_all_threads(void);
 
@@ -746,6 +747,8 @@ _read_config(void)
 	conf->block_map_size = 0;
 
 	_update_logging();
+	_update_nice();
+		
 	get_procs(&conf->actual_cpus);
 	get_cpuinfo(conf->actual_cpus,
 		    &conf->actual_sockets,
@@ -1027,6 +1030,7 @@ static void
 _process_cmdline(int ac, char **av)
 {
 	int c;
+	char *tmp_char;
 
 	conf->prog = xbasename(av[0]);
 
@@ -1053,6 +1057,11 @@ _process_cmdline(int ac, char **av)
 			break;
 		case 'M':
 			conf->mlock_pages = 1;
+			break;
+		case 'n':
+			conf->nice = strtol(optarg, &tmp_char, 10);
+			if (tmp_char[0] != '\0')
+				conf->nice = NO_VAL;
 			break;
 		case 'N':
 			conf->node_name = xstrdup(optarg);
@@ -1465,7 +1474,7 @@ _kill_old_slurmd(void)
 	}
 }
 
-/* Reset slurmctld logging based upon configuration parameters */
+/* Reset slurmd logging based upon configuration parameters */
 static void _update_logging(void)
 {
 	log_options_t *o = &conf->log_opts;
@@ -1499,6 +1508,25 @@ static void _update_logging(void)
 		o->syslog_level  = LOG_LEVEL_QUIET;
 
 	log_alter(conf->log_opts, SYSLOG_FACILITY_DAEMON, conf->logfile);
+}
+
+/* Reset slurmd nice value */
+static void _update_nice(void)
+{
+	int cur_nice;
+	id_t pid;
+
+	if (conf->nice == NO_VAL) {
+		error("Invalid option for -n option (nice value), ignored");
+		return;
+	}
+
+	pid = getpid();
+	cur_nice = getpriority(PRIO_PROCESS, pid);
+	if (cur_nice == conf->nice)
+		return;
+	if (setpriority(PRIO_PROCESS, pid, conf->nice))
+		error("Unable to reset nice value to %d: %m", conf->nice);
 }
 
 /*
