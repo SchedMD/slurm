@@ -165,6 +165,8 @@ documents those changes that are of interest to users and admins.
  -- Fix bug that could cause slurmctld to abort if select/cons_res is used AND a
     job is submitted using the --no-kill option AND one of the job's nodes goes
     DOWN AND slurmctld restarts while that job is still running.
+ -- In jobcomp plugins, job time limit was sometimes recorded improperly if not
+    set by user (recorded huge number rather than partition's time limit).
 
 * Changes in SLURM 2.1.5
 ========================
