@@ -1518,8 +1518,11 @@ static void _parse_commandline(int argc, char *argv[])
 			break;
 		case 'n':
 			new_nice = strtol(optarg, &tmp_char, 10);
-			if (tmp_char[0] != '\0')
-				new_nice = NO_VAL;
+			if (tmp_char[0] != '\0') {
+				error("Invalid option for -n option (nice "
+				      "value), ignored");
+				new_nice = 0;
+			}
 			break;
 		case 'r':
 			recover = 1;
@@ -1565,6 +1568,8 @@ static void _usage(char *prog_name)
 			"\tPrint this help message.\n");
 	fprintf(stderr, "  -L logfile "
 			"\tLog messages to the specified file.\n");
+	fprintf(stderr, "  -n value "
+			"\tRun the daemon at the specified nice value.\n");
 #if (DEFAULT_RECOVER == 0)
 	fprintf(stderr, "  -r      "
 			"\tRecover state from last checkpoint.\n");
@@ -1691,10 +1696,8 @@ static void _update_nice(void)
 	int cur_nice;
 	id_t pid;
 
-	if (new_nice == NO_VAL) {
-		error("Invalid option for -n option (nice value), ignored");
+	if (new_nice == 0)	/* No change */
 		return;
-	}
 
 	pid = getpid();
 	cur_nice = getpriority(PRIO_PROCESS, pid);

@@ -1060,8 +1060,11 @@ _process_cmdline(int ac, char **av)
 			break;
 		case 'n':
 			conf->nice = strtol(optarg, &tmp_char, 10);
-			if (tmp_char[0] != '\0')
-				conf->nice = NO_VAL;
+			if (tmp_char[0] != '\0') {
+				error("Invalid option for -n option (nice "
+				      "value), ignored");
+				conf->nice = 0;
+			}
 			break;
 		case 'N':
 			conf->node_name = xstrdup(optarg);
@@ -1420,6 +1423,7 @@ Usage: %s [OPTIONS]\n\
    -h          Print this help message.\n\
    -f config   Read configuration from the specified file.\n\
    -L logfile  Log messages to the file `logfile'.\n\
+   -n value    Run the daemon at the specified nice value.\n\
    -v          Verbose mode. Multiple -v's increase verbosity.\n\
    -V          Print version information and exit.\n", conf->prog);
 	return;
@@ -1516,10 +1520,8 @@ static void _update_nice(void)
 	int cur_nice;
 	id_t pid;
 
-	if (conf->nice == NO_VAL) {
-		error("Invalid option for -n option (nice value), ignored");
+	if (conf->nice == 0)	/* No change */
 		return;
-	}
 
 	pid = getpid();
 	cur_nice = getpriority(PRIO_PROCESS, pid);
