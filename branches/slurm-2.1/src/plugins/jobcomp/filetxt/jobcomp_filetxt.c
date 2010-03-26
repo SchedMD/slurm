@@ -250,6 +250,7 @@ extern int slurm_jobcomp_log_record ( struct job_record *job_ptr )
 	char select_buf[128], *work_dir;
 	size_t offset = 0, tot_size, wrote;
 	enum job_states job_state;
+	uint32_t time_limit;
 
 	if ((log_name == NULL) || (job_comp_fd < 0)) {
 		error("JobCompLoc log file %s not open", log_name);
@@ -259,11 +260,17 @@ extern int slurm_jobcomp_log_record ( struct job_record *job_ptr )
 	slurm_mutex_lock( &file_lock );
 	_get_user_name(job_ptr->user_id, usr_str, sizeof(usr_str));
 	_get_group_name(job_ptr->group_id, grp_str, sizeof(grp_str));
-	if (job_ptr->time_limit == INFINITE)
-		strcpy(lim_str, "UNLIMITED");
+
+	if ((job_ptr->time_limit == NO_VAL) && job_ptr->part_ptr)
+		time_limit = job_ptr->part_ptr->max_time;
 	else
+		time_limit = job_ptr->time_limit;
+	if (time_limit == INFINITE)
+		strcpy(lim_str, "UNLIMITED");
+	else {
 		snprintf(lim_str, sizeof(lim_str), "%lu",
-				(unsigned long) job_ptr->time_limit);
+			 (unsigned long) time_limit);
+	}
 
 	/* Job will typically be COMPLETING when this is called.
 	 * We remove the flags to get the eventual completion state:

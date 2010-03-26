@@ -312,6 +312,7 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 		*blockid = NULL;
 	enum job_states job_state;
 	char *query = NULL;
+	uint32_t time_limit;
 
 	if(!jobcomp_pgsql_db || PQstatus(jobcomp_pgsql_db) != CONNECTION_OK) {
 		char *loc = slurm_get_jobcomp_loc();
@@ -324,11 +325,17 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 
 	usr_str = _get_user_name(job_ptr->user_id);
 	grp_str = _get_group_name(job_ptr->group_id);
-	if (job_ptr->time_limit == INFINITE)
-		strcpy(lim_str, "UNLIMITED");
+
+	if ((job_ptr->time_limit == NO_VAL) && job_ptr->part_ptr)
+		time_limit = job_ptr->part_ptr->max_time;
 	else
+		time_limit = job_ptr->time_limit;
+	if (time_limit == INFINITE)
+		strcpy(lim_str, "UNLIMITED");
+	else {
 		snprintf(lim_str, sizeof(lim_str), "%lu",
-			 (unsigned long) job_ptr->time_limit);
+			 (unsigned long) time_limit);
+	}
 
 	/* Job will typically be COMPLETING when this is called.
 	 * We remove the flags to get the eventual completion state:

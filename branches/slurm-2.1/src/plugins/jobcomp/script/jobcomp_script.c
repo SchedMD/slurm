@@ -214,7 +214,10 @@ static struct jobcomp_info * _jobcomp_info_create (struct job_record *job)
 	j->jobstate = xstrdup (job_state_string (state));
 
 	j->partition = xstrdup (job->partition);
-	j->limit = job->time_limit;
+	if ((job->time_limit == NO_VAL) && job->part_ptr)
+		j->limit = job->part_ptr->max_time;
+	else
+		j->limit = job->time_limit;
 	j->start = job->start_time;
 	j->end = job->end_time;
 	j->submit = job->details ? job->details->submit_time:job->start_time;
