@@ -78,6 +78,7 @@ static int    debug_level = 0;		/* incremented for -v on command line */
 static int    foreground = 0;		/* run process as a daemon */
 static log_options_t log_opts = 	/* Log to stderr & syslog */
 			LOG_OPTS_INITIALIZER;
+static int	 new_nice = 0;
 static pthread_t rpc_handler_thread;	/* thread ID for RPC hander */
 static pthread_t signal_handler_thread;	/* thread ID for signal hander */
 static pthread_t rollup_handler_thread;	/* thread ID for rollup hander */
@@ -96,6 +97,7 @@ static void  _rollup_handler_cancel();
 static void *_rollup_handler(void *no_data);
 static void *_signal_handler(void *no_data);
 static void  _update_logging(void);
+static void  _update_nice(void);
 static void  _usage(char *prog_name);
 
 /* main - slurmctld main function, start various threads and process RPCs */
@@ -112,6 +114,7 @@ int main(int argc, char *argv[])
 		exit(1);
 	_parse_commandline(argc, argv);
 	_update_logging();
+	_update_nice();
 
 	if (slurm_auth_init(NULL) != SLURM_SUCCESS) {
 		fatal("Unable to initialize %s authentication plugin",
@@ -291,9 +294,10 @@ static void  _init_config(void)
 static void _parse_commandline(int argc, char *argv[])
 {
 	int c = 0;
+	char *tmp_char;
 
 	opterr = 0;
-	while ((c = getopt(argc, argv, "DhvV")) != -1)
+	while ((c = getopt(argc, argv, "Dhn:vV")) != -1)
 		switch (c) {
 		case 'D':
 			foreground = 1;
@@ -301,6 +305,14 @@ static void _parse_commandline(int argc, char *argv[])
 		case 'h':
 			_usage(argv[0]);
 			exit(0);
+			break;
+		case 'n':
+			new_nice = strtol(optarg, &tmp_char, 10);
+			if (tmp_char[0] != '\0') {
+				error("Invalid option for -n option (nice "
+				      "value), ignored");
+				new_nice = 0;
+			}
 			break;
 		case 'v':
 			debug_level++;
@@ -324,6 +336,8 @@ static void _usage(char *prog_name)
 			"Run daemon in foreground.\n");
 	fprintf(stderr, "  -h         \t"
 			"Print this help message.\n");
+	fprintf(stderr, "  -n value   \t"
+			"Run the daemon at the specified nice value.\n");
 	fprintf(stderr, "  -v         \t"
 			"Verbose mode. Multiple -v's increase verbosity.\n");
 	fprintf(stderr, "  -V         \t"
@@ -353,6 +367,23 @@ static void _update_logging(void)
 	}
 
 	log_alter(log_opts, SYSLOG_FACILITY_DAEMON, slurmdbd_conf->log_file);
+}
+
+/* Reset slurmd nice value */
+static void _update_nice(void)
+{
+	int cur_nice;
+	id_t pid;
+
+	if (new_nice == 0)	/* No change */
+		return;
+
+	pid = getpid();
+	cur_nice = getpriority(PRIO_PROCESS, pid);
+	if (cur_nice == new_nice)
+		return;
+	if (setpriority(PRIO_PROCESS, pid, new_nice))
+		error("Unable to reset nice value to %d: %m", new_nice);
 }
 
 /* Kill the currently running slurmdbd */
