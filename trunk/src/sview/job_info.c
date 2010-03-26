@@ -152,6 +152,7 @@ enum {
 	SORTID_TIME_ELIGIBLE,
 	SORTID_TIME_END,
 	SORTID_TIMELIMIT,
+	SORTID_TIME_RESIZE,
 	SORTID_TIME_RUNNING,
 	SORTID_TIME_START,
 	SORTID_TIME_SUBMIT,
@@ -224,6 +225,9 @@ static display_data_t display_data_job[] = {
 	{G_TYPE_STRING, SORTID_STATE, "State", TRUE, EDIT_NONE, refresh_job,
 	 create_model_job, admin_edit_job},
 	{G_TYPE_INT, SORTID_STATE_NUM, NULL, FALSE, EDIT_NONE, refresh_job,
+	 create_model_job, admin_edit_job},
+	{G_TYPE_STRING, SORTID_TIME_RESIZE, "Time Resize", FALSE,
+	 EDIT_NONE, refresh_job,
 	 create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_TIME_RUNNING, "Time Running", TRUE,
 	 EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
@@ -1551,6 +1555,16 @@ static void _layout_job_record(GtkTreeView *treeview,
 						 SORTID_TIMELIMIT),
 				   tmp_char);
 
+	if (job_ptr->resize_time) {
+		slurm_make_time_str((time_t *)&job_ptr->resize_time, tmp_char,
+				    sizeof(tmp_char));
+	} else
+		sprintf(tmp_char, "N/A");
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_job,
+						 SORTID_TIME_RESIZE),
+				   tmp_char);
+
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_job,
 						 SORTID_TIME_RUNNING),
@@ -1636,6 +1650,12 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 	gtk_tree_store_set(treestore, iter, SORTID_COLOR,
 			   sview_colors[sview_job_info_ptr->color_inx], -1);
 	gtk_tree_store_set(treestore, iter, SORTID_TIME_RUNNING, tmp_char, -1);
+	if (job_ptr->resize_time) {
+		slurm_make_time_str((time_t *)&job_ptr->resize_time, tmp_char,
+				    sizeof(tmp_char));
+	} else
+		sprintf(tmp_char, "N/A");
+	gtk_tree_store_set(treestore, iter, SORTID_TIME_RESIZE, tmp_char, -1);
 	slurm_make_time_str((time_t *)&job_ptr->submit_time, tmp_char,
 			    sizeof(tmp_char));
 	gtk_tree_store_set(treestore, iter, SORTID_TIME_SUBMIT, tmp_char, -1);
