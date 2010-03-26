@@ -109,6 +109,7 @@ job_info_to_hv(job_info_t* job_info, HV* hv)
 	}
 	hv_store_sv(hv, "req_node_inx", newRV_noinc((SV*)avp));
 	STORE_FIELD(hv, job_info, requeue, uint16_t);
+	STORE_FIELD(hv, job_info, resize_time, time_t);
 	STORE_FIELD(hv, job_info, restart_cnt, uint16_t);
 	if(job_info->resv_name)
 		STORE_FIELD(hv, job_info, resv_name, charp);
