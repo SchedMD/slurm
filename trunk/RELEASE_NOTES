@@ -147,6 +147,7 @@ slurm_step_ctx_params_t
 
 * Added the following struct definitions:
 job_info_t
+	resize_time
 	time_min
 
 job_desc_msg_t

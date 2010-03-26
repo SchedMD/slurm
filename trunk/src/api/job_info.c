@@ -300,7 +300,19 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	else
 		xstrcat(out, "\n   ");
 
-	/****** Line 8 ******/
+	/****** Line 8 (optional) ******/
+	if (job_ptr->resize_time) {
+		slurm_make_time_str((time_t *)&job_ptr->resize_time, time_str,
+				    sizeof(time_str));
+		snprintf(tmp_line, sizeof(tmp_line), "ResizeTime=%s", time_str);
+		xstrcat(out, tmp_line);
+		if (one_liner)
+			xstrcat(out, " ");
+		else
+			xstrcat(out, "\n   ");
+	}
+
+	/****** Line 9 ******/
 	slurm_make_time_str((time_t *)&job_ptr->start_time, time_str,
 			    sizeof(time_str));
 	snprintf(tmp_line, sizeof(tmp_line), "StartTime=%s ", time_str);
@@ -322,7 +334,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	else
 		xstrcat(out, "\n   ");
 
-	/****** Line 9 ******/
+	/****** Line 10 ******/
 	if (job_ptr->suspend_time) {
 		slurm_make_time_str ((time_t *)&job_ptr->suspend_time,
 				     time_str, sizeof(time_str));
@@ -338,7 +350,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	else
 		xstrcat(out, "\n   ");
 
-	/****** Line 10 ******/
+	/****** Line 11 ******/
 	snprintf(tmp_line, sizeof(tmp_line),
 		 "Partition=%s AllocNode:Sid=%s:%u",
 		 job_ptr->partition, job_ptr->alloc_node, job_ptr->alloc_sid);
@@ -348,7 +360,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	else
 		xstrcat(out, "\n   ");
 
-	/****** Line 11 ******/
+	/****** Line 12 ******/
 	snprintf(tmp_line, sizeof(tmp_line), "Req%s=%s Exc%s=%s",
 		 nodelist, job_ptr->req_nodes, nodelist, job_ptr->exc_nodes);
 	xstrcat(out, tmp_line);
@@ -357,7 +369,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	else
 		xstrcat(out, "\n   ");
 
-	/****** Line 12 ******/
+	/****** Line 13 ******/
 	xstrfmtcat(out, "%s=", nodelist);
 	xstrcat(out, job_ptr->nodes);
 	if(job_ptr->nodes && ionodes) {
@@ -370,7 +382,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	else
 		xstrcat(out, "\n   ");
 
-	/****** Line 13 ******/
+	/****** Line 14 ******/
 #ifdef HAVE_BG
 	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
 				    SELECT_JOBDATA_NODE_CNT,
@@ -560,7 +572,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	}
 #endif
 
-	/****** Line 14 ******/
+	/****** Line 15 ******/
 line14:
 	if (job_ptr->pn_min_memory & MEM_PER_CPU) {
 		job_ptr->pn_min_memory &= (~MEM_PER_CPU);
@@ -589,7 +601,7 @@ line14:
 	else
 		xstrcat(out, "\n   ");
 
-	/****** Line 15 ******/
+	/****** Line 16 ******/
 	snprintf(tmp_line, sizeof(tmp_line),
 		 "Features=%s Reservation=%s",
 		 job_ptr->features, job_ptr->resv_name);
@@ -599,7 +611,7 @@ line14:
 	else
 		xstrcat(out, "\n   ");
 
-	/****** Line 16 ******/
+	/****** Line 17 ******/
 	snprintf(tmp_line, sizeof(tmp_line),
 		 "Shared=%s Contiguous=%d Licenses=%s Network=%s",
 		 (job_ptr->shared == 0 ? "0" :
@@ -607,7 +619,7 @@ line14:
 		 job_ptr->contiguous, job_ptr->licenses, job_ptr->network);
 	xstrcat(out, tmp_line);
 
-	/****** Lines 17, 18 (optional, batch only) ******/
+	/****** Lines 18, 19 (optional, batch only) ******/
 	if (job_ptr->batch_flag) {
 		if (one_liner)
 			xstrcat(out, " ");
@@ -625,7 +637,7 @@ line14:
 	}
 
 #ifdef HAVE_BG
-	/****** Line 19 (optional) ******/
+	/****** Line 20 (optional) ******/
 	select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,
 				       select_buf, sizeof(select_buf),
 				       SELECT_PRINT_BG_ID);
@@ -639,7 +651,7 @@ line14:
 		xstrcat(out, tmp_line);
 	}
 
-	/****** Line 20 (optional) ******/
+	/****** Line 21 (optional) ******/
 	select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,
 				       select_buf, sizeof(select_buf),
 				       SELECT_PRINT_MIXED_SHORT);
@@ -652,7 +664,7 @@ line14:
 	}
 
 #ifdef HAVE_BGL
-	/****** Line 21 (optional) ******/
+	/****** Line 22 (optional) ******/
 	select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,
 				       select_buf, sizeof(select_buf),
 				       SELECT_PRINT_BLRTS_IMAGE);
@@ -666,7 +678,7 @@ line14:
 		xstrcat(out, tmp_line);
 	}
 #endif
-	/****** Line 22 (optional) ******/
+	/****** Line 23 (optional) ******/
 	select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,
 				select_buf, sizeof(select_buf),
 				SELECT_PRINT_LINUX_IMAGE);
@@ -684,7 +696,7 @@ line14:
 #endif
 		xstrcat(out, tmp_line);
 	}
-	/****** Line 23 (optional) ******/
+	/****** Line 24 (optional) ******/
 	select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,
 				select_buf, sizeof(select_buf),
 				SELECT_PRINT_MLOADER_IMAGE);
@@ -697,7 +709,7 @@ line14:
 			 "MloaderImage=%s", select_buf);
 		xstrcat(out, tmp_line);
 	}
-	/****** Line 24 (optional) ******/
+	/****** Line 25 (optional) ******/
 	select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,
 				select_buf, sizeof(select_buf),
 				SELECT_PRINT_RAMDISK_IMAGE);
@@ -717,7 +729,7 @@ line14:
 	}
 #endif
 
-	/****** Line 25 (optional) ******/
+	/****** Line 26 (optional) ******/
 	if (job_ptr->comment) {
 		if (one_liner)
 			xstrcat(out, " ");

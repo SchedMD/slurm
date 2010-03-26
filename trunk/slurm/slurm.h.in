@@ -738,6 +738,7 @@ typedef struct job_info {
 				 * start_range_1, end_range_1,
 				 * start_range_2, .., -1  */
 	uint16_t requeue;       /* enable or disable job requeue option */
+	time_t resize_time;	/* time of latest size change */
 	uint16_t restart_cnt;	/* count of job restarts */
 	char *resv_name;	/* reservation name */
 	select_jobinfo_t *select_jobinfo; /* opaque data type,

@@ -717,6 +717,7 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	pack_time(dump_job_ptr->end_time, buffer);
 	pack_time(dump_job_ptr->suspend_time, buffer);
 	pack_time(dump_job_ptr->pre_sus_time, buffer);
+	pack_time(dump_job_ptr->resize_time, buffer);
 	pack_time(dump_job_ptr->tot_sus_time, buffer);
 
 	pack16(dump_job_ptr->direct_set_prio, buffer);
@@ -796,7 +797,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	uint32_t next_step_id, total_cpus, cpu_cnt;
 	uint32_t resv_id, spank_job_env_size = 0;
 	time_t start_time, end_time, suspend_time, pre_sus_time, tot_sus_time;
-	time_t now = time(NULL);
+	time_t resize_time = 0, now = time(NULL);
 	uint16_t job_state, details, batch_flag, step_flag;
 	uint16_t kill_on_node_fail, kill_on_step_done, direct_set_prio, qos;
 	uint16_t alloc_resp_port, other_port, mail_type, state_reason;
@@ -858,6 +859,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		safe_unpack_time(&end_time, buffer);
 		safe_unpack_time(&suspend_time, buffer);
 		safe_unpack_time(&pre_sus_time, buffer);
+		safe_unpack_time(&resize_time, buffer);
 		safe_unpack_time(&tot_sus_time, buffer);
 
 		safe_unpack16(&direct_set_prio, buffer);
@@ -1160,6 +1162,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	xfree(job_ptr->resp_host);
 	job_ptr->resp_host    = resp_host;
 	resp_host             = NULL;	/* reused, nothing left to free */
+	job_ptr->resize_time  = resize_time;
 	job_ptr->restart_cnt  = restart_cnt;
 	job_ptr->resv_id      = resv_id;
 	job_ptr->resv_name    = resv_name;
@@ -1737,6 +1740,7 @@ extern int kill_running_job_by_node_name(char *node_name)
 				srun_node_fail(job_ptr->job_id, node_name);
 				error("Removing failed node %s from job_id %u",
 				      node_name, job_ptr->job_id);
+				job_ptr->resize_time = now;
 				kill_step_on_node(job_ptr, node_ptr);
 				excise_node_from_job(job_ptr, node_ptr);
 			} else if (job_ptr->batch_flag && job_ptr->details &&
@@ -4575,6 +4579,7 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 		pack_time(dump_job_ptr->end_time, buffer);
 		pack_time(dump_job_ptr->suspend_time, buffer);
 		pack_time(dump_job_ptr->pre_sus_time, buffer);
+		pack_time(dump_job_ptr->resize_time, buffer);
 		pack32(dump_job_ptr->priority, buffer);
 
 		/* Only send the allocated nodelist since we are only sending
@@ -6002,6 +6007,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			info("sched: update_job: setting nodes to %s for "
 			     "job_id %u",
 			     job_specs->req_nodes, job_specs->job_id);
+			job_ptr->resize_time = now;
 			i_first = bit_ffs(job_ptr->node_bitmap);
 			i_last  = bit_fls(job_ptr->node_bitmap);
 			for (i=i_first; i<=i_last; i++) {
@@ -6062,6 +6068,10 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		} else {
 			int i, i_first, i_last, total;
 			struct node_record *node_ptr;
+			info("sched: update_job: set node count to %u for "
+			     "job_id %u",
+			     job_specs->min_nodes, job_specs->job_id);
+			job_ptr->resize_time = now;
 			i_first = bit_ffs(job_ptr->node_bitmap);
 			i_last  = bit_fls(job_ptr->node_bitmap);
 			for (i=i_first, total=0; i<=i_last; i++) {
@@ -6073,7 +6083,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 				kill_step_on_node(job_ptr, node_ptr);
 				excise_node_from_job(job_ptr, node_ptr);
 			}
-			info("sched: update_job: setting nodes to %s for "
+			info("sched: update_job: set nodes to %s for "
 			     "job_id %u",
 			     job_ptr->nodes, job_specs->job_id);
 		}

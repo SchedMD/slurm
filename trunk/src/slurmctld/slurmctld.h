@@ -442,6 +442,7 @@ struct job_record {
 					 * in the header files, confirm the
 					 * value before use */
 	uint16_t restart_cnt;		/* count of restarts */
+	time_t resize_time;		/* time of latest size change */
 	uint32_t resv_id;		/* reservation ID */
 	char *resv_name;		/* reservation name */
 	struct slurmctld_resv *resv_ptr;/* reservation structure pointer */
