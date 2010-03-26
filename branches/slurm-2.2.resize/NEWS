@@ -31,8 +31,14 @@ documents those changes that are of interest to users and admins.
     "scontrol update JobId=# NodeList=<names>". Subsequent job steps must
     explicitly specify an appropriate node count to work properly.
  -- Added resize_time field to job record noting the time of the latest job
-    size change (to be used for accounting purposes, which is under
-    development).
+    size change (to be used for accounting purposes).
+ -- Add node state flag of JOB_RESIZING. This will only exist when a job's
+    accounting record is being written immediately before it changes size.
+    This permits job accounting records to be written for a job at each size.
+ -- Execute slurm_jobcomp_log_record() in the jobcomp plugin immediately before
+    a job changes size (in addition to being called job termination as
+    previously used). All plugins write a record for the job at each size with
+    intermediate job states being JOB_RESIZING.
  -- sview/smap now hides hidden partitions and their jobs by default, with an
     option to display them.
 

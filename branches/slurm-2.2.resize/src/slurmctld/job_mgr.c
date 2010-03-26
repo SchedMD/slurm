@@ -1740,7 +1740,7 @@ extern int kill_running_job_by_node_name(char *node_name)
 				srun_node_fail(job_ptr->job_id, node_name);
 				error("Removing failed node %s from job_id %u",
 				      node_name, job_ptr->job_id);
-				job_ptr->resize_time = now;
+				job_resize_acctg(job_ptr);
 				kill_step_on_node(job_ptr, node_ptr);
 				excise_node_from_job(job_ptr, node_ptr);
 			} else if (job_ptr->batch_flag && job_ptr->details &&
@@ -6007,7 +6007,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			info("sched: update_job: setting nodes to %s for "
 			     "job_id %u",
 			     job_specs->req_nodes, job_specs->job_id);
-			job_ptr->resize_time = now;
+			job_resize_acctg(job_ptr);
 			i_first = bit_ffs(job_ptr->node_bitmap);
 			i_last  = bit_fls(job_ptr->node_bitmap);
 			for (i=i_first; i<=i_last; i++) {
@@ -6071,7 +6071,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			info("sched: update_job: set node count to %u for "
 			     "job_id %u",
 			     job_specs->min_nodes, job_specs->job_id);
-			job_ptr->resize_time = now;
+			job_resize_acctg(job_ptr);
 			i_first = bit_ffs(job_ptr->node_bitmap);
 			i_last  = bit_fls(job_ptr->node_bitmap);
 			for (i=i_first, total=0; i<=i_last; i++) {
@@ -6360,6 +6360,17 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	 return error_code;
 }
 
+/* Record accounting information for a job immediately before changing size */
+extern void job_resize_acctg(struct job_record *job_ptr)
+{
+	job_ptr->job_state |= JOB_RESIZING;
+
+	g_slurm_jobcomp_write(job_ptr);
+	//jobacct_storage_g_job_complete(acct_db_conn, job_ptr);
+
+	job_ptr->job_state &= (~JOB_RESIZING);
+	job_ptr->resize_time = time(NULL);
+}
 
 /*
  * validate_jobs_on_node - validate that any jobs that should be on the node

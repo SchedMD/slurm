@@ -205,21 +205,31 @@ static struct jobcomp_info * _jobcomp_info_create (struct job_record *job)
 	j->gid = job->group_id;
 	j->name = xstrdup (job->name);
 
-	/*
-	 *  Job will typically be COMPLETING when this code is called.
-	 *  We remove the flags to hopefully get the eventual
-	 *  completion state: e.g.: JOB_FAILED, TIMEOUT, ....
-	 */
-	state = job->job_state & JOB_STATE_BASE;
-	j->jobstate = xstrdup (job_state_string (state));
+	if (job->job_state & JOB_RESIZING) {
+		state = JOB_RESIZING;
+		if (job->resize_time)
+			j->start = job->resize_time;
+		else
+			j->start = job->start_time;
+		j->end = time(NULL);
+	} else {
+		/* Job state will typically have JOB_COMPLETING or JOB_RESIZING
+		 * flag set when called. We remove the flags to get the eventual
+		 * completion state: JOB_FAILED, JOB_TIMEOUT, etc. */
+		state = job->job_state & JOB_STATE_BASE;
+		j->jobstate = xstrdup (job_state_string (state));
+		if (job->resize_time)
+			j->start = job->resize_time;
+		else
+			j->start = job->start_time;
+		j->end = job->end_time;
+	}
 
 	j->partition = xstrdup (job->partition);
 	if ((job->time_limit == NO_VAL) && job->part_ptr)
 		j->limit = job->part_ptr->max_time;
 	else
 		j->limit = job->time_limit;
-	j->start = job->start_time;
-	j->end = job->end_time;
 	j->submit = job->details ? job->details->submit_time:job->start_time;
 	j->batch_flag = job->batch_flag;
 	j->nodes = xstrdup (job->nodes);

@@ -462,8 +462,8 @@ sacct [<OPTION>]                                                            \n\
      -s, --state:                                                           \n\
 	           Select jobs based on their current state or the state    \n\
                    they were in during the time period given: running (r),  \n\
-	           completed (cd), failed (f), timeout (to), and            \n\
-                   node_fail (nf).                                          \n\
+                   completed (cd), failed (f), timeout (to), resizing (rs)  \n\
+                   and node_fail (nf).                                      \n\
      -S, --starttime:                                                       \n\
                    Select jobs eligible after this time.  Default is        \n\
                    midnight of current day.  If states are given with the -s\n\
@@ -514,6 +514,8 @@ int decode_state_char(char *state)
 {
 	if (!strncasecmp(state, "p", 1))
 		return JOB_PENDING; 	/* we should never see this */
+	else if (!strncasecmp(state, "rs", 2))
+		return JOB_RESIZING;
 	else if (!strncasecmp(state, "r", 1))
 		return JOB_RUNNING;
 	else if (!strncasecmp(state, "su", 1))

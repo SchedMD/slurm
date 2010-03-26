@@ -220,10 +220,13 @@ enum job_states {
 	JOB_NODE_FAIL,		/* terminated on node failure */
 	JOB_END			/* not a real state, last entry in table */
 };
-#define	JOB_STATE_BASE    0x00ff   /* Used for job_states above */
-#define	JOB_STATE_FLAGS   0xff00   /* Used for state flags below */
-#define	JOB_COMPLETING    0x8000   /* Waiting for epilog completion */
-#define	JOB_CONFIGURING   0x4000   /* Allocated nodes booting */
+#define	JOB_STATE_BASE	0x00ff	/* Used for job_states above */
+#define	JOB_STATE_FLAGS	0xff00	/* Used for state flags below */
+#define	JOB_COMPLETING	0x8000	/* Waiting for epilog completion */
+#define	JOB_CONFIGURING	0x4000	/* Allocated nodes booting */
+#define	JOB_RESIZING	0x2000	/* Size of job about to change, flag set
+				 * before calling accounting functions
+				 * immediately before job changes size */
 
 #define READY_JOB_FATAL	   -2	/* fatal error */
 #define READY_JOB_ERROR    -1	/* ordinary error */
