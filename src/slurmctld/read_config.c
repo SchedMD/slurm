@@ -1289,6 +1289,7 @@ static int _sync_nodes_to_active_job(struct job_record *job_ptr)
 			 * on a node that was newly configured DOWN */
 			info("Removing failed node %s from job_id %u",
 			     node_ptr->name, job_ptr->job_id);
+			job_ptr->resize_time = time(NULL);
 			srun_node_fail(job_ptr->job_id, node_ptr->name);
 			kill_step_on_node(job_ptr, node_ptr);
 			excise_node_from_job(job_ptr, node_ptr);

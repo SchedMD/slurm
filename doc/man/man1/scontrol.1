@@ -435,11 +435,24 @@ Nice value changes are not additive, but overwrite any prior nice
 value and are applied to the job's base priority.
 Only privileged users can specify a negative adjustment.
 .TP
+\fINodeList\fP=<nodes>
+Change the nodes allocated to a running job to shrink it's size.
+The specified list of nodes must be a subset of the nodes currently
+allocated to the job. Multiple node names may be specified using
+simple node range expressions (e.g. "lx[10\-20]"). After a job's allocation
+is reduced, subsequent \fBsrun\fR commands must explicitly specify node and
+task counts which are valid for the new allocation.
+.TP
 \fINumCPUs\fP=<min_count>[\-<max_count>]
 Set the job's minimum and optionally maximum count of CPUs to be allocated.
 .TP
 \fINumNodes\fP=<min_count>[\-<max_count>]
 Set the job's minimum and optionally maximum count of nodes to be allocated.
+If the job is already running, use this to specify a node count less than
+currently allocated and resources previously allocated to the job will be
+relinquished. After a job's allocation is reduced, subsequent \fBsrun\fR
+commands must explicitly specify node and task counts which are valid for the
+new allocation. Also see the \fINodeList\fP parameter above.
 .TP
 \fINumTasks\fP=<count>
 Set the job's count of required tasks to the specified value.
@@ -842,7 +855,7 @@ Identify the partition to be reserved.
 .TP
 \fIFlags\fP=<flags>
 Flags associated with the reservation.
-In order to remove a flag with the update option, preceed the name with
+In order to remove a flag with the update option, precede the name with
 a minus sign. For example: Flags=\-DAILY (NOTE: this option is not supported
 for all flags).
 Currently supported flags include:

@@ -7,12 +7,14 @@ documents those changes that are of interest to users and admins.
     to restrict spawned task nice values to that of the slurmd daemon plus 1.
     This insures that the slurmd daemon always have a higher scheduling
     priority than spawned tasks.
+ -- Add support in slurmctld, slurmd ans slurmdbd for option of "-n <value>" to
+    reset the daemon's nice value.
  -- Fixed slurm_load_slurmd_status and slurm_pid2jobid to work correctly when
     multiple slurmds are in use.
  -- Altered srun to set max_nodes to min_nodes if not set when doing an
     allocation to mimic that which salloc and sbatch do.  If running a step if
     the max isn't set it remains unset.
- -- Applied patch from David Egolf (David.Egolf@Bull.com) Added the ability
+ -- Applied patch from David Egolf (David.Egolf@Bull.com). Added the ability
     to purge/archive accounting data on a day or hour basis, previously
     it was only available on a monthly basis.
  -- Add support for maximum node count in job step request.
@@ -24,12 +26,13 @@ documents those changes that are of interest to users and admins.
     partitions.
  -- Added sacctmgr list events which will list events that have happened on
     clusters in accounting.
- -- Add support in slurmctld, slurmd ans slurmdbd for option of "-n <value>" to
-    reset the daemon's nice value.
  -- Permit a running job to shrink in size using a command of
     "scontrol update JobId=# NumNodes=#" or
     "scontrol update JobId=# NodeList=<names>". Subsequent job steps must
     explicitly specify an appropriate node count to work properly.
+ -- Added resize_time field to job record noting the time of the latest job
+    size change (to be used for accounting purposes, which is under
+    development).
  -- sview/smap now hides hidden partitions and their jobs by default, with an
     option to display them.
 
