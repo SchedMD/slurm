@@ -68,7 +68,7 @@ CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
   one ThreadsPerCore configured (i.e. no change in behavior without this
   option).
 
-* Add new configuration parameters GroupUpdateForce and GroupUpdateTime. These 
+* Add new configuration parameters GroupUpdateForce and GroupUpdateTime. These
   control when slurmctld updates its information of which users are in the
   groups allowed to use partitions. NOTE: There is no change in the default
   behavior.
@@ -116,8 +116,8 @@ OTHER CHANGES
   S_STEP_ALLOC_MEM. Support will remain for S_JOB_ALLOC_CORES and
   S_JOB_ALLOC_MEM.
 
-* Changed error mesage from "Requested time limit exceeds partition limit"
-  "Requested time limit is invalid (exceeds some limit)". The error can be
+* Changed error message from "Requested time limit exceeds partition limit"
+  to "Requested time limit is invalid (exceeds some limit)". The error can be
   triggered by a time limit exceeding the user/bank limit or the time-min
   exceeding the job or partition's time limit.
 
