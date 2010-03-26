@@ -59,6 +59,8 @@ if [ -d /bgl/BlueLight/ppcfloor ]; then
 fi
 
 # Source slurm specific configuration
+# SLURMCTLD_OPTIONS defines slurmctld command line options. See "man slurmctld"
+# SLURMD_OPTIONS defines slurmd command line options. See "man slurmd"
 if [ -f /etc/sysconfig/slurm ] ; then
     . /etc/sysconfig/slurm
 else
