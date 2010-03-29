@@ -385,14 +385,14 @@ js_p_job_start(pgsql_conn_t *pg_conn,
 		return ESLURM_DB_CONNECTION;
 
 	debug3("as/pg: job_start() called");
-	if (job->resize_time) {
-		begin_time  = job->resize_time;
-		submit_time = job->resize_time;
-		start_time  = job->resize_time;
+	if (job_ptr->resize_time) {
+		begin_time  = job_ptr->resize_time;
+		submit_time = job_ptr->resize_time;
+		start_time  = job_ptr->resize_time;
 	} else {
 		begin_time  = job_ptr->details->begin_time;
 		submit_time = job_ptr->details->submit_time;
-		start_time = job_ptr->start_time;
+		start_time  = job_ptr->start_time;
 	}
 	if (job_ptr->job_state & JOB_RESIZING)
 		job_state = JOB_RESIZING;

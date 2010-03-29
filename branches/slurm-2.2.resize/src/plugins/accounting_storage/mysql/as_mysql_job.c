@@ -228,14 +228,14 @@ extern int as_mysql_job_start(mysql_conn_t *mysql_conn,
 		return ESLURM_DB_CONNECTION;
 
 	debug2("as_mysql_slurmdb_job_start() called");
-	if (job->resize_time) {
-		begin_time  = job->resize_time;
-		submit_time = job->resize_time;
-		start_time  = job->resize_time;
+	if (job_ptr->resize_time) {
+		begin_time  = job_ptr->resize_time;
+		submit_time = job_ptr->resize_time;
+		start_time  = job_ptr->resize_time;
 	} else {
 		begin_time  = job_ptr->details->begin_time;
 		submit_time = job_ptr->details->submit_time;
-		start_time = job_ptr->start_time;
+		start_time  = job_ptr->start_time;
 	}
 	if (job_ptr->job_state & JOB_RESIZING)
 		job_state = JOB_RESIZING;
