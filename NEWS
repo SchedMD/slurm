@@ -3,6 +3,8 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 2.1.7
 ========================
+ -- In sched/wiki2 - Fix logic in support of Moab being able to identify
+    preemptable jobs.
 
 * Changes in SLURM 2.1.6
 ========================
