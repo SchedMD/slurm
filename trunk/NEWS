@@ -1,13 +1,16 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in SLURM 2.2.0.pre5
+=============================
+
 * Changes in SLURM 2.2.0.pre4
 =============================
  -- Add support for a PropagatePrioProcess configuration parameter value of 2
     to restrict spawned task nice values to that of the slurmd daemon plus 1.
     This insures that the slurmd daemon always have a higher scheduling
     priority than spawned tasks.
- -- Add support in slurmctld, slurmd ans slurmdbd for option of "-n <value>" to
+ -- Add support in slurmctld, slurmd and slurmdbd for option of "-n <value>" to
     reset the daemon's nice value.
  -- Fixed slurm_load_slurmd_status and slurm_pid2jobid to work correctly when
     multiple slurmds are in use.
