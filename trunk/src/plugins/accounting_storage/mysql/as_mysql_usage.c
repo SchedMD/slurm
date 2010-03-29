@@ -772,7 +772,6 @@ extern int as_mysql_roll_usage(mysql_conn_t *mysql_conn,
 			if(lowest == now) {
 				debug("No clusters have been added "
 				      "not doing rollup");
-				mysql_free_result(result);
 				return SLURM_SUCCESS;
 			}
 
