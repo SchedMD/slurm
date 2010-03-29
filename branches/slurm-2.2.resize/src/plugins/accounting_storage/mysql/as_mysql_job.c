@@ -214,9 +214,9 @@ extern int as_mysql_job_start(mysql_conn_t *mysql_conn,
 	char *block_id = NULL;
 	char *query = NULL;
 	int reinit = 0;
-	time_t check_time = job_ptr->start_time;
+	time_t begin_time, check_time, start_time, submit_time;
 	uint32_t wckeyid = 0;
-	int node_cnt = 0;
+	int job_state, node_cnt = 0;
 
 	if (!job_ptr->details || !job_ptr->details->submit_time) {
 		error("as_mysql_job_start: "
@@ -228,16 +228,29 @@ extern int as_mysql_job_start(mysql_conn_t *mysql_conn,
 		return ESLURM_DB_CONNECTION;
 
 	debug2("as_mysql_slurmdb_job_start() called");
+	if (job->resize_time) {
+		begin_time  = job->resize_time;
+		submit_time = job->resize_time;
+		start_time  = job->resize_time;
+	} else {
+		begin_time  = job_ptr->details->begin_time;
+		submit_time = job_ptr->details->submit_time;
+		start_time = job_ptr->start_time;
+	}
+	if (job_ptr->job_state & JOB_RESIZING)
+		job_state = JOB_RESIZING;
+	else
+		job_state = job_ptr->job_state & JOB_STATE_BASE;
 
 	/* See what we are hearing about here if no start time. If
 	 * this job latest time is before the last roll up we will
 	 * need to reset it to look at this job. */
-	if(!check_time) {
-		check_time = job_ptr->details->begin_time;
-
-		if(!check_time)
-			check_time = job_ptr->details->submit_time;
-	}
+	if (start_time)
+		check_time = start_time;
+	else if (begin_time)
+		check_time = begin_time;
+	else
+		check_time = submit_time;
 
 	slurm_mutex_lock(&rollup_lock);
 	if(check_time < global_last_rollup) {
@@ -253,9 +266,7 @@ extern int as_mysql_job_start(mysql_conn_t *mysql_conn,
 				       "and time_start=%d;",
 				       mysql_conn->cluster_name,
 				       job_table, job_ptr->job_id,
-				       job_ptr->details->submit_time,
-				       job_ptr->details->begin_time,
-				       job_ptr->start_time);
+				       submit_time, begin_time, start_time);
 		debug3("%d(%s:%d) query\n%s",
 		       mysql_conn->conn, THIS_FILE, __LINE__, query);
 		if(!(result =
@@ -281,7 +292,7 @@ extern int as_mysql_job_start(mysql_conn_t *mysql_conn,
 			      "now hearing about it.",
 			      ctime(&check_time),
 			      job_ptr->job_id, mysql_conn->cluster_name);
-		else if(job_ptr->details->begin_time)
+		else if(begin_time)
 			debug("Need to reroll usage from %sJob %u "
 			      "from %s became eligible then and we are just "
 			      "now hearing about it.",
@@ -365,9 +376,8 @@ no_rollup_change:
 	 * them by zeroing out the end.
 	 */
 	if(!job_ptr->db_index) {
-		if(!job_ptr->details->begin_time)
-			job_ptr->details->begin_time =
-				job_ptr->details->submit_time;
+		if(!begin_time)
+			begin_time = submit_time;
 		query = xstrdup_printf(
 			"insert into \"%s_%s\" "
 			"(id_job, id_assoc, id_wckey, id_user, "
@@ -411,14 +421,10 @@ no_rollup_change:
 			   "on duplicate key update "
 			   "job_db_inx=LAST_INSERT_ID(job_db_inx), state=%u, "
 			   "id_assoc=%u, id_wckey=%u, id_resv=%u, timelimit=%u",
-			   (int)job_ptr->details->begin_time,
-			   (int)job_ptr->details->submit_time,
-			   (int)job_ptr->start_time,
-			   jname, track_steps,
-			   job_ptr->job_state & JOB_STATE_BASE,
+			   begin_time, submit_time, start_time,
+			   jname, track_steps, job_state,
 			   job_ptr->priority, job_ptr->details->min_cpus,
-			   job_ptr->total_cpus, node_cnt,
-			   job_ptr->job_state & JOB_STATE_BASE,
+			   job_ptr->total_cpus, node_cnt, job_state,
 			   job_ptr->assoc_id, wckeyid, job_ptr->resv_id,
 			   job_ptr->time_limit);
 
@@ -472,8 +478,7 @@ no_rollup_change:
 			   "cpus_alloc=%u, nodes_alloc=%u, "
 			   "id_assoc=%u, id_wckey=%u, id_resv=%u, timelimit=%u "
 			   "where job_db_inx=%d",
-			   (int)job_ptr->start_time,
-			   jname, job_ptr->job_state & JOB_STATE_BASE,
+			   start_time, jname, job_state,
 			   job_ptr->total_cpus, node_cnt,
 			   job_ptr->assoc_id, wckeyid,
 			   job_ptr->resv_id, job_ptr->time_limit,
@@ -493,8 +498,8 @@ extern int as_mysql_job_complete(mysql_conn_t *mysql_conn,
 			      struct job_record *job_ptr)
 {
 	char *query = NULL, *nodes = NULL;
-	int rc=SLURM_SUCCESS;
-	time_t start_time = job_ptr->start_time;
+	int rc = SLURM_SUCCESS, job_state;
+	time_t start_time, end_time;
 
 	if (!job_ptr->db_index
 	    && (!job_ptr->details || !job_ptr->details->submit_time)) {
@@ -507,24 +512,37 @@ extern int as_mysql_job_complete(mysql_conn_t *mysql_conn,
 		return ESLURM_DB_CONNECTION;
 	debug2("as_mysql_slurmdb_job_complete() called");
 
-	/* If we get an error with this just fall through to avoid an
-	 * infinite loop
-	 */
-	if (job_ptr->end_time == 0) {
-		debug("as_mysql_jobacct: job %u never started", job_ptr->job_id);
-		return SLURM_SUCCESS;
-	} else if(start_time > job_ptr->end_time)
+	if (job_ptr->resize_time) {
+		start_time  = job_ptr->resize_time;
+	} else {
+		start_time  = job_ptr->start_time;
+	}
+	if (job_ptr->job_state & JOB_RESIZING) {
+		end_time = time(NULL);
+		job_state = JOB_RESIZING;
+	} else {
+		/* If we get an error with this just fall through to avoid an
+		 * infinite loop */
+		if (job_ptr->end_time == 0) {
+			debug("as_mysql_jobacct: job %u never started",
+			      job_ptr->job_id);
+			return SLURM_SUCCESS;
+		}
+		end_time = job_ptr->end_time;
+		job_state = job_ptr->job_state & JOB_STATE_BASE;
+	}
+	if (start_time > end_time)
 		start_time = 0;
 
 	slurm_mutex_lock(&rollup_lock);
-	if(job_ptr->end_time < global_last_rollup) {
+	if(end_time < global_last_rollup) {
 		global_last_rollup = job_ptr->end_time;
 		slurm_mutex_unlock(&rollup_lock);
 
 		query = xstrdup_printf("update %s set hourly_rollup=%d, "
 				       "daily_rollup=%d, monthly_rollup=%d",
-				       last_ran_table, job_ptr->end_time,
-				       job_ptr->end_time, job_ptr->end_time);
+				       last_ran_table, end_time,
+				       end_time, end_time);
 		debug3("%d(%s:%d) query\n%s",
 		       mysql_conn->conn, THIS_FILE, __LINE__, query);
 		rc = mysql_db_query(mysql_conn->db_conn, query);
@@ -559,9 +577,7 @@ extern int as_mysql_job_complete(mysql_conn_t *mysql_conn,
 			       "state=%d, nodelist='%s', exit_code=%d, "
 			       "kill_requid=%d where job_db_inx=%d",
 			       mysql_conn->cluster_name, job_table,
-			       (int)start_time,
-			       (int)job_ptr->end_time,
-			       job_ptr->job_state & JOB_STATE_BASE,
+			       start_time, end_time, job_state,
 			       nodes, job_ptr->exit_code,
 			       job_ptr->requid, job_ptr->db_index);
 	debug3("%d(%s:%d) query\n%s",

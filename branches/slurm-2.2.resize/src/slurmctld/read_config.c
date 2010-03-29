@@ -1287,12 +1287,19 @@ static int _sync_nodes_to_active_job(struct job_record *job_ptr)
 		    (job_ptr->node_cnt > 1)) {
 			/* This should only happen if a job was running
 			 * on a node that was newly configured DOWN */
+			int save_accounting_enforce;
 			info("Removing failed node %s from job_id %u",
 			     node_ptr->name, job_ptr->job_id);
-			job_resize_acctg(job_ptr);
+			/* Disable accounting here. Accounting reset for all
+			 * jobs in _restore_job_dependencies() */
+			save_accounting_enforce = accounting_enforce;
+			accounting_enforce &= (~ACCOUNTING_ENFORCE_LIMITS);
+			job_pre_resize_acctg(job_ptr);
 			srun_node_fail(job_ptr->job_id, node_ptr->name);
 			kill_step_on_node(job_ptr, node_ptr);
 			excise_node_from_job(job_ptr, node_ptr);
+			job_post_resize_acctg(job_ptr);
+			accounting_enforce = save_accounting_enforce;
 		} else if (IS_NODE_DOWN(node_ptr)) {
 			time_t now = time(NULL);
 			info("Killing job %u on DOWN node %s",
@@ -1370,11 +1377,11 @@ static int _restore_job_dependencies(void)
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		if (accounting_enforce & ACCOUNTING_ENFORCE_LIMITS) {
+			if (!IS_JOB_FINISHED(job_ptr))
+				acct_policy_add_job_submit(job_ptr);
 			if (IS_JOB_RUNNING(job_ptr) ||
 			    IS_JOB_SUSPENDED(job_ptr))
 				acct_policy_job_begin(job_ptr);
-			if (!IS_JOB_FINISHED(job_ptr))
-				acct_policy_add_job_submit(job_ptr);
 		}
 
 		license_list = license_validate(job_ptr->licenses, &valid);

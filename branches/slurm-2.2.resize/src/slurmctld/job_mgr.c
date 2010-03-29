@@ -1740,9 +1740,10 @@ extern int kill_running_job_by_node_name(char *node_name)
 				srun_node_fail(job_ptr->job_id, node_name);
 				error("Removing failed node %s from job_id %u",
 				      node_name, job_ptr->job_id);
-				job_resize_acctg(job_ptr);
+				job_pre_resize_acctg(job_ptr);
 				kill_step_on_node(job_ptr, node_ptr);
 				excise_node_from_job(job_ptr, node_ptr);
+				job_post_resize_acctg(job_ptr);
 			} else if (job_ptr->batch_flag && job_ptr->details &&
 				   (job_ptr->details->requeue > 0)) {
 				char requeue_msg[128];
@@ -6007,7 +6008,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			info("sched: update_job: setting nodes to %s for "
 			     "job_id %u",
 			     job_specs->req_nodes, job_specs->job_id);
-			job_resize_acctg(job_ptr);
+			job_pre_resize_acctg(job_ptr);
 			i_first = bit_ffs(job_ptr->node_bitmap);
 			i_last  = bit_fls(job_ptr->node_bitmap);
 			for (i=i_first; i<=i_last; i++) {
@@ -6017,6 +6018,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 				kill_step_on_node(job_ptr, node_ptr);
 				excise_node_from_job(job_ptr, node_ptr);
 			}
+			job_post_resize_acctg(job_ptr);
 		}
 		FREE_NULL_BITMAP(req_bitmap);
 		xfree(job_specs->req_nodes);
@@ -6071,7 +6073,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			info("sched: update_job: set node count to %u for "
 			     "job_id %u",
 			     job_specs->min_nodes, job_specs->job_id);
-			job_resize_acctg(job_ptr);
+			job_pre_resize_acctg(job_ptr);
 			i_first = bit_ffs(job_ptr->node_bitmap);
 			i_last  = bit_fls(job_ptr->node_bitmap);
 			for (i=i_first, total=0; i<=i_last; i++) {
@@ -6083,6 +6085,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 				kill_step_on_node(job_ptr, node_ptr);
 				excise_node_from_job(job_ptr, node_ptr);
 			}
+			job_post_resize_acctg(job_ptr);
 			info("sched: update_job: set nodes to %s for "
 			     "job_id %u",
 			     job_ptr->nodes, job_specs->job_id);
@@ -6361,15 +6364,22 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 }
 
 /* Record accounting information for a job immediately before changing size */
-extern void job_resize_acctg(struct job_record *job_ptr)
+extern void job_pre_resize_acctg(struct job_record *job_ptr)
 {
 	job_ptr->job_state |= JOB_RESIZING;
-
-	g_slurm_jobcomp_write(job_ptr);
-	//jobacct_storage_g_job_complete(acct_db_conn, job_ptr);
-
+	job_completion_logger(job_ptr);
 	job_ptr->job_state &= (~JOB_RESIZING);
 	job_ptr->resize_time = time(NULL);
+}
+
+/* Record accounting information for a job immediately after changing size */
+extern void job_post_resize_acctg(struct job_record *job_ptr)
+{
+	job_ptr->job_state |= JOB_RESIZING;
+	acct_policy_add_job_submit(job_ptr);
+	acct_policy_job_begin(job_ptr);
+	jobacct_storage_g_job_start(acct_db_conn, job_ptr);
+	job_ptr->job_state &= (~JOB_RESIZING);
 }
 
 /*
@@ -6974,38 +6984,40 @@ void job_fini (void)
 extern void job_completion_logger(struct job_record  *job_ptr)
 {
 	int base_state;
+	bool job_resizing, sent_start = false;
 
 	xassert(job_ptr);
+	job_resizing = job_ptr->job_state & JOB_RESIZING;
 
 	acct_policy_remove_job_submit(job_ptr);
 
-	/* Remove configuring state just to make sure it isn't there
-	 * since it will throw off displays of the job.
-	 */
-	job_ptr->job_state &= (~JOB_CONFIGURING);
+	if (!job_resizing) {
+		/* Remove configuring state just to make sure it isn't there
+		 * since it will throw off displays of the job. */
+		job_ptr->job_state &= (~JOB_CONFIGURING);
 
-	/* make sure all parts of the job are notified */
-	srun_job_complete(job_ptr);
+		/* make sure all parts of the job are notified */
+		srun_job_complete(job_ptr);
 
-	/* mail out notifications of completion */
-	base_state = job_ptr->job_state & JOB_STATE_BASE;
-	if ((base_state == JOB_COMPLETE) || (base_state == JOB_CANCELLED)) {
-		if (job_ptr->mail_type & MAIL_JOB_END)
-			mail_job_info(job_ptr, MAIL_JOB_END);
-	} else {	/* JOB_FAILED, JOB_NODE_FAIL, or JOB_TIMEOUT */
-		if (job_ptr->mail_type & MAIL_JOB_FAIL)
-			mail_job_info(job_ptr, MAIL_JOB_FAIL);
-		else if (job_ptr->mail_type & MAIL_JOB_END)
-			mail_job_info(job_ptr, MAIL_JOB_END);
+		/* mail out notifications of completion */
+		base_state = job_ptr->job_state & JOB_STATE_BASE;
+		if ((base_state == JOB_COMPLETE) ||
+		    (base_state == JOB_CANCELLED)) {
+			if (job_ptr->mail_type & MAIL_JOB_END)
+				mail_job_info(job_ptr, MAIL_JOB_END);
+		} else {	/* JOB_FAILED, JOB_NODE_FAIL, or JOB_TIMEOUT */
+			if (job_ptr->mail_type & MAIL_JOB_FAIL)
+				mail_job_info(job_ptr, MAIL_JOB_FAIL);
+			else if (job_ptr->mail_type & MAIL_JOB_END)
+				mail_job_info(job_ptr, MAIL_JOB_END);
+		}
 	}
 
 	g_slurm_jobcomp_write(job_ptr);
 
 	if(!job_ptr->assoc_id) {
 		slurmdb_association_rec_t assoc_rec;
-		/* Just incase we turned on accounting after we
-		   started the job
-		*/
+		/* In case accounting enabled after starting the job */
 		memset(&assoc_rec, 0, sizeof(slurmdb_association_rec_t));
 		assoc_rec.acct      = job_ptr->account;
 		assoc_rec.partition = job_ptr->partition;
@@ -7017,10 +7029,9 @@ extern void job_completion_logger(struct job_record  *job_ptr)
 					     &job_ptr->assoc_ptr))) {
 			job_ptr->assoc_id = assoc_rec.id;
 			/* we have to call job start again because the
-			   associd does not get updated in job
-			   complete */
-			jobacct_storage_g_job_start(
-				acct_db_conn, job_ptr);
+			 * associd does not get updated in job complete */
+			jobacct_storage_g_job_start(acct_db_conn, job_ptr);
+			sent_start = true;
 		}
 	}
 
@@ -7029,7 +7040,7 @@ extern void job_completion_logger(struct job_record  *job_ptr)
 	 * keep track of all jobs, so we will set the db_inx to
 	 * INFINITE and the database will understand what happened.
 	 */
-	if(!job_ptr->nodes && !job_ptr->db_index) {
+	if(!job_ptr->nodes && !job_ptr->db_index && !sent_start) {
 		jobacct_storage_g_job_start(acct_db_conn, job_ptr);
 	}
 

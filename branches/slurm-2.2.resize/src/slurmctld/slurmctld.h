@@ -871,7 +871,10 @@ extern int job_node_ready(uint32_t job_id, int *ready);
 extern void job_preempt_remove(uint32_t job_id);
 
 /* Record accounting information for a job immediately before changing size */
-extern void job_resize_acctg(struct job_record *job_ptr);
+extern void job_pre_resize_acctg(struct job_record *job_ptr);
+
+/* Record accounting information for a job immediately after changing size */
+extern void job_post_resize_acctg(struct job_record *job_ptr);
 
 /*
  * job_restart - Restart a batch job from checkpointed state
