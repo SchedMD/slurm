@@ -216,20 +216,24 @@ static void _state_time_string(char **extra, uint32_t state,
 		if(start) {
 			if(!end) {
 				xstrfmtcat(*extra,
-					   "(t1.eligible && (!t1.start || "
-					   "(%d between "
-					   "t1.eligible and t1.start)))",
+					   "(t1.time_eligible && "
+					   "(!t1.time_start || (%d between "
+					   "t1.time_eligible "
+					   "and t1.time_start)))",
 					   start);
 			} else {
 				xstrfmtcat(*extra,
-					   "(t1.eligible && ((%d between "
-					   "t1.eligible and t1.start) || "
-					   "(t1.eligible between %d and %d)))",
+					   "(t1.time_eligible && ((%d between "
+					   "t1.time_eligible and "
+					   "t1.time_start) || "
+					   "(t1.time_eligible "
+					   "between %d and %d)))",
 					   start, start,
 					   end);
 			}
 		} else if (end) {
-			xstrfmtcat(*extra, "(t1.eligible && t1.eligible < %d)",
+			xstrfmtcat(*extra, "(t1.time_eligible && "
+				   "t1.time_eligible < %d)",
 				   end);
 		}
 		break;
@@ -240,19 +244,23 @@ static void _state_time_string(char **extra, uint32_t state,
 		if(start) {
 			if(!end) {
 				xstrfmtcat(*extra,
-					   "(t1.start && (!t1.end || "
-					   "(%d between t1.start and t1.end)))",
+					   "(t1.time_start && (!t1.time_end || "
+					   "(%d between t1.time_start "
+					   "and t1.time_end)))",
 					   start);
 			} else {
 				xstrfmtcat(*extra,
-					   "(t1.start && "
-					   "((%d between t1.start and t1.end) "
-					   "|| (t1.start between %d and %d)))",
+					   "(t1.time_start && "
+					   "((%d between t1.time_start "
+					   "and t1.time_end) "
+					   "|| (t1.time_start between "
+					   "%d and %d)))",
 					   start, start,
 					   end);
 			}
 		} else if (end) {
-			xstrfmtcat(*extra, "(t1.start && t1.start < %d)", end);
+			xstrfmtcat(*extra, "(t1.time_start && "
+				   "t1.time_start < %d)", end);
 		}
 		break;
 	case JOB_COMPLETE:
@@ -261,17 +269,18 @@ static void _state_time_string(char **extra, uint32_t state,
 	case JOB_TIMEOUT:
 	case JOB_NODE_FAIL:
 	default:
-		xstrfmtcat(*extra, "(t1.state='%u' && (t1.end && ", state);
+		xstrfmtcat(*extra, "(t1.state='%u' && (t1.time_end && ", state);
 		if(start) {
 			if(!end) {
-				xstrfmtcat(*extra, "(t1.end >= %d)))", start);
+				xstrfmtcat(*extra, "(t1.time_end >= %d)))",
+					   start);
 			} else {
 				xstrfmtcat(*extra,
-					   "(t1.end between %d and %d)))",
+					   "(t1.time_end between %d and %d)))",
 					   start, end);
 			}
 		} else if(end) {
-			xstrfmtcat(*extra, "(t1.end <= %d)))", end);
+			xstrfmtcat(*extra, "(t1.time_end <= %d)))", end);
 		}
 		break;
 	}
