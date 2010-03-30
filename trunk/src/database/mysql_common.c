@@ -621,22 +621,16 @@ extern MYSQL_RES *mysql_db_query_ret(MYSQL *mysql_db, char *query, bool last)
 	MYSQL_RES *result = NULL;
 
 	if(mysql_db_query(mysql_db, query) != SLURM_ERROR)  {
-		if(last)
+		if(mysql_errno(mysql_db) == ER_NO_SUCH_TABLE)
+			return result;
+		else if(last)
 			result = _get_last_result(mysql_db);
 		else
 			result = _get_first_result(mysql_db);
 		if(!result && mysql_field_count(mysql_db)) {
-			errno = mysql_errno(mysql_db);
-			if(errno == ER_NO_SUCH_TABLE) {
-				errno = 0;
-				debug4("We should have gotten a result, "
-				       "but the calling table "
-				       "doesn't exist: %s\n%s",
-				       mysql_error(mysql_db), query);
-			} else
-				/* should have returned data */
-				error("We should have gotten a result: %s",
-				      mysql_error(mysql_db));
+			/* should have returned data */
+			error("We should have gotten a result: '%m' '%s'",
+			      mysql_error(mysql_db));
 		}
 	}
 
