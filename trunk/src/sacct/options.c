@@ -703,6 +703,8 @@ void parse_command_line(int argc, char **argv)
 			break;
 		case 'E':
 			job_cond->usage_end = parse_time(optarg, 1);
+			if (job_cond->usage_end == 0)
+				exit(1);
 			break;
 		case 'f':
 			xfree(params.opt_filein);
@@ -807,6 +809,8 @@ void parse_command_line(int argc, char **argv)
 			break;
 		case 'S':
 			job_cond->usage_start = parse_time(optarg, 1);
+			if (job_cond->usage_start == 0)
+				exit(1);
 			break;
 		case 'T':
 			job_cond->without_usage_truncation = 0;
