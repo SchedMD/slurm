@@ -93,7 +93,7 @@
 #include "src/slurmd/common/task_plugin.h"
 #include "src/slurmd/common/set_oomadj.h"
 
-#define GETOPT_ARGS	"cd:Df:hL:Mn:N:vV"
+#define GETOPT_ARGS	"cCd:Df:hL:Mn:N:vV"
 
 #ifndef MAXHOSTNAMELEN
 #  define MAXHOSTNAMELEN	64
@@ -144,6 +144,7 @@ static void      _install_fork_handlers(void);
 static void 	 _kill_old_slurmd(void);
 static void      _msg_engine(void);
 static void      _print_conf(void);
+static void      _print_config(void);
 static void      _process_cmdline(int ac, char **av);
 static void      _read_config(void);
 static void      _reconfigure(void);
@@ -1027,6 +1028,31 @@ _destroy_conf(void)
 }
 
 static void
+_print_config(void)
+{
+	char name[128];
+
+	gethostname_short(name, sizeof(name));
+	printf("NodeName=%s ", name);
+
+	get_procs(&conf->actual_cpus);
+	get_cpuinfo(conf->actual_cpus,
+		    &conf->actual_sockets,
+		    &conf->actual_cores,
+		    &conf->actual_threads,
+		    &conf->block_map_size,
+		    &conf->block_map, &conf->block_map_inv);
+	printf("Procs=%u Sockets=%u CoresPerSocket=%u ThreadsPerCore=%u ",
+	       conf->actual_cpus, conf->actual_sockets, conf->actual_cores,
+	       conf->actual_threads);
+
+	get_memory(&conf->real_memory_size);
+	get_tmp_disk(&conf->tmp_disk_space, "/tmp");
+	printf("RealMemory=%u TmpDisk=%u\n",
+	       conf->real_memory_size, conf->tmp_disk_space);
+}
+
+static void
 _process_cmdline(int ac, char **av)
 {
 	int c;
@@ -1038,6 +1064,10 @@ _process_cmdline(int ac, char **av)
 		switch (c) {
 		case 'c':
 			conf->cleanstart = 1;
+			break;
+		case 'C':
+			_print_config();
+			exit(0);
 			break;
 		case 'd':
 			conf->stepd_loc = xstrdup(optarg);
@@ -1417,6 +1447,7 @@ _usage()
 	fprintf(stderr, "\
 Usage: %s [OPTIONS]\n\
    -c          Force cleanup of slurmd shared memory.\n\
+   -C          Print node configuration information and exit.\n\
    -d stepd    Pathname to the slurmstepd program.\n\
    -D          Run daemon in foreground.\n\
    -M          Use mlock() to lock slurmd pages into memory.\n\

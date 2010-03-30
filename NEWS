@@ -5,6 +5,7 @@ documents those changes that are of interest to users and admins.
 =============================
  -- Modify commands to accept time format with one or two digit hour value
     (e.g. 8:00 or 08:00 or 8:00:00 or 08:00:00).
+ -- Add slurmd option of "-C" to print actual hardware configuration and exit.
 
 * Changes in SLURM 2.2.0.pre4
 =============================
