@@ -1619,11 +1619,11 @@ extern int jobacct_storage_p_job_start(void *db_conn,
 		req.start_time    = job_ptr->resize_time;
 		req.submit_time   = job_ptr->resize_time;
 	} else {
-		if (job_ptr->details)
+		if (job_ptr->details) {
 			req.eligible_time = job_ptr->details->begin_time;
-		req.start_time    = job_ptr->start_time;
-		if (job_ptr->details)
 			req.submit_time   = job_ptr->details->submit_time;
+		}
+		req.start_time    = job_ptr->start_time;
 	}
 	req.gid           = job_ptr->group_id;
 	req.job_id        = job_ptr->job_id;
@@ -1706,7 +1706,6 @@ extern int jobacct_storage_p_job_complete(void *db_conn,
 
 	req.assoc_id    = job_ptr->assoc_id;
 	req.db_index    = job_ptr->db_index;
-	req.end_time    = job_ptr->end_time;
 	req.exit_code   = job_ptr->exit_code;
 	req.job_id      = job_ptr->job_id;
 	if (job_ptr->job_state & JOB_RESIZING) {
