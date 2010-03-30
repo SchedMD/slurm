@@ -1,4 +1,4 @@
-.TH SACCT "1" "April 2009" "sacct 2.0" "Slurm components"
+.TH SACCT "1" "March 2010" "sacct 2.2" "Slurm components"
 
 .SH "NAME"
 sacct \- displays accounting data for all jobs and job steps in the
@@ -270,34 +270,49 @@ from. The default is all partitions.
 
 .TP
 \f3\-s \fP\f2state_list\fP \f3,\fP  \f3\-\-state\fP\f3=\fP\f2state_list\fP
-Selects jobs based on their current state or the state they were in
-during the time period given, which can be designated with
-the following state designators:
+Selects jobs based on their state during the time period given.
+Unless otherwise specified, the start and end time will be the
+current time when the \f3\-\-state\fP option is specified and
+only currently running jobs can be displayed.
+A start and/or end time must be specified to view information about
+jobs not currently running.
+The following state designators are valid and multiple state names
+may be specified using comma separators. Either the short or long form of
+the state name may be used (e.g. \f3CA\fP or \f3CANCELLED\fP) and the
+the the name is case insensitive (e.g. \f3ca\fP and \f3CA\fP both work).
 .RS
-.TP "10"
-\f3r\fP
-running
+.TP "20"
+\f3CA  CANCELLED\fP
+Job was explicitly cancelled by the user or system administrator.
+The job may or may not have been initiated.
 .TP
-\f3s\fP
-suspended
+\f3CD  COMPLETED\fP
+Job has terminated all processes on all nodes.
 .TP
-\f3ca\fP
-cancelled
+\f3CF  CONFIGURING\fP
+Job has been allocated resources, but are waiting for them to become ready for use
+(e.g. booting).
 .TP
-\f3cd\fP
-completed
+\f3CG  COMPLETING\fP
+Job is in the process of completing. Some processes on some nodes may still be active.
 .TP
-\f3pd\fP
-pending
+\f3F   FAILED\fP
+Job terminated with non\-zero exit code or other failure condition.
 .TP
-\f3f\fP
-failed
+\f3NF  NODE_FAIL\fP
+Job terminated due to failure of one or more allocated nodes.
 .TP
-\f3to\fP
-timed out
+\f3PD  PENDING\fP
+Job is awaiting resource allocation.
 .TP
-\f3nf\fP
-node_fail
+\f3R   RUNNING\fP
+Job currently has an allocation.
+.TP
+\f3S   SUSPENDED\fP
+Job has an allocation, but execution has been suspended.
+.TP
+\f3TO  TIMEOUT\fP
+Job terminated upon reaching its time limit.
 .RE
 .IP
 The
@@ -504,11 +519,11 @@ Maximum page faults of a process.
 
 .TP
 \f3maxpagesnode\fP
-The node where the maxpages occured.
+The node where the maxpages occurred.
 
 .TP
 \f3maxpagestask\fP
-The task on maxpagesnode where the maxpages occured.
+The task on maxpagesnode where the maxpages occurred.
 
 .TP
 \f3maxrss\fP
@@ -516,11 +531,11 @@ Maximum resident set size of a process.
 
 .TP
 \f3maxrssnode\fP
-The node where the maxrss occured.
+The node where the maxrss occurred.
 
 .TP
 \f3maxrsstask\fP
-The task on maxrssnode where the maxrss occured.
+The task on maxrssnode where the maxrss occurred.
 
 .TP
 \f3maxvmsize\fP
@@ -528,11 +543,11 @@ Maximum  Virtual  Memory size of any process.
 
 .TP
 \f3maxvmsizenode\fP
-The node where the maxvsize occured.
+The node where the maxvsize occurred.
 
 .TP
 \f3maxvmsizetask\fP
-The task on maxvsizenode where the maxvsize occured.
+The task on maxvsizenode where the maxvsize occurred.
 
 .TP
 \f3mincpu\fP
@@ -540,11 +555,11 @@ Minimum cpu of any process.
 
 .TP
 \f3mincpunode\fP
-The node where the mincpu occured.
+The node where the mincpu occurred.
 
 .TP
 \f3mincputask\fP
-The task on mincpunode where the mincpu occured.
+The task on mincpunode where the mincpu occurred.
 
 .TP
 \f3ncpus\fP
@@ -604,8 +619,10 @@ Initiation time of the job in the same format as \f3end\fP.
 \f3state\fP
 Displays the job status, or state.
 
-Output can be RUNNING, SUSPENDED, COMPLETED,  CANCELLED, FAILED,
-TIMEOUT, or NODE_FAIL.
+Output can be RUNNING, SUSPENDED, COMPLETED, CANCELLED, FAILED,
+TIMEOUT, or NODE_FAIL. If multiple job states are found for a single
+job (e.g. the job was requeued after a NODE_FAIL and then COMPLETED)
+then the last job state will be displayed followed by a "+".
 
 .TP
 \f3submit\fP
