@@ -532,8 +532,7 @@ static char *	_will_run_test2(uint32_t jobid, time_t start_time,
 	if (preemptee_cnt) {
 		preemptee_candidates = list_create(NULL);
 		for (i=0; i<preemptee_cnt; i++) {
-			pre_ptr = find_job_record(preemptee[i]);
-			if (pre_ptr) {
+			if ((pre_ptr = find_job_record(preemptee[i])))
 				list_append(preemptee_candidates, pre_ptr);
 		}
 	}
