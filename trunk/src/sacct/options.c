@@ -214,7 +214,7 @@ static int _addto_state_char_list(List char_list, char *names)
 				if((i-start) > 0) {
 					name = xmalloc((i-start+1));
 					memcpy(name, names+start, (i-start));
-					c = decode_state_char(name);
+					c = job_state_num(name);
 					if (c == -1)
 						fatal("unrecognized job "
 						      "state value");
@@ -247,7 +247,7 @@ static int _addto_state_char_list(List char_list, char *names)
 		if((i-start) > 0) {
 			name = xmalloc((i-start)+1);
 			memcpy(name, names+start, (i-start));
-			c = decode_state_char(name);
+			c = job_state_num(name);
 			if (c == -1)
 				fatal("unrecognized job state value");
 			xfree(name);
@@ -508,28 +508,6 @@ void _init_params()
 	memset(&params, 0, sizeof(sacct_parameters_t));
 	params.job_cond = xmalloc(sizeof(slurmdb_job_cond_t));
 	params.job_cond->without_usage_truncation = 1;
-}
-
-int decode_state_char(char *state)
-{
-	if (!strncasecmp(state, "p", 1))
-		return JOB_PENDING; 	/* we should never see this */
-	else if (!strncasecmp(state, "r", 1))
-		return JOB_RUNNING;
-	else if (!strncasecmp(state, "su", 1))
-		return JOB_SUSPENDED;
-	else if (!strncasecmp(state, "cd", 2))
-		return JOB_COMPLETE;
-	else if (!strncasecmp(state, "ca", 2))
-		return JOB_CANCELLED;
-	else if (!strncasecmp(state, "f", 1))
-		return JOB_FAILED;
-	else if (!strncasecmp(state, "to", 1))
-		return JOB_TIMEOUT;
-	else if (!strncasecmp(state, "nf", 1))
-		return JOB_NODE_FAIL;
-	else
-		return -1; // unknown
 }
 
 int get_data(void)

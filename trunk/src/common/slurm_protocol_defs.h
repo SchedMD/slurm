@@ -1050,6 +1050,7 @@ extern uint32_t slurm_get_return_code(slurm_msg_type_t type, void *data);
 extern char *job_reason_string(enum job_state_reason inx);
 extern char *job_state_string(uint16_t inx);
 extern char *job_state_string_compact(uint16_t inx);
+extern int   job_state_num(const char *state_name);
 extern char *node_state_string(uint16_t inx);
 extern char *node_state_string_compact(uint16_t inx);
 extern void  private_data_string(uint16_t private_data, char *str, int str_len);

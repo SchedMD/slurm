@@ -379,24 +379,8 @@ _parse_state( char* str, enum job_states* states )
 	int i;
 	char *state_names;
 
-	for (i = 0; i<JOB_END; i++) {
-		if (strcasecmp (job_state_string(i), str) == 0) {
-			*states = i;
-			return SLURM_SUCCESS;
-		}
-		if (strcasecmp (job_state_string_compact(i), str) == 0) {
-			*states = i;
-			return SLURM_SUCCESS;
-		}
-	}
-	if ((strcasecmp(job_state_string(JOB_COMPLETING), str) == 0) ||
-	    (strcasecmp(job_state_string_compact(JOB_COMPLETING),str) == 0)) {
-		*states = JOB_COMPLETING;
-		return SLURM_SUCCESS;
-	}
-	if ((strcasecmp(job_state_string(JOB_CONFIGURING), str) == 0) ||
-	    (strcasecmp(job_state_string_compact(JOB_CONFIGURING),str) == 0)) {
-		*states = JOB_CONFIGURING;
+	if ((i = job_state_num(str)) >= 0) {
+		*states = i;
 		return SLURM_SUCCESS;
 	}
 
