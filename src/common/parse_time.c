@@ -129,9 +129,11 @@ _get_time(char *time_str, int *pos, int *hour, int *minute, int * second)
 	if ((time_str[offset] < '0') || (time_str[offset] > '9'))
 		goto prob;
 	hr = time_str[offset++] - '0';
-	if ((time_str[offset] < '0') || (time_str[offset] > '9'))
-		goto prob;
-	hr = (hr * 10) + time_str[offset++] - '0';
+	if (time_str[offset] != ':') {
+		if ((time_str[offset] < '0') || (time_str[offset] > '9'))
+			goto prob;
+		hr = (hr * 10) + time_str[offset++] - '0';
+	}
 	if (hr > 23) {
 		offset -= 2;
 		goto prob;
@@ -412,7 +414,8 @@ extern time_t parse_time(char *time_str, int past)
 			/* invalid */
 			goto prob;
 		/* We have some numeric value to process */
-		if (time_str[pos+2] == ':') {	/* time */
+		if ((time_str[pos+1] == ':') || (time_str[pos+2] == ':')) {
+			/* Parse the time stamp */
 			if (_get_time(time_str, &pos, &hour, &minute, &second))
 				goto prob;
 			continue;
