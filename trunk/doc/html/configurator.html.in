@@ -1,6 +1,6 @@
 <!--
 Copyright (C) 2005-2007 The Regents of the University of California.
-Copyright (C) 2008-2009 Lawrence Livermore National Security.
+Copyright (C) 2008-2010 Lawrence Livermore National Security.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 Written by Morris Jette <jette1@llnl.gov> and Danny Auble <da@llnl.gov>
 
@@ -381,7 +381,10 @@ Define the machines on which user applications can run.
 You can also specify addresses of these computers if desired 
 (defaults to their hostnames).
 Only a few of the possible parameters associated with the nodes will 
-be set by this tool, but many others are available. 
+be set by this tool, but many others are available.
+Executing the command <i>slurmd -C</i> on each compute node will print its
+physical configuration (sockets, cores, real memory size, etc.), which
+can be used in constructing the <i>slurm.conf</i> file.
 All of the nodes will be placed into a single partition (or queue) 
 with global access. Many options are available to group nodes into 
 partitions with a wide variety of configuration parameters. 
@@ -856,6 +859,6 @@ before terminating all remaining tasks. A value of zero indicates unlimited wait
 </FORM>
 <HR>
 <P class="footer">LLNL-WEB-402631<BR>
-Last modified 3 February 2010</P>
+Last modified 30 March 2010</P>
 </BODY>
 
