@@ -153,35 +153,20 @@ int initialize_and_process_args(int argc, char *argv[])
 static uint16_t
 _xlate_state_name(const char *state_name, bool env_var)
 {
-	enum job_states i;
+	int i = job_state_num(state_name);
 
-	for (i=0; i<JOB_END; i++) {
-		if ((strcasecmp(state_name,job_state_string(i)) == 0) ||
-		    (strcasecmp(state_name,job_state_string_compact(i)) == 0)){
-			return i;
-		}
-	}
-	if ((strcasecmp(state_name,
-			job_state_string(JOB_COMPLETING)) == 0) ||
-	    (strcasecmp(state_name,
-			job_state_string_compact(JOB_COMPLETING)) == 0)) {
-		return JOB_COMPLETING;
-	}
-	if ((strcasecmp(state_name,
-			job_state_string(JOB_CONFIGURING)) == 0) ||
-	    (strcasecmp(state_name,
-			job_state_string_compact(JOB_CONFIGURING)) == 0)) {
-		return JOB_CONFIGURING;
-	}
+	if (i >= 0)
+		return (uint16_t) i;
 
-	if (env_var)
+	if (env_var) {
 		fprintf(stderr, "Unrecognized SCANCEL_STATE value: %s\n",
 			state_name);
-	else
+	} else {
 		fprintf(stderr, "Invalid job state specified: %s\n",
 			state_name);
-
-	fprintf (stderr, "Valid job states are PENDING, RUNNING, and SUSPENDED\n");
+	}
+	fprintf(stderr,
+		"Valid job states are PENDING, RUNNING, and SUSPENDED\n");
 	exit (1);
 }
 

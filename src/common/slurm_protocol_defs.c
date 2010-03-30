@@ -937,6 +937,34 @@ char *job_state_string_compact(uint16_t inx)
 	}
 }
 
+static inline bool _job_name_test(int state_num, const char *state_name)
+{
+	if (!strcasecmp(state_name, job_state_string(state_num)) ||
+	    !strcasecmp(state_name, job_state_string_compact(state_num))) {
+		return true;
+	}
+	return false;
+}
+
+int job_state_num(const char *state_name)
+{
+	int i;
+
+	for (i=0; i<JOB_END; i++) {
+		if (_job_name_test(i, state_name))
+			return i;
+	}
+
+	if (_job_name_test(JOB_COMPLETING, state_name))
+		return JOB_COMPLETING;
+	if (_job_name_test(JOB_COMPLETING, state_name))
+		return JOB_COMPLETING;
+//	if (_job_name_test(JOB_RESIZING, state_name))
+//		return JOB_RESIZING;
+
+	return -1;
+}
+
 extern char *reservation_flags_string(uint16_t flags)
 {
 	char *flag_str = xstrdup("");
