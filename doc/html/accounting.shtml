@@ -559,7 +559,7 @@ sacctmgr add account chemistry,physics parent=science \
 For example, to permit user <i>da</i> to execute jobs on all clusters
 with a default account of <i>test</i> execute:</p>
 <pre>
-sacctmgr add user da default=test
+sacctmgr add user da DefaultAccount=test
 </pre>
 
 <p>If <b>AccountingStorageEnforce=associations</b> is configured in
