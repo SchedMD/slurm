@@ -2,7 +2,7 @@
  *  slurm_protocol_api.c - high-level slurm communication functions
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Kevin Tew <tew1@llnl.gov>, et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -870,23 +870,6 @@ extern uint16_t slurm_get_tree_width(void)
 	return tree_width;
 }
 
-/* slurm_get_vsize_factor
- * returns the value of vsize_factor in slurmctld_conf object
- */
-extern uint16_t slurm_get_vsize_factor(void)
-{
-	uint16_t vsize_factor = 0;
-	slurm_ctl_conf_t *conf;
-
-	if(slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		vsize_factor = conf->vsize_factor;
-		slurm_conf_unlock();
-	}
-	return vsize_factor;
-}
-
 /* slurm_set_auth_type
  * set the authentication type in slurmctld_conf object
  * used for security testing purposes
@@ -908,29 +891,8 @@ extern int slurm_set_auth_type(char *auth_type)
 	return 0;
 }
 
-/* slurm_get_hash_val
- * get hash val of the slurm.conf from slurmctld_conf object from
- * slurmctld_conf object
- * RET uint32_t  - hash_val
- */
-uint32_t slurm_get_hash_val(void)
-{
-	uint32_t hash_val;
-	slurm_ctl_conf_t *conf;
-
-	if(slurmdbd_conf) {
-		hash_val = NO_VAL;
-	} else {
-		conf = slurm_conf_lock();
-		hash_val = conf->hash_val;
-		slurm_conf_unlock();
-	}
-	return hash_val;
-}
-
 /* slurm_get_health_check_program
- * get health_check_program from slurmctld_conf object from
- * slurmctld_conf object
+ * get health_check_program from slurmctld_conf object from slurmctld_conf object
  * RET char *   - health_check_program, MUST be xfreed by caller
  */
 char *slurm_get_health_check_program(void)
@@ -2073,15 +2035,14 @@ int slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 	/*
 	 * Unpack message body
 	 */
-	msg->protocol_version = header.version;
 	msg->msg_type = header.msg_type;
 	msg->flags = header.flags;
 
-	if ((header.body_length > remaining_buf(buffer)) ||
-	    (unpack_msg(msg, buffer) != SLURM_SUCCESS)) {
-		rc = ESLURM_PROTOCOL_INCOMPLETE_PACKET;
+	if ( (header.body_length > remaining_buf(buffer)) ||
+	     (unpack_msg(msg, buffer) != SLURM_SUCCESS) ) {
 		(void) g_slurm_auth_destroy(auth_cred);
 		free_buf(buffer);
+		rc = ESLURM_PROTOCOL_INCOMPLETE_PACKET;
 		goto total_return;
 	}
 
@@ -2953,7 +2914,6 @@ int slurm_send_rc_msg(slurm_msg_t *msg, int rc)
 	rc_msg.return_code = rc;
 
 	slurm_msg_t_init(&resp_msg);
-	resp_msg.protocol_version = msg->protocol_version;
 	resp_msg.address  = msg->address;
 	resp_msg.msg_type = RESPONSE_SLURM_RC;
 	resp_msg.data     = &rc_msg;

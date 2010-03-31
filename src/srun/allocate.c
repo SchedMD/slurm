@@ -2,7 +2,7 @@
  *  src/srun/allocate.c - srun functions for managing node allocations
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <mgrondona@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -302,7 +302,7 @@ static int _blocks_dealloc(void)
 	}
 
 	if (error_code) {
-		error("slurm_load_partitions: %s",
+		error("slurm_load_partitions: %s\n",
 		      slurm_strerror(slurm_get_errno()));
 		return -1;
 	}
@@ -646,27 +646,22 @@ job_desc_msg_create_from_opts ()
 
 	if (opt.max_nodes)
 		j->max_nodes    = opt.max_nodes;
-	else if (opt.nodes_set) {
-		/* On an allocation if the max nodes isn't set set it
-		 * to do the same behavior as with salloc or sbatch.
-		 */
-		j->max_nodes    = opt.min_nodes;
-	}
-	if (opt.pn_min_cpus != NO_VAL)
-		j->pn_min_cpus    = opt.pn_min_cpus;
-	if (opt.pn_min_memory != NO_VAL)
-		j->pn_min_memory = opt.pn_min_memory;
+
+	if (opt.job_min_cpus != NO_VAL)
+		j->job_min_cpus    = opt.job_min_cpus;
+	if (opt.job_min_memory != NO_VAL)
+		j->job_min_memory = opt.job_min_memory;
 	else if (opt.mem_per_cpu != NO_VAL)
-		j->pn_min_memory = opt.mem_per_cpu | MEM_PER_CPU;
-	if (opt.pn_min_tmp_disk != NO_VAL)
-		j->pn_min_tmp_disk = opt.pn_min_tmp_disk;
+		j->job_min_memory = opt.mem_per_cpu | MEM_PER_CPU;
+	if (opt.job_min_tmp_disk != NO_VAL)
+		j->job_min_tmp_disk = opt.job_min_tmp_disk;
 	if (opt.overcommit) {
-		j->min_cpus    = opt.min_nodes;
-		j->overcommit  = opt.overcommit;
+		j->num_procs    = opt.min_nodes;
+		j->overcommit	= opt.overcommit;
 	} else
-		j->min_cpus    = opt.nprocs * opt.cpus_per_task;
+		j->num_procs    = opt.nprocs * opt.cpus_per_task;
 	if (opt.nprocs_set)
-		j->num_tasks   = opt.nprocs;
+		j->num_tasks    = opt.nprocs;
 
 	if (opt.cpus_set)
 		j->cpus_per_task = opt.cpus_per_task;
@@ -675,8 +670,6 @@ job_desc_msg_create_from_opts ()
 		j->kill_on_node_fail   = 0;
 	if (opt.time_limit != NO_VAL)
 		j->time_limit          = opt.time_limit;
-	if (opt.time_min != NO_VAL)
-		j->time_min            = opt.time_min;
 	j->shared = opt.shared;
 
 	if (opt.warn_signal)
@@ -724,27 +717,7 @@ create_job_step(srun_job_t *job, bool use_all_cpus)
 	totalview_jobid = NULL;
 	xstrfmtcat(totalview_jobid, "%u", job->ctx_params.job_id);
 
-	/* Validate minimum and maximum node counts */
-	if (opt.min_nodes && opt.max_nodes &&
-	    (opt.min_nodes > opt.max_nodes)) {
-		error ("Minimum node count > maximum node count (%d > %d)",
-		       opt.min_nodes, opt.max_nodes);
-		return -1;
-	}
-#ifndef HAVE_FRONT_END
-	if (opt.min_nodes && (opt.min_nodes > job->nhosts)) {
-		error ("Minimum node count > allocated node count (%d > %d)",
-		       opt.min_nodes, job->nhosts);
-		return -1;
-	}
-#endif
-	job->ctx_params.min_nodes = job->nhosts;
-	if (opt.min_nodes && (opt.min_nodes < job->ctx_params.min_nodes))
-		job->ctx_params.min_nodes = opt.min_nodes;
-	job->ctx_params.max_nodes = job->nhosts;
-	if (opt.max_nodes && (opt.max_nodes < job->ctx_params.max_nodes))
-		job->ctx_params.max_nodes = opt.max_nodes;
-
+	job->ctx_params.node_count = job->nhosts;
 	if (!opt.nprocs_set && (opt.ntasks_per_node != NO_VAL))
 		job->ntasks = opt.nprocs = job->nhosts * opt.ntasks_per_node;
 	job->ctx_params.task_count = opt.nprocs;
@@ -755,7 +728,7 @@ create_job_step(srun_job_t *job, bool use_all_cpus)
 	if (use_all_cpus)
 		job->ctx_params.cpu_count = job->cpu_count;
 	else if (opt.overcommit)
-		job->ctx_params.cpu_count = job->ctx_params.min_nodes;
+		job->ctx_params.cpu_count = job->ctx_params.node_count;
 	else
 		job->ctx_params.cpu_count = opt.nprocs*opt.cpus_per_task;
 
@@ -787,7 +760,7 @@ create_job_step(srun_job_t *job, bool use_all_cpus)
 		break;
 	default:
 		job->ctx_params.task_dist = (job->ctx_params.task_count <=
-					     job->ctx_params.min_nodes)
+					     job->ctx_params.node_count)
 			? SLURM_DIST_CYCLIC : SLURM_DIST_BLOCK;
 		opt.distribution = job->ctx_params.task_dist;
 		break;
@@ -806,7 +779,7 @@ create_job_step(srun_job_t *job, bool use_all_cpus)
 
 	debug("requesting job %u, user %u, nodes %u including (%s)",
 	      job->ctx_params.job_id, job->ctx_params.uid,
-	      job->ctx_params.min_nodes, job->ctx_params.node_list);
+	      job->ctx_params.node_count, job->ctx_params.node_list);
 	debug("cpus %u, tasks %u, name %s, relative %u",
 	      job->ctx_params.cpu_count, job->ctx_params.task_count,
 	      job->ctx_params.name, job->ctx_params.relative);

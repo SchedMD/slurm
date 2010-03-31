@@ -2,7 +2,7 @@
  *  opt.c - options processing for sbatch
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <grondona1@llnl.gov>, et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -160,7 +160,6 @@
 #define LONG_OPT_CHECKPOINT      0x14b
 #define LONG_OPT_CHECKPOINT_DIR  0x14c
 #define LONG_OPT_SIGNAL          0x14d
-#define LONG_OPT_TIME_MIN        0x14e
 
 /*---- global variables, defined in opt.h ----*/
 opt_t opt;
@@ -298,7 +297,6 @@ static void _opt_default()
 	opt.mem_bind_type = 0;
 	opt.mem_bind = NULL;
 	opt.time_limit = NO_VAL;
-	opt.time_min = NO_VAL;
 	opt.partition = NULL;
 
 	opt.job_name = NULL;
@@ -697,7 +695,6 @@ static struct option long_options[] = {
 	{"signal",        required_argument, 0, LONG_OPT_SIGNAL},
 	{"sockets-per-node", required_argument, 0, LONG_OPT_SOCKETSPERNODE},
 	{"tasks-per-node",required_argument, 0, LONG_OPT_NTASKSPERNODE},
-	{"time-min",      required_argument, 0, LONG_OPT_TIME_MIN},
 	{"threads-per-core", required_argument, 0, LONG_OPT_THREADSPERCORE},
 	{"tmp",           required_argument, 0, LONG_OPT_TMP},
 	{"uid",           required_argument, 0, LONG_OPT_UID},
@@ -944,8 +941,8 @@ _get_argument(const char *file, int lineno, const char *line, int *skipped)
 	argument[i] = '\0';
 
 	if (quoted) /* Unmatched quote */
-		fatal("%s: line %d: Unmatched `%c` in [%s]",
-		      file, lineno, q_char, line);
+		fatal ("%s: line %d: Unmatched `%c` in [%s]\n",
+				file, lineno, q_char, line);
 
 	*skipped = ptr - line;
 
@@ -1543,10 +1540,6 @@ static void _set_options(int argc, char **argv)
 				exit(error_exit);
 			}
 			break;
-		case LONG_OPT_TIME_MIN:
-			xfree(opt.time_min_str);
-			opt.time_min_str = xstrdup(optarg);
-			break;
 		default:
 			if (spank_process_option (opt_char, optarg) < 0) {
 				error("Unrecognized command line parameter %c",
@@ -1994,14 +1987,14 @@ static bool _opt_verify(void)
 	}
 
 	if (opt.cpus_per_task <= 0) {
-		error("invalid number of cpus per task (-c %d)",
+		error("invalid number of cpus per task (-c %d)\n",
 		      opt.cpus_per_task);
 		verified = false;
 	}
 
 	if ((opt.min_nodes < 0) || (opt.max_nodes < 0) ||
 	    (opt.max_nodes && (opt.min_nodes > opt.max_nodes))) {
-		error("invalid number of nodes (-N %d-%d)",
+		error("invalid number of nodes (-N %d-%d)\n",
 		      opt.min_nodes, opt.max_nodes);
 		verified = false;
 	}
@@ -2201,15 +2194,6 @@ static bool _opt_verify(void)
 		}
 		if (opt.time_limit == 0)
 			opt.time_limit = INFINITE;
-	}
-	if (opt.time_min_str) {
-		opt.time_min = time_str2mins(opt.time_min_str);
-		if ((opt.time_min < 0) && (opt.time_min != INFINITE)) {
-			error("Invalid time-min specification");
-			exit(error_exit);
-		}
-		if (opt.time_min == 0)
-			opt.time_min = INFINITE;
 	}
 
 	if (opt.ckpt_interval_str) {
@@ -2509,10 +2493,9 @@ static void _opt_list()
 		opt.nprocs_set ? "(set)" : "(default)");
 	info("cpus_per_task     : %d %s", opt.cpus_per_task,
 		opt.cpus_set ? "(set)" : "(default)");
-	if (opt.max_nodes) {
-		info("nodes             : %d-%d", 
-		     opt.min_nodes, opt.max_nodes);
-	} else {
+	if (opt.max_nodes)
+		info("nodes             : %d-%d", opt.min_nodes, opt.max_nodes);
+	else {
 		info("nodes             : %d %s", opt.min_nodes,
 			opt.nodes_set ? "(set)" : "(default)");
 	}
@@ -2536,8 +2519,6 @@ static void _opt_list()
 		info("time_limit        : INFINITE");
 	else if (opt.time_limit != NO_VAL)
 		info("time_limit        : %d", opt.time_limit);
-	if (opt.time_min != NO_VAL)
-		info("time_min          : %d", opt.time_min);
 	if (opt.nice)
 		info("nice              : %d", opt.nice);
 	info("account           : %s", opt.account);
@@ -2606,8 +2587,7 @@ static void _usage(void)
 "Usage: sbatch [-N nnodes] [-n ntasks]\n"
 "              [-c ncpus] [-r n] [-p partition] [--hold] [-t minutes]\n"
 "              [-D path] [--immediate] [--no-kill] [--overcommit]\n"
-"              [--input file] [--output file] [--error file]\n"
-"              [--time-min=minutes] [--licenses=names]\n"
+"              [--input file] [--output file] [--error file]  [--licenses=names]\n"
 "              [--workdir=directory] [--share] [-m dist] [-J jobname]\n"
 "              [--jobid=id] [--verbose] [--gid=group] [--uid=user] [-W sec] \n"
 "              [--contiguous] [--mincpus=n] [--mem=MB] [--tmp=MB] [-C list]\n"
@@ -2672,7 +2652,6 @@ static void _help(void)
 "  -Q, --quiet                 quiet mode (suppress informational messages)\n"
 "      --requeue               if set, permit the job to be requeued\n"
 "  -t, --time=minutes          time limit\n"
-"      --time-min=minutes      minimum time limit (if distinct)\n"
 "  -s, --share                 share nodes with other jobs\n"
 "      --uid=user_id           user ID to run job as (user root only)\n"
 "  -v, --verbose               verbose mode (multiple -v's increase verbosity)\n"

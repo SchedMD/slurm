@@ -208,30 +208,28 @@ extern int block_ready(struct job_record *job_ptr)
 }
 
 /* Pack all relevent information about a block */
-extern void pack_block(bg_record_t *bg_record, Buf buffer,
-		       uint16_t protocol_version)
+extern void pack_block(bg_record_t *bg_record, Buf buffer)
 {
-	if(protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
-		packstr(bg_record->bg_block_id, buffer);
+	packstr(bg_record->bg_block_id, buffer);
 #ifdef HAVE_BGL
-		packstr(bg_record->blrtsimage, buffer);
+	packstr(bg_record->blrtsimage, buffer);
 #endif
-		pack_bit_fmt(bg_record->bitmap, buffer);
-		pack16((uint16_t)bg_record->conn_type, buffer);
-		packstr(bg_record->ionodes, buffer);
-		pack_bit_fmt(bg_record->ionode_bitmap, buffer);
-		pack32((uint32_t)bg_record->job_running, buffer);
-		packstr(bg_record->linuximage, buffer);
-		packstr(bg_record->mloaderimage, buffer);
-		packstr(bg_record->nodes, buffer);
-		pack32((uint32_t)bg_record->node_cnt, buffer);
+	pack_bit_fmt(bg_record->bitmap, buffer);
+	pack16((uint16_t)bg_record->conn_type, buffer);
+	packstr(bg_record->ionodes, buffer);
+	pack_bit_fmt(bg_record->ionode_bitmap, buffer);
+	pack32((uint32_t)bg_record->job_running, buffer);
+	packstr(bg_record->linuximage, buffer);
+	packstr(bg_record->mloaderimage, buffer);
+	packstr(bg_record->nodes, buffer);
+	pack32((uint32_t)bg_record->node_cnt, buffer);
 #ifdef HAVE_BGL
-		pack16((uint16_t)bg_record->node_use, buffer);
+	pack16((uint16_t)bg_record->node_use, buffer);
 #endif
-		packstr(bg_record->user_name, buffer);
-		packstr(bg_record->ramdiskimage, buffer);
-		pack16((uint16_t)bg_record->state, buffer);
-	}
+
+	packstr(bg_record->user_name, buffer);
+	packstr(bg_record->ramdiskimage, buffer);
+	pack16((uint16_t)bg_record->state, buffer);
 }
 
 extern int update_block_list()
@@ -498,14 +496,23 @@ extern int update_block_list()
 					      bg_record->boot_count);
 					bg_record->boot_count++;
 				} else {
-					char *reason = "update_block_list: "
-						"Boot fails ";
+					char reason[128], time_str[32];
 
 					error("Couldn't boot Block %s "
 					      "for user %s",
 					      bg_record->bg_block_id,
 					      bg_record->target_name);
 					slurm_mutex_unlock(&block_state_mutex);
+
+					now = time(NULL);
+					slurm_make_time_str(&now, time_str,
+							    sizeof(time_str));
+					snprintf(reason,
+						 sizeof(reason),
+						 "update_block_list: "
+						 "Boot fails "
+						 "[SLURM@%s]",
+						 time_str);
 					drain_as_needed(bg_record, reason);
 					slurm_mutex_lock(&block_state_mutex);
 					bg_record->boot_state = 0;

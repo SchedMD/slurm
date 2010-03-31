@@ -40,7 +40,6 @@
 
 #include "src/sacctmgr/sacctmgr.h"
 #include "src/common/uid.h"
-static bool with_deleted = 0;
 static bool without_limits = 0;
 
 static int _set_cond(int *start, int argc, char *argv[],
@@ -53,9 +52,6 @@ static int _set_cond(int *start, int argc, char *argv[],
 	int end = 0;
 	int command_len = 0;
 	int option = 0;
-
-	with_deleted = 0;
-	without_limits = 0;
 
 	for (i=(*start); i<argc; i++) {
 		end = parse_option_end(argv[i]);
@@ -75,10 +71,6 @@ static int _set_cond(int *start, int argc, char *argv[],
 		} else if(!end && !strncasecmp(argv[i], "where",
 					       MAX(command_len, 5))) {
 			continue;
-		} else if (!end &&
-			   !strncasecmp (argv[i], "WithDeleted",
-					 MAX(command_len, 5))) {
-			with_deleted = 1;
 		} else if (!end && !strncasecmp (argv[i], "WOLimits",
 						 MAX(command_len, 3))) {
 			without_limits = 1;
@@ -117,7 +109,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 
 static int _set_rec(int *start, int argc, char *argv[],
 		    List name_list,
-		    slurmdb_association_rec_t *assoc,
+		    acct_association_rec_t *assoc,
 		    uint16_t *classification)
 {
 	int i, mins;
@@ -270,17 +262,17 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
 	int i = 0;
-	slurmdb_cluster_rec_t *cluster = NULL;
+	acct_cluster_rec_t *cluster = NULL;
 	List name_list = list_create(slurm_destroy_char);
 	List cluster_list = NULL;
-	slurmdb_association_rec_t start_assoc;
+	acct_association_rec_t start_assoc;
 
 	int limit_set = 0;
 	ListIterator itr = NULL, itr_c = NULL;
 	char *name = NULL;
 	uint16_t class = 0;
 
-	slurmdb_init_association_rec(&start_assoc);
+	init_acct_association_rec(&start_assoc);
 
 	for (i=0; i<argc; i++) {
 		int command_len = strlen(argv[i]);
@@ -300,10 +292,10 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 		return SLURM_ERROR;
 	} else {
 		List temp_list = NULL;
-		slurmdb_cluster_cond_t cluster_cond;
+		acct_cluster_cond_t cluster_cond;
 		char *name = NULL;
 
-		memset(&cluster_cond, 0, sizeof(slurmdb_cluster_cond_t));
+		memset(&cluster_cond, 0, sizeof(acct_cluster_cond_t));
 		cluster_cond.cluster_list = name_list;
 		cluster_cond.classification = class;
 
@@ -320,7 +312,7 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 		itr_c = list_iterator_create(name_list);
 		itr = list_iterator_create(temp_list);
 		while((name = list_next(itr_c))) {
-			slurmdb_cluster_rec_t *cluster_rec = NULL;
+			acct_cluster_rec_t *cluster_rec = NULL;
 
 			list_iterator_reset(itr);
 			while((cluster_rec = list_next(itr))) {
@@ -343,7 +335,7 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 	}
 
 	printf(" Adding Cluster(s)\n");
-	cluster_list = list_create(slurmdb_destroy_cluster_rec);
+	cluster_list = list_create(destroy_acct_cluster_rec);
 	itr = list_iterator_create(name_list);
 	while((name = list_next(itr))) {
 		if(!name[0]) {
@@ -353,13 +345,13 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 			rc = SLURM_ERROR;
 			continue;
 		}
-		cluster = xmalloc(sizeof(slurmdb_cluster_rec_t));
+		cluster = xmalloc(sizeof(acct_cluster_rec_t));
 
 		list_append(cluster_list, cluster);
 		cluster->name = xstrdup(name);
 		cluster->classification = class;
-		cluster->root_assoc = xmalloc(sizeof(slurmdb_association_rec_t));
-		slurmdb_init_association_rec(cluster->root_assoc);
+		cluster->root_assoc = xmalloc(sizeof(acct_association_rec_t));
+		init_acct_association_rec(cluster->root_assoc);
 		printf("  Name          = %s\n", cluster->name);
 		if(cluster->classification)
 			printf("  Classification= %s\n",
@@ -423,13 +415,13 @@ end_it:
 extern int sacctmgr_list_cluster(int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
-	slurmdb_cluster_cond_t *cluster_cond =
-		xmalloc(sizeof(slurmdb_cluster_cond_t));
+	acct_cluster_cond_t *cluster_cond =
+		xmalloc(sizeof(acct_cluster_cond_t));
 	List cluster_list;
 	int i=0;
 	ListIterator itr = NULL;
 	ListIterator itr2 = NULL;
-	slurmdb_cluster_rec_t *cluster = NULL;
+	acct_cluster_rec_t *cluster = NULL;
 	char *object;
 
 	int field_count = 0;
@@ -478,7 +470,7 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 	}
 
 	if(exit_code) {
-		slurmdb_destroy_cluster_cond(cluster_cond);
+		destroy_acct_cluster_cond(cluster_cond);
 		list_destroy(format_list);
 		return SLURM_ERROR;
 	}
@@ -493,8 +485,6 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 					      "F,GrpJ,GrpN,GrpS,MaxJ,MaxN,"
 					      "MaxS,MaxW,QOS");
 	}
-
-	cluster_cond->with_deleted = with_deleted;
 
 	itr = list_iterator_create(format_list);
 	while((object = list_next(itr))) {
@@ -657,14 +647,14 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 	list_destroy(format_list);
 
 	if(exit_code) {
-		slurmdb_destroy_cluster_cond(cluster_cond);
+		destroy_acct_cluster_cond(cluster_cond);
 		list_destroy(print_fields_list);
 		return SLURM_ERROR;
 	}
 
 	cluster_list = acct_storage_g_get_clusters(db_conn, my_uid,
 						   cluster_cond);
-	slurmdb_destroy_cluster_cond(cluster_cond);
+	destroy_acct_cluster_cond(cluster_cond);
 
 	if(!cluster_list) {
 		exit_code=1;
@@ -681,7 +671,7 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 
 	while((cluster = list_next(itr))) {
 		int curr_inx = 1;
-		slurmdb_association_rec_t *assoc = cluster->root_assoc;
+		acct_association_rec_t *assoc = cluster->root_assoc;
 		while((field = list_next(itr2))) {
 			switch(field->type) {
 			case PRINT_CLUSTER:
@@ -842,14 +832,14 @@ extern int sacctmgr_modify_cluster(int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
 	int i=0;
-	slurmdb_association_rec_t *assoc = xmalloc(sizeof(slurmdb_association_rec_t));
-	slurmdb_association_cond_t *assoc_cond =
-		xmalloc(sizeof(slurmdb_association_cond_t));
+	acct_association_rec_t *assoc = xmalloc(sizeof(acct_association_rec_t));
+	acct_association_cond_t *assoc_cond =
+		xmalloc(sizeof(acct_association_cond_t));
 	int cond_set = 0, rec_set = 0, set = 0;
 	List ret_list = NULL;
 	uint16_t class_cond = 0, class_rec = 0;
 
-	slurmdb_init_association_rec(assoc);
+	init_acct_association_rec(assoc);
 
 	assoc_cond->cluster_list = list_create(slurm_destroy_char);
 	assoc_cond->acct_list = list_create(NULL);
@@ -877,28 +867,28 @@ extern int sacctmgr_modify_cluster(int argc, char *argv[])
 	if(!rec_set) {
 		exit_code=1;
 		fprintf(stderr, " You didn't give me anything to set\n");
-		slurmdb_destroy_association_rec(assoc);
-		slurmdb_destroy_association_cond(assoc_cond);
+		destroy_acct_association_rec(assoc);
+		destroy_acct_association_cond(assoc_cond);
 		return SLURM_ERROR;
 	} else if(!cond_set) {
 		if(!commit_check("You didn't set any conditions with 'WHERE'.\n"
 				 "Are you sure you want to continue?")) {
 			printf("Aborted\n");
-			slurmdb_destroy_association_rec(assoc);
-			slurmdb_destroy_association_cond(assoc_cond);
+			destroy_acct_association_rec(assoc);
+			destroy_acct_association_cond(assoc_cond);
 			return SLURM_SUCCESS;
 		}
 	} else if(exit_code) {
-		slurmdb_destroy_association_rec(assoc);
-		slurmdb_destroy_association_cond(assoc_cond);
+		destroy_acct_association_rec(assoc);
+		destroy_acct_association_cond(assoc_cond);
 		return SLURM_ERROR;
 	}
 
 	if(class_cond) {
 		List temp_list = NULL;
-		slurmdb_cluster_cond_t cluster_cond;
+		acct_cluster_cond_t cluster_cond;
 
-		memset(&cluster_cond, 0, sizeof(slurmdb_cluster_cond_t));
+		memset(&cluster_cond, 0, sizeof(acct_cluster_cond_t));
 		cluster_cond.cluster_list = assoc_cond->cluster_list;
 		cluster_cond.classification = class_cond;
 
@@ -909,16 +899,16 @@ extern int sacctmgr_modify_cluster(int argc, char *argv[])
 			fprintf(stderr,
 				" Problem getting clusters from database.  "
 				"Contact your admin.\n");
-			slurmdb_destroy_association_rec(assoc);
-			slurmdb_destroy_association_cond(assoc_cond);
+			destroy_acct_association_rec(assoc);
+			destroy_acct_association_cond(assoc_cond);
 			return SLURM_ERROR;
 		} else if(!list_count(temp_list)) {
 			fprintf(stderr,
 				" The class you gave %s didn't "
 				"return any clusters.\n",
 				get_classification_str(class_cond));
-			slurmdb_destroy_association_rec(assoc);
-			slurmdb_destroy_association_cond(assoc_cond);
+			destroy_acct_association_rec(assoc);
+			destroy_acct_association_cond(assoc_cond);
 			list_destroy(temp_list);
 			return SLURM_ERROR;
 		}
@@ -965,11 +955,11 @@ extern int sacctmgr_modify_cluster(int argc, char *argv[])
 		list_destroy(ret_list);
 
 	if(class_rec) {
-		slurmdb_cluster_cond_t cluster_cond;
-		slurmdb_cluster_rec_t cluster_rec;
+		acct_cluster_cond_t cluster_cond;
+		acct_cluster_rec_t cluster_rec;
 
-		memset(&cluster_cond, 0, sizeof(slurmdb_cluster_cond_t));
-		memset(&cluster_rec, 0, sizeof(slurmdb_cluster_rec_t));
+		memset(&cluster_cond, 0, sizeof(acct_cluster_cond_t));
+		memset(&cluster_rec, 0, sizeof(acct_cluster_rec_t));
 		/* the class has already returned these clusters so
 		   just go with it */
 		cluster_cond.cluster_list = assoc_cond->cluster_list;
@@ -1010,8 +1000,8 @@ extern int sacctmgr_modify_cluster(int argc, char *argv[])
 			acct_storage_g_commit(db_conn, 0);
 		}
 	}
-	slurmdb_destroy_association_cond(assoc_cond);
-	slurmdb_destroy_association_rec(assoc);
+	destroy_acct_association_cond(assoc_cond);
+	destroy_acct_association_rec(assoc);
 
 	return rc;
 }
@@ -1019,8 +1009,8 @@ extern int sacctmgr_modify_cluster(int argc, char *argv[])
 extern int sacctmgr_delete_cluster(int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
-	slurmdb_cluster_cond_t *cluster_cond =
-		xmalloc(sizeof(slurmdb_cluster_cond_t));
+	acct_cluster_cond_t *cluster_cond =
+		xmalloc(sizeof(acct_cluster_cond_t));
 	int i=0;
 	List ret_list = NULL;
 	int cond_set = 0;
@@ -1039,13 +1029,13 @@ extern int sacctmgr_delete_cluster(int argc, char *argv[])
 	}
 
 	if(exit_code) {
-		slurmdb_destroy_cluster_cond(cluster_cond);
+		destroy_acct_cluster_cond(cluster_cond);
 		return SLURM_ERROR;
 	} else if(!cond_set) {
 		exit_code=1;
 		fprintf(stderr,
 			" No conditions given to remove, not executing.\n");
-		slurmdb_destroy_cluster_cond(cluster_cond);
+		destroy_acct_cluster_cond(cluster_cond);
 		return SLURM_ERROR;
 	}
 
@@ -1055,7 +1045,7 @@ extern int sacctmgr_delete_cluster(int argc, char *argv[])
 		fprintf(stderr,
 			"problem with delete request.  "
 			"Nothing given to delete.\n");
-		slurmdb_destroy_cluster_cond(cluster_cond);
+		destroy_acct_cluster_cond(cluster_cond);
 		return SLURM_SUCCESS;
 	}
 	notice_thread_init();
@@ -1063,7 +1053,7 @@ extern int sacctmgr_delete_cluster(int argc, char *argv[])
 		db_conn, my_uid, cluster_cond);
 	notice_thread_fini();
 
-	slurmdb_destroy_cluster_cond(cluster_cond);
+	destroy_acct_cluster_cond(cluster_cond);
 
 	if(ret_list && list_count(ret_list)) {
 		char *object = NULL;
@@ -1095,15 +1085,15 @@ extern int sacctmgr_delete_cluster(int argc, char *argv[])
 
 extern int sacctmgr_dump_cluster (int argc, char *argv[])
 {
-	slurmdb_user_cond_t user_cond;
-	slurmdb_user_rec_t *user = NULL;
-	slurmdb_hierarchical_rec_t *slurmdb_hierarchical_rec = NULL;
-	slurmdb_association_rec_t *assoc = NULL;
-	slurmdb_association_cond_t assoc_cond;
+	acct_user_cond_t user_cond;
+	acct_user_rec_t *user = NULL;
+	acct_hierarchical_rec_t *acct_hierarchical_rec = NULL;
+	acct_association_rec_t *assoc = NULL;
+	acct_association_cond_t assoc_cond;
 	List assoc_list = NULL;
 	List acct_list = NULL;
 	List user_list = NULL;
-	List slurmdb_hierarchical_rec_list = NULL;
+	List acct_hierarchical_rec_list = NULL;
 	char *cluster_name = NULL;
 	char *file_name = NULL;
 	char *user_name = NULL;
@@ -1157,10 +1147,10 @@ extern int sacctmgr_dump_cluster (int argc, char *argv[])
 		return SLURM_ERROR;
 	} else {
 		List temp_list = NULL;
-		slurmdb_cluster_cond_t cluster_cond;
-		slurmdb_cluster_rec_t *cluster_rec = NULL;
+		acct_cluster_cond_t cluster_cond;
+		acct_cluster_rec_t *cluster_rec = NULL;
 
-		memset(&cluster_cond, 0, sizeof(slurmdb_cluster_cond_t));
+		memset(&cluster_cond, 0, sizeof(acct_cluster_cond_t));
 		cluster_cond.cluster_list = list_create(NULL);
 		list_push(cluster_cond.cluster_list, cluster_name);
 
@@ -1194,11 +1184,11 @@ extern int sacctmgr_dump_cluster (int argc, char *argv[])
 		printf(" No filename given, using %s.\n", file_name);
 	}
 
-	memset(&user_cond, 0, sizeof(slurmdb_user_cond_t));
+	memset(&user_cond, 0, sizeof(acct_user_cond_t));
 	user_cond.with_coords = 1;
 	user_cond.with_wckeys = 1;
 
-	memset(&assoc_cond, 0, sizeof(slurmdb_association_cond_t));
+	memset(&assoc_cond, 0, sizeof(acct_association_cond_t));
 	assoc_cond.without_parent_limits = 1;
 	assoc_cond.with_raw_qos = 1;
 	assoc_cond.cluster_list = list_create(NULL);
@@ -1222,7 +1212,7 @@ extern int sacctmgr_dump_cluster (int argc, char *argv[])
 
 	} else {
 		if(my_uid != slurm_get_slurm_user_id() && my_uid != 0
-		    && user->admin_level < SLURMDB_ADMIN_SUPER_USER) {
+		    && user->admin_level < ACCT_ADMIN_SUPER_USER) {
 			exit_code=1;
 			fprintf(stderr, " Your user does not have sufficient "
 				"privileges to dump clusters.\n");
@@ -1255,7 +1245,7 @@ extern int sacctmgr_dump_cluster (int argc, char *argv[])
 		return SLURM_ERROR;
 	}
 
-	slurmdb_hierarchical_rec_list = slurmdb_get_acct_hierarchical_rec_list(assoc_list);
+	acct_hierarchical_rec_list = get_acct_hierarchical_rec_list(assoc_list);
 
 	acct_list = acct_storage_g_get_accounts(db_conn, my_uid, NULL);
 
@@ -1297,8 +1287,8 @@ extern int sacctmgr_dump_cluster (int argc, char *argv[])
 	if(class_str)
 		xstrfmtcat(line, ":Classification=%s", class_str);
 
-	slurmdb_hierarchical_rec = list_peek(slurmdb_hierarchical_rec_list);
-	assoc = slurmdb_hierarchical_rec->assoc;
+	acct_hierarchical_rec = list_peek(acct_hierarchical_rec_list);
+	assoc = acct_hierarchical_rec->assoc;
 	if(strcmp(assoc->acct, "root"))
 		fprintf(stderr, "Root association not on the top it was %s\n",
 			assoc->acct);
@@ -1312,12 +1302,12 @@ extern int sacctmgr_dump_cluster (int argc, char *argv[])
 	}
 	info("%s", line);
 
-	print_file_slurmdb_hierarchical_rec_list(
-		fd, slurmdb_hierarchical_rec_list, user_list, acct_list);
+	print_file_acct_hierarchical_rec_list(
+		fd, acct_hierarchical_rec_list, user_list, acct_list);
 
 	xfree(cluster_name);
 	xfree(file_name);
-	list_destroy(slurmdb_hierarchical_rec_list);
+	list_destroy(acct_hierarchical_rec_list);
 	list_destroy(assoc_list);
 	fclose(fd);
 

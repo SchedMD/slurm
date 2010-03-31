@@ -112,7 +112,7 @@ void pty_thread_create(srun_job_t *job)
 		return;
 	}
 	job->pty_port = ntohs(((struct sockaddr_in) pty_addr).sin_port);
-	debug2("initialized job control port %hu", job->pty_port);
+	debug2("initialized job control port %hu\n", job->pty_port);
 
 	slurm_attr_init(&attr);
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);

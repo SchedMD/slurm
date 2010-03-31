@@ -120,7 +120,7 @@ void _do_help(void)
 		_usage();
 		break;
 	default:
-		fprintf(stderr, "stats bug: params.opt_help=%d\n",
+		fprintf(stderr, "sacct bug: params.opt_help=%d\n",
 			params.opt_help);
 	}
 }
@@ -135,8 +135,8 @@ static int _addto_job_list(List job_list, char *names)
 {
 	int i=0, start=0;
 	char *name = NULL, *dot = NULL;
-	slurmdb_selected_step_t *selected_step = NULL;
-	slurmdb_selected_step_t *curr_step = NULL;
+	jobacct_selected_step_t *selected_step = NULL;
+	jobacct_selected_step_t *curr_step = NULL;
 
 	ListIterator itr = NULL;
 	char quote_c = '\0';
@@ -169,7 +169,7 @@ static int _addto_job_list(List job_list, char *names)
 					memcpy(name, names+start, (i-start));
 
 					selected_step = xmalloc(
-						sizeof(slurmdb_selected_step_t));
+						sizeof(jobacct_selected_step_t));
 					dot = strstr(name, ".");
 					if (dot == NULL) {
 						debug2("No jobstep requested");
@@ -196,7 +196,7 @@ static int _addto_job_list(List job_list, char *names)
 							    selected_step);
 						count++;
 					} else
-						slurmdb_destroy_selected_step(
+						destroy_jobacct_selected_step(
 							selected_step);
 					list_iterator_reset(itr);
 				}
@@ -210,7 +210,7 @@ static int _addto_job_list(List job_list, char *names)
 			memcpy(name, names+start, (i-start));
 
 			selected_step =
-				xmalloc(sizeof(slurmdb_selected_step_t));
+				xmalloc(sizeof(jobacct_selected_step_t));
 			dot = strstr(name, ".");
 			if (dot == NULL) {
 				debug2("No jobstep requested");
@@ -233,7 +233,7 @@ static int _addto_job_list(List job_list, char *names)
 				list_append(job_list, selected_step);
 				count++;
 			} else
-				slurmdb_destroy_selected_step(
+				destroy_jobacct_selected_step(
 					selected_step);
 		}
 	}
@@ -268,7 +268,7 @@ void parse_command_line(int argc, char **argv)
 	extern int optind;
 	int c, i, optionIndex = 0;
 	char *end = NULL, *start = NULL;
-	slurmdb_selected_step_t *selected_step = NULL;
+	jobacct_selected_step_t *selected_step = NULL;
 	ListIterator itr = NULL;
 	log_options_t logopt = LOG_OPTS_STDERR_ONLY;
 
@@ -318,7 +318,7 @@ void parse_command_line(int argc, char **argv)
 			}
 			if(!params.opt_job_list)
 				params.opt_job_list = list_create(
-					slurmdb_destroy_selected_step);
+					destroy_jobacct_selected_step);
 			_addto_job_list(params.opt_job_list, optarg);
 			break;
 		case 'n':
@@ -371,7 +371,7 @@ void parse_command_line(int argc, char **argv)
 		}
 		if(!params.opt_job_list)
 			params.opt_job_list = list_create(
-				slurmdb_destroy_selected_step);
+				destroy_jobacct_selected_step);
 		_addto_job_list(params.opt_job_list, optarg);
 	}
 

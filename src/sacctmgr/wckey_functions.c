@@ -41,7 +41,7 @@
 #include "src/common/uid.h"
 
 static int _set_cond(int *start, int argc, char *argv[],
-		     slurmdb_wckey_cond_t *wckey_cond,
+		     acct_wckey_cond_t *wckey_cond,
 		     List format_list)
 {
 	int i;
@@ -128,7 +128,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 					 MAX(command_len, 1))) {
 			wckey_cond->usage_start = parse_time(argv[i]+end, 1);
 			set = 1;
-		} else if (!strncasecmp (argv[i], "Users",
+		} else if (!strncasecmp (argv[i], "User",
 					 MAX(command_len, 1))) {
 			if(!wckey_cond->user_list)
 				wckey_cond->user_list =
@@ -150,12 +150,12 @@ static int _set_cond(int *start, int argc, char *argv[],
 extern int sacctmgr_list_wckey(int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
-	slurmdb_wckey_cond_t *wckey_cond = xmalloc(sizeof(slurmdb_wckey_cond_t));
+	acct_wckey_cond_t *wckey_cond = xmalloc(sizeof(acct_wckey_cond_t));
 	List wckey_list = NULL;
 	int i=0;
 	ListIterator itr = NULL;
 	ListIterator itr2 = NULL;
-	slurmdb_wckey_rec_t *wckey = NULL;
+	acct_wckey_rec_t *wckey = NULL;
 	char *object;
 
 	print_field_t *field = NULL;
@@ -180,7 +180,7 @@ extern int sacctmgr_list_wckey(int argc, char *argv[])
 	}
 
 	if(exit_code) {
-		slurmdb_destroy_wckey_cond(wckey_cond);
+		destroy_acct_wckey_cond(wckey_cond);
 		list_destroy(format_list);
 		return SLURM_ERROR;
 	}
@@ -206,24 +206,24 @@ extern int sacctmgr_list_wckey(int argc, char *argv[])
 		command_len = strlen(object);
 
 		field = xmalloc(sizeof(print_field_t));
-		if(!strncasecmp("WCKeys", object, MAX(command_len, 1))
-		   || !strncasecmp("Names", object, MAX(command_len, 1))) {
+		if(!strncasecmp("WCKey", object, MAX(command_len, 1))
+		   || !strncasecmp("Name", object, MAX(command_len, 1))) {
 			field->type = PRINT_NAME;
 			field->name = xstrdup("WCKey");
 			field->len = 10;
 			field->print_routine = print_fields_str;
-		} else if(!strncasecmp("Clusters", object,
+		} else if(!strncasecmp("Cluster", object,
 				       MAX(command_len, 2))) {
 			field->type = PRINT_CLUSTER;
 			field->name = xstrdup("Cluster");
 			field->len = 10;
 			field->print_routine = print_fields_str;
-		} else if(!strncasecmp("IDs", object, MAX(command_len, 1))) {
+		} else if(!strncasecmp("ID", object, MAX(command_len, 1))) {
 			field->type = PRINT_ID;
 			field->name = xstrdup("ID");
 			field->len = 6;
 			field->print_routine = print_fields_uint;
-		} else if(!strncasecmp("Users", object, MAX(command_len, 1))) {
+		} else if(!strncasecmp("User", object, MAX(command_len, 1))) {
 			field->type = PRINT_USER;
 			field->name = xstrdup("User");
 			field->len = 10;
@@ -244,13 +244,13 @@ extern int sacctmgr_list_wckey(int argc, char *argv[])
 	list_destroy(format_list);
 
 	if(exit_code) {
-		slurmdb_destroy_wckey_cond(wckey_cond);
+		destroy_acct_wckey_cond(wckey_cond);
 		list_destroy(print_fields_list);
 		return SLURM_ERROR;
 	}
 
 	wckey_list = acct_storage_g_get_wckeys(db_conn, my_uid, wckey_cond);
-	slurmdb_destroy_wckey_cond(wckey_cond);
+	destroy_acct_wckey_cond(wckey_cond);
 
 	if(!wckey_list) {
 		exit_code=1;

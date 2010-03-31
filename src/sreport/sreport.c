@@ -55,11 +55,11 @@ int exit_flag;		/* program to terminate if =1 */
 int input_words;	/* number of words of input permitted */
 int quiet_flag;		/* quiet=1, verbose=-1, normal=0 */
 int all_clusters_flag = 0;
-slurmdb_report_time_format_t time_format = SLURMDB_REPORT_TIME_MINS;
+sreport_time_format_t time_format = SREPORT_TIME_MINS;
 char *time_format_string = "Minutes";
 void *db_conn = NULL;
 uint32_t my_uid = 0;
-slurmdb_report_sort_t sort_flag = SLURMDB_REPORT_SORT_TIME;
+sreport_sort_t sort_flag = SREPORT_SORT_TIME;
 
 static void	_job_rep (int argc, char *argv[]);
 static void	_user_rep (int argc, char *argv[]);
@@ -178,7 +178,7 @@ main (int argc, char *argv[])
 		}
 	}
 
-	db_conn = acct_storage_g_get_connection(false, 0, false, NULL);
+	db_conn = acct_storage_g_get_connection(false, 0, false);
 	if(errno) {
 		error("Problem talking to the database: %m");
 		exit(1);
@@ -582,25 +582,25 @@ static int _set_time_format(char *format)
 	int command_len = strlen(format);
 
 	if (strncasecmp (format, "SecPer", MAX(command_len, 6)) == 0) {
-		time_format = SLURMDB_REPORT_TIME_SECS_PER;
+		time_format = SREPORT_TIME_SECS_PER;
 		time_format_string = "Seconds/Percentage of Total";
 	} else if (strncasecmp (format, "MinPer", MAX(command_len, 6)) == 0) {
-		time_format = SLURMDB_REPORT_TIME_MINS_PER;
+		time_format = SREPORT_TIME_MINS_PER;
 		time_format_string = "Minutes/Percentage of Total";
 	} else if (strncasecmp (format, "HourPer", MAX(command_len, 6)) == 0) {
-		time_format = SLURMDB_REPORT_TIME_HOURS_PER;
+		time_format = SREPORT_TIME_HOURS_PER;
 		time_format_string = "Hours/Percentage of Total";
 	} else if (strncasecmp (format, "Seconds", MAX(command_len, 1)) == 0) {
-		time_format = SLURMDB_REPORT_TIME_SECS;
+		time_format = SREPORT_TIME_SECS;
 		time_format_string = "Seconds";
 	} else if (strncasecmp (format, "Minutes", MAX(command_len, 1)) == 0) {
-		time_format = SLURMDB_REPORT_TIME_MINS;
+		time_format = SREPORT_TIME_MINS;
 		time_format_string = "Minutes";
 	} else if (strncasecmp (format, "Hours", MAX(command_len, 1)) == 0) {
-		time_format = SLURMDB_REPORT_TIME_HOURS;
+		time_format = SREPORT_TIME_HOURS;
 		time_format_string = "Hours";
 	} else if (strncasecmp (format, "Percent", MAX(command_len, 1)) == 0) {
-		time_format = SLURMDB_REPORT_TIME_PERCENT;
+		time_format = SREPORT_TIME_PERCENT;
 		time_format_string = "Percentage of Total";
 	} else {
 		fprintf (stderr, "unknown time format %s", format);
@@ -615,9 +615,9 @@ static int _set_sort(char *format)
 	int command_len = strlen(format);
 
 	if (strncasecmp (format, "Name", MAX(command_len, 1)) == 0) {
-		sort_flag = SLURMDB_REPORT_SORT_NAME;
+		sort_flag = SREPORT_SORT_NAME;
 	} else if (strncasecmp (format, "Time", MAX(command_len, 6)) == 0) {
-		sort_flag = SLURMDB_REPORT_SORT_TIME;
+		sort_flag = SREPORT_SORT_TIME;
 	} else {
 		fprintf (stderr, "unknown timesort format %s", format);
 		return SLURM_ERROR;

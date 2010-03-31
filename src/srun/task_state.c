@@ -170,7 +170,7 @@ static void _do_log_msg (bitstr_t *b, log_f fn, const char *msg)
 {
 	char buf [65536];
 	char *s = bit_set_count (b) == 1 ? "" : "s";
-	(*fn) ("task%s %s: %s", s, bit_fmt (buf, sizeof(buf), b), msg);
+	(*fn) ("task%s %s: %s\n", s, bit_fmt (buf, sizeof(buf), b), msg);
 }
 
 void task_state_print (task_state_t ts, log_f fn)

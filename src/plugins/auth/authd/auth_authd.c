@@ -342,15 +342,15 @@ slurm_auth_print( slurm_auth_credential_t *cred, FILE *fp )
 		return SLURM_ERROR;
 	}
 
-	verbose( "BEGIN AUTHD CREDENTIAL" );
+	verbose( "BEGIN AUTHD CREDENTIAL\n" );
 	verbose( "   UID: %u", cred->cred.uid );
 	verbose( "   GID: %u", cred->cred.gid );
 	verbose( "   Valid from: %s", ctime( &cred->cred.valid_from ) );
 	verbose( "   Valid to: %s", ctime( &cred->cred.valid_to ) );
-	verbose( "   Signature: 0x%02x%02x%02x%02x ...",
+	verbose( "   Signature: 0x%02x%02x%02x%02x ...\n",
 			 cred->sig.data[ 0 ], cred->sig.data[ 1 ],
 			 cred->sig.data[ 2 ], cred->sig.data[ 3 ] );
-	verbose( "END AUTHD CREDENTIAL" );
+	verbose( "END AUTHD CREDENTIAL\n" );
 
 	return SLURM_SUCCESS;
 }

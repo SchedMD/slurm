@@ -55,8 +55,6 @@
 /* global timeslicer thread variables */
 static bool thread_running = false;
 static bool thread_shutdown = false;
-static pthread_mutex_t term_lock = PTHREAD_MUTEX_INITIALIZER;
-static pthread_cond_t  term_cond = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t thread_flag_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_t timeslicer_thread_id = (pthread_t) 0;
 static List preempt_job_list = (List) NULL;
@@ -212,13 +210,17 @@ static void _print_jobs(struct gs_part *p_ptr)
 
 static uint16_t _get_gr_type(void)
 {
-	if (slurmctld_conf.select_type_param & CR_CORE)
-		return GS_CORE;
-	if (slurmctld_conf.select_type_param & CR_CPU)
-		return GS_CPU;
-	if (slurmctld_conf.select_type_param & CR_SOCKET)
-		return GS_SOCKET;
-
+	switch (slurmctld_conf.select_type_param) {
+		case CR_CORE:
+		case CR_CORE_MEMORY:
+			return GS_CORE;
+		case CR_CPU:
+		case CR_CPU_MEMORY:
+			return GS_CPU;
+		case CR_SOCKET:
+		case CR_SOCKET_MEMORY:
+			return GS_SOCKET;
+	}
 	/* note that CR_MEMORY is node-level scheduling with
 	 * memory management */
 	return GS_NODE;
@@ -646,7 +648,7 @@ static int _suspend_job(uint32_t job_id)
 	msg.job_id = job_id;
 	debug3("gang: suspending %u", job_id);
 	msg.op = SUSPEND_JOB;
-	rc = job_suspend(&msg, 0, -1, false, (uint16_t)NO_VAL);
+	rc = job_suspend(&msg, 0, -1, false);
 	/* job_suspend() returns ESLURM_DISABLED if job is already suspended */
 	if ((rc != SLURM_SUCCESS) && (rc != ESLURM_DISABLED)) {
 		info("gang: suspending job %u: %s",
@@ -663,7 +665,7 @@ static void _resume_job(uint32_t job_id)
 	msg.job_id = job_id;
 	debug3("gang: resuming %u", job_id);
 	msg.op = RESUME_JOB;
-	rc = job_suspend(&msg, 0, -1, false, (uint16_t)NO_VAL);
+	rc = job_suspend(&msg, 0, -1, false);
 	if ((rc != SLURM_SUCCESS) && (rc != ESLURM_ALREADY_DONE)) {
 		error("gang: resuming job %u: %s",
 		      job_id, slurm_strerror(rc));
@@ -1195,10 +1197,7 @@ extern int gs_fini(void)
 	debug3("gang: entering gs_fini");
 	pthread_mutex_lock(&thread_flag_mutex);
 	if (thread_running) {
-		pthread_mutex_lock(&term_lock);
 		thread_shutdown = true;
-		pthread_cond_signal(&term_cond);
-		pthread_mutex_unlock(&term_lock);
 		usleep(120000);
 		if (timeslicer_thread_id)
 			error("gang: timeslicer pthread still running");
@@ -1540,13 +1539,10 @@ static void _cycle_job_list(struct gs_part *p_ptr)
 
 static void _slice_sleep(void)
 {
-	struct timespec ts = {0, 0};
+	int i, cycles = timeslicer_seconds * 10;
 
-	ts.tv_sec = time(NULL) + timeslicer_seconds;
-	pthread_mutex_lock(&term_lock);
-	if (!thread_shutdown)
-		pthread_cond_timedwait(&term_cond, &term_lock, &ts);
-	pthread_mutex_unlock(&term_lock);
+	for (i=0; ((i<cycles) && !thread_shutdown); i++)
+		usleep(100000);
 }
 
 /* The timeslicer thread */

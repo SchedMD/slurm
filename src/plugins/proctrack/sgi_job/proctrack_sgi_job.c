@@ -204,7 +204,7 @@ int slurm_container_create (slurmd_job_t *job)
 		error ("Failed to create job container: %m");
 		return SLURM_ERROR;
 	}
-	debug ("created jid 0x%08lx", jid);
+	debug ("created jid 0x%08lx\n", jid);
 
 	return SLURM_SUCCESS;
 }

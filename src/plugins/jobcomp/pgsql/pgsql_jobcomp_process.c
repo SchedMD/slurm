@@ -59,14 +59,14 @@ static void _do_fdump(PGresult *result, int lc)
 	return;
 }
 
-extern List pgsql_jobcomp_process_get_jobs(slurmdb_job_cond_t *job_cond)
+extern List pgsql_jobcomp_process_get_jobs(acct_job_cond_t *job_cond)
 {
 
 	char *query = NULL;
 	char *extra = NULL;
 	char *tmp = NULL;
 	char *selected_part = NULL;
-	slurmdb_selected_step_t *selected_step = NULL;
+	jobacct_selected_step_t *selected_step = NULL;
 	ListIterator itr = NULL;
 	int set = 0;
 	PGresult *result = NULL;
@@ -220,7 +220,7 @@ extern List pgsql_jobcomp_process_get_jobs(slurmdb_job_cond_t *job_cond)
 	return job_list;
 }
 
-extern int pgsql_jobcomp_process_archive(slurmdb_archive_cond_t *arch_cond)
+extern int pgsql_jobcomp_process_archive(acct_archive_cond_t *arch_cond)
 {
 	return SLURM_SUCCESS;
 }

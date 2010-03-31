@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  licenses.c - Functions for handling cluster-wide consumable resources
  *****************************************************************************
- *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette@llnl.gov>, et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -52,33 +52,31 @@
 #include "src/slurmctld/reservation.h"
 #include "src/slurmctld/slurmctld.h"
 
+#define _DEBUG 0
+
 List license_list = (List) NULL;
 static pthread_mutex_t license_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /* Print all licenses on a list */
-static inline void _licenses_print(char *header, List licenses, int job_id)
+static inline void _licenses_print(char *header, List licenses)
 {
+#if _DEBUG
 	ListIterator iter;
 	licenses_t *license_entry;
 
+	info("licenses: %s", header);
 	if (licenses == NULL)
 		return;
 
 	iter = list_iterator_create(licenses);
 	if (iter == NULL)
 		fatal("malloc failure from list_iterator_create");
-  	while ((license_entry = (licenses_t *) list_next(iter))) {
-		if (job_id == 0) {
-			info("licenses: %s=%s total=%u used=%u", 
-			     header, license_entry->name,
-			     license_entry->total, license_entry->used);
-		} else {
-			info("licenses: %s=%s job_id=%u available=%u used=%u", 
-			     header, license_entry->name, job_id, 
-			     license_entry->total, license_entry->used);
-		}
+	while ((license_entry = (licenses_t *) list_next(iter))) {
+		info("name:%s total:%u used:%u", license_entry->name,
+		     license_entry->total, license_entry->used);
 	}
 	list_iterator_destroy(iter);
+#endif
 }
 
 /* Free a license_t record (for use by list_destroy) */
@@ -164,7 +162,7 @@ extern int license_init(char *licenses)
 	if (!valid)
 		fatal("Invalid configured licenses: %s", licenses);
 
-	_licenses_print("init_license", license_list, 0);
+	_licenses_print("licences_init", license_list);
 	slurm_mutex_unlock(&license_mutex);
 	return SLURM_SUCCESS;
 }
@@ -211,7 +209,7 @@ extern int license_update(char *licenses)
 
 	list_destroy(license_list);
 	license_list = new_list;
-	_licenses_print("update_license", license_list, 0);
+	_licenses_print("licences_update", license_list);
 	slurm_mutex_unlock(&license_mutex);
 	return SLURM_SUCCESS;
 }
@@ -241,11 +239,11 @@ extern List license_validate(char *licenses, bool *valid)
 	List job_license_list;
 
 	job_license_list = _build_license_list(licenses, valid);
+	_licenses_print("job_validate", job_license_list);
 	if (!job_license_list)
 		return job_license_list;
 
 	slurm_mutex_lock(&license_mutex);
-	_licenses_print("request_license", job_license_list, 0);
 	iter = list_iterator_create(job_license_list);
 	if (iter == NULL)
 		fatal("malloc failure from list_iterator_create");
@@ -360,7 +358,7 @@ extern int license_job_get(struct job_record *job_ptr)
 		}
 	}
 	list_iterator_destroy(iter);
-	_licenses_print("acquire_license", license_list, job_ptr->job_id);
+	_licenses_print("licences_job_get", license_list);
 	slurm_mutex_unlock(&license_mutex);
 	return rc;
 }
@@ -403,7 +401,7 @@ extern int license_job_return(struct job_record *job_ptr)
 		}
 	}
 	list_iterator_destroy(iter);
-	_licenses_print("return_license", license_list, job_ptr->job_id);
+	_licenses_print("licences_job_return", license_list);
 	slurm_mutex_unlock(&license_mutex);
 	return rc;
 }

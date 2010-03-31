@@ -82,7 +82,7 @@ static char *_get_qos_list_str(List qos_list)
 {
 	char *qos_char = NULL;
 	ListIterator itr = NULL;
-	slurmdb_qos_rec_t *qos = NULL;
+	acct_qos_rec_t *qos = NULL;
 
 	if(!qos_list)
 		return NULL;
@@ -223,16 +223,16 @@ extern int commit_check(char *warning)
 	return 0;
 }
 
-extern slurmdb_association_rec_t *sacctmgr_find_association(char *user,
+extern acct_association_rec_t *sacctmgr_find_association(char *user,
 							 char *account,
 							 char *cluster,
 							 char *partition)
 {
-	slurmdb_association_rec_t * assoc = NULL;
-	slurmdb_association_cond_t assoc_cond;
+	acct_association_rec_t * assoc = NULL;
+	acct_association_cond_t assoc_cond;
 	List assoc_list = NULL;
 
-	memset(&assoc_cond, 0, sizeof(slurmdb_association_cond_t));
+	memset(&assoc_cond, 0, sizeof(acct_association_cond_t));
 	if(account) {
 		assoc_cond.acct_list = list_create(NULL);
 		list_append(assoc_cond.acct_list, account);
@@ -278,12 +278,12 @@ extern slurmdb_association_rec_t *sacctmgr_find_association(char *user,
 	return assoc;
 }
 
-extern slurmdb_association_rec_t *sacctmgr_find_account_base_assoc(char *account,
+extern acct_association_rec_t *sacctmgr_find_account_base_assoc(char *account,
 								char *cluster)
 {
-	slurmdb_association_rec_t *assoc = NULL;
+	acct_association_rec_t *assoc = NULL;
 	char *temp = "root";
-	slurmdb_association_cond_t assoc_cond;
+	acct_association_cond_t assoc_cond;
 	List assoc_list = NULL;
 
 	if(!cluster)
@@ -292,7 +292,7 @@ extern slurmdb_association_rec_t *sacctmgr_find_account_base_assoc(char *account
 	if(account)
 		temp = account;
 
-	memset(&assoc_cond, 0, sizeof(slurmdb_association_cond_t));
+	memset(&assoc_cond, 0, sizeof(acct_association_cond_t));
 	assoc_cond.acct_list = list_create(NULL);
 	list_append(assoc_cond.cluster_list, temp);
 	assoc_cond.cluster_list = list_create(NULL);
@@ -315,23 +315,23 @@ extern slurmdb_association_rec_t *sacctmgr_find_account_base_assoc(char *account
 	return assoc;
 }
 
-extern slurmdb_association_rec_t *sacctmgr_find_root_assoc(char *cluster)
+extern acct_association_rec_t *sacctmgr_find_root_assoc(char *cluster)
 {
 	return sacctmgr_find_account_base_assoc(NULL, cluster);
 }
 
-extern slurmdb_user_rec_t *sacctmgr_find_user(char *name)
+extern acct_user_rec_t *sacctmgr_find_user(char *name)
 {
-	slurmdb_user_rec_t *user = NULL;
-	slurmdb_user_cond_t user_cond;
-	slurmdb_association_cond_t assoc_cond;
+	acct_user_rec_t *user = NULL;
+	acct_user_cond_t user_cond;
+	acct_association_cond_t assoc_cond;
 	List user_list = NULL;
 
 	if(!name)
 		return NULL;
 
-	memset(&user_cond, 0, sizeof(slurmdb_user_cond_t));
-	memset(&assoc_cond, 0, sizeof(slurmdb_association_cond_t));
+	memset(&user_cond, 0, sizeof(acct_user_cond_t));
+	memset(&assoc_cond, 0, sizeof(acct_association_cond_t));
 	assoc_cond.user_list = list_create(NULL);
 	list_append(assoc_cond.user_list, name);
 	user_cond.assoc_cond = &assoc_cond;
@@ -349,18 +349,18 @@ extern slurmdb_user_rec_t *sacctmgr_find_user(char *name)
 	return user;
 }
 
-extern slurmdb_account_rec_t *sacctmgr_find_account(char *name)
+extern acct_account_rec_t *sacctmgr_find_account(char *name)
 {
-	slurmdb_account_rec_t *account = NULL;
-	slurmdb_account_cond_t account_cond;
-	slurmdb_association_cond_t assoc_cond;
+	acct_account_rec_t *account = NULL;
+	acct_account_cond_t account_cond;
+	acct_association_cond_t assoc_cond;
 	List account_list = NULL;
 
 	if(!name)
 		return NULL;
 
-	memset(&account_cond, 0, sizeof(slurmdb_account_cond_t));
-	memset(&assoc_cond, 0, sizeof(slurmdb_association_cond_t));
+	memset(&account_cond, 0, sizeof(acct_account_cond_t));
+	memset(&assoc_cond, 0, sizeof(acct_association_cond_t));
 	assoc_cond.acct_list = list_create(NULL);
 	list_append(assoc_cond.acct_list, name);
 	account_cond.assoc_cond = &assoc_cond;
@@ -378,16 +378,16 @@ extern slurmdb_account_rec_t *sacctmgr_find_account(char *name)
 	return account;
 }
 
-extern slurmdb_cluster_rec_t *sacctmgr_find_cluster(char *name)
+extern acct_cluster_rec_t *sacctmgr_find_cluster(char *name)
 {
-	slurmdb_cluster_rec_t *cluster = NULL;
-	slurmdb_cluster_cond_t cluster_cond;
+	acct_cluster_rec_t *cluster = NULL;
+	acct_cluster_cond_t cluster_cond;
 	List cluster_list = NULL;
 
 	if(!name)
 		return NULL;
 
-	memset(&cluster_cond, 0, sizeof(slurmdb_cluster_cond_t));
+	memset(&cluster_cond, 0, sizeof(acct_cluster_cond_t));
 	cluster_cond.cluster_list = list_create(NULL);
 	list_append(cluster_cond.cluster_list, name);
 
@@ -404,12 +404,12 @@ extern slurmdb_cluster_rec_t *sacctmgr_find_cluster(char *name)
 	return cluster;
 }
 
-extern slurmdb_association_rec_t *sacctmgr_find_association_from_list(
+extern acct_association_rec_t *sacctmgr_find_association_from_list(
 	List assoc_list, char *user, char *account,
 	char *cluster, char *partition)
 {
 	ListIterator itr = NULL;
-	slurmdb_association_rec_t * assoc = NULL;
+	acct_association_rec_t * assoc = NULL;
 
 	if(!assoc_list)
 		return NULL;
@@ -437,11 +437,11 @@ extern slurmdb_association_rec_t *sacctmgr_find_association_from_list(
 	return assoc;
 }
 
-extern slurmdb_association_rec_t *sacctmgr_find_account_base_assoc_from_list(
+extern acct_association_rec_t *sacctmgr_find_account_base_assoc_from_list(
 	List assoc_list, char *account, char *cluster)
 {
 	ListIterator itr = NULL;
-	slurmdb_association_rec_t *assoc = NULL;
+	acct_association_rec_t *assoc = NULL;
 	char *temp = "root";
 
 	if(!cluster || !assoc_list)
@@ -466,11 +466,11 @@ extern slurmdb_association_rec_t *sacctmgr_find_account_base_assoc_from_list(
 	return assoc;
 }
 
-extern slurmdb_qos_rec_t *sacctmgr_find_qos_from_list(
+extern acct_qos_rec_t *sacctmgr_find_qos_from_list(
 	List qos_list, char *name)
 {
 	ListIterator itr = NULL;
-	slurmdb_qos_rec_t *qos = NULL;
+	acct_qos_rec_t *qos = NULL;
 	char *working_name = NULL;
 
 	if(!name || !qos_list)
@@ -492,11 +492,11 @@ extern slurmdb_qos_rec_t *sacctmgr_find_qos_from_list(
 
 }
 
-extern slurmdb_user_rec_t *sacctmgr_find_user_from_list(
+extern acct_user_rec_t *sacctmgr_find_user_from_list(
 	List user_list, char *name)
 {
 	ListIterator itr = NULL;
-	slurmdb_user_rec_t *user = NULL;
+	acct_user_rec_t *user = NULL;
 
 	if(!name || !user_list)
 		return NULL;
@@ -512,11 +512,11 @@ extern slurmdb_user_rec_t *sacctmgr_find_user_from_list(
 
 }
 
-extern slurmdb_account_rec_t *sacctmgr_find_account_from_list(
+extern acct_account_rec_t *sacctmgr_find_account_from_list(
 	List acct_list, char *name)
 {
 	ListIterator itr = NULL;
-	slurmdb_account_rec_t *account = NULL;
+	acct_account_rec_t *account = NULL;
 
 	if(!name || !acct_list)
 		return NULL;
@@ -532,11 +532,11 @@ extern slurmdb_account_rec_t *sacctmgr_find_account_from_list(
 
 }
 
-extern slurmdb_cluster_rec_t *sacctmgr_find_cluster_from_list(
+extern acct_cluster_rec_t *sacctmgr_find_cluster_from_list(
 	List cluster_list, char *name)
 {
 	ListIterator itr = NULL;
-	slurmdb_cluster_rec_t *cluster = NULL;
+	acct_cluster_rec_t *cluster = NULL;
 
 	if(!name || !cluster_list)
 		return NULL;
@@ -551,11 +551,11 @@ extern slurmdb_cluster_rec_t *sacctmgr_find_cluster_from_list(
 	return cluster;
 }
 
-extern slurmdb_wckey_rec_t *sacctmgr_find_wckey_from_list(
+extern acct_wckey_rec_t *sacctmgr_find_wckey_from_list(
 	List wckey_list, char *user, char *name, char *cluster)
 {
 	ListIterator itr = NULL;
-	slurmdb_wckey_rec_t * wckey = NULL;
+	acct_wckey_rec_t * wckey = NULL;
 
 	if(!wckey_list)
 		return NULL;
@@ -726,7 +726,7 @@ extern int addto_qos_char_list(List char_list, List qos_list, char *names,
 					name = xmalloc((i-start+1));
 					memcpy(name, names+start, (i-start));
 
-					id = str_2_slurmdb_qos(qos_list, name);
+					id = str_2_acct_qos(qos_list, name);
 					if(id == NO_VAL) {
 						char *tmp = _get_qos_list_str(
 							qos_list);
@@ -808,7 +808,7 @@ extern int addto_qos_char_list(List char_list, List qos_list, char *names,
 			name = xmalloc((i-start)+1);
 			memcpy(name, names+start, (i-start));
 
-			id = str_2_slurmdb_qos(qos_list, name);
+			id = str_2_acct_qos(qos_list, name);
 			if(id == NO_VAL) {
 				char *tmp = _get_qos_list_str(qos_list);
 				error("You gave a bad qos "
@@ -998,7 +998,7 @@ extern void sacctmgr_print_coord_list(
 	int abs_len = abs(field->len);
 	ListIterator itr = NULL;
 	char *print_this = NULL;
-	slurmdb_coord_rec_t *object = NULL;
+	acct_coord_rec_t *object = NULL;
 
 	if(!value || !list_count(value)) {
 		if(print_fields_parsable_print)
@@ -1085,7 +1085,7 @@ extern void sacctmgr_print_qos_bitstr(print_field_t *field, List qos_list,
 	xfree(print_this);
 }
 
-extern void sacctmgr_print_assoc_limits(slurmdb_association_rec_t *assoc)
+extern void sacctmgr_print_assoc_limits(acct_association_rec_t *assoc)
 {
 	if(!assoc)
 		return;
@@ -1180,7 +1180,7 @@ extern void sacctmgr_print_assoc_limits(slurmdb_association_rec_t *assoc)
 	}
 }
 
-extern void sacctmgr_print_qos_limits(slurmdb_qos_rec_t *qos)
+extern void sacctmgr_print_qos_limits(acct_qos_rec_t *qos)
 {
 	if(!qos)
 		return;
@@ -1276,7 +1276,7 @@ extern void sacctmgr_print_qos_limits(slurmdb_qos_rec_t *qos)
 
 }
 
-extern int sort_coord_list(slurmdb_coord_rec_t *coord_a, slurmdb_coord_rec_t *coord_b)
+extern int sort_coord_list(acct_coord_rec_t *coord_a, acct_coord_rec_t *coord_b)
 {
 	int diff = strcmp(coord_a->name, coord_b->name);
 

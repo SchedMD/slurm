@@ -2,8 +2,7 @@
  *  debugger.c - Definitions needed for parallel debugger
  *  $Id: debugger.c 11149 2007-03-14 20:53:19Z morrone $
  *****************************************************************************
- *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
+ *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <grondona1@llnl.gov>, et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -45,7 +44,6 @@
 #include "src/common/log.h"
 
 #include "src/srun/debugger.h"
-#include "src/srun/srun_job.h"
 
 /*
  *  Instantiate extern variables from debugger.h
@@ -53,22 +51,19 @@
 MPIR_PROCDESC *MPIR_proctable;
 int MPIR_proctable_size;
 VOLATILE int MPIR_debug_state;
+VOLATILE int MPIR_debug_gate;
 int MPIR_being_debugged;
 int MPIR_i_am_starter;
 int MPIR_acquired_pre_main;
 char *totalview_jobid;
-#ifdef DEBUGGER_PARTIAL_ATTACH
-  int MPIR_partial_attach_ok;
-#endif
 
-void MPIR_Breakpoint(srun_job_t *job)
+void MPIR_Breakpoint(void)
 {
 	/*
 	 * This just notifies parallel debugger that some event of
 	 *  interest occurred.
 	 */
 	debug("In MPIR_Breakpoint");
-	slurm_step_launch_fwd_signal(job->step_ctx, SIG_DEBUG_WAKE);
 }
 
 

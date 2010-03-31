@@ -56,19 +56,30 @@ BEGIN { require "config.slurmdb.pl"; }
 our ($logLevel, $db_conn_line, $db_job_table, $db_user, $db_passwd);
 
 my $set = 0;
+my $submit_set = 0;
+my $migrate_set = 0;
+my $start_set = 0;
+my $end_set = 0;
 
-my $job_common_columns =
-	"(id_job, id_assoc, id_wckey, track_steps, priority, " .
-	"id_user, id_group, account, partition, wckey, job_name, " .
-	"state, cpus_req, time_submit";
+my $submit_sql = "INSERT INTO $db_job_table " .
+	"(jobid, associd, wckeyid, track_steps, priority, uid, gid, cluster, " .
+	"account, partition, wckey, name, state, req_cpus, submit) VALUES ";
 
-my %submit_sql;
+my $migrate_sql = "INSERT INTO $db_job_table " .
+	"(jobid, associd, wckeyid, track_steps, priority, uid, gid, cluster, " .
+	"account, partition, wckey, name, state, req_cpus, " .
+	"submit, eligible) VALUES ";
 
-my %migrate_sql;
+my $start_sql = "INSERT INTO $db_job_table " .
+	"(jobid, associd, wckeyid, track_steps, priority, uid, gid, cluster, " .
+	"account, partition, wckey, name, state, req_cpus, " .
+	"submit, eligible, start, nodelist, alloc_cpus) VALUES ";
 
-my %start_sql;
-
-my %end_sql;
+my $end_sql = "INSERT INTO $db_job_table " .
+	"(jobid, associd, wckeyid, track_steps, priority, uid, gid, cluster, " .
+	"account, partition, wckey, name, state, req_cpus, " .
+	"submit, eligible, start, nodelist, alloc_cpus, " .
+	"end, comp_code) VALUES ";
 
 foreach my $line (<STDIN>) {
 	chomp $line;
@@ -169,11 +180,8 @@ foreach my $line (<STDIN>) {
 			$cluster = $1;
 		} elsif ($rm_ext =~ /feature:(\w*)/) {
 			$cluster = $1;
-		} elsif ($rm_ext =~ /PARTITION=(\w*)/) {
-			$cluster = $1;
 		} else {
-			print "ERROR: No cluster found for\n$line\n";
-			next;
+			$cluster = "";
 		}
 	}
 
@@ -188,50 +196,34 @@ foreach my $line (<STDIN>) {
 	}
 
 	if($event eq "JOBSUBMIT") {
-		if(!$submit_sql{$cluster}) {
-			$submit_sql{$cluster} =
-				"INSERT INTO $cluster" . "_$db_job_table " .
-				"$job_common_columns) VALUES ";
-		} else {
-			$submit_sql{$cluster} .= ", "
-		}
-		$submit_sql{$cluster} .= "($id, 0, 0, 0, 0, $uid, $gid, " .
+		$submit_sql .= ", " if $submit_set;
+		$submit_sql .= "($id, 0, 0, 0, 0, $uid, $gid, \"$cluster\", " .
 			"\"$account\", \"$partition\", \"$wckey\", " .
 			"\"$executable\", 0, $req_tasks, $submit_time)";
+		$submit_set = 1;
 		$set = 1;
 	} elsif ($event eq "JOBMIGRATE") {
-		if(!$migrate_sql{$cluster}) {
-			$migrate_sql{$cluster} =
-				"INSERT INTO $cluster" . "_$db_job_table " .
-				"$job_common_columns, time_eligible) VALUES ";
-		} else {
-			$migrate_sql{$cluster} .= ", ";
-		}
+		$migrate_sql .= ", " if $migrate_set;
 		# here for some reason the eligible time is really the
-		# submit time, so we use the end time which appears
+		# elgible time, so we use the end time which appears
 		# to be the best guess.
-		$migrate_sql{$cluster} .= "($id, 0, 0, 0, 0, $uid, $gid, " .
+		$migrate_sql .= "($id, 0, 0, 0, 0, $uid, $gid, \"$cluster\", " .
 			"\"$account\", \"$partition\", \"$wckey\", " .
 			"\"$executable\", 0, $req_tasks, $submit_time, " .
 			"$end_time)";
+		$migrate_set = 1;
 		$set = 1;
 	} elsif ($event eq "JOBSTART") {
-		if(!$start_sql{$cluster}) {
-			$start_sql{$cluster} =
-				"INSERT INTO $cluster" . "_$db_job_table " .
-				"$job_common_columns, time_eligible, " .
-				"time_start, nodelist, cpus_alloc) VALUES ";
-		} else {
-			$start_sql{$cluster} .= ", ";
-		}
+		$start_sql .= ", " if $start_set;
 
 		# req_tasks is used for alloc_tasks on purpose.
 		# alloc_tasks isn't always correct.
-		$start_sql{$cluster} .= "($id, 0, 0, 0, 0, $uid, $gid, " .
+		$start_sql .= "($id, 0, 0, 0, 0, $uid, $gid, \"$cluster\", " .
 			"\"$account\", \"$partition\", \"$wckey\", " .
 			"\"$executable\", 1, $req_tasks, $submit_time, " .
 			"$eligible_time, $start_time, \"$alloc_hl\", " .
 			"$req_tasks)";
+		$start_set = 1;
 		$set = 1;
 	} elsif (($event eq "JOBEND") || ($event eq "JOBCANCEL")
 		|| ($event eq "JOBFAILURE") || ($event eq "JOBTIMEOUT"))  {
@@ -245,20 +237,13 @@ foreach my $line (<STDIN>) {
 			$state = 6;
 		}
 
-		if(!$end_sql{$cluster}) {
-			$end_sql{$cluster} =
-				"INSERT INTO $cluster" . "_$db_job_table " .
-				"$job_common_columns, time_eligible, " .
-				"time_start, nodelist, cpus_alloc, " .
-				"time_end, exit_code) VALUES ";
-		} else {
-			$end_sql{$cluster} .= ", ";
-		}
-		$end_sql{$cluster} .= "($id, 0, 0, 0, 0, $uid, $gid, " .
+		$end_sql .= ", " if $end_set;
+		$end_sql .= "($id, 0, 0, 0, 0, $uid, $gid, \"$cluster\", " .
 			"\"$account\", \"$partition\", \"$wckey\", " .
 			"\"$executable\", $state, $req_tasks, $submit_time, " .
 			"$eligible_time, $start_time, \"$alloc_hl\", " .
 			"$req_tasks, $end_time, $comp_code)";
+		$end_set = 1;
 		$set = 1;
 	} else {
 		print "ERROR: unknown event of $event\n";
@@ -271,35 +256,33 @@ exit 0 if !$set;
 $db_user = (getpwuid($<))[0] if !$db_user;
 my $dbhandle = DBI->connect($db_conn_line, $db_user, $db_passwd,
 			    {AutoCommit => 1, RaiseError => 1});
-
-while (my ($key, $line) = each(%submit_sql)) {
-	$line .= " on duplicate key update id_job=VALUES(id_job)";
-	#print "submit\n$line\n\n";
-	$dbhandle->do($line);
+if($submit_set) {
+	$submit_sql .= " on duplicate key update jobid=VALUES(jobid)";
+	#print "submit\n$submit_sql\n\n";
+	$dbhandle->do($submit_sql);
 }
 
-while (my ($key, $line) = each(%migrate_sql)) {
-	$line .= " on duplicate key update " .
-		"time_eligible=VALUES(time_eligible)";
-	#print "migrate\n$line\n\n";
-	$dbhandle->do($line);
+if($migrate_set) {
+	$migrate_sql .= " on duplicate key update eligible=VALUES(eligible)";
+	#print "migrate\n$migrate_sql\n\n";
+	$dbhandle->do($migrate_sql);
 }
 
-while (my ($key, $line) = each(%start_sql)) {
-	$line .= " on duplicate key update nodelist=VALUES(nodelist), " .
+if($start_set) {
+	$start_sql .= " on duplicate key update nodelist=VALUES(nodelist), " .
 		"account=VALUES(account), partition=VALUES(partition), " .
-		"wckey=values(wckey), time_start=VALUES(time_start), " .
-		"job_name=VALUES(job_name), state=values(state), " .
-		"cpus_alloc=values(cpus_alloc)";
-	#print "start\n$line\n\n";
-	$dbhandle->do($line);
+		"wckey=values(wckey), start=VALUES(start), " .
+		"name=VALUES(name), state=values(state), " .
+		"alloc_cpus=values(alloc_cpus)";
+	#print "start\n$start_sql\n\n";
+	$dbhandle->do($start_sql);
 }
 
-while (my ($key, $line) = each(%start_sql)) {
-	$line .= " on duplicate key update time_end=VALUES(time_end), " .
-		"state=VALUES(state), exit_code=VALUES(exit_code)";
-	#print "end\n$line\n\n";
-	$dbhandle->do($line);
+if($end_set) {
+	$end_sql .= " on duplicate key update end=VALUES(end), " .
+		"state=VALUES(state), comp_code=VALUES(comp_code)";
+	#print "end\n$end_sql\n\n";
+	$dbhandle->do($end_sql);
 }
 
 exit 0;

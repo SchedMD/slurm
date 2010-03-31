@@ -1,4 +1,4 @@
-.TH SCONTROL "1" "March 2010" "scontrol 2.2" "Slurm components"
+.TH SCONTROL "1" "September 2009" "scontrol 2.1" "Slurm components"
 
 .SH "NAME"
 scontrol \- Used view and modify Slurm configuration and state.
@@ -153,8 +153,8 @@ This is the default behavior.
 
 .TP
 \fBnotify\fP \fIjob_id\fP \fImessage\fP
-Send a message to standard error of the salloc or srun command or batch job 
-associated with the specified \fIjob_id\fP.
+Send a message to standard error of the srun command associated with the
+specified \fIjob_id\fP.
 
 .TP
 \fBoneliner\fP
@@ -218,16 +218,6 @@ Resume a previously suspended job.
 .TP
 \fBrequeue\fP \fIjob_id\fP
 Requeue a running or pending SLURM batch job.
-
-.TP
-\fBschedloglevel\fP \fILEVEL\fP
-Enable or disable scheduler logging.
-\fILEVEL\fP may be "0", "1", "disable" or "enable". "0" has the same 
-effect as "disable". "1" has the same effect as "enable".
-This value is temporary and will be overwritten when the slurmctld 
-daemon reads the slurm.conf configuration file (e.g. when the daemon 
-is restarted or \fBscontrol reconfigure\fR is executed) if the
-SlurmSchedLogLevel parameter is present.
 
 .TP
 \fBsetdebug\fP \fILEVEL\fP
@@ -305,8 +295,8 @@ primary SLURM controller is scheduled down.
 
 .TP
 \fBupdate\fP \fISPECIFICATION\fP
-Update job, step, node, partition, or reservation configuration per the 
-supplied specification. \fISPECIFICATION\fP is in the same format as the Slurm
+Update job, node, partition, or reservation configuration per the supplied
+specification. \fISPECIFICATION\fP is in the same format as the Slurm
 configuration file and the output of the \fIshow\fP command described above. It
 may be desirable to execute the \fIshow\fP command (described above) on the
 specific entity you which to update, then use cut\-and\-paste tools to enter
@@ -435,24 +425,8 @@ Nice value changes are not additive, but overwrite any prior nice
 value and are applied to the job's base priority.
 Only privileged users can specify a negative adjustment.
 .TP
-\fINodeList\fP=<nodes>
-Change the nodes allocated to a running job to shrink it's size.
-The specified list of nodes must be a subset of the nodes currently
-allocated to the job. Multiple node names may be specified using
-simple node range expressions (e.g. "lx[10\-20]"). After a job's allocation
-is reduced, subsequent \fBsrun\fR commands must explicitly specify node and
-task counts which are valid for the new allocation.
-.TP
-\fINumCPUs\fP=<min_count>[\-<max_count>]
-Set the job's minimum and optionally maximum count of CPUs to be allocated.
-.TP
 \fINumNodes\fP=<min_count>[\-<max_count>]
 Set the job's minimum and optionally maximum count of nodes to be allocated.
-If the job is already running, use this to specify a node count less than
-currently allocated and resources previously allocated to the job will be
-relinquished. After a job's allocation is reduced, subsequent \fBsrun\fR
-commands must explicitly specify node and task counts which are valid for the
-new allocation. Also see the \fINodeList\fP parameter above.
 .TP
 \fINumTasks\fP=<count>
 Set the job's count of required tasks to the specified value.
@@ -587,25 +561,6 @@ a further state such as RUNNING, COMPLETE, etc. In these cases the
 code explicitly returns zero for these values. These values are
 meaningless once the job resources have been allocated and the job has
 started.
-
-.TP
-\fBSPECIFICATIONS FOR UPDATE COMMAND, STEPS\fR
-.TP
-\fIStepId\fP=<job_id>[.<step_id>]
-Identify the step to be updated. 
-If the job_id is given, but no step_id is specified then all steps of 
-the identified job will be modified.
-This specification is required.
-.TP
-\fITimeLimit\fP=<time>
-The job's time limit.
-Output format is [days\-]hours:minutes:seconds or "UNLIMITED".
-Input format (for \fBupdate\fR command) set is minutes, minutes:seconds,
-hours:minutes:seconds, days\-hours, days\-hours:minutes or
-days\-hours:minutes:seconds.
-Time resolution is one minute and second values are rounded up to
-the next minute.
-
 .TP
 \fBSPECIFICATIONS FOR UPDATE COMMAND, NODES\fR
 .TP
@@ -616,11 +571,10 @@ simple node range expressions (e.g. "lx[10\-20]"). This specification is require
 \fIFeatures\fP=<features>
 Identify feature(s) to be associated with the specified node.  Any
 previously defined feature(s) will be overwritten with the new value.
-Features assigned via \fBscontrol\fR will only persist across the restart 
-of the slurmctld daemon with the \fI\-R\fR option and state files 
-preserved or slurmctld's receipt of a SIGHUP. 
-Update slurm.conf with any changes meant to be persistent across normal 
-restarts of slurmctld or the execution of \fBscontrol reconfig\fR.
+\fBNOTE:\fR Features assigned via \fBscontrol\fR do not survive the
+restart of the slurmctld nor will they survive \fBscontrol
+reconfigure\fR if Features are defined in slurm.conf. Update
+slurm.conf with any changes meant to be persistent.
 
 .TP
 \fIReason\fP=<reason>
@@ -655,11 +609,10 @@ Generally only "DRAIN", "FAIL" and "RESUME" should be used.
 Identify weight to be associated with specified nodes. This allows
 dynamic changes to weight associated with nodes, which will be used
 for the subsequent node allocation decisions.
-Weight assigned via \fBscontrol\fR will only persist across the restart 
-of the slurmctld daemon with the \fI\-R\fR option and state files 
-preserved or slurmctld's receipt of a SIGHUP. 
-Update slurm.conf with any changes meant to be persistent across normal 
-restarts of slurmctld or the execution of \fBscontrol reconfig\fR.
+Any previously identified weight will be overwritten with the new value.\fBNOTE:\fR The \fIWeight\fP associated with nodes will be reset to
+the values specified in slurm.conf (if any) upon slurmctld restart
+or reconfiguration.
+Update slurm.conf with any changes meant to be persistent.
 
 .TP
 \fBSPECIFICATIONS FOR CREATE, UPDATE, AND DELETE COMMANDS, PARTITIONS\fR
@@ -676,11 +629,6 @@ partition.
 Node names may be specified using the node range expression syntax
 described above.
 The default value is "ALL".
-
-.TP
-\fIAlternate\fP=<partition name>
-Alternate partition to be used if the state of this partition is "DRAIN" or
-"INACTIVE."  The value "NONE" will clear a previously set alternate partition.
 
 .TP
 \fIDefault\fP=<yes|no>
@@ -758,32 +706,12 @@ An optional job count specifies how many jobs can be allocated to use
 each resource.
 
 .TP
-\fIState\fP=<up|down|drain|inactive>
-Specify if jobs can be allocated nodes or queued in this partition. 
-Possible values are "UP", "DOWN", "DRAIN" and "INACTIVE".
-.RS
-.TP 10
-\fIUP\fP
-Designates that new jobs may queued on the partition, and that
-jobs may be allocated nodes and run from the partition.
-.TP
-\fIDOWN\fP
-Designates that new jobs may be queued on the partition, but
-queued jobs may not be allocated nodes and run from the partition. Jobs
-already running on the partition continue to run. The jobs
+\fIState\fP=<up|down>
+Specify if jobs can be allocated nodes in this partition.
+Possible values are"UP" and "DOWN".
+If a partition allocated nodes to running jobs, those jobs will continue
+execution even after the partition's state is set to "DOWN". The jobs
 must be explicitly canceled to force their termination.
-.TP
-\fIDRAIN\fP
-Designates that no new jobs may be queued on the partition (job
-submission requests will be denied with an error message), but jobs
-already queued on the partition may be allocated nodes and run.
-See also the "Alternate" partition specification.
-.TP
-\fIINACTIVE\fP
-Designates that no new jobs may be queued on the partition,
-and jobs already queued may not be allocated nodes and run.
-See also the "Alternate" partition specification.
-.RE
 
 .TP
 \fBSPECIFICATIONS FOR CREATE, UPDATE, AND DELETE COMMANDS, RESERVATIONS\fR
@@ -855,7 +783,7 @@ Identify the partition to be reserved.
 .TP
 \fIFlags\fP=<flags>
 Flags associated with the reservation.
-In order to remove a flag with the update option, precede the name with
+In order to remove a flag with the update option, preceed the name with
 a minus sign. For example: Flags=\-DAILY (NOTE: this option is not supported
 for all flags).
 Currently supported flags include:
@@ -1017,7 +945,6 @@ scontrol: quit
 
 .SH "COPYING"
 Copyright (C) 2002\-2007 The Regents of the University of California.
-Copyright (C) 2008\-2010 Lawrence Livermore National Security.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 CODE\-OCEC\-09\-009. All rights reserved.
 .LP

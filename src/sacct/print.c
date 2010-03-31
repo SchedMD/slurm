@@ -50,7 +50,7 @@ char *_elapsed_time(long secs, long usecs)
 	long    subsec = 0;
 	char *str = NULL;
 
-	if(secs < 0 || secs == (long)NO_VAL)
+	if(secs < 0 || secs == NO_VAL)
 		return NULL;
 
 
@@ -86,7 +86,7 @@ static char *_find_qos_name_from_list(
 	List qos_list, int qosid)
 {
 	ListIterator itr = NULL;
-	slurmdb_qos_rec_t *qos = NULL;
+	acct_qos_rec_t *qos = NULL;
 
 	if(!qos_list || qosid == NO_VAL)
 		return NULL;
@@ -108,8 +108,8 @@ static char *_find_qos_name_from_list(
 
 void print_fields(type_t type, void *object)
 {
-	slurmdb_job_rec_t *job = (slurmdb_job_rec_t *)object;
-	slurmdb_step_rec_t *step = (slurmdb_step_rec_t *)object;
+	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
+	jobacct_step_rec_t *step = (jobacct_step_rec_t *)object;
 	jobcomp_job_rec_t *job_comp = (jobcomp_job_rec_t *)object;
 	print_field_t *field = NULL;
 	int curr_inx = 1;
@@ -121,7 +121,7 @@ void print_fields(type_t type, void *object)
 	case JOB:
 		step = NULL;
 		if(!job->track_steps)
-			step = (slurmdb_step_rec_t *)job->first_step_ptr;
+			step = (jobacct_step_rec_t *)job->first_step_ptr;
 		/* set this to avoid printing out info for things that
 		   don't mean anything.  Like an allocation that never
 		   ran anything.
@@ -199,10 +199,10 @@ void print_fields(type_t type, void *object)
 			switch(type) {
 			case JOB:
 				if(!job->track_steps)
-					tmp_dub = job->stats.cpu_ave;
+					tmp_dub = job->sacct.ave_cpu;
 				break;
 			case JOBSTEP:
-				tmp_dub = step->stats.cpu_ave;
+				tmp_dub = step->sacct.ave_cpu;
 				break;
 			case JOBCOMP:
 			default:
@@ -220,10 +220,10 @@ void print_fields(type_t type, void *object)
 			switch(type) {
 			case JOB:
 				if(!job->track_steps)
-					tmp_dub = job->stats.pages_ave;
+					tmp_dub = job->sacct.ave_pages;
 				break;
 			case JOBSTEP:
-				tmp_dub = step->stats.pages_ave;
+				tmp_dub = step->sacct.ave_pages;
 				break;
 			case JOBCOMP:
 			default:
@@ -242,10 +242,10 @@ void print_fields(type_t type, void *object)
 			switch(type) {
 			case JOB:
 				if(!job->track_steps)
-					tmp_dub = job->stats.rss_ave;
+					tmp_dub = job->sacct.ave_rss;
 				break;
 			case JOBSTEP:
-				tmp_dub = step->stats.rss_ave;
+				tmp_dub = step->sacct.ave_rss;
 				break;
 			case JOBCOMP:
 			default:
@@ -264,10 +264,10 @@ void print_fields(type_t type, void *object)
 			switch(type) {
 			case JOB:
 				if(!job->track_steps)
-					tmp_dub = job->stats.vsize_ave;
+					tmp_dub = job->sacct.ave_vsize;
 				break;
 			case JOBSTEP:
-				tmp_dub = step->stats.vsize_ave;
+				tmp_dub = step->sacct.ave_vsize;
 				break;
 			case JOBCOMP:
 			default:
@@ -539,10 +539,10 @@ void print_fields(type_t type, void *object)
 			switch(type) {
 			case JOB:
 				if(!job->track_steps)
-					tmp_int = job->stats.pages_max;
+					tmp_int = job->sacct.max_pages;
 				break;
 			case JOBSTEP:
-				tmp_int = step->stats.pages_max;
+				tmp_int = step->sacct.max_pages;
 				break;
 			case JOBCOMP:
 			default:
@@ -562,12 +562,12 @@ void print_fields(type_t type, void *object)
 			case JOB:
 				if(!job->track_steps)
 					tmp_char = find_hostname(
-						job->stats.pages_max_nodeid,
+						job->sacct.max_pages_id.nodeid,
 						job->nodes);
 				break;
 			case JOBSTEP:
 				tmp_char = find_hostname(
-					step->stats.pages_max_nodeid,
+					step->sacct.max_pages_id.nodeid,
 					step->nodes);
 				break;
 			case JOBCOMP:
@@ -585,10 +585,10 @@ void print_fields(type_t type, void *object)
 			case JOB:
 				if(!job->track_steps)
 					tmp_int =
-						job->stats.pages_max_taskid;
+						job->sacct.max_pages_id.taskid;
 				break;
 			case JOBSTEP:
-				tmp_int = step->stats.pages_max_taskid;
+				tmp_int = step->sacct.max_pages_id.taskid;
 				break;
 			case JOBCOMP:
 			default:
@@ -603,10 +603,10 @@ void print_fields(type_t type, void *object)
 			switch(type) {
 			case JOB:
 				if(!job->track_steps)
-					tmp_int = job->stats.rss_max;
+					tmp_int = job->sacct.max_rss;
 				break;
 			case JOBSTEP:
-				tmp_int = step->stats.rss_max;
+				tmp_int = step->sacct.max_rss;
 				break;
 			case JOBCOMP:
 			default:
@@ -626,12 +626,12 @@ void print_fields(type_t type, void *object)
 			case JOB:
 				if(!job->track_steps)
 					tmp_char = find_hostname(
-						job->stats.rss_max_nodeid,
+						job->sacct.max_rss_id.nodeid,
 						job->nodes);
 				break;
 			case JOBSTEP:
 				tmp_char = find_hostname(
-					step->stats.rss_max_nodeid,
+					step->sacct.max_rss_id.nodeid,
 					step->nodes);
 				break;
 			case JOBCOMP:
@@ -648,10 +648,10 @@ void print_fields(type_t type, void *object)
 			switch(type) {
 			case JOB:
 				if(!job->track_steps)
-					tmp_int = job->stats.rss_max_taskid;
+					tmp_int = job->sacct.max_rss_id.taskid;
 				break;
 			case JOBSTEP:
-				tmp_int = step->stats.rss_max_taskid;
+				tmp_int = step->sacct.max_rss_id.taskid;
 				break;
 			case JOBCOMP:
 			default:
@@ -666,10 +666,10 @@ void print_fields(type_t type, void *object)
 			switch(type) {
 			case JOB:
 				if(!job->track_steps)
-					tmp_int = job->stats.vsize_max;
+					tmp_int = job->sacct.max_vsize;
 				break;
 			case JOBSTEP:
-				tmp_int = step->stats.vsize_max;
+				tmp_int = step->sacct.max_vsize;
 				break;
 			case JOBCOMP:
 			default:
@@ -690,12 +690,12 @@ void print_fields(type_t type, void *object)
 			case JOB:
 				if(!job->track_steps)
 					tmp_char = find_hostname(
-						job->stats.vsize_max_nodeid,
+						job->sacct.max_vsize_id.nodeid,
 						job->nodes);
 				break;
 			case JOBSTEP:
 				tmp_char = find_hostname(
-					step->stats.vsize_max_nodeid,
+					step->sacct.max_vsize_id.nodeid,
 					step->nodes);
 				break;
 			case JOBCOMP:
@@ -713,10 +713,10 @@ void print_fields(type_t type, void *object)
 			case JOB:
 				if(!job->track_steps)
 					tmp_int =
-						job->stats.vsize_max_taskid;
+						job->sacct.max_vsize_id.taskid;
 				break;
 			case JOBSTEP:
-				tmp_int = step->stats.vsize_max_taskid;
+				tmp_int = step->sacct.max_vsize_id.taskid;
 				break;
 			case JOBCOMP:
 			default:
@@ -731,10 +731,10 @@ void print_fields(type_t type, void *object)
 			switch(type) {
 			case JOB:
 				if(!job->track_steps)
-					tmp_dub = job->stats.cpu_min;
+					tmp_dub = job->sacct.min_cpu;
 				break;
 			case JOBSTEP:
-				tmp_dub = step->stats.cpu_min;
+				tmp_dub = step->sacct.min_cpu;
 				break;
 			case JOBCOMP:
 			default:
@@ -752,12 +752,12 @@ void print_fields(type_t type, void *object)
 			case JOB:
 				if(!job->track_steps)
 					tmp_char = find_hostname(
-						job->stats.cpu_min_nodeid,
+						job->sacct.min_cpu_id.nodeid,
 						job->nodes);
 				break;
 			case JOBSTEP:
 				tmp_char = find_hostname(
-					step->stats.cpu_min_nodeid,
+					step->sacct.min_cpu_id.nodeid,
 					step->nodes);
 				break;
 			case JOBCOMP:
@@ -774,10 +774,10 @@ void print_fields(type_t type, void *object)
 			switch(type) {
 			case JOB:
 				if(!job->track_steps)
-					tmp_int = job->stats.cpu_min_taskid;
+					tmp_int = job->sacct.min_cpu_id.taskid;
 				break;
 			case JOBSTEP:
-				tmp_int = step->stats.cpu_min_taskid;
+				tmp_int = step->sacct.min_cpu_id.taskid;
 				break;
 			case JOBCOMP:
 			default:
@@ -1145,16 +1145,6 @@ void print_fields(type_t type, void *object)
 		case PRINT_TIMELIMIT:
 			switch(type) {
 			case JOB:
-				if (job->timelimit == INFINITE)
-					tmp_char = "UNLIMITED";
-				else if (job->timelimit == NO_VAL)
-					tmp_char = "Partition_Limit";
-				else if(job->timelimit) {
-					char tmp1[128];
-					mins2time_str(job->timelimit,
-						      tmp1, sizeof(tmp1));
-					tmp_char = tmp1;
-				}
 
 				break;
 			case JOBSTEP:

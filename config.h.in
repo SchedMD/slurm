@@ -21,9 +21,6 @@
 /* Define location of cpuset directory */
 #undef CPUSET_DIR
 
-/* Define to 1 for debugger partial task attach support. */
-#undef DEBUGGER_PARTIAL_ATTACH
-
 /* Define to 1 if licensed under terms of the GNU General Public License. */
 #undef GPL_LICENSED
 
@@ -130,9 +127,6 @@
 /* Define to 1 if you have the <limits.h> header file. */
 #undef HAVE_LIMITS_H
 
-/* Define to 1 if you have the <linux/sched.h> header file. */
-#undef HAVE_LINUX_SCHED_H
-
 /* Define to 1 if your system has a GNU libc compatible `malloc' function, and
    to 0 otherwise. */
 #undef HAVE_MALLOC
@@ -172,6 +166,9 @@
 
 /* Define to 1 if using PostgreSQL libaries */
 #undef HAVE_PGSQL
+
+/* define if plpa library installed */
+#undef HAVE_PLPA
 
 /* Define if you have Posix semaphores. */
 #undef HAVE_POSIX_SEMS
@@ -432,7 +429,7 @@
 #undef SLURM_PREFIX
 
 /* SLURM Version Number */
-#undef SLURM_VERSION_NUMBER
+#undef SLURM_VERSION
 
 /* Define the project's version string. */
 #undef SLURM_VERSION_STRING

@@ -2,7 +2,7 @@
  *  opts.c - sinfo command line option processing functions
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Joey Ekstrom <ekstrom1@llnl.gov>, Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -242,8 +242,8 @@ extern void parse_command_line(int argc, char *argv[])
 
 		} else if (params.list_reasons) {
 			params.format = params.long_output ?
-			  "%20R %12U %19H %6t %N" :
-			  "%20R %9u %19H %N";
+			  "%50R %6t %N" :
+			  "%50R %N";
 
 		} else if ((env_val = getenv ("SINFO_FORMAT"))) {
 			params.format = xstrdup(env_val);
@@ -526,11 +526,6 @@ _parse_format( char* format )
 					field_size,
 					right_justify,
 					suffix );
-		} else if (field[0] == 'H') {
-			format_add_timestamp( params.format_list,
-					      field_size,
-					      right_justify,
-					      suffix );
 		} else if (field[0] == 'l') {
 			params.match_flags.max_time_flag = true;
 			format_add_time( params.format_list,
@@ -592,25 +587,15 @@ _parse_format( char* format )
 		} else if (field[0] == 't') {
 			params.match_flags.state_flag = true;
 			format_add_state_compact( params.format_list,
-						  field_size,
-						  right_justify,
-						  suffix );
-		} else if (field[0] == 'T') {
-			params.match_flags.state_flag = true;
-			format_add_state_long( params.format_list,
-					       field_size,
-					       right_justify,
-					       suffix );
-		} else if (field[0] == 'u') {
-			format_add_user( params.format_list,
 					field_size,
 					right_justify,
 					suffix );
-		} else if (field[0] == 'U') {
-			format_add_user_long( params.format_list,
-					      field_size,
-					      right_justify,
-					      suffix );
+		} else if (field[0] == 'T') {
+			params.match_flags.state_flag = true;
+			format_add_state_long( params.format_list,
+					field_size,
+					right_justify,
+					suffix );
 		} else if (field[0] == 'w') {
 			params.match_flags.weight_flag = true;
 			format_add_weight( params.format_list,

@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  sstat.c - job accounting reports for SLURM's slurmdb/log plugin
+ *  sstat.c - job accounting reports for SLURM's jobacct/log plugin
  *****************************************************************************
  *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -74,8 +74,8 @@ print_field_t fields[] = {
 	{0, NULL, NULL, 0}};
 
 List jobs = NULL;
-slurmdb_job_rec_t job;
-slurmdb_step_rec_t step;
+jobacct_job_rec_t job;
+jobacct_step_rec_t step;
 List print_fields_list = NULL;
 ListIterator print_fields_itr = NULL;
 int field_count = 0;
@@ -88,7 +88,7 @@ int _sstat_query(slurm_step_layout_t *step_layout, uint32_t job_id,
 	stat_jobacct_msg_t *jobacct_msg = NULL;
 	ListIterator itr;
 	List ret_list = NULL;
-	slurmdb_stats_t temp_stats;
+	sacct_t temp_sacct;
 	ret_data_info_t *ret_data_info = NULL;
 	int rc = SLURM_SUCCESS;
 	int ntasks = 0;
@@ -96,15 +96,15 @@ int _sstat_query(slurm_step_layout_t *step_layout, uint32_t job_id,
 	debug("getting the stat of job %d on %d nodes",
 	      job_id, step_layout->node_cnt);
 
-	memset(&job, 0, sizeof(slurmdb_job_rec_t));
+	memset(&job, 0, sizeof(jobacct_job_rec_t));
 	job.jobid = job_id;
 
-	memset(&step, 0, sizeof(slurmdb_step_rec_t));
+	memset(&step, 0, sizeof(jobacct_step_rec_t));
 
-	memset(&temp_stats, 0, sizeof(slurmdb_stats_t));
-	temp_stats.cpu_min = NO_VAL;
-	memset(&step.stats, 0, sizeof(slurmdb_stats_t));
-	step.stats.cpu_min = NO_VAL;
+	memset(&temp_sacct, 0, sizeof(sacct_t));
+	temp_sacct.min_cpu = NO_VAL;
+	memset(&step.sacct, 0, sizeof(sacct_t));
+	step.sacct.min_cpu = NO_VAL;
 
 	step.job_ptr = &job;
 	step.stepid = step_id;
@@ -134,11 +134,11 @@ int _sstat_query(slurm_step_layout_t *step_layout, uint32_t job_id,
 			if(jobacct_msg) {
 				debug2("got it back for job %d",
 				       jobacct_msg->job_id);
-				jobacct_gather_g_2_stats(
-					&temp_stats,
+				jobacct_gather_g_2_sacct(
+					&temp_sacct,
 					jobacct_msg->jobacct);
 				ntasks += jobacct_msg->num_tasks;
-				aggregate_stats(&step.stats, &temp_stats);
+				aggregate_sacct(&step.sacct, &temp_sacct);
 			}
 			break;
 		case RESPONSE_SLURM_RC:
@@ -162,12 +162,12 @@ int _sstat_query(slurm_step_layout_t *step_layout, uint32_t job_id,
 cleanup:
 
 	if(tot_tasks) {
-		step.stats.cpu_ave /= (double)tot_tasks;
-		step.stats.cpu_ave /= (double)100;
-		step.stats.cpu_min /= 100;
-		step.stats.rss_ave /= (double)tot_tasks;
-		step.stats.vsize_ave /= (double)tot_tasks;
-		step.stats.pages_ave /= (double)tot_tasks;
+		step.sacct.ave_cpu /= (double)tot_tasks;
+		step.sacct.ave_cpu /= (double)100;
+		step.sacct.min_cpu /= 100;
+		step.sacct.ave_rss /= (double)tot_tasks;
+		step.sacct.ave_vsize /= (double)tot_tasks;
+		step.sacct.ave_pages /= (double)tot_tasks;
 		step.ntasks = tot_tasks;
 	}
 	jobacct_gather_g_destroy(r.jobacct);
@@ -227,7 +227,7 @@ int main(int argc, char **argv)
 {
 	ListIterator itr = NULL;
 	uint32_t stepid = 0;
-	slurmdb_selected_step_t *selected_step = NULL;
+	jobacct_selected_step_t *selected_step = NULL;
 
 	print_fields_list = list_create(NULL);
 	print_fields_itr = list_iterator_create(print_fields_list);

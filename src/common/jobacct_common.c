@@ -42,26 +42,702 @@
 #include "jobacct_common.h"
 
 pthread_mutex_t jobacct_lock = PTHREAD_MUTEX_INITIALIZER;
-uint32_t jobacct_job_id     = 0;
-uint32_t jobacct_step_id    = 0;
-uint32_t jobacct_mem_limit  = 0;
-uint32_t jobacct_vmem_limit = 0;
+uint32_t jobacct_job_id = 0;
+uint32_t jobacct_mem_limit = 0;
 uint32_t mult = 1000;
 
-static void _pack_jobacct_id(jobacct_id_t *jobacct_id,
-			     uint16_t rpc_version, Buf buffer)
+static void _pack_jobacct_id(jobacct_id_t *jobacct_id, uint16_t rpc_version, Buf buffer)
 {
 	pack32((uint32_t)jobacct_id->nodeid, buffer);
 	pack16((uint16_t)jobacct_id->taskid, buffer);
 }
 
-static int _unpack_jobacct_id(jobacct_id_t *jobacct_id,
-			      uint16_t rpc_version, Buf buffer)
+static int _unpack_jobacct_id(jobacct_id_t *jobacct_id, uint16_t rpc_version, Buf buffer)
 {
 	safe_unpack32(&jobacct_id->nodeid, buffer);
 	safe_unpack16(&jobacct_id->taskid, buffer);
 	return SLURM_SUCCESS;
 unpack_error:
+	return SLURM_ERROR;
+}
+
+static void _pack_sacct(sacct_t *sacct, uint16_t rpc_version, Buf buffer)
+{
+	int i=0;
+
+	if(rpc_version >= 6) {
+		if(!sacct) {
+			for(i=0; i<4; i++)
+				pack32((uint32_t) 0, buffer);
+
+			for(i=0; i<4; i++)
+				packdouble(0, buffer);
+
+			for(i=0; i<4; i++) {	/* _pack_jobacct_id() */
+				pack32((uint32_t) 0, buffer);
+				pack16((uint16_t) 0, buffer);
+			}
+			return;
+		}
+
+		pack32(sacct->max_vsize, buffer);
+		pack32(sacct->max_rss, buffer);
+		pack32(sacct->max_pages, buffer);
+		pack32(sacct->min_cpu, buffer);
+
+		packdouble(sacct->ave_vsize, buffer);
+		packdouble(sacct->ave_rss, buffer);
+		packdouble(sacct->ave_pages, buffer);
+		packdouble(sacct->ave_cpu, buffer);
+
+		_pack_jobacct_id(&sacct->max_vsize_id, rpc_version, buffer);
+		_pack_jobacct_id(&sacct->max_rss_id, rpc_version, buffer);
+		_pack_jobacct_id(&sacct->max_pages_id, rpc_version, buffer);
+		_pack_jobacct_id(&sacct->min_cpu_id, rpc_version, buffer);
+	} else {
+		uint32_t temp;
+
+		if(!sacct) {
+			for(i=0; i<8; i++)
+				pack32((uint32_t) 0, buffer);
+
+			for(i=0; i<4; i++) {	/* _pack_jobacct_id() */
+				pack32((uint32_t) 0, buffer);
+				pack16((uint16_t) 0, buffer);
+			}
+			return;
+		}
+
+		pack32(sacct->max_vsize, buffer);
+		temp = sacct->ave_vsize * mult;
+		pack32(temp, buffer);
+		pack32(sacct->max_rss, buffer);
+		temp = (uint32_t)sacct->ave_rss * mult;
+		pack32(temp, buffer);
+		pack32(sacct->max_pages, buffer);
+		temp = (uint32_t)sacct->ave_pages * mult;
+		pack32(temp, buffer);
+		temp = (uint32_t)sacct->min_cpu * mult;
+		pack32(temp, buffer);
+		temp = (uint32_t)sacct->ave_cpu * mult;
+		pack32(temp, buffer);
+
+		_pack_jobacct_id(&sacct->max_vsize_id, rpc_version, buffer);
+		_pack_jobacct_id(&sacct->max_rss_id, rpc_version, buffer);
+		_pack_jobacct_id(&sacct->max_pages_id, rpc_version, buffer);
+		_pack_jobacct_id(&sacct->min_cpu_id, rpc_version, buffer);
+	}
+}
+
+/* you need to xfree this */
+static int _unpack_sacct(sacct_t *sacct, uint16_t rpc_version, Buf buffer)
+{
+	if(rpc_version >= 6) {
+		safe_unpack32(&sacct->max_vsize, buffer);
+		safe_unpack32(&sacct->max_rss, buffer);
+		safe_unpack32(&sacct->max_pages, buffer);
+		safe_unpack32(&sacct->min_cpu, buffer);
+
+		safe_unpackdouble(&sacct->ave_vsize, buffer);
+		safe_unpackdouble(&sacct->ave_rss, buffer);
+		safe_unpackdouble(&sacct->ave_pages, buffer);
+		safe_unpackdouble(&sacct->ave_cpu, buffer);
+
+		if(_unpack_jobacct_id(&sacct->max_vsize_id, rpc_version, buffer) != SLURM_SUCCESS)
+			goto unpack_error;
+		if(_unpack_jobacct_id(&sacct->max_rss_id, rpc_version, buffer) != SLURM_SUCCESS)
+			goto unpack_error;
+		if(_unpack_jobacct_id(&sacct->max_pages_id, rpc_version, buffer) != SLURM_SUCCESS)
+			goto unpack_error;
+		if(_unpack_jobacct_id(&sacct->min_cpu_id, rpc_version, buffer) != SLURM_SUCCESS)
+			goto unpack_error;
+	} else {
+		/* this is here to handle the floats since it appears sending
+		 * in a float with a typecast returns incorrect information
+		 */
+		uint32_t temp;
+
+		safe_unpack32(&sacct->max_vsize, buffer);
+		safe_unpack32(&temp, buffer);
+		sacct->ave_vsize = temp / mult;
+		safe_unpack32(&sacct->max_rss, buffer);
+		safe_unpack32(&temp, buffer);
+		sacct->ave_rss = temp / mult;
+		safe_unpack32(&sacct->max_pages, buffer);
+		safe_unpack32(&temp, buffer);
+		sacct->ave_pages = temp / mult;
+		safe_unpack32(&temp, buffer);
+		sacct->min_cpu = temp / mult;
+		safe_unpack32(&temp, buffer);
+		sacct->ave_cpu = temp / mult;
+		if(_unpack_jobacct_id(&sacct->max_vsize_id, rpc_version, buffer) != SLURM_SUCCESS)
+			goto unpack_error;
+		if(_unpack_jobacct_id(&sacct->max_rss_id, rpc_version, buffer) != SLURM_SUCCESS)
+			goto unpack_error;
+		if(_unpack_jobacct_id(&sacct->max_pages_id, rpc_version, buffer) != SLURM_SUCCESS)
+			goto unpack_error;
+		if(_unpack_jobacct_id(&sacct->min_cpu_id, rpc_version, buffer) != SLURM_SUCCESS)
+			goto unpack_error;
+	}
+	return SLURM_SUCCESS;
+
+unpack_error:
+	sacct = NULL;
+       	return SLURM_ERROR;
+}
+extern jobacct_job_rec_t *create_jobacct_job_rec()
+{
+	jobacct_job_rec_t *job = xmalloc(sizeof(jobacct_job_rec_t));
+	memset(&job->sacct, 0, sizeof(sacct_t));
+	job->sacct.min_cpu = NO_VAL;
+	job->state = JOB_PENDING;
+	job->steps = list_create(destroy_jobacct_step_rec);
+	job->requid = -1;
+	job->lft = (uint32_t)NO_VAL;
+	job->resvid = (uint32_t)NO_VAL;
+
+      	return job;
+}
+
+extern jobacct_step_rec_t *create_jobacct_step_rec()
+{
+	jobacct_step_rec_t *step = xmalloc(sizeof(jobacct_job_rec_t));
+	memset(&step->sacct, 0, sizeof(sacct_t));
+	step->stepid = (uint32_t)NO_VAL;
+	step->state = NO_VAL;
+	step->exitcode = NO_VAL;
+	step->ncpus = (uint32_t)NO_VAL;
+	step->elapsed = (uint32_t)NO_VAL;
+	step->tot_cpu_sec = (uint32_t)NO_VAL;
+	step->tot_cpu_usec = (uint32_t)NO_VAL;
+	step->requid = -1;
+
+	return step;
+}
+
+extern void destroy_jobacct_job_rec(void *object)
+{
+	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
+	if (job) {
+		xfree(job->account);
+		xfree(job->blockid);
+		xfree(job->cluster);
+		xfree(job->jobname);
+		xfree(job->partition);
+		xfree(job->nodes);
+		if(job->steps) {
+			list_destroy(job->steps);
+			job->steps = NULL;
+		}
+		xfree(job->user);
+		xfree(job->wckey);
+		xfree(job);
+	}
+}
+
+extern void destroy_jobacct_step_rec(void *object)
+{
+	jobacct_step_rec_t *step = (jobacct_step_rec_t *)object;
+	if (step) {
+		xfree(step->nodes);
+		xfree(step->stepname);
+		xfree(step);
+	}
+}
+
+extern void destroy_jobacct_selected_step(void *object)
+{
+	jobacct_selected_step_t *step = (jobacct_selected_step_t *)object;
+	if (step) {
+		xfree(step);
+	}
+}
+
+
+extern void pack_jobacct_job_rec(void *object, uint16_t rpc_version, Buf buffer)
+{
+	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
+	ListIterator itr = NULL;
+	jobacct_step_rec_t *step = NULL;
+	uint32_t count = 0;
+
+	if(rpc_version >= 5) {
+		pack32(job->alloc_cpus, buffer);
+		pack32(job->alloc_nodes, buffer);
+		pack32(job->associd, buffer);
+		packstr(job->account, buffer);
+		packstr(job->blockid, buffer);
+		packstr(job->cluster, buffer);
+		pack32(job->elapsed, buffer);
+		pack_time(job->eligible, buffer);
+		pack_time(job->end, buffer);
+		pack32(job->exitcode, buffer);
+		pack32(job->gid, buffer);
+		pack32(job->jobid, buffer);
+		packstr(job->jobname, buffer);
+		pack32(job->lft, buffer);
+		packstr(job->partition, buffer);
+		packstr(job->nodes, buffer);
+		pack32(job->priority, buffer);
+		pack16(job->qos, buffer);
+		pack32(job->resvid, buffer);
+		pack32(job->req_cpus, buffer);
+		pack32(job->requid, buffer);
+		_pack_sacct(&job->sacct, rpc_version, buffer);
+		pack32(job->show_full, buffer);
+		pack_time(job->start, buffer);
+		pack16((uint16_t)job->state, buffer);
+		if(job->steps)
+			count = list_count(job->steps);
+		pack32(count, buffer);
+		if(count) {
+			itr = list_iterator_create(job->steps);
+			while((step = list_next(itr))) {
+				pack_jobacct_step_rec(step, rpc_version,
+						      buffer);
+			}
+			list_iterator_destroy(itr);
+		}
+		pack_time(job->submit, buffer);
+		pack32(job->suspended, buffer);
+		pack32(job->sys_cpu_sec, buffer);
+		pack32(job->sys_cpu_usec, buffer);
+		pack32(job->timelimit, buffer);
+		pack32(job->tot_cpu_sec, buffer);
+		pack32(job->tot_cpu_usec, buffer);
+		pack16(job->track_steps, buffer);
+		pack32(job->uid, buffer);
+		packstr(job->user, buffer);
+		pack32(job->user_cpu_sec, buffer);
+		pack32(job->user_cpu_usec, buffer);
+		packstr(job->wckey, buffer); /* added for rpc_version 4 */
+		pack32(job->wckeyid, buffer); /* added for rpc_version 4 */
+	} else if(rpc_version >= 4) {
+		pack32(job->alloc_cpus, buffer);
+		pack32(job->associd, buffer);
+		packstr(job->account, buffer);
+		packstr(job->blockid, buffer);
+		packstr(job->cluster, buffer);
+		pack32(job->elapsed, buffer);
+		pack_time(job->eligible, buffer);
+		pack_time(job->end, buffer);
+		pack32(job->exitcode, buffer);
+		pack32(job->gid, buffer);
+		pack32(job->jobid, buffer);
+		packstr(job->jobname, buffer);
+		pack32(job->lft, buffer);
+		packstr(job->partition, buffer);
+		packstr(job->nodes, buffer);
+		pack32(job->priority, buffer);
+		pack16(job->qos, buffer);
+		pack32(job->req_cpus, buffer);
+		pack32(job->requid, buffer);
+		_pack_sacct(&job->sacct, rpc_version, buffer);
+		pack32(job->show_full, buffer);
+		pack_time(job->start, buffer);
+		pack16((uint16_t)job->state, buffer);
+		if(job->steps)
+			count = list_count(job->steps);
+		pack32(count, buffer);
+		if(count) {
+			itr = list_iterator_create(job->steps);
+			while((step = list_next(itr))) {
+				pack_jobacct_step_rec(step, rpc_version,
+						      buffer);
+			}
+			list_iterator_destroy(itr);
+		}
+		pack_time(job->submit, buffer);
+		pack32(job->suspended, buffer);
+		pack32(job->sys_cpu_sec, buffer);
+		pack32(job->sys_cpu_usec, buffer);
+		pack32(job->tot_cpu_sec, buffer);
+		pack32(job->tot_cpu_usec, buffer);
+		pack16(job->track_steps, buffer);
+		pack32(job->uid, buffer);
+		packstr(job->user, buffer);
+		pack32(job->user_cpu_sec, buffer);
+		pack32(job->user_cpu_usec, buffer);
+		packstr(job->wckey, buffer); /* added for rpc_version 4 */
+		pack32(job->wckeyid, buffer); /* added for rpc_version 4 */
+	} else {
+		pack32(job->alloc_cpus, buffer);
+		pack32(job->associd, buffer);
+		packstr(job->account, buffer);
+		packstr(job->blockid, buffer);
+		packstr(job->cluster, buffer);
+		pack32(job->elapsed, buffer);
+		pack_time(job->eligible, buffer);
+		pack_time(job->end, buffer);
+		pack32(job->exitcode, buffer);
+		pack32(job->gid, buffer);
+		pack32(job->jobid, buffer);
+		packstr(job->jobname, buffer);
+		pack32(job->lft, buffer);
+		packstr(job->partition, buffer);
+		packstr(job->nodes, buffer);
+		pack32(job->priority, buffer);
+		pack16(job->qos, buffer);
+		pack32(job->req_cpus, buffer);
+		pack32(job->requid, buffer);
+		_pack_sacct(&job->sacct, rpc_version, buffer);
+		pack32(job->show_full, buffer);
+		pack_time(job->start, buffer);
+		pack16((uint16_t)job->state, buffer);
+		if(job->steps)
+			count = list_count(job->steps);
+		pack32(count, buffer);
+		if(count) {
+			itr = list_iterator_create(job->steps);
+			while((step = list_next(itr))) {
+				pack_jobacct_step_rec(step, rpc_version,
+						      buffer);
+			}
+			list_iterator_destroy(itr);
+		}
+		pack_time(job->submit, buffer);
+		pack32(job->suspended, buffer);
+		pack32(job->sys_cpu_sec, buffer);
+		pack32(job->sys_cpu_usec, buffer);
+		pack32(job->tot_cpu_sec, buffer);
+		pack32(job->tot_cpu_usec, buffer);
+		pack16(job->track_steps, buffer);
+		pack32(job->uid, buffer);
+		packstr(job->user, buffer);
+		pack32(job->user_cpu_sec, buffer);
+		pack32(job->user_cpu_usec, buffer);
+	}
+}
+
+extern int unpack_jobacct_job_rec(void **job, uint16_t rpc_version, Buf buffer)
+{
+	jobacct_job_rec_t *job_ptr = xmalloc(sizeof(jobacct_job_rec_t));
+	int i = 0;
+	jobacct_step_rec_t *step = NULL;
+	uint32_t count = 0;
+	uint32_t uint32_tmp;
+	uint16_t uint16_tmp;
+
+	*job = job_ptr;
+
+	if(rpc_version >= 5) {
+		safe_unpack32(&job_ptr->alloc_cpus, buffer);
+		safe_unpack32(&job_ptr->alloc_nodes, buffer);
+		safe_unpack32(&job_ptr->associd, buffer);
+		safe_unpackstr_xmalloc(&job_ptr->account, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&job_ptr->blockid, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&job_ptr->cluster, &uint32_tmp, buffer);
+		safe_unpack32(&job_ptr->elapsed, buffer);
+		safe_unpack_time(&job_ptr->eligible, buffer);
+		safe_unpack_time(&job_ptr->end, buffer);
+		safe_unpack32(&uint32_tmp, buffer);
+		job_ptr->exitcode = (int32_t)uint32_tmp;
+		safe_unpack32(&job_ptr->gid, buffer);
+		safe_unpack32(&job_ptr->jobid, buffer);
+		safe_unpackstr_xmalloc(&job_ptr->jobname, &uint32_tmp, buffer);
+		safe_unpack32(&job_ptr->lft, buffer);
+		safe_unpackstr_xmalloc(&job_ptr->partition, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&job_ptr->nodes, &uint32_tmp, buffer);
+		safe_unpack32(&job_ptr->priority, buffer);
+		safe_unpack16(&job_ptr->qos, buffer);
+		safe_unpack32(&job_ptr->resvid, buffer);
+		safe_unpack32(&job_ptr->req_cpus, buffer);
+		safe_unpack32(&job_ptr->requid, buffer);
+		if(_unpack_sacct(&job_ptr->sacct, rpc_version, buffer)
+		   != SLURM_SUCCESS)
+			goto unpack_error;
+		safe_unpack32(&job_ptr->show_full, buffer);
+		safe_unpack_time(&job_ptr->start, buffer);
+		safe_unpack16(&uint16_tmp, buffer);
+		job_ptr->state = uint16_tmp;
+		safe_unpack32(&count, buffer);
+
+		job_ptr->steps = list_create(destroy_jobacct_step_rec);
+		for(i=0; i<count; i++) {
+			unpack_jobacct_step_rec(&step, rpc_version, buffer);
+			if(step) {
+				step->job_ptr = job_ptr;
+				if(!job_ptr->first_step_ptr)
+					job_ptr->first_step_ptr = step;
+				list_append(job_ptr->steps, step);
+			}
+		}
+
+		safe_unpack_time(&job_ptr->submit, buffer);
+		safe_unpack32(&job_ptr->suspended, buffer);
+		safe_unpack32(&job_ptr->sys_cpu_sec, buffer);
+		safe_unpack32(&job_ptr->sys_cpu_usec, buffer);
+		safe_unpack32(&job_ptr->timelimit, buffer);
+		safe_unpack32(&job_ptr->tot_cpu_sec, buffer);
+		safe_unpack32(&job_ptr->tot_cpu_usec, buffer);
+		safe_unpack16(&job_ptr->track_steps, buffer);
+		safe_unpack32(&job_ptr->uid, buffer);
+		safe_unpackstr_xmalloc(&job_ptr->user, &uint32_tmp, buffer);
+		safe_unpack32(&job_ptr->user_cpu_sec, buffer);
+		safe_unpack32(&job_ptr->user_cpu_usec, buffer);
+		safe_unpackstr_xmalloc(&job_ptr->wckey, &uint32_tmp, buffer);
+		safe_unpack32(&job_ptr->wckeyid, buffer);
+	} else if(rpc_version >= 4) {
+		safe_unpack32(&job_ptr->alloc_cpus, buffer);
+		safe_unpack32(&job_ptr->associd, buffer);
+		safe_unpackstr_xmalloc(&job_ptr->account, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&job_ptr->blockid, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&job_ptr->cluster, &uint32_tmp, buffer);
+		safe_unpack32(&job_ptr->elapsed, buffer);
+		safe_unpack_time(&job_ptr->eligible, buffer);
+		safe_unpack_time(&job_ptr->end, buffer);
+		safe_unpack32(&uint32_tmp, buffer);
+		job_ptr->exitcode = (int32_t)uint32_tmp;
+		safe_unpack32(&job_ptr->gid, buffer);
+		safe_unpack32(&job_ptr->jobid, buffer);
+		safe_unpackstr_xmalloc(&job_ptr->jobname, &uint32_tmp, buffer);
+		safe_unpack32(&job_ptr->lft, buffer);
+		safe_unpackstr_xmalloc(&job_ptr->partition, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&job_ptr->nodes, &uint32_tmp, buffer);
+		safe_unpack32(&job_ptr->priority, buffer);
+		safe_unpack16(&job_ptr->qos, buffer);
+		safe_unpack32(&job_ptr->req_cpus, buffer);
+		safe_unpack32(&job_ptr->requid, buffer);
+		if(_unpack_sacct(&job_ptr->sacct, rpc_version, buffer)
+		   != SLURM_SUCCESS)
+			goto unpack_error;
+		safe_unpack32(&job_ptr->show_full, buffer);
+		safe_unpack_time(&job_ptr->start, buffer);
+		safe_unpack16(&uint16_tmp, buffer);
+		job_ptr->state = uint16_tmp;
+		safe_unpack32(&count, buffer);
+
+		job_ptr->steps = list_create(destroy_jobacct_step_rec);
+		for(i=0; i<count; i++) {
+			unpack_jobacct_step_rec(&step, rpc_version, buffer);
+			if(step) {
+				step->job_ptr = job_ptr;
+				if(!job_ptr->first_step_ptr)
+					job_ptr->first_step_ptr = step;
+				list_append(job_ptr->steps, step);
+			}
+		}
+
+		safe_unpack_time(&job_ptr->submit, buffer);
+		safe_unpack32(&job_ptr->suspended, buffer);
+		safe_unpack32(&job_ptr->sys_cpu_sec, buffer);
+		safe_unpack32(&job_ptr->sys_cpu_usec, buffer);
+		safe_unpack32(&job_ptr->tot_cpu_sec, buffer);
+		safe_unpack32(&job_ptr->tot_cpu_usec, buffer);
+		safe_unpack16(&job_ptr->track_steps, buffer);
+		safe_unpack32(&job_ptr->uid, buffer);
+		safe_unpackstr_xmalloc(&job_ptr->user, &uint32_tmp, buffer);
+		safe_unpack32(&job_ptr->user_cpu_sec, buffer);
+		safe_unpack32(&job_ptr->user_cpu_usec, buffer);
+		safe_unpackstr_xmalloc(&job_ptr->wckey, &uint32_tmp, buffer);
+		safe_unpack32(&job_ptr->wckeyid, buffer);
+	} else {
+		safe_unpack32(&job_ptr->alloc_cpus, buffer);
+		safe_unpack32(&job_ptr->associd, buffer);
+		safe_unpackstr_xmalloc(&job_ptr->account, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&job_ptr->blockid, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&job_ptr->cluster, &uint32_tmp, buffer);
+		safe_unpack32(&job_ptr->elapsed, buffer);
+		safe_unpack_time(&job_ptr->eligible, buffer);
+		safe_unpack_time(&job_ptr->end, buffer);
+		safe_unpack32(&uint32_tmp, buffer);
+		job_ptr->exitcode = (int32_t)uint32_tmp;
+		safe_unpack32(&job_ptr->gid, buffer);
+		safe_unpack32(&job_ptr->jobid, buffer);
+		safe_unpackstr_xmalloc(&job_ptr->jobname, &uint32_tmp, buffer);
+		safe_unpack32(&job_ptr->lft, buffer);
+		safe_unpackstr_xmalloc(&job_ptr->partition, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&job_ptr->nodes, &uint32_tmp, buffer);
+		safe_unpack32(&uint32_tmp, buffer);
+		job_ptr->priority = (int32_t)uint32_tmp;
+		safe_unpack16(&job_ptr->qos, buffer);
+		safe_unpack32(&job_ptr->req_cpus, buffer);
+		safe_unpack32(&job_ptr->requid, buffer);
+		if(_unpack_sacct(&job_ptr->sacct, rpc_version, buffer)
+		   != SLURM_SUCCESS)
+			goto unpack_error;
+		safe_unpack32(&job_ptr->show_full, buffer);
+		safe_unpack_time(&job_ptr->start, buffer);
+		safe_unpack16(&uint16_tmp, buffer);
+		job_ptr->state = uint16_tmp;
+		safe_unpack32(&count, buffer);
+		job_ptr->steps = list_create(destroy_jobacct_step_rec);
+		for(i=0; i<count; i++) {
+			unpack_jobacct_step_rec(&step, rpc_version, buffer);
+			if(step) {
+				step->job_ptr = job_ptr;
+				if(!job_ptr->first_step_ptr)
+					job_ptr->first_step_ptr = step;
+				list_append(job_ptr->steps, step);
+			}
+		}
+
+		safe_unpack_time(&job_ptr->submit, buffer);
+		safe_unpack32(&job_ptr->suspended, buffer);
+		safe_unpack32(&job_ptr->sys_cpu_sec, buffer);
+		safe_unpack32(&job_ptr->sys_cpu_usec, buffer);
+		safe_unpack32(&job_ptr->tot_cpu_sec, buffer);
+		safe_unpack32(&job_ptr->tot_cpu_usec, buffer);
+		safe_unpack16(&job_ptr->track_steps, buffer);
+		safe_unpack32(&job_ptr->uid, buffer);
+		safe_unpackstr_xmalloc(&job_ptr->user, &uint32_tmp, buffer);
+		safe_unpack32(&job_ptr->user_cpu_sec, buffer);
+		safe_unpack32(&job_ptr->user_cpu_usec, buffer);
+	}
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	destroy_jobacct_job_rec(job_ptr);
+	*job = NULL;
+	return SLURM_ERROR;
+}
+
+extern void pack_jobacct_step_rec(jobacct_step_rec_t *step,
+				  uint16_t rpc_version, Buf buffer)
+{
+	uint32_t uint32_tmp = NO_VAL;
+
+	if(rpc_version >= 5) {
+		pack32(step->elapsed, buffer);
+		pack_time(step->end, buffer);
+		pack32((uint32_t)step->exitcode, buffer);
+		pack32(step->ncpus, buffer);
+		pack32(step->nnodes, buffer);
+		packstr(step->nodes, buffer);
+		pack32(step->ntasks, buffer);
+		pack32(step->requid, buffer);
+		_pack_sacct(&step->sacct, rpc_version, buffer);
+		pack_time(step->start, buffer);
+		pack16(step->state, buffer);
+		pack32(step->stepid, buffer);	/* job's step number */
+		packstr(step->stepname, buffer);
+		pack32(step->suspended, buffer);
+		pack32(step->sys_cpu_sec, buffer);
+		pack32(step->sys_cpu_usec, buffer);
+		pack16(step->task_dist, buffer);
+		pack32(step->tot_cpu_sec, buffer);
+		pack32(step->tot_cpu_usec, buffer);
+		pack32(step->user_cpu_sec, buffer);
+		pack32(step->user_cpu_usec, buffer);
+	} else {
+		pack32(step->elapsed, buffer);
+		pack_time(step->end, buffer);
+		pack32((uint32_t)step->exitcode, buffer);
+		pack32(uint32_tmp, buffer);
+		pack32(step->ncpus, buffer);
+		packstr(step->nodes, buffer);
+		pack32(step->requid, buffer);
+		_pack_sacct(&step->sacct, rpc_version, buffer);
+		pack_time(step->start, buffer);
+		pack16(step->state, buffer);
+		pack32(step->stepid, buffer);	/* job's step number */
+		packstr(step->stepname, buffer);
+		pack32(step->suspended, buffer);
+		pack32(step->sys_cpu_sec, buffer);
+		pack32(step->sys_cpu_usec, buffer);
+		pack32(step->tot_cpu_sec, buffer);
+		pack32(step->tot_cpu_usec, buffer);
+		pack32(step->user_cpu_sec, buffer);
+		pack32(step->user_cpu_usec, buffer);
+	}
+}
+
+extern int unpack_jobacct_step_rec(jobacct_step_rec_t **step,
+				   uint16_t rpc_version, Buf buffer)
+{
+	uint32_t uint32_tmp;
+	uint16_t uint16_tmp;
+	jobacct_step_rec_t *step_ptr = xmalloc(sizeof(jobacct_step_rec_t));
+
+	*step = step_ptr;
+
+	if(rpc_version >= 5) {
+		safe_unpack32(&step_ptr->elapsed, buffer);
+		safe_unpack_time(&step_ptr->end, buffer);
+		safe_unpack32(&uint32_tmp, buffer);
+		step_ptr->exitcode = (int32_t)uint32_tmp;
+		safe_unpack32(&step_ptr->ncpus, buffer);
+		safe_unpack32(&step_ptr->nnodes, buffer);
+		safe_unpackstr_xmalloc(&step_ptr->nodes, &uint32_tmp, buffer);
+		safe_unpack32(&step_ptr->ntasks, buffer);
+		safe_unpack32(&step_ptr->requid, buffer);
+		if(_unpack_sacct(&step_ptr->sacct, rpc_version, buffer)
+		   != SLURM_SUCCESS)
+			goto unpack_error;
+		safe_unpack_time(&step_ptr->start, buffer);
+		safe_unpack16(&uint16_tmp, buffer);
+		step_ptr->state = uint16_tmp;
+		safe_unpack32(&step_ptr->stepid, buffer);
+		safe_unpackstr_xmalloc(&step_ptr->stepname,
+				       &uint32_tmp, buffer);
+		safe_unpack32(&step_ptr->suspended, buffer);
+		safe_unpack32(&step_ptr->sys_cpu_sec, buffer);
+		safe_unpack32(&step_ptr->sys_cpu_usec, buffer);
+		safe_unpack16(&step_ptr->task_dist, buffer);
+		safe_unpack32(&step_ptr->tot_cpu_sec, buffer);
+		safe_unpack32(&step_ptr->tot_cpu_usec, buffer);
+		safe_unpack32(&step_ptr->user_cpu_sec, buffer);
+		safe_unpack32(&step_ptr->user_cpu_usec, buffer);
+	} else {
+		safe_unpack32(&step_ptr->elapsed, buffer);
+		safe_unpack_time(&step_ptr->end, buffer);
+		safe_unpack32(&uint32_tmp, buffer);
+		step_ptr->exitcode = (int32_t)uint32_tmp;
+		safe_unpack32(&uint32_tmp, buffer);
+		safe_unpack32(&step_ptr->ncpus, buffer);
+		safe_unpackstr_xmalloc(&step_ptr->nodes, &uint32_tmp, buffer);
+		safe_unpack32(&step_ptr->requid, buffer);
+		if(_unpack_sacct(&step_ptr->sacct, rpc_version, buffer)
+		   != SLURM_SUCCESS)
+			goto unpack_error;
+		safe_unpack_time(&step_ptr->start, buffer);
+		safe_unpack16(&uint16_tmp, buffer);
+		step_ptr->state = uint16_tmp;
+		safe_unpack32(&step_ptr->stepid, buffer);	/* job's step number */
+		safe_unpackstr_xmalloc(&step_ptr->stepname, &uint32_tmp, buffer);
+		safe_unpack32(&step_ptr->suspended, buffer);
+		safe_unpack32(&step_ptr->sys_cpu_sec, buffer);
+		safe_unpack32(&step_ptr->sys_cpu_usec, buffer);
+		safe_unpack32(&step_ptr->tot_cpu_sec, buffer);
+		safe_unpack32(&step_ptr->tot_cpu_usec, buffer);
+		safe_unpack32(&step_ptr->user_cpu_sec, buffer);
+		safe_unpack32(&step_ptr->user_cpu_usec, buffer);
+	}
+	return SLURM_SUCCESS;
+
+unpack_error:
+	destroy_jobacct_step_rec(step_ptr);
+	*step = NULL;
+	return SLURM_ERROR;
+}
+
+extern void pack_jobacct_selected_step(jobacct_selected_step_t *step,
+				       uint16_t rpc_version, Buf buffer)
+{
+	pack32(step->jobid, buffer);
+	pack32(step->stepid, buffer);
+}
+
+extern int unpack_jobacct_selected_step(jobacct_selected_step_t **step,
+					uint16_t rpc_version, Buf buffer)
+{
+	jobacct_selected_step_t *step_ptr =
+		xmalloc(sizeof(jobacct_selected_step_t));
+
+	*step = step_ptr;
+
+	safe_unpack32(&step_ptr->jobid, buffer);
+	safe_unpack32(&step_ptr->stepid, buffer);
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	destroy_jobacct_selected_step(step_ptr);
+	*step = NULL;
 	return SLURM_ERROR;
 }
 
@@ -171,7 +847,8 @@ extern int jobacct_common_setinfo(struct jobacctinfo *jobacct,
 		jobacct->tot_cpu = *uint32;
 		break;
 	default:
-		debug("jobacct_g_set_setinfo data_type %d invalid", type);
+		debug("jobacct_g_set_setinfo data_type %d invalid",
+		      type);
 	}
 	slurm_mutex_unlock(&jobacct_lock);
 	return rc;
@@ -243,7 +920,8 @@ extern int jobacct_common_getinfo(struct jobacctinfo *jobacct,
 		*uint32 = jobacct->tot_cpu;
 		break;
 	default:
-		debug("jobacct_g_set_setinfo data_type %d invalid", type);
+		debug("jobacct_g_set_setinfo data_type %d invalid",
+		      type);
 	}
 	slurm_mutex_unlock(&jobacct_lock);
 	return rc;
@@ -314,33 +992,27 @@ extern void jobacct_common_aggregate(struct jobacctinfo *dest,
 	slurm_mutex_unlock(&jobacct_lock);
 }
 
-extern void jobacct_common_2_stats(slurmdb_stats_t *stats,
-				   struct jobacctinfo *jobacct)
+extern void jobacct_common_2_sacct(sacct_t *sacct, struct jobacctinfo *jobacct)
 {
 	xassert(jobacct);
-	xassert(stats);
+	xassert(sacct);
 	slurm_mutex_lock(&jobacct_lock);
-	stats->vsize_max = jobacct->max_vsize;
-	stats->vsize_max_nodeid = jobacct->max_vsize_id.nodeid;
-	stats->vsize_max_taskid = jobacct->max_vsize_id.taskid;
-	stats->vsize_ave = (double)jobacct->tot_vsize;
-	stats->rss_max = jobacct->max_rss;
-	stats->rss_max_nodeid = jobacct->max_rss_id.nodeid;
-	stats->rss_max_taskid = jobacct->max_rss_id.taskid;
-	stats->rss_ave = (double)jobacct->tot_rss;
-	stats->pages_max = jobacct->max_pages;
-	stats->pages_max_nodeid = jobacct->max_pages_id.nodeid;
-	stats->pages_max_taskid = jobacct->max_pages_id.taskid;
-	stats->pages_ave = (double)jobacct->tot_pages;
-	stats->cpu_min = jobacct->min_cpu;
-	stats->cpu_min_nodeid = jobacct->min_cpu_id.nodeid;
-	stats->cpu_min_taskid = jobacct->min_cpu_id.taskid;
-	stats->cpu_ave = (double)jobacct->tot_cpu;
+	sacct->max_vsize = jobacct->max_vsize;
+	sacct->max_vsize_id = jobacct->max_vsize_id;
+	sacct->ave_vsize = (double)jobacct->tot_vsize;
+	sacct->max_rss = jobacct->max_rss;
+	sacct->max_rss_id = jobacct->max_rss_id;
+	sacct->ave_rss = (double)jobacct->tot_rss;
+	sacct->max_pages = jobacct->max_pages;
+	sacct->max_pages_id = jobacct->max_pages_id;
+	sacct->ave_pages = (double)jobacct->tot_pages;
+	sacct->min_cpu = jobacct->min_cpu;
+	sacct->min_cpu_id = jobacct->min_cpu_id;
+	sacct->ave_cpu = (double)jobacct->tot_cpu;
 	slurm_mutex_unlock(&jobacct_lock);
 }
 
-extern void jobacct_common_pack(struct jobacctinfo *jobacct,
-				uint16_t rpc_version, Buf buffer)
+extern void jobacct_common_pack(struct jobacctinfo *jobacct, uint16_t rpc_version, Buf buffer)
 {
 	int i=0;
 
@@ -412,8 +1084,7 @@ unpack_error:
        	return SLURM_ERROR;
 }
 
-extern int jobacct_common_set_mem_limit(uint32_t job_id, uint32_t step_id,
-					uint32_t mem_limit)
+extern int jobacct_common_set_mem_limit(uint32_t job_id, uint32_t mem_limit)
 {
 	if ((job_id == 0) || (mem_limit == 0)) {
 		error("jobacct_common_set_mem_limit: jobid:%u mem_limit:%u",
@@ -421,11 +1092,8 @@ extern int jobacct_common_set_mem_limit(uint32_t job_id, uint32_t step_id,
 		return SLURM_ERROR;
 	}
 
-	jobacct_job_id      = job_id;
-	jobacct_step_id     = step_id;
-	jobacct_mem_limit   = mem_limit * 1024;	/* MB to KB */
-	jobacct_vmem_limit  = jobacct_mem_limit;
-	jobacct_vmem_limit *= (slurm_get_vsize_factor() / 100.0);
+	jobacct_job_id   = job_id;
+	jobacct_mem_limit = mem_limit * 1024;	/* MB to KB */
 	return SLURM_SUCCESS;
 }
 

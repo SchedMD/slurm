@@ -58,14 +58,14 @@ static void _do_fdump(MYSQL_ROW row, int lc)
 	return;
 }
 
-extern List mysql_jobcomp_process_get_jobs(slurmdb_job_cond_t *job_cond)
+extern List mysql_jobcomp_process_get_jobs(acct_job_cond_t *job_cond)
 {
 
 	char *query = NULL;
 	char *extra = NULL;
 	char *tmp = NULL;
 	char *selected_part = NULL;
-	slurmdb_selected_step_t *selected_step = NULL;
+	jobacct_selected_step_t *selected_step = NULL;
 	ListIterator itr = NULL;
 	int set = 0;
 	MYSQL_RES *result = NULL;
@@ -205,7 +205,7 @@ extern List mysql_jobcomp_process_get_jobs(slurmdb_job_cond_t *job_cond)
 	return job_list;
 }
 
-extern int mysql_jobcomp_process_archive(slurmdb_archive_cond_t *arch_cond)
+extern int mysql_jobcomp_process_archive(acct_archive_cond_t *arch_cond)
 {
 	return SLURM_SUCCESS;
 }

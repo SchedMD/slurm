@@ -112,7 +112,6 @@ extern int sacctmgr_list_user(int argc, char *argv[]);
 extern int sacctmgr_list_account(int argc, char *argv[]);
 extern int sacctmgr_list_cluster(int argc, char *argv[]);
 extern int sacctmgr_list_config(bool have_db_conn);
-extern int sacctmgr_list_event(int argc, char *argv[]);
 extern int sacctmgr_list_problem(int argc, char *argv[]);
 extern int sacctmgr_list_qos(int argc, char *argv[]);
 extern int sacctmgr_list_wckey(int argc, char *argv[]);
@@ -156,50 +155,50 @@ extern void sacctmgr_print_qos_list(print_field_t *field, List qos_list,
 extern void sacctmgr_print_qos_bitstr(print_field_t *field, List qos_list,
 				      bitstr_t *value, int last);
 
-extern void sacctmgr_print_assoc_limits(slurmdb_association_rec_t *assoc);
-extern void sacctmgr_print_qos_limits(slurmdb_qos_rec_t *qos);
-extern int sort_coord_list(slurmdb_coord_rec_t *coord_a,
-			   slurmdb_coord_rec_t *coord_b);
+extern void sacctmgr_print_assoc_limits(acct_association_rec_t *assoc);
+extern void sacctmgr_print_qos_limits(acct_qos_rec_t *qos);
+extern int sort_coord_list(acct_coord_rec_t *coord_a,
+			   acct_coord_rec_t *coord_b);
 
 /* you need to free the objects returned from these functions */
-extern slurmdb_association_rec_t *sacctmgr_find_association(char *user,
+extern acct_association_rec_t *sacctmgr_find_association(char *user,
 							 char *account,
 							 char *cluster,
 							 char *partition);
-extern slurmdb_association_rec_t *sacctmgr_find_account_base_assoc(
+extern acct_association_rec_t *sacctmgr_find_account_base_assoc(
 	char *account, char *cluster);
-extern slurmdb_association_rec_t *sacctmgr_find_root_assoc(char *cluster);
-extern slurmdb_user_rec_t *sacctmgr_find_user(char *name);
-extern slurmdb_account_rec_t *sacctmgr_find_account(char *name);
-extern slurmdb_cluster_rec_t *sacctmgr_find_cluster(char *name);
+extern acct_association_rec_t *sacctmgr_find_root_assoc(char *cluster);
+extern acct_user_rec_t *sacctmgr_find_user(char *name);
+extern acct_account_rec_t *sacctmgr_find_account(char *name);
+extern acct_cluster_rec_t *sacctmgr_find_cluster(char *name);
 
 /* do not free any of the object returned from these functions since
  * they are pointing to an object in the list given
  */
 
-extern slurmdb_association_rec_t *sacctmgr_find_association_from_list(
+extern acct_association_rec_t *sacctmgr_find_association_from_list(
 	List assoc_list, char *user, char *account,
 	char *cluster, char *partition);
-extern slurmdb_association_rec_t *sacctmgr_find_account_base_assoc_from_list(
+extern acct_association_rec_t *sacctmgr_find_account_base_assoc_from_list(
 	List assoc_list, char *account, char *cluster);
-extern slurmdb_qos_rec_t *sacctmgr_find_qos_from_list(
+extern acct_qos_rec_t *sacctmgr_find_qos_from_list(
 	List qos_list, char *name);
-extern slurmdb_user_rec_t *sacctmgr_find_user_from_list(
+extern acct_user_rec_t *sacctmgr_find_user_from_list(
 	List user_list, char *name);
-extern slurmdb_account_rec_t *sacctmgr_find_account_from_list(
+extern acct_account_rec_t *sacctmgr_find_account_from_list(
 	List acct_list, char *name);
-extern slurmdb_cluster_rec_t *sacctmgr_find_cluster_from_list(
+extern acct_cluster_rec_t *sacctmgr_find_cluster_from_list(
 	List cluster_list, char *name);
-extern slurmdb_wckey_rec_t *sacctmgr_find_wckey_from_list(
+extern acct_wckey_rec_t *sacctmgr_find_wckey_from_list(
 	List wckey_list, char *user, char *name, char *cluster);
 
 
 /* file_functions.c */
 extern int print_file_add_limits_to_line(char **line,
-					 slurmdb_association_rec_t *assoc);
+					 acct_association_rec_t *assoc);
 
-extern int print_file_slurmdb_hierarchical_rec_list(FILE *fd,
-					  List slurmdb_hierarchical_rec_list,
+extern int print_file_acct_hierarchical_rec_list(FILE *fd,
+					  List acct_hierarchical_rec_list,
 					  List user_list,
 					  List acct_list);
 

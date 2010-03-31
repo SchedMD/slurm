@@ -98,9 +98,8 @@ extern slurm_step_layout_t *slurm_step_layout_copy(
 
 /* pack and unpack structure */
 extern void pack_slurm_step_layout(slurm_step_layout_t *step_layout,
-				   Buf buffer, uint16_t protocol_version);
-extern int unpack_slurm_step_layout(slurm_step_layout_t **layout, Buf buffer,
-				    uint16_t protocol_version);
+				   Buf buffer);
+extern int unpack_slurm_step_layout(slurm_step_layout_t **layout, Buf buffer);
 
 /* destroys structure for step layout */
 extern int slurm_step_layout_destroy(slurm_step_layout_t *step_layout);

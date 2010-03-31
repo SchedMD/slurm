@@ -29,13 +29,8 @@ command displays job status data for any job running on the system.
 .PP
 For the non\-root user, the
 .BR "sstat "
-output is limited to the user's jobs.
-
-.PP
-Note:  the
-.BR "sstat "
-command requires that the \f3jobacct_gather\fP plugin be installed and
-operational.
+command limits the display of job status data to jobs that were
+launched with their own user identifier (UID).
 
 .TP
 \f3\-a \fP\f3,\fP \f3\-\-allsteps\fP

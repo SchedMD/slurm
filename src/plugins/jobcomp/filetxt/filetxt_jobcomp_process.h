@@ -47,7 +47,7 @@
 #include "src/common/jobacct_common.h"
 #include "src/common/slurm_accounting_storage.h"
 
-extern List filetxt_jobcomp_process_get_jobs(slurmdb_job_cond_t *job_cond);
-extern int filetxt_jobcomp_process_archive(slurmdb_archive_cond_t *arch_cond);
+extern List filetxt_jobcomp_process_get_jobs(acct_job_cond_t *job_cond);
+extern int filetxt_jobcomp_process_archive(acct_archive_cond_t *arch_cond);
 
 #endif

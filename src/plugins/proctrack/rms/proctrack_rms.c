@@ -167,7 +167,7 @@ extern int slurm_container_signal  (uint32_t id, int signal)
  */
 extern int slurm_container_destroy (uint32_t id)
 {
-	debug2("proctrack/rms: destroying container %u", id);
+	debug2("proctrack/rms: destroying container %u\n", id);
 	if (id == 0)
 		return SLURM_SUCCESS;
 

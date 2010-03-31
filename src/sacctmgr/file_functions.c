@@ -42,7 +42,7 @@
 #include "src/common/uid.h"
 
 typedef struct {
-	slurmdb_admin_level_t admin;
+	acct_admin_level_t admin;
 	uint16_t classification;
 	List coord_list; /* char *list */
 	char *def_acct;
@@ -118,7 +118,7 @@ static int _init_sacctmgr_file_opts(sacctmgr_file_opts_t *file_opts)
 
 	memset(file_opts, 0, sizeof(sacctmgr_file_opts_t));
 
-	file_opts->admin = SLURMDB_ADMIN_NOTSET;
+	file_opts->admin = ACCT_ADMIN_NOTSET;
 
 	file_opts->fairshare = NO_VAL;
 
@@ -316,7 +316,7 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 			file_opts->name = xstrdup(option);
 		} else if (!strncasecmp (sub, "AdminLevel",
 					 MAX(command_len, 2))) {
-			file_opts->admin = str_2_slurmdb_admin_level(option);
+			file_opts->admin = str_2_acct_admin_level(option);
 		} else if (!strncasecmp (sub, "Coordinator",
 					 MAX(command_len, 2))) {
 			if(!file_opts->coord_list)
@@ -744,7 +744,7 @@ static int _print_out_assoc(List assoc_list, bool user, bool add)
 	List print_fields_list = NULL;
 	ListIterator itr, itr2;
 	print_field_t *field = NULL;
-	slurmdb_association_rec_t *assoc = NULL;
+	acct_association_rec_t *assoc = NULL;
 	int rc = SLURM_SUCCESS;
 
 	if(!assoc_list || !list_count(assoc_list))
@@ -875,13 +875,13 @@ static int _print_out_assoc(List assoc_list, bool user, bool add)
 }
 
 static int _mod_assoc(sacctmgr_file_opts_t *file_opts,
-		      slurmdb_association_rec_t *assoc,
+		      acct_association_rec_t *assoc,
 		      sacctmgr_mod_type_t mod_type,
 		      char *parent)
 {
 	int changed = 0;
-	slurmdb_association_rec_t mod_assoc;
-	slurmdb_association_cond_t assoc_cond;
+	acct_association_rec_t mod_assoc;
+	acct_association_cond_t assoc_cond;
 	char *type = NULL;
 	char *name = NULL;
 	char *my_info = NULL;
@@ -903,8 +903,8 @@ static int _mod_assoc(sacctmgr_file_opts_t *file_opts,
 		return 0;
 		break;
 	}
-	slurmdb_init_association_rec(&mod_assoc);
-	memset(&assoc_cond, 0, sizeof(slurmdb_association_cond_t));
+	init_acct_association_rec(&mod_assoc);
+	memset(&assoc_cond, 0, sizeof(acct_association_cond_t));
 
 	if((file_opts->fairshare != NO_VAL)
 	   && (assoc->shares_raw != file_opts->fairshare)) {
@@ -1184,15 +1184,15 @@ static int _mod_assoc(sacctmgr_file_opts_t *file_opts,
 }
 
 static int _mod_cluster(sacctmgr_file_opts_t *file_opts,
-			slurmdb_cluster_rec_t *cluster, char *parent)
+			acct_cluster_rec_t *cluster, char *parent)
 {
 	int changed = 0;
 	char *my_info = NULL;
-	slurmdb_cluster_rec_t mod_cluster;
-	slurmdb_cluster_cond_t cluster_cond;
+	acct_cluster_rec_t mod_cluster;
+	acct_cluster_cond_t cluster_cond;
 
-	memset(&mod_cluster, 0, sizeof(slurmdb_cluster_rec_t));
-	memset(&cluster_cond, 0, sizeof(slurmdb_cluster_cond_t));
+	memset(&mod_cluster, 0, sizeof(acct_cluster_rec_t));
+	memset(&cluster_cond, 0, sizeof(acct_cluster_cond_t));
 
 	if(file_opts->classification
 	   && (file_opts->classification != cluster->classification)) {
@@ -1245,17 +1245,17 @@ static int _mod_cluster(sacctmgr_file_opts_t *file_opts,
 }
 
 static int _mod_acct(sacctmgr_file_opts_t *file_opts,
-		     slurmdb_account_rec_t *acct, char *parent)
+		     acct_account_rec_t *acct, char *parent)
 {
 	int changed = 0;
 	char *desc = NULL, *org = NULL, *my_info = NULL;
-	slurmdb_account_rec_t mod_acct;
-	slurmdb_account_cond_t acct_cond;
-	slurmdb_association_cond_t assoc_cond;
+	acct_account_rec_t mod_acct;
+	acct_account_cond_t acct_cond;
+	acct_association_cond_t assoc_cond;
 
-	memset(&mod_acct, 0, sizeof(slurmdb_account_rec_t));
-	memset(&acct_cond, 0, sizeof(slurmdb_account_cond_t));
-	memset(&assoc_cond, 0, sizeof(slurmdb_association_cond_t));
+	memset(&mod_acct, 0, sizeof(acct_account_rec_t));
+	memset(&acct_cond, 0, sizeof(acct_account_cond_t));
+	memset(&assoc_cond, 0, sizeof(acct_association_cond_t));
 
 	if(file_opts->desc)
 		desc = xstrdup(file_opts->desc);
@@ -1325,24 +1325,24 @@ static int _mod_acct(sacctmgr_file_opts_t *file_opts,
 }
 
 static int _mod_user(sacctmgr_file_opts_t *file_opts,
-		     slurmdb_user_rec_t *user, char *cluster, char *parent)
+		     acct_user_rec_t *user, char *cluster, char *parent)
 {
 	int rc;
 	int set = 0;
 	int changed = 0;
 	char *def_acct = NULL, *def_wckey = NULL, *my_info = NULL;
-	slurmdb_user_rec_t mod_user;
-	slurmdb_user_cond_t user_cond;
+	acct_user_rec_t mod_user;
+	acct_user_cond_t user_cond;
 	List ret_list = NULL;
-	slurmdb_association_cond_t assoc_cond;
+	acct_association_cond_t assoc_cond;
 
 	if(!user || !user->name) {
 		fatal(" We need a user name in _mod_user");
 	}
 
-	memset(&mod_user, 0, sizeof(slurmdb_user_rec_t));
-	memset(&user_cond, 0, sizeof(slurmdb_user_cond_t));
-	memset(&assoc_cond, 0, sizeof(slurmdb_association_cond_t));
+	memset(&mod_user, 0, sizeof(acct_user_rec_t));
+	memset(&user_cond, 0, sizeof(acct_user_cond_t));
+	memset(&assoc_cond, 0, sizeof(acct_association_cond_t));
 
 	assoc_cond.user_list = list_create(NULL);
 	list_append(assoc_cond.user_list, user->name);
@@ -1378,16 +1378,16 @@ static int _mod_user(sacctmgr_file_opts_t *file_opts,
 		changed = 1;
 	}
 
-	if(user->admin_level != SLURMDB_ADMIN_NOTSET
-	   && file_opts->admin != SLURMDB_ADMIN_NOTSET
+	if(user->admin_level != ACCT_ADMIN_NOTSET
+	   && file_opts->admin != ACCT_ADMIN_NOTSET
 	   && user->admin_level != file_opts->admin) {
 		xstrfmtcat(my_info,
 			   "%-30.30s for %-7.7s %-10.10s %8s -> %s\n",
 			   " Changed Admin Level", "User",
 			   user->name,
-			   slurmdb_admin_level_str(
+			   acct_admin_level_str(
 				   user->admin_level),
-			   slurmdb_admin_level_str(
+			   acct_admin_level_str(
 				   file_opts->admin));
 		mod_user.admin_level = file_opts->admin;
 		changed = 1;
@@ -1426,7 +1426,7 @@ static int _mod_user(sacctmgr_file_opts_t *file_opts,
 		      && list_count(file_opts->coord_list))) {
 		ListIterator coord_itr = NULL;
 		char *temp_char = NULL;
-		slurmdb_coord_rec_t *coord = NULL;
+		acct_coord_rec_t *coord = NULL;
 		int first = 1;
 		notice_thread_init();
 		rc = acct_storage_g_add_coord(db_conn, my_uid,
@@ -1434,12 +1434,12 @@ static int _mod_user(sacctmgr_file_opts_t *file_opts,
 					      &user_cond);
 		notice_thread_fini();
 
-		user->coord_accts = list_create(slurmdb_destroy_coord_rec);
+		user->coord_accts = list_create(destroy_acct_coord_rec);
 		coord_itr = list_iterator_create(file_opts->coord_list);
 		printf(" Making User '%s' coordinator for account(s)",
 		       user->name);
 		while((temp_char = list_next(coord_itr))) {
-			coord = xmalloc(sizeof(slurmdb_coord_rec_t));
+			coord = xmalloc(sizeof(acct_coord_rec_t));
 			coord->name = xstrdup(temp_char);
 			coord->direct = 1;
 			list_push(user->coord_accts, coord);
@@ -1459,7 +1459,7 @@ static int _mod_user(sacctmgr_file_opts_t *file_opts,
 		ListIterator coord_itr = NULL;
 		ListIterator char_itr = NULL;
 		char *temp_char = NULL;
-		slurmdb_coord_rec_t *coord = NULL;
+		acct_coord_rec_t *coord = NULL;
 		List add_list = list_create(NULL);
 
 		coord_itr = list_iterator_create(user->coord_accts);
@@ -1503,14 +1503,14 @@ static int _mod_user(sacctmgr_file_opts_t *file_opts,
 		      && list_count(file_opts->wckey_list))) {
 		ListIterator wckey_itr = NULL;
 		char *temp_char = NULL;
-		slurmdb_wckey_rec_t *wckey = NULL;
+		acct_wckey_rec_t *wckey = NULL;
 		int first = 1;
 
-		user->wckey_list = list_create(slurmdb_destroy_wckey_rec);
+		user->wckey_list = list_create(destroy_acct_wckey_rec);
 		wckey_itr = list_iterator_create(file_opts->wckey_list);
 		printf(" Adding WCKey(s) ");
 		while((temp_char = list_next(wckey_itr))) {
-			wckey = xmalloc(sizeof(slurmdb_wckey_rec_t));
+			wckey = xmalloc(sizeof(acct_wckey_rec_t));
 			wckey->name = xstrdup(temp_char);
 			wckey->cluster = xstrdup(cluster);
 			wckey->user = xstrdup(user->name);
@@ -1535,8 +1535,8 @@ static int _mod_user(sacctmgr_file_opts_t *file_opts,
 		ListIterator wckey_itr = NULL;
 		ListIterator char_itr = NULL;
 		char *temp_char = NULL;
-		slurmdb_wckey_rec_t *wckey = NULL;
-		List add_list = list_create(slurmdb_destroy_wckey_rec);
+		acct_wckey_rec_t *wckey = NULL;
+		List add_list = list_create(destroy_acct_wckey_rec);
 
 		wckey_itr = list_iterator_create(user->wckey_list);
 		char_itr = list_iterator_create(file_opts->wckey_list);
@@ -1549,7 +1549,7 @@ static int _mod_user(sacctmgr_file_opts_t *file_opts,
 			if(!wckey) {
 				printf(" Adding WCKey '%s' to User '%s'\n",
 				       temp_char, user->name);
-				wckey = xmalloc(sizeof(slurmdb_wckey_rec_t));
+				wckey = xmalloc(sizeof(acct_wckey_rec_t));
 				wckey->name = xstrdup(temp_char);
 				wckey->cluster = xstrdup(cluster);
 				wckey->user = xstrdup(user->name);
@@ -1578,10 +1578,10 @@ static int _mod_user(sacctmgr_file_opts_t *file_opts,
 	return set;
 }
 
-static slurmdb_user_rec_t *_set_user_up(sacctmgr_file_opts_t *file_opts,
+static acct_user_rec_t *_set_user_up(sacctmgr_file_opts_t *file_opts,
 				     char *cluster, char *parent)
 {
-	slurmdb_user_rec_t *user = xmalloc(sizeof(slurmdb_user_rec_t));
+	acct_user_rec_t *user = xmalloc(sizeof(acct_user_rec_t));
 
 	user->assoc_list = NULL;
 	user->name = xstrdup(file_opts->name);
@@ -1599,14 +1599,14 @@ static slurmdb_user_rec_t *_set_user_up(sacctmgr_file_opts_t *file_opts,
 	user->admin_level = file_opts->admin;
 
 	if(file_opts->coord_list) {
-		slurmdb_user_cond_t user_cond;
-		slurmdb_association_cond_t assoc_cond;
+		acct_user_cond_t user_cond;
+		acct_association_cond_t assoc_cond;
 		ListIterator coord_itr = NULL;
 		char *temp_char = NULL;
-		slurmdb_coord_rec_t *coord = NULL;
+		acct_coord_rec_t *coord = NULL;
 
-		memset(&user_cond, 0, sizeof(slurmdb_user_cond_t));
-		memset(&assoc_cond, 0, sizeof(slurmdb_association_cond_t));
+		memset(&user_cond, 0, sizeof(acct_user_cond_t));
+		memset(&assoc_cond, 0, sizeof(acct_association_cond_t));
 		assoc_cond.user_list = list_create(NULL);
 		list_append(assoc_cond.user_list, user->name);
 		user_cond.assoc_cond = &assoc_cond;
@@ -1617,10 +1617,10 @@ static slurmdb_user_rec_t *_set_user_up(sacctmgr_file_opts_t *file_opts,
 					 &user_cond);
 		notice_thread_fini();
 		list_destroy(assoc_cond.user_list);
-		user->coord_accts = list_create(slurmdb_destroy_coord_rec);
+		user->coord_accts = list_create(destroy_acct_coord_rec);
 		coord_itr = list_iterator_create(file_opts->coord_list);
 		while((temp_char = list_next(coord_itr))) {
-			coord = xmalloc(sizeof(slurmdb_coord_rec_t));
+			coord = xmalloc(sizeof(acct_coord_rec_t));
 			coord->name = xstrdup(temp_char);
 			coord->direct = 1;
 			list_push(user->coord_accts, coord);
@@ -1631,12 +1631,12 @@ static slurmdb_user_rec_t *_set_user_up(sacctmgr_file_opts_t *file_opts,
 	if(file_opts->wckey_list) {
 		ListIterator wckey_itr = NULL;
 		char *temp_char = NULL;
-		slurmdb_wckey_rec_t *wckey = NULL;
+		acct_wckey_rec_t *wckey = NULL;
 
-		user->wckey_list = list_create(slurmdb_destroy_wckey_rec);
+		user->wckey_list = list_create(destroy_acct_wckey_rec);
 		wckey_itr = list_iterator_create(file_opts->wckey_list);
 		while((temp_char = list_next(wckey_itr))) {
-			wckey = xmalloc(sizeof(slurmdb_wckey_rec_t));
+			wckey = xmalloc(sizeof(acct_wckey_rec_t));
 			wckey->name = xstrdup(temp_char);
 			wckey->user = xstrdup(user->name);
 			wckey->cluster = xstrdup(cluster);
@@ -1651,10 +1651,10 @@ static slurmdb_user_rec_t *_set_user_up(sacctmgr_file_opts_t *file_opts,
 }
 
 
-static slurmdb_account_rec_t *_set_acct_up(sacctmgr_file_opts_t *file_opts,
+static acct_account_rec_t *_set_acct_up(sacctmgr_file_opts_t *file_opts,
 					char *parent)
 {
-	slurmdb_account_rec_t *acct = xmalloc(sizeof(slurmdb_account_rec_t));
+	acct_account_rec_t *acct = xmalloc(sizeof(acct_account_rec_t));
 	acct->assoc_list = NULL;
 	acct->name = xstrdup(file_opts->name);
 	if(file_opts->desc)
@@ -1674,11 +1674,11 @@ static slurmdb_account_rec_t *_set_acct_up(sacctmgr_file_opts_t *file_opts,
 	return acct;
 }
 
-static slurmdb_association_rec_t *_set_assoc_up(sacctmgr_file_opts_t *file_opts,
+static acct_association_rec_t *_set_assoc_up(sacctmgr_file_opts_t *file_opts,
 					     sacctmgr_mod_type_t mod_type,
 					     char *cluster, char *parent)
 {
-	slurmdb_association_rec_t *assoc = NULL;
+	acct_association_rec_t *assoc = NULL;
 
 	if(!cluster) {
 		error("No cluster name was given for _set_assoc_up");
@@ -1690,8 +1690,8 @@ static slurmdb_association_rec_t *_set_assoc_up(sacctmgr_file_opts_t *file_opts,
 		return NULL;
 	}
 
-	assoc = xmalloc(sizeof(slurmdb_association_rec_t));
-	slurmdb_init_association_rec(assoc);
+	assoc = xmalloc(sizeof(acct_association_rec_t));
+	init_acct_association_rec(assoc);
 
 	switch(mod_type) {
 	case MOD_CLUSTER:
@@ -1711,7 +1711,7 @@ static slurmdb_association_rec_t *_set_assoc_up(sacctmgr_file_opts_t *file_opts,
 		break;
 	default:
 		error("Unknown mod type for _set_assoc_up %d", mod_type);
-		slurmdb_destroy_association_rec(assoc);
+		destroy_acct_association_rec(assoc);
 		assoc = NULL;
 		break;
 	}
@@ -1740,28 +1740,28 @@ static slurmdb_association_rec_t *_set_assoc_up(sacctmgr_file_opts_t *file_opts,
 	return assoc;
 }
 
-static int _print_file_slurmdb_hierarchical_rec_childern(FILE *fd,
-					       List slurmdb_hierarchical_rec_list,
+static int _print_file_acct_hierarchical_rec_childern(FILE *fd,
+					       List acct_hierarchical_rec_list,
 					       List user_list,
 					       List acct_list)
 {
 	ListIterator itr = NULL;
-	slurmdb_hierarchical_rec_t *slurmdb_hierarchical_rec = NULL;
+	acct_hierarchical_rec_t *acct_hierarchical_rec = NULL;
 	char *line = NULL;
-	slurmdb_user_rec_t *user_rec = NULL;
-	slurmdb_account_rec_t *acct_rec = NULL;
+	acct_user_rec_t *user_rec = NULL;
+	acct_account_rec_t *acct_rec = NULL;
 	uint16_t track_wckey = slurm_get_track_wckey();
 
-	itr = list_iterator_create(slurmdb_hierarchical_rec_list);
-	while((slurmdb_hierarchical_rec = list_next(itr))) {
-		if(slurmdb_hierarchical_rec->assoc->user) {
+	itr = list_iterator_create(acct_hierarchical_rec_list);
+	while((acct_hierarchical_rec = list_next(itr))) {
+		if(acct_hierarchical_rec->assoc->user) {
 			user_rec = sacctmgr_find_user_from_list(
-				user_list, slurmdb_hierarchical_rec->assoc->user);
+				user_list, acct_hierarchical_rec->assoc->user);
 			line = xstrdup_printf(
-				"User - %s", slurmdb_hierarchical_rec->sort_name);
-			if(slurmdb_hierarchical_rec->assoc->partition)
+				"User - %s", acct_hierarchical_rec->sort_name);
+			if(acct_hierarchical_rec->assoc->partition)
 				xstrfmtcat(line, ":Partition='%s'",
-					   slurmdb_hierarchical_rec->
+					   acct_hierarchical_rec->
 					   assoc->partition);
 			if(user_rec) {
 				xstrfmtcat(line, ":DefaultAccount='%s'",
@@ -1772,15 +1772,15 @@ static int _print_file_slurmdb_hierarchical_rec_childern(FILE *fd,
 					xstrfmtcat(line, ":DefaultWCKey='%s'",
 						   user_rec->default_wckey);
 
-				if(user_rec->admin_level > SLURMDB_ADMIN_NONE)
+				if(user_rec->admin_level > ACCT_ADMIN_NONE)
 					xstrfmtcat(line, ":AdminLevel='%s'",
-						   slurmdb_admin_level_str(
+						   acct_admin_level_str(
 							   user_rec->
 							   admin_level));
 				if(user_rec->coord_accts
 				   && list_count(user_rec->coord_accts)) {
 					ListIterator itr2 = NULL;
-					slurmdb_coord_rec_t *coord = NULL;
+					acct_coord_rec_t *coord = NULL;
 					int first_coord = 1;
 					list_sort(user_rec->coord_accts,
 						  (ListCmpF)sort_coord_list);
@@ -1812,7 +1812,7 @@ static int _print_file_slurmdb_hierarchical_rec_childern(FILE *fd,
 				if(user_rec->wckey_list
 				   && list_count(user_rec->wckey_list)) {
 					ListIterator itr2 = NULL;
-					slurmdb_wckey_rec_t *wckey = NULL;
+					acct_wckey_rec_t *wckey = NULL;
 					int first_wckey = 1;
 					itr2 = list_iterator_create(
 						user_rec->wckey_list);
@@ -1835,10 +1835,10 @@ static int _print_file_slurmdb_hierarchical_rec_childern(FILE *fd,
 			}
 		} else {
 			acct_rec = sacctmgr_find_account_from_list(
-				acct_list, slurmdb_hierarchical_rec->assoc->acct);
+				acct_list, acct_hierarchical_rec->assoc->acct);
 			line = xstrdup_printf(
 				"Account - %s",
-				slurmdb_hierarchical_rec->sort_name);
+				acct_hierarchical_rec->sort_name);
 			if(acct_rec) {
 				xstrfmtcat(line, ":Description='%s'",
 					   acct_rec->description);
@@ -1848,7 +1848,7 @@ static int _print_file_slurmdb_hierarchical_rec_childern(FILE *fd,
 		}
 
 		print_file_add_limits_to_line(&line,
-					      slurmdb_hierarchical_rec->assoc);
+					      acct_hierarchical_rec->assoc);
 
 		if(fprintf(fd, "%s\n", line) < 0) {
 			exit_code=1;
@@ -1860,14 +1860,14 @@ static int _print_file_slurmdb_hierarchical_rec_childern(FILE *fd,
 		xfree(line);
 	}
 	list_iterator_destroy(itr);
-	print_file_slurmdb_hierarchical_rec_list(fd, slurmdb_hierarchical_rec_list,
+	print_file_acct_hierarchical_rec_list(fd, acct_hierarchical_rec_list,
 				       user_list, acct_list);
 
 	return SLURM_SUCCESS;
 }
 
 extern int print_file_add_limits_to_line(char **line,
-					 slurmdb_association_rec_t *assoc)
+					 acct_association_rec_t *assoc)
 {
 	if(!assoc)
 		return SLURM_ERROR;
@@ -1928,34 +1928,34 @@ extern int print_file_add_limits_to_line(char **line,
 }
 
 
-extern int print_file_slurmdb_hierarchical_rec_list(FILE *fd,
-					  List slurmdb_hierarchical_rec_list,
+extern int print_file_acct_hierarchical_rec_list(FILE *fd,
+					  List acct_hierarchical_rec_list,
 					  List user_list,
 					  List acct_list)
 {
 	ListIterator itr = NULL;
-	slurmdb_hierarchical_rec_t *slurmdb_hierarchical_rec = NULL;
+	acct_hierarchical_rec_t *acct_hierarchical_rec = NULL;
 
-	itr = list_iterator_create(slurmdb_hierarchical_rec_list);
-	while((slurmdb_hierarchical_rec = list_next(itr))) {
+	itr = list_iterator_create(acct_hierarchical_rec_list);
+	while((acct_hierarchical_rec = list_next(itr))) {
 /* 		info("got here %d with %d from %s %s",  */
-/* 		     depth, list_count(slurmdb_hierarchical_rec->childern), */
-/* 		     slurmdb_hierarchical_rec->assoc->acct,
-		     slurmdb_hierarchical_rec->assoc->user); */
-		if(!list_count(slurmdb_hierarchical_rec->childern))
+/* 		     depth, list_count(acct_hierarchical_rec->childern), */
+/* 		     acct_hierarchical_rec->assoc->acct,
+		     acct_hierarchical_rec->assoc->user); */
+		if(!list_count(acct_hierarchical_rec->childern))
 			continue;
 		if(fprintf(fd, "Parent - %s\n",
-			   slurmdb_hierarchical_rec->assoc->acct) < 0) {
+			   acct_hierarchical_rec->assoc->acct) < 0) {
 			error("Can't write to file");
 			return SLURM_ERROR;
 		}
 		info("%s - %s", "Parent",
-		       slurmdb_hierarchical_rec->assoc->acct);
+		       acct_hierarchical_rec->assoc->acct);
 /* 		info("sending %d from %s", */
-/* 		     list_count(slurmdb_hierarchical_rec->childern), */
-/* 		     slurmdb_hierarchical_rec->assoc->acct); */
-		_print_file_slurmdb_hierarchical_rec_childern(
-			fd, slurmdb_hierarchical_rec->childern,
+/* 		     list_count(acct_hierarchical_rec->childern), */
+/* 		     acct_hierarchical_rec->assoc->acct); */
+		_print_file_acct_hierarchical_rec_childern(
+			fd, acct_hierarchical_rec->childern,
 			user_list, acct_list);
 	}
 	list_iterator_destroy(itr);
@@ -1980,11 +1980,11 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 	int rc = SLURM_SUCCESS;
 
 	sacctmgr_file_opts_t *file_opts = NULL;
-	slurmdb_association_rec_t *assoc = NULL, *assoc2 = NULL;
-	slurmdb_account_rec_t *acct = NULL, *acct2 = NULL;
-	slurmdb_cluster_rec_t *cluster = NULL;
-	slurmdb_user_rec_t *user = NULL, *user2 = NULL;
-	slurmdb_user_cond_t user_cond;
+	acct_association_rec_t *assoc = NULL, *assoc2 = NULL;
+	acct_account_rec_t *acct = NULL, *acct2 = NULL;
+	acct_cluster_rec_t *cluster = NULL;
+	acct_user_rec_t *user = NULL, *user2 = NULL;
+	acct_user_cond_t user_cond;
 
 	List curr_assoc_list = NULL;
 	List curr_acct_list = NULL;
@@ -1994,7 +1994,7 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 	/* This will be freed in their local counter parts */
 	List mod_acct_list = NULL;
 	List acct_list = NULL;
-	List slurmdb_assoc_list = NULL;
+	List acct_assoc_list = NULL;
 	List mod_user_list = NULL;
 	List user_list = NULL;
 	List user_assoc_list = NULL;
@@ -2081,14 +2081,14 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 	curr_acct_list = acct_storage_g_get_accounts(db_conn, my_uid, NULL);
 
 	/* These are new info so they need to be freed here */
-	acct_list = list_create(slurmdb_destroy_account_rec);
-	slurmdb_assoc_list = list_create(slurmdb_destroy_association_rec);
-	user_list = list_create(slurmdb_destroy_user_rec);
-	user_assoc_list = list_create(slurmdb_destroy_association_rec);
+	acct_list = list_create(destroy_acct_account_rec);
+	acct_assoc_list = list_create(destroy_acct_association_rec);
+	user_list = list_create(destroy_acct_user_rec);
+	user_assoc_list = list_create(destroy_acct_association_rec);
 
-	mod_acct_list = list_create(slurmdb_destroy_account_rec);
-	mod_user_list = list_create(slurmdb_destroy_user_rec);
-	mod_assoc_list = list_create(slurmdb_destroy_association_rec);
+	mod_acct_list = list_create(destroy_acct_account_rec);
+	mod_user_list = list_create(destroy_acct_user_rec);
+	mod_assoc_list = list_create(destroy_acct_association_rec);
 
 	format_list = list_create(slurm_destroy_char);
 
@@ -2131,7 +2131,7 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 
 		if(!strcasecmp("Machine", object)
 		   || !strcasecmp("Cluster", object)) {
-			slurmdb_association_cond_t assoc_cond;
+			acct_association_cond_t assoc_cond;
 
 			if(cluster_name && !cluster_name_set) {
 				exit_code=1;
@@ -2157,11 +2157,11 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 			/* we have to do this here since this is the
 			   first place we have the cluster_name
 			*/
-			memset(&user_cond, 0, sizeof(slurmdb_user_cond_t));
+			memset(&user_cond, 0, sizeof(acct_user_cond_t));
 			user_cond.with_coords = 1;
 			user_cond.with_wckeys = 1;
 
-			memset(&assoc_cond, 0, sizeof(slurmdb_association_cond_t));
+			memset(&assoc_cond, 0, sizeof(acct_association_cond_t));
 			assoc_cond.cluster_list = list_create(NULL);
 			assoc_cond.with_raw_qos = 1;
 			assoc_cond.without_parent_limits = 1;
@@ -2189,7 +2189,7 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 				if(my_uid != slurm_get_slurm_user_id()
 				   && my_uid != 0
 				   && (user->admin_level
-				       < SLURMDB_ADMIN_SUPER_USER)) {
+				       < ACCT_ADMIN_SUPER_USER)) {
 					exit_code=1;
 					fprintf(stderr,
 						" Your user does not have "
@@ -2204,7 +2204,7 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 			xfree(user_name);
 
 			if(start_clean) {
-				slurmdb_cluster_cond_t cluster_cond;
+				acct_cluster_cond_t cluster_cond;
 				List ret_list = NULL;
 
 				if(!commit_check("You requested to flush "
@@ -2217,7 +2217,7 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 				}
 
 				memset(&cluster_cond, 0,
-				       sizeof(slurmdb_cluster_cond_t));
+				       sizeof(acct_cluster_cond_t));
 				cluster_cond.cluster_list = list_create(NULL);
 				list_append(cluster_cond.cluster_list,
 					    cluster_name);
@@ -2246,9 +2246,9 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 				     curr_cluster_list, cluster_name))) {
 				List temp_assoc_list = list_create(NULL);
 				List cluster_list =
-					list_create(slurmdb_destroy_cluster_rec);
+					list_create(destroy_acct_cluster_rec);
 
-				cluster = xmalloc(sizeof(slurmdb_cluster_rec_t));
+				cluster = xmalloc(sizeof(acct_cluster_rec_t));
 				list_append(cluster_list, cluster);
 				cluster->name = xstrdup(cluster_name);
 				if(file_opts->classification) {
@@ -2332,7 +2332,7 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 			if(!sacctmgr_find_account_base_assoc_from_list(
 				   curr_assoc_list, parent, cluster_name)
 			   && !sacctmgr_find_account_base_assoc_from_list(
-				   slurmdb_assoc_list, parent, cluster_name)) {
+				   acct_assoc_list, parent, cluster_name)) {
 				exit_code=1;
 				fprintf(stderr, " line(%d) You need to add "
 				       "this parent (%s) as a child before "
@@ -2372,7 +2372,7 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 				assoc = _set_assoc_up(file_opts, MOD_ACCT,
 						      cluster_name, parent);
 
-				list_append(slurmdb_assoc_list, assoc);
+				list_append(acct_assoc_list, assoc);
 				/* don't add anything to the
 				   curr_assoc_list */
 			} else if(!(assoc =
@@ -2380,14 +2380,14 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 					    curr_assoc_list, file_opts->name,
 					    cluster_name)) &&
 				  !sacctmgr_find_account_base_assoc_from_list(
-					  slurmdb_assoc_list, file_opts->name,
+					  acct_assoc_list, file_opts->name,
 					  cluster_name)) {
 				acct2 = sacctmgr_find_account_from_list(
 					mod_acct_list, file_opts->name);
 
 				if(!acct2) {
 					acct2 = xmalloc(
-						sizeof(slurmdb_account_rec_t));
+						sizeof(acct_account_rec_t));
 					list_append(mod_acct_list, acct2);
 					acct2->name = xstrdup(file_opts->name);
 					if(_mod_acct(file_opts, acct, parent))
@@ -2399,7 +2399,7 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 				assoc = _set_assoc_up(file_opts, MOD_ACCT,
 						      cluster_name, parent);
 
-				list_append(slurmdb_assoc_list, assoc);
+				list_append(acct_assoc_list, assoc);
 				/* don't add anything to the
 				   curr_assoc_list */
 			} else if(assoc) {
@@ -2408,7 +2408,7 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 
 				if(!acct2) {
 					acct2 = xmalloc(
-						sizeof(slurmdb_account_rec_t));
+						sizeof(acct_account_rec_t));
 					list_append(mod_acct_list, acct2);
 					acct2->name = xstrdup(file_opts->name);
 					if(_mod_acct(file_opts, acct, parent))
@@ -2425,8 +2425,8 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 
 				if(!assoc2) {
 					assoc2 = xmalloc(
-						sizeof(slurmdb_association_rec_t));
-					slurmdb_init_association_rec(assoc2);
+						sizeof(acct_association_rec_t));
+					init_acct_association_rec(assoc2);
 					list_append(mod_assoc_list, assoc2);
 					assoc2->cluster = xstrdup(cluster_name);
 					assoc2->acct = xstrdup(file_opts->name);
@@ -2492,7 +2492,7 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 					mod_user_list, file_opts->name);
 				if(!user2) {
 					user2 = xmalloc(
-						sizeof(slurmdb_user_rec_t));
+						sizeof(acct_user_rec_t));
 					list_append(mod_user_list, user2);
 					user2->name = xstrdup(file_opts->name);
 					if(_mod_user(file_opts, user,
@@ -2513,7 +2513,7 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 					mod_user_list, file_opts->name);
 				if(!user2) {
 					user2 = xmalloc(
-						sizeof(slurmdb_user_rec_t));
+						sizeof(acct_user_rec_t));
 					list_append(mod_user_list, user2);
 					user2->name = xstrdup(file_opts->name);
 					if(_mod_user(file_opts, user,
@@ -2531,8 +2531,8 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 
 				if(!assoc2) {
 					assoc2 = xmalloc(
-						sizeof(slurmdb_association_rec_t));
-					slurmdb_init_association_rec(assoc2);
+						sizeof(acct_association_rec_t));
+					init_acct_association_rec(assoc2);
 					list_append(mod_assoc_list, assoc2);
 					assoc2->cluster = xstrdup(cluster_name);
 					assoc2->acct = xstrdup(parent);
@@ -2607,9 +2607,9 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 		set = 1;
 	}
 
-	if(rc == SLURM_SUCCESS && list_count(slurmdb_assoc_list)) {
+	if(rc == SLURM_SUCCESS && list_count(acct_assoc_list)) {
 		printf("Account Associations\n");
-		rc = _print_out_assoc(slurmdb_assoc_list, 0, 1);
+		rc = _print_out_assoc(acct_assoc_list, 0, 1);
 		set = 1;
 	}
 	if(rc == SLURM_SUCCESS && list_count(user_list)) {
@@ -2630,7 +2630,7 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 				case PRINT_ADMIN:
 					field->print_routine(
 						field,
-						slurmdb_admin_level_str(
+						acct_admin_level_str(
 							user->admin_level));
 					break;
 				case PRINT_COORDS:
@@ -2704,7 +2704,7 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 	list_destroy(format_list);
 	list_destroy(mod_acct_list);
 	list_destroy(acct_list);
-	list_destroy(slurmdb_assoc_list);
+	list_destroy(acct_assoc_list);
 	list_destroy(mod_user_list);
 	list_destroy(user_list);
 	list_destroy(user_assoc_list);

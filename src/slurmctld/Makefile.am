@@ -24,8 +24,6 @@ slurmctld_SOURCES = 	\
 	controller.c 	\
 	gang.c		\
 	gang.h		\
-	groups.c	\
-	groups.h	\
 	job_mgr.c 	\
 	job_scheduler.c \
 	job_scheduler.h \

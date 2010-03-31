@@ -41,14 +41,14 @@
 #include "src/common/uid.h"
 
 static int _set_cond(int *start, int argc, char *argv[],
-		     slurmdb_user_cond_t *user_cond,
+		     acct_user_cond_t *user_cond,
 		     List format_list)
 {
 	int i;
 	int u_set = 0;
 	int a_set = 0;
 	int end = 0;
-	slurmdb_association_cond_t *assoc_cond = NULL;
+	acct_association_cond_t *assoc_cond = NULL;
 	int command_len = 0;
 	int option = 0;
 
@@ -59,7 +59,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 
 	if(!user_cond->assoc_cond)
 		user_cond->assoc_cond =
-			xmalloc(sizeof(slurmdb_association_cond_t));
+			xmalloc(sizeof(acct_association_cond_t));
 
 	assoc_cond = user_cond->assoc_cond;
 
@@ -94,11 +94,6 @@ static int _set_cond(int *start, int argc, char *argv[],
 					 MAX(command_len, 5))) {
 			user_cond->with_coords = 1;
 		} else if (!end &&
-			   !strncasecmp (argv[i], "WithDeleted",
-					 MAX(command_len, 5))) {
-			user_cond->with_deleted = 1;
-			assoc_cond->with_deleted = 1;
-		} else if (!end &&
 			   !strncasecmp (argv[i], "WithRawQOSLevel",
 					 MAX(command_len, 5))) {
 			assoc_cond->with_raw_qos = 1;
@@ -130,7 +125,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 		} else if (!strncasecmp (argv[i], "AdminLevel",
 					 MAX(command_len, 2))) {
 			user_cond->admin_level =
-				str_2_slurmdb_admin_level(argv[i]+end);
+				str_2_acct_admin_level(argv[i]+end);
 			u_set = 1;
 		} else if (!strncasecmp (argv[i], "Clusters",
 					 MAX(command_len, 1))) {
@@ -323,8 +318,8 @@ static int _set_cond(int *start, int argc, char *argv[],
 }
 
 static int _set_rec(int *start, int argc, char *argv[],
-		    slurmdb_user_rec_t *user,
-		    slurmdb_association_rec_t *assoc)
+		    acct_user_rec_t *user,
+		    acct_association_rec_t *assoc)
 {
 	int i, mins;
 	int u_set = 0;
@@ -359,7 +354,7 @@ static int _set_rec(int *start, int argc, char *argv[],
 		} else if (!strncasecmp (argv[i], "AdminLevel",
 					 MAX(command_len, 2))) {
 			user->admin_level =
-				str_2_slurmdb_admin_level(argv[i]+end);
+				str_2_acct_admin_level(argv[i]+end);
 			u_set = 1;
 		} else if (!strncasecmp (argv[i], "DefaultAccount",
 					 MAX(command_len, 8))) {
@@ -525,13 +520,13 @@ static int _set_rec(int *start, int argc, char *argv[],
  *     account list
  * IN: check - whether or not to check if the existance of the above lists
  */
-static int _check_coord_request(slurmdb_user_cond_t *user_cond, bool check)
+static int _check_coord_request(acct_user_cond_t *user_cond, bool check)
 {
 	ListIterator itr = NULL, itr2 = NULL;
 	char *name = NULL;
-	slurmdb_user_rec_t *user_rec = NULL;
-	slurmdb_account_rec_t *acct_rec = NULL;
-	slurmdb_account_cond_t account_cond;
+	acct_user_rec_t *user_rec = NULL;
+	acct_account_rec_t *acct_rec = NULL;
+	acct_account_cond_t account_cond;
 	List local_acct_list = NULL;
 	List local_user_list = NULL;
 	int rc = SLURM_SUCCESS;
@@ -556,7 +551,7 @@ static int _check_coord_request(slurmdb_user_cond_t *user_cond, bool check)
 		return SLURM_ERROR;
 	}
 
-	memset(&account_cond, 0, sizeof(slurmdb_account_cond_t));
+	memset(&account_cond, 0, sizeof(acct_account_cond_t));
 	account_cond.assoc_cond = user_cond->assoc_cond;
 	local_acct_list =
 		acct_storage_g_get_accounts(db_conn, my_uid, &account_cond);
@@ -637,10 +632,10 @@ static int _check_coord_request(slurmdb_user_cond_t *user_cond, bool check)
 
 static int _check_user_has_acct(char *user, char *acct)
 {
-	slurmdb_association_cond_t assoc_cond;
+	acct_association_cond_t assoc_cond;
 	List ret_list = NULL;
 
-	memset(&assoc_cond, 0, sizeof(slurmdb_association_cond_t));
+	memset(&assoc_cond, 0, sizeof(acct_association_cond_t));
 	assoc_cond.acct_list = list_create(NULL);
 	list_push(assoc_cond.acct_list, acct);
 	assoc_cond.user_list = list_create(NULL);
@@ -663,15 +658,15 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 	ListIterator itr_c = NULL;
 	ListIterator itr_p = NULL;
 	ListIterator itr_w = NULL;
-	slurmdb_user_rec_t *user = NULL;
-	slurmdb_association_rec_t *assoc = NULL;
-	slurmdb_association_rec_t start_assoc;
+	acct_user_rec_t *user = NULL;
+	acct_association_rec_t *assoc = NULL;
+	acct_association_rec_t start_assoc;
 	char *default_acct = NULL;
 	char *default_wckey = NULL;
-	slurmdb_association_cond_t *assoc_cond = NULL;
-	slurmdb_wckey_rec_t *wckey = NULL;
-	slurmdb_wckey_cond_t *wckey_cond = NULL;
-	slurmdb_admin_level_t admin_level = SLURMDB_ADMIN_NOTSET;
+	acct_association_cond_t *assoc_cond = NULL;
+	acct_wckey_rec_t *wckey = NULL;
+	acct_wckey_cond_t *wckey_cond = NULL;
+	acct_admin_level_t admin_level = ACCT_ADMIN_NOTSET;
 	char *name = NULL, *account = NULL, *cluster = NULL, *partition = NULL;
 	int partition_set = 0;
 	List user_list = NULL;
@@ -696,16 +691,16 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 /* 		       " Please contact your administrator.\n"); */
 /* 		return SLURM_ERROR; */
 /* 	} */
-	slurmdb_init_association_rec(&start_assoc);
+	init_acct_association_rec(&start_assoc);
 
-	assoc_cond = xmalloc(sizeof(slurmdb_association_cond_t));
+	assoc_cond = xmalloc(sizeof(acct_association_cond_t));
 
 	assoc_cond->user_list = list_create(slurm_destroy_char);
 	assoc_cond->acct_list = list_create(slurm_destroy_char);
 	assoc_cond->cluster_list = list_create(slurm_destroy_char);
 	assoc_cond->partition_list = list_create(slurm_destroy_char);
 
-	wckey_cond = xmalloc(sizeof(slurmdb_wckey_cond_t));
+	wckey_cond = xmalloc(sizeof(acct_wckey_cond_t));
 
 	wckey_cond->name_list = list_create(slurm_destroy_char);
 
@@ -734,7 +729,7 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 					argv[i]+end);
 		} else if (!strncasecmp (argv[i], "AdminLevel",
 					 MAX(command_len, 2))) {
-			admin_level = str_2_slurmdb_admin_level(argv[i]+end);
+			admin_level = str_2_acct_admin_level(argv[i]+end);
 		} else if (!strncasecmp (argv[i], "Clusters",
 					 MAX(command_len, 1))) {
 			slurm_addto_char_list(assoc_cond->cluster_list,
@@ -881,19 +876,19 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 	}
 
 	if(exit_code) {
-		slurmdb_destroy_wckey_cond(wckey_cond);
-		slurmdb_destroy_association_cond(assoc_cond);
+		destroy_acct_wckey_cond(wckey_cond);
+		destroy_acct_association_cond(assoc_cond);
 		return SLURM_ERROR;
 	} else if(!list_count(assoc_cond->user_list)) {
-		slurmdb_destroy_wckey_cond(wckey_cond);
-		slurmdb_destroy_association_cond(assoc_cond);
+		destroy_acct_wckey_cond(wckey_cond);
+		destroy_acct_association_cond(assoc_cond);
 		exit_code=1;
 		fprintf(stderr, " Need name of user to add.\n");
 		return SLURM_ERROR;
 	} else {
- 		slurmdb_user_cond_t user_cond;
+ 		acct_user_cond_t user_cond;
 
-		memset(&user_cond, 0, sizeof(slurmdb_user_cond_t));
+		memset(&user_cond, 0, sizeof(acct_user_cond_t));
 		user_cond.assoc_cond = assoc_cond;
 
 		local_user_list = acct_storage_g_get_users(
@@ -905,15 +900,15 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 		exit_code=1;
 		fprintf(stderr, " Problem getting users from database.  "
 			"Contact your admin.\n");
-		slurmdb_destroy_wckey_cond(wckey_cond);
-		slurmdb_destroy_association_cond(assoc_cond);
+		destroy_acct_wckey_cond(wckey_cond);
+		destroy_acct_association_cond(assoc_cond);
 		return SLURM_ERROR;
 	}
 
 
 	if(!list_count(assoc_cond->cluster_list)) {
 		List cluster_list = NULL;
-		slurmdb_cluster_rec_t *cluster_rec = NULL;
+		acct_cluster_rec_t *cluster_rec = NULL;
 
 		cluster_list = acct_storage_g_get_clusters(db_conn,
 							   my_uid, NULL);
@@ -922,8 +917,8 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 			fprintf(stderr,
 				" Problem getting clusters from database.  "
 			       "Contact your admin.\n");
-			slurmdb_destroy_wckey_cond(wckey_cond);
-			slurmdb_destroy_association_cond(assoc_cond);
+			destroy_acct_wckey_cond(wckey_cond);
+			destroy_acct_association_cond(assoc_cond);
 			list_destroy(local_user_list);
 			if(local_acct_list)
 				list_destroy(local_acct_list);
@@ -942,8 +937,8 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 			fprintf(stderr,
 				"  Can't add users, no cluster defined yet.\n"
 				" Please contact your administrator.\n");
-			slurmdb_destroy_wckey_cond(wckey_cond);
-			slurmdb_destroy_association_cond(assoc_cond);
+			destroy_acct_wckey_cond(wckey_cond);
+			destroy_acct_association_cond(assoc_cond);
 			list_destroy(local_user_list);
 			if(local_acct_list)
 				list_destroy(local_acct_list);
@@ -951,9 +946,9 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 		}
 	} else {
 		List temp_list = NULL;
-		slurmdb_cluster_cond_t cluster_cond;
+		acct_cluster_cond_t cluster_cond;
 
-		memset(&cluster_cond, 0, sizeof(slurmdb_cluster_cond_t));
+		memset(&cluster_cond, 0, sizeof(acct_cluster_cond_t));
 		cluster_cond.cluster_list = assoc_cond->cluster_list;
 
 		temp_list = acct_storage_g_get_clusters(db_conn, my_uid,
@@ -962,7 +957,7 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 		itr_c = list_iterator_create(assoc_cond->cluster_list);
 		itr = list_iterator_create(temp_list);
 		while((cluster = list_next(itr_c))) {
-			slurmdb_cluster_rec_t *cluster_rec = NULL;
+			acct_cluster_rec_t *cluster_rec = NULL;
 
 			list_iterator_reset(itr);
 			while((cluster_rec = list_next(itr))) {
@@ -984,8 +979,8 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 		list_destroy(temp_list);
 
 		if(!list_count(assoc_cond->cluster_list)) {
-			slurmdb_destroy_wckey_cond(wckey_cond);
-			slurmdb_destroy_association_cond(assoc_cond);
+			destroy_acct_wckey_cond(wckey_cond);
+			destroy_acct_association_cond(assoc_cond);
 			list_destroy(local_user_list);
 			if(local_acct_list)
 				list_destroy(local_acct_list);
@@ -995,18 +990,18 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 
 	if(!list_count(assoc_cond->acct_list)) {
 		if(!list_count(wckey_cond->name_list)) {
-			slurmdb_destroy_wckey_cond(wckey_cond);
-			slurmdb_destroy_association_cond(assoc_cond);
+			destroy_acct_wckey_cond(wckey_cond);
+			destroy_acct_association_cond(assoc_cond);
 			exit_code=1;
 			fprintf(stderr, " Need name of account to "
 				"add user to.\n");
 			return SLURM_ERROR;
 		}
 	} else {
- 		slurmdb_account_cond_t account_cond;
-		slurmdb_association_cond_t query_assoc_cond;
+ 		acct_account_cond_t account_cond;
+		acct_association_cond_t query_assoc_cond;
 
-		memset(&account_cond, 0, sizeof(slurmdb_account_cond_t));
+		memset(&account_cond, 0, sizeof(acct_account_cond_t));
 		account_cond.assoc_cond = assoc_cond;
 
 		local_acct_list = acct_storage_g_get_accounts(
@@ -1017,8 +1012,8 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 			fprintf(stderr, " Problem getting accounts "
 				"from database.  Contact your admin.\n");
 			list_destroy(local_user_list);
-			slurmdb_destroy_wckey_cond(wckey_cond);
-			slurmdb_destroy_association_cond(assoc_cond);
+			destroy_acct_wckey_cond(wckey_cond);
+			destroy_acct_association_cond(assoc_cond);
 			return SLURM_ERROR;
 		}
 
@@ -1026,7 +1021,7 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 			default_acct =
 				xstrdup(list_peek(assoc_cond->acct_list));
 
-		memset(&query_assoc_cond, 0, sizeof(slurmdb_association_cond_t));
+		memset(&query_assoc_cond, 0, sizeof(acct_association_cond_t));
 		query_assoc_cond.acct_list = assoc_cond->acct_list;
 		query_assoc_cond.cluster_list = assoc_cond->cluster_list;
 		local_assoc_list = acct_storage_g_get_associations(
@@ -1038,8 +1033,8 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 				"from database.  Contact your admin.\n");
 			list_destroy(local_user_list);
 			list_destroy(local_acct_list);
-			slurmdb_destroy_wckey_cond(wckey_cond);
-			slurmdb_destroy_association_cond(assoc_cond);
+			destroy_acct_wckey_cond(wckey_cond);
+			destroy_acct_association_cond(assoc_cond);
 			return SLURM_ERROR;
 		}
 	}
@@ -1059,9 +1054,9 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 
 	/* we are adding these lists to the global lists and will be
 	   freed when they are */
-	user_list = list_create(slurmdb_destroy_user_rec);
-	assoc_list = list_create(slurmdb_destroy_association_rec);
-	wckey_list = list_create(slurmdb_destroy_wckey_rec);
+	user_list = list_create(destroy_acct_user_rec);
+	assoc_list = list_create(destroy_acct_association_rec);
+	wckey_list = list_create(destroy_acct_wckey_rec);
 
 	itr = list_iterator_create(assoc_cond->user_list);
 	while((name = list_next(itr))) {
@@ -1111,11 +1106,11 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 				xfree(warning);
 			}
 
-			user = xmalloc(sizeof(slurmdb_user_rec_t));
+			user = xmalloc(sizeof(acct_user_rec_t));
 			user->assoc_list =
-				list_create(slurmdb_destroy_association_rec);
+				list_create(destroy_acct_association_rec);
 			user->wckey_list =
-				list_create(slurmdb_destroy_wckey_rec);
+				list_create(destroy_acct_wckey_rec);
 			user->name = xstrdup(name);
 			user->default_acct = xstrdup(default_acct);
 			user->default_wckey = xstrdup(default_wckey);
@@ -1170,8 +1165,8 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 						   cluster, partition))
 						continue;
 					assoc = xmalloc(
-						sizeof(slurmdb_association_rec_t));
-					slurmdb_init_association_rec(assoc);
+						sizeof(acct_association_rec_t));
+					init_acct_association_rec(assoc);
 					assoc->user = xstrdup(name);
 					assoc->acct = xstrdup(account);
 					assoc->cluster = xstrdup(cluster);
@@ -1229,8 +1224,8 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 					continue;
 				}
 
-				assoc = xmalloc(sizeof(slurmdb_association_rec_t));
-				slurmdb_init_association_rec(assoc);
+				assoc = xmalloc(sizeof(acct_association_rec_t));
+				init_acct_association_rec(assoc);
 				assoc->user = xstrdup(name);
 				assoc->acct = xstrdup(account);
 				assoc->cluster = xstrdup(cluster);
@@ -1287,7 +1282,7 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 					   cluster)) {
 					continue;
 				}
-				wckey = xmalloc(sizeof(slurmdb_wckey_rec_t));
+				wckey = xmalloc(sizeof(acct_wckey_rec_t));
 				wckey->user = xstrdup(name);
 				wckey->name = xstrdup(account);
 				wckey->cluster = xstrdup(cluster);
@@ -1316,8 +1311,8 @@ no_default:
 		list_destroy(local_assoc_list);
 	if(local_wckey_list)
 		list_destroy(local_wckey_list);
-	slurmdb_destroy_wckey_cond(wckey_cond);
-	slurmdb_destroy_association_cond(assoc_cond);
+	destroy_acct_wckey_cond(wckey_cond);
+	destroy_acct_association_cond(assoc_cond);
 
 	if(!list_count(user_list) && !list_count(assoc_list)
 	   && !list_count(wckey_list)) {
@@ -1336,9 +1331,9 @@ no_default:
 		if(track_wckey)
 			printf("  Default WCKey   = %s\n", default_wckey);
 
-		if(admin_level != SLURMDB_ADMIN_NOTSET)
+		if(admin_level != ACCT_ADMIN_NOTSET)
 			printf("  Admin Level     = %s\n",
-			       slurmdb_admin_level_str(admin_level));
+			       acct_admin_level_str(admin_level));
 		xfree(user_str);
 	}
 
@@ -1412,7 +1407,7 @@ extern int sacctmgr_add_coord(int argc, char *argv[])
 	int rc = SLURM_SUCCESS;
 	int i=0;
 	int cond_set = 0, prev_set = 0;
-	slurmdb_user_cond_t *user_cond = xmalloc(sizeof(slurmdb_user_cond_t));
+	acct_user_cond_t *user_cond = xmalloc(sizeof(acct_user_cond_t));
 	char *name = NULL;
 	char *user_str = NULL;
 	char *acct_str = NULL;
@@ -1428,19 +1423,19 @@ extern int sacctmgr_add_coord(int argc, char *argv[])
 	}
 
 	if(exit_code) {
-		slurmdb_destroy_user_cond(user_cond);
+		destroy_acct_user_cond(user_cond);
 		return SLURM_ERROR;
 	} else if(!cond_set) {
 		exit_code=1;
 		fprintf(stderr, " You need to specify conditions to "
 		       "to add the coordinator.\n");
-		slurmdb_destroy_user_cond(user_cond);
+		destroy_acct_user_cond(user_cond);
 		return SLURM_ERROR;
 	}
 
 	if((_check_coord_request(user_cond, true) == SLURM_ERROR)
 	   || exit_code) {
-		slurmdb_destroy_user_cond(user_cond);
+		destroy_acct_user_cond(user_cond);
 		return SLURM_ERROR;
 	}
 
@@ -1464,7 +1459,7 @@ extern int sacctmgr_add_coord(int argc, char *argv[])
 				      user_cond->assoc_cond->acct_list,
 				      user_cond);
 	notice_thread_fini();
-	slurmdb_destroy_user_cond(user_cond);
+	destroy_acct_user_cond(user_cond);
 
 	if(rc == SLURM_SUCCESS) {
 		if(commit_check("Would you like to commit changes?")) {
@@ -1485,13 +1480,13 @@ extern int sacctmgr_add_coord(int argc, char *argv[])
 extern int sacctmgr_list_user(int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
-	slurmdb_user_cond_t *user_cond = xmalloc(sizeof(slurmdb_user_cond_t));
+	acct_user_cond_t *user_cond = xmalloc(sizeof(acct_user_cond_t));
 	List user_list;
 	int i=0, cond_set=0, prev_set=0;
 	ListIterator itr = NULL;
 	ListIterator itr2 = NULL;
-	slurmdb_user_rec_t *user = NULL;
-	slurmdb_association_rec_t *assoc = NULL;
+	acct_user_rec_t *user = NULL;
+	acct_association_rec_t *assoc = NULL;
 	char *object;
 
 	print_field_t *field = NULL;
@@ -1541,7 +1536,7 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 	}
 
 	if(exit_code) {
-		slurmdb_destroy_user_cond(user_cond);
+		destroy_acct_user_cond(user_cond);
 		list_destroy(format_list);
 		return SLURM_ERROR;
 	}
@@ -1555,8 +1550,7 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 		if(user_cond->with_assocs)
 			slurm_addto_char_list(format_list,
 					      "Cl,Ac,Part,F,"
-					      "MaxJ,MaxN,MaxCPUs,MaxS,MaxW,"
-					      "MaxCPUMins,QOS");
+					      "MaxJ,MaxN,MaxS,MaxW,QOS");
 		if(user_cond->with_coords)
 			slurm_addto_char_list(format_list, "Coord");
 	}
@@ -1567,7 +1561,7 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 				 "Are you sure you want to continue?")) {
 			printf("Aborted\n");
 			list_destroy(format_list);
-			slurmdb_destroy_user_cond(user_cond);
+			destroy_acct_user_cond(user_cond);
 			return SLURM_SUCCESS;
 		}
 	}
@@ -1760,13 +1754,13 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 	list_destroy(format_list);
 
 	if(exit_code) {
-		slurmdb_destroy_user_cond(user_cond);
+		destroy_acct_user_cond(user_cond);
 		list_destroy(print_fields_list);
 		return SLURM_ERROR;
 	}
 
 	user_list = acct_storage_g_get_users(db_conn, my_uid, user_cond);
-	slurmdb_destroy_user_cond(user_cond);
+	destroy_acct_user_cond(user_cond);
 
 	if(!user_list) {
 		exit_code=1;
@@ -1800,7 +1794,7 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 					case PRINT_ADMIN:
 						field->print_routine(
 							field,
-							slurmdb_admin_level_str(
+							acct_admin_level_str(
 								user->
 								admin_level),
 							(curr_inx ==
@@ -2041,7 +2035,7 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 				case PRINT_ADMIN:
 					field->print_routine(
 						field,
-						slurmdb_admin_level_str(
+						acct_admin_level_str(
 							user->admin_level),
 						(curr_inx == field_count));
 					break;
@@ -2093,14 +2087,14 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 extern int sacctmgr_modify_user(int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
-	slurmdb_user_cond_t *user_cond = xmalloc(sizeof(slurmdb_user_cond_t));
-	slurmdb_user_rec_t *user = xmalloc(sizeof(slurmdb_user_rec_t));
-	slurmdb_association_rec_t *assoc = xmalloc(sizeof(slurmdb_association_rec_t));
+	acct_user_cond_t *user_cond = xmalloc(sizeof(acct_user_cond_t));
+	acct_user_rec_t *user = xmalloc(sizeof(acct_user_rec_t));
+	acct_association_rec_t *assoc = xmalloc(sizeof(acct_association_rec_t));
 	int i=0;
 	int cond_set = 0, prev_set = 0, rec_set = 0, set = 0;
 	List ret_list = NULL;
 
-	slurmdb_init_association_rec(assoc);
+	init_acct_association_rec(assoc);
 
 	for (i=0; i<argc; i++) {
 		int command_len = strlen(argv[i]);
@@ -2119,24 +2113,24 @@ extern int sacctmgr_modify_user(int argc, char *argv[])
 	}
 
 	if(exit_code) {
-		slurmdb_destroy_user_cond(user_cond);
-		slurmdb_destroy_user_rec(user);
-		slurmdb_destroy_association_rec(assoc);
+		destroy_acct_user_cond(user_cond);
+		destroy_acct_user_rec(user);
+		destroy_acct_association_rec(assoc);
 		return SLURM_ERROR;
 	} else if(!rec_set) {
 		exit_code=1;
 		fprintf(stderr, " You didn't give me anything to set\n");
-		slurmdb_destroy_user_cond(user_cond);
-		slurmdb_destroy_user_rec(user);
-		slurmdb_destroy_association_rec(assoc);
+		destroy_acct_user_cond(user_cond);
+		destroy_acct_user_rec(user);
+		destroy_acct_association_rec(assoc);
 		return SLURM_ERROR;
 	} else if(!cond_set) {
 		if(!commit_check("You didn't set any conditions with 'WHERE'.\n"
 				 "Are you sure you want to continue?")) {
 			printf("Aborted\n");
-			slurmdb_destroy_user_cond(user_cond);
-			slurmdb_destroy_user_rec(user);
-			slurmdb_destroy_association_rec(assoc);
+			destroy_acct_user_cond(user_cond);
+			destroy_acct_user_rec(user);
+			destroy_acct_association_rec(assoc);
 			return SLURM_SUCCESS;
 		}
 	}
@@ -2278,9 +2272,9 @@ assoc_end:
 		}
 	}
 
-	slurmdb_destroy_user_cond(user_cond);
-	slurmdb_destroy_user_rec(user);
-	slurmdb_destroy_association_rec(assoc);
+	destroy_acct_user_cond(user_cond);
+	destroy_acct_user_rec(user);
+	destroy_acct_association_rec(assoc);
 
 	return rc;
 }
@@ -2288,7 +2282,7 @@ assoc_end:
 extern int sacctmgr_delete_user(int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
-	slurmdb_user_cond_t *user_cond = xmalloc(sizeof(slurmdb_user_cond_t));
+	acct_user_cond_t *user_cond = xmalloc(sizeof(acct_user_cond_t));
 	int i=0;
 	List ret_list = NULL;
 	int cond_set = 0, prev_set = 0;
@@ -2306,12 +2300,12 @@ extern int sacctmgr_delete_user(int argc, char *argv[])
 		exit_code=1;
 		fprintf(stderr,
 			" No conditions given to remove, not executing.\n");
-		slurmdb_destroy_user_cond(user_cond);
+		destroy_acct_user_cond(user_cond);
 		return SLURM_ERROR;
 	}
 
 	if(exit_code) {
-		slurmdb_destroy_user_cond(user_cond);
+		destroy_acct_user_cond(user_cond);
 		return SLURM_ERROR;
 	}
 
@@ -2325,7 +2319,7 @@ extern int sacctmgr_delete_user(int argc, char *argv[])
 	}
 	notice_thread_fini();
 
-	slurmdb_destroy_user_cond(user_cond);
+	destroy_acct_user_cond(user_cond);
 
 	if(ret_list && list_count(ret_list)) {
 		char *object = NULL;
@@ -2365,7 +2359,7 @@ extern int sacctmgr_delete_coord(int argc, char *argv[])
 	int rc = SLURM_SUCCESS;
 	int i=0, set=0;
 	int cond_set = 0, prev_set = 0;
-	slurmdb_user_cond_t *user_cond = xmalloc(sizeof(slurmdb_user_cond_t));
+	acct_user_cond_t *user_cond = xmalloc(sizeof(acct_user_cond_t));
 	char *name = NULL;
 	char *user_str = NULL;
 	char *acct_str = NULL;
@@ -2383,18 +2377,18 @@ extern int sacctmgr_delete_coord(int argc, char *argv[])
 	}
 
 	if(exit_code) {
-		slurmdb_destroy_user_cond(user_cond);
+		destroy_acct_user_cond(user_cond);
 		return SLURM_ERROR;
 	} else if(!cond_set) {
 		exit_code=1;
 		fprintf(stderr, " You need to specify a user list "
 		       "or account list here.\n");
-		slurmdb_destroy_user_cond(user_cond);
+		destroy_acct_user_cond(user_cond);
 		return SLURM_ERROR;
 	}
 	if((_check_coord_request(user_cond, false) == SLURM_ERROR)
 	   || exit_code) {
-		slurmdb_destroy_user_cond(user_cond);
+		destroy_acct_user_cond(user_cond);
 		return SLURM_ERROR;
 	}
 
@@ -2420,7 +2414,7 @@ extern int sacctmgr_delete_coord(int argc, char *argv[])
 		exit_code=1;
 		fprintf(stderr, " You need to specify a user list "
 		       "or an account list here.\n");
-		slurmdb_destroy_user_cond(user_cond);
+		destroy_acct_user_cond(user_cond);
 		return SLURM_ERROR;
 	}
 	/* FIX ME: This list should be received from the slurmdbd not
@@ -2440,7 +2434,7 @@ extern int sacctmgr_delete_coord(int argc, char *argv[])
         ret_list = acct_storage_g_remove_coord(db_conn, my_uid,
 					       user_cond->assoc_cond->acct_list,
 					       user_cond);
-	slurmdb_destroy_user_cond(user_cond);
+	destroy_acct_user_cond(user_cond);
 
 
 	if(ret_list && list_count(ret_list)) {

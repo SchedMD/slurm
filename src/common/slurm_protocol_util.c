@@ -1,8 +1,7 @@
 /*****************************************************************************\
  *  slurm_protocol_util.c - communication infrastructure functions
  *****************************************************************************
- *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
+ *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Kevin Tew <tew1@llnl.gov> et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -58,55 +57,12 @@ int check_header_version(header_t * header)
 {
 	if(slurmdbd_conf) {
 		if (header->version != SLURM_PROTOCOL_VERSION
-		    && header->version != SLURM_2_1_PROTOCOL_VERSION
 		    && header->version != SLURM_2_0_PROTOCOL_VERSION
 		    && header->version != SLURM_1_3_PROTOCOL_VERSION)
 			slurm_seterrno_ret(SLURM_PROTOCOL_VERSION_ERROR);
-	} else if (header->version != SLURM_PROTOCOL_VERSION) {
-		/* Starting with 2.2 we will handle previous versions
-		 * of SLURM for some calls */
-		switch(header->msg_type) {
-		case REQUEST_BLOCK_INFO:
-		case REQUEST_BUILD_INFO:
-		case REQUEST_CANCEL_JOB_STEP:
-		case REQUEST_CHECKPOINT:
-		case REQUEST_CHECKPOINT_COMP:
-		case REQUEST_CHECKPOINT_TASK_COMP:
-		case REQUEST_COMPLETE_BATCH_SCRIPT:	/* From slurmstepd */
-		case REQUEST_COMPLETE_JOB_ALLOCATION:
-		case REQUEST_CREATE_PARTITION:
-		case REQUEST_CREATE_RESERVATION:
-		case REQUEST_JOB_END_TIME:
-		case REQUEST_JOB_INFO:
-		case REQUEST_JOB_INFO_SINGLE:
-		case REQUEST_JOB_READY:
-		case REQUEST_JOB_REQUEUE:
-		case REQUEST_JOB_STEP_INFO:
-		case REQUEST_JOB_WILL_RUN:
-		case REQUEST_NODE_INFO:
-		case REQUEST_PARTITION_INFO:
-		case REQUEST_PRIORITY_FACTORS:
-		case REQUEST_RECONFIGURE:
-		case REQUEST_RESERVATION_INFO:
-		case REQUEST_SET_DEBUG_LEVEL:
-		case REQUEST_SHARE_INFO:
-		case REQUEST_SHUTDOWN:
-		case REQUEST_SHUTDOWN_IMMEDIATE:
-		case REQUEST_STEP_COMPLETE:		/* From slurmstepd */
-		case REQUEST_STEP_LAYOUT:
-		case REQUEST_SUBMIT_BATCH_JOB:
-		case REQUEST_SUSPEND:
-		case REQUEST_TOPO_INFO:
-		case REQUEST_UPDATE_BLOCK:
-		case REQUEST_UPDATE_JOB:
-		case REQUEST_UPDATE_PARTITION:
-			if(header->version == SLURM_2_1_PROTOCOL_VERSION)
-				break;
-		default:
-			slurm_seterrno_ret(SLURM_PROTOCOL_VERSION_ERROR);
-			break;
-		}
-	}
+	} else if (header->version != SLURM_PROTOCOL_VERSION)
+		slurm_seterrno_ret(SLURM_PROTOCOL_VERSION_ERROR);
+
 	return SLURM_PROTOCOL_SUCCESS;
 }
 
@@ -124,16 +80,12 @@ void init_header(header_t *header, slurm_msg_t *msg,
 	/* Since the slurmdbd could talk to a host of different
 	   versions of slurm this needs to be kept current when the
 	   protocol version changes. */
-	if(msg->protocol_version != (uint16_t)NO_VAL)
-		header->version = msg->protocol_version;
-	else if(msg->msg_type == ACCOUNTING_UPDATE_MSG
+	if(msg->msg_type == ACCOUNTING_UPDATE_MSG
 	   || msg->msg_type == ACCOUNTING_FIRST_REG) {
 		uint32_t rpc_version =
 			((accounting_update_msg_t *)msg->data)->rpc_version;
-		if(rpc_version >= 8)
+		if(rpc_version >= 6)
 			header->version = SLURM_PROTOCOL_VERSION;
-		else if(rpc_version >= 6)
-			header->version = SLURM_2_1_PROTOCOL_VERSION;
 		else if(rpc_version >= 5)
 			header->version = SLURM_2_0_PROTOCOL_VERSION;
 		else

@@ -146,22 +146,21 @@ extern int _addto_uid_char_list(List char_list, char *names)
 }
 
 static int _set_cond(int *start, int argc, char *argv[],
-		     slurmdb_archive_cond_t *arch_cond)
+		     acct_archive_cond_t *arch_cond)
 {
 	int i;
 	int set = 0;
 	int end = 0;
 	int command_len = 0;
 	int option = 0;
- 	uint32_t tmp;
-	slurmdb_job_cond_t *job_cond = NULL;
+	acct_job_cond_t *job_cond = NULL;
 
 	if(!arch_cond) {
 		error("No arch_cond given");
 		return -1;
 	}
 	if(!arch_cond->job_cond)
-		arch_cond->job_cond = xmalloc(sizeof(slurmdb_job_cond_t));
+		arch_cond->job_cond = xmalloc(sizeof(acct_job_cond_t));
 	job_cond = arch_cond->job_cond;
 
 	for (i=(*start); i<argc; i++) {
@@ -181,19 +180,19 @@ static int _set_cond(int *start, int argc, char *argv[],
 			continue;
 		} else if(!end && !strncasecmp(argv[i], "events",
 					  MAX(command_len, 1))) {
-			arch_cond->purge_step |= SLURMDB_PURGE_ARCHIVE;
+			arch_cond->archive_events = 1;
 			set = 1;
 		} else if(!end && !strncasecmp(argv[i], "jobs",
 					  MAX(command_len, 1))) {
-			arch_cond->purge_job |= SLURMDB_PURGE_ARCHIVE;
+			arch_cond->archive_jobs = 1;
 			set = 1;
 		} else if(!end && !strncasecmp(argv[i], "steps",
 					  MAX(command_len, 1))) {
-			arch_cond->purge_step |= SLURMDB_PURGE_ARCHIVE;
+			arch_cond->archive_steps = 1;
 			set = 1;
 		} else if(!end && !strncasecmp(argv[i], "suspend",
 					  MAX(command_len, 1))) {
-			arch_cond->purge_suspend |= SLURMDB_PURGE_ARCHIVE;
+			arch_cond->archive_suspend = 1;
 			set = 1;
 		} else if(!end
 			  || !strncasecmp (argv[i], "Clusters",
@@ -235,7 +234,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 		} else if (!strncasecmp (argv[i], "Jobs",
 					 MAX(command_len, 1))) {
 			char *end_char = NULL, *start_char = argv[i]+end;
-			slurmdb_selected_step_t *selected_step = NULL;
+			jobacct_selected_step_t *selected_step = NULL;
 			char *dot = NULL;
 			if(!job_cond->step_list)
 				job_cond->step_list =
@@ -249,7 +248,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 				if(!(int)*start_char)
 					continue;
 				selected_step = xmalloc(
-					sizeof(slurmdb_selected_step_t));
+					sizeof(jobacct_selected_step_t));
 				list_append(job_cond->step_list, selected_step);
 
 				dot = strstr(start_char, ".");
@@ -273,83 +272,38 @@ static int _set_cond(int *start, int argc, char *argv[],
 			slurm_addto_char_list(job_cond->partition_list,
 					      argv[i]+end);
 			set = 1;
-		} else if (!strncasecmp (argv[i], "PurgeEventAfter",
-					 MAX(command_len, 10))) {
-			if ((tmp = slurmdb_parse_purge(argv[i]+end))
-			    == NO_VAL) {
-				exit_code = 1;
-			} else {
-				arch_cond->purge_event |= tmp;
-				set = 1;
-			}
-		} else if (!strncasecmp (argv[i], "PurgeJobAfter",
-					 MAX(command_len, 10))) {
-			if ((tmp = slurmdb_parse_purge(argv[i]+end))
-			    == NO_VAL) {
-				exit_code = 1;
-			} else {
-				arch_cond->purge_job |= tmp;
-				set = 1;
-			}
-		} else if (!strncasecmp (argv[i], "PurgeStepAfter",
-					 MAX(command_len, 10))) {
-			if ((tmp = slurmdb_parse_purge(argv[i]+end))
-			    == NO_VAL) {
-				exit_code = 1;
-			} else {
-				arch_cond->purge_step |= tmp;
-				set = 1;
-			}
-		} else if (!strncasecmp (argv[i], "PurgeSuspendAfter",
-					 MAX(command_len, 10))) {
-			if ((tmp = slurmdb_parse_purge(argv[i]+end))
-			    == NO_VAL) {
-				exit_code = 1;
-			} else {
-				arch_cond->purge_suspend |= tmp;
-				set = 1;
-			}
 		} else if (!strncasecmp (argv[i], "PurgeEventMonths",
 					 MAX(command_len, 6))) {
-			if (get_uint(argv[i]+end, &tmp, "PurgeEventMonths")
+			if (get_uint16(argv[i]+end, &arch_cond->purge_event,
+				       "PurgeEventMonths")
 			    != SLURM_SUCCESS) {
 				exit_code = 1;
-			} else {
-				arch_cond->purge_event |= tmp;
-				arch_cond->purge_event |= SLURMDB_PURGE_MONTHS;
+			} else
 				set = 1;
-			}
 		} else if (!strncasecmp (argv[i], "PurgeJobMonths",
 					 MAX(command_len, 6))) {
-			if (get_uint(argv[i]+end, &tmp, "PurgeJobMonths")
+			if (get_uint16(argv[i]+end, &arch_cond->purge_job,
+				       "PurgeJobMonths")
 			    != SLURM_SUCCESS) {
 				exit_code = 1;
-			} else {
-				arch_cond->purge_job |= tmp;
-				arch_cond->purge_job |= SLURMDB_PURGE_MONTHS;
+			} else
 				set = 1;
-			}
 		} else if (!strncasecmp (argv[i], "PurgeStepMonths",
 					 MAX(command_len, 7))) {
-			if (get_uint(argv[i]+end, &tmp, "PurgeStepMonths")
+			if (get_uint16(argv[i]+end, &arch_cond->purge_step,
+				       "PurgeStepMonths")
 			    != SLURM_SUCCESS) {
 				exit_code = 1;
-			} else {
-				arch_cond->purge_step |= tmp;
-				arch_cond->purge_step |= SLURMDB_PURGE_MONTHS;
+			} else
 				set = 1;
-			}
 		} else if (!strncasecmp (argv[i], "PurgeSuspendMonths",
 					 MAX(command_len, 7))) {
-			if (get_uint(argv[i]+end, &tmp, "PurgeSuspendMonths")
+			if (get_uint16(argv[i]+end, &arch_cond->purge_suspend,
+				       "PurgeSuspendMonths")
 			    != SLURM_SUCCESS) {
 				exit_code = 1;
-			} else {
-				arch_cond->purge_suspend |= tmp;
-				arch_cond->purge_suspend
-					|= SLURMDB_PURGE_MONTHS;
+			} else
 				set = 1;
-			}
 		} else if (!strncasecmp (argv[i], "Start",
 					 MAX(command_len, 2))) {
 			job_cond->usage_start = parse_time(argv[i]+end, 1);
@@ -381,10 +335,18 @@ static int _set_cond(int *start, int argc, char *argv[],
 extern int sacctmgr_archive_dump(int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
-	slurmdb_archive_cond_t *arch_cond =
-		xmalloc(sizeof(slurmdb_archive_cond_t));
+	acct_archive_cond_t *arch_cond = xmalloc(sizeof(acct_archive_cond_t));
 	int i=0;
 	struct stat st;
+
+	arch_cond->archive_events = (uint16_t)NO_VAL;
+	arch_cond->archive_jobs = (uint16_t)NO_VAL;
+	arch_cond->archive_steps = (uint16_t)NO_VAL;
+	arch_cond->archive_suspend = (uint16_t)NO_VAL;
+	arch_cond->purge_event = (uint16_t)NO_VAL;
+	arch_cond->purge_job = (uint16_t)NO_VAL;
+	arch_cond->purge_step = (uint16_t)NO_VAL;
+	arch_cond->purge_suspend = (uint16_t)NO_VAL;
 
 	for (i=0; i<argc; i++) {
 		int command_len = strlen(argv[i]);
@@ -394,17 +356,8 @@ extern int sacctmgr_archive_dump(int argc, char *argv[])
 		_set_cond(&i, argc, argv, arch_cond);
 	}
 
-	if(!arch_cond->purge_event)
-		arch_cond->purge_event = NO_VAL;
-	if(!arch_cond->purge_job)
-		arch_cond->purge_job = NO_VAL;
-	if(!arch_cond->purge_step)
-		arch_cond->purge_step = NO_VAL;
-	if(!arch_cond->purge_suspend)
-		arch_cond->purge_suspend = NO_VAL;
-
 	if(exit_code) {
-		slurmdb_destroy_archive_cond(arch_cond);
+		destroy_acct_archive_cond(arch_cond);
 		return SLURM_ERROR;
 	}
 
@@ -475,7 +428,7 @@ extern int sacctmgr_archive_dump(int argc, char *argv[])
 		fprintf(stderr, " Problem dumping archive\n");
 		rc = SLURM_ERROR;
 	}
-	slurmdb_destroy_archive_cond(arch_cond);
+	destroy_acct_archive_cond(arch_cond);
 
 	return rc;
 }
@@ -483,8 +436,7 @@ extern int sacctmgr_archive_dump(int argc, char *argv[])
 extern int sacctmgr_archive_load(int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
-	slurmdb_archive_rec_t *arch_rec =
-		xmalloc(sizeof(slurmdb_archive_rec_t));
+	acct_archive_rec_t *arch_rec = xmalloc(sizeof(acct_archive_rec_t));
 	int i=0, command_len = 0, option = 0;
 	struct stat st;
 
@@ -514,7 +466,7 @@ extern int sacctmgr_archive_load(int argc, char *argv[])
 	}
 
 	if(exit_code) {
-		slurmdb_destroy_archive_rec(arch_rec);
+		destroy_acct_archive_rec(arch_rec);
 		return SLURM_ERROR;
 	}
 
@@ -556,7 +508,7 @@ extern int sacctmgr_archive_load(int argc, char *argv[])
 		rc = SLURM_ERROR;
 	}
 
-	slurmdb_destroy_archive_rec(arch_rec);
+	destroy_acct_archive_rec(arch_rec);
 
 	return rc;
 }

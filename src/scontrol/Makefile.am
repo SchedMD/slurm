@@ -17,8 +17,7 @@ scontrol_SOURCES =	\
 	scontrol.h	\
 	update_job.c	\
 	update_node.c	\
-	update_part.c	\
-	update_step.c
+	update_part.c
 
 convenience_libs = $(top_builddir)/src/api/libslurm.o -ldl -lm
 

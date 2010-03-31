@@ -1,4 +1,4 @@
-.TH "srun" "1" "SLURM 2.2" "February 2010" "SLURM Commands"
+.TH "srun" "1" "SLURM 2.1" "October 2009" "SLURM Commands"
 
 .SH "NAME"
 srun \- Run parallel jobs
@@ -1015,19 +1015,6 @@ Standard output from this program of the form
 for the task being spawned.
 
 .TP
-\fB\-\-time\-min\fR=<\fItime\fR>
-Set a minimum time limit on the job allocation.
-If specified, the job may have it's \fB\-\-time\fR limit lowered to a value
-no lower than \fB\-\-time\-min\fR if doing so permits the job to begin
-execution earlier than otherwise possible. 
-The job's time limit will not be changed after the job is allocated resources.
-This is performed by a backfill scheduling algorithm to allocate resources 
-otherwise reserved for higher priority jobs.
-Acceptable time formats include "minutes", "minutes:seconds", 
-"hours:minutes:seconds", "days\-hours", "days\-hours:minutes" and 
-"days\-hours:minutes:seconds".
-
-.TP
 \fB\-\-tmp\fR=<\fIMB\fR>
 Specify a minimum amount of temporary disk space.
 
@@ -1857,7 +1844,7 @@ wait
 
 .SH "COPYING"
 Copyright (C) 2006\-2007 The Regents of the University of California.
-Copyright (C) 2008\-2010 Lawrence Livermore National Security.
+Copyright (C) 2008\-2009 Lawrence Livermore National Security.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 CODE\-OCEC\-09\-009. All rights reserved.
 .LP

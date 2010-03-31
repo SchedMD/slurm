@@ -2,7 +2,7 @@
  *  print.c - sinfo print job functions
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Joey Ekstrom <ekstrom1@llnl.gov> and
  *  Morris Jette <jette1@llnl.gov>
@@ -49,7 +49,6 @@
 #include "src/common/hostlist.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-#include "src/common/parse_time.h"
 #include "src/sinfo/print.h"
 #include "src/sinfo/sinfo.h"
 
@@ -286,16 +285,10 @@ int _print_avail(sinfo_data_t * sinfo_data, int width,
 	if (sinfo_data) {
 		if (sinfo_data->part_info == NULL)
 			_print_str("n/a", width, right_justify, true);
-		else if (sinfo_data->part_info->state_up == PARTITION_UP)
+		else if (sinfo_data->part_info->state_up)
 			_print_str("up", width, right_justify, true);
-		else if (sinfo_data->part_info->state_up == PARTITION_DOWN)
-			_print_str("down", width, right_justify, true);
-		else if (sinfo_data->part_info->state_up == PARTITION_DRAIN)
-			_print_str("drain", width, right_justify, true);
-		else if (sinfo_data->part_info->state_up == PARTITION_INACTIVE)
-			_print_str("inactive", width, right_justify, true);
 		else
-			_print_str("unknown", width, right_justify, true);
+			_print_str("down", width, right_justify, true);
 	} else
 		_print_str("AVAIL", width, right_justify, true);
 
@@ -827,71 +820,6 @@ int _print_time(sinfo_data_t * sinfo_data, int width,
 					width, right_justify, true);
 	} else
 		_print_str("TIMELIMIT", width, right_justify, true);
-
-	if (suffix)
-		printf("%s", suffix);
-	return SLURM_SUCCESS;
-}
-
-int _print_timestamp(sinfo_data_t * sinfo_data, int width,
-			bool right_justify, char *suffix)
-{
-	if (sinfo_data && sinfo_data->reason_time) {
-		char time_str[32];
-		slurm_make_time_str(&sinfo_data->reason_time,
-				    time_str, sizeof(time_str));
-		_print_str(time_str, width, right_justify, true);
-	} else if (sinfo_data)
-		_print_str("Unknown", width, right_justify, true);
-	else
-		_print_str("TIMESTAMP", width, right_justify, true);
-
-	if (suffix)
-		printf("%s", suffix);
-	return SLURM_SUCCESS;
-}
-
-int _print_user(sinfo_data_t * sinfo_data, int width,
-			bool right_justify, char *suffix)
-{
-	if (sinfo_data && (sinfo_data->reason_uid != NO_VAL)) {
-		char user[FORMAT_STRING_SIZE];
-		struct passwd *pw = NULL;
-
-		if ((pw=getpwuid(sinfo_data->reason_uid)))
-			snprintf(user, sizeof(user), "%s", pw->pw_name);
-		else
-			snprintf(user, sizeof(user), "Unk(%u)",
-				 sinfo_data->reason_uid);
-		_print_str(user, width, right_justify, true);
-	} else if (sinfo_data)
-		_print_str("Unknown", width, right_justify, true);
-	else
-		_print_str("USER", width, right_justify, true);
-
-	if (suffix)
-		printf("%s", suffix);
-	return SLURM_SUCCESS;
-}
-
-int _print_user_long(sinfo_data_t * sinfo_data, int width,
-			bool right_justify, char *suffix)
-{
-	if (sinfo_data && (sinfo_data->reason_uid != NO_VAL)) {
-		char user[FORMAT_STRING_SIZE];
-		struct passwd *pw = NULL;
-
-		if ((pw=getpwuid(sinfo_data->reason_uid)))
-			snprintf(user, sizeof(user), "%s(%u)", pw->pw_name,
-				 sinfo_data->reason_uid);
-		else
-			snprintf(user, sizeof(user), "Unk(%u)",
-				 sinfo_data->reason_uid);
-		_print_str(user, width, right_justify, true);
-	} else if (sinfo_data)
-		_print_str("Unknown", width, right_justify, true);
-	else
-		_print_str("USER", width, right_justify, true);
 
 	if (suffix)
 		printf("%s", suffix);

@@ -247,7 +247,6 @@ static void * _service_connection(void *arg)
 		error("close(%d): %m(%s)",  conn->newsockfd, conn->ip);
 	else
 		debug2("Closed connection %d uid(%d)", conn->newsockfd, uid);
-	xfree(conn->cluster_name);
 	xfree(conn);
 	_free_server_thread(pthread_self());
 	return NULL;

@@ -2,7 +2,7 @@
  *  opt.c - options processing for salloc
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <grondona1@llnl.gov>, et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -157,7 +157,6 @@
 #define LONG_OPT_WCKEY           0x13d
 #define LONG_OPT_RESERVATION     0x13e
 #define LONG_OPT_SIGNAL          0x13f
-#define LONG_OPT_TIME_MIN        0x140
 
 /*---- global variables, defined in opt.h ----*/
 opt_t opt;
@@ -295,8 +294,6 @@ static void _opt_default()
 	opt.mem_bind = NULL;
 	opt.time_limit = NO_VAL;
 	opt.time_limit_str = NULL;
-	opt.time_min = NO_VAL;
-	opt.time_min_str = NULL;
 	opt.partition = NULL;
 
 	opt.job_name = NULL;
@@ -641,7 +638,6 @@ void set_options(const int argc, char **argv)
 		{"signal",        required_argument, 0, LONG_OPT_SIGNAL},
 		{"sockets-per-node", required_argument, 0, LONG_OPT_SOCKETSPERNODE},
 		{"tasks-per-node",  required_argument, 0, LONG_OPT_NTASKSPERNODE},
-		{"time-min",      required_argument, 0, LONG_OPT_TIME_MIN},
 		{"threads-per-core", required_argument, 0, LONG_OPT_THREADSPERCORE},
 		{"tmp",           required_argument, 0, LONG_OPT_TMP},
 		{"uid",           required_argument, 0, LONG_OPT_UID},
@@ -1081,10 +1077,6 @@ void set_options(const int argc, char **argv)
 				exit(error_exit);
 			}
 			break;
-		case LONG_OPT_TIME_MIN:
-			xfree(opt.time_min_str);
-			opt.time_min_str = xstrdup(optarg);
-			break;
 		default:
 			if (spank_process_option(opt_char, optarg) < 0) {
 				error("Unrecognized command line parameter %c",
@@ -1217,14 +1209,14 @@ static bool _opt_verify(void)
 	}
 
 	if (opt.cpus_per_task <= 0) {
-		error("invalid number of cpus per task (-c %d)",
+		error("invalid number of cpus per task (-c %d)\n",
 		      opt.cpus_per_task);
 		verified = false;
 	}
 
 	if ((opt.min_nodes < 0) || (opt.max_nodes < 0) ||
 	    (opt.max_nodes && (opt.min_nodes > opt.max_nodes))) {
-		error("invalid number of nodes (-N %d-%d)",
+		error("invalid number of nodes (-N %d-%d)\n",
 		      opt.min_nodes, opt.max_nodes);
 		verified = false;
 	}
@@ -1406,15 +1398,6 @@ static bool _opt_verify(void)
 		}
 		if (opt.time_limit == 0)
 			opt.time_limit = INFINITE;
-	}
-	if (opt.time_min_str) {
-		opt.time_min = time_str2mins(opt.time_min_str);
-		if ((opt.time_min < 0) && (opt.time_min != INFINITE)) {
-			error("Invalid min-time specification");
-			exit(error_exit);
-		}
-		if (opt.time_min == 0)
-			opt.time_min = INFINITE;
 	}
 
 #ifdef HAVE_AIX
@@ -1678,8 +1661,6 @@ static void _opt_list()
 		info("time_limit     : INFINITE");
 	else if (opt.time_limit != NO_VAL)
 		info("time_limit     : %d", opt.time_limit);
-	if (opt.time_min != NO_VAL)
-		info("time_min       : %d", opt.time_min);
 	if (opt.nice)
 		info("nice           : %d", opt.nice);
 	info("account        : %s", opt.account);
@@ -1765,7 +1746,6 @@ static void _usage(void)
 "              [--nodefile=file] [--nodelist=hosts] [--exclude=hosts]\n"
 "              [--network=type] [--mem-per-cpu=MB] [--qos=qos]\n"
 "              [--cpu_bind=...] [--mem_bind=...] [--reservation=name]\n"
-"              [--time-min=minutes]\n"
 "              [executable [args...]]\n");
 }
 
@@ -1809,7 +1789,6 @@ static void _help(void)
 "  -Q, --quiet                 quiet mode (suppress informational messages)\n"
 "  -s, --share                 share nodes with other jobs\n"
 "  -t, --time=minutes          time limit\n"
-"      --time-min=minutes      minimum time limit (if distinct)\n"
 "      --uid=user_id           user ID to run job as (user root only)\n"
 "  -v, --verbose               verbose mode (multiple -v's increase verbosity)\n"
 "\n"

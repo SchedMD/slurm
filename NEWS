@@ -1,156 +1,14 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
-* Changes in SLURM 2.2.0.pre5
-=============================
- -- Modify commands to accept time format with one or two digit hour value
-    (e.g. 8:00 or 08:00 or 8:00:00 or 08:00:00).
- -- Add slurmd option of "-C" to print actual hardware configuration and exit.
-
-* Changes in SLURM 2.2.0.pre4
-=============================
- -- Add support for a PropagatePrioProcess configuration parameter value of 2
-    to restrict spawned task nice values to that of the slurmd daemon plus 1.
-    This insures that the slurmd daemon always have a higher scheduling
-    priority than spawned tasks.
- -- Add support in slurmctld, slurmd and slurmdbd for option of "-n <value>" to
-    reset the daemon's nice value.
- -- Fixed slurm_load_slurmd_status and slurm_pid2jobid to work correctly when
-    multiple slurmds are in use.
- -- Altered srun to set max_nodes to min_nodes if not set when doing an
-    allocation to mimic that which salloc and sbatch do.  If running a step if
-    the max isn't set it remains unset.
- -- Applied patch from David Egolf (David.Egolf@Bull.com). Added the ability
-    to purge/archive accounting data on a day or hour basis, previously
-    it was only available on a monthly basis.
- -- Add support for maximum node count in job step request.
- -- Fix bug in CPU count logic for job step allocation (used count of CPUS per
-    node rather than CPUs allocated to the job).
- -- Add new configuration parameters GroupUpdateForce and GroupUpdateTime.
-    See "man slurm.conf" for details about how these control when slurmctld
-    updates its information of which users are in the groups allowed to use
-    partitions.
- -- Added sacctmgr list events which will list events that have happened on
-    clusters in accounting.
- -- Permit a running job to shrink in size using a command of
-    "scontrol update JobId=# NumNodes=#" or
-    "scontrol update JobId=# NodeList=<names>". Subsequent job steps must
-    explicitly specify an appropriate node count to work properly.
- -- Added resize_time field to job record noting the time of the latest job
-    size change (to be used for accounting purposes, which is under
-    development).
- -- sview/smap now hides hidden partitions and their jobs by default, with an
-    option to display them.
-
-* Changes in SLURM 2.2.0.pre3
-=============================
- -- Refine support for TotalView partial attach. Add parameter to configure
-    program of "--enable-partial-attach".
- -- In select/cons_res, the count of CPUs on required nodes was formerly
-    ignored in enforcing the maximum CPU limit. Also enforce maximum CPU
-    limit when the topology/tree plugin is configured (previously ignored).
- -- In select/cons_res, allocate cores for a job using a best-fit approach.
- -- In select/cons_res, for jobs that can run on a single node, use a best-fit
-    packing approach.
- -- Add support for new partition states of DRAIN and INACTIVE and new partition
-    option of "Alternate" (alternate partition to use for jobs submitted to 
-    partitions that are currently in a state of DRAIN or INACTIVE).
- -- Add group membership cache. This can substantially speed up slurmctld
-    startup or reconfiguration if many partitions have AllowGroups configured.
- -- Added slurmdb api for accessing slurm DB information.
- -- In select/linear: Modify data structures for better performance and to 
-    avoid underflow error messages when slurmctld restarts while jobs are
-    in completing state.
- -- Added hash for slurm.conf so when nodes check in to the controller it can
-    verify the slurm.conf is the same as the one it is running.  If not an
-    error message is displayed.  To silence this message add NO_CONF_HASH
-    to DebugFlags in your slurm.conf.
- -- Added error code ESLURM_CIRCULAR_DEPENDENCY and prevent circular job
-    dependencies (e.g. job 12 dependent upon job 11 AND job 11 is dependent
-    upon job 12).
- -- Add BootTime and SlurmdStartTime to available node information.
- -- Fixed moab_2_slurmdb to work correctly under new database schema.
- -- Slurmd will drain a compute node when the SlurmdSpoolDir is full.
-
-* Changes in SLURM 2.2.0.pre2
-=============================
- -- Add support for spank_get_item() to get S_STEP_ALLOC_CORES and 
-    S_STEP_ALLOC_MEM. Support will remain for S_JOB_ALLOC_CORES and 
-    S_JOB_ALLOC_MEM. 
- -- Kill individual job steps that exceed their memory limit rather than 
-    killing an entire job if one step exceeds its memory limit.
- -- Added configuration parameter VSizeFactor to enforce virtual memory limits 
-    for jobs and job steps as a percentage of their real memory allocation.
- -- Add scontrol ability to update job step's time limits.
- -- Add scontrol ability to update job's NumCPUs count.
- -- Add --time-min options to salloc, sbatch and srun. The scontrol command 
-    has been modified to display and modify the new field. sched/backfill
-    plugin has been changed to alter time limits of jobs with the 
-    --time-min option if doing so permits earlier job initiation.
- -- Add support for TotalView symbol MPIR_partial_attach_ok with srun support
-    to release processes which TotalView does not attach to.
- -- Add new option for SelectTypeParameters of CR_ONE_TASK_PER_CORE. This 
-    option will allocate one task per core by default. Without this option, 
-    by default one task will be allocated per thread on nodes with more than 
-    one ThreadsPerCore configured.
- -- Avoid accounting separately for a current pid corresponds to a Light Weight
-    Process (Thread POSIX) appearing in the /proc directory. Only account for
-    the original process (pid==tgid) to avoid accounting for memory use more 
-    than once.
- -- Add proctrack/cgroup plugin which uses Linux control groups (aka cgroup)
-    to track processes on Linux systems having this feature enabled (kernel
-    >= 2.6.24).
- -- Add logging of license transations including job_id.
- -- Add configuration parameters SlurmSchedLogFile and SlurmSchedLogLevel to
-    support writing scheduling events to a separate log file.
- -- Added contribs/web_apps/chart_stats.cgi, a web app that invokes sreport to
-    retrieve from the accounting storage db a user's request for job usage or
-    machine utilization statistics and charts the results to a browser.
- -- Massive change to the schema in the storage_accounting/mysql plugin.  When
-    starting the slurmdbd the process of conversion may take a few minutes.
-    You might also see some errors such as 'error: mysql_query failed: 1206
-    The total number of locks exceeds the lock table size'.  If you get this,
-    do not worry, it is because your setting of innodb_buffer_pool_size in
-    your my.cnf file is not set or set too low.  A decent value there should
-    be 64M or higher depending on the system you are running on.  See
-    RELEASE_NOTES for more information.  But setting this and then
-    restarting the mysqld and slurmdbd will put things right.  After this
-    change we have noticed 50-75% increase in performance with sreport and
-    sacct.
- -- Fix for MaxCPUs to honor partitions of 1 node that have more than the
-    maxcpus for a job.
- -- Add support for "scontrol notify <message>" to work for batch jobs.
-
-* Changes in SLURM 2.2.0.pre1
-=============================
- -- Added RunTime field to scontrol show job report
- -- Added SLURM_VERSION_NUMBER and removed SLURM_API_VERSION from 
-    slurm/slurm.h.
- -- Added support to handle communication with SLURM 2.1 clusters.  Job's
-    should not be lost in the future when upgrading to higher versions of 
-    SLURM.
- -- Added withdeleted options for listing clusters, users, and accounts
- -- Remove PLPA task affinity functions due to that package being deprecated.
- -- Preserve current partition state information and node Feature and Weight 
-    information rather than use contents of slurm.conf file after slurmctld 
-    restart with -R option or SIGHUP. Replace information with contents of 
-    slurm.conf after slurmctld restart without -R or "scontrol reconfigure".
-    See RELEASE_NOTES file fore more details.
- -- Modify SLURM's PMI library (for MPICH2) to properly execute an executable
-    program stand-alone (single MPI task launched without srun).
- -- Made GrpCPUs and MaxCPUs limits work for select/cons_res.
- -- Moved all SQL dependant plugins into a seperate rpm slurm-sql.  This
-    should be needed only where a connection to a database is needed (i.e.
-    where the slurmdbd is running)
- -- Add command line option "no_sys_info" to PAM module to supress system 
-    logging of "access granted for user ...", access denied and other errors
-    will still be logged.
- -- sinfo -R now has the user and timestamp in separate fields from the reason.
- -- Much functionality has been added to account_storage/pgsql.  The plugin
-    is still in a very beta state.  It is still highly advised to use the
-    mysql plugin, but if you feel like living on the edge or just really
-    like postgres over mysql for some reason here you go. (Work done
-    primarily by Hongjia Cao, NUDT.)
+* Changes in SLURM 2.1.6-2
+========================
+ -- In sched/wiki2 - Fix logic in support of Moab being able to identify
+    preemptable jobs.
+ -- Applied fixes to a debug4 message in priority_multifactor.c sent in by
+    Per Lundqvist
+ -- BLUEGENE - Fixed issue where incorrect nodecards could be picked when
+    looking at combining small blocks to make a larger small block.
 
 * Changes in SLURM 2.1.6
 ========================
@@ -198,6 +56,10 @@ documents those changes that are of interest to users and admins.
     un-booted block when a job comes to use it before the state checking
     thread notices it which could cause the slurmctld to lock up on a
     non-dynamic system.
+ -- Correct TaskEpilog logic. Previously could kill other user tasks on that
+    node which remained running.
+ -- Fix accounting Purge to remove correct period of time.  Previously would
+    remove n+1 leaving an extra time period around.
  -- In select/cons_res with FastSchedule=0 and Procs=# defined for the node, 
     but no specific socket/core/thread count configured, avoid fatal error if 
     the number of cores on a node is less than the number of Procs configured.

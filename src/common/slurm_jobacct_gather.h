@@ -70,7 +70,6 @@
 #include <unistd.h>
 
 #include <slurm/slurm.h>
-#include <slurm/slurmdb.h>
 
 #include "src/common/macros.h"
 #include "src/common/pack.h"
@@ -108,8 +107,7 @@ extern jobacctinfo_t *jobacct_gather_g_stat_task(pid_t pid);
 /* must free jobacctinfo_t if not NULL */
 extern jobacctinfo_t *jobacct_gather_g_remove_task(pid_t pid);
 
-extern void jobacct_gather_g_2_stats(slurmdb_stats_t *stats,
-				     jobacctinfo_t *jobacct);
+extern void jobacct_gather_g_2_sacct(sacct_t *sacct, jobacctinfo_t *jobacct);
 
 
 #endif /*__SLURM_JOBACCT_GATHER_H__*/

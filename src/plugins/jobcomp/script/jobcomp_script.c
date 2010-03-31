@@ -223,7 +223,7 @@ static struct jobcomp_info * _jobcomp_info_create (struct job_record *job)
 	j->submit = job->details ? job->details->submit_time:job->start_time;
 	j->batch_flag = job->batch_flag;
 	j->nodes = xstrdup (job->nodes);
-	j->nprocs = job->total_cpus;
+	j->nprocs = job->total_procs;
 	j->nnodes = job->node_cnt;
 	j->account = job->account ? xstrdup (job->account) : NULL;
 	if (job->details && job->details->work_dir)
@@ -433,7 +433,7 @@ static void _jobcomp_child (char * script, struct jobcomp_info *job)
 	/*
 	 * Failure of execve implies error
 	 */
-	error ("jobcomp/script: execve(%s): %m", script);
+	error ("jobcomp/script: execve(%s): %m\n", script);
 	exit (1);
 }
 
@@ -461,7 +461,7 @@ static int _jobcomp_exec_child (char *script, struct jobcomp_info *job)
 		error ("jobcomp/script: waitpid: %m");
 
 	if (WEXITSTATUS(status))
-		error ("jobcomp/script: script %s exited with status %d",
+		error ("jobcomp/script: script %s exited with status %d\n",
 		       script, WEXITSTATUS(status));
 
 	return (0);
@@ -628,7 +628,7 @@ extern int fini ( void )
  * in/out job_list List of job_rec_t *
  * note List needs to be freed when called
  */
-extern List slurm_jobcomp_get_jobs(slurmdb_job_cond_t *job_cond)
+extern List slurm_jobcomp_get_jobs(acct_job_cond_t *job_cond)
 {
 
 	info("This function is not implemented.");
@@ -638,7 +638,7 @@ extern List slurm_jobcomp_get_jobs(slurmdb_job_cond_t *job_cond)
 /*
  * expire old info from the storage
  */
-extern int slurm_jobcomp_archive(slurmdb_archive_cond_t *archive_cond)
+extern int slurm_jobcomp_archive(acct_archive_cond_t *archive_cond)
 {
 	info("This function is not implemented.");
 	return SLURM_SUCCESS;

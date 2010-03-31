@@ -86,8 +86,7 @@ PROGRAMS = $(bin_PROGRAMS)
 am_scontrol_OBJECTS = create_res.$(OBJEXT) info_block.$(OBJEXT) \
 	info_job.$(OBJEXT) info_node.$(OBJEXT) info_part.$(OBJEXT) \
 	info_res.$(OBJEXT) scontrol.$(OBJEXT) update_job.$(OBJEXT) \
-	update_node.$(OBJEXT) update_part.$(OBJEXT) \
-	update_step.$(OBJEXT)
+	update_node.$(OBJEXT) update_part.$(OBJEXT)
 scontrol_OBJECTS = $(am_scontrol_OBJECTS)
 am__DEPENDENCIES_1 = $(top_builddir)/src/api/libslurm.o
 am__DEPENDENCIES_2 =
@@ -204,6 +203,7 @@ PATH_SEPARATOR = @PATH_SEPARATOR@
 PGSQL_CFLAGS = @PGSQL_CFLAGS@
 PGSQL_LIBS = @PGSQL_LIBS@
 PKG_CONFIG = @PKG_CONFIG@
+PLPA_LIBS = @PLPA_LIBS@
 PROCTRACKDIR = @PROCTRACKDIR@
 PROJECT = @PROJECT@
 PTHREAD_CC = @PTHREAD_CC@
@@ -229,7 +229,7 @@ SLURM_MAJOR = @SLURM_MAJOR@
 SLURM_MICRO = @SLURM_MICRO@
 SLURM_MINOR = @SLURM_MINOR@
 SLURM_PREFIX = @SLURM_PREFIX@
-SLURM_VERSION_NUMBER = @SLURM_VERSION_NUMBER@
+SLURM_VERSION = @SLURM_VERSION@
 SLURM_VERSION_STRING = @SLURM_VERSION_STRING@
 SO_LDFLAGS = @SO_LDFLAGS@
 SSL_CPPFLAGS = @SSL_CPPFLAGS@
@@ -310,8 +310,7 @@ scontrol_SOURCES = \
 	scontrol.h	\
 	update_job.c	\
 	update_node.c	\
-	update_part.c	\
-	update_step.c
+	update_part.c
 
 convenience_libs = $(top_builddir)/src/api/libslurm.o -ldl -lm
 scontrol_LDADD = \
@@ -416,7 +415,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/update_job.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/update_node.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/update_part.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/update_step.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<

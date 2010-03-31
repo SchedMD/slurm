@@ -3,7 +3,7 @@
  *	logic could be placed for broadcast communications.
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>, et. al.
  *  Derived from pdsh written by Jim Garlick <garlick1@llnl.gov>
@@ -398,8 +398,7 @@ static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr)
 	agent_info_ptr->msg_type       = agent_arg_ptr->msg_type;
 	agent_info_ptr->msg_args_pptr  = &agent_arg_ptr->msg_args;
 
-	if ((agent_arg_ptr->msg_type != REQUEST_JOB_NOTIFY)	&&
-	    (agent_arg_ptr->msg_type != REQUEST_SHUTDOWN)	&&
+	if ((agent_arg_ptr->msg_type != REQUEST_SHUTDOWN)	&&
 	    (agent_arg_ptr->msg_type != REQUEST_RECONFIGURE)	&&
 	    (agent_arg_ptr->msg_type != SRUN_EXEC)		&&
 	    (agent_arg_ptr->msg_type != SRUN_TIMEOUT)		&&
@@ -482,8 +481,9 @@ static void _update_wdog_state(thd_t *thread_ptr,
 	case DSH_ACTIVE:
 		thd_comp->work_done = false;
 		if (thread_ptr->end_time <= thd_comp->now) {
-			debug3("agent thread %lu timed out",
-			       (unsigned long) thread_ptr->thread);
+			debug3("agent thread %lu timed out\n",
+			       (unsigned long)
+			       thread_ptr->thread);
 			if (pthread_kill(thread_ptr->thread, SIGUSR1) == ESRCH)
 				*state = DSH_NO_RESP;
 			else
@@ -527,11 +527,11 @@ static void *_wdog(void *args)
 	if ( (agent_ptr->msg_type == SRUN_JOB_COMPLETE)			||
 	     (agent_ptr->msg_type == SRUN_STEP_MISSING)			||
 	     (agent_ptr->msg_type == SRUN_EXEC)				||
-	     (agent_ptr->msg_type == SRUN_NODE_FAIL)			||
 	     (agent_ptr->msg_type == SRUN_PING)				||
 	     (agent_ptr->msg_type == SRUN_TIMEOUT)			||
 	     (agent_ptr->msg_type == SRUN_USER_MSG)			||
-	     (agent_ptr->msg_type == RESPONSE_RESOURCE_ALLOCATION) )
+	     (agent_ptr->msg_type == RESPONSE_RESOURCE_ALLOCATION)	||
+	     (agent_ptr->msg_type == SRUN_NODE_FAIL) )
 		srun_agent = true;
 
 	thd_comp.max_delay = 0;
@@ -1395,8 +1395,6 @@ static void _purge_agent_args(agent_arg_t *agent_arg_ptr)
 			slurm_free_srun_exec_msg(agent_arg_ptr->msg_args);
 		else if (agent_arg_ptr->msg_type == SRUN_NODE_FAIL)
 			slurm_free_srun_node_fail_msg(agent_arg_ptr->msg_args);
-		else if (agent_arg_ptr->msg_type == REQUEST_JOB_NOTIFY)
-			slurm_free_job_notify_msg(agent_arg_ptr->msg_args);
 		else
 			xfree(agent_arg_ptr->msg_args);
 	}

@@ -2,7 +2,6 @@
  *  srun_comm.h - definitions srun communications
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette@llnl.gov> et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -113,6 +112,6 @@ extern void srun_timeout (struct job_record *job_ptr);
 /*
  * srun_user_message - Send arbitrary message to an srun job (no job steps)
  */
-extern int srun_user_message(struct job_record *job_ptr, char *msg);
+extern void srun_user_message(struct job_record *job_ptr, char *msg);
 
 #endif /* !_HAVE_SRUN_COMM_H */

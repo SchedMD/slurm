@@ -48,7 +48,6 @@
 
 #define MAX_JOB_QUEUE 20
 
-static void	_preempt_list_del(void *x);
 static char *	_will_run_test(uint32_t jobid, time_t start_time,
 			       char *node_list, int *err_code, char **err_msg);
 static char *	_will_run_test2(uint32_t jobid, time_t start_time,
@@ -270,7 +269,7 @@ static char *	_will_run_test(uint32_t jobid, time_t start_time,
 					    &proc_cnt);
 
 #else
-		proc_cnt = job_ptr->total_cpus;
+		proc_cnt = job_ptr->total_procs;
 #endif
 		snprintf(tmp_str, sizeof(tmp_str), "%u:%u@%u,",
 			 jobid, proc_cnt, (uint32_t) job_ptr->start_time);
@@ -531,15 +530,10 @@ static char *	_will_run_test2(uint32_t jobid, time_t start_time,
 	}
 
 	if (preemptee_cnt) {
-		preemptee_candidates = list_create(_preempt_list_del);
+		preemptee_candidates = list_create(NULL);
 		for (i=0; i<preemptee_cnt; i++) {
-			pre_ptr = find_job_record(preemptee[i]);
-			if (pre_ptr) {
-				pre_pptr = xmalloc(sizeof(struct
-							  job_record *));
-				pre_pptr[0] = pre_ptr;
-				list_append(preemptee_candidates, pre_pptr);
-			}
+			if ((pre_ptr = find_job_record(preemptee[i])))
+				list_append(preemptee_candidates, pre_ptr);
 		}
 	}
 
@@ -558,7 +552,7 @@ static char *	_will_run_test2(uint32_t jobid, time_t start_time,
 		select_g_select_jobinfo_get(job_ptr->select_jobinfo,
 				     SELECT_JOBDATA_NODE_CNT, &proc_cnt);
 #else
-		proc_cnt = job_ptr->total_cpus;
+		proc_cnt = job_ptr->total_procs;
 #endif
 		snprintf(tmp_str, sizeof(tmp_str),
 			 "STARTINFO=%u TASKS=%u STARTTIME=%u NODES=",
@@ -592,11 +586,6 @@ static char *	_will_run_test2(uint32_t jobid, time_t start_time,
 
 	FREE_NULL_BITMAP(avail_bitmap);
 	return reply_msg;
-}
-
-static void _preempt_list_del(void *x)
-{
-	xfree(x);
 }
 
 /*

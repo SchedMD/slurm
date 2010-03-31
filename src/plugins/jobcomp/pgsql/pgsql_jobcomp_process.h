@@ -82,8 +82,8 @@ enum {
 	JOBCOMP_REQ_COUNT
 };
 
-extern List pgsql_jobcomp_process_get_jobs(slurmdb_job_cond_t *job_cond);
+extern List pgsql_jobcomp_process_get_jobs(acct_job_cond_t *job_cond);
 
-extern int pgsql_jobcomp_process_archive(slurmdb_archive_cond_t *arch_cond);
+extern int pgsql_jobcomp_process_archive(acct_archive_cond_t *arch_cond);
 
 #endif

@@ -74,9 +74,6 @@
 #define BITSTR_SHIFT_WORD32	5
 #define BITSTR_SHIFT_WORD64	6
 
-#ifndef   __bitstr_datatypes_defined
-#  define __bitstr_datatypes_defined
-
 #ifdef USE_64BIT_BITSTR
 typedef int64_t bitstr_t;
 #define BITSTR_SHIFT 		BITSTR_SHIFT_WORD64
@@ -86,8 +83,6 @@ typedef int32_t bitstr_t;
 #endif
 
 typedef bitstr_t bitoff_t;
-
-#endif
 
 /*
  * internal macros / defs

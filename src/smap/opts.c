@@ -66,14 +66,12 @@ extern void parse_command_line(int argc, char *argv[])
 		{"version", no_argument, 0, 'V'},
 		{"help", no_argument, 0, OPT_LONG_HELP},
 		{"usage", no_argument, 0, OPT_LONG_USAGE},
-		{"show_hidden", no_argument, 0, 'H'},
+		{"hide", no_argument, 0, OPT_LONG_HIDE},
 		{NULL, 0, 0, 0}
 	};
 
-	memset(&params, 0, sizeof(params));
-
 	while ((opt_char =
-		getopt_long(argc, argv, "cD:hi:I:Hn:QR:vV",
+		getopt_long(argc, argv, "cD:hi:I:n:QR:vV",
 			    long_options, &option_index)) != -1) {
 		switch (opt_char) {
 		case '?':
@@ -100,9 +98,6 @@ extern void parse_command_line(int argc, char *argv[])
 			break;
 		case 'h':
 			params.no_header = true;
-			break;
-		case 'H':
-			params.all_flag = true;
 			break;
 		case 'i':
 			params.iterate = atoi(optarg);
@@ -155,6 +150,9 @@ extern void parse_command_line(int argc, char *argv[])
 		case OPT_LONG_USAGE:
 			_usage();
 			exit(0);
+		case OPT_LONG_HIDE:
+			params.all_flag = false;
+			break;
 		}
 	}
 }
@@ -207,7 +205,6 @@ Usage: smap [OPTIONS]\n\
                              r = reservations\n\
                              s = slurm partitions\n\
   -h, --noheader             no headers on output\n\
-  -H, --show_hidden          display hidden partitions and their jobs\n\
   -i, --iterate=seconds      specify an interation period\n\
   -I, --ionodes=[ionodes]    only show objects with these ionodes\n\
                              This should be used inconjuction with the -n\n\

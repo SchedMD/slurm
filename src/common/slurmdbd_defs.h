@@ -76,8 +76,8 @@
  *	communicating with it (e.g. it will not accept messages with a
  *	version higher than SLURMDBD_VERSION).
  */
-#define SLURMDBD_VERSION	8 /* already changed for 2.2 */
-#define SLURMDBD_VERSION_MIN	7
+#define SLURMDBD_VERSION	07
+#define SLURMDBD_VERSION_MIN	02
 
 /* SLURM DBD message types */
 /* ANY TIME YOU ADD TO THIS LIST UPDATE THE CONVERSION FUNCTIONS! */
@@ -89,7 +89,7 @@ typedef enum {
 	DBD_ADD_ASSOCS,         /* Add new association to the mix       */
 	DBD_ADD_CLUSTERS,       /* Add new cluster to the mix           */
 	DBD_ADD_USERS,          /* Add new user to the mix              */
-	DBD_CLUSTER_CPUS,	/* Record total processors on cluster	*/
+	DBD_CLUSTER_PROCS,	/* Record total processors on cluster	*/
 	DBD_FLUSH_JOBS, 	/* End jobs that are still running
 				 * when a controller is restarted.	*/
 	DBD_GET_ACCOUNTS,	/* Get account information		*/
@@ -159,8 +159,6 @@ typedef enum {
 	DBD_GOT_CONFIG,		/* Response to DBD_GET_CONFIG		*/
 	DBD_GET_PROBS,  	/* Get problems existing in accounting	*/
 	DBD_GOT_PROBS,		/* Response to DBD_GET_PROBS		*/
-	DBD_GET_EVENTS, 	/* Get event information		*/
-	DBD_GOT_EVENTS, 	/* Response to DBD_GET_EVENTS		*/
 } slurmdbd_msg_type_t;
 
 /*****************************************************************************\
@@ -174,19 +172,20 @@ typedef struct slurmdbd_msg {
 
 typedef struct {
 	List acct_list; /* list of account names (char *'s) */
-	slurmdb_user_cond_t *cond;
+	acct_user_cond_t *cond;
 } dbd_acct_coord_msg_t;
 
-typedef struct dbd_cluster_cpus_msg {
-	char *cluster_nodes;	/* nodes in cluster */
-	uint32_t cpu_count;	/* total processor count */
+typedef struct dbd_cluster_procs_msg {
+	char *cluster_name;	/* name of cluster */
+	char *cluster_nodes;	/* name of cluster */
+	uint32_t proc_count;	/* total processor count */
 	time_t event_time;	/* time of transition */
-} dbd_cluster_cpus_msg_t;
+} dbd_cluster_procs_msg_t;
 
 typedef struct {
 	void *rec; /* this could be anything based on the type types
-		    * are defined in slurm_accounting_storage.h
-		    * *_rec_t */
+		     * are defined in slurm_accounting_storage.h
+		     * *_rec_t */
 } dbd_rec_msg_t;
 
 typedef struct {
@@ -253,6 +252,7 @@ typedef struct dbd_job_start_msg {
 	uint32_t alloc_cpus;	/* count of allocated processors */
 	uint32_t alloc_nodes;   /* how many nodes used in job */
 	uint32_t assoc_id;	/* accounting association id */
+	char *   cluster;       /* cluster job is being ran on */
 	char *   block_id;      /* Bluegene block id */
 	uint32_t db_index;	/* index into the db for this job */
 	time_t   eligible_time;	/* time job becomes eligible to run */
@@ -305,13 +305,12 @@ typedef struct {
 #define DBD_NODE_STATE_DOWN  1
 #define DBD_NODE_STATE_UP    2
 typedef struct dbd_node_state_msg {
+	char *cluster_name;	/* name of cluster */
 	uint32_t cpu_count;     /* number of cpus on node */
 	time_t event_time;	/* time of transition */
 	char *hostlist;		/* name of hosts */
 	uint16_t new_state;	/* new state of host, see DBD_NODE_STATE_* */
 	char *reason;		/* explanation for the node's state */
-	uint32_t reason_uid;   	/* User that set the reason, ignore if
-				 * no reason is set. */
 	uint16_t state;         /* current state of node.  Used to get
 				   flags on the state (i.e. maintenance) */
 } dbd_node_state_msg_t;
@@ -323,6 +322,7 @@ typedef struct dbd_rc_msg {
 } dbd_rc_msg_t;
 
 typedef struct dbd_register_ctld_msg {
+	char *cluster_name;	/* name of cluster */
 	uint16_t port;		/* slurmctld's comm port */
 } dbd_register_ctld_msg_t;
 
@@ -338,7 +338,7 @@ typedef struct dbd_step_comp_msg {
 	time_t   job_submit_time;/* job submit time needed to find job record
 				  * in db */
 	uint32_t step_id;	/* step ID */
-	uint32_t total_cpus;	/* count of allocated processors */
+	uint32_t total_procs;	/* count of allocated processors */
 	uint32_t total_tasks;	/* count of tasks for step */
 } dbd_step_comp_msg_t;
 
@@ -356,7 +356,7 @@ typedef struct dbd_step_start_msg {
 				  * in db */
 	uint32_t step_id;	/* step ID */
 	uint16_t task_dist;     /* layout method of step */
-	uint32_t total_cpus;	/* count of allocated processors */
+	uint32_t total_procs;	/* count of allocated processors */
 	uint32_t total_tasks;	/* count of tasks for step */
 } dbd_step_start_msg_t;
 
@@ -416,29 +416,49 @@ extern char *slurmdbd_msg_type_2_str(slurmdbd_msg_type_t msg_type,
 /*****************************************************************************\
  * Free various SlurmDBD message structures
 \*****************************************************************************/
-void inline slurmdbd_free_acct_coord_msg(dbd_acct_coord_msg_t *msg);
-void inline slurmdbd_free_cluster_cpus_msg(dbd_cluster_cpus_msg_t *msg);
-void inline slurmdbd_free_rec_msg(slurmdbd_msg_type_t type,
+void inline slurmdbd_free_acct_coord_msg(uint16_t rpc_version,
+					 dbd_acct_coord_msg_t *msg);
+void inline slurmdbd_free_cluster_procs_msg(uint16_t rpc_version,
+					    dbd_cluster_procs_msg_t *msg);
+void inline slurmdbd_free_rec_msg(uint16_t rpc_version,
+				  slurmdbd_msg_type_t type,
 				  dbd_rec_msg_t *msg);
-void inline slurmdbd_free_cond_msg(slurmdbd_msg_type_t type,
+void inline slurmdbd_free_cond_msg(uint16_t rpc_version,
+				   slurmdbd_msg_type_t type,
 				   dbd_cond_msg_t *msg);
-void inline slurmdbd_free_get_jobs_msg(dbd_get_jobs_msg_t *msg);
-void inline slurmdbd_free_init_msg(dbd_init_msg_t *msg);
-void inline slurmdbd_free_fini_msg(dbd_fini_msg_t *msg);
-void inline slurmdbd_free_job_complete_msg(dbd_job_comp_msg_t *msg);
-void inline slurmdbd_free_job_start_msg(dbd_job_start_msg_t *msg);
-void inline slurmdbd_free_id_rc_msg(dbd_id_rc_msg_t *msg);
-void inline slurmdbd_free_job_suspend_msg(dbd_job_suspend_msg_t *msg);
-void inline slurmdbd_free_list_msg(dbd_list_msg_t *msg);
-void inline slurmdbd_free_modify_msg(slurmdbd_msg_type_t type,
+void inline slurmdbd_free_get_jobs_msg(uint16_t rpc_version,
+				       dbd_get_jobs_msg_t *msg);
+void inline slurmdbd_free_init_msg(uint16_t rpc_version,
+				   dbd_init_msg_t *msg);
+void inline slurmdbd_free_fini_msg(uint16_t rpc_version,
+				   dbd_fini_msg_t *msg);
+void inline slurmdbd_free_job_complete_msg(uint16_t rpc_version,
+					   dbd_job_comp_msg_t *msg);
+void inline slurmdbd_free_job_start_msg(uint16_t rpc_version,
+					dbd_job_start_msg_t *msg);
+void inline slurmdbd_free_id_rc_msg(uint16_t rpc_version,
+					   dbd_id_rc_msg_t *msg);
+void inline slurmdbd_free_job_suspend_msg(uint16_t rpc_version,
+					  dbd_job_suspend_msg_t *msg);
+void inline slurmdbd_free_list_msg(uint16_t rpc_version,
+				   dbd_list_msg_t *msg);
+void inline slurmdbd_free_modify_msg(uint16_t rpc_version,
+				     slurmdbd_msg_type_t type,
 				     dbd_modify_msg_t *msg);
-void inline slurmdbd_free_node_state_msg(dbd_node_state_msg_t *msg);
-void inline slurmdbd_free_rc_msg(dbd_rc_msg_t *msg);
-void inline slurmdbd_free_register_ctld_msg(dbd_register_ctld_msg_t *msg);
-void inline slurmdbd_free_roll_usage_msg(dbd_roll_usage_msg_t *msg);
-void inline slurmdbd_free_step_complete_msg(dbd_step_comp_msg_t *msg);
-void inline slurmdbd_free_step_start_msg(dbd_step_start_msg_t *msg);
-void inline slurmdbd_free_usage_msg(slurmdbd_msg_type_t type,
+void inline slurmdbd_free_node_state_msg(uint16_t rpc_version,
+					 dbd_node_state_msg_t *msg);
+void inline slurmdbd_free_rc_msg(uint16_t rpc_version,
+				 dbd_rc_msg_t *msg);
+void inline slurmdbd_free_register_ctld_msg(uint16_t rpc_version,
+					    dbd_register_ctld_msg_t *msg);
+void inline slurmdbd_free_roll_usage_msg(uint16_t rpc_version,
+					 dbd_roll_usage_msg_t *msg);
+void inline slurmdbd_free_step_complete_msg(uint16_t rpc_version,
+					    dbd_step_comp_msg_t *msg);
+void inline slurmdbd_free_step_start_msg(uint16_t rpc_version,
+					 dbd_step_start_msg_t *msg);
+void inline slurmdbd_free_usage_msg(uint16_t rpc_version,
+				    slurmdbd_msg_type_t type,
 				    dbd_usage_msg_t *msg);
 
 /*****************************************************************************\
@@ -447,9 +467,9 @@ void inline slurmdbd_free_usage_msg(slurmdbd_msg_type_t type,
 void inline slurmdbd_pack_acct_coord_msg(uint16_t rpc_version,
 					 dbd_acct_coord_msg_t *msg,
 					 Buf buffer);
-void inline slurmdbd_pack_cluster_cpus_msg(uint16_t rpc_version,
-					   dbd_cluster_cpus_msg_t *msg,
-					   Buf buffer);
+void inline slurmdbd_pack_cluster_procs_msg(uint16_t rpc_version,
+					    dbd_cluster_procs_msg_t *msg,
+					    Buf buffer);
 void inline slurmdbd_pack_rec_msg(uint16_t rpc_version,
 				  slurmdbd_msg_type_t type,
 				  dbd_rec_msg_t *msg, Buf buffer);
@@ -507,9 +527,9 @@ void inline slurmdbd_pack_usage_msg(uint16_t rpc_version,
 int inline slurmdbd_unpack_acct_coord_msg(uint16_t rpc_version,
 					  dbd_acct_coord_msg_t **msg,
 					  Buf buffer);
-int inline slurmdbd_unpack_cluster_cpus_msg(uint16_t rpc_version,
-					    dbd_cluster_cpus_msg_t **msg,
-					    Buf buffer);
+int inline slurmdbd_unpack_cluster_procs_msg(uint16_t rpc_version,
+					     dbd_cluster_procs_msg_t **msg,
+					     Buf buffer);
 int inline slurmdbd_unpack_rec_msg(uint16_t rpc_version,
 				   slurmdbd_msg_type_t type,
 				   dbd_rec_msg_t **msg, Buf buffer);

@@ -2,7 +2,7 @@
  *  slurm_protocol_defs.h - definitions used for RPCs
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Kevin Tew <tew1@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -167,7 +167,6 @@ typedef enum {
 	REQUEST_SET_DEBUG_LEVEL,
 	REQUEST_HEALTH_CHECK,
 	REQUEST_TAKEOVER,
-	REQUEST_SET_SCHEDLOG_LEVEL,
 
 	REQUEST_BUILD_INFO = 2001,
 	RESPONSE_BUILD_INFO,
@@ -241,7 +240,7 @@ typedef enum {
 	RESPONSE_RUN_JOB_STEP,
 	REQUEST_CANCEL_JOB_STEP,
 	RESPONSE_CANCEL_JOB_STEP,
-	REQUEST_UPDATE_JOB_STEP,
+	DEFUNCT_REQUEST_COMPLETE_JOB_STEP, /* DEFUNCT */
 	DEFUNCT_RESPONSE_COMPLETE_JOB_STEP, /* DEFUNCT */
 	REQUEST_CHECKPOINT,
 	RESPONSE_CHECKPOINT,
@@ -355,18 +354,15 @@ typedef struct slurm_protocol_config {
 } slurm_protocol_config_t;
 
 typedef struct slurm_msg {
-	slurm_addr address;
-	void *auth_cred;
-	slurm_fd conn_fd;
-	void *data;
-	uint32_t data_size;
-	uint16_t flags;
 	uint16_t msg_type; /* really a slurm_msg_type_t but needs to be
 			    * this way for packing purposes.  message type */
-	uint16_t protocol_version; /* DON'T PACK!  Only used if
-				    * message comming from non-default
-				    * slurm protocol.  Initted to
-				    * NO_VAL meaning use the default. */
+	uint16_t flags;
+	slurm_addr address;
+	slurm_fd conn_fd;
+	void *auth_cred;
+	void *data;
+	uint32_t data_size;
+
 	/* The following were all added for the forward.c code */
 	forward_t forward;
 	forward_struct_t *forward_struct;
@@ -563,10 +559,7 @@ typedef struct job_step_specs {
 	uint32_t mem_per_cpu;	/* MB memory required per CPU, 0=no limit */
 	char *name;		/* name of the job step, default "" */
 	char *network;		/* network use spec */
-	uint32_t min_nodes;	/* minimum number of nodes required by job,
-				 * default=0 */
-	uint32_t max_nodes;	/* maximum number of nodes usable by job,
-				 * default=0 */
+	uint32_t node_count;	/* count of required nodes */
 	uint8_t no_kill;	/* 1 if no kill on node failure */
 	char *node_list;	/* list of required nodes */
 	uint32_t num_tasks;	/* number of tasks required */
@@ -600,10 +593,9 @@ typedef struct launch_tasks_request_msg {
 	uint32_t  nprocs;	/* number of processes in this job step   */
 	uint32_t  uid;
 	uint32_t  gid;
-	uint32_t  job_mem_lim;	/* MB of memory reserved by job per node OR
+	uint32_t  job_mem;	/* MB of memory reserved by job per node OR
 				 * real memory per CPU | MEM_PER_CPU,
 				 * default=0 (no limit) */
-	uint32_t  step_mem_lim;	/* MB of memory reserved by step */
 	uint16_t  *tasks_to_launch;
 	uint32_t  envc;
 	uint32_t  argc;
@@ -675,10 +667,7 @@ typedef struct return_code_msg {
  * the event of some launch failure or race condition preventing slurmd
  * from getting the MPIRUN_PARTITION at that time. It is needed for
  * the job epilog. */
-
-#define SIG_DEBUG_WAKE	995	/* Dummy signal value to wake procs stopped 
-				 * for debugger */
-#define SIG_TIME_LIMIT	996	/* Dummy signal value for time limit reached */
+#define SIG_TIME_LIMIT	996	/* Dummy signal value i time limit reached */
 #define SIG_ABORT	997	/* Dummy signal value to abort a job */
 #define SIG_NODE_FAIL	998	/* Dummy signal value to signify node failure */
 #define SIG_FAILURE	999	/* Dummy signal value to signify sys failure */
@@ -856,36 +845,33 @@ typedef struct pty_winsz {
 
 typedef struct will_run_response_msg {
 	uint32_t job_id;	/* ID of job to start */
-	char *node_list;	/* nodes where job will start */
-	List preemptee_job_id;	/* jobs preempted to start this job */
 	uint32_t proc_cnt;	/* CPUs allocated to job at start */
 	time_t start_time;	/* time when job will start */
+	char *node_list;	/* nodes where job will start */
+	List preemptee_job_id;	/* jobs preempted to start this job */
 } will_run_response_msg_t;
 
 /*****************************************************************************\
  * Slurm API Message Types
 \*****************************************************************************/
 typedef struct slurm_node_registration_status_msg {
+	time_t timestamp;
+	char *node_name;
 	char *arch;
-	uint16_t cores;
+	char *os;
 	uint16_t cpus;
-	uint32_t hash_val;      /* hash value of slurm.conf file
-				   existing on node */
+	uint16_t sockets;
+	uint16_t cores;
+	uint16_t threads;
+	uint32_t real_memory;
+	uint32_t tmp_disk;
 	uint32_t job_count;	/* number of associate job_id's */
 	uint32_t *job_id;	/* IDs of running job (if any) */
-	char *node_name;
-	char *os;
-	uint32_t real_memory;
-	time_t slurmd_start_time;
+	uint32_t *step_id;	/* IDs of running job steps (if any) */
 	uint32_t status;	/* node status code, same as return codes */
 	uint16_t startup;	/* slurmd just restarted */
-	uint32_t *step_id;	/* IDs of running job steps (if any) */
-	uint16_t sockets;
-	switch_node_info_t *switch_nodeinfo;	/* set only if startup != 0 */
-	uint16_t threads;
-	time_t timestamp;
-	uint32_t tmp_disk;
 	uint32_t up_time;	/* seconds since reboot */
+	switch_node_info_t *switch_nodeinfo;	/* set only if startup != 0 */
 } slurm_node_registration_status_msg_t;
 
 
@@ -921,8 +907,6 @@ extern void slurm_msg_t_copy(slurm_msg_t *dest, slurm_msg_t *src);
 
 extern void slurm_destroy_char(void *object);
 extern void slurm_destroy_uint32_ptr(void *object);
-/* here to add \\ to all \" in a string this needs to be xfreed later */
-extern char *slurm_add_slash_to_quotes(char *str);
 extern int slurm_addto_char_list(List char_list, char *names);
 extern int slurm_sort_char_list_asc(char *name_a, char *name_b);
 extern int slurm_sort_char_list_desc(char *name_a, char *name_b);
@@ -1013,7 +997,6 @@ void inline slurm_free_checkpoint_comp_msg(checkpoint_comp_msg_t *msg);
 void inline slurm_free_checkpoint_task_comp_msg(checkpoint_task_comp_msg_t *msg);
 void inline slurm_free_checkpoint_resp_msg(checkpoint_resp_msg_t *msg);
 void inline slurm_free_suspend_msg(suspend_msg_t *msg);
-void slurm_free_update_step_msg(step_update_request_msg_t * msg);
 void slurm_free_resource_allocation_response_msg (
 		resource_allocation_response_msg_t * msg);
 void slurm_free_job_alloc_info_response_msg (
@@ -1025,15 +1008,11 @@ void slurm_free_ctl_conf(slurm_ctl_conf_info_msg_t * config_ptr);
 void slurm_free_job_info_msg(job_info_msg_t * job_buffer_ptr);
 void slurm_free_job_step_info_response_msg(
 		job_step_info_response_msg_t * msg);
-void slurm_free_job_step_info_members (job_step_info_t * msg);
 void slurm_free_node_info_msg(node_info_msg_t * msg);
-void slurm_free_node_info_members(node_info_t * node);
 void slurm_free_partition_info_msg(partition_info_msg_t * msg);
-void slurm_free_partition_info_members(partition_info_t * part);
 void slurm_free_reservation_info_msg(reserve_info_msg_t * msg);
 void slurm_free_get_kvs_msg(kvs_get_msg_t *msg);
 void slurm_free_will_run_response_msg(will_run_response_msg_t *msg);
-void slurm_free_reserve_info_members(reserve_info_t * resv);
 void slurm_free_topo_info_msg(topo_info_response_msg_t *msg);
 void inline slurm_free_file_bcast_msg(file_bcast_msg_t *msg);
 void inline slurm_free_step_complete_msg(step_complete_msg_t *msg);
@@ -1050,7 +1029,6 @@ extern uint32_t slurm_get_return_code(slurm_msg_type_t type, void *data);
 extern char *job_reason_string(enum job_state_reason inx);
 extern char *job_state_string(uint16_t inx);
 extern char *job_state_string_compact(uint16_t inx);
-extern int   job_state_num(const char *state_name);
 extern char *node_state_string(uint16_t inx);
 extern char *node_state_string_compact(uint16_t inx);
 extern void  private_data_string(uint16_t private_data, char *str, int str_len);

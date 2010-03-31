@@ -137,6 +137,7 @@ extern void parse_command_line(int argc, char *argv[]);
 extern ba_system_t *ba_system_ptr;
 extern int quiet_flag;
 
+
 extern void init_grid(node_info_msg_t *node_info_ptr);
 extern int set_grid_inx(int start, int end, int count);
 extern int set_grid_name(char *nodes, int count);

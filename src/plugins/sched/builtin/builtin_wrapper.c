@@ -1,8 +1,7 @@
 /*****************************************************************************\
  *  builtin_wrapper.c - NO-OP plugin for SLURM's internal scheduler.
  *****************************************************************************
- *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
+ *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Kevin Tew <tew1@llnl.gov> et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -60,7 +59,7 @@ static int plugin_errno = SLURM_SUCCESS;
 /**************************************************************************/
 int init( void )
 {
-	verbose( "sched: Built-in scheduler plugin loaded" );
+	verbose( "Built-in scheduler plugin loaded" );
 	return SLURM_SUCCESS;
 }
 

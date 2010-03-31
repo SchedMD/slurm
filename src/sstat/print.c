@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  print.c - print functions for stats
+ *  print.c - print functions for sacct
  *
  *  $Id: print.c 7541 2006-03-18 01:44:58Z da $
  *****************************************************************************
@@ -80,7 +80,7 @@ char *_elapsed_time(long secs, long usecs)
 	return str;
 }
 
-void print_fields(slurmdb_step_rec_t *step)
+void print_fields(jobacct_step_rec_t *step)
 {
 	print_field_t *field = NULL;
 	int curr_inx = 1;
@@ -93,7 +93,7 @@ void print_fields(slurmdb_step_rec_t *step)
 		switch(field->type) {
 		case PRINT_AVECPU:
 
-			tmp_char = _elapsed_time((int)step->stats.cpu_ave, 0);
+			tmp_char = _elapsed_time((int)step->sacct.ave_cpu, 0);
 
 			field->print_routine(field,
 					     tmp_char,
@@ -101,7 +101,7 @@ void print_fields(slurmdb_step_rec_t *step)
 			xfree(tmp_char);
 			break;
 		case PRINT_AVEPAGES:
-			convert_num_unit((float)step->stats.pages_ave,
+			convert_num_unit((float)step->sacct.ave_pages,
 					 outbuf, sizeof(outbuf),
 					 UNIT_KILO);
 
@@ -110,7 +110,7 @@ void print_fields(slurmdb_step_rec_t *step)
 					     (curr_inx == field_count));
 			break;
 		case PRINT_AVERSS:
-			convert_num_unit((float)step->stats.rss_ave,
+			convert_num_unit((float)step->sacct.ave_rss,
 					 outbuf, sizeof(outbuf),
 					 UNIT_KILO);
 
@@ -119,7 +119,7 @@ void print_fields(slurmdb_step_rec_t *step)
 					     (curr_inx == field_count));
 			break;
 		case PRINT_AVEVSIZE:
-			convert_num_unit((float)step->stats.vsize_ave,
+			convert_num_unit((float)step->sacct.ave_vsize,
 					 outbuf, sizeof(outbuf),
 					 UNIT_KILO);
 
@@ -137,7 +137,7 @@ void print_fields(slurmdb_step_rec_t *step)
 					     (curr_inx == field_count));
 			break;
 		case PRINT_MAXPAGES:
-			convert_num_unit((float)step->stats.pages_max,
+			convert_num_unit((float)step->sacct.max_pages,
 					 outbuf, sizeof(outbuf),
 					 UNIT_KILO);
 
@@ -147,7 +147,7 @@ void print_fields(slurmdb_step_rec_t *step)
 			break;
 		case PRINT_MAXPAGESNODE:
 			tmp_char = find_hostname(
-					step->stats.pages_max_nodeid,
+					step->sacct.max_pages_id.nodeid,
 					step->nodes);
 			field->print_routine(field,
 					     tmp_char,
@@ -156,11 +156,11 @@ void print_fields(slurmdb_step_rec_t *step)
 			break;
 		case PRINT_MAXPAGESTASK:
 			field->print_routine(field,
-					     step->stats.pages_max_taskid,
+					     step->sacct.max_pages_id.taskid,
 					     (curr_inx == field_count));
 			break;
 		case PRINT_MAXRSS:
-			convert_num_unit((float)step->stats.rss_max,
+			convert_num_unit((float)step->sacct.max_rss,
 					 outbuf, sizeof(outbuf),
 					 UNIT_KILO);
 
@@ -170,7 +170,7 @@ void print_fields(slurmdb_step_rec_t *step)
 			break;
 		case PRINT_MAXRSSNODE:
 			tmp_char = find_hostname(
-					step->stats.rss_max_nodeid,
+					step->sacct.max_rss_id.nodeid,
 					step->nodes);
 			field->print_routine(field,
 					     tmp_char,
@@ -179,11 +179,11 @@ void print_fields(slurmdb_step_rec_t *step)
 			break;
 		case PRINT_MAXRSSTASK:
 			field->print_routine(field,
-					     step->stats.rss_max_taskid,
+					     step->sacct.max_rss_id.taskid,
 					     (curr_inx == field_count));
 			break;
 		case PRINT_MAXVSIZE:
-			convert_num_unit((float)step->stats.vsize_max,
+			convert_num_unit((float)step->sacct.max_vsize,
 					 outbuf, sizeof(outbuf),
 					 UNIT_KILO);
 
@@ -193,7 +193,7 @@ void print_fields(slurmdb_step_rec_t *step)
 			break;
 		case PRINT_MAXVSIZENODE:
 			tmp_char = find_hostname(
-					step->stats.vsize_max_nodeid,
+					step->sacct.max_vsize_id.nodeid,
 					step->nodes);
 			field->print_routine(field,
 					     tmp_char,
@@ -202,11 +202,11 @@ void print_fields(slurmdb_step_rec_t *step)
 			break;
 		case PRINT_MAXVSIZETASK:
 			field->print_routine(field,
-					     step->stats.vsize_max_taskid,
+					     step->sacct.max_vsize_id.taskid,
 					     (curr_inx == field_count));
 			break;
 		case PRINT_MINCPU:
-			tmp_char = _elapsed_time((int)step->stats.cpu_min, 0);
+			tmp_char = _elapsed_time((int)step->sacct.min_cpu, 0);
 			field->print_routine(field,
 					     tmp_char,
 					     (curr_inx == field_count));
@@ -214,7 +214,7 @@ void print_fields(slurmdb_step_rec_t *step)
 			break;
 		case PRINT_MINCPUNODE:
 			tmp_char = find_hostname(
-					step->stats.cpu_min_nodeid,
+					step->sacct.min_cpu_id.nodeid,
 					step->nodes);
 			field->print_routine(field,
 					     tmp_char,
@@ -223,7 +223,7 @@ void print_fields(slurmdb_step_rec_t *step)
 			break;
 		case PRINT_MINCPUTASK:
 			field->print_routine(field,
-					     step->stats.cpu_min_taskid,
+					     step->sacct.min_cpu_id.taskid,
 					     (curr_inx == field_count));
 			break;
 		case PRINT_NTASKS:

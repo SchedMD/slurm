@@ -182,7 +182,7 @@ static jobcomp_job_rec_t *_parse_line(List job_info_list)
 	return job;
 }
 
-extern List filetxt_jobcomp_process_get_jobs(slurmdb_job_cond_t *job_cond)
+extern List filetxt_jobcomp_process_get_jobs(acct_job_cond_t *job_cond)
 {
 	char line[BUFFER_SIZE];
 	char *fptr = NULL, *filein = NULL;
@@ -191,7 +191,7 @@ extern List filetxt_jobcomp_process_get_jobs(slurmdb_job_cond_t *job_cond)
 	FILE *fd = NULL;
 	int lc = 0;
 	jobcomp_job_rec_t *job = NULL;
-	slurmdb_selected_step_t *selected_step = NULL;
+	jobacct_selected_step_t *selected_step = NULL;
 	char *selected_part = NULL;
 	ListIterator itr = NULL;
 	List job_info_list = NULL;
@@ -308,7 +308,7 @@ extern List filetxt_jobcomp_process_get_jobs(slurmdb_job_cond_t *job_cond)
 	return job_list;
 }
 
-extern int filetxt_jobcomp_process_archive(slurmdb_archive_cond_t *arch_cond)
+extern int filetxt_jobcomp_process_archive(acct_archive_cond_t *arch_cond)
 {
 	info("No code to archive jobcomp.");
 	return SLURM_SUCCESS;

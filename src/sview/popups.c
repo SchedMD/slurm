@@ -411,7 +411,7 @@ extern void create_search_popup(GtkAction *action, gpointer user_data)
 		};
 
 		sview_search_info.search_type = SEARCH_JOB_STATE;
-		entry = create_pulldown_combo(pulldown_display_data, JOB_END);
+		entry = create_pulldown_combo(pulldown_display_data, PAGE_CNT);
 		label = gtk_label_new("Which state?");
 	} else if(!strcmp(name, "partition_name")) {
 		sview_search_info.search_type = SEARCH_PARTITION_NAME;
@@ -419,15 +419,13 @@ extern void create_search_popup(GtkAction *action, gpointer user_data)
 		label = gtk_label_new("Which partition");
 	} else if(!strcmp(name, "partition_state")) {
 		display_data_t pulldown_display_data[] = {
-			{G_TYPE_NONE, PARTITION_UP, "Up", TRUE, -1},
-			{G_TYPE_NONE, PARTITION_DOWN, "Down", TRUE, -1},
-			{G_TYPE_NONE, PARTITION_INACTIVE, "Inactive", TRUE, -1},
-			{G_TYPE_NONE, PARTITION_DRAIN, "Drain", TRUE, -1},
+			{G_TYPE_NONE, 0, "Down", TRUE, -1},
+			{G_TYPE_NONE, 1, "Up", TRUE, -1},
 			{G_TYPE_NONE, -1, NULL, FALSE, -1}
 		};
 
 		sview_search_info.search_type = SEARCH_PARTITION_STATE;
-		entry = create_pulldown_combo(pulldown_display_data, 5);
+		entry = create_pulldown_combo(pulldown_display_data, PAGE_CNT);
 		label = gtk_label_new("Which state?");
 	} else if(!strcmp(name, "node_name")) {
 		sview_search_info.search_type = SEARCH_NODE_NAME;

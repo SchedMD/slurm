@@ -88,7 +88,7 @@ typedef struct slurm_jobacct_gather_ops {
 	int (*jobacct_gather_add_task) (pid_t pid, jobacct_id_t *jobacct_id);
 	jobacctinfo_t *(*jobacct_gather_stat_task)(pid_t pid);
 	jobacctinfo_t *(*jobacct_gather_remove_task)(pid_t pid);
-	void (*jobacct_gather_2_stats)       (slurmdb_stats_t *stats,
+	void (*jobacct_gather_2_sacct)       (sacct_t *sacct,
 					      jobacctinfo_t *jobacct);
 } slurm_jobacct_gather_ops_t;
 
@@ -189,7 +189,7 @@ _slurm_jobacct_gather_get_ops( slurm_jobacct_gather_context_t *c )
 		"jobacct_gather_p_add_task",
 		"jobacct_gather_p_stat_task",
 		"jobacct_gather_p_remove_task",
-		"jobacct_gather_p_2_stats"
+		"jobacct_gather_p_2_sacct"
 	};
 	int n_syms = sizeof( syms ) / sizeof( char * );
 	int rc = 0;
@@ -529,16 +529,15 @@ extern jobacctinfo_t *jobacct_gather_g_remove_task(pid_t pid)
 	return jobacct;
 }
 
-extern void jobacct_gather_g_2_stats(slurmdb_stats_t *stats,
-				     jobacctinfo_t *jobacct)
+extern void jobacct_gather_g_2_sacct(sacct_t *sacct, jobacctinfo_t *jobacct)
 {
 	if (_slurm_jobacct_gather_init() < 0)
 		return;
 
 	slurm_mutex_lock( &g_jobacct_gather_context_lock );
 	if ( g_jobacct_gather_context )
-		(*(g_jobacct_gather_context->ops.jobacct_gather_2_stats))
-			(stats, jobacct);
+		(*(g_jobacct_gather_context->ops.jobacct_gather_2_sacct))
+			(sacct, jobacct);
 	slurm_mutex_unlock( &g_jobacct_gather_context_lock );
 	return;
 }

@@ -3,7 +3,7 @@
  *             launch a user-specified command.
  *****************************************************************************
  *  Copyright (C) 2006-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Christopher J. Morrone <morrone2@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -527,18 +527,18 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 
 	/* job constraints */
 	if (opt.mincpus > -1)
-		desc->pn_min_cpus = opt.mincpus;
+		desc->job_min_cpus = opt.mincpus;
 	if (opt.realmem > -1)
-		desc->pn_min_memory = opt.realmem;
+		desc->job_min_memory = opt.realmem;
 	else if (opt.mem_per_cpu > -1)
-		desc->pn_min_memory = opt.mem_per_cpu | MEM_PER_CPU;
+		desc->job_min_memory = opt.mem_per_cpu | MEM_PER_CPU;
 	if (opt.tmpdisk > -1)
-		desc->pn_min_tmp_disk = opt.tmpdisk;
+		desc->job_min_tmp_disk = opt.tmpdisk;
 	if (opt.overcommit) {
-		desc->min_cpus = opt.min_nodes;
+		desc->num_procs = opt.min_nodes;
 		desc->overcommit = opt.overcommit;
 	} else
-		desc->min_cpus = opt.nprocs * opt.cpus_per_task;
+		desc->num_procs = opt.nprocs * opt.cpus_per_task;
 	if (opt.nprocs_set)
 		desc->num_tasks = opt.nprocs;
 	if (opt.cpus_set)
@@ -562,8 +562,6 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 		desc->kill_on_node_fail = 0;
 	if (opt.time_limit  != NO_VAL)
 		desc->time_limit = opt.time_limit;
-	if (opt.time_min  != NO_VAL)
-		desc->time_min = opt.time_min;
 	desc->shared = opt.shared;
 	desc->job_id = opt.jobid;
 

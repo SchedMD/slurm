@@ -336,9 +336,8 @@ host_fini:	if (rc) {
 			info("wiki: change job %u min_nodes to %u",
 				jobid, new_node_cnt);
 #ifdef HAVE_BG
-			job_ptr->details->min_cpus = job_desc.min_cpus;
-			job_ptr->details->max_cpus = job_desc.max_cpus;
-			job_ptr->details->pn_min_cpus = job_desc.pn_min_cpus;
+			job_ptr->num_procs = job_desc.num_procs;
+			job_ptr->details->job_min_cpus = job_desc.job_min_cpus;
 #endif
 			last_job_update = now;
 			update_accounting = true;
@@ -353,7 +352,8 @@ host_fini:	if (rc) {
 		if (job_ptr->details && job_ptr->details->begin_time) {
 			/* Update job record in accounting to reflect
 			 * the changes */
-			jobacct_storage_g_job_start(acct_db_conn, job_ptr);
+			jobacct_storage_g_job_start(
+				acct_db_conn, slurmctld_cluster_name, job_ptr);
 		}
 	}
 

@@ -94,7 +94,7 @@ typedef struct {
 	uint32_t tot_cpu_sec;
 	uint32_t tot_cpu_usec;
 	struct rusage rusage;
-	slurmdb_stats_t stats;
+	sacct_t sacct;
 	List    steps;
 	char    *account;
 	uint32_t requid;
@@ -114,7 +114,7 @@ typedef struct {
 	uint32_t	tot_cpu_sec;
 	uint32_t        tot_cpu_usec;
 	struct rusage   rusage;
-	slurmdb_stats_t stats;
+	sacct_t         sacct;
 	char            *account;
 	uint32_t requid;
 } filetxt_step_rec_t;
@@ -246,43 +246,42 @@ static void _destroy_filetxt_step_rec(void *object)
 	}
 }
 
-static slurmdb_step_rec_t *_slurmdb_create_step_rec(
+static jobacct_step_rec_t *_create_jobacct_step_rec(
 	filetxt_step_rec_t *filetxt_step)
 {
-	slurmdb_step_rec_t *slurmdb_step = slurmdb_create_step_rec();
+	jobacct_step_rec_t *jobacct_step = create_jobacct_step_rec();
 
-	slurmdb_step->elapsed = filetxt_step->elapsed;
-	slurmdb_step->end = filetxt_step->header.timestamp;
-	slurmdb_step->exitcode = filetxt_step->exitcode;
-	slurmdb_step->ncpus = filetxt_step->ncpus;
+	jobacct_step->elapsed = filetxt_step->elapsed;
+	jobacct_step->end = filetxt_step->header.timestamp;
+	jobacct_step->exitcode = filetxt_step->exitcode;
+	jobacct_step->ncpus = filetxt_step->ncpus;
 	if(filetxt_step->nodes) {
 		hostlist_t hl = hostlist_create(filetxt_step->nodes);
-		slurmdb_step->nnodes = hostlist_count(hl);
+		jobacct_step->nnodes = hostlist_count(hl);
 		hostlist_destroy(hl);
 	}
-	slurmdb_step->nodes = xstrdup(filetxt_step->nodes);
-	slurmdb_step->requid = filetxt_step->requid;
-	memcpy(&slurmdb_step->stats, &filetxt_step->stats,
-	       sizeof(slurmdb_stats_t));
-	slurmdb_step->start = filetxt_step->header.timestamp -
-		slurmdb_step->elapsed;
-	slurmdb_step->state = filetxt_step->status;
-	slurmdb_step->stepid = filetxt_step->stepnum;
-	slurmdb_step->stepname = xstrdup(filetxt_step->stepname);
-	slurmdb_step->sys_cpu_sec = filetxt_step->rusage.ru_stime.tv_sec;
-	slurmdb_step->sys_cpu_usec = filetxt_step->rusage.ru_stime.tv_usec;
-	slurmdb_step->tot_cpu_sec = filetxt_step->tot_cpu_sec;
-	slurmdb_step->tot_cpu_usec = filetxt_step->tot_cpu_usec;
-	slurmdb_step->user_cpu_sec = filetxt_step->rusage.ru_utime.tv_sec;
-	slurmdb_step->user_cpu_usec = filetxt_step->rusage.ru_utime.tv_usec;
+	jobacct_step->nodes = xstrdup(filetxt_step->nodes);
+	jobacct_step->requid = filetxt_step->requid;
+	memcpy(&jobacct_step->sacct, &filetxt_step->sacct, sizeof(sacct_t));
+	jobacct_step->start = filetxt_step->header.timestamp -
+		jobacct_step->elapsed;
+	jobacct_step->state = filetxt_step->status;
+	jobacct_step->stepid = filetxt_step->stepnum;
+	jobacct_step->stepname = xstrdup(filetxt_step->stepname);
+	jobacct_step->sys_cpu_sec = filetxt_step->rusage.ru_stime.tv_sec;
+	jobacct_step->sys_cpu_usec = filetxt_step->rusage.ru_stime.tv_usec;
+	jobacct_step->tot_cpu_sec = filetxt_step->tot_cpu_sec;
+	jobacct_step->tot_cpu_usec = filetxt_step->tot_cpu_usec;
+	jobacct_step->user_cpu_sec = filetxt_step->rusage.ru_utime.tv_sec;
+	jobacct_step->user_cpu_usec = filetxt_step->rusage.ru_utime.tv_usec;
 
-	return slurmdb_step;
+	return jobacct_step;
 }
 
-static slurmdb_job_rec_t *_slurmdb_create_job_rec(
-	filetxt_job_rec_t *filetxt_job, slurmdb_job_cond_t *job_cond)
+static jobacct_job_rec_t *_create_jobacct_job_rec(
+	filetxt_job_rec_t *filetxt_job, acct_job_cond_t *job_cond)
 {
-	slurmdb_job_rec_t *slurmdb_job = NULL;
+	jobacct_job_rec_t *jobacct_job = NULL;
 	ListIterator itr = NULL;
 	filetxt_step_rec_t *filetxt_step = NULL;
 
@@ -306,64 +305,63 @@ static slurmdb_job_rec_t *_slurmdb_create_job_rec(
 foundstate:
 
 no_cond:
-	slurmdb_job = slurmdb_create_job_rec();
-	slurmdb_job->associd = 0;
-	slurmdb_job->account = xstrdup(filetxt_job->account);
-	slurmdb_job->blockid = xstrdup(filetxt_job->header.blockid);
-	slurmdb_job->cluster = NULL;
-	slurmdb_job->elapsed = filetxt_job->elapsed;
-	slurmdb_job->eligible = filetxt_job->header.job_submit;
-	slurmdb_job->end = filetxt_job->header.timestamp;
-	slurmdb_job->exitcode = filetxt_job->exitcode;
-	slurmdb_job->gid = filetxt_job->header.gid;
-	slurmdb_job->jobid = filetxt_job->header.jobnum;
-	slurmdb_job->jobname = xstrdup(filetxt_job->jobname);
-	slurmdb_job->partition = xstrdup(filetxt_job->header.partition);
-	slurmdb_job->req_cpus = filetxt_job->ncpus;
-	slurmdb_job->alloc_cpus = filetxt_job->ncpus;
+	jobacct_job = create_jobacct_job_rec();
+	jobacct_job->associd = 0;
+	jobacct_job->account = xstrdup(filetxt_job->account);
+	jobacct_job->blockid = xstrdup(filetxt_job->header.blockid);
+	jobacct_job->cluster = NULL;
+	jobacct_job->elapsed = filetxt_job->elapsed;
+	jobacct_job->eligible = filetxt_job->header.job_submit;
+	jobacct_job->end = filetxt_job->header.timestamp;
+	jobacct_job->exitcode = filetxt_job->exitcode;
+	jobacct_job->gid = filetxt_job->header.gid;
+	jobacct_job->jobid = filetxt_job->header.jobnum;
+	jobacct_job->jobname = xstrdup(filetxt_job->jobname);
+	jobacct_job->partition = xstrdup(filetxt_job->header.partition);
+	jobacct_job->req_cpus = filetxt_job->ncpus;
+	jobacct_job->alloc_cpus = filetxt_job->ncpus;
 	if(filetxt_job->nodes) {
 		hostlist_t hl = hostlist_create(filetxt_job->nodes);
-		slurmdb_job->alloc_nodes = hostlist_count(hl);
+		jobacct_job->alloc_nodes = hostlist_count(hl);
 		hostlist_destroy(hl);
 	}
-	slurmdb_job->nodes = xstrdup(filetxt_job->nodes);
-	slurmdb_job->priority = filetxt_job->priority;
-	slurmdb_job->requid = filetxt_job->requid;
-	memcpy(&slurmdb_job->stats, &filetxt_job->stats,
-	       sizeof(slurmdb_stats_t));
-	slurmdb_job->show_full = filetxt_job->show_full;
-	slurmdb_job->start = filetxt_job->header.timestamp -
-		slurmdb_job->elapsed;
-	slurmdb_job->state = filetxt_job->status;
+	jobacct_job->nodes = xstrdup(filetxt_job->nodes);
+	jobacct_job->priority = filetxt_job->priority;
+	jobacct_job->requid = filetxt_job->requid;
+	memcpy(&jobacct_job->sacct, &filetxt_job->sacct, sizeof(sacct_t));
+	jobacct_job->show_full = filetxt_job->show_full;
+	jobacct_job->start = filetxt_job->header.timestamp -
+		jobacct_job->elapsed;
+	jobacct_job->state = filetxt_job->status;
 
-	slurmdb_job->steps = list_create(slurmdb_destroy_step_rec);
+	jobacct_job->steps = list_create(destroy_jobacct_step_rec);
 	if(filetxt_job->steps) {
 		itr = list_iterator_create(filetxt_job->steps);
 		while((filetxt_step = list_next(itr))) {
-			slurmdb_step_rec_t *step =
-				_slurmdb_create_step_rec(filetxt_step);
+			jobacct_step_rec_t *step =
+				_create_jobacct_step_rec(filetxt_step);
 			if(step) {
-				step->job_ptr = slurmdb_job;
-				if(!slurmdb_job->first_step_ptr)
-					slurmdb_job->first_step_ptr = step;
-				list_append(slurmdb_job->steps, step);
+				step->job_ptr = jobacct_job;
+				if(!jobacct_job->first_step_ptr)
+					jobacct_job->first_step_ptr = step;
+				list_append(jobacct_job->steps, step);
 			}
 		}
 		list_iterator_destroy(itr);
 	}
-	slurmdb_job->submit = filetxt_job->header.job_submit;
+	jobacct_job->submit = filetxt_job->header.job_submit;
 
-	slurmdb_job->sys_cpu_sec = filetxt_job->rusage.ru_stime.tv_sec;
-	slurmdb_job->sys_cpu_usec = filetxt_job->rusage.ru_stime.tv_usec;
-	slurmdb_job->tot_cpu_sec = filetxt_job->tot_cpu_sec;
-	slurmdb_job->tot_cpu_usec = filetxt_job->tot_cpu_usec;
-	slurmdb_job->track_steps = filetxt_job->track_steps;
-	slurmdb_job->uid = filetxt_job->header.uid;
-	slurmdb_job->user = NULL;
-	slurmdb_job->user_cpu_sec = filetxt_job->rusage.ru_utime.tv_sec;
-	slurmdb_job->user_cpu_usec = filetxt_job->rusage.ru_utime.tv_usec;
+	jobacct_job->sys_cpu_sec = filetxt_job->rusage.ru_stime.tv_sec;
+	jobacct_job->sys_cpu_usec = filetxt_job->rusage.ru_stime.tv_usec;
+	jobacct_job->tot_cpu_sec = filetxt_job->tot_cpu_sec;
+	jobacct_job->tot_cpu_usec = filetxt_job->tot_cpu_usec;
+	jobacct_job->track_steps = filetxt_job->track_steps;
+	jobacct_job->uid = filetxt_job->header.uid;
+	jobacct_job->user = NULL;
+	jobacct_job->user_cpu_sec = filetxt_job->rusage.ru_utime.tv_sec;
+	jobacct_job->user_cpu_usec = filetxt_job->rusage.ru_utime.tv_usec;
 
-	return slurmdb_job;
+	return jobacct_job;
 }
 
 static filetxt_job_rec_t *_create_filetxt_job_rec(filetxt_header_t header)
@@ -371,8 +369,8 @@ static filetxt_job_rec_t *_create_filetxt_job_rec(filetxt_header_t header)
 	filetxt_job_rec_t *job = xmalloc(sizeof(filetxt_job_rec_t));
 	memcpy(&job->header, &header, sizeof(filetxt_header_t));
 	memset(&job->rusage, 0, sizeof(struct rusage));
-	memset(&job->stats, 0, sizeof(slurmdb_stats_t));
-	job->stats.cpu_min = NO_VAL;
+	memset(&job->sacct, 0, sizeof(sacct_t));
+	job->sacct.min_cpu = NO_VAL;
 	job->job_start_seen = 0;
 	job->job_step_seen = 0;
 	job->job_terminated_seen = 0;
@@ -402,7 +400,7 @@ static filetxt_step_rec_t *_create_filetxt_step_rec(filetxt_header_t header)
 	filetxt_step_rec_t *step = xmalloc(sizeof(filetxt_job_rec_t));
 	memcpy(&step->header, &header, sizeof(filetxt_header_t));
 	memset(&step->rusage, 0, sizeof(struct rusage));
-	memset(&step->stats, 0, sizeof(slurmdb_stats_t));
+	memset(&step->sacct, 0, sizeof(sacct_t));
 	step->stepnum = (uint32_t)NO_VAL;
 	step->nodes = NULL;
 	step->stepname = NULL;
@@ -753,54 +751,54 @@ static int _parse_line(char *f[], void **data, int len)
 		(*step)->rusage.ru_nsignals = atoi(f[F_NSIGNALS]);
 		(*step)->rusage.ru_nvcsw = atoi(f[F_NVCSW]);
 		(*step)->rusage.ru_nivcsw = atoi(f[F_NIVCSW]);
-		(*step)->stats.vsize_max = atoi(f[F_MAX_VSIZE]);
+		(*step)->sacct.max_vsize = atoi(f[F_MAX_VSIZE]);
 		if(len > F_STEPNODES) {
-			(*step)->stats.vsize_max_taskid =
+			(*step)->sacct.max_vsize_id.taskid =
 				atoi(f[F_MAX_VSIZE_TASK]);
-			(*step)->stats.vsize_ave = atof(f[F_AVE_VSIZE]);
-			(*step)->stats.rss_max = atoi(f[F_MAX_RSS]);
-			(*step)->stats.rss_max_taskid =
+			(*step)->sacct.ave_vsize = atof(f[F_AVE_VSIZE]);
+			(*step)->sacct.max_rss = atoi(f[F_MAX_RSS]);
+			(*step)->sacct.max_rss_id.taskid =
 				atoi(f[F_MAX_RSS_TASK]);
-			(*step)->stats.rss_ave = atof(f[F_AVE_RSS]);
-			(*step)->stats.pages_max = atoi(f[F_MAX_PAGES]);
-			(*step)->stats.pages_max_taskid =
+			(*step)->sacct.ave_rss = atof(f[F_AVE_RSS]);
+			(*step)->sacct.max_pages = atoi(f[F_MAX_PAGES]);
+			(*step)->sacct.max_pages_id.taskid =
 				atoi(f[F_MAX_PAGES_TASK]);
-			(*step)->stats.pages_ave = atof(f[F_AVE_PAGES]);
-			(*step)->stats.cpu_min = atoi(f[F_MIN_CPU]);
-			(*step)->stats.cpu_min_taskid =
+			(*step)->sacct.ave_pages = atof(f[F_AVE_PAGES]);
+			(*step)->sacct.min_cpu = atoi(f[F_MIN_CPU]);
+			(*step)->sacct.min_cpu_id.taskid =
 				atoi(f[F_MIN_CPU_TASK]);
-			(*step)->stats.cpu_ave = atof(f[F_AVE_CPU]);
+			(*step)->sacct.ave_cpu = atof(f[F_AVE_CPU]);
 			(*step)->stepname = xstrdup(f[F_STEPNAME]);
 			(*step)->nodes = xstrdup(f[F_STEPNODES]);
 		} else {
-			(*step)->stats.vsize_max_taskid = (uint16_t)NO_VAL;
-			(*step)->stats.vsize_ave = (float)NO_VAL;
-			(*step)->stats.rss_max = NO_VAL;
-			(*step)->stats.rss_max_taskid = (uint16_t)NO_VAL;
-			(*step)->stats.rss_ave = (float)NO_VAL;
-			(*step)->stats.pages_max = NO_VAL;
-			(*step)->stats.pages_max_taskid = (uint16_t)NO_VAL;
-			(*step)->stats.pages_ave = (float)NO_VAL;
-			(*step)->stats.cpu_min = NO_VAL;
-			(*step)->stats.cpu_min_taskid = (uint16_t)NO_VAL;
-			(*step)->stats.cpu_ave =  (float)NO_VAL;
+			(*step)->sacct.max_vsize_id.taskid = (uint16_t)NO_VAL;
+			(*step)->sacct.ave_vsize = (float)NO_VAL;
+			(*step)->sacct.max_rss = NO_VAL;
+			(*step)->sacct.max_rss_id.taskid = (uint16_t)NO_VAL;
+			(*step)->sacct.ave_rss = (float)NO_VAL;
+			(*step)->sacct.max_pages = NO_VAL;
+			(*step)->sacct.max_pages_id.taskid = (uint16_t)NO_VAL;
+			(*step)->sacct.ave_pages = (float)NO_VAL;
+			(*step)->sacct.min_cpu = NO_VAL;
+			(*step)->sacct.min_cpu_id.taskid = (uint16_t)NO_VAL;
+			(*step)->sacct.ave_cpu =  (float)NO_VAL;
 			(*step)->stepname = NULL;
 			(*step)->nodes = NULL;
 		}
 		if(len > F_MIN_CPU_NODE) {
-			(*step)->stats.vsize_max_nodeid =
+			(*step)->sacct.max_vsize_id.nodeid =
 				atoi(f[F_MAX_VSIZE_NODE]);
-			(*step)->stats.rss_max_nodeid =
+			(*step)->sacct.max_rss_id.nodeid =
 				atoi(f[F_MAX_RSS_NODE]);
-			(*step)->stats.pages_max_nodeid =
+			(*step)->sacct.max_pages_id.nodeid =
 				atoi(f[F_MAX_PAGES_NODE]);
-			(*step)->stats.cpu_min_nodeid =
+			(*step)->sacct.min_cpu_id.nodeid =
 				atoi(f[F_MIN_CPU_NODE]);
 		} else {
-			(*step)->stats.vsize_max_nodeid = NO_VAL;
-			(*step)->stats.rss_max_nodeid = NO_VAL;
-			(*step)->stats.pages_max_nodeid = NO_VAL;
-			(*step)->stats.cpu_min_nodeid = NO_VAL;
+			(*step)->sacct.max_vsize_id.nodeid = NO_VAL;
+			(*step)->sacct.max_rss_id.nodeid = NO_VAL;
+			(*step)->sacct.max_pages_id.nodeid = NO_VAL;
+			(*step)->sacct.min_cpu_id.nodeid = NO_VAL;
 		}
 		if(len > F_STEP_ACCOUNT)
 			(*step)->account = xstrdup(f[F_STEP_ACCOUNT]);
@@ -907,7 +905,7 @@ static void _process_step(List job_list, char *f[], int lc,
 		job->requid = temp->requid;
 		step->requid = temp->requid;
 		memcpy(&step->rusage, &temp->rusage, sizeof(struct rusage));
-		memcpy(&step->stats, &temp->stats, sizeof(slurmdb_stats_t));
+		memcpy(&step->sacct, &temp->sacct, sizeof(sacct_t));
 		xfree(step->stepname);
 		step->stepname = xstrdup(temp->stepname);
 		step->end = temp->header.timestamp;
@@ -1027,7 +1025,7 @@ finished:
 	_destroy_filetxt_job_rec(temp);
 }
 
-extern List filetxt_jobacct_process_get_jobs(slurmdb_job_cond_t *job_cond)
+extern List filetxt_jobacct_process_get_jobs(acct_job_cond_t *job_cond)
 {
 	char line[BUFFER_SIZE];
 	char *f[MAX_RECORD_FIELDS+1];    /* End list with null entry and,
@@ -1040,12 +1038,12 @@ extern List filetxt_jobacct_process_get_jobs(slurmdb_job_cond_t *job_cond)
 	int rec_type = -1;
 	int job_id = 0, step_id = 0, uid = 0, gid = 0;
 	filetxt_job_rec_t *filetxt_job = NULL;
-	slurmdb_selected_step_t *selected_step = NULL;
+	jobacct_selected_step_t *selected_step = NULL;
 	char *object = NULL;
 	ListIterator itr = NULL, itr2 = NULL;
 	int show_full = 0;
 	int fdump_flag = 0;
-	List ret_job_list = list_create(slurmdb_destroy_job_rec);
+	List ret_job_list = list_create(destroy_jobacct_job_rec);
 	List job_list = list_create(_destroy_filetxt_job_rec);
 
 	filein = slurm_get_accounting_storage_loc();
@@ -1176,21 +1174,21 @@ extern List filetxt_jobacct_process_get_jobs(slurmdb_job_cond_t *job_cond)
 		switch(rec_type) {
 		case JOB_START:
 			if(i < F_JOB_ACCOUNT) {
-				error("Bad data on a Job Start");
+				error("Bad data on a Job Start\n");
 				_show_rec(f);
 			} else
 				_process_start(job_list, f, lc, show_full, i);
 			break;
 		case JOB_STEP:
 			if(i < F_MAX_VSIZE) {
-				error("Bad data on a Step entry");
+				error("Bad data on a Step entry\n");
 				_show_rec(f);
 			} else
 				_process_step(job_list, f, lc, show_full, i);
 			break;
 		case JOB_SUSPEND:
 			if(i < F_JOB_REQUID) {
-				error("Bad data on a Suspend entry");
+				error("Bad data on a Suspend entry\n");
 				_show_rec(f);
 			} else
 				_process_suspend(job_list, f, lc,
@@ -1198,7 +1196,7 @@ extern List filetxt_jobacct_process_get_jobs(slurmdb_job_cond_t *job_cond)
 			break;
 		case JOB_TERMINATED:
 			if(i < F_JOB_REQUID) {
-				error("Bad data on a Job Term");
+				error("Bad data on a Job Term\n");
 				_show_rec(f);
 			} else
 				_process_terminated(job_list, f, lc,
@@ -1220,23 +1218,22 @@ extern List filetxt_jobacct_process_get_jobs(slurmdb_job_cond_t *job_cond)
 	itr = list_iterator_create(job_list);
 
 	while((filetxt_job = list_next(itr))) {
-		slurmdb_job_rec_t *slurmdb_job =
-			_slurmdb_create_job_rec(filetxt_job, job_cond);
-		if(slurmdb_job) {
-			slurmdb_job_rec_t *curr_job = NULL;
+		jobacct_job_rec_t *jobacct_job =
+			_create_jobacct_job_rec(filetxt_job, job_cond);
+		if(jobacct_job) {
+			jobacct_job_rec_t *curr_job = NULL;
 			if(itr2) {
 				list_iterator_reset(itr2);
 				while((curr_job = list_next(itr2))) {
 					if (curr_job->jobid ==
-					    slurmdb_job->jobid) {
+					    jobacct_job->jobid) {
 						list_delete_item(itr2);
-						info("removing job %d",
-						     slurmdb_job->jobid);
+						info("removing job %d", jobacct_job->jobid);
 						break;
 					}
 				}
 			}
-			list_append(ret_job_list, slurmdb_job);
+			list_append(ret_job_list, jobacct_job);
 		}
 	}
 
@@ -1251,7 +1248,7 @@ extern List filetxt_jobacct_process_get_jobs(slurmdb_job_cond_t *job_cond)
 	return ret_job_list;
 }
 
-extern int filetxt_jobacct_process_archive(slurmdb_archive_cond_t *arch_cond)
+extern int filetxt_jobacct_process_archive(acct_archive_cond_t *arch_cond)
 {
 	char	line[BUFFER_SIZE],
 		*f[EXPIRE_READ_LENGTH],
@@ -1280,7 +1277,7 @@ extern int filetxt_jobacct_process_archive(slurmdb_archive_cond_t *arch_cond)
 	int rec_type = -1;
 	ListIterator itr = NULL;
 	ListIterator itr2 = NULL;
-	slurmdb_job_cond_t *job_cond = NULL;
+	acct_job_cond_t *job_cond = NULL;
 
 	/* Figure out our expiration date */
 	time_t		expiry;
@@ -1299,7 +1296,7 @@ extern int filetxt_jobacct_process_archive(slurmdb_archive_cond_t *arch_cond)
 
 	expiry = time(NULL) - job_cond->usage_end;
 
-	debug("Purging jobs completed prior to %d", (int)expiry);
+	debug("Purging jobs completed prior to %d\n", (int)expiry);
 
 	/* Open the current or specified logfile, or quit */
 	fd = _open_log_file(filein);
@@ -1309,12 +1306,12 @@ extern int filetxt_jobacct_process_archive(slurmdb_archive_cond_t *arch_cond)
 	}
 	if ((statbuf.st_mode & S_IFLNK) == S_IFLNK) {
 		error("%s is a symbolic link; --expire requires "
-		      "a hard-linked file name", filein);
+			"a hard-linked file name\n", filein);
 		goto finished;
 	}
 	if (!(statbuf.st_mode & S_IFREG)) {
 		error("%s is not a regular file; --expire "
-			"only works on accounting log files",
+			"only works on accounting log files\n",
 			filein);
 		goto finished;
 	}
@@ -1331,7 +1328,7 @@ extern int filetxt_jobacct_process_archive(slurmdb_archive_cond_t *arch_cond)
 		}
 	} else {
 		error("Warning! %s exists -- please remove "
-			"or rename it before proceeding",
+			"or rename it before proceeding\n",
 			old_logfile_name);
 		goto finished;
 	}
@@ -1433,9 +1430,14 @@ extern int filetxt_jobacct_process_archive(slurmdb_archive_cond_t *arch_cond)
 	/* if (params->opt_verbose > 2) { */
 /* 		error("--- contents of exp_list ---"); */
 /* 		itr = list_iterator_create(exp_list); */
-/* 		while((exp_rec = list_next(itr))) */
+/* 		while((exp_rec = list_next(itr))) { */
+/* 			if (!(i%5)) */
+/* 				error("\n"); */
+/* 			else */
+/* 				error("\t"); */
 /* 			error("%d", exp_rec->job); */
-/* 		error("---- end of exp_list ---"); */
+/* 		} */
+/* 		error("\n---- end of exp_list ---\n"); */
 /* 		list_iterator_destroy(itr); */
 /* 	} */
 	/* write the expired file */
@@ -1517,7 +1519,7 @@ extern int filetxt_jobacct_process_archive(slurmdb_archive_cond_t *arch_cond)
 			error("SEVERE ERROR: Current accounting "
 				"log may have been renamed %s;\n"
 				"please rename it to \"%s\" if necessary, "
-			        "and try again",
+			        "and try again\n",
 				old_logfile_name, filein);
 		goto finished2;
 	}
@@ -1527,7 +1529,8 @@ extern int filetxt_jobacct_process_archive(slurmdb_archive_cond_t *arch_cond)
 	file_err = slurm_reconfigure();
 	if (file_err) {
 		file_err = 1;
-		error("Error: Attempt to reconfigure SLURM failed.");
+		error("Error: Attempt to reconfigure "
+			"SLURM failed.\n");
 		if (rename(old_logfile_name, filein)) {
 			perror("renaming logfile from .old.");
 			goto finished2;

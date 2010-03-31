@@ -1393,7 +1393,7 @@ io_close_all(slurmd_job_t *job)
 		error("Could not open /dev/null: %m");
 	} else {
 		if (dup2(devnull, STDERR_FILENO) < 0)
-			error("Unable to dup /dev/null onto stderr");
+			error("Unable to dup /dev/null onto stderr\n");
 	}
 
 	/* Signal IO thread to close appropriate

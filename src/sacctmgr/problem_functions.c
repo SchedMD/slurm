@@ -41,7 +41,7 @@
 static bool tree_display = 0;
 
 static int _set_cond(int *start, int argc, char *argv[],
-		     slurmdb_association_cond_t *assoc_cond,
+		     acct_association_cond_t *assoc_cond,
 		     List format_list)
 {
 	int i, end = 0;
@@ -129,10 +129,10 @@ static int _set_cond(int *start, int argc, char *argv[],
 extern int sacctmgr_list_problem(int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
-	slurmdb_association_cond_t *assoc_cond =
-		xmalloc(sizeof(slurmdb_association_cond_t));
+	acct_association_cond_t *assoc_cond =
+		xmalloc(sizeof(acct_association_cond_t));
 	List assoc_list = NULL;
-	slurmdb_association_rec_t *assoc = NULL;
+	acct_association_rec_t *assoc = NULL;
 	int i=0;
 	ListIterator itr = NULL;
 	ListIterator itr2 = NULL;
@@ -162,7 +162,7 @@ extern int sacctmgr_list_problem(int argc, char *argv[])
 	}
 
 	if(exit_code) {
-		slurmdb_destroy_association_cond(assoc_cond);
+		destroy_acct_association_cond(assoc_cond);
 		list_destroy(format_list);
 		return SLURM_ERROR;
 	} else if(!list_count(format_list))
@@ -228,13 +228,13 @@ extern int sacctmgr_list_problem(int argc, char *argv[])
 	list_destroy(format_list);
 
 	if(exit_code) {
-		slurmdb_destroy_association_cond(assoc_cond);
+		destroy_acct_association_cond(assoc_cond);
 		list_destroy(print_fields_list);
 		return SLURM_ERROR;
 	}
 
 	assoc_list = acct_storage_g_get_problems(db_conn, my_uid, assoc_cond);
-	slurmdb_destroy_association_cond(assoc_cond);
+	destroy_acct_association_cond(assoc_cond);
 
 	if(!assoc_list) {
 		exit_code=1;
@@ -273,7 +273,7 @@ extern int sacctmgr_list_problem(int argc, char *argv[])
 				*/
 				field->print_routine(
 					field,
-					slurmdb_problem_str_get(assoc->id),
+					get_acct_problem_str(assoc->id),
 					(curr_inx == field_count));
 				break;
 			case PRINT_USER:

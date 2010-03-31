@@ -3,7 +3,7 @@
  *	Note: there is a global node table (node_record_table_ptr)
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -351,7 +351,7 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 {
 	uint32_t saved_min_nodes, saved_job_min_nodes;
 	bitstr_t *saved_req_node_bitmap = NULL;
-	uint32_t saved_min_cpus, saved_req_nodes;
+	uint32_t saved_num_procs, saved_req_nodes;
 	int rc, tmp_node_set_size;
 	struct node_set *tmp_node_set_ptr;
 	int error_code = SLURM_SUCCESS, i;
@@ -388,10 +388,8 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 		saved_req_node_bitmap = bit_copy(accumulate_bitmap);
 		job_ptr->details->req_node_bitmap = NULL;
 	}
-	saved_min_cpus = job_ptr->details->min_cpus;
-	/* Don't mess with max_cpus here since it is only set (as of
-	   2.2 to be a limit and not user configurable. */
-	job_ptr->details->min_cpus = 1;
+	saved_num_procs = job_ptr->num_procs;
+	job_ptr->num_procs = 1;
 	tmp_node_set_ptr = xmalloc(sizeof(struct node_set) * node_set_size);
 
 	/* Accumulate nodes with required feature counts.
@@ -438,7 +436,7 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 			min_nodes = feat_ptr->count;
 			req_nodes = feat_ptr->count;
 			job_ptr->details->min_nodes = feat_ptr->count;
-			job_ptr->details->min_cpus = feat_ptr->count;
+			job_ptr->num_procs = feat_ptr->count;
 			if (*preemptee_job_list) {
 				list_destroy(*preemptee_job_list);
 				*preemptee_job_list = NULL;
@@ -503,7 +501,7 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 		} else
 			job_ptr->details->req_node_bitmap = accumulate_bitmap;
 		node_cnt = bit_set_count(job_ptr->details->req_node_bitmap);
-		job_ptr->details->min_cpus = MAX(saved_min_cpus, node_cnt);
+		job_ptr->num_procs = MAX(saved_num_procs, node_cnt);
 		min_nodes = MAX(saved_min_nodes, node_cnt);
 		job_ptr->details->min_nodes = min_nodes;
 		req_nodes = MAX(min_nodes, req_nodes);
@@ -512,7 +510,7 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 	} else {
 		min_nodes = saved_min_nodes;
 		req_nodes = saved_req_nodes;
-		job_ptr->details->min_cpus = saved_min_cpus;
+		job_ptr->num_procs = saved_num_procs;
 		job_ptr->details->min_nodes = saved_job_min_nodes;
 	}
 #if 0
@@ -549,7 +547,7 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 	/* restore job's initial required node bitmap */
 	FREE_NULL_BITMAP(job_ptr->details->req_node_bitmap);
 	job_ptr->details->req_node_bitmap = saved_req_node_bitmap;
-	job_ptr->details->min_cpus = saved_min_cpus;
+	job_ptr->num_procs = saved_num_procs;
 	job_ptr->details->min_nodes = saved_job_min_nodes;
 
 	/* Restore available node bitmap, ignoring reservations */
@@ -618,6 +616,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 	bool tried_sched = false;	/* Tried to schedule with avail nodes */
 	static uint32_t cr_enabled = NO_VAL;
 	bool preempt_flag = false;
+	select_type_plugin_info_t cr_type = SELECT_TYPE_INFO_NONE;
 	int shared = 0, select_mode;
 
 	if (test_only)
@@ -655,6 +654,9 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 		 * its ability to share resources */
 		job_ptr->cr_enabled = cr_enabled; /* CR enabled for this job */
 
+		cr_type = (select_type_plugin_info_t) slurmctld_conf.
+							select_type_param;
+
 		/* Set the partially_idle_node_bitmap to reflect the
 		 * idle and partially idle nodes */
 		error_code = select_g_get_info_from_plugin (SELECT_BITMAP,
@@ -663,11 +665,10 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 			FREE_NULL_BITMAP(partially_idle_node_bitmap);
 			return error_code;
 		}
-                debug3("Job %u shared %d CR type %u cpus %u-%u nbits %d",
-		       job_ptr->job_id, shared, cr_enabled, 
-		       slurmctld_conf.select_type_param,
-		       job_ptr->details->min_cpus, job_ptr->details->max_cpus,
-		       bit_set_count(partially_idle_node_bitmap));
+                debug3("Job %u shared %d CR type %d num_procs %d nbits %d",
+		     job_ptr->job_id, shared, cr_enabled, cr_type,
+		     job_ptr->num_procs,
+		     bit_set_count(partially_idle_node_bitmap));
         }
 
 	if (job_ptr->details->req_node_bitmap) {  /* specific nodes required */
@@ -980,15 +981,13 @@ static void _preempt_jobs(List preemptee_job_list, int *error_code)
 			memset(&ckpt_msg, 0, sizeof(checkpoint_msg_t));
 			ckpt_msg.op        = CHECK_VACATE;
 			ckpt_msg.job_id    = job_ptr->job_id;
-			rc = job_checkpoint(&ckpt_msg, 0, -1,
-					    (uint16_t) NO_VAL);
+			rc = job_checkpoint(&ckpt_msg, 0, -1);
 			if (rc == SLURM_SUCCESS) {
 				info("preempted job %u has been checkpointed",
 				     job_ptr->job_id);
 			}
 		} else if (mode == PREEMPT_MODE_REQUEUE) {
-			rc = job_requeue(0, job_ptr->job_id, -1,
-					 (uint16_t)NO_VAL);
+			rc = job_requeue(0, job_ptr->job_id, -1);
 			if (rc == SLURM_SUCCESS) {
 				info("preempted job %u has been requeued",
 				     job_ptr->job_id);
@@ -1062,10 +1061,8 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 
 	/* Confirm that partition is up and has compatible nodes limits */
 	fail_reason = WAIT_NO_REASON;
-	if (part_ptr->state_up == PARTITION_DOWN)
-		fail_reason = WAIT_PART_DOWN;
-	else if (part_ptr->state_up == PARTITION_INACTIVE)
-		fail_reason = WAIT_PART_INACTIVE;
+	if (part_ptr->state_up == 0)
+		fail_reason = WAIT_PART_STATE;
 	else if (job_ptr->priority == 0)       /* user or administrator hold */
 		fail_reason = WAIT_HELD;
 	else if ((job_ptr->time_limit != NO_VAL) &&
@@ -1130,8 +1127,8 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 					       &preemptee_job_list);
 	}
 	/* set up the cpu_cnt here so we can decrement it as nodes
-	   free up. total_cpus is set within _get_req_features */
-	job_ptr->cpu_cnt = job_ptr->total_cpus;
+	   free up. total_procs is set within _get_req_features */
+	job_ptr->cpu_cnt = job_ptr->total_procs;
 
 	if (!test_only && preemptee_job_list && (error_code == SLURM_SUCCESS))
 		_preempt_jobs(preemptee_job_list, &error_code);
@@ -1242,7 +1239,8 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 
 	acct_policy_job_begin(job_ptr);
 
-	jobacct_storage_g_job_start(acct_db_conn, job_ptr);
+	jobacct_storage_g_job_start(acct_db_conn, slurmctld_cluster_name,
+				    job_ptr);
 	prolog_slurmctld(job_ptr);
 	slurm_sched_newalloc(job_ptr);
 
@@ -1407,10 +1405,10 @@ extern int job_req_node_filter(struct job_record *job_ptr,
 		node_ptr = node_record_table_ptr + i;
 		config_ptr = node_ptr->config_ptr;
 		if (slurmctld_conf.fast_schedule) {
-			if ((detail_ptr->pn_min_cpus  > config_ptr->cpus)   ||
-			    ((detail_ptr->pn_min_memory & (~MEM_PER_CPU)) >
+			if ((detail_ptr->job_min_cpus  > config_ptr->cpus)   ||
+			    ((detail_ptr->job_min_memory & (~MEM_PER_CPU)) >
 			      config_ptr->real_memory) 			     ||
-			    (detail_ptr->pn_min_tmp_disk >
+			    (detail_ptr->job_min_tmp_disk >
 			     config_ptr->tmp_disk)) {
 				bit_clear(avail_bitmap, i);
 				continue;
@@ -1423,10 +1421,10 @@ extern int job_req_node_filter(struct job_record *job_ptr,
 				continue;
 			}
 		} else {
-			if ((detail_ptr->pn_min_cpus > node_ptr->cpus)     ||
-			    ((detail_ptr->pn_min_memory & (~MEM_PER_CPU)) >
+			if ((detail_ptr->job_min_cpus > node_ptr->cpus)     ||
+			    ((detail_ptr->job_min_memory & (~MEM_PER_CPU)) >
 			      node_ptr->real_memory)                         ||
-			    (detail_ptr->pn_min_tmp_disk >
+			    (detail_ptr->job_min_tmp_disk >
 			     node_ptr->tmp_disk)) {
 				bit_clear(avail_bitmap, i);
 				continue;
@@ -1536,10 +1534,10 @@ static int _build_node_list(struct job_record *job_ptr,
 			list_next(config_iterator))) {
 
 		config_filter = 0;
-		if ((detail_ptr->pn_min_cpus     > config_ptr->cpus       ) ||
-		    ((detail_ptr->pn_min_memory & (~MEM_PER_CPU)) >
+		if ((detail_ptr->job_min_cpus     > config_ptr->cpus       ) ||
+		    ((detail_ptr->job_min_memory & (~MEM_PER_CPU)) >
 		      config_ptr->real_memory)                               ||
-		    (detail_ptr->pn_min_tmp_disk > config_ptr->tmp_disk))
+		    (detail_ptr->job_min_tmp_disk > config_ptr->tmp_disk))
 			config_filter = 1;
 		if (mc_ptr                                                   &&
 		    ((mc_ptr->min_sockets      > config_ptr->sockets    )    ||
@@ -1692,10 +1690,10 @@ static void _filter_nodes_in_set(struct node_set *node_set_ptr,
 				continue;
 
 			node_con = node_record_table_ptr[i].config_ptr;
-			if ((job_con->pn_min_cpus     <= node_con->cpus)    &&
-			    ((job_con->pn_min_memory & (~MEM_PER_CPU)) <=
+			if ((job_con->job_min_cpus     <= node_con->cpus)    &&
+			    ((job_con->job_min_memory & (~MEM_PER_CPU)) <=
 			      node_con->real_memory)                         &&
-			    (job_con->pn_min_tmp_disk <= node_con->tmp_disk))
+			    (job_con->job_min_tmp_disk <= node_con->tmp_disk))
 				job_ok = 1;
 			if (mc_ptr                                           &&
 			    ((mc_ptr->min_sockets      <= node_con->sockets) &&
@@ -1718,10 +1716,10 @@ static void _filter_nodes_in_set(struct node_set *node_set_ptr,
 				continue;
 
 			node_ptr = &node_record_table_ptr[i];
-			if ((job_con->pn_min_cpus     <= node_ptr->cpus)    &&
-			    ((job_con->pn_min_memory & (~MEM_PER_CPU)) <=
+			if ((job_con->job_min_cpus     <= node_ptr->cpus)    &&
+			    ((job_con->job_min_memory & (~MEM_PER_CPU)) <=
 			      node_ptr->real_memory)                         &&
-			    (job_con->pn_min_tmp_disk <= node_ptr->tmp_disk))
+			    (job_con->job_min_tmp_disk <= node_ptr->tmp_disk))
 				job_ok = 1;
 			if (mc_ptr                                           &&
 			    ((mc_ptr->min_sockets      <= node_ptr->sockets) &&

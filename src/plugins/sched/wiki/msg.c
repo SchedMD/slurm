@@ -281,7 +281,7 @@ extern int parse_wiki_config(void)
 
 	debug("Reading wiki.conf file (%s)",wiki_conf);
 	tbl = s_p_hashtbl_create(options);
-	if (s_p_parse_file(tbl, NULL, wiki_conf) == SLURM_ERROR)
+	if (s_p_parse_file(tbl, wiki_conf) == SLURM_ERROR)
 		fatal("something wrong with opening/reading wiki.conf file");
 
 	if (! s_p_get_string(&key, "AuthKey", tbl))

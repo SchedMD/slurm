@@ -40,7 +40,7 @@
 
 #include "sreport.h"
 
-extern void slurmdb_report_print_time(print_field_t *field,
+extern void sreport_print_time(print_field_t *field,
 			       uint64_t value, uint64_t total_time, int last)
 {
 	int abs_len = abs(field->len);
@@ -64,36 +64,36 @@ extern void slurmdb_report_print_time(print_field_t *field,
 		double temp_d = (double)value;
 
 		switch(time_format) {
-		case SLURMDB_REPORT_TIME_SECS:
+		case SREPORT_TIME_SECS:
 			output = xstrdup_printf("%llu", value);
 			break;
-		case SLURMDB_REPORT_TIME_MINS:
+		case SREPORT_TIME_MINS:
 			temp_d /= 60;
 			output = xstrdup_printf("%.0lf", temp_d);
 			break;
-		case SLURMDB_REPORT_TIME_HOURS:
+		case SREPORT_TIME_HOURS:
 			temp_d /= 3600;
 			output = xstrdup_printf("%.0lf", temp_d);
 			break;
-		case SLURMDB_REPORT_TIME_PERCENT:
+		case SREPORT_TIME_PERCENT:
 			percent /= total_time;
 			percent *= 100;
 			output = xstrdup_printf("%.2lf%%", percent);
 			break;
-		case SLURMDB_REPORT_TIME_SECS_PER:
+		case SREPORT_TIME_SECS_PER:
 			percent /= total_time;
 			percent *= 100;
 			output = xstrdup_printf("%llu(%.2lf%%)",
 						value, percent);
 			break;
-		case SLURMDB_REPORT_TIME_MINS_PER:
+		case SREPORT_TIME_MINS_PER:
 			percent /= total_time;
 			percent *= 100;
 			temp_d /= 60;
 			output = xstrdup_printf("%.0lf(%.2lf%%)",
 						temp_d, percent);
 			break;
-		case SLURMDB_REPORT_TIME_HOURS_PER:
+		case SREPORT_TIME_HOURS_PER:
 			percent /= total_time;
 			percent *= 100;
 			temp_d /= 3600;
@@ -226,18 +226,133 @@ extern void addto_char_list(List char_list, char *names)
 	list_iterator_destroy(itr);
 }
 
+extern int set_start_end_time(time_t *start, time_t *end)
+{
+	time_t my_time = time(NULL);
+	time_t temp_time;
+	struct tm start_tm;
+	struct tm end_tm;
+	int sent_start = (*start), sent_end = (*end);
+
+//	info("now got %d and %d sent", (*start), (*end));
+	/* Default is going to be the last day */
+	if(!sent_end) {
+		if(!localtime_r(&my_time, &end_tm)) {
+			error("Couldn't get localtime from end %d",
+			      my_time);
+			return SLURM_ERROR;
+		}
+		end_tm.tm_hour = 0;
+		//(*end) = mktime(&end_tm);
+	} else {
+		temp_time = sent_end;
+		if(!localtime_r(&temp_time, &end_tm)) {
+			error("Couldn't get localtime from user end %d",
+			      my_time);
+			return SLURM_ERROR;
+		}
+		if(end_tm.tm_sec >= 30)
+			end_tm.tm_min++;
+		if(end_tm.tm_min >= 30)
+			end_tm.tm_hour++;
+	}
+
+	end_tm.tm_sec = 0;
+	end_tm.tm_min = 0;
+	end_tm.tm_isdst = -1;
+	(*end) = mktime(&end_tm);
+
+	if(!sent_start) {
+		if(!localtime_r(&my_time, &start_tm)) {
+			error("Couldn't get localtime from start %d",
+			      my_time);
+			return SLURM_ERROR;
+		}
+		start_tm.tm_hour = 0;
+		start_tm.tm_mday--;
+		//(*start) = mktime(&start_tm);
+	} else {
+		temp_time = sent_start;
+		if(!localtime_r(&temp_time, &start_tm)) {
+			error("Couldn't get localtime from user start %d",
+			      my_time);
+			return SLURM_ERROR;
+		}
+		if(start_tm.tm_sec >= 30)
+			start_tm.tm_min++;
+		if(start_tm.tm_min >= 30)
+			start_tm.tm_hour++;
+	}
+	start_tm.tm_sec = 0;
+	start_tm.tm_min = 0;
+	start_tm.tm_isdst = -1;
+	(*start) = mktime(&start_tm);
+
+	if((*end)-(*start) < 3600)
+		(*end) = (*start) + 3600;
+/* 	info("now got %d and %d sent", (*start), (*end)); */
+/* 	char start_char[20]; */
+/* 	char end_char[20]; */
+/* 	time_t my_start = (*start); */
+/* 	time_t my_end = (*end); */
+
+/* 	slurm_make_time_str(&my_start,  */
+/* 			    start_char, sizeof(start_char)); */
+/* 	slurm_make_time_str(&my_end, */
+/* 			    end_char, sizeof(end_char)); */
+/* 	info("which is %s - %s", start_char, end_char); */
+	return SLURM_SUCCESS;
+}
+
+extern void destroy_sreport_assoc_rec(void *object)
+{
+	sreport_assoc_rec_t *sreport_assoc = (sreport_assoc_rec_t *)object;
+	if(sreport_assoc) {
+		xfree(sreport_assoc->acct);
+		xfree(sreport_assoc->cluster);
+		xfree(sreport_assoc->parent_acct);
+		xfree(sreport_assoc->user);
+		xfree(sreport_assoc);
+	}
+}
+
+extern void destroy_sreport_user_rec(void *object)
+{
+	sreport_user_rec_t *sreport_user = (sreport_user_rec_t *)object;
+	if(sreport_user) {
+		xfree(sreport_user->acct);
+		if(sreport_user->acct_list)
+			list_destroy(sreport_user->acct_list);
+		xfree(sreport_user->name);
+		xfree(sreport_user);
+	}
+}
+
+extern void destroy_sreport_cluster_rec(void *object)
+{
+	sreport_cluster_rec_t *sreport_cluster =
+		(sreport_cluster_rec_t *)object;
+	if(sreport_cluster) {
+		if(sreport_cluster->assoc_list)
+			list_destroy(sreport_cluster->assoc_list);
+		xfree(sreport_cluster->name);
+		if(sreport_cluster->user_list)
+			list_destroy(sreport_cluster->user_list);
+		xfree(sreport_cluster);
+	}
+}
+
 /*
  * Comparator used for sorting users largest cpu to smallest cpu
  *
  * returns: 1: user_a > user_b   0: user_a == user_b   -1: user_a < user_b
  *
  */
-extern int sort_user_dec(slurmdb_report_user_rec_t *user_a,
-			 slurmdb_report_user_rec_t *user_b)
+extern int sort_user_dec(sreport_user_rec_t *user_a, sreport_user_rec_t *user_b)
 {
 	int diff = 0;
 
-	if(sort_flag == SLURMDB_REPORT_SORT_TIME) {
+	if(sort_flag == SREPORT_SORT_TIME) {
 		if (user_a->cpu_secs > user_b->cpu_secs)
 			return -1;
 		else if (user_a->cpu_secs < user_b->cpu_secs)
@@ -265,8 +380,8 @@ extern int sort_user_dec(slurmdb_report_user_rec_t *user_a,
  *           -1: cluster_a < cluster_b
  *
  */
-extern int sort_cluster_dec(slurmdb_report_cluster_rec_t *cluster_a,
-			    slurmdb_report_cluster_rec_t *cluster_b)
+extern int sort_cluster_dec(sreport_cluster_rec_t *cluster_a,
+			    sreport_cluster_rec_t *cluster_b)
 {
 	int diff = 0;
 
@@ -293,8 +408,8 @@ extern int sort_cluster_dec(slurmdb_report_cluster_rec_t *cluster_a,
  *           1: assoc_a < assoc_b
  *
  */
-extern int sort_assoc_dec(slurmdb_report_assoc_rec_t *assoc_a,
-			  slurmdb_report_assoc_rec_t *assoc_b)
+extern int sort_assoc_dec(sreport_assoc_rec_t *assoc_a,
+			  sreport_assoc_rec_t *assoc_b)
 {
 	int diff = 0;
 
@@ -330,8 +445,8 @@ extern int sort_assoc_dec(slurmdb_report_assoc_rec_t *assoc_a,
  * returns: 1: resv_a > resv_b   0: resv_a == resv_b   -1: resv_a < resv_b
  *
  */
-extern int sort_reservations_dec(slurmdb_reservation_rec_t *resv_a,
-				 slurmdb_reservation_rec_t *resv_b)
+extern int sort_reservations_dec(acct_reservation_rec_t *resv_a,
+				 acct_reservation_rec_t *resv_b)
 {
 	int diff = 0;
 

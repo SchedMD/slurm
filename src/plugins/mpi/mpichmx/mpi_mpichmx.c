@@ -106,7 +106,7 @@ int p_mpi_hook_slurmstepd_task(const mpi_plugin_task_info_t *job,
 	if (!getenv("MXMPI_RECV")) {
 		env_array_overwrite_fmt(env, "MXMPI_RECV",  "%s", "hybrid");
 	}
-	debug2("init for mpi rank %u", job->gtaskid);
+	debug2("init for mpi rank %u\n", job->gtaskid);
 
 	return SLURM_SUCCESS;
 }

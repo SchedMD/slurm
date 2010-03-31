@@ -52,9 +52,10 @@ struct part_cr_record {
 	struct part_record *part_ptr;	/* pointer to partition in slurmctld */
 	uint16_t run_job_cnt;		/* number of running jobs on this node
 					 * for this partition */
+	uint32_t *run_job_ids;		/* job IDs for running jobs */
+	uint16_t run_job_len;		/* length of run_job_ids array */
 	uint16_t tot_job_cnt;		/* number of jobs allocated to this
-					 * node for this partition 
-					 * (RUNNING & SUSPENDED) */
+					 * node for this partition */
 	struct part_cr_record *next;	/* ptr to next part_cr_record */
 };
 
@@ -70,15 +71,6 @@ struct node_cr_record {
 	uint16_t exclusive_cnt;		/* count of jobs exclusively allocated
 					 * this node (from different
 					 * partitions) */
-};
-
-struct cr_record{
-	struct node_cr_record *nodes;	/* ptr to array of node records */
-	uint32_t *run_job_ids;		/* job IDs for running jobs */
-	uint16_t run_job_len;		/* length of run_job_ids array */
-	uint32_t *tot_job_ids;		/* job IDs for allocated jobs 
-					 * (RUNNING & SUSPENDED)*/
-	uint16_t tot_job_len;		/* length of tot_job_ids array */
 };
 
 #endif /* !_SELECT_LINEAR_H */

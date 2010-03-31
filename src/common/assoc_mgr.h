@@ -60,88 +60,24 @@
 typedef struct {
 	uint16_t cache_level;
 	uint16_t enforce;
- 	void (*remove_assoc_notify) (slurmdb_association_rec_t *rec);
+ 	void (*remove_assoc_notify) (acct_association_rec_t *rec);
 } assoc_init_args_t;
-
-struct assoc_mgr_association_usage {
-	List childern_list;     /* list of childern associations
-				 * (DON'T PACK) */
-
-	uint32_t grp_used_cpus; /* count of active jobs in the group
-				 * (DON'T PACK) */
-	uint32_t grp_used_nodes; /* count of active jobs in the group
-				  * (DON'T PACK) */
-	double grp_used_wall;   /* group count of time used in
-				 * running jobs (DON'T PACK) */
-
-	uint32_t level_shares;  /* number of shares on this level of
-				 * the tree (DON'T PACK) */
-
-	slurmdb_association_rec_t *parent_assoc_ptr; /* ptr to parent acct
-						      * set in slurmctld
-						      * (DON'T PACK) */
-
-	double shares_norm;     /* normalized shares (DON'T PACK) */
-
-	long double usage_efctv;/* effective, normalized usage (DON'T PACK) */
-	long double usage_norm;	/* normalized usage (DON'T PACK) */
-	long double usage_raw;	/* measure of resource usage (DON'T PACK) */
-
-	uint32_t used_jobs;	/* count of active jobs (DON'T PACK) */
-	uint32_t used_submit_jobs; /* count of jobs pending or running
-				    * (DON'T PACK) */
-
-	bitstr_t *valid_qos;    /* qos available for this association
-				 * derived from the qos_list.
-				 * (DON'T PACK) */
-};
-
-struct assoc_mgr_qos_usage {
-	List job_list; /* list of job pointers to submitted/running
-			  jobs (DON'T PACK) */
-	uint32_t grp_used_cpus; /* count of cpus in use in this qos
-				 * (DON'T PACK) */
-	uint32_t grp_used_jobs;	/* count of active jobs (DON'T PACK) */
-	uint32_t grp_used_nodes; /* count of nodes in use in this qos
-				  * (DON'T PACK) */
-	uint32_t grp_used_submit_jobs; /* count of jobs pending or running
-					* (DON'T PACK) */
-	double grp_used_wall;   /* group count of time (minutes) used in
-				 * running jobs (DON'T PACK) */
-	double norm_priority;/* normalized priority (DON'T PACK) */
-	long double usage_raw;	/* measure of resource usage (DON'T PACK) */
-
-	List user_limit_list; /* slurmdb_used_limits_t's (DON'T PACK) */
-};
-
 
 extern List assoc_mgr_association_list;
 extern List assoc_mgr_qos_list;
 extern List assoc_mgr_user_list;
 extern List assoc_mgr_wckey_list;
 
-extern slurmdb_association_rec_t *assoc_mgr_root_assoc;
+extern acct_association_rec_t *assoc_mgr_root_assoc;
 extern pthread_mutex_t assoc_mgr_association_lock;
 extern pthread_mutex_t assoc_mgr_qos_lock;
 extern pthread_mutex_t assoc_mgr_user_lock;
 extern pthread_mutex_t assoc_mgr_file_lock;
 extern pthread_mutex_t assoc_mgr_wckey_lock;
 
-extern uint32_t g_qos_max_priority; /* max priority in all qos's */
-extern uint32_t g_qos_count; /* count used for generating qos bitstr's */
-
-
-extern int assoc_mgr_init(void *db_conn, assoc_init_args_t *args);
-extern int assoc_mgr_fini(char *state_save_location);
-
-extern assoc_mgr_association_usage_t *create_assoc_mgr_association_usage();
-extern void destroy_assoc_mgr_association_usage(void *object);
-extern assoc_mgr_qos_usage_t *create_assoc_mgr_qos_usage();
-extern void destroy_assoc_mgr_qos_usage(void *object);
-
 /*
  * get info from the storage
- * IN:  assoc - slurmdb_association_rec_t with at least cluster and
+ * IN:  assoc - acct_association_rec_t with at least cluster and
  *		    account set for account association.  To get user
  *		    association set user, and optional partition.
  *		    Sets "id" field with the association ID.
@@ -153,74 +89,74 @@ extern void destroy_assoc_mgr_qos_usage(void *object);
  * RET: SLURM_SUCCESS on success, else SLURM_ERROR
  */
 extern int assoc_mgr_get_user_assocs(void *db_conn,
-				     slurmdb_association_rec_t *assoc,
+				     acct_association_rec_t *assoc,
 				     int enforce,
 				     List assoc_list);
 
 /*
  * get info from the storage
- * IN/OUT:  assoc - slurmdb_association_rec_t with at least cluster and
+ * IN/OUT:  assoc - acct_association_rec_t with at least cluster and
  *		    account set for account association.  To get user
  *		    association set user, and optional partition.
  *		    Sets "id" field with the association ID.
  * IN: enforce - return an error if no such association exists
  * IN/OUT: assoc_pptr - if non-NULL then return a pointer to the
- *			slurmdb_association record in cache on success
+ *			acct_association record in cache on success
  *                      DO NOT FREE.
  * RET: SLURM_SUCCESS on success, else SLURM_ERROR
  */
 extern int assoc_mgr_fill_in_assoc(void *db_conn,
-				   slurmdb_association_rec_t *assoc,
+				   acct_association_rec_t *assoc,
 				   int enforce,
-				   slurmdb_association_rec_t **assoc_pptr);
+				   acct_association_rec_t **assoc_pptr);
 
 /*
  * get info from the storage
- * IN/OUT:  user - slurmdb_user_rec_t with the name set of the user.
+ * IN/OUT:  user - acct_user_rec_t with the name set of the user.
  *                 "default_account" will be filled in on
  *                 successful return DO NOT FREE.
  * IN/OUT: user_pptr - if non-NULL then return a pointer to the
- *		       slurmdb_user record in cache on success
+ *		       acct_user record in cache on success
  *                     DO NOT FREE.
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int assoc_mgr_fill_in_user(void *db_conn, slurmdb_user_rec_t *user,
+extern int assoc_mgr_fill_in_user(void *db_conn, acct_user_rec_t *user,
 				  int enforce,
-				  slurmdb_user_rec_t **user_pptr);
+				  acct_user_rec_t **user_pptr);
 
 /*
  * get info from the storage
- * IN/OUT:  qos - slurmdb_qos_rec_t with the id set of the qos.
+ * IN/OUT:  qos - acct_qos_rec_t with the id set of the qos.
  * IN/OUT:  qos_pptr - if non-NULL then return a pointer to the
- *		       slurmdb_qos record in cache on success
+ *		       acct_qos record in cache on success
  *                     DO NOT FREE.
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int assoc_mgr_fill_in_qos(void *db_conn, slurmdb_qos_rec_t *qos,
+extern int assoc_mgr_fill_in_qos(void *db_conn, acct_qos_rec_t *qos,
 				 int enforce,
-				 slurmdb_qos_rec_t **qos_pptr);
+				 acct_qos_rec_t **qos_pptr);
 /*
  * get info from the storage
- * IN/OUT:  wckey - slurmdb_wckey_rec_t with the name, cluster and user
+ * IN/OUT:  wckey - acct_wckey_rec_t with the name, cluster and user
  *		    for the wckey association.
  *		    Sets "id" field with the wckey ID.
  * IN: enforce - return an error if no such wckey exists
  * IN/OUT: wckey_pptr - if non-NULL then return a pointer to the
- *			slurmdb_wckey record in cache on success
+ *			acct_wckey record in cache on success
  * RET: SLURM_SUCCESS on success, else SLURM_ERROR
  */
 extern int assoc_mgr_fill_in_wckey(void *db_conn,
-				   slurmdb_wckey_rec_t *wckey,
+				   acct_wckey_rec_t *wckey,
 				   int enforce,
-				   slurmdb_wckey_rec_t **wckey_pptr);
+				   acct_wckey_rec_t **wckey_pptr);
 
 /*
  * get admin_level of uid
  * IN: uid - uid of user to check admin_level of.
- * RET: admin level SLURMDB_ADMIN_NOTSET on error
+ * RET: admin level ACCT_ADMIN_NOTSET on error
  */
-extern slurmdb_admin_level_t assoc_mgr_get_admin_level(void *db_conn,
-						       uint32_t uid);
+extern acct_admin_level_t assoc_mgr_get_admin_level(void *db_conn,
+						    uint32_t uid);
 
 /*
  * see if user is coordinator of given acct
@@ -230,6 +166,9 @@ extern slurmdb_admin_level_t assoc_mgr_get_admin_level(void *db_conn,
  */
 extern int assoc_mgr_is_user_acct_coord(void *db_conn, uint32_t uid,
 					char *acct);
+
+extern int assoc_mgr_init(void *db_conn, assoc_init_args_t *args);
+extern int assoc_mgr_fini(char *state_save_location);
 
 /*
  * get the share information from the association list in the form of
@@ -243,31 +182,31 @@ extern List assoc_mgr_get_shares(
 
 /*
  * update associations in cache
- * IN:  slurmdb_update_object_t *object
+ * IN:  acct_update_object_t *object
  * RET: SLURM_SUCCESS on success (or not found) SLURM_ERROR else
  */
-extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update);
+extern int assoc_mgr_update_assocs(acct_update_object_t *update);
 
 /*
  * update wckeys in cache
- * IN:  slurmdb_update_object_t *object
+ * IN:  acct_update_object_t *object
  * RET: SLURM_SUCCESS on success (or not found) SLURM_ERROR else
  */
-extern int assoc_mgr_update_wckeys(slurmdb_update_object_t *update);
+extern int assoc_mgr_update_wckeys(acct_update_object_t *update);
 
 /*
  * update qos in cache
- * IN:  slurmdb_update_object_t *object
+ * IN:  acct_update_object_t *object
  * RET: SLURM_SUCCESS on success (or not found) SLURM_ERROR else
  */
-extern int assoc_mgr_update_qos(slurmdb_update_object_t *update);
+extern int assoc_mgr_update_qos(acct_update_object_t *update);
 
 /*
  * update users in cache
- * IN:  slurmdb_update_object_t *object
+ * IN:  acct_update_object_t *object
  * RET: SLURM_SUCCESS on success (or not found) SLURM_ERROR else
  */
-extern int assoc_mgr_update_users(slurmdb_update_object_t *update);
+extern int assoc_mgr_update_users(acct_update_object_t *update);
 
 /*
  * validate that an association ID is still valid

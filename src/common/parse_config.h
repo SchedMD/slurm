@@ -179,11 +179,8 @@ typedef struct conf_file_options {
 s_p_hashtbl_t *s_p_hashtbl_create(struct conf_file_options options[]);
 void s_p_hashtbl_destroy(s_p_hashtbl_t *hashtbl);
 
-/* Returns SLURM_SUCCESS if file was opened and parse correctly
- * OUT hash_val - cyclic redundancy check (CRC) character-wise value
- *                of file.
- */
-int s_p_parse_file(s_p_hashtbl_t *hashtbl, uint32_t *hash_val, char *filename);
+/* Returns SLURM_SUCCESS if file was opened and parse correctly */
+int s_p_parse_file(s_p_hashtbl_t *hashtbl, char *filename);
 
 /*
  * Returns 1 if the line is parsed cleanly, and 0 otherwise.

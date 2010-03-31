@@ -95,9 +95,6 @@ struct node_record {
 					 * responding */
 	bool not_responding;		/* set if fails to respond,
 					 * clear after logging this */
-	time_t boot_time;		/* Time of node boot, 
-					 * computed from up_time */
-	time_t slurmd_start_time;	/* Time of slurmd startup */
 	time_t last_response;		/* last response from the node */
 	time_t last_idle;		/* time node last become idle */
 	uint16_t cpus;			/* count of processors on the node */
@@ -119,16 +116,9 @@ struct node_record {
 	uint16_t no_share_job_cnt;	/* count of jobs running that will
 					 * not share nodes */
 	char *reason; 			/* why a node is DOWN or DRAINING */
-	time_t reason_time;     	/* Time stamp when reason was
-			        	 * set, ignore if no reason is set. */
-	uint32_t reason_uid;    	/* User that set the reason, ignore if
-					 * no reason is set. */
 	char *features;			/* associated features, used only
 					 * for state save/restore, DO NOT
 					 * use for scheduling purposes */
-	uint32_t weight;		/* orignal weight, used only for state
-					 * save/restore, DO NOT use for 
-					 * scheduling purposes. */
 	char *arch;			/* computer architecture */
 	char *os;			/* operating system now running */
 	struct node_record *node_next;	/* next entry with same hash index */

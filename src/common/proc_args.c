@@ -575,8 +575,6 @@ bool verify_hint(const char *arg, int *min_sockets, int *min_cores,
 		} else if (strcasecmp(tok, "multithread") == 0) {
 		        *min_threads = 1;
 			*cpu_bind_type |= CPU_BIND_TO_THREADS;
-			if (*ntasks_per_core == NO_VAL)
-				*ntasks_per_core = INFINITE;
 		} else if (strcasecmp(tok, "nomultithread") == 0) {
 		        *min_threads = 1;
 			*cpu_bind_type |= CPU_BIND_TO_THREADS;

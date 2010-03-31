@@ -47,14 +47,13 @@ else
    RETVAL=0
 fi
 
-# We can not use a starter program without losing environment
+# We can not use a starter program without losing environment 
 # variables that are critical on Blue Gene systems
 if [ -d /bgl/BlueLight/ppcfloor ]; then
    STARTPROC=""
 fi
 
 # Source slurm specific configuration
-# SLURMDBD_OPTIONS defines slurmdbd command line options. See "man slurmdbd"
 if [ -f /etc/sysconfig/slurm ] ; then
     . /etc/sysconfig/slurm
 else
@@ -69,15 +68,15 @@ export LD_LIBRARY_PATH="$LIBDIR:$LD_LIBRARY_PATH"
 start() {
     prog=$1
     shift
-    echo -n "starting $prog: "
-    unset HOME MAIL USER USERNAME
+    echo -n "starting $prog: " 
+    unset HOME MAIL USER USERNAME 
     $STARTPROC $SBINDIR/$prog $SLURMDBD_OPTIONS
     rc_status -v
     echo
     touch /var/lock/subsys/slurmdbd
 }
 
-stop() {
+stop() { 
     echo -n "stopping $1: "
     killproc $1 -TERM
     rc_status -v
@@ -93,48 +92,48 @@ slurmstatus() {
 
     pidfile=`grep -i pidfile $CONFDIR/slurmdbd.conf | grep -v '^ *#'`
     if [ $? = 0 ]; then
-	pidfile=${pidfile##*=}
-	pidfile=${pidfile%#*}
+        pidfile=${pidfile##*=}
+        pidfile=${pidfile%#*}
     else
-	pidfile=/var/run/slurmdbd.pid
+        pidfile=/var/run/slurmdbd.pid
     fi
 
    pid=`pidof -o $$ -o $$PPID -o %PPID -x $1 || \
-	 pidof -o $$ -o $$PPID -o %PPID -x ${base}`
+         pidof -o $$ -o $$PPID -o %PPID -x ${base}`
 
     if [ -f $pidfile ]; then
-	read rpid < $pidfile
-	if [ "$rpid" != "" -a "$pid" != "" ]; then
-	    for i in $pid ; do
-		if [ "$i" = "$rpid" ]; then
-		    echo $"${base} (pid $pid) is running..."
-		    return 0
-		fi
-	    done
-	elif [ "$rpid" != "" -a "$pid" = "" ]; then
+        read rpid < $pidfile
+        if [ "$rpid" != "" -a "$pid" != "" ]; then
+            for i in $pid ; do
+                if [ "$i" = "$rpid" ]; then 
+                    echo $"${base} (pid $pid) is running..."
+                    return 0
+                fi     
+            done
+        elif [ "$rpid" != "" -a "$pid" = "" ]; then
 		echo $"${base} dead but pid file exists"
 		return 1
-	fi
+        fi 
 
     fi
 
     if [ "$base" = "slurmdbd" -a "$pid" != "" ] ; then
-	echo $"${base} (pid $pid) is running..."
-	return 0
+        echo $"${base} (pid $pid) is running..."
+        return 0
     fi
-
+    
     echo $"${base} is stopped"
-
+    
     return 3
 }
 
 #
-# stop slurm daemons,
+# stop slurm daemons, 
 # wait for termination to complete (up to 10 seconds) before returning
 #
 slurmstop() {
 	stop $1
-
+	
 	for i in 1 2 3 4
 	do
 		sleep $i
@@ -154,30 +153,30 @@ slurmstop() {
 case "$1" in
     start)
 	start slurmdbd
-	;;
+        ;;
     stop)
 	slurmstop slurmdbd
-	;;
+        ;;
     status)
 	slurmstatus slurmdbd
-	;;
+        ;;
     restart)
 	$0 stop
 	$0 start
-	;;
+        ;;
     condrestart)
-	if [ -f /var/lock/subsys/slurm ]; then
-		 stop slurmdbd
-		 start slurmdbd
-	fi
-	;;
+        if [ -f /var/lock/subsys/slurm ]; then
+                 stop slurmdbd
+                 start slurmdbd
+        fi
+        ;;
     reconfig)
 	killproc slurmdbd -HUP
 	;;
     *)
-	echo "Usage: $0 {start|stop|status|restart|condrestart|reconfig}"
-	exit 1
-	;;
+        echo "Usage: $0 {start|stop|status|restart|condrestart|reconfig}"
+        exit 1
+        ;;
 esac
 
 rc_exit

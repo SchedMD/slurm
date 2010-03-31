@@ -156,7 +156,7 @@ int get_memset(nodemask_t *mask, slurmd_job_t *job)
 	char mstr[1 + NUMA_NUM_NODES / 4];
 	int local_id = job->envtp->localid;
 
-	debug3("get_memset (%d) %s", job->mem_bind_type, job->mem_bind);
+	debug3("get_memset (%d) %s\n", job->mem_bind_type, job->mem_bind);
 	if (job->mem_bind_type & MEM_BIND_LOCAL) {
 		*mask = numa_get_run_node_mask();
 		return true;

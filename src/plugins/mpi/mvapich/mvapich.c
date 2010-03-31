@@ -341,9 +341,9 @@ static void report_absent_tasks (mvapich_state_t *st, int check_do_poll)
 		int nhosts = hostlist_count (hosts);
 		hostlist_ranged_string (tasks, 4096, r);
 		hostlist_ranged_string (hosts, 4096, h);
-		error ("mvapich: timeout: waiting on rank%s %s on host%s %s.",
-			nranks > 1 ? "s" : "", r,
-			nhosts > 1 ? "s" : "", h);
+		error ("mvapich: timeout: waiting on rank%s %s on host%s %s.\n",
+				nranks > 1 ? "s" : "", r,
+				nhosts > 1 ? "s" : "", h);
 	}
 
 	hostlist_destroy (hosts);
@@ -477,7 +477,7 @@ again:
 		if (mp->nfds == 0)
 			return (NULL);
 
-		mvapich_debug3 ("mvapich_poll_next (nfds=%d, timeout=%d)",
+		mvapich_debug3 ("mvapich_poll_next (nfds=%d, timeout=%d)\n",
 				mp->nfds, startup_timeout (st));
 		if ((rc = mvapich_poll_internal (mp)) < 0)
 			mvapich_terminate_job (st, "mvapich_poll_next: %m");
@@ -561,8 +561,7 @@ static int mvapich_write (struct mvapich_info *mvi, void * buf, size_t len)
 	n = write (mvi->fd, p, nleft);
 
 	if ((n < 0) && (errno != EAGAIN)) {
-		error ("mvapich: rank %d: write (%d/%ld): %m", 
-		       mvi->rank, nleft, len);
+		error ("mvapich: rank %d: write (%d/%ld): %m\n", mvi->rank, nleft, len);
 		return (-1);
 	}
 
@@ -589,8 +588,7 @@ static int mvapich_read (struct mvapich_info *mvi, void * buf, size_t len)
 	n = read (mvi->fd, p, nleft);
 
 	if ((n < 0) && (errno != EAGAIN)) {
-		error ("mvapich: rank %d: read (%d/%ld): %m", 
-		       mvi->rank, nleft, len);
+		error ("mvapich: rank %d: read (%d/%ld): %m\n", mvi->rank, nleft, len);
 		return (-1);
 	}
 
@@ -761,7 +759,7 @@ static void mvapich_bcast_hostids (mvapich_state_t *st)
 	/*
 	 *  Broadcast hostids
 	 */
-	mvapich_debug ("bcasting hostids");
+	mvapich_debug ("bcasting hostids\n");
 	mp = mvapich_poll_create (st);
 	while ((mvi = mvapich_poll_next (mp, 0))) {
 		if (mvapich_write (mvi, hostids, len) < 0)
@@ -778,11 +776,10 @@ static void mvapich_bcast_hostids (mvapich_state_t *st)
 	mvapich_poll_reset (mp);
 	while ((mvi = mvapich_poll_next (mp, 1))) {
 		int co = 1, rc;
-		mvapich_debug3 ("reading connect once value from rank %d fd=%d",
+		mvapich_debug3 ("reading connect once value from rank %d fd=%d\n",
 				mvi->rank, mvi->fd);
 		if ((rc = read (mvi->fd, &co, sizeof (int))) <= 0) {
-			mvapich_debug2 ("reading connect once value rc=%d: %m",
-					rc);
+			mvapich_debug2 ("reading connect once value rc=%d: %m\n", rc);
 			close (mvi->fd);
 			mvi->fd = -1;
 			st->connect_once = 0;
@@ -875,10 +872,10 @@ static int recv_common_value (mvapich_state_t *st, int *valp, int rank)
 {
 	int val;
 	if (mvapich_recv (st, &val, sizeof (int), rank) <= 0) {
-		error ("mvapich: recv_common_value: rank %d: %m", rank);
+		error ("mvapich: recv_common_value: rank %d: %m\n", rank);
 		return (-1);
 	}
-	mvapich_debug3 ("recv_common_value (rank=%d, val=%d)", rank, *valp);
+	mvapich_debug3 ("recv_common_value (rank=%d, val=%d)\n", rank, *valp);
 
 	/*
 	 *  If value is uninitialized, set it to current value,
@@ -911,7 +908,7 @@ static int process_pmgr_bcast (mvapich_state_t *st, int *rootp, int *sizep,
 	 *  Recv data from root
 	 */
 	*bufp = xmalloc (*sizep);
-	mvapich_debug3 ("PMGR_BCAST: recv from root");
+	mvapich_debug3 ("PMGR_BCAST: recv from root\n");
 	if (mvapich_recv (st, *bufp, *sizep, rank) < 0) {
 		error ("mvapich: PMGR_BCAST: Failed to recv from root: %m");
 		return (-1);
@@ -932,7 +929,7 @@ static int process_pmgr_gather (mvapich_state_t *st, int *rootp,
 	if (*bufp == NULL)
 		*bufp = xmalloc (*sizep * st->nprocs);
 
-	mvapich_debug3 ("PMGR_GATHER: recv from rank %d", rank);
+	mvapich_debug3 ("PMGR_GATHER: recv from rank %d\n", rank);
 	if (mvapich_recv(st, (*bufp) + (*sizep)*rank, *sizep, rank) < 0) {
 		error ("mvapich: PMGR_/GATHER: rank %d: recv: %m", rank);
 		return (-1);
@@ -974,7 +971,7 @@ static int process_pmgr_allgather (mvapich_state_t *st, int *sizep,
 	if (*bufp == NULL)
 		*bufp = xmalloc (*sizep * st->nprocs);
 
-	mvapich_debug3 ("PMGR_ALLGATHER: recv from rank %d", rank);
+	mvapich_debug3 ("PMGR_ALLGATHER: recv from rank %d\n", rank);
 	if (mvapich_recv (st, (*bufp) + *sizep*rank, *sizep, rank) < 0) {
 		error ("mvapich: PMGR_ALLGATHER: rank %d: %m", rank);
 		return (-1);
@@ -993,7 +990,7 @@ static int process_pmgr_alltoall (mvapich_state_t *st, int *sizep,
 
 	if (*bufp == NULL)
 		*bufp = xmalloc (*sizep * st->nprocs * st->nprocs);
-	mvapich_debug3 ("PMGR_ALLTOALL: recv from rank %d", rank);
+	mvapich_debug3 ("PMGR_ALLTOALL: recv from rank %d\n", rank);
 	if (mvapich_recv ( st,
 				*bufp + (*sizep * st->nprocs)*rank,
 				*sizep * st->nprocs, rank ) < 0) {
@@ -1020,7 +1017,7 @@ static int mvapich_process_op (mvapich_state_t *st,
 	}
 
 	opcode = *opcodep;
-	mvapich_debug3 ("rank %d: opcode=%d", mvi->rank, opcode);
+	mvapich_debug3 ("rank %d: opcode=%d\n", mvi->rank, opcode);
 
 	// read in additional data depending on current opcode
 
@@ -1177,9 +1174,9 @@ static int mvapich_processops (mvapich_state_t *st)
 	/* Until a 'CLOSE' or 'ABORT' message is seen, we continuously
 	 *  loop processing ops
 	 */
-	mvapich_debug ("Initiated PMGR processing");
+	mvapich_debug ("Initiated PMGR processing\n");
 	while (mvapich_pmgr_loop (st) != 1) {};
-	mvapich_debug ("Completed processing PMGR opcodes");
+	mvapich_debug ("Completed processing PMGR opcodes\n");
 
 	return (0);
 }
@@ -1436,13 +1433,13 @@ static void do_timings (mvapich_state_t *st, const char *fmt, ...)
 
 	if (!initialized) {
 		if (gettimeofday (&initv, NULL) < 0)
-			error ("mvapich: do_timings(): gettimeofday(): %m");
+			error ("mvapich: do_timings(): gettimeofday(): %m\n");
 		initialized = 1;
 		return;
 	}
 
 	if (gettimeofday (&tv, NULL) < 0) {
-		error ("mvapich: do_timings(): gettimeofday(): %m");
+		error ("mvapich: do_timings(): gettimeofday(): %m\n");
 		return;
 	}
 
@@ -1547,7 +1544,7 @@ again:
 
 	case MV_READ_HOSTID:
 		if (mvi->hostidlen != sizeof (int)) {
-			error ("mvapich: rank %d: unexpected hostidlen = %d",
+			error ("mvapich: rank %d: unexpected hostidlen = %d\n",
 					mvi->rank, mvi->hostidlen);
 			return (-1);
 		}
@@ -1659,7 +1656,7 @@ static int mvapich_accept_new (mvapich_state_t *st)
 		st->mvarray[st->nconnected]->fd = fd;
 		st->nconnected++;
 
-		mvapich_debug3 ("Got connection %d: fd=%d", st->nconnected, fd);
+		mvapich_debug3 ("Got connection %d: fd=%d\n", st->nconnected, fd);
 	}
 
 	return (0);
@@ -1717,7 +1714,7 @@ mvapich_initialize_connections (mvapich_state_t *st,
 		ncompleted = 0;
 
 		if (st->nconnected < st->nprocs)
-			mvapich_debug2 ("Waiting for connection %d/%d",
+			mvapich_debug2 ("Waiting for connection %d/%d\n",
 					st->nconnected + 1, st->nprocs);
 
 		for (i = 0; i < st->nconnected; i++) {
@@ -1735,7 +1732,7 @@ mvapich_initialize_connections (mvapich_state_t *st,
 		}
 
 		if (st->nconnected == st->nprocs && !printonce) {
-			mvapich_debug ("Got %d connections.", st->nprocs);
+			mvapich_debug ("Got %d connections.\n", st->nprocs);
 			do_timings (st, "Accept %d connection%s%s",
 					st->nprocs, st->nprocs == 1 ? "" : "s",
 					st->protocol_phase ? " (phase 2)" : "");
@@ -1749,7 +1746,7 @@ mvapich_initialize_connections (mvapich_state_t *st,
 			break; /* All done. */
 		}
 
-		mvapich_debug3 ("do_poll (nfds=%d)", nfds);
+		mvapich_debug3 ("do_poll (nfds=%d)\n", nfds);
 
 		while ((rc = poll (fds, nfds, startup_timeout (st))) < 0) {
 			if (errno == EINTR || errno == EAGAIN)
@@ -1762,7 +1759,7 @@ mvapich_initialize_connections (mvapich_state_t *st,
 			mvapich_terminate_job (st, NULL);
 		}
 
-		mvapich_debug3 ("poll (nfds=%d) = %d", nfds, rc);
+		mvapich_debug3 ("poll (nfds=%d) = %d\n", nfds, rc);
 
 		/*
 		 *  Stop other work if told to shut down
@@ -1856,7 +1853,7 @@ static int read_phase2_header (mvapich_state_t *st, struct mvapich_info *mvi)
 
 static int mvapich_handle_phase_two (mvapich_state_t *st)
 {
-	mvapich_debug ("protocol phase 0 complete. beginning phase 2.");
+	mvapich_debug ("protocol phase 0 complete. beginning phase 2.\n");
 
 	st->protocol_phase = 1;
 
@@ -2143,11 +2140,11 @@ extern mvapich_state_t *mvapich_thr_create(const mpi_plugin_client_info_t *job,
 
 	st = mvapich_state_create(job);
 	if (!st) {
-		error ("mvapich: Failed initialization");
+		error ("mvapich: Failed initialization\n");
 		return NULL;
 	}
 	if (process_environment (st) < 0) {
-		error ("mvapich: Failed to read environment settings");
+		error ("mvapich: Failed to read environment settings\n");
 		mvapich_state_destroy(st);
 		return NULL;
 	}

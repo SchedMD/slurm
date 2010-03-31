@@ -134,8 +134,8 @@ extern List find_preemptable_jobs(struct job_record *job_ptr)
 static bool _qos_preemptable(struct job_record *preemptee,
 			     struct job_record *preemptor)
 {
-	slurmdb_qos_rec_t *qos_ee = preemptee->qos_ptr;
-	slurmdb_qos_rec_t *qos_or = preemptor->qos_ptr;
+	acct_qos_rec_t *qos_ee = preemptee->qos_ptr;
+	acct_qos_rec_t *qos_or = preemptor->qos_ptr;
 
 	if ((qos_ee == NULL) || (qos_or == NULL) ||
 	    (qos_or->preempt_bitstr == NULL) ||
@@ -149,7 +149,7 @@ static bool _qos_preemptable(struct job_record *preemptee,
 static uint32_t _gen_job_prio(struct job_record *job_ptr)
 {
 	uint32_t job_prio;
-	slurmdb_qos_rec_t *qos_ptr = job_ptr->qos_ptr;
+	acct_qos_rec_t *qos_ptr = job_ptr->qos_ptr;
 
 	if (qos_ptr)
 		job_prio = (qos_ptr->priority & 0xffff) << 16;

@@ -4,7 +4,7 @@
  *	the slurm daemons directly, not for user client use.
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Kevin Tew <tew1@llnl.gov> et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -66,12 +66,16 @@
 static void _free_all_job_info (job_info_msg_t *msg);
 
 static void _free_all_node_info (node_info_msg_t *msg);
+static void _slurm_free_node_info_members (node_info_t * node);
 
 static void _free_all_partitions (partition_info_msg_t *msg);
+static void _slurm_free_partition_info_members (partition_info_t * part);
 
 static void  _free_all_reservations(reserve_info_msg_t *msg);
+static void _slurm_free_reserve_info_members (reserve_info_t * part);
 
 static void _free_all_step_info (job_step_info_response_msg_t *msg);
+static void _slurm_free_job_step_info_members (job_step_info_t * msg);
 static void _make_lower(char *change);
 
 /*
@@ -82,9 +86,8 @@ extern void slurm_msg_t_init(slurm_msg_t *msg)
 {
 	memset(msg, 0, sizeof(slurm_msg_t));
 
-	msg->conn_fd = -1;
 	msg->msg_type = (uint16_t)NO_VAL;
-	msg->protocol_version = (uint16_t)NO_VAL;
+	msg->conn_fd = -1;
 
 	forward_init(&msg->forward, NULL);
 
@@ -119,42 +122,6 @@ extern void slurm_destroy_uint32_ptr(void *object)
 {
 	uint32_t *tmp = (uint32_t *)object;
 	xfree(tmp);
-}
-
-/* here to add \\ to all \" in a string this needs to be xfreed later */
-extern char *slurm_add_slash_to_quotes(char *str)
-{
-	int i=0, start=0;
-	char *fixed = NULL;
-
-	if(!str)
-		return NULL;
-
-	while(str[i]) {
-		if((str[i] == '"')) {
-			char *tmp = xstrndup(str+start, i-start);
-			xstrfmtcat(fixed, "%s\\\"", tmp);
-			xfree(tmp);
-			start = i+1;
-		}
-
-		if((str[i] == '\'')) {
-			char *tmp = xstrndup(str+start, i-start);
-			xstrfmtcat(fixed, "%s\\\'", tmp);
-			xfree(tmp);
-			start = i+1;
-		}
-
-		i++;
-	}
-
-	if((i-start) > 0) {
-		char *tmp = xstrndup(str+start, i-start);
-		xstrcat(fixed, tmp);
-		xfree(tmp);
-	}
-
-	return fixed;
 }
 
 /* returns number of objects added to list */
@@ -301,11 +268,6 @@ void slurm_free_job_step_id_msg(job_step_id_msg_t * msg)
 }
 
 void slurm_free_job_id_request_msg(job_id_request_msg_t * msg)
-{
-	xfree(msg);
-}
-
-void slurm_free_update_step_msg(step_update_request_msg_t * msg)
 {
 	xfree(msg);
 }
@@ -491,7 +453,7 @@ void slurm_free_update_node_msg(update_node_msg_t * msg)
 void slurm_free_update_part_msg(update_part_msg_t * msg)
 {
 	if (msg) {
-		slurm_free_partition_info_members((partition_info_t *)msg);
+		_slurm_free_partition_info_members((partition_info_t *)msg);
 		xfree(msg);
 	}
 }
@@ -814,10 +776,8 @@ extern char *job_reason_string(enum job_state_reason inx)
 		return "PartitionNodeLimit";
 	case WAIT_PART_TIME_LIMIT:
 		return "PartitionTimeLimit";
-	case WAIT_PART_DOWN:
+	case WAIT_PART_STATE:
 		return "PartitionDown";
-	case WAIT_PART_INACTIVE:
-		return "PartitionInactive";
 	case WAIT_HELD:
 		return "JobHeld";
 	case WAIT_TIME:
@@ -935,34 +895,6 @@ char *job_state_string_compact(uint16_t inx)
 	default:
 		return "?";
 	}
-}
-
-static inline bool _job_name_test(int state_num, const char *state_name)
-{
-	if (!strcasecmp(state_name, job_state_string(state_num)) ||
-	    !strcasecmp(state_name, job_state_string_compact(state_num))) {
-		return true;
-	}
-	return false;
-}
-
-int job_state_num(const char *state_name)
-{
-	int i;
-
-	for (i=0; i<JOB_END; i++) {
-		if (_job_name_test(i, state_name))
-			return i;
-	}
-
-	if (_job_name_test(JOB_COMPLETING, state_name))
-		return JOB_COMPLETING;
-	if (_job_name_test(JOB_COMPLETING, state_name))
-		return JOB_COMPLETING;
-//	if (_job_name_test(JOB_RESIZING, state_name))
-//		return JOB_RESIZING;
-
-	return -1;
 }
 
 extern char *reservation_flags_string(uint16_t flags)
@@ -1564,10 +1496,10 @@ static void _free_all_step_info (job_step_info_response_msg_t *msg)
 		return;
 
 	for (i = 0; i < msg->job_step_count; i++)
-		slurm_free_job_step_info_members (&msg->job_steps[i]);
+		_slurm_free_job_step_info_members (&msg->job_steps[i]);
 }
 
-void slurm_free_job_step_info_members (job_step_info_t * msg)
+static void _slurm_free_job_step_info_members (job_step_info_t * msg)
 {
 	if (msg != NULL) {
 		xfree(msg->partition);
@@ -1606,10 +1538,10 @@ static void _free_all_node_info(node_info_msg_t *msg)
 		return;
 
 	for (i = 0; i < msg->record_count; i++)
-		slurm_free_node_info_members(&msg->node_array[i]);
+		_slurm_free_node_info_members(&msg->node_array[i]);
 }
 
-void slurm_free_node_info_members(node_info_t * node)
+static void _slurm_free_node_info_members(node_info_t * node)
 {
 	if (node) {
 		xfree(node->name);
@@ -1648,17 +1580,16 @@ static void  _free_all_partitions(partition_info_msg_t *msg)
 		return;
 
 	for (i = 0; i < msg->record_count; i++)
-		slurm_free_partition_info_members(
+		_slurm_free_partition_info_members(
 			&msg->partition_array[i]);
 
 }
 
-void slurm_free_partition_info_members(partition_info_t * part)
+static void _slurm_free_partition_info_members(partition_info_t * part)
 {
 	if (part) {
 		xfree(part->allow_alloc_nodes);
 		xfree(part->allow_groups);
-		xfree(part->alternate);
 		xfree(part->name);
 		xfree(part->nodes);
 		xfree(part->node_inx);
@@ -1691,12 +1622,12 @@ static void  _free_all_reservations(reserve_info_msg_t *msg)
 		return;
 
 	for (i = 0; i < msg->record_count; i++)
-		slurm_free_reserve_info_members(
+		_slurm_free_reserve_info_members(
 			&msg->reservation_array[i]);
 
 }
 
-void slurm_free_reserve_info_members(reserve_info_t * resv)
+static void _slurm_free_reserve_info_members(reserve_info_t * resv)
 {
 	if (resv) {
 		xfree(resv->accounts);
@@ -2007,7 +1938,6 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 		slurm_free_return_code_msg(data);
 		break;
 	case REQUEST_SET_DEBUG_LEVEL:
-	case REQUEST_SET_SCHEDLOG_LEVEL:
 		slurm_free_set_debug_level_msg(data);
 		break;
 	case SLURM_SUCCESS:
@@ -2029,8 +1959,6 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case RESPONSE_TOPO_INFO:
 		slurm_free_topo_info_msg(data);
 		break;
-	case REQUEST_UPDATE_JOB_STEP:
-		slurm_free_update_step_msg(data);
 	default:
 		error("invalid type trying to be freed %u", type);
 		break;

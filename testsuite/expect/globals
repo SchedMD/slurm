@@ -1394,47 +1394,41 @@ proc is_super_user { } {
 #
 ################################################################
 proc check_acct_associations { } {
-        global sacctmgr number alpha_numeric_under
+        global sacctmgr number
 
         set rc 1
+	set min -1
+	set max -1
 	log_user 0
 	send_user "Testing Associations\n"
      	#
      	# Use sacctmgr to check associations
      	#
-     	set s_pid [spawn $sacctmgr -n -p list assoc wopi wopl withd format=lft,rgt,cluster]
+     	set s_pid [spawn $sacctmgr -n -p list assoc wopi wopl withd format=lft,rgt]
      	expect {
-	       -re "($number)\\|($number)\\|($alpha_numeric_under)\\|" {
+	       -re "($number)\\|($number)\\|" {
 	       	      # Here we are checking if we have duplicates and
 		      # setting up an array to check for holes later
 
-		      set cluster $expect_out(3,string)
-		      if { ![info exists c_min($cluster)] } {
-			      set c_min($cluster) -1
-			      set c_max($cluster) -1
-		      }
-
 	    	      set num1 $expect_out(1,string)
 		      set num2 $expect_out(2,string)
-		      set first [info exists found($cluster,$num1)]
-		      set sec [info exists found($cluster,$num2)]
+		      set first [info exists found($num1)]
+		      set sec [info exists found($num2)]
 		      #send_user "$first=$num1 $sec=$num2\n";
 		      if { $first } {
-			     send_user "FAILURE: $cluster found lft $num1 again\n"
+			     send_user "FAILURE: found lft $num1 again\n"
 			     set rc 0
 		      } elseif { $sec } {
-			     send_user "FAILURE: $cluster found rgt $num2 again\n"
+			     send_user "FAILURE: found rgt $num2 again\n"
 			     set rc 0
 		      } else {
-			     set found($cluster,$num1) 1
-			     set found($cluster,$num2) 1
-			     if { $c_min($cluster) == -1
-				  || $c_min($cluster) > $num1 } {
-			     	    set c_min($cluster) $num1
+			     set found($num1) 1
+			     set found($num2) 1
+			     if { $min == -1 || $min > $num1 } {
+			     	    set min $num1
 			     }
-			     if { $c_max($cluster) == -1
-				  || $c_max($cluster) < $num2 } {
-			     	    set c_max($cluster) $num2
+			     if { $max == -1 || $max < $num2 } {
+			     	    set max $num2
 			     }
 		      }
 		      exp_continue
@@ -1449,14 +1443,12 @@ proc check_acct_associations { } {
 	       }
         }
 
-	foreach cluster [array names c_min] {
-		# Here we are checking for holes in the list from above
-		for {set inx $c_min($cluster)} {$inx < $c_max($cluster)} {incr inx} {
-			if { ![info exists found($cluster,$inx)] } {
-				send_user "FAILURE: $cluster No index at $inx\n"
-				set rc 0
-			}
-		}
+      	# Here we are checking for holes in the list from above
+	for {set inx $min} {$inx < $max} {incr inx} {
+	       if { ![info exists found($inx)] } {
+		      send_user "FAILURE: No index at $inx\n"
+		      set rc 0
+	       }
 	}
 	log_user 1
 	return $rc

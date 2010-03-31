@@ -616,7 +616,7 @@ char *slurm_read_hostfile(char *filename, int n)
 	fclose(fp);
 
 	if (hostlist_count(hostlist) <= 0) {
-		error("Hostlist is empty!");
+		error("Hostlist is empty!\n");
 		goto cleanup_hostfile;
 	}
 	if (hostlist_count(hostlist) < n) {
@@ -637,7 +637,7 @@ char *slurm_read_hostfile(char *filename, int n)
 		goto cleanup_hostfile;
 	}
 
-	debug2("Hostlist from SLURM_HOSTFILE = %s", nodelist);
+	debug2("Hostlist from SLURM_HOSTFILE = %s\n", nodelist);
 
 cleanup_hostfile:
 	hostlist_destroy(hostlist);
@@ -712,8 +712,8 @@ _handle_msg(slurm_msg_t *msg, resource_allocation_response_msg_t **resp)
 			info("Job has been cancelled");
 			break;
 		default:
-			error("received spurious message type: %d",
-			      msg->msg_type);
+			error("received spurious message type: %d\n",
+				 msg->msg_type);
 	}
 	return rc;
 }

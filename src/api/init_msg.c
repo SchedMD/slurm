@@ -2,7 +2,7 @@
  *  init_msg.c - initialize RPC messages contents
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -72,15 +72,13 @@ void slurm_init_job_desc_msg(job_desc_msg_t * job_desc_msg)
 #endif
 	job_desc_msg->group_id		= NO_VAL;
 	job_desc_msg->job_id		= NO_VAL;
-	job_desc_msg->pn_min_cpus	= (uint16_t) NO_VAL;
-	job_desc_msg->pn_min_memory    = NO_VAL;
-	job_desc_msg->pn_min_tmp_disk  = NO_VAL;
+	job_desc_msg->job_min_cpus	= (uint16_t) NO_VAL;
+	job_desc_msg->job_min_memory    = NO_VAL;
+	job_desc_msg->job_min_tmp_disk  = NO_VAL;
 	job_desc_msg->kill_on_node_fail = (uint16_t) NO_VAL;
-	job_desc_msg->max_cpus		= NO_VAL;
 	job_desc_msg->max_nodes		= NO_VAL;
 	job_desc_msg->mem_bind_type	= (uint16_t) NO_VAL;
 	job_desc_msg->min_cores		= (uint16_t) NO_VAL;
-	job_desc_msg->min_cpus		= NO_VAL;
 	job_desc_msg->min_nodes		= NO_VAL;
 	job_desc_msg->min_sockets	= (uint16_t) NO_VAL;
 	job_desc_msg->min_threads	= (uint16_t) NO_VAL;
@@ -88,6 +86,7 @@ void slurm_init_job_desc_msg(job_desc_msg_t * job_desc_msg)
 	job_desc_msg->ntasks_per_core	= (uint16_t) NO_VAL;
 	job_desc_msg->ntasks_per_node	= (uint16_t) NO_VAL;
 	job_desc_msg->ntasks_per_socket	= (uint16_t) NO_VAL;
+	job_desc_msg->num_procs		= NO_VAL;
 	job_desc_msg->num_tasks		= NO_VAL;
 	job_desc_msg->overcommit	= (uint8_t) NO_VAL;
 	job_desc_msg->plane_size	= (uint16_t) NO_VAL;
@@ -98,21 +97,7 @@ void slurm_init_job_desc_msg(job_desc_msg_t * job_desc_msg)
 	job_desc_msg->shared		= (uint16_t) NO_VAL;
 	job_desc_msg->task_dist		= (uint16_t) NO_VAL;
 	job_desc_msg->time_limit	= NO_VAL;
-	job_desc_msg->time_min		= NO_VAL;
 	job_desc_msg->user_id		= NO_VAL;
-}
-
-/*
- * slurm_init_update_step_msg - initialize step update message with default
- *	values before calling slurm_update_step()
- * OUT step_msg - step update messasge descriptor
- */
-extern void slurm_init_update_step_msg (step_update_request_msg_t * step_msg)
-{
-	memset(step_msg, 0, sizeof(step_update_request_msg_t));
-	step_msg->job_id     = NO_VAL;
-	step_msg->step_id    = NO_VAL;
-	step_msg->time_limit = NO_VAL;
 }
 
 /*

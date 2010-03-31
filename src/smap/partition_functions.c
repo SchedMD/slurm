@@ -90,17 +90,11 @@ extern void get_slurm_part()
 	static partition_info_msg_t *part_info_ptr = NULL;
 	static partition_info_msg_t *new_part_ptr = NULL;
 	partition_info_t part;
-	uint16_t show_flags = 0;
 	bitstr_t *nodes_req = NULL;
-	static uint16_t last_flags = 0;
 
-	if(params.all_flag)
-		show_flags |= SHOW_ALL;
 	if (part_info_ptr) {
-		if(show_flags != last_flags)
-			part_info_ptr->last_update = 0;
 		error_code = slurm_load_partitions(part_info_ptr->last_update,
-						   &new_part_ptr, show_flags);
+						   &new_part_ptr, SHOW_ALL);
 		if (error_code == SLURM_SUCCESS)
 			slurm_free_partition_info_msg(part_info_ptr);
 		else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
@@ -109,10 +103,8 @@ extern void get_slurm_part()
 		}
 	} else {
 		error_code = slurm_load_partitions((time_t) NULL,
-						   &new_part_ptr, show_flags);
+						   &new_part_ptr, SHOW_ALL);
 	}
-
-	last_flags = show_flags;
 	if (error_code) {
 		if (quiet_flag != 1) {
 			if(!params.commandline) {
@@ -592,19 +584,16 @@ static int _print_text_part(partition_info_t *part_ptr,
 				  part_ptr->name);
 			main_xcord += 10;
 			if (params.display != BGPART) {
-				char *tmp_state;
-				if (part_ptr->state_up == PARTITION_INACTIVE)
-					tmp_state = "inact";
-				else if (part_ptr->state_up == PARTITION_UP)
-					tmp_state = "up";
-				else if (part_ptr->state_up == PARTITION_DOWN)
-					tmp_state = "down";
-				else if (part_ptr->state_up == PARTITION_DRAIN)
-					tmp_state = "drain";
+				if (part_ptr->state_up)
+					mvwprintw(text_win,
+						  main_ycord,
+						  main_xcord,
+						  "up");
 				else
-					tmp_state = "unk";
-				mvwprintw(text_win, main_ycord, main_xcord,
-					  tmp_state);
+					mvwprintw(text_win,
+						  main_ycord,
+						  main_xcord,
+						  "down");
 				main_xcord += 7;
 
 				if (part_ptr->max_time == INFINITE)
@@ -760,16 +749,10 @@ static int _print_text_part(partition_info_t *part_ptr,
 			printf("%9.9s ", part_ptr->name);
 
 			if (params.display != BGPART) {
-				if (part_ptr->state_up == PARTITION_INACTIVE)
-					printf(" inact ");
-				else if (part_ptr->state_up == PARTITION_UP)
+				if (part_ptr->state_up)
 					printf("   up ");
-				else if (part_ptr->state_up == PARTITION_DOWN)
-					printf(" down ");
-				else if (part_ptr->state_up == PARTITION_DRAIN)
-					printf(" drain ");
 				else
-					printf(" unk ");
+					printf(" down ");
 
 				if (part_ptr->max_time == INFINITE)
 					snprintf(time_buf, sizeof(time_buf),

@@ -493,10 +493,15 @@ extern int bg_record_cmpf_inc(bg_record_t* rec_a, bg_record_t* rec_b)
 	int size_a = rec_a->node_cnt;
 	int size_b = rec_b->node_cnt;
 
-	if (size_a < size_b)
-		return -1;
-	else if (size_a > size_b)
-		return 1;
+	/* We only look at this if we are ordering blocks larger than
+	 * a midplane, order of ionodes is how we order otherwise. */
+	if((size_a >= bg_conf->bp_node_cnt)
+	   || (size_b >= bg_conf->bp_node_cnt)) {
+		if (size_a < size_b)
+			return -1;
+		else if (size_a > size_b)
+			return 1;
+	}
 
 	if(rec_a->nodes && rec_b->nodes) {
 		size_a = strcmp(rec_a->nodes, rec_b->nodes);
@@ -625,8 +630,7 @@ extern void drain_as_needed(bg_record_t *bg_record, char *reason)
 			NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
 		lock_slurmctld(job_write_lock);
 		debug2("Trying to requeue job %d", bg_record->job_running);
-		if((rc = job_requeue(0, bg_record->job_running,
-				     -1, (uint16_t)NO_VAL))) {
+		if((rc = job_requeue(0, bg_record->job_running, -1))) {
 			error("couldn't requeue job %u, failing it: %s",
 			      bg_record->job_running,
 			      slurm_strerror(rc));
@@ -650,8 +654,7 @@ extern void drain_as_needed(bg_record_t *bg_record, char *reason)
 	/* at least one base partition */
 	hl = hostlist_create(bg_record->nodes);
 	if (!hl) {
-		slurm_drain_nodes(bg_record->nodes, reason,
-				  slurm_get_slurm_user_id());
+		slurm_drain_nodes(bg_record->nodes, reason);
 		return;
 	}
 	while ((host = hostlist_shift(hl))) {
@@ -665,8 +668,7 @@ extern void drain_as_needed(bg_record_t *bg_record, char *reason)
 	hostlist_destroy(hl);
 
 	if (needed) {
-		slurm_drain_nodes(bg_record->nodes, reason,
-				  slurm_get_slurm_user_id());
+		slurm_drain_nodes(bg_record->nodes, reason);
 	}
 end_it:
 	while(bg_record->job_running > NO_JOB_RUNNING) {
@@ -1047,9 +1049,14 @@ extern int down_nodecard(char *bp_name, bitoff_t io_start,
 	static int create_size = NO_VAL;
 	static blockreq_t blockreq;
 	int rc = SLURM_SUCCESS;
-	char *reason = "select_bluegene: nodecard down";
+	time_t now = time(NULL);
+	char reason[128], time_str[32];
 
 	xassert(bp_name);
+
+	slurm_make_time_str(&now, time_str, sizeof(time_str));
+	snprintf(reason, sizeof(reason),
+		 "select_bluegene: nodecard down [SLURM@%s]", time_str);
 
 	if(io_cnt == NO_VAL) {
 		io_cnt = 1;
@@ -1163,11 +1170,9 @@ extern int down_nodecard(char *bp_name, bitoff_t io_start,
 		      "Draining the whole node.");
 		if(!node_already_down(bp_name)) {
 			if(slurmctld_locked)
-				drain_nodes(bp_name, reason,
-					    slurm_get_slurm_user_id());
+				drain_nodes(bp_name, reason);
 			else
-				slurm_drain_nodes(bp_name, reason,
-						  slurm_get_slurm_user_id());
+				slurm_drain_nodes(bp_name, reason);
 		}
 		rc = SLURM_SUCCESS;
 		goto cleanup;
@@ -1287,14 +1292,18 @@ extern int down_nodecard(char *bp_name, bitoff_t io_start,
 			break;
 		case 512:
 			if(!node_already_down(bp_name)) {
-				char *reason = "select_bluegene: nodecard down";
+				time_t now = time(NULL);
+				char reason[128], time_str[32];
+				slurm_make_time_str(&now, time_str,
+						    sizeof(time_str));
+				snprintf(reason, sizeof(reason),
+					 "select_bluegene: "
+					 "nodecard down [SLURM@%s]",
+					 time_str);
 				if(slurmctld_locked)
-					drain_nodes(bp_name, reason,
-						    slurm_get_slurm_user_id());
+					drain_nodes(bp_name, reason);
 				else
-					slurm_drain_nodes(
-						bp_name, reason,
-						slurm_get_slurm_user_id());
+					slurm_drain_nodes(bp_name, reason);
 			}
 			rc = SLURM_SUCCESS;
 			goto cleanup;
@@ -1559,12 +1568,13 @@ static int _check_all_blocks_error(int node_inx, time_t event_time,
 			reason = "update block: setting partial node down.";
 		send_node.node_state = NODE_STATE_ERROR;
 		rc = clusteracct_storage_g_node_down(acct_db_conn,
+						     slurmctld_cluster_name,
 						     &send_node, event_time,
-						     reason,
-						     slurm_get_slurm_user_id());
+						     reason);
 	} else {
 		send_node.node_state = NODE_STATE_IDLE;
 		rc = clusteracct_storage_g_node_up(acct_db_conn,
+						   slurmctld_cluster_name,
 						   &send_node, event_time);
 	}
 

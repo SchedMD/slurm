@@ -44,7 +44,6 @@
 #include "src/common/slurm_protocol_defs.h"
 
 typedef struct {
-	char *cluster_name;
 	void *db_conn; /* database connection */
 	char ip[32];
 	slurm_fd newsockfd; /* socket connection descriptor */

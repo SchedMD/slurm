@@ -40,12 +40,9 @@ libsched_if64_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 
 sbin_PROGRAMS = slurm_prolog slurm_epilog sfree
 
-convenience_libs = \
-	$(top_builddir)/src/api/libslurm.o -ldl
-
-sfree_LDADD = $(convenience_libs)
-slurm_prolog_LDADD = $(convenience_libs)
-slurm_epilog_LDADD = $(convenience_libs)
+sfree_LDADD = $(top_builddir)/src/api/libslurmhelper.la
+slurm_prolog_LDADD = $(top_builddir)/src/api/libslurmhelper.la
+slurm_epilog_LDADD = $(top_builddir)/src/api/libslurmhelper.la
 sfree_SOURCES = sfree.c sfree.h opts.c \
 		../block_allocator/bridge_linker.c \
 		../block_allocator/bridge_linker.h

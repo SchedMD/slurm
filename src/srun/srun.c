@@ -3,7 +3,7 @@
  *	parallel jobs.
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <grondona@llnl.gov>, et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -135,7 +135,7 @@ int    retry_step_cnt = 0;
 static int   _become_user (void);
 static int   _call_spank_local_user (srun_job_t *job);
 static void  _define_symbols(void);
-static void  _handle_intr(void);
+static void  _handle_intr();
 static void  _handle_pipe(int signo);
 static void  _handle_signal(int signo);
 static void  _print_job_information(resource_allocation_response_msg_t *resp);
@@ -145,7 +145,7 @@ static void  _run_srun_epilog (srun_job_t *job);
 static int   _run_srun_script (srun_job_t *job, char *script);
 static void  _set_cpu_env_var(resource_allocation_response_msg_t *resp);
 static void  _set_exit_code(void);
-static int   _setup_signals(void);
+static int   _setup_signals();
 static void  _step_opt_exclusive(void);
 static void  _set_stdio_fds(srun_job_t *job, slurm_step_io_fds_t *cio_fds);
 static void  _set_submit_dir_env(void);
@@ -341,7 +341,7 @@ int srun(int ac, char **av)
 	 *  Become --uid user
 	 */
 	if (_become_user () < 0)
-		info ("Warning: Unable to assume uid=%lu", opt.uid);
+		info ("Warning: Unable to assume uid=%lu\n", opt.uid);
 
 	/*
 	 *  Enhance environment for job
@@ -475,18 +475,16 @@ int srun(int ac, char **av)
 		else
 			mpir_set_executable_names(launch_params.argv[0]);
 		MPIR_debug_state = MPIR_DEBUG_SPAWNED;
+		MPIR_Breakpoint();
 		if (opt.debugger_test)
 			mpir_dump_proctable();
-		else
-			MPIR_Breakpoint(job);
 	} else {
 		info("Job step %u.%u aborted before step completely launched.",
 		     job->jobid, job->stepid);
 	}
 
 	slurm_step_launch_wait_finish(job->step_ctx);
-	if ((MPIR_being_debugged == 0) && retry_step_begin && 
-	    (retry_step_cnt < MAX_STEP_RETRIES)) {
+	if (retry_step_begin && (retry_step_cnt < MAX_STEP_RETRIES)) {
 		retry_step_begin = false;
 		slurm_step_ctx_destroy(job->step_ctx);
 		if (got_alloc) {
@@ -1285,7 +1283,7 @@ _task_finish(task_exit_msg_t *msg)
 		_setup_max_wait_timer();
 }
 
-static void _handle_intr(void)
+static void _handle_intr()
 {
 	static time_t last_intr      = 0;
 	static time_t last_intr_sent = 0;
@@ -1350,11 +1348,9 @@ static void _handle_signal(int signo)
 		info ("forcing job termination");
 		slurm_step_launch_abort(job->step_ctx);
 		break;
-#if 0
-	case SIGTSTP:
-		debug3("got SIGTSTP");
-		break;
-#endif
+	/* case SIGTSTP: */
+/* 		debug3("got SIGTSTP"); */
+/* 		break; */
 	case SIGCONT:
 		debug3("got SIGCONT");
 		break;
@@ -1364,7 +1360,7 @@ static void _handle_signal(int signo)
 	}
 }
 
-static int _setup_signals(void)
+static int _setup_signals()
 {
 	int sigarray[] = {
 		SIGINT,  SIGQUIT, /*SIGTSTP,*/ SIGCONT, SIGTERM,

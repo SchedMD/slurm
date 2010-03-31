@@ -161,7 +161,7 @@ const char plugin_type[] = "select/cons_res";
 const uint32_t plugin_version = 91;
 const uint32_t pstate_version = 7;	/* version control on saved state */
 
-uint16_t cr_type = CR_CPU; /* cr_type is overwritten in init() */
+select_type_plugin_info_t cr_type = CR_CPU; /* cr_type is overwritten in init() */
 
 uint16_t select_fast_schedule;
 
@@ -468,7 +468,7 @@ static void _destroy_part_data(struct part_res_record *this_ptr)
 
 
 /* (re)create the global select_part_record array */
-static void _create_part_data(void)
+static void _create_part_data()
 {
 	ListIterator part_iterator;
 	struct part_record *p_ptr;
@@ -1174,8 +1174,6 @@ static int _run_now(struct job_record *job_ptr, bitstr_t *bitmap,
 		}
 
 		job_iterator = list_iterator_create(job_list);
-		if (job_iterator == NULL)
-			fatal ("memory allocation failure");
 		while ((tmp_job_ptr = (struct job_record *)
 				list_next(job_iterator))) {
 			if (!IS_JOB_RUNNING(tmp_job_ptr) &&
@@ -1210,8 +1208,6 @@ static int _run_now(struct job_record *job_ptr, bitstr_t *bitmap,
 			}
 			preemptee_iterator = list_iterator_create(
 						preemptee_candidates);
-			if (preemptee_iterator == NULL)
-				fatal ("memory allocation failure");
 			while ((tmp_job_ptr = (struct job_record *)
 					list_next(preemptee_iterator))) {
 				if (bit_overlap(bitmap,
@@ -1287,8 +1283,6 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	else
 		action = 2;	/* remove cores only, suspend job */
 	job_iterator = list_iterator_create(job_list);
-	if (job_iterator == NULL)
-		fatal ("memory allocation failure");
 	while ((tmp_job_ptr = (struct job_record *) list_next(job_iterator))) {
 		if (!IS_JOB_RUNNING(tmp_job_ptr) &&
 		    !IS_JOB_SUSPENDED(tmp_job_ptr))
@@ -1322,8 +1316,6 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	if (rc != SLURM_SUCCESS) {
 		list_sort(cr_job_list, _cr_job_list_sort);
 		job_iterator = list_iterator_create(cr_job_list);
-		if (job_iterator == NULL)
-			fatal ("memory allocation failure");
 		while ((tmp_job_ptr = list_next(job_iterator))) {
 			_rm_job_from_res(future_part, future_usage,
 					 tmp_job_ptr, 0);
@@ -1356,8 +1348,6 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 				fatal("list_create malloc failure");
 		}
 		preemptee_iterator =list_iterator_create(preemptee_candidates);
-		if (preemptee_iterator == NULL)
-			fatal ("memory allocation failure");
 		while ((tmp_job_ptr = (struct job_record *)
 				list_next(preemptee_iterator))) {
 			if (bit_overlap(bitmap,
@@ -1478,8 +1468,8 @@ extern int init(void)
 	error("%s is incompatible with BlueGene", plugin_name);
 	fatal("Use SelectType=select/bluegene");
 #endif
-	cr_type = slurmctld_conf.select_type_param;
-	verbose("%s loaded with argument %u", plugin_name, cr_type);
+	cr_type = (select_type_plugin_info_t)slurmctld_conf.select_type_param;
+	verbose("%s loaded with argument %d ", plugin_name, cr_type);
 
 	return SLURM_SUCCESS;
 }
@@ -1627,7 +1617,7 @@ extern int select_p_block_init(List part_list)
  * NOTE: the job information that is considered for scheduling includes:
  *	req_node_bitmap: bitmap of specific nodes required by the job
  *	contiguous: allocated nodes must be sequentially located
- *	num_cpus: minimum number of processors required by the job
+ *	num_procs: minimum number of processors required by the job
  * NOTE: bitmap must be a superset of req_nodes at the time that
  *	select_p_job_test is called
  */
@@ -2044,8 +2034,6 @@ extern int select_p_reconfigure(void)
 
 	/* reload job data */
 	job_iterator = list_iterator_create(job_list);
-	if (job_iterator == NULL)
-		fatal ("memory allocation failure");
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		if (IS_JOB_RUNNING(job_ptr)) {
 			/* add the job */

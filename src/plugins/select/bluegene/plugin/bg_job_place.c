@@ -833,13 +833,13 @@ static int _find_best_block_match(List block_list,
 	bg_record_t *bg_record = NULL;
 	uint16_t req_geometry[BA_SYSTEM_DIMENSIONS];
 	uint16_t conn_type, rotate, target_size = 0;
-	uint32_t req_procs = job_ptr->details->min_cpus;
+	uint32_t req_procs = job_ptr->num_procs;
 	ba_request_t request;
 	int i;
 	int overlap_check = 0;
 	int allow = 0;
 	int check_image = 1;
-	uint32_t max_cpus = job_ptr->details->max_cpus;
+	uint32_t max_cpus = (uint32_t)NO_VAL;
 	char tmp_char[256];
 	static int total_cpus = 0;
 #ifdef HAVE_BGL
@@ -880,6 +880,9 @@ static int _find_best_block_match(List block_list,
 				    SELECT_JOBDATA_GEOMETRY, &req_geometry);
 	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
 				    SELECT_JOBDATA_ROTATE, &rotate);
+	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
+				    SELECT_JOBDATA_MAX_CPUS, &max_cpus);
+
 
 #ifdef HAVE_BGL
 	if((rc = _check_images(job_ptr, &blrtsimage, &linuximage,
@@ -939,6 +942,8 @@ static int _find_best_block_match(List block_list,
 	else
 		request.avail_node_bitmap = slurm_block_bitmap;
 
+	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
+			     SELECT_JOBDATA_MAX_CPUS, &max_cpus);
 	/* since we only look at procs after this and not nodes we
 	 *  need to set a max_cpus if given
 	 */
@@ -1246,12 +1251,12 @@ static int _sync_block_lists(List full_list, List incomp_list)
 /* 	job_resrcs_ptr->node_bitmap = bit_copy(bitmap); */
 /* 	if (job_resrcs_ptr->node_bitmap == NULL) */
 /* 		fatal("bit_copy malloc failure"); */
-/* 	job_resrcs_ptr->nprocs = job_ptr->num_cpus; */
+/* 	job_resrcs_ptr->nprocs = job_ptr->num_procs; */
 /* 	if (build_job_resources(job_resrcs_ptr, (void *)node_record_table_ptr, 1)) */
 /* 		error("select_p_job_test: build_job_resources: %m"); */
 
-/* 	if (job_ptr->num_cpus <= bg_conf->cpus_per_bp) */
-/* 		node_cpus = job_ptr->num_cpus; */
+/* 	if (job_ptr->num_procs <= bg_conf->cpus_per_bp) */
+/* 		node_cpus = job_ptr->num_procs; */
 /* 	else */
 /* 		node_cpus = bg_conf->cpus_per_bp; */
 
@@ -1308,14 +1313,14 @@ static void _build_select_struct(struct job_record *job_ptr,
 	job_resrcs_ptr->cpus_used = xmalloc(sizeof(uint16_t) * node_cnt);
 /* 	job_resrcs_ptr->nhosts = node_cnt; */
 	job_resrcs_ptr->nhosts = bit_set_count(bitmap);
-	job_resrcs_ptr->nprocs = job_ptr->details->min_cpus;
+	job_resrcs_ptr->nprocs = job_ptr->num_procs;
 	job_resrcs_ptr->node_bitmap = bit_copy(bitmap);
 	if (job_resrcs_ptr->node_bitmap == NULL)
 		fatal("bit_copy malloc failure");
 
 	job_resrcs_ptr->cpu_array_cnt = 1;
-	if(job_ptr->details->min_cpus < bg_conf->cpus_per_bp)
-		job_resrcs_ptr->cpu_array_value[0] = job_ptr->details->min_cpus;
+	if(job_ptr->num_procs < bg_conf->cpus_per_bp)
+		job_resrcs_ptr->cpu_array_value[0] = job_ptr->num_procs;
 	else
 		job_resrcs_ptr->cpu_array_value[0] = bg_conf->cpus_per_bp;
 	job_resrcs_ptr->cpu_array_reps[0] = node_cnt;
@@ -1471,7 +1476,7 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 			conn_type = SELECT_SMALL;
 		else if(min_nodes > 1)
 			conn_type = SELECT_TORUS;
-		else if(job_ptr->details->min_cpus < bg_conf->cpus_per_bp)
+		else if(job_ptr->num_procs < bg_conf->cpus_per_bp)
 			conn_type = SELECT_SMALL;
 
 		select_g_select_jobinfo_set(job_ptr->select_jobinfo,
@@ -1491,7 +1496,7 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 	select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,
 				       buf, sizeof(buf),
 				       SELECT_PRINT_MIXED);
-	debug("bluegene:submit_job: %u mode=%d %s nodes=%u-%u-%u",
+	debug("bluegene:submit_job: %u mode=%d %s nodes=%u-%u-%u", 
 	      job_ptr->job_id, local_mode, buf,
 	      min_nodes, req_nodes, max_nodes);
 	select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,

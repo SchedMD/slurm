@@ -40,7 +40,7 @@ DIST_COMMON = README $(am__configure_deps) $(pkginclude_HEADERS) \
 	$(srcdir)/Makefile.am $(srcdir)/Makefile.in \
 	$(srcdir)/config.h.in $(srcdir)/config.xml.in \
 	$(top_srcdir)/configure \
-	$(top_srcdir)/contribs/perlapi/libslurm/perl/Makefile.PL.in \
+	$(top_srcdir)/contribs/perlapi/libslurm-perl/Makefile.PL.in \
 	$(top_srcdir)/contribs/phpext/slurm_php/config.m4.in \
 	$(top_srcdir)/slurm/slurm.h.in AUTHORS COPYING ChangeLog \
 	INSTALL NEWS
@@ -86,7 +86,7 @@ am__CONFIG_DISTCLEAN_FILES = config.status config.cache config.log \
 mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = config.h $(top_builddir)/slurm/slurm.h
 CONFIG_CLEAN_FILES = config.xml \
-	contribs/perlapi/libslurm/perl/Makefile.PL \
+	contribs/perlapi/libslurm-perl/Makefile.PL \
 	contribs/phpext/slurm_php/config.m4
 CONFIG_CLEAN_VPATH_FILES =
 SOURCES =
@@ -256,6 +256,7 @@ PATH_SEPARATOR = @PATH_SEPARATOR@
 PGSQL_CFLAGS = @PGSQL_CFLAGS@
 PGSQL_LIBS = @PGSQL_LIBS@
 PKG_CONFIG = @PKG_CONFIG@
+PLPA_LIBS = @PLPA_LIBS@
 PROCTRACKDIR = @PROCTRACKDIR@
 PROJECT = @PROJECT@
 PTHREAD_CC = @PTHREAD_CC@
@@ -281,7 +282,7 @@ SLURM_MAJOR = @SLURM_MAJOR@
 SLURM_MICRO = @SLURM_MICRO@
 SLURM_MINOR = @SLURM_MINOR@
 SLURM_PREFIX = @SLURM_PREFIX@
-SLURM_VERSION_NUMBER = @SLURM_VERSION_NUMBER@
+SLURM_VERSION = @SLURM_VERSION@
 SLURM_VERSION_STRING = @SLURM_VERSION_STRING@
 SO_LDFLAGS = @SO_LDFLAGS@
 SSL_CPPFLAGS = @SSL_CPPFLAGS@
@@ -359,8 +360,6 @@ EXTRA_DIST = \
 	etc/slurm.epilog.clean	\
 	etc/init.d.slurm	\
 	etc/init.d.slurmdbd	\
-	etc/cgroup.conf.example	\
-	etc/cgroup.release_agent \
 	autogen.sh		\
 	slurm.spec		\
 	README			\
@@ -378,7 +377,6 @@ EXTRA_DIST = \
 pkginclude_HEADERS = \
 	slurm/pmi.h		\
 	slurm/slurm.h 		\
-	slurm/slurmdb.h 		\
 	slurm/slurm_errno.h	\
 	slurm/spank.h
 
@@ -456,7 +454,7 @@ distclean-hdr:
 	-rm -f config.h stamp-h1 slurm/slurm.h slurm/stamp-h2
 config.xml: $(top_builddir)/config.status $(srcdir)/config.xml.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
-contribs/perlapi/libslurm/perl/Makefile.PL: $(top_builddir)/config.status $(top_srcdir)/contribs/perlapi/libslurm/perl/Makefile.PL.in
+contribs/perlapi/libslurm-perl/Makefile.PL: $(top_builddir)/config.status $(top_srcdir)/contribs/perlapi/libslurm-perl/Makefile.PL.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
 contribs/phpext/slurm_php/config.m4: $(top_builddir)/config.status $(top_srcdir)/contribs/phpext/slurm_php/config.m4.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@

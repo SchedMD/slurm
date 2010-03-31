@@ -42,7 +42,7 @@
 #include "src/common/slurmdbd_defs.h"
 
 static int _set_cond(int *start, int argc, char *argv[],
-		     slurmdb_txn_cond_t *txn_cond,
+		     acct_txn_cond_t *txn_cond,
 		     List format_list)
 {
 	int i, end = 0;
@@ -164,9 +164,9 @@ static int _set_cond(int *start, int argc, char *argv[],
 extern int sacctmgr_list_txn(int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
-	slurmdb_txn_cond_t *txn_cond = xmalloc(sizeof(slurmdb_txn_cond_t));
+	acct_txn_cond_t *txn_cond = xmalloc(sizeof(acct_txn_cond_t));
 	List txn_list = NULL;
-	slurmdb_txn_rec_t *txn = NULL;
+	acct_txn_rec_t *txn = NULL;
 	int i=0;
 	ListIterator itr = NULL;
 	ListIterator itr2 = NULL;
@@ -200,7 +200,7 @@ extern int sacctmgr_list_txn(int argc, char *argv[])
 	}
 
 	if(exit_code) {
-		slurmdb_destroy_txn_cond(txn_cond);
+		destroy_acct_txn_cond(txn_cond);
 		list_destroy(format_list);
 		return SLURM_ERROR;
 	}
@@ -239,7 +239,7 @@ extern int sacctmgr_list_txn(int argc, char *argv[])
 			field->name = xstrdup("ActionRaw");
 			field->len = 10;
 			field->print_routine = print_fields_uint;
-		} else if(!strncasecmp("Action", object,
+		} else if(!strncasecmp("ActionRaw", object,
 				       MAX(command_len, 4))) {
 			field->type = PRINT_ACTION;
 			field->name = xstrdup("Action");
@@ -304,7 +304,7 @@ extern int sacctmgr_list_txn(int argc, char *argv[])
 	}
 
 	txn_list = acct_storage_g_get_txn(db_conn, my_uid, txn_cond);
-	slurmdb_destroy_txn_cond(txn_cond);
+	destroy_acct_txn_cond(txn_cond);
 
 	if(!txn_list) {
 		exit_code=1;

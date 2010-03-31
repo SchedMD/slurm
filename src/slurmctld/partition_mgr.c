@@ -5,7 +5,7 @@
  *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette@llnl.gov> et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -46,6 +46,7 @@
 
 #include <ctype.h>
 #include <errno.h>
+#include <pwd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -61,18 +62,25 @@
 #include "src/common/uid.h"
 #include "src/common/xstring.h"
 
-#include "src/slurmctld/groups.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/proc_req.h"
 #include "src/slurmctld/sched_plugin.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/state_save.h"
 
+/* needed for getgrent_r */
+#ifndef   _GNU_SOURCE
+#  define _GNU_SOURCE
+#endif
+#ifndef   __USE_GNU
+#define   __USE_GNU
+#endif
+
+#include <grp.h>
+
 
 /* Change PART_STATE_VERSION value when changing the state save format */
-#define PART_STATE_VERSION      "VER003"
-#define PART_2_2_STATE_VERSION  "VER003"	/* SLURM version 2.2 */
-#define PART_2_1_STATE_VERSION  "VER002"	/* SLURM version 2.1 */
+#define PART_STATE_VERSION      "VER002"
 
 /* Global variables */
 struct part_record default_part;	/* default configuration values */
@@ -87,6 +95,7 @@ static int    _delete_part_record(char *name);
 static void   _dump_part_state(struct part_record *part_ptr,
 			       Buf buffer);
 static uid_t *_get_groups_members(char *group_names);
+static uid_t *_get_group_members(char *group_name);
 static time_t _get_group_tlm(void);
 static void   _list_delete_part(void *part_entry);
 static int    _open_part_state_file(char **state_file);
@@ -224,7 +233,6 @@ struct part_record *create_part_record(void)
 
 	xassert (part_ptr->magic = PART_MAGIC);  /* set value */
 	part_ptr->name              = xstrdup("DEFAULT");
-	part_ptr->alternate         = xstrdup(default_part.alternate);
 	part_ptr->disable_root_jobs = default_part.disable_root_jobs;
 	part_ptr->hidden            = default_part.hidden;
 	part_ptr->max_time          = default_part.max_time;
@@ -276,16 +284,17 @@ static int _delete_part_record(char *name)
 	int i;
 
 	last_part_update = time(NULL);
-	if (name == NULL) {
+	if (name == NULL)
 		i = list_delete_all(part_list, &list_find_part,
 				    "universal_key");
-	} else
+	else
 		i = list_delete_all(part_list, &list_find_part, name);
 	if ((name == NULL) || (i != 0))
 		return 0;
 
-	error("_delete_part_record: attempt to delete non-existent "
-	      "partition %s", name);
+	error
+	    ("_delete_part_record: attempt to delete non-existent partition %s",
+	     name);
 	return ENOENT;
 }
 
@@ -320,7 +329,10 @@ int dump_all_part_state(void)
 		_dump_part_state(part_ptr, buffer);
 	}
 	list_iterator_destroy(part_iterator);
+	/* Maintain config read lock until we copy state_save_location *\
+	\* unlock_slurmctld(part_read_lock);          - see below      */
 
+	/* write the buffer to file */
 	old_file = xstrdup(slurmctld_conf.state_save_location);
 	xstrcat(old_file, "/part_state.old");
 	reg_file = xstrdup(slurmctld_conf.state_save_location);
@@ -328,8 +340,6 @@ int dump_all_part_state(void)
 	new_file = xstrdup(slurmctld_conf.state_save_location);
 	xstrcat(new_file, "/part_state.new");
 	unlock_slurmctld(part_read_lock);
-
-	/* write the buffer to file */
 	lock_state_files();
 	log_fd = creat(new_file, 0600);
 	if (log_fd < 0) {
@@ -409,7 +419,6 @@ static void _dump_part_state(struct part_record *part_ptr, Buf buffer)
 	pack16(part_ptr->state_up,       buffer);
 	packstr(part_ptr->allow_groups,  buffer);
 	packstr(part_ptr->allow_alloc_nodes, buffer);
-	packstr(part_ptr->alternate,     buffer);
 	packstr(part_ptr->nodes,         buffer);
 }
 
@@ -464,8 +473,6 @@ int load_all_part_state(void)
 	Buf buffer;
 	char *ver_str = NULL;
 	char* allow_alloc_nodes = NULL;
-	uint16_t protocol_version = (uint16_t)NO_VAL;
-	char* alternate = NULL;
 
 	/* read the file */
 	lock_state_files();
@@ -503,15 +510,7 @@ int load_all_part_state(void)
 
 	safe_unpackstr_xmalloc( &ver_str, &name_len, buffer);
 	debug3("Version string in part_state header is %s", ver_str);
-	if(ver_str) {
-		if(!strcmp(ver_str, PART_STATE_VERSION)) {
-			protocol_version = SLURM_PROTOCOL_VERSION;
-		} else if(!strcmp(ver_str, PART_2_1_STATE_VERSION)) {
-			protocol_version = SLURM_2_1_PROTOCOL_VERSION;
-		}
-	}
-
-	if (protocol_version == (uint16_t)NO_VAL) {
+	if ((!ver_str) || (strcmp(ver_str, PART_STATE_VERSION) != 0)) {
 		error("**********************************************************");
 		error("Can not recover partition state, data version incompatible");
 		error("**********************************************************");
@@ -523,65 +522,36 @@ int load_all_part_state(void)
 	safe_unpack_time(&time, buffer);
 
 	while (remaining_buf(buffer) > 0) {
-		if(protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
-			safe_unpackstr_xmalloc(&part_name, &name_len, buffer);
-			safe_unpack32(&max_time, buffer);
-			safe_unpack32(&default_time, buffer);
-			safe_unpack32(&max_nodes, buffer);
-			safe_unpack32(&min_nodes, buffer);
+		safe_unpackstr_xmalloc(&part_name, &name_len, buffer);
+		safe_unpack32(&max_time, buffer);
+		safe_unpack32(&default_time, buffer);
+		safe_unpack32(&max_nodes, buffer);
+		safe_unpack32(&min_nodes, buffer);
 
-			safe_unpack16(&def_part_flag, buffer);
-			safe_unpack16(&hidden,    buffer);
-			safe_unpack16(&root_only, buffer);
-			safe_unpack16(&max_share, buffer);
-			safe_unpack16(&priority,  buffer);
+		safe_unpack16(&def_part_flag, buffer);
+		safe_unpack16(&hidden,    buffer);
+		safe_unpack16(&root_only, buffer);
+		safe_unpack16(&max_share, buffer);
+		safe_unpack16(&priority,  buffer);
 
-			if(priority > part_max_priority)
-				part_max_priority = priority;
+		if(priority > part_max_priority)
+			part_max_priority = priority;
 
-			safe_unpack16(&state_up, buffer);
-			safe_unpackstr_xmalloc(&allow_groups,
-					       &name_len, buffer);
-			safe_unpackstr_xmalloc(&allow_alloc_nodes,
-					       &name_len, buffer);
-			safe_unpackstr_xmalloc(&alternate, &name_len, buffer);
-			safe_unpackstr_xmalloc(&nodes, &name_len, buffer);
-		} else {
-			safe_unpackstr_xmalloc(&part_name, &name_len, buffer);
-			safe_unpack32(&max_time, buffer);
-			safe_unpack32(&default_time, buffer);
-			safe_unpack32(&max_nodes, buffer);
-			safe_unpack32(&min_nodes, buffer);
+		safe_unpack16(&state_up, buffer);
+		safe_unpackstr_xmalloc(&allow_groups, &name_len, buffer);
+		safe_unpackstr_xmalloc(&allow_alloc_nodes, &name_len, buffer);
+		safe_unpackstr_xmalloc(&nodes, &name_len, buffer);
 
-			safe_unpack16(&def_part_flag, buffer);
-			safe_unpack16(&hidden,    buffer);
-			safe_unpack16(&root_only, buffer);
-			safe_unpack16(&max_share, buffer);
-			safe_unpack16(&priority,  buffer);
-
-			if(priority > part_max_priority)
-				part_max_priority = priority;
-
-			safe_unpack16(&state_up, buffer);
-			if (state_up == 0)
-				state_up = PARTITION_DOWN;
-			else
-				state_up = PARTITION_UP;
-			safe_unpackstr_xmalloc(&allow_groups,
-					       &name_len, buffer);
-			safe_unpackstr_xmalloc(&allow_alloc_nodes,
-					       &name_len, buffer);
-			safe_unpackstr_xmalloc(&nodes, &name_len, buffer);
-		}
 		/* validity test as possible */
-		if ((def_part_flag > 1) || (root_only > 1) || (hidden > 1) || 
-		    (state_up > PARTITION_UP)) {
-			error("Invalid data for partition %s: def_part_flag=%u,"
-			      " hidden=%u root_only=%u, state_up=%u",
-			      part_name, def_part_flag, hidden, root_only,
-			      state_up);
+		if ((def_part_flag > 1) ||
+		    (root_only > 1) || (hidden > 1) ||
+		    (state_up > 1)) {
+			error("Invalid data for partition %s: def_part_flag=%u, "
+				"hidden=%u root_only=%u, state_up=%u",
+				part_name, def_part_flag, hidden, root_only,
+				state_up);
 			error("No more partition data will be processed from "
-			      "the checkpoint file");
+				"the checkpoint file");
 			xfree(part_name);
 			error_code = EINVAL;
 			break;
@@ -590,39 +560,41 @@ int load_all_part_state(void)
 		/* find record and perform update */
 		part_ptr = list_find_first(part_list, &list_find_part,
 					   part_name);
-		part_cnt++;
-		if (part_ptr == NULL) {
-			info("load_all_part_state: partition %s missing from "
-				"configuration file", part_name);
-			part_ptr = create_part_record();
-			xfree(part_ptr->name);
-			part_ptr->name = xstrdup(part_name);
-		}
 
-		part_ptr->hidden         = hidden;
-		part_ptr->max_time       = max_time;
-		part_ptr->default_time   = default_time;
-		part_ptr->max_nodes      = max_nodes;
-		part_ptr->max_nodes_orig = max_nodes;
-		part_ptr->min_nodes      = min_nodes;
-		part_ptr->min_nodes_orig = min_nodes;
-		if (def_part_flag) {
-			xfree(default_part_name);
-			default_part_name = xstrdup(part_name);
-			default_part_loc = part_ptr;
+		if (part_ptr) {
+			part_cnt++;
+			part_ptr->hidden         = hidden;
+			part_ptr->max_time       = max_time;
+			part_ptr->default_time   = default_time;
+			part_ptr->max_nodes      = max_nodes;
+			part_ptr->max_nodes_orig = max_nodes;
+			part_ptr->min_nodes      = min_nodes;
+			part_ptr->min_nodes_orig = min_nodes;
+			if (def_part_flag) {
+				xfree(default_part_name);
+				default_part_name = xstrdup(part_name);
+				default_part_loc = part_ptr;
+			}
+			part_ptr->root_only      = root_only;
+			part_ptr->max_share      = max_share;
+			part_ptr->priority       = priority;
+
+			if(part_max_priority)
+				part_ptr->norm_priority =
+					(double)part_ptr->priority
+					/ (double)part_max_priority;
+
+			part_ptr->state_up       = state_up;
+			xfree(part_ptr->allow_groups);
+			part_ptr->allow_groups   = allow_groups;
+			xfree(part_ptr->allow_alloc_nodes);
+			part_ptr->allow_alloc_nodes   = allow_alloc_nodes;
+			xfree(part_ptr->nodes);
+			part_ptr->nodes = nodes;
+		} else {
+			info("load_all_part_state: partition %s removed from "
+				"configuration file", part_name);
 		}
-		part_ptr->root_only      = root_only;
-		part_ptr->max_share      = max_share;
-		part_ptr->priority       = priority;
-		part_ptr->state_up       = state_up;
-		xfree(part_ptr->allow_groups);
-		part_ptr->allow_groups   = allow_groups;
-		xfree(part_ptr->allow_alloc_nodes);
-		part_ptr->allow_alloc_nodes   = allow_alloc_nodes;
-		xfree(part_ptr->alternate);
-		part_ptr->alternate      = alternate;
-		xfree(part_ptr->nodes);
-		part_ptr->nodes = nodes;
 
 		xfree(part_name);
 	}
@@ -673,7 +645,7 @@ int init_part_conf(void)
 	default_part.min_nodes      = 1;
 	default_part.min_nodes_orig = 1;
 	default_part.root_only      = 0;
-	default_part.state_up       = PARTITION_UP;
+	default_part.state_up       = 1;
 	default_part.max_share      = 1;
 	default_part.priority       = 1;
 	default_part.norm_priority  = 0;
@@ -683,7 +655,6 @@ int init_part_conf(void)
 	xfree(default_part.allow_groups);
 	xfree(default_part.allow_uids);
 	xfree(default_part.allow_alloc_nodes);
-	xfree(default_part.alternate); 	
 	FREE_NULL_BITMAP(default_part.node_bitmap);
 
 	if (part_list)		/* delete defunct partitions */
@@ -726,12 +697,10 @@ static void _list_delete_part(void *part_entry)
 			break;
 		}
 	}
-
-	xfree(part_ptr->allow_alloc_nodes);
+	xfree(part_ptr->name);
 	xfree(part_ptr->allow_groups);
 	xfree(part_ptr->allow_uids);
-	xfree(part_ptr->alternate);
-	xfree(part_ptr->name);
+	xfree(part_ptr->allow_alloc_nodes);
 	xfree(part_ptr->nodes);
 	FREE_NULL_BITMAP(part_ptr->node_bitmap);
 	xfree(part_entry);
@@ -802,8 +771,7 @@ extern void part_filter_clear(void)
  * NOTE: change slurm_load_part() in api/part_info.c if data format changes
  */
 extern void pack_all_part(char **buffer_ptr, int *buffer_size,
-			  uint16_t show_flags, uid_t uid,
-			  uint16_t protocol_version)
+			  uint16_t show_flags, uid_t uid)
 {
 	ListIterator part_iterator;
 	struct part_record *part_ptr;
@@ -830,7 +798,7 @@ extern void pack_all_part(char **buffer_ptr, int *buffer_size,
 		    ((part_ptr->hidden)
 		     || (validate_group (part_ptr, uid) == 0)))
 			continue;
-		pack_part(part_ptr, buffer, protocol_version);
+		pack_part(part_ptr, buffer);
 		parts_packed++;
 	}
 	list_iterator_destroy(part_iterator);
@@ -856,75 +824,38 @@ extern void pack_all_part(char **buffer_ptr, int *buffer_size,
  * NOTE: if you make any changes here be sure to make the corresponding changes
  *	to _unpack_partition_info_members() in common/slurm_protocol_pack.c
  */
-void pack_part(struct part_record *part_ptr, Buf buffer,
-	       uint16_t protocol_version)
+void pack_part(struct part_record *part_ptr, Buf buffer)
 {
 	uint16_t default_part_flag;
 	uint32_t altered;
 
-	if(protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
-		if (default_part_loc == part_ptr)
-			default_part_flag = 1;
-		else
-			default_part_flag = 0;
+	if (default_part_loc == part_ptr)
+		default_part_flag = 1;
+	else
+		default_part_flag = 0;
 
-		packstr(part_ptr->name, buffer);
-		pack32(part_ptr->max_time, buffer);
-		pack32(part_ptr->default_time, buffer);
-		pack32(part_ptr->max_nodes_orig, buffer);
-		pack32(part_ptr->min_nodes_orig, buffer);
-		altered = part_ptr->total_nodes;
-		select_g_alter_node_cnt(SELECT_APPLY_NODE_MAX_OFFSET,
-					&altered);
-		pack32(altered, buffer);
-		pack32(part_ptr->total_cpus, buffer);
-		pack16(default_part_flag,    buffer);
-		pack16(part_ptr->disable_root_jobs, buffer);
-		pack16(part_ptr->hidden,     buffer);
-		pack16(part_ptr->root_only,  buffer);
-		pack16(part_ptr->max_share,  buffer);
-		pack16(part_ptr->priority,   buffer);
+	packstr(part_ptr->name, buffer);
+	pack32(part_ptr->max_time, buffer);
+	pack32(part_ptr->default_time, buffer);
+	pack32(part_ptr->max_nodes_orig, buffer);
+	pack32(part_ptr->min_nodes_orig, buffer);
+	altered = part_ptr->total_nodes;
+	select_g_alter_node_cnt(SELECT_APPLY_NODE_MAX_OFFSET,
+				&altered);
+	pack32(altered, buffer);
+	pack32(part_ptr->total_cpus, buffer);
+	pack16(default_part_flag,    buffer);
+	pack16(part_ptr->disable_root_jobs, buffer);
+	pack16(part_ptr->hidden,     buffer);
+	pack16(part_ptr->root_only,  buffer);
+	pack16(part_ptr->max_share,  buffer);
+	pack16(part_ptr->priority,   buffer);
 
-		pack16(part_ptr->state_up, buffer);
-		packstr(part_ptr->allow_groups, buffer);
-		packstr(part_ptr->allow_alloc_nodes, buffer);
-		packstr(part_ptr->alternate, buffer);
-		packstr(part_ptr->nodes, buffer);
-		pack_bit_fmt(part_ptr->node_bitmap, buffer);
-	} else {
-		uint16_t state;
-		if (default_part_loc == part_ptr)
-			default_part_flag = 1;
-		else
-			default_part_flag = 0;
-
-		packstr(part_ptr->name, buffer);
-		pack32(part_ptr->max_time, buffer);
-		pack32(part_ptr->default_time, buffer);
-		pack32(part_ptr->max_nodes_orig, buffer);
-		pack32(part_ptr->min_nodes_orig, buffer);
-		altered = part_ptr->total_nodes;
-		select_g_alter_node_cnt(SELECT_APPLY_NODE_MAX_OFFSET,
-					&altered);
-		pack32(altered, buffer);
-		pack32(part_ptr->total_cpus, buffer);
-		pack16(default_part_flag,    buffer);
-		pack16(part_ptr->disable_root_jobs, buffer);
-		pack16(part_ptr->hidden,     buffer);
-		pack16(part_ptr->root_only,  buffer);
-		pack16(part_ptr->max_share,  buffer);
-		pack16(part_ptr->priority,   buffer);
-
-		if (part_ptr->state_up == PARTITION_UP)
-			state = 1;
-		else	/* DOWN, DRAIN, and INACTIVE */
-			state = 0;
-		pack16(state, buffer);
-		packstr(part_ptr->allow_groups, buffer);
-		packstr(part_ptr->allow_alloc_nodes, buffer);
-		packstr(part_ptr->nodes, buffer);
-		pack_bit_fmt(part_ptr->node_bitmap, buffer);
-	}
+	pack16(part_ptr->state_up, buffer);
+	packstr(part_ptr->allow_groups, buffer);
+	packstr(part_ptr->allow_alloc_nodes, buffer);
+	packstr(part_ptr->nodes, buffer);
+	pack_bit_fmt(part_ptr->node_bitmap, buffer);
 }
 
 
@@ -1097,7 +1028,6 @@ extern int update_part (update_part_msg_t * part_desc, bool create_flag)
 				part_ptr->allow_groups, part_desc->name);
 			part_ptr->allow_uids =
 				_get_groups_members(part_ptr->allow_groups);
-			clear_group_cache();
 		}
 	}
 
@@ -1118,19 +1048,6 @@ extern int update_part (update_part_msg_t * part_desc, bool create_flag)
 			     part_ptr->allow_alloc_nodes, part_desc->name);
 		}
 	}
-	if (part_desc->alternate != NULL) {
-		xfree(part_ptr->alternate);
-		if ((strcasecmp(part_desc->alternate, "NONE") == 0) ||
-		    (part_desc->alternate[0] == '\0'))
-			part_ptr->alternate = NULL;
-		else
-			part_ptr->alternate = xstrdup(part_desc->alternate);
-		part_desc->alternate = NULL;
-		info("update_part: setting alternate to %s for "
-		     "partition %s",
-		     part_ptr->alternate, part_desc->name);
-	}
-
 
 	if (part_desc->nodes != NULL) {
 		char *backup_node_list = part_ptr->nodes;
@@ -1241,9 +1158,7 @@ void load_part_uid_allow_list(int force)
 	time_t temp_time;
 	ListIterator part_iterator;
 	struct part_record *part_ptr;
-	DEF_TIMERS;
 
-	START_TIMER;
 	temp_time = _get_group_tlm();
 	if ((force == 0) && (temp_time == last_update_time))
 		return;
@@ -1257,9 +1172,7 @@ void load_part_uid_allow_list(int force)
 		part_ptr->allow_uids =
 			_get_groups_members(part_ptr->allow_groups);
 	}
-	clear_group_cache();
 	list_iterator_destroy(part_iterator);
-	END_TIMER2("load_part_uid_allow_list");
 }
 
 
@@ -1283,7 +1196,7 @@ uid_t *_get_groups_members(char *group_names)
 	tmp_names = xstrdup(group_names);
 	one_group_name = strtok_r(tmp_names, ",", &name_ptr);
 	while (one_group_name) {
-		temp_uids = get_group_members(one_group_name);
+		temp_uids = _get_group_members(one_group_name);
 		if (temp_uids == NULL)
 			;
 		else if (group_uids == NULL) {
@@ -1304,6 +1217,118 @@ uid_t *_get_groups_members(char *group_names)
 	return group_uids;
 }
 
+/*
+ * _get_group_members - indentify the users in a given group name
+ * IN group_name - a single group name
+ * RET a zero terminated list of its UIDs or NULL on error
+ * NOTE: User root has implicitly access to every group
+ * NOTE: The caller must xfree non-NULL return values
+ */
+uid_t *_get_group_members(char *group_name)
+{
+	char grp_buffer[PW_BUF_SIZE];
+	char pw_buffer[PW_BUF_SIZE];
+  	struct group grp,  *grp_result = NULL;
+	struct passwd pw, *pwd_result = NULL;
+	uid_t *group_uids, my_uid;
+	gid_t my_gid;
+	int i, j, uid_cnt;
+#ifdef HAVE_AIX
+	FILE *fp = NULL;
+#endif
+
+	/* We need to check for !grp_result, since it appears some
+	 * versions of this function do not return an error on failure.
+	 */
+	if (getgrnam_r(group_name, &grp, grp_buffer, PW_BUF_SIZE,
+		       &grp_result) || (grp_result == NULL)) {
+		error("Could not find configured group %s", group_name);
+		return NULL;
+	}
+
+	my_gid = grp_result->gr_gid;
+
+	/* MH-CEA workaround to handle different group entries with
+	 * the same gid */
+	uid_cnt=0;
+#ifdef HAVE_AIX
+	setgrent_r(&fp);
+	while (!getgrent_r(&grp, grp_buffer, PW_BUF_SIZE, &fp)) {
+		grp_result = &grp;
+#else
+	setgrent();
+	while (getgrent_r(&grp, grp_buffer, PW_BUF_SIZE,
+			  &grp_result) == 0 && grp_result != NULL) {
+#endif
+	        if (grp_result->gr_gid == my_gid) {
+		        for (i=0 ; grp_result->gr_mem[i] != NULL ; i++) {
+				uid_cnt++;
+			}
+		}
+	}
+
+	group_uids = (uid_t *) xmalloc(sizeof(uid_t) * (uid_cnt + 1));
+
+	j=0;
+#ifdef HAVE_AIX
+	setgrent_r(&fp);
+	while (!getgrent_r(&grp, grp_buffer, PW_BUF_SIZE, &fp)) {
+		grp_result = &grp;
+#else
+	setgrent();
+	while (getgrent_r(&grp, grp_buffer, PW_BUF_SIZE,
+			  &grp_result) == 0 && grp_result != NULL) {
+#endif
+	        if (grp_result->gr_gid == my_gid) {
+			if (strcmp(grp_result->gr_name, group_name))
+				debug("including members of group '%s' as it "
+				      "corresponds to the same gid as group"
+				      " '%s'",grp_result->gr_name,group_name);
+
+		        for (i=0; j < uid_cnt; i++) {
+			        if (grp_result->gr_mem[i] == NULL)
+			                break;
+				if (uid_from_string(grp_result->gr_mem[i],
+						    &my_uid) < 0)
+				        error("Could not find user %s in "
+					      "configured group %s",
+					      grp_result->gr_mem[i],
+					      group_name);
+				else if (my_uid)
+				        group_uids[j++] = my_uid;
+			}
+		}
+	}
+#ifdef HAVE_AIX
+	endgrent_r(&fp);
+	setpwent_r(&fp);
+	while (!getpwent_r(&pw, pw_buffer, PW_BUF_SIZE, &fp)) {
+		pwd_result = &pw;
+#else
+	endgrent();
+	setpwent();
+#if defined (__sun)
+	while ((pwd_result = getpwent_r(&pw, pw_buffer, PW_BUF_SIZE)) != NULL) {
+#else
+
+	while (!getpwent_r(&pw, pw_buffer, PW_BUF_SIZE, &pwd_result)) {
+#endif
+#endif
+ 		if (pwd_result->pw_gid != my_gid)
+			continue;
+		j++;
+ 		xrealloc(group_uids, ((j+1) * sizeof(uid_t)));
+		group_uids[j-1] = pwd_result->pw_uid;
+	}
+#ifdef HAVE_AIX
+	endpwent_r(&fp);
+#else
+	endpwent();
+#endif
+
+	return group_uids;
+}
+
 /* _get_group_tlm - return the time of last modification for the GROUP_FILE */
 time_t _get_group_tlm(void)
 {
@@ -1315,6 +1340,21 @@ time_t _get_group_tlm(void)
 	}
 	return stat_buf.st_mtime;
 }
+
+#if EXTREME_LOGGING
+/* _print_group_members - print the members of a uid list */
+static void _print_group_members(uid_t * uid_list)
+{
+	int i;
+
+	if (uid_list) {
+		for (i = 0; uid_list[i]; i++) {
+			debug3("%u", (unsigned int) uid_list[i]);
+		}
+	}
+	printf("\n\n");
+}
+#endif
 
 /* _uid_list_size - return the count of uid's in a zero terminated list */
 static int _uid_list_size(uid_t * uid_list_ptr)

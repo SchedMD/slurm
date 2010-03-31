@@ -1,8 +1,7 @@
 /*****************************************************************************\
  *  log.h - configurable logging for slurm: log to file, stderr and/or syslog.
  *****************************************************************************
- *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
+ *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <mgrondona@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -93,7 +92,6 @@ typedef enum {
 	LOG_LEVEL_DEBUG3,
 	LOG_LEVEL_DEBUG4,
 	LOG_LEVEL_DEBUG5,
-	LOG_LEVEL_SCHED,
 	LOG_LEVEL_END
 }	log_level_t;
 
@@ -120,9 +118,6 @@ typedef struct {
 #define LOG_OPTS_STDERR_ONLY	\
 	{ LOG_LEVEL_INFO,  LOG_LEVEL_QUIET, LOG_LEVEL_QUIET, 1, 0 }
 
-#define SCHEDLOG_OPTS_INITIALIZER	\
-	{ LOG_LEVEL_QUIET, LOG_LEVEL_QUIET, LOG_LEVEL_QUIET, 0, 1 }
-
 /*
  * initialize log module (called only once)
  *
@@ -142,15 +137,6 @@ typedef struct {
 int log_init(char *argv0, log_options_t opts,
               log_facility_t fac, char *logfile);
 
-/*
- * initialize scheduler log module (called only once)
- */
-int sched_log_init(char *argv0, log_options_t opts, log_facility_t fac, 
-		   char *logfile);
-
-/* Write to scheduler log */
-void schedlog(const char *fmt, ...);
-
 /* reinitialize log module.
  * Keep same log options as previously initialized log, but reinit mutex
  * that protects the log. This call is needed after a fork() in a threaded
@@ -163,24 +149,12 @@ void log_reinit(void);
  */
 void log_fini(void);
 
-/*
- * Close scheduler log and free associated memory
- */
-void sched_log_fini(void);
-
 /* Alter log facility, options are like log_init() above, except that
  * an argv0 argument is not passed.
  *
  * This function may be called multiple times.
  */
 int log_alter(log_options_t opts, log_facility_t fac, char *logfile);
-
-/* Sched alter log facility, options are like sched_log_init() above, 
- * except that an argv0 argument is not passed.
- *
- * This function may be called multiple times.
- */
-int sched_log_alter(log_options_t opts, log_facility_t fac, char *logfile);
 
 /* Set prefix for log file entries
  * (really only useful for slurmd at this point)

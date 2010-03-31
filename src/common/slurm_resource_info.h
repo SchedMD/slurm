@@ -61,7 +61,7 @@ int slurm_get_avail_procs(const uint16_t minsockets,
 			  uint16_t *cores,
 			  uint16_t *threads,
 			  const uint16_t *alloc_cores,
-			  const uint16_t cr_type,
+			  const select_type_plugin_info_t cr_type,
 			  uint32_t job_id, char *name);
 
 void slurm_print_cpu_bind_help(void);

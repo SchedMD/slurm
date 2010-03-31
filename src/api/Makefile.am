@@ -155,10 +155,14 @@ force:
 $(libslurm_o_LDADD) $(convenience_libs) $(slurmapi_add) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`
 
+
+# FIXME - don't export the client_io_handler_ symbols once srun is no longer
+#         calling them directly
 $(VERSION_SCRIPT) :
 	(echo "{ global:";   \
 	 echo "   islurm_*;"; \
 	 echo "   slurm_*;"; \
+	 echo "   client_io_handler_*;"; \
 	 echo "  local: *;"; \
 	 echo "};") > $(VERSION_SCRIPT)
 

@@ -4,7 +4,7 @@
  *  of sets of consecutive nodes using a best-fit algorithm.
  *****************************************************************************
  *  Copyright (C) 2004-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -104,23 +104,22 @@ struct select_nodeinfo {
 	uint16_t alloc_cpus;
 };
 
-static int  _add_job_to_nodes(struct cr_record *cr_ptr,
+static int  _add_job_to_nodes(struct node_cr_record *node_cr_ptr,
 			      struct job_record *job_ptr, char *pre_err,
 			      int suspended);
-static void _add_run_job(struct cr_record *cr_ptr, uint32_t job_id);
-static void _add_tot_job(struct cr_record *cr_ptr, uint32_t job_id);
+static void _add_run_job(struct part_cr_record *part_cr_ptr, uint32_t job_id);
 static void _build_select_struct(struct job_record *job_ptr, bitstr_t *bitmap);
 static int  _cr_job_list_sort(void *x, void *y);
-static void _dump_node_cr(struct cr_record *cr_ptr);
-static struct cr_record *_dup_cr(struct cr_record *cr_ptr);
+static void _dump_node_cr(struct node_cr_record *node_cr_ptr);
+static struct node_cr_record *_dup_node_cr(struct node_cr_record *node_cr_ptr);
 static int  _find_job_mate(struct job_record *job_ptr, bitstr_t *bitmap,
 			   uint32_t min_nodes, uint32_t max_nodes,
 			   uint32_t req_nodes);
-static void _free_cr(struct cr_record *cr_ptr);
+static void _free_node_cr(struct node_cr_record *node_cr_ptr);
 static uint16_t _get_avail_cpus(struct job_record *job_ptr, int index);
 static uint16_t _get_total_cpus(int index);
 static void _init_node_cr(void);
-static int _job_count_bitmap(struct cr_record *cr_ptr,
+static int _job_count_bitmap(struct node_cr_record *node_cr_ptr,
 			     struct job_record *job_ptr,
 			     bitstr_t * bitmap, bitstr_t * jobmap,
 			     int run_job_cnt, int tot_job_cnt);
@@ -130,9 +129,8 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 static int _job_test_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 			  uint32_t min_nodes, uint32_t max_nodes,
 			  uint32_t req_nodes);
-static bool _rem_run_job(struct cr_record *cr_ptr, uint32_t job_id);
-static bool _rem_tot_job(struct cr_record *cr_ptr, uint32_t job_id);
-static int _rm_job_from_nodes(struct cr_record *cr_ptr,
+static bool _rem_run_job(struct part_cr_record *part_cr_ptr, uint32_t job_id);
+static int _rm_job_from_nodes(struct node_cr_record *node_cr_ptr,
 			      struct job_record *job_ptr, char *pre_err,
 			      bool remove_all);
 static int _run_now(struct job_record *job_ptr, bitstr_t *bitmap,
@@ -193,7 +191,7 @@ static bool job_preemption_killing = false;
 static bool job_preemption_tested  = false;
 
 /* Record of resources consumed on each node including job details */
-static struct cr_record *cr_ptr = NULL;
+static struct node_cr_record *node_cr_ptr = NULL;
 static pthread_mutex_t cr_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 #ifdef HAVE_XCPU
@@ -206,7 +204,7 @@ static void *xcpu_agent(void *args)
 {
 	int i;
 	static time_t last_xcpu_test;
-	char clone_path[128], down_node_list[512];
+	char reason[12], clone_path[128], down_node_list[512];
 	struct stat buf;
 	time_t now;
 
@@ -236,10 +234,13 @@ static void *xcpu_agent(void *args)
 					error("down_node_list overflow");
 			}
 			if (down_node_list[0]) {
-				slurm_drain_nodes(
-					down_node_list,
-					"select_linear: Can not stat XCPU ",
-					slurm_get_slurm_user_id());
+				char time_str[32];
+				slurm_make_time_str(&now, time_str,
+					sizeof(time_str));
+				snprintf(reason, sizeof(reason),
+					"select_linear: Can not stat XCPU "
+					"[SLURM@%s]", time_str);
+				slurm_drain_nodes(down_node_list, reason);
 			}
 			last_xcpu_test = now;
 		}
@@ -294,90 +295,47 @@ static int _fini_status_pthread(void)
 #endif
 
 /* Add job id to record of jobs running on this node */
-static void _add_run_job(struct cr_record *cr_ptr, uint32_t job_id)
+static void _add_run_job(struct part_cr_record *part_cr_ptr, uint32_t job_id)
 {
 	int i;
 
-	if (cr_ptr->run_job_ids == NULL) {	/* create new array */
-		cr_ptr->run_job_len = RUN_JOB_INCR;
-		cr_ptr->run_job_ids = xmalloc(sizeof(uint32_t) *
-					      cr_ptr->run_job_len);
-		cr_ptr->run_job_ids[0] = job_id;
+	if (part_cr_ptr->run_job_ids == NULL) {	/* create new array */
+		part_cr_ptr->run_job_len = RUN_JOB_INCR;
+		part_cr_ptr->run_job_ids = xmalloc(sizeof(uint32_t) *
+						   part_cr_ptr->run_job_len);
+		part_cr_ptr->run_job_ids[0] = job_id;
 		return;
 	}
 
-	for (i=0; i<cr_ptr->run_job_len; i++) {
-		if (cr_ptr->run_job_ids[i])
+	for (i=0; i<part_cr_ptr->run_job_len; i++) {
+		if (part_cr_ptr->run_job_ids[i])
 			continue;
 		/* fill in hole */
-		cr_ptr->run_job_ids[i] = job_id;
+		part_cr_ptr->run_job_ids[i] = job_id;
 		return;
 	}
 
 	/* expand array and add to end */
-	cr_ptr->run_job_len += RUN_JOB_INCR;
-	xrealloc(cr_ptr->run_job_ids, sizeof(uint32_t) * cr_ptr->run_job_len);
-	cr_ptr->run_job_ids[i] = job_id;
+	part_cr_ptr->run_job_len += RUN_JOB_INCR;
+	xrealloc(part_cr_ptr->run_job_ids,
+		 sizeof(uint32_t) * part_cr_ptr->run_job_len);
+	part_cr_ptr->run_job_ids[i] = job_id;
 }
 
-/* Add job id to record of jobs running or suspended on this node */
-static void _add_tot_job(struct cr_record *cr_ptr, uint32_t job_id)
-{
-	int i;
-
-	if (cr_ptr->tot_job_ids == NULL) {	/* create new array */
-		cr_ptr->tot_job_len = RUN_JOB_INCR;
-		cr_ptr->tot_job_ids = xmalloc(sizeof(uint32_t) *
-					      cr_ptr->tot_job_len);
-		cr_ptr->tot_job_ids[0] = job_id;
-		return;
-	}
-
-	for (i=0; i<cr_ptr->tot_job_len; i++) {
-		if (cr_ptr->tot_job_ids[i])
-			continue;
-		/* fill in hole */
-		cr_ptr->tot_job_ids[i] = job_id;
-		return;
-	}
-
-	/* expand array and add to end */
-	cr_ptr->tot_job_len += RUN_JOB_INCR;
-	xrealloc(cr_ptr->tot_job_ids, sizeof(uint32_t) * cr_ptr->tot_job_len);
-	cr_ptr->tot_job_ids[i] = job_id;
-}
-
-/* Remove job id from record of jobs running,
+/* Remove job id from record of jobs running on this node,
  * RET true if successful, false if the job was not running */
-static bool _rem_run_job(struct cr_record *cr_ptr, uint32_t job_id)
+static bool _rem_run_job(struct part_cr_record *part_cr_ptr, uint32_t job_id)
 {
 	int i;
 
-	if ((cr_ptr->run_job_ids == NULL) || (cr_ptr->run_job_len == 0))
+	if ((part_cr_ptr->run_job_ids == NULL) ||
+	    (part_cr_ptr->run_job_len == 0))
 		return false;
 
-	for (i=0; i<cr_ptr->run_job_len; i++) {
-		if (cr_ptr->run_job_ids[i] != job_id)
+	for (i=0; i<part_cr_ptr->run_job_len; i++) {
+		if (part_cr_ptr->run_job_ids[i] != job_id)
 			continue;
-		cr_ptr->run_job_ids[i] = 0;
-		return true;
-	}
-	return false;
-}
-
-/* Remove job id from record of jobs running or suspended,
- * RET true if successful, false if the job was not running */
-static bool _rem_tot_job(struct cr_record *cr_ptr, uint32_t job_id)
-{
-	int i;
-
-	if ((cr_ptr->tot_job_ids == NULL) || (cr_ptr->tot_job_len == 0))
-		return false;
-
-	for (i=0; i<cr_ptr->tot_job_len; i++) {
-		if (cr_ptr->tot_job_ids[i] != job_id)
-			continue;
-		cr_ptr->tot_job_ids[i] = 0;
+		part_cr_ptr->run_job_ids[i] = 0;
 		return true;
 	}
 	return false;
@@ -473,11 +431,13 @@ static uint16_t _get_avail_cpus(struct job_record *job_ptr, int index)
 			min_sockets, min_cores, cpus_per_task,
 			ntasks_per_node, ntasks_per_socket, ntasks_per_core,
 	    		&cpus, &sockets, &cores, &threads, NULL,
-			CR_CPU, job_ptr->job_id, node_ptr->name);
+			SELECT_TYPE_INFO_NONE,
+			job_ptr->job_id, node_ptr->name);
 
 #if SELECT_DEBUG
-	debug("avail_cpus index %d = %d (out of %d %d %d %d)",
-	      index, avail_cpus, cpus, sockets, cores, threads);
+	debug3("avail_cpus index %d = %d (out of %d %d %d %d)",
+				index, avail_cpus,
+				cpus, sockets, cores, threads);
 #endif
 	return(avail_cpus);
 }
@@ -509,13 +469,13 @@ static void _build_select_struct(struct job_record *job_ptr, bitstr_t *bitmap)
 	bool memory_info = false;
 	job_resources_t *job_resrcs_ptr;
 
-	if (job_ptr->details->pn_min_memory  && (cr_type == CR_MEMORY)) {
-		if (job_ptr->details->pn_min_memory & MEM_PER_CPU) {
-			job_memory_cpu = job_ptr->details->pn_min_memory &
+	if (job_ptr->details->job_min_memory  && (cr_type == CR_MEMORY)) {
+		if (job_ptr->details->job_min_memory & MEM_PER_CPU) {
+			job_memory_cpu = job_ptr->details->job_min_memory &
 					 (~MEM_PER_CPU);
 			memory_info = true;
 		} else {
-			job_memory_node = job_ptr->details->pn_min_memory;
+			job_memory_node = job_ptr->details->job_min_memory;
 			memory_info = true;
 		}
 	}
@@ -535,7 +495,7 @@ static void _build_select_struct(struct job_record *job_ptr, bitstr_t *bitmap)
 	job_resrcs_ptr->node_bitmap = bit_copy(bitmap);
 	if (job_resrcs_ptr->node_bitmap == NULL)
 		fatal("bit_copy malloc failure");
-	job_resrcs_ptr->nprocs = job_ptr->total_cpus;
+	job_resrcs_ptr->nprocs = job_ptr->total_procs;
 	if (build_job_resources(job_resrcs_ptr, (void *)select_node_ptr,
 				 select_fast_schedule))
 		error("_build_select_struct: build_job_resources: %m");
@@ -585,7 +545,7 @@ static void _build_select_struct(struct job_record *job_ptr, bitstr_t *bitmap)
  * Set the bits in 'jobmap' that correspond to bits in the 'bitmap'
  * that are running 'run_job_cnt' jobs or less, and clear the rest.
  */
-static int _job_count_bitmap(struct cr_record *cr_ptr,
+static int _job_count_bitmap(struct node_cr_record *node_cr_ptr,
 			     struct job_record *job_ptr,
 			     bitstr_t * bitmap, bitstr_t * jobmap,
 			     int run_job_cnt, int tot_job_cnt)
@@ -595,14 +555,13 @@ static int _job_count_bitmap(struct cr_record *cr_ptr,
 	uint32_t job_memory_cpu = 0, job_memory_node = 0;
 	uint32_t alloc_mem = 0, job_mem = 0, avail_mem = 0;
 
-	xassert(cr_ptr);
-	xassert(cr_ptr->nodes);
-	if (job_ptr->details->pn_min_memory  && (cr_type == CR_MEMORY)) {
-		if (job_ptr->details->pn_min_memory & MEM_PER_CPU) {
-			job_memory_cpu = job_ptr->details->pn_min_memory &
+	xassert(node_cr_ptr);
+	if (job_ptr->details->job_min_memory  && (cr_type == CR_MEMORY)) {
+		if (job_ptr->details->job_min_memory & MEM_PER_CPU) {
+			job_memory_cpu = job_ptr->details->job_min_memory &
 					 (~MEM_PER_CPU);
 		} else
-			job_memory_node = job_ptr->details->pn_min_memory;
+			job_memory_node = job_ptr->details->job_min_memory;
 	}
 
 	for (i = 0; i < node_record_count; i++) {
@@ -611,7 +570,7 @@ static int _job_count_bitmap(struct cr_record *cr_ptr,
 			continue;
 		}
 		if (job_memory_cpu || job_memory_node) {
-			alloc_mem = cr_ptr->nodes[i].alloc_memory;
+			alloc_mem = node_cr_ptr[i].alloc_memory;
 			if (select_fast_schedule) {
 				avail_mem = node_record_table_ptr[i].
 					    config_ptr->real_memory;
@@ -633,7 +592,7 @@ static int _job_count_bitmap(struct cr_record *cr_ptr,
 			}
 		}
 
-		if (cr_ptr->nodes[i].exclusive_cnt != 0) {
+		if (node_cr_ptr[i].exclusive_cnt != 0) {
 			/* already reserved by some exclusive job */
 			bit_clear(jobmap, i);
 			continue;
@@ -641,7 +600,7 @@ static int _job_count_bitmap(struct cr_record *cr_ptr,
 
 		total_jobs = 0;
 		total_run_jobs = 0;
-		part_cr_ptr = cr_ptr->nodes[i].parts;
+		part_cr_ptr = node_cr_ptr[i].parts;
 		while (part_cr_ptr) {
 			total_run_jobs += part_cr_ptr->run_job_cnt;
 			total_jobs     += part_cr_ptr->tot_job_cnt;
@@ -676,8 +635,7 @@ static int _find_job_mate(struct job_record *job_ptr, bitstr_t *bitmap,
 	while ((job_scan_ptr = (struct job_record *) list_next(job_iterator))) {
 		if ((!IS_JOB_RUNNING(job_scan_ptr))			||
 		    (job_scan_ptr->node_cnt   != req_nodes)		||
-		    (job_scan_ptr->total_cpus < 
-		     job_ptr->details->min_cpus)			||
+		    (job_scan_ptr->total_procs < job_ptr->num_procs)	||
 		    (!bit_super_set(job_scan_ptr->node_bitmap, bitmap)))
 			continue;
 		if (job_scan_ptr->details && job_ptr->details &&
@@ -696,7 +654,7 @@ static int _find_job_mate(struct job_record *job_ptr, bitstr_t *bitmap,
 			continue;	/* Excluded nodes in this job */
 
 		bit_and(bitmap, job_scan_ptr->node_bitmap);
-		job_ptr->total_cpus = job_scan_ptr->total_cpus;
+		job_ptr->total_procs = job_scan_ptr->total_procs;
 		rc = SLURM_SUCCESS;
 		break;
 	}
@@ -751,7 +709,7 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	/* Build table with information about sets of consecutive nodes */
 	consec_cpus[consec_index] = consec_nodes[consec_index] = 0;
 	consec_req[consec_index] = -1;	/* no required nodes here by default */
-	rem_cpus = job_ptr->details->min_cpus;
+	rem_cpus = job_ptr->num_procs;
 	if (req_nodes > min_nodes)
 		rem_nodes = req_nodes;
 	else
@@ -813,11 +771,12 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	debug3("rem_cpus=%d, rem_nodes=%d", rem_cpus, rem_nodes);
 	for (i = 0; i < consec_index; i++) {
 		if (consec_req[i] != -1)
-			debug3("start=%s, end=%s, nodes=%d, cpus=%d, req=%s",
-			       select_node_ptr[consec_start[i]].name,
-			       select_node_ptr[consec_end[i]].name,
-			       consec_nodes[i], consec_cpus[i],
-			       select_node_ptr[consec_req[i]].name);
+			debug3
+			    ("start=%s, end=%s, nodes=%d, cpus=%d, req=%s",
+			     select_node_ptr[consec_start[i]].name,
+			     select_node_ptr[consec_end[i]].name,
+			     consec_nodes[i], consec_cpus[i],
+			     select_node_ptr[consec_req[i]].name);
 		else
 			debug3("start=%s, end=%s, nodes=%d, cpus=%d",
 			       select_node_ptr[consec_start[i]].name,
@@ -951,8 +910,8 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		error_code = SLURM_SUCCESS;
 	}
 	if (error_code == SLURM_SUCCESS) {
-		/* job's total_cpus is needed for SELECT_MODE_WILL_RUN */
-		job_ptr->total_cpus = total_cpus;
+		/* job's total_procs is needed for SELECT_MODE_WILL_RUN */
+		job_ptr->total_procs = total_cpus;
 	}
 
 	xfree(consec_cpus);
@@ -987,7 +946,7 @@ static int _job_test_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 	int best_fit_location = 0, best_fit_sufficient;
 	bool sufficient;
 
-	rem_cpus = job_ptr->details->min_cpus;
+	rem_cpus = job_ptr->num_procs;
 	if (req_nodes > min_nodes)
 		rem_nodes = req_nodes;
 	else
@@ -1245,8 +1204,8 @@ static int _job_test_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 		rc = EINVAL;
 
  fini:	if (rc == SLURM_SUCCESS) {
-		/* Job's total_cpus is needed for SELECT_MODE_WILL_RUN */
-		job_ptr->total_cpus = total_cpus;
+		/* Job's total_procs is needed for SELECT_MODE_WILL_RUN */
+		job_ptr->total_procs = total_cpus;
 	}
 	FREE_NULL_BITMAP(avail_nodes_bitmap);
 	FREE_NULL_BITMAP(req_nodes_bitmap);
@@ -1267,7 +1226,7 @@ static int _job_test_topo(struct job_record *job_ptr, bitstr_t *bitmap,
  * if remove_all = false: the job has been suspended, so just deallocate CPUs
  * if remove_all = true: deallocate all resources
  */
-static int _rm_job_from_nodes(struct cr_record *cr_ptr,
+static int _rm_job_from_nodes(struct node_cr_record *node_cr_ptr,
 			      struct job_record *job_ptr, char *pre_err,
 			      bool remove_all)
 {
@@ -1275,27 +1234,21 @@ static int _rm_job_from_nodes(struct cr_record *cr_ptr,
 	struct part_cr_record *part_cr_ptr;
 	job_resources_t *job_resrcs_ptr;
 	uint32_t job_memory, job_memory_cpu = 0, job_memory_node = 0;
-	bool exclusive, is_job_running;
+	bool exclusive;
 
-	if (cr_ptr == NULL) {
-		error("%s: cr_ptr not initialized", pre_err);
-		return SLURM_ERROR;
-	}
-
-	if (_rem_tot_job(cr_ptr, job_ptr->job_id) == 0) {
-		info("select/linear: job %u has no resources allocated",
-		     job_ptr->job_id);
+	if (node_cr_ptr == NULL) {
+		error("%s: node_cr_ptr not initialized", pre_err);
 		return SLURM_ERROR;
 	}
 
 	exclusive = (job_ptr->details->shared == 0);
 	if (remove_all && job_ptr->details &&
-	    job_ptr->details->pn_min_memory && (cr_type == CR_MEMORY)) {
-		if (job_ptr->details->pn_min_memory & MEM_PER_CPU) {
-			job_memory_cpu = job_ptr->details->pn_min_memory &
+	    job_ptr->details->job_min_memory && (cr_type == CR_MEMORY)) {
+		if (job_ptr->details->job_min_memory & MEM_PER_CPU) {
+			job_memory_cpu = job_ptr->details->job_min_memory &
 					 (~MEM_PER_CPU);
 		} else
-			job_memory_node = job_ptr->details->pn_min_memory;
+			job_memory_node = job_ptr->details->job_min_memory;
 	}
 
 	if ((job_resrcs_ptr = job_ptr->job_resrcs) == NULL) {
@@ -1310,8 +1263,6 @@ static int _rm_job_from_nodes(struct cr_record *cr_ptr,
 		      "from slurm.conf", job_ptr->job_id);
 		return SLURM_ERROR;
 	}
-
-	is_job_running = _rem_run_job(cr_ptr, job_ptr->job_id);
 	for (i = i_first; i <= i_last; i++) {
 		if (bit_test(job_resrcs_ptr->node_bitmap, i) == 0)
 			continue;
@@ -1325,16 +1276,16 @@ static int _rm_job_from_nodes(struct cr_record *cr_ptr,
 			job_memory = job_memory_cpu *
 				     node_record_table_ptr[i].cpus;
 		}
-		if (cr_ptr->nodes[i].alloc_memory >= job_memory)
-			cr_ptr->nodes[i].alloc_memory -= job_memory;
+		if (node_cr_ptr[i].alloc_memory >= job_memory)
+			node_cr_ptr[i].alloc_memory -= job_memory;
 		else {
-			cr_ptr->nodes[i].alloc_memory = 0;
+			node_cr_ptr[i].alloc_memory = 0;
 			error("%s: memory underflow for node %s",
 				pre_err, node_record_table_ptr[i].name);
 		}
 		if (exclusive) {
-			if (cr_ptr->nodes[i].exclusive_cnt)
-				cr_ptr->nodes[i].exclusive_cnt--;
+			if (node_cr_ptr[i].exclusive_cnt)
+				node_cr_ptr[i].exclusive_cnt--;
 			else {
 				error("%s: exclusive_cnt underflow for "
 				      "node %s",
@@ -1342,13 +1293,13 @@ static int _rm_job_from_nodes(struct cr_record *cr_ptr,
 			}
 		}
 
-		part_cr_ptr = cr_ptr->nodes[i].parts;
+		part_cr_ptr = node_cr_ptr[i].parts;
 		while (part_cr_ptr) {
 			if (part_cr_ptr->part_ptr != job_ptr->part_ptr) {
 				part_cr_ptr = part_cr_ptr->next;
 				continue;
 			}
-			if (!is_job_running)
+			if (!_rem_run_job(part_cr_ptr, job_ptr->job_id))
 				/* cancelled job already suspended */;
 			else if (part_cr_ptr->run_job_cnt > 0)
 				part_cr_ptr->run_job_cnt--;
@@ -1375,17 +1326,17 @@ static int _rm_job_from_nodes(struct cr_record *cr_ptr,
 			break;
 		}
 		if (part_cr_ptr == NULL) {
-			if (job_ptr->part_ptr) {
-				error("%s: Could not find partition "
+			if(job_ptr->part_ptr)
+				error("%s: could not find partition "
 				      "%s for node %s",
 				      pre_err, job_ptr->part_ptr->name,
 				      node_record_table_ptr[i].name);
-			} else {
+			else
 				error("%s: no partition ptr given for "
 				      "job %u and node %s",
 				      pre_err, job_ptr->job_id,
 				      node_record_table_ptr[i].name);
-			}
+
 			rc = SLURM_ERROR;
 		}
 	}
@@ -1399,7 +1350,7 @@ static int _rm_job_from_nodes(struct cr_record *cr_ptr,
  * if alloc_all = 0: the job has been suspended, so just re-allocate CPUs
  * if alloc_all = 1: allocate all resources (CPUs and memory)
  */
-static int _add_job_to_nodes(struct cr_record *cr_ptr,
+static int _add_job_to_nodes(struct node_cr_record *node_cr_ptr,
 			     struct job_record *job_ptr, char *pre_err,
 			     int alloc_all)
 {
@@ -1409,18 +1360,18 @@ static int _add_job_to_nodes(struct cr_record *cr_ptr,
 	job_resources_t *job_resrcs_ptr;
 	uint32_t job_memory_cpu = 0, job_memory_node = 0;
 
-	if (cr_ptr == NULL) {
-		error("%s: cr_ptr not initialized", pre_err);
+	if (node_cr_ptr == NULL) {
+		error("%s: node_cr_ptr not initialized", pre_err);
 		return SLURM_ERROR;
 	}
 
 	if (alloc_all && job_ptr->details &&
-	    job_ptr->details->pn_min_memory && (cr_type == CR_MEMORY)) {
-		if (job_ptr->details->pn_min_memory & MEM_PER_CPU) {
-			job_memory_cpu = job_ptr->details->pn_min_memory &
+	    job_ptr->details->job_min_memory && (cr_type == CR_MEMORY)) {
+		if (job_ptr->details->job_min_memory & MEM_PER_CPU) {
+			job_memory_cpu = job_ptr->details->job_min_memory &
 					 (~MEM_PER_CPU);
 		} else
-			job_memory_node = job_ptr->details->pn_min_memory;
+			job_memory_node = job_ptr->details->job_min_memory;
 	}
 	exclusive = (job_ptr->details->shared == 0);
 
@@ -1429,44 +1380,40 @@ static int _add_job_to_nodes(struct cr_record *cr_ptr,
 		      job_ptr->job_id);
 		return SLURM_ERROR;
 	}
-
-	if (alloc_all)
-		_add_run_job(cr_ptr, job_ptr->job_id);
-	_add_tot_job(cr_ptr, job_ptr->job_id);
-
 	i_first = bit_ffs(job_resrcs_ptr->node_bitmap);
 	i_last  = bit_fls(job_resrcs_ptr->node_bitmap);
 	for (i=i_first; ((i<=i_last) && (i_first>=0)); i++) {
 		if (bit_test(job_resrcs_ptr->node_bitmap, i) == 0)
 			continue;
 		if (job_memory_cpu == 0)
-			cr_ptr->nodes[i].alloc_memory += job_memory_node;
+			node_cr_ptr[i].alloc_memory += job_memory_node;
 		else if (select_fast_schedule) {
-			cr_ptr->nodes[i].alloc_memory +=
+			node_cr_ptr[i].alloc_memory +=
 					job_memory_cpu *
 					node_record_table_ptr[i].
 					config_ptr->cpus;
 		} else {
-			cr_ptr->nodes[i].alloc_memory +=
+			node_cr_ptr[i].alloc_memory +=
 					job_memory_cpu *
 					node_record_table_ptr[i].cpus;
 		}
 		if (exclusive)
-			cr_ptr->nodes[i].exclusive_cnt++;
+			node_cr_ptr[i].exclusive_cnt++;
 
-		part_cr_ptr = cr_ptr->nodes[i].parts;
+		part_cr_ptr = node_cr_ptr[i].parts;
 		while (part_cr_ptr) {
 			if (part_cr_ptr->part_ptr != job_ptr->part_ptr) {
 				part_cr_ptr = part_cr_ptr->next;
 				continue;
 			}
 			if (alloc_all)
-				part_cr_ptr->run_job_cnt++;
-			part_cr_ptr->tot_job_cnt++;
+				part_cr_ptr->tot_job_cnt++;
+			_add_run_job(part_cr_ptr, job_ptr->job_id);
+			part_cr_ptr->run_job_cnt++;
 			break;
 		}
 		if (part_cr_ptr == NULL) {
-			error("%s: Could not find partition %s for node %s",
+			error("%s: could not find partition %s for node %s",
 				pre_err, job_ptr->part_ptr->name,
 				node_record_table_ptr[i].name);
 			rc = SLURM_ERROR;
@@ -1476,53 +1423,42 @@ static int _add_job_to_nodes(struct cr_record *cr_ptr,
 	return rc;
 }
 
-static void _free_cr(struct cr_record *cr_ptr)
+static void _free_node_cr(struct node_cr_record *node_cr_ptr)
 {
 	int i;
 	struct part_cr_record *part_cr_ptr1, *part_cr_ptr2;
 
-	if (cr_ptr == NULL)
+	if (node_cr_ptr == NULL)
 		return;
 
 	for (i = 0; i < select_node_cnt; i++) {
-		part_cr_ptr1 = cr_ptr->nodes[i].parts;
+		part_cr_ptr1 = node_cr_ptr[i].parts;
 		while (part_cr_ptr1) {
 			part_cr_ptr2 = part_cr_ptr1->next;
+			xfree(part_cr_ptr1->run_job_ids);
 			xfree(part_cr_ptr1);
 			part_cr_ptr1 = part_cr_ptr2;
 		}
 	}
-	xfree(cr_ptr->nodes);
-	xfree(cr_ptr->run_job_ids);
-	xfree(cr_ptr->tot_job_ids);
-	xfree(cr_ptr);
+	xfree(node_cr_ptr);
 }
 
-static void _dump_node_cr(struct cr_record *cr_ptr)
+static inline void _dump_node_cr(struct node_cr_record *node_cr_ptr)
 {
 #if SELECT_DEBUG
 	int i;
 	struct part_cr_record *part_cr_ptr;
 
-	if ((cr_ptr == NULL) || (cr_ptr->nodes == NULL))
+	if (node_cr_ptr == NULL)
 		return;
-
-	for (i = 0; i < cr_ptr->run_job_len; i++) {
-		if (cr_ptr->run_job_ids[i])
-			info("Running job:%u", cr_ptr->run_job_ids[i]);
-	}
-	for (i = 0; i < cr_ptr->tot_job_len; i++) {
-		if (cr_ptr->tot_job_ids[i])
-			info("Alloc job:%u", cr_ptr->tot_job_ids[i]);
-	}
 
 	for (i = 0; i < select_node_cnt; i++) {
 		info("Node:%s exclusive_cnt:%u alloc_mem:%u",
 			node_record_table_ptr[i].name,
-			cr_ptr->nodes[i].exclusive_cnt,
-			cr_ptr->nodes[i].alloc_memory);
+			node_cr_ptr[i].exclusive_cnt,
+			node_cr_ptr[i].alloc_memory);
 
-		part_cr_ptr = cr_ptr->nodes[i].parts;
+		part_cr_ptr = node_cr_ptr[i].parts;
 		while (part_cr_ptr) {
 			info("  Part:%s run:%u tot:%u",
 				part_cr_ptr->part_ptr->name,
@@ -1534,46 +1470,49 @@ static void _dump_node_cr(struct cr_record *cr_ptr)
 #endif
 }
 
-static struct cr_record *_dup_cr(struct cr_record *cr_ptr)
+static struct node_cr_record *_dup_node_cr(struct node_cr_record *node_cr_ptr)
 {
 	int i;
-	struct cr_record *new_cr_ptr;
+	struct node_cr_record *new_node_cr_ptr;
 	struct part_cr_record *part_cr_ptr, *new_part_cr_ptr;
 
-	if (cr_ptr == NULL)
+	if (node_cr_ptr == NULL)
 		return NULL;
 
-	new_cr_ptr = xmalloc(sizeof(struct cr_record));
-	new_cr_ptr->run_job_len = cr_ptr->run_job_len;
-	i = sizeof(uint32_t) * cr_ptr->run_job_len;
-	new_cr_ptr->run_job_ids = xmalloc(i);
-	memcpy(new_cr_ptr->run_job_ids, cr_ptr->run_job_ids, i);
-	new_cr_ptr->tot_job_len = cr_ptr->tot_job_len;
-	i = sizeof(uint32_t) * cr_ptr->tot_job_len;
-	new_cr_ptr->tot_job_ids = xmalloc(i);
-	memcpy(new_cr_ptr->tot_job_ids, cr_ptr->tot_job_ids, i);
+	new_node_cr_ptr = xmalloc(select_node_cnt *
+				  sizeof(struct node_cr_record));
 
-	new_cr_ptr->nodes = xmalloc(select_node_cnt *
-				    sizeof(struct node_cr_record));
 	for (i = 0; i < select_node_cnt; i++) {
-		new_cr_ptr->nodes[i].alloc_memory = cr_ptr->nodes[i].
-						    alloc_memory;
-		new_cr_ptr->nodes[i].exclusive_cnt = cr_ptr->nodes[i].
-						     exclusive_cnt;
-
-		part_cr_ptr = cr_ptr->nodes[i].parts;
+		new_node_cr_ptr[i].alloc_memory = node_cr_ptr[i].alloc_memory;
+		new_node_cr_ptr[i].exclusive_cnt = node_cr_ptr[i].
+						   exclusive_cnt;
+		part_cr_ptr = node_cr_ptr[i].parts;
 		while (part_cr_ptr) {
-			new_part_cr_ptr = xmalloc(sizeof(struct part_cr_record));
+			new_part_cr_ptr = xmalloc(sizeof(struct
+							 part_cr_record));
 			new_part_cr_ptr->part_ptr    = part_cr_ptr->part_ptr;
-			new_part_cr_ptr->run_job_cnt = part_cr_ptr->run_job_cnt;
-			new_part_cr_ptr->tot_job_cnt = part_cr_ptr->tot_job_cnt;
-			new_part_cr_ptr->next 	     = new_cr_ptr->nodes[i].
+			if (part_cr_ptr->run_job_cnt) {
+				new_part_cr_ptr->run_job_cnt = part_cr_ptr->
+							       run_job_cnt;
+				new_part_cr_ptr->run_job_len = part_cr_ptr->
+							       run_job_len;
+				new_part_cr_ptr->run_job_ids =
+					xmalloc(sizeof(uint32_t) *
+						part_cr_ptr->run_job_len);
+				memcpy(new_part_cr_ptr->run_job_ids,
+				       part_cr_ptr->run_job_ids,
+				       (sizeof(uint32_t) *
+					part_cr_ptr->run_job_len));
+			}
+			new_part_cr_ptr->tot_job_cnt = part_cr_ptr->
+						       tot_job_cnt;
+			new_part_cr_ptr->next 	     = new_node_cr_ptr[i].
 						       parts;
-			new_cr_ptr->nodes[i].parts   = new_part_cr_ptr;
+			new_node_cr_ptr[i].parts     = new_part_cr_ptr;
 			part_cr_ptr = part_cr_ptr->next;
 		}
 	}
-	return new_cr_ptr;
+	return new_node_cr_ptr;
 }
 
 static void _init_node_cr(void)
@@ -1587,11 +1526,10 @@ static void _init_node_cr(void)
 	uint32_t job_memory_cpu, job_memory_node;
 	int exclusive, i, i_first, i_last;
 
-	if (cr_ptr)
+	if (node_cr_ptr)
 		return;
 
-	cr_ptr = xmalloc(sizeof(struct cr_record));
-	cr_ptr->nodes = xmalloc(select_node_cnt * sizeof(struct node_cr_record));
+	node_cr_ptr = xmalloc(select_node_cnt * sizeof(struct node_cr_record));
 
 	/* build partition records */
 	part_iterator = list_iterator_create(part_list);
@@ -1602,9 +1540,9 @@ static void _init_node_cr(void)
 			if (!bit_test(part_ptr->node_bitmap, i))
 				continue;
 			part_cr_ptr = xmalloc(sizeof(struct part_cr_record));
-			part_cr_ptr->next = cr_ptr->nodes[i].parts;
+			part_cr_ptr->next = node_cr_ptr[i].parts;
 			part_cr_ptr->part_ptr = part_ptr;
-			cr_ptr->nodes[i].parts = part_cr_ptr;
+			node_cr_ptr[i].parts = part_cr_ptr;
 		}
 
 	}
@@ -1620,28 +1558,24 @@ static void _init_node_cr(void)
 			      job_ptr->job_id);
 			continue;
 		}
-		if (IS_JOB_RUNNING(job_ptr))
-			_add_run_job(cr_ptr, job_ptr->job_id);
-		_add_tot_job(cr_ptr, job_ptr->job_id);
 
 		job_memory_cpu  = 0;
 		job_memory_node = 0;
-		if (job_ptr->details && job_ptr->details->pn_min_memory &&
+		if (job_ptr->details && job_ptr->details->job_min_memory &&
 		    (cr_type == CR_MEMORY)) {
-			if (job_ptr->details->pn_min_memory & MEM_PER_CPU) {
+			if (job_ptr->details->job_min_memory & MEM_PER_CPU) {
 				job_memory_cpu = job_ptr->details->
-						 pn_min_memory &
+						 job_min_memory &
 						 (~MEM_PER_CPU);
 			} else {
 				job_memory_node = job_ptr->details->
-						  pn_min_memory;
+						  job_min_memory;
 			}
 		}
 		exclusive = (job_ptr->details->shared == 0);
 
-		/* Use job_resrcs_ptr->node_bitmap rather than 
-		 * job_ptr->node_bitmap which can have DOWN nodes 
-		 * cleared from the bitmap */
+		/* Use job_resrcs_ptr->node_bitmap rather than job_ptr->node_bitmap
+		 * which can have DOWN nodes cleared from the bitmap */
 		if (job_resrcs_ptr->node_bitmap == NULL)
 			continue;
 		i_first = bit_ffs(job_resrcs_ptr->node_bitmap);
@@ -1650,29 +1584,32 @@ static void _init_node_cr(void)
 			if (!bit_test(job_resrcs_ptr->node_bitmap, i))
 				continue;
 			if (exclusive)
-				cr_ptr->nodes[i].exclusive_cnt++;
+				node_cr_ptr[i].exclusive_cnt++;
 			if (job_memory_cpu == 0)
-				cr_ptr->nodes[i].alloc_memory += job_memory_node;
+				node_cr_ptr[i].alloc_memory += job_memory_node;
 			else if (select_fast_schedule) {
-				cr_ptr->nodes[i].alloc_memory +=
+				node_cr_ptr[i].alloc_memory +=
 						job_memory_cpu *
 						node_record_table_ptr[i].
 						config_ptr->cpus;
 			} else {
-				cr_ptr->nodes[i].alloc_memory +=
+				node_cr_ptr[i].alloc_memory +=
 						job_memory_cpu *
 						node_record_table_ptr[i].cpus;
 			}
-			part_cr_ptr = cr_ptr->nodes[i].parts;
+			part_cr_ptr = node_cr_ptr[i].parts;
 			while (part_cr_ptr) {
 				if (part_cr_ptr->part_ptr !=
 				    job_ptr->part_ptr) {
 					part_cr_ptr = part_cr_ptr->next;
 					continue;
 				}
-				if (IS_JOB_RUNNING(job_ptr))
-					part_cr_ptr->run_job_cnt++;
 				part_cr_ptr->tot_job_cnt++;
+				if (IS_JOB_RUNNING(job_ptr)) {
+					_add_run_job(part_cr_ptr,
+						     job_ptr->job_id);
+					part_cr_ptr->run_job_cnt++;
+				}
 				break;
 			}
 			if (part_cr_ptr == NULL) {
@@ -1684,7 +1621,7 @@ static void _init_node_cr(void)
 		}
 	}
 	list_iterator_destroy(job_iterator);
-	_dump_node_cr(cr_ptr);
+	_dump_node_cr(node_cr_ptr);
 }
 
 static int _find_job (void *x, void *key)
@@ -1713,10 +1650,10 @@ static int _test_only(struct job_record *job_ptr, bitstr_t *bitmap,
 	int rc;
 	uint32_t save_mem;
 
-	save_mem = job_ptr->details->pn_min_memory;
-	job_ptr->details->pn_min_memory = 0;
+	save_mem = job_ptr->details->job_min_memory;
+	job_ptr->details->job_min_memory = 0;
 	rc = _job_test(job_ptr, bitmap, min_nodes, max_nodes, req_nodes);
-	job_ptr->details->pn_min_memory = save_mem;
+	job_ptr->details->job_min_memory = save_mem;
 
 	return rc;
 }
@@ -1733,7 +1670,7 @@ static int _run_now(struct job_record *job_ptr, bitstr_t *bitmap,
 	int max_run_job, j, sus_jobs, rc = EINVAL, prev_cnt = -1;
 	struct job_record *tmp_job_ptr;
 	ListIterator job_iterator, preemptee_iterator;
-	struct cr_record *exp_cr;
+	struct node_cr_record *exp_node_cr;
 
 	orig_map = bit_copy(bitmap);
 	if (!orig_map)
@@ -1745,7 +1682,7 @@ static int _run_now(struct job_record *job_ptr, bitstr_t *bitmap,
 		     sus_jobs+=4) {
 			if (last_iteration)
 				sus_jobs = NO_SHARE_LIMIT;
-			j = _job_count_bitmap(cr_ptr, job_ptr,
+			j = _job_count_bitmap(node_cr_ptr, job_ptr,
 					      orig_map, bitmap,
 					      max_run_job,
 					      max_run_job + sus_jobs);
@@ -1777,7 +1714,7 @@ static int _run_now(struct job_record *job_ptr, bitstr_t *bitmap,
 	}
 
 	if ((rc != SLURM_SUCCESS) && preemptee_candidates &&
-	    (exp_cr = _dup_cr(cr_ptr))) {
+	    (exp_node_cr = _dup_node_cr(node_cr_ptr))) {
 		/* Remove all preemptable jobs from simulated environment */
 		job_iterator = list_iterator_create(job_list);
 		while ((tmp_job_ptr = (struct job_record *)
@@ -1788,10 +1725,10 @@ static int _run_now(struct job_record *job_ptr, bitstr_t *bitmap,
 			if (_is_preemptable(tmp_job_ptr,
 					    preemptee_candidates)) {
 				/* Remove preemptable job now */
-				_rm_job_from_nodes(exp_cr, tmp_job_ptr,
+				_rm_job_from_nodes(exp_node_cr, tmp_job_ptr,
 						   "_will_run_test",
 						   _job_preemption_killing());
-				j = _job_count_bitmap(exp_cr, job_ptr,
+				j = _job_count_bitmap(exp_node_cr, job_ptr,
 						      orig_map, bitmap,
 						      (max_share - 1),
 						      NO_SHARE_LIMIT);
@@ -1827,7 +1764,7 @@ static int _run_now(struct job_record *job_ptr, bitstr_t *bitmap,
 			}
 			list_iterator_destroy(preemptee_iterator);
 		}
-		_free_cr(exp_cr);
+		_free_node_cr(exp_node_cr);
 	}
 	if (rc == SLURM_SUCCESS)
 		_build_select_struct(job_ptr, bitmap);
@@ -1837,7 +1774,7 @@ static int _run_now(struct job_record *job_ptr, bitstr_t *bitmap,
 }
 
 /* Determine where and when the job at job_ptr can begin execution by updating
- * a scratch cr_record structure to reflect each job terminating at the
+ * a scratch node_cr_record structure to reflect each job terminating at the
  * end of its time limit and use this to show where and when the job at job_ptr
  * will begin execution. Used by SLURM's sched/backfill plugin and Moab. */
 static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
@@ -1846,7 +1783,7 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			  List preemptee_candidates,
 			  List *preemptee_job_list)
 {
-	struct cr_record *exp_cr;
+	struct node_cr_record *exp_node_cr;
 	struct job_record *tmp_job_ptr;
 	List cr_job_list;
 	ListIterator job_iterator, preemptee_iterator;
@@ -1860,7 +1797,7 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		fatal("bit_copy: malloc failure");
 
 	/* Try to run with currently available nodes */
-	i = _job_count_bitmap(cr_ptr, job_ptr, orig_map, bitmap,
+	i = _job_count_bitmap(node_cr_ptr, job_ptr, orig_map, bitmap,
 			      max_run_jobs, NO_SHARE_LIMIT);
 	if (i >= min_nodes) {
 		rc = _job_test(job_ptr, bitmap, min_nodes, max_nodes,
@@ -1874,8 +1811,8 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 
 	/* Job is still pending. Simulate termination of jobs one at a time
 	 * to determine when and where the job can start. */
-	exp_cr = _dup_cr(cr_ptr);
-	if (exp_cr == NULL) {
+	exp_node_cr = _dup_node_cr(node_cr_ptr);
+	if (exp_node_cr == NULL) {
 		bit_free(orig_map);
 		return SLURM_ERROR;
 	}
@@ -1895,7 +1832,7 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		}
 		if (_is_preemptable(tmp_job_ptr, preemptee_candidates)) {
 			/* Remove preemptable job now */
-			_rm_job_from_nodes(exp_cr, tmp_job_ptr,
+			_rm_job_from_nodes(exp_node_cr, tmp_job_ptr,
 					   "_will_run_test",
 					   _job_preemption_killing());
 		} else
@@ -1906,7 +1843,7 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 
 	/* Test with all preemptable jobs gone */
 	if (preemptee_candidates) {
-		i = _job_count_bitmap(exp_cr, job_ptr, orig_map, bitmap,
+		i = _job_count_bitmap(exp_node_cr, job_ptr, orig_map, bitmap,
 				      max_run_jobs, NO_SHARE_LIMIT);
 		if (i >= min_nodes) {
 			rc = _job_test(job_ptr, bitmap, min_nodes, max_nodes,
@@ -1923,9 +1860,9 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		job_iterator = list_iterator_create(cr_job_list);
 		while ((tmp_job_ptr = (struct job_record *)
 				       list_next(job_iterator))) {
-			_rm_job_from_nodes(exp_cr, tmp_job_ptr,
+			_rm_job_from_nodes(exp_node_cr, tmp_job_ptr,
 					   "_will_run_test", true);
-			i = _job_count_bitmap(exp_cr, job_ptr, orig_map,
+			i = _job_count_bitmap(exp_node_cr, job_ptr, orig_map,
 					      bitmap, max_run_jobs,
 					      NO_SHARE_LIMIT);
 			if (i < min_nodes)
@@ -1966,7 +1903,7 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	}
 
 	list_destroy(cr_job_list);
-	_free_cr(exp_cr);
+	_free_node_cr(exp_node_cr);
 	bit_free(orig_map);
 	return rc;
 }
@@ -1992,7 +1929,8 @@ extern int init ( void )
 	error("%s is incompatible with BlueGene", plugin_name);
 	fatal("Use SelectType=select/bluegene");
 #endif
-	cr_type = slurmctld_conf.select_type_param;
+	cr_type = (select_type_plugin_info_t)
+			slurmctld_conf.select_type_param;
 	return rc;
 }
 
@@ -2003,8 +1941,8 @@ extern int fini ( void )
 	rc = _fini_status_pthread();
 #endif
 	slurm_mutex_lock(&cr_mutex);
-	_free_cr(cr_ptr);
-	cr_ptr = NULL;
+	_free_node_cr(node_cr_ptr);
+	node_cr_ptr = NULL;
 	slurm_mutex_unlock(&cr_mutex);
 	return rc;
 }
@@ -2045,8 +1983,8 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 	 * can't rebuild it since the partition and node structures
 	 * have not yet had node bitmaps reset. */
 	slurm_mutex_lock(&cr_mutex);
-	_free_cr(cr_ptr);
-	cr_ptr = NULL;
+	_free_node_cr(node_cr_ptr);
+	node_cr_ptr = NULL;
 	slurm_mutex_unlock(&cr_mutex);
 
 	select_node_ptr = node_ptr;
@@ -2088,7 +2026,7 @@ extern int select_p_block_init(List part_list)
  * NOTE: the job information that is considered for scheduling includes:
  *	req_node_bitmap: bitmap of specific nodes required by the job
  *	contiguous: allocated nodes must be sequentially located
- *	num_cpus: minimum number of processors required by the job
+ *	num_procs: minimum number of processors required by the job
  * NOTE: bitmap must be a superset of the job's required at the time that
  *	select_p_job_test is called
  */
@@ -2105,11 +2043,12 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		return EINVAL;
 
 	slurm_mutex_lock(&cr_mutex);
-	if (cr_ptr == NULL) {
+	if (node_cr_ptr == NULL) {
 		_init_node_cr();
-		if (cr_ptr == NULL) {
+		if (node_cr_ptr == NULL) {
 			slurm_mutex_unlock(&cr_mutex);
-			error("select_p_job_test: cr_ptr not initialized");
+			error("select_p_job_test: node_cr_ptr not "
+			      "initialized");
 			return SLURM_ERROR;
 		}
 	}
@@ -2173,9 +2112,9 @@ extern int select_p_job_begin(struct job_record *job_ptr)
 	}
 #endif
 	slurm_mutex_lock(&cr_mutex);
-	if (cr_ptr == NULL)
+	if (node_cr_ptr == NULL)
 		_init_node_cr();
-	_add_job_to_nodes(cr_ptr, job_ptr, "select_p_job_begin", 1);
+	_add_job_to_nodes(node_cr_ptr, job_ptr, "select_p_job_begin", 1);
 	slurm_mutex_unlock(&cr_mutex);
 	return rc;
 }
@@ -2210,9 +2149,9 @@ extern int select_p_job_fini(struct job_record *job_ptr)
 	}
 #endif
 	slurm_mutex_lock(&cr_mutex);
-	if (cr_ptr == NULL)
+	if (node_cr_ptr == NULL)
 		_init_node_cr();
-	_rm_job_from_nodes(cr_ptr, job_ptr, "select_p_job_fini", true);
+	_rm_job_from_nodes(node_cr_ptr, job_ptr, "select_p_job_fini", true);
 	slurm_mutex_unlock(&cr_mutex);
 	return rc;
 }
@@ -2220,9 +2159,10 @@ extern int select_p_job_fini(struct job_record *job_ptr)
 extern int select_p_job_suspend(struct job_record *job_ptr)
 {
 	slurm_mutex_lock(&cr_mutex);
-	if (cr_ptr == NULL)
+	if (node_cr_ptr == NULL)
 		_init_node_cr();
-	_rm_job_from_nodes(cr_ptr, job_ptr, "select_p_job_suspend", false);
+	_rm_job_from_nodes(node_cr_ptr, job_ptr, "select_p_job_suspend",
+			   false);
 	slurm_mutex_unlock(&cr_mutex);
 	return SLURM_SUCCESS;
 }
@@ -2230,9 +2170,9 @@ extern int select_p_job_suspend(struct job_record *job_ptr)
 extern int select_p_job_resume(struct job_record *job_ptr)
 {
 	slurm_mutex_lock(&cr_mutex);
-	if (cr_ptr == NULL)
+	if (node_cr_ptr == NULL)
 		_init_node_cr();
-	_add_job_to_nodes(cr_ptr, job_ptr, "select_p_job_resume", 0);
+	_add_job_to_nodes(node_cr_ptr, job_ptr, "select_p_job_resume", 0);
 	slurm_mutex_unlock(&cr_mutex);
 	return SLURM_SUCCESS;
 }
@@ -2333,7 +2273,7 @@ extern int select_p_select_nodeinfo_set(struct job_record *job_ptr)
 	xassert(job_ptr);
 
 	slurm_mutex_lock(&cr_mutex);
-	if (cr_ptr == NULL)
+	if (node_cr_ptr == NULL)
 		_init_node_cr();
 	slurm_mutex_unlock(&cr_mutex);
 
@@ -2469,8 +2409,8 @@ extern int select_p_reconfigure(void)
 	job_preemption_enabled = false;
 	job_preemption_killing = false;
 	job_preemption_tested  = false;
-	_free_cr(cr_ptr);
-	cr_ptr = NULL;
+	_free_node_cr(node_cr_ptr);
+	node_cr_ptr = NULL;
 	_init_node_cr();
 	slurm_mutex_unlock(&cr_mutex);
 

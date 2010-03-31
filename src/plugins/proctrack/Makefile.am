@@ -12,4 +12,4 @@ if HAVE_LUA
 LUA = lua
 endif
 
-SUBDIRS = $(AIX_PROCTRACK) $(SGI_JOB) $(LUA) pgid linuxproc rms cgroup
+SUBDIRS = $(AIX_PROCTRACK) $(SGI_JOB) $(LUA) pgid linuxproc rms

@@ -2,7 +2,7 @@
  *  update_job.c - update job functions for scontrol.
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -296,7 +296,7 @@ scontrol_update_job (int argc, char *argv[])
 			return -1;
 		}
 
-		if (strncasecmp(tag, "JobId", MAX(taglen, 3)) == 0) {
+		if (strncasecmp(tag, "JobId", MAX(taglen, 1)) == 0) {
 			job_msg.job_id =
 				(uint32_t) strtol(val, (char **) NULL, 10);
 		}
@@ -304,7 +304,7 @@ scontrol_update_job (int argc, char *argv[])
 			job_msg.comment = val;
 			update_cnt++;
 		}
-		else if (strncasecmp(tag, "TimeLimit", MAX(taglen, 5)) == 0) {
+		else if (strncasecmp(tag, "TimeLimit", MAX(taglen, 2)) == 0) {
 			int time_limit = time_str2mins(val);
 			if ((time_limit < 0) && (time_limit != INFINITE)) {
 				error("Invalid TimeLimit value");
@@ -312,16 +312,6 @@ scontrol_update_job (int argc, char *argv[])
 				return 0;
 			}
 			job_msg.time_limit = time_limit;
-			update_cnt++;
-		}
-		else if (strncasecmp(tag, "TimeMin", MAX(taglen, 5)) == 0) {
-			int time_min = time_str2mins(val);
-			if ((time_min < 0) && (time_min != INFINITE)) {
-				error("Invalid TimeMin value");
-				exit_code = 1;
-				return 0;
-			}
-			job_msg.time_min = time_min;
 			update_cnt++;
 		}
 		else if (strncasecmp(tag, "Priority", MAX(taglen, 2)) == 0) {
@@ -342,24 +332,10 @@ scontrol_update_job (int argc, char *argv[])
 			job_msg.nice = NICE_OFFSET + nice;
 			update_cnt++;
 		}
-		else if (strncasecmp(tag, "NumCPUs", MAX(taglen, 6)) == 0) {
-			int min_cpus, max_cpus=0;
-			if (!get_resource_arg_range(val, "NumCPUs", &min_cpus,
-						   &max_cpus, false) ||
-			    (min_cpus <= 0) || 
-			    (max_cpus && (max_cpus < min_cpus))) {
-				error("Invalid NumCPUs value: %s", val);
-				exit_code = 1;
-				return 0;
-			}
-			job_msg.min_cpus = min_cpus;
-			if (max_cpus)
-				job_msg.max_cpus = max_cpus;
-			update_cnt++;
-		}
-		/* ReqProcs was removed in SLURM version 2.1 */
-		else if (strncasecmp(tag, "ReqProcs", MAX(taglen, 8)) == 0) {
-			job_msg.num_tasks =
+		/* ReqProcs was replaced by NumTasks in SLURM version 2.1 */
+		else if ((strncasecmp(tag, "ReqProcs", MAX(taglen, 4)) == 0) ||
+			 (strncasecmp(tag, "NumTasks", MAX(taglen, 8)) == 0)) {
+			job_msg.num_procs =
 				(uint32_t) strtol(val, (char **) NULL, 10);
 			update_cnt++;
 		}
@@ -402,26 +378,26 @@ scontrol_update_job (int argc, char *argv[])
 			update_cnt++;
 		}
 		else if (strncasecmp(tag, "MinCPUsNode", MAX(taglen, 4)) == 0) {
-			job_msg.pn_min_cpus =
+			job_msg.job_min_cpus =
 				(uint32_t) strtol(val, (char **) NULL, 10);
 			update_cnt++;
 		}
 		else if (strncasecmp(tag, "MinMemoryNode",
 				     MAX(taglen, 10)) == 0) {
-			job_msg.pn_min_memory =
+			job_msg.job_min_memory =
 				(uint32_t) strtol(val, (char **) NULL, 10);
 			update_cnt++;
 		}
 		else if (strncasecmp(tag, "MinMemoryCPU",
 				     MAX(taglen, 10)) == 0) {
-			job_msg.pn_min_memory =
+			job_msg.job_min_memory =
 				(uint32_t) strtol(val, (char **) NULL, 10);
-			job_msg.pn_min_memory |= MEM_PER_CPU;
+			job_msg.job_min_memory |= MEM_PER_CPU;
 			update_cnt++;
 		}
 		else if (strncasecmp(tag, "MinTmpDiskNode",
 				     MAX(taglen, 5)) == 0) {
-			job_msg.pn_min_tmp_disk =
+			job_msg.job_min_tmp_disk =
 				(uint32_t) strtol(val, (char **) NULL, 10);
 			update_cnt++;
 		}
@@ -468,8 +444,7 @@ scontrol_update_job (int argc, char *argv[])
 			job_msg.exc_nodes = val;
 			update_cnt++;
 		}
-		else if (!strncasecmp(tag, "NodeList",    MAX(taglen, 8)) ||
-			 !strncasecmp(tag, "ReqNodeList", MAX(taglen, 8))) {
+		else if (strncasecmp(tag, "ReqNodeList", MAX(taglen, 8)) == 0){
 			job_msg.req_nodes = val;
 			update_cnt++;
 		}

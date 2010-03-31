@@ -68,6 +68,7 @@
 
 #define STAT_FIELDS "jobid,maxvmsize,maxvmsizenode,maxvmsizetask,avevmsize,maxrss,maxrssnode,maxrsstask,averss,maxpages,maxpagesnode,maxpagestask,avepages,mincpu,mincpunode,mincputask,avecpu,ntasks"
 
+#define BUFFER_SIZE 4096
 #define STATE_COUNT 10
 
 #define MAX_PRINTFIELDS 100
@@ -124,10 +125,10 @@ extern int printfields[MAX_PRINTFIELDS],	/* Indexed into fields[] */
 
 /* process.c */
 char *find_hostname(uint32_t pos, char *hosts);
-void aggregate_stats(slurmdb_stats_t *dest, slurmdb_stats_t *from);
+void aggregate_sacct(sacct_t *dest, sacct_t *from);
 
 /* print.c */
-void print_fields(slurmdb_step_rec_t *step);
+void print_fields(jobacct_step_rec_t *step);
 
 /* options.c */
 void parse_command_line(int argc, char **argv);

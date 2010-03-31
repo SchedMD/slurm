@@ -67,7 +67,7 @@ int init( void )
 {
 	pthread_attr_t attr;
 
-	verbose( "sched: Backfill scheduler plugin loaded" );
+	verbose( "Backfill scheduler plugin loaded" );
 
 	pthread_mutex_lock( &thread_flag_mutex );
 	if ( backfill_thread ) {

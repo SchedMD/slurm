@@ -341,7 +341,7 @@ extern int select_p_state_save(char *dir_name)
 #endif
 		xassert(bg_record->bg_block_id != NULL);
 
-		pack_block(bg_record, buffer, SLURM_PROTOCOL_VERSION);
+		pack_block(bg_record, buffer);
 		blocks_packed++;
 	}
 	list_iterator_destroy(itr);
@@ -536,8 +536,7 @@ extern int select_p_job_resume(struct job_record *job_ptr)
 	return ESLURM_NOT_SUPPORTED;
 }
 
-extern int select_p_pack_select_info(time_t last_query_time, Buf *buffer_ptr,
-				     uint16_t protocol_version)
+extern int select_p_pack_select_info(time_t last_query_time, Buf *buffer_ptr)
 {
 	ListIterator itr;
 	bg_record_t *bg_record = NULL;
@@ -555,38 +554,35 @@ extern int select_p_pack_select_info(time_t last_query_time, Buf *buffer_ptr,
 		pack32(blocks_packed, buffer);
 		pack_time(last_bg_update, buffer);
 
-		if(protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
-			if(bg_lists->main) {
-				slurm_mutex_lock(&block_state_mutex);
-				itr = list_iterator_create(bg_lists->main);
-				while ((bg_record = list_next(itr))) {
-					pack_block(bg_record, buffer,
-						   protocol_version);
-					blocks_packed++;
-				}
-				list_iterator_destroy(itr);
-				slurm_mutex_unlock(&block_state_mutex);
-			} else {
-				error("select_p_pack_select_info: "
-				      "no bg_lists->main");
-				return SLURM_ERROR;
+		if(bg_lists->main) {
+			slurm_mutex_lock(&block_state_mutex);
+			itr = list_iterator_create(bg_lists->main);
+			while ((bg_record = list_next(itr))) {
+				pack_block(bg_record, buffer);
+				blocks_packed++;
 			}
-			/*
-			 * get all the blocks we are freeing since they have
-			 * been moved here
-			 */
-			if(bg_lists->freeing) {
-				slurm_mutex_lock(&block_state_mutex);
-				itr = list_iterator_create(bg_lists->freeing);
-				while ((bg_record = list_next(itr))) {
-					xassert(bg_record->bg_block_id != NULL);
-					pack_block(bg_record, buffer,
-						   protocol_version);
-					blocks_packed++;
-				}
-				list_iterator_destroy(itr);
-				slurm_mutex_unlock(&block_state_mutex);
+			list_iterator_destroy(itr);
+			slurm_mutex_unlock(&block_state_mutex);
+		} else {
+			error("select_p_pack_select_info: no bg_lists->main");
+			return SLURM_ERROR;
+		}
+		/*
+		 * get all the blocks we are freeing since they have
+		 * been moved here
+		 */
+		if(bg_lists->freeing) {
+			slurm_mutex_lock(&block_state_mutex);
+			itr = list_iterator_create(bg_lists->freeing);
+			while ((bg_record = (bg_record_t *) list_next(itr))
+			       != NULL) {
+				xassert(bg_record->bg_block_id != NULL);
+
+				pack_block(bg_record, buffer);
+				blocks_packed++;
 			}
+			list_iterator_destroy(itr);
+			slurm_mutex_unlock(&block_state_mutex);
 		}
 		tmp_offset = get_buf_offset(buffer);
 		set_buf_offset(buffer, 0);
@@ -603,17 +599,15 @@ extern int select_p_pack_select_info(time_t last_query_time, Buf *buffer_ptr,
 }
 
 extern int select_p_select_nodeinfo_pack(select_nodeinfo_t *nodeinfo,
-					 Buf buffer,
-					 uint16_t protocol_version)
+					 Buf buffer)
 {
-	return select_nodeinfo_pack(nodeinfo, buffer, protocol_version);
+	return select_nodeinfo_pack(nodeinfo, buffer);
 }
 
 extern int select_p_select_nodeinfo_unpack(select_nodeinfo_t **nodeinfo,
-					   Buf buffer,
-					   uint16_t protocol_version)
+					   Buf buffer)
 {
-	return select_nodeinfo_unpack(nodeinfo, buffer, protocol_version);
+	return select_nodeinfo_unpack(nodeinfo, buffer);
 }
 
 extern select_nodeinfo_t *select_p_select_nodeinfo_alloc(uint32_t size)
@@ -672,17 +666,15 @@ extern int select_p_select_jobinfo_free  (select_jobinfo_t *jobinfo)
 	return free_select_jobinfo(jobinfo);
 }
 
-extern int  select_p_select_jobinfo_pack(select_jobinfo_t *jobinfo, Buf buffer,
-					 uint16_t protocol_version)
+extern int  select_p_select_jobinfo_pack(select_jobinfo_t *jobinfo, Buf buffer)
 {
-	return pack_select_jobinfo(jobinfo, buffer, protocol_version);
+	return pack_select_jobinfo(jobinfo, buffer);
 }
 
 extern int  select_p_select_jobinfo_unpack(select_jobinfo_t **jobinfo,
-					   Buf buffer,
-					   uint16_t protocol_version)
+					   Buf buffer)
 {
-	return unpack_select_jobinfo(jobinfo, buffer, protocol_version);
+	return unpack_select_jobinfo(jobinfo, buffer);
 }
 
 extern char *select_p_select_jobinfo_sprint(select_jobinfo_t *jobinfo,
@@ -701,7 +693,8 @@ extern int select_p_update_block (update_block_msg_t *block_desc_ptr)
 {
 	int rc = SLURM_SUCCESS;
 	bg_record_t *bg_record = NULL;
-	char reason[200];
+	time_t now;
+	char reason[128], tmp[64], time_str[32];
 
 	if(!block_desc_ptr->bg_block_id) {
 		error("update_block: No name specified");
@@ -716,24 +709,27 @@ extern int select_p_update_block (update_block_msg_t *block_desc_ptr)
 		return ESLURM_INVALID_BLOCK_NAME;
 	}
 
+	now = time(NULL);
+	slurm_make_time_str(&now, time_str, sizeof(time_str));
+	snprintf(tmp, sizeof(tmp), "[SLURM@%s]", time_str);
 	if(block_desc_ptr->state == RM_PARTITION_NAV) {
 		if(bg_record->conn_type < SELECT_SMALL)
 			snprintf(reason, sizeof(reason),
 				 "update_block: "
-				 "Admin removing block %s",
-				 bg_record->bg_block_id);
+				 "Admin removing block %s %s",
+				 bg_record->bg_block_id, tmp);
 		else
 			snprintf(reason, sizeof(reason),
 				 "update_block: "
-				 "Removing all blocks on midplane %s",
-				 bg_record->nodes);
+				 "Removing all blocks on midplane %s %s",
+				 bg_record->nodes, tmp);
 
 	} else {
 		snprintf(reason, sizeof(reason),
 			 "update_block: "
-			 "Admin set block %s state to %s",
+			 "Admin set block %s state to %s %s",
 			 bg_record->bg_block_id,
-			 bg_block_state_string(block_desc_ptr->state));
+			 bg_block_state_string(block_desc_ptr->state), tmp);
 	}
 	/* First fail any job running on this block */
 	if(bg_record->job_running > NO_JOB_RUNNING) {
@@ -1138,6 +1134,10 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 		tmp = 1;
 		set_select_jobinfo(job_desc->select_jobinfo,
 				   SELECT_JOBDATA_ALTERED, &tmp);
+		tmp = NO_VAL;
+		set_select_jobinfo(job_desc->select_jobinfo,
+				   SELECT_JOBDATA_MAX_CPUS,
+				   &tmp);
 
 		if(job_desc->min_nodes == (uint32_t) NO_VAL)
 			return SLURM_SUCCESS;
@@ -1155,16 +1155,16 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 			job_desc->max_nodes = job_desc->min_nodes;
 		}
 
-		/* make sure if the user only specified min_cpus to
+		/* make sure if the user only specified num_procs to
 		   set min_nodes correctly
 		*/
-		if((job_desc->min_cpus != NO_VAL)
-		   && (job_desc->min_cpus > job_desc->min_nodes))
+		if((job_desc->num_procs != NO_VAL)
+		   && (job_desc->num_procs > job_desc->min_nodes))
 			job_desc->min_nodes =
-				job_desc->min_cpus / bg_conf->cpu_ratio;
+				job_desc->num_procs / bg_conf->cpu_ratio;
 
-		/* initialize min_cpus to the min_nodes */
-		job_desc->min_cpus = job_desc->min_nodes * bg_conf->cpu_ratio;
+		/* initialize num_procs to the min_nodes */
+		job_desc->num_procs = job_desc->min_nodes * bg_conf->cpu_ratio;
 
 		if((job_desc->max_nodes == (uint32_t) NO_VAL)
 		   || (job_desc->max_nodes < job_desc->min_nodes))
@@ -1190,7 +1190,7 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 					     SELECT_JOBDATA_NODE_CNT,
 					     &job_desc->min_nodes);
 			job_desc->min_nodes = tmp;
-			job_desc->min_cpus = bg_conf->cpus_per_bp * tmp;
+			job_desc->num_procs = bg_conf->cpus_per_bp * tmp;
 		} else {
 #ifdef HAVE_BGL
 			if(job_desc->min_nodes <= bg_conf->nodecard_node_cnt
@@ -1211,7 +1211,7 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 
 			tmp = bg_conf->bp_node_cnt/job_desc->min_nodes;
 
-			job_desc->min_cpus = bg_conf->cpus_per_bp/tmp;
+			job_desc->num_procs = bg_conf->cpus_per_bp/tmp;
 			job_desc->min_nodes = 1;
 #else
 			i = bg_conf->smallest_block;
@@ -1227,11 +1227,12 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 					   SELECT_JOBDATA_NODE_CNT,
 					   &job_desc->min_nodes);
 
-			job_desc->min_cpus = job_desc->min_nodes
+			job_desc->num_procs = job_desc->min_nodes
 				* bg_conf->cpu_ratio;
 			job_desc->min_nodes = 1;
 #endif
 		}
+		//job_desc->job_min_cpus = job_desc->num_procs;
 
 		if(job_desc->max_nodes > bg_conf->bp_node_cnt) {
 			tmp = job_desc->max_nodes % bg_conf->bp_node_cnt;
@@ -1243,8 +1244,10 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 
 		if(tmp > 0) {
 			job_desc->max_nodes = tmp;
-			job_desc->max_cpus =
-				job_desc->max_nodes * bg_conf->cpus_per_bp;
+			tmp *= bg_conf->cpus_per_bp;
+			set_select_jobinfo(job_desc->select_jobinfo,
+					   SELECT_JOBDATA_MAX_CPUS,
+					   &tmp);
 			tmp = NO_VAL;
 		} else {
 #ifdef HAVE_BGL
@@ -1261,7 +1264,11 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 					bg_conf->bp_node_cnt;
 
 			tmp = bg_conf->bp_node_cnt/job_desc->max_nodes;
-			job_desc->max_cpus = bg_conf->cpus_per_bp/tmp;
+			tmp = bg_conf->cpus_per_bp/tmp;
+
+			set_select_jobinfo(job_desc->select_jobinfo,
+					   SELECT_JOBDATA_MAX_CPUS,
+					   &tmp);
 			job_desc->max_nodes = 1;
 #else
 			i = bg_conf->smallest_block;
@@ -1272,8 +1279,10 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 				}
 				i *= 2;
 			}
-			job_desc->max_cpus =
-				job_desc->max_nodes * bg_conf->cpu_ratio;
+			tmp = job_desc->max_nodes * bg_conf->cpu_ratio;
+			set_select_jobinfo(job_desc->select_jobinfo,
+					   SELECT_JOBDATA_MAX_CPUS,
+					   &tmp);
 
 			job_desc->max_nodes = 1;
 #endif

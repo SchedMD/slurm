@@ -42,8 +42,7 @@
 
 /*****************************************************/
 extern int block_ready(struct job_record *job_ptr);
-extern void pack_block(bg_record_t *bg_record, Buf buffer,
-		       uint16_t protocol_version);
+extern void pack_block(bg_record_t *bg_record, Buf buffer);
 extern int update_block_list();
 extern int update_freeing_block_list();
 #endif /* _BG_PART_INFO_H_ */

@@ -75,20 +75,17 @@ static node_subgrp_t *_find_subgrp(List subgrp_list, enum node_states state,
 	return subgrp;
 }
 
-static int _pack_node_subgrp(node_subgrp_t *subgrp, Buf buffer,
-			     uint16_t protocol_version)
+static int _pack_node_subgrp(node_subgrp_t *subgrp, Buf buffer)
 {
-	if(protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
-		pack_bit_fmt(subgrp->bitmap, buffer);
-		pack16(subgrp->node_cnt, buffer);
-		pack16(subgrp->state, buffer);
-	}
+	pack_bit_fmt(subgrp->bitmap, buffer);
+	pack16(subgrp->node_cnt, buffer);
+	pack16(subgrp->state, buffer);
 
 	return SLURM_SUCCESS;
 }
 
 static int _unpack_node_subgrp(node_subgrp_t **subgrp_pptr, Buf buffer,
-			       uint16_t bitmap_size, uint16_t protocol_version)
+			       uint16_t bitmap_size)
 {
 	node_subgrp_t *subgrp = xmalloc(sizeof(node_subgrp_t));
 	int j;
@@ -97,26 +94,24 @@ static int _unpack_node_subgrp(node_subgrp_t **subgrp_pptr, Buf buffer,
 
 	*subgrp_pptr = subgrp;
 
-	if(protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
-		safe_unpackstr_xmalloc(&subgrp->str, &uint32_tmp, buffer);
-		if (!subgrp->str)
-			subgrp->inx = bitfmt2int("");
-		else
-			subgrp->inx = bitfmt2int(subgrp->str);
+	safe_unpackstr_xmalloc(&subgrp->str, &uint32_tmp, buffer);
+	if (!subgrp->str)
+		subgrp->inx = bitfmt2int("");
+	else
+		subgrp->inx = bitfmt2int(subgrp->str);
 
-		subgrp->bitmap = bit_alloc(bitmap_size);
+	subgrp->bitmap = bit_alloc(bitmap_size);
 
-		j = 0;
-		while(subgrp->inx[j] >= 0) {
-			bit_nset(subgrp->bitmap, subgrp->inx[j],
-				 subgrp->inx[j+1]);
-			j+=2;
-		}
-
-		safe_unpack16(&subgrp->node_cnt, buffer);
-		safe_unpack16(&uint16_tmp, buffer);
-		subgrp->state = uint16_tmp;
+	j = 0;
+	while(subgrp->inx[j] >= 0) {
+		bit_nset(subgrp->bitmap, subgrp->inx[j], subgrp->inx[j+1]);
+		j+=2;
 	}
+
+	safe_unpack16(&subgrp->node_cnt, buffer);
+	safe_unpack16(&uint16_tmp, buffer);
+	subgrp->state = uint16_tmp;
+
 	return SLURM_SUCCESS;
 
 unpack_error:
@@ -125,57 +120,49 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-extern int select_nodeinfo_pack(select_nodeinfo_t *nodeinfo, Buf buffer,
-				uint16_t protocol_version)
+extern int select_nodeinfo_pack(select_nodeinfo_t *nodeinfo, Buf buffer)
 {
 	ListIterator itr;
 	node_subgrp_t *subgrp = NULL;
 	uint16_t count = 0;
 
-	if(protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
-		pack16(nodeinfo->bitmap_size, buffer);
+	pack16(nodeinfo->bitmap_size, buffer);
 
-		if(nodeinfo->subgrp_list)
-			count = list_count(nodeinfo->subgrp_list);
+	if(nodeinfo->subgrp_list)
+		count = list_count(nodeinfo->subgrp_list);
 
-		pack16(count, buffer);
+	pack16(count, buffer);
 
-		if(count > 0) {
-			itr = list_iterator_create(nodeinfo->subgrp_list);
-			while((subgrp = list_next(itr))) {
-				_pack_node_subgrp(subgrp, buffer,
-						  protocol_version);
-			}
-			list_iterator_destroy(itr);
+	if(count > 0) {
+		itr = list_iterator_create(nodeinfo->subgrp_list);
+		while((subgrp = list_next(itr))) {
+			_pack_node_subgrp(subgrp, buffer);
 		}
+		list_iterator_destroy(itr);
 	}
 	return SLURM_SUCCESS;
 }
 
-extern int select_nodeinfo_unpack(select_nodeinfo_t **nodeinfo, Buf buffer,
-				  uint16_t protocol_version)
+extern int select_nodeinfo_unpack(select_nodeinfo_t **nodeinfo, Buf buffer)
 {
 	uint16_t size = 0;
 	select_nodeinfo_t *nodeinfo_ptr = NULL;
 	uint32_t j = 0;
 
-	if(protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
-		safe_unpack16(&size, buffer);
+	safe_unpack16(&size, buffer);
 
-		nodeinfo_ptr = select_nodeinfo_alloc((uint32_t)size);
-		*nodeinfo = nodeinfo_ptr;
+	nodeinfo_ptr = select_nodeinfo_alloc((uint32_t)size);
+	*nodeinfo = nodeinfo_ptr;
 
-		safe_unpack16(&size, buffer);
-		nodeinfo_ptr->subgrp_list = list_create(_free_node_subgrp);
-		for(j=0; j<size; j++) {
-			node_subgrp_t *subgrp = NULL;
-			if(_unpack_node_subgrp(&subgrp, buffer,
-					       nodeinfo_ptr->bitmap_size,
-					       protocol_version)
-			   != SLURM_SUCCESS)
-				goto unpack_error;
-			list_append(nodeinfo_ptr->subgrp_list, subgrp);
-		}
+	safe_unpack16(&size, buffer);
+	nodeinfo_ptr->subgrp_list = list_create(_free_node_subgrp);
+	for(j=0; j<size; j++) {
+		node_subgrp_t *subgrp = NULL;
+		if(_unpack_node_subgrp(&subgrp, buffer,
+				       nodeinfo_ptr->bitmap_size)
+		   != SLURM_SUCCESS)
+			goto unpack_error;
+		list_append(nodeinfo_ptr->subgrp_list, subgrp);
 	}
 	return SLURM_SUCCESS;
 

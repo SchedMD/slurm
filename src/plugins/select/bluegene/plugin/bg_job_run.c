@@ -274,8 +274,7 @@ static int _make_sure_block_still_exists(bg_update_t *bg_update_ptr,
 		      bg_update_ptr->bg_block_id,
 		      bg_update_ptr->job_ptr->job_id);
 		lock_slurmctld(job_write_lock);
-		if((rc = job_requeue(0, bg_update_ptr->job_ptr->job_id,
-				     -1, (uint16_t)NO_VAL))) {
+		if((rc = job_requeue(0, bg_update_ptr->job_ptr->job_id, -1))) {
 			error("couldn't requeue job %u, failing it: %s",
 			      bg_update_ptr->job_ptr->job_id,
 			      slurm_strerror(rc));
@@ -394,11 +393,14 @@ static void _remove_jobs_on_block_and_reset(rm_job_list_t *job_list,
 		      bg_record->user_name);
 
 		if(job_remove_failed) {
+			char time_str[32], reason[128];
+			time_t now;
+			slurm_make_time_str(&now, time_str, sizeof(time_str));
+			snprintf(reason, sizeof(reason),
+				 "_term_agent: Couldn't remove job "
+				 "[SLURM@%s]", time_str);
 			if(bg_record->nodes)
-				slurm_drain_nodes(
-					bg_record->nodes,
-					"_term_agent: Couldn't remove job",
-					slurm_get_slurm_user_id());
+				slurm_drain_nodes(bg_record->nodes, reason);
 			else
 				error("Block %s doesn't have a node list.",
 				      block_id);
@@ -485,8 +487,7 @@ static void _sync_agent(bg_update_t *bg_update_ptr)
 		slurm_mutex_unlock(&block_state_mutex);
 		error("No block %s", bg_update_ptr->bg_block_id);
 		lock_slurmctld(job_write_lock);
-		if((rc = job_requeue(0, bg_update_ptr->job_ptr->job_id,
-				     -1, (uint16_t)NO_VAL))) {
+		if((rc = job_requeue(0, bg_update_ptr->job_ptr->job_id, -1))) {
 			error("couldn't requeue job %u, failing it: %s",
 			      bg_update_ptr->job_ptr->job_id,
 			      slurm_strerror(rc));
@@ -498,8 +499,8 @@ static void _sync_agent(bg_update_t *bg_update_ptr)
 	}
 
 	last_bg_update = time(NULL);
-	bg_update_ptr->job_ptr->total_cpus =
-		bg_update_ptr->job_ptr->details->min_cpus = bg_record->cpu_cnt;
+	bg_update_ptr->job_ptr->num_procs = bg_record->cpu_cnt;
+	bg_update_ptr->job_ptr->total_procs = bg_update_ptr->job_ptr->num_procs;
 	bg_record->job_running = bg_update_ptr->job_ptr->job_id;
 	bg_record->job_ptr = bg_update_ptr->job_ptr;
 
@@ -572,8 +573,7 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 		   incase the fail job isn't ran */
 		sleep(2);
 		lock_slurmctld(job_write_lock);
-		if((rc = job_requeue(0, bg_update_ptr->job_ptr->job_id,
-				     -1, (uint16_t)NO_VAL))) {
+		if((rc = job_requeue(0, bg_update_ptr->job_ptr->job_id, -1))) {
 			error("1 couldn't requeue job %u, failing it: %s",
 			      bg_update_ptr->job_ptr->job_id,
 			      slurm_strerror(rc));
@@ -656,8 +656,7 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 		   incase the fail job isn't ran */
 		sleep(2);
 		lock_slurmctld(job_write_lock);
-		if((rc = job_requeue(0, bg_update_ptr->job_ptr->job_id,
-				     -1, (uint16_t)NO_VAL))) {
+		if((rc = job_requeue(0, bg_update_ptr->job_ptr->job_id, -1))) {
 			error("2 couldn't requeue job %u, failing it: %s",
 			      bg_update_ptr->job_ptr->job_id,
 			      slurm_strerror(rc));
@@ -873,8 +872,7 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 			   incase the fail job isn't ran */
 			lock_slurmctld(job_write_lock);
 			if((rc = job_requeue(
-				    0, bg_update_ptr->job_ptr->job_id,
-				    -1, (uint16_t)NO_VAL))) {
+				    0, bg_update_ptr->job_ptr->job_id, -1))) {
 				error("3 couldn't requeue job %u, "
 				      "failing it: %s",
 				      bg_update_ptr->job_ptr->job_id,
@@ -1250,7 +1248,8 @@ extern int start_job(struct job_record *job_ptr)
 	}
 
 	last_bg_update = time(NULL);
-	job_ptr->total_cpus = job_ptr->details->min_cpus = bg_record->cpu_cnt;
+	job_ptr->num_procs = bg_record->cpu_cnt;
+	job_ptr->total_procs = job_ptr->num_procs;
 	bg_record->job_running = bg_update_ptr->job_ptr->job_id;
 	bg_record->job_ptr = bg_update_ptr->job_ptr;
 	if(!block_ptr_exist_in_list(bg_lists->job_running, bg_record)) {
@@ -1436,13 +1435,16 @@ extern int boot_block(bg_record_t *bg_record)
 		error("bridge_create_block(%s): %s",
 		      bg_record->bg_block_id, bg_err_str(rc));
 		if(rc == INCOMPATIBLE_STATE) {
-			char reason[200];
+			char reason[128], time_str[32];
+			time_t now = time(NULL);
+			slurm_make_time_str(&now, time_str, sizeof(time_str));
 			snprintf(reason, sizeof(reason),
 				 "boot_block: "
 				 "Block %s is in an incompatible state.  "
 				 "This usually means hardware is allocated "
-				 "by another block (maybe outside of SLURM).",
-				 bg_record->bg_block_id);
+				 "by another block (maybe outside of SLURM). "
+				 "[SLURM@%s]",
+				 bg_record->bg_block_id, time_str);
 			drain_as_needed(bg_record, reason);
 			bg_record->boot_state = 0;
 			bg_record->boot_count = 0;

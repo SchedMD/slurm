@@ -2,7 +2,7 @@
  *  step_ctx.c - step_ctx task functions for use by AIX/POE
  *****************************************************************************
  *  Copyright (C) 2004-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -72,29 +72,21 @@ _job_fake_cred(struct slurm_step_ctx_struct *ctx)
 	slurm_cred_arg_t arg;
 	uint32_t node_cnt = ctx->step_resp->step_layout->node_cnt;
 
-	arg.jobid          = ctx->job_id;
-	arg.stepid         = ctx->step_resp->job_step_id;
-	arg.uid            = ctx->user_id;
-
-	arg.job_nhosts     = node_cnt;
-	arg.job_hostlist   = ctx->step_resp->step_layout->node_list;
-	arg.job_mem_limit  = 0;
-
-	arg.step_hostlist  = ctx->step_req->node_list;
-	arg.step_mem_limit = 0;
-
-	arg.job_core_bitmap   = bit_alloc(node_cnt);
-	bit_nset(arg.job_core_bitmap,  0, node_cnt-1);
-	arg.step_core_bitmap  = bit_alloc(node_cnt);
-	bit_nset(arg.step_core_bitmap, 0, node_cnt-1);
-
+	arg.hostlist      = ctx->step_req->node_list;
+	arg.job_mem       = 0;
+	arg.jobid         = ctx->job_id;
+	arg.stepid        = ctx->step_resp->job_step_id;
+	arg.uid           = ctx->user_id;
+	arg.core_bitmap   = bit_alloc(node_cnt);
+	bit_nset(arg.core_bitmap, 0, node_cnt-1);
 	arg.cores_per_socket = xmalloc(sizeof(uint16_t));
 	arg.cores_per_socket[0] = 1;
 	arg.sockets_per_node = xmalloc(sizeof(uint16_t));
 	arg.sockets_per_node[0] = 1;
 	arg.sock_core_rep_count = xmalloc(sizeof(uint32_t));
 	arg.sock_core_rep_count[0] = node_cnt;
-
+	arg.job_nhosts    = node_cnt;
+	arg.job_hostlist  = ctx->step_resp->step_layout->node_list;
 	ctx->step_resp->cred = slurm_cred_faker(&arg);
 }
 
@@ -105,8 +97,7 @@ static job_step_create_request_msg_t *_create_step_request(
 		xmalloc(sizeof(job_step_create_request_msg_t));
 	step_req->job_id = step_params->job_id;
 	step_req->user_id = (uint32_t)step_params->uid;
-	step_req->min_nodes = step_params->min_nodes;
-	step_req->max_nodes = step_params->max_nodes;
+	step_req->node_count = step_params->node_count;
 	step_req->cpu_count = step_params->cpu_count;
 	step_req->num_tasks = step_params->task_count;
 	step_req->relative = step_params->relative;
@@ -228,7 +219,7 @@ slurm_step_ctx_create_no_alloc (const slurm_step_ctx_params_t *step_params,
 	step_resp->step_layout = fake_slurm_step_layout_create(
 		step_req->node_list,
 		NULL, NULL,
-		step_req->min_nodes,
+		step_req->node_count,
 		step_req->num_tasks);
 
 	if (switch_alloc_jobinfo(&step_resp->switch_job) < 0)
@@ -428,7 +419,7 @@ slurm_step_ctx_daemon_per_node_hack(slurm_step_ctx_t *ctx)
 	}
 
 	/* hack the context node count */
-	ctx->step_req->num_tasks = ctx->step_req->min_nodes;
+	ctx->step_req->num_tasks = ctx->step_req->node_count;
 
 	/* hack the context step layout */
 	old_layout = ctx->step_resp->step_layout;

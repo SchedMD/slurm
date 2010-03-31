@@ -266,7 +266,7 @@ _handle_msg(void *arg, slurm_msg_t *msg)
 		_handle_node_fail(msg_thr, msg);
 		break;
 	default:
-		error("received spurious message type: %d",
+		error("received spurious message type: %d\n",
 		      msg->msg_type);
 		break;
 	}

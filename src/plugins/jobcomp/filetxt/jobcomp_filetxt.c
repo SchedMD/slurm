@@ -295,7 +295,7 @@ extern int slurm_jobcomp_log_record ( struct job_record *job_ptr )
 		 job_state_string(job_state),
 		 job_ptr->partition, lim_str, start_str,
 		 end_str, job_ptr->nodes, job_ptr->node_cnt,
-		 job_ptr->total_cpus, work_dir,
+		 job_ptr->total_procs, work_dir,
 		 select_buf);
 	tot_size = strlen(job_rec);
 
@@ -333,7 +333,7 @@ extern char *slurm_jobcomp_strerror( int errnum )
  * in/out job_list List of job_rec_t *
  * note List needs to be freed when called
  */
-extern List slurm_jobcomp_get_jobs(slurmdb_job_cond_t *job_cond)
+extern List slurm_jobcomp_get_jobs(acct_job_cond_t *job_cond)
 {
 	return filetxt_jobcomp_process_get_jobs(job_cond);
 }
@@ -341,7 +341,7 @@ extern List slurm_jobcomp_get_jobs(slurmdb_job_cond_t *job_cond)
 /*
  * expire old info from the database
  */
-extern int slurm_jobcomp_archive(slurmdb_archive_cond_t *arch_cond)
+extern int slurm_jobcomp_archive(acct_archive_cond_t *arch_cond)
 {
 	return filetxt_jobcomp_process_archive(arch_cond);
 }

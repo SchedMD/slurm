@@ -202,45 +202,33 @@ but can only see themselves when listing users.
 .RE
 
 .TP
-\fBPurgeEventAfter\fR
+\fBPurgeEventMonths\fR
 Events happening on the cluster over this age are purged from the database.
-This includes node down times and such.
-The time is a numeric value and is a number of months.  If you want to purge
-more often you can include hours, or days behind the numeric value to get
-those more frequent purges. (i.e. a value of '12hours' would purge
-everything older than 12 hours.)
-If not set (default), then job step records are never purged.
+This includeds node down times and such.
+The time is a numeric value and is a number of months.
+If zero (default), then job step records are never purged.
 
 .TP
-\fBPurgeJobAfter\fR
+\fBPurgeJobMonths\fR
 Individual job records over this age are purged from the database.
 Aggregated information will be preserved indefinitely.
-The time is a numeric value and is a number of months.  If you want to purge
-more often you can include hours, or days behind the numeric value to get
-those more frequent purges. (i.e. a value of '12hours' would purge
-everything older than 12 hours.)
-If not set (default), then job records are never purged.
+The time is a numeric value and is a number of months.
+If zero (default), then job records are never purged.
 
 .TP
-\fBPurgeStepAfter\fR
+\fBPurgeStepMonths\fR
 Individual job step records over this age are purged from the database.
 Aggregated information will be preserved indefinitely.
-The time is a numeric value and is a number of months.  If you want to purge
-more often you can include hours, or days behind the numeric value to get
-those more frequent purges. (i.e. a value of '12hours' would purge
-everything older than 12 hours.)
-If not set (default), then job step records are never purged.
+The time is a numeric value and is a number of months.
+If zero (default), then job step records are never purged.
 
 .TP
-\fBPurgeSuspendAfter\fR
+\fBPurgeSuspendMonths\fR
 Records of individual suspend times for jobs over this age are purged from the
 database.
 Aggregated information will be preserved indefinitely.
-The time is a numeric value and is a number of months.  If you want to purge
-more often you can include hours, or days behind the numeric value to get
-those more frequent purges. (i.e. a value of '12hours' would purge
-everything older than 12 hours.)
-If not set (default), then job step records are never purged.
+The time is a numeric value and is a number of months.
+If zero (default), then job step records are never purged.
 
 .TP
 \fBSlurmUser\fR
@@ -337,13 +325,13 @@ DbdHost=db_host
 .br
 DebugLevel=4
 .br
-PurgeEventAfter=1month
+PurgeEventMonths=1
 .br
-PurgeJobAfter=12month
+PurgeJobMonths=12
 .br
-PurgeStepAfter=1month
+PurgeStepMonths=1
 .br
-PurgeSuspendAfter=1month
+PurgeSuspendMonths=1
 .br
 LogFile=/var/log/slurmdbd.log
 .br

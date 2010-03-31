@@ -47,55 +47,40 @@
  *
  * Return SLURM_SUCCESS on success, or SLURM_ERROR otherwise
  */
-int parse_select_type_param(char *select_type_parameters, uint16_t *param)
+int parse_select_type_param(char *select_type_parameters,
+				   select_type_plugin_info_t *param)
 {
 	int rc = SLURM_SUCCESS;
 	char *str_parameters, *st_str = NULL;
-	int param_cnt = 0;
 
-	*param = 0;
+
 	st_str = xstrdup(select_type_parameters);
-	str_parameters = strtok(st_str,",");
-	while (str_parameters) {
-		if (!strcasecmp(str_parameters, "CR_Socket")) {
-			*param |= CR_SOCKET;
-			param_cnt++;
-		} else if (!strcasecmp(str_parameters, "CR_Socket_Memory")) {
-			*param |= CR_SOCKET;
-			*param |= CR_MEMORY;
-			param_cnt++;
-		} else if (!strcasecmp(str_parameters, "CR_Core")) {
-			*param |= CR_CORE;
-			param_cnt++;
-		} else if (!strcasecmp(str_parameters, "CR_Core_Memory")) {
-			*param |= CR_CORE;
-			*param |= CR_MEMORY;
-			param_cnt++;
-		} else if (!strcasecmp(str_parameters, "CR_Memory")) {
-			*param |= CR_MEMORY;
-			param_cnt++;
-		} else if (!strcasecmp(str_parameters, "CR_CPU")) {
-			*param |= CR_CPU;
-			param_cnt++;
-		} else if (!strcasecmp(str_parameters, "CR_CPU_Memory")) {
-			*param |= CR_CPU;
-			*param |= CR_MEMORY;
-			param_cnt++;
-		} else if (!strcasecmp(str_parameters,
-				       "CR_ONE_TASK_PER_CORE")) {
-			*param |= CR_ONE_TASK_PER_CORE;
-		} else {
-			error("Bad SelectTypeParameter: %s", str_parameters);
-			rc = SLURM_ERROR;
-			xfree(st_str);
-			return rc;
-		}
-		str_parameters = strtok(NULL,",");
+	if ((str_parameters = strtok(st_str,",")) != NULL) {
+		do {
+			if (strcasecmp(str_parameters, "CR_Socket") == 0) {
+				*param = CR_SOCKET;
+			} else if (strcasecmp(str_parameters, "CR_Socket_Memory") == 0) {
+				*param = CR_SOCKET_MEMORY;
+			} else if (strcasecmp(str_parameters, "CR_Core") == 0) {
+				*param = CR_CORE;
+			} else if (strcasecmp(str_parameters, "CR_Core_Memory") == 0) {
+				*param = CR_CORE_MEMORY;
+			} else if (strcasecmp(str_parameters, "CR_Memory") == 0) {
+				*param = CR_MEMORY;
+			} else if (strcasecmp(str_parameters, "CR_CPU") == 0) {
+				*param = CR_CPU;
+			} else if (strcasecmp(str_parameters, "CR_CPU_Memory") == 0) {
+				*param = CR_CPU_MEMORY;
+			} else {
+				error("Bad SelectTypeParameter: %s\n",
+				      str_parameters );
+				rc = SLURM_ERROR;
+				xfree(st_str);
+				return rc;
+			}
+		} while ((str_parameters = strtok(NULL,",")));
 	}
 	xfree(st_str);
-
-	if (param_cnt > 1)
-		rc = SLURM_ERROR;
 
 	return rc;
 }

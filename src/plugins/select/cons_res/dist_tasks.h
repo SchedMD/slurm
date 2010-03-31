@@ -50,6 +50,6 @@
 
 #include "select_cons_res.h"
 
-int cr_dist(struct job_record *job_ptr,const uint16_t cr_type);
+int cr_dist(struct job_record *job_ptr,const select_type_plugin_info_t cr_type);
 
 #endif /* !_CONS_RES_DIST_TASKS_H */

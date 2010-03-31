@@ -40,7 +40,7 @@
 #include "src/sacctmgr/sacctmgr.h"
 
 static int _set_cond(int *start, int argc, char *argv[],
-		     slurmdb_qos_cond_t *qos_cond,
+		     acct_qos_cond_t *qos_cond,
 		     List format_list)
 {
 	int i;
@@ -69,8 +69,8 @@ static int _set_cond(int *start, int argc, char *argv[],
 		if (!strncasecmp (argv[i], "Set", MAX(command_len, 3))) {
 			i--;
 			break;
-		} else if (!end && !strncasecmp (argv[i], "WithDeleted",
-						 MAX(command_len, 5))) {
+		} else if (!strncasecmp (argv[i], "WithDeleted",
+					 MAX(command_len, 5))) {
 			qos_cond->with_deleted = 1;
 		} else if(!end && !strncasecmp(argv[i], "where",
 					       MAX(command_len, 5))) {
@@ -137,7 +137,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 
 static int _set_rec(int *start, int argc, char *argv[],
 		    List name_list,
-		    slurmdb_qos_rec_t *qos)
+		    acct_qos_rec_t *qos)
 {
 	int i, mins;
 	int set = 0;
@@ -326,15 +326,15 @@ extern int sacctmgr_add_qos(int argc, char *argv[])
 	int rc = SLURM_SUCCESS;
 	int i=0, limit_set=0;
 	ListIterator itr = NULL;
-	slurmdb_qos_rec_t *qos = NULL;
-	slurmdb_qos_rec_t *start_qos = xmalloc(sizeof(slurmdb_qos_rec_t));
+	acct_qos_rec_t *qos = NULL;
+	acct_qos_rec_t *start_qos = xmalloc(sizeof(acct_qos_rec_t));
 	List name_list = list_create(slurm_destroy_char);
 	char *description = NULL;
 	char *name = NULL;
 	List qos_list = NULL;
 	char *qos_str = NULL;
 
-	slurmdb_init_qos_rec(start_qos);
+	init_acct_qos_rec(start_qos);
 
 	for (i=0; i<argc; i++) {
 		int command_len = strlen(argv[i]);
@@ -351,7 +351,7 @@ extern int sacctmgr_add_qos(int argc, char *argv[])
 		return SLURM_ERROR;
 	} else if(!list_count(name_list)) {
 		list_destroy(name_list);
-		slurmdb_destroy_qos_rec(start_qos);
+		destroy_acct_qos_rec(start_qos);
 		exit_code=1;
 		fprintf(stderr, " Need name of qos to add.\n");
 		return SLURM_SUCCESS;
@@ -371,13 +371,13 @@ extern int sacctmgr_add_qos(int argc, char *argv[])
 		}
 	}
 
-	qos_list = list_create(slurmdb_destroy_qos_rec);
+	qos_list = list_create(destroy_acct_qos_rec);
 
 	itr = list_iterator_create(name_list);
 	while((name = list_next(itr))) {
 		qos = NULL;
 		if(!sacctmgr_find_qos_from_list(g_qos_list, name)) {
-			qos = xmalloc(sizeof(slurmdb_qos_rec_t));
+			qos = xmalloc(sizeof(acct_qos_rec_t));
 			qos->name = xstrdup(name);
 			if(start_qos->description)
 				qos->description =
@@ -462,11 +462,11 @@ end_it:
 extern int sacctmgr_list_qos(int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
-	slurmdb_qos_cond_t *qos_cond = xmalloc(sizeof(slurmdb_qos_cond_t));
+	acct_qos_cond_t *qos_cond = xmalloc(sizeof(acct_qos_cond_t));
  	int i=0;
 	ListIterator itr = NULL;
 	ListIterator itr2 = NULL;
-	slurmdb_qos_rec_t *qos = NULL;
+	acct_qos_rec_t *qos = NULL;
 	char *object;
 	List qos_list = NULL;
 	int field_count = 0;
@@ -506,7 +506,7 @@ extern int sacctmgr_list_qos(int argc, char *argv[])
 	}
 
 	if(exit_code) {
-		slurmdb_destroy_qos_cond(qos_cond);
+		destroy_acct_qos_cond(qos_cond);
 		list_destroy(format_list);
 		return SLURM_ERROR;
 	} else if(!list_count(format_list)) {
@@ -667,7 +667,7 @@ extern int sacctmgr_list_qos(int argc, char *argv[])
 		return SLURM_ERROR;
 	}
 	qos_list = acct_storage_g_get_qos(db_conn, my_uid, qos_cond);
-	slurmdb_destroy_qos_cond(qos_cond);
+	destroy_acct_qos_cond(qos_cond);
 
 	if(!qos_list) {
 		exit_code=1;
@@ -805,13 +805,13 @@ extern int sacctmgr_list_qos(int argc, char *argv[])
 extern int sacctmgr_modify_qos(int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
-	slurmdb_qos_cond_t *qos_cond = xmalloc(sizeof(slurmdb_qos_cond_t));
-	slurmdb_qos_rec_t *qos = xmalloc(sizeof(slurmdb_qos_rec_t));
+	acct_qos_cond_t *qos_cond = xmalloc(sizeof(acct_qos_cond_t));
+	acct_qos_rec_t *qos = xmalloc(sizeof(acct_qos_rec_t));
 	int i=0;
 	int cond_set = 0, rec_set = 0, set = 0;
 	List ret_list = NULL;
 
-	slurmdb_init_qos_rec(qos);
+	init_acct_qos_rec(qos);
 
 	for (i=0; i<argc; i++) {
 		int command_len = strlen(argv[i]);
@@ -828,21 +828,21 @@ extern int sacctmgr_modify_qos(int argc, char *argv[])
 	}
 
 	if(exit_code) {
-		slurmdb_destroy_qos_cond(qos_cond);
-		slurmdb_destroy_qos_rec(qos);
+		destroy_acct_qos_cond(qos_cond);
+		destroy_acct_qos_rec(qos);
 		return SLURM_ERROR;
 	} else if(!rec_set) {
 		exit_code=1;
 		fprintf(stderr, " You didn't give me anything to set\n");
-		slurmdb_destroy_qos_cond(qos_cond);
-		slurmdb_destroy_qos_rec(qos);
+		destroy_acct_qos_cond(qos_cond);
+		destroy_acct_qos_rec(qos);
 		return SLURM_ERROR;
 	} else if(!cond_set) {
 		if(!commit_check("You didn't set any conditions with 'WHERE'.\n"
 				 "Are you sure you want to continue?")) {
 			printf("Aborted\n");
-			slurmdb_destroy_qos_cond(qos_cond);
-			slurmdb_destroy_qos_rec(qos);
+			destroy_acct_qos_cond(qos_cond);
+			destroy_acct_qos_rec(qos);
 			return SLURM_SUCCESS;
 		}
 	}
@@ -881,8 +881,8 @@ extern int sacctmgr_modify_qos(int argc, char *argv[])
 		}
 	}
 
-	slurmdb_destroy_qos_cond(qos_cond);
-	slurmdb_destroy_qos_rec(qos);
+	destroy_acct_qos_cond(qos_cond);
+	destroy_acct_qos_rec(qos);
 
 	return rc;
 }
@@ -890,8 +890,8 @@ extern int sacctmgr_modify_qos(int argc, char *argv[])
 extern int sacctmgr_delete_qos(int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
-	slurmdb_qos_cond_t *qos_cond =
-		xmalloc(sizeof(slurmdb_qos_cond_t));
+	acct_qos_cond_t *qos_cond =
+		xmalloc(sizeof(acct_qos_cond_t));
 	int i=0;
 	List ret_list = NULL;
 	int set = 0;
@@ -908,17 +908,17 @@ extern int sacctmgr_delete_qos(int argc, char *argv[])
 		exit_code=1;
 		fprintf(stderr,
 			" No conditions given to remove, not executing.\n");
-		slurmdb_destroy_qos_cond(qos_cond);
+		destroy_acct_qos_cond(qos_cond);
 		return SLURM_ERROR;
 	} else if(set == -1) {
-		slurmdb_destroy_qos_cond(qos_cond);
+		destroy_acct_qos_cond(qos_cond);
 		return SLURM_ERROR;
 	}
 
 	notice_thread_init();
 	ret_list = acct_storage_g_remove_qos(db_conn, my_uid, qos_cond);
 	notice_thread_fini();
-	slurmdb_destroy_qos_cond(qos_cond);
+	destroy_acct_qos_cond(qos_cond);
 
 	if(ret_list && list_count(ret_list)) {
 		char *object = NULL;

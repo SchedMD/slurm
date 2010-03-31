@@ -196,6 +196,7 @@ PATH_SEPARATOR = @PATH_SEPARATOR@
 PGSQL_CFLAGS = @PGSQL_CFLAGS@
 PGSQL_LIBS = @PGSQL_LIBS@
 PKG_CONFIG = @PKG_CONFIG@
+PLPA_LIBS = @PLPA_LIBS@
 PROCTRACKDIR = @PROCTRACKDIR@
 PROJECT = @PROJECT@
 PTHREAD_CC = @PTHREAD_CC@
@@ -221,7 +222,7 @@ SLURM_MAJOR = @SLURM_MAJOR@
 SLURM_MICRO = @SLURM_MICRO@
 SLURM_MINOR = @SLURM_MINOR@
 SLURM_PREFIX = @SLURM_PREFIX@
-SLURM_VERSION_NUMBER = @SLURM_VERSION_NUMBER@
+SLURM_VERSION = @SLURM_VERSION@
 SLURM_VERSION_STRING = @SLURM_VERSION_STRING@
 SO_LDFLAGS = @SO_LDFLAGS@
 SSL_CPPFLAGS = @SSL_CPPFLAGS@
@@ -348,12 +349,12 @@ generated_html = \
 
 html_DATA = \
 	${generated_html} \
-	allocation_pies.gif \
+	AllocationPies.gif \
 	arch.gif \
 	configurator.html \
 	coding_style.pdf \
 	entities.gif \
-	example_usage.gif \
+	ExampleUsage.gif \
 	lci.7.tutorial.pdf \
 	lll.gif \
 	mc_support.gif \
@@ -371,7 +372,7 @@ html_DATA = \
 	topo_ex1.gif \
 	topo_ex2.gif \
 	linuxstyles.css \
-	usage_pies.gif
+	UsagePies.gif
 
 MOSTLYCLEANFILES = ${generated_html}
 EXTRA_DIST = $(html_DATA)

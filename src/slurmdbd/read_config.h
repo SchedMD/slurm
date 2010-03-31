@@ -54,7 +54,6 @@
 #endif  /* HAVE_CONFIG_H */
 
 #include <time.h>
-#include <pthread.h>
 #include "src/common/list.h"
 
 #define DEFAULT_SLURMDBD_AUTHTYPE	"auth/none"
@@ -66,10 +65,18 @@
 /* SlurmDBD configuration parameters */
 typedef struct slurm_dbd_conf {
 	time_t		last_update;	/* time slurmdbd.conf read	*/
+	uint16_t	archive_events;	/* flag if we are to
+					 * archive events */
+	uint16_t	archive_jobs;	/* flag if we are to
+					 * archive jobs	*/
 	char *		archive_dir;    /* location to localy
 					 * store data if not
 					 * using a script               */
 	char *		archive_script;	/* script to archive old data	*/
+	uint16_t	archive_steps;	/* flag if we are to
+					 * archive steps	        */
+	uint16_t	archive_suspend;/* flag if we are to
+					 * archive suspend data         */
 	char *		auth_info;	/* authentication info		*/
 	char *		auth_type;	/* authentication mechanism	*/
 	uint16_t        control_timeout;/* how long to wait before
@@ -79,21 +86,19 @@ typedef struct slurm_dbd_conf {
 	char *		dbd_host;	/* hostname of Slurm DBD	*/
 	uint16_t	dbd_port;	/* port number for RPCs to DBD	*/
 	uint16_t	debug_level;	/* Debug level, default=3	*/
-	char *	 	default_qos;	/* default qos setting when
+	char *   	default_qos;	/* default qos setting when
 					 * adding clusters              */
 	char *		log_file;	/* Log file			*/
 	uint16_t        msg_timeout;    /* message timeout		*/
 	char *		pid_file;	/* where to store current PID	*/
 	char *		plugindir;	/* dir to look for plugins	*/
 	uint16_t        private_data;   /* restrict information         */
-					/* purge variable format
-					 * controlled by PURGE_FLAGS	*/
-	uint32_t        purge_event;    /* purge events older than
-					 * this in months or days 	*/
-	uint32_t	purge_job;	/* purge time for job info	*/
-	uint32_t	purge_step;	/* purge time for step info	*/
-	uint32_t        purge_suspend;  /* purge suspend data older
-					 * than this in months or days	*/
+	uint16_t        purge_event;    /* purge events older than
+					 * this in months */
+	uint16_t	purge_job;	/* purge time for job info	*/
+	uint16_t	purge_step;	/* purge time for step info	*/
+	uint16_t        purge_suspend;  /* purge suspend data older than this
+					 * in months */
 	uint32_t	slurm_user_id;	/* uid of slurm_user_name	*/
 	char *		slurm_user_name;/* user that slurmcdtld runs as	*/
 	char *		storage_backup_host;/* backup host where DB is

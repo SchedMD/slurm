@@ -286,7 +286,7 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 	int rc = SLURM_SUCCESS;
 	char *usr_str = NULL, *grp_str = NULL, lim_str[32];
 	char *connect_type = NULL, *reboot = NULL, *rotate = NULL,
-		*geometry = NULL, *start = NULL,
+		*maxprocs = NULL, *geometry = NULL, *start = NULL,
 		*blockid = NULL;
 	enum job_states job_state;
 	char *query = NULL;
@@ -326,6 +326,8 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 						 SELECT_PRINT_REBOOT);
 	rotate = select_g_select_jobinfo_xstrdup(job_ptr->select_jobinfo,
 						 SELECT_PRINT_ROTATE);
+	maxprocs = select_g_select_jobinfo_xstrdup(job_ptr->select_jobinfo,
+						   SELECT_PRINT_MAX_CPUS);
 	geometry = select_g_select_jobinfo_xstrdup(job_ptr->select_jobinfo,
 						   SELECT_PRINT_GEOMETRY);
 	start = select_g_select_jobinfo_xstrdup(job_ptr->select_jobinfo,
@@ -351,7 +353,7 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 		xstrcat(query, ", reboot");
 	if(rotate)
 		xstrcat(query, ", rotate");
-	if(job_ptr->details && (job_ptr->details->max_cpus != NO_VAL))
+	if(maxprocs)
 		xstrcat(query, ", maxprocs");
 	if(geometry)
 		xstrcat(query, ", geometry");
@@ -363,7 +365,7 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 		   "'%s', \"%s\", %u, %u, %u",
 		   job_ptr->job_id, job_ptr->user_id, usr_str,
 		   job_ptr->group_id, grp_str, job_ptr->name,
-		   job_state, job_ptr->total_cpus, job_ptr->partition, lim_str,
+		   job_state, job_ptr->total_procs, job_ptr->partition, lim_str,
 		   (int)job_ptr->start_time, (int)job_ptr->end_time,
 		   job_ptr->node_cnt);
 
@@ -382,9 +384,10 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 		xstrfmtcat(query, ", '%s'", rotate);
 		xfree(rotate);
 	}
-	if(job_ptr->details && (job_ptr->details->max_cpus != NO_VAL))
-		xstrfmtcat(query, ", '%u'", job_ptr->details->max_cpus);
-
+	if(maxprocs) {
+		xstrfmtcat(query, ", '%s'", maxprocs);
+		xfree(maxprocs);
+	}
 	if(geometry) {
 		xstrfmtcat(query, ", '%s'", geometry);
 		xfree(geometry);
@@ -422,7 +425,7 @@ extern char *slurm_jobcomp_strerror(int errnum)
  * in/out job_list List of job_rec_t *
  * note List needs to be freed when called
  */
-extern List slurm_jobcomp_get_jobs(slurmdb_job_cond_t *job_cond)
+extern List slurm_jobcomp_get_jobs(acct_job_cond_t *job_cond)
 {
 	List job_list = NULL;
 
@@ -443,7 +446,7 @@ extern List slurm_jobcomp_get_jobs(slurmdb_job_cond_t *job_cond)
 /*
  * expire old info from the storage
  */
-extern int slurm_jobcomp_archive(slurmdb_archive_cond_t *arch_cond)
+extern int slurm_jobcomp_archive(acct_archive_cond_t *arch_cond)
 {
 	if(!jobcomp_mysql_db || mysql_ping(jobcomp_mysql_db) != 0) {
 		char *loc = slurm_get_jobcomp_loc();

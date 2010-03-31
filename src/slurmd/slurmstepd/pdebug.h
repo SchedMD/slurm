@@ -1,8 +1,7 @@
 /*****************************************************************************\
- * pdebug.h - ptrace functions for slurmstepd
+ * src/slurmd/slurmstepd/ptrace_debug.h - ptrace functions for slurmstepd
  *****************************************************************************
- *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
+ *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <mgrondona@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -17,7 +16,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under
+ *  to link the code of portions of this program with the OpenSSL library under 
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -54,17 +53,11 @@
  * Stop current task on exec() for connection from a parallel debugger
  */
 void pdebug_stop_current(slurmd_job_t *job);
-
 /*
  * Prepare task for parallel debugger attach
  * Returns SLURM_SUCCESS or SLURM_ERROR.
  */
 int pdebug_trace_process(slurmd_job_t *job, pid_t pid);
-
-/*
- * Wake tasks currently stopped for parallel debugger attach
- */
-void pdebug_wake_process(slurmd_job_t *job, pid_t pid);
 
 #ifdef HAVE_PTRACE64
 #  define _PTRACE(r,p,a,d) ptrace64((r),(long long)(p),(long long)(a),(d),NULL)

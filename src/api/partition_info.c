@@ -136,12 +136,6 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 			" AllowGroups=%s", part_ptr->allow_groups);
 	}
 	xstrcat(out, tmp_line);
-	if (part_ptr->alternate != NULL) {
-		snprintf(tmp_line, sizeof(tmp_line), " Alternate=%s",
-			 part_ptr->alternate);
-		xstrcat(out, tmp_line);
-	}
-
 	if (part_ptr->default_part)
 		sprintf(tmp_line, " Default=YES");
 	else
@@ -276,17 +270,10 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 
 	/****** Line 7 ******/
 
-	if (part_ptr->state_up == PARTITION_UP)
+	if (part_ptr->state_up)
 		sprintf(tmp_line, "State=UP");
-	else if (part_ptr->state_up == PARTITION_DOWN)
-		sprintf(tmp_line, "State=DOWN");
-	else if (part_ptr->state_up == PARTITION_INACTIVE)
-		sprintf(tmp_line, "State=INACTIVE");
-	else if (part_ptr->state_up == PARTITION_DRAIN)
-		sprintf(tmp_line, "State=DRAIN");
 	else
-		sprintf(tmp_line, "State=UNKNOWN");
-
+		sprintf(tmp_line, "State=DOWN");
 	xstrcat(out, tmp_line);
 
 #ifdef HAVE_BG

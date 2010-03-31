@@ -81,7 +81,7 @@ AC_CHECK_HEADERS(mcheck.h values.h socket.h sys/socket.h  \
                  sys/systemcfg.h ncurses.h curses.h sys/dr.h sys/vfs.h \
                  pam/pam_appl.h security/pam_appl.h sys/sysctl.h \
                  pty.h utmp.h \
-		 sys/syslog.h linux/sched.h \
+		 sys/syslog.h \
 		 kstat.h paths.h limits.h sys/statfs.h sys/ptrace.h sys/termios.h \
 		)
 AC_HEADER_SYS_WAIT
@@ -318,8 +318,7 @@ AC_CONFIG_FILES([Makefile
 		 contribs/Makefile
 		 contribs/pam/Makefile
 		 contribs/perlapi/Makefile
-		 contribs/perlapi/libslurm/Makefile
-		 contribs/perlapi/libslurm/perl/Makefile.PL
+		 contribs/perlapi/libslurm-perl/Makefile.PL
 		 contribs/torque/Makefile
 		 contribs/phpext/Makefile
 		 contribs/phpext/slurm_php/config.m4
@@ -327,7 +326,6 @@ AC_CONFIG_FILES([Makefile
 		 src/Makefile
 		 src/api/Makefile
 		 src/common/Makefile
-		 src/db_api/Makefile
 		 src/database/Makefile
 		 src/sacct/Makefile
 		 src/sacctmgr/Makefile
@@ -355,7 +353,6 @@ AC_CONFIG_FILES([Makefile
 		 src/sview/Makefile
 		 src/plugins/Makefile
 		 src/plugins/accounting_storage/Makefile
-		 src/plugins/accounting_storage/common/Makefile
 		 src/plugins/accounting_storage/filetxt/Makefile
 		 src/plugins/accounting_storage/mysql/Makefile
 		 src/plugins/accounting_storage/pgsql/Makefile
@@ -399,7 +396,6 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/proctrack/linuxproc/Makefile
 		 src/plugins/proctrack/rms/Makefile
 		 src/plugins/proctrack/sgi_job/Makefile
-		 src/plugins/proctrack/cgroup/Makefile
 		 src/plugins/proctrack/lua/Makefile
 		 src/plugins/sched/Makefile
 		 src/plugins/sched/backfill/Makefile

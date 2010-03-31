@@ -73,11 +73,9 @@
 %if %{?chaos}0
 %slurm_with_opt mysql
 %slurm_with_opt lua
-%slurm_with_opt partial_attach
 %else
 %slurm_without_opt sgijob
 %slurm_without_opt lua
-%slurm_without_opt partial-attach
 %endif
 
 %if %{?chaos}0 && 0%{?chaos} < 5
@@ -264,15 +262,9 @@ SLURM switch plugin for Quadrics Elan3 or Elan4.
 %package slurmdbd
 Summary: SLURM database daemon
 Group: System Environment/Base
-Requires: slurm-plugins slurm-sql
+Requires: slurm-plugins
 %description slurmdbd
 SLURM database daemon
-
-%package sql
-Summary: SLURM SQL support
-Group: System Environment/Base
-%description sql
-SLURM sql support
 
 %package plugins
 Summary: SLURM plugins (loadable shared objects)
@@ -366,7 +358,6 @@ Gives the ability for SLURM to use Berkeley Lab Checkpoint/Restart
 %configure --program-prefix=%{?_program_prefix:%{_program_prefix}} \
 	%{?slurm_with_cray_xt:--enable-cray-xt} \
 	%{?slurm_with_debug:--enable-debug} \
-	%{?slurm_with_partial_attach:--enable-partial-attach} \
 	%{?slurm_with_sun_const:--enable-sun-const} \
 	%{?with_db2_dir} \
 	%{?with_pam_dir}	\
@@ -398,8 +389,6 @@ if [ -d /etc/init.d ]; then
    install -D -m755 etc/init.d.slurm    $RPM_BUILD_ROOT/etc/init.d/slurm
    install -D -m755 etc/init.d.slurmdbd $RPM_BUILD_ROOT/etc/init.d/slurmdbd
 fi
-install -D -m644 etc/cgroup.conf.example ${RPM_BUILD_ROOT}%{_sysconfdir}/cgroup.conf.example
-install -D -m755 etc/cgroup.release_agent ${RPM_BUILD_ROOT}%{_sysconfdir}/cgroup.release_agent
 install -D -m644 etc/slurm.conf.example ${RPM_BUILD_ROOT}%{_sysconfdir}/slurm.conf.example
 install -D -m644 etc/slurmdbd.conf.example ${RPM_BUILD_ROOT}%{_sysconfdir}/slurmdbd.conf.example
 install -D -m755 etc/slurm.epilog.clean ${RPM_BUILD_ROOT}%{_sysconfdir}/slurm.epilog.clean
@@ -461,20 +450,18 @@ if [ -d /etc/init.d ]; then
    echo "/etc/init.d/slurmdbd" >> $LIST
 fi
 
-LIST=./sql.files
+LIST=./plugins.files
 touch $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/accounting_storage_mysql.so &&
    echo %{_libdir}/slurm/accounting_storage_mysql.so >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/accounting_storage_pgsql.so &&
    echo %{_libdir}/slurm/accounting_storage_pgsql.so >> $LIST
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/crypto_openssl.so           &&
+   echo %{_libdir}/slurm/crypto_openssl.so           >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/jobcomp_mysql.so            &&
    echo %{_libdir}/slurm/jobcomp_mysql.so            >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/jobcomp_pgsql.so            &&
    echo %{_libdir}/slurm/jobcomp_pgsql.so            >> $LIST
-
-LIST=./plugins.files
-test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/crypto_openssl.so           &&
-   echo %{_libdir}/slurm/crypto_openssl.so           >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/task_affinity.so            &&
    echo %{_libdir}/slurm/task_affinity.so            >> $LIST
 
@@ -525,8 +512,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man8/spank*
 %dir %{_sysconfdir}
 %dir %{_libdir}/slurm/src
-%config %{_sysconfdir}/cgroup.conf.example
-%config %{_sysconfdir}/cgroup.release_agent
 %config %{_sysconfdir}/slurm.conf.example
 %config %{_sysconfdir}/slurm.epilog.clean
 %if %{slurm_with blcr}
@@ -543,9 +528,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libpmi.la
 %{_libdir}/libslurm.a
 %{_libdir}/libslurm.la
-%{_libdir}/libslurmdb.la
 %{_mandir}/man3/slurm_*
-#%{_mandir}/man3/slurmdb_*
 #############################################################################
 
 %if %{slurm_with auth_none}
@@ -611,11 +594,6 @@ rm -rf $RPM_BUILD_ROOT
 %config %{_sysconfdir}/slurmdbd.conf.example
 #############################################################################
 
-%files -f sql.files sql
-%defattr(-,root,root)
-%dir %{_libdir}/slurm
-#############################################################################
-
 %files -f plugins.files plugins
 %defattr(-,root,root)
 %dir %{_libdir}/slurm
@@ -644,7 +622,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/slurm/preempt_qos.so
 %{_libdir}/slurm/priority_basic.so
 %{_libdir}/slurm/priority_multifactor.so
-%{_libdir}/slurm/proctrack_cgroup.so
 %{_libdir}/slurm/proctrack_pgid.so
 %{_libdir}/slurm/proctrack_linuxproc.so
 %{_libdir}/slurm/sched_backfill.so

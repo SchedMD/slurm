@@ -64,7 +64,6 @@ enum {
 /* These need to be in alpha order (except POS and CNT) */
 enum {
 	SORTID_POS = POS_LOC,
-	SORTID_ALTERNATE,
 #ifdef HAVE_BG
 	SORTID_NODELIST,
 	SORTID_NODES_ALLOWED,
@@ -106,8 +105,6 @@ static display_data_t display_data_part[] = {
 	 EDIT_NONE, refresh_part, create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_COLOR, NULL, TRUE, EDIT_NONE, refresh_part,
 	 create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_ALTERNATE, "Alternate", FALSE,
-	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_DEFAULT, "Default", TRUE,
 	 EDIT_MODEL, refresh_part, create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_HIDDEN, "Hidden", FALSE,
@@ -189,7 +186,7 @@ static display_data_t options_data_part[] = {
 	{G_TYPE_STRING, PART_PAGE, "Make Nodes Idle", TRUE, ADMIN_PAGE},
 	{G_TYPE_STRING, PART_PAGE, "Update Node Features", TRUE, ADMIN_PAGE},
 #endif
-	{G_TYPE_STRING, PART_PAGE, "Change Part State",
+	{G_TYPE_STRING, PART_PAGE, "Change Part State Up/Down",
 	 TRUE, ADMIN_PAGE},
 	{G_TYPE_STRING, PART_PAGE, "Edit Part", TRUE, ADMIN_PAGE},
 	{G_TYPE_STRING, JOB_PAGE, "Jobs", TRUE, PART_PAGE},
@@ -278,10 +275,6 @@ static void _set_active_combo_part(GtkComboBox *combo,
 			action = 0;
 		else if(!strcmp(temp_char, "down"))
 			action = 1;
-		else if(!strcmp(temp_char, "inactive"))
-			action = 2;
-		else if(!strcmp(temp_char, "drain"))
-			action = 3;
 		else
 			action = 0;
 		break;
@@ -373,10 +366,6 @@ static const char *_set_part_msg(update_part_msg_t *part_msg,
 		return NULL;
 
 	switch(column) {
-	case SORTID_ALTERNATE:
-		type = "alternate";
-		part_msg->alternate = xstrdup(new_text);
-		break;
 	case SORTID_DEFAULT:
 		if (!strcasecmp(new_text, "yes"))
 			part_msg->default_part = 1;
@@ -446,10 +435,9 @@ static const char *_set_part_msg(update_part_msg_t *part_msg,
 		} else if (!strcasecmp(new_text, "force")) {
 			part_msg->max_share =
 				_set_part_share_popup() | SHARED_FORCE;
-		} else if (!strcasecmp(new_text, "no"))
+		} else {	/* "no" */
 			part_msg->max_share = 1;
-		else
-			goto return_error;
+		}
 		type = "share";
 		break;
 	case SORTID_GROUPS:
@@ -466,17 +454,10 @@ static const char *_set_part_msg(update_part_msg_t *part_msg,
 		break;
 	case SORTID_PART_STATE:
 		if (!strcasecmp(new_text, "up"))
-			part_msg->state_up = PARTITION_UP;
-		else if (!strcasecmp(new_text, "down"))
-			part_msg->state_up = PARTITION_DOWN;
-		else if (!strcasecmp(new_text, "inactive"))
-			part_msg->state_up = PARTITION_INACTIVE;
-		else if (!strcasecmp(new_text, "drain"))
-			part_msg->state_up = PARTITION_DRAIN;
+			part_msg->state_up = 1;
 		else
-			goto return_error;
-		type = "availability";
-
+			part_msg->state_up = 0;
+		type = "part state";
 		break;
 	case SORTID_NODE_STATE:
 		type = (char *)new_text;
@@ -527,8 +508,8 @@ static void _admin_edit_combo_box_part(GtkComboBox *combo,
 	gtk_tree_model_get(model, &iter, 1, &column, -1);
 
 	_set_part_msg(part_msg, name, column);
-	if(name)
-		g_free(name);
+
+	g_free(name);
 }
 
 static gboolean _admin_focus_out_part(GtkEntry *entry,
@@ -771,29 +752,7 @@ static void _layout_part_record(GtkTreeView *treeview,
 	for(i = 0; i < SORTID_CNT; i++) {
 		switch(i) {
 		case SORTID_PART_STATE:
-			switch(part_ptr->state_up) {
-			case PARTITION_UP:
-				temp_char = "up";
-				break;
-			case PARTITION_DOWN:
-				temp_char = "down";
-				break;
-			case PARTITION_INACTIVE:
-				temp_char = "inactive";
-				break;
-			case PARTITION_DRAIN:
-				temp_char = "drain";
-				break;
-			default:
-				temp_char = "unknown";
-				break;
-			}
-			break;
-		case SORTID_ALTERNATE:
-			if(part_ptr->alternate)
-				temp_char = part_ptr->alternate;
-			else
-				temp_char = "";
+			up_down = part_ptr->state_up;
 			break;
 		case SORTID_CPUS:
 			convert_num_unit((float)part_ptr->total_cpus,
@@ -963,22 +922,10 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 		temp_char = "no";
 	gtk_tree_store_set(treestore, iter, SORTID_HIDDEN, temp_char, -1);
 
-	if(part_ptr->alternate)
-		temp_char = part_ptr->alternate;
-	else
-		temp_char = "";
-	gtk_tree_store_set(treestore, iter, SORTID_ALTERNATE, temp_char, -1);
-
-	if (part_ptr->state_up == PARTITION_UP)
+	if (part_ptr->state_up)
 		temp_char = "up";
-	else if (part_ptr->state_up == PARTITION_DOWN)
-		temp_char = "down";
-	else if (part_ptr->state_up == PARTITION_INACTIVE)
-		temp_char = "inact";
-	else if (part_ptr->state_up == PARTITION_DRAIN)
-		temp_char = "drain";
 	else
-		temp_char = "unk";
+		temp_char = "down";
 	gtk_tree_store_set(treestore, iter, SORTID_PART_STATE, temp_char, -1);
 
 	if (part_ptr->max_time == INFINITE)
@@ -1628,12 +1575,10 @@ extern int get_new_info_part(partition_info_msg_t **part_ptr, int force)
 {
 	static partition_info_msg_t *part_info_ptr = NULL;
 	static partition_info_msg_t *new_part_ptr = NULL;
-	uint16_t show_flags = 0;
 	int error_code = SLURM_NO_CHANGE_IN_DATA;
 	time_t now = time(NULL);
 	static time_t last;
 	static bool changed = 0;
-	static uint16_t last_flags = 0;
 
 	if(!force && ((now - last) < global_sleep_time)) {
 		if(*part_ptr != part_info_ptr)
@@ -1644,15 +1589,9 @@ extern int get_new_info_part(partition_info_msg_t **part_ptr, int force)
 		return error_code;
 	}
 	last = now;
-
-	if(global_show_hidden)
-		show_flags |= SHOW_ALL;
-
 	if (part_info_ptr) {
-		if(show_flags != last_flags)
-			part_info_ptr->last_update = 0;
 		error_code = slurm_load_partitions(part_info_ptr->last_update,
-						   &new_part_ptr, show_flags);
+						   &new_part_ptr, SHOW_ALL);
 		if (error_code == SLURM_SUCCESS) {
 			slurm_free_partition_info_msg(part_info_ptr);
 			changed = 1;
@@ -1662,12 +1601,11 @@ extern int get_new_info_part(partition_info_msg_t **part_ptr, int force)
 				changed = 0;
 		}
 	} else {
-		error_code = slurm_load_partitions((time_t) NULL, &new_part_ptr,
-						   show_flags);
+		error_code = slurm_load_partitions((time_t) NULL,
+						   &new_part_ptr, SHOW_ALL);
 		changed = 1;
 	}
 
-	last_flags = show_flags;
 	part_info_ptr = new_part_ptr;
 
 	if(*part_ptr != part_info_ptr)
@@ -1767,16 +1705,6 @@ extern GtkListStore *create_model_part(int type)
 		gtk_list_store_append(model, &iter);
 		gtk_list_store_set(model, &iter,
 				   0, "down",
-				   1, SORTID_PART_STATE,
-				   -1);
-		gtk_list_store_append(model, &iter);
-		gtk_list_store_set(model, &iter,
-				   0, "inactive",
-				   1, SORTID_PART_STATE,
-				   -1);
-		gtk_list_store_append(model, &iter);
-		gtk_list_store_set(model, &iter,
-				   0, "drain",
 				   1, SORTID_PART_STATE,
 				   -1);
 		break;
@@ -2418,40 +2346,25 @@ extern void admin_part(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 
 	part_msg->name = xstrdup(partid);
 
-	if(!strcasecmp("Change Part State", type)) {
-		GtkCellRenderer *renderer = NULL;
-		GtkTreeModel *model2 = GTK_TREE_MODEL(
-			create_model_part(SORTID_PART_STATE));
-		if(!model2) {
-			g_print("In change part, no model set up for %d(%s)\n",
-				SORTID_PART_STATE, partid);
-			return;
-		}
-		entry = gtk_combo_box_new_with_model(model2);
-		g_object_unref(model2);
-
-		_set_active_combo_part(GTK_COMBO_BOX(entry),
-				       model, iter, SORTID_PART_STATE);
-
-		g_signal_connect(entry, "changed",
-				 G_CALLBACK(_admin_edit_combo_box_part),
-				 part_msg);
-
-		renderer = gtk_cell_renderer_text_new();
-		gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(entry),
-					   renderer, TRUE);
-		gtk_cell_layout_add_attribute(GTK_CELL_LAYOUT(entry),
-					      renderer, "text", 0);
-
+	if(!strcasecmp("Change Part State Up/Down", type)) {
+		char *state = NULL;
 		label = gtk_dialog_add_button(GTK_DIALOG(popup),
 					      GTK_STOCK_YES, GTK_RESPONSE_OK);
 		gtk_window_set_default(GTK_WINDOW(popup), label);
 		gtk_dialog_add_button(GTK_DIALOG(popup),
 				      GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL);
-
+		gtk_tree_model_get(model, iter, SORTID_PART_STATE, &state, -1);
+		if(!strcasecmp("down", state)) {
+			temp = "up";
+			part_msg->state_up = 1;
+		} else {
+			temp = "down";
+			part_msg->state_up = 0;
+		}
+		g_free(state);
 		snprintf(tmp_char, sizeof(tmp_char),
-			 "Which state would you like to set partition '%s' to?",
-			 partid);
+			 "Are you sure you want to set partition %s %s?",
+			 partid, temp);
 		label = gtk_label_new(tmp_char);
 		edit_type = EDIT_PART_STATE;
 	} else if(!strcasecmp("Edit Part", type)) {

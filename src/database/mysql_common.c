@@ -61,7 +61,7 @@ static MYSQL_RES *_get_first_result(MYSQL *mysql_db)
 
 		/* more results? -1 = no, >0 = error, 0 = yes (keep looping) */
 		if ((rc = mysql_next_result(mysql_db)) > 0)
-			debug3("error: Could not execute statement %d", rc);
+			debug3("error: Could not execute statement %d\n", rc);
 
 	} while (rc == 0);
 
@@ -82,7 +82,7 @@ static MYSQL_RES *_get_last_result(MYSQL *mysql_db)
 		}
 		/* more results? -1 = no, >0 = error, 0 = yes (keep looping) */
 		if ((rc = mysql_next_result(mysql_db)) > 0)
-			debug3("error: Could not execute statement %d", rc);
+			debug3("error: Could not execute statement %d\n", rc);
 	} while (rc == 0);
 
 	return last_result;
@@ -147,7 +147,6 @@ static int _mysql_make_table_current(MYSQL *mysql_db, char *table_name,
 	START_TIMER;
 	while(fields[i].name) {
 		int found = 0;
-
 		list_iterator_reset(itr);
 		while((col = list_next(itr))) {
 			if(!strcmp(col, fields[i].name)) {
@@ -266,59 +265,42 @@ static int _mysql_make_table_current(MYSQL *mysql_db, char *table_name,
 
 	/* see if we have already done this definition */
 	if(!adding) {
-		char *quoted = slurm_add_slash_to_quotes(query);
 		char *query2 = xstrdup_printf("select table_name from "
-					      "%s where definition='%s'",
-					      table_defs_table, quoted);
+					      "%s where definition=\"%s\"",
+					      table_defs_table, query);
 		MYSQL_RES *result = NULL;
 		MYSQL_ROW row;
 
-		xfree(quoted);
 		run_update = 1;
+
 		if((result = mysql_db_query_ret(mysql_db, query2, 0))) {
 			if((row = mysql_fetch_row(result)))
 				run_update = 0;
 			mysql_free_result(result);
 		}
 		xfree(query2);
-		if(run_update) {
-			run_update = 2;
-			query2 = xstrdup_printf("select table_name from "
-						"%s where table_name='%s'",
-						table_defs_table, table_name);
-			if((result = mysql_db_query_ret(mysql_db, query2, 0))) {
-				if((row = mysql_fetch_row(result)))
-					run_update = 1;
-				mysql_free_result(result);
-			}
-			xfree(query2);
-		}
 	}
 
 	/* if something has changed run the alter line */
 	if(run_update || adding) {
 		time_t now = time(NULL);
 		char *query2 = NULL;
-		char *quoted = NULL;
 
-		if(run_update == 2)
-			debug4("Table %s doesn't exist, adding", table_name);
-		else
-			debug("Table %s has changed.  Updating...", table_name);
+		debug("Table %s has changed.  Updating...", table_name);
+
 		if(mysql_db_query(mysql_db, query)) {
 			xfree(query);
 			return SLURM_ERROR;
 		}
-		quoted = slurm_add_slash_to_quotes(correct_query);
+
 		query2 = xstrdup_printf("insert into %s (creation_time, "
 					"mod_time, table_name, definition) "
-					"values (%d, %d, '%s', '%s') "
+					"values (%d, %d, \"%s\", \"%s\") "
 					"on duplicate key update "
-					"definition='%s', mod_time=%d;",
+					"definition=\"%s\", mod_time=%d;",
 					table_defs_table, now, now,
-					table_name, quoted,
-					quoted, now);
-		xfree(quoted);
+					table_name, correct_query,
+					correct_query, now);
 		if(mysql_db_query(mysql_db, query2)) {
 			xfree(query2);
 			return SLURM_ERROR;
@@ -386,7 +368,7 @@ static int _create_db(char *db_name, mysql_db_info_t *db_info)
 #ifdef MYSQL_NOT_THREAD_SAFE
 			slurm_mutex_unlock(&mysql_lock);
 #endif
-			error("mysql_real_connect failed: %d %s",
+			error("mysql_real_connect failed: %d %s\n",
 			      mysql_errno(mysql_db),
 			      mysql_error(mysql_db));
 			rc = SLURM_ERROR;
@@ -501,7 +483,7 @@ extern int mysql_clear_results(MYSQL *mysql_db)
 
 		/* more results? -1 = no, >0 = error, 0 = yes (keep looping) */
 		if ((rc = mysql_next_result(mysql_db)) > 0)
-			error("Could not execute statement %d %s",
+			error("Could not execute statement %d %s\n",
 			      mysql_errno(mysql_db),
 			      mysql_error(mysql_db));
 	} while (rc == 0);
@@ -525,25 +507,13 @@ extern int mysql_db_query(MYSQL *mysql_db, char *query)
 	mysql_clear_results(mysql_db);
 //try_again:
 	if(mysql_query(mysql_db, query)) {
-		errno = mysql_errno(mysql_db);
-		if(errno == ER_NO_SUCH_TABLE) {
-			debug4("This could happen often and is expected.\n"
-			       "mysql_query failed: %d %s\n%s",
-			       mysql_errno(mysql_db),
-			       mysql_error(mysql_db), query);
-			errno = 0;
-			goto end_it;
-		}
 		error("mysql_query failed: %d %s\n%s",
 		      mysql_errno(mysql_db),
 		      mysql_error(mysql_db), query);
+		errno = mysql_errno(mysql_db);
 #ifdef MYSQL_NOT_THREAD_SAFE
 		slurm_mutex_unlock(&mysql_lock);
 #endif
-		if(errno == ER_LOCK_WAIT_TIMEOUT)
-			fatal("mysql gave ER_LOCK_WAIT_TIMEOUT as an error. "
-			      "The only way to fix this is restart the "
-			      "calling program");
 		/* FIXME: If we get ER_LOCK_WAIT_TIMEOUT here we need
 		to restart the connections, but it appears restarting
 		the calling program is the only way to handle this.
@@ -554,7 +524,7 @@ extern int mysql_db_query(MYSQL *mysql_db, char *query)
 
 		return SLURM_ERROR;
 	}
-end_it:
+
 #ifdef MYSQL_NOT_THREAD_SAFE
 	slurm_mutex_unlock(&mysql_lock);
 #endif
@@ -621,15 +591,13 @@ extern MYSQL_RES *mysql_db_query_ret(MYSQL *mysql_db, char *query, bool last)
 	MYSQL_RES *result = NULL;
 
 	if(mysql_db_query(mysql_db, query) != SLURM_ERROR)  {
-		if(mysql_errno(mysql_db) == ER_NO_SUCH_TABLE)
-			return result;
-		else if(last)
+		if(last)
 			result = _get_last_result(mysql_db);
 		else
 			result = _get_first_result(mysql_db);
 		if(!result && mysql_field_count(mysql_db)) {
 			/* should have returned data */
-			error("We should have gotten a result: '%m' '%s'",
+			error("We should have gotten a result: %s",
 			      mysql_error(mysql_db));
 		}
 	}

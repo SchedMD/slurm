@@ -1299,17 +1299,23 @@ proc remove_coor { accounts names } {
 	set exit_code 0
 	set matches 0
 	set nothing 1
-	set check "Deleting coordinator"
+	set check "Deleting user"
 
 	if { ![string length $name] } {
 		send_user "FAILURE: we need a name to remove\n"
 		return 1
 	}
 
-	set command "$names"
+	set command "$name"
 
 	if { [string length $accounts] } {
 		set command "$command accounts=$accounts"
+		set check "Deleting coordinator associations"
+	}
+
+	if { [string length $names] } {
+		set command "$command names=$names"
+		set check "Deleting coordinator associations"
 	}
 
 	set my_pid [eval spawn $sacctmgr -i delete coordinator $command]

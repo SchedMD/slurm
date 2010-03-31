@@ -165,7 +165,6 @@ typedef struct kill_thread {
 static int  _access(const char *path, int modes, uid_t uid, gid_t gid);
 static void _send_launch_failure(launch_tasks_request_msg_t *,
 				 slurm_addr *, int);
-static int  _drain_node(char *reason);
 static int  _fork_all_tasks(slurmd_job_t *job);
 static int  _become_user(slurmd_job_t *job, struct priv_state *ps);
 static void  _set_prio_process (slurmd_job_t *job);
@@ -962,7 +961,7 @@ job_manager(slurmd_job_t *job)
 
 	debug2("Before call to spank_fini()");
 	if (spank_fini (job)  < 0) {
-		error ("spank_fini failed");
+		error ("spank_fini failed\n");
 	}
 	debug2("After call to spank_fini()");
 
@@ -1030,7 +1029,7 @@ _fork_all_tasks(slurmd_job_t *job)
 
 	debug2("Before call to spank_init()");
 	if (spank_init (job) < 0) {
-		error ("Plugin stack initialization failed.");
+		error ("Plugin stack initialization failed.\n");
 		return SLURM_ERROR;
 	}
 	debug2("After call to spank_init()");
@@ -1125,7 +1124,7 @@ _fork_all_tasks(slurmd_job_t *job)
 			/* jobacct_gather_g_endpoll();
 			 * closing jobacct files here causes deadlock */
 
-			if (conf->propagate_prio)
+			if (conf->propagate_prio == 1)
 				_set_prio_process(job);
 
 			/*
@@ -1523,8 +1522,6 @@ _make_batch_dir(slurmd_job_t *job)
 
 	if ((mkdir(path, 0750) < 0) && (errno != EEXIST)) {
 		error("mkdir(%s): %m", path);
-		if (errno == ENOSPC)
-			_drain_node("SlurmdSpoolDir is full");
 		goto error;
 	}
 
@@ -1564,8 +1561,6 @@ _make_batch_script(batch_job_launch_msg_t *msg, char *path)
 	if (fputs(msg->script, fp) < 0) {
 		(void) fclose(fp);
 		error("fputs: %m");
-		if (errno == ENOSPC)
-			_drain_node("SlurmdSpoolDir is full");
 		goto error;
 	}
 
@@ -1588,27 +1583,6 @@ _make_batch_script(batch_job_launch_msg_t *msg, char *path)
 	(void) unlink(script);
 	return NULL;
 
-}
-
-static int _drain_node(char *reason)
-{
-	slurm_msg_t req_msg;
-	update_node_msg_t update_node_msg;
-
-	memset(&update_node_msg, 0, sizeof(update_node_msg_t));
-	update_node_msg.node_names = conf->node_name;
-	update_node_msg.node_state = NODE_STATE_DRAIN;
-	update_node_msg.reason = reason;
-	update_node_msg.reason_uid = getuid();
-	update_node_msg.weight = NO_VAL;
-	slurm_msg_t_init(&req_msg);
-	req_msg.msg_type = REQUEST_UPDATE_NODE;
-	req_msg.data = &update_node_msg;
-
-	if (slurm_send_only_controller_msg(&req_msg) < 0)
-		return SLURM_ERROR;
-
-	return SLURM_SUCCESS;
 }
 
 static void
@@ -1858,24 +1832,23 @@ static void _set_prio_process (slurmd_job_t *job)
 {
 	char *env_name = "SLURM_PRIO_PROCESS";
 	char *env_val;
-	int prio_daemon, prio_process;
+
+	int prio_process;
 
 	if (!(env_val = getenvp( job->env, env_name ))) {
 		error( "Couldn't find %s in environment", env_name );
-		prio_process = 0;
-	} else {
-		/* Users shouldn't get this in their environment */
-		unsetenvp( job->env, env_name );
-		prio_process = atoi( env_val );
+		return;
 	}
 
-	if (conf->propagate_prio == PROP_PRIO_NICER) {
-		prio_daemon = getpriority( PRIO_PROCESS, 0 );
-		prio_process = MAX( prio_process, (prio_daemon + 1) );
-	}
+	/*
+	 * Users shouldn't get this in their environ
+	 */
+	unsetenvp( job->env, env_name );
+
+	prio_process = atoi( env_val );
 
 	if (setpriority( PRIO_PROCESS, 0, prio_process ))
-		error( "setpriority(PRIO_PROCESS, %d): %m", prio_process );
+		error( "setpriority(PRIO_PROCESS): %m" );
 	else {
 		debug2( "_set_prio_process: setpriority %d succeeded",
 			prio_process);

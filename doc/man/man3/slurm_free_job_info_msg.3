@@ -41,6 +41,7 @@ int \fBslurm_load_job\fR (
 .br
 );
 .LP
+.LP
 int \fBslurm_load_jobs\fR (
 .br
 	time_t \fIupdate_time\fP,
@@ -48,14 +49,6 @@ int \fBslurm_load_jobs\fR (
 	job_info_msg_t **\fIjob_info_msg_pptr\fP,
 .br
 	uint16_t \fIshow_flags\fP
-.br
-);
-.LP
-int \fBslurm_notify_job\fR (
-.br
-	uint32_t \fIjob_id\fP,
-.br
-	char *\fImessage\fP
 .br
 );
 .LP
@@ -250,9 +243,6 @@ record count, and array of job_table records for some specific job ID.
 .LP
 \fBslurm_load_jobs\fR Returns a job_info_msg_t that contains an update time,
 record count, and array of job_table records for all jobs.
-.LP
-\fBslurm_notify_job\fR Sends the specified message to standard output of 
-the specified job ID.
 .LP
 \fBslurm_pid2jobid\fR Returns a Slurm job id corresponding to the supplied
 local process id. This only works for processes which Slurm spawns and their

@@ -59,7 +59,6 @@
 
 #include "src/common/parse_time.h"
 #include "src/common/slurm_protocol_api.h"
-#include "src/common/uid.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
@@ -124,7 +123,7 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 {
 	uint16_t my_state = node_ptr->node_state;
 	char *comp_str = "", *drain_str = "", *power_str = "";
-	char tmp_line[512], time_str[32];
+	char tmp_line[512];
 	char *out = NULL;
 	uint16_t err_cpus = 0, alloc_cpus = 0;
 	int cpus_per_node = 1;
@@ -226,42 +225,10 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 		xstrcat(out, "\n   ");
 
 	/****** Line 5 ******/
-	if (node_ptr->boot_time) {
-		slurm_make_time_str ((time_t *)&node_ptr->boot_time,
-				     time_str, sizeof(time_str));
-	} else {
-		strncpy(time_str, "None", sizeof(time_str));
-	}
-	snprintf(tmp_line, sizeof(tmp_line), "BootTime=%s ", time_str);
-	xstrcat(out, tmp_line);
 
-	if (node_ptr->slurmd_start_time) {
-		slurm_make_time_str ((time_t *)&node_ptr->slurmd_start_time,
-				     time_str, sizeof(time_str));
-	} else {
-		strncpy(time_str, "None", sizeof(time_str));
-	}
-	snprintf(tmp_line, sizeof(tmp_line), "SlurmdStartTime=%s", time_str);
+	snprintf(tmp_line, sizeof(tmp_line), "Reason=%s",
+		 node_ptr->reason);
 	xstrcat(out, tmp_line);
-	if (one_liner)
-		xstrcat(out, " ");
-	else
-		xstrcat(out, "\n   ");
-
-	/****** Line 6 ******/
-	if (node_ptr->reason_time) {
-		char *user_name = uid_to_string(node_ptr->reason_uid);
-		slurm_make_time_str ((time_t *)&node_ptr->reason_time,
-				     time_str, sizeof(time_str));
-		snprintf(tmp_line, sizeof(tmp_line), "Reason=%s [%s@%s]",
-			 node_ptr->reason, user_name, time_str);
-		xstrcat(out, tmp_line);
-		xfree(user_name);
-	} else {
-		snprintf(tmp_line, sizeof(tmp_line), "Reason=%s",
-			 node_ptr->reason);
-		xstrcat(out, tmp_line);
-	}
 	if (one_liner)
 		xstrcat(out, "\n");
 	else
@@ -283,17 +250,17 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 extern int slurm_load_node (time_t update_time,
 			    node_info_msg_t **resp, uint16_t show_flags)
 {
-	int rc;
-	slurm_msg_t req_msg;
-	slurm_msg_t resp_msg;
-	node_info_request_msg_t req;
+        int rc;
+        slurm_msg_t req_msg;
+        slurm_msg_t resp_msg;
+        node_info_request_msg_t req;
 
 	slurm_msg_t_init(&req_msg);
 	slurm_msg_t_init(&resp_msg);
-	req.last_update  = update_time;
+        req.last_update  = update_time;
 	req.show_flags   = show_flags;
-	req_msg.msg_type = REQUEST_NODE_INFO;
-	req_msg.data     = &req;
+        req_msg.msg_type = REQUEST_NODE_INFO;
+        req_msg.data     = &req;
 
 	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
 		return SLURM_ERROR;
@@ -314,5 +281,5 @@ extern int slurm_load_node (time_t update_time,
 		break;
 	}
 
-	return SLURM_PROTOCOL_SUCCESS;
+        return SLURM_PROTOCOL_SUCCESS;
 }

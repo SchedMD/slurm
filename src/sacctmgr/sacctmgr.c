@@ -193,7 +193,7 @@ main (int argc, char *argv[])
 	 * error you can not rollback ;)
 	 */
 	errno = 0;
-	db_conn = acct_storage_g_get_connection(false, 0, 1, NULL);
+	db_conn = acct_storage_g_get_connection(false, 0, 1);
 	if(errno != SLURM_SUCCESS) {
 		int tmp_errno = errno;
 		if((input_field_count == 2) &&
@@ -612,14 +612,11 @@ static void _show_it (int argc, char *argv[])
 				MAX(command_len, 2)) == 0) {
 		error_code = sacctmgr_list_association((argc - 1), &argv[1]);
 	} else if (strncasecmp (argv[0], "Clusters",
-				MAX(command_len, 2)) == 0) {
+				MAX(command_len, 1)) == 0) {
 		error_code = sacctmgr_list_cluster((argc - 1), &argv[1]);
 	} else if (strncasecmp (argv[0], "Configuration",
-				MAX(command_len, 2)) == 0) {
-		error_code = sacctmgr_list_config(true);
-	} else if (strncasecmp (argv[0], "Events",
 				MAX(command_len, 1)) == 0) {
-		error_code = sacctmgr_list_event((argc - 1), &argv[1]);
+		error_code = sacctmgr_list_config(true);
 	} else if (strncasecmp (argv[0], "Problems",
 				MAX(command_len, 1)) == 0) {
 		error_code = sacctmgr_list_problem((argc - 1), &argv[1]);
@@ -638,8 +635,8 @@ static void _show_it (int argc, char *argv[])
 		fprintf(stderr, "No valid entity in list command\n");
 		fprintf(stderr, "Input line must include ");
 		fprintf(stderr, "\"Account\", \"Association\", "
-			"\"Cluster\", \"Events\"\n\"Configuration\", "
-			"\"Problem\", \"QOS\", \"Transaction\", \"User\", "
+			"\"Configuration\"\n\"Cluster\", \"Problem\", "
+			"\"QOS\", \"Transaction\", \"User\", "
 			"or \"WCKey\"\n");
 	}
 
@@ -814,8 +811,7 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
   <SPECS> are different for each command entity pair.                      \n\
        list account       - Clusters=, Descriptions=, Format=, Names=,     \n\
                             Organizations=, Parents=, WithAssocs,          \n\
-                            WithDeleted, WithCoordinators, WithRawQOS,     \n\
-                            and WOPLimits                                  \n\
+                            WithCoordinators, WithRawQOS, and WOPLimits    \n\
        add account        - Clusters=, Description=, Fairshare=,           \n\
                             GrpCPUMins=, GrpCPUs=, GrpJobs=, GrpNodes=,    \n\
                             GrpSubmitJob=, GrpWall=, MaxCPUMins=, MaxJobs=,\n\
@@ -851,10 +847,6 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
        add coordinator    - Accounts=, and Names=                          \n\
        delete coordinator - Accounts=, and Names=                          \n\
                                                                            \n\
-       list events        - All_Clusters, All_Time, Clusters=, End=, Events=,\n\
-                            Format=, MaxCpus=, MinCpus=, Nodes=, Reason=,  \n\
-                            Start=, States=, and User=                     \n\
-                                                                           \n\
        list qos           - Descriptions=, Format=, Ids=, Names=,          \n\
                             and WithDeleted                                \n\
        add qos            - Description=, GrpCPUMins=, GrpCPUs=, GrpJobs=, \n\
@@ -869,7 +861,7 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
        list user          - AdminLevel=, DefaultAccounts=,                 \n\
                             DefaultWCKeys=, Format=, Names=,               \n\
                             QosLevel=, WithAssocs, WithCoordinators,       \n\
-                            WithDeleted, WithRawQOS, and WOPLimits         \n\
+                            WithRawQOS, and WOPLimits                      \n\
        add user           - Accounts=, AdminLevel=, Clusters=,             \n\
                             DefaultAccount=, DefaultWCKey=,                \n\
                             Fairshare=, MaxCPUMins=, MaxCPUs=,             \n\
@@ -886,16 +878,11 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                             DefaultAccounts=, DefaultWCKeys=, and Names=   \n\
                                                                            \n\
        list wckey         - Clusters=, End=, Format=, IDs=, Names=,        \n\
-                            Start=, User=, and WithDeleted                 \n\
+                            Start=, User=, and WCKeys=                     \n\
                                                                            \n\
-       archive dump       - Directory=, Events, Jobs,                      \n\
-                            PurgeEventAfter=<Period>,                      \n\
-                            PurgeJobAfter=<Period>,                        \n\
-                            PurgeStepAfter=<Period>,                       \n\
-                            PurgeSuspendAfter=<Period>,                    \n\
-                            Where <Period>: dDays or mMonths or m [months] \n\
-                                                                           \n\
-                            Script=, Steps and Suspend                     \n\
+       archive dump       - Directory=, Events, Jobs, PurgeEventMonths=,   \n\
+                            PurgeJobMonths=, PurgeStepMonths=,             \n\
+                            PurgeSuspendMonths=, Script=, Steps and Suspend\n\
                                                                            \n\
        archive load       - File=, or Insert=                              \n\
                                                                            \n\
@@ -919,10 +906,6 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                             GrpNodes, GrpSubmitJob, MaxCPUMins,            \n\
                             MaxCPUs, MaxJobs, MaxNodes, MaxSubmitJobs,     \n\
                             MaxWall, NodeCount, NodeNames                  \n\
-                                                                           \n\
-       Event              - Cluster, ClusterNodes, CPUs, Duration, End,    \n\
-                            Event, EventRaw, NodeName, Reason, Start,      \n\
-                            State, StateRaw, User                          \n\
                                                                            \n\
        QOS                - Description, GrpCPUMins, GrpCPUs, GrpJobs,     \n\
                             GrpNodes, GrpSubmitJob, GrpWall, ID,           \n\

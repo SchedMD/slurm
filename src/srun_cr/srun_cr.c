@@ -148,7 +148,7 @@ mimic_exit(int status)
 		/* now raise the signal */
 		signal_self(WTERMSIG(status));
 	} else {
-		error("Unexpected status from child");
+		error("Unexpected status from child\n");
 		exit(-1);
 	}
 }

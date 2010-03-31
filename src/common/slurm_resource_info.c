@@ -117,7 +117,7 @@ int slurm_get_avail_procs(const uint16_t min_sockets,
 			  uint16_t *cores,
 			  uint16_t *threads,
 			  const uint16_t *alloc_cores,
-			  const uint16_t cr_type,
+			  const select_type_plugin_info_t cr_type,
 			  uint32_t job_id,
 			  char *name)
 {
@@ -156,10 +156,32 @@ int slurm_get_avail_procs(const uint16_t min_sockets,
 		     job_id, name, i, alloc_cores[i]);
 #endif
 	allocated_cpus = allocated_cores * (*threads);
-
+	switch(cr_type) {
 	/* For the following CR types, nodes have no notion of socket, core,
 	   and thread.  Only one level of logical processors */
-	if (cr_type & CR_CORE) {
+	case SELECT_TYPE_INFO_NONE:
+		/* Default for select/linear */
+	case CR_CPU:
+	case CR_CPU_MEMORY:
+
+		if (*cpus >= allocated_cpus)
+			*cpus -= allocated_cpus;
+		else {
+			*cpus = 0;
+			error("cons_res: *cpus underflow");
+		}
+
+	case CR_MEMORY:
+		/*** compute an overall maximum cpu count honoring ntasks* ***/
+		max_cpus  = *cpus;
+		if (ntaskspernode > 0) {
+			max_cpus = MIN(max_cpus, ntaskspernode);
+		}
+		break;
+
+	/* For all other types, nodes contain sockets, cores, and threads */
+	case CR_CORE:
+	case CR_CORE_MEMORY:
 		if (*cpus >= allocated_cpus)
 			*cpus -= allocated_cpus;
 		else {
@@ -208,7 +230,11 @@ int slurm_get_avail_procs(const uint16_t min_sockets,
 		if (ntaskspernode > 0) {
 			max_cpus = MIN(max_cpus, ntaskspernode);
 		}
-	} else if (cr_type & CR_SOCKET) {
+		break;
+
+	case CR_SOCKET:
+	case CR_SOCKET_MEMORY:
+	default:
 		if (*sockets >= allocated_sockets)
 			*sockets -= allocated_sockets; /* sockets count */
 		else {
@@ -241,22 +267,7 @@ int slurm_get_avail_procs(const uint16_t min_sockets,
 
 		/*** honor any availability maximum ***/
 		max_cpus = MIN(max_cpus, max_avail_cpus);
-	} else {	/* CR_CPU (default) */
-		if ((cr_type & CR_CPU) ||
-		    (!(cr_type & CR_MEMORY))) {
-			if (*cpus >= allocated_cpus)
-				*cpus -= allocated_cpus;
-			else {
-				*cpus = 0;
-				error("cons_res: *cpus underflow");
-			}
-		}
-
-		/*** compute an overall maximum cpu count honoring ntasks* ***/
-		max_cpus  = *cpus;
-		if (ntaskspernode > 0) {
-			max_cpus = MIN(max_cpus, ntaskspernode);
-		}
+		break;
 	}
 
 	/*** factor cpus_per_task into max_cpus ***/

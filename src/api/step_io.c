@@ -1117,7 +1117,7 @@ client_io_handler_create(slurm_step_io_fds_t fds,
 				      (short *)&cio->listenport[i]) < 0) {
 			fatal("unable to initialize stdio listen socket: %m");
 		}
-		debug("initialized stdio listening socket, port %d",
+		debug("initialized stdio listening socket, port %d\n",
 		      cio->listenport[i]);
 		/*net_set_low_water(cio->listensock[i], 140);*/
 		obj = _create_listensock_eio(cio->listensock[i], cio);

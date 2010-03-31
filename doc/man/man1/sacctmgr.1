@@ -192,10 +192,6 @@ This should be a trusted person since they can change limits on
 account and user associations inside their realm.
 
 .TP
-\fIevent\fR
-Events like downed or draining nodes on clusters.
-
-.TP
 \fIqos\fR
 Quality of Service.
 
@@ -239,8 +235,9 @@ this will change in future versions of SLURM.)
 Maximum number of CPUs running jobs are able to be allocated in aggregate for
 this association and all association which are children of this association.
 To clear a previously set value use the modify command with a new
-value of \-1.  (NOTE: This limit only applys fully when using the Select
-Consumable Resouce plugin.)
+value of \-1.  (NOTE: This limit is not currently enforced in SLURM.
+You can still set this, but have to wait for future versions of SLURM
+before it is enforced.)
 
 .TP
 \fIGrpJobs\fP=<max jobs>
@@ -290,8 +287,9 @@ Maximum number of CPUs each job is able to use in this account.
 This is overridden if set directly on a user.
 Default is the cluster's limit.
 To clear a previously set value use the modify command with a new
-value of \-1.  (NOTE: This limit only applys fully when using the Select
-Consumable Resouce plugin.)
+value of \-1.  (NOTE: This limit is not currently enforced in SLURM.
+You can still set this, but have to wait for future versions of SLURM
+before it is enforced.)
 
 .TP
 \fIMaxJobs\fP=<max jobs>
@@ -372,18 +370,6 @@ Organization to which the account belongs.
 Parent account of this account. Default is the root account, a top
 level account.
 
-.TP
-\fIWithAssoc\fP
-Display all associations for this account.
-
-.TP
-\fIWithCoord\fP
-Display all coordinators for this account.
-
-.TP
-\fIWithDeleted\fP
-Display information with previously deleted data.
-
 .SH ""
 NOTE: If using the WithAssoc option you can also query against
 association specific information to view only certain associations
@@ -422,15 +408,15 @@ in the \fILIST/SHOW ASSOCIATION FORMAT OPTIONS\fP section.
 .SH "SPECIFICATIONS FOR ASSOCIATIONS"
 
 .TP
-\fIClusters\fP=<comma separated list of cluster names>
+\fICluster\fP=<comma separated list of cluster names>
 List the associations of the cluster(s).
 
 .TP
-\fIAccounts\fP=<comma separated list of account names>
+\fIAccount\fP=<comma separated list of account names>
 List the associations of the account(s).
 
 .TP
-\fIUsers\fP=<comma separated list of user names>
+\fIUser\fP=<comma separated list of user names>
 List the associations of the user(s).
 
 .TP
@@ -663,133 +649,6 @@ account or list user.
 .RE
 
 
-.SH "SPECIFICATIONS FOR EVENTS"
-
-.TP
-\fIAll_Clusters\fP
-Get information on all cluster shortcut.
-
-.TP
-\fIAll_Time\fP
-Get time period for all time shortcut.
-
-.TP
-\fIClusters\fP=<comma separated list of cluster names>
-List the events of the cluster(s).  Default is the cluster where the
-command was run.
-
-.TP
-\fIEnd\fP=<OPT>
-Period ending of events. Default is now.
-Valid time formats are...
-HH:MM[:SS] [AM|PM]
-MMDD[YY] or MM/DD[/YY] or MM.DD[.YY]
-MM/DD[/YY]-HH:MM[:SS]
-YYYY-MM-DD[THH:MM[:SS]]
-
-.TP
-\fIEvent\fP=<OPT>
-Specific events to look for, valid options are Cluster or Node,
-default is both.
-
-.TP
-\fIMaxCPUs\fP=<OPT>
-Max number of cpus affected by an event.
-
-.TP
-\fIMinCPUs\fP=<OPT>
-Min number of cpus affected by an event.
-
-.TP
-\fINodes\fP=<comma separated list of node names>
-Node names affected by an event.
-
-.TP
-\fIReason\fP=<comma separated list of reasons>
-Reason an event happened.
-
-.TP
-\fIStart\fP=<OPT>
-Period start of events.  Default is 00:00:00 of previous day, unless
-states are given with the States= spec events.  If this is the case
-the default behavior is to return events currently in
-the states specified.
-
-Valid time formats are...
-HH:MM[:SS] [AM|PM]
-MMDD[YY] or MM/DD[/YY] or MM.DD[.YY]
-MM/DD[/YY]-HH:MM[:SS]
-YYYY-MM-DD[THH:MM[:SS]]
-
-.TP
-\fIStates\fP=<comma separated list of states>
-State of a node in a node event.  If this is set, the event type is
-set automatically to Node.
-
-.TP
-\fIUser\fP=<comma separated list of users>
-Query against users who set the event.  If this is set, the event type is
-set automatically to Node since only user slurm can preform a cluster event.
-
-.RE
-
-.SH "LIST/SHOW EVENT FORMAT OPTIONS"
-
-.TP
-\fICluster\fP
-The name of the cluster event happened on.
-
-.TP
-\fIClusterNodes\fP
-The hostlist of nodes on a cluster in a cluster event.
-
-.TP
-\fICPUs\fP
-Number of cpus involved with the event.
-
-.TP
-\fIDuration\fP
-Time period the event was around for.
-
-.TP
-\fIEnd\fP
-Period when event ended.
-
-.TP
-\fIEvent\fP
-Name of the event.
-
-.TP
-\fIEventRaw\fP
-Numeric value of the name of the event.
-
-.TP
-\fINodeName\fP
-The node effected by the event.  In a cluster event, this is blank.
-
-.TP
-\fIReason\fP
-The reason an event happened.
-
-.TP
-\fIStart\fP
-Period when event started.
-
-.TP
-\fIState\fP
-On a node event this is the formatted state of the node during the event.
-
-.TP
-\fIStateRaw\fP
-On a node event this is the numeric value of the state of the node
-during the event.
-
-.TP
-\fIUser\fP
-On a node event this is the user who caused the event to happen.
-.RE
-
-
 .SH "SPECIFICATIONS FOR QOS"
 
 .TP
@@ -865,10 +724,6 @@ What priority will be added to a job\'s priority when using this QOS.
 \fIUsageFactor\fP
 Usage factor when running with this QOS
 .RE
-
-.TP
-\fIWithDeleted\fP
-Display information with previously deleted data.
 
 
 .SH "LIST/SHOW QOS FORMAT OPTIONS"
@@ -1082,18 +937,6 @@ Partition name.
 .TP
 \fIWCKeys\fP=<wckeys>
 Workload Characterization Key values.
-
-.TP
-\fIWithAssoc\fP
-Display all associations for this user.
-
-.TP
-\fIWithCoord\fP
-Display all accounts a user is coordinator for.
-
-.TP
-\fIWithDeleted\fP
-Display information with previously deleted data.
 
 .SH ""
 NOTE: If using the WithAssoc option you can also query against
@@ -1394,46 +1237,34 @@ archive dump
 Directory to store the archive data.
 .TP
 \fIEvents\fP
-Archive Events.  If not specified and PurgeEventAfter is set
+Archive Events.  If not specified and PurgeEventMonths is set
 all event data removed will be lost permanently.
 .TP
 \fIJobs\fP
-Archive Jobs.  If not specified and PurgeJobAfter is set
+Archive Jobs.  If not specified and PurgeJobMonths is set
 all job data removed will be lost permanently.
 .TP
-\fIPurgeEventAfter=\fP
-Purge cluster event records older than time stated in months.  If you
-want to purge on a shorter time period you can include hours, or days
-behind the numeric value to get those more frequent purges. (i.e. a
-value of '12hours' would purge everything older than 12 hours.)
+\fIPurgeEventMonths=\fP
+Purge cluster event records older than time stated in months.
 .TP
-\fIPurgeJobAfter=\fP
-Purge job records older than time stated in months.  If you
-want to purge on a shorter time period you can include hours, or days
-behind the numeric value to get those more frequent purges. (i.e. a
-value of '12hours' would purge everything older than 12 hours.)
+\fIPurgeJobMonths=\fP
+Purge job records older than time stated in months.
 .TP
-\fIPurgeStepAfter=\fP
-Purge step records older than time stated in months.  If you
-want to purge on a shorter time period you can include hours, or days
-behind the numeric value to get those more frequent purges. (i.e. a
-value of '12hours' would purge everything older than 12 hours.)
+\fIPurgeStepMonths=\fP
+Purge step records older than time stated in months.
 .TP
-\fIPurgeSuspendAfter=\fP
-Purge job suspend records older than time stated in months.  If you
-want to purge on a shorter time period you can include hours, or days
-behind the numeric value to get those more frequent purges. (i.e. a
-value of '12hours' would purge everything older than 12 hours.)
+\fIPurgeSuspendMonths=\fP
+Purge job suspend records older than time stated in months.
 .TP
 \fIScript=\fP
 Run this script instead of the generic form of archive to flat files.
 .TP
 \fISteps\fP
-Archive Steps.  If not specified and PurgeStepAfter is set
+Archive Steps.  If not specified and PurgeStepMonths is set
 all step data removed will be lost permanently.
 .TP
 \fISuspend\fP
-Archive Suspend Data.  If not specified and PurgeSuspendAfter is set
+Archive Suspend Data.  If not specified and PurgeSuspendMonths is set
 all suspend data removed will be lost permanently.
 .RE
 

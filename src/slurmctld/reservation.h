@@ -133,10 +133,6 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
  */
 extern int job_test_resv_now(struct job_record *job_ptr);
 
-/* Adjust a job's time_limit and end_time as needed to avoid using 
- *	reserved resources. Don't go below job's time_min value. */
-extern void job_time_adj_resv(struct job_record *job_ptr);
-
 /* Begin scan of all jobs for valid reservations */
 extern void begin_job_resv_check(void);
 

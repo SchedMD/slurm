@@ -137,7 +137,7 @@ main(int argc, char * argv[])
 	    	_cpuinfo_path = argv[1];
 		testnumproc = 1024;	/* since may not match test host */
 	}
-	debug3("%s:", _cpuinfo_path);
+	debug3("%s:\n", _cpuinfo_path);
 
 	error_code = get_mach_name(node_name);
 	if (error_code != 0) 
@@ -159,20 +159,20 @@ main(int argc, char * argv[])
 	error_code += get_speed(&speed);
 #endif
 
-	debug3("");
-	debug3("NodeName=%s CPUs=%u Sockets=%u Cores=%u Threads=%u",
+	debug3("\n");
+	debug3("NodeName=%s CPUs=%u Sockets=%u Cores=%u Threads=%u\n",
 		node_name, this_node.cpus,
 		this_node.sockets, this_node.cores, this_node.threads);
-	debug3("\tRealMemory=%u TmpDisk=%u Speed=%f",
+	debug3("\tRealMemory=%u TmpDisk=%u Speed=%f\n",
 		this_node.real_memory, this_node.tmp_disk, speed);
 	secs  = up_time % 60;
 	mins  = (up_time / 60) % 60;
 	hours = (up_time / 3600) % 24;
 	days  = (up_time / 86400);
-	debug3("\tUpTime=%u=%u-%2.2u:%2.2u:%2.2u",
+	debug3("\tUpTime=%u=%u-%2.2u:%2.2u:%2.2u\n",
 	       up_time, days, hours, mins, secs);
 	if (error_code != 0) 
-		debug3("get_mach_stat error_code=%d encountered", error_code);
+		debug3("get_mach_stat error_code=%d encountered\n", error_code);
 	exit (error_code);
 }
 
@@ -277,13 +277,13 @@ get_os_name(char *os_name)
 	strcpy(os_name, "UNKNOWN");
 	error_code = uname(&sys_info);
 	if (error_code != 0) {
-		error ("get_os_name: uname error %d", error_code);
+		error ("get_os_name: uname error %d\n", error_code);
 		return error_code;
 	} 
 
 	if ((strlen(sys_info.sysname) + strlen(sys_info.release) + 2) >= 
 		MAX_OS_LEN) {
-		error ("get_os_name: OS name too long");
+		error ("get_os_name: OS name too long\n");
 		return error_code;
 	} 
 
@@ -308,7 +308,7 @@ get_mach_name(char *node_name)
 
     error_code = gethostname_short(node_name, MAX_SLURM_NAME);
     if (error_code != 0)
-	error ("get_mach_name: gethostname_short error %d", error_code);
+	error ("get_mach_name: gethostname_short error %d\n", error_code);
 
     return error_code;
 }
@@ -390,7 +390,7 @@ get_tmp_disk(uint32_t *tmp_disk, char *tmp_fs)
 	}
 	else if (errno != ENOENT) {
 		error_code = errno;
-		error ("get_tmp_disk: error %d executing statfs on %s", 
+		error ("get_tmp_disk: error %d executing statfs on %s\n", 
 			errno, tmp_fs_name);
 	}
 
@@ -506,7 +506,7 @@ get_speed(float *speed)
 
 	kc = kstat_open();
 	if (kc == NULL) {
-		error ("get speed: kstat error %d", errno);
+		error ("get speed: kstat error %d\n", errno);
 		return errno;
 	}
 
@@ -522,7 +522,7 @@ get_speed(float *speed)
 	*speed = 1.0;
 	cpu_info_file = fopen(_cpuinfo_path, "r");
 	if (cpu_info_file == NULL) {
-		error("get_speed: error %d opening %s", errno, _cpuinfo_path);
+		error("get_speed: error %d opening %s\n", errno, _cpuinfo_path);
 		return errno;
 	} 
 
@@ -610,13 +610,13 @@ get_cpuinfo(uint16_t numproc,
 
 	kc = kstat_open();
 	if (kc == NULL) {
-		error ("get speed: kstat error %d", errno);
+		error ("get speed: kstat error %d\n", errno);
 		return errno;
 	}
 #else
 	cpu_info_file = fopen(_cpuinfo_path, "r");
 	if (cpu_info_file == NULL) {
-		error ("get_cpuinfo: error %d opening %s", 
+		error ("get_cpuinfo: error %d opening %s\n", 
 			errno, _cpuinfo_path);
 		return errno;
 	}
@@ -826,17 +826,17 @@ get_cpuinfo(uint16_t numproc,
 
 #if DEBUG_DETAIL
 	/*** Display raw data ***/
-	debug3("");
-	debug3("numcpu:     %u", numcpu);
-	debug3("numphys:    %u", numphys);
-	debug3("numcores:   %u", numcores);
+	debug3("\n");
+	debug3("numcpu:     %u\n", numcpu);
+	debug3("numphys:    %u\n", numphys);
+	debug3("numcores:   %u\n", numcores);
 
-	debug3("cores:      %u->%u", mincores, maxcores);
-	debug3("sibs:       %u->%u", minsibs,  maxsibs);
+	debug3("cores:      %u->%u\n", mincores, maxcores);
+	debug3("sibs:       %u->%u\n", minsibs,  maxsibs);
 
-	debug3("cpuid:      %u->%u", mincpuid,  maxcpuid);
-	debug3("physid:     %u->%u", minphysid, maxphysid);
-	debug3("coreid:     %u->%u", mincoreid, maxcoreid);
+	debug3("cpuid:      %u->%u\n", mincpuid,  maxcpuid);
+	debug3("physid:     %u->%u\n", minphysid, maxphysid);
+	debug3("coreid:     %u->%u\n", mincoreid, maxcoreid);
 
 	for (i = 0; i <= maxcpuid; i++) {
 		debug3("CPU %d:", i);
@@ -847,13 +847,13 @@ get_cpuinfo(uint16_t numproc,
 		debug3(" cores:    %u", cpuinfo[i].cores);
 		debug3(" coreid:   %u", cpuinfo[i].coreid);
 		debug3(" corecnt:  %u", cpuinfo[i].corecnt);
-		debug3("");
+		debug3("\n");
 	}
 
-	debug3("");
-	debug3("Sockets:          %u", sockets);
-	debug3("Cores per socket: %u", cores);
-	debug3("Threads per core: %u", threads);
+	debug3("\n");
+	debug3("Sockets:          %u\n", sockets);
+	debug3("Cores per socket: %u\n", cores);
+	debug3("Threads per core: %u\n", threads);
 #endif
 
 	*block_map_size = numcpu;
@@ -970,56 +970,56 @@ static int _compute_block_map(uint16_t numproc,
 #if DEBUG_DETAIL
 	/* Display the mapping tables */
 
-	debug3("\nMachine logical CPU ID assignment:");
+	debug3("\nMachine logical CPU ID assignment:\n");
 	debug3("Logical CPU ID:      ");
 	for (i = 0; i < numproc; i++) {
 		debug3("%3d", i);
 	}
-	debug3("");
+	debug3("\n");
 	debug3("Physical Socket ID:  ");
 	for (i = 0; i < numproc; i++) {
 		debug3("%3u", cpuinfo[i].physid);
 	}
-	debug3("");
+	debug3("\n");
 
 	if (block_map) {
-		debug3("\nAbstract -> Machine logical CPU ID block mapping:");
+		debug3("\nAbstract -> Machine logical CPU ID block mapping:\n");
 		debug3("Input: (Abstract ID) ");
 		for (i = 0; i < numproc; i++) {
 			debug3("%3d", i);
 		}
-		debug3("");
+		debug3("\n");
 		debug3("Output: (Machine ID) ");
 		for (i = 0; i < numproc; i++) {
 			debug3("%3u", (*block_map)[i]);
 		}
-		debug3("");
+		debug3("\n");
 		debug3("Physical Socket ID:  ");
 		for (i = 0; i < numproc; i++) {
 			uint16_t id = (*block_map)[i];
 			debug3("%3u", cpuinfo[id].physid);
 		}
-		debug3("");
+		debug3("\n");
 	}
 
 	if (block_map_inv) {
 		debug3("\nMachine -> Abstract logical CPU ID block mapping: "
-			"(inverse)");
+			"(inverse)\n");
 		debug3("Input: (Machine ID)  ");
 		for (i = 0; i < numproc; i++) {
 			debug3("%3d", i);
 		}
-		debug3("");
+		debug3("\n");
 		debug3("Output: (Abstract ID)");
 		for (i = 0; i < numproc; i++) {
 			debug3("%3u", (*block_map_inv)[i]);
 		}
-		debug3("");
+		debug3("\n");
 		debug3("Physical Socket ID:  ");
 		for (i = 0; i < numproc; i++) {
 			debug3("%3u", cpuinfo[i].physid);
 		}
-		debug3("");
+		debug3("\n");
 	}
 #endif
 	return 0;

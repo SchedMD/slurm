@@ -170,7 +170,7 @@ extern int process(shares_response_msg_t *resp)
 
 	if(!resp->assoc_shares_list || !list_count(resp->assoc_shares_list))
 		return SLURM_SUCCESS;
-	tree_list = list_create(slurmdb_destroy_print_tree);
+	tree_list = list_create(destroy_acct_print_tree);
 	itr = list_iterator_create(resp->assoc_shares_list);
 	while((assoc = list_next(itr))) {
 		int curr_inx = 1;
@@ -186,7 +186,7 @@ extern int process(shares_response_msg_t *resp)
 				else
 					local_acct = xstrdup(assoc->name);
 
-				print_acct = slurmdb_tree_name_get(
+				print_acct = get_tree_acct_name(
 					local_acct,
 					assoc->parent, tree_list);
 				xfree(local_acct);

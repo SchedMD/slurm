@@ -247,7 +247,7 @@ read_proc()
 	if (hertz == 0) {
 		hertz = sysconf(_SC_CLK_TCK);
 		if (hertz == 0) {
-			error ("read_proc: unable to get clock rate");
+			error ("read_proc: unable to get clock rate\n");
 			hertz = 100;	/* default on many systems */
 		} 
 	} 
@@ -255,7 +255,7 @@ read_proc()
 	proc_stat = (char *) xmalloc(proc_stat_size);
 	proc_fs = opendir("/proc");
 	if (proc_fs == NULL) {
-		error ("read_proc: opendir unable to open /proc %m");
+		error ("read_proc: opendir unable to open /proc %m\n");
 		return errno;
 	}
 	iteration++;
@@ -268,7 +268,7 @@ read_proc()
 			continue;	/* Not "real" process ID */
 		if (strlen(proc_ent->d_name) > 10) {
 			/* make proc_name longer and change this value */
-			error ("read_proc: process ID number too long");
+			error ("read_proc: process ID number too long\n");
 			continue;
 		} 
 		sprintf (proc_name, "/proc/%s/stat", proc_ent->d_name);
@@ -324,7 +324,7 @@ read_proc()
 					break;
 				} 
 				if (sess_free == NULL) {
-					error ("read_proc: Internal error");
+					error ("read_proc: Internal error\n");
 					return EINVAL;
 				} 
 			} 

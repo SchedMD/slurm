@@ -517,7 +517,7 @@ static int _parse_fed_file(hostlist_t *adapter_list)
 		fed_conf = _get_fed_conf();
 
 	tbl = s_p_hashtbl_create(options);
-	if(s_p_parse_file(tbl, NULL, fed_conf) == SLURM_ERROR)
+	if(s_p_parse_file(tbl, fed_conf) == SLURM_ERROR)
 		fatal("something wrong with opening/reading federation "
 		      "conf file");
 
@@ -2346,7 +2346,7 @@ fed_load_table(fed_jobinfo_t *jp, int uid, int pid)
 				jp->tableinfo[i].table);
 		}
 		if(err != NTBL_SUCCESS) {
-			error("unable to load table: [%d] %s",
+			error("unable to load table: [%d] %s\n",
 			      err, _lookup_fed_status_tab(err));
 			return SLURM_ERROR;
 		}

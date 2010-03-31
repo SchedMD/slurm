@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  process.c - process functions for stats
+ *  process.c - process functions for sacct
  *
  *  $Id: process.c 7541 2006-03-18 01:44:58Z da $
  *****************************************************************************
@@ -59,34 +59,30 @@ char *find_hostname(uint32_t pos, char *hosts)
 	return host;
 }
 
-void aggregate_stats(slurmdb_stats_t *dest, slurmdb_stats_t *from)
+void aggregate_sacct(sacct_t *dest, sacct_t *from)
 {
-	if(dest->vsize_max < from->vsize_max) {
-		dest->vsize_max = from->vsize_max;
-		dest->vsize_max_nodeid = from->vsize_max_nodeid;
-		dest->vsize_max_taskid = from->vsize_max_taskid;
+	if(dest->max_vsize < from->max_vsize) {
+		dest->max_vsize = from->max_vsize;
+		dest->max_vsize_id = from->max_vsize_id;
 	}
-	dest->vsize_ave += from->vsize_ave;
+	dest->ave_vsize += from->ave_vsize;
 
-	if(dest->rss_max < from->rss_max) {
-		dest->rss_max = from->rss_max;
-		dest->rss_max_nodeid = from->rss_max_nodeid;
-		dest->rss_max_taskid = from->rss_max_taskid;
+	if(dest->max_rss < from->max_rss) {
+		dest->max_rss = from->max_rss;
+		dest->max_rss_id = from->max_rss_id;
 	}
-	dest->rss_ave += from->rss_ave;
+	dest->ave_rss += from->ave_rss;
 
-	if(dest->pages_max < from->pages_max) {
-		dest->pages_max = from->pages_max;
-		dest->pages_max_nodeid = from->pages_max_nodeid;
-		dest->pages_max_taskid = from->pages_max_taskid;
+	if(dest->max_pages < from->max_pages) {
+		dest->max_pages = from->max_pages;
+		dest->max_pages_id = from->max_pages_id;
 	}
-	dest->pages_ave += from->pages_ave;
+	dest->ave_pages += from->ave_pages;
 
-	if((dest->cpu_min > from->cpu_min)
-	   || (dest->cpu_min == NO_VAL)) {
-		dest->cpu_min = from->cpu_min;
-		dest->cpu_min_nodeid = from->cpu_min_nodeid;
-		dest->cpu_min_taskid = from->cpu_min_taskid;
+	if((dest->min_cpu > from->min_cpu)
+	   || (dest->min_cpu == NO_VAL)) {
+		dest->min_cpu = from->min_cpu;
+		dest->min_cpu_id = from->min_cpu_id;
 	}
-	dest->cpu_ave += from->cpu_ave;
+	dest->ave_cpu += from->ave_cpu;
 }

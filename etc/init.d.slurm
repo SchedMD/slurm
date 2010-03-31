@@ -5,7 +5,7 @@
 #              manages exclusive access to a set of compute \
 #              resources and distributes work to those resources.
 #
-# processname: /usr/sbin/slurmd
+# processname: /usr/sbin/slurmd 
 # pidfile: /var/run/slurmd.pid
 #
 # processname: /usr/sbin/slurmctld
@@ -52,15 +52,13 @@ else
    RETVAL=0
 fi
 
-# We can not use a starter program without losing environment
+# We can not use a starter program without losing environment 
 # variables that are critical on Blue Gene systems
 if [ -d /bgl/BlueLight/ppcfloor ]; then
    STARTPROC=""
 fi
 
 # Source slurm specific configuration
-# SLURMCTLD_OPTIONS defines slurmctld command line options. See "man slurmctld"
-# SLURMD_OPTIONS defines slurmd command line options. See "man slurmd"
 if [ -f /etc/sysconfig/slurm ] ; then
     . /etc/sysconfig/slurm
 else
@@ -76,15 +74,15 @@ export LD_LIBRARY_PATH="$LIBDIR:$LD_LIBRARY_PATH"
 start() {
     prog=$1
     shift
-    echo -n "starting $prog: "
-    unset HOME MAIL USER USERNAME
+    echo -n "starting $prog: " 
+    unset HOME MAIL USER USERNAME 
     $STARTPROC $SBINDIR/$prog $*
     rc_status -v
     echo
     touch /var/lock/subsys/slurm
 }
 
-stop() {
+stop() { 
     echo -n "stopping $1: "
     killproc $1 -TERM
     rc_status -v
@@ -93,9 +91,9 @@ stop() {
 }
 
 startall() {
-    for prog in `$BINDIR/scontrol show daemons`; do
-	optvar=`echo ${prog}_OPTIONS | tr "a-z" "A-Z"`
-	start $prog ${!optvar}
+    for prog in `$BINDIR/scontrol show daemons`; do 
+        optvar=`echo ${prog}_OPTIONS | tr "a-z" "A-Z"`
+        start $prog ${!optvar} 
     done
 }
 
@@ -112,49 +110,49 @@ slurmstatus() {
 
     pidfile=`grep -i ${base}pid $CONFDIR/slurm.conf | grep -v '^ *#'`
     if [ $? = 0 ]; then
-	pidfile=${pidfile##*=}
-	pidfile=${pidfile%#*}
+        pidfile=${pidfile##*=}
+        pidfile=${pidfile%#*}
     else
-	pidfile=/var/run/${base}.pid
+        pidfile=/var/run/${base}.pid
     fi
 
     pid=`pidof -o $$ -o $$PPID -o %PPID -x $1 || \
-	 pidof -o $$ -o $$PPID -o %PPID -x ${base}`
+         pidof -o $$ -o $$PPID -o %PPID -x ${base}`
 
     if [ -f $pidfile ]; then
-	read rpid < $pidfile
-	if [ "$rpid" != "" -a "$pid" != "" ]; then
-	    for i in $pid ; do
-		if [ "$i" = "$rpid" ]; then
-		    echo $"${base} (pid $pid) is running..."
-		    return 0
-		fi
-	    done
-	elif [ "$rpid" != "" -a "$pid" = "" ]; then
-#           Due to change in user id, pid file may persist
+        read rpid < $pidfile
+        if [ "$rpid" != "" -a "$pid" != "" ]; then
+            for i in $pid ; do
+                if [ "$i" = "$rpid" ]; then 
+                    echo $"${base} (pid $pid) is running..."
+                    return 0
+                fi     
+            done
+        elif [ "$rpid" != "" -a "$pid" = "" ]; then
+#           Due to change in user id, pid file may persist 
 #           after slurmctld terminates
-	    if [ "$base" != "slurmctld" ] ; then
-	       echo $"${base} dead but pid file exists"
-	    else
-	       echo $"${base} is stopped"
-	    fi
-	    return 1
-	fi
+            if [ "$base" != "slurmctld" ] ; then
+               echo $"${base} dead but pid file exists"
+            else
+               echo $"${base} is stopped"
+            fi
+            return 1
+        fi 
 
     fi
 
     if [ "$base" = "slurmctld" -a "$pid" != "" ] ; then
-	echo $"${base} (pid $pid) is running..."
-	return 0
+        echo $"${base} (pid $pid) is running..."
+        return 0
     fi
-
+     
     echo $"${base} is stopped"
-
+    
     return 3
 }
 
 #
-# stop slurm daemons,
+# stop slurm daemons, 
 # wait for termination to complete (up to 10 seconds) before returning
 #
 slurmstop() {
@@ -163,11 +161,11 @@ slurmstop() {
 
        for i in 1 2 3 4
        do
-	  sleep $i
-	  slurmstatus $prog
-	  if [ $? != 0 ]; then
-	     break
-	  fi
+          sleep $i
+          slurmstatus $prog
+          if [ $? != 0 ]; then
+             break
+          fi
        done
     done
 }
@@ -182,46 +180,46 @@ slurmstop() {
 case "$1" in
     start)
 	startall
-	;;
+        ;;
     startclean)
-	SLURMCTLD_OPTIONS="-c $SLURMCTLD_OPTIONS"
-	SLURMD_OPTIONS="-c $SLURMD_OPTIONS"
-	startall
-	;;
+        SLURMCTLD_OPTIONS="-c $SLURMCTLD_OPTIONS"
+        SLURMD_OPTIONS="-c $SLURMD_OPTIONS"
+        startall
+        ;;
     stop)
 	slurmstop
-	;;
+        ;;
     status)
 	for prog in `$BINDIR/scontrol show daemons`; do
 	   slurmstatus $prog
 	done
-	;;
+        ;;
     restart)
-	$0 stop
-	$0 start
-	;;
+        $0 stop
+        $0 start
+        ;;
     condrestart)
-	if [ -f /var/lock/subsys/slurm ]; then
-	    for prog in `$BINDIR/scontrol show daemons`; do
-		 stop $prog
-		 start $prog
-	    done
-	fi
-	;;
+        if [ -f /var/lock/subsys/slurm ]; then
+            for prog in `$BINDIR/scontrol show daemons`; do
+                 stop $prog
+                 start $prog
+            done
+        fi
+        ;;
     reconfig)
 	for prog in `$BINDIR/scontrol show daemons`; do
 	    killproc $prog -HUP
 	done
 	;;
     test)
-	for prog in `$BINDIR/scontrol show daemons`; do
+	for prog in `$BINDIR/scontrol show daemons`; do   
 	    echo "$prog runs here"
 	done
 	;;
     *)
-	echo "Usage: $0 {start|startclean|stop|status|restart|reconfig|condrestart|test}"
-	exit 1
-	;;
+        echo "Usage: $0 {start|startclean|stop|status|restart|reconfig|condrestart|test}"
+        exit 1
+        ;;
 esac
 
 rc_exit

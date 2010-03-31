@@ -200,6 +200,7 @@ PATH_SEPARATOR = @PATH_SEPARATOR@
 PGSQL_CFLAGS = @PGSQL_CFLAGS@
 PGSQL_LIBS = @PGSQL_LIBS@
 PKG_CONFIG = @PKG_CONFIG@
+PLPA_LIBS = @PLPA_LIBS@
 PROCTRACKDIR = @PROCTRACKDIR@
 PROJECT = @PROJECT@
 PTHREAD_CC = @PTHREAD_CC@
@@ -225,7 +226,7 @@ SLURM_MAJOR = @SLURM_MAJOR@
 SLURM_MICRO = @SLURM_MICRO@
 SLURM_MINOR = @SLURM_MINOR@
 SLURM_PREFIX = @SLURM_PREFIX@
-SLURM_VERSION_NUMBER = @SLURM_VERSION_NUMBER@
+SLURM_VERSION = @SLURM_VERSION@
 SLURM_VERSION_STRING = @SLURM_VERSION_STRING@
 SO_LDFLAGS = @SO_LDFLAGS@
 SSL_CPPFLAGS = @SSL_CPPFLAGS@
@@ -369,7 +370,6 @@ man3_MANS = man3/slurm_hostlist_create.3 \
 	man3/slurm_init_part_desc_msg.3 \
 	man3/slurm_init_resv_desc_msg.3 \
 	man3/slurm_init_update_node_msg.3 \
-	man3/slurm_init_update_step_msg.3 \
 	man3/slurm_job_cpus_allocated_on_node.3 \
 	man3/slurm_job_cpus_allocated_on_node_id.3 \
 	man3/slurm_job_step_create.3 \
@@ -438,11 +438,9 @@ man3_MANS = man3/slurm_hostlist_create.3 \
 	man3/slurm_update_job.3 \
 	man3/slurm_update_node.3 \
 	man3/slurm_update_partition.3 \
-	man3/slurm_update_reservation.3 \
-	man3/slurm_update_step.3
+	man3/slurm_update_reservation.3
 
 man5_MANS = man5/bluegene.conf.5 \
-	man5/cgroup.conf.5 \
 	man5/slurm.conf.5 \
 	man5/slurmdbd.conf.5 \
 	man5/topology.conf.5 \

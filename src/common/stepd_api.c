@@ -3,7 +3,7 @@
  *  $Id$
  *****************************************************************************
  *  Copyright (C) 2005-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Portions Copyright (C) 2008 Vijay Ramasubramanian
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Christopher Morrone <morrone2@llnl.gov>
@@ -288,31 +288,16 @@ stepd_get_info(int fd)
 {
 	int req = REQUEST_INFO;
 	slurmstepd_info_t *info;
-	uint16_t protocol_version;
 
 	info = xmalloc(sizeof(slurmstepd_info_t));
 	safe_write(fd, &req, sizeof(int));
-
 	safe_read(fd, &info->uid, sizeof(uid_t));
 	safe_read(fd, &info->jobid, sizeof(uint32_t));
 	safe_read(fd, &info->stepid, sizeof(uint32_t));
+	safe_read(fd, &info->nodeid, sizeof(uint32_t));
+	safe_read(fd, &info->job_mem_limit, sizeof(uint32_t));
 
-	safe_read(fd, &protocol_version, sizeof(uint16_t));
-	if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
-		safe_read(fd, &info->nodeid, sizeof(uint32_t));
-		safe_read(fd, &info->job_mem_limit, sizeof(uint32_t));
-		safe_read(fd, &info->step_mem_limit, sizeof(uint32_t));
-	} else {
-		info->nodeid  = protocol_version << 16;
-		safe_read(fd, &protocol_version, sizeof(uint16_t));
-		info->nodeid |= protocol_version;
-		safe_read(fd, &info->job_mem_limit, sizeof(uint32_t));
-		info->step_mem_limit = info->job_mem_limit;
-		verbose("Old version slurmstepd for step %u.%u", 
-			info->jobid, info->stepid);
-	}
 	return info;
-
 rwfail:
 	xfree(info);
 	return NULL;
@@ -334,32 +319,6 @@ stepd_signal(int fd, int signal)
 	safe_read(fd, &rc, sizeof(int));
 	return rc;
 rwfail:
-	return -1;
-}
-
-/*
- * Send job notification message to a batch job
- */
-int
-stepd_notify_job(int fd, char *message)
-{
-	int req = REQUEST_JOB_NOTIFY;
-	int rc;
-
-	safe_write(fd, &req, sizeof(int));
-	if (message) {
-		rc = strlen(message) + 1;
-		safe_write(fd, &rc, sizeof(int));
-		safe_write(fd, message, rc);
-	} else {
-		rc = 0;
-		safe_write(fd, &rc, sizeof(int));
-	}
-
-	/* Receive the return code */
-	safe_read(fd, &rc, sizeof(int));
-	return rc;
- rwfail:
 	return -1;
 }
 
@@ -505,7 +464,7 @@ _sockname_regex_init(regex_t *re, const char *nodename)
 	xstrcat(pattern, "_([[:digit:]]*)\\.([[:digit:]]*)$");
 
 	if (regcomp(re, pattern, REG_EXTENDED) != 0) {
-		error("sockname regex compilation failed");
+		error("sockname regex compilation failed\n");
 		return -1;
 	}
 

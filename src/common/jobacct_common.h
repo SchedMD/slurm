@@ -55,7 +55,6 @@
 
 #include <dirent.h>
 #include <sys/stat.h>
-#include <slurm/slurmdb.h>
 
 #include "src/common/xmalloc.h"
 #include "src/common/list.h"
@@ -72,6 +71,100 @@ typedef struct {
 	uint16_t taskid; /* contains which task number it was on */
 	uint32_t nodeid; /* contains which node number it was on */
 } jobacct_id_t;
+
+typedef struct {
+	uint32_t max_vsize;
+	jobacct_id_t max_vsize_id;
+	double ave_vsize;
+	uint32_t max_rss;
+	jobacct_id_t max_rss_id;
+	double ave_rss;
+	uint32_t max_pages;
+	jobacct_id_t max_pages_id;
+	double ave_pages;
+	uint32_t min_cpu;
+	jobacct_id_t min_cpu_id;
+	double ave_cpu;
+} sacct_t;
+
+typedef struct {
+	uint32_t alloc_cpus;
+	uint32_t alloc_nodes;
+	char    *account;
+	uint32_t associd;
+	char	*blockid;
+	char    *cluster;
+	uint32_t elapsed;
+	time_t eligible;
+	time_t end;
+	int32_t	exitcode;
+	void *first_step_ptr; /* this pointer to a jobacct_step_rec_t
+				 is set up on the
+				 client side so does not need to
+				 be packed */
+	uint32_t gid;
+	uint32_t jobid;
+	char	*jobname;
+	uint32_t lft;
+	char	*partition;
+	char	*nodes;
+	uint32_t priority;
+	uint16_t qos;
+	uint32_t req_cpus;
+	uint32_t requid;
+	uint32_t resvid;
+	sacct_t sacct;
+	uint32_t show_full;
+	time_t start;
+	enum job_states	state;
+	List    steps; /* list of jobacct_step_rec_t *'s */
+	time_t submit;
+	uint32_t suspended;
+	uint32_t sys_cpu_sec;
+	uint32_t sys_cpu_usec;
+	uint32_t timelimit;
+	uint32_t tot_cpu_sec;
+	uint32_t tot_cpu_usec;
+	uint16_t track_steps;
+	uint32_t uid;
+	char    *user;
+	uint32_t user_cpu_sec;
+	uint32_t user_cpu_usec;
+	char    *wckey;
+	uint32_t wckeyid;
+} jobacct_job_rec_t;
+
+typedef struct {
+	uint32_t elapsed;
+	time_t end;
+	int32_t exitcode;
+	jobacct_job_rec_t *job_ptr; /* this pointer is set up on the
+				       client side so does not need to
+				       be packed */
+	uint32_t ncpus;
+	uint32_t nnodes;
+	char *nodes;
+	uint32_t ntasks;
+	uint32_t requid;
+	sacct_t sacct;
+	time_t start;
+	enum job_states	state;
+	uint32_t stepid;	/* job's step number */
+	char *stepname;
+	uint32_t suspended;
+	uint32_t sys_cpu_sec;
+	uint32_t sys_cpu_usec;
+	uint16_t task_dist;
+	uint32_t tot_cpu_sec;
+	uint32_t tot_cpu_usec;
+	uint32_t user_cpu_sec;
+	uint32_t user_cpu_usec;
+} jobacct_step_rec_t;
+
+typedef struct selected_step_t {
+	uint32_t jobid;
+	uint32_t stepid;
+} jobacct_selected_step_t;
 
 struct jobacctinfo {
 	pid_t pid;
@@ -103,6 +196,28 @@ struct jobacctinfo {
    typedef struct jobacctinfo jobacctinfo_t;     /* opaque data type */
 #endif
 
+extern jobacct_step_rec_t *create_jobacct_step_rec();
+extern jobacct_job_rec_t *create_jobacct_job_rec();
+extern void free_jobacct_header(void *object);
+extern void destroy_jobacct_job_rec(void *object);
+extern void destroy_jobacct_step_rec(void *object);
+extern void destroy_jobacct_selected_step(void *object);
+
+extern void pack_jobacct_job_rec(void *object,
+				 uint16_t rpc_version, Buf buffer);
+extern int unpack_jobacct_job_rec(void **object, uint16_t rpc_version,
+				  Buf buffer);
+
+extern void pack_jobacct_step_rec(jobacct_step_rec_t *step,
+				  uint16_t rpc_version, Buf buffer);
+extern int unpack_jobacct_step_rec(jobacct_step_rec_t **step,
+				   uint16_t rpc_version, Buf buffer);
+
+extern void pack_jobacct_selected_step(jobacct_selected_step_t *step,
+				       uint16_t rpc_version, Buf buffer);
+extern int unpack_jobacct_selected_step(jobacct_selected_step_t **step,
+					uint16_t rpc_version, Buf buffer);
+
 /* These should only be called from the jobacct-gather plugin */
 extern int jobacct_common_init_struct(struct jobacctinfo *jobacct,
 				      jobacct_id_t *jobacct_id);
@@ -115,15 +230,14 @@ extern int jobacct_common_getinfo(struct jobacctinfo *jobacct,
 			  enum jobacct_data_type type, void *data);
 extern void jobacct_common_aggregate(struct jobacctinfo *dest,
 			     struct jobacctinfo *from);
-extern void jobacct_common_2_stats(slurmdb_stats_t *stats,
+extern void jobacct_common_2_sacct(sacct_t *sacct,
 				   struct jobacctinfo *jobacct);
 extern void jobacct_common_pack(struct jobacctinfo *jobacct,
 				uint16_t rpc_version, Buf buffer);
 extern int jobacct_common_unpack(struct jobacctinfo **jobacct,
 				 uint16_t rpc_version, Buf buffer);
 
-extern int jobacct_common_set_mem_limit(uint32_t job_id, uint32_t step_id,
-					uint32_t mem_limit);
+extern int jobacct_common_set_mem_limit(uint32_t job_id, uint32_t mem_limit);
 extern int jobacct_common_add_task(pid_t pid, jobacct_id_t *jobacct_id,
 				   List task_list);
 extern struct jobacctinfo *jobacct_common_stat_task(pid_t pid, List task_list);
@@ -135,8 +249,6 @@ extern struct jobacctinfo *jobacct_common_remove_task(pid_t pid,
 /* defined in common_jobacct.c */
 extern pthread_mutex_t jobacct_lock;
 extern uint32_t jobacct_job_id;
-extern uint32_t jobacct_step_id;
-extern uint32_t jobacct_mem_limit;	/* step's memory limit in KB */
-extern uint32_t jobacct_vmem_limit;	/* step's virutal memory limit in KB */
+extern uint32_t jobacct_mem_limit;	/* job's memory limit in KB */
 
 #endif

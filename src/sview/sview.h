@@ -70,7 +70,6 @@
 #include "src/common/list.h"
 #include "src/common/macros.h"
 #include "src/common/node_select.h"
-#include "src/common/uid.h"
 #include "src/plugins/select/bluegene/block_allocator/block_allocator.h"
 #include "src/plugins/select/bluegene/plugin/bluegene.h"
 //#include "src/plugins/select/bluegene/wrap_rm_api.h"
@@ -253,9 +252,6 @@ typedef struct {
 	node_info_t *node_ptr;
 	char *color;
 	int pos;
-	char *boot_time;
-	char *reason;
-	char *slurmd_start_time;
 } sview_node_info_t;
 
 typedef struct {
@@ -284,7 +280,6 @@ extern int global_vertical;
 extern bool global_entry_changed;
 extern bool global_send_update_msg;
 extern bool global_edit_error;
-extern bool global_show_hidden;
 extern gchar *global_edit_error_msg;
 extern bool admin_mode;
 extern GtkWidget *main_statusbar;

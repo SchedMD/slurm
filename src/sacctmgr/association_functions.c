@@ -39,9 +39,10 @@
 
 #include "src/sacctmgr/sacctmgr.h"
 static bool tree_display = 0;
+static bool without_limits = 0;
 
 static int _set_cond(int *start, int argc, char *argv[],
-		     slurmdb_association_cond_t *assoc_cond,
+		     acct_association_cond_t *assoc_cond,
 		     List format_list)
 {
 	int i, end = 0;
@@ -82,6 +83,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 			assoc_cond->without_parent_limits = 1;
 		} else if (!end && !strncasecmp (argv[i], "WOLimits",
 						 MAX(command_len, 3))) {
+			without_limits = 1;
 			assoc_cond->without_parent_limits = 1;
 		} else if(!end && !strncasecmp(argv[i], "where",
 					       MAX(command_len, 5))) {
@@ -303,11 +305,11 @@ static int _set_cond(int *start, int argc, char *argv[],
 extern int sacctmgr_list_association(int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
-	slurmdb_association_cond_t *assoc_cond =
-		xmalloc(sizeof(slurmdb_association_cond_t));
+	acct_association_cond_t *assoc_cond =
+		xmalloc(sizeof(acct_association_cond_t));
 	List assoc_list = NULL;
 	List first_list = NULL;
-	slurmdb_association_rec_t *assoc = NULL;
+	acct_association_rec_t *assoc = NULL;
 	int i=0;
 	ListIterator itr = NULL;
 	ListIterator itr2 = NULL;
@@ -358,17 +360,16 @@ extern int sacctmgr_list_association(int argc, char *argv[])
 	}
 
 	if(exit_code) {
-		slurmdb_destroy_association_cond(assoc_cond);
+		destroy_acct_association_cond(assoc_cond);
 		list_destroy(format_list);
 		return SLURM_ERROR;
 	} else if(!list_count(format_list)) {
 		slurm_addto_char_list(format_list, "C,A,U,Part");
-		if(!assoc_cond->without_parent_limits)
+		if(!without_limits)
 			slurm_addto_char_list(format_list,
-					      "F,GrpJ,GrpN,GrpCPUs,"
-					      "GrpS,GrpWall,GrpCPUMins,MaxJ,"
-					      "MaxN,MaxCPUs,MaxS,MaxW,"
-					      "MaxCPUMins,QOS");
+					      "F,GrpCPUMins,GrpJ,GrpN,"
+					      "GrpS,GrpWall,"
+					      "MaxJ,MaxN,MaxS,MaxW,QOS");
 	}
 	print_fields_list = list_create(destroy_print_field);
 
@@ -553,14 +554,14 @@ extern int sacctmgr_list_association(int argc, char *argv[])
 	list_destroy(format_list);
 
 	if(exit_code) {
-		slurmdb_destroy_association_cond(assoc_cond);
+		destroy_acct_association_cond(assoc_cond);
 		list_destroy(print_fields_list);
 		return SLURM_ERROR;
 	}
 
 	assoc_list = acct_storage_g_get_associations(db_conn, my_uid,
 						     assoc_cond);
-	slurmdb_destroy_association_cond(assoc_cond);
+	destroy_acct_association_cond(assoc_cond);
 
 	if(!assoc_list) {
 		exit_code=1;
@@ -569,7 +570,7 @@ extern int sacctmgr_list_association(int argc, char *argv[])
 		return SLURM_ERROR;
 	}
 	first_list = assoc_list;
-	assoc_list = slurmdb_get_hierarchical_sorted_assoc_list(first_list);
+	assoc_list = get_hierarchical_sorted_assoc_list(first_list);
 
 	itr = list_iterator_create(assoc_list);
 	itr2 = list_iterator_create(print_fields_list);
@@ -584,7 +585,7 @@ extern int sacctmgr_list_association(int argc, char *argv[])
 				list_flush(tree_list);
 			} else {
 				tree_list =
-					list_create(slurmdb_destroy_print_tree);
+					list_create(destroy_acct_print_tree);
 			}
 			last_cluster = assoc->cluster;
 		}
@@ -604,7 +605,7 @@ extern int sacctmgr_list_association(int argc, char *argv[])
 						parent_acct =
 							assoc->parent_acct;
 					}
-					print_acct = slurmdb_tree_name_get(
+					print_acct = get_tree_acct_name(
 						local_acct,
 						parent_acct, tree_list);
 					xfree(local_acct);

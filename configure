@@ -815,6 +815,7 @@ HAVE_PAM_TRUE
 PAM_LIBS
 HAVE_SCHED_SETAFFINITY_FALSE
 HAVE_SCHED_SETAFFINITY_TRUE
+PLPA_LIBS
 HAVE_NUMA_FALSE
 HAVE_NUMA_TRUE
 NUMA_LIBS
@@ -907,7 +908,7 @@ RELEASE
 SLURM_MICRO
 SLURM_MINOR
 SLURM_MAJOR
-SLURM_VERSION_NUMBER
+SLURM_VERSION
 VERSION
 SLURM_API_REVISION
 SLURM_API_AGE
@@ -998,7 +999,6 @@ with_pg_config
 enable_debug
 enable_memory_leak_debug
 enable_front_end
-enable_partial_attach
 with_slurmctld_port
 with_slurmd_port
 with_slurmdbd_port
@@ -1669,7 +1669,6 @@ Optional Features:
   --enable-memory-leak-debug
                           enable memory leak debugging code for development
   --enable-front-end      enable slurmd operation on a front-end
-  --enable-partial-attach enable debugger partial task attach support
   --enable-multiple-slurmd
                           enable multiple-slurmd support
 
@@ -2870,13 +2869,10 @@ SLURM_MINOR="`perl -ne 'print,exit if s/^\s*MINOR:\s*(\S*).*/\1/i' $srcdir/META`
 SLURM_MICRO="`perl -ne 'print,exit if s/^\s*MICRO:\s*(\S*).*/\1/i' $srcdir/META`"
 RELEASE="`perl -ne 'print,exit if s/^\s*RELEASE:\s*(\S*).*/\1/i' $srcdir/META`"
 
-# NOTE: SLURM_VERSION_NUMBER excludes any non-numeric component
-# (e.g. "pre1" in the MICRO), but may be suitable for the user determining
-# how to use the APIs or other differences.
-SLURM_VERSION_NUMBER="`printf "0x%02x%02x%02x" $SLURM_MAJOR $SLURM_MINOR $SLURM_MICRO`"
+SLURM_VERSION="`printf "0x%02x%02x%02x" $SLURM_MAJOR $SLURM_MINOR $SLURM_MICRO`"
 
 cat >>confdefs.h <<_ACEOF
-#define SLURM_VERSION_NUMBER $SLURM_VERSION_NUMBER
+#define SLURM_VERSION $SLURM_VERSION
 _ACEOF
 
 
@@ -6975,13 +6971,13 @@ if test "${lt_cv_nm_interface+set}" = set; then :
 else
   lt_cv_nm_interface="BSD nm"
   echo "int some_variable = 0;" > conftest.$ac_ext
-  (eval echo "\"\$as_me:6978: $ac_compile\"" >&5)
+  (eval echo "\"\$as_me:6974: $ac_compile\"" >&5)
   (eval "$ac_compile" 2>conftest.err)
   cat conftest.err >&5
-  (eval echo "\"\$as_me:6981: $NM \\\"conftest.$ac_objext\\\"\"" >&5)
+  (eval echo "\"\$as_me:6977: $NM \\\"conftest.$ac_objext\\\"\"" >&5)
   (eval "$NM \"conftest.$ac_objext\"" 2>conftest.err > conftest.out)
   cat conftest.err >&5
-  (eval echo "\"\$as_me:6984: output\"" >&5)
+  (eval echo "\"\$as_me:6980: output\"" >&5)
   cat conftest.out >&5
   if $GREP 'External.*some_variable' conftest.out > /dev/null; then
     lt_cv_nm_interface="MS dumpbin"
@@ -8186,7 +8182,7 @@ ia64-*-hpux*)
   ;;
 *-*-irix6*)
   # Find out which ABI we are using.
-  echo '#line 8189 "configure"' > conftest.$ac_ext
+  echo '#line 8185 "configure"' > conftest.$ac_ext
   if { { eval echo "\"\$as_me\":${as_lineno-$LINENO}: \"$ac_compile\""; } >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -9975,11 +9971,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:9978: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:9974: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:9982: \$? = $ac_status" >&5
+   echo "$as_me:9978: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -10314,11 +10310,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:10317: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:10313: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:10321: \$? = $ac_status" >&5
+   echo "$as_me:10317: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -10419,11 +10415,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:10422: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:10418: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:10426: \$? = $ac_status" >&5
+   echo "$as_me:10422: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -10474,11 +10470,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:10477: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:10473: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:10481: \$? = $ac_status" >&5
+   echo "$as_me:10477: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -12857,7 +12853,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<_LT_EOF
-#line 12860 "configure"
+#line 12856 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -12953,7 +12949,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<_LT_EOF
-#line 12956 "configure"
+#line 12952 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -14909,11 +14905,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:14912: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:14908: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:14916: \$? = $ac_status" >&5
+   echo "$as_me:14912: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -15008,11 +15004,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:15011: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:15007: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:15015: \$? = $ac_status" >&5
+   echo "$as_me:15011: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -15060,11 +15056,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:15063: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:15059: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:15067: \$? = $ac_status" >&5
+   echo "$as_me:15063: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -16386,7 +16382,7 @@ for ac_header in mcheck.h values.h socket.h sys/socket.h  \
                  sys/systemcfg.h ncurses.h curses.h sys/dr.h sys/vfs.h \
                  pam/pam_appl.h security/pam_appl.h sys/sysctl.h \
                  pty.h utmp.h \
-		 sys/syslog.h linux/sched.h \
+		 sys/syslog.h \
 		 kstat.h paths.h limits.h sys/statfs.h sys/ptrace.h sys/termios.h \
 
 do :
@@ -16813,6 +16809,61 @@ $as_echo "#define HAVE_NUMA 1" >>confdefs.h
   else
     { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Unable to locate NUMA memory affinity functions" >&5
 $as_echo "$as_me: WARNING: Unable to locate NUMA memory affinity functions" >&2;}
+  fi
+
+#
+# Test for PLPA functions (see http://www.open-mpi.org/software/plpa)
+#
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for plpa_sched_getaffinity in -lplpa" >&5
+$as_echo_n "checking for plpa_sched_getaffinity in -lplpa... " >&6; }
+if test "${ac_cv_lib_plpa_plpa_sched_getaffinity+set}" = set; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lplpa  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char plpa_sched_getaffinity ();
+int
+main ()
+{
+return plpa_sched_getaffinity ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_plpa_plpa_sched_getaffinity=yes
+else
+  ac_cv_lib_plpa_plpa_sched_getaffinity=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_plpa_plpa_sched_getaffinity" >&5
+$as_echo "$ac_cv_lib_plpa_plpa_sched_getaffinity" >&6; }
+if test "x$ac_cv_lib_plpa_plpa_sched_getaffinity" = x""yes; then :
+  ac_have_plpa=yes; PLPA_LIBS="-rpath /usr/local/lib -lplpa"
+fi
+
+
+
+  if test "x$ac_have_plpa" = "xyes"; then
+    have_sched_setaffinity=yes
+
+$as_echo "#define HAVE_PLPA 1" >>confdefs.h
+
+  else
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Unable to locate PLPA processor affinity functions" >&5
+$as_echo "$as_me: WARNING: Unable to locate PLPA processor affinity functions" >&2;}
   fi
 
 #
@@ -19035,29 +19086,6 @@ $as_echo "#define HAVE_FRONT_END 1" >>confdefs.h
   { $as_echo "$as_me:${as_lineno-$LINENO}: result: ${x_ac_front_end=no}" >&5
 $as_echo "${x_ac_front_end=no}" >&6; }
 
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether debugger partial attach enabled" >&5
-$as_echo_n "checking whether debugger partial attach enabled... " >&6; }
-  # Check whether --enable-partial-attach was given.
-if test "${enable_partial_attach+set}" = set; then :
-  enableval=$enable_partial_attach;  case "$enableval" in
-        yes) x_ac_partial_attach=yes ;;
-         no) x_ac_partial_attach=no ;;
-          *) { $as_echo "$as_me:${as_lineno-$LINENO}: result: doh!" >&5
-$as_echo "doh!" >&6; }
-             as_fn_error "bad value \"$enableval\" for --enable-partial-leak-attach" "$LINENO" 5 ;;
-      esac
-
-
-fi
-
-  if test "$x_ac_partial_attach" = yes; then
-
-$as_echo "#define DEBUGGER_PARTIAL_ATTACH 1" >>confdefs.h
-
-  fi
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: ${x_ac_partial_attach=no}" >&5
-$as_echo "${x_ac_partial_attach=no}" >&6; }
-
 
 
  if test "x$ac_debug" = "xtrue"; then
@@ -20202,7 +20230,7 @@ fi
 
 
 
-ac_config_files="$ac_config_files Makefile config.xml auxdir/Makefile contribs/Makefile contribs/pam/Makefile contribs/perlapi/Makefile contribs/perlapi/libslurm/Makefile contribs/perlapi/libslurm/perl/Makefile.PL contribs/torque/Makefile contribs/phpext/Makefile contribs/phpext/slurm_php/config.m4 contribs/slurmdb-direct/Makefile src/Makefile src/api/Makefile src/common/Makefile src/db_api/Makefile src/database/Makefile src/sacct/Makefile src/sacctmgr/Makefile src/sreport/Makefile src/sstat/Makefile src/sshare/Makefile src/salloc/Makefile src/sbatch/Makefile src/sattach/Makefile src/sprio/Makefile src/srun/Makefile src/srun_cr/Makefile src/slurmd/Makefile src/slurmd/slurmd/Makefile src/slurmd/slurmstepd/Makefile src/slurmdbd/Makefile src/slurmctld/Makefile src/sbcast/Makefile src/scontrol/Makefile src/scancel/Makefile src/squeue/Makefile src/sinfo/Makefile src/smap/Makefile src/strigger/Makefile src/sview/Makefile src/plugins/Makefile src/plugins/accounting_storage/Makefile src/plugins/accounting_storage/common/Makefile src/plugins/accounting_storage/filetxt/Makefile src/plugins/accounting_storage/mysql/Makefile src/plugins/accounting_storage/pgsql/Makefile src/plugins/accounting_storage/none/Makefile src/plugins/accounting_storage/slurmdbd/Makefile src/plugins/auth/Makefile src/plugins/auth/authd/Makefile src/plugins/auth/munge/Makefile src/plugins/auth/none/Makefile src/plugins/checkpoint/Makefile src/plugins/checkpoint/aix/Makefile src/plugins/checkpoint/none/Makefile src/plugins/checkpoint/ompi/Makefile src/plugins/checkpoint/xlch/Makefile src/plugins/checkpoint/blcr/Makefile src/plugins/checkpoint/blcr/cr_checkpoint.sh src/plugins/checkpoint/blcr/cr_restart.sh src/plugins/crypto/Makefile src/plugins/crypto/munge/Makefile src/plugins/crypto/openssl/Makefile src/plugins/jobacct_gather/Makefile src/plugins/jobacct_gather/linux/Makefile src/plugins/jobacct_gather/aix/Makefile src/plugins/jobacct_gather/none/Makefile src/plugins/jobcomp/Makefile src/plugins/jobcomp/filetxt/Makefile src/plugins/jobcomp/none/Makefile src/plugins/jobcomp/script/Makefile src/plugins/jobcomp/mysql/Makefile src/plugins/jobcomp/pgsql/Makefile src/plugins/preempt/Makefile src/plugins/preempt/none/Makefile src/plugins/preempt/partition_prio/Makefile src/plugins/preempt/qos/Makefile src/plugins/priority/Makefile src/plugins/priority/basic/Makefile src/plugins/priority/multifactor/Makefile src/plugins/proctrack/Makefile src/plugins/proctrack/aix/Makefile src/plugins/proctrack/pgid/Makefile src/plugins/proctrack/linuxproc/Makefile src/plugins/proctrack/rms/Makefile src/plugins/proctrack/sgi_job/Makefile src/plugins/proctrack/cgroup/Makefile src/plugins/proctrack/lua/Makefile src/plugins/sched/Makefile src/plugins/sched/backfill/Makefile src/plugins/sched/builtin/Makefile src/plugins/sched/hold/Makefile src/plugins/sched/wiki/Makefile src/plugins/sched/wiki2/Makefile src/plugins/select/Makefile src/plugins/select/bluegene/Makefile src/plugins/select/bluegene/block_allocator/Makefile src/plugins/select/bluegene/plugin/Makefile src/plugins/select/cons_res/Makefile src/plugins/select/linear/Makefile src/plugins/switch/Makefile src/plugins/switch/elan/Makefile src/plugins/switch/none/Makefile src/plugins/switch/federation/Makefile src/plugins/mpi/Makefile src/plugins/mpi/mpich1_p4/Makefile src/plugins/mpi/mpich1_shmem/Makefile src/plugins/mpi/mpichgm/Makefile src/plugins/mpi/mpichmx/Makefile src/plugins/mpi/mvapich/Makefile src/plugins/mpi/lam/Makefile src/plugins/mpi/none/Makefile src/plugins/mpi/openmpi/Makefile src/plugins/task/Makefile src/plugins/task/affinity/Makefile src/plugins/task/none/Makefile src/plugins/topology/Makefile src/plugins/topology/3d_torus/Makefile src/plugins/topology/none/Makefile src/plugins/topology/tree/Makefile doc/Makefile doc/man/Makefile doc/html/Makefile doc/html/configurator.html testsuite/Makefile testsuite/expect/Makefile testsuite/slurm_unit/Makefile testsuite/slurm_unit/api/Makefile testsuite/slurm_unit/api/manual/Makefile testsuite/slurm_unit/common/Makefile testsuite/slurm_unit/slurmctld/Makefile testsuite/slurm_unit/slurmd/Makefile testsuite/slurm_unit/slurmdbd/Makefile"
+ac_config_files="$ac_config_files Makefile config.xml auxdir/Makefile contribs/Makefile contribs/pam/Makefile contribs/perlapi/Makefile contribs/perlapi/libslurm-perl/Makefile.PL contribs/torque/Makefile contribs/phpext/Makefile contribs/phpext/slurm_php/config.m4 contribs/slurmdb-direct/Makefile src/Makefile src/api/Makefile src/common/Makefile src/database/Makefile src/sacct/Makefile src/sacctmgr/Makefile src/sreport/Makefile src/sstat/Makefile src/sshare/Makefile src/salloc/Makefile src/sbatch/Makefile src/sattach/Makefile src/sprio/Makefile src/srun/Makefile src/srun_cr/Makefile src/slurmd/Makefile src/slurmd/slurmd/Makefile src/slurmd/slurmstepd/Makefile src/slurmdbd/Makefile src/slurmctld/Makefile src/sbcast/Makefile src/scontrol/Makefile src/scancel/Makefile src/squeue/Makefile src/sinfo/Makefile src/smap/Makefile src/strigger/Makefile src/sview/Makefile src/plugins/Makefile src/plugins/accounting_storage/Makefile src/plugins/accounting_storage/filetxt/Makefile src/plugins/accounting_storage/mysql/Makefile src/plugins/accounting_storage/pgsql/Makefile src/plugins/accounting_storage/none/Makefile src/plugins/accounting_storage/slurmdbd/Makefile src/plugins/auth/Makefile src/plugins/auth/authd/Makefile src/plugins/auth/munge/Makefile src/plugins/auth/none/Makefile src/plugins/checkpoint/Makefile src/plugins/checkpoint/aix/Makefile src/plugins/checkpoint/none/Makefile src/plugins/checkpoint/ompi/Makefile src/plugins/checkpoint/xlch/Makefile src/plugins/checkpoint/blcr/Makefile src/plugins/checkpoint/blcr/cr_checkpoint.sh src/plugins/checkpoint/blcr/cr_restart.sh src/plugins/crypto/Makefile src/plugins/crypto/munge/Makefile src/plugins/crypto/openssl/Makefile src/plugins/jobacct_gather/Makefile src/plugins/jobacct_gather/linux/Makefile src/plugins/jobacct_gather/aix/Makefile src/plugins/jobacct_gather/none/Makefile src/plugins/jobcomp/Makefile src/plugins/jobcomp/filetxt/Makefile src/plugins/jobcomp/none/Makefile src/plugins/jobcomp/script/Makefile src/plugins/jobcomp/mysql/Makefile src/plugins/jobcomp/pgsql/Makefile src/plugins/preempt/Makefile src/plugins/preempt/none/Makefile src/plugins/preempt/partition_prio/Makefile src/plugins/preempt/qos/Makefile src/plugins/priority/Makefile src/plugins/priority/basic/Makefile src/plugins/priority/multifactor/Makefile src/plugins/proctrack/Makefile src/plugins/proctrack/aix/Makefile src/plugins/proctrack/pgid/Makefile src/plugins/proctrack/linuxproc/Makefile src/plugins/proctrack/rms/Makefile src/plugins/proctrack/sgi_job/Makefile src/plugins/proctrack/lua/Makefile src/plugins/sched/Makefile src/plugins/sched/backfill/Makefile src/plugins/sched/builtin/Makefile src/plugins/sched/hold/Makefile src/plugins/sched/wiki/Makefile src/plugins/sched/wiki2/Makefile src/plugins/select/Makefile src/plugins/select/bluegene/Makefile src/plugins/select/bluegene/block_allocator/Makefile src/plugins/select/bluegene/plugin/Makefile src/plugins/select/cons_res/Makefile src/plugins/select/linear/Makefile src/plugins/switch/Makefile src/plugins/switch/elan/Makefile src/plugins/switch/none/Makefile src/plugins/switch/federation/Makefile src/plugins/mpi/Makefile src/plugins/mpi/mpich1_p4/Makefile src/plugins/mpi/mpich1_shmem/Makefile src/plugins/mpi/mpichgm/Makefile src/plugins/mpi/mpichmx/Makefile src/plugins/mpi/mvapich/Makefile src/plugins/mpi/lam/Makefile src/plugins/mpi/none/Makefile src/plugins/mpi/openmpi/Makefile src/plugins/task/Makefile src/plugins/task/affinity/Makefile src/plugins/task/none/Makefile src/plugins/topology/Makefile src/plugins/topology/3d_torus/Makefile src/plugins/topology/none/Makefile src/plugins/topology/tree/Makefile doc/Makefile doc/man/Makefile doc/html/Makefile doc/html/configurator.html testsuite/Makefile testsuite/expect/Makefile testsuite/slurm_unit/Makefile testsuite/slurm_unit/api/Makefile testsuite/slurm_unit/api/manual/Makefile testsuite/slurm_unit/common/Makefile testsuite/slurm_unit/slurmctld/Makefile testsuite/slurm_unit/slurmd/Makefile testsuite/slurm_unit/slurmdbd/Makefile"
 
 
 cat >confcache <<\_ACEOF
@@ -21373,8 +21401,7 @@ do
     "contribs/Makefile") CONFIG_FILES="$CONFIG_FILES contribs/Makefile" ;;
     "contribs/pam/Makefile") CONFIG_FILES="$CONFIG_FILES contribs/pam/Makefile" ;;
     "contribs/perlapi/Makefile") CONFIG_FILES="$CONFIG_FILES contribs/perlapi/Makefile" ;;
-    "contribs/perlapi/libslurm/Makefile") CONFIG_FILES="$CONFIG_FILES contribs/perlapi/libslurm/Makefile" ;;
-    "contribs/perlapi/libslurm/perl/Makefile.PL") CONFIG_FILES="$CONFIG_FILES contribs/perlapi/libslurm/perl/Makefile.PL" ;;
+    "contribs/perlapi/libslurm-perl/Makefile.PL") CONFIG_FILES="$CONFIG_FILES contribs/perlapi/libslurm-perl/Makefile.PL" ;;
     "contribs/torque/Makefile") CONFIG_FILES="$CONFIG_FILES contribs/torque/Makefile" ;;
     "contribs/phpext/Makefile") CONFIG_FILES="$CONFIG_FILES contribs/phpext/Makefile" ;;
     "contribs/phpext/slurm_php/config.m4") CONFIG_FILES="$CONFIG_FILES contribs/phpext/slurm_php/config.m4" ;;
@@ -21382,7 +21409,6 @@ do
     "src/Makefile") CONFIG_FILES="$CONFIG_FILES src/Makefile" ;;
     "src/api/Makefile") CONFIG_FILES="$CONFIG_FILES src/api/Makefile" ;;
     "src/common/Makefile") CONFIG_FILES="$CONFIG_FILES src/common/Makefile" ;;
-    "src/db_api/Makefile") CONFIG_FILES="$CONFIG_FILES src/db_api/Makefile" ;;
     "src/database/Makefile") CONFIG_FILES="$CONFIG_FILES src/database/Makefile" ;;
     "src/sacct/Makefile") CONFIG_FILES="$CONFIG_FILES src/sacct/Makefile" ;;
     "src/sacctmgr/Makefile") CONFIG_FILES="$CONFIG_FILES src/sacctmgr/Makefile" ;;
@@ -21410,7 +21436,6 @@ do
     "src/sview/Makefile") CONFIG_FILES="$CONFIG_FILES src/sview/Makefile" ;;
     "src/plugins/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/Makefile" ;;
     "src/plugins/accounting_storage/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/accounting_storage/Makefile" ;;
-    "src/plugins/accounting_storage/common/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/accounting_storage/common/Makefile" ;;
     "src/plugins/accounting_storage/filetxt/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/accounting_storage/filetxt/Makefile" ;;
     "src/plugins/accounting_storage/mysql/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/accounting_storage/mysql/Makefile" ;;
     "src/plugins/accounting_storage/pgsql/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/accounting_storage/pgsql/Makefile" ;;
@@ -21454,7 +21479,6 @@ do
     "src/plugins/proctrack/linuxproc/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/proctrack/linuxproc/Makefile" ;;
     "src/plugins/proctrack/rms/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/proctrack/rms/Makefile" ;;
     "src/plugins/proctrack/sgi_job/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/proctrack/sgi_job/Makefile" ;;
-    "src/plugins/proctrack/cgroup/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/proctrack/cgroup/Makefile" ;;
     "src/plugins/proctrack/lua/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/proctrack/lua/Makefile" ;;
     "src/plugins/sched/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/sched/Makefile" ;;
     "src/plugins/sched/backfill/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/sched/backfill/Makefile" ;;

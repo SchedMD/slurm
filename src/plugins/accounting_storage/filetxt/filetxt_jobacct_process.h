@@ -41,14 +41,14 @@
  *  Copyright (C) 2002 The Regents of the University of California.
 \*****************************************************************************/
 
-#ifndef _HAVE_FILETXT_JOBSLURMDB_PROCESS_H
-#define _HAVE_FILETXT_JOBSLURMDB_PROCESS_H
+#ifndef _HAVE_FILETXT_JOBACCT_PROCESS_H
+#define _HAVE_FILETXT_JOBACCT_PROCESS_H
 
 #include "src/common/jobacct_common.h"
 #include "src/common/slurm_accounting_storage.h"
 #include "src/slurmdbd/read_config.h"
 
-extern List filetxt_jobacct_process_get_jobs(slurmdb_job_cond_t *job_cond);
-extern int filetxt_jobacct_process_archive(slurmdb_archive_cond_t *arch_cond);
+extern List filetxt_jobacct_process_get_jobs(acct_job_cond_t *job_cond);
+extern int filetxt_jobacct_process_archive(acct_archive_cond_t *arch_cond);
 
 #endif

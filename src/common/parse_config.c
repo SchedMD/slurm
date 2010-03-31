@@ -212,7 +212,7 @@ static void _keyvalue_regex_init(void)
 		if (regcomp(&keyvalue_re, keyvalue_pattern,
 			    REG_EXTENDED) != 0) {
 			/* FIXME - should be fatal? */
-			error("keyvalue regex compilation failed");
+			error("keyvalue regex compilation failed\n");
 		}
 		keyvalue_initialized = true;
 	}
@@ -341,30 +341,6 @@ static void _strip_escapes(char *line)
 	}
 }
 
-/* This can be used to make sure files are the same across nodes if
- * needed */
-static void _compute_hash_val(uint32_t *hash_val, char *line)
-{
-	int idx, i, len;
-
-	if(!hash_val)
-		return;
-
-	len = strlen(line);
-	for (i = 0; i < len; i++) {
-		(*hash_val) = ( (*hash_val) ^ line[i] << 8 );
-
-		for (idx = 0; idx < 8; ++idx) {
-			if ((*hash_val) & 0x8000) {
-				(*hash_val) <<= 1;
-				(*hash_val) = (*hash_val) ^ 4129;
-			} else
-				(*hash_val) <<= 1;
-		}
-	}
-}
-
-
 /*
  * Reads the next line from the "file" into buffer "buf".
  *
@@ -372,8 +348,7 @@ static void _compute_hash_val(uint32_t *hash_val, char *line)
  * the next line by a trailing "\".  Strips out comments,
  * replaces escaped "\#" with "#", and replaces "\\" with "\".
  */
-static int _get_next_line(char *buf, int buf_size,
-			  uint32_t *hash_val, FILE *file)
+static int _get_next_line(char *buf, int buf_size, FILE *file)
 {
 	char *ptr = buf;
 	int leftover = buf_size;
@@ -382,7 +357,6 @@ static int _get_next_line(char *buf, int buf_size,
 
 	while (fgets(ptr, leftover, file)) {
 		lines++;
-		_compute_hash_val(hash_val, ptr);
 		_strip_comments(ptr);
 		read_size = strlen(ptr);
 		new_size = _strip_continuation(ptr, read_size);
@@ -804,7 +778,7 @@ static int _parse_next_key(s_p_hashtbl_t *hashtbl,
  * directive but the included file contained errors.  Returns 0 if
  * no include directive is found.
  */
-static int _parse_include_directive(s_p_hashtbl_t *hashtbl, uint32_t *hash_val,
+static int _parse_include_directive(s_p_hashtbl_t *hashtbl,
 				    const char *line, char **leftover)
 {
 	char *ptr;
@@ -823,8 +797,7 @@ static int _parse_include_directive(s_p_hashtbl_t *hashtbl, uint32_t *hash_val,
 			ptr++;
 		fn_stop = *leftover = ptr;
 		filename = xstrndup(fn_start, fn_stop-fn_start);
-		if (s_p_parse_file(hashtbl, hash_val, filename)
-		    == SLURM_SUCCESS) {
+		if (s_p_parse_file(hashtbl, filename) == SLURM_SUCCESS) {
 			xfree(filename);
 			return 1;
 		} else {
@@ -836,7 +809,7 @@ static int _parse_include_directive(s_p_hashtbl_t *hashtbl, uint32_t *hash_val,
 	}
 }
 
-int s_p_parse_file(s_p_hashtbl_t *hashtbl, uint32_t *hash_val, char *filename)
+int s_p_parse_file(s_p_hashtbl_t *hashtbl, char *filename)
 {
 	FILE *f;
 	char line[BUFFER_SIZE];
@@ -861,16 +834,14 @@ int s_p_parse_file(s_p_hashtbl_t *hashtbl, uint32_t *hash_val, char *filename)
 	}
 
 	line_number = 1;
-	while ((merged_lines = _get_next_line(
-			line, BUFFER_SIZE, hash_val, f)) > 0) {
+	while ((merged_lines = _get_next_line(line, BUFFER_SIZE, f)) > 0) {
 		/* skip empty lines */
 		if (line[0] == '\0') {
 			line_number += merged_lines;
 			continue;
 		}
 
-		inc_rc = _parse_include_directive(hashtbl, hash_val,
-						  line, &leftover);
+		inc_rc = _parse_include_directive(hashtbl, line, &leftover);
 		if (inc_rc == 0) {
 			_parse_next_key(hashtbl, line, &leftover);
 		} else if (inc_rc < 0) {
@@ -926,7 +897,7 @@ int s_p_get_string(char **str, const char *key, const s_p_hashtbl_t *hashtbl)
 		return 0;
 	}
 	if (p->type != S_P_STRING) {
-		error("Key \"%s\" is not a string", key);
+		error("Key \"%s\" is not a string\n", key);
 		return 0;
 	}
 	if (p->data_count == 0) {
@@ -964,7 +935,7 @@ int s_p_get_long(long *num, const char *key, const s_p_hashtbl_t *hashtbl)
 		return 0;
 	}
 	if (p->type != S_P_LONG) {
-		error("Key \"%s\" is not a long", key);
+		error("Key \"%s\" is not a long\n", key);
 		return 0;
 	}
 	if (p->data_count == 0) {
@@ -1003,7 +974,7 @@ int s_p_get_uint16(uint16_t *num, const char *key,
 		return 0;
 	}
 	if (p->type != S_P_UINT16) {
-		error("Key \"%s\" is not a uint16_t", key);
+		error("Key \"%s\" is not a uint16_t\n", key);
 		return 0;
 	}
 	if (p->data_count == 0) {
@@ -1042,7 +1013,7 @@ int s_p_get_uint32(uint32_t *num, const char *key,
 		return 0;
 	}
 	if (p->type != S_P_UINT32) {
-		error("Key \"%s\" is not a uint32_t", key);
+		error("Key \"%s\" is not a uint32_t\n", key);
 		return 0;
 	}
 	if (p->data_count == 0) {
@@ -1080,7 +1051,7 @@ int s_p_get_pointer(void **ptr, const char *key, const s_p_hashtbl_t *hashtbl)
 		return 0;
 	}
 	if (p->type != S_P_POINTER) {
-		error("Key \"%s\" is not a pointer", key);
+		error("Key \"%s\" is not a pointer\n", key);
 		return 0;
 	}
 	if (p->data_count == 0) {
@@ -1125,7 +1096,7 @@ int s_p_get_array(void **ptr_array[], int *count,
 		return 0;
 	}
 	if (p->type != S_P_ARRAY) {
-		error("Key \"%s\" is not an array", key);
+		error("Key \"%s\" is not an array\n", key);
 		return 0;
 	}
 	if (p->data_count == 0) {
@@ -1164,7 +1135,7 @@ int s_p_get_boolean(bool *flag, const char *key, const s_p_hashtbl_t *hashtbl)
 		return 0;
 	}
 	if (p->type != S_P_BOOLEAN) {
-		error("Key \"%s\" is not a boolean", key);
+		error("Key \"%s\" is not a boolean\n", key);
 		return 0;
 	}
 	if (p->data_count == 0) {

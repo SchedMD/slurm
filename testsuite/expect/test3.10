@@ -8,7 +8,6 @@
 #          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2007 The Regents of the University of California.
-# Copyright (C) 2008-2010 Lawrence Livermore National Security.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
 # CODE-OCEC-09-009. All rights reserved.
@@ -36,92 +35,13 @@ source ./globals
 set test_id        "3.10"
 set authorized     1
 set exit_code      0
-set file_err       "test$test_id.error"
-set file_in        "test$test_id.input"
-set file_out       "test$test_id.output"
 set job_id         0
 
 print_header $test_id
 
 #
-# Start a batch job
-#
-exec rm -f $file_in $file_out $file_err
-make_bash_script $file_in "$bin_sleep 120"
-spawn $sbatch --output=$file_out --error=$file_err -t1 ./$file_in
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id $expect_out(1,string)
-		exp_continue
-	}
-	eof {
-		wait
-	}
-}
-if {$job_id == 0} {
-	send_user "\nFAILURE: batch submit failure\n"
-	exit 1
-}
-if {[wait_for_job $job_id "RUNNING"] != 0} {
-	send_user "\nFAILURE: waiting for job to start\n"
-	cancel_job $job_id
-	exit 1
-}
-# Add delay to make sure job step fully starts
-exec $bin_sleep 2
-#
-# Send the batch job a message
-#
-spawn $scontrol notify $job_id TEST_NOTIFY
-expect {
-	-re "Invalid user id" {
-		set authorized 0
-		exp_continue
-	}
-	eof {
-		wait
-	}
-}
-if {$authorized == 0} {
-	send_user "\nWARNING: You are not authorized to run this test\n"
-	cancel_job $job_id
-	exit 0
-}
-cancel_job $job_id
-
-#
-# Test stderr file
-#
-if {[wait_for_file $file_err] == 0} {
-	set got_message 0
-	spawn cat $file_err
-	expect {
-		-re "TEST_NOTIFY" {
-			set got_message 1
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
-	if {$got_message != 1} {
-		send_user "\nFAILURE: message not received\n"
-		set exit_code 1
-	}
-} else {
-	set exit_code 1
-}
-if {$exit_code == 0} {
-	send_user "\nSo far, so good\n\n"
-	exec rm -f $file_in $file_out $file_err
-} else {
-	exit $exit_code
-}
-
-#
 # Start a test program
 #
-set job_id         0
 set timeout $max_job_delay
 set srun_pid [spawn $srun -N1 -t1 -v $bin_sleep 10]
 set srun_spawn_id $spawn_id

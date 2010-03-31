@@ -2,7 +2,7 @@
  *  opt.h - definitions for salloc option processing
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <grondona1@llnl.gov>,
  *    Christopher J. Morrone <morrone2@llnl.gov>, et. al.
@@ -91,8 +91,6 @@ typedef struct salloc_options {
 	bool extra_set;		/* true if extra node info explicitly set */
 	int  time_limit;	/* --time,   -t	(int minutes)	*/
 	char *time_limit_str;	/* --time,   -t (string)	*/
-	int  time_min;		/* --min-time 	(int minutes)	*/
-	char *time_min_str;	/* --min-time (string)		*/
 	char *partition;	/* --partition=n,   -p n   	*/
 	enum task_dist_states
 		distribution;	/* --distribution=, -m dist	*/

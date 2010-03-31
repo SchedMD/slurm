@@ -70,7 +70,7 @@ extern int priority_g_set_max_cluster_usage(uint32_t procs, uint32_t half_life);
  * association.
  * IN/OUT: assoc - association to have usage set.
  */
-extern void priority_g_set_assoc_usage(slurmdb_association_rec_t *assoc);
+extern void priority_g_set_assoc_usage(acct_association_rec_t *assoc);
 extern List priority_g_get_priority_factors_list(
 	priority_factors_request_msg_t *req_msg);
 

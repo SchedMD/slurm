@@ -226,7 +226,7 @@ extern int slurm_send_slurmdbd_recv_rc_msg(uint16_t rpc_version,
 			      msg->sent_type, msg->return_code,
 			      comment);
 		}
-		slurmdbd_free_rc_msg(msg);
+		slurmdbd_free_rc_msg(rpc_version, msg);
 	}
 	xfree(resp);
 
@@ -424,7 +424,6 @@ extern Buf pack_slurmdbd_msg(uint16_t rpc_version, slurmdbd_msg_t *req)
 	case DBD_GOT_ACCOUNTS:
 	case DBD_GOT_ASSOCS:
 	case DBD_GOT_CLUSTERS:
-	case DBD_GOT_EVENTS:
 	case DBD_GOT_JOBS:
 	case DBD_GOT_LIST:
 	case DBD_GOT_PROBS:
@@ -442,31 +441,29 @@ extern Buf pack_slurmdbd_msg(uint16_t rpc_version, slurmdbd_msg_t *req)
 		break;
 	case DBD_ADD_ACCOUNT_COORDS:
 	case DBD_REMOVE_ACCOUNT_COORDS:
-		slurmdbd_pack_acct_coord_msg(
-			rpc_version,
-			(dbd_acct_coord_msg_t *)req->data,
-			buffer);
+		slurmdbd_pack_acct_coord_msg(rpc_version,
+					     (dbd_acct_coord_msg_t *)req->data,
+					     buffer);
 		break;
 	case DBD_ARCHIVE_LOAD:
-		slurmdb_pack_archive_rec(req->data, rpc_version, buffer);
+		pack_acct_archive_rec(req->data, rpc_version, buffer);
 		break;
-	case DBD_CLUSTER_CPUS:
+	case DBD_CLUSTER_PROCS:
 	case DBD_FLUSH_JOBS:
-		slurmdbd_pack_cluster_cpus_msg(
+		slurmdbd_pack_cluster_procs_msg(
 			rpc_version,
-			(dbd_cluster_cpus_msg_t *)req->data, buffer);
+			(dbd_cluster_procs_msg_t *)req->data, buffer);
 		break;
 	case DBD_GET_ACCOUNTS:
 	case DBD_GET_ASSOCS:
 	case DBD_GET_CLUSTERS:
-	case DBD_GET_EVENTS:
 	case DBD_GET_JOBS_COND:
 	case DBD_GET_PROBS:
 	case DBD_GET_QOS:
 	case DBD_GET_RESVS:
+	case DBD_GET_WCKEYS:
 	case DBD_GET_TXN:
 	case DBD_GET_USERS:
-	case DBD_GET_WCKEYS:
 	case DBD_REMOVE_ACCOUNTS:
 	case DBD_REMOVE_ASSOCS:
 	case DBD_REMOVE_CLUSTERS:
@@ -596,7 +593,6 @@ extern int unpack_slurmdbd_msg(uint16_t rpc_version,
 	case DBD_GOT_ACCOUNTS:
 	case DBD_GOT_ASSOCS:
 	case DBD_GOT_CLUSTERS:
-	case DBD_GOT_EVENTS:
 	case DBD_GOT_JOBS:
 	case DBD_GOT_LIST:
 	case DBD_GOT_PROBS:
@@ -619,25 +615,24 @@ extern int unpack_slurmdbd_msg(uint16_t rpc_version,
 			(dbd_acct_coord_msg_t **)&resp->data, buffer);
 		break;
 	case DBD_ARCHIVE_LOAD:
-		rc = slurmdb_unpack_archive_rec(&resp->data, rpc_version, buffer);
+		rc = unpack_acct_archive_rec(&resp->data, rpc_version, buffer);
 		break;
-	case DBD_CLUSTER_CPUS:
+	case DBD_CLUSTER_PROCS:
 	case DBD_FLUSH_JOBS:
-		rc = slurmdbd_unpack_cluster_cpus_msg(
+		rc = slurmdbd_unpack_cluster_procs_msg(
 			rpc_version,
-			(dbd_cluster_cpus_msg_t **)&resp->data, buffer);
+			(dbd_cluster_procs_msg_t **)&resp->data, buffer);
 		break;
 	case DBD_GET_ACCOUNTS:
 	case DBD_GET_ASSOCS:
 	case DBD_GET_CLUSTERS:
-	case DBD_GET_EVENTS:
 	case DBD_GET_JOBS_COND:
+	case DBD_GET_USERS:
 	case DBD_GET_PROBS:
 	case DBD_GET_QOS:
 	case DBD_GET_RESVS:
-	case DBD_GET_TXN:
-	case DBD_GET_USERS:
 	case DBD_GET_WCKEYS:
+	case DBD_GET_TXN:
 	case DBD_REMOVE_ACCOUNTS:
 	case DBD_REMOVE_ASSOCS:
 	case DBD_REMOVE_CLUSTERS:
@@ -777,7 +772,7 @@ extern slurmdbd_msg_type_t str_2_slurmdbd_msg_type(char *msg_type)
 	} else if(!strcasecmp(msg_type, "Add Users")) {
 		return DBD_ADD_USERS;
 	} else if(!strcasecmp(msg_type, "Cluster Processors")) {
-		return DBD_CLUSTER_CPUS;
+		return DBD_CLUSTER_PROCS;
 	} else if(!strcasecmp(msg_type, "Flush Jobs")) {
 		return DBD_FLUSH_JOBS;
 	} else if(!strcasecmp(msg_type, "Get Accounts")) {
@@ -790,8 +785,6 @@ extern slurmdbd_msg_type_t str_2_slurmdbd_msg_type(char *msg_type)
 		return DBD_GET_CLUSTERS;
 	} else if(!strcasecmp(msg_type, "Get Cluster Usage")) {
 		return DBD_GET_CLUSTER_USAGE;
-	} else if(!strcasecmp(msg_type, "Get Events")) {
-		return DBD_GET_EVENTS;
 	} else if(!strcasecmp(msg_type, "Get Jobs")) {
 		return DBD_GET_JOBS;
 	} else if(!strcasecmp(msg_type, "Get Problems")) {
@@ -808,8 +801,6 @@ extern slurmdbd_msg_type_t str_2_slurmdbd_msg_type(char *msg_type)
 		return DBD_GOT_CLUSTERS;
 	} else if(!strcasecmp(msg_type, "Got Cluster Usage")) {
 		return DBD_GOT_CLUSTER_USAGE;
-	} else if(!strcasecmp(msg_type, "Got Events")) {
-		return DBD_GOT_EVENTS;
 	} else if(!strcasecmp(msg_type, "Got Jobs")) {
 		return DBD_GOT_JOBS;
 	} else if(!strcasecmp(msg_type, "Got List")) {
@@ -954,9 +945,9 @@ extern char *slurmdbd_msg_type_2_str(slurmdbd_msg_type_t msg_type, int get_enum)
 		} else
 			return "Add Users";
 		break;
-	case DBD_CLUSTER_CPUS:
+	case DBD_CLUSTER_PROCS:
 		if(get_enum) {
-			return "DBD_CLUSTER_CPUS";
+			return "DBD_CLUSTER_PROCS";
 		} else
 			return "Cluster Processors";
 		break;
@@ -995,12 +986,6 @@ extern char *slurmdbd_msg_type_2_str(slurmdbd_msg_type_t msg_type, int get_enum)
 			return "DBD_GET_CLUSTER_USAGE";
 		} else
 			return "Get Cluster Usage";
-		break;
-	case DBD_GET_EVENTS:
-		if(get_enum) {
-			return "DBD_GET_EVENTS";
-		} else
-			return "Get Events";
 		break;
 	case DBD_GET_JOBS:
 		if(get_enum) {
@@ -1049,12 +1034,6 @@ extern char *slurmdbd_msg_type_2_str(slurmdbd_msg_type_t msg_type, int get_enum)
 			return "DBD_GOT_CLUSTER_USAGE";
 		} else
 			return "Got Cluster Usage";
-		break;
-	case DBD_GOT_EVENTS:
-		if(get_enum) {
-			return "DBD_GOT_EVENTS";
-		} else
-			return "Got Events";
 		break;
 	case DBD_GOT_JOBS:
 		if(get_enum) {
@@ -1476,7 +1455,7 @@ static int _get_return_code(uint16_t rpc_version, int read_timeout)
 		if (slurmdbd_unpack_id_rc_msg(rpc_version, &id_msg, buffer)
 		    == SLURM_SUCCESS) {
 			rc = id_msg->return_code;
-			slurmdbd_free_id_rc_msg(id_msg);
+			slurmdbd_free_id_rc_msg(rpc_version, id_msg);
 			if (rc != SLURM_SUCCESS)
 				error("slurmdbd: DBD_ID_RC is %d", rc);
 		} else
@@ -1510,7 +1489,7 @@ static int _get_return_code(uint16_t rpc_version, int read_timeout)
 					      msg->comment);
 
 			}
-			slurmdbd_free_rc_msg(msg);
+			slurmdbd_free_rc_msg(rpc_version, msg);
 		} else
 			error("slurmdbd: unpack message error");
 		break;
@@ -1710,7 +1689,6 @@ static void _create_agent(void)
 		if (pthread_create(&agent_tid, &agent_attr, _agent, NULL) ||
 		    (agent_tid == 0))
 			fatal("pthread_create: %m");
-		slurm_attr_destroy(&agent_attr);
 	}
 }
 
@@ -2079,28 +2057,32 @@ static int _purge_job_start_req(void)
 /****************************************************************************\
  * Free data structures
 \****************************************************************************/
-void inline slurmdbd_free_acct_coord_msg(dbd_acct_coord_msg_t *msg)
+void inline slurmdbd_free_acct_coord_msg(uint16_t rpc_version,
+					 dbd_acct_coord_msg_t *msg)
 {
 	if(msg) {
 		if(msg->acct_list) {
 			list_destroy(msg->acct_list);
 			msg->acct_list = NULL;
 		}
-		slurmdb_destroy_user_cond(msg->cond);
+		destroy_acct_user_cond(msg->cond);
 		xfree(msg);
 	}
 }
 
-void inline slurmdbd_free_cluster_cpus_msg(dbd_cluster_cpus_msg_t *msg)
+void inline slurmdbd_free_cluster_procs_msg(uint16_t rpc_version,
+					    dbd_cluster_procs_msg_t *msg)
 {
 	if (msg) {
+		xfree(msg->cluster_name);
 		xfree(msg->cluster_nodes);
 		xfree(msg);
 	}
 }
 
-void inline slurmdbd_free_rec_msg(slurmdbd_msg_type_t type,
-				  dbd_rec_msg_t *msg)
+void inline slurmdbd_free_rec_msg(uint16_t rpc_version,
+				   slurmdbd_msg_type_t type,
+				   dbd_rec_msg_t *msg)
 {
 	void (*my_destroy) (void *object);
 
@@ -2109,7 +2091,7 @@ void inline slurmdbd_free_rec_msg(slurmdbd_msg_type_t type,
 		case DBD_ADD_RESV:
 		case DBD_REMOVE_RESV:
 		case DBD_MODIFY_RESV:
-			my_destroy = slurmdb_destroy_reservation_rec;
+			my_destroy = destroy_acct_reservation_rec;
 			break;
 		default:
 			fatal("Unknown rec type");
@@ -2121,7 +2103,8 @@ void inline slurmdbd_free_rec_msg(slurmdbd_msg_type_t type,
 	}
 }
 
-void inline slurmdbd_free_cond_msg(slurmdbd_msg_type_t type,
+void inline slurmdbd_free_cond_msg(uint16_t rpc_version,
+				   slurmdbd_msg_type_t type,
 				   dbd_cond_msg_t *msg)
 {
 	void (*my_destroy) (void *object);
@@ -2130,43 +2113,40 @@ void inline slurmdbd_free_cond_msg(slurmdbd_msg_type_t type,
 		switch(type) {
 		case DBD_GET_ACCOUNTS:
 		case DBD_REMOVE_ACCOUNTS:
-			my_destroy = slurmdb_destroy_account_cond;
+			my_destroy = destroy_acct_account_cond;
 			break;
 		case DBD_GET_ASSOCS:
 		case DBD_GET_PROBS:
 		case DBD_REMOVE_ASSOCS:
-			my_destroy = slurmdb_destroy_association_cond;
+			my_destroy = destroy_acct_association_cond;
 			break;
 		case DBD_GET_CLUSTERS:
 		case DBD_REMOVE_CLUSTERS:
-			my_destroy = slurmdb_destroy_cluster_cond;
+			my_destroy = destroy_acct_cluster_cond;
 			break;
 		case DBD_GET_JOBS_COND:
-			my_destroy = slurmdb_destroy_job_cond;
+			my_destroy = destroy_acct_job_cond;
 			break;
 		case DBD_GET_QOS:
 		case DBD_REMOVE_QOS:
-			my_destroy = slurmdb_destroy_qos_cond;
+			my_destroy = destroy_acct_qos_cond;
 			break;
 		case DBD_GET_WCKEYS:
 		case DBD_REMOVE_WCKEYS:
-			my_destroy = slurmdb_destroy_wckey_cond;
+			my_destroy = destroy_acct_wckey_cond;
 			break;
 		case DBD_GET_TXN:
-			my_destroy = slurmdb_destroy_txn_cond;
+			my_destroy = destroy_acct_txn_cond;
 			break;
 		case DBD_GET_USERS:
 		case DBD_REMOVE_USERS:
-			my_destroy = slurmdb_destroy_user_cond;
+			my_destroy = destroy_acct_user_cond;
 			break;
 		case DBD_ARCHIVE_DUMP:
-			my_destroy = slurmdb_destroy_archive_cond;
+			my_destroy = destroy_acct_archive_cond;
 			break;
 		case DBD_GET_RESVS:
-			my_destroy = slurmdb_destroy_reservation_cond;
-			break;
-		case DBD_GET_EVENTS:
-			my_destroy = slurmdb_destroy_event_cond;
+			my_destroy = destroy_acct_reservation_cond;
 			break;
 		default:
 			fatal("Unknown cond type");
@@ -2178,7 +2158,8 @@ void inline slurmdbd_free_cond_msg(slurmdbd_msg_type_t type,
 	}
 }
 
-void inline slurmdbd_free_get_jobs_msg(dbd_get_jobs_msg_t *msg)
+void inline slurmdbd_free_get_jobs_msg(uint16_t rpc_version,
+				       dbd_get_jobs_msg_t *msg)
 {
 	if (msg) {
 		xfree(msg->cluster_name);
@@ -2191,7 +2172,8 @@ void inline slurmdbd_free_get_jobs_msg(dbd_get_jobs_msg_t *msg)
 	}
 }
 
-void inline slurmdbd_free_init_msg(dbd_init_msg_t *msg)
+void inline slurmdbd_free_init_msg(uint16_t rpc_version,
+				   dbd_init_msg_t *msg)
 {
 	if(msg) {
 		xfree(msg->cluster_name);
@@ -2199,12 +2181,14 @@ void inline slurmdbd_free_init_msg(dbd_init_msg_t *msg)
 	}
 }
 
-void inline slurmdbd_free_fini_msg(dbd_fini_msg_t *msg)
+void inline slurmdbd_free_fini_msg(uint16_t rpc_version,
+				   dbd_fini_msg_t *msg)
 {
 	xfree(msg);
 }
 
-void inline slurmdbd_free_job_complete_msg(dbd_job_comp_msg_t *msg)
+void inline slurmdbd_free_job_complete_msg(uint16_t rpc_version,
+					   dbd_job_comp_msg_t *msg)
 {
 	if (msg) {
 		xfree(msg->nodes);
@@ -2212,11 +2196,13 @@ void inline slurmdbd_free_job_complete_msg(dbd_job_comp_msg_t *msg)
 	}
 }
 
-void inline slurmdbd_free_job_start_msg(dbd_job_start_msg_t *msg)
+void inline slurmdbd_free_job_start_msg(uint16_t rpc_version,
+					dbd_job_start_msg_t *msg)
 {
 	if (msg) {
 		xfree(msg->account);
 		xfree(msg->block_id);
+		xfree(msg->cluster);
 		xfree(msg->name);
 		xfree(msg->nodes);
 		xfree(msg->node_inx);
@@ -2226,17 +2212,20 @@ void inline slurmdbd_free_job_start_msg(dbd_job_start_msg_t *msg)
 	}
 }
 
-void inline slurmdbd_free_id_rc_msg(dbd_id_rc_msg_t *msg)
+void inline slurmdbd_free_id_rc_msg(uint16_t rpc_version,
+					   dbd_id_rc_msg_t *msg)
 {
 	xfree(msg);
 }
 
-void inline slurmdbd_free_job_suspend_msg(dbd_job_suspend_msg_t *msg)
+void inline slurmdbd_free_job_suspend_msg(uint16_t rpc_version,
+					  dbd_job_suspend_msg_t *msg)
 {
 	xfree(msg);
 }
 
-void inline slurmdbd_free_list_msg(dbd_list_msg_t *msg)
+void inline slurmdbd_free_list_msg(uint16_t rpc_version,
+				   dbd_list_msg_t *msg)
 {
 	if (msg) {
 		if(msg->my_list)
@@ -2245,7 +2234,8 @@ void inline slurmdbd_free_list_msg(dbd_list_msg_t *msg)
 	}
 }
 
-void inline slurmdbd_free_modify_msg(slurmdbd_msg_type_t type,
+void inline slurmdbd_free_modify_msg(uint16_t rpc_version,
+				     slurmdbd_msg_type_t type,
 				     dbd_modify_msg_t *msg)
 {
 	void (*destroy_cond) (void *object);
@@ -2254,24 +2244,24 @@ void inline slurmdbd_free_modify_msg(slurmdbd_msg_type_t type,
 	if (msg) {
 		switch(type) {
 		case DBD_MODIFY_ACCOUNTS:
-			destroy_cond = slurmdb_destroy_account_cond;
-			destroy_rec = slurmdb_destroy_account_rec;
+			destroy_cond = destroy_acct_account_cond;
+			destroy_rec = destroy_acct_account_rec;
 			break;
 		case DBD_MODIFY_ASSOCS:
-			destroy_cond = slurmdb_destroy_association_cond;
-			destroy_rec = slurmdb_destroy_association_rec;
+			destroy_cond = destroy_acct_association_cond;
+			destroy_rec = destroy_acct_association_rec;
 			break;
 		case DBD_MODIFY_CLUSTERS:
-			destroy_cond = slurmdb_destroy_cluster_cond;
-			destroy_rec = slurmdb_destroy_cluster_rec;
+			destroy_cond = destroy_acct_cluster_cond;
+			destroy_rec = destroy_acct_cluster_rec;
 			break;
 		case DBD_MODIFY_QOS:
-			destroy_cond = slurmdb_destroy_qos_cond;
-			destroy_rec = slurmdb_destroy_qos_rec;
+			destroy_cond = destroy_acct_qos_cond;
+			destroy_rec = destroy_acct_qos_rec;
 			break;
 		case DBD_MODIFY_USERS:
-			destroy_cond = slurmdb_destroy_user_cond;
-			destroy_rec = slurmdb_destroy_user_rec;
+			destroy_cond = destroy_acct_user_cond;
+			destroy_rec = destroy_acct_user_rec;
 			break;
 		default:
 			fatal("Unknown modify type");
@@ -2286,16 +2276,19 @@ void inline slurmdbd_free_modify_msg(slurmdbd_msg_type_t type,
 	}
 }
 
-void inline slurmdbd_free_node_state_msg(dbd_node_state_msg_t *msg)
+void inline slurmdbd_free_node_state_msg(uint16_t rpc_version,
+					 dbd_node_state_msg_t *msg)
 {
 	if (msg) {
+		xfree(msg->cluster_name);
 		xfree(msg->hostlist);
 		xfree(msg->reason);
 		xfree(msg);
 	}
 }
 
-void inline slurmdbd_free_rc_msg(dbd_rc_msg_t *msg)
+void inline slurmdbd_free_rc_msg(uint16_t rpc_version,
+				 dbd_rc_msg_t *msg)
 {
 	if(msg) {
 		xfree(msg->comment);
@@ -2303,17 +2296,23 @@ void inline slurmdbd_free_rc_msg(dbd_rc_msg_t *msg)
 	}
 }
 
-void inline slurmdbd_free_register_ctld_msg(dbd_register_ctld_msg_t *msg)
+void inline slurmdbd_free_register_ctld_msg(uint16_t rpc_version,
+					    dbd_register_ctld_msg_t *msg)
+{
+	if(msg) {
+		xfree(msg->cluster_name);
+		xfree(msg);
+	}
+}
+
+void inline slurmdbd_free_roll_usage_msg(uint16_t rpc_version,
+					 dbd_roll_usage_msg_t *msg)
 {
 	xfree(msg);
 }
 
-void inline slurmdbd_free_roll_usage_msg(dbd_roll_usage_msg_t *msg)
-{
-	xfree(msg);
-}
-
-void inline slurmdbd_free_step_complete_msg(dbd_step_comp_msg_t *msg)
+void inline slurmdbd_free_step_complete_msg(uint16_t rpc_version,
+					    dbd_step_comp_msg_t *msg)
 {
 	if (msg) {
 		xfree(msg->jobacct);
@@ -2321,7 +2320,8 @@ void inline slurmdbd_free_step_complete_msg(dbd_step_comp_msg_t *msg)
 	}
 }
 
-void inline slurmdbd_free_step_start_msg(dbd_step_start_msg_t *msg)
+void inline slurmdbd_free_step_start_msg(uint16_t rpc_version,
+					 dbd_step_start_msg_t *msg)
 {
 	if (msg) {
 		xfree(msg->name);
@@ -2331,7 +2331,8 @@ void inline slurmdbd_free_step_start_msg(dbd_step_start_msg_t *msg)
 	}
 }
 
-void inline slurmdbd_free_usage_msg(slurmdbd_msg_type_t type,
+void inline slurmdbd_free_usage_msg(uint16_t rpc_version,
+				    slurmdbd_msg_type_t type,
 				    dbd_usage_msg_t *msg)
 {
 	void (*destroy_rec) (void *object);
@@ -2339,15 +2340,15 @@ void inline slurmdbd_free_usage_msg(slurmdbd_msg_type_t type,
 		switch(type) {
 		case DBD_GET_ASSOC_USAGE:
 		case DBD_GOT_ASSOC_USAGE:
-			destroy_rec = slurmdb_destroy_association_rec;
+			destroy_rec = destroy_acct_association_rec;
 			break;
 		case DBD_GET_CLUSTER_USAGE:
 		case DBD_GOT_CLUSTER_USAGE:
-			destroy_rec = slurmdb_destroy_cluster_rec;
+			destroy_rec = destroy_acct_cluster_rec;
 			break;
 		case DBD_GET_WCKEY_USAGE:
 		case DBD_GOT_WCKEY_USAGE:
-			destroy_rec = slurmdb_destroy_wckey_rec;
+			destroy_rec = destroy_acct_wckey_rec;
 			break;
 		default:
 			fatal("Unknown usuage type");
@@ -2384,7 +2385,7 @@ slurmdbd_pack_acct_coord_msg(uint16_t rpc_version,
 	}
 	count = 0;
 
-	slurmdb_pack_user_cond(msg->cond, rpc_version, buffer);
+	pack_acct_user_cond(msg->cond, rpc_version, buffer);
 }
 
 int inline
@@ -2407,61 +2408,60 @@ slurmdbd_unpack_acct_coord_msg(uint16_t rpc_version,
 		}
 	}
 
-	if(slurmdb_unpack_user_cond((void *)&msg_ptr->cond, rpc_version, buffer)
+	if(unpack_acct_user_cond((void *)&msg_ptr->cond, rpc_version, buffer)
 	   == SLURM_ERROR)
 		goto unpack_error;
 	return SLURM_SUCCESS;
 
 unpack_error:
-	slurmdbd_free_acct_coord_msg(msg_ptr);
+	slurmdbd_free_acct_coord_msg(rpc_version, msg_ptr);
 	*msg = NULL;
 	return SLURM_ERROR;
 }
 
 void inline
-slurmdbd_pack_cluster_cpus_msg(uint16_t rpc_version,
-			       dbd_cluster_cpus_msg_t *msg, Buf buffer)
+slurmdbd_pack_cluster_procs_msg(uint16_t rpc_version,
+				dbd_cluster_procs_msg_t *msg, Buf buffer)
 {
-	if(rpc_version >= 8) {
+	if(rpc_version >= 5) {
+		packstr(msg->cluster_name, buffer);
 		packstr(msg->cluster_nodes, buffer);
-		pack32(msg->cpu_count,    buffer);
+		pack32(msg->proc_count,    buffer);
 		pack_time(msg->event_time, buffer);
 	} else {
-		packnull(buffer);
-		packstr(msg->cluster_nodes, buffer);
-		pack32(msg->cpu_count,    buffer);
+		packstr(msg->cluster_name, buffer);
+		pack32(msg->proc_count,    buffer);
 		pack_time(msg->event_time, buffer);
 	}
 }
 
 int inline
-slurmdbd_unpack_cluster_cpus_msg(uint16_t rpc_version,
-				 dbd_cluster_cpus_msg_t **msg, Buf buffer)
+slurmdbd_unpack_cluster_procs_msg(uint16_t rpc_version,
+				  dbd_cluster_procs_msg_t **msg, Buf buffer)
 {
-	dbd_cluster_cpus_msg_t *msg_ptr;
+	dbd_cluster_procs_msg_t *msg_ptr;
 	uint32_t uint32_tmp;
-	char *char_tmp;
 
-	msg_ptr = xmalloc(sizeof(dbd_cluster_cpus_msg_t));
+	msg_ptr = xmalloc(sizeof(dbd_cluster_procs_msg_t));
 	*msg = msg_ptr;
 
-	if(rpc_version >= 8) {
+	if(rpc_version >= 5) {
+		safe_unpackstr_xmalloc(&msg_ptr->cluster_name,
+				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&msg_ptr->cluster_nodes,
 				       &uint32_tmp, buffer);
-		safe_unpack32(&msg_ptr->cpu_count, buffer);
+		safe_unpack32(&msg_ptr->proc_count, buffer);
 		safe_unpack_time(&msg_ptr->event_time, buffer);
 	} else {
-		unpackstr_ptr(&char_tmp, &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&msg_ptr->cluster_nodes,
+		safe_unpackstr_xmalloc(&msg_ptr->cluster_name,
 				       &uint32_tmp, buffer);
-		safe_unpack32(&msg_ptr->cpu_count, buffer);
+		safe_unpack32(&msg_ptr->proc_count, buffer);
 		safe_unpack_time(&msg_ptr->event_time, buffer);
 	}
-
 	return SLURM_SUCCESS;
 
 unpack_error:
-	slurmdbd_free_cluster_cpus_msg(msg_ptr);
+	slurmdbd_free_cluster_procs_msg(rpc_version, msg_ptr);
 	*msg = NULL;
 	return SLURM_ERROR;
 }
@@ -2476,7 +2476,7 @@ void inline slurmdbd_pack_rec_msg(uint16_t rpc_version,
 	case DBD_ADD_RESV:
 	case DBD_REMOVE_RESV:
 	case DBD_MODIFY_RESV:
-		my_function = slurmdb_pack_reservation_rec;
+		my_function = pack_acct_reservation_rec;
 		break;
 	default:
 		fatal("Unknown pack type");
@@ -2497,7 +2497,7 @@ int inline slurmdbd_unpack_rec_msg(uint16_t rpc_version,
 	case DBD_ADD_RESV:
 	case DBD_REMOVE_RESV:
 	case DBD_MODIFY_RESV:
-		my_function = slurmdb_unpack_reservation_rec;
+		my_function = unpack_acct_reservation_rec;
 		break;
 	default:
 		fatal("Unknown unpack type");
@@ -2513,7 +2513,7 @@ int inline slurmdbd_unpack_rec_msg(uint16_t rpc_version,
 	return SLURM_SUCCESS;
 
 unpack_error:
-	slurmdbd_free_rec_msg(type, msg_ptr);
+	slurmdbd_free_rec_msg(rpc_version, type, msg_ptr);
 	*msg = NULL;
 	return SLURM_ERROR;
 }
@@ -2527,43 +2527,40 @@ void inline slurmdbd_pack_cond_msg(uint16_t rpc_version,
 	switch(type) {
 	case DBD_GET_ACCOUNTS:
 	case DBD_REMOVE_ACCOUNTS:
-		my_function = slurmdb_pack_account_cond;
+		my_function = pack_acct_account_cond;
 		break;
 	case DBD_GET_ASSOCS:
 	case DBD_GET_PROBS:
 	case DBD_REMOVE_ASSOCS:
-		my_function = slurmdb_pack_association_cond;
+		my_function = pack_acct_association_cond;
 		break;
 	case DBD_GET_CLUSTERS:
 	case DBD_REMOVE_CLUSTERS:
-		my_function = slurmdb_pack_cluster_cond;
+		my_function = pack_acct_cluster_cond;
 		break;
 	case DBD_GET_JOBS_COND:
-		my_function = slurmdb_pack_job_cond;
+		my_function = pack_acct_job_cond;
 		break;
 	case DBD_GET_QOS:
 	case DBD_REMOVE_QOS:
-		my_function = slurmdb_pack_qos_cond;
+		my_function = pack_acct_qos_cond;
 		break;
 	case DBD_GET_WCKEYS:
 	case DBD_REMOVE_WCKEYS:
-		my_function = slurmdb_pack_wckey_cond;
+		my_function = pack_acct_wckey_cond;
 		break;
 	case DBD_GET_USERS:
 	case DBD_REMOVE_USERS:
-		my_function = slurmdb_pack_user_cond;
+		my_function = pack_acct_user_cond;
 		break;
 	case DBD_GET_TXN:
-		my_function = slurmdb_pack_txn_cond;
+		my_function = pack_acct_txn_cond;
 		break;
 	case DBD_ARCHIVE_DUMP:
-		my_function = slurmdb_pack_archive_cond;
+		my_function = pack_acct_archive_cond;
 		break;
 	case DBD_GET_RESVS:
-		my_function = slurmdb_pack_reservation_cond;
-		break;
-	case DBD_GET_EVENTS:
-		my_function = slurmdb_pack_event_cond;
+		my_function = pack_acct_reservation_cond;
 		break;
 	default:
 		fatal("Unknown pack type");
@@ -2583,43 +2580,40 @@ int inline slurmdbd_unpack_cond_msg(uint16_t rpc_version,
 	switch(type) {
 	case DBD_GET_ACCOUNTS:
 	case DBD_REMOVE_ACCOUNTS:
-		my_function = slurmdb_unpack_account_cond;
+		my_function = unpack_acct_account_cond;
 		break;
 	case DBD_GET_ASSOCS:
 	case DBD_GET_PROBS:
 	case DBD_REMOVE_ASSOCS:
-		my_function = slurmdb_unpack_association_cond;
+		my_function = unpack_acct_association_cond;
 		break;
 	case DBD_GET_CLUSTERS:
 	case DBD_REMOVE_CLUSTERS:
-		my_function = slurmdb_unpack_cluster_cond;
+		my_function = unpack_acct_cluster_cond;
 		break;
 	case DBD_GET_JOBS_COND:
-		my_function = slurmdb_unpack_job_cond;
+		my_function = unpack_acct_job_cond;
 		break;
 	case DBD_GET_QOS:
 	case DBD_REMOVE_QOS:
-		my_function = slurmdb_unpack_qos_cond;
+		my_function = unpack_acct_qos_cond;
 		break;
 	case DBD_GET_WCKEYS:
 	case DBD_REMOVE_WCKEYS:
-		my_function = slurmdb_unpack_wckey_cond;
+		my_function = unpack_acct_wckey_cond;
 		break;
 	case DBD_GET_USERS:
 	case DBD_REMOVE_USERS:
-		my_function = slurmdb_unpack_user_cond;
+		my_function = unpack_acct_user_cond;
 		break;
 	case DBD_GET_TXN:
-		my_function = slurmdb_unpack_txn_cond;
+		my_function = unpack_acct_txn_cond;
 		break;
 	case DBD_ARCHIVE_DUMP:
-		my_function = slurmdb_unpack_archive_cond;
+		my_function = unpack_acct_archive_cond;
 		break;
 	case DBD_GET_RESVS:
-		my_function = slurmdb_unpack_reservation_cond;
-		break;
-	case DBD_GET_EVENTS:
-		my_function = slurmdb_unpack_event_cond;
+		my_function = unpack_acct_reservation_cond;
 		break;
 	default:
 		fatal("Unknown unpack type");
@@ -2635,7 +2629,7 @@ int inline slurmdbd_unpack_cond_msg(uint16_t rpc_version,
 	return SLURM_SUCCESS;
 
 unpack_error:
-	slurmdbd_free_cond_msg(type, msg_ptr);
+	slurmdbd_free_cond_msg(rpc_version, type, msg_ptr);
 	*msg = NULL;
 	return SLURM_ERROR;
 }
@@ -2645,7 +2639,7 @@ void inline slurmdbd_pack_get_jobs_msg(uint16_t rpc_version,
 {
 	uint32_t i = 0;
 	ListIterator itr = NULL;
-	slurmdb_selected_step_t *job = NULL;
+	jobacct_selected_step_t *job = NULL;
 	char *part = NULL;
 
 	packstr(msg->cluster_name, buffer);
@@ -2663,7 +2657,7 @@ void inline slurmdbd_pack_get_jobs_msg(uint16_t rpc_version,
 	if(i) {
 		itr = list_iterator_create(msg->selected_steps);
 		while((job = list_next(itr))) {
-			slurmdb_pack_selected_step(job, rpc_version, buffer);
+			pack_jobacct_selected_step(job, rpc_version, buffer);
 		}
 		list_iterator_destroy(itr);
 	}
@@ -2690,7 +2684,7 @@ int inline slurmdbd_unpack_get_jobs_msg(uint16_t rpc_version,
 	uint32_t count = 0;
 	uint32_t uint32_tmp;
 	dbd_get_jobs_msg_t *msg_ptr;
-	slurmdb_selected_step_t *job = NULL;
+	jobacct_selected_step_t *job = NULL;
 	char *part = NULL;
 
 	msg_ptr = xmalloc(sizeof(dbd_get_jobs_msg_t));
@@ -2707,9 +2701,9 @@ int inline slurmdbd_unpack_get_jobs_msg(uint16_t rpc_version,
 	safe_unpack32(&count, buffer);
 	if(count) {
 		msg_ptr->selected_steps =
-			list_create(slurmdb_destroy_selected_step);
+			list_create(destroy_jobacct_selected_step);
 		for(i=0; i<count; i++) {
-			slurmdb_unpack_selected_step(&job, rpc_version, buffer);
+			unpack_jobacct_selected_step(&job, rpc_version, buffer);
 			list_append(msg_ptr->selected_steps, job);
 		}
 	}
@@ -2727,7 +2721,7 @@ int inline slurmdbd_unpack_get_jobs_msg(uint16_t rpc_version,
 	return SLURM_SUCCESS;
 
 unpack_error:
-	slurmdbd_free_get_jobs_msg(msg_ptr);
+	slurmdbd_free_get_jobs_msg(rpc_version, msg_ptr);
 	*msg = NULL;
 	return SLURM_ERROR;
 }
@@ -2804,7 +2798,7 @@ slurmdbd_unpack_init_msg(dbd_init_msg_t **msg,
 	return rc;
 
 unpack_error:
-	slurmdbd_free_init_msg(msg_ptr);
+	slurmdbd_free_init_msg(msg_ptr->version, msg_ptr);
 	*msg = NULL;
 	if(rc == SLURM_SUCCESS)
 		rc = SLURM_ERROR;
@@ -2830,7 +2824,7 @@ slurmdbd_unpack_fini_msg(uint16_t rpc_version, dbd_fini_msg_t **msg, Buf buffer)
 	return SLURM_SUCCESS;
 
 unpack_error:
-	slurmdbd_free_fini_msg(msg_ptr);
+	slurmdbd_free_fini_msg(rpc_version, msg_ptr);
 	*msg = NULL;
 	return SLURM_ERROR;
 }
@@ -2848,6 +2842,16 @@ slurmdbd_pack_job_complete_msg(uint16_t rpc_version,
 		pack16(msg->job_state, buffer);
 		packstr(msg->nodes, buffer);
 		pack32(msg->req_uid, buffer);
+		pack_time(msg->start_time, buffer);
+		pack_time(msg->submit_time, buffer);
+	} else {
+		pack32(msg->assoc_id, buffer);
+		pack32(msg->db_index, buffer);
+		pack_time(msg->end_time, buffer);
+		pack32(msg->exit_code, buffer);
+		pack32(msg->job_id, buffer);
+		pack16(msg->job_state, buffer);
+		packstr(msg->nodes, buffer);
 		pack_time(msg->start_time, buffer);
 		pack_time(msg->submit_time, buffer);
 	}
@@ -2872,11 +2876,21 @@ slurmdbd_unpack_job_complete_msg(uint16_t rpc_version,
 		safe_unpack32(&msg_ptr->req_uid, buffer);
 		safe_unpack_time(&msg_ptr->start_time, buffer);
 		safe_unpack_time(&msg_ptr->submit_time, buffer);
+	} else {
+		safe_unpack32(&msg_ptr->assoc_id, buffer);
+		safe_unpack32(&msg_ptr->db_index, buffer);
+		safe_unpack_time(&msg_ptr->end_time, buffer);
+		safe_unpack32(&msg_ptr->exit_code, buffer);
+		safe_unpack32(&msg_ptr->job_id, buffer);
+		safe_unpack16(&msg_ptr->job_state, buffer);
+		safe_unpackstr_xmalloc(&msg_ptr->nodes, &uint32_tmp, buffer);
+		safe_unpack_time(&msg_ptr->start_time, buffer);
+		safe_unpack_time(&msg_ptr->submit_time, buffer);
 	}
 	return SLURM_SUCCESS;
 
 unpack_error:
-	slurmdbd_free_job_complete_msg(msg_ptr);
+	slurmdbd_free_job_complete_msg(rpc_version, msg_ptr);
 	*msg = NULL;
 	return SLURM_ERROR;
 }
@@ -2885,12 +2899,13 @@ void inline
 slurmdbd_pack_job_start_msg(uint16_t rpc_version,
 			    dbd_job_start_msg_t *msg, Buf buffer)
 {
-	if(rpc_version >= 8) {
+	if(rpc_version >= 5) {
 		packstr(msg->account, buffer);
 		pack32(msg->alloc_cpus, buffer);
 		pack32(msg->alloc_nodes, buffer);
 		pack32(msg->assoc_id, buffer);
 		packstr(msg->block_id, buffer);
+		packstr(msg->cluster, buffer);
 		pack32(msg->db_index, buffer);
 		pack_time(msg->eligible_time, buffer);
 		pack32(msg->gid, buffer);
@@ -2908,13 +2923,30 @@ slurmdbd_pack_job_start_msg(uint16_t rpc_version,
 		pack32(msg->timelimit, buffer);
 		pack32(msg->uid, buffer);
 		packstr(msg->wckey, buffer);
+	} else if(rpc_version >= 3) {
+		packstr(msg->account, buffer);
+		pack32(msg->alloc_cpus, buffer);
+		pack32(msg->assoc_id, buffer);
+		packstr(msg->block_id, buffer);
+		packstr(msg->cluster, buffer);
+		pack32(msg->db_index, buffer);
+		pack_time(msg->eligible_time, buffer);
+		pack32(msg->gid, buffer);
+		pack32(msg->job_id, buffer);
+		pack16(msg->job_state, buffer);
+		packstr(msg->name, buffer);
+		packstr(msg->nodes, buffer);
+		packstr(msg->partition, buffer);
+		pack32(msg->priority, buffer);
+		pack32(msg->req_cpus, buffer);
+		pack_time(msg->start_time, buffer);
+		pack_time(msg->submit_time, buffer);
+		pack32(msg->uid, buffer);
 	} else {
 		packstr(msg->account, buffer);
 		pack32(msg->alloc_cpus, buffer);
-		pack32(msg->alloc_nodes, buffer);
 		pack32(msg->assoc_id, buffer);
 		packstr(msg->block_id, buffer);
-		packnull(buffer);
 		pack32(msg->db_index, buffer);
 		pack_time(msg->eligible_time, buffer);
 		pack32(msg->gid, buffer);
@@ -2922,16 +2954,12 @@ slurmdbd_pack_job_start_msg(uint16_t rpc_version,
 		pack16(msg->job_state, buffer);
 		packstr(msg->name, buffer);
 		packstr(msg->nodes, buffer);
-		packstr(msg->node_inx, buffer);
 		packstr(msg->partition, buffer);
 		pack32(msg->priority, buffer);
 		pack32(msg->req_cpus, buffer);
-		pack32(msg->resv_id, buffer);
 		pack_time(msg->start_time, buffer);
 		pack_time(msg->submit_time, buffer);
-		pack32(msg->timelimit, buffer);
 		pack32(msg->uid, buffer);
-		packstr(msg->wckey, buffer);
 	}
 }
 
@@ -2940,16 +2968,16 @@ slurmdbd_unpack_job_start_msg(uint16_t rpc_version,
 			      dbd_job_start_msg_t **msg, Buf buffer)
 {
 	uint32_t uint32_tmp;
-	char *tmp_char;
 	dbd_job_start_msg_t *msg_ptr = xmalloc(sizeof(dbd_job_start_msg_t));
 	*msg = msg_ptr;
 
-	if(rpc_version >= 8) {
+	if(rpc_version >= 5) {
 		safe_unpackstr_xmalloc(&msg_ptr->account, &uint32_tmp, buffer);
 		safe_unpack32(&msg_ptr->alloc_cpus, buffer);
 		safe_unpack32(&msg_ptr->alloc_nodes, buffer);
 		safe_unpack32(&msg_ptr->assoc_id, buffer);
 		safe_unpackstr_xmalloc(&msg_ptr->block_id, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&msg_ptr->cluster, &uint32_tmp, buffer);
 		safe_unpack32(&msg_ptr->db_index, buffer);
 		safe_unpack_time(&msg_ptr->eligible_time, buffer);
 		safe_unpack32(&msg_ptr->gid, buffer);
@@ -2968,13 +2996,57 @@ slurmdbd_unpack_job_start_msg(uint16_t rpc_version,
 		safe_unpack32(&msg_ptr->timelimit, buffer);
 		safe_unpack32(&msg_ptr->uid, buffer);
 		safe_unpackstr_xmalloc(&msg_ptr->wckey, &uint32_tmp, buffer);
+	} else if(rpc_version >= 3) {
+		char *temp = NULL, *jname = NULL;
+		safe_unpackstr_xmalloc(&msg_ptr->account, &uint32_tmp, buffer);
+		safe_unpack32(&msg_ptr->alloc_cpus, buffer);
+		safe_unpack32(&msg_ptr->assoc_id, buffer);
+		safe_unpackstr_xmalloc(&msg_ptr->block_id, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&msg_ptr->cluster, &uint32_tmp, buffer);
+		safe_unpack32(&msg_ptr->db_index, buffer);
+		safe_unpack_time(&msg_ptr->eligible_time, buffer);
+		safe_unpack32(&msg_ptr->gid, buffer);
+		safe_unpack32(&msg_ptr->job_id, buffer);
+		safe_unpack16(&msg_ptr->job_state, buffer);
+		safe_unpackstr_xmalloc(&msg_ptr->name, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&msg_ptr->nodes, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&msg_ptr->partition,
+				       &uint32_tmp, buffer);
+		safe_unpack32(&msg_ptr->priority, buffer);
+		safe_unpack32(&msg_ptr->req_cpus, buffer);
+		safe_unpack_time(&msg_ptr->start_time, buffer);
+		safe_unpack_time(&msg_ptr->submit_time, buffer);
+		safe_unpack32(&msg_ptr->uid, buffer);
+
+		/* first set the jname to the msg_ptr->name */
+		jname = xstrdup(msg_ptr->name);
+		/* then grep for " since that is the delimiter for
+		   the wckey */
+		if((temp = strchr(jname, '\"'))) {
+			if(strrchr(jname, '\"') != temp) {
+				error("job %u has quotes in it's name '%s', "
+				      "no way to get correct wckey, "
+				      "setting name to 'bad_name'",
+				      msg_ptr->job_id, jname);
+				xfree(jname);
+				jname = xstrdup("bad_name");
+			} else {
+				/* if we have a wckey set the " to NULL to
+				 * end the jname */
+				temp[0] = '\0';
+				/* increment and copy the remainder */
+				temp++;
+				msg_ptr->wckey = xstrdup(temp);
+			}
+		}
+		xfree(msg_ptr->name);
+		msg_ptr->name = xstrdup(jname);
+		xfree(jname);
 	} else {
 		safe_unpackstr_xmalloc(&msg_ptr->account, &uint32_tmp, buffer);
 		safe_unpack32(&msg_ptr->alloc_cpus, buffer);
-		safe_unpack32(&msg_ptr->alloc_nodes, buffer);
 		safe_unpack32(&msg_ptr->assoc_id, buffer);
 		safe_unpackstr_xmalloc(&msg_ptr->block_id, &uint32_tmp, buffer);
-		unpackstr_ptr(&tmp_char, &uint32_tmp, buffer);
 		safe_unpack32(&msg_ptr->db_index, buffer);
 		safe_unpack_time(&msg_ptr->eligible_time, buffer);
 		safe_unpack32(&msg_ptr->gid, buffer);
@@ -2982,23 +3054,19 @@ slurmdbd_unpack_job_start_msg(uint16_t rpc_version,
 		safe_unpack16(&msg_ptr->job_state, buffer);
 		safe_unpackstr_xmalloc(&msg_ptr->name, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&msg_ptr->nodes, &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&msg_ptr->node_inx, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&msg_ptr->partition,
 				       &uint32_tmp, buffer);
 		safe_unpack32(&msg_ptr->priority, buffer);
 		safe_unpack32(&msg_ptr->req_cpus, buffer);
-		safe_unpack32(&msg_ptr->resv_id, buffer);
 		safe_unpack_time(&msg_ptr->start_time, buffer);
 		safe_unpack_time(&msg_ptr->submit_time, buffer);
-		safe_unpack32(&msg_ptr->timelimit, buffer);
 		safe_unpack32(&msg_ptr->uid, buffer);
-		safe_unpackstr_xmalloc(&msg_ptr->wckey, &uint32_tmp, buffer);
 	}
 
 	return SLURM_SUCCESS;
 
 unpack_error:
-	slurmdbd_free_job_start_msg(msg_ptr);
+	slurmdbd_free_job_start_msg(rpc_version, msg_ptr);
 	*msg = NULL;
 	return SLURM_ERROR;
 }
@@ -3022,7 +3090,7 @@ slurmdbd_unpack_id_rc_msg(uint16_t rpc_version,
 	return SLURM_SUCCESS;
 
 unpack_error:
-	slurmdbd_free_id_rc_msg(msg_ptr);
+	slurmdbd_free_id_rc_msg(rpc_version, msg_ptr);
 	*msg = NULL;
 	return SLURM_ERROR;
 }
@@ -3054,7 +3122,7 @@ slurmdbd_unpack_job_suspend_msg(uint16_t rpc_version,
 	return SLURM_SUCCESS;
 
 unpack_error:
-	slurmdbd_free_job_suspend_msg(msg_ptr);
+	slurmdbd_free_job_suspend_msg(rpc_version, msg_ptr);
 	*msg = NULL;
 	return SLURM_ERROR;
 }
@@ -3071,46 +3139,43 @@ void inline slurmdbd_pack_list_msg(uint16_t rpc_version,
 	switch(type) {
 	case DBD_ADD_ACCOUNTS:
 	case DBD_GOT_ACCOUNTS:
-		my_function = slurmdb_pack_account_rec;
+		my_function = pack_acct_account_rec;
 		break;
 	case DBD_ADD_ASSOCS:
 	case DBD_GOT_ASSOCS:
 	case DBD_GOT_PROBS:
-		my_function = slurmdb_pack_association_rec;
+		my_function = pack_acct_association_rec;
 		break;
 	case DBD_ADD_CLUSTERS:
 	case DBD_GOT_CLUSTERS:
-		my_function = slurmdb_pack_cluster_rec;
+		my_function = pack_acct_cluster_rec;
 		break;
 	case DBD_GOT_CONFIG:
 		my_function = pack_config_key_pair;
 		break;
 	case DBD_GOT_JOBS:
-		my_function = slurmdb_pack_job_rec;
+		my_function = pack_jobacct_job_rec;
 		break;
 	case DBD_GOT_LIST:
 		my_function = _slurmdbd_packstr;
 		break;
 	case DBD_ADD_QOS:
 	case DBD_GOT_QOS:
-		my_function = slurmdb_pack_qos_rec;
+		my_function = pack_acct_qos_rec;
 		break;
 	case DBD_GOT_RESVS:
-		my_function = slurmdb_pack_reservation_rec;
+		my_function = pack_acct_reservation_rec;
 		break;
 	case DBD_ADD_WCKEYS:
 	case DBD_GOT_WCKEYS:
-		my_function = slurmdb_pack_wckey_rec;
+		my_function = pack_acct_wckey_rec;
 		break;
 	case DBD_ADD_USERS:
 	case DBD_GOT_USERS:
-		my_function = slurmdb_pack_user_rec;
+		my_function = pack_acct_user_rec;
 		break;
 	case DBD_GOT_TXN:
-		my_function = slurmdb_pack_txn_rec;
-		break;
-	case DBD_GOT_EVENTS:
-		my_function = slurmdb_pack_event_rec;
+		my_function = pack_acct_txn_rec;
 		break;
 	default:
 		fatal("Unknown pack type");
@@ -3146,27 +3211,27 @@ int inline slurmdbd_unpack_list_msg(uint16_t rpc_version,
 	switch(type) {
 	case DBD_ADD_ACCOUNTS:
 	case DBD_GOT_ACCOUNTS:
-		my_function = slurmdb_unpack_account_rec;
-		my_destroy = slurmdb_destroy_account_rec;
+		my_function = unpack_acct_account_rec;
+		my_destroy = destroy_acct_account_rec;
 		break;
 	case DBD_ADD_ASSOCS:
 	case DBD_GOT_ASSOCS:
 	case DBD_GOT_PROBS:
-		my_function = slurmdb_unpack_association_rec;
-		my_destroy = slurmdb_destroy_association_rec;
+		my_function = unpack_acct_association_rec;
+		my_destroy = destroy_acct_association_rec;
 		break;
 	case DBD_ADD_CLUSTERS:
 	case DBD_GOT_CLUSTERS:
-		my_function = slurmdb_unpack_cluster_rec;
-		my_destroy = slurmdb_destroy_cluster_rec;
+		my_function = unpack_acct_cluster_rec;
+		my_destroy = destroy_acct_cluster_rec;
 		break;
 	case DBD_GOT_CONFIG:
 		my_function = unpack_config_key_pair;
 		my_destroy = destroy_config_key_pair;
 		break;
 	case DBD_GOT_JOBS:
-		my_function = slurmdb_unpack_job_rec;
-		my_destroy = slurmdb_destroy_job_rec;
+		my_function = unpack_jobacct_job_rec;
+		my_destroy = destroy_jobacct_job_rec;
 		break;
 	case DBD_GOT_LIST:
 		my_function = _slurmdbd_unpackstr;
@@ -3174,30 +3239,26 @@ int inline slurmdbd_unpack_list_msg(uint16_t rpc_version,
 		break;
 	case DBD_ADD_QOS:
 	case DBD_GOT_QOS:
-		my_function = slurmdb_unpack_qos_rec;
-		my_destroy = slurmdb_destroy_qos_rec;
+		my_function = unpack_acct_qos_rec;
+		my_destroy = destroy_acct_qos_rec;
 		break;
 	case DBD_GOT_RESVS:
-		my_function = slurmdb_unpack_reservation_rec;
-		my_destroy = slurmdb_destroy_reservation_rec;
+		my_function = unpack_acct_reservation_rec;
+		my_destroy = destroy_acct_reservation_rec;
 		break;
 	case DBD_ADD_WCKEYS:
 	case DBD_GOT_WCKEYS:
-		my_function = slurmdb_unpack_wckey_rec;
-		my_destroy = slurmdb_destroy_wckey_rec;
+		my_function = unpack_acct_wckey_rec;
+		my_destroy = destroy_acct_wckey_rec;
 		break;
 	case DBD_ADD_USERS:
 	case DBD_GOT_USERS:
-		my_function = slurmdb_unpack_user_rec;
-		my_destroy = slurmdb_destroy_user_rec;
+		my_function = unpack_acct_user_rec;
+		my_destroy = destroy_acct_user_rec;
 		break;
 	case DBD_GOT_TXN:
-		my_function = slurmdb_unpack_txn_rec;
-		my_destroy = slurmdb_destroy_txn_rec;
-		break;
-	case DBD_GOT_EVENTS:
-		my_function = slurmdb_unpack_event_rec;
-		my_destroy = slurmdb_destroy_event_rec;
+		my_function = unpack_acct_txn_rec;
+		my_destroy = destroy_acct_txn_rec;
 		break;
 	default:
 		fatal("Unknown unpack type");
@@ -3223,7 +3284,7 @@ int inline slurmdbd_unpack_list_msg(uint16_t rpc_version,
 	return SLURM_SUCCESS;
 
 unpack_error:
-	slurmdbd_free_list_msg(msg_ptr);
+	slurmdbd_free_list_msg(rpc_version, msg_ptr);
 	*msg = NULL;
 	return SLURM_ERROR;
 }
@@ -3237,24 +3298,24 @@ void inline slurmdbd_pack_modify_msg(uint16_t rpc_version,
 
 	switch(type) {
 	case DBD_MODIFY_ACCOUNTS:
-		my_cond = slurmdb_pack_account_cond;
-		my_rec = slurmdb_pack_account_rec;
+		my_cond = pack_acct_account_cond;
+		my_rec = pack_acct_account_rec;
 		break;
 	case DBD_MODIFY_ASSOCS:
-		my_cond = slurmdb_pack_association_cond;
-		my_rec = slurmdb_pack_association_rec;
+		my_cond = pack_acct_association_cond;
+		my_rec = pack_acct_association_rec;
 		break;
 	case DBD_MODIFY_CLUSTERS:
-		my_cond = slurmdb_pack_cluster_cond;
-		my_rec = slurmdb_pack_cluster_rec;
+		my_cond = pack_acct_cluster_cond;
+		my_rec = pack_acct_cluster_rec;
 		break;
 	case DBD_MODIFY_QOS:
-		my_cond = slurmdb_pack_qos_cond;
-		my_rec = slurmdb_pack_qos_rec;
+		my_cond = pack_acct_qos_cond;
+		my_rec = pack_acct_qos_rec;
 		break;
 	case DBD_MODIFY_USERS:
-		my_cond = slurmdb_pack_user_cond;
-		my_rec = slurmdb_pack_user_rec;
+		my_cond = pack_acct_user_cond;
+		my_rec = pack_acct_user_rec;
 		break;
 	default:
 		fatal("Unknown pack type");
@@ -3277,24 +3338,24 @@ int inline slurmdbd_unpack_modify_msg(uint16_t rpc_version,
 
 	switch(type) {
 	case DBD_MODIFY_ACCOUNTS:
-		my_cond = slurmdb_unpack_account_cond;
-		my_rec = slurmdb_unpack_account_rec;
+		my_cond = unpack_acct_account_cond;
+		my_rec = unpack_acct_account_rec;
 		break;
 	case DBD_MODIFY_ASSOCS:
-		my_cond = slurmdb_unpack_association_cond;
-		my_rec = slurmdb_unpack_association_rec;
+		my_cond = unpack_acct_association_cond;
+		my_rec = unpack_acct_association_rec;
 		break;
 	case DBD_MODIFY_CLUSTERS:
-		my_cond = slurmdb_unpack_cluster_cond;
-		my_rec = slurmdb_unpack_cluster_rec;
+		my_cond = unpack_acct_cluster_cond;
+		my_rec = unpack_acct_cluster_rec;
 		break;
 	case DBD_MODIFY_QOS:
-		my_cond = slurmdb_unpack_qos_cond;
-		my_rec = slurmdb_unpack_qos_rec;
+		my_cond = unpack_acct_qos_cond;
+		my_rec = unpack_acct_qos_rec;
 		break;
 	case DBD_MODIFY_USERS:
-		my_cond = slurmdb_unpack_user_cond;
-		my_rec = slurmdb_unpack_user_rec;
+		my_cond = unpack_acct_user_cond;
+		my_rec = unpack_acct_user_rec;
 		break;
 	default:
 		fatal("Unknown unpack type");
@@ -3309,7 +3370,7 @@ int inline slurmdbd_unpack_modify_msg(uint16_t rpc_version,
 	return SLURM_SUCCESS;
 
 unpack_error:
-	slurmdbd_free_modify_msg(type, msg_ptr);
+	slurmdbd_free_modify_msg(rpc_version, type, msg_ptr);
 	*msg = NULL;
 	return SLURM_ERROR;
 }
@@ -3318,22 +3379,21 @@ void inline
 slurmdbd_pack_node_state_msg(uint16_t rpc_version,
 			     dbd_node_state_msg_t *msg, Buf buffer)
 {
-	if(rpc_version >= 8) {
+	if(rpc_version >= 5) {
+		packstr(msg->cluster_name, buffer);
 		pack32(msg->cpu_count, buffer);
 		packstr(msg->hostlist, buffer);
 		packstr(msg->reason, buffer);
-		pack32(msg->reason_uid, buffer);
 		pack16(msg->new_state, buffer);
 		pack_time(msg->event_time, buffer);
 		pack16(msg->state, buffer);
 	} else {
-		packnull(buffer);
+		packstr(msg->cluster_name, buffer);
 		pack32(msg->cpu_count, buffer);
 		packstr(msg->hostlist, buffer);
 		packstr(msg->reason, buffer);
 		pack16(msg->new_state, buffer);
 		pack_time(msg->event_time, buffer);
-		pack16(msg->state, buffer);
 	}
 }
 
@@ -3343,35 +3403,33 @@ slurmdbd_unpack_node_state_msg(uint16_t rpc_version,
 {
 	dbd_node_state_msg_t *msg_ptr;
 	uint32_t uint32_tmp;
-	char *char_tmp;
 
 	msg_ptr = xmalloc(sizeof(dbd_node_state_msg_t));
 	*msg = msg_ptr;
 
-	msg_ptr->reason_uid = NO_VAL;
-
-	if(rpc_version >= 8) {
+	if(rpc_version >= 5) {
+		safe_unpackstr_xmalloc(&msg_ptr->cluster_name,
+				       &uint32_tmp, buffer);
 		safe_unpack32(&msg_ptr->cpu_count, buffer);
 		safe_unpackstr_xmalloc(&msg_ptr->hostlist, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&msg_ptr->reason,   &uint32_tmp, buffer);
-		safe_unpack32(&msg_ptr->reason_uid, buffer);
 		safe_unpack16(&msg_ptr->new_state, buffer);
 		safe_unpack_time(&msg_ptr->event_time, buffer);
 		safe_unpack16(&msg_ptr->state, buffer);
 	} else {
-		unpackstr_ptr(&char_tmp, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&msg_ptr->cluster_name,
+				       &uint32_tmp, buffer);
 		safe_unpack32(&msg_ptr->cpu_count, buffer);
 		safe_unpackstr_xmalloc(&msg_ptr->hostlist, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&msg_ptr->reason,   &uint32_tmp, buffer);
 		safe_unpack16(&msg_ptr->new_state, buffer);
 		safe_unpack_time(&msg_ptr->event_time, buffer);
-		safe_unpack16(&msg_ptr->state, buffer);
 	}
 
 	return SLURM_SUCCESS;
 
 unpack_error:
-	slurmdbd_free_node_state_msg(msg_ptr);
+	slurmdbd_free_node_state_msg(rpc_version, msg_ptr);
 	*msg = NULL;
 	return SLURM_ERROR;
 }
@@ -3398,7 +3456,7 @@ slurmdbd_unpack_rc_msg(uint16_t rpc_version,
 	return SLURM_SUCCESS;
 
 unpack_error:
-	slurmdbd_free_rc_msg(msg_ptr);
+	slurmdbd_free_rc_msg(rpc_version, msg_ptr);
 	*msg = NULL;
 	return SLURM_ERROR;
 }
@@ -3407,12 +3465,8 @@ void inline
 slurmdbd_pack_register_ctld_msg(uint16_t rpc_version,
 				dbd_register_ctld_msg_t *msg, Buf buffer)
 {
-	if(rpc_version >= 8) {
-		pack16(msg->port, buffer);
-	} else {
-		packnull(buffer);
-		pack16(msg->port, buffer);
-	}
+	packstr(msg->cluster_name, buffer);
+	pack16(msg->port, buffer);
 }
 
 int inline
@@ -3423,17 +3477,12 @@ slurmdbd_unpack_register_ctld_msg(uint16_t rpc_version,
 	dbd_register_ctld_msg_t *msg_ptr = xmalloc(
 		sizeof(dbd_register_ctld_msg_t));
 	*msg = msg_ptr;
-	if(rpc_version >= 8) {
-		safe_unpack16(&msg_ptr->port, buffer);
-	} else {
-		char *tmp_char = NULL;
-		unpackstr_ptr(&tmp_char, &uint32_tmp, buffer);
-		safe_unpack16(&msg_ptr->port, buffer);
-	}
+	safe_unpackstr_xmalloc(&msg_ptr->cluster_name, &uint32_tmp, buffer);
+	safe_unpack16(&msg_ptr->port, buffer);
 	return SLURM_SUCCESS;
 
 unpack_error:
-	slurmdbd_free_register_ctld_msg(msg_ptr);
+	slurmdbd_free_register_ctld_msg(rpc_version, msg_ptr);
 	*msg = NULL;
 	return SLURM_ERROR;
 }
@@ -3445,6 +3494,8 @@ slurmdbd_pack_roll_usage_msg(uint16_t rpc_version,
 	if(rpc_version >= 5) {
 		pack16(msg->archive_data, buffer);
 		pack_time(msg->end, buffer);
+		pack_time(msg->start, buffer);
+	} else {
 		pack_time(msg->start, buffer);
 	}
 }
@@ -3461,11 +3512,13 @@ slurmdbd_unpack_roll_usage_msg(uint16_t rpc_version,
 		safe_unpack16(&msg_ptr->archive_data, buffer);
 		safe_unpack_time(&msg_ptr->end, buffer);
 		safe_unpack_time(&msg_ptr->start, buffer);
+	} else {
+		safe_unpack_time(&msg_ptr->start, buffer);
 	}
 	return SLURM_SUCCESS;
 
 unpack_error:
-	slurmdbd_free_roll_usage_msg(msg_ptr);
+	slurmdbd_free_roll_usage_msg(rpc_version, msg_ptr);
 	*msg = NULL;
 	return SLURM_ERROR;
 }
@@ -3478,14 +3531,13 @@ slurmdbd_pack_step_complete_msg(uint16_t rpc_version,
 	pack32(msg->db_index, buffer);
 	pack_time(msg->end_time, buffer);
 	pack32(msg->exit_code, buffer);
-	jobacct_common_pack((struct jobacctinfo *)msg->jobacct,
-			    rpc_version, buffer);
+	jobacct_common_pack((struct jobacctinfo *)msg->jobacct, rpc_version, buffer);
 	pack32(msg->job_id, buffer);
 	pack32(msg->req_uid, buffer);
 	pack_time(msg->start_time, buffer);
 	pack_time(msg->job_submit_time, buffer);
 	pack32(msg->step_id, buffer);
-	pack32(msg->total_cpus, buffer);
+	pack32(msg->total_procs, buffer);
 }
 
 int inline
@@ -3498,18 +3550,17 @@ slurmdbd_unpack_step_complete_msg(uint16_t rpc_version,
 	safe_unpack32(&msg_ptr->db_index, buffer);
 	safe_unpack_time(&msg_ptr->end_time, buffer);
 	safe_unpack32(&msg_ptr->exit_code, buffer);
-	jobacct_common_unpack((struct jobacctinfo **)&msg_ptr->jobacct,
-			      rpc_version, buffer);
+	jobacct_common_unpack((struct jobacctinfo **)&msg_ptr->jobacct, rpc_version, buffer);
 	safe_unpack32(&msg_ptr->job_id, buffer);
 	safe_unpack32(&msg_ptr->req_uid, buffer);
 	safe_unpack_time(&msg_ptr->start_time, buffer);
 	safe_unpack_time(&msg_ptr->job_submit_time, buffer);
 	safe_unpack32(&msg_ptr->step_id, buffer);
-	safe_unpack32(&msg_ptr->total_cpus, buffer);
+	safe_unpack32(&msg_ptr->total_procs, buffer);
 	return SLURM_SUCCESS;
 
 unpack_error:
-	slurmdbd_free_step_complete_msg(msg_ptr);
+	slurmdbd_free_step_complete_msg(rpc_version, msg_ptr);
 	*msg = NULL;
 	return SLURM_ERROR;
 }
@@ -3530,8 +3581,18 @@ slurmdbd_pack_step_start_msg(uint16_t rpc_version, dbd_step_start_msg_t *msg,
 		pack_time(msg->job_submit_time, buffer);
 		pack32(msg->step_id, buffer);
 		pack16(msg->task_dist, buffer);
-		pack32(msg->total_cpus, buffer);
+		pack32(msg->total_procs, buffer);
 		pack32(msg->total_tasks, buffer);
+	} else {
+		pack32(msg->assoc_id, buffer);
+		pack32(msg->db_index, buffer);
+		pack32(msg->job_id, buffer);
+		packstr(msg->name, buffer);
+		packstr(msg->nodes, buffer);
+		pack_time(msg->start_time, buffer);
+		pack_time(msg->job_submit_time, buffer);
+		pack32(msg->step_id, buffer);
+		pack32(msg->total_procs, buffer);
 	}
 }
 
@@ -3554,14 +3615,24 @@ slurmdbd_unpack_step_start_msg(uint16_t rpc_version,
 		safe_unpack_time(&msg_ptr->job_submit_time, buffer);
 		safe_unpack32(&msg_ptr->step_id, buffer);
 		safe_unpack16(&msg_ptr->task_dist, buffer);
-		safe_unpack32(&msg_ptr->total_cpus, buffer);
+		safe_unpack32(&msg_ptr->total_procs, buffer);
 		safe_unpack32(&msg_ptr->total_tasks, buffer);
+	} else {
+		safe_unpack32(&msg_ptr->assoc_id, buffer);
+		safe_unpack32(&msg_ptr->db_index, buffer);
+		safe_unpack32(&msg_ptr->job_id, buffer);
+		safe_unpackstr_xmalloc(&msg_ptr->name, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&msg_ptr->nodes, &uint32_tmp, buffer);
+		safe_unpack_time(&msg_ptr->start_time, buffer);
+		safe_unpack_time(&msg_ptr->job_submit_time, buffer);
+		safe_unpack32(&msg_ptr->step_id, buffer);
+		safe_unpack32(&msg_ptr->total_procs, buffer);
 	}
 
 	return SLURM_SUCCESS;
 
 unpack_error:
-	slurmdbd_free_step_start_msg(msg_ptr);
+	slurmdbd_free_step_start_msg(rpc_version, msg_ptr);
 	*msg = NULL;
 	return SLURM_ERROR;
 }
@@ -3575,15 +3646,15 @@ void inline slurmdbd_pack_usage_msg(uint16_t rpc_version,
 	switch(type) {
 	case DBD_GET_ASSOC_USAGE:
 	case DBD_GOT_ASSOC_USAGE:
-		my_rec = slurmdb_pack_association_rec;
+		my_rec = pack_acct_association_rec;
 		break;
 	case DBD_GET_CLUSTER_USAGE:
 	case DBD_GOT_CLUSTER_USAGE:
-		my_rec = slurmdb_pack_cluster_rec;
+		my_rec = pack_acct_cluster_rec;
 		break;
 	case DBD_GET_WCKEY_USAGE:
 	case DBD_GOT_WCKEY_USAGE:
-		my_rec = slurmdb_pack_wckey_rec;
+		my_rec = pack_acct_wckey_rec;
 		break;
 	default:
 		fatal("Unknown pack type");
@@ -3608,15 +3679,15 @@ int inline slurmdbd_unpack_usage_msg(uint16_t rpc_version,
 	switch(type) {
 	case DBD_GET_ASSOC_USAGE:
 	case DBD_GOT_ASSOC_USAGE:
-		my_rec = slurmdb_unpack_association_rec;
+		my_rec = unpack_acct_association_rec;
 		break;
 	case DBD_GET_CLUSTER_USAGE:
 	case DBD_GOT_CLUSTER_USAGE:
-		my_rec = slurmdb_unpack_cluster_rec;
+		my_rec = unpack_acct_cluster_rec;
 		break;
 	case DBD_GET_WCKEY_USAGE:
 	case DBD_GOT_WCKEY_USAGE:
-		my_rec = slurmdb_unpack_wckey_rec;
+		my_rec = unpack_acct_wckey_rec;
 		break;
 	default:
 		fatal("Unknown pack type");
@@ -3633,7 +3704,7 @@ int inline slurmdbd_unpack_usage_msg(uint16_t rpc_version,
 	return SLURM_SUCCESS;
 
 unpack_error:
-	slurmdbd_free_usage_msg(type, msg_ptr);
+	slurmdbd_free_usage_msg(rpc_version, type, msg_ptr);
 	*msg = NULL;
 	return SLURM_ERROR;
 }

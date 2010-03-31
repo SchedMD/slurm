@@ -1,6 +1,6 @@
 <!--
 Copyright (C) 2005-2007 The Regents of the University of California.
-Copyright (C) 2008-2010 Lawrence Livermore National Security.
+Copyright (C) 2008-2009 Lawrence Livermore National Security.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 Written by Morris Jette <jette1@llnl.gov> and Danny Auble <da@llnl.gov>
 
@@ -156,8 +156,6 @@ function displayfile()
    get_field("JobCredentialPrivateKey", document.config.private_key) + "<br>" +
    get_field("JobCredentialPublicCertificate", document.config.public_key) + "<br>" +
    "#JobFileAppend=0 <br>" +
-   "#GroupUpdateForce=0 <br>" +
-   "#GroupUpdateTime=600 <br>" +
    "#JobRequeue=1 <br>" +
    "#KillOnBadExit=0 <br>" +
    "#Licenses=foo*4,bar <br>" +
@@ -217,7 +215,6 @@ function displayfile()
    "SlurmdTimeout=" + document.config.slurmd_timeout.value + "<br>" +
    "#UnkillableStepProgram= <br>" +
    "#UnkillableStepTimeout=60 <br>" +
-   "#VSizeFactor=0 <br>" +
    "Waittime=" + document.config.wait_time.value + "<br>" +
    "# <br>" +
    "# <br>" +
@@ -270,8 +267,6 @@ function displayfile()
    get_field("SlurmctldLogFile",document.config.slurmctld_logfile) + "<br>" +
    "SlurmdDebug=" + document.config.slurmd_debug.value + "<br>" +
    get_field("SlurmdLogFile",document.config.slurmd_logfile) + "<br>" +
-   "SlurmSchedLogFile= <br>" +
-   "SlurmSchedLogLevel= <br>" +
    "# <br>" +
    "# <br>" +
    "# POWER SAVE SUPPORT FOR IDLE NODES (optional) <br>" +
@@ -381,10 +376,7 @@ Define the machines on which user applications can run.
 You can also specify addresses of these computers if desired 
 (defaults to their hostnames).
 Only a few of the possible parameters associated with the nodes will 
-be set by this tool, but many others are available.
-Executing the command <i>slurmd -C</i> on each compute node will print its
-physical configuration (sockets, cores, real memory size, etc.), which
-can be used in constructing the <i>slurm.conf</i> file.
+be set by this tool, but many others are available. 
 All of the nodes will be placed into a single partition (or queue) 
 with global access. Many options are available to group nodes into 
 partitions with a wide variety of configuration parameters. 
@@ -585,9 +577,6 @@ with a job step.<BR>
 Select one value for <B>ProctrackType</B>:<BR>
 <input type="radio" name="proctrack_type" value="aix"> <B>AIX</B>: Use AIX kernel 
 extension, recommended for AIX systems<BR>
-<input type="radio" name="proctrack_type" value="cgroup"> <B>Cgroup</B>: Use 
-Linux <i>cgroups</i> to create a job container and track processes.
-Build a <i>cgroup.conf</i> file as well<BR>
 <input type="radio" name="proctrack_type" value="pgid" checked> <B>Pgid</B>: Use Unix
 Process Group ID, processes changing their process group ID can escape from SLURM 
 control<BR>
@@ -859,6 +848,6 @@ before terminating all remaining tasks. A value of zero indicates unlimited wait
 </FORM>
 <HR>
 <P class="footer">LLNL-WEB-402631<BR>
-Last modified 30 March 2010</P>
+Last modified 3 February 2010</P>
 </BODY>
 

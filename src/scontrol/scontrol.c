@@ -3,7 +3,7 @@
  *	provides interface to read, write, update, and configurations.
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Portions Copyright (C) 2008 Vijay Ramasubramanian.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
@@ -729,9 +729,8 @@ _process_command (int argc, char *argv[])
 					level = -1;
 					exit_code = 1;
 					if (quiet_flag != 1)
-						fprintf(stderr, "invalid "
-							"debug level: %s\n", 
-							argv[1]);
+						fprintf(stderr, "invalid debug "
+							"level: %s\n", argv[1]);
 				}
 			}
 			if (level != -1) {
@@ -742,55 +741,6 @@ _process_command (int argc, char *argv[])
 						slurm_perror(
 							"slurm_set_debug_level "
 							"error");
-				}
-			}
-		}
-	}
-	else if (strncasecmp (tag, "schedloglevel", MAX(taglen, 2)) == 0) {
-		if (argc > 2) {
-			exit_code = 1;
-			if (quiet_flag != 1)
-				fprintf(stderr,
-					"too many arguments for keyword:%s\n",
-					tag);
-		} else if (argc < 2) {
-			exit_code = 1;
-			if (quiet_flag != 1)
-				fprintf(stderr,
-					"too few arguments for keyword:%s\n",
-					tag);
-		} else {
-			int level = -1;
-			char *endptr;
-			char *levels[] = {
-				"disable", "enable", NULL};
-			int index = 0;
-			while (levels[index]) {
-				if (strcasecmp(argv[1], levels[index]) == 0) {
-					level = index;
-					break;
-				}
-				index ++;
-			}
-			if (level == -1) {
-				/* effective levels: 0 - 1 */
-				level = (int)strtoul (argv[1], &endptr, 10);
-				if (*endptr != '\0' || level > 1) {
-					level = -1;
-					exit_code = 1;
-					if (quiet_flag != 1)
-						fprintf(stderr, "invalid schedlog "
-							"level: %s\n", argv[1]);
-				}
-			}
-			if (level != -1) {
-				error_code = slurm_set_schedlog_level(level);
-				if (error_code) {
-					exit_code = 1;
-					if (quiet_flag != 1)
-						slurm_perror(
-							"slurm_set_schedlog_level"
-							" error");
 				}
 			}
 		}
@@ -949,7 +899,7 @@ _create_it (int argc, char *argv[])
 
 	if (i >= argc) {
 		exit_code = 1;
-		error("Invalid creation entity: %s", argv[0]);
+		error("Invalid creation entity: %s\n", argv[0]);
 	} else if (error_code)
 		exit_code = 1;
 }
@@ -969,7 +919,7 @@ _delete_it (int argc, char *argv[])
 	int taglen = 0;
 
 	if (argc != 1) {
-		error("Only one option follows delete.  %d given.", argc);
+		error("Only one option follows delete.  %d given.\n", argc);
 		exit_code = 1;
 		return;
 	}
@@ -981,7 +931,7 @@ _delete_it (int argc, char *argv[])
 		val++;
 	} else {
 		error("Proper format is 'delete Partition=p'"
-		      " or 'delete Reservation=r'");
+		      " or 'delete Reservation=r'\n");
 		exit_code = 1;
 		return;
 	}
@@ -1131,7 +1081,7 @@ _update_it (int argc, char *argv[])
 	int i, error_code = SLURM_SUCCESS;
 	int nodetag=0, partag=0, jobtag=0;
 	int blocktag=0, subtag=0, restag=0;
-	int debugtag=0, steptag=0;
+	int debugtag=0;
 
 	/* First identify the entity to update */
 	for (i=0; i<argc; i++) {
@@ -1147,10 +1097,8 @@ _update_it (int argc, char *argv[])
 			nodetag=1;
 		} else if (!strncasecmp(tag, "PartitionName", MAX(taglen, 3))) {
 			partag=1;
-		} else if (!strncasecmp(tag, "JobId", MAX(taglen, 3))) {
+		} else if (!strncasecmp(tag, "JobId", MAX(taglen, 1))) {
 			jobtag=1;
-		} else if (!strncasecmp(tag, "StepId", MAX(taglen, 4))) {
-			steptag=1;
 		} else if (!strncasecmp(tag, "BlockName", MAX(taglen, 3))) {
 			blocktag=1;
 		} else if (!strncasecmp(tag, "SubBPName", MAX(taglen, 3))) {
@@ -1165,16 +1113,14 @@ _update_it (int argc, char *argv[])
 	}
 
 	/* The order of tests matters here.  An update job request can include
-	 * partition and reservation tags, possibly before the jobid tag, but
-	 * none of the other updates have a jobid tag, so check jobtag first.
-	 * Likewise, check restag next, because reservations can have a
-	 * partition tag.  The order of the rest doesn't matter because there
-	 * aren't any other duplicate tags.  */
+	   partition and reservation tags, possibly before the jobid tag, but
+	   none of the other updates have a jobid tag, so check jobtag first.
+	   Likewise, check restag next, because reservations can have a
+	   partition tag.  The order of the rest doesn't matter because there
+	   aren't any other duplicate tags.  */
 
 	if (jobtag)
 		error_code = scontrol_update_job (argc, argv);
-	else if (steptag)
-		error_code = scontrol_update_step (argc, argv);
 	else if (restag)
 		error_code = scontrol_update_res (argc, argv);
 	else if (nodetag)
@@ -1441,7 +1387,6 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
      reconfigure              re-read configuration files.                 \n\
      requeue <job_id>         re-queue a batch job                         \n\
      setdebug <level>         set slurmctld debug level                    \n\
-     schedloglevel <slevel>   set scheduler log level                      \n\
      show <ENTITY> [<ID>]     display state of identified entity, default  \n\
                               is all records.                              \n\
      shutdown <OPTS>          shutdown slurm daemons                       \n\
@@ -1449,8 +1394,8 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
                               (the primary controller will be stopped)     \n\
      suspend <job_id>         susend specified job                         \n\
      resume <job_id>          resume previously suspended job              \n\
-     update <SPECIFICATIONS>  update job, node, partition, reservation,    \n\
-                              step or bluegene block/subbp configuration   \n\
+     update <SPECIFICATIONS>  update job, node, partition, reservation, or \n\
+                              bluegene block/subbp configuration           \n\
      verbose                  enable detailed logging.                     \n\
      version                  display tool version number.                 \n\
      !!                       Repeat the last command entered.             \n\
@@ -1471,9 +1416,6 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
   <LEVEL> may be an integer value like SlurmctldDebug in the slurm.conf    \n\
        file or the name of the most detailed errors to report (e.g. \"info\",\n\
        \"verbose\", \"debug\", \"debug2\", etc.).                          \n\
-                                                                           \n\
-  <SLEVEL> may be an integer value like SlurmSchedLogLevel in the          \n\
-       slurm.conf file or \"enable\" or \"disable\".                       \n\
                                                                            \n\
   <OPTS> may be \"slurmctld\" to shutdown just the slurmctld daemon,       \n\
        otherwise all slurm daemons are shutdown                            \n\

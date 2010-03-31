@@ -73,6 +73,7 @@
 
 #define LONG_COMP_FIELDS "jobid,uid,jobname,partition,nnodes,nodes,state,start,end,timelimit"
 
+#define BUFFER_SIZE 4096
 #define STATE_COUNT 10
 
 #define MAX_PRINTFIELDS 100
@@ -150,7 +151,7 @@ typedef enum {
 } sacct_print_types_t;
 
 typedef struct {
-	slurmdb_job_cond_t *job_cond;
+	acct_job_cond_t *job_cond;
 	int opt_completion;	/* --completion */
 	int opt_dump;		/* --dump */
 	int opt_dup;		/* --duplicates; +1 = explicitly set */
@@ -176,12 +177,14 @@ extern List qos_list;
 
 /* process.c */
 char *find_hostname(uint32_t pos, char *hosts);
-void aggregate_stats(slurmdb_stats_t *dest, slurmdb_stats_t *from);
+void aggregate_sacct(sacct_t *dest, sacct_t *from);
 
 /* print.c */
 void print_fields(type_t type, void *object);
 
 /* options.c */
+int decode_state_char(char *state);
+char *decode_state_int(int state);
 int get_data(void);
 void parse_command_line(int argc, char **argv);
 void do_dump(void);

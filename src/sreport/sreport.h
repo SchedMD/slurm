@@ -78,8 +78,6 @@
 
 #include <slurm/slurm.h>
 
-#include <slurm/slurmdb.h>
-
 #include "src/common/jobacct_common.h"
 #include "src/common/parse_time.h"
 #include "src/common/slurm_accounting_storage.h"
@@ -89,7 +87,47 @@
 #define CKPT_WAIT	10
 #define	MAX_INPUT_FIELDS 128
 
-extern slurmdb_report_time_format_t time_format;
+typedef enum {
+	SREPORT_TIME_SECS,
+	SREPORT_TIME_MINS,
+	SREPORT_TIME_HOURS,
+	SREPORT_TIME_PERCENT,
+	SREPORT_TIME_SECS_PER,
+	SREPORT_TIME_MINS_PER,
+	SREPORT_TIME_HOURS_PER,
+} sreport_time_format_t;
+
+typedef enum {
+	SREPORT_SORT_TIME,
+	SREPORT_SORT_NAME
+} sreport_sort_t;
+
+typedef struct {
+	char *acct;
+	char *cluster;
+	uint64_t cpu_secs;
+	char *parent_acct;
+	char *user;
+} sreport_assoc_rec_t;
+
+typedef struct {
+	char *acct;
+	List acct_list; /* list of char *'s */
+	List assoc_list; /* list of acct_association_rec_t's */
+	uint64_t cpu_secs;
+	char *name;
+	uid_t uid;
+} sreport_user_rec_t;
+
+typedef struct {
+	List assoc_list; /* list of sreport_assoc_rec_t *'s */
+	uint32_t cpu_count;
+	uint64_t cpu_secs;
+	char *name;
+	List user_list; /* list of sreport_user_rec_t *'s */
+} sreport_cluster_rec_t;
+
+extern sreport_time_format_t time_format;
 extern char *time_format_string;
 extern char *command_name;
 extern int exit_code;	/* sacctmgr's exit code, =1 on any error at any time */
@@ -99,20 +137,24 @@ extern int quiet_flag;	/* quiet=1, verbose=-1, normal=0 */
 extern void *db_conn;
 extern uint32_t my_uid;
 extern int all_clusters_flag;
-extern slurmdb_report_sort_t sort_flag;
+extern sreport_sort_t sort_flag;
 
-extern void slurmdb_report_print_time(print_field_t *field,
+extern void sreport_print_time(print_field_t *field,
 			       uint64_t value, uint64_t total_time, int last);
 extern int parse_option_end(char *option);
 extern char *strip_quotes(char *option, int *increased);
-extern int sort_user_dec(slurmdb_report_user_rec_t *user_a,
-			 slurmdb_report_user_rec_t *user_b);
-extern int sort_cluster_dec(slurmdb_report_cluster_rec_t *cluster_a,
-			    slurmdb_report_cluster_rec_t *cluster_b);
-extern int sort_assoc_dec(slurmdb_report_assoc_rec_t *assoc_a,
-			  slurmdb_report_assoc_rec_t *assoc_b);
-extern int sort_reservations_dec(slurmdb_reservation_rec_t *resv_a,
-				 slurmdb_reservation_rec_t *resv_b);
+extern int set_start_end_time(time_t *start, time_t *end);
+extern void destroy_sreport_assoc_rec(void *object);
+extern void destroy_sreport_user_rec(void *object);
+extern void destroy_sreport_cluster_rec(void *object);
+extern int sort_user_dec(sreport_user_rec_t *user_a,
+			 sreport_user_rec_t *user_b);
+extern int sort_cluster_dec(sreport_cluster_rec_t *cluster_a,
+			    sreport_cluster_rec_t *cluster_b);
+extern int sort_assoc_dec(sreport_assoc_rec_t *assoc_a,
+			  sreport_assoc_rec_t *assoc_b);
+extern int sort_reservations_dec(acct_reservation_rec_t *resv_a,
+				 acct_reservation_rec_t *resv_b);
 
 extern int get_uint(char *in_value, uint32_t *out_value, char *type);
 

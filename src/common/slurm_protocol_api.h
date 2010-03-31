@@ -3,7 +3,7 @@
  *	definitions
  *****************************************************************************
  *  Copyright (C) 2002-2006 The Regents of the University of California.
- *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Kevin Tew <tew1@llnl.gov>, et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -182,16 +182,8 @@ int inline slurm_api_set_default_config();
  * execute this only at program termination to free all memory */
 void inline slurm_api_clear_config(void);
 
-/* slurm_get_hash_val
- * get hash val of the slurm.conf from slurmctld_conf object from
- * slurmctld_conf object
- * RET uint32_t  - hash_val
- */
-uint32_t slurm_get_hash_val(void);
-
 /* slurm_get_health_check_program
- * get health_check_program from slurmctld_conf object from
- * slurmctld_conf object
+ * get health_check_program from slurmctld_conf object from slurmctld_conf object
  * RET char *   - health_check_program, MUST be xfreed by caller
  */
 char *slurm_get_health_check_program(void);
@@ -337,11 +329,6 @@ extern int slurm_set_tree_width(uint16_t tree_width);
  * returns the value of tree_width in slurmctld_conf object
  */
 extern uint16_t slurm_get_tree_width(void);
-
-/* slurm_get_vsize_factor
- * returns the value of vsize_factor in slurmctld_conf object
- */
-extern uint16_t slurm_get_vsize_factor(void);
 
 /* slurm_get_accounting_storage_type
  * returns the accounting storage type from slurmctld_conf object

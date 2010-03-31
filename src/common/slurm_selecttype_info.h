@@ -44,6 +44,7 @@
 #include <string.h>
 #include <slurm/slurm.h>
 
-int parse_select_type_param(char *select_type_parameters, uint16_t *param);
+int parse_select_type_param(char *select_type_parameters,
+				   select_type_plugin_info_t *param);
 
 #endif /*__SLURM_SELECTTYPE_INFO_H__*/
