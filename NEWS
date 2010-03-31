@@ -1,8 +1,11 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
-* Changes in SLURM 2.1.6-2
+* Changes in SLURM 2.1.7
 ========================
+
+* Changes in SLURM 2.1.6-2
+==========================
  -- In sched/wiki2 - Fix logic in support of Moab being able to identify
     preemptable jobs.
  -- Applied fixes to a debug4 message in priority_multifactor.c sent in by
