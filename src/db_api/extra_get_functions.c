@@ -49,11 +49,6 @@
 
 #include "src/common/slurm_accounting_storage.h"
 
-extern void defines()
-{
-	verbose("");
-}
-
 /*
  * get info from the storage
  * RET: List of config_key_pairs_t *

@@ -109,6 +109,8 @@ strong_alias(verbose,		slurm_verbose);
 strong_alias(debug,		slurm_debug);
 strong_alias(debug2,		slurm_debug2);
 strong_alias(debug3,		slurm_debug3);
+strong_alias(debug4,		slurm_debug4);
+strong_alias(debug5,		slurm_debug5);
 
 /*
 ** struct defining a "log" type

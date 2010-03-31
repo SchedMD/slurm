@@ -104,7 +104,8 @@ am__base_list = \
   sed '$$!N;$$!N;$$!N;$$!N;s/\n/ /g'
 am__installdirs = "$(DESTDIR)$(libdir)"
 LTLIBRARIES = $(lib_LTLIBRARIES)
-libslurmdb_la_DEPENDENCIES = $(top_builddir)/src/common/libcommon.la
+libslurmdb_la_DEPENDENCIES =  \
+	$(top_builddir)/src/api/libslurmhelper.la
 am_libslurmdb_la_OBJECTS = account_functions.lo archive_functions.lo \
 	assoc_functions.lo cluster_functions.lo \
 	cluster_report_functions.lo coord_functions.lo \
@@ -376,7 +377,7 @@ libslurmdb_la_SOURCES = \
 	user_report_functions.c \
 	wckey_functions.c
 
-libslurmdb_la_LIBADD = $(top_builddir)/src/common/libcommon.la
+libslurmdb_la_LIBADD = $(top_builddir)/src/api/libslurmhelper.la
 libslurmdb_la_LDFLAGS = \
         $(LIB_LDFLAGS) \
         -version-info $(current):$(rev):$(age) \
