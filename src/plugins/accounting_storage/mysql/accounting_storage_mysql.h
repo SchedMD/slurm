@@ -44,6 +44,21 @@
 #include <strings.h>
 #include <stdlib.h>
 
+/* we can't include common/slurm_xlator.h here since it contains
+ * list_push and list_pop which are mysql macros what for some reason
+ * are given to us.  So if you need something from the header just
+ * copy it here.
+ */
+#define	fatal			slurm_fatal
+#define	error			slurm_error
+#define	info			slurm_info
+#define	verbose			slurm_verbose
+#define	debug			slurm_debug
+#define	debug2			slurm_debug2
+#define	debug3			slurm_debug3
+#define	debug4			slurm_debug4
+#define	debug5			slurm_debug5
+
 #include "src/common/assoc_mgr.h"
 #include "src/common/slurmdbd_defs.h"
 #include "src/common/slurm_auth.h"

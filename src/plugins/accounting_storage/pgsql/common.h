@@ -42,6 +42,7 @@
 
 #include <strings.h>
 #include <stdlib.h>
+#include "src/common/slurm_xlator.h"
 #include "src/database/pgsql_common.h"
 #include "src/slurmdbd/read_config.h"
 #include "src/common/slurmdbd_defs.h"
