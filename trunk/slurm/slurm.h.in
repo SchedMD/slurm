@@ -1025,15 +1025,28 @@ typedef struct job_alloc_info_msg {
 	uint32_t job_id;	/* job ID */
 } job_alloc_info_msg_t;
 
+/* Current partition state information and used to set partition options
+ * using slurm_update_partition(). */
+#define PART_FLAG_DEFAULT	0x0001	/* Set if default partition */
+#define PART_FLAG_HIDDEN	0x0002	/* Set if partition is hidden */
+#define PART_FLAG_NO_ROOT	0x0004	/* Set if user root jobs disabled */
+#define PART_FLAG_ROOT_ONLY	0x0008	/* Set if only root can submit jobs */
+/* Used with slurm_update_partition() to clear flags associated with existing
+ * partitions. For example, if a partition is currently hidden and you want
+ * to make it visible then set flags to PART_FLAG_HIDDEN_CLR and call
+ * slurm_update_partition(). */
+#define PART_FLAG_DEFAULT_CLR	0x0100	/* Clear DEFAULT partition flag */
+#define PART_FLAG_HIDDEN_CLR	0x0200	/* Clear HIDDEN partition flag */
+#define PART_FLAG_NO_ROOT_CLR	0x0400	/* Clear NO_ROOT partition flag */
+#define PART_FLAG_ROOT_ONLY_CLR	0x0800	/* Clear ROOT_ONLY partition flag */
+
 typedef struct partition_info {
 	char *allow_alloc_nodes;/* list names of allowed allocating nodes */
 	char *allow_groups;	/* comma delimited list of groups,
 				 * null indicates all */
 	char *alternate; 	/* name of alternate partition */
-	uint16_t default_part;	/* 1 if this is default partition */
 	uint32_t default_time;	/* minutes, NO_VAL or INFINITE */
-	uint16_t disable_root_jobs; /* 1 if user root jobs disabled */
-	uint16_t hidden;	/* 1 if partition is hidden by default */
+	uint16_t flags;		/* see PART_FLAG_* above */
 	uint32_t max_nodes;	/* per job or INFINITE */
 	uint16_t max_share;	/* number of jobs to gang schedule */
 	uint32_t max_time;	/* minutes or INFINITE */
@@ -1044,8 +1057,7 @@ typedef struct partition_info {
 				 * start_range_2, .., -1  */
 	char *nodes;		/* list names of nodes in partition */
 	uint16_t priority;	/* scheduling priority for jobs */
-	uint16_t root_only;	/* 1 if allocate must come for user root */
-	uint16_t state_up;	/* see PARTITION_ stats above */
+	uint16_t state_up;	/* see PARTITION_ states above */
 	uint32_t total_cpus;	/* total number of cpus in the partition */
 	uint32_t total_nodes;	/* total number of nodes in the partition */
 } partition_info_t;

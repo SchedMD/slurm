@@ -1757,7 +1757,7 @@ extern int pack_ctld_job_step_info_response_msg(
 
 		if (((show_flags & SHOW_ALL) == 0)
 		    && (job_ptr->part_ptr)
-		    && (job_ptr->part_ptr->hidden))
+		    && (job_ptr->part_ptr->flags & PART_FLAG_HIDDEN))
 			continue;
 
 		if ((slurmctld_conf.private_data & PRIVATE_DATA_JOBS)

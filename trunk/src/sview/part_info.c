@@ -378,19 +378,23 @@ static const char *_set_part_msg(update_part_msg_t *part_msg,
 		part_msg->alternate = xstrdup(new_text);
 		break;
 	case SORTID_DEFAULT:
-		if (!strcasecmp(new_text, "yes"))
-			part_msg->default_part = 1;
-		else
-			part_msg->default_part = 0;
-
+		if (!strcasecmp(new_text, "yes")) {
+			part_msg->flags |= PART_FLAG_DEFAULT;
+			part_msg->flags &= (~PART_FLAG_DEFAULT_CLR);
+		} else {
+			part_msg->flags &= (~PART_FLAG_DEFAULT);
+			part_msg->flags |= PART_FLAG_DEFAULT_CLR;
+		}
 		type = "default";
 		break;
 	case SORTID_HIDDEN:
-		if (!strcasecmp(new_text, "yes"))
-			part_msg->hidden = 1;
-		else
-			part_msg->hidden = 0;
-
+		if (!strcasecmp(new_text, "yes")) {
+			part_msg->flags |= PART_FLAG_HIDDEN;
+			part_msg->flags &= (~PART_FLAG_HIDDEN_CLR);
+		} else {
+			part_msg->flags &= (~PART_FLAG_HIDDEN);
+			part_msg->flags |= PART_FLAG_HIDDEN_CLR;
+		}
 		type = "hidden";
 		break;
 	case SORTID_TIMELIMIT:
@@ -431,9 +435,11 @@ static const char *_set_part_msg(update_part_msg_t *part_msg,
 		break;
 	case SORTID_ROOT:
 		if (!strcasecmp(new_text, "yes")) {
-			part_msg->root_only = 1;
+			part_msg->flags |= PART_FLAG_ROOT_ONLY;
+			part_msg->flags &= (~PART_FLAG_ROOT_ONLY_CLR);
 		} else {
-			part_msg->root_only = 0;
+			part_msg->flags &= (~PART_FLAG_ROOT_ONLY);
+			part_msg->flags |= PART_FLAG_ROOT_ONLY_CLR;
 		}
 
 		type = "root";
@@ -802,7 +808,10 @@ static void _layout_part_record(GtkTreeView *treeview,
 			temp_char = tmp_cnt;
 			break;
 		case SORTID_DEFAULT:
-			yes_no = part_ptr->default_part;
+			if (part_ptr->flags & PART_FLAG_DEFAULT)
+				yes_no = 1;
+			else
+				yes_no = 0;
 			break;
 		case SORTID_FEATURES:
 			sview_part_sub = list_peek(sview_part_info->sub_list);
@@ -815,7 +824,10 @@ static void _layout_part_record(GtkTreeView *treeview,
 				temp_char = "all";
 			break;
 		case SORTID_HIDDEN:
-			yes_no = part_ptr->hidden;
+			if (part_ptr & PART_FLAG_HIDDEN)
+				yes_no = 1;
+			else
+				yes_no = 0;
 			break;
 		case SORTID_JOB_SIZE:
 			_build_min_max_32_string(time_buf, sizeof(time_buf),
@@ -864,7 +876,10 @@ static void _layout_part_record(GtkTreeView *treeview,
 			temp_char = sview_part_sub->features;
 			break;
 		case SORTID_ROOT:
-			yes_no = part_ptr->root_only;
+			if (part_ptr->flags & PART_FLAG_ROOT_ONLY)
+				yes_no = 1;
+			else
+				yes_no = 0;
 			break;
 		case SORTID_SHARE:
 			if(part_ptr->max_share & SHARED_FORCE) {
@@ -951,13 +966,13 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 
 	gtk_tree_store_set(treestore, iter, SORTID_NAME, part_ptr->name, -1);
 
-	if(part_ptr->default_part)
+	if(part_ptr->flags & PART_FLAG_DEFAULT)
 		temp_char = "yes";
 	else
 		temp_char = "no";
 	gtk_tree_store_set(treestore, iter, SORTID_DEFAULT, temp_char, -1);
 
-	if(part_ptr->hidden)
+	if(part_ptr->flags & PART_FLAG_HIDDEN)
 		temp_char = "yes";
 	else
 		temp_char = "no";
@@ -1017,7 +1032,7 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 	gtk_tree_store_set(treestore, iter, SORTID_NODES_MAX,
 			   time_buf, -1);
 
-	if(part_ptr->root_only)
+	if(part_ptr->flags & PART_FLAG_ROOT_ONLY)
 		temp_char = "yes";
 	else
 		temp_char = "no";

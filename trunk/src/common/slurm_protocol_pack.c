@@ -2569,39 +2569,59 @@ _pack_update_partition_msg(update_part_msg_t * msg, Buf buffer,
 	if(protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
 		packstr(msg->allow_groups, buffer);
 		packstr(msg->alternate,    buffer);
-		pack16(msg-> default_part, buffer);
 		pack32(msg-> max_time,     buffer);
 		pack32(msg-> default_time, buffer);
 		pack32(msg-> max_nodes,    buffer);
 		pack32(msg-> min_nodes,    buffer);
 		packstr(msg->name,         buffer);
 		packstr(msg->nodes,        buffer);
-		pack16(msg-> hidden,       buffer);
+		pack16(msg-> flags,        buffer);
 		pack16(msg-> max_share,    buffer);
 		pack16(msg-> priority,     buffer);
-		pack16(msg-> root_only,    buffer);
 		pack16(msg-> state_up,     buffer);
 
 		packstr(msg->allow_alloc_nodes, buffer);
 	} else {
-		uint16_t state;
+		uint16_t state, default_part, hidden, root_only;
+
 		if (msg-> state_up == PARTITION_UP)
 			state = 1;
 		else	/* DOWN, DRAIN or INACTIVE */
 			state = 0;
 
+		if (msg->flags & PART_FLAG_DEFAULT)
+			default_part = 1;
+		else if (msg->flags & PART_FLAG_DEFAULT_CLR)
+			default_part = 0;
+		else
+			default_part = (uint16_t) NO_VAL;
+
+		if (msg->flags & PART_FLAG_HIDDEN)
+			hidden = 1;
+		else if (msg->flags & PART_FLAG_HIDDEN_CLR)
+			hidden = 0;
+		else
+			hidden = (uint16_t) NO_VAL;
+
+		if (msg->flags & PART_FLAG_ROOT_ONLY)
+			root_only = 1;
+		else if (msg->flags & PART_FLAG_ROOT_ONLY_CLR)
+			root_only = 0;
+		else
+			root_only = (uint16_t) NO_VAL;
+
 		packstr(msg->allow_groups, buffer);
-		pack16(msg-> default_part, buffer);
+		pack16(default_part,       buffer);
 		pack32(msg-> max_time,     buffer);
 		pack32(msg-> default_time, buffer);
 		pack32(msg-> max_nodes,    buffer);
 		pack32(msg-> min_nodes,    buffer);
 		packstr(msg->name,         buffer);
 		packstr(msg->nodes,        buffer);
-		pack16(msg-> hidden,       buffer);
+		pack16(hidden,             buffer);
 		pack16(msg-> max_share,    buffer);
 		pack16(msg-> priority,     buffer);
-		pack16(msg-> root_only,    buffer);
+		pack16(root_only,          buffer);
 		pack16(state,              buffer);
 
 		packstr(msg->allow_alloc_nodes, buffer);
@@ -2625,7 +2645,6 @@ _unpack_update_partition_msg(update_part_msg_t ** msg, Buf buffer,
 		safe_unpackstr_xmalloc(&tmp_ptr->allow_groups,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&tmp_ptr->alternate, &uint32_tmp, buffer);
-		safe_unpack16(&tmp_ptr->default_part, buffer);
 		safe_unpack32(&tmp_ptr->max_time, buffer);
 		safe_unpack32(&tmp_ptr->default_time, buffer);
 		safe_unpack32(&tmp_ptr->max_nodes, buffer);
@@ -2633,20 +2652,25 @@ _unpack_update_partition_msg(update_part_msg_t ** msg, Buf buffer,
 		safe_unpackstr_xmalloc(&tmp_ptr->name, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&tmp_ptr->nodes, &uint32_tmp, buffer);
 
-		safe_unpack16(&tmp_ptr->hidden,    buffer);
+		safe_unpack16(&tmp_ptr->flags,     buffer);
 		safe_unpack16(&tmp_ptr->max_share, buffer);
 		safe_unpack16(&tmp_ptr->priority,  buffer);
-		safe_unpack16(&tmp_ptr->root_only, buffer);
 		safe_unpack16(&tmp_ptr->state_up,  buffer);
 
 		safe_unpackstr_xmalloc(&tmp_ptr->allow_alloc_nodes,
 				       &uint32_tmp, buffer);
 	} else {
-		uint16_t state;
+		uint16_t state, default_part, hidden, root_only;
 
 		safe_unpackstr_xmalloc(&tmp_ptr->allow_groups,
 				       &uint32_tmp, buffer);
-		safe_unpack16(&tmp_ptr->default_part, buffer);
+
+		safe_unpack16(&default_part, buffer);
+		if (default_part == 0)
+			tmp_ptr->flags |= PART_FLAG_DEFAULT_CLR;
+		else if (default_part == 1)
+			tmp_ptr->flags |= PART_FLAG_DEFAULT;
+
 		safe_unpack32(&tmp_ptr->max_time, buffer);
 		safe_unpack32(&tmp_ptr->default_time, buffer);
 		safe_unpack32(&tmp_ptr->max_nodes, buffer);
@@ -2654,10 +2678,21 @@ _unpack_update_partition_msg(update_part_msg_t ** msg, Buf buffer,
 		safe_unpackstr_xmalloc(&tmp_ptr->name, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&tmp_ptr->nodes, &uint32_tmp, buffer);
 
-		safe_unpack16(&tmp_ptr->hidden,    buffer);
+		safe_unpack16(&hidden,             buffer);
+		if (hidden == 0)
+			tmp_ptr->flags |= PART_FLAG_HIDDEN_CLR;
+		else if (hidden == 1)
+			tmp_ptr->flags |= PART_FLAG_HIDDEN;
+
 		safe_unpack16(&tmp_ptr->max_share, buffer);
 		safe_unpack16(&tmp_ptr->priority,  buffer);
-		safe_unpack16(&tmp_ptr->root_only, buffer);
+
+		safe_unpack16(&root_only,          buffer);
+		if (root_only == 0)
+			tmp_ptr->flags |= PART_FLAG_ROOT_ONLY_CLR;
+		else if (root_only == 1)
+			tmp_ptr->flags |= PART_FLAG_ROOT_ONLY;
+
 		safe_unpack16(&state,              buffer);
 		if (state == 1)
 			tmp_ptr->state_up = PARTITION_UP;
@@ -3226,10 +3261,7 @@ _unpack_partition_info_members(partition_info_t * part, Buf buffer,
 		safe_unpack32(&part->total_nodes,  buffer);
 
 		safe_unpack32(&part->total_cpus,   buffer);
-		safe_unpack16(&part->default_part, buffer);
-		safe_unpack16(&part->disable_root_jobs, buffer);
-		safe_unpack16(&part->hidden,       buffer);
-		safe_unpack16(&part->root_only,    buffer);
+		safe_unpack16(&part->flags,        buffer);
 		safe_unpack16(&part->max_share,    buffer);
 		safe_unpack16(&part->priority,     buffer);
 
@@ -3249,6 +3281,7 @@ _unpack_partition_info_members(partition_info_t * part, Buf buffer,
 			node_inx_str = NULL;
 		}
 	} else {
+		uint16_t default_part, disable_root_jobs, hidden, root_only;
 		safe_unpackstr_xmalloc(&part->name, &uint32_tmp, buffer);
 		if (part->name == NULL)
 			part->name = xmalloc(1);/* part->name = "" implicit */
@@ -3259,10 +3292,10 @@ _unpack_partition_info_members(partition_info_t * part, Buf buffer,
 		safe_unpack32(&part->total_nodes,  buffer);
 
 		safe_unpack32(&part->total_cpus,   buffer);
-		safe_unpack16(&part->default_part, buffer);
-		safe_unpack16(&part->disable_root_jobs, buffer);
-		safe_unpack16(&part->hidden,       buffer);
-		safe_unpack16(&part->root_only,    buffer);
+		safe_unpack16(&default_part,       buffer);
+		safe_unpack16(&disable_root_jobs,  buffer);
+		safe_unpack16(&hidden,             buffer);
+		safe_unpack16(&root_only,          buffer);
 		safe_unpack16(&part->max_share,    buffer);
 		safe_unpack16(&part->priority,     buffer);
 
@@ -3284,6 +3317,14 @@ _unpack_partition_info_members(partition_info_t * part, Buf buffer,
 			xfree(node_inx_str);
 			node_inx_str = NULL;
 		}
+		if (default_part)
+			part->flags |= PART_FLAG_DEFAULT;
+		if (disable_root_jobs)
+			part->flags |= PART_FLAG_NO_ROOT;
+		if (hidden)
+			part->flags |= PART_FLAG_HIDDEN;
+		if (root_only)
+			part->flags |= PART_FLAG_ROOT_ONLY;
 	}
 	return SLURM_SUCCESS;
 

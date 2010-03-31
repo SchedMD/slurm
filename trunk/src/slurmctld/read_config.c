@@ -446,12 +446,13 @@ static int _build_single_partitionline_info(slurm_conf_partition_t *part)
 		default_part_name = xstrdup(part->name);
 		default_part_loc = part_ptr;
 	}
-	if(part->disable_root_jobs == (uint16_t)NO_VAL)
-		part_ptr->disable_root_jobs = slurmctld_conf.disable_root_jobs;
-	else
-		part_ptr->disable_root_jobs = part->disable_root_jobs;
+	if(part->disable_root_jobs == (uint16_t)NO_VAL) {
+		if (slurmctld_conf.disable_root_jobs)
+			part_ptr->flags |= PART_FLAG_NO_ROOT;
+	} else if (part->disable_root_jobs)
+		part_ptr->flags |= PART_FLAG_NO_ROOT;
 
-	if(part_ptr->disable_root_jobs)
+	if(part_ptr->flags & PART_FLAG_NO_ROOT)
 		debug2("partition %s does not allow root jobs", part_ptr->name);
 
 	if ((part->default_time != NO_VAL) &&
@@ -461,7 +462,10 @@ static int _build_single_partitionline_info(slurm_conf_partition_t *part)
 		part->default_time = NO_VAL;
 	}
 
-	part_ptr->hidden         = part->hidden_flag ? 1 : 0;
+	if (part->hidden_flag)
+		part_ptr->flags |= PART_FLAG_HIDDEN;
+	if (part->root_only_flag)
+		part_ptr->flags |= PART_FLAG_ROOT_ONLY;
 	part_ptr->max_time       = part->max_time;
 	part_ptr->default_time   = part->default_time;
 	part_ptr->max_share      = part->max_share;
@@ -470,7 +474,6 @@ static int _build_single_partitionline_info(slurm_conf_partition_t *part)
 	part_ptr->min_nodes      = part->min_nodes;
 	part_ptr->min_nodes_orig = part->min_nodes;
 	part_ptr->priority       = part->priority;
-	part_ptr->root_only      = part->root_only_flag ? 1 : 0;
 	part_ptr->state_up       = part->state_up;
 	if (part->allow_groups) {
 		xfree(part_ptr->allow_groups);
@@ -972,17 +975,32 @@ static int  _restore_part_state(List old_part_list, char *old_def_part_name)
 				part_ptr->default_time = old_part_ptr->
 							 default_time;
 			}
-			if (part_ptr->disable_root_jobs !=
-			    old_part_ptr->disable_root_jobs) {
-				error("Partition %s DisableRootJobs differs "
-				      "from slurm.conf", part_ptr->name);
-				part_ptr->disable_root_jobs = old_part_ptr->
-							     disable_root_jobs;
-			}
-			if (part_ptr->hidden != old_part_ptr->hidden) {
+			if ((part_ptr->flags & PART_FLAG_HIDDEN) != 
+			    (old_part_ptr->flags & PART_FLAG_HIDDEN)) {
 				error("Partition %s Hidden differs from "
 				      "slurm.conf", part_ptr->name);
-				part_ptr->hidden = old_part_ptr->hidden;
+				if (old_part_ptr->flags & PART_FLAG_HIDDEN)
+					part_ptr->flags |= PART_FLAG_HIDDEN;
+				else
+					part_ptr->flags &= (~PART_FLAG_HIDDEN);
+			}
+			if ((part_ptr->flags & PART_FLAG_NO_ROOT) != 
+			    (old_part_ptr->flags & PART_FLAG_NO_ROOT)) {
+				error("Partition %s DisableRootJobs differs "
+				      "from slurm.conf", part_ptr->name);
+				if (old_part_ptr->flags & PART_FLAG_NO_ROOT)
+					part_ptr->flags |= PART_FLAG_NO_ROOT;
+				else
+					part_ptr->flags &= (~PART_FLAG_NO_ROOT);
+			}
+			if ((part_ptr->flags & PART_FLAG_ROOT_ONLY) != 
+			    (old_part_ptr->flags & PART_FLAG_ROOT_ONLY)) {
+				error("Partition %s RootOnly differs from "
+				      "slurm.conf", part_ptr->name);
+				if (old_part_ptr->flags & PART_FLAG_ROOT_ONLY)
+					part_ptr->flags |= PART_FLAG_ROOT_ONLY;
+				else
+					part_ptr->flags &= (~PART_FLAG_ROOT_ONLY);
 			}
 			if (part_ptr->max_nodes != old_part_ptr->max_nodes) {
 				error("Partition %s MaxNodes differs from "
@@ -1019,11 +1037,6 @@ static int  _restore_part_state(List old_part_list, char *old_def_part_name)
 				      "slurm.conf", part_ptr->name);
 				part_ptr->priority = old_part_ptr->priority;
 			}
-			if (part_ptr->root_only != old_part_ptr->root_only) {
-				error("Partition %s RootOnly differs from "
-				      "slurm.conf", part_ptr->name);
-				part_ptr->root_only = old_part_ptr->root_only;
-			}
 			if (part_ptr->state_up != old_part_ptr->state_up) {
 				error("Partition %s State differs from "
 				      "slurm.conf", part_ptr->name);
@@ -1039,9 +1052,7 @@ static int  _restore_part_state(List old_part_list, char *old_def_part_name)
 			part_ptr->allow_groups = xstrdup(old_part_ptr->
 							 allow_groups);
 			part_ptr->default_time = old_part_ptr->default_time;
-			part_ptr->disable_root_jobs = old_part_ptr->
-						      disable_root_jobs;
-			part_ptr->hidden = old_part_ptr->hidden;
+			part_ptr->flags = old_part_ptr->flags;
 			part_ptr->max_nodes = old_part_ptr->max_nodes;
 			part_ptr->max_nodes_orig = old_part_ptr->
 						   max_nodes_orig;
@@ -1052,7 +1063,6 @@ static int  _restore_part_state(List old_part_list, char *old_def_part_name)
 						   min_nodes_orig;
 			part_ptr->nodes = xstrdup(old_part_ptr->nodes);
 			part_ptr->priority = old_part_ptr->priority;
-			part_ptr->root_only = old_part_ptr->root_only;
 			part_ptr->state_up = old_part_ptr->state_up;
 		}
 	}

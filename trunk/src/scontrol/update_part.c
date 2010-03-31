@@ -117,9 +117,9 @@ scontrol_parse_part_options (int argc, char *argv[], int *update_cnt_ptr,
 		}
 		else if (strncasecmp(tag, "Default", MAX(taglen, 7)) == 0) {
 			if (strncasecmp(val, "NO", MAX(vallen, 1)) == 0)
-				part_msg_ptr->default_part = 0;
+				part_msg_ptr->flags |= PART_FLAG_DEFAULT_CLR;
 			else if (strncasecmp(val, "YES", MAX(vallen, 1)) == 0)
-				part_msg_ptr->default_part = 1;
+				part_msg_ptr->flags |= PART_FLAG_DEFAULT;
 			else {
 				exit_code = 1;
 				error("Invalid input: %s", argv[i]);
@@ -129,11 +129,25 @@ scontrol_parse_part_options (int argc, char *argv[], int *update_cnt_ptr,
 			}
 			(*update_cnt_ptr)++;
 		}
+		else if (!strncasecmp(tag, "DisableRootJobs", MAX(taglen, 1))) {
+			if (strncasecmp(val, "NO", MAX(vallen, 1)) == 0)
+				part_msg_ptr->flags |= PART_FLAG_NO_ROOT_CLR;
+			else if (strncasecmp(val, "YES", MAX(vallen, 1)) == 0)
+				part_msg_ptr->flags |= PART_FLAG_NO_ROOT;
+			else {
+				exit_code = 1;
+				error("Invalid input: %s", argv[i]);
+				error("Acceptable DisableRootJobs values "
+					"are YES and NO");
+				return -1;
+			}
+			(*update_cnt_ptr)++;
+		}
 		else if (strncasecmp(tag, "Hidden", MAX(taglen, 1)) == 0) {
 			if (strncasecmp(val, "NO", MAX(vallen, 1)) == 0)
-				part_msg_ptr->hidden = 0;
+				part_msg_ptr->flags |= PART_FLAG_HIDDEN_CLR;
 			else if (strncasecmp(val, "YES", MAX(vallen, 1)) == 0)
-				part_msg_ptr->hidden = 1;
+				part_msg_ptr->flags |= PART_FLAG_HIDDEN;
 			else {
 				exit_code = 1;
 				error("Invalid input: %s", argv[i]);
@@ -145,9 +159,9 @@ scontrol_parse_part_options (int argc, char *argv[], int *update_cnt_ptr,
 		}
 		else if (strncasecmp(tag, "RootOnly", MAX(taglen, 1)) == 0) {
 			if (strncasecmp(val, "NO", MAX(vallen, 1)) == 0)
-				part_msg_ptr->root_only = 0;
+				part_msg_ptr->flags |= PART_FLAG_ROOT_ONLY_CLR;
 			else if (strncasecmp(val, "YES", MAX(vallen, 1)) == 0)
-				part_msg_ptr->root_only = 1;
+				part_msg_ptr->flags |= PART_FLAG_ROOT_ONLY;
 			else {
 				exit_code = 1;
 				error("Invalid input: %s", argv[i]);

@@ -141,6 +141,7 @@ job_desc_msg_t
 
 partition_info_t
 	state_up (new states added PARTITION_DRAIN and PARTITION_INACTIVE)
+	default_part, disable_root_jobs, hidden and root_only -> flags
 
 slurm_step_ctx_params_t
 	node_count ->min_nodes

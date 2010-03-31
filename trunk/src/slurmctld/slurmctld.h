@@ -198,8 +198,7 @@ struct part_record {
 	uid_t *allow_uids;	/* zero terminated list of allowed users */
 	char *alternate; 	/* name of alternate partition */
 	uint32_t default_time;	/* minutes, NO_VAL or INFINITE */
-	uint16_t disable_root_jobs; /* if set then user root can't run jobs */
-	uint16_t hidden;	/* 1 if hidden by default */
+	uint16_t flags;		/* see PART_FLAG_* in slurm.h */
 	uint32_t magic;		/* magic cookie to test data integrity */
 	uint32_t max_nodes;	/* per job or INFINITE */
 	uint32_t max_nodes_orig;/* unscaled value (c-nodes on BlueGene) */
@@ -218,8 +217,6 @@ struct part_record {
 	uint16_t state_up;	/* See PARTITION_* states in slurm.h */
 	uint32_t total_nodes;	/* total number of nodes in the partition */
 	uint32_t total_cpus;	/* total number of cpus in the partition */
-	uint16_t root_only;	/* 1 if allocate/submit RPC can only be
-				   issued by user root */
 };
 
 extern List part_list;			/* list of part_record entries */

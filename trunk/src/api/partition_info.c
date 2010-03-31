@@ -2,7 +2,7 @@
  *  partition_info.c - get/print the partition state information of slurm
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov> et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -142,7 +142,7 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 		xstrcat(out, tmp_line);
 	}
 
-	if (part_ptr->default_part)
+	if (part_ptr->flags & PART_FLAG_DEFAULT)
 		sprintf(tmp_line, " Default=YES");
 	else
 		sprintf(tmp_line, " Default=NO");
@@ -179,13 +179,13 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 		sprintf(tmp_line, "DefaultTime=%s", time_line);
 	}
 	xstrcat(out, tmp_line);
-	if (part_ptr->disable_root_jobs)
+	if (part_ptr->flags & PART_FLAG_NO_ROOT)
 		sprintf(tmp_line, " DisableRootJobs=YES");
 	else
 		sprintf(tmp_line, " DisableRootJobs=NO");
 	xstrcat(out, tmp_line);
 
-	if (part_ptr->hidden)
+	if (part_ptr->flags & PART_FLAG_HIDDEN)
 		sprintf(tmp_line, " Hidden=YES");
 	else
 		sprintf(tmp_line, " Hidden=NO");
@@ -250,7 +250,7 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 
 	sprintf(tmp_line, "Priority=%u", part_ptr->priority);
 	xstrcat(out, tmp_line);
-	if (part_ptr->root_only)
+	if (part_ptr->flags & PART_FLAG_ROOT_ONLY)
 		sprintf(tmp_line, " RootOnly=YES");
 	else
 		sprintf(tmp_line, " RootOnly=NO");
