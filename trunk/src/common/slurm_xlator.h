@@ -295,6 +295,12 @@
 /* slurm_protocol_defs.[ch] functions */
 #define conn_type_string	slurm_conn_type_string
 
+/* slurmdbd_defs.[ch] functions */
+#define slurmdbd_free_list_msg	slurmdb_slurmdbd_free_list_msg
+#define slurmdbd_free_rc_msg    slurmdb_slurmdbd_free_rc_msg
+#define slurmdbd_free_usage_msg slurmdb_slurmdbd_free_usage_msg
+#define slurmdbd_free_id_rc_msg slurmdb_slurmdbd_free_id_rc_msg
+
 #endif /* USE_ALIAS */
 
 /* Include the function definitions after redefining their names. */
