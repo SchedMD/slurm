@@ -61,6 +61,12 @@
 #include "src/common/xstring.h"
 #include "src/slurmctld/slurmctld.h"
 
+/* These are defined here so when we link with something other than
+ * the slurmctld we will have these symbols defined.  They will get
+ * overwritten when linking with the slurmctld.
+ */
+slurm_ctl_conf_t slurmctld_conf;
+
 /*
  * These variables are required by the generic plugin interface.  If they
  * are not found in the plugin, the plugin loader will ignore it.

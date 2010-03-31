@@ -63,6 +63,13 @@
 #include "src/plugins/select/bluegene/wrap_rm_api.h"
 #endif
 
+/*
+** Define slurm-specific aliases for use by plugins, see slurm_xlator.h
+** for details.
+ */
+strong_alias(conn_type_string,	slurm_conn_type_string);
+
+
 static void _free_all_job_info (job_info_msg_t *msg);
 
 static void _free_all_node_info (node_info_msg_t *msg);

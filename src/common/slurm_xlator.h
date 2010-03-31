@@ -290,6 +290,9 @@
 #define	xstrdup			slurm_xstrdup
 #define	xbasename		slurm_xbasename
 
+/* slurm_protocol_defs.[ch] functions */
+#define conn_type_string	slurm_conn_type_string
+
 #endif /* USE_ALIAS */
 
 /* Include the function definitions after redefining their names. */
