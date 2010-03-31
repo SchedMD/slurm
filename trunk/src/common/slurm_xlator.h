@@ -205,6 +205,8 @@
 #define	debug			slurm_debug
 #define	debug2			slurm_debug2
 #define	debug3			slurm_debug3
+#define	debug4			slurm_debug4
+#define	debug5			slurm_debug5
 
 /* macros.h functions
  * None exported today.
