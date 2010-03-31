@@ -824,7 +824,7 @@ static void _layout_part_record(GtkTreeView *treeview,
 				temp_char = "all";
 			break;
 		case SORTID_HIDDEN:
-			if (part_ptr & PART_FLAG_HIDDEN)
+			if (part_ptr->flags & PART_FLAG_HIDDEN)
 				yes_no = 1;
 			else
 				yes_no = 0;
