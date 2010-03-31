@@ -695,9 +695,9 @@ static int _breakup_blocks(List block_list, List new_blocks,
 				total_cnode_cnt += bg_record->node_cnt;
 
 			bit_fmt(bitstring, BITSIZE, ionodes);
-			debug2("1 adding %s %d got %d set "
+			debug2("1 adding %s %s %d got %d set "
 			       "ionodes %s total is %s",
-			       bg_record->bg_block_id,
+			       bg_record->bg_block_id, bg_record->nodes,
 			       bg_record->node_cnt, total_cnode_cnt,
 			       bg_record->ionodes, bitstring);
 			if(total_cnode_cnt == cnodes) {
