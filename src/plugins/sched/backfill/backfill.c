@@ -443,7 +443,7 @@ static void _attempt_backfill(void)
 		if (((part_ptr->state_up & PARTITION_SCHED) == 0) ||
 		    (part_ptr->node_bitmap == NULL))
 		 	continue;
-		if ((part_ptr->root_only) && filter_root)
+		if ((part_ptr->flags & PART_FLAG_ROOT_ONLY) && filter_root)
 			continue;
 
 		if ((!job_independent(job_ptr, 0)) ||

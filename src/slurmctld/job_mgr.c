@@ -2350,7 +2350,7 @@ extern int job_signal(uint32_t job_id, uint16_t signal, uint16_t batch_flag,
 		return ESLURM_ACCESS_DENIED;
 	}
 	if ((!super_user) && (signal == SIGKILL) && job_ptr->part_ptr &&
-	    (job_ptr->part_ptr->root_only) && wiki2_sched) {
+	    (job_ptr->part_ptr->flags & PART_FLAG_ROOT_ONLY) && wiki2_sched) {
 		info("Attempt to cancel Moab job using Slurm command from "
 		     "uid %d", uid);
 		return ESLURM_ACCESS_DENIED;
@@ -2742,13 +2742,13 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	if ((error_code = _validate_job_desc(job_desc, allocate, submit_uid)))
 		return error_code;
 
-	if ((job_desc->user_id == 0) && part_ptr->disable_root_jobs) {
+	if ((job_desc->user_id == 0) && (part_ptr->flags & PART_FLAG_NO_ROOT)) {
 		error("Security violation, SUBMIT_JOB for user root disabled");
 		return ESLURM_USER_ID_MISSING;
 	}
 
 	/* can this user access this partition */
-	if ((part_ptr->root_only) && (submit_uid != 0)) {
+	if ((part_ptr->flags & PART_FLAG_ROOT_ONLY) && (submit_uid != 0)) {
 		info("_job_create: uid %u access to partition %s denied, %s",
 		     (unsigned int) submit_uid, part_ptr->name, "not root");
 		error_code = ESLURM_ACCESS_DENIED;
@@ -3962,7 +3962,7 @@ void job_time_limit(void)
 		if (slurmctld_conf.inactive_limit &&
 		    (job_ptr->time_last_active <= old) &&
 		    (job_ptr->part_ptr) &&
-		    (job_ptr->part_ptr->root_only == 0)) {
+		    (!(job_ptr->part_ptr->flags & PART_FLAG_ROOT_ONLY))) {
 			/* job inactive, kill it */
 			info("Inactivity time limit reached for JobId=%u",
 			     job_ptr->job_id);
@@ -4450,7 +4450,7 @@ extern void pack_all_jobs(char **buffer_ptr, int *buffer_size,
 
 		if (((show_flags & SHOW_ALL) == 0) && (uid != 0) &&
 		    (job_ptr->part_ptr) &&
-		    (job_ptr->part_ptr->hidden))
+		    (job_ptr->part_ptr->flags & PART_FLAG_HIDDEN))
 			continue;
 
 		if ((slurmctld_conf.private_data & PRIVATE_DATA_JOBS) &&

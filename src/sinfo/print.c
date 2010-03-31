@@ -649,7 +649,7 @@ int _print_partition(sinfo_data_t * sinfo_data, int width,
 		else {
 			char *tmp;
 			tmp = xstrdup(sinfo_data->part_info->name);
-			if (sinfo_data->part_info->default_part) {
+			if (sinfo_data->part_info->flags & PART_FLAG_DEFAULT) {
 				if (strlen(tmp) < width)
 					xstrcat(tmp, "*");
 				else if (width > 0)
@@ -714,7 +714,7 @@ int _print_root(sinfo_data_t * sinfo_data, int width,
 	if (sinfo_data) {
 		if (sinfo_data->part_info == NULL)
 			_print_str("n/a", width, right_justify, true);
-		else if (sinfo_data->part_info->root_only)
+		else if (sinfo_data->part_info->flags & PART_FLAG_ROOT_ONLY)
 			_print_str("yes", width, right_justify, true);
 		else
 			_print_str("no", width, right_justify, true);

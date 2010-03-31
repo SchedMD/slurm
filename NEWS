@@ -8,6 +8,11 @@ documents those changes that are of interest to users and admins.
  -- Add slurmd option of "-C" to print actual hardware configuration and exit.
  -- Pass EnforcePartLimits configuration parameter from slurmctld for user
     commands to see the correct value instead of always "NO".
+ -- Modify partition data structures to replace the default_part,
+    disable_root_jobs, hidden and root_only fields with a single field called
+    "flags" populated with the flags PART_FLAG_DEFAULT, PART_FLAG_NO_ROOT
+    PART_FLAG_HIDDEN and/or PART_FLAG_ROOT_ONLY. This is a more flexible
+    solution besides making for smaller data structures.
 
 * Changes in SLURM 2.2.0.pre4
 =============================

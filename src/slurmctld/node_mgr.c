@@ -502,7 +502,7 @@ static bool _node_is_hidden(struct node_record *node_ptr)
 	bool shown = false;
 
 	for (i=0; i<node_ptr->part_cnt; i++) {
-		if (node_ptr->part_pptr[i]->hidden == 0) {
+		if (!(node_ptr->part_pptr[i]->flags & PART_FLAG_HIDDEN)) {
 			shown = true;
 			break;
 		}

@@ -19,10 +19,8 @@ part_info_to_hv(partition_info_t* part_info, HV* hv)
 		STORE_FIELD(hv, part_info, allow_alloc_nodes, charp);
 	if (part_info->allow_groups)
 		STORE_FIELD(hv, part_info, allow_groups, charp);
-	STORE_FIELD(hv, part_info, default_part, uint16_t);
 	STORE_FIELD(hv, part_info, default_time, uint32_t);
-	STORE_FIELD(hv, part_info, disable_root_jobs, uint16_t);
-	STORE_FIELD(hv, part_info, hidden, uint16_t);
+	STORE_FIELD(hv, part_info, flags, uint16_t);
 	STORE_FIELD(hv, part_info, max_nodes, uint32_t);
 	STORE_FIELD(hv, part_info, max_share, uint16_t);
 	STORE_FIELD(hv, part_info, max_time, uint32_t);
@@ -49,7 +47,6 @@ part_info_to_hv(partition_info_t* part_info, HV* hv)
 	if (part_info->nodes)
 		STORE_FIELD(hv, part_info, nodes, charp);
 	STORE_FIELD(hv, part_info, priority, uint16_t);
-	STORE_FIELD(hv, part_info, root_only, uint16_t);
 	STORE_FIELD(hv, part_info, state_up, uint16_t);
 	STORE_FIELD(hv, part_info, total_cpus, uint32_t);
 	STORE_FIELD(hv, part_info, total_nodes, uint32_t);
@@ -91,10 +88,8 @@ hv_to_update_part_msg(HV* hv, update_part_msg_t* part_msg)
 	
 	FETCH_FIELD(hv, part_msg, allow_alloc_nodes, charp, FALSE);
 	FETCH_FIELD(hv, part_msg, allow_groups, charp, FALSE);
-	FETCH_FIELD(hv, part_msg, default_part, uint16_t, FALSE);
 	FETCH_FIELD(hv, part_msg, default_time, uint32_t, FALSE);
-	FETCH_FIELD(hv, part_msg, disable_root_jobs, uint16_t, FALSE);
-	FETCH_FIELD(hv, part_msg, hidden, uint16_t, FALSE);
+	FETCH_FIELD(hv, part_msg, flags, uint16_t, FALSE);
 	FETCH_FIELD(hv, part_msg, max_nodes, uint32_t, FALSE);
 	FETCH_FIELD(hv, part_msg, max_share, uint16_t, FALSE);
 	FETCH_FIELD(hv, part_msg, max_time, uint32_t, FALSE);
@@ -103,7 +98,6 @@ hv_to_update_part_msg(HV* hv, update_part_msg_t* part_msg)
 	/*not used node_inx */
 	FETCH_FIELD(hv, part_msg, nodes, charp, FALSE);
 	FETCH_FIELD(hv, part_msg, priority, uint16_t, FALSE);
-	FETCH_FIELD(hv, part_msg, root_only, uint16_t, FALSE);
 	FETCH_FIELD(hv, part_msg, state_up, uint16_t, FALSE);
 	FETCH_FIELD(hv, part_msg, total_cpus, uint32_t, FALSE);
 	FETCH_FIELD(hv, part_msg, total_nodes, uint32_t, FALSE);

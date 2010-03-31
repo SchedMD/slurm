@@ -162,7 +162,7 @@ extern void get_slurm_part()
 		}
 		if(!params.commandline) {
 			if(i>=text_line_cnt) {
-				part.root_only = (int) letters[count%62];
+				part.flags = (int) letters[count%62];
 				wattron(text_win,
 					COLOR_PAIR(colors[count%6]));
 				_print_text_part(&part, NULL);
@@ -170,7 +170,7 @@ extern void get_slurm_part()
 					 COLOR_PAIR(colors[count%6]));
 			}
 		} else {
-			part.root_only = (int) letters[count%62];
+			part.flags = (int) letters[count%62];
 			_print_text_part(&part, NULL);
 		}
 		count++;
@@ -579,10 +579,13 @@ static int _print_text_part(partition_info_t *part_ptr,
 #endif
 
 	if(!params.commandline) {
+		uint16_t root_only = 0;
+		if (part_ptr->flags & PART_FLAG_ROOT_ONLY)
+			root_only = 1;
 		mvwprintw(text_win,
 			  main_ycord,
 			  main_xcord, "%c",
-			  part_ptr->root_only);
+			  root_only);
 		main_xcord += 4;
 
 		if (part_ptr->name) {
@@ -912,7 +915,7 @@ static int _print_rest(db2_block_info_t *block_ptr)
 	if (!block_ptr->printed)
 		return SLURM_SUCCESS;
 	part.allow_groups = block_ptr->nodes;
-	part.root_only = (int) letters[block_ptr->letter_num%62];
+	part.flags = (int) letters[block_ptr->letter_num%62];
 	if(!params.commandline) {
 		wattron(text_win,
 			COLOR_PAIR(colors[block_ptr->letter_num%6]));

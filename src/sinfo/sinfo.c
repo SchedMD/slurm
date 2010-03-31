@@ -610,7 +610,8 @@ static bool _match_part_data(sinfo_data_t *sinfo_ptr,
 		return false;
 
 	if (params.match_flags.root_flag &&
-	    (part_ptr->root_only != sinfo_ptr->part_info->root_only))
+	    ((part_ptr->flags & PART_FLAG_ROOT_ONLY) !=
+	     (sinfo_ptr->part_info->flags & PART_FLAG_ROOT_ONLY)))
 		return false;
 
 	if (params.match_flags.share_flag &&

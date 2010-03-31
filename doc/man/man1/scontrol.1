@@ -698,11 +698,17 @@ then MaxTime will be used.
 Format is the same as for MaxTime.
 
 .TP
+\fIDisableRootJobs\fP=<yes|no>
+Specify if jobs can be executed as user roo.
+Possible values are "YES" and "NO".
+
+.TP
 \fIHidden\fP=<yes|no>
 Specify if the partition and its jobs should be hidden from view.
 Hidden partitions will by default not be reported by SLURM APIs
 or commands.
 Possible values are "YES" and "NO".
+
 .TP
 \fIMaxNodes\fP=<count>
 Set the maximum number of nodes which will be allocated to any single job
