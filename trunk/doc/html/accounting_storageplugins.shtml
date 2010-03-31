@@ -768,8 +768,12 @@ running on the host is grabbed from the connection.<br>
 <p class="commandline">
 int jobacct_storage_p_job_start(void *db_conn, struct job_record *job_ptr)
 <p style="margin-left:.2in"><b>Description</b>:<br>
-jobacct_storage_p_job_start() is called in the jobacct plugin when a
-job starts, inserting information into the database about the new job.
+Note that a job is about to begin execution or has just changed size.
+The job's state will include the JOB_RESIZING flag if and only if it has
+just changed size. Otherwise the job is beginning execution for the first time.
+Note the existance of <i>resize_time</i> in the job record if one wishes to
+record information about a job at each size (i.e. a history of the job as
+its size changes through time).</p>
 <p style="margin-left:.2in"><b>Arguments</b>: <br>
 <span class="commandline">db_conn</span> (input) connection to
 the storage type.<br>
@@ -782,8 +786,12 @@ slurmctld.
 <p class="commandline">
 int jobacct_storage_p_job_complete(void *db_conn, struct job_record *job_ptr)
 <p style="margin-left:.2in"><b>Description</b>:<br>
-jobacct_storage_p_job_complete() is called in the jobacct plugin when
-a job completes, this updates info about end of a job.
+Note that a job is about to terminate or change size.
+The job's state will include the JOB_RESIZING flag if and only if it is about
+to change size. Otherwise the job is terminating.
+Note the existance of <i>resize_time</i> in the job record if one wishes to
+record information about a job at each size (i.e. a history of the job as
+its size changes through time).</p>
 <p style="margin-left:.2in"><b>Arguments</b>: <br>
 <span class="commandline">db_conn</span> (input) connection to
 the storage type.<br>
@@ -940,6 +948,6 @@ ability to implement a particular API version using the mechanism outlined
 for SLURM plugins.
 <p class="footer"><a href="#top">top</a>
 
-<p style="text-align:center;">Last modified 2 March 2009</p>
+<p style="text-align:center;">Last modified 29 March 2010</p>
 
 <!--#include virtual="footer.txt"-->

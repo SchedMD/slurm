@@ -589,23 +589,38 @@ extern int jobacct_storage_p_job_complete(void *db_conn,
 					  struct job_record *job_ptr)
 {
 	char buf[BUFFER_SIZE];
+	uint16_t job_state;
+	int duration;
+
 	if(!storage_init) {
 		debug("jobacct init was not called or it failed");
 		return SLURM_ERROR;
 	}
 
 	debug2("slurmdb_job_complete() called");
-	if (job_ptr->end_time == 0) {
-		debug("jobacct: job %u never started", job_ptr->job_id);
-		return SLURM_ERROR;
+	if (job_ptr->job_state & JOB_RESIZING) {
+		job_state = JOB_RESIZING;
+		if (job_ptr->resize_time)
+			duration = time(NULL) - job_ptr->resize_time;
+		else
+			duration = time(NULL) - job_ptr->start_time;
+	} else {
+		if (job_ptr->end_time == 0) {
+			debug("jobacct: job %u never started", job_ptr->job_id);
+			return SLURM_ERROR;
+		}
+		job_state = job_ptr->job_state & JOB_STATE_BASE;
+		if (job_ptr->resize_time)
+			duration = job_ptr->end_time - job_ptr->resize_time;
+		else
+			duration = job_ptr->end_time - job_ptr->start_time;
 	}
+
 	/* leave the requid as a %d since we want to see if it is -1
 	   in stats */
-	snprintf(buf, BUFFER_SIZE, "%d %d %d %u %u",
-		 JOB_TERMINATED,
-		 (int) (job_ptr->end_time - job_ptr->start_time),
-		 job_ptr->job_state & JOB_STATE_BASE,
-		 job_ptr->requid, job_ptr->exit_code);
+	snprintf(buf, BUFFER_SIZE, "%d %d %u %u %u",
+		 JOB_TERMINATED, duration,
+		 job_state, job_ptr->requid, job_ptr->exit_code);
 
 	return  _print_record(job_ptr, job_ptr->end_time, buf);
 }

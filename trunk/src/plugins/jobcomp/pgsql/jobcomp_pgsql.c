@@ -312,7 +312,7 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 		*blockid = NULL;
 	enum job_states job_state;
 	char *query = NULL;
-	uint32_t time_limit;
+	uint32_t time_limit, start_time, end_time;
 
 	if(!jobcomp_pgsql_db || PQstatus(jobcomp_pgsql_db) != CONNECTION_OK) {
 		char *loc = slurm_get_jobcomp_loc();
@@ -340,7 +340,21 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 	/* Job will typically be COMPLETING when this is called.
 	 * We remove the flags to get the eventual completion state:
 	 * JOB_FAILED, JOB_TIMEOUT, etc. */
-	job_state = job_ptr->job_state & JOB_STATE_BASE;
+	if (job_ptr->job_state & JOB_RESIZING) {
+		job_state = JOB_RESIZING;
+		if (job_ptr->resize_time)
+			start_time = job_ptr->resize_time;
+		else
+			start_time = job_ptr->start_time;
+		end_time = time(NULL);
+	} else {
+		job_state = job_ptr->job_state & JOB_STATE_BASE;
+		if (job_ptr->resize_time)
+			start_time = job_ptr->resize_time;
+		else
+			start_time = job_ptr->start_time;
+		end_time = job_ptr->end_time;
+	}
 
 	connect_type = select_g_select_jobinfo_xstrdup(job_ptr->select_jobinfo,
 						       SELECT_PRINT_CONNECTION);
@@ -387,8 +401,7 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 		   job_ptr->job_id, job_ptr->user_id, usr_str,
 		   job_ptr->group_id, grp_str, job_ptr->name,
 		   job_state, job_ptr->total_cpus, job_ptr->partition, lim_str,
-		   (int)job_ptr->start_time, (int)job_ptr->end_time,
-		   job_ptr->node_cnt);
+		   start_time, end_time, job_ptr->node_cnt);
 
 	if(job_ptr->nodes)
 		xstrfmtcat(query, ", '%s'", job_ptr->nodes);

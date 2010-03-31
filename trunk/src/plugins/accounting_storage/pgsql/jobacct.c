@@ -371,8 +371,8 @@ js_p_job_start(pgsql_conn_t *pg_conn,
 	int rc=SLURM_SUCCESS, track_steps = 0, reinit = 0;
 	char *jname = NULL, *nodes = NULL, *node_inx = NULL;
 	char *block_id = NULL, *rec = NULL, *query = NULL;
-	time_t check_time;
-	int node_cnt = 0;
+	time_t begin_time, check_time, start_time, submit_time;
+	int job_state, node_cnt = 0;
 	uint32_t wckeyid = 0;
 
 	if (!job_ptr->details || !job_ptr->details->submit_time) {
@@ -385,16 +385,29 @@ js_p_job_start(pgsql_conn_t *pg_conn,
 		return ESLURM_DB_CONNECTION;
 
 	debug3("as/pg: job_start() called");
+	if (job_ptr->resize_time) {
+		begin_time  = job_ptr->resize_time;
+		submit_time = job_ptr->resize_time;
+		start_time  = job_ptr->resize_time;
+	} else {
+		begin_time  = job_ptr->details->begin_time;
+		submit_time = job_ptr->details->submit_time;
+		start_time  = job_ptr->start_time;
+	}
+	if (job_ptr->job_state & JOB_RESIZING)
+		job_state = JOB_RESIZING;
+	else
+		job_state = job_ptr->job_state & JOB_STATE_BASE;
 
 	/* See what we are hearing about here if no start time. If
 	 * this job latest time is before the last roll up we will
 	 * need to reset it to look at this job. */
-	check_time = job_ptr->start_time;
-	if(!check_time) {
-		check_time = job_ptr->details->begin_time;
-		if(!check_time)
-			check_time = job_ptr->details->submit_time;
-	}
+	if (start_time)
+		check_time = start_time;
+	else if (begin_time)
+		check_time = begin_time;
+	else
+		check_time = submit_time;
 
 	slurm_mutex_lock(&rollup_lock);
 	if(check_time < global_last_rollup) {
@@ -406,9 +419,7 @@ js_p_job_start(pgsql_conn_t *pg_conn,
 				       "submit=%d AND eligible=%d "
 				       "AND start=%d;",
 				       job_table, job_ptr->job_id,
-				       job_ptr->details->submit_time,
-				       job_ptr->details->begin_time,
-				       job_ptr->start_time);
+				       submit_time, begin_time, start_time);
 		result = DEF_QUERY_RET;
 		if(!result) {
 			slurm_mutex_unlock(&rollup_lock);
@@ -424,13 +435,13 @@ js_p_job_start(pgsql_conn_t *pg_conn,
 		}
 		PQclear(result);
 
-		if(job_ptr->start_time)
+		if(start_time)
 			debug("Need to reroll usage from %sJob %u "
 			      "from %s started then and we are just "
 			      "now hearing about it.",
 			      ctime(&check_time),
 			      job_ptr->job_id, pg_conn->cluster_name);
-		else if(job_ptr->details->begin_time)
+		else if(begin_time)
 			debug("Need to reroll usage from %sJob %u "
 			      "from %s became eligible then and we are just "
 			      "now hearing about it.",
@@ -496,8 +507,7 @@ no_rollup_change:
 
 	/* If there is a start_time get the wckeyid.  If the job is
 	 * cancelled before the job starts we also want to grab it. */
-	if(job_ptr->assoc_id
-	   && (job_ptr->start_time || IS_JOB_CANCELLED(job_ptr)))
+	if(job_ptr->assoc_id && (start_time || IS_JOB_CANCELLED(job_ptr)))
 		wckeyid = get_wckeyid(pg_conn, &job_ptr->wckey,
 				      job_ptr->user_id, pg_conn->cluster_name,
 				      job_ptr->assoc_id);
@@ -509,9 +519,8 @@ no_rollup_change:
 	 * them by zeroing out the end.
 	 */
 	if(!job_ptr->db_index) {
-		if (!job_ptr->details->begin_time)
-			job_ptr->details->begin_time =
-				job_ptr->details->submit_time;
+		if (!begin_time)
+			begin_time = submit_time;
 
 		rec = xstrdup_printf(
 			"(0, 0, %u, %u, '%s', %u, %u, %u, "
@@ -533,16 +542,16 @@ no_rollup_change:
 			block_id ?: "",
 			job_ptr->account ?: "",
 
-			job_ptr->details->begin_time,
-			job_ptr->details->submit_time,
-			job_ptr->start_time,
+			begin_time,
+			submit_time,
+			start_time,
 			/* endtime=0 */
 			/* suspended=0 */
 			job_ptr->time_limit,
 
 			jname,
 			track_steps,
-			job_ptr->job_state & JOB_STATE_BASE,
+			job_state,
 			/* comp_code=0 */
 			job_ptr->priority,
 			job_ptr->details->min_cpus,
@@ -592,8 +601,7 @@ no_rollup_change:
 		xstrfmtcat(query, "start=%d, name='%s', state=%u, "
 			   "alloc_cpus=%u, alloc_nodes=%u, associd=%u, "
 			   "wckeyid=%u, resvid=%u, timelimit=%d WHERE id=%d;",
-			   (int)job_ptr->start_time,
-			   jname, job_ptr->job_state & JOB_STATE_BASE,
+			   start_time, jname, job_state,
 			   job_ptr->total_cpus, node_cnt,
 			   job_ptr->assoc_id, wckeyid, job_ptr->resv_id,
 			   job_ptr->time_limit, job_ptr->db_index);
@@ -617,8 +625,8 @@ js_p_job_complete(pgsql_conn_t *pg_conn,
 		  struct job_record *job_ptr)
 {
 	char *query = NULL, *nodes = NULL;
-	int rc=SLURM_SUCCESS;
-	time_t start_time = job_ptr->start_time;
+	int rc = SLURM_SUCCESS, job_state;
+	time_t start_time, end_time;
 
 	if (!job_ptr->db_index
 	    && (!job_ptr->details || !job_ptr->details->submit_time)) {
@@ -632,24 +640,37 @@ js_p_job_complete(pgsql_conn_t *pg_conn,
 
 	debug2("as/pg: job_complete() called");
 
-	/* If we get an error with this just fall through to avoid an
-	 * infinite loop
-	 */
-	if (job_ptr->end_time == 0) {
-		debug("as/pg: job_complete: job %u never started", job_ptr->job_id);
-		return SLURM_SUCCESS;
-	} else if(start_time > job_ptr->end_time)
-		start_time = 0;
+	if (job_ptr->resize_time) {
+		start_time = job_ptr->resize_time;
+	} else {
+		start_time = job_ptr->start_time;
+	}
+	if (job_ptr->job_state & JOB_RESIZING) {
+		end_time = time(NULL);
+		job_state = JOB_RESIZING;
+	} else {
+		/* If we get an error with this just fall through to avoid an
+		 * infinite loop */
+		if (job_ptr->end_time == 0) {
+			debug("as/pg: job_complete: job %u never started",
+			      job_ptr->job_id);
+			return SLURM_SUCCESS;
+		}
+		end_time = job_ptr->end_time;
+		job_state = job_ptr->job_state & JOB_STATE_BASE;
+	}
+	if (start_time > end_time)
+ 		start_time = 0;
 
 	slurm_mutex_lock(&rollup_lock);
-	if(job_ptr->end_time < global_last_rollup) {
+	if(end_time < global_last_rollup) {
 		global_last_rollup = job_ptr->end_time;
 		slurm_mutex_unlock(&rollup_lock);
 
 		query = xstrdup_printf("UPDATE %s SET hourly_rollup=%d, "
 				       "daily_rollup=%d, monthly_rollup=%d",
-				       last_ran_table, job_ptr->end_time,
-				       job_ptr->end_time, job_ptr->end_time);
+				       last_ran_table, end_time,
+				       end_time, end_time);
 		rc = DEF_QUERY_RET_RC;
 	} else
 		slurm_mutex_unlock(&rollup_lock);
@@ -668,9 +689,7 @@ js_p_job_complete(pgsql_conn_t *pg_conn,
 	query = xstrdup_printf("UPDATE %s SET start=%d, endtime=%d, state=%d, "
 			       "nodelist='%s', comp_code=%d, "
 			       "kill_requid=%d WHERE id=%d",
-			       job_table, (int)job_ptr->start_time,
-			       (int)job_ptr->end_time,
-			       job_ptr->job_state & JOB_STATE_BASE,
+			       job_table, start_time, end_time, job_state,
 			       nodes, job_ptr->exit_code,
 			       job_ptr->requid, job_ptr->db_index);
 	rc = DEF_QUERY_RET_RC;
