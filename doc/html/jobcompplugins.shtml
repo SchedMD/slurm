@@ -3,9 +3,9 @@
 <h1><a name="top">SLURM Job Completion Logging Plugin API</a></h1>
 
 <h2> Overview</h2>
-<p> This document describes SLURM job completion logging plugins and the API that defines
+<p>This document describes SLURM job completion logging plugins and the API that defines
 them. It is intended as a resource to programmers wishing to write their own SLURM
-job completion logging plugins. This is version 0 of the API.</p>
+job completion logging plugins. This is version 100 of the API.</p>
 <p>SLURM job completion logging plugins are SLURM plugins that implement the SLURM
 API for logging job information upon their completion. This may be used to log job information
 to a text file, database, etc. The plugins must conform to the SLURM Plugin API with the following
@@ -69,11 +69,15 @@ to indicate the reason for failure.</p>
 <p class="footer"><a href="#top">top</a></p>
 
 <p class="commandline">int slurm_jobcomp_log_record (struct job_record *job_ptr);</p>
-<p style="margin-left:.2in"><b>Description</b>: Note termination of a job
-with the specified characteristics.</p>
+<p style="margin-left:.2in"><b>Description</b>: Note that a job is about to
+terminate or change size. The job's state will include the JOB_RESIZING flag
+if and only if it is about to change size. Otherwise the job is terminating.
+Note the existance of <i>resize_time</i> in the job record if one wishes to
+record information about a job at each size (i.e. a history of the job as
+its size changes through time).</p>
 <p style="margin-left:.2in"><b>Argument</b>: <br>
-<span class="commandline"> job_ptr</span>&nbsp;&nbsp;&nbsp;(input) Pointer to job record as defined
-in <i>src/slurmctld/slurmctld.h</i></p>
+<span class="commandline"> job_ptr</span>&nbsp;&nbsp;&nbsp;(input) Pointer to
+job record as defined in <i>src/slurmctld/slurmctld.h</i></p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
 the plugin should return SLURM_ERROR and set the errno to an appropriate value
 to indicate the reason for failure.</p>
@@ -123,11 +127,11 @@ void slurm_jobcomp_archive(List selected_parts, void *params)
 
 
 <h2>Versioning</h2>
-<p> This document describes version 1 of the SLURM job completion API. Future
+<p> This document describes version 100 of the SLURM job completion API. Future
 releases of SLURM may revise this API. A job completion plugin conveys its ability
 to implement a particular API version using the mechanism outlined for SLURM plugins.</p>
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 24 March 2010</p>
+<p style="text-align:center;">Last modified 26 March 2010</p>
 
 <!--#include virtual="footer.txt"-->

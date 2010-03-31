@@ -889,6 +889,8 @@ char *job_state_string(uint16_t inx)
 		return "COMPLETING";
 	if (inx & JOB_CONFIGURING)
 		return "CONFIGURING";
+	if (inx & JOB_RESIZING)
+		return "RESIZING";
 
 	/* Process JOB_STATE_BASE */
 	switch (inx & JOB_STATE_BASE) {
@@ -920,6 +922,8 @@ char *job_state_string_compact(uint16_t inx)
 		return "CG";
 	if (inx & JOB_CONFIGURING)
 		return "CF";
+	if (inx & JOB_RESIZING)
+		return "RS";
 
 	/* Process JOB_STATE_BASE */
 	switch (inx & JOB_STATE_BASE) {
@@ -966,8 +970,8 @@ int job_state_num(const char *state_name)
 		return JOB_COMPLETING;
 	if (_job_name_test(JOB_COMPLETING, state_name))
 		return JOB_COMPLETING;
-//	if (_job_name_test(JOB_RESIZING, state_name))
-//		return JOB_RESIZING;
+	if (_job_name_test(JOB_RESIZING, state_name))
+		return JOB_RESIZING;
 
 	return -1;
 }

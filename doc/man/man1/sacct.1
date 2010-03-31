@@ -308,6 +308,9 @@ Job is awaiting resource allocation.
 \f3R   RUNNING\fP
 Job currently has an allocation.
 .TP
+\f3RS  RESIZING\fP
+Job is about to change size.
+.TP
 \f3S   SUSPENDED\fP
 Job has an allocation, but execution has been suspended.
 .TP
@@ -619,7 +622,7 @@ Initiation time of the job in the same format as \f3end\fP.
 \f3state\fP
 Displays the job status, or state.
 
-Output can be RUNNING, SUSPENDED, COMPLETED, CANCELLED, FAILED,
+Output can be RUNNING, RESIZING, SUSPENDED, COMPLETED, CANCELLED, FAILED,
 TIMEOUT, or NODE_FAIL. If multiple job states are found for a single
 job (e.g. the job was requeued after a NODE_FAIL and then COMPLETED)
 then the last job state will be displayed followed by a "+".

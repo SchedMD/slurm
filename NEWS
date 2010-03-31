@@ -13,6 +13,14 @@ documents those changes that are of interest to users and admins.
     "flags" populated with the flags PART_FLAG_DEFAULT, PART_FLAG_NO_ROOT
     PART_FLAG_HIDDEN and/or PART_FLAG_ROOT_ONLY. This is a more flexible
     solution besides making for smaller data structures.
+ -- Add node state flag of JOB_RESIZING. This will only exist when a job's
+    accounting record is being written immediately before or after it changes
+    size. This permits job accounting records to be written for a job at each
+    size.
+ -- Make calls to jobcomp and accounting_storage plugins before and after a job
+    changes size (with the job state being JOB_RESIZING).All plugins write a
+    record for the job at each size with intermediate job states being
+    JOB_RESIZING. More work is needed for correct accounting.
 
 * Changes in SLURM 2.2.0.pre4
 =============================
@@ -44,8 +52,7 @@ documents those changes that are of interest to users and admins.
     "scontrol update JobId=# NodeList=<names>". Subsequent job steps must
     explicitly specify an appropriate node count to work properly.
  -- Added resize_time field to job record noting the time of the latest job
-    size change (to be used for accounting purposes, which is under
-    development).
+    size change (to be used for accounting purposes).
  -- sview/smap now hides hidden partitions and their jobs by default, with an
     option to display them.
 

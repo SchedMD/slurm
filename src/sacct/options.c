@@ -462,8 +462,8 @@ sacct [<OPTION>]                                                            \n\
      -s, --state:                                                           \n\
 	           Select jobs based on their current state or the state    \n\
                    they were in during the time period given: running (r),  \n\
-	           completed (cd), failed (f), timeout (to), and            \n\
-                   node_fail (nf).                                          \n\
+                   completed (cd), failed (f), timeout (to), resizing (rs)  \n\
+                   and node_fail (nf).                                      \n\
      -S, --starttime:                                                       \n\
                    Select jobs eligible after this time.  Default is        \n\
                    midnight of current day.  If states are given with the -s\n\

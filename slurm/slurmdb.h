@@ -477,7 +477,7 @@ typedef struct {
 	uint32_t resvid;
 	uint32_t show_full;
 	time_t start;
-	enum job_states	state;
+	uint16_t	state;
 	slurmdb_stats_t stats;
 	List    steps; /* list of slurmdb_step_rec_t *'s */
 	time_t submit;

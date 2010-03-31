@@ -1621,11 +1621,23 @@ extern int jobacct_storage_p_job_start(void *db_conn,
 #endif
 	req.block_id      = block_id;
 	req.db_index      = job_ptr->db_index;
-	if (job_ptr->details)
-		req.eligible_time = job_ptr->details->begin_time;
+	if (job_ptr->resize_time) {
+		req.eligible_time = job_ptr->resize_time;
+		req.start_time    = job_ptr->resize_time;
+		req.submit_time   = job_ptr->resize_time;
+	} else {
+		if (job_ptr->details) {
+			req.eligible_time = job_ptr->details->begin_time;
+			req.submit_time   = job_ptr->details->submit_time;
+		}
+		req.start_time    = job_ptr->start_time;
+	}
 	req.gid           = job_ptr->group_id;
 	req.job_id        = job_ptr->job_id;
-	req.job_state     = job_ptr->job_state & JOB_STATE_BASE;
+	if (job_ptr->job_state & JOB_RESIZING)
+		req.job_state     = JOB_RESIZING;
+	else
+		req.job_state     = job_ptr->job_state & JOB_STATE_BASE;
 	req.name          = job_ptr->name;
 	req.nodes         = job_ptr->nodes;
 	if(job_ptr->node_bitmap) {
@@ -1638,11 +1650,8 @@ extern int jobacct_storage_p_job_start(void *db_conn,
 		req.req_cpus      = job_ptr->details->min_cpus;
 	req.resv_id       = job_ptr->resv_id;
 	req.priority      = job_ptr->priority;
-	req.start_time    = job_ptr->start_time;
 	req.timelimit     = job_ptr->time_limit;
 	req.wckey         = job_ptr->wckey;
-	if (job_ptr->details)
-		req.submit_time   = job_ptr->details->submit_time;
 	req.uid           = job_ptr->user_id;
 
 	msg.msg_type      = DBD_JOB_START;
@@ -1704,15 +1713,25 @@ extern int jobacct_storage_p_job_complete(void *db_conn,
 
 	req.assoc_id    = job_ptr->assoc_id;
 	req.db_index    = job_ptr->db_index;
-	req.end_time    = job_ptr->end_time;
 	req.exit_code   = job_ptr->exit_code;
 	req.job_id      = job_ptr->job_id;
-	req.job_state   = job_ptr->job_state & JOB_STATE_BASE;
+	if (job_ptr->job_state & JOB_RESIZING) {
+		req.end_time    = time(NULL);
+		req.job_state   = JOB_RESIZING;
+	} else {
+		req.end_time    = job_ptr->end_time;
+		req.job_state   = job_ptr->job_state & JOB_STATE_BASE;
+	}
 	req.req_uid     = job_ptr->requid;
 	req.nodes       = job_ptr->nodes;
-	req.start_time  = job_ptr->start_time;
-	if (job_ptr->details)
-		req.submit_time   = job_ptr->details->submit_time;
+	if (job_ptr->resize_time) {
+		req.start_time  = job_ptr->resize_time;
+		req.submit_time = job_ptr->resize_time;
+	} else {
+		req.start_time  = job_ptr->start_time;
+		if (job_ptr->details)
+			req.submit_time = job_ptr->details->submit_time;
+	}
 
 	msg.msg_type    = DBD_JOB_COMPLETE;
 	msg.data        = &req;
