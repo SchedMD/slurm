@@ -62,7 +62,8 @@ libslurmdb_la_SOURCES =	\
 	user_functions.c \
 	user_report_functions.c \
 	wckey_functions.c
-libslurmdb_la_LIBADD = $(top_builddir)/src/api/libslurmhelper.la
+
+libslurmdb_la_LIBADD = $(top_builddir)/src/common/libcommon.la
 libslurmdb_la_LDFLAGS        = \
         $(LIB_LDFLAGS) \
         -version-info $(current):$(rev):$(age) \
