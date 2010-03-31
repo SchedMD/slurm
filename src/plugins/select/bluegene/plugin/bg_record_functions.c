@@ -493,10 +493,15 @@ extern int bg_record_cmpf_inc(bg_record_t* rec_a, bg_record_t* rec_b)
 	int size_a = rec_a->node_cnt;
 	int size_b = rec_b->node_cnt;
 
-	if (size_a < size_b)
-		return -1;
-	else if (size_a > size_b)
-		return 1;
+	/* We only look at this if we are ordering blocks larger than
+	 * a midplane, order of ionodes is how we order otherwise. */
+	if((size_a >= bg_conf->bp_node_cnt)
+	   || (size_b >= bg_conf->bp_node_cnt)) {
+		if (size_a < size_b)
+			return -1;
+		else if (size_a > size_b)
+			return 1;
+	}
 
 	if(rec_a->nodes && rec_b->nodes) {
 		size_a = strcmp(rec_a->nodes, rec_b->nodes);
