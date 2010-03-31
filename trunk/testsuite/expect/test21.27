@@ -50,11 +50,10 @@ set ac3		pa3
 set usr		user
 set us1		usr1
 set us2		usr2
-set us3		gdm
+set us3		mysql
 
 set access_err  0
 set timeout     120
-#set user_name   "id -u -n"
 
 print_header $test_id
 
