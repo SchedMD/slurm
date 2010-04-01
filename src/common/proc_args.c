@@ -753,17 +753,20 @@ int get_signal_opts(char *optarg, uint16_t *warn_signal, uint16_t *warn_time)
 	if (optarg == NULL)
 		return -1;
 
-	num = strtol(optarg, &endptr, 10);
-	if ((num < 0) || (num > 0x0ffff))
+	endptr = strchr(optarg, '@');
+	if (endptr)
+		endptr[0] = '\0';
+	num = (uint16_t) sig_name2num(optarg);
+	if (endptr)
+		endptr[0] = '@';
+	if ((num < 1) || (num > 0x0ffff))
 		return -1;
 	*warn_signal = (uint16_t) num;
 
-	if (endptr[0] == '\0') {
+	if (!endptr) {
 		*warn_time = 60;
 		return 0;
 	}
-	if (endptr[0] != '@')
-		return -1;
 
 	num = strtol(endptr+1, &endptr, 10);
 	if ((num < 0) || (num > 0x0ffff))
@@ -772,4 +775,47 @@ int get_signal_opts(char *optarg, uint16_t *warn_signal, uint16_t *warn_time)
 	if (endptr[0] == '\0')
 		return 0;
 	return -1;
+}
+
+/* Convert a signal name to it's numeric equivalent.
+ * Return -1 on failure */
+int sig_name2num(char *signal_name)
+{
+	char *sig_name[] = {"HUP", "INT", "QUIT", "KILL", "TERM",
+			    "USR1", "USR2", "CONT", NULL};
+	int sig_num[] = {SIGHUP, SIGINT, SIGQUIT, SIGKILL, SIGTERM,
+			       SIGUSR1, SIGUSR2, SIGCONT};
+	char *ptr;
+	long tmp;
+	int sig;
+	int i;
+
+	tmp = strtol(signal_name, &ptr, 10);
+	if (ptr != signal_name) { /* found a number */
+		if (xstring_is_whitespace(ptr))
+			sig = (int)tmp;
+		else
+			return 0;
+	} else {
+		ptr = (char *)signal_name;
+		while (isspace(*ptr))
+			ptr++;
+		if (strncasecmp(ptr, "SIG", 3) == 0)
+			ptr += 3;
+		for (i = 0; ; i++) {
+			if (sig_name[i] == NULL)
+				return 0;
+			if (strncasecmp(ptr, sig_name[i],
+					strlen(sig_name[i])) == 0) {
+				/* found the signal name */
+				if (!xstring_is_whitespace(ptr + 
+							   strlen(sig_name[i])))
+					return 0;
+				sig = sig_num[i];
+				break;
+			}
+		}
+	}
+
+	return sig;
 }
