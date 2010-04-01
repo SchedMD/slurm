@@ -622,7 +622,9 @@ static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr,
 	uint16_t base_state;
 	uint16_t used_cpus = 0, error_cpus = 0;
 	int total_cpus = 0, total_nodes = 0;
-	int single_node_cpus = (node_ptr->cpus / node_scaling);
+	/* since node_scaling could be less here we need to use the
+	   global node scaling which should never change. */
+	int single_node_cpus = (node_ptr->cpus / g_node_scaling);
 
  	base_state = node_ptr->node_state & NODE_STATE_BASE;
 
@@ -704,10 +706,11 @@ static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr,
 		node_ptr->reason = xstrdup("Block(s) in error state");
 		sinfo_ptr->reason     = node_ptr->reason;
 	}
-	if(params.match_flags.cpus_flag && (used_cpus || error_cpus)) {
-		/* we only get one shot at this (because the node name
-		   is the same), so we need to make
-		   sure we get all the subgrps accounted for here */
+	if(!params.match_flags.state_flag && (used_cpus || error_cpus)) {
+		/* We only get one shot at this (because all states
+		   are combined together), so we need to make
+		   sure we get all the subgrps accounted. (So use
+		   g_node_scaling for safe measure) */
 		total_nodes = g_node_scaling;
 
 		sinfo_ptr->nodes_alloc += used_cpus;
@@ -762,9 +765,10 @@ static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr,
 	} else
 		sinfo_ptr->cpus_idle += total_cpus;
 
-/* 	info("count is now %d %d %d %d",  */
-/* 	     sinfo_ptr->cpus_alloc, sinfo_ptr->cpus_idle, */
-/* 	     sinfo_ptr->cpus_other, sinfo_ptr->cpus_total); */
+	/* info("count is now %d %d %d %d %d", */
+	/*      sinfo_ptr->cpus_alloc, sinfo_ptr->cpus_idle, */
+	/*      sinfo_ptr->cpus_other, sinfo_ptr->cpus_total, */
+	/*      sinfo_ptr->nodes_total); */
 }
 
 static int _insert_node_ptr(List sinfo_list, uint16_t part_num,
