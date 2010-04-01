@@ -59,10 +59,6 @@ struct sinfo_parameters params;
 
 static int g_node_scaling = 1;
 
-#ifdef HAVE_BG
-static int cpus_per_node = 1;
-#endif
-
 /************
  * Funtions *
  ************/
@@ -76,7 +72,7 @@ static sinfo_data_t *_create_sinfo(partition_info_t* part_ptr,
 static bool _filter_out(node_info_t *node_ptr);
 static void _sinfo_list_delete(void *data);
 static bool _match_node_data(sinfo_data_t *sinfo_ptr,
-                             node_info_t *node_ptr);
+                             node_info_t *node_ptr, uint32_t node_scaling);
 static bool _match_part_data(sinfo_data_t *sinfo_ptr,
                              partition_info_t* part_ptr);
 static int  _query_server(partition_info_msg_t ** part_pptr,
@@ -334,10 +330,6 @@ static int _build_sinfo_data(List sinfo_list,
 
 	g_node_scaling = node_msg->node_scaling;
 
-#ifdef HAVE_BG
-	cpus_per_node = node_msg->node_array[0].cpus / g_node_scaling;
-#endif
-
 	/* by default every partition is shown, even if no nodes */
 	if ((!params.node_flag) && params.match_flags.partition_flag) {
 		part_ptr = partition_msg->partition_array;
@@ -517,7 +509,7 @@ static void _sort_hostlist(List sinfo_list)
 }
 
 static bool _match_node_data(sinfo_data_t *sinfo_ptr,
-                             node_info_t *node_ptr)
+                             node_info_t *node_ptr, uint32_t node_scaling)
 {
 	if (sinfo_ptr->nodes &&
 	    params.match_flags.features_flag &&
@@ -543,7 +535,7 @@ static bool _match_node_data(sinfo_data_t *sinfo_ptr,
 		return true;
 
 	if (params.match_flags.cpus_flag &&
-	    (node_ptr->cpus        != sinfo_ptr->min_cpus))
+	    ((node_ptr->cpus / node_scaling) != sinfo_ptr->min_cpus))
 		return false;
 	if (params.match_flags.sockets_flag &&
 	    (node_ptr->sockets     != sinfo_ptr->min_sockets))
@@ -630,6 +622,7 @@ static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr,
 	uint16_t base_state;
 	uint16_t used_cpus = 0, error_cpus = 0;
 	int total_cpus = 0, total_nodes = 0;
+	int single_node_cpus = (node_ptr->cpus / node_scaling);
 
  	base_state = node_ptr->node_state & NODE_STATE_BASE;
 
@@ -637,8 +630,8 @@ static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr,
 		sinfo_ptr->node_state = node_ptr->node_state;
 		sinfo_ptr->features   = node_ptr->features;
 		sinfo_ptr->reason     = node_ptr->reason;
-		sinfo_ptr->min_cpus   = node_ptr->cpus;
-		sinfo_ptr->max_cpus   = node_ptr->cpus;
+		sinfo_ptr->min_cpus   = single_node_cpus;
+		sinfo_ptr->max_cpus   = single_node_cpus;
 		sinfo_ptr->min_sockets = node_ptr->sockets;
 		sinfo_ptr->max_sockets = node_ptr->sockets;
 		sinfo_ptr->min_cores   = node_ptr->cores;
@@ -656,10 +649,10 @@ static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr,
 		 * just return, don't duplicate */
 		return;
 	} else {
-		if (sinfo_ptr->min_cpus > node_ptr->cpus)
-			sinfo_ptr->min_cpus = node_ptr->cpus;
-		if (sinfo_ptr->max_cpus < node_ptr->cpus)
-			sinfo_ptr->max_cpus = node_ptr->cpus;
+		if (sinfo_ptr->min_cpus > single_node_cpus)
+			sinfo_ptr->min_cpus = single_node_cpus;
+		if (sinfo_ptr->max_cpus < single_node_cpus)
+			sinfo_ptr->max_cpus = single_node_cpus;
 
 		if (sinfo_ptr->min_sockets > node_ptr->sockets)
 			sinfo_ptr->min_sockets = node_ptr->sockets;
@@ -721,11 +714,11 @@ static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr,
 		sinfo_ptr->nodes_other += error_cpus;
 		sinfo_ptr->nodes_idle +=
 			(total_nodes - (used_cpus + error_cpus));
-		used_cpus *= cpus_per_node;
-		error_cpus *= cpus_per_node;
+		used_cpus *= single_node_cpus;
+		error_cpus *= single_node_cpus;
 	} else {
 		/* process only for this subgrp and then return */
-		total_cpus = total_nodes * cpus_per_node;
+		total_cpus = total_nodes * single_node_cpus;
 
 		if ((base_state == NODE_STATE_ALLOCATED)
 		    ||  (node_ptr->node_state & NODE_STATE_COMPLETING)) {
@@ -787,7 +780,7 @@ static int _insert_node_ptr(List sinfo_list, uint16_t part_num,
 		if (!_match_part_data(sinfo_ptr, part_ptr))
 			continue;
 		if (sinfo_ptr->nodes_total &&
-		    (!_match_node_data(sinfo_ptr, node_ptr)))
+		    (!_match_node_data(sinfo_ptr, node_ptr, node_scaling)))
 			continue;
 		_update_sinfo(sinfo_ptr, node_ptr, node_scaling);
 		break;
