@@ -65,7 +65,6 @@ static void _configure_node_down(rm_bp_id_t bp_id, my_bluegene_t *my_bg)
 	rm_location_t bp_loc;
 	rm_BP_state_t bp_state;
 	char bg_down_node[128];
-	time_t now = time(NULL);
 
 	if ((rc = bridge_get_data(my_bg, RM_BPNum, &bp_num)) != STATUS_OK) {
 		error("bridge_get_data(RM_BPNum): %s", bg_err_str(rc));
