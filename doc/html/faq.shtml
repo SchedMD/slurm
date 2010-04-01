@@ -42,6 +42,8 @@
   memory limit?</a></li>
 <li><a href="#mailing_list">Is an archive available of messages posted to 
 the <i>slurm-dev</i> mailing list?</a></li>
+<li><a href="#job_size">Can I change my job's size after it has started
+running?</a></li>
 </ol>
 
 <h2>For Administrators</h2>
@@ -629,7 +631,35 @@ or other limits as needed.</p>
 <p><a name="mailing_list"><b>23. Is an archive available of messages posted to 
 the <i>slurm-dev</i> mailing list?</b></a><br>
 Yes, it is at <a href="http://groups.google.com/group/slurm-devel">
-http://groups.google.com/group/slurm-devel</a>
+http://groups.google.com/group/slurm-devel</a></p>
+
+<p><a name="job_size"><b>24. Can I change my job's size after it has started
+running?</b></a><br>
+It is possible to decrease a job's size after it has started, but it is not
+currently possible to increase a job's size.
+Use the <i>scontrol</i> command to change a job's size either by specifying
+a new node count (<i>NumNodes=</i>) for the job or identify the specific nodes
+(<i>NodeList=</i>) that you want the job to retain. 
+Any job steps running on the nodes which are reliquished by the job will be
+killed unless initiated with the <i>--no-kill</i> option.
+After the job size is changed, some environment variables created by SLURM
+containing information about the job's environment will no longer be valid and
+should either be removed or altered (e.g. SLURM_NNODES, SLURM_NODELIST and
+SLURM_NPROCS, others may need to be altered depending upon the MPI
+implementation in use). 
+You must retain the SLURM_JOBID environment variable in order for the
+<i>srun</i> command to gather information about the job's current state and
+specify the desired node and/or task count in subsequent <i>srun</i> invocations. 
+An example is shown below.
+<pre>
+#!/bin/bash
+srun my_big_job
+scontrol update JobId=$SLURM_JOBID NumNodes=2
+unset SLURM_NNODES
+unset SLURM_NODELIST
+unset SLURM_NPROCS
+srun -N2 my_small_job
+</pre>
 
 <p class="footer"><a href="#top">top</a></p>
 
