@@ -699,10 +699,13 @@ static int _breakup_blocks(List block_list, List new_blocks,
 			*/
 			if((num_over = bit_overlap(
 				    ionodes, bg_record->ionode_bitmap))) {
-				num_cnodes -= (double)num_over *
-					((double)bg_conf->nodecard_node_cnt
-					 / bg_conf->io_ratio);
-				if(num_cnodes <= 0)
+				/* Since the smallest block size is
+				   the number of cnodes in an io node,
+				   just multiply the num_over by that to
+				   get the number of cnodes to remove.
+				*/
+				if((num_cnodes -=
+				    num_over * bg_conf->smallest_block) <= 0)
 					continue;
 			}
 			bit_or(ionodes, bg_record->ionode_bitmap);
