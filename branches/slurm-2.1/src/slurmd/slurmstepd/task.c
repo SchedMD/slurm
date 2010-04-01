@@ -110,14 +110,16 @@ static char *_uint32_array_to_str(int array_len, const uint32_t *array);
  * use them to add environment variables to env */
 static void _update_env(char *buf, char ***env)
 {
-	char *tmp_ptr, *name_ptr, *val_ptr, *buf_ptr = buf;
+	char *name_ptr, *val_ptr, *buf_ptr = buf;
+	int quote;
 
-	while ((tmp_ptr = strstr(buf_ptr, "export"))) {
+	while ((buf_ptr = strstr(buf_ptr, "export"))) {
 		buf_ptr += 6;
 		while (isspace(buf_ptr[0]))
 			buf_ptr++;
 		if (buf_ptr[0] == '=')	/* mal-formed */
 			continue;
+
 		name_ptr = buf_ptr;	/* start of env var name */
 		while ((buf_ptr[0] != '=') && (buf_ptr[0] != '\0'))
 			buf_ptr++;
@@ -125,14 +127,33 @@ static void _update_env(char *buf, char ***env)
 			continue;
 		buf_ptr[0] = '\0';	/* end of env var name */
 		buf_ptr++;
+
 		val_ptr = buf_ptr;	/* start of env var value */
-		while ((!isspace(buf_ptr[0])) && (buf_ptr[0] != '\0'))
-			buf_ptr++;
-		if (isspace(buf_ptr[0])) {
-			buf_ptr[0] = '\0';/* end of env var value */
+		if (val_ptr[0] == '\'')
+			quote = 1;
+		else if (val_ptr[0] == '\"')
+			quote = 2;
+		else
+			quote = 0;
+		buf_ptr++;
+		while (buf_ptr[0] != '\0') {
+			if ((quote == 0) && 
+			    ((buf_ptr[0] == '\n') || (buf_ptr[0] == '\r'))) {
+				buf_ptr[0] = '\0';
+				buf_ptr++;
+				break;
+			}
+			if (((buf_ptr[0] == '\'') && (quote == 1)) ||
+			    ((buf_ptr[0] == '\"') && (quote == 2))) {
+				val_ptr++;
+				buf_ptr[0] = '\0';
+				buf_ptr += 2;
+				break;
+			}
 			buf_ptr++;
 		}
-		debug("name:%s:val:%s:",name_ptr,val_ptr);
+
+		debug("name:%s:val:%s:", name_ptr, val_ptr);
 		if (setenvf(env, name_ptr, "%s", val_ptr))
 			error("Unable to set %s environment variable", 
 			      name_ptr);
@@ -180,7 +201,7 @@ _run_script_and_set_env(const char *name, const char *path, slurmd_job_t *job)
 {
 	int status, rc, nread;
 	pid_t cpid;
-	int pfd[2];
+	int pfd[2], offset = 0;
 	char buf[4096];
 
 	xassert(job->env);
@@ -222,12 +243,12 @@ _run_script_and_set_env(const char *name, const char *path, slurmd_job_t *job)
 	}
 
 	close(pfd[1]);
-	while ((nread = read(pfd[0], buf, sizeof(buf))) > 0) {
-		buf[nread] = 0;
-		//debug("read %d:%s:", nread, buf);
-		_update_env(buf, &job->env);
-		_print_stdout(buf);
-	}
+	buf[0] = '\0';
+	while ((nread = read(pfd[0], buf+offset, (sizeof(buf)-offset))) > 0)
+		offset += nread;
+	/* debug("read %d:%s:", offset, buf); */
+	_update_env(buf, &job->env);
+	_print_stdout(buf);
 
 	close(pfd[0]);
 	while (1) {
