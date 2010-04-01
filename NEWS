@@ -171,6 +171,9 @@ documents those changes that are of interest to users and admins.
  -- Modify srun, salloc and sbatch parsing for the --signal option to accept
     either a signal name in addition to the previously supported signal
     numbers (e.g. "--signal=USR2@200").
+ -- BLUEGENE - Fixed sinfo --long --Node output for cpus on a single cnode.
+ -- Add support for quotes in environment variables exported by the TaskProlog
+    program.
 
 * Changes in SLURM 2.1.6-2
 ==========================
