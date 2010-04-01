@@ -132,4 +132,8 @@ char *print_geometry(const uint16_t *geometry);
  * RET 0 on success, -1 on failure */
 int get_signal_opts(char *optarg, uint16_t *warn_signal, uint16_t *warn_time);
 
+/* Convert a signal name to it's numeric equivalent.
+ * Return 0 on failure */
+int sig_name2num(char *signal_name);
+
 #endif /* !_PROC_ARGS_H */
