@@ -246,7 +246,6 @@ extern int update_block_list()
 	rm_partition_state_t state;
 	char *name = NULL;
 	bg_record_t *bg_record = NULL;
-	time_t now;
 	kill_job_struct_t *freeit = NULL;
 	ListIterator itr = NULL;
 	slurmctld_lock_t job_write_lock = {
@@ -573,7 +572,8 @@ extern int update_block_list()
 	while((freeit = list_pop(kill_job_list))) {
 		debug2("Trying to requeue job %d", freeit->jobid);
 		lock_slurmctld(job_write_lock);
-		if((rc = job_requeue(0, freeit->jobid, -1))) {
+		if((rc = job_requeue(0, freeit->jobid,
+				     -1, (uint16_t)NO_VAL))) {
 			error("couldn't requeue job %u, failing it: %s",
 			      freeit->jobid,
 			      slurm_strerror(rc));
