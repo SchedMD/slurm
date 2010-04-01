@@ -232,6 +232,8 @@ _run_script_and_set_env(const char *name, const char *path, slurmd_job_t *job)
 			error("couldn't do the dup: %m");
 		close(2);
 		close(0);
+		close(pfd[0]);
+		close(pfd[1]);
 #ifdef SETPGRP_TWO_ARGS
 		setpgrp(0, 0);
 #else
