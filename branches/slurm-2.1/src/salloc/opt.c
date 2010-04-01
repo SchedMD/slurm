@@ -188,7 +188,6 @@ static bool _opt_verify(void);
 
 static void  _proc_get_user_env(char *optarg);
 static void _process_env_var(env_vars_t *e, const char *val);
-static int _parse_signal(const char *signal_name);
 static void  _usage(void);
 
 /*---[ end forward declarations of static functions ]---------------------*/
@@ -737,9 +736,11 @@ void set_options(const int argc, char **argv)
 			break;
 		case 'K': /* argument is optional */
 			if (optarg) {
-				opt.kill_command_signal =_parse_signal(optarg);
-				if (opt.kill_command_signal == 0)
+				opt.kill_command_signal = sig_name2num(optarg);
+				if (opt.kill_command_signal == 0) {
+					error("Invalid signal name %s", optarg);
 					exit(error_exit);
+				}
 			}
 			opt.kill_command_signal_set = true;
 			break;
@@ -1562,61 +1563,6 @@ static char *print_constraints()
 		xstrfmtcat(buf, "constraints=`%s' ", opt.constraints);
 
 	return buf;
-}
-
-/*
- * Takes a string containing the number or name of a signal and returns
- * the signal number.  The signal name is case insensitive, and may be of
- * the form "SIGHUP" or just "HUP".
- *
- * Allowed signal names are HUP, INT, QUIT, KILL, TERM, USR1, USR2, and CONT.
- */
-static int _parse_signal(const char *signal_name)
-{
-	char *sig_name[] = {"HUP", "INT", "QUIT", "KILL", "TERM",
-			    "USR1", "USR2", "CONT", NULL};
-	int sig_num[] = {SIGHUP, SIGINT, SIGQUIT, SIGKILL, SIGTERM,
-			       SIGUSR1, SIGUSR2, SIGCONT};
-	char *ptr;
-	long tmp;
-	int sig;
-	int i;
-
-	tmp = strtol(signal_name, &ptr, 10);
-	if (ptr != signal_name) { /* found a number */
-		if (xstring_is_whitespace(ptr)) {
-			sig = (int)tmp;
-		} else {
-			goto fail;
-		}
-	} else {
-		ptr = (char *)signal_name;
-		while (isspace(*ptr))
-			ptr++;
-		if (strncasecmp(ptr, "SIG", 3) == 0)
-			ptr += 3;
-		for (i = 0; ; i++) {
-			if (sig_name[i] == NULL) {
-				goto fail;
-			}
-			if (strncasecmp(ptr, sig_name[i],
-					strlen(sig_name[i])) == 0) {
-				/* found the signal name */
-				if (!xstring_is_whitespace(
-					    ptr + strlen(sig_name[i]))) {
-					goto fail;
-				}
-				sig = sig_num[i];
-				break;
-			}
-		}
-	}
-
-	return sig;
-
-fail:
-	error("\"%s\" is not a valid signal", signal_name);
-	return 0;
 }
 
 #define tf_(b) (b == true) ? "true" : "false"

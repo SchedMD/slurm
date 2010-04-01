@@ -3,6 +3,9 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 2.1.7
 ========================
+ -- Modify srun, salloc and sbatch parsing for the --signal option to accept
+    either a signal name in addition to the previously supported signal
+    numbers (e.g. "--signal=USR2@200").
 
 * Changes in SLURM 2.1.6-2
 ==========================
