@@ -1794,8 +1794,6 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		       "idle resources found");
 		goto alloc_job;
 	}
-	debug3("cons_res: cr_job_test: test 1 fail - "
-	       "not enough idle resources");
 
 	if (job_node_req == NODE_CR_ONE_ROW) {
 		/* This job CANNOT share CPUs regardless of priority,
@@ -1803,8 +1801,12 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		 * addressed in _verify_node_state() and job preemption
 		 * removes jobs from simulated resource allocation map
 		 * before this point. */
+		debug3("cons_res: cr_job_test: test 1 fail - "
+		       "no idle resources available");
 		goto alloc_job;
 	}
+	debug3("cons_res: cr_job_test: test 1 fail - "
+	       "not enough idle resources");
 
 	/*** Step 2 ***/
 	bit_copybits(bitmap, orig_map);
