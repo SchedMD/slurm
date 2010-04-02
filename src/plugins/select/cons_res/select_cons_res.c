@@ -1087,9 +1087,8 @@ static uint16_t _get_job_node_req(struct job_record *job_ptr)
 	if (max_share == 0)		    /* Partition Shared=EXCLUSIVE */
 		return NODE_CR_RESERVED;
 
-	/* Partition Shared=FORCE with count > 1 */
-	if ((max_share & SHARED_FORCE) &&
-	    ((max_share & (~SHARED_FORCE)) > 1))
+	/* Partition is Shared=FORCE */
+	if (max_share & SHARED_FORCE)
 		return NODE_CR_AVAILABLE;
 
 	/* Partition is Shared=NO or Shared=YES */
