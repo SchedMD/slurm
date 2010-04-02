@@ -9,6 +9,8 @@ documents those changes that are of interest to users and admins.
  -- BLUEGENE - Fixed sinfo --long --Node output for cpus on a single cnode.
  -- Add support for quotes in environment variables exported by the TaskProlog
     program.
+ -- In sched/wiki2 - Fix another logic bug in support of Moab being able to
+    identify preemptable jobs.
 
 * Changes in SLURM 2.1.6-2
 ==========================
