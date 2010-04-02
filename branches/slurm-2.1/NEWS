@@ -11,6 +11,7 @@ documents those changes that are of interest to users and admins.
     program.
  -- In sched/wiki2 - Fix another logic bug in support of Moab being able to
     identify preemptable jobs.
+ -- In select/cons_res - Fix bug preventing job preemption using job suspend.
 
 * Changes in SLURM 2.1.6-2
 ==========================
