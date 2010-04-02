@@ -409,7 +409,7 @@ static char *	_will_run_test2(uint32_t jobid, time_t start_time,
 				uint32_t *preemptee, int preemptee_cnt,
 				int *err_code, char **err_msg)
 {
-	struct job_record *job_ptr = NULL, *pre_ptr, **pre_pptr;
+	struct job_record *job_ptr = NULL, *pre_ptr;
 	struct part_record *part_ptr;
 	bitstr_t *avail_bitmap = NULL, *resv_bitmap = NULL;
 	time_t start_res;
@@ -564,15 +564,14 @@ static char *	_will_run_test2(uint32_t jobid, time_t start_time,
 		xfree(hostlist);
 
 		if (preempted_jobs) {
-			while ((pre_pptr = list_pop(preempted_jobs))) {
+			while ((pre_ptr = list_pop(preempted_jobs))) {
 				if (pre_cnt++)
 					sep = ",";
 				else
 					sep = " PREEMPT=";
 				snprintf(tmp_str, sizeof(tmp_str), "%s%u",
-					 sep, pre_pptr[0]->job_id);
+					 sep, pre_ptr->job_id);
 				xstrcat(reply_msg, tmp_str);
-				xfree(pre_pptr);
 			}
 			list_destroy(preempted_jobs);
 		}
