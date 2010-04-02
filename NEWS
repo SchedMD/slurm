@@ -11,6 +11,8 @@ documents those changes that are of interest to users and admins.
     program.
  -- In sched/wiki2 - Fix another logic bug in support of Moab being able to
     identify preemptable jobs.
+ -- In sched/wiki2 - For BlueGene systems only: Fix bug preventing Moab from
+    being able to correctly change the node count of pending jobs.
  -- In select/cons_res - Fix bug preventing job preemption with a configuration
     of Shared=FORCE:1 and PreemptMode=GANG,SUSPEND.
 
