@@ -2982,6 +2982,12 @@ extern void * slurm_list_find PARAMS((ListIterator i, ListFindF f, void *key));
  */
 extern int slurm_list_is_empty PARAMS((List l));
 
+/*
+ *  Creates and returns a list iterator for non-destructively traversing
+ *    list [l], or lsd_nomem_error() on failure.
+ */
+extern ListIterator slurm_list_iterator_create PARAMS((List l));
+
 /* slurm_list_iterator_reset():
  *
  *  Resets the list iterator [i] to start traversal at the beginning

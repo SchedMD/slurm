@@ -1,1 +1,1 @@
-SUBDIRS = libslurm
+SUBDIRS = libslurm libslurmdb
