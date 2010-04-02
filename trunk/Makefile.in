@@ -41,6 +41,7 @@ DIST_COMMON = README $(am__configure_deps) $(pkginclude_HEADERS) \
 	$(srcdir)/config.h.in $(srcdir)/config.xml.in \
 	$(top_srcdir)/configure \
 	$(top_srcdir)/contribs/perlapi/libslurm/perl/Makefile.PL.in \
+	$(top_srcdir)/contribs/perlapi/libslurmdb/perl/Makefile.PL.in \
 	$(top_srcdir)/contribs/phpext/slurm_php/config.m4.in \
 	$(top_srcdir)/slurm/slurm.h.in AUTHORS COPYING ChangeLog \
 	INSTALL NEWS
@@ -87,6 +88,7 @@ mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = config.h $(top_builddir)/slurm/slurm.h
 CONFIG_CLEAN_FILES = config.xml \
 	contribs/perlapi/libslurm/perl/Makefile.PL \
+	contribs/perlapi/libslurmdb/perl/Makefile.PL \
 	contribs/phpext/slurm_php/config.m4
 CONFIG_CLEAN_VPATH_FILES =
 SOURCES =
@@ -457,6 +459,8 @@ distclean-hdr:
 config.xml: $(top_builddir)/config.status $(srcdir)/config.xml.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
 contribs/perlapi/libslurm/perl/Makefile.PL: $(top_builddir)/config.status $(top_srcdir)/contribs/perlapi/libslurm/perl/Makefile.PL.in
+	cd $(top_builddir) && $(SHELL) ./config.status $@
+contribs/perlapi/libslurmdb/perl/Makefile.PL: $(top_builddir)/config.status $(top_srcdir)/contribs/perlapi/libslurmdb/perl/Makefile.PL.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
 contribs/phpext/slurm_php/config.m4: $(top_builddir)/config.status $(top_srcdir)/contribs/phpext/slurm_php/config.m4.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
