@@ -315,7 +315,6 @@ host_fini:	if (rc) {
 	}
 
 	if (new_node_cnt) {
-		static uint16_t cpus_per_node = 0;
 		job_desc_msg_t job_desc;
 
 		memset(&job_desc, 0, sizeof(job_desc_msg_t));
@@ -337,6 +336,9 @@ host_fini:	if (rc) {
 			info("wiki: change job %u min_nodes to %u",
 				jobid, new_node_cnt);
 #ifdef HAVE_BG
+{
+			static uint16_t cpus_per_node = 0;
+
 			job_ptr->num_procs = job_desc.num_procs;
 			job_ptr->details->job_min_cpus = job_desc.job_min_cpus;
 
@@ -350,6 +352,7 @@ host_fini:	if (rc) {
 			select_g_select_jobinfo_set(job_ptr->select_jobinfo,
 						    SELECT_JOBDATA_NODE_CNT,
 						    &new_node_cnt);
+}
 #endif
 			last_job_update = now;
 			update_accounting = true;
