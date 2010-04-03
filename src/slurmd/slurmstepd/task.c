@@ -143,7 +143,7 @@ static void _proc_stdout(char *buf, char ***env)
 				equal_ptr--;
 			equal_ptr[0] = '\0';	
 			end_line[0] = '\0';
-			info("export name:%s:val:%s:", name_ptr, val_ptr);
+			debug("export name:%s:val:%s:", name_ptr, val_ptr);
 			if (setenvf(env, name_ptr, "%s", val_ptr)) {
 				error("Unable to set %s environment variable", 
 				      buf_ptr);
@@ -162,7 +162,7 @@ static void _proc_stdout(char *buf, char ***env)
 			while (isspace(end_line[-1]))
 				end_line--;	
 			end_line[0] = '\0';
-			info(" unset name:%s:", name_ptr);
+			debug(" unset name:%s:", name_ptr);
 			unsetenvp(*env, name_ptr);
 			if (end_buf)
 				end_line[0] = '\0';
