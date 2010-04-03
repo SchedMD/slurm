@@ -100,89 +100,81 @@
  * Static prototype definitions.
  */
 static void  _make_tmpdir(slurmd_job_t *job);
-static void  _print_stdout(char *buf);
 static int   _run_script_and_set_env(const char *name, const char *path, 
 				     slurmd_job_t *job);
-static void  _update_env(char *buf, char ***env);
+static void  _proc_stdout(char *buf, char ***env);
 static char *_uint32_array_to_str(int array_len, const uint32_t *array);
 
-/* Search for "export NAME=value" records in buf and 
- * use them to add environment variables to env */
-static void _update_env(char *buf, char ***env)
+/*
+ * Process TaskProlog output
+ * "export NAME=value"	adds environment variables
+ * "unset  NAME"	clears an environment variable
+ * "print  <whatever>"	writes that to the job's stdout
+ */
+static void _proc_stdout(char *buf, char ***env)
 {
-	char *name_ptr, *val_ptr, *buf_ptr = buf;
-	int quote;
+	bool end_buf = false;
+	int len;
+	char *buf_ptr, *name_ptr, *val_ptr;
+	char *end_line, *equal_ptr;
 
-	while ((buf_ptr = strstr(buf_ptr, "export"))) {
-		buf_ptr += 6;
-		while (isspace(buf_ptr[0]))
-			buf_ptr++;
-		if (buf_ptr[0] == '=')	/* mal-formed */
-			continue;
-
-		name_ptr = buf_ptr;	/* start of env var name */
-		while ((buf_ptr[0] != '=') && (buf_ptr[0] != '\0'))
-			buf_ptr++;
-		if (buf_ptr[0] == '\0')	/* mal-formed */
-			continue;
-		buf_ptr[0] = '\0';	/* end of env var name */
-		buf_ptr++;
-
-		val_ptr = buf_ptr;	/* start of env var value */
-		if (val_ptr[0] == '\'')
-			quote = 1;
-		else if (val_ptr[0] == '\"')
-			quote = 2;
-		else
-			quote = 0;
-		buf_ptr++;
-		while (buf_ptr[0] != '\0') {
-			if ((quote == 0) && 
-			    ((buf_ptr[0] == '\n') || (buf_ptr[0] == '\r'))) {
-				buf_ptr[0] = '\0';
+	buf_ptr = buf;
+	while (buf_ptr[0]) {
+		end_line = strchr(buf_ptr, '\n');
+		if (!end_line) {
+			end_line = buf_ptr + strlen(buf_ptr);
+			end_buf = true;
+		}
+		if (!strncmp(buf_ptr, "print ", 6)) {
+			buf_ptr += 6;
+			while (isspace(buf_ptr[0]))
 				buf_ptr++;
-				break;
+			len = end_line - buf_ptr + 1;
+			safe_write(1, buf_ptr, len);
+		} else if (!strncmp(buf_ptr, "export ",7)) {
+			name_ptr = buf_ptr + 7;
+			while (isspace(name_ptr[0]))
+				name_ptr++;
+			equal_ptr = strchr(name_ptr, '=');
+			if (!equal_ptr || (equal_ptr > end_line))
+				goto rwfail;
+			val_ptr = equal_ptr + 1;
+			while (isspace(equal_ptr[-1]))
+				equal_ptr--;
+			equal_ptr[0] = '\0';	
+			end_line[0] = '\0';
+			info("export name:%s:val:%s:", name_ptr, val_ptr);
+			if (setenvf(env, name_ptr, "%s", val_ptr)) {
+				error("Unable to set %s environment variable", 
+				      buf_ptr);
 			}
-			if (((buf_ptr[0] == '\'') && (quote == 1)) ||
-			    ((buf_ptr[0] == '\"') && (quote == 2))) {
-				val_ptr++;
-				buf_ptr[0] = '\0';
-				buf_ptr += 2;
-				break;
-			}
-			buf_ptr++;
+			equal_ptr[0] = '=';
+			if (end_buf)
+				end_line[0] = '\0';
+			else
+				end_line[0] = '\n';
+		} else if (!strncmp(buf_ptr, "unset ", 6)) {
+			name_ptr = buf_ptr + 6;
+			while (isspace(name_ptr[0]))
+				name_ptr++;
+			if ((name_ptr[0] == '\n') || (name_ptr[0] == '\0'))
+				goto rwfail;
+			while (isspace(end_line[-1]))
+				end_line--;	
+			end_line[0] = '\0';
+			info(" unset name:%s:", name_ptr);
+			unsetenvp(*env, name_ptr);
+			if (end_buf)
+				end_line[0] = '\0';
+			else
+				end_line[0] = '\n';
 		}
 
-		debug("name:%s:val:%s:", name_ptr, val_ptr);
-		if (setenvf(env, name_ptr, "%s", val_ptr))
-			error("Unable to set %s environment variable", 
-			      name_ptr);
-	}		
-}
-
-/* Search for "print <whatever>" records in buf and 
- * write that to the job's stdout */
-static void _print_stdout(char *buf)
-{
-	char *tmp_ptr, *buf_ptr = buf;
-
-	while ((tmp_ptr = strstr(buf_ptr, "print "))) {
-		if ((tmp_ptr != buf_ptr) && (tmp_ptr[-1] != '\n')) {
-			/* Skip "print " if not at start of a line */
-			buf_ptr +=6;
-			continue;
-		}
-		buf_ptr = tmp_ptr + 6;
-		tmp_ptr = strchr(buf_ptr, '\n');
-		if (tmp_ptr) {
-			safe_write(1, buf_ptr, (tmp_ptr - buf_ptr + 1));
-			buf_ptr = tmp_ptr + 1;
-		} else {
-			safe_write(1, buf_ptr, strlen(buf_ptr));
+rwfail:		 /* process rest of script output */
+		if (end_buf)
 			break;
-		}
-	}		
-rwfail:
+		buf_ptr = end_line + 1;
+	}
 	return;
 }
 
@@ -232,6 +224,8 @@ _run_script_and_set_env(const char *name, const char *path, slurmd_job_t *job)
 			error("couldn't do the dup: %m");
 		close(2);
 		close(0);
+		close(pfd[0]);
+		close(pfd[1]);
 #ifdef SETPGRP_TWO_ARGS
 		setpgrp(0, 0);
 #else
@@ -246,9 +240,8 @@ _run_script_and_set_env(const char *name, const char *path, slurmd_job_t *job)
 	buf[0] = '\0';
 	while ((nread = read(pfd[0], buf+offset, (sizeof(buf)-offset))) > 0)
 		offset += nread;
-	/* debug("read %d:%s:", offset, buf); */
-	_update_env(buf, &job->env);
-	_print_stdout(buf);
+	/* debug ("read %d:%s:", offset, buf); */
+	_proc_stdout(buf, &job->env);
 
 	close(pfd[0]);
 	while (1) {

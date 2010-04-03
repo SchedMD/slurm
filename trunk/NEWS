@@ -173,8 +173,17 @@ documents those changes that are of interest to users and admins.
     either a signal name in addition to the previously supported signal
     numbers (e.g. "--signal=USR2@200").
  -- BLUEGENE - Fixed sinfo --long --Node output for cpus on a single cnode.
- -- Add support for quotes in environment variables exported by the TaskProlog
-    program.
+ -- In sched/wiki2 - Fix another logic bug in support of Moab being able to
+    identify preemptable jobs.
+ -- In sched/wiki2 - For BlueGene systems only: Fix bug preventing Moab from
+    being able to correctly change the node count of pending jobs.
+ -- In select/cons_res - Fix bug preventing job preemption with a configuration
+    of Shared=FORCE:1 and PreemptMode=GANG,SUSPEND.
+ -- In the TaskProlog, add support for an "unset" option to clear environment
+    variables for the user application. Also add support for embedded white-
+    space in the environment variables exported to the user application
+    (everything after the equal sign to the end of the line is included without
+    alteration).
 
 * Changes in SLURM 2.1.6-2
 ==========================
