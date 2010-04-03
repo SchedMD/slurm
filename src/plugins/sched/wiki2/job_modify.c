@@ -315,6 +315,7 @@ host_fini:	if (rc) {
 	}
 
 	if (new_node_cnt) {
+		static uint16_t cpus_per_node = 0;
 		job_desc_msg_t job_desc;
 
 		memset(&job_desc, 0, sizeof(job_desc_msg_t));
@@ -329,8 +330,8 @@ host_fini:	if (rc) {
 
 		if (IS_JOB_PENDING(job_ptr) && job_ptr->details) {
 			job_ptr->details->min_nodes = job_desc.min_nodes;
-			if (job_ptr->details->max_nodes
-			&&  (job_ptr->details->max_nodes < job_desc.min_nodes))
+			if (job_ptr->details->max_nodes &&
+			   (job_ptr->details->max_nodes < job_desc.min_nodes))
 				job_ptr->details->max_nodes =
 					job_desc.min_nodes;
 			info("wiki: change job %u min_nodes to %u",
@@ -339,6 +340,17 @@ host_fini:	if (rc) {
 			job_ptr->details->min_cpus = job_desc.min_cpus;
 			job_ptr->details->max_cpus = job_desc.max_cpus;
 			job_ptr->details->pn_min_cpus = job_desc.pn_min_cpus;
+
+			if (!cpus_per_node) {
+				select_g_alter_node_cnt(SELECT_GET_NODE_CPU_CNT,
+							&cpus_per_node);
+			}
+			new_node_cnt = job_ptr->num_procs;
+			if (cpus_per_node)
+				new_node_cnt /= cpus_per_node;
+			select_g_select_jobinfo_set(job_ptr->select_jobinfo,
+						    SELECT_JOBDATA_NODE_CNT,
+						    &new_node_cnt);
 #endif
 			last_job_update = now;
 			update_accounting = true;
