@@ -87,6 +87,8 @@ typedef struct slurm_select_ops {
 						List *preemptee_job_list);
 	int		(*job_begin)	       (struct job_record *job_ptr);
 	int		(*job_ready)	       (struct job_record *job_ptr);
+	int		(*job_resized)	       (struct job_record *job_ptr,
+						struct node_record *node_ptr);
 	int		(*job_fini)	       (struct job_record *job_ptr);
 	int		(*job_suspend)	       (struct job_record *job_ptr);
 	int		(*job_resume)	       (struct job_record *job_ptr);
@@ -189,6 +191,7 @@ static slurm_select_ops_t * _select_get_ops(slurm_select_context_t *c)
 		"select_p_job_test",
 		"select_p_job_begin",
 		"select_p_job_ready",
+		"select_p_job_resized",
 		"select_p_job_fini",
 		"select_p_job_suspend",
 		"select_p_job_resume",
@@ -699,6 +702,20 @@ extern int select_g_job_ready(struct job_record *job_ptr)
 		return -1;
 
 	return (*(g_select_context->ops.job_ready))(job_ptr);
+}
+
+/*
+ * Modify internal data structures for a job that has changed size
+ *	Only support jobs shrinking now.
+ * RET: 0 or an error code
+ */
+extern int select_g_job_resized(struct job_record *job_ptr,
+				struct node_record *node_ptr)
+{
+	if (slurm_select_init() < 0)
+		return -1;
+
+	return (*(g_select_context->ops.job_resized))(job_ptr, node_ptr);
 }
 
 /*

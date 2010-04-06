@@ -249,6 +249,14 @@ extern int select_g_job_begin(struct job_record *job_ptr);
 extern int select_g_job_ready(struct job_record *job_ptr);
 
 /*
+ * Modify internal data structures for a job that has changed size
+ *	Only support jobs shrinking now.
+ * RET: 0 or an error code
+ */
+extern int select_g_job_resized(struct job_record *job_ptr,
+				struct node_record *node_ptr);
+
+/*
  * Note termination of job is starting. Executed from slurmctld.
  * IN job_ptr - pointer to job being terminated
  */
