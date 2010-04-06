@@ -582,7 +582,6 @@ extern int job_sizes_grouped_by_top_acct(int argc, char *argv[])
 	uint32_t total_time = 0;
 	slurmdb_report_time_format_t temp_format;
 
-	List job_list = NULL;
 	List slurmdb_report_cluster_grouping_list = NULL;
 	List assoc_list = NULL;
 
@@ -737,11 +736,6 @@ end_it:
 		grouping_list = NULL;
 	}
 
-	if(job_list) {
-		list_destroy(job_list);
-		job_list = NULL;
-	}
-
 	if(assoc_list) {
 		list_destroy(assoc_list);
 		assoc_list = NULL;
@@ -786,7 +780,6 @@ extern int job_sizes_grouped_by_wckey(int argc, char *argv[])
 	uint32_t total_time = 0;
 	slurmdb_report_time_format_t temp_format;
 
-	List job_list = NULL;
 	List slurmdb_report_cluster_grouping_list = NULL;
 	List wckey_list = NULL;
 
@@ -939,11 +932,6 @@ end_it:
 	if(grouping_list) {
 		list_destroy(grouping_list);
 		grouping_list = NULL;
-	}
-
-	if(job_list) {
-		list_destroy(job_list);
-		job_list = NULL;
 	}
 
 	if(wckey_list) {
