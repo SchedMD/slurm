@@ -593,9 +593,6 @@ extern int cluster_account_by_user(int argc, char *argv[])
 	ListIterator itr2 = NULL;
 	ListIterator cluster_itr = NULL;
 	List format_list = list_create(slurm_destroy_char);
-	List assoc_list = NULL;
-	List first_list = NULL;
-	List cluster_list = NULL;
 	List slurmdb_report_cluster_list = NULL;
 	List tree_list = NULL;
 	int i=0;
@@ -762,21 +759,6 @@ extern int cluster_account_by_user(int argc, char *argv[])
 	list_iterator_destroy(cluster_itr);
 end_it:
 	slurmdb_destroy_association_cond(assoc_cond);
-
-	if(assoc_list) {
-		list_destroy(assoc_list);
-		assoc_list = NULL;
-	}
-
-	if(first_list) {
-		list_destroy(first_list);
-		first_list = NULL;
-	}
-
-	if(cluster_list) {
-		list_destroy(cluster_list);
-		cluster_list = NULL;
-	}
 
 	if(slurmdb_report_cluster_list) {
 		list_destroy(slurmdb_report_cluster_list);
