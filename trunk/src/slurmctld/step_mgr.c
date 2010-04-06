@@ -623,11 +623,15 @@ _pick_step_nodes (struct job_record  *job_ptr,
 	}
 
 	if (step_spec->mem_per_cpu && _is_mem_resv()) {
-		int node_inx = 0, usable_mem;
-		for (i=bit_ffs(job_resrcs_ptr->node_bitmap);
-		     i<node_record_count; i++) {
+		int node_inx = -1, first_bit, last_bit, usable_mem;
+		first_bit = bit_ffs(job_resrcs_ptr->node_bitmap);
+		last_bit  = bit_fls(job_resrcs_ptr->node_bitmap);
+		for (i=first_bit; i<=last_bit; i++) {
 			if (!bit_test(job_resrcs_ptr->node_bitmap, i))
 				continue;
+			node_inx++;
+			if (!bit_test(nodes_avail, i))
+				continue;	/* node now DOWN */
 			usable_mem = job_resrcs_ptr->
 				     memory_allocated[node_inx] -
 				     job_resrcs_ptr->memory_used[node_inx];
@@ -650,8 +654,6 @@ _pick_step_nodes (struct job_record  *job_ptr,
 							job_resrcs_ptr->
 							cpus[node_inx]);
 			}
-			if (++node_inx >= job_resrcs_ptr->nhosts)
-				break;
 		}
 	}
 
