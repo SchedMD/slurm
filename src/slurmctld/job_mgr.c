@@ -1866,6 +1866,7 @@ extern void excise_node_from_job(struct job_record *job_ptr,
 	}
 	job_ptr->node_cnt = new_pos + 1;
 	bit_free(orig_bitmap);
+	(void) select_g_job_resized(job_ptr, node_ptr);
 }
 
 /*
@@ -5991,6 +5992,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		}
 	}
 
+#ifndef HAVE_BG
 	if (job_specs->req_nodes && 
 	    (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr))) {
 		/* Use req_nodes to change the nodes associated with a running
@@ -6024,6 +6026,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		xfree(job_specs->req_nodes);
 		update_accounting = true;
 	}
+#endif
 
 	if (job_specs->req_nodes) {
 		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
@@ -6055,6 +6058,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		}
 	}
 
+#ifndef HAVE_BG
 	if ((job_specs->min_nodes != NO_VAL) &&
 	    (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr))) {
 		/* Use req_nodes to change the nodes associated with a running
@@ -6092,6 +6096,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		}
 		update_accounting = true;
 	}
+#endif
 
 	if (job_specs->ntasks_per_node != (uint16_t) NO_VAL) {
 		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))

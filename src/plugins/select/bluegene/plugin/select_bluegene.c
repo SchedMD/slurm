@@ -521,6 +521,12 @@ extern int select_p_job_ready(struct job_record *job_ptr)
 	return block_ready(job_ptr);
 }
 
+extern int select_p_job_resized(struct job_record *job_ptr,
+				struct node_record *node_ptr)
+{
+	return ESLURM_NOT_SUPPORTED;
+}
+
 extern int select_p_job_fini(struct job_record *job_ptr)
 {
 	return term_job(job_ptr);

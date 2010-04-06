@@ -1701,6 +1701,13 @@ extern int select_p_job_ready(struct job_record *job_ptr)
 	return SLURM_SUCCESS;
 }
 
+extern int select_p_job_resized(struct job_record *job_ptr,
+				struct node_record *node_ptr)
+{
+	/* TBD */
+	return SLURM_SUCCESS;
+}
+
 extern int select_p_job_fini(struct job_record *job_ptr)
 {
 	xassert(job_ptr);

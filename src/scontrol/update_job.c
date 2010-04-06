@@ -637,12 +637,16 @@ static void _update_job_size(uint32_t job_id)
 
 	xstrfmtcat(fname_csh, "slurm_job_%u_resize.csh", job_id);
 	xstrfmtcat(fname_sh,  "slurm_job_%u_resize.sh", job_id);
+	(void) unlink(fname_csh);
+	(void) unlink(fname_sh);
  	if (!(resize_csh = fopen(fname_csh, "w"))) {
-		fprintf(stderr, "Could not create file %s", fname_csh);
+		fprintf(stderr, "Could not create file %s: %s\n", fname_csh, 
+			strerror(errno));
 		goto fini;
 	}
  	if (!(resize_sh = fopen(fname_sh, "w"))) {
-		fprintf(stderr, "Could not create file %s", fname_sh);
+		fprintf(stderr, "Could not create file %s: %s\n", fname_sh, 
+			strerror(errno));
 		goto fini;
 	}
 	chmod(fname_csh, 0500);	/* Make file executable */
