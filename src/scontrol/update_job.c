@@ -626,7 +626,7 @@ scontrol_job_notify(int argc, char *argv[])
 static void _update_job_size(uint32_t job_id)
 {
 	resource_allocation_response_msg_t *alloc_info;
-	char *fname_csh = NULL, *fname_sh = NULL, *tmp;
+	char *fname_csh = NULL, *fname_sh = NULL;
 	FILE *resize_csh = NULL, *resize_sh = NULL;
 
 	if (slurm_allocation_lookup_lite(job_id, &alloc_info) !=
@@ -673,6 +673,16 @@ static void _update_job_size(uint32_t job_id)
 			alloc_info->node_cnt);
 	}
 	if (getenv("SLURM_JOB_CPUS_PER_NODE")) {
+#if 1
+		fprintf(resize_sh, "unset SLURM_JOB_CPUS_PER_NODE\n");
+		fprintf(resize_csh, "unsetenv SLURM_JOB_CPUS_PER_NODE\n");
+#else
+		/* The job resource structure is currently based upon the
+		 * original job allocation, so we don't have sufficient
+		 * information to recreate this environment variable today.
+		 * This is a possible future enhancement if/when job resource
+		 * information is corrected after job resize */
+		char *tmp;
 		tmp = uint32_compressed_to_str(alloc_info->num_cpu_groups,
 					       alloc_info->cpus_per_node,
 					       alloc_info->cpu_count_reps);
@@ -681,6 +691,7 @@ static void _update_job_size(uint32_t job_id)
 		fprintf(resize_csh, "setenv SLURM_JOB_CPUS_PER_NODE \"%s\"\n",
 			tmp);
 		xfree(tmp);
+#endif
 	}
 	if (getenv("SLURM_TASKS_PER_NODE")) {
 		/* We don't have sufficient information to recreate this */
