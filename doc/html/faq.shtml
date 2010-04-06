@@ -645,8 +645,9 @@ killed unless initiated with the <i>--no-kill</i> option.
 After the job size is changed, some environment variables created by SLURM
 containing information about the job's environment will no longer be valid and
 should either be removed or altered (e.g. SLURM_NNODES, SLURM_NODELIST and
-SLURM_NPROCS, others may need to be altered depending upon the MPI
-implementation in use). 
+SLURM_NPROCS).
+The <i>scontrol</i> command will generate a script that can be executed to
+reset local environment variables
 You must retain the SLURM_JOBID environment variable in order for the
 <i>srun</i> command to gather information about the job's current state and
 specify the desired node and/or task count in subsequent <i>srun</i> invocations. 
@@ -655,10 +656,9 @@ An example is shown below.
 #!/bin/bash
 srun my_big_job
 scontrol update JobId=$SLURM_JOBID NumNodes=2
-unset SLURM_NNODES
-unset SLURM_NODELIST
-unset SLURM_NPROCS
+. slurm_job_${SLURM_JOBID}_resize.sh
 srun -N2 my_small_job
+rm slurm_job_${SLURM_JOBID}_resize.*
 </pre>
 
 <p class="footer"><a href="#top">top</a></p>

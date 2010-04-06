@@ -38,12 +38,14 @@
 \*****************************************************************************/
 
 #include "scontrol.h"
+#include "src/common/env.h"
 #include "src/common/proc_args.h"
 
 static int _parse_checkpoint_args(int argc, char **argv,
 				  uint16_t *max_wait, char **image_dir);
 static int _parse_restart_args(int argc, char **argv,
 			       uint16_t *stick, char **image_dir);
+static void _update_job_size(uint32_t job_id);
 
 /*
  * scontrol_checkpoint - perform some checkpoint/resume operation
@@ -269,6 +271,7 @@ scontrol_requeue(char *job_id_str)
 extern int
 scontrol_update_job (int argc, char *argv[])
 {
+	bool update_size = false;
 	int i, update_cnt = 0;
 	char *tag, *val;
 	int taglen, vallen;
@@ -379,6 +382,7 @@ scontrol_update_job (int argc, char *argv[])
 				false);
 			if(!rc)
 				return rc;
+			update_size = true;
 			update_cnt++;
 		}
 		else if (strncasecmp(tag, "ReqSockets", MAX(taglen, 4)) == 0) {
@@ -471,6 +475,7 @@ scontrol_update_job (int argc, char *argv[])
 		else if (!strncasecmp(tag, "NodeList",    MAX(taglen, 8)) ||
 			 !strncasecmp(tag, "ReqNodeList", MAX(taglen, 8))) {
 			job_msg.req_nodes = val;
+			update_size = true;
 			update_cnt++;
 		}
 		else if (strncasecmp(tag, "Features", MAX(taglen, 1)) == 0) {
@@ -577,8 +582,11 @@ scontrol_update_job (int argc, char *argv[])
 
 	if (slurm_update_job(&job_msg))
 		return slurm_get_errno ();
-	else
+	else {
+		if (update_size)
+			_update_job_size(job_msg.job_id);
 		return 0;
+	}
 }
 
 /*
@@ -615,3 +623,80 @@ scontrol_job_notify(int argc, char *argv[])
 		return 0;
 }
 
+static void _update_job_size(uint32_t job_id)
+{
+	resource_allocation_response_msg_t *alloc_info;
+	char *fname_csh = NULL, *fname_sh = NULL, *tmp;
+	FILE *resize_csh = NULL, *resize_sh = NULL;
+
+	if (slurm_allocation_lookup_lite(job_id, &alloc_info) !=
+	    SLURM_SUCCESS) {
+		slurm_perror("slurm_allocation_lookup_lite");
+		return;
+	}
+
+	xstrfmtcat(fname_csh, "slurm_job_%u_resize.csh", job_id);
+	xstrfmtcat(fname_sh,  "slurm_job_%u_resize.sh", job_id);
+ 	if (!(resize_csh = fopen(fname_csh, "w"))) {
+		fprintf(stderr, "Could not create file %s", fname_csh);
+		goto fini;
+	}
+ 	if (!(resize_sh = fopen(fname_sh, "w"))) {
+		fprintf(stderr, "Could not create file %s", fname_sh);
+		goto fini;
+	}
+	chmod(fname_csh, 0500);	/* Make file executable */
+	chmod(fname_sh, 0500);
+
+	if (getenv("SLURM_NODELIST")) {
+		fprintf(resize_sh, "export SLURM_NODELIST=\"%s\"\n",
+			alloc_info->node_list);
+		fprintf(resize_csh, "setenv SLURM_NODELIST \"%s\"\n",
+			alloc_info->node_list);
+	}
+	if (getenv("SLURM_JOB_NODELIST")) {
+		fprintf(resize_sh, "export SLURM_JOB_NODELIST=\"%s\"\n", 
+			alloc_info->node_list);
+		fprintf(resize_csh, "setenv SLURM_JOB_NODELIST \"%s\"\n", 
+			alloc_info->node_list);
+	}
+	if (getenv("SLURM_NNODES")) {
+		fprintf(resize_sh, "export SLURM_NNODES=%u\n",
+			alloc_info->node_cnt);
+		fprintf(resize_csh, "setenv SLURM_NNODES %u\n",
+			alloc_info->node_cnt);
+	}
+	if (getenv("SLURM_JOB_NUM_NODES")) {
+		fprintf(resize_sh, "export SLURM_JOB_NUM_NODES=%u\n",
+			alloc_info->node_cnt);
+		fprintf(resize_csh, "setenv SLURM_JOB_NUM_NODES %u\n",
+			alloc_info->node_cnt);
+	}
+	if (getenv("SLURM_JOB_CPUS_PER_NODE")) {
+		tmp = uint32_compressed_to_str(alloc_info->num_cpu_groups,
+					       alloc_info->cpus_per_node,
+					       alloc_info->cpu_count_reps);
+		fprintf(resize_sh, "export SLURM_JOB_CPUS_PER_NODE=\"%s\"\n",
+			tmp);
+		fprintf(resize_csh, "setenv SLURM_JOB_CPUS_PER_NODE \"%s\"\n",
+			tmp);
+		xfree(tmp);
+	}
+	if (getenv("SLURM_TASKS_PER_NODE")) {
+		/* We don't have sufficient information to recreate this */
+		fprintf(resize_sh, "unset SLURM_TASKS_PER_NODE\n");
+		fprintf(resize_csh, "unsetenv SLURM_TASKS_PER_NODE\n");
+	}
+
+	printf("To reset SLURM environment variables, execute\n");
+	printf("  For bash or sh shells: . ./%s\n", fname_sh);
+	printf("  For csh shells:        source ./%s\n", fname_csh);
+
+fini:	slurm_free_resource_allocation_response_msg(alloc_info);
+	xfree(fname_csh);
+	xfree(fname_sh);
+	if (resize_csh)
+		fclose(resize_csh);
+	if (resize_sh)
+		fclose(resize_sh);
+}

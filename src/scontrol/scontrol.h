@@ -60,6 +60,8 @@
 #ifdef HAVE_STRINGS_H
 #  include <strings.h>
 #endif
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
 
