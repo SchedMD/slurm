@@ -391,13 +391,13 @@ DESTDIR="$RPM_BUILD_ROOT" make install
 DESTDIR="$RPM_BUILD_ROOT" make install-contrib
 
 %ifos aix5.3
-mv ${RPM_BUILD_ROOT}%{_bindir}/srun ${RPM_BUILD_ROOT}%{_sbindir}
+   mv ${RPM_BUILD_ROOT}%{_bindir}/srun ${RPM_BUILD_ROOT}%{_sbindir}
+%else
+   if [ -d /etc/init.d ]; then
+      install -D -m755 etc/init.d.slurm    $RPM_BUILD_ROOT/etc/init.d/slurm
+      install -D -m755 etc/init.d.slurmdbd $RPM_BUILD_ROOT/etc/init.d/slurmdbd
+   fi
 %endif
-
-if [ -d /etc/init.d ]; then
-   install -D -m755 etc/init.d.slurm    $RPM_BUILD_ROOT/etc/init.d/slurm
-   install -D -m755 etc/init.d.slurmdbd $RPM_BUILD_ROOT/etc/init.d/slurmdbd
-fi
 install -D -m644 etc/cgroup.conf.example ${RPM_BUILD_ROOT}%{_sysconfdir}/cgroup.conf.example
 install -D -m755 etc/cgroup.release_agent ${RPM_BUILD_ROOT}%{_sysconfdir}/cgroup.release_agent
 install -D -m644 etc/slurm.conf.example ${RPM_BUILD_ROOT}%{_sysconfdir}/slurm.conf.example
@@ -432,9 +432,8 @@ rm -f ${RPM_BUILD_ROOT}%{_mandir}/man1/srun_cr* ${RPM_BUILD_ROOT}%{_bindir}/srun
 # Build conditional file list for main package
 LIST=./slurm.files
 touch $LIST
-if [ -d /etc/init.d ]; then
-   echo "/etc/init.d/slurm"    >> $LIST
-fi
+test -f $RPM_BUILD_ROOT/etc/init.d/slurm                       &&
+  echo /etc/init.d/slurm                               >> $LIST
 
 %if %{slurm_with aix}
 install -D -m644 etc/federation.conf.example ${RPM_BUILD_ROOT}%{_sysconfdir}/federation.conf.example
@@ -457,9 +456,8 @@ test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/switch_federation.so  &&
 
 LIST=./slurmdbd.files
 touch $LIST
-if [ -d /etc/init.d ]; then
-   echo "/etc/init.d/slurmdbd" >> $LIST
-fi
+test -f $RPM_BUILD_ROOT/etc/init.d/slurm                       &&
+  echo /etc/init.d/slurmdbd                            >> $LIST
 
 LIST=./sql.files
 touch $LIST

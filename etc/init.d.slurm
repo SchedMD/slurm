@@ -38,7 +38,10 @@ if [ -f /etc/rc.status ]; then
 
    rc_reset
 else
-   [ -f /etc/rc.d/init.d/functions ] || exit 0
+   if [ ! -f /etc/rc.d/init.d/functions ]; then
+      echo "Could not find /etc/rc.d/init.d/functions. Is some other daemon launch mechanism used?"
+      exit 1
+   fi
    . /etc/rc.d/init.d/functions
    SUSE=0
    STARTPROC=daemon
@@ -50,6 +53,11 @@ else
       exit $RETVAL
    }
    RETVAL=0
+fi
+
+if [ ! -x $BINDIR/scontrol ]; then
+   echo "Could not find $BINDIR/scontrol. Bad path?"
+   exit 1
 fi
 
 # We can not use a starter program without losing environment
@@ -68,7 +76,10 @@ else
     SLURMD_OPTIONS=""
 fi
 
-[ -f $CONFDIR/slurm.conf ] || exit 1
+if [ ! -f $CONFDIR/slurm.conf ]; then
+   echo "Could not find $CONFDIR/slurm.conf. Bad path?"
+   exit 1
+fi
 
 # setup library paths for slurm and munge support
 export LD_LIBRARY_PATH="$LIBDIR:$LD_LIBRARY_PATH"
