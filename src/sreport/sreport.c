@@ -198,7 +198,7 @@ main (int argc, char *argv[])
 		error_code = _get_command (&input_field_count, input_fields);
 	}
 
-	acct_storage_g_close_connection(&db_conn);
+	slurmdb_connection_close(&db_conn);
 	slurm_acct_storage_fini();
 	exit(exit_code);
 }

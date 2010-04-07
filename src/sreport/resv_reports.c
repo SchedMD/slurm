@@ -323,8 +323,7 @@ static List _get_resv_list(int argc, char *argv[],
 
 	_set_resv_cond(&i, argc, argv, resv_cond, format_list);
 
-	resv_list = acct_storage_g_get_reservations(db_conn, my_uid,
-						    resv_cond);
+	resv_list = slurmdb_reservations_get(db_conn, resv_cond);
 	if(!resv_list) {
 		exit_code=1;
 		fprintf(stderr, " Problem with resv query.\n");
