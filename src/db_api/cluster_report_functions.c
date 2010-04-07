@@ -265,8 +265,8 @@ static void _process_wckey_type(
 	}
 }
 
-static List _process_util_by_report(char *calling_name, void *cond,
-				    cluster_report_t type)
+static List _process_util_by_report(void *db_conn, char *calling_name,
+				    void *cond, cluster_report_t type)
 {	ListIterator itr = NULL;
 	ListIterator itr2 = NULL;
 	ListIterator type_itr = NULL;
@@ -281,7 +281,6 @@ static List _process_util_by_report(char *calling_name, void *cond,
 	int exit_code = 0;
 
 	uid_t my_uid = getuid();
-	void *db_conn = slurmdb_connection_get();
 	List ret_list = list_create(slurmdb_destroy_report_cluster_rec);
 
 	memset(&cluster_cond, 0, sizeof(slurmdb_cluster_cond_t));
@@ -416,8 +415,6 @@ end_it:
 		cluster_list = NULL;
 	}
 
-	slurmdb_connection_close(&db_conn);
-
 	if(exit_code) {
 		if(ret_list) {
 			list_destroy(ret_list);
@@ -429,30 +426,34 @@ end_it:
 }
 
 
-extern List slurmdb_report_cluster_account_by_user(
+extern List slurmdb_report_cluster_account_by_user(void *db_conn,
 	slurmdb_association_cond_t *assoc_cond)
 {
-	return _process_util_by_report("slurmdb_report_cluster_account_by_user",
+	return _process_util_by_report(db_conn,
+				       "slurmdb_report_cluster_account_by_user",
 				       assoc_cond, CLUSTER_REPORT_AU);
 }
 
-extern List slurmdb_report_cluster_user_by_account(
+extern List slurmdb_report_cluster_user_by_account(void *db_conn,
 	slurmdb_association_cond_t *assoc_cond)
 {
-	return _process_util_by_report("slurmdb_report_cluster_user_by_account",
+	return _process_util_by_report(db_conn,
+				       "slurmdb_report_cluster_user_by_account",
 				       assoc_cond, CLUSTER_REPORT_UA);
 }
 
-extern List slurmdb_report_cluster_wckey_by_user(
+extern List slurmdb_report_cluster_wckey_by_user(void *db_conn,
 	slurmdb_wckey_cond_t *wckey_cond)
 {
-	return _process_util_by_report("slurmdb_report_cluster_wckey_by_user",
+	return _process_util_by_report(db_conn,
+				       "slurmdb_report_cluster_wckey_by_user",
 				       wckey_cond, CLUSTER_REPORT_WU);
 }
 
-extern List slurmdb_report_cluster_user_by_wckey(
+extern List slurmdb_report_cluster_user_by_wckey(void *db_conn,
 	slurmdb_wckey_cond_t *wckey_cond)
 {
-	return _process_util_by_report("slurmdb_report_cluster_user_by_wckey",
+	return _process_util_by_report(db_conn,
+				       "slurmdb_report_cluster_user_by_wckey",
 				       wckey_cond, CLUSTER_REPORT_UW);
 }
