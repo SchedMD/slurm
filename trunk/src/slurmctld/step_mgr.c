@@ -1007,8 +1007,10 @@ static void _pick_step_cores(struct step_record *step_ptr,
 			if (!bit_test(job_resrcs_ptr->core_bitmap, bit_offset))
 				continue;
 			if ((use_all_cores == false) &&
-			    bit_test(job_resrcs_ptr->core_bitmap_used, bit_offset))
+			    bit_test(job_resrcs_ptr->core_bitmap_used, 
+				     bit_offset)) {
 				continue;
+			}
 			bit_set(job_resrcs_ptr->core_bitmap_used, bit_offset);
 			bit_set(step_ptr->core_bitmap_job, bit_offset);
 #if 0
