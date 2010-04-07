@@ -6011,7 +6011,8 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			i_first = bit_ffs(job_ptr->node_bitmap);
 			i_last  = bit_fls(job_ptr->node_bitmap);
 			for (i=i_first; i<=i_last; i++) {
-				if (bit_test(req_bitmap, i))
+				if (bit_test(req_bitmap, i) ||
+				    !bit_test(job_ptr->node_bitmap, i))
 					continue;
 				node_ptr = node_record_table_ptr + i;
 				kill_step_on_node(job_ptr, node_ptr);
