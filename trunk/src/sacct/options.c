@@ -524,8 +524,7 @@ int get_data(void)
 		return SLURM_SUCCESS;
 	} else {
 
-		jobs = jobacct_storage_g_get_jobs_cond(acct_db_conn, getuid(),
-						       job_cond);
+		jobs = slurmdb_jobs_get(acct_db_conn, job_cond);
 	}
 
 	if (params.opt_fdump)
@@ -920,7 +919,7 @@ void parse_command_line(int argc, char **argv)
 			exit(1);
 		}
 		xfree(acct_type);
-		acct_db_conn = acct_storage_g_get_connection(false, 0, false, NULL);
+		acct_db_conn = slurmdb_connection_get();
 		if(errno != SLURM_SUCCESS) {
 			error("Problem talking to the database: %m");
 			exit(1);
@@ -1422,7 +1421,7 @@ void sacct_fini()
 	if(params.opt_completion)
 		g_slurm_jobcomp_fini();
 	else {
-		acct_storage_g_close_connection(&acct_db_conn);
+		slurmdb_connection_close(&acct_db_conn);
 		slurm_acct_storage_fini();
 	}
 	xfree(params.opt_field_list);
