@@ -184,6 +184,8 @@ extern select_nodeinfo_t *select_p_select_nodeinfo_alloc(uint32_t size);
 extern int select_p_select_nodeinfo_free(select_nodeinfo_t *nodeinfo);
 
 /* Procedure Declarations */
+static int _rm_job_from_one_node(struct job_record *job_ptr,
+				 struct node_record *node_ptr);
 static int _run_now(struct job_record *job_ptr, bitstr_t *bitmap,
 		    uint32_t min_nodes, uint32_t max_nodes,
 		    uint32_t req_nodes, uint16_t job_node_req,
@@ -789,11 +791,10 @@ static void _build_row_bitmaps(struct part_res_record *p_ptr)
 			if (p_ptr->row[i].num_jobs == 0)
 				continue;
 			for (j = 0; j < p_ptr->row[i].num_jobs; j++) {
-				add_job_to_cores(
-						p_ptr->row[i].job_list[j],
-						&(p_ptr->row[i].row_bitmap),
-						cr_node_num_cores,
-						cr_num_core_count);
+				add_job_to_cores(p_ptr->row[i].job_list[j],
+						 &(p_ptr->row[i].row_bitmap),
+						 cr_node_num_cores,
+						 cr_num_core_count);
 			}
 		}
 	}
@@ -868,9 +869,12 @@ static int _add_job_to_res(struct job_record *job_ptr, int action)
 
 	/* add memory */
 	if (action != 2) {
-		for (i = 0, n = 0; i < select_node_cnt; i++) {
+		for (i = 0, n = -1; i < select_node_cnt; i++) {
 			if (!bit_test(job->node_bitmap, i))
 				continue;
+			n++;
+			if (job->memory_allocated[n] == 0)
+				continue;	/* node lost by job resizing */
 			select_node_usage[i].alloc_memory +=
 						job->memory_allocated[n];
 			if ((select_node_usage[i].alloc_memory >
@@ -882,7 +886,6 @@ static int _add_job_to_res(struct job_record *job_ptr, int action)
 				      job_ptr->job_id);
 
 			}
-			n++;
 		}
 	}
 
@@ -948,6 +951,7 @@ static int _rm_job_from_res(struct part_res_record *part_record_ptr,
 			    struct job_record *job_ptr, int action)
 {
 	struct job_resources *job = job_ptr->job_resrcs;
+	int first_bit, last_bit;
 	int i, n;
 
 	if (!job || !job->core_bitmap) {
@@ -963,9 +967,14 @@ static int _rm_job_from_res(struct part_res_record *part_record_ptr,
 
 	/* subtract memory */
 	if (action != 2) {
-		for (i = 0, n = 0; i < select_node_cnt; i++) {
+		first_bit = bit_ffs(job->node_bitmap);
+		last_bit =  bit_fls(job->node_bitmap);
+		for (i = first_bit, n = -1; i <= last_bit; i++) {
 			if (!bit_test(job->node_bitmap, i))
 				continue;
+			n++;
+			if (job->memory_allocated[n] == 0)
+				continue;	/* node lost by job resizing */
 			if (node_usage[i].alloc_memory <
 			    job->memory_allocated[n]) {
 				error("error: node %s mem is underallocated "
@@ -979,7 +988,6 @@ static int _rm_job_from_res(struct part_res_record *part_record_ptr,
 				node_usage[i].alloc_memory -=
 						job->memory_allocated[n];
 			}
-			n++;
 		}
 	}
 
@@ -1041,21 +1049,132 @@ static int _rm_job_from_res(struct part_res_record *part_record_ptr,
 			 * the removal of this job. If all cores are now
 			 * available, set node_state = NODE_CR_AVAILABLE
 			 */
-			for (n = 0; n < select_node_cnt; n++) {
-				if (bit_test(job->node_bitmap, n) == 0)
+			for (i = 0, n = -1; i < select_node_cnt; i++) {
+				if (bit_test(job->node_bitmap, i) == 0)
 					continue;
-				if (node_usage[n].node_state >=
+				n++;
+				if (job->cpus[n] == 0)
+					continue;  /* node lost by job resize */
+				if (node_usage[i].node_state >=
 				    job->node_req) {
-					node_usage[n].node_state -=
+					node_usage[i].node_state -=
 								job->node_req;
 				} else {
 					error("cons_res:_rm_job_from_res: "
 						"node_state mis-count");
-					node_usage[n].node_state =
+					node_usage[i].node_state =
 							NODE_CR_AVAILABLE;
 				}
 			}
 		}
+	}
+
+	return SLURM_SUCCESS;
+}
+
+static int _rm_job_from_one_node(struct job_record *job_ptr,
+				 struct node_record *node_ptr)
+{
+	struct part_res_record *part_record_ptr = select_part_record;
+	struct node_use_record *node_usage = select_node_usage;
+	struct job_resources *job = job_ptr->job_resrcs;
+	struct part_res_record *p_ptr;
+	int first_bit, last_bit;
+	int i, node_inx, n;
+
+	if (!job || !job->core_bitmap) {
+		error("job %u has no select data", job_ptr->job_id);
+		return SLURM_ERROR;
+	}
+
+	debug3("cons_res: _rm_job_from_one_node: job %u node %s", 
+	       job_ptr->job_id, node_ptr->name);
+#if (CR_DEBUG)
+	_dump_job_res(job);
+#endif
+
+	/* subtract memory */
+	node_inx  = node_ptr - node_record_table_ptr;
+	first_bit = bit_ffs(job->node_bitmap);
+	last_bit  = bit_fls(job->node_bitmap);
+	for (i = first_bit, n = -1; i <= last_bit; i++) {
+		if (!bit_test(job->node_bitmap, i))
+			continue;
+		n++;
+		if (i != node_inx)
+			continue;
+
+		job->cpus[n] = 0;
+		job->nprocs = build_job_resources_cpu_array(job);
+		clear_job_resources_node(job, n);
+		if (node_usage[i].alloc_memory < job->memory_allocated[n]) {
+			error("error: node %s mem is underallocated (%u-%u) "
+			      "for job %u",
+			      node_ptr->name, node_usage[i].alloc_memory,
+			      job->memory_allocated[n], job_ptr->job_id);
+			node_usage[i].alloc_memory = 0;
+		} else
+			node_usage[i].alloc_memory -= job->memory_allocated[n];
+		job->memory_allocated[n] = 0;
+		break;
+	}
+
+	if (IS_JOB_SUSPENDED(job_ptr))
+		return SLURM_SUCCESS;	/* No cores allocated to the job now */
+
+	/* subtract cores, reconstruct rows with remaining jobs */
+	if (!job_ptr->part_ptr) {
+		error("error: 'rm' job %u does not have a partition assigned",
+		      job_ptr->job_id);
+		return SLURM_ERROR;
+	}
+
+	for (p_ptr = part_record_ptr; p_ptr; p_ptr = p_ptr->next) {
+		if (p_ptr->part_ptr == job_ptr->part_ptr)
+			break;
+	}
+	if (!p_ptr) {
+		error("error: 'rm' could not find part %s",
+		      job_ptr->part_ptr->name);
+		return SLURM_ERROR;
+	}
+
+	if (!p_ptr->row) {
+		return SLURM_SUCCESS;
+	}
+
+	/* look for the job in the partition's job_list */
+	n = 0;
+	for (i = 0; i < p_ptr->num_rows; i++) {
+		uint32_t j;
+		for (j = 0; j < p_ptr->row[i].num_jobs; j++) {
+			if (p_ptr->row[i].job_list[j] != job)
+				continue;
+			debug3("cons_res: found job %u in part %s row %u",
+			       job_ptr->job_id, p_ptr->part_ptr->name, i);
+			/* found job - we're done, don't actually remove */
+			n = 1;
+			i = p_ptr->num_rows;
+			break;
+		}
+	}
+	if (n == 0) {
+		error("cons_res: could not find job %u in partition %s",
+		      job_ptr->job_id, p_ptr->part_ptr->name);
+		return SLURM_ERROR;
+	}
+
+
+	/* job was found and removed from core-bitmap, so refresh CR bitmaps */
+	_build_row_bitmaps(p_ptr);
+
+	/* Adjust the node_state of the node removed from this job. 
+	 * If all cores are now available, set node_state = NODE_CR_AVAILABLE */
+	if (node_usage[node_inx].node_state >= job->node_req) {
+		node_usage[node_inx].node_state -= job->node_req;
+	} else {
+		error("cons_res:_rm_job_from_one_node: node_state miscount");
+		node_usage[node_inx].node_state = NODE_CR_AVAILABLE;
 	}
 
 	return SLURM_SUCCESS;
@@ -1421,15 +1540,17 @@ static bool _is_node_avail(struct part_res_record *p_ptr, uint32_t node_i)
 static int _synchronize_bitmaps(struct job_record *job_ptr,
 				bitstr_t ** partially_idle_bitmap)
 {
-	int size, i, idlecpus = bit_set_count(avail_node_bitmap);
+	int size, i;
 	struct part_res_record *p_ptr;
 	size = bit_size(avail_node_bitmap);
 	bitstr_t *bitmap = bit_alloc(size);
+
 	if (bitmap == NULL)
 		return SLURM_ERROR;
 
 	debug3("cons_res: synch_bm: avail %d of %d set, idle %d of %d set",
-	       idlecpus, size, bit_set_count(idle_node_bitmap), size);
+	       bit_set_count(avail_node_bitmap), size,
+	       bit_set_count(idle_node_bitmap), size);
 
 	if (!job_ptr)
 		fatal("cons_res: error: don't know what job I'm sync'ing");
@@ -1440,24 +1561,24 @@ static int _synchronize_bitmaps(struct job_record *job_ptr,
 	}
 
 	for (i = 0; i < select_node_cnt; i++) {
-		if (bit_test(avail_node_bitmap, i) == 0)
+		if (!bit_test(avail_node_bitmap, i))
 			continue;
 
-		if (bit_test(idle_node_bitmap, i) == 1) {
+		if (bit_test(idle_node_bitmap, i)) {
 			bit_set(bitmap, i);
 			continue;
 		}
 
-		if(!p_ptr || _is_node_avail(p_ptr, i))
+		if (!p_ptr || _is_node_avail(p_ptr, i))
 			bit_set(bitmap, i);
 	}
-	idlecpus = bit_set_count(bitmap);
-	if (p_ptr)
+	if (p_ptr) {
 		debug3("cons_res: found %d partially idle nodes in part %s",
-			idlecpus, p_ptr->part_ptr->name);
-	else
+		       bit_set_count(bitmap), p_ptr->part_ptr->name);
+	} else {
 		debug3("cons_res: found %d partially idle nodes",
-			idlecpus);
+		       bit_set_count(bitmap));
+	}
 
 	*partially_idle_bitmap = bitmap;
 	return SLURM_SUCCESS;
@@ -1704,7 +1825,10 @@ extern int select_p_job_ready(struct job_record *job_ptr)
 extern int select_p_job_resized(struct job_record *job_ptr,
 				struct node_record *node_ptr)
 {
-	/* TBD */
+	xassert(job_ptr);
+	xassert(job_ptr->magic == JOB_MAGIC);
+
+	_rm_job_from_one_node(job_ptr, node_ptr);
 	return SLURM_SUCCESS;
 }
 
