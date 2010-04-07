@@ -1013,9 +1013,8 @@ static int _rm_job_from_res(struct part_res_record *part_record_ptr,
 			return SLURM_ERROR;
 		}
 
-		if (!p_ptr->row) {
+		if (!p_ptr->row)
 			return SLURM_SUCCESS;
-		}
 
 		/* remove the job from the job_list */
 		n = 0;
@@ -1104,6 +1103,11 @@ static int _rm_job_from_one_node(struct job_record *job_ptr,
 		if (i != node_inx)
 			continue;
 
+		if (job->cpus[n] == 0) {
+			info("attempt to remove node %s from job %u again",
+			     node_ptr->name, job_ptr->job_id);
+			return SLURM_SUCCESS;
+		}
 		job->cpus[n] = 0;
 		job->nprocs = build_job_resources_cpu_array(job);
 		clear_job_resources_node(job, n);
@@ -1139,9 +1143,8 @@ static int _rm_job_from_one_node(struct job_record *job_ptr,
 		return SLURM_ERROR;
 	}
 
-	if (!p_ptr->row) {
+	if (!p_ptr->row)
 		return SLURM_SUCCESS;
-	}
 
 	/* look for the job in the partition's job_list */
 	n = 0;

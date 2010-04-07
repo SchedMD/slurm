@@ -100,6 +100,10 @@
  *   |      Sock_0     |      Sock_1     |      Sock_0     |      Sock_1     |
  *   | Core_0 | Core_1 | Core_0 | Core_1 | Core_0 | Core_1 | Core_0 | Core_1 |
  *   | Bit_0  | Bit_1  | Bit_2  | Bit_3  | Bit_4  | Bit_5  | Bit_6  | Bit_7  |
+ *
+ * If a job changes size (reliquishes nodes), the node_bitmap will remain
+ * unchanged, but cpus, cpus_used, cpus_array_*, and memory_used will be 
+ * updated (e.g. cpus and mem_used on that node cleared).
  */
 struct job_resources {
 	bitstr_t *	core_bitmap;
@@ -237,8 +241,8 @@ extern void add_job_to_cores(job_resources_t *job_resrcs_ptr,
 			     const uint32_t *core_rep_count);
 
 /* Given a job pointer and a global node index, return the index of that
- * node in the job_resrcs_ptr->cpu_array_value. Return -1 if invalid */
-extern int job_resources_node_inx_to_cpu_array_inx(
-	job_resources_t *job_resrcs_ptr, int node_inx);
+ * node in the job_resrcs_ptr->cpus. Return -1 if invalid */
+extern int job_resources_node_inx_to_cpu_inx(job_resources_t *job_resrcs_ptr, 
+					     int node_inx);
 
 #endif /* !_JOB_RESOURCES_H */
