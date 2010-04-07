@@ -1431,11 +1431,12 @@ static int _rm_job_from_nodes(struct cr_record *cr_ptr,
 static int _rm_job_from_one_node(struct job_record *job_ptr,
 				 struct node_record *node_ptr, char *pre_err)
 {
-	int i, rc = SLURM_SUCCESS;
+	int i, node_inx, node_offset, rc = SLURM_SUCCESS;
 	struct part_cr_record *part_cr_ptr;
 	job_resources_t *job_resrcs_ptr;
 	uint32_t job_memory, job_memory_cpu = 0, job_memory_node = 0;
 	bool exclusive, is_job_running;
+	int first_bit, last_bit;
 
 	if (cr_ptr == NULL) {
 		error("%s: cr_ptr not initialized", pre_err);
@@ -1448,8 +1449,6 @@ static int _rm_job_from_one_node(struct job_record *job_ptr,
 		return SLURM_ERROR;
 	}
 
-	i = node_ptr - node_record_table_ptr;
-	exclusive = (job_ptr->details->shared == 0);
 	if (job_ptr->details &&
 	    job_ptr->details->pn_min_memory && (cr_type == CR_MEMORY)) {
 		if (job_ptr->details->pn_min_memory & MEM_PER_CPU) {
@@ -1458,16 +1457,34 @@ static int _rm_job_from_one_node(struct job_record *job_ptr,
 		} else
 			job_memory_node = job_ptr->details->pn_min_memory;
 	}
-	if ((job_resrcs_ptr = job_ptr->job_resrcs) == NULL) {
+	if ((job_ptr->job_resrcs == NULL) || 
+	    (job_ptr->job_resrcs->cpus == NULL)) {
 		error("job %u lacks a job_resources struct", job_ptr->job_id);
 		return SLURM_ERROR;
 	}
-	if (!bit_test(job_resrcs_ptr->node_bitmap, i)) {
+	job_resrcs_ptr = job_ptr->job_resrcs;
+	node_inx = node_ptr - node_record_table_ptr;
+	if (!bit_test(job_resrcs_ptr->node_bitmap, node_inx)) {
 		error("job %u allocated nodes (%s) which have been removed "
 		      "from slurm.conf",
 		      job_ptr->job_id, node_ptr->name);
 		return SLURM_ERROR;
 	}
+	first_bit = bit_ffs(job_resrcs_ptr->node_bitmap);
+	last_bit  = node_inx;
+	for (i = first_bit, node_offset = -1; i <= node_inx; i++) {
+		if (!bit_test(job_resrcs_ptr->node_bitmap, i))
+			continue;
+		node_offset++;
+	}
+	if (job_resrcs_ptr->cpus[node_offset] == 0) {
+		error("duplicate relinquish of node %s by job %u",
+		      node_ptr->name, job_ptr->job_id);
+		return SLURM_ERROR;
+	}
+	job_resrcs_ptr->cpus[node_offset] = 0;
+	build_job_resources_cpu_array(job_resrcs_ptr);
+	exclusive = (job_ptr->details->shared == 0);
 
 	is_job_running = _test_run_job(cr_ptr, job_ptr->job_id);
 	if (job_memory_cpu == 0)
@@ -1476,22 +1493,22 @@ static int _rm_job_from_one_node(struct job_record *job_ptr,
 		job_memory = job_memory_cpu * node_ptr->config_ptr->cpus;
 	else
 		job_memory = job_memory_cpu * node_ptr->cpus;
-	if (cr_ptr->nodes[i].alloc_memory >= job_memory)
-		cr_ptr->nodes[i].alloc_memory -= job_memory;
+	if (cr_ptr->nodes[node_inx].alloc_memory >= job_memory)
+		cr_ptr->nodes[node_inx].alloc_memory -= job_memory;
 	else {
-		cr_ptr->nodes[i].alloc_memory = 0;
+		cr_ptr->nodes[node_inx].alloc_memory = 0;
 		error("%s: memory underflow for node %s",
-			pre_err, node_ptr->name);
+		      pre_err, node_ptr->name);
 	}
 	if (exclusive) {
-		if (cr_ptr->nodes[i].exclusive_cnt)
-			cr_ptr->nodes[i].exclusive_cnt--;
+		if (cr_ptr->nodes[node_inx].exclusive_cnt)
+			cr_ptr->nodes[node_inx].exclusive_cnt--;
 		else {
 			error("%s: exclusive_cnt underflow for node %s",
 			      pre_err, node_ptr->name);
 		}
 	}
-	part_cr_ptr = cr_ptr->nodes[i].parts;
+	part_cr_ptr = cr_ptr->nodes[node_inx].parts;
 	while (part_cr_ptr) {
 		if (part_cr_ptr->part_ptr != job_ptr->part_ptr) {
 			part_cr_ptr = part_cr_ptr->next;
