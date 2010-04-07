@@ -316,7 +316,19 @@ host_fini:	if (rc) {
 
 	if (new_node_cnt) {
 		job_desc_msg_t job_desc;
-
+#ifdef HAVE_BG
+		uint16_t geometry[SYSTEM_DIMENSIONS] = {(uint16_t) NO_VAL};
+		static uint16_t cpus_per_node = 0;
+		if (!cpus_per_node) {
+			select_g_alter_node_cnt(SELECT_GET_NODE_CPU_CNT,
+						&cpus_per_node);
+		}
+#endif
+		if(!IS_JOB_PENDING(job_ptr) || !job_ptr->details) {
+			error("wiki: MODIFYJOB node count of non-pending "
+			      "job %u", jobid);
+			return ESLURM_DISABLED;
+		}
 		memset(&job_desc, 0, sizeof(job_desc_msg_t));
 
 		job_desc.min_nodes = new_node_cnt;
@@ -327,41 +339,33 @@ host_fini:	if (rc) {
 
 		select_g_select_jobinfo_free(job_desc.select_jobinfo);
 
-		if (IS_JOB_PENDING(job_ptr) && job_ptr->details) {
-			job_ptr->details->min_nodes = job_desc.min_nodes;
-			if (job_ptr->details->max_nodes &&
-			   (job_ptr->details->max_nodes < job_desc.min_nodes))
-				job_ptr->details->max_nodes =
-					job_desc.min_nodes;
-			info("wiki: change job %u min_nodes to %u",
-				jobid, new_node_cnt);
+		job_ptr->details->min_nodes = job_desc.min_nodes;
+		if (job_ptr->details->max_nodes &&
+		    (job_ptr->details->max_nodes < job_desc.min_nodes))
+			job_ptr->details->max_nodes = job_desc.min_nodes;
+		info("wiki: change job %u min_nodes to %u",
+		     jobid, new_node_cnt);
 #ifdef HAVE_BG
-{
-			static uint16_t cpus_per_node = 0;
+		job_ptr->details->min_cpus = job_desc.min_cpus;
+		job_ptr->details->max_cpus = job_desc.max_cpus;
+		job_ptr->details->pn_min_cpus = job_desc.pn_min_cpus;
 
-			job_ptr->details->min_cpus = job_desc.min_cpus;
-			job_ptr->details->max_cpus = job_desc.max_cpus;
-			job_ptr->details->pn_min_cpus = job_desc.pn_min_cpus;
+		new_node_cnt = job_ptr->details->min_cpus;
+		if (cpus_per_node)
+			new_node_cnt /= cpus_per_node;
 
-			if (!cpus_per_node) {
-				select_g_alter_node_cnt(SELECT_GET_NODE_CPU_CNT,
-							&cpus_per_node);
-			}
-			new_node_cnt = job_ptr->num_procs;
-			if (cpus_per_node)
-				new_node_cnt /= cpus_per_node;
-			select_g_select_jobinfo_set(job_ptr->select_jobinfo,
-						    SELECT_JOBDATA_NODE_CNT,
-						    &new_node_cnt);
-}
+		/* This is only set up so accounting is set up correctly */
+		select_g_select_jobinfo_set(job_ptr->select_jobinfo,
+					    SELECT_JOBDATA_NODE_CNT,
+					    &new_node_cnt);
+		/* reset geo since changing this makes any geo
+		   potentially invalid */
+		select_g_select_jobinfo_set(job_ptr->select_jobinfo,
+					    SELECT_JOBDATA_GEOMETRY,
+					    geometry);
 #endif
-			last_job_update = now;
-			update_accounting = true;
-		} else {
-			error("wiki: MODIFYJOB node count of non-pending "
-				"job %u", jobid);
-			return ESLURM_DISABLED;
-		}
+		last_job_update = now;
+		update_accounting = true;
 	}
 
 	if (update_accounting) {

@@ -349,11 +349,11 @@ no_rollup_change:
 		}
 #ifdef HAVE_BG
 		select_g_select_jobinfo_get(job_ptr->select_jobinfo,
-				     SELECT_JOBDATA_BLOCK_ID,
-				     &block_id);
+					    SELECT_JOBDATA_BLOCK_ID,
+					    &block_id);
 		select_g_select_jobinfo_get(job_ptr->select_jobinfo,
-				     SELECT_JOBDATA_NODE_CNT,
-				     &node_cnt);
+					    SELECT_JOBDATA_NODE_CNT,
+					    &node_cnt);
 #else
 		node_cnt = job_ptr->node_cnt;
 #endif
