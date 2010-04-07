@@ -5029,13 +5029,33 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		else {
 #ifdef HAVE_BG
 			uint32_t node_cnt = job_specs->num_procs;
+			/* Set the block type to NAV here since if the
+			   job size changes from a small block to a
+			   regular size block the block types won't
+			   jive.
+			*/
+			uint16_t conn_type = (uint16_t)SELECT_NAV;
+			/* Also, if geometry is set we need to 0 out
+			   the first part of it so the bluegene plugin
+			   doesn't look at it any more.
+			*/
+			uint16_t req_geometry[SYSTEM_DIMENSIONS] = { 0 };
+
 			if(cpus_per_node)
 				node_cnt /= cpus_per_node;
 			select_g_select_jobinfo_set(job_ptr->select_jobinfo,
 						    SELECT_JOBDATA_NODE_CNT,
 						    &node_cnt);
+			select_g_select_jobinfo_set(job_ptr->select_jobinfo,
+						    SELECT_JOBDATA_CONN_TYPE,
+						    &conn_type);
+			select_g_select_jobinfo_set(job_ptr->select_jobinfo,
+						    SELECT_JOBDATA_GEOMETRY,
+						    &req_geometry);
 #endif
 			job_ptr->num_procs = job_specs->num_procs;
+			job_ptr->details->job_min_cpus =
+				job_specs->job_min_cpus;
 			info("update_job: setting num_procs to %u for "
 			     "job_id %u", job_specs->num_procs,
 			     job_specs->job_id);
