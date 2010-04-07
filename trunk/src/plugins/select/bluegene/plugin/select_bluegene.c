@@ -1193,8 +1193,8 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 		/* this means it is greater or equal to one bp */
 		if(tmp > 0) {
 			set_select_jobinfo(job_desc->select_jobinfo,
-					     SELECT_JOBDATA_NODE_CNT,
-					     &job_desc->min_nodes);
+					   SELECT_JOBDATA_NODE_CNT,
+					   &job_desc->min_nodes);
 			job_desc->min_nodes = tmp;
 			job_desc->min_cpus = bg_conf->cpus_per_bp * tmp;
 		} else {

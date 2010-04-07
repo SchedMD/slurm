@@ -37,6 +37,7 @@
 \*****************************************************************************/
 
 #include "src/common/slurm_xlator.h"
+#include "bluegene.h"
 #include "jobinfo.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -112,6 +113,7 @@ extern int set_select_jobinfo(select_jobinfo_t *jobinfo,
 	uint16_t *uint16 = (uint16_t *) data;
 	uint32_t *uint32 = (uint32_t *) data;
 	char *tmp_char = (char *) data;
+	uint32_t new_size;
 
 	if (jobinfo == NULL) {
 		error("select_g_set_jobinfo: jobinfo not set");
@@ -124,8 +126,15 @@ extern int set_select_jobinfo(select_jobinfo_t *jobinfo,
 
 	switch (data_type) {
 	case SELECT_JOBDATA_GEOMETRY:
-		for (i=0; i<SYSTEM_DIMENSIONS; i++)
+		new_size = 1;
+		for (i=0; i<SYSTEM_DIMENSIONS; i++) {
 			jobinfo->geometry[i] = uint16[i];
+			new_size *= uint16[i];
+		}
+
+		/* Make sure the conn type is correct with the new count */
+		if((new_size > 1) && (jobinfo->conn_type == SELECT_SMALL))
+			jobinfo->conn_type = SELECT_TORUS;
 		break;
 	case SELECT_JOBDATA_REBOOT:
 		jobinfo->reboot = *uint16;
@@ -151,6 +160,13 @@ extern int set_select_jobinfo(select_jobinfo_t *jobinfo,
 		break;
 	case SELECT_JOBDATA_NODE_CNT:
 		jobinfo->node_cnt = *uint32;
+
+		/* Make sure the conn type is correct with the new count */
+		if((bg_conf->bp_node_cnt == bg_conf->nodecard_node_cnt)
+		   || (jobinfo->node_cnt < bg_conf->bp_node_cnt))
+			jobinfo->conn_type = SELECT_SMALL;
+		else if(jobinfo->conn_type == SELECT_SMALL)
+			jobinfo->conn_type = SELECT_TORUS;
 		break;
 	case SELECT_JOBDATA_ALTERED:
 		jobinfo->altered = *uint16;

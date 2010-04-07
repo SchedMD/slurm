@@ -5516,9 +5516,16 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		uint32_t node_cnt = detail_ptr->min_cpus;
 		if(cpus_per_node)
 			node_cnt /= cpus_per_node;
+		/* This is only set up so accounting is set up
+		   correctly */
 		select_g_select_jobinfo_set(job_ptr->select_jobinfo,
 					    SELECT_JOBDATA_NODE_CNT,
 					    &node_cnt);
+		/* reset geo since changing this makes any geo
+		   potentially invalid */
+		select_g_select_jobinfo_set(job_ptr->select_jobinfo,
+					    SELECT_JOBDATA_GEOMETRY,
+					    geometry);
 #endif
 		info("update_job: setting min_cpus from "
 		     "%u to %u for job_id %u",
@@ -5559,6 +5566,8 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			uint32_t node_cnt = job_specs->num_tasks;
 			if(cpus_per_node)
 				node_cnt /= cpus_per_node;
+			/* This is only set up so accounting is set up
+			   correctly */
 			select_g_select_jobinfo_set(job_ptr->select_jobinfo,
 						    SELECT_JOBDATA_NODE_CNT,
 						    &node_cnt);
@@ -5784,7 +5793,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			     job_specs->job_id);
 			update_accounting = true;
 		} else {
-			error("sched: Attempt to increase job_min_cpus for "
+			error("sched: Attempt to increase nice for "
 			      "job %u", job_specs->job_id);
 			error_code = ESLURM_ACCESS_DENIED;
 		}
@@ -5990,7 +5999,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	}
 
 #ifndef HAVE_BG
-	if (job_specs->req_nodes && 
+	if (job_specs->req_nodes &&
 	    (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr))) {
 		/* Use req_nodes to change the nodes associated with a running
 		 * for lack of other field in the job request to use */
@@ -6100,7 +6109,8 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
 			error_code = ESLURM_DISABLED;
 		else if (super_user) {
-			detail_ptr->ntasks_per_node = job_specs->ntasks_per_node;
+			detail_ptr->ntasks_per_node =
+				job_specs->ntasks_per_node;
 			info("sched: update_job: setting ntasks_per_node to %u"
 			     " for job_id %u", job_specs->ntasks_per_node,
 			     job_specs->job_id);
@@ -6116,7 +6126,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			error_code = ESLURM_DISABLED;
 		else {
 			int rc;
-			rc = update_job_dependency(job_ptr, 
+			rc = update_job_dependency(job_ptr,
 						   job_specs->dependency);
 			if (rc != SLURM_SUCCESS)
 				error_code = rc;
