@@ -802,8 +802,8 @@ extern int get_job_resources_node(job_resources_t *job_resrcs_ptr,
 	return 0;
 }
 
-extern int set_job_resources_node(job_resources_t *job_resrcs_ptr,
-				  uint32_t node_id)
+static int _change_job_resources_node(job_resources_t *job_resrcs_ptr,
+				      uint32_t node_id, bool new_value)
 {
 	int i, bit_inx = 0, core_cnt = 0;
 
@@ -825,21 +825,37 @@ extern int set_job_resources_node(job_resources_t *job_resrcs_ptr,
 		}
 	}
 	if (core_cnt < 1) {
-		error("set_job_resources_node: core_cnt=0");
+		error("_change_job_resources_node: core_cnt=0");
 		return SLURM_ERROR;
 	}
 
 	i = bit_size(job_resrcs_ptr->core_bitmap);
 	if ((bit_inx + core_cnt) > i) {
-		error("set_job_resources_node: offset > bitmap size "
+		error("_change_job_resources_node: offset > bitmap size "
 		      "(%d >= %d)", (bit_inx + core_cnt), i);
 		return SLURM_ERROR;
 	}
 
-	for (i=0; i<core_cnt; i++)
-		bit_set(job_resrcs_ptr->core_bitmap, bit_inx++);
+	for (i=0; i<core_cnt; i++) {
+		if (new_value)
+			bit_set(job_resrcs_ptr->core_bitmap, bit_inx++);
+		else
+			bit_clear(job_resrcs_ptr->core_bitmap, bit_inx++);
+	}
 
 	return SLURM_SUCCESS;
+}
+
+extern int set_job_resources_node(job_resources_t *job_resrcs_ptr,
+				  uint32_t node_id)
+{
+	return _change_job_resources_node(job_resrcs_ptr, node_id, true);
+}
+
+extern int clear_job_resources_node(job_resources_t *job_resrcs_ptr,
+				    uint32_t node_id)
+{
+	return _change_job_resources_node(job_resrcs_ptr, node_id, false);
 }
 
 extern int get_job_resources_cnt(job_resources_t *job_resrcs_ptr,

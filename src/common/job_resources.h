@@ -207,13 +207,15 @@ extern int set_job_resources_bit(job_resources_t *job_resrcs_ptr,
 				 uint32_t node_id, uint16_t socket_id,
 				 uint16_t core_id);
 
-/* Get/set bit value at specified location for whole node allocations
+/* Get/clear/set bit value at specified location for whole node allocations
  *	get is for any socket/core on the specified node
  *	set is for all sockets/cores on the specified node
  *	fully comptabable with set/get_job_resources_bit()
  *	node_id is all zero origin */
 extern int get_job_resources_node(job_resources_t *job_resrcs_ptr,
 				  uint32_t node_id);
+extern int clear_job_resources_node(job_resources_t *job_resrcs_ptr,
+				    uint32_t node_id);
 extern int set_job_resources_node(job_resources_t *job_resrcs_ptr,
 				  uint32_t node_id);
 
