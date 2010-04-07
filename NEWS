@@ -18,6 +18,7 @@ documents those changes that are of interest to users and admins.
     space in the environment variables exported to the user application
     (everything after the equal sign to the end of the line is included without
     alteration).
+ -- Do not install /etc/init.d/slurm or /etc/init.d/slurmdbd on AIX systems.
 
 * Changes in SLURM 2.1.6-2
 ==========================
