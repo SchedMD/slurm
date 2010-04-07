@@ -912,7 +912,7 @@ extern List slurmdb_clusters_remove(void *db_conn,
  * RET: List containing (slurmdb_report_cluster_rec_t *'s) else NULL on error
  * note List needs to be freed with slurm_list_destroy() when called
  */
-extern List slurmdb_report_cluster_account_by_user(
+extern List slurmdb_report_cluster_account_by_user(void *db_conn,
 	slurmdb_association_cond_t *assoc_cond);
 
 /* report for clusters of users per account
@@ -920,7 +920,7 @@ extern List slurmdb_report_cluster_account_by_user(
  * RET: List containing (slurmdb_report_cluster_rec_t *'s) else NULL on error
  * note List needs to be freed with slurm_list_destroy() when called
  */
-extern List slurmdb_report_cluster_user_by_account(
+extern List slurmdb_report_cluster_user_by_account(void *db_conn,
 	slurmdb_association_cond_t *assoc_cond);
 
 /* report for clusters of wckey per user
@@ -928,7 +928,7 @@ extern List slurmdb_report_cluster_user_by_account(
  * RET: List containing (slurmdb_report_cluster_rec_t *'s) else NULL on error
  * note List needs to be freed with slurm_list_destroy() when called
  */
-extern List slurmdb_report_cluster_wckey_by_user(
+extern List slurmdb_report_cluster_wckey_by_user(void *db_conn,
 	slurmdb_wckey_cond_t *wckey_cond);
 
 /* report for clusters of users per wckey
@@ -936,14 +936,14 @@ extern List slurmdb_report_cluster_wckey_by_user(
  * RET: List containing (slurmdb_report_cluster_rec_t *'s) else NULL on error
  * note List needs to be freed with slurm_list_destroy() when called
  */
-extern List slurmdb_report_cluster_user_by_wckey(
+extern List slurmdb_report_cluster_user_by_wckey(void *db_conn,
 	slurmdb_wckey_cond_t *wckey_cond);
 
 
-extern List slurmdb_report_job_sizes_grouped_by_top_account(
+extern List slurmdb_report_job_sizes_grouped_by_top_account(void *db_conn,
 	slurmdb_job_cond_t *job_cond, List grouping_list, bool flat_view);
 
-extern List slurmdb_report_job_sizes_grouped_by_wckey(
+extern List slurmdb_report_job_sizes_grouped_by_wckey(void *db_conn,
 	slurmdb_job_cond_t *job_cond, List grouping_list);
 
 /* report on users with top usage
@@ -954,7 +954,8 @@ extern List slurmdb_report_job_sizes_grouped_by_wckey(
  * RET: List containing (slurmdb_report_cluster_rec_t *'s) else NULL on error
  * note List needs to be freed with slurm_list_destroy() when called
  */
-extern List slurmdb_report_user_top_usage(slurmdb_user_cond_t *user_cond,
+extern List slurmdb_report_user_top_usage(void *db_conn,
+					  slurmdb_user_cond_t *user_cond,
 					  bool group_accounts);
 
 /************** connection functions **************/

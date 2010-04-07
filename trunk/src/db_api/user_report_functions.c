@@ -48,7 +48,8 @@
 #include "src/common/slurm_accounting_storage.h"
 #include "src/common/xstring.h"
 
-extern List slurmdb_report_user_top_usage(slurmdb_user_cond_t *user_cond,
+extern List slurmdb_report_user_top_usage(void *db_conn,
+					  slurmdb_user_cond_t *user_cond,
 					  bool group_accounts)
 {
 	List cluster_list = NULL;
@@ -68,7 +69,6 @@ extern List slurmdb_report_user_top_usage(slurmdb_user_cond_t *user_cond,
 	slurmdb_report_user_rec_t *slurmdb_report_user = NULL;
 	slurmdb_report_cluster_rec_t *slurmdb_report_cluster = NULL;
 	uid_t my_uid = getuid();
-	void *db_conn = slurmdb_connection_get();
 	bool delete_user_cond = 0, delete_assoc_cond = 0,
 		delete_cluster_list = 0;
 	time_t start_time, end_time;
@@ -304,8 +304,6 @@ end_it:
 		list_destroy(user_list);
 		user_list = NULL;
 	}
-
-	slurmdb_connection_close(&db_conn);
 
 	if(exit_code) {
 		if(cluster_list) {

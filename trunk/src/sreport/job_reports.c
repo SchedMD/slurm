@@ -608,7 +608,7 @@ extern int job_sizes_grouped_by_top_acct(int argc, char *argv[])
 	_setup_grouping_print_fields_list(grouping_list);
 
 	if(!(slurmdb_report_cluster_grouping_list =
-	     slurmdb_report_job_sizes_grouped_by_top_account(
+	     slurmdb_report_job_sizes_grouped_by_top_account(db_conn,
 		     job_cond, grouping_list, flat_view))) {
 		exit_code = 1;
 		goto end_it;
@@ -806,7 +806,7 @@ extern int job_sizes_grouped_by_wckey(int argc, char *argv[])
 	_setup_grouping_print_fields_list(grouping_list);
 
 	if(!(slurmdb_report_cluster_grouping_list =
-	     slurmdb_report_job_sizes_grouped_by_wckey(
+	     slurmdb_report_job_sizes_grouped_by_wckey(db_conn,
 		     job_cond, grouping_list))) {
 		exit_code = 1;
 		goto end_it;

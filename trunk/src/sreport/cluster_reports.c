@@ -541,8 +541,7 @@ static List _get_cluster_list(int argc, char *argv[], uint32_t *total_time,
 
 	_set_cluster_cond(&i, argc, argv, cluster_cond, format_list);
 
-	cluster_list = acct_storage_g_get_clusters(db_conn, my_uid,
-						   cluster_cond);
+	cluster_list = slurmdb_clusters_get(db_conn, cluster_cond);
 	if(!cluster_list) {
 		exit_code=1;
 		fprintf(stderr, " Problem with cluster query.\n");
@@ -618,7 +617,7 @@ extern int cluster_account_by_user(int argc, char *argv[])
 	list_destroy(format_list);
 
 	if(!(slurmdb_report_cluster_list =
-	     slurmdb_report_cluster_account_by_user(assoc_cond))) {
+	     slurmdb_report_cluster_account_by_user(db_conn, assoc_cond))) {
 		exit_code = 1;
 		goto end_it;
 	}
@@ -804,7 +803,7 @@ extern int cluster_user_by_account(int argc, char *argv[])
 	list_destroy(format_list);
 
 	if(!(slurmdb_report_cluster_list =
-	     slurmdb_report_cluster_user_by_account(assoc_cond))) {
+	     slurmdb_report_cluster_user_by_account(db_conn, assoc_cond))) {
 		exit_code = 1;
 		goto end_it;
 	}
@@ -958,7 +957,7 @@ extern int cluster_user_by_wckey(int argc, char *argv[])
 	list_destroy(format_list);
 
 	if(!(slurmdb_report_cluster_list =
-	     slurmdb_report_cluster_user_by_wckey(wckey_cond))) {
+	     slurmdb_report_cluster_user_by_wckey(db_conn, wckey_cond))) {
 		exit_code = 1;
 		goto end_it;
 	}
@@ -1276,7 +1275,7 @@ extern int cluster_wckey_by_user(int argc, char *argv[])
 	list_destroy(format_list);
 
 	if(!(slurmdb_report_cluster_list =
-	     slurmdb_report_cluster_wckey_by_user(wckey_cond))) {
+	     slurmdb_report_cluster_wckey_by_user(db_conn, wckey_cond))) {
 		exit_code = 1;
 		goto end_it;
 	}

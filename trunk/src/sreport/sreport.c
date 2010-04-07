@@ -178,7 +178,8 @@ main (int argc, char *argv[])
 		}
 	}
 
-	db_conn = acct_storage_g_get_connection(false, 0, false, NULL);
+	db_conn = slurmdb_connection_get();
+
 	if(errno) {
 		error("Problem talking to the database: %m");
 		exit(1);

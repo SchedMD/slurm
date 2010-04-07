@@ -265,7 +265,7 @@ extern int user_top(int argc, char *argv[])
 	list_destroy(format_list);
 
 	if(!(slurmdb_report_cluster_list =
-	     slurmdb_report_user_top_usage(user_cond, group_accts))) {
+	     slurmdb_report_user_top_usage(db_conn, user_cond, group_accts))) {
 		exit_code = 1;
 		goto end_it;
 	}

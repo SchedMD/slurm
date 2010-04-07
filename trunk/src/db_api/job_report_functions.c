@@ -50,7 +50,7 @@
 #include "src/common/slurm_accounting_storage.h"
 #include "src/common/xstring.h"
 
-static List _process_grouped_report(
+static List _process_grouped_report(void *db_conn,
 	slurmdb_job_cond_t *job_cond, List grouping_list,
 	bool flat_view, bool wckey_type)
 {
@@ -78,7 +78,6 @@ static List _process_grouped_report(
 	bool destroy_grouping_list = 0;
 
 	uid_t my_uid = getuid();
-	void *db_conn = slurmdb_connection_get();
 
 	/* we don't want to actually query by accounts in the jobs
 	   here since we may be looking for sub accounts of a specific
@@ -341,8 +340,6 @@ end_it:
 	if(destroy_grouping_list && grouping_list)
 		list_destroy(grouping_list);
 
-	slurmdb_connection_close(&db_conn);
-
 	if(exit_code) {
 		if(cluster_list) {
 			list_destroy(cluster_list);
@@ -354,15 +351,15 @@ end_it:
 }
 
 
-extern List slurmdb_report_job_sizes_grouped_by_top_account(
+extern List slurmdb_report_job_sizes_grouped_by_top_account(void *db_conn,
 	slurmdb_job_cond_t *job_cond, List grouping_list, bool flat_view)
 {
-	return _process_grouped_report(job_cond, grouping_list, flat_view, 0);
+	return _process_grouped_report(db_conn, job_cond, grouping_list,
+				       flat_view, 0);
 }
 
-extern List slurmdb_report_job_sizes_grouped_by_wckey(
+extern List slurmdb_report_job_sizes_grouped_by_wckey(void *db_conn,
 	slurmdb_job_cond_t *job_cond, List grouping_list)
 {
-
-	return _process_grouped_report(job_cond, grouping_list, 0, 1);
+	return _process_grouped_report(db_conn, job_cond, grouping_list, 0, 1);
 }
