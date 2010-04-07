@@ -18,6 +18,7 @@
 #
 # Makefile for slurm API library
 
+
 VPATH = @srcdir@
 pkgdatadir = $(datadir)/@PACKAGE@
 pkgincludedir = $(includedir)/@PACKAGE@
@@ -38,6 +39,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
+noinst_PROGRAMS = libslurmdb.o$(EXEEXT)
 subdir = src/db_api
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -117,6 +119,10 @@ libslurmdb_la_OBJECTS = $(am_libslurmdb_la_OBJECTS)
 libslurmdb_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(libslurmdb_la_LDFLAGS) $(LDFLAGS) -o $@
+PROGRAMS = $(noinst_PROGRAMS)
+am_libslurmdb_o_OBJECTS =
+libslurmdb_o_OBJECTS = $(am_libslurmdb_o_OBJECTS)
+libslurmdb_o_DEPENDENCIES = $(top_builddir)/src/api/libslurm.o
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__depfiles_maybe = depfiles
@@ -130,8 +136,8 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(libslurmdb_la_SOURCES)
-DIST_SOURCES = $(libslurmdb_la_SOURCES)
+SOURCES = $(libslurmdb_la_SOURCES) $(libslurmdb_o_SOURCES)
+DIST_SOURCES = $(libslurmdb_la_SOURCES) $(libslurmdb_o_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -383,11 +389,16 @@ libslurmdb_la_LDFLAGS = \
         -version-info $(current):$(rev):$(age) \
         $(OTHER_FLAGS)
 
+
+# This was made so we could export all symbols from libcommon
+# on multiple platforms
+libslurmdb_o_SOURCES = 
+libslurmdb_o_LDADD = $(top_builddir)/src/api/libslurm.o
 CLEANFILES = \
-	$(VERSION_SCRIPT) $(PMI_VERSION_SCRIPT)
+	$(VERSION_SCRIPT)
 
 DISTCLEANFILES = \
-	$(VERSION_SCRIPT) $(PMI_VERSION_SCRIPT)
+	$(VERSION_SCRIPT)
 
 all: $(BUILT_SOURCES)
 	$(MAKE) $(AM_MAKEFLAGS) all-am
@@ -457,6 +468,15 @@ clean-libLTLIBRARIES:
 	done
 libslurmdb.la: $(libslurmdb_la_OBJECTS) $(libslurmdb_la_DEPENDENCIES) 
 	$(libslurmdb_la_LINK) -rpath $(libdir) $(libslurmdb_la_OBJECTS) $(libslurmdb_la_LIBADD) $(LIBS)
+
+clean-noinstPROGRAMS:
+	@list='$(noinst_PROGRAMS)'; test -n "$$list" || exit 0; \
+	echo " rm -f" $$list; \
+	rm -f $$list || exit $$?; \
+	test -n "$(EXEEXT)" || exit 0; \
+	list=`for p in $$list; do echo "$$p"; done | sed 's/$(EXEEXT)$$//'`; \
+	echo " rm -f" $$list; \
+	rm -f $$list
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -592,7 +612,7 @@ distdir: $(DISTFILES)
 check-am: all-am
 check: $(BUILT_SOURCES)
 	$(MAKE) $(AM_MAKEFLAGS) check-am
-all-am: Makefile $(LTLIBRARIES)
+all-am: Makefile $(LTLIBRARIES) $(PROGRAMS)
 installdirs:
 	for dir in "$(DESTDIR)$(libdir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
@@ -629,7 +649,7 @@ maintainer-clean-generic:
 clean: clean-am
 
 clean-am: clean-generic clean-libLTLIBRARIES clean-libtool \
-	mostlyclean-am
+	clean-noinstPROGRAMS mostlyclean-am
 
 distclean: distclean-am
 	-rm -rf ./$(DEPDIR)
@@ -700,22 +720,25 @@ uninstall-am: uninstall-libLTLIBRARIES
 .MAKE: all check install install-am install-strip
 
 .PHONY: CTAGS GTAGS all all-am check check-am clean clean-generic \
-	clean-libLTLIBRARIES clean-libtool ctags distclean \
-	distclean-compile distclean-generic distclean-libtool \
-	distclean-tags distdir dvi dvi-am html html-am info info-am \
-	install install-am install-data install-data-am install-dvi \
-	install-dvi-am install-exec install-exec-am install-html \
-	install-html-am install-info install-info-am \
-	install-libLTLIBRARIES install-man install-pdf install-pdf-am \
-	install-ps install-ps-am install-strip installcheck \
-	installcheck-am installdirs maintainer-clean \
+	clean-libLTLIBRARIES clean-libtool clean-noinstPROGRAMS ctags \
+	distclean distclean-compile distclean-generic \
+	distclean-libtool distclean-tags distdir dvi dvi-am html \
+	html-am info info-am install install-am install-data \
+	install-data-am install-dvi install-dvi-am install-exec \
+	install-exec-am install-html install-html-am install-info \
+	install-info-am install-libLTLIBRARIES install-man install-pdf \
+	install-pdf-am install-ps install-ps-am install-strip \
+	installcheck installcheck-am installdirs maintainer-clean \
 	maintainer-clean-generic mostlyclean mostlyclean-compile \
 	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
 	tags uninstall uninstall-am uninstall-libLTLIBRARIES
 
 
+libslurmdb.o: $(libslurmdb_la_OBJECTS) $(libslurmdb_o_LDADD)
+	$(LINK) $(libslurmdb_la_OBJECTS) $(libslurmdb_o_LDADD)
+
 force:
-$(libslurmdb_la_LIBADD) : force
+$(libslurmdb_la_LIBADD) $(libslurmdb_o_LIBADD) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`
 
 $(VERSION_SCRIPT) :
