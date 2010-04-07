@@ -338,6 +338,17 @@ host_fini:	if (rc) {
 #ifdef HAVE_BG
 {
 			static uint16_t cpus_per_node = 0;
+			/* Set the block type to NAV here since if the
+			   job size changes from a small block to a
+			   regular size block the block types won't
+			   jive.
+			*/
+			uint16_t conn_type = (uint16_t)SELECT_NAV;
+			/* Also, if geometry is set we need to 0 out
+			   the first part of it so the bluegene plugin
+			   doesn't look at it any more.
+			*/
+			uint16_t req_geometry[SYSTEM_DIMENSIONS] = { 0 };
 
 			job_ptr->num_procs = job_desc.num_procs;
 			job_ptr->details->job_min_cpus = job_desc.job_min_cpus;
@@ -352,6 +363,12 @@ host_fini:	if (rc) {
 			select_g_select_jobinfo_set(job_ptr->select_jobinfo,
 						    SELECT_JOBDATA_NODE_CNT,
 						    &new_node_cnt);
+			select_g_select_jobinfo_set(job_ptr->select_jobinfo,
+						    SELECT_JOBDATA_CONN_TYPE,
+						    &conn_type);
+			select_g_select_jobinfo_set(job_ptr->select_jobinfo,
+						    SELECT_JOBDATA_GEOMETRY,
+						    &req_geometry);
 }
 #endif
 			last_job_update = now;
