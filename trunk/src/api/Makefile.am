@@ -139,7 +139,7 @@ libpmi_la_LDFLAGS = $(LIB_LDFLAGS) \
         -version-info $(libpmi_current):$(libpmi_rev):$(libpmi_age) \
         $(PMI_OTHER_FLAGS)
 
-# This was made so we chould export all symbols from libcommon
+# This was made so we could export all symbols from libcommon
 # on multiple platforms
 libslurm_o_SOURCES =
 

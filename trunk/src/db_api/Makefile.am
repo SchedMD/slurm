@@ -46,6 +46,13 @@ lib_LTLIBRARIES = libslurmdb.la
 # need to be built before anything else.
 BUILT_SOURCES = $(VERSION_SCRIPT) libslurmdb.la
 
+# libslurmdb.o contains all the api symbols and will export
+# them to plugins that are loaded.  Since you can not include both libslurm
+# and libslurmdb in the same program because of extra symbols this is needed.
+# libslurmdb.o are for convenience, and it is not installed.
+noinst_PROGRAMS = libslurmdb.o
+
+
 libslurmdb_la_SOURCES =	\
 	account_functions.c \
 	archive_functions.c \
@@ -69,8 +76,17 @@ libslurmdb_la_LDFLAGS        = \
         -version-info $(current):$(rev):$(age) \
         $(OTHER_FLAGS)
 
+# This was made so we could export all symbols from libcommon
+# on multiple platforms
+libslurmdb_o_SOURCES =
+
+libslurmdb_o_LDADD = $(top_builddir)/src/api/libslurm.o
+
+libslurmdb.o: $(libslurmdb_la_OBJECTS) $(libslurmdb_o_LDADD)
+	$(LINK) $(libslurmdb_la_OBJECTS) $(libslurmdb_o_LDADD)
+
 force:
-$(libslurmdb_la_LIBADD) : force
+$(libslurmdb_la_LIBADD) $(libslurmdb_o_LIBADD) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`
 
 $(VERSION_SCRIPT) :
@@ -81,7 +97,7 @@ $(VERSION_SCRIPT) :
 	 echo "};") > $(VERSION_SCRIPT)
 
 CLEANFILES = \
-	$(VERSION_SCRIPT) $(PMI_VERSION_SCRIPT)
+	$(VERSION_SCRIPT)
 
 DISTCLEANFILES = \
-	$(VERSION_SCRIPT) $(PMI_VERSION_SCRIPT)
+	$(VERSION_SCRIPT)

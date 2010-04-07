@@ -476,7 +476,7 @@ libpmi_la_LDFLAGS = $(LIB_LDFLAGS) \
         $(PMI_OTHER_FLAGS)
 
 
-# This was made so we chould export all symbols from libcommon
+# This was made so we could export all symbols from libcommon
 # on multiple platforms
 libslurm_o_SOURCES = 
 libslurm_o_LDADD = $(top_builddir)/src/common/libeio.o	\
