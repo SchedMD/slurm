@@ -4147,18 +4147,15 @@ extern int job_update_cpu_cnt(struct job_record *job_ptr, int node_inx)
 	 * cpu count isn't set up on that system. */
 	return SLURM_SUCCESS;
 #endif
-	if((offset = job_resources_node_inx_to_cpu_array_inx(
+	if ((offset = job_resources_node_inx_to_cpu_inx(
 		    job_ptr->job_resrcs, node_inx)) < 0) {
 		error("job_update_cpu_cnt: problem getting offset of job %u",
 		      job_ptr->job_id);
 		job_ptr->cpu_cnt = 0;
 		return SLURM_ERROR;
 	}
-	/* info("cpu for %d is %d out of %d", */
-	/*      node_inx, job_ptr->job_resrcs->cpu_array_value[offset], */
-	/*      job_ptr->cpu_cnt); */
 
-	cnt = job_ptr->job_resrcs->cpu_array_value[offset];
+	cnt = job_ptr->job_resrcs->cpus[offset];
 	if (cnt > job_ptr->cpu_cnt) {
 		error("job_update_cpu_cnt: cpu_cnt underflow on job_id %u",
 		      job_ptr->job_id);
