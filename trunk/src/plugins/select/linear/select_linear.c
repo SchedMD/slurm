@@ -566,7 +566,7 @@ static void _build_select_struct(struct job_record *job_ptr, bitstr_t *bitmap)
 	job_resrcs_ptr->node_bitmap = bit_copy(bitmap);
 	if (job_resrcs_ptr->node_bitmap == NULL)
 		fatal("bit_copy malloc failure");
-	job_resrcs_ptr->nprocs = job_ptr->total_cpus;
+	job_resrcs_ptr->ncpus = job_ptr->total_cpus;
 	if (build_job_resources(job_resrcs_ptr, (void *)select_node_ptr,
 				 select_fast_schedule))
 		error("_build_select_struct: build_job_resources: %m");
@@ -606,9 +606,9 @@ static void _build_select_struct(struct job_record *job_ptr, bitstr_t *bitmap)
 		}
 		j++;
 	}
-	if (job_resrcs_ptr->nprocs != total_cpus) {
-		error("_build_select_struct: nprocs mismatch %u != %u",
-		      job_resrcs_ptr->nprocs, total_cpus);
+	if (job_resrcs_ptr->ncpus != total_cpus) {
+		error("_build_select_struct: ncpus mismatch %u != %u",
+		      job_resrcs_ptr->ncpus, total_cpus);
 	}
 }
 

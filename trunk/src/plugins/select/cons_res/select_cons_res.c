@@ -722,7 +722,7 @@ static void _build_row_bitmaps(struct part_res_record *p_ptr)
 	for (i = 0; i < num_jobs; i++) {
 		for (j = i+1; j < num_jobs; j++) {
 			if (jstart[j] < jstart[i] || (jstart[j] == jstart[i] &&
-			    tmpjobs[j]->nprocs > tmpjobs[i]->nprocs)) {
+			    tmpjobs[j]->ncpus > tmpjobs[i]->ncpus)) {
 				x = jstart[i];
 				jstart[i] = jstart[j];
 				jstart[j] = x;
@@ -1109,7 +1109,7 @@ static int _rm_job_from_one_node(struct job_record *job_ptr,
 			return SLURM_SUCCESS;
 		}
 		job->cpus[n] = 0;
-		job->nprocs = build_job_resources_cpu_array(job);
+		job->ncpus = build_job_resources_cpu_array(job);
 		clear_job_resources_node(job, n);
 		if (node_usage[i].alloc_memory < job->memory_allocated[n]) {
 			error("error: node %s mem is underallocated (%u-%u) "

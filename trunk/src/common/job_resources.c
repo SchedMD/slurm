@@ -295,7 +295,7 @@ extern job_resources_t *copy_job_resources(
 
 	xassert(job_resrcs_ptr);
 	new_layout->nhosts = job_resrcs_ptr->nhosts;
-	new_layout->nprocs = job_resrcs_ptr->nprocs;
+	new_layout->ncpus = job_resrcs_ptr->ncpus;
 	new_layout->node_req = job_resrcs_ptr->node_req;
 	if (job_resrcs_ptr->core_bitmap) {
 		new_layout->core_bitmap = bit_copy(job_resrcs_ptr->
@@ -428,8 +428,8 @@ extern void log_job_resources(uint32_t job_id,
 	}
 
 	info("====================");
-	info("job_id:%u nhosts:%u nprocs:%u node_req:%u",
-	     job_id, job_resrcs_ptr->nhosts, job_resrcs_ptr->nprocs,
+	info("job_id:%u nhosts:%u ncpus:%u node_req:%u",
+	     job_id, job_resrcs_ptr->nhosts, job_resrcs_ptr->ncpus,
 	     job_resrcs_ptr->node_req);
 
 	if (job_resrcs_ptr->cpus == NULL) {
@@ -530,7 +530,7 @@ extern void pack_job_resources(job_resources_t *job_resrcs_ptr, Buf buffer,
 		xassert(job_resrcs_ptr->nhosts);
 
 		pack32(job_resrcs_ptr->nhosts, buffer);
-		pack32(job_resrcs_ptr->nprocs, buffer);
+		pack32(job_resrcs_ptr->ncpus, buffer);
 		pack8(job_resrcs_ptr->node_req, buffer);
 
 		if (job_resrcs_ptr->cpu_array_reps)
@@ -623,7 +623,7 @@ extern int unpack_job_resources(job_resources_t **job_resrcs_pptr,
 
 		job_resrcs = xmalloc(sizeof(struct job_resources));
 		job_resrcs->nhosts = empty;
-		safe_unpack32(&job_resrcs->nprocs, buffer);
+		safe_unpack32(&job_resrcs->ncpus, buffer);
 		safe_unpack8(&job_resrcs->node_req, buffer);
 
 		safe_unpack32_array(&job_resrcs->cpu_array_reps,
