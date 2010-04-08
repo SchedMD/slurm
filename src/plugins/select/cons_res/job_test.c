@@ -2219,10 +2219,10 @@ alloc_job:
 	if (job_res->node_bitmap == NULL)
 		fatal("bit_copy malloc failure");
 	job_res->nhosts           = bit_set_count(bitmap);
-	job_res->nprocs           = job_res->nhosts;
+	job_res->ncpus           = job_res->nhosts;
 	if (job_ptr->details->ntasks_per_node)
-		job_res->nprocs  *= job_ptr->details->ntasks_per_node;
-	job_res->nprocs           = MAX(job_res->nprocs,
+		job_res->ncpus  *= job_ptr->details->ntasks_per_node;
+	job_res->ncpus           = MAX(job_res->ncpus,
 					job_ptr->details->min_cpus);
 	job_res->node_req         = job_node_req;
 	job_res->cpus             = cpu_count;
@@ -2286,17 +2286,17 @@ alloc_job:
 		i++;
 	}
 
-	/* When 'srun --overcommit' is used, nprocs is set to a minimum value
+	/* When 'srun --overcommit' is used, ncpus is set to a minimum value
 	 * in order to allocate the appropriate number of nodes based on the
 	 * job request.
 	 * For cons_res, all available logical processors will be allocated on
 	 * each allocated node in order to accommodate the overcommit request.
 	 */
 	if (job_ptr->details->overcommit && job_ptr->details->num_tasks)
-		job_res->nprocs = MIN(total_cpus, job_ptr->details->num_tasks);
+		job_res->ncpus = MIN(total_cpus, job_ptr->details->num_tasks);
 
-	debug3("cons_res: cr_job_test: job %u nprocs %u cbits %u/%u nbits %u",
-	       job_ptr->job_id, job_res->nprocs, bit_set_count(free_cores),
+	debug3("cons_res: cr_job_test: job %u ncpus %u cbits %u/%u nbits %u",
+	       job_ptr->job_id, job_res->ncpus, bit_set_count(free_cores),
 	       bit_set_count(job_res->core_bitmap), job_res->nhosts);
 	FREE_NULL_BITMAP(free_cores);
 

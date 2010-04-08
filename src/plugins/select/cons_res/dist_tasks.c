@@ -79,7 +79,7 @@ static int _compute_c_b_task_dist(struct job_record *job_ptr)
 		return SLURM_ERROR;
 	}
 
-	maxtasks = job_res->nprocs;
+	maxtasks = job_res->ncpus;
 	avail_cpus = job_res->cpus;
 	job_res->cpus = xmalloc(job_res->nhosts * sizeof(uint16_t));
 
@@ -123,7 +123,7 @@ static int _compute_plane_dist(struct job_record *job_ptr)
 		return SLURM_ERROR;
 	}
 
-	maxtasks = job_res->nprocs;
+	maxtasks = job_res->ncpus;
 	avail_cpus = job_res->cpus;
 
 	if (job_ptr->details && job_ptr->details->mc_ptr)

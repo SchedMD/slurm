@@ -79,7 +79,7 @@
  *			  here do NOT get cleared as the job completes on a
  *			  node
  * node_req		- NODE_CR_RESERVED|NODE_CR_ONE_ROW|NODE_CR_AVAILABLE
- * nprocs		- Number of processors in the allocation
+ * ncpus		- Number of processors in the allocation
  * sock_core_rep_count	- How many consecutive nodes that sockets_per_node
  *			  and cores_per_socket apply to, build by
  *			  build_job_resources() and insures consistent
@@ -123,7 +123,7 @@ struct job_resources {
 				    Used primarily for api
 				    functions */
 	uint8_t		node_req;
-	uint32_t	nprocs;
+	uint32_t	ncpus;
 	uint32_t *	sock_core_rep_count;
 	uint16_t *	sockets_per_node;
 };

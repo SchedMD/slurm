@@ -1246,7 +1246,7 @@ static int _sync_block_lists(List full_list, List incomp_list)
 /* 	job_resrcs_ptr->node_bitmap = bit_copy(bitmap); */
 /* 	if (job_resrcs_ptr->node_bitmap == NULL) */
 /* 		fatal("bit_copy malloc failure"); */
-/* 	job_resrcs_ptr->nprocs = job_ptr->num_cpus; */
+/* 	job_resrcs_ptr->ncpus = job_ptr->num_cpus; */
 /* 	if (build_job_resources(job_resrcs_ptr, (void *)node_record_table_ptr, 1)) */
 /* 		error("select_p_job_test: build_job_resources: %m"); */
 
@@ -1281,9 +1281,9 @@ static int _sync_block_lists(List full_list, List incomp_list)
 /* #endif */
 /* 		j++; */
 /* 	} */
-/* 	if (job_resrcs_ptr->nprocs != total_cpus) { */
-/* 		error("select_p_job_test: nprocs mismatch %u != %u", */
-/* 		      job_resrcs_ptr->nprocs, total_cpus); */
+/* 	if (job_resrcs_ptr->ncpus != total_cpus) { */
+/* 		error("select_p_job_test: ncpus mismatch %u != %u", */
+/* 		      job_resrcs_ptr->ncpus, total_cpus); */
 /* 	} */
 /* } */
 
@@ -1308,7 +1308,7 @@ static void _build_select_struct(struct job_record *job_ptr,
 	job_resrcs_ptr->cpus_used = xmalloc(sizeof(uint16_t) * node_cnt);
 /* 	job_resrcs_ptr->nhosts = node_cnt; */
 	job_resrcs_ptr->nhosts = bit_set_count(bitmap);
-	job_resrcs_ptr->nprocs = job_ptr->details->min_cpus;
+	job_resrcs_ptr->ncpus = job_ptr->details->min_cpus;
 	job_resrcs_ptr->node_bitmap = bit_copy(bitmap);
 	if (job_resrcs_ptr->node_bitmap == NULL)
 		fatal("bit_copy malloc failure");
@@ -1324,9 +1324,9 @@ static void _build_select_struct(struct job_record *job_ptr,
 	for (i=0; i<node_cnt; i++)
 		job_resrcs_ptr->cpus[i] = bg_conf->cpu_ratio;
 
-	if (job_resrcs_ptr->nprocs != total_cpus) {
-		error("select_p_job_test: nprocs mismatch %u != %u",
-		      job_resrcs_ptr->nprocs, total_cpus);
+	if (job_resrcs_ptr->ncpus != total_cpus) {
+		error("select_p_job_test: ncpus mismatch %u != %u",
+		      job_resrcs_ptr->ncpus, total_cpus);
 	}
 }
 
