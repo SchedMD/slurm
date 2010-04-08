@@ -245,7 +245,7 @@ static display_data_t display_data_job[] = {
 	 EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_TIMELIMIT, "Time Limit", FALSE,
 	 EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_NODES, "Node Count", TRUE, EDIT_NONE,
+	{G_TYPE_STRING, SORTID_NODES, "Node Count", TRUE, EDIT_TEXTBOX,
 	 refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_CPUS, "CPU Count",
 	 FALSE, EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
@@ -708,6 +708,18 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 			goto return_error;
 		job_msg->min_nodes = (uint32_t)temp_int;
 		break;
+	case SORTID_NODES:
+		temp_int = strtol(new_text, &p, 10);
+		if (*p == 'k' || *p == 'K')
+			temp_int *= 1024;
+		else if(*p == 'm' || *p == 'M')
+			temp_int *= 1048576;
+
+		type = "node count";
+		if(temp_int <= 0)
+			goto return_error;
+		job_msg->min_nodes = job_msg->max_nodes = (uint32_t)temp_int;
+		break;
 	case SORTID_NODES_MAX:
 		temp_int = strtol(new_text, &p, 10);
 		if (*p == 'k' || *p == 'K')
@@ -718,6 +730,11 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 		type = "max nodes";
 		if(temp_int <= 0)
 			goto return_error;
+#ifdef HAVE_BG
+		/* this needs to be set up for correct functionality */
+		if(job_msg->min_nodes == NO_VAL)
+			job_msg->min_nodes = (uint32_t)temp_int;
+#endif
 		job_msg->max_nodes = (uint32_t)temp_int;
 		break;
 	case SORTID_MEM_MIN:
