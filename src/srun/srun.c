@@ -288,8 +288,8 @@ int srun(int ac, char **av)
 			 * NOTE: Some options are not supported */
 			opt.min_nodes = resp->node_cnt;
 			xfree(opt.alloc_nodelist);
-			if (!opt.nprocs_set)
-				opt.nprocs = opt.min_nodes;
+			if (!opt.ntasks_set)
+				opt.ntasks = opt.min_nodes;
 		}
 		if (opt.alloc_nodelist == NULL)
                        opt.alloc_nodelist = xstrdup(resp->node_list);
@@ -401,7 +401,7 @@ int srun(int ac, char **av)
 	xfree(env);
 
  re_launch:
-	task_state = task_state_create(opt.nprocs);
+	task_state = task_state_create(opt.ntasks);
 	slurm_step_launch_params_t_init(&launch_params);
 	launch_params.gid = opt.gid;
 	launch_params.argc = opt.argc;
@@ -1016,7 +1016,7 @@ static void _step_opt_exclusive(void)
 		opt.min_nodes = 1;
 		opt.max_nodes = 0;
 	}
-	if (!opt.nprocs_set) {
+	if (!opt.ntasks_set) {
 		error("--ntasks must be set with --exclusive");
 		exit(error_exit);
 	}

@@ -228,7 +228,7 @@ int slurm_step_launch (slurm_step_ctx_t *ctx,
 		launch.cwd = _lookup_cwd();
 	}
 	launch.nnodes		= ctx->step_resp->step_layout->node_cnt;
-	launch.nprocs		= ctx->step_resp->step_layout->task_cnt;
+	launch.ntasks		= ctx->step_resp->step_layout->task_cnt;
 	launch.slurmd_debug	= params->slurmd_debug;
 	launch.switch_job	= ctx->step_resp->switch_job;
 	launch.task_prolog	= params->task_prolog;

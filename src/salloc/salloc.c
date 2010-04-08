@@ -311,8 +311,11 @@ int main(int argc, char *argv[])
 		goto relinquish;
 
 	/* Add default task count for srun, if not already set */
-	if (opt.nprocs_set)
-		env_array_append_fmt(&env, "SLURM_NPROCS", "%d", opt.nprocs);
+	if (opt.ntasks_set) {
+		env_array_append_fmt(&env, "SLURM_NTASKS", "%d", opt.ntasks);
+		/* keep around for old scripts */
+		env_array_append_fmt(&env, "SLURM_NPROCS", "%d", opt.ntasks);
+	}
 	if (opt.cpus_per_task > 1) {
 		env_array_append_fmt(&env, "SLURM_CPUS_PER_TASK", "%d",
 				     opt.cpus_per_task);
@@ -538,9 +541,9 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 		desc->min_cpus = opt.min_nodes;
 		desc->overcommit = opt.overcommit;
 	} else
-		desc->min_cpus = opt.nprocs * opt.cpus_per_task;
-	if (opt.nprocs_set)
-		desc->num_tasks = opt.nprocs;
+		desc->min_cpus = opt.ntasks * opt.cpus_per_task;
+	if (opt.ntasks_set)
+		desc->num_tasks = opt.ntasks;
 	if (opt.cpus_set)
 		desc->cpus_per_task = opt.cpus_per_task;
 	if (opt.ntasks_per_node > -1)

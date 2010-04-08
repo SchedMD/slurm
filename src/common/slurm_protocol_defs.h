@@ -597,7 +597,7 @@ typedef struct launch_tasks_request_msg {
 	uint32_t  job_id;
 	uint32_t  job_step_id;
 	uint32_t  nnodes;	/* number of nodes in this job step       */
-	uint32_t  nprocs;	/* number of processes in this job step   */
+	uint32_t  ntasks;	/* number of tasks in this job step   */
 	uint32_t  uid;
 	uint32_t  gid;
 	uint32_t  job_mem_lim;	/* MB of memory reserved by job per node OR
@@ -730,7 +730,7 @@ typedef struct batch_job_launch_msg {
 	uint32_t step_id;
 	uint32_t uid;
 	uint32_t gid;
-	uint32_t nprocs;	/* number of tasks in this job         */
+	uint32_t ntasks;	/* number of tasks in this job         */
 	uint32_t num_cpu_groups;/* elements in below cpu arrays */
 	uint16_t cpu_bind_type;	/* Internal for slurmd/task_affinity   */
 	char     *cpu_bind;	/* Internal for slurmd/task_affinity   */

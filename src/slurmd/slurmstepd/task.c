@@ -6,32 +6,32 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark A. Grondona <mgrondona@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  In addition, as a special exception, the copyright holders give permission
+ *  to link the code of portions of this program with the OpenSSL library under
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -100,7 +100,7 @@
  * Static prototype definitions.
  */
 static void  _make_tmpdir(slurmd_job_t *job);
-static int   _run_script_and_set_env(const char *name, const char *path, 
+static int   _run_script_and_set_env(const char *name, const char *path,
 				     slurmd_job_t *job);
 static void  _proc_stdout(char *buf, char ***env);
 static char *_uint32_array_to_str(int array_len, const uint32_t *array);
@@ -141,11 +141,11 @@ static void _proc_stdout(char *buf, char ***env)
 			val_ptr = equal_ptr + 1;
 			while (isspace(equal_ptr[-1]))
 				equal_ptr--;
-			equal_ptr[0] = '\0';	
+			equal_ptr[0] = '\0';
 			end_line[0] = '\0';
 			debug("export name:%s:val:%s:", name_ptr, val_ptr);
 			if (setenvf(env, name_ptr, "%s", val_ptr)) {
-				error("Unable to set %s environment variable", 
+				error("Unable to set %s environment variable",
 				      buf_ptr);
 			}
 			equal_ptr[0] = '=';
@@ -160,7 +160,7 @@ static void _proc_stdout(char *buf, char ***env)
 			if ((name_ptr[0] == '\n') || (name_ptr[0] == '\0'))
 				goto rwfail;
 			while (isspace(end_line[-1]))
-				end_line--;	
+				end_line--;
 			end_line[0] = '\0';
 			debug(" unset name:%s:", name_ptr);
 			unsetenvp(*env, name_ptr);
@@ -184,7 +184,7 @@ rwfail:		 /* process rest of script output */
  *	in the script's standard output.
  * name IN: class of program ("system prolog", "user prolog", etc.)
  * path IN: pathname of program to run
- * job IN/OUT: pointer to associated job, can update job->env 
+ * job IN/OUT: pointer to associated job, can update job->env
  *	if prolog
  * RET 0 on success, -1 on failure.
  */
@@ -322,13 +322,13 @@ _setup_mpi(slurmd_job_t *job, int ltaskid)
 	info->stepid = job->stepid;
 	info->nnodes = job->nnodes;
 	info->nodeid = job->nodeid;
-	info->ntasks = job->nprocs;
-	info->ltasks = job->ntasks;
+	info->ntasks = job->ntasks;
+	info->ltasks = job->node_tasks;
 	info->gtaskid = job->task[ltaskid]->gtid;
 	info->ltaskid = job->task[ltaskid]->id;
 	info->self = job->envtp->self;
 	info->client = job->envtp->cli;
-		
+
 	return mpi_hook_slurmstepd_task(info, &job->env);
 }
 
@@ -374,10 +374,10 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 	}
 	close(waitfd);
 
-	gtids = xmalloc(job->ntasks * sizeof(uint32_t));
-	for (j = 0; j < job->ntasks; j++)
+	gtids = xmalloc(job->node_tasks * sizeof(uint32_t));
+	for (j = 0; j < job->node_tasks; j++)
 		gtids[j] = job->task[j]->gtid;
-	job->envtp->sgtids = _uint32_array_to_str(job->ntasks, gtids);
+	job->envtp->sgtids = _uint32_array_to_str(job->node_tasks, gtids);
 	xfree(gtids);
 
 	job->envtp->jobid = job->jobid;
@@ -411,11 +411,11 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 		 */
 		task->argv[0] = _build_path(task->argv[0], job->env);
 	}
-	
+
 	if (!job->batch) {
 		if (interconnect_attach(job->switch_job, &job->env,
 				job->nodeid, (uint32_t) i, job->nnodes,
-				job->nprocs, task->gtid) < 0) {
+				job->ntasks, task->gtid) < 0) {
 			error("Unable to attach to interconnect: %m");
 			log_fini();
 			exit(1);
@@ -461,7 +461,7 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 	}
 	if (job->task_prolog) {
 		_run_script_and_set_env("user task_prolog",
-					job->task_prolog, job); 
+					job->task_prolog, job);
 	}
 
 	if (!job->batch)
@@ -475,7 +475,7 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 	if (job->restart_dir) {
 		info("restart from %s", job->restart_dir);
 		/* no return on success */
-		checkpoint_restart_task(job, job->restart_dir, task->gtid); 
+		checkpoint_restart_task(job, job->restart_dir, task->gtid);
 		error("Restart task failed: %m");
 		exit(errno);
 	}
@@ -486,7 +486,7 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 	}
 	execve(task->argv[0], task->argv, job->env);
 
-	/* 
+	/*
 	 * print error message and clean up if execve() returns:
 	 */
 	if ((errno == ENOENT) &&
@@ -504,7 +504,7 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 			exit(errno);
 		}
 	}
-	error("execve(): %s: %m", task->argv[0]); 
+	error("execve(): %s: %m", task->argv[0]);
 	exit(errno);
 }
 
@@ -525,8 +525,8 @@ _make_tmpdir(slurmd_job_t *job)
 /*
  * Return a string representation of an array of uint32_t elements.
  * Each value in the array is printed in decimal notation and elements
- * are separated by a comma.  
- * 
+ * are separated by a comma.
+ *
  * Returns an xmalloc'ed string.  Free with xfree().
  */
 static char *_uint32_array_to_str(int array_len, const uint32_t *array)
@@ -539,13 +539,11 @@ static char *_uint32_array_to_str(int array_len, const uint32_t *array)
 		return str;
 
 	for (i = 0; i < array_len; i++) {
-  
+
 		if (i == array_len-1) /* last time through loop */
 			sep = "";
 		xstrfmtcat(str, "%u%s", array[i], sep);
 	}
-	
+
 	return str;
 }
-
-

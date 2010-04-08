@@ -80,7 +80,7 @@ pdebug_trace_process(slurmd_job_t *job, pid_t pid)
 			 * Mark this process as complete since it died
 			 * prematurely.
 			 */
-			for (i = 0; i < job->ntasks; i++) {
+			for (i = 0; i < job->node_tasks; i++) {
 				if (job->task[i]->pid == pid) {
 					job->task[i]->state =
 						SLURMD_TASK_COMPLETE;

@@ -350,7 +350,7 @@ If the specified file already exists, it will be overwritten.
 .TP
 \fB\-E\fR, \fB\-\-preserve-env\fR
 Pass the current values of environment variables SLURM_NNODES and
-SLURM_NPROCS through to the \fIexecutable\fR, rather than computing them
+SLURM_NTASKS through to the \fIexecutable\fR, rather than computing them
 from commandline parameters.
 
 .TP
@@ -1447,7 +1447,7 @@ Same as \fB\-\-ntasks\-per\-socket\fR
 \fBSLURM_NO_ROTATE\fR
 Same as \fB\-R, \-\-no\-rotate\fR
 .TP
-\fBSLURM_NPROCS\fR
+\fBSLURM_NTASKS\fR
 Same as \fB\-n, \-\-ntasks\fR
 .TP
 \fBSLURM_OPEN_MODE\fR
@@ -1580,7 +1580,7 @@ The relative node ID of the current node
 \fBSLURM_NODELIST\fR
 List of nodes allocated to the job
 .TP
-\fBSLURM_NPROCS\fR
+\fBSLURM_NTASKS\fR
 Total number of processes in the current job
 .TP
 \fBSLURM_PRIO_PROCESS\fR
@@ -1797,7 +1797,7 @@ MACHINEFILE="nodes.$SLURM_JOB_ID"
 srun \-l /bin/hostname | sort \-n | awk '{print $2}' > $MACHINEFILE
 
 # Run using generated Machine file:
-mpirun \-np $SLURM_NPROCS \-machinefile $MACHINEFILE mpi\-app
+mpirun \-np $SLURM_NTASKS \-machinefile $MACHINEFILE mpi\-app
 
 rm $MACHINEFILE
 

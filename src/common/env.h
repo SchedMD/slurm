@@ -36,9 +36,9 @@
 #include "src/common/slurm_protocol_api.h"
 
 typedef struct env_options {
-	int nprocs;		/* --nprocs=n,      -n n	*/
+	int ntasks;		/* --ntasks=n,      -n n	*/
 	char *task_count;
-	bool nprocs_set;	/* true if nprocs explicitly set */
+	bool ntasks_set;	/* true if ntasks explicitly set */
 	bool cpus_set;		/* true if cpus_per_task explicitly set */
 	task_dist_states_t distribution; /* --distribution=, -m dist	*/
 	uint16_t plane_size;         /* plane_size for SLURM_DIST_PLANE */
@@ -143,7 +143,7 @@ extern int env_array_for_batch_job(char ***dest,
  * pointed to by "dest" is NULL, memory will automatically be xmalloc'ed.
  * The array is terminated by a NULL pointer, and thus is suitable for
  * use by execle() and other env_array_* functions.  If preserve_env is
- * true, the variables SLURM_NNODES and SLURM_NPROCS remain unchanged.
+ * true, the variables SLURM_NNODES and SLURM_NTASKS remain unchanged.
  *
  * Sets variables:
  *	SLURM_STEP_ID
@@ -157,7 +157,7 @@ extern int env_array_for_batch_job(char ***dest,
  * Sets OBSOLETE variables:
  *	SLURM_STEPID
  *      SLURM_NNODES
- *	SLURM_NPROCS
+ *	SLURM_NTASKS
  *	SLURM_NODELIST
  *	SLURM_TASKS_PER_NODE
  *	SLURM_SRUN_COMM_HOST

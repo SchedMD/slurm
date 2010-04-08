@@ -320,10 +320,17 @@ int setup_env(env_t *env, bool preserve_env)
 		 rc = SLURM_FAILURE;
 	}
 
-	if (!preserve_env && env->nprocs
-	   && setenvf(&env->env, "SLURM_NPROCS", "%d", env->nprocs)) {
-		error("Unable to set SLURM_NPROCS environment variable");
-		rc = SLURM_FAILURE;
+	if (!preserve_env && env->ntasks) {
+		if(setenvf(&env->env, "SLURM_NTASKS", "%d", env->ntasks)) {
+			error("Unable to set SLURM_NTASKS "
+			      "environment variable");
+			rc = SLURM_FAILURE;
+		}
+		if(setenvf(&env->env, "SLURM_NPROCS", "%d", env->ntasks)) {
+			error("Unable to set SLURM_NPROCS "
+			      "environment variable");
+			rc = SLURM_FAILURE;
+		}
 	}
 
 	if (env->cpus_per_task
@@ -1047,7 +1054,7 @@ env_array_for_job(char ***dest, const resource_allocation_response_msg_t *alloc,
  *	SLURM_JOBID
  *	SLURM_NNODES
  *	SLURM_NODELIST
- *	SLURM_NPROCS
+ *	SLURM_NTASKS
  *	SLURM_TASKS_PER_NODE
  */
 extern int
@@ -1059,7 +1066,7 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
 	uint32_t num_cpus = 0;
 	int i;
 	slurm_step_layout_t *step_layout = NULL;
-	uint32_t num_tasks = batch->nprocs;
+	uint32_t num_tasks = batch->ntasks;
 	uint16_t cpus_per_task;
 	uint16_t task_dist;
 
@@ -1107,6 +1114,9 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
 	}
 
 	if(num_tasks) {
+		env_array_overwrite_fmt(dest, "SLURM_NTASKS", "%u",
+					num_tasks);
+		/* keep around for old scripts */
 		env_array_overwrite_fmt(dest, "SLURM_NPROCS", "%u",
 					num_tasks);
 	} else {
@@ -1145,7 +1155,7 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
  * pointed to by "dest" is NULL, memory will automatically be xmalloc'ed.
  * The array is terminated by a NULL pointer, and thus is suitable for
  * use by execle() and other env_array_* functions.  If preserve_env is
- * true, the variables SLURM_NNODES, SLURM_NPROCS and SLURM_TASKS_PER_NODE
+ * true, the variables SLURM_NNODES, SLURM_NTASKS and SLURM_TASKS_PER_NODE
  * remain unchanged.
  *
  * Sets variables:
@@ -1160,7 +1170,7 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
  * Sets OBSOLETE variables:
  *	SLURM_STEPID
  *      SLURM_NNODES
- *	SLURM_NPROCS
+ *	SLURM_NTASKS
  *	SLURM_NODELIST
  *	SLURM_TASKS_PER_NODE
  *	SLURM_SRUN_COMM_PORT
@@ -1197,6 +1207,9 @@ env_array_for_step(char ***dest,
 	if (!preserve_env) {
 		env_array_overwrite_fmt(dest, "SLURM_NNODES",
 					"%hu", step->step_layout->node_cnt);
+		env_array_overwrite_fmt(dest, "SLURM_NTASKS", "%u",
+					step->step_layout->task_cnt);
+		/* keep around for old scripts */
 		env_array_overwrite_fmt(dest, "SLURM_NPROCS",
 					"%u", step->step_layout->task_cnt);
 		env_array_overwrite_fmt(dest, "SLURM_TASKS_PER_NODE", "%s",

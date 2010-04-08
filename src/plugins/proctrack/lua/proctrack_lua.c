@@ -246,10 +246,10 @@ static int lua_job_table_create (slurmd_job_t *job)
 	lua_setfield (L, -2, "stepid");
 	lua_pushnumber (L, job->nodeid);
 	lua_setfield (L, -2, "nodeid");
+	lua_pushnumber (L, job->node_tasks);
+	lua_setfield (L, -2, "node_tasks");
 	lua_pushnumber (L, job->ntasks);
 	lua_setfield (L, -2, "ntasks");
-	lua_pushnumber (L, job->nprocs);
-	lua_setfield (L, -2, "nprocs");
 	lua_pushnumber (L, job->cpus_per_task);
 	lua_setfield (L, -2, "cpus_per_task");
 	lua_pushnumber (L, job->nnodes);
