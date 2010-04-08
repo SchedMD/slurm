@@ -398,6 +398,8 @@ extern void slurmdb_destroy_report_user_rec(void *object)
 		xfree(slurmdb_report_user->acct);
 		if(slurmdb_report_user->acct_list)
 			list_destroy(slurmdb_report_user->acct_list);
+		if(slurmdb_report_user->assoc_list)
+			list_destroy(slurmdb_report_user->assoc_list);
 		xfree(slurmdb_report_user->name);
 		xfree(slurmdb_report_user);
 	}
