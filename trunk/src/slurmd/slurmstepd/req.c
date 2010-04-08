@@ -684,7 +684,7 @@ _handle_signal_task_local(int fd, slurmd_job_t *job, uid_t uid)
 	/*
 	 * Sanity checks
 	 */
-	if (ltaskid < 0 || ltaskid >= job->ntasks) {
+	if (ltaskid < 0 || ltaskid >= job->node_tasks) {
 		debug("step %u.%u invalid local task id %d",
 		      job->jobid, job->stepid, ltaskid);
 		rc = SLURM_ERROR;
@@ -805,7 +805,7 @@ _handle_signal_container(int fd, slurmd_job_t *job, uid_t uid)
 		goto done;
 	if (sig == SIG_DEBUG_WAKE) {
 		int i;
-		for (i = 0; i < job->ntasks; i++)
+		for (i = 0; i < job->node_tasks; i++)
 			pdebug_wake_process(job, job->task[i]->pid);
 		goto done;
 	}
@@ -1077,12 +1077,12 @@ done:
 		int len, i;
 
 		debug("  in _handle_attach sending response info");
-		len = job->ntasks * sizeof(uint32_t);
+		len = job->node_tasks * sizeof(uint32_t);
 		pids = xmalloc(len);
 		gtids = xmalloc(len);
 
 		if (job->task != NULL) {
-			for (i = 0; i < job->ntasks; i++) {
+			for (i = 0; i < job->node_tasks; i++) {
 				if (job->task[i] == NULL)
 					continue;
 				pids[i] = (uint32_t)job->task[i]->pid;
@@ -1090,13 +1090,13 @@ done:
 			}
 		}
 
-		safe_write(fd, &job->ntasks, sizeof(uint32_t));
+		safe_write(fd, &job->node_tasks, sizeof(uint32_t));
 		safe_write(fd, pids, len);
 		safe_write(fd, gtids, len);
 		xfree(pids);
 		xfree(gtids);
 
-		for (i = 0; i < job->ntasks; i++) {
+		for (i = 0; i < job->node_tasks; i++) {
 			len = strlen(job->task[i]->argv[0]) + 1;
 			safe_write(fd, &len, sizeof(int));
 			safe_write(fd, job->task[i]->argv[0], len);
@@ -1364,9 +1364,9 @@ _handle_stat_jobacct(int fd, slurmd_job_t *job, uid_t uid)
 	}
 
 	jobacct = jobacct_gather_g_create(NULL);
-	debug3("num tasks = %d", job->ntasks);
+	debug3("num tasks = %d", job->node_tasks);
 
-	for (i = 0; i < job->ntasks; i++) {
+	for (i = 0; i < job->node_tasks; i++) {
 		temp_jobacct = jobacct_gather_g_stat_task(job->task[i]->pid);
 		if(temp_jobacct) {
 			jobacct_gather_g_aggregate(jobacct, temp_jobacct);
@@ -1391,8 +1391,8 @@ _handle_task_info(int fd, slurmd_job_t *job)
 
 	debug("_handle_task_info for job %u.%u", job->jobid, job->stepid);
 
-	safe_write(fd, &job->ntasks, sizeof(uint32_t));
-	for (i = 0; i < job->ntasks; i++) {
+	safe_write(fd, &job->node_tasks, sizeof(uint32_t));
+	for (i = 0; i < job->node_tasks; i++) {
 		task = job->task[i];
 		safe_write(fd, &task->id, sizeof(int));
 		safe_write(fd, &task->gtid, sizeof(uint32_t));

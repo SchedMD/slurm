@@ -115,9 +115,9 @@ typedef struct slurmd_job {
 	uint32_t       jobid;  /* Current SLURM job id                      */
 	uint32_t       stepid; /* Current step id (or NO_VAL)               */
 	uint32_t       nnodes; /* number of nodes in current job            */
-	uint32_t       nprocs; /* total number of processes in current job  */
+	uint32_t       ntasks; /* total number of tasks in current job  */
 	uint32_t       nodeid; /* relative position of this node in job     */
-	uint32_t       ntasks; /* number of tasks on *this* node            */
+	uint32_t       node_tasks; /* number of tasks on *this* node        */
 	uint32_t       cpus_per_task;	/* number of cpus desired per task  */
 	uint32_t       debug;  /* debug level for job slurmd                */
 	uint32_t       job_mem;  /* MB of memory reserved for the job       */
@@ -231,7 +231,7 @@ static inline slurmd_task_info_t *
 job_task_info_by_pid (slurmd_job_t *job, pid_t pid)
 {
 	int i;
-	for (i = 0; i < job->ntasks; i++) {
+	for (i = 0; i < job->node_tasks; i++) {
 		if (job->task[i]->pid == pid)
 			return (job->task[i]);
 	}

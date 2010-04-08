@@ -205,8 +205,8 @@ job_create(launch_tasks_request_msg_t *msg)
 
 	job->state	= SLURMSTEPD_STEP_STARTING;
 	job->pwd	= pwd;
-	job->ntasks	= msg->tasks_to_launch[nodeid];
-	job->nprocs	= msg->nprocs;
+	job->node_tasks	= msg->tasks_to_launch[nodeid];
+	job->ntasks	= msg->ntasks;
 	job->jobid	= msg->job_id;
 	job->stepid	= msg->job_step_id;
 
@@ -354,8 +354,8 @@ job_batch_job_create(batch_job_launch_msg_t *msg)
 	job->state   = SLURMSTEPD_STEP_STARTING;
 	job->pwd     = pwd;
 	job->cpus    = msg->cpus_per_node[0];
-	job->ntasks  = 1;
-	job->nprocs  = msg->nprocs;
+	job->node_tasks  = 1;
+	job->ntasks  = msg->ntasks;
 	job->jobid   = msg->job_id;
 	job->stepid  = msg->step_id;
 
@@ -465,7 +465,7 @@ _expand_stdio_filename(char *filename, int gtaskid, slurmd_job_t *job)
 
 	if (id < 0)
 		return fname_create(job, filename, gtaskid);
-	if (id >= job->nprocs) {
+	if (id >= job->ntasks) {
 		error("Task ID in filename is invalid");
 		return NULL;
 	}
@@ -483,16 +483,16 @@ _job_init_task_info(slurmd_job_t *job, uint32_t *gtid,
 	int          i;
 	char        *in, *out, *err;
 
-	if (job->ntasks == 0) {
+	if (job->node_tasks == 0) {
 		error("User requested launch of zero tasks!");
 		job->task = NULL;
 		return;
 	}
 
 	job->task = (slurmd_task_info_t **)
-		xmalloc(job->ntasks * sizeof(slurmd_task_info_t *));
+		xmalloc(job->node_tasks * sizeof(slurmd_task_info_t *));
 
-	for (i = 0; i < job->ntasks; i++){
+	for (i = 0; i < job->node_tasks; i++){
 		in = _expand_stdio_filename(ifname, gtid[i], job);
 		out = _expand_stdio_filename(ofname, gtid[i], job);
 		err = _expand_stdio_filename(efname, gtid[i], job);
@@ -513,7 +513,7 @@ _job_init_task_info(slurmd_job_t *job, uint32_t *gtid,
 void
 job_signal_tasks(slurmd_job_t *job, int signal)
 {
-	int n = job->ntasks;
+	int n = job->node_tasks;
 	while (--n >= 0) {
 		if ((job->task[n]->pid > (pid_t) 0)
 		&&  (kill(job->task[n]->pid, signal) < 0)) {
@@ -535,7 +535,7 @@ job_destroy(slurmd_job_t *job)
 
 	_pwd_destroy(job->pwd);
 
-	for (i = 0; i < job->ntasks; i++)
+	for (i = 0; i < job->node_tasks; i++)
 		_task_info_destroy(job->task[i], job->multi_prog);
 	list_destroy(job->sruns);
 	xfree(job->envtp);

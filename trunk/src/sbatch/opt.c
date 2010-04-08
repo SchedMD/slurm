@@ -241,8 +241,8 @@ static bool _valid_node_list(char **node_list_pptr)
 	   procs to use then we need exactly this many since we are
 	   saying, lay it out this way!  Same for max and min nodes.
 	   Other than that just read in as many in the hostfile */
-	if(opt.nprocs_set)
-		count = opt.nprocs;
+	if(opt.ntasks_set)
+		count = opt.ntasks;
 	else if(opt.nodes_set) {
 		if(opt.max_nodes)
 			count = opt.max_nodes;
@@ -280,8 +280,8 @@ static void _opt_default()
 
 	opt.progname = NULL;
 
-	opt.nprocs = 1;
-	opt.nprocs_set = false;
+	opt.ntasks = 1;
+	opt.ntasks_set = false;
 	opt.cpus_per_task = 1;
 	opt.cpus_set = false;
 	opt.min_nodes = 0;
@@ -1188,8 +1188,8 @@ static void _set_options(int argc, char **argv)
 			}
 			break;
 		case 'n':
-			opt.nprocs_set = true;
-			opt.nprocs =
+			opt.ntasks_set = true;
+			opt.ntasks =
 				_get_int(optarg, "number of tasks");
 			break;
 		case 'N':
@@ -1784,8 +1784,8 @@ static void _parse_pbs_nodes_opts(char *node_opts)
 
 	if(ppn) {
 		ppn *= node_cnt;
-		opt.nprocs_set = true;
-		opt.nprocs = ppn;
+		opt.ntasks_set = true;
+		opt.ntasks = ppn;
 	}
 
 	if(hostlist_count(hl) > 0) {
@@ -1988,8 +1988,8 @@ static bool _opt_verify(void)
 		setenv("SLURM_JOB_NAME", opt.job_name, 0);
 
 	/* check for realistic arguments */
-	if (opt.nprocs <= 0) {
-		error("invalid number of processes (-n %d)", opt.nprocs);
+	if (opt.ntasks <= 0) {
+		error("invalid number of processes (-n %d)", opt.ntasks);
 		verified = false;
 	}
 
@@ -2055,13 +2055,13 @@ static bool _opt_verify(void)
 	 * SLURM reference guide.  */
 	if (opt.distribution == SLURM_DIST_PLANE && opt.plane_size) {
 		if ((opt.min_nodes <= 0) ||
-		    ((opt.nprocs/opt.plane_size) < opt.min_nodes)) {
-			if (((opt.min_nodes-1)*opt.plane_size) >= opt.nprocs) {
+		    ((opt.ntasks/opt.plane_size) < opt.min_nodes)) {
+			if (((opt.min_nodes-1)*opt.plane_size) >= opt.ntasks) {
 #if(0)
 				info("Too few processes ((n/plane_size) %d < N %d) "
 				     "and ((N-1)*(plane_size) %d >= n %d)) ",
-				     opt.nprocs/opt.plane_size, opt.min_nodes,
-				     (opt.min_nodes-1)*opt.plane_size, opt.nprocs);
+				     opt.ntasks/opt.plane_size, opt.min_nodes,
+				     (opt.min_nodes-1)*opt.plane_size, opt.ntasks);
 #endif
 				error("Too few processes for the requested "
 				      "{plane,node} distribution");
@@ -2112,42 +2112,42 @@ static bool _opt_verify(void)
 	/* massage the numbers */
 	if ((opt.nodes_set || opt.extra_set)				&&
 	    ((opt.min_nodes == opt.max_nodes) || (opt.max_nodes == 0))	&&
-	    !opt.nprocs_set) {
+	    !opt.ntasks_set) {
 		/* 1 proc / node default */
-		opt.nprocs = MAX(opt.min_nodes, 1);
+		opt.ntasks = MAX(opt.min_nodes, 1);
 
 		/* 1 proc / min_[socket * core * thread] default */
 		if (opt.min_sockets_per_node > 0) {
-			opt.nprocs *= opt.min_sockets_per_node;
-			opt.nprocs_set = true;
+			opt.ntasks *= opt.min_sockets_per_node;
+			opt.ntasks_set = true;
 		}
 		if (opt.min_cores_per_socket > 0) {
-			opt.nprocs *= opt.min_cores_per_socket;
-			opt.nprocs_set = true;
+			opt.ntasks *= opt.min_cores_per_socket;
+			opt.ntasks_set = true;
 		}
 		if (opt.min_threads_per_core > 0) {
-			opt.nprocs *= opt.min_threads_per_core;
-			opt.nprocs_set = true;
+			opt.ntasks *= opt.min_threads_per_core;
+			opt.ntasks_set = true;
 		}
 
-	} else if (opt.nodes_set && opt.nprocs_set) {
+	} else if (opt.nodes_set && opt.ntasks_set) {
 
 		/*
 		 *  make sure # of procs >= min_nodes
 		 */
-		if (opt.nprocs < opt.min_nodes) {
+		if (opt.ntasks < opt.min_nodes) {
 
 			info ("Warning: can't run %d processes on %d "
 			      "nodes, setting nnodes to %d",
-			      opt.nprocs, opt.min_nodes, opt.nprocs);
+			      opt.ntasks, opt.min_nodes, opt.ntasks);
 
-			opt.min_nodes = opt.nprocs;
+			opt.min_nodes = opt.ntasks;
 			if (   opt.max_nodes
 			       && (opt.min_nodes > opt.max_nodes) )
 				opt.max_nodes = opt.min_nodes;
 		}
 
-	} /* else if (opt.nprocs_set && !opt.nodes_set) */
+	} /* else if (opt.ntasks_set && !opt.nodes_set) */
 
 	if(!opt.nodelist) {
 		if((opt.nodelist = xstrdup(getenv("SLURM_HOSTFILE")))) {
@@ -2178,11 +2178,11 @@ static bool _opt_verify(void)
 	/* set up the proc and node counts based on the arbitrary list
 	   of nodes */
 	if((opt.distribution == SLURM_DIST_ARBITRARY)
-	   && (!opt.nodes_set || !opt.nprocs_set)) {
+	   && (!opt.nodes_set || !opt.ntasks_set)) {
 		hostlist_t hl = hostlist_create(opt.nodelist);
-		if(!opt.nprocs_set) {
-			opt.nprocs_set = 1;
-			opt.nprocs = hostlist_count(hl);
+		if(!opt.ntasks_set) {
+			opt.ntasks_set = 1;
+			opt.ntasks = hostlist_count(hl);
 		}
 		if(!opt.nodes_set) {
 			opt.nodes_set = 1;
@@ -2505,8 +2505,8 @@ static void _opt_list()
 	info("uid               : %ld", (long) opt.uid);
 	info("gid               : %ld", (long) opt.gid);
 	info("cwd               : %s", opt.cwd);
-	info("nprocs            : %d %s", opt.nprocs,
-		opt.nprocs_set ? "(set)" : "(default)");
+	info("ntasks            : %d %s", opt.ntasks,
+		opt.ntasks_set ? "(set)" : "(default)");
 	info("cpus_per_task     : %d %s", opt.cpus_per_task,
 		opt.cpus_set ? "(set)" : "(default)");
 	if (opt.max_nodes) {

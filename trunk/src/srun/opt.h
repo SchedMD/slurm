@@ -92,8 +92,8 @@ typedef struct srun_options {
 	char *cwd;		/* current working directory	*/
 	bool cwd_set;		/* true if cwd is explicitly set */
 
-	int  nprocs;		/* --nprocs=n,      -n n	*/
-	bool nprocs_set;	/* true if nprocs explicitly set */
+	int  ntasks;		/* --ntasks=n,      -n n	*/
+	bool ntasks_set;	/* true if ntasks explicitly set */
 	int  cpus_per_task;	/* --cpus-per-task=n, -c n	*/
 	bool cpus_set;		/* true if cpus_per_task explicitly set */
 	int32_t max_threads;	/* --threads, -T (threads in srun) */

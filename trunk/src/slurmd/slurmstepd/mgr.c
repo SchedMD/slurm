@@ -239,7 +239,7 @@ extern void
 batch_finish(slurmd_job_t *job, int rc)
 {
 	int i;
-	for (i = 0; i < job->ntasks; i++) {
+	for (i = 0; i < job->node_tasks; i++) {
 		/* If signalled we only need to check one and then
 		 * break out of the loop */
 		if(WIFSIGNALED(job->task[i]->estatus)) {
@@ -411,7 +411,7 @@ _setup_normal_io(slurmd_job_t *job)
 			/* Make eio objects to write from the slurmstepd */
 			if (outpattern == SLURMD_ALL_UNIQUE) {
 				/* Open a separate file per task */
-				for (ii = 0; ii < job->ntasks; ii++) {
+				for (ii = 0; ii < job->node_tasks; ii++) {
 					rc = io_create_local_client(
 						job->task[ii]->ofname,
 						file_flags, job, job->labelio,
@@ -449,7 +449,7 @@ _setup_normal_io(slurmd_job_t *job)
 			if (!same) {
 				if (errpattern == SLURMD_ALL_UNIQUE) {
 					/* Open a separate file per task */
-					for (ii = 0; ii < job->ntasks; ii++) {
+					for (ii = 0; ii < job->node_tasks; ii++) {
 						rc = io_create_local_client(
 							job->task[ii]->efname,
 							file_flags, job,
@@ -516,7 +516,7 @@ _setup_user_managed_io(slurmd_job_t *job)
 		return SLURM_ERROR;
 	}
 
-	return user_managed_io_client_connect(job->ntasks, srun, job->task);
+	return user_managed_io_client_connect(job->node_tasks, srun, job->task);
 }
 
 static void
@@ -619,7 +619,7 @@ _wait_for_children_slurmstepd(slurmd_job_t *job)
 	}
 
 	/* Find the maximum task return code */
-	for (i = 0; i < job->ntasks; i++) {
+	for (i = 0; i < job->node_tasks; i++) {
 		/* If signalled we only need to check one and then
 		   break out of the loop */
 		if(WIFSIGNALED(job->task[i]->estatus)) {
@@ -1038,20 +1038,20 @@ _fork_all_tasks(slurmd_job_t *job)
 	/*
 	 * Pre-allocate a pipe for each of the tasks
 	 */
-	debug3("num tasks on this node = %d", job->ntasks);
-	writefds = (int *) xmalloc (job->ntasks * sizeof(int));
+	debug3("num tasks on this node = %d", job->node_tasks);
+	writefds = (int *) xmalloc (job->node_tasks * sizeof(int));
 	if (!writefds) {
 		error("writefds xmalloc failed!");
 		return SLURM_ERROR;
 	}
-	readfds = (int *) xmalloc (job->ntasks * sizeof(int));
+	readfds = (int *) xmalloc (job->node_tasks * sizeof(int));
 	if (!readfds) {
 		error("readfds xmalloc failed!");
 		return SLURM_ERROR;
 	}
 
 
-	for (i = 0; i < job->ntasks; i++) {
+	for (i = 0; i < job->node_tasks; i++) {
 		fdpair[0] = -1; fdpair[1] = -1;
 		if (pipe (fdpair) < 0) {
 			error ("exec_all_tasks: pipe: %m");
@@ -1105,7 +1105,7 @@ _fork_all_tasks(slurmd_job_t *job)
 	/*
 	 * Fork all of the task processes.
 	 */
-	for (i = 0; i < job->ntasks; i++) {
+	for (i = 0; i < job->node_tasks; i++) {
 		pid_t pid;
 		if ((pid = fork ()) < 0) {
 			error("child fork: %m");
@@ -1117,7 +1117,7 @@ _fork_all_tasks(slurmd_job_t *job)
 			(void) mkcrid(0);
 #endif
 			/* Close file descriptors not needed by the child */
-			for (j = 0; j < job->ntasks; j++) {
+			for (j = 0; j < job->node_tasks; j++) {
 				close(writefds[j]);
 				if (j > i)
 					close(readfds[j]);
@@ -1185,7 +1185,7 @@ _fork_all_tasks(slurmd_job_t *job)
 		error ("Unable to return to working directory");
 	}
 
-	for (i = 0; i < job->ntasks; i++) {
+	for (i = 0; i < job->node_tasks; i++) {
 		/*
 		 * Put this task in the step process group
 		 * login_tty() must put task zero in its own
@@ -1219,7 +1219,7 @@ _fork_all_tasks(slurmd_job_t *job)
 	/*
 	 * Now it's ok to unblock the tasks, so they may call exec.
 	 */
-	for (i = 0; i < job->ntasks; i++) {
+	for (i = 0; i < job->node_tasks; i++) {
 		char c = '\0';
 
 		debug3("Unblocking %u.%u task %d, writefd = %d",
@@ -1266,13 +1266,13 @@ _send_pending_exit_msgs(slurmd_job_t *job)
 	int  nsent  = 0;
 	int  status = 0;
 	bool set    = false;
-	uint32_t  tid[job->ntasks];
+	uint32_t  tid[job->node_tasks];
 
 	/*
 	 * Collect all exit codes with the same status into a
 	 * single message.
 	 */
-	for (i = 0; i < job->ntasks; i++) {
+	for (i = 0; i < job->node_tasks; i++) {
 		slurmd_task_info_t *t = job->task[i];
 
 		if (!t->exited || t->esent)
@@ -1423,14 +1423,14 @@ _wait_for_all_tasks(slurmd_job_t *job)
 	int tasks_left = 0;
 	int i;
 
-	for (i = 0; i < job->ntasks; i++) {
+	for (i = 0; i < job->node_tasks; i++) {
 		if (job->task[i]->state < SLURMD_TASK_COMPLETE) {
 			tasks_left++;
 		}
 	}
-	if (tasks_left < job->ntasks)
+	if (tasks_left < job->node_tasks)
 		verbose("Only %d of %d requested tasks successfully launched",
-			tasks_left, job->ntasks);
+			tasks_left, job->node_tasks);
 
 	for (i = 0; i < tasks_left; ) {
 		int rc;
@@ -1665,11 +1665,11 @@ _send_launch_resp(slurmd_job_t *job, int rc)
 
 	resp.node_name		= xstrdup(job->node_name);
 	resp.return_code	= rc;
-	resp.count_of_pids	= job->ntasks;
+	resp.count_of_pids	= job->node_tasks;
 
-	resp.local_pids = xmalloc(job->ntasks * sizeof(*resp.local_pids));
-	resp.task_ids = xmalloc(job->ntasks * sizeof(*resp.task_ids));
-	for (i = 0; i < job->ntasks; i++) {
+	resp.local_pids = xmalloc(job->node_tasks * sizeof(*resp.local_pids));
+	resp.task_ids = xmalloc(job->node_tasks * sizeof(*resp.task_ids));
+	for (i = 0; i < job->node_tasks; i++) {
 		resp.local_pids[i] = job->task[i]->pid;
 		resp.task_ids[i] = job->task[i]->gtid;
 	}

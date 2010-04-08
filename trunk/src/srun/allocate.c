@@ -664,9 +664,9 @@ job_desc_msg_create_from_opts ()
 		j->min_cpus    = opt.min_nodes;
 		j->overcommit  = opt.overcommit;
 	} else
-		j->min_cpus    = opt.nprocs * opt.cpus_per_task;
-	if (opt.nprocs_set)
-		j->num_tasks   = opt.nprocs;
+		j->min_cpus    = opt.ntasks * opt.cpus_per_task;
+	if (opt.ntasks_set)
+		j->num_tasks   = opt.ntasks;
 
 	if (opt.cpus_set)
 		j->cpus_per_task = opt.cpus_per_task;
@@ -745,9 +745,9 @@ create_job_step(srun_job_t *job, bool use_all_cpus)
 	if (opt.max_nodes && (opt.max_nodes < job->ctx_params.max_nodes))
 		job->ctx_params.max_nodes = opt.max_nodes;
 
-	if (!opt.nprocs_set && (opt.ntasks_per_node != NO_VAL))
-		job->ntasks = opt.nprocs = job->nhosts * opt.ntasks_per_node;
-	job->ctx_params.task_count = opt.nprocs;
+	if (!opt.ntasks_set && (opt.ntasks_per_node != NO_VAL))
+		job->ntasks = opt.ntasks = job->nhosts * opt.ntasks_per_node;
+	job->ctx_params.task_count = opt.ntasks;
 
 	if (opt.mem_per_cpu != NO_VAL)
 		job->ctx_params.mem_per_cpu = opt.mem_per_cpu;
@@ -757,7 +757,7 @@ create_job_step(srun_job_t *job, bool use_all_cpus)
 	else if (opt.overcommit)
 		job->ctx_params.cpu_count = job->ctx_params.min_nodes;
 	else
-		job->ctx_params.cpu_count = opt.nprocs*opt.cpus_per_task;
+		job->ctx_params.cpu_count = opt.ntasks*opt.cpus_per_task;
 
 	job->ctx_params.relative = (uint16_t)opt.relative;
 	job->ctx_params.ckpt_interval = (uint16_t)opt.ckpt_interval;

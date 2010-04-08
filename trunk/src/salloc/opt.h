@@ -71,8 +71,8 @@ typedef struct salloc_options {
 	uid_t euid;		/* effective user --uid=user	*/
 	gid_t egid;		/* effective group --gid=group	*/
 
-	int  nprocs;		/* --nprocs=n,      -n n	*/
-	bool nprocs_set;	/* true if nprocs explicitly set */
+	int  ntasks;		/* --ntasks=n,      -n n	*/
+	bool ntasks_set;	/* true if ntasks explicitly set */
 	int  cpus_per_task;	/* --cpus-per-task=n, -c n	*/
 	bool cpus_set;		/* true if cpus_per_task explicitly set */
 	int  min_nodes;		/* --nodes=n,       -N n	*/

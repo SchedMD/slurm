@@ -272,11 +272,11 @@ static int fill_job_desc_from_opts(job_desc_msg_t *desc)
 		desc->min_cpus = MAX(opt.min_nodes, 1);
 		desc->overcommit = opt.overcommit;
 	} else
-		desc->min_cpus = opt.nprocs * opt.cpus_per_task;
+		desc->min_cpus = opt.ntasks * opt.cpus_per_task;
 	desc->max_cpus = desc->max_cpus;
 
-	if (opt.nprocs_set)
-		desc->num_tasks = opt.nprocs;
+	if (opt.ntasks_set)
+		desc->num_tasks = opt.ntasks;
 	if (opt.cpus_set)
 		desc->cpus_per_task = opt.cpus_per_task;
 	if (opt.ntasks_per_socket > -1)

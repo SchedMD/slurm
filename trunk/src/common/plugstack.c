@@ -1399,9 +1399,9 @@ global_to_local_id (slurmd_job_t *job, uint32_t gid, uint32_t *p2uint32)
 {
 	int i;
 	*p2uint32 = (uint32_t) -1;
-	if (gid >= job->nprocs)
+	if (gid >= job->ntasks)
 		return (ESPANK_BAD_ARG);
-	for (i = 0; i < job->ntasks; i++) {
+	for (i = 0; i < job->node_tasks; i++) {
 		if (job->task[i]->gtid == gid) {
 			*p2uint32 = job->task[i]->id;
 			return (ESPANK_SUCCESS);
@@ -1654,7 +1654,7 @@ spank_err_t spank_get_item(spank_t spank, spank_item_t item, ...)
 		break;
 	case S_JOB_LOCAL_TASK_COUNT:
 		p2uint32 = va_arg(vargs, uint32_t *);
-		*p2uint32 = slurmd_job->ntasks;
+		*p2uint32 = slurmd_job->node_tasks;
 		break;
 	case S_JOB_TOTAL_TASK_COUNT:
 		p2uint32 = va_arg(vargs, uint32_t *);
@@ -1667,7 +1667,7 @@ spank_err_t spank_get_item(spank_t spank, spank_item_t item, ...)
 				rc = ESPANK_ENV_NOEXIST;
 			}
 		} else
-			*p2uint32 = slurmd_job->nprocs;
+			*p2uint32 = slurmd_job->ntasks;
 		break;
 	case S_JOB_NCPUS:
 		p2uint16 = va_arg(vargs, uint16_t *);
@@ -1755,7 +1755,7 @@ spank_err_t spank_get_item(spank_t spank, spank_item_t item, ...)
 		p2uint32 = va_arg(vargs, uint32_t *);
 		*p2uint32 = (uint32_t) -1;
 
-		if ((uint32 <= slurmd_job->ntasks) &&
+		if ((uint32 <= slurmd_job->node_tasks) &&
 		    slurmd_job->task && slurmd_job->task[uint32]) {
 			*p2uint32 = slurmd_job->task[uint32]->gtid;
 		} else

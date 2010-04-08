@@ -3385,17 +3385,17 @@ int _launch_batch_step(job_desc_msg_t *job_desc_msg, uid_t uid,
 	launch_msg_ptr->job_mem = job_desc_msg->pn_min_memory;
 	launch_msg_ptr->cpus_per_task = job_desc_msg->cpus_per_task;
 
-	/* _max_nprocs() represents the total number of CPUs available
+	/* job_ptr->total_cpus represents the total number of CPUs available
 	 * for this step (overcommit not supported yet). If job_desc_msg
 	 * contains a reasonable min_cpus request, use that value;
 	 * otherwise default to the allocation processor request.
 	 */
-	launch_msg_ptr->nprocs = job_ptr->total_cpus;
+	launch_msg_ptr->ntasks = job_ptr->total_cpus;
 	if (job_desc_msg->min_cpus > 0 &&
-		job_desc_msg->min_cpus < launch_msg_ptr->nprocs)
-		launch_msg_ptr->nprocs = job_desc_msg->min_cpus;
-	if (launch_msg_ptr->nprocs < 0)
-		launch_msg_ptr->nprocs = job_ptr->cpu_cnt;
+		job_desc_msg->min_cpus < launch_msg_ptr->ntasks)
+		launch_msg_ptr->ntasks = job_desc_msg->min_cpus;
+	if (launch_msg_ptr->ntasks < 0)
+		launch_msg_ptr->ntasks = job_ptr->cpu_cnt;
 
 	launch_msg_ptr->num_cpu_groups = job_ptr->job_resrcs->cpu_array_cnt;
 	launch_msg_ptr->cpus_per_node  = xmalloc(sizeof(uint16_t) *
@@ -3415,7 +3415,7 @@ int _launch_batch_step(job_desc_msg_t *job_desc_msg, uid_t uid,
 	 * actually allocated, rather than totaling up to the requested
 	 * CPU count for the allocation.
 	 * This means that SLURM_TASKS_PER_NODE will not match with
-	 * SLURM_NPROCS in the batch script environment.
+	 * SLURM_NTASKS in the batch script environment.
 	 */
 
 	agent_arg_ptr = (agent_arg_t *) xmalloc(sizeof(agent_arg_t));

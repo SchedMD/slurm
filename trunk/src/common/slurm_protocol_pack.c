@@ -5558,7 +5558,7 @@ _pack_launch_tasks_request_msg(launch_tasks_request_msg_t * msg, Buf buffer,
 	if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
 		pack32(msg->job_id, buffer);
 		pack32(msg->job_step_id, buffer);
-		pack32(msg->nprocs, buffer);
+		pack32(msg->ntasks, buffer);
 		pack32(msg->uid, buffer);
 		pack32(msg->gid, buffer);
 		pack32(msg->job_mem_lim, buffer);
@@ -5617,7 +5617,7 @@ _pack_launch_tasks_request_msg(launch_tasks_request_msg_t * msg, Buf buffer,
 	} else {
 		pack32(msg->job_id, buffer);
 		pack32(msg->job_step_id, buffer);
-		pack32(msg->nprocs, buffer);
+		pack32(msg->ntasks, buffer);
 		pack32(msg->uid, buffer);
 		pack32(msg->gid, buffer);
 		pack32(msg->job_mem_lim, buffer);
@@ -5691,7 +5691,7 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 	if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
 		safe_unpack32(&msg->job_id, buffer);
 		safe_unpack32(&msg->job_step_id, buffer);
-		safe_unpack32(&msg->nprocs, buffer);
+		safe_unpack32(&msg->ntasks, buffer);
 		safe_unpack32(&msg->uid, buffer);
 		safe_unpack32(&msg->gid, buffer);
 		safe_unpack32(&msg->job_mem_lim, buffer);
@@ -5780,7 +5780,7 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 	} else {
 		safe_unpack32(&msg->job_id, buffer);
 		safe_unpack32(&msg->job_step_id, buffer);
-		safe_unpack32(&msg->nprocs, buffer);
+		safe_unpack32(&msg->ntasks, buffer);
 		safe_unpack32(&msg->uid, buffer);
 		safe_unpack32(&msg->gid, buffer);
 		safe_unpack32(&msg->job_mem_lim, buffer);
@@ -6500,7 +6500,7 @@ _pack_batch_job_launch_msg(batch_job_launch_msg_t * msg, Buf buffer,
 	pack32(msg->step_id, buffer);
 	pack32(msg->uid, buffer);
 	pack32(msg->gid, buffer);
-	pack32(msg->nprocs, buffer);
+	pack32(msg->ntasks, buffer);
 
 	pack8(msg->open_mode, buffer);
 	pack8(msg->overcommit, buffer);
@@ -6557,7 +6557,7 @@ _unpack_batch_job_launch_msg(batch_job_launch_msg_t ** msg, Buf buffer,
 	safe_unpack32(&launch_msg_ptr->step_id, buffer);
 	safe_unpack32(&launch_msg_ptr->uid, buffer);
 	safe_unpack32(&launch_msg_ptr->gid, buffer);
-	safe_unpack32(&launch_msg_ptr->nprocs, buffer);
+	safe_unpack32(&launch_msg_ptr->ntasks, buffer);
 
 	safe_unpack8(&launch_msg_ptr->open_mode, buffer);
 	safe_unpack8(&launch_msg_ptr->overcommit, buffer);
