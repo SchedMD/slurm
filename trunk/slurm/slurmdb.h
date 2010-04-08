@@ -730,7 +730,7 @@ typedef struct {
 typedef struct {
 	char *acct;
 	List acct_list; /* list of char *'s */
-	List assoc_list; /* list of slurmdb_association_rec_t's */
+	List assoc_list; /* list of slurmdb_report_assoc_rec_t's */
 	uint64_t cpu_secs;
 	char *name;
 	uid_t uid;
