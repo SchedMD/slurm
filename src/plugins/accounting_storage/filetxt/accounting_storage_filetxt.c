@@ -598,7 +598,7 @@ extern int jobacct_storage_p_job_complete(void *db_conn,
 	}
 
 	debug2("slurmdb_job_complete() called");
-	if (job_ptr->job_state & JOB_RESIZING) {
+	if (IS_JOB_RESIZING(job_ptr)) {
 		job_state = JOB_RESIZING;
 		if (job_ptr->resize_time)
 			duration = time(NULL) - job_ptr->resize_time;

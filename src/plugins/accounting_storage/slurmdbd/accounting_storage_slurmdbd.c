@@ -1620,24 +1620,21 @@ extern int jobacct_storage_p_job_start(void *db_conn,
 	req.alloc_nodes      = job_ptr->node_cnt;
 #endif
 	req.block_id      = block_id;
-	req.db_index      = job_ptr->db_index;
 	if (job_ptr->resize_time) {
 		req.eligible_time = job_ptr->resize_time;
-		req.start_time    = job_ptr->resize_time;
 		req.submit_time   = job_ptr->resize_time;
-	} else {
-		if (job_ptr->details) {
-			req.eligible_time = job_ptr->details->begin_time;
-			req.submit_time   = job_ptr->details->submit_time;
-		}
-		req.start_time    = job_ptr->start_time;
+	} else if (job_ptr->details) {
+		req.eligible_time = job_ptr->details->begin_time;
+		req.submit_time   = job_ptr->details->submit_time;
 	}
+
+	req.start_time    = job_ptr->start_time;
 	req.gid           = job_ptr->group_id;
 	req.job_id        = job_ptr->job_id;
-	if (job_ptr->job_state & JOB_RESIZING)
-		req.job_state     = JOB_RESIZING;
-	else
-		req.job_state     = job_ptr->job_state & JOB_STATE_BASE;
+
+	req.db_index      = job_ptr->db_index;
+
+	req.job_state     = job_ptr->job_state;
 	req.name          = job_ptr->name;
 	req.nodes         = job_ptr->nodes;
 	if(job_ptr->node_bitmap) {
@@ -1660,7 +1657,7 @@ extern int jobacct_storage_p_job_start(void *db_conn,
 	/* if we already have the db_index don't wait around for it
 	 * again just send the message
 	 */
-	if(req.db_index) {
+	if(req.db_index && !IS_JOB_RESIZING(job_ptr)) {
 		if (slurm_send_slurmdbd_msg(SLURMDBD_VERSION, &msg) < 0) {
 			xfree(block_id);
 			return SLURM_ERROR;
@@ -1715,8 +1712,8 @@ extern int jobacct_storage_p_job_complete(void *db_conn,
 	req.db_index    = job_ptr->db_index;
 	req.exit_code   = job_ptr->exit_code;
 	req.job_id      = job_ptr->job_id;
-	if (job_ptr->job_state & JOB_RESIZING) {
-		req.end_time    = time(NULL);
+	if (IS_JOB_RESIZING(job_ptr)) {
+		req.end_time    = job_ptr->resize_time;
 		req.job_state   = JOB_RESIZING;
 	} else {
 		req.end_time    = job_ptr->end_time;
@@ -1724,6 +1721,7 @@ extern int jobacct_storage_p_job_complete(void *db_conn,
 	}
 	req.req_uid     = job_ptr->requid;
 	req.nodes       = job_ptr->nodes;
+
 	if (job_ptr->resize_time) {
 		req.start_time  = job_ptr->resize_time;
 		req.submit_time = job_ptr->resize_time;
@@ -1810,8 +1808,15 @@ extern int jobacct_storage_p_step_start(void *db_conn,
 				       step_ptr->step_node_bitmap);
 	}
 	req.node_cnt    = nodes;
-	req.start_time  = step_ptr->start_time;
-	if (step_ptr->job_ptr->details)
+
+	if(step_ptr->start_time > step_ptr->job_ptr->resize_time)
+		req.start_time = step_ptr->start_time;
+	else
+		req.start_time = step_ptr->job_ptr->resize_time;
+
+	if (step_ptr->job_ptr->resize_time)
+		req.job_submit_time   = step_ptr->job_ptr->resize_time;
+	else if (step_ptr->job_ptr->details)
 		req.job_submit_time   = step_ptr->job_ptr->details->submit_time;
 	req.step_id     = step_ptr->step_id;
 	if (step_ptr->step_layout)
@@ -1873,8 +1878,9 @@ extern int jobacct_storage_p_step_complete(void *db_conn,
 #endif
 
 	if (!step_ptr->job_ptr->db_index
-	    && (!step_ptr->job_ptr->details
-		|| !step_ptr->job_ptr->details->submit_time)) {
+	    && ((!step_ptr->job_ptr->details
+		 || !step_ptr->job_ptr->details->submit_time)
+		&& !step_ptr->job_ptr->resize_time)) {
 		error("jobacct_storage_p_step_complete: "
 		      "Not inputing this job, it has no submit time.");
 		return SLURM_ERROR;
@@ -1889,8 +1895,14 @@ extern int jobacct_storage_p_step_complete(void *db_conn,
 	req.jobacct     = step_ptr->jobacct;
 	req.job_id      = step_ptr->job_ptr->job_id;
 	req.req_uid     = step_ptr->requid;
-	req.start_time  = step_ptr->start_time;
-	if (step_ptr->job_ptr->details)
+	if(step_ptr->start_time > step_ptr->job_ptr->resize_time)
+		req.start_time = step_ptr->start_time;
+	else
+		req.start_time = step_ptr->job_ptr->resize_time;
+
+	if (step_ptr->job_ptr->resize_time)
+		req.job_submit_time   = step_ptr->job_ptr->resize_time;
+	else if (step_ptr->job_ptr->details)
 		req.job_submit_time   = step_ptr->job_ptr->details->submit_time;
 	req.step_id     = step_ptr->step_id;
 	req.total_cpus = cpus;
@@ -1920,8 +1932,12 @@ extern int jobacct_storage_p_suspend(void *db_conn,
 	req.job_id       = job_ptr->job_id;
 	req.db_index     = job_ptr->db_index;
 	req.job_state    = job_ptr->job_state & JOB_STATE_BASE;
-	if (job_ptr->details)
+
+	if (job_ptr->resize_time)
+		req.submit_time   = job_ptr->resize_time;
+	else if (job_ptr->details)
 		req.submit_time   = job_ptr->details->submit_time;
+
 	req.suspend_time = job_ptr->suspend_time;
 	msg.msg_type     = DBD_JOB_SUSPEND;
 	msg.data         = &req;

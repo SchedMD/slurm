@@ -1754,7 +1754,8 @@ extern int kill_running_job_by_node_name(char *node_name)
 				     job_ptr->job_id, node_name);
 				_set_job_prio(job_ptr);
 				snprintf(requeue_msg, sizeof(requeue_msg),
-					 "Job requeued due to failure of node %s",
+					 "Job requeued due to failure "
+					 "of node %s",
 					 node_name);
 				slurm_sched_requeue(job_ptr, requeue_msg);
 				job_ptr->time_last_active  = now;
@@ -6028,10 +6029,14 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 				excise_node_from_job(job_ptr, node_ptr);
 			}
 			job_post_resize_acctg(job_ptr);
-		}
+			update_accounting = false;
+		} else
+			/* Since job_post_resize_acctg will restart
+			   things don't do it again. */
+			update_accounting = true;
+
 		FREE_NULL_BITMAP(req_bitmap);
 		xfree(job_specs->req_nodes);
-		update_accounting = true;
 	}
 #endif
 
@@ -6100,8 +6105,10 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			info("sched: update_job: set nodes to %s for "
 			     "job_id %u",
 			     job_ptr->nodes, job_specs->job_id);
+			/* Since job_post_resize_acctg will restart
+			   things don't do it again. */
+			update_accounting = false;
 		}
-		update_accounting = true;
 	}
 #endif
 
@@ -6366,6 +6373,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 
 #endif
 	 if(update_accounting) {
+		 info("updating accounting");
 		 if (job_ptr->details && job_ptr->details->begin_time) {
 			/* Update job record in accounting to reflect
 			 * changes */
@@ -6380,9 +6388,9 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 extern void job_pre_resize_acctg(struct job_record *job_ptr)
 {
 	job_ptr->job_state |= JOB_RESIZING;
+	job_ptr->resize_time = time(NULL);
 	job_completion_logger(job_ptr);
 	job_ptr->job_state &= (~JOB_RESIZING);
-	job_ptr->resize_time = time(NULL);
 }
 
 /* Record accounting information for a job immediately after changing size */
@@ -6997,14 +7005,13 @@ void job_fini (void)
 extern void job_completion_logger(struct job_record  *job_ptr)
 {
 	int base_state;
-	bool job_resizing, sent_start = false;
+	bool sent_start = false;
 
 	xassert(job_ptr);
-	job_resizing = job_ptr->job_state & JOB_RESIZING;
 
 	acct_policy_remove_job_submit(job_ptr);
 
-	if (!job_resizing) {
+	if (!IS_JOB_RESIZING(job_ptr)) {
 		/* Remove configuring state just to make sure it isn't there
 		 * since it will throw off displays of the job. */
 		job_ptr->job_state &= (~JOB_CONFIGURING);
@@ -7027,6 +7034,11 @@ extern void job_completion_logger(struct job_record  *job_ptr)
 	}
 
 	g_slurm_jobcomp_write(job_ptr);
+
+	/* When starting the resized job everything is taken care of
+	   there, so don't call it here. */
+	if (IS_JOB_RESIZING(job_ptr))
+		return;
 
 	if(!job_ptr->assoc_id) {
 		slurmdb_association_rec_t assoc_rec;
@@ -7053,9 +7065,8 @@ extern void job_completion_logger(struct job_record  *job_ptr)
 	 * keep track of all jobs, so we will set the db_inx to
 	 * INFINITE and the database will understand what happened.
 	 */
-	if(!job_ptr->nodes && !job_ptr->db_index && !sent_start) {
+	if(!job_ptr->nodes && !job_ptr->db_index && !sent_start)
 		jobacct_storage_g_job_start(acct_db_conn, job_ptr);
-	}
 
 	jobacct_storage_g_job_complete(acct_db_conn, job_ptr);
 }

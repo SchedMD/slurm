@@ -322,7 +322,7 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 	int set = 0;
 	char *prefix="t2";
 	int rc = SLURM_SUCCESS;
-	int last_id = -1, curr_id = -1;
+	int last_id = -1, curr_id = -1, last_state = -1;
 	local_cluster_t *curr_cluster = NULL;
 
 	/* This is here to make sure we are looking at only this user
@@ -390,12 +390,10 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 	}
 
 	/* Here we want to order them this way in such a way so it is
-	   easy to look for duplicates
+	   easy to look for duplicates, it is also easy to sort the
+	   resized jobs.
 	*/
-	if(job_cond && !job_cond->duplicates)
-		xstrcat(query, " order by id_job, time_submit desc");
-	else
-		xstrcat(query, " order by time_submit desc");
+	xstrcat(query, " group by id_job, time_submit desc");
 
 	debug3("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, THIS_FILE, __LINE__, query);
@@ -413,22 +411,32 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 
 		curr_id = atoi(row[JOB_REQ_JOBID]);
 
-		if(job_cond && !job_cond->duplicates && curr_id == last_id)
+		if(job_cond && !job_cond->duplicates
+		   && (curr_id == last_id)
+		   && (atoi(row[JOB_REQ_STATE]) != JOB_RESIZING))
 			continue;
-
-		last_id = curr_id;
 
 		/* check the bitmap to see if this is one of the jobs
 		   we are looking for */
 		if(!good_nodes_from_inx(local_cluster_list,
 					(void **)&curr_cluster,
-					row[JOB_REQ_NODE_INX], submit))
+					row[JOB_REQ_NODE_INX], submit)) {
+			last_id = curr_id;
 			continue;
+		}
 
 		job = slurmdb_create_job_rec();
-		list_append(job_list, job);
-
 		job->state = atoi(row[JOB_REQ_STATE]);
+		last_state = job->state;
+		if(curr_id == last_id)
+			/* put in reverse so we order by the submit getting
+			   larger which it is given to us in reverse
+			   order from the database */
+			list_prepend(job_list, job);
+		else
+			list_append(job_list, job);
+		last_id = curr_id;
+
 		job->alloc_cpus = atoi(row[JOB_REQ_ALLOC_CPUS]);
 		job->alloc_nodes = atoi(row[JOB_REQ_ALLOC_NODES]);
 		job->associd = atoi(row[JOB_REQ_ASSOCID]);

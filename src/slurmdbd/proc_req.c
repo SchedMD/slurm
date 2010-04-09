@@ -1789,8 +1789,6 @@ static int  _job_complete(slurmdbd_conn_t *slurmdbd_conn,
 		goto end_it;
 	}
 
-	debug2("DBD_JOB_COMPLETE: ID:%u ", job_comp_msg->job_id);
-
 	memset(&job, 0, sizeof(struct job_record));
 	memset(&details, 0, sizeof(struct job_details));
 
@@ -1806,6 +1804,13 @@ static int  _job_complete(slurmdbd_conn_t *slurmdbd_conn,
 	details.submit_time = job_comp_msg->submit_time;
 
 	job.details = &details;
+
+	if(job.job_state & JOB_RESIZING) {
+		job.resize_time = job_comp_msg->end_time;
+		debug2("DBD_JOB_COMPLETE: RESIZE ID:%u", job_comp_msg->job_id);
+	} else
+		debug2("DBD_JOB_COMPLETE: ID:%u", job_comp_msg->job_id);
+
 	rc = jobacct_storage_g_job_complete(slurmdbd_conn->db_conn, &job);
 
 	if(rc && errno == 740) /* meaning data is already there */
@@ -1876,7 +1881,12 @@ static int  _job_start(slurmdbd_conn_t *slurmdbd_conn,
 
 	job.details = &details;
 
-	if(job.start_time) {
+	if(job.job_state & JOB_RESIZING) {
+		job.resize_time = job_start_msg->eligible_time;
+		debug2("DBD_JOB_START: RESIZE CALL ID:%u NAME:%s INX:%u",
+		       job_start_msg->job_id, job_start_msg->name,
+		       job.db_index);
+	} else if(job.start_time) {
 		debug2("DBD_JOB_START: START CALL ID:%u NAME:%s INX:%u",
 		       job_start_msg->job_id, job_start_msg->name,
 		       job.db_index);

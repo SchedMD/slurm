@@ -672,7 +672,7 @@ extern int create_cluster_tables(MYSQL *db_conn, char *cluster_name)
 	storage_field_t assoc_table_fields[] = {
 		{ "creation_time", "int unsigned not null" },
 		{ "mod_time", "int unsigned default 0 not null" },
-		{ "deleted", "tinyint default 0" },
+		{ "deleted", "tinyint default 0 not null" },
 		{ "id_assoc", "int not null auto_increment" },
 		{ "user", "tinytext not null default ''" },
 		{ "acct", "tinytext not null" },
@@ -701,25 +701,25 @@ extern int create_cluster_tables(MYSQL *db_conn, char *cluster_name)
 	storage_field_t assoc_usage_table_fields[] = {
 		{ "creation_time", "int unsigned not null" },
 		{ "mod_time", "int unsigned default 0 not null" },
-		{ "deleted", "tinyint default 0" },
+		{ "deleted", "tinyint default 0 not null" },
 		{ "id_assoc", "int not null" },
 		{ "time_start", "int unsigned not null" },
-		{ "alloc_cpu_secs", "bigint default 0" },
+		{ "alloc_cpu_secs", "bigint default 0 not null" },
 		{ NULL, NULL}
 	};
 
 	storage_field_t cluster_usage_table_fields[] = {
 		{ "creation_time", "int unsigned not null" },
 		{ "mod_time", "int unsigned default 0 not null" },
-		{ "deleted", "tinyint default 0" },
+		{ "deleted", "tinyint default 0 not null" },
 		{ "time_start", "int unsigned not null" },
-		{ "cpu_count", "int default 0" },
-		{ "alloc_cpu_secs", "bigint default 0" },
-		{ "down_cpu_secs", "bigint default 0" },
-		{ "pdown_cpu_secs", "bigint default 0" },
-		{ "idle_cpu_secs", "bigint default 0" },
-		{ "resv_cpu_secs", "bigint default 0" },
-		{ "over_cpu_secs", "bigint default 0" },
+		{ "cpu_count", "int default 0 not null" },
+		{ "alloc_cpu_secs", "bigint default 0 not null" },
+		{ "down_cpu_secs", "bigint default 0 not null" },
+		{ "pdown_cpu_secs", "bigint default 0 not null" },
+		{ "idle_cpu_secs", "bigint default 0 not null" },
+		{ "resv_cpu_secs", "bigint default 0 not null" },
+		{ "over_cpu_secs", "bigint default 0 not null" },
 		{ NULL, NULL}
 	};
 
@@ -737,7 +737,7 @@ extern int create_cluster_tables(MYSQL *db_conn, char *cluster_name)
 
 	storage_field_t job_table_fields[] = {
 		{ "job_db_inx", "int not null auto_increment" },
-		{ "deleted", "tinyint default 0" },
+		{ "deleted", "tinyint default 0 not null" },
 		{ "account", "tinytext" },
 		{ "cpus_req", "int unsigned not null" },
 		{ "cpus_alloc", "int unsigned not null" },
@@ -756,7 +756,7 @@ extern int create_cluster_tables(MYSQL *db_conn, char *cluster_name)
 		{ "node_inx", "text" },
 		{ "partition", "tinytext not null" },
 		{ "priority", "int not null" },
-		{ "qos", "smallint default 0" },
+		{ "qos", "smallint default 0 not null" },
 		{ "state", "smallint unsigned not null" },
 		{ "timelimit", "int unsigned default 0 not null" },
 		{ "time_submit", "int unsigned default 0 not null" },
@@ -771,7 +771,7 @@ extern int create_cluster_tables(MYSQL *db_conn, char *cluster_name)
 
 	storage_field_t resv_table_fields[] = {
 		{ "id_resv", "int unsigned default 0 not null" },
-		{ "deleted", "tinyint default 0" },
+		{ "deleted", "tinyint default 0 not null" },
 		{ "assoclist", "text not null default ''" },
 		{ "cpus", "int unsigned not null" },
 		{ "flags", "smallint unsigned default 0 not null" },
@@ -785,7 +785,7 @@ extern int create_cluster_tables(MYSQL *db_conn, char *cluster_name)
 
 	storage_field_t step_table_fields[] = {
 		{ "job_db_inx", "int not null" },
-		{ "deleted", "tinyint default 0" },
+		{ "deleted", "tinyint default 0 not null" },
 		{ "cpus_alloc", "int unsigned not null" },
 		{ "exit_code", "int default 0 not null" },
 		{ "id_step", "smallint not null" },
@@ -796,7 +796,7 @@ extern int create_cluster_tables(MYSQL *db_conn, char *cluster_name)
 		{ "state", "smallint unsigned not null" },
 		{ "step_name", "text not null" },
 		{ "task_cnt", "int unsigned not null" },
-		{ "task_dist", "smallint default 0" },
+		{ "task_dist", "smallint default 0 not null" },
 		{ "time_start", "int unsigned default 0 not null" },
 		{ "time_end", "int unsigned default 0 not null" },
 		{ "time_suspended", "int unsigned default 0 not null" },
@@ -834,7 +834,7 @@ extern int create_cluster_tables(MYSQL *db_conn, char *cluster_name)
 	storage_field_t wckey_table_fields[] = {
 		{ "creation_time", "int unsigned not null" },
 		{ "mod_time", "int unsigned default 0 not null" },
-		{ "deleted", "tinyint default 0" },
+		{ "deleted", "tinyint default 0 not null" },
 		{ "id_wckey", "int not null auto_increment" },
 		{ "wckey_name", "tinytext not null default ''" },
 		{ "user", "tinytext not null" },
@@ -844,7 +844,7 @@ extern int create_cluster_tables(MYSQL *db_conn, char *cluster_name)
 	storage_field_t wckey_usage_table_fields[] = {
 		{ "creation_time", "int unsigned not null" },
 		{ "mod_time", "int unsigned default 0 not null" },
-		{ "deleted", "tinyint default 0" },
+		{ "deleted", "tinyint default 0 not null" },
 		{ "id_wckey", "int not null" },
 		{ "time_start", "int unsigned not null" },
 		{ "alloc_cpu_secs", "bigint default 0" },

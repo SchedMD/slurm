@@ -206,7 +206,7 @@ no_wckeyid:
 /* extern functions */
 
 extern int as_mysql_job_start(mysql_conn_t *mysql_conn,
-			   struct job_record *job_ptr)
+			      struct job_record *job_ptr)
 {
 	int rc=SLURM_SUCCESS;
 	char *nodes = NULL, *jname = NULL, *node_inx = NULL;
@@ -217,8 +217,10 @@ extern int as_mysql_job_start(mysql_conn_t *mysql_conn,
 	time_t begin_time, check_time, start_time, submit_time;
 	uint32_t wckeyid = 0;
 	int job_state, node_cnt = 0;
+//	uint32_t job_db_inx = job_ptr->db_index;
 
-	if (!job_ptr->details || !job_ptr->details->submit_time) {
+	if ((!job_ptr->details || !job_ptr->details->submit_time)
+	    && !job_ptr->resize_time) {
 		error("as_mysql_job_start: "
 		      "Not inputing this job, it has no submit time.");
 		return SLURM_ERROR;
@@ -228,6 +230,21 @@ extern int as_mysql_job_start(mysql_conn_t *mysql_conn,
 		return ESLURM_DB_CONNECTION;
 
 	debug2("as_mysql_slurmdb_job_start() called");
+
+	job_state = job_ptr->job_state;
+
+	/* Since we need a new db_inx make sure the old db_inx
+	 * removed. This is most likely the only time we are going to
+	 * be notified of the change also so make the state without
+	 * the resize. */
+	if(IS_JOB_RESIZING(job_ptr)) {
+		as_mysql_job_complete(mysql_conn, job_ptr);
+		job_state &= (~JOB_RESIZING);
+		job_ptr->db_index = 0;
+	}
+
+	job_state &= JOB_STATE_BASE;
+
 	if (job_ptr->resize_time) {
 		begin_time  = job_ptr->resize_time;
 		submit_time = job_ptr->resize_time;
@@ -237,10 +254,6 @@ extern int as_mysql_job_start(mysql_conn_t *mysql_conn,
 		submit_time = job_ptr->details->submit_time;
 		start_time  = job_ptr->start_time;
 	}
-	if (job_ptr->job_state & JOB_RESIZING)
-		job_state = JOB_RESIZING;
-	else
-		job_state = job_ptr->job_state & JOB_STATE_BASE;
 
 	/* See what we are hearing about here if no start time. If
 	 * this job latest time is before the last roll up we will
@@ -368,13 +381,6 @@ no_rollup_change:
 				       mysql_conn->cluster_name,
 				       job_ptr->assoc_id);
 
-
-	/* We need to put a 0 for 'end' incase of funky job state
-	 * files from a hot start of the controllers we call
-	 * job_start on jobs we may still know about after
-	 * job_flush has been called so we need to restart
-	 * them by zeroing out the end.
-	 */
 	if(!job_ptr->db_index) {
 		if(!begin_time)
 			begin_time = submit_time;
@@ -491,6 +497,10 @@ no_rollup_change:
 	xfree(block_id);
 	xfree(query);
 
+	/* now we will reset all the steps */
+	/* if(IS_JOB_RESIZING(job_ptr)) */
+	/* 	rc = _resize_steps(job_db_inx, job_ptr); */
+
 	return rc;
 }
 
@@ -499,10 +509,11 @@ extern int as_mysql_job_complete(mysql_conn_t *mysql_conn,
 {
 	char *query = NULL, *nodes = NULL;
 	int rc = SLURM_SUCCESS, job_state;
-	time_t start_time, end_time;
+	time_t submit_time, end_time;
 
 	if (!job_ptr->db_index
-	    && (!job_ptr->details || !job_ptr->details->submit_time)) {
+	    && ((!job_ptr->details || !job_ptr->details->submit_time)
+		&& !job_ptr->resize_time)) {
 		error("as_mysql_job_complete: "
 		      "Not inputing this job, it has no submit time.");
 		return SLURM_ERROR;
@@ -512,13 +523,13 @@ extern int as_mysql_job_complete(mysql_conn_t *mysql_conn,
 		return ESLURM_DB_CONNECTION;
 	debug2("as_mysql_slurmdb_job_complete() called");
 
-	if (job_ptr->resize_time) {
-		start_time  = job_ptr->resize_time;
-	} else {
-		start_time  = job_ptr->start_time;
-	}
-	if (job_ptr->job_state & JOB_RESIZING) {
-		end_time = time(NULL);
+	if (job_ptr->resize_time)
+		submit_time = job_ptr->resize_time;
+	else
+		submit_time = job_ptr->details->submit_time;
+
+	if (IS_JOB_RESIZING(job_ptr)) {
+		end_time = job_ptr->resize_time;
 		job_state = JOB_RESIZING;
 	} else {
 		/* If we get an error with this just fall through to avoid an
@@ -531,8 +542,6 @@ extern int as_mysql_job_complete(mysql_conn_t *mysql_conn,
 		end_time = job_ptr->end_time;
 		job_state = job_ptr->job_state & JOB_STATE_BASE;
 	}
-	if (start_time > end_time)
-		start_time = 0;
 
 	slurm_mutex_lock(&rollup_lock);
 	if(end_time < global_last_rollup) {
@@ -558,7 +567,7 @@ extern int as_mysql_job_complete(mysql_conn_t *mysql_conn,
 	if(!job_ptr->db_index) {
 		if(!(job_ptr->db_index =
 		     _get_db_index(mysql_conn,
-				   job_ptr->details->submit_time,
+				   submit_time,
 				   job_ptr->job_id,
 				   job_ptr->assoc_id))) {
 			/* If we get an error with this just fall
@@ -573,13 +582,14 @@ extern int as_mysql_job_complete(mysql_conn_t *mysql_conn,
 		}
 	}
 
-	query = xstrdup_printf("update \"%s_%s\" set time_start=%d, time_end=%d, "
+	query = xstrdup_printf("update \"%s_%s\" set time_end=%d, "
 			       "state=%d, nodelist='%s', exit_code=%d, "
-			       "kill_requid=%d where job_db_inx=%d",
+			       "kill_requid=%d where job_db_inx=%d;",
 			       mysql_conn->cluster_name, job_table,
-			       start_time, end_time, job_state,
+			       end_time, job_state,
 			       nodes, job_ptr->exit_code,
 			       job_ptr->requid, job_ptr->db_index);
+
 	debug3("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, THIS_FILE, __LINE__, query);
 	rc = mysql_db_query(mysql_conn->db_conn, query);
@@ -589,23 +599,35 @@ extern int as_mysql_job_complete(mysql_conn_t *mysql_conn,
 }
 
 extern int as_mysql_step_start(mysql_conn_t *mysql_conn,
-			    struct step_record *step_ptr)
+			       struct step_record *step_ptr)
 {
 	int cpus = 0, tasks = 0, nodes = 0, task_dist = 0;
 	int rc=SLURM_SUCCESS;
 	char node_list[BUFFER_SIZE];
 	char *node_inx = NULL;
+	time_t start_time, submit_time;
+
 #ifdef HAVE_BG
 	char *ionodes = NULL;
 #endif
 	char *query = NULL;
 
 	if (!step_ptr->job_ptr->db_index
-	    && (!step_ptr->job_ptr->details
-		|| !step_ptr->job_ptr->details->submit_time)) {
+	    && ((!step_ptr->job_ptr->details
+		 || !step_ptr->job_ptr->details->submit_time)
+		&& !step_ptr->job_ptr->resize_time)) {
 		error("as_mysql_step_start: "
 		      "Not inputing this job, it has no submit time.");
 		return SLURM_ERROR;
+	}
+
+	if (step_ptr->job_ptr->resize_time) {
+		submit_time = start_time = step_ptr->job_ptr->resize_time;
+		if(step_ptr->start_time > submit_time)
+			start_time = step_ptr->start_time;
+	} else {
+		start_time = step_ptr->start_time;
+		submit_time = step_ptr->job_ptr->details->submit_time;
 	}
 
 	if(check_connection(mysql_conn) != SLURM_SUCCESS)
@@ -660,7 +682,7 @@ extern int as_mysql_step_start(mysql_conn_t *mysql_conn,
 	if(!step_ptr->job_ptr->db_index) {
 		if(!(step_ptr->job_ptr->db_index =
 		     _get_db_index(mysql_conn,
-				   step_ptr->job_ptr->details->submit_time,
+				   submit_time,
 				   step_ptr->job_ptr->job_id,
 				   step_ptr->job_ptr->assoc_id))) {
 			/* If we get an error with this just fall
@@ -690,7 +712,7 @@ extern int as_mysql_step_start(mysql_conn_t *mysql_conn,
 		mysql_conn->cluster_name, step_table,
 		step_ptr->job_ptr->db_index,
 		step_ptr->step_id,
-		(int)step_ptr->start_time, step_ptr->name,
+		(int)start_time, step_ptr->name,
 		JOB_RUNNING, cpus, nodes, tasks, node_list, node_inx, task_dist,
 		cpus, nodes, tasks, JOB_RUNNING,
 		node_list, node_inx, task_dist);
@@ -716,13 +738,24 @@ extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 	char *query = NULL;
 	int rc =SLURM_SUCCESS;
 	uint32_t exit_code = 0;
+	time_t start_time, submit_time;
 
 	if (!step_ptr->job_ptr->db_index
-	    && (!step_ptr->job_ptr->details
-		|| !step_ptr->job_ptr->details->submit_time)) {
+	    && ((!step_ptr->job_ptr->details
+		 || !step_ptr->job_ptr->details->submit_time)
+		&& !step_ptr->job_ptr->resize_time)) {
 		error("as_mysql_step_complete: "
 		      "Not inputing this job, it has no submit time.");
 		return SLURM_ERROR;
+	}
+
+	if (step_ptr->job_ptr->resize_time) {
+		submit_time = start_time = step_ptr->job_ptr->resize_time;
+		if(step_ptr->start_time > submit_time)
+			start_time = step_ptr->start_time;
+	} else {
+		start_time = step_ptr->start_time;
+		submit_time = step_ptr->job_ptr->details->submit_time;
 	}
 
 	if (jobacct == NULL) {
@@ -753,8 +786,8 @@ extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 #endif
 	}
 
-	if ((elapsed=now-step_ptr->start_time)<0)
-		elapsed=0;	/* For *very* short jobs, if clock is wrong */
+	if ((elapsed = (now - start_time)) < 0)
+		elapsed = 0;	/* For *very* short jobs, if clock is wrong */
 
 	exit_code = step_ptr->exit_code;
 	if (exit_code == NO_VAL) {
@@ -786,7 +819,7 @@ extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 	if(!step_ptr->job_ptr->db_index) {
 		if(!(step_ptr->job_ptr->db_index =
 		     _get_db_index(mysql_conn,
-				   step_ptr->job_ptr->details->submit_time,
+				   submit_time,
 				   step_ptr->job_ptr->job_id,
 				   step_ptr->job_ptr->assoc_id))) {
 			/* If we get an error with this just fall
@@ -853,18 +886,26 @@ extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 	return rc;
 }
 
-extern int as_mysql_suspend(mysql_conn_t *mysql_conn, struct job_record *job_ptr)
+extern int as_mysql_suspend(mysql_conn_t *mysql_conn,
+			    struct job_record *job_ptr)
 {
 	char *query = NULL;
 	int rc = SLURM_SUCCESS;
 	bool suspended = false;
+	time_t submit_time;
 
 	if(check_connection(mysql_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
+
+	if (job_ptr->resize_time)
+		submit_time = job_ptr->resize_time;
+	else
+		submit_time = job_ptr->details->submit_time;
+
 	if(!job_ptr->db_index) {
 		if(!(job_ptr->db_index =
 		     _get_db_index(mysql_conn,
-				   job_ptr->details->submit_time,
+				   submit_time,
 				   job_ptr->job_id,
 				   job_ptr->assoc_id))) {
 			/* If we get an error with this just fall
