@@ -190,13 +190,20 @@ _get_db_index(pgsql_conn_t *pg_conn, time_t submit, uint32_t jobid,
 static int
 _check_job_db_index(pgsql_conn_t *pg_conn, struct job_record *job_ptr)
 {
+	time_t submit_time;
+
+	if (job_ptr->resize_time)
+		submit_time = job_ptr->resize_time;
+	else
+		submit_time = job_ptr->details->submit_time;
+
 	if(!job_ptr->db_index) {
 		job_ptr->db_index = _get_db_index(
 			pg_conn,
-			job_ptr->details->submit_time,
+			submit_time,
 			job_ptr->job_id,
 			job_ptr->assoc_id);
-		if (! job_ptr->db_index) {
+		if (!job_ptr->db_index) {
 			/* If we get an error with this just fall
 			 * through to avoid an infinite loop
 			 */
@@ -375,7 +382,8 @@ js_p_job_start(pgsql_conn_t *pg_conn,
 	int job_state, node_cnt = 0;
 	uint32_t wckeyid = 0;
 
-	if (!job_ptr->details || !job_ptr->details->submit_time) {
+	if ((!job_ptr->details || !job_ptr->details->submit_time)
+	    && !job_ptr->resize_time) {
 		error("as/pg: job_start: Not inputing this job, "
 		      "it has no submit time.");
 		return SLURM_ERROR;
@@ -385,6 +393,21 @@ js_p_job_start(pgsql_conn_t *pg_conn,
 		return ESLURM_DB_CONNECTION;
 
 	debug3("as/pg: job_start() called");
+
+	job_state = job_ptr->job_state;
+
+	/* Since we need a new db_inx make sure the old db_inx
+	 * removed. This is most likely the only time we are going to
+	 * be notified of the change also so make the state without
+	 * the resize. */
+	if(job_state & JOB_RESIZING) {
+		js_p_job_complete(pg_conn, job_ptr);
+		job_state &= (~JOB_RESIZING);
+		job_ptr->db_index = 0;
+	}
+
+	job_state &= JOB_STATE_BASE;
+
 	if (job_ptr->resize_time) {
 		begin_time  = job_ptr->resize_time;
 		submit_time = job_ptr->resize_time;
@@ -394,10 +417,6 @@ js_p_job_start(pgsql_conn_t *pg_conn,
 		submit_time = job_ptr->details->submit_time;
 		start_time  = job_ptr->start_time;
 	}
-	if (job_ptr->job_state & JOB_RESIZING)
-		job_state = JOB_RESIZING;
-	else
-		job_state = job_ptr->job_state & JOB_STATE_BASE;
 
 	/* See what we are hearing about here if no start time. If
 	 * this job latest time is before the last roll up we will
@@ -512,12 +531,6 @@ no_rollup_change:
 				      job_ptr->user_id, pg_conn->cluster_name,
 				      job_ptr->assoc_id);
 
-	/* We need to put a 0 for 'end' incase of funky job state
-	 * files from a hot start of the controllers we call
-	 * job_start on jobs we may still know about after
-	 * job_flush has been called so we need to restart
-	 * them by zeroing out the end.
-	 */
 	if(!job_ptr->db_index) {
 		if (!begin_time)
 			begin_time = submit_time;
@@ -626,10 +639,11 @@ js_p_job_complete(pgsql_conn_t *pg_conn,
 {
 	char *query = NULL, *nodes = NULL;
 	int rc = SLURM_SUCCESS, job_state;
-	time_t start_time, end_time;
+	time_t end_time;
 
 	if (!job_ptr->db_index
-	    && (!job_ptr->details || !job_ptr->details->submit_time)) {
+	    && ((!job_ptr->details || !job_ptr->details->submit_time)
+		&& !job_ptr->resize_time)) {
 		error("jobacct_storage_p_job_complete: "
 		      "Not inputing this job, it has no submit time.");
 		return SLURM_ERROR;
@@ -640,13 +654,8 @@ js_p_job_complete(pgsql_conn_t *pg_conn,
 
 	debug2("as/pg: job_complete() called");
 
-	if (job_ptr->resize_time) {
-		start_time = job_ptr->resize_time;
-	} else {
-		start_time = job_ptr->start_time;
-	}
-	if (job_ptr->job_state & JOB_RESIZING) {
-		end_time = time(NULL);
+	if (IS_JOB_RESIZING(job_ptr)) {
+		end_time = job_ptr->resize_time;
 		job_state = JOB_RESIZING;
 	} else {
 		/* If we get an error with this just fall through to avoid an
@@ -659,8 +668,6 @@ js_p_job_complete(pgsql_conn_t *pg_conn,
 		end_time = job_ptr->end_time;
 		job_state = job_ptr->job_state & JOB_STATE_BASE;
 	}
-	if (start_time > end_time)
- 		start_time = 0;
 
 	slurm_mutex_lock(&rollup_lock);
 	if(end_time < global_last_rollup) {
@@ -686,10 +693,10 @@ js_p_job_complete(pgsql_conn_t *pg_conn,
 	if (_check_job_db_index(pg_conn, job_ptr) != SLURM_SUCCESS)
 		return SLURM_SUCCESS;
 
-	query = xstrdup_printf("UPDATE %s SET start=%d, endtime=%d, state=%d, "
+	query = xstrdup_printf("UPDATE %s SET endtime=%d, state=%d, "
 			       "nodelist='%s', comp_code=%d, "
 			       "kill_requid=%d WHERE id=%d",
-			       job_table, start_time, end_time, job_state,
+			       job_table, end_time, job_state,
 			       nodes, job_ptr->exit_code,
 			       job_ptr->requid, job_ptr->db_index);
 	rc = DEF_QUERY_RET_RC;
@@ -716,14 +723,21 @@ js_p_step_start(pgsql_conn_t *pg_conn,
 	char *ionodes = NULL;
 #endif
 	char *query = NULL, *rec = NULL;
+	time_t start_time;
 
 	if (!step_ptr->job_ptr->db_index
-	    && (!step_ptr->job_ptr->details
-		|| !step_ptr->job_ptr->details->submit_time)) {
+	    && ((!step_ptr->job_ptr->details
+		 || !step_ptr->job_ptr->details->submit_time)
+		&& !step_ptr->job_ptr->resize_time)) {
 		error("jobacct_storage_p_step_start: "
 		      "Not inputing this job step, it has no submit time.");
 		return SLURM_ERROR;
 	}
+
+	if(step_ptr->start_time > step_ptr->job_ptr->resize_time)
+		start_time = step_ptr->start_time;
+	else
+		start_time = step_ptr->job_ptr->resize_time;
 
 	if(check_db_connection(pg_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
@@ -785,7 +799,7 @@ js_p_step_start(pgsql_conn_t *pg_conn,
 			     step_ptr->job_ptr->db_index,
 			     /* deleted=0 */
 			     step_ptr->step_id,
-			     step_ptr->start_time,
+			     start_time,
 			     /* endtime=0 */
 			     /* suspended=0 */
 			     step_ptr->name ?: "",
@@ -829,14 +843,21 @@ js_p_step_complete(pgsql_conn_t *pg_conn,
 	char *query = NULL;
 	int rc =SLURM_SUCCESS;
 	uint32_t exit_code;
+	time_t start_time;
 
 	if (!step_ptr->job_ptr->db_index
-	    && (!step_ptr->job_ptr->details
-		|| !step_ptr->job_ptr->details->submit_time)) {
+	    && ((!step_ptr->job_ptr->details
+		 || !step_ptr->job_ptr->details->submit_time)
+		&& !step_ptr->job_ptr->resize_time)) {
 		error("jobacct_storage_p_step_complete: "
 		      "Not inputing this job step, it has no submit time.");
 		return SLURM_ERROR;
 	}
+
+	if(step_ptr->start_time > step_ptr->job_ptr->resize_time)
+		start_time = step_ptr->start_time;
+	else
+		start_time = step_ptr->job_ptr->resize_time;
 
 	if(check_db_connection(pg_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
@@ -866,8 +887,8 @@ js_p_step_complete(pgsql_conn_t *pg_conn,
 #endif
 	}
 
-	if ((elapsed=now-step_ptr->start_time)<0)
-		elapsed=0;	/* For *very* short jobs, if clock is wrong */
+	if ((elapsed = (now - start_time)) < 0)
+		elapsed = 0;	/* For *very* short jobs, if clock is wrong */
 
 	exit_code = step_ptr->exit_code;
 	if (exit_code == NO_VAL) {

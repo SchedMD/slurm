@@ -99,6 +99,8 @@
 	((_X->job_state & JOB_STATE_BASE) >  JOB_SUSPENDED)
 #define IS_JOB_COMPLETED(_X)		\
 	(IS_JOB_FINISHED(_X) && ((_X->job_state & JOB_COMPLETING) == 0))
+#define IS_JOB_RESIZING(_X)		\
+	(_X->job_state & JOB_RESIZING)
 
 /* Defined node states */
 #define IS_NODE_UNKNOWN(_X)		\

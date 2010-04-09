@@ -523,7 +523,6 @@ int get_data(void)
 		jobs = g_slurm_jobcomp_get_jobs(job_cond);
 		return SLURM_SUCCESS;
 	} else {
-
 		jobs = slurmdb_jobs_get(acct_db_conn, job_cond);
 	}
 

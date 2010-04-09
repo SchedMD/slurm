@@ -205,7 +205,7 @@ static struct jobcomp_info * _jobcomp_info_create (struct job_record *job)
 	j->gid = job->group_id;
 	j->name = xstrdup (job->name);
 
-	if (job->job_state & JOB_RESIZING) {
+	if (IS_JOB_RESIZING(job)) {
 		state = JOB_RESIZING;
 		j->jobstate = xstrdup (job_state_string (state));
 		if (job->resize_time)

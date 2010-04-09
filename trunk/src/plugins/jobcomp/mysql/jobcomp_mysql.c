@@ -318,7 +318,7 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 	/* Job will typically be COMPLETING when this is called.
 	 * We remove the flags to get the eventual completion state:
 	 * JOB_FAILED, JOB_TIMEOUT, etc. */
-	if (job_ptr->job_state & JOB_RESIZING) {
+	if (IS_JOB_RESIZING(job_ptr)) {
 		job_state = JOB_RESIZING;
 		if (job_ptr->resize_time)
 			start_time = job_ptr->resize_time;
