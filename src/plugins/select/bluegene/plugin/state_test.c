@@ -122,6 +122,17 @@ static void _configure_node_down(rm_bp_id_t bp_id, my_bluegene_t *my_bg)
 			continue;
 		}
 
+		/* make sure we have this midplane in the system */
+		if(bp_loc.X >= DIM_SIZE[X]
+		   || bp_loc.Y >= DIM_SIZE[Y]
+		   || bp_loc.Z >= DIM_SIZE[Z]) {
+			debug4("node %s%c%c%c isn't configured",
+			       bg_conf->slurm_node_prefix,
+			       alpha_num[bp_loc.X], alpha_num[bp_loc.Y],
+			       alpha_num[bp_loc.Z]);
+			continue;
+		}
+
 		snprintf(bg_down_node, sizeof(bg_down_node), "%s%c%c%c",
 			 bg_conf->slurm_node_prefix,
 			 alpha_num[bp_loc.X], alpha_num[bp_loc.Y],
@@ -139,6 +150,128 @@ static void _configure_node_down(rm_bp_id_t bp_id, my_bluegene_t *my_bg)
 		slurm_drain_nodes(bg_down_node, reason);
 		break;
 	}
+}
+
+static char *_get_bp_node_name(rm_BP_t *bp_ptr)
+{
+	rm_bp_id_t bp_id = NULL;
+	rm_location_t bp_loc;
+	int rc;
+
+	errno = SLURM_SUCCESS;
+
+	if ((rc = bridge_get_data(bp_ptr, RM_BPLoc, &bp_loc))
+	    != STATUS_OK) {
+		error("bridge_get_data(RM_BPLoc): %s", bg_err_str(rc));
+		errno = SLURM_ERROR;
+		return NULL;
+	}
+
+	/* make sure we have this midplane in the system */
+	if(bp_loc.X >= DIM_SIZE[X]
+	   || bp_loc.Y >= DIM_SIZE[Y]
+	   || bp_loc.Z >= DIM_SIZE[Z]) {
+		debug4("node %s%c%c%c isn't configured",
+		       bg_conf->slurm_node_prefix,
+		       alpha_num[bp_loc.X], alpha_num[bp_loc.Y],
+		       alpha_num[bp_loc.Z]);
+		return NULL;
+	}
+
+	return xstrdup_printf("%s%c%c%c",
+			      bg_conf->slurm_node_prefix,
+			      alpha_num[bp_loc.X], alpha_num[bp_loc.Y],
+			      alpha_num[bp_loc.Z]);
+}
+
+static int _test_nodecard_state(
+	rm_nodecard_t *ncard, char *node_name, bool slurmctld_locked)
+{
+	int rc = SLURM_SUCCESS;
+	rm_nodecard_id_t nc_name = NULL;
+	rm_nodecard_state_t state;
+
+	if ((rc = bridge_get_data(ncard,
+				  RM_NodeCardState,
+				  &state)) != STATUS_OK) {
+		error("bridge_get_data(RM_NodeCardState: %s",
+		      rc);
+		return SLURM_ERROR;
+	}
+
+	if(state == RM_NODECARD_UP)
+		return SLURM_SUCCESS;
+
+	/* Here we want to keep track of any nodecard that
+	   isn't up and return error if it is in the system. */
+	rc = SLURM_ERROR;
+
+	if ((rc = bridge_get_data(ncard,
+				  RM_NodeCardID,
+				  &nc_name)) != STATUS_OK) {
+		error("bridge_get_data(RM_NodeCardID): %d", rc);
+		return SLURM_ERROR;
+	}
+
+	if(!nc_name) {
+		error("We didn't get an RM_NodeCardID but rc was STATUS_OK?");
+		return SLURM_ERROR;
+	}
+
+#ifdef HAVE_BGL
+	if ((rc = bridge_get_data(ncard,
+				  RM_NodeCardQuarter,
+				  &io_start)) != STATUS_OK) {
+		error("bridge_get_data(CardQuarter): %d",rc);
+		goto clean_up;
+	}
+	io_start *= bg_conf->quarter_ionode_cnt;
+	io_start += bg_conf->nodecard_ionode_cnt * (i%4);
+#else
+	/* From the first nodecard id we can figure
+	   out where to start from with the alloc of ionodes.
+	*/
+	io_start = atoi((char*)nc_name+1);
+	io_start *= bg_conf->io_ratio;
+#endif
+	/* On small systems with less than a midplane the
+	   database may see the nodecards there but in missing
+	   state.  To avoid getting a bunch of warnings here just
+	   skip over the ones missing.
+	*/
+	if(io_start >= bg_conf->numpsets) {
+		rc = SLURM_SUCCESS;
+		if(state == RM_NODECARD_MISSING) {
+			debug3("Nodecard %s is missing",
+			       nc_name);
+		} else {
+			error("We don't have the system configured "
+			      "for this nodecard %s, we only have "
+			      "%d ionodes and this starts at %d",
+			      nc_name, io_start, bg_conf->numpsets);
+		}
+		goto clean_up;
+	}
+	/* if(!ionode_bitmap) */
+	/* 	ionode_bitmap = bit_alloc(bg_conf->numpsets); */
+	/* info("setting %s start %d of %d", */
+	/*      nc_name,  io_start, bg_conf->numpsets); */
+	/* bit_nset(ionode_bitmap, io_start, io_start+io_cnt); */
+
+	/* we have to handle each nodecard separately to make
+	   sure we don't create holes in the system */
+	if(down_nodecard(node_name, io_start, slurmctld_locked)
+	   == SLURM_SUCCESS) {
+		debug("nodecard %s on %s is in an error state",
+		      nc_name, node_name);
+	} else
+		debug2("nodecard %s on %s is in an error state, "
+		       "but error was returned when trying to make it so",
+		       nc_name, node_name);
+clean_up:
+
+	free(nc_name);
+	return rc;
 }
 
 /*
@@ -183,28 +316,7 @@ static int _test_down_nodecards(rm_BP_t *bp_ptr, bool slurmctld_locked)
 		goto clean_up;
 	}
 
-	coord = find_bp_loc(bp_id);
-	if(!coord) {
-		error("Could not find coordinates for "
-		      "BP ID %s", (char *) bp_id);
-		rc = SLURM_ERROR;
-		goto clean_up;
-	}
-
-	/* make sure we have this midplane in the system */
-	if(coord[X] >= DIM_SIZE[X]
-	   || coord[Y] >= DIM_SIZE[Y]
-	   || coord[Z] >= DIM_SIZE[Z]) {
-		debug4("node %s isn't configured", bp_id);
-		rc = SLURM_SUCCESS;
-		goto clean_up;
-	}
-
-	node_name = xstrdup_printf("%s%c%c%c",
-				   bg_conf->slurm_node_prefix,
-				   alpha_num[coord[X]],
-				   alpha_num[coord[Y]],
-				   alpha_num[coord[Z]]);
+	node_name = _get_bp_node_name(bp_ptr);
 
 	if((rc = bridge_get_data(ncard_list, RM_NodeCardListSize, &num))
 	   != STATUS_OK) {
@@ -238,83 +350,10 @@ static int _test_down_nodecards(rm_BP_t *bp_ptr, bool slurmctld_locked)
 				goto clean_up;
 			}
 		}
-		if ((rc = bridge_get_data(ncard,
-					  RM_NodeCardState,
-					  &state)) != STATUS_OK) {
-			error("bridge_get_data(RM_NodeCardState: %s",
-			      rc);
-			rc = SLURM_ERROR;
-			goto clean_up;
-		}
 
-		if(state == RM_NODECARD_UP)
-			continue;
-
-		/* Here we want to keep track of any nodecard that
-		   isn't up and return error if this is not 0 since
-		   we could be checking to see if we could run here. */
-		marked_down++;
-
-		if ((rc = bridge_get_data(ncard,
-					  RM_NodeCardID,
-					  &nc_name)) != STATUS_OK) {
-			error("bridge_get_data(RM_NodeCardID): %d",rc);
-			rc = SLURM_ERROR;
-			goto clean_up;
-		}
-
-		if(!nc_name) {
-			rc = SLURM_ERROR;
-			goto clean_up;
-		}
-
-#ifdef HAVE_BGL
-		if ((rc = bridge_get_data(ncard,
-					  RM_NodeCardQuarter,
-					  &io_start)) != STATUS_OK) {
-			error("bridge_get_data(CardQuarter): %d",rc);
-			goto clean_up;
-		}
-		io_start *= bg_conf->quarter_ionode_cnt;
-		io_start += bg_conf->nodecard_ionode_cnt * (i%4);
-#else
-		/* From the first nodecard id we can figure
-		   out where to start from with the alloc of ionodes.
-		*/
-		io_start = atoi((char*)nc_name+1);
-		io_start *= bg_conf->io_ratio;
-#endif
-		/* On small systems with less than a midplane the
-		   database may see the nodecards there but in missing
-		   state.  To avoid getting a bunch of warnings here just
-		   skip over the ones missing.
-		*/
-		if(io_start >= bg_conf->numpsets) {
-			if(state == RM_NODECARD_MISSING) {
-				debug3("Nodecard %s is missing continue",
-				       nc_name);
-			} else {
-				error("We don't have the system configured "
-				      "for this nodecard %s, we only have "
-				      "%d ionodes and this starts at %d",
-				      nc_name, io_start, bg_conf->numpsets);
-			}
-			free(nc_name);
-			continue;
-		}
-/* 		if(!ionode_bitmap)  */
-/* 			ionode_bitmap = bit_alloc(bg_conf->numpsets); */
-/* 		info("setting %s start %d of %d", */
-/* 		     nc_name,  io_start, bg_conf->numpsets); */
-/* 		bit_nset(ionode_bitmap, io_start, io_start+io_cnt); */
-		/* we have to handle each nodecard separately to make
-		   sure we don't create holes in the system */
-		if(down_nodecard(node_name, io_start, slurmctld_locked)
-		   == SLURM_SUCCESS) {
-			debug("nodecard %s on %s is in an error state",
-			      nc_name, node_name);
-		}
-		free(nc_name);
+		if(_test_nodecard_state(ncard, node_name, slurmctld_locked)
+		   != SLURM_SUCCESS)
+			marked_down++;
 	}
 
 	/* this code is here to bring up a block after it is in an
@@ -374,6 +413,7 @@ clean_up:
 	/* If we marked any nodecard down we need to state it here */
 	if((rc == SLURM_SUCCESS) && marked_down)
 		rc = SLURM_ERROR;
+
 	return rc;
 }
 
@@ -523,8 +563,9 @@ extern int check_block_bp_states(char *bg_block_id, bool slurmctld_locked)
 #ifdef HAVE_BG_FILES
 	rm_partition_t *block_ptr = NULL;
 	rm_BP_t *bp_ptr = NULL;
-	int bp_cnt = 0;
+	int cnt = 0;
 	int i = 0;
+	bool small = false;
 
 	if ((rc = bridge_get_block(bg_block_id, &block_ptr)) != STATUS_OK) {
 		error("Block %s doesn't exist.", bg_block_id);
@@ -534,14 +575,96 @@ extern int check_block_bp_states(char *bg_block_id, bool slurmctld_locked)
 	}
 
 
-	if ((rc = bridge_get_data(block_ptr, RM_PartitionBPNum, &bp_cnt))
+	if ((rc = bridge_get_data(block_ptr, RM_PartitionSmall, &small))
+	    != STATUS_OK) {
+		error("bridge_get_data(RM_PartitionSmall): %s",
+		      bg_err_str(rc));
+		rc = SLURM_ERROR;
+
+		goto cleanup;
+	}
+
+	if(small) {
+		/* If this is a small block we can just check the
+		   nodecard list of the block.
+		*/
+		if((rc = bridge_get_data(block_ptr,
+					 RM_PartitionNodeCardNum,
+					 &cnt))
+		   != STATUS_OK) {
+			error("bridge_get_data(RM_PartitionNodeCardNum): %s",
+			      bg_err_str(rc));
+			rc = SLURM_ERROR;
+			goto cleanup;
+		}
+
+		if ((rc = bridge_get_data(block_ptr,
+					  RM_PartitionFirstBP,
+					  &bp_ptr))
+		    != STATUS_OK) {
+			error("bridge_get_data(RM_FirstBP): %s",
+			      bg_err_str(rc));
+			rc = SLURM_ERROR;
+			goto cleanup;
+		}
+
+		if(!(node_name = _get_bp_node_name(bp_ptr))) {
+			rc = errno;
+			goto cleanup;
+		}
+
+		for(i=0; i<cnt; i++) {
+			if(i) {
+				if ((rc = bridge_get_data(
+					     block_ptr,
+					     RM_PartitionNextNodeCard,
+					     &ncard))
+				    != STATUS_OK) {
+					error("bridge_get_data("
+					      "RM_PartitionNextNodeCard): %s",
+					      bg_err_str(rc));
+					rc = SLURM_ERROR;
+					break;
+				}
+			} else {
+				if ((rc = bridge_get_data(
+					     block_ptr,
+					     RM_PartitionFirstNodeCard,
+					     &ncard))
+				    != STATUS_OK) {
+					error("bridge_get_data("
+					      "RM_PartitionFirstNodeCard): %s",
+					      bg_err_str(rc));
+					rc = SLURM_ERROR;
+					break;
+				}
+			}
+			/* If we find any nodecards in an error state just
+			   break here since we are seeing if we can run.  If
+			   any nodecard is down this can't happen.
+			*/
+			if(_test_nodecard_state(
+				   ncard, node_name, slurmctld_locked)
+			   != SLURM_SUCCESS) {
+				rc = SLURM_ERROR;
+				break;
+			}
+		}
+		xfree(node_name);
+		goto cleanup;
+	}
+
+	/* If this isn't a small block we have to check the list of
+	   nodecards on each midplane.
+	*/
+	if ((rc = bridge_get_data(block_ptr, RM_PartitionBPNum, &cnt))
 	    != STATUS_OK) {
 		error("bridge_get_data(RM_BPNum): %s", bg_err_str(rc));
 		rc = SLURM_ERROR;
 		goto cleanup;
 	}
 
-	for(i=0; i<bp_cnt; i++) {
+	for(i=0; i<cnt; i++) {
 		if(i) {
 			if ((rc = bridge_get_data(block_ptr,
 						  RM_PartitionNextBP,
@@ -568,9 +691,11 @@ extern int check_block_bp_states(char *bg_block_id, bool slurmctld_locked)
 		   break here since we are seeing if we can run.  If
 		   any nodecard is down this can't happen.
 		*/
-		if((rc = _test_down_nodecards(bp_ptr, slurmctld_locked))
-		   != SLURM_SUCCESS)
+		if(_test_down_nodecards(bp_ptr, slurmctld_locked)
+		   != SLURM_SUCCESS) {
+			rc = SLURM_ERROR;
 			break;
+		}
 	}
 
 cleanup:

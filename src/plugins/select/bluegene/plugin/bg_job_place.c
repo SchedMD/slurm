@@ -943,7 +943,7 @@ static int _find_best_block_match(List block_list,
 		request.avail_node_bitmap = slurm_block_bitmap;
 
 	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
-			     SELECT_JOBDATA_MAX_CPUS, &max_cpus);
+				    SELECT_JOBDATA_MAX_CPUS, &max_cpus);
 	/* since we only look at procs after this and not nodes we
 	 *  need to set a max_cpus if given
 	 */
@@ -994,12 +994,19 @@ static int _find_best_block_match(List block_list,
 					   bg_record->bg_block_id, 1)
 				   != SLURM_SUCCESS) {
 					/* check_block_bp_states will
-					   already set things in an
-					   error state, so we don't
-					   have to do that here.
+					   set this block in the main
+					   list to an error state, but
+					   we aren't looking
+					   at the main list, so we
+					   need to set this copy of
+					   the block in an
+					   error state as well.
 					*/
+					bg_record->job_running =
+						BLOCK_ERROR_STATE;
+					bg_record->state = RM_PARTITION_ERROR;
 					error("_find_best_block_match: Picked "
-					      "block had some issues with "
+					      "block (%s) had some issues with "
 					      "hardware, trying a different "
 					      "one.",
 					      bg_record->bg_block_id);
