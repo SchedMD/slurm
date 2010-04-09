@@ -267,7 +267,8 @@ static int _post_allocate(bg_record_t *bg_record)
 
 #ifdef HAVE_BG_FILES
 #ifdef HAVE_BGL
-static int _find_nodecard(rm_partition_t *block_ptr, int *nc_id)
+extern int find_nodecard_num(rm_partition_t *block_ptr, rm_nodecard_t *ncard,
+			     int *nc_id)
 {
 	char *my_card_name = NULL;
 	char *card_name = NULL;
@@ -276,19 +277,12 @@ static int _find_nodecard(rm_partition_t *block_ptr, int *nc_id)
 	int i=0;
 	int rc;
 	rm_nodecard_list_t *ncard_list = NULL;
-	rm_nodecard_t *ncard = NULL;
 	rm_BP_t *curr_bp = NULL;
+	rm_nodecard_t *ncard2;
 
 	xassert(block_ptr);
 	xassert(nc_id);
 
-	if((rc = bridge_get_data(block_ptr,
-				 RM_PartitionFirstNodeCard,
-				 &ncard))
-	   != STATUS_OK) {
-		error("bridge_get_data(RM_FirstCard): %s",
-		      bg_err_str(rc));
-	}
 	if((rc = bridge_get_data(ncard,
 				 RM_NodeCardID,
 				 &my_card_name))
@@ -330,7 +324,7 @@ static int _find_nodecard(rm_partition_t *block_ptr, int *nc_id)
 			if ((rc =
 			     bridge_get_data(ncard_list,
 					     RM_NodeCardListNext,
-					     &ncard)) != STATUS_OK) {
+					     &ncard2)) != STATUS_OK) {
 				error("bridge_get_data"
 				      "(RM_NodeCardListNext): %s",
 				      rc);
@@ -340,7 +334,7 @@ static int _find_nodecard(rm_partition_t *block_ptr, int *nc_id)
 		} else {
 			if ((rc = bridge_get_data(ncard_list,
 						  RM_NodeCardListFirst,
-						  &ncard)) != STATUS_OK) {
+						  &ncard2)) != STATUS_OK) {
 				error("bridge_get_data"
 				      "(RM_NodeCardListFirst: %s",
 				      rc);
@@ -348,7 +342,7 @@ static int _find_nodecard(rm_partition_t *block_ptr, int *nc_id)
 				goto cleanup;
 			}
 		}
-		if ((rc = bridge_get_data(ncard,
+		if ((rc = bridge_get_data(ncard2,
 					  RM_NodeCardID,
 					  &card_name)) != STATUS_OK) {
 			error("bridge_get_data(RM_NodeCardID: %s",
@@ -593,7 +587,7 @@ int read_bg_blocks(List curr_block_list)
 
 			nc_id = 0;
 			if(nc_cnt == 1)
-				_find_nodecard(block_ptr, &nc_id);
+				find_nodecard_num(block_ptr, ncard, &nc_id);
 
 			bg_record->node_cnt =
 				nc_cnt * bg_conf->nodecard_node_cnt;

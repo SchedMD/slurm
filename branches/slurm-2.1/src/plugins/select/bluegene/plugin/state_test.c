@@ -154,7 +154,6 @@ static void _configure_node_down(rm_bp_id_t bp_id, my_bluegene_t *my_bg)
 
 static char *_get_bp_node_name(rm_BP_t *bp_ptr)
 {
-	rm_bp_id_t bp_id = NULL;
 	rm_location_t bp_loc;
 	int rc;
 
@@ -184,12 +183,13 @@ static char *_get_bp_node_name(rm_BP_t *bp_ptr)
 			      alpha_num[bp_loc.Z]);
 }
 
-static int _test_nodecard_state(
-	rm_nodecard_t *ncard, char *node_name, bool slurmctld_locked)
+static int _test_nodecard_state(rm_nodecard_t *ncard, int nc_id,
+				char *node_name, bool slurmctld_locked)
 {
 	int rc = SLURM_SUCCESS;
 	rm_nodecard_id_t nc_name = NULL;
 	rm_nodecard_state_t state;
+	int io_start = 0;
 
 	if ((rc = bridge_get_data(ncard,
 				  RM_NodeCardState,
@@ -226,7 +226,7 @@ static int _test_nodecard_state(
 		goto clean_up;
 	}
 	io_start *= bg_conf->quarter_ionode_cnt;
-	io_start += bg_conf->nodecard_ionode_cnt * (i%4);
+	io_start += bg_conf->nodecard_ionode_cnt * (nc_id%4);
 #else
 	/* From the first nodecard id we can figure
 	   out where to start from with the alloc of ionodes.
@@ -282,17 +282,14 @@ clean_up:
 static int _test_down_nodecards(rm_BP_t *bp_ptr, bool slurmctld_locked)
 {
 	rm_bp_id_t bp_id = NULL;
-	rm_nodecard_id_t nc_name = NULL;
 	int num = 0;
 	int marked_down = 0;
 	int i=0;
 	int rc = SLURM_SUCCESS;
 	rm_nodecard_list_t *ncard_list = NULL;
 	rm_nodecard_t *ncard = NULL;
-	rm_nodecard_state_t state;
 	//bitstr_t *ionode_bitmap = NULL;
 	//bg_record_t *bg_record = NULL;
-	int *coord = NULL;
 	char *node_name = NULL;
 	//int bp_bit = 0;
 	//int io_cnt = 1;
@@ -327,8 +324,6 @@ static int _test_down_nodecards(rm_BP_t *bp_ptr, bool slurmctld_locked)
 	}
 
 	for(i=0; i<num; i++) {
-		int io_start = 0;
-
 		if (i) {
 			if ((rc = bridge_get_data(ncard_list,
 						  RM_NodeCardListNext,
@@ -351,7 +346,7 @@ static int _test_down_nodecards(rm_BP_t *bp_ptr, bool slurmctld_locked)
 			}
 		}
 
-		if(_test_nodecard_state(ncard, node_name, slurmctld_locked)
+		if(_test_nodecard_state(ncard, i, node_name, slurmctld_locked)
 		   != SLURM_SUCCESS)
 			marked_down++;
 	}
@@ -565,6 +560,7 @@ extern int check_block_bp_states(char *bg_block_id, bool slurmctld_locked)
 	rm_BP_t *bp_ptr = NULL;
 	int cnt = 0;
 	int i = 0;
+	int nc_id = 0;
 	bool small = false;
 
 	if ((rc = bridge_get_block(bg_block_id, &block_ptr)) != STATUS_OK) {
@@ -585,6 +581,9 @@ extern int check_block_bp_states(char *bg_block_id, bool slurmctld_locked)
 	}
 
 	if(small) {
+		rm_nodecard_t *ncard = NULL;
+		char *node_name = NULL;
+
 		/* If this is a small block we can just check the
 		   nodecard list of the block.
 		*/
@@ -639,12 +638,17 @@ extern int check_block_bp_states(char *bg_block_id, bool slurmctld_locked)
 					break;
 				}
 			}
+#ifdef HAVE_BGL
+			nc_id = 0;
+			if(cnt == 1)
+				find_nodecard_num(block_ptr, ncard, &nc_id);
+#endif
 			/* If we find any nodecards in an error state just
 			   break here since we are seeing if we can run.  If
 			   any nodecard is down this can't happen.
 			*/
 			if(_test_nodecard_state(
-				   ncard, node_name, slurmctld_locked)
+				   ncard, nc_id, node_name, slurmctld_locked)
 			   != SLURM_SUCCESS) {
 				rc = SLURM_ERROR;
 				break;
