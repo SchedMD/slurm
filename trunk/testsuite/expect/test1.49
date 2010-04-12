@@ -55,7 +55,9 @@ exec $bin_touch $file_out_post
 
 make_bash_script $task_prolog "
   $bin_id >> $file_out_pre
+  echo print HEADER
   echo export TEST=prolog_qa
+  echo unset DISPLAY
 "
 
 make_bash_script $task_epilog "
@@ -65,6 +67,7 @@ make_bash_script $task_epilog "
 
 make_bash_script $file_in "
   echo TEST==\$TEST
+  echo DISPLAY==\${DISPLAY}X
   #env
 "
 
@@ -84,7 +87,7 @@ if { [test_bluegene] } {
 
 set srun_pid [spawn $srun -N$node_cnt -n$tasks -O -t1 --task-prolog=$task_prolog --task-epilog=$task_epilog $file_in]
 expect {
-	-re "TEST==prolog_qa" {
+	-re "(HEADER|TEST==prolog_qa|DISPLAY==X)" {
 		incr matches
 		exp_continue
 	}
@@ -105,9 +108,12 @@ expect {
 if {$exit_code != 0} {
 	exit $exit_code
 }
-if {$matches != $tasks} {
-	send_user "\nFAILURE: prolog exported env var failure ($matches != $tasks)\n"
+set exp_matches [expr $tasks * 3]
+if {$matches != $exp_matches} {
+	send_user "\nFAILURE: prolog exported env var failure ($matches != $exp_matches)\n"
 	set exit_code 1
+} else {
+	send_user "\nSo far, so good\n\n"
 }
 
 #
