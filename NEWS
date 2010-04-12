@@ -22,6 +22,8 @@ documents those changes that are of interest to users and admins.
  -- BLUEGENE - fixed check for small blocks if a node card of a midplane is
     in an error state other jobs can still run on the midplane on other
     nodecards.
+ -- BLUEGENE - Check to make sure job killing is in the active job table in
+    DB2 when killing the job.
 
 * Changes in SLURM 2.1.6-2
 ==========================
