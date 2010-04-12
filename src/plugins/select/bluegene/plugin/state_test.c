@@ -207,10 +207,6 @@ static int _test_nodecard_state(rm_nodecard_t *ncard, int nc_id,
 	if(state == RM_NODECARD_UP)
 		return SLURM_SUCCESS;
 
-	/* Here we want to keep track of any nodecard that
-	   isn't up and return error if it is in the system. */
-	rc = SLURM_ERROR;
-
 	if ((rc = bridge_get_data(ncard,
 				  RM_NodeCardID,
 				  &nc_name)) != STATUS_OK) {
@@ -227,7 +223,8 @@ static int _test_nodecard_state(rm_nodecard_t *ncard, int nc_id,
 	if ((rc = bridge_get_data(ncard,
 				  RM_NodeCardQuarter,
 				  &io_start)) != STATUS_OK) {
-		error("bridge_get_data(CardQuarter): %d",rc);
+		error("bridge_get_data(CardQuarter): %d", rc);
+		rc = SLURM_ERROR;
 		goto clean_up;
 	}
 	io_start *= bg_conf->quarter_ionode_cnt;
@@ -257,6 +254,7 @@ static int _test_nodecard_state(rm_nodecard_t *ncard, int nc_id,
 		}
 		goto clean_up;
 	}
+
 	/* if(!ionode_bitmap) */
 	/* 	ionode_bitmap = bit_alloc(bg_conf->numpsets); */
 	/* info("setting %s start %d of %d", */
@@ -273,6 +271,11 @@ static int _test_nodecard_state(rm_nodecard_t *ncard, int nc_id,
 		debug2("nodecard %s on %s is in an error state, "
 		       "but error was returned when trying to make it so",
 		       nc_name, node_name);
+
+	/* Here we want to keep track of any nodecard that
+	   isn't up and return error if it is in the system. */
+	rc = SLURM_ERROR;
+
 clean_up:
 
 	free(nc_name);
@@ -565,7 +568,6 @@ extern int check_block_bp_states(char *bg_block_id, bool slurmctld_locked)
 	rm_BP_t *bp_ptr = NULL;
 	int cnt = 0;
 	int i = 0;
-	int nc_id = 0;
 	bool small = false;
 
 	if ((rc = bridge_get_block(bg_block_id, &block_ptr)) != STATUS_OK) {
@@ -618,6 +620,7 @@ extern int check_block_bp_states(char *bg_block_id, bool slurmctld_locked)
 		}
 
 		for(i=0; i<cnt; i++) {
+			int nc_id = 0;
 			if(i) {
 				if ((rc = bridge_get_data(
 					     block_ptr,
@@ -644,9 +647,7 @@ extern int check_block_bp_states(char *bg_block_id, bool slurmctld_locked)
 				}
 			}
 #ifdef HAVE_BGL
-			nc_id = 0;
-			if(cnt == 1)
-				find_nodecard_num(block_ptr, ncard, &nc_id);
+			find_nodecard_num(block_ptr, ncard, &nc_id);
 #endif
 			/* If we find any nodecards in an error state just
 			   break here since we are seeing if we can run.  If
