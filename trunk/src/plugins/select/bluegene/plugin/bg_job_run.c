@@ -96,7 +96,7 @@ static pthread_cond_t agent_cond = PTHREAD_COND_INITIALIZER;
 static int agent_cnt = 0;
 
 #ifdef HAVE_BG_FILES
-static int	_remove_job(db_job_id_t job_id);
+static int	_remove_job(db_job_id_t job_id, char *block_id);
 #endif
 
 static void	_bg_list_del(void *x);
@@ -113,14 +113,15 @@ static void	_term_agent(bg_update_t *bg_update_ptr);
 
 #ifdef HAVE_BG_FILES
 /* Kill a job and remove its record from MMCS */
-static int _remove_job(db_job_id_t job_id)
+static int _remove_job(db_job_id_t job_id, char *block_id)
 {
 	int rc;
 	int count = 0;
 	rm_job_t *job_rec = NULL;
 	rm_job_state_t job_state;
+	bool is_history = false;
 
-	debug("removing job %d from MMCS", job_id);
+	debug("removing job %d from MMCS on block %s", job_id, block_id);
 	while(1) {
 		if (count)
 			sleep(POLL_INTERVAL);
@@ -152,22 +153,46 @@ static int _remove_job(db_job_id_t job_id)
 			continue;
 		}
 
+		/* If this job is in the history table we
+		   should just exit here since it is marked
+		   incorrectly */
+		if ((rc = bridge_get_data(job_rec, RM_JobInHist,
+					  &is_history))
+		    != STATUS_OK) {
+			(void) bridge_free_job(job_rec);
+			if (rc == JOB_NOT_FOUND) {
+				debug("job %d removed from MMCS", job_id);
+				return STATUS_OK;
+			}
+
+			error("bridge_get_data(RM_JobInHist) for jobid=%d "
+			      "%s", job_id, bg_err_str(rc));
+			continue;
+		}
+
 		if ((rc = bridge_free_job(job_rec)) != STATUS_OK)
 			error("bridge_free_job: %s", bg_err_str(rc));
 
-		debug2("job %d is in state %d", job_id, job_state);
+		debug2("job %d on block %s is in state %d history %d",
+		       job_id, block_id, job_state, is_history);
 
 		/* check the state and process accordingly */
-		if(job_state == RM_JOB_TERMINATED)
+		if(is_history) {
+			debug2("Job %d on block %s isn't in the "
+			       "active job table anymore, final state was %d",
+			       job_id, block_id, job_state);
+			return STATUS_OK;
+		} else if(job_state == RM_JOB_TERMINATED)
 			return STATUS_OK;
 		else if(job_state == RM_JOB_DYING) {
 			if(count > MAX_POLL_RETRIES)
-				error("Job %d isn't dying, trying for "
-				      "%d seconds", job_id,
-				      count*POLL_INTERVAL);
+				error("Job %d on block %s isn't dying, "
+				      "trying for %d seconds", job_id,
+				      block_id, count*POLL_INTERVAL);
 			continue;
 		} else if(job_state == RM_JOB_ERROR) {
-			error("job %d is in a error state.", job_id);
+			error("job %d on block %s is in a error state.",
+			      job_id, block_id);
 
 			//free_bg_block();
 			return STATUS_OK;
@@ -187,16 +212,23 @@ static int _remove_job(db_job_id_t job_id)
 
 		if (rc != STATUS_OK) {
 			if (rc == JOB_NOT_FOUND) {
-				debug("job %d removed from MMCS", job_id);
+				debug("job %d on block %s removed from MMCS",
+				      job_id, block_id);
 				return STATUS_OK;
 			}
 			if(rc == INCOMPATIBLE_STATE)
-				debug("job %d is in an INCOMPATIBLE_STATE",
-				      job_id);
+				debug("job %d on block %s is in an "
+				      "INCOMPATIBLE_STATE",
+				      job_id, block_id);
 			else
 				error("bridge_signal_job(%d): %s", job_id,
 				      bg_err_str(rc));
-		}
+		} else if(count > MAX_POLL_RETRIES)
+			error("Job %d on block %s is in state %d and "
+			      "isn't dying, and doesn't appear to be "
+			      "responding to SIGTERM, trying for %d seconds",
+			      job_id, block_id, job_state, count*POLL_INTERVAL);
+
 	}
 
 	error("Failed to remove job %d from MMCS", job_id);
@@ -379,7 +411,7 @@ static void _remove_jobs_on_block_and_reset(rm_job_list_t *job_list,
 			continue;
 		}
 		debug2("got job_id %d",job_id);
-		if((rc = _remove_job(job_id)) == INTERNAL_ERROR) {
+		if((rc = _remove_job(job_id, block_id)) == INTERNAL_ERROR) {
 			job_remove_failed = 1;
 			break;
 		}
