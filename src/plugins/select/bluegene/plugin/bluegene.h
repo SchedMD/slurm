@@ -169,6 +169,12 @@ extern int validate_current_blocks(char *dir);
 
 /* block_sys.c */
 /*****************************************************/
+#ifdef HAVE_BG_FILES
+#ifdef HAVE_BGL
+extern int find_nodecard_num(rm_partition_t *block_ptr, rm_nodecard_t *ncard,
+			     int *nc_id);
+#endif
+#endif
 extern int configure_block(bg_record_t * bg_conf_record);
 extern int read_bg_blocks();
 extern int load_state_file(List curr_block_list, char *dir_name);
