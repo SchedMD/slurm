@@ -3,7 +3,7 @@
  *  functions.
  *****************************************************************************
  *  Copyright (C) 2004-2007 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Dan Phung <phung4@llnl.gov> and Morris Jette <jette1@llnl.gov>
  *
@@ -1310,6 +1310,7 @@ static void _build_select_struct(struct job_record *job_ptr,
 	job_resrcs_ptr->nhosts = bit_set_count(bitmap);
 	job_resrcs_ptr->ncpus = job_ptr->details->min_cpus;
 	job_resrcs_ptr->node_bitmap = bit_copy(bitmap);
+	job_resrcs_ptr->nodes = bitmap2node_name(bitmap);
 	if (job_resrcs_ptr->node_bitmap == NULL)
 		fatal("bit_copy malloc failure");
 

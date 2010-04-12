@@ -2216,13 +2216,14 @@ alloc_job:
 	/** create the struct_job_res  **/
 	job_res                   = create_job_resources();
 	job_res->node_bitmap      = bit_copy(bitmap);
+	job_res->nodes            = bitmap2node_name(bitmap);
 	if (job_res->node_bitmap == NULL)
 		fatal("bit_copy malloc failure");
 	job_res->nhosts           = bit_set_count(bitmap);
-	job_res->ncpus           = job_res->nhosts;
+	job_res->ncpus            = job_res->nhosts;
 	if (job_ptr->details->ntasks_per_node)
-		job_res->ncpus  *= job_ptr->details->ntasks_per_node;
-	job_res->ncpus           = MAX(job_res->ncpus,
+		job_res->ncpus   *= job_ptr->details->ntasks_per_node;
+	job_res->ncpus            = MAX(job_res->ncpus,
 					job_ptr->details->min_cpus);
 	job_res->node_req         = job_node_req;
 	job_res->cpus             = cpu_count;

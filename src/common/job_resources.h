@@ -79,6 +79,7 @@
  *			  here do NOT get cleared as the job completes on a
  *			  node
  * node_req		- NODE_CR_RESERVED|NODE_CR_ONE_ROW|NODE_CR_AVAILABLE
+ * nodes		- Names of nodes in original job allocation
  * ncpus		- Number of processors in the allocation
  * sock_core_rep_count	- How many consecutive nodes that sockets_per_node
  *			  and cores_per_socket apply to, build by
@@ -118,11 +119,8 @@ struct job_resources {
 	uint32_t *	memory_used;
 	uint32_t	nhosts;
 	bitstr_t *	node_bitmap;
-	hostlist_t      node_hl; /* will be set on unpack if
-				    a nodelist is given to create.
-				    Used primarily for api
-				    functions */
 	uint8_t		node_req;
+	char *		nodes;
 	uint32_t	ncpus;
 	uint32_t *	sock_core_rep_count;
 	uint16_t *	sockets_per_node;
@@ -186,15 +184,13 @@ extern void log_job_resources(uint32_t job_id,
 extern void pack_job_resources(job_resources_t *job_resrcs_ptr, Buf buffer,
 			       uint16_t protocol_version);
 extern int unpack_job_resources(job_resources_t **job_resrcs_pptr,
-				char *nodelist, Buf buffer,
-				uint16_t protocol_version);
+				Buf buffer, uint16_t protocol_version);
 
 /* Reset the node_bitmap in a job_resources data structure
  * This is needed after a restart/reconfiguration since nodes can
  * be added or removed from the system resulting in changing in
  * the bitmap size or bit positions */
-extern void reset_node_bitmap(job_resources_t *job_resrcs_ptr,
-			      bitstr_t *new_node_bitmap);
+extern int reset_node_bitmap(job_resources_t *job_resrcs_ptr, uint32_t job_id);
 
 /* For a given node_id, socket_id and core_id, get it's offset within
  * the core bitmap */

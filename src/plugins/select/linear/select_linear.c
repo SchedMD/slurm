@@ -564,6 +564,7 @@ static void _build_select_struct(struct job_record *job_ptr, bitstr_t *bitmap)
 	job_resrcs_ptr->memory_used = xmalloc(sizeof(uint32_t) * node_cnt);
 	job_resrcs_ptr->nhosts = node_cnt;
 	job_resrcs_ptr->node_bitmap = bit_copy(bitmap);
+	job_resrcs_ptr->nodes = bitmap2node_name(bitmap);
 	if (job_resrcs_ptr->node_bitmap == NULL)
 		fatal("bit_copy malloc failure");
 	job_resrcs_ptr->ncpus = job_ptr->total_cpus;

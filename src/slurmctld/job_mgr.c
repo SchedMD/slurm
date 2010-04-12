@@ -913,7 +913,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		if (select_g_select_jobinfo_unpack(&select_jobinfo, buffer,
 						   protocol_version))
 			goto unpack_error;
-		if (unpack_job_resources(&job_resources, NULL, buffer,
+		if (unpack_job_resources(&job_resources, buffer,
 					 protocol_version))
 			goto unpack_error;
 
@@ -1043,7 +1043,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		if (select_g_select_jobinfo_unpack(&select_jobinfo, buffer,
 						   protocol_version))
 			goto unpack_error;
-		if (unpack_job_resources(&job_resources, NULL, buffer,
+		if (unpack_job_resources(&job_resources, buffer,
 					 protocol_version))
 			goto unpack_error;
 
@@ -4983,7 +4983,8 @@ void reset_job_bitmaps(void)
 		    	      job_ptr->nodes, job_ptr->job_id);
 			job_fail = true;
 		}
-		reset_node_bitmap(job_ptr->job_resrcs, job_ptr->node_bitmap);
+		if (reset_node_bitmap(job_ptr->job_resrcs, job_ptr->job_id))
+			job_fail = true;
 		if (!job_fail && !IS_JOB_FINISHED(job_ptr) &&
 		    job_ptr->job_resrcs && (cr_flag || gang_flag) &&
 		    valid_job_resources(job_ptr->job_resrcs,

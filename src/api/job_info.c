@@ -1111,15 +1111,19 @@ extern int slurm_job_cpus_allocated_on_node_id(
 	return job_resrcs_ptr->cpu_array_value[i];
 }
 
-extern int slurm_job_cpus_allocated_on_node(
-	job_resources_t *job_resrcs_ptr, const char *node)
+extern int slurm_job_cpus_allocated_on_node(job_resources_t *job_resrcs_ptr,
+					    const char *node)
 {
+	hostlist_t node_hl;
 	int node_id;
 
-	if (!job_resrcs_ptr || !node || !job_resrcs_ptr->node_hl)
+	if (!job_resrcs_ptr || !node || !job_resrcs_ptr->nodes)
 		slurm_seterrno_ret(EINVAL);
 
-	if ((node_id = hostlist_find(job_resrcs_ptr->node_hl, node)) == -1)
+	node_hl = hostlist_create(job_resrcs_ptr->nodes);
+	node_id = hostlist_find(node_hl, node);
+	hostlist_destroy(node_hl);
+	if (node_id == -1)
 		return (0); /* No cpus allocated on this node */
 
 	return slurm_job_cpus_allocated_on_node_id(job_resrcs_ptr, node_id);
