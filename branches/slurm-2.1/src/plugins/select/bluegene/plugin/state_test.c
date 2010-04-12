@@ -183,6 +183,11 @@ static char *_get_bp_node_name(rm_BP_t *bp_ptr)
 			      alpha_num[bp_loc.Z]);
 }
 
+/* To fake a nodecard down do this on the service node.
+db2 "update bg{l|p}nodecard set status = 'E' where location =
+'Rxx-Mx-Nx' and status='A'"
+Reverse the A, and E to bring it back up.
+*/
 static int _test_nodecard_state(rm_nodecard_t *ncard, int nc_id,
 				char *node_name, bool slurmctld_locked)
 {
