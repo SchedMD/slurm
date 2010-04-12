@@ -358,50 +358,31 @@ if {$host_cnt == 0} {
 # find me an idle node in default partition
 log_user 0
 set inode_procs 0
-spawn $scontrol -o show node $def_hostlist
-expect {
-	-re "^NodeName=($alpha_numeric_under)"  {
-		set inode_name $expect_out(1,string)
-		set inode_procs 1
-	}
-	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-
-if {!$inode_procs} {
-	send_user "\nFAILURE: couldn't find an idle node in the default partition\n"
-	exit 1
-}
-
-# We have to do this a second time since we can't rely on expect getting 1
-# line at a line so we could in theory get cpu counts from a different
-# node than we expect, thus messing the test up.
-
-set inode_procs 0
-spawn $scontrol -o show node $inode_name
-expect {
-	-re "^NodeName=($alpha_numeric_under) .*CoresPerSocket=($number) .*CPUTot=($number)(K?).* Sockets=($number) State=IDLE ThreadsPerCore=($number)"  {
-		set inode_name $expect_out(1,string)
-		set inode_cores_per_socket $expect_out(2,string)
-		set inode_procs $expect_out(3,string)
-		if {[string compare $expect_out(4,string) ""]} {
-			set inode_procs [expr $inode_procs * 1024]
+set host_inx 0
+while {$host_inx <= $host_cnt} {
+	spawn $scontrol -o show node $host_name($host_inx)
+	expect {
+		-re "^NodeName=($alpha_numeric_under) .*CoresPerSocket=($number) .*CPUTot=($number)(K?).* Sockets=($number) State=IDLE ThreadsPerCore=($number)"  {
+			set inode_name $expect_out(1,string)
+			set inode_cores_per_socket $expect_out(2,string)
+			set inode_procs $expect_out(3,string)
+			if {[string compare $expect_out(4,string) ""]} {
+				set inode_procs [expr $inode_procs * 1024]
+			}
+			set inode_sockets $expect_out(5,string)
+			set inode_threads_per_core $expect_out(6,string)
+			set host_inx $host_cnt
+			exp_continue
 		}
-		set inode_sockets $expect_out(5,string)
-		set inode_threads_per_core $expect_out(6,string)
+		timeout {
+			send_user "\nFAILURE: scontrol not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
 	}
-	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
+	incr host_inx
 }
 log_user 1
 
