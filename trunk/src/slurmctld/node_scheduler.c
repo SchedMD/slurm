@@ -1220,7 +1220,12 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	job_ptr->state_reason = WAIT_NO_REASON;
 	xfree(job_ptr->state_desc);
 
-	job_ptr->nodes = bitmap2node_name(select_bitmap);
+	if (job_ptr->job_resrcs && job_ptr->job_resrcs->nodes)
+		job_ptr->nodes = xstrdup(job_ptr->job_resrcs->nodes);
+	else {
+		error("Select plugin failed to set job resources, nodes");
+		job_ptr->nodes = bitmap2node_name(select_bitmap);
+	}
 	select_bitmap = NULL;	/* nothing left to free */
 	allocate_nodes(job_ptr);
 	build_node_details(job_ptr);
