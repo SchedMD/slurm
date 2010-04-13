@@ -39,6 +39,47 @@
 #ifndef _JOB_SUBMIT_H
 #define _JOB_SUBMIT_H
 
-#include "src/slurmctld/slurmctld.h"
+#include <slurm/slurm.h>
+
+/*
+ * Initialize the job submit plugin.
+ *
+ * Returns a SLURM errno.
+ */
+extern int job_submit_plugin_init(void);
+
+/*
+ * Terminate the job submit plugin. Free memory.
+ *
+ * Returns a SLURM errno.
+ */
+extern int job_submit_plugin_fini(void);
+
+/*
+ **************************************************************************
+ *                          P L U G I N   C A L L S                       *
+ **************************************************************************
+ */
+
+/*
+ * Perform reconfig, re-read any configuration files
+ */
+extern int job_submit_plugin_reconfig(void);
+
+/*
+ * Execute the job_submit() function in each job submit plugin.
+ * If any plugin function returns anything other than SLURM_SUCCESS
+ * then stop and forward it's return value.
+ */
+extern int job_submit_plugin_submit(struct job_descriptor *job_desc);
+
+/*
+ * Execute the job_modify() function in each job submit plugin.
+ * This should be called 
+ * If any plugin function returns anything other than SLURM_SUCCESS
+ * then stop and forward it's return value.
+ */
+extern int job_submit_plugin_modify(struct job_descriptor *job_desc,
+				    struct job_record *job_ptr);
 
 #endif /* !_JOB_SUBMIT_H */

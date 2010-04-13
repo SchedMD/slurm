@@ -86,6 +86,7 @@
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/basil_interface.h"
 #include "src/slurmctld/job_scheduler.h"
+#include "src/slurmctld/job_submit.h"
 #include "src/slurmctld/licenses.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/ping_nodes.h"
@@ -412,6 +413,8 @@ int main(int argc, char *argv[])
 		fatal( "failed to initialize accounting_storage plugin");
 	if (slurm_jobacct_gather_init() != SLURM_SUCCESS )
 		fatal( "failed to initialize jobacct_gather plugin");
+	if (job_submit_plugin_init() != SLURM_SUCCESS )
+		fatal( "failed to initialize job_submit plugin");
 
 	while (1) {
 		/* initialization for each primary<->backup switch */
@@ -610,6 +613,7 @@ int main(int argc, char *argv[])
 
 	/* Some plugins are needed to purge job/node data structures,
 	 * unplug after other data structures are purged */
+	job_submit_plugin_fini();
 	slurm_preempt_fini();
 	g_slurm_jobcomp_fini();
 	slurm_acct_storage_fini();
