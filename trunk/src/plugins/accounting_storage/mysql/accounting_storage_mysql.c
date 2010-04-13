@@ -2174,7 +2174,7 @@ extern int jobacct_storage_p_step_complete(mysql_conn_t *mysql_conn,
 extern int jobacct_storage_p_suspend(mysql_conn_t *mysql_conn,
 				     struct job_record *job_ptr)
 {
-	return as_mysql_suspend(mysql_conn, job_ptr);
+	return as_mysql_suspend(mysql_conn, 0, job_ptr);
 }
 
 /*

@@ -217,7 +217,7 @@ extern int as_mysql_job_start(mysql_conn_t *mysql_conn,
 	time_t begin_time, check_time, start_time, submit_time;
 	uint32_t wckeyid = 0;
 	int job_state, node_cnt = 0;
-//	uint32_t job_db_inx = job_ptr->db_index;
+	uint32_t job_db_inx = job_ptr->db_index;
 
 	if ((!job_ptr->details || !job_ptr->details->submit_time)
 	    && !job_ptr->resize_time) {
@@ -498,14 +498,32 @@ no_rollup_change:
 	xfree(query);
 
 	/* now we will reset all the steps */
-	/* if(IS_JOB_RESIZING(job_ptr)) */
-	/* 	rc = _resize_steps(job_db_inx, job_ptr); */
+	if(IS_JOB_RESIZING(job_ptr)) {
+		if(IS_JOB_SUSPENDED(job_ptr))
+			as_mysql_suspend(mysql_conn, job_db_inx, job_ptr);
+		/* Here we aren't sure how many cpus are being changed here in
+		   the step since we don't have that information from the
+		   job.  The resize of steps shouldn't happen very often in
+		   the first place (srun --no-kill option), and this don't
+		   effect accounting in the first place so it isn't a
+		   big deal. */
+
+		query = xstrdup_printf("update \"%s_%s\" set job_db_inx=%u "
+				       "where job_db_inx=%u;",
+				       mysql_conn->cluster_name, step_table,
+				       job_ptr->db_index, job_db_inx);
+
+		debug3("%d(%s:%d) query\n%s",
+		       mysql_conn->conn, THIS_FILE, __LINE__, query);
+		rc = mysql_db_query(mysql_conn->db_conn, query);
+		xfree(query);
+	}
 
 	return rc;
 }
 
 extern int as_mysql_job_complete(mysql_conn_t *mysql_conn,
-			      struct job_record *job_ptr)
+				 struct job_record *job_ptr)
 {
 	char *query = NULL, *nodes = NULL;
 	int rc = SLURM_SUCCESS, job_state;
@@ -725,7 +743,7 @@ extern int as_mysql_step_start(mysql_conn_t *mysql_conn,
 }
 
 extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
-			       struct step_record *step_ptr)
+				  struct step_record *step_ptr)
 {
 	time_t now;
 	int elapsed;
@@ -887,12 +905,13 @@ extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 }
 
 extern int as_mysql_suspend(mysql_conn_t *mysql_conn,
+			    uint32_t old_db_inx,
 			    struct job_record *job_ptr)
 {
 	char *query = NULL;
 	int rc = SLURM_SUCCESS;
-	bool suspended = false;
 	time_t submit_time;
+	uint32_t job_db_inx;
 
 	if(check_connection(mysql_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
@@ -920,17 +939,34 @@ extern int as_mysql_suspend(mysql_conn_t *mysql_conn,
 		}
 	}
 
-	if (job_ptr->job_state == JOB_SUSPENDED)
-		suspended = true;
+	if(IS_JOB_RESIZING(job_ptr)) {
+		if(!old_db_inx) {
+			error("No old db inx given for job %u cluster %s, "
+			      "can't update suspend table.",
+			      job_ptr->job_id, mysql_conn->cluster_name);
+			return SLURM_ERROR;
+		}
+		job_db_inx = old_db_inx;
+		xstrfmtcat(query,
+			   "update \"%s_%s\" set time_end=%d where "
+			   "job_db_inx=%u && time_end=0;",
+			   mysql_conn->cluster_name, suspend_table,
+			   (int)job_ptr->suspend_time, job_db_inx);
 
+	} else
+		job_db_inx = job_ptr->db_index;
+
+	/* use job_db_inx for this one since we want to update the
+	   supend time of the job before it was resized.
+	*/
 	xstrfmtcat(query,
 		   "update \"%s_%s\" set time_suspended=%d-time_suspended, "
 		   "state=%d where job_db_inx=%d;",
 		   mysql_conn->cluster_name, job_table,
 		   (int)job_ptr->suspend_time,
 		   job_ptr->job_state & JOB_STATE_BASE,
-		   job_ptr->db_index);
-	if(suspended)
+		   job_db_inx);
+	if(IS_JOB_SUSPENDED(job_ptr))
 		xstrfmtcat(query,
 			   "insert into \"%s_%s\" (job_db_inx, id_assoc, "
 			   "time_start, time_end) values (%u, %u, %d, 0);",
@@ -951,7 +987,8 @@ extern int as_mysql_suspend(mysql_conn_t *mysql_conn,
 	xfree(query);
 	if(rc != SLURM_ERROR) {
 		xstrfmtcat(query,
-			   "update \"%s_%s\" set time_suspended=%u-time_suspended, "
+			   "update \"%s_%s\" set "
+			   "time_suspended=%u-time_suspended, "
 			   "state=%d where job_db_inx=%u and time_end=0",
 			   mysql_conn->cluster_name, step_table,
 			   (int)job_ptr->suspend_time,

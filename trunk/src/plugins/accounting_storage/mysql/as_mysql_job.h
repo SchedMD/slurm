@@ -54,7 +54,8 @@ extern int as_mysql_step_start(mysql_conn_t *mysql_conn,
 extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 			       struct step_record *step_ptr);
 
-extern int as_mysql_suspend(mysql_conn_t *mysql_conn, struct job_record *job_ptr);
+extern int as_mysql_suspend(mysql_conn_t *mysql_conn, uint32_t old_db_inx,
+			    struct job_record *job_ptr);
 
 extern int as_mysql_flush_jobs_on_cluster(
 	mysql_conn_t *mysql_conn, time_t event_time);
