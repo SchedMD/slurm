@@ -1,0 +1,88 @@
+.TH "topology.conf" "5" "March 2009" "topology.conf 2.0" "Slurm configuration file"
+
+.SH "NAME"
+topology.conf \- Slurm configuration file for defining the network topology
+
+.SH "DESCRIPTION"
+\fB/etc/topology.conf\fP is an ASCII file which describes the
+cluster's network topology for optimized job resource allocation.
+The file location can be modified at system build time using the
+DEFAULT_SLURM_CONF parameter. The file will always be located in the
+same directory as the \fBslurm.conf\fP file.
+.LP
+Parameter names are case insensitive.
+Any text following a "#" in the configuration file is treated
+as a comment through the end of that line.
+The size of each line in the file is limited to 1024 characters.
+Changes to the configuration file take effect upon restart of
+SLURM daemons, daemon receipt of the SIGHUP signal, or execution
+of the command "scontrol reconfigure" unless otherwise noted.
+.LP
+The network topology configuration one one line defining a switch name and
+its children, either node names or switch names.
+SLURM's hostlist expression parser is used, so the node and switch
+names need not be consecutive (e.g. "Nodes=tux[0\-3,12,18\-20]"
+and "Swithces=s[0\-2,4\-8,12]" will parse fine).
+An optional link speed may also be specified.
+.LP
+The overall configuration parameters available include:
+
+.TP
+\fBSwitchName\fR
+The name of a switch. This name is internal to SLURM and arbitrary.
+Each switch should have a unique name.
+This field must be specified.
+.TP
+\fBSwitches\fR
+Child switches of the named switch.
+Either this option or the \fBNodes\fR option must be specified.
+.TP
+\fBNodes\fR
+Child Nodes of the named leaf switch.
+Either this option or the \fBSwitches\fR option must be specified.
+.TP
+\fBLinkSpeed\fR
+An optional value specifying the performance of this communication link.
+The units used are arbitrary and this information is currently not used.
+It may be used in the future to optimize resource allocations.
+
+.SH "EXAMPLE"
+.LP
+.br
+##################################################################
+.br
+# SLURM's network topology configuration file for use with the
+.br
+# topology/tree plugin
+.br
+##################################################################
+.br
+SwitchName=s0 Nodes=dev[0\-5]
+.br
+SwitchName=s1 Nodes=dev[6\-11]
+.br
+SwitchName=s2 Nodes=dev[12\-17]
+.br
+SwitchName=s3 Switches=s[0\-2]
+
+.SH "COPYING"
+Copyright (C) 2009 Lawrence Livermore National Security.
+Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+CODE\-OCEC\-09\-009. All rights reserved.
+.LP
+This file is part of SLURM, a resource management program.
+For details, see <https://computing.llnl.gov/linux/slurm/>.
+.LP
+SLURM is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free
+Software Foundation; either version 2 of the License, or (at your option)
+any later version.
+.LP
+SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+details.
+
+.SH "SEE ALSO"
+.LP
+\fBslurm.conf\fR(5)
