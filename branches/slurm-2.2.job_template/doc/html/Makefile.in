@@ -309,6 +309,7 @@ generated_html = \
 	help.html \
 	ibm.html \
 	jobacct_gatherplugins.html \
+	job_submit_plugins.html \
 	accounting_storageplugins.html \
 	jobcompplugins.html \
 	mail.html \
