@@ -195,6 +195,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"JobCredentialPublicCertificate", S_P_STRING},
 	{"JobFileAppend", S_P_UINT16},
 	{"JobRequeue", S_P_UINT16},
+	{"JobSubmitPlugins", S_P_STRING},
 	{"KillTree", S_P_UINT16, _defunct_option},
 	{"KillOnBadExit", S_P_UINT16},
 	{"KillWait", S_P_UINT16},
@@ -1435,6 +1436,7 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->job_comp_user);
 	xfree (ctl_conf_ptr->job_credential_private_key);
 	xfree (ctl_conf_ptr->job_credential_public_certificate);
+	xfree (ctl_conf_ptr->job_submit_plugins);
 	xfree (ctl_conf_ptr->licenses);
 	xfree (ctl_conf_ptr->mail_prog);
 	xfree (ctl_conf_ptr->mpi_default);
@@ -1538,6 +1540,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->job_credential_public_certificate);
 	ctl_conf_ptr->job_file_append		= (uint16_t) NO_VAL;
 	ctl_conf_ptr->job_requeue		= (uint16_t) NO_VAL;
+	xfree(ctl_conf_ptr->job_submit_plugins);
 	ctl_conf_ptr->kill_wait			= (uint16_t) NO_VAL;
 	xfree (ctl_conf_ptr->licenses);
 	xfree (ctl_conf_ptr->mail_prog);
@@ -2073,6 +2076,9 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		conf->job_requeue = 1;
 	else if (conf->job_requeue > 1)
 		conf->job_requeue = 1;
+
+	s_p_get_string(&conf->job_submit_plugins, "JobSubmitPlugins",
+		       hashtbl);
 
 	if (!s_p_get_uint16(&conf->get_env_timeout, "GetEnvTimeout", hashtbl))
 		conf->get_env_timeout = DEFAULT_GET_ENV_TIMEOUT;
