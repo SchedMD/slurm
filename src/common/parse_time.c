@@ -58,6 +58,23 @@
 time_t     time_now;
 struct tm *time_now_tm;
 
+typedef struct unit_names {
+	char *name;
+	int name_len;
+	int multiplier;
+} unit_names_t;
+static unit_names_t un[] = {
+	{"minutes",	7,	60},
+	{"minute",	6,	60},
+	{"hours",	5,	(60*60)},
+	{"hour",	4,	(60*60)},
+	{"days",	4,	(24*60*60)},
+	{"day",		3,	(24*60*60)},
+	{"weeks",	5,	(7*24*60*60)},
+	{"week",	4,	(7*24*60*60)},
+	{NULL,		0,	0}
+};
+
 /* convert time differential string into a number of seconds
  * time_str (in): string to parse
  * pos (in/out): position of parse start/end
@@ -66,34 +83,25 @@ struct tm *time_now_tm;
  */
 static int _get_delta(char *time_str, int *pos, long *delta)
 {
-	int offset;
+	int i, offset;
 	long cnt = 0;
 	int digit = 0;
 
-	offset = (*pos) + 1;
-	for ( ; ((time_str[offset]!='\0')&&(time_str[offset]!='\n')); offset++) {
+	for (offset = (*pos) + 1;
+	     ((time_str[offset] != '\0') && (time_str[offset] != '\n'));
+	     offset++) {
 		if (isspace(time_str[offset]))
 			continue;
-		if (strncasecmp(time_str+offset, "minutes", 7) == 0) {
-			cnt *= 60;
-			offset +=7;
-			break;
+		for (i=0; un[i].name; i++) {
+			if (!strncasecmp((time_str + offset),
+					 un[i].name, un[i].name_len)) {
+				offset += un[i].name_len;
+				cnt    *= un[i].multiplier;
+				break;
+			}
 		}
-		if (strncasecmp(time_str+offset, "hours", 5) == 0) {
-			cnt *= (60 * 60);
-			offset += 5;
-			break;
-		}
-		if (strncasecmp(time_str+offset, "days", 4) == 0) {
-			cnt *= (24 * 60 * 60);
-			offset += 4;
-			break;
-		}
-		if (strncasecmp(time_str+offset, "weeks", 5) == 0) {
-			cnt *= (7 * 24 * 60 * 60);
-			offset += 5;
-			break;
-		}
+		if (un[i].name)
+			break;	/* processed unit name */
 		if ((time_str[offset] >= '0') && (time_str[offset] <= '9')) {
 			cnt = (cnt * 10) + (time_str[offset] - '0');
 			digit++;
@@ -336,9 +344,10 @@ extern time_t parse_time(char *time_str, int past)
 	time_now = time(NULL);
 	time_now_tm = localtime(&time_now);
 
-	for (pos=0; ((time_str[pos] != '\0')&&(time_str[pos] != '\n')); pos++) {
-		if (isblank(time_str[pos]) || (time_str[pos] == '-')
-		    || (time_str[pos] == 'T'))
+	for (pos=0; ((time_str[pos] != '\0') && (time_str[pos] != '\n'));
+	     pos++) {
+		if (isblank(time_str[pos]) ||
+		    (time_str[pos] == '-') || (time_str[pos] == 'T'))
 			continue;
 		if (strncasecmp(time_str+pos, "today", 5) == 0) {
 			month = time_now_tm->tm_mon;
