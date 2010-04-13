@@ -6390,6 +6390,8 @@ extern void job_pre_resize_acctg(struct job_record *job_ptr)
 {
 	job_ptr->job_state |= JOB_RESIZING;
 	job_ptr->resize_time = time(NULL);
+	/* NOTE: job_completion_logger() calls
+	 *	 acct_policy_remove_job_submit() */
 	job_completion_logger(job_ptr);
 	job_ptr->job_state &= (~JOB_RESIZING);
 }
