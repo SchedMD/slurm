@@ -204,7 +204,10 @@ static int _remove_job(db_job_id_t job_id, char *block_id)
 		 * process gets killed with a SIGTERM.  In the case of
 		 * bridge_cancel_job it always gets killed with a
 		 * SIGKILL.  From IBM's point of view that is a bad
-		 * deally, so we are going to use signal ;).
+		 * deally, so we are going to use signal ;).  Sending
+		 * a SIGKILL will kill the mpirun front end process,
+		 * and if you kill that jobs will never get cleaned up and
+		 * you end up with ciod unreacahble on the next job.
 		 */
 
 //		 rc = bridge_cancel_job(job_id);
