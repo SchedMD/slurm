@@ -57,7 +57,7 @@
  * when there is an error allocating the memory.
  *
  * xrealloc(p, newsize) changes the size of the block pointed to by p to the
- * value of newsize. Newly allocated memory is not zeroed. If p is NULL,
+ * value of newsize. Newly allocated memory is zeroed. If p is NULL,
  * xrealloc() performs the same function as  `p = xmalloc(newsize)'. If p
  * is not NULL, it is required to have been initialized with a call to
  * [try_]xmalloc() or [try_]xrealloc().

@@ -63,6 +63,7 @@
 
 #include <stdio.h>
 
+#include <slurm/slurm.h>
 #include <slurm/slurm_errno.h>
 #include "src/common/slurm_xlator.h"
 #include "src/slurmctld/slurmctld.h"
@@ -98,7 +99,15 @@ const char plugin_type[]       	= "job_submit/logging";
 const uint32_t plugin_version   = 100;
 const uint32_t min_plug_version = 100;
 
-extern int submit_job_p(struct job_record *job_ptr)
+extern int job_submit(struct job_descriptor *job_desc)
 {
+	info("in job_submit/logging, job_submit");
+	return SLURM_SUCCESS;
+}
+
+extern int job_modify(struct job_descriptor *job_desc, 
+		      struct job_record *job_ptr)
+{
+	info("in job_submit/logging, job_modify");
 	return SLURM_SUCCESS;
 }

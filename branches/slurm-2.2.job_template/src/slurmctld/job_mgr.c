@@ -75,6 +75,7 @@
 #include "src/slurmctld/acct_policy.h"
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/job_scheduler.h"
+#include "src/slurmctld/job_submit.h"
 #include "src/slurmctld/licenses.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/node_scheduler.h"
@@ -2629,6 +2630,10 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 #endif
 
 	*job_pptr = (struct job_record *) NULL;
+	error_code = job_submit_plugin_submit(job_desc);
+	if (error_code != SLURM_SUCCESS)
+		return error_code;
+
 	/* find selected partition */
 	if (job_desc->partition) {
 		part_ptr = list_find_first(part_list, &list_find_part,
@@ -5339,6 +5344,11 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		      job_specs->job_id);
 		return ESLURM_INVALID_JOB_ID;
 	}
+
+	error_code = job_submit_plugin_modify(job_specs, job_ptr);
+	if (error_code != SLURM_SUCCESS)
+		return error_code;
+
 	if ((uid == 0) || (uid == slurmctld_conf.slurm_user_id))
 		super_user = 1;
 	if ((job_ptr->user_id != uid) && (super_user == 0)) {
