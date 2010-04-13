@@ -629,6 +629,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/slurm/jobcomp_none.so
 %{_libdir}/slurm/jobcomp_filetxt.so
 %{_libdir}/slurm/jobcomp_script.so
+%{_libdir}/slurm/job_submit_defaults.so
+%{_libdir}/slurm/job_submit_logging.so
+%{_libdir}/slurm/job_submit_partition.so
 %{_libdir}/slurm/mpi_lam.so
 %{_libdir}/slurm/mpi_mpich1_p4.so
 %{_libdir}/slurm/mpi_mpich1_shmem.so
