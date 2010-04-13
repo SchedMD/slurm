@@ -99,15 +99,64 @@ const char plugin_type[]       	= "job_submit/partition";
 const uint32_t plugin_version   = 100;
 const uint32_t min_plug_version = 100;
 
+/* Test if this user can run jobs in the selected partition based upon
+ * the partition's AllowGroups parameter. */
+static bool _user_access(uid_t run_uid, struct part_record *part_ptr)
+{
+	int i;
+
+	if ((run_uid == 0) || (run_uid == getuid()))
+		return true;	/* Superuser can run anywhere */
+
+	if (!part_ptr->allow_uids)
+		return true;	/* AllowGroups=ALL */
+
+	for (i=0; part_ptr->allow_uids[i]; i++) {
+		if (part_ptr->allow_uids[i] == run_uid)
+			return true;	/* User in AllowGroups */
+	}
+	return false;		/* User not in AllowGroups */
+}
+
+/* This exampe code will set a job's default partition to the highest
+ * priority partition that is available to this user. This is only an
+ * example and tremendous flexibility is available. */
 extern int job_submit(struct job_descriptor *job_desc)
 {
-	info("in job_submit/partition, job_submit");
+	ListIterator part_iterator;
+	struct part_record *part_ptr;
+	struct part_record *top_prio_part = NULL;
+
+	if (job_desc->partition)	/* job already specified partition */
+		return SLURM_SUCCESS;
+
+	part_iterator = list_iterator_create(part_list);
+	if (!part_iterator)
+		fatal("list_iterator_create malloc");
+	while ((part_ptr = (struct part_record *) list_next(part_iterator))) {
+		if (!(part_ptr->state_up & PARTITION_SUBMIT))
+			continue;	/* nobody can submit jobs here */
+		if (!_user_access(job_desc->user_id, part_ptr))
+			continue;	/* AllowGroups prevents use */
+		if (!top_prio_part ||
+		    (top_prio_part->priority < part_ptr->priority)) {
+			/* Found higher priority partition */
+			top_prio_part = part_ptr;
+		}
+	}
+	list_iterator_destroy(part_iterator);
+
+	if (top_prio_part) {
+		info("Setting partition of submitted job to %s",
+		     top_prio_part->name);
+		job_desc->partition = xstrdup(top_prio_part->name);
+	}
+
 	return SLURM_SUCCESS;
 }
 
 extern int job_modify(struct job_descriptor *job_desc, 
 		      struct job_record *job_ptr)
 {
-	info("in job_submit/partition, job_modify");
 	return SLURM_SUCCESS;
 }

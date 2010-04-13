@@ -101,13 +101,29 @@ const uint32_t min_plug_version = 100;
 
 extern int job_submit(struct job_descriptor *job_desc)
 {
-	info("in job_submit/logging, job_submit");
+	/* Log select fields from a job submit request. See slurm/slurm.h
+	 * for information about additional fields in struct job_descriptor.
+	 * Note that default values for most numbers is NO_VAL */
+	info("Job submit request: account:%s begin_time:%u dependency:%s "
+	     "name:%s partition:%s qos:%s time_limit:%u user_id:%u",
+	     job_desc->account, job_desc->begin_time, job_desc->dependency,
+	     job_desc->name, job_desc->partition, job_desc->qos,
+	     job_desc->time_limit, job_desc->user_id);
+
 	return SLURM_SUCCESS;
 }
 
 extern int job_modify(struct job_descriptor *job_desc, 
 		      struct job_record *job_ptr)
 {
-	info("in job_submit/logging, job_modify");
+	/* Log select fields from a job modify request. See slurm/slurm.h
+	 * for information about additional fields in struct job_descriptor.
+	 * Note that default values for most numbers is NO_VAL */
+	info("Job modify request: account:%s begin_time:%u dependency:%s "
+	     "job_id:%u name:%s partition:%s qos:%s time_limit:%u",
+	     job_desc->account, job_desc->begin_time, job_desc->dependency,
+	     job_desc->job_id, job_desc->name, job_desc->partition,
+	     job_desc->qos, job_desc->time_limit);
+
 	return SLURM_SUCCESS;
 }
