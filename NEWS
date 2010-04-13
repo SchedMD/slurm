@@ -1,6 +1,10 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+ -- Add new configuration parameter JobSubmitPlugins which provides a mechanism
+    to set default job parameters or perform other site-configurable actions at
+    job submit time.
+
 * Changes in SLURM 2.2.0.pre5
 =============================
  -- Modify commands to accept time format with one or two digit hour value
