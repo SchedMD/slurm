@@ -203,6 +203,7 @@ documents those changes that are of interest to users and admins.
  -- Correct logic to support ResvOverRun configuration parameter.
  -- Get --acctg-freq option working for srun and salloc commands.
  -- Fix sinfo display of drained nodes correctly with the summarize flag.
+ -- Fix minor memory leaks in slurmd and slurmstepd.
 
 * Changes in SLURM 2.1.6-2
 ==========================
