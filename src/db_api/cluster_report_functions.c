@@ -113,6 +113,7 @@ static void _process_au(List assoc_list, slurmdb_association_rec_t *assoc)
 	list_append(assoc_list, slurmdb_report_assoc);
 
 	slurmdb_report_assoc->acct = xstrdup(assoc->acct);
+	slurmdb_report_assoc->cluster = xstrdup(assoc->cluster);
 	slurmdb_report_assoc->parent_acct = xstrdup(assoc->parent_acct);
 	slurmdb_report_assoc->user = xstrdup(assoc->user);
 
