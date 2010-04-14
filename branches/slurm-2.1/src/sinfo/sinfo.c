@@ -727,11 +727,12 @@ static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr,
 		    ||  (node_ptr->node_state & NODE_STATE_COMPLETING)) {
 			sinfo_ptr->nodes_alloc += total_nodes;
 			sinfo_ptr->cpus_alloc += total_cpus;
-		} else if (base_state == NODE_STATE_IDLE) {
-			sinfo_ptr->nodes_idle += total_nodes;
-			sinfo_ptr->cpus_idle += total_cpus;
-		} else {
+		} else if (IS_NODE_DRAIN(node_ptr) ||
+			   (base_state == NODE_STATE_DOWN)) {
 			sinfo_ptr->nodes_other += total_nodes;
+			sinfo_ptr->cpus_other += total_cpus;
+		} else {
+			sinfo_ptr->nodes_idle += total_nodes;
 			sinfo_ptr->cpus_idle += total_cpus;
 		}
 
@@ -744,10 +745,11 @@ static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr,
 	if ((base_state == NODE_STATE_ALLOCATED) ||
 	    IS_NODE_COMPLETING(node_ptr))
 		sinfo_ptr->nodes_alloc += total_nodes;
-	else if (base_state == NODE_STATE_IDLE)
+	 else if (IS_NODE_DRAIN(node_ptr) ||
+		  (base_state == NODE_STATE_DOWN))
+		 sinfo_ptr->nodes_other += total_nodes;
+	 else
 		sinfo_ptr->nodes_idle += total_nodes;
-	else
-		sinfo_ptr->nodes_other += total_nodes;
 #endif
 	sinfo_ptr->nodes_total += total_nodes;
 
