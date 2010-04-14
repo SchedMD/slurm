@@ -74,6 +74,7 @@
 #include "src/slurmctld/basil_interface.h"
 #include "src/slurmctld/gang.h"
 #include "src/slurmctld/job_scheduler.h"
+#include "src/slurmctld/job_submit.h"
 #include "src/slurmctld/licenses.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/node_scheduler.h"
@@ -789,6 +790,8 @@ int read_slurm_conf(int recover, bool reconfig)
 	error_code = MAX(error_code, rc);	/* not fatal */
 
 	/* Update plugin parameters as possible */
+	rc = job_submit_plugin_reconfig();
+	error_code = MAX(error_code, rc);	/* not fatal */
 	rc = _preserve_select_type_param(&slurmctld_conf, old_select_type_p);
 	error_code = MAX(error_code, rc);	/* not fatal */
 

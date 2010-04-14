@@ -388,6 +388,10 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/jobcomp/script/Makefile
 		 src/plugins/jobcomp/mysql/Makefile
 		 src/plugins/jobcomp/pgsql/Makefile
+		 src/plugins/job_submit/Makefile
+		 src/plugins/job_submit/defaults/Makefile
+		 src/plugins/job_submit/logging/Makefile
+		 src/plugins/job_submit/partition/Makefile
 		 src/plugins/preempt/Makefile
 		 src/plugins/preempt/none/Makefile
 		 src/plugins/preempt/partition_prio/Makefile

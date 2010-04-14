@@ -475,6 +475,7 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 					job_credential_public_certificate);
 	conf_ptr->job_file_append     = conf->job_file_append;
 	conf_ptr->job_requeue         = conf->job_requeue;
+	conf_ptr->job_submit_plugins  = xstrdup(conf->job_submit_plugins);
 
 	conf_ptr->get_env_timeout     = conf->get_env_timeout;
 

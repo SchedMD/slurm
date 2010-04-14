@@ -76,6 +76,10 @@ CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
 * Added new configuration parameters SlurmSchedLogFile and SlurmSchedLogLevel
   to support writing scheduling events to a separate log file.
 
+* Added new configuration parameter JobSubmitPlugins which provides a mechanism
+  to set default job parameters or perform other site-configurable actions at
+  job submit time.
+
 * Added "--enable-partial-attach" option to configure (build) script.
 
 * Added support for new partition states of DRAIN and INACTIVE and new partition
