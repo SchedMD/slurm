@@ -232,7 +232,7 @@ extern void parse_command_line(int argc, char *argv[])
 #ifdef HAVE_BG
 			params.format = "%9P %.5a %.10l %.32F  %N";
 #else
-			params.format = "%9P %.5a %.10l %.15F  %N";
+			params.format = "%9P %.5a %.10l %.16F  %N";
 #endif
 		} else if ( params.node_flag ) {
 			params.node_field_flag = true;	/* compute size later */
