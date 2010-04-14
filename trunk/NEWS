@@ -31,6 +31,7 @@ documents those changes that are of interest to users and admins.
  -- Add new configuration parameter JobSubmitPlugins which provides a mechanism
     to set default job parameters or perform other site-configurable actions at
     job submit time.
+ -- Better postgres support for accounting, still beta.
 
 * Changes in SLURM 2.2.0.pre4
 =============================

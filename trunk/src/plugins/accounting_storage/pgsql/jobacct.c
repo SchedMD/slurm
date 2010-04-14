@@ -924,20 +924,20 @@ js_p_step_complete(pgsql_conn_t *pg_conn,
 
 	query = xstrdup_printf(
 		"UPDATE %s SET endtime=%u, state=%d, "
-		"kill_requid=%d, comp_code=%u, "
+		"kill_requid=%d, comp_code=%d, "
 		"user_sec=%u, user_usec=%u, "
 		"sys_sec=%u, sys_usec=%u, "
-		"max_vsize=%u, max_vsize_task=%u, "
-		"max_vsize_node=%u, ave_vsize=%.2f, "
-		"max_rss=%u, max_rss_task=%u, "
-		"max_rss_node=%u, ave_rss=%.2f, "
-		"max_pages=%u, max_pages_task=%u, "
-		"max_pages_node=%u, ave_pages=%.2f, "
-		"min_cpu=%.2f, min_cpu_task=%u, "
-		"min_cpu_node=%u, ave_cpu=%.2f "
+		"max_vsize=%d, max_vsize_task=%d, "
+		"max_vsize_node=%d, ave_vsize=%.2f, "
+		"max_rss=%d, max_rss_task=%d, "
+		"max_rss_node=%d, ave_rss=%.2f, "
+		"max_pages=%d, max_pages_task=%d, "
+		"max_pages_node=%d, ave_pages=%.2f, "
+		"min_cpu=%.2f, min_cpu_task=%d, "
+		"min_cpu_node=%d, ave_cpu=%.2f "
 		"WHERE id=%u and stepid=%u",
 		step_table, (int)now,
-		comp_status,
+		(int)comp_status,
 		step_ptr->requid,
 		exit_code,
 		/* user seconds */
@@ -948,21 +948,21 @@ js_p_step_complete(pgsql_conn_t *pg_conn,
 		jobacct->sys_cpu_sec,
 		/* system microsecs */
 		jobacct->sys_cpu_usec,
-		jobacct->max_vsize,	/* max vsize */
-		jobacct->max_vsize_id.taskid,	/* max vsize task */
-		jobacct->max_vsize_id.nodeid,	/* max vsize node */
+		(int)jobacct->max_vsize,	/* max vsize */
+		(int)jobacct->max_vsize_id.taskid,	/* max vsize task */
+		(int)jobacct->max_vsize_id.nodeid,	/* max vsize node */
 		ave_vsize,	/* ave vsize */
-		jobacct->max_rss,	/* max vsize */
-		jobacct->max_rss_id.taskid,	/* max rss task */
-		jobacct->max_rss_id.nodeid,	/* max rss node */
+		(int)jobacct->max_rss,	/* max vsize */
+		(int)jobacct->max_rss_id.taskid,	/* max rss task */
+		(int)jobacct->max_rss_id.nodeid,	/* max rss node */
 		ave_rss,	/* ave rss */
-		jobacct->max_pages,	/* max pages */
-		jobacct->max_pages_id.taskid,	/* max pages task */
-		jobacct->max_pages_id.nodeid,	/* max pages node */
+		(int)jobacct->max_pages,	/* max pages */
+		(int)jobacct->max_pages_id.taskid,	/* max pages task */
+		(int)jobacct->max_pages_id.nodeid,	/* max pages node */
 		ave_pages,	/* ave pages */
 		ave_cpu2,	/* min cpu */
-		jobacct->min_cpu_id.taskid,	/* min cpu task */
-		jobacct->min_cpu_id.nodeid,	/* min cpu node */
+		(int)jobacct->min_cpu_id.taskid,	/* min cpu task */
+		(int)jobacct->min_cpu_id.nodeid,	/* min cpu node */
 		ave_cpu,	/* ave cpu */
 		step_ptr->job_ptr->db_index, step_ptr->step_id);
 	rc = DEF_QUERY_RET_RC;
@@ -1604,6 +1604,7 @@ js_p_get_jobs_cond(pgsql_conn_t *pg_conn, uid_t uid,
 		job->alloc_nodes = atoi(ROW(JOB_REQ_ALLOC_NODES));
 		job->associd = atoi(ROW(JOB_REQ_ASSOCID));
 		job->resvid = atoi(ROW(JOB_REQ_RESVID));
+		job->state = atoi(ROW(JOB_REQ_STATE));
 
 		/* we want a blank wckey if the name is null */
 		if(ROW(JOB_REQ_WCKEY))
