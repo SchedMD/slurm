@@ -653,5 +653,6 @@ fini:	_clear_power_config();
 	slurm_mutex_lock(&power_mutex);
 	power_save_enabled = false;
 	slurm_mutex_unlock(&power_mutex);
+	pthread_exit(NULL);
 	return NULL;
 }

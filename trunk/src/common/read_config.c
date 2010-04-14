@@ -1652,7 +1652,7 @@ static void _init_slurm_conf(const char *file_name)
 
 /* caller must lock conf_lock */
 static void
-_destroy_slurm_conf()
+_destroy_slurm_conf(void)
 {
 	s_p_hashtbl_destroy(conf_hashtbl);
 	if (default_nodename_tbl != NULL) {
