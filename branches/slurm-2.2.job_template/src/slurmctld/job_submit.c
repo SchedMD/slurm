@@ -71,6 +71,7 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+#include "src/slurmctld/slurmctld.h"
 
 typedef struct slurm_submit_ops {
 	int		(*submit)	( struct job_descriptor *job_desc );
@@ -184,7 +185,7 @@ static int _unload_submit_plugin(slurm_submit_context_t *plugin_context)
 extern int job_submit_plugin_init(void)
 {
 	int rc = SLURM_SUCCESS;
-	char *last, *names, *one_name;
+	char *last = NULL, *names, *one_name;
 
 	slurm_mutex_lock(&submit_context_lock);
 	if (submit_context_cnt >= 0)
