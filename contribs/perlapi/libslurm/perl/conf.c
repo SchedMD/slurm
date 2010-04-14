@@ -86,6 +86,8 @@ slurm_ctl_conf_to_hv(slurm_ctl_conf_t* conf, HV* hv)
 		STORE_FIELD(hv, conf, job_credential_public_certificate, charp);
 	STORE_FIELD(hv, conf, job_file_append, uint16_t); 
 	STORE_FIELD(hv, conf, job_requeue, uint16_t); 
+	if(conf->job_submit_plugins)
+		STORE_FIELD(hv, conf, job_submit_plugins, charp);
 	STORE_FIELD(hv, conf, kill_on_bad_exit, uint16_t);
 	STORE_FIELD(hv, conf, kill_wait, uint16_t);
 	if(conf->licenses)
@@ -207,6 +209,7 @@ slurm_ctl_conf_to_hv(slurm_ctl_conf_t* conf, HV* hv)
 		STORE_FIELD(hv, conf, unkillable_program, charp);
 	STORE_FIELD(hv, conf, unkillable_timeout, uint16_t);
 	STORE_FIELD(hv, conf, use_pam, uint16_t);
+	STORE_FIELD(hv, conf, vsize_factor, uint16_t);
 	STORE_FIELD(hv, conf, wait_time, uint16_t);
 	return 0;
 }
