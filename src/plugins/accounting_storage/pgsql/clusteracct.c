@@ -57,6 +57,41 @@ static char *event_table_constraint = ", "
 	"PRIMARY KEY (node_name, cluster, period_start) "
 	")";
 
+
+/*
+ * _create_function_record_node_down - create a PL/PGSQL function to record
+ *   node down event
+ *
+ * IN db_conn: database connection
+ * RET: error code
+ */
+static int
+_create_function_record_node_down(PGconn *db_conn)
+{
+	char *create_line = xstrdup_printf(
+		"CREATE OR REPLACE FUNCTION record_node_down "
+		"(cl TEXT, nn TEXT, st INTEGER, rs TEXT, rs_uid INTEGER, "
+		" cpu INTEGER, tm INTEGER) RETURNS VOID AS $$"
+		"BEGIN "
+		"  UPDATE %s SET period_end=(tm-1) WHERE cluster=cl "
+		"    AND period_end=0 AND node_name=nn;"
+		"  LOOP"
+		"    BEGIN "
+		"      INSERT INTO %s (node_name, cluster, cpu_count, "
+		"          period_start, state, reason, reason_uid) "
+		"        VALUES (nn, cl, cpu, tm, st, rs, rs_uid);"
+		"      RETURN;"
+		"    EXCEPTION WHEN UNIQUE_VIOLATION THEN "
+		"      UPDATE %s SET period_end=0"
+		"        WHERE cluster=cl AND node_name=nn AND period_start=tm;"
+		"      IF FOUND THEN RETURN; END IF;"
+		"    END; "
+		"  END LOOP; "
+		"END; $$ LANGUAGE PLPGSQL;",
+		event_table, event_table, event_table);
+	return create_function_xfree(db_conn, create_line);
+}
+
 /*
  * check_clusteracct_tables - check clusteracct related tables and functions
  * IN pg_conn: database connection
@@ -70,7 +105,7 @@ check_clusteracct_tables(PGconn *db_conn, char *user)
 
 	rc = check_table(db_conn, event_table, event_table_fields,
 			 event_table_constraint, user);
-
+	rc |= _create_function_record_node_down(db_conn);
 	return rc;
 }
 
@@ -141,16 +176,11 @@ cs_p_node_down(pgsql_conn_t *pg_conn,
 	       node_ptr->name, pg_conn->cluster_name, cpus);
 
 	query = xstrdup_printf(
-		"UPDATE %s SET period_end=%d WHERE cluster='%s' "
-		"AND period_end=0 AND node_name='%s';",
-		event_table, (event_time-1), pg_conn->cluster_name,
-		node_ptr->name);
-	xstrfmtcat(query, "INSERT INTO %s "
-		   "(node_name, cluster, cpu_count, period_start, "
-		   "reason, reason_uid) "
-		   "VALUES ('%s', '%s', %u, %d, $$%s$$, %d);",
-		   event_table, node_ptr->name, pg_conn->cluster_name,
-		   cpus, event_time, my_reason ?: "", reason_uid);
+		"SELECT record_node_down('%s', '%s', %d, '%s', %d, %d, %d);",
+		pg_conn->cluster_name, node_ptr->name,
+		(int)node_ptr->node_state, my_reason, (int)reason_uid,
+		(int)cpus, (int)event_time);
+
 	rc = DEF_QUERY_RET_RC;
 	return rc;
 }
