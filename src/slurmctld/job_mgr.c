@@ -3182,7 +3182,7 @@ static int _validate_job_create_req(job_desc_msg_t * job_desc)
 	if (job_desc->mloaderimage &&
 	    (strlen(job_desc->mloaderimage) > MAX_STR_LEN)) {
 		info("_validate_job_create_req: strlen(mloaderimage) too big (%d)",
-		     strlen(job_desc->features));
+		     strlen(job_desc->mloaderimage));
 		return ESLURM_PATHNAME_TOO_LONG;
 	}
 	if (job_desc->name && (strlen(job_desc->name) > MAX_STR_LEN)) {

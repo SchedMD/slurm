@@ -391,10 +391,27 @@ The second number of the signal that caused the process to terminate if
 it was terminated by a signal.
 .TP
 \fIFeatures\fP=<features>
-Set the job's required node features. Multiple values
-may be comma separated if all features are required (AND operation) or
-separated by "|" if any of the specified features are required (OR operation).
-Value may be cleared with blank data value, "Features=".
+Set the job's required node features. 
+The list of features may include multiple feature names separated
+by ampersand (AND) and/or vertical bar (OR) operators.
+For example: \fBFeatures="opteron&video"\fR or \fBFeatures="fast|faster"\fR.
+In the first example, only nodes having both the feature "opteron" AND
+the feature "video" will be used.
+There is no mechanism to specify that you want one node with feature
+"opteron" and another node with feature "video" in case no
+node has both features.
+If only one of a set of possible options should be used for all allocated
+nodes, then use the OR operator and enclose the options within square brackets.
+For example: "\fBFeatures=[rack1|rack2|rack3|rack4]"\fR might
+be used to specify that all nodes must be allocated on a single rack of
+the cluster, but any of those four racks can be used.
+A request can also specify the number of nodes needed with some feature
+by appending an asterisk and count after the feature name.
+For example "\fBFeatures=graphics*4"\fR
+indicates that at least four allocated nodes must have the feature "graphics."
+Constraints with node counts may only be combined with AND operators.
+Value may be cleared with blank data value, for example "Features=".
+
 .TP
 \fIGeometry\fP=<geo>
 Reset the required job geometry.
