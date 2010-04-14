@@ -83,7 +83,7 @@ make_bash_script $file_in "
 # Spawn an sbatch job that uses stdout and confirm its contents
 #
 set timeout $max_job_delay
-set sbatch_pid [spawn $sbatch -N1-4 --output=$file_out -t1 $file_in]
+set sbatch_pid [spawn $sbatch -N1-4 --output=$file_out -t2 $file_in]
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
