@@ -28,6 +28,9 @@ documents those changes that are of interest to users and admins.
  -- Added to contribs foundation for Perl extension for slurmdb library.
  -- Modify time parsing logic to accept "minute", "hour", "day", and "week" in
     addition to the currently accepted "minutes", "hours", etc.
+ -- Add new configuration parameter JobSubmitPlugins which provides a mechanism
+    to set default job parameters or perform other site-configurable actions at
+    job submit time.
 
 * Changes in SLURM 2.2.0.pre4
 =============================
