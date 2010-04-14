@@ -2875,7 +2875,7 @@ extern int job_resv_check(struct job_record *job_ptr)
 	else
 		job_ptr->resv_ptr->job_pend_cnt++;
 
-	if (job_ptr->resv_ptr->end_time < (time(NULL) + resv_over_run))
+	if ((job_ptr->resv_ptr->end_time + resv_over_run) < time(NULL))
 		return ESLURM_INVALID_TIME_VALUE;
 	return SLURM_SUCCESS;
 }

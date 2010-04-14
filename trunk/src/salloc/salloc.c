@@ -494,6 +494,8 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 		desc->begin_time = opt.begin;
 	if (opt.account)
 		desc->account = xstrdup(opt.account);
+	if (opt.acctg_freq >= 0)
+		desc->acctg_freq = opt.acctg_freq;
 	if (opt.comment)
 		desc->comment = xstrdup(opt.comment);
 	if (opt.qos)
