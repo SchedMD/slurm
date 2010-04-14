@@ -387,7 +387,6 @@ allocate_nodes(void)
 	xsignal(SIGUSR2, _signal_while_allocating);
 
 	while (!resp) {
-//WHAT IS THIS?
 		resp = slurm_allocate_resources_blocking(j, opt.immediate,
 							 _set_pending_job_id);
 		if (destroy_job) {
@@ -520,7 +519,7 @@ slurmctld_msg_init(void)
  * (see opt.h)
  */
 job_desc_msg_t *
-job_desc_msg_create_from_opts ()
+job_desc_msg_create_from_opts (void)
 {
 	job_desc_msg_t *j = xmalloc(sizeof(*j));
 	char buf[8192];
@@ -536,6 +535,8 @@ job_desc_msg_create_from_opts ()
 		j->name   = xstrdup(opt.job_name);
 	else
 		j->name   = xstrdup(opt.cmd_name);
+	if (opt.acctg_freq >= 0)
+		j->acctg_freq     = opt.acctg_freq;
 	j->reservation    = xstrdup(opt.reservation);
 	j->wckey          = xstrdup(opt.wckey);
 
