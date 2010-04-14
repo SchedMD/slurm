@@ -136,8 +136,7 @@ static s_p_values_t *_conf_hashtbl_lookup(
 	return NULL;
 }
 
-s_p_hashtbl_t *s_p_hashtbl_create(
-	s_p_options_t options[])
+s_p_hashtbl_t *s_p_hashtbl_create(s_p_options_t options[])
 {
 	s_p_options_t *op = NULL;
 	s_p_values_t *value = NULL;
@@ -146,7 +145,6 @@ s_p_hashtbl_t *s_p_hashtbl_create(
 
 	len = CONF_HASH_LEN * sizeof(s_p_values_t *);
 	hashtbl = (s_p_hashtbl_t *)xmalloc(len);
-	memset(hashtbl, 0, len);
 
 	for (op = options; op->key != NULL; op++) {
 		value = xmalloc(sizeof(s_p_values_t));

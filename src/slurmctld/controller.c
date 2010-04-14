@@ -583,12 +583,14 @@ int main(int argc, char *argv[])
 
 
 #ifdef MEMORY_LEAK_DEBUG
+{
 	/* This should purge all allocated memory,   *\
 	\*   Anything left over represents a leak.   */
+	char *dir_name;
 
 	/* Give running agents a chance to complete and free memory.
-	 * Wait up to 30 seconds (3 seconds * 10) */
-	for (i=0; i<10; i++) {
+	 * Wait up to 60 seconds (3 seconds * 20) */
+	for (i=0; i<20; i++) {
 		agent_purge();
 		sleep(3);
 		cnt = get_agent_count();
@@ -630,6 +632,7 @@ int main(int argc, char *argv[])
 	slurm_conf_destroy();
 	slurm_api_clear_config();
 	sleep(2);
+}
 #else
 	/* Give REQUEST_SHUTDOWN a chance to get propagated,
 	 * up to 3 seconds. */
