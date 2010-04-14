@@ -97,7 +97,7 @@ set matches 0
 set sbatch_pid [spawn $sbatch -vv -o $file_out $file_in]
 #exp_internal 1
 expect {
-	-re "nprocs$whitespace: ($number) \\(set\\)" {
+	-re "ntasks$whitespace: ($number) \\(set\\)" {
 		set cpu_count $expect_out(1,string)
 		set cpus_per_node [expr $cpu_count / $node_cnt]
 		if { $cpus_per_node != $ppn_cnt } {
@@ -148,7 +148,7 @@ expect {
 	}
 }
 if {$matches != 3} {
-	send_user "\nFAILURE: sbatch didn't read the correct options from batch file\n"
+	send_user "\nFAILURE: sbatch didn't read the correct options from batch file ($matches of 3)\n"
 	set exit_code 1
 }
 if {$job_id != 0} {
