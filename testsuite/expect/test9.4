@@ -15,7 +15,7 @@
 #          test9.4.[0-9]+.output
 ############################################################################
 # Copyright (C) 2002-2007 The Regents of the University of California.
-# Copyright (C) 2008 Lawrence Livermore National Security.
+# Copyright (C) 2008-2010 Lawrence Livermore National Security.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
 # CODE-OCEC-09-009. All rights reserved.
@@ -47,12 +47,7 @@ set file_in_task  "test$test_id.%t.input"
 set file_out_task "test$test_id.%t.output"
 set job_name      "test$test_id"
 
-if {[test_wiki_sched] == 1} {
-	set cycle_count 5
-} else {
-	set cycle_count 100
-}
-
+set cycle_count [get_cycle_count]
 if { [test_bluegene] } {
 	set node_cnt 1-2048
 } else {
