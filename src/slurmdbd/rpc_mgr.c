@@ -266,7 +266,7 @@ extern Buf make_dbd_rc_msg(uint16_t rpc_version,
 	msg.return_code  = rc;
 	msg.comment  = comment;
 	msg.sent_type  = sent_type;
-	slurmdbd_pack_rc_msg(rpc_version, &msg, buffer);
+	slurmdbd_pack_rc_msg(&msg, rpc_version, buffer);
 	return buffer;
 }
 

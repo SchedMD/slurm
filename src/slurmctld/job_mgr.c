@@ -383,7 +383,6 @@ int dump_all_job_state(void)
 	/* write header: version, time */
 	packstr(JOB_STATE_VERSION, buffer);
 	pack_time(time(NULL), buffer);
-
 	/*
 	 * write header: job id
 	 * This is needed so that the job id remains persistent even after
@@ -1229,8 +1228,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		if(job_ptr->assoc_id && !job_ptr->db_index && job_ptr->nodes) {
 			debug("starting job %u in accounting",
 			      job_ptr->job_id);
-			jobacct_storage_g_job_start(acct_db_conn,
-						    job_ptr);
+			jobacct_storage_g_job_start(acct_db_conn, job_ptr);
 			if (IS_JOB_SUSPENDED(job_ptr)) {
 				jobacct_storage_g_job_suspend(acct_db_conn,
 							      job_ptr);
@@ -7122,13 +7120,6 @@ extern bool job_independent(struct job_record *job_ptr, int will_run)
 			job_ptr->state_reason = WAIT_NO_REASON;
 			xfree(job_ptr->state_desc);
 			send_acct_rec = true;
-		}
-		if (send_acct_rec && !will_run) {
-			/* We want to record when a job becomes eligible in
-			 * order to calculate reserved time (a measure of
-			 * system over-subscription), job really is not
-			 * starting now */
-			jobacct_storage_g_job_start(acct_db_conn, job_ptr);
 		}
 		return true;
 	} else if (rc == 1) {

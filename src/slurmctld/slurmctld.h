@@ -157,6 +157,7 @@ extern void *acct_db_conn;
 extern int   accounting_enforce;
 extern int   association_based_accounting;
 extern int   cluster_cpus;
+extern int   with_slurmdbd;
 
 /*****************************************************************************\
  *  NODE parameters and data structures, mostly in src/common/node_conf.h

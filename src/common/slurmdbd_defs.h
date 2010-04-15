@@ -161,6 +161,8 @@ typedef enum {
 	DBD_GOT_PROBS,		/* Response to DBD_GET_PROBS		*/
 	DBD_GET_EVENTS, 	/* Get event information		*/
 	DBD_GOT_EVENTS, 	/* Response to DBD_GET_EVENTS		*/
+	DBD_SEND_MULT_JOB_START,/* Send multiple job starts		*/
+	DBD_GOT_MULT_JOB_START	/* Get response to DBD_SEND_MULT_JOB_START */
 } slurmdbd_msg_type_t;
 
 /*****************************************************************************\
@@ -276,6 +278,7 @@ typedef struct dbd_job_start_msg {
 
 /* returns a uint32_t along with a return code */
 typedef struct dbd_id_rc_msg {
+	uint32_t job_id;
 	uint32_t id;
 	uint32_t return_code;
 } dbd_id_rc_msg_t;
@@ -403,11 +406,12 @@ extern int slurm_send_recv_slurmdbd_msg(uint16_t rpc_version,
  * The RPC will not be queued if an error occurs.
  * Returns SLURM_SUCCESS or an error code */
 extern int slurm_send_slurmdbd_recv_rc_msg(uint16_t rpc_version,
-					   slurmdbd_msg_t *req, int *rc);
+					   slurmdbd_msg_t *req,
+					   int *rc);
 
-extern Buf pack_slurmdbd_msg(uint16_t rpc_version, slurmdbd_msg_t *req);
-extern int unpack_slurmdbd_msg(uint16_t rpc_version,
-			       slurmdbd_msg_t *resp, Buf buffer);
+extern Buf pack_slurmdbd_msg(slurmdbd_msg_t *req, uint16_t rpc_version);
+extern int unpack_slurmdbd_msg(slurmdbd_msg_t *resp,
+			       uint16_t rpc_version, Buf buffer);
 
 extern slurmdbd_msg_type_t str_2_slurmdbd_msg_type(char *msg_type);
 extern char *slurmdbd_msg_type_2_str(slurmdbd_msg_type_t msg_type,
@@ -418,148 +422,152 @@ extern char *slurmdbd_msg_type_2_str(slurmdbd_msg_type_t msg_type,
 \*****************************************************************************/
 void inline slurmdbd_free_acct_coord_msg(dbd_acct_coord_msg_t *msg);
 void inline slurmdbd_free_cluster_cpus_msg(dbd_cluster_cpus_msg_t *msg);
-void inline slurmdbd_free_rec_msg(slurmdbd_msg_type_t type,
-				  dbd_rec_msg_t *msg);
-void inline slurmdbd_free_cond_msg(slurmdbd_msg_type_t type,
-				   dbd_cond_msg_t *msg);
+void inline slurmdbd_free_rec_msg(dbd_rec_msg_t *msg, slurmdbd_msg_type_t type);
+void inline slurmdbd_free_cond_msg(dbd_cond_msg_t *msg,
+				   slurmdbd_msg_type_t type);
 void inline slurmdbd_free_get_jobs_msg(dbd_get_jobs_msg_t *msg);
 void inline slurmdbd_free_init_msg(dbd_init_msg_t *msg);
 void inline slurmdbd_free_fini_msg(dbd_fini_msg_t *msg);
 void inline slurmdbd_free_job_complete_msg(dbd_job_comp_msg_t *msg);
-void inline slurmdbd_free_job_start_msg(dbd_job_start_msg_t *msg);
-void inline slurmdbd_free_id_rc_msg(dbd_id_rc_msg_t *msg);
+void inline slurmdbd_free_job_start_msg(void *in);
+void inline slurmdbd_free_id_rc_msg(void *in);
 void inline slurmdbd_free_job_suspend_msg(dbd_job_suspend_msg_t *msg);
 void inline slurmdbd_free_list_msg(dbd_list_msg_t *msg);
-void inline slurmdbd_free_modify_msg(slurmdbd_msg_type_t type,
-				     dbd_modify_msg_t *msg);
+void inline slurmdbd_free_modify_msg(dbd_modify_msg_t *msg,
+				     slurmdbd_msg_type_t type);
 void inline slurmdbd_free_node_state_msg(dbd_node_state_msg_t *msg);
 void inline slurmdbd_free_rc_msg(dbd_rc_msg_t *msg);
 void inline slurmdbd_free_register_ctld_msg(dbd_register_ctld_msg_t *msg);
 void inline slurmdbd_free_roll_usage_msg(dbd_roll_usage_msg_t *msg);
 void inline slurmdbd_free_step_complete_msg(dbd_step_comp_msg_t *msg);
 void inline slurmdbd_free_step_start_msg(dbd_step_start_msg_t *msg);
-void inline slurmdbd_free_usage_msg(slurmdbd_msg_type_t type,
-				    dbd_usage_msg_t *msg);
+void inline slurmdbd_free_usage_msg(dbd_usage_msg_t *msg,
+				    slurmdbd_msg_type_t type);
 
 /*****************************************************************************\
  * Pack various SlurmDBD message structures into a buffer
 \*****************************************************************************/
-void inline slurmdbd_pack_acct_coord_msg(uint16_t rpc_version,
-					 dbd_acct_coord_msg_t *msg,
+void inline slurmdbd_pack_acct_coord_msg(dbd_acct_coord_msg_t *msg,
+					 uint16_t rpc_version,
 					 Buf buffer);
-void inline slurmdbd_pack_cluster_cpus_msg(uint16_t rpc_version,
-					   dbd_cluster_cpus_msg_t *msg,
+void inline slurmdbd_pack_cluster_cpus_msg(dbd_cluster_cpus_msg_t *msg,
+					   uint16_t rpc_version,
 					   Buf buffer);
-void inline slurmdbd_pack_rec_msg(uint16_t rpc_version,
-				  slurmdbd_msg_type_t type,
-				  dbd_rec_msg_t *msg, Buf buffer);
-void inline slurmdbd_pack_cond_msg(uint16_t rpc_version,
-				   slurmdbd_msg_type_t type,
-				   dbd_cond_msg_t *msg, Buf buffer);
-void inline slurmdbd_pack_get_jobs_msg(uint16_t rpc_version,
-				       dbd_get_jobs_msg_t *msg, Buf buffer);
-void inline slurmdbd_pack_init_msg(uint16_t rpc_version,
-				   dbd_init_msg_t *msg, Buf buffer,
-				   char *auth_info);
-void inline slurmdbd_pack_fini_msg(uint16_t rpc_version,
-				   dbd_fini_msg_t *msg, Buf buffer);
-void inline slurmdbd_pack_job_complete_msg(uint16_t rpc_version,
-					   dbd_job_comp_msg_t *msg,
+void inline slurmdbd_pack_rec_msg(dbd_rec_msg_t *msg,
+				  uint16_t rpc_version,
+				  slurmdbd_msg_type_t type, Buf buffer);
+void inline slurmdbd_pack_cond_msg(dbd_cond_msg_t *msg,
+				   uint16_t rpc_version,
+				   slurmdbd_msg_type_t type, Buf buffer);
+void inline slurmdbd_pack_get_jobs_msg(dbd_get_jobs_msg_t *msg,
+				       uint16_t rpc_version, Buf buffer);
+void inline slurmdbd_pack_init_msg(dbd_init_msg_t *msg, uint16_t rpc_version,
+				   Buf buffer, char *auth_info);
+void inline slurmdbd_pack_fini_msg(dbd_fini_msg_t *msg,
+				   uint16_t rpc_version, Buf buffer);
+void inline slurmdbd_pack_job_complete_msg(dbd_job_comp_msg_t *msg,
+					   uint16_t rpc_version,
 					   Buf buffer);
-void inline slurmdbd_pack_job_start_msg(uint16_t rpc_version,
-					dbd_job_start_msg_t *msg,
+void inline slurmdbd_pack_job_start_msg(void *in,
+					uint16_t rpc_version,
 					Buf buffer);
-void inline slurmdbd_pack_id_rc_msg(uint16_t rpc_version,
-				    dbd_id_rc_msg_t *msg,
+void inline slurmdbd_pack_id_rc_msg(void *in,
+				    uint16_t rpc_version,
 				    Buf buffer);
-void inline slurmdbd_pack_job_suspend_msg(uint16_t rpc_version,
-					  dbd_job_suspend_msg_t *msg,
+void inline slurmdbd_pack_job_suspend_msg(dbd_job_suspend_msg_t *msg,
+					  uint16_t rpc_version,
 					  Buf buffer);
-void inline slurmdbd_pack_list_msg(uint16_t rpc_version,
+void inline slurmdbd_pack_list_msg(dbd_list_msg_t *msg,
+				   uint16_t rpc_version,
 				   slurmdbd_msg_type_t type,
-				   dbd_list_msg_t *msg, Buf buffer);
-void inline slurmdbd_pack_modify_msg(uint16_t rpc_version,
+				   Buf buffer);
+void inline slurmdbd_pack_modify_msg(dbd_modify_msg_t *msg,
+				     uint16_t rpc_version,
 				     slurmdbd_msg_type_t type,
-				     dbd_modify_msg_t *msg, Buf buffer);
-void inline slurmdbd_pack_node_state_msg(uint16_t rpc_version,
-					 dbd_node_state_msg_t *msg,
+				     Buf buffer);
+void inline slurmdbd_pack_node_state_msg(dbd_node_state_msg_t *msg,
+					 uint16_t rpc_version,
 					 Buf buffer);
-void inline slurmdbd_pack_rc_msg(uint16_t rpc_version,
-				 dbd_rc_msg_t *msg, Buf buffer);
-void inline slurmdbd_pack_register_ctld_msg(uint16_t rpc_version,
-					    dbd_register_ctld_msg_t *msg,
+void inline slurmdbd_pack_rc_msg(dbd_rc_msg_t *msg,
+				 uint16_t rpc_version, Buf buffer);
+void inline slurmdbd_pack_register_ctld_msg(dbd_register_ctld_msg_t *msg,
+					    uint16_t rpc_version,
 					    Buf buffer);
-void inline slurmdbd_pack_roll_usage_msg(uint16_t rpc_version,
-					 dbd_roll_usage_msg_t *msg, Buf buffer);
-void inline slurmdbd_pack_step_complete_msg(uint16_t rpc_version,
-					    dbd_step_comp_msg_t *msg,
+void inline slurmdbd_pack_roll_usage_msg(dbd_roll_usage_msg_t *msg,
+					 uint16_t rpc_version, Buf buffer);
+void inline slurmdbd_pack_step_complete_msg(dbd_step_comp_msg_t *msg,
+					    uint16_t rpc_version,
 					    Buf buffer);
-void inline slurmdbd_pack_step_start_msg(uint16_t rpc_version,
-					 dbd_step_start_msg_t *msg,
+void inline slurmdbd_pack_step_start_msg(dbd_step_start_msg_t *msg,
+					 uint16_t rpc_version,
 					 Buf buffer);
-void inline slurmdbd_pack_usage_msg(uint16_t rpc_version,
+void inline slurmdbd_pack_usage_msg(dbd_usage_msg_t *msg,
+				    uint16_t rpc_version,
 				    slurmdbd_msg_type_t type,
-				    dbd_usage_msg_t *msg, Buf buffer);
+				    Buf buffer);
 
 /*****************************************************************************\
  * Unpack various SlurmDBD message structures from a buffer
 \*****************************************************************************/
-int inline slurmdbd_unpack_acct_coord_msg(uint16_t rpc_version,
-					  dbd_acct_coord_msg_t **msg,
+int inline slurmdbd_unpack_acct_coord_msg(dbd_acct_coord_msg_t **msg,
+					  uint16_t rpc_version,
 					  Buf buffer);
-int inline slurmdbd_unpack_cluster_cpus_msg(uint16_t rpc_version,
-					    dbd_cluster_cpus_msg_t **msg,
+int inline slurmdbd_unpack_cluster_cpus_msg(dbd_cluster_cpus_msg_t **msg,
+					    uint16_t rpc_version,
 					    Buf buffer);
-int inline slurmdbd_unpack_rec_msg(uint16_t rpc_version,
+int inline slurmdbd_unpack_rec_msg(dbd_rec_msg_t **msg,
+				   uint16_t rpc_version,
 				   slurmdbd_msg_type_t type,
-				   dbd_rec_msg_t **msg, Buf buffer);
-int inline slurmdbd_unpack_cond_msg(uint16_t rpc_version,
-				    slurmdbd_msg_type_t type,
-				    dbd_cond_msg_t **msg, Buf buffer);
-int inline slurmdbd_unpack_get_jobs_msg(uint16_t rpc_version,
-					dbd_get_jobs_msg_t **msg, Buf buffer);
+				   Buf buffer);
+int inline slurmdbd_unpack_cond_msg(dbd_cond_msg_t **msg,
+				    uint16_t rpc_version,
+				    slurmdbd_msg_type_t type, Buf buffer);
+int inline slurmdbd_unpack_get_jobs_msg(dbd_get_jobs_msg_t **msg,
+					uint16_t rpc_version, Buf buffer);
 int inline slurmdbd_unpack_init_msg(dbd_init_msg_t **msg, Buf buffer,
 				    char *auth_info);
-int inline slurmdbd_unpack_fini_msg(uint16_t rpc_version,
-				    dbd_fini_msg_t **msg, Buf buffer);
-int inline slurmdbd_unpack_job_complete_msg(uint16_t rpc_version,
-					    dbd_job_comp_msg_t **msg,
+int inline slurmdbd_unpack_fini_msg(dbd_fini_msg_t **msg,
+				    uint16_t rpc_version, Buf buffer);
+int inline slurmdbd_unpack_job_complete_msg(dbd_job_comp_msg_t **msg,
+					    uint16_t rpc_version,
 					    Buf buffer);
-int inline slurmdbd_unpack_job_start_msg(uint16_t rpc_version,
-					 dbd_job_start_msg_t **msg,
+int inline slurmdbd_unpack_job_start_msg(void **msg,
+					 uint16_t rpc_version,
 					 Buf buffer);
-int inline slurmdbd_unpack_id_rc_msg(uint16_t rpc_version,
-				     dbd_id_rc_msg_t **msg,
+int inline slurmdbd_unpack_id_rc_msg(void **msg,
+				     uint16_t rpc_version,
 				     Buf buffer);
-int inline slurmdbd_unpack_job_suspend_msg(uint16_t rpc_version,
-					   dbd_job_suspend_msg_t **msg,
+int inline slurmdbd_unpack_job_suspend_msg(dbd_job_suspend_msg_t **msg,
+					   uint16_t rpc_version,
 					   Buf buffer);
-int inline slurmdbd_unpack_list_msg(uint16_t rpc_version,
+int inline slurmdbd_unpack_list_msg(dbd_list_msg_t **msg,
+				    uint16_t rpc_version,
 				    slurmdbd_msg_type_t type,
-				    dbd_list_msg_t **msg, Buf buffer);
-int inline slurmdbd_unpack_modify_msg(uint16_t rpc_version,
+				    Buf buffer);
+int inline slurmdbd_unpack_modify_msg(dbd_modify_msg_t **msg,
+				      uint16_t rpc_version,
 				      slurmdbd_msg_type_t type,
-				      dbd_modify_msg_t **msg, Buf buffer);
-int inline slurmdbd_unpack_node_state_msg(uint16_t rpc_version,
-					  dbd_node_state_msg_t **msg,
+				      Buf buffer);
+int inline slurmdbd_unpack_node_state_msg(dbd_node_state_msg_t **msg,
+					  uint16_t rpc_version,
 					  Buf buffer);
-int inline slurmdbd_unpack_rc_msg(uint16_t rpc_version,
-				  dbd_rc_msg_t **msg, Buf buffer);
-int inline slurmdbd_unpack_register_ctld_msg(uint16_t rpc_version,
-					     dbd_register_ctld_msg_t **msg,
+int inline slurmdbd_unpack_rc_msg(dbd_rc_msg_t **msg,
+				  uint16_t rpc_version, Buf buffer);
+int inline slurmdbd_unpack_register_ctld_msg(dbd_register_ctld_msg_t **msg,
+					     uint16_t rpc_version,
 					     Buf buffer);
-int inline slurmdbd_unpack_roll_usage_msg(uint16_t rpc_version,
-					  dbd_roll_usage_msg_t **msg,
+int inline slurmdbd_unpack_roll_usage_msg(dbd_roll_usage_msg_t **msg,
+					  uint16_t rpc_version,
 					  Buf buffer);
-int inline slurmdbd_unpack_step_complete_msg(uint16_t rpc_version,
-					     dbd_step_comp_msg_t **msg,
+int inline slurmdbd_unpack_step_complete_msg(dbd_step_comp_msg_t **msg,
+					     uint16_t rpc_version,
 					     Buf buffer);
-int inline slurmdbd_unpack_step_start_msg(uint16_t rpc_version,
-					  dbd_step_start_msg_t **msg,
+int inline slurmdbd_unpack_step_start_msg(dbd_step_start_msg_t **msg,
+					  uint16_t rpc_version,
 					  Buf buffer);
-int inline slurmdbd_unpack_usage_msg(uint16_t rpc_version,
+int inline slurmdbd_unpack_usage_msg(dbd_usage_msg_t **msg,
+				     uint16_t rpc_version,
 				     slurmdbd_msg_type_t type,
-				     dbd_usage_msg_t **msg,
 				     Buf buffer);
 
 #endif	/* !_SLURMDBD_DEFS_H */

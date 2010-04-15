@@ -1247,7 +1247,10 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 
 	acct_policy_job_begin(job_ptr);
 
-	jobacct_storage_g_job_start(acct_db_conn, job_ptr);
+	/* If ran with slurmdbd this is handled out of band in the job */
+	if(!with_slurmdbd)
+		jobacct_storage_g_job_start(acct_db_conn, job_ptr);
+
 	prolog_slurmctld(job_ptr);
 	slurm_sched_newalloc(job_ptr);
 

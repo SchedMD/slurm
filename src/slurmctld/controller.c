@@ -157,6 +157,7 @@ int accounting_enforce = 0;
 int association_based_accounting = 0;
 bool ping_nodes_now = false;
 int      cluster_cpus = 0;
+int   with_slurmdbd = 0;
 
 /* Local variables */
 static int	daemonize = DEFAULT_DAEMONIZE;
@@ -317,6 +318,13 @@ int main(int argc, char *argv[])
 	association_based_accounting =
 		slurm_get_is_association_based_accounting();
 	accounting_enforce = slurmctld_conf.accounting_storage_enforce;
+	if(!strcasecmp(slurmctld_conf.accounting_storage_type,
+		       "accounting_storage/slurmdbd")) {
+		with_slurmdbd = 1;
+		/* we need job_list not to be NULL */
+		init_job_conf();
+
+	}
 
 	if (accounting_enforce && !association_based_accounting) {
 		slurm_ctl_conf_t *conf = slurm_conf_lock();
@@ -556,6 +564,7 @@ int main(int argc, char *argv[])
 
 		/* Save any pending state save RPCs */
 		acct_storage_g_close_connection(&acct_db_conn);
+		slurm_acct_storage_fini();
 
 		/* join the power save thread after saving all state
 		 * since it could wait a while waiting for spawned
@@ -618,7 +627,6 @@ int main(int argc, char *argv[])
 	job_submit_plugin_fini();
 	slurm_preempt_fini();
 	g_slurm_jobcomp_fini();
-	slurm_acct_storage_fini();
 	slurm_jobacct_gather_fini();
 	slurm_select_fini();
 	slurm_topo_fini();
