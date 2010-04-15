@@ -1261,6 +1261,20 @@ static void _step_dealloc_lps(struct step_record *step_ptr)
 #endif
 }
 
+static int _test_strlen(char *test_str, char *str_name, int max_str_len)
+{
+	int i = 0;
+
+	if (test_str)
+		i = strlen(test_str);
+	if (i > max_str_len) {
+		info("step_create_request: strlen(%s) too big (%d > %d)",
+		     str_name, i, max_str_len);
+		return ESLURM_PATHNAME_TOO_LONG;
+	}
+	return SLURM_SUCCESS;
+}
+
 /*
  * step_create - creates a step_record in step_specs->job_id, sets up the
  *	according to the step_specs.
@@ -1333,16 +1347,11 @@ step_create(job_step_create_request_msg_t *step_specs,
 		return ESLURM_TASKDIST_ARBITRARY_UNSUPPORTED;
 	}
 
-	if ((step_specs->host      &&
-	     (strlen(step_specs->host)      > MAX_STR_LEN)) ||
-	    (step_specs->node_list &&
-	     (strlen(step_specs->node_list) > MAX_STR_LEN)) ||
-	    (step_specs->network   &&
-	     (strlen(step_specs->network)   > MAX_STR_LEN)) ||
-	    (step_specs->name      &&
-	     (strlen(step_specs->name)      > MAX_STR_LEN)) ||
-	    (step_specs->ckpt_dir &&
-	     (strlen(step_specs->ckpt_dir) > MAX_STR_LEN)))
+	if (_test_strlen(step_specs->ckpt_dir, "ckpt_dir", 1024)	||
+	    _test_strlen(step_specs->host, "host", 1024)		||
+	    _test_strlen(step_specs->name, "name", 1024)		||
+	    _test_strlen(step_specs->network, "network", 1024)		||
+	    _test_strlen(step_specs->node_list, "node_list", 1024))
 		return ESLURM_PATHNAME_TOO_LONG;
 
 	/* if the overcommit flag is checked, we 0 set cpu_count=0
