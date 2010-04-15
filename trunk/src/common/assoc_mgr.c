@@ -2498,8 +2498,8 @@ extern int dump_assoc_mgr_state(char *state_save_location)
 		msg.my_list = assoc_mgr_user_list;
 		/* let us know what to unpack */
 		pack16(DBD_ADD_USERS, buffer);
-		slurmdbd_pack_list_msg(SLURMDBD_VERSION,
-				       DBD_ADD_USERS, &msg, buffer);
+		slurmdbd_pack_list_msg(&msg, SLURMDBD_VERSION,
+				       DBD_ADD_USERS, buffer);
 		slurm_mutex_unlock(&assoc_mgr_user_lock);
 	}
 
@@ -2509,8 +2509,8 @@ extern int dump_assoc_mgr_state(char *state_save_location)
 		msg.my_list = assoc_mgr_qos_list;
 		/* let us know what to unpack */
 		pack16(DBD_ADD_QOS, buffer);
-		slurmdbd_pack_list_msg(SLURMDBD_VERSION,
-				       DBD_ADD_QOS, &msg, buffer);
+		slurmdbd_pack_list_msg(&msg, SLURMDBD_VERSION,
+				       DBD_ADD_QOS, buffer);
 		slurm_mutex_unlock(&assoc_mgr_qos_lock);
 	}
 
@@ -2520,8 +2520,8 @@ extern int dump_assoc_mgr_state(char *state_save_location)
 		msg.my_list = assoc_mgr_wckey_list;
 		/* let us know what to unpack */
 		pack16(DBD_ADD_WCKEYS, buffer);
-		slurmdbd_pack_list_msg(SLURMDBD_VERSION,
-				       DBD_ADD_WCKEYS, &msg, buffer);
+		slurmdbd_pack_list_msg(&msg, SLURMDBD_VERSION,
+				       DBD_ADD_WCKEYS, buffer);
 		slurm_mutex_unlock(&assoc_mgr_wckey_lock);
 	}
 	/* this needs to be done last so qos is set up
@@ -2532,8 +2532,8 @@ extern int dump_assoc_mgr_state(char *state_save_location)
 		msg.my_list = assoc_mgr_association_list;
 		/* let us know what to unpack */
 		pack16(DBD_ADD_ASSOCS, buffer);
-		slurmdbd_pack_list_msg(SLURMDBD_VERSION,
-				       DBD_ADD_ASSOCS, &msg, buffer);
+		slurmdbd_pack_list_msg(&msg, SLURMDBD_VERSION,
+				       DBD_ADD_ASSOCS, buffer);
 		slurm_mutex_unlock(&assoc_mgr_association_lock);
 	}
 
@@ -2998,7 +2998,7 @@ extern int load_assoc_mgr_state(char *state_save_location)
 		switch(type) {
 		case DBD_ADD_ASSOCS:
 			error_code = slurmdbd_unpack_list_msg(
-				SLURMDBD_VERSION, DBD_ADD_ASSOCS, &msg, buffer);
+				&msg, SLURMDBD_VERSION, DBD_ADD_ASSOCS, buffer);
 			if (error_code != SLURM_SUCCESS)
 				goto unpack_error;
 			else if(!msg->my_list) {
@@ -3019,7 +3019,7 @@ extern int load_assoc_mgr_state(char *state_save_location)
 			break;
 		case DBD_ADD_USERS:
 			error_code = slurmdbd_unpack_list_msg(
-				SLURMDBD_VERSION, DBD_ADD_USERS, &msg, buffer);
+				&msg, SLURMDBD_VERSION, DBD_ADD_USERS, buffer);
 			if (error_code != SLURM_SUCCESS)
 				goto unpack_error;
 			else if(!msg->my_list) {
@@ -3039,7 +3039,7 @@ extern int load_assoc_mgr_state(char *state_save_location)
 			break;
 		case DBD_ADD_QOS:
 			error_code = slurmdbd_unpack_list_msg(
-				SLURMDBD_VERSION, DBD_ADD_QOS, &msg, buffer);
+				&msg, SLURMDBD_VERSION, DBD_ADD_QOS, buffer);
 			if (error_code != SLURM_SUCCESS)
 				goto unpack_error;
 			else if(!msg->my_list) {
@@ -3059,7 +3059,7 @@ extern int load_assoc_mgr_state(char *state_save_location)
 			break;
 		case DBD_ADD_WCKEYS:
 			error_code = slurmdbd_unpack_list_msg(
-				SLURMDBD_VERSION, DBD_ADD_WCKEYS, &msg, buffer);
+				&msg, SLURMDBD_VERSION, DBD_ADD_WCKEYS, buffer);
 			if (error_code != SLURM_SUCCESS)
 				goto unpack_error;
 			else if(!msg->my_list) {

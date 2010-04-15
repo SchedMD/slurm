@@ -344,6 +344,7 @@ extern int schedule(void)
 	debug3("sched: Processing job queue...");
 	for (i = 0; i < job_queue_size; i++) {
 		job_ptr = job_queue[i].job_ptr;
+
 		if (job_ptr->priority == 0)	{ /* held */
 			debug3("sched: JobId=%u. State=%s. Reason=%s. "
 			       "Priority=%u.",
@@ -400,7 +401,7 @@ extern int schedule(void)
 			 * disabled between when the job was submitted and
 			 * the time we consider running it. It should be
 			 * very rare. */
-			info("sched: JobId=%u has invalid account", 
+			info("sched: JobId=%u has invalid account",
 			     job_ptr->job_id);
 			last_job_update = time(NULL);
 			job_ptr->job_state = JOB_FAILED;

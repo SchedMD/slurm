@@ -629,12 +629,12 @@ static void *_decay_thread(void *no_data)
 	double decay_factor = 1;
 	uint16_t reset_period = slurm_get_priority_reset_period();
 
-	if(decay_hl > 0)
-		decay_factor = 1 - (0.693 / decay_hl);
-
 	/* Write lock on jobs, read lock on nodes and partitions */
 	slurmctld_lock_t job_write_lock =
 		{ NO_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
+
+	if(decay_hl > 0)
+		decay_factor = 1 - (0.693 / decay_hl);
 
 	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
 	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
