@@ -1035,8 +1035,13 @@ _task_start(launch_tasks_response_msg_t *msg)
 	int taskid;
 	int i;
 
-	verbose("Node %s (%d), %d tasks started",
-		msg->node_name, msg->srun_node_id, msg->count_of_pids);
+	if(msg->count_of_pids)
+		verbose("Node %s, %d tasks started",
+			msg->node_name, msg->count_of_pids);
+	else
+		error("No tasks started on node %s: %s",
+		      msg->node_name, slurm_strerror(msg->return_code));
+
 
 	for (i = 0; i < msg->count_of_pids; i++) {
 		taskid = msg->task_ids[i];
