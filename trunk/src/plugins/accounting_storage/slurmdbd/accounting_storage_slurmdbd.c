@@ -127,16 +127,15 @@ static int _setup_job_start_msg(dbd_job_start_msg_t *req,
 	}
 	memset(req, 0, sizeof(dbd_job_start_msg_t));
 
-	req->alloc_cpus    = job_ptr->total_cpus;
 	req->account       = job_ptr->account;
 	req->assoc_id      = job_ptr->assoc_id;
 #ifdef HAVE_BG
 	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
-			     SELECT_JOBDATA_BLOCK_ID,
-			     &block_id);
+				    SELECT_JOBDATA_BLOCK_ID,
+				    &block_id);
 	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
-			     SELECT_JOBDATA_NODE_CNT,
-			     &req->alloc_nodes);
+				    SELECT_JOBDATA_NODE_CNT,
+				    &req->alloc_nodes);
 #else
 	req->alloc_nodes   = job_ptr->node_cnt;
 #endif
@@ -158,10 +157,17 @@ static int _setup_job_start_msg(dbd_job_start_msg_t *req,
 	req->job_state     = job_ptr->job_state;
 	req->name          = job_ptr->name;
 	req->nodes         = job_ptr->nodes;
-	if(job_ptr->node_bitmap) {
+
+	/* since we could be sending this after the job is over we
+	   need the original bitmap */
+	if(job_ptr->job_resrcs && job_ptr->job_resrcs->node_bitmap) {
 		req->node_inx = bit_fmt(temp_bit, sizeof(temp_bit),
-				       job_ptr->node_bitmap);
-	}
+					job_ptr->job_resrcs->node_bitmap);
+		req->alloc_nodes =
+			bit_set_count(job_ptr->job_resrcs->node_bitmap);
+	} else if(job_ptr->node_bitmap)
+		req->node_inx = bit_fmt(temp_bit, sizeof(temp_bit),
+					job_ptr->node_bitmap);
 
 	req->partition     = job_ptr->partition;
 	if (job_ptr->details)

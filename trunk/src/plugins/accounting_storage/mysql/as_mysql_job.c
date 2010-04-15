@@ -67,9 +67,11 @@ static int _get_db_index(mysql_conn_t *mysql_conn,
 	row = mysql_fetch_row(result);
 	if(!row) {
 		mysql_free_result(result);
-		error("We can't get a db_index for this combo, "
-		      "time_submit=%d and id_job=%u and id_assoc=%u.",
-		      (int)submit, jobid, associd);
+		debug4("We can't get a db_index for this combo, "
+		       "time_submit=%d and id_job=%u and id_assoc=%u.  "
+		       "We must not have heard about the start yet, "
+		       "no big deal, we will get one right after this.",
+		       (int)submit, jobid, associd);
 		return 0;
 	}
 	db_index = atoi(row[0]);
@@ -387,52 +389,62 @@ no_rollup_change:
 		query = xstrdup_printf(
 			"insert into \"%s_%s\" "
 			"(id_job, id_assoc, id_wckey, id_user, "
-			"id_group, nodelist, id_resv, timelimit, ",
+			"id_group, nodelist, id_resv, timelimit, "
+			"time_eligible, time_submit, time_start, "
+			"job_name, track_steps, state, priority, cpus_req, "
+			"cpus_alloc, nodes_alloc",
 			mysql_conn->cluster_name, job_table);
 
 		if(job_ptr->account)
-			xstrcat(query, "account, ");
+			xstrcat(query, ", account");
 		if(job_ptr->partition)
-			xstrcat(query, "partition, ");
+			xstrcat(query, ", partition");
 		if(block_id)
-			xstrcat(query, "id_block, ");
+			xstrcat(query, ", id_block");
 		if(job_ptr->wckey)
-			xstrcat(query, "wckey, ");
+			xstrcat(query, ", wckey");
 		if(node_inx)
-			xstrcat(query, "node_inx, ");
+			xstrcat(query, ", node_inx");
 
 		xstrfmtcat(query,
-			   "time_eligible, time_submit, time_start, "
-			   "job_name, track_steps, "
-			   "state, priority, cpus_req, "
-			   "cpus_alloc, nodes_alloc) "
-			   "values (%u, %u, %u, %u, %u, '%s', %u, %u, ",
+			   ") values (%u, %u, %u, %u, %u, '%s', %u, %u, "
+			   "%d, %d, %d, '%s', %u, %u, %u, %u, %u, %u",
 			   job_ptr->job_id, job_ptr->assoc_id, wckeyid,
 			   job_ptr->user_id, job_ptr->group_id, nodes,
-			   job_ptr->resv_id, job_ptr->time_limit);
-
-		if(job_ptr->account)
-			xstrfmtcat(query, "'%s', ", job_ptr->account);
-		if(job_ptr->partition)
-			xstrfmtcat(query, "'%s', ", job_ptr->partition);
-		if(block_id)
-			xstrfmtcat(query, "'%s', ", block_id);
-		if(job_ptr->wckey)
-			xstrfmtcat(query, "'%s', ", job_ptr->wckey);
-		if(node_inx)
-			xstrfmtcat(query, "'%s', ", node_inx);
-
-		xstrfmtcat(query,
-			   "%d, %d, %d, '%s', %u, %u, %u, %u, %u, %u) "
-			   "on duplicate key update "
-			   "job_db_inx=LAST_INSERT_ID(job_db_inx), state=%u, "
-			   "id_assoc=%u, id_wckey=%u, id_resv=%u, timelimit=%u",
+			   job_ptr->resv_id, job_ptr->time_limit,
 			   begin_time, submit_time, start_time,
 			   jname, track_steps, job_state,
 			   job_ptr->priority, job_ptr->details->min_cpus,
-			   job_ptr->total_cpus, node_cnt, job_state,
-			   job_ptr->assoc_id, wckeyid, job_ptr->resv_id,
-			   job_ptr->time_limit);
+			   job_ptr->total_cpus, node_cnt);
+
+		if(job_ptr->account)
+			xstrfmtcat(query, ", '%s'", job_ptr->account);
+		if(job_ptr->partition)
+			xstrfmtcat(query, ", '%s'", job_ptr->partition);
+		if(block_id)
+			xstrfmtcat(query, ", '%s'", block_id);
+		if(job_ptr->wckey)
+			xstrfmtcat(query, ", '%s'", job_ptr->wckey);
+		if(node_inx)
+			xstrfmtcat(query, ", '%s'", node_inx);
+
+		xstrfmtcat(query,
+			   ") on duplicate key update "
+			   "job_db_inx=LAST_INSERT_ID(job_db_inx), "
+			   "id_wckey=%u, id_user=%u, id_group=%u, "
+			   "nodelist='%s', id_resv=%u, timelimit=%u, "
+			   "time_submit=%d, time_start=%d, "
+			   "job_name='%s', track_steps=%u, "
+			   "state=greatest(state, %u), priority=%u, "
+			   "cpus_req=%u, cpus_alloc=%u, nodes_alloc=%u",
+			   wckeyid, job_ptr->user_id, job_ptr->group_id, nodes,
+			   job_ptr->resv_id, job_ptr->time_limit,
+			   submit_time, start_time,
+			   jname, track_steps, job_state,
+			   job_ptr->priority, job_ptr->details->min_cpus,
+			   job_ptr->total_cpus, node_cnt, wckeyid,
+			   job_ptr->user_id, job_ptr->group_id, nodes,
+			   job_ptr->resv_id, job_ptr->time_limit);
 
 		if(job_ptr->account)
 			xstrfmtcat(query, ", account='%s'", job_ptr->account);
