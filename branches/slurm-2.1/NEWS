@@ -29,6 +29,8 @@ documents those changes that are of interest to users and admins.
  -- Fix sinfo display of drained nodes correctly with the summarize flag.
  -- Fix minor memory leaks in slurmd and slurmstepd.
  -- Better error messages for failed step launch.
+ -- Modify srun to insure compatability of the --relative option with the node
+    count requested.
 
 * Changes in SLURM 2.1.6-2
 ==========================
