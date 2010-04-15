@@ -3247,10 +3247,14 @@ static int   _send_mult_job_start(slurmdbd_conn_t *slurmdbd_conn,
 	}
 	list_iterator_destroy(itr);
 
+	slurmdbd_free_list_msg(get_msg);
+
 	*out_buffer = init_buf(1024);
 	pack16((uint16_t) DBD_GOT_MULT_JOB_START, *out_buffer);
 	slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->rpc_version,
 			       DBD_GOT_MULT_JOB_START, *out_buffer);
+	if(list_msg.my_list)
+		list_destroy(list_msg.my_list);
 
 	return SLURM_SUCCESS;
 }
