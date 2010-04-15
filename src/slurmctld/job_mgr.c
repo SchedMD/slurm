@@ -1225,7 +1225,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		info("Recovered job %u %u", job_id, job_ptr->assoc_id);
 
 		/* make sure we have started this job in accounting */
-		if(job_ptr->assoc_id && !job_ptr->db_index && job_ptr->nodes) {
+		if(!job_ptr->db_index) {
 			debug("starting job %u in accounting",
 			      job_ptr->job_id);
 			jobacct_storage_g_job_start(acct_db_conn, job_ptr);
@@ -2245,7 +2245,8 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 		job_ptr->job_state  = JOB_FAILED;
 		job_ptr->exit_code  = 1;
 		job_ptr->start_time = job_ptr->end_time = now;
-	}
+	} else if(!with_slurmdbd && !job_ptr->db_index)
+		jobacct_storage_g_job_start(acct_db_conn, job_ptr);
 
 	debug2("sched: JobId=%u allocated resources: NodeList=%s",
 	       job_ptr->job_id, job_ptr->nodes);
@@ -7071,12 +7072,7 @@ extern void job_completion_logger(struct job_record  *job_ptr)
 		}
 	}
 
-	/*
-	 * This means the job wasn't ever eligible, but we want to
-	 * keep track of all jobs, so we will set the db_inx to
-	 * INFINITE and the database will understand what happened.
-	 */
-	if(!job_ptr->nodes && !job_ptr->db_index && !sent_start)
+	if(!with_slurmdbd && !job_ptr->db_index)
 		jobacct_storage_g_job_start(acct_db_conn, job_ptr);
 
 	jobacct_storage_g_job_complete(acct_db_conn, job_ptr);

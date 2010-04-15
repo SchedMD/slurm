@@ -32,6 +32,7 @@ documents those changes that are of interest to users and admins.
     to set default job parameters or perform other site-configurable actions at
     job submit time.
  -- Better postgres support for accounting, still beta.
+ -- Speed up job start when using the slurmdbd.
 
 * Changes in SLURM 2.2.0.pre4
 =============================

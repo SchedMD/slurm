@@ -1542,6 +1542,10 @@ step_create(job_step_create_request_msg_t *step_specs,
 	if (checkpoint_alloc_jobinfo (&step_ptr->check_job) < 0)
 		fatal ("step_create: checkpoint_alloc_jobinfo error");
 	*new_step_record = step_ptr;
+
+	if(!with_slurmdbd && !job_ptr->db_index)
+		jobacct_storage_g_job_start(acct_db_conn, job_ptr);
+
 	jobacct_storage_g_step_start(acct_db_conn, step_ptr);
 	return SLURM_SUCCESS;
 }
