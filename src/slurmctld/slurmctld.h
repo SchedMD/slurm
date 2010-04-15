@@ -87,10 +87,6 @@
 /* Maximum parallel threads to service incoming RPCs */
 #define MAX_SERVER_THREADS 100
 
-/* Maximum size we want to support for user strings (e.g. job comment).
- * Try to prevent user from filling slurmctld's memory */
-#define MAX_STR_LEN  64 * 1024
-
 /* Perform full slurmctld's state every PERIODIC_CHECKPOINT seconds */
 #define	PERIODIC_CHECKPOINT	300
 
