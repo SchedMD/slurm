@@ -2018,8 +2018,10 @@ extern int select_p_select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
 		*uint16 = 0;
 		break;
 	case SELECT_NODEDATA_SUBCNT:
-		if(state == NODE_STATE_ALLOCATED)
+		if (state == NODE_STATE_ALLOCATED)
 			*uint16 = nodeinfo->alloc_cpus;
+		else
+			*uint16 = 0;
 		break;
 	default:
 		error("Unsupported option %d for get_nodeinfo.", dinfo);
