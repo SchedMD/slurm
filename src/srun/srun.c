@@ -319,7 +319,7 @@ int srun(int ac, char **av)
 		}
 #endif
 		if (opt.relative_set && opt.relative) {
-			error("--relaive option ignored in job allocation "
+			error("--relative option ignored in job allocation "
 			      "request");
 			opt.relative = NO_VAL;
 			opt.relative_set = false;
