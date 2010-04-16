@@ -294,7 +294,13 @@ static void *_set_db_inx_thread(void *no_data)
 		slurm_mutex_unlock(&db_inx_lock);
 		/* END_TIMER; */
 		/* info("set all db_inx's in %s", TIME_STR); */
-		sleep(30);
+
+		/* Since it doesn't take much time at all to do this
+		   check do it every 5 seconds.  This helps the DBD so
+		   it doesn't have to find db_indexs of jobs that
+		   haven't had the start rpc come through.
+		*/
+		sleep(5);
 	}
 
 	return NULL;
