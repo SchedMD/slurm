@@ -1343,7 +1343,8 @@ static int _launch_tasks(slurm_step_ctx_t *ctx,
 
 			errno = tot_rc;
 			tot_rc = SLURM_ERROR;
-			error("Task launch for %u.%u failed on node %s: %m",
+			error("Task launch for %u.%u failed on "
+			      "node %s: %m",
 			      ctx->job_id, ctx->step_resp->job_step_id,
 			      ret_data->node_name);
 		} else {
