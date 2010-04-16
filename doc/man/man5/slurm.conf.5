@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "February 2010" "slurm.conf 2.2" "Slurm configuration file"
+.TH "slurm.conf" "5" "April 2010" "slurm.conf 2.2" "Slurm configuration file"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -2053,6 +2053,16 @@ either has a feature or it does not.
 If desired a feature may contain a numeric component indicating,
 for example, processor speed.
 By default a node has no features.
+Also see \fBGres\fR.
+
+.TP
+\fBGres\fR
+A comma delimited list of generic resources specifications for a node.
+Each resource specification consists of a name followed by an optional
+colon with a numeric value (default value is one)
+(e.g. "Gres=bandwidth:10000,gpus").
+By default a node has no generic resources.
+Also see \fBFeature\fR.
 
 .TP
 \fBProcs\fR

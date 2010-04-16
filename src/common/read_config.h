@@ -146,7 +146,8 @@ typedef struct slurm_conf_node {
 	char *nodenames;
 	char *hostnames;
 	char *addresses;
-	char *feature;		/* arbitrary list of features associated */
+	char *gres;		/* arbitrary list of node's generic resources */
+	char *feature;		/* arbitrary list of node's features */
 	uint16_t port;
 	uint16_t cpus;		/* count of cpus running on the node */
 	uint16_t sockets;       /* number of sockets per node */

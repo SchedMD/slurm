@@ -3,7 +3,7 @@
  *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov> et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -190,7 +190,6 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 		xstrcat(out, "\n   ");
 
 	/****** Line 2 ******/
-
 	snprintf(tmp_line, sizeof(tmp_line),
 		 "CPUAlloc=%u CPUErr=%u CPUTot=%u Features=%s",
 		 alloc_cpus, err_cpus, node_ptr->cpus, node_ptr->features);
@@ -201,6 +200,14 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 		xstrcat(out, "\n   ");
 
 	/****** Line 3 ******/
+	snprintf(tmp_line, sizeof(tmp_line), "Gres=%s",node_ptr->gres);
+	xstrcat(out, tmp_line);
+	if (one_liner)
+		xstrcat(out, " ");
+	else
+		xstrcat(out, "\n   ");
+
+	/****** Line 4 ******/
 	if (node_ptr->os) {
 		snprintf(tmp_line, sizeof(tmp_line), "OS=%s ", node_ptr->os);
 		xstrcat(out, tmp_line);
@@ -213,7 +220,7 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 	else
 		xstrcat(out, "\n   ");
 
-	/****** Line 4 ******/
+	/****** Line 5 ******/
 
 	snprintf(tmp_line, sizeof(tmp_line),
 		 "State=%s%s%s%s ThreadsPerCore=%u TmpDisk=%u Weight=%u",
@@ -225,7 +232,7 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 	else
 		xstrcat(out, "\n   ");
 
-	/****** Line 5 ******/
+	/****** Line 6 ******/
 	if (node_ptr->boot_time) {
 		slurm_make_time_str ((time_t *)&node_ptr->boot_time,
 				     time_str, sizeof(time_str));
@@ -248,7 +255,7 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 	else
 		xstrcat(out, "\n   ");
 
-	/****** Line 6 ******/
+	/****** Line 7 ******/
 	if (node_ptr->reason_time) {
 		char *user_name = uid_to_string(node_ptr->reason_uid);
 		slurm_make_time_str ((time_t *)&node_ptr->reason_time,
