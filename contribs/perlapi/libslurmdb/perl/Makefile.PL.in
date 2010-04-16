@@ -1,4 +1,4 @@
-use 5.010000;
+use 5.008;
 use ExtUtils::MakeMaker;
 
 if (!(-e "@prefix@/lib/libslurmdb.so") && !(-e "@top_builddir@/src/db_api/.libs/libslurmdb.so")) {
