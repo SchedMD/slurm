@@ -77,7 +77,8 @@ static void _delete_allocated_blocks(List allocated_blocks)
 	allocated_block_t *allocated_block = NULL;
 
 	while ((allocated_block = list_pop(allocated_blocks)) != NULL) {
-		remove_block(allocated_block->nodes,0);
+		remove_block(allocated_block->nodes, 0,
+			     allocated_block->request->conn_type);
 		list_destroy(allocated_block->nodes);
 		delete_ba_request(allocated_block->request);
 		xfree(allocated_block);
@@ -835,7 +836,9 @@ static int _remove_allocation(char *com, List allocated_blocks)
 			} else if(allocated_block->letter == letter) {
 				found=1;
 				remove_block(allocated_block->nodes,
-					     color_count);
+					     color_count,
+					     allocated_block->request->
+					     conn_type);
 				list_destroy(allocated_block->nodes);
 				delete_ba_request(allocated_block->request);
 				list_remove(results_i);
