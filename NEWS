@@ -185,6 +185,8 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 2.1.8
 ========================
+ -- Update BUILD_NOTES for AIX and bgp systems on how to get sview to
+    build correctly.
 
 * Changes in SLURM 2.1.7
 ========================
