@@ -488,10 +488,12 @@ extern int parse_format( char* format )
 							   field_size,
 							   right_justify,
 							   suffix );
-			else
+			else {
 				error ( "Invalid job step format "
 					"specification: %c",
 					field[0] );
+				exit(1);
+			}
 		} else {
 			if (field[0] == 'a')
 				job_format_add_account( params.format_list,
@@ -695,9 +697,11 @@ extern int parse_format( char* format )
 							   field_size,
 							   right_justify,
 							   suffix );
-			else
+			else {
 				error( "Invalid job format specification: %c",
 				       field[0] );
+				exit(1);
+			}
 		}
 		token = strtok_r( NULL, "%", &tmp_char);
 	}

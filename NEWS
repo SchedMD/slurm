@@ -3,6 +3,8 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 2.2.0.pre6
 =============================
+ -- Changed squeue to fail when passed invalid -o <output_format> or
+    -S <sort_list> specifications.
 
 * Changes in SLURM 2.2.0.pre5
 =============================
