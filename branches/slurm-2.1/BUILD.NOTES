@@ -63,7 +63,12 @@ Linux cluster (See BlueGene and AIX specific notes below for some differences).
    Use SourceForge admin tool to add new release, including changelog.
 
 BlueGene build notes:
-3. Use the rpm make target to create the new RPMs. This requires a .rpmmacros
+0. If on a bgp system and you want sview export these variables
+    export CFLAGS="-I/opt/gnome/lib/gtk-2.0/include -I/opt/gnome/lib/glib-2.0/include $CFLAGS"
+    export LIBS="-L/usr/X11R6/lib64 $LIBS"
+    export CMD_LDFLAGS='-L/usr/X11R6/lib64'
+    export PKG_CONFIG_PATH="/opt/gnome/lib64/pkgconfig/:$PKG_CONFIG_PATH"
+1. Use the rpm make target to create the new RPMs. This requires a .rpmmacros
    (.rpmrc for newer versions of rpmbuild) file containing:
 	%_prefix                /usr
 	%_slurm_sysconfdir      /etc/slurm
@@ -89,6 +94,7 @@ To build and run on AIX:
    then making the buildfarm directory the first one in my PATH.
    Also, make certain that the "proctrack" rpm is installed.
 1. export OBJECT_MODE=32
+   export PKG_CONFIG="/usr/bin/pkg-config"
 2. Build with:
    ./configure --enable-debug --prefix=/opt/freeware \
 	--sysconfdir=/opt/freeware/etc/slurm \
