@@ -824,6 +824,39 @@ proc test_account_storage { } {
 
 ################################################################
 #
+# Proc: test_using_slurmdbd
+#
+# Purpose: Since there is a lag at which the slurmdbd processes a job start
+# we need to wait a bit to make sure the data has been set before proceeding.
+# This is based upon
+# the value of AccountingStorageType in the slurm.conf.
+#
+# Returns 1 if the system is running with slurmdbd, 0 otherwise
+#
+################################################################
+
+proc test_using_slurmdbd { } {
+	global scontrol
+
+	log_user 0
+	set account_storage 0
+	spawn $scontrol show config
+	expect {
+		-re "(accounting_storage/slurmdbd)" {
+			set account_storage 1
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+	log_user 1
+
+	return $account_storage
+}
+
+################################################################
+#
 # Proc: priority_type
 #
 # Purpose: Use scontrol to determine the priority plugin

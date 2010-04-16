@@ -38,6 +38,7 @@ set file_in     "test.$test_id.input"
 set test_acct   "test_acct"
 set wk          21test
 set timeout 60
+
 print_header $test_id
 
 #
@@ -56,6 +57,8 @@ if { [string compare [check_accounting_admin_level] "Administrator"] } {
 	send_user "\nWARNING: This test can't be run without being an Accounting administrator.\nUse sacctmgr mod user \$USER_NAME set admin=admin.\n"
 	exit 0
 }
+
+set using_slurmdbd [test_using_slurmdbd]
 
 set cn [get_cluster_name]
 
@@ -161,6 +164,10 @@ expect {
 	}
 }
 
+if {$using_slurmdbd} {
+	sleep 30
+}
+
 spawn $sacct -j $job_id --fields=wckey
 	expect {
 		-re "$wk" {
@@ -221,6 +228,10 @@ if {$job_id == 0} {
 			wait
 		}
 	}
+	if {$using_slurmdbd} {
+		sleep 30
+	}
+
 	spawn $sacct -j $job_id --fields=wckey
 	expect {
 		-re "$wk" {
@@ -278,6 +289,11 @@ if {$job_id == 0} {
 			wait
 		}
 	}
+
+	if {$using_slurmdbd} {
+		sleep 30
+	}
+
 	spawn $sacct -j $job_id --fields=wckey
 	expect {
 		-re "$wk" {
