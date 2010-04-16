@@ -386,7 +386,8 @@ static double _get_fairshare_priority( struct job_record *job_ptr)
 
 	// Priority is 0 -> 1
 	priority_fs =
-		(assoc->usage->shares_norm - (double)assoc->usage->usage_efctv + 1.0) / 2.0;
+		(assoc->usage->shares_norm
+		 - (double)assoc->usage->usage_efctv + 1.0) / 2.0;
 	debug4("Fairshare priority for user %s in acct %s"
 	       "((%f - %Lf) + 1) / 2 = %f",
 	       assoc->user, assoc->acct, assoc->usage->shares_norm,
@@ -788,7 +789,8 @@ static void *_decay_thread(void *no_data)
 					*/
 					if (assoc == assoc_mgr_root_assoc)
 						break;
-					assoc->usage->grp_used_wall += run_decay;
+					assoc->usage->grp_used_wall +=
+						run_decay;
 					assoc->usage->usage_raw +=
 						(long double)real_decay;
 					debug4("adding %f new usage to "
@@ -797,7 +799,8 @@ static void *_decay_thread(void *no_data)
 					       "wall added %d making it %f.",
 					       real_decay, assoc->id,
 					       assoc->user, assoc->acct,
-					       assoc->usage->usage_raw, run_decay,
+					       assoc->usage->usage_raw,
+					       run_decay,
 					       assoc->usage->grp_used_wall);
 
 					assoc = assoc->usage->parent_assoc_ptr;
@@ -826,7 +829,8 @@ static void *_decay_thread(void *no_data)
 	get_usage:
 		/* now calculate all the normalized usage here */
 		slurm_mutex_lock(&assoc_mgr_association_lock);
-		_set_children_usage_efctv(assoc_mgr_root_assoc->usage->childern_list);
+		_set_children_usage_efctv(
+			assoc_mgr_root_assoc->usage->childern_list);
 		slurm_mutex_unlock(&assoc_mgr_association_lock);
 
 		last_ran = start_time;
@@ -1060,7 +1064,8 @@ extern void priority_p_set_assoc_usage(slurmdb_association_rec_t *assoc)
 	xassert(assoc_mgr_root_assoc->usage->usage_raw);
 	xassert(assoc->usage->parent_assoc_ptr);
 
-	assoc->usage->usage_norm = assoc->usage->usage_raw / assoc_mgr_root_assoc->usage->usage_raw;
+	assoc->usage->usage_norm = assoc->usage->usage_raw
+		/ assoc_mgr_root_assoc->usage->usage_raw;
 	debug4("Normalized usage for %s %s off %s %Lf / %Lf = %Lf",
 	       child, child_str, assoc->usage->parent_assoc_ptr->acct,
 	       assoc->usage->usage_raw, assoc_mgr_root_assoc->usage->usage_raw,
