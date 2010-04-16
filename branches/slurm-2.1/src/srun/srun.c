@@ -754,11 +754,11 @@ static int _validate_relative(resource_allocation_response_msg_t *resp)
 	if (opt.relative_set &&
 	    ((opt.relative + opt.min_nodes) > resp->node_cnt)) {
 		if (opt.nodes_set_opt) {  /* -N command line option used */
-			error("--relative and --nodes option incompatable "
+			error("--relative and --nodes option incompatible "
 			      "with count of allocated nodes (%d+%d>%d)",
 			      opt.relative, opt.min_nodes, resp->node_cnt);
 		} else {		/* SLURM_NNODES option used */
-			error("--relative and SLURM_NNODES option incompatable "
+			error("--relative and SLURM_NNODES option incompatible "
 			      "with count of allocated nodes (%d+%d>%d)",
 			      opt.relative, opt.min_nodes, resp->node_cnt);
 		}
