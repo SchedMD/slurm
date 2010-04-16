@@ -156,6 +156,7 @@ static int   _slurm_debug_env_val (void);
 static void  _task_start(launch_tasks_response_msg_t *msg);
 static void  _task_finish(task_exit_msg_t *msg);
 static char *_uint16_array_to_str(int count, const uint16_t *array);
+static int   _validate_relative(resource_allocation_response_msg_t *resp);
 
 /*
  * from libvirt-0.6.2 GPL2
@@ -296,6 +297,8 @@ int srun(int ac, char **av)
 		if (opt.exclusive)
 			_step_opt_exclusive();
 		_set_cpu_env_var(resp);
+		if (_validate_relative(resp))
+			exit(error_exit);
 		job = job_step_create_allocation(resp);
 		slurm_free_resource_allocation_response_msg(resp);
 
@@ -315,12 +318,22 @@ int srun(int ac, char **av)
 			exit(error_exit);
 		}
 #endif
+		if (opt.relative_set && opt.relative) {
+			error("--relative option ignored in job allocation "
+			      "request");
+			opt.relative = NO_VAL;
+			opt.relative_set = false;
+		}
 
 		if ( !(resp = allocate_nodes()) )
 			exit(error_exit);
 		got_alloc = 1;
 		_print_job_information(resp);
 		_set_cpu_env_var(resp);
+		if (_validate_relative(resp)) {
+			slurm_complete_job(resp->job_id, 1);
+			exit(error_exit);
+		}
 		job = job_create_allocation(resp);
 
 		opt.exclusive = false;	/* not applicable for this step */
@@ -737,6 +750,25 @@ static void _set_cpu_env_var(resource_allocation_response_msg_t *resp)
 	return;
 }
 
+static int _validate_relative(resource_allocation_response_msg_t *resp)
+{
+
+	if (opt.relative_set &&
+	    ((opt.relative + opt.min_nodes) > resp->node_cnt)) {
+		if (opt.nodes_set_opt) {  /* -N command line option used */
+			error("--relative and --nodes option incompatable "
+			      "with count of allocated nodes (%d+%d>%d)",
+			      opt.relative, opt.min_nodes, resp->node_cnt);
+		} else {		/* SLURM_NNODES option used */
+			error("--relative and SLURM_NNODES option incompatable "
+			      "with count of allocated nodes (%d+%d>%d)",
+			      opt.relative, opt.min_nodes, resp->node_cnt);
+		}
+		return -1;
+	}
+	return 0;
+}
+
 /* Set SLURM_RLIMIT_* environment variables with current resource
  * limit values, reset RLIMIT_NOFILE to maximum possible value */
 static int _set_rlimit_env(void)
@@ -1037,8 +1069,13 @@ _task_start(launch_tasks_response_msg_t *msg)
 	int taskid;
 	int i;
 
-	verbose("Node %s (%d), %d tasks started",
-		msg->node_name, msg->srun_node_id, msg->count_of_pids);
+	if(msg->count_of_pids)
+		verbose("Node %s, %d tasks started",
+			msg->node_name, msg->count_of_pids);
+	else
+		error("No tasks started on node %s: %s",
+		      msg->node_name, slurm_strerror(msg->return_code));
+
 
 	for (i = 0; i < msg->count_of_pids; i++) {
 		taskid = msg->task_ids[i];

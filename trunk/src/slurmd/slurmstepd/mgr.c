@@ -1675,7 +1675,7 @@ _send_launch_resp(slurmd_job_t *job, int rc)
 	}
 
 	if (slurm_send_only_node_msg(&resp_msg) != SLURM_SUCCESS)
-		error("failed to send RESPONSE_LAUNCH_TASKS: %m"); 
+		error("failed to send RESPONSE_LAUNCH_TASKS: %m");
 
 	xfree(resp.local_pids);
 	xfree(resp.task_ids);
