@@ -165,7 +165,7 @@ expect {
 }
 
 if {$using_slurmdbd} {
-	sleep 30
+	sleep 5
 }
 
 spawn $sacct -j $job_id --fields=wckey
@@ -229,7 +229,7 @@ if {$job_id == 0} {
 		}
 	}
 	if {$using_slurmdbd} {
-		sleep 30
+		sleep 5
 	}
 
 	spawn $sacct -j $job_id --fields=wckey
@@ -291,7 +291,7 @@ if {$job_id == 0} {
 	}
 
 	if {$using_slurmdbd} {
-		sleep 30
+		sleep 5
 	}
 
 	spawn $sacct -j $job_id --fields=wckey
