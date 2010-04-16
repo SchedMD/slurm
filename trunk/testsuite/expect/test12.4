@@ -51,6 +51,9 @@ if { [string compare [check_accounting_admin_level] "Administrator"] } {
 	send_user "\nWARNING: This test can't be run without being an Accounting administrator.\nUse sacctmgr mod user \$USER_NAME set admin=admin.\n"
 	exit 0
 }
+
+set using_slurmdbd [test_using_slurmdbd]
+
 set cluster [get_cluster_name]
 #
 # Identify the user and his current default account
@@ -185,6 +188,12 @@ if {$job_id == 0} {
 		set exit_code 1
 	}
 }
+
+if {$using_slurmdbd} {
+	sleep 30
+}
+
+
 ################################################################
 #
 # Proc: sacct_job
@@ -198,11 +207,12 @@ if {$job_id == 0} {
 ################################################################
 
 proc sacct_job { soption job_id} {
-	global sacct
+	global sacct using_slurmdbd
 	set debug       0
 	set exit_code   0
 	set matches     0
 	set not_support 0
+
 	send_user "sacct -$soption -p -j $job_id\n"
 
 	if { $soption == "-brief" || $soption == "b" } {
