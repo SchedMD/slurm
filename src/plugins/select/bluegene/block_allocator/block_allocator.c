@@ -1348,7 +1348,7 @@ extern int allocate_block(ba_request_t* ba_request, List results)
  * Admin wants to remove a previous allocation.
  * will allow Admin to delete a previous allocation retrival by letter code.
  */
-extern int remove_block(List nodes, int new_count)
+extern int remove_block(List nodes, int new_count, int conn_type)
 {
 	int dim;
 	ba_node_t* curr_ba_node = NULL;
@@ -1371,6 +1371,10 @@ extern int remove_block(List nodes, int new_count)
 		ba_node->used = false;
 		ba_node->color = 7;
 		ba_node->letter = '.';
+		/* Small blocks don't use wires, and only have 1 node,
+		   so just break. */
+		if(conn_type == SELECT_SMALL)
+			break;
 		for(dim=0;dim<BA_SYSTEM_DIMENSIONS;dim++) {
 			curr_switch = &ba_node->axis_switch[dim];
 			if(curr_switch->int_wire[0].used) {
@@ -1440,7 +1444,7 @@ extern int redo_block(List nodes, int *geo, int conn_type, int new_count)
 	if(!ba_node)
 		return SLURM_ERROR;
 
-	remove_block(nodes, new_count);
+	remove_block(nodes, new_count, conn_type);
 	list_delete_all(nodes, &empty_null_destroy_list, "");
 
 	name = set_bg_block(nodes, ba_node->coord, geo, conn_type);
@@ -1646,7 +1650,7 @@ extern char *set_bg_block(List results, int *start,
 
 	if(!found) {
 		debug2("trying less efficient code");
-		remove_block(results, color_count);
+		remove_block(results, color_count, conn_type);
 		list_delete_all(results, &empty_null_destroy_list, "");
 		list_append(results, ba_node);
 		found = _find_x_path(results, ba_node,
@@ -3440,7 +3444,10 @@ static int _reset_the_path(ba_switch_t *curr_switch, int source,
 	}
 	/*set the switch to not be used */
 	if(!curr_switch->int_wire[source].used) {
-		debug("I reached the end, the source isn't used");
+		/* This means something overlapping the removing block
+		already cleared this, or the path just never was
+		complete in the first place. */
+		debug3("I reached the end, the source isn't used");
 		return 1;
 	}
 	curr_switch->int_wire[source].used = 0;
@@ -3704,7 +3711,8 @@ start_again:
 			}
 
 			if(results) {
-				remove_block(results, color_count);
+				remove_block(results, color_count,
+					     ba_request->conn_type);
 				list_delete_all(results,
 						&empty_null_destroy_list, "");
 			}

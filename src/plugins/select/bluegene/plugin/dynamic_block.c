@@ -271,7 +271,8 @@ extern List create_dynamic_block(List block_list,
 
 		debug3("removing %s for request %d",
 		       bg_record->nodes, request->size);
-		remove_block(bg_record->bg_block_list, (int)NO_VAL);
+		remove_block(bg_record->bg_block_list, (int)NO_VAL,
+			     (int)bg_record->conn_type);
 		/* need to set any unusable nodes that this last block
 		   used */
 		removable_set_bps(unusable_nodes);
