@@ -1,0 +1,161 @@
+.TH "cgroup.conf" "5" "February 2010" "cgroup.conf 2.2" "Slurm configuration file"
+
+.SH "NAME"
+cgroup.conf \- Slurm configuration file for the cgroup support
+
+.SH "DESCRIPTION"
+\fB/etc/cgroup.conf\fP is an ASCII file which defines parameters used by 
+Slurm's proctrack/cgroup plugin in support of Linux cgroups being used as a
+job container. The file will always be located in the same directory as the 
+\fBslurm.conf\fP file.
+.LP
+Parameter names are case insensitive.
+Any text following a "#" in the configuration file is treated
+as a comment through the end of that line.
+The size of each line in the file is limited to 1024 characters.
+Changes to the configuration file take effect upon restart of
+SLURM daemons, daemon receipt of the SIGHUP signal, or execution
+of the command "scontrol reconfigure" unless otherwise noted.
+.LP
+Slurm cgroup proctrack plugin creates a hierarchical set of
+directories for each step, putting the step tasks into the leaf.
+This directory structure is like the following:
+.br 
+/dev/cgroup/slurm/uid_%uid/job_%jobid/step_%stepid
+.LP
+Slurm cgroup proctrack plugin can constrain cores, RAM and swap space for 
+jobs and set a variety of default job and job step parameters for cgroups.
+.LP
+The configuration parameters available include:
+
+
+.TP
+\fBAllowedRAMSpace\fR=<number>
+Constrain the job cgroup RAM to this percentage of the allocated memory.
+The default value is 100.
+If the limit is exceeded, the job steps will be killed and a warning message
+will be written to standard error.
+Also see \fBConstrainRAMSpace\fR.
+
+.TP
+\fBAllowedSwapSpace\fR=<number>
+Constrain the job cgroup swap space to this percentage of the allocated memory.
+The default value is 0.
+If the limit is exceeded, the job steps will be killed and a warning message
+will be written to standard error.
+Also see \fBConstrainSwapSpace\fR.
+
+.TP
+\fBCgroupAutomount\fR=<yes|no>
+Slurm cgroup plugins require a valid and functional cgroup system mounted on 
+/dev/cgroup. When launched, plugins check cgroup availability. If cgroup is 
+not available, the plugin launch fails unless CgroupAutomount is set to yes. 
+In that case, the plugin will first try to mount the cgroup system.
+
+.TP
+\fBCgroupMountOptions\fR=<options>
+Used to tune the cgroup system behavior.
+
+.TP
+\fBCgroupReleaseAgent\fR=<path_to_program>
+Used to tune the cgroup system behavior.
+
+.TP
+\fBConstrainCores\fR=<yes|no>
+If configured to "yes" then constrain allowed cores to the subset of 
+allocated resources.
+The default value is "no".
+
+.TP
+\fBConstrainRAMSpace\fR=<yes|no>
+If configured to "yes" then constraing the job's RAM usage.
+The default value is "no".
+Also see \fBAllowedRAMSpace\fR.
+
+.TP
+\fBConstrainSwapSpace\fR=<yes|no>
+If configured to "yes" then constraing the job's swap space usage.
+The default value is "no".
+Also see \fBAllowedSwapSpace\fR.
+
+.TP
+\fBJobCgroupParams\fR=<options>
+Used to tune job cgroup. The format of the parameter is the following:
+"a=b c=d e=f" where a,c,d corresponds to files under the cgroup 
+directory and b,d,f the values to write in these files.
+
+.TP
+\fBJobStepCgroupParams\fR=<options>
+Used to tune job step cgroup. The format of the parameter is the following:
+"a=b c=d e=f" where a,c,d corresponds to files under the cgroup 
+directory and b,d,f the values to write in these files.
+
+
+.SH "EXAMPLE"
+.LP
+.br
+###
+.br
+# Slurm cgroup support configuration file
+.br
+###
+.br
+CgroupAutomount=yes
+.br
+CgroupMountOptions="memory,cpuset"
+.br
+CgroupReleaseAgent="/etc/slurm/cgroup.release_agent"
+.br
+JobCgroupParams="memory.swappiness=30"
+.br
+JobStepCgroupParams=""
+.br
+#
+.br
+# Constrain RAM at 100% of allocation and 
+.br
+# Total space (RAM + swap) at 110% of allocation
+.br
+#
+.br
+ConstrainRAMSpace=yes
+.br
+AllowedRAMSpace=100
+.br
+ConstrainSwapSpace=yes
+.br
+AllowedSwapSpace=10
+.br
+ConstrainCores=yes
+
+.SH "NOTES"
+Proctrack/cgroup is not compatable with the task/affinity plugin configured
+to use cpusets, although this may be addressed in the future.
+.LP
+Only one instance of a cgroup subsystem is valid at a time in the kernel.
+If you try to mount another cgroup hierarchy that uses the same cpuset 
+subsystem it will fail.
+However you can mount another cgroup hierarchy for a different cpuset 
+subsystem.
+
+.SH "COPYING"
+Copyright (C) 2010 Lawrence Livermore National Security.
+Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+CODE\-OCEC\-09\-009. All rights reserved.
+.LP
+This file is part of SLURM, a resource management program.
+For details, see <https://computing.llnl.gov/linux/slurm/>.
+.LP
+SLURM is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free
+Software Foundation; either version 2 of the License, or (at your option)
+any later version.
+.LP
+SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+details.
+
+.SH "SEE ALSO"
+.LP
+\fBslurm.conf\fR(5)

@@ -1,0 +1,20 @@
+* Thu Jan 07 2010 Matthieu Hautreux <matthieu.hautreux@cea.fr>
+- release 0.2
+- fix a bug in memory limits calculation based on cgroup.conf 
+  configuration parameters ( (a / b * c) becomes (a * (float) (b/c)) 
+  which is better due to a, b and c being uint32_t values and roundness 
+  issues)
+- add new operations xcgroup_get_memlimit and xcgroup_get_memswlimit
+- add a workaround to cope with a slurm-2.1.0 and previous versions
+  limitation. job_mem field of slurmd_job_t corresponds to job steps
+  limits and not to the job mem limit. Two distinct fields should be
+  available in the future. In the meantime, we use job_mem value of
+  each launched step and extend the amount of allowed memory (both
+  ram and swap) if the the new amount is higher that the previous
+  one
+	
+* Tue Dec 01 2009 Matthieu Hautreux <matthieu.hautreux@cea.fr>
+- initial release (0.1) of proctrack/cgroup plugin
+- include a patch for jobacct_gather proper behavior when used with 
+  proctrack/cgroup (skip POSIX threads reported by the cgroup during
+  accounting)
