@@ -165,9 +165,11 @@ void sort_job_list(List job_list)
 			list_sort(job_list, _sort_job_by_reservation);
 		else if (params.sort[i] == 'z')
 			list_sort(job_list, _sort_job_by_num_sct);
-		else
+		else {
 			error("Invalid sort specification: %c",
 			      params.sort[i]);
+			exit(1);
+		}
 	}
 }
 
