@@ -99,6 +99,12 @@ const char plugin_type[]       	= "job_submit/partition";
 const uint32_t plugin_version   = 100;
 const uint32_t min_plug_version = 100;
 
+/*****************************************************************************\
+ * We've provided a simple example of the type of things you can do with this
+ * plugin. If you develop another plugin that may be of interest to others
+ * please post it to slurm-dev@lists.llnl.gov  Thanks!
+\*****************************************************************************/
+
 /* Test if this user can run jobs in the selected partition based upon
  * the partition's AllowGroups parameter. */
 static bool _user_access(uid_t run_uid, struct part_record *part_ptr)
