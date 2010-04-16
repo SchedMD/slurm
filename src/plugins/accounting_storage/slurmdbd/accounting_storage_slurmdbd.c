@@ -160,6 +160,11 @@ static int _setup_job_start_msg(dbd_job_start_msg_t *req,
 
 	/* since we could be sending this after the job is over we
 	   need the original bitmap */
+	if(job_ptr->job_resrcs)
+		req->alloc_cpus = job_ptr->job_resrcs->ncpus;
+	else
+		req->alloc_cpus = job_ptr->total_cpus;
+
 	if(job_ptr->job_resrcs && job_ptr->job_resrcs->node_bitmap) {
 		req->node_inx = bit_fmt(temp_bit, sizeof(temp_bit),
 					job_ptr->job_resrcs->node_bitmap);
