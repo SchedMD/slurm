@@ -244,10 +244,11 @@ static void _state_time_string(char **extra, uint32_t state,
 		if(start) {
 			if(!end) {
 				xstrfmtcat(*extra,
-					   "(t1.time_start && (!t1.time_end || "
+					   "(t1.time_start && "
+					   "((!t1.time_end && t1.state=%d) || "
 					   "(%d between t1.time_start "
 					   "and t1.time_end)))",
-					   start);
+					   JOB_RUNNING, start);
 			} else {
 				xstrfmtcat(*extra,
 					   "(t1.time_start && "
