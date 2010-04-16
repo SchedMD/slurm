@@ -520,6 +520,12 @@ _parse_format( char* format )
 					field_size,
 					right_justify,
 					suffix );
+		} else if (field[0] == 'G') {
+			params.match_flags.gres_flag = true;
+			format_add_gres( params.format_list,
+					field_size,
+					right_justify,
+					suffix );
 		} else if (field[0] == 'h') {
 			params.match_flags.share_flag = true;
 			format_add_share( params.format_list,
@@ -744,6 +750,8 @@ void _print_options( void )
 			"true" : "false");
 	printf("groups_flag     = %s\n", params.match_flags.groups_flag ?
 					"true" : "false");
+	printf("gres_flag       = %s\n", params.match_flags.gres_flag ?
+			"true" : "false");
 	printf("job_size_flag   = %s\n", params.match_flags.job_size_flag ?
 					"true" : "false");
 	printf("max_time_flag   = %s\n", params.match_flags.max_time_flag ?
