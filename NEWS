@@ -3,8 +3,6 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 2.2.0.pre6
 =============================
- -- Changed squeue to fail when passed invalid -o <output_format> or
-    -S <sort_list> specifications.
 
 * Changes in SLURM 2.2.0.pre5
 =============================
@@ -40,6 +38,8 @@ documents those changes that are of interest to users and admins.
  -- Speed up job start when using the slurmdbd.
  -- Forward step failure reason back to slurmd before in some cases it would
     just be SLURM_FAILURE returned.
+ -- Changed squeue to fail when passed invalid -o <output_format> or
+    -S <sort_list> specifications.
 
 * Changes in SLURM 2.2.0.pre4
 =============================
