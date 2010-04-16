@@ -1,6 +1,9 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in SLURM 2.2.0.pre6
+=============================
+
 * Changes in SLURM 2.2.0.pre5
 =============================
  -- Modify commands to accept time format with one or two digit hour value
