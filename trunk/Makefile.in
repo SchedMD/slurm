@@ -43,9 +43,8 @@ DIST_COMMON = README $(am__configure_deps) $(pkginclude_HEADERS) \
 	$(top_srcdir)/contribs/perlapi/libslurm/perl/Makefile.PL.in \
 	$(top_srcdir)/contribs/perlapi/libslurmdb/perl/Makefile.PL.in \
 	$(top_srcdir)/contribs/phpext/slurm_php/config.m4.in \
-	$(top_srcdir)/slurm/slurm.h.in \
-	$(top_srcdir)/src/plugins/auth/Makefile.in AUTHORS COPYING \
-	ChangeLog INSTALL NEWS
+	$(top_srcdir)/slurm/slurm.h.in AUTHORS COPYING ChangeLog \
+	INSTALL NEWS
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
 	$(top_srcdir)/auxdir/libtool.m4 \
@@ -90,7 +89,7 @@ CONFIG_HEADER = config.h $(top_builddir)/slurm/slurm.h
 CONFIG_CLEAN_FILES = config.xml \
 	contribs/perlapi/libslurm/perl/Makefile.PL \
 	contribs/perlapi/libslurmdb/perl/Makefile.PL \
-	contribs/phpext/slurm_php/config.m4 src/plugins/auth/Makefile
+	contribs/phpext/slurm_php/config.m4
 CONFIG_CLEAN_VPATH_FILES =
 SOURCES =
 DIST_SOURCES =
@@ -464,8 +463,6 @@ contribs/perlapi/libslurm/perl/Makefile.PL: $(top_builddir)/config.status $(top_
 contribs/perlapi/libslurmdb/perl/Makefile.PL: $(top_builddir)/config.status $(top_srcdir)/contribs/perlapi/libslurmdb/perl/Makefile.PL.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
 contribs/phpext/slurm_php/config.m4: $(top_builddir)/config.status $(top_srcdir)/contribs/phpext/slurm_php/config.m4.in
-	cd $(top_builddir) && $(SHELL) ./config.status $@
-src/plugins/auth/Makefile: $(top_builddir)/config.status $(top_srcdir)/src/plugins/auth/Makefile.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
 
 mostlyclean-libtool:
