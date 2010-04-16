@@ -3,7 +3,7 @@
  *  mode of sview.
  *****************************************************************************
  *  Copyright (C) 2004-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *
@@ -45,6 +45,7 @@ enum {
 	SORTID_DISK,
 	SORTID_ERR_CPUS,
 	SORTID_FEATURES,
+	SORTID_GRES,
 	SORTID_MEMORY,
 	SORTID_NAME,
 	SORTID_REASON,
@@ -90,6 +91,8 @@ static display_data_t display_data_node[] = {
 	 create_model_node, admin_edit_node},
 	{G_TYPE_STRING, SORTID_FEATURES, "Features", FALSE,
 	 EDIT_TEXTBOX, refresh_node, create_model_node, admin_edit_node},
+	{G_TYPE_STRING, SORTID_GRES, "Gres", FALSE,
+	 EDIT_TEXTBOX, refresh_node, create_model_node, admin_edit_node},
 	{G_TYPE_STRING, SORTID_BOOT_TIME, "BootTime", FALSE, 
 	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
 	{G_TYPE_STRING, SORTID_SLURMD_START_TIME, "SlurmdStartTime", FALSE, 
@@ -118,6 +121,7 @@ static display_data_t options_data_node[] = {
 	{G_TYPE_STRING, NODE_PAGE, "Make Node Idle", TRUE, ADMIN_PAGE},
 #endif
 	{G_TYPE_STRING, NODE_PAGE, "Update Features", TRUE, ADMIN_PAGE},
+	{G_TYPE_STRING, NODE_PAGE, "Update Gres", TRUE, ADMIN_PAGE},
 	{G_TYPE_STRING, JOB_PAGE,  "Jobs", TRUE, NODE_PAGE},
 #ifdef HAVE_BG
 	{G_TYPE_STRING, BLOCK_PAGE, "Blocks", TRUE, NODE_PAGE},
@@ -246,6 +250,10 @@ static void _layout_node_record(GtkTreeView *treeview,
 				   node_ptr->features);
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_node,
+						 SORTID_GRES),
+				   node_ptr->gres);
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_node,
 						 SORTID_BOOT_TIME),
 				   sview_node_info_ptr->boot_time);
 	add_display_treestore_line(update, treestore, &iter,
@@ -336,6 +344,8 @@ static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 			   node_ptr->weight, -1);
 	gtk_tree_store_set(treestore, iter, SORTID_FEATURES,
 			   node_ptr->features, -1);
+	gtk_tree_store_set(treestore, iter, SORTID_GRES,
+			   node_ptr->gres, -1);
 	gtk_tree_store_set(treestore, iter, SORTID_BOOT_TIME,
 			   sview_node_info_ptr->boot_time, -1);
 	gtk_tree_store_set(treestore, iter, SORTID_SLURMD_START_TIME,
@@ -781,6 +791,92 @@ end_it:
 	return rc;
 }
 
+extern int update_gres_node(GtkDialog *dialog, const char *nodelist,
+			    const char *old_gres)
+{
+	char tmp_char[100];
+	char *edit = NULL;
+	GtkWidget *entry = NULL;
+	GtkWidget *label = NULL;
+	update_node_msg_t *node_msg = xmalloc(sizeof(update_node_msg_t));
+	int response = 0;
+	int no_dialog = 0;
+	int rc = SLURM_SUCCESS;
+
+	if(!dialog) {
+		snprintf(tmp_char, sizeof(tmp_char),
+			 "Update Gres for Node(s) %s?", nodelist);
+
+		dialog = GTK_DIALOG(
+			gtk_dialog_new_with_buttons(
+				tmp_char,
+				GTK_WINDOW(main_window),
+				GTK_DIALOG_MODAL
+				| GTK_DIALOG_DESTROY_WITH_PARENT,
+				NULL));
+		no_dialog = 1;
+	}
+	label = gtk_dialog_add_button(dialog,
+				      GTK_STOCK_YES, GTK_RESPONSE_OK);
+	gtk_window_set_default(GTK_WINDOW(dialog), label);
+	gtk_dialog_add_button(dialog,
+			      GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL);
+
+	node_msg->node_names = xstrdup(nodelist);
+	node_msg->gres = NULL;
+	node_msg->reason = NULL;
+	node_msg->node_state = (uint16_t) NO_VAL;
+
+	snprintf(tmp_char, sizeof(tmp_char),
+		 "Gres for Node(s) %s?", nodelist);
+	label = gtk_label_new(tmp_char);
+	gtk_box_pack_start(GTK_BOX(dialog->vbox),
+			   label, FALSE, FALSE, 0);
+
+	entry = create_entry();
+	if(!entry)
+		goto end_it;
+
+	if(old_gres)
+		gtk_entry_set_text(GTK_ENTRY(entry), old_gres);
+
+	gtk_box_pack_start(GTK_BOX(dialog->vbox), entry, TRUE, TRUE, 0);
+	gtk_widget_show_all(GTK_WIDGET(dialog));
+
+	response = gtk_dialog_run(dialog);
+	if (response == GTK_RESPONSE_OK) {
+		node_msg->gres =
+			xstrdup(gtk_entry_get_text(GTK_ENTRY(entry)));
+		if(!node_msg->gres) {
+			edit = g_strdup_printf("No gres given.");
+			display_edit_note(edit);
+			g_free(edit);
+			goto end_it;
+		}
+		if(slurm_update_node(node_msg) == SLURM_SUCCESS) {
+			edit = g_strdup_printf(
+				"Nodes %s updated successfully.",
+				nodelist);
+			display_edit_note(edit);
+			g_free(edit);
+
+		} else {
+			edit = g_strdup_printf(
+				"Problem updating nodes %s.",
+				nodelist);
+			display_edit_note(edit);
+			g_free(edit);
+		}
+	}
+
+end_it:
+	slurm_free_update_node_msg(node_msg);
+	if(no_dialog)
+		gtk_widget_destroy(GTK_WIDGET(dialog));
+
+	return rc;
+}
+
 extern int update_state_node(GtkDialog *dialog,
 			     const char *nodelist, const char *type)
 {
@@ -811,6 +907,7 @@ extern int update_state_node(GtkDialog *dialog,
 			      GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL);
 
 	node_msg->features = NULL;
+	node_msg->gres = NULL;
 	node_msg->reason = NULL;
 	node_msg->node_names = xstrdup(nodelist);
 
@@ -1416,24 +1513,28 @@ extern void admin_menu_node_name(char *name, GdkEventButton *event)
 extern void admin_node(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 {
 	char *name = NULL;
-	char *old_features = NULL;
+	char *old_value = NULL;
 
 	gtk_tree_model_get(model, iter, SORTID_NAME, &name, -1);
-	if(!strcasecmp("Update Features", type))  /* get old features */
+	if(!strcasecmp("Update Features", type)) {  /* get old features */
 		gtk_tree_model_get(model, iter, SORTID_FEATURES,
-				   &old_features, -1);
+				   &old_value, -1);
+	} else if(!strcasecmp("Update Gres", type)) {  /* get old gres */
+		gtk_tree_model_get(model, iter, SORTID_GRES,
+				   &old_value, -1);
+	}
 
-	admin_node_name(name, old_features, type);
+	admin_node_name(name, old_value, type);
 
 	if(name)
 		g_free(name);
-	if(old_features)
-		g_free(old_features);
+	if(old_value)
+		g_free(old_value);
 
 	return;
 }
 
-extern void admin_node_name(char *name, char *old_features, char *type)
+extern void admin_node_name(char *name, char *old_value, char *type)
 {
 	GtkWidget *popup = gtk_dialog_new_with_buttons(
 		type,
@@ -1443,7 +1544,9 @@ extern void admin_node_name(char *name, char *old_features, char *type)
 	gtk_window_set_transient_for(GTK_WINDOW(popup), NULL);
 
 	if(!strcasecmp("Update Features", type)) { /* update features */
-		update_features_node(GTK_DIALOG(popup), name, old_features);
+		update_features_node(GTK_DIALOG(popup), name, old_value);
+	} else if(!strcasecmp("Update Gres", type)) { /* update gres */
+		update_gres_node(GTK_DIALOG(popup), name, old_value);
 	} else /* something that has to deal with a node state change */
 		update_state_node(GTK_DIALOG(popup), name, type);
 

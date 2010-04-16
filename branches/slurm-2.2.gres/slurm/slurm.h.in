@@ -979,7 +979,8 @@ typedef struct node_info {
 	uint16_t cores;         /* number of cores per CPU */
 	uint16_t cpus;		/* configured count of cpus running on
 				 * the node */
-	char *features;		/* arbitrary list of features for node */
+	char *features;		/* list of a node's features */
+	char *gres;		/* list of a node's generic resources */
 	char *name;		/* node name */
 	uint16_t node_state;	/* see enum node_states */
 	char *os;		/* operating system currently running */
@@ -1492,6 +1493,7 @@ typedef struct submit_response_msg {
 
 typedef struct slurm_update_node_msg {
 	char *features;		/* new feature for node */
+	char *gres;		/* new generic resources for node */
 	char *node_names;	/* comma separated list of required nodes */
 	uint16_t node_state;	/* see enum node_states */
 	char *reason;		/* reason for node being DOWN or DRAINING */

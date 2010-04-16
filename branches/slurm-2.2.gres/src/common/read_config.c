@@ -409,6 +409,7 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 	static s_p_options_t _nodename_options[] = {
 		{"CoresPerSocket", S_P_UINT16},
 		{"Feature", S_P_STRING},
+		{"Gres", S_P_STRING},
 		{"NodeAddr", S_P_STRING},
 		{"NodeHostname", S_P_STRING},
 		{"Port", S_P_UINT16},
@@ -476,6 +477,9 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 
 		if (!s_p_get_string(&n->feature, "Feature", tbl))
 			s_p_get_string(&n->feature, "Feature", dflt);
+
+		if (!s_p_get_string(&n->gres, "Gres", tbl))
+			s_p_get_string(&n->gres, "Gres", dflt);
 
 		if (!s_p_get_uint16(&n->port, "Port", tbl)
 		    && !s_p_get_uint16(&n->port, "Port", dflt)) {
@@ -589,6 +593,7 @@ static void _destroy_nodename(void *ptr)
 	xfree(n->hostnames);
 	xfree(n->addresses);
 	xfree(n->feature);
+	xfree(n->gres);
 	xfree(n->reason);
 	xfree(n->state);
 	xfree(ptr);

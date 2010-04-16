@@ -102,6 +102,7 @@ static void	_sync_bitmaps(struct node_record *node_ptr, int job_count);
 static void	_update_config_ptr(bitstr_t *bitmap,
 				struct config_record *config_ptr);
 static int	_update_node_features(char *node_names, char *features);
+static int	_update_node_gres(char *node_names, char *gres);
 static int	_update_node_weight(char *node_names, uint32_t weight);
 static bool 	_valid_node_state_change(uint16_t old, uint16_t new);
 #ifndef HAVE_FRONT_END
@@ -643,6 +644,7 @@ static void _pack_node (struct node_record *dump_node_ptr, Buf buffer,
 
 		packstr(dump_node_ptr->arch, buffer);
 		packstr(dump_node_ptr->config_ptr->feature, buffer);
+		packstr(dump_node_ptr->config_ptr->gres, buffer);
 		packstr(dump_node_ptr->os, buffer);
 		packstr(dump_node_ptr->reason, buffer);
 	} else if(protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
@@ -924,11 +926,13 @@ int update_node ( update_node_msg_t * update_node_msg )
 	hostlist_destroy (host_list);
 
 	if ((error_code == 0) && (update_node_msg->features)) {
-		error_code = _update_node_features(
-			update_node_msg->node_names,
-			update_node_msg->features);
+		error_code = _update_node_features(update_node_msg->node_names,
+						   update_node_msg->features);
 	}
-
+	if ((error_code == 0) && (update_node_msg->gres)) {
+		error_code = _update_node_gres(update_node_msg->node_names,
+					       update_node_msg->gres);
+	}
 
 	/* Update weight. Weight is part of config_ptr,
 	 * hence do the splitting if required */
@@ -996,6 +1000,26 @@ extern void restore_node_features(void)
 	}
 }
 
+/* Duplicate a configuration record except for the node names & bitmap */
+struct config_record * _dup_config(struct config_record *config_ptr)
+{
+	struct config_record *new_config_ptr;
+
+	new_config_ptr = create_config_record();
+	new_config_ptr->magic       = config_ptr->magic;
+	new_config_ptr->cpus        = config_ptr->cpus;
+	new_config_ptr->sockets     = config_ptr->sockets;
+	new_config_ptr->cores       = config_ptr->cores;
+	new_config_ptr->threads     = config_ptr->threads;
+	new_config_ptr->real_memory = config_ptr->real_memory;
+	new_config_ptr->tmp_disk    = config_ptr->tmp_disk;
+	new_config_ptr->weight      = config_ptr->weight;
+	new_config_ptr->feature     = xstrdup(config_ptr->feature);
+	new_config_ptr->gres        = xstrdup(config_ptr->gres);
+
+	return new_config_ptr;
+}
+
 /*
  * _update_node_weight - Update weight associated with nodes
  *	build new config list records as needed
@@ -1039,25 +1063,14 @@ static int _update_node_weight(char *node_names, uint32_t weight)
 			config_ptr->weight = weight;
 		} else {
 			/* partial update, split config_record */
-			new_config_ptr = create_config_record();
+			new_config_ptr = _dup_config(config_ptr);
 			if (first_new == NULL);
 				first_new = new_config_ptr;
-			new_config_ptr->magic       = config_ptr->magic;
-			new_config_ptr->cpus        = config_ptr->cpus;
-			new_config_ptr->sockets     = config_ptr->sockets;
-			new_config_ptr->cores       = config_ptr->cores;
-			new_config_ptr->threads     = config_ptr->threads;
-			new_config_ptr->real_memory = config_ptr->real_memory;
-			new_config_ptr->tmp_disk    = config_ptr->tmp_disk;
 			/* Change weight for the given node */
 			new_config_ptr->weight      = weight;
-			if (config_ptr->feature) {
-				new_config_ptr->feature = xstrdup(config_ptr->
-								  feature);
-			}
 			new_config_ptr->node_bitmap = bit_copy(tmp_bitmap);
-			new_config_ptr->nodes =
-				bitmap2node_name(tmp_bitmap);
+			new_config_ptr->nodes = bitmap2node_name(tmp_bitmap);
+
 			build_config_feature_list(new_config_ptr);
 			_update_config_ptr(tmp_bitmap, new_config_ptr);
 
@@ -1119,29 +1132,18 @@ static int _update_node_features(char *node_names, char *features)
 		} else if (tmp_cnt == config_cnt) {
 			/* all nodes changed, update in situ */
 			xfree(config_ptr->feature);
-			if (features && features[0])
-				config_ptr->feature = xstrdup(features);
-			else
-				config_ptr->feature = NULL;
+			config_ptr->feature = xstrdup(features);
 			build_config_feature_list(config_ptr);
 		} else {
 			/* partial update, split config_record */
-			new_config_ptr = create_config_record();
+			new_config_ptr = _dup_config(config_ptr);
 			if (first_new == NULL);
 				first_new = new_config_ptr;
-			new_config_ptr->magic       = config_ptr->magic;
-			new_config_ptr->cpus        = config_ptr->cpus;
-			new_config_ptr->sockets     = config_ptr->sockets;
-			new_config_ptr->cores       = config_ptr->cores;
-			new_config_ptr->threads     = config_ptr->threads;
-			new_config_ptr->real_memory = config_ptr->real_memory;
-			new_config_ptr->tmp_disk    = config_ptr->tmp_disk;
-			new_config_ptr->weight      = config_ptr->weight;
-			if (features && features[0])
-				new_config_ptr->feature = xstrdup(features);
+			xfree(new_config_ptr->feature);
+			new_config_ptr->feature     = xstrdup(features);
 			new_config_ptr->node_bitmap = bit_copy(tmp_bitmap);
-			new_config_ptr->nodes =
-				bitmap2node_name(tmp_bitmap);
+			new_config_ptr->nodes = bitmap2node_name(tmp_bitmap);
+
 			build_config_feature_list(new_config_ptr);
 			_update_config_ptr(tmp_bitmap, new_config_ptr);
 
@@ -1149,8 +1151,8 @@ static int _update_node_features(char *node_names, char *features)
 			bit_not(tmp_bitmap);
 			bit_and(config_ptr->node_bitmap, tmp_bitmap);
 			xfree(config_ptr->nodes);
-			config_ptr->nodes = bitmap2node_name(
-				config_ptr->node_bitmap);
+			config_ptr->nodes = bitmap2node_name(config_ptr->
+							     node_bitmap);
 		}
 		bit_free(tmp_bitmap);
 	}
@@ -1159,6 +1161,78 @@ static int _update_node_features(char *node_names, char *features)
 
 	info("_update_node_features: nodes %s features set to: %s",
 		node_names, features);
+	return SLURM_SUCCESS;
+}
+
+/*
+ * _update_node_gres - Update generic resources associated with nodes
+ *	build new config list records as needed
+ * IN node_names - List of nodes to update
+ * IN gres - New gres value
+ * RET: SLURM_SUCCESS or error code
+ */
+static int _update_node_gres(char *node_names, char *gres)
+{
+	bitstr_t *node_bitmap = NULL, *tmp_bitmap;
+	ListIterator config_iterator;
+	struct config_record *config_ptr, *new_config_ptr;
+	struct config_record *first_new = NULL;
+	int rc, config_cnt, tmp_cnt;
+
+	rc = node_name2bitmap(node_names, false, &node_bitmap);
+	if (rc) {
+		info("_update_node_gres: invalid node_name");
+		return rc;
+	}
+
+	/* For each config_record with one of these nodes,
+	 * update it (if all nodes updated) or split it into
+	 * a new entry */
+	config_iterator = list_iterator_create(config_list);
+	if (config_iterator == NULL)
+		fatal("list_iterator_create malloc failure");
+	while ((config_ptr = (struct config_record *)
+			list_next(config_iterator))) {
+		if (config_ptr == first_new)
+			break;	/* done with all original records */
+
+		tmp_bitmap = bit_copy(node_bitmap);
+		bit_and(tmp_bitmap, config_ptr->node_bitmap);
+		config_cnt = bit_set_count(config_ptr->node_bitmap);
+		tmp_cnt = bit_set_count(tmp_bitmap);
+		if (tmp_cnt == 0) {
+			/* no overlap, leave alone */
+		} else if (tmp_cnt == config_cnt) {
+			/* all nodes changed, update in situ */
+			xfree(config_ptr->gres);
+			config_ptr->gres = xstrdup(gres);
+//FIXME			build_config_feature_list(config_ptr);
+		} else {
+			/* partial update, split config_record */
+			new_config_ptr = _dup_config(config_ptr);
+			if (first_new == NULL);
+				first_new = new_config_ptr;
+			xfree(new_config_ptr->gres);
+			new_config_ptr->gres        = xstrdup(gres);
+			new_config_ptr->node_bitmap = bit_copy(tmp_bitmap);
+			new_config_ptr->nodes = bitmap2node_name(tmp_bitmap);
+
+//FIXME			build_config_feature_list(new_config_ptr);
+			_update_config_ptr(tmp_bitmap, new_config_ptr);
+
+			/* Update remaining records */
+			bit_not(tmp_bitmap);
+			bit_and(config_ptr->node_bitmap, tmp_bitmap);
+			xfree(config_ptr->nodes);
+			config_ptr->nodes = bitmap2node_name(config_ptr->
+							     node_bitmap);
+		}
+		bit_free(tmp_bitmap);
+	}
+	list_iterator_destroy(config_iterator);
+	bit_free(node_bitmap);
+
+	info("_update_node_gres: nodes %s gres set to: %s", node_names, gres);
 	return SLURM_SUCCESS;
 }
 

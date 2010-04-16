@@ -2006,6 +2006,7 @@ _pack_update_node_msg(update_node_msg_t * msg, Buf buffer,
 		packstr(msg->node_names, buffer);
 		pack16(msg->node_state, buffer);
 		packstr(msg->features, buffer);
+		packstr(msg->gres, buffer);
 		packstr(msg->reason, buffer);
 		pack32(msg->weight, buffer);
 		pack32(msg->reason_uid, buffer);
@@ -2035,6 +2036,7 @@ _unpack_update_node_msg(update_node_msg_t ** msg, Buf buffer,
 				       &uint32_tmp, buffer);
 		safe_unpack16(&tmp_ptr->node_state, buffer);
 		safe_unpackstr_xmalloc(&tmp_ptr->features, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&tmp_ptr->gres, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&tmp_ptr->reason, &uint32_tmp, buffer);
 		safe_unpack32(&tmp_ptr->weight, buffer);
 		safe_unpack32(&tmp_ptr->reason_uid, buffer);
@@ -2531,6 +2533,7 @@ _unpack_node_info_members(node_info_t * node, Buf buffer,
 
 		safe_unpackstr_xmalloc(&node->arch, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&node->features, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&node->gres, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&node->os, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&node->reason, &uint32_tmp, buffer);
 	} else {

@@ -640,6 +640,20 @@ Update slurm.conf with any changes meant to be persistent across normal
 restarts of slurmctld or the execution of \fBscontrol reconfig\fR.
 
 .TP
+\fIGres\fP=<gres>
+Identify generic resources to be associated with the specified node.  Any
+previously defined generic resources will be overwritten with the new value.
+Specifications for multiple generic resources should be comma separated.
+Each resource specification consists of a name followed by an optional
+colon with a numeric value (default value is one)
+(e.g. "Gres=bandwidth:10000,gpus").
+Generic resources assigned via \fBscontrol\fR will only persist across the
+restart of the slurmctld daemon with the \fI\-R\fR option and state files
+preserved or slurmctld's receipt of a SIGHUP.
+Update slurm.conf with any changes meant to be persistent across normal
+restarts of slurmctld or the execution of \fBscontrol reconfig\fR.
+
+.TP
 \fIReason\fP=<reason>
 Identify the reason the node is in a "DOWN" or "DRAINED", "DRAINING",
 "FAILING" or "FAIL" state.
