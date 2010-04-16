@@ -33,6 +33,8 @@ documents those changes that are of interest to users and admins.
     job submit time.
  -- Better postgres support for accounting, still beta.
  -- Speed up job start when using the slurmdbd.
+ -- Forward step failure reason back to slurmd before in some cases it would
+    just be SLURM_FAILURE returned.
 
 * Changes in SLURM 2.2.0.pre4
 =============================

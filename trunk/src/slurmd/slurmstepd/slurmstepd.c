@@ -117,7 +117,11 @@ main (int argc, char *argv[])
 
 	/* Create the slurmd_job_t, mostly from info in a
 	   launch_tasks_request_msg_t or a batch_job_launch_msg_t */
-	job = _step_setup(cli, self, msg);
+	if(!(job = _step_setup(cli, self, msg))) {
+		_send_fail_to_slurmd(STDOUT_FILENO);
+		rc = SLURM_FAILURE;
+		goto ending;
+	}
 	job->ngids = ngids;
 	job->gids = gids;
 
@@ -186,6 +190,7 @@ _send_fail_to_slurmd(int sock)
 
 	if (errno)
 		fail = errno;
+
 	safe_write(sock, &fail, sizeof(int));
 	return;
 rwfail:
@@ -365,7 +370,8 @@ _step_setup(slurm_addr *cli, slurm_addr *self, slurm_msg_t *msg)
 		break;
 	}
 	if(!job) {
-		fatal("_step_setup: no job returned");
+		error("_step_setup: no job returned");
+		return NULL;
 	}
 	job->jmgr_pid = getpid();
 	job->jobacct = jobacct_gather_g_create(NULL);

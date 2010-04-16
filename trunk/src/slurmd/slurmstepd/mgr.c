@@ -218,7 +218,13 @@ mgr_launch_tasks_setup(launch_tasks_request_msg_t *msg, slurm_addr *cli,
 	slurmd_job_t *job = NULL;
 
 	if (!(job = job_create(msg))) {
+		/* We want to send back to the slurmd the reason we
+		   failed so keep track of it since errno could be
+		   reset in _send_launch_failure.
+		*/
+		int fail = errno;
 		_send_launch_failure (msg, cli, errno);
+		errno = fail;
 		return NULL;
 	}
 
