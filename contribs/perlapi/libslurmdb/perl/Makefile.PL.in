@@ -10,11 +10,73 @@ following link(s):
    @prefix@/lib/libslurmdb.so\n");
 }
 
+# Most all the extra code is to deal with MakeMaker < 6.11 not working
+# correctly to build rpms
+
+my(
+   $mm_version,
+   $mm_knows_destdir,
+   $mm_has_destdir,
+   $mm_has_good_destdir,
+   $mm_needs_destdir,
+   );
+
+# Gather some information about what EU::MM offers and/or needs
+
+# Store the version for later use
+$mm_version          = $ExtUtils::MakeMaker::VERSION;
+
+# MakeMaker prior to 6.11 doesn't support DESTDIR which is needed for
+# packaging with builddir!=destdir. See bug 2388.
+$mm_knows_destdir    = $ExtUtils::MakeMaker::Recognized_Att_Keys{DESTDIR};
+$mm_has_good_destdir = $mm_version >= 6.11;
+# Add DESTDIR hack only if it's requested (and necessary)
+$mm_needs_destdir    = !$mm_has_good_destdir;
+$mm_has_destdir      = $mm_knows_destdir || $mm_needs_destdir;
+$ExtUtils::MakeMaker::Recognized_Att_Keys{"DESTDIR"} = 1 if $mm_needs_destdir;
+
+if ($mm_needs_destdir) {
+	my $error = <<DESTDIR_HACK;
+
+    ***********************************************************************
+    ExtUtils::MakeMaker ${mm_version} does not include support for DESTDIR,
+    so if you want to be on the safe side, you might want to upgrade your
+    ExtUtils::MakeMaker to version 6.11 or later. It is available via CPAN.
+
+    You can use either the CPAN shell or go to
+      <http://search.cpan.org/search?module=ExtUtils::MakeMaker>
+    to get an up-to-date version.
+
+    This should only be necessary if you are creating binary packages.
+    ***********************************************************************
+
+DESTDIR_HACK
+       $error =~ s/^ {4}//gm;
+       warn $error;
+} elsif (!$mm_has_good_destdir) {
+	my $error = <<DESTDIR_BUG;
+
+    ***********************************************************************
+    ExtUtils::MakeMaker ${mm_version} contains bugs that may cause problems
+    in the \"make\" process.  It is recommended that you upgrade
+    ExtUtils::MakeMaker to version 6.11 or later. It is available via CPAN.
+
+    You can use either the CPAN shell or go to
+      <http://search.cpan.org/search?module=ExtUtils::MakeMaker>
+    to get an up-to-date version.
+
+    This should only be necessary if you are creating binary packages.
+    ***********************************************************************
+
+DESTDIR_BUG
+       $error =~ s/^ {4}//gm;
+       warn $error;
+}
 
 # AIX has problems with not always having the correct
 # flags so we have to add some :)
 my $os = lc(`uname`);
-my $other_ld_flags = "-Wl,-rpath=@top_builddir@/src/api/.libs -Wl,-rpath=@top_builddir@/src/db_api/.libs -Wl,-rpath=@prefix@/lib";
+my $other_ld_flags = "-Wl,-rpath,@top_builddir@/src/db_api/.libs -Wl,-rpath,@prefix@/lib";
 $other_ld_flags = " -brtl -G -bnoentry -bgcbypass:1000 -bexpfull"
 	if $os =~ "aix";
 
@@ -25,7 +87,7 @@ WriteMakefile(
     ($] >= 5.005 ?     ## Add these new keywords supported since 5.005
       (ABSTRACT_FROM  => 'Slurmdb.pm', # retrieve abstract from module
        AUTHOR         => 'Don Lipari <lipari@llnl.gov>') : ()),
-    LIBS              => ["-L@prefix@/lib -lslurmdb"], # e.g., '-lm'
+    LIBS              => ["-L@top_builddir@/src/db_api/.libs -L@prefix@/lib -lslurmdb"], # e.g., '-lm'
     DEFINE            => '', # e.g., '-DHAVE_SOMETHING'
     INC               => "-I. -I@top_srcdir@ -I@top_builddir@", # e.g., '-I. -I/usr/include/other'
     # Un-comment this if you add C files to link with later:
@@ -43,50 +105,49 @@ if  (eval {require ExtUtils::Constant; 1}) {
 		 SLURMDB_CLASS_BASE SLURMDB_PURGE_ARCHIVE SLURMDB_PURGE_BASE
 		 SLURMDB_PURGE_DAYS SLURMDB_PURGE_FLAGS SLURMDB_PURGE_HOURS
 		 SLURMDB_PURGE_MONTHS),
-              {name=>"SLURMDB_ADD_ASSOC", macro=>"1"},
-              {name=>"SLURMDB_ADD_COORD", macro=>"1"},
-              {name=>"SLURMDB_ADD_QOS", macro=>"1"},
-              {name=>"SLURMDB_ADD_USER", macro=>"1"},
-              {name=>"SLURMDB_ADD_WCKEY", macro=>"1"},
-              {name=>"SLURMDB_ADMIN_NONE", macro=>"1"},
-              {name=>"SLURMDB_ADMIN_NOTSET", macro=>"1"},
-              {name=>"SLURMDB_ADMIN_OPERATOR", macro=>"1"},
-              {name=>"SLURMDB_ADMIN_SUPER_USER", macro=>"1"},
-              {name=>"SLURMDB_CLASS_CAPABILITY", macro=>"1"},
-              {name=>"SLURMDB_CLASS_CAPACITY", macro=>"1"},
-              {name=>"SLURMDB_CLASS_CAPAPACITY", macro=>"1"},
-              {name=>"SLURMDB_CLASS_NONE", macro=>"1"},
-              {name=>"SLURMDB_EVENT_ALL", macro=>"1"},
-              {name=>"SLURMDB_EVENT_CLUSTER", macro=>"1"},
-              {name=>"SLURMDB_EVENT_NODE", macro=>"1"},
-              {name=>"SLURMDB_MODIFY_ASSOC", macro=>"1"},
-              {name=>"SLURMDB_MODIFY_QOS", macro=>"1"},
-              {name=>"SLURMDB_MODIFY_USER", macro=>"1"},
-              {name=>"SLURMDB_MODIFY_WCKEY", macro=>"1"},
-              {name=>"SLURMDB_PROBLEM_ACCT_NO_ASSOC", macro=>"1"},
-              {name=>"SLURMDB_PROBLEM_ACCT_NO_USERS", macro=>"1"},
-              {name=>"SLURMDB_PROBLEM_NOT_SET", macro=>"1"},
-              {name=>"SLURMDB_PROBLEM_USER_NO_ASSOC", macro=>"1"},
-              {name=>"SLURMDB_PROBLEM_USER_NO_UID", macro=>"1"},
-              {name=>"SLURMDB_REMOVE_ASSOC", macro=>"1"},
-              {name=>"SLURMDB_REMOVE_COORD", macro=>"1"},
-              {name=>"SLURMDB_REMOVE_QOS", macro=>"1"},
-              {name=>"SLURMDB_REMOVE_USER", macro=>"1"},
-              {name=>"SLURMDB_REMOVE_WCKEY", macro=>"1"},
-              {name=>"SLURMDB_REPORT_SORT_NAME", macro=>"1"},
-              {name=>"SLURMDB_REPORT_SORT_TIME", macro=>"1"},
-              {name=>"SLURMDB_REPORT_TIME_HOURS", macro=>"1"},
-              {name=>"SLURMDB_REPORT_TIME_HOURS_PER", macro=>"1"},
-              {name=>"SLURMDB_REPORT_TIME_MINS", macro=>"1"},
-              {name=>"SLURMDB_REPORT_TIME_MINS_PER", macro=>"1"},
-              {name=>"SLURMDB_REPORT_TIME_PERCENT", macro=>"1"},
-              {name=>"SLURMDB_REPORT_TIME_SECS", macro=>"1"},
-              {name=>"SLURMDB_REPORT_TIME_SECS_PER", macro=>"1"},
-              {name=>"SLURMDB_UPDATE_NOTSET", macro=>"1"});
+              {name=>"SLURMDB_ADD_ASSOC", type => "IV", macro=>"1"},
+              {name=>"SLURMDB_ADD_COORD", type => "IV", macro=>"1"},
+              {name=>"SLURMDB_ADD_QOS", type => "IV", macro=>"1"},
+              {name=>"SLURMDB_ADD_USER", type => "IV", macro=>"1"},
+              {name=>"SLURMDB_ADD_WCKEY", type => "IV", macro=>"1"},
+              {name=>"SLURMDB_ADMIN_NONE", type => "IV", macro=>"1"},
+              {name=>"SLURMDB_ADMIN_NOTSET", type => "IV", macro=>"1"},
+              {name=>"SLURMDB_ADMIN_OPERATOR", type => "IV", macro=>"1"},
+              {name=>"SLURMDB_ADMIN_SUPER_USER", type => "IV", macro=>"1"},
+              {name=>"SLURMDB_CLASS_CAPABILITY", type => "IV", macro=>"1"},
+              {name=>"SLURMDB_CLASS_CAPACITY", type => "IV", macro=>"1"},
+              {name=>"SLURMDB_CLASS_CAPAPACITY", type => "IV", macro=>"1"},
+              {name=>"SLURMDB_CLASS_NONE", type => "IV", macro=>"1"},
+              {name=>"SLURMDB_EVENT_ALL", type => "IV", macro=>"1"},
+              {name=>"SLURMDB_EVENT_CLUSTER", type => "IV", macro=>"1"},
+              {name=>"SLURMDB_EVENT_NODE", type => "IV", macro=>"1"},
+              {name=>"SLURMDB_MODIFY_ASSOC", type => "IV", macro=>"1"},
+              {name=>"SLURMDB_MODIFY_QOS", type => "IV", macro=>"1"},
+              {name=>"SLURMDB_MODIFY_USER", type => "IV", macro=>"1"},
+              {name=>"SLURMDB_MODIFY_WCKEY", type => "IV", macro=>"1"},
+              {name=>"SLURMDB_PROBLEM_ACCT_NO_ASSOC", type => "IV", macro=>"1"},
+              {name=>"SLURMDB_PROBLEM_ACCT_NO_USERS", type => "IV", macro=>"1"},
+              {name=>"SLURMDB_PROBLEM_NOT_SET", type => "IV", macro=>"1"},
+              {name=>"SLURMDB_PROBLEM_USER_NO_ASSOC", type => "IV", macro=>"1"},
+              {name=>"SLURMDB_PROBLEM_USER_NO_UID", type => "IV", macro=>"1"},
+              {name=>"SLURMDB_REMOVE_ASSOC", type => "IV", macro=>"1"},
+              {name=>"SLURMDB_REMOVE_COORD", type => "IV", macro=>"1"},
+              {name=>"SLURMDB_REMOVE_QOS", type => "IV", macro=>"1"},
+              {name=>"SLURMDB_REMOVE_USER", type => "IV", macro=>"1"},
+              {name=>"SLURMDB_REMOVE_WCKEY", type => "IV", macro=>"1"},
+              {name=>"SLURMDB_REPORT_SORT_NAME", type => "IV", macro=>"1"},
+              {name=>"SLURMDB_REPORT_SORT_TIME", type => "IV", macro=>"1"},
+              {name=>"SLURMDB_REPORT_TIME_HOURS", type => "IV", macro=>"1"},
+              {name=>"SLURMDB_REPORT_TIME_HOURS_PER", type => "IV", macro=>"1"},
+              {name=>"SLURMDB_REPORT_TIME_MINS", type => "IV", macro=>"1"},
+              {name=>"SLURMDB_REPORT_TIME_MINS_PER", type => "IV", macro=>"1"},
+              {name=>"SLURMDB_REPORT_TIME_PERCENT", type => "IV", macro=>"1"},
+              {name=>"SLURMDB_REPORT_TIME_SECS", type => "IV", macro=>"1"},
+              {name=>"SLURMDB_REPORT_TIME_SECS_PER", type => "IV", macro=>"1"},
+              {name=>"SLURMDB_UPDATE_NOTSET", type => "IV", macro=>"1"});
   ExtUtils::Constant::WriteConstants(
                                      NAME         => 'Slurmdb',
                                      NAMES        => \@names,
-                                     DEFAULT_TYPE => 'IV',
                                      C_FILE       => 'const-c.inc',
                                      XS_FILE      => 'const-xs.inc',
                                   );
