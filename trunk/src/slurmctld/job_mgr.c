@@ -4524,7 +4524,7 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 		/* Actual or expected start time */
 		if((dump_job_ptr->start_time) || (begin_time <= time(NULL)))
 			pack_time(dump_job_ptr->start_time, buffer);
-		else	/* earliest start time in the future */ 
+		else	/* earliest start time in the future */
 			pack_time(begin_time, buffer);
 
 		pack_time(dump_job_ptr->end_time, buffer);
@@ -4624,7 +4624,7 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 		/* Actual or expected start time */
 		if((dump_job_ptr->start_time) || (begin_time <= time(NULL)))
 			pack_time(dump_job_ptr->start_time, buffer);
-		else	/* earliest start time in the future */ 
+		else	/* earliest start time in the future */
 			pack_time(begin_time, buffer);
 
 		pack_time(dump_job_ptr->end_time, buffer);
@@ -6389,13 +6389,13 @@ validate_jobs_on_node(slurm_node_registration_status_msg_t *reg_msg)
 		verbose("Node %s rebooted %u secs ago",
 			reg_msg->node_name, reg_msg->up_time);
 	}
-	
+
 	if (reg_msg->up_time <= now) {
 		node_ptr->up_time = reg_msg->up_time;
 		node_ptr->boot_time = now - reg_msg->up_time;
 		node_ptr->slurmd_start_time = reg_msg->slurmd_start_time;
 	} else {
-		error("Node up_time is invalid: %u>%u", reg_msg->up_time, 
+		error("Node up_time is invalid: %u>%u", reg_msg->up_time,
 		      (uint32_t) now);
 	}
 
