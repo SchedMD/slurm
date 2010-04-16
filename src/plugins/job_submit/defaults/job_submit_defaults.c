@@ -100,6 +100,12 @@ const char plugin_type[]       	= "job_submit/defaults";
 const uint32_t plugin_version   = 100;
 const uint32_t min_plug_version = 100;
 
+/*****************************************************************************\
+ * We've provided a simple example of the type of things you can do with this
+ * plugin. If you develop another plugin that may be of interest to others
+ * please post it to slurm-dev@lists.llnl.gov  Thanks!
+\*****************************************************************************/
+
 /* This example code will prevent users from setting an accounting frequency
  * of less than 30 seconds in order to insure more precise accounting.
  * Also remove any QOS value set by the user in order to use the default value
