@@ -371,6 +371,7 @@ void slurm_free_job_desc_msg(job_desc_msg_t * msg)
 		xfree(msg->std_err);
 		xfree(msg->exc_nodes);
 		xfree(msg->features);
+		xfree(msg->gres);
 		xfree(msg->std_in);
 		xfree(msg->licenses);
 		xfree(msg->linuximage);
@@ -452,6 +453,7 @@ void slurm_free_job_info_members(job_info_t * job)
 		xfree(job->exc_nodes);
 		xfree(job->exc_node_inx);
 		xfree(job->features);
+		xfree(job->gres);
 		xfree(job->licenses);
 		xfree(job->name);
 		xfree(job->network);

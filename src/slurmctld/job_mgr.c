@@ -754,6 +754,7 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	packstr(dump_job_ptr->alloc_node, buffer);
 	packstr(dump_job_ptr->account, buffer);
 	packstr(dump_job_ptr->comment, buffer);
+	packstr(dump_job_ptr->gres, buffer);
 	packstr(dump_job_ptr->network, buffer);
 	packstr(dump_job_ptr->licenses, buffer);
 	packstr(dump_job_ptr->mail_user, buffer);
@@ -807,7 +808,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	char *account = NULL, *network = NULL, *mail_user = NULL;
 	char *comment = NULL, *nodes_completing = NULL, *alloc_node = NULL;
 	char *licenses = NULL, *state_desc = NULL, *wckey = NULL;
-	char *resv_name = NULL;
+	char *resv_name = NULL, *gres = NULL;
 	char **spank_job_env = (char **) NULL;
 	struct job_record *job_ptr;
 	struct part_record *part_ptr;
@@ -905,6 +906,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		safe_unpackstr_xmalloc(&alloc_node, &name_len, buffer);
 		safe_unpackstr_xmalloc(&account, &name_len, buffer);
 		safe_unpackstr_xmalloc(&comment, &name_len, buffer);
+		safe_unpackstr_xmalloc(&gres, &name_len, buffer);
 		safe_unpackstr_xmalloc(&network, &name_len, buffer);
 		safe_unpackstr_xmalloc(&licenses, &name_len, buffer);
 		safe_unpackstr_xmalloc(&mail_user, &name_len, buffer);
@@ -1118,6 +1120,9 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	xfree(job_ptr->comment);
 	job_ptr->comment      = comment;
 	comment               = NULL;  /* reused, nothing left to free */
+	xfree(job_ptr->gres);
+	job_ptr->gres         = gres;
+	gres                  = NULL;  /* reused, nothing left to free */
 	job_ptr->direct_set_prio = direct_set_prio;
 	job_ptr->db_index     = db_index;
 	job_ptr->end_time     = end_time;
@@ -1268,6 +1273,7 @@ unpack_error:
 	xfree(alloc_node);
 	xfree(account);
 	xfree(comment);
+	xfree(gres);
 	xfree(resp_host);
 	xfree(licenses);
 	xfree(mail_user);
@@ -1923,8 +1929,8 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 	debug3("   immediate=%ld features=%s reservation=%s",
 	       immediate, job_specs->features, job_specs->reservation);
 
-	debug3("   req_nodes=%s exc_nodes=%s",
-	       job_specs->req_nodes, job_specs->exc_nodes);
+	debug3("   req_nodes=%s exc_nodes=%s gres=%s",
+	       job_specs->req_nodes, job_specs->exc_nodes, job_specs->gres);
 
 	time_limit = (job_specs->time_limit != NO_VAL) ?
 		(long) job_specs->time_limit : -1L;
@@ -3037,6 +3043,10 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		error_code = ESLURM_INVALID_FEATURE;
 		goto cleanup_fail;
 	}
+	if (build_gres_list(job_ptr)) {
+		error_code = ESLURM_INVALID_GRES;
+		goto cleanup_fail;
+	}
 
 	if ((error_code = validate_job_resv(job_ptr)))
 		goto cleanup_fail;
@@ -3142,6 +3152,7 @@ static int _validate_job_create_req(job_desc_msg_t * job_desc)
 	    _test_strlen(job_desc->dependency, "dependency", 1024)	||
 	    _test_strlen(job_desc->exc_nodes, "exc_nodes", 1024)	||
 	    _test_strlen(job_desc->features, "features", 1024)		||
+	    _test_strlen(job_desc->gres, "gres", 1024)			||
 	    _test_strlen(job_desc->licenses, "licenses", 1024)		||
 	    _test_strlen(job_desc->linuximage, "linuximage", 1024)	||
 	    _test_strlen(job_desc->mail_user, "mail_user", 1024)	||
@@ -3645,6 +3656,7 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	job_ptr->alloc_sid  = job_desc->alloc_sid;
 	job_ptr->alloc_node = xstrdup(job_desc->alloc_node);
 	job_ptr->account    = xstrdup(job_desc->account);
+	job_ptr->gres       = xstrdup(job_desc->gres);
 	job_ptr->network    = xstrdup(job_desc->network);
 	job_ptr->resv_name  = xstrdup(job_desc->reservation);
 	job_ptr->comment    = xstrdup(job_desc->comment);
@@ -4282,6 +4294,7 @@ static void _list_delete_job(void *job_entry)
 	xfree(job_ptr->account);
 	xfree(job_ptr->alloc_node);
 	xfree(job_ptr->comment);
+	xfree(job_ptr->gres);
 	xfree(job_ptr->licenses);
 	if (job_ptr->license_list)
 		list_destroy(job_ptr->license_list);
@@ -4547,13 +4560,13 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 		packstr(dump_job_ptr->account, buffer);
 		packstr(dump_job_ptr->network, buffer);
 		packstr(dump_job_ptr->comment, buffer);
+		packstr(dump_job_ptr->gres, buffer);
 
 		slurm_mutex_lock(&assoc_mgr_qos_lock);
-		if (assoc_mgr_qos_list)
+		if (assoc_mgr_qos_list) {
 			packstr(slurmdb_qos_str(assoc_mgr_qos_list,
-					     dump_job_ptr->qos),
-				buffer);
-		else
+					        dump_job_ptr->qos), buffer);
+		} else
 			packnull(buffer);
 		slurm_mutex_unlock(&assoc_mgr_qos_lock);
 
@@ -5898,6 +5911,26 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 				list_destroy(detail_ptr->feature_list);
 				detail_ptr->feature_list = NULL;
 			}
+		}
+	}
+
+	if (job_specs->gres) {
+		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
+			error_code = ESLURM_DISABLED;
+		else if (job_specs->gres[0] != '\0') {
+//FIXME: Validate input
+			info("sched: update_job: setting gres to "
+			     "%s for job_id %u",
+			     job_specs->gres, job_specs->job_id);
+			xfree(job_ptr->gres);
+			job_ptr->gres = job_specs->gres;
+			job_specs->gres = NULL;
+//FIXME: rebuild struct
+		} else {
+			info("sched: update_job: cleared gres for job %u",
+			     job_specs->job_id);
+			xfree(job_ptr->gres);
+//FIXME: clear struct
 		}
 	}
 
@@ -8559,6 +8592,7 @@ _copy_job_record_to_job_desc(struct job_record *job_ptr)
 						  &job_desc->env_size);
 	job_desc->exc_nodes         = xstrdup(details->exc_nodes);
 	job_desc->features          = xstrdup(details->features);
+	job_desc->gres              = xstrdup(job_ptr->gres);
 	job_desc->group_id          = job_ptr->group_id;
 	job_desc->immediate         = 0; /* nowhere to get this value */
 	job_desc->job_id            = job_ptr->job_id;

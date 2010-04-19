@@ -86,6 +86,12 @@ void print_slurm_version(void)
 	printf("%s %s\n", PACKAGE, SLURM_VERSION_STRING);
 }
 
+/* print the available gres options */
+void print_gres_help(void)
+{
+	printf("Gres help not available yet\n");
+}
+
 /*
  * verify that a distribution type in arg is of a known form
  * returns the task_dist_states, or -1 if state is unknown

@@ -1660,3 +1660,15 @@ static int _valid_node_feature(char *feature)
 
 	return rc;
 }
+
+/*
+ * build_gres_list - Translate a job's gres string into a gres_list
+ * IN  job_ptr->gres
+ * OUT job_ptr->gres_list
+ * RET error code
+ */
+extern int build_gres_list(struct job_record *job_ptr)
+{
+	error("construction of a job's gres list TBD");
+	return SLURM_SUCCESS;
+}

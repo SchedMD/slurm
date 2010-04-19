@@ -3567,6 +3567,7 @@ _unpack_job_info_members(job_info_t * job, Buf buffer,
 		safe_unpackstr_xmalloc(&job->account, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job->network, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job->comment, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&job->gres, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job->qos, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job->licenses, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job->state_desc, &uint32_tmp, buffer);
@@ -4720,6 +4721,7 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer,
 		pack16(job_desc_ptr->task_dist, buffer);
 		pack16(job_desc_ptr->kill_on_node_fail, buffer);
 		packstr(job_desc_ptr->features, buffer);
+		packstr(job_desc_ptr->gres, buffer);
 		pack32(job_desc_ptr->job_id, buffer);
 		packstr(job_desc_ptr->name, buffer);
 
@@ -5022,6 +5024,7 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer,
 		safe_unpack16(&job_desc_ptr->kill_on_node_fail, buffer);
 		safe_unpackstr_xmalloc(&job_desc_ptr->features,
 				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&job_desc_ptr->gres, &uint32_tmp,buffer);
 		safe_unpack32(&job_desc_ptr->job_id, buffer);
 		safe_unpackstr_xmalloc(&job_desc_ptr->name,
 				       &uint32_tmp, buffer);

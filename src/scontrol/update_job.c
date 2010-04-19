@@ -482,6 +482,10 @@ scontrol_update_job (int argc, char *argv[])
 			job_msg.features = val;
 			update_cnt++;
 		}
+		else if (strncasecmp(tag, "Gres", MAX(taglen, 2)) == 0) {
+			job_msg.gres = val;
+			update_cnt++;
+		}
 		else if (strncasecmp(tag, "Account", MAX(taglen, 1)) == 0) {
 			job_msg.account = val;
 			update_cnt++;
@@ -491,7 +495,7 @@ scontrol_update_job (int argc, char *argv[])
 			update_cnt++;
 		}
 #ifdef HAVE_BG
-		else if (strncasecmp(tag, "Geometry", MAX(taglen, 1)) == 0) {
+		else if (strncasecmp(tag, "Geometry", MAX(taglen, 2)) == 0) {
 			char* token, *delimiter = ",x", *next_ptr;
 			int j, rc = 0;
 			uint16_t geo[SYSTEM_DIMENSIONS];

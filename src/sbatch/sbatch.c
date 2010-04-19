@@ -185,6 +185,7 @@ static int fill_job_desc_from_opts(job_desc_msg_t *desc)
 	desc->contiguous = opt.contiguous ? 1 : 0;
 	desc->features = opt.constraints;
 	desc->immediate = opt.immediate;
+	desc->gres = opt.gres;
 	if (opt.job_name != NULL)
 		desc->name = xstrdup(opt.job_name);
 	else

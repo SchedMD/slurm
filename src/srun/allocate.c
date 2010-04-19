@@ -529,6 +529,7 @@ job_desc_msg_create_from_opts (void)
 
 	j->contiguous     = opt.contiguous;
 	j->features       = opt.constraints;
+	j->gres           = opt.gres;
 	if (opt.immediate == 1)
 		j->immediate = opt.immediate;
 	if (opt.job_name)
