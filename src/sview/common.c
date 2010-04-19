@@ -605,23 +605,40 @@ extern GtkWidget *create_entry()
 extern void create_page(GtkNotebook *notebook, display_data_t *display_data)
 {
 	GtkScrolledWindow *scrolled_window = create_scrolled_window();
-	GtkWidget *event_box = NULL;
-	GtkWidget *label = NULL;
+	GtkWidget *event_box = gtk_event_box_new();
+	GtkWidget *label = gtk_label_new(display_data->name);
+	GtkWidget *close_button = gtk_event_box_new();
+	GtkWidget *table = gtk_table_new(1, 3, FALSE);
+	GtkWidget *image = gtk_image_new_from_stock(
+		GTK_STOCK_DIALOG_ERROR, GTK_ICON_SIZE_SMALL_TOOLBAR);
 	int err;
 
-	event_box = gtk_event_box_new();
+	gtk_container_add(GTK_CONTAINER(close_button), image);
+	gtk_widget_set_size_request(close_button, 10, 10);
+	g_signal_connect(G_OBJECT(close_button), "button-press-event",
+			 G_CALLBACK(close_tab),
+			 display_data);
+
+	//gtk_event_box_set_above_child(GTK_EVENT_BOX(close_button), FALSE);
+
+	gtk_container_add(GTK_CONTAINER(event_box), label);
 	gtk_event_box_set_above_child(GTK_EVENT_BOX(event_box), FALSE);
 	g_signal_connect(G_OBJECT(event_box), "button-press-event",
 			 G_CALLBACK(tab_pressed),
 			 display_data);
 
-	label = gtk_label_new(display_data->name);
-	gtk_container_add(GTK_CONTAINER(event_box), label);
-	gtk_widget_show(label);
+	gtk_table_set_homogeneous(GTK_TABLE(table), FALSE);
+	gtk_table_set_col_spacings(GTK_TABLE(table), 5);
+	gtk_container_set_border_width(GTK_CONTAINER(table), 1);
+
+	gtk_table_attach_defaults(GTK_TABLE(table), event_box, 0, 1, 0, 1);
+	gtk_table_attach_defaults(GTK_TABLE(table), close_button, 2, 3, 0, 1);
+
+	gtk_widget_show_all(table);
 	//(display_data->set_fields)(GTK_MENU(menu));
 	if((err = gtk_notebook_append_page(GTK_NOTEBOOK(notebook),
 					   GTK_WIDGET(scrolled_window),
-					   event_box)) == -1) {
+					   table)) == -1) {
 		g_error("Couldn't add page to notebook\n");
 	}
 
@@ -843,7 +860,7 @@ extern gboolean left_button_pressed(GtkTreeView *tree_view,
 	}
 	last_user_data = iter.user_data;
 
-	if(!admin_mode)
+	if(!sview_config.admin_mode)
 		rc = true;
 
 	last_time = now;
@@ -900,7 +917,7 @@ extern gboolean row_clicked(GtkTreeView *tree_view, GdkEventButton *event,
 		right_button_pressed(tree_view, path, event,
 				     signal_params, ROW_CLICKED);
 		did_something = TRUE;
-	} else if(!admin_mode)
+	} else if(!sview_config.admin_mode)
 		did_something = TRUE;
 	gtk_tree_path_free(path);
 
@@ -1171,7 +1188,7 @@ extern void *popup_thr(popup_info_t *popup_win)
 		gdk_threads_leave();
 		g_static_mutex_unlock(&sview_mutex);
 		//g_print("done popup_thr\n");
-		sleep(global_sleep_time);
+		sleep(sview_config.refresh_delay);
 	}
 	return NULL;
 }
@@ -1504,7 +1521,7 @@ extern void sview_widget_modify_bg(GtkWidget *widget, GtkStateType state,
 /* 	DEF_TIMERS; */
 
 /* 	START_TIMER; */
-	if(grid_speedup) {
+	if(sview_config.grid_speedup) {
 		/* For some reason, QT Themes have a very slow call to for
 		 * gtk_widget_modify_bg as of 7-6-09.
 		 * Here we only take around 40 microsecs where

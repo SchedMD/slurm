@@ -787,7 +787,7 @@ extern int get_new_info_resv(reserve_info_msg_t **info_ptr,
 	static time_t last;
 	static bool changed = 0;
 
-	if(!force && ((now - last) < global_sleep_time)) {
+	if(!force && ((now - last) < sview_config.refresh_delay)) {
 		if(*info_ptr != resv_info_ptr)
 			error_code = SLURM_SUCCESS;
 		*info_ptr = resv_info_ptr;
@@ -991,7 +991,7 @@ display_it:
 	}
 	list_iterator_destroy(itr);
 	change_grid_color(grid_button_list, -1, -1, MAKE_WHITE, true, 0);
-	if(grid_speedup) {
+	if(sview_config.grid_speedup) {
 		gtk_widget_set_sensitive(GTK_WIDGET(main_grid_table), 0);
 		gtk_widget_set_sensitive(GTK_WIDGET(main_grid_table), 1);
 	}

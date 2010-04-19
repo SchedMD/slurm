@@ -97,7 +97,6 @@
 #define MAKE_WHITE -1
 
 enum { JOB_PAGE,
-       STEP_PAGE,
        PART_PAGE,
        NODE_PAGE,
        BLOCK_PAGE,
@@ -150,27 +149,18 @@ typedef enum { SEARCH_JOB_ID = 1,
 
 /* Input parameters */
 typedef struct {
-	bool all_flag;
-	bool no_header;
-
-	char *format;
-	char *sort;
-	char *states;
-
-	int iterate;
-	int verbose;
-	int display;
-
-	bool long_output;
-	bool commandline;
-	bool parse;
-
-	char *nodes;
-	char *partition;
-
-	int node_field_size;
-
-} sview_parameters_t;
+	bool admin_mode;
+	int grid_hori;
+	int grid_vert;
+	int grid_x_width;
+	int grid_speedup;
+	int page_default;
+	bool page_visible[PAGE_CNT];
+	int refresh_delay;
+	bool show_hidden;
+	bool show_grid;
+	int tab_pos;
+} sview_config_t;
 
 typedef struct display_data display_data_t;
 typedef struct specific_info specific_info_t;
@@ -267,36 +257,27 @@ typedef struct {
 } signal_params_t;
 
 
-extern sview_parameters_t params;
-extern int text_line_cnt;
+extern sview_config_t sview_config;
 
 extern void parse_command_line(int argc, char *argv[]);
 
 extern int fini;
 extern ba_system_t *ba_system_ptr;
-extern int quiet_flag;
 extern bool toggled;
 extern bool force_refresh;
 extern List popup_list;
 extern List grid_button_list;
 extern List signal_params_list;
-extern int global_sleep_time;
-extern int global_x_width;
-extern int global_horizontal;
-extern int global_vertical;
 extern bool global_entry_changed;
 extern bool global_send_update_msg;
 extern bool global_edit_error;
-extern bool global_show_hidden;
 extern gchar *global_edit_error_msg;
-extern bool admin_mode;
 extern GtkWidget *main_statusbar;
 extern GtkWidget *main_window;
 extern GtkTable *main_grid_table;
 extern GStaticMutex sview_mutex;
 extern int cpus_per_node;
 extern int g_node_scaling;
-extern int grid_speedup;
 extern char *sview_colors[];
 extern int sview_colors_cnt;
 
@@ -312,6 +293,8 @@ extern void print_date();
 extern void refresh_main(GtkAction *action, gpointer user_data);
 extern void tab_pressed(GtkWidget *widget, GdkEventButton *event,
 			display_data_t *display_data);
+extern void close_tab(GtkWidget *widget, GdkEventButton *event,
+		      display_data_t *display_data);
 
 //popups.c
 extern void create_config_popup(GtkAction *action, gpointer user_data);
