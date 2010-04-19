@@ -96,6 +96,7 @@ enum {
 #ifdef HAVE_BG
 	SORTID_GEOMETRY,
 #endif
+	SORTID_GRES,
 	SORTID_GROUP_ID,
 #ifdef HAVE_BG
 #ifdef HAVE_BGL
@@ -319,6 +320,8 @@ static display_data_t display_data_job[] = {
 	{G_TYPE_STRING, SORTID_REASON, "Reason Waiting",
 	 FALSE, EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_FEATURES, "Features",
+	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
+	{G_TYPE_STRING, SORTID_GRES, "Gres",
 	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_LICENSES, "Licenses",
 	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
@@ -808,6 +811,10 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 	case SORTID_FEATURES:
 		job_msg->features = xstrdup(new_text);
 		type = "features";
+		break;
+	case SORTID_GRES:
+		job_msg->gres = xstrdup(new_text);
+		type = "gres";
 		break;
 	case SORTID_LICENSES:
 		job_msg->licenses = xstrdup(new_text);
@@ -1306,6 +1313,11 @@ static void _layout_job_record(GtkTreeView *treeview,
 				   find_col_name(display_data_job,
 						 SORTID_FEATURES),
 				   job_ptr->features);
+
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_job,
+						 SORTID_GRES),
+				   job_ptr->gres);
 
 #ifdef HAVE_BG
 	add_display_treestore_line(update, treestore, &iter,
@@ -1949,6 +1961,8 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 
 	gtk_tree_store_set(treestore, iter,
 			   SORTID_FEATURES, job_ptr->features, -1);
+	gtk_tree_store_set(treestore, iter,
+			   SORTID_GRES, job_ptr->gres, -1);
 	gtk_tree_store_set(treestore, iter,
 			   SORTID_LICENSES, job_ptr->licenses, -1);
 	if (job_ptr->state_desc)
