@@ -214,9 +214,11 @@ static int _build_single_nodeline_info(slurm_conf_node_t *node_ptr,
 				node_rec->node_state = state_val;
 			node_rec->last_response = (time_t) 0;
 			node_rec->comm_name = xstrdup(address);
-
-			node_rec->port = node_ptr->port;
-			node_rec->reason = xstrdup(node_ptr->reason);
+			node_rec->port      = node_ptr->port;
+			node_rec->weight    = node_ptr->weight;
+			node_rec->features  = xstrdup(node_ptr->feature);
+			node_rec->gres      = xstrdup(node_ptr->gres);
+			node_rec->reason    = xstrdup(node_ptr->reason);
 		} else {
 			/* FIXME - maybe should be fatal? */
 			error("reconfiguration for node %s, ignoring!", alias);
