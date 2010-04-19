@@ -205,7 +205,8 @@ _dump_node_state (struct node_record *dump_node_ptr, Buf buffer)
 {
 	packstr (dump_node_ptr->name, buffer);
 	packstr (dump_node_ptr->reason, buffer);
-	packstr (dump_node_ptr->config_ptr->feature, buffer);
+	packstr (dump_node_ptr->features, buffer);
+	packstr (dump_node_ptr->gres, buffer);
 	pack16  (dump_node_ptr->node_state, buffer);
 	pack16  (dump_node_ptr->cpus, buffer);
 	pack16  (dump_node_ptr->sockets, buffer);
@@ -251,14 +252,15 @@ static int _open_node_state_file(char **state_file)
  * load_all_node_state - Load the node state from file, recover on slurmctld
  *	restart. Execute this after loading the configuration file data.
  *	Data goes into common storage.
- * IN state_only - if true, overwrite only node state, features and reason
+ * IN state_only - if true, overwrite only node state and reason
  *	Use this to overwrite the "UNKNOWN state typically used in slurm.conf
  * RET 0 or error code
  * NOTE: READ lock_slurmctld config before entry
  */
 extern int load_all_node_state ( bool state_only )
 {
-	char *node_name, *reason = NULL, *data = NULL, *state_file, *features;
+	char *node_name, *reason = NULL, *data = NULL, *state_file;
+	char *features, *gres;
 	int data_allocated, data_read = 0, error_code = 0, node_cnt = 0;
 	uint16_t node_state;
 	uint16_t cpus = 1, sockets = 1, cores = 1, threads = 1;
@@ -338,6 +340,7 @@ extern int load_all_node_state ( bool state_only )
 			safe_unpackstr_xmalloc (&node_name, &name_len, buffer);
 			safe_unpackstr_xmalloc (&reason,    &name_len, buffer);
 			safe_unpackstr_xmalloc (&features,  &name_len, buffer);
+			safe_unpackstr_xmalloc (&gres,      &name_len, buffer);
 			safe_unpack16 (&node_state,  buffer);
 			safe_unpack16 (&cpus,        buffer);
 			safe_unpack16 (&sockets,     buffer);
@@ -388,6 +391,7 @@ extern int load_all_node_state ( bool state_only )
 			error ("Node %s has vanished from configuration",
 			       node_name);
 			xfree(features);
+			xfree(gres);
 			xfree(reason);
 		} else if (state_only) {
 			uint16_t orig_flags;
@@ -429,8 +433,8 @@ extern int load_all_node_state ( bool state_only )
 				node_ptr->reason_uid = reason_uid;
 			} else
 				xfree(reason);
-			xfree(node_ptr->features);
-			node_ptr->features = features;
+			xfree(features);
+			xfree(gres);
 		} else {
 			node_cnt++;
 			if ((!power_save_mode) &&
@@ -450,6 +454,8 @@ extern int load_all_node_state ( bool state_only )
 			node_ptr->reason_uid  = reason_uid;
 			xfree(node_ptr->features);
 			node_ptr->features = features;
+			xfree(node_ptr->gres);
+			node_ptr->gres = gres;
 			node_ptr->part_cnt      = 0;
 			xfree(node_ptr->part_pptr);
 			node_ptr->cpus          = cpus;
@@ -463,10 +469,11 @@ extern int load_all_node_state ( bool state_only )
 		}
 		xfree (node_name);
 
-		if(node_ptr)
+		if (node_ptr) {
 			select_g_update_node_state(
 				(node_ptr - node_record_table_ptr),
 				node_ptr->node_state);
+		}
 	}
 
 fini:	info("Recovered state of %d nodes", node_cnt);
@@ -643,8 +650,8 @@ static void _pack_node (struct node_record *dump_node_ptr, Buf buffer,
 					      buffer, protocol_version);
 
 		packstr(dump_node_ptr->arch, buffer);
-		packstr(dump_node_ptr->config_ptr->feature, buffer);
-		packstr(dump_node_ptr->config_ptr->gres, buffer);
+		packstr(dump_node_ptr->features, buffer);
+		packstr(dump_node_ptr->gres, buffer);
 		packstr(dump_node_ptr->os, buffer);
 		packstr(dump_node_ptr->reason, buffer);
 	} else if(protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
@@ -673,7 +680,7 @@ static void _pack_node (struct node_record *dump_node_ptr, Buf buffer,
 					      buffer, protocol_version);
 
 		packstr(dump_node_ptr->arch, buffer);
-		packstr(dump_node_ptr->config_ptr->feature, buffer);
+		packstr(dump_node_ptr->features, buffer);
 		packstr(dump_node_ptr->os, buffer);
 		packstr(dump_node_ptr->reason, buffer);
 	} else {
@@ -756,6 +763,21 @@ int update_node ( update_node_msg_t * update_node_msg )
 			error_code = ESLURM_INVALID_NODE_NAME;
 			free (this_node_name);
 			break;
+		}
+
+		if (update_node_msg->features) {
+			xfree(node_ptr->features);
+			if (update_node_msg->features[0])
+				node_ptr->features = xstrdup(update_node_msg->
+							     features);
+			/* _update_node_features() logs and udates config */
+		}
+
+		if (update_node_msg->gres) {
+			xfree(node_ptr->gres);
+			if (update_node_msg->gres[0])
+				node_ptr->gres = xstrdup(update_node_msg->gres);
+			/* _update_node_gres() logs and udates config */
 		}
 
 		if ((update_node_msg -> reason) &&
@@ -948,55 +970,71 @@ int update_node ( update_node_msg_t * update_node_msg )
 	return error_code;
 }
 
-/*
- * restore_node_features - Restore node Features and Weight based upon state
- *	previously in memory (preserves interactive updates)
- */
-extern void restore_node_features(void)
+/* variation of strcmp that accepts NULL pointers */
+static int _strcmp(char *str1, char *str2)
 {
-	int i, j;
-	char *node_list;
-	struct node_record *node_ptr1, *node_ptr2;
-	hostlist_t hl;
+	if (!str1 && !str2)
+		return 0;
+	if (str1 && !str2)
+		return 1;
+	if (!str1 && str2)
+		return -1;
+	return strcmp(str1, str2);
+}
 
-	for (i=0, node_ptr1=node_record_table_ptr; i<node_record_count; 
-	     i++, node_ptr1++) {
+/*
+ * restore_node_features - Make node and config (from slurm.conf) fields
+ *	consistent for Features, Gres and Weight
+ * IN recover - 
+ *              0, 1 - use data from config record, built using slurm.conf
+ *              2 = use data from node record, built from saved state
+ */
+extern void restore_node_features(int recover)
+{
+	int i;
+	struct node_record *node_ptr;
 
-		if (node_ptr1->weight != node_ptr1->config_ptr->weight) {
+	for (i=0, node_ptr=node_record_table_ptr; i<node_record_count; 
+	     i++, node_ptr++) {
+
+		if (node_ptr->weight != node_ptr->config_ptr->weight) {
 			error("Node %s Weight(%u) differ from slurm.conf",
-			      node_ptr1->name, node_ptr1->weight);
-			_update_node_weight(node_ptr1->name, 
-					    node_ptr1->weight);
-		}
-
-		if (!node_ptr1->config_ptr->feature && !node_ptr1->features)
-			continue;	/* No feature to preserve */
-		if (node_ptr1->config_ptr->feature && node_ptr1->features &&
-		    !strcmp(node_ptr1->config_ptr->feature,
-			    node_ptr1->features)) {
-			continue;	/* Identical feature value */
-		}
-
-		hl = hostlist_create(node_ptr1->name);
-		for (j=(i+1), node_ptr2=(node_ptr1+1); j<node_record_count; 
-		     j++, node_ptr2++) {
-			if ((!node_ptr1->features && !node_ptr2->features) ||
-			    ( node_ptr1->features &&  node_ptr2->features &&
-			     !strcmp(node_ptr1->features, 
-				     node_ptr2->features))) {
-				/* Reset this job's feature at same time */
-				hostlist_push(hl, node_ptr2->name);
+			      node_ptr->name, node_ptr->weight);
+			if (recover == 2) {
+				_update_node_weight(node_ptr->name, 
+						    node_ptr->weight);
+			} else {
+				node_ptr->weight = node_ptr->config_ptr->
+						   weight;
 			}
 		}
 
-		node_list = xmalloc(2048);
-		hostlist_ranged_string(hl, 2048, node_list);
-		error("Node %s Features(%s) differ from slurm.conf",
-		      node_list, node_ptr1->features);
-		_update_node_features(node_list, node_ptr1->features);
-		xfree(node_ptr1->features);
-		xfree(node_list);
-		hostlist_destroy(hl);
+		if (_strcmp(node_ptr->config_ptr->feature, node_ptr->features)){
+			error("Node %s Features(%s) differ from slurm.conf",
+			      node_ptr->name, node_ptr->features);
+			if (recover == 2) {
+				_update_node_features(node_ptr->name,
+						      node_ptr->features);
+			} else {
+				xfree(node_ptr->features);
+				node_ptr->features = xstrdup(node_ptr->
+							     config_ptr->
+							     feature);
+			}
+		}
+
+		if (_strcmp(node_ptr->config_ptr->gres, node_ptr->gres)) {
+			error("Node %s Gres(%s) differ from slurm.conf",
+			      node_ptr->name, node_ptr->gres);
+			if (recover == 2) {
+				_update_node_gres(node_ptr->name,
+						  node_ptr->gres);
+			} else {
+				xfree(node_ptr->gres);
+				node_ptr->gres = xstrdup(node_ptr->config_ptr->
+							 gres);
+			}
+		}
 	}
 }
 

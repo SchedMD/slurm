@@ -1115,7 +1115,7 @@ extern int load_all_job_state ( void );
  * load_all_node_state - Load the node state from file, recover on slurmctld
  *	restart. Execute this after loading the configuration file data.
  *	Data goes into common storage.
- * IN state_only - if true over-write only node state, features and reason
+ * IN state_only - if true over-write only node state, features, gres and reason
  * RET 0 or error code
  */
 extern int load_all_node_state ( bool state_only );
@@ -1351,10 +1351,13 @@ extern void reset_job_bitmaps (void);
 extern void reset_job_priority(void);
 
 /*
- * restore_node_features - Restore node features based upon state
- *      saved (preserves interactive updates)
+ * restore_node_features - Make node and config (from slurm.conf) fields
+ *	consistent for Features, Gres and Weight
+ * IN recover - 
+ *              0, 1 - use data from config record, built using slurm.conf
+ *              2 = use data from node record, built from saved state
  */
-extern void restore_node_features(void);
+extern void restore_node_features(int recover);
 
 /* Update time stamps for job step resume */
 extern void resume_job_step(struct job_record *job_ptr);
