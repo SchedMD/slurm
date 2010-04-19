@@ -1294,7 +1294,7 @@ extern List acct_storage_p_get_clusters(void *db_conn, uid_t uid,
 	return ret_list;
 }
 
-extern List acct_storage_p_get_config(void)
+extern List acct_storage_p_get_config(void *db_conn)
 {
 	slurmdbd_msg_t req, resp;
 	dbd_list_msg_t *got_msg;
