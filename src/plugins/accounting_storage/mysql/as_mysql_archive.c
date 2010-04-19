@@ -1141,7 +1141,7 @@ static char *_make_archive_name(time_t period_start, time_t period_end,
 		 time_tm.tm_sec);
 
 	/* write the buffer to file */
-	return xstrdup_printf("%s/\"%s_%s\"_archive_\"%s_%s\"",
+	return xstrdup_printf("%s/%s_%s_archive_%s_%s",
 			      arch_dir, cluster_name, arch_type,
 			      start_char, end_char);
 
