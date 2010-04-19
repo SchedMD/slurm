@@ -56,6 +56,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+
+#include <slurm/slurmdb.h>
+
 #if defined(HAVE_AIX)
 /* AIX defines a func_data macro which conflicts with func_data
  * variable names in the gtk.h headers */
@@ -312,6 +315,7 @@ extern void tab_pressed(GtkWidget *widget, GdkEventButton *event,
 
 //popups.c
 extern void create_config_popup(GtkAction *action, gpointer user_data);
+extern void create_dbconfig_popup(GtkAction *action, gpointer user_data);
 extern void create_daemon_popup(GtkAction *action, gpointer user_data);
 extern void create_search_popup(GtkAction *action, gpointer user_data);
 extern void change_refresh_popup(GtkAction *action, gpointer user_data);

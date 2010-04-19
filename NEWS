@@ -3,6 +3,7 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 2.2.0.pre6
 =============================
+ -- sview - added ability to see database configuration.
 
 * Changes in SLURM 2.2.0.pre5
 =============================

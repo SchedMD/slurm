@@ -217,7 +217,7 @@ static GtkTreeStore *_local_create_treestore_2cols(GtkWidget *popup,
 	return treestore;
 }
 
-static void _layout_ctl_conf(GtkTreeStore *treestore,
+static void _layout_conf_ctl(GtkTreeStore *treestore,
 			     slurm_ctl_conf_info_msg_t *slurm_ctl_conf_ptr)
 {
 	char temp_str[128];
@@ -274,6 +274,104 @@ static void _layout_ctl_conf(GtkTreeStore *treestore,
 	list_iterator_destroy(itr);
 }
 
+static void _layout_conf_dbd(GtkTreeStore *treestore)
+{
+	ListIterator itr = NULL;
+	GtkTreeIter iter;
+	config_key_pair_t *key_pair;
+	int update = 0;
+	time_t now = time(NULL);
+	char tmp_str[128], *user_name = NULL;
+	List dbd_config_list = NULL;
+
+	/* first load accounting parms from slurm.conf */
+	char *acct_storage_backup_host =
+		slurm_get_accounting_storage_backup_host();
+	char *acct_storage_host = slurm_get_accounting_storage_host();
+	char *acct_storage_loc  = slurm_get_accounting_storage_loc();
+	char *acct_storage_pass = slurm_get_accounting_storage_pass();
+	uint32_t acct_storage_port = slurm_get_accounting_storage_port();
+	char *acct_storage_type = slurm_get_accounting_storage_type();
+	char *acct_storage_user = slurm_get_accounting_storage_user();
+	char *auth_type = slurm_get_auth_type();
+	uint16_t msg_timeout = slurm_get_msg_timeout();
+	char *plugin_dir = slurm_get_plugin_dir();
+	uint16_t private_data = slurm_get_private_data();
+	uint32_t slurm_user_id = slurm_get_slurm_user_id();
+	uint16_t track_wckey = slurm_get_track_wckey();
+
+	slurm_make_time_str(&now, tmp_str, sizeof(tmp_str));
+	add_display_treestore_line_with_font(
+		update, treestore, &iter,
+		"SLURM Configuration data as of", tmp_str, "bold");
+
+	add_display_treestore_line(update, treestore, &iter,
+				   "AccountingStorageBackupHost",
+				   acct_storage_backup_host);
+	add_display_treestore_line(update, treestore, &iter,
+				   "AccountingStorageHost", acct_storage_host);
+	add_display_treestore_line(update, treestore, &iter,
+				   "AccountingStorageLoc", acct_storage_loc);
+	add_display_treestore_line(update, treestore, &iter,
+				   "AccountingStoragePass", acct_storage_pass);
+	sprintf(tmp_str, "%u", acct_storage_port);
+	add_display_treestore_line(update, treestore, &iter,
+				   "AccountingStoragePort", tmp_str);
+	add_display_treestore_line(update, treestore, &iter,
+				   "AccountingStorageType", acct_storage_type);
+	add_display_treestore_line(update, treestore, &iter,
+				   "AccountingStorageUser", acct_storage_user);
+	add_display_treestore_line(update, treestore, &iter,
+				   "AuthType", auth_type);
+	sprintf(tmp_str, "%u sec", msg_timeout);
+	add_display_treestore_line(update, treestore, &iter,
+				   "MessageTimeout", tmp_str);
+	add_display_treestore_line(update, treestore, &iter,
+				   "PluginDir", plugin_dir);
+	private_data_string(private_data, tmp_str, sizeof(tmp_str));
+	add_display_treestore_line(update, treestore, &iter,
+				   "PrivateData", tmp_str);
+	user_name = uid_to_string(slurm_user_id);
+	sprintf(tmp_str, "%s(%u)", user_name, slurm_user_id);
+	xfree(user_name);
+	add_display_treestore_line(update, treestore, &iter,
+				   "SlurmUserId", tmp_str);
+	add_display_treestore_line(update, treestore, &iter,
+				   "SLURM_CONF", default_slurm_config_file);
+	add_display_treestore_line(update, treestore, &iter,
+				   "SLURM_VERSION", SLURM_VERSION_STRING);
+	sprintf(tmp_str, "%u", track_wckey);
+	add_display_treestore_line(update, treestore, &iter,
+				   "TrackWCKey", tmp_str);
+
+	xfree(acct_storage_backup_host);
+	xfree(acct_storage_host);
+	xfree(acct_storage_loc);
+	xfree(acct_storage_pass);
+	xfree(acct_storage_type);
+	xfree(acct_storage_user);
+	xfree(auth_type);
+	xfree(plugin_dir);
+
+	/* now load accounting parms from slurmdbd.conf */
+
+	/* second load slurmdbd.conf parms */
+	if (!(dbd_config_list = slurmdb_config_get(NULL)))
+		return;
+
+	add_display_treestore_line_with_font(
+		update, treestore, &iter,
+		"\nSlurmDBD Configuration:", NULL, "bold");
+
+        itr = list_iterator_create(dbd_config_list);
+	while((key_pair = list_next(itr))) {
+	        add_display_treestore_line(update, treestore, &iter,
+					   key_pair->name,
+					   key_pair->value);
+	}
+	list_iterator_destroy(itr);
+}
+
 extern void create_config_popup(GtkAction *action, gpointer user_data)
 {
 	GtkWidget *popup = gtk_dialog_new_with_buttons(
@@ -294,9 +392,37 @@ extern void create_config_popup(GtkAction *action, gpointer user_data)
 			 G_CALLBACK(_delete_popup), NULL);
 
 	error_code = get_new_info_config(&slurm_ctl_conf_ptr);
-	_layout_ctl_conf(treestore, slurm_ctl_conf_ptr);
+	_layout_conf_ctl(treestore, slurm_ctl_conf_ptr);
 
 	gtk_widget_show_all(popup);
+
+	return;
+}
+
+extern void create_dbconfig_popup(GtkAction *action, gpointer user_data)
+{
+        List dbd_config_list = NULL;
+	GtkWidget *popup = gtk_dialog_new_with_buttons(
+		"SLURM Database Config Info",
+		GTK_WINDOW(user_data),
+		GTK_DIALOG_DESTROY_WITH_PARENT,
+		GTK_STOCK_CLOSE,
+		GTK_RESPONSE_OK,
+		NULL);
+	GtkTreeStore *treestore =
+		_local_create_treestore_2cols(popup, 600, 400);
+
+	g_signal_connect(G_OBJECT(popup), "delete_event",
+			 G_CALLBACK(_delete_popup), NULL);
+	g_signal_connect(G_OBJECT(popup), "response",
+			 G_CALLBACK(_delete_popup), NULL);
+
+	_layout_conf_dbd(treestore);
+
+	gtk_widget_show_all(popup);
+
+	if (dbd_config_list)
+		list_destroy(dbd_config_list);
 
 	return;
 }

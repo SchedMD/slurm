@@ -516,6 +516,7 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 		"    </menu>"
 		"    <menu action='displays'>"
 		"      <menuitem action='config'/>"
+		"      <menuitem action='dbconfig'/>"
 		"    </menu>"
 		"    <menu action='help'>"
 		"      <menuitem action='about'/>"
@@ -587,6 +588,11 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 		{"config", GTK_STOCK_INFO, "_Config Info",
 		 "<control>c", "Displays info from slurm.conf file",
 		 G_CALLBACK(create_config_popup)},
+		{"dbconfig", GTK_STOCK_INFO, "_Database Config Info",
+		 "<control>d",
+		 "Displays info relevant to the "
+		 "configuration of the Slurm Database.",
+		 G_CALLBACK(create_dbconfig_popup)},
 		{"exit", GTK_STOCK_QUIT, "E_xit",
 		 "<control>x", "Exits Program", G_CALLBACK(_delete)},
 		{"help", NULL, "_Help", "<alt>h"},
