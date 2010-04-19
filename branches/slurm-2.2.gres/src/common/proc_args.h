@@ -65,6 +65,9 @@
 /* print this version of SLURM */
 void print_slurm_version(void);
 
+/* print the available gres options */
+void print_gres_help(void);
+
 /* verify the requested distribution type */
 task_dist_states_t verify_dist_type(const char *arg, uint32_t *plane_size);
 

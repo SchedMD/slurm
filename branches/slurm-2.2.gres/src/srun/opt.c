@@ -182,6 +182,7 @@
 #define LONG_OPT_SIGNAL          0x14e
 #define LONG_OPT_DEBUG_SLURMD    0x14f
 #define LONG_OPT_TIME_MIN        0x150
+#define LONG_OPT_GRES            0x151
 
 /*---- global variables, defined in opt.h ----*/
 int _verbose;
@@ -401,6 +402,7 @@ static void _opt_default()
 
 	opt.hold	    = false;
 	opt.constraints	    = NULL;
+	opt.gres	    = NULL;
 	opt.contiguous	    = false;
 	opt.nodelist	    = NULL;
 	opt.exc_nodes	    = NULL;
@@ -774,6 +776,7 @@ static void set_options(const int argc, char **argv)
 		{"exclusive",        no_argument,       0, LONG_OPT_EXCLUSIVE},
 		{"get-user-env",     optional_argument, 0, LONG_OPT_GET_USER_ENV},
 		{"gid",              required_argument, 0, LONG_OPT_GID},
+		{"gres",             required_argument, 0, LONG_OPT_GRES},
 		{"help",             no_argument,       0, LONG_OPT_HELP},
 		{"hint",             required_argument, 0, LONG_OPT_HINT},
 		{"ioload-image",     required_argument, 0, LONG_OPT_RAMDISK_IMAGE},
@@ -1432,6 +1435,14 @@ static void set_options(const int argc, char **argv)
 		case LONG_OPT_TIME_MIN:
 			xfree(opt.time_min_str);
 			opt.time_min_str = xstrdup(optarg);
+			break;
+		case LONG_OPT_GRES:
+			if (!strcasecmp(optarg, "help")) {
+				print_gres_help();
+				exit(0);
+			}
+			xfree(opt.gres);
+			opt.gres = xstrdup(optarg);
 			break;
 		default:
 			if (spank_process_option (opt_char, optarg) < 0) {
@@ -2151,6 +2162,8 @@ static void _opt_list()
 	info("comment        : %s", opt.comment);
 
 	info("dependency     : %s", opt.dependency);
+	if (opt.gres)
+		info("gres           : %s", opt.gres);
 	info("exclusive      : %s", tf_(opt.exclusive));
 	info("qos            : %s", opt.qos);
 	if (opt.shared != (uint16_t) NO_VAL)
@@ -2230,7 +2243,7 @@ static void _usage(void)
 "            [-c ncpus] [-r n] [-p partition] [--hold] [-t minutes]\n"
 "            [-D path] [--immediate[=secs]] [--overcommit] [--no-kill]\n"
 "            [--share] [--label] [--unbuffered] [-m dist] [-J jobname]\n"
-"            [--jobid=id] [--verbose] [--slurmd_debug=#]\n"
+"            [--jobid=id] [--verbose] [--slurmd_debug=#] [--gres=list]\n"
 "            [--core=type] [-T threads] [-W sec] [--checkpoint=time]\n"
 "            [--checkpoint-dir=dir]  [--licenses=names]\n"
 "            [--restart-dir=dir] [--qos=qos] [--time-min=minutes]\n"
@@ -2281,6 +2294,7 @@ static void _help(void)
 "  -E, --preserve-env          env vars for node and task counts override\n"
 "                              command-line flags\n"
 "      --get-user-env          used by Moab.  See srun man page.\n"
+"      --gres=list             required generic resources\n"
 "  -H, --hold                  submit job in held state\n"
 "  -i, --input=in              location of stdin redirection\n"
 "  -I, --immediate[=secs]      exit if resources not available in \"secs\"\n"

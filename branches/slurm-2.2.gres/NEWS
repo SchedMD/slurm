@@ -4,8 +4,10 @@ documents those changes that are of interest to users and admins.
 * Changes in SLURM 2.2.0.pre6
 =============================
  -- Added infrastructure to support allocation of generic node resources.
-    - Added node configuration parameter of Gres=.
-    - Added ability to view/modify gres using scontrol, sinfo and sview.
+    -Added node configuration parameter of Gres=.
+    -Added ability to view/modify a node's gres using scontrol, sinfo and sview.
+    -Added salloc, sbatch and srun --gres option.
+    -Added ability to view/modify a job's gres using scontrol, squeue and sview.
 
 * Changes in SLURM 2.2.0.pre5
 =============================

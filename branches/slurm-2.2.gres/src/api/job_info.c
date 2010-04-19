@@ -603,8 +603,8 @@ line14:
 
 	/****** Line 16 ******/
 	snprintf(tmp_line, sizeof(tmp_line),
-		 "Features=%s Reservation=%s",
-		 job_ptr->features, job_ptr->resv_name);
+		 "Features=%s Gres=%s Reservation=%s",
+		 job_ptr->features, job_ptr->gres, job_ptr->resv_name);
 	xstrcat(out, tmp_line);
 	if (one_liner)
 		xstrcat(out, " ");

@@ -1,4 +1,4 @@
-.TH "salloc" "1" "SLURM 2.2" "February 2010" "SLURM Commands"
+.TH "salloc" "1" "SLURM 2.2" "April 2010" "SLURM Commands"
 
 .SH "NAME"
 salloc \- Obtain a SLURM job allocation (a set of nodes), execute a command,
@@ -353,6 +353,21 @@ This option was originally created for use by Moab.
 If \fBsalloc\fR is run as root, and the \fB\-\-gid\fR option is used,
 submit the job with \fIgroup\fR's group access permissions.  \fIgroup\fR
 may be the group name or the numerical group ID.
+
+.TP
+\fB\-\-gres\fR=<\fIlist\fR>
+Specifies a comma delimited list of generic consumable resources.
+The format of each entry on the list is "name[:count[*cpu]]".
+The name is that of the consumable resource.
+The count is the number of those resources with a default value of 1.
+The specified resources will be allocated to the job on each node
+allocated unless "*cpu" is appended, in which case the resources
+will be allocated on a per cpu basis.
+The available generic consumable resources is configurable by the system
+administrator.
+A list of available generic consumable resources will be printed and the
+command will exit if the option argument is "help".
+Examples of use include "\-\-gres=gpus:2*cpu,disk=40G" and "\-\-gres=help".
 
 .TP
 \fB\-h\fR, \fB\-\-help\fR

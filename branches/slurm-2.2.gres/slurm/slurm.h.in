@@ -577,6 +577,8 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 				 * from job's allocation, default NONE */
 	char *features;		/* comma separated list of required features,
 				 * default NONE */
+	char *gres;		/* comma separated list of required generic
+				 * resources, default NONE */
 	uint32_t group_id;	/* group to assume, if run as root. */
 	uint16_t immediate;	/* 1 if allocate to run or fail immediately,
 				 * 0 if to be queued awaiting resources */
@@ -706,6 +708,7 @@ typedef struct job_info {
 				 * start_range_2, .., -1  */
 	uint32_t exit_code;	/* exit code for job (status from wait call) */
 	char *features;		/* comma separated list of required features */
+	char *gres;		/* comma separated list of generic resources */
 	uint32_t group_id;	/* group job sumitted as */
 	uint32_t job_id;	/* job ID */
 	uint16_t job_state;	/* state of the job, see enum job_states */

@@ -59,6 +59,14 @@ struct job_queue {
 extern int build_feature_list(struct job_record *job_ptr);
 
 /*
+ * build_gres_list - Translate a job's gres string into a gres_list
+ * IN  job_ptr->gres
+ * OUT job_ptr->gres_list
+ * RET error code
+ */
+extern int build_gres_list(struct job_record *job_ptr);
+
+/*
  * build_job_queue - build (non-priority ordered) list of pending jobs
  * OUT job_queue - pointer to job queue
  * RET number of entries in job_queue
