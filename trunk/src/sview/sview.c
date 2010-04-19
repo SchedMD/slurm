@@ -47,7 +47,7 @@ typedef struct {
 } page_thr_t;
 
 /* globals */
-sview_parameters_t params;
+sview_config_t sview_config;
 int adding = 1;
 int fini = 0;
 int grid_init = 0;
@@ -56,16 +56,10 @@ bool force_refresh = FALSE;
 List popup_list = NULL;
 List signal_params_list = NULL;
 int page_running[PAGE_CNT];
-int global_sleep_time = 5;
-int global_x_width = 0;
-int global_horizontal = 10;
-int global_vertical = 10;
 bool global_entry_changed = 0;
 bool global_send_update_msg = 0;
 bool global_edit_error = 0;
-bool global_show_hidden = 0;
 gchar *global_edit_error_msg = NULL;
-bool admin_mode = FALSE;
 GtkWidget *main_notebook = NULL;
 GtkWidget *main_statusbar = NULL;
 GtkWidget *main_window = NULL;
@@ -74,7 +68,6 @@ GtkTable *main_grid_table = NULL;
 GStaticMutex sview_mutex = G_STATIC_MUTEX_INIT;
 GMutex *grid_mutex = NULL;
 GCond *grid_cond = NULL;
-int grid_speedup = 0;
 
 static GtkActionGroup *admin_action_group = NULL;
 static GtkActionGroup *menu_action_group = NULL;
@@ -85,9 +78,6 @@ display_data_t main_display_data[] = {
 	 refresh_main, create_model_job, admin_edit_job,
 	 get_info_job, specific_info_job,
 	 set_menus_job, NULL},
-	{G_TYPE_NONE, STEP_PAGE, NULL, FALSE, -1,
-	 refresh_main, NULL, NULL, NULL,
-	 NULL, NULL, NULL},
 	{G_TYPE_NONE, PART_PAGE, "Partitions", TRUE, -1,
 	 refresh_main, create_model_part, admin_edit_part,
 	 get_info_part, specific_info_part,
@@ -167,7 +157,7 @@ void *_page_thr(void *arg)
 		g_static_mutex_unlock(&sview_mutex);
 /* 		END_TIMER; */
 /* 		g_print("got for initeration: %s\n", TIME_STR); */
-		sleep(global_sleep_time);
+		sleep(sview_config.refresh_delay);
 
 		gdk_threads_enter();
 		if(thread_count > 1) {
@@ -213,7 +203,7 @@ void *_grid_init_thr(void *arg)
 		gdk_threads_leave();
 
 		if(rc != SLURM_SUCCESS)
-			sleep(global_sleep_time);
+			sleep(sview_config.refresh_delay);
 		else
 			grid_init = 1;
 
@@ -271,10 +261,9 @@ static void _page_switched(GtkNotebook     *notebook,
 			break;
 	}
 
-	if(main_display_data[i].extra != page_num) {
-		g_print("page %d not found\n", page_num);
+	if(main_display_data[i].extra != page_num)
 		return;
-	}
+
 	if(main_display_data[i].get_info) {
 		running = i;
 		page_running[i] = 1;
@@ -288,8 +277,7 @@ static void _page_switched(GtkNotebook     *notebook,
 		page_thr->page_num = i;
 		page_thr->table = table;
 
-		if (!g_thread_create(_page_thr, page_thr, FALSE, &error))
-		{
+		if (!g_thread_create(_page_thr, page_thr, FALSE, &error)) {
 			g_printerr ("Failed to create page thread: %s\n",
 				    error->message);
 			return;
@@ -301,30 +289,28 @@ static void _set_admin_mode(GtkToggleAction *action)
 {
 //	GtkAction *admin_action = NULL;
 
-	if(admin_mode) {
-		admin_mode = FALSE;
+	if(sview_config.admin_mode) {
+		sview_config.admin_mode = FALSE;
 		gtk_statusbar_pop(GTK_STATUSBAR(main_statusbar),
 				  STATUS_ADMIN_MODE);
 	} else {
-		admin_mode = TRUE;
+		sview_config.admin_mode = TRUE;
 		gtk_statusbar_push(GTK_STATUSBAR(main_statusbar),
 				   STATUS_ADMIN_MODE,
 				   "Admin mode activated! "
 				   "Think before you alter anything.");
 	}
-	gtk_action_group_set_sensitive(admin_action_group, admin_mode);
+	gtk_action_group_set_sensitive(admin_action_group, sview_config.admin_mode);
 }
 
 static void _set_grid(GtkToggleAction *action)
 {
-	static bool open = TRUE;
-
-	if(open) {
+	if(sview_config.show_grid) {
 		gtk_widget_hide(grid_window);
-		open = FALSE;
+		sview_config.show_grid = FALSE;
 	} else {
 		gtk_widget_show(grid_window);
-		open = TRUE;
+		sview_config.show_grid = TRUE;
 	}
 
 	return;
@@ -333,14 +319,14 @@ static void _set_grid(GtkToggleAction *action)
 static void _set_hidden(GtkToggleAction *action)
 {
 	char *tmp;
-	if(global_show_hidden) {
+	if(sview_config.show_hidden) {
 		tmp = g_strdup_printf(
 			"Hidden partitions and their jobs are now hidden");
-		global_show_hidden = 0;
+		sview_config.show_hidden = 0;
 	} else {
 		tmp = g_strdup_printf(
 			"Hidden partitions and their jobs are now visible");
-		global_show_hidden = 1;
+		sview_config.show_hidden = 1;
 	}
 	refresh_main(NULL, NULL);
 	display_edit_note(tmp);
@@ -721,6 +707,18 @@ extern void tab_pressed(GtkWidget *widget, GdkEventButton *event,
 	}
 }
 
+extern void close_tab(GtkWidget *widget, GdkEventButton *event,
+		      display_data_t *display_data)
+{
+	if(event->button == 3)
+		/* don't do anything with a right click */
+		return;
+
+	gtk_widget_hide(gtk_notebook_get_nth_page(GTK_NOTEBOOK(main_notebook),
+						  display_data->extra));
+	//g_print("hid %d\n", display_data->extra);
+}
+
 int main(int argc, char *argv[])
 {
 	GtkWidget *menubar = NULL;
@@ -730,9 +728,25 @@ int main(int argc, char *argv[])
 	GtkViewport *view = NULL;
 	int i=0;
 
-	if(getenv("SVIEW_GRID_SPEEDUP"))
-		grid_speedup = 1;
+	sview_config.refresh_delay = 5;
+	sview_config.grid_x_width = 0;
+	sview_config.grid_hori = 10;
+	sview_config.grid_vert = 10;
+	sview_config.show_hidden = 0;
+	sview_config.admin_mode = FALSE;
+	sview_config.grid_speedup = 0;
+	sview_config.show_grid = TRUE;
+	sview_config.page_default = PART_PAGE;
+	sview_config.tab_pos = GTK_POS_TOP;
 
+	if(getenv("SVIEW_GRID_SPEEDUP"))
+		sview_config.grid_speedup = 1;
+	for(i=0; i<PAGE_CNT; i++) {
+		if(!main_display_data[i].show)
+			sview_config.page_visible[i] = FALSE;
+		else
+			sview_config.page_visible[i] = TRUE;
+	}
 	_init_pages();
 	g_thread_init(NULL);
 	gdk_threads_init();
@@ -779,7 +793,8 @@ int main(int argc, char *argv[])
 
 	gtk_notebook_popup_enable(GTK_NOTEBOOK(main_notebook));
 	gtk_notebook_set_scrollable(GTK_NOTEBOOK(main_notebook), TRUE);
-	gtk_notebook_set_tab_pos(GTK_NOTEBOOK(main_notebook), GTK_POS_TOP);
+	gtk_notebook_set_tab_pos(GTK_NOTEBOOK(main_notebook),
+				 sview_config.tab_pos);
 
 	main_statusbar = gtk_statusbar_new();
 	gtk_statusbar_set_has_resize_grip(GTK_STATUSBAR(main_statusbar),
@@ -802,17 +817,42 @@ int main(int argc, char *argv[])
 	for(i=0; i<PAGE_CNT; i++) {
 		if(main_display_data[i].id == -1)
 			break;
-		else if(!main_display_data[i].show)
-			continue;
+
 		create_page(GTK_NOTEBOOK(main_notebook),
 			    &main_display_data[i]);
 	}
 
 	/* tell signal we are done adding */
-	adding = 0;
+
 	popup_list = list_create(destroy_popup_info);
 	signal_params_list = list_create(destroy_signal_params);
+
 	gtk_widget_show_all(main_window);
+
+	adding = 0;
+	/* apply default settings */
+	if(!sview_config.show_grid)
+		gtk_widget_hide(grid_window);
+
+	for(i=0; i<PAGE_CNT; i++) {
+		GtkWidget *visible_tab = NULL;
+
+		if(main_display_data[i].id == -1)
+			break;
+
+		visible_tab = gtk_notebook_get_nth_page(
+			GTK_NOTEBOOK(main_notebook), i);
+		if(sview_config.page_visible[i]
+		   || (i == sview_config.page_default))
+			gtk_widget_show(visible_tab);
+		else
+			gtk_widget_hide(visible_tab);
+	}
+	/* Set the default page This has to be done after the
+	 * gtk_widget_show_all since it, for some reason always sets
+	 * 0 to be the default page and will just overwrite this. */
+	gtk_notebook_set_current_page(GTK_NOTEBOOK(main_notebook),
+				      sview_config.page_default);
 
 	/* Finished! */
 	gtk_main ();

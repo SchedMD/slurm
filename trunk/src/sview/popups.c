@@ -685,7 +685,7 @@ extern void change_refresh_popup(GtkAction *action, gpointer user_data)
 {
 	GtkWidget *table = gtk_table_new(1, 2, FALSE);
 	GtkWidget *label = NULL;
-	GtkObject *adjustment = gtk_adjustment_new(global_sleep_time,
+	GtkObject *adjustment = gtk_adjustment_new(sview_config.refresh_delay,
 						   1, 10000,
 						   5, 60,
 						   0);
@@ -720,11 +720,11 @@ extern void change_refresh_popup(GtkAction *action, gpointer user_data)
 	response = gtk_dialog_run (GTK_DIALOG(popup));
 
 	if (response == GTK_RESPONSE_OK) {
-		global_sleep_time =
+		sview_config.refresh_delay =
 			gtk_spin_button_get_value_as_int(
 				GTK_SPIN_BUTTON(spin_button));
 		temp = g_strdup_printf("Refresh Interval set to %d seconds.",
-				       global_sleep_time);
+				       sview_config.refresh_delay);
 		gtk_statusbar_pop(GTK_STATUSBAR(main_statusbar),
 				  STATUS_REFRESH);
 		response = gtk_statusbar_push(GTK_STATUSBAR(main_statusbar),
@@ -749,8 +749,8 @@ extern void change_grid_popup(GtkAction *action, gpointer user_data)
 	GtkWidget *label;
 	GtkObject *adjustment;
 	GtkWidget *width_sb, *hori_sb, *vert_sb;
-	int width = global_x_width, hori = global_horizontal,
-		vert = global_vertical;
+	int width = sview_config.grid_x_width, hori = sview_config.grid_hori,
+		vert = sview_config.grid_vert;
 	GtkWidget *popup = gtk_dialog_new_with_buttons(
 		"Grid Properties",
 		GTK_WINDOW (user_data),
@@ -769,21 +769,21 @@ extern void change_grid_popup(GtkAction *action, gpointer user_data)
 			   table, FALSE, FALSE, 0);
 
 	label = gtk_label_new("Nodes in row ");
-	adjustment = gtk_adjustment_new(global_x_width, 1, 1000, 1, 60, 0);
+	adjustment = gtk_adjustment_new(sview_config.grid_x_width, 1, 1000, 1, 60, 0);
 	width_sb = gtk_spin_button_new(GTK_ADJUSTMENT(adjustment), 1, 0);
 	gtk_container_set_border_width(GTK_CONTAINER(table), 10);
 	gtk_table_attach_defaults(GTK_TABLE(table), label, 0, 1, 0, 1);
 	gtk_table_attach_defaults(GTK_TABLE(table), width_sb, 1, 2, 0, 1);
 
 	label = gtk_label_new("Nodes before horizontal break ");
-	adjustment = gtk_adjustment_new(global_horizontal, 1, 1000, 1, 60, 0);
+	adjustment = gtk_adjustment_new(sview_config.grid_hori, 1, 1000, 1, 60, 0);
 	hori_sb = gtk_spin_button_new(GTK_ADJUSTMENT(adjustment), 1, 0);
 	gtk_container_set_border_width(GTK_CONTAINER(table), 10);
 	gtk_table_attach_defaults(GTK_TABLE(table), label, 0, 1, 1, 2);
 	gtk_table_attach_defaults(GTK_TABLE(table), hori_sb, 1, 2, 1, 2);
 
 	label = gtk_label_new("Nodes before vertical break ");
-	adjustment = gtk_adjustment_new(global_vertical, 1, 1000, 1, 60, 0);
+	adjustment = gtk_adjustment_new(sview_config.grid_vert, 1, 1000, 1, 60, 0);
 	vert_sb = gtk_spin_button_new(GTK_ADJUSTMENT(adjustment), 1, 0);
 	gtk_container_set_border_width(GTK_CONTAINER(table), 10);
 	gtk_table_attach_defaults(GTK_TABLE(table), label, 0, 1, 2, 3);
@@ -793,25 +793,25 @@ extern void change_grid_popup(GtkAction *action, gpointer user_data)
 	response = gtk_dialog_run (GTK_DIALOG(popup));
 
 	if (response == GTK_RESPONSE_OK) {
-		global_x_width =
+		sview_config.grid_x_width =
 			gtk_spin_button_get_value_as_int(
 				GTK_SPIN_BUTTON(width_sb));
-		global_horizontal =
+		sview_config.grid_hori =
 			gtk_spin_button_get_value_as_int(
 				GTK_SPIN_BUTTON(hori_sb));
-		global_vertical =
+		sview_config.grid_vert =
 			gtk_spin_button_get_value_as_int(
 				GTK_SPIN_BUTTON(vert_sb));
-		if((width == global_x_width)
-		   && (hori == global_horizontal)
-		   && (vert == global_vertical)) {
+		if((width == sview_config.grid_x_width)
+		   && (hori == sview_config.grid_hori)
+		   && (vert == sview_config.grid_vert)) {
 			temp = g_strdup_printf("Grid: Nothing changed.");
 		} else {
 			temp = g_strdup_printf("Grid set to %d nodes breaks "
 					       "at %d H and %d V.",
-					       global_x_width,
-					       global_horizontal,
-					       global_vertical);
+					       sview_config.grid_x_width,
+					       sview_config.grid_hori,
+					       sview_config.grid_vert);
 			get_system_stats(main_grid_table);
 		}
 		gtk_statusbar_pop(GTK_STATUSBAR(main_statusbar),
