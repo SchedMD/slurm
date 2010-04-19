@@ -1132,7 +1132,8 @@ static int _update_node_features(char *node_names, char *features)
 		} else if (tmp_cnt == config_cnt) {
 			/* all nodes changed, update in situ */
 			xfree(config_ptr->feature);
-			config_ptr->feature = xstrdup(features);
+			if (features && features[0])
+				config_ptr->feature = xstrdup(features);
 			build_config_feature_list(config_ptr);
 		} else {
 			/* partial update, split config_record */
@@ -1140,7 +1141,8 @@ static int _update_node_features(char *node_names, char *features)
 			if (first_new == NULL);
 				first_new = new_config_ptr;
 			xfree(new_config_ptr->feature);
-			new_config_ptr->feature     = xstrdup(features);
+			if (features && features[0])
+				new_config_ptr->feature = xstrdup(features);
 			new_config_ptr->node_bitmap = bit_copy(tmp_bitmap);
 			new_config_ptr->nodes = bitmap2node_name(tmp_bitmap);
 
@@ -1205,7 +1207,8 @@ static int _update_node_gres(char *node_names, char *gres)
 		} else if (tmp_cnt == config_cnt) {
 			/* all nodes changed, update in situ */
 			xfree(config_ptr->gres);
-			config_ptr->gres = xstrdup(gres);
+			if (gres && gres[0])
+				config_ptr->gres = xstrdup(gres);
 //FIXME			build_config_feature_list(config_ptr);
 		} else {
 			/* partial update, split config_record */
@@ -1213,7 +1216,8 @@ static int _update_node_gres(char *node_names, char *gres)
 			if (first_new == NULL);
 				first_new = new_config_ptr;
 			xfree(new_config_ptr->gres);
-			new_config_ptr->gres        = xstrdup(gres);
+			if (gres && gres[0])
+				new_config_ptr->gres = xstrdup(gres);
 			new_config_ptr->node_bitmap = bit_copy(tmp_bitmap);
 			new_config_ptr->nodes = bitmap2node_name(tmp_bitmap);
 

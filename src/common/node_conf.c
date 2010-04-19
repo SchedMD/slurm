@@ -489,9 +489,9 @@ extern int build_all_nodeline_info (bool set_bitmap)
 		config_ptr->real_memory = node->real_memory;
 		config_ptr->tmp_disk = node->tmp_disk;
 		config_ptr->weight = node->weight;
-		if (node->feature)
+		if (node->feature && node->feature[0])
 			config_ptr->feature = xstrdup(node->feature);
-		if (node->gres)
+		if (node->gres && node->gres[0])
 			config_ptr->gres = xstrdup(node->gres);
 
 		rc = _build_single_nodeline_info(node, config_ptr);
