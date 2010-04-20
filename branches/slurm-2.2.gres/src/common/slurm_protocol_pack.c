@@ -2879,6 +2879,7 @@ _pack_job_step_create_request_msg(job_step_create_request_msg_t
 		packstr(msg->network, buffer);
 		packstr(msg->node_list, buffer);
 		packstr(msg->ckpt_dir, buffer);
+		packstr(msg->gres, buffer);
 
 		pack8(msg->no_kill, buffer);
 		pack8(msg->overcommit, buffer);
@@ -2952,6 +2953,7 @@ _unpack_job_step_create_request_msg(job_step_create_request_msg_t ** msg,
 				       buffer);
 		safe_unpackstr_xmalloc(&(tmp_ptr->ckpt_dir), &uint32_tmp, 
 				       buffer);
+		safe_unpackstr_xmalloc(&(tmp_ptr->gres), &uint32_tmp, buffer);
 
 		safe_unpack8(&(tmp_ptr->no_kill), buffer);
 		safe_unpack8(&(tmp_ptr->overcommit), buffer);
@@ -3419,17 +3421,44 @@ _unpack_job_step_info_members(job_step_info_t * step, Buf buffer,
 	uint32_t uint32_tmp = 0;
 	char *node_inx_str;
 
-	if(protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
+	if(protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
 		safe_unpack32(&step->job_id, buffer);
 		safe_unpack32(&step->step_id, buffer);
 		safe_unpack16(&step->ckpt_interval, buffer);
 		safe_unpack32(&step->user_id, buffer);
 		safe_unpack32(&step->num_cpus, buffer);
 		safe_unpack32(&step->num_tasks, buffer);
-
 		safe_unpack32(&step->time_limit, buffer);
+
 		safe_unpack_time(&step->start_time, buffer);
 		safe_unpack_time(&step->run_time, buffer);
+
+		safe_unpackstr_xmalloc(&step->partition, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&step->resv_ports, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&step->nodes, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&step->name, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&step->network, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&node_inx_str, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&step->ckpt_dir, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&step->gres, &uint32_tmp, buffer);
+		if (node_inx_str == NULL)
+			step->node_inx = bitfmt2int("");
+		else {
+			step->node_inx = bitfmt2int(node_inx_str);
+			xfree(node_inx_str);
+		}
+	} else {
+		safe_unpack32(&step->job_id, buffer);
+		safe_unpack32(&step->step_id, buffer);
+		safe_unpack16(&step->ckpt_interval, buffer);
+		safe_unpack32(&step->user_id, buffer);
+		safe_unpack32(&step->num_cpus, buffer);
+		safe_unpack32(&step->num_tasks, buffer);
+		safe_unpack32(&step->time_limit, buffer);
+
+		safe_unpack_time(&step->start_time, buffer);
+		safe_unpack_time(&step->run_time, buffer);
+
 		safe_unpackstr_xmalloc(&step->partition, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&step->resv_ports, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&step->nodes, &uint32_tmp, buffer);

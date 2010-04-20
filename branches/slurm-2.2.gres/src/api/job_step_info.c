@@ -3,10 +3,9 @@
  *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002-2006 The Regents of the University of California.
- *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Morris Jette <jette1@llnl.gov>,
- *             Joey Ekstrom <ekstrom1@llnl.gov>,  et. al.
+ *  Written by Morris Jette <jette1@llnl.gov>, et. al.
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
@@ -135,8 +134,18 @@ slurm_sprint_job_step_info ( job_step_info_t * job_step_ptr,
 
 	/****** Line 2 ******/
 	snprintf(tmp_line, sizeof(tmp_line),
-		"Partition=%s Nodes=%s Tasks=%u Name=%s Network=%s",
+		"Partition=%s Nodes=%s Gres=%s",
 		job_step_ptr->partition, job_step_ptr->nodes,
+		job_step_ptr->gres);
+	xstrcat(out, tmp_line);
+	if (one_liner)
+		xstrcat(out, " ");
+	else
+		xstrcat(out, "\n   ");
+
+	/****** Line 3 ******/
+	snprintf(tmp_line, sizeof(tmp_line),
+		"Tasks=%u Name=%s Network=%s",
 		job_step_ptr->num_tasks, job_step_ptr->name,
 		job_step_ptr->network);
 	xstrcat(out, tmp_line);
@@ -145,7 +154,7 @@ slurm_sprint_job_step_info ( job_step_info_t * job_step_ptr,
 	else
 		xstrcat(out, "\n   ");
 
-	/****** Line 3 ******/
+	/****** Line 4 ******/
 	snprintf(tmp_line, sizeof(tmp_line),
 		"ResvPorts=%s Checkpoint=%u CheckpointDir=%s\n\n",
 		 job_step_ptr->resv_ports,

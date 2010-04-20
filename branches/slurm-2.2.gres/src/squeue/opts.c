@@ -445,6 +445,10 @@ extern int parse_format( char* format )
 							   field_size,
 							   right_justify,
 							   suffix );
+			else if (field[0] == 'b')
+				step_format_add_gres( params.format_list,
+						      field_size,
+						      right_justify, suffix );
 			else if (field[0] == 'i')
 				step_format_add_id( params.format_list,
 						    field_size,
