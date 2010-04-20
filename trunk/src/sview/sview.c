@@ -55,7 +55,7 @@ bool toggled = FALSE;
 bool force_refresh = FALSE;
 List popup_list = NULL;
 List signal_params_list = NULL;
-int page_running[PAGE_CNT];
+int page_running = -1;
 bool global_entry_changed = 0;
 bool global_send_update_msg = 0;
 bool global_edit_error = 0;
@@ -145,7 +145,7 @@ void *_page_thr(void *arg)
 	thread_count++;
 	gdk_flush();
 	gdk_threads_leave();
-	while(page_running[num]) {
+	while(page_running == num) {
 /* 		START_TIMER; */
 		g_static_mutex_lock(&sview_mutex);
 		gdk_threads_enter();
@@ -229,7 +229,6 @@ static void _page_switched(GtkNotebook     *notebook,
 	GtkBin *bin2 = GTK_BIN(&view->bin);
 	GtkTable *table = GTK_TABLE(bin2->child);
 	int i = 0;
-	static int running=-1;
 	page_thr_t *page_thr = NULL;
 	GError *error = NULL;
 	static int started_grid_init = 0;
@@ -248,8 +247,8 @@ static void _page_switched(GtkNotebook     *notebook,
 		started_grid_init = 1;
 	}
 
-	if(running != -1) {
-		page_running[running] = 0;
+	if(page_running != -1) {
+		page_running = page_num;
 	}
 
 	for(i=0; i<PAGE_CNT; i++) {
@@ -265,8 +264,7 @@ static void _page_switched(GtkNotebook     *notebook,
 		return;
 
 	if(main_display_data[i].get_info) {
-		running = i;
-		page_running[i] = 1;
+		page_running = i;
 		if(toggled || force_refresh) {
 			(main_display_data[i].get_info)(
 				table, &main_display_data[i]);
