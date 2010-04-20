@@ -265,11 +265,13 @@ static void _page_switched(GtkNotebook     *notebook,
 
 	if(main_display_data[i].get_info) {
 		page_running = i;
-		if(toggled || force_refresh) {
-			(main_display_data[i].get_info)(
-				table, &main_display_data[i]);
-			return;
-		}
+		/* If we return here we would not clear the grid which
+		   may need to be done. */
+		/* if(toggled || force_refresh) { */
+		/* 	(main_display_data[i].get_info)( */
+		/* 		table, &main_display_data[i]); */
+		/* 	return; */
+		/* } */
 
 		page_thr = xmalloc(sizeof(page_thr_t));
 		page_thr->page_num = i;

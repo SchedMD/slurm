@@ -313,7 +313,7 @@ extern char *change_grid_color(List button_list, int start, int end,
 			       int color_inx, bool change_unused,
 			       enum node_states state_override);
 extern void highlight_grid(GtkTreeView *tree_view, GtkTreePath *path,
-			   int node_inx_id, List button_list);
+			   int node_inx_id, int color_inx_id, List button_list);
 extern void highlight_grid_range(int start, int end, List button_list);
 extern void set_grid_used(List button_list, int start, int end,
 			  bool used, bool reset_highlight);

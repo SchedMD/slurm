@@ -893,8 +893,18 @@ extern gboolean row_clicked(GtkTreeView *tree_view, GdkEventButton *event,
 					  (gint) event->x,
 					  (gint) event->y,
 					  &path, NULL, NULL, NULL)) {
-		return did_something;
+		selection = gtk_tree_view_get_selection(tree_view);
+		/* If there is a selection clear it up by doing a
+		   refresh.  If there wasn't a selection before do
+		   nothing. */
+		if(gtk_tree_selection_count_selected_rows(selection)){
+			gtk_tree_selection_unselect_all(selection);
+			refresh_main(NULL, NULL);
+			return TRUE;
+		}
+		return FALSE;
 	}
+
 	/* make the selection (highlight) here */
 	selection = gtk_tree_view_get_selection(tree_view);
 	gtk_tree_selection_unselect_all(selection);
