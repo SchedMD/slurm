@@ -59,6 +59,8 @@ slurm_ctl_conf_to_hv(slurm_ctl_conf_t* conf, HV* hv)
 		STORE_FIELD(hv, conf, epilog_slurmctld, charp);
 	STORE_FIELD(hv, conf, fast_schedule, uint16_t);
 	STORE_FIELD(hv, conf, first_job_id, uint32_t);
+	if(conf->gres_plugins)
+		STORE_FIELD(hv, conf, gres_plugins, charp);
 	STORE_FIELD(hv, conf, group_info, uint16_t);
 	STORE_FIELD(hv, conf, health_check_interval, uint16_t);
 	if(conf->health_check_program)

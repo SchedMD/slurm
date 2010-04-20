@@ -9,6 +9,8 @@ documents those changes that are of interest to users and admins.
     -Added salloc, sbatch and srun --gres option.
     -Added ability to view a job or job step's gres using scontrol, squeue and
      sview.
+    -Added new configuration parameter GresPlugins to define plugins used to
+     manage generic resources.
 
 * Changes in SLURM 2.2.0.pre5
 =============================
