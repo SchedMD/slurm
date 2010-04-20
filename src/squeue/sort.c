@@ -78,6 +78,7 @@ static int _sort_job_by_user_id(void *void1, void *void2);
 static int _sort_job_by_user_name(void *void1, void *void2);
 static int _sort_job_by_reservation(void *void1, void *void2);
 
+static int _sort_step_by_gres(void *void1, void *void2);
 static int _sort_step_by_id(void *void1, void *void2);
 static int _sort_step_by_node_list(void *void1, void *void2);
 static int _sort_step_by_partition(void *void1, void *void2);
@@ -197,7 +198,9 @@ void sort_step_list(List step_list)
 		if ((i > 0) && (params.sort[i-1] == '-'))
 			reverse_order = true;
 
-		if      (params.sort[i] == 'i')
+		if      (params.sort[i] == 'b')
+			list_sort(step_list, _sort_step_by_gres);
+		else if (params.sort[i] == 'i')
 			list_sort(step_list, _sort_step_by_id);
 		else if (params.sort[i] == 'N')
 			list_sort(step_list, _sort_step_by_node_list);
@@ -689,6 +692,24 @@ static int _sort_job_by_reservation(void *void1, void *void2)
 /*****************************************************************************
  * Local Step Sort Functions
  *****************************************************************************/
+static int _sort_step_by_gres(void *void1, void *void2)
+{
+	int diff;
+	job_step_info_t *step1 = (job_step_info_t *) void1;
+	job_step_info_t *step2 = (job_step_info_t *) void2;
+	char *val1 = "", *val2 = "";
+
+	if (step1->gres)
+		val1 = step1->gres;
+	if (step2->gres)
+		val2 = step2->gres;
+	diff = strcmp(val1, val2);
+
+	if (reverse_order)
+		diff = -diff;
+	return diff;
+}
+
 static int _sort_step_by_id(void *void1, void *void2)
 {
 	int diff;

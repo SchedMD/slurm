@@ -864,6 +864,7 @@ typedef struct {
 	uint32_t mem_per_cpu;	/* memory required per CPU (MB),
 				 * use job limit if 0 */
 	char *ckpt_dir;		/* directory to store checkpoint image files */
+	char *gres;		/* generic resources needed */
 	char *name;		/* name of the job step */
 	char *network;		/* network use spec */
 	uint8_t no_kill;	/* 1 if no kill on node failure */
@@ -952,6 +953,7 @@ typedef struct {
 typedef struct {
 	char *ckpt_dir;		/* path to store checkpoint image files */
 	uint16_t ckpt_interval;	/* checkpoint interval in minutes */
+	char *gres;		/* generic resources required */
 	uint32_t job_id;	/* job ID */
 	char *name;		/* name of job step */
 	char *network;		/* network specs for job step */

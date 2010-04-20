@@ -2039,6 +2039,11 @@ static void _layout_step_record(GtkTreeView *treeview,
 
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_job,
+						 SORTID_GRES),
+				   step_ptr->gres);
+
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_job,
 						 SORTID_NAME),
 				   step_ptr->name);
 
@@ -2149,6 +2154,8 @@ static void _update_step_record(job_step_info_t *step_ptr,
 			   SORTID_JOBID, step_ptr->step_id, -1);
 	gtk_tree_store_set(treestore, iter,
 			   SORTID_PARTITION, step_ptr->partition, -1);
+	gtk_tree_store_set(treestore, iter,
+			   SORTID_GRES, step_ptr->gres, -1);
 /* #ifdef HAVE_BG */
 /* 	gtk_tree_store_set(treestore, iter,  */
 /* 			   SORTID_BLOCK,  */
