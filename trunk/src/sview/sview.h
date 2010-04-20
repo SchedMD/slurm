@@ -400,7 +400,7 @@ extern void popup_all_node(GtkTreeModel *model, GtkTreeIter *iter, int id);
 extern void popup_all_node_name(char *name, int id);
 extern void admin_menu_node_name(char *name, GdkEventButton *event);
 extern void admin_node(GtkTreeModel *model, GtkTreeIter *iter, char *type);
-extern void admin_node_name(char *name, char *old_features, char *type);
+extern void admin_node_name(char *name, char *old_value, char *type);
 
 // resv_info.c
 extern void refresh_resv(GtkAction *action, gpointer user_data);

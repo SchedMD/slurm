@@ -371,6 +371,7 @@ void slurm_free_job_desc_msg(job_desc_msg_t * msg)
 		xfree(msg->std_err);
 		xfree(msg->exc_nodes);
 		xfree(msg->features);
+		xfree(msg->gres);
 		xfree(msg->std_in);
 		xfree(msg->licenses);
 		xfree(msg->linuximage);
@@ -452,6 +453,7 @@ void slurm_free_job_info_members(job_info_t * job)
 		xfree(job->exc_nodes);
 		xfree(job->exc_node_inx);
 		xfree(job->features);
+		xfree(job->gres);
 		xfree(job->licenses);
 		xfree(job->name);
 		xfree(job->network);
@@ -489,6 +491,7 @@ void slurm_free_update_node_msg(update_node_msg_t * msg)
 {
 	if (msg) {
 		xfree(msg->features);
+		xfree(msg->gres);
 		xfree(msg->node_names);
 		xfree(msg->reason);
 		xfree(msg);
@@ -542,6 +545,7 @@ void slurm_free_job_step_create_request_msg(job_step_create_request_msg_t *
 					    msg)
 {
 	if (msg) {
+		xfree(msg->gres);
 		xfree(msg->host);
 		xfree(msg->name);
 		xfree(msg->network);

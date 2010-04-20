@@ -20,6 +20,8 @@ hv_to_slurm_step_ctx_params(HV* hv, slurm_step_ctx_params_t* params)
 	FETCH_FIELD(hv, params, job_id, uint32_t, TRUE);
 	FETCH_FIELD(hv, params, uid, uint32_t, FALSE);
 	FETCH_FIELD(hv, params, name, charp, FALSE);
+	FETCH_FIELD(hv, params, ckpt_dir, charp, FALSE);
+	FETCH_FIELD(hv, params, gres, charp, FALSE);
 	FETCH_FIELD(hv, params, min_nodes, uint32_t, FALSE);
 	FETCH_FIELD(hv, params, max_nodes, uint32_t, FALSE);
 	FETCH_FIELD(hv, params, cpu_count, uint32_t, FALSE);

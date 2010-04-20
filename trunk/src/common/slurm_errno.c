@@ -268,6 +268,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Required partition not available (inactive or drain)"},
 	{ ESLURM_CIRCULAR_DEPENDENCY,
 	  "Circular job dependency"				},
+	{ ESLURM_INVALID_GRES,
+	  "Invalid generic resource (gres) specification"	},
 
 	/* slurmd error codes */
 

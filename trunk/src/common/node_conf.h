@@ -3,7 +3,7 @@
  *  file and work with the corresponding structures
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov> et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -73,8 +73,9 @@ struct config_record {
 	uint32_t tmp_disk;	/* MB total storage in TMP_FS file system */
 	uint32_t weight;	/* arbitrary priority of node for
 				 * scheduling work on */
-	char *feature;		/* arbitrary list of features associated */
+	char *feature;		/* arbitrary list of node's features */
 	char **feature_array;	/* array of feature names */
+	char *gres;		/* arbitrary list of node's generic resources */
 	char *nodes;		/* name of nodes with this configuration */
 	bitstr_t *node_bitmap;	/* bitmap of nodes with this configuration */
 };
@@ -123,7 +124,10 @@ struct node_record {
 			        	 * set, ignore if no reason is set. */
 	uint32_t reason_uid;    	/* User that set the reason, ignore if
 					 * no reason is set. */
-	char *features;			/* associated features, used only
+	char *features;			/* node's features, used only
+					 * for state save/restore, DO NOT
+					 * use for scheduling purposes */
+	char *gres;			/* node's generic resources, used only
 					 * for state save/restore, DO NOT
 					 * use for scheduling purposes */
 	uint32_t weight;		/* orignal weight, used only for state

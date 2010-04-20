@@ -529,6 +529,7 @@ job_desc_msg_create_from_opts (void)
 
 	j->contiguous     = opt.contiguous;
 	j->features       = opt.constraints;
+	j->gres           = opt.gres;
 	if (opt.immediate == 1)
 		j->immediate = opt.immediate;
 	if (opt.job_name)
@@ -752,6 +753,7 @@ create_job_step(srun_job_t *job, bool use_all_cpus)
 
 	if (opt.mem_per_cpu != NO_VAL)
 		job->ctx_params.mem_per_cpu = opt.mem_per_cpu;
+	job->ctx_params.gres = opt.gres;
 
 	if (use_all_cpus)
 		job->ctx_params.cpu_count = job->cpu_count;
@@ -763,6 +765,7 @@ create_job_step(srun_job_t *job, bool use_all_cpus)
 	job->ctx_params.relative = (uint16_t)opt.relative;
 	job->ctx_params.ckpt_interval = (uint16_t)opt.ckpt_interval;
 	job->ctx_params.ckpt_dir = opt.ckpt_dir;
+	job->ctx_params.gres = opt.gres;
 	job->ctx_params.exclusive = (uint16_t)opt.exclusive;
 	if (opt.immediate == 1)
 		job->ctx_params.immediate = (uint16_t)opt.immediate;

@@ -6,6 +6,15 @@ documents those changes that are of interest to users and admins.
  -- sview - added ability to see database configuration.
  -- sview - added ability to remove visible tabs.
  -- sview - change way grid highlighting takes place on selected objects.
+ -- Added infrastructure to support allocation of generic node resources.
+    -Added node configuration parameter of Gres=.
+    -Added ability to view/modify a node's gres using scontrol, sinfo and sview.
+    -Added salloc, sbatch and srun --gres option.
+    -Added ability to view a job or job step's gres using scontrol, squeue and
+     sview.
+    -Added new configuration parameter GresPlugins to define plugins used to
+     manage generic resources.
+    -Added framework for gres plugins.
 
 * Changes in SLURM 2.2.0.pre5
 =============================

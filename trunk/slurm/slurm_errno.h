@@ -183,6 +183,7 @@ enum {
 	ESLURM_INVALID_CPU_COUNT,
 	ESLURM_PARTITION_NOT_AVAIL,
 	ESLURM_CIRCULAR_DEPENDENCY,
+	ESLURM_INVALID_GRES,
 
 	/* switch specific error codes, specific values defined in plugin module */
 	ESLURM_SWITCH_MIN = 3000,

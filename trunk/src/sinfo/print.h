@@ -1,7 +1,8 @@
 /*****************************************************************************\
  *  print.h - sinfo print job definitions
  *****************************************************************************
- *  Copyright (C) 2002-2006 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Joey Ekstrom <ekstrom1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -87,6 +88,8 @@ int  print_sinfo_list(List sinfo_list);
 	format_add_function(list,wid,right,suffix,_print_features)
 #define format_add_groups(list,wid,right,suffix) \
 	format_add_function(list,wid,right,suffix,_print_groups)
+#define format_add_gres(list,wid,right,suffix) \
+	format_add_function(list,wid,right,suffix,_print_gres)
 #define format_add_memory(list,wid,right,suffix) \
 	format_add_function(list,wid,right,suffix,_print_memory)
 #define format_add_node_list(list,wid,right,suffix) \
@@ -153,6 +156,8 @@ int _print_disk(sinfo_data_t * sinfo_data, int width,
 int _print_features(sinfo_data_t * sinfo_data, int width,
 			bool right_justify, char *suffix);
 int _print_groups(sinfo_data_t * sinfo_data, int width,
+			bool right_justify, char *suffix);
+int _print_gres(sinfo_data_t * sinfo_data, int width,
 			bool right_justify, char *suffix);
 int _print_memory(sinfo_data_t * sinfo_data, int width,
 			bool right_justify, char *suffix);

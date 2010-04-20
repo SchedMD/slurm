@@ -2,7 +2,7 @@
  *  print.h - squeue print job definitions
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2009 Lawrence Livermore National Security
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Joey Ekstrom <ekstrom1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -99,6 +99,8 @@ int job_format_add_function(List list, int width, bool right_justify,
 	job_format_add_function(list,wid,right,suffix,_print_job_user_name)
 #define job_format_add_user_id(list,wid,right,suffix) \
 	job_format_add_function(list,wid,right,suffix,_print_job_user_id)
+#define job_format_add_gres(list,wid,right,suffix) \
+        job_format_add_function(list,wid,right,suffix,_print_job_gres)
 #define job_format_add_group_name(list,wid,right,suffix) \
         job_format_add_function(list,wid,right,suffix,_print_job_group_name)
 #define job_format_add_group_id(list,wid,right,suffix) \
@@ -193,6 +195,8 @@ int _print_job_wckey(job_info_t * job, int width, bool right_justify,
 int _print_job_user_id(job_info_t * job, int width, bool right_justify,
 			char* suffix);
 int _print_job_user_name(job_info_t * job, int width, bool right_justify,
+			char* suffix);
+int _print_job_gres(job_info_t * job, int width, bool right_justify,
 			char* suffix);
 int _print_job_group_id(job_info_t * job, int width, bool right_justify,
 			char* suffix);
@@ -296,6 +300,8 @@ int step_format_add_function(List list, int width, bool right_justify,
 	step_format_add_function(list,wid,right,suffix,_print_step_name)
 #define step_format_add_num_tasks(list,wid,right,suffix) \
 	step_format_add_function(list,wid,right,suffix,_print_step_num_tasks)
+#define step_format_add_gres(list,wid,right,suffix) \
+	step_format_add_function(list,wid,right,suffix,_print_step_gres)
 
 /*****************************************************************************
  * Step Line Print Functions
@@ -321,6 +327,8 @@ int _print_step_name(job_step_info_t * step, int width,
 int _print_step_nodes(job_step_info_t * step, int width,
 			bool right_justify, char *suffix);
 int _print_step_num_tasks(job_step_info_t * step, int width,
+			bool right_justify, char *suffix);
+int _print_step_gres(job_step_info_t * step, int width,
 			bool right_justify, char *suffix);
 
 #endif

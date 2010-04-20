@@ -185,6 +185,7 @@ typedef struct srun_options {
 	int32_t mem_per_cpu;	/* --mem-per-cpu=n		*/
 	long pn_min_tmp_disk;	/* --tmp=n			*/
 	char *constraints;	/* --constraints=, -C constraint*/
+	char *gres;		/* --gres=			*/
 	bool contiguous;	/* --contiguous			*/
 	char *nodelist;		/* --nodelist=node1,node2,...	*/
 	char *alloc_nodelist;   /* grabbed from the environment */

@@ -2,7 +2,7 @@
  *  sort.c - squeue sorting functions
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>, et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -51,6 +51,7 @@
 
 static bool reverse_order;
 
+static int _sort_job_by_gres(void *void1, void *void2);
 static int _sort_job_by_group_id(void *void1, void *void2);
 static int _sort_job_by_group_name(void *void1, void *void2);
 static int _sort_job_by_id(void *void1, void *void2);
@@ -77,6 +78,7 @@ static int _sort_job_by_user_id(void *void1, void *void2);
 static int _sort_job_by_user_name(void *void1, void *void2);
 static int _sort_job_by_reservation(void *void1, void *void2);
 
+static int _sort_step_by_gres(void *void1, void *void2);
 static int _sort_step_by_id(void *void1, void *void2);
 static int _sort_step_by_node_list(void *void1, void *void2);
 static int _sort_step_by_partition(void *void1, void *void2);
@@ -105,7 +107,9 @@ void sort_job_list(List job_list)
 		if ((i > 0) && (params.sort[i-1] == '-'))
 			reverse_order = true;
 
-		if      (params.sort[i] == 'c')
+		if      (params.sort[i] == 'b')
+			list_sort(job_list, _sort_job_by_gres);
+		else if (params.sort[i] == 'c')
 			;	/* sort_job_by_min_cpus_per_node */
 		else if (params.sort[i] == 'C')
 			list_sort(job_list, _sort_job_by_num_cpus);
@@ -194,7 +198,9 @@ void sort_step_list(List step_list)
 		if ((i > 0) && (params.sort[i-1] == '-'))
 			reverse_order = true;
 
-		if      (params.sort[i] == 'i')
+		if      (params.sort[i] == 'b')
+			list_sort(step_list, _sort_step_by_gres);
+		else if (params.sort[i] == 'i')
 			list_sort(step_list, _sort_step_by_id);
 		else if (params.sort[i] == 'N')
 			list_sort(step_list, _sort_step_by_node_list);
@@ -216,6 +222,24 @@ void sort_step_list(List step_list)
 /*****************************************************************************
  * Local Job Sort Functions
  *****************************************************************************/
+static int _sort_job_by_gres(void *void1, void *void2)
+{
+	int diff;
+	job_info_t *job1 = (job_info_t *) void1;
+	job_info_t *job2 = (job_info_t *) void2;
+	char *val1 = "", *val2 = "";
+
+	if (job1->gres)
+		val1 = job1->gres;
+	if (job2->gres)
+		val2 = job2->gres;
+	diff = strcmp(val1, val2);
+
+	if (reverse_order)
+		diff = -diff;
+	return diff;
+}
+
 static int _sort_job_by_group_id(void *void1, void *void2)
 {
 	int diff;
@@ -668,6 +692,24 @@ static int _sort_job_by_reservation(void *void1, void *void2)
 /*****************************************************************************
  * Local Step Sort Functions
  *****************************************************************************/
+static int _sort_step_by_gres(void *void1, void *void2)
+{
+	int diff;
+	job_step_info_t *step1 = (job_step_info_t *) void1;
+	job_step_info_t *step2 = (job_step_info_t *) void2;
+	char *val1 = "", *val2 = "";
+
+	if (step1->gres)
+		val1 = step1->gres;
+	if (step2->gres)
+		val2 = step2->gres;
+	diff = strcmp(val1, val2);
+
+	if (reverse_order)
+		diff = -diff;
+	return diff;
+}
+
 static int _sort_step_by_id(void *void1, void *void2)
 {
 	int diff;

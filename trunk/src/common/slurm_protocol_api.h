@@ -196,6 +196,13 @@ uint32_t slurm_get_hash_val(void);
  */
 char *slurm_get_health_check_program(void);
 
+/* slurm_get_gres_plugins
+ * get gres_plugins from slurmctld_conf object from
+ * slurmctld_conf object
+ * RET char *   - gres_plugins, MUST be xfreed by caller
+ */
+char *slurm_get_gres_plugins(void);
+
 /* slurm_get_job_submit_plugins
  * get job_submit_plugins from slurmctld_conf object from
  * slurmctld_conf object

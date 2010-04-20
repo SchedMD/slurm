@@ -399,6 +399,12 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
 	key_pair->value = xstrdup(tmp_str);
 	list_append(ret_list, key_pair);
 
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("GresPlugins");
+	key_pair->value = xstrdup(slurm_ctl_conf_ptr->gres_plugins);
+	list_append(ret_list, key_pair);
+
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("GroupUpdateForce");
 	if (slurm_ctl_conf_ptr->group_info & GROUP_FORCE)

@@ -947,6 +947,26 @@ char *slurm_get_health_check_program(void)
 	return health_check_program;
 }
 
+/* slurm_get_gres_plugins
+ * get gres_plugins from slurmctld_conf object from
+ * slurmctld_conf object
+ * RET char *   - gres_plugins, MUST be xfreed by caller
+ */
+char *slurm_get_gres_plugins(void)
+{
+	char *gres_plugins = NULL;
+	slurm_ctl_conf_t *conf;
+
+	if(slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		gres_plugins = xstrdup(conf->gres_plugins);
+		slurm_conf_unlock();
+	}
+	return gres_plugins;
+}
+
+
 /* slurm_get_job_submit_plugins
  * get job_submit_plugins from slurmctld_conf object from
  * slurmctld_conf object

@@ -161,6 +161,7 @@
 #define LONG_OPT_CHECKPOINT_DIR  0x14c
 #define LONG_OPT_SIGNAL          0x14d
 #define LONG_OPT_TIME_MIN        0x14e
+#define LONG_OPT_GRES            0x14f
 
 /*---- global variables, defined in opt.h ----*/
 opt_t opt;
@@ -332,6 +333,7 @@ static void _opt_default()
 
 	opt.hold	    = false;
 	opt.constraints	    = NULL;
+	opt.gres	    = NULL;
 	opt.contiguous	    = false;
 	opt.nodelist	    = NULL;
 	opt.exc_nodes	    = NULL;
@@ -666,6 +668,7 @@ static struct option long_options[] = {
 	{"cpu_bind",      required_argument, 0, LONG_OPT_CPU_BIND},
 	{"exclusive",     no_argument,       0, LONG_OPT_EXCLUSIVE},
 	{"get-user-env",  optional_argument, 0, LONG_OPT_GET_USER_ENV},
+	{"gres",          required_argument, 0, LONG_OPT_GRES},
 	{"gid",           required_argument, 0, LONG_OPT_GID},
 	{"hint",          required_argument, 0, LONG_OPT_HINT},
 	{"ioload-image",  required_argument, 0, LONG_OPT_RAMDISK_IMAGE},
@@ -1546,6 +1549,14 @@ static void _set_options(int argc, char **argv)
 		case LONG_OPT_TIME_MIN:
 			xfree(opt.time_min_str);
 			opt.time_min_str = xstrdup(optarg);
+			break;
+		case LONG_OPT_GRES:
+			if (!strcasecmp(optarg, "help")) {
+				print_gres_help();
+				exit(0);
+			}
+			xfree(opt.gres);
+			opt.gres = xstrdup(optarg);
 			break;
 		default:
 			if (spank_process_option (opt_char, optarg) < 0) {
@@ -2543,6 +2554,8 @@ static void _opt_list()
 	info("account           : %s", opt.account);
 	info("comment           : %s", opt.comment);
 	info("dependency        : %s", opt.dependency);
+	if (opt.gres)
+		info("gres              : %s", opt.gres);
 	info("qos               : %s", opt.qos);
 	str = print_constraints();
 	info("constraints       : %s", str);
@@ -2625,7 +2638,7 @@ static void _usage(void)
 "              [--mail-type=type] [--mail-user=user][--nice[=value]]\n"
 "              [--requeue] [--no-requeue] [--ntasks-per-node=n] [--propagate]\n"
 "              [--nodefile=file] [--nodelist=hosts] [--exclude=hosts]\n"
-"              [--network=type] [--mem-per-cpu=MB] [--qos=qos]\n"
+"              [--network=type] [--mem-per-cpu=MB] [--qos=qos] [--gres=list]\n"
 "              [--cpu_bind=...] [--mem_bind=...] [--reservation=name]\n"
 "              executable [args...]\n");
 }
@@ -2647,6 +2660,7 @@ static void _help(void)
 "  -e, --error=err             file for batch script's standard error\n"
 "      --get-user-env          used by Moab.  See srun man page.\n"
 "      --gid=group_id          group ID to run job as (user root only)\n"
+"      --gres=list             required generic resources\n"
 "  -H, --hold                  submit job in held state\n"
 "  -i, --input=in              file for batch script's standard input\n"
 "  -I, --immediate             exit if resources are not immediately available\n"
