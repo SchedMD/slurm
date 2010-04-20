@@ -65,6 +65,7 @@ enum {
 	SORTID_BLOCK,
 	SORTID_NODELIST,
 	SORTID_COLOR,
+	SORTID_COLOR_INX,
 	SORTID_CONN,
 	SORTID_JOB,
 #ifdef HAVE_BGL
@@ -132,6 +133,8 @@ static display_data_t display_data_block[] = {
 	{G_TYPE_STRING, SORTID_IMAGEMLOADER, "Image Mloader",
 	 FALSE, EDIT_NONE, refresh_block, create_model_block, admin_edit_block},
 	{G_TYPE_POINTER, SORTID_NODE_INX, NULL, FALSE, EDIT_NONE,
+	 refresh_resv, create_model_resv, admin_edit_resv},
+	{G_TYPE_INT, SORTID_COLOR_INX, NULL, FALSE, EDIT_NONE,
 	 refresh_resv, create_model_resv, admin_edit_resv},
 	{G_TYPE_INT, SORTID_SMALL_BLOCK, NULL, FALSE, EDIT_NONE, refresh_block,
 	 create_model_block, admin_edit_block},
@@ -306,6 +309,8 @@ static void _update_block_record(sview_block_info_t *block_ptr,
 
 	gtk_tree_store_set(treestore, iter, SORTID_COLOR,
 			   sview_colors[block_ptr->color_inx], -1);
+	gtk_tree_store_set(treestore, iter, SORTID_COLOR_INX,
+			   block_ptr->color_inx, -1);
 	gtk_tree_store_set(treestore, iter, SORTID_BLOCK,
 			   block_ptr->bg_block_name, -1);
 	gtk_tree_store_set(treestore, iter, SORTID_PARTITION,
@@ -883,6 +888,7 @@ extern void get_info_block(GtkTable *table, display_data_t *display_data)
 	int j=0;
 	ListIterator itr = NULL;
 	sview_block_info_t *sview_block_info_ptr = NULL;
+	GtkTreePath *path = NULL;
 
 	if(display_data)
 		local_display_data = display_data;
@@ -949,23 +955,29 @@ display_it:
 		return;
 
 	/* set up the grid */
-	itr = list_iterator_create(block_list);
-	while ((sview_block_info_ptr = list_next(itr))) {
-		j=0;
-		while(sview_block_info_ptr->bp_inx[j] >= 0) {
-			change_grid_color(grid_button_list,
-					  sview_block_info_ptr->bp_inx[j],
-					  sview_block_info_ptr->bp_inx[j+1],
-					  sview_block_info_ptr->color_inx,
-					  true, 0);
-			j += 2;
-		}
+	if(display_widget && gtk_tree_selection_count_selected_rows(
+		   gtk_tree_view_get_selection(
+			   GTK_TREE_VIEW(display_widget)))) {
+		GtkTreeViewColumn *focus_column = NULL;
+		/* highlight the correct nodes from the last selection */
+		gtk_tree_view_get_cursor(GTK_TREE_VIEW(display_widget),
+					 &path, &focus_column);
 	}
-	list_iterator_destroy(itr);
-	change_grid_color(grid_button_list, -1, -1, MAKE_WHITE, true, 0);
-	if(sview_config.grid_speedup) {
-		gtk_widget_set_sensitive(GTK_WIDGET(main_grid_table), 0);
-		gtk_widget_set_sensitive(GTK_WIDGET(main_grid_table), 1);
+	if(!path) {
+		itr = list_iterator_create(block_list);
+		while ((sview_block_info_ptr = list_next(itr))) {
+			j=0;
+			while(sview_block_info_ptr->bp_inx[j] >= 0) {
+				change_grid_color(
+					grid_button_list,
+					sview_block_info_ptr->bp_inx[j],
+					sview_block_info_ptr->bp_inx[j+1],
+					sview_block_info_ptr->color_inx,
+					true, 0);
+				j += 2;
+			}
+		}
+		list_iterator_destroy(itr);
 	}
 
 	if(view == ERROR_VIEW && display_widget) {
@@ -986,17 +998,16 @@ display_it:
 				 SORTID_CNT, SORTID_NODELIST, SORTID_COLOR);
 	}
 
-	if(gtk_tree_selection_count_selected_rows(
-		   gtk_tree_view_get_selection(
-			   GTK_TREE_VIEW(display_widget)))) {
-		GtkTreePath *path = NULL;
-		GtkTreeViewColumn *focus_column = NULL;
-		/* highlight the correct nodes from the last selection */
-		gtk_tree_view_get_cursor(GTK_TREE_VIEW(display_widget),
-					 &path, &focus_column);
-		if(path)
-			highlight_grid(GTK_TREE_VIEW(display_widget), path,
-				       SORTID_NODE_INX, grid_button_list);
+	if(path)
+		highlight_grid(GTK_TREE_VIEW(display_widget), path,
+			       SORTID_NODE_INX, SORTID_COLOR_INX,
+			       grid_button_list);
+	else
+		change_grid_color(grid_button_list, -1, -1,
+				  MAKE_WHITE, true, 0);
+	if(sview_config.grid_speedup) {
+		gtk_widget_set_sensitive(GTK_WIDGET(main_grid_table), 0);
+		gtk_widget_set_sensitive(GTK_WIDGET(main_grid_table), 1);
 	}
 
 	view = INFO_VIEW;
@@ -1245,7 +1256,7 @@ extern void set_menus_block(void *arg, void *arg2, GtkTreePath *path, int type)
 		make_options_menu(tree_view, path, menu, options_data_block);
 		break;
 	case ROW_LEFT_CLICKED:
-		highlight_grid(tree_view, path, SORTID_NODE_INX, button_list);
+		highlight_grid(tree_view, path, SORTID_NODE_INX, 0, button_list);
 		break;
 	case FULL_CLICKED:
 	{

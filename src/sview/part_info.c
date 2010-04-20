@@ -70,6 +70,7 @@ enum {
 	SORTID_NODES_ALLOWED,
 #endif
 	SORTID_COLOR,
+	SORTID_COLOR_INX,
 	SORTID_CPUS,
 	SORTID_DEFAULT,
 	SORTID_FEATURES,
@@ -162,6 +163,8 @@ static display_data_t display_data_part[] = {
 	{G_TYPE_INT, SORTID_NODE_STATE_NUM, NULL, FALSE, EDIT_NONE, refresh_part,
 	 create_model_part, admin_edit_part},
 	{G_TYPE_INT, SORTID_ONLY_LINE, NULL, FALSE, EDIT_NONE, refresh_part,
+	 create_model_part, admin_edit_part},
+	{G_TYPE_INT, SORTID_COLOR_INX, NULL, FALSE, EDIT_NONE, refresh_part,
 	 create_model_part, admin_edit_part},
 	{G_TYPE_POINTER, SORTID_NODE_INX, NULL, FALSE, EDIT_NONE,
 	 refresh_part, create_model_part, admin_edit_part},
@@ -963,6 +966,8 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 
 	gtk_tree_store_set(treestore, iter, SORTID_COLOR,
 			   sview_colors[sview_part_info->color_inx], -1);
+	gtk_tree_store_set(treestore, iter, SORTID_COLOR_INX,
+			   sview_part_info->color_inx, -1);
 
 	gtk_tree_store_set(treestore, iter, SORTID_NAME, part_ptr->name, -1);
 
@@ -1919,6 +1924,7 @@ extern void get_info_part(GtkTable *table, display_data_t *display_data)
 	sview_part_info_t *sview_part_info = NULL;
 	partition_info_t *part_ptr = NULL;
 	ListIterator itr = NULL;
+	GtkTreePath *path = NULL;
 
 	if(display_data)
 		local_display_data = display_data;
@@ -1980,24 +1986,29 @@ display_it:
 		return;
 
 	/* set up the grid */
-	itr = list_iterator_create(info_list);
-	while ((sview_part_info = list_next(itr))) {
-		part_ptr = sview_part_info->part_ptr;
-		j=0;
-		while(part_ptr->node_inx[j] >= 0) {
+	if(display_widget && gtk_tree_selection_count_selected_rows(
+		   gtk_tree_view_get_selection(
+			   GTK_TREE_VIEW(display_widget)))) {
+		GtkTreeViewColumn *focus_column = NULL;
+		/* highlight the correct nodes from the last selection */
+		gtk_tree_view_get_cursor(GTK_TREE_VIEW(display_widget),
+					 &path, &focus_column);
+	}
+	if(!path) {
+		itr = list_iterator_create(info_list);
+		while ((sview_part_info = list_next(itr))) {
+			part_ptr = sview_part_info->part_ptr;
+			j=0;
+			while(part_ptr->node_inx[j] >= 0) {
 				change_grid_color(grid_button_list,
 						  part_ptr->node_inx[j],
 						  part_ptr->node_inx[j+1],
 						  sview_part_info->color_inx,
 						  true, 0);
-			j += 2;
+				j += 2;
+			}
 		}
-	}
-	list_iterator_destroy(itr);
-	change_grid_color(grid_button_list, -1, -1, MAKE_WHITE, true, 0);
-	if(sview_config.grid_speedup) {
-		gtk_widget_set_sensitive(GTK_WIDGET(main_grid_table), 0);
-		gtk_widget_set_sensitive(GTK_WIDGET(main_grid_table), 1);
+		list_iterator_destroy(itr);
 	}
 
 	if(view == ERROR_VIEW && display_widget) {
@@ -2019,17 +2030,16 @@ display_it:
 				 SORTID_CNT, SORTID_NAME, SORTID_COLOR);
 	}
 
-	if(gtk_tree_selection_count_selected_rows(
-		   gtk_tree_view_get_selection(
-			   GTK_TREE_VIEW(display_widget)))) {
-		GtkTreePath *path = NULL;
-		GtkTreeViewColumn *focus_column = NULL;
-		/* highlight the correct nodes from the last selection */
-		gtk_tree_view_get_cursor(GTK_TREE_VIEW(display_widget),
-					 &path, &focus_column);
-		if(path)
-			highlight_grid(GTK_TREE_VIEW(display_widget), path,
-				       SORTID_NODE_INX, grid_button_list);
+	if(path)
+		highlight_grid(GTK_TREE_VIEW(display_widget), path,
+			       SORTID_NODE_INX, SORTID_COLOR_INX,
+			       grid_button_list);
+	else
+		change_grid_color(grid_button_list, -1, -1,
+				  MAKE_WHITE, true, 0);
+	if(sview_config.grid_speedup) {
+		gtk_widget_set_sensitive(GTK_WIDGET(main_grid_table), 0);
+		gtk_widget_set_sensitive(GTK_WIDGET(main_grid_table), 1);
 	}
 
 	view = INFO_VIEW;
@@ -2250,7 +2260,8 @@ extern void set_menus_part(void *arg, void *arg2, GtkTreePath *path, int type)
 		make_options_menu(tree_view, path, menu, options_data_part);
 		break;
 	case ROW_LEFT_CLICKED:
-		highlight_grid(tree_view, path, SORTID_NODE_INX, button_list);
+		highlight_grid(tree_view, path, SORTID_NODE_INX,
+			       SORTID_COLOR_INX, button_list);
 		break;
 	case FULL_CLICKED:
 	{

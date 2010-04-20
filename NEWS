@@ -5,6 +5,7 @@ documents those changes that are of interest to users and admins.
 =============================
  -- sview - added ability to see database configuration.
  -- sview - added ability to remove visible tabs.
+ -- sview - change way grid highlighting takes place on selected objects.
 
 * Changes in SLURM 2.2.0.pre5
 =============================

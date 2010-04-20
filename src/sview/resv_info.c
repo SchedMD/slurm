@@ -49,6 +49,7 @@ enum {
 	SORTID_ACCOUNTS,
 	SORTID_ACTION,
 	SORTID_COLOR,
+	SORTID_COLOR_INX,
 	SORTID_DURATION,
 	SORTID_FEATURES,
 	SORTID_FLAGS,
@@ -99,6 +100,8 @@ static display_data_t display_data_resv[] = {
 	{G_TYPE_STRING, SORTID_FLAGS,      "Flags", FALSE, EDIT_NONE,
 	 refresh_resv, create_model_resv, admin_edit_resv},
 	{G_TYPE_POINTER, SORTID_NODE_INX,  NULL, FALSE, EDIT_NONE,
+	 refresh_resv, create_model_resv, admin_edit_resv},
+	{G_TYPE_INT, SORTID_COLOR_INX,  NULL, FALSE, EDIT_NONE,
 	 refresh_resv, create_model_resv, admin_edit_resv},
 	{G_TYPE_INT,    SORTID_UPDATED,    NULL, FALSE, EDIT_NONE,
 	 refresh_resv, create_model_resv, admin_edit_resv},
@@ -506,6 +509,8 @@ static void _update_resv_record(sview_resv_info_t *sview_resv_info_ptr,
 
 	gtk_tree_store_set(treestore, iter, SORTID_COLOR,
 			   sview_colors[sview_resv_info_ptr->color_inx], -1);
+	gtk_tree_store_set(treestore, iter, SORTID_COLOR_INX,
+			   sview_resv_info_ptr->color_inx, -1);
 	gtk_tree_store_set(treestore, iter, SORTID_UPDATED, 1, -1);
 
 	gtk_tree_store_set(treestore, iter,
@@ -937,6 +942,7 @@ extern void get_info_resv(GtkTable *table, display_data_t *display_data)
 	sview_resv_info_t *sview_resv_info_ptr = NULL;
 	reserve_info_t *resv_ptr = NULL;
 	time_t now = time(NULL);
+	GtkTreePath *path = NULL;
 
 	if(display_data)
 		local_display_data = display_data;
@@ -973,27 +979,33 @@ display_it:
 	if(!info_list)
 		return;
 	/* set up the grid */
-	itr = list_iterator_create(info_list);
-	while ((sview_resv_info_ptr = list_next(itr))) {
-		resv_ptr = sview_resv_info_ptr->resv_ptr;
-		if ((resv_ptr->start_time > now) ||
-		    (resv_ptr->end_time   < now))
-			continue;	/* only map current reservations */
-		j=0;
-		while(resv_ptr->node_inx[j] >= 0) {
-			change_grid_color(grid_button_list,
-					  resv_ptr->node_inx[j],
-					  resv_ptr->node_inx[j+1],
-					  sview_resv_info_ptr->color_inx,
-					  true, 0);
-			j += 2;
-		}
+	if(display_widget && gtk_tree_selection_count_selected_rows(
+		   gtk_tree_view_get_selection(
+			   GTK_TREE_VIEW(display_widget)))) {
+		GtkTreeViewColumn *focus_column = NULL;
+		/* highlight the correct nodes from the last selection */
+		gtk_tree_view_get_cursor(GTK_TREE_VIEW(display_widget),
+					 &path, &focus_column);
 	}
-	list_iterator_destroy(itr);
-	change_grid_color(grid_button_list, -1, -1, MAKE_WHITE, true, 0);
-	if(sview_config.grid_speedup) {
-		gtk_widget_set_sensitive(GTK_WIDGET(main_grid_table), 0);
-		gtk_widget_set_sensitive(GTK_WIDGET(main_grid_table), 1);
+	if(!path) {
+		itr = list_iterator_create(info_list);
+		while ((sview_resv_info_ptr = list_next(itr))) {
+			resv_ptr = sview_resv_info_ptr->resv_ptr;
+			if ((resv_ptr->start_time > now) ||
+			    (resv_ptr->end_time   < now))
+				continue;/* only map current reservations */
+			j=0;
+			while(resv_ptr->node_inx[j] >= 0) {
+				change_grid_color(grid_button_list,
+						  resv_ptr->node_inx[j],
+						  resv_ptr->node_inx[j+1],
+						  sview_resv_info_ptr->
+						  color_inx,
+						  true, 0);
+				j += 2;
+			}
+		}
+		list_iterator_destroy(itr);
 	}
 
 	if(view == ERROR_VIEW && display_widget) {
@@ -1015,17 +1027,16 @@ display_it:
 				 SORTID_CNT, SORTID_TIME_START, SORTID_COLOR);
 	}
 
-	if(gtk_tree_selection_count_selected_rows(
-		   gtk_tree_view_get_selection(
-			   GTK_TREE_VIEW(display_widget)))) {
-		GtkTreePath *path = NULL;
-		GtkTreeViewColumn *focus_column = NULL;
-		/* highlight the correct nodes from the last selection */
-		gtk_tree_view_get_cursor(GTK_TREE_VIEW(display_widget),
-					 &path, &focus_column);
-		if(path)
-			highlight_grid(GTK_TREE_VIEW(display_widget), path,
-				       SORTID_NODE_INX, grid_button_list);
+	if(path)
+		highlight_grid(GTK_TREE_VIEW(display_widget), path,
+			       SORTID_NODE_INX, SORTID_COLOR_INX,
+			       grid_button_list);
+	else
+		change_grid_color(grid_button_list, -1, -1,
+				  MAKE_WHITE, true, 0);
+	if(sview_config.grid_speedup) {
+		gtk_widget_set_sensitive(GTK_WIDGET(main_grid_table), 0);
+		gtk_widget_set_sensitive(GTK_WIDGET(main_grid_table), 1);
 	}
 
 	view = INFO_VIEW;
@@ -1208,7 +1219,8 @@ extern void set_menus_resv(void *arg, void *arg2, GtkTreePath *path, int type)
 		make_options_menu(tree_view, path, menu, options_data_resv);
 		break;
 	case ROW_LEFT_CLICKED:
-		highlight_grid(tree_view, path, SORTID_NODE_INX, button_list);
+		highlight_grid(tree_view, path, SORTID_NODE_INX,
+			       SORTID_COLOR_INX, button_list);
 		break;
 	case FULL_CLICKED:
 	{
