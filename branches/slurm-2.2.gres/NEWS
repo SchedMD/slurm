@@ -11,6 +11,7 @@ documents those changes that are of interest to users and admins.
      sview.
     -Added new configuration parameter GresPlugins to define plugins used to
      manage generic resources.
+    -Added framework for gres plugins.
 
 * Changes in SLURM 2.2.0.pre5
 =============================
