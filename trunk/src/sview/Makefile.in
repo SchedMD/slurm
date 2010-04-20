@@ -89,7 +89,7 @@ am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
 am__sview_SOURCES_DIST = sview.c popups.c grid.c part_info.c \
 	job_info.c block_info.c node_info.c resv_info.c submit_info.c \
-	admin_info.c common.c config_info.c
+	admin_info.c common.c config_info.c defaults.c
 @HAVE_GTK_TRUE@am_sview_OBJECTS = sview-sview.$(OBJEXT) \
 @HAVE_GTK_TRUE@	sview-popups.$(OBJEXT) sview-grid.$(OBJEXT) \
 @HAVE_GTK_TRUE@	sview-part_info.$(OBJEXT) \
@@ -100,10 +100,11 @@ am__sview_SOURCES_DIST = sview.c popups.c grid.c part_info.c \
 @HAVE_GTK_TRUE@	sview-submit_info.$(OBJEXT) \
 @HAVE_GTK_TRUE@	sview-admin_info.$(OBJEXT) \
 @HAVE_GTK_TRUE@	sview-common.$(OBJEXT) \
-@HAVE_GTK_TRUE@	sview-config_info.$(OBJEXT)
+@HAVE_GTK_TRUE@	sview-config_info.$(OBJEXT) \
+@HAVE_GTK_TRUE@	sview-defaults.$(OBJEXT)
 am__EXTRA_sview_SOURCES_DIST = sview.h sview.c popups.c grid.c \
 	part_info.c job_info.c block_info.c node_info.c resv_info.c \
-	submit_info.c admin_info.c common.c
+	submit_info.c admin_info.c common.c config_info.c defaults.c
 sview_OBJECTS = $(am_sview_OBJECTS)
 @HAVE_GTK_TRUE@sview_DEPENDENCIES = $(top_builddir)/src/plugins/select/bluegene/block_allocator/libbluegene_block_allocator.la \
 @HAVE_GTK_TRUE@	$(top_builddir)/src/db_api/libslurmdb.o
@@ -325,13 +326,13 @@ INCLUDES = -I$(top_srcdir) $(BG_INCLUDES)
 @HAVE_GTK_TRUE@sview_SOURCES = sview.c popups.c grid.c part_info.c job_info.c \
 @HAVE_GTK_TRUE@	block_info.c node_info.c resv_info.c \
 @HAVE_GTK_TRUE@	submit_info.c admin_info.c common.c \
-@HAVE_GTK_TRUE@	config_info.c
+@HAVE_GTK_TRUE@	config_info.c defaults.c
 
 @HAVE_GTK_TRUE@sview_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) $(BG_LDFLAGS) $(GTK_LIBS)
 @HAVE_GTK_TRUE@sview_CFLAGS = $(GTK_CFLAGS)
 @HAVE_GTK_FALSE@EXTRA_sview_SOURCES = sview.h sview.c popups.c grid.c part_info.c job_info.c \
 @HAVE_GTK_FALSE@	block_info.c node_info.c resv_info.c \
-@HAVE_GTK_FALSE@	submit_info.c admin_info.c common.c
+@HAVE_GTK_FALSE@	submit_info.c admin_info.c common.c config_info.c defaults.c
 
 all: all-am
 
@@ -424,6 +425,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sview-block_info.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sview-common.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sview-config_info.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sview-defaults.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sview-grid.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sview-job_info.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sview-node_info.Po@am__quote@
@@ -621,6 +623,20 @@ sview-config_info.obj: config_info.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='config_info.c' object='sview-config_info.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(sview_CFLAGS) $(CFLAGS) -c -o sview-config_info.obj `if test -f 'config_info.c'; then $(CYGPATH_W) 'config_info.c'; else $(CYGPATH_W) '$(srcdir)/config_info.c'; fi`
+
+sview-defaults.o: defaults.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(sview_CFLAGS) $(CFLAGS) -MT sview-defaults.o -MD -MP -MF $(DEPDIR)/sview-defaults.Tpo -c -o sview-defaults.o `test -f 'defaults.c' || echo '$(srcdir)/'`defaults.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/sview-defaults.Tpo $(DEPDIR)/sview-defaults.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='defaults.c' object='sview-defaults.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(sview_CFLAGS) $(CFLAGS) -c -o sview-defaults.o `test -f 'defaults.c' || echo '$(srcdir)/'`defaults.c
+
+sview-defaults.obj: defaults.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(sview_CFLAGS) $(CFLAGS) -MT sview-defaults.obj -MD -MP -MF $(DEPDIR)/sview-defaults.Tpo -c -o sview-defaults.obj `if test -f 'defaults.c'; then $(CYGPATH_W) 'defaults.c'; else $(CYGPATH_W) '$(srcdir)/defaults.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/sview-defaults.Tpo $(DEPDIR)/sview-defaults.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='defaults.c' object='sview-defaults.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(sview_CFLAGS) $(CFLAGS) -c -o sview-defaults.obj `if test -f 'defaults.c'; then $(CYGPATH_W) 'defaults.c'; else $(CYGPATH_W) '$(srcdir)/defaults.c'; fi`
 
 mostlyclean-libtool:
 	-rm -f *.lo

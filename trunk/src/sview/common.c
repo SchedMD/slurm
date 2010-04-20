@@ -1583,3 +1583,59 @@ extern void sview_widget_modify_bg(GtkWidget *widget, GtkStateType state,
 /* 			g_print("%d 3 took %s\n", grid_button->inx, TIME_STR); */
 
 }
+
+extern char *page_to_str(int page)
+{
+	switch(page) {
+	case JOB_PAGE:
+		return "Job";
+	case PART_PAGE:
+		return "Partition";
+	case NODE_PAGE:
+		return "Node";
+	case BLOCK_PAGE:
+		return "Block";
+	case RESV_PAGE:
+		return "Reservation";
+	case SUBMIT_PAGE:
+		return "Submit";
+	case ADMIN_PAGE:
+		return "Admin";
+	case INFO_PAGE:
+		return "Info";
+	default:
+		return "Unknown";
+	}
+	return "Unknown";
+}
+
+extern char *tab_pos_to_str(int pos)
+{
+	switch(pos) {
+	case GTK_POS_TOP:
+		return "Top";
+	case GTK_POS_BOTTOM:
+		return "Bottom";
+	case GTK_POS_LEFT:
+		return "Left";
+	case GTK_POS_RIGHT:
+		return "Right";
+	default:
+		return "Unknown";
+	}
+	return "Unknown";
+}
+
+extern char *visible_to_str()
+{
+	char *ret = NULL;
+	int i = 0;
+	for(i=0; i<PAGE_CNT; i++)
+		if(sview_config.page_visible[i]) {
+			if(ret)
+				xstrcat(ret, ",");
+			xstrcat(ret, page_to_str(i));
+		}
+
+	return ret;
+}
