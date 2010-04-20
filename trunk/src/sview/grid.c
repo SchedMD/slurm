@@ -580,10 +580,7 @@ extern void highlight_grid_range(int start, int end, List button_list)
 		if(start != -1)
 			if ((grid_button->inx < start)
 			    || (grid_button->inx > end)) {
-			/* clear everyone else */
-			/* sview_widget_modify_bg(grid_button->button, */
-			/* 		       GTK_STATE_NORMAL, */
-			/* 		       local_color_blank); */
+				/* clear everyone else */
 				if((GTK_WIDGET_STATE(grid_button->button)
 				    != GTK_STATE_ACTIVE))
 					gtk_widget_set_state(
@@ -594,10 +591,6 @@ extern void highlight_grid_range(int start, int end, List button_list)
 		/* highlight this one, if it is already hightlighted,
 		 * put it back to normal */
 		//g_print("highlighting %d\n", grid_button->inx);
-		/* gdk_color_parse(grid_button->color, &color); */
-		/* sview_widget_modify_bg(grid_button->button, */
-		/* 		       GTK_STATE_NORMAL, */
-		/* 		       color); */
 		if((GTK_WIDGET_STATE(grid_button->button)
 		    != GTK_STATE_NORMAL))
 			gtk_widget_set_state(grid_button->button,
