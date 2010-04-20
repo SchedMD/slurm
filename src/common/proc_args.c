@@ -71,13 +71,11 @@
 #include <sys/types.h>
 #include <sys/utsname.h>
 
+#include "src/common/gres.h"
 #include "src/common/list.h"
+#include "src/common/proc_args.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-
-#include "src/common/proc_args.h"
-
-
 
 
 /* print this version of SLURM */
@@ -89,7 +87,13 @@ void print_slurm_version(void)
 /* print the available gres options */
 void print_gres_help(void)
 {
-	printf("Gres help not available yet\n");
+	char help_msg[1024] = "";
+
+	gres_plugin_help_msg(help_msg, sizeof(help_msg));
+	if (help_msg[0])
+		printf("%s\n", help_msg);
+	else
+		printf("No gres help is available\n");
 }
 
 /*

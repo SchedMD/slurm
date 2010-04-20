@@ -3,6 +3,7 @@ SUBDIRS = \
 	auth			\
 	checkpoint		\
 	crypto			\
+	gres			\
 	jobacct_gather		\
 	jobcomp			\
 	job_submit		\

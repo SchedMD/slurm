@@ -623,6 +623,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/slurm/checkpoint_none.so
 %{_libdir}/slurm/checkpoint_ompi.so
 %{_libdir}/slurm/checkpoint_xlch.so
+%{_libdir}/slurm/gres_gpu.so
 %{_libdir}/slurm/jobacct_gather_aix.so
 %{_libdir}/slurm/jobacct_gather_linux.so
 %{_libdir}/slurm/jobacct_gather_none.so
