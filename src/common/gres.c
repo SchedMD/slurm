@@ -66,21 +66,27 @@
 #include <slurm/slurm_errno.h>
 
 #include "src/common/macros.h"
+#include "src/common/pack.h"
 #include "src/common/plugin.h"
 #include "src/common/plugrack.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
+#define GRES_MAGIC 0x438a34d4
+
 typedef struct slurm_gres_ops {
-	int		(*help_msg)	( char *msg, int msg_size );
+	int		(*help_msg)		( char *msg, int msg_size );
+	int		(*load_node_config)	( void );
+	int		(*pack_node_config)	( Buf buffer );
+	int		(*unpack_node_config)	( Buf buffer );
 } slurm_gres_ops_t;
 
 typedef struct slurm_gres_context {
-	char	       	*sched_type;
+	char	       	*gres_type;
 	plugrack_t     	plugin_list;
 	plugin_handle_t	cur_plugin;
-	int		sched_errno;
+	int		gres_errno;
 	slurm_gres_ops_t ops;
 } slurm_gres_context_t;
 
@@ -96,19 +102,22 @@ static int _load_gres_plugin(char *plugin_name,
 	 * Must be synchronized with slurm_gres_ops_t above.
 	 */
 	static const char *syms[] = {
-		"help_msg"
+		"help_msg",
+		"load_node_config",
+		"pack_node_config",
+		"unpack_node_config"
 	};
 	int n_syms = sizeof(syms) / sizeof(char *);
 
 	/* Find the correct plugin */
-	plugin_context->sched_type	= xstrdup("gres/");
-	xstrcat(plugin_context->sched_type, plugin_name);
+	plugin_context->gres_type	= xstrdup("gres/");
+	xstrcat(plugin_context->gres_type, plugin_name);
 	plugin_context->plugin_list	= NULL;
 	plugin_context->cur_plugin	= PLUGIN_INVALID_HANDLE;
-	plugin_context->sched_errno 	= SLURM_SUCCESS;
+	plugin_context->gres_errno 	= SLURM_SUCCESS;
 
         plugin_context->cur_plugin = plugin_load_and_link(
-					plugin_context->sched_type, 
+					plugin_context->gres_type, 
 					n_syms, syms,
 					(void **) &plugin_context->ops);
         if (plugin_context->cur_plugin != PLUGIN_INVALID_HANDLE)
@@ -116,7 +125,7 @@ static int _load_gres_plugin(char *plugin_name,
 
 	error("gres: Couldn't find the specified plugin name for %s "
 	      "looking at all files",
-	      plugin_context->sched_type);
+	      plugin_context->gres_type);
 
 	/* Get plugin list */
 	if (plugin_context->plugin_list == NULL) {
@@ -137,10 +146,10 @@ static int _load_gres_plugin(char *plugin_name,
 
 	plugin_context->cur_plugin = plugrack_use_by_type(
 					plugin_context->plugin_list,
-					plugin_context->sched_type );
+					plugin_context->gres_type );
 	if (plugin_context->cur_plugin == PLUGIN_INVALID_HANDLE) {
 		error("gres: cannot find scheduler plugin for %s", 
-		       plugin_context->sched_type);
+		       plugin_context->gres_type);
 		return SLURM_ERROR;
 	}
 
@@ -168,7 +177,7 @@ static int _unload_gres_plugin(slurm_gres_context_t *plugin_context)
 		rc = SLURM_SUCCESS;
 		plugin_unload(plugin_context->cur_plugin);
 	}
-	xfree(plugin_context->sched_type);
+	xfree(plugin_context->gres_type);
 
 	return rc;
 }
@@ -271,6 +280,83 @@ extern int gres_plugin_reconfig(void)
 	xfree(plugin_names);
 
 	return rc;
+}
+
+/*
+ * Load this node's configuration (i.e. how many resources it has)
+ */
+extern int gres_plugin_load_node_config(void)
+{
+	int i, rc;
+
+	rc = gres_plugin_init();
+
+	slurm_mutex_lock(&gres_context_lock);
+	for (i=0; ((i < gres_context_cnt) && (rc == SLURM_SUCCESS)); i++) {
+		rc = (*(gres_context[i].ops.load_node_config))();
+	}
+	slurm_mutex_unlock(&gres_context_lock);
+
+	return rc;
+}
+
+/*
+ * Pack this node's configuration into a buffer
+ */
+extern int gres_plugin_pack_node_config(Buf buffer)
+{
+	int i, rc;
+	uint32_t magic = GRES_MAGIC;
+
+	rc = gres_plugin_init();
+
+	slurm_mutex_lock(&gres_context_lock);
+	for (i=0; ((i < gres_context_cnt) && (rc == SLURM_SUCCESS)); i++) {
+		pack32(magic, buffer);
+		packstr(gres_context[i].gres_type, buffer);
+		rc = (*(gres_context[i].ops.pack_node_config))(buffer);
+	}
+	slurm_mutex_unlock(&gres_context_lock);
+
+	return rc;
+}
+
+/*
+ * Unpack this node's configuration from a buffer
+ */
+extern int gres_plugin_unpack_node_config(Buf buffer)
+{
+	int i, rc;
+	uint32_t magic, uint32_tmp;
+	char *gres_type = NULL;
+
+	rc = gres_plugin_init();
+
+	slurm_mutex_lock(&gres_context_lock);
+	for (i=0; ((i < gres_context_cnt) && (rc == SLURM_SUCCESS)) ; i++) {
+		safe_unpack32(&magic, buffer);
+		if (magic != GRES_MAGIC) 
+			goto unpack_error;
+		safe_unpackstr_xmalloc(&gres_type, &uint32_tmp, buffer);
+		if (strcmp(gres_type, gres_context[i].gres_type)) {
+			/* The value of GresPlugins must be consistent
+			 * across all machines in the cluster */
+			error("gres_plugin_unpack_node_config: plugin mismatch "
+			      "%s!=%s", gres_type, gres_context[i].gres_type);
+			goto unpack_error;
+		}
+		xfree(gres_type);
+		rc = (*(gres_context[i].ops.unpack_node_config))(buffer);
+	}
+	slurm_mutex_unlock(&gres_context_lock);
+
+	return rc;
+
+unpack_error:
+	slurm_mutex_unlock(&gres_context_lock);
+	xfree(gres_type);
+	error("gres_plugin_unpack_node_config: unpack error");
+	return SLURM_ERROR;
 }
 
 /*

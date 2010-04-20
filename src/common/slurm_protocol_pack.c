@@ -2064,6 +2064,7 @@ _pack_node_registration_status_msg(slurm_node_registration_status_msg_t *
 				   uint16_t protocol_version)
 {
 	int i;
+	uint32_t gres_info_size = 0;
 	xassert(msg != NULL);
 
 	if(protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
@@ -2092,6 +2093,13 @@ _pack_node_registration_status_msg(slurm_node_registration_status_msg_t *
 		pack16(msg->startup, buffer);
 		if (msg->startup)
 			switch_g_pack_node_info(msg->switch_nodeinfo, buffer);
+		if (msg->gres_info)
+			gres_info_size = get_buf_offset(msg->gres_info);
+		pack32(gres_info_size, buffer);
+		if (gres_info_size) {
+			packmem(get_buf_data(msg->gres_info), gres_info_size, 
+				buffer);
+		}
 	} else {
 		pack_time(msg->timestamp, buffer);
 		pack32(msg->status, buffer);
@@ -2124,7 +2132,8 @@ _unpack_node_registration_status_msg(slurm_node_registration_status_msg_t
 				     ** msg, Buf buffer,
 				     uint16_t protocol_version)
 {
-	uint32_t uint32_tmp;
+	char *gres_info = NULL;
+	uint32_t gres_info_size, uint32_tmp;
 	int i;
 	slurm_node_registration_status_msg_t *node_reg_ptr;
 
@@ -2172,6 +2181,15 @@ _unpack_node_registration_status_msg(slurm_node_registration_status_msg_t
 			 ||   switch_g_unpack_node_info(
 				 node_reg_ptr->switch_nodeinfo, buffer)))
 			goto unpack_error;
+
+		safe_unpack32(&gres_info_size, buffer);
+		if (gres_info_size) {
+			safe_unpackmem_xmalloc(&gres_info, &uint32_tmp, buffer);
+			if (gres_info_size != uint32_tmp)
+				goto unpack_error;
+			node_reg_ptr->gres_info = create_buf(gres_info,
+							     gres_info_size);
+		}	
 	} else {
 		/* initialize this so we don't check for those not sending it */
 		node_reg_ptr->hash_val = NO_VAL;

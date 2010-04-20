@@ -59,39 +59,40 @@
 #include <sys/mman.h>
 #include <dlfcn.h>
 
+#include "src/common/bitstring.h"
+#include "src/common/daemonize.h"
+#include "src/common/fd.h"
+#include "src/common/forward.h"
+#include "src/common/gres.h"
+#include "src/common/hostlist.h"
 #include "src/common/list.h"
 #include "src/common/log.h"
+#include "src/common/macros.h"
+#include "src/common/node_conf.h"
+#include "src/common/node_select.h"
 #include "src/common/pack.h"
+#include "src/common/parse_spec.h"
+#include "src/common/parse_time.h"
+#include "src/common/proc_args.h"
 #include "src/common/read_config.h"
+#include "src/slurmd/common/set_oomadj.h"
+#include "src/slurmd/common/setproctitle.h"
 #include "src/common/slurm_auth.h"
+#include "src/common/slurm_cred.h"
+#include "src/common/slurm_jobacct_gather.h"
+#include "src/common/slurm_protocol_api.h"
+#include "src/common/slurm_topology.h"
+#include "src/common/stepd_api.h"
 #include "src/common/switch.h"
+#include "src/slurmd/common/task_plugin.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/common/xsignal.h"
-#include "src/common/daemonize.h"
-#include "src/common/slurm_cred.h"
-#include "src/common/slurm_protocol_api.h"
-#include "src/common/parse_spec.h"
-#include "src/common/parse_time.h"
-#include "src/common/hostlist.h"
-#include "src/common/macros.h"
-#include "src/common/fd.h"
-#include "src/common/forward.h"
-#include "src/common/bitstring.h"
-#include "src/common/stepd_api.h"
-#include "src/common/node_select.h"
-#include "src/common/slurm_jobacct_gather.h"
-#include "src/common/slurm_topology.h"
-#include "src/common/node_conf.h"
-#include "src/common/proc_args.h"
 
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/slurmd/req.h"
 #include "src/slurmd/slurmd/get_mach_stat.h"
-#include "src/slurmd/common/setproctitle.h"
 #include "src/slurmd/common/proctrack.h"
-#include "src/slurmd/common/task_plugin.h"
-#include "src/slurmd/common/set_oomadj.h"
 
 #define GETOPT_ARGS	"cCd:Df:hL:Mn:N:vV"
 
@@ -571,8 +572,9 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 	struct utsname buf;
 	static bool first_msg = true;
 	static time_t slurmd_start_time = 0;
+	Buf gres_info;
 
-	msg->node_name  = xstrdup (conf->node_name);
+	msg->node_name   = xstrdup (conf->node_name);
 	msg->cpus	 = conf->cpus;
 	msg->sockets	 = conf->sockets;
 	msg->cores	 = conf->cores;
@@ -580,6 +582,12 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 	msg->real_memory = conf->real_memory_size;
 	msg->tmp_disk    = conf->tmp_disk_space;
 	msg->hash_val    = slurm_get_hash_val();
+
+	gres_info = init_buf(1024);
+	if (gres_plugin_pack_node_config(gres_info) != SLURM_SUCCESS)
+		error("error packing gres configuration");
+	else
+		msg->gres_info   = gres_info;
 
 	get_up_time(&conf->up_time);
 	msg->up_time     = conf->up_time;
@@ -839,6 +847,7 @@ _reconfigure(void)
 	 * Rebuild topology information and refresh slurmd topo infos
 	 */
 	slurm_topo_build_config();
+	gres_plugin_reconfig();
 	_set_topo_info();
 
 	/* _update_logging(); */
@@ -1166,9 +1175,9 @@ _slurmd_init(void)
 	 */
 	_read_config();
 
-	/*
-	 * Initialize topology support
-	 */
+	if ((gres_plugin_init() != SLURM_SUCCESS) ||
+	    (gres_plugin_load_node_config() != SLURM_SUCCESS))
+		return SLURM_FAILURE;
 	if (slurm_topo_init() != SLURM_SUCCESS)
 		return SLURM_FAILURE;
 
@@ -1335,6 +1344,7 @@ _slurmd_fini(void)
 	slurm_proctrack_fini();
 	slurm_auth_fini();
 	node_fini2();
+	gres_plugin_fini();
 	slurm_topo_fini();
 	slurmd_req(NULL);	/* purge memory allocated by slurmd_req() */
 	fini_setproctitle();

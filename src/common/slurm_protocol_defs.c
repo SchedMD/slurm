@@ -476,6 +476,8 @@ void slurm_free_node_registration_status_msg(
 {
 	if (msg) {
 		xfree(msg->arch);
+		if (msg->gres_info)
+			free_buf(msg->gres_info);
 		xfree(msg->job_id);
 		xfree(msg->node_name);
 		xfree(msg->os);

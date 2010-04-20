@@ -15,6 +15,7 @@ documents those changes that are of interest to users and admins.
     -Added new configuration parameter GresPlugins to define plugins used to
      manage generic resources.
     -Added framework for gres plugins.
+    -Added gres buffer to node registration messasge containing arbitrary data.
 
 * Changes in SLURM 2.2.0.pre5
 =============================

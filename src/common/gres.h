@@ -40,6 +40,7 @@
 #define _GRES_H
 
 #include <slurm/slurm.h>
+#include "src/common/pack.h"
 
 /*
  * Initialize the gres plugin.
@@ -67,9 +68,25 @@ extern int gres_plugin_fini(void);
 extern int gres_plugin_reconfig(void);
 
 /*
+ * Load this node's configuration (i.e. how many resources it has)
+ */
+extern int gres_plugin_load_node_config(void);
+
+/*
+ * Pack this node's configuration into a buffer
+ */
+extern int gres_plugin_pack_node_config(Buf buffer);
+
+/*
+ * Unpack this node's configuration from a buffer
+ */
+extern int gres_plugin_unpack_node_config(Buf buffer);
+
+/*
  * Provide a plugin-specific help message
  * IN/OUT msg - buffer provided by caller and filled in by plugin
  * IN msg_size - size of msg in bytes
  */
 extern int gres_plugin_help_msg(char *msg, int msg_size);
+
 #endif /* !_GRES_H */

@@ -65,8 +65,8 @@
 
 #include <slurm/slurm.h>
 #include <slurm/slurm_errno.h>
+
 #include "src/common/slurm_xlator.h"
-#include "src/slurmctld/slurmctld.h"
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -99,6 +99,10 @@ const char plugin_type[]       	= "gres/gpu";
 const uint32_t plugin_version   = 100;
 const uint32_t min_plug_version = 100;
 
+/* Currently loaded configuration */
+static uint32_t gres_cnt = 0;
+
+/* This will be the output for "srun --gres=help" */
 extern int help_msg (char *msg, int msg_size)
 {
 	char *response = "gpu[:count[*cpu]]";
@@ -109,4 +113,48 @@ extern int help_msg (char *msg, int msg_size)
 
 	memcpy(msg, response, resp_len);
 	return SLURM_SUCCESS;
+}
+
+/* Get the current configuration of this resource (e.g. how many exist,
+ *	their topology and any other required information). */
+extern int load_node_config(void)
+{
+	/* FIXME: Need to flesh this out, probably using 
+	 * http://svn.open-mpi.org/svn/hwloc/branches/libpci/
+	 * We'll want to capture topology information as well
+	 * as count. */
+	gres_cnt = 2;
+	return SLURM_SUCCESS;
+}
+
+/* Pack this node's current configuration.
+ * Include the version number so that we can possibly un/pack differnt
+ * versions of the data structure. */
+extern int pack_node_config(Buf buffer)
+{
+	pack32(plugin_version, buffer);
+	/* FIXME: Pack whatever information is available, including topology */
+	pack32(gres_cnt, buffer);
+	return SLURM_SUCCESS;
+}
+
+/* Unpack this node's current configuration.
+ * Include the version number so that we can possibly un/pack differnt
+ * versions of the data structure. */
+extern int unpack_node_config(Buf buffer)
+{
+	uint32_t version;
+
+	safe_unpack32(&version, buffer);
+	if (version == plugin_version) {
+		safe_unpack32(&gres_cnt, buffer);
+	} else {
+		error("unpack_node_config error for %s, invalid version", 
+		      plugin_name);
+		return SLURM_ERROR;
+	}
+	return SLURM_SUCCESS;
+
+unpack_error:
+	return SLURM_ERROR;
 }
