@@ -2,6 +2,7 @@
  *  update_node.c - node update function for scontrol.
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -75,6 +76,9 @@ scontrol_update_node (int argc, char *argv[])
 			node_msg.node_names = val;
 		else if (strncasecmp(tag, "Features", MAX(taglen, 1)) == 0) {
 			node_msg.features = val;
+			update_cnt++;
+		} else if (strncasecmp(tag, "Gres", MAX(taglen, 1)) == 0) {
+			node_msg.gres = val;
 			update_cnt++;
 		} else if (strncasecmp(tag, "Weight", MAX(taglen,1)) == 0) {
 			/* Logic borrowed from function _handle_uint32 */

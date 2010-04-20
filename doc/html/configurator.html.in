@@ -152,13 +152,15 @@ function displayfile()
    get_field("Epilog",document.config.epilog) + "<br>" +
    "#PrologSlurmctld= <br>" +
    "#FirstJobId=1 <br>" +
+   "#GresPlugins= <br>" +
+   "#GroupUpdateForce=0 <br>" +
+   "#GroupUpdateTime=600 <br>" 
    "#JobCheckpointDir=/var/slurm/checkpoint <br>" +
    get_field("JobCredentialPrivateKey", document.config.private_key) + "<br>" +
    get_field("JobCredentialPublicCertificate", document.config.public_key) + "<br>" +
-   "#JobFileAppend=0 <br>" +
-   "#GroupUpdateForce=0 <br>" +
-   "#GroupUpdateTime=600 <br>" +
+   "#JobFileAppend=0 <br>" ++
    "#JobRequeue=1 <br>" +
+   "#JobSubmitPlugins=1 <br>" +
    "#KillOnBadExit=0 <br>" +
    "#Licenses=foo*4,bar <br>" +
    "#MailProg=/bin/mail <br>" +

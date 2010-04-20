@@ -80,6 +80,8 @@ CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
   to set default job parameters or perform other site-configurable actions at
   job submit time.
 
+* Added new configuration parameter GresPlugins which manages generic resources.
+
 * Added "--enable-partial-attach" option to configure (build) script.
 
 * Added support for new partition states of DRAIN and INACTIVE and new partition
@@ -152,15 +154,21 @@ slurm_step_ctx_params_t
 
 * Added the following struct definitions:
 job_info_t
+	gres
 	resize_time
 	time_min
 
 job_desc_msg_t
+	gres
 	max_cpus
 	time_min
 
+job_step_info_t
+	gres
+
 node_info_t
 	boot_time
+	gres
 	reason_time
 	reason_uid
 	slurmd_start_time
@@ -169,9 +177,11 @@ partition_info_t
 	alternate
 
 slurm_step_ctx_params_t
+	gres
 	max_nodes
 
 update_node_msg_t
+	gres
 	reason_uid
 
 * Changed the following enums

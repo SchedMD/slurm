@@ -158,6 +158,7 @@
 #define LONG_OPT_RESERVATION     0x13e
 #define LONG_OPT_SIGNAL          0x13f
 #define LONG_OPT_TIME_MIN        0x140
+#define LONG_OPT_GRES            0x141
 
 /*---- global variables, defined in opt.h ----*/
 opt_t opt;
@@ -329,6 +330,7 @@ static void _opt_default()
 
 	opt.hold	    = false;
 	opt.constraints	    = NULL;
+	opt.gres            = NULL;
 	opt.contiguous	    = false;
 	opt.nodelist	    = NULL;
 	opt.exc_nodes	    = NULL;
@@ -612,6 +614,7 @@ void set_options(const int argc, char **argv)
 		{"exclusive",     no_argument,       0, LONG_OPT_EXCLUSIVE},
 		{"get-user-env",  optional_argument, 0, LONG_OPT_GET_USER_ENV},
 		{"gid",           required_argument, 0, LONG_OPT_GID},
+		{"gres",          required_argument, 0, LONG_OPT_GRES},
 		{"hint",          required_argument, 0, LONG_OPT_HINT},
 		{"ioload-image",  required_argument, 0, LONG_OPT_RAMDISK_IMAGE},
 		{"jobid",         required_argument, 0, LONG_OPT_JOBID},
@@ -1085,6 +1088,14 @@ void set_options(const int argc, char **argv)
 		case LONG_OPT_TIME_MIN:
 			xfree(opt.time_min_str);
 			opt.time_min_str = xstrdup(optarg);
+			break;
+		case LONG_OPT_GRES:
+			if (!strcasecmp(optarg, "help")) {
+				print_gres_help();
+				exit(0);
+			}
+			xfree(opt.gres);
+			opt.gres = xstrdup(optarg);
 			break;
 		default:
 			if (spank_process_option(opt_char, optarg) < 0) {
@@ -1631,6 +1642,8 @@ static void _opt_list()
 	info("account        : %s", opt.account);
 	info("comment        : %s", opt.comment);
 	info("dependency     : %s", opt.dependency);
+	if (opt.gres != NULL)
+		info("gres           : %s", opt.gres);
 	info("network        : %s", opt.network);
 	info("qos            : %s", opt.qos);
 	str = print_constraints();
@@ -1711,7 +1724,7 @@ static void _usage(void)
 "              [--nodefile=file] [--nodelist=hosts] [--exclude=hosts]\n"
 "              [--network=type] [--mem-per-cpu=MB] [--qos=qos]\n"
 "              [--cpu_bind=...] [--mem_bind=...] [--reservation=name]\n"
-"              [--time-min=minutes]\n"
+"              [--time-min=minutes] [--gres=list]\n"
 "              [executable [args...]]\n");
 }
 
@@ -1732,6 +1745,7 @@ static void _help(void)
 "  -D, --chdir=path            change working directory\n"
 "      --get-user-env          used by Moab.  See srun man page.\n"
 "      --gid=group_id          group ID to run job as (user root only)\n"
+"      --gres=list             required generic resources\n"
 "  -H, --hold                  submit job in held state\n"
 "  -I, --immediate[=secs]      exit if resources not available in \"secs\"\n"
 "      --jobid=id              specify jobid to use\n"

@@ -389,6 +389,7 @@ Exit status reported for the job by the wait() function.
 The first number is the exit code, typically as set by the exit() function.
 The second number of the signal that caused the process to terminate if
 it was terminated by a signal.
+
 .TP
 \fIFeatures\fP=<features>
 Set the job's required node features. 
@@ -418,6 +419,22 @@ Reset the required job geometry.
 On Blue Gene the value should be three digits separated by
 "x" or ",". The digits represent the allocation size in
 X, Y and Z dimensions (e.g. "2x3x4").
+
+.TP
+\fIGres\fP=<list>
+Specifies a comma delimited list of generic consumable resources.
+The format of each entry on the list is "name[:count[*cpu]]".
+The name is that of the consumable resource.
+The count is the number of those resources with a default value of 1.
+The specified resources will be allocated to the job on each node
+allocated unless "*cpu" is appended, in which case the resources
+will be allocated on a per cpu basis.
+The available generic consumable resources is configurable by the system
+administrator.
+A list of available generic consumable resources will be printed and the
+command will exit if the option argument is "help".
+Examples of use include "Gres=gpus:2*cpu,disk=40G" and "Gres=help".
+
 .TP
 \fIJobId\fP=<id>
 Identify the job to be updated. This specification is required.
@@ -640,6 +657,20 @@ Update slurm.conf with any changes meant to be persistent across normal
 restarts of slurmctld or the execution of \fBscontrol reconfig\fR.
 
 .TP
+\fIGres\fP=<gres>
+Identify generic resources to be associated with the specified node.  Any
+previously defined generic resources will be overwritten with the new value.
+Specifications for multiple generic resources should be comma separated.
+Each resource specification consists of a name followed by an optional
+colon with a numeric value (default value is one)
+(e.g. "Gres=bandwidth:10000,gpus").
+Generic resources assigned via \fBscontrol\fR will only persist across the
+restart of the slurmctld daemon with the \fI\-R\fR option and state files
+preserved or slurmctld's receipt of a SIGHUP.
+Update slurm.conf with any changes meant to be persistent across normal
+restarts of slurmctld or the execution of \fBscontrol reconfig\fR.
+
+.TP
 \fIReason\fP=<reason>
 Identify the reason the node is in a "DOWN" or "DRAINED", "DRAINING",
 "FAILING" or "FAIL" state.
@@ -820,6 +851,13 @@ For create, if you do not want to give a reservation name, use
 "scontrol create res ..." and a name will be created automatically.
 
 .TP
+\fIAccounts\fP=<account list>
+List of accounts permitted to use the reserved nodes.
+E.g.  Accounts=physcode1,physcode2.  A user in any of the accounts
+may use the reserved nodes.
+A new reservation must specify Users and/or Accounts.
+
+.TP
 \fILicenses\fP=<license>
 Specification of licenses (or other resources available on all
 nodes of the cluster) which are to be reserved.
@@ -919,13 +957,6 @@ Value may be cleared with blank data value, "Features=".
 \fIUsers\fP=<user list>
 List of users permitted to use the reserved nodes.
 E.g.  Users=jones1,smith2.
-A new reservation must specify Users and/or Accounts.
-
-.TP
-\fIAccounts\fP=<account list>
-List of accounts permitted to use the reserved nodes.
-E.g.  Accounts=physcode1,physcode2.  A user in any of the accounts
-may use the reserved nodes.
 A new reservation must specify Users and/or Accounts.
 
 .TP

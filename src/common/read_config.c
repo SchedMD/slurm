@@ -172,6 +172,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"FastSchedule", S_P_UINT16},
 	{"FirstJobId", S_P_UINT32},
 	{"GetEnvTimeout", S_P_UINT16},
+	{"GresPlugins", S_P_STRING},
 	{"GroupUpdateForce", S_P_UINT16},
 	{"GroupUpdateTime", S_P_UINT16},
 	{"HashBase", S_P_LONG, _defunct_option},
@@ -409,6 +410,7 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 	static s_p_options_t _nodename_options[] = {
 		{"CoresPerSocket", S_P_UINT16},
 		{"Feature", S_P_STRING},
+		{"Gres", S_P_STRING},
 		{"NodeAddr", S_P_STRING},
 		{"NodeHostname", S_P_STRING},
 		{"Port", S_P_UINT16},
@@ -476,6 +478,9 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 
 		if (!s_p_get_string(&n->feature, "Feature", tbl))
 			s_p_get_string(&n->feature, "Feature", dflt);
+
+		if (!s_p_get_string(&n->gres, "Gres", tbl))
+			s_p_get_string(&n->gres, "Gres", dflt);
 
 		if (!s_p_get_uint16(&n->port, "Port", tbl)
 		    && !s_p_get_uint16(&n->port, "Port", dflt)) {
@@ -589,6 +594,7 @@ static void _destroy_nodename(void *ptr)
 	xfree(n->hostnames);
 	xfree(n->addresses);
 	xfree(n->feature);
+	xfree(n->gres);
 	xfree(n->reason);
 	xfree(n->state);
 	xfree(ptr);
@@ -1426,6 +1432,7 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->crypto_type);
 	xfree (ctl_conf_ptr->epilog);
 	xfree (ctl_conf_ptr->epilog_slurmctld);
+	xfree (ctl_conf_ptr->gres_plugins);
 	xfree (ctl_conf_ptr->health_check_program);
 	xfree (ctl_conf_ptr->job_acct_gather_type);
 	xfree (ctl_conf_ptr->job_ckpt_dir);
@@ -1523,6 +1530,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->fast_schedule		= (uint16_t) NO_VAL;
 	ctl_conf_ptr->first_job_id		= (uint32_t) NO_VAL;
 	ctl_conf_ptr->get_env_timeout		= 0;
+	xfree(ctl_conf_ptr->gres_plugins);
 	ctl_conf_ptr->group_info		= (uint16_t) NO_VAL;
 	ctl_conf_ptr->hash_val			= (uint32_t) NO_VAL;
 	ctl_conf_ptr->health_check_interval	= 0;
@@ -1966,6 +1974,8 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 	if (!s_p_get_uint32(&conf->first_job_id, "FirstJobId", hashtbl))
 		conf->first_job_id = DEFAULT_FIRST_JOB_ID;
+
+	s_p_get_string(&conf->gres_plugins, "GresPlugins", hashtbl);
 
 	if (s_p_get_uint16(&conf->inactive_limit, "InactiveLimit", hashtbl)) {
 #ifdef HAVE_BG

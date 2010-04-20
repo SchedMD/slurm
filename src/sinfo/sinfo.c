@@ -2,7 +2,7 @@
  *  sinfo.c - Report overall state the system
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Joey Ekstrom <ekstrom1@llnl.gov>, Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -517,6 +517,11 @@ static bool _match_node_data(sinfo_data_t *sinfo_ptr,
 		return false;
 
 	if (sinfo_ptr->nodes &&
+	    params.match_flags.gres_flag &&
+	    (_strcmp(node_ptr->gres, sinfo_ptr->gres)))
+		return false;
+
+	if (sinfo_ptr->nodes &&
 	    params.match_flags.reason_flag &&
 	    (_strcmp(node_ptr->reason, sinfo_ptr->reason)))
 		return false;
@@ -632,6 +637,7 @@ static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr,
 	if (sinfo_ptr->nodes_total == 0) {	/* first node added */
 		sinfo_ptr->node_state = node_ptr->node_state;
 		sinfo_ptr->features   = node_ptr->features;
+		sinfo_ptr->gres       = node_ptr->gres;
 		sinfo_ptr->reason     = node_ptr->reason;
 		sinfo_ptr->reason_time= node_ptr->reason_time;
 		sinfo_ptr->reason_uid = node_ptr->reason_uid;

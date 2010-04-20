@@ -7,7 +7,7 @@
  *	configuration list (config_list)
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov> et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -214,9 +214,11 @@ static int _build_single_nodeline_info(slurm_conf_node_t *node_ptr,
 				node_rec->node_state = state_val;
 			node_rec->last_response = (time_t) 0;
 			node_rec->comm_name = xstrdup(address);
-
-			node_rec->port = node_ptr->port;
-			node_rec->reason = xstrdup(node_ptr->reason);
+			node_rec->port      = node_ptr->port;
+			node_rec->weight    = node_ptr->weight;
+			node_rec->features  = xstrdup(node_ptr->feature);
+			node_rec->gres      = xstrdup(node_ptr->gres);
+			node_rec->reason    = xstrdup(node_ptr->reason);
 		} else {
 			/* FIXME - maybe should be fatal? */
 			error("reconfiguration for node %s, ignoring!", alias);
@@ -489,8 +491,10 @@ extern int build_all_nodeline_info (bool set_bitmap)
 		config_ptr->real_memory = node->real_memory;
 		config_ptr->tmp_disk = node->tmp_disk;
 		config_ptr->weight = node->weight;
-		if (node->feature)
+		if (node->feature && node->feature[0])
 			config_ptr->feature = xstrdup(node->feature);
+		if (node->gres && node->gres[0])
+			config_ptr->gres = xstrdup(node->gres);
 
 		rc = _build_single_nodeline_info(node, config_ptr);
 		max_rc = MAX(max_rc, rc);
@@ -793,6 +797,7 @@ extern void purge_node_rec (struct node_record *node_ptr)
 	xfree(node_ptr->arch);
 	xfree(node_ptr->comm_name);
 	xfree(node_ptr->features);
+	xfree(node_ptr->gres);
 	xfree(node_ptr->name);
 	xfree(node_ptr->os);
 	xfree(node_ptr->part_pptr);

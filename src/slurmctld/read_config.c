@@ -760,13 +760,12 @@ int read_slurm_conf(int recover, bool reconfig)
 
 	if (reconfig) {
 		load_all_resv_state(0);
-		if (recover == 2)
-			restore_node_features();
 	} else {
 		load_all_resv_state(recover);
 		if (recover >= 1)
 			(void) trigger_state_restore();
 	}
+	restore_node_features(recover);
 
 	/* sort config_list by weight for scheduling */
 	list_sort(config_list, &list_compare_config);
@@ -886,6 +885,9 @@ static int _restore_node_state(int recover,
 			xfree(node_ptr->features);
 			node_ptr->features = old_node_ptr->features;
 			old_node_ptr->features = NULL;
+			xfree(node_ptr->gres);
+			node_ptr->gres = old_node_ptr->gres;
+			old_node_ptr->gres = NULL;
 		}
 		if (old_node_ptr->arch) {
 			xfree(node_ptr->arch);

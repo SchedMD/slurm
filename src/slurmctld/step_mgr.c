@@ -115,7 +115,6 @@ static struct step_record * _create_step_record(struct job_record *job_ptr)
 	step_ptr->start_time = time(NULL) ;
 	step_ptr->time_limit = INFINITE ;
 	step_ptr->jobacct = jobacct_gather_g_create(NULL);
-	step_ptr->ckpt_dir = NULL;
 	step_ptr->requid = -1;
 
 	if (list_append (job_ptr->step_list, step_ptr) == NULL)
@@ -174,6 +173,7 @@ static void _free_step_rec(struct step_record *step_ptr)
 	xfree(step_ptr->resv_ports);
 	xfree(step_ptr->network);
 	xfree(step_ptr->ckpt_dir);
+	xfree(step_ptr->gres);
 	xfree(step_ptr);
 }
 
@@ -243,8 +243,8 @@ dump_step_desc(job_step_create_request_msg_t *step_spec)
 	debug3("   mem_per_cpu=%u resv_port_cnt=%u immediate=%u no_kill=%u",
 	       step_spec->mem_per_cpu, step_spec->resv_port_cnt,
 	       step_spec->immediate, step_spec->no_kill);
-	debug3("   overcommit=%d time_limit=%u",
-	       step_spec->overcommit, step_spec->time_limit);
+	debug3("   overcommit=%d time_limit=%u gres=%s",
+	       step_spec->overcommit, step_spec->time_limit, step_spec->gres);
 }
 
 
@@ -1348,6 +1348,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 	}
 
 	if (_test_strlen(step_specs->ckpt_dir, "ckpt_dir", 1024)	||
+	    _test_strlen(step_specs->gres, "gres", 1024)		||
 	    _test_strlen(step_specs->host, "host", 1024)		||
 	    _test_strlen(step_specs->name, "name", 1024)		||
 	    _test_strlen(step_specs->network, "network", 1024)		||
@@ -1462,6 +1463,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 	step_ptr->exit_code = NO_VAL;
 	step_ptr->exclusive = step_specs->exclusive;
 	step_ptr->ckpt_dir  = xstrdup(step_specs->ckpt_dir);
+	step_ptr->gres      = xstrdup(step_specs->gres);
 	step_ptr->no_kill   = step_specs->no_kill;
 
 	/* step's name and network default to job's values if not
@@ -1718,8 +1720,8 @@ static void _pack_ctld_job_step_info(struct step_record *step_ptr, Buf buffer)
 	pack32(step_ptr->cpu_count, buffer);
 #endif
 	pack32(task_cnt, buffer);
-
 	pack32(step_ptr->time_limit, buffer);
+
 	pack_time(step_ptr->start_time, buffer);
 	if (IS_JOB_SUSPENDED(step_ptr->job_ptr)) {
 		run_time = step_ptr->pre_sus_time;
@@ -1730,6 +1732,7 @@ static void _pack_ctld_job_step_info(struct step_record *step_ptr, Buf buffer)
 			difftime(time(NULL), begin_time);
 	}
 	pack_time(run_time, buffer);
+
 	packstr(step_ptr->job_ptr->partition, buffer);
 	packstr(step_ptr->resv_ports, buffer);
 	packstr(node_list, buffer);
@@ -1737,6 +1740,7 @@ static void _pack_ctld_job_step_info(struct step_record *step_ptr, Buf buffer)
 	packstr(step_ptr->network, buffer);
 	pack_bit_fmt(pack_bitstr, buffer);
 	packstr(step_ptr->ckpt_dir, buffer);
+	packstr(step_ptr->gres, buffer);
 }
 
 /*
@@ -2364,6 +2368,7 @@ extern void dump_job_step_state(struct step_record *step_ptr, Buf buffer)
 	packstr(step_ptr->name, buffer);
 	packstr(step_ptr->network, buffer);
 	packstr(step_ptr->ckpt_dir, buffer);
+	packstr(step_ptr->gres, buffer);
 	pack16(step_ptr->batch_step, buffer);
 	if (!step_ptr->batch_step) {
 		pack_slurm_step_layout(step_ptr->step_layout, buffer,
@@ -2391,12 +2396,70 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer,
 	time_t start_time, pre_sus_time, tot_sus_time, ckpt_time;
 	char *host = NULL, *ckpt_dir = NULL, *core_job = NULL;
 	char *resv_ports = NULL, *name = NULL, *network = NULL;
-	char *bit_fmt = NULL;
+	char *bit_fmt = NULL, *gres = NULL;
 	switch_jobinfo_t *switch_tmp = NULL;
 	check_jobinfo_t check_tmp = NULL;
 	slurm_step_layout_t *step_layout = NULL;
 
-	if(protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
+	if(protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
+		safe_unpack32(&step_id, buffer);
+		safe_unpack16(&cyclic_alloc, buffer);
+		safe_unpack16(&port, buffer);
+		safe_unpack16(&ckpt_interval, buffer);
+		safe_unpack16(&cpus_per_task, buffer);
+		safe_unpack16(&resv_port_cnt, buffer);
+
+		safe_unpack8(&no_kill, buffer);
+
+		safe_unpack32(&cpu_count, buffer);
+		safe_unpack32(&mem_per_cpu, buffer);
+		safe_unpack32(&exit_code, buffer);
+		if (exit_code != NO_VAL) {
+			safe_unpackstr_xmalloc(&bit_fmt, &name_len, buffer);
+			safe_unpack16(&bit_cnt, buffer);
+		}
+		safe_unpack32(&core_size, buffer);
+		if (core_size)
+			safe_unpackstr_xmalloc(&core_job, &name_len, buffer);
+
+		safe_unpack32(&time_limit, buffer);
+		safe_unpack_time(&start_time, buffer);
+		safe_unpack_time(&pre_sus_time, buffer);
+		safe_unpack_time(&tot_sus_time, buffer);
+		safe_unpack_time(&ckpt_time, buffer);
+
+		safe_unpackstr_xmalloc(&host, &name_len, buffer);
+		safe_unpackstr_xmalloc(&resv_ports, &name_len, buffer);
+		safe_unpackstr_xmalloc(&name, &name_len, buffer);
+		safe_unpackstr_xmalloc(&network, &name_len, buffer);
+		safe_unpackstr_xmalloc(&ckpt_dir, &name_len, buffer);
+		safe_unpackstr_xmalloc(&gres, &name_len, buffer);
+
+		safe_unpack16(&batch_step, buffer);
+		if (!batch_step) {
+			if (unpack_slurm_step_layout(&step_layout, buffer,
+						     protocol_version))
+				goto unpack_error;
+			switch_alloc_jobinfo(&switch_tmp);
+			if (switch_unpack_jobinfo(switch_tmp, buffer))
+				goto unpack_error;
+		}
+		checkpoint_alloc_jobinfo(&check_tmp);
+		if (checkpoint_unpack_jobinfo(check_tmp, buffer))
+			goto unpack_error;
+
+		/* validity test as possible */
+		if (cyclic_alloc > 1) {
+			error("Invalid data for job %u.%u: cyclic_alloc=%u",
+			      job_ptr->job_id, step_id, cyclic_alloc);
+			goto unpack_error;
+		}
+		if (no_kill > 1) {
+			error("Invalid data for job %u.%u: no_kill=%u",
+			      job_ptr->job_id, step_id, no_kill);
+			goto unpack_error;
+		}
+	} else {
 		safe_unpack32(&step_id, buffer);
 		safe_unpack16(&cyclic_alloc, buffer);
 		safe_unpack16(&port, buffer);
@@ -2470,6 +2533,7 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer,
 	step_ptr->network      = network;
 	step_ptr->no_kill      = no_kill;
 	step_ptr->ckpt_dir     = ckpt_dir;
+	step_ptr->gres         = gres;
 	step_ptr->port         = port;
 	step_ptr->ckpt_interval= ckpt_interval;
 	step_ptr->mem_per_cpu  = mem_per_cpu;
@@ -2526,6 +2590,7 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer,
 	xfree(name);
 	xfree(network);
 	xfree(ckpt_dir);
+	xfree(gres);
 	xfree(bit_fmt);
 	xfree(core_job);
 	if (switch_tmp)

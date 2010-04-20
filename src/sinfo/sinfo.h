@@ -3,7 +3,8 @@
  *
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2002-2006 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Joey Ekstrom <ekstrom1@llnl.gov>, Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -99,6 +100,7 @@ typedef struct {
 	uint32_t max_weight;
 
 	char *features;
+	char *gres;
 	char *reason;
 	time_t reason_time;
 	uint32_t reason_uid;
@@ -125,6 +127,7 @@ struct sinfo_match_flags {
 	bool disk_flag;
 	bool features_flag;
 	bool groups_flag;
+	bool gres_flag;
 	bool job_size_flag;
 	bool default_time_flag;
 	bool max_time_flag;

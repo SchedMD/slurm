@@ -102,6 +102,7 @@ static void	_sync_bitmaps(struct node_record *node_ptr, int job_count);
 static void	_update_config_ptr(bitstr_t *bitmap,
 				struct config_record *config_ptr);
 static int	_update_node_features(char *node_names, char *features);
+static int	_update_node_gres(char *node_names, char *gres);
 static int	_update_node_weight(char *node_names, uint32_t weight);
 static bool 	_valid_node_state_change(uint16_t old, uint16_t new);
 #ifndef HAVE_FRONT_END
@@ -204,7 +205,8 @@ _dump_node_state (struct node_record *dump_node_ptr, Buf buffer)
 {
 	packstr (dump_node_ptr->name, buffer);
 	packstr (dump_node_ptr->reason, buffer);
-	packstr (dump_node_ptr->config_ptr->feature, buffer);
+	packstr (dump_node_ptr->features, buffer);
+	packstr (dump_node_ptr->gres, buffer);
 	pack16  (dump_node_ptr->node_state, buffer);
 	pack16  (dump_node_ptr->cpus, buffer);
 	pack16  (dump_node_ptr->sockets, buffer);
@@ -250,14 +252,15 @@ static int _open_node_state_file(char **state_file)
  * load_all_node_state - Load the node state from file, recover on slurmctld
  *	restart. Execute this after loading the configuration file data.
  *	Data goes into common storage.
- * IN state_only - if true, overwrite only node state, features and reason
+ * IN state_only - if true, overwrite only node state and reason
  *	Use this to overwrite the "UNKNOWN state typically used in slurm.conf
  * RET 0 or error code
  * NOTE: READ lock_slurmctld config before entry
  */
 extern int load_all_node_state ( bool state_only )
 {
-	char *node_name, *reason = NULL, *data = NULL, *state_file, *features;
+	char *node_name, *reason = NULL, *data = NULL, *state_file;
+	char *features, *gres;
 	int data_allocated, data_read = 0, error_code = 0, node_cnt = 0;
 	uint16_t node_state;
 	uint16_t cpus = 1, sockets = 1, cores = 1, threads = 1;
@@ -337,6 +340,7 @@ extern int load_all_node_state ( bool state_only )
 			safe_unpackstr_xmalloc (&node_name, &name_len, buffer);
 			safe_unpackstr_xmalloc (&reason,    &name_len, buffer);
 			safe_unpackstr_xmalloc (&features,  &name_len, buffer);
+			safe_unpackstr_xmalloc (&gres,      &name_len, buffer);
 			safe_unpack16 (&node_state,  buffer);
 			safe_unpack16 (&cpus,        buffer);
 			safe_unpack16 (&sockets,     buffer);
@@ -387,6 +391,7 @@ extern int load_all_node_state ( bool state_only )
 			error ("Node %s has vanished from configuration",
 			       node_name);
 			xfree(features);
+			xfree(gres);
 			xfree(reason);
 		} else if (state_only) {
 			uint16_t orig_flags;
@@ -428,8 +433,8 @@ extern int load_all_node_state ( bool state_only )
 				node_ptr->reason_uid = reason_uid;
 			} else
 				xfree(reason);
-			xfree(node_ptr->features);
-			node_ptr->features = features;
+			xfree(features);
+			xfree(gres);
 		} else {
 			node_cnt++;
 			if ((!power_save_mode) &&
@@ -449,6 +454,8 @@ extern int load_all_node_state ( bool state_only )
 			node_ptr->reason_uid  = reason_uid;
 			xfree(node_ptr->features);
 			node_ptr->features = features;
+			xfree(node_ptr->gres);
+			node_ptr->gres = gres;
 			node_ptr->part_cnt      = 0;
 			xfree(node_ptr->part_pptr);
 			node_ptr->cpus          = cpus;
@@ -462,10 +469,11 @@ extern int load_all_node_state ( bool state_only )
 		}
 		xfree (node_name);
 
-		if(node_ptr)
+		if (node_ptr) {
 			select_g_update_node_state(
 				(node_ptr - node_record_table_ptr),
 				node_ptr->node_state);
+		}
 	}
 
 fini:	info("Recovered state of %d nodes", node_cnt);
@@ -642,7 +650,8 @@ static void _pack_node (struct node_record *dump_node_ptr, Buf buffer,
 					      buffer, protocol_version);
 
 		packstr(dump_node_ptr->arch, buffer);
-		packstr(dump_node_ptr->config_ptr->feature, buffer);
+		packstr(dump_node_ptr->features, buffer);
+		packstr(dump_node_ptr->gres, buffer);
 		packstr(dump_node_ptr->os, buffer);
 		packstr(dump_node_ptr->reason, buffer);
 	} else if(protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
@@ -671,7 +680,7 @@ static void _pack_node (struct node_record *dump_node_ptr, Buf buffer,
 					      buffer, protocol_version);
 
 		packstr(dump_node_ptr->arch, buffer);
-		packstr(dump_node_ptr->config_ptr->feature, buffer);
+		packstr(dump_node_ptr->features, buffer);
 		packstr(dump_node_ptr->os, buffer);
 		packstr(dump_node_ptr->reason, buffer);
 	} else {
@@ -754,6 +763,21 @@ int update_node ( update_node_msg_t * update_node_msg )
 			error_code = ESLURM_INVALID_NODE_NAME;
 			free (this_node_name);
 			break;
+		}
+
+		if (update_node_msg->features) {
+			xfree(node_ptr->features);
+			if (update_node_msg->features[0])
+				node_ptr->features = xstrdup(update_node_msg->
+							     features);
+			/* _update_node_features() logs and udates config */
+		}
+
+		if (update_node_msg->gres) {
+			xfree(node_ptr->gres);
+			if (update_node_msg->gres[0])
+				node_ptr->gres = xstrdup(update_node_msg->gres);
+			/* _update_node_gres() logs and udates config */
 		}
 
 		if ((update_node_msg -> reason) &&
@@ -924,11 +948,13 @@ int update_node ( update_node_msg_t * update_node_msg )
 	hostlist_destroy (host_list);
 
 	if ((error_code == 0) && (update_node_msg->features)) {
-		error_code = _update_node_features(
-			update_node_msg->node_names,
-			update_node_msg->features);
+		error_code = _update_node_features(update_node_msg->node_names,
+						   update_node_msg->features);
 	}
-
+	if ((error_code == 0) && (update_node_msg->gres)) {
+		error_code = _update_node_gres(update_node_msg->node_names,
+					       update_node_msg->gres);
+	}
 
 	/* Update weight. Weight is part of config_ptr,
 	 * hence do the splitting if required */
@@ -944,56 +970,92 @@ int update_node ( update_node_msg_t * update_node_msg )
 	return error_code;
 }
 
-/*
- * restore_node_features - Restore node Features and Weight based upon state
- *	previously in memory (preserves interactive updates)
- */
-extern void restore_node_features(void)
+/* variation of strcmp that accepts NULL pointers */
+static int _strcmp(char *str1, char *str2)
 {
-	int i, j;
-	char *node_list;
-	struct node_record *node_ptr1, *node_ptr2;
-	hostlist_t hl;
+	if (!str1 && !str2)
+		return 0;
+	if (str1 && !str2)
+		return 1;
+	if (!str1 && str2)
+		return -1;
+	return strcmp(str1, str2);
+}
 
-	for (i=0, node_ptr1=node_record_table_ptr; i<node_record_count; 
-	     i++, node_ptr1++) {
+/*
+ * restore_node_features - Make node and config (from slurm.conf) fields
+ *	consistent for Features, Gres and Weight
+ * IN recover - 
+ *              0, 1 - use data from config record, built using slurm.conf
+ *              2 = use data from node record, built from saved state
+ */
+extern void restore_node_features(int recover)
+{
+	int i;
+	struct node_record *node_ptr;
 
-		if (node_ptr1->weight != node_ptr1->config_ptr->weight) {
+	for (i=0, node_ptr=node_record_table_ptr; i<node_record_count; 
+	     i++, node_ptr++) {
+
+		if (node_ptr->weight != node_ptr->config_ptr->weight) {
 			error("Node %s Weight(%u) differ from slurm.conf",
-			      node_ptr1->name, node_ptr1->weight);
-			_update_node_weight(node_ptr1->name, 
-					    node_ptr1->weight);
-		}
-
-		if (!node_ptr1->config_ptr->feature && !node_ptr1->features)
-			continue;	/* No feature to preserve */
-		if (node_ptr1->config_ptr->feature && node_ptr1->features &&
-		    !strcmp(node_ptr1->config_ptr->feature,
-			    node_ptr1->features)) {
-			continue;	/* Identical feature value */
-		}
-
-		hl = hostlist_create(node_ptr1->name);
-		for (j=(i+1), node_ptr2=(node_ptr1+1); j<node_record_count; 
-		     j++, node_ptr2++) {
-			if ((!node_ptr1->features && !node_ptr2->features) ||
-			    ( node_ptr1->features &&  node_ptr2->features &&
-			     !strcmp(node_ptr1->features, 
-				     node_ptr2->features))) {
-				/* Reset this job's feature at same time */
-				hostlist_push(hl, node_ptr2->name);
+			      node_ptr->name, node_ptr->weight);
+			if (recover == 2) {
+				_update_node_weight(node_ptr->name, 
+						    node_ptr->weight);
+			} else {
+				node_ptr->weight = node_ptr->config_ptr->
+						   weight;
 			}
 		}
 
-		node_list = xmalloc(2048);
-		hostlist_ranged_string(hl, 2048, node_list);
-		error("Node %s Features(%s) differ from slurm.conf",
-		      node_list, node_ptr1->features);
-		_update_node_features(node_list, node_ptr1->features);
-		xfree(node_ptr1->features);
-		xfree(node_list);
-		hostlist_destroy(hl);
+		if (_strcmp(node_ptr->config_ptr->feature, node_ptr->features)){
+			error("Node %s Features(%s) differ from slurm.conf",
+			      node_ptr->name, node_ptr->features);
+			if (recover == 2) {
+				_update_node_features(node_ptr->name,
+						      node_ptr->features);
+			} else {
+				xfree(node_ptr->features);
+				node_ptr->features = xstrdup(node_ptr->
+							     config_ptr->
+							     feature);
+			}
+		}
+
+		if (_strcmp(node_ptr->config_ptr->gres, node_ptr->gres)) {
+			error("Node %s Gres(%s) differ from slurm.conf",
+			      node_ptr->name, node_ptr->gres);
+			if (recover == 2) {
+				_update_node_gres(node_ptr->name,
+						  node_ptr->gres);
+			} else {
+				xfree(node_ptr->gres);
+				node_ptr->gres = xstrdup(node_ptr->config_ptr->
+							 gres);
+			}
+		}
 	}
+}
+
+/* Duplicate a configuration record except for the node names & bitmap */
+struct config_record * _dup_config(struct config_record *config_ptr)
+{
+	struct config_record *new_config_ptr;
+
+	new_config_ptr = create_config_record();
+	new_config_ptr->magic       = config_ptr->magic;
+	new_config_ptr->cpus        = config_ptr->cpus;
+	new_config_ptr->sockets     = config_ptr->sockets;
+	new_config_ptr->cores       = config_ptr->cores;
+	new_config_ptr->threads     = config_ptr->threads;
+	new_config_ptr->real_memory = config_ptr->real_memory;
+	new_config_ptr->tmp_disk    = config_ptr->tmp_disk;
+	new_config_ptr->weight      = config_ptr->weight;
+	new_config_ptr->feature     = xstrdup(config_ptr->feature);
+	new_config_ptr->gres        = xstrdup(config_ptr->gres);
+
+	return new_config_ptr;
 }
 
 /*
@@ -1039,25 +1101,14 @@ static int _update_node_weight(char *node_names, uint32_t weight)
 			config_ptr->weight = weight;
 		} else {
 			/* partial update, split config_record */
-			new_config_ptr = create_config_record();
+			new_config_ptr = _dup_config(config_ptr);
 			if (first_new == NULL);
 				first_new = new_config_ptr;
-			new_config_ptr->magic       = config_ptr->magic;
-			new_config_ptr->cpus        = config_ptr->cpus;
-			new_config_ptr->sockets     = config_ptr->sockets;
-			new_config_ptr->cores       = config_ptr->cores;
-			new_config_ptr->threads     = config_ptr->threads;
-			new_config_ptr->real_memory = config_ptr->real_memory;
-			new_config_ptr->tmp_disk    = config_ptr->tmp_disk;
 			/* Change weight for the given node */
 			new_config_ptr->weight      = weight;
-			if (config_ptr->feature) {
-				new_config_ptr->feature = xstrdup(config_ptr->
-								  feature);
-			}
 			new_config_ptr->node_bitmap = bit_copy(tmp_bitmap);
-			new_config_ptr->nodes =
-				bitmap2node_name(tmp_bitmap);
+			new_config_ptr->nodes = bitmap2node_name(tmp_bitmap);
+
 			build_config_feature_list(new_config_ptr);
 			_update_config_ptr(tmp_bitmap, new_config_ptr);
 
@@ -1121,27 +1172,18 @@ static int _update_node_features(char *node_names, char *features)
 			xfree(config_ptr->feature);
 			if (features && features[0])
 				config_ptr->feature = xstrdup(features);
-			else
-				config_ptr->feature = NULL;
 			build_config_feature_list(config_ptr);
 		} else {
 			/* partial update, split config_record */
-			new_config_ptr = create_config_record();
+			new_config_ptr = _dup_config(config_ptr);
 			if (first_new == NULL);
 				first_new = new_config_ptr;
-			new_config_ptr->magic       = config_ptr->magic;
-			new_config_ptr->cpus        = config_ptr->cpus;
-			new_config_ptr->sockets     = config_ptr->sockets;
-			new_config_ptr->cores       = config_ptr->cores;
-			new_config_ptr->threads     = config_ptr->threads;
-			new_config_ptr->real_memory = config_ptr->real_memory;
-			new_config_ptr->tmp_disk    = config_ptr->tmp_disk;
-			new_config_ptr->weight      = config_ptr->weight;
+			xfree(new_config_ptr->feature);
 			if (features && features[0])
 				new_config_ptr->feature = xstrdup(features);
 			new_config_ptr->node_bitmap = bit_copy(tmp_bitmap);
-			new_config_ptr->nodes =
-				bitmap2node_name(tmp_bitmap);
+			new_config_ptr->nodes = bitmap2node_name(tmp_bitmap);
+
 			build_config_feature_list(new_config_ptr);
 			_update_config_ptr(tmp_bitmap, new_config_ptr);
 
@@ -1149,8 +1191,8 @@ static int _update_node_features(char *node_names, char *features)
 			bit_not(tmp_bitmap);
 			bit_and(config_ptr->node_bitmap, tmp_bitmap);
 			xfree(config_ptr->nodes);
-			config_ptr->nodes = bitmap2node_name(
-				config_ptr->node_bitmap);
+			config_ptr->nodes = bitmap2node_name(config_ptr->
+							     node_bitmap);
 		}
 		bit_free(tmp_bitmap);
 	}
@@ -1159,6 +1201,80 @@ static int _update_node_features(char *node_names, char *features)
 
 	info("_update_node_features: nodes %s features set to: %s",
 		node_names, features);
+	return SLURM_SUCCESS;
+}
+
+/*
+ * _update_node_gres - Update generic resources associated with nodes
+ *	build new config list records as needed
+ * IN node_names - List of nodes to update
+ * IN gres - New gres value
+ * RET: SLURM_SUCCESS or error code
+ */
+static int _update_node_gres(char *node_names, char *gres)
+{
+	bitstr_t *node_bitmap = NULL, *tmp_bitmap;
+	ListIterator config_iterator;
+	struct config_record *config_ptr, *new_config_ptr;
+	struct config_record *first_new = NULL;
+	int rc, config_cnt, tmp_cnt;
+
+	rc = node_name2bitmap(node_names, false, &node_bitmap);
+	if (rc) {
+		info("_update_node_gres: invalid node_name");
+		return rc;
+	}
+
+	/* For each config_record with one of these nodes,
+	 * update it (if all nodes updated) or split it into
+	 * a new entry */
+	config_iterator = list_iterator_create(config_list);
+	if (config_iterator == NULL)
+		fatal("list_iterator_create malloc failure");
+	while ((config_ptr = (struct config_record *)
+			list_next(config_iterator))) {
+		if (config_ptr == first_new)
+			break;	/* done with all original records */
+
+		tmp_bitmap = bit_copy(node_bitmap);
+		bit_and(tmp_bitmap, config_ptr->node_bitmap);
+		config_cnt = bit_set_count(config_ptr->node_bitmap);
+		tmp_cnt = bit_set_count(tmp_bitmap);
+		if (tmp_cnt == 0) {
+			/* no overlap, leave alone */
+		} else if (tmp_cnt == config_cnt) {
+			/* all nodes changed, update in situ */
+			xfree(config_ptr->gres);
+			if (gres && gres[0])
+				config_ptr->gres = xstrdup(gres);
+//FIXME			build_config_feature_list(config_ptr);
+		} else {
+			/* partial update, split config_record */
+			new_config_ptr = _dup_config(config_ptr);
+			if (first_new == NULL);
+				first_new = new_config_ptr;
+			xfree(new_config_ptr->gres);
+			if (gres && gres[0])
+				new_config_ptr->gres = xstrdup(gres);
+			new_config_ptr->node_bitmap = bit_copy(tmp_bitmap);
+			new_config_ptr->nodes = bitmap2node_name(tmp_bitmap);
+
+//FIXME			build_config_feature_list(new_config_ptr);
+			_update_config_ptr(tmp_bitmap, new_config_ptr);
+
+			/* Update remaining records */
+			bit_not(tmp_bitmap);
+			bit_and(config_ptr->node_bitmap, tmp_bitmap);
+			xfree(config_ptr->nodes);
+			config_ptr->nodes = bitmap2node_name(config_ptr->
+							     node_bitmap);
+		}
+		bit_free(tmp_bitmap);
+	}
+	list_iterator_destroy(config_iterator);
+	bit_free(node_bitmap);
+
+	info("_update_node_gres: nodes %s gres set to: %s", node_names, gres);
 	return SLURM_SUCCESS;
 }
 
