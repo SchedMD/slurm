@@ -872,6 +872,7 @@ typedef struct slurm_node_registration_status_msg {
 	char *arch;
 	uint16_t cores;
 	uint16_t cpus;
+	Buf gres_info;		/* generic resource info */
 	uint32_t hash_val;      /* hash value of slurm.conf file
 				   existing on node */
 	uint32_t job_count;	/* number of associate job_id's */
