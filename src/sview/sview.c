@@ -238,8 +238,7 @@ static void _page_switched(GtkNotebook     *notebook,
 		return;
 	else if(!grid_init && !started_grid_init) {
 		/* start the thread to make the grid only once */
-		if (!g_thread_create(_grid_init_thr, notebook, FALSE, &error))
-		{
+		if (!g_thread_create(_grid_init_thr, notebook, FALSE, &error)) {
 			g_printerr ("Failed to create grid init thread: %s\n",
 				    error->message);
 			return;
@@ -247,16 +246,12 @@ static void _page_switched(GtkNotebook     *notebook,
 		started_grid_init = 1;
 	}
 
-	if(page_running != -1) {
+	if(page_running != -1)
 		page_running = page_num;
-	}
 
 	for(i=0; i<PAGE_CNT; i++) {
-		if(main_display_data[i].id == -1)
-			break;
-		else if(!main_display_data[i].show)
-			continue;
-		if(main_display_data[i].extra == page_num)
+		if((main_display_data[i].id == -1)
+		   || (main_display_data[i].extra == page_num))
 			break;
 	}
 
@@ -426,6 +421,7 @@ static gboolean _delete(GtkWidget *widget,
 	fini = 1;
 	gtk_main_quit();
 	ba_fini();
+
 	if(popup_list)
 		list_destroy(popup_list);
 	if(grid_button_list)
@@ -626,15 +622,15 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 	GtkToggleActionEntry toggle_entries[] = {
 		{"grid", GTK_STOCK_SELECT_COLOR, "Show _Grid",
 		 "<control>g", "Visual display of cluster",
-		 G_CALLBACK(_set_grid), TRUE},
+		 G_CALLBACK(_set_grid), sview_config.show_grid},
 		{"hidden", GTK_STOCK_SELECT_COLOR, "Show _Hidden",
 		 "<control>h", "Display Hidden Partitions/Jobs",
-		 G_CALLBACK(_set_hidden), FALSE},
+		 G_CALLBACK(_set_hidden), sview_config.show_hidden},
 		{"admin", GTK_STOCK_PREFERENCES,
 		 "_Admin Mode", "<control>a",
 		 "Allows user to change or update information",
 		 G_CALLBACK(_set_admin_mode),
-		 FALSE}
+		 sview_config.admin_mode}
 	};
 
 	/* Make an accelerator group (shortcut keys) */
@@ -643,7 +639,8 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 				     G_N_ELEMENTS(entries), window);
 	gtk_action_group_add_radio_actions(menu_action_group, radio_entries,
 					   G_N_ELEMENTS(radio_entries),
-					   0, G_CALLBACK(_tab_pos), notebook);
+					   sview_config.tab_pos,
+					   G_CALLBACK(_tab_pos), notebook);
 	gtk_action_group_add_radio_actions(menu_action_group, debug_entries,
 					   G_N_ELEMENTS(debug_entries),
 					   -1, G_CALLBACK(_set_debug),
@@ -728,25 +725,8 @@ int main(int argc, char *argv[])
 	GtkViewport *view = NULL;
 	int i=0;
 
-	sview_config.refresh_delay = 5;
-	sview_config.grid_x_width = 0;
-	sview_config.grid_hori = 10;
-	sview_config.grid_vert = 10;
-	sview_config.show_hidden = 0;
-	sview_config.admin_mode = FALSE;
-	sview_config.grid_speedup = 0;
-	sview_config.show_grid = TRUE;
-	sview_config.page_default = PART_PAGE;
-	sview_config.tab_pos = GTK_POS_TOP;
+	load_defaults();
 
-	if(getenv("SVIEW_GRID_SPEEDUP"))
-		sview_config.grid_speedup = 1;
-	for(i=0; i<PAGE_CNT; i++) {
-		if(!main_display_data[i].show)
-			sview_config.page_visible[i] = FALSE;
-		else
-			sview_config.page_visible[i] = TRUE;
-	}
 	_init_pages();
 	g_thread_init(NULL);
 	gdk_threads_init();
@@ -848,11 +828,23 @@ int main(int argc, char *argv[])
 		else
 			gtk_widget_hide(visible_tab);
 	}
-	/* Set the default page This has to be done after the
+	/* Set the default page.  This has to be done after the
 	 * gtk_widget_show_all since it, for some reason always sets
 	 * 0 to be the default page and will just overwrite this. */
-	gtk_notebook_set_current_page(GTK_NOTEBOOK(main_notebook),
-				      sview_config.page_default);
+	/* Also if we already are set at the current page we need to
+	   start up the page thread, so just call the _page_switched
+	   function.  If we aren't already there, then set the current
+	   page which will inturn call the _page_switched.  If the
+	   pages is already this the signal doesn't happen so handle
+	   it here.
+	*/
+	if(gtk_notebook_get_current_page(GTK_NOTEBOOK(main_notebook))
+	   == sview_config.page_default)
+		_page_switched(GTK_NOTEBOOK(main_notebook), NULL,
+			       sview_config.page_default, NULL);
+	else
+		gtk_notebook_set_current_page(GTK_NOTEBOOK(main_notebook),
+					      sview_config.page_default);
 
 	/* Finished! */
 	gtk_main ();

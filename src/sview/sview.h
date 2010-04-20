@@ -98,12 +98,12 @@
 
 enum { JOB_PAGE,
        PART_PAGE,
-       NODE_PAGE,
-       BLOCK_PAGE,
        RESV_PAGE,
+       BLOCK_PAGE,
+       NODE_PAGE,
        SUBMIT_PAGE,
-       ADMIN_PAGE,
        INFO_PAGE,
+       ADMIN_PAGE,
        PAGE_CNT
 };
 enum { TAB_CLICKED,
@@ -150,16 +150,16 @@ typedef enum { SEARCH_JOB_ID = 1,
 /* Input parameters */
 typedef struct {
 	bool admin_mode;
-	int grid_hori;
-	int grid_vert;
-	int grid_x_width;
-	int grid_speedup;
-	int page_default;
+	uint32_t grid_hori;
+	bool grid_speedup;
+	uint32_t grid_vert;
+	uint32_t grid_x_width;
+	uint16_t page_default;
 	bool page_visible[PAGE_CNT];
-	int refresh_delay;
-	bool show_hidden;
+	uint16_t refresh_delay;
 	bool show_grid;
-	int tab_pos;
+	bool show_hidden;
+	uint16_t tab_pos;
 } sview_config_t;
 
 typedef struct display_data display_data_t;
@@ -497,4 +497,12 @@ extern void add_display_treestore_line_with_font(
 	char *font);
 extern void sview_widget_modify_bg(GtkWidget *widget, GtkStateType state,
 				   const GdkColor color);
+extern char *page_to_str(int page);
+extern char *tab_pos_to_str(int tab_pos);
+extern char *visible_to_str();
+
+// defaults.c
+extern int load_defaults();
+extern int save_defaults();
+
 #endif
