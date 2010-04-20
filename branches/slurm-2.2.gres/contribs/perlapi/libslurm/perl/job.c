@@ -130,6 +130,8 @@ job_info_to_hv(job_info_t* job_info, HV* hv)
 		STORE_FIELD(hv, job_info, wckey, charp);
 	if(job_info->work_dir)
 		STORE_FIELD(hv, job_info, work_dir, charp);
+	if(job_info->gres)
+		STORE_FIELD(hv, job_info, gres, charp);
 
 	return 0;
 }
@@ -171,6 +173,8 @@ job_step_info_to_hv(job_step_info_t* step_info, HV* hv)
 
 	if(step_info->ckpt_dir)
 		STORE_FIELD(hv, step_info, ckpt_dir, charp);
+	if(step_info->gres)
+		STORE_FIELD(hv, step_info, gres, charp);
 	STORE_FIELD(hv, step_info, ckpt_interval, uint16_t);
 	STORE_FIELD(hv, step_info, job_id, uint32_t);
 	if(step_info->name)

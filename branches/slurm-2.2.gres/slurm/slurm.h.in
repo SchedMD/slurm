@@ -1328,6 +1328,7 @@ typedef struct slurm_ctl_conf {
 				 * (only check configuration file, faster) */
 	uint32_t first_job_id;	/* first slurm generated job_id to assign */
 	uint16_t get_env_timeout; /* timeout for srun --get-user-env option */
+	char * gres_plugins;	/* list of generic resource plugins */
 	uint16_t group_info;	/* see GROUP_* fields above */
 	uint32_t hash_val;      /* Hash value of the slurm.conf file */
 	uint16_t health_check_interval;	/* secs between health checks */

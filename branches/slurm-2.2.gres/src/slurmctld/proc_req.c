@@ -450,6 +450,7 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->fast_schedule       = conf->fast_schedule;
 	conf_ptr->first_job_id        = conf->first_job_id;
 
+	conf_ptr->gres_plugins        = xstrdup(conf->gres_plugins);
 	conf_ptr->group_info          = conf->group_info;
 
 	conf_ptr->inactive_limit      = conf->inactive_limit;
