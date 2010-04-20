@@ -4,7 +4,7 @@
  *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Joey Ekstrom <ekstrom1@llnl.gov>, Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -500,6 +500,10 @@ extern int parse_format( char* format )
 							field_size,
 							right_justify,
 							suffix  );
+			else if (field[0] == 'b')
+				job_format_add_gres( params.format_list,
+						     field_size, right_justify,
+						     suffix );
 			else if (field[0] == 'c')
 				job_format_add_min_cpus( params.format_list,
 							 field_size,
@@ -536,16 +540,15 @@ extern int parse_format( char* format )
 							 field_size,
 							 right_justify,
 							 suffix );
-			else if (field[0] == 'G')
-				job_format_add_group_id( params.format_list,
-							 field_size,
-							 right_justify,
-							 suffix );
 			else if (field[0] == 'g')
 				job_format_add_group_name( params.format_list,
 							   field_size,
 							   right_justify,
 							   suffix );
+			else if (field[0] == 'G')
+				job_format_add_gres( params.format_list,
+						     field_size, right_justify,
+						     suffix );
 			else if (field[0] == 'h')
 				job_format_add_shared( params.format_list,
 						       field_size,
