@@ -1,5 +1,5 @@
 /*
- * msg2hv.h - prototypes of msg-hv converting functions
+ * msg.h - prototypes of msg-hv converting functions
  */
 
 #ifndef _MSG_H
@@ -76,8 +76,32 @@ inline static int hv_store_charp(HV* hv, const char *key, charp val)
 {
 	SV* sv = NULL;
 
-	if(val)
+	if (val) {
 		sv = newSVpv(val, 0);
+
+		if (!key || hv_store(hv, key, (I32)strlen(key), sv, 0) == NULL) {
+			SvREFCNT_dec(sv);
+			return -1;
+		}
+	}
+	return 0;
+}
+
+/*
+ * store an unsigned 64b int into HV
+ */
+inline static int hv_store_uint64_t(HV* hv, const char *key, uint64_t val)
+{
+	SV* sv = NULL;
+	/* Perl has a hard time figuring out the an unsigned int is
+	   equal to INFINITE or NO_VAL since they are treated as
+	   signed ints so we will handle this here. */
+	if(val == (uint64_t)INFINITE)
+		sv = newSViv(INFINITE);
+	else if(val == (uint64_t)NO_VAL)
+		sv = newSViv(NO_VAL);
+	else
+		sv = newSVuv(val);
 
 	if (!key || hv_store(hv, key, (I32)strlen(key), sv, 0) == NULL) {
 		SvREFCNT_dec(sv);
@@ -154,6 +178,21 @@ inline static int hv_store_uint8_t(HV* hv, const char *key, uint8_t val)
 	}
 	return 0;
 }
+
+/*
+ * store a uid_t into HV
+ */
+inline static int hv_store_uid_t(HV* hv, const char *key, uid_t val)
+{
+	SV* sv = newSVuv(val);
+
+	if (!key || hv_store(hv, key, (I32)strlen(key), sv, 0) == NULL) {
+		SvREFCNT_dec(sv);
+		return -1;
+	}
+	return 0;
+}
+
 /*
  * store a signed int into HV
  */
@@ -220,7 +259,6 @@ inline static int hv_store_ptr(HV* hv, const char *key, void* ptr)
 		SvREFCNT_dec(sv);
 		return -1;
 	}
-
 	return 0;
 }
 
@@ -252,31 +290,5 @@ inline static int hv_store_ptr(HV* hv, const char *key, void* ptr)
 		} \
 	} while (0)
 
-
-extern int hv_to_job_desc_msg(HV* hv, job_desc_msg_t* job_desc_msg);
-extern void free_job_desc_msg_memory(job_desc_msg_t *msg);
-extern int resource_allocation_response_msg_to_hv(resource_allocation_response_msg_t* resp_msg, HV* hv);
-extern int job_alloc_info_response_msg_to_hv(job_alloc_info_response_msg_t *resp_msg, HV* hv);
-extern int submit_response_msg_to_hv(submit_response_msg_t *resp_msg, HV* hv);
-
-extern int job_info_msg_to_hv(job_info_msg_t* job_info_msg, HV* hv);
-extern int job_step_info_response_msg_to_hv(job_step_info_response_msg_t* job_step_info_msg, HV* hv);
-extern int slurm_step_layout_to_hv(slurm_step_layout_t* step_layout, HV* hv);
-
-extern int node_info_msg_to_hv(node_info_msg_t* node_info_msg, HV* hv);
-extern int hv_to_update_node_msg(HV* hv, update_node_msg_t *update_msg);
-
-extern int partition_info_msg_to_hv(partition_info_msg_t* part_info_msg, HV* hv);
-extern int hv_to_update_part_msg(HV* hv, update_part_msg_t* part_msg);
-
-extern int slurm_ctl_conf_to_hv(slurm_ctl_conf_t* conf, HV* hv);
-
-extern int trigger_info_to_hv(trigger_info_t *info, HV* hv);
-extern int trigger_info_msg_to_hv(trigger_info_msg_t *msg, HV* hv);
-extern int hv_to_trigger_info(HV* hv, trigger_info_t* info);
-
-extern int hv_to_slurm_step_ctx_params(HV* hv, slurm_step_ctx_params_t* params);
-extern int hv_to_slurm_step_launch_params(HV* hv, slurm_step_launch_params_t *params);
-extern void free_slurm_step_launch_params_memory(slurm_step_launch_params_t *params);
 
 #endif /* _MSG_H */

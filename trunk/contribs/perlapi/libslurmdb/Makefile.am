@@ -8,7 +8,7 @@ perl_sources = \
 	       $(perl_dir)/ppport.h \
 	       $(perl_dir)/Slurmdb.pm \
 	       $(perl_dir)/Slurmdb.xs \
-	       $(perl_dir)/msg.h \
+	       $(perl_dir)/slurmdb-perl.h \
 	       $(perl_dir)/cluster.c
 
 $(perl_dir)/Makefile:	$(perl_dir)/Makefile.PL

@@ -89,7 +89,7 @@ WriteMakefile(
        AUTHOR         => 'Don Lipari <lipari@llnl.gov>') : ()),
     LIBS              => ["-L@top_builddir@/src/db_api/.libs -L@prefix@/lib -lslurmdb"], # e.g., '-lm'
     DEFINE            => '', # e.g., '-DHAVE_SOMETHING'
-    INC               => "-I. -I@top_srcdir@ -I@top_builddir@", # e.g., '-I. -I/usr/include/other'
+    INC               => "-I. -I@top_srcdir@ -I@top_srcdir@/contribs/perlapi/common -I@top_builddir@",
     # Un-comment this if you add C files to link with later:
     OBJECT            => '$(O_FILES)', # link all the C files too
     CCFLAGS           => '-g',

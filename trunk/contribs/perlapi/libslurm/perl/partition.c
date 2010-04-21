@@ -7,7 +7,7 @@
 #include <XSUB.h>
 
 #include <slurm/slurm.h>
-#include "msg.h"
+#include "slurm-perl.h"
 
 /*
  * convert partition_info_t to perl HV

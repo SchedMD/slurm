@@ -8,7 +8,7 @@
 #include <signal.h>
 #include <string.h>
 #include <unistd.h>
-#include "msg.h"
+#include "slurm-perl.h"
 
 #include "const-c.inc"
 
