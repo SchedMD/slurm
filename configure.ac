@@ -380,6 +380,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/crypto/openssl/Makefile
 		 src/plugins/gres/Makefile
 		 src/plugins/gres/gpu/Makefile
+		 src/plugins/gres/nic/Makefile
 		 src/plugins/jobacct_gather/Makefile
 		 src/plugins/jobacct_gather/linux/Makefile
 		 src/plugins/jobacct_gather/aix/Makefile
