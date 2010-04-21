@@ -219,7 +219,7 @@ static int _unload_gres_plugin(slurm_gres_context_t *plugin_context)
  */
 extern int gres_plugin_init(void)
 {
-	int i, rc = SLURM_SUCCESS;
+	int i, j, rc = SLURM_SUCCESS;
 	char *last = NULL, *names, *one_name, *full_name;
 
 	slurm_mutex_lock(&gres_context_lock);
@@ -257,6 +257,25 @@ extern int gres_plugin_init(void)
 		one_name = strtok_r(NULL, ",", &last);
 	}
 	xfree(names);
+
+	/* Insure that plugin_id is valid and unique */
+	for (i=0; i<gres_context_cnt; i++) {
+		for (j=i+1; j<gres_context_cnt; j++) {
+			if (*(gres_context[i].ops.plugin_id) !=
+			    *(gres_context[j].ops.plugin_id))
+				continue;
+			fatal("GresPlugins: Duplicate plugin_id %u for %s and %s",
+			      *(gres_context[i].ops.plugin_id),
+			      gres_context[i].gres_type,
+			      gres_context[j].gres_type);
+		}
+		if (*(gres_context[i].ops.plugin_id) < 100) {
+			fatal("GresPlugins: Invalid plugin_id %u (<100) %s",
+			      *(gres_context[i].ops.plugin_id),
+			      gres_context[i].gres_type);
+		}
+
+	}
 
 fini:	slurm_mutex_unlock(&gres_context_lock);
 	return rc;
