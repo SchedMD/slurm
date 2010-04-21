@@ -130,6 +130,8 @@ struct node_record {
 	char *gres;			/* node's generic resources, used only
 					 * for state save/restore, DO NOT
 					 * use for scheduling purposes */
+	List gres_list;			/* list of gres state info managed by 
+					 * plugins */
 	uint32_t weight;		/* orignal weight, used only for state
 					 * save/restore, DO NOT use for 
 					 * scheduling purposes. */

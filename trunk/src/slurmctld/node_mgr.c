@@ -1444,7 +1444,18 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 	if (slurm_get_preempt_mode() != PREEMPT_MODE_OFF)
 		gang_flag = true;
 
-gres_plugin_unpack_node_config(reg_msg->gres_info, reg_msg->node_name);
+	if (gres_plugin_unpack_node_config(reg_msg->gres_info,
+			node_ptr->name) != SLURM_SUCCESS) {
+		error_code = SLURM_ERROR;
+		reason_down = "Could not unpack gres data";
+	} else if (gres_plugin_node_config_validate(node_ptr->name,
+			&node_ptr->gres, &node_ptr->gres_list,
+			slurmctld_conf.fast_schedule, &reason_down) 
+			!= SLURM_SUCCESS) {
+		error_code = EINVAL;
+		/* reason_down set in function above */
+	}	
+
 	if (slurmctld_conf.fast_schedule != 2) {
 		int sockets1, sockets2;	/* total sockets on node */
 		int cores1, cores2;	/* total cores on node */
@@ -1769,13 +1780,19 @@ extern int validate_nodes_via_front_end(
 	}
 	list_iterator_destroy(job_iterator);
 
-	/* Now validate the node info */
-gres_plugin_unpack_node_config(reg_msg->gres_info, node_record_table_ptr->name);
+	(void) gres_plugin_unpack_node_config(reg_msg->gres_info,
+					      node_record_table_ptr->name);
 	for (i=0; i<node_record_count; i++) {
 		node_ptr = &node_record_table_ptr[i];
 		config_ptr = node_ptr->config_ptr;
 		jobs_on_node = node_ptr->run_job_cnt + node_ptr->comp_job_cnt;
 		node_ptr->last_response = time (NULL);
+
+		(void) gres_plugin_node_config_validate(node_ptr->name,
+							&node_ptr->gres,
+							&node_ptr->gres_list,
+							slurmctld_conf.fast_schedule, 
+							NULL);
 
 		if (reg_msg->up_time) {
 			node_ptr->up_time = reg_msg->up_time;

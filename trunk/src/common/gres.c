@@ -65,6 +65,7 @@
 #include <slurm/slurm.h>
 #include <slurm/slurm_errno.h>
 
+#include "src/common/list.h"
 #include "src/common/macros.h"
 #include "src/common/pack.h"
 #include "src/common/plugin.h"
@@ -76,10 +77,17 @@
 #define GRES_MAGIC 0x438a34d4
 
 typedef struct slurm_gres_ops {
+	uint32_t	(*plugin_id);
 	int		(*help_msg)		( char *msg, int msg_size );
 	int		(*load_node_config)	( void );
 	int		(*pack_node_config)	( Buf buffer );
 	int		(*unpack_node_config)	( Buf buffer );
+	int		(*node_config_validate)	( char *node_name,
+						  char **configured_gres,
+						  List *gres_list,
+						  uint16_t fast_schedule,
+						  char **reason_down );
+	int		(*node_config_delete)	( void *list_element );
 } slurm_gres_ops_t;
 
 typedef struct slurm_gres_context {
@@ -115,10 +123,13 @@ static int _load_gres_plugin(char *plugin_name,
 	 * Must be synchronized with slurm_gres_ops_t above.
 	 */
 	static const char *syms[] = {
+		"plugin_id",
 		"help_msg",
 		"load_node_config",
 		"pack_node_config",
-		"unpack_node_config"
+		"unpack_node_config",
+		"node_config_validate",
+		"node_config_delete"
 	};
 	int n_syms = sizeof(syms) / sizeof(char *);
 
@@ -170,9 +181,11 @@ static int _load_gres_plugin(char *plugin_name,
 	if (plugin_get_syms(plugin_context->cur_plugin,
 			    n_syms, syms,
 			    (void **) &plugin_context->ops ) < n_syms ) {
-		error("gres: incomplete plugin detected");
+		error("gres: incomplete %s plugin detected",
+		      plugin_context->gres_type);
 		return SLURM_ERROR;
 	}
+
 	return SLURM_SUCCESS;
 }
 
@@ -276,6 +289,41 @@ fini:	slurm_mutex_unlock(&gres_context_lock);
  *                          P L U G I N   C A L L S                       *
  **************************************************************************
  */
+
+/*
+ * Provide a plugin-specific help message
+ * IN/OUT msg - buffer provided by caller and filled in by plugin
+ * IN msg_size - size of msg in bytes
+ */
+extern int gres_plugin_help_msg(char *msg, int msg_size)
+{
+	int i, rc;
+	char *tmp_msg;
+
+	if (msg_size < 1)
+		return EINVAL;
+
+	msg[0] = '\0';
+	tmp_msg = xmalloc(msg_size);
+	rc = gres_plugin_init();
+
+	slurm_mutex_lock(&gres_context_lock);
+	for (i=0; ((i < gres_context_cnt) && (rc == SLURM_SUCCESS)); i++) {
+		rc = (*(gres_context[i].ops.help_msg))(tmp_msg, msg_size);
+		if ((rc != SLURM_SUCCESS) || (tmp_msg[0] == '\0'))
+			continue;
+		if ((strlen(msg) + strlen(tmp_msg) + 2) > msg_size)
+			break;
+		if (msg[0])
+			strcat(msg, "\n");
+		strcat(msg, tmp_msg);
+		tmp_msg[0] = '\0';
+	}
+	slurm_mutex_unlock(&gres_context_lock);
+
+	xfree(tmp_msg);
+	return rc;
+}
 
 /*
  * Perform reconfig, re-read any configuration files
@@ -434,37 +482,56 @@ unpack_error:
 	goto fini;
 }
 
-/*
- * Provide a plugin-specific help message
- * IN/OUT msg - buffer provided by caller and filled in by plugin
- * IN msg_size - size of msg in bytes
- */
-extern int gres_plugin_help_msg(char *msg, int msg_size)
+static void _gres_list_delete(void *list_element)
 {
 	int i, rc;
-	char *tmp_msg;
 
-	if (msg_size < 1)
-		return EINVAL;
+	if (gres_plugin_init() != SLURM_SUCCESS)
+		return;
 
-	msg[0] = '\0';
-	tmp_msg = xmalloc(msg_size);
+	slurm_mutex_lock(&gres_context_lock);
+	for (i=0; i<gres_context_cnt; i++) {
+		rc = (*(gres_context[i].ops.node_config_delete))(list_element);
+		if (rc == SLURM_SUCCESS)
+			break;
+	}
+	slurm_mutex_unlock(&gres_context_lock);
+}
+
+/*
+ * Validate a node's configuration and put a gres record onto a list
+ * Called immediately after gres_plugin_unpack_node_config().
+ * IN node_name - name of the node for which the gres information applies
+ * IN/OUT configured_res - Gres information suppled from slurm.conf,
+ *		may be updated with actual configuration if FastSchedule=0
+ * IN/OUT gres_list - List of Gres records for this node to track usage
+ * IN fast_schedule - 0: Validate and use actual hardware configuration
+ *		      1: Validate hardware config, but use slurm.conf config
+ *		      2: Don't validate hardware, use slurm.conf configuration
+ * OUT reason_down - set to an explanation of failure, if any, don't set if NULL
+ */
+extern int gres_plugin_node_config_validate(char *node_name,
+					    char **configured_gres,
+					    List *gres_list,
+					    uint16_t fast_schedule,
+					    char **reason_down)
+{
+	int i, rc;
+
 	rc = gres_plugin_init();
 
 	slurm_mutex_lock(&gres_context_lock);
+	if ((gres_context_cnt > 0) && (*gres_list == NULL)) {
+		*gres_list = list_create(_gres_list_delete);
+		if (*gres_list == NULL)
+			fatal("list_create malloc failure");
+	}
 	for (i=0; ((i < gres_context_cnt) && (rc == SLURM_SUCCESS)); i++) {
-		rc = (*(gres_context[i].ops.help_msg))(tmp_msg, msg_size);
-		if ((rc != SLURM_SUCCESS) || (tmp_msg[0] == '\0'))
-			continue;
-		if ((strlen(msg) + strlen(tmp_msg) + 2) > msg_size)
-			break;
-		if (msg[0])
-			strcat(msg, "\n");
-		strcat(msg, tmp_msg);
-		tmp_msg[0] = '\0';
+		rc = (*(gres_context[i].ops.node_config_validate))
+			(node_name, configured_gres, gres_list, fast_schedule,
+			 reason_down);
 	}
 	slurm_mutex_unlock(&gres_context_lock);
 
-	xfree(tmp_msg);
 	return rc;
 }
