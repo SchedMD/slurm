@@ -208,7 +208,7 @@ extern int unpack_node_config(Buf buffer)
 
 	if (version == plugin_version) {
 		safe_unpack32(&gres_config.nic_cnt, buffer);
-		info("nic_cnt=%u", gres_config.nic_cnt);
+		/* info("nic_cnt=%u", gres_config.nic_cnt); */
 	} else {
 		error("unpack_node_config error for %s, invalid version", 
 		      plugin_name);
@@ -353,4 +353,26 @@ extern int node_config_validate(char *node_name, char **configured_gres,
 	}
 
 	return rc;
+}
+
+extern void node_state_log(List gres_list, char *node_name)
+{
+	ListIterator gres_iter;
+	nic_status_t *gres_ptr;
+
+	if (gres_list == NULL)
+		return;
+
+	gres_iter = list_iterator_create(gres_list);
+	if (gres_iter == NULL)
+		fatal("list_iterator_create malloc failure");
+	while ((gres_ptr = list_next(gres_iter))) {
+		if (gres_ptr->plugin_id != plugin_id)
+			continue;
+		info("%s state for %s", plugin_name, node_name);
+		info("  nic_cnt found:%u configured:%u avail:%u alloc:%u",
+		     gres_ptr->nic_cnt_found, gres_ptr->nic_cnt_config,
+		     gres_ptr->nic_cnt_avail, gres_ptr->nic_cnt_alloc);
+	}
+	list_iterator_destroy(gres_iter);
 }
