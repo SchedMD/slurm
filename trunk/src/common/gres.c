@@ -88,6 +88,7 @@ typedef struct slurm_gres_context {
 	plugin_handle_t	cur_plugin;
 	int		gres_errno;
 	slurm_gres_ops_t ops;
+	bool		unpacked_info;
 } slurm_gres_context_t;
 
 static int gres_context_cnt = -1;
@@ -189,8 +190,8 @@ static int _unload_gres_plugin(slurm_gres_context_t *plugin_context)
  */
 extern int gres_plugin_init(void)
 {
-	int rc = SLURM_SUCCESS;
-	char *last = NULL, *names, *one_name;
+	int i, rc = SLURM_SUCCESS;
+	char *last = NULL, *names, *one_name, *full_name;
 
 	slurm_mutex_lock(&gres_context_lock);
 	if (gres_context_cnt >= 0)
@@ -205,12 +206,25 @@ extern int gres_plugin_init(void)
 	names = xstrdup(gres_plugin_list);
 	one_name = strtok_r(names, ",", &last);
 	while (one_name) {
-		xrealloc(gres_context, (sizeof(slurm_gres_context_t) * 
-			 (gres_context_cnt + 1)));
-		rc = _load_gres_plugin(one_name, gres_context+gres_context_cnt);
-		if (rc != SLURM_SUCCESS)
-			break;
-		gres_context_cnt++;
+		full_name = xstrdup("gres/");
+		xstrcat(full_name, one_name);
+		for (i=0; i<gres_context_cnt; i++) {
+			if (!strcmp(full_name, gres_context[i].gres_type))
+				break;
+		}
+		xfree(full_name);
+		if (i<gres_context_cnt) {
+			error("Duplicate plugin %s ignored", 
+			      gres_context[i].gres_type);
+		} else {
+			xrealloc(gres_context, (sizeof(slurm_gres_context_t) * 
+				 (gres_context_cnt + 1)));
+			rc = _load_gres_plugin(one_name, 
+					       gres_context + gres_context_cnt);
+			if (rc != SLURM_SUCCESS)
+				break;
+			gres_context_cnt++;
+		}
 		one_name = strtok_r(NULL, ",", &last);
 	}
 	xfree(names);
@@ -283,7 +297,7 @@ extern int gres_plugin_reconfig(void)
 }
 
 /*
- * Load this node's configuration (i.e. how many resources it has)
+ * Load this node's gres configuration (i.e. how many resources it has)
  */
 extern int gres_plugin_load_node_config(void)
 {
@@ -301,7 +315,7 @@ extern int gres_plugin_load_node_config(void)
 }
 
 /*
- * Pack this node's configuration into a buffer
+ * Pack this node's gres configuration into a buffer
  */
 extern int gres_plugin_pack_node_config(Buf buffer)
 {
@@ -322,41 +336,65 @@ extern int gres_plugin_pack_node_config(Buf buffer)
 }
 
 /*
- * Unpack this node's configuration from a buffer
+ * Unpack this node's gres configuration from a buffer
  */
 extern int gres_plugin_unpack_node_config(Buf buffer)
 {
-	int i, rc;
+	int i, rc, rc2;
 	uint32_t magic, uint32_tmp;
 	char *gres_type = NULL;
 
 	rc = gres_plugin_init();
 
 	slurm_mutex_lock(&gres_context_lock);
-	for (i=0; ((i < gres_context_cnt) && (rc == SLURM_SUCCESS)) ; i++) {
+	for (i=0; i<gres_context_cnt; i++)
+		gres_context[i].unpacked_info = false;
+
+	while (rc == SLURM_SUCCESS) {
+		i = remaining_buf(buffer);
+		if (i == 0)
+			break;
 		safe_unpack32(&magic, buffer);
 		if (magic != GRES_MAGIC) 
 			goto unpack_error;
 		safe_unpackstr_xmalloc(&gres_type, &uint32_tmp, buffer);
-		if (strcmp(gres_type, gres_context[i].gres_type)) {
-			/* The value of GresPlugins must be consistent
-			 * across all machines in the cluster */
-			error("gres_plugin_unpack_node_config: plugin mismatch "
-			      "%s!=%s", gres_type, gres_context[i].gres_type);
+		if (gres_type == NULL)
+			goto unpack_error;
+		for (i=0; i<gres_context_cnt; i++) {
+			if (!strcmp(gres_type, gres_context[i].gres_type))
+				break;
+		}
+		if (i >= gres_context_cnt) {
+			error("gres_plugin_unpack_node_config: no plugin "
+			      "configured to unpack %s", gres_type);
 			goto unpack_error;
 		}
 		xfree(gres_type);
+		gres_context[i].unpacked_info = true;
 		rc = (*(gres_context[i].ops.unpack_node_config))(buffer);
+	}
+
+fini:	/* Insure that every gres plugin is called for unpack, even if no data
+	 * was packed by the node. A likely sign that GresPlugins is 
+	 * inconsistently configured. */
+	for (i=0; i<gres_context_cnt; i++) {
+		if (gres_context[i].unpacked_info)
+			continue;
+		error("gres_plugin_unpack_node_config: no info packed for %s",
+		      gres_context[i].gres_type);
+		rc2 = (*(gres_context[i].ops.unpack_node_config))(NULL);
+		if (rc2 != SLURM_SUCCESS)
+			rc = rc2;
 	}
 	slurm_mutex_unlock(&gres_context_lock);
 
 	return rc;
 
 unpack_error:
-	slurm_mutex_unlock(&gres_context_lock);
 	xfree(gres_type);
 	error("gres_plugin_unpack_node_config: unpack error");
-	return SLURM_ERROR;
+	rc = SLURM_ERROR;
+	goto fini;
 }
 
 /*
@@ -371,6 +409,7 @@ extern int gres_plugin_help_msg(char *msg, int msg_size)
 
 	if (msg_size < 1)
 		return EINVAL;
+
 	msg[0] = '\0';
 	tmp_msg = xmalloc(msg_size);
 	rc = gres_plugin_init();
@@ -380,6 +419,8 @@ extern int gres_plugin_help_msg(char *msg, int msg_size)
 		rc = (*(gres_context[i].ops.help_msg))(tmp_msg, msg_size);
 		if ((rc != SLURM_SUCCESS) || (tmp_msg[0] == '\0'))
 			continue;
+		if ((strlen(msg) + strlen(tmp_msg) + 2) > msg_size)
+			break;
 		if (msg[0])
 			strcat(msg, "\n");
 		strcat(msg, tmp_msg);
