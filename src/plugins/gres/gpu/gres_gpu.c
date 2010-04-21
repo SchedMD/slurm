@@ -62,6 +62,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include <stdio.h>
+#include <stdlib.h>
 
 #include <slurm/slurm.h>
 #include <slurm/slurm_errno.h>
@@ -90,22 +91,44 @@
  * only load authentication plugins if the plugin_type string has a prefix
  * of "auth/".
  *
+ * plugin_id        - unique id for this plugin, value of 100+
  * plugin_version   - specifies the version number of the plugin.
  * min_plug_version - specifies the minumum version number of incoming
  *                    messages that this plugin can accept
  */
-const char plugin_name[]       	= "Gres GPU plugin";
-const char plugin_type[]       	= "gres/gpu";
-const uint32_t plugin_version   = 100;
-const uint32_t min_plug_version = 100;
+const char	plugin_name[]		= "Gres GPU plugin";
+const char	plugin_type[]		= "gres/gpu";
+const uint32_t	plugin_id		= 101;
+const uint32_t	plugin_version		= 100;
+const uint32_t	min_plug_version	= 100;
 
-/* Currently loaded configuration. Modify or expand as
+/* Gres configuration loaded/used by slurmd. Modify or expand as
  * additional information becomes available (e.g. topology). */
 typedef struct gpu_config {
 	bool     loaded;
 	uint32_t gpu_cnt;
 } gpu_config_t;
 static gpu_config_t gres_config;
+
+/* Gres state as used by slurmctld. Includes data from gres_config loaded
+ * from slurmd, resources configured (may be more or less than actually found)
+ * plus resource allocation information. */
+typedef struct gpu_status {
+	uint32_t plugin_id;	/* Required for all gres plugin types */
+
+	/* Actual hardware found */
+	uint32_t gpu_cnt_found;
+
+	/* Configured resources via Gres parameter */
+	uint32_t gpu_cnt_config;
+
+	/* Total resources available for allocation to jobs */
+	uint32_t gpu_cnt_avail;
+
+	/* Resources currently allocated to jobs */
+	uint32_t  gpu_cnt_alloc;
+	bitstr_t *gpu_bit_alloc;
+} gpu_status_t;
 
 /*
  * This will be the output for "--gres=help" option.
@@ -196,4 +219,138 @@ extern int unpack_node_config(Buf buffer)
 
 unpack_error:
 	return SLURM_ERROR;
+}
+
+/*
+ * Delete an element placed on gres_list by node_config_validate()
+ * free associated memory
+ */
+extern int node_config_delete(gpu_status_t *list_element)
+{
+	xassert(list_element);
+	if (list_element->plugin_id != plugin_id)
+		return SLURM_ERROR;	/* Record from other plugin */
+
+	if (list_element->gpu_bit_alloc)
+		bit_free(list_element->gpu_bit_alloc);
+	xfree(list_element);
+	return SLURM_SUCCESS;
+}
+
+/*
+ * Validate a node's configuration and put a gres record onto a list
+ * Called immediately after unpack_node_config().
+ * IN node_name - name of the node for which the gres information applies
+ * IN/OUT configured_res - Gres information suppled from slurm.conf,
+ *		may be updated with actual configuration if FastSchedule=0
+ * IN/OUT gres_list - List of Gres records for this node to track usage
+ * IN fast_schedule - 0: Validate and use actual hardware configuration
+ *		      1: Validate hardware config, but use slurm.conf config
+ *		      2: Don't validate hardware, use slurm.conf configuration
+ * OUT reason_down - set to an explanation of failure, if any, don't set if NULL
+ */
+extern int node_config_validate(char *node_name, char **configured_gres,
+				List *gres_list, uint16_t fast_schedule,
+				char **reason_down)
+{
+	ListIterator gres_iter;
+	gpu_status_t *gres_ptr;
+	char *node_gres_config, *tok, *last = NULL;
+	int32_t gres_config_cnt = -1;
+	int rc = SLURM_SUCCESS;
+	bool updated_config = false;
+
+	xassert(*gres_list);
+	gres_iter = list_iterator_create(*gres_list);
+	if (gres_iter == NULL)
+		fatal("list_iterator_create malloc failure");
+	while ((gres_ptr = list_next(gres_iter))) {
+		if (gres_ptr->plugin_id == plugin_id)
+			break;
+	}
+	list_iterator_destroy(gres_iter);
+	if (gres_ptr == NULL) {
+		gres_ptr = xmalloc(sizeof(gpu_status_t));
+		list_append(*gres_list, gres_ptr);
+		gres_ptr->plugin_id = plugin_id;
+		gres_ptr->gpu_cnt_found = gres_config.gpu_cnt;
+		updated_config = true;
+	} else if (gres_ptr->gpu_cnt_found != gres_config.gpu_cnt) {
+		info("%s count changed for node %s from %u to %u",
+		     plugin_name, node_name, gres_config.gpu_cnt,
+		     gres_ptr->gpu_cnt_found);
+		gres_ptr->gpu_cnt_found = gres_config.gpu_cnt;
+		updated_config = true;
+	}
+
+	/* If the resource isn't configured for use with this node,
+	 * just return leaving gpu_cnt_config=0, gpu_cnt_avail=0, etc. */
+	if ((*configured_gres == NULL) || (updated_config == false))
+		return SLURM_SUCCESS;
+
+	node_gres_config = xstrdup(*configured_gres);
+	tok = strtok_r(node_gres_config, ",", &last);
+	while (tok) {
+		if (!strcmp(tok, "gpu")) {
+			gres_config_cnt = 1;
+			break;
+		}
+		if (!strncmp(tok, "gpu:", 4)) {
+			gres_config_cnt = strtol(tok+4, &last, 10);
+			if (last[0] == '\0')
+				;
+			else if ((last[0] == 'k') || (last[0] == 'K'))
+				gres_config_cnt *= 1024;
+			break;
+		}
+		tok = strtok_r(NULL, ",", &last);
+	}
+	gres_ptr->gpu_cnt_config = gres_config_cnt;
+	xfree(node_gres_config);
+
+	if (gres_config_cnt < 0)
+		;	/* not configured for use */
+	else if (fast_schedule == 0)
+		gres_ptr->gpu_cnt_avail = gres_ptr->gpu_cnt_found;
+	else
+		gres_ptr->gpu_cnt_avail = gres_ptr->gpu_cnt_config;
+
+	if (gres_ptr->gpu_bit_alloc == NULL) {
+		gres_ptr->gpu_bit_alloc = bit_alloc(gres_ptr->gpu_cnt_avail);
+	} else if (gres_ptr->gpu_cnt_avail > 
+		   bit_size(gres_ptr->gpu_bit_alloc)) {
+		gres_ptr->gpu_bit_alloc = bit_realloc(gres_ptr->gpu_bit_alloc,
+						      gres_ptr->gpu_cnt_avail);
+	}
+	if (gres_ptr->gpu_bit_alloc == NULL)
+		fatal("bit_alloc: malloc failure");
+
+
+	if ((fast_schedule < 2) && 
+	    (gres_ptr->gpu_cnt_found < gres_ptr->gpu_cnt_config)) {
+		*reason_down = "gres/gpu count too small";
+		rc = EINVAL;
+	} else if ((fast_schedule == 0) && 
+		   (gres_ptr->gpu_cnt_found > gres_ptr->gpu_cnt_config)) {
+		/* need to rebuild configured_gres */
+		char *new_configured_res = NULL;
+		node_gres_config = xstrdup(*configured_gres);
+		tok = strtok_r(node_gres_config, ",", &last);
+		while (tok) {
+			if (new_configured_res)
+				xstrcat(new_configured_res, ",");
+			if (strcmp(tok, "gpu") && strncmp(tok, "gpu:", 4)) {
+				xstrcat(new_configured_res, tok);
+			} else {
+				xstrfmtcat(new_configured_res, "gpu:%u",
+					   gres_ptr->gpu_cnt_found);
+			}
+			tok = strtok_r(NULL, ",", &last);
+		}
+		xfree(node_gres_config);
+		xfree(*configured_gres);
+		*configured_gres = new_configured_res;
+	}
+
+	return rc;
 }
