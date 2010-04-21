@@ -96,6 +96,18 @@ static slurm_gres_context_t *gres_context = NULL;
 static char *gres_plugin_list = NULL;
 static pthread_mutex_t gres_context_lock = PTHREAD_MUTEX_INITIALIZER;
 
+/* Variant of strcmp that will accept NULL string pointers */
+static int  _strcmp(const char *s1, const char *s2)
+{
+	if ((s1 != NULL) && (s2 == NULL))
+		return 1;
+	if ((s1 == NULL) && (s2 == NULL))
+		return 0;
+	if ((s1 == NULL) && (s2 != NULL))
+		return -1;
+	return strcmp(s1, s2);
+}
+
 static int _load_gres_plugin(char *plugin_name, 
 			     slurm_gres_context_t *plugin_context)
 {
@@ -267,26 +279,26 @@ fini:	slurm_mutex_unlock(&gres_context_lock);
 
 /*
  * Perform reconfig, re-read any configuration files
+ * OUT did_change - set if gres configuration changed
  */
-extern int gres_plugin_reconfig(void)
+extern int gres_plugin_reconfig(bool *did_change)
 {
 	int rc = SLURM_SUCCESS;
 	char *plugin_names = slurm_get_gres_plugins();
 	bool plugin_change;
 
-	if (!plugin_names && !gres_plugin_list)
-		return rc;
-
+	*did_change = false;
 	slurm_mutex_lock(&gres_context_lock);
-	if (plugin_names && gres_plugin_list &&
-	    strcmp(plugin_names, gres_plugin_list))
+	if (_strcmp(plugin_names, gres_plugin_list))
 		plugin_change = true;
 	else
 		plugin_change = false;
 	slurm_mutex_unlock(&gres_context_lock);
 
 	if (plugin_change) {
-		info("GresPlugins changed to %s", plugin_names);
+		info("GresPlugins changed from %s to %s",
+		     gres_plugin_list, plugin_names);
+		*did_change = true;
 		rc = gres_plugin_fini();
 		if (rc == SLURM_SUCCESS)
 			rc = gres_plugin_init();
@@ -368,8 +380,7 @@ extern int gres_plugin_unpack_node_config(Buf buffer, char* node_name)
 		gres_context[i].unpacked_info = false;
 
 	while (rc == SLURM_SUCCESS) {
-		i = remaining_buf(buffer);
-		if (i == 0)
+		if ((buffer == NULL) || (remaining_buf(buffer) == 0))
 			break;
 		safe_unpack32(&magic, buffer);
 		if (magic != GRES_MAGIC) 

@@ -623,6 +623,7 @@ int read_slurm_conf(int recover, bool reconfig)
 	char *state_save_dir      = xstrdup(slurmctld_conf.state_save_location);
 	char *mpi_params;
 	uint16_t old_select_type_p = slurmctld_conf.select_type_param;
+	bool gres_changed;
 
 	/* initialization */
 	START_TIMER;
@@ -804,6 +805,8 @@ int read_slurm_conf(int recover, bool reconfig)
 #endif
 
 	/* Sync select plugin with synchronized job/node/part data */
+	if (reconfig)
+		gres_plugin_reconfig(&gres_changed);
 	select_g_reconfigure();
 
 	slurmctld_conf.last_update = time(NULL);

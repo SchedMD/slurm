@@ -64,8 +64,9 @@ extern int gres_plugin_fini(void);
 
 /*
  * Perform reconfig, re-read any configuration files
+ * OUT did_change - set if gres configuration changed
  */
-extern int gres_plugin_reconfig(void);
+extern int gres_plugin_reconfig(bool *did_change);
 
 /*
  * Load this node's configuration (i.e. how many resources it has)

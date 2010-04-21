@@ -64,11 +64,13 @@
 #include "src/common/checkpoint.h"
 #include "src/common/daemonize.h"
 #include "src/common/fd.h"
+#include "src/common/gres.h"
 #include "src/common/hostlist.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/node_select.h"
 #include "src/common/pack.h"
+#include "src/common/proc_args.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_jobacct_gather.h"
 #include "src/common/slurm_accounting_storage.h"
@@ -81,7 +83,6 @@
 #include "src/common/uid.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
-#include "src/common/proc_args.h"
 
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/basil_interface.h"
@@ -411,6 +412,8 @@ int main(int argc, char *argv[])
 	/*
 	 * Initialize plugins.
 	 */
+	if (gres_plugin_init() != SLURM_SUCCESS )
+		fatal( "failed to initialize gres plugin" );
 	if (slurm_select_init() != SLURM_SUCCESS )
 		fatal( "failed to initialize node selection plugin" );
 	if (slurm_preempt_init() != SLURM_SUCCESS )

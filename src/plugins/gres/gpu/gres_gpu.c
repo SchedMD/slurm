@@ -102,6 +102,7 @@ const uint32_t min_plug_version = 100;
 /* Currently loaded configuration. Modify or expand as
  * additional information becomes available (e.g. topology). */
 typedef struct gpu_config {
+	bool     loaded;
 	uint32_t gpu_cnt;
 } gpu_config_t;
 static gpu_config_t gres_config;
@@ -133,6 +134,7 @@ extern int load_node_config(void)
 	 * http://svn.open-mpi.org/svn/hwloc/branches/libpci/
 	 * We'll want to capture topology information as well
 	 * as count. */
+	gres_config.loaded  = true;
 	gres_config.gpu_cnt = 2;
 	return SLURM_SUCCESS;
 }
@@ -146,7 +148,12 @@ extern int load_node_config(void)
  */
 extern int pack_node_config(Buf buffer)
 {
+	int rc = SLURM_SUCCESS;
+
 	pack32(plugin_version, buffer);
+
+	if (!gres_config.loaded)
+		rc = load_node_config();
 
 	/* Pack whatever node information is relevant to the slurmctld,
 	 * including topology. */
@@ -178,6 +185,7 @@ extern int unpack_node_config(Buf buffer)
 
 	if (version == plugin_version) {
 		safe_unpack32(&gres_config.gpu_cnt, buffer);
+		info("gpu_cnt=%u", gres_config.gpu_cnt);
 	} else {
 		error("unpack_node_config error for %s, invalid version", 
 		      plugin_name);

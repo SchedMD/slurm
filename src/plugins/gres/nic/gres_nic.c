@@ -102,6 +102,7 @@ const uint32_t min_plug_version = 100;
 /* Currently loaded configuration. Modify or expand as
  * additional information becomes available (e.g. topology). */
 typedef struct nic_config {
+	bool     loaded;
 	uint32_t nic_cnt;
 } nic_config_t;
 static nic_config_t gres_config;
@@ -133,6 +134,7 @@ extern int load_node_config(void)
 	 * http://svn.open-mpi.org/svn/hwloc/branches/libpci/
 	 * We'll want to capture topology information as well
 	 * as count. */
+	gres_config.loaded  = true;
 	gres_config.nic_cnt = 1;
 	return SLURM_SUCCESS;
 }
@@ -146,13 +148,18 @@ extern int load_node_config(void)
  */
 extern int pack_node_config(Buf buffer)
 {
+	int rc = SLURM_SUCCESS;
+
 	pack32(plugin_version, buffer);
+
+	if (!gres_config.loaded)
+		rc = load_node_config();
 
 	/* Pack whatever node information is relevant to the slurmctld,
 	 * including topology. */
 	pack32(gres_config.nic_cnt, buffer);
 
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 /*
@@ -178,6 +185,7 @@ extern int unpack_node_config(Buf buffer)
 
 	if (version == plugin_version) {
 		safe_unpack32(&gres_config.nic_cnt, buffer);
+		info("nic_cnt=%u", gres_config.nic_cnt);
 	} else {
 		error("unpack_node_config error for %s, invalid version", 
 		      plugin_name);

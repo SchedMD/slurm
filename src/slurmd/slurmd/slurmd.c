@@ -839,6 +839,7 @@ _reconfigure(void)
 	ListIterator i;
 	slurm_ctl_conf_t *cf;
 	step_loc_t *stepd;
+	bool did_change;
 
 	_reconfig = 0;
 	_read_config();
@@ -847,7 +848,6 @@ _reconfigure(void)
 	 * Rebuild topology information and refresh slurmd topo infos
 	 */
 	slurm_topo_build_config();
-	gres_plugin_reconfig();
 	_set_topo_info();
 
 	/* _update_logging(); */
@@ -887,6 +887,12 @@ _reconfigure(void)
 	}
 	list_iterator_destroy(i);
 	list_destroy(steps);
+
+	gres_plugin_reconfig(&did_change);
+	if (did_change) {
+		(void) gres_plugin_load_node_config();
+		send_registration_msg(SLURM_SUCCESS, false);
+	}
 
 	/*
 	 * XXX: reopen slurmd port?
