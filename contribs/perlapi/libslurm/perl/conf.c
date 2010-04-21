@@ -7,7 +7,7 @@
 #include <XSUB.h>
 
 #include <slurm/slurm.h>
-#include "msg.h"
+#include "slurm-perl.h"
 
 
 /*

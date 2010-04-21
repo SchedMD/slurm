@@ -7,7 +7,7 @@
 #include <XSUB.h>
 
 #include <slurm/slurm.h>
-#include "msg.h"
+#include "slurm-perl.h"
 
 #ifdef HAVE_BG
 /* These are just helper functions from slurm proper that don't get

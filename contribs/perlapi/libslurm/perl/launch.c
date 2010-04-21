@@ -7,7 +7,7 @@
 #include <XSUB.h>
 
 #include <slurm/slurm.h>
-#include "msg.h"
+#include "slurm-perl.h"
 
 /*
  * convert perl HV to slurm_step_ctx_params_t

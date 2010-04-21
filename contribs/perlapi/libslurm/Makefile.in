@@ -275,7 +275,7 @@ perl_sources = \
 	       $(perl_dir)/Slurm.pm \
 	       $(perl_dir)/Slurm.xs \
 	       $(perl_dir)/typemap \
-	       $(perl_dir)/msg.h \
+	       $(perl_dir)/slurm-perl.h \
 	       $(perl_dir)/alloc.c \
 	       $(perl_dir)/conf.c \
 	       $(perl_dir)/job.c \
