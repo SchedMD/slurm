@@ -316,11 +316,18 @@ extern int gres_plugin_load_node_config(void)
 
 /*
  * Pack this node's gres configuration into a buffer
+ *
+ * Data format:
+ *	uint32_t	magic cookie
+ *	char *		gres name
+ *	uint32_t	gres data block size
+ *	void *		gres data
  */
 extern int gres_plugin_pack_node_config(Buf buffer)
 {
 	int i, rc;
-	uint32_t magic = GRES_MAGIC;
+	uint32_t gres_size = 0, magic = GRES_MAGIC;
+	uint32_t header_offset, data_offset, tail_offset;
 
 	rc = gres_plugin_init();
 
@@ -328,7 +335,15 @@ extern int gres_plugin_pack_node_config(Buf buffer)
 	for (i=0; ((i < gres_context_cnt) && (rc == SLURM_SUCCESS)); i++) {
 		pack32(magic, buffer);
 		packstr(gres_context[i].gres_type, buffer);
+		header_offset = get_buf_offset(buffer);
+		pack32(gres_size, buffer);	/* Placeholder for now */
+		data_offset = get_buf_offset(buffer);
 		rc = (*(gres_context[i].ops.pack_node_config))(buffer);
+		tail_offset = get_buf_offset(buffer);
+		gres_size = tail_offset - data_offset;
+		set_buf_offset(buffer, header_offset);
+		pack32(gres_size, buffer);	/* The actual buffer size */
+		set_buf_offset(buffer, tail_offset);
 	}
 	slurm_mutex_unlock(&gres_context_lock);
 
@@ -336,12 +351,14 @@ extern int gres_plugin_pack_node_config(Buf buffer)
 }
 
 /*
- * Unpack this node's gres configuration from a buffer
+ * Unpack this node's configuration from a buffer
+ * IN buffer - message buffer to unpack
+ * IN node_name - name of node whose data is being unpacked
  */
-extern int gres_plugin_unpack_node_config(Buf buffer)
+extern int gres_plugin_unpack_node_config(Buf buffer, char* node_name)
 {
 	int i, rc, rc2;
-	uint32_t magic, uint32_tmp;
+	uint32_t gres_size, magic, tail_offset, uint32_tmp;
 	char *gres_type = NULL;
 
 	rc = gres_plugin_init();
@@ -360,18 +377,25 @@ extern int gres_plugin_unpack_node_config(Buf buffer)
 		safe_unpackstr_xmalloc(&gres_type, &uint32_tmp, buffer);
 		if (gres_type == NULL)
 			goto unpack_error;
+		safe_unpack32(&gres_size, buffer);
 		for (i=0; i<gres_context_cnt; i++) {
 			if (!strcmp(gres_type, gres_context[i].gres_type))
 				break;
 		}
 		if (i >= gres_context_cnt) {
 			error("gres_plugin_unpack_node_config: no plugin "
-			      "configured to unpack %s", gres_type);
-			goto unpack_error;
+			      "configured to unpack %s data from node %s", 
+			      gres_type, node_name);
+			/* A likely sign that GresPlugins is inconsistently
+			 * configured. Not a fatal error, skip over the data. */
+			tail_offset = get_buf_offset(buffer);
+			tail_offset += gres_size;
+			set_buf_offset(buffer, tail_offset);
+		} else {
+			gres_context[i].unpacked_info = true;
+			rc = (*(gres_context[i].ops.unpack_node_config))(buffer);
 		}
 		xfree(gres_type);
-		gres_context[i].unpacked_info = true;
-		rc = (*(gres_context[i].ops.unpack_node_config))(buffer);
 	}
 
 fini:	/* Insure that every gres plugin is called for unpack, even if no data
@@ -380,8 +404,9 @@ fini:	/* Insure that every gres plugin is called for unpack, even if no data
 	for (i=0; i<gres_context_cnt; i++) {
 		if (gres_context[i].unpacked_info)
 			continue;
-		error("gres_plugin_unpack_node_config: no info packed for %s",
-		      gres_context[i].gres_type);
+		error("gres_plugin_unpack_node_config: no info packed for %s "
+		      "by node %s",
+		      gres_context[i].gres_type, node_name);
 		rc2 = (*(gres_context[i].ops.unpack_node_config))(NULL);
 		if (rc2 != SLURM_SUCCESS)
 			rc = rc2;
@@ -392,7 +417,8 @@ fini:	/* Insure that every gres plugin is called for unpack, even if no data
 
 unpack_error:
 	xfree(gres_type);
-	error("gres_plugin_unpack_node_config: unpack error");
+	error("gres_plugin_unpack_node_config: unpack error from node %s",
+	      node_name);
 	rc = SLURM_ERROR;
 	goto fini;
 }

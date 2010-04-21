@@ -133,7 +133,7 @@ extern int load_node_config(void)
 	 * http://svn.open-mpi.org/svn/hwloc/branches/libpci/
 	 * We'll want to capture topology information as well
 	 * as count. */
-	gres_config.nic_cnt = 2;
+	gres_config.nic_cnt = 1;
 	return SLURM_SUCCESS;
 }
 
@@ -148,7 +148,8 @@ extern int pack_node_config(Buf buffer)
 {
 	pack32(plugin_version, buffer);
 
-	/* FIXME: Pack whatever information is available, including topology */
+	/* Pack whatever node information is relevant to the slurmctld,
+	 * including topology. */
 	pack32(gres_config.nic_cnt, buffer);
 
 	return SLURM_SUCCESS;
@@ -166,9 +167,10 @@ extern int unpack_node_config(Buf buffer)
 	uint32_t version;
 
 	if (!buffer) {
-		/* node failed to pack this gres info, likely inconsistent
-		 * GresPlugins configuration */
-		gres_config.nic_cnt = 0;
+		/* The node failed to pack this gres info, likely due to
+		 * inconsistent GresPlugins configuration. Set a reasonable
+		 * default configuration. */
+		gres_config.nic_cnt = NO_VAL;
 		return SLURM_SUCCESS;
 	}
 

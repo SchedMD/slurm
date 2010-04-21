@@ -79,8 +79,10 @@ extern int gres_plugin_pack_node_config(Buf buffer);
 
 /*
  * Unpack this node's configuration from a buffer
+ * IN buffer - message buffer to unpack
+ * IN node_name - name of node whose data is being unpacked
  */
-extern int gres_plugin_unpack_node_config(Buf buffer);
+extern int gres_plugin_unpack_node_config(Buf buffer, char *node_name);
 
 /*
  * Provide a plugin-specific help message

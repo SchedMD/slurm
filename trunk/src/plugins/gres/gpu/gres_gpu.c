@@ -148,7 +148,8 @@ extern int pack_node_config(Buf buffer)
 {
 	pack32(plugin_version, buffer);
 
-	/* FIXME: Pack whatever information is available, including topology */
+	/* Pack whatever node information is relevant to the slurmctld,
+	 * including topology. */
 	pack32(gres_config.gpu_cnt, buffer);
 
 	return SLURM_SUCCESS;
@@ -166,9 +167,10 @@ extern int unpack_node_config(Buf buffer)
 	uint32_t version;
 
 	if (!buffer) {
-		/* node failed to pack this gres info, likely inconsistent
-		 * GresPlugins configuration */
-		gres_config.gpu_cnt = 0;
+		/* The node failed to pack this gres info, likely due to
+		 * inconsistent GresPlugins configuration. Set a reasonable
+		 * default configuration. */
+		gres_config.gpu_cnt = NO_VAL;
 		return SLURM_SUCCESS;
 	}
 
