@@ -1455,6 +1455,7 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 		error_code = EINVAL;
 		/* reason_down set in function above */
 	}	
+	gres_plugin_node_state_log(node_ptr->gres_list, node_ptr->name);
 
 	if (slurmctld_conf.fast_schedule != 2) {
 		int sockets1, sockets2;	/* total sockets on node */
@@ -1793,6 +1794,7 @@ extern int validate_nodes_via_front_end(
 							&node_ptr->gres_list,
 							slurmctld_conf.fast_schedule, 
 							NULL);
+		gres_plugin_node_state_log(node_ptr->gres_list, node_ptr->name);
 
 		if (reg_msg->up_time) {
 			node_ptr->up_time = reg_msg->up_time;
