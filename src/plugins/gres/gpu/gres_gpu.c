@@ -99,11 +99,18 @@ const char plugin_type[]       	= "gres/gpu";
 const uint32_t plugin_version   = 100;
 const uint32_t min_plug_version = 100;
 
-/* Currently loaded configuration */
-static uint32_t gres_cnt = 0;
+/* Currently loaded configuration. Modify or expand as
+ * additional information becomes available (e.g. topology). */
+typedef struct gpu_config {
+	uint32_t gpu_cnt;
+} gpu_config_t;
+static gpu_config_t gres_config;
 
-/* This will be the output for "srun --gres=help" */
-extern int help_msg (char *msg, int msg_size)
+/*
+ * This will be the output for "--gres=help" option.
+ * Called only by salloc, sbatch and srun.
+ */
+extern int help_msg(char *msg, int msg_size)
 {
 	char *response = "gpu[:count[*cpu]]";
 	int resp_len = strlen(response) + 1;
@@ -115,44 +122,66 @@ extern int help_msg (char *msg, int msg_size)
 	return SLURM_SUCCESS;
 }
 
-/* Get the current configuration of this resource (e.g. how many exist,
- *	their topology and any other required information). */
+/*
+ * Get the current configuration of this resource (e.g. how many exist,
+ *	their topology and any other required information).
+ * Called only by slurmd.
+ */
 extern int load_node_config(void)
 {
 	/* FIXME: Need to flesh this out, probably using 
 	 * http://svn.open-mpi.org/svn/hwloc/branches/libpci/
 	 * We'll want to capture topology information as well
 	 * as count. */
-	gres_cnt = 2;
+	gres_config.gpu_cnt = 2;
 	return SLURM_SUCCESS;
 }
 
-/* Pack this node's current configuration.
+/*
+ * Pack this node's current configuration.
  * Include the version number so that we can possibly un/pack differnt
- * versions of the data structure. */
+ *	versions of the data structure.
+ * Keep the pack and unpack functions in sync.
+ * Called only by slurmd.
+ */
 extern int pack_node_config(Buf buffer)
 {
 	pack32(plugin_version, buffer);
+
 	/* FIXME: Pack whatever information is available, including topology */
-	pack32(gres_cnt, buffer);
+	pack32(gres_config.gpu_cnt, buffer);
+
 	return SLURM_SUCCESS;
 }
 
-/* Unpack this node's current configuration.
+/*
+ * Unpack this node's current configuration.
  * Include the version number so that we can possibly un/pack differnt
- * versions of the data structure. */
+ *	versions of the data structure.
+ * Keep the pack and unpack functions in sync.
+ * Called only by slurmctld.
+ */
 extern int unpack_node_config(Buf buffer)
 {
 	uint32_t version;
 
+	if (!buffer) {
+		/* node failed to pack this gres info, likely inconsistent
+		 * GresPlugins configuration */
+		gres_config.gpu_cnt = 0;
+		return SLURM_SUCCESS;
+	}
+
 	safe_unpack32(&version, buffer);
+
 	if (version == plugin_version) {
-		safe_unpack32(&gres_cnt, buffer);
+		safe_unpack32(&gres_config.gpu_cnt, buffer);
 	} else {
 		error("unpack_node_config error for %s, invalid version", 
 		      plugin_name);
 		return SLURM_ERROR;
 	}
+
 	return SLURM_SUCCESS;
 
 unpack_error:
