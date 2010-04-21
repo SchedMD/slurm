@@ -1444,7 +1444,7 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 	if (slurm_get_preempt_mode() != PREEMPT_MODE_OFF)
 		gang_flag = true;
 
-gres_plugin_unpack_node_config(reg_msg->gres_info);
+gres_plugin_unpack_node_config(reg_msg->gres_info, reg_msg->node_name);
 	if (slurmctld_conf.fast_schedule != 2) {
 		int sockets1, sockets2;	/* total sockets on node */
 		int cores1, cores2;	/* total cores on node */
@@ -1770,7 +1770,7 @@ extern int validate_nodes_via_front_end(
 	list_iterator_destroy(job_iterator);
 
 	/* Now validate the node info */
-gres_plugin_unpack_node_config(reg_msg->gres_info);
+gres_plugin_unpack_node_config(reg_msg->gres_info, node_record_table_ptr->name);
 	for (i=0; i<node_record_count; i++) {
 		node_ptr = &node_record_table_ptr[i];
 		config_ptr = node_ptr->config_ptr;

@@ -1,3 +1,3 @@
 # Makefile for gres plugins
 
-SUBDIRS = gpu
+SUBDIRS = gpu nic
