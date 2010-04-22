@@ -652,7 +652,10 @@ static void _pack_node (struct node_record *dump_node_ptr, Buf buffer,
 
 		packstr(dump_node_ptr->arch, buffer);
 		packstr(dump_node_ptr->features, buffer);
-		packstr(dump_node_ptr->gres, buffer);
+		if (dump_node_ptr->gres)
+			packstr(dump_node_ptr->gres, buffer);
+		else
+			packstr(dump_node_ptr->config_ptr->gres, buffer);
 		packstr(dump_node_ptr->os, buffer);
 		packstr(dump_node_ptr->reason, buffer);
 	} else if(protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
@@ -771,14 +774,14 @@ int update_node ( update_node_msg_t * update_node_msg )
 			if (update_node_msg->features[0])
 				node_ptr->features = xstrdup(update_node_msg->
 							     features);
-			/* _update_node_features() logs and udates config */
+			/* _update_node_features() logs and updates config */
 		}
 
 		if (update_node_msg->gres) {
 			xfree(node_ptr->gres);
 			if (update_node_msg->gres[0])
 				node_ptr->gres = xstrdup(update_node_msg->gres);
-			/* _update_node_gres() logs and udates config */
+			/* _update_node_gres() logs and updates config */
 		}
 
 		if ((update_node_msg -> reason) &&
@@ -1449,7 +1452,7 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 		error_code = SLURM_ERROR;
 		reason_down = "Could not unpack gres data";
 	} else if (gres_plugin_node_config_validate(node_ptr->name,
-			&node_ptr->gres, &node_ptr->gres_list,
+			config_ptr->gres, &node_ptr->gres, &node_ptr->gres_list,
 			slurmctld_conf.fast_schedule, &reason_down) 
 			!= SLURM_SUCCESS) {
 		error_code = EINVAL;
@@ -1790,6 +1793,7 @@ extern int validate_nodes_via_front_end(
 		node_ptr->last_response = time (NULL);
 
 		(void) gres_plugin_node_config_validate(node_ptr->name,
+							config_ptr->gres,
 							&node_ptr->gres,
 							&node_ptr->gres_list,
 							slurmctld_conf.fast_schedule, 

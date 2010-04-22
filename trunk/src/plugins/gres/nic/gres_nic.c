@@ -238,15 +238,16 @@ extern void node_config_delete(void *gres_data)
  * Validate a node's configuration and put a gres record onto a list
  * Called immediately after unpack_node_config().
  * IN node_name - name of the node for which the gres information applies
- * IN/OUT configured_res - Gres information suppled from slurm.conf,
- *		may be updated with actual configuration if FastSchedule=0
+ * IN orig_config - Gres information supplied from slurm.conf
+ * IN/OUT new_config - Gres information from slurm.conf if FastSchedule=0
  * IN/OUT gres_data - Gres record for this node to track usage
  * IN fast_schedule - 0: Validate and use actual hardware configuration
  *		      1: Validate hardware config, but use slurm.conf config
  *		      2: Don't validate hardware, use slurm.conf configuration
  * OUT reason_down - set to an explanation of failure, if any, don't set if NULL
  */
-extern int node_config_validate(char *node_name, char **configured_gres,
+extern int node_config_validate(char *node_name, 
+				char *orig_config, char **new_config,
 				void **gres_data, uint16_t fast_schedule,
 				char **reason_down)
 {
@@ -273,10 +274,11 @@ extern int node_config_validate(char *node_name, char **configured_gres,
 
 	/* If the resource isn't configured for use with this node,
 	 * just return leaving nic_cnt_config=0, nic_cnt_avail=0, etc. */
-	if ((*configured_gres == NULL) || (updated_config == false))
+	if ((orig_config == NULL) || (orig_config[0] == '\0') ||
+	    (updated_config == false))
 		return SLURM_SUCCESS;
 
-	node_gres_config = xstrdup(*configured_gres);
+	node_gres_config = xstrdup(orig_config);
 	tok = strtok_r(node_gres_config, ",", &last);
 	while (tok) {
 		if (!strcmp(tok, "nic")) {
@@ -313,16 +315,18 @@ extern int node_config_validate(char *node_name, char **configured_gres,
 	if (gres_ptr->nic_bit_alloc == NULL)
 		fatal("bit_alloc: malloc failure");
 
-
 	if ((fast_schedule < 2) && 
 	    (gres_ptr->nic_cnt_found < gres_ptr->nic_cnt_config)) {
 		*reason_down = "gres/nic count too small";
 		rc = EINVAL;
 	} else if ((fast_schedule == 0) && 
-		   (gres_ptr->nic_cnt_found > gres_ptr->nic_cnt_config)) {
-		/* need to rebuild configured_gres */
+		   (gres_ptr->nic_cnt_found >= gres_ptr->nic_cnt_config)) {
+		/* need to rebuild new_config */
 		char *new_configured_res = NULL;
-		node_gres_config = xstrdup(*configured_gres);
+		if (*new_config)
+			node_gres_config = xstrdup(*new_config);
+		else
+			node_gres_config = xstrdup(orig_config);
 		tok = strtok_r(node_gres_config, ",", &last);
 		while (tok) {
 			if (new_configured_res)
@@ -336,8 +340,8 @@ extern int node_config_validate(char *node_name, char **configured_gres,
 			tok = strtok_r(NULL, ",", &last);
 		}
 		xfree(node_gres_config);
-		xfree(*configured_gres);
-		*configured_gres = new_configured_res;
+		xfree(*new_config);
+		*new_config = new_configured_res;
 	}
 
 	return rc;

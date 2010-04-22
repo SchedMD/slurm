@@ -84,7 +84,8 @@ typedef struct slurm_gres_ops {
 	int		(*pack_node_config)	( Buf buffer );
 	int		(*unpack_node_config)	( Buf buffer );
 	int		(*node_config_validate)	( char *node_name,
-						  char **configured_gres,
+						  char *orig_config, 
+						  char **new_config,
 						  void **gres_data,
 						  uint16_t fast_schedule,
 						  char **reason_down );
@@ -529,8 +530,8 @@ static void _gres_list_delete(void *list_element)
  * Validate a node's configuration and put a gres record onto a list
  * Called immediately after gres_plugin_unpack_node_config().
  * IN node_name - name of the node for which the gres information applies
- * IN/OUT configured_res - Gres information suppled from slurm.conf,
- *		may be updated with actual configuration if FastSchedule=0
+ * IN orig_config - Gres information supplied from slurm.conf
+ * IN/OUT new_config - Gres information from slurm.conf if FastSchedule=0
  * IN/OUT gres_list - List of Gres records for this node to track usage
  * IN fast_schedule - 0: Validate and use actual hardware configuration
  *		      1: Validate hardware config, but use slurm.conf config
@@ -538,7 +539,8 @@ static void _gres_list_delete(void *list_element)
  * OUT reason_down - set to an explanation of failure, if any, don't set if NULL
  */
 extern int gres_plugin_node_config_validate(char *node_name,
-					    char **configured_gres,
+					    char *orig_config, 
+					    char **new_config,
 					    List *gres_list,
 					    uint16_t fast_schedule,
 					    char **reason_down)
@@ -571,8 +573,8 @@ extern int gres_plugin_node_config_validate(char *node_name,
 		}
 
 		rc = (*(gres_context[i].ops.node_config_validate))
-			(node_name, configured_gres, &gres_ptr->gres_data,
-			 fast_schedule, reason_down);
+			(node_name, orig_config, new_config, 
+			 &gres_ptr->gres_data, fast_schedule, reason_down);
 	}
 	slurm_mutex_unlock(&gres_context_lock);
 

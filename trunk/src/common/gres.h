@@ -97,8 +97,8 @@ extern int gres_plugin_unpack_node_config(Buf buffer, char *node_name);
  *	(expected to be an element of slurmctld's node record).
  * Called immediately after gres_plugin_unpack_node_config().
  * IN node_name - name of the node for which the gres information applies
- * IN/OUT configured_res - Gres information suppled from slurm.conf,
- *		may be updated with actual configuration if FastSchedule=0
+ * IN orig_config - Gres information supplied from slurm.conf
+ * IN/OUT new_config - Gres information from slurm.conf if FastSchedule=0
  * IN/OUT gres_list - List of Gres records for this node to track usage
  * IN fast_schedule - 0: Validate and use actual hardware configuration
  *		      1: Validate hardware config, but use slurm.conf config
@@ -106,7 +106,8 @@ extern int gres_plugin_unpack_node_config(Buf buffer, char *node_name);
  * OUT reason_down - set to an explanation of failure, if any, don't set if NULL
  */
 extern int gres_plugin_node_config_validate(char *node_name,
-					    char **configured_gres,
+					    char *orig_config, 
+					    char **new_config,
 					    List *gres_list,
 					    uint16_t fast_schedule,
 					    char **reason_down);
