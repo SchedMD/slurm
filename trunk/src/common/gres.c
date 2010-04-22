@@ -402,9 +402,9 @@ extern int gres_plugin_load_node_config(void)
  *
  * Data format:
  *	uint32_t	magic cookie
- *	char *		gres name
+ *	uint32_t	plugin_id name (must be unique)
  *	uint32_t	gres data block size
- *	void *		gres data
+ *	void *		gres data packed by plugin
  */
 extern int gres_plugin_pack_node_config(Buf buffer)
 {
@@ -417,7 +417,7 @@ extern int gres_plugin_pack_node_config(Buf buffer)
 	slurm_mutex_lock(&gres_context_lock);
 	for (i=0; ((i < gres_context_cnt) && (rc == SLURM_SUCCESS)); i++) {
 		pack32(magic, buffer);
-		packstr(gres_context[i].gres_type, buffer);
+		pack32(*(gres_context[i].ops.plugin_id), buffer);
 		header_offset = get_buf_offset(buffer);
 		pack32(gres_size, buffer);	/* Placeholder for now */
 		data_offset = get_buf_offset(buffer);
@@ -441,8 +441,7 @@ extern int gres_plugin_pack_node_config(Buf buffer)
 extern int gres_plugin_unpack_node_config(Buf buffer, char* node_name)
 {
 	int i, rc, rc2;
-	uint32_t gres_size, magic, tail_offset, uint32_tmp;
-	char *gres_type = NULL;
+	uint32_t gres_size, magic, tail_offset, plugin_id;
 
 	rc = gres_plugin_init();
 
@@ -456,28 +455,25 @@ extern int gres_plugin_unpack_node_config(Buf buffer, char* node_name)
 		safe_unpack32(&magic, buffer);
 		if (magic != GRES_MAGIC) 
 			goto unpack_error;
-		safe_unpackstr_xmalloc(&gres_type, &uint32_tmp, buffer);
-		if (gres_type == NULL)
-			goto unpack_error;
+		safe_unpack32(&plugin_id, buffer);
 		safe_unpack32(&gres_size, buffer);
 		for (i=0; i<gres_context_cnt; i++) {
-			if (!strcmp(gres_type, gres_context[i].gres_type))
+			if (*(gres_context[i].ops.plugin_id) == plugin_id)
 				break;
 		}
 		if (i >= gres_context_cnt) {
 			error("gres_plugin_unpack_node_config: no plugin "
-			      "configured to unpack %s data from node %s", 
-			      gres_type, node_name);
+			      "configured to unpack data type %u from node %s", 
+			      plugin_id, node_name);
 			/* A likely sign that GresPlugins is inconsistently
 			 * configured. Not a fatal error, skip over the data. */
 			tail_offset = get_buf_offset(buffer);
 			tail_offset += gres_size;
 			set_buf_offset(buffer, tail_offset);
-		} else {
-			gres_context[i].unpacked_info = true;
-			rc = (*(gres_context[i].ops.unpack_node_config))(buffer);
+			continue;
 		}
-		xfree(gres_type);
+		gres_context[i].unpacked_info = true;
+		rc = (*(gres_context[i].ops.unpack_node_config))(buffer);
 	}
 
 fini:	/* Insure that every gres plugin is called for unpack, even if no data
@@ -498,7 +494,6 @@ fini:	/* Insure that every gres plugin is called for unpack, even if no data
 	return rc;
 
 unpack_error:
-	xfree(gres_type);
 	error("gres_plugin_unpack_node_config: unpack error from node %s",
 	      node_name);
 	rc = SLURM_ERROR;
