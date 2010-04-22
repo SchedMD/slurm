@@ -425,7 +425,8 @@ extern int sacctmgr_archive_dump(int argc, char *argv[])
 		}
 	} else {
 		exit_code=1;
-		fprintf(stderr, " Problem dumping archive\n");
+		fprintf(stderr, " Problem dumping archive: %s\n",
+			slurm_strerror(rc));
 		rc = SLURM_ERROR;
 	}
 	destroy_acct_archive_cond(arch_cond);
@@ -504,7 +505,8 @@ extern int sacctmgr_archive_load(int argc, char *argv[])
 		}
 	} else {
 		exit_code=1;
-		fprintf(stderr, " Problem loading archive file\n");
+		fprintf(stderr, " Problem loading archive file: %s\n",
+			slurm_strerror(rc));
 		rc = SLURM_ERROR;
 	}
 
