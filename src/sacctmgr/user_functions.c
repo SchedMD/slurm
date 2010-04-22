@@ -1045,8 +1045,11 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 				xstrdup(list_peek(wckey_cond->name_list));
 		wckey_cond->cluster_list = assoc_cond->cluster_list;
 		wckey_cond->user_list = assoc_cond->user_list;
-		local_wckey_list = acct_storage_g_get_wckeys(
-			db_conn, my_uid, wckey_cond);
+		if(!(local_wckey_list = acct_storage_g_get_wckeys(
+			     db_conn, my_uid, wckey_cond)))
+			info("If you are a coordinator ignore "
+			     "the previous error");
+
 		wckey_cond->cluster_list = NULL;
 		wckey_cond->user_list = NULL;
 
@@ -1371,7 +1374,8 @@ no_default:
 						       wckey_list);
 	} else {
 		exit_code=1;
-		fprintf(stderr, " Problem adding users\n");
+		fprintf(stderr, " Problem adding users: %s\n",
+			slurm_strerror(rc));
 		rc = SLURM_ERROR;
 		notice_thread_fini();
 		goto end_it;
@@ -1388,7 +1392,8 @@ no_default:
 		}
 	} else {
 		exit_code=1;
-		fprintf(stderr, " Problem adding user associations\n");
+		fprintf(stderr, " Problem adding user associations: %s\n",
+			slurm_strerror(rc));
 		rc = SLURM_ERROR;
 	}
 
@@ -1470,7 +1475,8 @@ extern int sacctmgr_add_coord(int argc, char *argv[])
 		}
 	} else {
 		exit_code=1;
-		fprintf(stderr, " Problem adding coordinator\n");
+		fprintf(stderr, " Problem adding coordinator: %s\n",
+			slurm_strerror(rc));
 		rc = SLURM_ERROR;
 	}
 

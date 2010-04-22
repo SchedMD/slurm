@@ -2278,7 +2278,8 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 				if(rc != SLURM_SUCCESS) {
 					exit_code=1;
 					fprintf(stderr,
-						" Problem adding cluster\n");
+						" Problem adding cluster: %s\n",
+						slurm_strerror(rc));
 					rc = SLURM_ERROR;
 					_destroy_sacctmgr_file_opts(file_opts);
 					break;
@@ -2698,7 +2699,8 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 		}
 	} else {
 		exit_code=1;
-		fprintf(stderr, " Problem with requests.\n");
+		fprintf(stderr, " Problem with requests: %s\n",
+			slurm_strerror(rc));
 	}
 
 	list_destroy(format_list);

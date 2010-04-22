@@ -6,6 +6,7 @@ documents those changes that are of interest to users and admins.
  -- Update BUILD_NOTES for AIX and bgp systems on how to get sview to
     build correctly.
  -- Update man page for scontrol when nodes are in the "MIXED" state.
+ -- Better error messages for sacctmgr.
 
 * Changes in SLURM 2.1.7
 ========================

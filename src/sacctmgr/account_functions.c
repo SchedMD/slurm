@@ -878,7 +878,8 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 							     assoc_list);
 	} else {
 		exit_code=1;
-		fprintf(stderr, " Problem adding accounts\n");
+		fprintf(stderr, " Problem adding accounts: %s\n",
+			slurm_strerror(rc));
 		rc = SLURM_ERROR;
 		notice_thread_fini();
 		goto end_it;
@@ -895,7 +896,8 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 	} else {
 		exit_code=1;
 		fprintf(stderr,
-			" error: Problem adding account associations\n");
+			" error: Problem adding account associations: %s\n",
+			slurm_strerror(rc));
 		rc = SLURM_ERROR;
 	}
 
@@ -907,7 +909,6 @@ end_it:
 
 	destroy_acct_association_rec(start_assoc);
 	destroy_acct_account_rec(start_acct);
-
 	return rc;
 }
 
