@@ -114,8 +114,6 @@ static nic_config_t gres_config;
  * from slurmd, resources configured (may be more or less than actually found)
  * plus resource allocation information. */
 typedef struct nic_status {
-	uint32_t plugin_id;	/* Required for all gres plugin types */
-
 	/* Actual hardware found */
 	uint32_t nic_cnt_found;
 
@@ -225,16 +223,15 @@ unpack_error:
  * Delete an element placed on gres_list by node_config_validate()
  * free associated memory
  */
-extern int node_config_delete(nic_status_t *list_element)
+extern void node_config_delete(void *gres_data)
 {
-	xassert(list_element);
-	if (list_element->plugin_id != plugin_id)
-		return SLURM_ERROR;	/* Record from other plugin */
+	nic_status_t *gres_ptr;
 
-	if (list_element->nic_bit_alloc)
-		bit_free(list_element->nic_bit_alloc);
-	xfree(list_element);
-	return SLURM_SUCCESS;
+	xassert(gres_data);
+	gres_ptr = (nic_status_t *) gres_data;
+	if (gres_ptr->nic_bit_alloc)
+		bit_free(gres_ptr->nic_bit_alloc);
+	xfree(gres_ptr);
 }
 
 /*
@@ -243,36 +240,27 @@ extern int node_config_delete(nic_status_t *list_element)
  * IN node_name - name of the node for which the gres information applies
  * IN/OUT configured_res - Gres information suppled from slurm.conf,
  *		may be updated with actual configuration if FastSchedule=0
- * IN/OUT gres_list - List of Gres records for this node to track usage
+ * IN/OUT gres_data - Gres record for this node to track usage
  * IN fast_schedule - 0: Validate and use actual hardware configuration
  *		      1: Validate hardware config, but use slurm.conf config
  *		      2: Don't validate hardware, use slurm.conf configuration
  * OUT reason_down - set to an explanation of failure, if any, don't set if NULL
  */
 extern int node_config_validate(char *node_name, char **configured_gres,
-				List *gres_list, uint16_t fast_schedule,
+				void **gres_data, uint16_t fast_schedule,
 				char **reason_down)
 {
-	ListIterator gres_iter;
 	nic_status_t *gres_ptr;
 	char *node_gres_config, *tok, *last = NULL;
 	int32_t gres_config_cnt = -1;
 	int rc = SLURM_SUCCESS;
 	bool updated_config = false;
 
-	xassert(*gres_list);
-	gres_iter = list_iterator_create(*gres_list);
-	if (gres_iter == NULL)
-		fatal("list_iterator_create malloc failure");
-	while ((gres_ptr = list_next(gres_iter))) {
-		if (gres_ptr->plugin_id == plugin_id)
-			break;
-	}
-	list_iterator_destroy(gres_iter);
+	xassert(gres_data);
+	gres_ptr = (nic_status_t *) *gres_data;
 	if (gres_ptr == NULL) {
 		gres_ptr = xmalloc(sizeof(nic_status_t));
-		list_append(*gres_list, gres_ptr);
-		gres_ptr->plugin_id = plugin_id;
+		*gres_data = gres_ptr;
 		gres_ptr->nic_cnt_found = gres_config.nic_cnt;
 		updated_config = true;
 	} else if (gres_ptr->nic_cnt_found != gres_config.nic_cnt) {
@@ -355,32 +343,21 @@ extern int node_config_validate(char *node_name, char **configured_gres,
 	return rc;
 }
 
-extern void node_state_log(List gres_list, char *node_name)
+extern void node_state_log(void *gres_data, char *node_name)
 {
-	ListIterator gres_iter;
 	nic_status_t *gres_ptr;
 
-	if (gres_list == NULL)
-		return;
-
-	gres_iter = list_iterator_create(gres_list);
-	if (gres_iter == NULL)
-		fatal("list_iterator_create malloc failure");
-	while ((gres_ptr = list_next(gres_iter))) {
-		if (gres_ptr->plugin_id != plugin_id)
-			continue;
-		info("%s state for %s", plugin_name, node_name);
-		info("  nic_cnt found:%u configured:%u avail:%u alloc:%u",
-		     gres_ptr->nic_cnt_found, gres_ptr->nic_cnt_config,
-		     gres_ptr->nic_cnt_avail, gres_ptr->nic_cnt_alloc);
-		if (gres_ptr->nic_bit_alloc) {
-			char tmp_str[128];
-			bit_fmt(tmp_str, sizeof(tmp_str), 
-				gres_ptr->nic_bit_alloc);
-			info("  nic_bit_alloc:%s", tmp_str);
-		} else {
-			info("  nic_bit_alloc:NULL");
-		}
+	xassert(gres_data);
+	gres_ptr = (nic_status_t *) gres_data;
+	info("%s state for %s", plugin_name, node_name);
+	info("  nic_cnt found:%u configured:%u avail:%u alloc:%u",
+	     gres_ptr->nic_cnt_found, gres_ptr->nic_cnt_config,
+	     gres_ptr->nic_cnt_avail, gres_ptr->nic_cnt_alloc);
+	if (gres_ptr->nic_bit_alloc) {
+		char tmp_str[128];
+		bit_fmt(tmp_str, sizeof(tmp_str), gres_ptr->nic_bit_alloc);
+		info("  nic_bit_alloc:%s", tmp_str);
+	} else {
+		info("  nic_bit_alloc:NULL");
 	}
-	list_iterator_destroy(gres_iter);
 }
