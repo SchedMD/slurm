@@ -373,6 +373,14 @@ extern void node_state_log(List gres_list, char *node_name)
 		info("  gpu_cnt found:%u configured:%u avail:%u alloc:%u",
 		     gres_ptr->gpu_cnt_found, gres_ptr->gpu_cnt_config,
 		     gres_ptr->gpu_cnt_avail, gres_ptr->gpu_cnt_alloc);
+		if (gres_ptr->gpu_bit_alloc) {
+			char tmp_str[128];
+			bit_fmt(tmp_str, sizeof(tmp_str), 
+				gres_ptr->gpu_bit_alloc);
+			info("  gpu_bit_alloc:%s", tmp_str);
+		} else {
+			info("  gpu_bit_alloc:NULL");
+		}
 	}
 	list_iterator_destroy(gres_iter);
 }

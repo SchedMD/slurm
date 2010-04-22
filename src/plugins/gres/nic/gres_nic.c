@@ -373,6 +373,14 @@ extern void node_state_log(List gres_list, char *node_name)
 		info("  nic_cnt found:%u configured:%u avail:%u alloc:%u",
 		     gres_ptr->nic_cnt_found, gres_ptr->nic_cnt_config,
 		     gres_ptr->nic_cnt_avail, gres_ptr->nic_cnt_alloc);
+		if (gres_ptr->nic_bit_alloc) {
+			char tmp_str[128];
+			bit_fmt(tmp_str, sizeof(tmp_str), 
+				gres_ptr->nic_bit_alloc);
+			info("  nic_bit_alloc:%s", tmp_str);
+		} else {
+			info("  nic_bit_alloc:NULL");
+		}
 	}
 	list_iterator_destroy(gres_iter);
 }
