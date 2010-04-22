@@ -1,7 +1,7 @@
 /*****************************************************************************\
- *  common.c - accounting interface to pgsql - common functions.
+ *  as_pg_common.c - accounting interface to pgsql - common functions.
  *
- *  $Id: common.c 13061 2008-01-22 21:23:56Z da $
+ *  $Id: as_pg_common.c 13061 2008-01-22 21:23:56Z da $
  *****************************************************************************
  *  Copyright (C) 2004-2007 The Regents of the University of California.
  *  Copyright (C) 2008 Lawrence Livermore National Security.
@@ -38,7 +38,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include "common.h"
+#include "as_pg_common.h"
 
 #define DELETE_SEC_BACK (3600*24)
 
@@ -154,7 +154,7 @@ concat_limit(char *col, int limit, char **rec, char **txn)
 }
 
 /*
- * aspg_modify_common - modify the entity table and insert a txn record
+ * pgsql_modify_common - modify the entity table and insert a txn record
  *
  * IN pg_conn: database connection
  * IN type: modification action type
@@ -169,9 +169,9 @@ concat_limit(char *col, int limit, char **rec, char **txn)
  * RET: error code
  */
 extern int
-aspg_modify_common(pgsql_conn_t *pg_conn, uint16_t type, time_t now,
-		   char *user_name, char *table, char *name_char,
-		   char *vals)
+pgsql_modify_common(pgsql_conn_t *pg_conn, uint16_t type, time_t now,
+		    char *user_name, char *table, char *name_char,
+		    char *vals)
 {
 	char *query = NULL;
 	int rc = SLURM_SUCCESS;
@@ -293,7 +293,7 @@ _check_jobs_before_remove_without_assoctable(pgsql_conn_t *pg_conn,
 
 
 /*
- * aspg_remove_common - remove entities from corresponding
+ * pgsql_remove_common - remove entities from corresponding
  *   table and insert a record in txn_table
  *
  * IN pg_conn: database connection
@@ -308,9 +308,9 @@ _check_jobs_before_remove_without_assoctable(pgsql_conn_t *pg_conn,
  * RET: error code
  */
 extern int
-aspg_remove_common(pgsql_conn_t *pg_conn, uint16_t type, time_t now,
-		   char *user_name, char *table, char *name_char,
-		   char *assoc_char)
+pgsql_remove_common(pgsql_conn_t *pg_conn, uint16_t type, time_t now,
+		    char *user_name, char *table, char *name_char,
+		    char *assoc_char)
 {
 	int rc = SLURM_SUCCESS;
 	char *query = NULL, *loc_assoc_char = NULL;
@@ -400,8 +400,8 @@ aspg_remove_common(pgsql_conn_t *pg_conn, uint16_t type, time_t now,
 
 			rem_assoc->id = atoi(id);
 			if(addto_update_list(pg_conn->update_list,
-				     SLURMDB_REMOVE_ASSOC,
-				     rem_assoc) != SLURM_SUCCESS)
+					     SLURMDB_REMOVE_ASSOC,
+					     rem_assoc) != SLURM_SUCCESS)
 				error("couldn't add to the update list");
 		}
 		list_iterator_destroy(itr);
@@ -692,7 +692,7 @@ good_nodes_from_inx(List local_cluster_list, void **object,
 				if((submit >= local_cluster->start)
 				   && (submit <= local_cluster->end)) {
 					*curr_cluster = local_cluster;
-						break;
+					break;
 				}
 			}
 			list_iterator_destroy(itr);

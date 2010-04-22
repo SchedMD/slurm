@@ -1,7 +1,7 @@
 /*****************************************************************************\
- *  qos.c - accounting interface to pgsql - qos related functions.
+ *  as_pg_qos.c - accounting interface to pgsql - qos related functions.
  *
- *  $Id: qos.c 13061 2008-01-22 21:23:56Z da $
+ *  $Id: as_pg_qos.c 13061 2008-01-22 21:23:56Z da $
  *****************************************************************************
  *  Copyright (C) 2004-2007 The Regents of the University of California.
  *  Copyright (C) 2008 Lawrence Livermore National Security.
@@ -38,7 +38,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include "common.h"
+#include "as_pg_common.h"
 
 char *qos_table = "qos_table";
 static storage_field_t qos_table_fields[] = {
@@ -221,7 +221,7 @@ _make_qos_record_for_add(slurmdb_qos_rec_t *object, time_t now,
  *    qos remove/get/modify
  *
  * IN qos_cond: condition specified
- * RET: condition string. appropriate for aspg_modify_common
+ * RET: condition string. appropriate for pgsql_modify_common
  * NOTE: the string should be xfree-ed by caller
  */
 static char *
@@ -239,7 +239,7 @@ _make_qos_cond(slurmdb_qos_cond_t *qos_cond)
  * _make_qos_vals_for_modify - make SQL update value string for qos
  *    modify
  * IN qos: new qos record
- * OUT vals: value string. appropriate for aspg_modify_common
+ * OUT vals: value string. appropriate for pgsql_modify_common
  * OUT added_preempt: preempt qos newly added
  */
 static void
@@ -450,7 +450,7 @@ check_qos_tables(PGconn *db_conn, char *user)
 }
 
 /*
- * as_p_add_qos - add qos
+ * as_pg_add_qos - add qos
  *
  * IN pg_conn: database connection
  * IN uid: user performing the add operation
@@ -458,7 +458,7 @@ check_qos_tables(PGconn *db_conn, char *user)
  * RET: error code
  */
 extern int
-as_p_add_qos(pgsql_conn_t *pg_conn, uint32_t uid, List qos_list)
+as_pg_add_qos(pgsql_conn_t *pg_conn, uint32_t uid, List qos_list)
 {
 	ListIterator itr = NULL;
 	slurmdb_qos_rec_t *object = NULL;
@@ -519,7 +519,7 @@ as_p_add_qos(pgsql_conn_t *pg_conn, uint32_t uid, List qos_list)
 }
 
 /*
- * as_p_modify_qos - modify qos
+ * as_pg_modify_qos - modify qos
  *
  * IN pg_conn: database connection
  * IN uid: user performing the modify action
@@ -528,8 +528,8 @@ as_p_add_qos(pgsql_conn_t *pg_conn, uint32_t uid, List qos_list)
  * RET: qos'es modified
  */
 extern List
-as_p_modify_qos(pgsql_conn_t *pg_conn, uint32_t uid,
-		slurmdb_qos_cond_t *qos_cond, slurmdb_qos_rec_t *qos)
+as_pg_modify_qos(pgsql_conn_t *pg_conn, uint32_t uid,
+		 slurmdb_qos_cond_t *qos_cond, slurmdb_qos_rec_t *qos)
 {
 	List ret_list = NULL;
 	char *object = NULL, *user_name = NULL, *added_preempt = NULL;
@@ -667,7 +667,7 @@ as_p_modify_qos(pgsql_conn_t *pg_conn, uint32_t uid,
 	xstrcat(name_char, ")");
 
 	user_name = uid_to_string((uid_t) uid);
-	rc = aspg_modify_common(pg_conn, DBD_MODIFY_QOS, now,
+	rc = pgsql_modify_common(pg_conn, DBD_MODIFY_QOS, now,
 				user_name, qos_table, name_char, vals);
 	xfree(user_name);
 	xfree(name_char);
@@ -681,7 +681,7 @@ as_p_modify_qos(pgsql_conn_t *pg_conn, uint32_t uid,
 }
 
 /*
- * as_p_remove_qos - remove qos
+ * as_pg_remove_qos - remove qos
  *
  * IN pg_conn: database connection
  * IN uid: user performing the remove operation
@@ -689,8 +689,8 @@ as_p_modify_qos(pgsql_conn_t *pg_conn, uint32_t uid,
  * RET: list of qos'es removed
  */
 extern List
-as_p_remove_qos(pgsql_conn_t *pg_conn, uint32_t uid,
-		slurmdb_qos_cond_t *qos_cond)
+as_pg_remove_qos(pgsql_conn_t *pg_conn, uint32_t uid,
+		 slurmdb_qos_cond_t *qos_cond)
 {
 	List ret_list = NULL;
 	PGresult *result = NULL;
@@ -780,7 +780,7 @@ as_p_remove_qos(pgsql_conn_t *pg_conn, uint32_t uid,
 	}
 
 	user_name = uid_to_string((uid_t) uid);
-	rc = aspg_remove_common(pg_conn, DBD_REMOVE_QOS, now,
+	rc = pgsql_remove_common(pg_conn, DBD_REMOVE_QOS, now,
 				user_name, qos_table, name_char, assoc_char);
 	xfree(assoc_char);
 	xfree(name_char);
@@ -793,7 +793,7 @@ as_p_remove_qos(pgsql_conn_t *pg_conn, uint32_t uid,
 }
 
 /*
- * as_p_get_qos - get qos
+ * as_pg_get_qos - get qos
  *
  * IN pg_conn: database connection
  * IN uid: user performing the get operation
@@ -801,8 +801,8 @@ as_p_remove_qos(pgsql_conn_t *pg_conn, uint32_t uid,
  * RET: list of qos'es got
  */
 extern List
-as_p_get_qos(pgsql_conn_t *pg_conn, uid_t uid,
-	     slurmdb_qos_cond_t *qos_cond)
+as_pg_get_qos(pgsql_conn_t *pg_conn, uid_t uid,
+	      slurmdb_qos_cond_t *qos_cond)
 {
 	char *query = NULL, *cond = NULL;
 	List qos_list = NULL;

@@ -1,8 +1,8 @@
 /*****************************************************************************\
- *  association.c - accounting interface to pgsql - association
+ *  as_pg_assoc.c - accounting interface to pgsql - association
  *  related functions.
  *
- *  $Id: association.c 13061 2008-01-22 21:23:56Z da $
+ *  $Id: as_pg_assoc.c 13061 2008-01-22 21:23:56Z da $
  *****************************************************************************
  *  Copyright (C) 2004-2007 The Regents of the University of California.
  *  Copyright (C) 2008 Lawrence Livermore National Security.
@@ -39,7 +39,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include "common.h"
+#include "as_pg_common.h"
 
 #define SECS_PER_DAY	(24 * 60 * 60)
 
@@ -1225,8 +1225,8 @@ _modify_unset_users(pgsql_conn_t *pg_conn, slurmdb_association_rec_t *assoc,
 				slurmdb_destroy_association_rec(mod_assoc);
 			else
 				if(addto_update_list(pg_conn->update_list,
-						      SLURMDB_MODIFY_ASSOC,
-						      mod_assoc)
+						     SLURMDB_MODIFY_ASSOC,
+						     mod_assoc)
 				   != SLURM_SUCCESS)
 					error("couldn't add to "
 					      "the update list");
@@ -1360,7 +1360,7 @@ check_assoc_tables(PGconn *db_conn, char *user)
 
 
 /*
- * as_p_add_assocaitons - add associations
+ * as_pg_add_assocaitons - add associations
  *
  * IN pg_conn: database connection
  * IN uid: user performing the add operation
@@ -1368,8 +1368,8 @@ check_assoc_tables(PGconn *db_conn, char *user)
  * RET: error code
  */
 extern int
-as_p_add_associations(pgsql_conn_t *pg_conn, uint32_t uid,
-		      List assoc_list)
+as_pg_add_associations(pgsql_conn_t *pg_conn, uint32_t uid,
+		       List assoc_list)
 {
 	ListIterator itr = NULL;
 	int rc = SLURM_SUCCESS;
@@ -1608,7 +1608,7 @@ as_p_add_associations(pgsql_conn_t *pg_conn, uint32_t uid,
 
 
 /*
- * as_p_modify_associations - modify associations
+ * as_pg_modify_associations - modify associations
  *
  * IN pg_conn: database connection
  * IN uid: user performing the modify operation
@@ -1617,9 +1617,9 @@ as_p_add_associations(pgsql_conn_t *pg_conn, uint32_t uid,
  * RET: list of users modified
  */
 extern List
-as_p_modify_associations(pgsql_conn_t *pg_conn, uint32_t uid,
-			 slurmdb_association_cond_t *assoc_cond,
-			 slurmdb_association_rec_t *assoc)
+as_pg_modify_associations(pgsql_conn_t *pg_conn, uint32_t uid,
+			  slurmdb_association_cond_t *assoc_cond,
+			  slurmdb_association_rec_t *assoc)
 {
 	List ret_list = NULL;
 	char *object = NULL, *user_name = NULL;
@@ -1632,8 +1632,8 @@ as_p_modify_associations(pgsql_conn_t *pg_conn, uint32_t uid,
 	int moved_parent = 0;
 
 	char *ma_fields[] = {"id", "acct", "parent_acct", "cluster",
-			    "user_name","partition", "lft", "rgt",
-			    "qos" };
+			     "user_name","partition", "lft", "rgt",
+			     "qos" };
 	enum {
 		MA_ID,
 		MA_ACCT,
@@ -1854,7 +1854,7 @@ as_p_modify_associations(pgsql_conn_t *pg_conn, uint32_t uid,
 					xstrfmtcat(tmp_qos, ",%s", new_qos);
 				}
 				xstrfmtcat(vals, ", qos='%s', delta_qos=''",
-					tmp_qos);
+					   tmp_qos);
 				xfree(tmp_qos);
 
 			} else {
@@ -1885,9 +1885,9 @@ as_p_modify_associations(pgsql_conn_t *pg_conn, uint32_t uid,
 					}
 				}
 				xstrfmtcat(vals, ", qos=(CASE WHEN qos='' THEN '' "
-					"ELSE %s END), delta_qos=(CASE WHEN "
-					"qos='' THEN %s ELSE '' END)",
-					tmp_qos, tmp_delta);
+					   "ELSE %s END), delta_qos=(CASE WHEN "
+					   "qos='' THEN %s ELSE '' END)",
+					   tmp_qos, tmp_delta);
 				xfree(tmp_qos);
 				xfree(tmp_delta);
 			}
@@ -1898,8 +1898,8 @@ as_p_modify_associations(pgsql_conn_t *pg_conn, uint32_t uid,
 		}
 
 		if(addto_update_list(pg_conn->update_list,
-				      SLURMDB_MODIFY_ASSOC,
-				      mod_assoc) != SLURM_SUCCESS)
+				     SLURMDB_MODIFY_ASSOC,
+				     mod_assoc) != SLURM_SUCCESS)
 			error("couldn't add to the update list");
 		if(account_type) { /* propagate change to sub account and users */
 			_modify_unset_users(pg_conn,
@@ -1914,9 +1914,9 @@ as_p_modify_associations(pgsql_conn_t *pg_conn, uint32_t uid,
 
 	if(assoc->parent_acct) {
 		if ((rc == ESLURM_INVALID_PARENT_ACCOUNT ||
-		    rc == ESLURM_SAME_PARENT_ACCOUNT) &&
-			list_count(ret_list))
-		rc = SLURM_SUCCESS;
+		     rc == ESLURM_SAME_PARENT_ACCOUNT) &&
+		    list_count(ret_list))
+			rc = SLURM_SUCCESS;
 
 		if(rc != SLURM_SUCCESS) {
 			if(pg_conn->rollback) {
@@ -1944,8 +1944,8 @@ as_p_modify_associations(pgsql_conn_t *pg_conn, uint32_t uid,
 
 	if(vals) {
 		user_name = uid_to_string((uid_t) uid);
-		rc = aspg_modify_common(pg_conn, DBD_MODIFY_ASSOCS, now,
-					user_name, assoc_table, name_char, vals);
+		rc = pgsql_modify_common(pg_conn, DBD_MODIFY_ASSOCS, now,
+					 user_name, assoc_table, name_char, vals);
 		xfree(user_name);
 		if (rc == SLURM_ERROR) {
 			if(pg_conn->rollback) {
@@ -1984,8 +1984,8 @@ as_p_modify_associations(pgsql_conn_t *pg_conn, uint32_t uid,
 		local_itr = list_iterator_create(local_assoc_list);
 		while((local_assoc = list_next(local_itr))) {
 			if(addto_update_list(pg_conn->update_list,
-					      SLURMDB_MODIFY_ASSOC,
-					      local_assoc) == SLURM_SUCCESS)
+					     SLURMDB_MODIFY_ASSOC,
+					     local_assoc) == SLURM_SUCCESS)
 				list_remove(local_itr);
 		}
 		list_iterator_destroy(local_itr);
@@ -2000,7 +2000,7 @@ end_it:
 }
 
 /*
- * as_p_remove_associations - remove associations
+ * as_pg_remove_associations - remove associations
  *
  * IN pg_conn: database connection
  * IN uid: user performing the remove operation
@@ -2008,8 +2008,8 @@ end_it:
  * RET: associations removed
  */
 extern List
-as_p_remove_associations(pgsql_conn_t *pg_conn, uint32_t uid,
-			 slurmdb_association_cond_t *assoc_cond)
+as_pg_remove_associations(pgsql_conn_t *pg_conn, uint32_t uid,
+			  slurmdb_association_cond_t *assoc_cond)
 {
 	ListIterator itr = NULL;
 	List ret_list = NULL;
@@ -2160,8 +2160,8 @@ as_p_remove_associations(pgsql_conn_t *pg_conn, uint32_t uid,
 	PQclear(result);
 
 	user_name = uid_to_string((uid_t) uid);
-	rc = aspg_remove_common(pg_conn, DBD_REMOVE_ASSOCS, now, user_name,
-				assoc_table, name_char, assoc_char);
+	rc = pgsql_remove_common(pg_conn, DBD_REMOVE_ASSOCS, now, user_name,
+				 assoc_table, name_char, assoc_char);
 	xfree(user_name);
 	xfree(name_char);
 	xfree(assoc_char);
@@ -2185,7 +2185,7 @@ end_it:
 }
 
 /*
- * as_p_get_associaitons - get associations
+ * as_pg_get_associaitons - get associations
  *
  * IN pg_conn: database connection
  * IN uid: user performing the get operation
@@ -2193,8 +2193,8 @@ end_it:
  * RET: assocations got
  */
 extern List
-as_p_get_associations(pgsql_conn_t *pg_conn, uid_t uid,
-		      slurmdb_association_cond_t *assoc_cond)
+as_pg_get_associations(pgsql_conn_t *pg_conn, uid_t uid,
+		       slurmdb_association_cond_t *assoc_cond)
 {
 	char *query = NULL, *cond = NULL;
 	List assoc_list = NULL;

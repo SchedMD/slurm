@@ -1,8 +1,8 @@
 /*****************************************************************************\
- *  clusteracct.c - accounting interface to pgsql - cluster/node
- *  related functions.
+ *  as_pg_event.c - accounting interface to pgsql - cluster/node event related
+ *  functions.
  *
- *  $Id: clusteracct.c 13061 2008-01-22 21:23:56Z da $
+ *  $Id: as_pg_event.c 13061 2008-01-22 21:23:56Z da $
  *****************************************************************************
  *  Copyright (C) 2004-2007 The Regents of the University of California.
  *  Copyright (C) 2008 Lawrence Livermore National Security.
@@ -38,7 +38,7 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
-#include "common.h"
+#include "as_pg_common.h"
 
 char *event_table = "cluster_event_table";
 static storage_field_t event_table_fields[] = {
@@ -140,15 +140,15 @@ get_cluster_cpu_nodes(pgsql_conn_t *pg_conn, slurmdb_cluster_rec_t *cluster)
 }
 
 /*
- * cs_p_node_down - load into storage the event of node down
+ * cs_pg_node_down - load into storage the event of node down
  * IN pg_conn: database connection
  * IN cluster: cluster of the down node
  * RET: error code
  */
 extern int
-cs_p_node_down(pgsql_conn_t *pg_conn,
-	       struct node_record *node_ptr,
-	       time_t event_time, char *reason, uint32_t reason_uid)
+cs_pg_node_down(pgsql_conn_t *pg_conn,
+		struct node_record *node_ptr,
+		time_t event_time, char *reason, uint32_t reason_uid)
 {
 	uint16_t cpus;
 	int rc = SLURM_ERROR;
@@ -158,7 +158,7 @@ cs_p_node_down(pgsql_conn_t *pg_conn,
 		return ESLURM_DB_CONNECTION;
 
 	if (!node_ptr) {
-		error("as/pg: cs_p_node_down: No node_ptr give!");
+		error("as/pg: cs_pg_node_down: No node_ptr give!");
 		return SLURM_ERROR;
 	}
 
@@ -186,14 +186,14 @@ cs_p_node_down(pgsql_conn_t *pg_conn,
 }
 
 /*
- * cs_p_node_up - load into storage the event of node up
+ * cs_pg_node_up - load into storage the event of node up
  * IN pg_conn: database connection
  * IN cluster: cluster of the down node
  * RET: error code
  */
 extern int
-cs_p_node_up(pgsql_conn_t *pg_conn,
-	     struct node_record *node_ptr, time_t event_time)
+cs_pg_node_up(pgsql_conn_t *pg_conn,
+	      struct node_record *node_ptr, time_t event_time)
 {
 	char* query;
 	int rc = SLURM_ERROR;
@@ -211,7 +211,7 @@ cs_p_node_up(pgsql_conn_t *pg_conn,
 }
 
 /*
- * cs_p_register_ctld - cluster registration
+ * cs_pg_register_ctld - cluster registration
  *   SHOULD NOT be called from slurmdbd, where modify_clusters
  *   will be called on cluster registration
  * IN pg_conn: database connection
@@ -220,7 +220,7 @@ cs_p_node_up(pgsql_conn_t *pg_conn,
  * RET: error code
  */
 extern int
-cs_p_register_ctld(pgsql_conn_t *pg_conn, char *cluster, uint16_t port)
+cs_pg_register_ctld(pgsql_conn_t *pg_conn, char *cluster, uint16_t port)
 {
 	char *query = NULL, *address = NULL;
 	char hostname[255];
@@ -261,7 +261,7 @@ cs_p_register_ctld(pgsql_conn_t *pg_conn, char *cluster, uint16_t port)
 }
 
 /*
- * cs_p_cluster_cpus - cluster processor count change
+ * cs_pg_cluster_cpus - cluster processor count change
  *
  * IN pg_conn: database connection
  * IN cluster: cluster name
@@ -271,7 +271,7 @@ cs_p_register_ctld(pgsql_conn_t *pg_conn, char *cluster, uint16_t port)
  * RET: error code
  */
 extern int
-cs_p_cluster_cpus(pgsql_conn_t *pg_conn, char *cluster_nodes,
+cs_pg_cluster_cpus(pgsql_conn_t *pg_conn, char *cluster_nodes,
 		   uint32_t cpus, time_t event_time)
 {
 	PGresult *result = NULL;
@@ -363,7 +363,7 @@ end_it:
 }
 
 /*
- * cs_p_get_usage - get cluster usage data
+ * cs_pg_get_usage - get cluster usage data
  *
  * IN pg_conn: database connection
  * IN/OUT cluster_rec: usage of which cluster to get
@@ -373,9 +373,9 @@ end_it:
  * RET: error code
  */
 extern int
-cs_p_get_usage(pgsql_conn_t *pg_conn, uid_t uid,
-	       slurmdb_cluster_rec_t *cluster_rec,
-	       int type, time_t start, time_t end)
+cs_pg_get_usage(pgsql_conn_t *pg_conn, uid_t uid,
+		slurmdb_cluster_rec_t *cluster_rec,
+		int type, time_t start, time_t end)
 {
 	PGresult *result = NULL;
 	char *query = NULL, *usage_table = NULL;
@@ -432,3 +432,128 @@ cs_p_get_usage(pgsql_conn_t *pg_conn, uid_t uid,
 	PQclear(result);
 	return SLURM_SUCCESS;
 }
+
+/*
+ * as_pg_get_events - get cluster events
+ *
+ * IN pg_conn: database connection
+ * IN uid: user performing get operation
+ * event_cond: filter condition
+ * RET: list of events
+ */
+extern List
+as_pg_get_events(pgsql_conn_t *pg_conn, uid_t uid, 
+		 slurmdb_event_cond_t *event_cond)
+{
+        char *query = NULL;
+        char *cond = NULL;
+        List ret_list = NULL;
+        PGresult *result = NULL;
+        time_t now = time(NULL);
+
+        /* if this changes you will need to edit the corresponding enum */
+	char *ge_fields = "cluster,cluster_nodes,cpu_count,node_name,state,"
+		"time_start,time_end,reason,reason_uid";
+        enum {
+		GE_CLUSTER,
+                GE_CNODES,
+                GE_CPU,
+                GE_NODE,
+                GE_STATE,
+                GE_START,
+                GE_END,
+                GE_REASON,
+                GE_REASON_UID,
+                GE_COUNT
+        };
+
+        if(check_db_connection(pg_conn) != SLURM_SUCCESS)
+                return NULL;
+
+	cond = xstrdup("WHERE TRUE");
+	
+        if(!event_cond)
+                goto empty;
+
+        if(event_cond->cpus_min) {
+                if(event_cond->cpus_max) {
+                        xstrfmtcat(cond, " AND (cpu_count BETWEEN %u AND %u)",
+                                   event_cond->cpus_min, event_cond->cpus_max);
+
+                } else {
+                        xstrfmtcat(cond, " AND (cpu_count='%u')",
+                                   event_cond->cpus_min);
+                }
+        }
+
+        switch(event_cond->event_type) {
+        case SLURMDB_EVENT_ALL:
+                break;
+        case SLURMDB_EVENT_CLUSTER:
+                xstrcat(cond, " AND (node_name = '')");
+                break;
+        case SLURMDB_EVENT_NODE:
+                xstrcat(cond, " AND (node_name != '')");
+                break;
+        default:
+                error("Unknown event %u doing all", event_cond->event_type);
+                break;
+        }
+
+	concat_cond_list(event_cond->node_list, NULL, "node_name", &cond);
+
+        if(event_cond->period_start) {
+                if(!event_cond->period_end)
+                        event_cond->period_end = now;
+                xstrfmtcat(cond,
+                           " AND (time_start < %d) "
+                           " AND (time_end >= %d OR time_end = 0)",
+                           event_cond->period_end, event_cond->period_start);
+        }
+
+	concat_like_cond_list(event_cond->reason_list, NULL, "reason", &cond);
+	concat_cond_list(event_cond->reason_uid_list, NULL, "reason_uid", &cond);
+	concat_cond_list(event_cond->state_list, NULL, "state", &cond);
+	concat_cond_list(event_cond->cluster_list, NULL, "cluster", &cond);
+
+empty:
+        query = xstrdup_printf("SELECT %s from %s %s ORDER BY cluster,time_start;",
+                               ge_fields, event_table, cond);
+	xfree(cond);
+	result = DEF_QUERY_RET;
+	if (!result) {
+		return NULL;
+	}
+
+        ret_list = list_create(slurmdb_destroy_event_rec);
+	FOR_EACH_ROW {
+                slurmdb_event_rec_t *event =
+                        xmalloc(sizeof(slurmdb_event_rec_t));
+                list_append(ret_list, event);
+
+                event->cluster = xstrdup(ROW(GE_CLUSTER));
+
+                if(ISEMPTY(GE_NODE)) {
+                        event->event_type = SLURMDB_EVENT_CLUSTER;
+                } else
+                        event->node_name = xstrdup(ROW(GE_NODE));
+                        event->event_type = SLURMDB_EVENT_NODE;
+
+                event->cpu_count = atoi(ROW(GE_CPU));
+                event->state = atoi(ROW(GE_STATE));
+                event->period_start = atoi(ROW(GE_START));
+                event->period_end = atoi(ROW(GE_END));
+
+                if(!ISEMPTY(GE_REASON))
+                        event->reason = xstrdup(ROW(GE_REASON));
+                event->reason_uid = atoi(ROW(GE_REASON_UID));
+
+                if(!ISEMPTY(GE_CNODES))
+                        event->cluster_nodes =
+                                xstrdup(ROW(GE_CNODES));
+        } END_EACH_ROW;
+        PQclear(result);
+
+        return ret_list;
+}
+

@@ -1,7 +1,8 @@
 /*****************************************************************************\
- *  cluster.c - accounting interface to pgsql - clusters related functions.
+ *  as_pg_cluster.c - accounting interface to pgsql - clusters related
+ *  functions.
  *
- *  $Id: cluster.c 13061 2008-01-22 21:23:56Z da $
+ *  $Id: as_pg_cluster.c 13061 2008-01-22 21:23:56Z da $
  *****************************************************************************
  *  Copyright (C) 2004-2007 The Regents of the University of California.
  *  Copyright (C) 2008 Lawrence Livermore National Security.
@@ -37,8 +38,7 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
-#include "common.h"
-
+#include "as_pg_common.h"
 
 char *cluster_table = "cluster_table";
 static storage_field_t cluster_table_fields[] = {
@@ -101,7 +101,7 @@ check_cluster_tables(PGconn *db_conn, char *user)
 }
 
 /*
- * as_p_add_clusters - add clusters
+ * as_pg_add_clusters - add clusters
  *
  * IN pg_conn: database connection
  * IN uid: user performing the add operation
@@ -109,8 +109,8 @@ check_cluster_tables(PGconn *db_conn, char *user)
  * RET: error code
  */
 extern int
-as_p_add_clusters(pgsql_conn_t *pg_conn, uint32_t uid,
-		  List cluster_list)
+as_pg_add_clusters(pgsql_conn_t *pg_conn, uint32_t uid,
+		   List cluster_list)
 {
 	ListIterator itr = NULL;
 	int rc = SLURM_SUCCESS, added = 0;
@@ -194,7 +194,7 @@ as_p_add_clusters(pgsql_conn_t *pg_conn, uint32_t uid,
 }
 
 /*
- * as_p_modify_clusters - modify clusters
+ * as_pg_modify_clusters - modify clusters
  *   This is called by cs_p_register_ctld when ctld registers to dbd.
  *   Also called when modify classification of cluster.
  *   If you need to alter the default values of the cluster, use
@@ -207,9 +207,9 @@ as_p_add_clusters(pgsql_conn_t *pg_conn, uint32_t uid,
  * RET: list of clusters modified
  */
 extern List
-as_p_modify_clusters(pgsql_conn_t *pg_conn, uint32_t uid,
-		     slurmdb_cluster_cond_t *cluster_cond,
-		     slurmdb_cluster_rec_t *cluster)
+as_pg_modify_clusters(pgsql_conn_t *pg_conn, uint32_t uid,
+		      slurmdb_cluster_cond_t *cluster_cond,
+		      slurmdb_cluster_rec_t *cluster)
 {
 	List ret_list = NULL;
 	int rc = SLURM_SUCCESS, set = 0;
@@ -309,9 +309,9 @@ as_p_modify_clusters(pgsql_conn_t *pg_conn, uint32_t uid,
 	if(vals) {
 		send_char = xstrdup_printf("(%s)", name_char);
 		user_name = uid_to_string((uid_t) uid);
-		rc = aspg_modify_common(pg_conn, DBD_MODIFY_CLUSTERS, now,
-					user_name, cluster_table,
-					send_char, vals);
+		rc = pgsql_modify_common(pg_conn, DBD_MODIFY_CLUSTERS, now,
+					 user_name, cluster_table,
+					 send_char, vals);
 		xfree(user_name);
 		xfree(send_char);
 		if (rc != SLURM_SUCCESS) {
@@ -329,7 +329,7 @@ end_it:
 
 
 /*
- * as_p_remove_clusters - remove clusters
+ * as_pg_remove_clusters - remove clusters
  *
  * IN pg_conn: database connection
  * IN uid: user performing the remove operation
@@ -337,8 +337,8 @@ end_it:
  * RET: list of clusters removed
  */
 extern List
-as_p_remove_clusters(pgsql_conn_t *pg_conn, uint32_t uid,
-		     slurmdb_cluster_cond_t *cluster_cond)
+as_pg_remove_clusters(pgsql_conn_t *pg_conn, uint32_t uid,
+		      slurmdb_cluster_cond_t *cluster_cond)
 {
 	List ret_list = NULL;
 	List tmp_list = NULL;
@@ -432,8 +432,8 @@ as_p_remove_clusters(pgsql_conn_t *pg_conn, uint32_t uid,
 	xfree(assoc_char);
 
 	user_name = uid_to_string((uid_t) uid);
-	rc = aspg_remove_common(pg_conn, DBD_REMOVE_CLUSTERS, now, user_name,
-				cluster_table, name_char, cond);
+	rc = pgsql_remove_common(pg_conn, DBD_REMOVE_CLUSTERS, now, user_name,
+				 cluster_table, name_char, cond);
 	xfree(user_name);
 	xfree(name_char);
 	xfree(cond);
@@ -445,7 +445,7 @@ as_p_remove_clusters(pgsql_conn_t *pg_conn, uint32_t uid,
 }
 
 /*
- * as_p_get_clusters -  get clusters
+ * as_pg_get_clusters -  get clusters
  *
  * IN pg_conn: database connection
  * IN uid: user performing the get operation
@@ -453,8 +453,8 @@ as_p_remove_clusters(pgsql_conn_t *pg_conn, uint32_t uid,
  * RET: the clusters
  */
 extern List
-as_p_get_clusters(pgsql_conn_t *pg_conn, uid_t uid,
-		  slurmdb_cluster_cond_t *cluster_cond)
+as_pg_get_clusters(pgsql_conn_t *pg_conn, uid_t uid,
+		   slurmdb_cluster_cond_t *cluster_cond)
 {
 	char *query = NULL, *cond = NULL;
 	PGresult *result = NULL;
@@ -519,7 +519,7 @@ empty:
 
 		/* get the usage if requested */
 		if(cluster_cond && cluster_cond->with_usage) {
-			cs_p_get_usage(pg_conn, uid, cluster,
+			as_pg_get_usage(pg_conn, uid, cluster,
 				       DBD_GET_CLUSTER_USAGE,
 				       cluster_cond->usage_start,
 				       cluster_cond->usage_end);

@@ -1,7 +1,7 @@
 /*****************************************************************************\
- *  txn.c - accounting interface to pgsql - txn related functions.
+ *  as_pg_txn.c - accounting interface to pgsql - txn related functions.
  *
- *  $Id: txn.c 13061 2008-01-22 21:23:56Z da $
+ *  $Id: as_pg_txn.c 13061 2008-01-22 21:23:56Z da $
  *****************************************************************************
  *  Copyright (C) 2004-2007 The Regents of the University of California.
  *  Copyright (C) 2008 Lawrence Livermore National Security.
@@ -37,7 +37,7 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
-#include "common.h"
+#include "as_pg_common.h"
 
 char *txn_table = "txn_table";
 static storage_field_t txn_table_fields[] = {
@@ -161,7 +161,7 @@ check_txn_tables(PGconn *db_conn, char *user)
 }
 
 /*
- * as_p_get_txn - get transactions
+ * as_pg_get_txn - get transactions
  *
  * IN pg_conn: database connection
  * IN uid: user performing the get operation
@@ -169,8 +169,8 @@ check_txn_tables(PGconn *db_conn, char *user)
  * RET: transactions
  */
 extern List
-as_p_get_txn(pgsql_conn_t *pg_conn, uid_t uid,
-	     slurmdb_txn_cond_t *txn_cond)
+as_pg_get_txn(pgsql_conn_t *pg_conn, uid_t uid,
+	      slurmdb_txn_cond_t *txn_cond)
 {
 	char *query = NULL, *cond = NULL;
 	List txn_list = NULL;
