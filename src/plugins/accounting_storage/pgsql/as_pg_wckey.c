@@ -1,7 +1,7 @@
 /*****************************************************************************\
- *  wckey.c - accounting interface to pgsql - wckey related functions.
+ *  as_pg_wckey.c - accounting interface to pgsql - wckey related functions.
  *
- *  $Id: wckey.c 13061 2008-01-22 21:23:56Z da $
+ *  $Id: as_pg_wckey.c 13061 2008-01-22 21:23:56Z da $
  *****************************************************************************
  *  Copyright (C) 2004-2007 The Regents of the University of California.
  *  Copyright (C) 2008 Lawrence Livermore National Security.
@@ -38,7 +38,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include "common.h"
+#include "as_pg_common.h"
 
 char *wckey_table = "wckey_table";
 static storage_field_t wckey_table_fields[] = {
@@ -126,7 +126,7 @@ check_wckey_tables(PGconn *db_conn, char *user)
 }
 
 /*
- * as_p_add_wckeys - add wckeys
+ * as_pg_add_wckeys - add wckeys
  *
  * IN pg_conn: database connection
  * IN uid: user performing the add operation
@@ -134,7 +134,7 @@ check_wckey_tables(PGconn *db_conn, char *user)
  * RET: error code
  */
 extern int
-as_p_add_wckeys(pgsql_conn_t *pg_conn, uint32_t uid, List wckey_list)
+as_pg_add_wckeys(pgsql_conn_t *pg_conn, uint32_t uid, List wckey_list)
 {
 	ListIterator itr = NULL;
 	int rc = SLURM_SUCCESS, added=0;
@@ -203,7 +203,7 @@ as_p_add_wckeys(pgsql_conn_t *pg_conn, uint32_t uid, List wckey_list)
 }
 
 /*
- * as_p_modify_wckeys - modify wckeys
+ * as_pg_modify_wckeys - modify wckeys
  *
  * IN pg_conn: database connection
  * IN uid: user performing the modify operation
@@ -212,16 +212,16 @@ as_p_add_wckeys(pgsql_conn_t *pg_conn, uint32_t uid, List wckey_list)
  * RET: list of wckeys modified
  */
 extern List
-as_p_modify_wckeys(pgsql_conn_t *pg_conn, uint32_t uid,
-		   slurmdb_wckey_cond_t *wckey_cond,
-		   slurmdb_wckey_rec_t *wckey)
+as_pg_modify_wckeys(pgsql_conn_t *pg_conn, uint32_t uid,
+		    slurmdb_wckey_cond_t *wckey_cond,
+		    slurmdb_wckey_rec_t *wckey)
 {
 	/* TODO: complete this */
 	return NULL;
 }
 
 /*
- * as_p_remove_wckeys - remove wckeys
+ * as_pg_remove_wckeys - remove wckeys
  *
  * IN pg_conn: database connection
  * IN uid: user performing the remove operation
@@ -229,8 +229,8 @@ as_p_modify_wckeys(pgsql_conn_t *pg_conn, uint32_t uid,
  * RET: list of wckeys removed
  */
 extern List
-as_p_remove_wckeys(pgsql_conn_t *pg_conn, uint32_t uid,
-		   slurmdb_wckey_cond_t *wckey_cond)
+as_pg_remove_wckeys(pgsql_conn_t *pg_conn, uint32_t uid,
+		    slurmdb_wckey_cond_t *wckey_cond)
 {
 	List ret_list = NULL;
 	PGresult *result = NULL;
@@ -301,8 +301,8 @@ as_p_remove_wckeys(pgsql_conn_t *pg_conn, uint32_t uid,
 	}
 
 	user_name = uid_to_string((uid_t) uid);
-	rc = aspg_remove_common(pg_conn, DBD_REMOVE_WCKEYS, now,
-				user_name, wckey_table, name_char, assoc_char);
+	rc = pgsql_remove_common(pg_conn, DBD_REMOVE_WCKEYS, now,
+				 user_name, wckey_table, name_char, assoc_char);
 	xfree(name_char);
 	xfree(assoc_char);
 	xfree(user_name);
@@ -314,7 +314,7 @@ as_p_remove_wckeys(pgsql_conn_t *pg_conn, uint32_t uid,
 }
 
 /*
- * as_p_get_wckeys - get wckeys
+ * as_pg_get_wckeys - get wckeys
  *
  * IN pg_conn: database connection
  * IN uid: user performing the get operation
@@ -322,8 +322,8 @@ as_p_remove_wckeys(pgsql_conn_t *pg_conn, uint32_t uid,
  * RET: list of wckeys got
  */
 extern List
-as_p_get_wckeys(pgsql_conn_t *pg_conn, uid_t uid,
-		slurmdb_wckey_cond_t *wckey_cond)
+as_pg_get_wckeys(pgsql_conn_t *pg_conn, uid_t uid,
+		 slurmdb_wckey_cond_t *wckey_cond)
 {
 	char *query = NULL;
 	char *cond = NULL;

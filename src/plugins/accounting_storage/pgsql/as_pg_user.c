@@ -1,7 +1,7 @@
 /*****************************************************************************\
- *  user.c - accounting interface to pgsql - user related functions.
+ *  as_pg_user.c - accounting interface to pgsql - user related functions.
  *
- *  $Id: user.c 13061 2008-01-22 21:23:56Z da $
+ *  $Id: as_pg_user.c 13061 2008-01-22 21:23:56Z da $
  *****************************************************************************
  *  Copyright (C) 2004-2007 The Regents of the University of California.
  *  Copyright (C) 2008 Lawrence Livermore National Security.
@@ -38,7 +38,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include "common.h"
+#include "as_pg_common.h"
 
 char *slurmdb_coord_table = "slurmdb_coord_table";
 static storage_field_t slurmdb_coord_table_fields[] = {
@@ -304,7 +304,7 @@ check_user_tables(PGconn *db_conn, char *user)
 }
 
 /*
- * as_p_add_users - add users
+ * as_pg_add_users - add users
  *
  * IN pg_conn: database connection
  * IN uid: user performing the add operation
@@ -312,7 +312,7 @@ check_user_tables(PGconn *db_conn, char *user)
  * RET: error code
  */
 extern int
-as_p_add_users(pgsql_conn_t *pg_conn, uint32_t uid, List user_list)
+as_pg_add_users(pgsql_conn_t *pg_conn, uint32_t uid, List user_list)
 {
 	ListIterator itr = NULL;
 	int rc = SLURM_SUCCESS;
@@ -410,7 +410,7 @@ as_p_add_users(pgsql_conn_t *pg_conn, uint32_t uid, List user_list)
 }
 
 /*
- * as_p_modify_users - modify users
+ * as_pg_modify_users - modify users
  *
  * IN pg_conn: database connection
  * IN uid: user performing the modify operation
@@ -419,8 +419,8 @@ as_p_add_users(pgsql_conn_t *pg_conn, uint32_t uid, List user_list)
  * RET: list of users modified
  */
 extern List
-as_p_modify_users(pgsql_conn_t *pg_conn, uint32_t uid,
-		  slurmdb_user_cond_t *user_cond, slurmdb_user_rec_t *user)
+as_pg_modify_users(pgsql_conn_t *pg_conn, uint32_t uid,
+		   slurmdb_user_cond_t *user_cond, slurmdb_user_rec_t *user)
 {
 	List ret_list = NULL;
 	int rc = SLURM_SUCCESS;
@@ -495,9 +495,9 @@ as_p_modify_users(pgsql_conn_t *pg_conn, uint32_t uid,
 	xstrcat(name_char, ")");
 
 	user_name = uid_to_string((uid_t) uid);
-	rc = aspg_modify_common(pg_conn, DBD_MODIFY_USERS, now,
-				user_name, user_table,
-				name_char, vals);
+	rc = pgsql_modify_common(pg_conn, DBD_MODIFY_USERS, now,
+				 user_name, user_table,
+				 name_char, vals);
 	xfree(user_name);
 	xfree(name_char);
 	xfree(vals);
@@ -510,7 +510,7 @@ as_p_modify_users(pgsql_conn_t *pg_conn, uint32_t uid,
 }
 
 /*
- * as_p_remove_users - remove users
+ * as_pg_remove_users - remove users
  *
  * IN pg_conn: database connection
  * IN uid: user performing the remove operation
@@ -518,8 +518,8 @@ as_p_modify_users(pgsql_conn_t *pg_conn, uint32_t uid,
  * RET: list of users removed
  */
 extern List
-as_p_remove_users(pgsql_conn_t *pg_conn, uint32_t uid,
-		  slurmdb_user_cond_t *user_cond)
+as_pg_remove_users(pgsql_conn_t *pg_conn, uint32_t uid,
+		   slurmdb_user_cond_t *user_cond)
 {
 	List ret_list = NULL, coord_list = NULL;
 	char *user_name = NULL, *assoc_char = NULL;
@@ -609,8 +609,8 @@ as_p_remove_users(pgsql_conn_t *pg_conn, uint32_t uid,
 	list_destroy(assoc_cond.user_list);
 
 	user_name = uid_to_string((uid_t) uid);
-	rc = aspg_remove_common(pg_conn, DBD_REMOVE_USERS, now,
-				user_name, user_table, name_char, assoc_char);
+	rc = pgsql_remove_common(pg_conn, DBD_REMOVE_USERS, now,
+				 user_name, user_table, name_char, assoc_char);
 	xfree(user_name);
 	xfree(name_char);
 	xfree(assoc_char);
@@ -637,7 +637,7 @@ as_p_remove_users(pgsql_conn_t *pg_conn, uint32_t uid,
 }
 
 /*
- * as_p_get_users - get users
+ * as_pg_get_users - get users
  *
  * IN pg_conn: database connection
  * IN uid: user performing the get operation
@@ -645,7 +645,7 @@ as_p_remove_users(pgsql_conn_t *pg_conn, uint32_t uid,
  * RET: the users
  */
 extern List
-as_p_get_users(pgsql_conn_t *pg_conn, uid_t uid, slurmdb_user_cond_t *user_cond)
+as_pg_get_users(pgsql_conn_t *pg_conn, uid_t uid, slurmdb_user_cond_t *user_cond)
 {
 	char *query = NULL, *cond = NULL;
 	List user_list = NULL;
@@ -814,7 +814,7 @@ get_wckeys:
 }
 
 /*
- * as_p_add_coord - add account coordinators
+ * as_pg_add_coord - add account coordinators
  *
  * IN pg_conn - database connection
  * IN uid - user performing the add operation
@@ -824,8 +824,8 @@ get_wckeys:
  * RET - error code
  */
 extern int
-as_p_add_coord(pgsql_conn_t *pg_conn, uint32_t uid,
-	       List acct_list, slurmdb_user_cond_t *user_cond)
+as_pg_add_coord(pgsql_conn_t *pg_conn, uint32_t uid,
+		List acct_list, slurmdb_user_cond_t *user_cond)
 {
 	char *query = NULL, *user = NULL, *acct = NULL;
 	char *user_name = NULL, *vals = NULL, *txn_query = NULL;
@@ -908,7 +908,7 @@ as_p_add_coord(pgsql_conn_t *pg_conn, uint32_t uid,
 }
 
 /*
- * as_p_remove_coord - remove account coordinators
+ * as_pg_remove_coord - remove account coordinators
  *
  * IN pg_conn - database connection
  * IN uid - user performing the remove operation
@@ -918,8 +918,8 @@ as_p_add_coord(pgsql_conn_t *pg_conn, uint32_t uid,
  * RET - list of coords removed
  */
 extern List
-as_p_remove_coord(pgsql_conn_t *pg_conn, uint32_t uid,
-		  List acct_list, slurmdb_user_cond_t *user_cond)
+as_pg_remove_coord(pgsql_conn_t *pg_conn, uint32_t uid,
+		   List acct_list, slurmdb_user_cond_t *user_cond)
 {
 	List user_list = NULL;
 	slurmdb_user_rec_t user;
@@ -1007,8 +1007,8 @@ as_p_remove_coord(pgsql_conn_t *pg_conn, uint32_t uid,
 	user_name = uid_to_string((uid_t) uid);
 	/* cond begins with "AND ()" since constructed with concat_cond_list() */
 	/* TODO: fix this */
-	rc = aspg_remove_common(pg_conn, DBD_REMOVE_ACCOUNT_COORDS, now,
-				user_name, slurmdb_coord_table, (cond + 4), NULL);
+	rc = pgsql_remove_common(pg_conn, DBD_REMOVE_ACCOUNT_COORDS, now,
+				 user_name, slurmdb_coord_table, (cond + 4), NULL);
 	xfree(user_name);
 	xfree(cond);
 	if (rc != SLURM_SUCCESS) {

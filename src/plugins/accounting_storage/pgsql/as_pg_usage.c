@@ -1,7 +1,8 @@
 /*****************************************************************************\
- *  usage.c - accounting interface to pgsql - cluster usage related functions.
+ *  as_pg_usage.c - accounting interface to pgsql - cluster usage related 
+ *  functions.
  *
- *  $Id: usage.c 13061 2008-01-22 21:23:56Z da $
+ *  $Id: as_pg_usage.c 13061 2008-01-22 21:23:56Z da $
  *****************************************************************************
  *  Copyright (C) 2004-2007 The Regents of the University of California.
  *  Copyright (C) 2008 Lawrence Livermore National Security.
@@ -38,7 +39,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include "common.h"
+#include "as_pg_common.h"
 
 char *assoc_day_table = "assoc_day_usage_table";
 char *assoc_hour_table = "assoc_hour_usage_table";
@@ -912,7 +913,7 @@ _get_wckey_usage(pgsql_conn_t *pg_conn, uid_t uid,
 }
 
 /*
- * as_p_get_usage - get cluster usage
+ * as_pg_get_usage - get cluster usage
  *
  * IN pg_conn: database connection
  * IN uid: user performing the get operation
@@ -923,8 +924,8 @@ _get_wckey_usage(pgsql_conn_t *pg_conn, uid_t uid,
  * RET: error code
  */
 extern int
-as_p_get_usage(pgsql_conn_t *pg_conn, uid_t uid, void *in,
-	       slurmdbd_msg_type_t type, time_t start, time_t end)
+as_pg_get_usage(pgsql_conn_t *pg_conn, uid_t uid, void *in,
+		slurmdbd_msg_type_t type, time_t start, time_t end)
 {
 	int rc = SLURM_SUCCESS;
 
@@ -947,7 +948,7 @@ as_p_get_usage(pgsql_conn_t *pg_conn, uid_t uid, void *in,
 }
 
 /*
- * as_p_roll_usage - rollup usage information
+ * as_pg_roll_usage - rollup usage information
  *
  * IN pg_conn: database connection
  * IN sent_start: start time
@@ -956,8 +957,8 @@ as_p_get_usage(pgsql_conn_t *pg_conn, uid_t uid, void *in,
  * RET: error code
  */
 extern int
-as_p_roll_usage(pgsql_conn_t *pg_conn,  time_t sent_start,
-		time_t sent_end, uint16_t archive_data)
+as_pg_roll_usage(pgsql_conn_t *pg_conn,  time_t sent_start,
+		 time_t sent_end, uint16_t archive_data)
 {
 	int rc = SLURM_SUCCESS;
 	PGresult *result = NULL;

@@ -1,7 +1,7 @@
 /*****************************************************************************\
- *  rollup.c - accounting interface to pgsql - usage data rollup.
+ *  as_pg_rollup.c - accounting interface to pgsql - usage data rollup.
  *
- *  $Id: rollup.c 13061 2008-01-22 21:23:56Z da $
+ *  $Id: as_pg_rollup.c 13061 2008-01-22 21:23:56Z da $
  *****************************************************************************
  *  Copyright (C) 2004-2007 The Regents of the University of California.
  *  Copyright (C) 2008 Lawrence Livermore National Security.
@@ -38,7 +38,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include "common.h"
+#include "as_pg_common.h"
 
 /*
  * data structures used in this file
@@ -692,11 +692,11 @@ _cluster_usage_sanity_check(local_cluster_usage_t *c_usage,
 
 		total_used = c_usage->a_cpu +
 			c_usage->d_cpu + c_usage->pd_cpu;
-		  /* info("We now have (%llu+%llu+%llu)(%llu) " */
-		  /*       "?= %llu", */
-		  /*       c_usage->a_cpu, c_usage->d_cpu, */
-		  /*       c_usage->pd_cpu, total_used, */
-		  /*       c_usage->total_time); */
+		/* info("We now have (%llu+%llu+%llu)(%llu) " */
+		/*       "?= %llu", */
+		/*       c_usage->a_cpu, c_usage->d_cpu, */
+		/*       c_usage->pd_cpu, total_used, */
+		/*       c_usage->total_time); */
 
 	}
 
@@ -1056,5 +1056,5 @@ pgsql_monthly_rollup(pgsql_conn_t *pg_conn,
 	arch_cond.purge_step = slurmdbd_conf->purge_step;
 	arch_cond.purge_suspend = slurmdbd_conf->purge_suspend;
 
-	return js_p_archive(pg_conn, &arch_cond);
+	return js_pg_archive(pg_conn, &arch_cond);
 }

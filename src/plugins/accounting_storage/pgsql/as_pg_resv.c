@@ -1,8 +1,8 @@
 /*****************************************************************************\
- *  reservation.c - accounting interface to pgsql - reservation
- *  related functions.
+ *  as_pg_resv.c - accounting interface to pgsql - reservation related
+ *  functions.
  *
- *  $Id: reservation.c 13061 2008-01-22 21:23:56Z da $
+ *  $Id: as_pg_resv.c 13061 2008-01-22 21:23:56Z da $
  *****************************************************************************
  *  Copyright (C) 2004-2007 The Regents of the University of California.
  *  Copyright (C) 2008 Lawrence Livermore National Security.
@@ -39,7 +39,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include "common.h"
+#include "as_pg_common.h"
 
 char *resv_table = "resv_table";
 static storage_field_t resv_table_fields[] = {
@@ -187,7 +187,7 @@ check_resv_tables(PGconn *db_conn, char *user)
 	int rc;
 
 	rc = check_table(db_conn, resv_table, resv_table_fields,
-		    resv_table_constraint, user);
+			 resv_table_constraint, user);
 
 	rc |= _create_function_add_resv(db_conn);
 	rc |= _create_function_modify_resv(db_conn);
@@ -196,14 +196,14 @@ check_resv_tables(PGconn *db_conn, char *user)
 
 
 /*
- * as_p_add_reservation - add reservation
+ * as_pg_add_reservation - add reservation
  *
  * IN pg_conn: database connection
  * IN resv: reservation to add
  * RET: error code
  */
 extern int
-as_p_add_reservation(pgsql_conn_t *pg_conn, slurmdb_reservation_rec_t *resv)
+as_pg_add_reservation(pgsql_conn_t *pg_conn, slurmdb_reservation_rec_t *resv)
 {
 	int rc = SLURM_SUCCESS;
 	char *query = NULL, *rec = NULL;
@@ -237,15 +237,15 @@ as_p_add_reservation(pgsql_conn_t *pg_conn, slurmdb_reservation_rec_t *resv)
 }
 
 /*
- * as_p_modify_reservation - modify reservation
+ * as_pg_modify_reservation - modify reservation
  *
  * IN pg_conn: database connection
  * IN resv: reservation to modify
  * RET: error code
  */
 extern int
-as_p_modify_reservation(pgsql_conn_t *pg_conn,
-			slurmdb_reservation_rec_t *resv)
+as_pg_modify_reservation(pgsql_conn_t *pg_conn,
+			 slurmdb_reservation_rec_t *resv)
 {
 	PGresult *result = NULL;
 	int rc = SLURM_SUCCESS, set = 0;
@@ -399,15 +399,15 @@ end_it:
 }
 
 /*
- * as_p_remove_reservation - remove reservation
+ * as_pg_remove_reservation - remove reservation
  *
  * IN pg_conn: database connection
  * IN resv: reservation to remove
  * RET error code
  */
 extern int
-as_p_remove_reservation(pgsql_conn_t *pg_conn,
-			slurmdb_reservation_rec_t *resv)
+as_pg_remove_reservation(pgsql_conn_t *pg_conn,
+			 slurmdb_reservation_rec_t *resv)
 {
 	int rc = SLURM_SUCCESS;
 	char *query = NULL;//, *tmp_extra = NULL;
@@ -444,7 +444,7 @@ as_p_remove_reservation(pgsql_conn_t *pg_conn,
 }
 
 /*
- * as_p_get_reservations - get reservations
+ * as_pg_get_reservations - get reservations
  *
  * IN pg_conn: database connection
  * IN uid: user performing the get operation
@@ -452,8 +452,8 @@ as_p_remove_reservation(pgsql_conn_t *pg_conn,
  * RET: reservations got
  */
 extern List
-as_p_get_reservations(pgsql_conn_t *pg_conn, uid_t uid,
-		      slurmdb_reservation_cond_t *resv_cond)
+as_pg_get_reservations(pgsql_conn_t *pg_conn, uid_t uid,
+		       slurmdb_reservation_cond_t *resv_cond)
 {
 	//DEF_TIMERS;
 	char *query = NULL, *cond = NULL;

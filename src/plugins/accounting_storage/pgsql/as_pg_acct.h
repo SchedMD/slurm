@@ -1,7 +1,7 @@
 /*****************************************************************************\
- *  problem.c - accounting interface to pgsql - problems in account data
+ *  as_pg_acct.h - accounting interface to pgsql - account replated functions.
  *
- *  $Id: problem.c 13061 2008-01-22 21:23:56Z da $
+ *  $Id: as_pg_acct.h 13061 2008-01-22 21:23:56Z da $
  *****************************************************************************
  *  Copyright (C) 2004-2007 The Regents of the University of California.
  *  Copyright (C) 2008 Lawrence Livermore National Security.
@@ -37,40 +37,31 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
+#ifndef _HAVE_AS_PGSQL_ACCT_H
+#define _HAVE_AS_PGSQL_ACCT_H
 
-#include "common.h"
+#include "as_pg_common.h"
 
-/*
- * as_p_get_problems - get problems in accouting data
- *
- * IN pg_conn: database connection
- * IN uid: user performing the get operation
- * IN assoc_q: associations to check
- * RET: list of problems
- */
-extern List
-as_p_get_problems(pgsql_conn_t *pg_conn, uid_t uid,
-		  slurmdb_association_cond_t *assoc_q)
-{
-	List ret_list = NULL;
+/* table names */
+extern char *acct_table;
 
-	if(check_db_connection(pg_conn) != SLURM_SUCCESS)
-		return NULL;
+extern int check_acct_tables(PGconn *db_conn, char *user);
 
-	ret_list = list_create(slurmdb_destroy_association_rec);
+extern int as_pg_add_accts(pgsql_conn_t *pg_conn, uint32_t uid,
+			   List acct_list);
+extern List as_pg_modify_accounts(pgsql_conn_t *pg_conn, uint32_t uid,
+				  slurmdb_account_cond_t *acct_cond,
+				  slurmdb_account_rec_t *acct);
+extern List as_pg_remove_accts(pgsql_conn_t *pg_conn, uint32_t uid,
+			       slurmdb_account_cond_t *acct_cond);
+extern List as_pg_get_accts(pgsql_conn_t *pg_conn, uid_t uid,
+			    slurmdb_account_cond_t *acct_cond);
 
-	if(get_acct_no_assocs(pg_conn, assoc_q, ret_list)
-	   != SLURM_SUCCESS)
-		goto end_it;
+extern int get_acct_no_assocs(pgsql_conn_t *pg_conn,
+			      slurmdb_association_cond_t *assoc_q,
+			      List ret_list);
+extern int get_acct_no_users(pgsql_conn_t *pg_conn,
+			     slurmdb_association_cond_t *assoc_q,
+			     List ret_list);
 
-	if(get_acct_no_users(pg_conn, assoc_q, ret_list)
-	   != SLURM_SUCCESS)
-		goto end_it;
-
-	if(get_user_no_assocs_or_no_uid(pg_conn, assoc_q, ret_list)
-	   != SLURM_SUCCESS)
-		goto end_it;
-
-end_it:
-	return ret_list;
-}
+#endif /* _HAVE_AS_PGSQL_ACCT_H */

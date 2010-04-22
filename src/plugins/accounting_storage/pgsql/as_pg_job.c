@@ -1,7 +1,7 @@
 /*****************************************************************************\
- *  jobacct.c - accounting interface to pgsql - job/step related functions.
+ *  as_pg_job.c - accounting interface to pgsql - job/step related functions.
  *
- *  $Id: jobacct.c 13061 2008-01-22 21:23:56Z da $
+ *  $Id: as_pg_job.c 13061 2008-01-22 21:23:56Z da $
  *****************************************************************************
  *  Copyright (C) 2004-2007 The Regents of the University of California.
  *  Copyright (C) 2008 Lawrence Livermore National Security.
@@ -37,7 +37,7 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
-#include "common.h"
+#include "as_pg_common.h"
 
 char *job_table = "job_table";
 static storage_field_t job_table_fields[] = {
@@ -111,8 +111,8 @@ static storage_field_t step_table_fields[] = {
 	{ "max_vsize", "INTEGER DEFAULT 0 NOT NULL" },
 	{ "max_vsize_task", "INTEGER DEFAULT 0 NOT NULL" },
 	{ "max_vsize_node", "INTEGER DEFAULT 0 NOT NULL" },
-	 /* use "FLOAT" instead of "DOUBLE PRECISION" since only one
-	    identifier supported in make_table_current() */
+	/* use "FLOAT" instead of "DOUBLE PRECISION" since only one
+	   identifier supported in make_table_current() */
 	{ "ave_vsize", "FLOAT DEFAULT 0.0 NOT NULL" },
 	{ "max_rss", "INTEGER DEFAULT 0 NOT NULL" },
 	{ "max_rss_task", "INTEGER DEFAULT 0 NOT NULL" },
@@ -364,7 +364,7 @@ check_slurmdb_tables(PGconn *db_conn, char *user)
 }
 
 /*
- * js_p_job_start - load into the storage the start of a job
+ * js_pg_job_start - load into the storage the start of a job
  *
  * IN pg_conn: database connection
  * IN cluster_name: cluster of the job
@@ -372,8 +372,8 @@ check_slurmdb_tables(PGconn *db_conn, char *user)
  * RET: error code
  */
 extern int
-js_p_job_start(pgsql_conn_t *pg_conn,
-	       struct job_record *job_ptr)
+js_pg_job_start(pgsql_conn_t *pg_conn,
+		struct job_record *job_ptr)
 {
 	int rc=SLURM_SUCCESS, track_steps = 0, reinit = 0;
 	char *jname = NULL, *nodes = NULL, *node_inx = NULL;
@@ -401,7 +401,7 @@ js_p_job_start(pgsql_conn_t *pg_conn,
 	 * be notified of the change also so make the state without
 	 * the resize. */
 	if(job_state & JOB_RESIZING) {
-		js_p_job_complete(pg_conn, job_ptr);
+		js_pg_job_complete(pg_conn, job_ptr);
 		job_state &= (~JOB_RESIZING);
 		job_ptr->db_index = 0;
 	}
@@ -514,11 +514,11 @@ no_rollup_change:
 		}
 #ifdef HAVE_BG
 		select_g_select_jobinfo_get(job_ptr->select_jobinfo,
-				     SELECT_JOBDATA_BLOCK_ID,
-				     &block_id);
+					    SELECT_JOBDATA_BLOCK_ID,
+					    &block_id);
 		select_g_select_jobinfo_get(job_ptr->select_jobinfo,
-				     SELECT_JOBDATA_NODE_CNT,
-				     &node_cnt);
+					    SELECT_JOBDATA_NODE_CNT,
+					    &node_cnt);
 #else
 		node_cnt = job_ptr->node_cnt;
 #endif
@@ -627,15 +627,15 @@ no_rollup_change:
 }
 
 /*
- * js_p_job_complete - load into the storage the end of a job
+ * js_pg_job_complete - load into the storage the end of a job
  *
  * IN pg_conn: database connection
  * IN job_ptr: job completed
  * RET error code
  */
 extern int
-js_p_job_complete(pgsql_conn_t *pg_conn,
-		  struct job_record *job_ptr)
+js_pg_job_complete(pgsql_conn_t *pg_conn,
+		   struct job_record *job_ptr)
 {
 	char *query = NULL, *nodes = NULL;
 	int rc = SLURM_SUCCESS, job_state;
@@ -650,7 +650,7 @@ js_p_job_complete(pgsql_conn_t *pg_conn,
 	}
 
 	if (check_db_connection(pg_conn) != SLURM_SUCCESS)
-			return ESLURM_DB_CONNECTION;
+		return ESLURM_DB_CONNECTION;
 
 	debug2("as/pg: job_complete() called");
 
@@ -705,15 +705,15 @@ js_p_job_complete(pgsql_conn_t *pg_conn,
 
 
 /*
- * js_p_step_start - load into the storage the start of a job step
+ * js_pg_step_start - load into the storage the start of a job step
  *
  * IN pg_conn: database connection
  * IN step_ptr: step just started
  * RET: error code
  */
 extern int
-js_p_step_start(pgsql_conn_t *pg_conn,
-		struct step_record *step_ptr)
+js_pg_step_start(pgsql_conn_t *pg_conn,
+		 struct step_record *step_ptr)
 {
 	int cpus = 0, tasks = 0, nodes = 0, task_dist = 0;
 	int rc=SLURM_SUCCESS;
@@ -760,8 +760,8 @@ js_p_step_start(pgsql_conn_t *pg_conn,
 #ifdef HAVE_BG
 		tasks = cpus = step_ptr->job_ptr->details->min_cpus;
 		select_g_select_jobinfo_get(step_ptr->job_ptr->select_jobinfo,
-				     SELECT_JOBDATA_IONODES,
-				     &ionodes);
+					    SELECT_JOBDATA_IONODES,
+					    &ionodes);
 		if(ionodes) {
 			snprintf(node_list, BUFFER_SIZE,
 				 "%s[%s]", step_ptr->job_ptr->nodes, ionodes);
@@ -770,8 +770,8 @@ js_p_step_start(pgsql_conn_t *pg_conn,
 			snprintf(node_list, BUFFER_SIZE, "%s",
 				 step_ptr->job_ptr->nodes);
 		select_g_select_jobinfo_get(step_ptr->job_ptr->select_jobinfo,
-				     SELECT_JOBDATA_NODE_CNT,
-				     &nodes);
+					    SELECT_JOBDATA_NODE_CNT,
+					    &nodes);
 #else
 		if(!step_ptr->step_layout || !step_ptr->step_layout->task_cnt) {
 			tasks = cpus = step_ptr->job_ptr->total_cpus;
@@ -822,15 +822,15 @@ js_p_step_start(pgsql_conn_t *pg_conn,
 }
 
 /*
- * js_p_step_complete - load into the storage the end of a job step
+ * js_pg_step_complete - load into the storage the end of a job step
  *
  * IN pg_conn: database connection
  * IN step_ptr: step completed
  * RET: error code
  */
 extern int
-js_p_step_complete(pgsql_conn_t *pg_conn,
-		   struct step_record *step_ptr)
+js_pg_step_complete(pgsql_conn_t *pg_conn,
+		    struct step_record *step_ptr)
 {
 	time_t now;
 	int elapsed;
@@ -970,13 +970,13 @@ js_p_step_complete(pgsql_conn_t *pg_conn,
 }
 
 /*
- * js_p_suspend - load into the storage a suspention of a job
+ * js_pg_suspend - load into the storage a suspention of a job
  *
  * IN pg_conn: database connection
  * IN job_ptr: job suspended
  */
 extern int
-js_p_suspend(pgsql_conn_t *pg_conn, struct job_record *job_ptr)
+js_pg_suspend(pgsql_conn_t *pg_conn, struct job_record *job_ptr)
 {
 	char *query = NULL;
 	int rc = SLURM_SUCCESS;
@@ -1279,7 +1279,7 @@ no_resv:
 
 
 /*
- * js_p_get_jobs_cond - get jobs
+ * js_pg_get_jobs_cond - get jobs
  *
  * IN pg_conn: database connection
  * IN uid: user performing the get operation
@@ -1287,8 +1287,8 @@ no_resv:
  * RET: list of jobs
  */
 extern List
-js_p_get_jobs_cond(pgsql_conn_t *pg_conn, uid_t uid,
-		   slurmdb_job_cond_t *job_cond)
+js_pg_get_jobs_cond(pgsql_conn_t *pg_conn, uid_t uid,
+		    slurmdb_job_cond_t *job_cond)
 {
 
 	char *query = NULL, *extra_table = NULL, *tmp = NULL, *cond = NULL,
@@ -1932,39 +1932,4 @@ js_p_get_jobs_cond(pgsql_conn_t *pg_conn, uid_t uid,
 
 	return job_list;
 
-}
-
-/*
- * js_p_archive - expire old job info from the storage
- *
- * IN pg_conn: database connection
- * IN arch_cond: which jobs to expire
- * RET: error code
- */
-extern int
-js_p_archive(pgsql_conn_t *pg_conn,
-	     slurmdb_archive_cond_t *arch_cond)
-{
-	if (check_db_connection(pg_conn) != SLURM_SUCCESS)
-		return ESLURM_DB_CONNECTION;
-
-	return ESLURM_NOT_SUPPORTED;
-}
-
-
-/*
- * js_p_archive_load  - load old job info into the storage
- *
- * IN pg_conn: database connection
- * IN arch_rec: old job info
- * RET: error code
- */
-extern int
-js_p_archive_load(pgsql_conn_t *pg_conn,
-		  slurmdb_archive_rec_t *arch_rec)
-{
-	if (check_db_connection(pg_conn) != SLURM_SUCCESS)
-		return ESLURM_DB_CONNECTION;
-
-	return ESLURM_NOT_SUPPORTED;
 }
