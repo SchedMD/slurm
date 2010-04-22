@@ -239,7 +239,7 @@ extern void node_config_delete(void *gres_data)
  * Called immediately after unpack_node_config().
  * IN node_name - name of the node for which the gres information applies
  * IN orig_config - Gres information supplied from slurm.conf
- * IN/OUT new_config - Gres information from slurm.conf if FastSchedule=0
+ * IN/OUT new_config - Updated gres info from slurm.conf if FastSchedule=0
  * IN/OUT gres_data - Gres record for this node to track usage
  * IN fast_schedule - 0: Validate and use actual hardware configuration
  *		      1: Validate hardware config, but use slurm.conf config
@@ -251,10 +251,10 @@ extern int node_config_validate(char *node_name,
 				void **gres_data, uint16_t fast_schedule,
 				char **reason_down)
 {
+	int rc = SLURM_SUCCESS;
 	gpu_status_t *gres_ptr;
 	char *node_gres_config, *tok, *last = NULL;
 	int32_t gres_config_cnt = -1;
-	int rc = SLURM_SUCCESS;
 	bool updated_config = false;
 
 	xassert(gres_data);
@@ -265,9 +265,11 @@ extern int node_config_validate(char *node_name,
 		gres_ptr->gpu_cnt_found = gres_config.gpu_cnt;
 		updated_config = true;
 	} else if (gres_ptr->gpu_cnt_found != gres_config.gpu_cnt) {
-		info("%s count changed for node %s from %u to %u",
-		     plugin_name, node_name, gres_config.gpu_cnt,
-		     gres_ptr->gpu_cnt_found);
+		if (gres_ptr->gpu_cnt_found != NO_VAL) {
+			info("%s count changed for node %s from %u to %u",
+			     plugin_name, node_name, gres_config.gpu_cnt,
+			     gres_ptr->gpu_cnt_found);
+		}
 		gres_ptr->gpu_cnt_found = gres_config.gpu_cnt;
 		updated_config = true;
 	}
@@ -317,10 +319,105 @@ extern int node_config_validate(char *node_name,
 
 	if ((fast_schedule < 2) && 
 	    (gres_ptr->gpu_cnt_found < gres_ptr->gpu_cnt_config)) {
-		*reason_down = "gres/gpu count too small";
+		if (reason_down && (*reason_down == NULL))
+			*reason_down = xstrdup("gres/gpu count too low");
 		rc = EINVAL;
 	} else if ((fast_schedule == 0) && 
-		   (gres_ptr->gpu_cnt_found >= gres_ptr->gpu_cnt_config)) {
+		   (gres_ptr->gpu_cnt_found > gres_ptr->gpu_cnt_config)) {
+		/* need to rebuild new_config */
+		char *new_configured_res = NULL;
+		if (*new_config)
+			node_gres_config = xstrdup(*new_config);
+		else
+			node_gres_config = xstrdup(orig_config);
+		tok = strtok_r(node_gres_config, ",", &last);
+		while (tok) {
+			if (new_configured_res)
+				xstrcat(new_configured_res, ",");
+			if (strcmp(tok, "gpu") && strncmp(tok, "gpu:", 4)) {
+				xstrcat(new_configured_res, tok);
+			} else {
+				xstrfmtcat(new_configured_res, "gpu:%u",
+					   gres_ptr->gpu_cnt_found);
+			}
+			tok = strtok_r(NULL, ",", &last);
+		}
+		xfree(node_gres_config);
+		xfree(*new_config);
+		*new_config = new_configured_res;
+	}
+
+	return rc;
+}
+
+/*
+ * Note that a node's configuration has been modified.
+ * IN node_name - name of the node for which the gres information applies
+ * IN orig_config - Gres information supplied from slurm.conf
+ * IN/OUT new_config - Updated gres info from slurm.conf if FastSchedule=0
+ * IN/OUT gres_list - List of Gres records for this node to track usage
+ * IN fast_schedule - 0: Validate and use actual hardware configuration
+ *		      1: Validate hardware config, but use slurm.conf config
+ *		      2: Don't validate hardware, use slurm.conf configuration
+ */
+extern int node_reconfig(char *node_name, char *orig_config, char **new_config,
+			 void **gres_data, uint16_t fast_schedule)
+{
+	int rc = SLURM_SUCCESS;
+	gpu_status_t *gres_ptr;
+	char *node_gres_config, *tok, *last = NULL;
+	int32_t gres_config_cnt = 0;
+
+	xassert(gres_data);
+	gres_ptr = (gpu_status_t *) *gres_data;
+	if (gres_ptr == NULL) {
+		/* Assume that node has not yet registerd */
+		info("%s record is NULL for node %s", plugin_name, node_name);
+		return rc;
+	}
+
+	node_gres_config = xstrdup(orig_config);
+	tok = strtok_r(node_gres_config, ",", &last);
+	while (tok) {
+		if (!strcmp(tok, "gpu")) {
+			gres_config_cnt = 1;
+			break;
+		}
+		if (!strncmp(tok, "gpu:", 4)) {
+			gres_config_cnt = strtol(tok+4, &last, 10);
+			if (last[0] == '\0')
+				;
+			else if ((last[0] == 'k') || (last[0] == 'K'))
+				gres_config_cnt *= 1024;
+			break;
+		}
+		tok = strtok_r(NULL, ",", &last);
+	}
+	gres_ptr->gpu_cnt_config = gres_config_cnt;
+	xfree(node_gres_config);
+
+	if (fast_schedule == 0)
+		gres_ptr->gpu_cnt_avail = gres_ptr->gpu_cnt_found;
+	else if (gres_ptr->gpu_cnt_config != NO_VAL)
+		gres_ptr->gpu_cnt_avail = gres_ptr->gpu_cnt_config;
+
+	if (gres_ptr->gpu_bit_alloc == NULL) {
+		gres_ptr->gpu_bit_alloc = bit_alloc(gres_ptr->gpu_cnt_avail);
+	} else if (gres_ptr->gpu_cnt_avail > 
+		   bit_size(gres_ptr->gpu_bit_alloc)) {
+		gres_ptr->gpu_bit_alloc = bit_realloc(gres_ptr->gpu_bit_alloc,
+						      gres_ptr->gpu_cnt_avail);
+	}
+	if (gres_ptr->gpu_bit_alloc == NULL)
+		fatal("bit_alloc: malloc failure");
+
+	if ((fast_schedule < 2) && 
+	    (gres_ptr->gpu_cnt_found < gres_ptr->gpu_cnt_config)) {
+		/* Do not set node DOWN, but give the node 
+		 * a chance to register with more resources */
+		gres_ptr->gpu_cnt_found = NO_VAL;
+	} else if ((fast_schedule == 0) && 
+		   (gres_ptr->gpu_cnt_found > gres_ptr->gpu_cnt_config)) {
 		/* need to rebuild new_config */
 		char *new_configured_res = NULL;
 		if (*new_config)

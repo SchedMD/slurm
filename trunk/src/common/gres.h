@@ -65,7 +65,7 @@ extern int gres_plugin_fini(void);
 /*
  * Provide a plugin-specific help message
  * IN/OUT msg - buffer provided by caller and filled in by plugin
- * IN msg_size - size of msg in bytes
+ * IN msg_size - size of msg buffer in bytes
  */
 extern int gres_plugin_help_msg(char *msg, int msg_size);
 
@@ -111,6 +111,22 @@ extern int gres_plugin_node_config_validate(char *node_name,
 					    List *gres_list,
 					    uint16_t fast_schedule,
 					    char **reason_down);
+
+/*
+ * Note that a node's configuration has been modified.
+ * IN node_name - name of the node for which the gres information applies
+ * IN orig_config - Gres information supplied from slurm.conf
+ * IN/OUT new_config - Updated gres info from slurm.conf if FastSchedule=0
+ * IN/OUT gres_list - List of Gres records for this node to track usage
+ * IN fast_schedule - 0: Validate and use actual hardware configuration
+ *		      1: Validate hardware config, but use slurm.conf config
+ *		      2: Don't validate hardware, use slurm.conf configuration
+ */
+extern int gres_plugin_node_reconfig(char *node_name,
+				     char *orig_config, 
+				     char **new_config,
+				     List *gres_list,
+				     uint16_t fast_schedule);
 
 /*
  * Log a node's current gres state
