@@ -1027,18 +1027,14 @@ extern void restore_node_features(int recover)
 			}
 		}
 
-		if (_strcmp(node_ptr->config_ptr->gres, node_ptr->gres)) {
-			error("Node %s Gres(%s) differ from slurm.conf",
-			      node_ptr->name, node_ptr->gres);
-			if (recover == 2) {
-				_update_node_gres(node_ptr->name,
-						  node_ptr->gres);
-			} else {
-				xfree(node_ptr->gres);
-				node_ptr->gres = xstrdup(node_ptr->config_ptr->
-							 gres);
-			}
-		}
+		/* We lose the gres information updated manually and always
+		 * use the information from slurm.conf */
+		(void) gres_plugin_node_reconfig(node_ptr->name,
+						 node_ptr->config_ptr->gres, 
+						 &node_ptr->gres,
+						 &node_ptr->gres_list,
+						 slurmctld_conf.fast_schedule);
+		gres_plugin_node_state_log(node_ptr->gres_list, node_ptr->name);
 	}
 }
 
@@ -1221,7 +1217,9 @@ static int _update_node_gres(char *node_names, char *gres)
 	ListIterator config_iterator;
 	struct config_record *config_ptr, *new_config_ptr;
 	struct config_record *first_new = NULL;
+	struct node_record *node_ptr;
 	int rc, config_cnt, tmp_cnt;
+	int i, i_first, i_last;
 
 	rc = node_name2bitmap(node_names, false, &node_bitmap);
 	if (rc) {
@@ -1251,7 +1249,6 @@ static int _update_node_gres(char *node_names, char *gres)
 			xfree(config_ptr->gres);
 			if (gres && gres[0])
 				config_ptr->gres = xstrdup(gres);
-//FIXME			build_config_feature_list(config_ptr);
 		} else {
 			/* partial update, split config_record */
 			new_config_ptr = _dup_config(config_ptr);
@@ -1263,7 +1260,6 @@ static int _update_node_gres(char *node_names, char *gres)
 			new_config_ptr->node_bitmap = bit_copy(tmp_bitmap);
 			new_config_ptr->nodes = bitmap2node_name(tmp_bitmap);
 
-//FIXME			build_config_feature_list(new_config_ptr);
 			_update_config_ptr(tmp_bitmap, new_config_ptr);
 
 			/* Update remaining records */
@@ -1276,6 +1272,18 @@ static int _update_node_gres(char *node_names, char *gres)
 		bit_free(tmp_bitmap);
 	}
 	list_iterator_destroy(config_iterator);
+
+	i_first = bit_ffs(node_bitmap);
+	i_last  = bit_fls(node_bitmap);
+	for (i=i_first; i<=i_last; i++) {
+		node_ptr = node_record_table_ptr + i;
+		(void) gres_plugin_node_reconfig(node_ptr->name,
+						 node_ptr->config_ptr->gres, 
+						 &node_ptr->gres,
+						 &node_ptr->gres_list,
+						 slurmctld_conf.fast_schedule);
+		gres_plugin_node_state_log(node_ptr->gres_list, node_ptr->name);
+	}
 	bit_free(node_bitmap);
 
 	info("_update_node_gres: nodes %s gres set to: %s", node_names, gres);

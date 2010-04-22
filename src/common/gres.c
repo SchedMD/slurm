@@ -89,6 +89,11 @@ typedef struct slurm_gres_ops {
 						  void **gres_data,
 						  uint16_t fast_schedule,
 						  char **reason_down );
+	int		(*node_reconfig)	( char *node_name,
+						  char *orig_config, 
+						  char **new_config,
+						  void **gres_data,
+						  uint16_t fast_schedule );
 	void		(*node_config_delete)	( void *list_element );
 	void		(*node_state_log)	( void *list_element, 
 						  char *node_name );
@@ -138,6 +143,7 @@ static int _load_gres_plugin(char *plugin_name,
 		"pack_node_config",
 		"unpack_node_config",
 		"node_config_validate",
+		"node_reconfig",
 		"node_config_delete",
 		"node_state_log"
 	};
@@ -322,7 +328,7 @@ fini:	slurm_mutex_unlock(&gres_context_lock);
 /*
  * Provide a plugin-specific help message
  * IN/OUT msg - buffer provided by caller and filled in by plugin
- * IN msg_size - size of msg in bytes
+ * IN msg_size - size of msg buffer in bytes
  */
 extern int gres_plugin_help_msg(char *msg, int msg_size)
 {
@@ -531,7 +537,7 @@ static void _gres_list_delete(void *list_element)
  * Called immediately after gres_plugin_unpack_node_config().
  * IN node_name - name of the node for which the gres information applies
  * IN orig_config - Gres information supplied from slurm.conf
- * IN/OUT new_config - Gres information from slurm.conf if FastSchedule=0
+ * IN/OUT new_config - Updated gres info from slurm.conf if FastSchedule=0
  * IN/OUT gres_list - List of Gres records for this node to track usage
  * IN fast_schedule - 0: Validate and use actual hardware configuration
  *		      1: Validate hardware config, but use slurm.conf config
@@ -575,6 +581,55 @@ extern int gres_plugin_node_config_validate(char *node_name,
 		rc = (*(gres_context[i].ops.node_config_validate))
 			(node_name, orig_config, new_config, 
 			 &gres_ptr->gres_data, fast_schedule, reason_down);
+	}
+	slurm_mutex_unlock(&gres_context_lock);
+
+	return rc;
+}
+
+/*
+ * Note that a node's configuration has been modified.
+ * IN node_name - name of the node for which the gres information applies
+ * IN orig_config - Gres information supplied from slurm.conf
+ * IN/OUT new_config - Updated gres info from slurm.conf if FastSchedule=0
+ * IN/OUT gres_list - List of Gres records for this node to track usage
+ * IN fast_schedule - 0: Validate and use actual hardware configuration
+ *		      1: Validate hardware config, but use slurm.conf config
+ *		      2: Don't validate hardware, use slurm.conf configuration
+ */
+extern int gres_plugin_node_reconfig(char *node_name,
+				     char *orig_config, 
+				     char **new_config,
+				     List *gres_list,
+				     uint16_t fast_schedule)
+{
+	int i, rc;
+	ListIterator gres_iter;
+	gres_node_state_t *gres_ptr;
+
+	rc = gres_plugin_init();
+
+	slurm_mutex_lock(&gres_context_lock);
+	if ((gres_context_cnt > 0) && (*gres_list == NULL)) {
+		*gres_list = list_create(_gres_list_delete);
+		if (*gres_list == NULL)
+			fatal("list_create malloc failure");
+	}
+	for (i=0; ((i < gres_context_cnt) && (rc == SLURM_SUCCESS)); i++) {
+		/* Find gres_node_state entry on the list */
+		gres_iter = list_iterator_create(*gres_list);
+		while ((gres_ptr = (gres_node_state_t *) list_next(gres_iter))){
+			if (gres_ptr->plugin_id == 
+			    *(gres_context[i].ops.plugin_id))
+				break;
+		}
+		list_iterator_destroy(gres_iter);
+		if (gres_ptr == NULL)
+			continue;
+
+		rc = (*(gres_context[i].ops.node_reconfig))
+			(node_name, orig_config, new_config, 
+			 &gres_ptr->gres_data, fast_schedule);
 	}
 	slurm_mutex_unlock(&gres_context_lock);
 
