@@ -127,6 +127,7 @@ running?</a></li>
 <li><a href="#stop_sched">How can I stop SLURM from scheduling jobs?</a></li>
 <li><a href="#scontrol_multi_jobs">Can I update multiple jobs with a single
 <i>scontrol</i> command?</a></li>
+<li><a href="#amazon_ec2">Can SLURM be used to run jobs on Amazon's EC2?</a></li>
 </ol>
 
 
@@ -1102,18 +1103,19 @@ regular database plugins?</b></a><br>
 While the normal storage plugins will work fine without the added
 layer of the slurmdbd there are some great benefits to using the
 slurmdbd.
-
-1. Added security.  Using the slurmdbd you can have an authenticated
-   connection to the database.
-2. Off loading processing from the controller.  With the slurmdbd there is no
-   slow down to the controller due to a slow or overloaded database.
-3. Keeping enterprise wide accounting from all slurm clusters in one database.
-   The slurmdbd is multi-threaded and designed to handle all the
-   accounting for the entire enterprise.
-4. With the new database plugins 1.3+ you can query with sacct
-   accounting stats from any node slurm is installed on.  With the
-   slurmdbd you can also query any cluster using the slurmdbd from any
-   other cluster's nodes.
+<ol>
+<li>Added security.  Using the slurmdbd you can have an authenticated
+connection to the database.</li>
+<li>Off loading processing from the controller.  With the slurmdbd there is no
+slow down to the controller due to a slow or overloaded database.</li>
+<li>Keeping enterprise wide accounting from all slurm clusters in one database.
+The slurmdbd is multi-threaded and designed to handle all the
+accounting for the entire enterprise.</li>
+<li>With the new database plugins 1.3+ you can query with sacct
+accounting stats from any node slurm is installed on.  With the
+slurmdbd you can also query any cluster using the slurmdbd from any
+other cluster's nodes.</li>
+</ol>
 
 <p><a name="debug"><b>29. How can I build SLURM with debugging symbols?</b></a></br>
 Set your CFLAGS environment variable before building.
@@ -1274,8 +1276,32 @@ advantage of its filtering and formatting options. For example:
 $ squeue -tpd -h -o "scontrol update jobid=%i priority=1000" >my.script
 </pre></p>
 
+<p><a name="amazon_ec2"><b>40. Can SLURM be used to run jobs on 
+Amazon's EC2?</b></a></br>
+<p>Yes, here is a description of use SLURM use with 
+<a href="http://aws.amazon.com/ec2/">Amazon's EC2</a> courtesy of 
+Ashley Pittman:</p>
+<p>I do this regularly and have no problem with it, the approach I take is to
+start as many instances as I want and have a wrapper around
+ec2-describe-instances that builds a /etc/hosts file with fixed hostnames
+and the actual IP addresses that have been allocated.  The only other step
+then is to generate a slurm.conf based on how many node you've chosen to boot
+that day.  I run this wrapper script on my laptop and it generates the files
+and they rsyncs them to all the instances automatically.</p>
+<p>One thing I found is that SLURM refuses to start if any nodes specified in
+the slurm.conf file aren't resolvable, I initially tried to specify cloud[0-15]
+in slurm.conf, but then if I configure less than 16 nodes in /etc/hosts this
+doesn't work so I dynamically generate the slurm.conf as well as the hosts
+file.</p>
+<p>As a comment about EC2 I run just run generic AMIs and have a persistent EBS
+storage device which I attach to the first instance when I start up.  This
+contains a /usr/local which has my software like SLURM, pdsh and MPI installed
+which I then copy over the /usr/local on the first instance and NFS export to
+all other instances.  This way I have persistent home directories and a very
+simple first-login script that configures the virtual cluster for me.</p>
+
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 5 January 2010</p>
+<p style="text-align:center;">Last modified 2 April 2010</p>
 
 <!--#include virtual="footer.txt"-->
