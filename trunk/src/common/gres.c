@@ -85,11 +85,11 @@ typedef struct slurm_gres_ops {
 	int		(*unpack_node_config)	( Buf buffer );
 	int		(*node_config_validate)	( char *node_name,
 						  char **configured_gres,
-						  List *gres_list,
+						  void **gres_data,
 						  uint16_t fast_schedule,
 						  char **reason_down );
-	int		(*node_config_delete)	( void *list_element );
-	void		(*node_state_log)	( List gres_list, 
+	void		(*node_config_delete)	( void *list_element );
+	void		(*node_state_log)	( void *list_element, 
 						  char *node_name );
 } slurm_gres_ops_t;
 
@@ -106,6 +106,11 @@ static int gres_context_cnt = -1;
 static slurm_gres_context_t *gres_context = NULL;
 static char *gres_plugin_list = NULL;
 static pthread_mutex_t gres_context_lock = PTHREAD_MUTEX_INITIALIZER;
+
+typedef struct gres_node_state {
+	uint32_t	plugin_id;
+	void		*gres_data;
+} gres_node_state_t;
 
 /* Variant of strcmp that will accept NULL string pointers */
 static int  _strcmp(const char *s1, const char *s2)
@@ -502,16 +507,20 @@ unpack_error:
 
 static void _gres_list_delete(void *list_element)
 {
-	int i, rc;
+	int i;
+	gres_node_state_t *gres_ptr;
 
 	if (gres_plugin_init() != SLURM_SUCCESS)
 		return;
 
+	gres_ptr = (gres_node_state_t *) list_element;
 	slurm_mutex_lock(&gres_context_lock);
 	for (i=0; i<gres_context_cnt; i++) {
-		rc = (*(gres_context[i].ops.node_config_delete))(list_element);
-		if (rc == SLURM_SUCCESS)
-			break;
+		if (gres_ptr->plugin_id != *(gres_context[i].ops.plugin_id))
+			continue;
+		(*(gres_context[i].ops.node_config_delete))(gres_ptr->gres_data);
+		xfree(gres_ptr);
+		break;
 	}
 	slurm_mutex_unlock(&gres_context_lock);
 }
@@ -535,6 +544,8 @@ extern int gres_plugin_node_config_validate(char *node_name,
 					    char **reason_down)
 {
 	int i, rc;
+	ListIterator gres_iter;
+	gres_node_state_t *gres_ptr;
 
 	rc = gres_plugin_init();
 
@@ -545,9 +556,23 @@ extern int gres_plugin_node_config_validate(char *node_name,
 			fatal("list_create malloc failure");
 	}
 	for (i=0; ((i < gres_context_cnt) && (rc == SLURM_SUCCESS)); i++) {
+		/* Find or create gres_node_state entry on the list */
+		gres_iter = list_iterator_create(*gres_list);
+		while ((gres_ptr = (gres_node_state_t *) list_next(gres_iter))){
+			if (gres_ptr->plugin_id == 
+			    *(gres_context[i].ops.plugin_id))
+				break;
+		}
+		list_iterator_destroy(gres_iter);
+		if (gres_ptr == NULL) {
+			gres_ptr = xmalloc(sizeof(gres_node_state_t));
+			gres_ptr->plugin_id = *(gres_context[i].ops.plugin_id);
+			list_append(*gres_list, gres_ptr);
+		}
+
 		rc = (*(gres_context[i].ops.node_config_validate))
-			(node_name, configured_gres, gres_list, fast_schedule,
-			 reason_down);
+			(node_name, configured_gres, &gres_ptr->gres_data,
+			 fast_schedule, reason_down);
 	}
 	slurm_mutex_unlock(&gres_context_lock);
 
@@ -563,13 +588,24 @@ extern void gres_plugin_node_state_log(List gres_list, char *node_name)
 {
 #if _DEBUG
 	int i;
+	ListIterator gres_iter;
+	gres_node_state_t *gres_ptr;
 
 	(void) gres_plugin_init();
 
 	slurm_mutex_lock(&gres_context_lock);
-	for (i=0; i<gres_context_cnt; i++) {
-		(*(gres_context[i].ops.node_state_log))(gres_list, node_name);
+	gres_iter = list_iterator_create(gres_list);
+	while ((gres_ptr = (gres_node_state_t *) list_next(gres_iter))) {
+		for (i=0; i<gres_context_cnt; i++) {
+			if (gres_ptr->plugin_id != 
+			    *(gres_context[i].ops.plugin_id))
+				continue;
+			(*(gres_context[i].ops.node_state_log))
+					(gres_ptr->gres_data, node_name);
+			break;
+		}
 	}
+	list_iterator_destroy(gres_iter);
 	slurm_mutex_unlock(&gres_context_lock);
 #endif
 }
