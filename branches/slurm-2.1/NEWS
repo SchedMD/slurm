@@ -13,6 +13,7 @@ documents those changes that are of interest to users and admins.
     that the job's exit status gets checked for dependent jobs prior to puring
     completed job records.
  -- BLUEGENE - fix sort order when picking blocks.
+ -- BLUEGENE - Handle case where an error block would lock up queue.
 
 * Changes in SLURM 2.1.7
 ========================
