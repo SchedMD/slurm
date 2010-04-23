@@ -59,15 +59,7 @@ _STMT_START {		\
 
 pthread_mutex_t create_dynamic_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-/* This list is for the test_job_list function because we will be
- * adding and removing blocks off the bg_lists->job_running and don't want
- * to ruin that list in submit_job it should = bg_lists->job_running
- * otherwise it should be a copy of that list.
- */
-List job_block_test_list = NULL;
-
 static void _rotate_geo(uint16_t *req_geometry, int rot_cnt);
-static int _bg_record_sort_aval_inc(bg_record_t* rec_a, bg_record_t* rec_b);
 static int _get_user_groups(uint32_t user_id, uint32_t group_id,
 			     gid_t *groups, int max_groups, int *ngroups);
 static int _test_image_perms(char *image_name, List image_list,
@@ -124,62 +116,6 @@ static void _rotate_geo(uint16_t *req_geometry, int rot_cnt)
 			SWAP(req_geometry[X], req_geometry[Y], tmp);
 			break;
 	}
-}
-
-/*
- * Comparator used for sorting blocks smallest to largest
- *
- * returns: -1: rec_a < rec_b   0: rec_a == rec_b   1: rec_a > rec_b
- *
- */
-static int _bg_record_sort_aval_inc(bg_record_t* rec_a, bg_record_t* rec_b)
-{
-	if((rec_a->job_running == BLOCK_ERROR_STATE)
-	   && (rec_b->job_running != BLOCK_ERROR_STATE))
-		return 1;
-	else if((rec_a->job_running != BLOCK_ERROR_STATE)
-	   && (rec_b->job_running == BLOCK_ERROR_STATE))
-		return -1;
-	else if(!rec_a->job_ptr && rec_b->job_ptr)
-		return 1;
-	else if(rec_a->job_ptr && !rec_b->job_ptr)
-		return -1;
-	else if(rec_a->job_ptr && rec_b->job_ptr) {
-		if(rec_a->job_ptr->start_time > rec_b->job_ptr->start_time)
-			return 1;
-		else if(rec_a->job_ptr->start_time < rec_b->job_ptr->start_time)
-			return -1;
-	}
-
-	return bg_record_cmpf_inc(rec_a, rec_b);
-}
-
-/*
- * Comparator used for sorting blocks smallest to largest
- *
- * returns: -1: rec_a > rec_b   0: rec_a == rec_b   1: rec_a < rec_b
- *
- */
-static int _bg_record_sort_aval_dec(bg_record_t* rec_a, bg_record_t* rec_b)
-{
-	if((rec_a->job_running == BLOCK_ERROR_STATE)
-	   && (rec_b->job_running != BLOCK_ERROR_STATE))
-		return -1;
-	else if((rec_a->job_running != BLOCK_ERROR_STATE)
-	   && (rec_b->job_running == BLOCK_ERROR_STATE))
-		return 1;
-	else if(!rec_a->job_ptr && rec_b->job_ptr)
-		return -1;
-	else if(rec_a->job_ptr && !rec_b->job_ptr)
-		return 1;
-	else if(rec_a->job_ptr && rec_b->job_ptr) {
-		if(rec_a->job_ptr->start_time > rec_b->job_ptr->start_time)
-			return -1;
-		else if(rec_a->job_ptr->start_time < rec_b->job_ptr->start_time)
-			return 1;
-	}
-
-	return bg_record_cmpf_inc(rec_a, rec_b);
 }
 
 /*
@@ -360,6 +296,13 @@ static bg_record_t *_find_matching_block(List block_list,
 		/* If test_only we want to fall through to tell the
 		   scheduler that it is runnable just not right now.
 		*/
+
+		/* The job running could be reset so set it back up
+		   here if there is a job_ptr
+		*/
+		if(bg_record->job_ptr)
+			bg_record->job_running = bg_record->job_ptr->job_id;
+
 		debug3("%s job_running = %d",
 		       bg_record->bg_block_id, bg_record->job_running);
 		/*block is messed up some how (BLOCK_ERROR_STATE)
@@ -724,18 +667,18 @@ static int _dynamically_request(List block_list, int *blocks_added,
 	list_of_lists = list_create(NULL);
 
 	if(user_req_nodes)
-		list_append(list_of_lists, job_block_test_list);
+		list_append(list_of_lists, bg_lists->job_running);
 	else {
 		list_append(list_of_lists, block_list);
-		if(job_block_test_list == bg_lists->job_running &&
-		   list_count(block_list) != list_count(bg_lists->booted)) {
+		if(list_count(block_list) != list_count(bg_lists->booted)) {
 			list_append(list_of_lists, bg_lists->booted);
 			if(list_count(bg_lists->booted)
-			   != list_count(job_block_test_list))
-				list_append(list_of_lists, job_block_test_list);
+			   != list_count(bg_lists->job_running))
+				list_append(list_of_lists,
+					    bg_lists->job_running);
 		} else if(list_count(block_list)
-			  != list_count(job_block_test_list)) {
-			list_append(list_of_lists, job_block_test_list);
+			  != list_count(bg_lists->job_running)) {
+			list_append(list_of_lists, bg_lists->job_running);
 		}
 	}
 	itr = list_iterator_create(list_of_lists);
@@ -765,20 +708,14 @@ static int _dynamically_request(List block_list, int *blocks_added,
 					list_append(block_list, bg_record);
 					(*blocks_added) = 1;
 				} else {
-					if(job_block_test_list
-					   == bg_lists->job_running) {
-						if(configure_block(bg_record)
-						   == SLURM_ERROR) {
-							destroy_bg_record(
-								bg_record);
-							error("_dynamically_"
-							      "request: "
-							      "unable to "
-							      "configure "
-							      "block");
-							rc = SLURM_ERROR;
-							break;
-						}
+					if(configure_block(bg_record)
+					   == SLURM_ERROR) {
+						destroy_bg_record(bg_record);
+						error("_dynamically_request: "
+						      "unable to configure "
+						      "block");
+						rc = SLURM_ERROR;
+						break;
 					}
 					list_append(block_list, bg_record);
 					print_bg_record(bg_record);
@@ -793,7 +730,7 @@ static int _dynamically_request(List block_list, int *blocks_added,
 				continue;
 			}
 			list_sort(block_list,
-				  (ListCmpF)_bg_record_sort_aval_dec);
+				  (ListCmpF)bg_record_sort_aval_inc);
 
 			rc = SLURM_SUCCESS;
 			break;
@@ -1056,15 +993,26 @@ static int _find_best_block_match(List block_list,
 
 		if(is_test) {
 			List new_blocks = NULL;
-			List job_list = NULL;
+			List job_list = list_create(NULL);
+			ListIterator itr = NULL;
 			debug("trying with empty machine");
-			slurm_mutex_lock(&block_state_mutex);
-			if(job_block_test_list == bg_lists->job_running)
-				job_list = copy_bg_list(job_block_test_list);
-			else
-				job_list = job_block_test_list;
-			slurm_mutex_unlock(&block_state_mutex);
-			list_sort(job_list, (ListCmpF)_bg_record_sort_aval_inc);
+
+			/* Here we need to make sure the blocks in the
+			   job list are those in the block list so go
+			   through and grab them and add them to a
+			   separate list.
+			*/
+			itr = list_iterator_create(block_list);
+			while((bg_record = list_next(itr))) {
+				if(bg_record->job_ptr)
+					list_append(job_list, bg_record);
+			}
+			list_iterator_destroy(itr);
+
+			/* Block list is already in the correct order,
+			   earliest avaliable first,
+			   so the job list will also be. No need to
+			   sort. */
 			while(1) {
 				bool track_down_nodes = true;
 				/* this gets altered in
@@ -1072,9 +1020,8 @@ static int _find_best_block_match(List block_list,
 				for(i=0; i<BA_SYSTEM_DIMENSIONS; i++)
 					request.geometry[i] = req_geometry[i];
 
-				bg_record = list_pop(job_list);
-				if(bg_record) {
-					if(bg_record->job_ptr)
+				if((bg_record = list_pop(job_list))) {
+					if(bg_record->job_ptr) {
 						debug2("taking off %d(%s) "
 						       "started at %d "
 						       "ends at %d",
@@ -1084,8 +1031,21 @@ static int _find_best_block_match(List block_list,
 						       start_time,
 						       bg_record->job_ptr->
 						       end_time);
-					else if(bg_record->job_running
-						== BLOCK_ERROR_STATE)
+						/* Mark the block as
+						   not running a job,
+						   this should
+						   correspond to the
+						   pointer in the
+						   block_list.  We
+						   only look at the
+						   job_running var so
+						   don't remove the
+						   job_ptr.
+						*/
+						bg_record->job_running =
+							NO_JOB_RUNNING;
+					} else if(bg_record->job_running
+						  == BLOCK_ERROR_STATE)
 						debug2("taking off (%s) "
 						       "which is in an error "
 						       "state",
@@ -1101,7 +1061,6 @@ static int _find_best_block_match(List block_list,
 				if(!(new_blocks = create_dynamic_block(
 					     block_list, &request, job_list,
 					     track_down_nodes))) {
-					destroy_bg_record(bg_record);
 					if(errno == ESLURM_INTERCONNECT_FAILURE
 					   || !list_count(job_list)) {
 						char *nodes;
@@ -1128,10 +1087,9 @@ static int _find_best_block_match(List block_list,
 				if(!(*found_bg_record)) {
 					error("got an empty list back");
 					list_destroy(new_blocks);
-					if(bg_record) {
-						destroy_bg_record(bg_record);
+					if(bg_record)
 						continue;
-					} else {
+					else {
 						rc = SLURM_ERROR;
 						break;
 					}
@@ -1139,37 +1097,15 @@ static int _find_best_block_match(List block_list,
 				bit_and(slurm_block_bitmap,
 					(*found_bg_record)->bitmap);
 
-				if(bg_record) {
+				if(bg_record)
 					(*found_bg_record)->job_ptr
 						= bg_record->job_ptr;
-					destroy_bg_record(bg_record);
-				}
-
-				if(job_block_test_list
-				   != bg_lists->job_running) {
-					list_append(block_list,
-						    (*found_bg_record));
-					while((bg_record =
-					       list_pop(new_blocks))) {
-						if(block_exist_in_list(
-							   block_list,
-							   bg_record))
-							destroy_bg_record(
-								bg_record);
-						else {
-							list_append(block_list,
-								    bg_record);
-//					print_bg_record(bg_record);
-						}
-					}
-				}
 
 				list_destroy(new_blocks);
 				break;
 			}
 
-			if(job_block_test_list == bg_lists->job_running)
-				list_destroy(job_list);
+			list_destroy(job_list);
 
 			goto end_it;
 		} else {
@@ -1470,8 +1406,6 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 	if(bg_conf->layout_mode == LAYOUT_DYNAMIC)
 		slurm_mutex_lock(&create_dynamic_mutex);
 
-	job_block_test_list = bg_lists->job_running;
-
 	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
 				    SELECT_JOBDATA_CONN_TYPE, &conn_type);
 	if(conn_type == SELECT_NAV) {
@@ -1536,7 +1470,7 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 	/* just remove the preemptable jobs now since we are treating
 	   this as a run now deal */
 preempt:
-	list_sort(block_list, (ListCmpF)_bg_record_sort_aval_dec);
+	list_sort(block_list, (ListCmpF)bg_record_sort_aval_inc);
 
 	rc = _find_best_block_match(block_list, &blocks_added,
 				    job_ptr, slurm_block_bitmap, min_nodes,

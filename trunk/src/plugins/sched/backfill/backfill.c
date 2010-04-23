@@ -558,6 +558,7 @@ static void _attempt_backfill(void)
 		}
 
 		job_ptr->start_time = MAX(job_ptr->start_time, start_res);
+		last_job_update = now;
 		if (job_ptr->start_time <= now) {
 			int rc = _start_job(job_ptr, resv_bitmap);
 			if ((rc == SLURM_SUCCESS) && job_ptr->time_min) {
