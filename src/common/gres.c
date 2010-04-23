@@ -648,6 +648,9 @@ extern void gres_plugin_node_state_log(List gres_list, char *node_name)
 	ListIterator gres_iter;
 	gres_node_state_t *gres_ptr;
 
+	if (gres_list == NULL)
+		return;
+
 	(void) gres_plugin_init();
 
 	slurm_mutex_lock(&gres_context_lock);
