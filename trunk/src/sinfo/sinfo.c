@@ -111,8 +111,7 @@ int main(int argc, char *argv[])
 		    (params.iterate || params.verbose || params.long_output))
 			print_date();
 
-		if (_query_server(&partition_msg, &node_msg, &block_msg)
-		    != 0)
+		if (_query_server(&partition_msg, &node_msg, &block_msg) != 0)
 			rc = 1;
 		else if (params.bg_flag)
 			(void) _bg_report(block_msg);
@@ -246,19 +245,18 @@ _query_server(partition_info_msg_t ** part_pptr,
 		show_flags |= SHOW_ALL;
 
 	if (old_part_ptr) {
-		error_code =
-		    slurm_load_partitions(old_part_ptr->last_update,
-					  &new_part_ptr, show_flags);
+		error_code = slurm_load_partitions(old_part_ptr->last_update,
+						   &new_part_ptr, show_flags);
 		if (error_code == SLURM_SUCCESS)
 			slurm_free_partition_info_msg(old_part_ptr);
 		else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
 			error_code = SLURM_SUCCESS;
 			new_part_ptr = old_part_ptr;
 		}
-	} else
-		error_code =
-		    slurm_load_partitions((time_t) NULL, &new_part_ptr,
-					  show_flags);
+	} else {
+		error_code = slurm_load_partitions((time_t) NULL, &new_part_ptr,
+						   show_flags);
+	}
 	if (error_code) {
 		slurm_perror("slurm_load_partitions");
 		return error_code;
@@ -268,18 +266,18 @@ _query_server(partition_info_msg_t ** part_pptr,
 	*part_pptr = new_part_ptr;
 
 	if (old_node_ptr) {
-		error_code =
-		    slurm_load_node(old_node_ptr->last_update,
-				    &new_node_ptr, show_flags);
+		error_code = slurm_load_node(old_node_ptr->last_update,
+					     &new_node_ptr, show_flags);
 		if (error_code == SLURM_SUCCESS)
 			slurm_free_node_info_msg(old_node_ptr);
 		else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
 			error_code = SLURM_SUCCESS;
 			new_node_ptr = old_node_ptr;
 		}
-	} else
+	} else {
 		error_code = slurm_load_node((time_t) NULL, &new_node_ptr,
-				show_flags);
+					     show_flags);
+	}
 
 	if (error_code) {
 		slurm_perror("slurm_load_node");
