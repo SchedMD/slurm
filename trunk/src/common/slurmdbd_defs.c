@@ -1405,6 +1405,11 @@ static int _send_fini_msg(void)
 	Buf buffer;
 	dbd_fini_msg_t req;
 
+	/* If the connection is already gone, we don't need to send a
+	   fini. */
+	if(_fd_writeable(slurmdbd_fd) == -1)
+		return SLURM_SUCCESS;
+
 	buffer = init_buf(1024);
 	pack16((uint16_t) DBD_FINI, buffer);
 	req.commit  = 0;

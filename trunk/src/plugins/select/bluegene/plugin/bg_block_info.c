@@ -184,6 +184,12 @@ extern int block_ready(struct job_record *job_ptr)
 			} else if ((bg_record->user_uid == job_ptr->user_id)
 				   && (bg_record->state
 				       == RM_PARTITION_READY)) {
+				/* Clear the state just incase we
+				   missed it somehow.
+				*/
+				job_ptr->job_state &= (~JOB_CONFIGURING);
+				last_job_update = time(NULL);
+				
 				rc = 1;
 			} else if (bg_record->user_uid != job_ptr->user_id)
 				rc = 0;

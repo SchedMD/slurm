@@ -448,7 +448,8 @@ extern int sacctmgr_add_qos(int argc, char *argv[])
 		}
 	} else {
 		exit_code=1;
-		fprintf(stderr, " Problem adding QOS.\n");
+		fprintf(stderr, " Problem adding QOS: %s\n",
+			slurm_strerror(rc));
 		rc = SLURM_ERROR;
 	}
 

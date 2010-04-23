@@ -203,6 +203,13 @@ documents those changes that are of interest to users and admins.
 ========================
  -- Update BUILD_NOTES for AIX and bgp systems on how to get sview to
     build correctly.
+ -- Update man page for scontrol when nodes are in the "MIXED" state.
+ -- Better error messages for sacctmgr.
+ -- Fix bug in allocation of CPUs with select/cons_res and --cpus-per-task
+    option.
+ -- Fix bug in dependency support for afterok and afternotok options to insure
+    that the job's exit status gets checked for dependent jobs prior to puring
+    completed job records.
 
 * Changes in SLURM 2.1.7
 ========================

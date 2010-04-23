@@ -7068,7 +7068,26 @@ extern bool job_independent(struct job_record *job_ptr, int will_run)
 {
 	struct job_details *detail_ptr = job_ptr->details;
 	time_t now = time(NULL);
-	int rc;
+	int depend_rc;
+
+	/* Test dependencies first so we can cancel jobs before dependent
+	 * jobs records get purged (e.g. afterok, afternotok) */
+	depend_rc = test_job_dependency(job_ptr);
+	if (depend_rc == 1) {
+		job_ptr->state_reason = WAIT_DEPENDENCY;
+		xfree(job_ptr->state_desc);
+		return false;
+	} else if (depend_rc == 2) {
+		time_t now = time(NULL);
+		info("Job dependency can't be satisfied, cancelling job %u",
+		     job_ptr->job_id);
+		job_ptr->job_state	= JOB_CANCELLED;
+		xfree(job_ptr->state_desc);
+		job_ptr->start_time	= now;
+		job_ptr->end_time	= now;
+		job_completion_logger(job_ptr);
+		return false;
+	}
 
 	if (detail_ptr && (detail_ptr->begin_time > now)) {
 		job_ptr->state_reason = WAIT_TIME;
@@ -7082,37 +7101,18 @@ extern bool job_independent(struct job_record *job_ptr, int will_run)
 		return false;	/* not yet time */
 	}
 
-	rc = test_job_dependency(job_ptr);
-	if (rc == 0) {
-		bool send_acct_rec = false;
-		if (job_ptr->state_reason == WAIT_DEPENDENCY) {
-			job_ptr->state_reason = WAIT_NO_REASON;
-			xfree(job_ptr->state_desc);
-		}
-		if (detail_ptr && (detail_ptr->begin_time == 0)) {
-			detail_ptr->begin_time = now;
-			send_acct_rec = true;
-		} else if (job_ptr->state_reason == WAIT_TIME) {
-			job_ptr->state_reason = WAIT_NO_REASON;
-			xfree(job_ptr->state_desc);
-			send_acct_rec = true;
-		}
-		return true;
-	} else if (rc == 1) {
-		job_ptr->state_reason = WAIT_DEPENDENCY;
+	/* Job is eligible to start now */
+	if (job_ptr->state_reason == WAIT_DEPENDENCY) {
+		job_ptr->state_reason = WAIT_NO_REASON;
 		xfree(job_ptr->state_desc);
-		return false;
-	} else {	/* rc == 2 */
-		time_t now = time(NULL);
-		info("Job dependency can't be satisfied, cancelling job %u",
-			job_ptr->job_id);
-		job_ptr->job_state	= JOB_CANCELLED;
-		xfree(job_ptr->state_desc);
-		job_ptr->start_time	= now;
-		job_ptr->end_time	= now;
-		job_completion_logger(job_ptr);
-		return false;
 	}
+	if (detail_ptr && (detail_ptr->begin_time == 0)) {
+		detail_ptr->begin_time = now;
+	} else if (job_ptr->state_reason == WAIT_TIME) {
+		job_ptr->state_reason = WAIT_NO_REASON;
+		xfree(job_ptr->state_desc);
+	}
+	return true;
 }
 
 /*
