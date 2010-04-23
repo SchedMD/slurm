@@ -546,6 +546,10 @@ static void _sync_agent(bg_update_t *bg_update_ptr)
 		list_push(bg_lists->booted, bg_record);
 
 	if(bg_record->state == RM_PARTITION_READY) {
+		if(bg_record->job_ptr) {
+			bg_record->job_ptr->job_state &= (~JOB_CONFIGURING);
+			last_job_update = time(NULL);
+		}
 		if(bg_record->user_uid != bg_update_ptr->job_ptr->user_id) {
 			int set_user_rc = SLURM_SUCCESS;
 

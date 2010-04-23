@@ -412,7 +412,8 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 		}
 	} else {
 		exit_code=1;
-		fprintf(stderr, " Problem adding clusters\n");
+		fprintf(stderr, " Problem adding clusters: %s\n",
+			slurm_strerror(rc));
 	}
 end_it:
 	list_destroy(cluster_list);

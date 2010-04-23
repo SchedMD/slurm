@@ -758,7 +758,7 @@ extern int test_job_dependency(struct job_record *job_ptr)
 {
 	ListIterator depend_iter;
 	struct depend_spec *dep_ptr;
-	bool failure = false;
+	bool failure = false, depends = false;
  	struct job_queue *job_queue = NULL;
  	int i, now, job_queue_size = 0;
  	struct job_record *qjob_ptr;
@@ -796,7 +796,7 @@ extern int test_job_dependency(struct job_record *job_ptr)
  			if (now)
  				list_delete_item(depend_iter);
  			else
-				break;
+				depends = true;
  		} else if (dep_ptr->job_ptr->job_id != dep_ptr->job_id) {
 			/* job is gone, dependency lifted */
 			list_delete_item(depend_iter);
@@ -804,16 +804,16 @@ extern int test_job_dependency(struct job_record *job_ptr)
 			if (!IS_JOB_PENDING(dep_ptr->job_ptr))
 				list_delete_item(depend_iter);
 			else
-				break;
+				depends = true;
 		} else if (dep_ptr->depend_type == SLURM_DEPEND_AFTER_ANY) {
 			if (IS_JOB_FINISHED(dep_ptr->job_ptr))
 				list_delete_item(depend_iter);
 			else
-				break;
+				depends = true;
 		} else if (dep_ptr->depend_type == SLURM_DEPEND_AFTER_NOT_OK) {
 			if (!IS_JOB_FINISHED(dep_ptr->job_ptr))
-				break;
-			if (!IS_JOB_COMPLETE(dep_ptr->job_ptr))
+				depends = true;
+			else if (!IS_JOB_COMPLETE(dep_ptr->job_ptr))
 				list_delete_item(depend_iter);
 			else {
 				failure = true;
@@ -821,8 +821,8 @@ extern int test_job_dependency(struct job_record *job_ptr)
 			}
 		} else if (dep_ptr->depend_type == SLURM_DEPEND_AFTER_OK) {
 			if (!IS_JOB_FINISHED(dep_ptr->job_ptr))
-				break;
-			if (IS_JOB_COMPLETE(dep_ptr->job_ptr))
+				depends = true;
+			else if (IS_JOB_COMPLETE(dep_ptr->job_ptr))
 				list_delete_item(depend_iter);
 			else {
 				failure = true;
@@ -835,7 +835,7 @@ extern int test_job_dependency(struct job_record *job_ptr)
 
 	if (failure)
 		return 2;
-	if (dep_ptr)
+	if (depends)
 		return 1;
 	return 0;
 }

@@ -232,7 +232,7 @@ referenced or recorded.</p>
 <ul>
 <li><b>AccountingStorageEnforce</b>:
 This option contains a comma separated list of options you may want to
- enforce.  The valid options are
+ enforce.  The valid options are any comma separated combination of
 <ul>
 <li>associations - This will prevent users from running jobs if
 their <i>association</i> is not in the database. This option will

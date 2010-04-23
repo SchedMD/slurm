@@ -679,8 +679,11 @@ Use quotes to enclose a reason having more than one word.
 .TP
 \fIState\fP=<state>
 Identify the state to be assigned to the node. Possible values are  "NoResp",
-"ALLOC", "ALLOCATED", "DOWN", "DRAIN", "FAIL", "FAILING", "IDLE", "MAINT",
-"POWER_DOWN", "POWER_UP", or "RESUME".
+"ALLOC", "ALLOCATED", "DOWN", "DRAIN", "FAIL", "FAILING", "IDLE",
+"MIXED", "MAINT", "POWER_DOWN", "POWER_UP", or "RESUME".
+If a node is in a "MIXED" state it usually means the node is in
+multiple states.  For instance if only part of the node is "ALLOCATED"
+and the rest of the node is "IDLE" the state will be "MIXED".
 If you want to remove a node from service, you typically want to set
 it's state to "DRAIN".
 "FAILING" is similar to "DRAIN" except that some applications will
