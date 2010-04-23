@@ -75,7 +75,7 @@
 
 /* used to set flags to empty */
 #define SLURM_PROTOCOL_NO_FLAGS 0
-#define SLURM_GLOBAL_AUTH_KEY   1
+#define SLURM_GLOBAL_AUTH_KEY   0x0001
 
 #if MONGO_IMPLEMENTATION
 #  include <src/common/slurm_protocol_mongo_common.h>
