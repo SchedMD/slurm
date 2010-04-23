@@ -179,6 +179,9 @@ extern List create_dynamic_block(List block_list,
 			break;
 		}
 
+		/* Sort the list so the small blocks are in the order
+		 * of ionodes. */
+		list_sort(block_list, (ListCmpF)bg_record_cmpf_inc);
 		request->conn_type = SELECT_SMALL;
 		new_blocks = list_create(destroy_bg_record);
 		/* check only blocks that are free and small */
@@ -209,6 +212,8 @@ extern List create_dynamic_block(List block_list,
 		   == SLURM_SUCCESS)
 			goto finished;
 
+		/* Re-sort the list back to the original order. */
+		list_sort(block_list, (ListCmpF)bg_record_sort_aval_inc);
 		list_destroy(new_blocks);
 		new_blocks = NULL;
 		debug2("small block not able to be placed inside others");
@@ -612,8 +617,8 @@ static int _breakup_blocks(List block_list, List new_blocks,
 	int cnodes = request->procs / bg_conf->cpu_ratio;
 	int curr_bp_bit = -1;
 
-	debug2("proc count = %d cnodes = %d size = %d",
-	       request->procs, cnodes, request->size);
+	debug2("cpu_count= %d cnodes=%d o_free=%d o_small=%d",
+	       request->procs, cnodes, only_free, only_small);
 
 	switch(cnodes) {
 	case 16:
@@ -651,6 +656,7 @@ static int _breakup_blocks(List block_list, List new_blocks,
 		/* check for free blocks on the first and second time */
 		if(only_free && (bg_record->state != RM_PARTITION_FREE))
 			continue;
+
 		/* check small blocks first */
 		if(only_small && (bg_record->node_cnt > bg_conf->bp_node_cnt))
 			continue;

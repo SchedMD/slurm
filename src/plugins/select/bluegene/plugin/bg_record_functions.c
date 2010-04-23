@@ -522,6 +522,34 @@ extern int bg_record_cmpf_inc(bg_record_t* rec_a, bg_record_t* rec_b)
 	return 0;
 }
 
+/*
+ * Comparator used for sorting blocks from earliest avaliable to lastest
+ *
+ * returns: -1: rec_a < rec_b   0: rec_a == rec_b   1: rec_a > rec_b
+ *
+ */
+extern int bg_record_sort_aval_inc(bg_record_t* rec_a, bg_record_t* rec_b)
+{
+	if((rec_a->job_running == BLOCK_ERROR_STATE)
+	   && (rec_b->job_running != BLOCK_ERROR_STATE))
+		return 1;
+	else if((rec_a->job_running != BLOCK_ERROR_STATE)
+	   && (rec_b->job_running == BLOCK_ERROR_STATE))
+		return -1;
+	else if(!rec_a->job_ptr && rec_b->job_ptr)
+		return -1;
+	else if(rec_a->job_ptr && !rec_b->job_ptr)
+		return 1;
+	else if(rec_a->job_ptr && rec_b->job_ptr) {
+		if(rec_a->job_ptr->end_time > rec_b->job_ptr->end_time)
+			return 1;
+		else if(rec_a->job_ptr->end_time < rec_b->job_ptr->end_time)
+			return -1;
+	}
+
+	return bg_record_cmpf_inc(rec_a, rec_b);
+}
+
 /* if looking at the main list this should have some nice
  * block_state_mutex locks around it.
  */
