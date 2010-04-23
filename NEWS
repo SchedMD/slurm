@@ -15,6 +15,8 @@ documents those changes that are of interest to users and admins.
     -Added new configuration parameter GresPlugins to define plugins used to
      manage generic resources.
     -Added framework for gres plugins.
+ -- Slurmd modified to log slow slurmstepd startup and note possible file system
+    problem.
 
 * Changes in SLURM 2.2.0.pre5
 =============================

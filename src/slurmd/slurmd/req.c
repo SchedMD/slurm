@@ -562,6 +562,7 @@ _forkexec_slurmstepd(slurmd_step_type_t type, void *req,
 		return SLURM_FAILURE;
 	} else if (pid > 0) {
 		int rc = 0;
+		time_t start_time = time(NULL);
 		/*
 		 * Parent sends initialization data to the slurmstepd
 		 * over the to_stepd pipe, and waits for the return code
@@ -583,6 +584,13 @@ _forkexec_slurmstepd(slurmd_step_type_t type, void *req,
 			error("Error reading return code message "
 			      "from slurmstepd: %m");
 			rc = SLURM_FAILURE;
+		} else {
+			int delta_time = time(NULL) - start_time;
+			if (delta_time > 5) {
+				info("Warning: slurmstepd startup took %d sec, "
+				     "possible file system problem or full "
+				     "memory", delta_time);
+			}
 		}
 
 	done:
