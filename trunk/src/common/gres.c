@@ -326,7 +326,7 @@ fini:	slurm_mutex_unlock(&gres_context_lock);
  */
 
 /*
- * Provide a plugin-specific help message
+ * Provide a plugin-specific help message for salloc, sbatch and srun
  * IN/OUT msg - buffer provided by caller and filled in by plugin
  * IN msg_size - size of msg buffer in bytes
  */
@@ -588,7 +588,7 @@ extern int gres_plugin_node_config_validate(char *node_name,
 }
 
 /*
- * Note that a node's configuration has been modified.
+ * Note that a node's configuration has been modified (e.g. "scontol update ..")
  * IN node_name - name of the node for which the gres information applies
  * IN orig_config - Gres information supplied from slurm.conf
  * IN/OUT new_config - Updated gres info from slurm.conf if FastSchedule=0
