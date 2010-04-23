@@ -122,6 +122,7 @@ extern void process_nodes(bg_record_t *bg_reord, bool startup);
 extern List copy_bg_list(List in_list);
 extern void copy_bg_record(bg_record_t *fir_record, bg_record_t *sec_record);
 extern int bg_record_cmpf_inc(bg_record_t *rec_a, bg_record_t *rec_b);
+extern int bg_record_sort_aval_inc(bg_record_t* rec_a, bg_record_t* rec_b);
 
 /* return bg_record from a bg_list */
 extern bg_record_t *find_bg_record_in_list(List my_list, char *bg_block_id);
