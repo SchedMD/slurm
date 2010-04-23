@@ -7,6 +7,8 @@ documents those changes that are of interest to users and admins.
     build correctly.
  -- Update man page for scontrol when nodes are in the "MIXED" state.
  -- Better error messages for sacctmgr.
+ -- Fix bug in allocation of CPUs with select/cons_res and --cpus-per-task
+    option.
 
 * Changes in SLURM 2.1.7
 ========================
