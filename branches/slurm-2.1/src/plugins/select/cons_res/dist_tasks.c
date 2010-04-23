@@ -71,7 +71,7 @@
 static int _compute_c_b_task_dist(struct job_record *job_ptr)
 {
 	bool over_subscribe = false;
-	uint32_t n, i, tid, maxtasks;
+	uint32_t n, i, tid, maxtasks, l;
 	uint16_t *avail_cpus;
 	job_resources_t *job_res = job_ptr->job_resrcs;
 	if (!job_res || !job_res->cpus) {
@@ -82,6 +82,9 @@ static int _compute_c_b_task_dist(struct job_record *job_ptr)
 	maxtasks = job_res->nprocs;
 	avail_cpus = job_res->cpus;
 	job_res->cpus = xmalloc(job_res->nhosts * sizeof(uint16_t));
+
+        if (job_ptr->details->cpus_per_task > 1)
+                 maxtasks = maxtasks / job_ptr->details->cpus_per_task;	
 
 	for (tid = 0, i = 0; (tid < maxtasks); i++) { /* cycle counter */
 		bool space_remaining = false;
@@ -96,10 +99,12 @@ static int _compute_c_b_task_dist(struct job_record *job_ptr)
 		for (n = 0; ((n < job_res->nhosts) && (tid < maxtasks)); n++) {
 			if ((i < avail_cpus[n]) || over_subscribe) {
 				tid++;
-				if (job_res->cpus[n] < avail_cpus[n])
-					job_res->cpus[n]++;
-				if ((i + 1) < avail_cpus[n])
-					space_remaining = true;
+				for (l = 0; l < job_ptr->details->cpus_per_task; l++) {
+					if (job_res->cpus[n] < avail_cpus[n])
+						job_res->cpus[n]++;
+					if ((i + 1) < avail_cpus[n])
+						space_remaining = true;
+				}
 			}
 		}
 		if (!space_remaining) {
