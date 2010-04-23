@@ -63,18 +63,23 @@ extern int gres_plugin_fini(void);
  */
 
 /*
- * Provide a plugin-specific help message
+ * Perform reconfig, re-read any configuration files
+ * OUT did_change - set if gres configuration changed
+ */
+extern int gres_plugin_reconfig(bool *did_change);
+
+/*
+ * Provide a plugin-specific help message for salloc, sbatch and srun
  * IN/OUT msg - buffer provided by caller and filled in by plugin
  * IN msg_size - size of msg buffer in bytes
  */
 extern int gres_plugin_help_msg(char *msg, int msg_size);
 
 /*
- * Perform reconfig, re-read any configuration files
- * OUT did_change - set if gres configuration changed
+ **************************************************************************
+ *                 PLUGIN CALLS FOR SLURMD DAEMON                         *
+ **************************************************************************
  */
-extern int gres_plugin_reconfig(bool *did_change);
-
 /*
  * Load this node's configuration (i.e. how many resources it has)
  */
@@ -85,6 +90,11 @@ extern int gres_plugin_load_node_config(void);
  */
 extern int gres_plugin_pack_node_config(Buf buffer);
 
+/*
+ **************************************************************************
+ *                 PLUGIN CALLS FOR SLURMCTLD DAEMON                      *
+ **************************************************************************
+ */
 /*
  * Unpack this node's configuration from a buffer
  * IN buffer - message buffer to unpack
@@ -113,7 +123,7 @@ extern int gres_plugin_node_config_validate(char *node_name,
 					    char **reason_down);
 
 /*
- * Note that a node's configuration has been modified.
+ * Note that a node's configuration has been modified (e.g. "scontol update ..")
  * IN node_name - name of the node for which the gres information applies
  * IN orig_config - Gres information supplied from slurm.conf
  * IN/OUT new_config - Updated gres info from slurm.conf if FastSchedule=0
