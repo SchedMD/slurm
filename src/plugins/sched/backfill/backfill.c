@@ -121,6 +121,9 @@ static bool _job_is_completing(void);
 static bool _more_work(void);
 static int  _num_feature_count(struct job_record *job_ptr);
 static int  _start_job(struct job_record *job_ptr, bitstr_t *avail_bitmap);
+static bool _test_resv_overlap(node_space_map_t *node_space, 
+			       bitstr_t *use_bitmap, uint32_t start_time, 
+			       uint32_t end_reserve);
 static int  _try_sched(struct job_record *job_ptr, bitstr_t **avail_bitmap,
 		       uint32_t min_nodes, uint32_t max_nodes,
 		       uint32_t req_nodes);
@@ -556,10 +559,19 @@ static void _attempt_backfill(void)
 			break;
 		}
 
+		end_reserve = job_ptr->start_time + (time_limit * 60);
+		if (_test_resv_overlap(node_space, avail_bitmap, 
+				       job_ptr->start_time, end_reserve)) {
+			/* This job overlaps with an existing reservation for
+			 * job to be backfill scheduled, which the sched 
+			 * plugin does not know about. Try again later. */
+			later_start = job_ptr->start_time;
+			goto TRY_LATER;
+		}
+
 		/*
 		 * Add reservation to scheduling table
 		 */
-		end_reserve = job_ptr->start_time + (time_limit * 60);
 		bit_not(avail_bitmap);
 		_add_reservation(job_ptr->start_time, end_reserve,
 				 avail_bitmap, node_space, &node_space_recs);
@@ -721,4 +733,32 @@ static void _add_reservation(uint32_t start_time, uint32_t end_reserve,
 		    ((j = node_space[j].next) == 0))
 			break;
 	}
+}
+
+/*
+ * Determine if the resource specification for a new job overlaps with a
+ *	reservation that the backfill scheduler has made for a job to be
+ *	started in the future.
+ * IN use_bitmap - nodes to be allocated
+ * IN start_time - start time of job
+ * IN end_reserve - end time of job
+ */
+static bool _test_resv_overlap(node_space_map_t *node_space, 
+			       bitstr_t *use_bitmap, uint32_t start_time, 
+			       uint32_t end_reserve)
+{
+	bool overlap = false;
+	int j;
+
+	for (j=0; ; ) {
+		if ((node_space[j].end_time   > start_time) &&
+		    (node_space[j].begin_time < end_reserve) &&
+		    (!bit_super_set(use_bitmap, node_space[j].avail_bitmap))) {
+			overlap = true;
+			break;
+		}
+		if ((j = node_space[j].next) == 0)
+			break;
+	}
+	return overlap;
 }
