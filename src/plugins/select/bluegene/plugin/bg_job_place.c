@@ -1009,8 +1009,22 @@ static int _find_best_block_match(List block_list,
 			*/
 			itr = list_iterator_create(block_list);
 			while((bg_record = list_next(itr))) {
-				if(bg_record->job_ptr)
+				if(bg_record->job_running != NO_JOB_RUNNING)
 					list_append(job_list, bg_record);
+				/* Since the error blocks are at the
+				   end we only really need to look at
+				   the first one to make sure it will
+				   work, so don't add more than one to
+				   the job list.
+				   We do need to check for at least
+				   one error block because that lets
+				   us know not to hold up the entire
+				   machine for a job that won't run
+				   until the error is removed which
+				   could be a very long time.
+				*/
+				if(bg_record->job_running == BLOCK_ERROR_STATE)
+					break;
 			}
 			list_iterator_destroy(itr);
 
@@ -1102,10 +1116,12 @@ static int _find_best_block_match(List block_list,
 				bit_and(slurm_block_bitmap,
 					(*found_bg_record)->bitmap);
 
-				if(bg_record)
+				if(bg_record) {
+					(*found_bg_record)->job_running =
+						bg_record->job_running;
 					(*found_bg_record)->job_ptr
 						= bg_record->job_ptr;
-
+				}
 				list_destroy(new_blocks);
 				break;
 			}
