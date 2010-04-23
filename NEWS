@@ -210,7 +210,8 @@ documents those changes that are of interest to users and admins.
  -- Fix bug in dependency support for afterok and afternotok options to insure
     that the job's exit status gets checked for dependent jobs prior to puring
     completed job records.
- -- BLUEGENE - fix sort order when picking blocks.
+ -- Fix bug in sched/backfill that could set an incorrect expected start time
+    for a job.
 
 * Changes in SLURM 2.1.7
 ========================
