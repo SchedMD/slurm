@@ -438,7 +438,11 @@ static void _attempt_backfill(void)
 
 		if (part_ptr == NULL) {
 			part_ptr = find_part_record(job_ptr->partition);
-			xassert(part_ptr);
+			if (part_ptr == NULL) {
+				error("Could not find partition %s for job %u",
+				      job_ptr->partition, job_ptr->job_id);
+				continue;
+			}
 			job_ptr->part_ptr = part_ptr;
 			error("partition pointer reset for job %u, part %s",
 			      job_ptr->job_id, job_ptr->partition);
@@ -575,12 +579,15 @@ static void _attempt_backfill(void)
 			} else {
 				job_ptr->time_limit = orig_time_limit;
 			}
-			if (rc == ESLURM_ACCOUNTING_POLICY)
+			if (rc == ESLURM_ACCOUNTING_POLICY) {
 				continue;
-			else if (rc != SLURM_SUCCESS) {
+			} else if (rc != SLURM_SUCCESS) {
 				/* Planned to start job, but something bad
 				 * happended. */
 				break;
+			} else {
+				/* Started this job, move to next one */
+				continue;
 			}
 		} else
 			job_ptr->time_limit = orig_time_limit;
