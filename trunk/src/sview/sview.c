@@ -46,6 +46,8 @@ typedef struct {
 	int page_num;
 } page_thr_t;
 
+static void _get_info_tabs(GtkTable *table, display_data_t *display_data);
+
 /* globals */
 sview_config_t sview_config;
 int adding = 1;
@@ -105,13 +107,20 @@ display_data_t main_display_data[] = {
 	 get_info_node, specific_info_node,
 	 set_menus_node, NULL},
 #endif
-	{G_TYPE_NONE, SUBMIT_PAGE, "Submit Job", FALSE, -1,
+	{G_TYPE_NONE, SUBMIT_PAGE, NULL, FALSE, -1,
 	 refresh_main, NULL, NULL, NULL,
 	 NULL, NULL, NULL},
+	{G_TYPE_NONE, ADMIN_PAGE, NULL, FALSE, -1,
+	 refresh_main, NULL, NULL,
+	 NULL, NULL,
+	 NULL, NULL},
 	{G_TYPE_NONE, INFO_PAGE, NULL, FALSE, -1,
 	 refresh_main, NULL, NULL,
 	 NULL, NULL,
 	 NULL, NULL},
+	{G_TYPE_NONE, NEW_PAGE, "New", TRUE, -1,
+	 refresh_main, NULL, NULL, _get_info_tabs,
+	 NULL, NULL, NULL},
 	{G_TYPE_NONE, -1, NULL, FALSE, -1}
 };
 
@@ -307,6 +316,46 @@ static void _set_grid(GtkToggleAction *action)
 		gtk_widget_show(grid_window);
 		sview_config.show_grid = TRUE;
 	}
+
+	return;
+}
+
+static void _toggle_tab_visiblity(GtkToggleButton *toggle_button,
+				  display_data_t *display_data)
+{
+	static bool already_here = false;
+	int page_num;
+	GtkWidget *visible_tab;
+
+	/* When calling the set active below it signals this again, so
+	   to avoid an infinite loop we will just fall out.
+	*/
+	if(already_here)
+		return;
+
+	already_here = true;
+	page_num = display_data->extra;
+	visible_tab = gtk_notebook_get_nth_page(
+		GTK_NOTEBOOK(main_notebook), page_num);
+	if(toggle_button) {
+		sview_config.page_visible[page_num] =
+			gtk_toggle_button_get_active(toggle_button);
+	}
+
+	if(sview_config.page_visible[page_num]) {
+		gtk_widget_show(visible_tab);
+		sview_config.page_visible[page_num] = TRUE;
+	} else {
+		gtk_widget_hide(visible_tab);
+		sview_config.page_visible[page_num] = FALSE;
+	}
+	if(sview_config.page_check_widget[page_num])
+		gtk_toggle_button_set_active(
+			GTK_TOGGLE_BUTTON(
+				sview_config.page_check_widget[page_num]),
+			sview_config.page_visible[page_num]);
+
+	already_here = false;
 
 	return;
 }
@@ -679,6 +728,54 @@ void *_popup_thr_main(void *arg)
 	return NULL;
 }
 
+static void _get_info_tabs(GtkTable *table, display_data_t *display_data)
+{
+	int i;
+	static bool init = 0;
+
+	if(!table || init) {
+		return;
+	}
+
+	init = 1;
+	/* This only needs to be ran once */
+	for(i=0; i<PAGE_CNT; i++) {
+		if(main_display_data[i].id == -1)
+			break;
+
+		if(!main_display_data[i].name
+		   || (i == NEW_PAGE))
+			continue;
+
+		sview_config.page_check_widget[i] =
+			gtk_check_button_new_with_label(
+				main_display_data[i].name);
+		gtk_table_attach_defaults(
+			table,
+			sview_config.page_check_widget[i],
+			0, 1, i, i+1);
+		if(sview_config.page_visible[i])
+			gtk_toggle_button_set_active(
+				GTK_TOGGLE_BUTTON(
+					sview_config.page_check_widget[i]),
+				true);
+		else
+			gtk_toggle_button_set_active(
+				GTK_TOGGLE_BUTTON(
+					sview_config.page_check_widget[i]),
+				false);
+		g_signal_connect(
+			G_OBJECT(sview_config.page_check_widget[i]),
+			"toggled",
+			G_CALLBACK(_toggle_tab_visiblity),
+			main_display_data+i);
+	}
+
+	gtk_widget_show_all(GTK_WIDGET(table));
+	return;
+
+}
+
 extern void refresh_main(GtkAction *action, gpointer user_data)
 {
 	int page = gtk_notebook_get_current_page(GTK_NOTEBOOK(main_notebook));
@@ -710,9 +807,8 @@ extern void close_tab(GtkWidget *widget, GdkEventButton *event,
 	if(event->button == 3)
 		/* don't do anything with a right click */
 		return;
-
-	gtk_widget_hide(gtk_notebook_get_nth_page(GTK_NOTEBOOK(main_notebook),
-						  display_data->extra));
+	sview_config.page_visible[display_data->extra] = false;
+	_toggle_tab_visiblity(NULL, display_data);
 	//g_print("hid %d\n", display_data->extra);
 }
 
@@ -823,7 +919,8 @@ int main(int argc, char *argv[])
 		visible_tab = gtk_notebook_get_nth_page(
 			GTK_NOTEBOOK(main_notebook), i);
 		if(sview_config.page_visible[i]
-		   || (i == sview_config.page_default))
+		   || (i == sview_config.page_default)
+		   || (i == NEW_PAGE))
 			gtk_widget_show(visible_tab);
 		else
 			gtk_widget_hide(visible_tab);

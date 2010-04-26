@@ -4,7 +4,7 @@ documents those changes that are of interest to users and admins.
 * Changes in SLURM 2.2.0.pre6
 =============================
  -- sview - added ability to see database configuration.
- -- sview - added ability to remove visible tabs.
+ -- sview - added ability to add/remove visible tabs.
  -- sview - change way grid highlighting takes place on selected objects.
  -- Added infrastructure to support allocation of generic node resources.
     -Added node configuration parameter of Gres=.

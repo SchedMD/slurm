@@ -922,8 +922,7 @@ extern void get_info_block(GtkTable *table, display_data_t *display_data)
 		goto end_it;
 	}
 
-	if((block_error_code = get_new_info_block(&block_ptr,
-							force_refresh))
+	if((block_error_code = get_new_info_block(&block_ptr, force_refresh))
 	   == SLURM_NO_CHANGE_IN_DATA) {
 		if((!display_widget || view == ERROR_VIEW)
 		   || (part_error_code != SLURM_NO_CHANGE_IN_DATA)) {
@@ -948,6 +947,9 @@ extern void get_info_block(GtkTable *table, display_data_t *display_data)
 	}
 
 display_it:
+
+	if(!part_info_ptr || !block_ptr)
+		return;
 
 	block_list = _create_block_list(part_info_ptr, block_ptr,
 					changed);

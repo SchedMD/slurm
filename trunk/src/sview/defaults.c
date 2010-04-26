@@ -109,6 +109,7 @@ extern int load_defaults()
 	uint32_t hash_val = NO_VAL;
 	int rc = SLURM_SUCCESS;
 	char *tmp_str;
+
 	_init_sview_conf();
 
 	if(!home)

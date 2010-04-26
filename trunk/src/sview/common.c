@@ -609,15 +609,24 @@ extern void create_page(GtkNotebook *notebook, display_data_t *display_data)
 	GtkWidget *label = gtk_label_new(display_data->name);
 	GtkWidget *close_button = gtk_event_box_new();
 	GtkWidget *table = gtk_table_new(1, 3, FALSE);
-	GtkWidget *image = gtk_image_new_from_stock(
-		GTK_STOCK_DIALOG_ERROR, GTK_ICON_SIZE_SMALL_TOOLBAR);
+	GtkWidget *image = NULL;
 	int err;
+
+	if(display_data->id == NEW_PAGE) {
+		table = gtk_table_new(PAGE_CNT, 3, FALSE);
+		image = gtk_image_new_from_stock(
+			GTK_STOCK_ADD, GTK_ICON_SIZE_SMALL_TOOLBAR);
+	} else {
+		table = gtk_table_new(1, 3, FALSE);
+		image = gtk_image_new_from_stock(
+			GTK_STOCK_DIALOG_ERROR, GTK_ICON_SIZE_SMALL_TOOLBAR);
+		g_signal_connect(G_OBJECT(close_button), "button-press-event",
+				 G_CALLBACK(close_tab),
+				 display_data);
+	}
 
 	gtk_container_add(GTK_CONTAINER(close_button), image);
 	gtk_widget_set_size_request(close_button, 10, 10);
-	g_signal_connect(G_OBJECT(close_button), "button-press-event",
-			 G_CALLBACK(close_tab),
-			 display_data);
 
 	//gtk_event_box_set_above_child(GTK_EVENT_BOX(close_button), FALSE);
 
