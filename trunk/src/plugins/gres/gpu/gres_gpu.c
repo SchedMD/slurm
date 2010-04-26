@@ -110,10 +110,10 @@ typedef struct gpu_config {
 } gpu_config_t;
 static gpu_config_t gres_config;
 
-/* Gres state as used by slurmctld. Includes data from gres_config loaded
+/* Gres node state as used by slurmctld. Includes data from gres_config loaded
  * from slurmd, resources configured (may be more or less than actually found)
  * plus resource allocation information. */
-typedef struct gpu_status {
+typedef struct gpu_node_state {
 	/* Actual hardware found */
 	uint32_t gpu_cnt_found;
 
@@ -126,7 +126,18 @@ typedef struct gpu_status {
 	/* Resources currently allocated to jobs */
 	uint32_t  gpu_cnt_alloc;
 	bitstr_t *gpu_bit_alloc;
-} gpu_status_t;
+} gpu_node_state_t;
+
+/* Gres job state as used by slurmctld. */
+typedef struct gpu_job_state {
+	/* Count of resources needed */
+	uint32_t gpu_cnt_alloc;
+
+	/* If 0 then gpu_cnt_alloc is per node,
+	 * if 1 then gpu_cnt_alloc is per CPU */
+	uint8_t  gpu_cnt_mult;
+} gpu_job_state_t;
+
 
 /*
  * This will be the output for "--gres=help" option.
@@ -225,10 +236,10 @@ unpack_error:
  */
 extern void node_config_delete(void *gres_data)
 {
-	gpu_status_t *gres_ptr;
+	gpu_node_state_t *gres_ptr;
 
 	xassert(gres_data);
-	gres_ptr = (gpu_status_t *) gres_data;
+	gres_ptr = (gpu_node_state_t *) gres_data;
 	if (gres_ptr->gpu_bit_alloc)
 		bit_free(gres_ptr->gpu_bit_alloc);
 	xfree(gres_ptr);
@@ -252,15 +263,15 @@ extern int node_config_validate(char *node_name,
 				char **reason_down)
 {
 	int rc = SLURM_SUCCESS;
-	gpu_status_t *gres_ptr;
+	gpu_node_state_t *gres_ptr;
 	char *node_gres_config, *tok, *last = NULL;
 	int32_t gres_config_cnt = -1;
 	bool updated_config = false;
 
 	xassert(gres_data);
-	gres_ptr = (gpu_status_t *) *gres_data;
+	gres_ptr = (gpu_node_state_t *) *gres_data;
 	if (gres_ptr == NULL) {
-		gres_ptr = xmalloc(sizeof(gpu_status_t));
+		gres_ptr = xmalloc(sizeof(gpu_node_state_t));
 		*gres_data = gres_ptr;
 		gres_ptr->gpu_cnt_found = gres_config.gpu_cnt;
 		updated_config = true;
@@ -364,12 +375,12 @@ extern int node_reconfig(char *node_name, char *orig_config, char **new_config,
 			 void **gres_data, uint16_t fast_schedule)
 {
 	int rc = SLURM_SUCCESS;
-	gpu_status_t *gres_ptr;
+	gpu_node_state_t *gres_ptr;
 	char *node_gres_config, *tok, *last = NULL;
 	int32_t gres_config_cnt = 0;
 
 	xassert(gres_data);
-	gres_ptr = (gpu_status_t *) *gres_data;
+	gres_ptr = (gpu_node_state_t *) *gres_data;
 	if (gres_ptr == NULL) {
 		/* Assume that node has not yet registerd */
 		info("%s record is NULL for node %s", plugin_name, node_name);
@@ -446,7 +457,7 @@ extern int node_reconfig(char *node_name, char *orig_config, char **new_config,
 
 extern int pack_node_state(void *gres_data, Buf buffer)
 {
-	gpu_status_t *gres_ptr = (gpu_status_t *) gres_data;
+	gpu_node_state_t *gres_ptr = (gpu_node_state_t *) gres_data;
 
 	pack32(gres_ptr->gpu_cnt_avail,  buffer);
 	pack32(gres_ptr->gpu_cnt_alloc,  buffer);
@@ -457,9 +468,9 @@ extern int pack_node_state(void *gres_data, Buf buffer)
 
 extern int unpack_node_state(void **gres_data, Buf buffer)
 {
-	gpu_status_t *gres_ptr;
+	gpu_node_state_t *gres_ptr;
 
-	gres_ptr = xmalloc(sizeof(gpu_status_t));
+	gres_ptr = xmalloc(sizeof(gpu_node_state_t));
 
 	gres_ptr->gpu_cnt_found = NO_VAL;
 	if (buffer) {
@@ -497,10 +508,10 @@ unpack_error:
 
 extern void node_state_log(void *gres_data, char *node_name)
 {
-	gpu_status_t *gres_ptr;
+	gpu_node_state_t *gres_ptr;
 
 	xassert(gres_data);
-	gres_ptr = (gpu_status_t *) gres_data;
+	gres_ptr = (gpu_node_state_t *) gres_data;
 	info("%s state for %s", plugin_name, node_name);
 	info("  gpu_cnt found:%u configured:%u avail:%u alloc:%u",
 	     gres_ptr->gpu_cnt_found, gres_ptr->gpu_cnt_config,
@@ -512,4 +523,51 @@ extern void node_state_log(void *gres_data, char *node_name)
 	} else {
 		info("  gpu_bit_alloc:NULL");
 	}
+}
+
+extern void job_config_delete(void *gres_data)
+{
+	xfree(gres_data);
+}
+
+extern int job_gres_validate(char *config, void **gres_data)
+{
+	char *last;
+	gpu_job_state_t *gres_ptr;
+	uint32_t cnt;
+	uint8_t mult = 0;
+
+	if (!strcmp(config, "gpu")) {
+		cnt = 1;
+	} else if (!strncmp(config, "gpu:", 4)) {
+		cnt = strtol(config+4, &last, 10);
+		if (last[0] == '\0')
+			;
+		else if ((last[0] == 'k') || (last[0] == 'K'))
+			cnt *= 1024;
+		else if (!strcasecmp(last, "*cpu"))
+			mult = 1;
+	} else
+		return SLURM_ERROR;
+
+	gres_ptr = xmalloc(sizeof(gpu_job_state_t));
+	gres_ptr->gpu_cnt_alloc = cnt;
+	gres_ptr->gpu_cnt_mult  = mult;
+	*gres_data = gres_ptr;
+	return SLURM_SUCCESS;
+}
+
+extern void job_state_log(void *gres_data, uint32_t job_id)
+{
+	gpu_job_state_t *gres_ptr;
+	char *mult;
+
+	xassert(gres_data);
+	gres_ptr = (gpu_job_state_t *) gres_data;
+	info("%s state for job %u", plugin_name, job_id);
+	if (gres_ptr->gpu_cnt_mult)
+		mult = "cpu";
+	else
+		mult = "node";
+	info("  gpu_cnt %u per %s", gres_ptr->gpu_cnt_alloc, mult);
 }
