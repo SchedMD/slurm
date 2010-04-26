@@ -393,6 +393,7 @@ struct job_record {
 	uint32_t exit_code;		/* exit code for job (status from
 					 * wait call) */
 	char *gres;			/* generic resources */
+	List gres_list;			/* generic resource allocation detaisl */
 	uint32_t group_id;		/* group submitted under */
 	uint32_t job_id;		/* job ID */
 	struct job_record *job_next;	/* next entry with same hash index */

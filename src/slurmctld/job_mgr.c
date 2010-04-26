@@ -3043,10 +3043,11 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		error_code = ESLURM_INVALID_FEATURE;
 		goto cleanup_fail;
 	}
-	if (build_gres_list(job_ptr)) {
+	if (gres_plugin_job_gres_validate(job_ptr->gres, &job_ptr->gres_list)) {
 		error_code = ESLURM_INVALID_GRES;
 		goto cleanup_fail;
 	}
+	gres_plugin_job_state_log(job_ptr->gres_list, job_ptr->job_id);
 
 	if ((error_code = validate_job_resv(job_ptr)))
 		goto cleanup_fail;

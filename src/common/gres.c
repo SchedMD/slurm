@@ -94,13 +94,18 @@ typedef struct slurm_gres_ops {
 						  char **new_config,
 						  void **gres_data,
 						  uint16_t fast_schedule );
-	void		(*node_config_delete)	( void *list_element );
+	void		(*node_config_delete)	( void *gres_data );
 	int		(*pack_node_state)	( void *gres_data,
 						  Buf buffer );
 	int		(*unpack_node_state)	( void **gres_data,
 						  Buf buffer );
-	void		(*node_state_log)	( void *list_element, 
+	void		(*node_state_log)	( void *gres_data, 
 						  char *node_name );
+	void		(*job_config_delete)	( void *gres_data );
+	int		(*job_gres_validate)	( char *config,
+						  void **gres_data);
+	void		(*job_state_log)	( void *gres_data, 
+						  uint32_t job_id );
 } slurm_gres_ops_t;
 
 typedef struct slurm_gres_context {
@@ -117,10 +122,10 @@ static slurm_gres_context_t *gres_context = NULL;
 static char *gres_plugin_list = NULL;
 static pthread_mutex_t gres_context_lock = PTHREAD_MUTEX_INITIALIZER;
 
-typedef struct gres_node_state {
+typedef struct gres_state {
 	uint32_t	plugin_id;
 	void		*gres_data;
-} gres_node_state_t;
+} gres_state_t;
 
 /* Variant of strcmp that will accept NULL string pointers */
 static int  _strcmp(const char *s1, const char *s2)
@@ -151,7 +156,10 @@ static int _load_gres_plugin(char *plugin_name,
 		"node_config_delete",
 		"pack_node_state",
 		"unpack_node_state",
-		"node_state_log"
+		"node_state_log",
+		"job_config_delete",
+		"job_gres_validate",
+		"job_state_log"
 	};
 	int n_syms = sizeof(syms) / sizeof(char *);
 
@@ -525,15 +533,15 @@ unpack_error:
 	goto fini;
 }
 
-static void _gres_list_delete(void *list_element)
+static void _gres_node_list_delete(void *list_element)
 {
 	int i;
-	gres_node_state_t *gres_ptr;
+	gres_state_t *gres_ptr;
 
 	if (gres_plugin_init() != SLURM_SUCCESS)
 		return;
 
-	gres_ptr = (gres_node_state_t *) list_element;
+	gres_ptr = (gres_state_t *) list_element;
 	slurm_mutex_lock(&gres_context_lock);
 	for (i=0; i<gres_context_cnt; i++) {
 		if (gres_ptr->plugin_id != *(gres_context[i].ops.plugin_id))
@@ -566,27 +574,27 @@ extern int gres_plugin_node_config_validate(char *node_name,
 {
 	int i, rc;
 	ListIterator gres_iter;
-	gres_node_state_t *gres_ptr;
+	gres_state_t *gres_ptr;
 
 	rc = gres_plugin_init();
 
 	slurm_mutex_lock(&gres_context_lock);
 	if ((gres_context_cnt > 0) && (*gres_list == NULL)) {
-		*gres_list = list_create(_gres_list_delete);
+		*gres_list = list_create(_gres_node_list_delete);
 		if (*gres_list == NULL)
 			fatal("list_create malloc failure");
 	}
 	for (i=0; ((i < gres_context_cnt) && (rc == SLURM_SUCCESS)); i++) {
-		/* Find or create gres_node_state entry on the list */
+		/* Find or create gres_state entry on the list */
 		gres_iter = list_iterator_create(*gres_list);
-		while ((gres_ptr = (gres_node_state_t *) list_next(gres_iter))){
+		while ((gres_ptr = (gres_state_t *) list_next(gres_iter))) {
 			if (gres_ptr->plugin_id == 
 			    *(gres_context[i].ops.plugin_id))
 				break;
 		}
 		list_iterator_destroy(gres_iter);
 		if (gres_ptr == NULL) {
-			gres_ptr = xmalloc(sizeof(gres_node_state_t));
+			gres_ptr = xmalloc(sizeof(gres_state_t));
 			gres_ptr->plugin_id = *(gres_context[i].ops.plugin_id);
 			list_append(*gres_list, gres_ptr);
 		}
@@ -618,20 +626,20 @@ extern int gres_plugin_node_reconfig(char *node_name,
 {
 	int i, rc;
 	ListIterator gres_iter;
-	gres_node_state_t *gres_ptr;
+	gres_state_t *gres_ptr;
 
 	rc = gres_plugin_init();
 
 	slurm_mutex_lock(&gres_context_lock);
 	if ((gres_context_cnt > 0) && (*gres_list == NULL)) {
-		*gres_list = list_create(_gres_list_delete);
+		*gres_list = list_create(_gres_node_list_delete);
 		if (*gres_list == NULL)
 			fatal("list_create malloc failure");
 	}
 	for (i=0; ((i < gres_context_cnt) && (rc == SLURM_SUCCESS)); i++) {
-		/* Find gres_node_state entry on the list */
+		/* Find gres_state entry on the list */
 		gres_iter = list_iterator_create(*gres_list);
-		while ((gres_ptr = (gres_node_state_t *) list_next(gres_iter))){
+		while ((gres_ptr = (gres_state_t *) list_next(gres_iter))){
 			if (gres_ptr->plugin_id == 
 			    *(gres_context[i].ops.plugin_id))
 				break;
@@ -664,7 +672,7 @@ extern int gres_plugin_pack_node_state(List gres_list, Buf buffer,
 	uint32_t magic = GRES_MAGIC;
 	uint16_t rec_cnt = 0;
 	ListIterator gres_iter;
-	gres_node_state_t *gres_ptr;
+	gres_state_t *gres_ptr;
 
 	if (gres_list == NULL) {
 		pack16(rec_cnt, buffer);
@@ -681,7 +689,7 @@ extern int gres_plugin_pack_node_state(List gres_list, Buf buffer,
 
 	slurm_mutex_lock(&gres_context_lock);
 	gres_iter = list_iterator_create(gres_list);
-	while ((gres_ptr = (gres_node_state_t *) list_next(gres_iter))) {
+	while ((gres_ptr = (gres_state_t *) list_next(gres_iter))) {
 		for (i=0; i<gres_context_cnt; i++) {
 			if (gres_ptr->plugin_id != 
 			    *(gres_context[i].ops.plugin_id))
@@ -736,7 +744,8 @@ extern int gres_plugin_unpack_node_state(List *gres_list, Buf buffer,
 	int i, rc, rc2;
 	uint32_t gres_size, magic, tail_offset, plugin_id;
 	uint16_t rec_cnt;
-	gres_node_state_t *gres_ptr;
+	gres_state_t *gres_ptr;
+	void *gres_data;
 
 	safe_unpack16(&rec_cnt, buffer);
 	if (rec_cnt == 0)
@@ -746,7 +755,7 @@ extern int gres_plugin_unpack_node_state(List *gres_list, Buf buffer,
 
 	slurm_mutex_lock(&gres_context_lock);
 	if ((gres_context_cnt > 0) && (*gres_list == NULL)) {
-		*gres_list = list_create(_gres_list_delete);
+		*gres_list = list_create(_gres_node_list_delete);
 		if (*gres_list == NULL)
 			fatal("list_create malloc failure");
 	}
@@ -779,14 +788,14 @@ extern int gres_plugin_unpack_node_state(List *gres_list, Buf buffer,
 			continue;
 		}
 		gres_context[i].unpacked_info = true;
-		gres_ptr = xmalloc(sizeof(gres_node_state_t));
-		gres_ptr->plugin_id = *(gres_context[i].ops.plugin_id);
 		rc2 = (*(gres_context[i].ops.unpack_node_state))
-				(&gres_ptr->gres_data, buffer);
+				(&gres_data, buffer);
 		if (rc2 != SLURM_SUCCESS) {
 			rc = rc2;
-			xfree(gres_ptr);
 		} else {
+			gres_ptr = xmalloc(sizeof(gres_state_t));
+			gres_ptr->plugin_id = *(gres_context[i].ops.plugin_id);
+			gres_ptr->gres_data = gres_data;
 			list_append(*gres_list, gres_ptr);
 		}
 	}
@@ -800,15 +809,14 @@ fini:	/* Insure that every gres plugin is called for unpack, even if no data
 		error("gres_plugin_unpack_node_state: no info packed for %s "
 		      "by node %s",
 		      gres_context[i].gres_type, node_name);
-		gres_ptr = xmalloc(sizeof(gres_node_state_t));
-		gres_ptr->plugin_id = *(gres_context[i].ops.plugin_id);
-		list_append(*gres_list, gres_ptr);
 		rc2 = (*(gres_context[i].ops.unpack_node_state))
-				(&gres_ptr->gres_data, NULL);
+				(&gres_data, NULL);
 		if (rc2 != SLURM_SUCCESS) {
 			rc = rc2;
-			xfree(gres_ptr);
 		} else {
+			gres_ptr = xmalloc(sizeof(gres_state_t));
+			gres_ptr->plugin_id = *(gres_context[i].ops.plugin_id);
+			gres_ptr->gres_data = gres_data;
 			list_append(*gres_list, gres_ptr);
 		}
 	}
@@ -833,7 +841,7 @@ extern void gres_plugin_node_state_log(List gres_list, char *node_name)
 #if _DEBUG
 	int i;
 	ListIterator gres_iter;
-	gres_node_state_t *gres_ptr;
+	gres_state_t *gres_ptr;
 
 	if (gres_list == NULL)
 		return;
@@ -842,13 +850,123 @@ extern void gres_plugin_node_state_log(List gres_list, char *node_name)
 
 	slurm_mutex_lock(&gres_context_lock);
 	gres_iter = list_iterator_create(gres_list);
-	while ((gres_ptr = (gres_node_state_t *) list_next(gres_iter))) {
+	while ((gres_ptr = (gres_state_t *) list_next(gres_iter))) {
 		for (i=0; i<gres_context_cnt; i++) {
 			if (gres_ptr->plugin_id != 
 			    *(gres_context[i].ops.plugin_id))
 				continue;
 			(*(gres_context[i].ops.node_state_log))
 					(gres_ptr->gres_data, node_name);
+			break;
+		}
+	}
+	list_iterator_destroy(gres_iter);
+	slurm_mutex_unlock(&gres_context_lock);
+#endif
+}
+
+static void _gres_job_list_delete(void *list_element)
+{
+	int i;
+	gres_state_t *gres_ptr;
+
+	if (gres_plugin_init() != SLURM_SUCCESS)
+		return;
+
+	gres_ptr = (gres_state_t *) list_element;
+	slurm_mutex_lock(&gres_context_lock);
+	for (i=0; i<gres_context_cnt; i++) {
+		if (gres_ptr->plugin_id != *(gres_context[i].ops.plugin_id))
+			continue;
+		(*(gres_context[i].ops.job_config_delete))(gres_ptr->gres_data);
+		xfree(gres_ptr);
+		break;
+	}
+	slurm_mutex_unlock(&gres_context_lock);
+}
+
+/*
+ * Given a job's requested gres configuration, validate it and build a gres list
+ * IN req_config - job request's gres input string
+ * OUT gres_list - List of Gres records for this job to track usage
+ * RET SLURM_SUCCESS or ESLURM__INVALIDGRES
+ */
+extern int gres_plugin_job_gres_validate(char *req_config, List *gres_list)
+{
+	char *tmp_str, *tok, *last;
+	int i, rc, rc2;
+	gres_state_t *gres_ptr;
+	void *gres_data;
+
+	if ((req_config == NULL) || (req_config[0] == '\0')) {
+		*gres_list = NULL;
+		return SLURM_SUCCESS;
+	}
+
+	if ((rc = gres_plugin_init()) != SLURM_SUCCESS)
+		return rc;
+
+	slurm_mutex_lock(&gres_context_lock);
+	tmp_str = xstrdup(req_config);
+	if ((gres_context_cnt > 0) && (*gres_list == NULL)) {
+		*gres_list = list_create(_gres_job_list_delete);
+		if (*gres_list == NULL)
+			fatal("list_create malloc failure");
+	}
+
+	tok = strtok_r(tmp_str, ",", &last);
+	while (tok && (rc == SLURM_SUCCESS)) {
+		rc2 = SLURM_ERROR;
+		for (i=0; i<gres_context_cnt; i++) {
+			rc2 = (*(gres_context[i].ops.job_gres_validate))
+					(tok, &gres_data);
+			if (rc2 != SLURM_SUCCESS)
+				continue;
+			gres_ptr = xmalloc(sizeof(gres_state_t));
+			gres_ptr->plugin_id = *(gres_context[i].ops.plugin_id);
+			gres_ptr->gres_data = gres_data;
+			list_append(*gres_list, gres_ptr);
+			break;		/* processed it */
+		}
+		if (rc2 != SLURM_SUCCESS) {
+			info("Invalid gres job specification %s", tok);
+			rc = ESLURM_INVALID_GRES;
+			break;
+		}
+		tok = strtok_r(NULL, ",", &last);
+	}
+	slurm_mutex_unlock(&gres_context_lock);
+
+	xfree(tmp_str);
+	return rc;
+}
+
+/*
+ * Log a job's current gres state
+ * IN gres_list - generated by gres_plugin_job_gres_validate()
+ * IN job_id - job's ID
+ */
+extern void gres_plugin_job_state_log(List gres_list, uint32_t job_id)
+{
+#if _DEBUG
+	int i;
+	ListIterator gres_iter;
+	gres_state_t *gres_ptr;
+
+	if (gres_list == NULL)
+		return;
+
+	(void) gres_plugin_init();
+
+	slurm_mutex_lock(&gres_context_lock);
+	gres_iter = list_iterator_create(gres_list);
+	while ((gres_ptr = (gres_state_t *) list_next(gres_iter))) {
+		for (i=0; i<gres_context_cnt; i++) {
+			if (gres_ptr->plugin_id != 
+			    *(gres_context[i].ops.plugin_id))
+				continue;
+			(*(gres_context[i].ops.job_state_log))
+					(gres_ptr->gres_data, job_id);
 			break;
 		}
 	}
