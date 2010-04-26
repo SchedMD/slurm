@@ -188,8 +188,8 @@ typedef struct {
 	List max_submit_jobs_list; /* list of char * */
 	List max_wall_pj_list; /* list of char * */
 
-	List partition_list;	/* list of char * */
 	List parent_acct_list;	/* name of parent account */
+	List partition_list;	/* list of char * */
 
 	List qos_list; /* list of char * */
 
