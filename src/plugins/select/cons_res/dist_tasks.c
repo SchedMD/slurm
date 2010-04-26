@@ -120,7 +120,7 @@ static int _compute_c_b_task_dist(struct job_record *job_ptr)
 static int _compute_plane_dist(struct job_record *job_ptr)
 {
 	bool over_subscribe = false;
-	uint32_t n, i, p, tid, maxtasks;
+	uint32_t n, i, p, tid, maxtasks, l;
 	uint16_t *avail_cpus, plane_size = 1;
 	job_resources_t *job_res = job_ptr->job_resrcs;
 	if (!job_res || !job_res->cpus) {
@@ -130,6 +130,9 @@ static int _compute_plane_dist(struct job_record *job_ptr)
 
 	maxtasks = job_res->ncpus;
 	avail_cpus = job_res->cpus;
+
+        if (job_ptr->details->cpus_per_task > 1)
+                 maxtasks = maxtasks / job_ptr->details->cpus_per_task;	
 
 	if (job_ptr->details && job_ptr->details->mc_ptr)
 		plane_size = job_ptr->details->mc_ptr->plane_size;
@@ -155,8 +158,13 @@ static int _compute_plane_dist(struct job_record *job_ptr)
 				if ((job_res->cpus[n] < avail_cpus[n]) ||
 				    over_subscribe) {
 					tid++;
-					if (job_res->cpus[n] < avail_cpus[n])
-						job_res->cpus[n]++;
+					for (l=0; 
+					     l<job_ptr->details->cpus_per_task;
+					     l++) {
+						if (job_res->cpus[n] < 
+						    avail_cpus[n])
+							job_res->cpus[n]++;
+					}
 				}
 			}
 			if (job_res->cpus[n] < avail_cpus[n])
