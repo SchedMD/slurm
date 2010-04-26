@@ -424,7 +424,11 @@ static void _attempt_backfill(void)
 
 		if (part_ptr == NULL) {
 			part_ptr = find_part_record(job_ptr->partition);
-			xassert(part_ptr);
+			if (part_ptr == NULL) {
+				error("Could not find partition %s for job %u",
+				      job_ptr->partition, job_ptr->job_id);
+				continue;
+			}
 			job_ptr->part_ptr = part_ptr;
 			error("partition pointer reset for job %u, part %s",
 			      job_ptr->job_id, job_ptr->partition);
