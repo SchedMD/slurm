@@ -869,7 +869,7 @@ extern gboolean left_button_pressed(GtkTreeView *tree_view,
 	}
 	last_user_data = iter.user_data;
 
-	if(!sview_config.admin_mode)
+	if(!working_sview_config.admin_mode)
 		rc = true;
 
 	last_time = now;
@@ -936,7 +936,7 @@ extern gboolean row_clicked(GtkTreeView *tree_view, GdkEventButton *event,
 		right_button_pressed(tree_view, path, event,
 				     signal_params, ROW_CLICKED);
 		did_something = TRUE;
-	} else if(!sview_config.admin_mode)
+	} else if(!working_sview_config.admin_mode)
 		did_something = TRUE;
 	gtk_tree_path_free(path);
 
@@ -1207,7 +1207,7 @@ extern void *popup_thr(popup_info_t *popup_win)
 		gdk_threads_leave();
 		g_static_mutex_unlock(&sview_mutex);
 		//g_print("done popup_thr\n");
-		sleep(sview_config.refresh_delay);
+		sleep(working_sview_config.refresh_delay);
 	}
 	return NULL;
 }
@@ -1540,7 +1540,7 @@ extern void sview_widget_modify_bg(GtkWidget *widget, GtkStateType state,
 /* 	DEF_TIMERS; */
 
 /* 	START_TIMER; */
-	if(sview_config.grid_speedup) {
+	if(working_sview_config.grid_speedup) {
 		/* For some reason, QT Themes have a very slow call to for
 		 * gtk_widget_modify_bg as of 7-6-09.
 		 * Here we only take around 40 microsecs where
@@ -1640,7 +1640,7 @@ extern char *visible_to_str()
 	char *ret = NULL;
 	int i = 0;
 	for(i=0; i<PAGE_CNT; i++)
-		if(sview_config.page_visible[i]) {
+		if(working_sview_config.page_visible[i]) {
 			if(ret)
 				xstrcat(ret, ",");
 			xstrcat(ret, page_to_str(i));

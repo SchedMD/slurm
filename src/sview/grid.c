@@ -559,7 +559,7 @@ extern void highlight_grid(GtkTreeView *tree_view, GtkTreePath *path,
 	}
 	list_iterator_destroy(itr);
 
-	if(changed && sview_config.grid_speedup) {
+	if(changed && working_sview_config.grid_speedup) {
 		gtk_widget_set_sensitive(GTK_WIDGET(main_grid_table), 0);
 		gtk_widget_set_sensitive(GTK_WIDGET(main_grid_table), 1);
 	}
@@ -817,23 +817,23 @@ extern void put_buttons_in_table(GtkTable *table, List button_list)
 
 #ifdef HAVE_3D
 	node_count = DIM_SIZE[X];
-	sview_config.grid_x_width = DIM_SIZE[X] + DIM_SIZE[Z];
+	working_sview_config.grid_x_width = DIM_SIZE[X] + DIM_SIZE[Z];
 	table_y = (DIM_SIZE[Z] * DIM_SIZE[Y]) + DIM_SIZE[Y];
 #else
-	if(!sview_config.grid_x_width) {
+	if(!working_sview_config.grid_x_width) {
 		if(node_count < 50) {
-			sview_config.grid_x_width = 1;
+			working_sview_config.grid_x_width = 1;
 		} else if(node_count < 500) {
-			sview_config.grid_x_width = 10;
+			working_sview_config.grid_x_width = 10;
 		} else {
-			sview_config.grid_x_width=20;
+			working_sview_config.grid_x_width=20;
 		}
 	}
-	table_y = node_count/sview_config.grid_x_width;
+	table_y = node_count/working_sview_config.grid_x_width;
 	table_y++;
 #endif
-	//g_print("the table size is y=%d x=%d\n", table_y, sview_config.grid_x_width);
-	gtk_table_resize(table, table_y, sview_config.grid_x_width);
+	//g_print("the table size is y=%d x=%d\n", table_y, working_sview_config.grid_x_width);
+	gtk_table_resize(table, table_y, working_sview_config.grid_x_width);
 	itr = list_iterator_create(button_list);
 	while((grid_button = list_next(itr))) {
 #ifdef HAVE_3D
@@ -859,17 +859,17 @@ extern void put_buttons_in_table(GtkTable *table, List button_list)
 
 		coord_x++;
 
-		if(coord_x == sview_config.grid_x_width) {
+		if(coord_x == working_sview_config.grid_x_width) {
 			coord_x = 0;
 			coord_y++;
-			if(!(coord_y % sview_config.grid_vert))
+			if(!(coord_y % working_sview_config.grid_vert))
 				gtk_table_set_row_spacing(table, coord_y-1, 5);
 		}
 
 		if(coord_y == table_y)
 			break;
 
-		if(coord_x && !(coord_x % sview_config.grid_hori))
+		if(coord_x && !(coord_x % working_sview_config.grid_hori))
 			gtk_table_set_col_spacing(table, coord_x-1, 5);
 #endif
 	}
@@ -890,20 +890,20 @@ extern int update_grid_table(GtkTable *table, List button_list, List node_list)
 	int default_y_offset= (DIM_SIZE[Z] * DIM_SIZE[Y])
 		+ (DIM_SIZE[Y] - DIM_SIZE[Z]);
 	node_count = DIM_SIZE[X];
-	sview_config.grid_x_width = DIM_SIZE[X] + DIM_SIZE[Z];
+	working_sview_config.grid_x_width = DIM_SIZE[X] + DIM_SIZE[Z];
 	table_y = (DIM_SIZE[Z] * DIM_SIZE[Y]) + DIM_SIZE[Y];
 #else
 	node_count = list_count(node_list);
-	if(!sview_config.grid_x_width) {
+	if(!working_sview_config.grid_x_width) {
 		if(node_count < 50) {
-			sview_config.grid_x_width = 1;
+			working_sview_config.grid_x_width = 1;
 		} else if(node_count < 500) {
-			sview_config.grid_x_width = 10;
+			working_sview_config.grid_x_width = 10;
 		} else {
-			sview_config.grid_x_width = 20;
+			working_sview_config.grid_x_width = 20;
 		}
 	}
-	table_y = node_count/sview_config.grid_x_width;
+	table_y = node_count/working_sview_config.grid_x_width;
 	table_y++;
 #endif
 
@@ -912,7 +912,7 @@ extern int update_grid_table(GtkTable *table, List button_list, List node_list)
 		return SLURM_ERROR;
 	}
 
-	gtk_table_resize(table, table_y, sview_config.grid_x_width);
+	gtk_table_resize(table, table_y, working_sview_config.grid_x_width);
 	gtk_table_set_row_spacings(table, 0);
 	gtk_table_set_col_spacings(table, 0);
 	itr = list_iterator_create(node_list);
@@ -966,10 +966,10 @@ extern int update_grid_table(GtkTable *table, List button_list, List node_list)
 			   coord_y.  We add space inbetween each 10th row.
 			*/
 			coord_x++;
-			if(coord_x == sview_config.grid_x_width) {
+			if(coord_x == working_sview_config.grid_x_width) {
 				coord_x = 0;
 				coord_y++;
-				if(!(coord_y % sview_config.grid_vert))
+				if(!(coord_y % working_sview_config.grid_vert))
 					gtk_table_set_row_spacing(table,
 								  coord_y-1, 5);
 			}
@@ -977,7 +977,7 @@ extern int update_grid_table(GtkTable *table, List button_list, List node_list)
 			if(coord_y == table_y)
 				break;
 
-			if(coord_x && !(coord_x%sview_config.grid_hori))
+			if(coord_x && !(coord_x%working_sview_config.grid_hori))
 				gtk_table_set_col_spacing(table, coord_x-1, 5);
 #endif
 			break;
@@ -1053,20 +1053,20 @@ extern int setup_grid_table(GtkTable *table, List button_list, List node_list)
 	int default_y_offset= (DIM_SIZE[Z] * DIM_SIZE[Y])
 		+ (DIM_SIZE[Y] - DIM_SIZE[Z]);
 	node_count = DIM_SIZE[X];
-	sview_config.grid_x_width = DIM_SIZE[X] + DIM_SIZE[Z];
+	working_sview_config.grid_x_width = DIM_SIZE[X] + DIM_SIZE[Z];
 	table_y = (DIM_SIZE[Z] * DIM_SIZE[Y]) + DIM_SIZE[Y];
 #else
 	node_count = list_count(node_list);
-	if(!sview_config.grid_x_width) {
+	if(!working_sview_config.grid_x_width) {
 		if(node_count < 50) {
-			sview_config.grid_x_width = 1;
+			working_sview_config.grid_x_width = 1;
 		} else if(node_count < 500) {
-			sview_config.grid_x_width = 10;
+			working_sview_config.grid_x_width = 10;
 		} else {
-			sview_config.grid_x_width = 20;
+			working_sview_config.grid_x_width = 20;
 		}
 	}
-	table_y = node_count/sview_config.grid_x_width;
+	table_y = node_count/working_sview_config.grid_x_width;
 	table_y++;
 #endif
 
@@ -1075,7 +1075,7 @@ extern int setup_grid_table(GtkTable *table, List button_list, List node_list)
 		return SLURM_ERROR;
 	}
 
-	gtk_table_resize(table, table_y, sview_config.grid_x_width);
+	gtk_table_resize(table, table_y, working_sview_config.grid_x_width);
 	itr = list_iterator_create(node_list);
 	while((sview_node_info_ptr = list_next(itr))) {
 #ifdef HAVE_3D
@@ -1133,17 +1133,17 @@ extern int setup_grid_table(GtkTable *table, List button_list, List node_list)
 		   coord_y.  We add space inbetween each 10th row.
 		*/
 		coord_x++;
-		if(coord_x == sview_config.grid_x_width) {
+		if(coord_x == working_sview_config.grid_x_width) {
 			coord_x = 0;
 			coord_y++;
-			if(!(coord_y % sview_config.grid_vert))
+			if(!(coord_y % working_sview_config.grid_vert))
 				gtk_table_set_row_spacing(table, coord_y-1, 5);
 		}
 
 		if(coord_y == table_y)
 			break;
 
-		if(coord_x && !(coord_x % sview_config.grid_hori))
+		if(coord_x && !(coord_x % working_sview_config.grid_hori))
 			gtk_table_set_col_spacing(table, coord_x-1, 5);
 #endif
 	}
@@ -1254,7 +1254,7 @@ extern void post_setup_popup_grid_list(popup_info_t *popup_win)
 
 	change_grid_color(popup_win->grid_button_list, -1, -1,
 			  MAKE_BLACK, true, NODE_STATE_IDLE);
-	if(sview_config.grid_speedup) {
+	if(working_sview_config.grid_speedup) {
 		gtk_widget_set_sensitive(GTK_WIDGET(popup_win->grid_table), 0);
 		gtk_widget_set_sensitive(GTK_WIDGET(popup_win->grid_table), 1);
 	}
