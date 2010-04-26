@@ -547,6 +547,7 @@ static void _attempt_backfill(void)
 		if (job_ptr->start_time <= now) {
 			int rc = _start_job(job_ptr, resv_bitmap);
 			if (rc == ESLURM_ACCOUNTING_POLICY) {
+				/* Unknown future start time, just skip job */
 				continue;
 			} else if (rc != SLURM_SUCCESS) {
 				/* Planned to start job, but something bad
