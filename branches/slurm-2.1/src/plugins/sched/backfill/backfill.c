@@ -542,12 +542,16 @@ static void _attempt_backfill(void)
 		last_job_update = now;
 		if (job_ptr->start_time <= now) {
 			int rc = _start_job(job_ptr, resv_bitmap);
-			if (rc == ESLURM_ACCOUNTING_POLICY)
+			if (rc == ESLURM_ACCOUNTING_POLICY) {
 				continue;
-			else if (rc != SLURM_SUCCESS)
+			} else if (rc != SLURM_SUCCESS) {
 				/* Planned to start job, but something bad
 				 * happended. */
 				break;
+			} else {
+				/* Started this job, move to next one */
+				continue;
+			}
 		}
 		if (job_ptr->start_time > (now + BACKFILL_WINDOW)) {
 			/* Starts too far in the future to worry about */
