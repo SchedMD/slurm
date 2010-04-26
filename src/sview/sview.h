@@ -102,8 +102,9 @@ enum { JOB_PAGE,
        BLOCK_PAGE,
        NODE_PAGE,
        SUBMIT_PAGE,
-       INFO_PAGE,
        ADMIN_PAGE,
+       INFO_PAGE,
+       NEW_PAGE,
        PAGE_CNT
 };
 enum { TAB_CLICKED,
@@ -155,6 +156,7 @@ typedef struct {
 	uint32_t grid_vert;
 	uint32_t grid_x_width;
 	uint16_t page_default;
+	GtkWidget *page_check_widget[PAGE_CNT];
 	bool page_visible[PAGE_CNT];
 	uint16_t refresh_delay;
 	bool show_grid;
@@ -272,6 +274,7 @@ extern bool global_entry_changed;
 extern bool global_send_update_msg;
 extern bool global_edit_error;
 extern gchar *global_edit_error_msg;
+extern GtkWidget *main_notebook;
 extern GtkWidget *main_statusbar;
 extern GtkWidget *main_window;
 extern GtkTable *main_grid_table;
