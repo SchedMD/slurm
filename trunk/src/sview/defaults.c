@@ -113,7 +113,7 @@ extern int load_defaults()
 	_init_sview_conf();
 
 	if(!home)
-		return SLURM_ERROR;
+		goto end_it;
 
 	pathname = xstrdup_printf("%s/.slurm", home);
 	if ((mkdir(pathname, 0750) < 0) && (errno != EEXIST)) {
@@ -189,6 +189,8 @@ extern int load_defaults()
 	s_p_hashtbl_destroy(hashtbl);
 
 end_it:
+	/* copy it all into the working struct */
+	memcpy(&working_sview_config, &sview_config, sizeof(sview_config_t));
 	xfree(pathname);
 	return SLURM_SUCCESS;
 }

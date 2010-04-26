@@ -590,7 +590,7 @@ extern int get_new_info_node(node_info_msg_t **info_ptr, int force)
 	static bool changed = 0;
 	static uint16_t last_flags = 0;
 
-	if(!force && ((now - last) < sview_config.refresh_delay)) {
+	if(!force && ((now - last) < working_sview_config.refresh_delay)) {
 		if(*info_ptr != node_info_ptr)
 			error_code = SLURM_SUCCESS;
 		*info_ptr = node_info_ptr;
@@ -601,7 +601,7 @@ extern int get_new_info_node(node_info_msg_t **info_ptr, int force)
 	}
 	last = now;
 
-	if(sview_config.show_hidden)
+	if(working_sview_config.show_hidden)
 		show_flags |= SHOW_ALL;
 	if (node_info_ptr) {
 		if(show_flags != last_flags)
@@ -1131,7 +1131,7 @@ display_it:
 	}
 	list_iterator_destroy(itr);
 	change_grid_color(grid_button_list, -1, -1, MAKE_WHITE, true, 0);
-	if(sview_config.grid_speedup) {
+	if(working_sview_config.grid_speedup) {
 		gtk_widget_set_sensitive(GTK_WIDGET(main_grid_table), 0);
 		gtk_widget_set_sensitive(GTK_WIDGET(main_grid_table), 1);
 	}

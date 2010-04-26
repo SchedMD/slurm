@@ -1655,7 +1655,7 @@ extern int get_new_info_part(partition_info_msg_t **part_ptr, int force)
 	static bool changed = 0;
 	static uint16_t last_flags = 0;
 
-	if(!force && ((now - last) < sview_config.refresh_delay)) {
+	if(!force && ((now - last) < working_sview_config.refresh_delay)) {
 		if(*part_ptr != part_info_ptr)
 			error_code = SLURM_SUCCESS;
 		*part_ptr = part_info_ptr;
@@ -1665,7 +1665,7 @@ extern int get_new_info_part(partition_info_msg_t **part_ptr, int force)
 	}
 	last = now;
 
-	if(sview_config.show_hidden)
+	if(working_sview_config.show_hidden)
 		show_flags |= SHOW_ALL;
 
 	if (part_info_ptr) {
@@ -2037,7 +2037,7 @@ display_it:
 	else
 		change_grid_color(grid_button_list, -1, -1,
 				  MAKE_WHITE, true, 0);
-	if(sview_config.grid_speedup) {
+	if(working_sview_config.grid_speedup) {
 		gtk_widget_set_sensitive(GTK_WIDGET(main_grid_table), 0);
 		gtk_widget_set_sensitive(GTK_WIDGET(main_grid_table), 1);
 	}

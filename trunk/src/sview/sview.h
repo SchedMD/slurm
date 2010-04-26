@@ -260,6 +260,7 @@ typedef struct {
 
 
 extern sview_config_t sview_config;
+extern sview_config_t working_sview_config;
 
 extern void parse_command_line(int argc, char *argv[]);
 
@@ -306,6 +307,7 @@ extern void create_daemon_popup(GtkAction *action, gpointer user_data);
 extern void create_search_popup(GtkAction *action, gpointer user_data);
 extern void change_refresh_popup(GtkAction *action, gpointer user_data);
 extern void change_grid_popup(GtkAction *action, gpointer user_data);
+extern void about_popup(GtkAction *action, gpointer user_data);
 
 //grid.c
 extern void destroy_grid_button(void *arg);
