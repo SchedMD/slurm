@@ -444,6 +444,56 @@ extern int node_reconfig(char *node_name, char *orig_config, char **new_config,
 	return rc;
 }
 
+extern int pack_node_state(void *gres_data, Buf buffer)
+{
+	nic_status_t *gres_ptr = (nic_status_t *) gres_data;
+
+	pack32(gres_ptr->nic_cnt_avail,  buffer);
+	pack32(gres_ptr->nic_cnt_alloc,  buffer);
+	pack_bit_str(gres_ptr->nic_bit_alloc, buffer);
+
+	return SLURM_SUCCESS;
+}
+
+extern int unpack_node_state(void **gres_data, Buf buffer)
+{
+	nic_status_t *gres_ptr;
+
+	gres_ptr = xmalloc(sizeof(nic_status_t));
+
+	gres_ptr->nic_cnt_found = NO_VAL;
+	if (buffer) {
+		safe_unpack32(&gres_ptr->nic_cnt_avail,  buffer);
+		safe_unpack32(&gres_ptr->nic_cnt_alloc,  buffer);
+		unpack_bit_str(&gres_ptr->nic_bit_alloc, buffer);
+		if (gres_ptr->nic_bit_alloc == NULL)
+			goto unpack_error;
+		if (gres_ptr->nic_cnt_avail != 
+		    bit_size(gres_ptr->nic_bit_alloc)) {
+			gres_ptr->nic_bit_alloc =
+					bit_realloc(gres_ptr->nic_bit_alloc,
+						    gres_ptr->nic_cnt_avail);
+			if (gres_ptr->nic_bit_alloc == NULL)
+				goto unpack_error;
+		}
+		if (gres_ptr->nic_cnt_alloc != 
+		    bit_set_count(gres_ptr->nic_bit_alloc)) {
+			error("%s unpack_node_state bit count inconsistent",
+			      plugin_name);
+			goto unpack_error;
+		}
+	}
+
+	*gres_data = gres_ptr;
+	return SLURM_SUCCESS;
+
+unpack_error:
+	if (gres_ptr->nic_bit_alloc)
+		bit_free(gres_ptr->nic_bit_alloc);
+	xfree(gres_ptr);
+	*gres_data = NULL;
+	return SLURM_ERROR;
+}
 extern void node_state_log(void *gres_data, char *node_name)
 {
 	nic_status_t *gres_ptr;
