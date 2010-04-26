@@ -724,9 +724,10 @@ static int _task_layout_lllp_multi(launch_tasks_request_msg_t *req,
 							c*(hw_threads) + t;
 					if (bit_test(avail_map, bit) == 0)
 						continue;
-					if (masks[taskcount] == NULL)
+					if (masks[taskcount] == NULL) {
 						masks[taskcount] =
 							bit_alloc(conf->block_map_size);
+					}
 					bit_set(masks[taskcount], bit);
 					if (++i < req->cpus_per_task)
 						continue;
@@ -817,12 +818,15 @@ static int _task_layout_lllp_cyclic(launch_tasks_request_msg_t *req,
 			for (c = 0; c < hw_cores; c++) {
 				for (s = 0; s < hw_sockets; s++) {
 					uint16_t bit = s*(hw_cores*hw_threads) +
-							c*(hw_threads) + t;
+						       c*(hw_threads) + t;
 					if (bit_test(avail_map, bit) == 0)
 						continue;
-					if (masks[taskcount] == NULL)
+					if (masks[taskcount] == NULL) {
 						masks[taskcount] =
-						    (bitstr_t *)bit_alloc(conf->block_map_size);
+							(bitstr_t *)
+							bit_alloc(conf->
+								  block_map_size);
+					}
 					bit_set(masks[taskcount], bit);
 					if (++i < req->cpus_per_task)
 						continue;
