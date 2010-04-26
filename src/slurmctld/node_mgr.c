@@ -217,6 +217,8 @@ _dump_node_state (struct node_record *dump_node_ptr, Buf buffer)
 	pack32  (dump_node_ptr->tmp_disk, buffer);
 	pack32  (dump_node_ptr->reason_uid, buffer);
 	pack_time(dump_node_ptr->reason_time, buffer);
+	(void) gres_plugin_pack_node_state(dump_node_ptr->gres_list, buffer,
+					   dump_node_ptr->name);
 }
 
 
@@ -268,6 +270,7 @@ extern int load_all_node_state ( bool state_only )
 	uint32_t real_memory, tmp_disk, data_size = 0, name_len;
 	uint32_t reason_uid = NO_VAL;
 	time_t reason_time = 0;
+	List gres_list = NULL;
 	struct node_record *node_ptr;
 	int state_fd;
 	time_t time_stamp, now = time(NULL);
@@ -351,7 +354,9 @@ extern int load_all_node_state ( bool state_only )
 			safe_unpack32 (&tmp_disk,    buffer);
 			safe_unpack32 (&reason_uid,  buffer);
 			safe_unpack_time (&reason_time, buffer);
-
+			if (gres_plugin_unpack_node_state(&gres_list, buffer,
+					node_name) != SLURM_SUCCESS)
+				goto unpack_error;
 			base_state = node_state & NODE_STATE_BASE;
 		} else if(protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
 			safe_unpackstr_xmalloc (&node_name, &name_len, buffer);
@@ -364,6 +369,8 @@ extern int load_all_node_state ( bool state_only )
 			safe_unpack16 (&threads,     buffer);
 			safe_unpack32 (&real_memory, buffer);
 			safe_unpack32 (&tmp_disk,    buffer);
+			gres_list = NULL;
+
 			base_state = node_state & NODE_STATE_BASE;
 		} else
 			goto unpack_error;
@@ -393,6 +400,8 @@ extern int load_all_node_state ( bool state_only )
 			       node_name);
 			xfree(features);
 			xfree(gres);
+			if (gres_list)
+				list_destroy(gres_list);
 			xfree(reason);
 		} else if (state_only) {
 			uint16_t orig_flags;
@@ -436,6 +445,8 @@ extern int load_all_node_state ( bool state_only )
 				xfree(reason);
 			xfree(features);
 			xfree(gres);
+			if (gres_list)
+				list_destroy(gres_list);
 		} else {
 			node_cnt++;
 			if ((!power_save_mode) &&
@@ -450,13 +461,14 @@ extern int load_all_node_state ( bool state_only )
 			}
 			node_ptr->node_state    = node_state;
 			xfree(node_ptr->reason);
-			node_ptr->reason      = reason;
-			node_ptr->reason_time = reason_time;
-			node_ptr->reason_uid  = reason_uid;
+			node_ptr->reason	= reason;
+			node_ptr->reason_time	= reason_time;
+			node_ptr->reason_uid	= reason_uid;
 			xfree(node_ptr->features);
-			node_ptr->features = features;
+			node_ptr->features	= features;
 			xfree(node_ptr->gres);
-			node_ptr->gres = gres;
+			node_ptr->gres 		= gres;
+			node_ptr->gres_list	= gres_list;
 			node_ptr->part_cnt      = 0;
 			xfree(node_ptr->part_pptr);
 			node_ptr->cpus          = cpus;
