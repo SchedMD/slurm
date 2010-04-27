@@ -2794,7 +2794,7 @@ extern char * debug_flags2str(uint32_t debug_flags)
 	if (debug_flags & DEBUG_FLAG_GRES) {
 		if (rc)
 			xstrcat(rc, ",");
-		xstrcat(rc, "GRes");
+		xstrcat(rc, "Gres");
 	}
 	if (debug_flags & DEBUG_FLAG_NO_CONF_HASH) {
 		if (rc)
@@ -2843,7 +2843,7 @@ extern uint32_t debug_str2flags(char *debug_flags)
 	while (tok) {
 		if      (strcasecmp(tok, "CPU_Bind") == 0)
 			rc |= DEBUG_FLAG_CPU_BIND;
-		else if (strcasecmp(tok, "GRes") == 0)
+		else if (strcasecmp(tok, "Gres") == 0)
 			rc = DEBUG_FLAG_GRES;
 		else if (strcasecmp(tok, "NO_CONF_HASH") == 0)
 			rc |= DEBUG_FLAG_NO_CONF_HASH;

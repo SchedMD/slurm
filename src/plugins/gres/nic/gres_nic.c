@@ -110,7 +110,7 @@ typedef struct nic_config {
 } nic_config_t;
 static nic_config_t gres_config;
 
-/* Gres state as used by slurmctld. Includes data from gres_config loaded
+/* Gres node state as used by slurmctld. Includes data from gres_config loaded
  * from slurmd, resources configured (may be more or less than actually found)
  * plus resource allocation information. */
 typedef struct nic_node_state {
@@ -504,6 +504,7 @@ unpack_error:
 	*gres_data = NULL;
 	return SLURM_ERROR;
 }
+
 extern void node_state_log(void *gres_data, char *node_name)
 {
 	nic_node_state_t *gres_ptr;
@@ -530,7 +531,7 @@ extern void job_config_delete(void *gres_data)
 
 extern int job_gres_validate(char *config, void **gres_data)
 {
-	char *last;
+	char *last = NULL;
 	nic_job_state_t *gres_ptr;
 	uint32_t cnt;
 	uint8_t mult = 0;
@@ -545,6 +546,8 @@ extern int job_gres_validate(char *config, void **gres_data)
 			cnt *= 1024;
 		else if (!strcasecmp(last, "*cpu"))
 			mult = 1;
+		else
+			return SLURM_ERROR;
 	} else
 		return SLURM_ERROR;
 
@@ -553,6 +556,36 @@ extern int job_gres_validate(char *config, void **gres_data)
 	gres_ptr->nic_cnt_mult  = mult;
 	*gres_data = gres_ptr;
 	return SLURM_SUCCESS;
+}
+
+extern int pack_job_state(void *gres_data, Buf buffer)
+{
+	nic_job_state_t *gres_ptr = (nic_job_state_t *) gres_data;
+
+	pack32(gres_ptr->nic_cnt_alloc,  buffer);
+	pack8 (gres_ptr->nic_cnt_mult,  buffer);
+
+	return SLURM_SUCCESS;
+}
+
+extern int unpack_job_state(void **gres_data, Buf buffer)
+{
+	nic_job_state_t *gres_ptr;
+
+	gres_ptr = xmalloc(sizeof(nic_job_state_t));
+
+	if (buffer) {
+		safe_unpack32(&gres_ptr->nic_cnt_alloc,  buffer);
+		safe_unpack8 (&gres_ptr->nic_cnt_mult,   buffer);
+	}
+
+	*gres_data = gres_ptr;
+	return SLURM_SUCCESS;
+
+unpack_error:
+	xfree(gres_ptr);
+	*gres_data = NULL;
+	return SLURM_ERROR;
 }
 
 extern void job_state_log(void *gres_data, uint32_t job_id)

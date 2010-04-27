@@ -59,8 +59,10 @@
 
 #include <slurm/slurm_errno.h>
 
+#include "src/common/assoc_mgr.h"
 #include "src/common/bitstring.h"
 #include "src/common/forward.h"
+#include "src/common/gres.h"
 #include "src/common/hostlist.h"
 #include "src/common/node_select.h"
 #include "src/common/parse_time.h"
@@ -70,7 +72,6 @@
 #include "src/common/switch.h"
 #include "src/common/xassert.h"
 #include "src/common/xstring.h"
-#include "src/common/assoc_mgr.h"
 
 #include "src/slurmctld/acct_policy.h"
 #include "src/slurmctld/agent.h"
@@ -81,8 +82,8 @@
 #include "src/slurmctld/node_scheduler.h"
 #include "src/slurmctld/proc_req.h"
 #include "src/slurmctld/reservation.h"
-#include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/sched_plugin.h"
+#include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/srun_comm.h"
 #include "src/slurmctld/state_save.h"
 #include "src/slurmctld/trigger_mgr.h"
@@ -770,6 +771,9 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	packstr_array(dump_job_ptr->spank_job_env,
 		      dump_job_ptr->spank_job_env_size, buffer);
 
+	(void) gres_plugin_pack_job_state(dump_job_ptr->gres_list, buffer,
+					  dump_job_ptr->job_id);
+
 	/* Dump job details, if available */
 	detail_ptr = dump_job_ptr->details;
 	if (detail_ptr) {
@@ -810,6 +814,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	char *licenses = NULL, *state_desc = NULL, *wckey = NULL;
 	char *resv_name = NULL, *gres = NULL;
 	char **spank_job_env = (char **) NULL;
+	List gres_list = NULL;
 	struct job_record *job_ptr;
 	struct part_record *part_ptr;
 	int error_code, i, qos_error;
@@ -926,6 +931,11 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 
 		safe_unpackstr_array(&spank_job_env, &spank_job_env_size,
 				     buffer);
+
+		if (gres_plugin_unpack_job_state(&gres_list, buffer, job_id) !=
+		    SLURM_SUCCESS)
+			goto unpack_error;
+		gres_plugin_job_state_log(gres_list, job_id);
 
 		safe_unpack16(&details, buffer);
 		if ((details == DETAILS_FLAG) &&
@@ -1123,6 +1133,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	xfree(job_ptr->gres);
 	job_ptr->gres         = gres;
 	gres                  = NULL;  /* reused, nothing left to free */
+	job_ptr->gres_list    = gres_list;
 	job_ptr->direct_set_prio = direct_set_prio;
 	job_ptr->db_index     = db_index;
 	job_ptr->end_time     = end_time;
