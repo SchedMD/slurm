@@ -564,7 +564,8 @@ uint16_t _can_job_run_on_node(struct job_record *job_ptr, bitstr_t *core_map,
 			      bool test_only)
 {
 	uint16_t cpus;
-	uint32_t avail_mem, req_mem;
+	uint32_t avail_mem, req_mem, gres_cpus;
+	struct node_record *node_ptr;
 
 	if (cr_type & CR_CORE)
 		cpus = _allocate_cores(job_ptr, core_map, node_i, 0);
@@ -572,6 +573,13 @@ uint16_t _can_job_run_on_node(struct job_record *job_ptr, bitstr_t *core_map,
 		cpus = _allocate_sockets(job_ptr, core_map, node_i);
 	else
 		cpus = _allocate_cores(job_ptr, core_map, node_i, 1);
+
+	node_ptr = select_node_record[node_i].node_ptr;
+	gres_cpus = gres_plugin_cpus_usable_by_job(job_ptr->gres_list,
+						   node_ptr->gres_list,
+						   test_only);
+	if (gres_cpus < cpus)
+		cpus = gres_cpus;
 
 	if (!(cr_type & CR_MEMORY))
 		return cpus;
@@ -644,9 +652,10 @@ static int _is_node_busy(struct part_res_record *p_ptr, uint32_t node_i,
 /*
  * Determine which of these nodes are usable by this job
  *
- * Remove nodes from the bitmap that don't have enough memory to
- * support the job. Return SLURM_ERROR if a required node doesn't
- * have enough memory.
+ * Remove nodes from the bitmap that don't have enough memory  or gres to
+ * support the job. 
+ *
+ * Return SLURM_ERROR if a required node can't be used.
  *
  * if node_state = NODE_CR_RESERVED, clear bitmap (if node is required
  *                                   then should we return NODE_BUSY!?!)
@@ -664,6 +673,7 @@ static int _verify_node_state(struct part_res_record *cr_part_ptr,
 			      struct node_use_record *node_usage,
 			      enum node_cr_state job_node_req)
 {
+	struct node_record *node_ptr;
 	uint32_t i, free_mem, min_mem, size;
 
 	min_mem = job_ptr->details->pn_min_memory & (~MEM_PER_CPU);
@@ -671,6 +681,7 @@ static int _verify_node_state(struct part_res_record *cr_part_ptr,
 	for (i = 0; i < size; i++) {
 		if (!bit_test(bitmap, i))
 			continue;
+		node_ptr = select_node_record[i].node_ptr;
 
 		/* node-level memory check */
 		if ((job_ptr->details->pn_min_memory) &&
@@ -685,10 +696,19 @@ static int _verify_node_state(struct part_res_record *cr_part_ptr,
 			}
 		}
 
+		/* node-level gres check */
+		if (gres_plugin_cpus_usable_by_job(job_ptr->gres_list, 
+						   node_ptr->gres_list, 
+						   true) == 0) {
+			info("cons_res: _vns: node %s lacks gres",
+			     node_ptr->name);
+			goto clear_bit;
+		}
+
 		/* exclusive node check */
 		if (node_usage[i].node_state >= NODE_CR_RESERVED) {
 			debug3("cons_res: _vns: node %s in exclusive use",
-			       select_node_record[i].node_ptr->name);
+			       node_ptr->name);
 			goto clear_bit;
 
 		/* non-resource-sharing node check */
@@ -696,7 +716,7 @@ static int _verify_node_state(struct part_res_record *cr_part_ptr,
 			if ((job_node_req == NODE_CR_RESERVED) ||
 			    (job_node_req == NODE_CR_AVAILABLE)) {
 				debug3("cons_res: _vns: node %s non-sharing",
-					select_node_record[i].node_ptr->name);
+				       node_ptr->name);
 				goto clear_bit;
 			}
 			/* cannot use this node if it is running jobs
@@ -704,7 +724,7 @@ static int _verify_node_state(struct part_res_record *cr_part_ptr,
 			if (_is_node_busy(cr_part_ptr, i, 1,
 					  job_ptr->part_ptr)) {
 				debug3("cons_res: _vns: node %s sharing?",
-					select_node_record[i].node_ptr->name);
+				       node_ptr->name);
 				goto clear_bit;
 			}
 
@@ -714,7 +734,6 @@ static int _verify_node_state(struct part_res_record *cr_part_ptr,
 				if (_is_node_busy(cr_part_ptr, i, 0,
 						  job_ptr->part_ptr)) {
 					debug3("cons_res: _vns: node %s busy",
-					       select_node_record[i].
 					       node_ptr->name);
 					goto clear_bit;
 				}
@@ -724,7 +743,6 @@ static int _verify_node_state(struct part_res_record *cr_part_ptr,
 				if (_is_node_busy(cr_part_ptr, i, 1, 
 						  job_ptr->part_ptr)) {
 					debug3("cons_res: _vns: node %s vbusy",
-					       select_node_record[i].
 					       node_ptr->name);
 					goto clear_bit;
 				}

@@ -588,6 +588,28 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+extern uint32_t cpus_usable_by_job(void *job_gres_data, void *node_gres_data,
+				   bool use_total_gres)
+{
+	uint32_t gres_avail;
+	gpu_job_state_t  *job_gres_ptr  = (gpu_job_state_t *)  job_gres_data;
+	gpu_node_state_t *node_gres_ptr = (gpu_node_state_t *) node_gres_data;
+
+	gres_avail = node_gres_ptr->gpu_cnt_avail;
+	if (!use_total_gres)
+		gres_avail -= node_gres_ptr->gpu_cnt_alloc;
+
+	if (job_gres_ptr->gpu_cnt_mult == 0) {
+		/* per gres node limit */
+		if (job_gres_ptr->gpu_cnt_alloc > gres_avail)
+			return (uint32_t) 0;
+		return NO_VAL;
+	} else {
+		/* per gres CPU limit */
+		return (uint32_t) (gres_avail / job_gres_ptr->gpu_cnt_alloc);
+	}
+}
+
 extern void job_state_log(void *gres_data, uint32_t job_id)
 {
 	gpu_job_state_t *gres_ptr;
