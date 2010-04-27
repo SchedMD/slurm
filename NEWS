@@ -16,6 +16,8 @@ documents those changes that are of interest to users and admins.
     for a job.
  -- BLUEGENE - Fix for systems that have midplanes defined in the database
     that don't exist.
+ -- Accounting, fixed bug where if removing an object a rollback wasn't
+    possible.
 
 * Changes in SLURM 2.1.7
 ========================
