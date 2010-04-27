@@ -764,10 +764,16 @@ May not exceed 65533.
 Identifies the default type of MPI to be used.
 Srun may override this configuration parameter in any case.
 Currently supported versions include:
+\fBlam\fR,
+\fBmpich1_p4\fR,
+\fBmpich1_shmem\fR,
 \fBmpichgm\fR,
+\fBmpichmx\fR,
 \fBmvapich\fR,
-\fBnone\fR (default, which works for many other versions of MPI including
-LAM MPI and Open MPI).
+\fBnone\fR (default, which works for many other versions of MPI) and
+\fBopenmpi\fR.
+More information about MPI use is available here
+<https://computing.llnl.gov/linux/slurm/mpi_guide.html>.
 
 .TP
 \fBMpiParams\fR

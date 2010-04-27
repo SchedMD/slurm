@@ -265,6 +265,12 @@ with the <i>--mpi=mpich1_shmem</i> option.</p>
 $ srun -n16 --mpi=mpich1_shmem a.out
 </pre>
 
+<p>NOTE: Using a configuration of <i>MpiDefault=mpich1_shmem</i> will result in
+one task being launched per node with the expectation that the MPI library will
+launch the remaining tasks based upon environment variables set by SLURM.
+Non-MPI jobs started in this configuration will lack the mechanism to launch
+more than one task per node unless srun's <i>--mpi=none</i> option is used.</p>
+
 <p>If you are using MPICH P4 (<i>DEFAULT_DEVICE=ch_p4</i> in
 the mpirun script) and SLURM version 1.2.11 or newer,
 then it is recommended that you apply the patch in the SLURM
