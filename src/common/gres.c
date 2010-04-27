@@ -108,6 +108,9 @@ typedef struct slurm_gres_ops {
 						  Buf buffer );
 	int		(*unpack_job_state)	( void **gres_data,
 						  Buf buffer );
+	uint32_t	(*cpus_usable_by_job)	( void *job_gres_data,
+						  void *node_gres_data,
+						  bool use_total_gres );
 	void		(*job_state_log)	( void *gres_data, 
 						  uint32_t job_id );
 } slurm_gres_ops_t;
@@ -166,6 +169,7 @@ static int _load_gres_plugin(char *plugin_name,
 		"job_gres_validate",
 		"pack_job_state",
 		"unpack_job_state",
+		"cpus_usable_by_job",
 		"job_state_log"
 	};
 	int n_syms = sizeof(syms) / sizeof(char *);
@@ -1128,6 +1132,68 @@ unpack_error:
 	      job_id);
 	rc = SLURM_ERROR;
 	goto fini;
+}
+
+/*
+ * Determine how many CPUs on the node can be used by this job
+ * IN job_gres_list - job's gres_list built by gres_plugin_job_gres_validate()
+ * IN node_gres_list - node's gres_list built by gres_plugin_node_config_validate()
+ * IN use_total_gres - if set then consider all gres resources as available,
+ *		       and none are commited to running jobs
+ * RET: NO_VAL    - All CPUs on node are available
+ *      otherwise - Specific CPU count
+ */
+extern uint32_t gres_plugin_cpus_usable_by_job(List job_gres_list, 
+					       List node_gres_list, 
+					       bool use_total_gres)
+{
+	int i;
+	uint32_t cpu_cnt, tmp_cnt;
+	ListIterator job_gres_iter,  node_gres_iter;
+	gres_state_t *job_gres_ptr, *node_gres_ptr;
+
+	if (job_gres_list == NULL)
+		return NO_VAL;
+	if (node_gres_list == NULL)
+		return (uint32_t) 0;
+
+	cpu_cnt = NO_VAL;
+	(void) gres_plugin_init();
+
+	slurm_mutex_lock(&gres_context_lock);
+	job_gres_iter = list_iterator_create(job_gres_list);
+	while ((job_gres_ptr = (gres_state_t *) list_next(job_gres_iter))) {
+		node_gres_iter = list_iterator_create(node_gres_list);
+		while ((node_gres_ptr = (gres_state_t *) 
+				list_next(node_gres_iter))) {
+			if (job_gres_ptr->plugin_id == node_gres_ptr->plugin_id)
+				break;
+		}
+		list_iterator_destroy(node_gres_iter);
+		if (node_gres_ptr == NULL) {
+			/* node lack resources required by the job */
+			cpu_cnt = 0;
+			break;
+		}
+
+		for (i=0; i<gres_context_cnt; i++) {
+			if (job_gres_ptr->plugin_id != 
+			    *(gres_context[i].ops.plugin_id))
+				continue;
+			tmp_cnt = (*(gres_context[i].ops.cpus_usable_by_job))
+					(job_gres_ptr->gres_data, 
+					 node_gres_ptr->gres_data,
+					 use_total_gres);
+			cpu_cnt = MIN(tmp_cnt, cpu_cnt);
+			break;
+		}
+		if (cpu_cnt == 0)
+			break;
+	}
+	list_iterator_destroy(job_gres_iter);
+	slurm_mutex_unlock(&gres_context_lock);
+
+	return cpu_cnt;
 }
 
 /*

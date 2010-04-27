@@ -47,6 +47,7 @@
 #include <slurm/slurm_errno.h>
 
 #include "src/common/bitstring.h"
+#include "src/common/gres.h"
 #include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/node_select.h"
