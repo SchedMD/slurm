@@ -98,6 +98,7 @@ typedef struct slurm_gres_ops {
 						  Buf buffer );
 	int		(*unpack_node_state)	( void **gres_data,
 						  Buf buffer );
+	void *		(*dup_node_state)	( void *gres_data );
 	void		(*node_state_log)	( void *gres_data, 
 						  char *node_name );
 
@@ -164,6 +165,7 @@ static int _load_gres_plugin(char *plugin_name,
 		"node_config_delete",
 		"pack_node_state",
 		"unpack_node_state",
+		"dup_node_state",
 		"node_state_log",
 		"job_config_delete",
 		"job_gres_validate",
@@ -567,7 +569,8 @@ static void _gres_node_list_delete(void *list_element)
 	for (i=0; i<gres_context_cnt; i++) {
 		if (gres_ptr->plugin_id != *(gres_context[i].ops.plugin_id))
 			continue;
-		(*(gres_context[i].ops.node_config_delete))(gres_ptr->gres_data);
+		(*(gres_context[i].ops.node_config_delete))
+				(gres_ptr->gres_data);
 		xfree(gres_ptr);
 		break;
 	}
@@ -850,6 +853,55 @@ unpack_error:
 	      node_name);
 	rc = SLURM_ERROR;
 	goto fini;
+}
+
+/*
+ * Duplicate a node gres status (used for will-run logic)
+ */
+extern List gres_plugin_dup_node_state(List gres_list)
+{
+	int i;
+	List new_list = NULL;
+	ListIterator gres_iter;
+	gres_state_t *gres_ptr, *new_gres;
+	void *gres_data;
+
+	if (gres_list == NULL)
+		return new_list;
+
+	(void) gres_plugin_init();
+
+	slurm_mutex_lock(&gres_context_lock);
+	if ((gres_context_cnt > 0)) {
+		new_list = list_create(_gres_node_list_delete);
+		if (new_list == NULL)
+			fatal("list_create malloc failure");
+	}
+	gres_iter = list_iterator_create(gres_list);
+	while ((gres_ptr = (gres_state_t *) list_next(gres_iter))) {
+		for (i=0; i<gres_context_cnt; i++) {
+			if (gres_ptr->plugin_id != 
+			    *(gres_context[i].ops.plugin_id))
+				continue;
+			gres_data = (*(gres_context[i].ops.dup_node_state))
+					(gres_ptr->gres_data);
+			if (gres_data) {
+				new_gres = xmalloc(sizeof(gres_state_t));
+				new_gres->plugin_id = gres_ptr->plugin_id;
+				new_gres->gres_data = gres_data;
+				list_append(new_list, new_gres);
+			}
+			break;
+		}
+		if (i >= gres_context_cnt) {
+			error("Could not find plugin id %u to dup node record",
+			      gres_ptr->plugin_id);
+		}
+	}
+	list_iterator_destroy(gres_iter);
+	slurm_mutex_unlock(&gres_context_lock);
+
+	return new_list;
 }
 
 /*
