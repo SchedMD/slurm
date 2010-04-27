@@ -138,7 +138,6 @@ typedef struct gpu_job_state {
 	uint8_t  gpu_cnt_mult;
 } gpu_job_state_t;
 
-
 /*
  * This will be the output for "--gres=help" option.
  * Called only by salloc, sbatch and srun.
@@ -191,7 +190,7 @@ extern int pack_node_config(Buf buffer)
 	 * including topology. */
 	pack32(gres_config.gpu_cnt, buffer);
 
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 /*
@@ -366,7 +365,7 @@ extern int node_config_validate(char *node_name,
  * IN node_name - name of the node for which the gres information applies
  * IN orig_config - Gres information supplied from slurm.conf
  * IN/OUT new_config - Updated gres info from slurm.conf if FastSchedule=0
- * IN/OUT gres_list - List of Gres records for this node to track usage
+ * IN/OUT gres_data - Gres record for this node to track usage
  * IN fast_schedule - 0: Validate and use actual hardware configuration
  *		      1: Validate hardware config, but use slurm.conf config
  *		      2: Don't validate hardware, use slurm.conf configuration
@@ -532,7 +531,7 @@ extern void job_config_delete(void *gres_data)
 
 extern int job_gres_validate(char *config, void **gres_data)
 {
-	char *last;
+	char *last = NULL;
 	gpu_job_state_t *gres_ptr;
 	uint32_t cnt;
 	uint8_t mult = 0;
@@ -547,6 +546,8 @@ extern int job_gres_validate(char *config, void **gres_data)
 			cnt *= 1024;
 		else if (!strcasecmp(last, "*cpu"))
 			mult = 1;
+		else
+			return SLURM_ERROR;
 	} else
 		return SLURM_ERROR;
 
@@ -555,6 +556,36 @@ extern int job_gres_validate(char *config, void **gres_data)
 	gres_ptr->gpu_cnt_mult  = mult;
 	*gres_data = gres_ptr;
 	return SLURM_SUCCESS;
+}
+
+extern int pack_job_state(void *gres_data, Buf buffer)
+{
+	gpu_job_state_t *gres_ptr = (gpu_job_state_t *) gres_data;
+
+	pack32(gres_ptr->gpu_cnt_alloc,  buffer);
+	pack8 (gres_ptr->gpu_cnt_mult,  buffer);
+
+	return SLURM_SUCCESS;
+}
+
+extern int unpack_job_state(void **gres_data, Buf buffer)
+{
+	gpu_job_state_t *gres_ptr;
+
+	gres_ptr = xmalloc(sizeof(gpu_job_state_t));
+
+	if (buffer) {
+		safe_unpack32(&gres_ptr->gpu_cnt_alloc,  buffer);
+		safe_unpack8 (&gres_ptr->gpu_cnt_mult,   buffer);
+	}
+
+	*gres_data = gres_ptr;
+	return SLURM_SUCCESS;
+
+unpack_error:
+	xfree(gres_ptr);
+	*gres_data = NULL;
+	return SLURM_ERROR;
 }
 
 extern void job_state_log(void *gres_data, uint32_t job_id)
