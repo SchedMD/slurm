@@ -1269,9 +1269,10 @@ typedef struct reservation_name_msg {
 #define DEBUG_FLAG_TRIGGERS	0x00000004	/* slurmctld triggers */
 #define DEBUG_FLAG_CPU_BIND	0x00000008	/* CPU binding */
 #define DEBUG_FLAG_WIKI		0x00000010	/* wiki communications */
-#define DEBUG_FLAG_NO_CONF_HASH	0x00000012	/* don't print error
-						 * warning about slurm.conf
-						 * files not matching */
+#define DEBUG_FLAG_NO_CONF_HASH	0x00000020	/* no warning about slurm.conf
+						 * files checksum mismatch */
+#define DEBUG_FLAG_GRES		0x00000040	/* Generic Resource info */
+
 
 #define GROUP_FORCE		0x8000	/* if set, update group membership
 					 * info even if no updates to
