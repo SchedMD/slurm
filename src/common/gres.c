@@ -908,7 +908,7 @@ static void _gres_job_list_delete(void *list_element)
  */
 extern int gres_plugin_job_gres_validate(char *req_config, List *gres_list)
 {
-	char *tmp_str, *tok, *last;
+	char *tmp_str, *tok, *last = NULL;
 	int i, rc, rc2;
 	gres_state_t *gres_ptr;
 	void *gres_data;
