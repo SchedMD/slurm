@@ -49,7 +49,7 @@ typedef struct {
 static void _get_info_tabs(GtkTable *table, display_data_t *display_data);
 
 /* globals */
-sview_config_t sview_config;
+sview_config_t default_sview_config;
 sview_config_t working_sview_config;
 int adding = 1;
 int fini = 0;
@@ -119,7 +119,7 @@ display_data_t main_display_data[] = {
 	 refresh_main, NULL, NULL,
 	 NULL, NULL,
 	 NULL, NULL},
-	{G_TYPE_NONE, NEW_PAGE, "New", TRUE, -1,
+	{G_TYPE_NONE, TAB_PAGE, "Visible Tabs", TRUE, -1,
 	 refresh_main, NULL, NULL, _get_info_tabs,
 	 NULL, NULL, NULL},
 	{G_TYPE_NONE, -1, NULL, FALSE, -1}
@@ -293,31 +293,31 @@ static void _page_switched(GtkNotebook     *notebook,
 static void _set_admin_mode(GtkToggleAction *action)
 {
 //	GtkAction *admin_action = NULL;
-
-	if(working_sview_config.admin_mode) {
-		working_sview_config.admin_mode = FALSE;
+	if(action)
+		working_sview_config.admin_mode
+			= gtk_toggle_action_get_active(action);
+	if(!working_sview_config.admin_mode)
 		gtk_statusbar_pop(GTK_STATUSBAR(main_statusbar),
 				  STATUS_ADMIN_MODE);
-	} else {
-		working_sview_config.admin_mode = TRUE;
+	else
 		gtk_statusbar_push(GTK_STATUSBAR(main_statusbar),
 				   STATUS_ADMIN_MODE,
 				   "Admin mode activated! "
 				   "Think before you alter anything.");
-	}
+
 	gtk_action_group_set_sensitive(admin_action_group,
 				       working_sview_config.admin_mode);
 }
 
 static void _set_grid(GtkToggleAction *action)
 {
-	if(working_sview_config.show_grid) {
+	if(action)
+		working_sview_config.show_grid
+			= gtk_toggle_action_get_active(action);
+	if(!working_sview_config.show_grid)
 		gtk_widget_hide(grid_window);
-		working_sview_config.show_grid = FALSE;
-	} else {
+	else
 		gtk_widget_show(grid_window);
-		working_sview_config.show_grid = TRUE;
-	}
 
 	return;
 }
@@ -344,13 +344,11 @@ static void _toggle_tab_visiblity(GtkToggleButton *toggle_button,
 			gtk_toggle_button_get_active(toggle_button);
 	}
 
-	if(working_sview_config.page_visible[page_num]) {
+	if(working_sview_config.page_visible[page_num])
 		gtk_widget_show(visible_tab);
-		working_sview_config.page_visible[page_num] = TRUE;
-	} else {
+	else
 		gtk_widget_hide(visible_tab);
-		working_sview_config.page_visible[page_num] = FALSE;
-	}
+
 	if(working_sview_config.page_check_widget[page_num])
 		gtk_toggle_button_set_active(
 			GTK_TOGGLE_BUTTON(working_sview_config.
@@ -365,15 +363,16 @@ static void _toggle_tab_visiblity(GtkToggleButton *toggle_button,
 static void _set_hidden(GtkToggleAction *action)
 {
 	char *tmp;
-	if(working_sview_config.show_hidden) {
+	if(action)
+		working_sview_config.show_hidden
+			= gtk_toggle_action_get_active(action);
+	if(!working_sview_config.show_hidden)
 		tmp = g_strdup_printf(
 			"Hidden partitions and their jobs are now hidden");
-		working_sview_config.show_hidden = 0;
-	} else {
+	else
 		tmp = g_strdup_printf(
 			"Hidden partitions and their jobs are now visible");
-		working_sview_config.show_hidden = 1;
-	}
+
 	refresh_main(NULL, NULL);
 	display_edit_note(tmp);
 	g_free(tmp);
@@ -546,6 +545,8 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 		"        <menuitem action='tab_left'/>"
 		"        <menuitem action='tab_right'/>"
 		"      </menu>"
+		"      <separator/>"
+		"      <menuitem action='defaults'/>"
 		"    </menu>"
 		"    <menu action='displays'>"
 		"      <menuitem action='config'/>"
@@ -635,6 +636,9 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 		{"grid_specs", GTK_STOCK_EDIT, "Set Grid _Properties",
 		 "<control>p", "Change Grid Properties",
 		 G_CALLBACK(change_grid_popup)},
+		{"defaults", GTK_STOCK_EDIT, "_Set Default Settings",
+		 "<control>s", "Change Default Settings",
+		 G_CALLBACK(configure_defaults)},
 	};
 
 	GtkActionEntry admin_entries[] = {
@@ -647,28 +651,15 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 		 G_CALLBACK(_get_current_debug)},
 	};
 
-	GtkRadioActionEntry debug_entries[] = {
-		{"debug_quiet", NULL, "quiet(0)", "", "Quiet level", 0},
-		{"debug_fatal", NULL, "fatal(1)", "", "Fatal level", 1},
-		{"debug_error", NULL, "error(2)", "", "Error level", 2},
-		{"debug_info", NULL, "info(3)", "", "Info level", 3},
-		{"debug_verbose", NULL, "verbose(4)", "", "Verbose level", 4},
-		{"debug_debug", NULL, "debug(5)", "", "Debug debug level", 5},
-		{"debug_debug2", NULL, "debug2(6)", "", "Debug2 level", 6},
-		{"debug_debug3", NULL, "debug3(7)", "", "Debug3 level", 7},
-		{"debug_debug4", NULL, "debug4(8)", "", "Debug4 level", 8},
-		{"debug_debug5", NULL, "debug5(9)", "", "Debug5 level", 9},
-	};
-
 	GtkRadioActionEntry radio_entries[] = {
 		{"tab_top", GTK_STOCK_GOTO_TOP, "_Top",
-		 "<control>T", "Move tabs to top", 2},
+		 "<control>T", "Move tabs to top", GTK_POS_TOP},
 		{"tab_bottom", GTK_STOCK_GOTO_BOTTOM, "_Bottom",
-		 "<control>B", "Move tabs to the bottom", 3},
+		 "<control>B", "Move tabs to the bottom", GTK_POS_BOTTOM},
 		{"tab_left", GTK_STOCK_GOTO_FIRST, "_Left",
-		 "<control>L", "Move tabs to the Left", 4},
+		 "<control>L", "Move tabs to the Left", GTK_POS_LEFT},
 		{"tab_right", GTK_STOCK_GOTO_LAST, "_Right",
-		 "<control>R", "Move tabs to the Right", 1}
+		 "<control>R", "Move tabs to the Right", GTK_POS_RIGHT}
 	};
 
 	GtkToggleActionEntry toggle_entries[] = {
@@ -685,10 +676,24 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 		 working_sview_config.admin_mode}
 	};
 
+	GtkRadioActionEntry debug_entries[] = {
+		{"debug_quiet", NULL, "quiet(0)", "", "Quiet level", 0},
+		{"debug_fatal", NULL, "fatal(1)", "", "Fatal level", 1},
+		{"debug_error", NULL, "error(2)", "", "Error level", 2},
+		{"debug_info", NULL, "info(3)", "", "Info level", 3},
+		{"debug_verbose", NULL, "verbose(4)", "", "Verbose level", 4},
+		{"debug_debug", NULL, "debug(5)", "", "Debug debug level", 5},
+		{"debug_debug2", NULL, "debug2(6)", "", "Debug2 level", 6},
+		{"debug_debug3", NULL, "debug3(7)", "", "Debug3 level", 7},
+		{"debug_debug4", NULL, "debug4(8)", "", "Debug4 level", 8},
+		{"debug_debug5", NULL, "debug5(9)", "", "Debug5 level", 9},
+	};
+
 	/* Make an accelerator group (shortcut keys) */
 	menu_action_group = gtk_action_group_new ("MenuActions");
 	gtk_action_group_add_actions(menu_action_group, entries,
 				     G_N_ELEMENTS(entries), window);
+
 	gtk_action_group_add_radio_actions(menu_action_group, radio_entries,
 					   G_N_ELEMENTS(radio_entries),
 					   working_sview_config.tab_pos,
@@ -720,7 +725,33 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 		g_error_free (error);
 		exit (0);
 	}
+	/* GList *action_list = gtk_action_group_list_actions(menu_action_group); */
+	/* GtkAction *action = NULL; */
+	/* int i=0; */
+	/* while((action = g_list_nth_data(action_list, i++))) { */
+	/* 	g_print("got %s and %x\n", gtk_action_get_name(action), action); */
+	/* } */
 
+	/* Get the pointers to the correct action so if we ever need
+	   to change it we can effect the action directly so
+	   everything stays in sync.
+	*/
+	default_sview_config.action_admin =
+		(GtkToggleAction *)gtk_action_group_get_action(
+			menu_action_group, "admin");
+	default_sview_config.action_grid =
+		(GtkToggleAction *)gtk_action_group_get_action(
+			menu_action_group, "grid");
+	default_sview_config.action_hidden =
+		(GtkToggleAction *)gtk_action_group_get_action(
+			menu_action_group, "hidden");
+	/* Pick the first one of the Radio, it is how GTK references
+	   the group in the future.
+	*/
+	default_sview_config.action_tab =
+		(GtkRadioAction *)gtk_action_group_get_action(
+			menu_action_group, "tab_top");
+	/* g_print("action grid is %x\n", default_sview_config.action_grid); */
 	/* Finally, return the actual menu bar created by the item factory. */
 	return gtk_ui_manager_get_widget (ui_manager, "/main");
 }
@@ -747,7 +778,7 @@ static void _get_info_tabs(GtkTable *table, display_data_t *display_data)
 			break;
 
 		if(!main_display_data[i].name
-		   || (i == NEW_PAGE))
+		   || (i == TAB_PAGE))
 			continue;
 
 		working_sview_config.page_check_widget[i] =
@@ -925,7 +956,7 @@ int main(int argc, char *argv[])
 			GTK_NOTEBOOK(main_notebook), i);
 		if(working_sview_config.page_visible[i]
 		   || (i == working_sview_config.page_default)
-		   || (i == NEW_PAGE))
+		   || (i == TAB_PAGE))
 			gtk_widget_show(visible_tab);
 		else
 			gtk_widget_hide(visible_tab);

@@ -372,7 +372,8 @@ extern void jobacct_common_pack(struct jobacctinfo *jobacct,
 }
 
 /* you need to xfree this */
-extern int jobacct_common_unpack(struct jobacctinfo **jobacct, uint16_t rpc_version, Buf buffer)
+extern int jobacct_common_unpack(struct jobacctinfo **jobacct,
+				 uint16_t rpc_version, Buf buffer)
 {
 	uint32_t uint32_tmp;
 	*jobacct = xmalloc(sizeof(struct jobacctinfo));
