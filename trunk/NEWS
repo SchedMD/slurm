@@ -15,6 +15,7 @@ documents those changes that are of interest to users and admins.
     -Added new configuration parameter GresPlugins to define plugins used to
      manage generic resources.
     -Added framework for gres plugins.
+    -Added DebugFlags option of "gres" for detailed debugging of gres actions.
  -- Slurmd modified to log slow slurmstepd startup and note possible file system
     problem.
 

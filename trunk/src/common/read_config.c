@@ -2780,6 +2780,7 @@ slurm_conf_expand_slurmd_path(const char *path, const char *node_name)
 
 /*
  * debug_flags2str - convert a DebugFlags uint32_t to the equivalent string
+ * Keep in sync with debug_str2flags() below
  */
 extern char * debug_flags2str(uint32_t debug_flags)
 {
@@ -2789,6 +2790,16 @@ extern char * debug_flags2str(uint32_t debug_flags)
 		if (rc)
 			xstrcat(rc, ",");
 		xstrcat(rc, "CPU_Bind");
+	}
+	if (debug_flags & DEBUG_FLAG_GRES) {
+		if (rc)
+			xstrcat(rc, ",");
+		xstrcat(rc, "GRes");
+	}
+	if (debug_flags & DEBUG_FLAG_NO_CONF_HASH) {
+		if (rc)
+			xstrcat(rc, ",");
+		xstrcat(rc, "NO_CONF_HASH");
 	}
 	if (debug_flags & DEBUG_FLAG_SELECT_TYPE) {
 		if (rc)
@@ -2816,6 +2827,7 @@ extern char * debug_flags2str(uint32_t debug_flags)
 
 /*
  * debug_str2flags - Convert a DebugFlags string to the equivalent uint32_t
+ * Keep in sycn with debug_flags2str() above
  * Returns NO_VAL if invalid
  */
 extern uint32_t debug_str2flags(char *debug_flags)
@@ -2831,6 +2843,8 @@ extern uint32_t debug_str2flags(char *debug_flags)
 	while (tok) {
 		if      (strcasecmp(tok, "CPU_Bind") == 0)
 			rc |= DEBUG_FLAG_CPU_BIND;
+		else if (strcasecmp(tok, "GRes") == 0)
+			rc = DEBUG_FLAG_GRES;
 		else if (strcasecmp(tok, "NO_CONF_HASH") == 0)
 			rc |= DEBUG_FLAG_NO_CONF_HASH;
 		else if (strcasecmp(tok, "SelectType") == 0)

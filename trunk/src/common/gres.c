@@ -74,7 +74,6 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
-#define _DEBUG     1
 #define GRES_MAGIC 0x438a34d4
 
 typedef struct slurm_gres_ops {
@@ -118,6 +117,7 @@ typedef struct slurm_gres_context {
 } slurm_gres_context_t;
 
 static int gres_context_cnt = -1;
+static bool gres_debug = false;
 static slurm_gres_context_t *gres_context = NULL;
 static char *gres_plugin_list = NULL;
 static pthread_mutex_t gres_context_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -249,6 +249,11 @@ extern int gres_plugin_init(void)
 	char *last = NULL, *names, *one_name, *full_name;
 
 	slurm_mutex_lock(&gres_context_lock);
+	if (slurm_get_debug_flags() & DEBUG_FLAG_GRES)
+		gres_debug = true;
+	else
+		gres_debug = false;
+
 	if (gres_context_cnt >= 0)
 		goto fini;
 
@@ -386,6 +391,11 @@ extern int gres_plugin_reconfig(bool *did_change)
 
 	*did_change = false;
 	slurm_mutex_lock(&gres_context_lock);
+	if (slurm_get_debug_flags() & DEBUG_FLAG_GRES)
+		gres_debug = true;
+	else
+		gres_debug = false;
+
 	if (_strcmp(plugin_names, gres_plugin_list))
 		plugin_change = true;
 	else
@@ -838,12 +848,11 @@ unpack_error:
  */
 extern void gres_plugin_node_state_log(List gres_list, char *node_name)
 {
-#if _DEBUG
 	int i;
 	ListIterator gres_iter;
 	gres_state_t *gres_ptr;
 
-	if (gres_list == NULL)
+	if (!gres_debug || (gres_list == NULL))
 		return;
 
 	(void) gres_plugin_init();
@@ -862,7 +871,6 @@ extern void gres_plugin_node_state_log(List gres_list, char *node_name)
 	}
 	list_iterator_destroy(gres_iter);
 	slurm_mutex_unlock(&gres_context_lock);
-#endif
 }
 
 static void _gres_job_list_delete(void *list_element)
@@ -948,12 +956,11 @@ extern int gres_plugin_job_gres_validate(char *req_config, List *gres_list)
  */
 extern void gres_plugin_job_state_log(List gres_list, uint32_t job_id)
 {
-#if _DEBUG
 	int i;
 	ListIterator gres_iter;
 	gres_state_t *gres_ptr;
 
-	if (gres_list == NULL)
+	if (!gres_debug || (gres_list == NULL))
 		return;
 
 	(void) gres_plugin_init();
@@ -972,5 +979,4 @@ extern void gres_plugin_job_state_log(List gres_list, uint32_t job_id)
 	}
 	list_iterator_destroy(gres_iter);
 	slurm_mutex_unlock(&gres_context_lock);
-#endif
 }
