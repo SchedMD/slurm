@@ -60,6 +60,7 @@
 #include <mysqld_error.h>
 
 typedef struct {
+	char *auto_incr_query;
 	char *cluster_name;
 	MYSQL *db_conn;
 	bool rollback;

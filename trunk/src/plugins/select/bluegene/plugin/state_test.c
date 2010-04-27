@@ -318,7 +318,13 @@ static int _test_down_nodecards(rm_BP_t *bp_ptr, bool slurmctld_locked)
 		goto clean_up;
 	}
 
-	node_name = _get_bp_node_name(bp_ptr);
+	/* The node_name will only be NULL if this system doesn't
+	   really have the node.
+	*/
+	if(!(node_name = _get_bp_node_name(bp_ptr))) {
+		rc = SLURM_ERROR;
+		goto clean_up;
+	}
 
 	if((rc = bridge_get_data(ncard_list, RM_NodeCardListSize, &num))
 	   != STATUS_OK) {
