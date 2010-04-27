@@ -2385,9 +2385,13 @@ static int _remove_common(mysql_conn_t *mysql_conn,
 	/* we want to remove completely all that is less than a day old */
 	if(!has_jobs && table != assoc_table) {
 		query = xstrdup_printf("delete from %s where creation_time>%d "
-				       "&& (%s);"
-				       "alter table %s AUTO_INCREMENT=0;",
-				       table, day_old, name_char, table);
+				       "&& (%s);",
+				       table, day_old, name_char);
+		/* Make sure the next id we get doesn't create holes
+		 * in the ids. */
+		xstrfmtcat(mysql_conn->auto_incr_query,
+			   "alter table %s AUTO_INCREMENT=0;",
+			   table);
 	}
 
 	if(table != assoc_table)
@@ -2598,12 +2602,13 @@ just_update:
 			       "fairshare=1, max_jobs=NULL, "
 			       "max_nodes_per_job=NULL, "
 			       "max_wall_duration_per_job=NULL, "
-			       "max_cpu_mins_per_job=NULL "
-			       "where (%s);"
-			       "alter table %s AUTO_INCREMENT=0;",
+			       "max_cpu_mins_per_job=NULL where (%s);",
 			       assoc_table, now,
-			       loc_assoc_char,
-			       assoc_table);
+			       loc_assoc_char);
+	/* Make sure the next id we get doesn't create holes in the ids. */
+	xstrfmtcat(mysql_conn->auto_incr_query,
+		   "alter table %s AUTO_INCREMENT=0;",
+		   assoc_table);
 
 	if(table != assoc_table)
 		xfree(loc_assoc_char);
@@ -2615,6 +2620,7 @@ just_update:
 		if(mysql_conn->rollback) {
 			mysql_db_rollback(mysql_conn->db_conn);
 		}
+		xfree(mysql_conn->auto_incr_query);
 		list_flush(mysql_conn->update_list);
 	}
 
@@ -3665,7 +3671,8 @@ extern void *acct_storage_p_get_connection(bool make_agent, int conn_num,
 	if(!mysql_db_info)
 		init();
 
-	debug2("acct_storage_p_get_connection: request new connection");
+	debug2("acct_storage_p_get_connection: request new connection %d",
+	       rollback);
 
 	mysql_conn->rollback = rollback;
 	mysql_conn->conn = conn_num;
@@ -3690,6 +3697,7 @@ extern int acct_storage_p_close_connection(mysql_conn_t **mysql_conn)
 
 	acct_storage_p_commit((*mysql_conn), 0);
 	mysql_close_db_connection(&(*mysql_conn)->db_conn);
+	xfree((*mysql_conn)->auto_incr_query);
 	list_destroy((*mysql_conn)->update_list);
 	xfree((*mysql_conn));
 
@@ -3708,8 +3716,32 @@ extern int acct_storage_p_commit(mysql_conn_t *mysql_conn, bool commit)
 			if(mysql_db_rollback(mysql_conn->db_conn))
 				error("rollback failed");
 		} else {
-			if(mysql_db_commit(mysql_conn->db_conn))
-				error("commit failed");
+			int rc = SLURM_SUCCESS;
+			/* Since any use of altering a tables
+			   AUTO_INCREMENT will make it so you can't
+			   rollback, save it until right at the end.
+			   for now we also want to check if
+			   update_list exists since I didn't want to
+			   alter the code all sorts since it is
+			   different in 2.2.
+			*/
+			if(mysql_conn->auto_incr_query
+			   && list_count(mysql_conn->update_list)) {
+				debug3("%d(%d) query\n%s",
+				       mysql_conn->conn, __LINE__,
+				       mysql_conn->auto_incr_query);
+				rc = mysql_db_query(
+					mysql_conn->db_conn,
+					mysql_conn->auto_incr_query);
+			}
+
+			if(rc != SLURM_SUCCESS) {
+				if(mysql_db_rollback(mysql_conn->db_conn))
+					error("rollback failed");
+			} else {
+				if(mysql_db_commit(mysql_conn->db_conn))
+					error("commit failed");
+			}
 		}
 	}
 
@@ -3833,7 +3865,7 @@ extern int acct_storage_p_commit(mysql_conn_t *mysql_conn, bool commit)
 		if(get_qos_count)
 			_set_qos_cnt(mysql_conn->db_conn);
 	}
-
+	xfree(mysql_conn->auto_incr_query);
 	list_flush(mysql_conn->update_list);
 
 	return SLURM_SUCCESS;
