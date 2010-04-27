@@ -104,7 +104,7 @@ enum { JOB_PAGE,
        SUBMIT_PAGE,
        ADMIN_PAGE,
        INFO_PAGE,
-       NEW_PAGE,
+       TAB_PAGE,
        PAGE_CNT
 };
 enum { TAB_CLICKED,
@@ -129,6 +129,7 @@ enum { DISPLAY_NAME,
 };
 
 enum { EDIT_NONE,
+       EDIT_ARRAY,
        EDIT_MODEL,
        EDIT_TEXTBOX
 };
@@ -161,6 +162,10 @@ typedef struct {
 	uint16_t refresh_delay;
 	bool show_grid;
 	bool show_hidden;
+	GtkToggleAction *action_admin;
+	GtkToggleAction *action_grid;
+	GtkToggleAction *action_hidden;
+	GtkRadioAction *action_tab;
 	uint16_t tab_pos;
 } sview_config_t;
 
@@ -259,7 +264,7 @@ typedef struct {
 } signal_params_t;
 
 
-extern sview_config_t sview_config;
+extern sview_config_t default_sview_config;
 extern sview_config_t working_sview_config;
 
 extern void parse_command_line(int argc, char *argv[]);
@@ -504,10 +509,13 @@ extern void sview_widget_modify_bg(GtkWidget *widget, GtkStateType state,
 				   const GdkColor color);
 extern char *page_to_str(int page);
 extern char *tab_pos_to_str(int tab_pos);
-extern char *visible_to_str();
+extern char *visible_to_str(sview_config_t *sview_config);
+extern gboolean entry_changed(GtkWidget *widget, void *msg);
 
 // defaults.c
 extern int load_defaults();
 extern int save_defaults();
+extern GtkListStore *create_model_defaults(int type);
+extern int configure_defaults();
 
 #endif

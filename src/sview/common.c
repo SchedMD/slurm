@@ -35,12 +35,6 @@ typedef struct {
 	GtkTreeIter iter;
 } treedata_t;
 
-static gboolean _entry_changed(GtkWidget *widget, void *msg)
-{
-	global_entry_changed = 1;
-	return false;
-}
-
 static void _handle_response(GtkDialog *dialog, gint response_id,
 			     popup_info_t *popup_win)
 {
@@ -305,7 +299,7 @@ static void _add_col_to_treeview(GtkTreeView *tree_view,
 		g_object_set(renderer,
 			     "model", model,
 			     "text-column", 0,
-			     "has-entry", display_data->extra,
+			     "has-entry", 1,
 			     "editable", TRUE,
 			     NULL);
 	} else if(display_data->extra == EDIT_TEXTBOX) {
@@ -612,7 +606,7 @@ extern void create_page(GtkNotebook *notebook, display_data_t *display_data)
 	GtkWidget *image = NULL;
 	int err;
 
-	if(display_data->id == NEW_PAGE) {
+	if(display_data->id == TAB_PAGE) {
 		table = gtk_table_new(PAGE_CNT, 3, FALSE);
 		image = gtk_image_new_from_stock(
 			GTK_STOCK_ADD, GTK_ICON_SIZE_SMALL_TOOLBAR);
@@ -1408,7 +1402,7 @@ extern void display_admin_edit(GtkTable *table, void *type_msg, int *row,
 
 		/* set global variable so we know something changed */
 		g_signal_connect(entry, "changed",
-				 (GCallback)_entry_changed,
+				 G_CALLBACK(entry_changed),
 				 NULL);
 	} else /* others can't be altered by the user */
 		return;
@@ -1635,12 +1629,12 @@ extern char *tab_pos_to_str(int pos)
 	return "Unknown";
 }
 
-extern char *visible_to_str()
+extern char *visible_to_str(sview_config_t *sview_config)
 {
 	char *ret = NULL;
 	int i = 0;
 	for(i=0; i<PAGE_CNT; i++)
-		if(working_sview_config.page_visible[i]) {
+		if(sview_config->page_visible[i]) {
 			if(ret)
 				xstrcat(ret, ",");
 			xstrcat(ret, page_to_str(i));
@@ -1648,3 +1642,10 @@ extern char *visible_to_str()
 
 	return ret;
 }
+
+extern gboolean entry_changed(GtkWidget *widget, void *msg)
+{
+	global_entry_changed = 1;
+	return false;
+}
+

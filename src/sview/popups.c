@@ -526,6 +526,7 @@ extern void create_search_popup(GtkAction *action, gpointer user_data)
 	} else if(!strcmp(name, "state_jobs")) {
 		display_data_t pulldown_display_data[] = {
 			{G_TYPE_NONE, JOB_PENDING, "Pending", TRUE, -1},
+			{G_TYPE_NONE, JOB_CONFIGURING, "Configuring", TRUE, -1},
 			{G_TYPE_NONE, JOB_RUNNING, "Running", TRUE, -1},
 			{G_TYPE_NONE, JOB_SUSPENDED, "Suspended", TRUE, -1},
 			{G_TYPE_NONE, JOB_COMPLETE, "Complete", TRUE, -1},

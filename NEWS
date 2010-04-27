@@ -18,6 +18,9 @@ documents those changes that are of interest to users and admins.
     -Added DebugFlags option of "gres" for detailed debugging of gres actions.
  -- Slurmd modified to log slow slurmstepd startup and note possible file system
     problem.
+ -- sview - There is now a .slurm/sviewrc created when runnning sview.
+    Defaults are put in there as to how sview looks when first launched.
+    You can set these by Ctrl-S or Options->Set Default Settings.
 
 * Changes in SLURM 2.2.0.pre5
 =============================
