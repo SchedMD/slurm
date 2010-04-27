@@ -505,6 +505,24 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+extern void *dup_node_state(void *gres_data)
+{
+	gpu_node_state_t *gres_ptr = (gpu_node_state_t *) gres_data;
+	gpu_node_state_t *new_gres;
+
+	if (gres_ptr == NULL)
+		return NULL;
+
+	new_gres = xmalloc(sizeof(gpu_node_state_t));
+	new_gres->gpu_cnt_found  = gres_ptr->gpu_cnt_found;
+	new_gres->gpu_cnt_config = gres_ptr->gpu_cnt_config;
+	new_gres->gpu_cnt_avail  = gres_ptr->gpu_cnt_avail;
+	new_gres->gpu_cnt_alloc  = gres_ptr->gpu_cnt_alloc;
+	new_gres->gpu_bit_alloc  = bit_copy(gres_ptr->gpu_bit_alloc);
+
+	return new_gres;
+}
+
 extern void node_state_log(void *gres_data, char *node_name)
 {
 	gpu_node_state_t *gres_ptr;
