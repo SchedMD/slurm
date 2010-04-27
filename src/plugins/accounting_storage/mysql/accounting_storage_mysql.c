@@ -667,6 +667,15 @@ extern int last_affected_rows(MYSQL *mysql_db)
 	return rows;
 }
 
+extern void reset_mysql_conn(mysql_conn_t *mysql_conn)
+{
+	if(mysql_conn->rollback) {
+		mysql_db_rollback(mysql_conn->db_conn);
+	}
+	xfree(mysql_conn->auto_incr_query);
+	list_flush(mysql_conn->update_list);
+}
+
 extern int create_cluster_tables(MYSQL *db_conn, char *cluster_name)
 {
 	storage_field_t assoc_table_fields[] = {
@@ -1018,9 +1027,11 @@ extern int remove_cluster_tables(MYSQL *db_conn, char *cluster_name)
 		return SLURM_SUCCESS;
 	}
 	mysql_free_result(result);
-	query = xstrdup_printf("drop table \"%s_%s\", \"%s_%s\", \"%s_%s\", \"%s_%s\", "
-			       "\"%s_%s\", \"%s_%s\", \"%s_%s\", \"%s_%s\", \"%s_%s\", \"%s_%s\", "
-			       "\"%s_%s\", \"%s_%s\", \"%s_%s\", \"%s_%s\", \"%s_%s\", \"%s_%s\";",
+	query = xstrdup_printf("drop table \"%s_%s\", \"%s_%s\", "
+			       "\"%s_%s\", \"%s_%s\", "
+			       "\"%s_%s\", \"%s_%s\", \"%s_%s\", \"%s_%s\", "
+			       "\"%s_%s\", \"%s_%s\", \"%s_%s\", \"%s_%s\", "
+			       "\"%s_%s\", \"%s_%s\", \"%s_%s\", \"%s_%s\";",
 			       cluster_name, assoc_table,
 			       cluster_name, assoc_day_table,
 			       cluster_name, assoc_hour_table,
@@ -1306,11 +1317,7 @@ extern int modify_common(mysql_conn_t *mysql_conn,
 	xfree(query);
 
 	if(rc != SLURM_SUCCESS) {
-		if(mysql_conn->rollback) {
-			mysql_db_rollback(mysql_conn->db_conn);
-		}
-		list_flush(mysql_conn->update_list);
-
+		reset_mysql_conn(mysql_conn);
 		return SLURM_ERROR;
 	}
 
@@ -1418,11 +1425,7 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 	rc = mysql_db_query(mysql_conn->db_conn, query);
 	xfree(query);
 	if(rc != SLURM_SUCCESS) {
-		if(mysql_conn->rollback) {
-			mysql_db_rollback(mysql_conn->db_conn);
-		}
-		list_flush(mysql_conn->update_list);
-
+		reset_mysql_conn(mysql_conn);
 		return SLURM_ERROR;
 	} else if((table == slurmdb_coord_table)
 		  || (table == qos_table)
@@ -1430,7 +1433,7 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 		return SLURM_SUCCESS;
 
 	/* mark deleted=1 or remove completely the accounting tables
-	*/
+	 */
 	if(table != assoc_table) {
 		if(!assoc_char) {
 			error("no assoc_char");
@@ -1479,8 +1482,8 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 			rem_assoc->id = atoi(row[0]);
 			rem_assoc->cluster = xstrdup(cluster_name);
 			if(addto_update_list(mysql_conn->update_list,
-					      SLURMDB_REMOVE_ASSOC,
-					      rem_assoc) != SLURM_SUCCESS)
+					     SLURMDB_REMOVE_ASSOC,
+					     rem_assoc) != SLURM_SUCCESS)
 				error("couldn't add to the update list");
 		}
 		mysql_free_result(result);
@@ -1508,10 +1511,7 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 	rc = mysql_db_query(mysql_conn->db_conn, query);
 	xfree(query);
 	if(rc != SLURM_SUCCESS) {
-		if(mysql_conn->rollback) {
-			mysql_db_rollback(mysql_conn->db_conn);
-		}
-		list_flush(mysql_conn->update_list);
+		reset_mysql_conn(mysql_conn);
 		return SLURM_ERROR;
 	}
 
@@ -1536,10 +1536,7 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 	if(!(result = mysql_db_query_ret(
 		     mysql_conn->db_conn, query, 0))) {
 		xfree(query);
-		if(mysql_conn->rollback) {
-			mysql_db_rollback(mysql_conn->db_conn);
-		}
-		list_flush(mysql_conn->update_list);
+		reset_mysql_conn(mysql_conn);
 		return SLURM_ERROR;
 	}
 	xfree(query);
@@ -1595,10 +1592,7 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 	}
 	mysql_free_result(result);
 	if(rc == SLURM_ERROR) {
-		if(mysql_conn->rollback) {
-			mysql_db_rollback(mysql_conn->db_conn);
-		}
-		list_flush(mysql_conn->update_list);
+		reset_mysql_conn(mysql_conn);
 		return rc;
 	}
 
@@ -1630,11 +1624,7 @@ just_update:
 	rc = mysql_db_query(mysql_conn->db_conn, query);
 	xfree(query);
 	if(rc != SLURM_SUCCESS) {
-		if(mysql_conn->rollback) {
-			mysql_db_rollback(mysql_conn->db_conn);
-		}
-		xfree(mysql_conn->auto_incr_query);
-		list_flush(mysql_conn->update_list);
+		reset_mysql_conn(mysql_conn);
 	}
 
 	return rc;
@@ -1796,13 +1786,8 @@ extern int acct_storage_p_commit(mysql_conn_t *mysql_conn, bool commit)
 			/* Since any use of altering a tables
 			   AUTO_INCREMENT will make it so you can't
 			   rollback, save it until right at the end.
-			   for now we also want to check if
-			   update_list exists since I didn't want to
-			   alter the code all sorts since it is
-			   different in 2.2.
 			*/
-			if(mysql_conn->auto_incr_query
-			   && list_count(mysql_conn->update_list)) {
+			if(mysql_conn->auto_incr_query) {
 				debug3("%d(%d) query\n%s",
 				       mysql_conn->conn, __LINE__,
 				       mysql_conn->auto_incr_query);
@@ -2121,7 +2106,7 @@ extern int clusteracct_storage_p_node_down(mysql_conn_t *mysql_conn,
 	}
 
 	return as_mysql_node_down(mysql_conn, node_ptr,
-			       event_time, reason, reason_uid);
+				  event_time, reason, reason_uid);
 }
 
 extern int clusteracct_storage_p_node_up(mysql_conn_t *mysql_conn,
@@ -2152,9 +2137,9 @@ extern int clusteracct_storage_p_register_ctld(mysql_conn_t *mysql_conn,
 }
 
 extern int clusteracct_storage_p_cluster_cpus(mysql_conn_t *mysql_conn,
-					       char *cluster_nodes,
-					       uint32_t cpus,
-					       time_t event_time)
+					      char *cluster_nodes,
+					      uint32_t cpus,
+					      time_t event_time)
 {
 	if(!mysql_conn->cluster_name) {
 		error("%s:%d no cluster name", THIS_FILE, __LINE__);
@@ -2162,7 +2147,7 @@ extern int clusteracct_storage_p_cluster_cpus(mysql_conn_t *mysql_conn,
 	}
 
 	return as_mysql_cluster_cpus(mysql_conn,
-				  cluster_nodes, cpus, event_time);
+				     cluster_nodes, cpus, event_time);
 }
 
 /*
