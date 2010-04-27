@@ -349,10 +349,7 @@ extern int as_mysql_add_wckeys(mysql_conn_t *mysql_conn, uint32_t uid,
 	xfree(user_name);
 
 	if(!added) {
-		if(mysql_conn->rollback) {
-			mysql_db_rollback(mysql_conn->db_conn);
-		}
-		list_flush(mysql_conn->update_list);
+		reset_mysql_conn(mysql_conn);
 	}
 
 	return rc;

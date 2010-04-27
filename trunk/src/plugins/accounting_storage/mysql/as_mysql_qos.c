@@ -386,10 +386,7 @@ extern int as_mysql_add_qos(mysql_conn_t *mysql_conn, uint32_t uid, List qos_lis
 	xfree(user_name);
 
 	if(!added) {
-		if(mysql_conn->rollback) {
-			mysql_db_rollback(mysql_conn->db_conn);
-		}
-		list_flush(mysql_conn->update_list);
+		reset_mysql_conn(mysql_conn);
 	}
 
 	return rc;
@@ -734,10 +731,7 @@ extern List as_mysql_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 	rc = mysql_db_query(mysql_conn->db_conn, query);
 	xfree(query);
 	if(rc != SLURM_SUCCESS) {
-		if(mysql_conn->rollback) {
-			mysql_db_rollback(mysql_conn->db_conn);
-		}
-		list_flush(mysql_conn->update_list);
+		reset_mysql_conn(mysql_conn);
 		list_destroy(ret_list);
 		return NULL;
 	}

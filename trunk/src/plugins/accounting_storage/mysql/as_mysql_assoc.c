@@ -2366,10 +2366,7 @@ end_it:
 		}
 	} else {
 		xfree(txn_query);
-		if(mysql_conn->rollback) {
-			mysql_db_rollback(mysql_conn->db_conn);
-		}
-		list_flush(mysql_conn->update_list);
+		reset_mysql_conn(mysql_conn);
 	}
 	list_destroy(local_cluster_list);
 	return rc;
@@ -2494,14 +2491,10 @@ extern List as_mysql_modify_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 	xfree(extra);
 
 	if(!ret_list) {
-		if(mysql_conn->rollback) {
-			mysql_db_rollback(mysql_conn->db_conn);
-		}
+		reset_mysql_conn(mysql_conn);
 		return NULL;
 	} else if(!list_count(ret_list)) {
-		if(mysql_conn->rollback) {
-			mysql_db_rollback(mysql_conn->db_conn);
-		}
+		reset_mysql_conn(mysql_conn);
 		errno = SLURM_NO_CHANGE_IN_DATA;
 		debug3("didn't effect anything");
 		return ret_list;
@@ -2638,14 +2631,10 @@ extern List as_mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 	xfree(extra);
 
 	if(!ret_list) {
-		if(mysql_conn->rollback) {
-			mysql_db_rollback(mysql_conn->db_conn);
-		}
+		reset_mysql_conn(mysql_conn);
 		return NULL;
 	} else if(!list_count(ret_list)) {
-		if(mysql_conn->rollback) {
-			mysql_db_rollback(mysql_conn->db_conn);
-		}
+		reset_mysql_conn(mysql_conn);
 		errno = SLURM_NO_CHANGE_IN_DATA;
 		debug3("didn't effect anything");
 		return ret_list;
