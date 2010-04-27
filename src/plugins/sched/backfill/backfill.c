@@ -580,6 +580,7 @@ static void _attempt_backfill(void)
 				job_ptr->time_limit = orig_time_limit;
 			}
 			if (rc == ESLURM_ACCOUNTING_POLICY) {
+				/* Unknown future start time, just skip job */
 				continue;
 			} else if (rc != SLURM_SUCCESS) {
 				/* Planned to start job, but something bad
