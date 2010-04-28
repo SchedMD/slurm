@@ -1083,8 +1083,8 @@ extern int slurm_job_node_ready(uint32_t job_id)
 	} else if (resp.msg_type == RESPONSE_SLURM_RC) {
 		int job_rc = ((return_code_msg_t *) resp.data) ->
 				return_code;
-		if ((job_rc == ESLURM_INVALID_PARTITION_NAME)
-		||  (job_rc == ESLURM_INVALID_JOB_ID))
+		if ((job_rc == ESLURM_INVALID_PARTITION_NAME) ||
+		    (job_rc == ESLURM_INVALID_JOB_ID))
 			rc = READY_JOB_FATAL;
 		else	/* EAGAIN */
 			rc = READY_JOB_ERROR;

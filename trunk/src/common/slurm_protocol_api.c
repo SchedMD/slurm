@@ -228,6 +228,23 @@ uint16_t slurm_get_batch_start_timeout(void)
 	return batch_start_timeout;
 }
 
+/* slurm_get_suspend_timeout
+ * RET SuspendTimeout value from slurm.conf
+ */
+uint16_t slurm_get_suspend_timeout(void)
+{
+        uint16_t suspend_timeout = 0;
+        slurm_ctl_conf_t *conf;
+
+        if(slurmdbd_conf) {
+        } else {
+                conf = slurm_conf_lock();
+                suspend_timeout = conf->suspend_timeout;
+                slurm_conf_unlock();
+        }
+        return suspend_timeout;
+}
+
 /* slurm_get_resume_timeout
  * RET ResumeTimeout value from slurm.conf
  */
