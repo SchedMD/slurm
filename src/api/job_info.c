@@ -581,7 +581,8 @@ line13:
 			xstrcat(out, " ");
 		else
 			xstrcat(out, "\n   ");
-		sprintf(tmp_line, "Command=%s", job_ptr->command);
+		snprintf(tmp_line, sizeof(tmp_line), "Command=%s",
+			 job_ptr->command);
 		xstrcat(out, tmp_line);
 	}
 	if (one_liner)
@@ -590,7 +591,7 @@ line13:
 		xstrcat(out, "\n   ");
 
 	/****** Line 17 ******/
-	sprintf(tmp_line, "WorkDir=%s", job_ptr->work_dir);
+	snprintf(tmp_line, sizeof(tmp_line), "WorkDir=%s", job_ptr->work_dir);
 	xstrcat(out, tmp_line);
 
 #ifdef HAVE_BG
