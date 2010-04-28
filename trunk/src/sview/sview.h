@@ -152,11 +152,11 @@ typedef enum { SEARCH_JOB_ID = 1,
 /* Input parameters */
 typedef struct {
 	bool admin_mode;
+	uint16_t default_page;
 	uint32_t grid_hori;
 	bool grid_speedup;
 	uint32_t grid_vert;
 	uint32_t grid_x_width;
-	uint16_t page_default;
 	GtkWidget *page_check_widget[PAGE_CNT];
 	bool page_visible[PAGE_CNT];
 	uint16_t refresh_delay;
@@ -300,6 +300,8 @@ extern void print_date();
 
 //sview.c
 extern void refresh_main(GtkAction *action, gpointer user_data);
+extern void toggle_tab_visiblity(GtkToggleButton *toggle_button,
+				 display_data_t *display_data);
 extern void tab_pressed(GtkWidget *widget, GdkEventButton *event,
 			display_data_t *display_data);
 extern void close_tab(GtkWidget *widget, GdkEventButton *event,

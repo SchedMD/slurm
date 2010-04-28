@@ -322,44 +322,6 @@ static void _set_grid(GtkToggleAction *action)
 	return;
 }
 
-static void _toggle_tab_visiblity(GtkToggleButton *toggle_button,
-				  display_data_t *display_data)
-{
-	static bool already_here = false;
-	int page_num;
-	GtkWidget *visible_tab;
-
-	/* When calling the set active below it signals this again, so
-	   to avoid an infinite loop we will just fall out.
-	*/
-	if(already_here)
-		return;
-
-	already_here = true;
-	page_num = display_data->extra;
-	visible_tab = gtk_notebook_get_nth_page(
-		GTK_NOTEBOOK(main_notebook), page_num);
-	if(toggle_button) {
-		working_sview_config.page_visible[page_num] =
-			gtk_toggle_button_get_active(toggle_button);
-	}
-
-	if(working_sview_config.page_visible[page_num])
-		gtk_widget_show(visible_tab);
-	else
-		gtk_widget_hide(visible_tab);
-
-	if(working_sview_config.page_check_widget[page_num])
-		gtk_toggle_button_set_active(
-			GTK_TOGGLE_BUTTON(working_sview_config.
-					  page_check_widget[page_num]),
-			working_sview_config.page_visible[page_num]);
-
-	already_here = false;
-
-	return;
-}
-
 static void _set_hidden(GtkToggleAction *action)
 {
 	char *tmp;
@@ -777,33 +739,24 @@ static void _get_info_tabs(GtkTable *table, display_data_t *display_data)
 		if(main_display_data[i].id == -1)
 			break;
 
-		if(!main_display_data[i].name
-		   || (i == TAB_PAGE))
+		if(!main_display_data[i].name || (i == TAB_PAGE))
 			continue;
-
-		working_sview_config.page_check_widget[i] =
-			gtk_check_button_new_with_label(
-				main_display_data[i].name);
+		if(!default_sview_config.page_check_widget[i])
+			default_sview_config.page_check_widget[i] =
+				gtk_check_button_new_with_label(
+					main_display_data[i].name);
 		gtk_table_attach_defaults(
 			table,
-			working_sview_config.page_check_widget[i],
+			default_sview_config.page_check_widget[i],
 			0, 1, i, i+1);
-		if(working_sview_config.page_visible[i])
-			gtk_toggle_button_set_active(
-				GTK_TOGGLE_BUTTON(
-					working_sview_config.
-					page_check_widget[i]),
-				true);
-		else
-			gtk_toggle_button_set_active(
-				GTK_TOGGLE_BUTTON(
-					working_sview_config.
-					page_check_widget[i]),
-				false);
+		gtk_toggle_button_set_active(
+			GTK_TOGGLE_BUTTON(
+				default_sview_config.page_check_widget[i]),
+			working_sview_config.page_visible[i]);
 		g_signal_connect(
-			G_OBJECT(working_sview_config.page_check_widget[i]),
+			G_OBJECT(default_sview_config.page_check_widget[i]),
 			"toggled",
-			G_CALLBACK(_toggle_tab_visiblity),
+			G_CALLBACK(toggle_tab_visiblity),
 			main_display_data+i);
 	}
 
@@ -819,6 +772,44 @@ extern void refresh_main(GtkAction *action, gpointer user_data)
 		g_error("no pages in notebook for refresh\n");
 	force_refresh = 1;
 	_page_switched(GTK_NOTEBOOK(main_notebook), NULL, page, NULL);
+}
+
+extern void toggle_tab_visiblity(GtkToggleButton *toggle_button,
+				 display_data_t *display_data)
+{
+	static bool already_here = false;
+	int page_num;
+	GtkWidget *visible_tab;
+
+	/* When calling the set active below it signals this again, so
+	   to avoid an infinite loop we will just fall out.
+	*/
+	if(already_here)
+		return;
+
+	already_here = true;
+	page_num = display_data->extra;
+	visible_tab = gtk_notebook_get_nth_page(
+		GTK_NOTEBOOK(main_notebook), page_num);
+	if(toggle_button) {
+		working_sview_config.page_visible[page_num] =
+			gtk_toggle_button_get_active(toggle_button);
+	}
+
+	if(working_sview_config.page_visible[page_num])
+		gtk_widget_show(visible_tab);
+	else
+		gtk_widget_hide(visible_tab);
+
+	if(default_sview_config.page_check_widget[page_num])
+		gtk_toggle_button_set_active(
+			GTK_TOGGLE_BUTTON(default_sview_config.
+					  page_check_widget[page_num]),
+			working_sview_config.page_visible[page_num]);
+
+	already_here = false;
+
+	return;
 }
 
 extern void tab_pressed(GtkWidget *widget, GdkEventButton *event,
@@ -844,7 +835,7 @@ extern void close_tab(GtkWidget *widget, GdkEventButton *event,
 		/* don't do anything with a right click */
 		return;
 	working_sview_config.page_visible[display_data->extra] = false;
-	_toggle_tab_visiblity(NULL, display_data);
+	toggle_tab_visiblity(NULL, display_data);
 	//g_print("hid %d\n", display_data->extra);
 }
 
@@ -955,7 +946,7 @@ int main(int argc, char *argv[])
 		visible_tab = gtk_notebook_get_nth_page(
 			GTK_NOTEBOOK(main_notebook), i);
 		if(working_sview_config.page_visible[i]
-		   || (i == working_sview_config.page_default)
+		   || (i == working_sview_config.default_page)
 		   || (i == TAB_PAGE))
 			gtk_widget_show(visible_tab);
 		else
@@ -972,13 +963,13 @@ int main(int argc, char *argv[])
 	   it here.
 	*/
 	if(gtk_notebook_get_current_page(GTK_NOTEBOOK(main_notebook))
-	   == working_sview_config.page_default)
+	   == working_sview_config.default_page)
 		_page_switched(GTK_NOTEBOOK(main_notebook), NULL,
-			       working_sview_config.page_default, NULL);
+			       working_sview_config.default_page, NULL);
 	else
 		gtk_notebook_set_current_page(GTK_NOTEBOOK(main_notebook),
 					      working_sview_config.
-					      page_default);
+					      default_page);
 
 	/* Finished! */
 	gtk_main ();
