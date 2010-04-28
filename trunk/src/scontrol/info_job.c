@@ -789,7 +789,7 @@ static int _wait_bluegene_block_ready(resource_allocation_response_msg_t *alloc)
 #else
 static int _wait_nodes_ready(uint32_t job_id)
 {
-	int is_ready = SLURM_ERROR, i, rc;
+	int is_ready = SLURM_ERROR, i, rc = 0;
 	int cur_delay = 0;
 	int suspend_time, resume_time, max_delay;
 
