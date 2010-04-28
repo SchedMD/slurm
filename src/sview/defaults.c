@@ -47,7 +47,7 @@
 enum {
 	SORTID_POS = POS_LOC,
 	SORTID_ADMIN,
-	SORTID_PAGE_DEFAULT,
+	SORTID_DEFAULT_PAGE,
 	SORTID_GRID_HORI,
 	SORTID_GRID_VERT,
 	SORTID_GRID_X_WIDTH,
@@ -68,7 +68,7 @@ static display_data_t display_data_defaults[] = {
 	{G_TYPE_INT, SORTID_POS, NULL, FALSE, EDIT_NONE, NULL},
 	{G_TYPE_STRING, SORTID_ADMIN, "Start in Admin Mode",
 	 TRUE, EDIT_MODEL, NULL, create_model_defaults, NULL},
-	{G_TYPE_STRING, SORTID_PAGE_DEFAULT, "Default Page",
+	{G_TYPE_STRING, SORTID_DEFAULT_PAGE, "Default Page",
 	 TRUE, EDIT_MODEL, NULL, create_model_defaults, NULL},
 	{G_TYPE_STRING, SORTID_GRID_HORI, "Grid Horizontal",
 	 TRUE, EDIT_TEXTBOX, NULL, create_model_defaults, NULL},
@@ -108,8 +108,8 @@ static void _set_active_combo_defaults(GtkComboBox *combo,
 	case SORTID_SHOW_HIDDEN:
 		action = sview_config->show_hidden;
 		break;
-	case SORTID_PAGE_DEFAULT:
-		action = sview_config->page_default;
+	case SORTID_DEFAULT_PAGE:
+		action = sview_config->default_page;
 		break;
 	case SORTID_TAB_POS:
 		if (sview_config->tab_pos == GTK_POS_TOP)
@@ -147,19 +147,19 @@ static const char *_set_sview_config(sview_config_t *sview_config,
 		else
 			sview_config->admin_mode = 0;
 		break;
-	case SORTID_PAGE_DEFAULT:
+	case SORTID_DEFAULT_PAGE:
 		if(!strcasecmp(new_text, "job"))
-			sview_config->page_default = JOB_PAGE;
+			sview_config->default_page = JOB_PAGE;
 		else if(!strcasecmp(new_text, "part"))
-			sview_config->page_default = PART_PAGE;
+			sview_config->default_page = PART_PAGE;
 		else if(!strcasecmp(new_text, "res"))
-			sview_config->page_default = RESV_PAGE;
+			sview_config->default_page = RESV_PAGE;
 		else if(!strcasecmp(new_text, "block"))
-			sview_config->page_default = BLOCK_PAGE;
+			sview_config->default_page = BLOCK_PAGE;
 		else if(!strcasecmp(new_text, "node"))
-			sview_config->page_default = NODE_PAGE;
+			sview_config->default_page = NODE_PAGE;
 		else
-			sview_config->page_default = JOB_PAGE;
+			sview_config->default_page = JOB_PAGE;
 		break;
 	case SORTID_GRID_HORI:
 		temp_int = strtol(new_text, (char **)NULL, 10);
@@ -227,6 +227,15 @@ static const char *_set_sview_config(sview_config_t *sview_config,
 return_error:
 	global_edit_error = 1;
 	return type;
+}
+
+static void _admin_focus_toggle(GtkToggleButton *toggle_button,
+				bool *visible)
+{
+	if(visible) {
+		(*visible) = gtk_toggle_button_get_active(toggle_button);
+		global_send_update_msg = 1;
+	}
 }
 
 static void _admin_edit_combo_box_defaults(GtkComboBox *combo,
@@ -358,6 +367,44 @@ static void _local_display_admin_edit(GtkTable *table,
 		g_signal_connect(entry, "changed",
 				 G_CALLBACK(entry_changed),
 				 NULL);
+	} else if(display_data->extra == EDIT_ARRAY) {
+		int i;
+		switch(display_data->id) {
+		case SORTID_PAGE_VISIBLE:
+			label = gtk_label_new(display_data->name);
+			gtk_table_attach(table, label, 0, 1,
+					 *row, (*row)+1,
+					 GTK_FILL | GTK_EXPAND,
+					 GTK_SHRINK, 0, 0);
+			for(i=0; i<PAGE_CNT; i++) {
+				if(main_display_data[i].id == -1)
+					break;
+
+				if(!main_display_data[i].name
+				   || (i == TAB_PAGE))
+					continue;
+				entry = gtk_check_button_new_with_label(
+					main_display_data[i].name);
+				gtk_toggle_button_set_active(
+					GTK_TOGGLE_BUTTON(entry),
+					sview_config->page_visible[i]);
+				g_signal_connect(
+					G_OBJECT(entry),
+					"toggled",
+					G_CALLBACK(_admin_focus_toggle),
+					&sview_config->page_visible[i]);
+
+				gtk_table_attach(table, entry, 1, 2,
+						 *row, (*row)+1,
+						 GTK_FILL, GTK_SHRINK,
+						 0, 0);
+				(*row)++;
+			}
+			break;
+		default:
+			break;
+		}
+			return;
 	} else /* others can't be altered by the user */
 		return;
 	label = gtk_label_new(display_data->name);
@@ -401,7 +448,7 @@ static void _init_sview_conf()
 	default_sview_config.admin_mode = FALSE;
 	default_sview_config.grid_speedup = 0;
 	default_sview_config.show_grid = TRUE;
-	default_sview_config.page_default = JOB_PAGE;
+	default_sview_config.default_page = JOB_PAGE;
 	default_sview_config.tab_pos = GTK_POS_TOP;
 
 	if(getenv("SVIEW_GRID_SPEEDUP"))
@@ -463,15 +510,15 @@ extern int load_defaults()
 	s_p_get_boolean(&default_sview_config.admin_mode, "AdminMode", hashtbl);
 	if (s_p_get_string(&tmp_str, "DefaultPage", hashtbl)) {
 		if (slurm_strcasestr(tmp_str, "job"))
-			default_sview_config.page_default = JOB_PAGE;
+			default_sview_config.default_page = JOB_PAGE;
 		else if (slurm_strcasestr(tmp_str, "part"))
-			default_sview_config.page_default = PART_PAGE;
+			default_sview_config.default_page = PART_PAGE;
 		else if (slurm_strcasestr(tmp_str, "res"))
-			default_sview_config.page_default = RESV_PAGE;
+			default_sview_config.default_page = RESV_PAGE;
 		else if (slurm_strcasestr(tmp_str, "block"))
-			default_sview_config.page_default = BLOCK_PAGE;
+			default_sview_config.default_page = BLOCK_PAGE;
 		else if (slurm_strcasestr(tmp_str, "node"))
-			default_sview_config.page_default = NODE_PAGE;
+			default_sview_config.default_page = NODE_PAGE;
 		xfree(tmp_str);
 	}
 	s_p_get_uint32(&default_sview_config.grid_hori,
@@ -510,10 +557,8 @@ extern int load_defaults()
 			default_sview_config.page_visible[PART_PAGE] = 1;
 		if (slurm_strcasestr(tmp_str, "res"))
 			default_sview_config.page_visible[RESV_PAGE] = 1;
-#ifdef HAVE_BG
 		if (slurm_strcasestr(tmp_str, "block"))
 			default_sview_config.page_visible[BLOCK_PAGE] = 1;
-#endif
 		if (slurm_strcasestr(tmp_str, "node"))
 			default_sview_config.page_visible[NODE_PAGE] = 1;
 		xfree(tmp_str);
@@ -565,7 +610,7 @@ extern int save_defaults()
 		goto end_it;
 	tmp_str = xstrdup_printf("DefaultPage=%s\n",
 				 page_to_str(default_sview_config.
-					     page_default));
+					     default_page));
 	rc = _write_to_file(fd, tmp_str);
 	xfree(tmp_str);
 	if(rc != SLURM_SUCCESS)
@@ -671,7 +716,7 @@ extern GtkListStore *create_model_defaults(int type)
 				   1, type,
 				   -1);
 		break;
-	case SORTID_PAGE_DEFAULT:
+	case SORTID_DEFAULT_PAGE:
 		model = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_INT);
 		gtk_list_store_append(model, &iter);
 		gtk_list_store_set(model, &iter,
@@ -821,7 +866,18 @@ extern int configure_defaults()
 				working_sview_config.tab_pos);
 			gtk_notebook_set_current_page(
 				GTK_NOTEBOOK(main_notebook),
-				working_sview_config.page_default);
+				working_sview_config.default_page);
+			for(i=0; i<PAGE_CNT; i++) {
+				if(main_display_data[i].id == -1)
+					break;
+
+				if(!main_display_data[i].name
+				   || (i == TAB_PAGE))
+					continue;
+
+				toggle_tab_visiblity(NULL,
+						     main_display_data+i);
+			}
 			get_system_stats(main_grid_table);
 			/******************************************/
 
