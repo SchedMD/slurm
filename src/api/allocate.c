@@ -91,7 +91,7 @@ static resource_allocation_response_msg_t *_wait_for_allocation_response(
  * IN job_desc_msg - description of resource allocation request
  * OUT slurm_alloc_msg - response to request
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
- * NOTE: free the allocated using slurm_free_resource_allocation_response_msg
+ * NOTE: free the response using slurm_free_resource_allocation_response_msg()
  */
 int
 slurm_allocate_resources (job_desc_msg_t *req,
@@ -165,8 +165,7 @@ slurm_allocate_resources (job_desc_msg_t *req,
  * RET allocation structure on success, NULL on error set errno to
  *	indicate the error (errno will be ETIMEDOUT if the timeout is reached
  *      with no allocation granted)
- * NOTE: free the allocation structure using
- *	slurm_free_resource_allocation_response_msg
+ * NOTE: free the response using slurm_free_resource_allocation_response_msg()
  */
 resource_allocation_response_msg_t *
 slurm_allocate_resources_blocking (const job_desc_msg_t *user_req,
@@ -445,7 +444,7 @@ slurm_allocation_lookup(uint32_t jobid,
  * IN jobid - job allocation identifier
  * OUT info - job allocation information
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
- * NOTE: free the "resp" using slurm_free_resource_allocation_response_msg
+ * NOTE: free the response using slurm_free_resource_allocation_response_msg()
  */
 int
 slurm_allocation_lookup_lite(uint32_t jobid,

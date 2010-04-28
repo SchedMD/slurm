@@ -191,10 +191,13 @@ available).</p>
 when node zero of the allocation is ready for use and pre-processing can
 be performed as needed before using <i>srun</i> to launch job steps.
 Waiting for all nodes to be booted can be accomplished by adding the 
-command "<i>scontrol waitjob $SLURM_JOBID</i>" within the script or by
+command "<i>scontrol wait_job $SLURM_JOBID</i>" within the script or by
 adding that command to the the system <i>Prolog</i> as configured in 
 <i>slurm.conf</i>, which would create the delay for all jobs on the system.
-Note that the <i>scontrol waitjob</i> command was added to SLURM version 2.2.
+Insure that the <i>Prolog</i> code is zero to avoid draining the node
+(do not use the scontrol exit code to avoid draining the node on error,
+for example if the job is explicitly cancelled during startup).
+Note that the <i>scontrol wait_job</i> command was added to SLURM version 2.2.
 When using earlier versions of SLURM, one may execute "<i>srun /bin/true</i>"
 or some other command first to insure that all nodes are booted and ready
 for use.</p>

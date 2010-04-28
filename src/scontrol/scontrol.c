@@ -670,8 +670,8 @@ _process_command (int argc, char *argv[])
 		}
 
 	}
-	else if ((strncasecmp (tag, "suspend", MAX(taglen, 2)) == 0)
-	||       (strncasecmp (tag, "resume", MAX(taglen, 3)) == 0)) {
+	else if ((strncasecmp (tag, "suspend", MAX(taglen, 2)) == 0) ||
+	         (strncasecmp (tag, "resume", MAX(taglen, 3)) == 0)) {
 		if (argc > 2) {
 			exit_code = 1;
 			if (quiet_flag != 1)
@@ -686,12 +686,32 @@ _process_command (int argc, char *argv[])
 					"too few arguments for keyword:%s\n",
 					tag);
 		} else {
-			error_code =scontrol_suspend(argv[0], argv[1]);
+			error_code = scontrol_suspend(argv[0], argv[1]);
 			if (error_code) {
 				exit_code = 1;
 				if (quiet_flag != 1)
 					slurm_perror ("slurm_suspend error");
 			}
+		}
+	}
+	else if (strncasecmp (tag, "wait_job", MAX(taglen, 2)) == 0) {
+		if (argc > 2) {
+			exit_code = 1;
+			if (quiet_flag != 1)
+				fprintf(stderr,
+					"too many arguments for keyword:%s\n",
+					tag);
+		}
+		else if (argc < 2) {
+			exit_code = 1;
+			if (quiet_flag != 1)
+				fprintf(stderr,
+					"too few arguments for keyword:%s\n",
+					tag);
+		} else {
+			error_code = scontrol_job_ready(argv[1]);
+			if (error_code)
+				exit_code = 1;
 		}
 	}
 	else if (strncasecmp (tag, "setdebug", MAX(taglen, 2)) == 0) {
@@ -1453,12 +1473,14 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
                               step or bluegene block/subbp configuration   \n\
      verbose                  enable detailed logging.                     \n\
      version                  display tool version number.                 \n\
+     wait_job <job_id>        wait until the nodes allocated to the job    \n\
+                              are booted and usable                        \n\
      !!                       Repeat the last command entered.             \n\
                                                                            \n\
   <ENTITY> may be \"config\", \"daemons\", \"job\", \"node\", \"partition\"\n\
        \"reservation\", \"hostlist\", \"hostnames\", \"slurmd\",           \n\
        \"topology\", or \"step\"                                           \n\
-       (also for BlueGene only: \"block\" or \"subbp\").                  \n\
+       (also for BlueGene only: \"block\" or \"subbp\").                   \n\
                                                                            \n\
   <ID> may be a configuration parameter name, job id, node name, partition \n\
        name, reservation name, job step id, or hostlist or pathname to a   \n\

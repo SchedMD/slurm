@@ -2,7 +2,7 @@
  *  scontrol.h - definitions for all scontrol modules
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -104,8 +104,13 @@ extern int quiet_flag;	/* quiet=1, verbose=-1, normal=0 */
 
 extern int	scontrol_checkpoint(char *op, char *job_step_id_str, int argc,
 				    char **argv);
+extern int	scontrol_create_part(int argc, char *argv[]);
+extern int	scontrol_create_res(int argc, char *argv[]);
 extern int	scontrol_encode_hostlist(char *hostlist);
 extern int	scontrol_job_notify(int argc, char *argv[]);
+extern int	scontrol_job_ready(char *job_id_str);
+extern void	scontrol_list_pids(const char *jobid_str,
+				   const char *node_name);
 extern int 	scontrol_load_jobs (job_info_msg_t ** job_buffer_pptr);
 extern int 	scontrol_load_nodes (node_info_msg_t ** node_buffer_pptr,
 				     uint16_t show_flags);
@@ -133,9 +138,5 @@ extern int	scontrol_update_node (int argc, char *argv[]);
 extern int	scontrol_update_part (int argc, char *argv[]);
 extern int	scontrol_update_res (int argc, char *argv[]);
 extern int	scontrol_update_step (int argc, char *argv[]);
-extern void     scontrol_list_pids(const char *jobid_str,
-				   const char *node_name);
-extern int	scontrol_create_part(int argc, char *argv[]);
-extern int	scontrol_create_res(int argc, char *argv[]);
 
 #endif
