@@ -156,6 +156,9 @@ static int   _roll_usage(slurmdbd_conn_t *slurmdbd_conn,
 static int   _send_mult_job_start(slurmdbd_conn_t *slurmdbd_conn,
 				  Buf in_buffer, Buf *out_buffer,
 				  uint32_t *uid);
+static int   _send_mult_msg(slurmdbd_conn_t *slurmdbd_conn,
+			    Buf in_buffer, Buf *out_buffer,
+			    uint32_t *uid);
 static int   _step_complete(slurmdbd_conn_t *slurmdbd_conn,
 			    Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _step_start(slurmdbd_conn_t *slurmdbd_conn,
@@ -399,6 +402,10 @@ proc_req(slurmdbd_conn_t *slurmdbd_conn,
 		case DBD_SEND_MULT_JOB_START:
 			rc = _send_mult_job_start(slurmdbd_conn,
 						  in_buffer, out_buffer, uid);
+			break;
+		case DBD_SEND_MULT_MSG:
+			rc = _send_mult_msg(slurmdbd_conn,
+					    in_buffer, out_buffer, uid);
 			break;
 		case DBD_STEP_COMPLETE:
 			rc = _step_complete(slurmdbd_conn,
@@ -2393,7 +2400,7 @@ static int   _modify_wckeys(slurmdbd_conn_t *slurmdbd_conn,
 }
 
 static int _modify_reservation(slurmdbd_conn_t *slurmdbd_conn,
-			     Buf in_buffer, Buf *out_buffer, uint32_t *uid)
+			       Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 {
 	int rc = SLURM_SUCCESS;
 	dbd_rec_msg_t *rec_msg = NULL;
@@ -2440,7 +2447,8 @@ static int _node_state(slurmdbd_conn_t *slurmdbd_conn,
 		goto end_it;
 	}
 	if (slurmdbd_unpack_node_state_msg(&node_state_msg,
-					   slurmdbd_conn->rpc_version, in_buffer) !=
+					   slurmdbd_conn->rpc_version,
+					   in_buffer) !=
 	    SLURM_SUCCESS) {
 		comment = "Failed to unpack DBD_NODE_STATE message";
 		error("%s", comment);
@@ -2580,7 +2588,8 @@ static int   _register_ctld(slurmdbd_conn_t *slurmdbd_conn,
 		goto end_it;
 	}
 	if (slurmdbd_unpack_register_ctld_msg(&register_ctld_msg,
-					      slurmdbd_conn->rpc_version, in_buffer) !=
+					      slurmdbd_conn->rpc_version,
+					      in_buffer) !=
 	    SLURM_SUCCESS) {
 		comment = "Failed to unpack DBD_REGISTER_CTLD message";
 		error("%s", comment);
@@ -3065,7 +3074,7 @@ static int   _remove_users(slurmdbd_conn_t *slurmdbd_conn,
 }
 
 static int   _remove_wckeys(slurmdbd_conn_t *slurmdbd_conn,
-			      Buf in_buffer, Buf *out_buffer, uint32_t *uid)
+			    Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 {
 	int rc = SLURM_SUCCESS;
 	dbd_cond_msg_t *get_msg = NULL;
@@ -3135,7 +3144,7 @@ static int   _remove_wckeys(slurmdbd_conn_t *slurmdbd_conn,
 }
 
 static int _remove_reservation(slurmdbd_conn_t *slurmdbd_conn,
-			     Buf in_buffer, Buf *out_buffer, uint32_t *uid)
+			       Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 {
 	int rc = SLURM_SUCCESS;
 	dbd_rec_msg_t *rec_msg = NULL;
@@ -3158,7 +3167,7 @@ static int _remove_reservation(slurmdbd_conn_t *slurmdbd_conn,
 	debug2("DBD_REMOVE_RESV: called");
 
 	rc = acct_storage_g_remove_reservation(slurmdbd_conn->db_conn,
-					     rec_msg->rec);
+					       rec_msg->rec);
 
 end_it:
 	slurmdbd_free_rec_msg(rec_msg, DBD_REMOVE_RESV);
@@ -3221,14 +3230,14 @@ static int   _send_mult_job_start(slurmdbd_conn_t *slurmdbd_conn,
 		error("%s %u", comment, *uid);
 		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
 					      ESLURM_ACCESS_DENIED, comment,
-					      DBD_JOB_START);
+					      DBD_SEND_MULT_JOB_START);
 		return SLURM_ERROR;
 	}
 
 	if (slurmdbd_unpack_list_msg(&get_msg, slurmdbd_conn->rpc_version,
 				     DBD_SEND_MULT_JOB_START,
 				     in_buffer) != SLURM_SUCCESS) {
-		comment = "Failed to unpack DBD_MULT_JOB_START message";
+		comment = "Failed to unpack DBD_SEND_MULT_JOB_START message";
 		error("%s", comment);
 		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
 					      SLURM_ERROR, comment,
@@ -3256,6 +3265,63 @@ static int   _send_mult_job_start(slurmdbd_conn_t *slurmdbd_conn,
 	if(list_msg.my_list)
 		list_destroy(list_msg.my_list);
 
+	return SLURM_SUCCESS;
+}
+
+static int   _send_mult_msg(slurmdbd_conn_t *slurmdbd_conn,
+			    Buf in_buffer, Buf *out_buffer,
+			    uint32_t *uid)
+{
+	dbd_list_msg_t *get_msg = NULL;
+	dbd_list_msg_t list_msg;
+	char *comment = NULL;
+	ListIterator itr = NULL;
+	Buf req_buf = NULL, ret_buf = NULL;
+	int rc = SLURM_SUCCESS;
+
+	if (*uid != slurmdbd_conf->slurm_user_id) {
+		comment = "DBD_SEND_MULT_MSG message from invalid uid";
+		error("%s %u", comment, *uid);
+		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
+					      ESLURM_ACCESS_DENIED, comment,
+					      DBD_SEND_MULT_MSG);
+		return SLURM_ERROR;
+	}
+
+	if (slurmdbd_unpack_list_msg(&get_msg, slurmdbd_conn->rpc_version,
+				     DBD_SEND_MULT_MSG,
+				     in_buffer) != SLURM_SUCCESS) {
+		comment = "Failed to unpack DBD_SEND_MULT_MSG message";
+		error("%s", comment);
+		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
+					      SLURM_ERROR, comment,
+					      DBD_SEND_MULT_MSG);
+		return SLURM_ERROR;
+	}
+
+	list_msg.my_list = list_create(slurmdbd_free_buffer);
+
+	itr = list_iterator_create(get_msg->my_list);
+	while((req_buf = list_next(itr))) {
+		ret_buf = NULL;
+		rc = proc_req(slurmdbd_conn, get_buf_data(req_buf),
+			      size_buf(req_buf), 0, &ret_buf, uid);
+		if(ret_buf)
+			list_append(list_msg.my_list, ret_buf);
+		if (rc != SLURM_SUCCESS)
+			break;
+	}
+	list_iterator_destroy(itr);
+
+	slurmdbd_free_list_msg(get_msg);
+
+	*out_buffer = init_buf(1024);
+	pack16((uint16_t) DBD_GOT_MULT_MSG, *out_buffer);
+	slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->rpc_version,
+			       DBD_GOT_MULT_MSG, *out_buffer);
+	if(list_msg.my_list)
+		list_destroy(list_msg.my_list);
+	
 	return SLURM_SUCCESS;
 }
 

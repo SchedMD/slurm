@@ -162,7 +162,9 @@ typedef enum {
 	DBD_GET_EVENTS, 	/* Get event information		*/
 	DBD_GOT_EVENTS, 	/* Response to DBD_GET_EVENTS		*/
 	DBD_SEND_MULT_JOB_START,/* Send multiple job starts		*/
-	DBD_GOT_MULT_JOB_START	/* Get response to DBD_SEND_MULT_JOB_START */
+	DBD_GOT_MULT_JOB_START,	/* Get response to DBD_SEND_MULT_JOB_START */
+	DBD_SEND_MULT_MSG,      /* Send multiple message		*/
+	DBD_GOT_MULT_MSG	/* Get response to DBD_SEND_MULT_MSG */
 } slurmdbd_msg_type_t;
 
 /*****************************************************************************\
@@ -417,6 +419,8 @@ extern slurmdbd_msg_type_t str_2_slurmdbd_msg_type(char *msg_type);
 extern char *slurmdbd_msg_type_2_str(slurmdbd_msg_type_t msg_type,
 				     int get_enum);
 
+extern void slurmdbd_free_buffer(void *x);
+
 /*****************************************************************************\
  * Free various SlurmDBD message structures
 \*****************************************************************************/
@@ -505,6 +509,9 @@ void inline slurmdbd_pack_usage_msg(dbd_usage_msg_t *msg,
 				    uint16_t rpc_version,
 				    slurmdbd_msg_type_t type,
 				    Buf buffer);
+void inline slurmdbd_pack_buffer(void *in,
+				 uint16_t rpc_version,
+				 Buf buffer);
 
 /*****************************************************************************\
  * Unpack various SlurmDBD message structures from a buffer
@@ -569,5 +576,8 @@ int inline slurmdbd_unpack_usage_msg(dbd_usage_msg_t **msg,
 				     uint16_t rpc_version,
 				     slurmdbd_msg_type_t type,
 				     Buf buffer);
+int inline slurmdbd_unpack_buffer(void **in,
+				  uint16_t rpc_version,
+				  Buf buffer);
 
 #endif	/* !_SLURMDBD_DEFS_H */

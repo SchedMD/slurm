@@ -107,7 +107,6 @@ static bool      rollback_started    = 0;
 static bool      halt_agent          = 0;
 
 static void * _agent(void *x);
-static void   _agent_queue_del(void *x);
 static void   _close_slurmdbd_fd(void);
 static void   _create_agent(void);
 static bool   _fd_readable(slurm_fd fd, int read_timeout);
@@ -449,6 +448,8 @@ extern Buf pack_slurmdbd_msg(slurmdbd_msg_t *req, uint16_t rpc_version)
 	case DBD_GOT_CONFIG:
 	case DBD_SEND_MULT_JOB_START:
 	case DBD_GOT_MULT_JOB_START:
+	case DBD_SEND_MULT_MSG:
+	case DBD_GOT_MULT_MSG:
 		slurmdbd_pack_list_msg(
 			(dbd_list_msg_t *)req->data, rpc_version,
 			req->msg_type, buffer);
@@ -617,6 +618,8 @@ extern int unpack_slurmdbd_msg(slurmdbd_msg_t *resp,
 	case DBD_GOT_CONFIG:
 	case DBD_SEND_MULT_JOB_START:
 	case DBD_GOT_MULT_JOB_START:
+	case DBD_SEND_MULT_MSG:
+	case DBD_GOT_MULT_MSG:
 		rc = slurmdbd_unpack_list_msg(
 			(dbd_list_msg_t **)&resp->data, rpc_version,
 			resp->msg_type, buffer);
@@ -914,6 +917,10 @@ extern slurmdbd_msg_type_t str_2_slurmdbd_msg_type(char *msg_type)
 		return DBD_SEND_MULT_JOB_START;
 	} else if(!strcasecmp(msg_type, "Got Multiple Job Starts")) {
 		return DBD_GOT_MULT_JOB_START;
+	} else if(!strcasecmp(msg_type, "Send Multiple Messages")) {
+		return DBD_SEND_MULT_MSG;
+	} else if(!strcasecmp(msg_type, "Got Multiple Message Returns")) {
+		return DBD_GOT_MULT_MSG;
 	} else {
 		return NO_VAL;
 	}
@@ -1356,12 +1363,31 @@ extern char *slurmdbd_msg_type_2_str(slurmdbd_msg_type_t msg_type, int get_enum)
 		} else
 			return "Got Multiple Job Starts";
 		break;
+	case DBD_SEND_MULT_MSG:
+		if(get_enum) {
+			return "DBD_SEND_MULT_MSG";
+		} else
+			return "Send Multiple Messages";
+		break;
+	case DBD_GOT_MULT_MSG:
+		if(get_enum) {
+			return "DBD_GOT_MULT_MSG";
+		} else
+			return "Got Multiple Message Returns";
+		break;
 	default:
 		return "Unknown";
 		break;
 	}
 
 	return "Unknown";
+}
+
+extern void slurmdbd_free_buffer(void *x)
+{
+	Buf buffer = (Buf) x;
+	if(buffer)
+		free_buf(buffer);
 }
 
 static int _send_init_msg()
@@ -1487,17 +1513,12 @@ static int _send_msg(Buf buffer)
 	return SLURM_SUCCESS;
 }
 
-static int _get_return_code(uint16_t rpc_version, int read_timeout)
+static int _unpack_return_code(uint16_t rpc_version, Buf buffer)
 {
-	Buf buffer;
-	uint16_t msg_type;
+	uint16_t msg_type = -1;
 	dbd_rc_msg_t *msg;
 	dbd_id_rc_msg_t *id_msg;
 	int rc = SLURM_ERROR;
-
-	buffer = _recv_msg(read_timeout);
-	if (buffer == NULL)
-		return rc;
 
 	safe_unpack16(&msg_type, buffer);
 	switch(msg_type) {
@@ -1511,6 +1532,100 @@ static int _get_return_code(uint16_t rpc_version, int read_timeout)
 				error("slurmdbd: DBD_ID_RC is %d", rc);
 		} else
 			error("slurmdbd: unpack message error");
+		break;
+	case DBD_RC:
+		if (slurmdbd_unpack_rc_msg(&msg, rpc_version, buffer)
+		    == SLURM_SUCCESS) {
+			rc = msg->return_code;
+			if (rc != SLURM_SUCCESS) {
+				if(msg->sent_type == DBD_REGISTER_CTLD &&
+				   slurm_get_accounting_storage_enforce()) {
+					error("slurmdbd: DBD_RC is %d from "
+					      "%s(%u): %s",
+					      rc,
+					      slurmdbd_msg_type_2_str(
+						      msg->sent_type, 1),
+					      msg->sent_type,
+					      msg->comment);
+					fatal("You need to add this cluster "
+					      "to accounting if you want to "
+					      "enforce associations, or no "
+					      "jobs will ever run.");
+				} else
+					debug("slurmdbd: DBD_RC is %d from "
+					      "%s(%u): %s",
+					      rc,
+					      slurmdbd_msg_type_2_str(
+						      msg->sent_type, 1),
+					      msg->sent_type,
+					      msg->comment);
+
+			}
+			slurmdbd_free_rc_msg(msg);
+		} else
+			error("slurmdbd: unpack message error");
+		break;
+	default:
+		error("slurmdbd: bad message type %d != DBD_RC", msg_type);
+	}
+
+unpack_error:
+
+	return rc;
+}
+
+static int _get_return_code(uint16_t rpc_version, int read_timeout)
+{
+	int rc = SLURM_ERROR;
+	Buf buffer = _recv_msg(read_timeout);
+	if (buffer == NULL)
+		return rc;
+
+	rc = _unpack_return_code(rpc_version, buffer);
+
+	free_buf(buffer);
+	return rc;
+}
+
+static int _handle_mult_rc_ret(uint16_t rpc_version, int read_timeout)
+{
+	Buf buffer;
+	uint16_t msg_type;
+	dbd_rc_msg_t *msg;
+	dbd_list_msg_t *list_msg;
+	int rc = SLURM_ERROR;
+	Buf out_buf = NULL;
+
+	buffer = _recv_msg(read_timeout);
+	if (buffer == NULL)
+		return rc;
+
+	safe_unpack16(&msg_type, buffer);
+	switch(msg_type) {
+	case DBD_GOT_MULT_MSG:
+		if (slurmdbd_unpack_list_msg(
+			    &list_msg, rpc_version, DBD_GOT_MULT_MSG, buffer)
+		    != SLURM_SUCCESS) {
+			error("slurmdbd: unpack message error");
+			break;
+		}
+
+		slurm_mutex_lock(&agent_lock);
+		if (agent_list) {
+			ListIterator itr =
+				list_iterator_create(list_msg->my_list);
+			while((out_buf = list_next(itr))) {
+				if((rc = _unpack_return_code(
+					    rpc_version, out_buf))
+				    != SLURM_SUCCESS)
+					break;
+
+				free_buf(list_dequeue(agent_list));
+			}
+			list_iterator_destroy(itr);
+		}
+		slurm_mutex_unlock(&agent_lock);
+		slurmdbd_free_list_msg(list_msg);
 		break;
 	case DBD_RC:
 		if (slurmdbd_unpack_rc_msg(&msg, rpc_version, buffer)
@@ -1728,7 +1843,7 @@ static void _create_agent(void)
 	agent_shutdown = 0;
 
 	if (agent_list == NULL) {
-		agent_list = list_create(_agent_queue_del);
+		agent_list = list_create(slurmdbd_free_buffer);
 		if (agent_list == NULL)
 			fatal("list_create: malloc failure");
 		_load_dbd_state();
@@ -1742,12 +1857,6 @@ static void _create_agent(void)
 			fatal("pthread_create: %m");
 		slurm_attr_destroy(&agent_attr);
 	}
-}
-
-static void _agent_queue_del(void *x)
-{
-	Buf buffer = (Buf) x;
-	free_buf(buffer);
 }
 
 static void _shutdown_agent(void)
@@ -1799,6 +1908,12 @@ static void *_agent(void *x)
 	static time_t fail_time = 0;
 	int sigarray[] = {SIGUSR1, 0};
 	int read_timeout = SLURMDBD_TIMEOUT * 1000;
+	slurmdbd_msg_t list_req;
+	dbd_list_msg_t list_msg;
+
+	list_req.msg_type = DBD_SEND_MULT_MSG;
+	list_req.data = &list_msg;
+	memset(&list_msg, 0, sizeof(dbd_list_msg_t));
 	/* DEF_TIMERS; */
 
 	/* Prepare to catch SIGUSR1 to interrupt pending
@@ -1837,9 +1952,14 @@ static void *_agent(void *x)
 		} else if ((cnt > 0) && ((cnt % 50) == 0))
 			info("slurmdbd: agent queue size %u", cnt);
 		/* Leave item on the queue until processing complete */
-		if (agent_list)
-			buffer = (Buf) list_peek(agent_list);
-		else
+		if (agent_list) {
+			if(list_count(agent_list) > 1) {
+				list_msg.my_list = agent_list;
+				buffer = pack_slurmdbd_msg(&list_req,
+							   SLURMDBD_VERSION);
+			} else
+				buffer = (Buf) list_peek(agent_list);
+		} else
 			buffer = NULL;
 		slurm_mutex_unlock(&agent_lock);
 		if (buffer == NULL) {
@@ -1863,6 +1983,9 @@ static void *_agent(void *x)
 				break;
 			}
 			error("slurmdbd: Failure sending message: %d: %m", rc);
+		} else if(list_msg.my_list) {
+			rc = _handle_mult_rc_ret(SLURMDBD_VERSION,
+						 read_timeout);
 		} else {
 			rc = _get_return_code(SLURMDBD_VERSION, read_timeout);
 			if (rc == EAGAIN) {
@@ -1882,7 +2005,16 @@ static void *_agent(void *x)
 
 		slurm_mutex_lock(&agent_lock);
 		if (agent_list && (rc == SLURM_SUCCESS)) {
-			buffer = (Buf) list_dequeue(agent_list);
+			/* If we sent a mult_msg we just need to free
+			   buffer, we don't need to requeue, just mark
+			   list_msg.my_list as NULL as that is the
+			   sign we sent a mult_msg.
+			*/
+			if(list_msg.my_list)
+				list_msg.my_list = NULL;
+			else
+				buffer = (Buf) list_dequeue(agent_list);
+
 			free_buf(buffer);
 			fail_time = 0;
 		} else {
@@ -3167,6 +3299,10 @@ void inline slurmdbd_pack_list_msg(dbd_list_msg_t *msg,
 	case DBD_GOT_MULT_JOB_START:
 		my_function = slurmdbd_pack_id_rc_msg;
 		break;
+	case DBD_SEND_MULT_MSG:
+	case DBD_GOT_MULT_MSG:
+		my_function = slurmdbd_pack_buffer;
+		break;
 	default:
 		fatal("Unknown pack type");
 		return;
@@ -3260,6 +3396,11 @@ int inline slurmdbd_unpack_list_msg(dbd_list_msg_t **msg, uint16_t rpc_version,
 	case DBD_GOT_MULT_JOB_START:
 		my_function = slurmdbd_unpack_id_rc_msg;
 		my_destroy = slurmdbd_free_id_rc_msg;
+		break;
+	case DBD_SEND_MULT_MSG:
+	case DBD_GOT_MULT_MSG:
+		my_function = slurmdbd_unpack_buffer;
+		my_destroy = slurmdbd_free_buffer;
 		break;
 	default:
 		fatal("Unknown unpack type");
@@ -3704,3 +3845,34 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+void inline slurmdbd_pack_buffer(void *in,
+				 uint16_t rpc_version,
+				 Buf buffer)
+{
+	Buf object = (Buf)in;
+
+	packmem(get_buf_data(object), get_buf_offset(object), buffer);
+}
+
+int inline slurmdbd_unpack_buffer(void **out,
+				  uint16_t rpc_version,
+				  Buf buffer)
+{
+	Buf out_ptr = NULL;
+	char *msg = NULL;
+	uint32_t uint32_tmp;
+
+	safe_unpackmem_xmalloc(&msg, &uint32_tmp, buffer);
+	if(!(out_ptr = create_buf(msg, uint32_tmp)))
+		goto unpack_error;
+	*out = out_ptr;
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	xfree(msg);
+	slurmdbd_free_buffer(out_ptr);
+	*out = NULL;
+	return SLURM_ERROR;
+
+}

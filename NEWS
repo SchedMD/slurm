@@ -31,6 +31,8 @@ documents those changes that are of interest to users and admins.
  -- The Priority/mulitfactor plugin now takes into consideration size of job
     in cpus as well as size in nodes when looking at the job size factor.
     Previously only nodes were considered.
+ -- When using the SlurmDBD messages waiting to be sent will be combined
+    and sent in one message.
 
 * Changes in SLURM 2.2.0.pre5
 =============================
