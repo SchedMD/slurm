@@ -435,40 +435,38 @@ static void _get_priority_factors(time_t start_time, struct job_record *job_ptr,
 	}
 
 	if(weight_js) {
-		/* FIXME: This will not work correctly when
-		 * the job is requesting smaller than 1 node.
-		 * We need a way to figure out how to look at
-		 * cpus requested here for those situations.  This can
-		 * probably be done with the num_cpus, but
-		 * that isn't always used.  This is usually
-		 * set on bluegene systems, which is where
-		 * this problem arose.  The code below was
-		 * tested on a bluegene system, seemed to
-		 * work, but isn't probably that generic.
-		 * Also the variable total_cpus doesn't exist
-		 * yet so that would need to be defined.
-		 */
+		uint32_t cpu_cnt = 0;
+		/* On the initial run of this we don't have total_cpus
+		   so go off the requesting.  After the first shot
+		   total_cpus should be filled in.
+		*/
+		if(job_ptr->total_cpus)
+			cpu_cnt = job_ptr->total_cpus;
+		else if(job_ptr->details
+			&& (job_ptr->details->max_cpus != NO_VAL))
+			cpu_cnt = job_ptr->details->max_cpus;
+		else if(job_ptr->details && job_ptr->details->min_cpus)
+			cpu_cnt = job_ptr->details->min_cpus;
 
 		if(favor_small) {
 			factors->priority_js = (double)(node_record_count
 					   - job_ptr->details->min_nodes)
 				/ (double)node_record_count;
-/* 			if(job_ptr->num_cpus && job_ptr->num_cpus != NO_VAL) { */
-/* 				factors->priority_js +=  */
-/* 					(double)(total_cpus - job_ptr->num_cpus) */
-/* 					/ (double)total_cpus; */
-/* 				factors->priority_js /= 2;			 */
-/* 			} */
+			if(cpu_cnt) {
+				factors->priority_js +=
+					(double)(cluster_cpus - cpu_cnt)
+					/ (double)cluster_cpus;
+				factors->priority_js /= 2;
+			}
 		} else {
 			factors->priority_js =
 				(double)job_ptr->details->min_nodes
 				/ (double)node_record_count;
-/* 			if(job_ptr->num_cpus && job_ptr->num_cpus != NO_VAL) { */
-/* 				factors->priority_js +=  */
-/* 					(double)job_ptr->num_cpus */
-/* 					/ (double)total_cpus; */
-/* 				factors->priority_js /= 2;			 */
-/* 			} */
+			if(cpu_cnt) {
+				factors->priority_js +=
+					(double)cpu_cnt / (double)cluster_cpus;
+				factors->priority_js /= 2;
+			}
 		}
 		if (factors->priority_js < .0)
 			factors->priority_js = 0.0;
