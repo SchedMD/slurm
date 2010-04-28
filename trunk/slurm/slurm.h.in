@@ -1569,7 +1569,7 @@ extern void slurm_init_job_desc_msg PARAMS((job_desc_msg_t * job_desc_msg));
  *   a job allocation if resources are immediately.  Otherwise it just contains
  *   the job id of the enqueued job request.
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
- * NOTE: free the allocated using slurm_free_resource_allocation_response_msg
+ * NOTE: free the response using slurm_free_resource_allocation_response_msg()
  */
 extern int slurm_allocate_resources PARAMS((
 	job_desc_msg_t * job_desc_msg ,
@@ -1591,8 +1591,7 @@ extern int slurm_allocate_resources PARAMS((
  * RET allocation structure on success, NULL on error set errno to
  *	indicate the error (errno will be ETIMEDOUT if the timeout is reached
  *      with no allocation granted)
- * NOTE: free the allocation structure using
- *	slurm_free_resource_allocation_response_msg
+ * NOTE: free the response using slurm_free_resource_allocation_response_msg()
  */
 extern resource_allocation_response_msg_t *
 	slurm_allocate_resources_blocking PARAMS((
@@ -1633,7 +1632,7 @@ extern int slurm_allocation_lookup PARAMS((
  * IN job_id - job allocation identifier
  * OUT resp - job allocation information
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
- * NOTE: free "info" using slurm_free_job_alloc_info_response_msg
+ * NOTE: free the response using slurm_free_resource_allocation_response_msg()
  */
 extern int slurm_allocation_lookup_lite PARAMS((
 	uint32_t job_id, resource_allocation_response_msg_t **info));

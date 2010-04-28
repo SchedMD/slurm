@@ -760,7 +760,7 @@ static int _wait_bluegene_block_ready(resource_allocation_response_msg_t *alloc)
 	char *block_id = NULL;
 	int cur_delay = 0;
 	int max_delay = BG_FREE_PREVIOUS_BLOCK + BG_MIN_BLOCK_BOOT +
-		(BG_INCR_BLOCK_BOOT * alloc->node_cnt);
+			(BG_INCR_BLOCK_BOOT * alloc->node_cnt);
 
 	pending_job_id = alloc->job_id;
 	select_g_select_jobinfo_get(alloc->select_jobinfo,

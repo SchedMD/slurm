@@ -2,7 +2,7 @@
  *  info_job.c - job information functions for scontrol.
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -42,6 +42,12 @@
 
 #include "scontrol.h"
 #include "src/common/stepd_api.h"
+#ifdef HAVE_BG
+#include "src/plugins/select/bluegene/plugin/bg_boot_time.h"
+#include "src/plugins/select/bluegene/wrap_rm_api.h"
+#endif
+
+#define POLL_SLEEP	3	/* retry interval in seconds  */
 
 static bool	_in_node_bit_list(int inx, int *node_list_array);
 static int	_scontrol_load_jobs(job_info_msg_t ** job_buffer_pptr,
@@ -689,3 +695,171 @@ scontrol_encode_hostlist(char *hostlist)
 	return SLURM_SUCCESS;
 }
 
+#ifdef HAVE_BG
+/*
+ * Test if any BG blocks are in deallocating state since they are
+ * probably related to this job we will want to sleep longer
+ * RET	1:  deallocate in progress
+ *	0:  no deallocate in progress
+ *     -1: error occurred
+ */
+static int _blocks_dealloc(void)
+{
+	static block_info_msg_t *bg_info_ptr = NULL, *new_bg_ptr = NULL;
+	int rc = 0, error_code = 0, i;
+
+	if (bg_info_ptr) {
+		error_code = slurm_load_block_info(bg_info_ptr->last_update,
+						   &new_bg_ptr);
+		if (error_code == SLURM_SUCCESS)
+			slurm_free_block_info_msg(&bg_info_ptr);
+		else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
+			error_code = SLURM_SUCCESS;
+			new_bg_ptr = bg_info_ptr;
+		}
+	} else {
+		error_code = slurm_load_block_info((time_t) NULL, &new_bg_ptr);
+	}
+
+	if (error_code) {
+		error("slurm_load_partitions: %s",
+		      slurm_strerror(slurm_get_errno()));
+		return -1;
+	}
+	for (i=0; i<new_bg_ptr->record_count; i++) {
+		if(new_bg_ptr->block_array[i].state
+		   == RM_PARTITION_DEALLOCATING) {
+			rc = 1;
+			break;
+		}
+	}
+	bg_info_ptr = new_bg_ptr;
+	return rc;
+}
+
+static int _wait_bluegene_block_ready(resource_allocation_response_msg_t *alloc)
+{
+	int is_ready = SLURM_ERROR, i, rc = 0;
+	char *block_id = NULL;
+	int cur_delay = 0;
+	int max_delay = BG_FREE_PREVIOUS_BLOCK + BG_MIN_BLOCK_BOOT +
+			(BG_INCR_BLOCK_BOOT * alloc->node_cnt);
+
+	select_g_select_jobinfo_get(alloc->select_jobinfo,
+				    SELECT_JOBDATA_BLOCK_ID,
+				    &block_id);
+
+	for (i=0; (cur_delay < max_delay); i++) {
+		if (i) {
+			if (i == 1) {
+				info("Waiting for block %s to become ready for "
+				     "job", block_id);
+			} else
+				debug("still waiting");
+			sleep(POLL_SLEEP);
+			rc = _blocks_dealloc();
+			if ((rc == 0) || (rc == -1))
+				cur_delay += POLL_SLEEP;
+		}
+
+		rc = slurm_job_node_ready(alloc->job_id);
+
+		if (rc == READY_JOB_FATAL)
+			break;				/* fatal error */
+		if ((rc == READY_JOB_ERROR) || (rc == EAGAIN))
+			continue;			/* retry */
+		if ((rc & READY_JOB_STATE) == 0)	/* job killed */
+			break;
+		if (rc & READY_NODE_STATE) {		/* job and node ready */
+			is_ready = SLURM_SUCCESS;
+			break;
+		}
+	}
+
+	if (is_ready == SLURM_SUCCESS)
+     		info("Block %s is ready for job %u", block_id, alloc->job_id);
+	else if ((rc & READY_JOB_STATE) == 0)
+		info("Job %u no longer running", alloc->job_id);
+	else
+		info("Problem running job %u", alloc->job_id);
+	xfree(block_id);
+
+	return is_ready;
+}
+#else
+static int _wait_nodes_ready(uint32_t job_id)
+{
+	int is_ready = SLURM_ERROR, i, rc;
+	int cur_delay = 0;
+	int suspend_time, resume_time, max_delay;
+
+	suspend_time = slurm_get_suspend_timeout();
+	resume_time  = slurm_get_resume_timeout();
+	if ((suspend_time == 0) || (resume_time == 0))
+		return SLURM_SUCCESS;	/* Power save mode disabled */
+	max_delay = suspend_time + resume_time;
+	max_delay *= 5;		/* Allow for ResumeRate support */
+
+	for (i=0; (cur_delay < max_delay); i++) {
+		if (i) {
+			if (i == 1)
+				info("Waiting for nodes to boot");
+			sleep(POLL_SLEEP);
+			cur_delay += POLL_SLEEP;
+		}
+
+		rc = slurm_job_node_ready(job_id);
+
+		if (rc == READY_JOB_FATAL)
+			break;				/* fatal error */
+		if ((rc == READY_JOB_ERROR) || (rc == EAGAIN))
+			continue;			/* retry */
+		if ((rc & READY_JOB_STATE) == 0)	/* job killed */
+			break;
+		if (rc & READY_NODE_STATE) {		/* job and node ready */
+			is_ready = SLURM_SUCCESS;
+			break;
+		}
+	}
+	if (is_ready == SLURM_SUCCESS)
+     		info("Nodes are ready for job %u", job_id);
+	else if ((rc & READY_JOB_STATE) == 0)
+		info("Job %u no longer running", job_id);
+	else
+		info("Problem running job %u", job_id);
+
+	return is_ready;
+}
+#endif	/* HAVE_BG */
+
+/*
+ * Wait until a job is ready to execute or enters some failed state
+ * RET 1: job ready to run
+ *     0: job can't run (cancelled, failure state, timeout, etc.)
+ */
+extern int scontrol_job_ready(char *job_id_str)
+{
+	int rc;
+	uint32_t job_id;
+
+	job_id = atoi(job_id_str);
+	if (job_id <= 0) {
+		fprintf(stderr, "Invlaid job_id %s", job_id_str);
+		return SLURM_ERROR;
+	}
+
+#ifdef HAVE_BG
+	resource_allocation_response_msg_t *alloc;
+	rc = slurm_allocation_lookup_lite(job_id, &alloc);
+	if (rc == SLURM_SUCCESS) {
+		rc = _wait_bluegene_block_ready(alloc);
+		slurm_free_resource_allocation_response_msg(alloc);
+	} else {
+		error("slurm_allocation_lookup_lite: %m");
+		rc = SLURM_ERROR;
+	}
+#else
+	rc = _wait_nodes_ready(job_id);
+#endif
+	return rc;
+}

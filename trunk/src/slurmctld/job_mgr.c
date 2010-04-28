@@ -7141,6 +7141,9 @@ extern int job_node_ready(uint32_t job_id, int *ready)
 	if (job_ptr == NULL)
 		return ESLURM_INVALID_JOB_ID;
 
+	if (!IS_JOB_RUNNING(job_ptr))
+		return 0;
+
 	rc = select_g_job_ready(job_ptr);
 	if (rc == READY_JOB_FATAL)
 		return ESLURM_INVALID_PARTITION_NAME;
@@ -7149,8 +7152,7 @@ extern int job_node_ready(uint32_t job_id, int *ready)
 
 	if (rc)
 		rc = READY_NODE_STATE;
-	if (IS_JOB_RUNNING(job_ptr))
-		rc |= READY_JOB_STATE;
+	rc |= READY_JOB_STATE;	/* Validated running above */
 
 	*ready = rc;
 	return SLURM_SUCCESS;
