@@ -526,7 +526,7 @@ extern List create_node_info_list(node_info_msg_t *node_info_ptr, int changed)
 	node_info_t *node_ptr = NULL;
 	char user[32], time_str[32];
 
-	if(!changed && info_list) {
+	if(!node_info_ptr || (!changed && info_list)) {
 		goto update_color;
 	}
 
@@ -571,8 +571,8 @@ extern List create_node_info_list(node_info_msg_t *node_info_ptr, int changed)
 		if(node_ptr->slurmd_start_time) {
 			slurm_make_time_str(&node_ptr->slurmd_start_time,
 					    time_str, sizeof(time_str));
-			sview_node_info_ptr->slurmd_start_time = 
-					xstrdup(time_str);
+			sview_node_info_ptr->slurmd_start_time =
+				xstrdup(time_str);
 		}
 	}
 update_color:
@@ -1073,7 +1073,7 @@ extern void get_info_node(GtkTable *table, display_data_t *display_data)
 {
 	int error_code = SLURM_SUCCESS;
 	static int view = -1;
-	node_info_msg_t *node_info_ptr = NULL;
+	static node_info_msg_t *node_info_ptr = NULL;
 	char error_char[100];
 	GtkWidget *label = NULL;
 	GtkTreeView *tree_view = NULL;
@@ -1110,11 +1110,9 @@ extern void get_info_node(GtkTable *table, display_data_t *display_data)
 		sprintf(error_char, "slurm_load_node: %s",
 			slurm_strerror(slurm_get_errno()));
 		label = gtk_label_new(error_char);
-		gtk_table_attach_defaults(table,
-					  label,
-					  0, 1, 0, 1);
-		gtk_widget_show(label);
 		display_widget = gtk_widget_ref(label);
+		gtk_table_attach_defaults(table, label, 0, 1, 0, 1);
+		gtk_widget_show(label);
 		goto end_it;
 	}
 display_it:
