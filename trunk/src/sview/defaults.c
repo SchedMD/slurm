@@ -70,15 +70,15 @@ static display_data_t display_data_defaults[] = {
 	 TRUE, EDIT_MODEL, NULL, create_model_defaults, NULL},
 	{G_TYPE_STRING, SORTID_DEFAULT_PAGE, "Default Page",
 	 TRUE, EDIT_MODEL, NULL, create_model_defaults, NULL},
-	{G_TYPE_STRING, SORTID_GRID_HORI, "Grid Horizontal",
+	{G_TYPE_STRING, SORTID_GRID_HORI, "Grid: Nodes before Horizontal break",
 	 TRUE, EDIT_TEXTBOX, NULL, create_model_defaults, NULL},
-	{G_TYPE_STRING, SORTID_GRID_VERT, "Grid Vertical",
+	{G_TYPE_STRING, SORTID_GRID_VERT, "Grid: Nodes before Vertical break",
 	 TRUE, EDIT_TEXTBOX, NULL, create_model_defaults, NULL},
-	{G_TYPE_STRING, SORTID_GRID_X_WIDTH, "Grid X Width",
+	{G_TYPE_STRING, SORTID_GRID_X_WIDTH, "Grid: Nodes in Row",
 	 TRUE, EDIT_TEXTBOX, NULL, create_model_defaults, NULL},
 	{G_TYPE_STRING, SORTID_PAGE_VISIBLE, "Visible Pages",
 	 TRUE, EDIT_ARRAY, NULL, create_model_defaults, NULL},
-	{G_TYPE_STRING, SORTID_REFRESH_DELAY, "Refresh Delay",
+	{G_TYPE_STRING, SORTID_REFRESH_DELAY, "Refresh Delay in Secs",
 	 TRUE, EDIT_TEXTBOX, NULL, create_model_defaults, NULL},
 	{G_TYPE_STRING, SORTID_SHOW_GRID, "Show Grid",
 	 TRUE, EDIT_MODEL, NULL, create_model_defaults, NULL},
@@ -372,6 +372,9 @@ static void _local_display_admin_edit(GtkTable *table,
 		switch(display_data->id) {
 		case SORTID_PAGE_VISIBLE:
 			label = gtk_label_new(display_data->name);
+			/* left justify */
+			gtk_misc_set_alignment(GTK_MISC(label),0.0,0.5);
+
 			gtk_table_attach(table, label, 0, 1,
 					 *row, (*row)+1,
 					 GTK_FILL | GTK_EXPAND,
@@ -408,6 +411,9 @@ static void _local_display_admin_edit(GtkTable *table,
 	} else /* others can't be altered by the user */
 		return;
 	label = gtk_label_new(display_data->name);
+	/* left justify */
+	gtk_misc_set_alignment(GTK_MISC(label),0.0,0.5);
+
 	gtk_table_attach(table, label, 0, 1, *row, (*row)+1,
 			 GTK_FILL | GTK_EXPAND, GTK_SHRINK,
 			 0, 0);
@@ -799,7 +805,7 @@ extern int configure_defaults()
 	gtk_dialog_add_button(GTK_DIALOG(popup),
 			      GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL);
 
-	gtk_window_set_default_size(GTK_WINDOW(popup), 200, 400);
+	gtk_window_set_default_size(GTK_WINDOW(popup), 150, 600);
 	snprintf(tmp_char, sizeof(tmp_char),
 		 "Default Settings for Sview");
 	label = gtk_label_new(tmp_char);
