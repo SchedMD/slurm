@@ -77,7 +77,8 @@
 #include "src/common/node_select.h"
 #endif
 
-#define MAX_RETRIES 3
+#define MAX_RETRIES	10
+#define POLL_SLEEP	3	/* retry interval in seconds  */
 
 char **command_argv;
 int command_argc;
@@ -109,10 +110,11 @@ static void _ping_handler(srun_ping_msg_t *msg);
 static void _node_fail_handler(srun_node_fail_msg_t *msg);
 
 #ifdef HAVE_BG
-#define POLL_SLEEP 3			/* retry interval in seconds  */
 static int _wait_bluegene_block_ready(
 			resource_allocation_response_msg_t *alloc);
 static int _blocks_dealloc(void);
+#else
+static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc);
 #endif
 
 #ifdef HAVE_CRAY_XT
@@ -267,6 +269,13 @@ int main(int argc, char *argv[])
 				      "boot of the block.");
 			goto relinquish;
 		}
+#else
+		if (!_wait_nodes_ready(alloc)) {
+			if(!allocation_interrupted)
+				error("Something is wrong with the "
+				      "boot of the nodes.");
+			goto relinquish;
+		}	
 #endif
 #ifdef HAVE_CRAY_XT
 		if (!_claim_reservation(alloc)) {
@@ -774,7 +783,7 @@ static int _wait_bluegene_block_ready(resource_allocation_response_msg_t *alloc)
 
 		if (rc == READY_JOB_FATAL)
 			break;				/* fatal error */
-		if (rc == READY_JOB_ERROR)		/* error */
+		if ((rc == READY_JOB_ERROR) || (rc == EAGAIN))
 			continue;			/* retry */
 		if ((rc & READY_JOB_STATE) == 0)	/* job killed */
 			break;
@@ -824,7 +833,7 @@ static int _blocks_dealloc(void)
 	}
 
 	if (error_code) {
-		error("slurm_load_partitions: %s\n",
+		error("slurm_load_partitions: %s",
 		      slurm_strerror(slurm_get_errno()));
 		return -1;
 	}
@@ -837,6 +846,60 @@ static int _blocks_dealloc(void)
 	}
 	bg_info_ptr = new_bg_ptr;
 	return rc;
+}
+#else
+/* returns 1 if job and nodes are ready for job to begin, 0 otherwise */
+static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc)
+{
+	int is_ready = 0, i, rc;
+	int cur_delay = 0;
+	int suspend_time, resume_time, max_delay;
+
+	suspend_time = slurm_get_suspend_timeout();
+	resume_time  = slurm_get_resume_timeout();
+	if ((suspend_time == 0) || (resume_time == 0))
+		return 1;	/* Power save mode disabled */
+	max_delay = suspend_time + resume_time;
+	max_delay *= 5;		/* Allow for ResumeRate support */
+
+	pending_job_id = alloc->job_id;
+
+	for (i=0; (cur_delay < max_delay); i++) {
+		if (i) {
+			if (i == 1)
+				info("Waiting for nodes to boot");
+			else
+				debug("still waiting");
+			sleep(POLL_SLEEP);
+			cur_delay += POLL_SLEEP;
+		}
+
+		rc = slurm_job_node_ready(alloc->job_id);
+
+		if (rc == READY_JOB_FATAL)
+			break;				/* fatal error */
+		if ((rc == READY_JOB_ERROR) || (rc == EAGAIN))
+			continue;			/* retry */
+		if ((rc & READY_JOB_STATE) == 0)	/* job killed */
+			break;
+		if (rc & READY_NODE_STATE) {		/* job and node ready */
+			is_ready = 1;
+			break;
+		}
+		if (allocation_interrupted)
+			break;
+	}
+	if (is_ready) {
+		if (i > 0)
+     			info ("Nodes %s are ready for job", alloc->node_list);
+	} else if (!allocation_interrupted)
+		error("Nodes %s are still not ready", alloc->node_list);
+	else	/* allocation_interrupted or slurmctld not responing */
+		is_ready = 0;
+
+	pending_job_id = 0;
+
+	return is_ready;
 }
 #endif	/* HAVE_BG */
 

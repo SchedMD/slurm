@@ -21,6 +21,11 @@ documents those changes that are of interest to users and admins.
  -- sview - There is now a .slurm/sviewrc created when runnning sview.
     Defaults are put in there as to how sview looks when first launched.
     You can set these by Ctrl-S or Options->Set Default Settings.
+ -- Modify srun and salloc so that after creating a resource allocation, they
+    wait for all allocated nodes to power up before proceeding. Salloc will
+    log the delay with the messages "Waiting for nodes to boot" and "Nodes are
+    ready for use". Srun will generate the same messages only if the --verbose
+    option is used.
 
 * Changes in SLURM 2.2.0.pre5
 =============================

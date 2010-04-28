@@ -1812,18 +1812,16 @@ extern int kill_running_job_by_node_name(char *node_name)
 				}
 				job_ptr->restart_cnt++;
 				/* Since the job completion logger
-				   removes the submit we need to add it
-				   again.
-				*/
+				 * removes the submit we need to add it
+				 * again. */
 				acct_policy_add_job_submit(job_ptr);
 			} else {
 				info("Killing job_id %u on failed node %s",
 				     job_ptr->job_id, node_name);
 				srun_node_fail(job_ptr->job_id, node_name);
 				job_ptr->job_state = JOB_NODE_FAIL |
-					JOB_COMPLETING;
-				job_ptr->exit_code =
-					MAX(job_ptr->exit_code, 1);
+						     JOB_COMPLETING;
+				job_ptr->exit_code = MAX(job_ptr->exit_code, 1);
 				job_ptr->state_reason = FAIL_DOWN_NODE;
 				xfree(job_ptr->state_desc);
 				if (suspended) {
@@ -1831,8 +1829,7 @@ extern int kill_running_job_by_node_name(char *node_name)
 						job_ptr->suspend_time;
 					job_ptr->tot_sus_time +=
 						difftime(now,
-							 job_ptr->
-							 suspend_time);
+							 job_ptr->suspend_time);
 				} else
 					job_ptr->end_time = time(NULL);
 				deallocate_nodes(job_ptr, false, suspended);

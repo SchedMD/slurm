@@ -173,7 +173,8 @@ nodes are in power save mode using messages of this sort:
 
 <p>Using these logs you can easily see the effect of SLURM's power saving
 support.
-You can also configure SLURM with programs that perform no action as <b>SuspendProgram</b> and <b>ResumeProgram</b> to assess the potential
+You can also configure SLURM with programs that perform no action as
+<b>SuspendProgram</b> and <b>ResumeProgram</b> to assess the potential
 impact of power saving mode before enabling it.</p>
 
 <h2>Use of Allocations</h2>
@@ -189,16 +190,20 @@ available).</p>
 <p>In the case of an <i>sbatch</i> command, the batch program will start
 when node zero of the allocation is ready for use and pre-processing can
 be performed as needed before using <i>srun</i> to launch job steps.
-The operation of <i>salloc</i> and <i>srun</i> follow a similar pattern
-of getting an job allocation at one time, but possibly being unable to
-launch job steps until later.
-If <i>ssh</i> or some other tools is used by <i>salloc</i> it may be
-desirable to execute "<i>srun /bin/true</i>" or some other command
-first to insure that all nodes are booted and ready for use.
-We plan to add a job and node state of <i>CONFIGURING</i> in SLURM
-version 2.1, which could be used to prevent salloc from executing
-any processes (including <i>ssh</i>) until all of the nodes are
-ready for use.</p>
+Waiting for all nodes to be booted can be accomplished by adding the 
+command "<i>scontrol waitjob $SLURM_JOBID</i>" within the script or by
+adding that command to the the system <i>Prolog</i> as configured in 
+<i>slurm.conf</i>, which would create the delay for all jobs on the system.
+Note that the <i>scontrol waitjob</i> command was added to SLURM version 2.2.
+When using earlier versions of SLURM, one may execute "<i>srun /bin/true</i>"
+or some other command first to insure that all nodes are booted and ready
+for use.</p>
+
+<p>The <i>salloc</i> and <i>srun</i> commands which create a resource
+allocation automatically wait for the nodes to power up in SLURM version 2.2.
+When using earlier versions of SLURM, <i>salloc</i> will return immediately
+after a resource allocation is made and one can execute "<i>srun /bin/true</i>"
+to insure that all nodes are booted and ready for use.</p>
 
 <h2>Fault Tolerance</h2>
 
@@ -239,6 +244,6 @@ and perform the following actions:
 <li>Boot the appropriate image for each node</li>
 </ol>
 
-<p style="text-align:center;">Last modified 6 August 2009</p>
+<p style="text-align:center;">Last modified 28 April 2010</p>
 
 <!--#include virtual="footer.txt"-->
