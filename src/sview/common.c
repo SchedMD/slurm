@@ -1407,6 +1407,8 @@ extern void display_admin_edit(GtkTable *table, void *type_msg, int *row,
 	} else /* others can't be altered by the user */
 		return;
 	label = gtk_label_new(display_data->name);
+	/* left justify */
+	gtk_misc_set_alignment(GTK_MISC(label),0.0,0.5);
 	gtk_table_attach(table, label, 0, 1, *row, (*row)+1,
 			 GTK_FILL | GTK_EXPAND, GTK_SHRINK,
 			 0, 0);
