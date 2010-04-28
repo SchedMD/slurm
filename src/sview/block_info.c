@@ -526,6 +526,13 @@ static List _create_block_list(partition_info_msg_t *part_info_ptr,
 		block_ptr->color_inx =
 			atoi(block_ptr->bg_block_name+3);
 #endif
+		/* on some systems they make there own blocks named
+		   whatever they want, so doing this fixes what could
+		   be a negative number.
+		*/
+		if(block_ptr->color_inx < 0)
+			block_ptr->color_inx = i;
+		
 		block_ptr->color_inx %= sview_colors_cnt;
 
 		block_ptr->nodes

@@ -619,20 +619,26 @@ line14:
 		 job_ptr->contiguous, job_ptr->licenses, job_ptr->network);
 	xstrcat(out, tmp_line);
 
-	/****** Lines 18, 19 (optional, batch only) ******/
+	/****** Line 18 (optional, batch only) ******/
 	if (job_ptr->batch_flag) {
 		if (one_liner)
 			xstrcat(out, " ");
 		else
 			xstrcat(out, "\n   ");
-		sprintf(tmp_line, "Command=%s", job_ptr->command);
+		snprintf(tmp_line, sizeof(tmp_line), "Command=%s",
+			 job_ptr->command);
 		xstrcat(out, tmp_line);
 
 		if (one_liner)
 			xstrcat(out, " ");
 		else
 			xstrcat(out, "\n   ");
-		sprintf(tmp_line, "WorkDir=%s", job_ptr->work_dir);
+	}
+
+	/****** Line 19 (optional, batch only) ******/
+	if (job_ptr->batch_flag) {
+		snprintf(tmp_line, sizeof(tmp_line), "WorkDir=%s",
+			 job_ptr->work_dir);
 		xstrcat(out, tmp_line);
 	}
 
