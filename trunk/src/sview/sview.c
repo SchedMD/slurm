@@ -831,7 +831,7 @@ extern void tab_pressed(GtkWidget *widget, GdkEventButton *event,
 	/* single click with the right mouse button? */
 	gtk_notebook_set_current_page(GTK_NOTEBOOK(main_notebook),
 				      display_data->extra);
-	if(event->button == 3) {
+	if((display_data->extra != TAB_PAGE) && (event->button == 3)) {
 		right_button_pressed(NULL, NULL, event,
 				     &signal_params, TAB_CLICKED);
 	}
