@@ -209,6 +209,7 @@ int srun(int ac, char **av)
 
 	/* Initialize plugin stack, read options from plugins, etc.
 	 */
+	init_spank_env();
 	if (spank_init(NULL) < 0) {
 		error("Plug-in initialization failed");
 		exit(error_exit);
