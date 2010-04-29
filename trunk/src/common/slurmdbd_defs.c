@@ -2018,6 +2018,14 @@ static void *_agent(void *x)
 			free_buf(buffer);
 			fail_time = 0;
 		} else {
+			/* We still need to free a mult_msg even if we
+			   got a failure.
+			*/
+			if(list_msg.my_list) {
+				list_msg.my_list = NULL;
+				free_buf(buffer);
+			}
+
 			fail_time = time(NULL);
 		}
 		slurm_mutex_unlock(&agent_lock);
