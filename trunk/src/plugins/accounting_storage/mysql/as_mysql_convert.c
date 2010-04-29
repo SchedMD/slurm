@@ -40,7 +40,7 @@
 
 #include "as_mysql_convert.h"
 
-static bool assocs=0, events=0, jobs=0, resvs=0, steps=0,
+static bool assocs=0, events=0, jobs=0, last_ran=0, resvs=0, steps=0,
 	suspends=0, usage=0, wckeys=0;
 
 static int converted = 0;
@@ -258,6 +258,29 @@ static void *_convert_cluster_tables(void *arg)
 		xfree(query);
 		if(rc != SLURM_SUCCESS) {
 			error("Couldn't update job table correctly");
+			goto end_it;
+		}
+	}
+
+	if(last_ran) {
+		info("Converting old last ran table for %s, "
+		     "this may take some time, please do not restart.",
+		     cluster_name);
+		query = xstrdup_printf(
+			"insert into \"%s_%s\" (hourly_rollup, daily_rollup, "
+			"monthly_rollup) "
+			"select hourly_rollup, daily_rollup, "
+			"monthly_rollup from %s on duplicate key update "
+			"hourly_rollup=VALUES(hourly_rollup), "
+			"daily_rollup=VALUES(daily_rollup), "
+			"monthly_rollup=VALUES(monthly_rollup);",
+			cluster_name, last_ran_table,
+			last_ran_table);
+		debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
+		rc = mysql_db_query(db_conn, query);
+		xfree(query);
+		if(rc != SLURM_SUCCESS) {
+			error("Couldn't update last ran table correctly");
 			goto end_it;
 		}
 	}
@@ -640,6 +663,13 @@ extern int as_mysql_convert_tables(MYSQL *db_conn)
 		{ NULL, NULL}
 	};
 
+	storage_field_t last_ran_table_fields_2_1[] = {
+		{ "hourly_rollup", "int unsigned default 0 not null" },
+		{ "daily_rollup", "int unsigned default 0 not null" },
+		{ "monthly_rollup", "int unsigned default 0 not null" },
+		{ NULL, NULL}
+	};
+
 	storage_field_t resv_table_fields_2_1[] = {
 		{ "id", "int unsigned default 0 not null" },
 		{ "name", "text not null" },
@@ -822,6 +852,27 @@ extern int as_mysql_convert_tables(MYSQL *db_conn)
 	mysql_free_result(result);
 	result = NULL;
 
+	/* now do last_ran_table */
+	query = xstrdup_printf("show tables like '%s';", last_ran_table);
+
+	debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
+	if(!(result = mysql_db_query_ret(db_conn, query, 0))) {
+		xfree(query);
+		goto end_it;
+	}
+	xfree(query);
+
+	if((row = mysql_fetch_row(result))) {
+		/* make it up to date */
+		if(mysql_db_create_table(db_conn, last_ran_table,
+					 last_ran_table_fields_2_1,
+					 ")") == SLURM_ERROR)
+			goto end_it;
+		last_ran = 1;
+	}
+	mysql_free_result(result);
+	result = NULL;
+
 	/* now do reservations */
 	query = xstrdup_printf("show tables like '%s';", resv_table);
 
@@ -970,7 +1021,7 @@ extern int as_mysql_convert_tables(MYSQL *db_conn)
 
 	rc = SLURM_SUCCESS;
 
-	if(!assocs && !events && !jobs && !resvs
+	if(!assocs && !events && !jobs && !last_ran && !resvs
 	   && !steps && !suspends && !usage && !wckeys)
 		goto end_it;
 

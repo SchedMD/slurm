@@ -48,17 +48,13 @@ static pthread_mutex_t usage_rollup_lock = PTHREAD_MUTEX_INITIALIZER;
 typedef struct {
 	uint16_t archive_data;
 	char *cluster_name;
-	time_t hour_start;
-	time_t hour_end;
-	time_t day_start;
-	time_t day_end;
-	time_t month_start;
-	time_t month_end;
 	mysql_conn_t *mysql_conn;
 	int *rc;
 	int *rolledup;
 	pthread_mutex_t *rolledup_lock;
 	pthread_cond_t *rolledup_cond;
+	time_t sent_end;
+	time_t sent_start;
 } local_rollup_t;
 
 static void *_cluster_rollup_usage(void *arg)
@@ -67,7 +63,36 @@ static void *_cluster_rollup_usage(void *arg)
 	int rc = SLURM_SUCCESS;
 	char timer_str[128];
 	mysql_conn_t mysql_conn;
+	MYSQL_RES *result = NULL;
+	MYSQL_ROW row;
+	char *query = NULL;
+	struct tm start_tm;
+	struct tm end_tm;
+	time_t my_time = local_rollup->sent_end;
+	time_t last_hour = local_rollup->sent_start;
+	time_t last_day = local_rollup->sent_start;
+	time_t last_month = local_rollup->sent_start;
+	time_t hour_start;
+	time_t hour_end;
+	time_t day_start;
+	time_t day_end;
+	time_t month_start;
+	time_t month_end;
 	DEF_TIMERS;
+
+	char *update_req_inx[] = {
+		"hourly_rollup",
+		"daily_rollup",
+		"monthly_rollup"
+	};
+
+	enum {
+		UPDATE_HOUR,
+		UPDATE_DAY,
+		UPDATE_MONTH,
+		UPDATE_COUNT
+	};
+
 
 	memset(&mysql_conn, 0, sizeof(mysql_conn_t));
 	mysql_conn.rollback = 1;
@@ -80,12 +105,201 @@ static void *_cluster_rollup_usage(void *arg)
 	if(rc != SLURM_SUCCESS)
 		goto end_it;
 
-	if((local_rollup->hour_end - local_rollup->hour_start) > 0) {
+	if(!local_rollup->sent_start) {
+		char *tmp = NULL;
+		int i=0;
+		xstrfmtcat(tmp, "%s", update_req_inx[i]);
+		for(i=1; i<UPDATE_COUNT; i++) {
+			xstrfmtcat(tmp, ", %s", update_req_inx[i]);
+		}
+		query = xstrdup_printf("select %s from \"%s_%s\"",
+				       tmp, local_rollup->cluster_name,
+				       last_ran_table);
+		xfree(tmp);
+
+		debug4("%d(%s:%d) query\n%s", mysql_conn.conn,
+		       THIS_FILE, __LINE__, query);
+		if(!(result = mysql_db_query_ret(
+			     mysql_conn.db_conn, query, 0))) {
+			xfree(query);
+			rc = SLURM_ERROR;
+			goto end_it;
+		}
+
+		xfree(query);
+		row = mysql_fetch_row(result);
+		if(row) {
+			last_hour = atoi(row[UPDATE_HOUR]);
+			last_day = atoi(row[UPDATE_DAY]);
+			last_month = atoi(row[UPDATE_MONTH]);
+			mysql_free_result(result);
+		} else {
+			time_t now = time(NULL);
+			time_t lowest = now;
+
+			mysql_free_result(result);
+
+			query = xstrdup_printf(
+				"select time_start from \"%s_%s\" "
+				"where node_name='' order by "
+				"time_start asc limit 1;",
+				local_rollup->cluster_name, event_table);
+			debug3("%d(%s:%d) query\n%s", mysql_conn.conn,
+			       THIS_FILE, __LINE__, query);
+			if(!(result = mysql_db_query_ret(
+				     mysql_conn.db_conn, query, 0))) {
+				xfree(query);
+				rc = SLURM_ERROR;
+				goto end_it;
+			}
+			xfree(query);
+			if((row = mysql_fetch_row(result))) {
+				time_t check = atoi(row[0]);
+				if(check < lowest)
+					lowest = check;
+			}
+			mysql_free_result(result);
+
+			/* If we don't have any events like adding a
+			 * cluster this will not work correctly, so we
+			 * will insert now as a starting point.
+			 */
+
+			query = xstrdup_printf(
+				"insert into \"%s_%s\" "
+				"(hourly_rollup, daily_rollup, monthly_rollup) "
+				"values (%d, %d, %d);",
+				local_rollup->cluster_name, last_ran_table,
+				lowest, lowest, lowest);
+
+			debug3("%d(%s:%d) query\n%s", mysql_conn.conn,
+			       THIS_FILE, __LINE__, query);
+			rc = mysql_db_query(mysql_conn.db_conn, query);
+			xfree(query);
+			if(rc != SLURM_SUCCESS) {
+				rc = SLURM_ERROR;
+				goto end_it;
+			}
+
+			if(lowest == now) {
+				debug("Cluster %s not registered, "
+				      "not doing rollup",
+				      local_rollup->cluster_name);
+				rc = SLURM_SUCCESS;
+				goto end_it;
+			}
+
+			last_hour = last_day = last_month = lowest;
+		}
+	}
+
+	if(!my_time)
+		my_time = time(NULL);
+
+	/* test month gap */
+/* 	last_hour = 1212299999; */
+/* 	last_day = 1212217200; */
+/* 	last_month = 1212217200; */
+/* 	my_time = 1212307200; */
+
+/* 	last_hour = 1211475599; */
+/* 	last_day = 1211475599; */
+/* 	last_month = 1211475599; */
+
+//	last_hour = 1211403599;
+	//	last_hour = 1206946800;
+//	last_day = 1207033199;
+//	last_day = 1197033199;
+//	last_month = 1204358399;
+
+	if(!localtime_r(&last_hour, &start_tm)) {
+		error("Couldn't get localtime from hour start %d", last_hour);
+		rc = SLURM_ERROR;
+		goto end_it;
+	}
+
+	if(!localtime_r(&my_time, &end_tm)) {
+		error("Couldn't get localtime from hour end %d", my_time);
+		rc = SLURM_ERROR;
+		goto end_it;
+	}
+
+	/* Below and anywhere in a rollup plugin when dealing with
+	 * epoch times we need to set the tm_isdst = -1 so we don't
+	 * have to worry about the time changes.  Not setting it to -1
+	 * will cause problems in the day and month with the date change.
+	 */
+
+	start_tm.tm_sec = 0;
+	start_tm.tm_min = 0;
+	start_tm.tm_isdst = -1;
+	hour_start = mktime(&start_tm);
+
+	end_tm.tm_sec = 0;
+	end_tm.tm_min = 0;
+	end_tm.tm_isdst = -1;
+	hour_end = mktime(&end_tm);
+
+/* 	info("hour start %s", ctime(&hour_start)); */
+/* 	info("hour end %s", ctime(&hour_end)); */
+/* 	info("diff is %d", hour_end-hour_start); */
+
+	slurm_mutex_lock(&rollup_lock);
+	global_last_rollup = hour_end;
+	slurm_mutex_unlock(&rollup_lock);
+
+	/* set up the day period */
+	if(!localtime_r(&last_day, &start_tm)) {
+		error("Couldn't get localtime from day %d", last_day);
+		rc = SLURM_ERROR;
+		goto end_it;
+	}
+
+	start_tm.tm_sec = 0;
+	start_tm.tm_min = 0;
+	start_tm.tm_hour = 0;
+	start_tm.tm_isdst = -1;
+	day_start = mktime(&start_tm);
+
+	end_tm.tm_hour = 0;
+	end_tm.tm_isdst = -1;
+	day_end = mktime(&end_tm);
+
+/* 	info("day start %s", ctime(&day_start)); */
+/* 	info("day end %s", ctime(&day_end)); */
+/* 	info("diff is %d", day_end-day_start); */
+
+	/* set up the month period */
+	if(!localtime_r(&last_month, &start_tm)) {
+		error("Couldn't get localtime from month %d", last_month);
+		rc = SLURM_ERROR;
+		goto end_it;
+	}
+
+	start_tm.tm_sec = 0;
+	start_tm.tm_min = 0;
+	start_tm.tm_hour = 0;
+	start_tm.tm_mday = 1;
+	start_tm.tm_isdst = -1;
+	month_start = mktime(&start_tm);
+
+	end_tm.tm_sec = 0;
+	end_tm.tm_min = 0;
+	end_tm.tm_hour = 0;
+	end_tm.tm_mday = 1;
+	end_tm.tm_isdst = -1;
+	month_end = mktime(&end_tm);
+
+/* 	info("month start %s", ctime(&month_start)); */
+/* 	info("month end %s", ctime(&month_end)); */
+/* 	info("diff is %d", month_end-month_start); */
+
+	if((hour_end - hour_start) > 0) {
 		START_TIMER;
 		rc = as_mysql_hourly_rollup(&mysql_conn,
 					    local_rollup->cluster_name,
-					    local_rollup->hour_start,
-					    local_rollup->hour_end,
+					    hour_start,
+					    hour_end,
 					    local_rollup->archive_data);
 		snprintf(timer_str, sizeof(timer_str),
 			 "hourly_rollup for %s", local_rollup->cluster_name);
@@ -94,12 +308,12 @@ static void *_cluster_rollup_usage(void *arg)
 			goto end_it;
 	}
 
-	if((local_rollup->day_end - local_rollup->day_start) > 0) {
+	if((day_end - day_start) > 0) {
 		START_TIMER;
 		rc = as_mysql_daily_rollup(&mysql_conn,
 					   local_rollup->cluster_name,
-					   local_rollup->day_start,
-					   local_rollup->day_end,
+					   day_start,
+					   day_end,
 					   local_rollup->archive_data);
 		snprintf(timer_str, sizeof(timer_str),
 			 "daily_rollup for %s", local_rollup->cluster_name);
@@ -108,12 +322,12 @@ static void *_cluster_rollup_usage(void *arg)
 			goto end_it;
 	}
 
-	if((local_rollup->month_end - local_rollup->month_start) > 0) {
+	if((month_end - month_start) > 0) {
 		START_TIMER;
 		rc = as_mysql_monthly_rollup(&mysql_conn,
 					     local_rollup->cluster_name,
-					     local_rollup->month_start,
-					     local_rollup->month_end,
+					     month_start,
+					     month_end,
 					     local_rollup->archive_data);
 		snprintf(timer_str, sizeof(timer_str),
 			 "monthly_rollup for %s", local_rollup->cluster_name);
@@ -122,6 +336,47 @@ static void *_cluster_rollup_usage(void *arg)
 			goto end_it;
 	}
 
+	if((hour_end - hour_start) > 0) {
+		/* If we have a sent_end do not update the last_run_table */
+		if(!local_rollup->sent_end)
+			query = xstrdup_printf(
+				"update \"%s_%s\" set hourly_rollup=%d",
+				local_rollup->cluster_name,
+				last_ran_table, hour_end);
+	} else
+		debug2("No need to roll cluster %s this hour %d <= %d",
+		       local_rollup->cluster_name, hour_end, hour_start);
+
+	if((day_end - day_start) > 0) {
+		if(query && !local_rollup->sent_end)
+			xstrfmtcat(query, ", daily_rollup=%d", day_end);
+		else if(!local_rollup->sent_end)
+			query = xstrdup_printf(
+				"update \"%s_%s\" set daily_rollup=%d",
+				local_rollup->cluster_name,
+				last_ran_table, day_end);
+	} else
+		debug2("No need to roll cluster %s this day %d <= %d",
+		       local_rollup->cluster_name, day_end, day_start);
+
+	if((month_end - month_start) > 0) {
+		if(query && !local_rollup->sent_end)
+			xstrfmtcat(query, ", monthly_rollup=%d", month_end);
+		else if(!local_rollup->sent_end)
+			query = xstrdup_printf(
+				"update \"%s_%s\" set monthly_rollup=%d",
+				local_rollup->cluster_name,
+				last_ran_table, month_end);
+	} else
+		debug2("No need to roll cluster %s this month %d <= %d",
+		       local_rollup->cluster_name, month_end, month_start);
+
+	if(query) {
+		debug3("%d(%s:%d) query\n%s",
+		       mysql_conn.conn, THIS_FILE, __LINE__, query);
+		rc = mysql_db_query(mysql_conn.db_conn, query);
+		xfree(query);
+	}
 end_it:
 	if(rc == SLURM_SUCCESS) {
 		if(mysql_db_commit(mysql_conn.db_conn)) {
@@ -655,226 +910,15 @@ extern int as_mysql_roll_usage(mysql_conn_t *mysql_conn,
 			       uint16_t archive_data)
 {
 	int rc = SLURM_SUCCESS;
-	int i = 0, rolledup = 0;
-	time_t my_time = sent_end;
-	struct tm start_tm;
-	struct tm end_tm;
-	MYSQL_RES *result = NULL;
-	MYSQL_ROW row;
-	char *query = NULL;
-	char *tmp = NULL;
-	time_t last_hour = sent_start;
-	time_t last_day = sent_start;
-	time_t last_month = sent_start;
-	time_t hour_start;
-	time_t hour_end;
-	time_t day_start;
-	time_t day_end;
-	time_t month_start;
-	time_t month_end;
-
+	int rolledup = 0;
+	char *cluster_name = NULL;
 	ListIterator itr;
 	pthread_mutex_t rolledup_lock = PTHREAD_MUTEX_INITIALIZER;
 	pthread_cond_t rolledup_cond;
 	//DEF_TIMERS;
 
-	char *update_req_inx[] = {
-		"hourly_rollup",
-		"daily_rollup",
-		"monthly_rollup"
-	};
-
-	enum {
-		UPDATE_HOUR,
-		UPDATE_DAY,
-		UPDATE_MONTH,
-		UPDATE_COUNT
-	};
-
 	if(check_connection(mysql_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
-
-	if(!sent_start) {
-		i=0;
-		xstrfmtcat(tmp, "%s", update_req_inx[i]);
-		for(i=1; i<UPDATE_COUNT; i++) {
-			xstrfmtcat(tmp, ", %s", update_req_inx[i]);
-		}
-		query = xstrdup_printf("select %s from %s",
-				       tmp, last_ran_table);
-		xfree(tmp);
-
-		debug4("%d(%s:%d) query\n%s", mysql_conn->conn,
-		       THIS_FILE, __LINE__, query);
-		if(!(result = mysql_db_query_ret(
-			     mysql_conn->db_conn, query, 0))) {
-			xfree(query);
-			return SLURM_ERROR;
-		}
-
-		xfree(query);
-		row = mysql_fetch_row(result);
-		if(row) {
-			last_hour = atoi(row[UPDATE_HOUR]);
-			last_day = atoi(row[UPDATE_DAY]);
-			last_month = atoi(row[UPDATE_MONTH]);
-			mysql_free_result(result);
-		} else {
-			time_t now = time(NULL);
-			time_t lowest = now;
-
-			mysql_free_result(result);
-
-			slurm_mutex_lock(&as_mysql_cluster_list_lock);
-			itr = list_iterator_create(as_mysql_cluster_list);
-			while((tmp = list_next(itr))) {
-				query = xstrdup_printf(
-					"select time_start from \"%s_%s\" "
-					"where node_name='' order by "
-					"time_start asc limit 1;",
-					tmp, event_table);
-				debug3("%d(%s:%d) query\n%s", mysql_conn->conn,
-				       THIS_FILE, __LINE__, query);
-				if(!(result = mysql_db_query_ret(
-					     mysql_conn->db_conn, query, 0))) {
-					xfree(query);
-					break;
-				}
-				xfree(query);
-				if((row = mysql_fetch_row(result))) {
-					time_t check = atoi(row[0]);
-					if(check < lowest)
-						lowest = check;
-				}
-				mysql_free_result(result);
-			}
-			list_iterator_destroy(itr);
-			slurm_mutex_unlock(&as_mysql_cluster_list_lock);
-
-			/* If we don't have any events like adding a
-			 * cluster this will not work correctly, so we
-			 * will insert now as a starting point.
-			 */
-
-			query = xstrdup_printf(
-				"insert into %s "
-				"(hourly_rollup, daily_rollup, monthly_rollup) "
-				"values (%d, %d, %d);",
-				last_ran_table, lowest, lowest, lowest);
-
-			debug3("%d(%s:%d) query\n%s", mysql_conn->conn,
-			       THIS_FILE, __LINE__, query);
-			rc = mysql_db_query(mysql_conn->db_conn, query);
-			xfree(query);
-			if(rc != SLURM_SUCCESS)
-				return SLURM_ERROR;
-
-			if(lowest == now) {
-				debug("No clusters have been added "
-				      "not doing rollup");
-				return SLURM_SUCCESS;
-			}
-
-			last_hour = last_day = last_month = lowest;
-		}
-	}
-
-	if(!my_time)
-		my_time = time(NULL);
-
-	/* test month gap */
-/* 	last_hour = 1212299999; */
-/* 	last_day = 1212217200; */
-/* 	last_month = 1212217200; */
-/* 	my_time = 1212307200; */
-
-/* 	last_hour = 1211475599; */
-/* 	last_day = 1211475599; */
-/* 	last_month = 1211475599; */
-
-//	last_hour = 1211403599;
-	//	last_hour = 1206946800;
-//	last_day = 1207033199;
-//	last_day = 1197033199;
-//	last_month = 1204358399;
-
-	if(!localtime_r(&last_hour, &start_tm)) {
-		error("Couldn't get localtime from hour start %d", last_hour);
-		return SLURM_ERROR;
-	}
-
-	if(!localtime_r(&my_time, &end_tm)) {
-		error("Couldn't get localtime from hour end %d", my_time);
-		return SLURM_ERROR;
-	}
-
-	/* Below and anywhere in a rollup plugin when dealing with
-	 * epoch times we need to set the tm_isdst = -1 so we don't
-	 * have to worry about the time changes.  Not setting it to -1
-	 * will cause problems in the day and month with the date change.
-	 */
-
-	start_tm.tm_sec = 0;
-	start_tm.tm_min = 0;
-	start_tm.tm_isdst = -1;
-	hour_start = mktime(&start_tm);
-
-	end_tm.tm_sec = 0;
-	end_tm.tm_min = 0;
-	end_tm.tm_isdst = -1;
-	hour_end = mktime(&end_tm);
-
-/* 	info("hour start %s", ctime(&hour_start)); */
-/* 	info("hour end %s", ctime(&hour_end)); */
-/* 	info("diff is %d", hour_end-hour_start); */
-
-	slurm_mutex_lock(&rollup_lock);
-	global_last_rollup = hour_end;
-	slurm_mutex_unlock(&rollup_lock);
-
-	/* set up the day period */
-	if(!localtime_r(&last_day, &start_tm)) {
-		error("Couldn't get localtime from day %d", last_day);
-		return SLURM_ERROR;
-	}
-
-	start_tm.tm_sec = 0;
-	start_tm.tm_min = 0;
-	start_tm.tm_hour = 0;
-	start_tm.tm_isdst = -1;
-	day_start = mktime(&start_tm);
-
-	end_tm.tm_hour = 0;
-	end_tm.tm_isdst = -1;
-	day_end = mktime(&end_tm);
-
-/* 	info("day start %s", ctime(&day_start)); */
-/* 	info("day end %s", ctime(&day_end)); */
-/* 	info("diff is %d", day_end-day_start); */
-
-	/* set up the month period */
-	if(!localtime_r(&last_month, &start_tm)) {
-		error("Couldn't get localtime from month %d", last_month);
-		return SLURM_ERROR;
-	}
-
-	start_tm.tm_sec = 0;
-	start_tm.tm_min = 0;
-	start_tm.tm_hour = 0;
-	start_tm.tm_mday = 1;
-	start_tm.tm_isdst = -1;
-	month_start = mktime(&start_tm);
-
-	end_tm.tm_sec = 0;
-	end_tm.tm_min = 0;
-	end_tm.tm_hour = 0;
-	end_tm.tm_mday = 1;
-	end_tm.tm_isdst = -1;
-	month_end = mktime(&end_tm);
-
-/* 	info("month start %s", ctime(&month_start)); */
-/* 	info("month end %s", ctime(&month_end)); */
-/* 	info("diff is %d", month_end-month_start); */
 
 	slurm_mutex_lock(&usage_rollup_lock);
 
@@ -884,28 +928,22 @@ extern int as_mysql_roll_usage(mysql_conn_t *mysql_conn,
 	//START_TIMER;
 	slurm_mutex_lock(&as_mysql_cluster_list_lock);
 	itr = list_iterator_create(as_mysql_cluster_list);
-	while((tmp = list_next(itr))) {
+	while((cluster_name = list_next(itr))) {
 		/* pthread_t rollup_tid; */
 		/* pthread_attr_t rollup_attr; */
 		local_rollup_t *local_rollup = xmalloc(sizeof(local_rollup_t));
 
 		local_rollup->archive_data = archive_data;
-		local_rollup->cluster_name = tmp;
-
-		local_rollup->hour_start = hour_start;
-		local_rollup->hour_end = hour_end;
-
-		local_rollup->day_start = day_start;
-		local_rollup->day_end = day_end;
-
-		local_rollup->month_start = month_start;
-		local_rollup->month_end = month_end;
+		local_rollup->cluster_name = cluster_name;
 
 		local_rollup->mysql_conn = mysql_conn;
 		local_rollup->rc = &rc;
 		local_rollup->rolledup = &rolledup;
 		local_rollup->rolledup_lock = &rolledup_lock;
 		local_rollup->rolledup_cond = &rolledup_cond;
+
+		local_rollup->sent_end = sent_end;
+		local_rollup->sent_start = sent_start;
 
 		/* _cluster_rollup_usage is responsible for freeing
 		   this local_rollup */
@@ -938,47 +976,6 @@ extern int as_mysql_roll_usage(mysql_conn_t *mysql_conn,
 	/* END_TIMER; */
 	/* info("total time was %s", TIME_STR); */
 
-	if(rc != SLURM_SUCCESS)
-		goto end_it;
-
-	if(hour_end-hour_start > 0) {
-		/* If we have a sent_end do not update the last_run_table */
-		if(!sent_end)
-			query = xstrdup_printf("update %s set hourly_rollup=%d",
-					       last_ran_table, hour_end);
-	} else
-		debug2("no need to run this hour %d <= %d",
-		       hour_end, hour_start);
-
-	if(day_end-day_start > 0) {
-		if(query && !sent_end)
-			xstrfmtcat(query, ", daily_rollup=%d", day_end);
-		else if(!sent_end)
-			query = xstrdup_printf("update %s set daily_rollup=%d",
-					       last_ran_table, day_end);
-	} else
-		debug2("no need to run this day %d <= %d",
-		       day_end, day_start);
-
-	if(month_end-month_start > 0) {
-		if(query && !sent_end)
-			xstrfmtcat(query, ", monthly_rollup=%d", month_end);
-		else if(!sent_end)
-			query = xstrdup_printf(
-				"update %s set monthly_rollup=%d",
-				last_ran_table, month_end);
-	} else
-		debug2("no need to run this month %d <= %d",
-		       month_end, month_start);
-
-	if(query) {
-		debug3("%d(%s:%d) query\n%s",
-		       mysql_conn->conn, THIS_FILE, __LINE__, query);
-		rc = mysql_db_query(mysql_conn->db_conn, query);
-		xfree(query);
-	}
-
-end_it:
 	slurm_mutex_unlock(&usage_rollup_lock);
 
 	return rc;
