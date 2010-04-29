@@ -222,12 +222,25 @@ function cpuset_has_pid (id, process_id)
     return false
 end
 
+function pid_is_thread (process_id)
+    local pid_status_path = string.format ("/proc/%s/status",process_id)
+    for line in io.lines(pid_status_path) do
+        if string.match(line,'^Tgid:%s+' .. process_id .. '$') then
+            return false
+        end
+     end
+     return true
+ end
+
+
 function cpuset_pids (id)
     local pids = {}
     if (cpuset_exists (id)) then
         local path = string.format ("%s/%s/tasks", cpuset_dir, id)
         for task in io.lines (path) do
-            table.insert (pids, task)
+            if not (pid_is_thread (task)) then
+                table.insert (pids, task)
+            end
         end
     end
     return pids
