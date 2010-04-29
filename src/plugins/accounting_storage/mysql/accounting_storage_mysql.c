@@ -339,13 +339,6 @@ static int _as_mysql_acct_check_tables(MYSQL *db_conn)
 		{ NULL, NULL}
 	};
 
-	storage_field_t last_ran_table_fields[] = {
-		{ "hourly_rollup", "int unsigned default 0 not null" },
-		{ "daily_rollup", "int unsigned default 0 not null" },
-		{ "monthly_rollup", "int unsigned default 0 not null" },
-		{ NULL, NULL}
-	};
-
 	storage_field_t qos_table_fields[] = {
 		{ "creation_time", "int unsigned not null" },
 		{ "mod_time", "int unsigned default 0 not null" },
@@ -509,11 +502,6 @@ static int _as_mysql_acct_check_tables(MYSQL *db_conn)
 
 	if(mysql_db_create_table(db_conn, acct_table, acct_table_fields,
 				 ", primary key (name(20)))") == SLURM_ERROR)
-		return SLURM_ERROR;
-
-	if(mysql_db_create_table(db_conn, last_ran_table,
-				 last_ran_table_fields,
-				 ")") == SLURM_ERROR)
 		return SLURM_ERROR;
 
 	if(mysql_db_create_table(db_conn, qos_table,
@@ -778,6 +766,13 @@ extern int create_cluster_tables(MYSQL *db_conn, char *cluster_name)
 		{ NULL, NULL}
 	};
 
+	storage_field_t last_ran_table_fields[] = {
+		{ "hourly_rollup", "int unsigned default 0 not null" },
+		{ "daily_rollup", "int unsigned default 0 not null" },
+		{ "monthly_rollup", "int unsigned default 0 not null" },
+		{ NULL, NULL}
+	};
+
 	storage_field_t resv_table_fields[] = {
 		{ "id_resv", "int unsigned default 0 not null" },
 		{ "deleted", "tinyint default 0 not null" },
@@ -940,6 +935,14 @@ extern int create_cluster_tables(MYSQL *db_conn, char *cluster_name)
 				 ", primary key (job_db_inx), "
 				 "unique index (id_job, "
 				 "id_assoc, time_submit))")
+	   == SLURM_ERROR)
+		return SLURM_ERROR;
+
+	snprintf(table_name, sizeof(table_name), "\"%s_%s\"",
+		 cluster_name, last_ran_table);
+	if(mysql_db_create_table(db_conn, table_name,
+				 last_ran_table_fields,
+				 ")")
 	   == SLURM_ERROR)
 		return SLURM_ERROR;
 

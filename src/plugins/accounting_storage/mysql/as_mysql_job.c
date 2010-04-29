@@ -323,8 +323,9 @@ extern int as_mysql_job_start(mysql_conn_t *mysql_conn,
 		global_last_rollup = check_time;
 		slurm_mutex_unlock(&rollup_lock);
 
-		query = xstrdup_printf("update %s set hourly_rollup=%d, "
+		query = xstrdup_printf("update \"%s_%s\" set hourly_rollup=%d, "
 				       "daily_rollup=%d, monthly_rollup=%d",
+				       mysql_conn->cluster_name,
 				       last_ran_table, check_time,
 				       check_time, check_time);
 		debug3("%d(%s:%d) query\n%s",
@@ -578,8 +579,9 @@ extern int as_mysql_job_complete(mysql_conn_t *mysql_conn,
 		global_last_rollup = job_ptr->end_time;
 		slurm_mutex_unlock(&rollup_lock);
 
-		query = xstrdup_printf("update %s set hourly_rollup=%d, "
+		query = xstrdup_printf("update \"%s_%s\" set hourly_rollup=%d, "
 				       "daily_rollup=%d, monthly_rollup=%d",
+				       mysql_conn->cluster_name,
 				       last_ran_table, end_time,
 				       end_time, end_time);
 		debug3("%d(%s:%d) query\n%s",
