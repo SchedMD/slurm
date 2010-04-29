@@ -25,6 +25,8 @@ documents those changes that are of interest to users and admins.
     variables for srun's use.
  -- In sched/wiki2 - Add support for the MODIFYJOB command to alter a job's
     comment field
+ -- When a cluster first registers with the SlurmDBD only send nodes in an
+    non-usable state.  Before all nodes were sent.
 
 * Changes in SLURM 2.1.7
 ========================
