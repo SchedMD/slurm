@@ -1148,6 +1148,7 @@ static char **_build_env(struct job_record *job_ptr)
 	name = gid_to_string((uid_t) job_ptr->group_id);
 	setenvf(&my_env, "SLURM_JOB_GROUP", "%s", name);
 	xfree(name);
+	setenvf(&my_env, "SLURM_JOBID", "%u", job_ptr->job_id);
 	setenvf(&my_env, "SLURM_JOB_ID", "%u", job_ptr->job_id);
 	setenvf(&my_env, "SLURM_JOB_NAME", "%s", job_ptr->name);
 	setenvf(&my_env, "SLURM_JOB_NODELIST", "%s", job_ptr->nodes);
