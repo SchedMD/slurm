@@ -143,6 +143,29 @@ static int lua_register_slurm_output_functions ()
 	 */
 	lua_newtable (L);
 	luaL_register (L, NULL, slurm_functions);
+
+	/*
+	 *  Create more user-friendly lua versions of SLURM log functions.
+	 */
+	luaL_loadstring (L, "slurm.error (string.format(unpack({...})))");
+	lua_setfield (L, -2, "log_error");
+	luaL_loadstring (L, "slurm.log (0, string.format(unpack({...})))");
+	lua_setfield (L, -2, "log_info");
+	luaL_loadstring (L, "slurm.log (1, string.format(unpack({...})))");
+	lua_setfield (L, -2, "log_verbose");
+	luaL_loadstring (L, "slurm.log (2, string.format(unpack({...})))");
+	lua_setfield (L, -2, "log_debug");
+	luaL_loadstring (L, "slurm.log (3, string.format(unpack({...})))");
+	lua_setfield (L, -2, "log_debug2");
+
+	/*
+	 * slurm.SUCCESS and slurm.FAILURE
+	 */
+	lua_pushnumber (L, -1);
+	lua_setfield (L, -2, "FAILURE");
+	lua_pushnumber (L, 0);
+	lua_setfield (L, -2, "SUCCESS");
+
 	lua_setglobal (L, "slurm");
 	return 0;
 }
