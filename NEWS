@@ -27,7 +27,8 @@ documents those changes that are of interest to users and admins.
     ready for use". Srun will generate the same messages only if the --verbose
     option is used.
  -- Add scontrol "wait_job <job_id>" option to wait for nodes to boot as needed.
-    Useful for batch jobs (in Prolog or the script) if powering down idle nodes.
+    Useful for batch jobs (in Prolog, PrologSlurmctld or the script) if powering
+    down idle nodes.
  -- The Priority/mulitfactor plugin now takes into consideration size of job
     in cpus as well as size in nodes when looking at the job size factor.
     Previously only nodes were considered.
