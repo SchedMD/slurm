@@ -3182,11 +3182,6 @@ static int _validate_job_create_req(job_desc_msg_t * job_desc)
 	    _test_strlen(job_desc->work_dir, "work_dir", 1024))
 		return ESLURM_PATHNAME_TOO_LONG;
 
-	if (!valid_spank_job_env(job_desc->spank_job_env,
-				 job_desc->spank_job_env_size,
-				 job_desc->user_id)) {
-		return EINVAL;
-	}
 	return SLURM_SUCCESS;
 }
 

@@ -14,6 +14,8 @@ require "posix"
 --
 --########################################################################--
 
+local use_release_agent = false
+
 function slurm_container_create (job)
     local id = cpuset_id_create (job)
     local cpu_list = cpumap:convert_ids (job.CPUs)
@@ -32,7 +34,7 @@ end
 function slurm_container_signal (id, signo)
     log_verbose ("slurm_container_signal(%d, %d)\n", id, signo)
     cpuset_kill (id, signo)
-    return 0
+    return slurm.SUCCESS
 end
 
 function slurm_container_destroy (id)
@@ -49,7 +51,7 @@ function slurm_container_find (pid)
          return id
       end
    end
-   return -1
+   return slurm.FAILURE
 end
 
 function slurm_container_has_pid (id, pid)
@@ -69,7 +71,7 @@ function slurm_container_wait (id)
         posix.sleep (s)
         s = (2*s <= 30) and 2*s or 30 -- Wait a max of 30s
     end
-    return 0
+    return slurm.SUCCESS
 end
 
 function slurm_container_get_pids (id)
@@ -135,6 +137,9 @@ function cpuset_create (name, cpus)
     posix.umask (mask)
     cpuset_set_f (path, "cpus", cpus)
     cpuset_set_f (path, "mems")
+    if (use_release_agent == true) then
+        cpuset_set_f (path, "notify_on_release", 1)
+    end
     return true
 end
 
@@ -159,9 +164,15 @@ function cpuset_kill (name, signo)
     if (not cpuset_exists (name)) then return end
 
     local path = string.format ("%s/%s/tasks", cpuset_dir, name)
-    for pid in io.lines (cpuset_dir .. "/" .. name .. "/tasks") do
-       log_debug ("Sending signal %d to pid %d", signo, pid)
-       posix.kill (pid, signo)
+
+    local path_fh = io.open(path)
+    if path_fh then
+        while true do
+            local pid = path_fh:read()
+            if pid == nil then break end
+            log_debug ("Sending signal %d to pid %d", signo, pid)
+            posix.kill (pid, signo)
+        end
     end
 end
 
@@ -200,7 +211,7 @@ function cpuset_id_create (job)
     end
 
     -- Add the lower 16 bits of the stepid:
-    id = id truncate_to_n_bits (job.stepid, 16)
+    id = id + truncate_to_n_bits (job.stepid, 16)
 
     -- Must truncate result to 32bits until SLURM's job container
     --  id is no longer represented by uint32_t :
@@ -222,12 +233,33 @@ function cpuset_has_pid (id, process_id)
     return false
 end
 
+function pid_is_thread (process_id)
+    local pid_status_path = string.format ("/proc/%d/status",process_id)
+    local pid_status_fh = io.open(pid_status_path)
+
+    if pid_status_fh then
+        while true do
+             local pid_status_line=pid_status_fh:read()
+             if pid_status_line == nil then break end
+             if string.match(pid_status_line,'^Tgid:%s+' .. process_id .. '$') then return false end
+        end
+    end
+    return true
+end
+
 function cpuset_pids (id)
     local pids = {}
     if (cpuset_exists (id)) then
         local path = string.format ("%s/%s/tasks", cpuset_dir, id)
-        for task in io.lines (path) do
-            table.insert (pids, task)
+        local path_fh = io.open(path)
+        if path_fh then
+        while true do
+            local task=path_fh:read()
+            if task == nil then break end
+            if not ( pid_is_thread(task) ) then
+                table.insert (pids, task)
+            end
+            end
         end
     end
     return pids
@@ -317,32 +349,17 @@ function cpumap_create ()
     return cpu_map
 end
 
-function v_log_msg (l, fmt, ...)
-    slurm.log (l, string.format (fmt, ...))
-end
-
-function log_msg (fmt, ...)
-    v_log_msg (0, fmt, ...)
-end
-
-function log_verbose (fmt, ...)
-    v_log_msg (1, fmt, ...)
-end
-
-function log_debug (fmt, ...)
-    v_log_msg (2, fmt, ...)
-end
-
-function log_err (fmt, ...)
-    slurm.error (string.format (fmt, ...))
-end
-
-
 --########################################################################--
 --
 --  Initialization code:
 --
 --########################################################################--
+
+log_msg = slurm.log_info
+log_verbose = slurm.log_verbose
+log_debug = slurm.log_debug
+log_err = slurm.error
+
 
 cpuset_dir = get_cpuset_dir ()
 if cpuset_dir == nil then
@@ -355,8 +372,8 @@ root_cpuset.mems = cpuset_read (cpuset_dir, "mems")
 
 cpumap = cpumap_create ()
 
-slurm.log (string.format ("initialized: root cpuset = %s\n", cpuset_dir))
+log_msg ("initialized: root cpuset = %s\n", cpuset_dir)
 
-return 0
+return slurm.SUCCESS
 
 -- vi: filetype=lua ts=4 sw=4 expandtab

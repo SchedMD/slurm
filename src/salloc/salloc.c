@@ -103,6 +103,7 @@ static void _signal_while_allocating(int signo);
 static void _job_complete_handler(srun_job_complete_msg_t *msg);
 static void _set_exit_code(void);
 static void _set_rlimits(char **env);
+static void _set_spank_env(void);
 static void _set_submit_dir_env(void);
 static void _timeout_handler(srun_timeout_msg_t *msg);
 static void _user_msg_handler(srun_user_msg_t *msg);
@@ -169,6 +170,7 @@ int main(int argc, char *argv[])
 		exit(error_exit);
 	}
 
+	_set_spank_env();
 	_set_submit_dir_env();
 	if (opt.cwd && chdir(opt.cwd)) {
 		error("chdir(%s): %m", opt.cwd);
@@ -437,6 +439,19 @@ static void _set_exit_code(void)
 			error("SLURM_EXIT_IMMEDIATE has zero value");
 		else
 			immediate_exit = i;
+	}
+}
+
+/* Propagate SPANK environment via SLURM_SPANK_ environment variables */
+static void _set_spank_env(void)
+{
+	int i;
+
+	for (i=0; i<opt.spank_job_env_size; i++) {
+		if (setenvfs("SLURM_SPANK_%s", opt.spank_job_env[i]) < 0) {
+			error("unable to set %s in environment",
+			      opt.spank_job_env[i]);
+		}
 	}
 }
 
