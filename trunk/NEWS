@@ -235,6 +235,9 @@ documents those changes that are of interest to users and admins.
     possible.
  -- Fix possible scontrol stack corruption when listing jobs with very a long
     job or working directory name (over 511 characters).
+ -- Insure that SPANK environment variables set by salloc or sbatch get
+    propagated to the Prolog on all nodes by setting SLURM_SPANK_* environment
+    variables for srun's use.
  
 * Changes in SLURM 2.1.7
 ========================

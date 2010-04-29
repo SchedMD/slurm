@@ -260,4 +260,8 @@ extern int   spank_set_job_env(const char *name, const char *value,
 			       int overwrite);
 extern int   spank_unset_job_env(const char *name);
 
+/* Initialize the the spank_job_env based upon environment variables set
+ *	via salloc or sbatch commands */
+extern void init_spank_env(void);
+
 #endif	/* _HAVE_OPT_H */

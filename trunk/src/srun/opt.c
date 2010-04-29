@@ -184,6 +184,8 @@
 #define LONG_OPT_TIME_MIN        0x150
 #define LONG_OPT_GRES            0x151
 
+extern char **environ;
+
 /*---- global variables, defined in opt.h ----*/
 int _verbose;
 opt_t opt;
@@ -1967,6 +1969,33 @@ static bool _opt_verify(void)
 		exit(error_exit);
 
 	return verified;
+}
+
+/* Initialize the the spank_job_env based upon environment variables set
+ *	via salloc or sbatch commands */
+extern void init_spank_env(void)
+{
+	int i;
+	char *name, *eq, *value;
+
+	if (environ == NULL)
+		return;
+
+	for (i=0; environ[i]; i++) {
+		if (strncmp(environ[i], "SLURM_SPANK_", 12))
+			continue;
+		name = xstrdup(environ[i] + 12);
+		eq = strchr(name, (int)'=');
+		if (eq == NULL) {
+			xfree(name);
+			break;
+		}
+		eq[0] = '\0';
+		value = eq + 1;
+		spank_set_job_env(name, value, 1);
+		xfree(name);
+	}
+		
 }
 
 /* Functions used by SPANK plugins to read and write job environment
