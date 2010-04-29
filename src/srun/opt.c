@@ -101,7 +101,6 @@
 #define OPT_DISTRIB     0x04
 #define OPT_NODES       0x05
 #define OPT_OVERCOMMIT  0x06
-#define OPT_CORE        0x07
 #define OPT_CONN_TYPE	0x08
 #define OPT_RESV_PORTS	0x09
 #define OPT_NO_ROTATE	0x0a
@@ -134,7 +133,6 @@
 #define LONG_OPT_GID         0x10b
 #define LONG_OPT_MPI         0x10c
 #define LONG_OPT_RESV_PORTS  0x10d
-#define LONG_OPT_CORE        0x10e
 #define LONG_OPT_DEBUG_TS    0x110
 #define LONG_OPT_CONNTYPE    0x111
 #define LONG_OPT_TEST_ONLY   0x113
@@ -371,8 +369,6 @@ static void _opt_default()
 	opt.ifname = NULL;
 	opt.efname = NULL;
 
-	opt.core_type = CORE_DEFAULT;
-
 	opt.labelio = false;
 	opt.unbuffered = false;
 	opt.overcommit = false;
@@ -479,7 +475,6 @@ env_vars_t env_vars[] = {
 {"SLURM_CHECKPOINT_DIR",OPT_STRING,     &opt.ckpt_dir,      NULL             },
 {"SLURM_CNLOAD_IMAGE",  OPT_STRING,     &opt.linuximage,    NULL             },
 {"SLURM_CONN_TYPE",     OPT_CONN_TYPE,  NULL,               NULL             },
-{"SLURM_CORE_FORMAT",   OPT_CORE,       NULL,               NULL             },
 {"SLURM_CPUS_PER_TASK", OPT_INT,        &opt.cpus_per_task, &opt.cpus_set    },
 {"SLURM_CPU_BIND",      OPT_CPU_BIND,   NULL,               NULL             },
 {"SLURM_DEPENDENCY",    OPT_STRING,     &opt.dependency,    NULL             },
@@ -640,10 +635,6 @@ _process_env_var(env_vars_t *e, const char *val)
 			error("Invalid SLURM_OPEN_MODE: %s. Ignored", val);
 		break;
 
-	case OPT_CORE:
-		opt.core_type = core_format_type (val);
-		break;
-
 	case OPT_CONN_TYPE:
 		opt.conn_type = verify_conn_type(val);
 		break;
@@ -770,7 +761,6 @@ static void set_options(const int argc, char **argv)
 		{"comment",          required_argument, 0, LONG_OPT_COMMENT},
 		{"conn-type",        required_argument, 0, LONG_OPT_CONNTYPE},
 		{"contiguous",       no_argument,       0, LONG_OPT_CONT},
-		{"core",             required_argument, 0, LONG_OPT_CORE},
 		{"cores-per-socket", required_argument, 0, LONG_OPT_CORESPERSOCKET},
 		{"cpu_bind",         required_argument, 0, LONG_OPT_CPU_BIND},
 		{"debugger-test",    no_argument,       0, LONG_OPT_DEBUG_TS},
@@ -1086,12 +1076,6 @@ static void set_options(const int argc, char **argv)
 			if (slurm_verify_mem_bind(optarg, &opt.mem_bind,
 						  &opt.mem_bind_type))
 				exit(error_exit);
-			break;
-		case LONG_OPT_CORE:
-			opt.core_type = core_format_type (optarg);
-			if (opt.core_type == CORE_INVALID)
-				error ("--core=\"%s\" Invalid -- ignoring.",
-				       optarg);
 			break;
 		case LONG_OPT_MINCPUS:
 			opt.pn_min_cpus = _get_int(optarg, "mincpus", true);
@@ -1799,8 +1783,6 @@ static bool _opt_verify(void)
 		}
 	}
 
-	core_format_enable (opt.core_type);
-
 	/* massage the numbers */
 	if (opt.nodelist) {
 		hl = hostlist_create(opt.nodelist);
@@ -1838,7 +1820,6 @@ static bool _opt_verify(void)
 			opt.ntasks_set = true;
 		}
 
-		core_format_enable (opt.core_type);
 		/* massage the numbers */
 		if (opt.nodelist) {
 			if (hl)	/* possibly built above */
@@ -2162,7 +2143,6 @@ static void _opt_list()
 	     opt.cpu_bind == NULL ? "default" : opt.cpu_bind);
 	info("mem_bind       : %s",
 	     opt.mem_bind == NULL ? "default" : opt.mem_bind);
-	info("core format    : %s", core_format_name (opt.core_type));
 	info("verbose        : %d", _verbose);
 	info("slurmd_debug   : %d", opt.slurmd_debug);
 	if (opt.immediate <= 1)

@@ -107,6 +107,9 @@ COMMAND CHANGES (see man pages for details)
 * Add support for slurmctld and slurmd option of "-n <value>" to reset the
   daemon's nice value.
 
+* srun's --core option has been removed. Use the SPANK "Core" plugin from
+  http://code.google.com/p/slurm-spank-plugins/ for continued support.
+
 BLUEGENE SPECIFIC CHANGES
 =========================
 

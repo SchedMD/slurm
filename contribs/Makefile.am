@@ -7,5 +7,6 @@ EXTRA_DIST = \
 	ptrace.patch		\
 	skilling.c		\
 	sjstat			\
+	spank_core.c		\
 	time_login.c		\
 	README
