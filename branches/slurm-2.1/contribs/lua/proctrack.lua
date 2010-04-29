@@ -200,7 +200,7 @@ function cpuset_id_create (job)
     end
 
     -- Add the lower 16 bits of the stepid:
-    id = id truncate_to_n_bits (job.stepid, 16)
+    id = id + truncate_to_n_bits (job.stepid, 16)
 
     -- Must truncate result to 32bits until SLURM's job container
     --  id is no longer represented by uint32_t :
