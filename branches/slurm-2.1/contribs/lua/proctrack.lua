@@ -14,6 +14,8 @@ require "posix"
 --
 --########################################################################--
 
+local use_release_agent = false
+
 function slurm_container_create (job)
     local id = cpuset_id_create (job)
     local cpu_list = cpumap:convert_ids (job.CPUs)
@@ -135,6 +137,9 @@ function cpuset_create (name, cpus)
     posix.umask (mask)
     cpuset_set_f (path, "cpus", cpus)
     cpuset_set_f (path, "mems")
+    if (use_release_agent == true) then
+        cpuset_set_f (path, "notify_on_release", 1)
+    end
     return true
 end
 
