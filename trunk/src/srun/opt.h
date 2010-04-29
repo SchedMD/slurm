@@ -54,7 +54,6 @@
 #include <unistd.h>
 
 #include "src/common/macros.h" /* true and false */
-#include "src/srun/core-format.h"
 #include "src/common/env.h"
 #include "src/srun/fname.h"
 
@@ -146,7 +145,6 @@ typedef struct srun_options {
 	char *efname;		/* --error, -e filename         */
 
 	int  slurmd_debug;	/* --slurmd-debug, -D           */
-	core_format_t core_type;/* --core= 	        	*/
 	bool join;		/* --join, 	    -j		*/
 
 	/* no longer need these, they are set globally : 	*/

@@ -85,8 +85,8 @@ am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
 am_srun_OBJECTS = srun.$(OBJEXT) opt.$(OBJEXT) srun_job.$(OBJEXT) \
 	srun_pty.$(OBJEXT) debugger.$(OBJEXT) fname.$(OBJEXT) \
-	allocate.$(OBJEXT) core-format.$(OBJEXT) multi_prog.$(OBJEXT) \
-	task_state.$(OBJEXT) srun.wrapper.$(OBJEXT)
+	allocate.$(OBJEXT) multi_prog.$(OBJEXT) task_state.$(OBJEXT) \
+	srun.wrapper.$(OBJEXT)
 srun_OBJECTS = $(am_srun_OBJECTS)
 am__DEPENDENCIES_1 = $(top_builddir)/src/api/libslurm.o
 srun_DEPENDENCIES = $(am__DEPENDENCIES_1)
@@ -309,8 +309,6 @@ srun_SOURCES = \
 	fname.h     \
 	allocate.c  \
 	allocate.h  \
-	core-format.c \
-	core-format.h \
 	multi_prog.c multi_prog.h \
 	task_state.c task_state.h \
 	srun.wrapper.c
@@ -410,7 +408,6 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/allocate.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/core-format.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/debugger.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/fname.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/multi_prog.Po@am__quote@

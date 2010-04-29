@@ -34,6 +34,9 @@ documents those changes that are of interest to users and admins.
     Previously only nodes were considered.
  -- When using the SlurmDBD messages waiting to be sent will be combined
     and sent in one message.
+ -- Remove srun's --core option. Move the logic to an optional SPANK plugin
+    (currrently in the contribs directory, but plan to distribute through
+    http://code.google.com/p/slurm-spank-plugins/).
 
 * Changes in SLURM 2.2.0.pre5
 =============================

@@ -155,13 +155,6 @@ plugins, both of which can modify the node ordering.
 Not honored for a job step's allocation.
 
 .TP
-\fB\-\-core\fR=<\fItype\fR>
-Adjust corefile format for parallel job. If possible, srun will set
-up the environment for the job such that a corefile format other than
-full core dumps is enabled. If run with type = "list", srun will
-print a list of supported corefile format types to stdout and exit.
-
-.TP
 \fB\-\-cpu_bind\fR=[{\fIquiet,verbose\fR},]\fItype\fR
 Bind tasks to CPUs. Used only when the task/affinity plugin is enabled.
 The configuration parameter \fBTaskPluginParam\fR may override these options.
