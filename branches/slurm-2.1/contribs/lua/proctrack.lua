@@ -159,9 +159,15 @@ function cpuset_kill (name, signo)
     if (not cpuset_exists (name)) then return end
 
     local path = string.format ("%s/%s/tasks", cpuset_dir, name)
-    for pid in io.lines (cpuset_dir .. "/" .. name .. "/tasks") do
-       log_debug ("Sending signal %d to pid %d", signo, pid)
-       posix.kill (pid, signo)
+
+    local path_fh = io.open(path)
+    if path_fh then
+        while true do
+            local pid = path_fh:read()
+            if pid == nil then break end
+            log_debug ("Sending signal %d to pid %d", signo, pid)
+            posix.kill (pid, signo)
+        end
     end
 end
 
@@ -223,23 +229,31 @@ function cpuset_has_pid (id, process_id)
 end
 
 function pid_is_thread (process_id)
-    local pid_status_path = string.format ("/proc/%s/status",process_id)
-    for line in io.lines(pid_status_path) do
-        if string.match(line,'^Tgid:%s+' .. process_id .. '$') then
-            return false
-        end
-     end
-     return true
- end
+    local pid_status_path = string.format ("/proc/%d/status",process_id)
+    local pid_status_fh = io.open(pid_status_path)
 
+    if pid_status_fh then
+        while true do
+             local pid_status_line=pid_status_fh:read()
+             if pid_status_line == nil then break end
+             if string.match(pid_status_line,'^Tgid:%s+' .. process_id .. '$') then return false end
+        end
+    end
+    return true
+end
 
 function cpuset_pids (id)
     local pids = {}
     if (cpuset_exists (id)) then
         local path = string.format ("%s/%s/tasks", cpuset_dir, id)
-        for task in io.lines (path) do
-            if not (pid_is_thread (task)) then
+        local path_fh = io.open(path)
+        if path_fh then
+        while true do
+            local task=path_fh:read()
+            if task == nil then break end
+            if not ( pid_is_thread(task) ) then
                 table.insert (pids, task)
+            end
             end
         end
     end
