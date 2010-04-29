@@ -62,7 +62,8 @@ static int	_job_modify(uint32_t jobid, char *bank_ptr,
 			char *depend_ptr, char *new_hostlist,
 			uint32_t new_node_cnt, char *part_name_ptr,
 			uint32_t new_time_limit, char *name_ptr,
-			char *start_ptr, char *feature_ptr, char *env_ptr)
+			char *start_ptr, char *feature_ptr, char *env_ptr,
+			char *comment_ptr)
 {
 	struct job_record *job_ptr;
 	time_t now = time(NULL);
@@ -78,6 +79,13 @@ static int	_job_modify(uint32_t jobid, char *bank_ptr,
 		return ESLURM_DISABLED;
 	}
 
+	if (comment_ptr) {
+		info("wiki: change job %u comment %s", jobid, comment_ptr);
+		xfree(job_ptr->comment);
+		job_ptr->comment = xstrdup(comment_ptr);
+		last_job_update = now;
+	}
+
 	if (depend_ptr) {
 		int rc = update_job_dependency(job_ptr, depend_ptr);
 		if (rc == SLURM_SUCCESS) {
@@ -89,7 +97,6 @@ static int	_job_modify(uint32_t jobid, char *bank_ptr,
 			return EINVAL;
 		}
 	}
-
 
 	if (env_ptr) {
 		bool have_equal = false;
@@ -393,16 +400,24 @@ host_fini:	if (rc) {
 }
 
 /* Modify a job:
- *	CMD=MODIFYJOB ARG=<jobid> PARTITION=<name> NODES=<number>
- *		DEPEND=afterany:<jobid> TIMELIMT=<seconds> BANK=<name>
- *		JOBNAME=<name> MINSTARTTIME=<uts> RFEATURES=<features>
- *		VARIABLELIST=<env_vars>
+ *	CMD=MODIFYJOB ARG=<jobid>
+ *		[BANK=<name>]
+ *		[COMMENT=<whatever>;]
+ *		[DEPEND=afterany:<jobid>]
+ *		[JOBNAME=<name>]
+ *		[MINSTARTTIME=<uts>]
+ *		[NODES=<number>]
+ *		[PARTITION=<name>]
+ *		[RFEATURES=<features>]
+ *		[TIMELIMT=<seconds>]
+ *		[VARIABLELIST=<env_vars>]
+ *
  * RET 0 on success, -1 on failure */
 extern int	job_modify_wiki(char *cmd_ptr, int *err_code, char **err_msg)
 {
 	char *arg_ptr, *bank_ptr, *depend_ptr, *nodes_ptr, *start_ptr;
 	char *host_ptr, *name_ptr, *part_ptr, *time_ptr, *tmp_char;
-	char *feature_ptr, *env_ptr;
+	char *comment_ptr, *feature_ptr, *env_ptr;
 	int i, slurm_rc;
 	uint32_t jobid, new_node_cnt = 0, new_time_limit = 0;
 	static char reply_msg[128];
@@ -429,6 +444,7 @@ extern int	job_modify_wiki(char *cmd_ptr, int *err_code, char **err_msg)
 		return -1;
 	}
 	bank_ptr    = strstr(cmd_ptr, "BANK=");
+	comment_ptr = strstr(cmd_ptr, "COMMENT=");
 	depend_ptr  = strstr(cmd_ptr, "DEPEND=");
 	host_ptr    = strstr(cmd_ptr, "HOSTLIST=");
 	name_ptr    = strstr(cmd_ptr, "JOBNAME=");
@@ -442,6 +458,32 @@ extern int	job_modify_wiki(char *cmd_ptr, int *err_code, char **err_msg)
 		bank_ptr[4] = ':';
 		bank_ptr += 5;
 		null_term(bank_ptr);
+	}
+	if (comment_ptr) {
+		comment_ptr[7] = ':';
+		comment_ptr += 8;
+		if (comment_ptr[0] == '\"') {
+			comment_ptr++;
+			for (i=0; ; i++) {
+				if (comment_ptr[i] == '\0')
+					break;
+				if (comment_ptr[i] == '\"') {
+					comment_ptr[i] = '\0';
+					break;
+				}
+			}
+		} else if (comment_ptr[0] == '\'') {
+			comment_ptr++;
+			for (i=0; ; i++) {
+				if (comment_ptr[i] == '\0')
+					break;
+				if (comment_ptr[i] == '\'') {
+					comment_ptr[i] = '\0';
+					break;
+				}
+			}
+		} else
+			null_term(comment_ptr);
 	}
 	if (depend_ptr) {
 		depend_ptr[6] = ':';
@@ -510,10 +552,10 @@ extern int	job_modify_wiki(char *cmd_ptr, int *err_code, char **err_msg)
 		null_term(env_ptr);
 	}
 
-	/* Look for any un-parsed "=" */
+	/* Look for any un-parsed "=" ignoring anything after VARIABLELIST
+	 * which is expected to contain "=" in its value*/
 	tmp_char = strchr(cmd_ptr, '=');
-	if (( env_ptr  && (tmp_char < env_ptr)) ||
-	    (!env_ptr  &&  tmp_char)) {
+	if (tmp_char && (!env_ptr || (env_ptr > tmp_char))) {
 		tmp_char[0] = '\0';
 		while (tmp_char[-1] && (!isspace(tmp_char[-1])))
 			tmp_char--;
@@ -523,7 +565,7 @@ extern int	job_modify_wiki(char *cmd_ptr, int *err_code, char **err_msg)
 	lock_slurmctld(job_write_lock);
 	slurm_rc = _job_modify(jobid, bank_ptr, depend_ptr, host_ptr,
 			new_node_cnt, part_ptr, new_time_limit, name_ptr,
-			start_ptr, feature_ptr, env_ptr);
+			start_ptr, feature_ptr, env_ptr, comment_ptr);
 	unlock_slurmctld(job_write_lock);
 	if (slurm_rc != SLURM_SUCCESS) {
 		*err_code = -700;
