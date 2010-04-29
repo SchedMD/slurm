@@ -32,7 +32,7 @@ end
 function slurm_container_signal (id, signo)
     log_verbose ("slurm_container_signal(%d, %d)\n", id, signo)
     cpuset_kill (id, signo)
-    return 0
+    return slurm.SUCCESS
 end
 
 function slurm_container_destroy (id)
@@ -49,7 +49,7 @@ function slurm_container_find (pid)
          return id
       end
    end
-   return -1
+   return slurm.FAILURE
 end
 
 function slurm_container_has_pid (id, pid)
@@ -69,7 +69,7 @@ function slurm_container_wait (id)
         posix.sleep (s)
         s = (2*s <= 30) and 2*s or 30 -- Wait a max of 30s
     end
-    return 0
+    return slurm.SUCCESS
 end
 
 function slurm_container_get_pids (id)
@@ -317,32 +317,17 @@ function cpumap_create ()
     return cpu_map
 end
 
-function v_log_msg (l, fmt, ...)
-    slurm.log (l, string.format (fmt, ...))
-end
-
-function log_msg (fmt, ...)
-    v_log_msg (0, fmt, ...)
-end
-
-function log_verbose (fmt, ...)
-    v_log_msg (1, fmt, ...)
-end
-
-function log_debug (fmt, ...)
-    v_log_msg (2, fmt, ...)
-end
-
-function log_err (fmt, ...)
-    slurm.error (string.format (fmt, ...))
-end
-
-
 --########################################################################--
 --
 --  Initialization code:
 --
 --########################################################################--
+
+log_msg = slurm.log_info
+log_verbose = slurm.log_verbose
+log_debug = slurm.log_debug
+log_err = slurm.error
+
 
 cpuset_dir = get_cpuset_dir ()
 if cpuset_dir == nil then
@@ -355,8 +340,8 @@ root_cpuset.mems = cpuset_read (cpuset_dir, "mems")
 
 cpumap = cpumap_create ()
 
-slurm.log (string.format ("initialized: root cpuset = %s\n", cpuset_dir))
+log_msg ("initialized: root cpuset = %s\n", cpuset_dir)
 
-return 0
+return slurm.SUCCESS
 
 -- vi: filetype=lua ts=4 sw=4 expandtab
