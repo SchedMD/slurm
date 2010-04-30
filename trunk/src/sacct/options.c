@@ -484,6 +484,8 @@ sacct [<OPTION>]                                                            \n\
      -V, --version: Print version.                                          \n\
      -W, --wckeys:                                                          \n\
                    Only send data about these wckeys.  Default is all.      \n\
+     -x, --associations:                                                    \n\
+                   Only send data about these association id.  Default is all.\n\
      -X, --allocations:                                                     \n\
 	           Only show cumulative statistics for each job, not the    \n\
 	           intermediate steps.                                      \n\
@@ -626,6 +628,7 @@ void parse_command_line(int argc, char **argv)
 		{"verbose", 0, 0, 'v'},
 		{"version", 0, 0, 'V'},
 		{"wckeys", 1, 0, 'W'},
+		{"associations", 1, 0, 'x'},
 		{0, 0, 0, 0}};
 
 	params.opt_uid = getuid();
@@ -637,7 +640,7 @@ void parse_command_line(int argc, char **argv)
 
 	while (1) {		/* now cycle through the command line */
 		c = getopt_long(argc, argv,
-				"aA:bcC:dDeE:f:g:hi:I:j:lLnN:o:OpPr:s:S:Ttu:vVW:X",
+				"aA:bcC:dDeE:f:g:hi:I:j:lLnN:o:OpPr:s:S:Ttu:vVW:x:X",
 				long_options, &optionIndex);
 		if (c == -1)
 			break;
@@ -819,6 +822,13 @@ void parse_command_line(int argc, char **argv)
 		case 'V':
 			print_slurm_version();
 			exit(0);
+		case 'x':
+			if(!job_cond->associd_list)
+				job_cond->associd_list =
+					list_create(slurm_destroy_char);
+			slurm_addto_char_list(job_cond->associd_list, optarg);
+			break;
+			
 		case 't':
 		case 'X':
 			params.opt_allocs = 1;

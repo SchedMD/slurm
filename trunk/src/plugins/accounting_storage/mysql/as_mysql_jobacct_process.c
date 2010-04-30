@@ -380,6 +380,9 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 		mysql_free_result(result);
 	}
 
+	setup_job_cluster_cond_limits(mysql_conn, job_cond,
+				      cluster_name, &extra);
+
 	query = xstrdup_printf("select %s from \"%s_%s\" as t1 "
 			       "left join \"%s_%s\" as t2 "
 			       "on t1.id_assoc=t2.id_assoc",
@@ -921,36 +924,14 @@ extern int good_nodes_from_inx(List local_cluster_list,
 
 extern char *setup_job_cluster_cond_limits(mysql_conn_t *mysql_conn,
 					   slurmdb_job_cond_t *job_cond,
-					   char *cluster_name)
+					   char *cluster_name, char **extra)
 {
 	int set = 0;
 	ListIterator itr = NULL;
 	char *object = NULL;
-	char *extra = NULL;
 
 	if(!job_cond)
 		return NULL;
-
-	if(job_cond->associd_list && list_count(job_cond->associd_list)) {
-		set = 0;
-		xstrfmtcat(extra, ", \"%s_%s\" as t3 where (",
-			   cluster_name, assoc_table);
-		itr = list_iterator_create(job_cond->associd_list);
-		while((object = list_next(itr))) {
-			if(set)
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "t3.id_assoc=%s", object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
-		/* just incase the association is gone */
-		if(set)
-			xstrcat(extra, " || ");
-		xstrfmtcat(extra, "t3.id_assoc is null) && "
-			   "(t2.lft between t3.lft and t3.rgt "
-			   "|| t2.lft is null)");
-	}
 
 	/* this must be done before resvid_list since we set
 	   resvid_list up here */
@@ -989,27 +970,27 @@ extern char *setup_job_cluster_cond_limits(mysql_conn_t *mysql_conn,
 
 	if(job_cond->resvid_list && list_count(job_cond->resvid_list)) {
 		set = 0;
-		if(extra)
-			xstrcat(extra, " && (");
+		if(*extra)
+			xstrcat(*extra, " && (");
 		else
-			xstrcat(extra, " where (");
+			xstrcat(*extra, " where (");
 		itr = list_iterator_create(job_cond->resvid_list);
 		while((object = list_next(itr))) {
 			if(set)
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "t1.id_resv='%s'", object);
+				xstrcat(*extra, " || ");
+			xstrfmtcat(*extra, "t1.id_resv='%s'", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
+		xstrcat(*extra, ")");
 	}
 
-	return extra;
+	return SLURM_SUCCESS;
 }
 
 extern int setup_job_cond_limits(mysql_conn_t *mysql_conn,
 				 slurmdb_job_cond_t *job_cond,
-				 const char *prefix, char **extra)
+				 char **extra)
 {
 	int set = 0;
 	ListIterator itr = NULL;
@@ -1030,6 +1011,23 @@ extern int setup_job_cond_limits(mysql_conn_t *mysql_conn,
 			if(set)
 				xstrcat(*extra, " || ");
 			xstrfmtcat(*extra, "t1.account='%s'", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(*extra, ")");
+	}
+
+	if(job_cond->associd_list && list_count(job_cond->associd_list)) {
+		set = 0;
+		if(*extra)
+			xstrcat(*extra, " && (");
+		else
+			xstrcat(*extra, " where (");
+		itr = list_iterator_create(job_cond->acct_list);
+		while((object = list_next(itr))) {
+			if(set)
+				xstrcat(*extra, " || ");
+			xstrfmtcat(*extra, "t1.associd='%s'", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -1210,14 +1208,14 @@ extern int setup_job_cond_limits(mysql_conn_t *mysql_conn,
 	return set;
 }
 
-extern List as_mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
-					   slurmdb_job_cond_t *job_cond)
+extern List as_mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn,
+					      uid_t uid,
+					      slurmdb_job_cond_t *job_cond)
 {
 	char *extra = NULL;
 	char *tmp = NULL, *tmp2 = NULL;
 	ListIterator itr = NULL;
 	int is_admin=1;
-	char *prefix="t2";
 	int i;
 	List job_list = NULL;
 	uint16_t private_data = 0;
@@ -1256,10 +1254,7 @@ extern List as_mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t ui
 	   && (atoi(list_peek(job_cond->state_list)) == JOB_PENDING))
 		only_pending = 1;
 
-	if((job_cond->associd_list && list_count(job_cond->associd_list)))
-		prefix="t3";
-
-	setup_job_cond_limits(mysql_conn, job_cond, prefix, &extra);
+	setup_job_cond_limits(mysql_conn, job_cond, &extra);
 
 	xfree(tmp);
 	xstrfmtcat(tmp, "%s", job_req_inx[0]);
