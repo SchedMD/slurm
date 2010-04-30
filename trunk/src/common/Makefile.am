@@ -44,6 +44,7 @@ libcommon_la_SOURCES = 			\
 	cbuf.c cbuf.h			\
 	safeopen.c safeopen.h		\
 	bitstring.c bitstring.h 	\
+	bit_array.c bit_array.h		\
 	mpi.c mpi.h                     \
 	pack.c pack.h			\
 	parse_config.c parse_config.h	\
