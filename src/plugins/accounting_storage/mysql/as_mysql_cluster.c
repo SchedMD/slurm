@@ -355,7 +355,7 @@ end_it:
 }
 
 extern List as_mysql_remove_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
-				  slurmdb_cluster_cond_t *cluster_cond)
+				     slurmdb_cluster_cond_t *cluster_cond)
 {
 	ListIterator itr = NULL, itr2 = NULL;
 	List ret_list = NULL;
@@ -487,7 +487,7 @@ extern List as_mysql_remove_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 			}
 		}
 		list_iterator_reset(itr2);
-		if((rc = remove_cluster_tables(mysql_conn->db_conn, object))
+		if((rc = remove_cluster_tables(mysql_conn, object))
 		   != SLURM_SUCCESS)
 			break;
 	}

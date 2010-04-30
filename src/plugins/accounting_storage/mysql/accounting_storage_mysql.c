@@ -1009,7 +1009,7 @@ extern int create_cluster_tables(MYSQL *db_conn, char *cluster_name)
 	return SLURM_SUCCESS;
 }
 
-extern int remove_cluster_tables(MYSQL *db_conn, char *cluster_name)
+extern int remove_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 {
 	char *query = NULL;
 	int rc = SLURM_SUCCESS;
@@ -1017,15 +1017,23 @@ extern int remove_cluster_tables(MYSQL *db_conn, char *cluster_name)
 
 	query = xstrdup_printf("select id_assoc from \"%s_%s\" limit 1;",
 			       cluster_name, assoc_table);
-	if(!(result = mysql_db_query_ret(db_conn, query, 0))) {
+	if(!(result = mysql_db_query_ret(mysql_conn->db_conn, query, 0))) {
 		xfree(query);
 		error("no result given when querying cluster %s", cluster_name);
 		return SLURM_ERROR;
 	}
+	debug4("%d(%s:%d) query\n%s",
+	       mysql_conn->conn, THIS_FILE, __LINE__, query);
 	xfree(query);
 
 	if(mysql_num_rows(result)) {
 		mysql_free_result(result);
+		/* If there were any associations removed fix it up
+		   here since the table isn't going to be deleted. */
+		xstrfmtcat(mysql_conn->auto_incr_query,
+			   "alter table \"%s_%s\" AUTO_INCREMENT=0;",
+			   cluster_name, assoc_table);
+
 		debug4("we still have associations, can't remove tables");
 		return SLURM_SUCCESS;
 	}
@@ -1051,7 +1059,10 @@ extern int remove_cluster_tables(MYSQL *db_conn, char *cluster_name)
 			       cluster_name, wckey_day_table,
 			       cluster_name, wckey_hour_table,
 			       cluster_name, wckey_month_table);
-	rc = mysql_db_query(db_conn, query);
+	debug3("%d(%s:%d) query\n%s",
+	       mysql_conn->conn, THIS_FILE, __LINE__, query);
+
+	rc = mysql_db_query(mysql_conn->db_conn, query);
 	xfree(query);
 	if(rc != SLURM_SUCCESS)
 		error("Couldn't drop cluster tables");
@@ -1614,11 +1625,16 @@ just_update:
 			       "where (%s);",
 			       cluster_name, assoc_table, now,
 			       loc_assoc_char);
-	/* Make sure the next id we get doesn't create holes in the ids. */
-	xstrfmtcat(mysql_conn->auto_incr_query,
-		   "alter table \"%s_%s\" AUTO_INCREMENT=0;",
-		   cluster_name, assoc_table);
 
+	/* if we are removing a cluster table this is handled in
+	   remove_cluster_tables if table still exists. */
+	if(table != cluster_table) {
+		/* Make sure the next id we get doesn't create holes
+		 * in the ids. */
+		xstrfmtcat(mysql_conn->auto_incr_query,
+			   "alter table \"%s_%s\" AUTO_INCREMENT=0;",
+			   cluster_name, assoc_table);
+	}
 	if(table != assoc_table)
 		xfree(loc_assoc_char);
 

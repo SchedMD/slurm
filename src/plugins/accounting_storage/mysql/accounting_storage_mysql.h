@@ -113,7 +113,7 @@ extern char *fix_double_quotes(char *str);
 extern int last_affected_rows(MYSQL *mysql_db);
 extern void reset_mysql_conn(mysql_conn_t *mysql_conn);
 extern int create_cluster_tables(MYSQL *mysql_db, char *cluster_name);
-extern int remove_cluster_tables(MYSQL *mysql_db, char *cluster_name);
+extern int remove_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name);
 extern int setup_association_limits(slurmdb_association_rec_t *assoc,
 				    char **cols, char **vals,
 				    char **extra, qos_level_t qos_level,
