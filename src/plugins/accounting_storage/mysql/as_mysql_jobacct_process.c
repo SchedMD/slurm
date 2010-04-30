@@ -1023,11 +1023,11 @@ extern int setup_job_cond_limits(mysql_conn_t *mysql_conn,
 			xstrcat(*extra, " && (");
 		else
 			xstrcat(*extra, " where (");
-		itr = list_iterator_create(job_cond->acct_list);
+		itr = list_iterator_create(job_cond->associd_list);
 		while((object = list_next(itr))) {
 			if(set)
 				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "t1.associd='%s'", object);
+			xstrfmtcat(*extra, "t1.id_assoc='%s'", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
