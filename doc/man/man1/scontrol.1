@@ -374,12 +374,6 @@ Set the job's list of excluded node. Multiple node names may be
 specified using simple node range expressions (e.g. "lx[10\-20]").
 Value may be cleared with blank data value, "ExcNodeList=".
 .TP
-\fIExitCode\fP=<exit>:<sig>
-Exit status reported for the job by the wait() function.
-The first number is the exit code, typically as set by the exit() function.
-The second number of the signal that caused the process to terminate if
-it was terminated by a signal.
-.TP
 \fIFeatures\fP=<features>
 Set the job's required node features. 
 The list of features may include multiple feature names separated
@@ -545,6 +539,12 @@ Local node and system id making the resource allocation.
 The time the job is expected to terminate based on the job's time
 limit.  When the job ends sooner, this field will be updated with the
 actual end time.
+.TP
+\fIExitCode\fP=<exit>:<sig>
+Exit status reported for the job by the wait() function.
+The first number is the exit code, typically as set by the exit() function.
+The second number of the signal that caused the process to terminate if
+it was terminated by a signal.
 .TP
 \fIJobState\fP
 The current state of the job.
