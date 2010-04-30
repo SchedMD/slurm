@@ -1262,6 +1262,20 @@ extern int as_mysql_convert_tables(MYSQL *db_conn)
 		xstrfmtcat(query, "%s to %s_old", job_table, job_table);
 	}
 
+	if(last_ran) {
+		if(!drop_query)
+			drop_query = xstrdup("drop table if exists ");
+		else
+			xstrcat(drop_query, ", ");
+		if(!query)
+			query = xstrdup("rename table ");
+		else
+			xstrcat(query, ", ");
+		xstrfmtcat(drop_query, "%s_old", last_ran_table);
+		xstrfmtcat(query, "%s to %s_old",
+			   last_ran_table, last_ran_table);
+	}
+
 	if(resvs) {
 		if(!drop_query)
 			drop_query = xstrdup("drop table if exists ");
