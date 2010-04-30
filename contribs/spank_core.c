@@ -3,7 +3,7 @@
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security, LLC.
  *  Produced at Lawrence Livermore National Laboratory.
- *  Written by Morris Jette <jette1@llnl.gov>.
+ *  Written by Mark Grondona <mgrondona@llnl.gov>.
  *
  *  UCRL-CODE-235358
  * 
