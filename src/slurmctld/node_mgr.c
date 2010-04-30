@@ -2490,6 +2490,7 @@ extern int send_nodes_to_accounting(time_t event_time)
 	int rc = SLURM_SUCCESS, i = 0;
 	struct node_record *node_ptr = NULL;
 	uint32_t node_scaling = 0;
+	char *reason = NULL;
 	slurmctld_lock_t node_read_lock = {
 		READ_LOCK, NO_LOCK, READ_LOCK, WRITE_LOCK };
 
@@ -2499,10 +2500,15 @@ extern int send_nodes_to_accounting(time_t event_time)
 	/* send nodes not in not 'up' state */
 	node_ptr = node_record_table_ptr;
 	for (i = 0; i < node_record_count; i++, node_ptr++) {
+		if(node_ptr->reason)
+			reason = node_ptr->reason;
+		else
+			reason = "First Registration";
 		if (node_ptr->name == '\0' ||
 		   (!IS_NODE_DRAIN(node_ptr) && !IS_NODE_FAIL(node_ptr) &&
 		    !IS_NODE_DOWN(node_ptr))) {
-			/* on some systems we need to make sure there
+			/* At this point, the node appears to be up,
+			   but on some systems we need to make sure there
 			   aren't some part of a node in an error state. */
 			if(node_ptr->select_nodeinfo) {
 				uint16_t err_cpus = 0;
@@ -2538,18 +2544,16 @@ extern int send_nodes_to_accounting(time_t event_time)
 					rc = clusteracct_storage_g_node_down(
 						acct_db_conn,
 						&send_node, event_time,
-						NULL,
+						reason,
 						slurm_get_slurm_user_id());
-
-					continue;
 				}
-			} else
-				continue;
-		}
-		rc = clusteracct_storage_g_node_down(acct_db_conn,
-						     node_ptr, event_time,
-						     NULL,
-						     slurm_get_slurm_user_id());
+			}
+		} else
+			rc = clusteracct_storage_g_node_down(
+				acct_db_conn,
+				node_ptr, event_time,
+				reason,
+				slurm_get_slurm_user_id());
 		if (rc == SLURM_ERROR)
 			break;
 	}

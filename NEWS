@@ -241,7 +241,12 @@ documents those changes that are of interest to users and admins.
  -- Insure that SPANK environment variables set by salloc or sbatch get
     propagated to the Prolog on all nodes by setting SLURM_SPANK_* environment
     variables for srun's use.
- 
+ -- In sched/wiki2 - Add support for the MODIFYJOB command to alter a job's
+    comment field
+ -- When a cluster first registers with the SlurmDBD only send nodes in an
+    non-usable state.  Before all nodes were sent.
+ -- Alter sacct to be able to query jobs by association id.
+
 * Changes in SLURM 2.1.7
 ========================
  -- Modify srun, salloc and sbatch parsing for the --signal option to accept
