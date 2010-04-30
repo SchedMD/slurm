@@ -1072,6 +1072,10 @@ extern int as_mysql_daily_rollup(mysql_conn_t *mysql_conn,
 			cluster_name, assoc_day_table, now, now, curr_start,
 			cluster_name, assoc_hour_table,
 			curr_end, curr_start, now);
+		/* We group on deleted here so if there are no entries
+		   we don't get an error, just nothing is returned.
+		   Else we get a bunch of NULL's
+		*/
 		xstrfmtcat(query,
 			   "insert into \"%s_%s\" (creation_time, "
 			   "mod_time, time_start, cpu_count, "
@@ -1086,6 +1090,7 @@ extern int as_mysql_daily_rollup(mysql_conn_t *mysql_conn,
 			   "@OSUM:=SUM(over_cpu_secs), "
 			   "@RSUM:=SUM(resv_cpu_secs) from \"%s_%s\" where "
 			   "(time_start < %d && time_start >= %d) "
+			   "group by deleted "
 			   "on duplicate key update "
 			   "mod_time=%d, cpu_count=@CPU, "
 			   "alloc_cpu_secs=@ASUM, down_cpu_secs=@DSUM, "
@@ -1181,6 +1186,10 @@ extern int as_mysql_monthly_rollup(mysql_conn_t *mysql_conn,
 			cluster_name, assoc_month_table, now, now, curr_start,
 			cluster_name, assoc_day_table,
 			curr_end, curr_start, now);
+		/* We group on deleted here so if there are no entries
+		   we don't get an error, just nothing is returned.
+		   Else we get a bunch of NULL's
+		*/
 		xstrfmtcat(query,
 			   "insert into \"%s_%s\" (creation_time, "
 			   "mod_time, time_start, cpu_count, "
@@ -1195,6 +1204,7 @@ extern int as_mysql_monthly_rollup(mysql_conn_t *mysql_conn,
 			   "@OSUM:=SUM(over_cpu_secs), "
 			   "@RSUM:=SUM(resv_cpu_secs) from \"%s_%s\" where "
 			   "(time_start < %d && time_start >= %d) "
+			   "group by deleted "
 			   "on duplicate key update "
 			   "mod_time=%d, cpu_count=@CPU, "
 			   "alloc_cpu_secs=@ASUM, down_cpu_secs=@DSUM, "
