@@ -1,5 +1,9 @@
 /*****************************************************************************\
- *  bit_array.c - Functions to manupulate arrays of bitstrings
+ *  bit_array.c - Functions to manupulate arrays of bitstrings. This permits
+ *  one to maintain separate bitmaps for each node, but also work with a
+ *  single bitmap for system-wide scheduling operations (e.g. determining
+ *  which jobs are allocated overlapping resources and thus can not be
+ *  concurrently scheduled).
  *****************************************************************************
  *  Copyright (C) 2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -222,7 +226,7 @@ int bitstruct2strings(bit_array_struct_t *bitstruct, bitstr_t ***strings)
 				fatal("bit_alloc malloc failure");
 			for (k=0; k<bitstruct->rec_size[i]; k++) {
 				if (bit_test(bitstruct->bitstr, bit_offset + k))
-				bit_set(local_bitstr[cnt], k);
+					bit_set(local_bitstr[cnt], k);
 			}
 			bit_offset += bitstruct->rec_size[i];
 			cnt++;
@@ -230,6 +234,68 @@ int bitstruct2strings(bit_array_struct_t *bitstruct, bitstr_t ***strings)
 	}
 
 	return SLURM_SUCCESS;
+}
+
+/*
+ * Extract a specific bitstring from the array by specifying its index
+ * IN bitstruct - a struct containing all of the information from all bitstrings
+ *	in a single bitstrings
+ * IN index - zero-origin index of the 
+ * RET: a single bitstrings originally passed as input to bitstrings2struct()
+ *	NULL on failure
+ *
+ * NOTE: User is responsible to free the return value
+ */
+bitstr_t *bitstruct2string(bit_array_struct_t *bitstruct, int index)
+{
+	int i, j;
+	int bit_offset = 0, cnt = 0;
+	bitstr_t *local_bitstr;
+
+	if (bitstruct == NULL) {
+		error("bitstruct2string: struct pointer is NULL");
+		return NULL;
+	}
+	if (index < 0) {
+		error("bitstruct2string: index is invalid (%d)", index);
+		return NULL;
+	}
+
+	xassert(bitstruct->rec_size);
+	xassert(bitstruct->rec_reps);
+
+	for (i=0; i<bitstruct->rec_cnt; i++) {
+		if (index >= (cnt + bitstruct->rec_reps[i])) {
+			bit_offset += bitstruct->rec_size[i] *
+				      bitstruct->rec_reps[i];
+			cnt += bitstruct->rec_reps[i];
+			continue;
+		}
+
+		bit_offset += bitstruct->rec_size[i] * (index - cnt);
+		break;
+	}
+	if (i >= bitstruct->rec_cnt) {
+		error("bitstruct2string: index is invalid (%d > %d)",
+		      index, (cnt - 1));
+		return NULL;
+	}
+	j = bit_size(bitstruct->bitstr);
+	if (j < (bit_offset+bitstruct->rec_size[i])) {
+		error("bitstruct2string: bit_size mismatch (%d < %d)",
+		      j, bit_offset);
+		return NULL;
+	}
+
+	local_bitstr = bit_alloc(bitstruct->rec_size[i]);
+	if (!local_bitstr)
+		fatal("bit_alloc malloc failure");
+	for (j=0; j<bitstruct->rec_size[i]; j++) {
+		if (bit_test(bitstruct->bitstr, bit_offset + j))
+			bit_set(local_bitstr, j);
+	}
+
+	return local_bitstr;
 }
 
 /*
