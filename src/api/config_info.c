@@ -97,6 +97,11 @@ _select_info(uint16_t select_type_param)
 			strcat(select_str, ",");
 		strcat(select_str, "CR_ONE_TASK_PER_CORE");
 	}
+	if (select_type_param & CR_CORE_DEFAULT_DIST_BLOCK) {
+		if (select_str[0])
+			strcat(select_str, ",");
+		strcat(select_str, "CR_CORE_DEFAULT_DIST_BLOCK");
+	}
 
 	if (select_str[0] == '\0')
 		strcat(select_str, "NONE");

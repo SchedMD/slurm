@@ -1437,6 +1437,12 @@ Allocate one task per core by default.
 Without this option, by default one task will be allocated per 
 thread on nodes with more than one \fBThreadsPerCore\fR configured.
 .TP
+\fBCR_CORE_DEFAULT_DIST_BLOCK\fR
+Allocate cores using block distribution by default.
+This default behavior can be overriden specifying a particular 
+"-m" parameter with srun/salloc/sbatch.
+Without this option, cores will be allocated cyclicly across the sockets.
+.TP
 \fBCR_Socket\fR
 Sockets are consumable resources.
 On nodes with multiple cores, each core or thread is counted as a CPU

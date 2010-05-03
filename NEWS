@@ -37,6 +37,9 @@ documents those changes that are of interest to users and admins.
  -- Remove srun's --core option. Move the logic to an optional SPANK plugin
     (currrently in the contribs directory, but plan to distribute through
     http://code.google.com/p/slurm-spank-plugins/).
+ -- Patch for adding CR_CORE_DEFAULT_DIST_BLOCK as a select option to layout
+    jobs using block layout across cores within each node instead of cyclic
+    which was previously the default.
 
 * Changes in SLURM 2.2.0.pre5
 =============================
