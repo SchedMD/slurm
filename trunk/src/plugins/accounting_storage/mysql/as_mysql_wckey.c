@@ -173,7 +173,7 @@ static int _cluster_remove_wckeys(mysql_conn_t *mysql_conn,
 	xfree(query);
 	rc = remove_common(mysql_conn, DBD_REMOVE_WCKEYS, now,
 			   user_name, wckey_table, assoc_char, assoc_char,
-			   cluster_name);
+			   cluster_name, NULL, NULL);
 	xfree(assoc_char);
 
 	if (rc == SLURM_ERROR) {

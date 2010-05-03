@@ -1396,7 +1396,8 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 		 * want to rewrite code to make it happen
 		 */
 
-		memset(&local_assoc_cond, 0, sizeof(slurmdb_association_cond_t));
+		memset(&local_assoc_cond, 0,
+		       sizeof(slurmdb_association_cond_t));
 		local_assoc_cond.cluster_list = list_create(NULL);
 		list_append(local_assoc_cond.cluster_list, cluster_name);
 		local_assoc_list = as_mysql_get_assocs(
@@ -1435,7 +1436,8 @@ static int _process_remove_assoc_results(mysql_conn_t *mysql_conn,
 					 slurmdb_user_rec_t *user,
 					 char *cluster_name,
 					 char *name_char,
-					 bool is_admin, List ret_list)
+					 bool is_admin, List ret_list,
+					 bool *jobs_running)
 {
 	ListIterator itr = NULL;
 	MYSQL_ROW row;
@@ -1445,6 +1447,8 @@ static int _process_remove_assoc_results(mysql_conn_t *mysql_conn,
 	char *user_name = NULL;
 
 	xassert(result);
+	if(*jobs_running)
+		goto skip_process;
 
 	while((row = mysql_fetch_row(result))) {
 		slurmdb_association_rec_t *rem_assoc = NULL;
@@ -1513,11 +1517,12 @@ static int _process_remove_assoc_results(mysql_conn_t *mysql_conn,
 
 	}
 
+skip_process:
 	user_name = uid_to_string((uid_t) user->uid);
 
 	rc = remove_common(mysql_conn, DBD_REMOVE_ASSOCS, now,
 			   user_name, assoc_table, name_char,
-			   assoc_char, cluster_name);
+			   assoc_char, cluster_name, ret_list, jobs_running);
 end_it:
 	xfree(user_name);
 	xfree(assoc_char);
@@ -1926,9 +1931,8 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 	return SLURM_SUCCESS;
 }
 
-
 extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
-			    List association_list)
+			       List association_list)
 {
 	ListIterator itr = NULL;
 	int rc = SLURM_SUCCESS;
@@ -2517,6 +2521,7 @@ extern List as_mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 	slurmdb_user_rec_t user;
 	char *prefix = "t1";
 	List use_cluster_list = as_mysql_cluster_list;
+	bool jobs_running = 0;
 
 	if(!assoc_cond) {
 		error("we need something to change");
@@ -2595,7 +2600,8 @@ extern List as_mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 		mysql_free_result(result);
 
 		query = xstrdup_printf("select distinct %s "
-				       "from \"%s_%s\" where (%s) order by lft;",
+				       "from \"%s_%s\" where (%s) "
+				       "order by lft;",
 				       object,
 				       cluster_name, assoc_table, name_char);
 		debug3("%d(%s:%d) query\n%s",
@@ -2610,11 +2616,10 @@ extern List as_mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 		}
 		xfree(query);
 
-
 		rc = _process_remove_assoc_results(mysql_conn, result,
 						   &user, cluster_name,
 						   name_char, is_admin,
-						   ret_list);
+						   ret_list, &jobs_running);
 		xfree(name_char);
 		mysql_free_result(result);
 
@@ -2639,12 +2644,15 @@ extern List as_mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 		debug3("didn't effect anything");
 		return ret_list;
 	}
-
+	if(jobs_running)
+		errno = ESLURM_JOBS_RUNNING_ON_ASSOC;
+	else
+		errno = SLURM_SUCCESS;
 	return ret_list;
 }
 
 extern List as_mysql_get_assocs(mysql_conn_t *mysql_conn, uid_t uid,
-			     slurmdb_association_cond_t *assoc_cond)
+				slurmdb_association_cond_t *assoc_cond)
 {
 	//DEF_TIMERS;
 	char *extra = NULL;

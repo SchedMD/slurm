@@ -1706,6 +1706,7 @@ extern int sacctmgr_delete_account(int argc, char *argv[])
 		ret_list = acct_storage_g_remove_associations(
 			db_conn, my_uid, acct_cond->assoc_cond);
 	}
+	rc = errno;
 	notice_thread_fini();
 	slurmdb_destroy_account_cond(acct_cond);
 
@@ -1728,6 +1729,20 @@ extern int sacctmgr_delete_account(int argc, char *argv[])
 			return SLURM_ERROR;
 		}
 		itr = list_iterator_create(ret_list);
+		/* If there were jobs running with an association to
+		   be deleted, don't.
+		*/
+		if(rc == ESLURM_JOBS_RUNNING_ON_ASSOC) {
+			fprintf(stderr, " Error with request: %s\n",
+				slurm_strerror(rc));
+			while((object = list_next(itr))) {
+				fprintf(stderr,"  %s\n", object);
+			}
+			list_destroy(ret_list);
+			acct_storage_g_commit(db_conn, 0);
+			return rc;
+		}
+
 		if(cond_set == 1) {
 			printf(" Deleting accounts...\n");
 		} else if(cond_set == 2 || cond_set == 3) {

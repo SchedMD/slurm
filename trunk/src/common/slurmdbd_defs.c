@@ -3315,6 +3315,7 @@ void inline slurmdbd_pack_list_msg(dbd_list_msg_t *msg,
 		fatal("Unknown pack type");
 		return;
 	}
+
 	if(msg->my_list) {
 		count = list_count(msg->my_list);
 		pack32(count, buffer);
@@ -3329,6 +3330,9 @@ void inline slurmdbd_pack_list_msg(dbd_list_msg_t *msg,
 		}
 		list_iterator_destroy(itr);
 	}
+
+	if(rpc_version >= 8)
+		pack32(msg->return_code, buffer);
 }
 
 int inline slurmdbd_unpack_list_msg(dbd_list_msg_t **msg, uint16_t rpc_version,
@@ -3417,6 +3421,7 @@ int inline slurmdbd_unpack_list_msg(dbd_list_msg_t **msg, uint16_t rpc_version,
 
 	msg_ptr = xmalloc(sizeof(dbd_list_msg_t));
 	*msg = msg_ptr;
+
 	safe_unpack32(&count, buffer);
 	if((int)count > -1) {
 		/* here we are looking to make the list if -1 or
@@ -3431,6 +3436,10 @@ int inline slurmdbd_unpack_list_msg(dbd_list_msg_t **msg, uint16_t rpc_version,
 			list_append(msg_ptr->my_list, object);
 		}
 	}
+
+	if(rpc_version >= 8)
+		safe_unpack32(&msg_ptr->return_code, buffer);
+
 	return SLURM_SUCCESS;
 
 unpack_error:

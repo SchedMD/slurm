@@ -743,7 +743,7 @@ extern List as_mysql_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 	while((object = list_next(itr))) {
 		if((rc = remove_common(mysql_conn, DBD_REMOVE_QOS, now,
 				       user_name, qos_table, name_char,
-				       assoc_char, object))
+				       assoc_char, object, NULL, NULL))
 		   != SLURM_SUCCESS)
 			break;
 	}

@@ -1062,6 +1062,7 @@ extern int sacctmgr_delete_cluster(int argc, char *argv[])
 	notice_thread_init();
 	ret_list = acct_storage_g_remove_clusters(
 		db_conn, my_uid, cluster_cond);
+	rc = errno;
 	notice_thread_fini();
 
 	slurmdb_destroy_cluster_cond(cluster_cond);
@@ -1069,6 +1070,19 @@ extern int sacctmgr_delete_cluster(int argc, char *argv[])
 	if(ret_list && list_count(ret_list)) {
 		char *object = NULL;
 		ListIterator itr = list_iterator_create(ret_list);
+		/* If there were jobs running with an association to
+		   be deleted, don't.
+		*/
+		if(rc == ESLURM_JOBS_RUNNING_ON_ASSOC) {
+			fprintf(stderr, " Error with request: %s\n",
+				slurm_strerror(rc));
+			while((object = list_next(itr))) {
+				fprintf(stderr,"  %s\n", object);
+			}
+			list_destroy(ret_list);
+			acct_storage_g_commit(db_conn, 0);
+			return rc;
+		}
 		printf(" Deleting clusters...\n");
 		while((object = list_next(itr))) {
 			printf("  %s\n", object);

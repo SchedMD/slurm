@@ -538,6 +538,7 @@ extern List as_mysql_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	slurmdb_user_cond_t user_coord_cond;
 	slurmdb_association_cond_t assoc_cond;
 	slurmdb_wckey_cond_t wckey_cond;
+	bool jobs_running = 0;
 
 	if(!user_cond) {
 		error("we need something to remove");
@@ -679,7 +680,8 @@ extern List as_mysql_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	while((object = list_next(itr))) {
 		if((rc = remove_common(mysql_conn, DBD_REMOVE_USERS, now,
 				       user_name, user_table, name_char,
-				       assoc_char, object))
+				       assoc_char, object, ret_list,
+				       &jobs_running))
 		   != SLURM_SUCCESS)
 			break;
 	}
@@ -707,6 +709,10 @@ extern List as_mysql_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		return NULL;
 	}
 
+	if(jobs_running)
+		errno = ESLURM_JOBS_RUNNING_ON_ASSOC;
+	else
+		errno = SLURM_SUCCESS;
 	return ret_list;
 }
 
@@ -858,7 +864,7 @@ extern List as_mysql_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 	while((object = list_next(itr))) {
 		if((rc = remove_common(mysql_conn, DBD_REMOVE_ACCOUNT_COORDS,
 				       now, user_name, slurmdb_coord_table,
-				       extra, NULL, object))
+				       extra, NULL, object, NULL, NULL))
 		   != SLURM_SUCCESS)
 			break;
 	}

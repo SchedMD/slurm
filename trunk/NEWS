@@ -40,6 +40,10 @@ documents those changes that are of interest to users and admins.
  -- Patch for adding CR_CORE_DEFAULT_DIST_BLOCK as a select option to layout
     jobs using block layout across cores within each node instead of cyclic
     which was previously the default.
+ -- Accounting - When removing associations if jobs are running, those jobs
+    must be killed before proceeding.  Before the jobs were killed
+    automatically thus causing user confusion on what is most likely an
+    admin's mistake.
 
 * Changes in SLURM 2.2.0.pre5
 =============================

@@ -1276,7 +1276,8 @@ extern void sacctmgr_print_qos_limits(slurmdb_qos_rec_t *qos)
 
 }
 
-extern int sort_coord_list(slurmdb_coord_rec_t *coord_a, slurmdb_coord_rec_t *coord_b)
+extern int sort_coord_list(slurmdb_coord_rec_t *coord_a,
+			   slurmdb_coord_rec_t *coord_b)
 {
 	int diff = strcmp(coord_a->name, coord_b->name);
 
