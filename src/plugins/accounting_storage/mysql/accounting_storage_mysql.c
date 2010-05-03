@@ -130,6 +130,14 @@ char *wckey_table = "wckey_table";
 
 static char *default_qos_str = NULL;
 
+enum {
+	JASSOC_JOB,
+	JASSOC_ACCT,
+	JASSOC_USER,
+	JASSOC_PART,
+	JASSOC_COUNT
+};
+
 extern int acct_storage_p_close_connection(mysql_conn_t **mysql_conn);
 
 static List _get_cluster_names(MYSQL *db_conn)
@@ -185,6 +193,32 @@ static int _set_qos_cnt(MYSQL *db_conn)
 	return SLURM_SUCCESS;
 }
 
+static void _process_running_jobs_result(char *cluster_name,
+					 MYSQL_RES *result, List ret_list)
+{
+	MYSQL_ROW row;
+	char *object;
+
+	while((row = mysql_fetch_row(result))) {
+		if(!row[JASSOC_USER][0]) {
+			/* This should never happen */
+			error("How did we get a job running on an association "
+			      "that isn't a user assocation job %s cluster "
+			      "'%s' acct '%s'?", row[JASSOC_JOB],
+			      cluster_name, row[JASSOC_ACCT]);
+			continue;
+		}
+		object = xstrdup_printf(
+			"JobID = %-10s C = %-10s A = %-10s U = %-9s",
+			row[JASSOC_JOB], cluster_name, row[JASSOC_ACCT],
+			row[JASSOC_USER]);
+		if(row[JASSOC_PART][0])
+			// see if there is a partition name
+			xstrfmtcat(object, " P = %s", row[JASSOC_PART]);
+		list_append(ret_list, object);
+	}
+}
+
 /* this function is here to see if any of what we are trying to remove
  * has jobs that are or were once running.  So if we have jobs and the
  * object is less than a day old we don't want to delete it only set
@@ -192,21 +226,53 @@ static int _set_qos_cnt(MYSQL *db_conn)
  */
 static bool _check_jobs_before_remove(mysql_conn_t *mysql_conn,
 				      char *cluster_name,
-				      char *assoc_char)
+				      char *assoc_char,
+				      List ret_list,
+				      bool *already_flushed)
 {
-	char *query = NULL;
+	char *query = NULL, *object = NULL;
 	bool rc = 0;
+	int i;
 	MYSQL_RES *result = NULL;
 
-	query = xstrdup_printf("select t0.id_assoc from \"%s_%s\" as t0, "
-			       "\"%s_%s\" as t1, \"%s_%s\" as t2 "
-			       "where t1.lft between "
-			       "t2.lft and t2.rgt && (%s) "
-			       "and t0.id_assoc=t1.id_assoc limit 1;",
-			       cluster_name, job_table,
-			       cluster_name, assoc_table,
-			       cluster_name, assoc_table,
-			       assoc_char);
+	/* if this changes you will need to edit the corresponding
+	 * enum above in the global settings */
+	static char *jassoc_req_inx[] = {
+		"t0.id_job",
+		"t1.acct",
+		"t1.user",
+		"t1.partition"
+	};
+	if(ret_list) {
+		xstrcat(object, jassoc_req_inx[0]);
+		for(i=1; i<JASSOC_COUNT; i++)
+			xstrfmtcat(object, ", %s", jassoc_req_inx[i]);
+
+		query = xstrdup_printf(
+			"select distinct %s "
+			"from \"%s_%s\" as t0, "
+			"\"%s_%s\" as t1, \"%s_%s\" as t2 "
+			"where t1.lft between "
+			"t2.lft and t2.rgt && (%s) "
+			"and t0.id_assoc=t1.id_assoc "
+			"and t0.time_end=0 && t0.state=%d;",
+			object, cluster_name, job_table,
+			cluster_name, assoc_table,
+			cluster_name, assoc_table,
+			assoc_char, JOB_RUNNING);
+		xfree(object);
+	} else {
+		query = xstrdup_printf(
+			"select t0.id_assoc from \"%s_%s\" as t0, "
+			"\"%s_%s\" as t1, \"%s_%s\" as t2 "
+			"where t1.lft between "
+			"t2.lft and t2.rgt && (%s) "
+			"and t0.id_assoc=t1.id_assoc limit 1;",
+			cluster_name, job_table,
+			cluster_name, assoc_table,
+			cluster_name, assoc_table,
+			assoc_char);
+	}
 
 	debug3("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, THIS_FILE, __LINE__, query);
@@ -219,7 +285,15 @@ static bool _check_jobs_before_remove(mysql_conn_t *mysql_conn,
 	if(mysql_num_rows(result)) {
 		debug4("We have jobs for this combo");
 		rc = true;
+		if(ret_list && !(*already_flushed)) {
+			list_flush(ret_list);
+			(*already_flushed) = 1;
+			reset_mysql_conn(mysql_conn);
+		}
 	}
+
+	if(ret_list)
+		_process_running_jobs_result(cluster_name, result, ret_list);
 
 	mysql_free_result(result);
 	return rc;
@@ -228,19 +302,46 @@ static bool _check_jobs_before_remove(mysql_conn_t *mysql_conn,
 /* Same as above but for associations instead of other tables */
 static bool _check_jobs_before_remove_assoc(mysql_conn_t *mysql_conn,
 					    char *cluster_name,
-					    char *assoc_char)
+					    char *assoc_char,
+					    List ret_list,
+					    bool *already_flushed)
 {
-	char *query = NULL;
+	char *query = NULL, *object = NULL;
 	bool rc = 0;
+	int i;
 	MYSQL_RES *result = NULL;
 
-	query = xstrdup_printf("select t1.id_assoc from \"%s_%s\" as t1, "
-			       "\"%s_%s\" as t2 where (%s) "
-			       "and t1.id_assoc=t2.id_assoc limit 1;",
-			       cluster_name, job_table,
-			       cluster_name, assoc_table,
-			       assoc_char);
+	/* if this changes you will need to edit the corresponding
+	 * enum above in the global settings */
+	static char *jassoc_req_inx[] = {
+		"t1.id_job",
+		"t2.acct",
+		"t2.user",
+		"t2.partition"
+	};
 
+	if(ret_list) {
+		xstrcat(object, jassoc_req_inx[0]);
+		for(i=1; i<JASSOC_COUNT; i++)
+			xstrfmtcat(object, ", %s", jassoc_req_inx[i]);
+
+		query = xstrdup_printf("select %s "
+				       "from \"%s_%s\" as t1, \"%s_%s\" as t2 "
+				       "where (%s) and t1.id_assoc=t2.id_assoc "
+				       "and t1.time_end=0 && t1.state=%d;",
+				       object, cluster_name, job_table,
+				       cluster_name, assoc_table,
+				       assoc_char, JOB_RUNNING);
+		xfree(object);
+	} else {
+		query = xstrdup_printf(
+			"select t1.id_assoc from \"%s_%s\" as t1, "
+			"\"%s_%s\" as t2 where (%s) "
+			"and t1.id_assoc=t2.id_assoc limit 1;",
+			cluster_name, job_table,
+			cluster_name, assoc_table,
+			assoc_char);
+	}
 	debug3("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, THIS_FILE, __LINE__, query);
 	if(!(result = mysql_db_query_ret(
@@ -253,7 +354,15 @@ static bool _check_jobs_before_remove_assoc(mysql_conn_t *mysql_conn,
 	if(mysql_num_rows(result)) {
 		debug4("We have jobs for this combo");
 		rc = true;
+		if(ret_list && !(*already_flushed)) {
+			list_flush(ret_list);
+			(*already_flushed) = 1;
+			reset_mysql_conn(mysql_conn);
+		}
 	}
+
+	if(ret_list)
+		_process_running_jobs_result(cluster_name, result, ret_list);
 
 	mysql_free_result(result);
 	return rc;
@@ -268,7 +377,8 @@ static bool _check_jobs_before_remove_without_assoctable(
 	bool rc = 0;
 	MYSQL_RES *result = NULL;
 
-	query = xstrdup_printf("select id_assoc from \"%s_%s\" where (%s) limit 1;",
+	query = xstrdup_printf("select id_assoc from \"%s_%s\" "
+			       "where (%s) limit 1;",
 			       cluster_name, job_table, where_char);
 
 	debug3("%d(%s:%d) query\n%s",
@@ -1346,7 +1456,9 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 			 char *table,
 			 char *name_char,
 			 char *assoc_char,
-			 char *cluster_name)
+			 char *cluster_name,
+			 List ret_list,
+			 bool *jobs_running)
 {
 	int rc = SLURM_SUCCESS;
 	char *query = NULL;
@@ -1376,11 +1488,25 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 		has_jobs = _check_jobs_before_remove_without_assoctable(
 			mysql_conn, cluster_name, assoc_char);
 	} else if(table != assoc_table) {
+		/* first check to see if we are running jobs now */
+		if(_check_jobs_before_remove(
+			   mysql_conn, cluster_name, assoc_char,
+			   ret_list, jobs_running) || (*jobs_running))
+			return SLURM_SUCCESS;
+
 		has_jobs = _check_jobs_before_remove(
-			mysql_conn, cluster_name, assoc_char);
+			mysql_conn, cluster_name, assoc_char, NULL, NULL);
 	} else {
+		/* first check to see if we are running jobs now */
+		if(_check_jobs_before_remove_assoc(
+			   mysql_conn, cluster_name, name_char,
+			   ret_list, jobs_running) || (*jobs_running))
+			return SLURM_SUCCESS;
+
+		/* now check to see if any jobs were ever run. */
 		has_jobs = _check_jobs_before_remove_assoc(
-			mysql_conn, cluster_name, name_char);
+			mysql_conn, cluster_name, name_char,
+			NULL, NULL);
 	}
 	/* we want to remove completely all that is less than a day old */
 	if(!has_jobs && table != assoc_table) {

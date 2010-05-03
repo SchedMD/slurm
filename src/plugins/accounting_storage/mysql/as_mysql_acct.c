@@ -383,6 +383,7 @@ extern List as_mysql_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 	int set = 0;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
+	bool jobs_running = 0;
 
 	if(!acct_cond) {
 		error("we need something to change");
@@ -491,7 +492,8 @@ extern List as_mysql_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 	while((object = list_next(itr))) {
 		if((rc = remove_common(mysql_conn, DBD_REMOVE_ACCOUNTS, now,
 				       user_name, acct_table, name_char,
-				       assoc_char, object))
+				       assoc_char, object, ret_list,
+				       &jobs_running))
 		   != SLURM_SUCCESS)
 			break;
 	}
@@ -506,6 +508,10 @@ extern List as_mysql_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 		return NULL;
 	}
 
+	if(jobs_running)
+		errno = ESLURM_JOBS_RUNNING_ON_ASSOC;
+	else
+		errno = SLURM_SUCCESS;
 	return ret_list;
 }
 

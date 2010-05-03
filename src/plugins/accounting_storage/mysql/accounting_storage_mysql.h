@@ -133,7 +133,9 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 			 char *table,
 			 char *name_char,
 			 char *assoc_char,
-			 char *cluster_name);
+			 char *cluster_name,
+			 List ret_list,
+			 bool *jobs_running);
 
 /*local api functions */
 extern int acct_storage_p_commit(mysql_conn_t *mysql_conn, bool commit);

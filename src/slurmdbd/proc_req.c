@@ -2722,6 +2722,7 @@ static int   _remove_accounts(slurmdbd_conn_t *slurmdbd_conn,
 					      rc, comment, DBD_REMOVE_ACCOUNTS);
 		return rc;
 	}
+	list_msg.return_code = errno;
 
 	slurmdbd_free_cond_msg(get_msg, DBD_REMOVE_ACCOUNTS);
 	*out_buffer = init_buf(1024);
@@ -2788,6 +2789,7 @@ static int   _remove_account_coords(slurmdbd_conn_t *slurmdbd_conn,
 					      DBD_REMOVE_ACCOUNT_COORDS);
 		return rc;
 	}
+	list_msg.return_code = SLURM_SUCCESS;
 
 	slurmdbd_free_acct_coord_msg(get_msg);
 	*out_buffer = init_buf(1024);
@@ -2850,6 +2852,7 @@ static int   _remove_assocs(slurmdbd_conn_t *slurmdbd_conn,
 					      rc, comment, DBD_REMOVE_ASSOCS);
 		return rc;
 	}
+	list_msg.return_code = errno;
 
 	slurmdbd_free_cond_msg(get_msg, DBD_REMOVE_ASSOCS);
 	*out_buffer = init_buf(1024);
@@ -2921,6 +2924,7 @@ static int   _remove_clusters(slurmdbd_conn_t *slurmdbd_conn,
 					      rc, comment, DBD_REMOVE_CLUSTERS);
 		return rc;
 	}
+	list_msg.return_code = errno;
 
 	slurmdbd_free_cond_msg(get_msg, DBD_REMOVE_CLUSTERS);
 	*out_buffer = init_buf(1024);
@@ -2991,6 +2995,7 @@ static int   _remove_qos(slurmdbd_conn_t *slurmdbd_conn,
 					      rc, comment, DBD_REMOVE_QOS);
 		return rc;
 	}
+	list_msg.return_code = SLURM_SUCCESS;
 
 	slurmdbd_free_cond_msg(get_msg, DBD_REMOVE_QOS);
 	*out_buffer = init_buf(1024);
@@ -3061,6 +3066,7 @@ static int   _remove_users(slurmdbd_conn_t *slurmdbd_conn,
 					      rc, comment, DBD_REMOVE_USERS);
 		return rc;
 	}
+	list_msg.return_code = errno;
 
 	slurmdbd_free_cond_msg(get_msg, DBD_REMOVE_USERS);
 	*out_buffer = init_buf(1024);
@@ -3131,6 +3137,7 @@ static int   _remove_wckeys(slurmdbd_conn_t *slurmdbd_conn,
 					      rc, comment, DBD_REMOVE_WCKEYS);
 		return rc;
 	}
+	list_msg.return_code = SLURM_SUCCESS;
 
 	slurmdbd_free_cond_msg(get_msg, DBD_REMOVE_WCKEYS);
 	*out_buffer = init_buf(1024);

@@ -370,6 +370,7 @@ extern List as_mysql_remove_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 	slurmdb_wckey_cond_t wckey_cond;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
+	bool jobs_running = 0;
 
 	if(!cluster_cond) {
 		error("we need something to change");
@@ -426,11 +427,13 @@ extern List as_mysql_remove_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 	user_name = uid_to_string((uid_t) uid);
 	while((row = mysql_fetch_row(result))) {
 		char *object = xstrdup(row[0]);
-		list_append(ret_list, object);
+		if(!jobs_running)
+			list_append(ret_list, object);
 
 		xfree(name_char);
 		xstrfmtcat(name_char, "name='%s'", object);
-
+		if(jobs_running)
+			xfree(object);
 		/* We should not need to delete any cluster usage just set it
 		 * to deleted */
 		xstrfmtcat(query,
@@ -444,7 +447,8 @@ extern List as_mysql_remove_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 			   object, cluster_month_table, now);
 		if((rc = remove_common(mysql_conn, DBD_REMOVE_CLUSTERS, now,
 				       user_name, cluster_table,
-				       name_char, assoc_char, object))
+				       name_char, assoc_char, object,
+				       ret_list, &jobs_running))
 		   != SLURM_SUCCESS)
 			break;
 	}
@@ -457,49 +461,54 @@ extern List as_mysql_remove_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		list_destroy(ret_list);
 		return NULL;
 	}
-
-	debug3("%d(%s:%d) query\n%s",
-	       mysql_conn->conn, THIS_FILE, __LINE__, query);
-	rc = mysql_db_query(mysql_conn->db_conn, query);
-	xfree(query);
-	if(rc != SLURM_SUCCESS) {
-		reset_mysql_conn(mysql_conn);
-		list_destroy(ret_list);
-		return NULL;
-	}
-
-	/* We need to remove these clusters from the wckey table */
-	memset(&wckey_cond, 0, sizeof(slurmdb_wckey_cond_t));
-	wckey_cond.cluster_list = ret_list;
-	tmp_list = as_mysql_remove_wckeys(mysql_conn, uid, &wckey_cond);
-	if(tmp_list)
-		list_destroy(tmp_list);
-
-	slurm_mutex_lock(&as_mysql_cluster_list_lock);
-	itr2 = list_iterator_create(as_mysql_cluster_list);
-
-	itr = list_iterator_create(ret_list);
-	while((object = list_next(itr))) {
-		while((cluster_name = list_next(itr2))) {
-			if(!strcmp(cluster_name, object)) {
-				list_delete_item(itr2);
-				break;
-			}
+	if(!jobs_running) {
+		debug3("%d(%s:%d) query\n%s",
+		       mysql_conn->conn, THIS_FILE, __LINE__, query);
+		rc = mysql_db_query(mysql_conn->db_conn, query);
+		xfree(query);
+		if(rc != SLURM_SUCCESS) {
+			reset_mysql_conn(mysql_conn);
+			list_destroy(ret_list);
+			return NULL;
 		}
-		list_iterator_reset(itr2);
-		if((rc = remove_cluster_tables(mysql_conn, object))
-		   != SLURM_SUCCESS)
-			break;
-	}
-	list_iterator_destroy(itr);
-	list_iterator_destroy(itr2);
-	slurm_mutex_unlock(&as_mysql_cluster_list_lock);
 
-	if(rc != SLURM_SUCCESS) {
-		reset_mysql_conn(mysql_conn);
-		list_destroy(ret_list);
-		return NULL;
-	}
+		/* We need to remove these clusters from the wckey table */
+		memset(&wckey_cond, 0, sizeof(slurmdb_wckey_cond_t));
+		wckey_cond.cluster_list = ret_list;
+		tmp_list = as_mysql_remove_wckeys(mysql_conn, uid, &wckey_cond);
+		if(tmp_list)
+			list_destroy(tmp_list);
+
+		slurm_mutex_lock(&as_mysql_cluster_list_lock);
+		itr2 = list_iterator_create(as_mysql_cluster_list);
+
+		itr = list_iterator_create(ret_list);
+		while((object = list_next(itr))) {
+			while((cluster_name = list_next(itr2))) {
+				if(!strcmp(cluster_name, object)) {
+					list_delete_item(itr2);
+					break;
+				}
+			}
+			list_iterator_reset(itr2);
+			if((rc = remove_cluster_tables(mysql_conn, object))
+			   != SLURM_SUCCESS)
+				break;
+		}
+		list_iterator_destroy(itr);
+		list_iterator_destroy(itr2);
+		slurm_mutex_unlock(&as_mysql_cluster_list_lock);
+
+		if(rc != SLURM_SUCCESS) {
+			reset_mysql_conn(mysql_conn);
+			list_destroy(ret_list);
+			errno = rc;
+			return NULL;
+		}
+		errno = SLURM_SUCCESS;
+	} else
+		errno = ESLURM_JOBS_RUNNING_ON_ASSOC;
+
 	return ret_list;
 }
 

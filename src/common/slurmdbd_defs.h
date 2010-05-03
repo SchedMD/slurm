@@ -300,6 +300,9 @@ typedef struct dbd_job_suspend_msg {
 typedef struct {
 	List my_list;		/* this list could be of any type as long as it
 				 * is handled correctly on both ends */
+	uint32_t return_code;   /* If there was an error and a list of
+				 * them this is the type of error it
+				 * was */
 } dbd_list_msg_t;
 
 typedef struct {

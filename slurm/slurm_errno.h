@@ -246,7 +246,8 @@ enum {
 	ESLURM_AUTH_UNABLE_TO_SIGN,
 
 	/* accounting errors */
-	ESLURM_DB_CONNECTION            = 7000
+	ESLURM_DB_CONNECTION            = 7000,
+	ESLURM_JOBS_RUNNING_ON_ASSOC
 };
 
 /* look up an errno value */
