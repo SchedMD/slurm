@@ -518,6 +518,9 @@ enum ctx_keys {
 				/* By default, schedule only one task per core.
 				 * Without this option, tasks would be
 				 * allocated threads. */
+#define CR_CORE_DEFAULT_DIST_BLOCK 0x1000
+				/* By default, distribute cores using a block
+				 * approach inside the nodes */
 
 #define MEM_PER_CPU  0x80000000
 #define SHARED_FORCE 0x8000
