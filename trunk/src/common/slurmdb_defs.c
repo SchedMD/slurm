@@ -922,7 +922,7 @@ extern List slurmdb_get_hierarchical_sorted_assoc_list(List assoc_list)
 extern List slurmdb_get_acct_hierarchical_rec_list(List assoc_list)
 {
 	slurmdb_hierarchical_rec_t *par_arch_rec = NULL;
-	slurmdb_hierarchical_rec_t *last_slurmdb_parent = NULL;
+	slurmdb_hierarchical_rec_t *last_acct_parent = NULL;
 	slurmdb_hierarchical_rec_t *last_parent = NULL;
 	slurmdb_hierarchical_rec_t *arch_rec = NULL;
 	slurmdb_association_rec_t *assoc = NULL;
@@ -963,22 +963,26 @@ extern List slurmdb_get_acct_hierarchical_rec_list(List assoc_list)
 		else
 			arch_rec->sort_name = assoc->acct;
 
-		if(last_parent && assoc->parent_id == last_parent->assoc->id) {
+		if(last_parent && assoc->parent_id == last_parent->assoc->id
+		   && !strcmp(assoc->cluster, last_parent->assoc->cluster)) {
 			par_arch_rec = last_parent;
-		} else if(last_slurmdb_parent
+		} else if(last_acct_parent
 			  && (assoc->parent_id ==
-			      last_slurmdb_parent->assoc->id)) {
-			par_arch_rec = last_slurmdb_parent;
+			      last_acct_parent->assoc->id)
+			  && !strcmp(assoc->cluster,
+				     last_acct_parent->assoc->cluster)) {
+			par_arch_rec = last_acct_parent;
 		} else {
 			list_iterator_reset(itr2);
 			while((par_arch_rec = list_next(itr2))) {
-				if(assoc->parent_id
-				   == par_arch_rec->assoc->id) {
+				if(assoc->parent_id == par_arch_rec->assoc->id
+				   && !strcmp(assoc->cluster,
+					      par_arch_rec->assoc->cluster)) {
 					if(assoc->user)
 						last_parent = par_arch_rec;
 					else
 						last_parent
-							= last_slurmdb_parent
+							= last_acct_parent
 							= par_arch_rec;
 					break;
 				}
@@ -987,7 +991,7 @@ extern List slurmdb_get_acct_hierarchical_rec_list(List assoc_list)
 
 		if(!par_arch_rec) {
 			list_append(arch_rec_list, arch_rec);
-			last_parent = last_slurmdb_parent = arch_rec;
+			last_parent = last_acct_parent = arch_rec;
 		} else
 			list_append(par_arch_rec->childern, arch_rec);
 
