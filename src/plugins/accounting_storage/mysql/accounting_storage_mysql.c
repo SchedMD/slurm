@@ -1421,7 +1421,6 @@ extern int modify_common(mysql_conn_t *mysql_conn,
 			   txn_table,
 			   now, type, tmp_cond_char, cluster_name,
 			   user_name, tmp_vals);
-		info("tmp_vals = %s", tmp_vals);
 	} else {
 		xstrfmtcat(query,
 			   "update %s set mod_time=%d%s "
