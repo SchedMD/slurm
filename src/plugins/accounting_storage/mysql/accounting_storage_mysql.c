@@ -2363,7 +2363,7 @@ static int _remove_common(mysql_conn_t *mysql_conn,
 	MYSQL_ROW row;
 	time_t day_old = now - DELETE_SEC_BACK;
 	bool has_jobs = false;
-	char *tmp_name_char = _fix_double_quotes(name_char);
+	char *tmp_name_char = NULL;
 
 	/* If we have jobs associated with this we do not want to
 	 * really delete it for accounting purposes.  This is for
@@ -2399,6 +2399,16 @@ static int _remove_common(mysql_conn_t *mysql_conn,
 			   "update %s set mod_time=%d, deleted=1 "
 			   "where deleted=0 && (%s);",
 			   table, now, name_char);
+
+	/* If we are removing assocs use the assoc_char since the
+	   name_char has lft between statements that can change over
+	   time.  The assoc_char has the actual ids of the assocs
+	   which never change.
+	*/
+	if(type == DBD_REMOVE_ASSOCS && assoc_char)
+		tmp_name_char = _fix_double_quotes(assoc_char);
+	else
+		tmp_name_char = _fix_double_quotes(name_char);
 
 	xstrfmtcat(query,
 		   "insert into %s (timestamp, action, name, actor) "
