@@ -147,7 +147,7 @@ libslurm_o_LDADD = $(top_builddir)/src/common/libeio.o	\
 	$(top_builddir)/src/common/libspank.o	\
 	$(top_builddir)/src/common/libcommon.o
 
-libslurm.o: $(libslurmhelper_la_OBJECTS) $(libslurm_o_LDADD)
+libslurm.o: $(libslurmhelper_la_OBJECTS) $(libslurmhelper_la_DEPENDENCIES) $(libslurm_o_LDADD)
 	$(LINK) $(libslurmhelper_la_OBJECTS) $(libslurm_o_LDADD)
 
 
