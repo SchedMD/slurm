@@ -258,6 +258,8 @@ documents those changes that are of interest to users and admins.
  -- When combining --ntasks-per-node and --exclusive in an allocation request
     the correct thing, giving the allocation the entire node but only
     ntasks-per-node, happens.
+ -- Fix accounting transaction logs when deleting associations to put the
+    ids instead of the lfts which could change over time.
 
 * Changes in SLURM 2.1.7
 ========================

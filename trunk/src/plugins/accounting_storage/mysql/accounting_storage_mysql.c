@@ -1467,7 +1467,7 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 	MYSQL_ROW row;
 	time_t day_old = now - DELETE_SEC_BACK;
 	bool has_jobs = false;
-	char *tmp_name_char = slurm_add_slash_to_quotes(name_char);
+	char *tmp_name_char = NULL;
 	bool cluster_centric = true;
 
 	/* figure out which tables we need to append the cluster name to */
@@ -1544,6 +1544,16 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 				   "where deleted=0 && (%s);",
 				   table, now, name_char);
 	}
+
+	/* If we are removing assocs use the assoc_char since the
+	   name_char has lft between statements that can change over
+	   time.  The assoc_char has the actual ids of the assocs
+	   which never change.
+	*/
+	if(type == DBD_REMOVE_ASSOCS && assoc_char)
+		tmp_name_char = slurm_add_slash_to_quotes(assoc_char);
+	else
+		tmp_name_char = slurm_add_slash_to_quotes(name_char);
 
 	if(cluster_centric)
 		xstrfmtcat(query,
