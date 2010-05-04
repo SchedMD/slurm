@@ -279,7 +279,11 @@ uint16_t _allocate_sockets(struct job_record *job_ptr, bitstr_t *core_map,
 		else
 			num_tasks += tmp;
 	}
-	if (job_ptr->details->ntasks_per_node)
+
+	/* If job requested exclusive rights to the node don't do the
+	   min here since it will make it so we don't allocate the
+	   entire node. */
+	if (job_ptr->details->ntasks_per_node && job_ptr->details->shared)
 		num_tasks = MIN(num_tasks, job_ptr->details->ntasks_per_node);
 
 	if (cpus_per_task < 2) {
@@ -492,7 +496,10 @@ uint16_t _allocate_cores(struct job_record *job_ptr, bitstr_t *core_map,
 	avail_cpus *= free_core_count;
 	num_tasks *= free_core_count;
 
-	if (job_ptr->details->ntasks_per_node)
+	/* If job requested exclusive rights to the node don't do the
+	   min here since it will make it so we don't allocate the
+	   entire node */
+	if (job_ptr->details->ntasks_per_node && job_ptr->details->shared)
 		num_tasks = MIN(num_tasks, job_ptr->details->ntasks_per_node);
 
 	if (cpus_per_task < 2) {

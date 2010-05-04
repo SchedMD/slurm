@@ -253,6 +253,11 @@ documents those changes that are of interest to users and admins.
  -- When a cluster first registers with the SlurmDBD only send nodes in an
     non-usable state.  Before all nodes were sent.
  -- Alter sacct to be able to query jobs by association id.
+ -- Edit documentation for scontrol stating ExitCode as something not alterable.
+ -- Update documentation about ReturnToService and silently rebooting nodes.
+ -- When combining --ntasks-per-node and --exclusive in an allocation request
+    the correct thing, giving the allocation the entire node but only
+    ntasks-per-node, happens.
 
 * Changes in SLURM 2.1.7
 ========================
