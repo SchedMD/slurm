@@ -1297,7 +1297,7 @@ static int _opt_find(struct spank_plugin_opt *p,
 static struct spank_plugin_opt *_find_remote_option_by_name(const char
 							    *str)
 {
-	struct spank_plugin_opt *opt;
+	struct spank_plugin_opt *opt = NULL;
 	struct opt_find_args args;
 	char buf[256];
 	char *name;
@@ -1318,8 +1318,10 @@ static struct spank_plugin_opt *_find_remote_option_by_name(const char
 	args.optname = buf;
 	args.plugin_name = name;
 
-	opt = list_find_first(option_cache, (ListFindF) _opt_find, &args);
-
+	if (option_cache) {
+		opt = list_find_first(option_cache, (ListFindF) _opt_find,
+				      &args);
+	}
 	if (opt == NULL) {
 		error("warning: plugin \"%s\" option \"%s\" not found.",
 		      name, buf);
