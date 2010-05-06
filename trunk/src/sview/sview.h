@@ -131,7 +131,8 @@ enum { DISPLAY_NAME,
 enum { EDIT_NONE,
        EDIT_ARRAY,
        EDIT_MODEL,
-       EDIT_TEXTBOX
+       EDIT_TEXTBOX,
+       EDIT_COLOR
 };
 
 typedef enum { SEARCH_JOB_ID = 1,

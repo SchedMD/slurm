@@ -287,6 +287,43 @@ static void *_editing_thr(gpointer arg)
 	return NULL;
 }
 
+static void _cell_data_func(GtkTreeViewColumn *col,
+			    GtkCellRenderer *renderer,
+			    GtkTreeModel *model,
+			    GtkTreeIter *iter,
+			    gpointer data)
+{
+	GdkPixbuf *pixbuf = NULL;
+	char *color_char;
+	uint32_t color;
+
+	g_object_get(renderer, "pixbuf", &pixbuf, NULL);
+	if(!pixbuf)
+		return;
+
+	gtk_tree_model_get(model, iter,
+			   GPOINTER_TO_INT(g_object_get_data(G_OBJECT(renderer),
+							     "column")),
+			   &color_char, -1);
+	if(!color_char)
+		return;
+
+	color_char++;
+	color = strtoul(color_char, (char **)&color_char, 16);
+
+	/* we need to shift over 2 spots for the alpha */
+	gdk_pixbuf_fill(pixbuf, color << 8);
+	/* This only has to be done once, but I can't find any way to
+	 * set something to only make it happen once.  It only takes
+	 * 3-5 usecs to do it so I didn't worry about it doing it
+	 * multiple times.  If you can figure out how to make this
+	 * happen only once please fix, but the pointers for the col,
+	 * renderer, and pixbuf are all the same.  You could put in
+	 * some think in the tree_model, but that seemed a bit more
+	 * cumbersome. - da
+	 */
+}
+
 static void _add_col_to_treeview(GtkTreeView *tree_view,
 				 display_data_t *display_data, int color_column)
 {
@@ -307,31 +344,33 @@ static void _add_col_to_treeview(GtkTreeView *tree_view,
 		g_object_set(renderer,
 			     "editable", TRUE,
 			     NULL);
+	} else if(display_data->extra == EDIT_COLOR) {
+		GdkPixbuf *pixbuf = gdk_pixbuf_new(GDK_COLORSPACE_RGB, false,
+						   8, 10, 20);
+		renderer = gtk_cell_renderer_pixbuf_new();
+		g_object_set(renderer, "pixbuf", pixbuf, NULL);
+		g_object_unref(pixbuf);
 	} else
 		renderer = gtk_cell_renderer_text_new();
 
-	g_signal_connect(renderer, "editing-started",
-			 G_CALLBACK(_editing_started), NULL);
-	g_signal_connect(renderer, "editing-canceled",
-			 G_CALLBACK(_editing_canceled), NULL);
-
-	g_signal_connect(renderer, "edited",
-			 G_CALLBACK(display_data->admin_edit),
-			 gtk_tree_view_get_model(tree_view));
+	gtk_tree_view_column_pack_start(col, renderer, TRUE);
 
 	g_object_set_data(G_OBJECT(renderer), "column",
 			  GINT_TO_POINTER(display_data->id));
 
-	gtk_tree_view_column_pack_start(col, renderer, TRUE);
-
-	if(display_data->id == color_column) {
-		gtk_tree_view_column_add_attribute(col, renderer,
-						   "cell-background",
-						   color_column);
-		g_object_set(renderer,
-			     "cell-background-set", TRUE,
-			     NULL);
+	if(display_data->extra == EDIT_COLOR) {
+		gtk_tree_view_column_set_cell_data_func(
+			col, renderer, _cell_data_func,
+			NULL, NULL);
 	} else {
+		g_signal_connect(renderer, "editing-started",
+				 G_CALLBACK(_editing_started), NULL);
+		g_signal_connect(renderer, "editing-canceled",
+				 G_CALLBACK(_editing_canceled), NULL);
+		g_signal_connect(renderer, "edited",
+				 G_CALLBACK(display_data->admin_edit),
+				 gtk_tree_view_get_model(tree_view));
+
 		gtk_tree_view_column_add_attribute(col, renderer,
 						   "text", display_data->id);
 		gtk_tree_view_column_set_expand(col, true);
