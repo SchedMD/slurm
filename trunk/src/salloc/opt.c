@@ -159,6 +159,7 @@
 #define LONG_OPT_SIGNAL          0x13f
 #define LONG_OPT_TIME_MIN        0x140
 #define LONG_OPT_GRES            0x141
+#define LONG_OPT_WAIT_ALL_NODES  0x142
 
 /*---- global variables, defined in opt.h ----*/
 opt_t opt;
@@ -350,6 +351,7 @@ static void _opt_default()
 	opt.get_user_env_time = -1;
 	opt.get_user_env_mode = -1;
 	opt.reservation     = NULL;
+	opt.wait_all_nodes  = (uint16_t) NO_VAL;
 	opt.wckey           = NULL;
 }
 
@@ -392,6 +394,7 @@ env_vars_t env_vars[] = {
   {"SALLOC_SIGNAL",        OPT_SIGNAL,     NULL,               NULL          },
   {"SALLOC_TIMELIMIT",     OPT_STRING,     &opt.time_limit_str,NULL          },
   {"SALLOC_WAIT",          OPT_IMMEDIATE,  NULL,               NULL          },
+  {"SALLOC_WAIT_ALL_NODES",OPT_INT,        &opt.wait_all_nodes,NULL          },
   {"SALLOC_WCKEY",         OPT_STRING,     &opt.wckey,         NULL          },
   {NULL, 0, NULL, NULL}
 };
@@ -647,6 +650,7 @@ void set_options(const int argc, char **argv)
 		{"threads-per-core", required_argument, 0, LONG_OPT_THREADSPERCORE},
 		{"tmp",           required_argument, 0, LONG_OPT_TMP},
 		{"uid",           required_argument, 0, LONG_OPT_UID},
+		{"wait-all-nodes",required_argument, 0, LONG_OPT_WAIT_ALL_NODES},
 		{"wckey",         required_argument, 0, LONG_OPT_WCKEY},
 		{NULL,            0,                 0, 0}
 	};
@@ -1096,6 +1100,9 @@ void set_options(const int argc, char **argv)
 			}
 			xfree(opt.gres);
 			opt.gres = xstrdup(optarg);
+			break;
+		case LONG_OPT_WAIT_ALL_NODES:
+			opt.wait_all_nodes = strtol(optarg, NULL, 10);
 			break;
 		default:
 			if (spank_process_option(opt_char, optarg) < 0) {

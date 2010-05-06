@@ -124,6 +124,7 @@ typedef struct sbatch_options {
 	char *network;		/* --network=			*/
 	int  quiet;
 	int  verbose;
+	uint16_t wait_all_nodes;  /* --wait-nodes-ready=val	*/
 	char *wrap;
 
 	/* constraint options */

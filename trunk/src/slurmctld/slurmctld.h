@@ -85,37 +85,57 @@
  *  GENERAL CONFIGURATION parameters and data structures
 \*****************************************************************************/
 /* Maximum parallel threads to service incoming RPCs */
+#ifndef MAX_SERVER_THREADS
 #define MAX_SERVER_THREADS 100
+#endif
 
 /* Perform full slurmctld's state every PERIODIC_CHECKPOINT seconds */
+#ifndef PERIODIC_CHECKPOINT
 #define	PERIODIC_CHECKPOINT	300
+#endif
 
 /* Retry an incomplete RPC agent request every RPC_RETRY_INTERVAL seconds */
+#ifndef RPC_RETRY_INTERVAL
 #define	RPC_RETRY_INTERVAL	60
+#endif
 
 /* Attempt to schedule jobs every PERIODIC_SCHEDULE seconds despite
  * any RPC activity. This will catch any state transisions that may
  * have otherwise been missed */
+#ifndef PERIODIC_SCHEDULE
 #define	PERIODIC_SCHEDULE	60
+#endif
 
 /* Check for jobs reaching their time limit every PERIODIC_TIMEOUT seconds */
+#ifndef PERIODIC_TIMEOUT
 #define	PERIODIC_TIMEOUT	30
+#endif
 
 /* Attempt to purge defunct job records and resend job kill requests
  * every PURGE_JOB_INTERVAL seconds */
+#ifndef PURGE_JOB_INTERVAL
 #define PURGE_JOB_INTERVAL 60
+#endif
 
 /* Process pending trigger events every TRIGGER_INTERVAL seconds */
+#ifndef TRIGGER_INTERVAL
 #define TRIGGER_INTERVAL 15
+#endif
 
 /* Report current node accounting state every PERIODIC_NODE_ACCT seconds */
+#ifndef PERIODIC_NODE_ACCT
 #define PERIODIC_NODE_ACCT 300
+#endif
 
 /* Pathname of group file record for checking update times */
+#ifndef GROUP_FILE
 #define GROUP_FILE	"/etc/group"
+#endif
 
 /* Seconds to wait for backup controller response to REQUEST_CONTROL RPC */
+#ifndef CONTROL_TIMEOUT
 #define CONTROL_TIMEOUT 4	/* seconds */
+#endif
 
 /*****************************************************************************\
  *  General configuration parameters and data structures
@@ -468,6 +488,8 @@ struct job_record {
 	uint32_t total_cpus;		/* number of allocated cpus,
 					 * for accounting */
 	uint32_t user_id;		/* user the job runs as */
+	uint16_t wait_all_nodes;	/* if set, wait for all nodes to boot
+					 * before starting the job */
 	uint16_t warn_signal;		/* signal to send before end_time */
 	uint16_t warn_time;		/* when to send signal before
 					 * end_time (secs) */

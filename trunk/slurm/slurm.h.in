@@ -84,6 +84,11 @@
 /* Define to 1 if you have the <sys/socket.h> header file. */
 #undef HAVE_SYS_SOCKET_H
 
+/* Default value for job's --wait-all-nodes option */
+#ifndef DEFAULT_WAIT_ALL_NODES
+#define DEFAULT_WAIT_ALL_NODES 0	/* don't wait */
+#endif
+
 BEGIN_C_DECLS
 
 #include <slurm/slurm_errno.h>
@@ -631,6 +636,9 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 				 * time_limit */
 	uint32_t user_id;	/* set only if different from current UID,
 				 * can only be explicitly set by user root */
+	uint16_t wait_all_nodes;/* 0 to start job immediately after allocation
+				 * 1 to start job after all nodes booted
+				 * or NO_VAL to use system default */
 	uint16_t warn_signal;	/* signal to send when approaching end time */
 	uint16_t warn_time;	/* time before end to send signal (seconds) */
 	char *work_dir;		/* pathname of working directory */

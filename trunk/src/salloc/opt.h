@@ -153,6 +153,7 @@ typedef struct salloc_options {
 	int get_user_env_mode; 	/* --get-user-env=[S|L]		*/
 	char *cwd;		/* current working directory	*/
 	char *reservation;	/* --reservation		*/
+	uint16_t wait_all_nodes;  /* --wait-nodes-ready=val	*/
 	char *wckey;            /* --wckey workload characterization key */
 	char **spank_job_env;	/* SPANK controlled environment for job
 				 * Prolog and Epilog		*/

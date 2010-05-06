@@ -303,6 +303,7 @@ static int fill_job_desc_from_opts(job_desc_msg_t *desc)
 		desc->time_min = opt.time_min;
 	desc->shared = opt.shared;
 
+	desc->wait_all_nodes = opt.wait_all_nodes;
 	if (opt.warn_signal)
 		desc->warn_signal = opt.warn_signal;
 	if (opt.warn_time)

@@ -845,6 +845,20 @@ The order of the node names in the list is not important; the node names
 will be sorted by SLURM.
 
 .TP
+\fB\-\-wait\-all\-nodes\fR=<\fIvalue\fR>
+Controls when the execution of the command begins.
+By default the job will begin execution as soon as the allocation is made.
+.RS
+.TP 5
+0
+Begin execution as soon as allocation can be made.
+Do not wait for all nodes to be ready for use (i.e. booted).
+.TP
+1
+Do not begin execution until all nodes are ready for use.
+.RE
+
+.TP
 \fB\-\-wckey\fR=<\fIwckey\fR>
 Specify wckey to be used with job.  If TrackWCKey=no (default) in the
 slurm.conf this value is ignored.
@@ -996,6 +1010,9 @@ Same as \fB\-t, \-\-time\fR
 .TP
 \fBSALLOC_WAIT\fR
 Same as \fB\-W, \-\-wait\fR
+.TP
+\fBSALLOC_WAIT_ALL_NODES\fR
+Same as \fB\-\-wait\-all\-nodes\fR
 
 .SH "OUTPUT ENVIRONMENT VARIABLES"
 .PP

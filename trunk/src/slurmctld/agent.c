@@ -1509,7 +1509,7 @@ static int _batch_launch_defer(queued_request_t *queued_req_ptr)
 	struct node_record *node_ptr;
 	time_t now = time(NULL);
 	struct job_record  *job_ptr;
-	int delay_time;
+	int delay_time, nodes_ready = 0;
 
 	agent_arg_ptr = queued_req_ptr->agent_arg_ptr;
 	if (agent_arg_ptr->msg_type != REQUEST_BATCH_JOB_LAUNCH)
@@ -1530,18 +1530,26 @@ static int _batch_launch_defer(queued_request_t *queued_req_ptr)
 		return -1;	/* job cancelled while waiting */
 	}
 
-	hostlist_deranged_string(agent_arg_ptr->hostlist,
-				 sizeof(hostname), hostname);
-	node_ptr = find_node_record(hostname);
-	if (node_ptr == NULL) {
-		error("agent(batch_launch) removed pending request for job "
-		      "%u, missing node %s",
-		      launch_msg_ptr->job_id, agent_arg_ptr->hostlist);
-		return -1;	/* invalid request?? */
+	if (job_ptr->wait_all_nodes) {
+		(void) job_node_ready(launch_msg_ptr->job_id, &nodes_ready);
+	} else {
+		hostlist_deranged_string(agent_arg_ptr->hostlist,
+					 sizeof(hostname), hostname);
+		node_ptr = find_node_record(hostname);
+		if (node_ptr == NULL) {
+			error("agent(batch_launch) removed pending request for "
+			      "job %u, missing node %s",
+			      launch_msg_ptr->job_id, agent_arg_ptr->hostlist);
+			return -1;	/* invalid request?? */
+		}
+		if (!IS_NODE_POWER_SAVE(node_ptr) && 
+		    !IS_NODE_NO_RESPOND(node_ptr)) {
+			nodes_ready = 1;
+		}
 	}
 
 	delay_time = difftime(now, job_ptr->start_time);
-	if (!IS_NODE_POWER_SAVE(node_ptr) && !IS_NODE_NO_RESPOND(node_ptr)) {
+	if (nodes_ready) {
 		/* ready to launch, adjust time limit for boot time */
 		if (delay_time && (job_ptr->time_limit != INFINITE) && 
 		    (!wiki2_sched)) {
@@ -1559,9 +1567,8 @@ static int _batch_launch_defer(queued_request_t *queued_req_ptr)
 		queued_req_ptr->last_attempt  = now;
 	} else if (difftime(now, queued_req_ptr->first_attempt) >=
 				 slurm_get_resume_timeout()) {
-		error("agent waited too long for node %s to respond, "
-		      "sending batch request anyway...",
-		      node_ptr->name);
+		error("agent waited too long for nodes to respond, "
+		      "sending batch request anyway...");
 		if (delay_time && (job_ptr->time_limit != INFINITE) && 
 		    (!wiki2_sched)) {
 			info("Job %u launch delayed by %d secs, "
