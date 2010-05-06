@@ -44,6 +44,7 @@ documents those changes that are of interest to users and admins.
     must be killed before proceeding.  Before the jobs were killed
     automatically thus causing user confusion on what is most likely an
     admin's mistake.
+ -- sview - color column keeps reference color when highlighting.
 
 * Changes in SLURM 2.2.0.pre5
 =============================

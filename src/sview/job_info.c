@@ -179,7 +179,7 @@ static display_data_t display_data_job[] = {
 	 create_model_job, admin_edit_job},
 	{G_TYPE_INT, SORTID_JOBID, "JobID", TRUE, EDIT_NONE, refresh_job,
 	 create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_COLOR, NULL, TRUE, EDIT_NONE,
+	{G_TYPE_STRING, SORTID_COLOR, NULL, TRUE, EDIT_COLOR,
 	 refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_ACTION, "Action", FALSE,
 	 EDIT_MODEL, refresh_job, create_model_job, admin_edit_job},

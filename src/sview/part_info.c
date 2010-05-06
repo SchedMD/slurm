@@ -105,7 +105,7 @@ static display_data_t display_data_part[] = {
 	{G_TYPE_INT, SORTID_POS, NULL, FALSE, EDIT_NONE, refresh_part},
 	{G_TYPE_STRING, SORTID_NAME, "Partition", TRUE,
 	 EDIT_NONE, refresh_part, create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_COLOR, NULL, TRUE, EDIT_NONE, refresh_part,
+	{G_TYPE_STRING, SORTID_COLOR, NULL, TRUE, EDIT_COLOR, refresh_part,
 	 create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_ALTERNATE, "Alternate", FALSE,
 	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
