@@ -2097,7 +2097,7 @@ _pack_node_registration_status_msg(slurm_node_registration_status_msg_t *
 			gres_info_size = get_buf_offset(msg->gres_info);
 		pack32(gres_info_size, buffer);
 		if (gres_info_size) {
-			packmem(get_buf_data(msg->gres_info), gres_info_size, 
+			packmem(get_buf_data(msg->gres_info), gres_info_size,
 				buffer);
 		}
 	} else {
@@ -2189,7 +2189,7 @@ _unpack_node_registration_status_msg(slurm_node_registration_status_msg_t
 				goto unpack_error;
 			node_reg_ptr->gres_info = create_buf(gres_info,
 							     gres_info_size);
-		}	
+		}
 	} else {
 		/* initialize this so we don't check for those not sending it */
 		node_reg_ptr->hash_val = NO_VAL;
@@ -2233,7 +2233,7 @@ _unpack_node_registration_status_msg(slurm_node_registration_status_msg_t
 
 		/* Compute slurmd_start_time, assuming it started at same
 		 * time that the node booted */
-		node_reg_ptr->slurmd_start_time = time(NULL) - 
+		node_reg_ptr->slurmd_start_time = time(NULL) -
 						  node_reg_ptr->up_time;
 	}
 	return SLURM_SUCCESS;
@@ -2965,11 +2965,11 @@ _unpack_job_step_create_request_msg(job_step_create_request_msg_t ** msg,
 
 		safe_unpackstr_xmalloc(&(tmp_ptr->host), &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&(tmp_ptr->name), &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&(tmp_ptr->network), &uint32_tmp, 
+		safe_unpackstr_xmalloc(&(tmp_ptr->network), &uint32_tmp,
 				       buffer);
-		safe_unpackstr_xmalloc(&(tmp_ptr->node_list), &uint32_tmp, 
+		safe_unpackstr_xmalloc(&(tmp_ptr->node_list), &uint32_tmp,
 				       buffer);
-		safe_unpackstr_xmalloc(&(tmp_ptr->ckpt_dir), &uint32_tmp, 
+		safe_unpackstr_xmalloc(&(tmp_ptr->ckpt_dir), &uint32_tmp,
 				       buffer);
 		safe_unpackstr_xmalloc(&(tmp_ptr->gres), &uint32_tmp, buffer);
 
@@ -2996,11 +2996,11 @@ _unpack_job_step_create_request_msg(job_step_create_request_msg_t ** msg,
 
 		safe_unpackstr_xmalloc(&(tmp_ptr->host), &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&(tmp_ptr->name), &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&(tmp_ptr->network), &uint32_tmp, 
+		safe_unpackstr_xmalloc(&(tmp_ptr->network), &uint32_tmp,
 				       buffer);
-		safe_unpackstr_xmalloc(&(tmp_ptr->node_list), &uint32_tmp, 
+		safe_unpackstr_xmalloc(&(tmp_ptr->node_list), &uint32_tmp,
 				       buffer);
-		safe_unpackstr_xmalloc(&(tmp_ptr->ckpt_dir), &uint32_tmp, 
+		safe_unpackstr_xmalloc(&(tmp_ptr->ckpt_dir), &uint32_tmp,
 				       buffer);
 
 		safe_unpack8(&(tmp_ptr->no_kill), buffer);
