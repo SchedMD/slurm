@@ -65,7 +65,7 @@ static display_data_t display_data_node[] = {
 	 create_model_node, admin_edit_node},
 	{G_TYPE_STRING, SORTID_NAME, "Name", TRUE, EDIT_NONE, refresh_node,
 	 create_model_node, admin_edit_node},
-	{G_TYPE_STRING, SORTID_COLOR, NULL, FALSE, EDIT_NONE, refresh_node,
+	{G_TYPE_STRING, SORTID_COLOR, NULL, TRUE, EDIT_COLOR, refresh_node,
 	 create_model_node, admin_edit_node},
 	{G_TYPE_STRING, SORTID_STATE, "State", TRUE, EDIT_MODEL, refresh_node,
 	 create_model_node, admin_edit_node},
@@ -276,8 +276,9 @@ static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 	node_info_t *node_ptr = sview_node_info_ptr->node_ptr;
 	int idle_cpus = node_ptr->cpus;
 
-/* 	gtk_tree_store_set(treestore, iter, SORTID_COLOR, */
-/* 			   sview_colors[sview_job_info_ptr->color_inx], -1); */
+	gtk_tree_store_set(treestore, iter, SORTID_COLOR,
+			   sview_colors[sview_node_info_ptr->pos
+					% sview_colors_cnt], -1);
 
 	gtk_tree_store_set(treestore, iter, SORTID_NAME, node_ptr->name, -1);
 
