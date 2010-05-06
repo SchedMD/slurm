@@ -75,7 +75,7 @@ static display_data_t display_data_resv[] = {
 	 refresh_resv, create_model_resv, admin_edit_resv},
 	{G_TYPE_STRING, SORTID_NAME,       "Name", TRUE, EDIT_NONE,
 	 refresh_resv, create_model_resv, admin_edit_resv},
-	{G_TYPE_STRING, SORTID_COLOR,      NULL, TRUE, EDIT_NONE,
+	{G_TYPE_STRING, SORTID_COLOR,      NULL, TRUE, EDIT_COLOR,
 	 refresh_resv, create_model_resv, admin_edit_resv},
 	{G_TYPE_STRING, SORTID_ACTION,     "Action", FALSE, EDIT_MODEL,
 	 refresh_resv, create_model_resv, admin_edit_resv},
