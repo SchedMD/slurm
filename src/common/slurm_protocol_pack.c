@@ -4908,6 +4908,7 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer,
 				job_desc_ptr->select_jobinfo);
 			job_desc_ptr->select_jobinfo = NULL;
 		}
+		pack16(job_desc_ptr->wait_all_nodes, buffer);
 	} else if(protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
 		pack16(job_desc_ptr->contiguous, buffer);
 		pack16(job_desc_ptr->task_dist, buffer);
@@ -5195,6 +5196,7 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer,
 		job_desc_ptr->linuximage = NULL;
 		job_desc_ptr->mloaderimage = NULL;
 		job_desc_ptr->ramdiskimage = NULL;
+		safe_unpack16(&job_desc_ptr->wait_all_nodes, buffer);
 	} else if(protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
 		job_desc_ptr = xmalloc(sizeof(job_desc_msg_t));
 		*job_desc_buffer_ptr = job_desc_ptr;
@@ -5324,6 +5326,9 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer,
 		job_desc_ptr->linuximage = NULL;
 		job_desc_ptr->mloaderimage = NULL;
 		job_desc_ptr->ramdiskimage = NULL;
+
+		/* Variables not packed in v2.1 */
+		job_desc_ptr->wait_all_nodes = (uint16_t)NO_VAL;
 	}
 
 	return SLURM_SUCCESS;

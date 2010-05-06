@@ -597,6 +597,7 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 	desc->shared = opt.shared;
 	desc->job_id = opt.jobid;
 
+	desc->wait_all_nodes = opt.wait_all_nodes;
 	if (opt.warn_signal)
 		desc->warn_signal = opt.warn_signal;
 	if (opt.warn_time)
@@ -879,6 +880,9 @@ static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc)
 
 	pending_job_id = alloc->job_id;
 
+	if (opt.wait_all_nodes == (uint16_t) NO_VAL)
+		opt.wait_all_nodes = DEFAULT_WAIT_ALL_NODES;
+
 	for (i=0; (cur_delay < max_delay); i++) {
 		if (i) {
 			if (i == 1)
@@ -889,7 +893,12 @@ static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc)
 			cur_delay += POLL_SLEEP;
 		}
 
-		rc = slurm_job_node_ready(alloc->job_id);
+		if (opt.wait_all_nodes) 
+			rc = slurm_job_node_ready(alloc->job_id);
+		else {
+			is_ready = 1;
+			break;
+		}
 
 		if (rc == READY_JOB_FATAL)
 			break;				/* fatal error */

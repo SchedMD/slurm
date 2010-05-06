@@ -21,14 +21,13 @@ documents those changes that are of interest to users and admins.
  -- sview - There is now a .slurm/sviewrc created when runnning sview.
     Defaults are put in there as to how sview looks when first launched.
     You can set these by Ctrl-S or Options->Set Default Settings.
- -- Modify srun and salloc so that after creating a resource allocation, they
-    wait for all allocated nodes to power up before proceeding. Salloc will
-    log the delay with the messages "Waiting for nodes to boot" and "Nodes are
-    ready for use". Srun will generate the same messages only if the --verbose
-    option is used.
  -- Add scontrol "wait_job <job_id>" option to wait for nodes to boot as needed.
     Useful for batch jobs (in Prolog, PrologSlurmctld or the script) if powering
     down idle nodes.
+ -- Added salloc and sbatch option --wait-for-nodes. If set non-zero, job 
+    initiation will be delayed until all allocated nodes have booted. Salloc
+    will log the delay with the messages "Waiting for nodes to boot" and "Nodes
+    are ready for use". 
  -- The Priority/mulitfactor plugin now takes into consideration size of job
     in cpus as well as size in nodes when looking at the job size factor.
     Previously only nodes were considered.

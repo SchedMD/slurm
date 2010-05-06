@@ -731,6 +731,7 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	pack16(dump_job_ptr->state_reason, buffer);
 	pack16(dump_job_ptr->restart_cnt, buffer);
 	pack16(dump_job_ptr->resv_flags, buffer);
+	pack16(dump_job_ptr->wait_all_nodes, buffer);
 	pack16(dump_job_ptr->warn_signal, buffer);
 	pack16(dump_job_ptr->warn_time, buffer);
 
@@ -807,7 +808,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	uint16_t kill_on_node_fail, kill_on_step_done, direct_set_prio, qos;
 	uint16_t alloc_resp_port, other_port, mail_type, state_reason;
 	uint16_t restart_cnt, resv_flags, ckpt_interval;
-	uint16_t warn_signal, warn_time;
+	uint16_t wait_all_nodes, warn_signal, warn_time;
 	char *nodes = NULL, *partition = NULL, *name = NULL, *resp_host = NULL;
 	char *account = NULL, *network = NULL, *mail_user = NULL;
 	char *comment = NULL, *nodes_completing = NULL, *alloc_node = NULL;
@@ -878,6 +879,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		safe_unpack16(&state_reason, buffer);
 		safe_unpack16(&restart_cnt, buffer);
 		safe_unpack16(&resv_flags, buffer);
+		safe_unpack16(&wait_all_nodes, buffer);
 		safe_unpack16(&warn_signal, buffer);
 		safe_unpack16(&warn_time, buffer);
 
@@ -1090,6 +1092,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 				goto unpack_error;
 			safe_unpack16(&step_flag, buffer);
 		}
+		wait_all_nodes = DEFAULT_WAIT_ALL_NODES;
 	} else
 		goto unpack_error;
 
@@ -1202,6 +1205,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	job_ptr->cpu_cnt      = cpu_cnt;
 	job_ptr->tot_sus_time = tot_sus_time;
 	job_ptr->user_id      = user_id;
+	job_ptr->wait_all_nodes = wait_all_nodes;
 	job_ptr->warn_signal  = warn_signal;
 	job_ptr->warn_time    = warn_time;
 
@@ -1892,7 +1896,7 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 	long job_id, time_min;
 	long pn_min_cpus, pn_min_memory, pn_min_tmp_disk, min_cpus;
 	long time_limit, priority, contiguous, acctg_freq;
-	long kill_on_node_fail, shared, immediate;
+	long kill_on_node_fail, shared, immediate, wait_all_nodes;
 	long cpus_per_task, requeue, num_tasks, overcommit;
 	long ntasks_per_node, ntasks_per_socket, ntasks_per_core;
 	char *mem_type, buf[100];
@@ -2039,8 +2043,11 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 	       job_specs->licenses);
 
 	slurm_make_time_str(&job_specs->end_time, buf, sizeof(buf));
-	debug3("   end_time=%s signal=%u@%u",
-	       buf, job_specs->warn_signal, job_specs->warn_time);
+	wait_all_nodes = (job_specs->wait_all_nodes != (uint16_t) NO_VAL) ?
+			 (long) job_specs->wait_all_nodes : -1L;
+	debug3("   end_time=%s signal=%u@%u wait_all_nodes=%d",
+	       buf, job_specs->warn_signal, job_specs->warn_time,
+	       wait_all_nodes);
 
 	ntasks_per_node = (job_specs->ntasks_per_node != (uint16_t) NO_VAL) ?
 		(long) job_specs->ntasks_per_node : -1L;
@@ -3695,6 +3702,10 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	job_desc->spank_job_env = (char **) NULL; /* nothing left to free */
 	job_desc->spank_job_env_size = 0;         /* nothing left to free */
 
+	if (job_desc->wait_all_nodes == (uint16_t) NO_VAL)
+		job_ptr->wait_all_nodes = DEFAULT_WAIT_ALL_NODES;
+	else
+		job_ptr->wait_all_nodes = job_desc->wait_all_nodes;
 	job_ptr->warn_signal = job_desc->warn_signal;
 	job_ptr->warn_time = job_desc->warn_time;
 
@@ -8640,6 +8651,7 @@ _copy_job_record_to_job_desc(struct job_record *job_ptr)
 	job_desc->time_limit        = job_ptr->time_limit;
 	job_desc->time_min          = job_ptr->time_min;
 	job_desc->user_id           = job_ptr->user_id;
+	job_desc->wait_all_nodes    = job_ptr->wait_all_nodes;
 	job_desc->warn_signal       = job_ptr->warn_signal;
 	job_desc->warn_time         = job_ptr->warn_time;
 	job_desc->wckey             = xstrdup(job_ptr->wckey);

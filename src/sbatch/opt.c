@@ -162,6 +162,7 @@
 #define LONG_OPT_SIGNAL          0x14d
 #define LONG_OPT_TIME_MIN        0x14e
 #define LONG_OPT_GRES            0x14f
+#define LONG_OPT_WAIT_ALL_NODES  0x150
 
 /*---- global variables, defined in opt.h ----*/
 opt_t opt;
@@ -324,6 +325,7 @@ static void _opt_default()
 	opt.verbose = 0;
 	opt.warn_signal = 0;
 	opt.warn_time   = 0;
+	opt.wait_all_nodes = (uint16_t) NO_VAL;
 
 	/* constraint default (-1 is no constraint) */
 	opt.mincpus	    = -1;
@@ -456,6 +458,7 @@ env_vars_t env_vars[] = {
   {"SBATCH_REQUEUE",       OPT_REQUEUE,    NULL,               NULL          },
   {"SBATCH_SIGNAL",        OPT_SIGNAL,     NULL,               NULL          },
   {"SBATCH_TIMELIMIT",     OPT_STRING,     &opt.time_limit_str,NULL          },
+  {"SBATCH_WAIT_ALL_NODES",OPT_INT,        &opt.wait_all_nodes,NULL          },
   {"SBATCH_WCKEY",         OPT_STRING,     &opt.wckey,         NULL          },
 
   {NULL, 0, NULL, NULL}
@@ -704,6 +707,7 @@ static struct option long_options[] = {
 	{"threads-per-core", required_argument, 0, LONG_OPT_THREADSPERCORE},
 	{"tmp",           required_argument, 0, LONG_OPT_TMP},
 	{"uid",           required_argument, 0, LONG_OPT_UID},
+	{"wait-all-nodes",required_argument, 0, LONG_OPT_WAIT_ALL_NODES},
 	{"wckey",         required_argument, 0, LONG_OPT_WCKEY},
 	{"wrap",          required_argument, 0, LONG_OPT_WRAP},
 	{NULL,            0,                 0, 0}
@@ -1557,6 +1561,9 @@ static void _set_options(int argc, char **argv)
 			}
 			xfree(opt.gres);
 			opt.gres = xstrdup(optarg);
+			break;
+		case LONG_OPT_WAIT_ALL_NODES:
+			opt.wait_all_nodes = strtol(optarg, NULL, 10);
 			break;
 		default:
 			if (spank_process_option (opt_char, optarg) < 0) {
