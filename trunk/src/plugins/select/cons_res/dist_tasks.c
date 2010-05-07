@@ -214,9 +214,17 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 		alloc_cores = true;
 #endif
 
-	if (job_ptr->details && job_ptr->details->mc_ptr &&
-	    job_ptr->details->mc_ptr->ntasks_per_core)
-		ntasks_per_core = job_ptr->details->mc_ptr->ntasks_per_core;
+	if (job_ptr->details && job_ptr->details->mc_ptr) {
+		if (job_ptr->details->mc_ptr->ntasks_per_core) {
+			ntasks_per_core = job_ptr->details->mc_ptr->
+					  ntasks_per_core;
+		}
+		if ((job_ptr->details->mc_ptr->min_threads !=
+							(uint16_t) NO_VAL) &&
+		    (job_ptr->details->mc_ptr->min_threads < ntasks_per_core)) {
+			ntasks_per_core = job_ptr->details->mc_ptr->min_threads;
+		}
+	}
 
 	size  = bit_size(job_res->node_bitmap);
 	csize = bit_size(job_res->core_bitmap);
@@ -402,9 +410,17 @@ static void _cyclic_sync_core_bitmap(struct job_record *job_ptr,
 		alloc_cores = true;
 #endif
 	core_map = job_res->core_bitmap;
-	if (job_ptr->details && job_ptr->details->mc_ptr &&
-	    job_ptr->details->mc_ptr->ntasks_per_core)
-		ntasks_per_core = job_ptr->details->mc_ptr->ntasks_per_core;
+	if (job_ptr->details && job_ptr->details->mc_ptr) {
+		if (job_ptr->details->mc_ptr->ntasks_per_core) {
+			ntasks_per_core = job_ptr->details->mc_ptr->
+					  ntasks_per_core;
+		}
+		if ((job_ptr->details->mc_ptr->min_threads != 
+							(uint16_t) NO_VAL) &&
+		    (job_ptr->details->mc_ptr->min_threads < ntasks_per_core)) {
+			ntasks_per_core = job_ptr->details->mc_ptr->min_threads;
+		}
+	}
 
 	sock_size  = select_node_record[0].sockets;
 	sock_start = xmalloc(sock_size * sizeof(uint32_t));

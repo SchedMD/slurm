@@ -465,10 +465,9 @@ static uint16_t _get_avail_cpus(struct job_record *job_ptr, int index)
 	uint16_t avail_cpus;
 	uint16_t cpus, sockets, cores, threads;
 	uint16_t cpus_per_task = 1;
-	uint16_t ntasks_per_node = 0, ntasks_per_socket = 0;
-	uint16_t ntasks_per_core = 0;
+	uint16_t ntasks_per_node = 0, ntasks_per_socket, ntasks_per_core;
+	uint16_t min_sockets, min_cores, min_threads;
 	multi_core_data_t *mc_ptr = NULL;
-	int min_sockets = 0, min_cores = 0;
 
 	if (job_ptr->details == NULL)
 		return (uint16_t) 0;
@@ -480,6 +479,15 @@ static uint16_t _get_avail_cpus(struct job_record *job_ptr, int index)
 	if ((mc_ptr = job_ptr->details->mc_ptr)) {
 		ntasks_per_socket = mc_ptr->ntasks_per_socket;
 		ntasks_per_core   = mc_ptr->ntasks_per_core;
+		min_sockets       = mc_ptr->min_sockets;
+		min_cores         = mc_ptr->min_cores;
+		min_threads       = mc_ptr->min_threads;
+	} else {
+		ntasks_per_socket = 0;
+		ntasks_per_core   = 0;
+		min_sockets       = (uint16_t) NO_VAL;
+		min_cores         = (uint16_t) NO_VAL;
+		min_threads       = (uint16_t) NO_VAL;
 	}
 
 	node_ptr = &(select_node_ptr[index]);
@@ -501,7 +509,7 @@ static uint16_t _get_avail_cpus(struct job_record *job_ptr, int index)
 #endif
 
 	avail_cpus = slurm_get_avail_procs(
-			min_sockets, min_cores, cpus_per_task,
+			min_sockets, min_cores, min_threads, cpus_per_task,
 			ntasks_per_node, ntasks_per_socket, ntasks_per_core,
 	    		&cpus, &sockets, &cores, &threads, NULL,
 			CR_CPU, job_ptr->job_id, node_ptr->name);

@@ -50,8 +50,9 @@
 #  endif			/* HAVE_INTTYPES_H */
 #endif
 
-int slurm_get_avail_procs(const uint16_t minsockets,
-			  const uint16_t mincores,
+int slurm_get_avail_procs(const uint16_t socket_cnt,
+			  const uint16_t core_cnt,
+			  const uint16_t thread_cnt,
 			  const uint16_t cpuspertask,
 			  const uint16_t ntaskspernode,
 			  const uint16_t ntaskspersocket,

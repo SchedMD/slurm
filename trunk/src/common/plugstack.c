@@ -1294,7 +1294,7 @@ static int _opt_find(struct spank_plugin_opt *p,
 
 static struct spank_plugin_opt *_find_remote_option_by_name(const char *str)
 {
-	struct spank_plugin_opt *opt;
+	struct spank_plugin_opt *opt = NULL;
 	struct opt_find_args args;
 	char buf[256];
 	char *name;
