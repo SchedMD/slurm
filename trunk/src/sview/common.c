@@ -310,6 +310,7 @@ static void _cell_data_func(GtkTreeViewColumn *col,
 
 	color_char++;
 	color = strtoul(color_char, (char **)&color_char, 16);
+	g_free(color_char);
 
 	/* we need to shift over 2 spots for the alpha */
 	gdk_pixbuf_fill(pixbuf, color << 8);
