@@ -1424,25 +1424,31 @@ extern int job_req_node_filter(struct job_record *job_ptr,
 				continue;
 			}
 			if (mc_ptr &&
-			    ((mc_ptr->min_sockets     > config_ptr->sockets) ||
-			     (mc_ptr->min_cores       > config_ptr->cores)   ||
-			     (mc_ptr->min_threads     > config_ptr->threads))){
+			    (((mc_ptr->min_sockets  > config_ptr->sockets) &&
+			      (mc_ptr->min_sockets  != (uint16_t) NO_VAL)) ||
+			     ((mc_ptr->min_cores    > config_ptr->cores)   &&
+			      (mc_ptr->min_cores    != (uint16_t) NO_VAL)) ||
+			     ((mc_ptr->min_threads  > config_ptr->threads) &&
+			      (mc_ptr->min_threads  != (uint16_t) NO_VAL)))) {
 				bit_clear(avail_bitmap, i);
 				continue;
 			}
 		} else {
 			if ((detail_ptr->pn_min_cpus > node_ptr->cpus)     ||
 			    ((detail_ptr->pn_min_memory & (~MEM_PER_CPU)) >
-			      node_ptr->real_memory)                         ||
+			      node_ptr->real_memory)                        ||
 			    (detail_ptr->pn_min_tmp_disk >
 			     node_ptr->tmp_disk)) {
 				bit_clear(avail_bitmap, i);
 				continue;
 			}
 			if (mc_ptr &&
-			    ((mc_ptr->min_sockets     > node_ptr->sockets)   ||
-			     (mc_ptr->min_cores       > node_ptr->cores)     ||
-			     (mc_ptr->min_threads     > node_ptr->threads))) {
+			    (((mc_ptr->min_sockets  > node_ptr->sockets)   &&
+			      (mc_ptr->min_sockets != (uint16_t) NO_VAL))  ||
+			     ((mc_ptr->min_cores    > node_ptr->cores)     &&
+			      (mc_ptr->min_cores   != (uint16_t) NO_VAL))  ||
+			     ((mc_ptr->min_threads  > node_ptr->threads)   &&
+			      (mc_ptr->min_threads  != (uint16_t) NO_VAL)))) {
 				bit_clear(avail_bitmap, i);
 				continue;
 			}
@@ -1549,10 +1555,13 @@ static int _build_node_list(struct job_record *job_ptr,
 		      config_ptr->real_memory)                               ||
 		    (detail_ptr->pn_min_tmp_disk > config_ptr->tmp_disk))
 			config_filter = 1;
-		if (mc_ptr                                                   &&
-		    ((mc_ptr->min_sockets      > config_ptr->sockets    )    ||
-		     (mc_ptr->min_cores        > config_ptr->cores      )    ||
-		     (mc_ptr->min_threads      > config_ptr->threads    )))
+		if (mc_ptr &&
+		    (((mc_ptr->min_sockets  > config_ptr->sockets) &&
+		      (mc_ptr->min_sockets  != (uint16_t) NO_VAL)) ||
+		     ((mc_ptr->min_cores    > config_ptr->cores)   &&
+		      (mc_ptr->min_cores    != (uint16_t) NO_VAL)) ||
+		     ((mc_ptr->min_threads  > config_ptr->threads) &&
+		      (mc_ptr->min_threads  != (uint16_t) NO_VAL))))
 			config_filter = 1;
 
 		/* since nodes can register with more resources than defined */
@@ -1705,10 +1714,13 @@ static void _filter_nodes_in_set(struct node_set *node_set_ptr,
 			      node_con->real_memory)                         &&
 			    (job_con->pn_min_tmp_disk <= node_con->tmp_disk))
 				job_ok = 1;
-			if (mc_ptr                                           &&
-			    ((mc_ptr->min_sockets      <= node_con->sockets) &&
-			     (mc_ptr->min_cores        <= node_con->cores  ) &&
-			     (mc_ptr->min_threads      <= node_con->threads)))
+			if (mc_ptr &&
+			    (((mc_ptr->min_sockets <= node_con->sockets)   ||
+			      (mc_ptr->min_sockets == (uint16_t) NO_VAL))  &&
+			     ((mc_ptr->min_cores   <= node_con->cores)     ||
+			      (mc_ptr->min_cores   == (uint16_t) NO_VAL))  &&
+			     ((mc_ptr->min_threads <= node_con->threads)   ||
+			      (mc_ptr->min_threads == (uint16_t) NO_VAL))))
 				job_mc_ptr_ok = 1;
 			if (job_ok && (!mc_ptr || job_mc_ptr_ok))
 				continue;
@@ -1731,10 +1743,13 @@ static void _filter_nodes_in_set(struct node_set *node_set_ptr,
 			      node_ptr->real_memory)                         &&
 			    (job_con->pn_min_tmp_disk <= node_ptr->tmp_disk))
 				job_ok = 1;
-			if (mc_ptr                                           &&
-			    ((mc_ptr->min_sockets      <= node_ptr->sockets) &&
-			     (mc_ptr->min_cores        <= node_ptr->cores  ) &&
-			     (mc_ptr->min_threads      <= node_ptr->threads)))
+			if (mc_ptr &&
+			    (((mc_ptr->min_sockets <= node_ptr->sockets)   ||
+			      (mc_ptr->min_sockets == (uint16_t) NO_VAL))  &&
+			     ((mc_ptr->min_cores   <= node_ptr->cores)     ||
+			      (mc_ptr->min_cores   == (uint16_t) NO_VAL))  &&
+			     ((mc_ptr->min_threads <= node_ptr->threads)   ||
+			      (mc_ptr->min_threads == (uint16_t) NO_VAL))))
 				job_mc_ptr_ok = 1;
 			if (job_ok && (!mc_ptr || job_mc_ptr_ok))
 				continue;
