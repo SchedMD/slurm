@@ -365,11 +365,11 @@ Bind tasks according to application hints
 .TP
 .B compute_bound
 Select settings for compute bound applications:
-use all cores in each socket
+use all cores in each socket, one thread per core
 .TP
 .B memory_bound
 Select settings for memory bound applications:
-use only one core in each socket
+use only one core in each socket, one thread per core
 .TP
 .B [no]multithread
 [don't] use extra threads with in-core multi-threading

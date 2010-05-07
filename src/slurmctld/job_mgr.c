@@ -3278,30 +3278,18 @@ _set_multi_core_data(job_desc_msg_t * job_desc)
 {
 	multi_core_data_t * mc_ptr;
 
-	if (((job_desc->min_sockets      == (uint16_t) NO_VAL)	||
-	     (job_desc->min_sockets      == (uint16_t) 1))	&&
-	    ((job_desc->min_cores        == (uint16_t) NO_VAL)	||
-	     (job_desc->min_cores        == (uint16_t) 1))	&&
-	    ((job_desc->min_threads      == (uint16_t) NO_VAL)	||
-	     (job_desc->min_threads      == (uint16_t) 1))	&&
+	if ((job_desc->min_sockets       == (uint16_t) NO_VAL)	&&
+	    (job_desc->min_cores         == (uint16_t) NO_VAL)	&&
+	    (job_desc->min_threads       == (uint16_t) NO_VAL)	&&
 	    (job_desc->ntasks_per_socket == (uint16_t) NO_VAL)	&&
 	    (job_desc->ntasks_per_core   == (uint16_t) NO_VAL)	&&
 	    (job_desc->plane_size        == (uint16_t) NO_VAL))
 		return NULL;
 
 	mc_ptr = xmalloc(sizeof(multi_core_data_t));
-	if (job_desc->min_sockets != (uint16_t) NO_VAL)
-		mc_ptr->min_sockets        = job_desc->min_sockets;
-	else
-		mc_ptr->min_sockets        = 1;
-	if (job_desc->min_cores != (uint16_t) NO_VAL)
-		mc_ptr->min_cores          = job_desc->min_cores;
-	else
-		mc_ptr->min_cores          = 1;
-	if (job_desc->min_threads != (uint16_t) NO_VAL)
-		mc_ptr->min_threads        = job_desc->min_threads;
-	else
-		mc_ptr->min_threads        = 1;
+	mc_ptr->min_sockets        = job_desc->min_sockets;
+	mc_ptr->min_cores          = job_desc->min_cores;
+	mc_ptr->min_threads        = job_desc->min_threads;
 	if (job_desc->ntasks_per_socket != (uint16_t) NO_VAL)
 		mc_ptr->ntasks_per_socket  = job_desc->ntasks_per_socket;
 	else
@@ -3978,22 +3966,10 @@ static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 	} else if (!_valid_job_min_mem(job_desc_msg))
 		return ESLURM_INVALID_TASK_MEMORY;
 
-	if (job_desc_msg->min_sockets == (uint16_t) NO_VAL)
-		job_desc_msg->min_sockets = 1;	/* default socket count of 1 */
-	if (job_desc_msg->min_cores == (uint16_t) NO_VAL)
-		job_desc_msg->min_cores = 1;	/* default core count of 1 */
-	if (job_desc_msg->min_threads == (uint16_t) NO_VAL)
-		job_desc_msg->min_threads = 1;	/* default thread count of 1 */
 	if (job_desc_msg->min_nodes == NO_VAL)
 		job_desc_msg->min_nodes = 1;	/* default node count of 1 */
 	if (job_desc_msg->num_procs == NO_VAL)
 		job_desc_msg->num_procs = job_desc_msg->min_nodes;
-	if (job_desc_msg->min_sockets == (uint16_t) NO_VAL)
-		job_desc_msg->min_sockets = 1;	/* default socket count of 1 */
-	if (job_desc_msg->min_cores == (uint16_t) NO_VAL)
-		job_desc_msg->min_cores = 1;	/* default core count of 1 */
-	if (job_desc_msg->min_threads == (uint16_t) NO_VAL)
-		job_desc_msg->min_threads = 1;	/* default thread count of 1 */
 
 	if (job_desc_msg->job_min_cpus == (uint16_t) NO_VAL)
 		job_desc_msg->job_min_cpus = 1;   /* default 1 cpu per node */
@@ -7876,7 +7852,7 @@ _copy_job_record_to_job_desc(struct job_record *job_ptr)
 	job_desc->max_nodes         = details->max_nodes;
 	job_desc->min_sockets       = mc_ptr->min_sockets;
 	job_desc->min_cores         = mc_ptr->min_cores;
-	job_desc->min_threads       = mc_ptr->min_threads;;
+	job_desc->min_threads       = mc_ptr->min_threads;
 	job_desc->cpus_per_task     = details->cpus_per_task;
 	job_desc->ntasks_per_node   = details->ntasks_per_node;
 	job_desc->ntasks_per_socket = mc_ptr->ntasks_per_socket;

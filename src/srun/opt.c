@@ -710,7 +710,7 @@ _get_int(const char *arg, const char *what, bool positive)
 
 static void set_options(const int argc, char **argv)
 {
-	int opt_char, option_index = 0;
+	int opt_char, option_index = 0, max_val = 0;
 	struct utsname name;
 	static struct option long_options[] = {
 		{"attach",        no_argument,       0, 'a'},
@@ -1304,17 +1304,26 @@ static void set_options(const int argc, char **argv)
 		case LONG_OPT_SOCKETSPERNODE:
 			get_resource_arg_range( optarg, "sockets-per-node",
 						&opt.min_sockets_per_node,
-						NULL, true );
+						&max_val, true );
+			if ((opt.min_sockets_per_node == 1) &&
+			    (max_val == INT_MAX))
+				opt.min_sockets_per_node = NO_VAL;
 			break;
 		case LONG_OPT_CORESPERSOCKET:
 			get_resource_arg_range( optarg, "cores-per-socket",
 						&opt.min_cores_per_socket,
-						NULL, true);
+						&max_val, true );
+			if ((opt.min_cores_per_socket == 1) &&
+			    (max_val == INT_MAX))
+				opt.min_cores_per_socket = NO_VAL;
 			break;
 		case LONG_OPT_THREADSPERCORE:
 			get_resource_arg_range( optarg, "threads-per-core",
 						&opt.min_threads_per_core,
-						NULL, true );
+						&max_val, true );
+			if ((opt.min_threads_per_core == 1) &&
+			    (max_val == INT_MAX))
+				opt.min_threads_per_core = NO_VAL;
 			break;
 		case LONG_OPT_NTASKSPERNODE:
 			opt.ntasks_per_node = _get_int(optarg, "ntasks-per-node",

@@ -138,12 +138,21 @@ uint16_t _allocate_sockets(struct job_record *job_ptr, bitstr_t *core_map,
 	uint16_t i, c, sockets    = select_node_record[node_i].sockets;
 	uint16_t cores_per_socket = select_node_record[node_i].cores;
 	uint16_t threads_per_core = select_node_record[node_i].vpus;
-	uint16_t min_cores = 0, min_sockets = 0, ntasks_per_socket = 0;
+	uint16_t min_cores = 1, min_sockets = 1, ntasks_per_socket = 0;
+	uint16_t max_cores = 0xffff, max_sockets = 0xffff, max_threads = 0xffff;
 	uint16_t ntasks_per_core = 0xffff;
 
 	if (job_ptr->details && job_ptr->details->mc_ptr) {
-		min_cores   = job_ptr->details->mc_ptr->min_cores;
-		min_sockets = job_ptr->details->mc_ptr->min_sockets;
+		if (job_ptr->details->mc_ptr->min_cores != (uint16_t) NO_VAL) {
+			min_cores = job_ptr->details->mc_ptr->min_cores;
+			max_cores = job_ptr->details->mc_ptr->min_cores;
+		}
+		if (job_ptr->details->mc_ptr->min_sockets != (uint16_t) NO_VAL){
+			min_sockets = job_ptr->details->mc_ptr->min_sockets;
+			max_sockets = job_ptr->details->mc_ptr->min_sockets;
+		}
+		if (job_ptr->details->mc_ptr->min_threads != (uint16_t) NO_VAL)
+			max_threads = job_ptr->details->mc_ptr->min_threads;
 		if (job_ptr->details->mc_ptr->ntasks_per_core) {
 			ntasks_per_core = job_ptr->details->mc_ptr->
 					  ntasks_per_core;
@@ -249,17 +258,28 @@ uint16_t _allocate_sockets(struct job_record *job_ptr, bitstr_t *core_map,
 		goto fini;
 	}
 
+	/* check max_cores and max_sockets */
 	c = 0;
 	for (i = 0; i < sockets; i++) {
+		if (free_cores[i] > max_cores) {
+			/* remove extra cores from this socket */
+			uint16_t tmp = free_cores[i] - max_cores;
+			free_core_count -= tmp;
+			free_cores[i] -= tmp;
+		}
 		if (free_cores[i] > 0)
 			c++;
+		if (free_cores[i] && c > max_sockets) {
+			/* remove extra sockets from use */
+			free_core_count -= free_cores[i];
+			free_cores[i] = 0;
+		}
 	}
 	if (free_core_count < 1) {
 		/* no available resources on this node */
 		num_tasks = 0;
 		goto fini;
 	}
-
 
 	/* Step 3: Compute task-related data:
 	 *         ntasks_per_socket, ntasks_per_node and cpus_per_task
@@ -270,7 +290,7 @@ uint16_t _allocate_sockets(struct job_record *job_ptr, bitstr_t *core_map,
 	 */
 	avail_cpus = 0;
 	num_tasks = 0;
-	threads_per_core = MIN(threads_per_core, ntasks_per_core); 
+	threads_per_core = MIN(threads_per_core, max_threads); 
 	for (i = 0; i < sockets; i++) {
 		uint16_t tmp = free_cores[i] * threads_per_core;
 		avail_cpus += tmp;
@@ -375,12 +395,21 @@ uint16_t _allocate_cores(struct job_record *job_ptr, bitstr_t *core_map,
 	uint16_t i, c, sockets    = select_node_record[node_i].sockets;
 	uint16_t cores_per_socket = select_node_record[node_i].cores;
 	uint16_t threads_per_core = select_node_record[node_i].vpus;
-	uint16_t min_cores = 0, min_sockets = 0;
+	uint16_t min_cores = 1, min_sockets = 1;
+	uint16_t max_cores = 0xffff, max_sockets = 0xffff, max_threads = 0xffff;
 	uint16_t ntasks_per_core = 0xffff;
 
 	if (!cpu_type && job_ptr->details && job_ptr->details->mc_ptr) {
-		min_cores   = job_ptr->details->mc_ptr->min_cores;
-		min_sockets = job_ptr->details->mc_ptr->min_sockets;
+		if (job_ptr->details->mc_ptr->min_cores != (uint16_t) NO_VAL) {
+			min_cores   = job_ptr->details->mc_ptr->min_cores;
+			max_cores   = job_ptr->details->mc_ptr->min_cores;
+		}
+		if (job_ptr->details->mc_ptr->min_sockets != (uint16_t) NO_VAL){
+			min_sockets = job_ptr->details->mc_ptr->min_sockets;
+			max_sockets = job_ptr->details->mc_ptr->min_sockets;
+		}
+		if (job_ptr->details->mc_ptr->min_threads != (uint16_t) NO_VAL)
+			max_threads = job_ptr->details->mc_ptr->min_threads;
 		if (job_ptr->details->mc_ptr->ntasks_per_core) {
 			ntasks_per_core = job_ptr->details->mc_ptr->
 					  ntasks_per_core;
@@ -467,17 +496,28 @@ uint16_t _allocate_cores(struct job_record *job_ptr, bitstr_t *core_map,
 		goto fini;
 	}
 
+	/* Step 2b: check max_cores per socket and max_sockets per node */
 	c = 0;
 	for (i = 0; i < sockets; i++) {
+		if (free_cores[i] > max_cores) {
+			/* remove extra cores from this socket */
+			uint16_t tmp = free_cores[i] - max_cores;
+			free_core_count -= tmp;
+			free_cores[i] -= tmp;
+		}
 		if (free_cores[i] > 0)
 			c++;
+		if (free_cores[i] && (c > max_sockets)) {
+			/* remove extra sockets from use */
+			free_core_count -= free_cores[i];
+			free_cores[i] = 0;
+		}
 	}
 	if (free_core_count < 1) {
 		/* no available resources on this node */
 		num_tasks = 0;
 		goto fini;
 	}
-
 
 	/* Step 3: Compute task-related data: use ntasks_per_core,
 	 *         ntasks_per_node and cpus_per_task to determine
@@ -486,7 +526,10 @@ uint16_t _allocate_cores(struct job_record *job_ptr, bitstr_t *core_map,
 	 * Note: cpus_per_task and ntasks_per_core need to play nice
 	 *       2 tasks_per_core vs. 2 cpus_per_task
 	 */
-	threads_per_core = MIN(threads_per_core, ntasks_per_core);
+	if (cpu_type)
+		max_threads = threads_per_core;
+	else
+		threads_per_core = MIN(threads_per_core, max_threads);
 	num_tasks = avail_cpus = threads_per_core;
 	i = job_ptr->details->mc_ptr->ntasks_per_core;
 	if (!cpu_type && i > 0)
@@ -494,7 +537,7 @@ uint16_t _allocate_cores(struct job_record *job_ptr, bitstr_t *core_map,
 
 	/* convert from PER_CORE to TOTAL_FOR_NODE */
 	avail_cpus *= free_core_count;
-	num_tasks *= free_core_count;
+	num_tasks  *= free_core_count;
 
 	/* If job requested exclusive rights to the node don't do the
 	   min here since it will make it so we don't allocate the
@@ -532,6 +575,7 @@ uint16_t _allocate_cores(struct job_record *job_ptr, bitstr_t *core_map,
 				avail_cpus = 0;
 		}
 	}
+
 	/* clear leftovers */
 	if (c < core_end)
 		bit_nclear(core_map, c, core_end-1);
@@ -1697,9 +1741,12 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	/* This is the case if -O/--overcommit  is true */
 	if (job_ptr->num_procs == job_ptr->details->min_nodes) {
 		struct multi_core_data *mc_ptr = job_ptr->details->mc_ptr;
-		job_ptr->num_procs *= MAX(1, mc_ptr->min_threads);
-		job_ptr->num_procs *= MAX(1, mc_ptr->min_cores);
-		job_ptr->num_procs *= MAX(1, mc_ptr->min_sockets);
+		if (mc_ptr->min_threads != (uint16_t) NO_VAL)
+			job_ptr->num_procs *= MAX(1, mc_ptr->min_threads);
+		if (mc_ptr->min_cores   != (uint16_t) NO_VAL)
+			job_ptr->num_procs *= MAX(1, mc_ptr->min_cores);
+		if (mc_ptr->min_sockets != (uint16_t) NO_VAL)
+			job_ptr->num_procs *= MAX(1, mc_ptr->min_sockets);
 	}
 
 	debug3("cons_res: cr_job_test: evaluating job %u on %u nodes",

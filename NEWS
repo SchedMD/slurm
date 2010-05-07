@@ -35,6 +35,11 @@ documents those changes that are of interest to users and admins.
     ntasks-per-node, happens.
  -- Fix accounting transaction logs when deleting associations to put the
     ids instead of the lfts which could change over time.
+ -- Fix support for salloc, sbatch and srun's --hint option to avoid allocating
+    a job more sockets per node or more cores per socket than desired. Also
+    when --hint=compute_bound or --hint=memory_bound then avoid allocating more
+    than one task per hyperthread (a change in behavior, but almost certainly
+    a preferable mode of operation).
 
 * Changes in SLURM 2.1.7
 ========================

@@ -483,6 +483,7 @@ bool verify_socket_core_thread_count(const char *arg, int *min_sockets,
 {
 	bool tmp_val,ret_val;
 	int i,j;
+	int max_sockets, max_cores, max_threads;
 	const char *cur_ptr = arg;
 	char buf[3][48]; /* each can hold INT64_MAX - INT64_MAX */
 	buf[0][0] = '\0';
@@ -519,13 +520,21 @@ bool verify_socket_core_thread_count(const char *arg, int *min_sockets,
 
 	ret_val = true;
 	tmp_val = get_resource_arg_range(&buf[0][0], "first arg of -B",
-					 min_sockets, NULL, true);
+					 min_sockets, &max_sockets, true);
+	if ((*min_sockets == 1) && (max_sockets == INT_MAX))
+		*min_sockets = NO_VAL;	/* Use full range of values */
 	ret_val = ret_val && tmp_val;
+
 	tmp_val = get_resource_arg_range(&buf[1][0], "second arg of -B",
-					 min_cores, NULL, true);
+					 min_cores, &max_cores, true);
+	if ((*min_cores == 1) && (max_cores == INT_MAX))
+		*min_cores = NO_VAL;	/* Use full range of values */
 	ret_val = ret_val && tmp_val;
+
 	tmp_val = get_resource_arg_range(&buf[2][0], "third arg of -B",
-					 min_threads, NULL, true);
+					 min_threads, &max_threads, true);
+	if ((*min_threads == 1) && (max_threads == INT_MAX))
+		*min_threads = NO_VAL;	/* Use full range of values */
 	ret_val = ret_val && tmp_val;
 
 	return ret_val;
@@ -566,20 +575,20 @@ bool verify_hint(const char *arg, int *min_sockets, int *min_cores,
 "        help            show this help message\n");
 			return 1;
 		} else if (strcasecmp(tok, "compute_bound") == 0) {
-		        *min_sockets = 1;
-		        *min_cores   = 1;
+		        *min_sockets = NO_VAL;
+		        *min_cores   = NO_VAL;
+		        *min_threads = 1;
 			*cpu_bind_type |= CPU_BIND_TO_CORES;
 		} else if (strcasecmp(tok, "memory_bound") == 0) {
-		        *min_cores = 1;
+		        *min_cores   = 1;
+		        *min_threads = 1;
 			*cpu_bind_type |= CPU_BIND_TO_CORES;
 		} else if (strcasecmp(tok, "multithread") == 0) {
-		        *min_threads = 1;
+		        *min_threads = NO_VAL;
 			*cpu_bind_type |= CPU_BIND_TO_THREADS;
 		} else if (strcasecmp(tok, "nomultithread") == 0) {
 		        *min_threads = 1;
 			*cpu_bind_type |= CPU_BIND_TO_THREADS;
-			if (*ntasks_per_core == NO_VAL)
-				*ntasks_per_core = 1;
 		} else {
 			error("unrecognized --hint argument \"%s\", "
 			      "see --hint=help", tok);
