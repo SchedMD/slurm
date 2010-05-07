@@ -803,7 +803,8 @@ extern int get_new_info_resv(reserve_info_msg_t **info_ptr,
 	last = now;
 	if (resv_info_ptr) {
 		error_code = slurm_load_reservations(resv_info_ptr->last_update,
-						     &new_resv_ptr);
+						     &new_resv_ptr,
+						     global_cluster_name);
 		if (error_code == SLURM_SUCCESS) {
 			slurm_free_reservation_info_msg(resv_info_ptr);
 			changed = 1;
@@ -814,7 +815,8 @@ extern int get_new_info_resv(reserve_info_msg_t **info_ptr,
 		}
 	} else {
 		error_code = slurm_load_reservations((time_t) NULL,
-						     &new_resv_ptr);
+						     &new_resv_ptr,
+						     global_cluster_name);
 		changed = 1;
 	}
 
@@ -896,7 +898,8 @@ extern void admin_edit_resv(GtkCellRendererText *cell,
 
 	if(old_text && !strcmp(old_text, new_text)) {
 		temp = g_strdup_printf("No change in value.");
-	} else if(slurm_update_reservation(resv_msg) == SLURM_SUCCESS) {
+	} else if(slurm_update_reservation(resv_msg, global_cluster_name)
+		  == SLURM_SUCCESS) {
 		gtk_tree_store_set(treestore, &iter, column, new_text, -1);
 		temp = g_strdup_printf("Reservation %s %s changed to %s",
 				       resv_msg->name,
@@ -1407,7 +1410,8 @@ extern void admin_resv(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 	if (response == GTK_RESPONSE_OK) {
 		switch(edit_type) {
 		case EDIT_REMOVE:
-			if(slurm_delete_reservation(&resv_name_msg)
+			if(slurm_delete_reservation(&resv_name_msg,
+						    global_cluster_name)
 			   == SLURM_SUCCESS) {
 				temp = g_strdup_printf(
 					"Reservation %s removed successfully",
@@ -1426,8 +1430,9 @@ extern void admin_resv(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 
 			if(!global_send_update_msg) {
 				temp = g_strdup_printf("No change detected.");
-			} else if(slurm_update_reservation(resv_msg)
-			   == SLURM_SUCCESS) {
+			} else if(slurm_update_reservation(resv_msg,
+							   global_cluster_name)
+				  == SLURM_SUCCESS) {
 				temp = g_strdup_printf(
 					"Reservation %s updated successfully",
 					resvid);

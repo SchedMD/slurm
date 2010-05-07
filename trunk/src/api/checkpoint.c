@@ -88,7 +88,7 @@ static int _checkpoint_op (uint16_t op, uint16_t data,
 	req_msg.msg_type  = REQUEST_CHECKPOINT;
 	req_msg.data      = &ckp_req;
 
-	if (slurm_send_recv_controller_rc_msg(&req_msg, &rc) < 0)
+	if (slurm_send_recv_controller_rc_msg(&req_msg, &rc, NULL) < 0)
 		return SLURM_ERROR;
 
 	slurm_seterrno(rc);
@@ -120,7 +120,7 @@ extern int slurm_checkpoint_able (uint32_t job_id, uint32_t step_id,
 	req_msg.msg_type  = REQUEST_CHECKPOINT;
 	req_msg.data      = &ckp_req;
 
-	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
+	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg, NULL) < 0)
 		return SLURM_ERROR;
 
 	switch(resp_msg.msg_type) {
@@ -233,7 +233,7 @@ extern int slurm_checkpoint_complete (uint32_t job_id, uint32_t step_id,
 	msg.msg_type     = REQUEST_CHECKPOINT_COMP;
 	msg.data         = &req;
 
-	if (slurm_send_recv_controller_rc_msg(&msg, &rc) < 0)
+	if (slurm_send_recv_controller_rc_msg(&msg, &rc, NULL) < 0)
 		return SLURM_ERROR;
 	if (rc)
 		slurm_seterrno_ret(rc);
@@ -277,7 +277,7 @@ extern int slurm_checkpoint_error ( uint32_t job_id, uint32_t step_id,
 	msg.msg_type  = REQUEST_CHECKPOINT;
 	msg.data      = &req;
 
-	rc = slurm_send_recv_controller_msg(&msg, &resp_msg);
+	rc = slurm_send_recv_controller_msg(&msg, &resp_msg, NULL);
 
 	if (rc == SLURM_SOCKET_ERROR)
 		return rc;
@@ -348,7 +348,7 @@ extern int slurm_checkpoint_task_complete (uint32_t job_id, uint32_t step_id,
 	msg.msg_type     = REQUEST_CHECKPOINT_TASK_COMP;
 	msg.data         = &req;
 
-	if (slurm_send_recv_controller_rc_msg(&msg, &rc) < 0)
+	if (slurm_send_recv_controller_rc_msg(&msg, &rc, NULL) < 0)
 		return SLURM_ERROR;
 	if (rc)
 		slurm_seterrno_ret(rc);

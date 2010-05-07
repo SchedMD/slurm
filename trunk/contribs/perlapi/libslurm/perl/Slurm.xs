@@ -276,7 +276,7 @@ slurm_read_hostfile(slurm_t self, char* filename, int n)
 		RETVAL
 
 HV*
-slurm_submit_batch_job(slurm_t self, HV* job_req = NULL)
+slurm_submit_batch_job(slurm_t self, HV* job_req = NULL, char *cluster_name = NULL)
 	PREINIT:
 		job_desc_msg_t job_desc_msg;
 		submit_response_msg_t* resp_msg = NULL;
@@ -285,7 +285,8 @@ slurm_submit_batch_job(slurm_t self, HV* job_req = NULL)
 		if(hv_to_job_desc_msg(job_req, &job_desc_msg) < 0) {
 			XSRETURN_UNDEF;
 		}
-		rc = slurm_submit_batch_job(&job_desc_msg, &resp_msg);
+		rc = slurm_submit_batch_job(&job_desc_msg, &resp_msg,
+					    cluster_name);
 		free_job_desc_msg_memory(&job_desc_msg);
 		if(rc != SLURM_SUCCESS) {
 			slurm_free_submit_response_response_msg(resp_msg);
@@ -315,14 +316,14 @@ slurm_job_will_run(slurm_t self, HV* job_req = NULL)
 #	JOB/STEP SIGNALING FUNCTIONS
 ######################################################################
 int
-slurm_kill_job(slurm_t self, U32 jobid, signo_t signal = 0, U16 batch_flag = 0)
+slurm_kill_job(slurm_t self, U32 jobid, signo_t signal = 0, U16 batch_flag = 0, char *cluster_name = NULL)
 	C_ARGS:
-		jobid, signal, batch_flag
+                jobid, signal, batch_flag, cluster_name
 
 int
-slurm_kill_job_step(slurm_t self, U32 jobid, U32 stepid, signo_t signal = 0)
+slurm_kill_job_step(slurm_t self, U32 jobid, U32 stepid, signo_t signal = 0, char *cluster_name = NULL)
 	C_ARGS:
-		jobid, stepid, signal
+		jobid, stepid, signal, cluster_name
 
 int
 slurm_signal_job(slurm_t self, U32 jobid, signo_t signal = 0)
@@ -339,9 +340,9 @@ slurm_signal_job_step(slurm_t self, U32 jobid, U32 stepid, signo_t signal = 0)
 #	JOB/STEP COMPLETION FUNCTIONS
 ######################################################################
 int
-slurm_complete_job(slurm_t self, U32 jobid, U32 job_rc = 0)
+slurm_complete_job(slurm_t self, U32 jobid, U32 job_rc = 0, char *cluster_name = NULL)
 	C_ARGS:
-		jobid, job_rc
+		jobid, job_rc, cluster_name
 
 int
 slurm_terminate_job(slurm_t self, U32 jobid)
@@ -369,12 +370,14 @@ slurm_api_version(slurm_t self, OUTLIST int major, OUTLIST int minor, OUTLIST in
 		micro = SLURM_VERSION_MICRO(version);
 
 HV*
-slurm_load_ctl_conf(slurm_t self = NULL)
+slurm_load_ctl_conf(slurm_t self = NULL, char *cluster_name = NULL)
 	PREINIT:
 		slurm_ctl_conf_t *new_ctl_conf;
 		int rc;
 	CODE:
-		rc = slurm_load_ctl_conf(self->ctl_conf ? self->ctl_conf->last_update : 0, &new_ctl_conf);
+                rc = slurm_load_ctl_conf(
+			self->ctl_conf ? self->ctl_conf->last_update : 0,
+			&new_ctl_conf, cluster_name);
 		if(rc == SLURM_SUCCESS) {
 			slurm_free_ctl_conf(self->ctl_conf);
 			self->ctl_conf = new_ctl_conf;
@@ -397,12 +400,15 @@ slurm_load_ctl_conf(slurm_t self = NULL)
 #	SLURM JOB CONTROL CONFIGURATION READ/PRINT/UPDATE FUNCTIONS
 ######################################################################
 HV*
-slurm_load_jobs(slurm_t self = NULL, U16 show_flags = 0)
+slurm_load_jobs(slurm_t self = NULL, U16 show_flags = 0, char *cluster_name = NULL)
 	PREINIT:
 		job_info_msg_t* new_job_info_msg = NULL;
 		int rc;
 	CODE:
-		rc = slurm_load_jobs(self->job_info_msg ? self->job_info_msg->last_update : 0, &new_job_info_msg, show_flags);
+		rc = slurm_load_jobs(
+			self->job_info_msg
+			? self->job_info_msg->last_update : 0,
+			&new_job_info_msg, show_flags, cluster_name);
 		if(rc == SLURM_SUCCESS) {
 			slurm_free_job_info_msg(self->job_info_msg);
 			self->job_info_msg = new_job_info_msg;
@@ -423,12 +429,12 @@ slurm_load_jobs(slurm_t self = NULL, U16 show_flags = 0)
 #slurm_sprint_job_info()
 
 time_t
-slurm_get_end_time(slurm_t self, U32 jobid)
+slurm_get_end_time(slurm_t self, U32 jobid, char *cluster_name = NULL)
 	PREINIT:
 		time_t end_time;
 		int rc;
 	CODE:
-		rc = slurm_get_end_time(jobid, &end_time);
+rc = slurm_get_end_time(jobid, &end_time, cluster_name);
 		if(rc != SLURM_SUCCESS) {
 			XSRETURN_UNDEF;
 		} else
@@ -437,9 +443,9 @@ slurm_get_end_time(slurm_t self, U32 jobid)
 		RETVAL
 
 long
-slurm_get_rem_time(slurm_t self, U32 jobid)
+slurm_get_rem_time(slurm_t self, U32 jobid, char *cluster_name = NULL)
 	C_ARGS:
-		jobid
+                jobid, cluster_name
 
 U32
 slurm_pid2jobid(slurm_t self, U32 pid)
@@ -456,14 +462,14 @@ slurm_pid2jobid(slurm_t self, U32 pid)
 		RETVAL
 
 int
-slurm_update_job(slurm_t self, HV* job_info = NULL)
+slurm_update_job(slurm_t self, HV* job_info = NULL, char *cluster_name = NULL)
 	PREINIT:
 		job_desc_msg_t job_msg;
 	CODE:
 		if(hv_to_job_desc_msg(job_info, &job_msg) < 0) {
 			XSRETURN_UNDEF;
 		}
-		RETVAL = slurm_update_job(&job_msg);
+                RETVAL = slurm_update_job(&job_msg, cluster_name);
 		free_job_desc_msg_memory(&job_msg);
 	OUTPUT:
 		RETVAL
@@ -574,14 +580,18 @@ slurm_job_cpus_allocated_on_node(slurm_t self, SV* job_res = NULL, char *node_na
 #	SLURM JOB STEP CONFIGURATION READ/PRINT/UPDATE FUNCTIONS
 ######################################################################
 HV*
-slurm_get_job_steps(slurm_t self = NULL, U16 show_flags = 0, U32 jobid = 0, U32 stepid = 0)
+slurm_get_job_steps(slurm_t self = NULL, U16 show_flags = 0, U32 jobid = 0, U32 stepid = 0, char *cluster_name = NULL)
 	PREINIT:
 		int rc;
 		job_step_info_response_msg_t* resp_msg;
 	CODE:
-		rc = slurm_get_job_steps(self->job_step_info_msg ? self->job_step_info_msg->last_update : 0, jobid, stepid, &resp_msg, show_flags);
+                rc = slurm_get_job_steps(
+			self->job_step_info_msg ?
+			self->job_step_info_msg->last_update : 0,
+			jobid, stepid, &resp_msg, show_flags, cluster_name);
 		if(rc == SLURM_SUCCESS) {
-			slurm_free_job_step_info_response_msg(self->job_step_info_msg);
+			slurm_free_job_step_info_response_msg(
+				self->job_step_info_msg);
 			self->job_step_info_msg = resp_msg;
 		} else if(slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
 			/* nothing to do */
@@ -600,11 +610,11 @@ slurm_get_job_steps(slurm_t self = NULL, U16 show_flags = 0, U32 jobid = 0, U32 
 # slurm_sprint_job_step_info
 
 HV*
-slurm_job_step_layout_get(slurm_t self, U32 jobid, U32 stepid)
+slurm_job_step_layout_get(slurm_t self, U32 jobid, U32 stepid, char *cluster_name = NULL)
 	PREINIT:
 		slurm_step_layout_t *layout;
 	CODE:
-		layout = slurm_job_step_layout_get(jobid, stepid);
+                layout = slurm_job_step_layout_get(jobid, stepid, cluster_name);
 		if(layout == NULL) {
 			XSRETURN_UNDEF;
 		} else {
@@ -622,12 +632,15 @@ slurm_job_step_layout_get(slurm_t self, U32 jobid, U32 stepid)
 #	SLURM NODE CONFIGURATION READ/PRINT/UPDATE FUNCTIONS
 ######################################################################
 HV*
-slurm_load_node(slurm_t self = NULL, U16 show_flags = 0)
+slurm_load_node(slurm_t self = NULL, U16 show_flags = 0, char *cluster_name = NULL)
 	PREINIT:
 		node_info_msg_t* new_node_info_msg = NULL;
 		int rc;
 	CODE:
-		rc = slurm_load_node(self->node_info_msg ? self->node_info_msg->last_update : 0, &new_node_info_msg, show_flags);
+		rc = slurm_load_node(
+			self->node_info_msg
+			? self->node_info_msg->last_update : 0,
+			&new_node_info_msg, show_flags, cluster_name);
 		if(rc == SLURM_SUCCESS) {
 			slurm_free_node_info_msg(self->node_info_msg);
 			self->node_info_msg = new_node_info_msg;
@@ -648,7 +661,7 @@ slurm_load_node(slurm_t self = NULL, U16 show_flags = 0)
 # slurm_sprint_node_table
 
 int
-slurm_update_node(slurm_t self, HV* update_req = NULL)
+slurm_update_node(slurm_t self, HV* update_req = NULL, char *cluster_name = NULL)
 	PREINIT:
 		update_node_msg_t node_msg;
 	INIT:
@@ -656,18 +669,21 @@ slurm_update_node(slurm_t self, HV* update_req = NULL)
 			XSRETURN_UNDEF;
 		}
 	C_ARGS:
-		&node_msg
+                &node_msg, cluster_name
 
 ######################################################################
 #	SLURM PARTITION CONFIGURATION READ/PRINT/UPDATE FUNCTIONS
 ######################################################################
 HV*
-slurm_load_partitions(slurm_t self = NULL, U16 show_flags = 0)
+slurm_load_partitions(slurm_t self = NULL, U16 show_flags = 0, char *cluster_name = NULL)
 	PREINIT:
 		partition_info_msg_t* new_part_info_msg;
 		int rc;
 	CODE:
-		rc = slurm_load_partitions(self->part_info_msg ? self->part_info_msg->last_update : 0, &new_part_info_msg, show_flags);
+                rc = slurm_load_partitions(
+			self->part_info_msg ?
+			self->part_info_msg->last_update : 0,
+			&new_part_info_msg, show_flags, cluster_name);
 		if(rc == SLURM_SUCCESS) {
 			slurm_free_partition_info_msg(self->part_info_msg);
 			self->part_info_msg = new_part_info_msg;
@@ -688,7 +704,7 @@ slurm_load_partitions(slurm_t self = NULL, U16 show_flags = 0)
 # slurm_sprint_partition_info
 
 int
-slurm_update_partition(slurm_t self, HV* part_info = NULL)
+slurm_update_partition(slurm_t self, HV* part_info = NULL, char *cluster_name = NULL)
 	PREINIT:
 		update_part_msg_t update_msg;
 	INIT:
@@ -696,16 +712,16 @@ slurm_update_partition(slurm_t self, HV* part_info = NULL)
 			XSRETURN_UNDEF;
 		}
 	C_ARGS:
-		&update_msg
+                &update_msg, cluster_name
 
 int
-slurm_delete_partition(slurm_t self, char* part_name)
+slurm_delete_partition(slurm_t self, char* part_name, char *cluster_name = NULL)
 	PREINIT:
 		delete_part_msg_t delete_msg;
 	INIT:
 		delete_msg.name = part_name;
 	C_ARGS:
-		&delete_msg
+                &delete_msg, cluster_name
 
 
 
@@ -718,8 +734,9 @@ slurm_ping(slurm_t self, U16 primary = 1)
 		primary
 
 int
-slurm_reconfigure(slurm_t self)
+slurm_reconfigure(slurm_t self, char *cluster_name = NULL)
 	C_ARGS:
+                cluster_name
 
 int
 slurm_shutdown(slurm_t self, U16 core = 0)
@@ -732,19 +749,19 @@ slurm_shutdown(slurm_t self, U16 core = 0)
 #	SLURM JOB SUSPEND FUNCTIONS
 ######################################################################
 int
-slurm_suspend(slurm_t self, U32 jobid)
+slurm_suspend(slurm_t self, U32 jobid, char *cluster_name = NULL)
 	C_ARGS:
-		jobid
+		jobid, cluster_name
 
 int
-slurm_resume(slurm_t self, U32 jobid)
+slurm_resume(slurm_t self, U32 jobid, char *cluster_name = NULL)
 	C_ARGS:
-		jobid
+		jobid, cluster_name
 
 int
-slurm_requeue(slurm_t self, U32 jobid)
+slurm_requeue(slurm_t self, U32 jobid, char *cluster_name = NULL)
 	C_ARGS:
-		jobid
+		jobid, cluster_name
 
 
 ######################################################################
@@ -801,17 +818,17 @@ slurm_checkpoint_error(slurm_t self, U32 jobid, U32 stepid, OUTLIST U32 error_co
 ######################################################################
 #	SLURM TRIGGER FUNCTIONS
 ######################################################################
-int slurm_set_trigger(slurm_t self, HV* trigger_info = NULL)
+int slurm_set_trigger(slurm_t self, HV* trigger_info = NULL, char *cluster_name = NULL)
 	PREINIT:
 		trigger_info_t trigger_set;
 	INIT:
-		if(hv_to_trigger_info(trigger_info, &trigger_set) < 0) {
+               if(hv_to_trigger_info(trigger_info, &trigger_set) < 0) {
 			XSRETURN_UNDEF;
 		}
 	C_ARGS:
-		&trigger_set
+		&trigger_set, cluster_name
 
-int slurm_clear_trigger(slurm_t self, HV* trigger_info = NULL)
+int slurm_clear_trigger(slurm_t self, HV* trigger_info = NULL, char *cluster_name = NULL)
 	PREINIT:
 		trigger_info_t trigger_clear;
 	INIT:
@@ -819,15 +836,15 @@ int slurm_clear_trigger(slurm_t self, HV* trigger_info = NULL)
 			XSRETURN_UNDEF;
 		}
 	C_ARGS:
-		&trigger_clear
+		&trigger_clear, cluster_name
 
 HV*
-slurm_get_triggers(slurm_t self)
+slurm_get_triggers(slurm_t self, char *cluster_name = NULL)
 	PREINIT:
 		trigger_info_msg_t* trig_info_msg;
 		int rc;
 	CODE:
-		rc = slurm_get_triggers(&trig_info_msg);
+		rc = slurm_get_triggers(&trig_info_msg, cluster_name);
 		if(rc == SLURM_SUCCESS) {
 			RETVAL = newHV();
 			sv_2mortal((SV*)RETVAL);

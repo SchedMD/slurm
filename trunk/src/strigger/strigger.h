@@ -50,6 +50,7 @@
 
 struct strigger_parameters {
 	bool     block_err;
+	char *   cluster_name;
 	bool     job_fini;
 	uint32_t job_id;
 	bool     mode_set;

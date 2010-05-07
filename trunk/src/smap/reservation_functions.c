@@ -56,7 +56,8 @@ extern void get_reservation(void)
 
 	if (resv_info_ptr) {
 		error_code = slurm_load_reservations(resv_info_ptr->last_update,
-						     &new_resv_ptr);
+						     &new_resv_ptr,
+						     params.cluster_name);
 		if (error_code == SLURM_SUCCESS)
 			 slurm_free_reservation_info_msg(resv_info_ptr);
 		else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
@@ -65,7 +66,8 @@ extern void get_reservation(void)
 		}
 	} else
 		error_code = slurm_load_reservations((time_t) NULL,
-						     &new_resv_ptr);
+						     &new_resv_ptr,
+						     params.cluster_name);
 
 	if (error_code) {
 		if (quiet_flag != 1) {

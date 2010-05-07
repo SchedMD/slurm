@@ -105,6 +105,7 @@ parse_command_line( int argc, char* argv[] )
 		{"iterate",    required_argument, 0, 'i'},
 		{"jobs",       optional_argument, 0, 'j'},
 		{"long",       no_argument,       0, 'l'},
+		{"cluster",    required_argument, 0, 'M'},
 		{"node",       required_argument, 0, 'n'},
 		{"nodes",      required_argument, 0, 'n'},
 		{"noheader",   no_argument,       0, 'h'},
@@ -130,114 +131,118 @@ parse_command_line( int argc, char* argv[] )
 		params.sort = xstrdup(env_val);
 
 	while((opt_char = getopt_long(argc, argv,
-				      "A:ahi:j::ln:o:p:q:s::S:t:u:U:vV",
+				      "A:ahi:j::ln:M:o:p:q:s::S:t:u:U:vV",
 				      long_options, &option_index)) != -1) {
 		switch (opt_char) {
-			case (int)'?':
-				fprintf(stderr, "Try \"squeue --help\" "
-						"for more information\n");
+		case (int)'?':
+			fprintf(stderr, "Try \"squeue --help\" "
+				"for more information\n");
+			exit(1);
+		case (int) 'A':
+		case (int) 'U':	/* backwards compatibility */
+			xfree(params.accounts);
+		        params.accounts = xstrdup(optarg);
+			params.account_list =
+				_build_str_list( params.accounts );
+		break;
+		case (int)'a':
+			params.all_flag = true;
+			break;
+		case (int)'h':
+			params.no_header = true;
+			break;
+		case (int) 'i':
+			params.iterate= atoi(optarg);
+			if (params.iterate <= 0) {
+				error ("--iterate=%s\n", optarg);
 				exit(1);
-			case (int) 'A':
-			case (int) 'U':	/* backwards compatibility */
-				xfree(params.accounts);
-				params.accounts = xstrdup(optarg);
-				params.account_list =
-					_build_str_list( params.accounts );
-				break;
-			case (int)'a':
-				params.all_flag = true;
-				break;
-			case (int)'h':
-				params.no_header = true;
-				break;
-			case (int) 'i':
-				params.iterate= atoi(optarg);
-				if (params.iterate <= 0) {
-					error ("--iterate=%s\n", optarg);
-					exit(1);
-				}
-				break;
-			case (int) 'j':
-				if (optarg) {
-					params.jobs = xstrdup(optarg);
-					params.job_list =
-						_build_job_list(params.jobs);
-				}
-				params.job_flag = true;
-				break;
-			case (int) 'l':
-				params.long_list = true;
-				break;
-			case (int) 'n':
-				if (params.nodes)
-					hostset_destroy(params.nodes);
+			}
+			break;
+		case (int) 'j':
+			if (optarg) {
+				params.jobs = xstrdup(optarg);
+				params.job_list =
+					_build_job_list(params.jobs);
+			}
+			params.job_flag = true;
+			break;
+		case (int) 'l':
+			params.long_list = true;
+			break;
+		case (int) 'M':
+			xfree(params.cluster_name);
+			params.cluster_name = xstrdup(optarg);
+			break;
+		case (int) 'n':
+			if (params.nodes)
+				hostset_destroy(params.nodes);
 
-				params.nodes = hostset_create(optarg);
-				if (params.nodes == NULL) {
-					error("'%s' invalid entry for --nodes",
-					      optarg);
-					exit(1);
-				}
-				break;
-			case (int) 'o':
-				xfree(params.format);
-				params.format = xstrdup(optarg);
-				break;
-			case (int) 'p':
-				xfree(params.partitions);
-				params.partitions = xstrdup(optarg);
-				params.part_list =
-					_build_str_list( params.partitions );
-				params.all_flag = true;
-				break;
-			case (int) 'q':
-				xfree(params.qoss);
-				params.qoss = xstrdup(optarg);
-				params.qos_list =
-					_build_str_list( params.qoss );
-				break;
-			case (int) 's':
-				if (optarg) {
-					params.steps = xstrdup(optarg);
-					params.step_list =
-						_build_step_list(params.steps);
-				}
-				params.step_flag = true;
-				break;
-			case (int) 'S':
-				xfree(params.sort);
-				params.sort = xstrdup(optarg);
-				break;
-			case (int) 't':
-				xfree(params.states);
-				params.states = xstrdup(optarg);
-				params.state_list =
-					_build_state_list( params.states );
-				break;
-			case (int) 'u':
-				xfree(params.users);
-				params.users = xstrdup(optarg);
-				params.user_list =
-					_build_user_list( params.users );
-				break;
-			case (int) 'v':
-				params.verbose++;
-				break;
-			case (int) 'V':
-				print_slurm_version();
-				exit(0);
-			case OPT_LONG_HELP:
-				_help();
-				exit(0);
-			case OPT_LONG_HIDE:
-				params.all_flag = false;
-				break;
-			case OPT_LONG_START:
-				params.start_flag = true;
-				break;
-			case OPT_LONG_USAGE:
-				_usage();
-				exit(0);
+			params.nodes = hostset_create(optarg);
+			if (params.nodes == NULL) {
+				error("'%s' invalid entry for --nodes",
+				      optarg);
+				exit(1);
+			}
+			break;
+		case (int) 'o':
+			xfree(params.format);
+			params.format = xstrdup(optarg);
+			break;
+		case (int) 'p':
+			xfree(params.partitions);
+			params.partitions = xstrdup(optarg);
+			params.part_list =
+				_build_str_list( params.partitions );
+			params.all_flag = true;
+			break;
+		case (int) 'q':
+			xfree(params.qoss);
+			params.qoss = xstrdup(optarg);
+			params.qos_list =
+				_build_str_list( params.qoss );
+			break;
+		case (int) 's':
+			if (optarg) {
+				params.steps = xstrdup(optarg);
+				params.step_list =
+					_build_step_list(params.steps);
+			}
+			params.step_flag = true;
+			break;
+		case (int) 'S':
+			xfree(params.sort);
+			params.sort = xstrdup(optarg);
+			break;
+		case (int) 't':
+			xfree(params.states);
+			params.states = xstrdup(optarg);
+			params.state_list =
+				_build_state_list( params.states );
+			break;
+		case (int) 'u':
+			xfree(params.users);
+			params.users = xstrdup(optarg);
+			params.user_list =
+				_build_user_list( params.users );
+			break;
+		case (int) 'v':
+			params.verbose++;
+			break;
+		case (int) 'V':
+			print_slurm_version();
+			exit(0);
+		case OPT_LONG_HELP:
+			_help();
+			exit(0);
+		case OPT_LONG_HIDE:
+			params.all_flag = false;
+			break;
+		case OPT_LONG_START:
+			params.start_flag = true;
+			break;
+		case OPT_LONG_USAGE:
+			_usage();
+			exit(0);
 		}
 	}
 
@@ -354,7 +359,7 @@ static int   _max_cpus_per_node(void)
 	node_info_msg_t *node_info_ptr = NULL;
 
 	error_code = slurm_load_node ((time_t) NULL, &node_info_ptr,
-			params.all_flag);
+				      params.all_flag, params.cluster_name);
 	if (error_code == SLURM_SUCCESS) {
 		int i;
 		node_info_t *node_ptr = node_info_ptr->node_array;
@@ -793,6 +798,8 @@ _print_options()
 
 	printf( "-----------------------------\n" );
 	printf( "all        = %s\n", params.all_flag ? "true" : "false");
+	if(params.cluster_name)
+		printf( "cluster    = %s\n", params.cluster_name );
 	printf( "format     = %s\n", params.format );
 	printf( "iterate    = %d\n", params.iterate );
 	printf( "job_flag   = %d\n", params.job_flag );
@@ -1080,6 +1087,9 @@ Usage: squeue [OPTIONS]\n\
   -j, --job=job(s)                comma separated list of jobs IDs\n\
 				  to view, default is all\n\
   -l, --long                      long report\n\
+  -M, --cluster=cluster_name      cluster to issue commands to.  Default is\n\
+                                  current cluster.  cluster with no name will\n\
+                                  reset to default.\n\
   -n, --nodes=hostlist            list of nodes to view, default is \n\
 				  all nodes\n\
   -o, --format=format             format specification\n\

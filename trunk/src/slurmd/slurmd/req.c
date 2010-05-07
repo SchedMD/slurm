@@ -1383,7 +1383,7 @@ _abort_job(uint32_t job_id)
 	resp.node_name    = NULL;	/* unused */
 	resp_msg.msg_type = REQUEST_COMPLETE_BATCH_SCRIPT;
 	resp_msg.data     = &resp;
-	return slurm_send_recv_controller_rc_msg(&resp_msg, &rc);
+	return slurm_send_recv_controller_rc_msg(&resp_msg, &rc, NULL);
 }
 
 static int
@@ -1402,7 +1402,7 @@ _abort_step(uint32_t job_id, uint32_t step_id)
 	resp.jobacct      = jobacct_gather_g_create(NULL);
 	resp_msg.msg_type = REQUEST_STEP_COMPLETE;
 	resp_msg.data     = &resp;
-	rc2 = slurm_send_recv_controller_rc_msg(&resp_msg, &rc);
+	rc2 = slurm_send_recv_controller_rc_msg(&resp_msg, &rc, NULL);
 	/* Note: we are ignoring the RPC return code */
 	jobacct_gather_g_destroy(resp.jobacct);
 	return rc2;

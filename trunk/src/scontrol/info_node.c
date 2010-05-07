@@ -52,7 +52,8 @@ scontrol_load_nodes (node_info_msg_t ** node_buffer_pptr, uint16_t show_flags)
 		if (last_show_flags != show_flags)
 			old_node_info_ptr->last_update = (time_t) 0;
 		error_code = slurm_load_node (old_node_info_ptr->last_update,
-			&node_info_ptr, show_flags);
+					      &node_info_ptr, show_flags,
+					      cluster_name);
 		if (error_code == SLURM_SUCCESS)
 			slurm_free_node_info_msg (old_node_info_ptr);
 		else if (slurm_get_errno () == SLURM_NO_CHANGE_IN_DATA) {
@@ -64,7 +65,7 @@ scontrol_load_nodes (node_info_msg_t ** node_buffer_pptr, uint16_t show_flags)
 	}
 	else
 		error_code = slurm_load_node ((time_t) NULL, &node_info_ptr,
-				show_flags);
+					      show_flags, cluster_name);
 
 	if (error_code == SLURM_SUCCESS) {
 		old_node_info_ptr = node_info_ptr;
@@ -199,7 +200,7 @@ extern void	scontrol_print_topo (char *node_list)
 	hostset_t hs;
 
 	if ((topo_info_msg == NULL) &&
-	    slurm_load_topo(&topo_info_msg)) {
+	    slurm_load_topo(&topo_info_msg, cluster_name)) {
 		slurm_perror ("slurm_load_topo error");
 		return;
 	}

@@ -190,7 +190,7 @@ int _do_stat(uint32_t jobid, uint32_t stepid)
 	req_msg.msg_type = REQUEST_STEP_LAYOUT;
 	req_msg.data     = &req;
 
-	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0) {
+	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg, NULL) < 0) {
 		return SLURM_ERROR;
 	}
 
@@ -248,7 +248,7 @@ int main(int argc, char **argv)
 			int i = 0;
 			if(slurm_get_job_steps(
 				   0, selected_step->jobid, NO_VAL,
-				   &step_ptr, SHOW_ALL)) {
+				   &step_ptr, SHOW_ALL, NULL)) {
 				error("couldn't get steps for job %u",
 				      selected_step->jobid);
 				continue;

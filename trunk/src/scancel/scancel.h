@@ -47,6 +47,7 @@ typedef struct scancel_options {
 	char *account;		/* --account=n, -a		*/
 	bool batch;		/* --batch, -b			*/
 	bool ctld;		/* --ctld			*/
+	char *cluster_name;	/* --cluster=cluster_name, -Mcluster-name */
 	bool interactive;	/* --interactive, -i		*/
 	char *job_name;		/* --name=n, -nn		*/
 	char *partition;	/* --partition=n, -pn		*/

@@ -94,6 +94,7 @@
 #define	MAX_INPUT_FIELDS 128
 
 extern char *command_name;
+extern char *cluster_name;
 extern int all_flag;	/* display even hidden partitions */
 extern int detail_flag;	/* display additional details */
 extern int exit_code;	/* scontrol's exit code, =1 on any error at any time */

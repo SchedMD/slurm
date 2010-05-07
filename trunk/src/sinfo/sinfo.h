@@ -144,6 +144,7 @@ struct sinfo_match_flags {
 /* Input parameters */
 struct sinfo_parameters {
 	bool all_flag;
+	char *cluster_name;
 	bool bg_flag;
 	bool dead_nodes;
 	bool exact_match;

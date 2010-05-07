@@ -77,6 +77,7 @@ struct sprio_parameters {
 
 	int  verbose;
 
+	char *cluster_name;
 	char* format;
 	char* jobs;
 	char* users;

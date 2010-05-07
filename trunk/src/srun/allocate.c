@@ -122,7 +122,7 @@ static void _signal_while_allocating(int signo)
 {
 	destroy_job = 1;
 	if (pending_job_id != 0) {
-		slurm_complete_job(pending_job_id, NO_VAL);
+		slurm_complete_job(pending_job_id, NO_VAL, NULL);
 	}
 }
 
@@ -250,7 +250,7 @@ static int _wait_bluegene_block_ready(resource_allocation_response_msg_t *alloc)
 			debug2("still waiting");
 		}
 
-		rc = slurm_job_node_ready(alloc->job_id);
+		rc = slurm_job_node_ready(alloc->job_id, NULL);
 
 		if (rc == READY_JOB_FATAL)
 			break;				/* fatal error */
@@ -292,7 +292,7 @@ static int _blocks_dealloc(void)
 
 	if (bg_info_ptr) {
 		error_code = slurm_load_block_info(bg_info_ptr->last_update,
-						   &new_bg_ptr);
+						   &new_bg_ptr, NULL);
 		if (error_code == SLURM_SUCCESS)
 			slurm_free_block_info_msg(&bg_info_ptr);
 		else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
@@ -300,7 +300,8 @@ static int _blocks_dealloc(void)
 			new_bg_ptr = bg_info_ptr;
 		}
 	} else {
-		error_code = slurm_load_block_info((time_t) NULL, &new_bg_ptr);
+		error_code = slurm_load_block_info((time_t) NULL,
+						   &new_bg_ptr, NULL);
 	}
 
 	if (error_code) {
@@ -345,7 +346,7 @@ static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc)
 			cur_delay += POLL_SLEEP;
 		}
 
-		rc = slurm_job_node_ready(alloc->job_id);
+		rc = slurm_job_node_ready(alloc->job_id, NULL);
 
 		if (rc == READY_JOB_FATAL)
 			break;				/* fatal error */
@@ -500,7 +501,7 @@ relinquish:
 
 	slurm_free_resource_allocation_response_msg(resp);
 	if(!destroy_job)
-		slurm_complete_job(resp->job_id, 1);
+		slurm_complete_job(resp->job_id, 1, NULL);
 	exit(error_exit);
 	return NULL;
 }

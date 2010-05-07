@@ -99,7 +99,8 @@ int main(int argc, char *argv[])
 		log_alter(opts, SYSLOG_FACILITY_USER, NULL);
 	}
 
-	while (slurm_load_node((time_t) NULL, &new_node_ptr, SHOW_ALL)) {
+	while (slurm_load_node((time_t) NULL, &new_node_ptr, SHOW_ALL,
+			       params.cluster_name)) {
 		error_code = slurm_get_errno();
 		printf("slurm_load_node: %s\n", slurm_strerror(error_code));
 		if (params.display == COMMANDS) {
@@ -286,7 +287,8 @@ part_fini:
 			if (node_info_ptr) {
 				error_code = slurm_load_node(
 					node_info_ptr->last_update,
-					&new_node_ptr, SHOW_ALL);
+					&new_node_ptr, SHOW_ALL,
+					params.cluster_name);
 				if (error_code == SLURM_SUCCESS)
 					slurm_free_node_info_msg(
 						node_info_ptr);
@@ -296,8 +298,10 @@ part_fini:
 					new_node_ptr = node_info_ptr;
 				}
 			} else {
-				error_code = slurm_load_node((time_t) NULL,
-						&new_node_ptr, SHOW_ALL);
+				error_code = slurm_load_node(
+					(time_t) NULL,
+					&new_node_ptr, SHOW_ALL,
+					params.cluster_name);
 			}
 			if (error_code && (quiet_flag != 1)) {
 				if(!params.commandline) {

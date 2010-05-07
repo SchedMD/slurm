@@ -799,8 +799,9 @@ int PMI_Abort(int exit_code, const char error_msg[])
 			/* Simple operation without srun */
 			kill(0, SIGKILL);
 		} else {
-			slurm_kill_job_step((uint32_t) pmi_jobid, 
-					    (uint32_t) pmi_stepid, SIGKILL);
+			slurm_kill_job_step((uint32_t) pmi_jobid,
+					    (uint32_t) pmi_stepid, SIGKILL,
+					    NULL);
 		}
 	}
 	exit(exit_code);

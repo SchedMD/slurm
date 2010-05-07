@@ -266,7 +266,7 @@ _slurm_match_allocation(uid_t uid)
 
 	DBG ("does uid %ld have \"%s\" allocated", uid, hostname);
 
-	if (slurm_load_jobs((time_t) 0, &msg, SHOW_ALL) < 0) {
+	if (slurm_load_jobs((time_t) 0, &msg, SHOW_ALL, NULL) < 0) {
 		_log_msg(LOG_ERR, "slurm_load_jobs: %s",
 			 slurm_strerror(errno));
 		return 0;

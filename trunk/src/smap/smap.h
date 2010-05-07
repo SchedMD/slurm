@@ -113,6 +113,7 @@ enum { JOBS, RESERVATIONS, SLURMPART, BGPART, COMMANDS };
 /* Input parameters */
 typedef struct {
 	bool all_flag;
+	char *cluster_name;
 	bool commandline;
 	int display;
 	int iterate;

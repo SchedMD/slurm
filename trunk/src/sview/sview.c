@@ -71,6 +71,7 @@ GtkTable *main_grid_table = NULL;
 GStaticMutex sview_mutex = G_STATIC_MUTEX_INIT;
 GMutex *grid_mutex = NULL;
 GCond *grid_cond = NULL;
+char *global_cluster_name = NULL;
 
 static GtkActionGroup *admin_action_group = NULL;
 static GtkActionGroup *menu_action_group = NULL;
@@ -345,7 +346,7 @@ static void _reconfigure(GtkToggleAction *action)
 {
 	char *temp = NULL;
 
-	if(!slurm_reconfigure())
+	if(!slurm_reconfigure(global_cluster_name))
 		temp = g_strdup_printf(
 			"Reconfigure sent to slurm successfully");
 	else
@@ -399,7 +400,7 @@ static void _set_debug(GtkRadioAction *action,
 	}
 
 	level = gtk_radio_action_get_current_value(action);
-	if(!slurm_set_debug_level(level)) {
+	if(!slurm_set_debug_level(level, global_cluster_name)) {
 		temp = g_strdup_printf(
 			"Slurmctld debug level is now set to %d", level);
 	} else
@@ -440,6 +441,7 @@ static gboolean _delete(GtkWidget *widget,
 		list_destroy(grid_button_list);
 	if(signal_params_list)
 		list_destroy(signal_params_list);
+	xfree(global_cluster_name);
 	return FALSE;
 }
 

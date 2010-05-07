@@ -94,6 +94,7 @@ extern void parse_command_line(int argc, char *argv[])
 	long tmp_l;
 	static struct option long_options[] = {
 		{"block_err", no_argument,       0, OPT_LONG_BLOCK_ERR},
+		{"cluster",   required_argument, 0, 'M'},
 		{"down",      no_argument,       0, 'd'},
 		{"drained",   no_argument,       0, 'D'},
 		{"fail",      no_argument,       0, 'F'},
@@ -122,7 +123,7 @@ extern void parse_command_line(int argc, char *argv[])
 	_init_options();
 
 	optind = 0;
-	while((opt_char = getopt_long(argc, argv, "dDFfi:Ij:no:p:QrtuvV",
+	while((opt_char = getopt_long(argc, argv, "dDFfi:Ij:M:no:p:QrtuvV",
 			long_options, &option_index)) != -1) {
 		switch (opt_char) {
 		case (int)'?':
@@ -158,6 +159,10 @@ extern void parse_command_line(int argc, char *argv[])
 				exit(1);
 			}
 			params.job_id = tmp_l;
+			break;
+		case (int) 'M':
+			xfree(params.cluster_name);
+			params.cluster_name = xstrdup(optarg);
 			break;
 		case (int)'n':
 			xfree(params.node_id);
@@ -359,6 +364,9 @@ Usage: strigger [--set | --get | --clear] [OPTIONS]\n\
   -i, --id=#          a trigger's ID number\n\
   -I, --idle          trigger event when node remains IDLE\n\
   -j, --jobid=#       trigger related to specific jobid\n\
+  -M, --cluster=name  cluster to issue commands to.  Default is\n\
+                      current cluster.  cluster with no name will\n\
+                      reset to default.\n\
   -n, --node[=host]   trigger related to specific node, all nodes by default\n\
   -o, --offset=#      trigger's offset time from event, negative to preceed\n\
   -p, --program=path  pathname of program to execute when triggered\n\

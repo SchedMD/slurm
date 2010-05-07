@@ -67,7 +67,7 @@
  * RET 0 or a slurm error code
  * NOTE: free the response using slurm_free_topo_info_msg
  */
-extern int slurm_load_topo(topo_info_response_msg_t **resp)
+extern int slurm_load_topo(topo_info_response_msg_t **resp, char *cluster_name)
 {
 	int rc;
 	slurm_msg_t req_msg;
@@ -78,7 +78,8 @@ extern int slurm_load_topo(topo_info_response_msg_t **resp)
 	req_msg.msg_type = REQUEST_TOPO_INFO;
 	req_msg.data     = NULL;
 
-	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
+	if (slurm_send_recv_controller_msg(
+		    &req_msg, &resp_msg, cluster_name) < 0)
 		return SLURM_ERROR;
 
 	switch (resp_msg.msg_type) {
@@ -108,9 +109,10 @@ extern int slurm_load_topo(topo_info_response_msg_t **resp)
  * IN topo_info_msg_ptr - switch topology information message pointer
  * IN one_liner - print as a single line if not zero
  */
-extern void slurm_print_topo_info_msg(FILE * out,
-				      topo_info_response_msg_t *topo_info_msg_ptr,
-				      int one_liner)
+extern void slurm_print_topo_info_msg(
+	FILE * out,
+	topo_info_response_msg_t *topo_info_msg_ptr,
+	int one_liner)
 {
 	int i;
 	topo_info_t *topo_ptr = topo_info_msg_ptr->topo_array;

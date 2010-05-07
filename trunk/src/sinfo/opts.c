@@ -96,6 +96,7 @@ extern void parse_command_line(int argc, char *argv[])
 		{"noheader",  no_argument,       0, 'h'},
 		{"iterate",   required_argument, 0, 'i'},
 		{"long",      no_argument,       0, 'l'},
+		{"cluster",   required_argument, 0, 'M'},
 		{"nodes",     required_argument, 0, 'n'},
 		{"Node",      no_argument,       0, 'N'},
 		{"format",    required_argument, 0, 'o'},
@@ -123,7 +124,7 @@ extern void parse_command_line(int argc, char *argv[])
 		params.sort = xstrdup(env_val);
 
 
-	while((opt_char = getopt_long(argc, argv, "abdehi:ln:No:p:rRsS:t:vV",
+	while((opt_char = getopt_long(argc, argv, "abdehi:lM:n:No:p:rRsS:t:vV",
 			long_options, &option_index)) != -1) {
 		switch (opt_char) {
 		case (int)'?':
@@ -161,6 +162,10 @@ extern void parse_command_line(int argc, char *argv[])
 			break;
 		case (int) 'l':
 			params.long_output = true;
+			break;
+		case (int) 'M':
+			xfree(params.cluster_name);
+			params.cluster_name = xstrdup(optarg);
 			break;
 		case (int) 'n':
 			xfree(params.nodes);

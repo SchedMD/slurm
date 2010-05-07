@@ -203,7 +203,8 @@ static int _get_info(priority_factors_request_msg_t *factors_req,
         req_msg.msg_type = REQUEST_PRIORITY_FACTORS;
         req_msg.data     = factors_req;
 
-	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
+	if (slurm_send_recv_controller_msg(
+		    &req_msg, &resp_msg, params.cluster_name) < 0)
 		return SLURM_ERROR;
 
 	switch (resp_msg.msg_type) {
