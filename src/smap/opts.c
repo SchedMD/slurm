@@ -59,6 +59,7 @@ extern void parse_command_line(int argc, char *argv[])
 		{"noheader", no_argument, 0, 'h'},
 		{"iterate", required_argument, 0, 'i'},
 		{"ionodes", required_argument, 0, 'I'},
+		{"cluster", required_argument, 0, 'M'},
 		{"nodes", required_argument, 0, 'n'},
 		{"quiet", no_argument, 0, 'Q'},
 		{"resolve", required_argument, 0, 'R'},
@@ -73,7 +74,7 @@ extern void parse_command_line(int argc, char *argv[])
 	memset(&params, 0, sizeof(params));
 
 	while ((opt_char =
-		getopt_long(argc, argv, "cD:hi:I:Hn:QR:vV",
+		getopt_long(argc, argv, "cD:hi:I:Hn:M:QR:vV",
 			    long_options, &option_index)) != -1) {
 		switch (opt_char) {
 		case '?':
@@ -124,6 +125,10 @@ extern void parse_command_line(int argc, char *argv[])
 				      optarg);
 				exit(1);
 			}
+			break;
+		case 'M':
+			xfree(params.cluster_name);
+			params.cluster_name = xstrdup(optarg);
 			break;
 		case 'n':
 			/*
@@ -188,9 +193,10 @@ static void _usage(void)
 {
 #ifdef HAVE_BG
 	printf("Usage: smap [-chQV] [-D bcjrs] [-i seconds] "
-	       "[-n nodelist] [-i ionodelist]\n");
+	       "[-n nodelist] [-i ionodelist] [-M cluster_name]\n");
 #else
-	printf("Usage: smap [-chQV] [-D jrs] [-i seconds] [-n nodelist]\n");
+	printf("Usage: smap [-chQV] [-D jrs] [-i seconds] [-n nodelist] "
+	       "[-M cluster_name]\n");
 #endif
 }
 
@@ -215,6 +221,9 @@ Usage: smap [OPTIONS]\n\
                              here.  Specify the node name with the -n option.\n\
                              This option is only valid on Bluegene systems,\n\
                              and only valid when querying blocks.\n\
+  -M, --cluster=cluster_name cluster to issue commands to.  Default is\n\
+                             current cluster.  cluster with no name will\n\
+                             reset to default.\n\
   -n, --nodes=[nodes]        only show objects with these nodes.\n\
                              If querying to the ionode level use the -I\n\
                              option in conjunction with this option.\n\

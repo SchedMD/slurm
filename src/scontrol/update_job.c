@@ -222,9 +222,9 @@ scontrol_suspend(char *op, char *job_id_str)
 	}
 
 	if (strncasecmp(op, "suspend", MAX(strlen(op), 2)) == 0)
-		rc = slurm_suspend (job_id);
+		rc = slurm_suspend (job_id, cluster_name);
 	else
-		rc = slurm_resume (job_id);
+		rc = slurm_resume (job_id, cluster_name);
 
 	return rc;
 }
@@ -255,7 +255,7 @@ scontrol_requeue(char *job_id_str)
 		return 0;
 	}
 
-	rc = slurm_requeue (job_id);
+	rc = slurm_requeue (job_id, cluster_name);
 	return rc;
 }
 
@@ -584,7 +584,7 @@ scontrol_update_job (int argc, char *argv[])
 		return 0;
 	}
 
-	if (slurm_update_job(&job_msg))
+	if (slurm_update_job(&job_msg, cluster_name))
 		return slurm_get_errno ();
 	else {
 		if (update_size)
@@ -618,7 +618,7 @@ scontrol_job_notify(int argc, char *argv[])
 			xstrcat(message, argv[i]);
 	}
 
-	i = slurm_notify_job(job_id, message);
+	i = slurm_notify_job(job_id, message, cluster_name);
 	xfree(message);
 
 	if (i)

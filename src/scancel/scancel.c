@@ -132,7 +132,8 @@ _load_job_records (void)
 {
 	int error_code;
 
-	error_code = slurm_load_jobs ((time_t) NULL, &job_buffer_ptr, 1);
+	error_code = slurm_load_jobs ((time_t) NULL, &job_buffer_ptr, 1,
+				      opt.cluster_name);
 
 	if (error_code) {
 		slurm_perror ("slurm_load_jobs error");
@@ -434,7 +435,8 @@ _cancel_job_id (void *ci)
 
 		if ((!sig_set) || opt.ctld) {
 			error_code = slurm_kill_job (job_id, sig,
-						     (uint16_t)opt.batch);
+						     (uint16_t)opt.batch,
+						     opt.cluster_name);
 		} else {
 			if (opt.batch)
 				error_code = slurm_signal_job_step(
@@ -496,7 +498,8 @@ _cancel_step_id (void *ci)
 		}
 
 		if ((!sig_set) || opt.ctld)
-			error_code = slurm_kill_job_step(job_id, step_id, sig);
+			error_code = slurm_kill_job_step(job_id, step_id, sig,
+							 opt.cluster_name);
 		else if (sig == SIGKILL)
 			error_code = slurm_terminate_job_step(job_id, step_id);
 		else

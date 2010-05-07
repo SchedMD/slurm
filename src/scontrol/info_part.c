@@ -55,8 +55,8 @@ scontrol_load_partitions (partition_info_msg_t **part_buffer_pptr)
 		if (last_show_flags != show_flags)
 			old_part_info_ptr->last_update = (time_t) 0;
 		error_code = slurm_load_partitions (
-						old_part_info_ptr->last_update,
-						&part_info_ptr, show_flags);
+			old_part_info_ptr->last_update,
+			&part_info_ptr, show_flags, cluster_name);
 		if (error_code == SLURM_SUCCESS)
 			slurm_free_partition_info_msg (old_part_info_ptr);
 		else if (slurm_get_errno () == SLURM_NO_CHANGE_IN_DATA) {
@@ -68,7 +68,8 @@ scontrol_load_partitions (partition_info_msg_t **part_buffer_pptr)
 	}
 	else
 		error_code = slurm_load_partitions((time_t) NULL,
-						   &part_info_ptr, show_flags);
+						   &part_info_ptr, show_flags,
+						   cluster_name);
 
 	if (error_code == SLURM_SUCCESS) {
 		old_part_info_ptr = part_info_ptr;

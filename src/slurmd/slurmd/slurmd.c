@@ -546,7 +546,7 @@ send_registration_msg(uint32_t status, bool startup)
 	req.msg_type = MESSAGE_NODE_REGISTRATION_STATUS;
 	req.data     = msg;
 
-	if (slurm_send_recv_controller_msg(&req, &resp) < 0) {
+	if (slurm_send_recv_controller_msg(&req, &resp, NULL) < 0) {
 		error("Unable to register: %m");
 		ret_val = SLURM_FAILURE;
 	} else {

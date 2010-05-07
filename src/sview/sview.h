@@ -290,6 +290,7 @@ extern int cpus_per_node;
 extern int g_node_scaling;
 extern char *sview_colors[];
 extern int sview_colors_cnt;
+extern char *global_cluster_name;
 
 extern void init_grid(node_info_msg_t *node_info_ptr);
 extern int set_grid(int start, int end, int count);

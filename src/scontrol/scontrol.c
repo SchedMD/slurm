@@ -46,6 +46,7 @@
 #define OPT_LONG_HIDE   0x102
 
 char *command_name;
+char *cluster_name = NULL;
 int all_flag;		/* display even hidden partitions */
 int detail_flag;	/* display additional details */
 int exit_code;		/* scontrol's exit code, =1 on any error at any time */
@@ -83,6 +84,7 @@ main (int argc, char *argv[])
 	int option_index;
 	static struct option long_options[] = {
 		{"all",      0, 0, 'a'},
+		{"cluster",  0, 0, 'M'},
 		{"details",  0, 0, 'd'},
 		{"help",     0, 0, 'h'},
 		{"hide",     0, 0, OPT_LONG_HIDE},
@@ -107,7 +109,7 @@ main (int argc, char *argv[])
 	if (getenv ("SCONTROL_ALL"))
 		all_flag= 1;
 
-	while((opt_char = getopt_long(argc, argv, "adhoQvV",
+	while((opt_char = getopt_long(argc, argv, "adhM:oQvV",
 			long_options, &option_index)) != -1) {
 		switch (opt_char) {
 		case (int)'?':
@@ -128,6 +130,10 @@ main (int argc, char *argv[])
 		case OPT_LONG_HIDE:
 			all_flag = 0;
 			detail_flag = 0;
+			break;
+		case (int)'M':
+			xfree(cluster_name);
+			cluster_name = xstrdup(optarg);
 			break;
 		case (int)'o':
 			one_liner = 1;
@@ -179,7 +185,7 @@ main (int argc, char *argv[])
 			break;
 		error_code = _get_command (&input_field_count, input_fields);
 	}
-
+	xfree(cluster_name);
 	exit(exit_code);
 }
 
@@ -310,7 +316,7 @@ _print_config (char *config_param)
 	if (old_slurm_ctl_conf_ptr) {
 		error_code = slurm_load_ctl_conf (
 				old_slurm_ctl_conf_ptr->last_update,
-			 &slurm_ctl_conf_ptr);
+				&slurm_ctl_conf_ptr, cluster_name);
 		if (error_code == SLURM_SUCCESS)
 			slurm_free_ctl_conf(old_slurm_ctl_conf_ptr);
 		else if (slurm_get_errno () == SLURM_NO_CHANGE_IN_DATA) {
@@ -324,7 +330,8 @@ _print_config (char *config_param)
 	}
 	else
 		error_code = slurm_load_ctl_conf ((time_t) NULL,
-						  &slurm_ctl_conf_ptr);
+						  &slurm_ctl_conf_ptr,
+						  cluster_name);
 
 	if (error_code) {
 		exit_code = 1;
@@ -517,6 +524,11 @@ _process_command (int argc, char *argv[])
 		}
 		scontrol_print_completing();
 	}
+	else if (strncasecmp (tag, "cluster", MAX(taglen, 2)) == 0) {
+		xfree(cluster_name);
+		if (argc >= 2)
+			cluster_name = xstrdup(argv[1]);
+	}
 	else if (strncasecmp (tag, "create", MAX(taglen, 2)) == 0) {
 		if (argc < 2) {
 			exit_code = 1;
@@ -614,7 +626,7 @@ _process_command (int argc, char *argv[])
 			fprintf (stderr, "too many arguments for keyword:%s\n",
 			         tag);
 		}
-		error_code = slurm_reconfigure ();
+		error_code = slurm_reconfigure(cluster_name);
 		if (error_code) {
 			exit_code = 1;
 			if (quiet_flag != 1)
@@ -750,12 +762,13 @@ _process_command (int argc, char *argv[])
 					exit_code = 1;
 					if (quiet_flag != 1)
 						fprintf(stderr, "invalid "
-							"debug level: %s\n", 
+							"debug level: %s\n",
 							argv[1]);
 				}
 			}
 			if (level != -1) {
-				error_code = slurm_set_debug_level(level);
+				error_code = slurm_set_debug_level(
+					level, cluster_name);
 				if (error_code) {
 					exit_code = 1;
 					if (quiet_flag != 1)
@@ -804,7 +817,8 @@ _process_command (int argc, char *argv[])
 				}
 			}
 			if (level != -1) {
-				error_code = slurm_set_schedlog_level(level);
+				error_code = slurm_set_schedlog_level(
+					level, cluster_name);
 				if (error_code) {
 					exit_code = 1;
 					if (quiet_flag != 1)
@@ -1010,7 +1024,7 @@ _delete_it (int argc, char *argv[])
 	if (strncasecmp (tag, "PartitionName", MAX(taglen, 3)) == 0) {
 		delete_part_msg_t part_msg;
 		part_msg.name = val;
-		if (slurm_delete_partition(&part_msg)) {
+		if (slurm_delete_partition(&part_msg, cluster_name)) {
 			char errmsg[64];
 			snprintf(errmsg, 64, "delete_partition %s", argv[0]);
 			slurm_perror(errmsg);
@@ -1018,7 +1032,7 @@ _delete_it (int argc, char *argv[])
 	} else if (strncasecmp (tag, "ReservationName", MAX(taglen, 3)) == 0) {
 		reservation_name_msg_t   res_msg;
 		res_msg.name = val;
-		if (slurm_delete_reservation(&res_msg)) {
+		if (slurm_delete_reservation(&res_msg, cluster_name)) {
 			char errmsg[64];
 			snprintf(errmsg, 64, "delete_reservation %s", argv[0]);
 			slurm_perror(errmsg);
@@ -1030,7 +1044,7 @@ _delete_it (int argc, char *argv[])
 
 		block_msg.bg_block_id = val;
 		block_msg.state = RM_PARTITION_NAV;
-		if (slurm_update_block(&block_msg)) {
+		if (slurm_update_block(&block_msg, cluster_name)) {
 			char errmsg[64];
 			snprintf(errmsg, 64, "delete_block %s", argv[0]);
 			slurm_perror(errmsg);
@@ -1294,7 +1308,7 @@ _update_bluegene_block (int argc, char *argv[])
 		return 0;
 	}
 
-	if (slurm_update_block(&block_msg)) {
+	if (slurm_update_block(&block_msg, cluster_name)) {
 		exit_code = 1;
 		return slurm_get_errno ();
 	} else
@@ -1372,7 +1386,7 @@ _update_bluegene_subbp (int argc, char *argv[])
 		return 0;
 	}
 
-	if (slurm_update_block(&block_msg)) {
+	if (slurm_update_block(&block_msg, cluster_name)) {
 		exit_code = 1;
 		return slurm_get_errno ();
 	} else
@@ -1402,7 +1416,7 @@ static int _update_slurmctld_debug(char *val)
 			fprintf(stderr, "invalid debug level: %s\n",
 				val);
 	} else {
-		error_code = slurm_set_debug_level(level);
+		error_code = slurm_set_debug_level(level, cluster_name);
 	}
 
 	return error_code;
@@ -1418,6 +1432,7 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
      -d or --detail: equivalent to \"detail\" command                      \n\
      -h or --help: equivalent to \"help\" command                          \n\
      --hide: equivalent to \"hide\" command                                \n\
+     -M or --cluster: equivalent to \"cluster\" command                    \n\
      -o or --oneliner: equivalent to \"oneliner\" command                  \n\
      -Q or --quiet: equivalent to \"quiet\" command                        \n\
      -v or --verbose: equivalent to \"verbose\" command                    \n\
@@ -1432,6 +1447,9 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
                               generating a core file.                      \n\
      all                      display information about all partitions,    \n\
                               including hidden partitions.                 \n\
+     cluster                  cluster to issue commands to.  Default is    \n\
+                              current cluster.  cluster with no name will  \n\
+                              reset to default.                            \n\
      checkpoint <CH_OP><ID>   perform a checkpoint operation on identified \n\
                               job or job step \n\
      completing               display jobs in completing state along with  \n\

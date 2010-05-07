@@ -1672,7 +1672,8 @@ extern int get_new_info_part(partition_info_msg_t **part_ptr, int force)
 		if(show_flags != last_flags)
 			part_info_ptr->last_update = 0;
 		error_code = slurm_load_partitions(part_info_ptr->last_update,
-						   &new_part_ptr, show_flags);
+						   &new_part_ptr, show_flags,
+						   global_cluster_name);
 		if (error_code == SLURM_SUCCESS) {
 			slurm_free_partition_info_msg(part_info_ptr);
 			changed = 1;
@@ -1683,7 +1684,8 @@ extern int get_new_info_part(partition_info_msg_t **part_ptr, int force)
 		}
 	} else {
 		error_code = slurm_load_partitions((time_t) NULL, &new_part_ptr,
-						   show_flags);
+						   show_flags,
+						   global_cluster_name);
 		changed = 1;
 	}
 
@@ -1882,7 +1884,8 @@ extern void admin_edit_part(GtkCellRendererText *cell,
 	if(column != SORTID_NODE_STATE && column != SORTID_FEATURES ) {
 		if(old_text && !strcmp(old_text, new_text)) {
 			temp = g_strdup_printf("No change in value.");
-		} else if(slurm_update_partition(part_msg) == SLURM_SUCCESS) {
+		} else if(slurm_update_partition(part_msg, global_cluster_name)
+			  == SLURM_SUCCESS) {
 			gtk_tree_store_set(treestore, &iter, column,
 					   new_text, -1);
 			temp = g_strdup_printf("Partition %s %s changed to %s",
@@ -2528,7 +2531,8 @@ extern void admin_part(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 			temp = global_edit_error_msg;
 		else if(!global_send_update_msg) {
 			temp = g_strdup_printf("No change detected.");
-		} else if(slurm_update_partition(part_msg) == SLURM_SUCCESS) {
+		} else if(slurm_update_partition(part_msg, global_cluster_name)
+			  == SLURM_SUCCESS) {
 			temp = g_strdup_printf(
 				"Partition %s updated successfully",
 				partid);

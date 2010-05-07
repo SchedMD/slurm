@@ -48,8 +48,8 @@ scontrol_load_reservations(reserve_info_msg_t **res_buffer_pptr)
 
 	if (old_res_info_ptr) {
 		error_code = slurm_load_reservations (
-						old_res_info_ptr->last_update,
-						&res_info_ptr);
+			old_res_info_ptr->last_update,
+			&res_info_ptr, cluster_name);
 		if (error_code == SLURM_SUCCESS) {
 			slurm_free_reservation_info_msg (old_res_info_ptr);
 
@@ -64,7 +64,8 @@ scontrol_load_reservations(reserve_info_msg_t **res_buffer_pptr)
 	}
 	else {
 		error_code = slurm_load_reservations((time_t) NULL,
-						     &res_info_ptr);
+						     &res_info_ptr,
+						     cluster_name);
 	}
 
 	if (error_code == SLURM_SUCCESS) {

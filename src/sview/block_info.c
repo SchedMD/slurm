@@ -719,7 +719,8 @@ extern int get_new_info_block(block_info_msg_t **block_ptr,
 	last = now;
 	if (bg_info_ptr) {
 		error_code = slurm_load_block_info(bg_info_ptr->last_update,
-						   &new_bg_ptr);
+						   &new_bg_ptr,
+						   global_cluster_name);
 		if (error_code == SLURM_SUCCESS) {
 			slurm_free_block_info_msg(&bg_info_ptr);
 			changed = 1;
@@ -730,7 +731,8 @@ extern int get_new_info_block(block_info_msg_t **block_ptr,
 		}
 	} else {
 		error_code = slurm_load_block_info((time_t) NULL,
-						   &new_bg_ptr);
+						   &new_bg_ptr,
+						   global_cluster_name);
 		changed = 1;
 	}
 
@@ -800,7 +802,8 @@ extern int update_state_block(GtkDialog *dialog,
 	gtk_widget_show_all(GTK_WIDGET(dialog));
 	i = gtk_dialog_run(dialog);
 	if (i == GTK_RESPONSE_OK) {
-		if(slurm_update_block(&block_msg) == SLURM_SUCCESS) {
+		if(slurm_update_block(&block_msg, global_cluster_name)
+		   == SLURM_SUCCESS) {
 			snprintf(tmp_char, sizeof(tmp_char),
 				 "Block %s updated successfully",
 				blockid);

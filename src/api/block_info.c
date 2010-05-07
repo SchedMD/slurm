@@ -195,11 +195,14 @@ char *slurm_sprint_block_info(
  * IN update_time - time of current configuration data
  * IN block_info_msg_pptr - place to store a node select configuration
  *	pointer
+ * IN cluster_name - if going cross-cluster, cluster to go to, NULL
+ *                   for regular operation.
  * RET 0 or a slurm error code
  * NOTE: free the response using slurm_free_block_info_msg
  */
 extern int slurm_load_block_info (
-	time_t update_time, block_info_msg_t **block_info_msg_pptr)
+	time_t update_time, block_info_msg_t **block_info_msg_pptr,
+	char *cluster_name)
 {
         int rc;
         slurm_msg_t req_msg;
@@ -213,7 +216,8 @@ extern int slurm_load_block_info (
         req_msg.msg_type = REQUEST_BLOCK_INFO;
         req_msg.data     = &req;
 
-	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
+	if (slurm_send_recv_controller_msg(
+		    &req_msg, &resp_msg, cluster_name) < 0)
 		return SLURM_ERROR;
 
 	switch (resp_msg.msg_type) {

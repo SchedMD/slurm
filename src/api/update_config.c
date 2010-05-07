@@ -51,7 +51,8 @@
 
 #include "src/common/slurm_protocol_api.h"
 
-static int _slurm_update (void * data, slurm_msg_type_t msg_type);
+static int _slurm_update (void * data, slurm_msg_type_t msg_type,
+			  char *cluster_name);
 
 /*
  * slurm_update_job - issue RPC to a job's configuration per request,
@@ -60,9 +61,10 @@ static int _slurm_update (void * data, slurm_msg_type_t msg_type);
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
 int
-slurm_update_job ( job_desc_msg_t * job_msg )
+slurm_update_job ( job_desc_msg_t * job_msg, char *cluster_name)
 {
-	return _slurm_update ((void *) job_msg, REQUEST_UPDATE_JOB);
+	return _slurm_update ((void *) job_msg, REQUEST_UPDATE_JOB,
+			      cluster_name);
 }
 
 /*
@@ -72,9 +74,10 @@ slurm_update_job ( job_desc_msg_t * job_msg )
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
 int
-slurm_update_node ( update_node_msg_t * node_msg )
+slurm_update_node ( update_node_msg_t * node_msg, char *cluster_name)
 {
-	return _slurm_update ((void *) node_msg, REQUEST_UPDATE_NODE);
+	return _slurm_update ((void *) node_msg, REQUEST_UPDATE_NODE,
+			      cluster_name);
 }
 
 /*
@@ -83,9 +86,10 @@ slurm_update_node ( update_node_msg_t * node_msg )
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
 int
-slurm_create_partition ( update_part_msg_t * part_msg )
+slurm_create_partition ( update_part_msg_t * part_msg, char *cluster_name)
 {
-	return _slurm_update ((void *) part_msg, REQUEST_CREATE_PARTITION);
+	return _slurm_update ((void *) part_msg, REQUEST_CREATE_PARTITION,
+			      cluster_name);
 }
 
 /*
@@ -95,9 +99,10 @@ slurm_create_partition ( update_part_msg_t * part_msg )
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
 int
-slurm_update_partition ( update_part_msg_t * part_msg )
+slurm_update_partition ( update_part_msg_t * part_msg, char *cluster_name )
 {
-	return _slurm_update ((void *) part_msg, REQUEST_UPDATE_PARTITION);
+	return _slurm_update ((void *) part_msg, REQUEST_UPDATE_PARTITION,
+			      cluster_name);
 }
 
 /*
@@ -107,9 +112,10 @@ slurm_update_partition ( update_part_msg_t * part_msg )
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
 int
-slurm_delete_partition ( delete_part_msg_t * part_msg )
+slurm_delete_partition ( delete_part_msg_t * part_msg, char *cluster_name )
 {
-	return _slurm_update ((void *) part_msg, REQUEST_DELETE_PARTITION);
+	return _slurm_update ((void *) part_msg, REQUEST_DELETE_PARTITION,
+			      cluster_name);
 }
 
 /*
@@ -119,7 +125,7 @@ slurm_delete_partition ( delete_part_msg_t * part_msg )
  *	otherwise return NULL and set errno to indicate the error
  */
 char *
-slurm_create_reservation (resv_desc_msg_t * resv_msg )
+slurm_create_reservation (resv_desc_msg_t * resv_msg, char *cluster_name)
 {
 	int rc;
 	char *resv_name = NULL;
@@ -133,7 +139,7 @@ slurm_create_reservation (resv_desc_msg_t * resv_msg )
 	req_msg.msg_type = REQUEST_CREATE_RESERVATION;
 	req_msg.data     = resv_msg;
 
-	rc = slurm_send_recv_controller_msg(&req_msg, &resp_msg);
+	rc = slurm_send_recv_controller_msg(&req_msg, &resp_msg, cluster_name);
 	switch (resp_msg.msg_type) {
 	case RESPONSE_CREATE_RESERVATION:
 		resp = (reservation_name_msg_t *) resp_msg.data;
@@ -157,9 +163,11 @@ slurm_create_reservation (resv_desc_msg_t * resv_msg )
  * IN resv_msg - description of reservation
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
-extern int slurm_update_reservation ( resv_desc_msg_t * resv_msg )
+extern int slurm_update_reservation (resv_desc_msg_t * resv_msg,
+				     char *cluster_name)
 {
-	return _slurm_update ((void *) resv_msg, REQUEST_UPDATE_RESERVATION);
+	return _slurm_update ((void *) resv_msg, REQUEST_UPDATE_RESERVATION,
+			      cluster_name);
 }
 
 /*
@@ -169,9 +177,11 @@ extern int slurm_update_reservation ( resv_desc_msg_t * resv_msg )
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
 int
-slurm_delete_reservation ( reservation_name_msg_t * resv_msg )
+slurm_delete_reservation (reservation_name_msg_t * resv_msg,
+			  char *cluster_name)
 {
-	return _slurm_update ((void *) resv_msg, REQUEST_DELETE_RESERVATION);
+	return _slurm_update ((void *) resv_msg, REQUEST_DELETE_RESERVATION,
+			      cluster_name);
 }
 
 /*
@@ -181,23 +191,25 @@ slurm_delete_reservation ( reservation_name_msg_t * resv_msg )
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
 int
-slurm_update_block ( update_block_msg_t * block_msg )
+slurm_update_block (update_block_msg_t * block_msg, char *cluster_name)
 {
-	return _slurm_update ((void *) block_msg, REQUEST_UPDATE_BLOCK);
+	return _slurm_update ((void *) block_msg, REQUEST_UPDATE_BLOCK,
+			      cluster_name);
 }
 
-/* Update the time limit of a job step, 
+/* Update the time limit of a job step,
  * step_id == NO_VAL updates all job steps of the specified job_id
  * RET 0 or -1 on error */
 int
-slurm_update_step ( step_update_request_msg_t * step_msg )
+slurm_update_step (step_update_request_msg_t * step_msg, char *cluster_name)
 {
-	return _slurm_update ((void *) step_msg, REQUEST_UPDATE_JOB_STEP);
+	return _slurm_update ((void *) step_msg, REQUEST_UPDATE_JOB_STEP,
+			      cluster_name);
 }
 
 /* _slurm_update - issue RPC for all update requests */
 static int
-_slurm_update (void *data, slurm_msg_type_t msg_type)
+_slurm_update (void *data, slurm_msg_type_t msg_type, char *cluster_name)
 {
 	int rc;
 	slurm_msg_t req_msg;
@@ -206,7 +218,7 @@ _slurm_update (void *data, slurm_msg_type_t msg_type)
 	req_msg.msg_type = msg_type;
 	req_msg.data     = data;
 
-	if (slurm_send_recv_controller_rc_msg(&req_msg, &rc) < 0)
+	if (slurm_send_recv_controller_rc_msg(&req_msg, &rc, cluster_name) < 0)
 		return SLURM_ERROR;
 
 	if (rc != SLURM_SUCCESS)

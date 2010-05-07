@@ -59,7 +59,7 @@ static int _get_new_info_block(block_info_msg_t **block_ptr)
 
 	if (bg_info_ptr) {
 		error_code = slurm_load_block_info(bg_info_ptr->last_update,
-						   &new_bg_ptr);
+						   &new_bg_ptr, NULL);
 		if (error_code == SLURM_SUCCESS) {
 			slurm_free_block_info_msg(&bg_info_ptr);
 		} else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
@@ -67,7 +67,8 @@ static int _get_new_info_block(block_info_msg_t **block_ptr)
 			new_bg_ptr = bg_info_ptr;
 		}
 	} else {
-		error_code = slurm_load_block_info((time_t) NULL, &new_bg_ptr);
+		error_code = slurm_load_block_info((time_t) NULL,
+						   &new_bg_ptr, NULL);
 	}
 
 	bg_info_ptr = new_bg_ptr;
@@ -159,7 +160,7 @@ int main(int argc, char *argv[])
 		else
 			msg.state = RM_PARTITION_FREE;
 		msg.bg_block_id = block_name;
-		rc = slurm_update_block(&msg);
+		rc = slurm_update_block(&msg, NULL);
 		if(rc != SLURM_SUCCESS)
 			error("Error trying to free block %s: %s",
 			      block_name, slurm_strerror(rc));

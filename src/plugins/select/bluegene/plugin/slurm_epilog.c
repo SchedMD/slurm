@@ -113,7 +113,7 @@ static void _wait_part_not_ready(uint32_t job_id)
 #endif
 		}
 
-		rc = slurm_job_node_ready(job_id);
+		rc = slurm_job_node_ready(job_id, NULL);
 		if (rc == READY_JOB_FATAL)
 			break;				/* fatal error */
 		if (rc == READY_JOB_ERROR)		/* error */
@@ -142,7 +142,7 @@ static int _get_job_size(uint32_t job_id)
 	int i, size = 1;
 	hostlist_t hl;
 
-	if (slurm_load_jobs((time_t) 0, &job_buffer_ptr, SHOW_ALL)) {
+	if (slurm_load_jobs((time_t) 0, &job_buffer_ptr, SHOW_ALL, NULL)) {
 		slurm_perror("slurm_load_jobs");
 		return 1;
 	}

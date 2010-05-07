@@ -139,7 +139,7 @@ slurm_signal_job_step (uint32_t job_id, uint32_t step_id, uint16_t signal)
 	 * the one matching step_id.  Signal that step.
 	 */
 	rc = slurm_get_job_steps((time_t)0, job_id, step_id,
-				 &step_info, SHOW_ALL);
+				 &step_info, SHOW_ALL, NULL);
  	if (rc != 0) {
  		save_errno = errno;
  		goto fail;
@@ -269,7 +269,7 @@ slurm_terminate_job (uint32_t job_id)
 
 	slurm_free_resource_allocation_response_msg(alloc_info);
 
-	slurm_complete_job(job_id, 0);
+	slurm_complete_job(job_id, 0, NULL);
 fail1:
 	if (rc) {
 		slurm_seterrno_ret(rc);
@@ -316,7 +316,7 @@ slurm_terminate_job_step (uint32_t job_id, uint32_t step_id)
 	 * the one matching step_id.  Terminate that step.
 	 */
 	rc = slurm_get_job_steps((time_t)0, job_id, step_id,
-				 &step_info, SHOW_ALL);
+				 &step_info, SHOW_ALL, NULL);
 	if (rc != 0) {
 		save_errno = errno;
 		goto fail;
@@ -412,7 +412,7 @@ static int _terminate_batch_script_step(
  * IN message - arbitrary message
  * RET 0 or -1 on error
  */
-extern int slurm_notify_job (uint32_t job_id, char *message)
+extern int slurm_notify_job (uint32_t job_id, char *message, char *cluster_name)
 {
 	int rc;
 	slurm_msg_t msg;
@@ -428,7 +428,7 @@ extern int slurm_notify_job (uint32_t job_id, char *message)
 	msg.msg_type    = REQUEST_JOB_NOTIFY;
 	msg.data        = &req;
 
-	if (slurm_send_recv_controller_rc_msg(&msg, &rc) < 0)
+	if (slurm_send_recv_controller_rc_msg(&msg, &rc, cluster_name) < 0)
 		return SLURM_FAILURE;
 
 	if (rc) {

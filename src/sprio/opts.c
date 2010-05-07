@@ -88,6 +88,7 @@ parse_command_line( int argc, char* argv[] )
 		{"noheader",   no_argument,       0, 'h'},
 		{"jobs",       optional_argument, 0, 'j'},
 		{"long",       no_argument,       0, 'l'},
+		{"cluster",    required_argument, 0, 'M'},
 		{"norm",       no_argument,       0, 'n'},
 		{"format",     required_argument, 0, 'o'},
 		{"user",       required_argument, 0, 'u'},
@@ -100,7 +101,7 @@ parse_command_line( int argc, char* argv[] )
 		{NULL,         0,                 0, 0}
 	};
 
-	while((opt_char = getopt_long(argc, argv, "hj::lno:u:vVw",
+	while((opt_char = getopt_long(argc, argv, "hj::lM:no:u:vVw",
 				      long_options, &option_index)) != -1) {
 		switch (opt_char) {
 		case (int)'?':
@@ -119,6 +120,10 @@ parse_command_line( int argc, char* argv[] )
 			break;
 		case (int) 'l':
 			params.long_list = true;
+			break;
+		case (int) 'M':
+			xfree(params.cluster_name);
+			params.cluster_name = xstrdup(optarg);
 			break;
 		case (int) 'n':
 			params.normalized = true;
@@ -458,6 +463,9 @@ Usage: sprio [OPTIONS]\n\
   -j, --jobs                      comma separated list of jobs\n\
                                   to view, default is all\n\
   -l, --long                      long report\n\
+  -M, --cluster=cluster_name      cluster to issue commands to.  Default is\n\
+                                  current cluster.  cluster with no name will\n\
+                                  reset to default.\n\
   -n, --norm                      display normalized values\n\
   -o, --format=format             format specification\n\
   -u, --user=user_name            comma separated list of users to view\n\

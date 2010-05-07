@@ -280,6 +280,7 @@ static void _opt_default()
 	}
 	opt.cwd = xstrdup(buf);
 
+	opt.cluster_name = NULL;
 	opt.progname = NULL;
 
 	opt.ntasks = 1;
@@ -643,6 +644,7 @@ static struct option long_options[] = {
 	{"no-kill",       no_argument,       0, 'k'},
 	{"licenses",      required_argument, 0, 'L'},
 	{"distribution",  required_argument, 0, 'm'},
+	{"cluster",       required_argument, 0, 'M'},
 	{"tasks",         required_argument, 0, 'n'},
 	{"ntasks",        required_argument, 0, 'n'},
 	{"nodes",         required_argument, 0, 'N'},
@@ -714,7 +716,7 @@ static struct option long_options[] = {
 };
 
 static char *opt_string =
-	"+bA:B:c:C:d:D:e:F:g:hHi:IJ:kL:m:n:N:o:Op:P:QRst:uU:vVw:x:";
+	"+bA:B:c:C:d:D:e:F:g:hHi:IJ:kL:m:M:n:N:o:Op:P:QRst:uU:vVw:x:";
 
 
 /*
@@ -1193,6 +1195,10 @@ static void _set_options(int argc, char **argv)
 				      "is not recognized", optarg);
 				exit(error_exit);
 			}
+			break;
+		case 'M':
+			xfree(opt.cluster_name);
+			opt.cluster_name = xstrdup(optarg);
 			break;
 		case 'n':
 			opt.ntasks_set = true;
@@ -2528,7 +2534,7 @@ static void _opt_list()
 	info("cpus_per_task     : %d %s", opt.cpus_per_task,
 		opt.cpus_set ? "(set)" : "(default)");
 	if (opt.max_nodes) {
-		info("nodes             : %d-%d", 
+		info("nodes             : %d-%d",
 		     opt.min_nodes, opt.max_nodes);
 	} else {
 		info("nodes             : %d %s", opt.min_nodes,
@@ -2627,7 +2633,7 @@ static void _usage(void)
 "              [-c ncpus] [-r n] [-p partition] [--hold] [-t minutes]\n"
 "              [-D path] [--immediate] [--no-kill] [--overcommit]\n"
 "              [--input file] [--output file] [--error file]\n"
-"              [--time-min=minutes] [--licenses=names]\n"
+"              [--time-min=minutes] [--licenses=names] [--cluster=cluster_name]\n"
 "              [--workdir=directory] [--share] [-m dist] [-J jobname]\n"
 "              [--jobid=id] [--verbose] [--gid=group] [--uid=user] [-W sec] \n"
 "              [--contiguous] [--mincpus=n] [--mem=MB] [--tmp=MB] [-C list]\n"
@@ -2677,6 +2683,9 @@ static void _help(void)
 "  -L, --licenses=names        required license, comma separated\n"
 "  -m, --distribution=type     distribution method for processes to nodes\n"
 "                              (type = block|cyclic|arbitrary)\n"
+"  -M, --cluster=cluster_name  cluster to issue commands to.  Default is\n"
+"                              current cluster.  cluster with no name will\n"
+"                              reset to default.\n"
 "      --mail-type=type        notify on state change: BEGIN, END, FAIL or ALL\n"
 "      --mail-user=user        who to send email notification for job state\n"
 "                              changes\n"
