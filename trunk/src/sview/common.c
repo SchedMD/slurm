@@ -294,7 +294,7 @@ static void _cell_data_func(GtkTreeViewColumn *col,
 			    gpointer data)
 {
 	GdkPixbuf *pixbuf = NULL;
-	char *color_char;
+	char *color_char, *color_char2;
 	uint32_t color;
 
 	g_object_get(renderer, "pixbuf", &pixbuf, NULL);
@@ -308,8 +308,8 @@ static void _cell_data_func(GtkTreeViewColumn *col,
 	if(!color_char)
 		return;
 
-	color_char++;
-	color = strtoul(color_char, (char **)&color_char, 16);
+	color_char2 = color_char+1;
+	color = strtoul(color_char2, (char **)&color_char2, 16);
 	g_free(color_char);
 
 	/* we need to shift over 2 spots for the alpha */
