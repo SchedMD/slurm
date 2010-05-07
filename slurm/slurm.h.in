@@ -624,7 +624,6 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	uint32_t max_nodes;	/* maximum number of nodes usable by job,
 				 * default=0 */
 	uint16_t min_sockets;	/* number of sockets per node required by job */
-				 * by job, default=0 */
 	uint16_t min_cores;	/* number of cores per cpu required by job */
 	uint16_t min_threads;	/* number of threads per core required by job */
 	uint16_t cpus_per_task;	/* number of processors required for each task */
