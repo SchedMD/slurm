@@ -16,11 +16,13 @@ BEGIN { use_ok('Slurmdb') };
 
 my $db_conn = Slurmdb::connection_get();
 
-my %assoc_cond = ();
-$assoc_cond{'usage_start'} = '1270000000';
-$assoc_cond{'usage_end'}   = '1273000000';
+my %user_cond = ();
+$user_cond{'assoc_cond'}{'usage_start'} = '1270000000';
+#$user_cond{'assoc_cond'}{'usage_end'}   = '1273000000';
+$user_cond{'with_assocs'} = 0;
+my $group_accounts = 0;
 
-my $clusters = Slurmdb::report_cluster_account_by_user($db_conn, \%assoc_cond);
+my $clusters = Slurmdb::report_user_top_usage($db_conn, \%user_cond, $group_accounts);
 
 for (my $i = 0; $i < @$clusters; $i++) {
     print "name       $clusters->[$i]{'name'}\n"

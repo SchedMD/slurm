@@ -23,13 +23,16 @@ ok( $clusters != 0, 'clusters_get' );
 
 for (my $i = 0; $i < @$clusters; $i++) {
 
+#     print "accounting_list $clusters->[$i]{'accounting_list'}\n";
       print "classification $clusters->[$i]{'classification'}\n";
       print "control_host   $clusters->[$i]{'control_host'}\n";
       print "control_port   $clusters->[$i]{'control_port'}\n";
       print "cpu_count      $clusters->[$i]{'cpu_count'}\n";
       print "name           $clusters->[$i]{'name'}\n";
-      print "nodes          $clusters->[$i]{'nodes'}\n";
-      print "rpc_version    $clusters->[$i]{'rpc_version'}\n";
+      print "nodes          $clusters->[$i]{'nodes'}\n"
+	  if exists $clusters->[$i]{'nodes'};
+#     print "root_assoc     $clusters->[$i]{'root_assoc'}\n";
+      print "rpc_version    $clusters->[$i]{'rpc_version'}\n\n";
 }
 
 my $rc = Slurmdb::connection_close($db_conn);
