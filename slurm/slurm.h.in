@@ -1370,7 +1370,7 @@ typedef struct slurm_ctl_conf {
 				 * on job termination */
 	char *licenses;		/* licenses available on this cluster */
 	char *mail_prog;	/* pathname of mail program */
-	uint16_t max_job_cnt;	/* maximum number of active jobs */
+	uint32_t max_job_cnt;	/* maximum number of active jobs */
 	uint32_t max_mem_per_cpu; /* maximum MB memory per allocated CPU */
 	uint16_t max_tasks_per_node; /* maximum tasks per node */
 	uint16_t min_job_age;	/* COMPLETED jobs over this age (secs)

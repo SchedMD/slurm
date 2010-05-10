@@ -84,7 +84,7 @@ extern char *default_plugstack;
 #define DEFAULT_KILL_TREE           0
 #define DEFAULT_KILL_WAIT           30
 #define DEFAULT_MAIL_PROG           "/bin/mail"
-#define DEFAULT_MAX_JOB_COUNT       5000
+#define DEFAULT_MAX_JOB_COUNT       10000
 #define DEFAULT_MEM_PER_CPU         0
 #define DEFAULT_MAX_MEM_PER_CPU     0
 #define DEFAULT_MIN_JOB_AGE         300
