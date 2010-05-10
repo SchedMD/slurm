@@ -18,7 +18,7 @@ documents those changes that are of interest to users and admins.
     -Added DebugFlags option of "gres" for detailed debugging of gres actions.
  -- Slurmd modified to log slow slurmstepd startup and note possible file system
     problem.
- -- sview - There is now a .slurm/sviewrc created when runnning sview.
+ -- sview - There is now a .slurm/sviewrc created when running sview.
     Defaults are put in there as to how sview looks when first launched.
     You can set these by Ctrl-S or Options->Set Default Settings.
  -- Add scontrol "wait_job <job_id>" option to wait for nodes to boot as needed.
@@ -34,7 +34,7 @@ documents those changes that are of interest to users and admins.
  -- When using the SlurmDBD messages waiting to be sent will be combined
     and sent in one message.
  -- Remove srun's --core option. Move the logic to an optional SPANK plugin
-    (currrently in the contribs directory, but plan to distribute through
+    (currently in the contribs directory, but plan to distribute through
     http://code.google.com/p/slurm-spank-plugins/).
  -- Patch for adding CR_CORE_DEFAULT_DIST_BLOCK as a select option to layout
     jobs using block layout across cores within each node instead of cyclic
@@ -49,7 +49,7 @@ documents those changes that are of interest to users and admins.
  -- SLURM commands (squeue, sinfo, etc...) can now go cross-cluster on like
     linux systems.  Cross-cluster for bluegene to linux and such does not
     currently work.  You can submit jobs with sbatch.  Salloc and srun are not
-    cross-cluster compatible, and given thier nature to talk to actual compute
+    cross-cluster compatible, and given their nature to talk to actual compute
     nodes these will likely never be.
  -- salloc modified to forward SIGTERM to the spawned program.
  -- In sched/wiki2 (for Moab support) - Add GRES and WCKEY fields to MODIFYJOBS
