@@ -1071,14 +1071,20 @@ The block name on Blue Gene systems only.
 
 .SH "SIGNALS"
 .LP
-While salloc is waiting for a PENDING job allocation, most signals will cause salloc to revoke the allocation request and exit.
+While salloc is waiting for a PENDING job allocation, most signals will cause
+salloc to revoke the allocation request and exit.
 
-However, if the allocation has been granted and salloc has already started the command
-specified in its command line parameters salloc will ignore most signals.  salloc will not exit or release the allocation until the command exits.  The notable exception is SIGHUP; a HUP signal will cause salloc to release the allocation and exit without waiting for the command to finish.
+However, if the allocation has been granted and salloc has already started the
+command specified in its command line parameters salloc will ignore most
+signals.  salloc will not exit or release the allocation until the command
+exits.  One notable exception is SIGHUP; a HUP signal will cause salloc to
+release the allocation and exit without waiting for the command to finish.
+Another exception is SIGTERM, which will be forwarded to the spawned program.
 
 .SH "EXAMPLES"
 .LP
-To get an allocation, and open a new xterm in which srun commands may be typed interactively:
+To get an allocation, and open a new xterm in which srun commands may be typed
+interactively:
 .IP
 $ salloc \-N16 xterm
 .br
@@ -1088,7 +1094,8 @@ salloc: Granted job allocation 65537
 .br
 salloc: Relinquishing job allocation 65537
 .LP
-To grab an allocation of nodes and launch a parallel application on one command line (See the \fBsalloc\fR man page for more examples):
+To grab an allocation of nodes and launch a parallel application on one command
+line (See the \fBsalloc\fR man page for more examples):
 .IP
 salloc \-N5 srun \-n10 myprogram
 

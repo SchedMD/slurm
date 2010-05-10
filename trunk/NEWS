@@ -51,6 +51,7 @@ documents those changes that are of interest to users and admins.
     currently work.  You can submit jobs with sbatch.  Salloc and srun are not
     cross-cluster compatible, and given thier nature to talk to actual compute
     nodes these will likely never be.
+ -- salloc modified to forward SIGTERM to the spawned program.
 
 * Changes in SLURM 2.2.0.pre5
 =============================

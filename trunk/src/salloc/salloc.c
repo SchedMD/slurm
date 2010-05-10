@@ -96,6 +96,7 @@ static time_t last_timeout = 0;
 static int  _fill_job_desc_from_opts(job_desc_msg_t *desc);
 static void _ring_terminal_bell(void);
 static pid_t  _fork_command(char **command);
+static void _forward_signal(int signo);
 static void _pending_callback(uint32_t job_id);
 static void _ignore_signal(int signo);
 static void _exit_on_signal(int signo);
@@ -291,11 +292,11 @@ int main(int argc, char *argv[])
 
 	after = time(NULL);
 
-	xsignal(SIGHUP, _exit_on_signal);
-	xsignal(SIGINT, _ignore_signal);
+	xsignal(SIGHUP,  _exit_on_signal);
+	xsignal(SIGINT,  _ignore_signal);
 	xsignal(SIGQUIT, _ignore_signal);
 	xsignal(SIGPIPE, _ignore_signal);
-	xsignal(SIGTERM, _ignore_signal);
+	xsignal(SIGTERM, _forward_signal);
 	xsignal(SIGUSR1, _ignore_signal);
 	xsignal(SIGUSR2, _ignore_signal);
 
@@ -661,6 +662,12 @@ static void _ignore_signal(int signo)
 static void _exit_on_signal(int signo)
 {
 	exit_flag = true;
+}
+
+static void _forward_signal(int signo)
+{
+	if (command_pid > 0)
+		kill(command_pid, signo);
 }
 
 /* This typically signifies the job was cancelled by scancel */
