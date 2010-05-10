@@ -571,7 +571,6 @@ rm -rf $RPM_BUILD_ROOT
 %if %{slurm_with bluegene}
 %files bluegene
 %defattr(-,root,root)
-%{_libdir}/slurm/select_bluegene.so
 %{_libdir}/slurm/libsched_if64.so
 %dir /etc/ld.so.conf.d
 /etc/ld.so.conf.d/slurm.conf
@@ -654,6 +653,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/slurm/sched_hold.so
 %{_libdir}/slurm/sched_wiki.so
 %{_libdir}/slurm/sched_wiki2.so
+%{_libdir}/slurm/select_bluegene.so
 %{_libdir}/slurm/select_cons_res.so
 %{_libdir}/slurm/select_linear.so
 %{_libdir}/slurm/switch_none.so

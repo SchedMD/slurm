@@ -115,14 +115,17 @@ libsched_if64_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(libsched_if64_la_LDFLAGS) $(LDFLAGS) -o $@
 @BLUEGENE_LOADED_TRUE@am_libsched_if64_la_rpath = -rpath $(pkglibdir)
 @BLUEGENE_LOADED_TRUE@select_bluegene_la_DEPENDENCIES = ../block_allocator/libbluegene_block_allocator.la
-am__select_bluegene_la_SOURCES_DIST = select_bluegene.c bg_boot_time.h \
-	bg_job_place.c bg_job_place.h bg_job_run.c bg_job_run.h \
-	bg_block_info.c bg_block_info.h bg_record_functions.c \
-	bg_record_functions.h bluegene.c bluegene.h state_test.c \
-	state_test.h bg_switch_connections.c block_sys.c \
-	dynamic_block.c dynamic_block.h defined_block.c \
-	defined_block.h jobinfo.c jobinfo.h nodeinfo.c nodeinfo.h \
-	../wrap_rm_api.h
+am__select_bluegene_la_SOURCES_DIST = select_bluegene.c jobinfo.c \
+	jobinfo.h nodeinfo.c nodeinfo.h ../wrap_rm_api.h \
+	bg_boot_time.h bg_job_place.c bg_job_place.h bg_job_run.c \
+	bg_job_run.h bg_block_info.c bg_block_info.h \
+	bg_record_functions.c bg_record_functions.h bluegene.c \
+	bluegene.h state_test.c state_test.h bg_switch_connections.c \
+	block_sys.c dynamic_block.c dynamic_block.h defined_block.c \
+	defined_block.h
+@BLUEGENE_LOADED_FALSE@am_select_bluegene_la_OBJECTS =  \
+@BLUEGENE_LOADED_FALSE@	select_bluegene.lo jobinfo.lo \
+@BLUEGENE_LOADED_FALSE@	nodeinfo.lo
 @BLUEGENE_LOADED_TRUE@am_select_bluegene_la_OBJECTS =  \
 @BLUEGENE_LOADED_TRUE@	select_bluegene.lo bg_job_place.lo \
 @BLUEGENE_LOADED_TRUE@	bg_job_run.lo bg_block_info.lo \
@@ -130,17 +133,12 @@ am__select_bluegene_la_SOURCES_DIST = select_bluegene.c bg_boot_time.h \
 @BLUEGENE_LOADED_TRUE@	state_test.lo bg_switch_connections.lo \
 @BLUEGENE_LOADED_TRUE@	block_sys.lo dynamic_block.lo \
 @BLUEGENE_LOADED_TRUE@	defined_block.lo jobinfo.lo nodeinfo.lo
-am__EXTRA_select_bluegene_la_SOURCES_DIST = select_bluegene.c \
-	bg_boot_time.h bg_job_place.c bg_job_place.h bg_job_run.c \
-	bg_job_run.h bg_block_info.c bg_block_info.h \
-	bg_record_functions.c bg_record_functions.h bluegene.c \
-	bluegene.h state_test.c state_test.h bg_switch_connections.c \
-	block_sys.c dynamic_block.c dynamic_block.h defined_block.c \
-	defined_block.h ../wrap_rm_api.h
 select_bluegene_la_OBJECTS = $(am_select_bluegene_la_OBJECTS)
 select_bluegene_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(select_bluegene_la_LDFLAGS) $(LDFLAGS) -o $@
+@BLUEGENE_LOADED_FALSE@am_select_bluegene_la_rpath = -rpath \
+@BLUEGENE_LOADED_FALSE@	$(pkglibdir)
 @BLUEGENE_LOADED_TRUE@am_select_bluegene_la_rpath = -rpath \
 @BLUEGENE_LOADED_TRUE@	$(pkglibdir)
 PROGRAMS = $(sbin_PROGRAMS)
@@ -188,11 +186,10 @@ LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
 SOURCES = $(libsched_if64_la_SOURCES) $(select_bluegene_la_SOURCES) \
-	$(EXTRA_select_bluegene_la_SOURCES) $(sfree_SOURCES) \
-	$(slurm_epilog_SOURCES) $(slurm_prolog_SOURCES)
+	$(sfree_SOURCES) $(slurm_epilog_SOURCES) \
+	$(slurm_prolog_SOURCES)
 DIST_SOURCES = $(am__libsched_if64_la_SOURCES_DIST) \
 	$(am__select_bluegene_la_SOURCES_DIST) \
-	$(am__EXTRA_select_bluegene_la_SOURCES_DIST) \
 	$(am__sfree_SOURCES_DIST) $(am__slurm_epilog_SOURCES_DIST) \
 	$(am__slurm_prolog_SOURCES_DIST)
 ETAGS = etags
@@ -385,7 +382,15 @@ top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic -lm
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common $(BG_INCLUDES)
+
+# These are needed for pack/unpack of structures for cross-cluster stuff
+@BLUEGENE_LOADED_FALSE@pkglib_LTLIBRARIES = select_bluegene.la
 @BLUEGENE_LOADED_TRUE@pkglib_LTLIBRARIES = select_bluegene.la libsched_if64.la
+@BLUEGENE_LOADED_FALSE@select_bluegene_la_SOURCES = select_bluegene.c \
+@BLUEGENE_LOADED_FALSE@			jobinfo.c jobinfo.h\
+@BLUEGENE_LOADED_FALSE@			nodeinfo.c nodeinfo.h\
+@BLUEGENE_LOADED_FALSE@			../wrap_rm_api.h
+
 
 # Blue Gene node selection plugin.
 @BLUEGENE_LOADED_TRUE@select_bluegene_la_SOURCES = select_bluegene.c \
@@ -404,6 +409,7 @@ INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common $(BG_INCLUDES)
 @BLUEGENE_LOADED_TRUE@				nodeinfo.c nodeinfo.h\
 @BLUEGENE_LOADED_TRUE@				../wrap_rm_api.h
 
+@BLUEGENE_LOADED_FALSE@select_bluegene_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 @BLUEGENE_LOADED_TRUE@select_bluegene_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 @BLUEGENE_LOADED_TRUE@select_bluegene_la_LIBADD = ../block_allocator/libbluegene_block_allocator.la
 
@@ -425,20 +431,6 @@ INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common $(BG_INCLUDES)
 @BLUEGENE_LOADED_TRUE@sfree_LDFLAGS = -export-dynamic -lm $(CMD_LDFLAGS)
 @BLUEGENE_LOADED_TRUE@slurm_prolog_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 @BLUEGENE_LOADED_TRUE@slurm_epilog_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
-@BLUEGENE_LOADED_FALSE@EXTRA_select_bluegene_la_SOURCES = select_bluegene.c \
-@BLUEGENE_LOADED_FALSE@				bg_boot_time.h \
-@BLUEGENE_LOADED_FALSE@				bg_job_place.c bg_job_place.h \
-@BLUEGENE_LOADED_FALSE@				bg_job_run.c bg_job_run.h \
-@BLUEGENE_LOADED_FALSE@				bg_block_info.c bg_block_info.h \
-@BLUEGENE_LOADED_FALSE@				bg_record_functions.c bg_record_functions.h \
-@BLUEGENE_LOADED_FALSE@				bluegene.c bluegene.h \
-@BLUEGENE_LOADED_FALSE@				state_test.c state_test.h \
-@BLUEGENE_LOADED_FALSE@				bg_switch_connections.c \
-@BLUEGENE_LOADED_FALSE@				block_sys.c \
-@BLUEGENE_LOADED_FALSE@				dynamic_block.c dynamic_block.h \
-@BLUEGENE_LOADED_FALSE@				defined_block.c defined_block.h \
-@BLUEGENE_LOADED_FALSE@				../wrap_rm_api.h
-
 all: all-am
 
 .SUFFIXES:
