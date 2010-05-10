@@ -58,9 +58,7 @@ struct select_jobinfo {
 	uint32_t node_cnt;      /* how many cnodes in block running job */
 	uint16_t altered;       /* see if we have altered this job
 				 * or not yet */
-#ifdef HAVE_BGL
 	char *blrtsimage;       /* BlrtsImage for this block */
-#endif
 	char *linuximage;       /* LinuxImage for this block */
 	char *mloaderimage;     /* mloaderImage for this block */
 	char *ramdiskimage;     /* RamDiskImage for this block */

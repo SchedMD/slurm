@@ -4479,37 +4479,37 @@ $as_echo "$as_me: Running in BG/L emulation mode" >&6;}
    	for bg_dir in $trydb2dir "" $bg_default_dirs; do
       	# Skip directories that don't exist
       		if test ! -z "$bg_dir" -a ! -d "$bg_dir" ; then
-         		continue;
+			continue;
       		fi
 
       		# Search for required BG API libraries in the directory
       		if test -z "$have_bg_ar" -a -f "$bg_dir/lib64/libbglbridge.so" ; then
-         		have_bg_ar=yes
+			have_bg_ar=yes
 			bg_bridge_so="$bg_dir/lib64/libbglbridge.so"
        	 		bg_ldflags="$bg_ldflags -L$bg_dir/lib64 -L/usr/lib64 -Wl,--unresolved-symbols=ignore-in-shared-libs -lbglbridge -lbgldb -ltableapi -lbglmachine -lexpat -lsaymessage"
-        	fi
+		fi
 
       		# Search for required DB2 library in the directory
       		if test -z "$have_db2" -a -f "$bg_dir/lib64/libdb2.so" ; then
-         		have_db2=yes
+			have_db2=yes
 	 	 	bg_db2_so="$bg_dir/lib64/libdb2.so"
        	 		bg_ldflags="$bg_ldflags -L$bg_dir/lib64 -ldb2"
        		fi
 
       		# Search for headers in the directory
       		if test -z "$have_bg_hdr" -a -f "$bg_dir/include/rm_api.h" ; then
-         		have_bg_hdr=yes
-         		bg_includes="-I$bg_dir/include"
+			have_bg_hdr=yes
+			bg_includes="-I$bg_dir/include"
       		fi
    	done
 
    	if test ! -z "$have_bg_ar" -a ! -z "$have_bg_hdr" -a ! -z "$have_db2" ; then
       		# ac_with_readline="no"
 		# Test to make sure the api is good
-                have_bg_files=yes
+		have_bg_files=yes
       		saved_LDFLAGS="$LDFLAGS"
       	 	LDFLAGS="$saved_LDFLAGS $bg_ldflags -m64"
-         	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+		cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
  int rm_set_serial(char *);
 int
@@ -4532,7 +4532,7 @@ rm -f core conftest.err conftest.$ac_objext \
 
   	if test ! -z "$have_bg_files" ; then
       		BG_INCLUDES="$bg_includes"
-	        CFLAGS="$CFLAGS -m64"
+		CFLAGS="$CFLAGS -m64"
 
 $as_echo "#define HAVE_3D 1" >>confdefs.h
 
@@ -4629,29 +4629,29 @@ $as_echo "$as_me: Running in BG/P emulation mode" >&6;}
    	for bg_dir in $trydb2dir "" $bg_default_dirs; do
       	# Skip directories that don't exist
       		if test ! -z "$bg_dir" -a ! -d "$bg_dir" ; then
-         		continue;
+			continue;
       		fi
 
 		soloc=$bg_dir/lib64/lib$libname.so
       		# Search for required BG API libraries in the directory
       		if test -z "$have_bg_ar" -a -f "$soloc" ; then
-         		have_bgp_ar=yes
+			have_bgp_ar=yes
 			bg_ldflags="$bg_ldflags -L$bg_dir/lib64 -L/usr/lib64 -Wl,--unresolved-symbols=ignore-in-shared-libs -l$libname"
-        	fi
+		fi
 
       		# Search for headers in the directory
       		if test -z "$have_bg_hdr" -a -f "$bg_dir/include/rm_api.h" ; then
-         		have_bgp_hdr=yes
-         		bg_includes="-I$bg_dir/include"
+			have_bgp_hdr=yes
+			bg_includes="-I$bg_dir/include"
       		fi
    	done
 
    	if test ! -z "$have_bgp_ar" -a ! -z "$have_bgp_hdr" ; then
       		# ac_with_readline="no"
 		# Test to make sure the api is good
-                saved_LDFLAGS="$LDFLAGS"
+		saved_LDFLAGS="$LDFLAGS"
       	 	LDFLAGS="$saved_LDFLAGS $bg_ldflags -m64"
-         	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+		cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
  int rm_set_serial(char *);
 int
@@ -4674,7 +4674,7 @@ rm -f core conftest.err conftest.$ac_objext \
 
   	if test ! -z "$have_bgp_files" ; then
       		BG_INCLUDES="$bg_includes"
-	        CFLAGS="$CFLAGS -m64"
+		CFLAGS="$CFLAGS -m64"
 
 $as_echo "#define HAVE_3D 1" >>confdefs.h
 
@@ -4701,7 +4701,7 @@ _ACEOF
 
 		{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for BG serial value" >&5
 $as_echo_n "checking for BG serial value... " >&6; }
-        	bg_serial="BGP"
+		bg_serial="BGP"
 
 # Check whether --with-bg-serial was given.
 if test "${with_bg_serial+set}" = set; then :

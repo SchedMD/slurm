@@ -93,7 +93,7 @@ char *slurmctld_cluster_name = NULL;
  */
 const char plugin_name[]       	= "BlueGene node selection plugin";
 const char plugin_type[]       	= "select/bluegene";
-const uint32_t plugin_version	= 100;
+const uint32_t plugin_version	= 200;
 
 /* pthread stuff for updating BG node status */
 static pthread_t block_thread = 0;
@@ -101,6 +101,7 @@ static pthread_t state_thread = 0;
 static pthread_mutex_t thread_flag_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /** initialize the status pthread */
+#ifdef HAVE_BG
 static int _init_status_pthread(void);
 
 extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data);
@@ -240,6 +241,7 @@ static List _get_config(void)
 
 	return my_list;
 }
+#endif
 
 /*
  * init() is called when the plugin is loaded, before any other functions
@@ -248,6 +250,7 @@ static List _get_config(void)
 extern int init ( void )
 {
 
+#ifdef HAVE_BG
 	if(bg_recover != NOT_FROM_CONTROLLER) {
 #if (SYSTEM_DIMENSIONS != 3)
 		fatal("SYSTEM_DIMENSIONS value (%d) invalid for BlueGene",
@@ -278,6 +281,7 @@ extern int init ( void )
 		if (init_bg() || _init_status_pthread())
 			return SLURM_ERROR;
 	}
+#endif
 	verbose("%s loaded", plugin_name);
 
 	return SLURM_SUCCESS;
@@ -312,6 +316,7 @@ extern int fini ( void )
 /* We rely upon DB2 to save and restore BlueGene state */
 extern int select_p_state_save(char *dir_name)
 {
+#ifdef HAVE_BG
 	ListIterator itr;
 	bg_record_t *bg_record = NULL;
 	int error_code = 0, log_fd;
@@ -405,35 +410,49 @@ extern int select_p_state_save(char *dir_name)
 	free_buf(buffer);
 	END_TIMER2("select_p_state_save");
 	return SLURM_SUCCESS;
+#else
+	return SLURM_ERROR;
+#endif
 }
 
 extern int select_p_state_restore(char *dir_name)
 {
+#ifdef HAVE_BG
 	debug("bluegene: select_p_state_restore");
 
 	return validate_current_blocks(dir_name);
+#else
+	return SLURM_ERROR;
+#endif
 }
 
 /* Sync BG blocks to currently active jobs */
 extern int select_p_job_init(List job_list)
 {
+#ifdef HAVE_BG
 	int rc = sync_jobs(job_list);
 
 	/* after we have synced the blocks then we say they are
 	   created. */
 	blocks_are_created = 1;
 	return rc;
-
+#else
+	return SLURM_ERROR;
+#endif
 }
 
 /* All initialization is performed by init() */
 extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 {
+#ifdef HAVE_BG
 	if(node_cnt>0 && bg_conf)
 		if(node_ptr->cpus >= bg_conf->bp_node_cnt)
 			bg_conf->cpus_per_bp = node_ptr->cpus;
 
 	return SLURM_SUCCESS;
+#else
+	return SLURM_ERROR;
+#endif
 }
 
 /*
@@ -442,6 +461,7 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
  */
  extern int select_p_block_init(List part_list)
 {
+#ifdef HAVE_BG
 	/* select_p_node_init needs to be called before this to set
 	   this up correctly
 	*/
@@ -465,6 +485,9 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 	}
 
 	return SLURM_SUCCESS;
+#else
+	return SLURM_ERROR;
+#endif
 }
 
 
@@ -497,6 +520,7 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			     List preemptee_candidates,
 			     List *preemptee_job_list)
 {
+#ifdef HAVE_BG
 	/* submit_job - is there a block where we have:
 	 * 1) geometry requested
 	 * 2) min/max nodes (BPs) requested
@@ -509,16 +533,27 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	return submit_job(job_ptr, bitmap, min_nodes, max_nodes,
 			  req_nodes, mode, preemptee_candidates,
 			  preemptee_job_list);
+#else
+	return SLURM_ERROR;
+#endif
 }
 
 extern int select_p_job_begin(struct job_record *job_ptr)
 {
+#ifdef HAVE_BG
 	return start_job(job_ptr);
+#else
+	return SLURM_ERROR;
+#endif
 }
 
 extern int select_p_job_ready(struct job_record *job_ptr)
 {
+#ifdef HAVE_BG
 	return block_ready(job_ptr);
+#else
+	return SLURM_ERROR;
+#endif
 }
 
 extern int select_p_job_resized(struct job_record *job_ptr,
@@ -529,7 +564,11 @@ extern int select_p_job_resized(struct job_record *job_ptr,
 
 extern int select_p_job_fini(struct job_record *job_ptr)
 {
+#ifdef HAVE_BG
 	return term_job(job_ptr);
+#else
+	return SLURM_ERROR;
+#endif
 }
 
 extern int select_p_job_suspend(struct job_record *job_ptr)
@@ -545,6 +584,7 @@ extern int select_p_job_resume(struct job_record *job_ptr)
 extern int select_p_pack_select_info(time_t last_query_time, Buf *buffer_ptr,
 				     uint16_t protocol_version)
 {
+#ifdef HAVE_BG
 	ListIterator itr;
 	bg_record_t *bg_record = NULL;
 	uint32_t blocks_packed = 0, tmp_offset;
@@ -606,6 +646,9 @@ extern int select_p_pack_select_info(time_t last_query_time, Buf *buffer_ptr,
 	}
 
 	return SLURM_SUCCESS;
+#else
+	return SLURM_ERROR;
+#endif
 }
 
 extern int select_p_select_nodeinfo_pack(select_nodeinfo_t *nodeinfo,
@@ -705,6 +748,7 @@ extern char *select_p_select_jobinfo_xstrdup(select_jobinfo_t *jobinfo,
 
 extern int select_p_update_block (update_block_msg_t *block_desc_ptr)
 {
+#ifdef HAVE_BG
 	int rc = SLURM_SUCCESS;
 	bg_record_t *bg_record = NULL;
 	char reason[200];
@@ -887,10 +931,14 @@ extern int select_p_update_block (update_block_msg_t *block_desc_ptr)
 	last_bg_update = time(NULL);
 
 	return rc;
+#else
+	return SLURM_ERROR;
+#endif
 }
 
 extern int select_p_update_sub_node (update_block_msg_t *block_desc_ptr)
 {
+#ifdef HAVE_BG
 	int rc = SLURM_SUCCESS;
 	int i = 0, j = 0;
 	char coord[BA_SYSTEM_DIMENSIONS+1], *node_name = NULL;
@@ -1024,12 +1072,16 @@ extern int select_p_update_sub_node (update_block_msg_t *block_desc_ptr)
 	last_bg_update = time(NULL);
 end_it:
 	return rc;
+#else
+	return SLURM_ERROR;
+#endif
 }
 
 extern int select_p_get_info_from_plugin (enum select_plugindata_info dinfo,
 					  struct job_record *job_ptr,
 					  void *data)
 {
+#ifdef HAVE_BG
 	uint16_t *tmp16 = (uint16_t *) data;
 	uint32_t *tmp32 = (uint32_t *) data;
 	List *tmp_list = (List *) data;
@@ -1057,6 +1109,9 @@ extern int select_p_get_info_from_plugin (enum select_plugindata_info dinfo,
 	}
 
 	return rc;
+#else
+	return SLURM_ERROR;
+#endif
 }
 
 extern int select_p_update_node_config (int index)
@@ -1066,6 +1121,7 @@ extern int select_p_update_node_config (int index)
 
 extern int select_p_update_node_state (int index, uint16_t state)
 {
+#ifdef HAVE_BG
 	int x, y, z;
 	for (y = DIM_SIZE[Y] - 1; y >= 0; y--) {
 		for (z = 0; z < DIM_SIZE[Z]; z++) {
@@ -1080,12 +1136,13 @@ extern int select_p_update_node_state (int index, uint16_t state)
 			}
 		}
 	}
-
+#endif
 	return SLURM_ERROR;
 }
 
 extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 {
+#ifdef HAVE_BG
 	job_desc_msg_t *job_desc = (job_desc_msg_t *)data;
 	uint16_t *cpus = (uint16_t *)data;
 	uint32_t *nodes = (uint32_t *)data, tmp;
@@ -1292,10 +1349,14 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 	}
 
 	return SLURM_SUCCESS;
+#else
+	return SLURM_ERROR;
+#endif
 }
 
 extern int select_p_reconfigure(void)
 {
+#ifdef HAVE_BG
 	slurm_conf_lock();
 	if(!slurmctld_conf.slurm_user_name
 	   || strcmp(bg_conf->slurm_user_name, slurmctld_conf.slurm_user_name))
@@ -1314,5 +1375,8 @@ extern int select_p_reconfigure(void)
 	slurm_conf_unlock();
 
 	return SLURM_SUCCESS;
+#else
+	return SLURM_ERROR;
+#endif
 }
 

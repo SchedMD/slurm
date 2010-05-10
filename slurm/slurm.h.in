@@ -74,9 +74,8 @@
 /* Define to 1 if emulating or running on Blue Gene/P system */
 #undef HAVE_BGP
 
-/* 4-dimensional architecture counting the nodes under a switch as additional
-   dimension */
-#undef SYSTEM_DIMENSIONS
+/* Number of dimensions the system has */
+#define SYSTEM_DIMENSIONS 1
 
 /* Define to 1 if you have the `elan3' library (-lelan3). */
 #undef HAVE_ELAN
@@ -674,10 +673,8 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
  * they are needed for LCRM and others that can't talk to the opaque data type
  * select_jobinfo.
  */
-#ifdef HAVE_BG
 	uint16_t geometry[SYSTEM_DIMENSIONS];	/* node count in various
 						 * dimensions, e.g. X, Y, and Z */
-#endif
 	uint16_t conn_type;	/* see enum connection_type */
 	uint16_t reboot;	/* force node reboot before startup */
 	uint16_t rotate;	/* permit geometry rotation if set */
