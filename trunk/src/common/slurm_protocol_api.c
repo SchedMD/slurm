@@ -72,6 +72,7 @@
 #include "src/common/log.h"
 #include "src/common/forward.h"
 #include "src/slurmdbd/read_config.h"
+#include "src/common/slurm_accounting_storage.h"
 
 /* EXTERNAL VARIABLES */
 
@@ -1913,22 +1914,92 @@ slurm_fd slurm_open_msg_conn(slurm_addr * slurm_address)
  */
 slurm_fd slurm_open_controller_conn(slurm_addr *addr, char *cluster_name)
 {
-	slurm_fd fd;
+	slurm_fd fd = -1;
 	slurm_ctl_conf_t *conf;
 	int retry, have_backup = 0;
+	static slurm_addr cluster_addr;
+	static char *last_cluster = NULL;
 
-	if (slurm_api_set_default_config() < 0)
+	if(cluster_name) {
+		/* If going cross-cluster, get the ip/port from the
+		   database for cluster_name and create an address
+		   instead of using the normal channels.
+		*/
+		slurmdb_cluster_rec_t *cluster_rec = NULL;
+		slurmdb_cluster_cond_t cluster_cond;
+		List temp_list = NULL;
+		void *db_conn = NULL;
+		if(last_cluster) {
+			if(!strcasecmp(cluster_name, last_cluster))
+				goto set_it;
+			xfree(last_cluster);
+		}
+		db_conn = acct_storage_g_get_connection(
+			false, 0, 1, cluster_name);
+
+		memset(&cluster_cond, 0, sizeof(slurmdb_cluster_cond_t));
+		cluster_cond.cluster_list = list_create(slurm_destroy_char);
+		slurm_addto_char_list(cluster_cond.cluster_list, cluster_name);
+
+		for (retry=0; retry<4; retry++) {
+			if (retry)
+				sleep(1);
+			if((temp_list = acct_storage_g_get_clusters(
+				    db_conn, getuid(), &cluster_cond)))
+				break;
+		}
+
+		if(cluster_cond.cluster_list)
+			list_destroy(cluster_cond.cluster_list);
+		acct_storage_g_close_connection(&db_conn);
+		if(!temp_list) {
+			error("Problem talking to database");
+			goto end_it;
+		}
+
+		if(!(cluster_rec = list_peek(temp_list))) {
+			error("No cluster '%s' known by database.",
+			      cluster_name);
+			list_destroy(temp_list);
+			goto end_it;
+		}
+		slurm_set_addr(&cluster_addr,
+			       cluster_rec->control_port,
+			       cluster_rec->control_host);
+		list_destroy(temp_list);
+		if (cluster_addr.sin_port == 0) {
+			error("Unable to establish '%s' control "
+			      "machine address", cluster_name);
+			goto end_it;
+		}
+
+		/* The last instance of this last_cluster will not be
+		   freed, but it should be rather small, and doesn't
+		   consitute a real memory leak, and makes it so we
+		   don't have to continually connect to the database
+		   to get information.
+		*/
+		last_cluster = xstrdup(cluster_name);
+	set_it:
+		addr = &cluster_addr;
+	} else if (slurm_api_set_default_config() < 0)
 		return SLURM_FAILURE;
+
 
 	for (retry=0; retry<4; retry++) {
 		if (retry)
 			sleep(1);
 		if(cluster_name) {
+			fd = slurm_open_msg_conn(addr);
+			if (fd >= 0)
+				goto end_it;
+			debug("Failed to contact controller for '%s': %m",
+			      cluster_name);
 		} else {
 			addr = &proto_conf->primary_controller;
 			fd = slurm_open_msg_conn(addr);
 			if (fd >= 0)
-				return fd;
+				goto end_it;
 			debug("Failed to contact primary controller: %m");
 
 			if (retry == 0) {
@@ -1942,15 +2013,16 @@ slurm_fd slurm_open_controller_conn(slurm_addr *addr, char *cluster_name)
 				addr = &proto_conf->secondary_controller;
 				fd = slurm_open_msg_conn(addr);
 				if (fd >= 0)
-					return fd;
+					goto end_it;
 				debug("Failed to contact secondary "
 				      "controller: %m");
 			}
 		}
 	}
-
 	addr = NULL;
 	slurm_seterrno_ret(SLURMCTLD_COMMUNICATIONS_CONNECTION_ERROR);
+end_it:
+	return fd;
 }
 
 /* calls connect to make a connection-less datagram connection to the
