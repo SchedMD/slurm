@@ -636,8 +636,8 @@ http://groups.google.com/group/slurm-devel</a></p>
 
 <p><a name="job_size"><b>24. Can I change my job's size after it has started
 running?</b></a><br>
-It is possible to decrease a job's size after it has started, but it is not
-currently possible to increase a job's size.
+Beginning with Slurm version 2.2 it is possible to decrease a job's size after
+it has started, but it is not currently possible to increase a job's size.
 Use the <i>scontrol</i> command to change a job's size either by specifying
 a new node count (<i>NumNodes=</i>) for the job or identify the specific nodes
 (<i>NodeList=</i>) that you want the job to retain. 
@@ -1302,6 +1302,6 @@ simple first-login script that configures the virtual cluster for me.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 2 April 2010</p>
+<p style="text-align:center;">Last modified 10 May 2010</p>
 
 <!--#include virtual="footer.txt"-->
