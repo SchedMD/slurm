@@ -828,7 +828,6 @@ void parse_command_line(int argc, char **argv)
 					list_create(slurm_destroy_char);
 			slurm_addto_char_list(job_cond->associd_list, optarg);
 			break;
-			
 		case 't':
 		case 'X':
 			params.opt_allocs = 1;

@@ -301,7 +301,6 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 	} else {
 		List temp_list = NULL;
 		slurmdb_cluster_cond_t cluster_cond;
-		char *name = NULL;
 
 		memset(&cluster_cond, 0, sizeof(slurmdb_cluster_cond_t));
 		cluster_cond.cluster_list = name_list;
