@@ -20,7 +20,7 @@ my %assoc_cond = ();
 $assoc_cond{'usage_start'} = '1270000000';
 $assoc_cond{'usage_end'}   = '1273000000';
 
-my $clusters = Slurmdb::report_cluster_account_by_user($db_conn, \%assoc_cond);
+my $clusters = Slurmdb::report_cluster_user_by_account($db_conn, \%assoc_cond);
 
 for (my $i = 0; $i < @$clusters; $i++) {
     print "name       $clusters->[$i]{'name'}\n"

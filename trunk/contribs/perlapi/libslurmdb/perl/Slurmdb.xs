@@ -13,6 +13,8 @@
 extern void *slurm_xmalloc(size_t, const char *, int, const char *);
 extern void slurmdb_destroy_association_cond(void *object);
 extern void slurmdb_destroy_cluster_cond(void *object);
+extern void slurmdb_destroy_job_cond(void *object);
+extern void slurmdb_destroy_user_cond(void *object);
 
 
 MODULE = Slurmdb	PACKAGE = Slurmdb	PREFIX=slurmdb_
@@ -32,9 +34,9 @@ slurmdb_clusters_get(db_conn, conditions)
 	void* db_conn
 	HV*   conditions
     INIT:
-	AV * results;
-	HV * rh;
-	List list = NULL;
+	AV*   results;
+	HV*   rh;
+	List  list = NULL;
 	ListIterator itr;
 	slurmdb_cluster_cond_t *cluster_cond = (slurmdb_cluster_cond_t*)
 		slurm_xmalloc(sizeof(slurmdb_cluster_cond_t), __FILE__,
@@ -44,22 +46,22 @@ slurmdb_clusters_get(db_conn, conditions)
 	if (hv_to_cluster_cond(conditions, cluster_cond) < 0) {
 		XSRETURN_UNDEF;
 	}
-	results = (AV *)sv_2mortal((SV *)newAV());
+	results = (AV*)sv_2mortal((SV*)newAV());
     CODE:
 	list = slurmdb_clusters_get(db_conn, cluster_cond);
 	if (list) {
 	    itr = slurm_list_iterator_create(list);
 
 	    while ((rec = slurm_list_next(itr))) {
-		rh = (HV *)sv_2mortal((SV *)newHV());
+		rh = (HV *)sv_2mortal((SV*)newHV());
 		if (cluster_rec_to_hv(rec, rh) < 0) {
 		    XSRETURN_UNDEF;
 		}
-		av_push(results, newRV((SV *)rh));
+		av_push(results, newRV((SV*)rh));
 	    }
 	    slurm_list_destroy(list);
 	}
-	RETVAL = newRV((SV *)results);
+	RETVAL = newRV((SV*)results);
 	slurmdb_destroy_cluster_cond(cluster_cond);
     OUTPUT:
         RETVAL
@@ -69,8 +71,8 @@ slurmdb_report_cluster_account_by_user(db_conn, assoc_condition)
 	void* db_conn
 	HV*   assoc_condition
     INIT:
-	AV * results;
-	List list = NULL;
+	AV*   results;
+	List  list = NULL;
 	slurmdb_association_cond_t *assoc_cond = (slurmdb_association_cond_t*)
 		slurm_xmalloc(sizeof(slurmdb_association_cond_t), __FILE__,
 		__LINE__, "slurmdb_report_cluster_account_by_user");
@@ -78,17 +80,111 @@ slurmdb_report_cluster_account_by_user(db_conn, assoc_condition)
 	if (hv_to_assoc_cond(assoc_condition, assoc_cond) < 0) {
 		XSRETURN_UNDEF;
 	}
-	results = (AV *)sv_2mortal((SV *)newAV());
+	results = (AV*)sv_2mortal((SV*)newAV());
     CODE:
 	list = slurmdb_report_cluster_account_by_user(db_conn, assoc_cond);
 	if (list) {
 	    if (report_cluster_rec_list_to_av(list, results) < 0) {
 		XSRETURN_UNDEF;
 	    }
-
 	    slurm_list_destroy(list);
 	}
-	RETVAL = newRV((SV *)results);
+	RETVAL = newRV((SV*)results);
 	slurmdb_destroy_association_cond(assoc_cond);
+    OUTPUT:
+        RETVAL
+
+SV*
+slurmdb_report_cluster_user_by_account(db_conn, assoc_condition)
+	void* db_conn
+	HV*   assoc_condition
+    INIT:
+	AV*   results;
+	List  list = NULL;
+	slurmdb_association_cond_t *assoc_cond = (slurmdb_association_cond_t*)
+		slurm_xmalloc(sizeof(slurmdb_association_cond_t), __FILE__,
+		__LINE__, "slurmdb_report_cluster_user_by_account");
+
+	if (hv_to_assoc_cond(assoc_condition, assoc_cond) < 0) {
+		XSRETURN_UNDEF;
+	}
+	results = (AV*)sv_2mortal((SV*)newAV());
+    CODE:
+	list = slurmdb_report_cluster_user_by_account(db_conn, assoc_cond);
+	if (list) {
+	    if (report_cluster_rec_list_to_av(list, results) < 0) {
+		XSRETURN_UNDEF;
+	    }
+	    slurm_list_destroy(list);
+	}
+	RETVAL = newRV((SV*)results);
+	slurmdb_destroy_association_cond(assoc_cond);
+    OUTPUT:
+        RETVAL
+
+SV*
+slurmdb_report_job_sizes_grouped_by_top_account(db_conn, job_condition, grouping_array, flat_view)
+	void* db_conn
+	HV*   job_condition
+	AV*   grouping_array
+	bool  flat_view
+    INIT:
+	AV*   results;
+	List  list = NULL;
+	List grouping_list = slurm_list_create(NULL);
+	slurmdb_job_cond_t *job_cond = (slurmdb_job_cond_t*)
+		slurm_xmalloc(sizeof(slurmdb_job_cond_t), __FILE__,
+		__LINE__, "slurmdb_report_job_sizes_grouped_by_top_account");
+	if (hv_to_job_cond(job_condition, job_cond) < 0) {
+		XSRETURN_UNDEF;
+	}
+	if (av_to_cluster_grouping_list(grouping_array, grouping_list) < 0) {
+		XSRETURN_UNDEF;
+	}
+	results = (AV*)sv_2mortal((SV*)newAV());
+    CODE:
+	list = slurmdb_report_job_sizes_grouped_by_top_account(db_conn,
+		job_cond, grouping_list, flat_view);
+	if (list) {
+	    if (cluster_grouping_list_to_av(list, results) < 0) {
+		XSRETURN_UNDEF;
+	    }
+	    slurm_list_destroy(list);
+	}
+	RETVAL = newRV((SV*)results);
+	slurmdb_destroy_job_cond(job_cond);
+	slurm_list_destroy(grouping_list);
+    OUTPUT:
+        RETVAL
+
+SV*
+slurmdb_report_user_top_usage(db_conn, user_condition, group_accounts)
+	void* db_conn
+	HV*   user_condition
+	bool  group_accounts
+    INIT:
+	AV*   results;
+	List  list = NULL;
+	slurmdb_user_cond_t* user_cond = (slurmdb_user_cond_t*)
+		slurm_xmalloc(sizeof(slurmdb_user_cond_t), __FILE__,
+		__LINE__, "slurmdb_report_user_top_usage");
+	user_cond->assoc_cond =	(slurmdb_association_cond_t*)
+		slurm_xmalloc(sizeof(slurmdb_association_cond_t), __FILE__,
+		__LINE__, "slurmdb_report_user_top_usage");
+	if (hv_to_user_cond(user_condition, user_cond) < 0) {
+		XSRETURN_UNDEF;
+	}
+	results = (AV*)sv_2mortal((SV*)newAV());
+    CODE:
+	list = slurmdb_report_user_top_usage(db_conn, user_cond,
+					     group_accounts);
+	if (list) {
+	    if (report_cluster_rec_list_to_av(list, results) < 0) {
+		XSRETURN_UNDEF;
+	    }
+	    slurm_list_destroy(list);
+	}
+	RETVAL = newRV((SV*)results);
+	slurmdb_destroy_user_cond(user_cond);
     OUTPUT:
         RETVAL
