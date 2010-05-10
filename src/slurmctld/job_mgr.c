@@ -8094,12 +8094,23 @@ extern int job_cancel_by_assoc_id(uint32_t assoc_id)
 
 		/* move up to the parent that should still exist */
 		if(job_ptr->assoc_ptr) {
+			/* Force a start so the association doesn't
+			   get lost.  Since there could be some delay
+			   in the start of the job when running with
+			   the slurmdbd.
+			*/
+			if(!job_ptr->db_index) {
+				jobacct_storage_g_job_start(acct_db_conn,
+							    job_ptr);
+			}
+
 			job_ptr->assoc_ptr =
 				((slurmdb_association_rec_t *)
 				 job_ptr->assoc_ptr)->usage->parent_assoc_ptr;
 			if(job_ptr->assoc_ptr)
-				job_ptr->assoc_id = ((slurmdb_association_rec_t *)
-						     job_ptr->assoc_ptr)->id;
+				job_ptr->assoc_id =
+					((slurmdb_association_rec_t *)
+					 job_ptr->assoc_ptr)->id;
 		}
 
 		if(IS_JOB_FINISHED(job_ptr))
@@ -8268,15 +8279,17 @@ extern int send_jobs_to_accounting(void)
 	while ((job_ptr = list_next(itr))) {
 		if(!job_ptr->assoc_id) {
 			slurmdb_association_rec_t assoc_rec;
-			memset(&assoc_rec, 0, sizeof(slurmdb_association_rec_t));
+			memset(&assoc_rec, 0,
+			       sizeof(slurmdb_association_rec_t));
 			assoc_rec.uid       = job_ptr->user_id;
 			assoc_rec.partition = job_ptr->partition;
 			assoc_rec.acct      = job_ptr->account;
 
-			if(assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
-						   accounting_enforce,
-						   (slurmdb_association_rec_t **)
-						   &job_ptr->assoc_ptr) &&
+			if(assoc_mgr_fill_in_assoc(
+				   acct_db_conn, &assoc_rec,
+				   accounting_enforce,
+				   (slurmdb_association_rec_t **)
+				   &job_ptr->assoc_ptr) &&
 			   (accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS)
 			   && (!IS_JOB_FINISHED(job_ptr))) {
 				info("Cancelling job %u with "

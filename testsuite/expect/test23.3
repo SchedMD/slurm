@@ -642,15 +642,21 @@ if {$matches != 6} {
 
 
 #
-# Use sacctmgr to delete the test account
+# Use sacctmgr to delete the test account (shouldn't work, because of running jobs)
 #
 set damatches 0
+set needtodel 0
 set sadel_pid [spawn $sacctmgr -i delete account $test_acct]
 expect {
 	-re "Deleting account" {
 		incr damatches
 		exp_continue
 	}
+	"Job(s) running, cancel job(s) before remove" {
+		send_user "This error was expected, no worries\n"
+		set needtodel 1
+	}
+
 	timeout {
 		send_user "\nFAILURE: sacctmgr delete not responding\n"
 		slow_kill $sadel_pid
@@ -660,8 +666,44 @@ expect {
 		wait
 	}
 }
+
+if {$needtodel == 1} {
+	#
+	# Use scancel to quite jobs
+	#
+	spawn $scancel -A $test_acct
+	expect {
+		eof {
+			wait
+		}
+	}
+
+	sleep 1
+
+	#
+	# Use sacctmgr to delete the test account
+	#
+	set damatches 0
+	set sadel_pid [spawn $sacctmgr -i delete account $test_acct]
+	expect {
+		-re "Deleting account" {
+			incr damatches
+			exp_continue
+		}
+
+		timeout {
+			send_user "\nFAILURE: sacctmgr delete not responding\n"
+			slow_kill $sadel_pid
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+}
+
 if {$damatches != 1} {
-	send_user "\nFAILURE: sacctmgr had a problem deleting account\n"
+	send_user "\nFAILURE: sacctmgr had problems deleting the account\n"
 	set exit_code 1
 }
 
