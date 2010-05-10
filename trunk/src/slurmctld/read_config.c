@@ -624,7 +624,7 @@ int read_slurm_conf(int recover, bool reconfig)
 	char *state_save_dir      = xstrdup(slurmctld_conf.state_save_location);
 	char *mpi_params;
 	uint16_t old_select_type_p = slurmctld_conf.select_type_param;
-	bool gres_changed;
+	bool gres_changed = false;
 
 	/* initialization */
 	START_TIMER;
