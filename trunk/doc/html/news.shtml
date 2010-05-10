@@ -81,7 +81,7 @@ job time limit).</li>
 <li>Support for Solaris (OpenSolaris build 119).</li>
 </ul>
 
-<h2><a name="22">Major Updates in SLURM Version 2.2 and beyond</a></h2>
+<h2><a name="22">Major Updates in SLURM Version 2.2</a></h2>
 <p>SLURM Version 2.2 release is planned late in 2010.
 Major enhancements include:
 <ul>
@@ -100,7 +100,9 @@ specification available.</li>
 improvement.</li>
 <li>RPCs have been modified to prevent job loss on SLURM upgrades and permit
 different versions of the commands and deamons to interoperate.</li>
-<li>Major enhancements made to PostGres database plugin (still beta).</li>
+<li>Major enhancements made to PostGreSQL database plugin (still beta).</li>
+<li>Permit SLURM commands to operate between clusters (e.g. status jobs on a
+different cluster or submit a job on one cluster to run on another).</li>
 </ul>
 
 <h2><a name="23">Major Updates in SLURM Version 2.3 and beyond</a></h2>
@@ -109,13 +111,12 @@ not been finalized. Anyone desiring to perform SLURM development should notify
 <a href="mailto:slurm-dev@lists.llnl.gov">slurm-dev@lists.llnl.gov</a>
 to coordinate activities. Future development plans includes:
 <ul>
-<li>Modify more SLURM commands to operate between clusters.</li>
 <li>Support for BlueGene/Q systems.</li>
 <li>Add Kerberos credential support including credential forwarding
 and refresh.</li>
 <li>Provide a web-based SLURM administration tool.</li>
 </ul>
 
-<p style="text-align:center;">Last modified 16 April 2010</p>
+<p style="text-align:center;">Last modified 10 May 2010</p>
 
 <!--#include virtual="footer.txt"-->
