@@ -2,7 +2,7 @@
  *  get_nodes.c - Process Wiki get node info request
  *****************************************************************************
  *  Copyright (C) 2006-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -72,6 +72,7 @@ static int	_str_cmp(char *s1, char *s2);
  *	CDISK=<MB>;		 MB of disk space on node
  *	CPROC=<cpus>;		 CPU count on node
  *	[FEATURE=<feature>;]	 Features associated with node, if any
+ *	[GRES=<name>[:<count>],...;] generic resources on the node
  *  [#<NODEID>:...];
  */
 extern int	get_nodes(char *cmd_ptr, int *err_code, char **err_msg)
@@ -264,6 +265,11 @@ static int	_same_info(struct node_record *node1_ptr,
 	if (_str_cmp(node1_ptr->config_ptr->feature,
 		     node2_ptr->config_ptr->feature))
 		return 11;
+
+	if (_str_cmp(node1_ptr->config_ptr->gres,
+		     node2_ptr->config_ptr->gres))
+		return 12;
+
 	return 0;
 }
 
@@ -341,6 +347,12 @@ static char *	_dump_node(struct node_record *node_ptr, hostlist_t hl,
 			if (tmp[i] == ',')
 				tmp[i] = ':';
 		}
+		xstrcat(buf, tmp);
+	}
+
+	if (node_ptr->config_ptr && node_ptr->config_ptr->gres) {
+		snprintf(tmp, sizeof(tmp), "GRES=%s;",
+			node_ptr->config_ptr->gres);
 		xstrcat(buf, tmp);
 	}
 
