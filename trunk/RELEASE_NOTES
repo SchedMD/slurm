@@ -57,6 +57,12 @@ HIGHLIGHTS
   as the one it is running.  If not an error message is displayed.  To
   silence this message add NO_CONF_HASH to DebugFlags in your slurm.conf.
 
+* SLURM commands (squeue, sinfo, etc...) can now go cross-cluster on like
+  linux systems.  Cross-cluster for bluegene to linux and such does not
+  currently work.  You can submit jobs with sbatch.  Salloc and srun are not
+  cross-cluster compatible, and given thier nature to talk to actual compute
+  nodes these will likely never be.
+
 CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
 =============================================================
 * Added VSizeFactor to enforce virtual memory limits for jobs and job steps as
