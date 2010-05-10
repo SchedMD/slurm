@@ -706,10 +706,9 @@ The maximum number of jobs SLURM can have in its active database
 at one time. Set the values of \fBMaxJobCount\fR and \fBMinJobAge\fR
 to insure the slurmctld daemon does not exhaust its memory or other
 resources. Once this limit is reached, requests to submit additional
-jobs will fail. The default value is 5000 jobs. This value may not
+jobs will fail. The default value is 10000 jobs. This value may not
 be reset via "scontrol reconfig". It only takes effect upon restart
 of the slurmctld daemon.
-May not exceed 65533.
 
 .TP
 \fBMaxMemPerCPU\fR

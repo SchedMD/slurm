@@ -80,6 +80,9 @@ CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
   to set default job parameters or perform other site-configurable actions at
   job submit time.
 
+* MaxJobCount changed from 16-bit to 32-bit field. The default MaxJobCount was
+  changed from 5,000 to 10,000.
+
 * Added new configuration parameter GresPlugins which manages generic resources.
 
 * Added "--enable-partial-attach" option to configure (build) script.

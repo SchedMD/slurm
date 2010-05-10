@@ -202,7 +202,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"KillWait", S_P_UINT16},
 	{"Licenses", S_P_STRING},
 	{"MailProg", S_P_STRING},
-	{"MaxJobCount", S_P_UINT16},
+	{"MaxJobCount", S_P_UINT32},
 	{"MaxMemPerCPU", S_P_UINT32},
 	{"MaxMemPerNode", S_P_UINT32},
 	{"MaxMemPerTask", S_P_UINT32},	/* defunct */
@@ -1906,7 +1906,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	s_p_get_string(&conf->job_credential_public_certificate,
 		      "JobCredentialPublicCertificate", hashtbl);
 
-	if (s_p_get_uint16(&conf->max_job_cnt, "MaxJobCount", hashtbl) &&
+	if (s_p_get_uint32(&conf->max_job_cnt, "MaxJobCount", hashtbl) &&
 	    (conf->max_job_cnt < 1))
 		fatal("MaxJobCount=%u, No jobs permitted", conf->max_job_cnt);
 
@@ -2109,7 +2109,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	if (!s_p_get_string(&conf->mail_prog, "MailProg", hashtbl))
 		conf->mail_prog = xstrdup(DEFAULT_MAIL_PROG);
 
-	if (!s_p_get_uint16(&conf->max_job_cnt, "MaxJobCount", hashtbl))
+	if (!s_p_get_uint32(&conf->max_job_cnt, "MaxJobCount", hashtbl))
 		conf->max_job_cnt = DEFAULT_MAX_JOB_COUNT;
 
 	if (s_p_get_uint32(&conf->max_mem_per_cpu,

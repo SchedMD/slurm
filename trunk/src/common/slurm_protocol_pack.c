@@ -3879,7 +3879,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		packstr(build_ptr->licenses, buffer);
 
 		packstr(build_ptr->mail_prog, buffer);
-		pack16(build_ptr->max_job_cnt, buffer);
+		pack32(build_ptr->max_job_cnt, buffer);
 		pack32(build_ptr->max_mem_per_cpu, buffer);
 		pack16(build_ptr->max_tasks_per_node, buffer);
 		pack16(build_ptr->min_job_age, buffer);
@@ -4319,7 +4319,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 
 		safe_unpackstr_xmalloc(&build_ptr->mail_prog,
 				       &uint32_tmp, buffer);
-		safe_unpack16(&build_ptr->max_job_cnt, buffer);
+		safe_unpack32(&build_ptr->max_job_cnt, buffer);
 		safe_unpack32(&build_ptr->max_mem_per_cpu, buffer);
 		safe_unpack16(&build_ptr->max_tasks_per_node, buffer);
 		safe_unpack16(&build_ptr->min_job_age, buffer);
@@ -4484,6 +4484,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpackstr_xmalloc(&build_ptr->z_char, &uint32_tmp,
 				       buffer);
 	} else if(protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
+		uint16_t max_job_cnt;
 		/* unpack timestamp of snapshot */
 		safe_unpack_time(&build_ptr->last_update, buffer);
 
@@ -4586,7 +4587,8 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 
 		safe_unpackstr_xmalloc(&build_ptr->mail_prog,
 				       &uint32_tmp, buffer);
-		safe_unpack16(&build_ptr->max_job_cnt, buffer);
+		max_job_cnt = MIN(build_ptr->max_job_cnt, 0xfffe);
+		safe_unpack16(&max_job_cnt, buffer);
 		safe_unpack32(&build_ptr->max_mem_per_cpu, buffer);
 		safe_unpack16(&build_ptr->max_tasks_per_node, buffer);
 		safe_unpack16(&build_ptr->min_job_age, buffer);
