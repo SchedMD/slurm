@@ -263,7 +263,7 @@ static int _open_node_state_file(char **state_file)
 extern int load_all_node_state ( bool state_only )
 {
 	char *node_name, *reason = NULL, *data = NULL, *state_file;
-	char *features, *gres;
+	char *features = NULL, *gres = NULL;
 	int data_allocated, data_read = 0, error_code = 0, node_cnt = 0;
 	uint16_t node_state;
 	uint16_t cpus = 1, sockets = 1, cores = 1, threads = 1;
@@ -387,9 +387,7 @@ extern int load_all_node_state ( bool state_only )
 				sockets, cores, threads, node_state);
 			error ("No more node data will be processed from the "
 				"checkpoint file");
-			xfree (node_name);
-			error_code = EINVAL;
-			break;
+			goto unpack_error;
 
 		}
 
@@ -398,11 +396,6 @@ extern int load_all_node_state ( bool state_only )
 		if (node_ptr == NULL) {
 			error ("Node %s has vanished from configuration",
 			       node_name);
-			xfree(features);
-			xfree(gres);
-			if (gres_list)
-				list_destroy(gres_list);
-			xfree(reason);
 		} else if (state_only) {
 			uint16_t orig_flags;
 			orig_flags = node_ptr->node_state & NODE_STATE_FLAGS;
@@ -439,14 +432,10 @@ extern int load_all_node_state ( bool state_only )
 			}
 			if (node_ptr->reason == NULL) {
 				node_ptr->reason = reason;
+				reason = NULL;	/* Nothing to free */
 				node_ptr->reason_time = reason_time;
 				node_ptr->reason_uid = reason_uid;
-			} else
-				xfree(reason);
-			xfree(features);
-			xfree(gres);
-			if (gres_list)
-				list_destroy(gres_list);
+			}
 		} else {
 			node_cnt++;
 			if ((!power_save_mode) &&
@@ -462,13 +451,17 @@ extern int load_all_node_state ( bool state_only )
 			node_ptr->node_state    = node_state;
 			xfree(node_ptr->reason);
 			node_ptr->reason	= reason;
+			reason			= NULL;	/* Nothing to free */
 			node_ptr->reason_time	= reason_time;
 			node_ptr->reason_uid	= reason_uid;
 			xfree(node_ptr->features);
 			node_ptr->features	= features;
+			features		= NULL;	/* Nothing to free */
 			xfree(node_ptr->gres);
 			node_ptr->gres 		= gres;
+			gres			= NULL;	/* Nothing to free */
 			node_ptr->gres_list	= gres_list;
+			gres_list		= NULL;	/* Nothing to free */
 			node_ptr->part_cnt      = 0;
 			xfree(node_ptr->part_pptr);
 			node_ptr->cpus          = cpus;
@@ -480,13 +473,20 @@ extern int load_all_node_state ( bool state_only )
 			node_ptr->last_response = (time_t) 0;
 			node_ptr->last_idle	= now;
 		}
-		xfree (node_name);
 
 		if (node_ptr) {
 			select_g_update_node_state(
 				(node_ptr - node_record_table_ptr),
 				node_ptr->node_state);
 		}
+		xfree(features);
+		xfree(gres);
+		if (gres_list) {
+			list_destroy(gres_list);
+			gres_list = NULL;
+		}
+		xfree (node_name);
+		xfree(reason);
 	}
 
 fini:	info("Recovered state of %d nodes", node_cnt);
@@ -502,6 +502,14 @@ fini:	info("Recovered state of %d nodes", node_cnt);
 unpack_error:
 	error("Incomplete node data checkpoint file");
 	error_code = EFAULT;
+	xfree(features);
+	xfree(gres);
+	if (gres_list) {
+		list_destroy(gres_list);
+		gres_list = NULL;
+	}
+	xfree (node_name);
+	xfree(reason);
 	goto fini;
 }
 
@@ -973,7 +981,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 	}
 
 	/* Update weight. Weight is part of config_ptr,
-	 * hence do the splitting if required */
+	 * hence split config records if required */
 	if ((error_code == 0) && (update_node_msg->weight != NO_VAL))	{
 		error_code = _update_node_weight(update_node_msg->node_names,
 						 update_node_msg->weight);
