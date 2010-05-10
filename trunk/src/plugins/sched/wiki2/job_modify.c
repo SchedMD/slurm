@@ -2,6 +2,7 @@
  *  job_modify.c - Process Wiki job modify request
  *****************************************************************************
  *  Copyright (C) 2006-2007 The Regents of the University of California.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -38,11 +39,12 @@
 
 #include "./msg.h"
 #include <strings.h>
+#include "src/common/gres.h"
+#include "src/common/node_select.h"
+#include "src/common/slurm_accounting_storage.h"
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
-#include "src/common/slurm_accounting_storage.h"
-#include "src/common/node_select.h"
 
 /* Given a string, replace the first space found with '\0' */
 extern void	null_term(char *str)
@@ -63,7 +65,7 @@ static int	_job_modify(uint32_t jobid, char *bank_ptr,
 			uint32_t new_node_cnt, char *part_name_ptr,
 			uint32_t new_time_limit, char *name_ptr,
 			char *start_ptr, char *feature_ptr, char *env_ptr,
-			char *comment_ptr)
+			char *comment_ptr, char *gres_ptr, char *wckey_ptr)
 {
 	struct job_record *job_ptr;
 	time_t now = time(NULL);
@@ -375,6 +377,37 @@ host_fini:	if (rc) {
 		update_accounting = true;
 	}
 
+	if (gres_ptr) {
+		char *orig_gres;
+
+		if (!IS_JOB_PENDING(job_ptr)) {
+			error("wiki: MODIFYJOB GRES of non-pending job %u",
+			      jobid);
+			return ESLURM_DISABLED;
+		}
+
+		orig_gres = job_ptr->gres;
+		job_ptr->gres = NULL;
+		if (gres_ptr[0])
+			job_ptr->gres = xstrdup(gres_ptr);
+		if (gres_plugin_job_gres_validate(job_ptr->gres,
+						  &job_ptr->gres_list)) {
+			error("wiki: MODIFYJOB Invalid GRES=%s", gres_ptr);
+			xfree(job_ptr->gres);
+			job_ptr->gres = orig_gres;
+			return ESLURM_INVALID_GRES;
+		}
+		xfree(orig_gres);
+	}
+
+	if (wckey_ptr) {
+		int rc = update_job_wckey("update_job", job_ptr, wckey_ptr);
+		if (rc != SLURM_SUCCESS) {
+			error("wiki: MODIFYJOB Invalid WCKEY=%s", wckey_ptr);
+			return rc;
+		}
+	}
+
 	if (update_accounting) {
 		if (job_ptr->details && job_ptr->details->begin_time) {
 			/* Update job record in accounting to reflect
@@ -388,23 +421,25 @@ host_fini:	if (rc) {
 
 /* Modify a job:
  *	CMD=MODIFYJOB ARG=<jobid>
- *		[BANK=<name>]
+ *		[BANK=<name>;]
  *		[COMMENT=<whatever>;]
- *		[DEPEND=afterany:<jobid>]
- *		[JOBNAME=<name>]
- *		[MINSTARTTIME=<uts>]
- *		[NODES=<number>]
- *		[PARTITION=<name>]
- *		[RFEATURES=<features>]
- *		[TIMELIMT=<seconds>]
- *		[VARIABLELIST=<env_vars>]
+ *		[DEPEND=afterany:<jobid>;]
+ *		[JOBNAME=<name>;]
+ *		[MINSTARTTIME=<uts>;]
+ *		[NODES=<number>;]
+ *		[PARTITION=<name>;]
+ *		[RFEATURES=<features>;]
+ *		[TIMELIMT=<seconds>;]
+ *		[VARIABLELIST=<env_vars>;]
+ *		[GRES=<name:value>;]
+ *		[WCKEY=<name>;]
  *
  * RET 0 on success, -1 on failure */
 extern int	job_modify_wiki(char *cmd_ptr, int *err_code, char **err_msg)
 {
 	char *arg_ptr, *bank_ptr, *depend_ptr, *nodes_ptr, *start_ptr;
 	char *host_ptr, *name_ptr, *part_ptr, *time_ptr, *tmp_char;
-	char *comment_ptr, *feature_ptr, *env_ptr;
+	char *comment_ptr, *feature_ptr, *env_ptr, *gres_ptr, *wckey_ptr;
 	int i, slurm_rc;
 	uint32_t jobid, new_node_cnt = 0, new_time_limit = 0;
 	static char reply_msg[128];
@@ -433,6 +468,7 @@ extern int	job_modify_wiki(char *cmd_ptr, int *err_code, char **err_msg)
 	bank_ptr    = strstr(cmd_ptr, "BANK=");
 	comment_ptr = strstr(cmd_ptr, "COMMENT=");
 	depend_ptr  = strstr(cmd_ptr, "DEPEND=");
+	gres_ptr    = strstr(cmd_ptr, "GRES=");
 	host_ptr    = strstr(cmd_ptr, "HOSTLIST=");
 	name_ptr    = strstr(cmd_ptr, "JOBNAME=");
 	start_ptr   = strstr(cmd_ptr, "MINSTARTTIME=");
@@ -441,6 +477,7 @@ extern int	job_modify_wiki(char *cmd_ptr, int *err_code, char **err_msg)
 	feature_ptr = strstr(cmd_ptr, "RFEATURES=");
 	time_ptr    = strstr(cmd_ptr, "TIMELIMIT=");
 	env_ptr     = strstr(cmd_ptr, "VARIABLELIST=");
+	wckey_ptr   = strstr(cmd_ptr, "WCKEY=");
 	if (bank_ptr) {
 		bank_ptr[4] = ':';
 		bank_ptr += 5;
@@ -481,6 +518,11 @@ extern int	job_modify_wiki(char *cmd_ptr, int *err_code, char **err_msg)
 		feature_ptr[9] = ':';
 		feature_ptr += 10;
 		null_term(feature_ptr);
+	}
+	if (gres_ptr) {
+		gres_ptr[4] = ':';
+		gres_ptr += 5;
+		null_term(gres_ptr);
 	}
 	if (host_ptr) {
 		host_ptr[8] = ':';
@@ -538,6 +580,11 @@ extern int	job_modify_wiki(char *cmd_ptr, int *err_code, char **err_msg)
 		env_ptr += 13;
 		null_term(env_ptr);
 	}
+	if (wckey_ptr) {
+		wckey_ptr[5] = ':';
+		wckey_ptr += 6;
+		null_term(wckey_ptr);
+	}
 
 	/* Look for any un-parsed "=" ignoring anything after VARIABLELIST
 	 * which is expected to contain "=" in its value*/
@@ -552,7 +599,8 @@ extern int	job_modify_wiki(char *cmd_ptr, int *err_code, char **err_msg)
 	lock_slurmctld(job_write_lock);
 	slurm_rc = _job_modify(jobid, bank_ptr, depend_ptr, host_ptr,
 			new_node_cnt, part_ptr, new_time_limit, name_ptr,
-			start_ptr, feature_ptr, env_ptr, comment_ptr);
+			start_ptr, feature_ptr, env_ptr, comment_ptr,
+			gres_ptr, wckey_ptr);
 	unlock_slurmctld(job_write_lock);
 	if (slurm_rc != SLURM_SUCCESS) {
 		*err_code = -700;

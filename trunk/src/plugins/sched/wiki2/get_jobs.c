@@ -2,7 +2,7 @@
  *  get_jobs.c - Process Wiki get job info request
  *****************************************************************************
  *  Copyright (C) 2006-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -99,8 +99,11 @@ reject_msg_t reject_msgs[REJECT_MSG_MAX];
  *	[MAXNODES=<nodes>;]		maximum number of nodes, 0 if no limit
  *	[TASKLIST=<node1:node2>;]	nodes in use, if running or completing
  *	[REJMESSAGE=<str>;]		reason job is not running, if any
- *	UPDATETIME=<uts>;		time last active
  *	[FLAGS=INTERACTIVE;]		set if interactive (not batch) job
+ *	[GRES=<name>[:<count>[*cpus]],...;] generic resources required by the
+ *					job on a per node basis
+ *	[WCKEY=<key>;]			workload characterization key for job
+ *	UPDATETIME=<uts>;		time last active
  *	WCLIMIT=<secs>;			wall clock time limit, seconds
  *	TASKS=<cpus>;			CPUs required
  *	NODES=<nodes>;			count of nodes required or allocated
@@ -322,6 +325,16 @@ static char *	_dump_job(struct job_record *job_ptr, time_t update_time)
 
 	if (job_ptr->batch_flag == 0)
 		xstrcat(buf, "FLAGS=INTERACTIVE;");
+
+	if (job_ptr->gres) {
+		snprintf(tmp, sizeof(tmp),"GRES=%s;", job_ptr->gres);
+		xstrcat(buf, tmp);
+	}
+
+	if (job_ptr->wckey) {
+		snprintf(tmp, sizeof(tmp),"WCKEY=%s;", job_ptr->wckey);
+		xstrcat(buf, tmp);
+	}
 
 	snprintf(tmp, sizeof(tmp),
 		"UPDATETIME=%u;WCLIMIT=%u;TASKS=%u;",

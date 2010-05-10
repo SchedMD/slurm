@@ -370,6 +370,8 @@ static void _modify_job(long my_job_id)
 		/* "NODES=2 " */
 		/* "DEPEND=afterany:3 " */
 		/* "INVALID=123 " */
+		/* "GRES=gpu " */
+		/* "WCKEY=my_key " */
 		"COMMENT=test123 "
 		"VARIABLELIST=TEST_ENV1=test_val1,TEST_ENV2=test_val2 "
 		"TIMELIMIT=10 BANK=test_bank",
