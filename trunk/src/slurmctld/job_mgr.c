@@ -1919,8 +1919,8 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 
 	debug3("   -N min-[max]: %u-[%u]:%u:%u:%u",
 	       job_specs->min_nodes,   job_specs->max_nodes,
-	       job_specs->min_sockets, job_specs->min_cores,
-	       job_specs->min_threads);
+	       job_specs->sockets_per_node, job_specs->cores_per_socket,
+	       job_specs->threads_per_core);
 
 	if (job_specs->pn_min_memory == NO_VAL) {
 		pn_min_memory = -1L;
@@ -3536,18 +3536,18 @@ _set_multi_core_data(job_desc_msg_t * job_desc)
 {
 	multi_core_data_t * mc_ptr;
 
-	if ((job_desc->min_sockets       == (uint16_t) NO_VAL)	&&
-	    (job_desc->min_cores         == (uint16_t) NO_VAL)	&&
-	    (job_desc->min_threads       == (uint16_t) NO_VAL)	&&
+	if ((job_desc->sockets_per_node  == (uint16_t) NO_VAL)	&&
+	    (job_desc->cores_per_socket  == (uint16_t) NO_VAL)	&&
+	    (job_desc->threads_per_core  == (uint16_t) NO_VAL)	&&
 	    (job_desc->ntasks_per_socket == (uint16_t) NO_VAL)	&&
 	    (job_desc->ntasks_per_core   == (uint16_t) NO_VAL)	&&
 	    (job_desc->plane_size        == (uint16_t) NO_VAL))
 		return NULL;
 
 	mc_ptr = xmalloc(sizeof(multi_core_data_t));
-	mc_ptr->min_sockets        = job_desc->min_sockets;
-	mc_ptr->min_cores          = job_desc->min_cores;
-	mc_ptr->min_threads        = job_desc->min_threads;
+	mc_ptr->sockets_per_node = job_desc->sockets_per_node;
+	mc_ptr->cores_per_socket = job_desc->cores_per_socket;
+	mc_ptr->threads_per_core = job_desc->threads_per_core;
 	if (job_desc->ntasks_per_socket != (uint16_t) NO_VAL)
 		mc_ptr->ntasks_per_socket  = job_desc->ntasks_per_socket;
 	else
@@ -5803,35 +5803,35 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		}
 	}
 
-	if (job_specs->min_sockets != (uint16_t) NO_VAL) {
+	if (job_specs->sockets_per_node != (uint16_t) NO_VAL) {
 		if ((!IS_JOB_PENDING(job_ptr)) || (mc_ptr == NULL))
 			error_code = ESLURM_DISABLED;
 		else {
-			mc_ptr->min_sockets = job_specs->min_sockets;
-			info("sched: update_job: setting min_sockets to %u "
-			     "for job_id %u", job_specs->min_sockets,
+			mc_ptr->sockets_per_node = job_specs->sockets_per_node;
+			info("sched: update_job: setting sockets_per_node to "
+			     "%u for job_id %u", job_specs->sockets_per_node,
 			     job_specs->job_id);
 		}
 	}
 
-	if (job_specs->min_cores != (uint16_t) NO_VAL) {
+	if (job_specs->cores_per_socket != (uint16_t) NO_VAL) {
 		if ((!IS_JOB_PENDING(job_ptr)) || (mc_ptr == NULL))
 			error_code = ESLURM_DISABLED;
 		else {
-			mc_ptr->min_cores = job_specs->min_cores;
-			info("sched: update_job: setting min_cores to %u for "
-			     "job_id %u", job_specs->min_cores,
+			mc_ptr->cores_per_socket = job_specs->cores_per_socket;
+			info("sched: update_job: setting cores_per_socket to "
+			     "%u for job_id %u", job_specs->cores_per_socket,
 			     job_specs->job_id);
 		}
 	}
 
-	if ((job_specs->min_threads != (uint16_t) NO_VAL)) {
+	if ((job_specs->threads_per_core != (uint16_t) NO_VAL)) {
 		if ((!IS_JOB_PENDING(job_ptr)) || (mc_ptr == NULL))
 			error_code = ESLURM_DISABLED;
 		else {
-			mc_ptr->min_threads = job_specs->min_threads;
-			info("sched: update_job: setting min_threads to %u for "
-			     "job_id %u", job_specs->min_threads,
+			mc_ptr->threads_per_core = job_specs->threads_per_core;
+			info("sched: update_job: setting threads_per_core to "
+			     "%u for job_id %u", job_specs->threads_per_core,
 			     job_specs->job_id);
 		}
 	}
@@ -8652,9 +8652,9 @@ _copy_job_record_to_job_desc(struct job_record *job_ptr)
 	job_desc->max_cpus          = details->max_cpus;
 	job_desc->min_nodes         = details->min_nodes;
 	job_desc->max_nodes         = details->max_nodes;
-	job_desc->min_sockets       = mc_ptr->min_sockets;
-	job_desc->min_cores         = mc_ptr->min_cores;
-	job_desc->min_threads       = mc_ptr->min_threads;
+	job_desc->sockets_per_node  = mc_ptr->sockets_per_node;
+	job_desc->cores_per_socket  = mc_ptr->cores_per_socket;
+	job_desc->threads_per_core  = mc_ptr->threads_per_core;
 	job_desc->cpus_per_task     = details->cpus_per_task;
 	job_desc->ntasks_per_node   = details->ntasks_per_node;
 	job_desc->ntasks_per_socket = mc_ptr->ntasks_per_socket;

@@ -631,12 +631,12 @@ job_desc_msg_create_from_opts (void)
 	j->exc_nodes      = opt.exc_nodes;
 	j->partition      = opt.partition;
 	j->min_nodes      = opt.min_nodes;
-	if (opt.min_sockets_per_node != NO_VAL)
-		j->min_sockets    = opt.min_sockets_per_node;
-	if (opt.min_cores_per_socket != NO_VAL)
-		j->min_cores      = opt.min_cores_per_socket;
-	if (opt.min_threads_per_core != NO_VAL)
-		j->min_threads    = opt.min_threads_per_core;
+	if (opt.sockets_per_node != NO_VAL)
+		j->sockets_per_node    = opt.sockets_per_node;
+	if (opt.cores_per_socket != NO_VAL)
+		j->cores_per_socket      = opt.cores_per_socket;
+	if (opt.threads_per_core != NO_VAL)
+		j->threads_per_core    = opt.threads_per_core;
 	j->user_id        = opt.uid;
 	j->dependency     = opt.dependency;
 	if (opt.nice)

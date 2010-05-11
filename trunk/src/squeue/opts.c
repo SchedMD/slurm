@@ -564,29 +564,28 @@ extern int parse_format( char* format )
 						       right_justify,
 						       suffix );
 			else if (field[0] == 'H')
-				job_format_add_min_sockets( params.format_list,
-							   field_size,
-							   right_justify,
-							   suffix );
+				job_format_add_sockets( params.format_list,
+							field_size,
+							right_justify,
+							suffix );
 			else if (field[0] == 'i')
 				job_format_add_job_id( params.format_list,
 						       field_size,
 						       right_justify,
 						       suffix );
 			else if (field[0] == 'I')
-				job_format_add_min_cores( params.format_list,
-							   field_size,
-							   right_justify,
-							   suffix );
+				job_format_add_cores( params.format_list,
+						      field_size,
+						      right_justify, suffix );
 			else if (field[0] == 'j')
 				job_format_add_name( params.format_list,
 						     field_size,
 						     right_justify, suffix );
 			else if (field[0] == 'J')
-				job_format_add_min_threads( params.format_list,
-							   field_size,
-							   right_justify,
-							   suffix );
+				job_format_add_threads( params.format_list,
+							field_size,
+							right_justify,
+							suffix );
 			else if (field[0] == 'k')
 				job_format_add_comment( params.format_list,
 							field_size,

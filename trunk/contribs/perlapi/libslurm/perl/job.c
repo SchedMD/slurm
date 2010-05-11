@@ -61,9 +61,9 @@ job_info_to_hv(job_info_t* job_info, HV* hv)
 	if(job_info->max_cpus)
 		STORE_FIELD(hv, job_info, max_cpus, uint32_t);
 	STORE_FIELD(hv, job_info, max_nodes, uint32_t);
-	STORE_FIELD(hv, job_info, min_cores, uint16_t);
-	STORE_FIELD(hv, job_info, min_sockets, uint16_t);
-	STORE_FIELD(hv, job_info, min_threads, uint16_t);
+	STORE_FIELD(hv, job_info, sockets_per_node, uint16_t);
+	STORE_FIELD(hv, job_info, cores_per_socket, uint16_t);
+	STORE_FIELD(hv, job_info, threads_per_core, uint16_t);
 	if(job_info->name)
 		STORE_FIELD(hv, job_info, name, charp);
 	if(job_info->network)

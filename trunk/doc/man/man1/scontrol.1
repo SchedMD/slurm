@@ -495,7 +495,7 @@ Set the priority to a non\-zero value to permit it to run.
 Explicitly setting a job's priority clears any previously set nice value.
 .TP
 \fIReqCores\fP=<count>
-Set the job's count of minimum cores per socket to the specified value.
+Set the job's count of cores per socket to the specified value.
 .TP
 \fIReqNodeList\fP=<nodes>
 Set the job's list of required node. Multiple node names may be specified using
@@ -503,10 +503,10 @@ simple node range expressions (e.g. "lx[10\-20]").
 Value may be cleared with blank data value, "ReqNodeList=".
 .TP
 \fIReqSockets\fP=<count>
-Set the job's count of minimum sockets per node to the specified value.
+Set the job's count of sockets per node to the specified value.
 .TP
 \fIReqThreads\fP=<count>
-Set the job's count of minimum threads per core to the specified value.
+Set the job's count of threads per core to the specified value.
 .TP
 \fIRequeue\fP=<0|1>
 Stipulates whether a job should be requeued after a node failure: 0

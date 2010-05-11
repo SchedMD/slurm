@@ -479,9 +479,9 @@ static uint16_t _get_avail_cpus(struct job_record *job_ptr, int index)
 	if ((mc_ptr = job_ptr->details->mc_ptr)) {
 		ntasks_per_socket = mc_ptr->ntasks_per_socket;
 		ntasks_per_core   = mc_ptr->ntasks_per_core;
-		min_sockets       = mc_ptr->min_sockets;
-		min_cores         = mc_ptr->min_cores;
-		min_threads       = mc_ptr->min_threads;
+		min_sockets       = mc_ptr->sockets_per_node;
+		min_cores         = mc_ptr->cores_per_socket;
+		min_threads       = mc_ptr->threads_per_core;
 	} else {
 		ntasks_per_socket = 0;
 		ntasks_per_core   = 0;
