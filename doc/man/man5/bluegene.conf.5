@@ -13,9 +13,9 @@ Parameter names are case insensitive.
 Any text following a "#" in the configuration file is treated
 as a comment through the end of that line.
 The size of each line in the file is limited to 1024 characters.
-Changes to the configuration file take effect upon restart of
-SLURM daemons, daemon receipt of the SIGHUP signal, or execution
-of the command "scontrol reconfigure" unless otherwise noted.
+Changes to the configuration file take only effect upon restart of
+the slurmctld daemon.  "scontrol reconfigure" does nothing with this file.
+Changes will only take place after a restart of the controller.
 .LP
 
 There are some differences between Bluegene/L and Bluegene/P in respects to the contents of the bluegene.conf file.
