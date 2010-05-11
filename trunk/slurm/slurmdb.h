@@ -394,6 +394,8 @@ typedef struct {
 typedef struct {
 	List accounting_list; /* list of slurmdb_cluster_accounting_rec_t *'s */
 	uint16_t classification; /* how this machine is classified */
+	slurm_addr control_addr; /* For convenience only.
+				  * DOESN'T GET PACKED */
 	char *control_host;
 	uint32_t control_port;
 	uint32_t cpu_count;

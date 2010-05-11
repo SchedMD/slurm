@@ -51,6 +51,7 @@
 
 #include "src/common/macros.h" /* true and false */
 #include "src/common/env.h"
+#include "src/common/slurmdb_defs.h"
 
 #ifndef SYSTEM_DIMENSIONS
 #  define SYSTEM_DIMENSIONS 1
@@ -58,7 +59,7 @@
 
 
 typedef struct sbatch_options {
-	char *cluster_name;     /* name of cluster to run this on. */
+	slurmdb_cluster_rec_t *cluster; /* cluster to run this on. */
 	char *progname;		/* argv[0] of this program or   */
 
 	/* batch script argv and argc, if provided on the command line */

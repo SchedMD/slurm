@@ -156,13 +156,17 @@ _print_job ( void )
 
 	if (old_job_ptr) {
 		if (job_id) {
-			error_code = slurm_load_job(&new_job_ptr, job_id,
-						    show_flags,
-						    params.cluster_name);
+			error_code = slurm_load_job(
+				&new_job_ptr, job_id,
+				show_flags,
+				params.cluster ?
+				&params.cluster->control_addr : NULL);
 		} else {
-			error_code = slurm_load_jobs(old_job_ptr->last_update,
-						     &new_job_ptr, show_flags,
-						     params.cluster_name);
+			error_code = slurm_load_jobs(
+				old_job_ptr->last_update,
+				&new_job_ptr, show_flags,
+				params.cluster ?
+				&params.cluster->control_addr : NULL);
 		}
 		if (error_code ==  SLURM_SUCCESS)
 			slurm_free_job_info_msg( old_job_ptr );
@@ -172,10 +176,14 @@ _print_job ( void )
 		}
 	} else if (job_id) {
 		error_code = slurm_load_job(&new_job_ptr, job_id, show_flags,
-					    params.cluster_name);
+					    params.cluster ?
+					    &params.cluster->control_addr :
+					    NULL);
 	} else {
 		error_code = slurm_load_jobs((time_t) NULL, &new_job_ptr,
-					     show_flags, params.cluster_name);
+					     show_flags, params.cluster ?
+					     &params.cluster->control_addr :
+					     NULL);
 	}
 
 	if (error_code) {
@@ -194,7 +202,7 @@ _print_job ( void )
 	if (params.format == NULL) {
 		if (params.long_list)
 			params.format = "%.7i %.9P %.8j %.8u %.8T %.10M %.9l "
-			                "%.6D %R";
+				"%.6D %R";
 		else
 			params.format = "%.7i %.9P %.8j %.8u  %.2t %.10M %.6D %R";
 	}
@@ -202,7 +210,7 @@ _print_job ( void )
 		parse_format(params.format);
 
 	print_jobs_array( new_job_ptr->job_array, new_job_ptr->record_count ,
-			params.format_list ) ;
+			  params.format_list ) ;
 	return SLURM_SUCCESS;
 }
 
@@ -222,9 +230,11 @@ _print_job_steps( void )
 	if (old_step_ptr) {
 		/* Use a last_update time of 0 so that we can get an updated
 		 * run_time for jobs rather than just its start_time */
-		error_code = slurm_get_job_steps ((time_t) 0, NO_VAL, NO_VAL,
-						  &new_step_ptr, show_flags,
-						  params.cluster_name);
+		error_code = slurm_get_job_steps((time_t) 0, NO_VAL, NO_VAL,
+						 &new_step_ptr, show_flags,
+						 params.cluster ?
+						 &params.cluster->control_addr :
+						 NULL);
 		if (error_code ==  SLURM_SUCCESS)
 			slurm_free_job_step_info_response_msg( old_step_ptr );
 		else if (slurm_get_errno () == SLURM_NO_CHANGE_IN_DATA) {
@@ -233,9 +243,11 @@ _print_job_steps( void )
 		}
 	}
 	else
-		error_code = slurm_get_job_steps ((time_t) 0, NO_VAL, NO_VAL,
-						  &new_step_ptr, show_flags,
-						  params.cluster_name);
+		error_code = slurm_get_job_steps((time_t) 0, NO_VAL, NO_VAL,
+						 &new_step_ptr, show_flags,
+						 params.cluster ?
+						 &params.cluster->control_addr :
+						 NULL);
 	if (error_code) {
 		slurm_perror ("slurm_get_job_steps error");
 		return SLURM_ERROR;

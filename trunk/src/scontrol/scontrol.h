@@ -89,12 +89,13 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+#include "src/common/slurmdb_defs.h"
 
 #define CKPT_WAIT	10
 #define	MAX_INPUT_FIELDS 128
 
 extern char *command_name;
-extern char *cluster_name;
+extern slurmdb_cluster_rec_t *cluster;
 extern int all_flag;	/* display even hidden partitions */
 extern int detail_flag;	/* display additional details */
 extern int exit_code;	/* scontrol's exit code, =1 on any error at any time */

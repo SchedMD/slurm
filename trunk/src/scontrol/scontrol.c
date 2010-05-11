@@ -46,7 +46,7 @@
 #define OPT_LONG_HIDE   0x102
 
 char *command_name;
-char *cluster_name = NULL;
+slurmdb_cluster_rec_t *cluster = NULL;
 int all_flag;		/* display even hidden partitions */
 int detail_flag;	/* display additional details */
 int exit_code;		/* scontrol's exit code, =1 on any error at any time */
@@ -132,8 +132,12 @@ main (int argc, char *argv[])
 			detail_flag = 0;
 			break;
 		case (int)'M':
-			xfree(cluster_name);
-			cluster_name = xstrdup(optarg);
+			slurmdb_destroy_cluster_rec(cluster);
+			if(!(cluster = slurmdb_get_info_cluster(optarg))) {
+				error("'%s' invalid entry for --cluster",
+				      optarg);
+				exit(1);
+			}
 			break;
 		case (int)'o':
 			one_liner = 1;
@@ -185,7 +189,7 @@ main (int argc, char *argv[])
 			break;
 		error_code = _get_command (&input_field_count, input_fields);
 	}
-	xfree(cluster_name);
+	slurmdb_destroy_cluster_rec(cluster);
 	exit(exit_code);
 }
 
@@ -316,7 +320,8 @@ _print_config (char *config_param)
 	if (old_slurm_ctl_conf_ptr) {
 		error_code = slurm_load_ctl_conf (
 				old_slurm_ctl_conf_ptr->last_update,
-				&slurm_ctl_conf_ptr, cluster_name);
+				&slurm_ctl_conf_ptr, cluster ?
+				      &cluster->control_addr : NULL);
 		if (error_code == SLURM_SUCCESS)
 			slurm_free_ctl_conf(old_slurm_ctl_conf_ptr);
 		else if (slurm_get_errno () == SLURM_NO_CHANGE_IN_DATA) {
@@ -331,7 +336,8 @@ _print_config (char *config_param)
 	else
 		error_code = slurm_load_ctl_conf ((time_t) NULL,
 						  &slurm_ctl_conf_ptr,
-						  cluster_name);
+						  cluster ?
+				      &cluster->control_addr : NULL);
 
 	if (error_code) {
 		exit_code = 1;
@@ -525,9 +531,14 @@ _process_command (int argc, char *argv[])
 		scontrol_print_completing();
 	}
 	else if (strncasecmp (tag, "cluster", MAX(taglen, 2)) == 0) {
-		xfree(cluster_name);
-		if (argc >= 2)
-			cluster_name = xstrdup(argv[1]);
+		slurmdb_destroy_cluster_rec(cluster);
+		if (argc >= 2) {
+			if(!(cluster = slurmdb_get_info_cluster(argv[1]))) {
+				error("'%s' invalid entry for --cluster",
+				      optarg);
+				exit(1);
+			}
+		}
 	}
 	else if (strncasecmp (tag, "create", MAX(taglen, 2)) == 0) {
 		if (argc < 2) {
@@ -626,7 +637,8 @@ _process_command (int argc, char *argv[])
 			fprintf (stderr, "too many arguments for keyword:%s\n",
 			         tag);
 		}
-		error_code = slurm_reconfigure(cluster_name);
+		error_code = slurm_reconfigure(cluster ?
+					       &cluster->control_addr : NULL);
 		if (error_code) {
 			exit_code = 1;
 			if (quiet_flag != 1)
@@ -768,7 +780,8 @@ _process_command (int argc, char *argv[])
 			}
 			if (level != -1) {
 				error_code = slurm_set_debug_level(
-					level, cluster_name);
+					level, cluster ?
+					&cluster->control_addr : NULL);
 				if (error_code) {
 					exit_code = 1;
 					if (quiet_flag != 1)
@@ -818,7 +831,8 @@ _process_command (int argc, char *argv[])
 			}
 			if (level != -1) {
 				error_code = slurm_set_schedlog_level(
-					level, cluster_name);
+					level, cluster ?
+					&cluster->control_addr : NULL);
 				if (error_code) {
 					exit_code = 1;
 					if (quiet_flag != 1)
@@ -1024,7 +1038,8 @@ _delete_it (int argc, char *argv[])
 	if (strncasecmp (tag, "PartitionName", MAX(taglen, 3)) == 0) {
 		delete_part_msg_t part_msg;
 		part_msg.name = val;
-		if (slurm_delete_partition(&part_msg, cluster_name)) {
+		if (slurm_delete_partition(&part_msg, cluster ?
+					   &cluster->control_addr : NULL)) {
 			char errmsg[64];
 			snprintf(errmsg, 64, "delete_partition %s", argv[0]);
 			slurm_perror(errmsg);
@@ -1032,7 +1047,8 @@ _delete_it (int argc, char *argv[])
 	} else if (strncasecmp (tag, "ReservationName", MAX(taglen, 3)) == 0) {
 		reservation_name_msg_t   res_msg;
 		res_msg.name = val;
-		if (slurm_delete_reservation(&res_msg, cluster_name)) {
+		if (slurm_delete_reservation(&res_msg, cluster ?
+					     &cluster->control_addr : NULL)) {
 			char errmsg[64];
 			snprintf(errmsg, 64, "delete_reservation %s", argv[0]);
 			slurm_perror(errmsg);
@@ -1044,7 +1060,8 @@ _delete_it (int argc, char *argv[])
 
 		block_msg.bg_block_id = val;
 		block_msg.state = RM_PARTITION_NAV;
-		if (slurm_update_block(&block_msg, cluster_name)) {
+		if (slurm_update_block(&block_msg, cluster ?
+				       &cluster->control_addr : NULL)) {
 			char errmsg[64];
 			snprintf(errmsg, 64, "delete_block %s", argv[0]);
 			slurm_perror(errmsg);
@@ -1113,7 +1130,7 @@ _show_it (int argc, char *argv[])
 		}
 		_print_daemons ();
 	} else if (strncasecmp (tag, "jobs", MAX(taglen, 1)) == 0 ||
-		 strncasecmp (tag, "jobid", MAX(taglen, 1)) == 0 ) {
+		   strncasecmp (tag, "jobid", MAX(taglen, 1)) == 0 ) {
 		scontrol_print_job (val);
 	} else if (strncasecmp (tag, "hostnames", MAX(taglen, 5)) == 0) {
 		if (val)
@@ -1130,10 +1147,10 @@ _show_it (int argc, char *argv[])
 	} else if (strncasecmp (tag, "nodes", MAX(taglen, 1)) == 0) {
 		scontrol_print_node_list (val);
 	} else if (strncasecmp (tag, "partitions", MAX(taglen, 1)) == 0 ||
-		 strncasecmp (tag, "partitionname", MAX(taglen, 1)) == 0) {
+		   strncasecmp (tag, "partitionname", MAX(taglen, 1)) == 0) {
 		scontrol_print_part (val);
 	} else if (strncasecmp (tag, "reservations", MAX(taglen, 1)) == 0 ||
-		 strncasecmp (tag, "reservationname", MAX(taglen, 1)) == 0) {
+		   strncasecmp (tag, "reservationname", MAX(taglen, 1)) == 0) {
 		scontrol_print_res (val);
 	} else if (strncasecmp (tag, "slurmd", MAX(taglen, 2)) == 0) {
 		_print_slurmd (val);
@@ -1230,7 +1247,7 @@ _update_it (int argc, char *argv[])
 			"(i.e. bgl000[0-3]),");
 #endif
 		fprintf(stderr, "\"PartitionName\", \"Reservation\", "
-				"\"JobId\", or \"SlurmctldDebug\" \n");
+			"\"JobId\", or \"SlurmctldDebug\" \n");
 	}
 
 	if (error_code) {
@@ -1287,7 +1304,7 @@ _update_bluegene_block (int argc, char *argv[])
 				fprintf (stderr, "Invalid input: %s\n",
 					 argv[i]);
 				fprintf (stderr, "Acceptable State values "
-					"are FREE, ERROR, REMOVE\n");
+					 "are FREE, ERROR, REMOVE\n");
 				return 0;
 			}
 			update_cnt++;
@@ -1308,7 +1325,8 @@ _update_bluegene_block (int argc, char *argv[])
 		return 0;
 	}
 
-	if (slurm_update_block(&block_msg, cluster_name)) {
+	if (slurm_update_block(&block_msg, cluster ?
+			       &cluster->control_addr : NULL)) {
 		exit_code = 1;
 		return slurm_get_errno ();
 	} else
@@ -1365,7 +1383,7 @@ _update_bluegene_subbp (int argc, char *argv[])
 				fprintf (stderr, "Invalid input: %s\n",
 					 argv[i]);
 				fprintf (stderr, "Acceptable State values "
-					"are FREE and ERROR\n");
+					 "are FREE and ERROR\n");
 				return 0;
 			}
 			update_cnt++;
@@ -1386,7 +1404,8 @@ _update_bluegene_subbp (int argc, char *argv[])
 		return 0;
 	}
 
-	if (slurm_update_block(&block_msg, cluster_name)) {
+	if (slurm_update_block(&block_msg, cluster ?
+			       &cluster->control_addr : NULL)) {
 		exit_code = 1;
 		return slurm_get_errno ();
 	} else
@@ -1416,7 +1435,9 @@ static int _update_slurmctld_debug(char *val)
 			fprintf(stderr, "invalid debug level: %s\n",
 				val);
 	} else {
-		error_code = slurm_set_debug_level(level, cluster_name);
+		error_code = slurm_set_debug_level(level, cluster ?
+						   &cluster->
+						   control_addr : NULL);
 	}
 
 	return error_code;

@@ -326,7 +326,7 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
  */
 extern int slurm_load_partitions (time_t update_time,
 				  partition_info_msg_t **resp,
-				  uint16_t show_flags, char *cluster_name)
+				  uint16_t show_flags, slurm_addr *addr)
 {
         int rc;
         slurm_msg_t req_msg;
@@ -342,7 +342,7 @@ extern int slurm_load_partitions (time_t update_time,
         req_msg.data     = &req;
 
 	if (slurm_send_recv_controller_msg(
-		    &req_msg, &resp_msg, cluster_name) < 0)
+		    &req_msg, &resp_msg, addr) < 0)
 		return SLURM_ERROR;
 
 	switch (resp_msg.msg_type) {

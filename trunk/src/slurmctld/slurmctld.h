@@ -465,7 +465,7 @@ struct job_record {
 	uint16_t resv_flags;		/* see RESERVE_FLAG_* in slurm.h */
 	uint32_t requid;            	/* requester user ID */
 	char *resp_host;		/* host for srun communications */
-	select_jobinfo_t *select_jobinfo;/* opaque data, BlueGene */
+	dynamic_plugin_data_t *select_jobinfo;/* opaque data, BlueGene */
 	job_resources_t *job_resrcs;	/* details of allocated cores */
 	char **spank_job_env;		/* environment variables for job prolog
 					 * and epilog scripts as set by SPANK
@@ -481,7 +481,7 @@ struct job_record {
 	time_t time_last_active;	/* time of last job activity */
 	uint32_t time_limit;		/* time_limit minutes or INFINITE,
 					 * NO_VAL implies partition max_time */
-	uint32_t time_min;		/* minimum time_limit minutes or 
+	uint32_t time_min;		/* minimum time_limit minutes or
 					 * INFINITE,
 					 * zero implies same as time_limit */
 	time_t tot_sus_time;		/* total time in suspend state */

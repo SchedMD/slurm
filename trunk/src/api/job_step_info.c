@@ -175,7 +175,7 @@ slurm_sprint_job_step_info ( job_step_info_t * job_step_ptr,
  *	job steps
  * IN job_info_msg_pptr - place to store a job configuration pointer
  * IN show_flags - job step filtering options
- * IN cluster_name - if going cross-cluster, cluster to go to, NULL
+ * IN addr - if going cross-cluster, address of cluster to go to. NULL
  *                   for regular operation.
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  * NOTE: free the response using slurm_free_job_step_info_response_msg
@@ -183,7 +183,7 @@ slurm_sprint_job_step_info ( job_step_info_t * job_step_ptr,
 int
 slurm_get_job_steps (time_t update_time, uint32_t job_id, uint32_t step_id,
 		     job_step_info_response_msg_t **resp, uint16_t show_flags,
-		     char *cluster_name)
+		     slurm_addr *addr)
 {
 	int rc;
 	slurm_msg_t req_msg;
@@ -201,7 +201,7 @@ slurm_get_job_steps (time_t update_time, uint32_t job_id, uint32_t step_id,
 	req_msg.data	= &req;
 
 	if (slurm_send_recv_controller_msg(
-		    &req_msg, &resp_msg, cluster_name) < 0)
+		    &req_msg, &resp_msg, addr) < 0)
 		return SLURM_ERROR;
 
 	switch (resp_msg.msg_type) {
@@ -224,7 +224,7 @@ slurm_get_job_steps (time_t update_time, uint32_t job_id, uint32_t step_id,
 }
 
 extern slurm_step_layout_t *
-slurm_job_step_layout_get(uint32_t job_id, uint32_t step_id, char *cluster_name)
+slurm_job_step_layout_get(uint32_t job_id, uint32_t step_id, slurm_addr *addr)
 {
 	job_step_id_msg_t data;
 	slurm_msg_t req, resp;
@@ -238,7 +238,7 @@ slurm_job_step_layout_get(uint32_t job_id, uint32_t step_id, char *cluster_name)
 	data.job_id = job_id;
 	data.step_id = step_id;
 
-	if (slurm_send_recv_controller_msg(&req, &resp, cluster_name) < 0) {
+	if (slurm_send_recv_controller_msg(&req, &resp, addr) < 0) {
 		return NULL;
 	}
 

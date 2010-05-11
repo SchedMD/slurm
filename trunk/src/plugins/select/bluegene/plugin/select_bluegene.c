@@ -93,15 +93,16 @@ char *slurmctld_cluster_name = NULL;
  */
 const char plugin_name[]       	= "BlueGene node selection plugin";
 const char plugin_type[]       	= "select/bluegene";
+const uint32_t plugin_id	= 100;
 const uint32_t plugin_version	= 200;
 
 /* pthread stuff for updating BG node status */
+#ifdef HAVE_BG
 static pthread_t block_thread = 0;
 static pthread_t state_thread = 0;
 static pthread_mutex_t thread_flag_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /** initialize the status pthread */
-#ifdef HAVE_BG
 static int _init_status_pthread(void);
 
 extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data);
@@ -291,6 +292,7 @@ extern int fini ( void )
 {
 	int rc = SLURM_SUCCESS;
 
+#ifdef HAVE_BG
 	agent_fini = true;
 	pthread_mutex_lock( &thread_flag_mutex );
 	if ( block_thread ) {
@@ -304,7 +306,7 @@ extern int fini ( void )
 	}
 	pthread_mutex_unlock( &thread_flag_mutex );
 	fini_bg();
-
+#endif
 	return rc;
 }
 
@@ -1193,19 +1195,19 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 			(*nodes) *= bg_conf->bp_node_cnt;
 		break;
 	case SELECT_SET_NODE_CNT:
-		get_select_jobinfo(job_desc->select_jobinfo,
+		get_select_jobinfo(job_desc->select_jobinfo->data,
 				   SELECT_JOBDATA_ALTERED, &tmp);
 		if(tmp == 1) {
 			return SLURM_SUCCESS;
 		}
 		tmp = 1;
-		set_select_jobinfo(job_desc->select_jobinfo,
+		set_select_jobinfo(job_desc->select_jobinfo->data,
 				   SELECT_JOBDATA_ALTERED, &tmp);
 
 		if(job_desc->min_nodes == (uint32_t) NO_VAL)
 			return SLURM_SUCCESS;
 
-		get_select_jobinfo(job_desc->select_jobinfo,
+		get_select_jobinfo(job_desc->select_jobinfo->data,
 				   SELECT_JOBDATA_GEOMETRY, &req_geometry);
 
 		if(req_geometry[0] != 0
@@ -1249,7 +1251,7 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 
 		/* this means it is greater or equal to one bp */
 		if(tmp > 0) {
-			set_select_jobinfo(job_desc->select_jobinfo,
+			set_select_jobinfo(job_desc->select_jobinfo->data,
 					   SELECT_JOBDATA_NODE_CNT,
 					   &job_desc->min_nodes);
 			job_desc->min_nodes = tmp;
@@ -1286,7 +1288,7 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 				i *= 2;
 			}
 
-			set_select_jobinfo(job_desc->select_jobinfo,
+			set_select_jobinfo(job_desc->select_jobinfo->data,
 					   SELECT_JOBDATA_NODE_CNT,
 					   &job_desc->min_nodes);
 

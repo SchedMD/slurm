@@ -721,12 +721,10 @@ int slurm_send_node_msg(slurm_fd open_fd, slurm_msg_t *msg);
 
 /* calls connect to make a connection-less datagram connection to the
  *	primary or secondary slurmctld message engine
- * OUT addr     - address of controller contacted
- * IN cluster_name - if going cross-cluster, cluster to go to.
+ * IN/OUT addr     - address of controller contacted
  * RET slurm_fd	- file descriptor of the connection created
  */
-slurm_fd inline slurm_open_controller_conn(slurm_addr *addr,
-					   char *cluster_name);
+slurm_fd inline slurm_open_controller_conn(slurm_addr *addr);
 slurm_fd inline slurm_open_controller_conn_spec(enum controller_id dest);
 /* gets the slurm_addr of the specified controller
  *	primary or secondary slurmctld message engine
@@ -970,12 +968,12 @@ int slurm_send_rc_msg(slurm_msg_t * request_msg, int rc);
  * listens for the response, then closes the connection
  * IN request_msg	- slurm_msg request
  * OUT response_msg	- slurm_msg response
- * IN cluster_name      - if going cross-cluster, cluster to go to.
+ * IN addr              - if going cross-cluster, address of cluster to go to.
  * RET int 		- returns 0 on success, -1 on failure and sets errno
  */
 int slurm_send_recv_controller_msg(slurm_msg_t * request_msg,
 				   slurm_msg_t * response_msg,
-				   char *cluster_name);
+				   slurm_addr *addr);
 
 /* slurm_send_recv_node_msg
  * opens a connection to node,
@@ -1027,7 +1025,7 @@ int slurm_send_recv_rc_msg_only_one(slurm_msg_t *req, int *rc, int timeout);
  *  returns 0 on success, -1 on failure and sets errno
  */
 int slurm_send_recv_controller_rc_msg(slurm_msg_t *req, int *rc,
-				      char *cluster_name);
+				      slurm_addr *addr);
 
 /* slurm_send_only_controller_msg
  * opens a connection to the controller, sends the node a message then,

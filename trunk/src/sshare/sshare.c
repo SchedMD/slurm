@@ -51,7 +51,7 @@ int quiet_flag;		/* quiet=1, verbose=-1, normal=0 */
 int long_flag;		/* exceeds 80 character limit with more info */
 int verbosity;		/* count of -v options */
 uint32_t my_uid = 0;
-char *cluster_name = NULL;
+slurmdb_cluster_rec_t *cluster = NULL;
 
 static int      _get_info(shares_request_msg_t *shares_req,
 			  shares_response_msg_t **shares_resp);
@@ -132,8 +132,12 @@ main (int argc, char *argv[])
 			long_flag = 1;
 			break;
 		case 'M':
-			xfree(cluster_name);
-			cluster_name = xstrdup(optarg);
+			slurmdb_destroy_cluster_rec(cluster);
+			if(!(cluster = slurmdb_get_info_cluster(optarg))) {
+				error("'%s' invalid entry for --cluster",
+				      optarg);
+				exit(1);
+			}
 			break;
 		case 'n':
 			print_fields_have_header = 0;
@@ -261,7 +265,8 @@ static int _get_info(shares_request_msg_t *shares_req,
         req_msg.data     = shares_req;
 
 	if (slurm_send_recv_controller_msg(
-		    &req_msg, &resp_msg, cluster_name) < 0)
+		    &req_msg, &resp_msg, cluster ?
+		    &cluster->control_addr : NULL) < 0)
 		return SLURM_ERROR;
 
 	switch (resp_msg.msg_type) {

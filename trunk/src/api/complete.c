@@ -54,12 +54,12 @@
  * slurm_complete_job - note the completion of a job allocation
  * IN job_id - the job's id
  * IN job_return_code - the highest exit code of any task of the job
- * IN cluster_name - if going cross-cluster, cluster to go to.
+ * IN addr - if going cross-cluster, address of cluster to go to.
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
 int
 slurm_complete_job (uint32_t job_id, uint32_t job_return_code,
-		    char *cluster_name)
+		    slurm_addr *addr)
 {
 	int rc;
 	slurm_msg_t req_msg;
@@ -72,7 +72,7 @@ slurm_complete_job (uint32_t job_id, uint32_t job_return_code,
 	req_msg.msg_type= REQUEST_COMPLETE_JOB_ALLOCATION;
 	req_msg.data	= &req;
 
-	if (slurm_send_recv_controller_rc_msg(&req_msg, &rc, cluster_name) < 0)
+	if (slurm_send_recv_controller_rc_msg(&req_msg, &rc, addr) < 0)
 	       return SLURM_ERROR;
 
 	if (rc)

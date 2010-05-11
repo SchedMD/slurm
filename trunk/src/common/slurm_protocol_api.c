@@ -1908,93 +1908,30 @@ slurm_fd slurm_open_msg_conn(slurm_addr * slurm_address)
 /* Calls connect to make a connection-less datagram connection to the
  *	primary or secondary slurmctld message engine. If the controller
  *	is very busy the connect may fail, so retry a couple of times.
- * OUT addr     - address of controller contacted
- * IN cluster_name - if going cross-cluster, cluster to go to.
+ * IN/OUT addr     - address of controller contacted
  * RET slurm_fd	- file descriptor of the connection created
  */
-slurm_fd slurm_open_controller_conn(slurm_addr *addr, char *cluster_name)
+slurm_fd slurm_open_controller_conn(slurm_addr *addr)
 {
 	slurm_fd fd = -1;
 	slurm_ctl_conf_t *conf;
 	int retry, have_backup = 0;
-	static slurm_addr cluster_addr;
-	static char *last_cluster = NULL;
 
-	if(cluster_name) {
-		/* If going cross-cluster, get the ip/port from the
-		   database for cluster_name and create an address
-		   instead of using the normal channels.
+	if(addr->sin_port == 0) {
+		/* This means the addr wasn't set up already.
 		*/
-		slurmdb_cluster_rec_t *cluster_rec = NULL;
-		slurmdb_cluster_cond_t cluster_cond;
-		List temp_list = NULL;
-		void *db_conn = NULL;
-		if(last_cluster) {
-			if(!strcasecmp(cluster_name, last_cluster))
-				goto set_it;
-			xfree(last_cluster);
-		}
-		db_conn = acct_storage_g_get_connection(
-			false, 0, 1, cluster_name);
-
-		memset(&cluster_cond, 0, sizeof(slurmdb_cluster_cond_t));
-		cluster_cond.cluster_list = list_create(slurm_destroy_char);
-		slurm_addto_char_list(cluster_cond.cluster_list, cluster_name);
-
-		for (retry=0; retry<4; retry++) {
-			if (retry)
-				sleep(1);
-			if((temp_list = acct_storage_g_get_clusters(
-				    db_conn, getuid(), &cluster_cond)))
-				break;
-		}
-
-		if(cluster_cond.cluster_list)
-			list_destroy(cluster_cond.cluster_list);
-		acct_storage_g_close_connection(&db_conn);
-		if(!temp_list) {
-			error("Problem talking to database");
-			goto end_it;
-		}
-
-		if(!(cluster_rec = list_peek(temp_list))) {
-			error("No cluster '%s' known by database.",
-			      cluster_name);
-			list_destroy(temp_list);
-			goto end_it;
-		}
-		slurm_set_addr(&cluster_addr,
-			       cluster_rec->control_port,
-			       cluster_rec->control_host);
-		list_destroy(temp_list);
-		if (cluster_addr.sin_port == 0) {
-			error("Unable to establish '%s' control "
-			      "machine address", cluster_name);
-			goto end_it;
-		}
-
-		/* The last instance of this last_cluster will not be
-		   freed, but it should be rather small, and doesn't
-		   consitute a real memory leak, and makes it so we
-		   don't have to continually connect to the database
-		   to get information.
-		*/
-		last_cluster = xstrdup(cluster_name);
-	set_it:
-		addr = &cluster_addr;
-	} else if (slurm_api_set_default_config() < 0)
-		return SLURM_FAILURE;
-
+		if (slurm_api_set_default_config() < 0)
+			return SLURM_FAILURE;
+	}
 
 	for (retry=0; retry<4; retry++) {
 		if (retry)
 			sleep(1);
-		if(cluster_name) {
+		if(addr->sin_port != 0) {
 			fd = slurm_open_msg_conn(addr);
 			if (fd >= 0)
 				goto end_it;
-			debug("Failed to contact controller for '%s': %m",
-			      cluster_name);
+			debug("Failed to contact controller: %m");
 		} else {
 			addr = &proto_conf->primary_controller;
 			fd = slurm_open_msg_conn(addr);
@@ -3198,11 +3135,11 @@ _send_and_recv_msgs(slurm_fd fd, slurm_msg_t *req, int timeout)
  * listens for the response, then closes the connection
  * IN request_msg	- slurm_msg request
  * OUT response_msg	- slurm_msg response
- * IN cluster_name      - if going cross-cluster, cluster to go to.
+ * IN addr              - if going cross-cluster, address of cluster to go to.
  * RET int		- returns 0 on success, -1 on failure and sets errno
  */
 int slurm_send_recv_controller_msg(slurm_msg_t *req, slurm_msg_t *resp,
-				   char *cluster_name)
+				   slurm_addr *addr)
 {
 	slurm_fd fd = -1;
 	int rc = 0;
@@ -3211,7 +3148,7 @@ int slurm_send_recv_controller_msg(slurm_msg_t *req, slurm_msg_t *resp,
 	slurm_ctl_conf_t *conf;
 	bool backup_controller_flag;
 	uint16_t slurmctld_timeout;
-	slurm_addr ctrl_addr;
+	slurm_addr ctrl_addr, *send_addr;
 
 	/* Just in case the caller didn't initialize his slurm_msg_t, and
 	 * since we KNOW that we are only sending to one node (the controller),
@@ -3221,7 +3158,13 @@ int slurm_send_recv_controller_msg(slurm_msg_t *req, slurm_msg_t *resp,
 	req->ret_list = NULL;
 	req->forward_struct = NULL;
 
-	if ((fd = slurm_open_controller_conn(&ctrl_addr, cluster_name)) < 0) {
+	if(!addr) {
+		ctrl_addr.sin_port = 0;
+		send_addr = &ctrl_addr;
+	} else
+		send_addr = addr;
+
+	if ((fd = slurm_open_controller_conn(send_addr)) < 0) {
 		rc = -1;
 		goto cleanup;
 	}
@@ -3241,7 +3184,7 @@ int slurm_send_recv_controller_msg(slurm_msg_t *req, slurm_msg_t *resp,
 		else
 			rc = -1;
 
-		if ((rc == 0)
+		if ((rc == 0) && (!addr)
 		    && (resp->msg_type == RESPONSE_SLURM_RC)
 		    && ((((return_code_msg_t *) resp->data)->return_code)
 			== ESLURM_IN_STANDBY_MODE)
@@ -3253,8 +3196,8 @@ int slurm_send_recv_controller_msg(slurm_msg_t *req, slurm_msg_t *resp,
 			      "responding, sleep and retry");
 			slurm_free_return_code_msg(resp->data);
 			sleep(30);
-			if ((fd = slurm_open_controller_conn(&ctrl_addr,
-							     cluster_name))
+			send_addr->sin_port = 0;
+			if ((fd = slurm_open_controller_conn(send_addr))
 			    < 0) {
 				rc = -1;
 			} else {
@@ -3310,7 +3253,8 @@ int slurm_send_only_controller_msg(slurm_msg_t *req)
 	/*
 	 *  Open connection to SLURM controller:
 	 */
-	if ((fd = slurm_open_controller_conn(&ctrl_addr, NULL)) < 0) {
+	ctrl_addr.sin_port = 0;
+	if ((fd = slurm_open_controller_conn(&ctrl_addr)) < 0) {
 		rc = SLURM_SOCKET_ERROR;
 		goto cleanup;
 	}
@@ -3600,12 +3544,12 @@ int slurm_send_recv_rc_msg_only_one(slurm_msg_t *req, int *rc, int timeout)
  *  support for backup controller and retry during transistion.
  */
 int slurm_send_recv_controller_rc_msg(slurm_msg_t *req, int *rc,
-				      char *cluster_name)
+				      slurm_addr *addr)
 {
 	int ret_c;
 	slurm_msg_t resp;
 
-	if(!slurm_send_recv_controller_msg(req, &resp, cluster_name)) {
+	if(!slurm_send_recv_controller_msg(req, &resp, addr)) {
 		*rc = slurm_get_return_code(resp.msg_type, resp.data);
 		slurm_free_msg_data(resp.msg_type, resp.data);
 		ret_c = 0;

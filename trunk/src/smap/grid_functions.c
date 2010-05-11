@@ -290,14 +290,17 @@ bitstr_t *get_requested_node_bitmap()
 		error_code =
 			slurm_load_node(old_node_ptr->last_update,
 					&new_node_ptr, SHOW_ALL,
-					params.cluster_name);
+					params.cluster ?
+					&params.cluster->control_addr : NULL);
 		if (error_code == SLURM_SUCCESS)
 			slurm_free_node_info_msg(old_node_ptr);
 		else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA)
 			return bitmap;
 	} else
 		error_code = slurm_load_node((time_t) NULL, &new_node_ptr,
-					     SHOW_ALL, params.cluster_name);
+					     SHOW_ALL, params.cluster ?
+					     &params.cluster->
+					     control_addr : NULL);
 
 	if(bitmap)
 		FREE_NULL_BITMAP(bitmap);

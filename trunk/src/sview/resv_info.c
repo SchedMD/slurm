@@ -804,7 +804,9 @@ extern int get_new_info_resv(reserve_info_msg_t **info_ptr,
 	if (resv_info_ptr) {
 		error_code = slurm_load_reservations(resv_info_ptr->last_update,
 						     &new_resv_ptr,
-						     global_cluster_name);
+						     global_cluster_rec ?
+						     &global_cluster_rec->
+						     control_addr : NULL);
 		if (error_code == SLURM_SUCCESS) {
 			slurm_free_reservation_info_msg(resv_info_ptr);
 			changed = 1;
@@ -816,7 +818,9 @@ extern int get_new_info_resv(reserve_info_msg_t **info_ptr,
 	} else {
 		error_code = slurm_load_reservations((time_t) NULL,
 						     &new_resv_ptr,
-						     global_cluster_name);
+						     global_cluster_rec ?
+						     &global_cluster_rec->
+						     control_addr : NULL);
 		changed = 1;
 	}
 
@@ -898,7 +902,9 @@ extern void admin_edit_resv(GtkCellRendererText *cell,
 
 	if(old_text && !strcmp(old_text, new_text)) {
 		temp = g_strdup_printf("No change in value.");
-	} else if(slurm_update_reservation(resv_msg, global_cluster_name)
+	} else if(slurm_update_reservation(resv_msg, global_cluster_rec ?
+					   &global_cluster_rec->
+					   control_addr : NULL)
 		  == SLURM_SUCCESS) {
 		gtk_tree_store_set(treestore, &iter, column, new_text, -1);
 		temp = g_strdup_printf("Reservation %s %s changed to %s",
@@ -1411,7 +1417,9 @@ extern void admin_resv(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 		switch(edit_type) {
 		case EDIT_REMOVE:
 			if(slurm_delete_reservation(&resv_name_msg,
-						    global_cluster_name)
+						    global_cluster_rec ?
+						    &global_cluster_rec->
+						    control_addr : NULL)
 			   == SLURM_SUCCESS) {
 				temp = g_strdup_printf(
 					"Reservation %s removed successfully",
@@ -1431,7 +1439,9 @@ extern void admin_resv(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 			if(!global_send_update_msg) {
 				temp = g_strdup_printf("No change detected.");
 			} else if(slurm_update_reservation(resv_msg,
-							   global_cluster_name)
+							   global_cluster_rec ?
+							   &global_cluster_rec->
+							   control_addr : NULL)
 				  == SLURM_SUCCESS) {
 				temp = g_strdup_printf(
 					"Reservation %s updated successfully",

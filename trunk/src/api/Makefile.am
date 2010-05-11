@@ -50,7 +50,7 @@ rev     = $(SLURM_API_REVISION)
 # libpmi only the library REVISION and AGE should change (and it is debatable
 # whether these parts of the .so version should change).
 #
-# REVISION is changed if the source of the library has changed so linkers 
+# REVISION is changed if the source of the library has changed so linkers
 # prefer the new version.
 # AGE is changed if interfaces are added but compatibility is not broken.
 libpmi_current = 0
@@ -147,7 +147,7 @@ libslurm_o_LDADD = $(top_builddir)/src/common/libeio.o	\
 	$(top_builddir)/src/common/libspank.o	\
 	$(top_builddir)/src/common/libcommon.o
 
-libslurm.o: $(libslurmhelper_la_OBJECTS) $(libslurmhelper_la_DEPENDENCIES) $(libslurm_o_LDADD)
+libslurm.o: $(libslurmhelper_la_OBJECTS) $(libslurm_o_LDADD)
 	$(LINK) $(libslurmhelper_la_OBJECTS) $(libslurm_o_LDADD)
 
 

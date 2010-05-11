@@ -752,6 +752,60 @@ extern void slurmdb_destroy_report_cluster_grouping(void *object)
 }
 
 
+extern slurmdb_cluster_rec_t *slurmdb_get_info_cluster(char *cluster_name)
+{
+	slurmdb_cluster_rec_t *cluster_rec = NULL;
+	slurmdb_cluster_cond_t cluster_cond;
+	List temp_list = NULL;
+
+	void *db_conn = NULL;
+
+	xassert(cluster_name);
+
+	db_conn = acct_storage_g_get_connection(false, 0, 1, cluster_name);
+
+	memset(&cluster_cond, 0, sizeof(slurmdb_cluster_cond_t));
+	cluster_cond.cluster_list = list_create(slurm_destroy_char);
+	slurm_addto_char_list(cluster_cond.cluster_list, cluster_name);
+
+	if(!(temp_list = acct_storage_g_get_clusters(
+		    db_conn, getuid(), &cluster_cond))) {
+		error("Problem talking to database");
+		goto end_it;
+	}
+
+	if(!(cluster_rec = list_pop(temp_list))) {
+		error("No cluster '%s' known by database.",
+		      cluster_name);
+		goto end_it;
+	}
+
+	if(cluster_rec->rpc_version < 8) {
+		error("Slurmctld must be running at least SLURM 2.2 "
+		      "for cross-cluster communication.");
+		slurmdb_destroy_cluster_rec(cluster_rec);
+		cluster_rec = NULL;
+		goto end_it;
+	}
+
+	slurm_set_addr(&cluster_rec->control_addr,
+		       cluster_rec->control_port,
+		       cluster_rec->control_host);
+	if (cluster_rec->control_addr.sin_port == 0) {
+		error("Unable to establish control "
+		      "machine address for '%s'(%s:%u)", cluster_name,
+		      cluster_rec->control_host, cluster_rec->control_port);
+		goto end_it;
+	}
+end_it:
+	if(cluster_cond.cluster_list)
+		list_destroy(cluster_cond.cluster_list);
+	if(temp_list)
+		list_destroy(temp_list);
+	acct_storage_g_close_connection(&db_conn);
+
+	return cluster_rec;
+}
 
 extern void slurmdb_init_association_rec(slurmdb_association_rec_t *assoc)
 {

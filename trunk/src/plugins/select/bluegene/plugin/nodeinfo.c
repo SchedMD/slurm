@@ -53,6 +53,7 @@ static void _free_node_subgrp(void *object)
 	}
 }
 
+#ifdef HAVE_BG
 static node_subgrp_t *_find_subgrp(List subgrp_list, enum node_states state,
 				   uint16_t size)
 {
@@ -74,6 +75,7 @@ static node_subgrp_t *_find_subgrp(List subgrp_list, enum node_states state,
 
 	return subgrp;
 }
+#endif
 
 static int _pack_node_subgrp(node_subgrp_t *subgrp, Buf buffer,
 			     uint16_t protocol_version)
@@ -191,9 +193,12 @@ extern select_nodeinfo_t *select_nodeinfo_alloc(uint32_t size)
 {
 	select_nodeinfo_t *nodeinfo = xmalloc(sizeof(struct select_nodeinfo));
 
+#ifdef HAVE_BG
 	if(bg_conf && (!size || size == NO_VAL))
 		size = bg_conf->numpsets;
-
+#else
+	fatal("we shouldn't be here in select_nodeinfo_alloc");
+#endif
 	nodeinfo->bitmap_size = size;
 	nodeinfo->magic = NODEINFO_MAGIC;
 	nodeinfo->subgrp_list = list_create(_free_node_subgrp);
@@ -217,6 +222,7 @@ extern int select_nodeinfo_free(select_nodeinfo_t *nodeinfo)
 
 extern int select_nodeinfo_set_all(time_t last_query_time)
 {
+#ifdef HAVE_BG
 	ListIterator itr = NULL;
 	struct node_record *node_ptr = NULL;
 	int i=0;
@@ -241,18 +247,21 @@ extern int select_nodeinfo_set_all(time_t last_query_time)
 
 	slurm_mutex_lock(&block_state_mutex);
 	for (i=0; i<node_record_count; i++) {
+		select_nodeinfo_t *nodeinfo;
 		node_ptr = &(node_record_table_ptr[i]);
 		xassert(node_ptr->select_nodeinfo);
-		xassert(node_ptr->select_nodeinfo->subgrp_list);
-		list_flush(node_ptr->select_nodeinfo->subgrp_list);
-		if(node_ptr->select_nodeinfo->bitmap_size != bg_conf->numpsets)
-			node_ptr->select_nodeinfo->bitmap_size =
-				bg_conf->numpsets;
+		nodeinfo = node_ptr->select_nodeinfo->data;
+		xassert(nodeinfo);
+		xassert(nodeinfo->subgrp_list);
+		list_flush(nodeinfo->subgrp_list);
+		if(nodeinfo->bitmap_size != bg_conf->numpsets)
+			nodeinfo->bitmap_size = bg_conf->numpsets;
 	}
 	itr = list_iterator_create(bg_lists->main);
 	while((bg_record = list_next(itr))) {
 		enum node_states state = NODE_STATE_UNKNOWN;
 		node_subgrp_t *subgrp = NULL;
+		select_nodeinfo_t *nodeinfo;
 
 		/* Only mark unidle blocks */
 		if(bg_record->job_running == NO_JOB_RUNNING)
@@ -277,8 +286,13 @@ extern int select_nodeinfo_set_all(time_t last_query_time)
 				continue;
 			node_ptr = &(node_record_table_ptr[i]);
 
+			xassert(node_ptr->select_nodeinfo);
+			nodeinfo = node_ptr->select_nodeinfo->data;
+			xassert(nodeinfo);
+			xassert(nodeinfo->subgrp_list);
+
 			subgrp = _find_subgrp(
-				node_ptr->select_nodeinfo->subgrp_list,
+				nodeinfo->subgrp_list,
 				state, bg_conf->numpsets);
 
 			if(subgrp->node_cnt < bg_conf->bp_node_cnt) {
@@ -298,6 +312,9 @@ extern int select_nodeinfo_set_all(time_t last_query_time)
 	slurm_mutex_unlock(&block_state_mutex);
 
 	return SLURM_SUCCESS;
+#else
+	return SLURM_ERROR;
+#endif
 }
 
 extern int select_nodeinfo_set(struct job_record *job_ptr)

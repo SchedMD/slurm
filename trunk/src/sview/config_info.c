@@ -48,7 +48,9 @@ extern int get_new_info_config(slurm_ctl_conf_info_msg_t **info_ptr)
 	if (ctl_info_ptr) {
 		error_code = slurm_load_ctl_conf(ctl_info_ptr->last_update,
 						 &new_ctl_ptr,
-						 global_cluster_name);
+						 global_cluster_rec ?
+						 &global_cluster_rec->
+						 control_addr : NULL);
 		if (error_code == SLURM_SUCCESS)
 			slurm_free_ctl_conf(ctl_info_ptr);
 		else if (slurm_get_errno () == SLURM_NO_CHANGE_IN_DATA) {
@@ -57,7 +59,9 @@ extern int get_new_info_config(slurm_ctl_conf_info_msg_t **info_ptr)
 		}
 	} else
 		error_code = slurm_load_ctl_conf((time_t) NULL, &new_ctl_ptr,
-						 global_cluster_name);
+						 global_cluster_rec ?
+						 &global_cluster_rec->
+						 control_addr : NULL);
 	ctl_info_ptr = new_ctl_ptr;
 
 	if(*info_ptr != ctl_info_ptr)

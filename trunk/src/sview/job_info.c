@@ -459,7 +459,9 @@ static void _cancel_job_id (uint32_t job_id, uint16_t signal)
 			signal = 9;
 			error_code = slurm_kill_job(job_id, SIGKILL,
 						    false,
-						    global_cluster_name);
+						    global_cluster_rec ?
+						    &global_cluster_rec->
+						    control_addr : NULL);
 		} else {
 			error_code = slurm_signal_job(job_id, signal);
 		}
@@ -2503,7 +2505,7 @@ void _display_info_job(List info_list, popup_info_t *popup_win)
 	int j = 0;
 
 	if(spec_info->search_info->int_data == NO_VAL) {
-	/* 	info = xstrdup("No pointer given!"); */
+		/* 	info = xstrdup("No pointer given!"); */
 		goto finished;
 	}
 
@@ -2531,12 +2533,12 @@ need_refresh:
 	} else if(spec_info->search_info->int_data2 == NO_VAL) {
 		j=0;
 		while(sview_job_info->job_ptr->node_inx[j] >= 0) {
-				change_grid_color(
-					popup_win->grid_button_list,
-					sview_job_info->job_ptr->node_inx[j],
-					sview_job_info->job_ptr->node_inx[j+1],
-					sview_job_info->color_inx,
-					true, 0);
+			change_grid_color(
+				popup_win->grid_button_list,
+				sview_job_info->job_ptr->node_inx[j],
+				sview_job_info->job_ptr->node_inx[j+1],
+				sview_job_info->color_inx,
+				true, 0);
 			j += 2;
 		}
 		_layout_job_record(treeview, sview_job_info, update);
@@ -2639,7 +2641,9 @@ extern int get_new_info_job(job_info_msg_t **info_ptr,
 			job_info_ptr->last_update = 0;
 		error_code = slurm_load_jobs(job_info_ptr->last_update,
 					     &new_job_ptr, show_flags,
-					     global_cluster_name);
+					     global_cluster_rec ?
+					     &global_cluster_rec->
+					     control_addr : NULL);
 		if (error_code == SLURM_SUCCESS) {
 			slurm_free_job_info_msg(job_info_ptr);
 			changed = 1;
@@ -2651,7 +2655,9 @@ extern int get_new_info_job(job_info_msg_t **info_ptr,
 	} else {
 		error_code = slurm_load_jobs((time_t) NULL, &new_job_ptr,
 					     show_flags,
-					     global_cluster_name);
+					     global_cluster_rec ?
+					     &global_cluster_rec->
+					     control_addr : NULL);
 		changed = 1;
 	}
 
@@ -2694,7 +2700,9 @@ extern int get_new_info_job_step(job_step_info_response_msg_t **info_ptr,
 		error_code = slurm_get_job_steps(old_step_ptr->last_update,
 						 NO_VAL, NO_VAL, &new_step_ptr,
 						 show_flags,
-						 global_cluster_name);
+						 global_cluster_rec ?
+						 &global_cluster_rec->
+						 control_addr : NULL);
 		if (error_code == SLURM_SUCCESS) {
 			slurm_free_job_step_info_response_msg(old_step_ptr);
 			changed = 1;
@@ -2706,7 +2714,9 @@ extern int get_new_info_job_step(job_step_info_response_msg_t **info_ptr,
 	} else {
 		error_code = slurm_get_job_steps((time_t) NULL, NO_VAL, NO_VAL,
 						 &new_step_ptr, show_flags,
-						 global_cluster_name);
+						 global_cluster_rec ?
+						 &global_cluster_rec->
+						 control_addr : NULL);
 		changed = 1;
 	}
 
@@ -2871,7 +2881,8 @@ extern void admin_edit_job(GtkCellRendererText *cell,
 
 	if(old_text && !strcmp(old_text, new_text)) {
 		temp = g_strdup_printf("No change in value.");
-	} else if(slurm_update_job(job_msg, global_cluster_name)
+	} else if(slurm_update_job(job_msg, global_cluster_rec ?
+				   &global_cluster_rec->control_addr : NULL)
 		  == SLURM_SUCCESS) {
 		gtk_tree_store_set(treestore, &iter, column, new_text, -1);
 		temp = g_strdup_printf("Job %d %s changed to %s",
@@ -3619,7 +3630,9 @@ extern void admin_job(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 
 			break;
 		case EDIT_REQUEUE:
-			response = slurm_requeue(jobid, global_cluster_name);
+			response = slurm_requeue(jobid, global_cluster_rec ?
+						 &global_cluster_rec->
+						 control_addr : NULL);
 			if(response) {
 				tmp_char_ptr = g_strdup_printf(
 					"Error happened trying to requeue "
@@ -3640,10 +3653,14 @@ extern void admin_job(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 		case EDIT_SUSPEND:
 			if(state == JOB_SUSPENDED)
 				response = slurm_resume(jobid,
-							global_cluster_name);
+							global_cluster_rec ?
+							&global_cluster_rec->
+							control_addr : NULL);
 			else
 				response = slurm_suspend(jobid,
-							 global_cluster_name);
+							 global_cluster_rec ?
+							 &global_cluster_rec->
+							 control_addr : NULL);
 			if(response) {
 				tmp_char_ptr = g_strdup_printf(
 					"Error happened trying to %s job %u.",
@@ -3673,7 +3690,9 @@ extern void admin_job(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 				tmp_char_ptr = g_strdup_printf(
 					"No change detected.");
 			} else if(slurm_update_job(job_msg,
-						   global_cluster_name)
+						   global_cluster_rec ?
+						   &global_cluster_rec->
+						   control_addr : NULL)
 				  == SLURM_SUCCESS) {
 				tmp_char_ptr = g_strdup_printf(
 					"Job %u updated successfully",
@@ -3686,7 +3705,7 @@ extern void admin_job(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 			} else {
 				tmp_char_ptr = g_strdup_printf(
 					"Problem updating job %u.",
-				       jobid);
+					jobid);
 			}
 			display_edit_note(tmp_char_ptr);
 			g_free(tmp_char_ptr);

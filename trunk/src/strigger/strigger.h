@@ -47,10 +47,11 @@
 #include <slurm/slurm.h>
 #include <src/common/macros.h>
 #include <src/common/slurm_protocol_defs.h>
+#include "src/common/slurmdb_defs.h"
 
 struct strigger_parameters {
 	bool     block_err;
-	char *   cluster_name;
+	slurmdb_cluster_rec_t *cluster;
 	bool     job_fini;
 	uint32_t job_id;
 	bool     mode_set;

@@ -157,14 +157,14 @@ char *slurm_sprint_reservation_info ( reserve_info_t * resv_ptr,
  * IN update_time - time of current configuration data
  * IN reserve_info_msg_pptr - place to store a reservation configuration
  *	pointer
- * IN cluster_name - if going cross-cluster, cluster to go to, NULL
+ * IN addr - if going cross-cluster, address of cluster to go to. NULL
  *                   for regular operation.
  * RET 0 or a slurm error code
  * NOTE: free the response using slurm_free_reservation_info_msg
  */
 extern int slurm_load_reservations (time_t update_time,
 				    reserve_info_msg_t **resp,
-				    char *cluster_name)
+				    slurm_addr *addr)
 {
         int rc;
         slurm_msg_t req_msg;
@@ -179,7 +179,7 @@ extern int slurm_load_reservations (time_t update_time,
         req_msg.data     = &req;
 
 	if (slurm_send_recv_controller_msg(
-		    &req_msg, &resp_msg, cluster_name) < 0)
+		    &req_msg, &resp_msg, addr) < 0)
 		return SLURM_ERROR;
 
 	switch (resp_msg.msg_type) {

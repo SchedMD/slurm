@@ -82,6 +82,7 @@
 #include "src/common/slurm_accounting_storage.h"
 #include "src/common/xstring.h"
 #include "src/common/print_fields.h"
+#include "src/common/slurmdb_defs.h"
 
 #define CKPT_WAIT	10
 #define	MAX_INPUT_FIELDS 128
@@ -97,7 +98,7 @@ extern int quiet_flag;	/* quiet=1, verbose=-1, normal=0 */
 extern uint32_t my_uid;
 extern sshare_time_format_t time_format;
 extern char *time_format_string;
-extern char *cluster_name;
+extern slurmdb_cluster_rec_t *cluster;
 
 extern int process(shares_response_msg_t *msg);
 

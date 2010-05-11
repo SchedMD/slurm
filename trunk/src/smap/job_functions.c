@@ -67,7 +67,8 @@ extern void get_job(void)
 			job_info_ptr->last_update = 0;
 		error_code = slurm_load_jobs(job_info_ptr->last_update,
 					     &new_job_ptr, show_flags,
-					     params.cluster_name);
+					     params.cluster ?
+					     &params.cluster->control_addr : NULL);
 		if (error_code == SLURM_SUCCESS)
 			slurm_free_job_info_msg(job_info_ptr);
 		else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
@@ -76,7 +77,8 @@ extern void get_job(void)
 		}
 	} else
 		error_code = slurm_load_jobs((time_t) NULL, &new_job_ptr,
-					     show_flags, params.cluster_name);
+					     show_flags, params.cluster ?
+					     &params.cluster->control_addr : NULL);
 
 	last_flags = show_flags;
 	if (error_code) {
@@ -131,8 +133,8 @@ extern void get_job(void)
 			job_ptr->num_nodes = 0;
 			while (job_ptr->node_inx[j] >= 0) {
 				job_ptr->num_nodes +=
-				    (job_ptr->node_inx[j + 1] + 1) -
-				    job_ptr->node_inx[j];
+					(job_ptr->node_inx[j + 1] + 1) -
+					job_ptr->node_inx[j];
 				set_grid_inx(job_ptr->node_inx[j],
 					     job_ptr->node_inx[j + 1], count);
 				j += 2;
@@ -326,9 +328,9 @@ static int _print_text_job(job_info_t * job_ptr)
 		mvwprintw(text_win, main_ycord,
 			  main_xcord, "%.16s",
 			  select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,
-						  time_buf,
-						  sizeof(time_buf),
-						  SELECT_PRINT_RESV_ID));
+							 time_buf,
+							 sizeof(time_buf),
+							 SELECT_PRINT_RESV_ID));
 		main_xcord += 18;
 #endif
 		uname = uid_to_string((uid_t) job_ptr->user_id);
@@ -401,16 +403,16 @@ static int _print_text_job(job_info_t * job_ptr)
 #ifdef HAVE_BG
 		printf("%16.16s ",
 		       select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,
-					       time_buf,
-					       sizeof(time_buf),
-					       SELECT_PRINT_BG_ID));
+						      time_buf,
+						      sizeof(time_buf),
+						      SELECT_PRINT_BG_ID));
 #endif
 #ifdef HAVE_CRAY_XT
 		printf("%16.16s ",
 		       select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,
-					       time_buf,
-					       sizeof(time_buf),
-					       SELECT_PRINT_RESV_ID));
+						      time_buf,
+						      sizeof(time_buf),
+						      SELECT_PRINT_RESV_ID));
 #endif
 		uname = uid_to_string((uid_t) job_ptr->user_id);
 		printf("%8.8s ", uname);
@@ -479,7 +481,8 @@ static int   _max_cpus_per_node(void)
 
 	error_code = slurm_load_node ((time_t) NULL, &node_info_ptr,
 				      params.all_flag ? 1 : 0,
-				      params.cluster_name);
+				      params.cluster ?
+				      &params.cluster->control_addr : NULL);
 	if (error_code == SLURM_SUCCESS) {
 		int i;
 		node_info_t *node_ptr = node_info_ptr->node_array;

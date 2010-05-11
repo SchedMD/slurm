@@ -317,7 +317,8 @@ scontrol_update_res(int argc, char *argv[])
 		goto SCONTROL_UPDATE_RES_CLEANUP;
 	}
 
-	err = slurm_update_reservation(&resv_msg, cluster_name);
+	err = slurm_update_reservation(&resv_msg, cluster ?
+				       &cluster->control_addr : NULL);
 	if (err) {
 		exit_code = 1;
 		slurm_perror("Error updating the reservation");
@@ -402,7 +403,8 @@ scontrol_create_res(int argc, char *argv[])
 		goto SCONTROL_CREATE_RES_CLEANUP;
 	}
 
-	new_res_name = slurm_create_reservation(&resv_msg, cluster_name);
+	new_res_name = slurm_create_reservation(&resv_msg, cluster ?
+						&cluster->control_addr : NULL);
 	if (!new_res_name) {
 		exit_code = 1;
 		slurm_perror("Error creating the reservation");
