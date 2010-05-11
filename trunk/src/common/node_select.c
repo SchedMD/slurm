@@ -613,7 +613,7 @@ extern int slurm_select_fini(void)
 
 	slurm_mutex_lock(&select_context_lock);
 	if (!select_context)
-		go to fini;
+		goto fini;
 
 	for (i=0; i<select_context_cnt; i++) {
 		j = _select_context_destroy(select_context);
