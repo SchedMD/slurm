@@ -819,7 +819,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	struct job_record *job_ptr;
 	struct part_record *part_ptr;
 	int error_code, i, qos_error;
-	select_jobinfo_t *select_jobinfo = NULL;
+	dynamic_plugin_data_t *select_jobinfo = NULL;
 	job_resources_t *job_resources = NULL;
 	check_jobinfo_t check_job = NULL;
 	slurmdb_association_rec_t assoc_rec;

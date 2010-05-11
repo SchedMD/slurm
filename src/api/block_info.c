@@ -195,14 +195,14 @@ char *slurm_sprint_block_info(
  * IN update_time - time of current configuration data
  * IN block_info_msg_pptr - place to store a node select configuration
  *	pointer
- * IN cluster_name - if going cross-cluster, cluster to go to, NULL
+ * IN addr - if going cross-cluster, address of cluster to go to. NULL
  *                   for regular operation.
  * RET 0 or a slurm error code
  * NOTE: free the response using slurm_free_block_info_msg
  */
 extern int slurm_load_block_info (
 	time_t update_time, block_info_msg_t **block_info_msg_pptr,
-	char *cluster_name)
+	slurm_addr *addr)
 {
         int rc;
         slurm_msg_t req_msg;
@@ -217,7 +217,7 @@ extern int slurm_load_block_info (
         req_msg.data     = &req;
 
 	if (slurm_send_recv_controller_msg(
-		    &req_msg, &resp_msg, cluster_name) < 0)
+		    &req_msg, &resp_msg, addr) < 0)
 		return SLURM_ERROR;
 
 	switch (resp_msg.msg_type) {
@@ -246,14 +246,14 @@ extern int slurm_free_block_info_msg(block_info_msg_t **block_info_msg_pptr)
 	return node_select_block_info_msg_free(block_info_msg_pptr);
 }
 
-extern int slurm_get_select_jobinfo(select_jobinfo_t *jobinfo,
+extern int slurm_get_select_jobinfo(dynamic_plugin_data_t *jobinfo,
 				    enum select_jobdata_type data_type,
 				    void *data)
 {
 	return select_g_select_jobinfo_get(jobinfo, data_type, data);
 }
 
-extern int slurm_get_select_nodeinfo(select_nodeinfo_t *nodeinfo,
+extern int slurm_get_select_nodeinfo(dynamic_plugin_data_t *nodeinfo,
 				     enum select_nodedata_type data_type,
 				     enum node_states state, void *data)
 {

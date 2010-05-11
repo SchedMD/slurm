@@ -158,6 +158,7 @@ List slurm_find_preemptable_jobs(struct job_record *job_ptr);
  */
 const char plugin_name[] = "Consumable Resources (CR) Node Selection plugin";
 const char plugin_type[] = "select/cons_res";
+const uint32_t plugin_id      = 101;
 const uint32_t plugin_version = 91;
 const uint32_t pstate_version = 7;	/* version control on saved state */
 
@@ -1593,14 +1594,6 @@ static int _synchronize_bitmaps(struct job_record *job_ptr,
  */
 extern int init(void)
 {
-#ifdef HAVE_XCPU
-	error("%s is incompatible with XCPU use", plugin_name);
-	fatal("Use SelectType=select/linear");
-#endif
-#ifdef HAVE_BG
-	error("%s is incompatible with BlueGene", plugin_name);
-	fatal("Use SelectType=select/bluegene");
-#endif
 	cr_type = slurmctld_conf.select_type_param;
 	verbose("%s loaded with argument %u", plugin_name, cr_type);
 
@@ -1995,7 +1988,8 @@ extern int select_p_select_nodeinfo_set_all(void)
 		if ((end - start) < node_cpus)
 			tmp_16 *= node_threads;
 
-		node_ptr->select_nodeinfo->alloc_cpus = tmp_16;
+		((select_nodeinfo_t *)node_ptr->select_nodeinfo->data)->
+			alloc_cpus = tmp_16;
 	}
 
 	return SLURM_SUCCESS;

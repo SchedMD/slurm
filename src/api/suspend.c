@@ -44,7 +44,7 @@
 #include <slurm/slurm.h>
 #include "src/common/slurm_protocol_api.h"
 
-static int _suspend_op (uint16_t op, uint32_t job_id, char *cluster_name);
+static int _suspend_op (uint16_t op, uint32_t job_id, slurm_addr *addr);
 /*
  * _suspend_op - perform a suspend/resume operation for some job.
  * IN op      - operation to perform
@@ -52,7 +52,7 @@ static int _suspend_op (uint16_t op, uint32_t job_id, char *cluster_name);
  * IN step_id - job step on which to perform operation
  * RET 0 or a slurm error code
  */
-static int _suspend_op (uint16_t op, uint32_t job_id, char *cluster_name)
+static int _suspend_op (uint16_t op, uint32_t job_id, slurm_addr *addr)
 {
 	int rc;
 	suspend_msg_t sus_req;
@@ -64,7 +64,7 @@ static int _suspend_op (uint16_t op, uint32_t job_id, char *cluster_name)
 	req_msg.msg_type = REQUEST_SUSPEND;
 	req_msg.data     = &sus_req;
 
-	if (slurm_send_recv_controller_rc_msg(&req_msg, &rc, cluster_name) < 0)
+	if (slurm_send_recv_controller_rc_msg(&req_msg, &rc, addr) < 0)
 		return SLURM_ERROR;
 
 	slurm_seterrno(rc);
@@ -74,36 +74,36 @@ static int _suspend_op (uint16_t op, uint32_t job_id, char *cluster_name)
 /*
  * slurm_suspend - suspend execution of a job.
  * IN job_id  - job on which to perform operation
- * IN cluster_name - if going cross-cluster, cluster to go to, NULL
+ * IN addr - if going cross-cluster, address of cluster to go to. NULL
  *                   for regular operation.
  * RET 0 or a slurm error code
  */
-extern int slurm_suspend (uint32_t job_id, char *cluster_name)
+extern int slurm_suspend (uint32_t job_id, slurm_addr *addr)
 {
-	return _suspend_op (SUSPEND_JOB, job_id, cluster_name);
+	return _suspend_op (SUSPEND_JOB, job_id, addr);
 }
 
 /*
  * slurm_resume - resume execution of a previously suspended job.
  * IN job_id  - job on which to perform operation
- * IN cluster_name - if going cross-cluster, cluster to go to, NULL
+ * IN addr - if going cross-cluster, address of cluster to go to. NULL
  *                   for regular operation.
  * RET 0 or a slurm error code
  */
-extern int slurm_resume (uint32_t job_id, char *cluster_name)
+extern int slurm_resume (uint32_t job_id, slurm_addr *addr)
 {
-	return _suspend_op (RESUME_JOB, job_id, cluster_name);
+	return _suspend_op (RESUME_JOB, job_id, addr);
 }
 
 /*
  * slurm_requeue - re-queue a batch job, if already running
  *	then terminate it first
  * IN job_id  - job on which to perform operation
- * IN cluster_name - if going cross-cluster, cluster to go to, NULL
+ * IN addr - if going cross-cluster, address of cluster to go to. NULL
  *                   for regular operation.
  * RET 0 or a slurm error code
  */
-extern int slurm_requeue (uint32_t job_id, char *cluster_name)
+extern int slurm_requeue (uint32_t job_id, slurm_addr *addr)
 {
 	int rc;
 	job_id_msg_t requeue_req;
@@ -114,7 +114,7 @@ extern int slurm_requeue (uint32_t job_id, char *cluster_name)
 	req_msg.msg_type	= REQUEST_JOB_REQUEUE;
 	req_msg.data		= &requeue_req;
 
-	if (slurm_send_recv_controller_rc_msg(&req_msg, &rc, cluster_name) < 0)
+	if (slurm_send_recv_controller_rc_msg(&req_msg, &rc, addr) < 0)
 		return SLURM_ERROR;
 
 	slurm_seterrno(rc);

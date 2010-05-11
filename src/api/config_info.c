@@ -1130,14 +1130,14 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
  * IN update_time - time of current configuration data
  * IN slurm_ctl_conf_ptr - place to store slurm control configuration
  *	pointer
- * IN cluster_name - if going cross-cluster, cluster to go to, NULL
+ * IN addr - if going cross-cluster, address of cluster to go to. NULL
  *                   for regular operation.
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  * NOTE: free the response using slurm_free_ctl_conf
  */
 int
 slurm_load_ctl_conf (time_t update_time, slurm_ctl_conf_t **confp,
-		     char *cluster_name)
+		     slurm_addr *addr)
 {
 	int rc;
 	slurm_msg_t req_msg;
@@ -1152,7 +1152,7 @@ slurm_load_ctl_conf (time_t update_time, slurm_ctl_conf_t **confp,
 	req_msg.data     = &req;
 
 	if (slurm_send_recv_controller_msg(
-		    &req_msg, &resp_msg, cluster_name) < 0)
+		    &req_msg, &resp_msg, addr) < 0)
 		return SLURM_ERROR;
 
 	switch (resp_msg.msg_type) {

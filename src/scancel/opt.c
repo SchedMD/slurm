@@ -206,7 +206,7 @@ static void _opt_default()
 {
 	opt.account	= NULL;
 	opt.batch	= false;
-	opt.cluster_name= NULL;
+	opt.cluster     = NULL;
 	opt.ctld	= false;
 	opt.interactive	= false;
 	opt.job_cnt	= 0;
@@ -357,8 +357,13 @@ static void _opt_args(int argc, char **argv)
 			break;
 		case (int)'M':
 			opt.ctld = true;
-			xfree(opt.cluster_name);
-			opt.cluster_name = xstrdup(optarg);
+			slurmdb_destroy_cluster_rec(opt.cluster);
+			if(!(opt.cluster =
+			     slurmdb_get_info_cluster(optarg))) {
+				error("'%s' invalid entry for --cluster",
+				      optarg);
+				exit(1);
+			}
 			break;
 		case (int)'n':
 			opt.job_name = xstrdup(optarg);

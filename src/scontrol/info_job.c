@@ -96,12 +96,15 @@ _scontrol_load_jobs(job_info_msg_t ** job_buffer_pptr, uint32_t job_id)
 			old_job_info_ptr->last_update = (time_t) 0;
 		if (job_id) {
 			error_code = slurm_load_job(&job_info_ptr, job_id,
-						    show_flags, cluster_name);
+						    show_flags, cluster ?
+						    &cluster->
+						    control_addr : NULL);
 		} else {
 			error_code = slurm_load_jobs(
-					old_job_info_ptr->last_update,
-					&job_info_ptr, show_flags,
-					cluster_name);
+				old_job_info_ptr->last_update,
+				&job_info_ptr, show_flags,
+				cluster ?
+				&cluster->control_addr : NULL);
 		}
 		if (error_code == SLURM_SUCCESS)
 			slurm_free_job_info_msg (old_job_info_ptr);
@@ -113,10 +116,12 @@ _scontrol_load_jobs(job_info_msg_t ** job_buffer_pptr, uint32_t job_id)
 		}
 	} else if (job_id) {
 		error_code = slurm_load_job(&job_info_ptr, job_id, show_flags,
-					    cluster_name);
+					    cluster ?
+					    &cluster->control_addr : NULL);
 	} else {
 		error_code = slurm_load_jobs((time_t) NULL, &job_info_ptr,
-					     show_flags, cluster_name);
+					     show_flags, cluster ?
+					     &cluster->control_addr : NULL);
 	}
 
 	if (error_code == SLURM_SUCCESS) {
@@ -151,7 +156,8 @@ scontrol_pid_info(pid_t job_pid)
 		return;
 	}
 
-	error_code = slurm_get_end_time(job_id, &end_time, cluster_name);
+	error_code = slurm_get_end_time(job_id, &end_time, cluster ?
+					&cluster->control_addr : NULL);
 	if (error_code) {
 		exit_code = 1;
 		if (quiet_flag != 1)
@@ -160,7 +166,8 @@ scontrol_pid_info(pid_t job_pid)
 	}
 	printf("Slurm job id %u ends at %s\n", job_id, ctime(&end_time));
 
-	rem_time = slurm_get_rem_time(job_id, cluster_name);
+	rem_time = slurm_get_rem_time(job_id, cluster ?
+				      &cluster->control_addr : NULL);
 	printf("slurm_get_rem_time is %ld\n", rem_time);
 	return;
 }
@@ -188,7 +195,7 @@ scontrol_print_completing (void)
 	/* Must load all nodes including hidden for cross-index
 	 * from job's node_inx to node table to work */
 	/*if (all_flag)		Always set this flag */
-		show_flags |= SHOW_ALL;
+	show_flags |= SHOW_ALL;
 	error_code = scontrol_load_nodes (&node_info_msg, show_flags);
 	if (error_code) {
 		exit_code = 1;
@@ -202,13 +209,13 @@ scontrol_print_completing (void)
 	for (i=0; i<job_info_msg->record_count; i++) {
 		if (job_info[i].job_state & JOB_COMPLETING)
 			scontrol_print_completing_job(&job_info[i],
-					node_info_msg);
+						      node_info_msg);
 	}
 }
 
 extern void
 scontrol_print_completing_job(job_info_t *job_ptr,
-		node_info_msg_t *node_info_msg)
+			      node_info_msg_t *node_info_msg)
 {
 	int i;
 	node_info_t *node_info;
@@ -324,12 +331,13 @@ scontrol_print_step (char *job_step_id_str)
 		if (last_show_flags != show_flags)
 			old_job_step_info_ptr->last_update = (time_t) 0;
 		error_code = slurm_get_job_steps (
-					old_job_step_info_ptr->last_update,
-					job_id, step_id, &job_step_info_ptr,
-					show_flags, cluster_name);
+			old_job_step_info_ptr->last_update,
+			job_id, step_id, &job_step_info_ptr,
+			show_flags, cluster ?
+			&cluster->control_addr : NULL);
 		if (error_code == SLURM_SUCCESS)
 			slurm_free_job_step_info_response_msg (
-					old_job_step_info_ptr);
+				old_job_step_info_ptr);
 		else if (slurm_get_errno () == SLURM_NO_CHANGE_IN_DATA) {
 			job_step_info_ptr = old_job_step_info_ptr;
 			error_code = SLURM_SUCCESS;
@@ -340,12 +348,14 @@ scontrol_print_step (char *job_step_id_str)
 	else {
 		if (old_job_step_info_ptr) {
 			slurm_free_job_step_info_response_msg (
-					old_job_step_info_ptr);
+				old_job_step_info_ptr);
 			old_job_step_info_ptr = NULL;
 		}
 		error_code = slurm_get_job_steps ( (time_t) 0, job_id, step_id,
 						   &job_step_info_ptr,
-						   show_flags, cluster_name);
+						   show_flags, cluster ?
+						   &cluster->
+						   control_addr : NULL);
 	}
 
 	if (error_code) {
@@ -713,7 +723,9 @@ static int _blocks_dealloc(void)
 
 	if (bg_info_ptr) {
 		error_code = slurm_load_block_info(bg_info_ptr->last_update,
-						   &new_bg_ptr, cluster_name);
+						   &new_bg_ptr, cluster ?
+						   &cluster->
+						   control_addr : NULL);
 		if (error_code == SLURM_SUCCESS)
 			slurm_free_block_info_msg(&bg_info_ptr);
 		else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
@@ -722,7 +734,9 @@ static int _blocks_dealloc(void)
 		}
 	} else {
 		error_code = slurm_load_block_info((time_t) NULL, &new_bg_ptr,
-						   cluster_name);
+						   cluster ?
+						   &cluster->
+						   control_addr : NULL);
 	}
 
 	if (error_code) {
@@ -747,7 +761,7 @@ static int _wait_bluegene_block_ready(resource_allocation_response_msg_t *alloc)
 	char *block_id = NULL;
 	int cur_delay = 0;
 	int max_delay = BG_FREE_PREVIOUS_BLOCK + BG_MIN_BLOCK_BOOT +
-			(BG_INCR_BLOCK_BOOT * alloc->node_cnt);
+		(BG_INCR_BLOCK_BOOT * alloc->node_cnt);
 
 	select_g_select_jobinfo_get(alloc->select_jobinfo,
 				    SELECT_JOBDATA_BLOCK_ID,
@@ -766,7 +780,8 @@ static int _wait_bluegene_block_ready(resource_allocation_response_msg_t *alloc)
 				cur_delay += POLL_SLEEP;
 		}
 
-		rc = slurm_job_node_ready(alloc->job_id, cluster_name);
+		rc = slurm_job_node_ready(alloc->job_id, cluster ?
+					  &cluster->control_addr : NULL);
 
 		if (rc == READY_JOB_FATAL)
 			break;				/* fatal error */
@@ -812,7 +827,8 @@ static int _wait_nodes_ready(uint32_t job_id)
 			cur_delay += POLL_SLEEP;
 		}
 
-		rc = slurm_job_node_ready(job_id, cluster_name);
+		rc = slurm_job_node_ready(job_id, cluster ?
+					  &cluster->control_addr : NULL);
 
 		if (rc == READY_JOB_FATAL)
 			break;				/* fatal error */
@@ -848,7 +864,7 @@ extern int scontrol_job_ready(char *job_id_str)
 
 	job_id = atoi(job_id_str);
 	if (job_id <= 0) {
-		fprintf(stderr, "Invlaid job_id %s", job_id_str);
+		fprintf(stderr, "Invalid job_id %s", job_id_str);
 		return SLURM_ERROR;
 	}
 

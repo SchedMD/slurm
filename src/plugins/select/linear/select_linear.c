@@ -186,6 +186,7 @@ extern int select_p_select_nodeinfo_free(select_nodeinfo_t *nodeinfo);
  */
 const char plugin_name[]       	= "Linear node selection plugin";
 const char plugin_type[]       	= "select/linear";
+const uint32_t plugin_id	= 102;
 const uint32_t plugin_version	= 90;
 
 static struct node_record *select_node_ptr = NULL;
@@ -2155,10 +2156,6 @@ extern int init ( void )
 #ifdef HAVE_XCPU
 	rc = _init_status_pthread();
 #endif
-#ifdef HAVE_BG
-	error("%s is incompatible with BlueGene", plugin_name);
-	fatal("Use SelectType=select/bluegene");
-#endif
 	cr_type = slurmctld_conf.select_type_param;
 	return rc;
 }
@@ -2518,18 +2515,20 @@ extern int select_p_select_nodeinfo_set_all(time_t last_query_time)
 	last_set_all = last_node_update;
 
 	for (i=0; i<node_record_count; i++) {
+		select_nodeinfo_t *nodeinfo;
+
 		node_ptr = &(node_record_table_ptr[i]);
+		nodeinfo = node_ptr->select_nodeinfo->data;
 
 		if ((node_ptr->node_state & NODE_STATE_COMPLETING) ||
 		    (node_ptr->node_state == NODE_STATE_ALLOCATED)) {
 			if (slurmctld_conf.fast_schedule)
-				node_ptr->select_nodeinfo->alloc_cpus =
+				nodeinfo->alloc_cpus =
 					node_ptr->config_ptr->cpus;
 			else
-				node_ptr->select_nodeinfo->alloc_cpus =
-					node_ptr->cpus;
+				nodeinfo->alloc_cpus = node_ptr->cpus;
 		} else
-			node_ptr->select_nodeinfo->alloc_cpus = 0;
+			nodeinfo->alloc_cpus = 0;
 	}
 
 	return SLURM_SUCCESS;

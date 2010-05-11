@@ -69,6 +69,7 @@
 #include "src/common/macros.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
+#include "src/common/slurmdb_defs.h"
 
 /* Collection of data for printing reports. Like data is combined here */
 typedef struct {
@@ -106,9 +107,8 @@ typedef struct {
 	uint32_t reason_uid;
 
 	hostlist_t nodes;
-#ifdef HAVE_BG
 	hostlist_t ionodes;
-#endif
+
 	/* part_info contains partition, avail, max_time, job_size,
 	 * root, share, groups, priority */
 	partition_info_t* part_info;
@@ -144,7 +144,7 @@ struct sinfo_match_flags {
 /* Input parameters */
 struct sinfo_parameters {
 	bool all_flag;
-	char *cluster_name;
+	slurmdb_cluster_rec_t *cluster;
 	bool bg_flag;
 	bool dead_nodes;
 	bool exact_match;

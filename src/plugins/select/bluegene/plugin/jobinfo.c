@@ -158,13 +158,14 @@ extern int set_select_jobinfo(select_jobinfo_t *jobinfo,
 		break;
 	case SELECT_JOBDATA_NODE_CNT:
 		jobinfo->node_cnt = *uint32;
-
+#ifdef HAVE_BG
 		/* Make sure the conn type is correct with the new count */
 		if((bg_conf->bp_node_cnt == bg_conf->nodecard_node_cnt)
 		   || (jobinfo->node_cnt < bg_conf->bp_node_cnt))
 			jobinfo->conn_type = SELECT_SMALL;
 		else if(jobinfo->conn_type == SELECT_SMALL)
 			jobinfo->conn_type = SELECT_TORUS;
+#endif
 		break;
 	case SELECT_JOBDATA_ALTERED:
 		jobinfo->altered = *uint16;

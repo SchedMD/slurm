@@ -96,6 +96,7 @@
 #include "src/common/hostlist.h"
 #include "src/common/list.h"
 #include "src/common/macros.h"
+#include "src/common/slurmdb_defs.h"
 #include "src/plugins/select/bluegene/block_allocator/block_allocator.h"
 #include "src/common/slurm_protocol_api.h"
 
@@ -113,7 +114,7 @@ enum { JOBS, RESERVATIONS, SLURMPART, BGPART, COMMANDS };
 /* Input parameters */
 typedef struct {
 	bool all_flag;
-	char *cluster_name;
+	slurmdb_cluster_rec_t *cluster;
 	bool commandline;
 	int display;
 	int iterate;

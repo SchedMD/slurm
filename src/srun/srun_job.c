@@ -80,7 +80,7 @@ typedef struct allocation_info {
 	uint32_t                num_cpu_groups;
 	uint16_t               *cpus_per_node;
 	uint32_t               *cpu_count_reps;
-	select_jobinfo_t       *select_jobinfo;
+	dynamic_plugin_data_t  *select_jobinfo;
 } allocation_info_t;
 
 /*

@@ -101,7 +101,8 @@ extern void get_slurm_part()
 			part_info_ptr->last_update = 0;
 		error_code = slurm_load_partitions(part_info_ptr->last_update,
 						   &new_part_ptr, show_flags,
-						   params.cluster_name);
+						   params.cluster ?
+						   &params.cluster->control_addr : NULL);
 		if (error_code == SLURM_SUCCESS)
 			slurm_free_partition_info_msg(part_info_ptr);
 		else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
@@ -111,7 +112,8 @@ extern void get_slurm_part()
 	} else {
 		error_code = slurm_load_partitions((time_t) NULL,
 						   &new_part_ptr, show_flags,
-						   params.cluster_name);
+						   params.cluster ?
+						   &params.cluster->control_addr : NULL);
 	}
 
 	last_flags = show_flags;
@@ -206,7 +208,8 @@ extern void get_bg_part()
 	if (part_info_ptr) {
 		error_code = slurm_load_partitions(part_info_ptr->last_update,
 						   &new_part_ptr, SHOW_ALL,
-						   params.cluster_name);
+						   params.cluster ?
+						   &params.cluster->control_addr : NULL);
 		if (error_code == SLURM_SUCCESS)
 			slurm_free_partition_info_msg(part_info_ptr);
 		else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
@@ -216,7 +219,8 @@ extern void get_bg_part()
 	} else {
 		error_code = slurm_load_partitions((time_t) NULL,
 						   &new_part_ptr, SHOW_ALL,
-						   params.cluster_name);
+						   params.cluster ?
+						   &params.cluster->control_addr : NULL);
 	}
 
 	if (error_code) {
@@ -237,7 +241,8 @@ extern void get_bg_part()
 	if (bg_info_ptr) {
 		error_code = slurm_load_block_info(bg_info_ptr->last_update,
 						   &new_bg_ptr,
-						   params.cluster_name);
+						   params.cluster ?
+						   &params.cluster->control_addr : NULL);
 		if (error_code == SLURM_SUCCESS)
 			slurm_free_block_info_msg(&bg_info_ptr);
 		else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
@@ -247,7 +252,8 @@ extern void get_bg_part()
 	} else {
 		error_code = slurm_load_block_info((time_t) NULL,
 						   &new_bg_ptr,
-						   params.cluster_name);
+						   params.cluster ?
+						   &params.cluster->control_addr : NULL);
 	}
 	if (error_code) {
 		if (quiet_flag != 1) {
@@ -259,7 +265,7 @@ extern void get_bg_part()
 				main_ycord++;
 			} else {
 				printf("slurm_load_block: %s\n",
-					  slurm_strerror(slurm_get_errno()));
+				       slurm_strerror(slurm_get_errno()));
 			}
 		}
 		return;
@@ -467,9 +473,9 @@ static int _marknodes(db2_block_info_t *block_ptr, int count)
 			start[Z] = (number % HOSTLIST_BASE);
 			j+=3;
 			block_ptr->size += set_grid_bg(start,
-							start,
-							count,
-							0);
+						       start,
+						       count,
+						       0);
 			if(block_ptr->nodes[j] != ',')
 				break;
 			j--;

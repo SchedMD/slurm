@@ -110,7 +110,8 @@ extern int scontrol_update_step (int argc, char *argv[])
 		return 0;
 	}
 
-	if (slurm_update_step(&step_msg, cluster_name))
+	if (slurm_update_step(&step_msg, cluster ?
+			      &cluster->control_addr : NULL))
 		return slurm_get_errno ();
 	else
 		return 0;

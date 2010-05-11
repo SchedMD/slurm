@@ -48,7 +48,8 @@ scontrol_load_block (block_info_msg_t **block_info_pptr)
 
 	if (last_info_ptr) {
 		error_code = slurm_load_block_info(
-			last_info_ptr->last_update, &info_ptr, cluster_name);
+			last_info_ptr->last_update, &info_ptr, cluster ?
+			&cluster->control_addr : NULL);
 		if (error_code == SLURM_SUCCESS)
 			slurm_free_block_info_msg(&last_info_ptr);
 		else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
@@ -60,7 +61,9 @@ scontrol_load_block (block_info_msg_t **block_info_pptr)
 		}
 	} else
 		error_code = slurm_load_block_info((time_t)NULL, &info_ptr,
-						   cluster_name);
+						   cluster ?
+						   &cluster->
+						   control_addr : NULL);
 
 	if (error_code == SLURM_SUCCESS) {
 		last_info_ptr = info_ptr;

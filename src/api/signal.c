@@ -412,7 +412,7 @@ static int _terminate_batch_script_step(
  * IN message - arbitrary message
  * RET 0 or -1 on error
  */
-extern int slurm_notify_job (uint32_t job_id, char *message, char *cluster_name)
+extern int slurm_notify_job (uint32_t job_id, char *message, slurm_addr *addr)
 {
 	int rc;
 	slurm_msg_t msg;
@@ -428,7 +428,7 @@ extern int slurm_notify_job (uint32_t job_id, char *message, char *cluster_name)
 	msg.msg_type    = REQUEST_JOB_NOTIFY;
 	msg.data        = &req;
 
-	if (slurm_send_recv_controller_rc_msg(&msg, &rc, cluster_name) < 0)
+	if (slurm_send_recv_controller_rc_msg(&msg, &rc, addr) < 0)
 		return SLURM_FAILURE;
 
 	if (rc) {

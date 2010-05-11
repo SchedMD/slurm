@@ -134,7 +134,7 @@ extern int acct_storage_g_commit(void *db_conn, bool commit);
 
 /*
  * add users to accounting system
- * IN:  user_list List of acct_user_rec_t *
+ * IN:  user_list List of slurmdb_user_rec_t *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
 extern int acct_storage_g_add_users(void *db_conn, uint32_t uid,
@@ -143,7 +143,7 @@ extern int acct_storage_g_add_users(void *db_conn, uint32_t uid,
 /*
  * add users as account coordinators
  * IN: acct_list list of char *'s of names of accounts
- * IN:  acct_user_cond_t *user_cond
+ * IN:  slurmdb_user_cond_t *user_cond
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
 extern int acct_storage_g_add_coord(void *db_conn, uint32_t uid,
@@ -153,7 +153,7 @@ extern int acct_storage_g_add_coord(void *db_conn, uint32_t uid,
 
 /*
  * add accounts to accounting system
- * IN:  account_list List of acct_account_rec_t *
+ * IN:  account_list List of slurmdb_account_rec_t *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
 extern int acct_storage_g_add_accounts(void *db_conn, uint32_t uid,
@@ -161,7 +161,7 @@ extern int acct_storage_g_add_accounts(void *db_conn, uint32_t uid,
 
 /*
  * add clusters to accounting system
- * IN:  cluster_list List of acct_cluster_rec_t *
+ * IN:  cluster_list List of slurmdb_cluster_rec_t *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
 extern int acct_storage_g_add_clusters(void *db_conn, uint32_t uid,
@@ -169,7 +169,7 @@ extern int acct_storage_g_add_clusters(void *db_conn, uint32_t uid,
 
 /*
  * add associations to accounting system
- * IN:  association_list List of acct_association_rec_t *
+ * IN:  association_list List of slurmdb_association_rec_t *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
 extern int acct_storage_g_add_associations(void *db_conn, uint32_t uid,
@@ -185,7 +185,7 @@ extern int acct_storage_g_add_qos(void *db_conn, uint32_t uid,
 
 /*
  * add wckey's to accounting system
- * IN:  wckey_list List of acct_wckey_rec_t *
+ * IN:  wckey_list List of slurmdb_wckey_rec_t *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
 extern int acct_storage_g_add_wckeys(void *db_conn, uint32_t uid,
@@ -193,7 +193,7 @@ extern int acct_storage_g_add_wckeys(void *db_conn, uint32_t uid,
 
 /*
  * add reservation's in accounting system
- * IN:  acct_reservation_rec_t *resv reservation to be added.
+ * IN:  slurmdb_reservation_rec_t *resv reservation to be added.
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
 extern int acct_storage_g_add_reservation(void *db_conn,
@@ -201,8 +201,8 @@ extern int acct_storage_g_add_reservation(void *db_conn,
 
 /*
  * modify existing users in the accounting system
- * IN:  acct_user_cond_t *user_cond
- * IN:  acct_user_rec_t *user
+ * IN:  slurmdb_user_cond_t *user_cond
+ * IN:  slurmdb_user_rec_t *user
  * RET: List containing (char *'s) else NULL on error
  */
 extern List acct_storage_g_modify_users(void *db_conn, uint32_t uid,
@@ -211,8 +211,8 @@ extern List acct_storage_g_modify_users(void *db_conn, uint32_t uid,
 
 /*
  * modify existing accounts in the accounting system
- * IN:  acct_acct_cond_t *acct_cond
- * IN:  acct_account_rec_t *acct
+ * IN:  slurmdb_acct_cond_t *acct_cond
+ * IN:  slurmdb_account_rec_t *acct
  * RET: List containing (char *'s) else NULL on error
  */
 extern List acct_storage_g_modify_accounts(void *db_conn, uint32_t uid,
@@ -221,8 +221,8 @@ extern List acct_storage_g_modify_accounts(void *db_conn, uint32_t uid,
 
 /*
  * modify existing clusters in the accounting system
- * IN:  acct_cluster_cond_t *cluster_cond
- * IN:  acct_cluster_rec_t *cluster
+ * IN:  slurmdb_cluster_cond_t *cluster_cond
+ * IN:  slurmdb_cluster_rec_t *cluster
  * RET: List containing (char *'s) else NULL on error
  */
 extern List acct_storage_g_modify_clusters(void *db_conn, uint32_t uid,
@@ -231,8 +231,8 @@ extern List acct_storage_g_modify_clusters(void *db_conn, uint32_t uid,
 
 /*
  * modify existing associations in the accounting system
- * IN:  acct_association_cond_t *assoc_cond
- * IN:  acct_association_rec_t *assoc
+ * IN:  slurmdb_association_cond_t *assoc_cond
+ * IN:  slurmdb_association_rec_t *assoc
  * RET: List containing (char *'s) else NULL on error
  */
 extern List acct_storage_g_modify_associations(
@@ -242,8 +242,8 @@ extern List acct_storage_g_modify_associations(
 
 /*
  * modify existing qos in the accounting system
- * IN:  acct_qos_cond_t *qos_cond
- * IN:  acct_qos_rec_t *qos
+ * IN:  slurmdb_qos_cond_t *qos_cond
+ * IN:  slurmdb_qos_rec_t *qos
  * RET: List containing (char *'s) else NULL on error
  */
 extern List acct_storage_g_modify_qos(void *db_conn, uint32_t uid,
@@ -252,8 +252,8 @@ extern List acct_storage_g_modify_qos(void *db_conn, uint32_t uid,
 
 /*
  * modify existing wckey in the accounting system
- * IN:  acct_wckey_cond_t *wckey_cond
- * IN:  acct_wckey_rec_t *wckey
+ * IN:  slurmdb_wckey_cond_t *wckey_cond
+ * IN:  slurmdb_wckey_rec_t *wckey
  * RET: List containing (char *'s) else NULL on error
  */
 extern List acct_storage_g_modify_wckeys(void *db_conn, uint32_t uid,
@@ -262,14 +262,14 @@ extern List acct_storage_g_modify_wckeys(void *db_conn, uint32_t uid,
 
 /*
  * modify reservation's in accounting system
- * IN:  acct_reservation_rec_t *resv
+ * IN:  slurmdb_reservation_rec_t *resv
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
 extern int acct_storage_g_modify_reservation(void *db_conn,
 					     slurmdb_reservation_rec_t *resv);
 /*
  * remove users from accounting system
- * IN:  acct_user_cond_t *user_cond
+ * IN:  slurmdb_user_cond_t *user_cond
  * RET: List containing (char *'s) else NULL on error
  */
 extern List acct_storage_g_remove_users(void *db_conn, uint32_t uid,
@@ -278,7 +278,7 @@ extern List acct_storage_g_remove_users(void *db_conn, uint32_t uid,
 /*
  * remove users from being a coordinator of an account
  * IN: acct_list list of char *'s of names of accounts
- * IN: acct_user_cond_t *user_cond
+ * IN: slurmdb_user_cond_t *user_cond
  * RET: List containing (char *'s) else NULL on error
  */
 extern List acct_storage_g_remove_coord(void *db_conn, uint32_t uid,
@@ -287,7 +287,7 @@ extern List acct_storage_g_remove_coord(void *db_conn, uint32_t uid,
 
 /*
  * remove accounts from accounting system
- * IN:  acct_account_cond_t *acct_cond
+ * IN:  slurmdb_account_cond_t *acct_cond
  * RET: List containing (char *'s) else NULL on error
  */
 extern List acct_storage_g_remove_accounts(void *db_conn, uint32_t uid,
@@ -295,7 +295,7 @@ extern List acct_storage_g_remove_accounts(void *db_conn, uint32_t uid,
 
 /*
  * remove clusters from accounting system
- * IN:  acct_cluster_cond_t *cluster_cond
+ * IN:  slurmdb_cluster_cond_t *cluster_cond
  * RET: List containing (char *'s) else NULL on error
  */
 extern List acct_storage_g_remove_clusters(void *db_conn, uint32_t uid,
@@ -303,7 +303,7 @@ extern List acct_storage_g_remove_clusters(void *db_conn, uint32_t uid,
 
 /*
  * remove associations from accounting system
- * IN:  acct_association_cond_t *assoc_cond
+ * IN:  slurmdb_association_cond_t *assoc_cond
  * RET: List containing (char *'s) else NULL on error
  */
 extern List acct_storage_g_remove_associations(
@@ -311,7 +311,7 @@ extern List acct_storage_g_remove_associations(
 
 /*
  * remove qos from accounting system
- * IN:  acct_qos_cond_t *assoc_qos
+ * IN:  slurmdb_qos_cond_t *assoc_qos
  * RET: List containing (char *'s) else NULL on error
  */
 extern List acct_storage_g_remove_qos(
@@ -319,7 +319,7 @@ extern List acct_storage_g_remove_qos(
 
 /*
  * remove wckey from accounting system
- * IN:  acct_wckey_cond_t *assoc_wckey
+ * IN:  slurmdb_wckey_cond_t *assoc_wckey
  * RET: List containing (char *'s) else NULL on error
  */
 extern List acct_storage_g_remove_wckeys(
@@ -327,16 +327,16 @@ extern List acct_storage_g_remove_wckeys(
 
 /*
  * remove reservation's in accounting system
- * IN:  acct_reservation_rec_t *resv
+ * IN:  slurmdb_reservation_rec_t *resv
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
 extern int acct_storage_g_remove_reservation(void *db_conn,
 					     slurmdb_reservation_rec_t *resv);
 /*
  * get info from the storage
- * IN:  acct_user_cond_t *
+ * IN:  slurmdb_user_cond_t *
  * IN:  params void *
- * returns List of acct_user_rec_t *
+ * returns List of slurmdb_user_rec_t *
  * note List needs to be freed when called
  */
 extern List acct_storage_g_get_users(void *db_conn,  uint32_t uid,
@@ -344,9 +344,9 @@ extern List acct_storage_g_get_users(void *db_conn,  uint32_t uid,
 
 /*
  * get info from the storage
- * IN:  acct_account_cond_t *
+ * IN:  slurmdb_account_cond_t *
  * IN:  params void *
- * returns List of acct_account_rec_t *
+ * returns List of slurmdb_account_rec_t *
  * note List needs to be freed when called
  */
 extern List acct_storage_g_get_accounts(void *db_conn,  uint32_t uid,
@@ -354,14 +354,13 @@ extern List acct_storage_g_get_accounts(void *db_conn,  uint32_t uid,
 
 /*
  * get info from the storage
- * IN:  acct_cluster_cond_t *
+ * IN:  slurmdb_cluster_cond_t *
  * IN:  params void *
- * returns List of acct_cluster_rec_t *
+ * returns List of slurmdb_cluster_rec_t *
  * note List needs to be freed when called
  */
 extern List acct_storage_g_get_clusters(
 	void *db_conn, uint32_t uid, slurmdb_cluster_cond_t *cluster_cond);
-
 
 /*
  * get info from the storage
@@ -372,8 +371,8 @@ extern List acct_storage_g_get_config(void *db_conn);
 
 /*
  * get info from the storage
- * IN:  acct_association_cond_t *
- * RET: List of acct_association_rec_t *
+ * IN:  slurmdb_association_cond_t *
+ * RET: List of slurmdb_association_rec_t *
  * note List needs to be freed when called
  */
 extern List acct_storage_g_get_associations(
@@ -381,8 +380,8 @@ extern List acct_storage_g_get_associations(
 
 /*
  * get info from the storage
- * IN:  acct_event_cond_t *
- * RET: List of acct_event_rec_t *
+ * IN:  slurmdb_event_cond_t *
+ * RET: List of slurmdb_event_rec_t *
  * note List needs to be freed when called
  */
 extern List acct_storage_g_get_events(
@@ -390,8 +389,8 @@ extern List acct_storage_g_get_events(
 
 /*
  * get info from the storage
- * IN:  acct_association_cond_t *
- * RET: List of acct_association_rec_t *
+ * IN:  slurmdb_association_cond_t *
+ * RET: List of slurmdb_association_rec_t *
  * note List needs to be freed when called
  */
 extern List acct_storage_g_get_problems(
@@ -399,8 +398,8 @@ extern List acct_storage_g_get_problems(
 
 /*
  * get info from the storage
- * IN:  acct_qos_cond_t *
- * RET: List of acct_qos_rec_t *
+ * IN:  slurmdb_qos_cond_t *
+ * RET: List of slurmdb_qos_rec_t *
  * note List needs to be freed when called
  */
 extern List acct_storage_g_get_qos(void *db_conn, uint32_t uid,
@@ -408,8 +407,8 @@ extern List acct_storage_g_get_qos(void *db_conn, uint32_t uid,
 
 /*
  * get info from the storage
- * IN:  acct_wckey_cond_t *
- * RET: List of acct_wckey_rec_t *
+ * IN:  slurmdb_wckey_cond_t *
+ * RET: List of slurmdb_wckey_rec_t *
  * note List needs to be freed when called
  */
 extern List acct_storage_g_get_wckeys(void *db_conn, uint32_t uid,
@@ -417,8 +416,8 @@ extern List acct_storage_g_get_wckeys(void *db_conn, uint32_t uid,
 
 /*
  * get info from the storage
- * IN:  acct_reservation_cond_t *
- * RET: List of acct_reservation_rec_t *
+ * IN:  slurmdb_reservation_cond_t *
+ * RET: List of slurmdb_reservation_rec_t *
  * note List needs to be freed when called
  */
 extern List acct_storage_g_get_reservations(
@@ -427,8 +426,8 @@ extern List acct_storage_g_get_reservations(
 
 /*
  * get info from the storage
- * IN:  acct_txn_cond_t *
- * RET: List of acct_txn_rec_t *
+ * IN:  slurmdb_txn_cond_t *
+ * RET: List of slurmdb_txn_rec_t *
  * note List needs to be freed when called
  */
 extern List acct_storage_g_get_txn(void *db_conn,  uint32_t uid,
