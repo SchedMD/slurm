@@ -609,11 +609,11 @@ done:
 
 extern int slurm_select_fini(void)
 {
-	int rc, i, j;
+	int rc = SLURM_SUCCESS, i, j;
 
 	slurm_mutex_lock(&select_context_lock);
 	if (!select_context)
-		return SLURM_SUCCESS;
+		go to fini;
 
 	for (i=0; i<select_context_cnt; i++) {
 		j = _select_context_destroy(select_context);
@@ -621,10 +621,9 @@ extern int slurm_select_fini(void)
 			rc = j;
 	}
 	xfree(select_context);
-	select_context = NULL;
 	select_context_cnt = -1;
 
-	slurm_mutex_unlock(&select_context_lock);
+fini:	slurm_mutex_unlock(&select_context_lock);
 	return rc;
 }
 
