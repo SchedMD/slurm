@@ -1,0 +1,112 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          Test the launch of a batch job within an existing job allocation.
+#          This logic is used by LSF
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2005-2006 The Regents of the University of California.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Morris Jette <jette1@llnl.gov>
+# CODE-OCEC-09-009. All rights reserved.
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <https://computing.llnl.gov/linux/slurm/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
+############################################################################
+source ./globals
+
+set test_id      "15.17"
+set file_in      "test$test_id.input"
+set exit_code    0
+set job_id_1     0
+set job_id_2     0
+
+print_header $test_id
+
+#
+# Build input script file
+#
+exec $bin_rm -f $file_in
+make_bash_script $file_in "$bin_printenv SLURMD_NODENAME"
+
+#
+# Spawn a sbatch job that uses stdout/err and confirm their contents
+#
+set timeout $max_job_delay
+if { [test_bluegene] } {
+	set node_cnt 1-2048
+} else {
+	if { [test_xcpu] } {
+		set node_cnt 1-1
+	} else {
+		set node_cnt 1-4
+	}
+}
+
+set salloc_pid [spawn $salloc -N$node_cnt -t1 $bin_bash]
+expect {
+	-re "Granted job allocation ($number)" {
+		set job_id_1 $expect_out(1,string)
+		send "$sbatch --jobid=$job_id_1 -o none -e none $file_in \r"
+		exp_continue
+	}
+	-re "Submitted batch job ($number)" {
+		set job_id_2 $expect_out(1,string)
+		send "exit \r"
+		exp_continue
+	}
+	-re "jobid ($number).0 submitted" {
+		set job_id_2 $expect_out(1,string)
+		send "exit \r"
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: salloc not responding\n"
+		if {$job_id_1 != 0} {
+			cancel_job $job_id_1
+		}
+		slow_kill [expr 0 - $salloc_pid]
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$job_id_1 == 0} {
+	send_user "\nFAILURE: job allocation failure\n"
+	exit 1
+}
+if {$job_id_1 != $job_id_2} {
+	send_user "\nFAILURE: batch job did not run in existing allocation\n"
+	exit 1
+}
+
+if [file exists none] {
+	send_user "\nFAILURE: created file 'none', should have mapped to no file\n"
+	exit 1
+}
+
+if {$exit_code == 0} {
+	send_user "\nSUCCESS\n"
+	exec $bin_rm -f $file_in
+}
+exit $exit_code
