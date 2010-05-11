@@ -386,12 +386,12 @@ scontrol_update_job (int argc, char *argv[])
 			update_cnt++;
 		}
 		else if (strncasecmp(tag, "ReqSockets", MAX(taglen, 4)) == 0) {
-			job_msg.min_sockets =
+			job_msg.sockets_per_node =
 				(uint16_t) strtol(val, (char **) NULL, 10);
 			update_cnt++;
 		}
 		else if (strncasecmp(tag, "ReqCores", MAX(taglen, 4)) == 0) {
-			job_msg.min_cores =
+			job_msg.cores_per_socket =
 				(uint16_t) strtol(val, (char **) NULL, 10);
 			update_cnt++;
 		}
@@ -401,7 +401,7 @@ scontrol_update_job (int argc, char *argv[])
                         update_cnt++;
                 }
 		else if (strncasecmp(tag, "ReqThreads", MAX(taglen, 4)) == 0) {
-			job_msg.min_threads =
+			job_msg.threads_per_core =
 				(uint16_t) strtol(val, (char **) NULL, 10);
 			update_cnt++;
 		}

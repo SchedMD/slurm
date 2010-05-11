@@ -3680,9 +3680,9 @@ _unpack_job_info_members(job_info_t * job, Buf buffer,
 		if (unpack_multi_core_data(&mc_ptr, buffer))
 			goto unpack_error;
 		if (mc_ptr) {
-			job->min_sockets       = mc_ptr->min_sockets;
-			job->min_cores         = mc_ptr->min_cores;
-			job->min_threads       = mc_ptr->min_threads;
+			job->sockets_per_node  = mc_ptr->sockets_per_node;
+			job->cores_per_socket  = mc_ptr->cores_per_socket;
+			job->threads_per_core  = mc_ptr->threads_per_core;
 			job->ntasks_per_socket = mc_ptr->ntasks_per_socket;
 			job->ntasks_per_core   = mc_ptr->ntasks_per_core;
 			xfree(mc_ptr);
@@ -3784,9 +3784,9 @@ _unpack_job_info_members(job_info_t * job, Buf buffer,
 		if (unpack_multi_core_data(&mc_ptr, buffer))
 			goto unpack_error;
 		if (mc_ptr) {
-			job->min_sockets       = mc_ptr->min_sockets;
-			job->min_cores         = mc_ptr->min_cores;
-			job->min_threads       = mc_ptr->min_threads;
+			job->sockets_per_node  = mc_ptr->sockets_per_node;
+			job->cores_per_socket  = mc_ptr->cores_per_socket;
+			job->threads_per_core  = mc_ptr->threads_per_core;
 			job->ntasks_per_socket = mc_ptr->ntasks_per_socket;
 			job->ntasks_per_core   = mc_ptr->ntasks_per_core;
 			xfree(mc_ptr);
@@ -4832,9 +4832,9 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer,
 		pack32(job_desc_ptr->max_cpus, buffer);
 		pack32(job_desc_ptr->min_nodes, buffer);
 		pack32(job_desc_ptr->max_nodes, buffer);
-		pack16(job_desc_ptr->min_sockets, buffer);
-		pack16(job_desc_ptr->min_cores, buffer);
-		pack16(job_desc_ptr->min_threads, buffer);
+		pack16(job_desc_ptr->sockets_per_node, buffer);
+		pack16(job_desc_ptr->cores_per_socket, buffer);
+		pack16(job_desc_ptr->threads_per_core, buffer);
 		pack32(job_desc_ptr->user_id, buffer);
 		pack32(job_desc_ptr->group_id, buffer);
 
@@ -4970,9 +4970,9 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer,
 		pack32(job_desc_ptr->min_cpus, buffer);
 		pack32(job_desc_ptr->min_nodes, buffer);
 		pack32(job_desc_ptr->max_nodes, buffer);
-		pack16(job_desc_ptr->min_sockets, buffer);
-		pack16(job_desc_ptr->min_cores, buffer);
-		pack16(job_desc_ptr->min_threads, buffer);
+		pack16(job_desc_ptr->sockets_per_node, buffer);
+		pack16(job_desc_ptr->cores_per_socket, buffer);
+		pack16(job_desc_ptr->threads_per_core, buffer);
 		pack32(job_desc_ptr->user_id, buffer);
 		pack32(job_desc_ptr->group_id, buffer);
 
@@ -5153,9 +5153,9 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer,
 		safe_unpack32(&job_desc_ptr->max_cpus, buffer);
 		safe_unpack32(&job_desc_ptr->min_nodes, buffer);
 		safe_unpack32(&job_desc_ptr->max_nodes, buffer);
-		safe_unpack16(&job_desc_ptr->min_sockets, buffer);
-		safe_unpack16(&job_desc_ptr->min_cores, buffer);
-		safe_unpack16(&job_desc_ptr->min_threads, buffer);
+		safe_unpack16(&job_desc_ptr->sockets_per_node, buffer);
+		safe_unpack16(&job_desc_ptr->cores_per_socket, buffer);
+		safe_unpack16(&job_desc_ptr->threads_per_core, buffer);
 		safe_unpack32(&job_desc_ptr->user_id, buffer);
 		safe_unpack32(&job_desc_ptr->group_id, buffer);
 
@@ -5281,9 +5281,9 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer,
 		safe_unpack32(&job_desc_ptr->min_cpus, buffer);
 		safe_unpack32(&job_desc_ptr->min_nodes, buffer);
 		safe_unpack32(&job_desc_ptr->max_nodes, buffer);
-		safe_unpack16(&job_desc_ptr->min_sockets, buffer);
-		safe_unpack16(&job_desc_ptr->min_cores, buffer);
-		safe_unpack16(&job_desc_ptr->min_threads, buffer);
+		safe_unpack16(&job_desc_ptr->sockets_per_node, buffer);
+		safe_unpack16(&job_desc_ptr->cores_per_socket, buffer);
+		safe_unpack16(&job_desc_ptr->threads_per_core, buffer);
 		safe_unpack32(&job_desc_ptr->user_id, buffer);
 		safe_unpack32(&job_desc_ptr->group_id, buffer);
 
@@ -7415,9 +7415,9 @@ pack_multi_core_data (multi_core_data_t *multi_core, Buf buffer)
 
 	pack8((uint8_t) 0xff, buffer);		/* flag as Full */
 
-	pack16(multi_core->min_sockets, buffer);
-	pack16(multi_core->min_cores,   buffer);
-	pack16(multi_core->min_threads, buffer);
+	pack16(multi_core->sockets_per_node, buffer);
+	pack16(multi_core->cores_per_socket, buffer);
+	pack16(multi_core->threads_per_core, buffer);
 
 	pack16(multi_core->ntasks_per_socket, buffer);
 	pack16(multi_core->ntasks_per_core,   buffer);
@@ -7439,9 +7439,9 @@ unpack_multi_core_data (multi_core_data_t **mc_ptr, Buf buffer)
 
 	multi_core = xmalloc(sizeof(multi_core_data_t));
 
-	safe_unpack16(&multi_core->min_sockets, buffer);
-	safe_unpack16(&multi_core->min_cores,   buffer);
-	safe_unpack16(&multi_core->min_threads, buffer);
+	safe_unpack16(&multi_core->sockets_per_node, buffer);
+	safe_unpack16(&multi_core->cores_per_socket, buffer);
+	safe_unpack16(&multi_core->threads_per_core, buffer);
 
 	safe_unpack16(&multi_core->ntasks_per_socket, buffer);
 	safe_unpack16(&multi_core->ntasks_per_core,   buffer);

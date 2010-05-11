@@ -54,6 +54,10 @@ documents those changes that are of interest to users and admins.
  -- salloc modified to forward SIGTERM to the spawned program.
  -- In sched/wiki2 (for Moab support) - Add GRES and WCKEY fields to MODIFYJOBS
     and GETJOBS commands. Add GRES field to GETNODES command.
+ -- In struct job_descriptor and struct job_info: rename min_sockets to
+    sockets_per_node, min_cores to cores_per_socket, and min_threads to
+    threads_per_core (the values are not minimum, but represent the target
+    values).
 
 * Changes in SLURM 2.2.0.pre5
 =============================

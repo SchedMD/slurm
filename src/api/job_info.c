@@ -401,9 +401,8 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	snprintf(tmp_line, sizeof(tmp_line),
 		 "NumNodes=%s NumCPUs=%s CPUs/Task=%u ReqS:C:T=%u:%u:%u",
 		 tmp2, tmp1, job_ptr->cpus_per_task,
-		 job_ptr->min_sockets,
-		 job_ptr->min_cores,
-		 job_ptr->min_threads);
+		 job_ptr->sockets_per_node, job_ptr->cores_per_socket,
+		 job_ptr->threads_per_core);
 	xstrcat(out, tmp_line);
 	if (one_liner)
 		xstrcat(out, " ");

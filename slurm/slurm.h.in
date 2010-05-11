@@ -653,9 +653,9 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 				 * default=0 */
 	uint32_t max_nodes;	/* maximum number of nodes usable by job,
 				 * default=0 */
-	uint16_t min_sockets;	/* number of sockets per node required by job */
-	uint16_t min_cores;	/* number of cores per socket required by job */
-	uint16_t min_threads;	/* number of threads per core required by job */
+	uint16_t sockets_per_node;/* sockets per node required by job */
+	uint16_t cores_per_socket;/* cores per socket required by job */
+	uint16_t threads_per_core;/* threads per core required by job */
 	uint16_t ntasks_per_node;/* number of tasks to invoke on each node */
 	uint16_t ntasks_per_socket;/* number of tasks to invoke on
 				    * each socket */
@@ -720,9 +720,9 @@ typedef struct job_info {
 	char *licenses;		/* licenses required by the job */
 	uint32_t max_cpus;	/* maximum number of cpus usable by job */
 	uint32_t max_nodes;	/* maximum number of nodes usable by job */
-	uint16_t min_cores;	/* minimum number of cores per cpu */
-	uint16_t min_sockets;	/* minimum number of sockets per node */
-	uint16_t min_threads;	/* minimum number of threads per core */
+	uint16_t sockets_per_node;/* sockets per node required by job */
+	uint16_t cores_per_socket;/* cores per socket required by job */
+	uint16_t threads_per_core;/* threads per core required by job */
 	char *name;		/* name of the job */
 	char *network;		/* network specification */
 	char *nodes;		/* list of nodes allocated to job */

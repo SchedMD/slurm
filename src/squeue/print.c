@@ -731,11 +731,11 @@ int _print_job_num_sct(job_info_t * job, int width, bool right_justify,
 	char threads[10];
 	char sct[(10+1)*3];
 	if (job) {
-		convert_num_unit((float)job->min_sockets, sockets,
+		convert_num_unit((float)job->sockets_per_node, sockets,
 				 sizeof(sockets), UNIT_NONE);
-		convert_num_unit((float)job->min_cores, cores,
+		convert_num_unit((float)job->cores_per_socket, cores,
 				 sizeof(cores), UNIT_NONE);
-		convert_num_unit((float)job->min_threads, threads,
+		convert_num_unit((float)job->threads_per_core, threads,
 				 sizeof(threads), UNIT_NONE);
 		sct[0] = '\0';
 		strcat(sct, sockets);
@@ -805,15 +805,15 @@ int _print_pn_min_cpus(job_info_t * job, int width, bool right_justify,
 	return SLURM_SUCCESS;
 }
 
-int _print_min_sockets(job_info_t * job, int width, bool right_justify,
+int _print_sockets(job_info_t * job, int width, bool right_justify,
 		       char* suffix)
 {
 	char tmp_char[8];
 
 	if (job == NULL)	/* Print the Header instead */
-		_print_str("MIN_SOCKETS", width, right_justify, true);
+		_print_str("SOCKETS_PER_NODE", width, right_justify, true);
 	else {
-		convert_num_unit((float)job->min_sockets, tmp_char,
+		convert_num_unit((float)job->sockets_per_node, tmp_char,
 				 sizeof(tmp_char), UNIT_NONE);
 		_print_str(tmp_char, width, right_justify, true);
 	}
@@ -822,15 +822,15 @@ int _print_min_sockets(job_info_t * job, int width, bool right_justify,
 	return SLURM_SUCCESS;
 }
 
-int _print_min_cores(job_info_t * job, int width, bool right_justify,
+int _print_cores(job_info_t * job, int width, bool right_justify,
 		     char* suffix)
 {
 	char tmp_char[8];
 
 	if (job == NULL)	/* Print the Header instead */
-		_print_str("MIN_CORES", width, right_justify, true);
+		_print_str("CORES_PER_SOCKET", width, right_justify, true);
 	else {
-		convert_num_unit((float)job->min_cores, tmp_char,
+		convert_num_unit((float)job->cores_per_socket, tmp_char,
 				 sizeof(tmp_char), UNIT_NONE);
 		_print_str(tmp_char, width, right_justify, true);
 	}
@@ -839,15 +839,15 @@ int _print_min_cores(job_info_t * job, int width, bool right_justify,
 	return SLURM_SUCCESS;
 }
 
-int _print_min_threads(job_info_t * job, int width, bool right_justify,
+int _print_threads(job_info_t * job, int width, bool right_justify,
 		       char* suffix)
 {
 	char tmp_char[8];
 
 	if (job == NULL)	/* Print the Header instead */
-		_print_str("MIN_THREADS", width, right_justify, true);
+		_print_str("THREADS_PER_CORE", width, right_justify, true);
 	else {
-		convert_num_unit((float)job->min_threads, tmp_char,
+		convert_num_unit((float)job->threads_per_core, tmp_char,
 				 sizeof(tmp_char), UNIT_NONE);
 		_print_str(tmp_char, width, right_justify, true);
 	}

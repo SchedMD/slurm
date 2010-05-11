@@ -840,12 +840,9 @@ typedef struct file_bcast_msg {
 } file_bcast_msg_t;
 
 typedef struct multi_core_data {
-	uint16_t min_sockets;	/* minimum number of sockets per node required
-				 * by job, default=0 */
-	uint16_t min_cores;	/* minimum number of cores per cpu required
-				 * by job, default=0 */
-	uint16_t min_threads;	/* minimum number of threads per core required
-				 * by job, default=0 */
+	uint16_t sockets_per_node;	/* sockets per node required by job */
+	uint16_t cores_per_socket;	/* cores per cpu required by job */
+	uint16_t threads_per_core;	/* threads per core required by job */
 
 	uint16_t ntasks_per_socket; /* number of tasks to invoke on each socket */
 	uint16_t ntasks_per_core;   /* number of tasks to invoke on each core */

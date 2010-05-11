@@ -67,9 +67,9 @@ static int _sort_job_by_node_list(void *void1, void *void2);
 static int _sort_job_by_num_nodes(void *void1, void *void2);
 static int _sort_job_by_num_cpus(void *void1, void *void2);
 static int _sort_job_by_num_sct(void *void1, void *void2);
-static int _sort_job_by_min_sockets(void *void1, void *void2);
-static int _sort_job_by_min_cores(void *void1, void *void2);
-static int _sort_job_by_min_threads(void *void1, void *void2);
+static int _sort_job_by_sockets(void *void1, void *void2);
+static int _sort_job_by_cores(void *void1, void *void2);
+static int _sort_job_by_threads(void *void1, void *void2);
 static int _sort_job_by_min_memory(void *void1, void *void2);
 static int _sort_job_by_min_tmp_disk(void *void1, void *void2);
 static int _sort_job_by_partition(void *void1, void *void2);
@@ -128,15 +128,15 @@ void sort_job_list(List job_list)
 		else if (params.sort[i] == 'h')
 			;	/* sort_job_by_shared */
 		else if (params.sort[i] == 'H')
-			list_sort(job_list, _sort_job_by_min_sockets);
+			list_sort(job_list, _sort_job_by_sockets);
 		else if (params.sort[i] == 'i')
 			list_sort(job_list, _sort_job_by_id);
 		else if (params.sort[i] == 'I')
-			list_sort(job_list, _sort_job_by_min_cores);
+			list_sort(job_list, _sort_job_by_cores);
 		else if (params.sort[i] == 'j')
 			list_sort(job_list, _sort_job_by_name);
 		else if (params.sort[i] == 'J')
-			list_sort(job_list, _sort_job_by_min_threads);
+			list_sort(job_list, _sort_job_by_threads);
 		else if (params.sort[i] == 'l')
 			list_sort(job_list, _sort_job_by_time_limit);
 		else if (params.sort[i] == 'L')
@@ -390,9 +390,9 @@ static int _sort_job_by_num_sct(void *void1, void *void2)
 	job_info_t *job1 = (job_info_t *) void1;
 	job_info_t *job2 = (job_info_t *) void2;
 
-	diffs = job1->min_sockets - job2->min_sockets;
-	diffc = job1->min_cores - job2->min_cores;
-	difft = job1->min_threads - job2->min_threads;
+	diffs = job1->sockets_per_node - job2->sockets_per_node;
+	diffc = job1->cores_per_socket - job2->cores_per_socket;
+	difft = job1->threads_per_core - job2->threads_per_core;
 
 	if (reverse_order) {
 		diffs = -diffs;
@@ -407,39 +407,39 @@ static int _sort_job_by_num_sct(void *void1, void *void2)
 		return difft;
 }
 
-static int _sort_job_by_min_sockets(void *void1, void *void2)
+static int _sort_job_by_sockets(void *void1, void *void2)
 {
 	int diff;
 	job_info_t *job1 = (job_info_t *) void1;
 	job_info_t *job2 = (job_info_t *) void2;
 
-	diff = job1->min_sockets - job2->min_sockets;
+	diff = job1->sockets_per_node - job2->sockets_per_node;
 
 	if (reverse_order)
 		diff = -diff;
 	return diff;
 }
 
-static int _sort_job_by_min_cores(void *void1, void *void2)
+static int _sort_job_by_cores(void *void1, void *void2)
 {
 	int diff;
 	job_info_t *job1 = (job_info_t *) void1;
 	job_info_t *job2 = (job_info_t *) void2;
 
-	diff = job1->min_cores - job2->min_cores;
+	diff = job1->cores_per_socket - job2->cores_per_socket;
 
 	if (reverse_order)
 		diff = -diff;
 	return diff;
 }
 
-static int _sort_job_by_min_threads(void *void1, void *void2)
+static int _sort_job_by_threads(void *void1, void *void2)
 {
 	int diff;
 	job_info_t *job1 = (job_info_t *) void1;
 	job_info_t *job2 = (job_info_t *) void2;
 
-	diff = job1->min_threads - job2->min_threads;
+	diff = job1->threads_per_core - job2->threads_per_core;
 
 	if (reverse_order)
 		diff = -diff;

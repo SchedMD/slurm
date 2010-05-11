@@ -150,12 +150,18 @@ job_info_t
 	job_min_cpus -> pn_min_cpus
 	job_min_memory -> pn_min_memory
 	job_min_tmp_disk -> pn_min_tmp_disk
+	min_sockets -> sockets_per_node
+	min_cores -> cores_per_socket
+	min_threads -> threads_per_core
 
 job_desc_msg_t
 	num_procs -> min_cpus
 	job_min_cpus -> pn_min_cpus
 	job_min_memory -> pn_min_memory
 	job_min_tmp_disk -> pn_min_tmp_disk
+	min_sockets -> sockets_per_node
+	min_cores -> cores_per_socket
+	min_threads -> threads_per_core
 
 partition_info_t
 	state_up (new states added PARTITION_DRAIN and PARTITION_INACTIVE)
