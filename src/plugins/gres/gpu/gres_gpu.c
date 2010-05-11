@@ -606,8 +606,8 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-extern uint32_t cpus_usable_by_job(void *job_gres_data, void *node_gres_data,
-				   bool use_total_gres)
+extern uint32_t job_test(void *job_gres_data, void *node_gres_data,
+			 bool use_total_gres)
 {
 	uint32_t gres_avail;
 	gpu_job_state_t  *job_gres_ptr  = (gpu_job_state_t *)  job_gres_data;
@@ -618,14 +618,48 @@ extern uint32_t cpus_usable_by_job(void *job_gres_data, void *node_gres_data,
 		gres_avail -= node_gres_ptr->gpu_cnt_alloc;
 
 	if (job_gres_ptr->gpu_cnt_mult == 0) {
-		/* per gres node limit */
+		/* per node gres limit */
 		if (job_gres_ptr->gpu_cnt_alloc > gres_avail)
 			return (uint32_t) 0;
 		return NO_VAL;
 	} else {
-		/* per gres CPU limit */
+		/* per CPU gres limit */
 		return (uint32_t) (gres_avail / job_gres_ptr->gpu_cnt_alloc);
 	}
+}
+
+extern void job_alloc(void *job_gres_data, void *node_gres_data, int cpu_cnt)
+{
+	uint32_t gres_cnt;
+	gpu_job_state_t  *job_gres_ptr  = (gpu_job_state_t *)  job_gres_data;
+	gpu_node_state_t *node_gres_ptr = (gpu_node_state_t *) node_gres_data;
+
+	if (job_gres_ptr->gpu_cnt_mult == 0)
+		gres_cnt = job_gres_ptr->gpu_cnt_alloc;
+	else
+		gres_cnt = (job_gres_ptr->gpu_cnt_alloc * cpu_cnt);
+
+	node_gres_ptr->gpu_cnt_alloc += gres_cnt;
+	if (node_gres_ptr->gpu_cnt_alloc > node_gres_ptr->gpu_cnt_avail)
+		error("%s: overallocated resources", plugin_name);
+}
+
+extern void job_dealloc(void *job_gres_data, void *node_gres_data, int cpu_cnt)
+{
+	uint32_t gres_cnt;
+	gpu_job_state_t  *job_gres_ptr  = (gpu_job_state_t *)  job_gres_data;
+	gpu_node_state_t *node_gres_ptr = (gpu_node_state_t *) node_gres_data;
+
+	if (job_gres_ptr->gpu_cnt_mult == 0)
+		gres_cnt = job_gres_ptr->gpu_cnt_alloc;
+	else
+		gres_cnt = (job_gres_ptr->gpu_cnt_alloc * cpu_cnt);
+
+	if (gres_cnt > node_gres_ptr->gpu_cnt_alloc) {
+		error("%s: resource count underflow", plugin_name);
+		node_gres_ptr->gpu_cnt_alloc = 0;
+	} else
+		node_gres_ptr->gpu_cnt_alloc -= gres_cnt;
 }
 
 extern void job_state_log(void *gres_data, uint32_t job_id)

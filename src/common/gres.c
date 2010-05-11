@@ -109,9 +109,15 @@ typedef struct slurm_gres_ops {
 						  Buf buffer );
 	int		(*unpack_job_state)	( void **gres_data,
 						  Buf buffer );
-	uint32_t	(*cpus_usable_by_job)	( void *job_gres_data,
+	uint32_t	(*job_test)		( void *job_gres_data,
 						  void *node_gres_data,
 						  bool use_total_gres );
+	void		(*job_alloc)		( void *job_gres_data,
+						  void *node_gres_data,
+						  uint32_t cpu_cnt );
+	void		(*job_dealloc)		( void *job_gres_data,
+						  void *node_gres_data,
+						  uint32_t cpu_cnt );
 	void		(*job_state_log)	( void *gres_data, 
 						  uint32_t job_id );
 } slurm_gres_ops_t;
@@ -171,7 +177,9 @@ static int _load_gres_plugin(char *plugin_name,
 		"job_gres_validate",
 		"pack_job_state",
 		"unpack_job_state",
-		"cpus_usable_by_job",
+		"job_test",
+		"job_alloc",
+		"job_dealloc",
 		"job_state_log"
 	};
 	int n_syms = sizeof(syms) / sizeof(char *);
@@ -1195,9 +1203,8 @@ unpack_error:
  * RET: NO_VAL    - All CPUs on node are available
  *      otherwise - Specific CPU count
  */
-extern uint32_t gres_plugin_cpus_usable_by_job(List job_gres_list, 
-					       List node_gres_list, 
-					       bool use_total_gres)
+extern uint32_t gres_plugin_job_test(List job_gres_list, List node_gres_list, 
+				     bool use_total_gres)
 {
 	int i;
 	uint32_t cpu_cnt, tmp_cnt;
@@ -1232,7 +1239,7 @@ extern uint32_t gres_plugin_cpus_usable_by_job(List job_gres_list,
 			if (job_gres_ptr->plugin_id != 
 			    *(gres_context[i].ops.plugin_id))
 				continue;
-			tmp_cnt = (*(gres_context[i].ops.cpus_usable_by_job))
+			tmp_cnt = (*(gres_context[i].ops.job_test))
 					(job_gres_ptr->gres_data, 
 					 node_gres_ptr->gres_data,
 					 use_total_gres);
@@ -1246,6 +1253,96 @@ extern uint32_t gres_plugin_cpus_usable_by_job(List job_gres_list,
 	slurm_mutex_unlock(&gres_context_lock);
 
 	return cpu_cnt;
+}
+
+/*
+ * Allocate resource to a job and update node and job gres information
+ * IN job_gres_list - job's gres_list built by gres_plugin_job_gres_validate()
+ * IN node_gres_list - node's gres_list built by gres_plugin_node_config_validate()
+ * IN cpu_cnt - number of CPUs allocated to this job on this node
+ */
+extern void gres_plugin_job_alloc(List job_gres_list, List node_gres_list, 
+				  uint32_t cpu_cnt)
+{
+	int i;
+	ListIterator job_gres_iter,  node_gres_iter;
+	gres_state_t *job_gres_ptr, *node_gres_ptr;
+
+	if ((job_gres_list == NULL) || (node_gres_list == NULL))
+		return;
+
+	(void) gres_plugin_init();
+
+	slurm_mutex_lock(&gres_context_lock);
+	job_gres_iter = list_iterator_create(job_gres_list);
+	while ((job_gres_ptr = (gres_state_t *) list_next(job_gres_iter))) {
+		node_gres_iter = list_iterator_create(node_gres_list);
+		while ((node_gres_ptr = (gres_state_t *) 
+				list_next(node_gres_iter))) {
+			if (job_gres_ptr->plugin_id == node_gres_ptr->plugin_id)
+				break;
+		}
+		list_iterator_destroy(node_gres_iter);
+		if (node_gres_ptr == NULL)
+			continue;
+
+		for (i=0; i<gres_context_cnt; i++) {
+			if (job_gres_ptr->plugin_id != 
+			    *(gres_context[i].ops.plugin_id))
+				continue;
+			(*(gres_context[i].ops.job_alloc))
+					(job_gres_ptr->gres_data, 
+					 node_gres_ptr->gres_data, cpu_cnt);
+			break;
+		}
+	}
+	list_iterator_destroy(job_gres_iter);
+	slurm_mutex_unlock(&gres_context_lock);
+}
+
+/*
+ * Deallocate resource from a job and update node and job gres information
+ * IN job_gres_list - job's gres_list built by gres_plugin_job_gres_validate()
+ * IN node_gres_list - node's gres_list built by gres_plugin_node_config_validate()
+ * IN cpu_cnt - number of CPUs allocated to this job on this node
+ */
+extern void gres_plugin_job_dealloc(List job_gres_list, List node_gres_list, 
+				    uint32_t cpu_cnt)
+{
+	int i;
+	ListIterator job_gres_iter,  node_gres_iter;
+	gres_state_t *job_gres_ptr, *node_gres_ptr;
+
+	if ((job_gres_list == NULL) || (node_gres_list == NULL))
+		return;
+
+	(void) gres_plugin_init();
+
+	slurm_mutex_lock(&gres_context_lock);
+	job_gres_iter = list_iterator_create(job_gres_list);
+	while ((job_gres_ptr = (gres_state_t *) list_next(job_gres_iter))) {
+		node_gres_iter = list_iterator_create(node_gres_list);
+		while ((node_gres_ptr = (gres_state_t *) 
+				list_next(node_gres_iter))) {
+			if (job_gres_ptr->plugin_id == node_gres_ptr->plugin_id)
+				break;
+		}
+		list_iterator_destroy(node_gres_iter);
+		if (node_gres_ptr == NULL)
+			continue;
+
+		for (i=0; i<gres_context_cnt; i++) {
+			if (job_gres_ptr->plugin_id != 
+			    *(gres_context[i].ops.plugin_id))
+				continue;
+			(*(gres_context[i].ops.job_dealloc))
+					(job_gres_ptr->gres_data, 
+					 node_gres_ptr->gres_data, cpu_cnt);
+			break;
+		}
+	}
+	list_iterator_destroy(job_gres_iter);
+	slurm_mutex_unlock(&gres_context_lock);
 }
 
 /*
