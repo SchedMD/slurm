@@ -202,9 +202,26 @@ extern int gres_plugin_unpack_job_state(List *gres_list, Buf buffer,
  * RET: NO_VAL    - All CPUs on node are available
  *      otherwise - Specific CPU count
  */
-extern uint32_t gres_plugin_cpus_usable_by_job(List job_gres_list, 
-					       List node_gres_list, 
-					       bool use_total_gres);
+extern uint32_t gres_plugin_job_test(List job_gres_list, List node_gres_list, 
+				     bool use_total_gres);
+
+/*
+ * Allocate resource to a job and update node and job gres information
+ * IN job_gres_list - job's gres_list built by gres_plugin_job_gres_validate()
+ * IN node_gres_list - node's gres_list built by gres_plugin_node_config_validate()
+ * IN cpu_cnt - number of CPUs allocated to this job on this node
+ */
+extern void gres_plugin_job_alloc(List job_gres_list, List node_gres_list, 
+				  uint32_t cpu_cnt);
+
+/*
+ * Deallocate resource from a job and update node and job gres information
+ * IN job_gres_list - job's gres_list built by gres_plugin_job_gres_validate()
+ * IN node_gres_list - node's gres_list built by gres_plugin_node_config_validate()
+ * IN cpu_cnt - number of CPUs allocated to this job on this node
+ */
+extern void gres_plugin_job_dealloc(List job_gres_list, List node_gres_list, 
+				    uint32_t cpu_cnt);
 
 /*
  * Log a job's current gres state

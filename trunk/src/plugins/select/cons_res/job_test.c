@@ -625,9 +625,8 @@ uint16_t _can_job_run_on_node(struct job_record *job_ptr, bitstr_t *core_map,
 		cpus = _allocate_cores(job_ptr, core_map, node_i, 1);
 
 	node_ptr = select_node_record[node_i].node_ptr;
-	gres_cpus = gres_plugin_cpus_usable_by_job(job_ptr->gres_list,
-						   node_ptr->gres_list,
-						   test_only);
+	gres_cpus = gres_plugin_job_test(job_ptr->gres_list,
+					 node_ptr->gres_list, test_only);
 	if (gres_cpus < cpus)
 		cpus = gres_cpus;
 
@@ -747,9 +746,8 @@ static int _verify_node_state(struct part_res_record *cr_part_ptr,
 		}
 
 		/* node-level gres check */
-		if (gres_plugin_cpus_usable_by_job(job_ptr->gres_list, 
-						   node_ptr->gres_list, 
-						   true) == 0) {
+		if (gres_plugin_job_test(job_ptr->gres_list, 
+					 node_ptr->gres_list, true) == 0) {
 			info("cons_res: _vns: node %s lacks gres",
 			     node_ptr->name);
 			goto clear_bit;
