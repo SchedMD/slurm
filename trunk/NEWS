@@ -58,6 +58,8 @@ documents those changes that are of interest to users and admins.
     sockets_per_node, min_cores to cores_per_socket, and min_threads to
     threads_per_core (the values are not minimum, but represent the target
     values).
+ -- Fixed bug in clearing a partition's DisableRootJobs value reported by
+    Hongjia Cao.
 
 * Changes in SLURM 2.2.0.pre5
 =============================

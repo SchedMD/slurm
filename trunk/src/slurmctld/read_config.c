@@ -451,8 +451,11 @@ static int _build_single_partitionline_info(slurm_conf_partition_t *part)
 	if(part->disable_root_jobs == (uint16_t)NO_VAL) {
 		if (slurmctld_conf.disable_root_jobs)
 			part_ptr->flags |= PART_FLAG_NO_ROOT;
-	} else if (part->disable_root_jobs)
+	} else if (part->disable_root_jobs) {
 		part_ptr->flags |= PART_FLAG_NO_ROOT;
+	} else {
+		part_ptr->flags &= (~PART_FLAG_NO_ROOT);
+	}
 
 	if(part_ptr->flags & PART_FLAG_NO_ROOT)
 		debug2("partition %s does not allow root jobs", part_ptr->name);
