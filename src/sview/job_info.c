@@ -458,10 +458,7 @@ static void _cancel_job_id (uint32_t job_id, uint16_t signal)
 		if ((signal == (uint16_t)-1) || (signal == SIGKILL)) {
 			signal = 9;
 			error_code = slurm_kill_job(job_id, SIGKILL,
-						    false,
-						    global_cluster_rec ?
-						    &global_cluster_rec->
-						    control_addr : NULL);
+						    false);
 		} else {
 			error_code = slurm_signal_job(job_id, signal);
 		}
@@ -2640,10 +2637,7 @@ extern int get_new_info_job(job_info_msg_t **info_ptr,
 		if(show_flags != last_flags)
 			job_info_ptr->last_update = 0;
 		error_code = slurm_load_jobs(job_info_ptr->last_update,
-					     &new_job_ptr, show_flags,
-					     global_cluster_rec ?
-					     &global_cluster_rec->
-					     control_addr : NULL);
+					     &new_job_ptr, show_flags);
 		if (error_code == SLURM_SUCCESS) {
 			slurm_free_job_info_msg(job_info_ptr);
 			changed = 1;
@@ -2654,10 +2648,7 @@ extern int get_new_info_job(job_info_msg_t **info_ptr,
 		}
 	} else {
 		error_code = slurm_load_jobs((time_t) NULL, &new_job_ptr,
-					     show_flags,
-					     global_cluster_rec ?
-					     &global_cluster_rec->
-					     control_addr : NULL);
+					     show_flags);
 		changed = 1;
 	}
 
@@ -2699,10 +2690,7 @@ extern int get_new_info_job_step(job_step_info_response_msg_t **info_ptr,
 	if (old_step_ptr) {
 		error_code = slurm_get_job_steps(old_step_ptr->last_update,
 						 NO_VAL, NO_VAL, &new_step_ptr,
-						 show_flags,
-						 global_cluster_rec ?
-						 &global_cluster_rec->
-						 control_addr : NULL);
+						 show_flags);
 		if (error_code == SLURM_SUCCESS) {
 			slurm_free_job_step_info_response_msg(old_step_ptr);
 			changed = 1;
@@ -2713,10 +2701,7 @@ extern int get_new_info_job_step(job_step_info_response_msg_t **info_ptr,
 		}
 	} else {
 		error_code = slurm_get_job_steps((time_t) NULL, NO_VAL, NO_VAL,
-						 &new_step_ptr, show_flags,
-						 global_cluster_rec ?
-						 &global_cluster_rec->
-						 control_addr : NULL);
+						 &new_step_ptr, show_flags);
 		changed = 1;
 	}
 
@@ -2881,8 +2866,7 @@ extern void admin_edit_job(GtkCellRendererText *cell,
 
 	if(old_text && !strcmp(old_text, new_text)) {
 		temp = g_strdup_printf("No change in value.");
-	} else if(slurm_update_job(job_msg, global_cluster_rec ?
-				   &global_cluster_rec->control_addr : NULL)
+	} else if(slurm_update_job(job_msg)
 		  == SLURM_SUCCESS) {
 		gtk_tree_store_set(treestore, &iter, column, new_text, -1);
 		temp = g_strdup_printf("Job %d %s changed to %s",
@@ -3630,9 +3614,7 @@ extern void admin_job(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 
 			break;
 		case EDIT_REQUEUE:
-			response = slurm_requeue(jobid, global_cluster_rec ?
-						 &global_cluster_rec->
-						 control_addr : NULL);
+			response = slurm_requeue(jobid);
 			if(response) {
 				tmp_char_ptr = g_strdup_printf(
 					"Error happened trying to requeue "
@@ -3652,15 +3634,9 @@ extern void admin_job(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 			break;
 		case EDIT_SUSPEND:
 			if(state == JOB_SUSPENDED)
-				response = slurm_resume(jobid,
-							global_cluster_rec ?
-							&global_cluster_rec->
-							control_addr : NULL);
+				response = slurm_resume(jobid);
 			else
-				response = slurm_suspend(jobid,
-							 global_cluster_rec ?
-							 &global_cluster_rec->
-							 control_addr : NULL);
+				response = slurm_suspend(jobid);
 			if(response) {
 				tmp_char_ptr = g_strdup_printf(
 					"Error happened trying to %s job %u.",
@@ -3689,10 +3665,7 @@ extern void admin_job(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 			else if(!global_send_update_msg) {
 				tmp_char_ptr = g_strdup_printf(
 					"No change detected.");
-			} else if(slurm_update_job(job_msg,
-						   global_cluster_rec ?
-						   &global_cluster_rec->
-						   control_addr : NULL)
+			} else if(slurm_update_job(job_msg)
 				  == SLURM_SUCCESS) {
 				tmp_char_ptr = g_strdup_printf(
 					"Job %u updated successfully",

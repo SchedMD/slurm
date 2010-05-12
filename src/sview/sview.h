@@ -291,7 +291,6 @@ extern int cpus_per_node;
 extern int g_node_scaling;
 extern char *sview_colors[];
 extern int sview_colors_cnt;
-extern slurmdb_cluster_rec_t *global_cluster_rec;
 
 extern void init_grid(node_info_msg_t *node_info_ptr);
 extern int set_grid(int start, int end, int count);

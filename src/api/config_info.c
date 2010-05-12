@@ -170,7 +170,7 @@ _preempt_str(uint16_t preempt_mode)
  * IN slurm_ctl_conf_ptr - slurm control configuration pointer
  */
 void slurm_print_ctl_conf ( FILE* out,
-                            slurm_ctl_conf_info_msg_t * slurm_ctl_conf_ptr )
+			    slurm_ctl_conf_info_msg_t * slurm_ctl_conf_ptr )
 {
 	char time_str[32], tmp_str[128];
 	void *ret_list = NULL;
@@ -429,9 +429,9 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
 		if(slurm_ctl_conf_ptr->hash_val == slurm_get_hash_val())
 			snprintf(tmp_str, sizeof(tmp_str), "Match");
 		else {
-			snprintf(tmp_str, sizeof(tmp_str), 
-				 "Different Ours=0x%x Slurmctld=0x%x", 
-				 slurm_get_hash_val(), 
+			snprintf(tmp_str, sizeof(tmp_str),
+				 "Different Ours=0x%x Slurmctld=0x%x",
+				 slurm_get_hash_val(),
 				 slurm_ctl_conf_ptr->hash_val);
 		}
 		key_pair = xmalloc(sizeof(config_key_pair_t));
@@ -780,7 +780,7 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
 	key_pair->value = xstrdup(tmp_str);
 	list_append(ret_list, key_pair);
 
-        key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("PropagateResourceLimits");
 	key_pair->value = xstrdup(slurm_ctl_conf_ptr->propagate_rlimits);
 	list_append(ret_list, key_pair);
@@ -837,7 +837,7 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
 	key_pair->value = xstrdup(slurm_ctl_conf_ptr->sched_params);
 	list_append(ret_list, key_pair);
 
-	snprintf(tmp_str, sizeof(tmp_str), "%u", 
+	snprintf(tmp_str, sizeof(tmp_str), "%u",
 		 slurm_ctl_conf_ptr->schedport);
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("SchedulerPort");
@@ -1130,19 +1130,16 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
  * IN update_time - time of current configuration data
  * IN slurm_ctl_conf_ptr - place to store slurm control configuration
  *	pointer
- * IN addr - if going cross-cluster, address of cluster to go to. NULL
- *                   for regular operation.
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  * NOTE: free the response using slurm_free_ctl_conf
  */
 int
-slurm_load_ctl_conf (time_t update_time, slurm_ctl_conf_t **confp,
-		     slurm_addr *addr)
+slurm_load_ctl_conf (time_t update_time, slurm_ctl_conf_t **confp)
 {
 	int rc;
 	slurm_msg_t req_msg;
 	slurm_msg_t resp_msg;
-        last_update_msg_t req;
+	last_update_msg_t req;
 
 	slurm_msg_t_init(&req_msg);
 	slurm_msg_t_init(&resp_msg);
@@ -1151,8 +1148,7 @@ slurm_load_ctl_conf (time_t update_time, slurm_ctl_conf_t **confp,
 	req_msg.msg_type = REQUEST_BUILD_INFO;
 	req_msg.data     = &req;
 
-	if (slurm_send_recv_controller_msg(
-		    &req_msg, &resp_msg, addr) < 0)
+	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
 		return SLURM_ERROR;
 
 	switch (resp_msg.msg_type) {
@@ -1169,7 +1165,7 @@ slurm_load_ctl_conf (time_t update_time, slurm_ctl_conf_t **confp,
 		slurm_seterrno_ret(SLURM_UNEXPECTED_MSG_ERROR);
 		break;
 	}
-        return SLURM_PROTOCOL_SUCCESS;
+	return SLURM_PROTOCOL_SUCCESS;
 }
 
 /*
@@ -1233,7 +1229,7 @@ slurm_load_slurmd_status(slurmd_status_t **slurmd_status_ptr)
 		*slurmd_status_ptr = (slurmd_status_t *) resp_msg.data;
 		break;
 	case RESPONSE_SLURM_RC:
-	        rc = ((return_code_msg_t *) resp_msg.data)->return_code;
+		rc = ((return_code_msg_t *) resp_msg.data)->return_code;
 		slurm_free_return_code_msg(resp_msg.data);
 		if (rc)
 			slurm_seterrno_ret(rc);

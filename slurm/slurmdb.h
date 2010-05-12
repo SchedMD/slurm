@@ -143,6 +143,16 @@ typedef enum {
 #define SLURMDB_CLASSIFIED_FLAG 0x0100
 #define SLURMDB_CLASS_BASE      0x00ff
 
+/* Cluster flags */
+#define CLUSTER_FLAG_BGL    0x00000001 /* This is a bluegene/l cluster */
+#define CLUSTER_FLAG_BGP    0x00000002 /* This is a bluegene/p cluster */
+#define CLUSTER_FLAG_BGQ    0x00000004 /* This is a bluegene/q cluster */
+#define CLUSTER_FLAG_SC     0x00000008 /* This is a sun constellation cluster */
+#define CLUSTER_FLAG_XCPU   0x00000010 /* This has xcpu */
+#define CLUSTER_FLAG_AIX    0x00000020 /* This is an aix cluster */
+#define CLUSTER_FLAG_MULTSD 0x00000040 /* This cluster is multiple slurmd */
+#define CLUSTER_FLAG_CRAYXT 0x00000080 /* This cluster is a cray XT */
+
 /* Define assoc_mgr_association_usage_t below to avoid including
  * extraneous slurmdb headers */
 #ifndef __assoc_mgr_association_usage_t_defined
@@ -399,6 +409,8 @@ typedef struct {
 	char *control_host;
 	uint32_t control_port;
 	uint32_t cpu_count;
+	uint16_t dimensions; /* number of dimensions this cluster is */
+	uint32_t flags;      /* set of CLUSTER_FLAG_* */
 	char *name;
 	char *nodes;
 	slurmdb_association_rec_t *root_assoc; /* root association for

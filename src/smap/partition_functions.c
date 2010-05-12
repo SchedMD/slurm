@@ -100,9 +100,7 @@ extern void get_slurm_part()
 		if(show_flags != last_flags)
 			part_info_ptr->last_update = 0;
 		error_code = slurm_load_partitions(part_info_ptr->last_update,
-						   &new_part_ptr, show_flags,
-						   params.cluster ?
-						   &params.cluster->control_addr : NULL);
+						   &new_part_ptr, show_flags);
 		if (error_code == SLURM_SUCCESS)
 			slurm_free_partition_info_msg(part_info_ptr);
 		else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
@@ -111,9 +109,7 @@ extern void get_slurm_part()
 		}
 	} else {
 		error_code = slurm_load_partitions((time_t) NULL,
-						   &new_part_ptr, show_flags,
-						   params.cluster ?
-						   &params.cluster->control_addr : NULL);
+						   &new_part_ptr, show_flags);
 	}
 
 	last_flags = show_flags;
@@ -207,9 +203,7 @@ extern void get_bg_part()
 
 	if (part_info_ptr) {
 		error_code = slurm_load_partitions(part_info_ptr->last_update,
-						   &new_part_ptr, SHOW_ALL,
-						   params.cluster ?
-						   &params.cluster->control_addr : NULL);
+						   &new_part_ptr, SHOW_ALL);
 		if (error_code == SLURM_SUCCESS)
 			slurm_free_partition_info_msg(part_info_ptr);
 		else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
@@ -218,9 +212,7 @@ extern void get_bg_part()
 		}
 	} else {
 		error_code = slurm_load_partitions((time_t) NULL,
-						   &new_part_ptr, SHOW_ALL,
-						   params.cluster ?
-						   &params.cluster->control_addr : NULL);
+						   &new_part_ptr, SHOW_ALL);
 	}
 
 	if (error_code) {
@@ -240,9 +232,7 @@ extern void get_bg_part()
 	}
 	if (bg_info_ptr) {
 		error_code = slurm_load_block_info(bg_info_ptr->last_update,
-						   &new_bg_ptr,
-						   params.cluster ?
-						   &params.cluster->control_addr : NULL);
+						   &new_bg_ptr);
 		if (error_code == SLURM_SUCCESS)
 			slurm_free_block_info_msg(&bg_info_ptr);
 		else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
@@ -251,9 +241,7 @@ extern void get_bg_part()
 		}
 	} else {
 		error_code = slurm_load_block_info((time_t) NULL,
-						   &new_bg_ptr,
-						   params.cluster ?
-						   &params.cluster->control_addr : NULL);
+						   &new_bg_ptr);
 	}
 	if (error_code) {
 		if (quiet_flag != 1) {

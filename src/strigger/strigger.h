@@ -51,7 +51,7 @@
 
 struct strigger_parameters {
 	bool     block_err;
-	slurmdb_cluster_rec_t *cluster;
+	List     clusters;
 	bool     job_fini;
 	uint32_t job_id;
 	bool     mode_set;

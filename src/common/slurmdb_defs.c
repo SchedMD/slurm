@@ -46,6 +46,8 @@
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/parse_time.h"
 
+slurmdb_cluster_rec_t *working_cluster_rec = NULL;
+
 /*
  * Comparator used for sorting immediate childern of acct_hierarchical_recs
  *
@@ -752,59 +754,77 @@ extern void slurmdb_destroy_report_cluster_grouping(void *object)
 }
 
 
-extern slurmdb_cluster_rec_t *slurmdb_get_info_cluster(char *cluster_name)
+extern List slurmdb_get_info_cluster(char *cluster_names)
 {
 	slurmdb_cluster_rec_t *cluster_rec = NULL;
 	slurmdb_cluster_cond_t cluster_cond;
 	List temp_list = NULL;
-
+	char *cluster_name = NULL;
 	void *db_conn = NULL;
+	ListIterator itr, itr2;
+	int err = 0;
 
-	xassert(cluster_name);
+	xassert(cluster_names);
 
+	cluster_name = slurm_get_cluster_name();
 	db_conn = acct_storage_g_get_connection(false, 0, 1, cluster_name);
+	xfree(cluster_name);
 
 	memset(&cluster_cond, 0, sizeof(slurmdb_cluster_cond_t));
 	cluster_cond.cluster_list = list_create(slurm_destroy_char);
-	slurm_addto_char_list(cluster_cond.cluster_list, cluster_name);
+	slurm_addto_char_list(cluster_cond.cluster_list, cluster_names);
 
 	if(!(temp_list = acct_storage_g_get_clusters(
 		    db_conn, getuid(), &cluster_cond))) {
 		error("Problem talking to database");
 		goto end_it;
 	}
+	itr = list_iterator_create(temp_list);
+	itr2 = list_iterator_create(cluster_cond.cluster_list);
+	while((cluster_name = list_next(itr2))) {
+		while((cluster_rec = list_next(itr)))
+			if(!strcmp(cluster_name, cluster_rec->name))
+				break;
+		if(!cluster_rec) {
+			error("No cluster '%s' known by database.",
+			      cluster_name);
+			err = 1;
+			goto next;
+		}
+		if(cluster_rec->rpc_version < 8) {
+			error("Slurmctld on '%s' must be running at least "
+			      "SLURM 2.2 for cross-cluster communication.",
+			      cluster_name);
+			list_delete_item(itr);
+			err = 1;
+			goto next;
+		}
 
-	if(!(cluster_rec = list_pop(temp_list))) {
-		error("No cluster '%s' known by database.",
-		      cluster_name);
-		goto end_it;
+		slurm_set_addr(&cluster_rec->control_addr,
+			       cluster_rec->control_port,
+			       cluster_rec->control_host);
+		if (cluster_rec->control_addr.sin_port == 0) {
+			error("Unable to establish control "
+			      "machine address for '%s'(%s:%u)",
+			      cluster_name,
+			      cluster_rec->control_host,
+			      cluster_rec->control_port);
+			list_delete_item(itr);
+			err = 1;
+			goto next;
+		}
+	next:
+		list_iterator_reset(itr);
 	}
+	list_iterator_destroy(itr2);
+	list_iterator_destroy(itr);
 
-	if(cluster_rec->rpc_version < 8) {
-		error("Slurmctld must be running at least SLURM 2.2 "
-		      "for cross-cluster communication.");
-		slurmdb_destroy_cluster_rec(cluster_rec);
-		cluster_rec = NULL;
-		goto end_it;
-	}
-
-	slurm_set_addr(&cluster_rec->control_addr,
-		       cluster_rec->control_port,
-		       cluster_rec->control_host);
-	if (cluster_rec->control_addr.sin_port == 0) {
-		error("Unable to establish control "
-		      "machine address for '%s'(%s:%u)", cluster_name,
-		      cluster_rec->control_host, cluster_rec->control_port);
-		goto end_it;
-	}
 end_it:
 	if(cluster_cond.cluster_list)
 		list_destroy(cluster_cond.cluster_list);
-	if(temp_list)
-		list_destroy(temp_list);
 	acct_storage_g_close_connection(&db_conn);
 
-	return cluster_rec;
+	return temp_list;
 }
 
 extern void slurmdb_init_association_rec(slurmdb_association_rec_t *assoc)

@@ -608,10 +608,7 @@ extern int get_new_info_node(node_info_msg_t **info_ptr, int force)
 		if(show_flags != last_flags)
 			node_info_ptr->last_update = 0;
 		error_code = slurm_load_node(node_info_ptr->last_update,
-					     &new_node_ptr, show_flags,
-					     global_cluster_rec ?
-					     &global_cluster_rec->
-					     control_addr : NULL);
+					     &new_node_ptr, show_flags);
 		if (error_code == SLURM_SUCCESS) {
 			slurm_free_node_info_msg(node_info_ptr);
 			changed = 1;
@@ -622,10 +619,7 @@ extern int get_new_info_node(node_info_msg_t **info_ptr, int force)
 		}
 	} else {
 		error_code = slurm_load_node((time_t) NULL, &new_node_ptr,
-					     show_flags,
-					     global_cluster_rec ?
-					     &global_cluster_rec->
-					     control_addr : NULL);
+					     show_flags);
 		changed = 1;
 	}
 
@@ -774,8 +768,7 @@ extern int update_features_node(GtkDialog *dialog, const char *nodelist,
 			g_free(edit);
 			goto end_it;
 		}
-		if(slurm_update_node(node_msg, global_cluster_rec ?
-				     &global_cluster_rec->control_addr : NULL)
+		if(slurm_update_node(node_msg)
 		   == SLURM_SUCCESS) {
 			edit = g_strdup_printf(
 				"Nodes %s updated successfully.",
@@ -862,8 +855,7 @@ extern int update_gres_node(GtkDialog *dialog, const char *nodelist,
 			g_free(edit);
 			goto end_it;
 		}
-		if(slurm_update_node(node_msg, global_cluster_rec ?
-				     &global_cluster_rec->control_addr : NULL)
+		if(slurm_update_node(node_msg)
 		   == SLURM_SUCCESS) {
 			edit = g_strdup_printf(
 				"Nodes %s updated successfully.",
@@ -982,8 +974,7 @@ extern int update_state_node(GtkDialog *dialog,
 				node_msg->reason_uid = getuid();
 			}
 		}
-		if(slurm_update_node(node_msg, global_cluster_rec ?
-				     &global_cluster_rec->control_addr : NULL)
+		if(slurm_update_node(node_msg)
 		   == SLURM_SUCCESS) {
 			lower = g_strdup_printf(
 				"Nodes %s updated successfully.",

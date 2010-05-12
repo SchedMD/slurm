@@ -55,12 +55,10 @@
  * IN job_id     - the job's id
  * IN signal     - signal number
  * IN batch_flag - 1 to signal batch shell only, otherwise 0
- * IN addr - if going cross-cluster, address of cluster to go to.
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
 int
-slurm_kill_job (uint32_t job_id, uint16_t signal, uint16_t batch_flag,
-		slurm_addr *addr)
+slurm_kill_job (uint32_t job_id, uint16_t signal, uint16_t batch_flag)
 {
 	int rc;
 	slurm_msg_t msg;
@@ -77,7 +75,7 @@ slurm_kill_job (uint32_t job_id, uint16_t signal, uint16_t batch_flag,
 	msg.msg_type    = REQUEST_CANCEL_JOB_STEP;
 	msg.data        = &req;
 
-	if (slurm_send_recv_controller_rc_msg(&msg, &rc, addr) < 0)
+	if (slurm_send_recv_controller_rc_msg(&msg, &rc) < 0)
 		return SLURM_FAILURE;
 
 	if (rc)
@@ -92,12 +90,10 @@ slurm_kill_job (uint32_t job_id, uint16_t signal, uint16_t batch_flag,
  * IN job_id     - the job's id
  * IN step_id    - the job step's id
  * IN signal     - signal number
- * IN addr - if going cross-cluster, address of cluster to go to.
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
 int
-slurm_kill_job_step (uint32_t job_id, uint32_t step_id, uint16_t signal,
-		     slurm_addr *addr)
+slurm_kill_job_step (uint32_t job_id, uint32_t step_id, uint16_t signal)
 {
 	int rc;
 	slurm_msg_t msg;
@@ -114,7 +110,7 @@ slurm_kill_job_step (uint32_t job_id, uint32_t step_id, uint16_t signal,
 	msg.msg_type    = REQUEST_CANCEL_JOB_STEP;
         msg.data        = &req;
 
-	if (slurm_send_recv_controller_rc_msg(&msg, &rc, addr) < 0)
+	if (slurm_send_recv_controller_rc_msg(&msg, &rc) < 0)
 		return SLURM_FAILURE;
 
 	if (rc)

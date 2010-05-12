@@ -284,14 +284,11 @@ slurm_sprint_node_table (node_info_t * node_ptr,
  * IN update_time - time of current configuration data
  * IN node_info_msg_pptr - place to store a node configuration pointer
  * IN show_flags - node filtering options
- * IN addr - if going cross-cluster, address of cluster to go to. NULL
- *                   for regular operation.
  * RET 0 or a slurm error code
  * NOTE: free the response using slurm_free_node_info_msg
  */
 extern int slurm_load_node (time_t update_time,
-			    node_info_msg_t **resp, uint16_t show_flags,
-			    slurm_addr *addr)
+			    node_info_msg_t **resp, uint16_t show_flags)
 {
 	int rc;
 	slurm_msg_t req_msg;
@@ -305,8 +302,7 @@ extern int slurm_load_node (time_t update_time,
 	req_msg.msg_type = REQUEST_NODE_INFO;
 	req_msg.data     = &req;
 
-	if (slurm_send_recv_controller_msg(
-		    &req_msg, &resp_msg, addr) < 0)
+	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
 		return SLURM_ERROR;
 
 	switch (resp_msg.msg_type) {

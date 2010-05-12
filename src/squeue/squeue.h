@@ -88,7 +88,7 @@ struct squeue_parameters {
 	int  verbose;
 
 	char* accounts;
-	slurmdb_cluster_rec_t *cluster;
+	List clusters;
 	char* format;
 	char* jobs;
 	hostset_t nodes;

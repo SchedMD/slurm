@@ -760,13 +760,12 @@ line14:
  * IN update_time - time of current configuration data
  * IN job_info_msg_pptr - place to store a job configuration pointer
  * IN show_flags -  job filtering option: 0, SHOW_ALL or SHOW_DETAIL
- * IN addr - if going cross-cluster, address of cluster to go to.
  * RET 0 or -1 on error
  * NOTE: free the response using slurm_free_job_info_msg
  */
 extern int
 slurm_load_jobs (time_t update_time, job_info_msg_t **resp,
-		 uint16_t show_flags, slurm_addr *addr)
+		 uint16_t show_flags)
 {
 	int rc;
 	slurm_msg_t resp_msg;
@@ -781,8 +780,7 @@ slurm_load_jobs (time_t update_time, job_info_msg_t **resp,
 	req_msg.msg_type = REQUEST_JOB_INFO;
 	req_msg.data     = &req;
 
-	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg,
-					   addr) < 0)
+	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
 		return SLURM_ERROR;
 
 	switch (resp_msg.msg_type) {
@@ -808,13 +806,11 @@ slurm_load_jobs (time_t update_time, job_info_msg_t **resp,
  * IN job_info_msg_pptr - place to store a job configuration pointer
  * IN job_id -  ID of job we want information about
  * IN show_flags -  job filtering option: 0, SHOW_ALL or SHOW_DETAIL
- * IN addr - if going cross-cluster, address of cluster to go to.
  * RET 0 or -1 on error
  * NOTE: free the response using slurm_free_job_info_msg
  */
 extern int
-slurm_load_job (job_info_msg_t **resp, uint32_t job_id, uint16_t show_flags,
-		slurm_addr *addr)
+slurm_load_job (job_info_msg_t **resp, uint32_t job_id, uint16_t show_flags)
 {
 	int rc;
 	slurm_msg_t resp_msg;
@@ -829,8 +825,7 @@ slurm_load_job (job_info_msg_t **resp, uint32_t job_id, uint16_t show_flags,
 	req_msg.msg_type = REQUEST_JOB_INFO_SINGLE;
 	req_msg.data     = &req;
 
-	if (slurm_send_recv_controller_msg(
-		    &req_msg, &resp_msg, addr) < 0)
+	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
 		return SLURM_ERROR;
 
 	switch (resp_msg.msg_type) {
@@ -931,16 +926,15 @@ slurm_pid2jobid (pid_t job_pid, uint32_t *jobid)
 /*
  * slurm_get_rem_time - get the expected time remaining for a given job
  * IN jobid     - slurm job id
- * IN addr - if going cross-cluster, address of cluster to go to.
  * RET remaining time in seconds or -1 on error
  */
-extern long slurm_get_rem_time(uint32_t jobid, slurm_addr *addr)
+extern long slurm_get_rem_time(uint32_t jobid)
 {
 	time_t now = time(NULL);
 	time_t end_time;
 	long rc;
 
-	if (slurm_get_end_time(jobid, &end_time, addr) != SLURM_SUCCESS)
+	if (slurm_get_end_time(jobid, &end_time) != SLURM_SUCCESS)
 		return -1L;
 
 	rc = difftime(end_time, now);
@@ -950,14 +944,14 @@ extern long slurm_get_rem_time(uint32_t jobid, slurm_addr *addr)
 }
 
 /* FORTRAN VERSIONS OF slurm_get_rem_time */
-extern int32_t islurm_get_rem_time__(uint32_t *jobid, slurm_addr *addr)
+extern int32_t islurm_get_rem_time__(uint32_t *jobid)
 {
 	time_t now = time(NULL);
 	time_t end_time;
 	int32_t rc;
 
 	if ((jobid == NULL)
-	    ||  (slurm_get_end_time(*jobid, &end_time, addr)
+	    ||  (slurm_get_end_time(*jobid, &end_time)
 		 != SLURM_SUCCESS))
 		return 0;
 
@@ -974,7 +968,7 @@ extern int32_t islurm_get_rem_time2__()
 	if (slurm_job_id == NULL)
 		return 0;
 	jobid = atol(slurm_job_id);
-	return islurm_get_rem_time__(&jobid, NULL);
+	return islurm_get_rem_time__(&jobid);
 }
 
 
@@ -982,11 +976,10 @@ extern int32_t islurm_get_rem_time2__()
  * slurm_get_end_time - get the expected end time for a given slurm job
  * IN jobid     - slurm job id
  * end_time_ptr - location in which to store scheduled end time for job
- * IN addr - if going cross-cluster, address of cluster to go to.
  * RET 0 or -1 on error
  */
 extern int
-slurm_get_end_time(uint32_t jobid, time_t *end_time_ptr, slurm_addr *addr)
+slurm_get_end_time(uint32_t jobid, time_t *end_time_ptr)
 {
 	int rc;
 	slurm_msg_t resp_msg;
@@ -1033,7 +1026,7 @@ slurm_get_end_time(uint32_t jobid, time_t *end_time_ptr, slurm_addr *addr)
 	req_msg.data       = &job_msg;
 
 	if (slurm_send_recv_controller_msg(
-		    &req_msg, &resp_msg, addr) < 0)
+		    &req_msg, &resp_msg) < 0)
 		return SLURM_ERROR;
 
 	switch (resp_msg.msg_type) {
@@ -1067,10 +1060,9 @@ slurm_get_end_time(uint32_t jobid, time_t *end_time_ptr, slurm_addr *addr)
 /*
  * slurm_job_node_ready - report if nodes are ready for job to execute now
  * IN job_id - slurm job id
- * IN addr - if going cross-cluster, address of cluster to go to.
  * RET: READY_* values as defined in slurm.h
  */
-extern int slurm_job_node_ready(uint32_t job_id, slurm_addr *addr)
+extern int slurm_job_node_ready(uint32_t job_id)
 {
 	slurm_msg_t req, resp;
 	job_id_msg_t msg;
@@ -1083,7 +1075,7 @@ extern int slurm_job_node_ready(uint32_t job_id, slurm_addr *addr)
 	req.data     = &msg;
 	msg.job_id   = job_id;
 
-	if (slurm_send_recv_controller_msg(&req, &resp, addr) < 0)
+	if (slurm_send_recv_controller_msg(&req, &resp) < 0)
 		return -1;
 
 	if (resp.msg_type == RESPONSE_JOB_READY) {

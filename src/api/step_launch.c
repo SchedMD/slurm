@@ -334,7 +334,7 @@ static void _step_abort(slurm_step_ctx_t *ctx)
 
 	if (!sls->abort_action_taken) {
 		slurm_kill_job_step(ctx->job_id, ctx->step_resp->job_step_id,
-				    SIGKILL, NULL);
+				    SIGKILL);
 		sls->abort_action_taken = true;
 	}
 }
@@ -415,7 +415,7 @@ void slurm_step_launch_wait_finish(slurm_step_ctx_t *ctx)
 				slurm_kill_job_step(ctx->job_id,
 						    ctx->step_resp->
 						    job_step_id,
-						    SIGKILL, NULL);
+						    SIGKILL);
 				sls->abort_action_taken = true;
 			}
 			if (!time_set) {
@@ -445,7 +445,7 @@ void slurm_step_launch_wait_finish(slurm_step_ctx_t *ctx)
 				 */
 				slurm_kill_job_step(ctx->job_id,
 						    ctx->step_resp->job_step_id,
-						    SIGKILL, NULL);
+						    SIGKILL);
 				if (!sls->user_managed_io) {
 					client_io_handler_abort(sls->
 								io.normal);
@@ -1288,7 +1288,7 @@ static int _fail_step_tasks(slurm_step_ctx_t *ctx, char *node, int ret_code)
 	req.msg_type = REQUEST_STEP_COMPLETE;
 	req.data = &msg;
 
-	if (slurm_send_recv_controller_rc_msg(&req, &rc, NULL) < 0)
+	if (slurm_send_recv_controller_rc_msg(&req, &rc) < 0)
 	       return SLURM_ERROR;
 
 	return SLURM_SUCCESS;

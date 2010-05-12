@@ -164,13 +164,15 @@ extern void parse_command_line(int argc, char *argv[])
 			params.long_output = true;
 			break;
 		case (int) 'M':
-			slurmdb_destroy_cluster_rec(params.cluster);
-			if(!(params.cluster =
+			if(params.clusters)
+				list_destroy(params.clusters);
+			if(!(params.clusters =
 			     slurmdb_get_info_cluster(optarg))) {
 				error("'%s' invalid entry for --cluster",
 				      optarg);
 				exit(1);
 			}
+			working_cluster_rec = list_peek(params.clusters);
 			break;
 		case (int) 'n':
 			xfree(params.nodes);

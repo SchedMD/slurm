@@ -119,7 +119,7 @@ static int _wait_part_ready(uint32_t job_id)
 #endif
 		}
 
-		rc = slurm_job_node_ready(job_id, NULL);
+		rc = slurm_job_node_ready(job_id);
 		if (rc == READY_JOB_FATAL)
 			break;				/* fatal error */
 		if (rc == READY_JOB_ERROR)		/* error */
@@ -153,7 +153,7 @@ static int _get_job_size(uint32_t job_id)
 	int i, size = 1;
 	hostlist_t hl;
 
-	if (slurm_load_jobs((time_t) 0, &job_buffer_ptr, SHOW_ALL, NULL)) {
+	if (slurm_load_jobs((time_t) 0, &job_buffer_ptr, SHOW_ALL)) {
 		slurm_perror("slurm_load_jobs");
 		return 1;
 	}
@@ -191,7 +191,7 @@ static int _partitions_dealloc()
 
 	if (bg_info_ptr) {
 		error_code = slurm_load_block_info(bg_info_ptr->last_update,
-						   &new_bg_ptr, NULL);
+						   &new_bg_ptr);
 		if (error_code == SLURM_SUCCESS)
 			slurm_free_block_info_msg(&bg_info_ptr);
 		else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
@@ -200,7 +200,7 @@ static int _partitions_dealloc()
 		}
 	} else {
 		error_code = slurm_load_block_info((time_t) NULL,
-						   &new_bg_ptr, NULL);
+						   &new_bg_ptr);
 	}
 
 	if (error_code) {

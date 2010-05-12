@@ -379,7 +379,7 @@ relinquish:
 	pthread_mutex_lock(&allocation_state_lock);
 	if (allocation_state != REVOKED) {
 		info("Relinquishing job allocation %d", alloc->job_id);
-		if (slurm_complete_job(alloc->job_id, status, NULL)
+		if (slurm_complete_job(alloc->job_id, status)
 		    != 0)
 			error("Unable to clean up job allocation %d: %m",
 			      alloc->job_id);
@@ -650,7 +650,7 @@ static void _signal_while_allocating(int signo)
 {
 	allocation_interrupted = true;
 	if (pending_job_id != 0) {
-		slurm_complete_job(pending_job_id, 0, NULL);
+		slurm_complete_job(pending_job_id, 0);
 	}
 }
 
@@ -802,7 +802,7 @@ static int _wait_bluegene_block_ready(resource_allocation_response_msg_t *alloc)
 			debug("still waiting");
 		}
 
-		rc = slurm_job_node_ready(alloc->job_id, NULL);
+		rc = slurm_job_node_ready(alloc->job_id);
 
 		if (rc == READY_JOB_FATAL)
 			break;				/* fatal error */
@@ -844,7 +844,7 @@ static int _blocks_dealloc(void)
 
 	if (bg_info_ptr) {
 		error_code = slurm_load_block_info(bg_info_ptr->last_update,
-						   &new_bg_ptr, NULL);
+						   &new_bg_ptr);
 		if (error_code == SLURM_SUCCESS)
 			slurm_free_block_info_msg(&bg_info_ptr);
 		else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
@@ -853,7 +853,7 @@ static int _blocks_dealloc(void)
 		}
 	} else {
 		error_code = slurm_load_block_info((time_t) NULL,
-						   &new_bg_ptr, NULL);
+						   &new_bg_ptr);
 	}
 
 	if (error_code) {
@@ -902,7 +902,7 @@ static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc)
 		}
 
 		if (opt.wait_all_nodes)
-			rc = slurm_job_node_ready(alloc->job_id, NULL);
+			rc = slurm_job_node_ready(alloc->job_id);
 		else {
 			is_ready = 1;
 			break;

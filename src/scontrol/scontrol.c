@@ -46,7 +46,7 @@
 #define OPT_LONG_HIDE   0x102
 
 char *command_name;
-slurmdb_cluster_rec_t *cluster = NULL;
+List clusters = NULL;
 int all_flag;		/* display even hidden partitions */
 int detail_flag;	/* display additional details */
 int exit_code;		/* scontrol's exit code, =1 on any error at any time */
@@ -132,12 +132,17 @@ main (int argc, char *argv[])
 			detail_flag = 0;
 			break;
 		case (int)'M':
-			slurmdb_destroy_cluster_rec(cluster);
-			if(!(cluster = slurmdb_get_info_cluster(optarg))) {
+			if(clusters) {
+				list_destroy(clusters);
+				clusters = NULL;
+				working_cluster_rec = NULL;
+			}
+			if(!(clusters = slurmdb_get_info_cluster(optarg))) {
 				error("'%s' invalid entry for --cluster",
 				      optarg);
 				exit(1);
 			}
+			working_cluster_rec = list_peek(clusters);
 			break;
 		case (int)'o':
 			one_liner = 1;
@@ -189,7 +194,8 @@ main (int argc, char *argv[])
 			break;
 		error_code = _get_command (&input_field_count, input_fields);
 	}
-	slurmdb_destroy_cluster_rec(cluster);
+	if(clusters)
+		list_destroy(clusters);
 	exit(exit_code);
 }
 
@@ -320,8 +326,7 @@ _print_config (char *config_param)
 	if (old_slurm_ctl_conf_ptr) {
 		error_code = slurm_load_ctl_conf (
 				old_slurm_ctl_conf_ptr->last_update,
-				&slurm_ctl_conf_ptr, cluster ?
-				      &cluster->control_addr : NULL);
+				&slurm_ctl_conf_ptr);
 		if (error_code == SLURM_SUCCESS)
 			slurm_free_ctl_conf(old_slurm_ctl_conf_ptr);
 		else if (slurm_get_errno () == SLURM_NO_CHANGE_IN_DATA) {
@@ -335,9 +340,7 @@ _print_config (char *config_param)
 	}
 	else
 		error_code = slurm_load_ctl_conf ((time_t) NULL,
-						  &slurm_ctl_conf_ptr,
-						  cluster ?
-				      &cluster->control_addr : NULL);
+						  &slurm_ctl_conf_ptr);
 
 	if (error_code) {
 		exit_code = 1;
@@ -531,13 +534,18 @@ _process_command (int argc, char *argv[])
 		scontrol_print_completing();
 	}
 	else if (strncasecmp (tag, "cluster", MAX(taglen, 2)) == 0) {
-		slurmdb_destroy_cluster_rec(cluster);
+		if(clusters) {
+			list_destroy(clusters);
+			clusters = NULL;
+			working_cluster_rec = NULL;
+		}
 		if (argc >= 2) {
-			if(!(cluster = slurmdb_get_info_cluster(argv[1]))) {
+			if(!(clusters = slurmdb_get_info_cluster(argv[1]))) {
 				error("'%s' invalid entry for --cluster",
 				      optarg);
 				exit(1);
 			}
+			working_cluster_rec = list_peek(clusters);
 		}
 	}
 	else if (strncasecmp (tag, "create", MAX(taglen, 2)) == 0) {
@@ -637,8 +645,7 @@ _process_command (int argc, char *argv[])
 			fprintf (stderr, "too many arguments for keyword:%s\n",
 			         tag);
 		}
-		error_code = slurm_reconfigure(cluster ?
-					       &cluster->control_addr : NULL);
+		error_code = slurm_reconfigure();
 		if (error_code) {
 			exit_code = 1;
 			if (quiet_flag != 1)
@@ -780,8 +787,7 @@ _process_command (int argc, char *argv[])
 			}
 			if (level != -1) {
 				error_code = slurm_set_debug_level(
-					level, cluster ?
-					&cluster->control_addr : NULL);
+					level);
 				if (error_code) {
 					exit_code = 1;
 					if (quiet_flag != 1)
@@ -831,8 +837,7 @@ _process_command (int argc, char *argv[])
 			}
 			if (level != -1) {
 				error_code = slurm_set_schedlog_level(
-					level, cluster ?
-					&cluster->control_addr : NULL);
+					level);
 				if (error_code) {
 					exit_code = 1;
 					if (quiet_flag != 1)
@@ -1038,8 +1043,7 @@ _delete_it (int argc, char *argv[])
 	if (strncasecmp (tag, "PartitionName", MAX(taglen, 3)) == 0) {
 		delete_part_msg_t part_msg;
 		part_msg.name = val;
-		if (slurm_delete_partition(&part_msg, cluster ?
-					   &cluster->control_addr : NULL)) {
+		if (slurm_delete_partition(&part_msg)) {
 			char errmsg[64];
 			snprintf(errmsg, 64, "delete_partition %s", argv[0]);
 			slurm_perror(errmsg);
@@ -1047,8 +1051,7 @@ _delete_it (int argc, char *argv[])
 	} else if (strncasecmp (tag, "ReservationName", MAX(taglen, 3)) == 0) {
 		reservation_name_msg_t   res_msg;
 		res_msg.name = val;
-		if (slurm_delete_reservation(&res_msg, cluster ?
-					     &cluster->control_addr : NULL)) {
+		if (slurm_delete_reservation(&res_msg)) {
 			char errmsg[64];
 			snprintf(errmsg, 64, "delete_reservation %s", argv[0]);
 			slurm_perror(errmsg);
@@ -1060,8 +1063,7 @@ _delete_it (int argc, char *argv[])
 
 		block_msg.bg_block_id = val;
 		block_msg.state = RM_PARTITION_NAV;
-		if (slurm_update_block(&block_msg, cluster ?
-				       &cluster->control_addr : NULL)) {
+		if (slurm_update_block(&block_msg)) {
 			char errmsg[64];
 			snprintf(errmsg, 64, "delete_block %s", argv[0]);
 			slurm_perror(errmsg);
@@ -1325,8 +1327,7 @@ _update_bluegene_block (int argc, char *argv[])
 		return 0;
 	}
 
-	if (slurm_update_block(&block_msg, cluster ?
-			       &cluster->control_addr : NULL)) {
+	if (slurm_update_block(&block_msg)) {
 		exit_code = 1;
 		return slurm_get_errno ();
 	} else
@@ -1404,8 +1405,7 @@ _update_bluegene_subbp (int argc, char *argv[])
 		return 0;
 	}
 
-	if (slurm_update_block(&block_msg, cluster ?
-			       &cluster->control_addr : NULL)) {
+	if (slurm_update_block(&block_msg)) {
 		exit_code = 1;
 		return slurm_get_errno ();
 	} else
@@ -1435,9 +1435,7 @@ static int _update_slurmctld_debug(char *val)
 			fprintf(stderr, "invalid debug level: %s\n",
 				val);
 	} else {
-		error_code = slurm_set_debug_level(level, cluster ?
-						   &cluster->
-						   control_addr : NULL);
+		error_code = slurm_set_debug_level(level);
 	}
 
 	return error_code;

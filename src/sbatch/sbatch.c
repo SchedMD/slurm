@@ -145,8 +145,9 @@ int main(int argc, char *argv[])
 
 	desc.script = (char *)script_body;
 
-	while (slurm_submit_batch_job(&desc, &resp, opt.cluster ?
-				      &opt.cluster->control_addr : NULL) < 0) {
+	if(opt.clusters)
+		working_cluster_rec = list_peek(opt.clusters);
+	while (slurm_submit_batch_job(&desc, &resp) < 0) {
 		static char *msg;
 
 		if (errno == ESLURM_ERROR_ON_DESC_TO_RECORD_COPY)

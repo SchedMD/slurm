@@ -98,7 +98,7 @@ extern int quiet_flag;	/* quiet=1, verbose=-1, normal=0 */
 extern uint32_t my_uid;
 extern sshare_time_format_t time_format;
 extern char *time_format_string;
-extern slurmdb_cluster_rec_t *cluster;
+extern List clusters;
 
 extern int process(shares_response_msg_t *msg);
 

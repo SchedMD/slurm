@@ -66,9 +66,7 @@ extern void get_job(void)
 		if(show_flags != last_flags)
 			job_info_ptr->last_update = 0;
 		error_code = slurm_load_jobs(job_info_ptr->last_update,
-					     &new_job_ptr, show_flags,
-					     params.cluster ?
-					     &params.cluster->control_addr : NULL);
+					     &new_job_ptr, show_flags);
 		if (error_code == SLURM_SUCCESS)
 			slurm_free_job_info_msg(job_info_ptr);
 		else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
@@ -77,8 +75,7 @@ extern void get_job(void)
 		}
 	} else
 		error_code = slurm_load_jobs((time_t) NULL, &new_job_ptr,
-					     show_flags, params.cluster ?
-					     &params.cluster->control_addr : NULL);
+					     show_flags);
 
 	last_flags = show_flags;
 	if (error_code) {
@@ -480,9 +477,7 @@ static int   _max_cpus_per_node(void)
 	node_info_msg_t *node_info_ptr = NULL;
 
 	error_code = slurm_load_node ((time_t) NULL, &node_info_ptr,
-				      params.all_flag ? 1 : 0,
-				      params.cluster ?
-				      &params.cluster->control_addr : NULL);
+				      params.all_flag ? 1 : 0);
 	if (error_code == SLURM_SUCCESS) {
 		int i;
 		node_info_t *node_ptr = node_info_ptr->node_array;

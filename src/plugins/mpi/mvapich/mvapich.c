@@ -293,7 +293,7 @@ static int mvapich_terminate_job (mvapich_state_t *st, const char *msg, ...)
 		xfree (p);
 	}
 
-	slurm_kill_job_step (st->job->jobid, st->job->stepid, SIGKILL, NULL);
+	slurm_kill_job_step (st->job->jobid, st->job->stepid, SIGKILL);
 	kill(getpid(), SIGTERM);	/* Needed for better srun cleanup */
 	pthread_exit(NULL);
 	/* NORETURN */

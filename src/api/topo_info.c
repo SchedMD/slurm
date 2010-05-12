@@ -67,7 +67,7 @@
  * RET 0 or a slurm error code
  * NOTE: free the response using slurm_free_topo_info_msg
  */
-extern int slurm_load_topo(topo_info_response_msg_t **resp, slurm_addr *addr)
+extern int slurm_load_topo(topo_info_response_msg_t **resp)
 {
 	int rc;
 	slurm_msg_t req_msg;
@@ -78,8 +78,7 @@ extern int slurm_load_topo(topo_info_response_msg_t **resp, slurm_addr *addr)
 	req_msg.msg_type = REQUEST_TOPO_INFO;
 	req_msg.data     = NULL;
 
-	if (slurm_send_recv_controller_msg(
-		    &req_msg, &resp_msg, addr) < 0)
+	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
 		return SLURM_ERROR;
 
 	switch (resp_msg.msg_type) {

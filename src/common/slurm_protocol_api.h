@@ -968,12 +968,10 @@ int slurm_send_rc_msg(slurm_msg_t * request_msg, int rc);
  * listens for the response, then closes the connection
  * IN request_msg	- slurm_msg request
  * OUT response_msg	- slurm_msg response
- * IN addr              - if going cross-cluster, address of cluster to go to.
  * RET int 		- returns 0 on success, -1 on failure and sets errno
  */
 int slurm_send_recv_controller_msg(slurm_msg_t * request_msg,
-				   slurm_msg_t * response_msg,
-				   slurm_addr *addr);
+				   slurm_msg_t * response_msg);
 
 /* slurm_send_recv_node_msg
  * opens a connection to node,
@@ -1024,8 +1022,7 @@ int slurm_send_recv_rc_msg_only_one(slurm_msg_t *req, int *rc, int timeout);
  *  Same as above, but send to controller
  *  returns 0 on success, -1 on failure and sets errno
  */
-int slurm_send_recv_controller_rc_msg(slurm_msg_t *req, int *rc,
-				      slurm_addr *addr);
+int slurm_send_recv_controller_rc_msg(slurm_msg_t *req, int *rc);
 
 /* slurm_send_only_controller_msg
  * opens a connection to the controller, sends the node a message then,

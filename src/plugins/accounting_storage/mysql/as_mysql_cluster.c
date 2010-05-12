@@ -166,7 +166,8 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 			added++;
 			/* add it to the list and sort */
 			slurm_mutex_lock(&as_mysql_cluster_list_lock);
-			list_append(as_mysql_cluster_list, xstrdup(object->name));
+			list_append(as_mysql_cluster_list,
+				    xstrdup(object->name));
 			list_sort(as_mysql_cluster_list,
 				  (ListCmpF)slurm_sort_char_list_asc);
 			slurm_mutex_unlock(&as_mysql_cluster_list_lock);
@@ -270,6 +271,16 @@ extern List as_mysql_modify_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 	if(cluster->rpc_version) {
 		xstrfmtcat(vals, ", rpc_version=%u", cluster->rpc_version);
 		set++;
+		clust_reg = true;
+	}
+
+	if(cluster->dimensions) {
+		xstrfmtcat(vals, ", dimensions=%u", cluster->dimensions);
+		clust_reg = true;
+	}
+
+	if(cluster->flags != NO_VAL) {
+		xstrfmtcat(vals, ", flags=%u", cluster->flags);
 		clust_reg = true;
 	}
 

@@ -214,8 +214,7 @@ scontrol_update_node (int argc, char *argv[])
 		return 0;
 	}
 
-	rc = slurm_update_node(&node_msg, cluster ?
-			       &cluster->control_addr : NULL);
+	rc = slurm_update_node(&node_msg);
 
 done:	xfree(reason_str);
 	if (rc) {

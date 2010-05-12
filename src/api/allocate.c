@@ -120,7 +120,7 @@ slurm_allocate_resources (job_desc_msg_t *req,
 	req_msg.msg_type = REQUEST_RESOURCE_ALLOCATION;
 	req_msg.data     = req;
 
-	rc = slurm_send_recv_controller_msg(&req_msg, &resp_msg, NULL);
+	rc = slurm_send_recv_controller_msg(&req_msg, &resp_msg);
 
 	/*
 	 *  Clear this hostname if set internally to this function
@@ -220,7 +220,7 @@ slurm_allocate_resources_blocking (const job_desc_msg_t *user_req,
 	req_msg.msg_type = REQUEST_RESOURCE_ALLOCATION;
 	req_msg.data     = req;
 
-	rc = slurm_send_recv_controller_msg(&req_msg, &resp_msg, NULL);
+	rc = slurm_send_recv_controller_msg(&req_msg, &resp_msg);
 
 	if (rc == SLURM_SOCKET_ERROR) {
 		int errnum = errno;
@@ -264,7 +264,7 @@ slurm_allocate_resources_blocking (const job_desc_msg_t *user_req,
 			   the time desired, so just free the job id */
 			if ((resp == NULL) && (errno != ESLURM_ALREADY_DONE)) {
 				errnum = errno;
-				slurm_complete_job(job_id, -1, NULL);
+				slurm_complete_job(job_id, -1);
 			}
 		}
 		break;
@@ -306,7 +306,7 @@ int slurm_job_will_run (job_desc_msg_t *req)
 	req_msg.msg_type = REQUEST_JOB_WILL_RUN;
 	req_msg.data     = req;
 
-	rc = slurm_send_recv_controller_msg(&req_msg, &resp_msg, NULL);
+	rc = slurm_send_recv_controller_msg(&req_msg, &resp_msg);
 
 	if (host_set)
 		req->alloc_node = NULL;
@@ -376,7 +376,7 @@ slurm_job_step_create (job_step_create_request_msg_t *req,
 	req_msg.msg_type = REQUEST_JOB_STEP_CREATE;
 	req_msg.data     = req;
 
-	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg, NULL) < 0)
+	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
 		return SLURM_ERROR;
 
 	switch (resp_msg.msg_type) {
@@ -417,7 +417,7 @@ slurm_allocation_lookup(uint32_t jobid,
 	req_msg.msg_type = REQUEST_JOB_ALLOCATION_INFO;
 	req_msg.data     = &req;
 
-	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg, NULL) < 0)
+	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
 		return SLURM_ERROR;
 
 	switch(resp_msg.msg_type) {
@@ -460,7 +460,7 @@ slurm_allocation_lookup_lite(uint32_t jobid,
 	req_msg.msg_type = REQUEST_JOB_ALLOCATION_INFO_LITE;
 	req_msg.data     = &req;
 
-	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg, NULL) < 0)
+	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
 		return SLURM_ERROR;
 
 	switch(resp_msg.msg_type) {
@@ -501,7 +501,7 @@ int slurm_sbcast_lookup(uint32_t jobid, job_sbcast_cred_msg_t **info)
 	req_msg.msg_type = REQUEST_JOB_SBCAST_CRED;
 	req_msg.data     = &req;
 
-	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg, NULL) < 0)
+	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
 		return SLURM_ERROR;
 
 	switch(resp_msg.msg_type) {
