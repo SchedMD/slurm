@@ -114,7 +114,7 @@ enum { JOBS, RESERVATIONS, SLURMPART, BGPART, COMMANDS };
 /* Input parameters */
 typedef struct {
 	bool all_flag;
-	slurmdb_cluster_rec_t *cluster;
+	List clusters;
 	bool commandline;
 	int display;
 	int iterate;

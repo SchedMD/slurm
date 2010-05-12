@@ -78,7 +78,7 @@ struct sprio_parameters {
 
 	int  verbose;
 
-	slurmdb_cluster_rec_t *cluster;
+	List clusters;
 
 	char* format;
 	char* jobs;

@@ -446,6 +446,8 @@ static int _as_mysql_acct_check_tables(MYSQL *db_conn)
 		{ "control_port", "int unsigned not null default 0" },
 		{ "rpc_version", "smallint unsigned not null default 0" },
 		{ "classification", "smallint unsigned default 0" },
+		{ "dimensions", "smallint unsigned default 1" },
+		{ "flags", "int unsigned default 0" },
 		{ NULL, NULL}
 	};
 

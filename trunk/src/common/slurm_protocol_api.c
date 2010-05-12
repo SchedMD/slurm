@@ -1917,7 +1917,7 @@ slurm_fd slurm_open_controller_conn(slurm_addr *addr)
 	slurm_ctl_conf_t *conf;
 	int retry, have_backup = 0;
 
-	if(addr->sin_port == 0) {
+	if(!working_cluster_rec) {
 		/* This means the addr wasn't set up already.
 		*/
 		if (slurm_api_set_default_config() < 0)
@@ -1927,7 +1927,15 @@ slurm_fd slurm_open_controller_conn(slurm_addr *addr)
 	for (retry=0; retry<4; retry++) {
 		if (retry)
 			sleep(1);
-		if(addr->sin_port != 0) {
+		if(working_cluster_rec) {
+			if(working_cluster_rec->control_addr.sin_port == 0) {
+				slurm_set_addr(
+					&working_cluster_rec->control_addr,
+					working_cluster_rec->control_port,
+					working_cluster_rec->control_host);
+			}
+			addr = &working_cluster_rec->control_addr;
+
 			fd = slurm_open_msg_conn(addr);
 			if (fd >= 0)
 				goto end_it;
@@ -3135,11 +3143,9 @@ _send_and_recv_msgs(slurm_fd fd, slurm_msg_t *req, int timeout)
  * listens for the response, then closes the connection
  * IN request_msg	- slurm_msg request
  * OUT response_msg	- slurm_msg response
- * IN addr              - if going cross-cluster, address of cluster to go to.
  * RET int		- returns 0 on success, -1 on failure and sets errno
  */
-int slurm_send_recv_controller_msg(slurm_msg_t *req, slurm_msg_t *resp,
-				   slurm_addr *addr)
+int slurm_send_recv_controller_msg(slurm_msg_t *req, slurm_msg_t *resp)
 {
 	slurm_fd fd = -1;
 	int rc = 0;
@@ -3148,7 +3154,7 @@ int slurm_send_recv_controller_msg(slurm_msg_t *req, slurm_msg_t *resp,
 	slurm_ctl_conf_t *conf;
 	bool backup_controller_flag;
 	uint16_t slurmctld_timeout;
-	slurm_addr ctrl_addr, *send_addr;
+	slurm_addr ctrl_addr;
 
 	/* Just in case the caller didn't initialize his slurm_msg_t, and
 	 * since we KNOW that we are only sending to one node (the controller),
@@ -3158,13 +3164,7 @@ int slurm_send_recv_controller_msg(slurm_msg_t *req, slurm_msg_t *resp,
 	req->ret_list = NULL;
 	req->forward_struct = NULL;
 
-	if(!addr) {
-		ctrl_addr.sin_port = 0;
-		send_addr = &ctrl_addr;
-	} else
-		send_addr = addr;
-
-	if ((fd = slurm_open_controller_conn(send_addr)) < 0) {
+	if ((fd = slurm_open_controller_conn(&ctrl_addr)) < 0) {
 		rc = -1;
 		goto cleanup;
 	}
@@ -3184,7 +3184,7 @@ int slurm_send_recv_controller_msg(slurm_msg_t *req, slurm_msg_t *resp,
 		else
 			rc = -1;
 
-		if ((rc == 0) && (!addr)
+		if ((rc == 0) && (!working_cluster_rec)
 		    && (resp->msg_type == RESPONSE_SLURM_RC)
 		    && ((((return_code_msg_t *) resp->data)->return_code)
 			== ESLURM_IN_STANDBY_MODE)
@@ -3196,8 +3196,7 @@ int slurm_send_recv_controller_msg(slurm_msg_t *req, slurm_msg_t *resp,
 			      "responding, sleep and retry");
 			slurm_free_return_code_msg(resp->data);
 			sleep(30);
-			send_addr->sin_port = 0;
-			if ((fd = slurm_open_controller_conn(send_addr))
+			if ((fd = slurm_open_controller_conn(&ctrl_addr))
 			    < 0) {
 				rc = -1;
 			} else {
@@ -3253,7 +3252,6 @@ int slurm_send_only_controller_msg(slurm_msg_t *req)
 	/*
 	 *  Open connection to SLURM controller:
 	 */
-	ctrl_addr.sin_port = 0;
 	if ((fd = slurm_open_controller_conn(&ctrl_addr)) < 0) {
 		rc = SLURM_SOCKET_ERROR;
 		goto cleanup;
@@ -3543,13 +3541,12 @@ int slurm_send_recv_rc_msg_only_one(slurm_msg_t *req, int *rc, int timeout)
  *  Make use of slurm_send_recv_controller_msg(), which handles
  *  support for backup controller and retry during transistion.
  */
-int slurm_send_recv_controller_rc_msg(slurm_msg_t *req, int *rc,
-				      slurm_addr *addr)
+int slurm_send_recv_controller_rc_msg(slurm_msg_t *req, int *rc)
 {
 	int ret_c;
 	slurm_msg_t resp;
 
-	if(!slurm_send_recv_controller_msg(req, &resp, addr)) {
+	if(!slurm_send_recv_controller_msg(req, &resp)) {
 		*rc = slurm_get_return_code(resp.msg_type, resp.data);
 		slurm_free_msg_data(resp.msg_type, resp.data);
 		ret_c = 0;

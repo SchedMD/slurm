@@ -246,10 +246,7 @@ _query_server(partition_info_msg_t ** part_pptr,
 
 	if (old_part_ptr) {
 		error_code = slurm_load_partitions(old_part_ptr->last_update,
-						   &new_part_ptr, show_flags,
-						   params.cluster ?
-						   &params.cluster->
-						   control_addr : NULL);
+						   &new_part_ptr, show_flags);
 		if (error_code == SLURM_SUCCESS)
 			slurm_free_partition_info_msg(old_part_ptr);
 		else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
@@ -258,10 +255,7 @@ _query_server(partition_info_msg_t ** part_pptr,
 		}
 	} else {
 		error_code = slurm_load_partitions((time_t) NULL, &new_part_ptr,
-						   show_flags,
-						   params.cluster ?
-						   &params.cluster->
-						   control_addr : NULL);
+						   show_flags);
 	}
 	if (error_code) {
 		slurm_perror("slurm_load_partitions");
@@ -273,9 +267,7 @@ _query_server(partition_info_msg_t ** part_pptr,
 
 	if (old_node_ptr) {
 		error_code = slurm_load_node(old_node_ptr->last_update,
-					     &new_node_ptr, show_flags,
-					     params.cluster ?
-				      &params.cluster->control_addr : NULL);
+					     &new_node_ptr, show_flags);
 		if (error_code == SLURM_SUCCESS)
 			slurm_free_node_info_msg(old_node_ptr);
 		else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
@@ -284,10 +276,7 @@ _query_server(partition_info_msg_t ** part_pptr,
 		}
 	} else {
 		error_code = slurm_load_node((time_t) NULL, &new_node_ptr,
-					     show_flags,
-					     params.cluster ?
-					     &params.cluster->
-					     control_addr : NULL);
+					     show_flags);
 	}
 
 	if (error_code) {
@@ -300,10 +289,7 @@ _query_server(partition_info_msg_t ** part_pptr,
 #ifdef HAVE_BG
 	if (old_bg_ptr) {
 		error_code = slurm_load_block_info(old_bg_ptr->last_update,
-						   &new_bg_ptr,
-						   params.cluster ?
-						   &params.cluster->
-						   control_addr : NULL);
+						   &new_bg_ptr);
 		if (error_code == SLURM_SUCCESS)
 			slurm_free_block_info_msg(&old_bg_ptr);
 		else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
@@ -312,10 +298,7 @@ _query_server(partition_info_msg_t ** part_pptr,
 		}
 	} else {
 		error_code = slurm_load_block_info((time_t) NULL,
-						   &new_bg_ptr,
-						   params.cluster ?
-						   &params.cluster->
-						   control_addr : NULL);
+						   &new_bg_ptr);
 	}
 	if (error_code) {
 		slurm_perror("slurm_load_block");

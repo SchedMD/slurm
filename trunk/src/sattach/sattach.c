@@ -133,7 +133,7 @@ int sattach(int argc, char *argv[])
 		log_alter(logopt, 0, NULL);
 	}
 
-	layout = slurm_job_step_layout_get(opt.jobid, opt.stepid, NULL);
+	layout = slurm_job_step_layout_get(opt.jobid, opt.stepid);
 	if (layout == NULL) {
 		error("Could not get job step info: %m");
 		exit(error_exit);

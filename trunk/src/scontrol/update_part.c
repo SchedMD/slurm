@@ -293,8 +293,7 @@ scontrol_update_part (int argc, char *argv[])
 		return 0;
 	}
 
-	if (slurm_update_partition(&part_msg, cluster ?
-				   &cluster->control_addr : NULL)) {
+	if (slurm_update_partition(&part_msg)) {
 		exit_code = 1;
 		return slurm_get_errno ();
 	} else
@@ -331,8 +330,7 @@ scontrol_create_part (int argc, char *argv[])
 		return 0;
 	}
 
-	if (slurm_create_partition(&part_msg, cluster ?
-				   &cluster->control_addr : NULL)) {
+	if (slurm_create_partition(&part_msg)) {
 		exit_code = 1;
 		slurm_perror("Error creating the partition");
 		return slurm_get_errno ();

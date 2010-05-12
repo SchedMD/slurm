@@ -55,8 +55,7 @@
  * slurm_set_trigger - Set an event trigger
  * RET 0 or a slurm error code
  */
-extern int slurm_set_trigger (trigger_info_t *trigger_set,
-			      slurm_addr *addr)
+extern int slurm_set_trigger (trigger_info_t *trigger_set)
 {
 	int rc;
 	slurm_msg_t msg;
@@ -71,7 +70,7 @@ extern int slurm_set_trigger (trigger_info_t *trigger_set,
 	msg.msg_type      = REQUEST_TRIGGER_SET;
         msg.data          = &req;
 
-	if (slurm_send_recv_controller_rc_msg(&msg, &rc, addr) < 0)
+	if (slurm_send_recv_controller_rc_msg(&msg, &rc) < 0)
 		return SLURM_FAILURE;
 
 	if (rc)
@@ -84,8 +83,7 @@ extern int slurm_set_trigger (trigger_info_t *trigger_set,
  * slurm_clear_trigger - Clear (remove) an existing event trigger
  * RET 0 or a slurm error code
  */
-extern int slurm_clear_trigger (trigger_info_t *trigger_clear,
-				slurm_addr *addr)
+extern int slurm_clear_trigger (trigger_info_t *trigger_clear)
 {
 	int rc;
 	slurm_msg_t msg;
@@ -100,7 +98,7 @@ extern int slurm_clear_trigger (trigger_info_t *trigger_clear,
 	msg.msg_type      = REQUEST_TRIGGER_CLEAR;
         msg.data          = &req;
 
-	if (slurm_send_recv_controller_rc_msg(&msg, &rc, addr) < 0)
+	if (slurm_send_recv_controller_rc_msg(&msg, &rc) < 0)
 		return SLURM_FAILURE;
 
 	if (rc)
@@ -114,8 +112,7 @@ extern int slurm_clear_trigger (trigger_info_t *trigger_clear,
  * Use slurm_free_trigger() to free the memory allocated by this function
  * RET 0 or a slurm error code
  */
-extern int slurm_get_triggers (trigger_info_msg_t ** trigger_get,
-			       slurm_addr *addr)
+extern int slurm_get_triggers (trigger_info_msg_t ** trigger_get)
 {
 	int rc;
 	slurm_msg_t resp_msg;
@@ -130,8 +127,7 @@ extern int slurm_get_triggers (trigger_info_msg_t ** trigger_get,
 	req_msg.msg_type  = REQUEST_TRIGGER_GET;
 	req_msg.data      = &req;
 
-	if (slurm_send_recv_controller_msg(
-		    &req_msg, &resp_msg, addr) < 0)
+	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
 		return SLURM_ERROR;
 
 	switch (resp_msg.msg_type) {

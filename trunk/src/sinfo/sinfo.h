@@ -144,7 +144,7 @@ struct sinfo_match_flags {
 /* Input parameters */
 struct sinfo_parameters {
 	bool all_flag;
-	slurmdb_cluster_rec_t *cluster;
+	List clusters;
 	bool bg_flag;
 	bool dead_nodes;
 	bool exact_match;

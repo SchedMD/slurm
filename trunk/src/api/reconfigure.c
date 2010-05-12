@@ -63,7 +63,7 @@ static int _send_message_controller (	enum controller_id dest,
  * RET 0 or a slurm error code
  */
 int
-slurm_reconfigure (slurm_addr *addr)
+slurm_reconfigure ()
 {
 	int rc;
 	slurm_msg_t req;
@@ -72,7 +72,7 @@ slurm_reconfigure (slurm_addr *addr)
 
 	req.msg_type = REQUEST_RECONFIGURE;
 
-	if (slurm_send_recv_controller_rc_msg(&req, &rc, addr) < 0)
+	if (slurm_send_recv_controller_rc_msg(&req, &rc) < 0)
 		return SLURM_ERROR;
 
 	if (rc)
@@ -195,7 +195,7 @@ _send_message_controller (enum controller_id dest, slurm_msg_t *req)
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
 int
-slurm_set_debug_level (uint32_t debug_level, slurm_addr *addr)
+slurm_set_debug_level (uint32_t debug_level)
 {
 	int rc;
 	slurm_msg_t req_msg;
@@ -209,8 +209,7 @@ slurm_set_debug_level (uint32_t debug_level, slurm_addr *addr)
 	req_msg.msg_type = REQUEST_SET_DEBUG_LEVEL;
 	req_msg.data     = &req;
 
-	if (slurm_send_recv_controller_msg(
-		    &req_msg, &resp_msg, addr) < 0)
+	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
 		return SLURM_ERROR;
 
 	switch (resp_msg.msg_type) {
@@ -233,7 +232,7 @@ slurm_set_debug_level (uint32_t debug_level, slurm_addr *addr)
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
 int
-slurm_set_schedlog_level (uint32_t schedlog_level, slurm_addr *addr)
+slurm_set_schedlog_level (uint32_t schedlog_level)
 {
 	int rc;
 	slurm_msg_t req_msg;
@@ -247,8 +246,7 @@ slurm_set_schedlog_level (uint32_t schedlog_level, slurm_addr *addr)
 	req_msg.msg_type = REQUEST_SET_SCHEDLOG_LEVEL;
 	req_msg.data     = &req;
 
-	if (slurm_send_recv_controller_msg(
-		    &req_msg, &resp_msg, addr) < 0)
+	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
 		return SLURM_ERROR;
 
 	switch (resp_msg.msg_type) {

@@ -170,13 +170,15 @@ parse_command_line( int argc, char* argv[] )
 			params.long_list = true;
 			break;
 		case (int) 'M':
-			slurmdb_destroy_cluster_rec(params.cluster);
-			if(!(params.cluster =
+			if(params.clusters)
+				list_destroy(params.clusters);
+			if(!(params.clusters =
 			     slurmdb_get_info_cluster(optarg))) {
 				error("'%s' invalid entry for --cluster",
 				      optarg);
 				exit(1);
 			}
+			working_cluster_rec = list_peek(params.clusters);
 			break;
 		case (int) 'n':
 			if (params.nodes)
@@ -364,8 +366,7 @@ static int   _max_cpus_per_node(void)
 	node_info_msg_t *node_info_ptr = NULL;
 
 	error_code = slurm_load_node ((time_t) NULL, &node_info_ptr,
-				      params.all_flag, params.cluster ?
-				      &params.cluster->control_addr : NULL);
+				      params.all_flag);
 	if (error_code == SLURM_SUCCESS) {
 		int i;
 		node_info_t *node_ptr = node_info_ptr->node_array;
@@ -803,8 +804,6 @@ _print_options()
 
 	printf( "-----------------------------\n" );
 	printf( "all        = %s\n", params.all_flag ? "true" : "false");
-	if(params.cluster)
-		printf( "cluster    = %s\n", params.cluster->name );
 	printf( "format     = %s\n", params.format );
 	printf( "iterate    = %d\n", params.iterate );
 	printf( "job_flag   = %d\n", params.job_flag );

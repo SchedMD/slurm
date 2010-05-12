@@ -332,7 +332,7 @@ int srun(int ac, char **av)
 		_print_job_information(resp);
 		_set_cpu_env_var(resp);
 		if (_validate_relative(resp)) {
-			slurm_complete_job(resp->job_id, 1, NULL);
+			slurm_complete_job(resp->job_id, 1);
 			exit(error_exit);
 		}
 		job = job_create_allocation(resp);
@@ -344,7 +344,7 @@ int srun(int ac, char **av)
 			opt.job_name_set_cmd = true;
 		}
 		if (!job || create_job_step(job, true) < 0) {
-			slurm_complete_job(resp->job_id, 1, NULL);
+			slurm_complete_job(resp->job_id, 1);
 			exit(error_exit);
 		}
 
@@ -520,9 +520,9 @@ cleanup:
 
 		/* send the controller we were cancelled */
 		if (job->state >= SRUN_JOB_CANCELLED)
-			slurm_complete_job(job->jobid, NO_VAL, NULL);
+			slurm_complete_job(job->jobid, NO_VAL);
 		else
-			slurm_complete_job(job->jobid, global_rc, NULL);
+			slurm_complete_job(job->jobid, global_rc);
 	}
 
 	_run_srun_epilog(job);
@@ -1106,7 +1106,7 @@ _terminate_job_step(slurm_step_ctx_t *step_ctx)
 	slurm_step_ctx_get(step_ctx, SLURM_STEP_CTX_STEPID, &step_id);
 	info("Terminating job step %u.%u", job_id, step_id);
 	update_job_state(job, SRUN_JOB_CANCELLED);
-	slurm_kill_job_step(job_id, step_id, SIGKILL, NULL);
+	slurm_kill_job_step(job_id, step_id, SIGKILL);
 }
 
 static void
@@ -1260,7 +1260,7 @@ _handle_openmpi_port_error(const char *tasks, const char *hosts,
 	slurm_step_ctx_get(step_ctx, SLURM_STEP_CTX_JOBID, &job_id);
 	slurm_step_ctx_get(step_ctx, SLURM_STEP_CTX_STEPID, &step_id);
 	info("Terminating job step %u.%u", job_id, step_id);
-	slurm_kill_job_step(job_id, step_id, SIGKILL, NULL);
+	slurm_kill_job_step(job_id, step_id, SIGKILL);
 }
 
 static void

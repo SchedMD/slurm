@@ -60,13 +60,11 @@ extern pid_t getsid(pid_t pid);		/* missing from <unistd.h> */
  * NOTE: free the response using slurm_free_submit_response_response_msg
  * IN job_desc_msg - description of batch job request
  * OUT slurm_alloc_msg - response to request
- * IN addr - if going cross-cluster, address of cluster to go to. NULL
- *                   for regular operation.
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
 int
 slurm_submit_batch_job (job_desc_msg_t *req,
-		        submit_response_msg_t **resp, slurm_addr *addr)
+		        submit_response_msg_t **resp)
 {
         int rc;
         slurm_msg_t req_msg;
@@ -93,7 +91,7 @@ slurm_submit_batch_job (job_desc_msg_t *req,
 	req_msg.msg_type = REQUEST_SUBMIT_BATCH_JOB ;
 	req_msg.data     = req;
 
-	rc = slurm_send_recv_controller_msg(&req_msg, &resp_msg, addr);
+	rc = slurm_send_recv_controller_msg(&req_msg, &resp_msg);
 
 	/*
 	 *  Clear this hostname if set internally to this function

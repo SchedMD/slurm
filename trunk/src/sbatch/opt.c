@@ -280,7 +280,7 @@ static void _opt_default()
 	}
 	opt.cwd = xstrdup(buf);
 
-	opt.cluster = NULL;
+	opt.clusters = NULL;
 	opt.progname = NULL;
 
 	opt.ntasks = 1;
@@ -1197,8 +1197,8 @@ static void _set_options(int argc, char **argv)
 			}
 			break;
 		case 'M':
-			slurmdb_destroy_cluster_rec(opt.cluster);
-			if(!(opt.cluster =
+			list_destroy(opt.clusters);
+			if(!(opt.clusters =
 			     slurmdb_get_info_cluster(optarg))) {
 				error("'%s' invalid entry for --cluster",
 				      optarg);

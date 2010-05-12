@@ -107,8 +107,7 @@ static int _clear_trigger(void)
 		snprintf(tmp_c, sizeof(tmp_c), "%u", params.job_id);
 		ti.res_id   = tmp_c;
 	}
-	if (slurm_clear_trigger(&ti, params.cluster ?
-				&params.cluster->control_addr : NULL)) {
+	if (slurm_clear_trigger(&ti)) {
 		if (!params.quiet) {
 			slurm_perror("slurm_clear_trigger");
 			return 1;
@@ -164,8 +163,7 @@ static int _set_trigger(void)
 	ti.offset = params.offset + 0x8000;
 	ti.program = params.program;
 
-	while (slurm_set_trigger(&ti, params.cluster ?
-				 &params.cluster->control_addr : NULL)) {
+	while (slurm_set_trigger(&ti)) {
 		slurm_perror("slurm_set_trigger");
 		if (slurm_get_errno() != EAGAIN)
 			return 1;
@@ -182,8 +180,7 @@ static int _get_trigger(void)
 	trigger_info_msg_t * trig_msg;
 	int line_no = 0, i;
 
-	if (slurm_get_triggers(&trig_msg, params.cluster ?
-			       &params.cluster->control_addr : NULL)) {
+	if (slurm_get_triggers(&trig_msg)) {
 		slurm_perror("slurm_get_triggers");
 		return 1;
 	}
