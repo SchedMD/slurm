@@ -70,9 +70,11 @@ struct node_cr_record {
 	uint16_t exclusive_cnt;		/* count of jobs exclusively allocated
 					 * this node (from different
 					 * partitions) */
+	List gres_list;			/* list of gres state info managed by 
+					 * plugins */
 };
 
-struct cr_record{
+struct cr_record {
 	struct node_cr_record *nodes;	/* ptr to array of node records */
 	uint32_t *run_job_ids;		/* job IDs for running jobs */
 	uint16_t run_job_len;		/* length of run_job_ids array */
