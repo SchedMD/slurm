@@ -378,12 +378,17 @@ int dump_all_job_state(void)
 	ListIterator job_iterator;
 	struct job_record *job_ptr;
 	Buf buffer = init_buf(high_buffer_size);
+	time_t min_age = 0, now = time(NULL);
 	DEF_TIMERS;
 
 	START_TIMER;
 	/* write header: version, time */
 	packstr(JOB_STATE_VERSION, buffer);
-	pack_time(time(NULL), buffer);
+	pack_time(now, buffer);
+
+	if (slurmctld_conf.min_job_age > 0)
+		min_age = now  - slurmctld_conf.min_job_age;
+
 	/*
 	 * write header: job id
 	 * This is needed so that the job id remains persistent even after
@@ -399,6 +404,10 @@ int dump_all_job_state(void)
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		xassert (job_ptr->magic == JOB_MAGIC);
+		if ((min_age > 0) && (job_ptr->end_time < min_age) &&
+		    IS_JOB_FINISHED(job_ptr))
+			continue;	/* job ready for purging, don't dump */
+
 		_dump_job_state(job_ptr, buffer);
 	}
 	list_iterator_destroy(job_iterator);
@@ -4385,7 +4394,7 @@ extern void pack_all_jobs(char **buffer_ptr, int *buffer_size,
 	struct job_record *job_ptr;
 	uint32_t jobs_packed = 0, tmp_offset;
 	Buf buffer;
-	time_t now = time(NULL);
+	time_t min_age = 0, now = time(NULL);
 
 	buffer_ptr[0] = NULL;
 	*buffer_size = 0;
@@ -4396,6 +4405,9 @@ extern void pack_all_jobs(char **buffer_ptr, int *buffer_size,
 	/* put in a place holder job record count of 0 for now */
 	pack32(jobs_packed, buffer);
 	pack_time(now, buffer);
+
+	if (slurmctld_conf.min_job_age > 0)
+		min_age = now  - slurmctld_conf.min_job_age;
 
 	/* write individual job records */
 	part_filter_set(uid);
@@ -4411,6 +4423,10 @@ extern void pack_all_jobs(char **buffer_ptr, int *buffer_size,
 		if ((slurmctld_conf.private_data & PRIVATE_DATA_JOBS) &&
 		    (job_ptr->user_id != uid) && !validate_super_user(uid))
 			continue;
+
+		if ((min_age > 0) && (job_ptr->end_time < min_age) &&
+		    IS_JOB_FINISHED(job_ptr))
+			continue;	/* job ready for purging, don't dump */
 
 		pack_job(job_ptr, show_flags, buffer, protocol_version);
 		jobs_packed++;
