@@ -3164,6 +3164,9 @@ int slurm_send_recv_controller_msg(slurm_msg_t *req, slurm_msg_t *resp)
 	req->ret_list = NULL;
 	req->forward_struct = NULL;
 
+	if(working_cluster_rec)
+		req->flags |= SLURM_GLOBAL_AUTH_KEY;
+
 	if ((fd = slurm_open_controller_conn(&ctrl_addr)) < 0) {
 		rc = -1;
 		goto cleanup;

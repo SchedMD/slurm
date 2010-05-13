@@ -161,7 +161,8 @@ typedef struct slurm_acct_storage_ops {
 				    time_t event_time);
 	int  (*cluster_cpus)      (void *db_conn, char *cluster_nodes,
 				   uint32_t cpus, time_t event_time);
-	int  (*register_ctld)      (void *db_conn, uint16_t port);
+	int  (*register_ctld)      (void *db_conn, uint16_t port,
+				    uint16_t dims, uint32_t flags);
 	int  (*job_start)          (void *db_conn, struct job_record *job_ptr);
 	int  (*job_complete)       (void *db_conn,
 				    struct job_record *job_ptr);
@@ -840,12 +841,13 @@ extern int clusteracct_storage_g_cluster_cpus(void *db_conn,
 }
 
 
-extern int clusteracct_storage_g_register_ctld(void *db_conn, uint16_t port)
+extern int clusteracct_storage_g_register_ctld(void *db_conn, uint16_t port,
+					       uint16_t dims, uint32_t flags)
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
  	return (*(g_acct_storage_context->ops.register_ctld))
-		(db_conn, port);
+		(db_conn, port, dims, flags);
 }
 
 /*

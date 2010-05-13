@@ -3630,6 +3630,8 @@ slurmdbd_pack_register_ctld_msg(dbd_register_ctld_msg_t *msg,
 				uint16_t rpc_version, Buf buffer)
 {
 	if(rpc_version >= 8) {
+		pack16(msg->dimensions, buffer);
+		pack32(msg->flags, buffer);
 		pack16(msg->port, buffer);
 	} else {
 		packnull(buffer);
@@ -3646,6 +3648,8 @@ slurmdbd_unpack_register_ctld_msg(dbd_register_ctld_msg_t **msg,
 		sizeof(dbd_register_ctld_msg_t));
 	*msg = msg_ptr;
 	if(rpc_version >= 8) {
+		safe_unpack16(&msg_ptr->dimensions, buffer);
+		safe_unpack32(&msg_ptr->flags, buffer);
 		safe_unpack16(&msg_ptr->port, buffer);
 	} else {
 		char *tmp_char = NULL;

@@ -159,6 +159,7 @@ int association_based_accounting = 0;
 bool ping_nodes_now = false;
 int      cluster_cpus = 0;
 int   with_slurmdbd = 0;
+uint32_t cluster_flags = 0;
 
 /* Local variables */
 static int	daemonize = DEFAULT_DAEMONIZE;
@@ -220,6 +221,34 @@ int main(int argc, char *argv[])
 		WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, WRITE_LOCK };
 	assoc_init_args_t assoc_init_arg;
 	pthread_t assoc_cache_thread;
+
+#ifdef HAVE_BG
+	cluster_flags |= CLUSTER_FLAG_BG;
+#endif
+#ifdef HAVE_BGL
+	cluster_flags |= CLUSTER_FLAG_BGL;
+#endif
+#ifdef HAVE_BGP
+	cluster_flags |= CLUSTER_FLAG_BGP;
+#endif
+#ifdef HAVE_BGQ
+	cluster_flags |= CLUSTER_FLAG_BGQ;
+#endif
+#ifdef HAVE_SUN_CONST
+	cluster_flags |= CLUSTER_FLAG_SC;
+#endif
+#ifdef HAVE_XCPU
+	cluster_flags |= CLUSTER_FLAG_XCPU;
+#endif
+#ifdef HAVE_AIX
+	cluster_flags |= CLUSTER_FLAG_AIX;
+#endif
+#ifdef MULTIPLE_SLURMD
+	cluster_flags |= CLUSTER_FLAG_MULTSD;
+#endif
+#ifdef HAVE_CRAY_XT
+	cluster_flags |= CLUSTER_FLAG_CRAYXT;
+#endif
 
 	/*
 	 * Establish initial configuration
@@ -485,9 +514,11 @@ int main(int argc, char *argv[])
 		}
 
 		info("Running as primary controller");
+
 		clusteracct_storage_g_register_ctld(
 			acct_db_conn,
-			slurmctld_conf.slurmctld_port);
+			slurmctld_conf.slurmctld_port,
+			SYSTEM_DIMENSIONS, cluster_flags);
 
 		_accounting_cluster_ready();
 
@@ -1649,7 +1680,8 @@ static int _shutdown_backup_controller(int wait_time)
 			 * but just temporarily became non-responsive */
 			clusteracct_storage_g_register_ctld(
 				acct_db_conn,
-				slurmctld_conf.slurmctld_port);
+				slurmctld_conf.slurmctld_port,
+				SYSTEM_DIMENSIONS, cluster_flags);
 		}
 	} else {
 		error("_shutdown_backup_controller: %s", slurm_strerror(rc));

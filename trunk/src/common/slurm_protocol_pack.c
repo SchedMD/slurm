@@ -3636,9 +3636,10 @@ _unpack_job_info_members(job_info_t * job, Buf buffer,
 		}
 
 		if (select_g_select_jobinfo_unpack(&job->select_jobinfo,
-						   buffer, protocol_version))
+						   buffer, protocol_version)) {
+			info("here");
 			goto unpack_error;
-
+		}
 		/*** unpack default job details ***/
 		safe_unpackstr_xmalloc(&job->features,   &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job->work_dir,   &uint32_tmp, buffer);

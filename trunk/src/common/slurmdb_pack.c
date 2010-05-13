@@ -495,7 +495,55 @@ extern void slurmdb_pack_cluster_rec(void *in, uint16_t rpc_version, Buf buffer)
 	uint32_t count = NO_VAL;
 	slurmdb_cluster_rec_t *object = (slurmdb_cluster_rec_t *)in;
 
-	if(rpc_version >= 5) {
+	if(rpc_version >= 8) {
+		if(!object) {
+			pack32(NO_VAL, buffer);
+			pack16(0, buffer);
+			packnull(buffer);
+			pack32(0, buffer);
+			pack32(0, buffer);
+			pack16(1, buffer);
+			pack32(NO_VAL, buffer);
+
+			packnull(buffer);
+			packnull(buffer);
+
+			slurmdb_pack_association_rec(NULL, rpc_version, buffer);
+
+			pack16(0, buffer);
+			return;
+		}
+
+		if(object->accounting_list)
+			count = list_count(object->accounting_list);
+
+		pack32(count, buffer);
+
+		if(count && count != NO_VAL) {
+			itr = list_iterator_create(object->accounting_list);
+			while((slurmdb_info = list_next(itr))) {
+				slurmdb_pack_cluster_accounting_rec(
+					slurmdb_info, rpc_version, buffer);
+			}
+			list_iterator_destroy(itr);
+		}
+		count = NO_VAL;
+
+		pack16(object->classification, buffer);
+		packstr(object->control_host, buffer);
+		pack32(object->control_port, buffer);
+		pack32(object->cpu_count, buffer);
+		pack16(object->dimensions, buffer);
+		pack32(object->flags, buffer);
+
+		packstr(object->name, buffer);
+		packstr(object->nodes, buffer);
+
+		slurmdb_pack_association_rec(object->root_assoc,
+					     rpc_version, buffer);
+
+		pack16(object->rpc_version, buffer);
+	} else if(rpc_version >= 5) {
 		if(!object) {
 			pack32(NO_VAL, buffer);
 			pack16(0, buffer);
@@ -554,7 +602,39 @@ extern int slurmdb_unpack_cluster_rec(void **object, uint16_t rpc_version,
 
 	*object = object_ptr;
 
-	if(rpc_version >= 5) {
+	if(rpc_version >= 8) {
+		safe_unpack32(&count, buffer);
+		if(count != NO_VAL) {
+			object_ptr->accounting_list = list_create(
+				slurmdb_destroy_cluster_accounting_rec);
+			for(i=0; i<count; i++) {
+				slurmdb_unpack_cluster_accounting_rec(
+					(void *)&slurmdb_info,
+					rpc_version, buffer);
+				list_append(object_ptr->accounting_list,
+					    slurmdb_info);
+			}
+		}
+
+		safe_unpack16(&object_ptr->classification, buffer);
+		safe_unpackstr_xmalloc(&object_ptr->control_host,
+				       &uint32_tmp, buffer);
+		safe_unpack32(&object_ptr->control_port, buffer);
+		safe_unpack32(&object_ptr->cpu_count, buffer);
+		safe_unpack16(&object_ptr->dimensions, buffer);
+		safe_unpack32(&object_ptr->flags, buffer);
+
+		safe_unpackstr_xmalloc(&object_ptr->name, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&object_ptr->nodes, &uint32_tmp, buffer);
+
+		if(slurmdb_unpack_association_rec(
+			   (void **)&object_ptr->root_assoc,
+			   rpc_version, buffer)
+		   == SLURM_ERROR)
+			goto unpack_error;
+
+		safe_unpack16(&object_ptr->rpc_version, buffer);
+	} else if(rpc_version >= 5) {
 		safe_unpack32(&count, buffer);
 		if(count != NO_VAL) {
 			object_ptr->accounting_list = list_create(

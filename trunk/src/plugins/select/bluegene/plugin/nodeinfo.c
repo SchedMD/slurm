@@ -197,7 +197,8 @@ extern select_nodeinfo_t *select_nodeinfo_alloc(uint32_t size)
 	if(bg_conf && (!size || size == NO_VAL))
 		size = bg_conf->numpsets;
 #else
-	fatal("we shouldn't be here in select_nodeinfo_alloc");
+	if(!size || size == NO_VAL)
+		fatal("we shouldn't be here in select_nodeinfo_alloc %u", size);
 #endif
 	nodeinfo->bitmap_size = size;
 	nodeinfo->magic = NODEINFO_MAGIC;

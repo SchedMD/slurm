@@ -490,7 +490,8 @@ extern int clusteracct_storage_g_cluster_cpus(void *db_conn,
 					      uint32_t cpus,
 					      time_t event_time);
 
-extern int clusteracct_storage_g_register_ctld(void *db_conn, uint16_t port);
+extern int clusteracct_storage_g_register_ctld(void *db_conn, uint16_t port,
+					       uint16_t dims, uint32_t flags);
 
 /*
  * load into the storage the start of a job
