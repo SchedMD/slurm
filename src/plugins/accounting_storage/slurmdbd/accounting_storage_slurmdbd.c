@@ -1821,15 +1821,20 @@ extern int clusteracct_storage_p_cluster_cpus(void *db_conn,
 	return rc;
 }
 
-extern int clusteracct_storage_p_register_ctld(void *db_conn, uint16_t port)
+extern int clusteracct_storage_p_register_ctld(void *db_conn, uint16_t port,
+					       uint16_t dims, uint32_t flags)
 {
 	slurmdbd_msg_t msg;
 	dbd_register_ctld_msg_t req;
 
-	info("Registering slurmctld at port %u with slurmdbd.", port);
+	info("Registering slurmctld at port %u with slurmdbd. %u %u",
+	     port, dims, flags);
 	memset(&req, 0, sizeof(dbd_register_ctld_msg_t));
 
 	req.port         = port;
+	req.dimensions   = dims;
+	req.flags        = flags;
+
 	msg.msg_type     = DBD_REGISTER_CTLD;
 	msg.data         = &req;
 

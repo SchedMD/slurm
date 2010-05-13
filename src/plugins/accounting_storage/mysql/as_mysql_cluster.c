@@ -203,8 +203,8 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 }
 
 extern List as_mysql_modify_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
-				  slurmdb_cluster_cond_t *cluster_cond,
-				  slurmdb_cluster_rec_t *cluster)
+				     slurmdb_cluster_cond_t *cluster_cond,
+				     slurmdb_cluster_rec_t *cluster)
 {
 	ListIterator itr = NULL;
 	List ret_list = NULL;
@@ -549,6 +549,8 @@ extern List as_mysql_get_clusters(mysql_conn_t *mysql_conn, uid_t uid,
 		"control_host",
 		"control_port",
 		"rpc_version",
+		"dimensions",
+		"flags",
 	};
 	enum {
 		CLUSTER_REQ_NAME,
@@ -556,6 +558,8 @@ extern List as_mysql_get_clusters(mysql_conn_t *mysql_conn, uid_t uid,
 		CLUSTER_REQ_CH,
 		CLUSTER_REQ_CP,
 		CLUSTER_REQ_VERSION,
+		CLUSTER_REQ_DIMS,
+		CLUSTER_REQ_FLAGS,
 		CLUSTER_REQ_COUNT
 	};
 
@@ -647,6 +651,9 @@ empty:
 		cluster->control_host = xstrdup(row[CLUSTER_REQ_CH]);
 		cluster->control_port = atoi(row[CLUSTER_REQ_CP]);
 		cluster->rpc_version = atoi(row[CLUSTER_REQ_VERSION]);
+		cluster->dimensions = atoi(row[CLUSTER_REQ_DIMS]);
+		cluster->flags = atoi(row[CLUSTER_REQ_FLAGS]);
+
 		query = xstrdup_printf(
 			"select cpu_count, cluster_nodes from "
 			"\"%s_%s\" where time_end=0 and node_name='' limit 1",
@@ -1044,7 +1051,8 @@ extern int as_mysql_node_up(mysql_conn_t *mysql_conn,
 }
 
 extern int as_mysql_register_ctld(mysql_conn_t *mysql_conn,
-			       char *cluster, uint16_t port)
+				  char *cluster, uint16_t port,
+				  uint16_t dims, uint32_t flags)
 {
 	char *query = NULL;
 	char *address = NULL;
@@ -1074,18 +1082,18 @@ extern int as_mysql_register_ctld(mysql_conn_t *mysql_conn,
 
 	query = xstrdup_printf(
 		"update %s set deleted=0, mod_time=%d, "
-		"control_host='%s', control_port=%u, rpc_version=%d "
-		"where name='%s';",
-		cluster_table, now, address, port,
+		"control_host='%s', control_port=%u, rpc_version=%d, "
+		"dimensions=%d, flags=%d where name='%s';",
+		cluster_table, now, address, port, dims, flags,
 		SLURMDBD_VERSION,
 		cluster);
 	xstrfmtcat(query,
 		   "insert into %s "
 		   "(timestamp, action, name, actor, info) "
-		   "values (%d, %d, '%s', '%s', '%s %u');",
+		   "values (%d, %d, '%s', '%s', '%s %u %u %u');",
 		   txn_table,
 		   now, DBD_MODIFY_CLUSTERS, cluster,
-		   slurmctld_conf.slurm_user_name, address, port);
+		   slurmctld_conf.slurm_user_name, address, port, dims, flags);
 
 	debug3("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, THIS_FILE, __LINE__, query);

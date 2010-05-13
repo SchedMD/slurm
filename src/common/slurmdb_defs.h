@@ -52,8 +52,6 @@
 #define SLURMDB_PURGE_IN_MONTHS(_X) \
 	(_X & SLURMDB_PURGE_MONTHS)
 
-extern slurmdb_cluster_rec_t *working_cluster_rec;
-
 extern slurmdb_step_rec_t *slurmdb_create_step_rec();
 extern slurmdb_job_rec_t *slurmdb_create_job_rec();
 

@@ -541,6 +541,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libpmi.la
 %{_libdir}/libslurm.a
 %{_libdir}/libslurm.la
+%{_libdir}/libslurmdb.a
 %{_libdir}/libslurmdb.la
 %{_mandir}/man3/slurm_*
 #%{_mandir}/man3/slurmdb_*

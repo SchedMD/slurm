@@ -501,7 +501,8 @@ extern int clusteracct_storage_p_node_up(void *db_conn,
 }
 
 extern int clusteracct_storage_p_register_ctld(void *db_conn,
-					       uint16_t port)
+					       uint16_t port, uint16_t dims,
+					       uint32_t flags)
 {
 	return SLURM_SUCCESS;
 }

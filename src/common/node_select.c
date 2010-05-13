@@ -931,12 +931,16 @@ extern int select_g_select_nodeinfo_get(dynamic_plugin_data_t *nodeinfo,
 					void *data)
 {
 	void *nodedata = NULL;
+	uint32_t plugin_id = select_context_default;
+
 	if (slurm_select_init() < 0)
 		return SLURM_ERROR;
 
-	if(nodeinfo)
+	if(nodeinfo) {
 		nodedata = nodeinfo->data;
-	return (*(select_context[nodeinfo->plugin_id].ops.nodeinfo_get))
+		plugin_id = nodeinfo->plugin_id;
+	}
+	return (*(select_context[plugin_id].ops.nodeinfo_get))
 		(nodedata, dinfo, state, data);
 }
 
@@ -1311,13 +1315,16 @@ extern int select_g_select_jobinfo_set(dynamic_plugin_data_t *jobinfo,
 				       void *data)
 {
 	void *jobdata = NULL;
+	uint32_t plugin_id = select_context_default;
 
 	if (slurm_select_init() < 0)
 		return SLURM_ERROR;
 
-	if(jobinfo)
+	if(jobinfo) {
 		jobdata = jobinfo->data;
-	return (*(select_context[jobinfo->plugin_id].ops.jobinfo_set))
+		plugin_id = jobinfo->plugin_id;
+	}
+	return (*(select_context[plugin_id].ops.jobinfo_set))
 		(jobdata, data_type, data);
 }
 
@@ -1331,13 +1338,16 @@ extern int select_g_select_jobinfo_get(dynamic_plugin_data_t *jobinfo,
 				       void *data)
 {
 	void *jobdata = NULL;
+	int plugin_id = select_context_default;
 
 	if (slurm_select_init() < 0)
 		return SLURM_ERROR;
 
-	if(jobinfo)
+	if(jobinfo) {
 		jobdata = jobinfo->data;
-	return (*(select_context[jobinfo->plugin_id].ops.jobinfo_get))
+		plugin_id = jobinfo->plugin_id;
+	}
+	return (*(select_context[plugin_id].ops.jobinfo_get))
 		(jobdata, data_type, data);
 }
 
