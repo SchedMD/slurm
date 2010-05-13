@@ -2599,10 +2599,8 @@ static int   _register_ctld(slurmdbd_conn_t *slurmdbd_conn,
 	debug2("DBD_REGISTER_CTLD: called for %s(%u)",
 	       slurmdbd_conn->cluster_name, register_ctld_msg->port);
 
-	debug2("slurmctld at ip:%s, port:%d dims:%d flags:%d",
-	       slurmdbd_conn->ip,
-	       register_ctld_msg->port, register_ctld_msg->dimensions,
-	       register_ctld_msg->flags);
+	debug2("slurmctld at ip:%s, port:%d",
+	       slurmdbd_conn->ip, register_ctld_msg->port);
 
 	memset(&cluster_q, 0, sizeof(slurmdb_cluster_cond_t));
 	memset(&cluster, 0, sizeof(slurmdb_cluster_rec_t));
