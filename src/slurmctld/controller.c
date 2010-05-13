@@ -1170,7 +1170,7 @@ static void *_slurmctld_background(void *no_data)
 	static time_t last_trigger;
 	static time_t last_node_acct;
 	time_t now;
-	int no_resp_msg_interval, ping_interval;
+	int no_resp_msg_interval, ping_interval, purge_job_interval;
 	int group_time, group_force;
 	DEF_TIMERS;
 
@@ -1203,6 +1203,14 @@ static void *_slurmctld_background(void *no_data)
 	last_purge_job_time = last_trigger = last_health_check_time = now;
 	last_timelimit_time = last_assert_primary_time = now;
 	last_no_resp_msg_time = last_resv_time = now;
+
+	if ((slurmctld_conf.min_job_age > 0) &&
+	    (slurmctld_conf.min_job_age < PURGE_JOB_INTERVAL)) {
+		/* Purge jobs more quickly, especially for high job flow */
+		purge_job_interval = MAX(10, slurmctld_conf.min_job_age);
+	} else
+		purge_job_interval = PURGE_JOB_INTERVAL;
+
 	if (slurmctld_conf.slurmd_timeout) {
 		/* We ping nodes that haven't responded in SlurmdTimeout/3,
 		 * but need to do the test at a higher frequency or we might
@@ -1337,7 +1345,7 @@ static void *_slurmctld_background(void *no_data)
 			unlock_slurmctld(part_write_lock);
 		}
 
-		if (difftime(now, last_purge_job_time) >= PURGE_JOB_INTERVAL) {
+		if (difftime(now, last_purge_job_time) >= purge_job_interval) {
 			last_purge_job_time = now;
 			debug2("Performing purge of old job records");
 			lock_slurmctld(job_write_lock);

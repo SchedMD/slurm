@@ -60,6 +60,9 @@ documents those changes that are of interest to users and admins.
     values).
  -- Fixed bug in clearing a partition's DisableRootJobs value reported by
     Hongjia Cao.
+ -- Purge (or ignore) terminated jobs in a more timely fashion based upon the
+    MinJobAge configuration parameter. Small values for MinJobAge should improve
+    responsiveness for high job throughput.
 
 * Changes in SLURM 2.2.0.pre5
 =============================
