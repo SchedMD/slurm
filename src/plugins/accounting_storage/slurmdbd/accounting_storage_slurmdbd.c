@@ -1827,8 +1827,7 @@ extern int clusteracct_storage_p_register_ctld(void *db_conn, uint16_t port,
 	slurmdbd_msg_t msg;
 	dbd_register_ctld_msg_t req;
 
-	info("Registering slurmctld at port %u with slurmdbd. %u %u",
-	     port, dims, flags);
+	info("Registering slurmctld at port %u with slurmdbd.", port);
 	memset(&req, 0, sizeof(dbd_register_ctld_msg_t));
 
 	req.port         = port;
