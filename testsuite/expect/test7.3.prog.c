@@ -171,7 +171,7 @@ int main (int argc, char *argv[])
 	slurm_step_launch_wait_finish(ctx);
 
 	/* Terminate the job killing all tasks */
-done:	slurm_kill_job(job_resp->job_id, SIGKILL, 0, NULL);
+done:	slurm_kill_job(job_resp->job_id, SIGKILL, 0);
 
 	/* clean up storage */
 	slurm_free_resource_allocation_response_msg(job_resp);
