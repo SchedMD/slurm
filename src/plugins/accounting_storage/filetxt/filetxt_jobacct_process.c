@@ -709,7 +709,6 @@ static int _parse_line(char *f[], void **data, int len)
 		for (i=0; (*job)->nodes[i]; i++) { /* discard trailing <CR> */
 			if (isspace((*job)->nodes[i])) {
 				(*job)->nodes[i] = '\0';
-				info("got here");
 			}
 		}
 		if (!strcmp((*job)->nodes, "(null)")) {

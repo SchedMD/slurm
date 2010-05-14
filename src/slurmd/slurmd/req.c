@@ -1207,11 +1207,11 @@ _rpc_batch_job(slurm_msg_t *msg)
 	 	 */
 #ifdef HAVE_BG
 		select_g_select_jobinfo_get(req->select_jobinfo,
-				     SELECT_JOBDATA_BLOCK_ID, &resv_id);
+					    SELECT_JOBDATA_BLOCK_ID, &resv_id);
 #endif
 #ifdef HAVE_CRAY_XT
 		select_g_select_jobinfo_get(req->select_jobinfo,
-				     SELECT_JOBDATA_RESV_ID, &resv_id);
+					    SELECT_JOBDATA_RESV_ID, &resv_id);
 #endif
 		rc = _run_prolog(req->job_id, req->uid, resv_id,
 				 req->spank_job_env, req->spank_job_env_size);
@@ -3109,12 +3109,13 @@ _rpc_abort_job(slurm_msg_t *msg)
 
 	save_cred_state(conf->vctx);
 #ifdef HAVE_BG
-	select_g_select_jobinfo_get(req->select_jobinfo, SELECT_JOBDATA_BLOCK_ID,
-			     &resv_id);
+	select_g_select_jobinfo_get(req->select_jobinfo,
+				    SELECT_JOBDATA_BLOCK_ID,
+				    &resv_id);
 #endif
 #ifdef HAVE_CRAY_XT
 	select_g_select_jobinfo_get(req->select_jobinfo, SELECT_JOBDATA_RESV_ID,
-			     &resv_id);
+				    &resv_id);
 #endif
 	_run_epilog(req->job_id, req->job_uid, resv_id,
 		    req->spank_job_env, req->spank_job_env_size);
@@ -3296,12 +3297,14 @@ _rpc_terminate_job(slurm_msg_t *msg)
 	save_cred_state(conf->vctx);
 
 #ifdef HAVE_BG
-	select_g_select_jobinfo_get(req->select_jobinfo, SELECT_JOBDATA_BLOCK_ID,
-			     &resv_id);
+	select_g_select_jobinfo_get(req->select_jobinfo,
+				    SELECT_JOBDATA_BLOCK_ID,
+				    &resv_id);
 #endif
 #ifdef HAVE_CRAY_XT
-	select_g_select_jobinfo_get(req->select_jobinfo, SELECT_JOBDATA_RESV_ID,
-			     &resv_id);
+	select_g_select_jobinfo_get(req->select_jobinfo,
+				    SELECT_JOBDATA_RESV_ID,
+				    &resv_id);
 #endif
 	rc = _run_epilog(req->job_id, req->job_uid, resv_id,
 			 req->spank_job_env, req->spank_job_env_size);

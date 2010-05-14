@@ -58,6 +58,10 @@
 #define HOSTLIST_BASE 10
 #endif
 
+/* largest configured system dimensions */
+#define HIGHEST_DIMENSIONS 4
+#define HIGHEST_BASE 36
+
 extern char *alpha_num;
 
 /* Notes:

@@ -133,76 +133,6 @@ int main(int argc, char *argv[])
 	exit(rc);
 }
 
-static char *_conn_type_str(int conn_type)
-{
-	switch (conn_type) {
-		case (SELECT_MESH):
-			return "MESH";
-		case (SELECT_TORUS):
-			return "TORUS";
-		case (SELECT_SMALL):
-			return "SMALL";
-	}
-	return "?";
-}
-
-static char *_node_use_str(int node_use)
-{
-	switch (node_use) {
-		case (SELECT_COPROCESSOR_MODE):
-			return "COPROCESSOR";
-		case (SELECT_VIRTUAL_NODE_MODE):
-			return "VIRTUAL";
-	}
-	return "?";
-}
-
-static char *_part_state_str(int state)
-{
-	static char tmp[16];
-	/* This is needs to happen cross cluster.  Since the enums
-	 * changed.  We don't handle BUSY or REBOOTING though, these
-	 * states are extremely rare so it isn't that big of a deal.
-	 */
-#ifdef HAVE_BGL
-	if(working_cluster_rec) {
-		if(!(working_cluster_rec->flags & CLUSTER_FLAG_BGL)) {
-			if(state == RM_PARTITION_BUSY)
-				state = RM_PARTITION_READY;
-		}
-	}
-#else
-	if(working_cluster_rec) {
-		if(working_cluster_rec->flags & CLUSTER_FLAG_BGL) {
-			if(state == RM_PARTITION_REBOOTING)
-				state = RM_PARTITION_READY;
-		}
-	}
-#endif
-	switch (state) {
-#ifdef HAVE_BGL
-		case RM_PARTITION_BUSY:
-			return "BUSY";
-#else
-		case RM_PARTITION_REBOOTING:
-			return "REBOOTING";
-#endif
-		case RM_PARTITION_CONFIGURING:
-			return "CONFIG";
-		case RM_PARTITION_DEALLOCATING:
-			return "DEALLOC";
-		case RM_PARTITION_ERROR:
-			return "ERROR";
-		case RM_PARTITION_FREE:
-			return "FREE";
-		case RM_PARTITION_READY:
-			return "READY";
-	}
-
-	snprintf(tmp, sizeof(tmp), "%d", state);
-	return tmp;
-}
-
 /*
  * _bg_report - download and print current bgblock state information
  */
@@ -225,11 +155,11 @@ static int _bg_report(block_info_msg_t *block_ptr)
 		       block_ptr->block_array[i].bg_block_id,
 		       block_ptr->block_array[i].nodes,
 		       block_ptr->block_array[i].owner_name,
-		       _part_state_str(
+		       bg_block_state_string(
 			       block_ptr->block_array[i].state),
-		       _conn_type_str(
+		       conn_type_string(
 			       block_ptr->block_array[i].conn_type),
-		       _node_use_str(
+		       node_use_string(
 			       block_ptr->block_array[i].node_use));
 	}
 

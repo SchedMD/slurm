@@ -95,6 +95,9 @@ extern int slurm_select_init(void);
  */
 extern int slurm_select_fini(void);
 
+extern int select_get_plugin_id_pos(uint32_t plugin_id);
+extern int select_get_plugin_id();
+
 /*
  * Save any global state information
  * IN dir_name - directory into which the data can be stored

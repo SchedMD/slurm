@@ -59,9 +59,7 @@
 #include "src/common/job_options.h"
 #include "src/common/forward.h"
 #include "src/common/slurm_jobacct_gather.h"
-#ifdef HAVE_BG
 #include "src/plugins/select/bluegene/wrap_rm_api.h"
-#endif
 
 /*
 ** Define slurm-specific aliases for use by plugins, see slurm_xlator.h
@@ -1353,7 +1351,6 @@ extern char *conn_type_string(enum connection_type conn_type)
 		return "Small";
 	case (SELECT_NAV):
 		return "NAV";
-#ifndef HAVE_BGL
 	case SELECT_HTC_S:
 		return "HTC_S";
 	case SELECT_HTC_D:
@@ -1362,14 +1359,12 @@ extern char *conn_type_string(enum connection_type conn_type)
 		return "HTC_V";
 	case SELECT_HTC_L:
 		return "HTC_L";
-#endif
 	default:
 		return "n/a";
 	}
 	return "n/a";
 }
 
-#ifdef HAVE_BGL
 extern char* node_use_string(enum node_use_type node_use)
 {
 	switch (node_use) {
@@ -1382,13 +1377,30 @@ extern char* node_use_string(enum node_use_type node_use)
 	}
 	return "";
 }
-#endif
 
 extern char *bg_block_state_string(uint16_t state)
 {
 	static char tmp[16];
+	/* This is needs to happen cross cluster.  Since the enums
+	 * changed.  We don't handle BUSY or REBOOTING though, these
+	 * states are extremely rare so it isn't that big of a deal.
+	 */
+#ifdef HAVE_BGL
+	if(working_cluster_rec) {
+		if(!(working_cluster_rec->flags & CLUSTER_FLAG_BGL)) {
+			if(state == RM_PARTITION_BUSY)
+				state = RM_PARTITION_READY;
+		}
+	}
+#else
+	if(working_cluster_rec) {
+		if(working_cluster_rec->flags & CLUSTER_FLAG_BGL) {
+			if(state == RM_PARTITION_REBOOTING)
+				state = RM_PARTITION_READY;
+		}
+	}
+#endif
 
-#ifdef HAVE_BG
 	switch ((rm_partition_state_t)state) {
 #ifdef HAVE_BGL
 	case RM_PARTITION_BUSY:
@@ -1410,7 +1422,6 @@ extern char *bg_block_state_string(uint16_t state)
 	case RM_PARTITION_READY:
 		return "READY";
 	}
-#endif
 
 	snprintf(tmp, sizeof(tmp), "%d", state);
 	return tmp;

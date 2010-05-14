@@ -277,9 +277,6 @@ enum {A, B, C, D};
 #  define SYSTEM_DIMENSIONS 1
 #endif
 
-/* largest configured system dimensions */
-#define HIGHEST_DIMENSIONS 4
-#define HIGHEST_BASE 36
 /* logic for block node description */
 
 /* to speed things up we will do some calculations once to avoid

@@ -1197,7 +1197,8 @@ static void _set_options(int argc, char **argv)
 			}
 			break;
 		case 'M':
-			list_destroy(opt.clusters);
+			if(opt.clusters)
+				list_destroy(opt.clusters);
 			if(!(opt.clusters =
 			     slurmdb_get_info_cluster(optarg))) {
 				error("'%s' invalid entry for --cluster",

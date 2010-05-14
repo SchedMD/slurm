@@ -45,6 +45,7 @@
 #include "src/common/slurm_strcasestr.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/parse_time.h"
+#include "src/common/node_select.h"
 
 slurmdb_cluster_rec_t *working_cluster_rec = NULL;
 
@@ -753,6 +754,42 @@ extern void slurmdb_destroy_report_cluster_grouping(void *object)
 	}
 }
 
+extern uint32_t slurmdb_setup_cluster_flags()
+{
+	uint32_t cluster_flags = 0;
+
+	if(working_cluster_rec)
+		return working_cluster_rec->flags;
+
+#ifdef HAVE_BG
+	cluster_flags |= CLUSTER_FLAG_BG;
+#endif
+#ifdef HAVE_BGL
+	cluster_flags |= CLUSTER_FLAG_BGL;
+#endif
+#ifdef HAVE_BGP
+	cluster_flags |= CLUSTER_FLAG_BGP;
+#endif
+#ifdef HAVE_BGQ
+	cluster_flags |= CLUSTER_FLAG_BGQ;
+#endif
+#ifdef HAVE_SUN_CONST
+	cluster_flags |= CLUSTER_FLAG_SC;
+#endif
+#ifdef HAVE_XCPU
+	cluster_flags |= CLUSTER_FLAG_XCPU;
+#endif
+#ifdef HAVE_AIX
+	cluster_flags |= CLUSTER_FLAG_AIX;
+#endif
+#ifdef MULTIPLE_SLURMD
+	cluster_flags |= CLUSTER_FLAG_MULTSD;
+#endif
+#ifdef HAVE_CRAY_XT
+	cluster_flags |= CLUSTER_FLAG_CRAYXT;
+#endif
+	return cluster_flags;
+}
 
 extern List slurmdb_get_info_cluster(char *cluster_names)
 {
@@ -763,7 +800,7 @@ extern List slurmdb_get_info_cluster(char *cluster_names)
 	void *db_conn = NULL;
 	ListIterator itr, itr2;
 	int err = 0;
-
+	int plugin_id_select = 0;
 	xassert(cluster_names);
 
 	cluster_name = slurm_get_cluster_name();
@@ -791,6 +828,7 @@ extern List slurmdb_get_info_cluster(char *cluster_names)
 			err = 1;
 			goto next;
 		}
+
 		if(cluster_rec->rpc_version < 8) {
 			error("Slurmctld on '%s' must be running at least "
 			      "SLURM 2.2 for cross-cluster communication.",
@@ -799,6 +837,18 @@ extern List slurmdb_get_info_cluster(char *cluster_names)
 			err = 1;
 			goto next;
 		}
+
+		if((plugin_id_select = select_get_plugin_id_pos(
+			    cluster_rec->plugin_id_select)) == SLURM_ERROR) {
+			error("Cluster '%s' has an unknown select plugin_id %u",
+			      cluster_name,
+			      cluster_rec->plugin_id_select);
+			list_delete_item(itr);
+			err = 1;
+			goto next;
+		}
+
+		cluster_rec->plugin_id_select = plugin_id_select;
 
 		slurm_set_addr(&cluster_rec->control_addr,
 			       cluster_rec->control_port,

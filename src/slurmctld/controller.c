@@ -221,34 +221,7 @@ int main(int argc, char *argv[])
 		WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, WRITE_LOCK };
 	assoc_init_args_t assoc_init_arg;
 	pthread_t assoc_cache_thread;
-
-#ifdef HAVE_BG
-	cluster_flags |= CLUSTER_FLAG_BG;
-#endif
-#ifdef HAVE_BGL
-	cluster_flags |= CLUSTER_FLAG_BGL;
-#endif
-#ifdef HAVE_BGP
-	cluster_flags |= CLUSTER_FLAG_BGP;
-#endif
-#ifdef HAVE_BGQ
-	cluster_flags |= CLUSTER_FLAG_BGQ;
-#endif
-#ifdef HAVE_SUN_CONST
-	cluster_flags |= CLUSTER_FLAG_SC;
-#endif
-#ifdef HAVE_XCPU
-	cluster_flags |= CLUSTER_FLAG_XCPU;
-#endif
-#ifdef HAVE_AIX
-	cluster_flags |= CLUSTER_FLAG_AIX;
-#endif
-#ifdef MULTIPLE_SLURMD
-	cluster_flags |= CLUSTER_FLAG_MULTSD;
-#endif
-#ifdef HAVE_CRAY_XT
-	cluster_flags |= CLUSTER_FLAG_CRAYXT;
-#endif
+	cluster_flags = slurmdb_setup_cluster_flags();
 
 	/*
 	 * Establish initial configuration
