@@ -136,12 +136,24 @@ extern void parse_command_line(int argc, char *argv[])
 			params.all_flag = true;
 			break;
 		case (int)'b':
+		if(working_cluster_rec) {
+			if(working_cluster_rec->flags & CLUSTER_FLAG_BG)
+				params.bg_flag = true;
+			else {
+				error("must be on a BG system to use "
+				      "--bg option");
+				exit(1);
+			}
+		} else {
 #ifdef HAVE_BG
 			params.bg_flag = true;
 #else
-			error("must be on a BG system to use --bg option");
+			error("Must be on a BG system to use --bg option, "
+			      "if using --cluster option put the --bg option "
+			      "after the --cluster option.");
 			exit(1);
 #endif
+		}
 			break;
 		case (int)'d':
 			params.dead_nodes = true;
@@ -241,11 +253,20 @@ extern void parse_command_line(int argc, char *argv[])
 
 	if ( params.format == NULL ) {
 		if ( params.summarize ) {
+			if(working_cluster_rec) {
+				if(working_cluster_rec->flags & CLUSTER_FLAG_BG)
+					params.format =
+						"%9P %.5a %.10l %.32F  %N";
+				else
+					params.format =
+						"%9P %.5a %.10l %.16F  %N";
+			} else {
 #ifdef HAVE_BG
-			params.format = "%9P %.5a %.10l %.32F  %N";
+				params.format = "%9P %.5a %.10l %.32F  %N";
 #else
-			params.format = "%9P %.5a %.10l %.16F  %N";
+				params.format = "%9P %.5a %.10l %.16F  %N";
 #endif
+			}
 		} else if ( params.node_flag ) {
 			params.node_field_flag = true;	/* compute size later */
 			params.format = params.long_output ?
