@@ -62,6 +62,7 @@ time_t last_job_update;
 char *alpha_num = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 void *acct_db_conn = NULL;
 char *slurmctld_cluster_name = NULL;
+slurmdb_cluster_rec_t *working_cluster_rec = NULL;
 
 /*
  * These variables are required by the generic plugin interface.  If they
