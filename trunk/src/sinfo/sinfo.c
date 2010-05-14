@@ -47,10 +47,8 @@
 #include "src/sinfo/sinfo.h"
 #include "src/sinfo/print.h"
 
-#ifdef HAVE_BG
-# include "src/plugins/select/bluegene/wrap_rm_api.h"
-# include "src/plugins/select/bluegene/plugin/bluegene.h"
-#endif
+#include "src/plugins/select/bluegene/wrap_rm_api.h"
+#include "src/plugins/select/bluegene/plugin/bluegene.h"
 
 /********************
  * Global Variables *
@@ -162,8 +160,25 @@ static char *_node_use_str(int node_use)
 static char *_part_state_str(int state)
 {
 	static char tmp[16];
-
-#ifdef HAVE_BG
+	/* This is needs to happen cross cluster.  Since the enums
+	 * changed.  We don't handle BUSY or REBOOTING though, these
+	 * states are extremely rare so it isn't that big of a deal.
+	 */
+#ifdef HAVE_BGL
+	if(working_cluster_rec) {
+		if(!(working_cluster_rec->flags & CLUSTER_FLAG_BGL)) {
+			if(state == RM_PARTITION_BUSY)
+				state = RM_PARTITION_READY;
+		}
+	}
+#else
+	if(working_cluster_rec) {
+		if(working_cluster_rec->flags & CLUSTER_FLAG_BGL) {
+			if(state == RM_PARTITION_REBOOTING)
+				state = RM_PARTITION_READY;
+		}
+	}
+#endif
 	switch (state) {
 #ifdef HAVE_BGL
 		case RM_PARTITION_BUSY:
@@ -183,7 +198,6 @@ static char *_part_state_str(int state)
 		case RM_PARTITION_READY:
 			return "READY";
 	}
-#endif
 
 	snprintf(tmp, sizeof(tmp), "%d", state);
 	return tmp;
@@ -235,9 +249,8 @@ _query_server(partition_info_msg_t ** part_pptr,
 {
 	static partition_info_msg_t *old_part_ptr = NULL, *new_part_ptr;
 	static node_info_msg_t *old_node_ptr = NULL, *new_node_ptr;
-#ifdef HAVE_BG
 	static block_info_msg_t *old_bg_ptr = NULL, *new_bg_ptr;
-#endif
+
 	int error_code;
 	uint16_t show_flags = 0;
 
@@ -286,19 +299,41 @@ _query_server(partition_info_msg_t ** part_pptr,
 	old_node_ptr = new_node_ptr;
 	*node_pptr = new_node_ptr;
 
-#ifdef HAVE_BG
-	if (old_bg_ptr) {
-		error_code = slurm_load_block_info(old_bg_ptr->last_update,
-						   &new_bg_ptr);
-		if (error_code == SLURM_SUCCESS)
-			slurm_free_block_info_msg(&old_bg_ptr);
-		else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
-			error_code = SLURM_SUCCESS;
-			new_bg_ptr = old_bg_ptr;
+	if(working_cluster_rec) {
+		if(working_cluster_rec->flags & CLUSTER_FLAG_BG) {
+			if (old_bg_ptr) {
+				error_code = slurm_load_block_info(
+					old_bg_ptr->last_update,
+					&new_bg_ptr);
+				if (error_code == SLURM_SUCCESS)
+					slurm_free_block_info_msg(&old_bg_ptr);
+				else if (slurm_get_errno() ==
+					 SLURM_NO_CHANGE_IN_DATA) {
+					error_code = SLURM_SUCCESS;
+					new_bg_ptr = old_bg_ptr;
+				}
+			} else {
+				error_code = slurm_load_block_info(
+					(time_t) NULL, &new_bg_ptr);
+			}
 		}
 	} else {
-		error_code = slurm_load_block_info((time_t) NULL,
-						   &new_bg_ptr);
+#ifdef HAVE_BG
+		if (old_bg_ptr) {
+			error_code = slurm_load_block_info(
+				old_bg_ptr->last_update,
+				&new_bg_ptr);
+			if (error_code == SLURM_SUCCESS)
+				slurm_free_block_info_msg(&old_bg_ptr);
+			else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
+				error_code = SLURM_SUCCESS;
+				new_bg_ptr = old_bg_ptr;
+			}
+		} else {
+			error_code = slurm_load_block_info((time_t) NULL,
+							   &new_bg_ptr);
+		}
+#endif
 	}
 	if (error_code) {
 		slurm_perror("slurm_load_block");
@@ -306,7 +341,6 @@ _query_server(partition_info_msg_t ** part_pptr,
 	}
 	old_bg_ptr = new_bg_ptr;
 	*block_pptr = new_bg_ptr;
-#endif
 	return SLURM_SUCCESS;
 }
 
@@ -707,58 +741,118 @@ static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr,
 				     SELECT_NODEDATA_SUBCNT,
 				     NODE_STATE_ERROR,
 				     &error_cpus);
-#ifdef HAVE_BG
-	if(error_cpus) {
-		xfree(node_ptr->reason);
-		node_ptr->reason = xstrdup("Block(s) in error state");
-		sinfo_ptr->reason     = node_ptr->reason;
-		sinfo_ptr->reason_time= node_ptr->reason_time;
-		sinfo_ptr->reason_uid = node_ptr->reason_uid;
-	}
-	if(!params.match_flags.state_flag && (used_cpus || error_cpus)) {
-		/* We only get one shot at this (because all states
-		   are combined together), so we need to make
-		   sure we get all the subgrps accounted. (So use
-		   g_node_scaling for safe measure) */
-		total_nodes = g_node_scaling;
+	if(working_cluster_rec) {
+		if(working_cluster_rec->flags & CLUSTER_FLAG_BG) {
+			if(error_cpus) {
+				xfree(node_ptr->reason);
+				node_ptr->reason = xstrdup("Block(s) in error state");
+				sinfo_ptr->reason     = node_ptr->reason;
+				sinfo_ptr->reason_time= node_ptr->reason_time;
+				sinfo_ptr->reason_uid = node_ptr->reason_uid;
+			}
+			if(!params.match_flags.state_flag
+			   && (used_cpus || error_cpus)) {
+				/* We only get one shot at this (because all states
+				   are combined together), so we need to make
+				   sure we get all the subgrps accounted. (So use
+				   g_node_scaling for safe measure) */
+				total_nodes = g_node_scaling;
 
-		sinfo_ptr->nodes_alloc += used_cpus;
-		sinfo_ptr->nodes_other += error_cpus;
-		sinfo_ptr->nodes_idle +=
-			(total_nodes - (used_cpus + error_cpus));
-		used_cpus *= single_node_cpus;
-		error_cpus *= single_node_cpus;
-	} else {
-		/* process only for this subgrp and then return */
-		total_cpus = total_nodes * single_node_cpus;
+				sinfo_ptr->nodes_alloc += used_cpus;
+				sinfo_ptr->nodes_other += error_cpus;
+				sinfo_ptr->nodes_idle +=
+					(total_nodes - (used_cpus + error_cpus));
+				used_cpus *= single_node_cpus;
+				error_cpus *= single_node_cpus;
+			} else {
+				/* process only for this subgrp and then return */
+				total_cpus = total_nodes * single_node_cpus;
 
-		if ((base_state == NODE_STATE_ALLOCATED)
-		    ||  (node_ptr->node_state & NODE_STATE_COMPLETING)) {
-			sinfo_ptr->nodes_alloc += total_nodes;
-			sinfo_ptr->cpus_alloc += total_cpus;
-		} else if (IS_NODE_DRAIN(node_ptr) ||
-			   (base_state == NODE_STATE_DOWN)) {
-			sinfo_ptr->nodes_other += total_nodes;
-			sinfo_ptr->cpus_other += total_cpus;
+				if ((base_state == NODE_STATE_ALLOCATED)
+				    || (node_ptr->node_state
+					& NODE_STATE_COMPLETING)) {
+					sinfo_ptr->nodes_alloc += total_nodes;
+					sinfo_ptr->cpus_alloc += total_cpus;
+				} else if (IS_NODE_DRAIN(node_ptr) ||
+					   (base_state == NODE_STATE_DOWN)) {
+					sinfo_ptr->nodes_other += total_nodes;
+					sinfo_ptr->cpus_other += total_cpus;
+				} else {
+					sinfo_ptr->nodes_idle += total_nodes;
+					sinfo_ptr->cpus_idle += total_cpus;
+				}
+
+				sinfo_ptr->nodes_total += total_nodes;
+				sinfo_ptr->cpus_total += total_cpus;
+
+				return;
+			}
 		} else {
-			sinfo_ptr->nodes_idle += total_nodes;
-			sinfo_ptr->cpus_idle += total_cpus;
+			if ((base_state == NODE_STATE_ALLOCATED) ||
+			    IS_NODE_COMPLETING(node_ptr))
+				sinfo_ptr->nodes_alloc += total_nodes;
+			else if (IS_NODE_DRAIN(node_ptr)
+				 || (base_state == NODE_STATE_DOWN))
+				sinfo_ptr->nodes_other += total_nodes;
+			else
+				sinfo_ptr->nodes_idle += total_nodes;
 		}
+	} else {
+#ifdef HAVE_BG
+		if(error_cpus) {
+			xfree(node_ptr->reason);
+			node_ptr->reason = xstrdup("Block(s) in error state");
+			sinfo_ptr->reason     = node_ptr->reason;
+			sinfo_ptr->reason_time= node_ptr->reason_time;
+			sinfo_ptr->reason_uid = node_ptr->reason_uid;
+		}
+		if(!params.match_flags.state_flag
+		   && (used_cpus || error_cpus)) {
+			/* We only get one shot at this (because all states
+			   are combined together), so we need to make
+			   sure we get all the subgrps accounted. (So use
+			   g_node_scaling for safe measure) */
+			total_nodes = g_node_scaling;
 
-		sinfo_ptr->nodes_total += total_nodes;
-		sinfo_ptr->cpus_total += total_cpus;
+			sinfo_ptr->nodes_alloc += used_cpus;
+			sinfo_ptr->nodes_other += error_cpus;
+			sinfo_ptr->nodes_idle +=
+				(total_nodes - (used_cpus + error_cpus));
+			used_cpus *= single_node_cpus;
+			error_cpus *= single_node_cpus;
+		} else {
+			/* process only for this subgrp and then return */
+			total_cpus = total_nodes * single_node_cpus;
 
-		return;
-	}
+			if ((base_state == NODE_STATE_ALLOCATED)
+			    || (node_ptr->node_state & NODE_STATE_COMPLETING)) {
+				sinfo_ptr->nodes_alloc += total_nodes;
+				sinfo_ptr->cpus_alloc += total_cpus;
+			} else if (IS_NODE_DRAIN(node_ptr) ||
+				   (base_state == NODE_STATE_DOWN)) {
+				sinfo_ptr->nodes_other += total_nodes;
+				sinfo_ptr->cpus_other += total_cpus;
+			} else {
+				sinfo_ptr->nodes_idle += total_nodes;
+				sinfo_ptr->cpus_idle += total_cpus;
+			}
+
+			sinfo_ptr->nodes_total += total_nodes;
+			sinfo_ptr->cpus_total += total_cpus;
+
+			return;
+		}
 #else
-	if ((base_state == NODE_STATE_ALLOCATED) ||
-	    IS_NODE_COMPLETING(node_ptr))
-		sinfo_ptr->nodes_alloc += total_nodes;
-	else if (IS_NODE_DRAIN(node_ptr) || (base_state == NODE_STATE_DOWN))
-		sinfo_ptr->nodes_other += total_nodes;
-	else
-		sinfo_ptr->nodes_idle += total_nodes;
+		if ((base_state == NODE_STATE_ALLOCATED) ||
+		    IS_NODE_COMPLETING(node_ptr))
+			sinfo_ptr->nodes_alloc += total_nodes;
+		else if (IS_NODE_DRAIN(node_ptr)
+			 || (base_state == NODE_STATE_DOWN))
+			sinfo_ptr->nodes_other += total_nodes;
+		else
+			sinfo_ptr->nodes_idle += total_nodes;
 #endif
+	}
 	sinfo_ptr->nodes_total += total_nodes;
 
 
