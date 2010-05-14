@@ -447,6 +447,7 @@ static int _as_mysql_acct_check_tables(MYSQL *db_conn)
 		{ "rpc_version", "smallint unsigned not null default 0" },
 		{ "classification", "smallint unsigned default 0" },
 		{ "dimensions", "smallint unsigned default 1" },
+		{ "plugin_id_select", "smallint unsigned default 0" },
 		{ "flags", "int unsigned default 0" },
 		{ NULL, NULL}
 	};

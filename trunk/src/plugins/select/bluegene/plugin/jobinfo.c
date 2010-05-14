@@ -346,13 +346,15 @@ extern int  pack_select_jobinfo(select_jobinfo_t *jobinfo, Buf buffer,
 				uint16_t protocol_version)
 {
 	int i;
+	int dims = working_cluster_rec ?
+		working_cluster_rec->dimensions : SYSTEM_DIMENSIONS;
 
 	if(protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
 		if (jobinfo) {
 			/* NOTE: If new elements are added here, make sure to
 			 * add equivalant pack of zeros below for NULL
 			 * pointer */
-			for (i=0; i<SYSTEM_DIMENSIONS; i++) {
+			for (i=0; i<dims; i++) {
 				pack16(jobinfo->geometry[i], buffer);
 			}
 			pack16(jobinfo->conn_type, buffer);
@@ -365,9 +367,7 @@ extern int  pack_select_jobinfo(select_jobinfo_t *jobinfo, Buf buffer,
 			packstr(jobinfo->nodes, buffer);
 			packstr(jobinfo->ionodes, buffer);
 
-#ifdef HAVE_BGL
 			packstr(jobinfo->blrtsimage, buffer);
-#endif
 			packstr(jobinfo->linuximage, buffer);
 			packstr(jobinfo->mloaderimage, buffer);
 			packstr(jobinfo->ramdiskimage, buffer);
@@ -375,7 +375,7 @@ extern int  pack_select_jobinfo(select_jobinfo_t *jobinfo, Buf buffer,
 			/* pack space for 3 positions for geo
 			 * then 1 for conn_type, reboot, and rotate
 			 */
-			for (i=0; i<(SYSTEM_DIMENSIONS+3); i++)
+			for (i=0; i<(dims+3); i++)
 				pack16((uint16_t) 0, buffer);
 
 			pack32((uint32_t) 0, buffer); //node_cnt
@@ -384,9 +384,7 @@ extern int  pack_select_jobinfo(select_jobinfo_t *jobinfo, Buf buffer,
 			packnull(buffer); //nodes
 			packnull(buffer); //ionodes
 
-#ifdef HAVE_BGL
 			packnull(buffer); //blrts
-#endif
 			packnull(buffer); //linux
 			packnull(buffer); //mloader
 			packnull(buffer); //ramdisk
@@ -474,16 +472,8 @@ extern int unpack_select_jobinfo(select_jobinfo_t **jobinfo_pptr, Buf buffer,
 		safe_unpackstr_xmalloc(&(jobinfo->ionodes), &uint32_tmp,
 				       buffer);
 
-		if(working_cluster_rec) {
-			if(working_cluster_rec->flags & CLUSTER_FLAG_BGL)
-				safe_unpackstr_xmalloc(&(jobinfo->blrtsimage),
-						       &uint32_tmp, buffer);
-		} else {
-#ifdef HAVE_BGL
-			safe_unpackstr_xmalloc(&(jobinfo->blrtsimage),
-					       &uint32_tmp, buffer);
-#endif
-		}
+		safe_unpackstr_xmalloc(&(jobinfo->blrtsimage),
+				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&(jobinfo->linuximage), &uint32_tmp,
 				       buffer);
 		safe_unpackstr_xmalloc(&(jobinfo->mloaderimage), &uint32_tmp,
@@ -507,17 +497,10 @@ extern int unpack_select_jobinfo(select_jobinfo_t **jobinfo_pptr, Buf buffer,
 		safe_unpackstr_xmalloc(&(jobinfo->ionodes), &uint32_tmp,
 				       buffer);
 
-		if(working_cluster_rec) {
-			if(working_cluster_rec->flags & CLUSTER_FLAG_BGL)
-				safe_unpackstr_xmalloc(&(jobinfo->blrtsimage),
-						       &uint32_tmp, buffer);
-		} else {
 #ifdef HAVE_BGL
-			safe_unpackstr_xmalloc(&(jobinfo->blrtsimage),
-					       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&(jobinfo->blrtsimage),
+				       &uint32_tmp, buffer);
 #endif
-		}
-
 		safe_unpackstr_xmalloc(&(jobinfo->linuximage), &uint32_tmp,
 				       buffer);
 		safe_unpackstr_xmalloc(&(jobinfo->mloaderimage), &uint32_tmp,
@@ -553,7 +536,7 @@ extern char *sprint_select_jobinfo(select_jobinfo_t *jobinfo,
 	}
 
 	if ((mode != SELECT_PRINT_DATA)
-	&& jobinfo && (jobinfo->magic != JOBINFO_MAGIC)) {
+	    && jobinfo && (jobinfo->magic != JOBINFO_MAGIC)) {
 		error("sprint_jobinfo: jobinfo magic bad");
 		return NULL;
 	}

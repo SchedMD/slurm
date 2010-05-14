@@ -63,6 +63,7 @@
 #include "src/common/node_select.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_step_layout.h"
+#include "src/common/slurmdb_defs.h"
 
 /*
  * Define slurm-specific aliases for use by plugins, see slurm_xlator.h
@@ -81,6 +82,66 @@ strong_alias(env_array_overwrite,	slurm_env_array_overwrite);
 strong_alias(env_array_overwrite_fmt,	slurm_env_array_overwrite_fmt);
 
 #define ENV_BUFSIZE (256 * 1024)
+
+static int _setup_perticulars(uint32_t cluster_flags,
+			       char ***dest,
+			       dynamic_plugin_data_t *select_jobinfo)
+{
+	int rc = SLURM_SUCCESS;
+	if(cluster_flags & CLUSTER_FLAG_BG) {
+		char *bg_part_id = NULL;
+		select_g_select_jobinfo_get(select_jobinfo,
+					    SELECT_JOBDATA_BLOCK_ID,
+					    &bg_part_id);
+		if (bg_part_id) {
+			if(cluster_flags & CLUSTER_FLAG_BGL) {
+				uint16_t conn_type =
+					(uint16_t)NO_VAL;
+				select_g_select_jobinfo_get(
+					select_jobinfo,
+					SELECT_JOBDATA_CONN_TYPE,
+					&conn_type);
+				if(conn_type > SELECT_SMALL) {
+					env_array_overwrite_fmt(dest,
+								"SUBMIT_POOL",
+								"%s",
+								bg_part_id);
+				}
+			}
+			env_array_overwrite_fmt(dest, "MPIRUN_PARTITION", "%s",
+						bg_part_id);
+			env_array_overwrite_fmt(dest, "MPIRUN_NOFREE",
+						"%d", 1);
+			env_array_overwrite_fmt(dest, "MPIRUN_NOALLOCATE",
+						"%d", 1);
+			xfree(bg_part_id);
+		} else
+			rc = SLURM_FAILURE;
+
+		if(rc == SLURM_FAILURE)
+			error("Can't set MPIRUN_PARTITION "
+			      "environment variable");
+	} else if(cluster_flags & CLUSTER_FLAG_CRAYXT) {
+		char *resv_id = NULL;
+		select_g_select_jobinfo_get(select_jobinfo,
+					    SELECT_JOBDATA_RESV_ID,
+					    &resv_id);
+		if (resv_id) {
+			env_array_overwrite_fmt(dest, "BASIL_RESERVATION_ID",
+						"%s", resv_id);
+		} else
+			rc = SLURM_FAILURE;
+
+		if(rc == SLURM_FAILURE)
+			error("Can't set BASIL_RESVERATION_ID "
+			      "environment variable");
+		xfree(resv_id);
+	} else if(cluster_flags & CLUSTER_FLAG_AIX) {
+		env_array_overwrite(dest, "LOADLBATCH", "yes");
+	}
+
+	return rc;
+}
 
 /*
  *  Return pointer to `name' entry in environment if found, or
@@ -310,6 +371,7 @@ int setup_env(env_t *env, bool preserve_env)
 	int rc = SLURM_SUCCESS;
 	char *dist = NULL, *lllp_dist = NULL;
 	char addrbuf[INET_ADDRSTRLEN];
+	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 
 	if (env == NULL)
 		return SLURM_ERROR;
@@ -606,56 +668,8 @@ int setup_env(env_t *env, bool preserve_env)
 	}
 
 	if(env->select_jobinfo) {
-#ifdef HAVE_BG
-		char *bgl_part_id = NULL;
-		select_g_select_jobinfo_get(env->select_jobinfo,
-				     SELECT_JOBDATA_BLOCK_ID, &bgl_part_id);
-		if (bgl_part_id) {
-#ifndef HAVE_BGL
-			uint16_t conn_type = (uint16_t)NO_VAL;
-			select_g_select_jobinfo_get(env->select_jobinfo,
-						    SELECT_JOBDATA_CONN_TYPE,
-						    &conn_type);
-			if(conn_type > SELECT_SMALL) {
-				if(setenvf(&env->env,
-					   "SUBMIT_POOL", "%s", bgl_part_id))
-					rc = SLURM_FAILURE;
-			}
-#endif
-			if(setenvf(&env->env,
-				   "MPIRUN_PARTITION", "%s", bgl_part_id))
-				rc = SLURM_FAILURE;
-
-			if(setenvf(&env->env, "MPIRUN_NOFREE", "%d", 1))
-				rc = SLURM_FAILURE;
-			if(setenvf(&env->env, "MPIRUN_NOALLOCATE", "%d", 1))
-				rc = SLURM_FAILURE;
-			xfree(bgl_part_id);
-		} else
-			rc = SLURM_FAILURE;
-
-		if(rc == SLURM_FAILURE)
-			error("Can't set MPIRUN_PARTITION "
-			      "environment variable");
-
-#endif
-
-#ifdef HAVE_CRAY_XT
-		char *resv_id = NULL;
-		select_g_select_jobinfo_get(env->select_jobinfo,
-				     SELECT_JOBDATA_RESV_ID, &resv_id);
-		if (resv_id) {
-			if(setenvf(&env->env,
-				   "BASIL_RESVERATION_ID", "%s", resv_id))
-				rc = SLURM_FAILURE;
-		} else
-			rc = SLURM_FAILURE;
-
-		if(rc == SLURM_FAILURE)
-			error("Can't set BASIL_RESVERATION_ID "
-			      "environment variable");
-		xfree(resv_id);
-#endif
+		_setup_perticulars(cluster_flags, &env->env,
+				   env->select_jobinfo);
 	}
 
 	if (env->jobid >= 0) {
@@ -740,8 +754,7 @@ int setup_env(env_t *env, bool preserve_env)
 		rc = SLURM_FAILURE;
 	}
 
-#ifdef HAVE_AIX
-	{
+	if(cluster_flags & CLUSTER_FLAG_AIX) {
 		char res_env[128];
 		char *debug_env = (char *)getenv("SLURM_LL_API_DEBUG");
 		int  debug_num = 0;
@@ -761,7 +774,6 @@ int setup_env(env_t *env, bool preserve_env)
 		setenvf(&env->env, "LOADLBATCH", "yes");
 		setenvf(&env->env, "LOADL_ACTIVE", "3.2.0");
 	}
-#endif
 
 	if (env->pty_port
 	&&  setenvf(&env->env, "SLURM_PTY_PORT", "%hu", env->pty_port)) {
@@ -891,7 +903,7 @@ extern char *uint32_compressed_to_str(uint32_t array_len,
  *	SLURM_JOB_CPUS_PER_NODE
  *	LOADLBATCH (AIX only)
  *	SLURM_BG_NUM_NODES, MPIRUN_PARTITION, MPIRUN_NOFREE, and
- *	MPIRUN_NOALLOCATE (BGL only)
+ *	MPIRUN_NOALLOCATE (BG only)
  *
  * Sets OBSOLETE variables (needed for MPI, do not remove):
  *	SLURM_JOBID
@@ -903,24 +915,26 @@ int
 env_array_for_job(char ***dest, const resource_allocation_response_msg_t *alloc,
 		  const job_desc_msg_t *desc)
 {
-#ifdef HAVE_CRAY_XT
-	char *resv_id = NULL;
-#endif
 	char *tmp = NULL;
 	char *dist = NULL, *lllp_dist = NULL;
 	slurm_step_layout_t *step_layout = NULL;
 	uint32_t num_tasks = desc->num_tasks;
 	int rc = SLURM_SUCCESS;
 	uint32_t node_cnt = alloc->node_cnt;
+	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 
-#ifdef HAVE_BG
-	select_g_select_jobinfo_get(alloc->select_jobinfo,
-				    SELECT_JOBDATA_NODE_CNT,
-				    &node_cnt);
-	if(!node_cnt)
-		node_cnt = alloc->node_cnt;
-	env_array_overwrite_fmt(dest, "SLURM_BG_NUM_NODES", "%u", node_cnt);
-#endif
+	_setup_perticulars(cluster_flags, dest, alloc->select_jobinfo);
+
+	if(cluster_flags & CLUSTER_FLAG_BG) {
+		select_g_select_jobinfo_get(alloc->select_jobinfo,
+					    SELECT_JOBDATA_NODE_CNT,
+					    &node_cnt);
+		if(!node_cnt)
+			node_cnt = alloc->node_cnt;
+		info("got here 2");
+		env_array_overwrite_fmt(dest, "SLURM_BG_NUM_NODES",
+					"%u", node_cnt);
+	}
 
 	env_array_overwrite_fmt(dest, "SLURM_JOB_ID", "%u", alloc->job_id);
 	env_array_overwrite_fmt(dest, "SLURM_JOB_NUM_NODES", "%u", node_cnt);
@@ -945,45 +959,6 @@ env_array_for_job(char ***dest, const resource_allocation_response_msg_t *alloc,
 					alloc->cpu_count_reps);
 	env_array_overwrite_fmt(dest, "SLURM_JOB_CPUS_PER_NODE", "%s", tmp);
 	xfree(tmp);
-
-#ifdef HAVE_AIX
-	/* this puts the "poe" command into batch mode */
-	env_array_overwrite(dest, "LOADLBATCH", "yes");
-#endif
-
-#ifdef HAVE_BG
-	/* BlueGene only */
-	select_g_select_jobinfo_get(alloc->select_jobinfo,
-				    SELECT_JOBDATA_BLOCK_ID,
-				    &tmp);
-	if (tmp) {
-#ifndef HAVE_BGL
-		uint16_t conn_type = (uint16_t)NO_VAL;
-		select_g_select_jobinfo_get(alloc->select_jobinfo,
-				     SELECT_JOBDATA_CONN_TYPE, &conn_type);
-		if(conn_type > SELECT_SMALL) {
-			env_array_overwrite_fmt(dest, "SUBMIT_POOL", "%s",
-						tmp);
-		}
-#endif
-		env_array_overwrite_fmt(dest, "MPIRUN_PARTITION", "%s",
-					tmp);
-		env_array_overwrite_fmt(dest, "MPIRUN_NOFREE", "%d", 1);
-		env_array_overwrite_fmt(dest, "MPIRUN_NOALLOCATE", "%d", 1);
-
-		xfree(tmp);
-	}
-#endif
-
-#ifdef HAVE_CRAY_XT
-	select_g_select_jobinfo_get(alloc->select_jobinfo,
-				    SELECT_JOBDATA_RESV_ID,
-				    &resv_id);
-	if (resv_id) {
-		env_array_overwrite_fmt(dest, "BASIL_RESERVATION_ID", "%s",
-					resv_id);
-	}
-#endif
 
 	/* OBSOLETE, but needed by MPI, do not remove */
 	env_array_overwrite_fmt(dest, "SLURM_JOBID", "%u", alloc->job_id);
@@ -1069,6 +1044,9 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
 	uint32_t num_tasks = batch->ntasks;
 	uint16_t cpus_per_task;
 	uint16_t task_dist;
+	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
+
+	_setup_perticulars(cluster_flags, dest, batch->select_jobinfo);
 
 	/* There is no explicit node count in the batch structure,
 	 * so we need to calculate the node count. */
@@ -1079,9 +1057,11 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
 
 	env_array_overwrite_fmt(dest, "SLURM_JOB_ID", "%u", batch->job_id);
 	env_array_overwrite_fmt(dest, "SLURM_JOB_NUM_NODES", "%u", num_nodes);
-#ifdef HAVE_BG
-	env_array_overwrite_fmt(dest, "SLURM_BG_NUM_NODES", "%u", num_nodes);
-#endif
+	if(cluster_flags & CLUSTER_FLAG_BG) {
+		info("got here");
+		env_array_overwrite_fmt(dest, "SLURM_BG_NUM_NODES",
+					"%u", num_nodes);
+	}
 	env_array_overwrite_fmt(dest, "SLURM_JOB_NODELIST", "%s", batch->nodes);
 
 	tmp = uint32_compressed_to_str(batch->num_cpu_groups,
@@ -1093,10 +1073,6 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
 	env_array_overwrite_fmt(dest, "ENVIRONMENT", "BATCH");
 	if (node_name)
 		env_array_overwrite_fmt(dest, "HOSTNAME", "%s", node_name);
-#ifdef HAVE_AIX
-	/* this puts the "poe" command into batch mode */
-	env_array_overwrite(dest, "LOADLBATCH", "yes");
-#endif
 
 	/* OBSOLETE, but needed by MPI, do not remove */
 	env_array_overwrite_fmt(dest, "SLURM_JOBID", "%u", batch->job_id);

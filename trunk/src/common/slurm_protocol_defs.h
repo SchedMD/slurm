@@ -1059,9 +1059,7 @@ extern void  private_data_string(uint16_t private_data, char *str, int str_len);
 extern void  accounting_enforce_string(uint16_t enforce,
 				       char *str, int str_len);
 extern char *conn_type_string(enum connection_type conn_type);
-#ifdef HAVE_BGL
 extern char *node_use_string(enum node_use_type node_use);
-#endif
 /* Translate a state enum to a readable string */
 extern char *bg_block_state_string(uint16_t state);
 

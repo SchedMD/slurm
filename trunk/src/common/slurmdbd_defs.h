@@ -333,6 +333,7 @@ typedef struct dbd_rc_msg {
 typedef struct dbd_register_ctld_msg {
 	uint16_t dimensions;    /* dimensions of system */
 	uint32_t flags;         /* flags for cluster */
+	uint32_t plugin_id_select; /* the select plugin_id */
 	uint16_t port;		/* slurmctld's comm port */
 } dbd_register_ctld_msg_t;
 

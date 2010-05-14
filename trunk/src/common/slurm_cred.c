@@ -169,7 +169,6 @@ struct slurm_job_credential {
 				 * default=0 (no limit) */
 	uint32_t  step_mem_limit;
 
-#ifndef HAVE_BG
 	uint16_t  core_array_size;	/* core/socket array size */
 	uint16_t *cores_per_socket;
 	uint16_t *sockets_per_node;
@@ -179,7 +178,6 @@ struct slurm_job_credential {
 	uint32_t  job_nhosts;	/* count of nodes allocated to JOB */
 	char     *job_hostlist;	/* list of nodes allocated to JOB */
 	bitstr_t *step_core_bitmap;
-#endif
 	time_t    ctime;	/* time of credential creation		*/
 	char     *step_hostlist;/* hostnames for which the cred is ok	*/
 
@@ -348,53 +346,53 @@ _slurm_crypto_get_ops( slurm_crypto_context_t *c )
 	int rc = 0;
 
 	/* Find the correct plugin. */
-        c->cur_plugin = plugin_load_and_link(c->crypto_type, n_syms, syms,
+	c->cur_plugin = plugin_load_and_link(c->crypto_type, n_syms, syms,
 					     (void **) &c->ops);
-        if ( c->cur_plugin != PLUGIN_INVALID_HANDLE )
-        	return &c->ops;
+	if ( c->cur_plugin != PLUGIN_INVALID_HANDLE )
+		return &c->ops;
 
 	error("Couldn't find the specified plugin name for %s "
 	      "looking at all files",
 	      c->crypto_type);
 
 	/* Get the plugin list, if needed. */
-        if ( c->plugin_list == NULL ) {
+	if ( c->plugin_list == NULL ) {
 		char *plugin_dir;
-                c->plugin_list = plugrack_create();
-                if ( c->plugin_list == NULL ) {
-                        error( "Unable to create a plugin manager" );
-                        return NULL;
-                }
+		c->plugin_list = plugrack_create();
+		if ( c->plugin_list == NULL ) {
+			error( "Unable to create a plugin manager" );
+			return NULL;
+		}
 
-                plugrack_set_major_type( c->plugin_list, "crypto" );
-                plugrack_set_paranoia( c->plugin_list,
+		plugrack_set_major_type( c->plugin_list, "crypto" );
+		plugrack_set_paranoia( c->plugin_list,
 				       PLUGRACK_PARANOIA_NONE,
 				       0 );
 		plugin_dir = slurm_get_plugin_dir();
-                plugrack_read_dir( c->plugin_list, plugin_dir );
+		plugrack_read_dir( c->plugin_list, plugin_dir );
 		xfree(plugin_dir);
-        }
+	}
 
-        /* Find the correct plugin. */
-        c->cur_plugin =
+	/* Find the correct plugin. */
+	c->cur_plugin =
 		plugrack_use_by_type( c->plugin_list, c->crypto_type );
-        if ( c->cur_plugin == PLUGIN_INVALID_HANDLE ) {
-                error( "can't find a plugin for type %s", c->crypto_type );
-                return NULL;
-        }
+	if ( c->cur_plugin == PLUGIN_INVALID_HANDLE ) {
+		error( "can't find a plugin for type %s", c->crypto_type );
+		return NULL;
+	}
 
-        /* Dereference the API. */
-        if ( (rc = plugin_get_syms( c->cur_plugin,
+	/* Dereference the API. */
+	if ( (rc = plugin_get_syms( c->cur_plugin,
 				    n_syms,
 				    syms,
 				    (void **) &c->ops )) < n_syms ) {
-                error( "incomplete crypto plugin detected only "
+		error( "incomplete crypto plugin detected only "
 		       "got %d out of %d",
 		       rc, n_syms);
-                return NULL;
-        }
+		return NULL;
+	}
 
-        return &c->ops;
+	return &c->ops;
 }
 
 static int _slurm_crypto_init(void)
@@ -1114,7 +1112,7 @@ slurm_cred_begin_expiration(slurm_cred_ctx_t ctx, uint32_t jobid)
 	j->expiration  = time(NULL) + ctx->expiry_window;
 
 	debug2 ("set revoke expiration for jobid %u to %s",
-	        j->jobid, timestr (&j->expiration, buf, 64) );
+		j->jobid, timestr (&j->expiration, buf, 64) );
 
 	slurm_mutex_unlock(&ctx->mutex);
 	return SLURM_SUCCESS;
@@ -1160,7 +1158,7 @@ static char *_core_format(bitstr_t *core_bitmap)
 #endif
 
 /*
- * Retrieve the set of cores that were allocated to the job and step then 
+ * Retrieve the set of cores that were allocated to the job and step then
  * format them in the List Format (e.g., "0-2,7,12-14"). Also return
  * job and step's memory limit.
  *
@@ -1317,11 +1315,11 @@ slurm_cred_unpack(Buf buffer)
 		xfree(bit_fmt);
 		safe_unpack16(          &cred->core_array_size, buffer);
 		if (cred->core_array_size) {
-			safe_unpack16_array(&cred->cores_per_socket, &len,  
+			safe_unpack16_array(&cred->cores_per_socket, &len,
 					    buffer);
 			if (len != cred->core_array_size)
 				goto unpack_error;
-			safe_unpack16_array(&cred->sockets_per_node, &len,  
+			safe_unpack16_array(&cred->sockets_per_node, &len,
 					    buffer);
 			if (len != cred->core_array_size)
 				goto unpack_error;
@@ -1569,9 +1567,9 @@ _slurm_cred_sign(slurm_cred_ctx_t ctx, slurm_cred_t *cred)
 	buffer = init_buf(4096);
 	_pack_cred(cred, buffer);
 	rc = (*(g_crypto_context->ops.crypto_sign))(ctx->key,
-						    get_buf_data(buffer), 
+						    get_buf_data(buffer),
 						    get_buf_offset(buffer),
-						    &cred->signature, 
+						    &cred->signature,
 						    &cred->siglen);
 	free_buf(buffer);
 
@@ -1594,15 +1592,15 @@ _slurm_cred_verify_signature(slurm_cred_ctx_t ctx, slurm_cred_t *cred)
 	_pack_cred(cred, buffer);
 
 	rc = (*(g_crypto_context->ops.crypto_verify_sign))(ctx->key,
-							get_buf_data(buffer), 
+							get_buf_data(buffer),
 							get_buf_offset(buffer),
-							cred->signature, 
+							cred->signature,
 							cred->siglen);
 	if (rc && _exkey_is_valid(ctx)) {
 		rc = (*(g_crypto_context->ops.crypto_verify_sign))(ctx->exkey,
-							get_buf_data(buffer), 
+							get_buf_data(buffer),
 							get_buf_offset(buffer),
-							cred->signature, 
+							cred->signature,
 							cred->siglen);
 	}
 	free_buf(buffer);
@@ -1638,13 +1636,13 @@ _pack_cred(slurm_cred_t *cred, Buf buffer)
 		pack_bit_fmt(cred->step_core_bitmap, buffer);
 		pack16(cred->core_array_size, buffer);
 		if (cred->core_array_size) {
-			pack16_array(cred->cores_per_socket, 
+			pack16_array(cred->cores_per_socket,
 				     cred->core_array_size,
 				     buffer);
-			pack16_array(cred->sockets_per_node, 
+			pack16_array(cred->sockets_per_node,
 				     cred->core_array_size,
 				     buffer);
-			pack32_array(cred->sock_core_rep_count, 
+			pack32_array(cred->sock_core_rep_count,
 				     cred->core_array_size,
 				     buffer);
 		}
@@ -1756,7 +1754,7 @@ _credential_revoked(slurm_cred_ctx_t ctx, slurm_cred_t *cred)
 	if (cred->ctime <= j->revoked) {
 		char buf[64];
 		debug ("cred for %u revoked. expires at %s",
-                       j->jobid, timestr (&j->expiration, buf, 64));
+		       j->jobid, timestr (&j->expiration, buf, 64));
 		return true;
 	}
 
@@ -1958,7 +1956,7 @@ _job_state_unpack_one(Buf buffer)
 		t3[0] = '\0';
 	}
 	debug3("cred_unpack: job %u ctime:%s%s%s",
-               j->jobid, timestr (&j->ctime, t1, 64), t2, t3);
+	       j->jobid, timestr (&j->ctime, t1, 64), t2, t3);
 
 	if ((j->revoked) && (j->expiration == (time_t) MAX_TIME)) {
 		info ("Warning: revoke on job %u has no expiration",

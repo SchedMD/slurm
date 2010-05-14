@@ -1833,6 +1833,7 @@ extern int clusteracct_storage_p_register_ctld(void *db_conn, uint16_t port,
 	req.port         = port;
 	req.dimensions   = dims;
 	req.flags        = flags;
+	req.plugin_id_select = select_get_plugin_id();
 
 	msg.msg_type     = DBD_REGISTER_CTLD;
 	msg.data         = &req;

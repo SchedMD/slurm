@@ -155,8 +155,18 @@ task_dist_states_t verify_dist_type(const char *arg, uint32_t *plane_size)
  */
 uint16_t verify_conn_type(const char *arg)
 {
-#ifdef HAVE_BG
 	uint16_t len = strlen(arg);
+	bool no_bgl = 1;
+
+	if(working_cluster_rec) {
+		if(working_cluster_rec->flags & CLUSTER_FLAG_BGL)
+			no_bgl = 0;
+	} else {
+#ifdef HAVE_BGL
+		no_bgl = 0;
+#endif
+	}
+
 	if(!len) {
 		/* no input given */
 		error("no conn-type argument given.");
@@ -167,18 +177,17 @@ uint16_t verify_conn_type(const char *arg)
 		return SELECT_TORUS;
 	else if (!strncasecmp(arg, "NAV", len))
 		return SELECT_NAV;
-#ifndef HAVE_BGL
-	else if (!strncasecmp(arg, "HTC", len)
-		 || !strncasecmp(arg, "HTC_S", len))
-		return SELECT_HTC_S;
-	else if (!strncasecmp(arg, "HTC_D", len))
-		return SELECT_HTC_D;
-	else if (!strncasecmp(arg, "HTC_V", len))
-		return SELECT_HTC_V;
-	else if (!strncasecmp(arg, "HTC_L", len))
-		return SELECT_HTC_L;
-#endif
-#endif
+	else if (no_bgl) {
+		if(!strncasecmp(arg, "HTC", len)
+		   || !strncasecmp(arg, "HTC_S", len))
+			return SELECT_HTC_S;
+		else if (!strncasecmp(arg, "HTC_D", len))
+			return SELECT_HTC_D;
+		else if (!strncasecmp(arg, "HTC_V", len))
+			return SELECT_HTC_V;
+		else if (!strncasecmp(arg, "HTC_L", len))
+			return SELECT_HTC_L;
+	}
 	error("invalid conn-type argument '%s' ignored.", arg);
 	return (uint16_t)NO_VAL;
 }
@@ -193,9 +202,11 @@ int verify_geometry(const char *arg, uint16_t *geometry)
 	int i, rc = 0;
 	char* geometry_tmp = xstrdup(arg);
 	char* original_ptr = geometry_tmp;
+	int dims = working_cluster_rec ?
+		working_cluster_rec->dimensions : SYSTEM_DIMENSIONS;
 
 	token = strtok_r(geometry_tmp, delimiter, &next_ptr);
-	for (i=0; i<SYSTEM_DIMENSIONS; i++) {
+	for (i=0; i<dims; i++) {
 		if (token == NULL) {
 			error("insufficient dimensions in --geometry");
 			rc = -1;
@@ -745,12 +756,14 @@ char *print_geometry(const uint16_t *geometry)
 {
 	int i;
 	char buf[32], *rc = NULL;
+	int dims = working_cluster_rec ?
+		working_cluster_rec->dimensions : SYSTEM_DIMENSIONS;
 
-	if ((SYSTEM_DIMENSIONS == 0)
+	if ((dims == 0)
 	||  (geometry[0] == (uint16_t)NO_VAL))
 		return NULL;
 
-	for (i=0; i<SYSTEM_DIMENSIONS; i++) {
+	for (i=0; i<dims; i++) {
 		if (i > 0)
 			snprintf(buf, sizeof(buf), "x%u", geometry[i]);
 		else

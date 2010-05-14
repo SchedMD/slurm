@@ -414,6 +414,7 @@ typedef struct {
 	uint32_t flags;      /* set of CLUSTER_FLAG_* */
 	char *name;
 	char *nodes;
+	uint32_t plugin_id_select; /* id of the select plugin */
 	slurmdb_association_rec_t *root_assoc; /* root association for
 						* cluster */
 	uint16_t rpc_version; /* version of rpc this cluter is running */

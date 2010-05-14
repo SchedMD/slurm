@@ -144,7 +144,7 @@ typedef struct sbatch_options {
 	char *exc_nodes;	/* --exclude=node1,node2,... -x	*/
 
 	/* BLUEGENE SPECIFIC */
-	uint16_t geometry[SYSTEM_DIMENSIONS]; /* --geometry, -g	*/
+	uint16_t geometry[HIGHEST_DIMENSIONS]; /* --geometry, -g	*/
 	bool reboot;		/* --reboot			*/
 	bool no_rotate;		/* --no_rotate, -R		*/
 	uint16_t conn_type;	/* --conn-type 			*/

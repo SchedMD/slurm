@@ -279,6 +279,11 @@ extern List as_mysql_modify_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		clust_reg = true;
 	}
 
+	if(cluster->plugin_id_select) {
+		xstrfmtcat(vals, ", plugin_id_select=%u",
+			   cluster->plugin_id_select);
+		clust_reg = true;
+	}
 	if(cluster->flags != NO_VAL) {
 		xstrfmtcat(vals, ", flags=%u", cluster->flags);
 		clust_reg = true;
@@ -551,6 +556,7 @@ extern List as_mysql_get_clusters(mysql_conn_t *mysql_conn, uid_t uid,
 		"rpc_version",
 		"dimensions",
 		"flags",
+		"plugin_id_select",
 	};
 	enum {
 		CLUSTER_REQ_NAME,
@@ -560,6 +566,7 @@ extern List as_mysql_get_clusters(mysql_conn_t *mysql_conn, uid_t uid,
 		CLUSTER_REQ_VERSION,
 		CLUSTER_REQ_DIMS,
 		CLUSTER_REQ_FLAGS,
+		CLUSTER_REQ_PI_SELECT,
 		CLUSTER_REQ_COUNT
 	};
 
@@ -653,6 +660,7 @@ empty:
 		cluster->rpc_version = atoi(row[CLUSTER_REQ_VERSION]);
 		cluster->dimensions = atoi(row[CLUSTER_REQ_DIMS]);
 		cluster->flags = atoi(row[CLUSTER_REQ_FLAGS]);
+		cluster->plugin_id_select = atoi(row[CLUSTER_REQ_PI_SELECT]);
 
 		query = xstrdup_printf(
 			"select cpu_count, cluster_nodes from "
