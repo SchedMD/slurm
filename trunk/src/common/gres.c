@@ -112,11 +112,14 @@ typedef struct slurm_gres_ops {
 	uint32_t	(*job_test)		( void *job_gres_data,
 						  void *node_gres_data,
 						  bool use_total_gres );
-	void		(*job_alloc)		( void *job_gres_data,
+	int		(*job_alloc)		( void *job_gres_data,
 						  void *node_gres_data,
+						  int node_cnt,
+						  int node_offset,
 						  uint32_t cpu_cnt );
-	void		(*job_dealloc)		( void *job_gres_data,
+	int		(*job_dealloc)		( void *job_gres_data,
 						  void *node_gres_data,
+						  int node_offset,
 						  uint32_t cpu_cnt );
 	void		(*job_state_log)	( void *gres_data,
 						  uint32_t job_id );
@@ -1259,20 +1262,27 @@ extern uint32_t gres_plugin_job_test(List job_gres_list, List node_gres_list,
 /*
  * Allocate resource to a job and update node and job gres information
  * IN job_gres_list - job's gres_list built by gres_plugin_job_gres_validate()
- * IN node_gres_list - node's gres_list built by gres_plugin_node_config_validate()
+ * IN node_gres_list - node's gres_list built by
+ *		gres_plugin_node_config_validate()
+ * IN node_cnt - total number of nodes originally allocated to the job
+ * IN node_offset - zero-origin index to the node of interest
  * IN cpu_cnt - number of CPUs allocated to this job on this node
+ * RET SLURM_SUCCESS or error code
  */
-extern void gres_plugin_job_alloc(List job_gres_list, List node_gres_list, 
-				  uint32_t cpu_cnt)
+extern int gres_plugin_job_alloc(List job_gres_list, List node_gres_list, 
+				 int node_cnt, int node_offset,
+				 uint32_t cpu_cnt)
 {
-	int i;
+	int i, rc, rc2;
 	ListIterator job_gres_iter,  node_gres_iter;
 	gres_state_t *job_gres_ptr, *node_gres_ptr;
 
-	if ((job_gres_list == NULL) || (node_gres_list == NULL))
-		return;
+	if (job_gres_list == NULL)
+		return SLURM_SUCCESS;
+	if (node_gres_list == NULL)
+		return SLURM_ERROR;
 
-	(void) gres_plugin_init();
+	rc = gres_plugin_init();
 
 	slurm_mutex_lock(&gres_context_lock);
 	job_gres_iter = list_iterator_create(job_gres_list);
@@ -1291,33 +1301,43 @@ extern void gres_plugin_job_alloc(List job_gres_list, List node_gres_list,
 			if (job_gres_ptr->plugin_id != 
 			    *(gres_context[i].ops.plugin_id))
 				continue;
-			(*(gres_context[i].ops.job_alloc))
+			rc2 = (*(gres_context[i].ops.job_alloc))
 					(job_gres_ptr->gres_data, 
-					 node_gres_ptr->gres_data, cpu_cnt);
+					 node_gres_ptr->gres_data, node_cnt,
+					 node_offset, cpu_cnt);
+			if (rc2 != SLURM_SUCCESS)
+				rc = rc2;
 			break;
 		}
 	}
 	list_iterator_destroy(job_gres_iter);
 	slurm_mutex_unlock(&gres_context_lock);
+
+	return rc;
 }
 
 /*
  * Deallocate resource from a job and update node and job gres information
  * IN job_gres_list - job's gres_list built by gres_plugin_job_gres_validate()
- * IN node_gres_list - node's gres_list built by gres_plugin_node_config_validate()
+ * IN node_gres_list - node's gres_list built by
+ *		gres_plugin_node_config_validate()
+ * IN node_offset - zero-origin index to the node of interest
  * IN cpu_cnt - number of CPUs allocated to this job on this node
+ * RET SLURM_SUCCESS or error code
  */
-extern void gres_plugin_job_dealloc(List job_gres_list, List node_gres_list, 
-				    uint32_t cpu_cnt)
+extern int gres_plugin_job_dealloc(List job_gres_list, List node_gres_list, 
+				   int node_offset, uint32_t cpu_cnt)
 {
-	int i;
+	int i, rc, rc2;
 	ListIterator job_gres_iter,  node_gres_iter;
 	gres_state_t *job_gres_ptr, *node_gres_ptr;
 
-	if ((job_gres_list == NULL) || (node_gres_list == NULL))
-		return;
+	if (job_gres_list == NULL)
+		return SLURM_SUCCESS;
+	if (node_gres_list == NULL)
+		return SLURM_ERROR;
 
-	(void) gres_plugin_init();
+	rc = gres_plugin_init();
 
 	slurm_mutex_lock(&gres_context_lock);
 	job_gres_iter = list_iterator_create(job_gres_list);
@@ -1336,14 +1356,19 @@ extern void gres_plugin_job_dealloc(List job_gres_list, List node_gres_list,
 			if (job_gres_ptr->plugin_id != 
 			    *(gres_context[i].ops.plugin_id))
 				continue;
-			(*(gres_context[i].ops.job_dealloc))
+			rc2 = (*(gres_context[i].ops.job_dealloc))
 					(job_gres_ptr->gres_data, 
-					 node_gres_ptr->gres_data, cpu_cnt);
+					 node_gres_ptr->gres_data, node_offset,
+					 cpu_cnt);
+			if (rc2 != SLURM_SUCCESS)
+				rc = rc2;
 			break;
 		}
 	}
 	list_iterator_destroy(job_gres_iter);
 	slurm_mutex_unlock(&gres_context_lock);
+
+	return rc;
 }
 
 /*

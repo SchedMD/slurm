@@ -136,6 +136,10 @@ typedef struct nic_job_state {
 	/* If 0 then nic_cnt_alloc is per node,
 	 * if 1 then nic_cnt_alloc is per CPU */
 	uint8_t  nic_cnt_mult;
+
+	/* Resources currently allocated to job on each node */
+	uint32_t node_cnt;
+	bitstr_t **nic_bit_alloc;
 } nic_job_state_t;
 
 /*
@@ -628,38 +632,129 @@ extern uint32_t job_test(void *job_gres_data, void *node_gres_data,
 	}
 }
 
-extern void job_alloc(void *job_gres_data, void *node_gres_data, int cpu_cnt)
+extern int job_alloc(void *job_gres_data, void *node_gres_data,
+		     int node_cnt, int node_offset, uint32_t cpu_cnt)
 {
+	int i;
 	uint32_t gres_cnt;
 	nic_job_state_t  *job_gres_ptr  = (nic_job_state_t *)  job_gres_data;
 	nic_node_state_t *node_gres_ptr = (nic_node_state_t *) node_gres_data;
 
+	/*
+	 * Validate data structures. Either job_gres_data->node_cnt and
+	 * job_gres_data->nic_bit_alloc are both set or both zero/NULL.
+	 */
+	xassert(node_cnt);
+	xassert(node_offset >= 0);
+	xassert(job_gres_ptr);
+	xassert(node_gres_ptr);
+	xassert(node_gres_ptr->nic_bit_alloc);
+	if (job_gres_ptr->node_cnt == 0) {
+		job_gres_ptr->node_cnt = node_cnt;
+		if (job_gres_ptr->nic_bit_alloc) {
+			error("%s: node_cnt==0 and bit_alloc is set",
+			      plugin_name);
+			xfree(job_gres_ptr->nic_bit_alloc);
+		}
+		job_gres_ptr->nic_bit_alloc = 
+					xmalloc(sizeof(bitstr_t *) * node_cnt);
+	} else if (job_gres_ptr->node_cnt < node_cnt) {
+		error("%s: node_cnt increase from %u to %d",
+		      plugin_name, job_gres_ptr->node_cnt, node_cnt);
+		if (node_offset >= job_gres_ptr->node_cnt)
+			return SLURM_ERROR;
+	} else if (job_gres_ptr->node_cnt > node_cnt) {
+		error("%s: node_cnt decrease from %u to %d",
+		      plugin_name, job_gres_ptr->node_cnt, node_cnt);
+	}
+
+	/*
+	 * Check that sufficient resources exist on this node
+	 */
 	if (job_gres_ptr->nic_cnt_mult == 0)
 		gres_cnt = job_gres_ptr->nic_cnt_alloc;
 	else
 		gres_cnt = (job_gres_ptr->nic_cnt_alloc * cpu_cnt);
+	i =  node_gres_ptr->nic_cnt_alloc + gres_cnt;
+	i -= node_gres_ptr->nic_cnt_avail;
+	if (i > 0) {
+		error("%s: overallocated resources by %d", plugin_name, i);
+		/* proceed with request, give job what's available */
+	}
 
-	node_gres_ptr->nic_cnt_alloc += gres_cnt;
-	if (node_gres_ptr->nic_cnt_alloc > node_gres_ptr->nic_cnt_avail)
-		error("%s: overallocated resources", plugin_name);
+	/*
+	 * Select the specific resources to use for this job.
+	 * We'll need to add topology information in the future
+	 */
+	if (job_gres_ptr->nic_bit_alloc[node_offset]) {
+		error("%s: job's bit_alloc is set for node %d",
+		      plugin_name, node_offset);
+		bit_free(job_gres_ptr->nic_bit_alloc[node_offset]);
+	}
+	job_gres_ptr->nic_bit_alloc[node_offset] = bit_alloc(node_gres_ptr->
+							     nic_cnt_avail);
+	if (job_gres_ptr->nic_bit_alloc[node_offset] == NULL)
+		fatal("bit_copy: malloc failure");
+	for (i=0; i<node_gres_ptr->nic_cnt_avail && gres_cnt>0; i++) {
+		if (bit_test(node_gres_ptr->nic_bit_alloc, i))
+			continue;
+		bit_set(node_gres_ptr->nic_bit_alloc, i);
+		bit_set(job_gres_ptr->nic_bit_alloc[node_offset], i);
+		node_gres_ptr->nic_cnt_alloc++;
+		gres_cnt--;
+	}
+
+	return SLURM_SUCCESS;
 }
 
-extern void job_dealloc(void *job_gres_data, void *node_gres_data, int cpu_cnt)
+extern int job_dealloc(void *job_gres_data, void *node_gres_data,
+		       int node_offset, uint32_t cpu_cnt)
 {
-	uint32_t gres_cnt;
+	int i, len;
 	nic_job_state_t  *job_gres_ptr  = (nic_job_state_t *)  job_gres_data;
 	nic_node_state_t *node_gres_ptr = (nic_node_state_t *) node_gres_data;
 
-	if (job_gres_ptr->nic_cnt_mult == 0)
-		gres_cnt = job_gres_ptr->nic_cnt_alloc;
-	else
-		gres_cnt = (job_gres_ptr->nic_cnt_alloc * cpu_cnt);
+	/*
+	 * Validate data structures. Either job_gres_data->node_cnt and
+	 * job_gres_data->nic_bit_alloc are both set or both zero/NULL.
+	 */
+	xassert(node_offset >= 0);
+	xassert(job_gres_ptr);
+	xassert(node_gres_ptr);
+	xassert(node_gres_ptr->nic_bit_alloc);
+	if (job_gres_ptr->node_cnt <= node_offset) {
+		error("%s: bad node_offset %d count is %u",
+		      plugin_name, node_offset, job_gres_ptr->node_cnt);
+		return SLURM_ERROR;
+	}
+	if (job_gres_ptr->nic_bit_alloc == NULL) {
+		error("%s: job's bitmap is NULL", plugin_name);
+		return SLURM_ERROR;
+	}
+	if (job_gres_ptr->nic_bit_alloc[node_offset] == NULL) {
+		error("%s: job's bitmap is empty", plugin_name);
+		return SLURM_ERROR;
+	}
 
-	if (gres_cnt > node_gres_ptr->nic_cnt_alloc) {
-		error("%s: resource count underflow", plugin_name);
-		node_gres_ptr->nic_cnt_alloc = 0;
-	} else
-		node_gres_ptr->nic_cnt_alloc -= gres_cnt;
+	len = bit_size(job_gres_ptr->nic_bit_alloc[node_offset]);
+	i   = bit_size(node_gres_ptr->nic_bit_alloc);
+	if (i != len) {
+		error("%s: job and node bitmap sizes differ (%d != %d)",
+		      plugin_name, len, i);
+		len = MIN(len, i);
+		/* proceed with request, make best effort */
+	}
+	for (i=0; i<len; i++) {
+		if (!bit_test(job_gres_ptr->nic_bit_alloc[node_offset], i))
+			continue;
+		bit_clear(node_gres_ptr->nic_bit_alloc, i);
+		/* NOTE: Do not clear bit from
+		 * job_gres_ptr->nic_bit_alloc[node_offset]
+		 * since this may only be an emulated deallocate */
+		node_gres_ptr->nic_cnt_alloc--;
+	}
+
+	return SLURM_SUCCESS;
 }
 
 extern void job_state_log(void *gres_data, uint32_t job_id)

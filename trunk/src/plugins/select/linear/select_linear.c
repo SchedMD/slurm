@@ -1348,7 +1348,7 @@ static int _rm_job_from_nodes(struct cr_record *cr_ptr,
 			      struct job_record *job_ptr, char *pre_err,
 			      bool remove_all)
 {
-	int i, i_first, i_last, rc = SLURM_SUCCESS;
+	int i, i_first, i_last, node_offset, rc = SLURM_SUCCESS;
 	struct part_cr_record *part_cr_ptr;
 	job_resources_t *job_resrcs_ptr;
 	uint32_t job_memory, job_memory_cpu = 0, job_memory_node = 0;
@@ -1388,9 +1388,12 @@ static int _rm_job_from_nodes(struct cr_record *cr_ptr,
 	i_last  = bit_fls(job_resrcs_ptr->node_bitmap);
 	if (i_first == -1)	/* job has no nodes */
 		i_last = -2;
+	node_offset = -1;
 	for (i = i_first; i <= i_last; i++) {
-		if (!bit_test(job_resrcs_ptr->node_bitmap, i) ||
-		    !bit_test(job_ptr->node_bitmap, i))
+		if (!bit_test(job_resrcs_ptr->node_bitmap, i))
+			continue;
+		node_offset++;
+		if (!bit_test(job_ptr->node_bitmap, i))
 			continue;
 
 		node_ptr = node_record_table_ptr + i;
@@ -1414,7 +1417,8 @@ static int _rm_job_from_nodes(struct cr_record *cr_ptr,
 			gres_list = cr_ptr->nodes[i].gres_list;
 		else
 			gres_list = node_ptr->gres_list;
-		gres_plugin_job_dealloc(job_ptr->gres_list, gres_list, cpu_cnt);
+		gres_plugin_job_dealloc(job_ptr->gres_list, gres_list,
+					node_offset, cpu_cnt);
 		gres_plugin_node_state_log(gres_list, node_ptr->name);
 
 		if (exclusive) {
@@ -1526,7 +1530,8 @@ static int _rm_job_from_one_node(struct job_record *job_ptr,
 	}
 	first_bit = bit_ffs(job_resrcs_ptr->node_bitmap);
 	last_bit  = node_inx;
-	for (i = first_bit, node_offset = -1; i <= node_inx; i++) {
+	node_offset = -1;
+	for (i = first_bit; i <= node_inx; i++) {
 		if (!bit_test(job_resrcs_ptr->node_bitmap, i))
 			continue;
 		node_offset++;
@@ -1560,7 +1565,8 @@ static int _rm_job_from_one_node(struct job_record *job_ptr,
 		gres_list = cr_ptr->nodes[i].gres_list;
 	else
 		gres_list = node_ptr->gres_list;
-	gres_plugin_job_dealloc(job_ptr->gres_list, gres_list, cpu_cnt);
+	gres_plugin_job_dealloc(job_ptr->gres_list, gres_list, node_offset,
+				cpu_cnt);
 	gres_plugin_node_state_log(gres_list, node_ptr->name);
 
 	exclusive = (job_ptr->details->shared == 0);
@@ -1624,7 +1630,7 @@ static int _add_job_to_nodes(struct cr_record *cr_ptr,
 			     struct job_record *job_ptr, char *pre_err,
 			     int alloc_all)
 {
-	int i, i_first, i_last, rc = SLURM_SUCCESS;
+	int i, i_first, i_last, node_cnt, node_offset, rc = SLURM_SUCCESS;
 	bool exclusive;
 	struct part_cr_record *part_cr_ptr;
 	job_resources_t *job_resrcs_ptr;
@@ -1658,11 +1664,15 @@ static int _add_job_to_nodes(struct cr_record *cr_ptr,
 
 	i_first = bit_ffs(job_resrcs_ptr->node_bitmap);
 	i_last  = bit_fls(job_resrcs_ptr->node_bitmap);
+	node_cnt = bit_set_count(job_resrcs_ptr->node_bitmap);
 	if (i_first == -1)	/* job has no nodes */
 		i_last = -2;
+	node_offset = -1;
 	for (i = i_first; i <= i_last; i++) {
-		if (!bit_test(job_resrcs_ptr->node_bitmap, i) ||
-		    !bit_test(job_ptr->node_bitmap, i))
+		if (!bit_test(job_resrcs_ptr->node_bitmap, i))
+			continue;
+		node_offset++;
+		if (!bit_test(job_ptr->node_bitmap, i))
 			continue;
 
 		node_ptr = node_record_table_ptr + i;
@@ -1681,7 +1691,8 @@ static int _add_job_to_nodes(struct cr_record *cr_ptr,
 			gres_list = cr_ptr->nodes[i].gres_list;
 		else
 			gres_list = node_ptr->gres_list;
-		gres_plugin_job_alloc(job_ptr->gres_list, gres_list, cpu_cnt);
+		gres_plugin_job_alloc(job_ptr->gres_list, gres_list,
+				      node_cnt, node_offset, cpu_cnt);
 		gres_plugin_node_state_log(gres_list, node_ptr->name);
 
 		if (exclusive)
