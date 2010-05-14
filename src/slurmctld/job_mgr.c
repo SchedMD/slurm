@@ -4860,19 +4860,39 @@ static void _pack_pending_job_details(struct job_details *detail_ptr,
 
 /*
  * purge_old_job - purge old job records.
- *	the jobs must have completed at least MIN_JOB_AGE minutes ago
- * global: job_list - global job table
- *	last_job_update - time of last job table update
- * NOTE: READ lock_slurmctld config before entry
+ *	The jobs must have completed at least MIN_JOB_AGE minutes ago.
+ *	Test job dependencies, handle after_ok, after_not_ok before
+ *	purging any jobs.
+ * NOTE: READ lock slurmctld config and WRITE lock jobs before entry
  */
 void purge_old_job(void)
 {
+	ListIterator job_iterator;
+	struct job_record  *job_ptr;
+	time_t now = time(NULL);
 	int i;
+
+	job_iterator = list_iterator_create(job_list);
+	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+		if (!IS_JOB_PENDING(job_ptr))
+			continue;
+		if (test_job_dependency(job_ptr) == 2) {
+			info("Job dependency can't be satisfied, cancelling "
+			     "job %u", job_ptr->job_id);
+			job_ptr->job_state	= JOB_CANCELLED;
+			xfree(job_ptr->state_desc);
+			job_ptr->start_time	= now;
+			job_ptr->end_time	= now;
+			job_completion_logger(job_ptr);
+			last_job_update		= now;
+		}
+	}
+	list_iterator_destroy(job_iterator);
 
 	i = list_delete_all(job_list, &_list_find_job_old, "");
 	if (i) {
 		debug2("purge_old_job: purged %d old job records", i);
-/*		last_job_update = time(NULL);	don't worry about state save */
+/*		last_job_update = now;		don't worry about state save */
 	}
 }
 

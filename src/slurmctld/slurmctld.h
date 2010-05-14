@@ -1347,11 +1347,12 @@ extern void part_fini (void);
 
 /*
  * purge_old_job - purge old job records.
- *	the jobs must have completed at least MIN_JOB_AGE minutes ago
- * global: job_list - global job table
- *	last_job_update - time of last job table update
+ *	The jobs must have completed at least MIN_JOB_AGE minutes ago.
+ *	Test job dependencies, handle after_ok, after_not_ok before
+ *	purging any jobs.
+ * NOTE: READ lock slurmctld config and WRITE lock jobs before entry
  */
-extern void purge_old_job (void);
+void purge_old_job(void);
 
 /*
  * rehash_jobs - Create or rebuild the job hash table.
