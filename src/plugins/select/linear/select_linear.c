@@ -673,6 +673,24 @@ static int _job_count_bitmap(struct cr_record *cr_ptr,
 			cpu_cnt   = node_ptr->config_ptr->cpus;
 		else
 			cpu_cnt = node_ptr->cpus;
+
+		if (cr_ptr->nodes[i].gres_list)
+			gres_list = cr_ptr->nodes[i].gres_list;
+		else
+			gres_list = node_ptr->gres_list;
+		gres_cpus = gres_plugin_job_test(job_ptr->gres_list, 
+						 gres_list, use_total_gres);
+		if ((gres_cpus != NO_VAL) && (gres_cpus < cpu_cnt)) {
+			bit_clear(jobmap, i);
+			continue;
+		}
+
+		if (mode == SELECT_MODE_TEST_ONLY) {
+			bit_set(jobmap, i);
+			count++;
+			continue;	/* No need to test other resources */
+		}
+
 		if (job_memory_cpu || job_memory_node) {
 			alloc_mem = cr_ptr->nodes[i].alloc_memory;
 			if (select_fast_schedule) {
@@ -692,17 +710,6 @@ static int _job_count_bitmap(struct cr_record *cr_ptr,
 				bit_clear(jobmap, i);
 				continue;
 			}
-		}
-
-		if (cr_ptr->nodes[i].gres_list)
-			gres_list = cr_ptr->nodes[i].gres_list;
-		else
-			gres_list = node_ptr->gres_list;
-		gres_cpus = gres_plugin_job_test(job_ptr->gres_list, 
-						 gres_list, use_total_gres);
-		if ((gres_cpus != NO_VAL) && (gres_cpus < cpu_cnt)) {
-			bit_clear(jobmap, i);
-			continue;
 		}
 
 		if (cr_ptr->nodes[i].exclusive_cnt != 0) {
@@ -2611,7 +2618,7 @@ extern int select_p_select_nodeinfo_set_all(time_t last_query_time)
 	for (i=0; i<node_record_count; i++) {
 		select_nodeinfo_t *nodeinfo;
 
-		node_ptr = &(node_record_table_ptr[i]);
+		node_ptr = node_record_table_ptr + i;
 		nodeinfo = node_ptr->select_nodeinfo->data;
 
 		if ((node_ptr->node_state & NODE_STATE_COMPLETING) ||
