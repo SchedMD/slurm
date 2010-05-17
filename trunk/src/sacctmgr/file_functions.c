@@ -1194,6 +1194,8 @@ static int _mod_cluster(sacctmgr_file_opts_t *file_opts,
 	memset(&mod_cluster, 0, sizeof(slurmdb_cluster_rec_t));
 	memset(&cluster_cond, 0, sizeof(slurmdb_cluster_cond_t));
 
+	mod_cluster.flags = NO_VAL;
+
 	if(file_opts->classification
 	   && (file_opts->classification != cluster->classification)) {
 		xstrfmtcat(my_info,
@@ -2245,10 +2247,11 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 			if(!(cluster = sacctmgr_find_cluster_from_list(
 				     curr_cluster_list, cluster_name))) {
 				List temp_assoc_list = list_create(NULL);
-				List cluster_list =
-					list_create(slurmdb_destroy_cluster_rec);
+				List cluster_list = list_create(
+					slurmdb_destroy_cluster_rec);
 
-				cluster = xmalloc(sizeof(slurmdb_cluster_rec_t));
+				cluster = xmalloc(
+					sizeof(slurmdb_cluster_rec_t));
 				list_append(cluster_list, cluster);
 				cluster->name = xstrdup(cluster_name);
 				if(file_opts->classification) {

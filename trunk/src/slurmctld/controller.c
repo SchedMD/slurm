@@ -159,7 +159,6 @@ int association_based_accounting = 0;
 bool ping_nodes_now = false;
 int      cluster_cpus = 0;
 int   with_slurmdbd = 0;
-uint32_t cluster_flags = 0;
 
 /* Local variables */
 static int	daemonize = DEFAULT_DAEMONIZE;
@@ -221,7 +220,6 @@ int main(int argc, char *argv[])
 		WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, WRITE_LOCK };
 	assoc_init_args_t assoc_init_arg;
 	pthread_t assoc_cache_thread;
-	cluster_flags = slurmdb_setup_cluster_flags();
 
 	/*
 	 * Establish initial configuration
@@ -490,8 +488,7 @@ int main(int argc, char *argv[])
 
 		clusteracct_storage_g_register_ctld(
 			acct_db_conn,
-			slurmctld_conf.slurmctld_port,
-			SYSTEM_DIMENSIONS, cluster_flags);
+			slurmctld_conf.slurmctld_port);
 
 		_accounting_cluster_ready();
 
@@ -1653,8 +1650,7 @@ static int _shutdown_backup_controller(int wait_time)
 			 * but just temporarily became non-responsive */
 			clusteracct_storage_g_register_ctld(
 				acct_db_conn,
-				slurmctld_conf.slurmctld_port,
-				SYSTEM_DIMENSIONS, cluster_flags);
+				slurmctld_conf.slurmctld_port);
 		}
 	} else {
 		error("_shutdown_backup_controller: %s", slurm_strerror(rc));

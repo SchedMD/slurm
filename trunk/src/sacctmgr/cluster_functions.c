@@ -355,9 +355,11 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 		cluster = xmalloc(sizeof(slurmdb_cluster_rec_t));
 
 		list_append(cluster_list, cluster);
+		cluster->flags = NO_VAL;
 		cluster->name = xstrdup(name);
 		cluster->classification = class;
-		cluster->root_assoc = xmalloc(sizeof(slurmdb_association_rec_t));
+		cluster->root_assoc =
+			xmalloc(sizeof(slurmdb_association_rec_t));
 		slurmdb_init_association_rec(cluster->root_assoc);
 		printf("  Name          = %s\n", cluster->name);
 		if(cluster->classification)
@@ -842,7 +844,8 @@ extern int sacctmgr_modify_cluster(int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
 	int i=0;
-	slurmdb_association_rec_t *assoc = xmalloc(sizeof(slurmdb_association_rec_t));
+	slurmdb_association_rec_t *assoc =
+		xmalloc(sizeof(slurmdb_association_rec_t));
 	slurmdb_association_cond_t *assoc_cond =
 		xmalloc(sizeof(slurmdb_association_cond_t));
 	int cond_set = 0, rec_set = 0, set = 0;
@@ -975,6 +978,7 @@ extern int sacctmgr_modify_cluster(int argc, char *argv[])
 		cluster_cond.cluster_list = assoc_cond->cluster_list;
 
 		cluster_rec.classification = class_rec;
+		cluster_rec.flags = NO_VAL;
 
 		ret_list = acct_storage_g_modify_clusters(
 			db_conn, my_uid, &cluster_cond, &cluster_rec);
