@@ -564,8 +564,7 @@ extern int clusteracct_storage_p_node_up(pgsql_conn_t *pg_conn,
 }
 
 extern int clusteracct_storage_p_register_ctld(pgsql_conn_t *pg_conn,
-					       uint16_t port, uint16_t dims,
-					       uint32_t flags)
+					       uint16_t port)
 {
 	if(!pg_conn->cluster_name) {
 		error("%s:%d no cluster name", THIS_FILE, __LINE__);

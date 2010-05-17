@@ -143,8 +143,7 @@ extern int clusteracct_storage_p_node_up(pgsql_conn_t *pg_conn,
 					 struct node_record *node_ptr,
 					 time_t event_time);
 extern int clusteracct_storage_p_register_ctld(pgsql_conn_t *pg_conn,
-					       uint16_t port, uint16_t dims,
-					       uint32_t flags);
+					       uint16_t port);
 extern int clusteracct_storage_p_cluster_cpus(pgsql_conn_t *pg_conn,
 					       char *cluster_nodes,
 					       uint32_t cpus,

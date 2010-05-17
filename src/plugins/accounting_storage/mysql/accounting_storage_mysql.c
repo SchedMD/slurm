@@ -2283,8 +2283,7 @@ extern int clusteracct_storage_p_node_up(mysql_conn_t *mysql_conn,
  * assumes some things like rpc_version.
  */
 extern int clusteracct_storage_p_register_ctld(mysql_conn_t *mysql_conn,
-					       uint16_t port,
-					       uint16_t dims, uint32_t flags)
+					       uint16_t port)
 {
 	if(!mysql_conn->cluster_name) {
 		error("%s:%d no cluster name", THIS_FILE, __LINE__);
@@ -2292,7 +2291,7 @@ extern int clusteracct_storage_p_register_ctld(mysql_conn_t *mysql_conn,
 	}
 
 	return as_mysql_register_ctld(
-		mysql_conn, mysql_conn->cluster_name, port, dims, flags);
+		mysql_conn, mysql_conn->cluster_name, port);
 }
 
 extern int clusteracct_storage_p_cluster_cpus(mysql_conn_t *mysql_conn,
