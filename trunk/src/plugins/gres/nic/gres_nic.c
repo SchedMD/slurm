@@ -527,6 +527,69 @@ extern void *dup_node_state(void *gres_data)
 	return new_gres;
 }
 
+extern void node_state_dealloc(void *gres_data)
+{
+	nic_node_state_t *gres_ptr = (nic_node_state_t *) gres_data;
+
+	gres_ptr->nic_cnt_alloc = 0;
+	if (gres_ptr->nic_bit_alloc) {
+		int i = bit_size(gres_ptr->nic_bit_alloc) - 1;
+		bit_nclear(gres_ptr->nic_bit_alloc, 0, i);
+	}
+}
+
+extern int node_state_realloc(void *job_gres_data, int node_offset,
+			      void *node_gres_data)
+{
+	nic_job_state_t  *job_gres_ptr  = (nic_job_state_t *)  job_gres_data;
+	nic_node_state_t *node_gres_ptr = (nic_node_state_t *) node_gres_data;
+	int i, job_bit_size, node_bit_size;
+
+	xassert(job_gres_ptr);
+	xassert(node_gres_ptr);
+
+	if (node_offset >= job_gres_ptr->node_cnt) {
+		error("%s job node offset is bad (%d >= %u)",
+		      plugin_name, node_offset, job_gres_ptr->node_cnt);
+		return EINVAL;
+	}
+
+	if ((job_gres_ptr->nic_bit_alloc == NULL) ||
+	    (job_gres_ptr->nic_bit_alloc[node_offset] == NULL)) {
+		error("%s job bit_alloc is NULL", plugin_name);
+		return EINVAL;
+	}
+
+	if (node_gres_ptr->nic_bit_alloc == NULL) {
+		error("%s node bit_alloc is NULL", plugin_name);
+		return EINVAL;
+	}
+
+	job_bit_size  = bit_size(job_gres_ptr->nic_bit_alloc[node_offset]);
+	node_bit_size = bit_size(node_gres_ptr->nic_bit_alloc);
+	if (job_bit_size != node_bit_size) {
+		error("%s job/node bit size mismatch (%d != %d)",
+		      plugin_name, job_bit_size, node_bit_size);
+		/* Update what we can */
+		node_bit_size = MIN(job_bit_size, node_bit_size);
+		for (i=0; i<node_bit_size; i++) {
+			if (!bit_test(job_gres_ptr->nic_bit_alloc[node_offset],
+				      i))
+				continue;
+			node_gres_ptr->nic_cnt_alloc++;
+			bit_set(node_gres_ptr->nic_bit_alloc, i);
+		}
+	} else {
+		node_gres_ptr->nic_cnt_alloc += bit_set_count(job_gres_ptr->
+							      nic_bit_alloc
+							      [node_offset]);
+		bit_or(node_gres_ptr->nic_bit_alloc,
+		       job_gres_ptr->nic_bit_alloc[node_offset]);
+	}
+
+	return SLURM_SUCCESS;
+}
+
 extern void node_state_log(void *gres_data, char *node_name)
 {
 	nic_node_state_t *gres_ptr;

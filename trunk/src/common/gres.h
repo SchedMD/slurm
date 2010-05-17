@@ -157,8 +157,30 @@ extern int gres_plugin_unpack_node_state(List *gres_list, Buf buffer,
 
 /*
  * Duplicate a node gres status (used for will-run logic)
+ * IN gres_list - node gres state information
+ * RET a copy of gres_list or NULL on failure
  */
 extern List gres_plugin_dup_node_state(List gres_list);
+
+/*
+ * Deallocate all resources on this node previous allocated to any jobs.
+ *	This function isused to synchronize state after slurmctld restarts or
+ *	is reconfigured.
+ * IN gres_list - node gres state information
+ */
+extern void gres_plugin_node_state_dealloc(List gres_list);
+
+/*
+ * Allocate in this nodes record the resources previously allocated to this
+ *	job. This function isused to synchronize state after slurmctld restarts
+ *	or is reconfigured.
+ * IN job_gres_list - job gres state information
+ * IN node_offset - zero-origin index of this node in the job's allocation
+ * IN node_gres_list - node gres state information
+ * RET SLURM_SUCCESS or error code
+ */
+extern int gres_plugin_node_state_realloc(List job_gres_list, int node_offset,
+					  List node_gres_list);
 
 /*
  * Log a node's current gres state
@@ -171,7 +193,7 @@ extern void gres_plugin_node_state_log(List gres_list, char *node_name);
  * Given a job's requested gres configuration, validate it and build a gres list
  * IN req_config - job request's gres input string
  * OUT gres_list - List of Gres records for this job to track usage
- * RET SLURM_SUCCESS or ESLURM__INVALIDGRES
+ * RET SLURM_SUCCESS or ESLURM_INVALID_GRES
  */
 extern int gres_plugin_job_gres_validate(char *req_config, List *gres_list);
 

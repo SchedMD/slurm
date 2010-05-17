@@ -99,6 +99,10 @@ typedef struct slurm_gres_ops {
 	int		(*unpack_node_state)	( void **gres_data,
 						  Buf buffer );
 	void *		(*dup_node_state)	( void *gres_data );
+	void		(*node_state_dealloc)	( void *gres_data );
+	int		(*node_state_realloc)	( void *job_gres_data,
+						  int node_offset,
+						  void *node_gres_data );
 	void		(*node_state_log)	( void *gres_data,
 						  char *node_name );
 
@@ -175,6 +179,8 @@ static int _load_gres_plugin(char *plugin_name,
 		"pack_node_state",
 		"unpack_node_state",
 		"dup_node_state",
+		"node_state_dealloc",
+		"node_state_realloc",
 		"node_state_log",
 		"job_config_delete",
 		"job_gres_validate",
@@ -427,12 +433,18 @@ extern int gres_plugin_reconfig(bool *did_change)
 	slurm_mutex_unlock(&gres_context_lock);
 
 	if (plugin_change) {
-		info("GresPlugins changed from %s to %s",
+		error("GresPlugins changed from %s to %s ignored",
 		     gres_plugin_list, plugin_names);
+		error("Restart the slurmctld daemon to change GresPlugins");
 		*did_change = true;
+#if 0
+		/* This logic would load new plugins, but we need the old
+		 * plugins to persist in order to process old state 
+		 * information. */
 		rc = gres_plugin_fini();
 		if (rc == SLURM_SUCCESS)
 			rc = gres_plugin_init();
+#endif
 	}
 	xfree(plugin_names);
 
@@ -868,6 +880,8 @@ unpack_error:
 
 /*
  * Duplicate a node gres status (used for will-run logic)
+ * IN gres_list - node gres state information
+ * RET a copy of gres_list or NULL on failure
  */
 extern List gres_plugin_dup_node_state(List gres_list)
 {
@@ -913,6 +927,94 @@ extern List gres_plugin_dup_node_state(List gres_list)
 	slurm_mutex_unlock(&gres_context_lock);
 
 	return new_list;
+}
+
+/*
+ * Deallocate all resources on this node previous allocated to any jobs.
+ *	This function isused to synchronize state after slurmctld restarts or
+ *	is reconfigured.
+ * IN gres_list - node gres state information
+ */
+extern void gres_plugin_node_state_dealloc(List gres_list)
+{
+	int i;
+	ListIterator gres_iter;
+	gres_state_t *gres_ptr;
+
+	if (gres_list == NULL)
+		return;
+
+	(void) gres_plugin_init();
+
+	slurm_mutex_lock(&gres_context_lock);
+	gres_iter = list_iterator_create(gres_list);
+	while ((gres_ptr = (gres_state_t *) list_next(gres_iter))) {
+		for (i=0; i<gres_context_cnt; i++) {
+			if (gres_ptr->plugin_id !=
+			    *(gres_context[i].ops.plugin_id))
+				continue;
+			(*(gres_context[i].ops.node_state_dealloc))
+					(gres_ptr->gres_data);
+			break;
+		}
+	}
+	list_iterator_destroy(gres_iter);
+	slurm_mutex_unlock(&gres_context_lock);
+}
+
+/*
+ * Allocate in this nodes record the resources previously allocated to this
+ *	job. This function isused to synchronize state after slurmctld restarts
+ *	or is reconfigured.
+ * IN job_gres_list - job gres state information
+ * IN node_offset - zero-origin index of this node in the job's allocation
+ * IN node_gres_list - node gres state information
+ * RET SLURM_SUCCESS or error code
+ */
+extern int gres_plugin_node_state_realloc(List job_gres_list, int node_offset,
+					  List node_gres_list)
+{
+	ListIterator job_gres_iter,  node_gres_iter;
+	gres_state_t *job_gres_ptr, *node_gres_ptr;
+	int i;
+
+	if (job_gres_list == NULL)
+		return SLURM_SUCCESS;
+	if (node_gres_list == NULL)
+		return SLURM_ERROR;
+
+	(void) gres_plugin_init();
+
+	slurm_mutex_lock(&gres_context_lock);
+	job_gres_iter = list_iterator_create(job_gres_list);
+	while ((job_gres_ptr = (gres_state_t *) list_next(job_gres_iter))) {
+		node_gres_iter = list_iterator_create(node_gres_list);
+		while ((node_gres_ptr = (gres_state_t *)
+				list_next(node_gres_iter))) {
+			if (job_gres_ptr->plugin_id == node_gres_ptr->plugin_id)
+				break;
+		}
+		list_iterator_destroy(node_gres_iter);
+		if (node_gres_ptr == NULL) {
+			error("Could not find plugin id %u to realloc job",
+			      job_gres_ptr->plugin_id);
+			continue;
+		}
+
+		for (i=0; i<gres_context_cnt; i++) {
+			if (job_gres_ptr->plugin_id !=
+			    *(gres_context[i].ops.plugin_id))
+				continue;
+			(*(gres_context[i].ops.node_state_realloc))
+					(job_gres_ptr->gres_data, node_offset,
+					 node_gres_ptr->gres_data);
+			break;
+		}
+	}
+	list_iterator_destroy(job_gres_iter);
+	slurm_mutex_unlock(&gres_context_lock);
+
+	return SLURM_SUCCESS;
 }
 
 /*
@@ -971,7 +1073,7 @@ static void _gres_job_list_delete(void *list_element)
  * Given a job's requested gres configuration, validate it and build a gres list
  * IN req_config - job request's gres input string
  * OUT gres_list - List of Gres records for this job to track usage
- * RET SLURM_SUCCESS or ESLURM__INVALIDGRES
+ * RET SLURM_SUCCESS or ESLURM_INVALID_GRES
  */
 extern int gres_plugin_job_gres_validate(char *req_config, List *gres_list)
 {
