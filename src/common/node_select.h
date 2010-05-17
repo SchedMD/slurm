@@ -355,8 +355,8 @@ extern char *select_g_select_jobinfo_sprint(dynamic_plugin_data_t *jobinfo,
  * IN mode    - print mode, see enum select_print_mode
  * RET        - the string, same as buf
  */
-extern char *select_g_select_jobinfo_xstrdup(
-	dynamic_plugin_data_t *jobinfo, int mode);
+extern char *select_g_select_jobinfo_xstrdup(dynamic_plugin_data_t *jobinfo,
+					     int mode);
 
 /*******************************************************\
  * NODE-SPECIFIC SELECT CREDENTIAL MANAGEMENT FUNCIONS *

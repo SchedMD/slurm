@@ -753,8 +753,7 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	if (IS_JOB_COMPLETING(dump_job_ptr)) {
 		if (dump_job_ptr->nodes_completing == NULL) {
 			dump_job_ptr->nodes_completing =
-				bitmap2node_name(
-					dump_job_ptr->node_bitmap);
+				bitmap2node_name(dump_job_ptr->node_bitmap);
 		}
 		packstr(dump_job_ptr->nodes_completing, buffer);
 	}

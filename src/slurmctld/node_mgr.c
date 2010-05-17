@@ -118,9 +118,10 @@ int dump_all_node_state ( void )
 	static int high_buffer_size = (1024 * 1024);
 	int error_code = 0, inx, log_fd;
 	char *old_file, *new_file, *reg_file;
+	struct node_record *node_ptr;
 	/* Locks: Read config and node */
 	slurmctld_lock_t node_read_lock = { READ_LOCK, NO_LOCK, READ_LOCK,
-						NO_LOCK };
+					    NO_LOCK };
 	Buf buffer = init_buf(high_buffer_size);
 	DEF_TIMERS;
 
@@ -131,12 +132,11 @@ int dump_all_node_state ( void )
 
 	/* write node records to buffer */
 	lock_slurmctld (node_read_lock);
-	for (inx = 0; inx < node_record_count; inx++) {
-		xassert (node_record_table_ptr[inx].magic == NODE_MAGIC);
-		xassert (node_record_table_ptr[inx].config_ptr->magic ==
-			 CONFIG_MAGIC);
-
-		_dump_node_state (&node_record_table_ptr[inx], buffer);
+	for (inx = 0, node_ptr = node_record_table_ptr; inx < node_record_count;
+	     inx++, node_ptr++) {
+		xassert (node_ptr->magic == NODE_MAGIC);
+		xassert (node_ptr->config_ptr->magic == CONFIG_MAGIC);
+		_dump_node_state (node_ptr, buffer);
 	}
 
 	old_file = xstrdup (slurmctld_conf.state_save_location);
@@ -151,8 +151,7 @@ int dump_all_node_state ( void )
 	lock_state_files();
 	log_fd = creat (new_file, 0600);
 	if (log_fd < 0) {
-		error ("Can't save state, error creating file %s %m",
-		       new_file);
+		error ("Can't save state, error creating file %s %m", new_file);
 		error_code = errno;
 	} else {
 		int pos = 0, nwrite = get_buf_offset(buffer), amount, rc;
