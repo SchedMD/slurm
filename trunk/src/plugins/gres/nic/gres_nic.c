@@ -645,16 +645,22 @@ extern int job_gres_validate(char *config, void **gres_data)
 
 extern int pack_job_state(void *gres_data, Buf buffer)
 {
+	int i;
 	nic_job_state_t *gres_ptr = (nic_job_state_t *) gres_data;
 
-	pack32(gres_ptr->nic_cnt_alloc,  buffer);
+	pack32(gres_ptr->nic_cnt_alloc, buffer);
 	pack8 (gres_ptr->nic_cnt_mult,  buffer);
+
+	pack32(gres_ptr->node_cnt,      buffer);
+	for (i=0; i<gres_ptr->node_cnt; i++)
+		pack_bit_str(gres_ptr->nic_bit_alloc[i], buffer);
 
 	return SLURM_SUCCESS;
 }
 
 extern int unpack_job_state(void **gres_data, Buf buffer)
 {
+	int i;
 	nic_job_state_t *gres_ptr;
 
 	gres_ptr = xmalloc(sizeof(nic_job_state_t));
@@ -662,12 +668,26 @@ extern int unpack_job_state(void **gres_data, Buf buffer)
 	if (buffer) {
 		safe_unpack32(&gres_ptr->nic_cnt_alloc,  buffer);
 		safe_unpack8 (&gres_ptr->nic_cnt_mult,   buffer);
+
+		safe_unpack32(&gres_ptr->node_cnt,       buffer);
+		gres_ptr->nic_bit_alloc = xmalloc(sizeof(bitstr_t *) *
+						  (gres_ptr->node_cnt + 1));
+		for (i=0; i<gres_ptr->node_cnt; i++)
+			unpack_bit_str(&gres_ptr->nic_bit_alloc[i], buffer);
 	}
 
 	*gres_data = gres_ptr;
 	return SLURM_SUCCESS;
 
 unpack_error:
+	error("Unpacking %s job state info", plugin_name);
+	if (gres_ptr->nic_bit_alloc) {
+		for (i=0; i<gres_ptr->node_cnt; i++) {
+			if (gres_ptr->nic_bit_alloc[i])
+				bit_free(gres_ptr->nic_bit_alloc[i]);
+		}
+		xfree(gres_ptr->nic_bit_alloc);
+	}
 	xfree(gres_ptr);
 	*gres_data = NULL;
 	return SLURM_ERROR;
@@ -719,8 +739,8 @@ extern int job_alloc(void *job_gres_data, void *node_gres_data,
 			      plugin_name);
 			xfree(job_gres_ptr->nic_bit_alloc);
 		}
-		job_gres_ptr->nic_bit_alloc = 
-					xmalloc(sizeof(bitstr_t *) * node_cnt);
+		job_gres_ptr->nic_bit_alloc = xmalloc(sizeof(bitstr_t *) *
+						      (node_cnt + 1));
 	} else if (job_gres_ptr->node_cnt < node_cnt) {
 		error("%s: node_cnt increase from %u to %d",
 		      plugin_name, job_gres_ptr->node_cnt, node_cnt);
