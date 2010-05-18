@@ -1173,7 +1173,7 @@ extern int gres_plugin_pack_job_state(List gres_list, Buf buffer,
 			if (rc2 != SLURM_SUCCESS) {
 				rc = rc2;
 				set_buf_offset(buffer, header_offset);
-				break;
+				continue;
 			}
 			tail_offset = get_buf_offset(buffer);
 			set_buf_offset(buffer, size_offset);

@@ -462,7 +462,7 @@ static int _list_find_feature (void *feature_entry, void *key)
 }
 
 /*
- * _build_all_nodeline_info - get a array of slurm_conf_node_t structures
+ * build_all_nodeline_info - get a array of slurm_conf_node_t structures
  *	from the slurm.conf reader, build table, and set values
  * IN set_bitmap - if true, set node_bitmap in config record (used by slurmd)
  * RET 0 if no error, error code otherwise

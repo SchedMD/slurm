@@ -435,6 +435,8 @@ extern int load_all_node_state ( bool state_only )
 				node_ptr->reason_time = reason_time;
 				node_ptr->reason_uid = reason_uid;
 			}
+			node_ptr->gres_list	= gres_list;
+			gres_list		= NULL;	/* Nothing to free */
 		} else {
 			node_cnt++;
 			if ((!power_save_mode) &&

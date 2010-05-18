@@ -92,6 +92,7 @@
 static void _acct_restore_active_jobs(void);
 static int  _build_bitmaps(void);
 static void _build_bitmaps_pre_select(void);
+static void _gres_reconig(bool reconfig);
 static int  _init_all_slurm_conf(void);
 static int  _preserve_select_type_param(slurm_ctl_conf_t * ctl_conf_ptr,
 					uint16_t old_select_type_p);
@@ -627,7 +628,6 @@ int read_slurm_conf(int recover, bool reconfig)
 	char *state_save_dir      = xstrdup(slurmctld_conf.state_save_location);
 	char *mpi_params;
 	uint16_t old_select_type_p = slurmctld_conf.select_type_param;
-	bool gres_changed = false;
 
 	/* initialization */
 	START_TIMER;
@@ -670,7 +670,7 @@ int read_slurm_conf(int recover, bool reconfig)
 	if (slurm_topo_init() != SLURM_SUCCESS)
 		fatal("Failed to initialize topology plugin");
 
-	/* Build node and partittion information based upon slurm.conf file */
+	/* Build node and partition information based upon slurm.conf file */
 	_build_all_nodeline_info();
 	_handle_all_downnodes();
 	_build_all_partitionline_info();
@@ -809,8 +809,7 @@ int read_slurm_conf(int recover, bool reconfig)
 #endif
 
 	/* Sync select plugin with synchronized job/node/part data */
-	if (reconfig)
-		gres_plugin_reconfig(&gres_changed);
+	_gres_reconig(reconfig);
 	select_g_reconfigure();
 
 	slurmctld_conf.last_update = time(NULL);
@@ -818,6 +817,65 @@ int read_slurm_conf(int recover, bool reconfig)
 	return error_code;
 }
 
+static void _gres_reconig(bool reconfig)
+{
+	struct node_record *node_ptr;
+	struct job_record *job_ptr;
+	ListIterator job_iterator;
+	int i, i_first, i_last, node_offset;
+	bool gres_active, gres_changed = false;
+	char *plugin_names;
+
+	if (reconfig)
+		gres_plugin_reconfig(&gres_changed);
+
+	plugin_names = slurm_get_gres_plugins();
+	if (plugin_names && plugin_names[0])
+		gres_active = true;
+	else
+		gres_active = false;
+	xfree(plugin_names);
+	if (!gres_active)
+		return;
+
+	/* Clear existing node Gres allocations */
+	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
+	     i++, node_ptr++) {
+		gres_plugin_node_state_dealloc(node_ptr->gres_list);
+	}
+
+	/* Reallocate job gres to the nodes */
+	job_iterator = list_iterator_create(job_list);
+	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+		if (!IS_JOB_RUNNING(job_ptr) && !IS_JOB_SUSPENDED(job_ptr))
+			continue;
+		if (job_ptr->job_resrcs == NULL)
+			continue;
+
+		i_first = bit_ffs(job_ptr->node_bitmap);
+		i_last  = bit_fls(job_ptr->node_bitmap);
+		if (i_first == -1)
+			i_last = -2;
+		node_offset = -1;
+		for (i = i_first; i <= i_last; i++) {
+			if (!bit_test(job_ptr->job_resrcs->node_bitmap, i))
+				continue;
+			node_offset++;
+			if (!bit_test(job_ptr->node_bitmap, i))
+				continue;
+			node_ptr = node_record_table_ptr + i;
+			gres_plugin_node_state_realloc(job_ptr->gres_list,
+						       node_offset,
+						       node_ptr->gres_list);
+		}
+	}
+	list_iterator_destroy(job_iterator);
+
+	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
+	     i++, node_ptr++) {
+		gres_plugin_node_state_log(node_ptr->gres_list, node_ptr->name);
+	}
+}
 
 /* Restore node state and size information from saved records which match
  * the node registration message. If a node was re-configured to be down or
@@ -874,12 +932,18 @@ static int _restore_node_state(int recover,
 			      node_ptr->config_ptr->cpus);
 		}
 		node_ptr->cpus          = old_node_ptr->cpus;
-		node_ptr->sockets       = old_node_ptr->sockets;
 		node_ptr->cores         = old_node_ptr->cores;
+		node_ptr->sockets       = old_node_ptr->sockets;
 		node_ptr->threads       = old_node_ptr->threads;
 		node_ptr->real_memory   = old_node_ptr->real_memory;
 		node_ptr->tmp_disk      = old_node_ptr->tmp_disk;
 		node_ptr->weight        = old_node_ptr->weight;
+
+		if (node_ptr->gres_list)
+			list_destroy(node_ptr->gres_list);
+		node_ptr->gres_list = old_node_ptr->gres_list;
+		old_node_ptr->gres_list = NULL;
+
 		if (node_ptr->reason == NULL) {
 			/* Recover only if not explicitly set in slurm.conf */
 			node_ptr->reason = old_node_ptr->reason;
@@ -1335,8 +1399,8 @@ static int _sync_nodes_to_active_job(struct job_record *job_ptr)
 			cnt++;
 		} else if (IS_NODE_IDLE(node_ptr)) {
 			cnt++;
-			node_ptr->node_state =
-				NODE_STATE_ALLOCATED | node_flags;
+			node_ptr->node_state = NODE_STATE_ALLOCATED |
+					       node_flags;
 		}
 	}
 	return cnt;
