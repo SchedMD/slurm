@@ -346,7 +346,7 @@ static void _acct_kill_job(void)
 static void *_watch_tasks(void *arg)
 {
 
-	while(!jobacct_shutdown) {	/* Do this until shutdown is requested */
+	while(!jobacct_shutdown) { /* Do this until shutdown is requested */
 		if(!jobacct_suspended) {
 			_get_process_data();	/* Update the data */
 		}
