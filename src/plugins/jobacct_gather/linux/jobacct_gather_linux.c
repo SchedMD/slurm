@@ -336,9 +336,10 @@ static void _get_process_data() {
 				jobacct->min_cpu = jobacct->tot_cpu =
 					MAX(jobacct->min_cpu,
 					    (prec->usec + prec->ssec));
-				debug2("%d mem size %u %u time %u",
-				      jobacct->pid, jobacct->max_rss,
-				      jobacct->max_vsize, jobacct->tot_cpu);
+				debug2("%d mem size %u %u time %u(%u+%u)",
+				       jobacct->pid, jobacct->max_rss,
+				       jobacct->max_vsize, jobacct->tot_cpu,
+				       prec->usec, prec->ssec);
 				break;
 			}
 		}
@@ -436,8 +437,8 @@ static int _get_process_data_line(int in, prec_t *prec) {
 	prec->pages = majflt;
 	prec->usec  = utime;
 	prec->ssec  = stime;
-	prec->vsize = vsize / 1024;		  /* convert from bytes to KB */
-	prec->rss   = rss * getpagesize() / 1024; /* convert from pages to KB */
+	prec->vsize = vsize / 1024;		 /* convert from bytes to KB */
+	prec->rss   = rss * getpagesize() / 1024;/* convert from pages to KB */
 	return 1;
 }
 
@@ -622,7 +623,8 @@ extern void jobacct_gather_p_change_poll(uint16_t frequency)
 		pthread_t _watch_tasks_thread_id;
 		/* create polling thread */
 		slurm_attr_init(&attr);
-		if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED))
+		if (pthread_attr_setdetachstate(&attr,
+						PTHREAD_CREATE_DETACHED))
 			error("pthread_attr_setdetachstate error %m");
 
 		if  (pthread_create(&_watch_tasks_thread_id, &attr,
@@ -682,11 +684,21 @@ extern int jobacct_gather_p_add_task(pid_t pid, jobacct_id_t *jobacct_id)
 
 extern struct jobacctinfo *jobacct_gather_p_stat_task(pid_t pid)
 {
-	_get_process_data();
-	if(pid)
+	if(pid) {
+		_get_process_data();
 		return jobacct_common_stat_task(pid, task_list);
-	else
+	} else {
+		/* In this situation, we are just trying to get a
+		 * basis of information since we are not pollng.  So
+		 * we will give a chance for processes to spawn before we
+		 * gather information. This should largely eliminate the
+		 * the chance of having /proc open when the tasks are
+		 * spawned, which would prevent a valid checkpoint/restart
+		 * with some systems */
+		_task_sleep(1);
+		_get_process_data();
 		return NULL;
+	}
 }
 
 extern struct jobacctinfo *jobacct_gather_p_remove_task(pid_t pid)
