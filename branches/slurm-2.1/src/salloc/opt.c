@@ -1196,16 +1196,9 @@ static bool _opt_verify(void)
 		verified = false;
 	}
 
-	if (opt.ntasks_per_node > -1) {
-		if(!opt.nprocs_set) {
-			opt.nprocs = opt.min_nodes * opt.ntasks_per_node;
-			opt.nprocs_set = 1;
-		} else if((opt.ntasks_per_node * opt.min_nodes) != opt.nprocs) {
-			error ("Asking for %u tasks per node with %u "
-			       "nodes doesn't equal %u",
-			       opt.ntasks_per_node, opt.min_nodes, opt.nprocs);
-			verified = false;
-		}
+	if ((opt.ntasks_per_node > -1) && (!opt.nprocs_set)) {
+		opt.nprocs = opt.min_nodes * opt.ntasks_per_node;
+		opt.nprocs_set = 1;
 	}
 
 	if (opt.mincpus < opt.cpus_per_task)
