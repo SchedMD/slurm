@@ -82,6 +82,9 @@ typedef struct slurm_gres_ops {
 	int		(*load_node_config)	( void );
 	int		(*pack_node_config)	( Buf buffer );
 	int		(*unpack_node_config)	( Buf buffer );
+	int		(*node_config_init)	( char *node_name,
+						  char *orig_config,
+						  void **gres_data );
 	int		(*node_config_validate)	( char *node_name,
 						  char *orig_config,
 						  char **new_config,
@@ -173,6 +176,7 @@ static int _load_gres_plugin(char *plugin_name,
 		"load_node_config",
 		"pack_node_config",
 		"unpack_node_config",
+		"node_config_init",
 		"node_config_validate",
 		"node_reconfig",
 		"node_config_delete",
@@ -601,6 +605,50 @@ static void _gres_node_list_delete(void *list_element)
 }
 
 /*
+ * Build a node's gres record based only upon the slurm.conf contents
+ * IN node_name - name of the node for which the gres information applies
+ * IN orig_config - Gres information supplied from slurm.conf
+ * IN/OUT gres_list - List of Gres records for this node to track usage
+ */
+extern int gres_plugin_init_node_config(char *node_name, char *orig_config,
+					List *gres_list)
+{
+	int i, rc;
+	ListIterator gres_iter;
+	gres_state_t *gres_ptr;
+
+	rc = gres_plugin_init();
+
+	slurm_mutex_lock(&gres_context_lock);
+	if ((gres_context_cnt > 0) && (*gres_list == NULL)) {
+		*gres_list = list_create(_gres_node_list_delete);
+		if (*gres_list == NULL)
+			fatal("list_create malloc failure");
+	}
+	for (i=0; ((i < gres_context_cnt) && (rc == SLURM_SUCCESS)); i++) {
+		/* Find or create gres_state entry on the list */
+		gres_iter = list_iterator_create(*gres_list);
+		while ((gres_ptr = (gres_state_t *) list_next(gres_iter))) {
+			if (gres_ptr->plugin_id ==
+			    *(gres_context[i].ops.plugin_id))
+				break;
+		}
+		list_iterator_destroy(gres_iter);
+		if (gres_ptr == NULL) {
+			gres_ptr = xmalloc(sizeof(gres_state_t));
+			gres_ptr->plugin_id = *(gres_context[i].ops.plugin_id);
+			list_append(*gres_list, gres_ptr);
+		}
+
+		rc = (*(gres_context[i].ops.node_config_init))
+			(node_name, orig_config, &gres_ptr->gres_data);
+	}
+	slurm_mutex_unlock(&gres_context_lock);
+
+	return rc;
+}
+
+/*
  * Validate a node's configuration and put a gres record onto a list
  * Called immediately after gres_plugin_unpack_node_config().
  * IN node_name - name of the node for which the gres information applies
@@ -612,7 +660,7 @@ static void _gres_node_list_delete(void *list_element)
  *		      2: Don't validate hardware, use slurm.conf configuration
  * OUT reason_down - set to an explanation of failure, if any, don't set if NULL
  */
-extern int gres_plugin_node_config_validate(char *node_name,
+extern int  gres_plugin_node_config_validate(char *node_name,
 					    char *orig_config,
 					    char **new_config,
 					    List *gres_list,
@@ -1320,7 +1368,7 @@ extern uint32_t gres_plugin_job_test(List job_gres_list, List node_gres_list,
 	if (job_gres_list == NULL)
 		return NO_VAL;
 	if (node_gres_list == NULL)
-		return (uint32_t) 0;
+		return NO_VAL;
 
 	cpu_cnt = NO_VAL;
 	(void) gres_plugin_init();
