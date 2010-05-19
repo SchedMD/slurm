@@ -824,10 +824,21 @@ static void _gres_reconig(bool reconfig)
 	ListIterator job_iterator;
 	int i, i_first, i_last, node_offset;
 	bool gres_active, gres_changed = false;
-	char *plugin_names;
+	char *gres_name, *plugin_names;
 
-	if (reconfig)
+	if (reconfig) {
 		gres_plugin_reconfig(&gres_changed);
+	} else {
+		for (i = 0, node_ptr = node_record_table_ptr; 
+		     i < node_record_count; i++, node_ptr++) {
+			if (node_ptr->gres)
+				gres_name = node_ptr->gres;
+			else
+				gres_name = node_ptr->config_ptr->gres;
+			gres_plugin_init_node_config(node_ptr->name, gres_name,
+						     &node_ptr->gres_list);
+		}
+	}
 
 	plugin_names = slurm_get_gres_plugins();
 	if (plugin_names && plugin_names[0])

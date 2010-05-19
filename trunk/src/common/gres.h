@@ -96,6 +96,15 @@ extern int gres_plugin_pack_node_config(Buf buffer);
  **************************************************************************
  */
 /*
+ * Build a node's gres record based only upon the slurm.conf contents
+ * IN node_name - name of the node for which the gres information applies
+ * IN orig_config - Gres information supplied from slurm.conf
+ * IN/OUT gres_list - List of Gres records for this node to track usage
+ */
+extern int gres_plugin_init_node_config(char *node_name, char *orig_config,
+					List *gres_list);
+
+/*
  * Unpack this node's configuration from a buffer
  * IN buffer - message buffer to unpack
  * IN node_name - name of node whose data is being unpacked
