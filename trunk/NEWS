@@ -252,6 +252,10 @@ documents those changes that are of interest to users and admins.
 ========================
  -- In select/linear - Fix logic to prevent over-subscribing memory with shared
     nodes (Shared=YES or Shared=FORCE).
+ -- Fix for handling -N and --ntasks-per-node without specifying -n with
+    salloc and sbatch.
+ -- Fix jobacct_gather/linux if not polling on tasks to give tasks time to
+    start before doing initial gather.
 
 * Changes in SLURM 2.1.8
 ========================
