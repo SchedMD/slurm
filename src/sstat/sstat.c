@@ -132,7 +132,8 @@ int _sstat_query(slurm_step_layout_t *step_layout, uint32_t job_id,
 			jobacct_msg = (stat_jobacct_msg_t *)
 				ret_data_info->data;
 			if(jobacct_msg) {
-				debug2("got it back for job %d",
+				debug2("got it back from %s for job %d",
+				       ret_data_info->node_name,
 				       jobacct_msg->job_id);
 				jobacct_gather_g_2_stats(
 					&temp_stats,
@@ -144,14 +145,16 @@ int _sstat_query(slurm_step_layout_t *step_layout, uint32_t job_id,
 		case RESPONSE_SLURM_RC:
 			rc = slurm_get_return_code(ret_data_info->type,
 						   ret_data_info->data);
-			error("there was an error with the request rc = %s",
-			      slurm_strerror(rc));
+			error("there was an error with the request to "
+			      "%s rc = %s",
+			      ret_data_info->node_name, slurm_strerror(rc));
 			break;
 		default:
 			rc = slurm_get_return_code(ret_data_info->type,
 						   ret_data_info->data);
-			error("unknown return given %d rc = %s",
-			      ret_data_info->type, slurm_strerror(rc));
+			error("unknown return given from %s: %d rc = %s",
+			      ret_data_info->node_name, ret_data_info->type,
+			      slurm_strerror(rc));
 			break;
 		}
 	}
