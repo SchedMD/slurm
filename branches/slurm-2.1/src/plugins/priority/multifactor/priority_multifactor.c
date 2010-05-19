@@ -816,7 +816,7 @@ static void *_decay_thread(void *no_data)
 
 			job_ptr->priority =
 				_get_priority_internal(start_time, job_ptr);
-
+			last_job_update = time(NULL);
 			debug2("priority for job %u is now %u",
 			       job_ptr->job_id, job_ptr->priority);
 		}
