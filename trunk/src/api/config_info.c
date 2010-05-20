@@ -175,15 +175,15 @@ void slurm_print_ctl_conf ( FILE* out,
 	char time_str[32], tmp_str[128];
 	void *ret_list = NULL;
 	char *select_title = "";
-#ifdef HAVE_BGL
-	select_title = "\nBluegene/L configuration\n";
-#endif
-#ifdef HAVE_BGP
-	select_title = "\nBluegene/P configuration\n";
-#endif
-#ifdef HAVE_BGQ
-	select_title = "\nBluegene/Q configuration\n";
-#endif
+	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
+
+	if(cluster_flags & CLUSTER_FLAG_BGL)
+		select_title = "\nBluegene/L configuration\n";
+	else if(cluster_flags & CLUSTER_FLAG_BGP)
+		select_title = "\nBluegene/P configuration\n";
+	else if(cluster_flags & CLUSTER_FLAG_BGQ)
+		select_title = "\nBluegene/Q configuration\n";
+
 	if ( slurm_ctl_conf_ptr == NULL )
 		return ;
 
@@ -208,6 +208,7 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
 	List ret_list = NULL;
 	config_key_pair_t *key_pair;
 	char tmp_str[128];
+	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 
 	if ( slurm_ctl_conf_ptr == NULL )
 		return NULL;
@@ -452,12 +453,13 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
 	key_pair->value = xstrdup(slurm_ctl_conf_ptr->health_check_program);
 	list_append(ret_list, key_pair);
 
-#ifdef HAVE_XCPU
-	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("HAVE_XCPU");
-	key_pair->value = xstrdup("1");
-	list_append(ret_list, key_pair);
-#endif
+	if(cluster_flags & CLUSTER_FLAG_XCPU) {
+		key_pair = xmalloc(sizeof(config_key_pair_t));
+		key_pair->name = xstrdup("HAVE_XCPU");
+		key_pair->value = xstrdup("1");
+		list_append(ret_list, key_pair);
+	}
+
 	snprintf(tmp_str, sizeof(tmp_str), "%u sec",
 		 slurm_ctl_conf_ptr->inactive_limit);
 	key_pair = xmalloc(sizeof(config_key_pair_t));
@@ -623,12 +625,12 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
 	key_pair->value = xstrdup(slurm_ctl_conf_ptr->mpi_params);
 	list_append(ret_list, key_pair);
 
-#ifdef MULTIPLE_SLURMD
-	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("MULTIPLE_SLURMD");
-	key_pair->value = xstrdup("1");
-	list_append(ret_list, key_pair);
-#endif
+	if(cluster_flags & CLUSTER_FLAG_MULTSD) {
+		key_pair = xmalloc(sizeof(config_key_pair_t));
+		key_pair->name = xstrdup("MULTIPLE_SLURMD");
+		key_pair->value = xstrdup("1");
+		list_append(ret_list, key_pair);
+	}
 
 	snprintf(tmp_str, sizeof(tmp_str), "%u",
 		 slurm_ctl_conf_ptr->next_job_id);
@@ -1181,35 +1183,36 @@ slurm_load_slurmd_status(slurmd_status_t **slurmd_status_ptr)
 	int rc;
 	slurm_msg_t req_msg;
 	slurm_msg_t resp_msg;
-#ifndef MULTIPLE_SLURMD
-	char this_host[256];
-#endif
+	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 	char *this_addr;
 
 	slurm_msg_t_init(&req_msg);
 	slurm_msg_t_init(&resp_msg);
 
-#ifdef MULTIPLE_SLURMD
-	if((this_addr = getenv("SLURMD_NODENAME"))) {
-		slurm_conf_get_addr(this_addr, &req_msg.address);
+	if(cluster_flags & CLUSTER_FLAG_MULTSD) {
+		if((this_addr = getenv("SLURMD_NODENAME"))) {
+			slurm_conf_get_addr(this_addr, &req_msg.address);
+		} else {
+			this_addr = "localhost";
+			slurm_set_addr(&req_msg.address,
+				       (uint16_t)slurm_get_slurmd_port(),
+				       this_addr);
+		}
 	} else {
-		this_addr = "localhost";
+		char this_host[256];
+
+		/*
+		 *  Set request message address to slurmd on localhost
+		 */
+		gethostname_short(this_host, sizeof(this_host));
+		this_addr = slurm_conf_get_nodeaddr(this_host);
+		if (this_addr == NULL)
+			this_addr = xstrdup("localhost");
 		slurm_set_addr(&req_msg.address,
 			       (uint16_t)slurm_get_slurmd_port(),
 			       this_addr);
+		xfree(this_addr);
 	}
-#else
-	/*
-	 *  Set request message address to slurmd on localhost
-	 */
-	gethostname_short(this_host, sizeof(this_host));
-	this_addr = slurm_conf_get_nodeaddr(this_host);
-	if (this_addr == NULL)
-		this_addr = xstrdup("localhost");
-	slurm_set_addr(&req_msg.address, (uint16_t)slurm_get_slurmd_port(),
-		       this_addr);
-	xfree(this_addr);
-#endif
 	req_msg.msg_type = REQUEST_DAEMON_STATUS;
 	req_msg.data     = NULL;
 

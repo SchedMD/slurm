@@ -103,6 +103,7 @@ extern int exit_flag;	/* program to terminate if =1 */
 extern int input_words;	/* number of words of input permitted */
 extern int one_liner;	/* one record per line if =1 */
 extern int quiet_flag;	/* quiet=1, verbose=-1, normal=0 */
+extern uint32_t cluster_flags; /*what type of cluster are we talking to */
 
 extern int	scontrol_checkpoint(char *op, char *job_step_id_str, int argc,
 				    char **argv);

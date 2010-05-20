@@ -129,6 +129,7 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 	uint16_t err_cpus = 0, alloc_cpus = 0;
 	int cpus_per_node = 1;
 	int total_used = node_ptr->cpus;
+	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 
 	if(node_scaling)
 		cpus_per_node = node_ptr->cpus / node_scaling;
@@ -149,22 +150,22 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 				  SELECT_NODEDATA_SUBCNT,
 				  NODE_STATE_ALLOCATED,
 				  &alloc_cpus);
-#ifdef HAVE_BG
-	if(!alloc_cpus
-	   && (IS_NODE_ALLOCATED(node_ptr) || IS_NODE_COMPLETING(node_ptr)))
-		alloc_cpus = node_ptr->cpus;
-	else
-		alloc_cpus *= cpus_per_node;
-#endif
+	if(cluster_flags & CLUSTER_FLAG_BG) {
+		if(!alloc_cpus
+		   && (IS_NODE_ALLOCATED(node_ptr)
+		       || IS_NODE_COMPLETING(node_ptr)))
+			alloc_cpus = node_ptr->cpus;
+		else
+			alloc_cpus *= cpus_per_node;
+	}
 	total_used -= alloc_cpus;
 
 	slurm_get_select_nodeinfo(node_ptr->select_nodeinfo,
 				  SELECT_NODEDATA_SUBCNT,
 				  NODE_STATE_ERROR,
 				  &err_cpus);
-#ifdef HAVE_BG
-	err_cpus *= cpus_per_node;
-#endif
+	if(cluster_flags & CLUSTER_FLAG_BG)
+		err_cpus *= cpus_per_node;
 	total_used -= err_cpus;
 
 	if ((alloc_cpus && err_cpus) ||

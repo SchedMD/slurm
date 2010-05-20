@@ -295,7 +295,8 @@ int slurm_job_will_run (job_desc_msg_t *req)
 	char buf[64];
 	bool host_set = false;
 	int rc;
-
+	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
+	char *type = "processors";
 	/* req.immediate = true;    implicit */
 	if ((req->alloc_node == NULL) &&
 	    (gethostname_short(buf, sizeof(buf)) == 0)) {
@@ -320,18 +321,15 @@ int slurm_job_will_run (job_desc_msg_t *req)
 			return SLURM_PROTOCOL_ERROR;
 		break;
 	case RESPONSE_JOB_WILL_RUN:
+		if(cluster_flags & CLUSTER_FLAG_BG)
+			type = "cnodes";
 		will_run_resp = (will_run_response_msg_t *) resp_msg.data;
 		slurm_make_time_str(&will_run_resp->start_time,
 				    buf, sizeof(buf));
-		info("Job %u to start at %s using %u "
-#ifdef HAVE_BG
-		     "cnodes"
-#else
-		     "processors"
-#endif
+		info("Job %u to start at %s using %u %s"
 		     " on %s",
 		     will_run_resp->job_id, buf,
-		     will_run_resp->proc_cnt,
+		     will_run_resp->proc_cnt, type,
 		     will_run_resp->node_list);
 		if (will_run_resp->preemptee_job_id) {
 			ListIterator itr;

@@ -120,6 +120,7 @@ char *slurm_sprint_block_info(
 	char tmp1[16];
 	char *out = NULL;
 	char *line_end = "\n   ";
+	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 
 	if (one_liner)
 		line_end = " ";
@@ -142,10 +143,10 @@ char *slurm_sprint_block_info(
 	xstrfmtcat(out, "User=%s ConnType=%s",
 		   block_ptr->owner_name,
 		   conn_type_string(block_ptr->conn_type));
-#ifdef HAVE_BGL
-	xstrfmtcat(out, " NodeUse=%s",
-		   node_use_string(block_ptr->node_use));
-#endif
+	if(cluster_flags & CLUSTER_FLAG_BGL)
+		xstrfmtcat(out, " NodeUse=%s",
+			   node_use_string(block_ptr->node_use));
+
 	xstrcat(out, line_end);
 
 	/****** Line 3 ******/
@@ -153,7 +154,8 @@ char *slurm_sprint_block_info(
 		xstrfmtcat(out, "BasePartitions=%s[%s] BPIndices=",
 			   block_ptr->nodes, block_ptr->ionodes);
 	else
-		xstrfmtcat(out, "BasePartitions=%s BPIndices=", block_ptr->nodes);
+		xstrfmtcat(out, "BasePartitions=%s BPIndices=",
+			   block_ptr->nodes);
 	for (j = 0;
 	     (block_ptr->bp_inx && (block_ptr->bp_inx[j] != -1));
 	     j+=2) {
@@ -168,19 +170,22 @@ char *slurm_sprint_block_info(
 	xstrfmtcat(out, "MloaderImage=%s%s",
 		   block_ptr->mloaderimage, line_end);
 
-#ifdef HAVE_BGL
-	/****** Line 5 ******/
-	xstrfmtcat(out, "BlrtsImage=%s%s", block_ptr->blrtsimage, line_end);
-	/****** Line 6 ******/
-	xstrfmtcat(out, "LinuxImage=%s%s", block_ptr->linuximage, line_end);
-	/****** Line 7 ******/
-	xstrfmtcat(out, "RamdiskImage=%s", block_ptr->ramdiskimage);
-#else
-	/****** Line 5 ******/
-	xstrfmtcat(out, "CnloadImage=%s%s", block_ptr->linuximage, line_end);
-	/****** Line 6 ******/
-	xstrfmtcat(out, "IoloadImage=%s", block_ptr->ramdiskimage);
-#endif
+	if(cluster_flags & CLUSTER_FLAG_BGL) {
+		/****** Line 5 ******/
+		xstrfmtcat(out, "BlrtsImage=%s%s", block_ptr->blrtsimage,
+			   line_end);
+		/****** Line 6 ******/
+		xstrfmtcat(out, "LinuxImage=%s%s", block_ptr->linuximage,
+			   line_end);
+		/****** Line 7 ******/
+		xstrfmtcat(out, "RamdiskImage=%s", block_ptr->ramdiskimage);
+	} else {
+		/****** Line 5 ******/
+		xstrfmtcat(out, "CnloadImage=%s%s", block_ptr->linuximage,
+			   line_end);
+		/****** Line 6 ******/
+		xstrfmtcat(out, "IoloadImage=%s", block_ptr->ramdiskimage);
+	}
 	if (one_liner)
 		xstrcat(out, "\n");
 	else

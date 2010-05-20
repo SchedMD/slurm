@@ -56,6 +56,10 @@
  */
 void slurm_init_job_desc_msg(job_desc_msg_t * job_desc_msg)
 {
+	int i;
+	int dims = working_cluster_rec ?
+		working_cluster_rec->dimensions : SYSTEM_DIMENSIONS;
+
 	memset(job_desc_msg, 0, sizeof(job_desc_msg_t));
 	job_desc_msg->acctg_freq	= (uint16_t) NO_VAL;
 	job_desc_msg->alloc_sid		= NO_VAL;
@@ -63,13 +67,8 @@ void slurm_init_job_desc_msg(job_desc_msg_t * job_desc_msg)
 	job_desc_msg->contiguous	= (uint16_t) NO_VAL;
 	job_desc_msg->cpu_bind_type	= (uint16_t) NO_VAL;
 	job_desc_msg->cpus_per_task	= (uint16_t) NO_VAL;
-#ifdef HAVE_BG
-{
-	int i;
-	for (i=0; i<SYSTEM_DIMENSIONS; i++)
+	for (i=0; i<dims; i++)
 		job_desc_msg->geometry[i] = (uint16_t) NO_VAL;
-}
-#endif
 	job_desc_msg->group_id		= NO_VAL;
 	job_desc_msg->job_id		= NO_VAL;
 	job_desc_msg->pn_min_cpus	= (uint16_t) NO_VAL;
