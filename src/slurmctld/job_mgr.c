@@ -780,7 +780,7 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	packstr_array(dump_job_ptr->spank_job_env,
 		      dump_job_ptr->spank_job_env_size, buffer);
 
-	(void) gres_plugin_pack_job_state(dump_job_ptr->gres_list, buffer,
+	(void) gres_plugin_job_state_pack(dump_job_ptr->gres_list, buffer,
 					  dump_job_ptr->job_id);
 
 	/* Dump job details, if available */
@@ -942,7 +942,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		safe_unpackstr_array(&spank_job_env, &spank_job_env_size,
 				     buffer);
 
-		if (gres_plugin_unpack_job_state(&gres_list, buffer, job_id) !=
+		if (gres_plugin_job_state_unpack(&gres_list, buffer, job_id) !=
 		    SLURM_SUCCESS)
 			goto unpack_error;
 		gres_plugin_job_state_log(gres_list, job_id);
@@ -3066,7 +3066,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		error_code = ESLURM_INVALID_FEATURE;
 		goto cleanup_fail;
 	}
-	if (gres_plugin_job_gres_validate(job_ptr->gres, &job_ptr->gres_list)) {
+	if (gres_plugin_job_state_validate(job_ptr->gres, &job_ptr->gres_list)){
 		error_code = ESLURM_INVALID_GRES;
 		goto cleanup_fail;
 	}

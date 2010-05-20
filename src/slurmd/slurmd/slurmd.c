@@ -584,7 +584,7 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 	msg->hash_val    = slurm_get_hash_val();
 
 	gres_info = init_buf(1024);
-	if (gres_plugin_pack_node_config(gres_info) != SLURM_SUCCESS)
+	if (gres_plugin_node_config_pack(gres_info) != SLURM_SUCCESS)
 		error("error packing gres configuration");
 	else
 		msg->gres_info   = gres_info;
@@ -890,7 +890,7 @@ _reconfigure(void)
 
 	gres_plugin_reconfig(&did_change);
 	if (did_change) {
-		(void) gres_plugin_load_node_config();
+		(void) gres_plugin_node_config_load();
 		send_registration_msg(SLURM_SUCCESS, false);
 	}
 
@@ -1182,7 +1182,7 @@ _slurmd_init(void)
 	_read_config();
 
 	if ((gres_plugin_init() != SLURM_SUCCESS) ||
-	    (gres_plugin_load_node_config() != SLURM_SUCCESS))
+	    (gres_plugin_node_config_load() != SLURM_SUCCESS))
 		return SLURM_FAILURE;
 	if (slurm_topo_init() != SLURM_SUCCESS)
 		return SLURM_FAILURE;

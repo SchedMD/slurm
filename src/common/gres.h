@@ -83,12 +83,12 @@ extern int gres_plugin_help_msg(char *msg, int msg_size);
 /*
  * Load this node's configuration (i.e. how many resources it has)
  */
-extern int gres_plugin_load_node_config(void);
+extern int gres_plugin_node_config_load(void);
 
 /*
  * Pack this node's configuration into a buffer
  */
-extern int gres_plugin_pack_node_config(Buf buffer);
+extern int gres_plugin_node_config_pack(Buf buffer);
 
 /*
  **************************************************************************
@@ -109,12 +109,12 @@ extern int gres_plugin_init_node_config(char *node_name, char *orig_config,
  * IN buffer - message buffer to unpack
  * IN node_name - name of node whose data is being unpacked
  */
-extern int gres_plugin_unpack_node_config(Buf buffer, char *node_name);
+extern int gres_plugin_node_config_unpack(Buf buffer, char *node_name);
 
 /*
  * Validate a node's configuration and put a gres record onto a list
  *	(expected to be an element of slurmctld's node record).
- * Called immediately after gres_plugin_unpack_node_config().
+ * Called immediately after gres_plugin_node_config_unpack().
  * IN node_name - name of the node for which the gres information applies
  * IN orig_config - Gres information supplied from slurm.conf
  * IN/OUT new_config - Gres information from slurm.conf if FastSchedule=0
@@ -153,15 +153,15 @@ extern int gres_plugin_node_reconfig(char *node_name,
  * IN/OUT buffer - location to write state to
  * IN node_name - name of the node for which the gres information applies
  */
-extern int gres_plugin_pack_node_state(List gres_list, Buf buffer,
+extern int gres_plugin_node_state_pack(List gres_list, Buf buffer,
 				       char *node_name);
 /*
  * Unpack a node's current gres status, called from slurmctld for save/restore
- * OUT gres_list - restored state stored by gres_plugin_pack_node_state()
+ * OUT gres_list - restored state stored by gres_plugin_node_state_pack()
  * IN/OUT buffer - location to read state from
  * IN node_name - name of the node for which the gres information applies
  */
-extern int gres_plugin_unpack_node_state(List *gres_list, Buf buffer,
+extern int gres_plugin_node_state_unpack(List *gres_list, Buf buffer,
 					 char *node_name);
 
 /*
@@ -169,7 +169,7 @@ extern int gres_plugin_unpack_node_state(List *gres_list, Buf buffer,
  * IN gres_list - node gres state information
  * RET a copy of gres_list or NULL on failure
  */
-extern List gres_plugin_dup_node_state(List gres_list);
+extern List gres_plugin_node_state_dup(List gres_list);
 
 /*
  * Deallocate all resources on this node previous allocated to any jobs.
@@ -204,7 +204,7 @@ extern void gres_plugin_node_state_log(List gres_list, char *node_name);
  * OUT gres_list - List of Gres records for this job to track usage
  * RET SLURM_SUCCESS or ESLURM_INVALID_GRES
  */
-extern int gres_plugin_job_gres_validate(char *req_config, List *gres_list);
+extern int gres_plugin_job_state_validate(char *req_config, List *gres_list);
 
 /*
  * Create a copy of a job's gres state
@@ -219,21 +219,21 @@ List gres_plugin_job_state_dup(List gres_list);
  * IN/OUT buffer - location to write state to
  * IN job_id - job's ID
  */
-extern int gres_plugin_pack_job_state(List gres_list, Buf buffer,
+extern int gres_plugin_job_state_pack(List gres_list, Buf buffer,
 				      uint32_t job_id);
 
 /*
  * Unpack a job's current gres status, called from slurmctld for save/restore
- * OUT gres_list - restored state stored by gres_plugin_pack_job_state()
+ * OUT gres_list - restored state stored by gres_plugin_job_state_pack()
  * IN/OUT buffer - location to read state from
  * IN job_id - job's ID
  */
-extern int gres_plugin_unpack_job_state(List *gres_list, Buf buffer,
+extern int gres_plugin_job_state_unpack(List *gres_list, Buf buffer,
 					uint32_t job_id);
 
 /*
  * Determine how many CPUs on the node can be used by this job
- * IN job_gres_list - job's gres_list built by gres_plugin_job_gres_validate()
+ * IN job_gres_list - job's gres_list built by gres_plugin_job_state_validate()
  * IN node_gres_list - node's gres_list built by gres_plugin_node_config_validate()
  * IN use_total_gres - if set then consider all gres resources as available,
  *		       and none are commited to running jobs
@@ -245,7 +245,7 @@ extern uint32_t gres_plugin_job_test(List job_gres_list, List node_gres_list,
 
 /*
  * Allocate resource to a job and update node and job gres information
- * IN job_gres_list - job's gres_list built by gres_plugin_job_gres_validate()
+ * IN job_gres_list - job's gres_list built by gres_plugin_job_state_validate()
  * IN node_gres_list - node's gres_list built by
  *		gres_plugin_node_config_validate()
  * IN node_cnt - total number of nodes originally allocated to the job
@@ -259,7 +259,7 @@ extern int gres_plugin_job_alloc(List job_gres_list, List node_gres_list,
 
 /*
  * Deallocate resource from a job and update node and job gres information
- * IN job_gres_list - job's gres_list built by gres_plugin_job_gres_validate()
+ * IN job_gres_list - job's gres_list built by gres_plugin_job_state_validate()
  * IN node_gres_list - node's gres_list built by
  *		gres_plugin_node_config_validate()
  * IN node_offset - zero-origin index to the node of interest
@@ -271,7 +271,7 @@ extern int gres_plugin_job_dealloc(List job_gres_list, List node_gres_list,
 
 /*
  * Log a job's current gres state
- * IN gres_list - generated by gres_plugin_job_gres_validate()
+ * IN gres_list - generated by gres_plugin_job_state_validate()
  * IN job_id - job's ID
  */
 extern void gres_plugin_job_state_log(List gres_list, uint32_t job_id);

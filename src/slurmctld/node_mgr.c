@@ -216,7 +216,7 @@ _dump_node_state (struct node_record *dump_node_ptr, Buf buffer)
 	pack32  (dump_node_ptr->tmp_disk, buffer);
 	pack32  (dump_node_ptr->reason_uid, buffer);
 	pack_time(dump_node_ptr->reason_time, buffer);
-	(void) gres_plugin_pack_node_state(dump_node_ptr->gres_list, buffer,
+	(void) gres_plugin_node_state_pack(dump_node_ptr->gres_list, buffer,
 					   dump_node_ptr->name);
 }
 
@@ -353,7 +353,7 @@ extern int load_all_node_state ( bool state_only )
 			safe_unpack32 (&tmp_disk,    buffer);
 			safe_unpack32 (&reason_uid,  buffer);
 			safe_unpack_time (&reason_time, buffer);
-			if (gres_plugin_unpack_node_state(&gres_list, buffer,
+			if (gres_plugin_node_state_unpack(&gres_list, buffer,
 					node_name) != SLURM_SUCCESS)
 				goto unpack_error;
 			base_state = node_state & NODE_STATE_BASE;
@@ -1476,7 +1476,7 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 	if (slurm_get_preempt_mode() != PREEMPT_MODE_OFF)
 		gang_flag = true;
 
-	if (gres_plugin_unpack_node_config(reg_msg->gres_info,
+	if (gres_plugin_node_config_unpack(reg_msg->gres_info,
 			node_ptr->name) != SLURM_SUCCESS) {
 		error_code = SLURM_ERROR;
 		reason_down = "Could not unpack gres data";
@@ -1813,7 +1813,7 @@ extern int validate_nodes_via_front_end(
 	}
 	list_iterator_destroy(job_iterator);
 
-	(void) gres_plugin_unpack_node_config(reg_msg->gres_info,
+	(void) gres_plugin_node_config_unpack(reg_msg->gres_info,
 					      node_record_table_ptr->name);
 	for (i=0; i<node_record_count; i++) {
 		node_ptr = &node_record_table_ptr[i];
