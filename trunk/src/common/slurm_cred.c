@@ -53,13 +53,14 @@
 #endif /* WITH_PTHREADS */
 
 #include "src/common/bitstring.h"
+#include "src/common/gres.h"
 #include "src/common/io_hdr.h"
+#include "src/common/job_resources.h"
 #include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/plugin.h"
 #include "src/common/plugrack.h"
-#include "src/common/job_resources.h"
 #include "src/common/slurm_cred.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xassert.h"
@@ -173,6 +174,8 @@ struct slurm_job_credential {
 	uint16_t *cores_per_socket;
 	uint16_t *sockets_per_node;
 	uint32_t *sock_core_rep_count;
+
+	List job_gres_list;		/* Generic resources allocated to JOB */
 
 	bitstr_t *job_core_bitmap;
 	uint32_t  job_nhosts;	/* count of nodes allocated to JOB */
@@ -627,6 +630,7 @@ slurm_cred_create(slurm_cred_ctx_t ctx, slurm_cred_arg_t *arg)
 	cred->jobid  = arg->jobid;
 	cred->stepid = arg->stepid;
 	cred->uid    = arg->uid;
+	cred->job_gres_list  = gres_plugin_job_state_dup(arg->job_gres_list);
 	cred->job_mem_limit  = arg->job_mem_limit;
 	cred->step_mem_limit = arg->step_mem_limit;
 	cred->step_hostlist  = xstrdup(arg->step_hostlist);
@@ -692,6 +696,7 @@ slurm_cred_copy(slurm_cred_t *cred)
 	rcred->jobid  = cred->jobid;
 	rcred->stepid = cred->stepid;
 	rcred->uid    = cred->uid;
+	rcred->job_gres_list  = gres_plugin_job_state_dup(cred->job_gres_list);
 	rcred->job_mem_limit  = cred->job_mem_limit;
 	rcred->step_mem_limit = cred->step_mem_limit;
 	rcred->step_hostlist  = xstrdup(cred->step_hostlist);
@@ -804,6 +809,8 @@ void slurm_cred_free_args(slurm_cred_arg_t *arg)
 		arg->step_core_bitmap = NULL;
 	}
 	xfree(arg->cores_per_socket);
+	if (arg->job_gres_list)
+		list_destroy(arg->job_gres_list);
 	xfree(arg->step_hostlist);
 	xfree(arg->job_hostlist);
 	xfree(arg->sock_core_rep_count);
@@ -823,6 +830,7 @@ slurm_cred_get_args(slurm_cred_t *cred, slurm_cred_arg_t *arg)
 	arg->jobid    = cred->jobid;
 	arg->stepid   = cred->stepid;
 	arg->uid      = cred->uid;
+	arg->job_gres_list  = gres_plugin_job_state_dup(cred->job_gres_list);
 	arg->job_mem_limit  = cred->job_mem_limit;
 	arg->step_mem_limit = cred->step_mem_limit;
 	arg->step_hostlist  = xstrdup(cred->step_hostlist);
@@ -909,6 +917,7 @@ slurm_cred_verify(slurm_cred_ctx_t ctx, slurm_cred_t *cred,
 	arg->jobid    = cred->jobid;
 	arg->stepid   = cred->stepid;
 	arg->uid      = cred->uid;
+	arg->job_gres_list  = gres_plugin_job_state_dup(cred->job_gres_list);
 	arg->job_mem_limit  = cred->job_mem_limit;
 	arg->step_mem_limit = cred->step_mem_limit;
 	arg->step_hostlist = xstrdup(cred->step_hostlist);
@@ -975,6 +984,8 @@ slurm_cred_destroy(slurm_cred_t *cred)
 	xfree(cred->sock_core_rep_count);
 	xfree(cred->sockets_per_node);
 #endif
+	if (cred->job_gres_list)
+		list_destroy(cred->job_gres_list);
 	xfree(cred->step_hostlist);
 	xfree(cred->signature);
 	xassert(cred->magic = ~CRED_MAGIC);
@@ -1295,6 +1306,9 @@ slurm_cred_unpack(Buf buffer)
 	safe_unpack32(          &cred->stepid,        buffer);
 	safe_unpack32(          &cred_uid,            buffer);
 	cred->uid = cred_uid;
+	if (gres_plugin_job_state_unpack(&cred->job_gres_list, buffer,
+					 cred->jobid) != SLURM_SUCCESS)
+		goto unpack_error;
 	safe_unpack32(          &cred->job_mem_limit,  buffer);
 	safe_unpack32(          &cred->step_mem_limit, buffer);
 	safe_unpackstr_xmalloc( &cred->step_hostlist, &len, buffer);
@@ -1623,6 +1637,7 @@ _pack_cred(slurm_cred_t *cred, Buf buffer)
 	pack32(cred->stepid,         buffer);
 	pack32(cred_uid,             buffer);
 
+	gres_plugin_job_state_pack(cred->job_gres_list, buffer, cred->jobid);
 	pack32(cred->job_mem_limit,  buffer);
 	pack32(cred->step_mem_limit, buffer);
 	packstr(cred->step_hostlist, buffer);

@@ -57,33 +57,35 @@
 #include <grp.h>
 
 #include "src/common/env.h"
+#include "src/common/fd.h"
+#include "src/common/forward.h"
+#include "src/common/gres.h"
 #include "src/common/hostlist.h"
 #include "src/common/jobacct_common.h"
+#include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/node_select.h"
+#include "src/common/read_config.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_cred.h"
 #include "src/common/slurm_jobacct_gather.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_interface.h"
-#include "src/common/xstring.h"
-#include "src/common/xmalloc.h"
-#include "src/common/list.h"
+#include "src/common/stepd_api.h"
 #include "src/common/uid.h"
 #include "src/common/util-net.h"
-#include "src/common/forward.h"
-#include "src/common/read_config.h"
-#include "src/common/fd.h"
-#include "src/common/stepd_api.h"
+#include "src/common/xstring.h"
+#include "src/common/xmalloc.h"
 
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/slurmd/reverse_tree_math.h"
 #include "src/slurmd/slurmd/xcpu.h"
+
 #include "src/slurmd/common/proctrack.h"
-#include "src/slurmd/common/slurmstepd_init.h"
 #include "src/slurmd/common/run_script.h"
+#include "src/slurmd/common/slurmstepd_init.h"
 #include "src/slurmd/common/task_plugin.h"
 
 #define _LIMIT_INFO 0
@@ -1095,9 +1097,6 @@ _set_batch_job_limits(slurm_msg_t *msg)
 	bool cpu_log = slurm_get_debug_flags() & DEBUG_FLAG_CPU_BIND;
 	slurm_cred_arg_t arg;
 	batch_job_launch_msg_t *req = (batch_job_launch_msg_t *)msg->data;
-
-	if (slurm_cred_get_args(req->cred, &arg) != SLURM_SUCCESS)
-		return;
 
 	if (cpu_log) {
 		char *per_job = "";

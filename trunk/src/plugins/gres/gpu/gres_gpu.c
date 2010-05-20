@@ -955,7 +955,8 @@ extern int job_dealloc(void *job_gres_data, void *node_gres_data,
 extern void job_state_log(void *gres_data, uint32_t job_id)
 {
 	gpu_job_state_t *gres_ptr;
-	char *mult;
+	char *mult, tmp_str[128];
+	int i;
 
 	xassert(gres_data);
 	gres_ptr = (gpu_job_state_t *) gres_data;
@@ -965,4 +966,14 @@ extern void job_state_log(void *gres_data, uint32_t job_id)
 	else
 		mult = "node";
 	info("  gpu_cnt %u per %s", gres_ptr->gpu_cnt_alloc, mult);
+
+	if (gres_ptr->node_cnt && gres_ptr->gpu_bit_alloc) {
+		for (i=0; i<gres_ptr->node_cnt; i++) {
+			bit_fmt(tmp_str, sizeof(tmp_str),
+				gres_ptr->gpu_bit_alloc[i]);
+			info("  gpu_bit_alloc[%d]:%s", i, tmp_str);
+		}
+	} else {
+		info("  gpu_bit_alloc:NULL");
+	}
 }
