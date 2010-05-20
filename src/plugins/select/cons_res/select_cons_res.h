@@ -111,9 +111,11 @@ struct node_res_record {
 
 /* per-node resource usage record */
 struct node_use_record {
-	uint16_t node_state;		/* see node_cr_state comments */
 	uint32_t alloc_memory;		/* real memory reserved by already
 					 * scheduled jobs */
+	List gres_list;			/* list of gres state info managed by 
+					 * plugins */
+	uint16_t node_state;		/* see node_cr_state comments */
 };
 
 

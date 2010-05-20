@@ -5,6 +5,10 @@ documents those changes that are of interest to users and admins.
 =============================
  -- Fixed issue with sacctmgr if quering against non-existant cluster it
     works the same way as 2.1.
+ -- Added infrastructure to support allocation of generic node resources (gres).
+    -Modified select/linear and select/cons_res plugins to allocate resources
+     at the level of a job without oversubcription.
+    -Modified job step credential to include the job's gres allocation details.
 
 * Changes in SLURM 2.2.0.pre6
 =============================

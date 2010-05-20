@@ -1418,7 +1418,7 @@ static int _rm_job_from_nodes(struct cr_record *cr_ptr,
 		else
 			gres_list = node_ptr->gres_list;
 		gres_plugin_job_dealloc(job_ptr->gres_list, gres_list,
-					node_offset, cpu_cnt);
+					node_offset);
 		gres_plugin_node_state_log(gres_list, node_ptr->name);
 
 		if (exclusive) {
@@ -1565,8 +1565,7 @@ static int _rm_job_from_one_node(struct job_record *job_ptr,
 		gres_list = cr_ptr->nodes[i].gres_list;
 	else
 		gres_list = node_ptr->gres_list;
-	gres_plugin_job_dealloc(job_ptr->gres_list, gres_list, node_offset,
-				cpu_cnt);
+	gres_plugin_job_dealloc(job_ptr->gres_list, gres_list, node_offset);
 	gres_plugin_node_state_log(gres_list, node_ptr->name);
 
 	exclusive = (job_ptr->details->shared == 0);

@@ -263,11 +263,10 @@ extern int gres_plugin_job_alloc(List job_gres_list, List node_gres_list,
  * IN node_gres_list - node's gres_list built by
  *		gres_plugin_node_config_validate()
  * IN node_offset - zero-origin index to the node of interest
- * IN cpu_cnt - number of CPUs allocated to this job on this node
  * RET SLURM_SUCCESS or error code
  */
 extern int gres_plugin_job_dealloc(List job_gres_list, List node_gres_list, 
-				   int node_offset, uint32_t cpu_cnt);
+				   int node_offset);
 
 /*
  * Log a job's current gres state
