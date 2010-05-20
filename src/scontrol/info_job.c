@@ -42,10 +42,8 @@
 
 #include "scontrol.h"
 #include "src/common/stepd_api.h"
-#ifdef HAVE_BG
 #include "src/plugins/select/bluegene/plugin/bg_boot_time.h"
 #include "src/plugins/select/bluegene/wrap_rm_api.h"
-#endif
 
 #define POLL_SLEEP	3	/* retry interval in seconds  */
 
@@ -696,7 +694,6 @@ scontrol_encode_hostlist(char *hostlist)
 	return SLURM_SUCCESS;
 }
 
-#ifdef HAVE_BG
 /*
  * Test if any BG blocks are in deallocating state since they are
  * probably related to this job we will want to sleep longer
@@ -787,7 +784,7 @@ static int _wait_bluegene_block_ready(resource_allocation_response_msg_t *alloc)
 
 	return is_ready;
 }
-#else
+
 static int _wait_nodes_ready(uint32_t job_id)
 {
 	int is_ready = SLURM_ERROR, i, rc = 0;
@@ -831,7 +828,6 @@ static int _wait_nodes_ready(uint32_t job_id)
 
 	return is_ready;
 }
-#endif	/* HAVE_BG */
 
 /*
  * Wait until a job is ready to execute or enters some failed state
@@ -849,18 +845,18 @@ extern int scontrol_job_ready(char *job_id_str)
 		return SLURM_ERROR;
 	}
 
-#ifdef HAVE_BG
-	resource_allocation_response_msg_t *alloc;
-	rc = slurm_allocation_lookup_lite(job_id, &alloc);
-	if (rc == SLURM_SUCCESS) {
-		rc = _wait_bluegene_block_ready(alloc);
-		slurm_free_resource_allocation_response_msg(alloc);
-	} else {
-		error("slurm_allocation_lookup_lite: %m");
-		rc = SLURM_ERROR;
-	}
-#else
-	rc = _wait_nodes_ready(job_id);
-#endif
+	if(cluster_flags & CLUSTER_FLAG_BG) {
+		resource_allocation_response_msg_t *alloc;
+		rc = slurm_allocation_lookup_lite(job_id, &alloc);
+		if (rc == SLURM_SUCCESS) {
+			rc = _wait_bluegene_block_ready(alloc);
+			slurm_free_resource_allocation_response_msg(alloc);
+		} else {
+			error("slurm_allocation_lookup_lite: %m");
+			rc = SLURM_ERROR;
+		}
+	} else
+		rc = _wait_nodes_ready(job_id);
+
 	return rc;
 }

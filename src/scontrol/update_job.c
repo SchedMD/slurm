@@ -494,7 +494,6 @@ scontrol_update_job (int argc, char *argv[])
 			job_msg.dependency = val;
 			update_cnt++;
 		}
-#ifdef HAVE_BG
 		else if (strncasecmp(tag, "Geometry", MAX(taglen, 2)) == 0) {
 			char* token, *delimiter = ",x", *next_ptr;
 			int j, rc = 0;
@@ -552,7 +551,6 @@ scontrol_update_job (int argc, char *argv[])
 			if(job_msg.conn_type != (uint16_t)NO_VAL)
 				update_cnt++;
 		}
-#endif
 		else if (strncasecmp(tag, "Licenses", MAX(taglen, 1)) == 0) {
 			job_msg.licenses = val;
 			update_cnt++;

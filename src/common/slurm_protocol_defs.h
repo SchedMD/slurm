@@ -66,7 +66,7 @@
 #include "src/common/slurm_step_layout.h"
 #include "src/common/switch.h"
 #include "src/common/xassert.h"
-//#include "src/common/slurm_jobacct_common.h"
+#include "src/common/slurmdb_defs.h"
 
 #define MAX_SLURM_NAME 64
 #define FORWARD_INIT 0xfffe

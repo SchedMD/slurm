@@ -90,19 +90,21 @@ static void _sprint_range(char *str, uint32_t str_size,
 			  uint32_t lower, uint32_t upper)
 {
 	char tmp[128];
+	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 
-#ifdef HAVE_BG
-	convert_num_unit((float)lower, tmp, sizeof(tmp), UNIT_NONE);
-#else
-	snprintf(tmp, sizeof(tmp), "%u", lower);
-#endif
+	if(cluster_flags & CLUSTER_FLAG_BG) {
+		convert_num_unit((float)lower, tmp, sizeof(tmp), UNIT_NONE);
+	} else {
+		snprintf(tmp, sizeof(tmp), "%u", lower);
+	}
 	if (upper > 0) {
     		char tmp2[128];
-#ifdef HAVE_BG
-		convert_num_unit((float)upper, tmp2, sizeof(tmp2), UNIT_NONE);
-#else
-		snprintf(tmp2, sizeof(tmp2), "%u", upper);
-#endif
+		if(cluster_flags & CLUSTER_FLAG_BG) {
+			convert_num_unit((float)upper, tmp2,
+					 sizeof(tmp2), UNIT_NONE);
+		} else {
+			snprintf(tmp2, sizeof(tmp2), "%u", upper);
+		}
 		snprintf(str, str_size, "%s-%s", tmp, tmp2);
 	} else
 		snprintf(str, str_size, "%s", tmp);
@@ -145,14 +147,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	char *out = NULL;
 	time_t run_time;
 	uint32_t min_nodes, max_nodes = 0;
-
-#ifdef HAVE_BG
-	char select_buf[122];
-	char *nodelist = "BP_List";
-	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
-				    SELECT_JOBDATA_IONODES,
-				    &ionodes);
-#else
+	char *nodelist = "NodeList";
 	bitstr_t *core_bitmap;
 	char *host;
 	int sock_inx, sock_reps, last;
@@ -162,8 +157,15 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	uint32_t last_mem_alloc = NO_VAL;
 	char last_hosts[128];
 	hostlist_t hl, hl_last;
-	char *nodelist = "NodeList";
-#endif
+	char select_buf[122];
+	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
+
+	if(cluster_flags & CLUSTER_FLAG_BG) {
+		nodelist = "BP_List";
+		select_g_select_jobinfo_get(job_ptr->select_jobinfo,
+					    SELECT_JOBDATA_IONODES,
+					    &ionodes);
+	}
 
 	/****** Line 1 ******/
 	snprintf(tmp_line, sizeof(tmp_line),
@@ -383,19 +385,20 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 		xstrcat(out, "\n   ");
 
 	/****** Line 14 ******/
-#ifdef HAVE_BG
-	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
-				    SELECT_JOBDATA_NODE_CNT,
-				    &min_nodes);
-	if ((min_nodes == 0) || (min_nodes == NO_VAL)) {
+	if(cluster_flags & CLUSTER_FLAG_BG) {
+		select_g_select_jobinfo_get(job_ptr->select_jobinfo,
+					    SELECT_JOBDATA_NODE_CNT,
+					    &min_nodes);
+		if ((min_nodes == 0) || (min_nodes == NO_VAL)) {
+			min_nodes = job_ptr->num_nodes;
+			max_nodes = job_ptr->max_nodes;
+		} else if(job_ptr->max_nodes)
+			max_nodes = min_nodes;
+	} else {
 		min_nodes = job_ptr->num_nodes;
 		max_nodes = job_ptr->max_nodes;
-	} else if(job_ptr->max_nodes)
-		max_nodes = min_nodes;
-#else
-	min_nodes = job_ptr->num_nodes;
-	max_nodes = job_ptr->max_nodes;
-#endif
+	}
+
 	_sprint_range(tmp1, sizeof(tmp1), job_ptr->num_cpus, job_ptr->max_cpus);
 	_sprint_range(tmp2, sizeof(tmp2), min_nodes, max_nodes);
 	snprintf(tmp_line, sizeof(tmp_line),
@@ -412,165 +415,165 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	if (!job_resrcs)
 		goto line14;
 
-#ifndef HAVE_BG
-	if (!job_resrcs->core_bitmap)
-		goto line14;
+	if(cluster_flags & CLUSTER_FLAG_BG) {
+		if ((job_resrcs->cpu_array_cnt > 0) &&
+		    (job_resrcs->cpu_array_value) &&
+		    (job_resrcs->cpu_array_reps)) {
+			int length = 0;
+			xstrcat(out, "CPUs=");
+			length += 10;
+			for (i = 0; i < job_resrcs->cpu_array_cnt; i++) {
+				if (length > 70) {
+					/* skip to last CPU group entry */
+					if (i < job_resrcs->cpu_array_cnt - 1) {
+						continue;
+					}
+					/* add elipsis before last entry */
+					xstrcat(out, "...,");
+					length += 4;
+				}
 
-	last  = bit_fls(job_resrcs->core_bitmap);
-	if (last == -1)
-		goto line14;
-
-	hl = hostlist_create(job_ptr->nodes);
-	if (!hl) {
-		error("slurm_sprint_job_info: hostlist_create: %s",
-		      job_ptr->nodes);
-		return NULL;
-	}
-	hl_last = hostlist_create(NULL);
-	if (!hl_last) {
-		error("slurm_sprint_job_info: hostlist_create: NULL");
-		hostlist_destroy(hl);
-		return NULL;
-	}
-
-	bit_inx = 0;
-	i = sock_inx = sock_reps = 0;
-	abs_node_inx = job_ptr->node_inx[i];
-
-/*	tmp1[] stores the current cpu(s) allocated	*/
-	tmp2[0] = '\0';	/* stores last cpu(s) allocated */
-	for (rel_node_inx=0; rel_node_inx < job_resrcs->nhosts;
-	     rel_node_inx++) {
-
-		if (sock_reps >=
-		    job_resrcs->sock_core_rep_count[sock_inx]) {
-			sock_inx++;
-			sock_reps = 0;
+				snprintf(tmp_line, sizeof(tmp_line), "%d",
+					 job_resrcs->cpus[i]);
+				xstrcat(out, tmp_line);
+				length += strlen(tmp_line);
+				if (job_resrcs->cpu_array_reps[i] > 1) {
+					snprintf(tmp_line, sizeof(tmp_line),
+						 "*%d",
+						 job_resrcs->cpu_array_reps[i]);
+					xstrcat(out, tmp_line);
+					length += strlen(tmp_line);
+				}
+				if (i < job_resrcs->cpu_array_cnt - 1) {
+					xstrcat(out, ",");
+					length++;
+				}
+			}
+			if (one_liner)
+				xstrcat(out, " ");
+			else
+				xstrcat(out, "\n   ");
 		}
-		sock_reps++;
+	} else {
+		if (!job_resrcs->core_bitmap)
+			goto line14;
 
-		bit_reps = job_resrcs->sockets_per_node[sock_inx] *
-			job_resrcs->cores_per_socket[sock_inx];
+		last  = bit_fls(job_resrcs->core_bitmap);
+		if (last == -1)
+			goto line14;
 
-		core_bitmap = bit_alloc(bit_reps);
-		if (core_bitmap == NULL) {
-			error("bit_alloc malloc failure");
-			hostlist_destroy(hl_last);
+		hl = hostlist_create(job_ptr->nodes);
+		if (!hl) {
+			error("slurm_sprint_job_info: hostlist_create: %s",
+			      job_ptr->nodes);
+			return NULL;
+		}
+		hl_last = hostlist_create(NULL);
+		if (!hl_last) {
+			error("slurm_sprint_job_info: hostlist_create: NULL");
 			hostlist_destroy(hl);
 			return NULL;
 		}
 
-		for (j=0; j < bit_reps; j++) {
-			if (bit_test(job_resrcs->core_bitmap, bit_inx))
-				bit_set(core_bitmap, j);
-			bit_inx++;
-		}
+		bit_inx = 0;
+		i = sock_inx = sock_reps = 0;
+		abs_node_inx = job_ptr->node_inx[i];
 
-		bit_fmt(tmp1, sizeof(tmp1), core_bitmap);
-		bit_free(core_bitmap);
-		host = hostlist_shift(hl);
+/*	tmp1[] stores the current cpu(s) allocated	*/
+		tmp2[0] = '\0';	/* stores last cpu(s) allocated */
+		for (rel_node_inx=0; rel_node_inx < job_resrcs->nhosts;
+		     rel_node_inx++) {
+
+			if (sock_reps >=
+			    job_resrcs->sock_core_rep_count[sock_inx]) {
+				sock_inx++;
+				sock_reps = 0;
+			}
+			sock_reps++;
+
+			bit_reps = job_resrcs->sockets_per_node[sock_inx] *
+				job_resrcs->cores_per_socket[sock_inx];
+
+			core_bitmap = bit_alloc(bit_reps);
+			if (core_bitmap == NULL) {
+				error("bit_alloc malloc failure");
+				hostlist_destroy(hl_last);
+				hostlist_destroy(hl);
+				return NULL;
+			}
+
+			for (j=0; j < bit_reps; j++) {
+				if (bit_test(job_resrcs->core_bitmap, bit_inx))
+					bit_set(core_bitmap, j);
+				bit_inx++;
+			}
+
+			bit_fmt(tmp1, sizeof(tmp1), core_bitmap);
+			bit_free(core_bitmap);
+			host = hostlist_shift(hl);
 /*
  *		If the allocation values for this host are not the same as the
  *		last host, print the report of the last group of hosts that had
  *		identical allocation values.
  */
-		if (strcmp(tmp1, tmp2) ||
-		    (last_mem_alloc_ptr != job_resrcs->memory_allocated) ||
-		    (job_resrcs->memory_allocated &&
-		     (last_mem_alloc !=
-		      job_resrcs->memory_allocated[rel_node_inx]))) {
-			if (hostlist_count(hl_last)) {
-				hostlist_ranged_string(hl_last,
-						       sizeof(last_hosts),
-						       last_hosts);
-				snprintf(tmp_line, sizeof(tmp_line),
-					 "  Nodes=%s CPU_IDs=%s Mem=%u",
-					 last_hosts, tmp2, last_mem_alloc_ptr ?
-					 last_mem_alloc : 0);
-				xstrcat(out, tmp_line);
-				if (one_liner)
-					xstrcat(out, " ");
-				else
-					xstrcat(out, "\n   ");
+			if (strcmp(tmp1, tmp2) ||
+			    (last_mem_alloc_ptr != job_resrcs->memory_allocated) ||
+			    (job_resrcs->memory_allocated &&
+			     (last_mem_alloc !=
+			      job_resrcs->memory_allocated[rel_node_inx]))) {
+				if (hostlist_count(hl_last)) {
+					hostlist_ranged_string(hl_last,
+							       sizeof(last_hosts),
+							       last_hosts);
+					snprintf(tmp_line, sizeof(tmp_line),
+						 "  Nodes=%s CPU_IDs=%s Mem=%u",
+						 last_hosts, tmp2, last_mem_alloc_ptr ?
+						 last_mem_alloc : 0);
+					xstrcat(out, tmp_line);
+					if (one_liner)
+						xstrcat(out, " ");
+					else
+						xstrcat(out, "\n   ");
 
-				hostlist_destroy(hl_last);
-				hl_last = hostlist_create(NULL);
-			}
-			strcpy(tmp2, tmp1);
-			last_mem_alloc_ptr = job_resrcs->memory_allocated;
-			if (last_mem_alloc_ptr)
-				last_mem_alloc = job_resrcs->
-					memory_allocated[rel_node_inx];
-			else
-				last_mem_alloc = NO_VAL;
-		}
-		hostlist_push_host(hl_last, host);
-		free(host);
-
-		if (bit_inx > last)
-			break;
-
-		if (abs_node_inx > job_ptr->node_inx[i+1]) {
-			i += 2;
-			abs_node_inx = job_ptr->node_inx[i];
-		} else {
-			abs_node_inx++;
-		}
-	}
-
-	if (hostlist_count(hl_last)) {
-		hostlist_ranged_string(hl_last, sizeof(last_hosts), last_hosts);
-		snprintf(tmp_line, sizeof(tmp_line),
-			 "  Nodes=%s CPU_IDs=%s Mem=%u", last_hosts, tmp2,
-			 last_mem_alloc_ptr ? last_mem_alloc : 0);
-		xstrcat(out, tmp_line);
-		if (one_liner)
-			xstrcat(out, " ");
-		else
-			xstrcat(out, "\n   ");
-	}
-	hostlist_destroy(hl);
-	hostlist_destroy(hl_last);
-#else
-	if ((job_resrcs->cpu_array_cnt > 0) &&
-	    (job_resrcs->cpu_array_value) &&
-	    (job_resrcs->cpu_array_reps)) {
-		int length = 0;
-		xstrcat(out, "CPUs=");
-		length += 10;
-		for (i = 0; i < job_resrcs->cpu_array_cnt; i++) {
-			if (length > 70) {
-				/* skip to last CPU group entry */
-			    	if (i < job_resrcs->cpu_array_cnt - 1) {
-			    		continue;
+					hostlist_destroy(hl_last);
+					hl_last = hostlist_create(NULL);
 				}
-				/* add elipsis before last entry */
-			    	xstrcat(out, "...,");
-				length += 4;
+				strcpy(tmp2, tmp1);
+				last_mem_alloc_ptr = job_resrcs->memory_allocated;
+				if (last_mem_alloc_ptr)
+					last_mem_alloc = job_resrcs->
+						memory_allocated[rel_node_inx];
+				else
+					last_mem_alloc = NO_VAL;
 			}
+			hostlist_push_host(hl_last, host);
+			free(host);
 
-			snprintf(tmp_line, sizeof(tmp_line), "%d",
-				 job_resrcs->cpus[i]);
-			xstrcat(out, tmp_line);
-			length += strlen(tmp_line);
-		    	if (job_resrcs->cpu_array_reps[i] > 1) {
-				snprintf(tmp_line, sizeof(tmp_line), "*%d",
-					 job_resrcs->cpu_array_reps[i]);
-				xstrcat(out, tmp_line);
-				length += strlen(tmp_line);
-			}
-			if (i < job_resrcs->cpu_array_cnt - 1) {
-				xstrcat(out, ",");
-				length++;
+			if (bit_inx > last)
+				break;
+
+			if (abs_node_inx > job_ptr->node_inx[i+1]) {
+				i += 2;
+				abs_node_inx = job_ptr->node_inx[i];
+			} else {
+				abs_node_inx++;
 			}
 		}
-		if (one_liner)
-			xstrcat(out, " ");
-		else
-			xstrcat(out, "\n   ");
-	}
-#endif
 
+		if (hostlist_count(hl_last)) {
+			hostlist_ranged_string(hl_last, sizeof(last_hosts), last_hosts);
+			snprintf(tmp_line, sizeof(tmp_line),
+				 "  Nodes=%s CPU_IDs=%s Mem=%u", last_hosts, tmp2,
+				 last_mem_alloc_ptr ? last_mem_alloc : 0);
+			xstrcat(out, tmp_line);
+			if (one_liner)
+				xstrcat(out, " ");
+			else
+				xstrcat(out, "\n   ");
+		}
+		hostlist_destroy(hl);
+		hostlist_destroy(hl_last);
+	}
 	/****** Line 15 ******/
 line14:
 	if (job_ptr->pn_min_memory & MEM_PER_CPU) {
@@ -578,14 +581,16 @@ line14:
 		tmp3_ptr = "CPU";
 	} else
 		tmp3_ptr = "Node";
-#ifdef HAVE_BG
-	convert_num_unit((float)job_ptr->pn_min_cpus, tmp1, sizeof(tmp1),
-			 UNIT_NONE);
-	snprintf(tmp_line, sizeof(tmp_line), "MinCPUsNode=%s",	tmp1);
-#else
-	snprintf(tmp_line, sizeof(tmp_line), "MinCPUsNode=%u",
-		 job_ptr->pn_min_cpus);
-#endif
+
+	if(cluster_flags & CLUSTER_FLAG_BG) {
+		convert_num_unit((float)job_ptr->pn_min_cpus,
+				 tmp1, sizeof(tmp1), UNIT_NONE);
+		snprintf(tmp_line, sizeof(tmp_line), "MinCPUsNode=%s",	tmp1);
+	} else {
+		snprintf(tmp_line, sizeof(tmp_line), "MinCPUsNode=%u",
+			 job_ptr->pn_min_cpus);
+	}
+
 	xstrcat(out, tmp_line);
 	convert_num_unit((float)job_ptr->pn_min_memory, tmp1, sizeof(tmp1),
 			 UNIT_MEGA);
@@ -641,98 +646,98 @@ line14:
 		xstrcat(out, tmp_line);
 	}
 
-#ifdef HAVE_BG
-	/****** Line 20 (optional) ******/
-	select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,
-				       select_buf, sizeof(select_buf),
-				       SELECT_PRINT_BG_ID);
-	if (select_buf[0] != '\0') {
-		if (one_liner)
-			xstrcat(out, " ");
-		else
-			xstrcat(out, "\n   ");
-		snprintf(tmp_line, sizeof(tmp_line),
-			 "Block_ID=%s", select_buf);
-		xstrcat(out, tmp_line);
-	}
+	if(cluster_flags & CLUSTER_FLAG_BG) {
+		/****** Line 20 (optional) ******/
+		select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,
+					       select_buf, sizeof(select_buf),
+					       SELECT_PRINT_BG_ID);
+		if (select_buf[0] != '\0') {
+			if (one_liner)
+				xstrcat(out, " ");
+			else
+				xstrcat(out, "\n   ");
+			snprintf(tmp_line, sizeof(tmp_line),
+				 "Block_ID=%s", select_buf);
+			xstrcat(out, tmp_line);
+		}
 
-	/****** Line 21 (optional) ******/
-	select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,
-				       select_buf, sizeof(select_buf),
-				       SELECT_PRINT_MIXED_SHORT);
-	if (select_buf[0] != '\0') {
-		if (one_liner)
-			xstrcat(out, " ");
-		else
-			xstrcat(out, "\n   ");
-		xstrcat(out, select_buf);
-	}
+		/****** Line 21 (optional) ******/
+		select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,
+					       select_buf, sizeof(select_buf),
+					       SELECT_PRINT_MIXED_SHORT);
+		if (select_buf[0] != '\0') {
+			if (one_liner)
+				xstrcat(out, " ");
+			else
+				xstrcat(out, "\n   ");
+			xstrcat(out, select_buf);
+		}
 
-#ifdef HAVE_BGL
-	/****** Line 22 (optional) ******/
-	select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,
-				       select_buf, sizeof(select_buf),
-				       SELECT_PRINT_BLRTS_IMAGE);
-	if (select_buf[0] != '\0') {
-		if (one_liner)
-			xstrcat(out, " ");
-		else
-			xstrcat(out, "\n   ");
-		snprintf(tmp_line, sizeof(tmp_line),
-			 "BlrtsImage=%s", select_buf);
-		xstrcat(out, tmp_line);
-	}
-#endif
-	/****** Line 23 (optional) ******/
-	select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,
+		if(cluster_flags & CLUSTER_FLAG_BGL) {
+			/****** Line 22 (optional) ******/
+			select_g_select_jobinfo_sprint(
+				job_ptr->select_jobinfo,
 				select_buf, sizeof(select_buf),
-				SELECT_PRINT_LINUX_IMAGE);
-	if (select_buf[0] != '\0') {
-		if (one_liner)
-			xstrcat(out, " ");
-		else
-			xstrcat(out, "\n   ");
-#ifdef HAVE_BGL
-		snprintf(tmp_line, sizeof(tmp_line),
-			 "LinuxImage=%s", select_buf);
-#else
-		snprintf(tmp_line, sizeof(tmp_line),
-			 "CnloadImage=%s", select_buf);
-#endif
-		xstrcat(out, tmp_line);
+				SELECT_PRINT_BLRTS_IMAGE);
+			if (select_buf[0] != '\0') {
+				if (one_liner)
+					xstrcat(out, " ");
+				else
+					xstrcat(out, "\n   ");
+				snprintf(tmp_line, sizeof(tmp_line),
+					 "BlrtsImage=%s", select_buf);
+				xstrcat(out, tmp_line);
+			}
+		}
+		/****** Line 23 (optional) ******/
+		select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,
+					       select_buf, sizeof(select_buf),
+					       SELECT_PRINT_LINUX_IMAGE);
+		if (select_buf[0] != '\0') {
+			if (one_liner)
+				xstrcat(out, " ");
+			else
+				xstrcat(out, "\n   ");
+			if(cluster_flags & CLUSTER_FLAG_BGL)
+				snprintf(tmp_line, sizeof(tmp_line),
+					 "LinuxImage=%s", select_buf);
+			else
+				snprintf(tmp_line, sizeof(tmp_line),
+					 "CnloadImage=%s", select_buf);
+
+			xstrcat(out, tmp_line);
+		}
+		/****** Line 24 (optional) ******/
+		select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,
+					       select_buf, sizeof(select_buf),
+					       SELECT_PRINT_MLOADER_IMAGE);
+		if (select_buf[0] != '\0') {
+			if (one_liner)
+				xstrcat(out, " ");
+			else
+				xstrcat(out, "\n   ");
+			snprintf(tmp_line, sizeof(tmp_line),
+				 "MloaderImage=%s", select_buf);
+			xstrcat(out, tmp_line);
+		}
+		/****** Line 25 (optional) ******/
+		select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,
+					       select_buf, sizeof(select_buf),
+					       SELECT_PRINT_RAMDISK_IMAGE);
+		if (select_buf[0] != '\0') {
+			if (one_liner)
+				xstrcat(out, " ");
+			else
+				xstrcat(out, "\n   ");
+			if(cluster_flags & CLUSTER_FLAG_BGL)
+				snprintf(tmp_line, sizeof(tmp_line),
+					 "RamDiskImage=%s", select_buf);
+			else
+				snprintf(tmp_line, sizeof(tmp_line),
+					 "IoloadImage=%s", select_buf);
+			xstrcat(out, tmp_line);
+		}
 	}
-	/****** Line 24 (optional) ******/
-	select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,
-				select_buf, sizeof(select_buf),
-				SELECT_PRINT_MLOADER_IMAGE);
-	if (select_buf[0] != '\0') {
-		if (one_liner)
-			xstrcat(out, " ");
-		else
-			xstrcat(out, "\n   ");
-		snprintf(tmp_line, sizeof(tmp_line),
-			 "MloaderImage=%s", select_buf);
-		xstrcat(out, tmp_line);
-	}
-	/****** Line 25 (optional) ******/
-	select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,
-				select_buf, sizeof(select_buf),
-				SELECT_PRINT_RAMDISK_IMAGE);
-	if (select_buf[0] != '\0') {
-		if (one_liner)
-			xstrcat(out, " ");
-		else
-			xstrcat(out, "\n   ");
-#ifdef HAVE_BGL
-		snprintf(tmp_line, sizeof(tmp_line),
-			 "RamDiskImage=%s", select_buf);
-#else
-		snprintf(tmp_line, sizeof(tmp_line),
-			 "IoloadImage=%s", select_buf);
-#endif
-		xstrcat(out, tmp_line);
-	}
-#endif
 
 	/****** Line 26 (optional) ******/
 	if (job_ptr->comment) {
@@ -860,35 +865,35 @@ slurm_pid2jobid (pid_t job_pid, uint32_t *jobid)
 	slurm_msg_t req_msg;
 	slurm_msg_t resp_msg;
 	job_id_request_msg_t req;
-#ifndef MULTIPLE_SLURMD
-	char this_host[256];
-#endif
+	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 	char *this_addr;
 
 	slurm_msg_t_init(&req_msg);
 	slurm_msg_t_init(&resp_msg);
 
-#ifdef MULTIPLE_SLURMD
-	if((this_addr = getenv("SLURMD_NODENAME"))) {
-		slurm_conf_get_addr(this_addr, &req_msg.address);
+	if(cluster_flags & CLUSTER_FLAG_MULTSD) {
+		if((this_addr = getenv("SLURMD_NODENAME"))) {
+			slurm_conf_get_addr(this_addr, &req_msg.address);
+		} else {
+			this_addr = "localhost";
+			slurm_set_addr(&req_msg.address,
+				       (uint16_t)slurm_get_slurmd_port(),
+				       this_addr);
+		}
 	} else {
-		this_addr = "localhost";
+		char this_host[256];
+		/*
+		 *  Set request message address to slurmd on localhost
+		 */
+		gethostname_short(this_host, sizeof(this_host));
+		this_addr = slurm_conf_get_nodeaddr(this_host);
+		if (this_addr == NULL)
+			this_addr = xstrdup("localhost");
 		slurm_set_addr(&req_msg.address,
 			       (uint16_t)slurm_get_slurmd_port(),
 			       this_addr);
+		xfree(this_addr);
 	}
-#else
-	/*
-	 *  Set request message address to slurmd on localhost
-	 */
-	gethostname_short(this_host, sizeof(this_host));
-	this_addr = slurm_conf_get_nodeaddr(this_host);
-	if (this_addr == NULL)
-		this_addr = xstrdup("localhost");
-	slurm_set_addr(&req_msg.address, (uint16_t)slurm_get_slurmd_port(),
-		       this_addr);
-	xfree(this_addr);
-#endif
 
 	req.job_pid      = job_pid;
 	req_msg.msg_type = REQUEST_JOB_ID;
