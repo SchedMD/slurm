@@ -686,6 +686,7 @@ extern int make_batch_job_cred(batch_job_launch_msg_t *launch_msg_ptr,
 	cred_arg.job_core_bitmap     = job_resrcs_ptr->core_bitmap;
 	cred_arg.job_mem_limit       = job_ptr->details->pn_min_memory;
 	cred_arg.job_nhosts          = job_resrcs_ptr->nhosts;
+	cred_arg.job_gres_list       = job_ptr->gres_list;
 
 #ifdef HAVE_FRONT_END
 	cred_arg.step_hostlist       = node_record_table_ptr[0].name;

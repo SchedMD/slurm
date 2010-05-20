@@ -162,8 +162,9 @@ typedef struct {
 					 * real memory per CPU | MEM_PER_CPU,
 					 * default=0 (no limit) */
 	uint32_t  job_nhosts;		/* count of nodes allocated to JOB */
+	List job_gres_list;		/* Generic resources allocated to JOB */
 
-	/* JOB specific info */
+	/* STEP specific info */
 	bitstr_t *step_core_bitmap;	/* cores allocated to STEP */
 	char     *step_hostlist;	/* list of nodes allocated to STEP */
 	uint32_t  step_mem_limit;	/* MB of memory reserved per node OR

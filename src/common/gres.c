@@ -1212,6 +1212,7 @@ List gres_plugin_job_state_dup(List gres_list)
 			new_gres_state = xmalloc(sizeof(gres_state_t));
 			new_gres_state->plugin_id = gres_ptr->plugin_id;
 			new_gres_state->gres_data = new_gres_data;
+			list_append(new_gres_list, new_gres_state);
 			break;
 		}
 		if (i >= gres_context_cnt) {
