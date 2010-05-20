@@ -79,29 +79,29 @@
 typedef struct slurm_gres_ops {
 	uint32_t	(*plugin_id);
 	int		(*help_msg)		( char *msg, int msg_size );
-	int		(*load_node_config)	( void );
-	int		(*pack_node_config)	( Buf buffer );
-	int		(*unpack_node_config)	( Buf buffer );
 	int		(*node_config_init)	( char *node_name,
 						  char *orig_config,
 						  void **gres_data );
+	int		(*node_config_load)	( void );
+	int		(*node_config_pack)	( Buf buffer );
+	int		(*node_config_unpack)	( Buf buffer );
 	int		(*node_config_validate)	( char *node_name,
 						  char *orig_config,
 						  char **new_config,
 						  void **gres_data,
 						  uint16_t fast_schedule,
 						  char **reason_down );
+	void		(*node_config_delete)	( void *gres_data );
 	int		(*node_reconfig)	( char *node_name,
 						  char *orig_config,
 						  char **new_config,
 						  void **gres_data,
 						  uint16_t fast_schedule );
-	void		(*node_config_delete)	( void *gres_data );
-	int		(*pack_node_state)	( void *gres_data,
+	int		(*node_state_pack)	( void *gres_data,
 						  Buf buffer );
-	int		(*unpack_node_state)	( void **gres_data,
+	int		(*node_state_unpack)	( void **gres_data,
 						  Buf buffer );
-	void *		(*dup_node_state)	( void *gres_data );
+	void *		(*node_state_dup)	( void *gres_data );
 	void		(*node_state_dealloc)	( void *gres_data );
 	int		(*node_state_realloc)	( void *job_gres_data,
 						  int node_offset,
@@ -109,14 +109,16 @@ typedef struct slurm_gres_ops {
 	void		(*node_state_log)	( void *gres_data,
 						  char *node_name );
 
-	void		(*job_config_delete)	( void *gres_data );
-	int		(*job_gres_validate)	( char *config,
+	void		(*job_state_delete)	( void *gres_data );
+	int		(*job_state_validate)	( char *config,
 						  void **gres_data);
-	void *		(*dup_job_state)	( void *gres_data );
-	int		(*pack_job_state)	( void *gres_data,
+	void *		(*job_state_dup)	( void *gres_data );
+	int		(*job_state_pack)	( void *gres_data,
 						  Buf buffer );
-	int		(*unpack_job_state)	( void **gres_data,
+	int		(*job_state_unpack)	( void **gres_data,
 						  Buf buffer );
+	void		(*job_state_log)	( void *gres_data,
+						  uint32_t job_id );
 	uint32_t	(*job_test)		( void *job_gres_data,
 						  void *node_gres_data,
 						  bool use_total_gres );
@@ -129,8 +131,6 @@ typedef struct slurm_gres_ops {
 						  void *node_gres_data,
 						  int node_offset,
 						  uint32_t cpu_cnt );
-	void		(*job_state_log)	( void *gres_data,
-						  uint32_t job_id );
 } slurm_gres_ops_t;
 
 typedef struct slurm_gres_context {
@@ -174,28 +174,28 @@ static int _load_gres_plugin(char *plugin_name,
 	static const char *syms[] = {
 		"plugin_id",
 		"help_msg",
-		"load_node_config",
-		"pack_node_config",
-		"unpack_node_config",
 		"node_config_init",
+		"node_config_load",
+		"node_config_pack",
+		"node_config_unpack",
 		"node_config_validate",
-		"node_reconfig",
 		"node_config_delete",
-		"pack_node_state",
-		"unpack_node_state",
-		"dup_node_state",
+		"node_reconfig",
+		"node_state_pack",
+		"node_state_unpack",
+		"node_state_dup",
 		"node_state_dealloc",
 		"node_state_realloc",
 		"node_state_log",
-		"job_config_delete",
-		"job_gres_validate",
-		"dup_job_state",
-		"pack_job_state",
-		"unpack_job_state",
+		"job_state_delete",
+		"job_state_validate",
+		"job_state_dup",
+		"job_state_pack",
+		"job_state_unpack",
+		"job_state_log",
 		"job_test",
 		"job_alloc",
-		"job_dealloc",
-		"job_state_log"
+		"job_dealloc"
 	};
 	int n_syms = sizeof(syms) / sizeof(char *);
 
@@ -460,7 +460,7 @@ extern int gres_plugin_reconfig(bool *did_change)
 /*
  * Load this node's gres configuration (i.e. how many resources it has)
  */
-extern int gres_plugin_load_node_config(void)
+extern int gres_plugin_node_config_load(void)
 {
 	int i, rc;
 
@@ -468,7 +468,7 @@ extern int gres_plugin_load_node_config(void)
 
 	slurm_mutex_lock(&gres_context_lock);
 	for (i=0; ((i < gres_context_cnt) && (rc == SLURM_SUCCESS)); i++) {
-		rc = (*(gres_context[i].ops.load_node_config))();
+		rc = (*(gres_context[i].ops.node_config_load))();
 	}
 	slurm_mutex_unlock(&gres_context_lock);
 
@@ -484,7 +484,7 @@ extern int gres_plugin_load_node_config(void)
  *	uint32_t	gres data block size
  *	void *		gres data packed by plugin
  */
-extern int gres_plugin_pack_node_config(Buf buffer)
+extern int gres_plugin_node_config_pack(Buf buffer)
 {
 	int i, rc;
 	uint32_t gres_size = 0, magic = GRES_MAGIC;
@@ -502,7 +502,7 @@ extern int gres_plugin_pack_node_config(Buf buffer)
 		header_offset = get_buf_offset(buffer);
 		pack32(gres_size, buffer);	/* Placeholder for now */
 		data_offset = get_buf_offset(buffer);
-		rc = (*(gres_context[i].ops.pack_node_config))(buffer);
+		rc = (*(gres_context[i].ops.node_config_pack))(buffer);
 		tail_offset = get_buf_offset(buffer);
 		gres_size = tail_offset - data_offset;
 		set_buf_offset(buffer, header_offset);
@@ -519,7 +519,7 @@ extern int gres_plugin_pack_node_config(Buf buffer)
  * IN buffer - message buffer to unpack
  * IN node_name - name of node whose data is being unpacked
  */
-extern int gres_plugin_unpack_node_config(Buf buffer, char* node_name)
+extern int gres_plugin_node_config_unpack(Buf buffer, char* node_name)
 {
 	int i, rc, rc2;
 	uint32_t gres_size, magic, tail_offset, plugin_id;
@@ -547,7 +547,7 @@ extern int gres_plugin_unpack_node_config(Buf buffer, char* node_name)
 				break;
 		}
 		if (i >= gres_context_cnt) {
-			error("gres_plugin_unpack_node_config: no plugin "
+			error("gres_plugin_node_config_unpack: no plugin "
 			      "configured to unpack data type %u from node %s",
 			      plugin_id, node_name);
 			/* A likely sign that GresPlugins is inconsistently
@@ -558,7 +558,7 @@ extern int gres_plugin_unpack_node_config(Buf buffer, char* node_name)
 			continue;
 		}
 		gres_context[i].unpacked_info = true;
-		rc = (*(gres_context[i].ops.unpack_node_config))(buffer);
+		rc = (*(gres_context[i].ops.node_config_unpack))(buffer);
 	}
 
 fini:	/* Insure that every gres plugin is called for unpack, even if no data
@@ -567,10 +567,10 @@ fini:	/* Insure that every gres plugin is called for unpack, even if no data
 	for (i=0; i<gres_context_cnt; i++) {
 		if (gres_context[i].unpacked_info)
 			continue;
-		error("gres_plugin_unpack_node_config: no info packed for %s "
+		error("gres_plugin_node_config_unpack: no info packed for %s "
 		      "by node %s",
 		      gres_context[i].gres_type, node_name);
-		rc2 = (*(gres_context[i].ops.unpack_node_config))(NULL);
+		rc2 = (*(gres_context[i].ops.node_config_unpack))(NULL);
 		if (rc2 != SLURM_SUCCESS)
 			rc = rc2;
 	}
@@ -579,7 +579,7 @@ fini:	/* Insure that every gres plugin is called for unpack, even if no data
 	return rc;
 
 unpack_error:
-	error("gres_plugin_unpack_node_config: unpack error from node %s",
+	error("gres_plugin_node_config_unpack: unpack error from node %s",
 	      node_name);
 	rc = SLURM_ERROR;
 	goto fini;
@@ -652,7 +652,7 @@ extern int gres_plugin_init_node_config(char *node_name, char *orig_config,
 
 /*
  * Validate a node's configuration and put a gres record onto a list
- * Called immediately after gres_plugin_unpack_node_config().
+ * Called immediately after gres_plugin_node_config_unpack().
  * IN node_name - name of the node for which the gres information applies
  * IN orig_config - Gres information supplied from slurm.conf
  * IN/OUT new_config - Updated gres info from slurm.conf if FastSchedule=0
@@ -760,7 +760,7 @@ extern int gres_plugin_node_reconfig(char *node_name,
  * IN/OUT buffer - location to write state to
  * IN node_name - name of the node for which the gres information applies
  */
-extern int gres_plugin_pack_node_state(List gres_list, Buf buffer,
+extern int gres_plugin_node_state_pack(List gres_list, Buf buffer,
 				       char *node_name)
 {
 	int i, rc = SLURM_SUCCESS, rc2;
@@ -797,7 +797,7 @@ extern int gres_plugin_pack_node_state(List gres_list, Buf buffer,
 			size_offset = get_buf_offset(buffer);
 			pack32(gres_size, buffer);	/* placeholder */
 			data_offset = get_buf_offset(buffer);
-			rc2 = (*(gres_context[i].ops.pack_node_state))
+			rc2 = (*(gres_context[i].ops.node_state_pack))
 					(gres_ptr->gres_data, buffer);
 			if (rc2 != SLURM_SUCCESS) {
 				rc = rc2;
@@ -831,11 +831,11 @@ extern int gres_plugin_pack_node_state(List gres_list, Buf buffer,
 
 /*
  * Unpack a node's current gres status, called from slurmctld for save/restore
- * OUT gres_list - restored state stored by gres_plugin_pack_node_state()
+ * OUT gres_list - restored state stored by gres_plugin_node_state_pack()
  * IN/OUT buffer - location to read state from
  * IN node_name - name of the node for which the gres information applies
  */
-extern int gres_plugin_unpack_node_state(List *gres_list, Buf buffer,
+extern int gres_plugin_node_state_unpack(List *gres_list, Buf buffer,
 					 char *node_name)
 {
 	int i, rc, rc2;
@@ -874,7 +874,7 @@ extern int gres_plugin_unpack_node_state(List *gres_list, Buf buffer,
 				break;
 		}
 		if (i >= gres_context_cnt) {
-			error("gres_plugin_unpack_node_state: no plugin "
+			error("gres_plugin_node_state_unpack: no plugin "
 			      "configured to unpack data type %u from node %s",
 			      plugin_id, node_name);
 			/* A likely sign that GresPlugins has changed.
@@ -885,7 +885,7 @@ extern int gres_plugin_unpack_node_state(List *gres_list, Buf buffer,
 			continue;
 		}
 		gres_context[i].unpacked_info = true;
-		rc2 = (*(gres_context[i].ops.unpack_node_state))
+		rc2 = (*(gres_context[i].ops.node_state_unpack))
 				(&gres_data, buffer);
 		if (rc2 != SLURM_SUCCESS) {
 			rc = rc2;
@@ -903,10 +903,10 @@ fini:	/* Insure that every gres plugin is called for unpack, even if no data
 	for (i=0; i<gres_context_cnt; i++) {
 		if (gres_context[i].unpacked_info)
 			continue;
-		error("gres_plugin_unpack_node_state: no info packed for %s "
+		error("gres_plugin_node_state_unpack: no info packed for %s "
 		      "by node %s",
 		      gres_context[i].gres_type, node_name);
-		rc2 = (*(gres_context[i].ops.unpack_node_state))
+		rc2 = (*(gres_context[i].ops.node_state_unpack))
 				(&gres_data, NULL);
 		if (rc2 != SLURM_SUCCESS) {
 			rc = rc2;
@@ -922,7 +922,7 @@ fini:	/* Insure that every gres plugin is called for unpack, even if no data
 	return rc;
 
 unpack_error:
-	error("gres_plugin_unpack_node_state: unpack error from node %s",
+	error("gres_plugin_node_state_unpack: unpack error from node %s",
 	      node_name);
 	rc = SLURM_ERROR;
 	goto fini;
@@ -933,7 +933,7 @@ unpack_error:
  * IN gres_list - node gres state information
  * RET a copy of gres_list or NULL on failure
  */
-extern List gres_plugin_dup_node_state(List gres_list)
+extern List gres_plugin_node_state_dup(List gres_list)
 {
 	int i;
 	List new_list = NULL;
@@ -958,7 +958,7 @@ extern List gres_plugin_dup_node_state(List gres_list)
 			if (gres_ptr->plugin_id !=
 			    *(gres_context[i].ops.plugin_id))
 				continue;
-			gres_data = (*(gres_context[i].ops.dup_node_state))
+			gres_data = (*(gres_context[i].ops.node_state_dup))
 					(gres_ptr->gres_data);
 			if (gres_data) {
 				new_gres = xmalloc(sizeof(gres_state_t));
@@ -1112,7 +1112,7 @@ static void _gres_job_list_delete(void *list_element)
 	for (i=0; i<gres_context_cnt; i++) {
 		if (gres_ptr->plugin_id != *(gres_context[i].ops.plugin_id))
 			continue;
-		(*(gres_context[i].ops.job_config_delete))(gres_ptr->gres_data);
+		(*(gres_context[i].ops.job_state_delete))(gres_ptr->gres_data);
 		xfree(gres_ptr);
 		break;
 	}
@@ -1125,7 +1125,7 @@ static void _gres_job_list_delete(void *list_element)
  * OUT gres_list - List of Gres records for this job to track usage
  * RET SLURM_SUCCESS or ESLURM_INVALID_GRES
  */
-extern int gres_plugin_job_gres_validate(char *req_config, List *gres_list)
+extern int gres_plugin_job_state_validate(char *req_config, List *gres_list)
 {
 	char *tmp_str, *tok, *last = NULL;
 	int i, rc, rc2;
@@ -1152,7 +1152,7 @@ extern int gres_plugin_job_gres_validate(char *req_config, List *gres_list)
 	while (tok && (rc == SLURM_SUCCESS)) {
 		rc2 = SLURM_ERROR;
 		for (i=0; i<gres_context_cnt; i++) {
-			rc2 = (*(gres_context[i].ops.job_gres_validate))
+			rc2 = (*(gres_context[i].ops.job_state_validate))
 					(tok, &gres_data);
 			if (rc2 != SLURM_SUCCESS)
 				continue;
@@ -1200,7 +1200,7 @@ List gres_plugin_job_state_dup(List gres_list)
 			if (gres_ptr->plugin_id !=
 			    *(gres_context[i].ops.plugin_id))
 				continue;
-			new_gres_data = (*(gres_context[i].ops.dup_job_state))
+			new_gres_data = (*(gres_context[i].ops.job_state_dup))
 					(gres_ptr->gres_data);
 			if (new_gres_data == NULL)
 				break;
@@ -1231,7 +1231,7 @@ List gres_plugin_job_state_dup(List gres_list)
  * IN/OUT buffer - location to write state to
  * IN job_id - job's ID
  */
-extern int gres_plugin_pack_job_state(List gres_list, Buf buffer,
+extern int gres_plugin_job_state_pack(List gres_list, Buf buffer,
 				      uint32_t job_id)
 {
 	int i, rc = SLURM_SUCCESS, rc2;
@@ -1263,7 +1263,7 @@ extern int gres_plugin_pack_job_state(List gres_list, Buf buffer,
 			size_offset = get_buf_offset(buffer);
 			pack32(gres_size, buffer);	/* placeholder */
 			data_offset = get_buf_offset(buffer);
-			rc2 = (*(gres_context[i].ops.pack_job_state))
+			rc2 = (*(gres_context[i].ops.job_state_pack))
 					(gres_ptr->gres_data, buffer);
 			if (rc2 != SLURM_SUCCESS) {
 				rc = rc2;
@@ -1297,11 +1297,11 @@ extern int gres_plugin_pack_job_state(List gres_list, Buf buffer,
 
 /*
  * Unpack a job's current gres status, called from slurmctld for save/restore
- * OUT gres_list - restored state stored by gres_plugin_pack_job_state()
+ * OUT gres_list - restored state stored by gres_plugin_job_state_pack()
  * IN/OUT buffer - location to read state from
  * IN job_id - job's ID
  */
-extern int gres_plugin_unpack_job_state(List *gres_list, Buf buffer,
+extern int gres_plugin_job_state_unpack(List *gres_list, Buf buffer,
 					uint32_t job_id)
 {
 	int i, rc, rc2;
@@ -1340,7 +1340,7 @@ extern int gres_plugin_unpack_job_state(List *gres_list, Buf buffer,
 				break;
 		}
 		if (i >= gres_context_cnt) {
-			error("gres_plugin_unpack_job_state: no plugin "
+			error("gres_plugin_job_state_unpack: no plugin "
 			      "configured to unpack data type %u from job %j",
 			      plugin_id, job_id);
 			/* A likely sign that GresPlugins has changed.
@@ -1351,7 +1351,7 @@ extern int gres_plugin_unpack_job_state(List *gres_list, Buf buffer,
 			continue;
 		}
 		gres_context[i].unpacked_info = true;
-		rc2 = (*(gres_context[i].ops.unpack_job_state))
+		rc2 = (*(gres_context[i].ops.job_state_unpack))
 				(&gres_data, buffer);
 		if (rc2 != SLURM_SUCCESS) {
 			rc = rc2;
@@ -1369,10 +1369,10 @@ fini:	/* Insure that every gres plugin is called for unpack, even if no data
 	for (i=0; i<gres_context_cnt; i++) {
 		if (gres_context[i].unpacked_info)
 			continue;
-		error("gres_plugin_unpack_job_state: no info packed for %s "
+		error("gres_plugin_job_state_unpack: no info packed for %s "
 		      "by job %u",
 		      gres_context[i].gres_type, job_id);
-		rc2 = (*(gres_context[i].ops.unpack_job_state))
+		rc2 = (*(gres_context[i].ops.job_state_unpack))
 				(&gres_data, NULL);
 		if (rc2 != SLURM_SUCCESS) {
 			rc = rc2;
@@ -1388,7 +1388,7 @@ fini:	/* Insure that every gres plugin is called for unpack, even if no data
 	return rc;
 
 unpack_error:
-	error("gres_plugin_unpack_job_state: unpack error from job %u",
+	error("gres_plugin_job_state_unpack: unpack error from job %u",
 	      job_id);
 	rc = SLURM_ERROR;
 	goto fini;
@@ -1396,7 +1396,7 @@ unpack_error:
 
 /*
  * Determine how many CPUs on the node can be used by this job
- * IN job_gres_list - job's gres_list built by gres_plugin_job_gres_validate()
+ * IN job_gres_list - job's gres_list built by gres_plugin_job_state_validate()
  * IN node_gres_list - node's gres_list built by
  *                     gres_plugin_node_config_validate()
  * IN use_total_gres - if set then consider all gres resources as available,
@@ -1458,7 +1458,7 @@ extern uint32_t gres_plugin_job_test(List job_gres_list, List node_gres_list,
 
 /*
  * Allocate resource to a job and update node and job gres information
- * IN job_gres_list - job's gres_list built by gres_plugin_job_gres_validate()
+ * IN job_gres_list - job's gres_list built by gres_plugin_job_state_validate()
  * IN node_gres_list - node's gres_list built by
  *		gres_plugin_node_config_validate()
  * IN node_cnt - total number of nodes originally allocated to the job
@@ -1515,7 +1515,7 @@ extern int gres_plugin_job_alloc(List job_gres_list, List node_gres_list,
 
 /*
  * Deallocate resource from a job and update node and job gres information
- * IN job_gres_list - job's gres_list built by gres_plugin_job_gres_validate()
+ * IN job_gres_list - job's gres_list built by gres_plugin_job_state_validate()
  * IN node_gres_list - node's gres_list built by
  *		gres_plugin_node_config_validate()
  * IN node_offset - zero-origin index to the node of interest
@@ -1570,7 +1570,7 @@ extern int gres_plugin_job_dealloc(List job_gres_list, List node_gres_list,
 
 /*
  * Log a job's current gres state
- * IN gres_list - generated by gres_plugin_job_gres_validate()
+ * IN gres_list - generated by gres_plugin_job_state_validate()
  * IN job_id - job's ID
  */
 extern void gres_plugin_job_state_log(List gres_list, uint32_t job_id)

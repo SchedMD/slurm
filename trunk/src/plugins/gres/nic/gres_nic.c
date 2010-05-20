@@ -163,7 +163,7 @@ extern int help_msg(char *msg, int msg_size)
  *	their topology and any other required information).
  * Called only by slurmd.
  */
-extern int load_node_config(void)
+extern int node_config_load(void)
 {
 	/* FIXME: Need to flesh this out, probably using 
 	 * http://svn.open-mpi.org/svn/hwloc/branches/libpci/
@@ -181,14 +181,14 @@ extern int load_node_config(void)
  * Keep the pack and unpack functions in sync.
  * Called only by slurmd.
  */
-extern int pack_node_config(Buf buffer)
+extern int node_config_pack(Buf buffer)
 {
 	int rc = SLURM_SUCCESS;
 
 	pack32(plugin_version, buffer);
 
 	if (!gres_config.loaded)
-		rc = load_node_config();
+		rc = node_config_load();
 
 	/* Pack whatever node information is relevant to the slurmctld,
 	 * including topology. */
@@ -204,7 +204,7 @@ extern int pack_node_config(Buf buffer)
  * Keep the pack and unpack functions in sync.
  * Called only by slurmctld.
  */
-extern int unpack_node_config(Buf buffer)
+extern int node_config_unpack(Buf buffer)
 {
 	uint32_t version;
 
@@ -222,7 +222,7 @@ extern int unpack_node_config(Buf buffer)
 		safe_unpack32(&gres_config.nic_cnt, buffer);
 		/* info("nic_cnt=%u", gres_config.nic_cnt); */
 	} else {
-		error("unpack_node_config error for %s, invalid version", 
+		error("node_config_unpack error for %s, invalid version", 
 		      plugin_name);
 		return SLURM_ERROR;
 	}
@@ -309,7 +309,7 @@ extern int node_config_init(char *node_name, char *orig_config,
 
 /*
  * Validate a node's configuration and put a gres record onto a list
- * Called immediately after unpack_node_config().
+ * Called immediately after node_config_unpack().
  * IN node_name - name of the node for which the gres information applies
  * IN orig_config - Gres information supplied from slurm.conf
  * IN/OUT new_config - Updated gres info from slurm.conf if FastSchedule=0
@@ -520,7 +520,7 @@ extern int node_reconfig(char *node_name, char *orig_config, char **new_config,
 	return rc;
 }
 
-extern int pack_node_state(void *gres_data, Buf buffer)
+extern int node_state_pack(void *gres_data, Buf buffer)
 {
 	nic_node_state_t *gres_ptr = (nic_node_state_t *) gres_data;
 
@@ -531,7 +531,7 @@ extern int pack_node_state(void *gres_data, Buf buffer)
 	return SLURM_SUCCESS;
 }
 
-extern int unpack_node_state(void **gres_data, Buf buffer)
+extern int node_state_unpack(void **gres_data, Buf buffer)
 {
 	nic_node_state_t *gres_ptr;
 
@@ -554,7 +554,7 @@ extern int unpack_node_state(void **gres_data, Buf buffer)
 		}
 		if (gres_ptr->nic_cnt_alloc != 
 		    bit_set_count(gres_ptr->nic_bit_alloc)) {
-			error("%s unpack_node_state bit count inconsistent",
+			error("%s node_state_unpack bit count inconsistent",
 			      plugin_name);
 			goto unpack_error;
 		}
@@ -571,7 +571,7 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-extern void *dup_node_state(void *gres_data)
+extern void *node_state_dup(void *gres_data)
 {
 	nic_node_state_t *gres_ptr = (nic_node_state_t *) gres_data;
 	nic_node_state_t *new_gres;
@@ -683,7 +683,7 @@ extern void node_state_log(void *gres_data, char *node_name)
 	}
 }
 
-extern int job_gres_validate(char *config, void **gres_data)
+extern int job_state_validate(char *config, void **gres_data)
 {
 	char *last = NULL;
 	nic_job_state_t *gres_ptr;
@@ -712,7 +712,7 @@ extern int job_gres_validate(char *config, void **gres_data)
 	return SLURM_SUCCESS;
 }
 
-extern void job_config_delete(void *gres_data)
+extern void job_state_delete(void *gres_data)
 {
 	int i;
 	nic_job_state_t *gres_ptr = (nic_job_state_t *) gres_data;
@@ -730,7 +730,7 @@ extern void job_config_delete(void *gres_data)
 	xfree(gres_ptr);
 }
 
-extern void *dup_job_state(void *gres_data)
+extern void *job_state_dup(void *gres_data)
 {
 
 	int i;
@@ -755,7 +755,7 @@ extern void *dup_job_state(void *gres_data)
 	return new_gres_ptr;
 }
 
-extern int pack_job_state(void *gres_data, Buf buffer)
+extern int job_state_pack(void *gres_data, Buf buffer)
 {
 	int i;
 	nic_job_state_t *gres_ptr = (nic_job_state_t *) gres_data;
@@ -770,7 +770,7 @@ extern int pack_job_state(void *gres_data, Buf buffer)
 	return SLURM_SUCCESS;
 }
 
-extern int unpack_job_state(void **gres_data, Buf buffer)
+extern int job_state_unpack(void **gres_data, Buf buffer)
 {
 	int i;
 	nic_job_state_t *gres_ptr;
