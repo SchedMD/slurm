@@ -497,11 +497,14 @@ scontrol_update_job (int argc, char *argv[])
 		else if (strncasecmp(tag, "Geometry", MAX(taglen, 2)) == 0) {
 			char* token, *delimiter = ",x", *next_ptr;
 			int j, rc = 0;
-			uint16_t geo[SYSTEM_DIMENSIONS];
+			int dims = working_cluster_rec ?
+				working_cluster_rec->dimensions
+				: SYSTEM_DIMENSIONS;
+			uint16_t geo[dims];
 			char* geometry_tmp = xstrdup(val);
 			char* original_ptr = geometry_tmp;
 			token = strtok_r(geometry_tmp, delimiter, &next_ptr);
-			for (j=0; j<SYSTEM_DIMENSIONS; j++) {
+			for (j=0; j<dims; j++) {
 				if (token == NULL) {
 					error("insufficient dimensions in "
 						"Geometry");
@@ -528,7 +531,7 @@ scontrol_update_job (int argc, char *argv[])
 			if (rc != 0)
 				exit_code = 1;
 			else {
-				for (j=0; j<SYSTEM_DIMENSIONS; j++)
+				for (j=0; j<dims; j++)
 					job_msg.geometry[j] = geo[j];
 				update_cnt++;
 			}
