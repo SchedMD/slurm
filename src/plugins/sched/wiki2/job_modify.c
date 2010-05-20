@@ -390,8 +390,8 @@ host_fini:	if (rc) {
 		job_ptr->gres = NULL;
 		if (gres_ptr[0])
 			job_ptr->gres = xstrdup(gres_ptr);
-		if (gres_plugin_job_gres_validate(job_ptr->gres,
-						  &job_ptr->gres_list)) {
+		if (gres_plugin_job_state_validate(job_ptr->gres,
+						   &job_ptr->gres_list)) {
 			error("wiki: MODIFYJOB Invalid GRES=%s", gres_ptr);
 			xfree(job_ptr->gres);
 			job_ptr->gres = orig_gres;
