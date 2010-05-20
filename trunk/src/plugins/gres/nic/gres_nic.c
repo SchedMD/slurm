@@ -882,21 +882,32 @@ extern int job_alloc(void *job_gres_data, void *node_gres_data,
 	 * We'll need to add topology information in the future
 	 */
 	if (job_gres_ptr->nic_bit_alloc[node_offset]) {
-		error("%s: job's bit_alloc is set for node %d",
+		/* Resuming a suspended job, resources already allocated */
+		debug("%s: job's bit_alloc is already set for node %d",
 		      plugin_name, node_offset);
-		bit_free(job_gres_ptr->nic_bit_alloc[node_offset]);
-	}
-	job_gres_ptr->nic_bit_alloc[node_offset] = bit_alloc(node_gres_ptr->
-							     nic_cnt_avail);
-	if (job_gres_ptr->nic_bit_alloc[node_offset] == NULL)
-		fatal("bit_copy: malloc failure");
-	for (i=0; i<node_gres_ptr->nic_cnt_avail && gres_cnt>0; i++) {
-		if (bit_test(node_gres_ptr->nic_bit_alloc, i))
-			continue;
-		bit_set(node_gres_ptr->nic_bit_alloc, i);
-		bit_set(job_gres_ptr->nic_bit_alloc[node_offset], i);
-		node_gres_ptr->nic_cnt_alloc++;
-		gres_cnt--;
+		gres_cnt = MIN(bit_size(node_gres_ptr->nic_bit_alloc),
+			       bit_size(job_gres_ptr->
+					nic_bit_alloc[node_offset]));
+		for (i=0; i<gres_cnt; i++) {
+			if (bit_test(job_gres_ptr->nic_bit_alloc[node_offset],
+				     i)) {
+				bit_set(node_gres_ptr->nic_bit_alloc, i);
+				node_gres_ptr->nic_cnt_alloc++;
+			}
+		}
+	} else {
+		job_gres_ptr->nic_bit_alloc[node_offset] = 
+				bit_alloc(node_gres_ptr->nic_cnt_avail);
+		if (job_gres_ptr->nic_bit_alloc[node_offset] == NULL)
+			fatal("bit_copy: malloc failure");
+		for (i=0; i<node_gres_ptr->nic_cnt_avail && gres_cnt>0; i++) {
+			if (bit_test(node_gres_ptr->nic_bit_alloc, i))
+				continue;
+			bit_set(node_gres_ptr->nic_bit_alloc, i);
+			bit_set(job_gres_ptr->nic_bit_alloc[node_offset], i);
+			node_gres_ptr->nic_cnt_alloc++;
+			gres_cnt--;
+		}
 	}
 
 	return SLURM_SUCCESS;
