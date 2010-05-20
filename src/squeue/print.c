@@ -585,14 +585,8 @@ int _print_job_nodes(job_info_t * job, int width, bool right, char* suffix)
 {
 	if (job == NULL) {       /* Print the Header instead */
 		char *title = "NODELIST";
-		if(working_cluster_rec) {
-			if(working_cluster_rec->flags & CLUSTER_FLAG_BG)
-				title = "BP_LIST";
-		} else {
-#ifdef HAVE_BG
+		if(params.cluster_flags & CLUSTER_FLAG_BG)
 			title = "BP_LIST";
-#endif
-		}
 		_print_str(title, width, right, false);
 	} else
 		_print_nodes(job->nodes, width, right, false);
@@ -607,14 +601,8 @@ int _print_job_reason_list(job_info_t * job, int width, bool right,
 {
 	if (job == NULL) {	/* Print the Header instead */
 		char *title = "NODELIST(REASON)";
-		if(working_cluster_rec) {
-			if(working_cluster_rec->flags & CLUSTER_FLAG_BG)
-				title = "BP_LIST(REASON)";
-		} else {
-#ifdef HAVE_BG
+		if(params.cluster_flags & CLUSTER_FLAG_BG)
 			title = "BP_LIST(REASON)";
-#endif
-		}
 		_print_str(title, width, right, false);
 	} else if (!IS_JOB_COMPLETING(job)
 		   && (IS_JOB_PENDING(job)
@@ -673,24 +661,13 @@ int _print_job_num_cpus(job_info_t * job, int width, bool right, char* suffix)
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("CPUS", width, right, true);
 	else {
-		if(working_cluster_rec) {
-			if(working_cluster_rec->flags & CLUSTER_FLAG_BG)
-				convert_num_unit((float)job->num_cpus, tmp_char,
-						 sizeof(tmp_char), UNIT_NONE);
-			else
-				snprintf(tmp_char, sizeof(tmp_char),
-					 "%u", job->num_cpus);
-		} else {
-
-#ifdef HAVE_BG
+		if(params.cluster_flags & CLUSTER_FLAG_BG)
 			convert_num_unit((float)job->num_cpus, tmp_char,
 					 sizeof(tmp_char), UNIT_NONE);
-#else
+		else
 			snprintf(tmp_char, sizeof(tmp_char),
 				 "%u", job->num_cpus);
-#endif
-		}
-		_print_str(tmp_char, width, right, true);
+       		_print_str(tmp_char, width, right, true);
 	}
 	if (suffix)
 		printf("%s", suffix);
@@ -706,38 +683,20 @@ int _print_job_num_nodes(job_info_t * job, int width, bool right_justify,
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("NODES", width, right_justify, true);
 	else {
-		if(working_cluster_rec) {
-			if(working_cluster_rec->flags & CLUSTER_FLAG_BG)
-				select_g_select_jobinfo_get(
-					job->select_jobinfo,
-					SELECT_JOBDATA_NODE_CNT,
-					&node_cnt);
-		} else {
-#ifdef HAVE_BG
+		if(params.cluster_flags & CLUSTER_FLAG_BG)
 			select_g_select_jobinfo_get(job->select_jobinfo,
 						    SELECT_JOBDATA_NODE_CNT,
 						    &node_cnt);
-#endif
-		}
 
 		if ((node_cnt == 0) || (node_cnt == NO_VAL))
 			node_cnt = _get_node_cnt(job);
 
-		if(working_cluster_rec) {
-			if(working_cluster_rec->flags & CLUSTER_FLAG_BG)
-				convert_num_unit((float)node_cnt, tmp_char,
-						 sizeof(tmp_char), UNIT_NONE);
-			else
-				snprintf(tmp_char, sizeof(tmp_char),
-					 "%d", node_cnt);
-		} else {
-#ifdef HAVE_BG
+		if(params.cluster_flags & CLUSTER_FLAG_BG)
 			convert_num_unit((float)node_cnt, tmp_char,
 					 sizeof(tmp_char), UNIT_NONE);
-#else
+		else
 			snprintf(tmp_char, sizeof(tmp_char), "%d", node_cnt);
-#endif
-		}
+
 		_print_str(tmp_char, width, right_justify, true);
 	}
 	if (suffix)
@@ -1275,14 +1234,9 @@ int _print_step_nodes(job_step_info_t * step, int width, bool right,
 {
 	if (step == NULL) {	/* Print the Header instead */
 		char *title = "NODELIST";
-		if(working_cluster_rec) {
-			if(working_cluster_rec->flags & CLUSTER_FLAG_BG)
-				title = "BP_LIST";
-		} else {
-#ifdef HAVE_BG
+		if(params.cluster_flags & CLUSTER_FLAG_BG)
 			title = "BP_LIST";
-#endif
-		}
+
 		_print_str(title, width, right, false);
 	} else
 		_print_nodes(step->nodes, width, right, false);

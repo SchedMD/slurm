@@ -229,26 +229,7 @@ _query_server(partition_info_msg_t ** part_pptr,
 	old_node_ptr = new_node_ptr;
 	*node_pptr = new_node_ptr;
 
-	if(working_cluster_rec) {
-		if(working_cluster_rec->flags & CLUSTER_FLAG_BG) {
-			if (old_bg_ptr) {
-				error_code = slurm_load_block_info(
-					old_bg_ptr->last_update,
-					&new_bg_ptr);
-				if (error_code == SLURM_SUCCESS)
-					slurm_free_block_info_msg(&old_bg_ptr);
-				else if (slurm_get_errno() ==
-					 SLURM_NO_CHANGE_IN_DATA) {
-					error_code = SLURM_SUCCESS;
-					new_bg_ptr = old_bg_ptr;
-				}
-			} else {
-				error_code = slurm_load_block_info(
-					(time_t) NULL, &new_bg_ptr);
-			}
-		}
-	} else {
-#ifdef HAVE_BG
+	if(params.cluster_flags & CLUSTER_FLAG_BG) {
 		if (old_bg_ptr) {
 			error_code = slurm_load_block_info(
 				old_bg_ptr->last_update,
@@ -260,11 +241,11 @@ _query_server(partition_info_msg_t ** part_pptr,
 				new_bg_ptr = old_bg_ptr;
 			}
 		} else {
-			error_code = slurm_load_block_info((time_t) NULL,
-							   &new_bg_ptr);
+			error_code = slurm_load_block_info(
+				(time_t) NULL, &new_bg_ptr);
 		}
-#endif
 	}
+
 	if (error_code) {
 		slurm_perror("slurm_load_block");
 		return error_code;
@@ -671,64 +652,8 @@ static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr,
 				     SELECT_NODEDATA_SUBCNT,
 				     NODE_STATE_ERROR,
 				     &error_cpus);
-	if(working_cluster_rec) {
-		if(working_cluster_rec->flags & CLUSTER_FLAG_BG) {
-			if(error_cpus) {
-				xfree(node_ptr->reason);
-				node_ptr->reason = xstrdup("Block(s) in error state");
-				sinfo_ptr->reason     = node_ptr->reason;
-				sinfo_ptr->reason_time= node_ptr->reason_time;
-				sinfo_ptr->reason_uid = node_ptr->reason_uid;
-			}
-			if(!params.match_flags.state_flag
-			   && (used_cpus || error_cpus)) {
-				/* We only get one shot at this (because all states
-				   are combined together), so we need to make
-				   sure we get all the subgrps accounted. (So use
-				   g_node_scaling for safe measure) */
-				total_nodes = g_node_scaling;
 
-				sinfo_ptr->nodes_alloc += used_cpus;
-				sinfo_ptr->nodes_other += error_cpus;
-				sinfo_ptr->nodes_idle +=
-					(total_nodes - (used_cpus + error_cpus));
-				used_cpus *= single_node_cpus;
-				error_cpus *= single_node_cpus;
-			} else {
-				/* process only for this subgrp and then return */
-				total_cpus = total_nodes * single_node_cpus;
-
-				if ((base_state == NODE_STATE_ALLOCATED)
-				    || (node_ptr->node_state
-					& NODE_STATE_COMPLETING)) {
-					sinfo_ptr->nodes_alloc += total_nodes;
-					sinfo_ptr->cpus_alloc += total_cpus;
-				} else if (IS_NODE_DRAIN(node_ptr) ||
-					   (base_state == NODE_STATE_DOWN)) {
-					sinfo_ptr->nodes_other += total_nodes;
-					sinfo_ptr->cpus_other += total_cpus;
-				} else {
-					sinfo_ptr->nodes_idle += total_nodes;
-					sinfo_ptr->cpus_idle += total_cpus;
-				}
-
-				sinfo_ptr->nodes_total += total_nodes;
-				sinfo_ptr->cpus_total += total_cpus;
-
-				return;
-			}
-		} else {
-			if ((base_state == NODE_STATE_ALLOCATED) ||
-			    IS_NODE_COMPLETING(node_ptr))
-				sinfo_ptr->nodes_alloc += total_nodes;
-			else if (IS_NODE_DRAIN(node_ptr)
-				 || (base_state == NODE_STATE_DOWN))
-				sinfo_ptr->nodes_other += total_nodes;
-			else
-				sinfo_ptr->nodes_idle += total_nodes;
-		}
-	} else {
-#ifdef HAVE_BG
+	if(params.cluster_flags & CLUSTER_FLAG_BG) {
 		if(error_cpus) {
 			xfree(node_ptr->reason);
 			node_ptr->reason = xstrdup("Block(s) in error state");
@@ -755,7 +680,8 @@ static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr,
 			total_cpus = total_nodes * single_node_cpus;
 
 			if ((base_state == NODE_STATE_ALLOCATED)
-			    || (node_ptr->node_state & NODE_STATE_COMPLETING)) {
+			    || (node_ptr->node_state
+				& NODE_STATE_COMPLETING)) {
 				sinfo_ptr->nodes_alloc += total_nodes;
 				sinfo_ptr->cpus_alloc += total_cpus;
 			} else if (IS_NODE_DRAIN(node_ptr) ||
@@ -772,7 +698,7 @@ static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr,
 
 			return;
 		}
-#else
+	} else {
 		if ((base_state == NODE_STATE_ALLOCATED) ||
 		    IS_NODE_COMPLETING(node_ptr))
 			sinfo_ptr->nodes_alloc += total_nodes;
@@ -781,8 +707,8 @@ static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr,
 			sinfo_ptr->nodes_other += total_nodes;
 		else
 			sinfo_ptr->nodes_idle += total_nodes;
-#endif
 	}
+
 	sinfo_ptr->nodes_total += total_nodes;
 
 
