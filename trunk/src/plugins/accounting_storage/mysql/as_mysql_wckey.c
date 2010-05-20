@@ -209,7 +209,10 @@ static int _cluster_get_wckeys(mysql_conn_t *mysql_conn,
 	if(!(result = mysql_db_query_ret(
 		     mysql_conn->db_conn, query, 0))) {
 		xfree(query);
-		return SLURM_ERROR;
+		if(mysql_errno(mysql_conn->db_conn) == ER_NO_SUCH_TABLE)
+			return SLURM_SUCCESS;
+		else
+			return SLURM_ERROR;
 	}
 	xfree(query);
 

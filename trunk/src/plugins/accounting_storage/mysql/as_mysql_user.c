@@ -896,7 +896,7 @@ extern List as_mysql_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 }
 
 extern List as_mysql_get_users(mysql_conn_t *mysql_conn, uid_t uid,
-			    slurmdb_user_cond_t *user_cond)
+			       slurmdb_user_cond_t *user_cond)
 {
 	char *query = NULL;
 	char *extra = NULL;

@@ -931,8 +931,11 @@ empty:
 		if(!(result = mysql_db_query_ret(
 			     mysql_conn->db_conn, query, 0))) {
 			xfree(query);
-			list_destroy(ret_list);
-			ret_list = NULL;
+			if(mysql_errno(mysql_conn->db_conn)
+			   != ER_NO_SUCH_TABLE) {
+				list_destroy(ret_list);
+				ret_list = NULL;
+			}
 			break;
 		}
 		xfree(query);
