@@ -914,7 +914,7 @@ extern int job_alloc(void *job_gres_data, void *node_gres_data,
 }
 
 extern int job_dealloc(void *job_gres_data, void *node_gres_data,
-		       int node_offset, uint32_t cpu_cnt)
+		       int node_offset)
 {
 	int i, len;
 	gpu_job_state_t  *job_gres_ptr  = (gpu_job_state_t *)  job_gres_data;

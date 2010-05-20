@@ -616,6 +616,7 @@ uint16_t _can_job_run_on_node(struct job_record *job_ptr, bitstr_t *core_map,
 	uint16_t cpus;
 	uint32_t avail_mem, req_mem, gres_cpus;
 	struct node_record *node_ptr;
+	List gres_list;
 
 	if (cr_type & CR_CORE)
 		cpus = _allocate_cores(job_ptr, core_map, node_i, 0);
@@ -625,6 +626,10 @@ uint16_t _can_job_run_on_node(struct job_record *job_ptr, bitstr_t *core_map,
 		cpus = _allocate_cores(job_ptr, core_map, node_i, 1);
 
 	node_ptr = select_node_record[node_i].node_ptr;
+	if (node_usage[node_i].gres_list)
+		gres_list = node_usage[node_i].gres_list;
+	else
+		gres_list = node_ptr->gres_list;
 	gres_cpus = gres_plugin_job_test(job_ptr->gres_list,
 					 node_ptr->gres_list, test_only);
 	if (gres_cpus < cpus)
@@ -650,11 +655,12 @@ uint16_t _can_job_run_on_node(struct job_record *job_ptr, bitstr_t *core_map,
 		/* FIXME: do we need to recheck min_cores, etc. here? */
 	} else {
 		/* memory is per node */
-		if (req_mem > avail_mem) {
-			bit_nclear(core_map, cr_get_coremap_offset(node_i),
-					(cr_get_coremap_offset(node_i+1))-1);
+		if (req_mem > avail_mem)
 			cpus = 0;
-		}
+	}
+	if (cpus == 0) {
+		bit_nclear(core_map, cr_get_coremap_offset(node_i),
+			   (cr_get_coremap_offset(node_i+1))-1);
 	}
 
 	debug3("cons_res: _can_job_run_on_node: %u cpus on %s(%d), mem %u/%u",
@@ -724,6 +730,7 @@ static int _verify_node_state(struct part_res_record *cr_part_ptr,
 {
 	struct node_record *node_ptr;
 	uint32_t i, free_mem, min_mem, size;
+	List gres_list;
 
 	min_mem = job_ptr->details->pn_min_memory & (~MEM_PER_CPU);
 	size = bit_size(bitmap);
@@ -746,6 +753,10 @@ static int _verify_node_state(struct part_res_record *cr_part_ptr,
 		}
 
 		/* node-level gres check */
+		if (node_usage[i].gres_list)
+			gres_list = node_usage[i].gres_list;
+		else
+			gres_list = node_ptr->gres_list;
 		if (gres_plugin_job_test(job_ptr->gres_list, 
 					 node_ptr->gres_list, true) == 0) {
 			info("cons_res: _vns: node %s lacks gres",

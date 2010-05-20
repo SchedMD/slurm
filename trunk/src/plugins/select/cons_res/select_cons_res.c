@@ -211,13 +211,16 @@ static void _dump_job_res(struct job_resources *job) {
 	info("DEBUG: Dump job_resources: nhosts %u cb %s", job->nhosts, str);
 }
 
-static void _dump_nodes()
+static void _dump_nodes(void)
 {
+	struct node_record *node_ptr;
+	List gres_list;
 	int i;
 
-	for (i=0; i<select_node_cnt; i++) {
+	for (i=0, node_ptr=; i<select_node_cnt; i++) {
+		node_ptr = select_node_record[i].node_ptr;
 		info("node:%s cpus:%u c:%u s:%u t:%u mem:%u a_mem:%u state:%d",
-			select_node_record[i].node_ptr->name,
+			node_ptr->name,
 			select_node_record[i].cpus,
 			select_node_record[i].cores,
 			select_node_record[i].sockets,
@@ -225,6 +228,13 @@ static void _dump_nodes()
 			select_node_record[i].real_memory,
 			select_node_usage[i].alloc_memory,
 			select_node_usage[i].node_state);
+
+		if (select_node_usage[i].gres_list)
+			gres_list = select_node_usage[i].gres_list;
+		else
+			gres_list = node_ptr->gres_list;
+		if (gres_list)
+			gres_plugin_node_state_log(gres_list, node_ptr->name);
 	}
 }
 
@@ -422,18 +432,23 @@ static struct part_res_record *_dup_part_data(struct part_res_record *orig_ptr)
 static struct node_use_record *_dup_node_usage(struct node_use_record *orig_ptr)
 {
 	struct node_use_record *new_use_ptr, *new_ptr;
+	List gres_list;
 	uint32_t i;
 
 	if (orig_ptr == NULL)
 		return NULL;
 
-	new_use_ptr = xmalloc(select_node_cnt *
-			      sizeof(struct node_use_record));
+	new_use_ptr = xmalloc(select_node_cnt * sizeof(struct node_use_record));
 	new_ptr = new_use_ptr;
 
 	for (i = 0; i < select_node_cnt; i++) {
 		new_ptr[i].node_state   = orig_ptr[i].node_state;
 		new_ptr[i].alloc_memory = orig_ptr[i].alloc_memory;
+		if (orig_ptr[i].gres_list)
+			gres_list = orig_ptr[i].gres_list;
+		else
+			gres_list = node_record_table_ptr[i].gres_list;
+		new_ptr[i].gres_list = gres_plugin_node_state_dup(gres_list);
 	}
 	return new_use_ptr;
 }
@@ -529,7 +544,11 @@ static void _destroy_node_data(struct node_use_record *node_usage,
 				struct node_res_record *node_data)
 {
 	xfree(node_data);
-	xfree(node_usage);
+	if (node_usage) {
+		if (node_usage->gres_list)
+			list_destroy(node_usage->gres_list);
+		xfree(node_usage);
+	}
 }
 
 
@@ -853,7 +872,9 @@ static void _build_row_bitmaps(struct part_res_record *p_ptr)
 static int _add_job_to_res(struct job_record *job_ptr, int action)
 {
 	struct job_resources *job = job_ptr->job_resrcs;
+	struct node_record *node_ptr;
 	struct part_res_record *p_ptr;
+	List gres_list;
 	int i, n;
 
 	if (!job || !job->core_bitmap) {
@@ -868,12 +889,21 @@ static int _add_job_to_res(struct job_record *job_ptr, int action)
 	_dump_job_res(job);
 #endif
 
-	/* add memory */
-	if (action != 2) {
-		for (i = 0, n = -1; i < select_node_cnt; i++) {
-			if (!bit_test(job->node_bitmap, i))
-				continue;
-			n++;
+	for (i = 0, n = -1; i < select_node_cnt; i++) {
+		if (!bit_test(job->node_bitmap, i))
+			continue;
+		n++;
+
+		node_ptr = select_node_record[i].node_ptr;
+		if (select_node_usage[i].gres_list)
+			gres_list = select_node_usage[i].gres_list;
+		else
+			gres_list = node_ptr->gres_list;
+		gres_plugin_job_alloc(job_ptr->gres_list, gres_list,
+				      job->nhosts, n, job->cpus[n]);
+		gres_plugin_node_state_log(gres_list, node_ptr->name);
+
+		if (action != 2) {
 			if (job->memory_allocated[n] == 0)
 				continue;	/* node lost by job resizing */
 			select_node_usage[i].alloc_memory +=
@@ -882,7 +912,7 @@ static int _add_job_to_res(struct job_record *job_ptr, int action)
 			     select_node_record[i].real_memory)) {
 				error("error: node %s mem is overallocated "
 				      "(%u) for job %u",
-				      select_node_record[i].node_ptr->name,
+				      node_ptr->name,
 				      select_node_usage[i].alloc_memory,
 				      job_ptr->job_id);
 
@@ -952,8 +982,10 @@ static int _rm_job_from_res(struct part_res_record *part_record_ptr,
 			    struct job_record *job_ptr, int action)
 {
 	struct job_resources *job = job_ptr->job_resrcs;
+	struct node_record *node_ptr;
 	int first_bit, last_bit;
 	int i, n;
+	List gres_list;
 
 	if (!job || !job->core_bitmap) {
 		error("job %u has no select data", job_ptr->job_id);
@@ -966,14 +998,22 @@ static int _rm_job_from_res(struct part_res_record *part_record_ptr,
 	_dump_job_res(job);
 #endif
 
-	/* subtract memory */
-	if (action != 2) {
-		first_bit = bit_ffs(job->node_bitmap);
-		last_bit =  bit_fls(job->node_bitmap);
-		for (i = first_bit, n = -1; i <= last_bit; i++) {
-			if (!bit_test(job->node_bitmap, i))
-				continue;
-			n++;
+	first_bit = bit_ffs(job->node_bitmap);
+	last_bit =  bit_fls(job->node_bitmap);
+	for (i = first_bit, n = -1; i <= last_bit; i++) {
+		if (!bit_test(job->node_bitmap, i))
+			continue;
+		n++;
+
+		node_ptr = node_record_table_ptr + i;
+		if (node_usage[i].gres_list)
+			gres_list = node_usage[i].gres_list;
+		else
+			gres_list = node_ptr->gres_list;
+		gres_plugin_job_dealloc(job_ptr->gres_list, gres_list, n);
+		gres_plugin_node_state_log(gres_list, node_ptr->name);
+
+		if (action != 2) {
 			if (job->memory_allocated[n] == 0)
 				continue;	/* node lost by job resizing */
 			if (node_usage[i].alloc_memory <
@@ -1081,6 +1121,7 @@ static int _rm_job_from_one_node(struct job_record *job_ptr,
 	struct part_res_record *p_ptr;
 	int first_bit, last_bit;
 	int i, node_inx, n;
+	List gres_list;
 
 	if (!job || !job->core_bitmap) {
 		error("job %u has no select data", job_ptr->job_id);
@@ -1109,6 +1150,14 @@ static int _rm_job_from_one_node(struct job_record *job_ptr,
 			     node_ptr->name, job_ptr->job_id);
 			return SLURM_SUCCESS;
 		}
+
+		if (node_usage[i].gres_list)
+			gres_list = node_usage[i].gres_list;
+		else
+			gres_list = node_ptr->gres_list;
+		gres_plugin_job_dealloc(job_ptr->gres_list, gres_list, n);
+		gres_plugin_node_state_log(gres_list, node_ptr->name);
+
 		job->cpus[n] = 0;
 		job->ncpus = build_job_resources_cpu_array(job);
 		clear_job_resources_node(job, n);
