@@ -1715,9 +1715,10 @@ extern int sacctmgr_delete_account(int argc, char *argv[])
 		ListIterator itr = NULL;
 
 		/* Check to see if person is trying to remove a default
-		 * account of a user.
+		 * account of a user.  _isdefault only works with the
+		 * output from acct_storage_g_remove_accounts btw.
 		 */
-		if(_isdefault(ret_list)) {
+		if((cond_set == 1) && _isdefault(ret_list)) {
 			exit_code=1;
 			fprintf(stderr, " Please either remove accounts listed "
 				"above from list and resubmit,\n"
