@@ -1098,6 +1098,9 @@ _set_batch_job_limits(slurm_msg_t *msg)
 	slurm_cred_arg_t arg;
 	batch_job_launch_msg_t *req = (batch_job_launch_msg_t *)msg->data;
 
+	if (slurm_cred_get_args(req->cred, &arg) != SLURM_SUCCESS)
+		return;
+
 	if (cpu_log) {
 		char *per_job = "";
 		uint32_t job_mem  = arg.job_mem_limit;
