@@ -78,7 +78,6 @@ static int
 _scontrol_load_jobs(job_info_msg_t ** job_buffer_pptr, uint32_t job_id)
 {
 	int error_code;
-	static job_info_msg_t *old_job_info_ptr = NULL;
 	static uint16_t last_show_flags = 0xffff;
 	uint16_t show_flags = 0;
 	job_info_msg_t * job_info_ptr = NULL;

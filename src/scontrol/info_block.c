@@ -43,16 +43,15 @@ extern int
 scontrol_load_block (block_info_msg_t **block_info_pptr)
 {
 	int error_code;
-	static block_info_msg_t *last_info_ptr = NULL;
 	block_info_msg_t *info_ptr = NULL;
 
-	if (last_info_ptr) {
+	if (old_block_info_ptr) {
 		error_code = slurm_load_block_info(
-			last_info_ptr->last_update, &info_ptr);
+			old_block_info_ptr->last_update, &info_ptr);
 		if (error_code == SLURM_SUCCESS)
-			slurm_free_block_info_msg(&last_info_ptr);
+			slurm_free_block_info_msg(&old_block_info_ptr);
 		else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
-			info_ptr = last_info_ptr;
+			info_ptr = old_block_info_ptr;
 			error_code = SLURM_SUCCESS;
 			if (quiet_flag == -1)
 				printf ("slurm_load_block no "
@@ -62,7 +61,7 @@ scontrol_load_block (block_info_msg_t **block_info_pptr)
 		error_code = slurm_load_block_info((time_t)NULL, &info_ptr);
 
 	if (error_code == SLURM_SUCCESS) {
-		last_info_ptr = info_ptr;
+		old_block_info_ptr = info_ptr;
 		*block_info_pptr = info_ptr;
 	}
 

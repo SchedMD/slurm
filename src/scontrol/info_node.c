@@ -44,7 +44,6 @@ extern int
 scontrol_load_nodes (node_info_msg_t ** node_buffer_pptr, uint16_t show_flags)
 {
 	int error_code;
-	static node_info_msg_t *old_node_info_ptr = NULL;
 	static int last_show_flags = 0xffff;
 	node_info_msg_t *node_info_ptr = NULL;
 
