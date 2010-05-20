@@ -253,6 +253,7 @@ parse_command_line( int argc, char* argv[] )
 		}
 	}
 
+	params.cluster_flags = slurmdb_setup_cluster_flags();
 	if (optind < argc) {
 		if (params.job_flag) {
 			params.jobs = xstrdup(argv[optind++]);

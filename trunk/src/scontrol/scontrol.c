@@ -106,7 +106,6 @@ main (int argc, char *argv[])
 	quiet_flag        = 0;
 	verbosity         = 0;
 	log_init("scontrol", opts, SYSLOG_FACILITY_DAEMON, NULL);
-	cluster_flags = slurmdb_setup_cluster_flags();
 
 	if (getenv ("SCONTROL_ALL"))
 		all_flag= 1;
@@ -145,7 +144,6 @@ main (int argc, char *argv[])
 				exit(1);
 			}
 			working_cluster_rec = list_peek(clusters);
-			cluster_flags = slurmdb_setup_cluster_flags();
 			break;
 		case (int)'o':
 			one_liner = 1;
@@ -168,6 +166,8 @@ main (int argc, char *argv[])
 			exit(exit_code);
 		}
 	}
+
+	cluster_flags = slurmdb_setup_cluster_flags();
 
 	if (verbosity) {
 		opts.stderr_level += verbosity;

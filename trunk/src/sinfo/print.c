@@ -332,28 +332,7 @@ int _print_cpus_aiot(sinfo_data_t * sinfo_data, int width,
 	char tmpo[8];
 	char tmpt[8];
 	if (sinfo_data) {
-		if(working_cluster_rec) {
-			if(working_cluster_rec->flags & CLUSTER_FLAG_BG) {
-				convert_num_unit((float)sinfo_data->cpus_alloc,
-						 tmpa, sizeof(tmpa), UNIT_NONE);
-				convert_num_unit((float)sinfo_data->cpus_idle,
-						 tmpi, sizeof(tmpi), UNIT_NONE);
-				convert_num_unit((float)sinfo_data->cpus_other,
-						 tmpo, sizeof(tmpo), UNIT_NONE);
-				convert_num_unit((float)sinfo_data->cpus_total,
-						 tmpt, sizeof(tmpt), UNIT_NONE);
-			} else {
-				snprintf(tmpa, sizeof(tmpa), "%u",
-					 sinfo_data->cpus_alloc);
-				snprintf(tmpi, sizeof(tmpi), "%u",
-					 sinfo_data->cpus_idle);
-				snprintf(tmpo, sizeof(tmpo), "%u",
-					 sinfo_data->cpus_other);
-				snprintf(tmpt, sizeof(tmpt), "%u",
-					 sinfo_data->cpus_total);
-			}
-		} else {
-#ifdef HAVE_BG
+		if(params.cluster_flags & CLUSTER_FLAG_BG) {
 			convert_num_unit((float)sinfo_data->cpus_alloc,
 					 tmpa, sizeof(tmpa), UNIT_NONE);
 			convert_num_unit((float)sinfo_data->cpus_idle,
@@ -362,7 +341,7 @@ int _print_cpus_aiot(sinfo_data_t * sinfo_data, int width,
 					 tmpo, sizeof(tmpo), UNIT_NONE);
 			convert_num_unit((float)sinfo_data->cpus_total,
 					 tmpt, sizeof(tmpt), UNIT_NONE);
-#else
+		} else {
 			snprintf(tmpa, sizeof(tmpa), "%u",
 				 sinfo_data->cpus_alloc);
 			snprintf(tmpi, sizeof(tmpi), "%u",
@@ -371,7 +350,6 @@ int _print_cpus_aiot(sinfo_data_t * sinfo_data, int width,
 				 sinfo_data->cpus_other);
 			snprintf(tmpt, sizeof(tmpt), "%u",
 				 sinfo_data->cpus_total);
-#endif
 		}
 		snprintf(id, FORMAT_STRING_SIZE, "%s/%s/%s/%s",
 			 tmpa, tmpi, tmpo, tmpt);
@@ -583,14 +561,9 @@ int _print_node_list(sinfo_data_t * sinfo_data, int width,
 		_print_str(tmp, width, right_justify, true);
 	} else {
 		char *title = "NODELIST";
-		if(working_cluster_rec) {
-			if(working_cluster_rec->flags & CLUSTER_FLAG_BG)
-				title = "BP_LIST";
-		} else {
-#ifdef HAVE_BG
+		if(params.cluster_flags & CLUSTER_FLAG_BG)
 			title = "BP_LIST";
-#endif
-		}
+
 		_print_str(title, width, right_justify, false);
 	}
 
@@ -605,22 +578,12 @@ int _print_nodes_t(sinfo_data_t * sinfo_data, int width,
 	char id[FORMAT_STRING_SIZE];
 	char tmp[8];
 	if (sinfo_data) {
-		if(working_cluster_rec) {
-			if(working_cluster_rec->flags & CLUSTER_FLAG_BG)
-				convert_num_unit((float)sinfo_data->nodes_total,
-						 tmp, sizeof(tmp), UNIT_NONE);
-			else
-				snprintf(tmp, sizeof(tmp), "%d",
-					 sinfo_data->nodes_total);
-		} else {
-#ifdef HAVE_BG
-			convert_num_unit((float)sinfo_data->nodes_total, tmp,
-					 sizeof(tmp), UNIT_NONE);
-#else
+		if(params.cluster_flags & CLUSTER_FLAG_BG)
+			convert_num_unit((float)sinfo_data->nodes_total,
+					 tmp, sizeof(tmp), UNIT_NONE);
+		else
 			snprintf(tmp, sizeof(tmp), "%d",
 				 sinfo_data->nodes_total);
-#endif
-		}
 		snprintf(id, FORMAT_STRING_SIZE, "%s", tmp);
 		_print_str(id, width, right_justify, true);
 	} else
@@ -638,30 +601,16 @@ int _print_nodes_ai(sinfo_data_t * sinfo_data, int width,
 	char tmpa[8];
 	char tmpi[8];
 	if (sinfo_data) {
-		if(working_cluster_rec) {
-			if(working_cluster_rec->flags & CLUSTER_FLAG_BG) {
-				convert_num_unit((float)sinfo_data->nodes_alloc,
-						 tmpa, sizeof(tmpa), UNIT_NONE);
-				convert_num_unit((float)sinfo_data->nodes_idle,
-						 tmpi, sizeof(tmpi), UNIT_NONE);
-			} else {
-				snprintf(tmpa, sizeof(tmpa), "%d",
-					 sinfo_data->nodes_alloc);
-				snprintf(tmpi, sizeof(tmpi), "%d",
-					 sinfo_data->nodes_idle);
-			}
-		} else {
-#ifdef HAVE_BG
+		if(params.cluster_flags & CLUSTER_FLAG_BG) {
 			convert_num_unit((float)sinfo_data->nodes_alloc,
-				 tmpa, sizeof(tmpa), UNIT_NONE);
+					 tmpa, sizeof(tmpa), UNIT_NONE);
 			convert_num_unit((float)sinfo_data->nodes_idle,
 					 tmpi, sizeof(tmpi), UNIT_NONE);
-#else
+		} else {
 			snprintf(tmpa, sizeof(tmpa), "%d",
 				 sinfo_data->nodes_alloc);
 			snprintf(tmpi, sizeof(tmpi), "%d",
 				 sinfo_data->nodes_idle);
-#endif
 		}
 		snprintf(id, FORMAT_STRING_SIZE, "%s/%s",
 		         tmpa, tmpi);
@@ -683,28 +632,7 @@ int _print_nodes_aiot(sinfo_data_t * sinfo_data, int width,
 	char tmpo[8];
 	char tmpt[8];
 	if (sinfo_data) {
-		if(working_cluster_rec) {
-			if(working_cluster_rec->flags & CLUSTER_FLAG_BG) {
-				convert_num_unit((float)sinfo_data->nodes_alloc,
-						 tmpa, sizeof(tmpa), UNIT_NONE);
-				convert_num_unit((float)sinfo_data->nodes_idle,
-						 tmpi, sizeof(tmpi), UNIT_NONE);
-				convert_num_unit((float)sinfo_data->nodes_other,
-						 tmpo, sizeof(tmpo), UNIT_NONE);
-				convert_num_unit((float)sinfo_data->nodes_total,
-						 tmpt, sizeof(tmpt), UNIT_NONE);
-			} else {
-				snprintf(tmpa, sizeof(tmpa), "%u",
-					 sinfo_data->nodes_alloc);
-				snprintf(tmpi, sizeof(tmpi), "%u",
-					 sinfo_data->nodes_idle);
-				snprintf(tmpo, sizeof(tmpo), "%u",
-					 sinfo_data->nodes_other);
-				snprintf(tmpt, sizeof(tmpt), "%u",
-					 sinfo_data->nodes_total);
-			}
-		} else {
-#ifdef HAVE_BG
+		if(params.cluster_flags & CLUSTER_FLAG_BG) {
 			convert_num_unit((float)sinfo_data->nodes_alloc,
 					 tmpa, sizeof(tmpa), UNIT_NONE);
 			convert_num_unit((float)sinfo_data->nodes_idle,
@@ -713,7 +641,7 @@ int _print_nodes_aiot(sinfo_data_t * sinfo_data, int width,
 					 tmpo, sizeof(tmpo), UNIT_NONE);
 			convert_num_unit((float)sinfo_data->nodes_total,
 					 tmpt, sizeof(tmpt), UNIT_NONE);
-#else
+		} else {
 			snprintf(tmpa, sizeof(tmpa), "%u",
 				 sinfo_data->nodes_alloc);
 			snprintf(tmpi, sizeof(tmpi), "%u",
@@ -722,7 +650,6 @@ int _print_nodes_aiot(sinfo_data_t * sinfo_data, int width,
 				 sinfo_data->nodes_other);
 			snprintf(tmpt, sizeof(tmpt), "%u",
 				 sinfo_data->nodes_total);
-#endif
 		}
 		snprintf(id, FORMAT_STRING_SIZE, "%s/%s/%s/%s",
 		         tmpa, tmpi, tmpo, tmpt);
