@@ -683,11 +683,6 @@ extern void node_state_log(void *gres_data, char *node_name)
 	}
 }
 
-extern void job_config_delete(void *gres_data)
-{
-	xfree(gres_data);
-}
-
 extern int job_gres_validate(char *config, void **gres_data)
 {
 	char *last = NULL;
@@ -715,6 +710,49 @@ extern int job_gres_validate(char *config, void **gres_data)
 	gres_ptr->gpu_cnt_mult  = mult;
 	*gres_data = gres_ptr;
 	return SLURM_SUCCESS;
+}
+
+extern void job_config_delete(void *gres_data)
+{
+	int i;
+	gpu_job_state_t *gres_ptr = (gpu_job_state_t *) gres_data;
+
+	if (gres_ptr == NULL)
+		return;
+
+	if (gres_ptr->gpu_bit_alloc) {
+		for (i=0; i<gres_ptr->node_cnt; i++) {
+			if (gres_ptr->gpu_bit_alloc[i])
+				bit_free(gres_ptr->gpu_bit_alloc[i]);
+		}
+		xfree(gres_ptr->gpu_bit_alloc);
+	}
+	xfree(gres_ptr);
+}
+
+extern void *dup_job_state(void *gres_data)
+{
+
+	int i;
+	gpu_job_state_t *gres_ptr = (gpu_job_state_t *) gres_data;
+	gpu_job_state_t *new_gres_ptr;
+
+	if (gres_ptr == NULL)
+		return NULL;
+
+	new_gres_ptr = xmalloc(sizeof(gpu_job_state_t));
+	new_gres_ptr->gpu_cnt_alloc	= gres_ptr->gpu_cnt_alloc;
+	new_gres_ptr->gpu_cnt_mult	= gres_ptr->gpu_cnt_mult;
+	new_gres_ptr->node_cnt		= gres_ptr->node_cnt;
+	new_gres_ptr->gpu_bit_alloc	= xmalloc(sizeof(bitstr_t *) *
+						  (gres_ptr->node_cnt + 1));
+	for (i=0; i<gres_ptr->node_cnt; i++) {
+		if (gres_ptr->gpu_bit_alloc[i] == NULL)
+			continue;
+		new_gres_ptr->gpu_bit_alloc[i] = bit_copy(gres_ptr->
+							  gpu_bit_alloc[i]);
+	}
+	return new_gres_ptr;
 }
 
 extern int pack_job_state(void *gres_data, Buf buffer)
