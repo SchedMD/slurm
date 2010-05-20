@@ -56,6 +56,12 @@ int one_liner;		/* one record per line if =1 */
 int quiet_flag;		/* quiet=1, verbose=-1, normal=0 */
 int verbosity;		/* count of "-v" options */
 uint32_t cluster_flags; /*what type of cluster are we talking to */
+block_info_msg_t *old_block_info_ptr = NULL;
+job_info_msg_t *old_job_info_ptr = NULL;
+node_info_msg_t *old_node_info_ptr = NULL;
+partition_info_msg_t *old_part_info_ptr = NULL;
+reserve_info_msg_t *old_res_info_ptr = NULL;
+slurm_ctl_conf_info_msg_t *old_slurm_ctl_conf_ptr = NULL;
 
 static void	_create_it (int argc, char *argv[]);
 static void	_delete_it (int argc, char *argv[]);
@@ -323,7 +329,6 @@ static void
 _print_config (char *config_param)
 {
 	int error_code;
-	static slurm_ctl_conf_info_msg_t *old_slurm_ctl_conf_ptr = NULL;
 	slurm_ctl_conf_info_msg_t  *slurm_ctl_conf_ptr = NULL;
 
 	if (old_slurm_ctl_conf_ptr) {
@@ -551,6 +556,18 @@ _process_command (int argc, char *argv[])
 			working_cluster_rec = list_peek(clusters);
 		}
 		cluster_flags = slurmdb_setup_cluster_flags();
+		if(old_block_info_ptr)
+			old_block_info_ptr->last_update = 0;
+		if(old_job_info_ptr)
+			old_job_info_ptr->last_update = 0;
+		if(old_node_info_ptr)
+			old_node_info_ptr->last_update = 0;
+		if(old_part_info_ptr)
+			old_part_info_ptr->last_update = 0;
+		if(old_res_info_ptr)
+			old_res_info_ptr->last_update = 0;
+		if(old_slurm_ctl_conf_ptr)
+			old_slurm_ctl_conf_ptr->last_update = 0;
 	}
 	else if (strncasecmp (tag, "create", MAX(taglen, 2)) == 0) {
 		if (argc < 2) {
