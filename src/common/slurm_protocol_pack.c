@@ -3806,6 +3806,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 {
 	uint32_t count = NO_VAL;
 	uint16_t uint16_tmp;
+	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 
 	if(protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
 		pack_time(build_ptr->last_update, buffer);
@@ -3966,9 +3967,9 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		pack16(build_ptr->slurmd_debug, buffer);
 		packstr(build_ptr->slurmd_logfile, buffer);
 		packstr(build_ptr->slurmd_pidfile, buffer);
-#ifndef MULTIPLE_SLURMD
-		pack32(build_ptr->slurmd_port, buffer);
-#endif
+		if(!(cluster_flags & CLUSTER_FLAG_MULTSD))
+			pack32(build_ptr->slurmd_port, buffer);
+
 		packstr(build_ptr->slurmd_spooldir, buffer);
 		pack16(build_ptr->slurmd_timeout, buffer);
 		packstr(build_ptr->srun_epilog, buffer);
@@ -4205,6 +4206,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 	uint32_t uint32_tmp;
 	uint16_t uint16_tmp;
 	slurm_ctl_conf_info_msg_t *build_ptr;
+	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 
 	/* alloc memory for structure */
 	build_ptr = xmalloc(sizeof(slurm_ctl_conf_t));
@@ -4431,9 +4433,9 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 				       buffer);
 		safe_unpackstr_xmalloc(&build_ptr->slurmd_pidfile, &uint32_tmp,
 				       buffer);
-#ifndef MULTIPLE_SLURMD
-		safe_unpack32(&build_ptr->slurmd_port, buffer);
-#endif
+		if(!(cluster_flags & CLUSTER_FLAG_MULTSD))
+			safe_unpack32(&build_ptr->slurmd_port, buffer);
+
 		safe_unpackstr_xmalloc(&build_ptr->slurmd_spooldir,
 				       &uint32_tmp, buffer);
 		safe_unpack16(&build_ptr->slurmd_timeout, buffer);
