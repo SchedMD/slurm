@@ -4991,8 +4991,8 @@ void reset_job_bitmaps(void)
 		if (_reset_detail_bitmaps(job_ptr))
 			job_fail = true;
 
-		if ((job_ptr->kill_on_step_done)
-		    &&  (list_count(job_ptr->step_list) <= 1)) {
+		if ((job_ptr->kill_on_step_done) &&
+		    (list_count(job_ptr->step_list) <= 1)) {
 			info("Single job step done, job is complete");
 			job_fail = true;
 		}

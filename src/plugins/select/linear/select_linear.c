@@ -357,18 +357,19 @@ static bool _ck_run_job(struct cr_record *cr_ptr, uint32_t job_id,
 			bool clear_it)
 {
 	int i;
+	bool rc = false;
 
 	if ((cr_ptr->run_job_ids == NULL) || (cr_ptr->run_job_len == 0))
-		return false;
+		return rc;
 
 	for (i=0; i<cr_ptr->run_job_len; i++) {
 		if (cr_ptr->run_job_ids[i] != job_id)
 			continue;
 		if (clear_it)
 			cr_ptr->run_job_ids[i] = 0;
-		return true;
+		rc = true;
 	}
-	return false;
+	return rc;
 }
 
 /* Remove job id from record of jobs running,
@@ -389,18 +390,19 @@ static bool _ck_tot_job(struct cr_record *cr_ptr, uint32_t job_id,
 			bool clear_it)
 {
 	int i;
+	bool rc = false;
 
 	if ((cr_ptr->tot_job_ids == NULL) || (cr_ptr->tot_job_len == 0))
-		return false;
+		return rc;
 
 	for (i=0; i<cr_ptr->tot_job_len; i++) {
 		if (cr_ptr->tot_job_ids[i] != job_id)
 			continue;
 		if (clear_it)
-		cr_ptr->tot_job_ids[i] = 0;
-			return true;
+			cr_ptr->tot_job_ids[i] = 0;
+		rc = true;
 	}
-	return false;
+	return rc;
 }
 /* Remove job id from record of jobs running or suspended,
  * RET true if successful, false if the job was not found */
