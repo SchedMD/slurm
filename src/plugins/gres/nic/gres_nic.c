@@ -140,13 +140,11 @@ typedef struct nic_job_state {
 	/* Resources currently allocated to job on each node */
 	uint32_t node_cnt;
 	bitstr_t **nic_bit_alloc;
-#if 0
-Need to modify state save, allocation, free, etc.
+
 	/* Resources currently allocated to job steps on each node.
 	 * This will be a subset of resources allocated to the job.
 	 * nic_bit_step_alloc is a subset of nic_bit_alloc */
 	bitstr_t **nic_bit_step_alloc;
-#endif
 } nic_job_state_t;
 
 /* Gres job step state as used by slurmctld. */
@@ -723,6 +721,8 @@ extern int job_state_validate(char *config, void **gres_data)
 			mult = 1;
 		else
 			return SLURM_ERROR;
+		if (cnt == 0)
+			return SLURM_ERROR;
 	} else
 		return SLURM_ERROR;
 
@@ -747,6 +747,13 @@ extern void job_state_delete(void *gres_data)
 				bit_free(gres_ptr->nic_bit_alloc[i]);
 		}
 		xfree(gres_ptr->nic_bit_alloc);
+	}
+	if (gres_ptr->nic_bit_step_alloc) {
+		for (i=0; i<gres_ptr->node_cnt; i++) {
+			if (gres_ptr->nic_bit_step_alloc[i])
+				bit_free(gres_ptr->nic_bit_step_alloc[i]);
+		}
+		xfree(gres_ptr->nic_bit_step_alloc);
 	}
 	xfree(gres_ptr);
 }
@@ -1008,6 +1015,65 @@ extern void job_state_log(void *gres_data, uint32_t job_id)
 	} else {
 		info("  nic_bit_alloc:NULL");
 	}
+
+	if (gres_ptr->node_cnt && gres_ptr->nic_bit_step_alloc) {
+		for (i=0; i<gres_ptr->node_cnt; i++) {
+			bit_fmt(tmp_str, sizeof(tmp_str),
+				gres_ptr->nic_bit_step_alloc[i]);
+			info("  nic_bit_step_alloc[%d]:%s", i, tmp_str);
+		}
+	} else {
+		info("  nic_bit_step_alloc:NULL");
+	}
+}
+
+extern void step_state_delete(void *gres_data)
+{
+	int i;
+	nic_step_state_t *gres_ptr = (nic_step_state_t *) gres_data;
+
+	if (gres_ptr == NULL)
+		return;
+
+	if (gres_ptr->nic_bit_alloc) {
+		for (i=0; i<gres_ptr->node_cnt; i++) {
+			if (gres_ptr->nic_bit_alloc[i])
+				bit_free(gres_ptr->nic_bit_alloc[i]);
+		}
+		xfree(gres_ptr->nic_bit_alloc);
+	}
+	xfree(gres_ptr);
+}
+
+extern int step_state_validate(char *config, void **gres_data)
+{
+	char *last = NULL;
+	nic_job_state_t *gres_ptr;
+	uint32_t cnt;
+	uint8_t mult = 0;
+
+	if (!strcmp(config, "nic")) {
+		cnt = 1;
+	} else if (!strncmp(config, "nic:", 4)) {
+		cnt = strtol(config+4, &last, 10);
+		if (last[0] == '\0')
+			;
+		else if ((last[0] == 'k') || (last[0] == 'K'))
+			cnt *= 1024;
+		else if (!strcasecmp(last, "*cpu"))
+			mult = 1;
+		else
+			return SLURM_ERROR;
+		if (cnt == 0)
+			return SLURM_ERROR;
+	} else
+		return SLURM_ERROR;
+
+	gres_ptr = xmalloc(sizeof(nic_step_state_t));
+	gres_ptr->nic_cnt_alloc = cnt;
+	gres_ptr->nic_cnt_mult  = mult;
+	*gres_data = gres_ptr;
+	return SLURM_SUCCESS;
 }
 
 extern int step_state_pack(void *gres_data, Buf buffer)
@@ -1084,4 +1150,10 @@ extern void step_state_log(void *gres_data, uint32_t job_id, uint32_t step_id)
 	} else {
 		info("  nic_bit_alloc:NULL");
 	}
+}
+
+extern uint32_t step_test(void *job_gres_data, void *step_gres_data,
+			  int node_offset)
+{
+	return NO_VAL;
 }
