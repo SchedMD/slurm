@@ -69,8 +69,6 @@ extern int select_nodeinfo_free(select_nodeinfo_t *nodeinfo);
 
 extern int select_nodeinfo_set_all(time_t last_query_time);
 
-extern int select_nodeinfo_set(struct job_record *job_ptr);
-
 extern int select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
 			       enum select_nodedata_type dinfo,
 			       enum node_states state,
