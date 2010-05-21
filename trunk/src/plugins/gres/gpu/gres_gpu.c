@@ -140,7 +140,28 @@ typedef struct gpu_job_state {
 	/* Resources currently allocated to job on each node */
 	uint32_t node_cnt;
 	bitstr_t **gpu_bit_alloc;
+#if 0
+Need to modify state save, allocation, free, etc.
+	/* Resources currently allocated to job steps on each node.
+	 * This will be a subset of resources allocated to the job.
+	 * gpu_bit_step_alloc is a subset of gpu_bit_alloc */
+	bitstr_t **gpu_bit_step_alloc;
+#endif
 } gpu_job_state_t;
+
+/* Gres job step state as used by slurmctld. */
+typedef struct gpu_step_state {
+	/* Count of resources needed */
+	uint32_t gpu_cnt_alloc;
+
+	/* If 0 then gpu_cnt_alloc is per node,
+	 * if 1 then gpu_cnt_alloc is per CPU */
+	uint8_t  gpu_cnt_mult;
+
+	/* Resources currently allocated to the job step on each node */
+	uint32_t node_cnt;
+	bitstr_t **gpu_bit_alloc;
+} gpu_step_state_t;
 
 /*
  * This will be the output for "--gres=help" option.
@@ -972,6 +993,82 @@ extern void job_state_log(void *gres_data, uint32_t job_id)
 	xassert(gres_data);
 	gres_ptr = (gpu_job_state_t *) gres_data;
 	info("%s state for job %u", plugin_name, job_id);
+	if (gres_ptr->gpu_cnt_mult)
+		mult = "cpu";
+	else
+		mult = "node";
+	info("  gpu_cnt %u per %s", gres_ptr->gpu_cnt_alloc, mult);
+
+	if (gres_ptr->node_cnt && gres_ptr->gpu_bit_alloc) {
+		for (i=0; i<gres_ptr->node_cnt; i++) {
+			bit_fmt(tmp_str, sizeof(tmp_str),
+				gres_ptr->gpu_bit_alloc[i]);
+			info("  gpu_bit_alloc[%d]:%s", i, tmp_str);
+		}
+	} else {
+		info("  gpu_bit_alloc:NULL");
+	}
+}
+
+extern int step_state_pack(void *gres_data, Buf buffer)
+{
+	int i;
+	gpu_step_state_t *gres_ptr = (gpu_step_state_t *) gres_data;
+
+	pack32(gres_ptr->gpu_cnt_alloc, buffer);
+	pack8 (gres_ptr->gpu_cnt_mult,  buffer);
+
+	pack32(gres_ptr->node_cnt,      buffer);
+	for (i=0; i<gres_ptr->node_cnt; i++)
+		pack_bit_str(gres_ptr->gpu_bit_alloc[i], buffer);
+
+	return SLURM_SUCCESS;
+}
+
+extern int step_state_unpack(void **gres_data, Buf buffer)
+{
+	int i;
+	gpu_step_state_t *gres_ptr;
+
+	gres_ptr = xmalloc(sizeof(gpu_step_state_t));
+
+	if (buffer) {
+		safe_unpack32(&gres_ptr->gpu_cnt_alloc,  buffer);
+		safe_unpack8 (&gres_ptr->gpu_cnt_mult,   buffer);
+
+		safe_unpack32(&gres_ptr->node_cnt,       buffer);
+		gres_ptr->gpu_bit_alloc = xmalloc(sizeof(bitstr_t *) *
+						  (gres_ptr->node_cnt + 1));
+		for (i=0; i<gres_ptr->node_cnt; i++)
+			unpack_bit_str(&gres_ptr->gpu_bit_alloc[i], buffer);
+	}
+
+	*gres_data = gres_ptr;
+	return SLURM_SUCCESS;
+
+unpack_error:
+	error("Unpacking %s step state info", plugin_name);
+	if (gres_ptr->gpu_bit_alloc) {
+		for (i=0; i<gres_ptr->node_cnt; i++) {
+			if (gres_ptr->gpu_bit_alloc[i])
+				bit_free(gres_ptr->gpu_bit_alloc[i]);
+		}
+		xfree(gres_ptr->gpu_bit_alloc);
+	}
+	xfree(gres_ptr);
+	*gres_data = NULL;
+	return SLURM_ERROR;
+}
+
+extern void step_state_log(void *gres_data, uint32_t job_id, uint32_t step_id)
+{
+	gpu_step_state_t *gres_ptr;
+	char *mult, tmp_str[128];
+	int i;
+
+	xassert(gres_data);
+	gres_ptr = (gpu_step_state_t *) gres_data;
+	info("%s state for step %u.%u", plugin_name, job_id, step_id);
 	if (gres_ptr->gpu_cnt_mult)
 		mult = "cpu";
 	else

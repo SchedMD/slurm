@@ -797,7 +797,7 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	while ((step_ptr = (struct step_record *)
 		list_next(step_iterator))) {
 		pack16((uint16_t) STEP_FLAG, buffer);
-		dump_job_step_state(step_ptr, buffer);
+		dump_job_step_state(dump_job_ptr, step_ptr, buffer);
 	}
 	list_iterator_destroy(step_iterator);
 	pack16((uint16_t) 0, buffer);	/* no step flag */

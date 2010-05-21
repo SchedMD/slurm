@@ -57,6 +57,7 @@
 #include "src/common/bitstring.h"
 #include "src/common/checkpoint.h"
 #include "src/common/forward.h"
+#include "src/common/gres.h"
 #include "src/common/slurm_accounting_storage.h"
 #include "src/common/slurm_jobacct_gather.h"
 #include "src/common/slurm_protocol_interface.h"
@@ -2328,10 +2329,12 @@ resume_job_step(struct job_record *job_ptr)
 /*
  * dump_job_step_state - dump the state of a specific job step to a buffer,
  *	load with load_step_state
+ * IN job_ptr - pointer to job for which information is to be dumpped
  * IN step_ptr - pointer to job step for which information is to be dumpped
  * IN/OUT buffer - location to store data, pointers automatically advanced
  */
-extern void dump_job_step_state(struct step_record *step_ptr, Buf buffer)
+extern void dump_job_step_state(struct job_record *job_ptr, 
+				struct step_record *step_ptr, Buf buffer)
 {
 	pack32(step_ptr->step_id, buffer);
 	pack16(step_ptr->cyclic_alloc, buffer);
@@ -2368,7 +2371,11 @@ extern void dump_job_step_state(struct step_record *step_ptr, Buf buffer)
 	packstr(step_ptr->name, buffer);
 	packstr(step_ptr->network, buffer);
 	packstr(step_ptr->ckpt_dir, buffer);
+
 	packstr(step_ptr->gres, buffer);
+	(void) gres_plugin_step_state_pack(step_ptr->gres_list, buffer,
+					   job_ptr->job_id, step_ptr->step_id);
+
 	pack16(step_ptr->batch_step, buffer);
 	if (!step_ptr->batch_step) {
 		pack_slurm_step_layout(step_ptr->step_layout, buffer,
@@ -2400,6 +2407,7 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer,
 	switch_jobinfo_t *switch_tmp = NULL;
 	check_jobinfo_t check_tmp = NULL;
 	slurm_step_layout_t *step_layout = NULL;
+	List gres_list = NULL;
 
 	if(protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
 		safe_unpack32(&step_id, buffer);
@@ -2433,7 +2441,11 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer,
 		safe_unpackstr_xmalloc(&name, &name_len, buffer);
 		safe_unpackstr_xmalloc(&network, &name_len, buffer);
 		safe_unpackstr_xmalloc(&ckpt_dir, &name_len, buffer);
+
 		safe_unpackstr_xmalloc(&gres, &name_len, buffer);
+		if (gres_plugin_step_state_unpack(&gres_list, buffer,
+				job_ptr->job_id, step_id) != SLURM_SUCCESS)
+			goto unpack_error;
 
 		safe_unpack16(&batch_step, buffer);
 		if (!batch_step) {
@@ -2534,6 +2546,7 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer,
 	step_ptr->no_kill      = no_kill;
 	step_ptr->ckpt_dir     = ckpt_dir;
 	step_ptr->gres         = gres;
+	step_ptr->gres_list    = gres_list;
 	step_ptr->port         = port;
 	step_ptr->ckpt_interval= ckpt_interval;
 	step_ptr->mem_per_cpu  = mem_per_cpu;
@@ -2591,6 +2604,8 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer,
 	xfree(network);
 	xfree(ckpt_dir);
 	xfree(gres);
+	if (gres_list)
+		list_destroy(gres_list);
 	xfree(bit_fmt);
 	xfree(core_job);
 	if (switch_tmp)

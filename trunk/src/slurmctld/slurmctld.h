@@ -413,7 +413,7 @@ struct job_record {
 	uint32_t exit_code;		/* exit code for job (status from
 					 * wait call) */
 	char *gres;			/* generic resources */
-	List gres_list;			/* generic resource allocation detaisl */
+	List gres_list;			/* generic resource allocation detail */
 	uint32_t group_id;		/* group submitted under */
 	uint32_t job_id;		/* job ID */
 	struct job_record *job_next;	/* next entry with same hash index */
@@ -525,6 +525,7 @@ struct 	step_record {
 	uint32_t exit_code;		/* highest exit code from any task */
 	bitstr_t *exit_node_bitmap;	/* bitmap of exited nodes */
 	char *gres;			/* generic resources required */
+	List gres_list;			/* generic resource allocation detail */
 	char *host;			/* host for srun communications */
 	struct job_record* job_ptr; 	/* ptr to the job that owns the step */
 	jobacctinfo_t *jobacct;         /* keep track of process info in the
@@ -686,10 +687,12 @@ extern void dump_job_desc(job_desc_msg_t * job_specs);
 /*
  * dump_job_step_state - dump the state of a specific job step to a buffer,
  *	load with load_step_state
+ * IN job_ptr - pointer to job for which information is to be dumpped
  * IN step_ptr - pointer to job step for which information is to be dumpped
  * IN/OUT buffer - location to store data, pointers automatically advanced
  */
-extern void dump_job_step_state(struct step_record *step_ptr, Buf buffer);
+extern void dump_job_step_state(struct job_record *job_ptr, 
+				struct step_record *step_ptr, Buf buffer);
 
 /*
  * dump_step_desc - dump the incoming step initiate request message
