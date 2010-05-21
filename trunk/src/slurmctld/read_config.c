@@ -739,6 +739,7 @@ int read_slurm_conf(int recover, bool reconfig)
 		      "Clean start required.");
 	}
 	xfree(state_save_dir);
+	_gres_reconig(reconfig);
 	reset_job_bitmaps();		/* must follow select_g_job_init() */
 
 	(void) _sync_nodes_to_jobs();
@@ -809,7 +810,6 @@ int read_slurm_conf(int recover, bool reconfig)
 #endif
 
 	/* Sync select plugin with synchronized job/node/part data */
-	_gres_reconig(reconfig);
 	select_g_reconfigure();
 
 	slurmctld_conf.last_update = time(NULL);
@@ -820,11 +820,9 @@ int read_slurm_conf(int recover, bool reconfig)
 static void _gres_reconig(bool reconfig)
 {
 	struct node_record *node_ptr;
-	struct job_record *job_ptr;
-	ListIterator job_iterator;
-	int i, i_first, i_last, node_offset;
-	bool gres_active, gres_changed = false;
-	char *gres_name, *plugin_names;
+	char *gres_name;
+	bool gres_changed;
+	int i;
 
 	if (reconfig) {
 		gres_plugin_reconfig(&gres_changed);
@@ -838,53 +836,6 @@ static void _gres_reconig(bool reconfig)
 			gres_plugin_init_node_config(node_ptr->name, gres_name,
 						     &node_ptr->gres_list);
 		}
-	}
-
-	plugin_names = slurm_get_gres_plugins();
-	if (plugin_names && plugin_names[0])
-		gres_active = true;
-	else
-		gres_active = false;
-	xfree(plugin_names);
-	if (!gres_active)
-		return;
-
-	/* Clear existing node Gres allocations */
-	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
-	     i++, node_ptr++) {
-		gres_plugin_node_state_dealloc(node_ptr->gres_list);
-	}
-
-	/* Reallocate job gres to the nodes */
-	job_iterator = list_iterator_create(job_list);
-	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
-		if (!IS_JOB_RUNNING(job_ptr) && !IS_JOB_SUSPENDED(job_ptr))
-			continue;
-		if (job_ptr->job_resrcs == NULL)
-			continue;
-
-		i_first = bit_ffs(job_ptr->node_bitmap);
-		i_last  = bit_fls(job_ptr->node_bitmap);
-		if (i_first == -1)
-			i_last = -2;
-		node_offset = -1;
-		for (i = i_first; i <= i_last; i++) {
-			if (!bit_test(job_ptr->job_resrcs->node_bitmap, i))
-				continue;
-			node_offset++;
-			if (!bit_test(job_ptr->node_bitmap, i))
-				continue;
-			node_ptr = node_record_table_ptr + i;
-			gres_plugin_node_state_realloc(job_ptr->gres_list,
-						       node_offset,
-						       node_ptr->gres_list);
-		}
-	}
-	list_iterator_destroy(job_iterator);
-
-	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
-	     i++, node_ptr++) {
-		gres_plugin_node_state_log(node_ptr->gres_list, node_ptr->name);
 	}
 }
 

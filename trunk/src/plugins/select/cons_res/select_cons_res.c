@@ -1754,6 +1754,8 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 							    real_memory;
 		}
 		select_node_usage[i].node_state = NODE_CR_AVAILABLE;
+		gres_plugin_node_state_dealloc(select_node_record[i].node_ptr->
+					       gres_list);
 	}
 	_create_part_data();
 

@@ -1851,7 +1851,7 @@ static void _init_node_cr(void)
 	struct job_record *job_ptr;
 	ListIterator job_iterator;
 	uint32_t job_memory_cpu, job_memory_node;
-	int exclusive, i, i_first, i_last;
+	int exclusive, i, i_first, i_last, node_offset;
 
 	if (cr_ptr)
 		return;
@@ -1875,6 +1875,12 @@ static void _init_node_cr(void)
 
 	}
 	list_iterator_destroy(part_iterator);
+
+	/* Clear existing node Gres allocations */
+	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
+	     i++, node_ptr++) {
+		gres_plugin_node_state_dealloc(node_ptr->gres_list);
+	}
 
 	/* record running and suspended jobs in node_cr_records */
 	job_iterator = list_iterator_create(job_list);
@@ -1911,6 +1917,7 @@ static void _init_node_cr(void)
 			continue;
 
 		exclusive = (job_ptr->details->shared == 0);
+		node_offset = -1;
 		i_first = bit_ffs(job_resrcs_ptr->node_bitmap);
 		i_last  = bit_fls(job_resrcs_ptr->node_bitmap);
 		if (i_first == -1)
@@ -1918,6 +1925,7 @@ static void _init_node_cr(void)
 		for (i = i_first; i <= i_last; i++) {
 			if (!bit_test(job_resrcs_ptr->node_bitmap, i))
 				continue;
+			node_offset++;
 			node_ptr = node_record_table_ptr + i;
 			if (exclusive)
 				cr_ptr->nodes[i].exclusive_cnt++;
@@ -1933,6 +1941,13 @@ static void _init_node_cr(void)
 						job_memory_cpu *
 						node_record_table_ptr[i].cpus;
 			}
+
+			if (bit_test(job_ptr->node_bitmap, i)) {
+				gres_plugin_node_state_realloc(
+						job_ptr->gres_list, node_offset,
+						node_ptr->gres_list);
+			}
+
 			part_cr_ptr = cr_ptr->nodes[i].parts;
 			while (part_cr_ptr) {
 				if (part_cr_ptr->part_ptr !=
