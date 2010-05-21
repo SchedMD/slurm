@@ -1056,6 +1056,7 @@ extern char *nodelist_nth_host(const char *nodelist, int inx);
 extern int nodelist_find(const char *nodelist, const char *name);
 extern void convert_num_unit(float num, char *buf, int buf_size, int orig_type);
 extern int revert_num_unit(const char *buf);
+extern void parse_int_to_array(int in, int *out);
 
 /*
  * slurm_job_step_create - Ask the slurm controller for a new job step

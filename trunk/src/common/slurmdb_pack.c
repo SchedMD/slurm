@@ -36,6 +36,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include <stdlib.h>
 #include "slurmdb_pack.h"
 #include "slurm_protocol_defs.h"
 #include "list.h"
@@ -671,6 +672,7 @@ extern int slurmdb_unpack_cluster_rec(void **object, uint16_t rpc_version,
 
 		safe_unpack16(&object_ptr->rpc_version, buffer);
 	}
+
 	return SLURM_SUCCESS;
 
 unpack_error:

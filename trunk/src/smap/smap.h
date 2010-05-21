@@ -115,6 +115,8 @@ enum { JOBS, RESERVATIONS, SLURMPART, BGPART, COMMANDS };
 typedef struct {
 	bool all_flag;
 	List clusters;
+	uint16_t cluster_dims;
+	uint32_t cluster_flags;
 	bool commandline;
 	int display;
 	int iterate;

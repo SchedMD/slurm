@@ -229,6 +229,7 @@ extern void slurmdb_destroy_cluster_rec(void *object)
 		if(slurmdb_cluster->accounting_list)
 			list_destroy(slurmdb_cluster->accounting_list);
 		xfree(slurmdb_cluster->control_host);
+		xfree(slurmdb_cluster->dim_size);
 		xfree(slurmdb_cluster->name);
 		xfree(slurmdb_cluster->nodes);
 		slurmdb_destroy_association_rec(slurmdb_cluster->root_assoc);
@@ -754,6 +755,12 @@ extern void slurmdb_destroy_report_cluster_grouping(void *object)
 	}
 }
 
+extern uint16_t slurmdb_setup_cluster_dims()
+{
+	return working_cluster_rec ?
+		working_cluster_rec->dimensions : SYSTEM_DIMENSIONS;
+}
+
 extern uint32_t slurmdb_setup_cluster_flags()
 {
 	uint32_t cluster_flags = 0;
@@ -863,6 +870,31 @@ extern List slurmdb_get_info_cluster(char *cluster_names)
 			err = 1;
 			goto next;
 		}
+
+		if(cluster_rec->flags & CLUSTER_FLAG_BG) {
+			int number, i, len;
+			char *nodes = cluster_rec->nodes;
+
+			cluster_rec->dim_size = xmalloc(
+				sizeof(int) * cluster_rec->dimensions);
+			len = strlen(nodes);
+			i = len - cluster_rec->dimensions;
+			if(nodes[len-1] == ']')
+				i--;
+			if(i > cluster_rec->dimensions) {
+				char *p = '\0';
+				number = strtoul(nodes + i, &p, 36);
+				hostlist_parse_int_to_array(
+					number, cluster_rec->dim_size,
+					cluster_rec->dimensions, 36);
+				/* all calculations this is for should
+				   be expecting 0 not to count as a
+				   number so add 1 to it. */
+				for(i=0; i<cluster_rec->dimensions; i++)
+					cluster_rec->dim_size[i]++;
+			}
+		}
+
 	next:
 		list_iterator_reset(itr);
 	}
