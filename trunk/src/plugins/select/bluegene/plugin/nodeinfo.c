@@ -318,11 +318,6 @@ extern int select_nodeinfo_set_all(time_t last_query_time)
 #endif
 }
 
-extern int select_nodeinfo_set(struct job_record *job_ptr)
-{
-	return SLURM_SUCCESS;
-}
-
 extern int select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
 			       enum select_nodedata_type dinfo,
 			       enum node_states state,

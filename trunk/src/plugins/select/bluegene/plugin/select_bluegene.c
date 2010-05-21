@@ -685,7 +685,7 @@ extern int select_p_select_nodeinfo_set_all(time_t last_query_time)
 
 extern int select_p_select_nodeinfo_set(struct job_record *job_ptr)
 {
-	return select_nodeinfo_set(job_ptr);
+	return SLURM_SUCCESS;
 }
 
 extern int select_p_select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
