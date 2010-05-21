@@ -100,6 +100,7 @@ extern void slurmdb_destroy_report_cluster_grouping(void *object);
 extern void slurmdb_init_association_rec(slurmdb_association_rec_t *assoc);
 extern void slurmdb_init_qos_rec(slurmdb_qos_rec_t *qos);
 
+extern uint16_t slurmdb_setup_cluster_dims();
 extern uint32_t slurmdb_setup_cluster_flags();
 extern List slurmdb_get_info_cluster(char *cluster_name);
 extern char *slurmdb_qos_str(List qos_list, uint32_t level);

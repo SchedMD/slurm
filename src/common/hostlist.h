@@ -318,6 +318,10 @@ void hostlist_sort(hostlist_t hl);
  */
 void hostlist_uniq(hostlist_t hl);
 
+int hostlist_get_base();
+
+/* given a int will parse it into sizes in each dimension */
+void hostlist_parse_int_to_array(int in, int *out, int dims, int hostlist_base);
 
 /* ----[ hostlist print functions ]---- */
 

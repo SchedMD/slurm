@@ -49,9 +49,7 @@
 typedef struct {
 	char *bg_block_name;
 	enum connection_type bg_conn_type;
-#ifdef HAVE_BGL
 	enum node_use_type bg_node_use;
-#endif
 	char *bg_user_name;
 	char *ionodes;
 	int job_running;
@@ -65,24 +63,18 @@ typedef struct {
 	rm_partition_state_t state;
 } db2_block_info_t;
 
-#ifdef HAVE_BG
 static List block_list = NULL;
-#endif
 
-#ifdef HAVE_BG
 static int _marknodes(db2_block_info_t *block_ptr, int count);
-#endif
 static void _print_header_part(void);
 static int  _print_text_part(partition_info_t *part_ptr,
 			     db2_block_info_t *db2_info_ptr);
-#ifdef HAVE_BG
 static void _block_list_del(void *object);
 static void _nodelist_del(void *object);
 static int _list_match_all(void *object, void *key);
 static int _in_slurm_partition(List slurm_nodes, List bg_nodes);
 static int _print_rest(db2_block_info_t *block_ptr);
 static int _make_nodelist(char *nodes, List nodelist);
-#endif
 
 extern void get_slurm_part()
 {
@@ -187,7 +179,6 @@ extern void get_slurm_part()
 
 extern void get_bg_part()
 {
-#ifdef HAVE_BG
 	int error_code, i, j, recs=0, count = 0, last_count = -1;
 	static partition_info_msg_t *part_info_ptr = NULL;
 	static partition_info_msg_t *new_part_ptr = NULL;
@@ -200,6 +191,9 @@ extern void get_bg_part()
 	ListIterator itr;
 	List nodelist = NULL;
 	bitstr_t *nodes_req = NULL;
+
+	if(!(params.cluster_flags & CLUSTER_FLAG_BG))
+		return;
 
 	if (part_info_ptr) {
 		error_code = slurm_load_partitions(part_info_ptr->last_update,
@@ -310,9 +304,10 @@ extern void get_bg_part()
 			= xstrdup(new_bg_ptr->block_array[i].owner_name);
 		block_ptr->state = new_bg_ptr->block_array[i].state;
 		block_ptr->bg_conn_type	= new_bg_ptr->block_array[i].conn_type;
-#ifdef HAVE_BGL
-		block_ptr->bg_node_use = new_bg_ptr->block_array[i].node_use;
-#endif
+		if(params.cluster_flags & CLUSTER_FLAG_BGL)
+			block_ptr->bg_node_use =
+				new_bg_ptr->block_array[i].node_use;
+
 		block_ptr->ionodes
 			= xstrdup(new_bg_ptr->block_array[i].ionodes);
 		block_ptr->node_cnt = new_bg_ptr->block_array[i].node_cnt;
@@ -393,20 +388,21 @@ extern void get_bg_part()
 
 	if (params.commandline && params.iterate)
 		printf("\n");
-
+	
 	part_info_ptr = new_part_ptr;
 	bg_info_ptr = new_bg_ptr;
-#endif /* HAVE_BG */
 	return;
 }
 
-#ifdef HAVE_BG
 static int _marknodes(db2_block_info_t *block_ptr, int count)
 {
 	int j=0;
 	int start[BA_SYSTEM_DIMENSIONS];
 	int end[BA_SYSTEM_DIMENSIONS];
 	int number = 0;
+	int dims = slurmdb_setup_cluster_dims();
+	int hostlist_base = hostlist_get_base();
+	char *p = '\0';
 
 	block_ptr->letter_num = count;
 	while (block_ptr->nodes[j] != '\0') {
@@ -417,33 +413,23 @@ static int _marknodes(db2_block_info_t *block_ptr, int count)
 		    && (block_ptr->nodes[j+4] == 'x'
 			|| block_ptr->nodes[j+4] == '-')) {
 			j++;
-			number = xstrntol(block_ptr->nodes + j,
-					  NULL, BA_SYSTEM_DIMENSIONS,
-					  HOSTLIST_BASE);
-			start[X] = number / (HOSTLIST_BASE * HOSTLIST_BASE);
-			start[Y] = (number % (HOSTLIST_BASE * HOSTLIST_BASE))
-				/ HOSTLIST_BASE;
-			start[Z] = (number % HOSTLIST_BASE);
+			number = strtoul(block_ptr->nodes + j, &p,
+					 hostlist_base);
+			hostlist_parse_int_to_array(
+				number, start, dims, hostlist_base);
 			j += 4;
-			number = xstrntol(block_ptr->nodes + j,
-					  NULL, BA_SYSTEM_DIMENSIONS,
-					  HOSTLIST_BASE);
-			end[X] = number / (HOSTLIST_BASE * HOSTLIST_BASE);
-			end[Y] = (number % (HOSTLIST_BASE * HOSTLIST_BASE))
-				/ HOSTLIST_BASE;
-			end[Z] = (number % HOSTLIST_BASE);
+			number = strtoul(block_ptr->nodes + j, &p,
+					 hostlist_base);
+			hostlist_parse_int_to_array(
+				number, end, dims, hostlist_base);
 			j += 3;
 
 			if(block_ptr->state != RM_PARTITION_FREE)
-				block_ptr->size += set_grid_bg(start,
-							       end,
-							       count,
-							       1);
+				block_ptr->size += set_grid_bg(
+					start, end, count, 1);
 			else
-				block_ptr->size += set_grid_bg(start,
-							       end,
-							       count,
-							       0);
+				block_ptr->size += set_grid_bg(
+					start, end, count, 0);
 			if(block_ptr->nodes[j] != ',')
 				break;
 			j--;
@@ -452,18 +438,13 @@ static int _marknodes(db2_block_info_t *block_ptr, int count)
 			  || (block_ptr->nodes[j] >= 'A'
 			      && block_ptr->nodes[j] <= 'Z')) {
 
-			number = xstrntol(block_ptr->nodes + j,
-					  NULL, BA_SYSTEM_DIMENSIONS,
-					  HOSTLIST_BASE);
-			start[X] = number / (HOSTLIST_BASE * HOSTLIST_BASE);
-			start[Y] = (number % (HOSTLIST_BASE * HOSTLIST_BASE))
-				/ HOSTLIST_BASE;
-			start[Z] = (number % HOSTLIST_BASE);
+			number = strtoul(block_ptr->nodes + j, &p,
+					 hostlist_base);
+			hostlist_parse_int_to_array(
+				number, start, dims, hostlist_base);
 			j+=3;
-			block_ptr->size += set_grid_bg(start,
-						       start,
-						       count,
-						       0);
+			block_ptr->size += set_grid_bg(
+				start, start, count, 0);
 			if(block_ptr->nodes[j] != ',')
 				break;
 			j--;
@@ -472,7 +453,6 @@ static int _marknodes(db2_block_info_t *block_ptr, int count)
 	}
 	return SLURM_SUCCESS;
 }
-#endif
 
 static void _print_header_part(void)
 {
@@ -514,24 +494,23 @@ static void _print_header_part(void)
 				  main_ycord,
 				  main_xcord, "CONN");
 			main_xcord += 7;
-#ifdef HAVE_BGL
-			mvwprintw(text_win,
-				  main_ycord,
-				  main_xcord, "NODE_USE");
-			main_xcord += 10;
-#endif
+			if(params.cluster_flags & CLUSTER_FLAG_BGL) {
+				mvwprintw(text_win,
+					  main_ycord,
+					  main_xcord, "NODE_USE");
+				main_xcord += 10;
+			}
 		}
 
 		mvwprintw(text_win, main_ycord,
 			  main_xcord, "NODES");
 		main_xcord += 7;
-#ifdef HAVE_BG
-		mvwprintw(text_win, main_ycord,
-			  main_xcord, "BP_LIST");
-#else
-		mvwprintw(text_win, main_ycord,
-			  main_xcord, "NODELIST");
-#endif
+		if(params.cluster_flags & CLUSTER_FLAG_BG)
+			mvwprintw(text_win, main_ycord,
+				  main_xcord, "BP_LIST");
+		else
+			mvwprintw(text_win, main_ycord,
+				  main_xcord, "NODELIST");
 		main_xcord = 1;
 		main_ycord++;
 	} else {
@@ -545,17 +524,15 @@ static void _print_header_part(void)
 			printf("   JOBID ");
 			printf("    USER ");
 			printf(" CONN ");
-#ifdef HAVE_BGL
-			printf(" NODE_USE ");
-#endif
+			if(params.cluster_flags & CLUSTER_FLAG_BGL)
+				printf(" NODE_USE ");
 		}
 
 		printf("NODES ");
-#ifdef HAVE_BG
-		printf("BP_LIST\n");
-#else
-		printf("NODELIST\n");
-#endif
+		if(params.cluster_flags & CLUSTER_FLAG_BG)
+			printf("BP_LIST\n");
+		else
+			printf("NODELIST\n");
 	}
 }
 
@@ -571,12 +548,11 @@ static int _print_text_part(partition_info_t *part_ptr,
 	char tmp_cnt[8];
 	char tmp_char[8];
 
-#ifdef HAVE_BG
-	convert_num_unit((float)part_ptr->total_nodes, tmp_cnt,
-			 sizeof(tmp_cnt), UNIT_NONE);
-#else
-	snprintf(tmp_cnt, sizeof(tmp_cnt), "%u", part_ptr->total_nodes);
-#endif
+	if(params.cluster_flags & CLUSTER_FLAG_BG)
+		convert_num_unit((float)part_ptr->total_nodes, tmp_cnt,
+				 sizeof(tmp_cnt), UNIT_NONE);
+	else
+		snprintf(tmp_cnt, sizeof(tmp_cnt), "%u", part_ptr->total_nodes);
 
 	if(!params.commandline) {
 		uint16_t root_only = 0;
@@ -672,14 +648,15 @@ static int _print_text_part(partition_info_t *part_ptr,
 						  db2_info_ptr->
 						  bg_conn_type));
 				main_xcord += 7;
-#ifdef HAVE_BGL
-				mvwprintw(text_win,
-					  main_ycord,
-					  main_xcord, "%.9s",
-					  node_use_string(
-						  db2_info_ptr->bg_node_use));
-				main_xcord += 10;
-#endif
+				if(params.cluster_flags & CLUSTER_FLAG_BGL) {
+					mvwprintw(text_win,
+						  main_ycord,
+						  main_xcord, "%.9s",
+						  node_use_string(
+							  db2_info_ptr->
+							  bg_node_use));
+					main_xcord += 10;
+				}
 			} else {
 				mvwprintw(text_win,
 					  main_ycord,
@@ -810,10 +787,10 @@ static int _print_text_part(partition_info_t *part_ptr,
 
 				printf("%5.5s ", conn_type_string(
 					       db2_info_ptr->bg_conn_type));
-#ifdef HAVE_BGL
-				printf("%9.9s ",  node_use_string(
-					       db2_info_ptr->bg_node_use));
-#endif
+				if(params.cluster_flags & CLUSTER_FLAG_BGL)
+					printf("%9.9s ", node_use_string(
+						       db2_info_ptr->
+						       bg_node_use));
 			}
 		}
 
@@ -833,7 +810,6 @@ static int _print_text_part(partition_info_t *part_ptr,
 	return printed;
 }
 
-#ifdef HAVE_BG
 static void _block_list_del(void *object)
 {
 	db2_block_info_t *block_ptr = (db2_block_info_t *)object;
@@ -932,10 +908,11 @@ static int _addto_nodelist(List nodelist, int *start, int *end)
 {
 	int *coord = NULL;
 	int x,y,z;
-
-	if(end[X] >= DIM_SIZE[X]
-	   || end[Y] >= DIM_SIZE[Y]
-	   || end[Z] >= DIM_SIZE[Z]) {
+	int *use_dims = working_cluster_rec ?
+		working_cluster_rec->dim_size : DIM_SIZE;
+	if(end[X] >= use_dims[X]
+	   || end[Y] >= use_dims[Y]
+	   || end[Z] >= use_dims[Z]) {
 		fatal("It appears the slurm.conf file has changed since "
 		      "the last restart.\nThings are in an incompatible "
 		      "state, please restart the slurmctld.");
@@ -965,6 +942,9 @@ static int _make_nodelist(char *nodes, List nodelist)
 	int number;
 	int start[BA_SYSTEM_DIMENSIONS];
 	int end[BA_SYSTEM_DIMENSIONS];
+	char *p = '\0';
+	int dims = slurmdb_setup_cluster_dims();
+	int hostlist_base = hostlist_get_base();
 
 	if(!nodelist)
 		nodelist = list_create(_nodelist_del);
@@ -976,21 +956,13 @@ static int _make_nodelist(char *nodes, List nodelist)
 		    && (nodes[j+4] == 'x'
 			|| nodes[j+4] == '-')) {
 			j++;
-			number = xstrntol(nodes + j, NULL,
-					  BA_SYSTEM_DIMENSIONS, HOSTLIST_BASE);
-			start[X] = number / (HOSTLIST_BASE * HOSTLIST_BASE);
-			start[Y] = (number % (HOSTLIST_BASE * HOSTLIST_BASE))
-				/ HOSTLIST_BASE;
-			start[Z] = (number % HOSTLIST_BASE);
-
+			number = strtoul(nodes + j, &p, hostlist_base);
+			hostlist_parse_int_to_array(
+				number, start, dims, hostlist_base);
 			j += 4;
-			number = xstrntol(nodes + j, NULL,
-					  BA_SYSTEM_DIMENSIONS, HOSTLIST_BASE);
-			end[X] = number / (HOSTLIST_BASE * HOSTLIST_BASE);
-			end[Y] = (number % (HOSTLIST_BASE * HOSTLIST_BASE))
-				/ HOSTLIST_BASE;
-			end[Z] = (number % HOSTLIST_BASE);
-
+			number = strtoul(nodes + j, &p, hostlist_base);
+			hostlist_parse_int_to_array(
+				number, end, dims, hostlist_base);
 			j += 3;
 			_addto_nodelist(nodelist, start, end);
 			if(nodes[j] != ',')
@@ -999,12 +971,9 @@ static int _make_nodelist(char *nodes, List nodelist)
 		} else if((nodes[j] >= '0' && nodes[j] <= '9')
 			  || (nodes[j] >= 'A' && nodes[j] <= 'Z')) {
 
-			number = xstrntol(nodes + j, NULL,
-					  BA_SYSTEM_DIMENSIONS, HOSTLIST_BASE);
-			start[X] = number / (HOSTLIST_BASE * HOSTLIST_BASE);
-			start[Y] = (number % (HOSTLIST_BASE * HOSTLIST_BASE))
-				/ HOSTLIST_BASE;
-			start[Z] = (number % HOSTLIST_BASE);
+			number = strtoul(nodes + j, &p, hostlist_base);
+			hostlist_parse_int_to_array(
+				number, start, dims, hostlist_base);
 			j+=3;
 			_addto_nodelist(nodelist, start, start);
 			if(nodes[j] != ',')
@@ -1015,5 +984,3 @@ static int _make_nodelist(char *nodes, List nodelist)
 	}
 	return 1;
 }
-
-#endif

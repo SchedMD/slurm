@@ -411,6 +411,10 @@ typedef struct {
 	uint32_t control_port;
 	uint32_t cpu_count;
 	uint16_t dimensions; /* number of dimensions this cluster is */
+	int *dim_size; /* For convenience only.
+			* Size of each dimension For now only on
+			* a bluegene cluster.  DOESN'T GET
+			* PACKED, is set up in slurmdb_get_info_cluster */
 	uint32_t flags;      /* set of CLUSTER_FLAG_* */
 	char *name;
 	char *nodes;

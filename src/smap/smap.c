@@ -44,11 +44,8 @@
 #include <signal.h>
 #include "src/smap/smap.h"
 
-#ifdef HAVE_3D
-#define MIN_SCREEN_WIDTH 92
-#else
-#define MIN_SCREEN_WIDTH 72
-#endif
+static int min_screen_width = 72;
+
 /********************
  * Global Variables *
  ********************/
@@ -87,9 +84,7 @@ int main(int argc, char *argv[])
 	int end = 0;
 	int i;
 	int rc;
-#ifdef HAVE_BG
 	int mapset = 0;
-#endif
 	//char *name;
 
 	log_init(xbasename(argv[0]), opts, SYSLOG_FACILITY_DAEMON, NULL);
@@ -99,8 +94,12 @@ int main(int argc, char *argv[])
 		log_alter(opts, SYSLOG_FACILITY_USER, NULL);
 	}
 
-	if(params.clusters)
-		working_cluster_rec = list_peek(params.clusters);
+	if(params.cluster_dims == 4) {
+		/* FIX ME: smap doesn't do anything correctly with
+		   more than 3 dims yet.
+		*/
+	} else if(params.cluster_dims == 3)
+		min_screen_width = 92;
 
 	while (slurm_load_node((time_t) NULL, &new_node_ptr, SHOW_ALL)) {
 		error_code = slurm_get_errno();
@@ -161,33 +160,36 @@ int main(int argc, char *argv[])
 		}
 part_fini:
 #else
-		printf("Must be on BG System to resolve.\n");
+		printf("Must be physically on a BG System to resolve.\n");
 #endif
 		ba_fini();
 		xfree(params.resolve);
 		exit(0);
 	}
 	if(!params.commandline) {
-
+		int check_width = min_screen_width;
 		signal(SIGWINCH, (void (*)(int))_resize_handler);
 		initscr();
 
-#ifdef HAVE_3D
-		height = DIM_SIZE[Y] * DIM_SIZE[Z] + DIM_SIZE[Y] + 3;
-		width = DIM_SIZE[X] + DIM_SIZE[Z] + 3;
-		if (COLS < (MIN_SCREEN_WIDTH + width) || LINES < height) {
-			width += MIN_SCREEN_WIDTH;
-#else
-		height = 10;
-		width = COLS;
-	        if (COLS < MIN_SCREEN_WIDTH || LINES < height) {
-			width = MIN_SCREEN_WIDTH;
-#endif
+		if(params.cluster_dims == 4) {
+			/* FIX ME: smap doesn't do anything correctly with
+			   more than 3 dims yet.
+			*/
+		} else if(params.cluster_dims == 3) {
+			height = DIM_SIZE[Y] * DIM_SIZE[Z] + DIM_SIZE[Y] + 3;
+			width = DIM_SIZE[X] + DIM_SIZE[Z] + 3;
+			check_width += width;
+		} else {
+			height = 10;
+			width = COLS;
+		}
+
+	        if (COLS < check_width || LINES < height) {
 			endwin();
 			error("Screen is too small make sure the screen "
 			      "is at least %dx%d\n"
 			      "Right now it is %dx%d\n",
-			      width,
+			      check_width,
 			      height,
 			      COLS,
 			      LINES);
@@ -208,17 +210,20 @@ part_fini:
 		max_display = grid_win->_maxy * grid_win->_maxx;
 		//scrollok(grid_win, TRUE);
 
-#ifdef HAVE_3D
-		startx = width;
-		COLS -= 2;
-		width = COLS - width;
-		height = LINES;
-#else
-		startx = 0;
-		starty = height;
-		height = LINES - height;
-
-#endif
+		if(params.cluster_dims == 4) {
+			/* FIX ME: smap doesn't do anything correctly with
+			   more than 3 dims yet.
+			*/
+		} else if(params.cluster_dims == 3) {
+			startx = width;
+			COLS -= 2;
+			width = COLS - width;
+			height = LINES;
+		} else {
+			startx = 0;
+			starty = height;
+			height = LINES - height;
+		}
 
 		text_win = newwin(height, width, starty, startx);
         }
@@ -249,29 +254,36 @@ part_fini:
 		case SLURMPART:
 			get_slurm_part();
 			break;
-#ifdef HAVE_BG
 		case COMMANDS:
-			if(!mapset) {
-				mapset = set_bp_map();
-				wclear(text_win);
-				//doupdate();
-				//move(0,0);
+			if(params.cluster_flags & CLUSTER_FLAG_BG) {
+				if(!mapset) {
+					mapset = set_bp_map();
+					wclear(text_win);
+					//doupdate();
+					//move(0,0);
+				}
+				get_command();
+			} else {
+				error("Must be on a BG SYSTEM to "
+				      "run this command");
+				if(!params.commandline)
+					endwin();
+				ba_fini();
+				exit(1);
 			}
-			get_command();
 			break;
 		case BGPART:
-			get_bg_part();
+			if(params.cluster_flags & CLUSTER_FLAG_BG)
+				get_bg_part();
+			else {
+				error("Must be on a BG SYSTEM to "
+				      "run this command");
+				if(!params.commandline)
+					endwin();
+				ba_fini();
+				exit(1);
+			}
 			break;
-#else
-		case COMMANDS:
-		case BGPART:
-			error("Must be on a BG SYSTEM to run this command");
-			if(!params.commandline)
-				endwin();
-			ba_fini();
-			exit(1);
-			break;
-#endif
 		}
 
 		if(!params.commandline) {
@@ -359,19 +371,19 @@ static int _get_option()
 	case '-':
 	case '_':
 		text_line_cnt++;
-		return 1;
-		break;
+	return 1;
+	break;
 	case KEY_LEFT:
 	case '=':
 	case '+':
 		text_line_cnt--;
-		if(text_line_cnt<0) {
-			text_line_cnt = 0;
-			return 0;
+	if(text_line_cnt<0) {
+		text_line_cnt = 0;
+		return 0;
 
-		}
-		return 1;
-		break;
+	}
+	return 1;
+	break;
 
 	case 'H':
 	case 'h':
@@ -379,8 +391,8 @@ static int _get_option()
 			params.all_flag = 0;
 		else
 			params.all_flag = 1;
-		return 1;
-	        break;
+	return 1;
+	break;
 	case 's':
 		text_line_cnt = 0;
 		grid_line_cnt = 0;
@@ -399,47 +411,49 @@ static int _get_option()
 		params.display = RESERVATIONS;
 		return 1;
 		break;
-#ifdef HAVE_BG
 	case 'b':
-		text_line_cnt = 0;
-		grid_line_cnt = 0;
-		params.display = BGPART;
-		return 1;
+		if(params.cluster_flags & CLUSTER_FLAG_BG) {
+			text_line_cnt = 0;
+			grid_line_cnt = 0;
+			params.display = BGPART;
+			return 1;
+		}
 		break;
 	case 'c':
-		params.display = COMMANDS;
-		return 1;
+		if(params.cluster_flags & CLUSTER_FLAG_BG) {
+			params.display = COMMANDS;
+			return 1;
+		}
 		break;
-#endif
-
-#ifndef HAVE_BG
 	case 'u':
 	case KEY_UP:
-		grid_line_cnt--;
-		if(grid_line_cnt<0) {
-			grid_line_cnt = 0;
-			return 0;
+		if(!(params.cluster_flags & CLUSTER_FLAG_BG)) {
+			grid_line_cnt--;
+			if(grid_line_cnt<0) {
+				grid_line_cnt = 0;
+				return 0;
+			}
+			return 1;
 		}
-		return 1;
-		break;
+	break;
 	case 'd':
 	case KEY_DOWN:
-		grid_line_cnt++;
-		if((((grid_line_cnt-2) * (grid_win->_maxx-1)) +
-		    max_display) > DIM_SIZE[X]) {
-			grid_line_cnt--;
-			return 0;
+		if(!(params.cluster_flags & CLUSTER_FLAG_BG)) {
+			grid_line_cnt++;
+			if((((grid_line_cnt-2) * (grid_win->_maxx-1)) +
+			    max_display) > DIM_SIZE[X]) {
+				grid_line_cnt--;
+				return 0;
+			}
+			return 1;
 		}
-
-		return 1;
-		break;
-#endif
+	break;
 	case 'q':
 	case '\n':
 		endwin();
-		ba_fini();
-		exit(0);
-		break;
+	ba_fini();
+	exit(0);
+	break;
 	}
 	return 0;
 }
@@ -447,7 +461,8 @@ static int _get_option()
 static void *_resize_handler(int sig)
 {
 	int startx=0, starty=0;
-	int height, width;
+	int height = 40, width = 100;
+	int check_width = min_screen_width;
 	main_ycord = 1;
 
 	/* clear existing data and update to avoid ghost during resize */
@@ -464,18 +479,20 @@ static void *_resize_handler(int sig)
 	doupdate();	/* update now to make sure we get the new size */
 	getmaxyx(stdscr,LINES,COLS);
 
-#ifdef HAVE_3D
-	height = DIM_SIZE[Y] * DIM_SIZE[Z] + DIM_SIZE[Y] + 3;
-	width = DIM_SIZE[X] + DIM_SIZE[Z] + 3;
-	if (COLS < (MIN_SCREEN_WIDTH + width) || LINES < height) {
-		width += MIN_SCREEN_WIDTH;
-#else
-	height = 10;
-	width = COLS;
-	if (COLS < MIN_SCREEN_WIDTH || LINES < height) {
-		width = MIN_SCREEN_WIDTH;
-#endif
+	if(params.cluster_dims == 4) {
+		/* FIX ME: smap doesn't do anything correctly with
+		   more than 3 dims yet.
+		*/
+	} else if(params.cluster_dims == 3) {
+		height = DIM_SIZE[Y] * DIM_SIZE[Z] + DIM_SIZE[Y] + 3;
+		width = DIM_SIZE[X] + DIM_SIZE[Z] + 3;
+		check_width += width;
+	} else {
+		height = 10;
+		width = COLS;
+	}
 
+	if (COLS < check_width || LINES < height) {
 		endwin();
 		error("Screen is too small make sure "
 		      "the screen is at least %dx%d\n"
@@ -487,17 +504,20 @@ static void *_resize_handler(int sig)
 	grid_win = newwin(height, width, starty, startx);
 	max_display = grid_win->_maxy * grid_win->_maxx;
 
-#ifdef HAVE_3D
-	startx = width;
-	COLS -= 2;
-	width = COLS - width;
-	height = LINES;
-#else
-	startx = 0;
-	starty = height;
-	height = LINES - height;
-
-#endif
+	if(params.cluster_dims == 4) {
+		/* FIX ME: smap doesn't do anything correctly with
+		   more than 3 dims yet.
+		*/
+	} else if(params.cluster_dims == 3) {
+		startx = width;
+		COLS -= 2;
+		width = COLS - width;
+		height = LINES;
+	} else {
+		startx = 0;
+		starty = height;
+		height = LINES - height;
+	}
 
 	text_win = newwin(height, width, starty, startx);
 
@@ -512,14 +532,14 @@ static void *_resize_handler(int sig)
 	case SLURMPART:
 		get_slurm_part();
 		break;
-#ifdef HAVE_BG
 	case COMMANDS:
-		get_command();
+		if(params.cluster_flags & CLUSTER_FLAG_BG)
+			get_command();
 		break;
 	case BGPART:
-		get_bg_part();
+		if(params.cluster_flags & CLUSTER_FLAG_BG)
+			get_bg_part();
 		break;
-#endif
 	}
 
 	print_grid(grid_line_cnt * (grid_win->_maxx-1));
