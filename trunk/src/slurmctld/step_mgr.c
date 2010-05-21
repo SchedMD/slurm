@@ -175,6 +175,8 @@ static void _free_step_rec(struct step_record *step_ptr)
 	xfree(step_ptr->network);
 	xfree(step_ptr->ckpt_dir);
 	xfree(step_ptr->gres);
+	if (step_ptr->gres_list)
+		list_destroy(step_ptr->gres_list);
 	xfree(step_ptr);
 }
 
@@ -414,9 +416,9 @@ int job_step_complete(uint32_t job_id, uint32_t step_id, uid_t uid,
 	jobacct_storage_g_step_complete(acct_db_conn, step_ptr);
 	_step_dealloc_lps(step_ptr);
 
-	if ((job_ptr->kill_on_step_done)
-	    &&  (list_count(job_ptr->step_list) <= 1)
-	    &&  (!IS_JOB_FINISHED(job_ptr)))
+	if ((job_ptr->kill_on_step_done) &&
+	    (list_count(job_ptr->step_list) <= 1) &&
+	    (!IS_JOB_FINISHED(job_ptr)))
 		return job_complete(job_id, uid, requeue, job_return_code);
 
 	last_job_update = time(NULL);
@@ -480,7 +482,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 	if (step_spec->mem_per_cpu &&
 	    ((job_resrcs_ptr->memory_allocated == NULL) ||
 	     (job_resrcs_ptr->memory_used == NULL))) {
-		error("_pick_step_nodes: lack memory allocation details "
+		error("_pick_step_nodes: job lacks memory allocation details "
 		      "to enforce memory limits for job %u", job_ptr->job_id);
 		step_spec->mem_per_cpu = 0;
 	}
@@ -1423,7 +1425,16 @@ step_create(job_step_create_request_msg_t *step_specs,
 	}
 	step_ptr->step_id = job_ptr->next_step_id++;
 
-	/* set the step_record values */
+	step_ptr->gres   = step_specs->gres;
+	step_specs->gres = NULL;
+	i = gres_plugin_step_state_validate(step_ptr->gres,
+					    &step_ptr->gres_list);
+	if (i != SLURM_SUCCESS) {
+		delete_step_record (job_ptr, step_ptr->step_id);
+		return i;
+	}
+	gres_plugin_step_state_log(step_ptr->gres_list, job_ptr->job_id,
+				   step_ptr->step_id);
 
 	/* Here is where the node list is set for the step */
 	if (step_specs->node_list &&
