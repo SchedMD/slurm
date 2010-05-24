@@ -356,7 +356,6 @@ static void _reconfigure(GtkToggleAction *action)
 
 static void _get_current_debug(GtkRadioAction *action)
 {
-#ifdef GTK2_USE_RADIO_SET
 	static int debug_level = 0;
 	static slurm_ctl_conf_info_msg_t  *slurm_ctl_conf_ptr = NULL;
 	static GtkAction *debug_action = NULL;
@@ -372,14 +371,14 @@ static void _get_current_debug(GtkRadioAction *action)
 	   changed so we need to make it happen here */
 	if(debug_level == 0)
 		debug_inited = 1;
+#ifdef GTK2_USE_RADIO_SET
 	gtk_radio_action_set_current_value(GTK_RADIO_ACTION(debug_action),
 					   debug_level);
 #else
-	/* Since gtk_radio_action_set_current_value wasn't added to
-	   GTK until 2.10 we have to just not set the first one here
-	   correctly unless we are running with it.
+	/* gtk_radio_action_set_current_value wasn't added to
+	   GTK until 2.10, it turns out g_object_set works just as well though.
 	*/
-	debug_inited = 1;
+	g_object_set(debug_action, "value", debug_level, NULL);
 #endif
 }
 
