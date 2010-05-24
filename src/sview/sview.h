@@ -505,4 +505,6 @@ extern void add_display_treestore_line_with_font(
 	char *font);
 extern void sview_widget_modify_bg(GtkWidget *widget, GtkStateType state,
 				   const GdkColor color);
+extern void sview_radio_action_set_current_value(GtkRadioAction *action,
+						 gint current_value);
 #endif
