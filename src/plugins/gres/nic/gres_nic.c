@@ -1128,12 +1128,11 @@ unpack_error:
 
 extern void step_state_log(void *gres_data, uint32_t job_id, uint32_t step_id)
 {
-	nic_step_state_t *gres_ptr;
+	nic_step_state_t *gres_ptr = (nic_step_state_t *) gres_data;
 	char *mult, tmp_str[128];
 	int i;
 
-	xassert(gres_data);
-	gres_ptr = (nic_step_state_t *) gres_data;
+	xassert(gres_ptr);
 	info("%s state for step %u.%u", plugin_name, job_id, step_id);
 	if (gres_ptr->nic_cnt_mult)
 		mult = "cpu";
@@ -1155,5 +1154,157 @@ extern void step_state_log(void *gres_data, uint32_t job_id, uint32_t step_id)
 extern uint32_t step_test(void *job_gres_data, void *step_gres_data,
 			  int node_offset)
 {
-	return NO_VAL;
+	nic_job_state_t  *job_gres_ptr  = (nic_job_state_t *)  job_gres_data;
+	nic_step_state_t *step_gres_ptr = (nic_step_state_t *) step_gres_data;
+	uint32_t gres_cnt;
+
+	xassert(job_gres_ptr);
+	xassert(step_gres_ptr);
+	if (node_offset >= job_gres_ptr->node_cnt) {
+		error("%s step_test node offset invalid (%d >= %u)",
+		      plugin_name, node_offset, job_gres_ptr->node_cnt);
+		return 0;
+	}
+	if ((job_gres_ptr->nic_bit_alloc == NULL) ||
+	    (job_gres_ptr->nic_bit_alloc[node_offset] == NULL)) {
+		error("%s step_test nic_bit_alloc is NULL",plugin_name);
+		return 0;
+	}
+
+	gres_cnt = bit_set_count(job_gres_ptr->nic_bit_alloc[node_offset]);
+/* FIXME: Adjust for resources already allocated to other steps */
+/* What about test vs. actual alloc? */
+	if (step_gres_ptr->nic_cnt_mult)	/* Gres count per CPU */
+		gres_cnt /= step_gres_ptr->nic_cnt_alloc;
+	else if (step_gres_ptr->nic_cnt_mult > gres_cnt)
+		gres_cnt = 0;
+
+	return gres_cnt;
+}
+
+extern int step_alloc(void *job_gres_data, void *step_gres_data,
+		      int node_offset, int cpu_cnt)
+{
+	nic_job_state_t  *job_gres_ptr  = (nic_job_state_t *)  job_gres_data;
+	nic_step_state_t *step_gres_ptr = (nic_step_state_t *) step_gres_data;
+	uint32_t gres_avail, gres_needed;
+	bitstr_t *nic_bit_alloc;
+
+	xassert(job_gres_ptr);
+	xassert(step_gres_ptr);
+	if (node_offset >= job_gres_ptr->node_cnt) {
+		error("%s step_test node offset invalid (%d >= %u)",
+		      plugin_name, node_offset, job_gres_ptr->node_cnt);
+		return SLURM_ERROR;
+	}
+	if ((job_gres_ptr->nic_bit_alloc == NULL) ||
+	    (job_gres_ptr->nic_bit_alloc[node_offset] == NULL)) {
+		error("%s step_test nic_bit_alloc is NULL", plugin_name);
+		return SLURM_ERROR;
+	}
+
+	nic_bit_alloc = bit_copy(job_gres_ptr->nic_bit_alloc[node_offset]);
+	if (nic_bit_alloc == NULL)
+		fatal("bit_copy malloc failure");
+	if (job_gres_ptr->nic_bit_step_alloc &&
+	    job_gres_ptr->nic_bit_step_alloc[node_offset]) {
+		bit_not(job_gres_ptr->nic_bit_step_alloc[node_offset]);
+		bit_and(nic_bit_alloc,
+			job_gres_ptr->nic_bit_step_alloc[node_offset]);
+		bit_not(job_gres_ptr->nic_bit_step_alloc[node_offset]);
+	}
+	gres_avail  = bit_set_count(nic_bit_alloc);
+	gres_needed = step_gres_ptr->nic_cnt_alloc;
+	if (step_gres_ptr->nic_cnt_mult)
+		gres_needed *= cpu_cnt;
+	if (gres_needed > gres_avail) {
+		error("%s step oversubscribing resources on node %d",
+		      plugin_name, node_offset);
+	} else {
+		int gres_rem = gres_needed;
+		int i, len = bit_size(nic_bit_alloc);
+		for (i=0; i<len; i++) {
+			if (gres_rem > 0) {
+				if (bit_test(nic_bit_alloc, i))
+					gres_rem--;
+			} else {
+				bit_clear(nic_bit_alloc, i);
+			}
+		}
+	}
+
+	if (job_gres_ptr->nic_bit_step_alloc == NULL) {
+		job_gres_ptr->nic_bit_step_alloc =
+			xmalloc(sizeof(bitstr_t *) * job_gres_ptr->node_cnt);
+	}
+	if (job_gres_ptr->nic_bit_step_alloc[node_offset]) {
+		bit_or(job_gres_ptr->nic_bit_step_alloc[node_offset],
+		       nic_bit_alloc);
+	} else {
+		job_gres_ptr->nic_bit_step_alloc[node_offset] =
+			bit_copy(nic_bit_alloc);
+	}
+	if (step_gres_ptr->nic_bit_alloc == NULL) {
+		step_gres_ptr->nic_bit_alloc = xmalloc(sizeof(bitstr_t *) *
+						       job_gres_ptr->node_cnt);
+	}
+	if (step_gres_ptr->nic_bit_alloc[node_offset]) {
+		error("%s step bit_alloc already exists", plugin_name);
+		bit_or(step_gres_ptr->nic_bit_alloc[node_offset],nic_bit_alloc);
+		bit_free(nic_bit_alloc);
+	} else {
+		step_gres_ptr->nic_bit_alloc[node_offset] = nic_bit_alloc;
+	}
+
+	return SLURM_SUCCESS;
+}
+
+extern int step_dealloc(void *job_gres_data, void *step_gres_data)
+{
+
+	nic_job_state_t  *job_gres_ptr  = (nic_job_state_t *)  job_gres_data;
+	nic_step_state_t *step_gres_ptr = (nic_step_state_t *) step_gres_data;
+	uint32_t i, j, node_cnt;
+	int len_j, len_s;
+
+	xassert(job_gres_ptr);
+	xassert(step_gres_ptr);
+	node_cnt = MIN(job_gres_ptr->node_cnt, step_gres_ptr->node_cnt);
+	if (step_gres_ptr->nic_bit_alloc == NULL) {
+		error("%s step dealloc bit_alloc is NULL", plugin_name);
+		return SLURM_ERROR;
+	}
+	if (job_gres_ptr->nic_bit_alloc == NULL) {
+		error("%s step dealloc, job's bit_alloc is NULL", plugin_name);
+		return SLURM_ERROR;
+	}
+	for (i=0; i<node_cnt; i++) {
+		if (step_gres_ptr->nic_bit_alloc[i] == NULL)
+			continue;
+		if (job_gres_ptr->nic_bit_alloc[i] == NULL) {
+			error("%s step dealloc, job's bit_alloc[%d] is NULL",
+			      plugin_name, i);
+			continue;
+		}
+		len_j = bit_size(job_gres_ptr->nic_bit_alloc[i]);
+		len_s = bit_size(step_gres_ptr->nic_bit_alloc[i]);
+		if (len_j != len_s) {
+			error("%s step dealloc, bit_alloc[%d] size mis-match"
+			      "(%d != %d)", len_j, len_s);
+			len_j = MIN(len_j, len_s);
+		}
+		for (j=0; j<len_j; j++) {
+			if (!bit_test(step_gres_ptr->nic_bit_alloc[i], j))
+				continue;
+			bit_clear(job_gres_ptr->nic_bit_alloc[i], j);
+			if (job_gres_ptr->nic_bit_step_alloc &&
+			    job_gres_ptr->nic_bit_step_alloc[i]) {
+				bit_clear(job_gres_ptr->nic_bit_step_alloc[i],
+					  j);
+			}
+		}
+		bit_free(step_gres_ptr->nic_bit_alloc[i]);
+	}
+
+	return SLURM_SUCCESS;
 }
