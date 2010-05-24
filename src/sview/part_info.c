@@ -160,8 +160,8 @@ static display_data_t display_data_part[] = {
 	{G_TYPE_STRING, SORTID_NODELIST, "NodeList", TRUE,
 	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
 #endif
-	{G_TYPE_INT, SORTID_NODE_STATE_NUM, NULL, FALSE, EDIT_NONE, refresh_part,
-	 create_model_part, admin_edit_part},
+	{G_TYPE_INT, SORTID_NODE_STATE_NUM, NULL, FALSE,
+	 EDIT_NONE, refresh_part, create_model_part, admin_edit_part},
 	{G_TYPE_INT, SORTID_ONLY_LINE, NULL, FALSE, EDIT_NONE, refresh_part,
 	 create_model_part, admin_edit_part},
 	{G_TYPE_INT, SORTID_COLOR_INX, NULL, FALSE, EDIT_NONE, refresh_part,
@@ -616,7 +616,6 @@ static void _subdivide_part(sview_part_info_t *sview_part_info,
 {
 	GtkTreeIter first_sub_iter;
 	ListIterator itr = NULL;
-	uint16_t state;
 	int i = 0, line = 0;
 	sview_part_sub_t *sview_part_sub = NULL;
 	int set = 0;
@@ -655,12 +654,18 @@ static void _subdivide_part(sview_part_info_t *sview_part_info,
 			}
 			line = 0;
 			while(1) {
-				/* search for the state number and
-				   check to see if it is in the list */
+				int state;
+				/* Search for the state number and
+				   check to see if it is in the
+				   list.  Here we need to pass an int
+				   for system where endian is an
+				   issue passing a uint16_t may seg
+				   fault. */
 				gtk_tree_model_get(model, sub_iter,
 						   SORTID_NODE_STATE_NUM,
 						   &state, -1);
-				if(state == sview_part_sub->node_state) {
+				if((uint16_t)state
+				   == sview_part_sub->node_state) {
 					/* update with new info */
 					_update_part_sub_record(
 						sview_part_sub,
