@@ -1629,6 +1629,47 @@ extern void sview_widget_modify_bg(GtkWidget *widget, GtkStateType state,
 
 }
 
+extern void sview_radio_action_set_current_value(GtkRadioAction *action,
+						 gint current_value)
+{
+#ifdef GTK2_USE_RADIO_SET
+	gtk_radio_action_set_current_value(action, current_value);
+#else
+	GSList *slist, *group;
+	int i=0;
+	/* gtk_radio_action_set_current_value wasn't added to
+	   GTK until 2.10, it turns out this is what is required to
+	   set the correct value.
+	*/
+	g_return_if_fail(GTK_IS_RADIO_ACTION(action));
+	if((group = gtk_radio_action_get_group(action))) {
+		/* for some reason groups are set backwards like a
+		   stack, g_slist_reverse will fix this but takes twice
+		   as long so just figure out the length, they add 1
+		   to it sense 0 isn't a number and then subtract the
+		   value to get the augmented in the stack.
+		*/
+		current_value = g_slist_length(group) - 1 - current_value;
+		if(current_value < 0) {
+			g_warning("Radio group does not contain an action "
+				  "with value '%d'\n", current_value);
+			return;
+		}
+
+		for (slist = group; slist; slist = slist->next) {
+			if(i == current_value) {
+				gtk_toggle_action_set_active(
+					GTK_TOGGLE_ACTION(slist->data), TRUE);
+				g_object_set(action, "value",
+					     current_value, NULL);
+				return;
+			}
+			i++;
+		}
+	}
+#endif
+}
+
 extern char *page_to_str(int page)
 {
 	switch(page) {
@@ -1690,4 +1731,3 @@ extern gboolean entry_changed(GtkWidget *widget, void *msg)
 	global_entry_changed = 1;
 	return false;
 }
-
