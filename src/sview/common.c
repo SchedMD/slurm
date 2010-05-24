@@ -1560,12 +1560,11 @@ extern void sview_widget_modify_bg(GtkWidget *widget, GtkStateType state,
 extern void sview_radio_action_set_current_value(GtkRadioAction *action,
 						 gint current_value)
 {
-	GSList *slist, *group;
-	int i=0;
-
 #ifdef GTK2_USE_RADIO_SET
 	gtk_radio_action_set_current_value(action, current_value);
 #else
+	GSList *slist, *group;
+	int i=0;
 	/* gtk_radio_action_set_current_value wasn't added to
 	   GTK until 2.10, it turns out this is what is required to
 	   set the correct value.
@@ -1591,7 +1590,7 @@ extern void sview_radio_action_set_current_value(GtkRadioAction *action,
 					GTK_TOGGLE_ACTION(slist->data), TRUE);
 				g_object_set(action, "value",
 					     current_value, NULL);
-				break;
+				return;
 			}
 			i++;
 		}
