@@ -359,15 +359,8 @@ static void _get_current_debug(GtkRadioAction *action)
 	   changed so we need to make it happen here */
 	if(debug_level == 0)
 		debug_inited = 1;
-#ifdef GTK2_USE_RADIO_SET
-	gtk_radio_action_set_current_value(GTK_RADIO_ACTION(debug_action),
-					   debug_level);
-#else
-	/* gtk_radio_action_set_current_value wasn't added to
-	   GTK until 2.10, it turns out g_object_set works just as well though.
-	*/
-	g_object_set(debug_action, "value", debug_level, NULL);
-#endif
+	sview_radio_action_set_current_value(GTK_RADIO_ACTION(debug_action),
+					     debug_level);
 }
 
 static void _set_debug(GtkRadioAction *action,
