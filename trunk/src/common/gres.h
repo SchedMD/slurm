@@ -320,4 +320,25 @@ extern void gres_plugin_step_state_log(List gres_list, uint32_t job_id,
 extern uint32_t gres_plugin_step_test(List job_gres_list, List step_gres_list,
 				      int node_offset);
 
+/*
+ * Allocate resource to a step and update job and step gres information
+ * IN step_gres_list - step's gres_list built by
+ *		gres_plugin_step_state_validate()
+ * IN job_gres_list - job's gres_list built by gres_plugin_job_state_validate()
+ * IN node_offset - zero-origin index to the node of interest
+ * IN cpu_cnt - number of CPUs allocated to this job on this node
+ * RET SLURM_SUCCESS or error code
+ */
+extern int gres_plugin_step_alloc(List step_gres_list, List job_gres_list,
+				  int node_offset, int cpu_cnt);
+
+/*
+ * Deallocate resource to a step and update job and step gres information
+ * IN step_gres_list - step's gres_list built by
+ *		gres_plugin_step_state_validate()
+ * IN job_gres_list - job's gres_list built by gres_plugin_job_state_validate()
+ * RET SLURM_SUCCESS or error code
+ */
+extern int gres_plugin_step_dealloc(List step_gres_list, List job_gres_list);
+
 #endif /* !_GRES_H */

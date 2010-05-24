@@ -143,6 +143,12 @@ typedef struct slurm_gres_ops {
 	uint32_t	(*step_test)		( void *job_gres_data,
 						  void *step_gres_data,
 						  int node_offset );
+	uint32_t	(*step_alloc)		( void *job_gres_data,
+						  void *step_gres_data,
+						  int node_offset,
+						  uint32_t cpu_cnt );
+	uint32_t	(*step_dealloc)		( void *job_gres_data,
+						  void *step_gres_data );
 } slurm_gres_ops_t;
 
 typedef struct slurm_gres_context {
@@ -213,7 +219,9 @@ static int _load_gres_plugin(char *plugin_name,
 		"step_state_pack",
 		"step_state_unpack",
 		"step_state_log",
-		"step_test"
+		"step_test",
+		"step_alloc",
+		"step_dealloc"
 	};
 	int n_syms = sizeof(syms) / sizeof(char *);
 
@@ -1954,4 +1962,110 @@ extern uint32_t gres_plugin_step_test(List job_gres_list, List step_gres_list,
 	slurm_mutex_unlock(&gres_context_lock);
 
 	return cpu_cnt;
+}
+
+/*
+ * Allocate resource to a step and update job and step gres information
+ * IN step_gres_list - step's gres_list built by
+ *		gres_plugin_step_state_validate()
+ * IN job_gres_list - job's gres_list built by gres_plugin_job_state_validate()
+ * IN node_offset - zero-origin index to the node of interest
+ * IN cpu_cnt - number of CPUs allocated to this job on this node
+ * RET SLURM_SUCCESS or error code
+ */
+extern int gres_plugin_step_alloc(List step_gres_list, List job_gres_list,
+				  int node_offset, int cpu_cnt)
+{
+	int i, rc, rc2;
+	ListIterator step_gres_iter,  job_gres_iter;
+	gres_state_t *step_gres_ptr, *job_gres_ptr;
+
+	if (step_gres_list == NULL)
+		return SLURM_SUCCESS;
+	if (job_gres_list == NULL)
+		return SLURM_ERROR;
+
+	rc = gres_plugin_init();
+
+	slurm_mutex_lock(&gres_context_lock);
+	step_gres_iter = list_iterator_create(step_gres_list);
+	while ((step_gres_ptr = (gres_state_t *) list_next(step_gres_iter))) {
+		job_gres_iter = list_iterator_create(job_gres_list);
+		while ((job_gres_ptr = (gres_state_t *) 
+				list_next(job_gres_iter))) {
+			if (step_gres_ptr->plugin_id == job_gres_ptr->plugin_id)
+				break;
+		}
+		list_iterator_destroy(job_gres_iter);
+		if (job_gres_ptr == NULL)
+			continue;
+
+		for (i=0; i<gres_context_cnt; i++) {
+			if (step_gres_ptr->plugin_id != 
+			    *(gres_context[i].ops.plugin_id))
+				continue;
+			rc2 = (*(gres_context[i].ops.step_alloc))
+					(step_gres_ptr->gres_data, 
+					 job_gres_ptr->gres_data,
+					 node_offset, cpu_cnt);
+			if (rc2 != SLURM_SUCCESS)
+				rc = rc2;
+			break;
+		}
+	}
+	list_iterator_destroy(step_gres_iter);
+	slurm_mutex_unlock(&gres_context_lock);
+
+	return rc;
+}
+
+/*
+ * Deallocate resource to a step and update job and step gres information
+ * IN step_gres_list - step's gres_list built by
+ *		gres_plugin_step_state_validate()
+ * IN job_gres_list - job's gres_list built by gres_plugin_job_state_validate()
+ * RET SLURM_SUCCESS or error code
+ */
+extern int gres_plugin_step_dealloc(List step_gres_list, List job_gres_list)
+{
+	int i, rc, rc2;
+	ListIterator step_gres_iter,  job_gres_iter;
+	gres_state_t *step_gres_ptr, *job_gres_ptr;
+
+	if (step_gres_list == NULL)
+		return SLURM_SUCCESS;
+	if (job_gres_list == NULL)
+		return SLURM_ERROR;
+
+	rc = gres_plugin_init();
+
+	slurm_mutex_lock(&gres_context_lock);
+	step_gres_iter = list_iterator_create(step_gres_list);
+	while ((step_gres_ptr = (gres_state_t *) list_next(step_gres_iter))) {
+		job_gres_iter = list_iterator_create(job_gres_list);
+		while ((job_gres_ptr = (gres_state_t *) 
+				list_next(job_gres_iter))) {
+			if (step_gres_ptr->plugin_id == job_gres_ptr->plugin_id)
+				break;
+		}
+		list_iterator_destroy(job_gres_iter);
+		if (job_gres_ptr == NULL)
+			continue;
+
+		for (i=0; i<gres_context_cnt; i++) {
+			if (step_gres_ptr->plugin_id != 
+			    *(gres_context[i].ops.plugin_id))
+				continue;
+			rc2 = (*(gres_context[i].ops.step_dealloc))
+					(step_gres_ptr->gres_data, 
+					 job_gres_ptr->gres_data);
+			if (rc2 != SLURM_SUCCESS)
+				rc = rc2;
+			break;
+		}
+	}
+	list_iterator_destroy(step_gres_iter);
+	slurm_mutex_unlock(&gres_context_lock);
+
+	return rc;
 }
