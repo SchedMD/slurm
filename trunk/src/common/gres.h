@@ -317,7 +317,7 @@ extern void gres_plugin_step_state_log(List gres_list, uint32_t job_id,
  * IN node_offset - index into the job's node allocation
  * RET Count of available CPUs on this node, NO_VAL if no limit
  */
-extern uint32_t gres_plugin_step_test(List job_gres_list, List step_gres_list,
+extern uint32_t gres_plugin_step_test(List step_gres_list, List job_gres_list,
 				      int node_offset);
 
 /*

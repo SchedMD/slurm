@@ -415,6 +415,7 @@ int job_step_complete(uint32_t job_id, uint32_t step_id, uid_t uid,
 
 	jobacct_storage_g_step_complete(acct_db_conn, step_ptr);
 	_step_dealloc_lps(step_ptr);
+	gres_plugin_step_dealloc(step_ptr->gres_list, job_ptr->gres_list);
 
 	if ((job_ptr->kill_on_step_done) &&
 	    (list_count(job_ptr->step_list) <= 1) &&
@@ -1119,6 +1120,8 @@ extern void step_alloc_lps(struct step_record *step_ptr)
 		cpus_alloc = step_ptr->step_layout->tasks[step_node_inx] *
 			     step_ptr->cpus_per_task;
 		job_resrcs_ptr->cpus_used[job_node_inx] += cpus_alloc;
+		gres_plugin_step_alloc(step_ptr->gres_list, job_ptr->gres_list,
+				       job_node_inx, cpus_alloc);
 		if (step_ptr->mem_per_cpu && _is_mem_resv()) {
 			job_resrcs_ptr->memory_used[job_node_inx] +=
 				(step_ptr->mem_per_cpu * cpus_alloc);
@@ -1140,7 +1143,8 @@ extern void step_alloc_lps(struct step_record *step_ptr)
 		if (step_node_inx == (step_ptr->step_layout->node_cnt - 1))
 			break;
 	}
-
+	gres_plugin_step_state_log(step_ptr->gres_list, job_ptr->job_id,
+				   step_ptr->step_id);
 }
 
 /* Dump a job step's CPU binding information.
@@ -1582,11 +1586,11 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 					       uint32_t plane_size)
 {
 	uint16_t cpus_per_node[node_count];
-	uint32_t cpu_count_reps[node_count];
+	uint32_t cpu_count_reps[node_count], gres_cpus;
 	int cpu_inx = -1;
 	int i, usable_cpus, usable_mem;
 	int set_nodes = 0/* , set_tasks = 0 */;
-	int pos = -1;
+	int pos = -1, job_node_offset = -1;
 	int first_bit, last_bit;
 	struct job_record *job_ptr = step_ptr->job_ptr;
 	job_resources_t *job_resrcs_ptr = job_ptr->job_resrcs;
@@ -1605,9 +1609,12 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 
 	/* build the cpus-per-node arrays for the subset of nodes
 	 * used by this job step */
-	first_bit = bit_ffs(step_ptr->step_node_bitmap);
-	last_bit  = bit_fls(step_ptr->step_node_bitmap);
+	first_bit = bit_ffs(job_ptr->node_bitmap);
+	last_bit  = bit_fls(job_ptr->node_bitmap);
 	for (i = first_bit; i <= last_bit; i++) {
+		if (!bit_test(job_ptr->node_bitmap, i))
+			continue;
+		job_node_offset++;
 		if (bit_test(step_ptr->step_node_bitmap, i)) {
 			/* find out the position in the job */
 			pos = bit_get_pos_num(job_resrcs_ptr->node_bitmap, i);
@@ -1627,6 +1634,11 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 				usable_mem /= step_ptr->mem_per_cpu;
 				usable_cpus = MIN(usable_cpus, usable_mem);
 			}
+
+			gres_cpus = gres_plugin_step_test(step_ptr->gres_list,
+							  job_ptr->gres_list,
+							  job_node_offset);
+			usable_cpus = MIN(usable_cpus, gres_cpus);
 			if (usable_cpus <= 0) {
 				error("step_layout_create no usable cpus");
 				return NULL;

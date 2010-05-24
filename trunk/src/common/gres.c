@@ -1912,7 +1912,7 @@ extern void gres_plugin_step_state_log(List gres_list, uint32_t job_id,
  * IN node_offset - index into the job's node allocation
  * RET Count of available CPUs on this node, NO_VAL if no limit
  */
-extern uint32_t gres_plugin_step_test(List job_gres_list, List step_gres_list,
+extern uint32_t gres_plugin_step_test(List step_gres_list, List job_gres_list,
 				      int node_offset)
 {
 	int i;
@@ -1949,8 +1949,8 @@ extern uint32_t gres_plugin_step_test(List job_gres_list, List step_gres_list,
 			    *(gres_context[i].ops.plugin_id))
 				continue;
 			tmp_cnt = (*(gres_context[i].ops.step_test))
-					(job_gres_ptr->gres_data,
-					 step_gres_ptr->gres_data,
+					(step_gres_ptr->gres_data,
+					 job_gres_ptr->gres_data,
 					 node_offset);
 			cpu_cnt = MIN(tmp_cnt, cpu_cnt);
 			break;
