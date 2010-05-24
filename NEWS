@@ -264,6 +264,9 @@ documents those changes that are of interest to users and admins.
     salloc and sbatch.
  -- Fix jobacct_gather/linux if not polling on tasks to give tasks time to
     start before doing initial gather.
+ -- When changing priority with the multifactor plugin we make sure we update
+    the last_job_update variable.
+ -- Fixed sview for gtk < 2.10 to display correct debug level at first.
 
 * Changes in SLURM 2.1.8
 ========================

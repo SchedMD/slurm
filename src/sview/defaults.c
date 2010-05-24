@@ -867,18 +867,9 @@ extern int configure_defaults()
 			gtk_toggle_action_set_active(
 				default_sview_config.action_hidden,
 				working_sview_config.show_hidden);
-#ifdef GTK2_USE_RADIO_SET
-			gtk_radio_action_set_current_value(
+			sview_radio_action_set_current_value(
 				default_sview_config.action_tab,
 				working_sview_config.tab_pos);
-#else
-			/* gtk_radio_action_set_current_value
-			   wasn't added to GTK until 2.10, it turns out
-			   g_object_set works just as well though.
-			*/
-			g_object_set(default_sview_config.action_tab, "value",
-				     working_sview_config.tab_pos, NULL);
-#endif
 			gtk_notebook_set_current_page(
 				GTK_NOTEBOOK(main_notebook),
 				working_sview_config.default_page);
