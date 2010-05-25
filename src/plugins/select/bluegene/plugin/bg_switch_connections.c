@@ -109,7 +109,7 @@ static int _get_bp_by_location(my_bluegene_t* my_bg, int* curr_coord,
 
 static int _get_switches_by_bpid(
 	my_bluegene_t* my_bg, const char *bpid,
-	rm_switch_t *coord_switch[BA_SYSTEM_DIMENSIONS])
+	rm_switch_t *coord_switch[SYSTEM_DIMENSIONS])
 {
 	static int switch_num = 0;
 	rm_switch_t *curr_switch = NULL;
@@ -158,7 +158,7 @@ static int _get_switches_by_bpid(
 		if (!strcasecmp((char *)bpid, (char *)curr_bpid)) {
 			coord_switch[found_bpid] = curr_switch;
 			found_bpid++;
-			if(found_bpid==BA_SYSTEM_DIMENSIONS) {
+			if(found_bpid==SYSTEM_DIMENSIONS) {
 				free(curr_bpid);
 				return SLURM_SUCCESS;
 			}
@@ -292,7 +292,7 @@ static int _used_switches(ba_node_t* ba_node)
 	       alpha_num[ba_node->coord[X]],
 	       alpha_num[ba_node->coord[Y]],
 	       alpha_num[ba_node->coord[Z]]);
-	for(i=0; i<BA_SYSTEM_DIMENSIONS; i++) {
+	for(i=0; i<SYSTEM_DIMENSIONS; i++) {
 		debug5("dim %d", i);
 		ba_switch = &ba_node->axis_switch[i];
 		for(j=0; j<num_connections; j++) {
@@ -649,7 +649,7 @@ extern int configure_block_switches(bg_record_t * bg_record)
 	int first_switch=1;
 	int i = 0;
 	rm_BP_t *curr_bp = NULL;
-	rm_switch_t *coord_switch[BA_SYSTEM_DIMENSIONS];
+	rm_switch_t *coord_switch[SYSTEM_DIMENSIONS];
 #endif
 	if(!bg_record->bg_block_list) {
 		error("There was no block_list given, can't create block");
@@ -754,7 +754,7 @@ extern int configure_block_switches(bg_record_t * bg_record)
 			continue;
 		}
 		free(bpid);
-		for(i=0; i<BA_SYSTEM_DIMENSIONS; i++) {
+		for(i=0; i<SYSTEM_DIMENSIONS; i++) {
 			if(_add_switch_conns(coord_switch[i],
 					     &ba_node->axis_switch[i])
 			   == SLURM_SUCCESS) {

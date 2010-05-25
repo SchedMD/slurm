@@ -77,7 +77,7 @@ typedef struct bg_record {
 	uint32_t cpu_cnt;               /* count of cpus per block */
 	int full_block;                 /* whether or not block is the full
 					   block */
-	uint16_t geo[BA_SYSTEM_DIMENSIONS];  /* geometry */
+	uint16_t geo[HIGHEST_DIMENSIONS];  /* geometry */
 	char *ionodes; 		        /* String of ionodes in block
 					 * NULL if not a small block*/
 	struct job_record *job_ptr;	/* pointer to job running on
@@ -104,7 +104,7 @@ typedef struct bg_record {
 	char *ramdiskimage;             /* RamDiskImage/IoloadImg for
 					 * this block */
 	rm_partition_state_t state;     /* Current state of the block */
-	int start[BA_SYSTEM_DIMENSIONS];/* start node */
+	int start[HIGHEST_DIMENSIONS];  /* start node */
 	int switch_count;               /* number of switches used. */
 	char *target_name;		/* when a block is freed this
 					   is the name of the user we

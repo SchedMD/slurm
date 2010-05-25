@@ -956,7 +956,7 @@ extern int load_state_file(List curr_block_list, char *dir_name)
 	bg_record_t *bg_record = NULL;
 	block_info_t *block_info = NULL;
 	bitstr_t *node_bitmap = NULL, *ionode_bitmap = NULL;
-	int geo[BA_SYSTEM_DIMENSIONS];
+	int geo[SYSTEM_DIMENSIONS];
 	char temp[256];
 	List results = NULL;
 	int data_allocated, data_read = 0;
@@ -1186,7 +1186,7 @@ extern int load_state_file(List curr_block_list, char *dir_name)
 		bg_record->ramdiskimage =
 			xstrdup(block_info->ramdiskimage);
 
-		for(j=0; j<BA_SYSTEM_DIMENSIONS; j++)
+		for(j=0; j<SYSTEM_DIMENSIONS; j++)
 			geo[j] = bg_record->geo[j];
 
 		if((bg_conf->layout_mode == LAYOUT_OVERLAP)

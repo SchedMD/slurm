@@ -660,9 +660,9 @@ static int _dynamically_request(List block_list, int *blocks_added,
 	ListIterator itr = NULL;
 	int rc = SLURM_ERROR;
 	int create_try = 0;
-	int start_geo[BA_SYSTEM_DIMENSIONS];
+	int start_geo[SYSTEM_DIMENSIONS];
 
-	memcpy(start_geo, request->geometry, sizeof(int)*BA_SYSTEM_DIMENSIONS);
+	memcpy(start_geo, request->geometry, sizeof(int)*SYSTEM_DIMENSIONS);
 	debug2("going to create %d", request->size);
 	list_of_lists = list_create(NULL);
 
@@ -725,7 +725,7 @@ static int _dynamically_request(List block_list, int *blocks_added,
 			list_destroy(new_blocks);
 			if(!*blocks_added) {
 				memcpy(request->geometry, start_geo,
-				       sizeof(int)*BA_SYSTEM_DIMENSIONS);
+				       sizeof(int)*SYSTEM_DIMENSIONS);
 				rc = SLURM_ERROR;
 				continue;
 			}
@@ -740,7 +740,7 @@ static int _dynamically_request(List block_list, int *blocks_added,
 		}
 
 		memcpy(request->geometry, start_geo,
-		       sizeof(int)*BA_SYSTEM_DIMENSIONS);
+		       sizeof(int)*SYSTEM_DIMENSIONS);
 
 	}
 	list_iterator_destroy(itr);
@@ -768,7 +768,7 @@ static int _find_best_block_match(List block_list,
 				  uint16_t query_mode, int avail_cpus)
 {
 	bg_record_t *bg_record = NULL;
-	uint16_t req_geometry[BA_SYSTEM_DIMENSIONS];
+	uint16_t req_geometry[SYSTEM_DIMENSIONS];
 	uint16_t conn_type, rotate, target_size = 0;
 	uint32_t req_procs = job_ptr->details->min_cpus;
 	ba_request_t request;
@@ -830,7 +830,7 @@ static int _find_best_block_match(List block_list,
 
 	if(req_geometry[X] != 0 && req_geometry[X] != (uint16_t)NO_VAL) {
 		target_size = 1;
-		for (i=0; i<BA_SYSTEM_DIMENSIONS; i++)
+		for (i=0; i<SYSTEM_DIMENSIONS; i++)
 			target_size *= (uint16_t)req_geometry[i];
 		if(target_size != min_nodes) {
 			debug2("min_nodes not set correctly %u should be %u "
@@ -853,7 +853,7 @@ static int _find_best_block_match(List block_list,
 
 	memset(&request, 0, sizeof(ba_request_t));
 
-	for(i=0; i<BA_SYSTEM_DIMENSIONS; i++)
+	for(i=0; i<SYSTEM_DIMENSIONS; i++)
 		request.geometry[i] = req_geometry[i];
 
 	request.deny_pass = (uint16_t)NO_VAL;
@@ -957,7 +957,7 @@ static int _find_best_block_match(List block_list,
 		} else {
 			/* this gets altered in _find_matching_block so we
 			   reset it */
-			for(i=0; i<BA_SYSTEM_DIMENSIONS; i++)
+			for(i=0; i<SYSTEM_DIMENSIONS; i++)
 				request.geometry[i] = req_geometry[i];
 		}
 
@@ -1031,7 +1031,7 @@ static int _find_best_block_match(List block_list,
 				bool track_down_nodes = true;
 				/* this gets altered in
 				 * create_dynamic_block so we reset it */
-				for(i=0; i<BA_SYSTEM_DIMENSIONS; i++)
+				for(i=0; i<SYSTEM_DIMENSIONS; i++)
 					request.geometry[i] = req_geometry[i];
 
 				if((bg_record = list_pop(job_list))) {

@@ -62,7 +62,7 @@ extern List create_dynamic_block(List block_list,
 	List results = NULL;
 	List new_blocks = NULL;
 	bitstr_t *my_bitmap = NULL;
-	int geo[BA_SYSTEM_DIMENSIONS];
+	int geo[SYSTEM_DIMENSIONS];
 	int i;
 	blockreq_t blockreq;
 	int cnodes = request->procs / bg_conf->cpu_ratio;
@@ -89,7 +89,7 @@ extern List create_dynamic_block(List block_list,
 
 			if(!bit_super_set(bg_record->bitmap, my_bitmap)) {
 				bit_or(my_bitmap, bg_record->bitmap);
-				for(i=0; i<BA_SYSTEM_DIMENSIONS; i++)
+				for(i=0; i<SYSTEM_DIMENSIONS; i++)
 					geo[i] = bg_record->geo[i];
 				debug2("adding %s %c%c%c %c%c%c",
 				       bg_record->nodes,
@@ -369,7 +369,7 @@ extern bg_record_t *create_small_record(bg_record_t *bg_record,
 	} else {
 		int i=0,j=0;
 		new_ba_node = ba_copy_node(ba_node);
-		for (i=0; i<BA_SYSTEM_DIMENSIONS; i++){
+		for (i=0; i<SYSTEM_DIMENSIONS; i++){
 			for(j=0;j<NUM_PORTS_PER_NODE;j++) {
 				ba_node->axis_switch[i].int_wire[j].used = 0;
 				if(i!=X) {

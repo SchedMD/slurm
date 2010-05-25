@@ -173,12 +173,13 @@ extern void process_nodes(bg_record_t *bg_record, bool startup)
 	int j=0, number;
 	int diff=0;
 	int largest_diff=-1;
-	int best_start[BA_SYSTEM_DIMENSIONS];
-	int start[BA_SYSTEM_DIMENSIONS];
-	int end[BA_SYSTEM_DIMENSIONS];
+	int best_start[SYSTEM_DIMENSIONS];
+	int start[SYSTEM_DIMENSIONS];
+	int end[SYSTEM_DIMENSIONS];
 	bool start_set=0;
 	ListIterator itr;
 	ba_node_t* ba_node = NULL;
+	char *p = '\0';
 
 	if(!bg_record->bg_block_list
 	   || !list_count(bg_record->bg_block_list)) {
@@ -201,24 +202,17 @@ extern void process_nodes(bg_record_t *bg_record, bool startup)
 			    && (bg_record->nodes[j+4] == 'x'
 				|| bg_record->nodes[j+4] == '-')) {
 				j++;
-				number = xstrntol(bg_record->nodes + j,
-						  NULL, BA_SYSTEM_DIMENSIONS,
-						  HOSTLIST_BASE);
-				start[X] = number /
-					(HOSTLIST_BASE * HOSTLIST_BASE);
-				start[Y] = (number %
-					    (HOSTLIST_BASE * HOSTLIST_BASE))
-					/ HOSTLIST_BASE;
-				start[Z] = (number % HOSTLIST_BASE);
+				number = strtoul(bg_record->nodes + j,
+						 &p, HOSTLIST_BASE);
+				hostlist_parse_int_to_array(
+					number, start, SYSTEM_DIMENSIONS,
+					HOSTLIST_BASE);
 				j += 4;
-				number = xstrntol(bg_record->nodes + j,
-						NULL, 3, HOSTLIST_BASE);
-				end[X] = number /
-					(HOSTLIST_BASE * HOSTLIST_BASE);
-				end[Y] = (number
-					  % (HOSTLIST_BASE * HOSTLIST_BASE))
-					/ HOSTLIST_BASE;
-				end[Z] = (number % HOSTLIST_BASE);
+				number = strtoul(bg_record->nodes + j,
+						 &p, HOSTLIST_BASE);
+				hostlist_parse_int_to_array(
+					number, end, SYSTEM_DIMENSIONS,
+					HOSTLIST_BASE);
 				j += 3;
 				diff = end[X]-start[X];
 				if(diff > largest_diff) {
@@ -244,15 +238,11 @@ extern void process_nodes(bg_record_t *bg_record, bool startup)
 				  || (bg_record->nodes[j] >= 'A'
 				      && bg_record->nodes[j] <= 'Z')) {
 
-				number = xstrntol(bg_record->nodes + j,
-						  NULL, BA_SYSTEM_DIMENSIONS,
-						  HOSTLIST_BASE);
-				start[X] = number /
-					(HOSTLIST_BASE * HOSTLIST_BASE);
-				start[Y] = (number %
-					    (HOSTLIST_BASE * HOSTLIST_BASE))
-					/ HOSTLIST_BASE;
-				start[Z] = (number % HOSTLIST_BASE);
+				number = strtoul(bg_record->nodes + j,
+						 &p, HOSTLIST_BASE);
+				hostlist_parse_int_to_array(
+					number, start, SYSTEM_DIMENSIONS,
+					HOSTLIST_BASE);
 				j+=3;
 				diff = 0;
 				if(diff > largest_diff) {
@@ -446,7 +436,7 @@ extern void copy_bg_record(bg_record_t *fir_record, bg_record_t *sec_record)
 	sec_record->boot_count = fir_record->boot_count;
 	sec_record->full_block = fir_record->full_block;
 
-	for(i=0;i<BA_SYSTEM_DIMENSIONS;i++) {
+	for(i=0;i<SYSTEM_DIMENSIONS;i++) {
 		sec_record->geo[i] = fir_record->geo[i];
 		sec_record->start[i] = fir_record->start[i];
 	}

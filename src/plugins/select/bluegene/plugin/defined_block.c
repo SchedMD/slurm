@@ -57,7 +57,7 @@ extern int create_defined_blocks(bg_layout_t overlapped,
 	ListIterator itr_found;
 	int i;
 	bg_record_t *found_record = NULL;
-	int geo[BA_SYSTEM_DIMENSIONS];
+	int geo[SYSTEM_DIMENSIONS];
 	char temp[256];
 	List results = NULL;
 	struct part_record *part_ptr = NULL;
@@ -146,7 +146,7 @@ extern int create_defined_blocks(bg_layout_t overlapped,
 					      "bluegene.conf file?",
 					      bg_record->bg_block_id);
 
-				for(i=0; i<BA_SYSTEM_DIMENSIONS; i++)
+				for(i=0; i<SYSTEM_DIMENSIONS; i++)
 					geo[i] = bg_record->geo[i];
 				debug2("adding %s %c%c%c %c%c%c",
 				       bg_record->nodes,
@@ -287,7 +287,7 @@ extern int create_full_system_block(List bg_found_block_list)
 	bg_record_t *bg_record = NULL;
 	char *name = NULL;
 	List records = NULL;
-	int geo[BA_SYSTEM_DIMENSIONS];
+	int geo[SYSTEM_DIMENSIONS];
 	int i;
 	blockreq_t blockreq;
 	List results = NULL;
@@ -395,7 +395,7 @@ extern int create_full_system_block(List bg_found_block_list)
 		goto no_total;
 	}
 	reset_ba_system(false);
-	for(i=0; i<BA_SYSTEM_DIMENSIONS; i++)
+	for(i=0; i<SYSTEM_DIMENSIONS; i++)
 		geo[i] = bg_record->geo[i];
 	debug2("adding %s %c%c%c %c%c%c",
 	       bg_record->nodes,

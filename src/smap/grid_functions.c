@@ -40,7 +40,6 @@
 
 #include "src/smap/smap.h"
 
-#ifdef HAVE_3D
 static int _coord(char coord)
 {
 	if ((coord >= '0') && (coord <= '9'))
@@ -50,55 +49,58 @@ static int _coord(char coord)
 	return -1;
 }
 
-#endif
-
 /* Set grid color based upon node names containing X-, Y- and Z-
  * coordinates in last three positions. It is not based upon the
  * nodes in the node table being numerically ordered. */
 extern int set_grid_name(char *nodes, int count)
 {
-#ifdef HAVE_3D
 	hostlist_t hl;
 	char *node;
 	int i, x = 0, y = 0, z = 0;
+	int *use_dims = working_cluster_rec ?
+		working_cluster_rec->dim_size : DIM_SIZE;
 
 	if (!nodes)
 		return 1;
 
-	hl = hostlist_create(nodes);
-	while ((node = hostlist_shift(hl))) {
-		i = strlen(node);
-		if (i < 4)
-			x = -1;
-		else {
-			x = _coord(node[i-3]);
-			y = _coord(node[i-2]);
-			z = _coord(node[i-1]);
+	if(params.cluster_dims == 4) {
+		/* FIX ME: smap doesn't do anything correctly with
+		   more than 3 dims yet.
+		*/
+	} else if(params.cluster_dims == 3) {
+		hl = hostlist_create(nodes);
+		while ((node = hostlist_shift(hl))) {
+			i = strlen(node);
+			if (i < 4)
+				x = -1;
+			else {
+				x = _coord(node[i-3]);
+				y = _coord(node[i-2]);
+				z = _coord(node[i-1]);
+			}
+			if ((ba_system_ptr->grid[x][y][z].state
+			     != NODE_STATE_DOWN) &&
+			    (!(ba_system_ptr->grid[x][y][z].state
+			       & NODE_STATE_DRAIN)) &&
+			    (x >= 0) && (x < use_dims[X]) &&
+			    (y >= 0) && (y < use_dims[Y]) &&
+			    (z >= 0) && (z < use_dims[Z])) {
+				ba_system_ptr->grid[x][y][z].letter =
+					letters[count%62];
+				ba_system_ptr->grid[x][y][z].color =
+					colors[count%6];
+			}
+			free(node);
 		}
-		if ((ba_system_ptr->grid[x][y][z].state
-				!= NODE_STATE_DOWN) &&
-		    (!(ba_system_ptr->grid[x][y][z].state
-				& NODE_STATE_DRAIN)) &&
-		    (x >= 0) && (x < DIM_SIZE[X]) &&
-		    (y >= 0) && (y < DIM_SIZE[Y]) &&
-		    (z >= 0) && (z < DIM_SIZE[Z])) {
-			ba_system_ptr->grid[x][y][z].letter =
-				letters[count%62];
-			ba_system_ptr->grid[x][y][z].color =
-				colors[count%6];
-		}
-		free(node);
+		hostlist_destroy(hl);
 	}
-	hostlist_destroy(hl);
-#endif
+
 	return 1;
 }
 
 extern int set_grid_inx(int start, int end, int count)
 {
-	int x;
-#ifdef HAVE_3D
-	int y, z;
+	int x, y, z;
 	for (y = DIM_SIZE[Y] - 1; y >= 0; y--) {
 		for (z = 0; z < DIM_SIZE[Z]; z++) {
 			for (x = 0; x < DIM_SIZE[X]; x++) {
@@ -120,36 +122,20 @@ extern int set_grid_inx(int start, int end, int count)
 			}
 		}
 	}
-#else
-	for (x = 0; x < DIM_SIZE[X]; x++) {
-		if ((ba_system_ptr->grid[x].index < start)
-		    ||  (ba_system_ptr->grid[x].index > end))
-			continue;
-		if ((ba_system_ptr->grid[x].state == NODE_STATE_DOWN)
-		    ||  (ba_system_ptr->grid[x].state & NODE_STATE_DRAIN))
-			continue;
-
-		ba_system_ptr->grid[x].letter = letters[count%62];
-		ba_system_ptr->grid[x].color = colors[count%6];
-	}
-#endif
 	return 1;
 }
 
 /* This function is only called when HAVE_BG is set */
 extern int set_grid_bg(int *start, int *end, int count, int set)
 {
-	int x=0;
+	int x=0, y=0, z=0;
 	int i = 0;
-#ifdef HAVE_3D
-	int y=0, z=0;
-#endif
+
 	assert(end[X] < DIM_SIZE[X]);
 	assert(start[X] >= 0);
 	assert(count >= 0);
 	assert(set >= 0);
 	assert(set <= 2);
-#ifdef HAVE_3D
 	assert(end[Y] < DIM_SIZE[Y]);
 	assert(start[Y] >= 0);
 	assert(end[Z] < DIM_SIZE[Z]);
@@ -179,18 +165,6 @@ extern int set_grid_bg(int *start, int *end, int count, int set)
 			}
 		}
 	}
-#else
-	for (x = start[X]; x <= end[X]; x++) {
-		if(!set) {
-			ba_system_ptr->grid[x].letter =
-				letters[count%62];
-			ba_system_ptr->grid[x].color =
-				colors[count%6];
-		}
-		i++;
-	}
-
-#endif
 
 	return i;
 }
@@ -200,9 +174,8 @@ extern void print_grid(int dir)
 {
 	int x;
 	int grid_xcord, grid_ycord = 2;
-
-#ifdef HAVE_3D
 	int y, z, offset = DIM_SIZE[Z];
+
 	for (y = DIM_SIZE[Y] - 1; y >= 0; y--) {
 		offset = DIM_SIZE[Z] + 1;
 		for (z = 0; z < DIM_SIZE[Z]; z++) {
@@ -239,39 +212,6 @@ extern void print_grid(int dir)
 		}
 		grid_ycord++;
 	}
-#else
-	grid_xcord=1;
-	grid_ycord=1;
-
-	for (x = dir; x < DIM_SIZE[X]; x++) {
-		if (ba_system_ptr->grid[x].color)
-			init_pair(ba_system_ptr->grid[x].color,
-				  ba_system_ptr->grid[x].color,
-				  COLOR_BLACK);
-		else
-			init_pair(ba_system_ptr->grid[x].color,
-				  ba_system_ptr->grid[x].color,
-				  7);
-
-		wattron(grid_win,
-			COLOR_PAIR(ba_system_ptr->grid[x].color));
-
-		mvwprintw(grid_win,
-			  grid_ycord, grid_xcord, "%c",
-			  ba_system_ptr->grid[x].letter);
-		wattroff(grid_win,
-			 COLOR_PAIR(ba_system_ptr->grid[x].color));
-
-		grid_xcord++;
-		if(grid_xcord==grid_win->_maxx) {
-			grid_xcord=1;
-			grid_ycord++;
-		}
-		if(grid_ycord==grid_win->_maxy) {
-			break;
-		}
-	}
-#endif
 	return;
 }
 

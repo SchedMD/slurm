@@ -202,8 +202,7 @@ int verify_geometry(const char *arg, uint16_t *geometry)
 	int i, rc = 0;
 	char* geometry_tmp = xstrdup(arg);
 	char* original_ptr = geometry_tmp;
-	int dims = working_cluster_rec ?
-		working_cluster_rec->dimensions : SYSTEM_DIMENSIONS;
+	int dims = slurmdb_setup_cluster_dims();
 
 	token = strtok_r(geometry_tmp, delimiter, &next_ptr);
 	for (i=0; i<dims; i++) {
@@ -756,8 +755,7 @@ char *print_geometry(const uint16_t *geometry)
 {
 	int i;
 	char buf[32], *rc = NULL;
-	int dims = working_cluster_rec ?
-		working_cluster_rec->dimensions : SYSTEM_DIMENSIONS;
+	int dims = slurmdb_setup_cluster_dims();
 
 	if ((dims == 0)
 	||  (geometry[0] == (uint16_t)NO_VAL))
