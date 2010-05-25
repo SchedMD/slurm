@@ -298,7 +298,7 @@ extern int acct_storage_p_commit(pgsql_conn_t *pg_conn, bool commit)
 		} END_EACH_ROW;
 		PQclear(result);
 	skip:
-		update_assoc_mgr(pg_conn->update_list);
+		assoc_mgr_update(pg_conn->update_list);
 	}
 
 	list_flush(pg_conn->update_list);

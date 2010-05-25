@@ -1983,7 +1983,7 @@ extern int acct_storage_p_commit(mysql_conn_t *mysql_conn, bool commit)
 		}
 		mysql_free_result(result);
 	skip:
-		rc = update_assoc_mgr(mysql_conn->update_list);
+		rc = assoc_mgr_update(mysql_conn->update_list);
 
 		if(get_qos_count)
 			_set_qos_cnt(mysql_conn->db_conn);
