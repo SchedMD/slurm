@@ -351,12 +351,6 @@ extern void process_nodes(bg_record_t *bg_record, bool startup)
 	} else if(bg_record->node_cnt == bg_conf->bp_node_cnt)
 		bg_record->full_block = 1;
 
-/* #ifndef HAVE_BG_FILES */
-/* 	max_dim[X] = MAX(max_dim[X], end[X]); */
-/* 	max_dim[Y] = MAX(max_dim[Y], end[Y]); */
-/* 	max_dim[Z] = MAX(max_dim[Z], end[Z]); */
-/* #endif */
-
 	if (node_name2bitmap(bg_record->nodes,
 			     false,
 			     &bg_record->bitmap)) {

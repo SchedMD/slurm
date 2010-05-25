@@ -68,15 +68,6 @@ List bg_destroy_block_list = NULL;       /* blocks to be destroyed */
 int free_cnt = 0;
 int destroy_cnt = 0;
 
-#ifndef HAVE_BG_FILES
-# if SYSTEM_DIMENSIONS==3
-int max_dim[SYSTEM_DIMENSIONS] = { 0, 0, 0 };
-# else
-int max_dim[SYSTEM_DIMENSIONS] = { 0 };
-# endif
-#endif
-
-
 static void _destroy_bg_config(bg_config_t *bg_conf);
 static void _destroy_bg_lists(bg_lists_t *bg_lists);
 
