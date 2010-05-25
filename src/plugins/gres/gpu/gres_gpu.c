@@ -1077,6 +1077,31 @@ extern int step_state_validate(char *config, void **gres_data)
 	return SLURM_SUCCESS;
 }
 
+extern void *step_state_dup(void *gres_data)
+{
+
+	int i;
+	gpu_step_state_t *gres_ptr = (gpu_step_state_t *) gres_data;
+	gpu_step_state_t *new_gres_ptr;
+
+	if (gres_ptr == NULL)
+		return NULL;
+
+	new_gres_ptr = xmalloc(sizeof(gpu_step_state_t));
+	new_gres_ptr->gpu_cnt_alloc	= gres_ptr->gpu_cnt_alloc;
+	new_gres_ptr->gpu_cnt_mult	= gres_ptr->gpu_cnt_mult;
+	new_gres_ptr->node_cnt		= gres_ptr->node_cnt;
+	new_gres_ptr->gpu_bit_alloc	= xmalloc(sizeof(bitstr_t *) *
+						  gres_ptr->node_cnt);
+	for (i=0; i<gres_ptr->node_cnt; i++) {
+		if (gres_ptr->gpu_bit_alloc[i] == NULL)
+			continue;
+		new_gres_ptr->gpu_bit_alloc[i] = bit_copy(gres_ptr->
+							  gpu_bit_alloc[i]);
+	}
+	return new_gres_ptr;
+}
+
 extern int step_state_pack(void *gres_data, Buf buffer)
 {
 	int i;

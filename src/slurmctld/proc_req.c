@@ -648,6 +648,7 @@ static int _make_step_cred(struct step_record *step_ptr,
 	cred_arg.job_mem_limit   = job_ptr->details->pn_min_memory;
 	cred_arg.job_nhosts      = job_resrcs_ptr->nhosts;
 	cred_arg.job_gres_list   = job_ptr->gres_list;
+	cred_arg.step_gres_list  = step_ptr->gres_list;
 
 	cred_arg.step_core_bitmap = step_ptr->core_bitmap_job;
 #ifdef HAVE_FRONT_END

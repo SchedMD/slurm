@@ -1004,7 +1004,7 @@ extern void job_state_log(void *gres_data, uint32_t job_id)
 		mult = "cpu";
 	else
 		mult = "node";
-	info("  gpu_cnt:%u per %s node_cnt:%u", gres_ptr->nic_cnt_alloc, mult,
+	info("  nic_cnt:%u per %s node_cnt:%u", gres_ptr->nic_cnt_alloc, mult,
 	     gres_ptr->node_cnt);
 
 	if (gres_ptr->node_cnt && gres_ptr->nic_bit_alloc) {
@@ -1075,6 +1075,31 @@ extern int step_state_validate(char *config, void **gres_data)
 	gres_ptr->nic_cnt_mult  = mult;
 	*gres_data = gres_ptr;
 	return SLURM_SUCCESS;
+}
+
+extern void *step_state_dup(void *gres_data)
+{
+
+	int i;
+	nic_step_state_t *gres_ptr = (nic_step_state_t *) gres_data;
+	nic_step_state_t *new_gres_ptr;
+
+	if (gres_ptr == NULL)
+		return NULL;
+
+	new_gres_ptr = xmalloc(sizeof(nic_step_state_t));
+	new_gres_ptr->nic_cnt_alloc	= gres_ptr->nic_cnt_alloc;
+	new_gres_ptr->nic_cnt_mult	= gres_ptr->nic_cnt_mult;
+	new_gres_ptr->node_cnt		= gres_ptr->node_cnt;
+	new_gres_ptr->nic_bit_alloc	= xmalloc(sizeof(bitstr_t *) *
+						  gres_ptr->node_cnt);
+	for (i=0; i<gres_ptr->node_cnt; i++) {
+		if (gres_ptr->nic_bit_alloc[i] == NULL)
+			continue;
+		new_gres_ptr->nic_bit_alloc[i] = bit_copy(gres_ptr->
+							  nic_bit_alloc[i]);
+	}
+	return new_gres_ptr;
 }
 
 extern int step_state_pack(void *gres_data, Buf buffer)
