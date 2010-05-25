@@ -9,7 +9,7 @@ general overview.
 <ol>
 <li>Make sure that you have synchronized clocks plus consistent users and groups
 (UIDs and GIDs) across the cluster.</li>
-<li>Install <a href="http://home/gna.org/munge">MUNGE</a> for
+<li>Install <a href="http://munge.googlecode.com/">MUNGE</a> for
 authentication. Make sure that all nodes in your cluster have the
 same <i>munge.key</i>. Make sure the MUNGE daemon, <i>munged</i>
 is started before you start the SLURM daemons.</li>
@@ -223,7 +223,7 @@ authentication infrastructure is provided by a dynamically loaded
 plugin chosen at runtime via the <b>AuthType</b> keyword in the SLURM
 configuration file.  Currently available authentication types include
 <a href="http://www.theether.org/authd/">authd</a>,
-<a href="http://home.gna.org/munge/">munge</a>, and none.
+<a href="http://munge.googlecode.com/">munge</a>, and none.
 The default authentication infrastructure is "munge", but this does
 require the installation of the MUNGE package.
 An authentication type of "none" requires no infrastructure, but permits
@@ -507,7 +507,7 @@ Currently, only three authentication plugins are supported:
 <b>auth/none</b>, <b>auth/authd</b>, and <b>auth/munge</b>.
 The auth/none plugin is built by default, but either
 Brent Chun's <a href="http://www.theether.org/authd/">authd</a>,
-or LLNL's <a href="http://home.gna.org/munge/">MUNGE</a>
+or LLNL's <a href="http://munge.googlecode.com/">MUNGE</a>
 should be installed in order to get properly authenticated communications.
 Unless you are experience with authd, we recommend the use of MUNGE.
 The configure script in the top-level directory of this distribution will

@@ -20,7 +20,7 @@ a message.</li>
 <li><b>Munge</b> (recommended)<br>
 In order to compile the "auth/munge" authentication plugin for SLURM,
 you will need to build and install Munge, available from
-<a href="http://home.gna.org/munge/">http://home.gna.org/munge/</a> and
+<a href="http://munge.googlecode.com/">http://munge.googlecode.com/</a> and
 <a href="http://packages.debian.org/src:munge">Debian</a> and
 <a href="http://fedoraproject.org/">Fedora</a> and
 <a href="http://packages.ubuntu.com/src:munge">Ubuntu</a>.
