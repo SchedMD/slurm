@@ -66,12 +66,12 @@ MySQL, PGSQL, SlurmDBD (Slurm Database Daemon) or none</li>
 
 <li><a href="authplugins.html">Authentication of communications</a>:
 <a href="http://www.theether.org/authd/">authd</a>,
-<a href="http://home.gna.org/munge/">munge</a>, or none (default).</li>
+<a href="http://munge.googlecode.com/">munge</a>, or none (default).</li>
 
 <li><a href="checkpoint_plugins.html">Checkpoint</a>: AIX, OpenMPI, XLCH, or none.</li>
 
 <li><a href="crypto_plugins.html">Cryptography (Digital Signature Generation)</a>:
-<a href="http://home.gna.org/munge/">munge</a> (default) or
+<a href="http://munge.googlecode.com/">munge</a> (default) or
 <a href="http://www.openssl.org/">OpenSSL</a>.</li>
 
 <li><a href="jobacct_gatherplugins.html">Job Accounting Gather</a>: AIX, Linux, or none(default)</li>
