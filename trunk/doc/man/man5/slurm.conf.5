@@ -88,12 +88,12 @@ Also see \fBDefaultStorageLoc\fR.
 \fBAccountingStoragePass\fR
 The password used to gain access to the database to store the
 accounting data.  Only used for database type storage plugins, ignored
-otherwise.  In the case of SLURM DBD (Database Daemon) with Munge
-authentication this can be configured to use a Munge daemon
+otherwise.  In the case of SLURM DBD (Database Daemon) with MUNGE
+authentication this can be configured to use a MUNGE daemon
 specifically configured to provide authentication between clusters
-while the default Munge daemon provides authentication within a
+while the default MUNGE daemon provides authentication within a
 cluster.  In that case, \fBAccountingStoragePass\fR should specify the
-named port to be used for communications with the alternate Munge
+named port to be used for communications with the alternate MUNGE
 daemon (e.g.  "/var/run/munge/global.socket.2"). The default value is
 NULL.  Also see \fBDefaultStoragePass\fR.
 
@@ -148,7 +148,7 @@ This may be fine for testing purposes, but
 authd is no longer actively supported).
 "auth/munge" indicates that LLNL's MUNGE is to be used
 (this is the best supported authentication mechanism for SLURM,
-see "http://home.gna.org/munge/" for more information).
+see "http://munge.googlecode.com/" for more information).
 All SLURM daemons and commands must be terminated prior to changing
 the value of \fBAuthType\fR and later restarted (SLURM jobs can be
 preserved).
