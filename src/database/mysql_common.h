@@ -60,9 +60,9 @@
 #include <mysqld_error.h>
 
 typedef struct {
-	char *auto_incr_query;
 	char *cluster_name;
 	MYSQL *db_conn;
+	char *pre_commit_query;
 	bool rollback;
 	List update_list;
 	int conn;
