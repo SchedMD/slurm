@@ -55,6 +55,7 @@ int long_flag = 1;
 int exit_code = 0;
 sshare_time_format_t time_format = SSHARE_TIME_MINS;
 char *time_format_string = "Minutes";
+time_t last_job_update = (time_t) 0;
 
 List   job_list = NULL;		/* job_record list */
 static pthread_mutex_t state_mutex = PTHREAD_MUTEX_INITIALIZER;
