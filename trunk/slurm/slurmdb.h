@@ -127,6 +127,8 @@ typedef enum {
 	SLURMDB_ADD_WCKEY,
 	SLURMDB_REMOVE_WCKEY,
 	SLURMDB_MODIFY_WCKEY,
+	SLURMDB_ADD_CLUSTER,
+	SLURMDB_REMOVE_CLUSTER,
 } slurmdb_update_type_t;
 
 /* Archive / Purge time flags */

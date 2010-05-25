@@ -1765,10 +1765,9 @@ extern int assoc_mgr_update(List update_list)
 	xassert(update_list);
 	itr = list_iterator_create(update_list);
 	while((object = list_next(itr))) {
-		if(!object->objects || !list_count(object->objects)) {
-			list_delete_item(itr);
+		if(!object->objects || !list_count(object->objects))
 			continue;
-		}
+
 		switch(object->type) {
 		case SLURMDB_MODIFY_USER:
 		case SLURMDB_ADD_USER:
@@ -1791,6 +1790,12 @@ extern int assoc_mgr_update(List update_list)
 		case SLURMDB_MODIFY_WCKEY:
 		case SLURMDB_REMOVE_WCKEY:
 			rc = assoc_mgr_update_wckeys(object);
+			break;
+		case SLURMDB_ADD_CLUSTER:
+		case SLURMDB_REMOVE_CLUSTER:
+			/* These are used in the accounting_storage
+			   plugins for rollback purposes, just skip here.
+			*/
 			break;
 		case SLURMDB_UPDATE_NOTSET:
 		default:

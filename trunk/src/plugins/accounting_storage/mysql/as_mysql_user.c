@@ -150,7 +150,7 @@ static int _get_user_coords(mysql_conn_t *mysql_conn, slurmdb_user_rec_t *user)
 }
 
 extern int as_mysql_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
-			   List user_list)
+			      List user_list)
 {
 	ListIterator itr = NULL;
 	int rc = SLURM_SUCCESS;
@@ -220,7 +220,7 @@ extern int as_mysql_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		}
 
 		if(addto_update_list(mysql_conn->update_list, SLURMDB_ADD_USER,
-				      object) == SLURM_SUCCESS)
+				     object) == SLURM_SUCCESS)
 			list_remove(itr);
 
 		/* we always have a ', ' as the first 2 chars */

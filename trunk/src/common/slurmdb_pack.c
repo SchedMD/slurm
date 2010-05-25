@@ -3802,15 +3802,12 @@ extern void slurmdb_pack_update_object(slurmdb_update_object_t *object,
 	case SLURMDB_ADD_WCKEY:
 	case SLURMDB_MODIFY_WCKEY:
 	case SLURMDB_REMOVE_WCKEY:
-		if(rpc_version <= 3) {
-			/* since this wasn't introduced before version
-			   4 pack a known type with NO_VAL as the count */
-			pack16(SLURMDB_MODIFY_USER, buffer);
-			pack32(count, buffer);
-			return;
-		}
 		my_function = slurmdb_pack_wckey_rec;
 		break;
+	case SLURMDB_ADD_CLUSTER:
+	case SLURMDB_REMOVE_CLUSTER:
+		pack16(object->type, buffer);
+		return;
 	case SLURMDB_UPDATE_NOTSET:
 	default:
 		error("pack: unknown type set in update_object: %d",
@@ -3873,6 +3870,10 @@ extern int slurmdb_unpack_update_object(slurmdb_update_object_t **object,
 		my_function = slurmdb_unpack_wckey_rec;
 		my_destroy = slurmdb_destroy_wckey_rec;
 		break;
+	case SLURMDB_ADD_CLUSTER:
+	case SLURMDB_REMOVE_CLUSTER:
+		/* we don't pack anything on these */
+		return SLURM_SUCCESS;
 	case SLURMDB_UPDATE_NOTSET:
 	default:
 		error("unpack: unknown type set in update_object: %d",
