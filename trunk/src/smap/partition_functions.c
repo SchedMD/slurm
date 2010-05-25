@@ -388,7 +388,7 @@ extern void get_bg_part()
 
 	if (params.commandline && params.iterate)
 		printf("\n");
-	
+
 	part_info_ptr = new_part_ptr;
 	bg_info_ptr = new_bg_ptr;
 	return;
@@ -397,11 +397,9 @@ extern void get_bg_part()
 static int _marknodes(db2_block_info_t *block_ptr, int count)
 {
 	int j=0;
-	int start[BA_SYSTEM_DIMENSIONS];
-	int end[BA_SYSTEM_DIMENSIONS];
+	int start[params.cluster_dims];
+	int end[params.cluster_dims];
 	int number = 0;
-	int dims = slurmdb_setup_cluster_dims();
-	int hostlist_base = hostlist_get_base();
 	char *p = '\0';
 
 	block_ptr->letter_num = count;
@@ -414,14 +412,16 @@ static int _marknodes(db2_block_info_t *block_ptr, int count)
 			|| block_ptr->nodes[j+4] == '-')) {
 			j++;
 			number = strtoul(block_ptr->nodes + j, &p,
-					 hostlist_base);
+					 params.cluster_base);
 			hostlist_parse_int_to_array(
-				number, start, dims, hostlist_base);
+				number, start, params.cluster_dims,
+				params.cluster_base);
 			j += 4;
 			number = strtoul(block_ptr->nodes + j, &p,
-					 hostlist_base);
+					 params.cluster_base);
 			hostlist_parse_int_to_array(
-				number, end, dims, hostlist_base);
+				number, end, params.cluster_dims,
+				params.cluster_base);
 			j += 3;
 
 			if(block_ptr->state != RM_PARTITION_FREE)
@@ -439,9 +439,10 @@ static int _marknodes(db2_block_info_t *block_ptr, int count)
 			      && block_ptr->nodes[j] <= 'Z')) {
 
 			number = strtoul(block_ptr->nodes + j, &p,
-					 hostlist_base);
+					 params.cluster_base);
 			hostlist_parse_int_to_array(
-				number, start, dims, hostlist_base);
+				number, start, params.cluster_dims,
+				params.cluster_base);
 			j+=3;
 			block_ptr->size += set_grid_bg(
 				start, start, count, 0);
@@ -908,11 +909,9 @@ static int _addto_nodelist(List nodelist, int *start, int *end)
 {
 	int *coord = NULL;
 	int x,y,z;
-	int *use_dims = working_cluster_rec ?
-		working_cluster_rec->dim_size : DIM_SIZE;
-	if(end[X] >= use_dims[X]
-	   || end[Y] >= use_dims[Y]
-	   || end[Z] >= use_dims[Z]) {
+	if(end[X] >= DIM_SIZE[X]
+	   || end[Y] >= DIM_SIZE[Y]
+	   || end[Z] >= DIM_SIZE[Z]) {
 		fatal("It appears the slurm.conf file has changed since "
 		      "the last restart.\nThings are in an incompatible "
 		      "state, please restart the slurmctld.");
@@ -940,11 +939,9 @@ static int _make_nodelist(char *nodes, List nodelist)
 {
 	int j = 0;
 	int number;
-	int start[BA_SYSTEM_DIMENSIONS];
-	int end[BA_SYSTEM_DIMENSIONS];
+	int start[params.cluster_dims];
+	int end[params.cluster_dims];
 	char *p = '\0';
-	int dims = slurmdb_setup_cluster_dims();
-	int hostlist_base = hostlist_get_base();
 
 	if(!nodelist)
 		nodelist = list_create(_nodelist_del);
@@ -956,13 +953,15 @@ static int _make_nodelist(char *nodes, List nodelist)
 		    && (nodes[j+4] == 'x'
 			|| nodes[j+4] == '-')) {
 			j++;
-			number = strtoul(nodes + j, &p, hostlist_base);
+			number = strtoul(nodes + j, &p, params.cluster_base);
 			hostlist_parse_int_to_array(
-				number, start, dims, hostlist_base);
+				number, start, params.cluster_dims,
+				params.cluster_base);
 			j += 4;
-			number = strtoul(nodes + j, &p, hostlist_base);
+			number = strtoul(nodes + j, &p, params.cluster_base);
 			hostlist_parse_int_to_array(
-				number, end, dims, hostlist_base);
+				number, end, params.cluster_dims,
+				params.cluster_base);
 			j += 3;
 			_addto_nodelist(nodelist, start, end);
 			if(nodes[j] != ',')
@@ -971,9 +970,10 @@ static int _make_nodelist(char *nodes, List nodelist)
 		} else if((nodes[j] >= '0' && nodes[j] <= '9')
 			  || (nodes[j] >= 'A' && nodes[j] <= 'Z')) {
 
-			number = strtoul(nodes + j, &p, hostlist_base);
+			number = strtoul(nodes + j, &p, params.cluster_base);
 			hostlist_parse_int_to_array(
-				number, start, dims, hostlist_base);
+				number, start, params.cluster_dims,
+				params.cluster_base);
 			j+=3;
 			_addto_nodelist(nodelist, start, start);
 			if(nodes[j] != ',')

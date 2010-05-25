@@ -407,7 +407,7 @@ static int _create_allocation(char *com, List allocated_blocks)
 					request->geometry[X] =
 						xstrntol(&com[geoi],
 							 NULL, diff,
-							 HOSTLIST_BASE);
+							 params.cluster_base);
 				}
 				geoi += diff;
 				diff = geoi;
@@ -426,7 +426,7 @@ static int _create_allocation(char *com, List allocated_blocks)
 					request->geometry[Y] =
 						xstrntol(&com[geoi],
 							 NULL, diff,
-							 HOSTLIST_BASE);
+							 params.cluster_base);
 				}
 				geoi += diff;
 				diff = geoi;
@@ -445,7 +445,7 @@ static int _create_allocation(char *com, List allocated_blocks)
 					request->geometry[Z] =
 						xstrntol(&com[geoi],
 							 NULL, diff,
-							 HOSTLIST_BASE);
+							 params.cluster_base);
 				}
 				request->size = -1;
 				break;
@@ -465,7 +465,8 @@ static int _create_allocation(char *com, List allocated_blocks)
 			} else {
 				request->start[X] = xstrntol(&com[starti],
 							     NULL, diff,
-							     HOSTLIST_BASE);
+							     params.
+							     cluster_base);
 			}
 			starti += diff;
 			if(starti==len)
@@ -484,7 +485,7 @@ static int _create_allocation(char *com, List allocated_blocks)
 			} else {
 				request->start[Y] = xstrntol(&com[starti],
 							     NULL, diff,
-							     HOSTLIST_BASE);
+							     params.cluster_base);
 			}
 			starti += diff;
 			if(starti==len)
@@ -503,7 +504,8 @@ static int _create_allocation(char *com, List allocated_blocks)
 			} else {
 				request->start[Z] = xstrntol(&com[starti],
 							     NULL, diff,
-							     HOSTLIST_BASE);
+							     params.
+							     cluster_base);
 			}
 		}
 	start_request:
@@ -631,14 +633,14 @@ static int _change_state_all_bps(char *com, int state)
 	char allnodes[50];
 	memset(allnodes,0,50);
 
-#ifdef HAVE_3D
-	sprintf(allnodes, "000x%c%c%c",
-		alpha_num[DIM_SIZE[X]-1], alpha_num[DIM_SIZE[Y]-1],
-		alpha_num[DIM_SIZE[Z]-1]);
-#else
-	sprintf(allnodes, "0-%d",
-		DIM_SIZE[X]);
-#endif
+	if(params.cluster_dims == 3)
+		sprintf(allnodes, "000x%c%c%c",
+			alpha_num[DIM_SIZE[X]-1], alpha_num[DIM_SIZE[Y]-1],
+			alpha_num[DIM_SIZE[Z]-1]);
+	else
+		sprintf(allnodes, "0-%d",
+			DIM_SIZE[X]);
+
 	return _change_state_bps(allnodes, state);
 
 }
@@ -646,14 +648,13 @@ static int _change_state_bps(char *com, int state)
 {
 	int i=0, x;
 	int len = strlen(com);
-	int start[SYSTEM_DIMENSIONS], end[SYSTEM_DIMENSIONS];
-#ifdef HAVE_3D
+	int start[params.cluster_dims], end[params.cluster_dims];
 	int number=0, y=0, z=0, j=0;
-#endif
 	char letter = '.';
 	char opposite = '#';
 	bool used = false;
 	char *c_state = "up";
+	char *p = '\0';
 
 	if(state == NODE_STATE_DOWN) {
 		letter = '#';
@@ -674,7 +675,35 @@ static int _change_state_bps(char *com, int state)
 		return 0;
 	}
 
-#ifdef HAVE_3D
+	if(params.cluster_dims == 1) {
+		if ((com[i+3] == 'x')
+		    || (com[i+3] == '-')) {
+			start[X] =  xstrntol(com + i, NULL,
+					     params.cluster_dims,
+					     params.cluster_base);
+			i += 4;
+			end[X] =  xstrntol(com + i, NULL,
+					   params.cluster_dims,
+					   params.cluster_base);
+		} else {
+			start[X] = end[X] =  xstrntol(com + i, NULL,
+						      params.cluster_dims,
+						      params.cluster_base);
+		}
+
+		if((start[X]>end[X])
+		   || (start[X]<0)
+		   || (end[X]>DIM_SIZE[X]-1))
+			goto error_message;
+
+		for(x=start[X];x<=end[X];x++) {
+			ba_system_ptr->grid[x][0][0].color = 0;
+			ba_system_ptr->grid[x][0][0].letter = letter;
+			ba_system_ptr->grid[x][0][0].used = used;
+		}
+		return 1;
+	}
+
 	if ((com[i+3] == 'x')
 	    || (com[i+3] == '-')) {
 		for(j=0; j<3; j++) {
@@ -685,12 +714,10 @@ static int _change_state_bps(char *com, int state)
 			goto error_message2;
 
 		}
-		number = xstrntol(com + i, NULL,
-				  BA_SYSTEM_DIMENSIONS, HOSTLIST_BASE);
-		start[X] = number / (HOSTLIST_BASE * HOSTLIST_BASE);
-		start[Y] = (number % (HOSTLIST_BASE * HOSTLIST_BASE))
-			/ HOSTLIST_BASE;
-		start[Z] = (number % HOSTLIST_BASE);
+		number = strtoul(com + i, &p, params.cluster_base);
+		hostlist_parse_int_to_array(
+			number, start, params.cluster_dims,
+			params.cluster_base);
 
 		i += 4;
 		for(j=0; j<3; j++) {
@@ -700,12 +727,10 @@ static int _change_state_bps(char *com, int state)
 				continue;
 			goto error_message2;
 		}
-		number = xstrntol(com + i, NULL,
-				  BA_SYSTEM_DIMENSIONS, HOSTLIST_BASE);
-		end[X] = number / (HOSTLIST_BASE * HOSTLIST_BASE);
-		end[Y] = (number % (HOSTLIST_BASE * HOSTLIST_BASE))
-			/ HOSTLIST_BASE;
-		end[Z] = (number % HOSTLIST_BASE);
+		number = strtoul(com + i, &p,  params.cluster_base);
+		hostlist_parse_int_to_array(
+			number, end, params.cluster_dims,
+			params.cluster_base);
 	} else {
 		for(j=0; j<3; j++) {
 			if (((i+j) <= len) &&
@@ -714,12 +739,10 @@ static int _change_state_bps(char *com, int state)
 				continue;
 			goto error_message2;
 		}
-		number = xstrntol(com + i, NULL,
-				  BA_SYSTEM_DIMENSIONS, HOSTLIST_BASE);
-		start[X] = end[X] = number / (HOSTLIST_BASE * HOSTLIST_BASE);
-		start[Y] = end[Y] = (number % (HOSTLIST_BASE * HOSTLIST_BASE))
-			/ HOSTLIST_BASE;
-		start[Z] = end[Z] = (number % HOSTLIST_BASE);
+		number = strtoul(com + i, &p,  params.cluster_base);
+		hostlist_parse_int_to_array(
+			number, start, params.cluster_dims,
+			params.cluster_base);
 	}
 	if((start[X]>end[X]
 	    || start[Y]>end[Y]
@@ -744,47 +767,22 @@ static int _change_state_bps(char *com, int state)
 			}
 		}
 	}
-#else
-	if ((com[i+3] == 'x')
-	    || (com[i+3] == '-')) {
-		start[X] =  xstrntol(com + i, NULL,
-				    BA_SYSTEM_DIMENSIONS, HOSTLIST_BASE);
-		i += 4;
-		end[X] =  xstrntol(com + i, NULL,
-				   BA_SYSTEM_DIMENSIONS, HOSTLIST_BASE);
-	} else {
-		start[X] = end[X] =  xstrntol(com + i, NULL,
-					      BA_SYSTEM_DIMENSIONS,
-					      HOSTLIST_BASE);
-	}
-
-	if((start[X]>end[X])
-	   || (start[X]<0)
-	   || (end[X]>DIM_SIZE[X]-1))
-		goto error_message;
-
-	for(x=start[X];x<=end[X];x++) {
-		ba_system_ptr->grid[x].color = 0;
-		ba_system_ptr->grid[x].letter = letter;
-		ba_system_ptr->grid[x].used = used;
-	}
-#endif
 	return 1;
 error_message:
 	memset(error_string,0,255);
-#ifdef HAVE_BG
-	sprintf(error_string,
-		"Problem with base partitions, "
-		"specified range was %d%d%dx%d%d%d",
-		alpha_num[start[X]],alpha_num[start[Y]],alpha_num[start[Z]],
-		alpha_num[end[X]],alpha_num[end[Y]],alpha_num[end[Z]]);
-#else
-	sprintf(error_string,
-		"Problem with nodes,  specified range was %d-%d",
-		start[X],end[X]);
-#endif
+	if(params.cluster_dims == 1) {
+		sprintf(error_string,
+			"Problem with nodes,  specified range was %d-%d",
+			start[X],end[X]);
+	} else {
+		sprintf(error_string,
+			"Problem with base partitions, "
+			"specified range was %d%d%dx%d%d%d",
+			alpha_num[start[X]],alpha_num[start[Y]],
+			alpha_num[start[Z]],
+			alpha_num[end[X]],alpha_num[end[Y]],alpha_num[end[Z]]);
+	}
 	return 0;
-#ifdef HAVE_3D
 error_message2:
 	memset(error_string,0,255);
 	sprintf(error_string,
@@ -792,7 +790,6 @@ error_message2:
 		"You need to specify XYZ or XYZxXYZ",
 		com+i,com);
 	return 0;
-#endif
 }
 static int _remove_allocation(char *com, List allocated_blocks)
 {
@@ -905,7 +902,7 @@ static int _copy_allocation(char *com, List allocated_blocks)
 
 	if(i<=len) {
 		/* Here we are looking for a real number for the count
-		   instead of the HOSTLIST_BASE so atoi is ok
+		   instead of the params.cluster_base so atoi is ok
 		*/
 		if(com[i]>='0' && com[i]<='9')
 			count = atoi(com+i);
@@ -1126,15 +1123,16 @@ static int _add_bg_record(blockreq_t *blockreq, List allocated_blocks)
 	int bp_count = 0;
 	int diff=0;
 	int largest_diff=-1;
-	int start[BA_SYSTEM_DIMENSIONS];
-	int end[BA_SYSTEM_DIMENSIONS];
-	int start1[BA_SYSTEM_DIMENSIONS];
-	int end1[BA_SYSTEM_DIMENSIONS];
-	int geo[BA_SYSTEM_DIMENSIONS];
+	int start[params.cluster_dims];
+	int end[params.cluster_dims];
+	int start1[params.cluster_dims];
+	int end1[params.cluster_dims];
+	int geo[params.cluster_dims];
 	char com[255];
 	int j = 0, number;
 	int len = 0;
 	int x,y,z;
+	char *p = '\0';
 
 	geo[X] = 0;
 	geo[Y] = 0;
@@ -1172,21 +1170,15 @@ static int _add_bg_record(blockreq_t *blockreq, List allocated_blocks)
 		    && (nodes[j+8] == ']' || nodes[j+8] == ',')
 		    && (nodes[j+4] == 'x' || nodes[j+4] == '-')) {
 			j++;
-			number = xstrntol(nodes + j, NULL,
-					  BA_SYSTEM_DIMENSIONS, HOSTLIST_BASE);
-			start[X] = number / (HOSTLIST_BASE * HOSTLIST_BASE);
-			start[Y] = (number % (HOSTLIST_BASE * HOSTLIST_BASE))
-				/ HOSTLIST_BASE;
-			start[Z] = (number % HOSTLIST_BASE);
-
+			number = strtoul(nodes + j, &p, params.cluster_base);
+			hostlist_parse_int_to_array(
+				number, start, params.cluster_dims,
+				params.cluster_base);
 			j += 4;
-			number = xstrntol(nodes + j, NULL,
-					  BA_SYSTEM_DIMENSIONS, HOSTLIST_BASE);
-			end[X] = number / (HOSTLIST_BASE * HOSTLIST_BASE);
-			end[Y] = (number % (HOSTLIST_BASE * HOSTLIST_BASE))
-				/ HOSTLIST_BASE;
-			end[Z] = (number % HOSTLIST_BASE);
-
+			number = strtoul(nodes + j, &p, params.cluster_base);
+			hostlist_parse_int_to_array(
+				number, end, params.cluster_dims,
+				params.cluster_base);
 			j += 3;
 			diff = end[X]-start[X];
 			if(diff > largest_diff) {
@@ -1216,13 +1208,10 @@ static int _add_bg_record(blockreq_t *blockreq, List allocated_blocks)
 			j--;
 		} else if((nodes[j] >= '0' && nodes[j] <= '9')
 			  || (nodes[j] >= 'A' && nodes[j] <= 'Z')) {
-			number = xstrntol(nodes + j, NULL,
-					  BA_SYSTEM_DIMENSIONS, HOSTLIST_BASE);
-			start[X] = number / (HOSTLIST_BASE * HOSTLIST_BASE);
-			start[Y] = (number % (HOSTLIST_BASE * HOSTLIST_BASE))
-				/ HOSTLIST_BASE;
-			start[Z] = (number % HOSTLIST_BASE);
-
+			number = strtoul(nodes + j, &p, params.cluster_base);
+			hostlist_parse_int_to_array(
+				number, start, params.cluster_dims,
+				params.cluster_base);
 			j+=3;
 			diff = 0;
 			if(diff > largest_diff) {

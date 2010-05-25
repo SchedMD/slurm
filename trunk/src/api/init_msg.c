@@ -57,8 +57,7 @@
 void slurm_init_job_desc_msg(job_desc_msg_t * job_desc_msg)
 {
 	int i;
-	int dims = working_cluster_rec ?
-		working_cluster_rec->dimensions : SYSTEM_DIMENSIONS;
+	int dims = slurmdb_setup_cluster_dims();
 
 	memset(job_desc_msg, 0, sizeof(job_desc_msg_t));
 	job_desc_msg->acctg_freq	= (uint16_t) NO_VAL;

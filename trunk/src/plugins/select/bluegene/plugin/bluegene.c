@@ -69,10 +69,10 @@ int free_cnt = 0;
 int destroy_cnt = 0;
 
 #ifndef HAVE_BG_FILES
-# if BA_SYSTEM_DIMENSIONS==3
-int max_dim[BA_SYSTEM_DIMENSIONS] = { 0, 0, 0 };
+# if SYSTEM_DIMENSIONS==3
+int max_dim[SYSTEM_DIMENSIONS] = { 0, 0, 0 };
 # else
-int max_dim[BA_SYSTEM_DIMENSIONS] = { 0 };
+int max_dim[SYSTEM_DIMENSIONS] = { 0 };
 # endif
 #endif
 

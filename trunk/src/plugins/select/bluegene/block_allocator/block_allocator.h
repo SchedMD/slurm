@@ -47,12 +47,6 @@
 
 #define NUM_PORTS_PER_NODE 6
 
-#ifdef HAVE_3D
-#define BA_SYSTEM_DIMENSIONS 3
-#else
-#define BA_SYSTEM_DIMENSIONS 1
-#endif
-
 #define PASS_DENY_X 0x0001
 #define PASS_DENY_Y 0x0002
 #define PASS_DENY_Z 0x0004
@@ -81,7 +75,7 @@ enum {X, Y, Z};
  */
 typedef struct {
 	int dim;
-	int geometry[BA_SYSTEM_DIMENSIONS];
+	int geometry[HIGHEST_DIMENSIONS];
 	int in;
 	int out;
 } ba_path_switch_t;
@@ -100,7 +94,7 @@ typedef struct {
 					  we are at */
 	List elongate_geos;            /* list of possible shapes of
 					  blocks. contains int* ptrs */
-	int geometry[BA_SYSTEM_DIMENSIONS]; /* size of block in geometry */
+	int geometry[HIGHEST_DIMENSIONS]; /* size of block in geometry */
 	char *linuximage;              /* LinuxImage for this block */
 	char *mloaderimage;            /* mloaderImage for this block */
 	uint16_t deny_pass;            /* PASSTHROUGH_FOUND is set if there are
@@ -132,7 +126,7 @@ typedef struct {
 					* block, only used for small
 					* block creation */
 #endif
-	int start[BA_SYSTEM_DIMENSIONS]; /* where to start creation of
+	int start[HIGHEST_DIMENSIONS]; /* where to start creation of
 					    block */
 	int start_req;                 /* state there was a start
 					  request */
@@ -200,7 +194,7 @@ typedef struct {
 typedef struct
 {
 	/* target label */
-	int node_tar[BA_SYSTEM_DIMENSIONS];
+	int node_tar[HIGHEST_DIMENSIONS];
 	/* target port */
 	int port_tar;
 	bool used;
@@ -226,9 +220,9 @@ typedef struct
  */
 typedef struct {
 	/* a switch for each dimensions */
-	ba_switch_t axis_switch[BA_SYSTEM_DIMENSIONS];
+	ba_switch_t axis_switch[HIGHEST_DIMENSIONS];
 	/* coordinates of midplane */
-	int coord[BA_SYSTEM_DIMENSIONS];
+	int coord[HIGHEST_DIMENSIONS];
 	/* color of letter used in smap */
 	int color;
 	/* midplane index used for easy look up of the miplane */
@@ -247,11 +241,7 @@ typedef struct {
 
 	/* made to hold info about a system, which right now is only a
 	 * grid of ba_nodes*/
-#ifdef HAVE_3D
 	ba_node_t ***grid;
-#else
-	ba_node_t *grid;
-#endif
 } ba_system_t;
 
 /* Used to Keep track of where the Base Blocks are at all times
@@ -259,7 +249,7 @@ typedef struct {
 */
 typedef struct {
 	char *bp_id;
-	int coord[BA_SYSTEM_DIMENSIONS];
+	int coord[HIGHEST_DIMENSIONS];
 } ba_bp_map_t;
 
 /* Global */
@@ -268,8 +258,8 @@ extern List bp_map_list; /* list used for conversion from XYZ to Rack
 			  * midplane */
 extern char letters[62]; /* complete list of letters used in smap */
 extern char colors[6]; /* index into colors used for smap */
-extern int DIM_SIZE[BA_SYSTEM_DIMENSIONS]; /* how many midplanes in
-					    * each dimension */
+extern int DIM_SIZE[HIGHEST_DIMENSIONS]; /* how many midplanes in
+					  * each dimension */
 extern s_p_options_t bg_conf_file_options[]; /* used to parse the
 					      * bluegene.conf file. */
 extern uint16_t ba_deny_pass;

@@ -215,16 +215,16 @@ static void _print_header_job(void)
 		mvwprintw(text_win, main_ycord,
 			  main_xcord, "PARTITION");
 		main_xcord += 10;
-#ifdef HAVE_BG
-		mvwprintw(text_win, main_ycord,
-			  main_xcord, "BG_BLOCK");
-		main_xcord += 18;
-#endif
-#ifdef HAVE_CRAY_XT
-		mvwprintw(text_win, main_ycord,
-			  main_xcord, "RESV_ID");
-		main_xcord += 18;
-#endif
+		if(params.cluster_flags & CLUSTER_FLAG_BG) {
+			mvwprintw(text_win, main_ycord,
+				  main_xcord, "BG_BLOCK");
+			main_xcord += 18;
+		}
+		if(params.cluster_flags & CLUSTER_FLAG_CRAYXT) {
+			mvwprintw(text_win, main_ycord,
+				  main_xcord, "RESV_ID");
+			main_xcord += 18;
+		}
 		mvwprintw(text_win, main_ycord,
 			  main_xcord, "USER");
 		main_xcord += 9;
@@ -240,31 +240,28 @@ static void _print_header_job(void)
 		mvwprintw(text_win, main_ycord,
 			  main_xcord, "NODES");
 		main_xcord += 6;
-#ifdef HAVE_BG
-		mvwprintw(text_win, main_ycord,
-			  main_xcord, "BP_LIST");
-#else
-		mvwprintw(text_win, main_ycord,
-			  main_xcord, "NODELIST");
-#endif
+		if(params.cluster_flags & CLUSTER_FLAG_BG)
+			mvwprintw(text_win, main_ycord,
+				  main_xcord, "BP_LIST");
+		else
+			mvwprintw(text_win, main_ycord,
+				  main_xcord, "NODELIST");
 		main_xcord = 1;
 		main_ycord++;
 	} else {
 		printf("   JOBID ");
 		printf("PARTITION ");
-#ifdef HAVE_BG
-		printf("        BG_BLOCK ");
-#endif
+		if(params.cluster_flags & CLUSTER_FLAG_BG)
+			printf("        BG_BLOCK ");
 		printf("    USER ");
 		printf("  NAME ");
 		printf("ST ");
 		printf("      TIME ");
 		printf("NODES ");
-#ifdef HAVE_BG
-		printf("BP_LIST\n");
-#else
-		printf("NODELIST\n");
-#endif
+		if(params.cluster_flags & CLUSTER_FLAG_BG)
+			printf("BP_LIST\n");
+		else
+			printf("NODELIST\n");
 	}
 }
 
@@ -282,25 +279,27 @@ static int _print_text_job(job_info_t * job_ptr)
 	char *ionodes = NULL, *uname;
 	time_t now_time = time(NULL);
 
-#ifdef HAVE_BG
-	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
-				    SELECT_JOBDATA_IONODES,
-				    &ionodes);
-	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
-				    SELECT_JOBDATA_NODE_CNT,
-				    &node_cnt);
-	if(!strcasecmp(job_ptr->nodes,"waiting..."))
-		xfree(ionodes);
-#else
-	node_cnt = job_ptr->num_nodes;
-#endif
+	if(params.cluster_flags & CLUSTER_FLAG_BG) {
+		select_g_select_jobinfo_get(job_ptr->select_jobinfo,
+					    SELECT_JOBDATA_IONODES,
+					    &ionodes);
+		select_g_select_jobinfo_get(job_ptr->select_jobinfo,
+					    SELECT_JOBDATA_NODE_CNT,
+					    &node_cnt);
+		if(!strcasecmp(job_ptr->nodes,"waiting..."))
+			xfree(ionodes);
+	} else
+		node_cnt = job_ptr->num_nodes;
+
 	if ((node_cnt  == 0) || (node_cnt == NO_VAL))
 		node_cnt = _get_node_cnt(job_ptr);
-#ifdef HAVE_BG
-	convert_num_unit((float)node_cnt, tmp_cnt, sizeof(tmp_cnt), UNIT_NONE);
-#else
-	snprintf(tmp_cnt, sizeof(tmp_cnt), "%d", node_cnt);
-#endif
+
+	if(params.cluster_flags & CLUSTER_FLAG_BG)
+		convert_num_unit((float)node_cnt, tmp_cnt,
+				 sizeof(tmp_cnt), UNIT_NONE);
+	else
+		snprintf(tmp_cnt, sizeof(tmp_cnt), "%d", node_cnt);
+
 	if(!params.commandline) {
 		mvwprintw(text_win, main_ycord,
 			  main_xcord, "%c", job_ptr->num_cpus);
@@ -311,25 +310,25 @@ static int _print_text_job(job_info_t * job_ptr)
 		mvwprintw(text_win, main_ycord,
 			  main_xcord, "%.10s", job_ptr->partition);
 		main_xcord += 10;
-#ifdef HAVE_BG
-		mvwprintw(text_win, main_ycord,
-			  main_xcord, "%.16s",
-			  select_g_select_jobinfo_sprint(
-				  job_ptr->select_jobinfo,
-				  time_buf,
-				  sizeof(time_buf),
-				  SELECT_PRINT_BG_ID));
-		main_xcord += 18;
-#endif
-#ifdef HAVE_CRAY_XT
-		mvwprintw(text_win, main_ycord,
-			  main_xcord, "%.16s",
-			  select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,
-							 time_buf,
-							 sizeof(time_buf),
-							 SELECT_PRINT_RESV_ID));
-		main_xcord += 18;
-#endif
+		if(params.cluster_flags & CLUSTER_FLAG_BG) {
+			mvwprintw(text_win, main_ycord,
+				  main_xcord, "%.16s",
+				  select_g_select_jobinfo_sprint(
+					  job_ptr->select_jobinfo,
+					  time_buf,
+					  sizeof(time_buf),
+					  SELECT_PRINT_BG_ID));
+			main_xcord += 18;
+		}
+		if(params.cluster_flags & CLUSTER_FLAG_CRAYXT) {
+			mvwprintw(text_win, main_ycord,
+				  main_xcord, "%.16s",
+				  select_g_select_jobinfo_sprint(
+					  job_ptr->select_jobinfo,
+					  time_buf, sizeof(time_buf),
+					  SELECT_PRINT_RESV_ID));
+			main_xcord += 18;
+		}
 		uname = uid_to_string((uid_t) job_ptr->user_id);
 		mvwprintw(text_win, main_ycord,
 			  main_xcord, "%.8s", uname);
@@ -397,20 +396,18 @@ static int _print_text_job(job_info_t * job_ptr)
 	} else {
 		printf("%8d ", job_ptr->job_id);
 		printf("%9.9s ", job_ptr->partition);
-#ifdef HAVE_BG
-		printf("%16.16s ",
-		       select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,
-						      time_buf,
-						      sizeof(time_buf),
-						      SELECT_PRINT_BG_ID));
-#endif
-#ifdef HAVE_CRAY_XT
-		printf("%16.16s ",
-		       select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,
-						      time_buf,
-						      sizeof(time_buf),
-						      SELECT_PRINT_RESV_ID));
-#endif
+		if(params.cluster_flags & CLUSTER_FLAG_BG)
+			printf("%16.16s ",
+			       select_g_select_jobinfo_sprint(
+				       job_ptr->select_jobinfo,
+				       time_buf, sizeof(time_buf),
+				       SELECT_PRINT_BG_ID));
+		if(params.cluster_flags & CLUSTER_FLAG_CRAYXT)
+			printf("%16.16s ",
+			       select_g_select_jobinfo_sprint(
+				       job_ptr->select_jobinfo,
+				       time_buf, sizeof(time_buf),
+				       SELECT_PRINT_RESV_ID));
 		uname = uid_to_string((uid_t) job_ptr->user_id);
 		printf("%8.8s ", uname);
 		xfree(uname);

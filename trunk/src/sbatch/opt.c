@@ -341,7 +341,7 @@ static void _opt_default()
 	opt.nodelist	    = NULL;
 	opt.exc_nodes	    = NULL;
 
-	for (i=0; i<SYSTEM_DIMENSIONS; i++)
+	for (i=0; i<HIGHEST_DIMENSIONS; i++)
 		opt.geometry[i]	    = (uint16_t) NO_VAL;
 	opt.reboot          = false;
 	opt.no_rotate	    = false;

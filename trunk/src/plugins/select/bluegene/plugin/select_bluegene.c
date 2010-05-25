@@ -944,7 +944,7 @@ extern int select_p_update_sub_node (update_block_msg_t *block_desc_ptr)
 #ifdef HAVE_BG
 	int rc = SLURM_SUCCESS;
 	int i = 0, j = 0;
-	char coord[BA_SYSTEM_DIMENSIONS+1], *node_name = NULL;
+	char coord[SYSTEM_DIMENSIONS+1], *node_name = NULL;
 	char ionodes[128];
 	int set = 0;
 	double nc_pos = 0, last_pos = -1;
@@ -1006,7 +1006,7 @@ extern int select_p_update_sub_node (update_block_msg_t *block_desc_ptr)
 				goto end_it;
 			}
 			/* make sure we are asking for a correct name */
-			for(i = 0; i < BA_SYSTEM_DIMENSIONS; i++) {
+			for(i = 0; i < SYSTEM_DIMENSIONS; i++) {
 				if((name[j+i] >= '0'
 				    && name[j+i] <= '9')
 				   || (name[j+i] >= 'A'
@@ -1021,8 +1021,8 @@ extern int select_p_update_sub_node (update_block_msg_t *block_desc_ptr)
 			}
 
 			strncpy(coord, name+j,
-				BA_SYSTEM_DIMENSIONS);
-			j += BA_SYSTEM_DIMENSIONS-1;
+				SYSTEM_DIMENSIONS);
+			j += SYSTEM_DIMENSIONS-1;
 			set++;
 		}
 		j++;
@@ -1150,7 +1150,7 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 	uint16_t *cpus = (uint16_t *)data;
 	uint32_t *nodes = (uint32_t *)data, tmp;
 	int i;
-	uint16_t req_geometry[BA_SYSTEM_DIMENSIONS];
+	uint16_t req_geometry[SYSTEM_DIMENSIONS];
 
 	if(!bg_conf->bp_node_cnt) {
 		fatal("select_p_alter_node_cnt: This can't be called "
@@ -1214,7 +1214,7 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 		if(req_geometry[0] != 0
 		   && req_geometry[0] != (uint16_t)NO_VAL) {
 			job_desc->min_nodes = 1;
-			for (i=0; i<BA_SYSTEM_DIMENSIONS; i++)
+			for (i=0; i<SYSTEM_DIMENSIONS; i++)
 				job_desc->min_nodes *=
 					(uint16_t)req_geometry[i];
 			job_desc->min_nodes *= bg_conf->bp_node_cnt;
