@@ -242,6 +242,14 @@ extern List assoc_mgr_get_shares(
 	void *db_conn, uid_t uid, List acct_list, List user_list);
 
 /*
+ * assoc_mgr_update - update the association manager
+ * IN update_list: updates to perform
+ * RET: error code
+ * NOTE: the items in update_list are not deleted
+ */
+extern int assoc_mgr_update(List update_list);
+
+/*
  * update associations in cache
  * IN:  slurmdb_update_object_t *object
  * RET: SLURM_SUCCESS on success (or not found) SLURM_ERROR else

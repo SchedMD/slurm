@@ -3670,11 +3670,8 @@ inline static void  _slurm_rpc_accounting_update_msg(slurm_msg_t *msg)
 {
 	int rc = SLURM_SUCCESS;
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
-	ListIterator itr = NULL;
 	accounting_update_msg_t *update_ptr =
 		(accounting_update_msg_t *) msg->data;
-	slurmdb_update_object_t *object = NULL;
-
 	DEF_TIMERS;
 
 	START_TIMER;
@@ -3689,43 +3686,8 @@ inline static void  _slurm_rpc_accounting_update_msg(slurm_msg_t *msg)
 		slurm_send_rc_msg(msg, EACCES);
 		return;
 	}
-	if(update_ptr->update_list && list_count(update_ptr->update_list)) {
-		itr = list_iterator_create(update_ptr->update_list);
-		while((object = list_next(itr))) {
-			if(!object->objects || !list_count(object->objects))
-				continue;
-			switch(object->type) {
-			case SLURMDB_MODIFY_USER:
-			case SLURMDB_ADD_USER:
-			case SLURMDB_REMOVE_USER:
-			case SLURMDB_ADD_COORD:
-			case SLURMDB_REMOVE_COORD:
-				rc = assoc_mgr_update_users(object);
-				break;
-			case SLURMDB_ADD_ASSOC:
-			case SLURMDB_MODIFY_ASSOC:
-			case SLURMDB_REMOVE_ASSOC:
-				rc = assoc_mgr_update_assocs(object);
-				break;
-			case SLURMDB_ADD_QOS:
-			case SLURMDB_MODIFY_QOS:
-			case SLURMDB_REMOVE_QOS:
-				rc = assoc_mgr_update_qos(object);
-				break;
-			case SLURMDB_ADD_WCKEY:
-			case SLURMDB_MODIFY_WCKEY:
-			case SLURMDB_REMOVE_WCKEY:
-				rc = assoc_mgr_update_wckeys(object);
-				break;
-			case SLURMDB_UPDATE_NOTSET:
-			default:
-				error("unknown type set in update_object: %d",
-				      object->type);
-				break;
-			}
-		}
-		list_iterator_destroy(itr);
-	}
+	if(update_ptr->update_list && list_count(update_ptr->update_list))
+		rc = assoc_mgr_update(update_ptr->update_list);
 
 	END_TIMER2("_slurm_rpc_accounting_update_msg");
 
