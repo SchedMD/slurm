@@ -1154,7 +1154,7 @@ extern void step_state_log(void *gres_data, uint32_t job_id, uint32_t step_id)
 }
 
 extern uint32_t step_test(void *step_gres_data, void *job_gres_data,
-			  int node_offset)
+			  int node_offset, bool ignore_alloc)
 {
 	nic_job_state_t  *job_gres_ptr  = (nic_job_state_t *)  job_gres_data;
 	nic_step_state_t *step_gres_ptr = (nic_step_state_t *) step_gres_data;
@@ -1181,7 +1181,8 @@ extern uint32_t step_test(void *step_gres_data, void *job_gres_data,
 	}
 
 	gres_cnt = bit_set_count(job_gres_ptr->nic_bit_alloc[node_offset]);
-	if (job_gres_ptr->nic_bit_step_alloc &&
+	if (!ignore_alloc &&
+	    job_gres_ptr->nic_bit_step_alloc &&
 	    job_gres_ptr->nic_bit_step_alloc[node_offset]) {
 		gres_cnt -= bit_set_count(job_gres_ptr->
 					  nic_bit_step_alloc[node_offset]);
@@ -1211,7 +1212,7 @@ extern int step_alloc(void *step_gres_data, void *job_gres_data,
 	}
 	if ((job_gres_ptr->nic_bit_alloc == NULL) ||
 	    (job_gres_ptr->nic_bit_alloc[node_offset] == NULL)) {
-		error("%s step_test nic_bit_alloc is NULL", plugin_name);
+		error("%s step_alloc nic_bit_alloc is NULL", plugin_name);
 		return SLURM_ERROR;
 	}
 

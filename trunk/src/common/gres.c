@@ -142,7 +142,8 @@ typedef struct slurm_gres_ops {
 						  uint32_t step_id );
 	uint32_t	(*step_test)		( void *job_gres_data,
 						  void *step_gres_data,
-						  int node_offset );
+						  int node_offset,
+						  bool ignore_alloc );
 	uint32_t	(*step_alloc)		( void *job_gres_data,
 						  void *step_gres_data,
 						  int node_offset,
@@ -1707,7 +1708,8 @@ extern int gres_plugin_step_state_validate(char *req_config,
 			}
 			job_gres_data = job_gres_ptr->gres_data;
 			rc3 = (*(gres_context[i].ops.step_test))
-					(step_gres_data, job_gres_data, NO_VAL);
+					(step_gres_data, job_gres_data, NO_VAL,
+					 true);
 			if (rc3 == 0) {
 				info("Step gres more than in job allocation %s",
 				     tok);
@@ -1944,10 +1946,11 @@ extern void gres_plugin_step_state_log(List gres_list, uint32_t job_id,
  * IN job_gres_list - a running job's gres info
  * IN/OUT step_gres_list - a pending job step's gres requirements
  * IN node_offset - index into the job's node allocation
+ * IN ignore_alloc - if set ignore resources already allocated to running steps
  * RET Count of available CPUs on this node, NO_VAL if no limit
  */
 extern uint32_t gres_plugin_step_test(List step_gres_list, List job_gres_list,
-				      int node_offset)
+				      int node_offset, bool ignore_alloc)
 {
 	int i;
 	uint32_t cpu_cnt, tmp_cnt;
@@ -1985,7 +1988,7 @@ extern uint32_t gres_plugin_step_test(List step_gres_list, List job_gres_list,
 			tmp_cnt = (*(gres_context[i].ops.step_test))
 					(step_gres_ptr->gres_data,
 					 job_gres_ptr->gres_data,
-					 node_offset);
+					 node_offset, ignore_alloc);
 			cpu_cnt = MIN(tmp_cnt, cpu_cnt);
 			break;
 		}

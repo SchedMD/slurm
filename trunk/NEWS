@@ -9,7 +9,8 @@ documents those changes that are of interest to users and admins.
     -Modified select/linear and select/cons_res plugins to allocate resources
      at the level of a job without oversubcription.
     -Get sched/backfill operating with gres allocations.
-    -Get gres configuration changes working.
+    -Get gres configuration changes (reconfiguration) working.
+    -Have job steps allocate resources.
     -Modified job step credential to include the job's gres allocation details.
 
 * Changes in SLURM 2.2.0.pre6
