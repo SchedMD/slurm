@@ -22,7 +22,7 @@ database support across multiple clusters.</li>
 <li>Gang scheduler plugin added (time-slicing of parallel jobs
 without an external scheduler).</li>
 <li>Cryptography logic moved to a separate plugin with the
-option of using OpenSSL (default) or Munge (GPL).</li>
+option of using OpenSSL (default) or MUNGE (GPL).</li>
 <li>Improved scheduling of multiple job steps within a job's allocation.</li>
 <li>Support for job specification of node features with node counts.</li>
 <li><i>srun</i>'s --alloc, --attach, and --batch options removed (use

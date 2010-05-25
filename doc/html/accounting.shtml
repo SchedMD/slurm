@@ -124,16 +124,16 @@ users should have consistent names and IDs.</p>
 
 <p>The best way to insure security of the data is by authenticating
 communications to the SlurmDBD and we recommend
-<a href="http://munge.googlecode.com/">Munge</a> for that purpose.
+<a href="http://munge.googlecode.com/">MUNGE</a> for that purpose.
 If you have one cluster managed by SLURM and execute the SlurmDBD
-on that one cluster, the normal Munge configuration will suffice.
-Otherwise Munge should then be installed on all nodes of all
+on that one cluster, the normal MUNGE configuration will suffice.
+Otherwise MUNGE should then be installed on all nodes of all
 SLURM managed clusters, plus the machine where SlurmDBD executes.
-You then have a choice of either having a single Munge key for
+You then have a choice of either having a single MUNGE key for
 all of these computers or maintaining a unique key for each of the
 clusters plus a second key for communications between the clusters
 for better security.
-Munge enhancements are planned to support two keys within a single
+MUNGE enhancements are planned to support two keys within a single
 configuration file, but presently two different daemons must be
 started with different configurations to support two different keys
 (create two key files and start the daemons with the
@@ -145,11 +145,11 @@ respectively, more details are provided below).</p>
 
 <p?Whether you use any authentication module or not you will need to have
 a way for the SlurmDBD to get uid's for users and/or admin.  If using
-Munge, it is ideal for your users to have the same id on all your
+MUNGE, it is ideal for your users to have the same id on all your
 clusters.  If this is the case you should have a combination of every clusters
 /etc/passwd file on the database server to allow the DBD to resolve
-names for authentication.  If using Munge and a users name is not in
-the passwd file the action will fail.  If not using Munge, you should
+names for authentication.  If using MUNGE and a users name is not in
+the passwd file the action will fail.  If not using MUNGE, you should
 add anyone you want to be an administrator or operator to the passwd file.
 If they plan on running sacctmgr or any of the accounting tools they
 should have the same uid, or they will not authentic correctly.  An
@@ -266,9 +266,9 @@ time their limits per association.</li>
 <li><b>AccountingStorageHost</b>: The name or address of the host where
 SlurmDBD executes</li>
 
-<li><b>AccountingStoragePass</b>: If using SlurmDBD with a second Munge
-daemon, store the pathname of the named socket used by Munge to provide
-enterprise-wide. Otherwise the default Munge daemon will be used.</li>
+<li><b>AccountingStoragePass</b>: If using SlurmDBD with a second MUNGE
+daemon, store the pathname of the named socket used by MUNGE to provide
+enterprise-wide. Otherwise the default MUNGE daemon will be used.</li>
 
 <li><b>AccountingStoragePort</b>:
 The network port that SlurmDBD accepts communication on.</li>
@@ -301,9 +301,9 @@ Some of the more important parameters include:</p>
 
 <ul>
 <li><b>AuthInfo</b>:
-If using SlurmDBD with a second Munge daemon, store the pathname of
-the named socket used by Munge to provide enterprise-wide.
-Otherwise the default Munge daemon will be used.</li>
+If using SlurmDBD with a second MUNGE daemon, store the pathname of
+the named socket used by MUNGE to provide enterprise-wide.
+Otherwise the default MUNGE daemon will be used.</li>
 
 <li><b>AuthType</b>:
 Define the authentication method for communications between SLURM
