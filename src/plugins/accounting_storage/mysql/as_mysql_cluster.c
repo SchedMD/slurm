@@ -374,7 +374,7 @@ end_it:
 extern List as_mysql_remove_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 				     slurmdb_cluster_cond_t *cluster_cond)
 {
-	ListIterator itr = NULL, itr2 = NULL;
+	ListIterator itr = NULL;
 	List ret_list = NULL;
 	List tmp_list = NULL;
 	int rc = SLURM_SUCCESS;
@@ -496,25 +496,18 @@ extern List as_mysql_remove_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		if(tmp_list)
 			list_destroy(tmp_list);
 
-		slurm_mutex_lock(&as_mysql_cluster_list_lock);
-		itr2 = list_iterator_create(as_mysql_cluster_list);
-
 		itr = list_iterator_create(ret_list);
 		while((object = list_next(itr))) {
-			while((cluster_name = list_next(itr2))) {
-				if(!strcmp(cluster_name, object)) {
-					list_delete_item(itr2);
-					break;
-				}
-			}
-			list_iterator_reset(itr2);
 			if((rc = remove_cluster_tables(mysql_conn, object))
 			   != SLURM_SUCCESS)
 				break;
+			cluster_name = xstrdup(object);
+			if(addto_update_list(mysql_conn->update_list,
+					     SLURMDB_REMOVE_CLUSTER,
+					     cluster_name) != SLURM_SUCCESS)
+				xfree(cluster_name);
 		}
 		list_iterator_destroy(itr);
-		list_iterator_destroy(itr2);
-		slurm_mutex_unlock(&as_mysql_cluster_list_lock);
 
 		if(rc != SLURM_SUCCESS) {
 			reset_mysql_conn(mysql_conn);

@@ -1965,6 +1965,9 @@ extern int acct_storage_p_commit(mysql_conn_t *mysql_conn, bool commit)
 		MYSQL_RES *result = NULL;
 		MYSQL_ROW row;
 		bool get_qos_count = 0;
+		ListIterator itr = NULL, itr2 = NULL, itr3 = NULL;
+		char *rem_cluster = NULL, *cluster_name = NULL;
+		slurmdb_update_object_t *object = NULL;
 
 		xstrfmtcat(query, "select control_host, control_port, "
 			   "name, rpc_version "
@@ -1984,6 +1987,37 @@ extern int acct_storage_p_commit(mysql_conn_t *mysql_conn, bool commit)
 		mysql_free_result(result);
 	skip:
 		rc = assoc_mgr_update(mysql_conn->update_list);
+
+		slurm_mutex_lock(&as_mysql_cluster_list_lock);
+		itr2 = list_iterator_create(as_mysql_cluster_list);
+		itr = list_iterator_create(mysql_conn->update_list);
+		while((object = list_next(itr))) {
+			if(!object->objects || !list_count(object->objects))
+				continue;
+			/* We only care about clusters removed here. */
+			switch(object->type) {
+			case SLURMDB_REMOVE_CLUSTER:
+				itr3 = list_iterator_create(object->objects);
+				while((rem_cluster = list_next(itr3))) {
+					while((cluster_name =
+					       list_next(itr2))) {
+						if(!strcmp(cluster_name,
+							   rem_cluster)) {
+							list_delete_item(itr2);
+							break;
+						}
+					}
+					list_iterator_reset(itr2);
+				}
+				list_iterator_destroy(itr3);
+				break;
+			default:
+				break;
+			}
+		}
+		list_iterator_destroy(itr);
+		list_iterator_destroy(itr2);
+		slurm_mutex_unlock(&as_mysql_cluster_list_lock);
 
 		if(get_qos_count)
 			_set_qos_cnt(mysql_conn->db_conn);

@@ -188,6 +188,13 @@ addto_update_list(List update_list, slurmdb_update_type_t type, void *object)
 		update_object->objects = list_create(
 			slurmdb_destroy_wckey_rec);
 		break;
+	case SLURMDB_ADD_CLUSTER:
+	case SLURMDB_REMOVE_CLUSTER:
+		/* This should only be the name of the cluster, and is
+		   only used in the plugin for rollback purposes.
+		*/
+		update_object->objects = list_create(slurm_destroy_char);
+		break;
 	case SLURMDB_UPDATE_NOTSET:
 	default:
 		error("unknown type set in update_object: %d", type);
