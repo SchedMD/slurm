@@ -98,13 +98,13 @@ am__libcommon_la_SOURCES_DIST = assoc_mgr.c assoc_mgr.h \
 	xassert.c xassert.h xstring.c xstring.h xsignal.c xsignal.h \
 	forward.c forward.h strlcpy.c strlcpy.h list.c list.h net.c \
 	net.h fd.c fd.h log.c log.h cbuf.c cbuf.h safeopen.c \
-	safeopen.h bitstring.c bitstring.h bit_array.c bit_array.h \
-	mpi.c mpi.h pack.c pack.h parse_config.c parse_config.h \
-	parse_spec.c parse_spec.h plugin.c plugin.h plugrack.c \
-	plugrack.h print_fields.c print_fields.h read_config.c \
-	read_config.h node_select.c node_select.h env.c env.h \
-	slurm_cred.h slurm_cred.c slurm_errno.c slurm_priority.c \
-	slurm_priority.h slurm_protocol_api.c slurm_protocol_api.h \
+	safeopen.h bitstring.c bitstring.h mpi.c mpi.h pack.c pack.h \
+	parse_config.c parse_config.h parse_spec.c parse_spec.h \
+	plugin.c plugin.h plugrack.c plugrack.h print_fields.c \
+	print_fields.h read_config.c read_config.h node_select.c \
+	node_select.h env.c env.h slurm_cred.h slurm_cred.c \
+	slurm_errno.c slurm_priority.c slurm_priority.h \
+	slurm_protocol_api.c slurm_protocol_api.h \
 	slurm_protocol_pack.c slurm_protocol_pack.h \
 	slurm_protocol_util.c slurm_protocol_util.h \
 	slurm_protocol_socket_implementation.c \
@@ -131,11 +131,11 @@ am__libcommon_la_SOURCES_DIST = assoc_mgr.c assoc_mgr.h \
 @HAVE_UNSETENV_FALSE@am__objects_1 = unsetenv.lo
 am_libcommon_la_OBJECTS = assoc_mgr.lo basil_resv_conf.lo xmalloc.lo \
 	xassert.lo xstring.lo xsignal.lo forward.lo strlcpy.lo list.lo \
-	net.lo fd.lo log.lo cbuf.lo safeopen.lo bitstring.lo \
-	bit_array.lo mpi.lo pack.lo parse_config.lo parse_spec.lo \
-	plugin.lo plugrack.lo print_fields.lo read_config.lo \
-	node_select.lo env.lo slurm_cred.lo slurm_errno.lo \
-	slurm_priority.lo slurm_protocol_api.lo slurm_protocol_pack.lo \
+	net.lo fd.lo log.lo cbuf.lo safeopen.lo bitstring.lo mpi.lo \
+	pack.lo parse_config.lo parse_spec.lo plugin.lo plugrack.lo \
+	print_fields.lo read_config.lo node_select.lo env.lo \
+	slurm_cred.lo slurm_errno.lo slurm_priority.lo \
+	slurm_protocol_api.lo slurm_protocol_pack.lo \
 	slurm_protocol_util.lo slurm_protocol_socket_implementation.lo \
 	slurm_protocol_defs.lo slurm_rlimits_info.lo slurmdb_defs.lo \
 	slurmdb_pack.lo slurmdbd_defs.lo uid.lo util-net.lo \
@@ -409,7 +409,6 @@ libcommon_la_SOURCES = \
 	cbuf.c cbuf.h			\
 	safeopen.c safeopen.h		\
 	bitstring.c bitstring.h 	\
-	bit_array.c bit_array.h		\
 	mpi.c mpi.h                     \
 	pack.c pack.h			\
 	parse_config.c parse_config.h	\
@@ -576,7 +575,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/arg_desc.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/assoc_mgr.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/basil_resv_conf.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bit_array.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bitstring.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cbuf.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/checkpoint.Plo@am__quote@
