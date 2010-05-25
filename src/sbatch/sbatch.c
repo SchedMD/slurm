@@ -245,8 +245,7 @@ static int fill_job_desc_from_opts(job_desc_msg_t *desc)
 
 	if ((int)opt.geometry[0] > 0) {
 		int i;
-		int dims = working_cluster_rec ?
-			working_cluster_rec->dimensions : SYSTEM_DIMENSIONS;
+		int dims = slurmdb_setup_cluster_dims();
 
 		for (i=0; i<dims; i++)
 			desc->geometry[i] = opt.geometry[i];

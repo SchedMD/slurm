@@ -497,9 +497,7 @@ scontrol_update_job (int argc, char *argv[])
 		else if (strncasecmp(tag, "Geometry", MAX(taglen, 2)) == 0) {
 			char* token, *delimiter = ",x", *next_ptr;
 			int j, rc = 0;
-			int dims = working_cluster_rec ?
-				working_cluster_rec->dimensions
-				: SYSTEM_DIMENSIONS;
+			int dims = slurmdb_setup_cluster_dims();
 			uint16_t geo[dims];
 			char* geometry_tmp = xstrdup(val);
 			char* original_ptr = geometry_tmp;

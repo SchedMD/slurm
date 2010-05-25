@@ -323,15 +323,9 @@ extern int create_full_system_block(List bg_found_block_list)
 	*/
 	slurm_mutex_lock(&block_state_mutex);
 
-//#ifdef HAVE_BG_FILES
 	geo[X] = DIM_SIZE[X] - 1;
 	geo[Y] = DIM_SIZE[Y] - 1;
 	geo[Z] = DIM_SIZE[Z] - 1;
-/* #else */
-/* 	geo[X] = max_dim[X]; */
-/* 	geo[Y] = max_dim[Y]; */
-/* 	geo[Z] = max_dim[Z]; */
-/* #endif */
 
 	i = (10+strlen(bg_conf->slurm_node_prefix));
 	name = xmalloc(i);
