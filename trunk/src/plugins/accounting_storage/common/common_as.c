@@ -121,66 +121,6 @@ extern int send_accounting_update(List update_list, char *cluster, char *host,
 }
 
 /*
- * update_assoc_mgr - update the association manager
- * IN update_list: updates to perform
- * RET: error code
- * NOTE: the items in update_list are not deleted
- */
-extern int update_assoc_mgr(List update_list)
-{
-	int rc = SLURM_SUCCESS;
-	ListIterator itr = NULL;
-	slurmdb_update_object_t *object = NULL;
-
-	/* NOTE: you can not use list_pop, or list_push
-	   anywhere either, since mysql is
-	   exporting something of the same type as a macro,
-	   which messes everything up (my_list.h is the bad boy).
-	   So we are just going to delete each item as it
-	   comes out.
-	*/
-	itr = list_iterator_create(update_list);
-	while((object = list_next(itr))) {
-		if(!object->objects || !list_count(object->objects)) {
-			list_delete_item(itr);
-			continue;
-		}
-		switch(object->type) {
-		case SLURMDB_MODIFY_USER:
-		case SLURMDB_ADD_USER:
-		case SLURMDB_REMOVE_USER:
-		case SLURMDB_ADD_COORD:
-		case SLURMDB_REMOVE_COORD:
-			rc = assoc_mgr_update_users(object);
-			break;
-		case SLURMDB_ADD_ASSOC:
-		case SLURMDB_MODIFY_ASSOC:
-		case SLURMDB_REMOVE_ASSOC:
-			rc = assoc_mgr_update_assocs(object);
-			break;
-		case SLURMDB_ADD_QOS:
-		case SLURMDB_MODIFY_QOS:
-		case SLURMDB_REMOVE_QOS:
-			rc = assoc_mgr_update_qos(object);
-			break;
-		case SLURMDB_ADD_WCKEY:
-		case SLURMDB_MODIFY_WCKEY:
-		case SLURMDB_REMOVE_WCKEY:
-			rc = assoc_mgr_update_wckeys(object);
-			break;
-		case SLURMDB_UPDATE_NOTSET:
-		default:
-			error("unknown type set in "
-			      "update_object: %d",
-			      object->type);
-			break;
-		}
-	}
-	list_iterator_destroy(itr);
-	return rc;
-}
-
-/*
  * addto_update_list - add object updated to list
  * IN/OUT update_list: list of updated objects
  * IN type: update type

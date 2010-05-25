@@ -48,8 +48,6 @@
 extern int send_accounting_update(List update_list, char *cluster, char *host,
 				  uint16_t port, uint16_t rpc_version);
 
-extern int update_assoc_mgr(List update_list);
-
 extern int addto_update_list(List update_list, slurmdb_update_type_t type,
 			     void *object);
 
