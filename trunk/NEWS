@@ -11,7 +11,8 @@ documents those changes that are of interest to users and admins.
     -Get sched/backfill operating with gres allocations.
     -Get gres configuration changes (reconfiguration) working.
     -Have job steps allocate resources.
-    -Modified job step credential to include the job's gres allocation details.
+    -Modified job step credential to include the job's and step's gres
+     allocation details.
  -- SLURM commands (squeue, sinfo, etc...) can now go cross-cluster on like
     linux systems.  Cross-cluster for bluegene to linux and such should
     work fine.

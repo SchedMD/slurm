@@ -170,6 +170,7 @@ typedef struct {
 	uint32_t  step_mem_limit;	/* MB of memory reserved per node OR
 					 * real memory per CPU | MEM_PER_CPU,
 					 * default=0 (no limit) */
+	List step_gres_list;		/* Generic resources allocated to STEP */
 } slurm_cred_arg_t;
 
 /* Terminate the plugin and release all memory. */
