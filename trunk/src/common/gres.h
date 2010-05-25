@@ -278,10 +278,13 @@ extern void gres_plugin_job_state_log(List gres_list, uint32_t job_id);
 /*
  * Given a step's requested gres configuration, validate it and build gres list
  * IN req_config - step request's gres input string
- * OUT gres_list - List of Gres records for this step to track usage
+ * OUT step_gres_list - List of Gres records for this step to track usage
+ * IN job_gres_list - List of Gres records for this job
  * RET SLURM_SUCCESS or ESLURM_INVALID_GRES
  */
-extern int gres_plugin_step_state_validate(char *req_config, List *gres_list);
+extern int gres_plugin_step_state_validate(char *req_config,
+					   List *step_gres_list,
+					   List job_gres_list);
 
 /*
  * Pack a step's current gres status, called from slurmctld for save/restore

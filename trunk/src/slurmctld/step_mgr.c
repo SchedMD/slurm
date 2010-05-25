@@ -1432,7 +1432,8 @@ step_create(job_step_create_request_msg_t *step_specs,
 	step_ptr->gres   = step_specs->gres;
 	step_specs->gres = NULL;
 	i = gres_plugin_step_state_validate(step_ptr->gres,
-					    &step_ptr->gres_list);
+					    &step_ptr->gres_list,
+					    job_ptr->gres_list);
 	if (i != SLURM_SUCCESS) {
 		delete_step_record (job_ptr, step_ptr->step_id);
 		return i;
