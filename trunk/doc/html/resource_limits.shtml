@@ -25,7 +25,7 @@ or <a href="http://www.postgresql.org/">PostgreSQL</a>.
 For security and performance reasons, the use of
 SlurmDBD (SLURM Database Daemon) as a front-end to the
 database is strongly recommended.
-SlurmDBD uses a SLURM authentication plugin (e.g. Munge).
+SlurmDBD uses a SLURM authentication plugin (e.g. MUNGE).
 SlurmDBD also uses an existing SLURM accounting storage plugin
 to maximize code reuse.
 SlurmDBD uses data caching and prioritization of pending requests

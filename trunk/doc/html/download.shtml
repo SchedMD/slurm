@@ -17,9 +17,9 @@ SLURM has also been packaged for
 a message.</li>
 <ul>
 <li><a href="http://www.theether.org/authd">authd</a></li>
-<li><b>Munge</b> (recommended)<br>
+<li><b>MUNGE</b> (recommended)<br>
 In order to compile the "auth/munge" authentication plugin for SLURM,
-you will need to build and install Munge, available from
+you will need to build and install MUNGE, available from
 <a href="http://munge.googlecode.com/">http://munge.googlecode.com/</a> and
 <a href="http://packages.debian.org/src:munge">Debian</a> and
 <a href="http://fedoraproject.org/">Fedora</a> and
@@ -45,12 +45,12 @@ It's an open source, non-interactive, command line, scriptable tool intended for
 
 <li><b>Digital signatures</b> (Cypto plugin) are used to insure message are not altered.</li>
 <ul>
-<li><b>Munge</b> (recommended)<br>
-Munge can be used at an alternative to OpenSSL.
-Munge is available under the Gnu General Public License.
-See Munge download information above.</li>
+<li><b>MUNGE</b> (recommended)<br>
+MUNGE can be used at an alternative to OpenSSL.
+MUNGE is available under the Gnu General Public License.
+See MUNGE download information above.</li>
 <li><b>OpenSSL</b><br>
-OpenSSL may be used as an alternative to Munge for generation of digital signatures.
+OpenSSL may be used as an alternative to MUNGE for generation of digital signatures.
 Download it from <a href="http://www.openssl.org/">http://www.openssl.org/</a>.</li>
 </ul><br>
 
