@@ -71,6 +71,8 @@ GtkTable *main_grid_table = NULL;
 GStaticMutex sview_mutex = G_STATIC_MUTEX_INIT;
 GMutex *grid_mutex = NULL;
 GCond *grid_cond = NULL;
+uint32_t cluster_flags;
+int cluster_dims;
 
 static GtkActionGroup *admin_action_group = NULL;
 static GtkActionGroup *menu_action_group = NULL;
@@ -444,20 +446,24 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 	GError *error = NULL;
 
 	/* Our menu*/
-	const char *ui_description =
+	char *ui_description = NULL;
+
+	xstrcat(ui_description,
 		"<ui>"
 		"  <menubar name='main'>"
 		"    <menu action='actions'>"
 		"      <menu action='search'>"
 		"        <menuitem action='jobid'/>"
 		"        <menuitem action='user_jobs'/>"
-		"        <menuitem action='state_jobs'/>"
-#ifdef HAVE_BG
-		"      <separator/>"
-		"        <menuitem action='bg_block_name'/>"
-		"        <menuitem action='bg_block_size'/>"
-		"        <menuitem action='bg_block_state'/>"
-#endif
+		"        <menuitem action='state_jobs'/>");
+	if(cluster_flags & CLUSTER_FLAG_BG)
+		xstrcat(ui_description,
+			"      <separator/>"
+			"        <menuitem action='bg_block_name'/>"
+			"        <menuitem action='bg_block_size'/>"
+			"        <menuitem action='bg_block_state'/>");
+
+	xstrcat(ui_description,
 		"      <separator/>"
 		"        <menuitem action='partition_name'/>"
 		"        <menuitem action='partition_state'/>"
@@ -486,10 +492,12 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 		"    </menu>"
 		"    <menu action='options'>"
 		"      <menuitem action='grid'/>"
-		"      <menuitem action='hidden'/>"
-#ifndef HAVE_BG
-		"      <menuitem action='grid_specs'/>"
-#endif
+		"      <menuitem action='hidden'/>");
+	if(cluster_flags & CLUSTER_FLAG_BG)
+		xstrcat(ui_description,
+			"      <menuitem action='grid_specs'/>");
+
+	xstrcat(ui_description,
 		"      <menuitem action='interval'/>"
 		"      <separator/>"
 		"      <menuitem action='admin'/>"
@@ -512,7 +520,7 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 		/* "      <menuitem action='manual'/>" */
 		"    </menu>"
 		"  </menubar>"
-		"</ui>";
+		"</ui>");
 
 	GtkActionEntry entries[] = {
 		{"actions", NULL, "_Actions", "<alt>a"},
@@ -528,42 +536,11 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 		{"state_jobs", NULL, "Job(s) in a Specific State",
 		 "", "Search for job(s) in a specific state",
 		 G_CALLBACK(create_search_popup)},
-#ifdef HAVE_BG
-		{"bg_block_name", NULL, "BG Block Name",
-		 "", "Search for a specific BG Block",
-		 G_CALLBACK(create_search_popup)},
-		{"bg_block_size", NULL, "BG Block Size",
-		 "",
-		 "Search for BG Blocks having given size in cnodes",
-		 G_CALLBACK(create_search_popup)},
-		{"bg_block_state", NULL, "BG Block State",
-		 "",
-		 "Search for BG Blocks having given state",
-		 G_CALLBACK(create_search_popup)},
-#endif
 		{"partition_name", NULL, "Slurm Partition Name",
 		 "", "Search for a specific SLURM partition",
 		 G_CALLBACK(create_search_popup)},
 		{"partition_state", NULL, "Slurm Partition State",
 		 "", "Search for SLURM partitions in a given state",
-		 G_CALLBACK(create_search_popup)},
-		{"node_name", NULL,
-#ifdef HAVE_BG
-		 "Base Partition(s) Name",
-		 "", "Search for a specific Base Partition(s)",
-#else
-		 "Node(s) Name",
-		 "", "Search for a specific Node(s)",
-#endif
-		 G_CALLBACK(create_search_popup)},
-		{"node_state", NULL,
-#ifdef HAVE_BG
-		 "Base Partition State",
-		 "", "Search for a Base Partition in a given state",
-#else
-		 "Node State",
-		 "", "Search for a Node in a given state",
-#endif
 		 G_CALLBACK(create_search_popup)},
 		{"reservation_name", NULL, "Reservation Name",
 		 "", "Search for reservation",
@@ -594,6 +571,39 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 		{"defaults", GTK_STOCK_EDIT, "_Set Default Settings",
 		 "<control>s", "Change Default Settings",
 		 G_CALLBACK(configure_defaults)},
+	};
+
+	GtkActionEntry bg_entries[] = {
+		{"bg_block_name", NULL, "BG Block Name",
+		 "", "Search for a specific BG Block",
+		 G_CALLBACK(create_search_popup)},
+		{"bg_block_size", NULL, "BG Block Size",
+		 "",
+		 "Search for BG Blocks having given size in cnodes",
+		 G_CALLBACK(create_search_popup)},
+		{"bg_block_state", NULL, "BG Block State",
+		 "",
+		 "Search for BG Blocks having given state",
+		 G_CALLBACK(create_search_popup)},
+		{"node_name", NULL,
+		 "Base Partition(s) Name",
+		 "", "Search for a specific Base Partition(s)",
+		 G_CALLBACK(create_search_popup)},
+		{"node_state", NULL,
+		 "Base Partition State",
+		 "", "Search for a Base Partition in a given state",
+		 G_CALLBACK(create_search_popup)},
+	};
+
+	GtkActionEntry nonbg_entries[] = {
+		{"node_name", NULL,
+		 "Node(s) Name",
+		 "", "Search for a specific Node(s)",
+		 G_CALLBACK(create_search_popup)},
+		{"node_state", NULL,
+		 "Node State",
+		 "", "Search for a Node in a given state",
+		 G_CALLBACK(create_search_popup)},
 	};
 
 	GtkActionEntry admin_entries[] = {
@@ -649,6 +659,14 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 	gtk_action_group_add_actions(menu_action_group, entries,
 				     G_N_ELEMENTS(entries), window);
 
+	if(cluster_flags & CLUSTER_FLAG_BG)
+		gtk_action_group_add_actions(menu_action_group, bg_entries,
+					     G_N_ELEMENTS(bg_entries), window);
+	else
+		gtk_action_group_add_actions(menu_action_group, nonbg_entries,
+					     G_N_ELEMENTS(nonbg_entries),
+					     window);
+
 	gtk_action_group_add_radio_actions(menu_action_group, radio_entries,
 					   G_N_ELEMENTS(radio_entries),
 					   working_sview_config.tab_pos,
@@ -673,13 +691,14 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 	accel_group = gtk_ui_manager_get_accel_group(ui_manager);
 	gtk_window_add_accel_group(GTK_WINDOW(window), accel_group);
 
-	if (!gtk_ui_manager_add_ui_from_string (ui_manager, ui_description,
-						-1, &error))
-	{
+	if (!gtk_ui_manager_add_ui_from_string(ui_manager, ui_description,
+					       -1, &error)) {
+		xfree(ui_description);
 		g_error("building menus failed: %s", error->message);
 		g_error_free (error);
 		exit (0);
 	}
+			xfree(ui_description);
 	/* GList *action_list = gtk_action_group_list_actions(menu_action_group); */
 	/* GtkAction *action = NULL; */
 	/* int i=0; */
@@ -756,6 +775,39 @@ static void _get_info_tabs(GtkTable *table, display_data_t *display_data)
 	gtk_widget_show_all(GTK_WIDGET(table));
 	return;
 
+}
+
+extern void change_cluster_main()
+{
+	display_data_t *display_data = main_display_data;
+	while(display_data++) {
+		if(display_data->id == -1)
+			break;
+		if(cluster_flags & CLUSTER_FLAG_BG) {
+			switch(display_data->id) {
+			case BLOCK_PAGE:
+				display_data->show = TRUE;
+				break;
+			case NODE_PAGE:
+				display_data->name = "Base Partitions";
+				break;
+			default:
+				break;
+			}
+		} else {
+			switch(display_data->id) {
+			case BLOCK_PAGE:
+				display_data->show = FALSE;
+				break;
+			case NODE_PAGE:
+				display_data->name = "Nodes";
+				break;
+			default:
+				break;
+			}
+		}
+	}
+	cluster_change_block();
 }
 
 extern void refresh_main(GtkAction *action, gpointer user_data)
@@ -842,6 +894,8 @@ int main(int argc, char *argv[])
 	int i=0;
 
 	load_defaults();
+	cluster_flags = slurmdb_setup_cluster_flags();
+	cluster_dims = slurmdb_setup_cluster_dims();
 
 	_init_pages();
 	g_thread_init(NULL);
@@ -862,9 +916,6 @@ int main(int argc, char *argv[])
 				       GTK_POLICY_NEVER,
 				       GTK_POLICY_AUTOMATIC);
 
-/* #ifdef HAVE_BG */
-/* 	gtk_widget_set_size_request(grid_window, 164, -1); */
-/* #endif */
 	/* fill in all static info for pages */
 	/* Make a window */
 	main_window = gtk_dialog_new();

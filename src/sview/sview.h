@@ -291,6 +291,8 @@ extern int cpus_per_node;
 extern int g_node_scaling;
 extern char *sview_colors[];
 extern int sview_colors_cnt;
+extern uint32_t cluster_flags;
+extern int cluster_dims;
 
 extern void init_grid(node_info_msg_t *node_info_ptr);
 extern int set_grid(int start, int end, int count);
@@ -360,6 +362,7 @@ extern void specific_info_part(popup_info_t *popup_win);
 extern void set_menus_part(void *arg, void *arg2, GtkTreePath *path, int type);
 extern void popup_all_part(GtkTreeModel *model, GtkTreeIter *iter, int id);
 extern void admin_part(GtkTreeModel *model, GtkTreeIter *iter, char *type);
+extern void cluster_change_part();
 
 // block_info.c
 extern void refresh_block(GtkAction *action, gpointer user_data);
@@ -376,6 +379,7 @@ extern void specific_info_block(popup_info_t *popup_win);
 extern void set_menus_block(void *arg, void *arg2, GtkTreePath *path, int type);
 extern void popup_all_block(GtkTreeModel *model, GtkTreeIter *iter, int id);
 extern void admin_block(GtkTreeModel *model, GtkTreeIter *iter, char *type);
+extern void cluster_change_block();
 
 // job_info.c
 extern void refresh_job(GtkAction *action, gpointer user_data);
@@ -392,6 +396,7 @@ extern void specific_info_job(popup_info_t *popup_win);
 extern void set_menus_job(void *arg, void *arg2, GtkTreePath *path, int type);
 extern void popup_all_job(GtkTreeModel *model, GtkTreeIter *iter, int id);
 extern void admin_job(GtkTreeModel *model, GtkTreeIter *iter, char *type);
+extern void cluster_change_job();
 
 // node_info.c
 extern void refresh_node(GtkAction *action, gpointer user_data);
@@ -415,6 +420,7 @@ extern void popup_all_node_name(char *name, int id);
 extern void admin_menu_node_name(char *name, GdkEventButton *event);
 extern void admin_node(GtkTreeModel *model, GtkTreeIter *iter, char *type);
 extern void admin_node_name(char *name, char *old_value, char *type);
+extern void cluster_change_node();
 
 // resv_info.c
 extern void refresh_resv(GtkAction *action, gpointer user_data);
@@ -429,6 +435,7 @@ extern void specific_info_resv(popup_info_t *popup_win);
 extern void set_menus_resv(void *arg, void *arg2, GtkTreePath *path, int type);
 extern void popup_all_resv(GtkTreeModel *model, GtkTreeIter *iter, int id);
 extern void admin_resv(GtkTreeModel *model, GtkTreeIter *iter, char *type);
+extern void cluster_change_resv();
 
 
 // submit_info.c

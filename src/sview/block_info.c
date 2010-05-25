@@ -39,9 +39,7 @@ typedef struct {
 	char *slurm_part_name;
 	char *nodes;
 	enum connection_type bg_conn_type;
-#ifdef HAVE_BGL
 	enum node_use_type bg_node_use;
-#endif
 	rm_partition_state_t state;
 	int size;
 	int node_cnt;
@@ -52,9 +50,7 @@ typedef struct {
 	int job_running;
 	bool printed;
 	bool small_block;
-#ifdef HAVE_BGL
 	char *imageblrts;       /* ImageBlrts for this block */
-#endif
 	char *imagelinux;       /* ImageLinux for this block */
 	char *imagemloader;     /* imagemloader for this block */
 	char *imageramdisk;     /* ImageRamDisk for this block */
@@ -68,8 +64,8 @@ enum {
 	SORTID_COLOR_INX,
 	SORTID_CONN,
 	SORTID_JOB,
-#ifdef HAVE_BGL
 	SORTID_IMAGEBLRTS,
+#ifdef HAVE_BGL
 	SORTID_IMAGELINUX,
 	SORTID_IMAGEMLOADER,
 	SORTID_IMAGERAMDISK,
@@ -82,9 +78,7 @@ enum {
 	SORTID_PARTITION,
 	SORTID_STATE,
 	SORTID_UPDATED,
-#ifdef HAVE_BGL
 	SORTID_USE,
-#endif
 	SORTID_NODE_INX,
 	SORTID_SMALL_BLOCK,
 	SORTID_USER,
@@ -176,9 +170,7 @@ static void _block_list_del(void *object)
 		xfree(block_ptr->bg_block_name);
 		xfree(block_ptr->slurm_part_name);
 		xfree(block_ptr->nodes);
-#ifdef HAVE_BGL
 		xfree(block_ptr->imageblrts);
-#endif
 		xfree(block_ptr->imagelinux);
 		xfree(block_ptr->imagemloader);
 		xfree(block_ptr->imageramdisk);
@@ -233,37 +225,37 @@ static void _layout_block_record(GtkTreeView *treeview,
 						 SORTID_CONN),
 				   conn_type_string(
 					   block_ptr->bg_conn_type));
-#ifdef HAVE_BGL
-	add_display_treestore_line(update, treestore, &iter,
-				   find_col_name(display_data_block,
-						 SORTID_IMAGEBLRTS),
-				   block_ptr->imageblrts);
-	add_display_treestore_line(update, treestore, &iter,
-				   find_col_name(display_data_block,
-						 SORTID_IMAGELINUX),
-				   block_ptr->imagelinux);
-	add_display_treestore_line(update, treestore, &iter,
-				   find_col_name(display_data_block,
-						 SORTID_IMAGEMLOADER),
-				   block_ptr->imagemloader);
-	add_display_treestore_line(update, treestore, &iter,
-				   find_col_name(display_data_block,
-						 SORTID_IMAGERAMDISK),
-				   block_ptr->imageramdisk);
-#else
-	add_display_treestore_line(update, treestore, &iter,
-				   find_col_name(display_data_block,
-						 SORTID_IMAGELINUX),
-				   block_ptr->imagelinux);
-	add_display_treestore_line(update, treestore, &iter,
-				   find_col_name(display_data_block,
-						 SORTID_IMAGERAMDISK),
-				   block_ptr->imageramdisk);
-	add_display_treestore_line(update, treestore, &iter,
-				   find_col_name(display_data_block,
-						 SORTID_IMAGEMLOADER),
-				   block_ptr->imagemloader);
-#endif
+	if(cluster_flags & CLUSTER_FLAG_BGL) {
+		add_display_treestore_line(update, treestore, &iter,
+					   find_col_name(display_data_block,
+							 SORTID_IMAGEBLRTS),
+					   block_ptr->imageblrts);
+		add_display_treestore_line(update, treestore, &iter,
+					   find_col_name(display_data_block,
+							 SORTID_IMAGELINUX),
+					   block_ptr->imagelinux);
+		add_display_treestore_line(update, treestore, &iter,
+					   find_col_name(display_data_block,
+							 SORTID_IMAGEMLOADER),
+					   block_ptr->imagemloader);
+		add_display_treestore_line(update, treestore, &iter,
+					   find_col_name(display_data_block,
+							 SORTID_IMAGERAMDISK),
+					   block_ptr->imageramdisk);
+	} else {
+		add_display_treestore_line(update, treestore, &iter,
+					   find_col_name(display_data_block,
+							 SORTID_IMAGELINUX),
+					   block_ptr->imagelinux);
+		add_display_treestore_line(update, treestore, &iter,
+					   find_col_name(display_data_block,
+							 SORTID_IMAGERAMDISK),
+					   block_ptr->imageramdisk);
+		add_display_treestore_line(update, treestore, &iter,
+					   find_col_name(display_data_block,
+							 SORTID_IMAGEMLOADER),
+					   block_ptr->imagemloader);
+	}
 
 	if(block_ptr->job_running > NO_JOB_RUNNING)
 		snprintf(tmp_cnt, sizeof(tmp_cnt),
@@ -275,12 +267,13 @@ static void _layout_block_record(GtkTreeView *treeview,
 				   find_col_name(display_data_block,
 						 SORTID_JOB),
 				  tmp_cnt);
-#ifdef HAVE_BGL
-	add_display_treestore_line(update, treestore, &iter,
-				   find_col_name(display_data_block,
-						 SORTID_USE),
-				   node_use_string(block_ptr->bg_node_use));
-#endif
+	if(cluster_flags & CLUSTER_FLAG_BGL) {
+		add_display_treestore_line(update, treestore, &iter,
+					   find_col_name(display_data_block,
+							 SORTID_USE),
+					   node_use_string(
+						   block_ptr->bg_node_use));
+	}
 	convert_num_unit((float)block_ptr->node_cnt, tmp_cnt, sizeof(tmp_cnt),
 			 UNIT_NONE);
 	add_display_treestore_line(update, treestore, &iter,
@@ -329,10 +322,10 @@ static void _update_block_record(sview_block_info_t *block_ptr,
 
 	gtk_tree_store_set(treestore, iter, SORTID_CONN,
 			   conn_type_string(block_ptr->bg_conn_type), -1);
-#ifdef HAVE_BGL
-	gtk_tree_store_set(treestore, iter, SORTID_USE,
-			   node_use_string(block_ptr->bg_node_use), -1);
-#endif
+	if(cluster_flags & CLUSTER_FLAG_BGL)
+		gtk_tree_store_set(treestore, iter, SORTID_USE,
+				   node_use_string(block_ptr->bg_node_use), -1);
+
 	convert_num_unit((float)block_ptr->node_cnt, tmp_cnt, sizeof(tmp_cnt),
 			 UNIT_NONE);
 	gtk_tree_store_set(treestore, iter, SORTID_NODES, tmp_cnt, -1);
@@ -343,10 +336,10 @@ static void _update_block_record(sview_block_info_t *block_ptr,
 	gtk_tree_store_set(treestore, iter,
 			   SORTID_NODE_INX, block_ptr->bp_inx, -1);
 
-#ifdef HAVE_BGL
-	gtk_tree_store_set(treestore, iter, SORTID_IMAGEBLRTS,
-			   block_ptr->imageblrts, -1);
-#endif
+	if(cluster_flags & CLUSTER_FLAG_BGL)
+		gtk_tree_store_set(treestore, iter, SORTID_IMAGEBLRTS,
+				   block_ptr->imageblrts, -1);
+
 	gtk_tree_store_set(treestore, iter, SORTID_IMAGELINUX,
 			   block_ptr->imagelinux, -1);
 	gtk_tree_store_set(treestore, iter, SORTID_IMAGEMLOADER,
@@ -532,7 +525,7 @@ static List _create_block_list(partition_info_msg_t *part_info_ptr,
 		*/
 		if(block_ptr->color_inx < 0)
 			block_ptr->color_inx = i;
-		
+
 		block_ptr->color_inx %= sview_colors_cnt;
 
 		block_ptr->nodes
@@ -550,10 +543,10 @@ static List _create_block_list(partition_info_msg_t *part_info_ptr,
 		block_ptr->bg_user_name
 			= xstrdup(block_info_ptr->
 				  block_array[i].owner_name);
-#ifdef HAVE_BGL
-		block_ptr->imageblrts = xstrdup(
-			block_info_ptr->block_array[i].blrtsimage);
-#endif
+		if(cluster_flags & CLUSTER_FLAG_BGL)
+			block_ptr->imageblrts = xstrdup(
+				block_info_ptr->block_array[i].blrtsimage);
+
 		block_ptr->imagelinux = xstrdup(
 			block_info_ptr->block_array[i].linuximage);
 		block_ptr->imagemloader = xstrdup(
@@ -565,10 +558,11 @@ static List _create_block_list(partition_info_msg_t *part_info_ptr,
 			= block_info_ptr->block_array[i].state;
 		block_ptr->bg_conn_type
 			= block_info_ptr->block_array[i].conn_type;
-#ifdef HAVE_BGL
-		block_ptr->bg_node_use
-			= block_info_ptr->block_array[i].node_use;
-#endif
+
+		if(cluster_flags & CLUSTER_FLAG_BGL)
+			block_ptr->bg_node_use
+				= block_info_ptr->block_array[i].node_use;
+
 		block_ptr->node_cnt
 			= block_info_ptr->block_array[i].node_cnt;
 		block_ptr->bp_inx
@@ -697,16 +691,17 @@ extern void refresh_block(GtkAction *action, gpointer user_data)
 	specific_info_block(popup_win);
 }
 
-extern int get_new_info_block(block_info_msg_t **block_ptr,
-				    int force)
+extern int get_new_info_block(block_info_msg_t **block_ptr, int force)
 {
 	int error_code = SLURM_NO_CHANGE_IN_DATA;
-#ifdef HAVE_BG
 	static block_info_msg_t *bg_info_ptr = NULL;
 	static block_info_msg_t *new_bg_ptr = NULL;
 	time_t now = time(NULL);
 	static time_t last;
 	static bool changed = 0;
+
+	if(!(cluster_flags & CLUSTER_FLAG_BG))
+		return error_code;
 
 	if(!force && ((now - last) < working_sview_config.refresh_delay)) {
 		if(*block_ptr != bg_info_ptr)
@@ -735,12 +730,12 @@ extern int get_new_info_block(block_info_msg_t **block_ptr,
 	}
 
 	bg_info_ptr = new_bg_ptr;
+	if(block_ptr) {
+		if(*block_ptr != bg_info_ptr)
+			error_code = SLURM_SUCCESS;
 
-	if(*block_ptr != bg_info_ptr)
-		error_code = SLURM_SUCCESS;
-
-	*block_ptr = new_bg_ptr;
-#endif
+		*block_ptr = new_bg_ptr;
+	}
 	return error_code;
 }
 
@@ -898,12 +893,23 @@ extern void get_info_block(GtkTable *table, display_data_t *display_data)
 	sview_block_info_t *sview_block_info_ptr = NULL;
 	GtkTreePath *path = NULL;
 
+	/* reset */
+	if(!table && !display_data) {
+		if(display_widget)
+			gtk_widget_destroy(display_widget);
+		display_widget = NULL;
+		get_new_info_part(&part_info_ptr, true);
+		get_new_info_block(&block_ptr, true);
+		return;
+	}
+
 	if(display_data)
 		local_display_data = display_data;
 	if(!table) {
 		display_data_block->set_menu = local_display_data->set_menu;
 		return;
 	}
+
 	if(display_widget && toggled) {
 		gtk_widget_destroy(display_widget);
 		display_widget = NULL;
@@ -1266,7 +1272,8 @@ extern void set_menus_block(void *arg, void *arg2, GtkTreePath *path, int type)
 		make_options_menu(tree_view, path, menu, options_data_block);
 		break;
 	case ROW_LEFT_CLICKED:
-		highlight_grid(tree_view, path, SORTID_NODE_INX, 0, button_list);
+		highlight_grid(tree_view, path, SORTID_NODE_INX,
+			       0, button_list);
 		break;
 	case FULL_CLICKED:
 	{
@@ -1414,3 +1421,50 @@ extern void admin_block(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 	return;
 }
 
+extern void cluster_change_block()
+{
+	display_data_t *display_data = display_data_block;
+	while(display_data++) {
+		if(display_data->id == -1)
+			break;
+		if(cluster_flags & CLUSTER_FLAG_BGL) {
+			switch(display_data->id) {
+			case SORTID_USE:
+				display_data->name = "Node Use";
+				display_data->show = TRUE;
+				break;
+			case SORTID_IMAGEBLRTS:
+				display_data->name = "Image Blrt";
+				break;
+			case SORTID_IMAGELINUX:
+				display_data->name = "Image Linux";
+				break;
+			case SORTID_IMAGERAMDISK:
+				display_data->name = "Image Ramdisk";
+				break;
+			default:
+				break;
+			}
+		} else {
+			switch(display_data->id) {
+			case SORTID_USE:
+				display_data->name = NULL;
+				display_data->show = FALSE;
+				break;
+			case SORTID_IMAGEBLRTS:
+				display_data->name = NULL;
+				display_data->show = FALSE;
+				break;
+			case SORTID_IMAGELINUX:
+				display_data->name = "Image Cnload";
+				break;
+			case SORTID_IMAGERAMDISK:
+				display_data->name = "Image Ioload";
+				break;
+			default:
+				break;
+			}
+		}
+	}
+	get_info_block(NULL, NULL);
+}
