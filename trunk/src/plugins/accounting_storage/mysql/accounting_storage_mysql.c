@@ -2035,7 +2035,8 @@ extern int acct_storage_p_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 }
 
 extern int acct_storage_p_add_coord(mysql_conn_t *mysql_conn, uint32_t uid,
-				    List acct_list, slurmdb_user_cond_t *user_cond)
+				    List acct_list,
+				    slurmdb_user_cond_t *user_cond)
 {
 	return as_mysql_add_coord(mysql_conn, uid, acct_list, user_cond);
 }
