@@ -773,7 +773,7 @@ extern void reset_mysql_conn(mysql_conn_t *mysql_conn)
 	if(mysql_conn->rollback) {
 		mysql_db_rollback(mysql_conn->db_conn);
 	}
-	xfree(mysql_conn->auto_incr_query);
+	xfree(mysql_conn->pre_commit_query);
 	list_flush(mysql_conn->update_list);
 }
 
@@ -1143,7 +1143,7 @@ extern int remove_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		mysql_free_result(result);
 		/* If there were any associations removed fix it up
 		   here since the table isn't going to be deleted. */
-		xstrfmtcat(mysql_conn->auto_incr_query,
+		xstrfmtcat(mysql_conn->pre_commit_query,
 			   "alter table \"%s_%s\" AUTO_INCREMENT=0;",
 			   cluster_name, assoc_table);
 
@@ -1151,35 +1151,28 @@ extern int remove_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		return SLURM_SUCCESS;
 	}
 	mysql_free_result(result);
-	query = xstrdup_printf("drop table \"%s_%s\", \"%s_%s\", "
-			       "\"%s_%s\", \"%s_%s\", "
-			       "\"%s_%s\", \"%s_%s\", \"%s_%s\", \"%s_%s\", "
-			       "\"%s_%s\", \"%s_%s\", \"%s_%s\", \"%s_%s\", "
-			       "\"%s_%s\", \"%s_%s\", \"%s_%s\", \"%s_%s\";",
-			       cluster_name, assoc_table,
-			       cluster_name, assoc_day_table,
-			       cluster_name, assoc_hour_table,
-			       cluster_name, assoc_month_table,
-			       cluster_name, cluster_day_table,
-			       cluster_name, cluster_hour_table,
-			       cluster_name, cluster_month_table,
-			       cluster_name, event_table,
-			       cluster_name, job_table,
-			       cluster_name, resv_table,
-			       cluster_name, step_table,
-			       cluster_name, suspend_table,
-			       cluster_name, wckey_table,
-			       cluster_name, wckey_day_table,
-			       cluster_name, wckey_hour_table,
-			       cluster_name, wckey_month_table);
-	debug3("%d(%s:%d) query\n%s",
-	       mysql_conn->conn, THIS_FILE, __LINE__, query);
-
-	rc = mysql_db_query(mysql_conn->db_conn, query);
-	xfree(query);
-	if(rc != SLURM_SUCCESS)
-		error("Couldn't drop cluster tables");
-
+	xstrfmtcat(mysql_conn->pre_commit_query,
+		   "drop table \"%s_%s\", \"%s_%s\", "
+		   "\"%s_%s\", \"%s_%s\", "
+		   "\"%s_%s\", \"%s_%s\", \"%s_%s\", \"%s_%s\", "
+		   "\"%s_%s\", \"%s_%s\", \"%s_%s\", \"%s_%s\", "
+		   "\"%s_%s\", \"%s_%s\", \"%s_%s\", \"%s_%s\";",
+		   cluster_name, assoc_table,
+		   cluster_name, assoc_day_table,
+		   cluster_name, assoc_hour_table,
+		   cluster_name, assoc_month_table,
+		   cluster_name, cluster_day_table,
+		   cluster_name, cluster_hour_table,
+		   cluster_name, cluster_month_table,
+		   cluster_name, event_table,
+		   cluster_name, job_table,
+		   cluster_name, resv_table,
+		   cluster_name, step_table,
+		   cluster_name, suspend_table,
+		   cluster_name, wckey_table,
+		   cluster_name, wckey_day_table,
+		   cluster_name, wckey_hour_table,
+		   cluster_name, wckey_month_table);
 	return rc;
 }
 
@@ -1520,7 +1513,7 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 					       name_char);
 			/* Make sure the next id we get doesn't create holes
 			 * in the ids. */
-			xstrfmtcat(mysql_conn->auto_incr_query,
+			xstrfmtcat(mysql_conn->pre_commit_query,
 				   "alter table \"%s_%s\" AUTO_INCREMENT=0;",
 				   cluster_name, table);
 		} else {
@@ -1529,7 +1522,7 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 					       table, day_old, name_char);
 			/* Make sure the next id we get doesn't create holes
 			 * in the ids. */
-			xstrfmtcat(mysql_conn->auto_incr_query,
+			xstrfmtcat(mysql_conn->pre_commit_query,
 				   "alter table %s AUTO_INCREMENT=0;",
 				   table);
 		}
@@ -1770,7 +1763,7 @@ just_update:
 	if(table != cluster_table) {
 		/* Make sure the next id we get doesn't create holes
 		 * in the ids. */
-		xstrfmtcat(mysql_conn->auto_incr_query,
+		xstrfmtcat(mysql_conn->pre_commit_query,
 			   "alter table \"%s_%s\" AUTO_INCREMENT=0;",
 			   cluster_name, assoc_table);
 	}
@@ -1920,7 +1913,7 @@ extern int acct_storage_p_close_connection(mysql_conn_t **mysql_conn)
 
 	acct_storage_p_commit((*mysql_conn), 0);
 	mysql_close_db_connection(&(*mysql_conn)->db_conn);
-	xfree((*mysql_conn)->auto_incr_query);
+	xfree((*mysql_conn)->pre_commit_query);
 	xfree((*mysql_conn)->cluster_name);
 	list_destroy((*mysql_conn)->update_list);
 	xfree((*mysql_conn));
@@ -1941,17 +1934,19 @@ extern int acct_storage_p_commit(mysql_conn_t *mysql_conn, bool commit)
 				error("rollback failed");
 		} else {
 			int rc = SLURM_SUCCESS;
-			/* Since any use of altering a tables
+			/* Handle anything here we were unable to do
+			   because of rollback issues.  i.e. Since any
+			   use of altering a tables
 			   AUTO_INCREMENT will make it so you can't
 			   rollback, save it until right at the end.
 			*/
-			if(mysql_conn->auto_incr_query) {
+			if(mysql_conn->pre_commit_query) {
 				debug3("%d(%d) query\n%s",
 				       mysql_conn->conn, __LINE__,
-				       mysql_conn->auto_incr_query);
+				       mysql_conn->pre_commit_query);
 				rc = mysql_db_query(
 					mysql_conn->db_conn,
-					mysql_conn->auto_incr_query);
+					mysql_conn->pre_commit_query);
 			}
 
 			if(rc != SLURM_SUCCESS) {
@@ -1993,7 +1988,7 @@ extern int acct_storage_p_commit(mysql_conn_t *mysql_conn, bool commit)
 		if(get_qos_count)
 			_set_qos_cnt(mysql_conn->db_conn);
 	}
-	xfree(mysql_conn->auto_incr_query);
+	xfree(mysql_conn->pre_commit_query);
 	list_flush(mysql_conn->update_list);
 
 	return SLURM_SUCCESS;
