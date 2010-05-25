@@ -50,58 +50,6 @@
 #include <sys/types.h>
 #include <pwd.h>
 
-typedef enum {
-	ACCT_ADMIN_NOTSET,
-	ACCT_ADMIN_NONE,
-	ACCT_ADMIN_OPERATOR,
-	ACCT_ADMIN_SUPER_USER
-} acct_admin_level_t;
-
-typedef enum {
-	ACCT_UPDATE_NOTSET,
-	ACCT_ADD_USER,
-	ACCT_ADD_ASSOC,
-	ACCT_ADD_COORD,
-	ACCT_MODIFY_USER,
-	ACCT_MODIFY_ASSOC,
-	ACCT_REMOVE_USER,
-	ACCT_REMOVE_ASSOC,
-	ACCT_REMOVE_COORD,
-	ACCT_ADD_QOS,
-	ACCT_REMOVE_QOS,
-	ACCT_MODIFY_QOS,
-	ACCT_ADD_WCKEY,
-	ACCT_REMOVE_WCKEY,
-	ACCT_MODIFY_WCKEY,
-} acct_update_type_t;
-
-typedef enum {
-	ACCT_CLASS_NONE, /* no class given */
-	ACCT_CLASS_CAPABILITY, /* capability cluster */
-	ACCT_CLASS_CAPACITY, /* capacity cluster */
-	ACCT_CLASS_CAPAPACITY, /* a cluster that is both capability
-				* and capacity */
-} acct_classification_type_t;
-
-typedef enum {
-	ACCT_PROBLEM_NOT_SET,
-	ACCT_PROBLEM_ACCT_NO_ASSOC,
-	ACCT_PROBLEM_ACCT_NO_USERS,
-	ACCT_PROBLEM_USER_NO_ASSOC,
-	ACCT_PROBLEM_USER_NO_UID,
-} acct_problem_type_t;
-
-typedef enum {
-	ACCT_EVENT_ALL,
-	ACCT_EVENT_CLUSTER,
-	ACCT_EVENT_NODE
-} acct_event_type_t;
-
-
-
-#define ACCT_CLASSIFIED_FLAG 0x0100
-#define ACCT_CLASS_BASE      0x00ff
-
 extern int slurm_acct_storage_init(char *loc); /* load the plugin */
 extern int slurm_acct_storage_fini(void); /* unload the plugin */
 
