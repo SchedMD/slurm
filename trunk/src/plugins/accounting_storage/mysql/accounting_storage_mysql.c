@@ -1592,9 +1592,6 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 
 		/* If we are doing this on an assoc_table we have
 		   already done this, so don't */
-/* 		query = xstrdup_printf("select lft, rgt " */
-/* 				       "from %s as t2 where %s order by lft;", */
-/* 				       assoc_table, assoc_char); */
 		query = xstrdup_printf("select distinct t1.id_assoc "
 				       "from \"%s_%s\" as t1, \"%s_%s\" as t2 "
 				       "where (%s) && t1.lft between "
@@ -2199,9 +2196,9 @@ extern List acct_storage_p_get_clusters(mysql_conn_t *mysql_conn, uid_t uid,
 	return as_mysql_get_clusters(mysql_conn, uid, cluster_cond);
 }
 
-extern List acct_storage_p_get_associations(mysql_conn_t *mysql_conn,
-					    uid_t uid,
-					    slurmdb_association_cond_t *assoc_cond)
+extern List acct_storage_p_get_associations(
+	mysql_conn_t *mysql_conn, uid_t uid,
+	slurmdb_association_cond_t *assoc_cond)
 {
 	return as_mysql_get_assocs(mysql_conn, uid, assoc_cond);
 }
@@ -2256,8 +2253,9 @@ extern List acct_storage_p_get_wckeys(mysql_conn_t *mysql_conn, uid_t uid,
 	return as_mysql_get_wckeys(mysql_conn, uid, wckey_cond);
 }
 
-extern List acct_storage_p_get_reservations(mysql_conn_t *mysql_conn, uid_t uid,
-					    slurmdb_reservation_cond_t *resv_cond)
+extern List acct_storage_p_get_reservations(
+	mysql_conn_t *mysql_conn, uid_t uid,
+	slurmdb_reservation_cond_t *resv_cond)
 {
 	return as_mysql_get_resvs(mysql_conn, uid, resv_cond);
 }
