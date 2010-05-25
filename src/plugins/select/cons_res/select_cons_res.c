@@ -2048,13 +2048,17 @@ extern int select_p_select_nodeinfo_set_all(void)
 
 extern int select_p_select_nodeinfo_set(struct job_record *job_ptr)
 {
+	int rc;
 	xassert(job_ptr);
 	xassert(job_ptr->magic == JOB_MAGIC);
 
 	if (!IS_JOB_RUNNING(job_ptr) && !IS_JOB_SUSPENDED(job_ptr))
 		return SLURM_SUCCESS;
 
-	return _add_job_to_res(job_ptr, 0);
+	rc = _add_job_to_res(job_ptr, 0);
+	gres_plugin_job_state_log(job_ptr->gres_list, job_ptr->job_id);
+
+	return rc;
 }
 
 extern int select_p_select_nodeinfo_get(select_nodeinfo_t *nodeinfo,

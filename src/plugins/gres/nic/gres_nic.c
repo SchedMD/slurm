@@ -1162,6 +1162,13 @@ extern uint32_t step_test(void *step_gres_data, void *job_gres_data,
 
 	xassert(job_gres_ptr);
 	xassert(step_gres_ptr);
+
+	if (node_offset == NO_VAL) {
+		if (step_gres_ptr->nic_cnt_alloc > job_gres_ptr->nic_cnt_alloc)
+			return 0;
+		return NO_VAL;
+	}
+
 	if (node_offset >= job_gres_ptr->node_cnt) {
 		error("%s step_test node offset invalid (%d >= %u)",
 		      plugin_name, node_offset, job_gres_ptr->node_cnt);
@@ -1169,16 +1176,19 @@ extern uint32_t step_test(void *step_gres_data, void *job_gres_data,
 	}
 	if ((job_gres_ptr->nic_bit_alloc == NULL) ||
 	    (job_gres_ptr->nic_bit_alloc[node_offset] == NULL)) {
-		error("%s step_test nic_bit_alloc is NULL",plugin_name);
+		error("%s step_test nic_bit_alloc is NULL", plugin_name);
 		return 0;
 	}
 
 	gres_cnt = bit_set_count(job_gres_ptr->nic_bit_alloc[node_offset]);
-/* FIXME: Adjust for resources already allocated to other steps */
-/* What about test vs. actual alloc? */
+	if (job_gres_ptr->nic_bit_step_alloc &&
+	    job_gres_ptr->nic_bit_step_alloc[node_offset]) {
+		gres_cnt -= bit_set_count(job_gres_ptr->
+					  nic_bit_step_alloc[node_offset]);
+	}
 	if (step_gres_ptr->nic_cnt_mult)	/* Gres count per CPU */
 		gres_cnt /= step_gres_ptr->nic_cnt_alloc;
-	else if (step_gres_ptr->nic_cnt_mult > gres_cnt)
+	else if (step_gres_ptr->nic_cnt_alloc > gres_cnt)
 		gres_cnt = 0;
 
 	return gres_cnt;
