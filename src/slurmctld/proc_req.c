@@ -3683,7 +3683,7 @@ inline static void  _slurm_rpc_accounting_update_msg(slurm_msg_t *msg)
 
 	if (!validate_super_user(uid)
 	    && (assoc_mgr_get_admin_level(acct_db_conn, uid)
-		< ACCT_ADMIN_SUPER_USER)) {
+		< SLURMDB_ADMIN_SUPER_USER)) {
 		error("Update Association request from non-super user uid=%d",
 		      uid);
 		slurm_send_rc_msg(msg, EACCES);
@@ -3695,29 +3695,29 @@ inline static void  _slurm_rpc_accounting_update_msg(slurm_msg_t *msg)
 			if(!object->objects || !list_count(object->objects))
 				continue;
 			switch(object->type) {
-			case ACCT_MODIFY_USER:
-			case ACCT_ADD_USER:
-			case ACCT_REMOVE_USER:
-			case ACCT_ADD_COORD:
-			case ACCT_REMOVE_COORD:
+			case SLURMDB_MODIFY_USER:
+			case SLURMDB_ADD_USER:
+			case SLURMDB_REMOVE_USER:
+			case SLURMDB_ADD_COORD:
+			case SLURMDB_REMOVE_COORD:
 				rc = assoc_mgr_update_users(object);
 				break;
-			case ACCT_ADD_ASSOC:
-			case ACCT_MODIFY_ASSOC:
-			case ACCT_REMOVE_ASSOC:
+			case SLURMDB_ADD_ASSOC:
+			case SLURMDB_MODIFY_ASSOC:
+			case SLURMDB_REMOVE_ASSOC:
 				rc = assoc_mgr_update_assocs(object);
 				break;
-			case ACCT_ADD_QOS:
-			case ACCT_MODIFY_QOS:
-			case ACCT_REMOVE_QOS:
+			case SLURMDB_ADD_QOS:
+			case SLURMDB_MODIFY_QOS:
+			case SLURMDB_REMOVE_QOS:
 				rc = assoc_mgr_update_qos(object);
 				break;
-			case ACCT_ADD_WCKEY:
-			case ACCT_MODIFY_WCKEY:
-			case ACCT_REMOVE_WCKEY:
+			case SLURMDB_ADD_WCKEY:
+			case SLURMDB_MODIFY_WCKEY:
+			case SLURMDB_REMOVE_WCKEY:
 				rc = assoc_mgr_update_wckeys(object);
 				break;
-			case ACCT_UPDATE_NOTSET:
+			case SLURMDB_UPDATE_NOTSET:
 			default:
 				error("unknown type set in update_object: %d",
 				      object->type);
@@ -3744,7 +3744,7 @@ inline static void  _slurm_rpc_accounting_first_reg(slurm_msg_t *msg)
 		(unsigned int) uid);
 	if (!validate_super_user(uid)
 	    && (assoc_mgr_get_admin_level(acct_db_conn, uid)
-		< ACCT_ADMIN_SUPER_USER)) {
+		< SLURMDB_ADMIN_SUPER_USER)) {
 		error("First Registration request from non-super user uid=%d",
 		      uid);
 		return;
