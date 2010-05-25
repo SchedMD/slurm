@@ -401,21 +401,29 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 		goto end_it;
 	}
 
-	notice_thread_init();
-	rc = acct_storage_g_add_clusters(db_conn, my_uid, cluster_list);
-	notice_thread_fini();
-	if(rc == SLURM_SUCCESS) {
-		if(commit_check("Would you like to commit changes?")) {
+	/* Since we are creating tables with add cluster that can't be
+	   rolled back.  So we ask before hand if they are serious
+	   about it so we can rollback if needed.
+	*/
+	if(commit_check("Would you like to commit changes?")) {
+		notice_thread_init();
+		rc = acct_storage_g_add_clusters(db_conn, my_uid, cluster_list);
+		notice_thread_fini();
+		if(rc == SLURM_SUCCESS) {
 			acct_storage_g_commit(db_conn, 1);
 		} else {
-			printf(" Changes Discarded\n");
+			exit_code=1;
+			fprintf(stderr, " Problem adding clusters: %s\n",
+				slurm_strerror(rc));
+			/* this isn't really needed, but just to be safe */
 			acct_storage_g_commit(db_conn, 0);
 		}
 	} else {
-		exit_code=1;
-		fprintf(stderr, " Problem adding clusters: %s\n",
-			slurm_strerror(rc));
+		printf(" Changes Discarded\n");
+		/* this isn't really needed, but just to be safe */
+		acct_storage_g_commit(db_conn, 0);
 	}
+
 end_it:
 	list_destroy(cluster_list);
 
