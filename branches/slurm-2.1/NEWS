@@ -12,6 +12,7 @@ documents those changes that are of interest to users and admins.
  -- When changing priority with the multifactor plugin we make sure we update
     the last_job_update variable.
  -- Fixed sview for gtk < 2.10 to display correct debug level at first.
+ -- Fixed sview to not select too fast when using a mouse right click.
 
 * Changes in SLURM 2.1.8
 ========================
