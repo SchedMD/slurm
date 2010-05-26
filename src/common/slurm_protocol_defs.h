@@ -1041,6 +1041,9 @@ void slurm_free_topo_info_msg(topo_info_response_msg_t *msg);
 void inline slurm_free_file_bcast_msg(file_bcast_msg_t *msg);
 void inline slurm_free_step_complete_msg(step_complete_msg_t *msg);
 void inline slurm_free_stat_jobacct_msg(stat_jobacct_msg_t *msg);
+void slurm_free_block_info_members(block_info_t *block_info);
+void slurm_free_block_info(block_info_t *block_info);
+void slurm_free_block_info_msg(block_info_msg_t *block_info_msg);
 void inline slurm_free_block_info_request_msg(
 		block_info_request_msg_t *msg);
 void inline slurm_free_job_notify_msg(job_notify_msg_t * msg);

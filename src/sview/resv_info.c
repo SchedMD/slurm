@@ -81,8 +81,13 @@ static display_data_t display_data_resv[] = {
 	 refresh_resv, create_model_resv, admin_edit_resv},
 	{G_TYPE_STRING, SORTID_NODE_CNT,   "Node Count", TRUE, EDIT_TEXTBOX,
 	 refresh_resv, create_model_resv, admin_edit_resv},
-	{G_TYPE_STRING, SORTID_NODE_LIST,  "NodeList", TRUE, EDIT_TEXTBOX,
-	 refresh_resv, create_model_resv, admin_edit_resv},
+	{G_TYPE_STRING, SORTID_NODE_LIST,
+#ifdef HAVE_BG
+	 "BP List",
+#else
+	 "NodeList",
+#endif
+	 TRUE, EDIT_TEXTBOX, refresh_resv, create_model_resv, admin_edit_resv},
 	{G_TYPE_STRING, SORTID_TIME_START, "Time Start", TRUE, EDIT_TEXTBOX,
 	 refresh_resv, create_model_resv, admin_edit_resv},
 	{G_TYPE_STRING, SORTID_TIME_END,   "Time End", TRUE, EDIT_TEXTBOX,
@@ -119,6 +124,7 @@ static display_data_t options_data_resv[] = {
 	{G_TYPE_STRING, BLOCK_PAGE, "Blocks", TRUE, RESV_PAGE},
 	{G_TYPE_STRING, NODE_PAGE, "Base Partitions", TRUE, RESV_PAGE},
 #else
+	{G_TYPE_STRING, BLOCK_PAGE, NULL, TRUE, RESV_PAGE},
 	{G_TYPE_STRING, NODE_PAGE, "Nodes", TRUE, RESV_PAGE},
 #endif
 	{G_TYPE_NONE, -1, NULL, FALSE, EDIT_NONE}
@@ -786,30 +792,30 @@ extern void refresh_resv(GtkAction *action, gpointer user_data)
 extern int get_new_info_resv(reserve_info_msg_t **info_ptr,
 			     int force)
 {
-	static reserve_info_msg_t *resv_info_ptr = NULL, *new_resv_ptr = NULL;
+	static reserve_info_msg_t *new_resv_ptr = NULL;
 	int error_code = SLURM_NO_CHANGE_IN_DATA;
 	time_t now = time(NULL);
 	static time_t last;
 	static bool changed = 0;
 
 	if(!force && ((now - last) < working_sview_config.refresh_delay)) {
-		if(*info_ptr != resv_info_ptr)
+		if(*info_ptr != g_resv_info_ptr)
 			error_code = SLURM_SUCCESS;
-		*info_ptr = resv_info_ptr;
+		*info_ptr = g_resv_info_ptr;
 		if(changed)
 			return SLURM_SUCCESS;
 		return error_code;
 	}
 	last = now;
-	if (resv_info_ptr) {
-		error_code = slurm_load_reservations(resv_info_ptr->last_update,
-						     &new_resv_ptr);
+	if (g_resv_info_ptr) {
+		error_code = slurm_load_reservations(
+			g_resv_info_ptr->last_update, &new_resv_ptr);
 		if (error_code == SLURM_SUCCESS) {
-			slurm_free_reservation_info_msg(resv_info_ptr);
+			slurm_free_reservation_info_msg(g_resv_info_ptr);
 			changed = 1;
 		} else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
 			error_code = SLURM_NO_CHANGE_IN_DATA;
-			new_resv_ptr = resv_info_ptr;
+			new_resv_ptr = g_resv_info_ptr;
 			changed = 0;
 		}
 	} else {
@@ -818,9 +824,9 @@ extern int get_new_info_resv(reserve_info_msg_t **info_ptr,
 		changed = 1;
 	}
 
-	resv_info_ptr = new_resv_ptr;
+	g_resv_info_ptr = new_resv_ptr;
 
-	if(*info_ptr != resv_info_ptr)
+	if(*info_ptr != g_resv_info_ptr)
 		error_code = SLURM_SUCCESS;
 
 	*info_ptr = new_resv_ptr;
@@ -944,6 +950,14 @@ extern void get_info_resv(GtkTable *table, display_data_t *display_data)
 	reserve_info_t *resv_ptr = NULL;
 	time_t now = time(NULL);
 	GtkTreePath *path = NULL;
+
+	/* reset */
+	if(!table && !display_data) {
+		if(display_widget)
+			gtk_widget_destroy(display_widget);
+		display_widget = NULL;
+		return;
+	}
 
 	if(display_data)
 		local_display_data = display_data;
@@ -1263,14 +1277,13 @@ extern void popup_all_resv(GtkTreeModel *model, GtkTreeIter *iter, int id)
 		snprintf(title, 100, "Job(s) in reservation %s", name);
 		break;
 	case NODE_PAGE:
-#ifdef HAVE_BG
-		snprintf(title, 100,
-			 "Base partitions(s) in reservation %s",
-			 name);
-#else
-		snprintf(title, 100, "Node(s) in reservation %s ",
-			 name);
-#endif
+		if(cluster_flags & CLUSTER_FLAG_BG)
+			snprintf(title, 100,
+				 "Base partitions(s) in reservation %s",
+				 name);
+		else
+			snprintf(title, 100, "Node(s) in reservation %s ",
+				 name);
 		break;
 	case BLOCK_PAGE:
 		snprintf(title, 100, "Block(s) in reservation %s", name);
@@ -1457,5 +1470,57 @@ end_it:
 		xfree(type);
 	}
 	return;
+}
+
+extern void cluster_change_resv()
+{
+	display_data_t *display_data = display_data_resv;
+	while(display_data++) {
+		if(display_data->id == -1)
+			break;
+		if(cluster_flags & CLUSTER_FLAG_BG) {
+			switch(display_data->id) {
+			case SORTID_NODE_LIST:
+				display_data->name = "BP List";
+				break;
+			default:
+				break;
+			}
+		} else {
+			switch(display_data->id) {
+			case SORTID_NODE_LIST:
+				display_data->name = "NodeList";
+				break;
+			default:
+				break;
+			}
+		}
+	}
+	display_data = options_data_resv;
+	while(display_data++) {
+		if(display_data->id == -1)
+			break;
+
+		if(cluster_flags & CLUSTER_FLAG_BG) {
+			switch(display_data->id) {
+			case BLOCK_PAGE:
+				display_data->name = "Blocks";
+				break;
+			case NODE_PAGE:
+				display_data->name = "Base Partitions";
+				break;
+			}
+		} else {
+			switch(display_data->id) {
+			case BLOCK_PAGE:
+				display_data->name = NULL;
+				break;
+			case NODE_PAGE:
+				display_data->name = "Nodes";
+				break;
+			}
+		}
+	}
+	get_info_resv(NULL, NULL);
 }
 

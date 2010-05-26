@@ -142,5 +142,7 @@ extern int unpack_msg ( slurm_msg_t * msg , Buf buffer );
 
 extern void pack_multi_core_data (multi_core_data_t *multi_core, Buf buffer);
 extern int unpack_multi_core_data (multi_core_data_t **multi_core, Buf buffer);
-
+extern int slurm_unpack_block_info_msg(
+	block_info_msg_t **block_info_msg_pptr, Buf buffer,
+	uint16_t protocol_version);
 #endif

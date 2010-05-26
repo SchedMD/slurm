@@ -1206,11 +1206,11 @@ extern int slurm_load_block_info PARAMS(
 /*
  * slurm_free_block_info_msg - free buffer returned by
  *	slurm_load_block
- * IN block_info_msg_pptr - data is freed and pointer is set to NULL
+ * IN block_info_msg_ptr - pointer to block_info_msg_t
  * RET 0 or a slurm error code
  */
-extern int slurm_free_block_info_msg PARAMS(
-	(block_info_msg_t **block_info_msg_pptr));
+extern void slurm_free_block_info_msg PARAMS(
+	(block_info_msg_t *block_info_msg));
 
 /* update state or remove block */
 extern int slurm_update_block PARAMS((update_block_msg_t *block_msg));

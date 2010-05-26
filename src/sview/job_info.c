@@ -2417,12 +2417,12 @@ static List _create_job_info_list(job_info_msg_t *job_info_ptr,
 	}
 
 	if(info_list) {
-		list_destroy(info_list);
-		list_destroy(odd_info_list);
+		list_flush(info_list);
+		list_flush(odd_info_list);
+	} else {
+		info_list = list_create(NULL);
+		odd_info_list = list_create(_job_info_list_del);
 	}
-
-	info_list = list_create(NULL);
-	odd_info_list = list_create(_job_info_list_del);
 	if (!info_list || !odd_info_list) {
 		g_print("malloc error\n");
 		return NULL;
@@ -2613,7 +2613,7 @@ extern void refresh_job(GtkAction *action, gpointer user_data)
 extern int get_new_info_job(job_info_msg_t **info_ptr,
 			    int force)
 {
-	static job_info_msg_t *job_info_ptr = NULL, *new_job_ptr = NULL;
+	static job_info_msg_t *new_job_ptr = NULL;
 	uint16_t show_flags = 0;
 	int error_code = SLURM_NO_CHANGE_IN_DATA;
 	time_t now = time(NULL);
@@ -2622,9 +2622,9 @@ extern int get_new_info_job(job_info_msg_t **info_ptr,
 	static uint16_t last_flags = 0;
 
 	if(!force && ((now - last) < working_sview_config.refresh_delay)) {
-		if(*info_ptr != job_info_ptr)
+		if(*info_ptr != g_job_info_ptr)
 			error_code = SLURM_SUCCESS;
-		*info_ptr = job_info_ptr;
+		*info_ptr = g_job_info_ptr;
 		if(changed)
 			return SLURM_SUCCESS;
 		return error_code;
@@ -2633,17 +2633,17 @@ extern int get_new_info_job(job_info_msg_t **info_ptr,
 
 	if(working_sview_config.show_hidden)
 		show_flags |= SHOW_ALL;
-	if (job_info_ptr) {
+	if (g_job_info_ptr) {
 		if(show_flags != last_flags)
-			job_info_ptr->last_update = 0;
-		error_code = slurm_load_jobs(job_info_ptr->last_update,
+			g_job_info_ptr->last_update = 0;
+		error_code = slurm_load_jobs(g_job_info_ptr->last_update,
 					     &new_job_ptr, show_flags);
 		if (error_code == SLURM_SUCCESS) {
-			slurm_free_job_info_msg(job_info_ptr);
+			slurm_free_job_info_msg(g_job_info_ptr);
 			changed = 1;
 		} else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
 			error_code = SLURM_NO_CHANGE_IN_DATA;
-			new_job_ptr = job_info_ptr;
+			new_job_ptr = g_job_info_ptr;
 			changed = 0;
 		}
 	} else {
@@ -2653,9 +2653,9 @@ extern int get_new_info_job(job_info_msg_t **info_ptr,
 	}
 
 	last_flags = show_flags;
-	job_info_ptr = new_job_ptr;
+	g_job_info_ptr = new_job_ptr;
 
-	if(*info_ptr != job_info_ptr)
+	if(*info_ptr != g_job_info_ptr)
 		error_code = SLURM_SUCCESS;
 
 	*info_ptr = new_job_ptr;
@@ -2914,6 +2914,14 @@ extern void get_info_job(GtkTable *table, display_data_t *display_data)
 	job_info_t *job_ptr = NULL;
 	ListIterator itr = NULL;
 	GtkTreePath *path = NULL;
+
+	/* reset */
+	if(!table && !display_data) {
+		if(display_widget)
+			gtk_widget_destroy(display_widget);
+		display_widget = NULL;
+		return;
+	}
 
 	if(display_data)
 		local_display_data = display_data;

@@ -59,12 +59,6 @@ static gboolean _menu_button_released(GtkWidget *widget, GdkEventButton *event,
 	return false;
 }
 
-static gboolean _entry_changed(GtkWidget *widget, void *msg)
-{
-	global_entry_changed = 1;
-	return false;
-}
-
 static void _handle_response(GtkDialog *dialog, gint response_id,
 			     popup_info_t *popup_win)
 {

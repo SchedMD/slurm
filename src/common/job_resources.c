@@ -529,6 +529,8 @@ extern void log_job_resources(uint32_t job_id,
 extern void pack_job_resources(job_resources_t *job_resrcs_ptr, Buf buffer,
 			       uint16_t protocol_version)
 {
+	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
+
 	if(protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
 		if (job_resrcs_ptr == NULL) {
 			uint32_t empty = NO_VAL;
@@ -553,7 +555,8 @@ extern void pack_job_resources(job_resources_t *job_resrcs_ptr, Buf buffer,
 			pack16_array(job_resrcs_ptr->cpu_array_value,
 				     job_resrcs_ptr->cpu_array_cnt, buffer);
 		else
-			pack16_array(job_resrcs_ptr->cpu_array_value, 0, buffer);
+			pack16_array(job_resrcs_ptr->cpu_array_value,
+				     0, buffer);
 
 		if (job_resrcs_ptr->cpus)
 			pack16_array(job_resrcs_ptr->cpus,
@@ -571,15 +574,15 @@ extern void pack_job_resources(job_resources_t *job_resrcs_ptr, Buf buffer,
 			pack32_array(job_resrcs_ptr->memory_allocated,
 				     job_resrcs_ptr->nhosts, buffer);
 		else
-			pack32_array(job_resrcs_ptr->memory_allocated, 0, buffer);
+			pack32_array(job_resrcs_ptr->memory_allocated,
+				     0, buffer);
 
 		if (job_resrcs_ptr->memory_used)
 			pack32_array(job_resrcs_ptr->memory_used,
 				     job_resrcs_ptr->nhosts, buffer);
 		else
 			pack32_array(job_resrcs_ptr->memory_used, 0, buffer);
-#ifndef HAVE_BG
-		{
+		if(!(cluster_flags & CLUSTER_FLAG_BG)) {
 			int i;
 			uint32_t core_cnt = 0, sock_recs = 0;
 			xassert(job_resrcs_ptr->cores_per_socket);
@@ -587,8 +590,8 @@ extern void pack_job_resources(job_resources_t *job_resrcs_ptr, Buf buffer,
 			xassert(job_resrcs_ptr->sockets_per_node);
 
 			for (i=0; i<job_resrcs_ptr->nhosts; i++) {
-				core_cnt += job_resrcs_ptr->sockets_per_node[i] *
-					job_resrcs_ptr->cores_per_socket[i] *
+				core_cnt += job_resrcs_ptr->sockets_per_node[i]
+					* job_resrcs_ptr->cores_per_socket[i] *
 					job_resrcs_ptr->sock_core_rep_count[i];
 				sock_recs += job_resrcs_ptr->
 					     sock_core_rep_count[i];
@@ -608,8 +611,7 @@ extern void pack_job_resources(job_resources_t *job_resrcs_ptr, Buf buffer,
 			pack_bit_str(job_resrcs_ptr->core_bitmap, buffer);
 			pack_bit_str(job_resrcs_ptr->core_bitmap_used, buffer);
 		}
-#endif
-	} else {
+       	} else {
 		if (job_resrcs_ptr == NULL) {
 			uint32_t empty = NO_VAL;
 			pack32(empty, buffer);
@@ -632,7 +634,8 @@ extern void pack_job_resources(job_resources_t *job_resrcs_ptr, Buf buffer,
 			pack16_array(job_resrcs_ptr->cpu_array_value,
 				     job_resrcs_ptr->cpu_array_cnt, buffer);
 		else
-			pack16_array(job_resrcs_ptr->cpu_array_value, 0, buffer);
+			pack16_array(job_resrcs_ptr->cpu_array_value,
+				     0, buffer);
 
 		if (job_resrcs_ptr->cpus)
 			pack16_array(job_resrcs_ptr->cpus,
@@ -650,7 +653,8 @@ extern void pack_job_resources(job_resources_t *job_resrcs_ptr, Buf buffer,
 			pack32_array(job_resrcs_ptr->memory_allocated,
 				     job_resrcs_ptr->nhosts, buffer);
 		else
-			pack32_array(job_resrcs_ptr->memory_allocated, 0, buffer);
+			pack32_array(job_resrcs_ptr->memory_allocated,
+				     0, buffer);
 
 		if (job_resrcs_ptr->memory_used)
 			pack32_array(job_resrcs_ptr->memory_used,
@@ -667,8 +671,8 @@ extern void pack_job_resources(job_resources_t *job_resrcs_ptr, Buf buffer,
 			xassert(job_resrcs_ptr->sockets_per_node);
 
 			for (i=0; i<job_resrcs_ptr->nhosts; i++) {
-				core_cnt += job_resrcs_ptr->sockets_per_node[i] *
-					job_resrcs_ptr->cores_per_socket[i] *
+				core_cnt += job_resrcs_ptr->sockets_per_node[i]
+					* job_resrcs_ptr->cores_per_socket[i] *
 					job_resrcs_ptr->sock_core_rep_count[i];
 				sock_recs += job_resrcs_ptr->
 					     sock_core_rep_count[i];
@@ -698,6 +702,7 @@ extern int unpack_job_resources(job_resources_t **job_resrcs_pptr,
 	char *bit_fmt = NULL;
 	uint32_t empty, tmp32;
 	job_resources_t *job_resrcs;
+	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 
 	xassert(job_resrcs_pptr);
 	if(protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
@@ -744,23 +749,23 @@ extern int unpack_job_resources(job_resources_t **job_resrcs_pptr,
 		if (tmp32 == 0)
 			xfree(job_resrcs->memory_used);
 
-#ifndef HAVE_BG
-		safe_unpack16_array(&job_resrcs->sockets_per_node,
-				    &tmp32, buffer);
-		if (tmp32 == 0)
-			xfree(job_resrcs->sockets_per_node);
-		safe_unpack16_array(&job_resrcs->cores_per_socket,
-				    &tmp32, buffer);
-		if (tmp32 == 0)
-			xfree(job_resrcs->cores_per_socket);
-		safe_unpack32_array(&job_resrcs->sock_core_rep_count,
-				    &tmp32, buffer);
-		if (tmp32 == 0)
-			xfree(job_resrcs->sock_core_rep_count);
+		if(!(cluster_flags & CLUSTER_FLAG_BG)) {
+			safe_unpack16_array(&job_resrcs->sockets_per_node,
+					    &tmp32, buffer);
+			if (tmp32 == 0)
+				xfree(job_resrcs->sockets_per_node);
+			safe_unpack16_array(&job_resrcs->cores_per_socket,
+					    &tmp32, buffer);
+			if (tmp32 == 0)
+				xfree(job_resrcs->cores_per_socket);
+			safe_unpack32_array(&job_resrcs->sock_core_rep_count,
+					    &tmp32, buffer);
+			if (tmp32 == 0)
+				xfree(job_resrcs->sock_core_rep_count);
 
-		unpack_bit_str(&job_resrcs->core_bitmap, buffer);
-		unpack_bit_str(&job_resrcs->core_bitmap_used, buffer);
-#endif
+			unpack_bit_str(&job_resrcs->core_bitmap, buffer);
+			unpack_bit_str(&job_resrcs->core_bitmap_used, buffer);
+		}
 	} else {
 		safe_unpack32(&empty, buffer);
 		if (empty == NO_VAL) {
