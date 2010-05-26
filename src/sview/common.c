@@ -30,10 +30,40 @@
 #include "src/sview/sview.h"
 #include "src/common/parse_time.h"
 
+static bool menu_right_pressed = false;
+
 typedef struct {
 	GtkTreeModel *model;
 	GtkTreeIter iter;
 } treedata_t;
+
+/* These next 2 functions are here to make it so we don't magically
+ * click on something before we really want to in a menu.
+ */
+static gboolean _menu_button_pressed(GtkWidget *widget, GdkEventButton *event,
+				    gpointer extra)
+{
+	if(event->button == 3) {
+		menu_right_pressed = true;
+		return true;
+	}
+	return false;
+}
+
+static gboolean _menu_button_released(GtkWidget *widget, GdkEventButton *event,
+				      gpointer extra)
+{
+	if(event->button == 3 && !menu_right_pressed)
+		return true;
+	menu_right_pressed = false;
+	return false;
+}
+
+static gboolean _entry_changed(GtkWidget *widget, void *msg)
+{
+	global_entry_changed = 1;
+	return false;
+}
 
 static void _handle_response(GtkDialog *dialog, gint response_id,
 			     popup_info_t *popup_win)
@@ -406,8 +436,7 @@ static void _popup_state_changed(GtkCheckMenuItem *menuitem,
 	(display_data->refresh)(NULL, display_data->user_data);
 }
 
-static void _selected_page(GtkMenuItem *menuitem,
-			   display_data_t *display_data)
+static void _selected_page(GtkMenuItem *menuitem, display_data_t *display_data)
 {
 	treedata_t *treedata = (treedata_t *)display_data->user_data;
 
@@ -544,6 +573,13 @@ extern void make_fields_menu(popup_info_t *popup_win, GtkMenu *menu,
 	if(popup_win && popup_win->spec_info->type == INFO_PAGE)
 		return;
 
+	g_signal_connect(G_OBJECT(menu), "button-press-event",
+			 G_CALLBACK(_menu_button_pressed),
+			 NULL);
+	g_signal_connect(G_OBJECT(menu), "button-release-event",
+			 G_CALLBACK(_menu_button_released),
+			 NULL);
+
 	for(i=0; i<count; i++) {
 		while(display_data++) {
 			if(display_data->id == -1)
@@ -584,6 +620,14 @@ extern void make_options_menu(GtkTreeView *tree_view, GtkTreePath *path,
 	GtkWidget *menuitem = NULL;
 	treedata_t *treedata = xmalloc(sizeof(treedata_t));
 	treedata->model = gtk_tree_view_get_model(tree_view);
+
+	g_signal_connect(G_OBJECT(menu), "button-press-event",
+			 G_CALLBACK(_menu_button_pressed),
+			 NULL);
+	g_signal_connect(G_OBJECT(menu), "button-release-event",
+			 G_CALLBACK(_menu_button_released),
+			 NULL);
+
 	if (!gtk_tree_model_get_iter(treedata->model, &treedata->iter, path)) {
 		g_error("make menus error getting iter from model\n");
 		return;
