@@ -1546,10 +1546,10 @@ static List _create_part_info_list(partition_info_msg_t *part_info_ptr,
 		return info_list;
 	}
 
-	if(info_list) {
-		list_destroy(info_list);
-	}
-	info_list = list_create(_part_info_list_del);
+	if(info_list)
+		list_flush(info_list);
+	else
+		info_list = list_create(_part_info_list_del);
 	if (!info_list) {
 		g_print("malloc error\n");
 		return NULL;
@@ -1679,7 +1679,6 @@ extern void refresh_part(GtkAction *action, gpointer user_data)
 
 extern int get_new_info_part(partition_info_msg_t **part_ptr, int force)
 {
-	static partition_info_msg_t *part_info_ptr = NULL;
 	static partition_info_msg_t *new_part_ptr = NULL;
 	uint16_t show_flags = 0;
 	int error_code = SLURM_NO_CHANGE_IN_DATA;
@@ -1689,9 +1688,9 @@ extern int get_new_info_part(partition_info_msg_t **part_ptr, int force)
 	static uint16_t last_flags = 0;
 
 	if(!force && ((now - last) < working_sview_config.refresh_delay)) {
-		if(*part_ptr != part_info_ptr)
+		if(*part_ptr != g_part_info_ptr)
 			error_code = SLURM_SUCCESS;
-		*part_ptr = part_info_ptr;
+		*part_ptr = g_part_info_ptr;
 		if(changed)
 			return SLURM_SUCCESS;
 		return error_code;
@@ -1701,17 +1700,17 @@ extern int get_new_info_part(partition_info_msg_t **part_ptr, int force)
 	if(working_sview_config.show_hidden)
 		show_flags |= SHOW_ALL;
 
-	if (part_info_ptr) {
+	if (g_part_info_ptr) {
 		if(show_flags != last_flags)
-			part_info_ptr->last_update = 0;
-		error_code = slurm_load_partitions(part_info_ptr->last_update,
+			g_part_info_ptr->last_update = 0;
+		error_code = slurm_load_partitions(g_part_info_ptr->last_update,
 						   &new_part_ptr, show_flags);
 		if (error_code == SLURM_SUCCESS) {
-			slurm_free_partition_info_msg(part_info_ptr);
+			slurm_free_partition_info_msg(g_part_info_ptr);
 			changed = 1;
 		} else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
 			error_code = SLURM_NO_CHANGE_IN_DATA;
-			new_part_ptr = part_info_ptr;
+			new_part_ptr = g_part_info_ptr;
 				changed = 0;
 		}
 	} else {
@@ -1721,9 +1720,9 @@ extern int get_new_info_part(partition_info_msg_t **part_ptr, int force)
 	}
 
 	last_flags = show_flags;
-	part_info_ptr = new_part_ptr;
+	g_part_info_ptr = new_part_ptr;
 
-	if(*part_ptr != part_info_ptr)
+	if(*part_ptr != g_part_info_ptr)
 		error_code = SLURM_SUCCESS;
 
 	*part_ptr = new_part_ptr;
@@ -1960,6 +1959,14 @@ extern void get_info_part(GtkTable *table, display_data_t *display_data)
 	partition_info_t *part_ptr = NULL;
 	ListIterator itr = NULL;
 	GtkTreePath *path = NULL;
+
+	/* reset */
+	if(!table && !display_data) {
+		if(display_widget)
+			gtk_widget_destroy(display_widget);
+		display_widget = NULL;
+		return;
+	}
 
 	if(display_data)
 		local_display_data = display_data;

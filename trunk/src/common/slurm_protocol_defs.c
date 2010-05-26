@@ -1871,6 +1871,44 @@ extern void slurm_free_stat_jobacct_msg(stat_jobacct_msg_t *msg)
 	}
 }
 
+extern void slurm_free_block_info_members(block_info_t *block_info)
+{
+	if(block_info) {
+		xfree(block_info->bg_block_id);
+		xfree(block_info->blrtsimage);
+		xfree(block_info->bp_inx);
+		xfree(block_info->ionodes);
+		xfree(block_info->ionode_inx);
+		xfree(block_info->linuximage);
+		xfree(block_info->mloaderimage);
+		xfree(block_info->nodes);
+		xfree(block_info->owner_name);
+		xfree(block_info->ramdiskimage);
+	}
+}
+
+extern void slurm_free_block_info(block_info_t *block_info)
+{
+	if(block_info) {
+		slurm_free_block_info_members(block_info);
+		xfree(block_info);
+	}
+}
+
+extern void slurm_free_block_info_msg(block_info_msg_t *block_info_msg)
+{
+	if(block_info_msg) {
+		if (block_info_msg->block_array) {
+			int i;
+			for(i=0; i<block_info_msg->record_count; i++)
+				slurm_free_block_info_members(
+					&(block_info_msg->block_array[i]));
+			xfree(block_info_msg->block_array);
+		}
+		xfree(block_info_msg);
+	}
+}
+
 void inline slurm_free_block_info_request_msg(
 	block_info_request_msg_t *msg)
 {

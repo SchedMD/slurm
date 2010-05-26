@@ -61,7 +61,7 @@ static int _get_new_info_block(block_info_msg_t **block_ptr)
 		error_code = slurm_load_block_info(bg_info_ptr->last_update,
 						   &new_bg_ptr);
 		if (error_code == SLURM_SUCCESS) {
-			slurm_free_block_info_msg(&bg_info_ptr);
+			slurm_free_block_info_msg(bg_info_ptr);
 		} else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
 			error_code = SLURM_NO_CHANGE_IN_DATA;
 			new_bg_ptr = bg_info_ptr;

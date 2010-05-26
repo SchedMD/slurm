@@ -242,11 +242,6 @@ extern int slurm_load_block_info (
         return SLURM_SUCCESS;
 }
 
-extern int slurm_free_block_info_msg(block_info_msg_t **block_info_msg_pptr)
-{
-	return node_select_block_info_msg_free(block_info_msg_pptr);
-}
-
 extern int slurm_get_select_jobinfo(dynamic_plugin_data_t *jobinfo,
 				    enum select_jobdata_type data_type,
 				    void *data)

@@ -583,7 +583,7 @@ update_color:
 
 extern int get_new_info_node(node_info_msg_t **info_ptr, int force)
 {
-	static node_info_msg_t *node_info_ptr = NULL, *new_node_ptr = NULL;
+	static node_info_msg_t *new_node_ptr = NULL;
 	uint16_t show_flags = 0;
 	int error_code = SLURM_NO_CHANGE_IN_DATA;
 	time_t now = time(NULL);
@@ -592,9 +592,9 @@ extern int get_new_info_node(node_info_msg_t **info_ptr, int force)
 	static uint16_t last_flags = 0;
 
 	if(!force && ((now - last) < working_sview_config.refresh_delay)) {
-		if(*info_ptr != node_info_ptr)
+		if(*info_ptr != g_node_info_ptr)
 			error_code = SLURM_SUCCESS;
-		*info_ptr = node_info_ptr;
+		*info_ptr = g_node_info_ptr;
 		if(changed)
 			return SLURM_SUCCESS;
 
@@ -604,17 +604,17 @@ extern int get_new_info_node(node_info_msg_t **info_ptr, int force)
 
 	if(working_sview_config.show_hidden)
 		show_flags |= SHOW_ALL;
-	if (node_info_ptr) {
+	if (g_node_info_ptr) {
 		if(show_flags != last_flags)
-			node_info_ptr->last_update = 0;
-		error_code = slurm_load_node(node_info_ptr->last_update,
+			g_node_info_ptr->last_update = 0;
+		error_code = slurm_load_node(g_node_info_ptr->last_update,
 					     &new_node_ptr, show_flags);
 		if (error_code == SLURM_SUCCESS) {
-			slurm_free_node_info_msg(node_info_ptr);
+			slurm_free_node_info_msg(g_node_info_ptr);
 			changed = 1;
 		} else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
 			error_code = SLURM_NO_CHANGE_IN_DATA;
-			new_node_ptr = node_info_ptr;
+			new_node_ptr = g_node_info_ptr;
 			changed = 0;
 		}
 	} else {
@@ -624,9 +624,9 @@ extern int get_new_info_node(node_info_msg_t **info_ptr, int force)
 	}
 
 	last_flags = show_flags;
-	node_info_ptr = new_node_ptr;
+	g_node_info_ptr = new_node_ptr;
 
-	if(*info_ptr != node_info_ptr)
+	if(*info_ptr != g_node_info_ptr)
 		error_code = SLURM_SUCCESS;
  	if(new_node_ptr && changed) {
 		int i;
@@ -638,8 +638,8 @@ extern int get_new_info_node(node_info_msg_t **info_ptr, int force)
 		cpus_per_node =
 			new_node_ptr->node_array[0].cpus / g_node_scaling;
 
-		for (i=0; i<node_info_ptr->record_count; i++) {
-			node_ptr = &(node_info_ptr->node_array[i]);
+		for (i=0; i<g_node_info_ptr->record_count; i++) {
+			node_ptr = &(g_node_info_ptr->node_array[i]);
 			if (!node_ptr->name || (node_ptr->name[0] == '\0'))
 				continue;	/* bad node */
 
@@ -1087,6 +1087,14 @@ extern void get_info_node(GtkTable *table, display_data_t *display_data)
 	int i = 0;
 	sview_node_info_t *sview_node_info_ptr = NULL;
 	ListIterator itr = NULL;
+
+	/* reset */
+	if(!table && !display_data) {
+		if(display_widget)
+			gtk_widget_destroy(display_widget);
+		display_widget = NULL;
+		return;
+	}
 
 	if(display_data)
 		local_display_data = display_data;

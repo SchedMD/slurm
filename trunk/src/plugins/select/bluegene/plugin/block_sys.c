@@ -1031,8 +1031,7 @@ extern int load_state_file(List curr_block_list, char *dir_name)
 		return EFAULT;
 	}
 	xfree(ver_str);
-	if(node_select_block_info_msg_unpack(&block_ptr, buffer,
-					     protocol_version)
+	if(slurm_unpack_block_info_msg(&block_ptr, buffer, protocol_version)
 	   == SLURM_ERROR) {
 		error("select_p_state_restore: problem unpacking block_info");
 		goto unpack_error;
@@ -1060,7 +1059,7 @@ extern int load_state_file(List curr_block_list, char *dir_name)
 		}
 	}
 
-	slurm_free_block_info_msg(&block_ptr);
+	slurm_free_block_info_msg(block_ptr);
 	free_buf(buffer);
 	return SLURM_SUCCESS;
 #endif
@@ -1259,7 +1258,7 @@ extern int load_state_file(List curr_block_list, char *dir_name)
 	slurm_mutex_unlock(&block_state_mutex);
 
 	info("Recovered %d blocks", blocks);
-	node_select_block_info_msg_free(&block_ptr);
+	slurm_free_block_info_msg(block_ptr);
 	free_buf(buffer);
 
 	return SLURM_SUCCESS;

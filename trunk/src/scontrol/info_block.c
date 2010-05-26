@@ -49,7 +49,7 @@ scontrol_load_block (block_info_msg_t **block_info_pptr)
 		error_code = slurm_load_block_info(
 			old_block_info_ptr->last_update, &info_ptr);
 		if (error_code == SLURM_SUCCESS)
-			slurm_free_block_info_msg(&old_block_info_ptr);
+			slurm_free_block_info_msg(old_block_info_ptr);
 		else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
 			info_ptr = old_block_info_ptr;
 			error_code = SLURM_SUCCESS;

@@ -763,11 +763,14 @@ extern uint16_t slurmdb_setup_cluster_dims()
 
 extern uint32_t slurmdb_setup_cluster_flags()
 {
-	uint32_t cluster_flags = 0;
+	static uint32_t cluster_flags = NO_VAL;
 
 	if(working_cluster_rec)
 		return working_cluster_rec->flags;
+	else if(cluster_flags != NO_VAL)
+		return cluster_flags;
 
+	cluster_flags = 0;
 #ifdef HAVE_BG
 	cluster_flags |= CLUSTER_FLAG_BG;
 #endif
@@ -794,6 +797,9 @@ extern uint32_t slurmdb_setup_cluster_flags()
 #endif
 #ifdef HAVE_CRAY_XT
 	cluster_flags |= CLUSTER_FLAG_CRAYXT;
+#endif
+#ifdef HAVE_FRONT_END
+	cluster_flags |= CLUSTER_FLAG_FE;
 #endif
 	return cluster_flags;
 }

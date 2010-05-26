@@ -53,6 +53,7 @@
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/node_select.h"
+#include "src/common/slurmdb_defs.h"
 
 /* build maps for task layout on nodes */
 static int _init_task_layout(slurm_step_layout_t *step_layout,
@@ -67,12 +68,8 @@ static int _task_layout_cyclic(slurm_step_layout_t *step_layout,
 			       uint16_t *cpus);
 static int _task_layout_plane(slurm_step_layout_t *step_layout,
 			      uint16_t *cpus);
-#ifndef HAVE_FRONT_END
 static int _task_layout_hostfile(slurm_step_layout_t *step_layout,
 				 const char *arbitrary_nodes);
-#endif
-
-
 
 /*
  * slurm_step_layout_create - determine how many tasks of a job will be
@@ -101,6 +98,7 @@ slurm_step_layout_t *slurm_step_layout_create(
 	char *arbitrary_nodes = NULL;
 	slurm_step_layout_t *step_layout =
 		xmalloc(sizeof(slurm_step_layout_t));
+	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 
 	step_layout->task_dist = task_dist;
 	if(task_dist == SLURM_DIST_ARBITRARY) {
@@ -120,20 +118,18 @@ slurm_step_layout_t *slurm_step_layout_create(
 	}
 
 	step_layout->task_cnt  = num_tasks;
-
-#ifdef HAVE_FRONT_END	/* Limited job step support */
-	/* All jobs execute through front-end on Blue Gene.
-	 * Normally we would not permit execution of job steps,
-	 * but can fake it by just allocating all tasks to
-	 * one of the allocated nodes. */
-#ifdef HAVE_BG
-	step_layout->node_cnt  = num_hosts;
-#else
-	step_layout->node_cnt  = 1;
-#endif
-#else
-	step_layout->node_cnt  = num_hosts;
-#endif
+	if(cluster_flags & CLUSTER_FLAG_FE) {
+		/* Limited job step support */
+		/* All jobs execute through front-end on Blue Gene.
+		 * Normally we would not permit execution of job steps,
+		 * but can fake it by just allocating all tasks to
+		 * one of the allocated nodes. */
+		if(cluster_flags & CLUSTER_FLAG_BG)
+			step_layout->node_cnt  = num_hosts;
+		else
+			step_layout->node_cnt  = 1;
+	} else
+		step_layout->node_cnt  = num_hosts;
 
 	if(_init_task_layout(step_layout, arbitrary_nodes,
 			     cpus_per_node, cpu_count_reps,
@@ -413,9 +409,8 @@ static int _init_task_layout(slurm_step_layout_t *step_layout,
 			     uint16_t task_dist, uint16_t plane_size)
 {
 	int cpu_cnt = 0, cpu_inx = 0, i;
-#ifndef HAVE_BG
-	hostlist_t hl = NULL;
-#endif
+	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
+
 /* 	char *name = NULL; */
 	uint16_t cpus[step_layout->node_cnt];
 
@@ -433,16 +428,15 @@ static int _init_task_layout(slurm_step_layout_t *step_layout,
 				     * step_layout->node_cnt);
 	step_layout->tids  = xmalloc(sizeof(uint32_t *)
 				     * step_layout->node_cnt);
-
-#ifndef HAVE_BG
-	hl = hostlist_create(step_layout->node_list);
-	/* make sure the number of nodes we think we have
-	 * is the correct number */
-	i = hostlist_count(hl);
-	if(step_layout->node_cnt > i)
-		step_layout->node_cnt = i;
-	hostlist_destroy(hl);
-#endif
+	if(!(cluster_flags & CLUSTER_FLAG_BG)) {
+		hostlist_t hl = hostlist_create(step_layout->node_list);
+		/* make sure the number of nodes we think we have
+		 * is the correct number */
+		i = hostlist_count(hl);
+		if(step_layout->node_cnt > i)
+			step_layout->node_cnt = i;
+		hostlist_destroy(hl);
+	}
 	debug("laying out the %u tasks on %u hosts %s",
 	      step_layout->task_cnt, step_layout->node_cnt,
 	      step_layout->node_list);
@@ -479,17 +473,15 @@ static int _init_task_layout(slurm_step_layout_t *step_layout,
             (task_dist == SLURM_DIST_CYCLIC_CYCLIC) ||
             (task_dist == SLURM_DIST_CYCLIC_BLOCK))
 		return _task_layout_cyclic(step_layout, cpus);
-#ifndef HAVE_FRONT_END
-	else if(task_dist == SLURM_DIST_ARBITRARY)
+	else if(task_dist == SLURM_DIST_ARBITRARY
+		&& !(cluster_flags & CLUSTER_FLAG_FE))
 		return _task_layout_hostfile(step_layout, arbitrary_nodes);
-#endif
         else if(task_dist == SLURM_DIST_PLANE)
                 return _task_layout_plane(step_layout, cpus);
 	else
 		return _task_layout_block(step_layout, cpus);
 }
 
-#ifndef HAVE_FRONT_END
 /* use specific set run tasks on each host listed in hostfile
  * XXX: Need to handle over-subscribe.
  */
@@ -570,7 +562,6 @@ static int _task_layout_hostfile(slurm_step_layout_t *step_layout,
 
 	return SLURM_SUCCESS;
 }
-#endif
 
 /* to effectively deal with heterogeneous nodes, we fake a cyclic
  * distribution to figure out how many tasks go on each node and

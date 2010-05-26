@@ -265,7 +265,6 @@ typedef struct {
 	List *button_list;
 } signal_params_t;
 
-
 extern sview_config_t default_sview_config;
 extern sview_config_t working_sview_config;
 
@@ -293,6 +292,13 @@ extern char *sview_colors[];
 extern int sview_colors_cnt;
 extern uint32_t cluster_flags;
 extern int cluster_dims;
+
+extern block_info_msg_t *g_block_info_ptr;
+extern job_info_msg_t *g_job_info_ptr;
+extern node_info_msg_t *g_node_info_ptr;
+extern partition_info_msg_t *g_part_info_ptr;
+extern reserve_info_msg_t *g_resv_info_ptr;
+extern slurm_ctl_conf_info_msg_t *g_ctl_info_ptr;
 
 extern void init_grid(node_info_msg_t *node_info_ptr);
 extern int set_grid(int start, int end, int count);

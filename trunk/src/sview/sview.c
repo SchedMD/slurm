@@ -74,6 +74,13 @@ GCond *grid_cond = NULL;
 uint32_t cluster_flags;
 int cluster_dims;
 
+block_info_msg_t *g_block_info_ptr = NULL;
+job_info_msg_t *g_job_info_ptr = NULL;
+node_info_msg_t *g_node_info_ptr = NULL;
+partition_info_msg_t *g_part_info_ptr = NULL;
+reserve_info_msg_t *g_resv_info_ptr = NULL;
+slurm_ctl_conf_info_msg_t *g_ctl_info_ptr = NULL;
+
 static GtkActionGroup *admin_action_group = NULL;
 static GtkActionGroup *menu_action_group = NULL;
 static bool debug_inited = 0;
@@ -807,7 +814,34 @@ extern void change_cluster_main()
 			}
 		}
 	}
+	slurm_free_block_info_msg(g_block_info_ptr);
+	g_block_info_ptr = NULL;
+	slurm_free_job_info_msg(g_job_info_ptr);
+	g_job_info_ptr = NULL;
+	slurm_free_node_info_msg(g_node_info_ptr);
+	g_node_info_ptr = NULL;
+	slurm_free_partition_info_msg(g_part_info_ptr);
+	g_part_info_ptr = NULL;
+	slurm_free_reservation_info_msg(g_resv_info_ptr);
+	g_resv_info_ptr = NULL;
+	slurm_free_ctl_conf(g_ctl_info_ptr);
+	g_ctl_info_ptr = NULL;
+
+	/* if(g_block_info_ptr) */
+	/* 	g_block_info_ptr->last_update = 0; */
+	/* if(g_job_info_ptr) */
+	/* 	g_job_info_ptr->last_update = 0; */
+	/* if(g_node_info_ptr) */
+	/* 	g_node_info_ptr->last_update = 0; */
+	/* if(g_part_info_ptr) */
+	/* 	g_part_info_ptr->last_update = 0; */
+	/* if(g_resv_info_ptr) */
+	/* 	g_resv_info_ptr->last_update = 0; */
+	/* if(g_ctl_info_ptr) */
+	/* 	g_ctl_info_ptr->last_update = 0; */
+
 	cluster_change_block();
+	cluster_change_resv();
 }
 
 extern void refresh_main(GtkAction *action, gpointer user_data)

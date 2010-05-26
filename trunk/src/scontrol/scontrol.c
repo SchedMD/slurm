@@ -556,18 +556,30 @@ _process_command (int argc, char *argv[])
 			working_cluster_rec = list_peek(clusters);
 		}
 		cluster_flags = slurmdb_setup_cluster_flags();
-		if(old_block_info_ptr)
-			old_block_info_ptr->last_update = 0;
-		if(old_job_info_ptr)
-			old_job_info_ptr->last_update = 0;
-		if(old_node_info_ptr)
-			old_node_info_ptr->last_update = 0;
-		if(old_part_info_ptr)
-			old_part_info_ptr->last_update = 0;
-		if(old_res_info_ptr)
-			old_res_info_ptr->last_update = 0;
-		if(old_slurm_ctl_conf_ptr)
-			old_slurm_ctl_conf_ptr->last_update = 0;
+		slurm_free_block_info_msg(old_block_info_ptr);
+		old_block_info_ptr = NULL;
+		slurm_free_job_info_msg(old_job_info_ptr);
+		old_job_info_ptr = NULL;
+		slurm_free_node_info_msg(old_node_info_ptr);
+		old_node_info_ptr = NULL;
+		slurm_free_partition_info_msg(old_part_info_ptr);
+		old_part_info_ptr = NULL;
+		slurm_free_reservation_info_msg(old_res_info_ptr);
+		old_res_info_ptr = NULL;
+		slurm_free_ctl_conf(old_slurm_ctl_conf_ptr);
+		old_slurm_ctl_conf_ptr = NULL;
+		/* if(old_block_info_ptr) */
+		/* 	old_block_info_ptr->last_update = 0; */
+		/* if(old_job_info_ptr) */
+		/* 	old_job_info_ptr->last_update = 0; */
+		/* if(old_node_info_ptr) */
+		/* 	old_node_info_ptr->last_update = 0; */
+		/* if(old_part_info_ptr) */
+		/* 	old_part_info_ptr->last_update = 0; */
+		/* if(old_res_info_ptr) */
+		/* 	old_res_info_ptr->last_update = 0; */
+		/* if(old_slurm_ctl_conf_ptr) */
+		/* 	old_slurm_ctl_conf_ptr->last_update = 0; */
 	}
 	else if (strncasecmp (tag, "create", MAX(taglen, 2)) == 0) {
 		if (argc < 2) {

@@ -104,8 +104,8 @@ static display_data_t display_data_block[] = {
 	{G_TYPE_STRING, SORTID_CONN, "Connection Type",
 	 FALSE, EDIT_NONE, refresh_block,
 	 create_model_block, admin_edit_block},
-	{G_TYPE_STRING, SORTID_NODELIST, "BP List", TRUE, EDIT_NONE, refresh_block,
-	 create_model_block, admin_edit_block},
+	{G_TYPE_STRING, SORTID_NODELIST, "BP List", TRUE,
+	 EDIT_NONE, refresh_block, create_model_block, admin_edit_block},
 	{G_TYPE_STRING, SORTID_PARTITION, "Partition",
 	 TRUE, EDIT_NONE, refresh_block,
 	 create_model_block, admin_edit_block},
@@ -492,10 +492,10 @@ static List _create_block_list(partition_info_msg_t *part_info_ptr,
 		return block_list;
 	}
 
-	if(block_list) {
-		list_destroy(block_list);
-	}
-	block_list = list_create(_block_list_del);
+	if(block_list)
+		list_flush(block_list);
+	else
+		block_list = list_create(_block_list_del);
 	if (!block_list) {
 		g_print("malloc error\n");
 		return NULL;
@@ -694,7 +694,6 @@ extern void refresh_block(GtkAction *action, gpointer user_data)
 extern int get_new_info_block(block_info_msg_t **block_ptr, int force)
 {
 	int error_code = SLURM_NO_CHANGE_IN_DATA;
-	static block_info_msg_t *bg_info_ptr = NULL;
 	static block_info_msg_t *new_bg_ptr = NULL;
 	time_t now = time(NULL);
 	static time_t last;
@@ -704,23 +703,23 @@ extern int get_new_info_block(block_info_msg_t **block_ptr, int force)
 		return error_code;
 
 	if(!force && ((now - last) < working_sview_config.refresh_delay)) {
-		if(*block_ptr != bg_info_ptr)
+		if(*block_ptr != g_block_info_ptr)
 			error_code = SLURM_SUCCESS;
-		*block_ptr = bg_info_ptr;
+		*block_ptr = g_block_info_ptr;
 		if(changed)
 			return SLURM_SUCCESS;
 		return error_code;
 	}
 	last = now;
-	if (bg_info_ptr) {
-		error_code = slurm_load_block_info(bg_info_ptr->last_update,
-						   &new_bg_ptr);
+	if (g_block_info_ptr) {
+		error_code = slurm_load_block_info(
+			g_block_info_ptr->last_update, &new_bg_ptr);
 		if (error_code == SLURM_SUCCESS) {
-			slurm_free_block_info_msg(&bg_info_ptr);
+			slurm_free_block_info_msg(g_block_info_ptr);
 			changed = 1;
 		} else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
 			error_code = SLURM_NO_CHANGE_IN_DATA;
-			new_bg_ptr = bg_info_ptr;
+			new_bg_ptr = g_block_info_ptr;
 			changed = 0;
 		}
 	} else {
@@ -729,9 +728,9 @@ extern int get_new_info_block(block_info_msg_t **block_ptr, int force)
 		changed = 1;
 	}
 
-	bg_info_ptr = new_bg_ptr;
+	g_block_info_ptr = new_bg_ptr;
 	if(block_ptr) {
-		if(*block_ptr != bg_info_ptr)
+		if(*block_ptr != g_block_info_ptr)
 			error_code = SLURM_SUCCESS;
 
 		*block_ptr = new_bg_ptr;
@@ -898,8 +897,6 @@ extern void get_info_block(GtkTable *table, display_data_t *display_data)
 		if(display_widget)
 			gtk_widget_destroy(display_widget);
 		display_widget = NULL;
-		get_new_info_part(&part_info_ptr, true);
-		get_new_info_block(&block_ptr, true);
 		return;
 	}
 
