@@ -6,6 +6,7 @@
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
+ *  Portions Copyright (C) 2010 SchedMD <http://www.schedmd.com>.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette@llnl.gov> et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -219,8 +220,7 @@ struct part_record *create_part_record(void)
 
 	last_part_update = time(NULL);
 
-	part_ptr =
-	    (struct part_record *) xmalloc(sizeof(struct part_record));
+	part_ptr = (struct part_record *) xmalloc(sizeof(struct part_record));
 
 	xassert (part_ptr->magic = PART_MAGIC);  /* set value */
 	part_ptr->name              = xstrdup("DEFAULT");
@@ -234,6 +234,7 @@ struct part_record *create_part_record(void)
 	part_ptr->min_nodes_orig    = default_part.min_nodes;
 	part_ptr->state_up          = default_part.state_up;
 	part_ptr->max_share         = default_part.max_share;
+	part_ptr->preempt_mode      = default_part.preempt_mode;
 	part_ptr->priority          = default_part.priority;
 	if(part_max_priority)
 		part_ptr->norm_priority = (double)default_part.priority
@@ -398,6 +399,7 @@ static void _dump_part_state(struct part_record *part_ptr, Buf buffer)
 
 	pack16(part_ptr->flags,          buffer);
 	pack16(part_ptr->max_share,      buffer);
+	pack16(part_ptr->preempt_mode,   buffer);
 	pack16(part_ptr->priority,       buffer);
 
 	pack16(part_ptr->state_up,       buffer);
@@ -451,7 +453,7 @@ int load_all_part_state(void)
 	uint32_t max_time, default_time, max_nodes, min_nodes;
 	time_t time;
 	uint16_t def_part_flag, flags, hidden, root_only;
-	uint16_t max_share, priority, state_up;
+	uint16_t max_share, preempt_mode, priority, state_up;
 	struct part_record *part_ptr;
 	uint32_t data_size = 0, name_len;
 	int data_allocated, data_read = 0, error_code = 0, part_cnt = 0;
@@ -525,9 +527,10 @@ int load_all_part_state(void)
 			safe_unpack32(&max_nodes, buffer);
 			safe_unpack32(&min_nodes, buffer);
 
-			safe_unpack16(&flags,     buffer);
-			safe_unpack16(&max_share, buffer);
-			safe_unpack16(&priority,  buffer);
+			safe_unpack16(&flags,        buffer);
+			safe_unpack16(&max_share,    buffer);
+			safe_unpack16(&preempt_mode, buffer);
+			safe_unpack16(&priority,     buffer);
 
 			if(priority > part_max_priority)
 				part_max_priority = priority;
@@ -588,6 +591,7 @@ int load_all_part_state(void)
 				      root_only);
 				error_code = EINVAL;
 			}
+			preempt_mode = (uint16_t) NO_VAL;
 		}
 		/* validity test as possible */
 		if (state_up > PARTITION_UP) {
@@ -631,6 +635,8 @@ int load_all_part_state(void)
 		part_ptr->min_nodes      = min_nodes;
 		part_ptr->min_nodes_orig = min_nodes;
 		part_ptr->max_share      = max_share;
+		if (preempt_mode != (uint16_t) NO_VAL)
+			part_ptr->preempt_mode   = preempt_mode;
 		part_ptr->priority       = priority;
 		part_ptr->state_up       = state_up;
 		xfree(part_ptr->allow_groups);
@@ -693,6 +699,7 @@ int init_part_conf(void)
 	default_part.min_nodes_orig = 1;
 	default_part.state_up       = PARTITION_UP;
 	default_part.max_share      = 1;
+	default_part.preempt_mode   = (uint16_t) NO_VAL;
 	default_part.priority       = 1;
 	default_part.norm_priority  = 0;
 	default_part.total_nodes    = 0;
@@ -902,6 +909,7 @@ void pack_part(struct part_record *part_ptr, Buf buffer,
 		pack32(part_ptr->total_cpus, buffer);
 		pack16(part_ptr->flags,      buffer);
 		pack16(part_ptr->max_share,  buffer);
+		pack16(part_ptr->preempt_mode, buffer);
 		pack16(part_ptr->priority,   buffer);
 
 		pack16(part_ptr->state_up, buffer);
@@ -1110,6 +1118,19 @@ extern int update_part (update_part_msg_t * part_desc, bool create_flag)
 		info("update_part: setting share to %s for partition %s",
 		     tmp_str, part_desc->name);
 		part_ptr->max_share = part_desc->max_share;
+	}
+
+	if (part_desc->preempt_mode != (uint16_t) NO_VAL) {
+		uint16_t new_mode;
+		new_mode = part_desc->preempt_mode & (~PREEMPT_MODE_GANG);
+		if (new_mode <= PREEMPT_MODE_CANCEL) {
+			info("update_part: setting preempt_mode to %s for "
+			     "partition %s",
+			     preempt_mode_string(new_mode), part_desc->name);
+			part_ptr->preempt_mode = new_mode;
+		} else {
+			info("update_part: invalid preempt_mode %u", new_mode);
+		}
 	}
 
 	if (part_desc->priority != (uint16_t) NO_VAL) {

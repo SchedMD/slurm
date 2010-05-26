@@ -5,6 +5,7 @@
  *****************************************************************************
  *  Copyright (C) 2004-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
+ *  Portions Copyright (C) 2010 SchedMD <http://www.schedmd.com>.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -194,9 +195,6 @@ static struct node_record *select_node_ptr = NULL;
 static int select_node_cnt = 0;
 static uint16_t select_fast_schedule;
 static uint16_t cr_type;
-static bool job_preemption_enabled = false;
-static bool job_preemption_killing = false;
-static bool job_preemption_tested  = false;
 
 /* Record of resources consumed on each node including job details */
 static struct cr_record *cr_ptr = NULL;
@@ -416,30 +414,6 @@ static bool _rem_tot_job(struct cr_record *cr_ptr, uint32_t job_id)
 static bool _test_tot_job(struct cr_record *cr_ptr, uint32_t job_id)
 {
 	return _ck_tot_job(cr_ptr, job_id, false);
-}
-
-static inline bool _job_preemption_enabled(void)
-{
-	if (!job_preemption_tested) {
-		uint16_t mode = slurm_get_preempt_mode();
-		mode &= (~PREEMPT_MODE_GANG);
-		if (mode == PREEMPT_MODE_SUSPEND)
-			job_preemption_enabled = true;
-		else if ((mode == PREEMPT_MODE_CANCEL)     ||
-			 (mode == PREEMPT_MODE_CHECKPOINT) ||
-			 (mode == PREEMPT_MODE_REQUEUE)) {
-			job_preemption_enabled = true;
-			job_preemption_killing = true;
-		}
-		job_preemption_tested = true;
-	}
-	return job_preemption_enabled;
-}
-static inline bool _job_preemption_killing(void)
-{
-	(void) _job_preemption_enabled();
-	return job_preemption_killing;
-
 }
 
 static bool _enough_nodes(int avail_nodes, int rem_nodes,
@@ -714,7 +688,8 @@ static int _job_count_bitmap(struct cr_record *cr_ptr,
 			}
 		}
 
-		if (cr_ptr->nodes[i].exclusive_cnt != 0) {
+		if ((mode != SELECT_MODE_TEST_ONLY) &&
+		    (cr_ptr->nodes[i].exclusive_cnt != 0)) {
 			/* already reserved by some exclusive job */
 			bit_clear(jobmap, i);
 			continue;
@@ -1996,7 +1971,6 @@ static int _test_only(struct job_record *job_ptr, bitstr_t *bitmap,
 {
 	bitstr_t *orig_map;
 	int i, rc = SLURM_ERROR;
-	int max_run_jobs = max_share - 1;	/* exclude this job */
 	uint32_t save_mem;
 
 	orig_map = bit_copy(bitmap);
@@ -2005,7 +1979,7 @@ static int _test_only(struct job_record *job_ptr, bitstr_t *bitmap,
 
 	/* Try to run with currently available nodes */
 	i = _job_count_bitmap(cr_ptr, job_ptr, orig_map, bitmap,
-			      max_run_jobs, NO_SHARE_LIMIT,
+			      NO_SHARE_LIMIT, NO_SHARE_LIMIT,
 			      SELECT_MODE_TEST_ONLY);
 	if (i >= min_nodes) {
 		save_mem = job_ptr->details->pn_min_memory;
@@ -2083,10 +2057,17 @@ static int _run_now(struct job_record *job_ptr, bitstr_t *bitmap,
 				continue;
 			if (_is_preemptable(tmp_job_ptr,
 					    preemptee_candidates)) {
+				bool remove_all = false;
+				uint16_t mode;
+				mode = slurm_job_preempt_mode(tmp_job_ptr);
+				if ((mode == PREEMPT_MODE_REQUEUE)    ||
+				    (mode == PREEMPT_MODE_CHECKPOINT) ||
+				    (mode == PREEMPT_MODE_CANCEL))
+					remove_all = true;
 				/* Remove preemptable job now */
 				_rm_job_from_nodes(exp_cr, tmp_job_ptr,
 						   "_will_run_test",
-						   _job_preemption_killing());
+						   remove_all);
 				j = _job_count_bitmap(exp_cr, job_ptr,
 						      orig_map, bitmap,
 						      (max_share - 1),
@@ -2103,7 +2084,7 @@ static int _run_now(struct job_record *job_ptr, bitstr_t *bitmap,
 		list_iterator_destroy(job_iterator);
 
 		if ((rc == SLURM_SUCCESS) && preemptee_job_list &&
-		    preemptee_candidates && _job_preemption_killing()) {
+		    preemptee_candidates) {
 			/* Build list of preemptee jobs whose resources are
 			 * actually used */
 			if (*preemptee_job_list == NULL) {
@@ -2118,7 +2099,6 @@ static int _run_now(struct job_record *job_ptr, bitstr_t *bitmap,
 				if (bit_overlap(bitmap,
 						tmp_job_ptr->node_bitmap) == 0)
 					continue;
-
 				list_append(*preemptee_job_list,
 					    tmp_job_ptr);
 			}
@@ -2192,10 +2172,15 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			continue;
 		}
 		if (_is_preemptable(tmp_job_ptr, preemptee_candidates)) {
+			uint16_t mode = slurm_job_preempt_mode(tmp_job_ptr);
+			bool remove_all = false;
+			if ((mode == PREEMPT_MODE_REQUEUE)    ||
+			    (mode == PREEMPT_MODE_CHECKPOINT) ||
+			    (mode == PREEMPT_MODE_CANCEL))
+				remove_all = true;
 			/* Remove preemptable job now */
 			_rm_job_from_nodes(exp_cr, tmp_job_ptr,
-					   "_will_run_test",
-					   _job_preemption_killing());
+					   "_will_run_test", remove_all);
 		} else
 			list_append(cr_job_list, tmp_job_ptr);
 
@@ -2803,9 +2788,6 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 extern int select_p_reconfigure(void)
 {
 	slurm_mutex_lock(&cr_mutex);
-	job_preemption_enabled = false;
-	job_preemption_killing = false;
-	job_preemption_tested  = false;
 	_free_cr(cr_ptr);
 	cr_ptr = NULL;
 	_init_node_cr();

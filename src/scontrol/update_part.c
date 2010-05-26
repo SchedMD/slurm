@@ -1,7 +1,9 @@
 /*****************************************************************************\
  *  update_part.c - partition update function for scontrol.
  *****************************************************************************
- *  Copyright (C) 2002-2006 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
+ *  Portions Copyright (C) 2010 SchedMD <http://www.schedmd.com>.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -213,7 +215,17 @@ scontrol_parse_part_options (int argc, char *argv[], int *update_cnt_ptr,
 			}
 			(*update_cnt_ptr)++;
 		}
-		else if (strncasecmp(tag, "Priority", MAX(taglen, 2)) == 0) {
+		else if (strncasecmp(tag, "PreemptMode", MAX(taglen, 3)) == 0) {
+			uint16_t new_mode = preempt_mode_num(val);
+			if (new_mode != (uint16_t) NO_VAL)
+				part_msg_ptr->preempt_mode = new_mode;
+			else {
+				error("Invalid input: %s", argv[i]);
+				return -1;
+			}
+			(*update_cnt_ptr)++;
+		}
+		else if (strncasecmp(tag, "Priority", MAX(taglen, 3)) == 0) {
 			part_msg_ptr->priority = (uint16_t) strtol(val,
 					(char **) NULL, 10);
 			(*update_cnt_ptr)++;

@@ -1,4 +1,4 @@
-.TH SINFO "1" "May 2008" "sinfo 2.0" "Slurm components"
+.TH SINFO "1" "May 2008" "sinfo 2.2" "Slurm components"
 
 .SH "NAME"
 sinfo \- view information about SLURM nodes and partitions.
@@ -164,6 +164,8 @@ Default time for any job in the format "days\-hours:minutes:seconds"
 .TP
 \fB%m\fR
 Size of memory per node in megabytes
+\fB%M\fR
+PreemptionMode
 .TP
 \fB%N\fR
 List of node names
@@ -539,6 +541,7 @@ Not Responding                      dev8
 .SH "COPYING"
 Copyright (C) 2002\-2007 The Regents of the University of California.
 Copyright (C) 2008\-2009 Lawrence Livermore National Security.
+Portions Copyright (C) 2010 SchedMD <http://www.schedmd.com>.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 CODE\-OCEC\-09\-009. All rights reserved.
 .LP

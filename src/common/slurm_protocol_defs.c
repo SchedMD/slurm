@@ -5,6 +5,7 @@
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
+ *  Portions Copyright (C) 2010 SchedMD <http://www.schedmd.com>.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Kevin Tew <tew1@llnl.gov> et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -891,6 +892,81 @@ void inline slurm_free_will_run_response_msg(will_run_response_msg_t *msg)
 			list_destroy(msg->preemptee_job_id);
                 xfree(msg);
         }
+}
+
+extern char *preempt_mode_string(uint16_t preempt_mode)
+{
+	char *gang_str;
+	static char preempt_str[64];
+
+	if (preempt_mode == PREEMPT_MODE_OFF)
+		return "OFF";
+	if (preempt_mode == PREEMPT_MODE_GANG)
+		return "GANG";
+
+	if (preempt_mode & PREEMPT_MODE_GANG) {
+		gang_str = "GANG,";
+		preempt_mode &= (~PREEMPT_MODE_GANG);
+	} else
+		gang_str = "";
+
+	if      (preempt_mode == PREEMPT_MODE_CANCEL)
+		sprintf(preempt_str, "%sCANCEL", gang_str);
+	else if (preempt_mode == PREEMPT_MODE_CHECKPOINT)
+		sprintf(preempt_str, "%sCHECKPOINT", gang_str);
+	else if (preempt_mode == PREEMPT_MODE_REQUEUE)
+		sprintf(preempt_str, "%sREQUEUE", gang_str);
+	else if (preempt_mode == PREEMPT_MODE_SUSPEND)
+		sprintf(preempt_str, "%sSUSPEND", gang_str);
+	else
+		sprintf(preempt_str, "%sUNKNOWN", gang_str);
+
+	return preempt_str;
+}
+
+extern uint16_t preempt_mode_num(const char *preempt_mode)
+{
+	uint16_t mode_num = 0;
+	int preempt_modes = 0;
+	char *tmp_str, *last = NULL, *tok;
+
+	if (preempt_mode == NULL)
+		return mode_num;
+
+	tmp_str = xstrdup(preempt_mode);
+	tok = strtok_r(tmp_str, ",", &last);
+	while (tok) {
+		if (strcasecmp(tok, "gang") == 0) {
+			mode_num |= PREEMPT_MODE_GANG;
+		} else if (strcasecmp(tok, "off") == 0) {
+			mode_num += PREEMPT_MODE_OFF;
+			preempt_modes++;
+		} else if (strcasecmp(tok, "cancel") == 0) {
+			mode_num += PREEMPT_MODE_CANCEL;
+			preempt_modes++;
+		} else if (strcasecmp(tok, "checkpoint") == 0) {
+			mode_num += PREEMPT_MODE_CHECKPOINT;
+			preempt_modes++;
+		} else if (strcasecmp(tok, "requeue") == 0) {
+			mode_num += PREEMPT_MODE_REQUEUE;
+			preempt_modes++;
+		} else if ((strcasecmp(tok, "on") == 0) ||
+			   (strcasecmp(tok, "suspend") == 0)) {
+			mode_num += PREEMPT_MODE_SUSPEND;
+			preempt_modes++;
+		} else {
+			preempt_modes = 0;
+			mode_num = (uint16_t) NO_VAL;
+			break;
+		}
+		tok = strtok_r(NULL, ",", &last);
+	}
+	xfree(tmp_str);
+	if (preempt_modes > 1) {
+		mode_num = (uint16_t) NO_VAL;
+	}
+
+	return mode_num;
 }
 
 char *job_state_string(uint16_t inx)

@@ -3,6 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
+ *  Portions Copyright (C) 2010 SchedMD <http://www.schedmd.com>.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov> and Kevin Tew <tew1@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -130,37 +131,6 @@ _reset_period_str(uint16_t reset_period)
 		default:
 			return "UNKNOWN";
 	}
-}
-
-static char *
-_preempt_str(uint16_t preempt_mode)
-{
-	char *gang_str;
-	static char preempt_str[64];
-
-	if (preempt_mode == PREEMPT_MODE_OFF)
-		return "OFF";
-	if (preempt_mode == PREEMPT_MODE_GANG)
-		return "GANG";
-
-	if (preempt_mode & PREEMPT_MODE_GANG) {
-		gang_str = "GANG,";
-		preempt_mode &= (~PREEMPT_MODE_GANG);
-	} else
-		gang_str = "";
-
-	if      (preempt_mode == PREEMPT_MODE_CANCEL)
-		sprintf(preempt_str, "%sCANCEL", gang_str);
-	else if (preempt_mode == PREEMPT_MODE_CHECKPOINT)
-		sprintf(preempt_str, "%sCHECKPOINT", gang_str);
-	else if (preempt_mode == PREEMPT_MODE_REQUEUE)
-		sprintf(preempt_str, "%sREQUEUE", gang_str);
-	else if (preempt_mode == PREEMPT_MODE_SUSPEND)
-		sprintf(preempt_str, "%sSUSPEND", gang_str);
-	else
-		sprintf(preempt_str, "%sUNKNOWN", gang_str);
-
-	return preempt_str;
 }
 
 /*
@@ -661,8 +631,8 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("PreemptMode");
-	key_pair->value = xstrdup(_preempt_str(
-					  slurm_ctl_conf_ptr->preempt_mode));
+	key_pair->value = xstrdup(preempt_mode_string(slurm_ctl_conf_ptr->
+						      preempt_mode));
 	list_append(ret_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));

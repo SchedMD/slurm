@@ -3,6 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
+ *  Portions Copyright (C) 2010 SchedMD <http://www.schedmd.com>.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -127,6 +128,7 @@ void slurm_init_part_desc_msg (update_part_msg_t * update_part_msg)
 	update_part_msg->max_share 	= (uint16_t) NO_VAL;
 	update_part_msg->min_nodes 	= NO_VAL;
 	update_part_msg->max_time 	= (uint32_t) NO_VAL;
+	update_part_msg->preempt_mode 	= (uint16_t) NO_VAL;
 	update_part_msg->priority 	= (uint16_t) NO_VAL;
 	update_part_msg->state_up 	= (uint16_t) NO_VAL;
 }

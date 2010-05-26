@@ -3,6 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
+ *  Portions Copyright (C) 2010 SchedMD <http://www.schedmd.com>.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Kevin Tew <tew1@llnl.gov>, et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -2598,6 +2599,7 @@ _pack_update_partition_msg(update_part_msg_t * msg, Buf buffer,
 		packstr(msg->nodes,        buffer);
 		pack16(msg-> flags,        buffer);
 		pack16(msg-> max_share,    buffer);
+		pack16(msg-> preempt_mode, buffer);
 		pack16(msg-> priority,     buffer);
 		pack16(msg-> state_up,     buffer);
 
@@ -2675,6 +2677,7 @@ _unpack_update_partition_msg(update_part_msg_t ** msg, Buf buffer,
 
 		safe_unpack16(&tmp_ptr->flags,     buffer);
 		safe_unpack16(&tmp_ptr->max_share, buffer);
+		safe_unpack16(&tmp_ptr->preempt_mode, buffer);
 		safe_unpack16(&tmp_ptr->priority,  buffer);
 		safe_unpack16(&tmp_ptr->state_up,  buffer);
 
@@ -3286,6 +3289,7 @@ _unpack_partition_info_members(partition_info_t * part, Buf buffer,
 		safe_unpack32(&part->total_cpus,   buffer);
 		safe_unpack16(&part->flags,        buffer);
 		safe_unpack16(&part->max_share,    buffer);
+		safe_unpack16(&part->preempt_mode, buffer);
 		safe_unpack16(&part->priority,     buffer);
 
 		safe_unpack16(&part->state_up, buffer);

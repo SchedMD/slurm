@@ -68,7 +68,8 @@ and a three-dimensional torus interconnect </li>
 </ul>
 <p>SLURM is actively being developed, distributed and supported by
 <a href="https://www.llnl.gov">Lawrence Livermore National Laboratory</a>,
-<a href="http://www.hp.com">Hewlett-Packard</a> and
+<a href="http://www.hp.com">Hewlett-Packard</a>,
+<a href="http://www.schedmd.com">SchedMD</a>.
 <a href="http://www.bull.com">Bull</a>.
 It is also distributed and supported by
 <a href="http://www.adaptivecomputing.com">Adaptive Computing</a>,
@@ -76,6 +77,6 @@ It is also distributed and supported by
 <a href="http://www.ibm.com">IBM</a> and
 <a href="http://www.sun.com">Sun Microsystems</a>.</p>
 
-<p style="text-align:center;">Last modified 25 March 2009</p>
+<p style="text-align:center;">Last modified 26 May 2010</p>
 
 <!--#include virtual="footer.txt"-->

@@ -4,6 +4,7 @@
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
+ *  Portions Copyright (C) 2010 SchedMD <http://www.schedmd.com>.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -647,8 +648,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 
 	/* If job preemption is enabled, then do NOT limit the set of available
 	 * nodes by their current 'sharable' or 'idle' setting */
-	if (slurm_get_preempt_mode() != PREEMPT_MODE_OFF)
-		preempt_flag = true;
+	preempt_flag = slurm_preemption_enabled();
 
 	if (cr_enabled) {
 		/* Determine which nodes might be used by this job based upon
@@ -957,24 +957,20 @@ static void _preempt_jobs(List preemptee_job_list, int *error_code)
 	ListIterator iter;
 	struct job_record *job_ptr;
 	uint16_t mode;
-	int job_cnt = 0, rc = 0;
-
-	mode = slurm_get_preempt_mode();
-	mode &= (~PREEMPT_MODE_GANG);
-	if (mode == PREEMPT_MODE_SUSPEND)
-		return;		/* just start job and let gang do suspend */
+	int job_cnt = 0, rc = SLURM_SUCCESS;
 
 	iter = list_iterator_create(preemptee_job_list);
 	if (!iter)
 		fatal("list_iterator_create: malloc failure");
 	while ((job_ptr = (struct job_record *) list_next(iter))) {
-		job_cnt++;
+		mode = slurm_job_preempt_mode(job_ptr);
 		if (mode == PREEMPT_MODE_CANCEL) {
 			rc = job_signal(job_ptr->job_id, SIGKILL, 0, 0);
 			if (rc == SLURM_SUCCESS) {
 				info("preempted job %u has been killed",
 				     job_ptr->job_id);
 			}
+			job_cnt++;
 		} else if (mode == PREEMPT_MODE_CHECKPOINT) {
 			checkpoint_msg_t ckpt_msg;
 			memset(&ckpt_msg, 0, sizeof(checkpoint_msg_t));
@@ -986,6 +982,7 @@ static void _preempt_jobs(List preemptee_job_list, int *error_code)
 				info("preempted job %u has been checkpointed",
 				     job_ptr->job_id);
 			}
+			job_cnt++;
 		} else if (mode == PREEMPT_MODE_REQUEUE) {
 			rc = job_requeue(0, job_ptr->job_id, -1,
 					 (uint16_t)NO_VAL);
@@ -993,6 +990,13 @@ static void _preempt_jobs(List preemptee_job_list, int *error_code)
 				info("preempted job %u has been requeued",
 				     job_ptr->job_id);
 			}
+			job_cnt++;
+		} else if ((mode == PREEMPT_MODE_SUSPEND) &&
+			   (slurm_get_preempt_mode() & PREEMPT_MODE_GANG)) {
+			debug("preempted job %u suspended by gang scheduler",
+			      job_ptr->job_id);
+		} else {
+			error("Invalid preempt_mode: %u", mode);
 		}
 
 		if (rc != SLURM_SUCCESS) {

@@ -4,6 +4,7 @@
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Portions Copyright (C) 2008 Vijay Ramasubramanian.
+ *  Portions Copyright (C) 2010 SchedMD <http://www.schedmd.com>.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -633,6 +634,7 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 		{"MaxNodes", S_P_UINT32}, /* INFINITE or a number */
 		{"MinNodes", S_P_UINT32},
 		{"Nodes", S_P_STRING},
+		{"PreemptMode", S_P_STRING},
 		{"Priority", S_P_UINT16},
 		{"RootOnly", S_P_BOOLEAN}, /* YES or NO */
 		{"Shared", S_P_STRING}, /* YES, NO, or FORCE */
@@ -744,6 +746,18 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 		if (!s_p_get_boolean(&p->root_only_flag, "RootOnly", tbl)
 		    && !s_p_get_boolean(&p->root_only_flag, "RootOnly", dflt))
 			p->root_only_flag = false;
+
+		if (s_p_get_string(&tmp, "PreemptMode", tbl) ||
+		    s_p_get_string(&tmp, "PreemptMode", dflt)) {
+			p->preempt_mode = preempt_mode_num(tmp);
+			if (p->preempt_mode == (uint16_t) NO_VAL) {
+				error("Bad value \"%s\" for PreemptMode", tmp);
+				xfree(tmp);
+				return -1;
+			}
+			xfree(tmp);
+		} else
+			p->preempt_mode = (uint16_t) NO_VAL;
 
 		if (!s_p_get_uint16(&p->priority, "Priority", tbl) &&
 		    !s_p_get_uint16(&p->priority, "Priority", dflt))
@@ -2277,38 +2291,12 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		conf->plugstack = xstrdup(default_plugstack);
 
 	if (s_p_get_string(&temp_str, "PreemptMode", hashtbl)) {
-		int preempt_modes = 0;
-		char *last = NULL, *tok;
-		conf->preempt_mode = 0;
-		tok = strtok_r(temp_str, ",", &last);
-		while (tok) {
-			if (strcasecmp(tok, "gang") == 0) {
-				conf->preempt_mode |= PREEMPT_MODE_GANG;
-			} else if (strcasecmp(tok, "off") == 0) {
-				conf->preempt_mode += PREEMPT_MODE_OFF;
-				preempt_modes++;
-			} else if (strcasecmp(tok, "cancel") == 0) {
-				conf->preempt_mode += PREEMPT_MODE_CANCEL;
-				preempt_modes++;
-			} else if (strcasecmp(tok, "checkpoint") == 0) {
-				conf->preempt_mode += PREEMPT_MODE_CHECKPOINT;
-				preempt_modes++;
-			} else if (strcasecmp(tok, "requeue") == 0) {
-				conf->preempt_mode += PREEMPT_MODE_REQUEUE;
-				preempt_modes++;
-			} else if ((strcasecmp(tok, "on") == 0) ||
-				 (strcasecmp(tok, "suspend") == 0)) {
-				conf->preempt_mode += PREEMPT_MODE_SUSPEND;
-				preempt_modes++;
-			} else
-				fatal("Invalid PreemptMode: %s", tok);
-			tok = strtok_r(NULL, ",", &last);
-		}
-		xfree(temp_str);
-		if (preempt_modes > 1)
-			fatal("More than one PreemptMode specified");
+		conf->preempt_mode = preempt_mode_num(temp_str);
+		if (conf->preempt_mode == (uint16_t) NO_VAL)
+			fatal("PreemptMode=%s invalid", temp_str);
 		if (conf->preempt_mode == PREEMPT_MODE_SUSPEND)
 			fatal("PreemptMode=SUSPEND requires GANG too");
+		xfree(temp_str);
 	}
 	if (!s_p_get_string(&conf->preempt_type, "PreemptType", hashtbl))
 		conf->preempt_type = xstrdup(DEFAULT_PREEMPT_TYPE);

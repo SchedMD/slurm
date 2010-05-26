@@ -3,6 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
+ *  Portions Copyright (C) 2010 SchedMD <http://www.schedmd.com>.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>, et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -1078,6 +1079,7 @@ typedef struct partition_info {
 				 * start_range_1, end_range_1,
 				 * start_range_2, .., -1  */
 	char *nodes;		/* list names of nodes in partition */
+	uint16_t preempt_mode;	/* See PREEMPT_MODE_* in slurm/slurm.h */
 	uint16_t priority;	/* scheduling priority for jobs */
 	uint16_t state_up;	/* see PARTITION_ states above */
 	uint32_t total_cpus;	/* total number of cpus in the partition */
@@ -1391,7 +1393,7 @@ typedef struct slurm_ctl_conf {
 	char *plugindir;	/* pathname to plugins */
 	char *plugstack;        /* pathname to plugin stack config
 				 * file */
-	uint16_t preempt_mode;	/* See PREEMPT_MODE_* above */
+	uint16_t preempt_mode;	/* See PREEMPT_MODE_* in slurm/slurm.h */
 	char *preempt_type;	/* job preemption selection plugin */
 	uint32_t priority_decay_hl; /* priority decay half life in
 				     * seconds */
@@ -1520,6 +1522,7 @@ typedef struct slurm_update_node_msg {
 	char *gres;		/* new generic resources for node */
 	char *node_names;	/* comma separated list of required nodes */
 	uint16_t node_state;	/* see enum node_states */
+	uint16_t preempt_mode;	/* See PREEMPT_MODE_* in slurm/slurm.h */
 	char *reason;		/* reason for node being DOWN or DRAINING */
 	uint32_t reason_uid;	/* user ID of sending (needed if user
 				 * root is sending message) */

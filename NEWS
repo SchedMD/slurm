@@ -16,6 +16,7 @@ documents those changes that are of interest to users and admins.
  -- SLURM commands (squeue, sinfo, etc...) can now go cross-cluster on like
     linux systems.  Cross-cluster for bluegene to linux and such should
     work fine.
+ -- Added the ability to configure PreemptMode on a per-partition basis.
 
 * Changes in SLURM 2.2.0.pre6
 =============================

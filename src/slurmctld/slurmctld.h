@@ -3,6 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
+ *  Portions Copyright (C) 2010 SchedMD <http://www.schedmd.com>.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov> et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -230,6 +231,7 @@ struct part_record {
 	char *nodes;		/* comma delimited list names of nodes */
 	double   norm_priority;	/* normalized scheduling priority for
 				 * jobs (DON'T PACK) */
+	uint16_t preempt_mode;	/* See PREEMPT_MODE_* in slurm/slurm.h */
 	uint16_t priority;	/* scheduling priority for jobs */
 	uint16_t state_up;	/* See PARTITION_* states in slurm.h */
 	uint32_t total_nodes;	/* total number of nodes in the partition */
