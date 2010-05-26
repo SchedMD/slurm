@@ -30,6 +30,7 @@ Also see <a href="publications.html">Publications and Presentations</a>.
 <ul>
 <li><a href="cons_res.html">Consumable Resources Guide</a></li>
 <li><a href="gang_scheduling.html">Gang Scheduling</a></li>
+<li><a href="gres.html">Generic Resource (Gres) Scheduling</a></li>
 <li><a href="priority_multifactor.html">Multifactor Job Priority</a></li>
 <li><a href="preempt.html">Preemption</a></li>
 <li><a href="qos.html">Quality of Service (QOS)</a></li>
@@ -79,6 +80,6 @@ Also see <a href="publications.html">Publications and Presentations</a>.
 </li>
 </ul>
 
-<p style="text-align:center;">Last modified 13 April 2010</p>
+<p style="text-align:center;">Last modified 25 May 2010</p>
 
 <!--#include virtual="footer.txt"-->

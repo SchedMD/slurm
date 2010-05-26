@@ -18,6 +18,7 @@ generated_html = \
 	download.html \
 	faq.html \
 	gang_scheduling.html \
+	gres.html \
 	help.html \
 	ibm.html \
 	jobacct_gatherplugins.html \
