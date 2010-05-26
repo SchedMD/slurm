@@ -17,6 +17,8 @@ documents those changes that are of interest to users and admins.
     linux systems.  Cross-cluster for bluegene to linux and such should
     work fine.
  -- Added the ability to configure PreemptMode on a per-partition basis.
+ -- Change slurmctld's default thread limit count to 1024, but adjust that down
+    as needed based upon the processs's resource limits.
 
 * Changes in SLURM 2.2.0.pre6
 =============================
