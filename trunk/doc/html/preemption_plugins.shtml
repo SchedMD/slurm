@@ -56,6 +56,22 @@ preempt to least attractive to preempt (e.g. lowest to highest priority).
 For example, even within a given partition or QOS one might want to
 smaller jobs first.</p>
 
+<p class="commandline">uint16_t job_preempt_mode(
+struct job_record *job_ptr)</p>
+<p style="margin-left:.2in"><b>Description</b>: Identifies the mechanism
+used to preempt the specified job.</p>
+<p style="margin-left:.2in"><b>Arguments</b>:<br>
+<span class="commandline">job_ptr</span> (input) a pointer to the
+running job to be preempted</p>
+<p style="margin-left:.2in"><b>Returns</b>: PREEMPT_MODE as defined in
+the slurm/slurm.h file</p>
+
+<p class="commandline">bool preemption_enabled(void)</p>
+<p style="margin-left:.2in"><b>Description</b>: Report whether or not job
+preemption is enabled.</p>
+<p style="margin-left:.2in"><b>Returns</b>: true if running jobs may be
+preempted, otherwise false</p>
+
 <h2>Versioning</h2>
 <p> This document describes version 100 of the SLURM Preemption API. Future
 releases of SLURM may revise this API. A preemption plugin conveys its ability
@@ -64,6 +80,6 @@ plugins.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 5 October 2009</p>
+<p style="text-align:center;">Last modified 22 May 2010</p>
 
 <!--#include virtual="footer.txt"-->

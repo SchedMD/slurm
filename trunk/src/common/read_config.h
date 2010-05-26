@@ -5,6 +5,7 @@
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Portions Copyright (C) 2008 Vijay Ramasubramanian.
+ *  Portions Copyright (C) 2010 SchedMD <http://www.schedmd.com>.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Mette <jette1@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -181,6 +182,7 @@ typedef struct slurm_conf_partition {
 	uint32_t min_nodes;	/* per job */
 	char	*name;		/* name of the partition */
 	char 	*nodes;		/* comma delimited list names of nodes */
+	uint16_t preempt_mode;	/* See PREEMPT_MODE_* in slurm/slurm.h */
 	uint16_t priority;	/* scheduling priority for jobs */
 	bool     root_only_flag;/* 1 if allocate/submit RPC can only be
 				   issued by user root */

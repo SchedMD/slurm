@@ -2,6 +2,8 @@
  *  sort.c - sinfo sorting functions
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
+ *  Portions Copyright (C) 2010 SchedMD <http://www.schedmd.com>.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Joey Ekstrom <ekstrom1@llnl.gov>,
  *             Morris Jette <jette1@llnl.gov>, et. al.
@@ -64,6 +66,7 @@ static int _sort_by_node_list(void *void1, void *void2);
 static int _sort_by_nodes_ai(void *void1, void *void2);
 static int _sort_by_nodes(void *void1, void *void2);
 static int _sort_by_partition(void *void1, void *void2);
+static int _sort_by_preempt_mode(void *void1, void *void2);
 static int _sort_by_priority(void *void1, void *void2);
 static int _sort_by_reason(void *void1, void *void2);
 static int _sort_by_reason_time(void *void1, void *void2);
@@ -122,6 +125,8 @@ void sort_sinfo_list(List sinfo_list)
 				list_sort(sinfo_list, _sort_by_max_time);
 		else if (params.sort[i] == 'm')
 				list_sort(sinfo_list, _sort_by_memory);
+		else if (params.sort[i] == 'M')
+				list_sort(sinfo_list, _sort_by_preempt_mode);
 		else if (params.sort[i] == 'N')
 				list_sort(sinfo_list, _sort_by_node_list);
 		else if (params.sort[i] == 'p')
@@ -534,6 +539,24 @@ static int _sort_by_share(void *void1, void *void2)
 		val1 = sinfo1->part_info->max_share;
 	if (sinfo2->part_info)
 		val2 = sinfo2->part_info->max_share;
+	diff = val1 - val2;
+
+	if (reverse_order)
+		diff = -diff;
+	return diff;
+}
+
+static int _sort_by_preempt_mode(void *void1, void *void2)
+{
+	int diff;
+	sinfo_data_t *sinfo1 = (sinfo_data_t *) void1;
+	sinfo_data_t *sinfo2 = (sinfo_data_t *) void2;
+	int val1 = 0, val2 = 0;
+
+	if (sinfo1->part_info)
+		val1 = sinfo1->part_info->preempt_mode;
+	if (sinfo2->part_info)
+		val2 = sinfo2->part_info->preempt_mode;
 	diff = val1 - val2;
 
 	if (reverse_order)

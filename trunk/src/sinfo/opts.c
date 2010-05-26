@@ -3,6 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
+ *  Portions Copyright (C) 2010 SchedMD <http://www.schedmd.com>.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Joey Ekstrom <ekstrom1@llnl.gov>, Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -569,6 +570,12 @@ _parse_format( char* format )
 		} else if (field[0] == 'm') {
 			params.match_flags.memory_flag = true;
 			format_add_memory( params.format_list,
+					field_size,
+					right_justify,
+					suffix );
+		} else if (field[0] == 'M') {
+			params.match_flags.preempt_mode_flag = true;
+			format_add_preempt_mode( params.format_list,
 					field_size,
 					right_justify,
 					suffix );

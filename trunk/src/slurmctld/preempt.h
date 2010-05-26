@@ -1,7 +1,8 @@
 /*****************************************************************************\
  *  preempt.h - Define job preemption plugin functions.
  *****************************************************************************
- *  Copyright (C) 2009 Lawrence Livermore National Security.
+ *  Copyright (C) 2009-2010 Lawrence Livermore National Security.
+ *  Portions Copyright (C) 2010 SchedMD <http://www.schedmd.com>.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -70,5 +71,15 @@ extern int slurm_preempt_fini(void);
  * NOTE: Caller must list_destroy() any list returned.
  */
 extern List slurm_find_preemptable_jobs(struct job_record *job_ptr);
+
+/*
+ * Return the PreemptMode which should apply to stop this job
+ */
+extern uint16_t slurm_job_preempt_mode(struct job_record *job_ptr);
+
+/*
+ * Return true if any jobs can be preempted, otherwise false
+ */
+extern bool slurm_preemption_enabled(void);
 
 #endif /*__SLURM_CONTROLLER_PREEMPT_H__*/

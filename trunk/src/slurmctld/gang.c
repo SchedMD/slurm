@@ -2,6 +2,7 @@
  *  gang.c - Gang scheduler functions.
  *****************************************************************************
  *  Copyright (C) 2008 Hewlett-Packard Development Company, L.P.
+ *  Portions Copyright (C) 2010 SchedMD <http://www.schedmd.com>.
  *  Written by Chris Holmes
  *  CODE-OCEC-09-009. All rights reserved.
  *
@@ -50,6 +51,7 @@
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/xstring.h"
 #include "src/slurmctld/locks.h"
+#include "src/slurmctld/preempt.h"
 #include "src/slurmctld/slurmctld.h"
 
 /* global timeslicer thread variables */
@@ -684,15 +686,21 @@ static void _preempt_job_queue(uint32_t job_id)
 
 static void _preempt_job_dequeue(void)
 {
+	struct job_record *job_ptr;
 	uint32_t job_id, *tmp_id;
-	uint16_t preempt_mode = slurm_get_preempt_mode();
+	uint16_t preempt_mode;
 
 	xassert(preempt_job_list);
-	preempt_mode &= (~PREEMPT_MODE_GANG);
 	while ((tmp_id = list_pop(preempt_job_list))) {
 		job_id = *tmp_id;
 		xfree(tmp_id);
 
+		if ((job_ptr = find_job_record(job_id)) == NULL) {
+			error("_preempt_job_dequeue could not find job %u",
+			      job_id);
+			continue;
+		}
+		preempt_mode = slurm_job_preempt_mode(job_ptr);
 		if (preempt_mode != PREEMPT_MODE_SUSPEND) {
 			error("Job %u allocated resources overlap other jobs",
 			      job_id);

@@ -3,6 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
+ *  Portions Copyright (C) 2010 SchedMD <http://www.schedmd.com>.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Kevin Tew <tew1@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -1048,6 +1049,9 @@ void inline slurm_free_accounting_update_msg(accounting_update_msg_t *msg);
 
 extern int slurm_free_msg_data(slurm_msg_type_t type, void *data);
 extern uint32_t slurm_get_return_code(slurm_msg_type_t type, void *data);
+
+extern char *preempt_mode_string(uint16_t preempt_mode);
+extern uint16_t preempt_mode_num(const char *preempt_mode);
 
 extern char *job_reason_string(enum job_state_reason inx);
 extern char *job_state_string(uint16_t inx);

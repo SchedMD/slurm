@@ -4,6 +4,7 @@
  *  $Id: select_cons_res.h,v 1.3 2006/10/31 20:01:38 palermo Exp $
  *****************************************************************************
  *  Copyright (C) 2006 Hewlett-Packard Development Company, L.P.
+*  Portions Copyright (C) 2010 SchedMD <http://www.schedmd.com>.
  *  Written by Susanne M. Balle, <susanne.balle@hp.com>
  *  CODE-OCEC-09-009. All rights reserved.
  *
@@ -128,8 +129,5 @@ extern struct node_use_record *select_node_usage;
 extern void cr_sort_part_rows(struct part_res_record *p_ptr);
 extern uint32_t cr_get_coremap_offset(uint32_t node_index);
 extern uint32_t cr_get_node_num_cores(uint32_t node_index);
-
-extern bool cr_preemption_enabled(void);
-extern bool cr_preemption_killing(void);
 
 #endif /* !_CONS_RES_H */

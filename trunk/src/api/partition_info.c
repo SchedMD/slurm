@@ -3,6 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
+ *  Portions Copyright (C) 2010 SchedMD <http://www.schedmd.com>.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov> et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -107,7 +108,7 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 	char tmp1[16], tmp2[16];
 	char tmp_line[MAXHOSTRANGELEN];
 	char *out = NULL;
-	uint16_t force, val;
+	uint16_t force, preempt_mode, val;
 	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 
 	/****** Line 1 ******/
@@ -268,6 +269,12 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 		sprintf(tmp_line, " Shared=YES:%u", val);
 		xstrcat(out, tmp_line);
 	}
+	preempt_mode = part_ptr->preempt_mode;
+	if (preempt_mode == (uint16_t) NO_VAL)
+		preempt_mode = slurm_get_preempt_mode(); /* use cluster param */
+	snprintf(tmp_line, sizeof(tmp_line), " PreemptMode=%s",
+		 preempt_mode_string(preempt_mode));
+	xstrcat(out, tmp_line);
 	if (one_liner)
 		xstrcat(out, " ");
 	else

@@ -35,6 +35,12 @@ In SLURM version 2.1, some job preemption logic was moved into the
 plus the backfill scheduler plugin, <i>sched/backfill</I>.
 </P>
 
+<P>
+SLURM version 2.2 offers the ability to configure the preemption mechanism
+used on a per partition or per QOS basis.
+For example, jobs in a low priority queue may get requeued,
+while jobs in a medium priority queue may get suspended.
+</P>
 <H2>Configuration</H2>
 <P>
 There are several important configuration parameters relating to preemption:
@@ -82,7 +88,10 @@ other jobs sharing the same resources.
 parameters are not critical.
 </LI>
 <LI>
-<B>PreemptMode</B>: Configure to <I>CANCEL</I>, <I>CHECKPOINT</I>,
+<B>PreemptMode</B>: Specifies the mechanism used to preempt low priority jobs.
+The PreemptMode can be specified on a system-wide basis or on a per-partition
+basis when <I>PreemptType=preempt/partition_prio</I>.
+Configure to <I>CANCEL</I>, <I>CHECKPOINT</I>,
 <I>SUSPEND</I> or <I>REQUEUE</I> depending on the desired action for low
 priority jobs.
 <UL>
@@ -128,7 +137,8 @@ partition <I>Priority</I> is not critical.
 </LI>
 <LI>
 <B>Shared</B>: Configure the partition's <I>Shared</I> setting to
-<I>FORCE</I> for all partitions in which job preemption is to take place.
+<I>FORCE</I> for all partitions in which job preemption using a suspend/resume
+mechanism is used or <I>NO</I> otherwise.
 The <I>FORCE</I> option supports an additional parameter that controls
 how many jobs can share a resource (FORCE[:max_share]). By default the
 max_share value is 4. In order to preempt jobs (and not gang schedule them),
@@ -279,6 +289,35 @@ JOBID PARTITION     NAME   USER  ST   TIME  NODES NODELIST
   489    active runit.pl   user   R   0:58      1 n16
 </PRE>
 
+<H2>Another Example</H2>
+<P>
+In this example we have three different partitions using three different
+job preemption mechanisms.
+</P>
+<PRE>
+# Excerpt from slurm.conf
+PartitionName=low Nodes=linux Default=YES Shared=NO      Priority=10 PreemptMode=requeue
+PartitionName=med Nodes=linux Default=NO  Shared=FORCE:1 Priority=20 PreemptMode=suspend
+PartitionName=hi  Nodes=linux Default=NO  Shared=FORCE:1 Priority=30 PreemptMode=off
+</PRE>
+<PRE>
+$ sbatch tmp
+Submitted batch job 94
+$ sbatch -p med tmp
+Submitted batch job 95
+$ sbatch -p hi tmp
+Submitted batch job 96
+$ squeue
+  JOBID PARTITION     NAME     USER  ST       TIME  NODES NODELIST(REASON)
+     96        hi      tmp      moe   R       0:04      1 linux
+     94       low      tmp      moe  PD       0:00      1 (Resources)
+     95       med      tmp      moe   S       0:02      1 linux
+(after job 96 completes)
+$ squeue
+  JOBID PARTITION     NAME     USER  ST       TIME  NODES NODELIST(REASON)
+     94       low      tmp      moe  PD       0:00      1 (Resources)
+     95       med      tmp      moe   R       0:24      1 linux
+</PRE>
 
 <H2><A NAME="future_work">Future Ideas</A></H2>
 
@@ -329,6 +368,6 @@ order to support ideal placements such as this, which can quickly complicate
 the design. Any and all help is welcome here!
 </P>
 
-<p style="text-align:center;">Last modified 19 August 2009</p>
+<p style="text-align:center;">Last modified 23 May 2010</p>
 
 <!--#include virtual="footer.txt"-->

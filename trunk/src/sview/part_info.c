@@ -2,7 +2,9 @@
  *  part_info.c - Functions related to partition display
  *  mode of sview.
  *****************************************************************************
- *  Copyright (C) 2004-2006 The Regents of the University of California.
+ *  Copyright (C) 2004-2007 The Regents of the University of California.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
+ *  Portions Copyright (C) 2010 SchedMD <http://www.schedmd.com>.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *
@@ -91,6 +93,7 @@ enum {
 	SORTID_NODES_MIN,
 	SORTID_ONLY_LINE,
 	SORTID_PART_STATE,
+	SORTID_PREEMPT_MODE,
 	SORTID_PRIORITY,
 	SORTID_REASON,
 	SORTID_ROOT,
@@ -126,6 +129,8 @@ static display_data_t display_data_part[] = {
 	 create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_JOB_SIZE, "Job Size", FALSE,
 	 EDIT_NONE, refresh_part, create_model_part, admin_edit_part},
+	{G_TYPE_STRING, SORTID_PREEMPT_MODE, "PreemptMode", FALSE,
+	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_PRIORITY, "Priority", FALSE,
 	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_NODES_MIN, "Nodes Min", FALSE,
@@ -369,6 +374,7 @@ static const char *_set_part_msg(update_part_msg_t *part_msg,
 {
 	char *type = "";
 	int temp_int = 0;
+	uint16_t temp_uint16 = 0;
 
 	global_edit_error = 0;
 
@@ -410,6 +416,13 @@ static const char *_set_part_msg(update_part_msg_t *part_msg,
 		if((temp_int <= 0) && (temp_int != INFINITE))
 			goto return_error;
 		part_msg->max_time = (uint32_t)temp_int;
+		break;
+	case SORTID_PREEMPT_MODE:
+		temp_uint16 = preempt_mode_num(new_text);
+		type = "preempt_mode";
+		if (temp_uint16 == (uint16_t) NO_VAL)
+			goto return_error;
+		part_msg->preempt_mode = temp_uint16;
 		break;
 	case SORTID_PRIORITY:
 		temp_int = strtol(new_text, (char **)NULL, 10);
@@ -518,6 +531,7 @@ static void _admin_edit_combo_box_part(GtkComboBox *combo,
 	GtkTreeIter iter;
 	int column = 0;
 	char *name = NULL;
+	const char *col_name = NULL;
 
 	if(!part_msg)
 		return;
@@ -535,7 +549,7 @@ static void _admin_edit_combo_box_part(GtkComboBox *combo,
 	gtk_tree_model_get(model, &iter, 0, &name, -1);
 	gtk_tree_model_get(model, &iter, 1, &column, -1);
 
-	_set_part_msg(part_msg, name, column);
+	col_name = _set_part_msg(part_msg, name, column);
 	if(name)
 		g_free(name);
 }
@@ -732,6 +746,7 @@ static void _layout_part_record(GtkTreeView *treeview,
 	sview_part_sub_t other_part_sub;
 	char ind_cnt[1024];
 	char *temp_char = NULL;
+	uint16_t temp_uint16 = 0;
 	int global_set = 0, i;
 	int yes_no = -1;
 	int up_down = -1;
@@ -874,6 +889,12 @@ static void _layout_part_record(GtkTreeView *treeview,
 			break;
 		case SORTID_ONLY_LINE:
 			break;
+		case SORTID_PREEMPT_MODE:
+			temp_uint16 = part_ptr->preempt_mode;
+			if (temp_uint16 == (uint16_t) NO_VAL)
+				temp_uint16 =  slurm_get_preempt_mode();
+			temp_char = preempt_mode_string(temp_uint16);
+			break;
 		case SORTID_PRIORITY:
 			convert_num_unit((float)part_ptr->priority,
 					 time_buf, sizeof(time_buf), UNIT_NONE);
@@ -965,6 +986,7 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 	char time_buf[20], tmp_buf[20];
 	char tmp_cnt[8];
 	char *temp_char = NULL;
+	uint16_t tmp_uint16 = 0;
 	partition_info_t *part_ptr = sview_part_info->part_ptr;
 	GtkTreeIter sub_iter;
 	int childern = 0;
@@ -1019,6 +1041,12 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 			      part_ptr->min_nodes,
 			      part_ptr->max_nodes, true);
 	gtk_tree_store_set(treestore, iter, SORTID_JOB_SIZE, time_buf, -1);
+
+	tmp_uint16 = part_ptr->preempt_mode;
+	if (tmp_uint16 == (uint16_t) NO_VAL)
+		tmp_uint16 = slurm_get_preempt_mode();	/* use cluster param */
+	gtk_tree_store_set(treestore, iter, SORTID_PREEMPT_MODE,
+			   preempt_mode_string(tmp_uint16), -1);
 
 	convert_num_unit((float)part_ptr->priority,
 			 time_buf, sizeof(time_buf), UNIT_NONE);
@@ -1737,6 +1765,7 @@ extern GtkListStore *create_model_part(int type)
 				   -1);
 
 		break;
+	case SORTID_PREEMPT_MODE:
 	case SORTID_PRIORITY:
 	case SORTID_TIMELIMIT:
 	case SORTID_NODES_MIN:

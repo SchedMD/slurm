@@ -270,31 +270,6 @@ static void _dump_state(struct part_res_record *p_ptr)
 }
 #endif
 
-/*  */
-extern bool cr_preemption_enabled(void)
-{
-	if (!job_preemption_tested) {
-		uint16_t mode = slurm_get_preempt_mode();
-		mode &= ~PREEMPT_MODE_GANG;
-		if (mode == PREEMPT_MODE_SUSPEND)
-			job_preemption_enabled = true;
-		else if ((mode == PREEMPT_MODE_CANCEL)     ||
-			 (mode == PREEMPT_MODE_CHECKPOINT) ||
-			 (mode == PREEMPT_MODE_REQUEUE)) {
-			job_preemption_enabled = true;
-			job_preemption_killing = true;
-		}
-		job_preemption_tested = true;
-	}
-	return job_preemption_enabled;
-}
-extern bool cr_preemption_killing(void)
-{
-	(void) cr_preemption_enabled();
-	return job_preemption_killing;
-
-}
-
 #define CR_NUM_CORE_ARRAY_INCREMENT 8
 
 /* (re)set cr_node_num_cores and cr_num_core_count arrays */
@@ -1319,6 +1294,8 @@ static int _run_now(struct job_record *job_ptr, bitstr_t *bitmap,
 	ListIterator job_iterator, preemptee_iterator;
 	struct part_res_record *future_part;
 	struct node_use_record *future_usage;
+	bool remove_some_jobs = false;
+	uint16_t mode;
 
 	orig_map = bit_copy(bitmap);
 	if (!orig_map)
@@ -1329,8 +1306,7 @@ static int _run_now(struct job_record *job_ptr, bitstr_t *bitmap,
 			 select_node_cnt, select_part_record,
 			 select_node_usage);
 
-	if ((rc != SLURM_SUCCESS) && cr_preemption_killing() &&
-	    preemptee_candidates) {
+	if ((rc != SLURM_SUCCESS) && preemptee_candidates) {
 		/* Remove preemptable jobs from simulated environment */
 		future_part = _dup_part_data(select_part_record);
 		if (future_part == NULL) {
@@ -1352,6 +1328,11 @@ static int _run_now(struct job_record *job_ptr, bitstr_t *bitmap,
 			if (!IS_JOB_RUNNING(tmp_job_ptr) &&
 			    !IS_JOB_SUSPENDED(tmp_job_ptr))
 				continue;
+			mode = slurm_job_preempt_mode(tmp_job_ptr);
+			if ((mode != PREEMPT_MODE_REQUEUE)    &&
+			    (mode != PREEMPT_MODE_CHECKPOINT) &&
+			    (mode != PREEMPT_MODE_CANCEL))
+				continue;	/* can't remove job */
 			if (_is_preemptable(tmp_job_ptr,
 					    preemptee_candidates)) {
 				/* Remove preemptable job now */
@@ -1371,7 +1352,7 @@ static int _run_now(struct job_record *job_ptr, bitstr_t *bitmap,
 		list_iterator_destroy(job_iterator);
 
 		if ((rc == SLURM_SUCCESS) && preemptee_job_list &&
-		    preemptee_candidates && cr_preemption_killing()) {
+		    preemptee_candidates) {
 			/* Build list of preemptee jobs whose resources are
 			 * actually used */
 			if (*preemptee_job_list == NULL) {
@@ -1385,14 +1366,23 @@ static int _run_now(struct job_record *job_ptr, bitstr_t *bitmap,
 				fatal ("memory allocation failure");
 			while ((tmp_job_ptr = (struct job_record *)
 					list_next(preemptee_iterator))) {
+				mode = slurm_job_preempt_mode(tmp_job_ptr);
+				if ((mode != PREEMPT_MODE_REQUEUE)    &&
+				    (mode != PREEMPT_MODE_CHECKPOINT) &&
+				    (mode != PREEMPT_MODE_CANCEL))
+					continue;
 				if (bit_overlap(bitmap,
 						tmp_job_ptr->node_bitmap) == 0)
 					continue;
-
 				list_append(*preemptee_job_list,
 					    tmp_job_ptr);
+				remove_some_jobs = true;
 			}
 			list_iterator_destroy(preemptee_iterator);
+			if (!remove_some_jobs) {
+				list_destroy(*preemptee_job_list);
+				*preemptee_job_list = NULL;
+			}
 		}
 
 		_destroy_part_data(future_part);
@@ -1453,10 +1443,6 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	cr_job_list = list_create(NULL);
 	if (!cr_job_list)
 		fatal("list_create: memory allocation error");
-	if (cr_preemption_killing())
-		action = 0;	/* remove cores and memory */
-	else
-		action = 2;	/* remove cores only, suspend job */
 	job_iterator = list_iterator_create(job_list);
 	if (job_iterator == NULL)
 		fatal ("memory allocation failure");
@@ -1469,6 +1455,13 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			continue;
 		}
 		if (_is_preemptable(tmp_job_ptr, preemptee_candidates)) {
+			uint16_t mode = slurm_job_preempt_mode(tmp_job_ptr);
+			if (mode == PREEMPT_MODE_OFF)
+				continue;
+			if (mode == PREEMPT_MODE_SUSPEND)
+				action = 2;	/* remove cores, keep memory */
+			else
+				action = 0;	/* remove cores and memory */
 			/* Remove preemptable job now */
 			_rm_job_from_res(future_part, future_usage,
 					 tmp_job_ptr, action);

@@ -1,7 +1,8 @@
 /*****************************************************************************\
  *  preempt.c - Job preemption plugin function setup.
  *****************************************************************************
- *  Copyright (C) 2009 Lawrence Livermore National Security.
+ *  Copyright (C) 2009-2010 Lawrence Livermore National Security.
+ *  Portions Copyright (C) 2010 SchedMD <http://www.schedmd.com>.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -50,7 +51,9 @@
 /*  TAG(                     slurm_preempt_ops_t                         )  */
 /* ************************************************************************ */
 typedef struct slurm_preempt_ops {
-	List (*find_jobs)	( struct job_record *job_ptr );
+	List		(*find_jobs)		( struct job_record *job_ptr );
+	uint16_t	(*job_preempt_mode)	( struct job_record *job_ptr );
+	bool		(*preemption_enabled)	( void );
 } slurm_preempt_ops_t;
 
 
@@ -80,6 +83,8 @@ static slurm_preempt_ops_t *
 	 */
 	static const char *syms[] = {
 		"find_preemptable_jobs",
+		"job_preempt_mode",
+		"preemption_enabled",
 	};
 	int n_syms = sizeof( syms ) / sizeof( char * );
 
@@ -237,3 +242,24 @@ extern List slurm_find_preemptable_jobs(struct job_record *job_ptr)
 	return (*(g_preempt_context->ops.find_jobs))(job_ptr);
 }
 
+/*
+ * Return the PreemptMode which should apply to stop this job
+ */
+extern uint16_t slurm_job_preempt_mode(struct job_record *job_ptr)
+{
+	if ( slurm_preempt_init() < 0 )
+		return (uint16_t) PREEMPT_MODE_OFF;
+
+	return (*(g_preempt_context->ops.job_preempt_mode))(job_ptr);
+}
+
+/*
+ * Return true if any jobs can be preempted, otherwise false
+ */
+extern bool slurm_preemption_enabled(void)
+{
+	if ( slurm_preempt_init() < 0 )
+		return false;
+
+	return (*(g_preempt_context->ops.preemption_enabled))();
+}

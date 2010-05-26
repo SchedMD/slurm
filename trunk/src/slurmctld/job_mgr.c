@@ -5,6 +5,7 @@
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
+ *  Portions Copyright (C) 2010 SchedMD <http://www.schedmd.com>.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -80,6 +81,7 @@
 #include "src/slurmctld/licenses.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/node_scheduler.h"
+#include "src/slurmctld/preempt.h"
 #include "src/slurmctld/proc_req.h"
 #include "src/slurmctld/reservation.h"
 #include "src/slurmctld/sched_plugin.h"
@@ -8942,10 +8944,15 @@ _read_job_ckpt_file(char *ckpt_file, int *size_ptr)
 extern void job_preempt_remove(uint32_t job_id)
 {
 	int rc = SLURM_SUCCESS;
-	uint16_t preempt_mode = slurm_get_preempt_mode();
+	struct job_record *job_ptr;
+	uint16_t preempt_mode;
 	checkpoint_msg_t ckpt_msg;
 
-	preempt_mode &= (~PREEMPT_MODE_GANG);
+	if ((job_ptr = find_job_record(job_id)) == NULL) {
+		error("job_preempt_remove could not find job %u", job_id);
+		return;
+	}
+	preempt_mode = slurm_job_preempt_mode(job_ptr);
 	if (preempt_mode == PREEMPT_MODE_REQUEUE) {
 		rc = job_requeue(0, job_id, -1, (uint16_t)NO_VAL);
 		if (rc == SLURM_SUCCESS) {
@@ -8961,6 +8968,9 @@ extern void job_preempt_remove(uint32_t job_id)
 		if (rc == SLURM_SUCCESS) {
 			info("preempted job %u has been checkpointed", job_id);
 		}
+	} else if ((preempt_mode == PREEMPT_MODE_SUSPEND) &&
+		   (slurm_get_preempt_mode() & PREEMPT_MODE_GANG)) {
+		debug("preempted job %u suspended by gang scheduler", job_id);
 	} else {
 		error("Invalid preempt_mode: %u", preempt_mode);
 	}

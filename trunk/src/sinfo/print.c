@@ -3,6 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
+ *  Portions Copyright (C) 2010 SchedMD <http://www.schedmd.com>.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Joey Ekstrom <ekstrom1@llnl.gov> and
  *  Morris Jette <jette1@llnl.gov>
@@ -691,6 +692,23 @@ int _print_partition(sinfo_data_t * sinfo_data, int width,
 int _print_prefix(sinfo_data_t * job, int width, bool right_justify,
 		char* suffix)
 {
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
+int _print_preempt_mode(sinfo_data_t * sinfo_data, int width,
+			bool right_justify, char *suffix)
+{
+	if (sinfo_data) {
+		uint16_t preempt_mode = sinfo_data->part_info->preempt_mode;
+		if (preempt_mode == (uint16_t) NO_VAL)
+			preempt_mode =  slurm_get_preempt_mode();
+		_print_str(preempt_mode_string(preempt_mode), 
+			   width, right_justify, true);
+	} else
+		_print_str("PREEMPT_MODE", width, right_justify, true);
+
 	if (suffix)
 		printf("%s", suffix);
 	return SLURM_SUCCESS;

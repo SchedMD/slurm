@@ -3,6 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
+ *  Portions Copyright (C) 2010 SchedMD <http://www.schedmd.com>.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -449,6 +450,10 @@ static int _build_single_partitionline_info(slurm_conf_partition_t *part)
 		default_part_name = xstrdup(part->name);
 		default_part_loc = part_ptr;
 	}
+
+	if (part->preempt_mode != (uint16_t) NO_VAL)
+		part_ptr->preempt_mode = part->preempt_mode;
+
 	if(part->disable_root_jobs == (uint16_t)NO_VAL) {
 		if (slurmctld_conf.disable_root_jobs)
 			part_ptr->flags |= PART_FLAG_NO_ROOT;
@@ -479,6 +484,7 @@ static int _build_single_partitionline_info(slurm_conf_partition_t *part)
 	part_ptr->max_nodes_orig = part->max_nodes;
 	part_ptr->min_nodes      = part->min_nodes;
 	part_ptr->min_nodes_orig = part->min_nodes;
+	part_ptr->preempt_mode   = part->preempt_mode;
 	part_ptr->priority       = part->priority;
 	part_ptr->state_up       = part->state_up;
 	if (part->allow_groups) {
@@ -1069,6 +1075,13 @@ static int  _restore_part_state(List old_part_list, char *old_def_part_name)
 				      "slurm.conf", part_ptr->name);
 				xfree(part_ptr->nodes);
 				part_ptr->nodes = xstrdup(old_part_ptr->nodes);
+			}
+			if (part_ptr->preempt_mode != 
+			    old_part_ptr->preempt_mode) {
+				error("Partition %s PreemptMode differs from "
+				      "slurm.conf", part_ptr->name);
+				part_ptr->preempt_mode = old_part_ptr->
+							 preempt_mode;
 			}
 			if (part_ptr->priority != old_part_ptr->priority) {
 				error("Partition %s Priority differs from "
