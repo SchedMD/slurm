@@ -165,6 +165,7 @@ static int	daemonize = DEFAULT_DAEMONIZE;
 static int	debug_level = 0;
 static char	*debug_logfile = NULL;
 static bool     dump_core = false;
+static uint32_t max_server_threads = MAX_SERVER_THREADS;
 static int	new_nice = 0;
 static char	node_name[MAX_SLURM_NAME];
 static int	recover   = DEFAULT_RECOVER;
@@ -199,6 +200,7 @@ static int          _shutdown_backup_controller(int wait_time);
 static void *       _slurmctld_background(void *no_data);
 static void *       _slurmctld_rpc_mgr(void *no_data);
 static void *       _slurmctld_signal_hand(void *no_data);
+static void         _test_thread_limit(void);
 inline static void  _update_cred_key(void);
 static void         _update_nice(void);
 inline static void  _usage(char *prog_name);
@@ -306,6 +308,7 @@ int main(int argc, char *argv[])
 		slurmctld_config.daemonize = 0;
 	}
 	test_core_limit();
+	_test_thread_limit();
 
 	/* This must happen before we spawn any threads
 	 * which are not designed to handle them */
@@ -999,7 +1002,7 @@ static bool _wait_for_server_thread(void)
 			rc = false;
 			break;
 		}
-		if (slurmctld_config.server_thread_count < MAX_SERVER_THREADS) {
+		if (slurmctld_config.server_thread_count < max_server_threads) {
 			slurmctld_config.server_thread_count++;
 			break;
 		} else {
@@ -1953,4 +1956,35 @@ static bool  _valid_controller(void)
 	}
 
 	return match;
+}
+
+static void _test_thread_limit(void)
+{
+#ifdef RLIMIT_NOFILE
+{
+	struct rlimit rlim[1];
+	if (getrlimit(RLIMIT_NOFILE, rlim) < 0)
+		error("Unable to get file count limit");
+	else if ((rlim->rlim_cur != RLIM_INFINITY) &&
+		 (max_server_threads > rlim->rlim_cur)) {
+		max_server_threads = rlim->rlim_cur;
+		info("Reducing max_server_thread to %u due to file count limit "
+		     "of %u", max_server_threads, max_server_threads);
+	}
+}
+#endif
+#ifdef RLIMIT_STACK
+{
+	struct rlimit rlim[1];
+	if (getrlimit(RLIMIT_STACK, rlim) < 0)
+		error("Unable to get stack size limit");
+	else if ((rlim->rlim_cur != RLIM_INFINITY) &&
+		 (max_server_threads > (rlim->rlim_cur / (1024*1024)))) {
+		max_server_threads = MAX(1, rlim->rlim_cur / (1024*1024));
+		info("Reducing max_server_thread to %u due to stack size limit "
+		     "of %u", max_server_threads, (uint32_t) rlim->rlim_cur);
+	}
+}
+#endif
+	return;
 }
