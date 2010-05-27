@@ -2237,6 +2237,9 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 					rc = SLURM_ERROR;
 					break;
 				}
+				/* This needs to be commited or
+				   problems may arise */
+				acct_storage_g_commit(db_conn, 1);
 			}
 			curr_cluster_list = acct_storage_g_get_clusters(
 				db_conn, my_uid, NULL);

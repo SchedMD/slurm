@@ -1130,13 +1130,13 @@ extern int remove_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 
 	query = xstrdup_printf("select id_assoc from \"%s_%s\" limit 1;",
 			       cluster_name, assoc_table);
+	debug4("%d(%s:%d) query\n%s",
+	       mysql_conn->conn, THIS_FILE, __LINE__, query);
 	if(!(result = mysql_db_query_ret(mysql_conn->db_conn, query, 0))) {
 		xfree(query);
 		error("no result given when querying cluster %s", cluster_name);
 		return SLURM_ERROR;
 	}
-	debug4("%d(%s:%d) query\n%s",
-	       mysql_conn->conn, THIS_FILE, __LINE__, query);
 	xfree(query);
 
 	if(mysql_num_rows(result)) {
@@ -1153,7 +1153,7 @@ extern int remove_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 	mysql_free_result(result);
 	xstrfmtcat(mysql_conn->pre_commit_query,
 		   "drop table \"%s_%s\", \"%s_%s\", "
-		   "\"%s_%s\", \"%s_%s\", "
+		   "\"%s_%s\", \"%s_%s\", \"%s_%s\", "
 		   "\"%s_%s\", \"%s_%s\", \"%s_%s\", \"%s_%s\", "
 		   "\"%s_%s\", \"%s_%s\", \"%s_%s\", \"%s_%s\", "
 		   "\"%s_%s\", \"%s_%s\", \"%s_%s\", \"%s_%s\";",
@@ -1166,6 +1166,7 @@ extern int remove_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		   cluster_name, cluster_month_table,
 		   cluster_name, event_table,
 		   cluster_name, job_table,
+		   cluster_name, last_ran_table,
 		   cluster_name, resv_table,
 		   cluster_name, step_table,
 		   cluster_name, suspend_table,
@@ -1944,6 +1945,7 @@ extern int acct_storage_p_commit(mysql_conn_t *mysql_conn, bool commit)
 				rc = mysql_db_query(
 					mysql_conn->db_conn,
 					mysql_conn->pre_commit_query);
+				xfree(mysql_conn->pre_commit_query);
 			}
 
 			if(rc != SLURM_SUCCESS) {
