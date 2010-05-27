@@ -967,6 +967,10 @@ void parse_command_line(int argc, char **argv)
 		   || job_cond->used_nodes)
 			all_users=1;
 
+	/* set all_users for user root if not requesting any */
+	if(!job_cond->userid_list && !params.opt_uid)
+		all_users = 1;
+
 	if(all_users) {
 		if(job_cond->userid_list && list_count(job_cond->userid_list)) {
 			list_destroy(job_cond->userid_list);
