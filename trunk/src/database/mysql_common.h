@@ -60,6 +60,7 @@
 #include <mysqld_error.h>
 
 typedef struct {
+	bool cluster_deleted;
 	char *cluster_name;
 	MYSQL *db_conn;
 	char *pre_commit_query;
@@ -83,6 +84,7 @@ typedef struct {
 
 extern pthread_mutex_t mysql_lock;
 
+extern int *destroy_mysql_conn(mysql_conn_t *mysql_conn);
 extern int *destroy_mysql_db_info(mysql_db_info_t *db_info);
 
 extern int mysql_get_db_connection(MYSQL **mysql_db, char *db_name,

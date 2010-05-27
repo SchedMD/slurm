@@ -369,7 +369,9 @@ static slurm_errtab_t slurm_errtab[] = {
 	{ ESLURM_DB_CONNECTION,
 	  "Unable to connect to database"			},
 	{ ESLURM_JOBS_RUNNING_ON_ASSOC,
-	  "Job(s) running, cancel job(s) before remove"         }
+	  "Job(s) running, cancel job(s) before remove"         },
+	{ ESLURM_CLUSTER_DELETED,
+	  "Cluster deleted, commit/rollback immediately"        }
 };
 
 /*

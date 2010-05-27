@@ -741,6 +741,12 @@ extern int check_connection(mysql_conn_t *mysql_conn)
 			}
 		}
 	}
+
+	if(mysql_conn->cluster_deleted) {
+		errno = ESLURM_CLUSTER_DELETED;
+		return ESLURM_CLUSTER_DELETED;
+	}
+
 	return SLURM_SUCCESS;
 }
 
@@ -1174,6 +1180,11 @@ extern int remove_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		   cluster_name, wckey_day_table,
 		   cluster_name, wckey_hour_table,
 		   cluster_name, wckey_month_table);
+	/* Since we could possibly add this exact cluster after this
+	   we will require a commit before doing anything else.  This
+	   flag will give us that.
+	*/
+	mysql_conn->cluster_deleted = 1;
 	return rc;
 }
 
@@ -1910,19 +1921,19 @@ extern int acct_storage_p_close_connection(mysql_conn_t **mysql_conn)
 		return SLURM_SUCCESS;
 
 	acct_storage_p_commit((*mysql_conn), 0);
-	mysql_close_db_connection(&(*mysql_conn)->db_conn);
-	xfree((*mysql_conn)->pre_commit_query);
-	xfree((*mysql_conn)->cluster_name);
-	list_destroy((*mysql_conn)->update_list);
-	xfree((*mysql_conn));
+	destroy_mysql_conn(*mysql_conn);
+	*mysql_conn = NULL;
 
 	return SLURM_SUCCESS;
 }
 
 extern int acct_storage_p_commit(mysql_conn_t *mysql_conn, bool commit)
 {
-	if(check_connection(mysql_conn) != SLURM_SUCCESS)
-		return ESLURM_DB_CONNECTION;
+	int rc = check_connection(mysql_conn);
+	/* always reset this here */
+	mysql_conn->cluster_deleted = 0;
+	if((rc != SLURM_SUCCESS) && (rc != ESLURM_CLUSTER_DELETED))
+		return rc;
 
 	debug4("got %d commits", list_count(mysql_conn->update_list));
 
@@ -1945,7 +1956,6 @@ extern int acct_storage_p_commit(mysql_conn_t *mysql_conn, bool commit)
 				rc = mysql_db_query(
 					mysql_conn->db_conn,
 					mysql_conn->pre_commit_query);
-				xfree(mysql_conn->pre_commit_query);
 			}
 
 			if(rc != SLURM_SUCCESS) {
