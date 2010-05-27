@@ -1145,10 +1145,18 @@ void print_fields(type_t type, void *object)
 		case PRINT_TIMELIMIT:
 			switch(type) {
 			case JOB:
-
+				if (job->timelimit == INFINITE)
+					tmp_char = "UNLIMITED";
+				else if (job->timelimit == NO_VAL)
+					tmp_char = "Partition_Limit";
+				else if(job->timelimit) {
+					char tmp1[128];
+					mins2time_str(job->timelimit,
+						      tmp1, sizeof(tmp1));
+					tmp_char = tmp1;
+				}
 				break;
 			case JOBSTEP:
-
 				break;
 			case JOBCOMP:
 				tmp_char = job_comp->timelimit;
