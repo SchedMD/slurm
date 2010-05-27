@@ -898,6 +898,7 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 		"t1.nodelist",
 		"t1.node_inx",
 		"t1.kill_requid",
+		"t1.timelimit",
 		"t1.qos",
 		"t2.user",
 		"t2.cluster",
@@ -934,6 +935,7 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 		JOB_REQ_NODELIST,
 		JOB_REQ_NODE_INX,
 		JOB_REQ_KILL_REQUID,
+		JOB_REQ_TIMELIMIT,
 		JOB_REQ_QOS,
 		JOB_REQ_USER_NAME,
 		JOB_REQ_CLUSTER,
@@ -1326,6 +1328,7 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 		job->priority = atoi(row[JOB_REQ_PRIORITY]);
 		job->req_cpus = atoi(row[JOB_REQ_REQ_CPUS]);
 		job->requid = atoi(row[JOB_REQ_KILL_REQUID]);
+		job->timelimit = atoi(row[JOB_REQ_TIMELIMIT]);
 		job->qos = atoi(row[JOB_REQ_QOS]);
 		job->show_full = 1;
 
@@ -1582,6 +1585,7 @@ extern int mysql_jobacct_process_archive(mysql_conn_t *mysql_conn,
 		"nodelist",
 		"node_inx",
 		"kill_requid",
+		"timelimit",
 		"qos"
 	};
 
@@ -1676,6 +1680,7 @@ extern int mysql_jobacct_process_archive(mysql_conn_t *mysql_conn,
 		JOB_REQ_NODELIST,
 		JOB_REQ_NODE_INX,
 		JOB_REQ_KILL_REQUID,
+		JOB_REQ_TIMELIMIT,
 		JOB_REQ_QOS,
 		JOB_REQ_COUNT
 	};
