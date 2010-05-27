@@ -1154,10 +1154,8 @@ void print_fields(type_t type, void *object)
 						      tmp1, sizeof(tmp1));
 					tmp_char = tmp1;
 				}
-
 				break;
 			case JOBSTEP:
-
 				break;
 			case JOBCOMP:
 				tmp_char = job_comp->timelimit;
