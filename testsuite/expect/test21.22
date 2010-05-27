@@ -34,7 +34,6 @@
 source ./globals
 
 set test_id     "21.22"
-set test_acct   "test_acct"
 set exit_code   0
 set file_in     "test$test_id.input"
 set file_in2    "test$test_id.input2"

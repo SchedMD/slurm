@@ -247,7 +247,8 @@ enum {
 
 	/* accounting errors */
 	ESLURM_DB_CONNECTION            = 7000,
-	ESLURM_JOBS_RUNNING_ON_ASSOC
+	ESLURM_JOBS_RUNNING_ON_ASSOC,
+	ESLURM_CLUSTER_DELETED
 };
 
 /* look up an errno value */

@@ -400,6 +400,18 @@ static int _create_db(char *db_name, mysql_db_info_t *db_info)
 	return rc;
 }
 
+extern int *destroy_mysql_conn(mysql_conn_t *mysql_conn)
+{
+	if(mysql_conn) {
+		mysql_close_db_connection(&mysql_conn->db_conn);
+		xfree(mysql_conn->pre_commit_query);
+		xfree(mysql_conn->cluster_name);
+		list_destroy(mysql_conn->update_list);
+		xfree(mysql_conn);
+	}
+	return SLURM_SUCCESS;
+}
+
 extern int *destroy_mysql_db_info(mysql_db_info_t *db_info)
 {
 	if(db_info) {
