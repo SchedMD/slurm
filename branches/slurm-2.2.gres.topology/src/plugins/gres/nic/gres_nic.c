@@ -54,15 +54,16 @@
 #      include <stdint.h>
 #    endif
 #  endif /* HAVE_INTTYPES_H */
-#  ifdef HAVE_HWLOC
-#    include <hwloc.h>
-#  endif /* HAVE_HWLOC */
 #else /* ! HAVE_CONFIG_H */
 #  include <sys/types.h>
 #  include <unistd.h>
 #  include <stdint.h>
 #  include <string.h>
 #endif /* HAVE_CONFIG_H */
+
+#ifdef HAVE_HWLOC
+#  include <hwloc.h>
+#endif /* HAVE_HWLOC */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -71,6 +72,8 @@
 #include <slurm/slurm_errno.h>
 
 #include "src/common/slurm_xlator.h"
+#include "src/common/bitstring.h"
+#include "src/common/list.h"
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -105,11 +108,28 @@ const uint32_t	plugin_id		= 102;
 const uint32_t	plugin_version		= 100;
 const uint32_t	min_plug_version	= 100;
 
+/* Identification of valid NIC names are reported by hwloc-info.
+ * Add to this list and send message to slurm-dev@lists.llnl.gov so we
+ * can update the SLURM code as appropriate. */
+char *nic_names[] = {
+	"Intel Corporation 82571EB Gigabit Ethernet Controller",
+	NULL
+};
+
+/* Gres configuration for each unique CPUSET identifying which NICs should
+ * be bound to which CPUSETs. */
+typedef struct nic_set {
+	uint32_t nic_cnt;
+	bitstr_t *nic_cpuset;
+} nic_set_t;
+
 /* Gres configuration loaded/used by slurmd. Modify or expand as
  * additional information becomes available (e.g. topology). */
 typedef struct nic_config {
-	bool     loaded;
-	uint32_t nic_cnt;
+	bool       loaded;		/* flag if structure is loaded */
+	uint32_t   nic_cnt;		/* total count of NICs on system */
+	uint32_t   nic_set_cnt;		/* count of populated nic_sets */
+	nic_set_t *nic_sets;
 } nic_config_t;
 static nic_config_t gres_config;
 
@@ -180,6 +200,49 @@ extern int help_msg(char *msg, int msg_size)
 	return SLURM_SUCCESS;
 }
 
+#ifdef HAVE_HWLOC
+static void _nic_cnt(hwloc_topology_t topology, hwloc_obj_t obj, List gres_list)
+{
+	int i;
+
+	if (obj->complete_cpuset) {
+		obj->userdata = obj->complete_cpuset;
+	} else if (obj->parent) {
+		if (obj->parent->complete_cpuset)
+			obj->userdata = obj->parent->complete_cpuset;
+		else
+			obj->userdata = obj->parent->userdata;
+
+	}
+
+	if (obj->type == HWLOC_OBJ_PCI_DEVICE) {
+		for (i=0; nic_names[i]; i++) {
+			if (strcmp(obj->name, nic_names[i]))
+				continue;
+			list_enqueue(gres_list, obj);
+			break;
+		}
+	}
+
+	for (i = 0; i < obj->arity; i++)
+		_nic_cnt(topology, obj->children[i], gres_list);
+}
+
+static bitstr_t *_make_slurm_bitmap(hwloc_obj_t obj, int cpu_cnt)
+{
+	bitstr_t *gres_bitmask;
+	int i;
+
+	gres_bitmask = bit_alloc(cpu_cnt);
+	if (gres_bitmask == NULL)
+		fatal("bit_alloc malloc failure");
+	for (i=0; i<cpu_cnt; i++) {
+		if (hwloc_cpuset_isset((hwloc_const_cpuset_t) obj->userdata, i))
+			bit_set(gres_bitmask, i);
+	}
+	return gres_bitmask;
+}
+
 /*
  * Get the current configuration of this resource (e.g. how many exist,
  *	their topology and any other required information).
@@ -187,14 +250,83 @@ extern int help_msg(char *msg, int msg_size)
  */
 extern int node_config_load(void)
 {
-#ifdef HAVE_HWLOC
-	gres_config.nic_cnt = 1;
-#else
+	hwloc_topology_t topology = (hwloc_topology_t) NULL;
+	hwloc_obj_t root_obj;
+	int cpu_cnt, i, rc = SLURM_SUCCESS;
+	List gres_obj_list = NULL;
+
 	gres_config.nic_cnt = 0;
-#endif
+	if (hwloc_topology_init(&topology) != 0) {
+		rc = SLURM_ERROR;
+		goto fini;
+	}
+	hwloc_topology_ignore_type(topology, HWLOC_OBJ_BRIDGE);
+	hwloc_topology_ignore_type(topology, HWLOC_OBJ_CACHE);
+	hwloc_topology_ignore_type(topology, HWLOC_OBJ_GROUP);
+	hwloc_topology_ignore_type(topology, HWLOC_OBJ_MISC);
+	hwloc_topology_ignore_type(topology, HWLOC_OBJ_OS_DEVICE);
+	if (hwloc_topology_load(topology) != 0) {
+		rc = SLURM_ERROR;
+		goto fini;
+	}
+	gres_obj_list = list_create(NULL);
+	root_obj = hwloc_get_root_obj(topology);
+	cpu_cnt = hwloc_cpuset_last(root_obj->complete_cpuset) + 1;
+	_nic_cnt(topology, root_obj, gres_obj_list);
+	gres_config.nic_cnt = list_count(gres_obj_list);
+	if (gres_config.nic_cnt) {
+		int gres_inx = -1;
+		hwloc_obj_t current_obj, last_obj = NULL;
+		gres_config.nic_sets = xmalloc(sizeof(nic_set_t) *
+					       gres_config.nic_cnt);
+		while ((current_obj = list_dequeue(gres_obj_list))) {
+			if (current_obj->userdata == NULL) {
+				error("%s node_config_load error", plugin_name);
+				gres_config.nic_cnt--;
+				continue;
+			}
+			gres_inx++;
+			if ((gres_inx == 0) ||
+			    hwloc_cpuset_compare((hwloc_cpuset_t)current_obj->
+								 userdata,
+						 (hwloc_cpuset_t)last_obj->
+								 userdata)) {
+				i = gres_config.nic_set_cnt;
+				gres_config.nic_sets[i].nic_cnt++;
+				gres_config.nic_sets[i].nic_cpuset =
+					_make_slurm_bitmap(current_obj, cpu_cnt);
+				gres_config.nic_set_cnt++;
+			} else {
+				i = gres_config.nic_set_cnt - 1;
+				gres_config.nic_sets[i].nic_cnt++;
+			}
+			last_obj = current_obj;
+		}
+	}
+	list_destroy(gres_obj_list);
+
+for (i=0; i<gres_config.nic_set_cnt; i++) {
+	char tmp_str[64];
+	bit_fmt(tmp_str, sizeof(tmp_str), gres_config.nic_sets[i].nic_cpuset);
+	info("nic_cnt:%u  bitmap:%s", 
+	     gres_config.nic_sets[i].nic_cnt, tmp_str);
+}
+fatal("nic_cnt:%u cpu_cnt:%d", gres_config.nic_cnt, cpu_cnt);
+fini:	if (topology)
+		hwloc_topology_destroy(topology);
+	if (rc == SLURM_SUCCESS)
+		gres_config.loaded  = true;
+	return rc;
+}
+#else
+/* We lack a mechanism for getting the resource count on this node */
+extern int node_config_load(void)
+{
+	gres_config.nic_cnt = 0;
 	gres_config.loaded  = true;
 	return SLURM_SUCCESS;
 }
+#endif
 
 /*
  * Pack this node's current configuration.
