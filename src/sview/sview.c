@@ -504,7 +504,7 @@ static char *_get_ui_description()
 		"    <menu action='options'>"
 		"      <menuitem action='grid'/>"
 		"      <menuitem action='hidden'/>");
-	if(cluster_flags & CLUSTER_FLAG_BG)
+	if(!(cluster_flags & CLUSTER_FLAG_BG))
 		xstrcat(ui_description,
 			"      <menuitem action='grid_specs'/>");
 
@@ -805,6 +805,7 @@ extern void _change_cluster_main(GtkComboBox *combo, gpointer extra)
 	slurmdb_cluster_rec_t *cluster_rec = NULL;
 	char *tmp, *ui_description;
 	GError *error = NULL;
+	GtkWidget *node_tab = NULL;
 
 	if(!gtk_combo_box_get_active_iter(combo, &iter)) {
 		g_print("nothing selected\n");
@@ -831,34 +832,6 @@ extern void _change_cluster_main(GtkComboBox *combo, gpointer extra)
 	/* 		return; */
 	/* } */
 
-	display_data = main_display_data;
-	while(display_data++) {
-		if(display_data->id == -1)
-			break;
-		if(cluster_flags & CLUSTER_FLAG_BG) {
-			switch(display_data->id) {
-			case BLOCK_PAGE:
-				display_data->show = TRUE;
-				break;
-			case NODE_PAGE:
-				display_data->name = "Base Partitions";
-				break;
-			default:
-				break;
-			}
-		} else {
-			switch(display_data->id) {
-			case BLOCK_PAGE:
-				display_data->show = FALSE;
-				break;
-			case NODE_PAGE:
-				display_data->name = "Nodes";
-				break;
-			default:
-				break;
-			}
-		}
-	}
 	/* free old info under last cluster */
 	slurm_free_block_info_msg(g_block_info_ptr);
 	g_block_info_ptr = NULL;
@@ -890,6 +863,35 @@ extern void _change_cluster_main(GtkComboBox *combo, gpointer extra)
 		working_cluster_rec = cluster_rec;
 	cluster_dims = slurmdb_setup_cluster_dims();
 	cluster_flags = slurmdb_setup_cluster_flags();
+
+	display_data = main_display_data;
+	while(display_data++) {
+		if(display_data->id == -1)
+			break;
+		if(cluster_flags & CLUSTER_FLAG_BG) {
+			switch(display_data->id) {
+			case BLOCK_PAGE:
+				display_data->show = TRUE;
+				break;
+			case NODE_PAGE:
+				display_data->name = "Base Partitions";
+				break;
+			default:
+				break;
+			}
+		} else {
+			switch(display_data->id) {
+			case BLOCK_PAGE:
+				display_data->show = FALSE;
+				break;
+			case NODE_PAGE:
+				display_data->name = "Nodes";
+				break;
+			default:
+				break;
+			}
+		}
+	}
 
 	/* set up menu */
 	ui_description = _get_ui_description();
@@ -923,6 +925,20 @@ extern void _change_cluster_main(GtkComboBox *combo, gpointer extra)
 	if(signal_params_list)
 		list_flush(signal_params_list);
 
+	/* change the node tab name if needed */
+	node_tab = gtk_notebook_get_nth_page(
+		GTK_NOTEBOOK(main_notebook), NODE_PAGE);
+	node_tab = gtk_notebook_get_tab_label(GTK_NOTEBOOK(main_notebook),
+					      node_tab);
+	/* ok, now we have a table which we have set up to contain an
+	 * event_box which contains the label we are interested.  We
+	 * setup this label to be the focus child of the table, so all
+	 * we have to do is grab that and we are set. */
+	node_tab = gtk_container_get_focus_child(GTK_CONTAINER(node_tab));
+
+	if(node_tab)
+		gtk_label_set_text(GTK_LABEL(node_tab),
+				   main_display_data[NODE_PAGE].name);
 	/* reinit */
 	get_system_stats(main_grid_table);
 
