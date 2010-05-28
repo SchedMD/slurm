@@ -100,6 +100,12 @@
 /* Define to 1 if you have the `hstrerror' function. */
 #undef HAVE_HSTRERROR
 
+/* Define to 1 if hwloc library found */
+#undef HAVE_HWLOC
+
+/* Define to 1 if hwloc library supports PCI devices */
+#undef HAVE_HWLOC_PCI
+
 /* Define to 1 if you have the `inet_aton' function. */
 #undef HAVE_INET_ATON
 
