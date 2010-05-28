@@ -803,6 +803,72 @@ extern uint32_t slurmdb_setup_cluster_flags()
 #endif
 	return cluster_flags;
 }
+static int _setup_cluster_rec(slurmdb_cluster_rec_t *cluster_rec)
+{
+	int plugin_id_select = 0;
+
+	xassert(cluster_rec);
+
+	if(!cluster_rec->control_port) {
+		debug("Slurmctld on '%s' hasn't registered yet.",
+		      cluster_rec->name);
+		return SLURM_ERROR;
+	}
+
+	if(cluster_rec->rpc_version < 8) {
+		debug("Slurmctld on '%s' must be running at least "
+		      "SLURM 2.2 for cross-cluster communication.",
+		      cluster_rec->name);
+		return SLURM_ERROR;
+	}
+
+	if((plugin_id_select = select_get_plugin_id_pos(
+		    cluster_rec->plugin_id_select)) == SLURM_ERROR) {
+		error("Cluster '%s' has an unknown select plugin_id %u",
+		      cluster_rec->name,
+		      cluster_rec->plugin_id_select);
+		return SLURM_ERROR;
+	}
+
+	cluster_rec->plugin_id_select = plugin_id_select;
+
+	slurm_set_addr(&cluster_rec->control_addr,
+		       cluster_rec->control_port,
+		       cluster_rec->control_host);
+	if (cluster_rec->control_addr.sin_port == 0) {
+		error("Unable to establish control "
+		      "machine address for '%s'(%s:%u)",
+		      cluster_rec->name,
+		      cluster_rec->control_host,
+		      cluster_rec->control_port);
+		return SLURM_ERROR;
+	}
+
+	if(cluster_rec->flags & CLUSTER_FLAG_BG) {
+		int number, i, len;
+		char *nodes = cluster_rec->nodes;
+
+		cluster_rec->dim_size = xmalloc(
+			sizeof(int) * cluster_rec->dimensions);
+		len = strlen(nodes);
+		i = len - cluster_rec->dimensions;
+		if(nodes[len-1] == ']')
+			i--;
+		if(i > cluster_rec->dimensions) {
+			char *p = '\0';
+			number = strtoul(nodes + i, &p, 36);
+			hostlist_parse_int_to_array(
+				number, cluster_rec->dim_size,
+				cluster_rec->dimensions, 36);
+			/* all calculations this is for should
+			   be expecting 0 not to count as a
+			   number so add 1 to it. */
+			for(i=0; i<cluster_rec->dimensions; i++)
+				cluster_rec->dim_size[i]++;
+		}
+	}
+	return SLURM_SUCCESS;
+}
 
 extern List slurmdb_get_info_cluster(char *cluster_names)
 {
@@ -813,16 +879,16 @@ extern List slurmdb_get_info_cluster(char *cluster_names)
 	void *db_conn = NULL;
 	ListIterator itr, itr2;
 	int err = 0;
-	int plugin_id_select = 0;
-	xassert(cluster_names);
 
 	cluster_name = slurm_get_cluster_name();
 	db_conn = acct_storage_g_get_connection(false, 0, 1, cluster_name);
 	xfree(cluster_name);
 
 	memset(&cluster_cond, 0, sizeof(slurmdb_cluster_cond_t));
-	cluster_cond.cluster_list = list_create(slurm_destroy_char);
-	slurm_addto_char_list(cluster_cond.cluster_list, cluster_names);
+	if(cluster_names) {
+		cluster_cond.cluster_list = list_create(slurm_destroy_char);
+		slurm_addto_char_list(cluster_cond.cluster_list, cluster_names);
+	}
 
 	if(!(temp_list = acct_storage_g_get_clusters(
 		    db_conn, getuid(), &cluster_cond))) {
@@ -830,81 +896,35 @@ extern List slurmdb_get_info_cluster(char *cluster_names)
 		goto end_it;
 	}
 	itr = list_iterator_create(temp_list);
-	itr2 = list_iterator_create(cluster_cond.cluster_list);
-	while((cluster_name = list_next(itr2))) {
-		while((cluster_rec = list_next(itr)))
-			if(!strcmp(cluster_name, cluster_rec->name))
-				break;
-		if(!cluster_rec) {
-			error("No cluster '%s' known by database.",
-			      cluster_name);
-			err = 1;
-			goto next;
-		}
-
-		if(cluster_rec->rpc_version < 8) {
-			error("Slurmctld on '%s' must be running at least "
-			      "SLURM 2.2 for cross-cluster communication.",
-			      cluster_name);
-			list_delete_item(itr);
-			err = 1;
-			goto next;
-		}
-
-		if((plugin_id_select = select_get_plugin_id_pos(
-			    cluster_rec->plugin_id_select)) == SLURM_ERROR) {
-			error("Cluster '%s' has an unknown select plugin_id %u",
-			      cluster_name,
-			      cluster_rec->plugin_id_select);
-			list_delete_item(itr);
-			err = 1;
-			goto next;
-		}
-
-		cluster_rec->plugin_id_select = plugin_id_select;
-
-		slurm_set_addr(&cluster_rec->control_addr,
-			       cluster_rec->control_port,
-			       cluster_rec->control_host);
-		if (cluster_rec->control_addr.sin_port == 0) {
-			error("Unable to establish control "
-			      "machine address for '%s'(%s:%u)",
-			      cluster_name,
-			      cluster_rec->control_host,
-			      cluster_rec->control_port);
-			list_delete_item(itr);
-			err = 1;
-			goto next;
-		}
-
-		if(cluster_rec->flags & CLUSTER_FLAG_BG) {
-			int number, i, len;
-			char *nodes = cluster_rec->nodes;
-
-			cluster_rec->dim_size = xmalloc(
-				sizeof(int) * cluster_rec->dimensions);
-			len = strlen(nodes);
-			i = len - cluster_rec->dimensions;
-			if(nodes[len-1] == ']')
-				i--;
-			if(i > cluster_rec->dimensions) {
-				char *p = '\0';
-				number = strtoul(nodes + i, &p, 36);
-				hostlist_parse_int_to_array(
-					number, cluster_rec->dim_size,
-					cluster_rec->dimensions, 36);
-				/* all calculations this is for should
-				   be expecting 0 not to count as a
-				   number so add 1 to it. */
-				for(i=0; i<cluster_rec->dimensions; i++)
-					cluster_rec->dim_size[i]++;
+	if(!cluster_names) {
+		while((cluster_rec = list_next(itr))) {
+			if(_setup_cluster_rec(cluster_rec) != SLURM_SUCCESS) {
+				err = 1;
+				list_delete_item(itr);
 			}
 		}
+	} else {
+		itr2 = list_iterator_create(cluster_cond.cluster_list);
+		while((cluster_name = list_next(itr2))) {
+			while((cluster_rec = list_next(itr)))
+				if(!strcmp(cluster_name, cluster_rec->name))
+					break;
+			if(!cluster_rec) {
+				error("No cluster '%s' known by database.",
+				      cluster_name);
+				err = 1;
+				goto next;
+			}
 
-	next:
-		list_iterator_reset(itr);
+			if(_setup_cluster_rec(cluster_rec) != SLURM_SUCCESS) {
+				err = 1;
+				list_delete_item(itr);
+			}
+		next:
+			list_iterator_reset(itr);
+		}
+		list_iterator_destroy(itr2);
 	}
-	list_iterator_destroy(itr2);
 	list_iterator_destroy(itr);
 
 end_it:

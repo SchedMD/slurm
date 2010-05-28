@@ -70,10 +70,15 @@
 
 #endif
 
+/* The below #defines are needed for cross cluster dealings */
 #ifdef HAVE_BGL
 typedef rm_BGL_t my_bluegene_t;
+#define PARTITION_ALREADY_DEFINED -6
+#define RM_PARTITION_REBOOTING 1000
 #else
 typedef rm_BG_t my_bluegene_t;
+#define RM_PARTITION_BUSY 1000
+
 #endif
 
 #endif	/* #ifndef ATTACH_BG_H */

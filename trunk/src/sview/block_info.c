@@ -119,6 +119,10 @@ static display_data_t display_data_block[] = {
 	{G_TYPE_STRING, SORTID_IMAGERAMDISK, "Image Ramdisk",
 	 FALSE, EDIT_NONE, refresh_block, create_model_block, admin_edit_block},
 #else
+	{G_TYPE_STRING, SORTID_USE, NULL, TRUE, EDIT_NONE, refresh_block,
+	 create_model_block, admin_edit_block},
+	{G_TYPE_STRING, SORTID_IMAGEBLRTS, NULL,
+	 FALSE, EDIT_NONE, refresh_block, create_model_block, admin_edit_block},
 	{G_TYPE_STRING, SORTID_IMAGELINUX, "Image Cnload",
 	 FALSE, EDIT_NONE, refresh_block, create_model_block, admin_edit_block},
 	{G_TYPE_STRING, SORTID_IMAGERAMDISK, "Image Ioload",
@@ -702,7 +706,8 @@ extern int get_new_info_block(block_info_msg_t **block_ptr, int force)
 	if(!(cluster_flags & CLUSTER_FLAG_BG))
 		return error_code;
 
-	if(!force && ((now - last) < working_sview_config.refresh_delay)) {
+	if(g_block_info_ptr && !force
+	   && ((now - last) < working_sview_config.refresh_delay)) {
 		if(*block_ptr != g_block_info_ptr)
 			error_code = SLURM_SUCCESS;
 		*block_ptr = g_block_info_ptr;
@@ -897,6 +902,8 @@ extern void get_info_block(GtkTable *table, display_data_t *display_data)
 		if(display_widget)
 			gtk_widget_destroy(display_widget);
 		display_widget = NULL;
+		part_info_ptr = NULL;
+		block_ptr = NULL;
 		return;
 	}
 

@@ -205,6 +205,7 @@ static display_data_t options_data_part[] = {
 	{G_TYPE_STRING, BLOCK_PAGE, "Blocks", TRUE, PART_PAGE},
 	{G_TYPE_STRING, NODE_PAGE, "Base Partitions", TRUE, PART_PAGE},
 #else
+	{G_TYPE_STRING, BLOCK_PAGE, NULL, TRUE, PART_PAGE},
 	{G_TYPE_STRING, NODE_PAGE, "Nodes", TRUE, PART_PAGE},
 #endif
 	//{G_TYPE_STRING, SUBMIT_PAGE, "Job Submit", FALSE, PART_PAGE},
@@ -871,12 +872,12 @@ static void _layout_part_record(GtkTreeView *treeview,
 			temp_char = part_ptr->allow_alloc_nodes;
 			break;
 		case SORTID_NODES:
-#ifdef HAVE_BG
-			convert_num_unit((float)part_ptr->total_nodes, tmp_cnt,
-					 sizeof(tmp_cnt), UNIT_NONE);
-#else
-			sprintf(tmp_cnt, "%u", part_ptr->total_nodes);
-#endif
+			if(cluster_flags & CLUSTER_FLAG_BG)
+				convert_num_unit((float)part_ptr->total_nodes,
+						 tmp_cnt,
+						 sizeof(tmp_cnt), UNIT_NONE);
+			else
+				sprintf(tmp_cnt, "%u", part_ptr->total_nodes);
 			temp_char = tmp_cnt;
 			break;
 		case SORTID_NODES_MAX:
@@ -1096,20 +1097,19 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 		temp_char = "all";
 	gtk_tree_store_set(treestore, iter, SORTID_GROUPS, temp_char, -1);
 
-#ifdef HAVE_BG
-	convert_num_unit((float)part_ptr->total_nodes, tmp_cnt,
-			 sizeof(tmp_cnt), UNIT_NONE);
-#else
-	sprintf(tmp_cnt, "%u", part_ptr->total_nodes);
-#endif
+	if(cluster_flags & CLUSTER_FLAG_BG)
+		convert_num_unit((float)part_ptr->total_nodes, tmp_cnt,
+				 sizeof(tmp_cnt), UNIT_NONE);
+	else
+		sprintf(tmp_cnt, "%u", part_ptr->total_nodes);
 	gtk_tree_store_set(treestore, iter, SORTID_NODES, tmp_cnt, -1);
 
-#ifdef HAVE_BG
-	convert_num_unit((float)part_ptr->total_cpus, tmp_cnt,
-			 sizeof(tmp_cnt), UNIT_NONE);
-#else
-	sprintf(tmp_cnt, "%u", part_ptr->total_cpus);
-#endif
+	if(cluster_flags & CLUSTER_FLAG_BG)
+		convert_num_unit((float)part_ptr->total_cpus, tmp_cnt,
+				 sizeof(tmp_cnt), UNIT_NONE);
+	else
+		sprintf(tmp_cnt, "%u", part_ptr->total_cpus);
+
 	gtk_tree_store_set(treestore, iter, SORTID_CPUS, tmp_cnt, -1);
 
 	gtk_tree_store_set(treestore, iter, SORTID_NODELIST,
@@ -1168,13 +1168,14 @@ static void _update_part_sub_record(sview_part_sub_t *sview_part_sub,
 					 tmp_cnt,
 					 sizeof(tmp_cnt), UNIT_NONE);
 			xstrfmtcat(cpu_tmp, "Alloc:%s", tmp_cnt);
-#ifdef HAVE_BG
-			convert_num_unit((float)(sview_part_sub->cpu_alloc_cnt
-						 / cpus_per_node),
-					 tmp_cnt,
-					 sizeof(tmp_cnt), UNIT_NONE);
-			xstrfmtcat(node_tmp, "Alloc:%s", tmp_cnt);
-#endif
+			if(cluster_flags & CLUSTER_FLAG_BG) {
+				convert_num_unit(
+					(float)(sview_part_sub->cpu_alloc_cnt
+						/ cpus_per_node),
+					tmp_cnt,
+					sizeof(tmp_cnt), UNIT_NONE);
+				xstrfmtcat(node_tmp, "Alloc:%s", tmp_cnt);
+			}
 		}
 		if(sview_part_sub->cpu_error_cnt) {
 			convert_num_unit((float)sview_part_sub->cpu_error_cnt,
@@ -1183,15 +1184,16 @@ static void _update_part_sub_record(sview_part_sub_t *sview_part_sub,
 			if(cpu_tmp)
 				xstrcat(cpu_tmp, " ");
 			xstrfmtcat(cpu_tmp, "Err:%s", tmp_cnt);
-#ifdef HAVE_BG
-			convert_num_unit((float)(sview_part_sub->cpu_error_cnt
-						 / cpus_per_node),
-					 tmp_cnt,
-					 sizeof(tmp_cnt), UNIT_NONE);
-			if(node_tmp)
-				xstrcat(node_tmp, " ");
-			xstrfmtcat(node_tmp, "Err:%s", tmp_cnt);
-#endif
+			if(cluster_flags & CLUSTER_FLAG_BG) {
+				convert_num_unit(
+					(float)(sview_part_sub->cpu_error_cnt
+						/ cpus_per_node),
+					tmp_cnt,
+					sizeof(tmp_cnt), UNIT_NONE);
+				if(node_tmp)
+					xstrcat(node_tmp, " ");
+				xstrfmtcat(node_tmp, "Err:%s", tmp_cnt);
+			}
 		}
 		if(sview_part_sub->cpu_idle_cnt) {
 			convert_num_unit((float)sview_part_sub->cpu_idle_cnt,
@@ -1200,15 +1202,16 @@ static void _update_part_sub_record(sview_part_sub_t *sview_part_sub,
 			if(cpu_tmp)
 				xstrcat(cpu_tmp, " ");
 			xstrfmtcat(cpu_tmp, "Idle:%s", tmp_cnt);
-#ifdef HAVE_BG
-			convert_num_unit((float)(sview_part_sub->cpu_idle_cnt
-						 / cpus_per_node),
-					 tmp_cnt,
-					 sizeof(tmp_cnt), UNIT_NONE);
-			if(node_tmp)
-				xstrcat(node_tmp, " ");
-			xstrfmtcat(node_tmp, "Idle:%s", tmp_cnt);
-#endif
+			if(cluster_flags & CLUSTER_FLAG_BG) {
+				convert_num_unit(
+					(float)(sview_part_sub->cpu_idle_cnt
+						/ cpus_per_node),
+					tmp_cnt,
+					sizeof(tmp_cnt), UNIT_NONE);
+				if(node_tmp)
+					xstrcat(node_tmp, " ");
+				xstrfmtcat(node_tmp, "Idle:%s", tmp_cnt);
+			}
 		}
 	} else {
 		cpu_tmp = xmalloc(20);
@@ -1392,23 +1395,23 @@ static void _update_sview_part_sub(sview_part_sub_t *sview_part_sub,
 					  SELECT_NODEDATA_SUBCNT,
 					  NODE_STATE_ALLOCATED,
 					  &alloc_cpus);
-#ifdef HAVE_BG
-		if(!alloc_cpus
-		   && (IS_NODE_ALLOCATED(node_ptr)
-		       || IS_NODE_COMPLETING(node_ptr)))
-			alloc_cpus = node_ptr->cpus;
-		else
-			alloc_cpus *= cpus_per_node;
-#endif
+		if(cluster_flags & CLUSTER_FLAG_BG) {
+			if(!alloc_cpus
+			   && (IS_NODE_ALLOCATED(node_ptr)
+			       || IS_NODE_COMPLETING(node_ptr)))
+				alloc_cpus = node_ptr->cpus;
+			else
+				alloc_cpus *= cpus_per_node;
+		}
 		idle_cpus -= alloc_cpus;
 
 		slurm_get_select_nodeinfo(node_ptr->select_nodeinfo,
 					  SELECT_NODEDATA_SUBCNT,
 					  NODE_STATE_ERROR,
 					  &err_cpus);
-#ifdef HAVE_BG
-		err_cpus *= cpus_per_node;
-#endif
+		if(cluster_flags & CLUSTER_FLAG_BG)
+			err_cpus *= cpus_per_node;
+
 		idle_cpus -= err_cpus;
 	}
 
@@ -1687,7 +1690,8 @@ extern int get_new_info_part(partition_info_msg_t **part_ptr, int force)
 	static bool changed = 0;
 	static uint16_t last_flags = 0;
 
-	if(!force && ((now - last) < working_sview_config.refresh_delay)) {
+	if(g_part_info_ptr && !force
+	   && ((now - last) < working_sview_config.refresh_delay)) {
 		if(*part_ptr != g_part_info_ptr)
 			error_code = SLURM_SUCCESS;
 		*part_ptr = g_part_info_ptr;
@@ -1965,6 +1969,8 @@ extern void get_info_part(GtkTable *table, display_data_t *display_data)
 		if(display_widget)
 			gtk_widget_destroy(display_widget);
 		display_widget = NULL;
+		part_info_ptr = NULL;
+		node_info_ptr = NULL;
 		return;
 	}
 
@@ -2353,26 +2359,26 @@ extern void popup_all_part(GtkTreeModel *model, GtkTreeIter *iter, int id)
 		if(!only_line)
 			gtk_tree_model_get(model, iter,
 					   SORTID_NODE_STATE, &state, -1);
-#ifdef HAVE_BG
-		if(!state || !strlen(state))
-			snprintf(title, 100,
-				 "Base partition(s) in partition %s",
-				 name);
-		else
-			snprintf(title, 100,
-				 "Base partition(s) in partition %s "
-				 "that are in '%s' state",
-				 name, state);
-#else
-		if(!state || !strlen(state))
-			snprintf(title, 100, "Node(s) in partition %s ",
-				 name);
-		else
-			snprintf(title, 100,
-				 "Node(s) in partition %s that are in "
-				 "'%s' state",
-				 name, state);
-#endif
+		if(cluster_flags & CLUSTER_FLAG_BG) {
+			if(!state || !strlen(state))
+				snprintf(title, 100,
+					 "Base partition(s) in partition %s",
+					 name);
+			else
+				snprintf(title, 100,
+					 "Base partition(s) in partition %s "
+					 "that are in '%s' state",
+					 name, state);
+		} else {
+			if(!state || !strlen(state))
+				snprintf(title, 100, "Node(s) in partition %s ",
+					 name);
+			else
+				snprintf(title, 100,
+					 "Node(s) in partition %s that are in "
+					 "'%s' state",
+					 name, state);
+		}
 		break;
 	case BLOCK_PAGE:
 		snprintf(title, 100, "Block(s) in partition %s", name);
@@ -2603,3 +2609,94 @@ end_it:
 	return;
 }
 
+
+extern void cluster_change_part()
+{
+	display_data_t *display_data = display_data_part;
+	while(display_data++) {
+		if(display_data->id == -1)
+			break;
+		if(cluster_flags & CLUSTER_FLAG_BG) {
+			switch(display_data->id) {
+			case SORTID_NODES_ALLOWED:
+				display_data->name = "BPs Allowed Allocating";
+				break;
+			case SORTID_NODELIST:
+				display_data->name = "BP List";
+				break;
+			default:
+				break;
+			}
+		} else {
+			switch(display_data->id) {
+			case SORTID_NODES_ALLOWED:
+				display_data->name = "Nodes Allowed Allocating";
+				break;
+			case SORTID_NODELIST:
+				display_data->name = "NodeList";
+				break;
+			default:
+				break;
+			}
+		}
+	}
+	display_data = options_data_part;
+	while(display_data++) {
+		if(display_data->id == -1)
+			break;
+
+		if(cluster_flags & CLUSTER_FLAG_BG) {
+			switch(display_data->id) {
+			case BLOCK_PAGE:
+				display_data->name = "Blocks";
+				break;
+			case NODE_PAGE:
+				display_data->name = "Base Partitions";
+				break;
+			}
+
+			if(!display_data->name) {
+			} else if(!strcmp(display_data->name, "Drain Nodes"))
+				display_data->name = "Drain Base Partitions";
+			else if(!strcmp(display_data->name, "Resume Nodes"))
+				display_data->name = "Resume Base Partitions";
+			else if(!strcmp(display_data->name, "Put Nodes Down"))
+				display_data->name = "Put Base Partitions Down";
+			else if(!strcmp(display_data->name, "Make Nodes Idle"))
+				display_data->name =
+					"Make Base Partitions Idle";
+			else if(!strcmp(display_data->name,
+					"Update Node Features"))
+				display_data->name =
+					"Update Base Partitions Features";
+		} else {
+			switch(display_data->id) {
+			case BLOCK_PAGE:
+				display_data->name = NULL;
+				break;
+			case NODE_PAGE:
+				display_data->name = "Nodes";
+				break;
+			}
+
+			if(!display_data->name) {
+			} else if(!strcmp(display_data->name,
+					  "Drain Base Partitions"))
+				display_data->name = "Drain Nodes";
+			else if(!strcmp(display_data->name,
+					"Resume Base Partitions"))
+				display_data->name = "Resume Nodes";
+			else if(!strcmp(display_data->name,
+					"Put Base Partitions Down"))
+				display_data->name = "Put Nodes Down";
+			else if(!strcmp(display_data->name,
+					"Make Base Partitions Idle"))
+				display_data->name = "Make Nodes Idle";
+			else if(!strcmp(display_data->name,
+					"Update Node Features"))
+				display_data->name =
+					"Update Base Partitions Features";
+		}
+	}
+	get_info_part(NULL, NULL);
+}
