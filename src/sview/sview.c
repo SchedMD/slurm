@@ -926,19 +926,23 @@ extern void _change_cluster_main(GtkComboBox *combo, gpointer extra)
 		list_flush(signal_params_list);
 
 	/* change the node tab name if needed */
+#ifdef GTK2_USE_GET_FOCUS
 	node_tab = gtk_notebook_get_nth_page(
 		GTK_NOTEBOOK(main_notebook), NODE_PAGE);
 	node_tab = gtk_notebook_get_tab_label(GTK_NOTEBOOK(main_notebook),
 					      node_tab);
 
-#ifdef GTK2_USE_GET_FOCUS
 	/* ok, now we have a table which we have set up to contain an
 	 * event_box which contains the label we are interested.  We
 	 * setup this label to be the focus child of the table, so all
 	 * we have to do is grab that and we are set. */
 	node_tab = gtk_container_get_focus_child(GTK_CONTAINER(node_tab));
 #else
-	g_object_get(node_tab, "child", &node_tab, NULL);
+	/* FIXME: on older systems there may be a way to do it, we
+	   just haven't figure it out yet.
+	*/
+	node_tab = NULL;
+	g_object_get(node_tab, "focus-child", &node_tab, NULL);
 #endif
 	if(node_tab)
 		gtk_label_set_text(GTK_LABEL(node_tab),
