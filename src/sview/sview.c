@@ -161,48 +161,38 @@ void *_page_thr(void *arg)
 		g_mutex_unlock(grid_mutex);
 
 		/* if the grid isn't there just return */
-		if(!grid_init) {
-			g_print("inited grid 0\n");
-
+		if(!grid_init)
 			return NULL;
-		}
 	}
-	//g_print("waiting\n");
-	gdk_threads_enter();
+
+	g_static_mutex_lock(&sview_mutex);
 	thread_count++;
-	//g_print("thread_count %d\n", thread_count);
-	gdk_flush();
-	gdk_threads_leave();
-	//g_print("before while\n");
+	g_static_mutex_unlock(&sview_mutex);
 	while(page_running == num) {
 /* 		START_TIMER; */
-		g_static_mutex_lock(&sview_mutex);
+//		g_static_mutex_lock(&sview_mutex);
 		gdk_threads_enter();
-		//g_print("init_grid\n");
 		sview_init_grid(reset_highlight);
 		reset_highlight=false;
 		(display_data->get_info)(table, display_data);
 		gdk_flush();
 		gdk_threads_leave();
-		g_static_mutex_unlock(&sview_mutex);
+//		g_static_mutex_unlock(&sview_mutex);
 /* 		END_TIMER; */
 /* 		g_print("got for initeration: %s\n", TIME_STR); */
 		sleep(working_sview_config.refresh_delay);
-
-		gdk_threads_enter();
+		g_static_mutex_lock(&sview_mutex);
 		if(thread_count > 1) {
-			gdk_flush();
-			gdk_threads_leave();
+			g_static_mutex_unlock(&sview_mutex);
 			break;
 		}
-		gdk_flush();
-		gdk_threads_leave();
-
+		g_static_mutex_unlock(&sview_mutex);
 	}
-	gdk_threads_enter();
+	g_static_mutex_lock(&sview_mutex);
+	//g_print("now here\n");
 	thread_count--;
-	gdk_flush();
-	gdk_threads_leave();
+	//g_print("done decrementing\n");
+	g_static_mutex_unlock(&sview_mutex);
 	//g_print("done\n");
 	return NULL;
 }
@@ -936,6 +926,7 @@ extern void _change_cluster_main(GtkComboBox *combo, gpointer extra)
 	/* reinit */
 	get_system_stats(main_grid_table);
 
+	refresh_main(NULL, NULL);
 	tmp = g_strdup_printf("Cluster changed to %s", cluster_rec->name);
 	display_edit_note(tmp);
 	g_free(tmp);
