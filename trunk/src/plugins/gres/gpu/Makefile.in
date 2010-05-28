@@ -73,7 +73,8 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
 	$(top_srcdir)/auxdir/x_ac_sgi_job.m4 \
 	$(top_srcdir)/auxdir/x_ac_slurm_ssl.m4 \
 	$(top_srcdir)/auxdir/x_ac_sun_const.m4 \
-	$(top_srcdir)/auxdir/x_ac_xcpu.m4 $(top_srcdir)/configure.ac
+	$(top_srcdir)/auxdir/x_ac_xcpu.m4 \
+	$(top_srcdir)/auxdir/x_ax_hwloc.m4 $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 mkinstalldirs = $(install_sh) -d
@@ -103,7 +104,8 @@ am__base_list = \
   sed '$$!N;$$!N;$$!N;$$!N;s/\n/ /g'
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
-gres_gpu_la_LIBADD =
+am__DEPENDENCIES_1 =
+gres_gpu_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am_gres_gpu_la_OBJECTS = gres_gpu.lo
 gres_gpu_la_OBJECTS = $(am_gres_gpu_la_OBJECTS)
 gres_gpu_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
@@ -175,6 +177,9 @@ HAVE_ELAN = @HAVE_ELAN@
 HAVE_FEDERATION = @HAVE_FEDERATION@
 HAVE_OPENSSL = @HAVE_OPENSSL@
 HAVE_SOME_CURSES = @HAVE_SOME_CURSES@
+HWLOC_CPPFLAGS = @HWLOC_CPPFLAGS@
+HWLOC_LDFLAGS = @HWLOC_LDFLAGS@
+HWLOC_LIBS = @HWLOC_LIBS@
 INSTALL = @INSTALL@
 INSTALL_DATA = @INSTALL_DATA@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
@@ -313,12 +318,13 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
-INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
+INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common $(HWLOC_CPPFLAGS)
 pkglib_LTLIBRARIES = gres_gpu.la
 
 # Gres GPU plugin.
 gres_gpu_la_SOURCES = gres_gpu.c
-gres_gpu_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+gres_gpu_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(HWLOC_LDFLAGS)
+gres_gpu_la_LIBADD = $(HWLOC_LIBS)
 all: all-am
 
 .SUFFIXES:

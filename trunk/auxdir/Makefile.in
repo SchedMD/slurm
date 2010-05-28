@@ -71,7 +71,8 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
 	$(top_srcdir)/auxdir/x_ac_sgi_job.m4 \
 	$(top_srcdir)/auxdir/x_ac_slurm_ssl.m4 \
 	$(top_srcdir)/auxdir/x_ac_sun_const.m4 \
-	$(top_srcdir)/auxdir/x_ac_xcpu.m4 $(top_srcdir)/configure.ac
+	$(top_srcdir)/auxdir/x_ac_xcpu.m4 \
+	$(top_srcdir)/auxdir/x_ax_hwloc.m4 $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 mkinstalldirs = $(install_sh) -d
@@ -129,6 +130,9 @@ HAVE_ELAN = @HAVE_ELAN@
 HAVE_FEDERATION = @HAVE_FEDERATION@
 HAVE_OPENSSL = @HAVE_OPENSSL@
 HAVE_SOME_CURSES = @HAVE_SOME_CURSES@
+HWLOC_CPPFLAGS = @HWLOC_CPPFLAGS@
+HWLOC_LDFLAGS = @HWLOC_LDFLAGS@
+HWLOC_LIBS = @HWLOC_LIBS@
 INSTALL = @INSTALL@
 INSTALL_DATA = @INSTALL_DATA@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
@@ -272,6 +276,7 @@ EXTRA_DIST = \
     x_ac__system_configuration.m4 \
     x_ac_affinity.m4 \
     x_ac_aix.m4 \
+    x_ac_blcr.m4 \
     x_ac_bluegene.m4 \
     x_ac_cflags.m4 \
     x_ac_cray.m4 \
@@ -280,6 +285,7 @@ EXTRA_DIST = \
     x_ac_env.m4 \
     x_ac_federation.m4 \
     x_ac_gpl_licensed.m4 \
+    x_ac_hwloc.m4 \
     x_ac_iso.m4 \
     x_ac_pam.m4 \
     x_ac_munge.m4 \
@@ -289,8 +295,7 @@ EXTRA_DIST = \
     x_ac_readline.m4 \
     x_ac_setproctitle.m4 \
     x_ac_slurm_ssl.m4 \
-    x_ac_sun_const.m4 \
-    x_ac_blcr.m4
+    x_ac_sun_const.m4
 
 all: all-am
 

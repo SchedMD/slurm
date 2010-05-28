@@ -54,6 +54,9 @@
 #      include <stdint.h>
 #    endif
 #  endif /* HAVE_INTTYPES_H */
+#  ifdef HAVE_HWLOC
+#    include <hwloc.h>
+#  endif /* HAVE_HWLOC */
 #else /* ! HAVE_CONFIG_H */
 #  include <sys/types.h>
 #  include <unistd.h>
@@ -184,12 +187,12 @@ extern int help_msg(char *msg, int msg_size)
  */
 extern int node_config_load(void)
 {
-	/* FIXME: Need to flesh this out, probably using 
-	 * http://svn.open-mpi.org/svn/hwloc/branches/libpci/
-	 * We'll want to capture topology information as well
-	 * as count. */
+#ifdef HAVE_HWLOC
+	gres_config.gpu_cnt = 1;
+#else
+	gres_config.gpu_cnt = 0;
+#endif
 	gres_config.loaded  = true;
-	gres_config.gpu_cnt = 8;
 	return SLURM_SUCCESS;
 }
 
