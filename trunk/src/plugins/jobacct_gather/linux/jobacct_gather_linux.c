@@ -190,6 +190,7 @@ static void _get_process_data(void)
 	prec_t *prec = NULL;
 	struct jobacctinfo *jobacct = NULL;
 	static int processing = 0;
+	long		hertz;
 
 	if(!pgid_plugin && cont_id == (uint32_t)NO_VAL) {
 		debug("cont_id hasn't been set yet not running poll");
@@ -202,6 +203,12 @@ static void _get_process_data(void)
 	}
 	processing = 1;
 	prec_list = list_create(_destroy_prec);
+
+	hertz = sysconf(_SC_CLK_TCK);
+	if (hertz < 1) {
+		error ("_get_process_data: unable to get clock rate");
+		hertz = 100;	/* default on many systems */
+	}
 
 	if(!pgid_plugin) {
 		/* get only the processes in the proctrack container */
@@ -338,7 +345,8 @@ static void _get_process_data(void)
 					MAX(jobacct->max_pages, prec->pages);
 				jobacct->min_cpu = jobacct->tot_cpu =
 					MAX(jobacct->min_cpu,
-					    (prec->usec + prec->ssec));
+					    (prec->ssec / hertz +
+					     prec->usec / hertz));
 				debug2("%d mem size %u %u time %u(%u+%u)",
 				       jobacct->pid, jobacct->max_rss,
 				       jobacct->max_vsize, jobacct->tot_cpu,
@@ -411,7 +419,6 @@ static int _is_a_lwp(uint32_t pid) {
 
 	FILE		*status_fp = NULL;
 	char		proc_status_file[256];
-		
 	uint32_t        tgid;
 	int             rc;
 

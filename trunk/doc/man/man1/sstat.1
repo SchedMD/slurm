@@ -38,51 +38,53 @@ command requires that the \f3jobacct_gather\fP plugin be installed and
 operational.
 
 .TP
-\f3\-a \fP\f3,\fP \f3\-\-allsteps\fP
+\f3\-a\fP\f3,\fP \f3\-\-allsteps\fP
 Print all steps for the given job(s) when no step is specified.
 
 .TP
-\f3\-e \fP\f3,\fP \f3\-\-helpformat\fP
+\f3\-e\fP\f3,\fP \f3\-\-helpformat\fP
 Print a list of fields that can be specified with the '\-\-format' option.
 
 .TP
-\f3\-h \fP\f3,\fP \f3\-\-help\fP
+\f3\-h\fP\f3,\fP \f3\-\-help\fP
 Displays a general help message.
 
 .TP
-\f3\-j \fP\f3,\fP \f3\-\-jobs\fP
+\f3\-j\fP\f3,\fP \f3\-\-jobs\fP
 Format is <job(.step)>. Stat this job step or comma-separated list of
 job steps. This option is required.  The step portion will default to
 step 0 if not specified, unless the \-\-allsteps flag is set where not
 specifying a step will result in all running steps to be displayed.
 
 .TP
-\f3\-n \fP\f3,\fP \f3\-\-noheader\fP
-No header will be added to the beginning of output. The default is to print a header.
+\f3\-n\fP\f3,\fP \f3\-\-noheader\fP
+No heading will be added to the output. The default action is to
+display a header.
 
 .TP
-\f3\-o \fP\f3,\fP \f3\-\-format\fP,\fP \f3\-\-fields\fP
+\f3\-o\fP\f3,\fP \f3\-\-format\fP,\fP \f3\-\-fields\fP
 Comma separated list of fields.
 (use '\-\-helpformat' for a list of available fields).
 
 .TP
-\f3\-p \fP\f3,\fP \f3\-\-parsable\fP
-output will be '|' delimited with a '|' at the end.
+\f3\-p\fP\f3,\fP \f3\-\-parsable\fP
+output will be '|' delimited with a '|' at the end
 
 .TP
-\f3\-P \fP\f3,\fP \f3\-\-parsable2\fP
+\f3\-P\fP\f3,\fP \f3\-\-parsable2\fP
 output will be '|' delimited without a '|' at the end
 
 .TP
 \f3\-\-usage\fP
-Display brief usage message.
+Display a command usage summary.
 
 .TP
 \f3\-v\fP\f3,\fP \f3\-\-verbose\fP
-Primarily for debugging purposes, report the state of various variables during processing.
+Primarily for debugging purposes, report the state of various
+variables during processing.
 
 .TP
-\f3\-V \fP\f3,\fP \f3\-\-version\fP
+\f3\-V\fP\f3,\fP \f3\-\-version\fP
 Print version.
 
 
@@ -91,83 +93,78 @@ The following are the field options:
 .RS
 .TP
 \f3AveCPU\fP
-
+Average (system + user) CPU time of all tasks in job.
 
 .TP
 \f3AvePages\fP
-
+Average number of page faults of all tasks in job.
 
 .TP
 \f3AveRSS\fP
-
+Average resident set size of all tasks in job.
 
 .TP
 \f3AveVMSize\fP
-
+Average Virtual Memory size of all tasks in job.
 
 .TP
 \f3JobID\fP
-
+The number of the job or job step.
+It is in the form:
+\f2job.jobstep\fP\c
+\&.
 
 .TP
 \f3MaxPages\fP
-
+Maximum number of page faults of all tasks in job.
 
 .TP
 \f3MaxPagesNode\fP
-
+The node on which the maxpages occurred.
 
 .TP
 \f3MaxPagesTask\fP
-
+The task ID where the maxpages occurred.
 
 .TP
 \f3MaxRSS\fP
-
+Maximum resident set size of all tasks in job.
 
 .TP
 \f3MaxRSSNode\fP
-
+The node on which the maxrss occurred.
 
 .TP
 \f3MaxRSSTask\fP
-
+The task ID where the maxrss occurred.
 
 .TP
 \f3MaxVMSize\fP
-
+Maximum Virtual Memory size of all tasks in job.
 
 .TP
 \f3MaxVMSizeNode\fP
-
+The node on which the maxvsize occurred.
 
 .TP
 \f3MaxVMSizeTask\fP
-
+The task ID where the maxvsize occurred.
 
 .TP
 \f3MinCPU\fP
-
+Minimum (system + user) CPU time of all tasks in job.
 
 .TP
 \f3MinCPUNode\fP
-
+The node on which the mincpu occurred.
 
 .TP
 \f3MinCPUTask\fP
-
+The task ID where the mincpu occurred.
 
 .TP
 \f3NTasks\fP
-
-
-.TP
-\f3SystemCPU\fP
-
-
-.TP
-\f3TotalCPU\fP
-
+Total number of tasks in a job or step.
 
 
 .SH "EXAMPLES"
