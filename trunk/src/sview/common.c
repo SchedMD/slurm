@@ -714,6 +714,7 @@ extern void create_page(GtkNotebook *notebook, display_data_t *display_data)
 
 	gtk_table_attach_defaults(GTK_TABLE(table), event_box, 0, 1, 0, 1);
 	gtk_table_attach_defaults(GTK_TABLE(table), close_button, 2, 3, 0, 1);
+	gtk_container_set_focus_child(GTK_CONTAINER(table), label);
 
 	gtk_widget_show_all(table);
 	//(display_data->set_fields)(GTK_MENU(menu));
