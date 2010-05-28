@@ -278,6 +278,8 @@ documents those changes that are of interest to users and admins.
  -- Fixed sview to not select too fast when using a mouse right click.
  -- Fixed sacct to display correct timelimits for jobs from accounting.
  -- Fixed sacct when running as root by default query all users as documented.
+ -- In proctrack/linuxproc, skip over files in /proc that are not really user
+    processes (e.g. "/proc/bus").
 
 * Changes in SLURM 2.1.8
 ========================

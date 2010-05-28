@@ -144,7 +144,7 @@ static int get_myname(char *s)
 	return 0;
 }
 
-static xppid_t **_build_hashtbl()
+static xppid_t **_build_hashtbl(void)
 {
 	DIR *dir;
 	struct dirent *de;
@@ -165,11 +165,13 @@ static xppid_t **_build_hashtbl()
 
 	while ((de = readdir(dir)) != NULL) {
 		num = de->d_name;
+		if ((num[0] < '0') || (num[0] > '9'))
+			continue;
 		ret_l = strtol(num, &endptr, 10);
-		if(errno == ERANGE)
+		if(errno == ERANGE) {
 			error("couldn't do a strtol on str %s(%d): %m",
 			      num, ret_l);
-
+		}
 		if (endptr == NULL || *endptr != 0)
 			continue;
 		sprintf(path, "/proc/%s/stat", num);
