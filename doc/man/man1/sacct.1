@@ -63,7 +63,7 @@ parameter in slurm.conf.
 .SH "OPTIONS"
 
 .TP "10"
-\f3\-a \fP\f3,\fP \f3\-\-allusers\fP
+\f3\-a\fP\f3,\fP \f3\-\-allusers\fP
 Displays the current user's jobs. Displays all users jobs when run by root.
 .IP
 
@@ -75,7 +75,7 @@ argument.
 
 
 .TP
-\f3\-b \fP\f3,\fP \f3\-\-brief\fP
+\f3\-b\fP\f3,\fP \f3\-\-brief\fP
 Displays a brief listing, which includes the following data:
 .RS
 .TP "3"
@@ -102,13 +102,13 @@ all clusters, default is current cluster you are executing the sacct
 command on\&.
 
 .TP
-\f3\-c \fP\f3,\fP \f3\-\-completion\fP
+\f3\-c\fP\f3,\fP \f3\-\-completion\fP
 Use job completion instead of job accounting.
 .IP
 
 
 .TP
-\f3\-d \fP\f3,\fP \f3\-\-dump\fP
+\f3\-d\fP\f3,\fP \f3\-\-dump\fP
 Dumps the raw data records.
 .IP
 
@@ -129,7 +129,7 @@ number. This behavior can be overridden by specifying \-\-duplicates, in
 which case all records that match the selection criteria will be returned.
 
 .TP
-\f3\-e \fP\f3,\fP \f3\-\-helpformat\fP
+\f3\-e\fP\f3,\fP \f3\-\-helpformat\fP
 .IP
 Print a list of fields that can be specified with the \f3\-\-format\fP option.
 .IP
@@ -191,10 +191,8 @@ list.  Space characters are not allowed.
 Default is no restrictions.\&.
 
 .TP
-\f3\-h \fP\f3,\fP \f3\-\-help\fP
+\f3\-h\fP\f3,\fP \f3\-\-help\fP
 Displays a general help message.
-.TP
-
 
 .TP
 \f3\-j \fP\f2job(.step)\fP \f3,\fP  \f3\-\-jobs\fP\f3=\fP\f2job(.step)\fP
@@ -237,7 +235,7 @@ a ranged string.
 .IP
 
 .TP
-\f3\-o \fP\f3,\fP \f3\-\-format\fP
+\f3\-o\fP\f3,\fP \f3\-\-format\fP
 Comma separated list of fields. (use "\-\-helpformat" for a list of
 available fields).
 
@@ -249,21 +247,21 @@ justified.  A \-30 will print 30 characters left justified.
 .IP
 
 .TP
-\f3\-O \fP\f3,\fP \f3\-\-formatted_dump\fP
+\f3\-O\fP\f3,\fP \f3\-\-formatted_dump\fP
 Dumps accounting records in an easy\-to\-read format.
 .IP
 This option is provided for debugging.
 
 .TP
-\f3\-p \fP\f3,\fP \f3\-\-parsable\fP
+\f3\-p\fP\f3,\fP \f3\-\-parsable\fP
 output will be '|' delimited with a '|' at the end
 
 .TP
-\f3\-P \fP\f3,\fP \f3\-\-parsable2\fP
+\f3\-P\fP\f3,\fP \f3\-\-parsable2\fP
 output will be '|' delimited without a '|' at the end
 
 .TP
-\f3\-r \fP\f3,\fP \f3\-\-partition\fP
+\f3\-r\fP\f3,\fP \f3\-\-partition\fP
 
 Comma separated list of partitions to select jobs and job steps
 from. The default is all partitions.
@@ -329,7 +327,7 @@ starttime is 'now'.
 \&.
 
 .TP
-\f3\-S \fP\f3,\fP \f3\-\-starttime\fP
+\f3\-S\fP\f3,\fP \f3\-\-starttime\fP
 Select jobs eligible after the specified time. Default is midnight of
 current day.  If states are given with the \-s option then return jobs
 in this state at this time, 'now' is also used as the default time.
@@ -341,7 +339,7 @@ MM/DD[/YY]-HH:MM[:SS]
 YYYY-MM-DD[THH:MM[:SS]]
 
 .TP
-\f3\-T \fP\f3,\fP \f3\-\-truncate\fP
+\f3\-T\fP\f3,\fP \f3\-\-truncate\fP
 Truncate time.  So if a job started before \-\-starttime the start time
 would be truncated to \-\-starttime.  The same for end time and \-\-endtime.
 
@@ -352,14 +350,15 @@ user's uid is used.
 
 .TP
 \f3\-\-usage\fP
-Displays a help message.
+Display a command usage summary.
 
 .TP
-\f3\-v \fP\f3,\fP \f3\-\-verbose\fP
-Primarily for debug use reports the state of certain variables during processing.
+\f3\-v\fP\f3,\fP \f3\-\-verbose\fP
+Primarily for debugging purposes, report the state of various
+variables during processing.
 
 .TP
-\f3\-V \fP\f3,\fP \f3\-\-version\fP
+\f3\-V\fP\f3,\fP \f3\-\-version\fP
 Print version.
 
 .TP
@@ -379,7 +378,7 @@ Space characters are not allowed in the \f2assoc_list\fP. Default is
 all associations\&.
 
 .TP
-\f3\-X \fP\f3,\fP \f3\-\-allocations\fP
+\f3\-X\fP\f3,\fP \f3\-\-allocations\fP
 Only show cumulative statistics for each job, not the intermediate steps.
 
 .SS "Job Accounting Fields"
@@ -398,20 +397,20 @@ Account the job ran under.
 Reference to the association of user, account and cluster.
 
 .TP
-\f3avecpu\fP
-Average CPU time of a process.
+\f3AveCPU\fP
+Average (system + user) CPU time of all tasks in job.
 
 .TP
-\f3avepages\fP
-Average pages of a process.
+\f3AvePages\fP
+Average number of page faults of all tasks in job.
 
 .TP
-\f3averss\fP
-Average resident set size of a process.
+\f3AveRSS\fP
+Average resident set size of all tasks in job.
 
 .TP
-\f3avevsize\fP
-Average Virtual Memory size of a process.
+\f3AveVMSize\fP
+Average Virtual Memory size of all tasks in job.
 
 .TP
 \f3blockid\fP
@@ -504,7 +503,7 @@ The group identifier of the user who ran the job.
 The group name of the user who ran the job.
 
 .TP
-\f3jobid\fP
+\f3JobID\fP
 The number of the job or job step.
 It is in the form:
 \f2job.jobstep\fP\c
@@ -525,52 +524,52 @@ What the layout of a step was when it was running.  This can be used
 to give you an idea of which node ran which rank in your job.
 
 .TP
-\f3maxpages\fP
-Maximum page faults of a process.
+\f3MaxPages\fP
+Maximum number of page faults of all tasks in job.
 
 .TP
-\f3maxpagesnode\fP
-The node where the maxpages occurred.
+\f3MaxPagesNode\fP
+The node on which the maxpages occurred.
 
 .TP
-\f3maxpagestask\fP
-The task on maxpagesnode where the maxpages occurred.
+\f3MaxPagesTask\fP
+The task ID where the maxpages occurred.
 
 .TP
-\f3maxrss\fP
-Maximum resident set size of a process.
+\f3MaxRSS\fP
+Maximum resident set size of all tasks in job.
 
 .TP
-\f3maxrssnode\fP
-The node where the maxrss occurred.
+\f3MaxRSSNode\fP
+The node on which the maxrss occurred.
 
 .TP
-\f3maxrsstask\fP
-The task on maxrssnode where the maxrss occurred.
+\f3MaxRSSTask\fP
+The task ID where the maxrss occurred.
 
 .TP
-\f3maxvmsize\fP
-Maximum  Virtual  Memory size of any process.
+\f3MaxVMSize\fP
+Maximum Virtual Memory size of all tasks in job.
 
 .TP
-\f3maxvmsizenode\fP
-The node where the maxvsize occurred.
+\f3MaxVMSizeNode\fP
+The node on which the maxvsize occurred.
 
 .TP
-\f3maxvmsizetask\fP
-The task on maxvsizenode where the maxvsize occurred.
+\f3MaxVMSizeTask\fP
+The task ID where the maxvsize occurred.
 
 .TP
-\f3mincpu\fP
-Minimum cpu of any process.
+\f3MinCPU\fP
+Minimum (system + user) CPU time of all tasks in job.
 
 .TP
-\f3mincpunode\fP
-The node where the mincpu occurred.
+\f3MinCPUNode\fP
+The node on which the mincpu occurred.
 
 .TP
-\f3mincputask\fP
-The task on mincpunode where the mincpu occurred.
+\f3MinCPUTask\fP
+The task ID where the mincpu occurred.
 
 .TP
 \f3ncpus\fP
@@ -585,7 +584,7 @@ List of nodes in job/step.
 Number of nodes in a job or step.
 
 .TP
-\f3ntasks\fP
+\f3NTasks\fP
 Total number of tasks in a job or step.
 
 .TP

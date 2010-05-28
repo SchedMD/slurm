@@ -69,8 +69,6 @@ print_field_t fields[] = {
 	{10, "MinCPUNode", print_fields_str, PRINT_MINCPUNODE},
 	{10, "MinCPUTask", print_fields_int, PRINT_MINCPUTASK},
 	{8, "NTasks", print_fields_int, PRINT_NTASKS},
-	{10, "SystemCPU", print_fields_str, PRINT_SYSTEMCPU},
-	{10, "TotalCPU", print_fields_str, PRINT_TOTALCPU},
 	{0, NULL, NULL, 0}};
 
 List jobs = NULL;
@@ -166,8 +164,6 @@ cleanup:
 
 	if(tot_tasks) {
 		step.stats.cpu_ave /= (double)tot_tasks;
-		step.stats.cpu_ave /= (double)100;
-		step.stats.cpu_min /= 100;
 		step.stats.rss_ave /= (double)tot_tasks;
 		step.stats.vsize_ave /= (double)tot_tasks;
 		step.stats.pages_ave /= (double)tot_tasks;

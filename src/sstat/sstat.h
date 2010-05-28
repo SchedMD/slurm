@@ -97,8 +97,6 @@ typedef enum {
 		PRINT_MINCPUNODE,
 		PRINT_MINCPUTASK,
 		PRINT_NTASKS,
-		PRINT_SYSTEMCPU,
-		PRINT_TOTALCPU,
 } sstat_print_types_t;
 
 

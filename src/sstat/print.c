@@ -231,24 +231,6 @@ void print_fields(slurmdb_step_rec_t *step)
 					     step->ntasks,
 					     (curr_inx == field_count));
 			break;
-		case PRINT_SYSTEMCPU:
-			tmp_char = _elapsed_time(step->sys_cpu_sec,
-						 step->sys_cpu_usec);
-
-			field->print_routine(field,
-					     tmp_char,
-					     (curr_inx == field_count));
-			xfree(tmp_char);
-			break;
-		case PRINT_TOTALCPU:
-			tmp_char = _elapsed_time(step->tot_cpu_sec,
-						 step->tot_cpu_usec);
-
-			field->print_routine(field,
-					     tmp_char,
-					     (curr_inx == field_count));
-			xfree(tmp_char);
-			break;
 		default:
 			break;
 		}
