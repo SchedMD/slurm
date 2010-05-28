@@ -189,6 +189,10 @@ if test ${gtk_config_minor_version=0} -gt 12 ; then
        AC_DEFINE([GTK2_USE_TOOLTIP], 1, [Define to 1 if using gtk+-2.12.0 or higher])
 fi
 
+if test ${gtk_config_minor_version=0} -gt 14 ; then
+       AC_DEFINE([GTK2_USE_GET_FOCUS], 1, [Define to 1 if using gtk+-2.14.0 or higher])
+fi
+
 
 X_AC_DATABASES
 
