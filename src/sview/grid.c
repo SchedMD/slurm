@@ -37,10 +37,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 #include "sview.h"
-
-#ifdef HAVE_BG
 #include "src/plugins/select/bluegene/plugin/bluegene.h"
-#endif
 
 List grid_button_list = NULL;
 List blinking_button_list = NULL;
@@ -57,7 +54,6 @@ int sview_colors_cnt = 20;
 
 GStaticMutex blinking_mutex = G_STATIC_MUTEX_INIT;
 
-#ifdef HAVE_3D
 static int _coord(char coord)
 {
 	if ((coord >= '0') && (coord <= '9'))
@@ -66,7 +62,6 @@ static int _coord(char coord)
 		return (coord - 'A');
 	return -1;
 }
-#endif
 
 static gboolean _mouseover_node(GtkWidget *widget, GdkEventButton *event,
 				grid_button_t *grid_button)
@@ -113,7 +108,6 @@ static gboolean _open_node(GtkWidget *widget, GdkEventButton *event,
 	return false;
 }
 
-#ifdef HAVE_BG
 static void _open_block(GtkWidget *widget, GdkEventButton *event,
 			grid_button_t *grid_button)
 {
@@ -151,7 +145,6 @@ static void _open_block(GtkWidget *widget, GdkEventButton *event,
 		gtk_window_present(GTK_WINDOW(popup_win->popup));
 	return;
 }
-#endif
 
 static void _add_button_signals(grid_button_t *grid_button)
 {
@@ -346,18 +339,15 @@ static bool _change_button_color(grid_button_t *grid_button,
 	return changed;
 }
 
-#ifdef HAVE_BG
 static int _block_in_node(int *bp_inx, int inx)
 {
 	int j=0;
 	if(bp_inx[j] >= 0) {
-		if ((bp_inx[j] == inx)
-		    && (bp_inx[j+1] == inx))
+		if ((bp_inx[j] == inx) && (bp_inx[j+1] == inx))
 			return 1;
 	}
 	return 0;
 }
-#endif
 
 extern void destroy_grid_button(void *arg)
 {
@@ -687,7 +677,6 @@ extern List copy_main_button_list(int initial_color)
 	return button_list;
 }
 
-#ifdef HAVE_BG
 extern void add_extra_bluegene_buttons(List *button_list, int inx,
 				       int *color_inx)
 {
@@ -793,7 +782,6 @@ extern void add_extra_bluegene_buttons(List *button_list, int inx,
 	}
 
 }
-#endif
 
 extern void add_extra_cr_buttons(List *button_list, node_info_t *node_ptr)
 {
@@ -806,72 +794,78 @@ extern void add_extra_cr_buttons(List *button_list, node_info_t *node_ptr)
 extern void put_buttons_in_table(GtkTable *table, List button_list)
 {
 	int table_y=0;
-#ifndef HAVE_3D
 	int coord_x=0, coord_y=0;
-#endif
 	grid_button_t *grid_button = NULL;
 	ListIterator itr = NULL;
 	int node_count = list_count(button_list);
 
 	list_sort(button_list, (ListCmpF) _sort_button_inx);
 
-#ifdef HAVE_3D
-	node_count = DIM_SIZE[X];
-	working_sview_config.grid_x_width = DIM_SIZE[X] + DIM_SIZE[Z];
-	table_y = (DIM_SIZE[Z] * DIM_SIZE[Y]) + DIM_SIZE[Y];
-#else
-	if(!working_sview_config.grid_x_width) {
-		if(node_count < 50) {
-			working_sview_config.grid_x_width = 1;
-		} else if(node_count < 500) {
-			working_sview_config.grid_x_width = 10;
-		} else {
-			working_sview_config.grid_x_width=20;
+	if(cluster_dims == 4) {
+		/* FIXME: */
+		return;
+	} else if(cluster_dims == 3) {
+		node_count = DIM_SIZE[X];
+		working_sview_config.grid_x_width = DIM_SIZE[X] + DIM_SIZE[Z];
+		table_y = (DIM_SIZE[Z] * DIM_SIZE[Y]) + DIM_SIZE[Y];
+	} else {
+		if(!working_sview_config.grid_x_width) {
+			if(node_count < 50) {
+				working_sview_config.grid_x_width = 1;
+			} else if(node_count < 500) {
+				working_sview_config.grid_x_width = 10;
+			} else {
+				working_sview_config.grid_x_width=20;
+			}
 		}
+		table_y = node_count/working_sview_config.grid_x_width;
+		table_y++;
 	}
-	table_y = node_count/working_sview_config.grid_x_width;
-	table_y++;
-#endif
 	//g_print("the table size is y=%d x=%d\n", table_y, working_sview_config.grid_x_width);
 	gtk_table_resize(table, table_y, working_sview_config.grid_x_width);
 	itr = list_iterator_create(button_list);
 	while((grid_button = list_next(itr))) {
-#ifdef HAVE_3D
-		grid_button->table = table;
-		gtk_table_attach(table, grid_button->button,
-				 grid_button->table_x,
-				 (grid_button->table_x+1),
-				 grid_button->table_y,
-				 (grid_button->table_y+1),
-				 GTK_SHRINK, GTK_SHRINK,
-				 1, 1);
-		if(!grid_button->table_x)
-			gtk_table_set_row_spacing(table,
-						  grid_button->table_y, 5);
-#else
-		grid_button->table = table;
-		grid_button->table_x = coord_x;
-		grid_button->table_y = coord_y;
-		gtk_table_attach(table, grid_button->button,
-				 coord_x, (coord_x+1), coord_y, (coord_y+1),
-				 GTK_SHRINK, GTK_SHRINK,
-				 1, 1);
+		if(cluster_dims == 4) {
+			/* FIXME: */
+			return;
+		} else if(cluster_dims == 3) {
+			grid_button->table = table;
+			gtk_table_attach(table, grid_button->button,
+					 grid_button->table_x,
+					 (grid_button->table_x+1),
+					 grid_button->table_y,
+					 (grid_button->table_y+1),
+					 GTK_SHRINK, GTK_SHRINK,
+					 1, 1);
+			if(!grid_button->table_x)
+				gtk_table_set_row_spacing(table,
+							  grid_button->table_y,
+							  5);
+		} else {
+			grid_button->table = table;
+			grid_button->table_x = coord_x;
+			grid_button->table_y = coord_y;
+			gtk_table_attach(table, grid_button->button,
+					 coord_x, (coord_x+1),
+					 coord_y, (coord_y+1),
+					 GTK_SHRINK, GTK_SHRINK,
+					 1, 1);
+			coord_x++;
+			if(coord_x == working_sview_config.grid_x_width) {
+				coord_x = 0;
+				coord_y++;
+				if(!(coord_y % working_sview_config.grid_vert))
+					gtk_table_set_row_spacing(
+						table, coord_y-1, 5);
+			}
 
-		coord_x++;
+			if(coord_y == table_y)
+				break;
 
-		if(coord_x == working_sview_config.grid_x_width) {
-			coord_x = 0;
-			coord_y++;
-			if(!(coord_y % working_sview_config.grid_vert))
-				gtk_table_set_row_spacing(table, coord_y-1, 5);
+			if(coord_x
+			   && !(coord_x % working_sview_config.grid_hori))
+				gtk_table_set_col_spacing(table, coord_x-1, 5);
 		}
-
-		if(coord_y == table_y)
-			break;
-
-		if(coord_x && !(coord_x % working_sview_config.grid_hori))
-			gtk_table_set_col_spacing(table, coord_x-1, 5);
-#endif
 	}
 	list_iterator_destroy(itr);
 
@@ -886,26 +880,31 @@ extern int update_grid_table(GtkTable *table, List button_list, List node_list)
 	int node_count = 0;
 	ListIterator itr = NULL, itr2 = NULL;
 	sview_node_info_t *sview_node_info_ptr = NULL;
-#ifdef HAVE_3D
-	int default_y_offset= (DIM_SIZE[Z] * DIM_SIZE[Y])
-		+ (DIM_SIZE[Y] - DIM_SIZE[Z]);
-	node_count = DIM_SIZE[X];
-	working_sview_config.grid_x_width = DIM_SIZE[X] + DIM_SIZE[Z];
-	table_y = (DIM_SIZE[Z] * DIM_SIZE[Y]) + DIM_SIZE[Y];
-#else
-	node_count = list_count(node_list);
-	if(!working_sview_config.grid_x_width) {
-		if(node_count < 50) {
-			working_sview_config.grid_x_width = 1;
-		} else if(node_count < 500) {
-			working_sview_config.grid_x_width = 10;
-		} else {
-			working_sview_config.grid_x_width = 20;
+	int default_y_offset = 0;
+
+	if(cluster_dims == 4) {
+		/* FIXME: */
+		return SLURM_ERROR;
+	} else if(cluster_dims == 3) {
+		default_y_offset = (DIM_SIZE[Z] * DIM_SIZE[Y])
+			+ (DIM_SIZE[Y] - DIM_SIZE[Z]);
+		node_count = DIM_SIZE[X];
+		working_sview_config.grid_x_width = DIM_SIZE[X] + DIM_SIZE[Z];
+		table_y = (DIM_SIZE[Z] * DIM_SIZE[Y]) + DIM_SIZE[Y];
+	} else {
+		node_count = list_count(node_list);
+		if(!working_sview_config.grid_x_width) {
+			if(node_count < 50) {
+				working_sview_config.grid_x_width = 1;
+			} else if(node_count < 500) {
+				working_sview_config.grid_x_width = 10;
+			} else {
+				working_sview_config.grid_x_width = 20;
+			}
 		}
+		table_y = node_count/working_sview_config.grid_x_width;
+		table_y++;
 	}
-	table_y = node_count/working_sview_config.grid_x_width;
-	table_y++;
-#endif
 
 	if(!node_list) {
 		g_print("setup_grid_table: no node_list given\n");
@@ -924,33 +923,40 @@ extern int update_grid_table(GtkTable *table, List button_list, List node_list)
 			if(grid_button->inx != inx)
 				continue;
 			found = 1;
-#ifdef HAVE_3D
-			int i = strlen(sview_node_info_ptr->node_ptr->name);
-			int x=0, y=0, z=0, y_offset=0;
-			/* On 3D system we need to translate a 3D space to
-			   a 2D space and make it appear 3D.  So we get the
-			   coords of each node in xyz format and apply an x
-			   and y offset to get a coord_x and coord_y.  This is
-			   not needed for linear systems since they can be
-			   laid out in any fashion
-			*/
-			if (i < 4) {
-				g_error("bad node name %s\n",
+			if(cluster_dims == 4) {
+				/* FIXME: */
+				return SLURM_ERROR;
+			} else if(cluster_dims == 3) {
+				int i = strlen(
 					sview_node_info_ptr->node_ptr->name);
-				goto end_it;
-			} else {
-				x = _coord(sview_node_info_ptr->
-					   node_ptr->name[i-3]);
-				y = _coord(sview_node_info_ptr->
-					   node_ptr->name[i-2]);
-				z = _coord(sview_node_info_ptr->
-					   node_ptr->name[i-1]);
+				int x=0, y=0, z=0, y_offset=0;
+				/* On 3D system we need to translate a
+				   3D space to a 2D space and make it
+				   appear 3D.  So we get the coords of
+				   each node in xyz format and apply
+				   an x and y offset to get a coord_x
+				   and coord_y.  This is not needed
+				   for linear systems since they can
+				   be laid out in any fashion
+				*/
+				if (i < 4) {
+					g_error("bad node name %s\n",
+						sview_node_info_ptr->
+						node_ptr->name);
+					goto end_it;
+				} else {
+					x = _coord(sview_node_info_ptr->
+						   node_ptr->name[i-3]);
+					y = _coord(sview_node_info_ptr->
+						   node_ptr->name[i-2]);
+					z = _coord(sview_node_info_ptr->
+						   node_ptr->name[i-1]);
+				}
+				coord_x = (x + (DIM_SIZE[Z] - 1)) - z;
+				y_offset = default_y_offset - (DIM_SIZE[Z] * y);
+				coord_y = (y_offset - y) + z;
 			}
-			coord_x = (x + (DIM_SIZE[Z] - 1)) - z;
 
-			y_offset = default_y_offset - (DIM_SIZE[Z] * y);
-			coord_y = (y_offset - y) + z;
-#endif
 			grid_button->table_x = coord_x;
 			grid_button->table_y = coord_y;
 			gtk_container_child_set(GTK_CONTAINER(table),
@@ -960,26 +966,33 @@ extern int update_grid_table(GtkTable *table, List button_list, List node_list)
 						"top-attach", coord_y,
 						"bottom-attach", (coord_y+1),
 						NULL);
-#ifndef HAVE_3D
-			/* On linear systems we just up the x_coord until we
-			   hit the side of the table and then incrememnt the
-			   coord_y.  We add space inbetween each 10th row.
-			*/
-			coord_x++;
-			if(coord_x == working_sview_config.grid_x_width) {
-				coord_x = 0;
-				coord_y++;
-				if(!(coord_y % working_sview_config.grid_vert))
-					gtk_table_set_row_spacing(table,
-								  coord_y-1, 5);
+
+			if(cluster_dims < 3) {
+				/* On linear systems we just up the
+				   x_coord until we hit the side of
+				   the table and then incrememnt the
+				   coord_y.  We add space inbetween
+				   each 10th row.
+				*/
+				coord_x++;
+				if(coord_x
+				   == working_sview_config.grid_x_width) {
+					coord_x = 0;
+					coord_y++;
+					if(!(coord_y
+					     % working_sview_config.grid_vert))
+						gtk_table_set_row_spacing(
+							table, coord_y-1, 5);
+				}
+
+				if(coord_y == table_y)
+					break;
+
+				if(coord_x
+				   && !(coord_x%working_sview_config.grid_hori))
+					gtk_table_set_col_spacing(
+						table, coord_x-1, 5);
 			}
-
-			if(coord_y == table_y)
-				break;
-
-			if(coord_x && !(coord_x%working_sview_config.grid_hori))
-				gtk_table_set_col_spacing(table, coord_x-1, 5);
-#endif
 			break;
 		}
 		if(!found) {
@@ -988,13 +1001,12 @@ extern int update_grid_table(GtkTable *table, List button_list, List node_list)
 		}
 		inx++;
 	}
-#ifdef HAVE_3D
-	/* This is needed to get the correct width of the grid
-	   window.  If it is not given then we get a really narrow
-	   window. */
-	gtk_table_set_row_spacing(table, coord_y-1, 1);
+	if(cluster_dims == 3)
+		/* This is needed to get the correct width of the grid
+		   window.  If it is not given then we get a really narrow
+		   window. */
+		gtk_table_set_row_spacing(table, coord_y-1, 1);
 end_it:
-#endif
 	list_iterator_destroy(itr);
 	list_iterator_destroy(itr2);
 	return error_code;
@@ -1049,26 +1061,31 @@ extern int setup_grid_table(GtkTable *table, List button_list, List node_list)
 	int node_count = 0;
 	ListIterator itr = NULL;
 	sview_node_info_t *sview_node_info_ptr = NULL;
-#ifdef HAVE_3D
-	int default_y_offset= (DIM_SIZE[Z] * DIM_SIZE[Y])
-		+ (DIM_SIZE[Y] - DIM_SIZE[Z]);
-	node_count = DIM_SIZE[X];
-	working_sview_config.grid_x_width = DIM_SIZE[X] + DIM_SIZE[Z];
-	table_y = (DIM_SIZE[Z] * DIM_SIZE[Y]) + DIM_SIZE[Y];
-#else
-	node_count = list_count(node_list);
-	if(!working_sview_config.grid_x_width) {
-		if(node_count < 50) {
-			working_sview_config.grid_x_width = 1;
-		} else if(node_count < 500) {
-			working_sview_config.grid_x_width = 10;
-		} else {
-			working_sview_config.grid_x_width = 20;
+	int default_y_offset = 0;
+
+	if(cluster_dims == 4) {
+		/* FIXME: */
+		return SLURM_ERROR;
+	} else if(cluster_dims == 3) {
+		default_y_offset = (DIM_SIZE[Z] * DIM_SIZE[Y])
+			+ (DIM_SIZE[Y] - DIM_SIZE[Z]);
+		node_count = DIM_SIZE[X];
+		working_sview_config.grid_x_width = DIM_SIZE[X] + DIM_SIZE[Z];
+		table_y = (DIM_SIZE[Z] * DIM_SIZE[Y]) + DIM_SIZE[Y];
+	} else {
+		node_count = list_count(node_list);
+		if(!working_sview_config.grid_x_width) {
+			if(node_count < 50) {
+				working_sview_config.grid_x_width = 1;
+			} else if(node_count < 500) {
+				working_sview_config.grid_x_width = 10;
+			} else {
+				working_sview_config.grid_x_width = 20;
+			}
 		}
+		table_y = node_count/working_sview_config.grid_x_width;
+		table_y++;
 	}
-	table_y = node_count/working_sview_config.grid_x_width;
-	table_y++;
-#endif
 
 	if(!node_list) {
 		g_print("setup_grid_table: no node_list given\n");
@@ -1078,30 +1095,38 @@ extern int setup_grid_table(GtkTable *table, List button_list, List node_list)
 	gtk_table_resize(table, table_y, working_sview_config.grid_x_width);
 	itr = list_iterator_create(node_list);
 	while((sview_node_info_ptr = list_next(itr))) {
-#ifdef HAVE_3D
-		int i = strlen(sview_node_info_ptr->node_ptr->name);
-		int x=0, y=0, z=0, y_offset=0;
-		/* On 3D system we need to translate a 3D space to
-		   a 2D space and make it appear 3D.  So we get the
-		   coords of each node in xyz format and apply an x
-		   and y offset to get a coord_x and coord_y.  This is
-		   not needed for linear systems since they can be
-		   laid out in any fashion
-		*/
-		if (i < 3) {
-			g_print("bad node name %s\n",
-				sview_node_info_ptr->node_ptr->name);
-			goto end_it;
-		} else {
-			x = _coord(sview_node_info_ptr->node_ptr->name[i-3]);
-			y = _coord(sview_node_info_ptr->node_ptr->name[i-2]);
-			z = _coord(sview_node_info_ptr->node_ptr->name[i-1]);
+		if(cluster_dims == 4) {
+			/* FIXME: */
+			return SLURM_ERROR;
+		} else if(cluster_dims == 3) {
+			int i = strlen(sview_node_info_ptr->node_ptr->name);
+			int x=0, y=0, z=0, y_offset=0;
+			/* On 3D system we need to translate a
+			   3D space to a 2D space and make it
+			   appear 3D.  So we get the coords of
+			   each node in xyz format and apply
+			   an x and y offset to get a coord_x
+			   and coord_y.  This is not needed
+			   for linear systems since they can
+			   be laid out in any fashion
+			*/
+			if (i < 4) {
+				g_error("bad node name %s\n",
+					sview_node_info_ptr->node_ptr->name);
+				goto end_it;
+			} else {
+				x = _coord(sview_node_info_ptr->
+					   node_ptr->name[i-3]);
+				y = _coord(sview_node_info_ptr->
+					   node_ptr->name[i-2]);
+				z = _coord(sview_node_info_ptr->
+					   node_ptr->name[i-1]);
+			}
+			coord_x = (x + (DIM_SIZE[Z] - 1)) - z;
+			y_offset = default_y_offset - (DIM_SIZE[Z] * y);
+			coord_y = (y_offset - y) + z;
 		}
-		coord_x = (x + (DIM_SIZE[Z] - 1)) - z;
 
-		y_offset = default_y_offset - (DIM_SIZE[Z] * y);
-		coord_y = (y_offset - y) + z;
-#endif
 		grid_button = xmalloc(sizeof(grid_button_t));
 		grid_button->color_inx = MAKE_INIT;
 		grid_button->inx = inx++;
@@ -1127,34 +1152,38 @@ extern int setup_grid_table(GtkTable *table, List button_list, List node_list)
 /* 				  grid_button->button); */
 /* 		gtk_frame_set_shadow_type(GTK_FRAME(grid_button->frame), */
 /* 					  GTK_SHADOW_ETCHED_OUT); */
-#ifndef HAVE_3D
-		/* On linear systems we just up the x_coord until we
-		   hit the side of the table and then incrememnt the
-		   coord_y.  We add space inbetween each 10th row.
-		*/
-		coord_x++;
-		if(coord_x == working_sview_config.grid_x_width) {
-			coord_x = 0;
-			coord_y++;
-			if(!(coord_y % working_sview_config.grid_vert))
-				gtk_table_set_row_spacing(table, coord_y-1, 5);
+		if(cluster_dims < 3) {
+			/* On linear systems we just up the
+			   x_coord until we hit the side of
+			   the table and then incrememnt the
+			   coord_y.  We add space inbetween
+			   each 10th row.
+			*/
+			coord_x++;
+			if(coord_x
+			   == working_sview_config.grid_x_width) {
+				coord_x = 0;
+				coord_y++;
+				if(!(coord_y % working_sview_config.grid_vert))
+					gtk_table_set_row_spacing(
+						table, coord_y-1, 5);
+			}
+
+			if(coord_y == table_y)
+				break;
+
+			if(coord_x && !(coord_x%working_sview_config.grid_hori))
+				gtk_table_set_col_spacing(
+					table, coord_x-1, 5);
 		}
-
-		if(coord_y == table_y)
-			break;
-
-		if(coord_x && !(coord_x % working_sview_config.grid_hori))
-			gtk_table_set_col_spacing(table, coord_x-1, 5);
-#endif
 	}
 
-#ifdef HAVE_3D
-	/* This is needed to get the correct width of the grid
-	   window.  If it is not given then we get a really narrow
-	   window. */
-	gtk_table_set_row_spacing(table, coord_y-1, 1);
+	if(cluster_dims == 3)
+		/* This is needed to get the correct width of the grid
+		   window.  If it is not given then we get a really narrow
+		   window. */
+		gtk_table_set_row_spacing(table, coord_y-1, 1);
 end_it:
-#endif
 	list_iterator_destroy(itr);
 	list_sort(button_list, (ListCmpF) _sort_button_inx);
 

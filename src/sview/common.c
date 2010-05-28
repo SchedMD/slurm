@@ -826,6 +826,7 @@ extern GtkTreeStore *create_treestore(GtkTreeView *tree_view,
 		_add_col_to_treeview(tree_view, &display_data[i], color_column);
 		if(!display_data[i].name)
 			continue;
+
 		switch(display_data[i].type) {
 		case G_TYPE_INT:
 			gtk_tree_sortable_set_sort_func(

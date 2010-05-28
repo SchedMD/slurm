@@ -1173,6 +1173,10 @@ extern void ba_fini()
 	bridge_fini();
 #endif
 	_delete_ba_system();
+	_initialized = false;
+	_bp_map_initialized = false;
+	_wires_initialized = true;
+
 //	debug3("pa system destroyed");
 }
 

@@ -292,6 +292,7 @@ extern char *sview_colors[];
 extern int sview_colors_cnt;
 extern uint32_t cluster_flags;
 extern int cluster_dims;
+extern List cluster_list;
 
 extern block_info_msg_t *g_block_info_ptr;
 extern job_info_msg_t *g_job_info_ptr;
@@ -342,10 +343,8 @@ extern void set_grid_used(List button_list, int start, int end,
 extern void get_button_list_from_main(List *button_list, int start, int end,
 				      int color_inx);
 extern List copy_main_button_list(int initial_color);
-#ifdef HAVE_BG
 extern void add_extra_bluegene_buttons(List *button_list, int inx,
 				       int *color_inx);
-#endif
 extern void add_extra_cr_buttons(List *button_list, node_info_t *node_ptr);
 extern void put_buttons_in_table(GtkTable *table, List button_list);
 extern int get_system_stats(GtkTable *table);

@@ -55,7 +55,7 @@ enum {
 	SORTID_FLAGS,
 	SORTID_NAME,
 	SORTID_NODE_CNT,
-	SORTID_NODE_LIST,
+	SORTID_NODELIST,
 	SORTID_NODE_INX,
 	SORTID_PARTITION,
 	SORTID_TIME_END,
@@ -81,7 +81,7 @@ static display_data_t display_data_resv[] = {
 	 refresh_resv, create_model_resv, admin_edit_resv},
 	{G_TYPE_STRING, SORTID_NODE_CNT,   "Node Count", TRUE, EDIT_TEXTBOX,
 	 refresh_resv, create_model_resv, admin_edit_resv},
-	{G_TYPE_STRING, SORTID_NODE_LIST,
+	{G_TYPE_STRING, SORTID_NODELIST,
 #ifdef HAVE_BG
 	 "BP List",
 #else
@@ -293,7 +293,7 @@ static const char *_set_resv_msg(resv_desc_msg_t *resv_msg,
 			goto return_error;
 		resv_msg->node_cnt = temp_int;
 		break;
-	case SORTID_NODE_LIST:
+	case SORTID_NODELIST:
 		resv_msg->node_list = xstrdup(new_text);
 		type = "node list";
 		break;
@@ -478,7 +478,7 @@ static void _layout_resv_record(GtkTreeView *treeview,
 
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_resv,
-						 SORTID_NODE_LIST),
+						 SORTID_NODELIST),
 				   resv_ptr->node_list);
 
 	add_display_treestore_line(update, treestore, &iter,
@@ -547,7 +547,7 @@ static void _update_resv_record(sview_resv_info_t *sview_resv_info_ptr,
 			   SORTID_NODE_CNT, tmp_char, -1);
 
 	gtk_tree_store_set(treestore, iter,
-			   SORTID_NODE_LIST, resv_ptr->node_list, -1);
+			   SORTID_NODELIST, resv_ptr->node_list, -1);
 
 	gtk_tree_store_set(treestore, iter,
 			   SORTID_NODE_INX, resv_ptr->node_inx, -1);
@@ -798,7 +798,8 @@ extern int get_new_info_resv(reserve_info_msg_t **info_ptr,
 	static time_t last;
 	static bool changed = 0;
 
-	if(!force && ((now - last) < working_sview_config.refresh_delay)) {
+	if(g_resv_info_ptr && !force
+	   && ((now - last) < working_sview_config.refresh_delay)) {
 		if(*info_ptr != g_resv_info_ptr)
 			error_code = SLURM_SUCCESS;
 		*info_ptr = g_resv_info_ptr;
@@ -956,6 +957,7 @@ extern void get_info_resv(GtkTable *table, display_data_t *display_data)
 		if(display_widget)
 			gtk_widget_destroy(display_widget);
 		display_widget = NULL;
+		resv_info_ptr = NULL;
 		return;
 	}
 
@@ -1335,7 +1337,7 @@ extern void popup_all_resv(GtkTreeModel *model, GtkTreeIter *iter, int id)
 	case NODE_PAGE:
 	case PART_PAGE:
 		g_free(name);
-		gtk_tree_model_get(model, iter, SORTID_NODE_LIST, &name, -1);
+		gtk_tree_model_get(model, iter, SORTID_NODELIST, &name, -1);
 		popup_win->spec_info->search_info->gchar_data = name;
 		popup_win->spec_info->search_info->search_type =
 			SEARCH_NODE_NAME;
@@ -1480,7 +1482,7 @@ extern void cluster_change_resv()
 			break;
 		if(cluster_flags & CLUSTER_FLAG_BG) {
 			switch(display_data->id) {
-			case SORTID_NODE_LIST:
+			case SORTID_NODELIST:
 				display_data->name = "BP List";
 				break;
 			default:
@@ -1488,7 +1490,7 @@ extern void cluster_change_resv()
 			}
 		} else {
 			switch(display_data->id) {
-			case SORTID_NODE_LIST:
+			case SORTID_NODELIST:
 				display_data->name = "NodeList";
 				break;
 			default:

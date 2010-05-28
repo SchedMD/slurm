@@ -1271,7 +1271,7 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 				job_desc->min_nodes =
 					bg_conf->bp_node_cnt;
 
-			set_select_jobinfo(job_desc->select_jobinfo,
+			set_select_jobinfo(job_desc->select_jobinfo->data,
 					   SELECT_JOBDATA_NODE_CNT,
 					   &job_desc->min_nodes);
 

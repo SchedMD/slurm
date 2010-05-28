@@ -73,6 +73,7 @@ GMutex *grid_mutex = NULL;
 GCond *grid_cond = NULL;
 uint32_t cluster_flags;
 int cluster_dims;
+List cluster_list = NULL;
 
 block_info_msg_t *g_block_info_ptr = NULL;
 job_info_msg_t *g_job_info_ptr = NULL;
@@ -84,6 +85,9 @@ slurm_ctl_conf_info_msg_t *g_ctl_info_ptr = NULL;
 static GtkActionGroup *admin_action_group = NULL;
 static GtkActionGroup *menu_action_group = NULL;
 static bool debug_inited = 0;
+static char *orig_cluster_name = NULL;
+static int g_menu_id = 0;
+static GtkUIManager *g_ui_manager = NULL;
 
 display_data_t main_display_data[] = {
 	{G_TYPE_NONE, JOB_PAGE, "Jobs", TRUE, -1,
@@ -157,17 +161,24 @@ void *_page_thr(void *arg)
 		g_mutex_unlock(grid_mutex);
 
 		/* if the grid isn't there just return */
-		if(!grid_init)
+		if(!grid_init) {
+			g_print("inited grid 0\n");
+
 			return NULL;
+		}
 	}
+	//g_print("waiting\n");
 	gdk_threads_enter();
 	thread_count++;
+	//g_print("thread_count %d\n", thread_count);
 	gdk_flush();
 	gdk_threads_leave();
+	//g_print("before while\n");
 	while(page_running == num) {
 /* 		START_TIMER; */
 		g_static_mutex_lock(&sview_mutex);
 		gdk_threads_enter();
+		//g_print("init_grid\n");
 		sview_init_grid(reset_highlight);
 		reset_highlight=false;
 		(display_data->get_info)(table, display_data);
@@ -192,7 +203,7 @@ void *_page_thr(void *arg)
 	thread_count--;
 	gdk_flush();
 	gdk_threads_leave();
-
+	//g_print("done\n");
 	return NULL;
 }
 
@@ -276,7 +287,6 @@ static void _page_switched(GtkNotebook     *notebook,
 
 	if(main_display_data[i].extra != page_num)
 		return;
-
 	if(main_display_data[i].get_info) {
 		page_running = i;
 		/* If we return here we would not clear the grid which
@@ -441,17 +451,14 @@ static gboolean _delete(GtkWidget *widget,
 		list_destroy(grid_button_list);
 	if(signal_params_list)
 		list_destroy(signal_params_list);
-
+	if(cluster_list)
+		list_destroy(cluster_list);
+	xfree(orig_cluster_name);
 	return FALSE;
 }
 
-/* Returns a menubar widget made from the above menu */
-static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
+static char *_get_ui_description()
 {
-	GtkUIManager *ui_manager = NULL;
-	GtkAccelGroup *accel_group = NULL;
-	GError *error = NULL;
-
 	/* Our menu*/
 	char *ui_description = NULL;
 
@@ -474,9 +481,16 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 		"      <separator/>"
 		"        <menuitem action='partition_name'/>"
 		"        <menuitem action='partition_state'/>"
-		"      <separator/>"
-		"        <menuitem action='node_name'/>"
-		"        <menuitem action='node_state'/>"
+		"      <separator/>");
+	if(cluster_flags & CLUSTER_FLAG_BG)
+		xstrcat(ui_description,
+			"        <menuitem action='node_name_bg'/>"
+			"        <menuitem action='node_state_bg'/>");
+	else
+		xstrcat(ui_description,
+			"        <menuitem action='node_name'/>"
+			"        <menuitem action='node_state'/>");
+	xstrcat(ui_description,
 		"      <separator/>"
 		"        <menuitem action='reservation_name'/>"
 		"      </menu>"
@@ -528,6 +542,15 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 		"    </menu>"
 		"  </menubar>"
 		"</ui>");
+	return ui_description;
+}
+
+/* Returns a menubar widget made from the above menu */
+static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
+{
+	GtkAccelGroup *accel_group = NULL;
+	GError *error = NULL;
+	char *ui_description = _get_ui_description();
 
 	GtkActionEntry entries[] = {
 		{"actions", NULL, "_Actions", "<alt>a"},
@@ -592,11 +615,11 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 		 "",
 		 "Search for BG Blocks having given state",
 		 G_CALLBACK(create_search_popup)},
-		{"node_name", NULL,
+		{"node_name_bg", NULL,
 		 "Base Partition(s) Name",
 		 "", "Search for a specific Base Partition(s)",
 		 G_CALLBACK(create_search_popup)},
-		{"node_state", NULL,
+		{"node_state_bg", NULL,
 		 "Base Partition State",
 		 "", "Search for a Base Partition in a given state",
 		 G_CALLBACK(create_search_popup)},
@@ -666,10 +689,10 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 	gtk_action_group_add_actions(menu_action_group, entries,
 				     G_N_ELEMENTS(entries), window);
 
-	if(cluster_flags & CLUSTER_FLAG_BG)
+	//if(cluster_flags & CLUSTER_FLAG_BG)
 		gtk_action_group_add_actions(menu_action_group, bg_entries,
 					     G_N_ELEMENTS(bg_entries), window);
-	else
+		//else
 		gtk_action_group_add_actions(menu_action_group, nonbg_entries,
 					     G_N_ELEMENTS(nonbg_entries),
 					     window);
@@ -691,21 +714,21 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 				     window);
 	gtk_action_group_set_sensitive(admin_action_group, FALSE);
 
-	ui_manager = gtk_ui_manager_new();
-	gtk_ui_manager_insert_action_group(ui_manager, menu_action_group, 0);
-	gtk_ui_manager_insert_action_group(ui_manager, admin_action_group, 1);
+	g_ui_manager = gtk_ui_manager_new();
+	gtk_ui_manager_insert_action_group(g_ui_manager, menu_action_group, 0);
+	gtk_ui_manager_insert_action_group(g_ui_manager, admin_action_group, 1);
 
-	accel_group = gtk_ui_manager_get_accel_group(ui_manager);
+	accel_group = gtk_ui_manager_get_accel_group(g_ui_manager);
 	gtk_window_add_accel_group(GTK_WINDOW(window), accel_group);
 
-	if (!gtk_ui_manager_add_ui_from_string(ui_manager, ui_description,
-					       -1, &error)) {
+	if (!(g_menu_id = gtk_ui_manager_add_ui_from_string(
+		      g_ui_manager, ui_description, -1, &error))) {
 		xfree(ui_description);
 		g_error("building menus failed: %s", error->message);
 		g_error_free (error);
 		exit (0);
 	}
-			xfree(ui_description);
+	xfree(ui_description);
 	/* GList *action_list = gtk_action_group_list_actions(menu_action_group); */
 	/* GtkAction *action = NULL; */
 	/* int i=0; */
@@ -734,7 +757,7 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 			menu_action_group, "tab_top");
 	/* g_print("action grid is %x\n", default_sview_config.action_grid); */
 	/* Finally, return the actual menu bar created by the item factory. */
-	return gtk_ui_manager_get_widget (ui_manager, "/main");
+	return gtk_ui_manager_get_widget (g_ui_manager, "/main");
 }
 
 void *_popup_thr_main(void *arg)
@@ -784,9 +807,41 @@ static void _get_info_tabs(GtkTable *table, display_data_t *display_data)
 
 }
 
-extern void change_cluster_main()
+extern void _change_cluster_main(GtkComboBox *combo, gpointer extra)
 {
-	display_data_t *display_data = main_display_data;
+	GtkTreeModel *model;
+	display_data_t *display_data;
+	GtkTreeIter iter;
+	slurmdb_cluster_rec_t *cluster_rec = NULL;
+	char *tmp, *ui_description;
+	GError *error = NULL;
+
+	if(!gtk_combo_box_get_active_iter(combo, &iter)) {
+		g_print("nothing selected\n");
+		return;
+	}
+	model = gtk_combo_box_get_model(combo);
+	if(!model) {
+		g_print("nothing selected\n");
+		return;
+	}
+
+	gtk_tree_model_get(model, &iter, 1, &cluster_rec, -1);
+	if(!cluster_rec) {
+		g_print("no cluster_rec pointer here!");
+		return;
+	}
+
+	/* From testing it doesn't appear you can get here without a
+	   legitimate change, so there isn't a need to check if we are
+	   going back to the same cluster we were just at.
+	*/
+	/* if(working_cluster_rec) { */
+	/* 	if(!strcmp(cluster_rec->name, working_cluster_rec->name)) */
+	/* 		return; */
+	/* } */
+
+	display_data = main_display_data;
 	while(display_data++) {
 		if(display_data->id == -1)
 			break;
@@ -814,6 +869,7 @@ extern void change_cluster_main()
 			}
 		}
 	}
+	/* free old info under last cluster */
 	slurm_free_block_info_msg(g_block_info_ptr);
 	g_block_info_ptr = NULL;
 	slurm_free_job_info_msg(g_job_info_ptr);
@@ -827,21 +883,112 @@ extern void change_cluster_main()
 	slurm_free_ctl_conf(g_ctl_info_ptr);
 	g_ctl_info_ptr = NULL;
 
-	/* if(g_block_info_ptr) */
-	/* 	g_block_info_ptr->last_update = 0; */
-	/* if(g_job_info_ptr) */
-	/* 	g_job_info_ptr->last_update = 0; */
-	/* if(g_node_info_ptr) */
-	/* 	g_node_info_ptr->last_update = 0; */
-	/* if(g_part_info_ptr) */
-	/* 	g_part_info_ptr->last_update = 0; */
-	/* if(g_resv_info_ptr) */
-	/* 	g_resv_info_ptr->last_update = 0; */
-	/* if(g_ctl_info_ptr) */
-	/* 	g_ctl_info_ptr->last_update = 0; */
+	/* set up working_cluster_rec */
+	if(cluster_dims > 1) {
+		/* reset from a multi-dim cluster */
+		working_sview_config.grid_x_width =
+			default_sview_config.grid_x_width;
+		working_sview_config.grid_hori = default_sview_config.grid_hori;
+		working_sview_config.grid_vert = default_sview_config.grid_vert;
+	}
 
+	if(!orig_cluster_name)
+		orig_cluster_name = slurm_get_cluster_name();
+	if(!strcmp(cluster_rec->name, orig_cluster_name))
+		working_cluster_rec = NULL;
+	else
+		working_cluster_rec = cluster_rec;
+	cluster_dims = slurmdb_setup_cluster_dims();
+	cluster_flags = slurmdb_setup_cluster_flags();
+
+	/* set up menu */
+	ui_description = _get_ui_description();
+	gtk_ui_manager_remove_ui(g_ui_manager, g_menu_id);
+	if (!(g_menu_id = gtk_ui_manager_add_ui_from_string(
+		      g_ui_manager, ui_description, -1, &error))) {
+		xfree(ui_description);
+		g_error("building menus failed: %s", error->message);
+		g_error_free (error);
+		exit (0);
+	}
+	xfree(ui_description);
+
+	/* make changes for each object */
 	cluster_change_block();
 	cluster_change_resv();
+	cluster_change_part();
+	cluster_change_job();
+	cluster_change_node();
+
+	/* destroy old stuff */
+	if(grid_button_list) {
+		list_destroy(grid_button_list);
+		grid_button_list = NULL;
+	}
+	ba_fini();
+
+	/* sorry popups can't survive a cluster change */
+	if(popup_list)
+		list_destroy(popup_list);
+
+	/* reinit */
+	get_system_stats(main_grid_table);
+
+	tmp = g_strdup_printf("Cluster changed to %s", cluster_rec->name);
+	display_edit_note(tmp);
+	g_free(tmp);
+}
+
+static GtkWidget *_create_cluster_combo()
+{
+	GtkListStore *model = NULL;
+	GtkWidget *combo = NULL;
+	GtkTreeIter iter;
+	ListIterator itr;
+	slurmdb_cluster_rec_t *cluster_rec;
+	GtkCellRenderer *renderer = NULL;
+	bool got_db = slurm_get_is_association_based_accounting();
+	int count = 0, spot = 0;
+
+	if(!got_db)
+		return NULL;
+
+	cluster_list = slurmdb_get_info_cluster(NULL);
+	if(!cluster_list || !list_count(cluster_list)) {
+		if(cluster_list)
+			list_destroy(cluster_list);
+		return NULL;
+	}
+
+	if(!orig_cluster_name)
+		orig_cluster_name = slurm_get_cluster_name();
+	model = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_POINTER);
+	itr = list_iterator_create(cluster_list);
+	while((cluster_rec = list_next(itr))) {
+		gtk_list_store_append(model, &iter);
+		gtk_list_store_set(model, &iter,
+				   0, cluster_rec->name,
+				   1, cluster_rec,
+				   -1);
+		if(!strcmp(cluster_rec->name, orig_cluster_name))
+			spot = count;
+		count++;
+	}
+	list_iterator_destroy(itr);
+
+	combo = gtk_combo_box_new_with_model(GTK_TREE_MODEL(model));
+	g_object_unref(model);
+
+	renderer = gtk_cell_renderer_text_new();
+	gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(combo), renderer, TRUE);
+	gtk_cell_layout_add_attribute(GTK_CELL_LAYOUT(combo),
+				      renderer, "text", 0);
+	gtk_combo_box_set_active(GTK_COMBO_BOX(combo), spot);
+	g_signal_connect(combo, "changed",
+			 G_CALLBACK(_change_cluster_main),
+			 NULL);
+
+	return combo;
 }
 
 extern void refresh_main(GtkAction *action, gpointer user_data)
@@ -850,6 +997,7 @@ extern void refresh_main(GtkAction *action, gpointer user_data)
 	if(page == -1)
 		g_error("no pages in notebook for refresh\n");
 	force_refresh = 1;
+	g_print("here\n");
 	_page_switched(GTK_NOTEBOOK(main_notebook), NULL, page, NULL);
 }
 
@@ -922,6 +1070,7 @@ int main(int argc, char *argv[])
 {
 	GtkWidget *menubar = NULL;
 	GtkWidget *table = NULL;
+	GtkWidget *combo = NULL;
 /* 	GtkWidget *button = NULL; */
 	GtkBin *bin = NULL;
 	GtkViewport *view = NULL;
@@ -965,13 +1114,20 @@ int main(int argc, char *argv[])
 	g_signal_connect(G_OBJECT(main_notebook), "switch_page",
 			 G_CALLBACK(_page_switched),
 			 NULL);
-	table = gtk_table_new(1, 2, FALSE);
+	table = gtk_table_new(1, 3, FALSE);
 	gtk_table_set_homogeneous(GTK_TABLE(table), FALSE);
 	gtk_container_set_border_width(GTK_CONTAINER(table), 1);
 	/* Create a menu */
 	menubar = _get_menubar_menu(main_window, main_notebook);
 	gtk_table_attach_defaults(GTK_TABLE(table), menubar, 0, 1, 0, 1);
 
+	if((combo = _create_cluster_combo())) {
+		GtkWidget *label = gtk_label_new("Cluster ");
+		gtk_table_attach(GTK_TABLE(table), label, 1, 2, 0, 1,
+				 GTK_FILL, GTK_SHRINK, 0, 0);
+		gtk_table_attach(GTK_TABLE(table), combo, 2, 3, 0, 1,
+				 GTK_FILL, GTK_SHRINK, 0, 0);
+	}
 	gtk_notebook_popup_enable(GTK_NOTEBOOK(main_notebook));
 	gtk_notebook_set_scrollable(GTK_NOTEBOOK(main_notebook), TRUE);
 	gtk_notebook_set_tab_pos(GTK_NOTEBOOK(main_notebook),

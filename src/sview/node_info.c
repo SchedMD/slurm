@@ -93,9 +93,9 @@ static display_data_t display_data_node[] = {
 	 EDIT_TEXTBOX, refresh_node, create_model_node, admin_edit_node},
 	{G_TYPE_STRING, SORTID_GRES, "Gres", FALSE,
 	 EDIT_TEXTBOX, refresh_node, create_model_node, admin_edit_node},
-	{G_TYPE_STRING, SORTID_BOOT_TIME, "BootTime", FALSE, 
+	{G_TYPE_STRING, SORTID_BOOT_TIME, "BootTime", FALSE,
 	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
-	{G_TYPE_STRING, SORTID_SLURMD_START_TIME, "SlurmdStartTime", FALSE, 
+	{G_TYPE_STRING, SORTID_SLURMD_START_TIME, "SlurmdStartTime", FALSE,
 	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
 	{G_TYPE_STRING, SORTID_REASON, "Reason", FALSE,
 	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
@@ -125,6 +125,8 @@ static display_data_t options_data_node[] = {
 	{G_TYPE_STRING, JOB_PAGE,  "Jobs", TRUE, NODE_PAGE},
 #ifdef HAVE_BG
 	{G_TYPE_STRING, BLOCK_PAGE, "Blocks", TRUE, NODE_PAGE},
+#else
+	{G_TYPE_STRING, BLOCK_PAGE, NULL, TRUE, NODE_PAGE},
 #endif
 	{G_TYPE_STRING, PART_PAGE, "Partitions", TRUE, NODE_PAGE},
 	{G_TYPE_STRING, RESV_PAGE, "Reservations", TRUE, NODE_PAGE},
@@ -165,13 +167,14 @@ static void _layout_node_record(GtkTreeView *treeview,
 				     SELECT_NODEDATA_SUBCNT,
 				     NODE_STATE_ALLOCATED,
 				     &alloc_cpus);
-#ifdef HAVE_BG
-	if(!alloc_cpus && ((node_ptr->node_state & NODE_STATE_ALLOCATED)
-			   ||  (node_ptr->node_state & NODE_STATE_COMPLETING)))
-		alloc_cpus = node_ptr->cpus;
-	else
-		alloc_cpus *= cpus_per_node;
-#endif
+	if(cluster_flags & CLUSTER_FLAG_BG) {
+		if(!alloc_cpus
+		   && ((node_ptr->node_state & NODE_STATE_ALLOCATED)
+		       ||  (node_ptr->node_state & NODE_STATE_COMPLETING)))
+			alloc_cpus = node_ptr->cpus;
+		else
+			alloc_cpus *= cpus_per_node;
+	}
 	idle_cpus -= alloc_cpus;
 	convert_num_unit((float)alloc_cpus, tmp_cnt,
 			 sizeof(tmp_cnt), UNIT_NONE);
@@ -185,9 +188,9 @@ static void _layout_node_record(GtkTreeView *treeview,
 				     NODE_STATE_ERROR,
 				     &err_cpus);
 
-#ifdef HAVE_BG
-	err_cpus *= cpus_per_node;
-#endif
+	if(cluster_flags & CLUSTER_FLAG_BG)
+		err_cpus *= cpus_per_node;
+
 	idle_cpus -= err_cpus;
 	convert_num_unit((float)err_cpus, tmp_cnt, sizeof(tmp_cnt), UNIT_NONE);
 	add_display_treestore_line(update, treestore, &iter,
@@ -289,13 +292,15 @@ static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 				     SELECT_NODEDATA_SUBCNT,
 				     NODE_STATE_ALLOCATED,
 				     &alloc_cpus);
-#ifdef HAVE_BG
-	if(!alloc_cpus
-	   && (IS_NODE_ALLOCATED(node_ptr) || IS_NODE_COMPLETING(node_ptr)))
-		alloc_cpus = node_ptr->cpus;
-	else
-		alloc_cpus *= cpus_per_node;
-#endif
+	if(cluster_flags & CLUSTER_FLAG_BG) {
+		if(!alloc_cpus
+		   && (IS_NODE_ALLOCATED(node_ptr)
+		       || IS_NODE_COMPLETING(node_ptr)))
+			alloc_cpus = node_ptr->cpus;
+		else
+			alloc_cpus *= cpus_per_node;
+	}
+
 	idle_cpus -= alloc_cpus;
 	convert_num_unit((float)alloc_cpus, tmp_cnt,
 			 sizeof(tmp_cnt), UNIT_NONE);
@@ -307,9 +312,9 @@ static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 				     NODE_STATE_ERROR,
 				     &err_cpus);
 
-#ifdef HAVE_BG
-	err_cpus *= cpus_per_node;
-#endif
+	if(cluster_flags & CLUSTER_FLAG_BG)
+		err_cpus *= cpus_per_node;
+
 	idle_cpus -= err_cpus;
 	convert_num_unit((float)err_cpus, tmp_cnt, sizeof(tmp_cnt), UNIT_NONE);
 	gtk_tree_store_set(treestore, iter, SORTID_ERR_CPUS,
@@ -478,14 +483,14 @@ need_refresh:
 	list_iterator_destroy(itr);
 	if(!found) {
 		if(!popup_win->not_found) {
-#ifdef HAVE_BG
-			char *temp = "BP NOT FOUND\n";
-#else
-			char *temp = "NODE NOT FOUND\n";
-#endif
+			char *temp;
 			GtkTreeIter iter;
 			GtkTreeModel *model = NULL;
 
+			if(cluster_flags & CLUSTER_FLAG_BG)
+				temp = "BP NOT FOUND\n";
+			else
+				temp = "NODE NOT FOUND\n";
 			/* only time this will be run so no update */
 			model = gtk_tree_view_get_model(treeview);
 			add_display_treestore_line(0,
@@ -591,13 +596,13 @@ extern int get_new_info_node(node_info_msg_t **info_ptr, int force)
 	static bool changed = 0;
 	static uint16_t last_flags = 0;
 
-	if(!force && ((now - last) < working_sview_config.refresh_delay)) {
+	if(g_node_info_ptr && !force
+	   && ((now - last) < working_sview_config.refresh_delay)) {
 		if(*info_ptr != g_node_info_ptr)
 			error_code = SLURM_SUCCESS;
 		*info_ptr = g_node_info_ptr;
 		if(changed)
 			return SLURM_SUCCESS;
-
 		return error_code;
 	}
 	last = now;
@@ -626,8 +631,9 @@ extern int get_new_info_node(node_info_msg_t **info_ptr, int force)
 	last_flags = show_flags;
 	g_node_info_ptr = new_node_ptr;
 
-	if(*info_ptr != g_node_info_ptr)
+	if(*info_ptr != g_node_info_ptr) {
 		error_code = SLURM_SUCCESS;
+	}
  	if(new_node_ptr && changed) {
 		int i;
 		node_info_t *node_ptr = NULL;
@@ -650,14 +656,14 @@ extern int get_new_info_node(node_info_msg_t **info_ptr, int force)
 				SELECT_NODEDATA_SUBCNT,
 				NODE_STATE_ALLOCATED,
 				&alloc_cpus);
-#ifdef HAVE_BG
-			if(!alloc_cpus
-			   && (IS_NODE_ALLOCATED(node_ptr)
-			       || IS_NODE_COMPLETING(node_ptr)))
-				alloc_cpus = node_ptr->cpus;
-			else
-				alloc_cpus *= cpus_per_node;
-#endif
+			if(cluster_flags & CLUSTER_FLAG_BG) {
+				if(!alloc_cpus
+				   && (IS_NODE_ALLOCATED(node_ptr)
+				       || IS_NODE_COMPLETING(node_ptr)))
+					alloc_cpus = node_ptr->cpus;
+				else
+					alloc_cpus *= cpus_per_node;
+			}
 			idle_cpus -= alloc_cpus;
 
 			slurm_get_select_nodeinfo(
@@ -665,9 +671,9 @@ extern int get_new_info_node(node_info_msg_t **info_ptr, int force)
 				SELECT_NODEDATA_SUBCNT,
 				NODE_STATE_ERROR,
 				&err_cpus);
-#ifdef HAVE_BG
-			err_cpus *= cpus_per_node;
-#endif
+			if(cluster_flags & CLUSTER_FLAG_BG)
+				err_cpus *= cpus_per_node;
+
 			idle_cpus -= err_cpus;
 
 			if(IS_NODE_DRAIN(node_ptr)) {
@@ -1421,12 +1427,13 @@ extern void popup_all_node_name(char *name, int id)
 	ListIterator itr = NULL;
 	popup_info_t *popup_win = NULL;
 	GError *error = NULL;
+	char *node;
 
-#ifdef HAVE_BG
-	char *node = "base partition";
-#else
-	char *node = "node";
-#endif
+	if(cluster_flags & CLUSTER_FLAG_BG)
+		node = "Base partition";
+	else
+		node = "Node";
+
 	switch(id) {
 	case JOB_PAGE:
 		snprintf(title, 100, "Job(s) with %s %s", node, name);
@@ -1565,3 +1572,49 @@ extern void admin_node_name(char *name, char *old_value, char *type)
 	return;
 }
 
+extern void cluster_change_node()
+{
+	display_data_t *display_data = options_data_node;
+	while(display_data++) {
+		if(display_data->id == -1)
+			break;
+		if(cluster_flags & CLUSTER_FLAG_BG) {
+			switch(display_data->id) {
+			case BLOCK_PAGE:
+				display_data->name = "Blocks";
+				break;
+			}
+
+			if(!display_data->name) {
+			} else if(!strcmp(display_data->name, "Drain Node"))
+				display_data->name = "Drain Base Partition";
+			else if(!strcmp(display_data->name, "Resume Node"))
+				display_data->name = "Resume Base Partition";
+			else if(!strcmp(display_data->name, "Put Node Down"))
+				display_data->name = "Put Base Partition Down";
+			else if(!strcmp(display_data->name, "Make Node Idle"))
+				display_data->name =
+					"Make Base Partition Idle";
+		} else {
+			switch(display_data->id) {
+			case BLOCK_PAGE:
+				display_data->name = NULL;
+				break;
+			}
+
+			if(!display_data->name) {
+			} else if(!strcmp(display_data->name,
+					  "Drain Base Partitions"))
+				display_data->name = "Drain Nodes";
+			else if(!strcmp(display_data->name,
+					"Resume Base Partitions"))
+				display_data->name = "Resume Nodes";
+			else if(!strcmp(display_data->name,
+					"Put Base Partitions Down"))
+				display_data->name = "Put Nodes Down";
+			else if(!strcmp(display_data->name,
+					"Make Base Partitions Idle"))
+				display_data->name = "Make Nodes Idle";
+		}
+	}
+}
