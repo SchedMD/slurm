@@ -1219,6 +1219,8 @@ extern uint32_t step_test(void *step_gres_data, void *job_gres_data,
 		gres_cnt /= step_gres_ptr->nic_cnt_alloc;
 	else if (step_gres_ptr->nic_cnt_alloc > gres_cnt)
 		gres_cnt = 0;
+	else
+		gres_cnt = NO_VAL;
 
 	return gres_cnt;
 }
