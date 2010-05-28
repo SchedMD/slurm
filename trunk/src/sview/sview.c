@@ -929,7 +929,9 @@ extern void _change_cluster_main(GtkComboBox *combo, gpointer extra)
 
 	/* sorry popups can't survive a cluster change */
 	if(popup_list)
-		list_destroy(popup_list);
+		list_flush(popup_list);
+	if(signal_params_list)
+		list_flush(signal_params_list);
 
 	/* reinit */
 	get_system_stats(main_grid_table);
@@ -997,7 +999,6 @@ extern void refresh_main(GtkAction *action, gpointer user_data)
 	if(page == -1)
 		g_error("no pages in notebook for refresh\n");
 	force_refresh = 1;
-	g_print("here\n");
 	_page_switched(GTK_NOTEBOOK(main_notebook), NULL, page, NULL);
 }
 
