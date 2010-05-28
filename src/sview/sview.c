@@ -939,6 +939,16 @@ extern void _change_cluster_main(GtkComboBox *combo, gpointer extra)
 	if(node_tab)
 		gtk_label_set_text(GTK_LABEL(node_tab),
 				   main_display_data[NODE_PAGE].name);
+
+	/* The name in the visible tabs is easier since it is really
+	   just a button with a label on it.
+	*/
+	if(default_sview_config.page_check_widget[NODE_PAGE]) {
+		gtk_button_set_label(GTK_BUTTON(default_sview_config.
+						page_check_widget[NODE_PAGE]),
+				     main_display_data[NODE_PAGE].name);
+	}
+
 	/* reinit */
 	get_system_stats(main_grid_table);
 
