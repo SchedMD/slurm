@@ -186,7 +186,7 @@ static int _sort_by_prio (void *x, void *y)
 /**************************************************************************/
 extern uint16_t job_preempt_mode(struct job_record *job_ptr)
 {
-	return (slurm_get_preempt_mode() && (~PREEMPT_MODE_GANG));
+	return (slurm_get_preempt_mode() & (~PREEMPT_MODE_GANG));
 }
 
 /**************************************************************************/

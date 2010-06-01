@@ -173,7 +173,7 @@ extern uint16_t job_preempt_mode(struct job_record *job_ptr)
 	    (job_ptr->part_ptr->preempt_mode != (uint16_t) NO_VAL))
 		return job_ptr->part_ptr->preempt_mode;
 
-	return (slurm_get_preempt_mode() && (~PREEMPT_MODE_GANG));
+	return (slurm_get_preempt_mode() & (~PREEMPT_MODE_GANG));
 }
 
 /**************************************************************************/
