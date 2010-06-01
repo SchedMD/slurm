@@ -2588,8 +2588,9 @@ void hostlist_parse_int_to_array(int in, int *out, int dims, int hostlist_base)
 			my_pow_minus /= hostlist_base;
 		}
 		if(out[a] < 0) {
-			fatal("Dim %d returned negitive %d from %d %d %d",
+			error("Dim %d returned negitive %d from %d %d %d",
 			      a, out[a], in, my_pow, my_pow_minus);
+			xassert(0);
 			out[a] = 0;
 		}
 	}

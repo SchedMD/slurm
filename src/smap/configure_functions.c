@@ -714,7 +714,8 @@ static int _change_state_bps(char *com, int state)
 			goto error_message2;
 
 		}
-		number = strtoul(com + i, &p, params.cluster_base);
+		number = xstrntol(com + i, &p, params.cluster_dims,
+				  params.cluster_base);
 		hostlist_parse_int_to_array(
 			number, start, params.cluster_dims,
 			params.cluster_base);
@@ -727,7 +728,8 @@ static int _change_state_bps(char *com, int state)
 				continue;
 			goto error_message2;
 		}
-		number = strtoul(com + i, &p,  params.cluster_base);
+		number = xstrntol(com + i, &p, params.cluster_dims,
+				  params.cluster_base);
 		hostlist_parse_int_to_array(
 			number, end, params.cluster_dims,
 			params.cluster_base);
@@ -739,7 +741,8 @@ static int _change_state_bps(char *com, int state)
 				continue;
 			goto error_message2;
 		}
-		number = strtoul(com + i, &p,  params.cluster_base);
+		number = xstrntol(com + i, &p, params.cluster_dims,
+				  params.cluster_base);
 		hostlist_parse_int_to_array(
 			number, start, params.cluster_dims,
 			params.cluster_base);
@@ -1170,12 +1173,14 @@ static int _add_bg_record(blockreq_t *blockreq, List allocated_blocks)
 		    && (nodes[j+8] == ']' || nodes[j+8] == ',')
 		    && (nodes[j+4] == 'x' || nodes[j+4] == '-')) {
 			j++;
-			number = strtoul(nodes + j, &p, params.cluster_base);
+			number = xstrntol(nodes + j, &p, params.cluster_dims,
+					  params.cluster_base);
 			hostlist_parse_int_to_array(
 				number, start, params.cluster_dims,
 				params.cluster_base);
 			j += 4;
-			number = strtoul(nodes + j, &p, params.cluster_base);
+			number = xstrntol(nodes + j, &p, params.cluster_dims,
+					  params.cluster_base);
 			hostlist_parse_int_to_array(
 				number, end, params.cluster_dims,
 				params.cluster_base);
@@ -1208,7 +1213,8 @@ static int _add_bg_record(blockreq_t *blockreq, List allocated_blocks)
 			j--;
 		} else if((nodes[j] >= '0' && nodes[j] <= '9')
 			  || (nodes[j] >= 'A' && nodes[j] <= 'Z')) {
-			number = strtoul(nodes + j, &p, params.cluster_base);
+			number = xstrntol(nodes + j, &p, params.cluster_dims,
+					  params.cluster_base);
 			hostlist_parse_int_to_array(
 				number, start, params.cluster_dims,
 				params.cluster_base);

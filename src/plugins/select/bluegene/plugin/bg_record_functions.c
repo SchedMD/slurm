@@ -202,14 +202,16 @@ extern void process_nodes(bg_record_t *bg_record, bool startup)
 			    && (bg_record->nodes[j+4] == 'x'
 				|| bg_record->nodes[j+4] == '-')) {
 				j++;
-				number = strtoul(bg_record->nodes + j,
-						 &p, HOSTLIST_BASE);
+				number = xstrntol(bg_record->nodes + j, &p,
+						  SYSTEM_DIMENSIONS,
+						  HOSTLIST_BASE);
 				hostlist_parse_int_to_array(
 					number, start, SYSTEM_DIMENSIONS,
 					HOSTLIST_BASE);
 				j += 4;
-				number = strtoul(bg_record->nodes + j,
-						 &p, HOSTLIST_BASE);
+				number = xstrntol(bg_record->nodes + j, &p,
+						  SYSTEM_DIMENSIONS,
+						  HOSTLIST_BASE);
 				hostlist_parse_int_to_array(
 					number, end, SYSTEM_DIMENSIONS,
 					HOSTLIST_BASE);
@@ -238,8 +240,9 @@ extern void process_nodes(bg_record_t *bg_record, bool startup)
 				  || (bg_record->nodes[j] >= 'A'
 				      && bg_record->nodes[j] <= 'Z')) {
 
-				number = strtoul(bg_record->nodes + j,
-						 &p, HOSTLIST_BASE);
+				number = xstrntol(bg_record->nodes + j, &p,
+						  SYSTEM_DIMENSIONS,
+						  HOSTLIST_BASE);
 				hostlist_parse_int_to_array(
 					number, start, SYSTEM_DIMENSIONS,
 					HOSTLIST_BASE);
