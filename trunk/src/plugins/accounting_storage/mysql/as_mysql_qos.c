@@ -493,9 +493,9 @@ extern List as_mysql_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 	ret_list = list_create(slurm_destroy_char);
 	while((row = mysql_fetch_row(result))) {
 		slurmdb_qos_rec_t *qos_rec = NULL;
+		int id = atoi(row[2]);
 		if(preempt_bitstr) {
-			if(_preemption_loop(mysql_conn,
-					    atoi(row[2]), preempt_bitstr))
+			if(_preemption_loop(mysql_conn, id, preempt_bitstr))
 				break;
 		}
 		object = xstrdup(row[0]);
@@ -509,7 +509,7 @@ extern List as_mysql_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 
 		qos_rec = xmalloc(sizeof(slurmdb_qos_rec_t));
 		qos_rec->name = xstrdup(object);
-
+		qos_rec->id = id;
 		qos_rec->grp_cpus = qos->grp_cpus;
 		qos_rec->grp_cpu_mins = qos->grp_cpu_mins;
 		qos_rec->grp_jobs = qos->grp_jobs;
@@ -531,27 +531,28 @@ extern List as_mysql_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 				list_iterator_create(qos->preempt_list);
 			char *new_preempt = NULL;
 
-			qos->preempt_bitstr = bit_alloc(g_qos_count);
+			qos_rec->preempt_bitstr = bit_alloc(g_qos_count);
 			if(row[1] && row[1][0])
-				bit_unfmt(qos->preempt_bitstr, row[1]+1);
+				bit_unfmt(qos_rec->preempt_bitstr, row[1]+1);
 
 			while((new_preempt = list_next(new_preempt_itr))) {
 				bool cleared = 0;
 				if(new_preempt[0] == '-') {
-					bit_clear(qos->preempt_bitstr,
+					bit_clear(qos_rec->preempt_bitstr,
 						  atoi(new_preempt+1));
 				} else if(new_preempt[0] == '+') {
-					bit_set(qos->preempt_bitstr,
+					bit_set(qos_rec->preempt_bitstr,
 						atoi(new_preempt+1));
 				} else {
 					if(!cleared) {
 						cleared = 1;
-						bit_nclear(qos->preempt_bitstr,
-							   0,
-							   bit_size(qos->preempt_bitstr)-1);
+						bit_nclear(
+							qos_rec->preempt_bitstr,
+							0,
+							g_qos_count-1);
 					}
 
-					bit_set(qos->preempt_bitstr,
+					bit_set(qos_rec->preempt_bitstr,
 						atoi(new_preempt));
 				}
 			}

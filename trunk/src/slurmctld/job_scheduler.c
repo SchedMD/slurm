@@ -1120,9 +1120,10 @@ extern int job_start_data(job_desc_msg_t *job_desc_msg,
 			req_nodes = min_nodes;
 		preemptee_candidates = slurm_find_preemptable_jobs(job_ptr);
 		rc = select_g_job_test(job_ptr, avail_bitmap,
-				min_nodes, max_nodes, req_nodes,
-				SELECT_MODE_WILL_RUN, preemptee_candidates,
-				&preemptee_job_list);
+				       min_nodes, max_nodes, req_nodes,
+				       SELECT_MODE_WILL_RUN,
+				       preemptee_candidates,
+				       &preemptee_job_list);
 	}
 
 	if (rc == SLURM_SUCCESS) {
@@ -1131,8 +1132,8 @@ extern int job_start_data(job_desc_msg_t *job_desc_msg,
 		resp_data->job_id     = job_ptr->job_id;
 #ifdef HAVE_BG
 		select_g_select_jobinfo_get(job_ptr->select_jobinfo,
-                        	     SELECT_JOBDATA_NODE_CNT,
-				     &resp_data->proc_cnt);
+					    SELECT_JOBDATA_NODE_CNT,
+					    &resp_data->proc_cnt);
 
 #else
 		resp_data->proc_cnt = job_ptr->total_cpus;
