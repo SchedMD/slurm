@@ -887,13 +887,6 @@ extern int job_fail(uint32_t job_id);
  */
 extern int job_node_ready(uint32_t job_id, int *ready);
 
-/*
- * Preempt a job using the proper job removal mechanism (checkpoint, requeue).
- * Do not use this function for job suspend/resume. This is handled by the
- * gang module.
- */
-extern void job_preempt_remove(uint32_t job_id);
-
 /* Record accounting information for a job immediately before changing size */
 extern void job_pre_resize_acctg(struct job_record *job_ptr);
 

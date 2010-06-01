@@ -91,15 +91,6 @@ int node_record_count;
 time_t last_node_update;
 struct switch_record *switch_record_table;
 int switch_record_cnt;
-#ifdef HAVE_AIX
-/* On AIX dlopen's RTLD_LAZY flag does NOT work, so we must define
- * actual functions here in order to load this plugin from anywhere
- *  other than slurmctld */
-void job_preempt_remove(uint32_t job_id)
-{
-	;
-}
-#endif
 
 struct select_nodeinfo {
 	uint16_t magic;		/* magic number */
