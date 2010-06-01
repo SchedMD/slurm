@@ -116,7 +116,6 @@ extern List find_preemptable_jobs(struct job_record *job_ptr)
 		    (bit_overlap(job_p->node_bitmap,
 				 job_ptr->part_ptr->node_bitmap) == 0))
 			continue;
-
 		/* This job is a preemption candidate */
 		if (preemptee_job_list == NULL) {
 			preemptee_job_list = list_create(NULL);
@@ -142,7 +141,6 @@ static bool _qos_preemptable(struct job_record *preemptee,
 	    (qos_or->preempt_bitstr == NULL) ||
 	    !bit_test(qos_or->preempt_bitstr, qos_ee->id))
 		return false;
-
 	return true;
 
 }
