@@ -1060,7 +1060,7 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
 	if(cluster_flags & CLUSTER_FLAG_BG)
 		env_array_overwrite_fmt(dest, "SLURM_BG_NUM_NODES",
 					"%u", num_nodes);
-	
+
 	env_array_overwrite_fmt(dest, "SLURM_JOB_NODELIST", "%s", batch->nodes);
 
 	tmp = uint32_compressed_to_str(batch->num_cpu_groups,
