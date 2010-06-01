@@ -931,7 +931,7 @@ env_array_for_job(char ***dest, const resource_allocation_response_msg_t *alloc,
 					    &node_cnt);
 		if(!node_cnt)
 			node_cnt = alloc->node_cnt;
-		info("got here 2");
+
 		env_array_overwrite_fmt(dest, "SLURM_BG_NUM_NODES",
 					"%u", node_cnt);
 	}
@@ -1057,11 +1057,10 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
 
 	env_array_overwrite_fmt(dest, "SLURM_JOB_ID", "%u", batch->job_id);
 	env_array_overwrite_fmt(dest, "SLURM_JOB_NUM_NODES", "%u", num_nodes);
-	if(cluster_flags & CLUSTER_FLAG_BG) {
-		info("got here");
+	if(cluster_flags & CLUSTER_FLAG_BG)
 		env_array_overwrite_fmt(dest, "SLURM_BG_NUM_NODES",
 					"%u", num_nodes);
-	}
+	
 	env_array_overwrite_fmt(dest, "SLURM_JOB_NODELIST", "%s", batch->nodes);
 
 	tmp = uint32_compressed_to_str(batch->num_cpu_groups,
