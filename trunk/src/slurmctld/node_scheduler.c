@@ -612,7 +612,6 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 	bitstr_t *avail_bitmap = NULL, *total_bitmap = NULL;
 	bitstr_t *backup_bitmap = NULL;
 	bitstr_t *possible_bitmap = NULL;
-	bitstr_t *partially_idle_node_bitmap = NULL;
 	int max_feature, min_feature;
 	bool runable_ever  = false;	/* Job can ever run */
 	bool runable_avail = false;	/* Job can run with available nodes */
@@ -645,30 +644,12 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 	shared = _resolve_shared_status(job_ptr->details->shared,
 					part_ptr->max_share, cr_enabled);
 	job_ptr->details->shared = shared;
+	if (cr_enabled)
+		job_ptr->cr_enabled = cr_enabled; /* CR enabled for this job */
 
 	/* If job preemption is enabled, then do NOT limit the set of available
 	 * nodes by their current 'sharable' or 'idle' setting */
 	preempt_flag = slurm_preemption_enabled();
-
-	if (cr_enabled) {
-		/* Determine which nodes might be used by this job based upon
-		 * its ability to share resources */
-		job_ptr->cr_enabled = cr_enabled; /* CR enabled for this job */
-
-		/* Set the partially_idle_node_bitmap to reflect the
-		 * idle and partially idle nodes */
-		error_code = select_g_get_info_from_plugin (SELECT_BITMAP,
-					job_ptr, &partially_idle_node_bitmap);
-		if (error_code != SLURM_SUCCESS) {
-			FREE_NULL_BITMAP(partially_idle_node_bitmap);
-			return error_code;
-		}
-                debug3("Job %u shared %d CR type %u cpus %u-%u nbits %d",
-		       job_ptr->job_id, shared, cr_enabled, 
-		       slurmctld_conf.select_type_param,
-		       job_ptr->details->min_cpus, job_ptr->details->max_cpus,
-		       bit_set_count(partially_idle_node_bitmap));
-        }
 
 	if (job_ptr->details->req_node_bitmap) {  /* specific nodes required */
 		/* We have already confirmed that all of these nodes have a
@@ -679,7 +660,6 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 				job_ptr->details->req_node_bitmap);
 		}
 		if (total_nodes > max_nodes) {	/* exceeds node limit */
-			FREE_NULL_BITMAP(partially_idle_node_bitmap);
 			return ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
 		}
 
@@ -687,16 +667,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 		/* Should we check memory availability on these nodes? */
 		if (!bit_super_set(job_ptr->details->req_node_bitmap,
 				   avail_node_bitmap)) {
-			FREE_NULL_BITMAP(partially_idle_node_bitmap);
 			return ESLURM_NODE_NOT_AVAIL;
-		}
-
-		if (partially_idle_node_bitmap) {
-			if (!bit_super_set(job_ptr->details->req_node_bitmap,
-					   partially_idle_node_bitmap)) {
-				FREE_NULL_BITMAP(partially_idle_node_bitmap);
-				return ESLURM_NODES_BUSY;
-			}
 		}
 
 		if (!preempt_flag) {
@@ -704,16 +675,12 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 				if (!bit_super_set(job_ptr->details->
 						   req_node_bitmap,
 						   share_node_bitmap)) {
-					FREE_NULL_BITMAP(
-						partially_idle_node_bitmap);
 					return ESLURM_NODES_BUSY;
 				}
 			} else {
 				if (!bit_super_set(job_ptr->details->
 						   req_node_bitmap,
 						   idle_node_bitmap)) {
-					FREE_NULL_BITMAP(
-						partially_idle_node_bitmap);
 					return ESLURM_NODES_BUSY;
 				}
 			}
@@ -758,11 +725,6 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 			}
 
 			bit_and(node_set_ptr[i].my_bitmap, avail_node_bitmap);
-			if (partially_idle_node_bitmap) {
-				bit_and(node_set_ptr[i].my_bitmap,
-					partially_idle_node_bitmap);
-			}
-
 			if (!preempt_flag) {
 				if (shared) {
 					bit_and(node_set_ptr[i].my_bitmap,
@@ -839,7 +801,6 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 					avail_nodes = 0;
 					break;
 				}
-				FREE_NULL_BITMAP(partially_idle_node_bitmap);
 				FREE_NULL_BITMAP(total_bitmap);
 				FREE_NULL_BITMAP(possible_bitmap);
 				*select_bitmap = avail_bitmap;
@@ -869,7 +830,6 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 						      preemptee_job_list);
 			if ((pick_code == SLURM_SUCCESS) &&
 			     (bit_set_count(avail_bitmap) <= max_nodes)) {
-				FREE_NULL_BITMAP(partially_idle_node_bitmap);
 				FREE_NULL_BITMAP(total_bitmap);
 				FREE_NULL_BITMAP(possible_bitmap);
 				*select_bitmap = avail_bitmap;
@@ -948,7 +908,6 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 	} else {
 		FREE_NULL_BITMAP(possible_bitmap);
 	}
-	FREE_NULL_BITMAP(partially_idle_node_bitmap);
 	return error_code;
 }
 
