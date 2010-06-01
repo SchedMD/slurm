@@ -953,7 +953,8 @@ extern void ba_init(node_info_msg_t *node_info_ptr, bool sanity_check)
 					numeric++;
 					continue;
 				}
-				number = strtoul(numeric, &p, cluster_base);
+				number = xstrntol(numeric, &p, cluster_dims,
+						  cluster_base);
 				break;
 			}
 			hostlist_parse_int_to_array(
@@ -1002,8 +1003,9 @@ node_info_error:
 					j++;
 					continue;
 				}
-				number = strtoul(node->nodenames + j,
-						 &p, cluster_base);
+				number = xstrntol(node->nodenames + j,
+						  &p, cluster_dims,
+						  cluster_base);
 				hostlist_parse_int_to_array(
 					number, coords, cluster_dims,
 					cluster_base);
@@ -1736,11 +1738,13 @@ extern int removable_set_bps(char *bps)
 		    && (bps[j+4] == 'x' || bps[j+4] == '-')) {
 
 			j++;
-			number = strtoul(bps + j, &p, cluster_base);
+			number = xstrntol(bps + j, &p, cluster_dims,
+					  cluster_base);
 			hostlist_parse_int_to_array(
 				number, start, cluster_dims, cluster_base);
 			j += 4;
-			number = strtoul(bps + j, &p, cluster_base);
+			number = xstrntol(bps + j, &p, cluster_dims,
+					  cluster_base);
 			hostlist_parse_int_to_array(
 				number, end, cluster_dims, cluster_base);
 			j += 3;
@@ -1761,7 +1765,8 @@ extern int removable_set_bps(char *bps)
 			j--;
 		} else if((bps[j] >= '0' && bps[j] <= '9')
 			  || (bps[j] >= 'A' && bps[j] <= 'Z')) {
-			number = strtoul(bps + j, &p, cluster_base);
+			number = xstrntol(bps + j, &p, cluster_dims,
+					  cluster_base);
 			hostlist_parse_int_to_array(
 				number, start, cluster_dims, cluster_base);
 			x = start[X];
@@ -1828,7 +1833,8 @@ extern int set_all_bps_except(char *bps)
 				numeric++;
 				continue;
 			}
-			number = strtoul(numeric, &p, cluster_base);
+			number = xstrntol(numeric, &p, cluster_dims,
+					  cluster_base);
 			break;
 		}
 		hostlist_parse_int_to_array(
@@ -2136,7 +2142,7 @@ extern char *find_bp_rack_mid(char* xyz)
 		return NULL;
 	}
 
-	number = strtoul(xyz[X]+len, &p, cluster_base);
+	number = xstrntol(xyz[X]+len, &p, cluster_dims, cluster_base);
 	hostlist_parse_int_to_array(number, coord, cluster_dims, cluster_base);
 
 	if(!bp_map_list) {

@@ -373,14 +373,13 @@ char * xstrndup(const char *str, size_t n)
 long int xstrntol(const char *str, char **endptr, size_t n, int base)
 {
 	long int number = 0;
-	char *new_str = xstrndup(str, n);
+	char new_str[n+1];
 
-	if(!new_str)
-		goto end_it;
+	memcpy(new_str, str, n);
+	new_str[n] = '\0';
 
 	number = strtol(new_str, endptr, base);
-	xfree(new_str);
-end_it:
+
 	return number;
 }
 

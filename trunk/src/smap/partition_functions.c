@@ -953,12 +953,14 @@ static int _make_nodelist(char *nodes, List nodelist)
 		    && (nodes[j+4] == 'x'
 			|| nodes[j+4] == '-')) {
 			j++;
-			number = strtoul(nodes + j, &p, params.cluster_base);
+			number = xstrntol(nodes + j, &p, params.cluster_dims,
+					  params.cluster_base);
 			hostlist_parse_int_to_array(
 				number, start, params.cluster_dims,
 				params.cluster_base);
 			j += 4;
-			number = strtoul(nodes + j, &p, params.cluster_base);
+			number = xstrntol(nodes + j, &p, params.cluster_dims,
+					  params.cluster_base);
 			hostlist_parse_int_to_array(
 				number, end, params.cluster_dims,
 				params.cluster_base);
@@ -970,7 +972,8 @@ static int _make_nodelist(char *nodes, List nodelist)
 		} else if((nodes[j] >= '0' && nodes[j] <= '9')
 			  || (nodes[j] >= 'A' && nodes[j] <= 'Z')) {
 
-			number = strtoul(nodes + j, &p, params.cluster_base);
+			number = xstrntol(nodes + j, &p, params.cluster_dims,
+					  params.cluster_base);
 			hostlist_parse_int_to_array(
 				number, start, params.cluster_dims,
 				params.cluster_base);

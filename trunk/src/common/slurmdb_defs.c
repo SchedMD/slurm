@@ -856,7 +856,9 @@ static int _setup_cluster_rec(slurmdb_cluster_rec_t *cluster_rec)
 			i--;
 		if(i > cluster_rec->dimensions) {
 			char *p = '\0';
-			number = strtoul(nodes + i, &p, 36);
+			number = xstrntol(nodes + i, &p,
+					  cluster_rec->dimensions,
+					  36);
 			hostlist_parse_int_to_array(
 				number, cluster_rec->dim_size,
 				cluster_rec->dimensions, 36);
