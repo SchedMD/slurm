@@ -641,6 +641,8 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 	shared = _resolve_shared_status(job_ptr->details->shared,
 					part_ptr->max_share, cr_enabled);
 	job_ptr->details->shared = shared;
+	if (cr_enabled)
+		job_ptr->cr_enabled = cr_enabled; /* CR enabled for this job */
 
 	/* If job preemption is enabled, then do NOT limit the set of available
 	 * nodes by their current 'sharable' or 'idle' setting */
