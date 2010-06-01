@@ -6137,7 +6137,7 @@ extern List acct_storage_p_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 			ListIterator new_preempt_itr =
 				list_iterator_create(qos->preempt_list);
 			char *new_preempt = NULL;
-			info("got here");
+
 			qos_rec->preempt_bitstr = bit_alloc(g_qos_count);
 			if(row[1] && row[1][0])
 				bit_unfmt(qos_rec->preempt_bitstr, row[1]+1);
