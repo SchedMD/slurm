@@ -707,9 +707,8 @@ static int _parse_line(char *f[], void **data, int len)
 		(*job)->nodes = xstrdup(f[F_NODES]);
 
 		for (i=0; (*job)->nodes[i]; i++) { /* discard trailing <CR> */
-			if (isspace((*job)->nodes[i])) {
+			if (isspace((*job)->nodes[i]))
 				(*job)->nodes[i] = '\0';
-			}
 		}
 		if (!strcmp((*job)->nodes, "(null)")) {
 			xfree((*job)->nodes);
