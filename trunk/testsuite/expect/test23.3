@@ -59,8 +59,6 @@ set mc		MinCPU
 set mn		MinCPUNode
 set mt		MinCPUTask
 set nt		NTasks
-set sc		SystemCPU
-set tc		TotalCPU
 #
 # Check accounting config and bail if not found.
 #
@@ -536,7 +534,7 @@ proc sstat_vargs { soption vargs job_id} {
 			incr matches
 			exp_continue
 		}
-		-re "MinCPUTask.NTasks.SystemCPU.TotalCPU" {
+		-re "MinCPUTask.NTasks" {
 			if {$debug} {send_user "\nmatch22\n"}
 			incr matches
 			exp_continue

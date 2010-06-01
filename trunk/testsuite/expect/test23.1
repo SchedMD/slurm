@@ -83,7 +83,7 @@ proc sstat_job { soption } {
 			incr matches
 			exp_continue
 		}
-		-re "MinCPUTask *NTasks *SystemCPU *TotalCPU" {
+		-re "MinCPUTask *NTasks" {
 			if {$debug} {send_user "\nmatch5\n"}
 			incr matches
 			exp_continue
