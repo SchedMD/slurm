@@ -164,9 +164,11 @@ typedef struct {
 	uint16_t refresh_delay;
 	bool show_grid;
 	bool show_hidden;
+	bool ruled_treeview;
 	GtkToggleAction *action_admin;
 	GtkToggleAction *action_grid;
 	GtkToggleAction *action_hidden;
+	GtkToggleAction *action_ruled;
 	GtkRadioAction *action_tab;
 	uint16_t tab_pos;
 } sview_config_t;

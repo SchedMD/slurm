@@ -350,6 +350,32 @@ static void _set_hidden(GtkToggleAction *action)
 	return;
 }
 
+static void _set_ruled(GtkToggleAction *action)
+{
+	char *tmp;
+	if(action)
+		working_sview_config.ruled_treeview
+			= gtk_toggle_action_get_active(action);
+	if(!working_sview_config.ruled_treeview)
+		tmp = g_strdup_printf(
+			"Tables not ruled");
+	else
+		tmp = g_strdup_printf(
+			"Tables ruled");
+
+	/* get rid of each existing table */
+	cluster_change_block();
+	cluster_change_resv();
+	cluster_change_part();
+	cluster_change_job();
+	cluster_change_node();
+	
+	refresh_main(NULL, NULL);
+	display_edit_note(tmp);
+	g_free(tmp);
+	return;
+}
+
 static void _reconfigure(GtkToggleAction *action)
 {
 	char *temp = NULL;
@@ -503,7 +529,8 @@ static char *_get_ui_description()
 		"    </menu>"
 		"    <menu action='options'>"
 		"      <menuitem action='grid'/>"
-		"      <menuitem action='hidden'/>");
+		"      <menuitem action='hidden'/>"
+		"      <menuitem action='ruled'/>");
 	if(!(cluster_flags & CLUSTER_FLAG_BG))
 		xstrcat(ui_description,
 			"      <menuitem action='grid_specs'/>");
@@ -654,6 +681,9 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 		{"hidden", GTK_STOCK_SELECT_COLOR, "Show _Hidden",
 		 "<control>h", "Display Hidden Partitions/Jobs",
 		 G_CALLBACK(_set_hidden), working_sview_config.show_hidden},
+		{"ruled", GTK_STOCK_SELECT_COLOR, "R_uled Tables",
+		 "<control>u", "Have ruled tables or not",
+		 G_CALLBACK(_set_ruled), working_sview_config.ruled_treeview},
 		{"admin", GTK_STOCK_PREFERENCES,
 		 "_Admin Mode", "<control>a",
 		 "Allows user to change or update information",
@@ -739,6 +769,9 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 	default_sview_config.action_hidden =
 		(GtkToggleAction *)gtk_action_group_get_action(
 			menu_action_group, "hidden");
+	default_sview_config.action_ruled =
+		(GtkToggleAction *)gtk_action_group_get_action(
+			menu_action_group, "ruled");
 	/* Pick the first one of the Radio, it is how GTK references
 	   the group in the future.
 	*/
