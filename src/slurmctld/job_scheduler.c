@@ -1237,6 +1237,7 @@ static char **_build_env(struct job_record *job_ptr)
 	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
 			     SELECT_JOBDATA_BLOCK_ID, &name);
 	setenvf(&my_env, "MPIRUN_PARTITION", "%s", name);
+	xfree(name);
 #endif
 	setenvf(&my_env, "SLURM_JOB_ACCOUNT", "%s", job_ptr->account);
 	if (job_ptr->details) {
