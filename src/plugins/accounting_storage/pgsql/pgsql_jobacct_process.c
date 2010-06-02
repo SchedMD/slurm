@@ -654,11 +654,9 @@ no_cond:
 				PQgetvalue(step_result, j, STEP_REQ_SYS_SEC));
 			step->sys_cpu_usec = atoi(
 				PQgetvalue(step_result, j, STEP_REQ_SYS_USEC));
-			job->tot_cpu_sec +=
-				step->tot_cpu_sec +=
+			step->tot_cpu_sec +=
 				step->user_cpu_sec + step->sys_cpu_sec;
-			job->tot_cpu_usec +=
-				step->tot_cpu_usec +=
+			step->tot_cpu_usec +=
 				step->user_cpu_usec + step->sys_cpu_usec;
 			step->sacct.max_vsize = atoi(
 				PQgetvalue(step_result, j,
