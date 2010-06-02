@@ -261,7 +261,7 @@ static int _open_node_state_file(char **state_file)
  */
 extern int load_all_node_state ( bool state_only )
 {
-	char *node_name, *reason = NULL, *data = NULL, *state_file;
+	char *node_name = NULL, *reason = NULL, *data = NULL, *state_file;
 	char *features = NULL, *gres = NULL;
 	int data_allocated, data_read = 0, error_code = 0, node_cnt = 0;
 	uint16_t node_state;
