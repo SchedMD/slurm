@@ -29,6 +29,7 @@ AC_DEFUN([X_AC_CRAY], [
   if test "$x_ac_cray_xt" = yes; then
     AC_MSG_RESULT([yes])
     AC_DEFINE(HAVE_3D, 1, [Define to 1 if 3-dimensional architecture])
+    AC_DEFINE(SYSTEM_DIMENSIONS, 3, [3-dimensional architecture])
     AC_DEFINE(HAVE_CRAY,1,[Define if Cray system])
     AC_DEFINE(HAVE_CRAY_XT,1,[Define if Cray XT system])
     AC_DEFINE(HAVE_FRONT_END, 1, [Define to 1 if running slurmd on front-end only])
@@ -37,7 +38,7 @@ AC_DEFUN([X_AC_CRAY], [
   fi
 
   AC_ARG_WITH(apbasil, AS_HELP_STRING(--with-apbasil=PATH,Specify path to apbasil command), [ try_apbasil=$withval ])
-  apbasil_default_locs="/usr/apbasil"
+  apbasil_default_locs="/usr/bin/apbasil"
   for apbasil_loc in $try_apbasil "" $apbasil_default_locs; do
     if test -z "$have_apbasil" -a -x "$apbasil_loc" ; then
       have_apbasil=$apbasil_loc

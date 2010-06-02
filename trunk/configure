@@ -17963,6 +17963,9 @@ $as_echo "yes" >&6; }
 $as_echo "#define HAVE_3D 1" >>confdefs.h
 
 
+$as_echo "#define SYSTEM_DIMENSIONS 3" >>confdefs.h
+
+
 $as_echo "#define HAVE_CRAY 1" >>confdefs.h
 
 
@@ -17982,7 +17985,7 @@ if test "${with_apbasil+set}" = set; then :
   withval=$with_apbasil;  try_apbasil=$withval
 fi
 
-  apbasil_default_locs="/usr/apbasil"
+  apbasil_default_locs="/usr/bin/apbasil"
   for apbasil_loc in $try_apbasil "" $apbasil_default_locs; do
     if test -z "$have_apbasil" -a -x "$apbasil_loc" ; then
       have_apbasil=$apbasil_loc
