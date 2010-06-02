@@ -21,6 +21,7 @@ documents those changes that are of interest to users and admins.
     as needed based upon the processs's resource limits.
  -- Removed the non-functional "SystemCPU" and "TotalCPU" reporting fields from
     sstat and updated man page
+ -- Correct location of apbasil command on Cray XT systems.
 
 * Changes in SLURM 2.2.0.pre6
 =============================
