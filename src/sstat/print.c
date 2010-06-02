@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  print.c - print functions for stats
+ *  print.c - print functions for sstat
  *
  *  $Id: print.c 7541 2006-03-18 01:44:58Z da $
  *****************************************************************************
@@ -93,7 +93,7 @@ void print_fields(slurmdb_step_rec_t *step)
 		switch(field->type) {
 		case PRINT_AVECPU:
 
-			tmp_char = _elapsed_time((int)step->stats.cpu_ave, 0);
+			tmp_char = _elapsed_time((long)step->stats.cpu_ave, 0);
 
 			field->print_routine(field,
 					     tmp_char,
@@ -206,7 +206,8 @@ void print_fields(slurmdb_step_rec_t *step)
 					     (curr_inx == field_count));
 			break;
 		case PRINT_MINCPU:
-			tmp_char = _elapsed_time((int)step->stats.cpu_min, 0);
+			tmp_char = _elapsed_time((long)step->stats.cpu_min, 0);
+
 			field->print_routine(field,
 					     tmp_char,
 					     (curr_inx == field_count));

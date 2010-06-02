@@ -712,11 +712,9 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 				atoi(step_row[STEP_REQ_USER_USEC]);
 			step->sys_cpu_sec = atoi(step_row[STEP_REQ_SYS_SEC]);
 			step->sys_cpu_usec = atoi(step_row[STEP_REQ_SYS_USEC]);
-			job->tot_cpu_sec +=
-				step->tot_cpu_sec +=
+			step->tot_cpu_sec +=
 				step->user_cpu_sec + step->sys_cpu_sec;
-			job->tot_cpu_usec +=
-				step->tot_cpu_usec +=
+			step->tot_cpu_usec +=
 				step->user_cpu_usec + step->sys_cpu_usec;
 			step->stats.vsize_max =
 				atoi(step_row[STEP_REQ_MAX_VSIZE]);
