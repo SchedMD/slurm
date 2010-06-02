@@ -400,7 +400,7 @@ extern int slurm_select_fini(void)
 		goto fini;
 
 	for (i=0; i<select_context_cnt; i++) {
-		j = _select_context_destroy(select_context);
+		j = _select_context_destroy(select_context + i);
 		if (j != SLURM_SUCCESS)
 			rc = j;
 	}
