@@ -443,9 +443,7 @@ no_rollup_change:
 			   submit_time, start_time,
 			   jname, track_steps, job_state,
 			   job_ptr->priority, job_ptr->details->min_cpus,
-			   job_ptr->total_cpus, node_cnt, wckeyid,
-			   job_ptr->user_id, job_ptr->group_id, nodes,
-			   job_ptr->resv_id, job_ptr->time_limit);
+			   job_ptr->total_cpus, node_cnt);
 
 		if(job_ptr->account)
 			xstrfmtcat(query, ", account='%s'", job_ptr->account);
