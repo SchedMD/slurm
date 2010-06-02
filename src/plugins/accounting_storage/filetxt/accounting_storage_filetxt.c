@@ -815,12 +815,10 @@ extern int jobacct_storage_p_step_complete(void *db_conn,
 		ave_pages /= cpus;
 		ave_cpu = jobacct->tot_cpu;
 		ave_cpu /= cpus;
-		ave_cpu /= 100;
 	}
 
 	if(jobacct->min_cpu != (uint32_t)NO_VAL) {
 		ave_cpu2 = jobacct->min_cpu;
-		ave_cpu2 /= 100;
 	}
 
 	if (step_ptr->job_ptr->account && step_ptr->job_ptr->account[0])
