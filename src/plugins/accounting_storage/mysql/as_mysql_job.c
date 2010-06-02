@@ -838,12 +838,10 @@ extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 		ave_pages /= (double)cpus;
 		ave_cpu = (double)jobacct->tot_cpu;
 		ave_cpu /= (double)cpus;
-		ave_cpu /= (double)100;
 	}
 
 	if(jobacct->min_cpu != NO_VAL) {
 		ave_cpu2 = (double)jobacct->min_cpu;
-		ave_cpu2 /= (double)100;
 	}
 
 	if(!step_ptr->job_ptr->db_index) {

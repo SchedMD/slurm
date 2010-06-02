@@ -655,6 +655,8 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 				continue;
 
 			step = slurmdb_create_step_rec();
+			step->tot_cpu_sec = 0;
+			step->tot_cpu_usec = 0;
 			step->job_ptr = job;
 			if(!job->first_step_ptr)
 				job->first_step_ptr = step;
