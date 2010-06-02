@@ -83,7 +83,7 @@ strong_alias(env_array_overwrite_fmt,	slurm_env_array_overwrite_fmt);
 
 #define ENV_BUFSIZE (256 * 1024)
 
-static int _setup_perticulars(uint32_t cluster_flags,
+static int _setup_particulars(uint32_t cluster_flags,
 			       char ***dest,
 			       dynamic_plugin_data_t *select_jobinfo)
 {
@@ -133,7 +133,7 @@ static int _setup_perticulars(uint32_t cluster_flags,
 			rc = SLURM_FAILURE;
 
 		if(rc == SLURM_FAILURE)
-			error("Can't set BASIL_RESVERATION_ID "
+			error("Can't set BASIL_RESERVATION_ID "
 			      "environment variable");
 		xfree(resv_id);
 	} else if(cluster_flags & CLUSTER_FLAG_AIX) {
@@ -668,7 +668,7 @@ int setup_env(env_t *env, bool preserve_env)
 	}
 
 	if(env->select_jobinfo) {
-		_setup_perticulars(cluster_flags, &env->env,
+		_setup_particulars(cluster_flags, &env->env,
 				   env->select_jobinfo);
 	}
 
@@ -923,7 +923,7 @@ env_array_for_job(char ***dest, const resource_allocation_response_msg_t *alloc,
 	uint32_t node_cnt = alloc->node_cnt;
 	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 
-	_setup_perticulars(cluster_flags, dest, alloc->select_jobinfo);
+	_setup_particulars(cluster_flags, dest, alloc->select_jobinfo);
 
 	if(cluster_flags & CLUSTER_FLAG_BG) {
 		select_g_select_jobinfo_get(alloc->select_jobinfo,
@@ -1046,7 +1046,7 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
 	uint16_t task_dist;
 	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 
-	_setup_perticulars(cluster_flags, dest, batch->select_jobinfo);
+	_setup_particulars(cluster_flags, dest, batch->select_jobinfo);
 
 	/* There is no explicit node count in the batch structure,
 	 * so we need to calculate the node count. */

@@ -809,7 +809,7 @@ extern bool is_node_down (char *name);
 extern bool is_node_resp (char *name);
 
 /*
- * job_allocate - create job_records for the suppied job specification and
+ * job_allocate - create job_records for the supplied job specification and
  *	allocate nodes for it.
  * IN job_specs - job specifications
  * IN immediate - if set then either initiate the job immediately or fail

@@ -885,7 +885,7 @@ extern int select_g_select_jobinfo_get (dynamic_plugin_data_t *jobinfo,
 	}
 
 	switch (data_type) {
-	case SELECT_DATA_RESV_ID:
+	case SELECT_JOBDATA_RESV_ID:
 		if ((data->reservation_id == NULL) ||
 		    (data->reservation_id[0] == '\0'))
 			*tmp_char = NULL;

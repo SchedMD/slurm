@@ -1230,7 +1230,7 @@ static char **_build_env(struct job_record *job_ptr)
 #ifdef HAVE_CRAY_XT
 	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
 			     SELECT_JOBDATA_RESV_ID, &name);
-	setenvf(&env, "BASIL_RESERVATION_ID", "%s", name);
+	setenvf(&my_env, "BASIL_RESERVATION_ID", "%s", name);
 	xfree(name);
 #endif
 #ifdef HAVE_BG
