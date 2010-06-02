@@ -1126,7 +1126,6 @@ void print_fields(type_t type, void *object)
 			case JOBSTEP:
 				tmp_int = step->sys_cpu_sec;
 				tmp_int2 = step->sys_cpu_usec;
-
 				break;
 			case JOBCOMP:
 
@@ -1245,12 +1244,11 @@ void print_fields(type_t type, void *object)
 			switch(type) {
 			case JOB:
 				tmp_int = job->user_cpu_sec;
-				tmp_int2 = job->tot_cpu_usec;
+				tmp_int2 = job->user_cpu_usec;
 				break;
 			case JOBSTEP:
 				tmp_int = step->user_cpu_sec;
 				tmp_int2 = step->user_cpu_usec;
-
 				break;
 			case JOBCOMP:
 

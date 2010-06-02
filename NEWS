@@ -22,6 +22,7 @@ documents those changes that are of interest to users and admins.
  -- Fix bug in select/cons_res that in some cases would prevent a preempting job
     from using of resources already allocated to a preemptable running job.
  -- Fix for sreport in interactive mode to honor parsable/2 options.
+ -- Fixed minor bugs in sacct and sstat commands
 
 * Changes in SLURM 2.1.8
 ========================
