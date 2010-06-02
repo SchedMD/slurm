@@ -516,6 +516,30 @@ _process_command (int argc, char *argv[])
 				 argv[0]);
 		}
 		exit_flag = 1;
+	} else if (strncasecmp (argv[0], "nonparsable",
+				MAX(command_len, 4)) == 0) {
+		if (argc > 1) {
+			exit_code = 1;
+			fprintf (stderr, "too many arguments for keyword:%s\n",
+				 argv[0]);
+		}
+		print_fields_parsable_print = 0;
+	} else if (strncasecmp (argv[0], "parsable",
+				MAX(command_len, 8)) == 0) {
+		if (argc > 1) {
+			exit_code = 1;
+			fprintf (stderr, "too many arguments for keyword:%s\n",
+				 argv[0]);
+		}
+		print_fields_parsable_print = PRINT_FIELDS_PARSABLE_ENDING;
+	} else if (strncasecmp (argv[0], "parsable2",
+				MAX(command_len, 9)) == 0) {
+		if (argc > 1) {
+			exit_code = 1;
+			fprintf (stderr, "too many arguments for keyword:%s\n",
+				 argv[0]);
+		}
+		print_fields_parsable_print = PRINT_FIELDS_PARSABLE_NO_ENDING;
 	} else if ((strncasecmp (argv[0], "reservation",
 				 MAX(command_len, 2)) == 0)
 		   || (strncasecmp (argv[0], "resv",
@@ -649,6 +673,7 @@ sreport [<OPTION>] [<COMMAND>]                                             \n\
     Valid <COMMAND> values are:                                            \n\
      exit                Terminate sreport                                 \n\
      help                Print this description of use.                    \n\
+     nonparsable         Return output to normal                           \n\
      parsable            Output will be | delimited with an ending '|'     \n\
      parsable2           Output will be | delimited without an ending '|'  \n\
      quiet               Print no messages other than error messages.      \n\
