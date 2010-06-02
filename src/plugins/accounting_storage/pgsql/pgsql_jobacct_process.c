@@ -593,6 +593,8 @@ no_cond:
 		xfree(query);
 		for(j = 0; j < PQntuples(step_result); j++) {
 			step = create_jobacct_step_rec();
+			step->tot_cpu_sec = 0;
+			step->tot_cpu_usec = 0;
 			step->job_ptr = job;
 			if(!job->first_step_ptr)
 				job->first_step_ptr = step;
