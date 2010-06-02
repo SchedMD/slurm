@@ -1401,6 +1401,8 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 				continue;
 
 			step = create_jobacct_step_rec();
+			step->tot_cpu_sec = 0;
+			step->tot_cpu_usec = 0;
 			step->job_ptr = job;
 			if(!job->first_step_ptr)
 				job->first_step_ptr = step;
