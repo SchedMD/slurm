@@ -54,15 +54,16 @@
 #      include <stdint.h>
 #    endif
 #  endif /* HAVE_INTTYPES_H */
-#  ifdef HAVE_HWLOC
-#    include <hwloc.h>
-#  endif /* HAVE_HWLOC */
 #else /* ! HAVE_CONFIG_H */
 #  include <sys/types.h>
 #  include <unistd.h>
 #  include <stdint.h>
 #  include <string.h>
 #endif /* HAVE_CONFIG_H */
+
+#ifdef HAVE_HWLOC
+#  include <hwloc.h>
+#endif /* HAVE_HWLOC */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -71,6 +72,8 @@
 #include <slurm/slurm_errno.h>
 
 #include "src/common/slurm_xlator.h"
+#include "src/common/bitstring.h"
+#include "src/common/list.h"
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -105,11 +108,19 @@ const uint32_t	plugin_id		= 101;
 const uint32_t	plugin_version		= 100;
 const uint32_t	min_plug_version	= 100;
 
+/* Identification of valid GPU names are reported by hwloc-info.
+ * Add to this list and send message to slurm-dev@lists.llnl.gov so we
+ * can update the SLURM code as appropriate. */
+char *gpu_names[] = {
+	"nVidia Corporation G80 [Quadro FX 5600]",
+	NULL
+};
+
 /* Gres configuration loaded/used by slurmd. Modify or expand as
  * additional information becomes available (e.g. topology). */
 typedef struct gpu_config {
-	bool     loaded;
-	uint32_t gpu_cnt;
+	bool       loaded;		/* flag if structure is loaded */
+	uint32_t   gpu_cnt;		/* total count of GPUs on system */
 } gpu_config_t;
 static gpu_config_t gres_config;
 
@@ -164,6 +175,20 @@ typedef struct gpu_step_state {
 	bitstr_t **gpu_bit_alloc;
 } gpu_step_state_t;
 
+/* Purge node configuration state removed */
+static void _purge_old_node_config(void)
+{
+	gres_config.loaded 	= false;
+	gres_config.gpu_cnt	= 0;
+}
+
+/* Purge all allocated memory when the plugin is removed */
+extern int fini(void)
+{
+	_purge_old_node_config();
+	return SLURM_SUCCESS;
+}
+
 /*
  * This will be the output for "--gres=help" option.
  * Called only by salloc, sbatch and srun.
@@ -180,6 +205,54 @@ extern int help_msg(char *msg, int msg_size)
 	return SLURM_SUCCESS;
 }
 
+#ifdef HAVE_HWLOC_PCI
+/* Get a count of GPUs in this part of the topology based upon name.
+ * See gpu_names above. */
+static void _gpu_cnt(hwloc_topology_t topology, hwloc_obj_t obj, List gres_list)
+{
+	int i;
+
+	if (obj->complete_cpuset) {
+		obj->userdata = obj->complete_cpuset;
+	} else if (obj->parent) {
+		if (obj->parent->complete_cpuset)
+			obj->userdata = obj->parent->complete_cpuset;
+		else
+			obj->userdata = obj->parent->userdata;
+
+	}
+
+	if (obj->type == HWLOC_OBJ_PCI_DEVICE) {
+		for (i=0; gpu_names[i]; i++) {
+			if (strcmp(obj->name, gpu_names[i]))
+				continue;
+			list_enqueue(gres_list, obj);
+			break;
+		}
+	}
+
+	for (i = 0; i < obj->arity; i++)
+		_gpu_cnt(topology, obj->children[i], gres_list);
+}
+
+#if 0
+/* Convert a hwloc CPUSET bitmap into a SLURM bitmap */
+static bitstr_t *_make_slurm_bitmap(hwloc_obj_t obj, int cpu_cnt)
+{
+	bitstr_t *gres_bitmask;
+	int i;
+
+	gres_bitmask = bit_alloc(cpu_cnt);
+	if (gres_bitmask == NULL)
+		fatal("bit_alloc malloc failure");
+	for (i=0; i<cpu_cnt; i++) {
+		if (hwloc_cpuset_isset((hwloc_const_cpuset_t) obj->userdata, i))
+			bit_set(gres_bitmask, i);
+	}
+	return gres_bitmask;
+}
+#endif
+
 /*
  * Get the current configuration of this resource (e.g. how many exist,
  *	their topology and any other required information).
@@ -187,14 +260,49 @@ extern int help_msg(char *msg, int msg_size)
  */
 extern int node_config_load(void)
 {
-#ifdef HAVE_HWLOC
-	gres_config.gpu_cnt = 1;
+	hwloc_topology_t topology = (hwloc_topology_t) NULL;
+	hwloc_obj_t root_obj;
+	int cpu_cnt, rc = SLURM_SUCCESS;
+	List gres_obj_list = NULL;
+
+	_purge_old_node_config();
+	if (hwloc_topology_init(&topology) != 0) {
+		rc = SLURM_ERROR;
+		goto fini;
+	}
+	hwloc_topology_ignore_type(topology, HWLOC_OBJ_BRIDGE);
+	hwloc_topology_ignore_type(topology, HWLOC_OBJ_CACHE);
+	hwloc_topology_ignore_type(topology, HWLOC_OBJ_GROUP);
+	hwloc_topology_ignore_type(topology, HWLOC_OBJ_MISC);
+	hwloc_topology_ignore_type(topology, HWLOC_OBJ_OS_DEVICE);
+	if (hwloc_topology_load(topology) != 0) {
+		rc = SLURM_ERROR;
+		goto fini;
+	}
+	gres_obj_list = list_create(NULL);
+	root_obj = hwloc_get_root_obj(topology);
+	cpu_cnt = hwloc_cpuset_last(root_obj->complete_cpuset) + 1;
+	_gpu_cnt(topology, root_obj, gres_obj_list);
+	gres_config.gpu_cnt = list_count(gres_obj_list);
+	/* Extract topology information later */
+	list_destroy(gres_obj_list);
+
+fini:	if (topology)
+		hwloc_topology_destroy(topology);
+	if (rc == SLURM_SUCCESS)
+		gres_config.loaded  = true;
+	return rc;
+}
 #else
-	gres_config.gpu_cnt = 0;
-#endif
-	gres_config.loaded  = true;
+/* We lack a mechanism for getting the resource count on this node */
+extern int node_config_load(void)
+{
+	gres_config.loaded 	= true;
+	gres_config.gpu_cnt	= 0;
+	gres_config.gpu_set_cnt	= 0;
 	return SLURM_SUCCESS;
 }
+#endif
 
 /*
  * Pack this node's current configuration.
@@ -230,6 +338,7 @@ extern int node_config_unpack(Buf buffer)
 {
 	uint32_t version;
 
+	_purge_old_node_config();
 	if (!buffer) {
 		/* The node failed to pack this gres info, likely due to
 		 * inconsistent GresPlugins configuration. Set a reasonable
@@ -252,6 +361,7 @@ extern int node_config_unpack(Buf buffer)
 	return SLURM_SUCCESS;
 
 unpack_error:
+	_purge_old_node_config();
 	return SLURM_ERROR;
 }
 
