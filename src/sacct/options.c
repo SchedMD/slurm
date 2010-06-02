@@ -576,10 +576,8 @@ int get_data(void)
 
 			if(step->state < JOB_COMPLETE)
 				continue;
-			/*
-			 * job->tot_cpu_sec and job->tot_cpu_usec
-			 * have already been aggregated
-			 */
+			job->tot_cpu_sec += step->tot_cpu_sec;
+			job->tot_cpu_usec += step->tot_cpu_usec;
 			job->user_cpu_sec +=
 				step->user_cpu_sec;
 			job->user_cpu_usec +=
