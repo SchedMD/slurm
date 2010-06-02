@@ -382,8 +382,8 @@ static int _claim_reservation(resource_allocation_response_msg_t *alloc)
 	int rc = 0;
 	char *resv_id = NULL;
 
-	select_g_get_jobinfo(alloc->select_jobinfo, SELECT_DATA_RESV_ID,
-			     &resv_id);
+	select_g_select_jobinfo_get(alloc->select_jobinfo,
+				    SELECT_JOBDATA_RESV_ID, &resv_id);
 	if (resv_id == NULL)
 		return rc;
 	if (basil_resv_conf(resv_id, alloc->job_id) == SLURM_SUCCESS)

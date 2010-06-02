@@ -1,5 +1,5 @@
 # Makefile for common library
-# If you are linking to this lib any know you are not linking to
+# If you are linking to this lib and know you are not linking to
 # anything else that will need variables here link to
 # $(top_builddir)/src/common/libcommon.la
 # if you are linking to a stand alone program that needs all symbols link to

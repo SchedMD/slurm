@@ -435,8 +435,8 @@ job_batch_job_create(batch_job_launch_msg_t *msg)
 	job->task[0]->argv = job->argv;
 
 #ifdef HAVE_CRAY_XT
-	select_g_get_jobinfo(msg->select_jobinfo, SELECT_DATA_RESV_ID,
-			     &job->resv_id);
+	select_g_select_jobinfo_get(msg->select_jobinfo, SELECT_JOBDATA_RESV_ID,
+				    &job->resv_id);
 #endif
 
 	return job;

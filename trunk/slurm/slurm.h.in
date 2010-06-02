@@ -462,7 +462,7 @@ enum node_states {
 	NODE_STATE_IDLE,	/* node idle and available for use */
 	NODE_STATE_ALLOCATED,	/* node has been allocated to a job */
 	NODE_STATE_ERROR,	/* node is in an error state */
-	NODE_STATE_MIXED,	/* node is in has a mixed state */
+	NODE_STATE_MIXED,	/* node has a mixed state */
 	NODE_STATE_FUTURE,	/* node slot reserved for future use */
 	NODE_STATE_END		/* last entry in table */
 };

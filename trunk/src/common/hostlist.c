@@ -2055,7 +2055,7 @@ hostlist_shift_iterators(hostlist_t hl, int idx, int depth, int n)
 {
 	hostlist_iterator_t i;
 	if(!hl) {
-		error("hostlist_shift_iterators: no hoslist given");
+		error("hostlist_shift_iterators: no hostlist given");
 		return;
 	}
 	for (i = hl->ilist; i; i = i->next) {
@@ -2078,7 +2078,7 @@ char *hostlist_shift(hostlist_t hl)
 	char *host = NULL;
 
 	if(!hl){
-		error("hostlist_shift: no hoslist given");
+		error("hostlist_shift: no hostlist given");
 		return NULL;
 	}
 	LOCK_HOSTLIST(hl);
