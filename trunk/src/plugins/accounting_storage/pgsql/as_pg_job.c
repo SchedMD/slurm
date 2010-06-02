@@ -909,12 +909,10 @@ js_pg_step_complete(pgsql_conn_t *pg_conn,
 		ave_pages /= (double)cpus;
 		ave_cpu = (double)jobacct->tot_cpu;
 		ave_cpu /= (double)cpus;
-		ave_cpu /= (double)100;
 	}
 
 	if(jobacct->min_cpu != (uint32_t)NO_VAL) {
 		ave_cpu2 = (double)jobacct->min_cpu;
-		ave_cpu2 /= (double)100;
 	}
 
 
@@ -1806,6 +1804,8 @@ js_pg_get_jobs_cond(pgsql_conn_t *pg_conn, uid_t uid,
 				continue;
 
 			step = slurmdb_create_step_rec();
+			step->tot_cpu_sec = 0;
+			step->tot_cpu_usec = 0;
 			step->job_ptr = job;
 			if(!job->first_step_ptr)
 				job->first_step_ptr = step;
