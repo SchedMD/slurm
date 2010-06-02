@@ -53,6 +53,7 @@ enum {
 	SORTID_GRID_X_WIDTH,
 	SORTID_PAGE_VISIBLE,
 	SORTID_REFRESH_DELAY,
+	SORTID_RULED_TV,
 	SORTID_SHOW_GRID,
 	SORTID_SHOW_HIDDEN,
 	SORTID_TAB_POS,
@@ -80,6 +81,8 @@ static display_data_t display_data_defaults[] = {
 	 TRUE, EDIT_ARRAY, NULL, create_model_defaults, NULL},
 	{G_TYPE_STRING, SORTID_REFRESH_DELAY, "Refresh Delay in Secs",
 	 TRUE, EDIT_TEXTBOX, NULL, create_model_defaults, NULL},
+	{G_TYPE_STRING, SORTID_RULED_TV, "Ruled Tables",
+	 TRUE, EDIT_MODEL, NULL, create_model_defaults, NULL},
 	{G_TYPE_STRING, SORTID_SHOW_GRID, "Show Grid",
 	 TRUE, EDIT_MODEL, NULL, create_model_defaults, NULL},
 	{G_TYPE_STRING, SORTID_SHOW_HIDDEN, "Show Hidden",
@@ -101,6 +104,9 @@ static void _set_active_combo_defaults(GtkComboBox *combo,
 	switch(type) {
 	case SORTID_ADMIN:
 		action = sview_config->admin_mode;
+		break;
+	case SORTID_RULED_TV:
+		action = sview_config->ruled_treeview;
 		break;
 	case SORTID_SHOW_GRID:
 		action = sview_config->show_grid;
@@ -188,6 +194,13 @@ static const char *_set_sview_config(sview_config_t *sview_config,
 		if((temp_int <= 0) && (temp_int != INFINITE))
 			goto return_error;
 		sview_config->refresh_delay = temp_int;
+		break;
+	case SORTID_RULED_TV:
+		type = "Ruled Tables";
+		if (!strcasecmp(new_text, "yes"))
+			sview_config->ruled_treeview = 1;
+		else
+			sview_config->ruled_treeview = 0;
 		break;
 	case SORTID_SHOW_GRID:
 		type = "Show Grid";
@@ -453,6 +466,7 @@ static void _init_sview_conf()
 	default_sview_config.show_hidden = 0;
 	default_sview_config.admin_mode = FALSE;
 	default_sview_config.grid_speedup = 0;
+	default_sview_config.ruled_treeview = FALSE;
 	default_sview_config.show_grid = TRUE;
 	default_sview_config.default_page = JOB_PAGE;
 	default_sview_config.tab_pos = GTK_POS_TOP;
@@ -478,6 +492,7 @@ extern int load_defaults()
 		{"GridVertical", S_P_UINT32},
 		{"GridXWidth", S_P_UINT32},
 		{"RefreshDelay", S_P_UINT16},
+		{"RuledTables", S_P_BOOLEAN},
 		{"ShowGrid", S_P_BOOLEAN},
 		{"ShowHidden", S_P_BOOLEAN},
 		{"TabPosition", S_P_STRING},
@@ -537,6 +552,8 @@ extern int load_defaults()
 		       "GridXWidth", hashtbl);
 	s_p_get_uint16(&default_sview_config.refresh_delay,
 		       "RefreshDelay", hashtbl);
+	s_p_get_boolean(&default_sview_config.ruled_treeview,
+			"RuledTables", hashtbl);
 	s_p_get_boolean(&default_sview_config.show_grid,
 			"ShowGrid", hashtbl);
 	s_p_get_boolean(&default_sview_config.show_hidden,
@@ -652,6 +669,13 @@ extern int save_defaults()
 	xfree(tmp_str);
 	if(rc != SLURM_SUCCESS)
 		goto end_it;
+	tmp_str = xstrdup_printf("RuledTables=%s\n",
+				 default_sview_config.ruled_treeview ?
+				 "YES" : "NO");
+	rc = _write_to_file(fd, tmp_str);
+	xfree(tmp_str);
+	if(rc != SLURM_SUCCESS)
+		goto end_it;
 	tmp_str = xstrdup_printf("ShowGrid=%s\n",
 				 default_sview_config.show_grid ?
 				 "YES" : "NO");
@@ -708,6 +732,7 @@ extern GtkListStore *create_model_defaults(int type)
 
 	switch(type) {
 	case SORTID_ADMIN:
+	case SORTID_RULED_TV:
 	case SORTID_SHOW_GRID:
 	case SORTID_SHOW_HIDDEN:
 		model = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_INT);
@@ -853,6 +878,16 @@ extern int configure_defaults()
 			tmp_char_ptr = g_strdup_printf(
 				"No change detected.");
 		else {
+			if(tmp_config.ruled_treeview
+			   != working_sview_config.ruled_treeview) {
+				/* get rid of each existing table */
+				cluster_change_block();
+				cluster_change_resv();
+				cluster_change_part();
+				cluster_change_job();
+				cluster_change_node();
+			}
+
 			memcpy(&default_sview_config, &tmp_config,
 			       sizeof(sview_config_t));
 			memcpy(&working_sview_config, &tmp_config,
@@ -862,6 +897,9 @@ extern int configure_defaults()
 				default_sview_config.action_admin,
 				working_sview_config.admin_mode);
 			gtk_toggle_action_set_active(
+				default_sview_config.action_ruled,
+				working_sview_config.ruled_treeview);
+			gtk_toggle_action_set_active(
 				default_sview_config.action_grid,
 				working_sview_config.show_grid);
 			gtk_toggle_action_set_active(
@@ -870,9 +908,7 @@ extern int configure_defaults()
 			sview_radio_action_set_current_value(
 				default_sview_config.action_tab,
 				working_sview_config.tab_pos);
-			gtk_notebook_set_current_page(
-				GTK_NOTEBOOK(main_notebook),
-				working_sview_config.default_page);
+
 			for(i=0; i<PAGE_CNT; i++) {
 				if(main_display_data[i].id == -1)
 					break;

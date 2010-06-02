@@ -736,6 +736,8 @@ extern GtkTreeView *create_treeview(display_data_t *local, List *button_list)
 
 	signal_params->display_data = local;
 	signal_params->button_list = button_list;
+	if(working_sview_config.ruled_treeview)
+		gtk_tree_view_set_rules_hint (tree_view, true);
 
 	g_signal_connect(G_OBJECT(tree_view), "button-press-event",
 			 G_CALLBACK(row_clicked),
@@ -757,6 +759,9 @@ extern GtkTreeView *create_treeview_2cols_attach_to_table(GtkTable *table)
 				   GTK_TYPE_STRING, GTK_TYPE_STRING);
 	GtkTreeViewColumn *col = gtk_tree_view_column_new();
 	GtkCellRenderer *renderer = gtk_cell_renderer_text_new();
+
+	if(working_sview_config.ruled_treeview)
+		gtk_tree_view_set_rules_hint (tree_view, true);
 
 	gtk_table_attach_defaults(table,
 				  GTK_WIDGET(tree_view),
