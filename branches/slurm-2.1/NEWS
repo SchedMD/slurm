@@ -23,6 +23,9 @@ documents those changes that are of interest to users and admins.
     from using of resources already allocated to a preemptable running job.
  -- Fix for sreport in interactive mode to honor parsable/2 options.
  -- Fixed minor bugs in sacct and sstat commands
+ -- BLUEGENE - Fixed issue if the slurmd becomes unresponsive and you have
+    blocks in an error state accounting is correct when the slurmd comes
+    back up.
 
 * Changes in SLURM 2.1.8
 ========================
