@@ -299,7 +299,6 @@ extern int node_config_load(void)
 {
 	gres_config.loaded 	= true;
 	gres_config.gpu_cnt	= 0;
-	gres_config.gpu_set_cnt	= 0;
 	return SLURM_SUCCESS;
 }
 #endif
