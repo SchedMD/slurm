@@ -198,8 +198,7 @@ extern int select_g_alter_node_cnt (enum select_node_cnt type, void *data);
 	(_X & SELECT_MODE_PREEMPT_FLAG)
 
 #define SELECT_IS_TEST(_X) \
-	((SELECT_IS_MODE_TEST_ONLY(_X) || SELECT_IS_MODE_WILL_RUN(_X))	\
-	 && !SELECT_IS_PREEMPT_SET(_X))
+	(SELECT_IS_MODE_TEST_ONLY(_X) || SELECT_IS_MODE_WILL_RUN(_X))
 
 #define SELECT_IS_PREEMPTABLE_TEST(_X) \
 	((SELECT_IS_MODE_TEST_ONLY(_X) || SELECT_IS_MODE_WILL_RUN(_X))	\

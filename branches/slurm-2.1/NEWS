@@ -27,6 +27,8 @@ documents those changes that are of interest to users and admins.
     blocks in an error state accounting is correct when the slurmd comes
     back up.
  -- Corrected documentation for -n option in srun/salloc/sbatch
+ -- BLUEGENE - when running a willrun test along with preemption the bluegene
+    plugin now does the correct thing.
 
 * Changes in SLURM 2.1.8
 ========================
