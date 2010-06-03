@@ -625,25 +625,26 @@ was submitted.  The format of the output is identical to that of the end field.
 How long the job was suspended for.
 
 .TP
-\f3systemcpu\fP
-The amount of system CPU time. (If job was running on multiple cpus this
-is a combination of all the times so this number could be much larger
-than the elapsed time.)
-The format of the output is identical to that of the
-\f3elapsed\fP
-field.
+\f3SystemCPU\fP
+The amount of system CPU time used by the job or job step.  The format
+of the output is identical to that of the \f3elapsed\fP field.
+
+NOTE: SystemCPU provides a measure of the task's parent process and
+does not include CPU time of child processes.
 
 .TP
 \f3timelimit\fP
 What the timelimit was/is for the job.
 
 .TP
-\f3totalcpu\fP
-The total amount CPU time actually used by the job, not just
-accounted for (which most likely is a higher number). (If job was
-running on multiple cpus this is a combination of  all  the  times  so
-this number could be much larger than the elapsed time.) The format of
-the output is identical  to  that  of  the elapsed field.
+\f3TotalCPU\fP
+The sum of the SystemCPU and UserCPU time used by the job or job step.
+The total CPU time of the job may exceed the job's elapsed time for
+jobs that include multiple job steps.  The format of the output is
+identical to that of the \f3elapsed\fP field.
+
+NOTE: TotalCPU provides a measure of the task's parent process and
+does not include CPU time of child processes.
 
 .TP
 \f3uid\fP
@@ -654,11 +655,12 @@ The user identifier of the user who ran the job.
 The user name of the user who ran the job.
 
 .TP
-\f3usercpu\fP
-The amount of user CPU time. (If job was running on multiple cpus
-this is a combination of  all  the  times  so this number could be
-much larger than the elapsed time.) The format of the output is
-identical  to  that  of  the elapsed field.
+\f3UserCPU\fP
+The amount of user CPU time used by the job or job step.  The format
+of the output is identical to that of the \f3elapsed\fP field.
+
+NOTE: UserCPU provides a measure of the task's parent process and does
+not include CPU time of child processes.
 
 .TP
 \f3wckey\fP
