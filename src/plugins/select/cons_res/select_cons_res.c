@@ -1651,8 +1651,6 @@ extern int fini(void)
 	select_part_record = NULL;
 	xfree(cr_node_num_cores);
 	xfree(cr_num_core_count);
-	cr_node_num_cores = NULL;
-	cr_num_core_count = NULL;
 
 	verbose("%s shutting down ...", plugin_name);
 
