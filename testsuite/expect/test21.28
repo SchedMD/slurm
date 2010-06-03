@@ -195,15 +195,15 @@ proc list_test_users { } {
 # Input: None
 #
 ################################################################
-proc list_test_object { tobject tname} {
+proc list_test_object { to1 to2 to3 tname} {
 	global sacctmgr 
 	set tmatches 0
-		set my_pid [spawn $sacctmgr -n -p list $tname $tobject]
+		set my_pid [spawn $sacctmgr -n -p list $tname $to1,$to2,$to3]
 		expect {
 		-re "There was a problem" {
 			send_user "FAILURE: there was a problem with the sacctmgr command\n"
 				}
-		-re "($tobject)" {
+		-re "($to1|$to2|$to3)" {
 			incr tmatches
 				exp_continue
 				}
@@ -303,7 +303,7 @@ set my_pid [spawn $sacctmgr del $usr $udtest]
         }
 }
 
-if { [list_test_object $utest user] != 0 } {
+if { [list_test_object $us1 $us2 $us3 user] != 0 } {
 	send_user "\nFAILURE: This test$test_id concludes that sacctmgr did not delete users.\n"
 		exit 1
 		}
@@ -325,7 +325,7 @@ set my_pid [spawn $sacctmgr del $acc $adtest]
 }
 		
 
-if { [list_test_object $adtest account] != 0 } {
+if { [list_test_object $nm1 $nm2 $nm3 account] != 0 } {
 	send_user "\nFAILURE: This test$test_id concludes that sacctmgr did not delete accounts.\n"
 		exit 1
 		}
@@ -346,16 +346,16 @@ set my_pid [spawn $sacctmgr del $clu $cdtest]
 }
 		
 
-if { [list_test_object $cdtest cluster] != 0 } {
+if { [list_test_object $tc1 $tc2 $tc3 cluster] != 0 } {
 	send_user "\nFAILURE: This test$test_id concludes that sacctmgr did not delete $clu\n"
 		exit 1
 		}
 
 # This is the end below here
 
-#incr exit_code [remove_user "" "" "$us1,$us2,$us3"]
-#incr exit_code [remove_acct "" "$nm1,$nm2,$nm3"]
-#incr exit_code [remove_cluster "$tc1,$tc2,$tc3"]
+incr exit_code [remove_user "" "" "$us1,$us2,$us3"]
+incr exit_code [remove_acct "" "$nm1,$nm2,$nm3"]
+incr exit_code [remove_cluster "$tc1,$tc2,$tc3"]
 
 if {$exit_code == 0} {
 	send_user "\nSUCCESS\n"
