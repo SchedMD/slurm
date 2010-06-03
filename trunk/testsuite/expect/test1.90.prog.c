@@ -60,7 +60,7 @@ main (int argc, char **argv)
 
 	if (numa_available() < 0) {
 		fprintf(stderr, "ERROR: numa support not available\n");
-		exit(1);
+		exit(0);
 	}
 
 	if ((task_str = getenv("SLURM_PROCID")) == NULL) {

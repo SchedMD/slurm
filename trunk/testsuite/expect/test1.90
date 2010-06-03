@@ -118,6 +118,11 @@ set full_mask -1
 set timeout $max_job_delay
 send "$srun -c1 $file_prog\r"
 expect {
+	-re "numa support not available" {
+		send "exit\r"
+		send_user "\nWARNING: Unable to test on this system\n"
+		exit 0
+	}
 	-re "TASK_ID:($number),CPU_MASK:($number),MEM_MASK:($number)" {
 		set full_mask $expect_out(3,string)
 		exp_continue
