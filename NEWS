@@ -25,6 +25,7 @@ documents those changes that are of interest to users and admins.
     sstat and updated man page
  -- Correct location of apbasil command on Cray XT systems.
  -- Fixed bug in MinCPU and AveCPU calculations in sstat command
+ -- Send message to srun when the Prolog takes over MessageTimeout/2 to execute.
 
 * Changes in SLURM 2.2.0.pre6
 =============================
