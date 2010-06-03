@@ -26,7 +26,7 @@ documents those changes that are of interest to users and admins.
  -- BLUEGENE - Fixed issue if the slurmd becomes unresponsive and you have
     blocks in an error state accounting is correct when the slurmd comes
     back up.
- -- Updated documentation for -n option in srun/salloc/sbatch
+ -- Corrected documentation for -n option in srun/salloc/sbatch
 
 * Changes in SLURM 2.1.8
 ========================
