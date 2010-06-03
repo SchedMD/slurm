@@ -114,7 +114,9 @@ typedef struct {
 typedef struct {
 	uint32_t job_id;
 	uint16_t msg_timeout;
+	bool *prolog_fini;
 	pthread_cond_t *timer_cond;
+	pthread_mutex_t *timer_mutex;
 } timer_struct_t;
 
 static int  _abort_job(uint32_t job_id);
@@ -3576,21 +3578,23 @@ _destroy_env(char **env)
 
 static void *_prolog_timer(void *x)
 {
-	int delay_time, rc;
+	int delay_time, rc = SLURM_SUCCESS;
 	struct timespec abs_time;
 	slurm_msg_t msg;
 	job_notify_msg_t notify_req;
 	char srun_msg[128];
-	pthread_mutex_t timer_mutex = PTHREAD_MUTEX_INITIALIZER;
 	timer_struct_t *timer_struct = (timer_struct_t *) x;
 
 	delay_time = MAX(2, (timer_struct->msg_timeout - 2));
 	abs_time.tv_sec  = time(NULL) + delay_time;
 	abs_time.tv_nsec = 0;
-	slurm_mutex_lock(&timer_mutex);
-	rc = pthread_cond_timedwait(timer_struct->timer_cond, &timer_mutex,
-				    &abs_time);
-	slurm_mutex_unlock(&timer_mutex);
+	slurm_mutex_lock(timer_struct->timer_mutex);
+	if (!timer_struct->prolog_fini) {
+		rc = pthread_cond_timedwait(timer_struct->timer_cond,
+					    timer_struct->timer_mutex,
+					    &abs_time);
+	}
+	slurm_mutex_unlock(timer_struct->timer_mutex);
 
 	if (rc != ETIMEDOUT)
 		return NULL;
@@ -3617,10 +3621,12 @@ _run_prolog(uint32_t jobid, uid_t uid, char *resv_id,
 				   spank_job_env_size);
 	time_t start_time = time(NULL), diff_time;
 	static uint16_t msg_timeout = 0;
-	pthread_t      timer_id;
-	pthread_attr_t timer_attr;
-	pthread_cond_t timer_cond = PTHREAD_COND_INITIALIZER;
-	timer_struct_t timer_struct;
+	pthread_t       timer_id;
+	pthread_attr_t  timer_attr;
+	pthread_cond_t  timer_cond  = PTHREAD_COND_INITIALIZER;
+	pthread_mutex_t timer_mutex = PTHREAD_MUTEX_INITIALIZER;
+	timer_struct_t  timer_struct;
+	bool prolog_fini = false;
 
 	if (msg_timeout == 0)
 		msg_timeout = slurm_get_msg_timeout();
@@ -3633,10 +3639,15 @@ _run_prolog(uint32_t jobid, uid_t uid, char *resv_id,
 	slurm_attr_init(&timer_attr);
 	timer_struct.job_id      = jobid;
 	timer_struct.msg_timeout = msg_timeout;
+	timer_struct.prolog_fini = &prolog_fini;
 	timer_struct.timer_cond  = &timer_cond;
+	timer_struct.timer_mutex = &timer_mutex;
 	pthread_create(&timer_id, &timer_attr, &_prolog_timer, &timer_struct);
 	rc = run_script("prolog", my_prolog, jobid, -1, my_env);
+	slurm_mutex_lock(&timer_mutex);
+	prolog_fini = true;
 	pthread_cond_broadcast(&timer_cond);
+	slurm_mutex_unlock(&timer_mutex);
 	_remove_job_running_prolog(jobid);
 	xfree(my_prolog);
 	_destroy_env(my_env);
