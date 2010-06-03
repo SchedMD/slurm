@@ -9,7 +9,7 @@
 #          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2005-2007 The Regents of the University of California.
-# Copyright (C) 2008 Lawrence Livermore National Security.
+# Copyright (C) 2008-2010 Lawrence Livermore National Security.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
 # CODE-OCEC-09-009. All rights reserved.
@@ -61,7 +61,7 @@ expect {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
-	-re "(configuration is not available|Unable to submit batch job|Node count specification invalid)" {
+	-re "(configuration is not available|Unable to submit batch job|Node count specification invalid|More processors requested than permitted)" {
 		send_user "\nWARNING: can't test srun task distribution\n"
 		exit 0
 	}
