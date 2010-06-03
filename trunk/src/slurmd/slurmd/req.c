@@ -3576,7 +3576,7 @@ _destroy_env(char **env)
 
 static void *_prolog_timer(void *x)
 {
-	int rc;
+	int delay_time, rc;
 	struct timespec abs_time;
 	slurm_msg_t msg;
 	job_notify_msg_t notify_req;
@@ -3584,7 +3584,8 @@ static void *_prolog_timer(void *x)
 	pthread_mutex_t timer_mutex = PTHREAD_MUTEX_INITIALIZER;
 	timer_struct_t *timer_struct = (timer_struct_t *) x;
 
-	abs_time.tv_sec  = time(NULL) + (timer_struct->msg_timeout / 2);
+	delay_time = MAX(2, (timer_struct->msg_timeout - 2));
+	abs_time.tv_sec  = time(NULL) + delay_time;
 	abs_time.tv_nsec = 0;
 	slurm_mutex_lock(&timer_mutex);
 	rc = pthread_cond_timedwait(timer_struct->timer_cond, &timer_mutex,
