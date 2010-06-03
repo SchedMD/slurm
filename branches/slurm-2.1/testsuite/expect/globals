@@ -643,6 +643,37 @@ proc test_assoc_enforced { } {
 
 ################################################################
 #
+# Proc: test_assoc_enforced
+#
+# Purpose: Determine if we need an association to run a job.
+# This is based upon
+# the value of AccountingStorageEnforce in the slurm.conf.
+#
+# Returns level of association enforcement, 0 if none
+#
+################################################################
+proc test_limits_enforced { } {
+	global scontrol number
+
+	log_user 0
+	set enforced 0
+	spawn $scontrol show config
+	expect {
+		-re "AccountingStorageEnforce *= (\[a-z]+),limits" {
+			set enforced 1
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+
+	log_user 1
+	return $enforced
+}
+
+################################################################
+#
 # Proc: test_power_save
 #
 # Return 1 if power save mode is enabled, 0 otherwise
