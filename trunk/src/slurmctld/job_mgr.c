@@ -346,8 +346,8 @@ static slurmdb_qos_rec_t *_determine_and_validate_qos(
 
 	if((accounting_enforce & ACCOUNTING_ENFORCE_QOS)
 	   && assoc_ptr
-	   && (!assoc_ptr->usage->valid_qos || !bit_test(assoc_ptr->usage->valid_qos,
-						  qos_rec->id))) {
+	   && (!assoc_ptr->usage->valid_qos
+	       || !bit_test(assoc_ptr->usage->valid_qos, qos_rec->id))) {
 		error("This association %d(account='%s', "
 		      "user='%s', partition='%s') does not have "
 		      "access to qos %s",

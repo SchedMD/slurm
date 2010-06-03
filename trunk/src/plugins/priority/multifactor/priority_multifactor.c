@@ -64,7 +64,7 @@
 #include "src/slurmctld/locks.h"
 
 #define SECS_PER_DAY	(24 * 60 * 60)
-#define SECS_PER_WEEK	(7 * 24 * 60 * 60)
+#define SECS_PER_WEEK	(7 * SECS_PER_DAY)
 
 /*
  * These variables are required by the generic plugin interface.  If they
