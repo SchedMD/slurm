@@ -655,8 +655,7 @@ sbatch does not launch tasks, it requests an allocation of resources and
 submits a batch script. This option advises the SLURM controller that job
 steps run within this allocation will launch a maximum of \fInumber\fR
 tasks and sufficient resources are allocated to accomplish this.
-The default is one task per socket or core (depending upon the value
-of the \fISelectTypeParameters\fR parameter in slurm.conf), but note
+The default is one task per node, but note
 that the \fB\-\-cpus\-per\-task\fR option will change this default.
 
 .TP

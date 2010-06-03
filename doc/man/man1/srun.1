@@ -728,8 +728,7 @@ and without delaying the initiation of the job.
 \fB\-n\fR, \fB\-\-ntasks\fR=<\fInumber\fR>
 Specify the number of tasks to run. Request that \fBsrun\fR
 allocate resources for \fIntasks\fR tasks.
-The default is one task per socket or core (depending upon the value
-of the \fISelectTypeParameters\fR parameter in slurm.conf), but note
+The default is one task per node, but note
 that the \fB\-\-cpus\-per\-task\fR option will change this default.
 
 .TP
