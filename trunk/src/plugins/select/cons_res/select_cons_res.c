@@ -39,7 +39,7 @@
  *  Once Job 2 finishes, Job 5, which was pending, is allocated
  *  available resources and is then running as illustrated below:
  *
- *  [<snip>]# squeue4
+ *  [<snip>]# squeue
  *   JOBID PARTITION    NAME     USER  ST       TIME  NODES NODELIST(REASON)
  *     3        lsf    sleep     root   R       1:58      3 linux[01-03]
  *     4        lsf    sleep     root   R       1:54      1 linux04
@@ -48,9 +48,9 @@
  *
  *  Job 3, Job 4, and Job 5 are now running concurrently on the cluster.
  *
- *  [<snip>]#  squeue4
+ *  [<snip>]#  squeue
  *  JOBID PARTITION     NAME     USER  ST       TIME  NODES NODELIST(REASON)
- *     5        lsf    sleep     root   R       1:52      3 xc14n[13-15]
+ *     5        lsf    sleep     root   R       1:52      3 linux[01-03]
  *  [<snip>]#
  *
  * The advantage of the consumable resource scheduling policy is that
