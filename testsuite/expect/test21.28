@@ -184,7 +184,41 @@ proc list_test_users { } {
 			return $matches
 }
 ################################################################
+################################################################
+#
+# Proc: list_test_object
+#
+# Purpose: Use sacctmgr to list the test object deletions
+#
+# Returns: Number representing the number of entries found.
+#
+# Input: None
+#
+################################################################
+proc list_test_object { tobject tname} {
+	global sacctmgr 
+	set tmatches 0
+		set my_pid [spawn $sacctmgr -n -p list $tname $tobject]
+		expect {
+		-re "There was a problem" {
+			send_user "FAILURE: there was a problem with the sacctmgr command\n"
+				}
+		-re "($tobject)" {
+			incr tmatches
+				exp_continue
+				}
+		timeout {
+			send_user "\nFAILURE: sacctmgr list associations not responding\n"
+				slow_kill $my_pid
+				}
+		eof {
+			wait
+				}
+	}
 
+			return $tmatches
+}
+################################################################
 #
 # Begin here with abort delete test
 #
@@ -204,7 +238,7 @@ set my_pid [spawn $sacctmgr del $acc $atest]
 		
 
 if { [list_test_users] != 27 } {
-	send_user "\nFAILURE: This test concludes that sacctmgr did not abort delete of accounts.\n"
+	send_user "\nFAILURE: This test$test_id concludes that sacctmgr did not abort delete of accounts.\n"
 		exit 1
 		}
 
@@ -225,7 +259,7 @@ set my_pid [spawn $sacctmgr del $clu $ctest]
 		
 
 if { [list_test_users] != 27 } {
-	send_user "\nFAILURE: This test concludes that sacctmgr did not abort delete of $clu\n"
+	send_user "\nFAILURE: This test$test_id concludes that sacctmgr did not abort delete of $clu\n"
 		exit 1
 		}
 
@@ -246,15 +280,82 @@ set my_pid [spawn $sacctmgr del $usr $atest]
 		
 
 if { [list_test_users] != 27 } {
-	send_user "\nFAILURE: This test concludes that sacctmgr did not abort delete of users.\n"
+	send_user "\nFAILURE: This test$test_id concludes that sacctmgr did not abort delete of users.\n"
+		exit 1
+		}
+
+################################################################
+#
+# Begin here with delete test
+#
+#
+foreach udtest $listu {
+set my_pid [spawn $sacctmgr del $usr $udtest]
+	expect {
+	 "(N/y):" {
+		send "y\r"
+			exp_continue
+	timeout {
+		send_user "\nFAILURE: sacctmgr list $usr timing out.\n"
+			slow_kill $my_pid
+				}
+	        }
+        }
+}
+
+if { [list_test_object $utest user] != 0 } {
+	send_user "\nFAILURE: This test$test_id concludes that sacctmgr did not delete users.\n"
+		exit 1
+		}
+
+#
+
+foreach adtest $lista {
+set my_pid [spawn $sacctmgr del $acc $adtest]
+	expect {
+	 "(N/y):" {
+		send "y\r"
+			exp_continue
+	timeout {
+		send_user "\nFAILURE: sacctmgr list $acc timing out.\n"
+			slow_kill $my_pid
+				}
+	        }
+        }
+}
+		
+
+if { [list_test_object $adtest account] != 0 } {
+	send_user "\nFAILURE: This test$test_id concludes that sacctmgr did not delete accounts.\n"
+		exit 1
+		}
+
+#
+foreach cdtest $listc {
+set my_pid [spawn $sacctmgr del $clu $cdtest]
+	expect {
+	 "(N/y):" {
+		send "y/r"
+			exp_continue
+	timeout {
+		send_user "\nFAILURE: sacctmgr list cluster timing out.\n"
+			slow_kill $my_pid
+				}
+	        }
+        }
+}
+		
+
+if { [list_test_object $cdtest cluster] != 0 } {
+	send_user "\nFAILURE: This test$test_id concludes that sacctmgr did not delete $clu\n"
 		exit 1
 		}
 
 # This is the end below here
 
-incr exit_code [remove_user "" "" "$us1,$us2,$us3"]
-incr exit_code [remove_acct "" "$nm1,$nm2,$nm3"]
-incr exit_code [remove_cluster "$tc1,$tc2,$tc3"]
+#incr exit_code [remove_user "" "" "$us1,$us2,$us3"]
+#incr exit_code [remove_acct "" "$nm1,$nm2,$nm3"]
+#incr exit_code [remove_cluster "$tc1,$tc2,$tc3"]
 
 if {$exit_code == 0} {
 	send_user "\nSUCCESS\n"
