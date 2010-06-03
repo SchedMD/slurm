@@ -637,7 +637,7 @@ static int _job_count_bitmap(struct cr_record *cr_ptr,
 
 		node_ptr = node_record_table_ptr + i;
 		if (select_fast_schedule)
-			cpu_cnt   = node_ptr->config_ptr->cpus;
+			cpu_cnt = node_ptr->config_ptr->cpus;
 		else
 			cpu_cnt = node_ptr->cpus;
 
