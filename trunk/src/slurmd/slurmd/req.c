@@ -111,6 +111,12 @@ typedef struct {
 	uint32_t step_id;
 } starting_step_t;
 
+typedef struct {
+	uint32_t job_id;
+	uint16_t msg_timeout;
+	pthread_cond_t *timer_cond;
+} timer_struct_t;
+
 static int  _abort_job(uint32_t job_id);
 static int  _abort_step(uint32_t job_id, uint32_t step_id);
 static char **_build_env(uint32_t jobid, uid_t uid, char *resv_id,
@@ -3568,36 +3574,80 @@ _destroy_env(char **env)
 	return;
 }
 
+static void *_prolog_timer(void *x)
+{
+	int rc;
+	struct timespec abs_time;
+	slurm_msg_t msg;
+	job_notify_msg_t notify_req;
+	char srun_msg[128];
+	pthread_mutex_t timer_mutex = PTHREAD_MUTEX_INITIALIZER;
+	timer_struct_t *timer_struct = (timer_struct_t *) x;
+
+	abs_time.tv_sec  = time(NULL) + (timer_struct->msg_timeout / 2);
+	abs_time.tv_nsec = 0;
+	slurm_mutex_lock(&timer_mutex);
+	rc = pthread_cond_timedwait(timer_struct->timer_cond, &timer_mutex,
+				    &abs_time);
+	slurm_mutex_unlock(&timer_mutex);
+
+	if (rc != ETIMEDOUT)
+		return NULL;
+
+	slurm_msg_t_init(&msg);
+	snprintf(srun_msg, sizeof(srun_msg), "Prolog hung on node %s",
+		 conf->node_name);
+	notify_req.job_id	= timer_struct->job_id;
+	notify_req.job_step_id	= NO_VAL;
+	notify_req.message	= srun_msg;
+	msg.msg_type	= REQUEST_JOB_NOTIFY;
+	msg.data	= &notify_req;
+	slurm_send_only_controller_msg(&msg);
+	return NULL;
+}
+
 static int
 _run_prolog(uint32_t jobid, uid_t uid, char *resv_id,
 	    char **spank_job_env, uint32_t spank_job_env_size)
 {
-	int error_code;
+	int rc;
 	char *my_prolog;
 	char **my_env = _build_env(jobid, uid, resv_id, spank_job_env,
 				   spank_job_env_size);
 	time_t start_time = time(NULL), diff_time;
 	static uint16_t msg_timeout = 0;
+	pthread_t      timer_id;
+	pthread_attr_t timer_attr;
+	pthread_cond_t timer_cond = PTHREAD_COND_INITIALIZER;
+	timer_struct_t timer_struct;
+
+	if (msg_timeout == 0)
+		msg_timeout = slurm_get_msg_timeout();
 
 	slurm_mutex_lock(&conf->config_mutex);
 	my_prolog = xstrdup(conf->prolog);
 	slurm_mutex_unlock(&conf->config_mutex);
 	_add_job_running_prolog(jobid);
 
-	error_code = run_script("prolog", my_prolog, jobid, -1, my_env);
+	slurm_attr_init(&timer_attr);
+	timer_struct.job_id      = jobid;
+	timer_struct.msg_timeout = msg_timeout;
+	timer_struct.timer_cond  = &timer_cond;
+	pthread_create(&timer_id, &timer_attr, &_prolog_timer, &timer_struct);
+	rc = run_script("prolog", my_prolog, jobid, -1, my_env);
+	pthread_cond_broadcast(&timer_cond);
 	_remove_job_running_prolog(jobid);
 	xfree(my_prolog);
 	_destroy_env(my_env);
 
 	diff_time = difftime(time(NULL), start_time);
-	if (msg_timeout == 0)
-		msg_timeout = slurm_get_msg_timeout();
 	if (diff_time >= msg_timeout) {
 		error("prolog for job %u ran for %d seconds",
 		      jobid, diff_time);
 	}
 
-	return error_code;
+	pthread_join(timer_id, NULL);
+	return rc;
 }
 
 static int
