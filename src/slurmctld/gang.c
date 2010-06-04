@@ -226,64 +226,17 @@ static uint16_t _get_gr_type(void)
 	return GS_NODE;
 }
 
-
-static void _load_socket_cnt(void)
-{
-	uint32_t i, index = 0, array_size = GS_CPU_ARRAY_INCREMENT;
-
-	if (gr_type != GS_SOCKET)
-		return;
-
-	gs_sockets_per_node = xmalloc(array_size * sizeof(uint16_t));
-	gs_socket_rep_count = xmalloc(array_size * sizeof(uint32_t));
-
-	for (i = 0; i < node_record_count; i++) {
-		uint16_t sock;
-		if (gs_fast_schedule) {
-			sock = node_record_table_ptr[i].config_ptr->sockets;
-		} else {
-			sock = node_record_table_ptr[i].sockets;
-		}
-		if (gs_sockets_per_node[index] == sock) {
-			gs_socket_rep_count[index]++;
-			continue;
-		}
-		if (gs_socket_rep_count[index] > 0) {
-			/* advance index and check array_size */
-			index++;
-			if (index >= array_size) {
-				array_size += GS_CPU_ARRAY_INCREMENT;
-				xrealloc(gs_sockets_per_node,
-				 	array_size * sizeof(uint16_t));
-				xrealloc(gs_socket_rep_count,
-				 	array_size * sizeof(uint32_t));
-			}
-		}
-		gs_sockets_per_node[index] = sock;
-		gs_socket_rep_count[index] = 1;
-	}
-	index++;
-	if (index >= array_size) {
-		array_size += GS_CPU_ARRAY_INCREMENT;
-		xrealloc(gs_sockets_per_node, array_size * sizeof(uint16_t));
-		xrealloc(gs_socket_rep_count, array_size * sizeof(uint32_t));
-	}
-	/* leave the last entries '0' */
-
-	for (i = 0; i < index; i++) {
-		debug3("gang: _load_socket_cnt: grp %d bits %u reps %u",
-			i, gs_sockets_per_node[i], gs_socket_rep_count[i]);
-	}
-}
-
-/* For GS_CPU  the gs_phys_res_cnt is the total number of CPUs per node.
- * For GS_CORE and GS_SOCKET the gs_phys_res_cnt is the total number of
- * cores per per node.
+/* For GS_CPU gs_bits_per_node is the total number of CPUs per node.
+ * For GS_CORE and GS_SOCKET gs_bits_per_node is the total number of
+ *	cores per per node.
+ * For GS_SOCKET also set gs_sockets_per_node
  * This function also sets gs_resmap_size;
  */
 static void _load_phys_res_cnt(void)
 {
-	uint32_t i, index = 0, array_size = GS_CPU_ARRAY_INCREMENT;
+	uint16_t bit = 0, sock = 0;
+	uint32_t i, bit_index = 0, sock_index = 0;
+	struct node_record *node_ptr;
 
 	xfree(gs_bits_per_node);
 	xfree(gs_bit_rep_count);
@@ -294,63 +247,74 @@ static void _load_phys_res_cnt(void)
 	    (gr_type != GS_SOCKET))
 		return;
 
-	gs_bits_per_node = xmalloc(array_size * sizeof(uint16_t));
-	gs_bit_rep_count = xmalloc(array_size * sizeof(uint32_t));
+	gs_bits_per_node = xmalloc(node_record_count * sizeof(uint16_t));
+	gs_bit_rep_count = xmalloc(node_record_count * sizeof(uint32_t));
+	if (gr_type == GS_SOCKET) {
+		gs_sockets_per_node = xmalloc(node_record_count *
+					      sizeof(uint16_t));
+		gs_socket_rep_count = xmalloc(node_record_count *
+					      sizeof(uint32_t));
+	}
 
 	gs_resmap_size = 0;
-	for (i = 0; i < node_record_count; i++) {
-		uint16_t bit;
+	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
+	     i++, node_ptr++) {
 		if (gr_type == GS_CPU) {
-			if (gs_fast_schedule) {
-				bit = node_record_table_ptr[i].config_ptr->
-				      cpus;
-			} else
-				bit = node_record_table_ptr[i].cpus;
+			if (gs_fast_schedule)
+				bit = node_ptr->config_ptr->cpus;
+			else
+				bit = node_ptr->cpus;
 		} else {
 			if (gs_fast_schedule) {
-				bit  = node_record_table_ptr[i].config_ptr->
-				       cores;
-				bit *= node_record_table_ptr[i].config_ptr->
-				       sockets;
+				sock = node_ptr->config_ptr->sockets;
+				bit  = node_ptr->config_ptr->cores * sock;
 			} else {
-				bit  = node_record_table_ptr[i].cores;
-				bit *= node_record_table_ptr[i].sockets;
+				sock = node_ptr->sockets;
+				bit  = node_ptr->cores * sock;
 			}
 		}
+
 		gs_resmap_size += bit;
-		if (gs_bits_per_node[index] == bit) {
-			gs_bit_rep_count[index]++;
-			continue;
+		if (gs_bits_per_node[bit_index] != bit) {
+			if (gs_bit_rep_count[bit_index] > 0)
+				bit_index++;
+			gs_bits_per_node[bit_index] = bit;
 		}
-		if (gs_bit_rep_count[index] > 0) {
-			/* advance index and check array_size */
-			index++;
-			if (index >= array_size) {
-				array_size += GS_CPU_ARRAY_INCREMENT;
-				xrealloc(gs_bits_per_node,
-				 	array_size * sizeof(uint16_t));
-				xrealloc(gs_bit_rep_count,
-				 	array_size * sizeof(uint32_t));
+		gs_bit_rep_count[bit_index]++;
+
+		if (gr_type == GS_SOCKET) {
+			if (gs_sockets_per_node[sock_index] != sock) {
+				if (gs_bit_rep_count[sock_index] > 0)
+					sock_index++;
+				gs_sockets_per_node[sock_index] = sock;
 			}
+			gs_socket_rep_count[sock_index]++;
 		}
-		gs_bits_per_node[index] = bit;
-		gs_bit_rep_count[index] = 1;
-	}
-	/* leave the last entries '0' */
-	index++;
-	if (index >= array_size) {
-		array_size += GS_CPU_ARRAY_INCREMENT;
-		xrealloc(gs_bits_per_node, array_size * sizeof(uint16_t));
-		xrealloc(gs_bit_rep_count, array_size * sizeof(uint32_t));
 	}
 
-	for (i = 0; i < index; i++) {
+	/* arrays must have trailing 0 */
+	bit_index += 2;
+	xrealloc(gs_bits_per_node, bit_index * sizeof(uint16_t));
+	xrealloc(gs_bit_rep_count, bit_index * sizeof(uint32_t));
+
+	bit_index--;
+	for (i = 0; i < bit_index; i++) {
 		debug3("gang: _load_phys_res_cnt: grp %d bits %u reps %u",
 		       i, gs_bits_per_node[i], gs_bit_rep_count[i]);
-
 	}
-	if (gr_type == GS_SOCKET)
-		_load_socket_cnt();
+
+	if (gr_type == GS_SOCKET) {
+		sock_index += 2;
+		xrealloc(gs_sockets_per_node, sock_index * sizeof(uint16_t));
+		xrealloc(gs_socket_rep_count, sock_index * sizeof(uint32_t));
+
+		sock_index--;
+		for (i = 0; i < sock_index; i++) {
+			debug3("gang: _load_phys_res_cnt: grp %d sock %u "
+			       "reps %u", i, gs_sockets_per_node[i],
+			       gs_socket_rep_count[i]);
+		}
+	}
 }
 
 static uint16_t _get_phys_bit_cnt(int node_index)
