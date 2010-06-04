@@ -2,7 +2,7 @@
 ############################################################################
 # Purpose: Test of SLURM functionality
 #          sacctmgr add an account to this cluster and try using it with
-#          salloc, sbatch and srun.
+#          salloc, sbatch and srun.  We also test limits here as well.
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
@@ -32,6 +32,7 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 ############################################################################
 source ./globals
+source ./globals_accounting
 
 set test_id     "21.21"
 set exit_code   0
@@ -39,6 +40,230 @@ set file_in     "test.$test_id.input"
 set test_acct   "test_acct"
 set timeout 60
 print_header $test_id
+
+proc _test_limits { } {
+	global test_acct file_in srun sbatch squeue bin_id number bin_sleep bin_rm
+	# test maxcpumin maxcpu maxjob maxnode maxsubmit maxwall
+	set maxcpumin 10
+	set maxcpu 4
+	set maxjob 2
+	set maxnode 1
+	set maxsubmit 4
+	set maxwall 10
+	set exit_code 0
+
+	incr exit_code [mod_acct "" "" "$test_acct" "" "" "" "" "" "" "" "" "" "" "" "" $maxjob $maxnode $maxsubmit $maxwall "" "" ""]
+	if { $exit_code } {
+		return $exit_code
+	}
+	#
+	# Spawn a job testing maxnode
+	#
+	set matches 0
+	spawn $srun -v -N$maxnode --account=$test_acct $bin_id
+	expect {
+		-re "launching ($number)" {
+			incr matches
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: srun not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if { $matches != 1 } {
+		send_user "\nFAILURE: job dion't launch with correct limit\n"
+		set exit_code 1
+		return $exit_code
+	}
+	#
+	# Spawn a job testing maxnode+1
+	#
+	spawn $srun -N[expr $maxnode + 1] --account=$test_acct $bin_id
+	expect {
+		-re "Job violates accounting policy" {
+			send_user "\nThis error is expected, not a problem\n"
+			exp_continue
+		}
+		-re "launching ($number)" {
+			send_user "\nFAILURE: job should not have run.\n"
+			set exit_code 1
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: srun not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if { $exit_code } {
+		return $exit_code
+	}
+
+	#
+	# Spawn a job testing maxwall
+	#
+	set matches 0
+	spawn $srun -v -t$maxwall --account=$test_acct $bin_id
+	expect {
+		-re "launching ($number)" {
+			incr matches
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: srun not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if { $matches != 1 } {
+		send_user "\nFAILURE: job dion't launch with correct limit\n"
+		set exit_code 1
+		return $exit_code
+	}
+	#
+	# Spawn a job testing maxwall+1
+	#
+	spawn $srun -t[expr $maxwall + 1] --account=$test_acct $bin_id
+	expect {
+		-re "Job violates accounting policy" {
+			send_user "\nThis error is expected, not a problem\n"
+			exp_continue
+		}
+		-re "launching ($number)" {
+			send_user "\nFAILURE: job should not have run.\n"
+			set exit_code 1
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: srun not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if { $exit_code } {
+		return $exit_code
+	}
+
+	make_bash_script $file_in "
+	$bin_sleep 5
+        "
+
+	# test job max cnt and submit
+	for {set inx 0} {$inx < $maxsubmit} {incr inx} {
+		set job_id($inx) 0
+		set mypid [spawn $sbatch -N1 -n1 --account=$test_acct --output=/dev/null --error=/dev/null -t5 $file_in]
+		expect {
+			-re "Submitted batch job ($number)" {
+				set job_id($inx) $expect_out(1,string)
+				exp_continue
+			}
+			-re "Unable to contact" {
+				send_user "\nFAILURE: slurm appears to be down\n"
+				set exit_code 1
+				exp_continue
+			}
+			timeout {
+				send_user "\nFAILURE: sbatch not responding\n"
+				slow_kill $mypid
+				set exit_code 1
+			}
+			eof {
+				wait
+			}
+		}
+
+		if { !$job_id($inx) } {
+			send_user "\nFAILURE: sbatch didn't return jobid\n"
+			set exit_code 1
+			exit
+		}
+
+		if { $exit_code } {
+			break
+		}
+	}
+
+	if { $exit_code } {
+		exec $bin_rm -f $file_in
+		return $exit_code
+	}
+
+	# then submit one more over the limit and it should fail
+	set mypid [spawn $sbatch -N1 -n1 --account=$test_acct --output=/dev/null --error=/dev/null -t5 $file_in]
+	expect {
+		-re "Job violates accounting policy" {
+			send_user "\nThis error is expected, not a problem\n"
+			exp_continue
+		}
+		-re "Submitted batch job ($number)" {
+			send_user "\nFAILURE: job should not have run.\n"
+			set exit_code 1
+			exp_continue
+		}
+		-re "Unable to contact" {
+			send_user "\nFAILURE: slurm appears to be down\n"
+			set exit_code 1
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sbatch not responding\n"
+			slow_kill $mypid
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if { $exit_code } {
+		exec $bin_rm -f $file_in
+		return $exit_code
+	}
+
+	set matches 0
+	set mypid [spawn $squeue -o "\%i \%t \%r"]
+	expect {
+		-re "($job_id(2)|$job_id(3)).PD.AssociationJobLimit" {
+			incr matches
+			exp_continue
+		}
+		-re "($job_id(0)|$job_id(1)).R.None" {
+			incr matches
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: squeue not responding\n"
+			slow_kill $mypid
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if { $matches != 4 } {
+		send_user "\nFAILURE: job's are in the state expected got $matches\n"
+		set exit_code 1
+		return $exit_code
+	}
+
+	exec $bin_rm -f $file_in
+	return $exit_code
+}
 
 #
 # Check accounting config and bail if not found.
@@ -248,6 +473,15 @@ if {$job_id == 0} {
 		set exit_code 1
 	}
 }
+
+
+#
+# Check to see if limits are enforced.
+#
+if { [test_limits_enforced] == 1 } {
+	set exit_code [_test_limits]
+}
+
 
 #
 # Use sacctmgr to delete the test account

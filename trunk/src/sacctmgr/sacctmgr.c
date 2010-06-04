@@ -818,14 +818,14 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                             and WOPLimits                                  \n\
        add account        - Clusters=, Description=, Fairshare=,           \n\
                             GrpCPUMins=, GrpCPUs=, GrpJobs=, GrpNodes=,    \n\
-                            GrpSubmitJob=, GrpWall=, MaxCPUMins=, MaxJobs=,\n\
-                            MaxNodes=, MaxSubmitJobs=, MaxWall=, Names=,   \n\
-                            Organization=, Parent=, and QosLevel           \n\
+                            GrpSubmitJob=, GrpWall=, MaxCPUMins=, MaxCPUs=,\n\
+                            MaxJobs=, MaxNodes=, MaxSubmitJobs=, MaxWall=, \n\
+                            Names=, Organization=, Parent=, and QosLevel=  \n\
        modify account     - (set options) Description=, Fairshare=,        \n\
                             GrpCPUMins=, GrpCPUs=, GrpJobs=, GrpNodes=,    \n\
-                            GrpSubmitJob=, GrpWall=, MaxCPUMins=, MaxJobs=,\n\
-                            MaxNodes=, MaxSubmitJobs=, MaxWall=, Names=,   \n\
-                            Organization=, Parent=, and QosLevel=          \n\
+                            GrpSubmitJob=, GrpWall=, MaxCPUMins=, MaxCPUs=,\n\
+                            MaxJobs=, MaxNodes=, MaxSubmitJobs=, MaxWall=, \n\
+                            Names=, Organization=, Parent=, and QosLevel=  \n\
                             (where options) Clusters=, Descriptions=,      \n\
                             Names=, Organizations=, Parent=, and QosLevel= \n\
        delete account     - Clusters=, Descriptions=, Names=,              \n\

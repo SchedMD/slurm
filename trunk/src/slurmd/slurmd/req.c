@@ -3576,6 +3576,30 @@ _destroy_env(char **env)
 	return;
 }
 
+#ifdef HAVE_BG
+/* a slow prolog is expected on bluegene systems */
+static int
+_run_prolog(uint32_t jobid, uid_t uid, char *resv_id,
+	    char **spank_job_env, uint32_t spank_job_env_size)
+{
+	int rc;
+	char *my_prolog;
+	char **my_env = _build_env(jobid, uid, resv_id, spank_job_env,
+				   spank_job_env_size);
+
+	slurm_mutex_lock(&conf->config_mutex);
+	my_prolog = xstrdup(conf->prolog);
+	slurm_mutex_unlock(&conf->config_mutex);
+	_add_job_running_prolog(jobid);
+
+	rc = run_script("prolog", my_prolog, jobid, -1, my_env);
+	_remove_job_running_prolog(jobid);
+	xfree(my_prolog);
+	_destroy_env(my_env);
+
+	return rc;
+}
+#else
 static void *_prolog_timer(void *x)
 {
 	int delay_time, rc = SLURM_SUCCESS;
@@ -3661,6 +3685,7 @@ _run_prolog(uint32_t jobid, uid_t uid, char *resv_id,
 	pthread_join(timer_id, NULL);
 	return rc;
 }
+#endif
 
 static int
 _run_epilog(uint32_t jobid, uid_t uid, char *resv_id,

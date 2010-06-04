@@ -900,6 +900,7 @@ create_job_step(srun_job_t *job, bool use_all_cpus)
 		      (difftime(time(NULL), begin_time) > opt.immediate))) ||
 		    ((rc != ESLURM_NODES_BUSY) && (rc != ESLURM_PORTS_BUSY) &&
 		     (rc != ESLURM_PROLOG_RUNNING) &&
+		     (rc != SLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT) &&
 		     (rc != ESLURM_DISABLED))) {
 			error ("Unable to create job step: %m");
 			return -1;
