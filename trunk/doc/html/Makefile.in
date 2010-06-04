@@ -312,6 +312,7 @@ generated_html = \
 	gang_scheduling.html \
 	gres.html \
 	help.html \
+	high_throughput.html \
 	ibm.html \
 	jobacct_gatherplugins.html \
 	job_submit_plugins.html \

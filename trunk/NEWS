@@ -28,6 +28,7 @@ documents those changes that are of interest to users and admins.
  -- Send message to srun when the Prolog takes too long (MessageTimeout) to
     complete.
  -- Change timeout for socket connect() to be half of configured MessageTimeout.
+ -- Added high-throughput computing web page with configuration guidance.
 
 * Changes in SLURM 2.2.0.pre6
 =============================
