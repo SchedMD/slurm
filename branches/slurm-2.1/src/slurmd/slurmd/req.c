@@ -1111,11 +1111,11 @@ _rpc_batch_job(slurm_msg_t *msg)
 	 	 */
 #ifdef HAVE_BG
 		select_g_select_jobinfo_get(req->select_jobinfo,
-				     SELECT_JOBDATA_BLOCK_ID, &resv_id);
+					    SELECT_JOBDATA_BLOCK_ID, &resv_id);
 #endif
 #ifdef HAVE_CRAY_XT
 		select_g_select_jobinfo_get(req->select_jobinfo,
-				     SELECT_JOBDATA_RESV_ID, &resv_id);
+					    SELECT_JOBDATA_RESV_ID, &resv_id);
 #endif
 		rc = _run_prolog(req->job_id, req->uid, resv_id,
 				 req->spank_job_env, req->spank_job_env_size);
@@ -3336,9 +3336,11 @@ _run_prolog(uint32_t jobid, uid_t uid, char *resv_id,
 	char *my_prolog;
 	char **my_env = _build_env(jobid, uid, resv_id, spank_job_env,
 				   spank_job_env_size);
+	/* a long prolog is expected on bluegene systems */
+#ifndef HAVE_BG
 	time_t start_time = time(NULL), diff_time;
 	static uint16_t msg_timeout = 0;
-
+#endif
 	slurm_mutex_lock(&conf->config_mutex);
 	my_prolog = xstrdup(conf->prolog);
 	slurm_mutex_unlock(&conf->config_mutex);
@@ -3349,6 +3351,7 @@ _run_prolog(uint32_t jobid, uid_t uid, char *resv_id,
 	xfree(my_prolog);
 	_destroy_env(my_env);
 
+#ifndef HAVE_BG
 	diff_time = difftime(time(NULL), start_time);
 	if (msg_timeout == 0)
 		msg_timeout = slurm_get_msg_timeout();
@@ -3356,7 +3359,7 @@ _run_prolog(uint32_t jobid, uid_t uid, char *resv_id,
 		error("prolog for job %u ran for %d seconds",
 		      jobid, diff_time);
 	}
-
+#endif
 	return error_code;
 }
 
