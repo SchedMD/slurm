@@ -3,7 +3,7 @@
  *					     based upon sockets.
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Kevin Tew <tew1@llnl.gov>, et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -633,6 +633,7 @@ extern int _slurm_connect (int __fd, struct sockaddr const * __addr,
 	 * Timeouts in excess of 3 minutes have been observed, resulting
 	 * in serious problems for slurmctld. Making the connect call
 	 * non-blocking and polling seems to fix the problem. */
+	static int timeout = 0;
 	int rc, flags, err;
 	socklen_t len;
 	struct pollfd ufds;
@@ -651,7 +652,10 @@ extern int _slurm_connect (int __fd, struct sockaddr const * __addr,
 	ufds.events = POLLIN | POLLOUT;
 	ufds.revents = 0;
 
-again:	rc = poll(&ufds, 1, 5000);
+	if (timeout == 0)
+		timeout = slurm_get_msg_timeout() * 1000 / 2;
+
+again:	rc = poll(&ufds, 1, timeout);
 	if (rc == -1) {
 		/* poll failed */
 		if (errno == EINTR) {
