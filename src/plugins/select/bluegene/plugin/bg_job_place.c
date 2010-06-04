@@ -315,7 +315,7 @@ static bg_record_t *_find_matching_block(List block_list,
 		} else if((bg_record->job_running != NO_JOB_RUNNING)
 			  && (bg_record->job_running != job_ptr->job_id)
 			  && (bg_conf->layout_mode == LAYOUT_DYNAMIC
-			      || (!SELECT_IS_TEST(query_mode)
+			      || (SELECT_IS_MODE_RUN_NOW(query_mode)
 				  && bg_conf->layout_mode != LAYOUT_DYNAMIC))) {
 			debug("block %s in use by %s job %d",
 			      bg_record->bg_block_id,
@@ -699,8 +699,7 @@ static int _dynamically_request(List block_list, int *blocks_added,
 			while((bg_record = list_pop(new_blocks))) {
 				if(block_exist_in_list(block_list, bg_record))
 					destroy_bg_record(bg_record);
-				else if(SELECT_IS_PREEMPTABLE_TEST(
-						query_mode)) {
+				else if(SELECT_IS_TEST(query_mode)) {
 					/* Here we don't really want
 					   to create the block if we
 					   are testing.
@@ -1290,7 +1289,8 @@ static void _build_select_struct(struct job_record *job_ptr,
 	}
 }
 
-static List _get_preemptables(bg_record_t *bg_record, List preempt_jobs)
+static List _get_preemptables(uint16_t query_mode, bg_record_t *bg_record,
+			      List preempt_jobs)
 {
 	List preempt = NULL;
 	ListIterator itr;
@@ -1320,7 +1320,7 @@ static List _get_preemptables(bg_record_t *bg_record, List preempt_jobs)
 			list_append(preempt, job_ptr);
 /* 			info("going to preempt %u running on %s", */
 /* 			     job_ptr->job_id, found_record->bg_block_id); */
-		} else {
+		} else if(SELECT_IS_MODE_RUN_NOW(query_mode)) {
 			error("Job %u running on block %s "
 			      "wasn't in the preempt list, but needs to be "
 			      "preempted for queried job to run on block %s",
@@ -1483,8 +1483,8 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 	block_list = copy_bg_list(bg_lists->main);
 	slurm_mutex_unlock(&block_state_mutex);
 
-	/* just remove the preemptable jobs now since we are treating
-	   this as a run now deal */
+	/* First look at the empty space, and then remove the
+	   preemptable jobs and try again. */
 preempt:
 	list_sort(block_list, (ListCmpF)bg_record_sort_aval_inc);
 
@@ -1534,18 +1534,6 @@ preempt:
 					job_ptr->select_jobinfo,
 					SELECT_JOBDATA_NODE_CNT,
 					&bg_record->node_cnt);
-
-				/* This is a fake record so we need to
-				 * destroy it after we get the info from
-				 * it.  if it was just testing then
-				 * we added this record to the
-				 * block_list.  If this is the case
-				 * it will be set below, but set
-				 * blocks_added to 0 since we don't
-				 * want to sync this with the list. */
-				if(!blocks_added)
-					destroy_bg_record(bg_record);
-				blocks_added = 0;
 			} else {
 				if((bg_record->ionodes)
 				   && (job_ptr->part_ptr->max_share <= 1))
@@ -1592,7 +1580,22 @@ preempt:
 				if(*preemptee_job_list)
 					list_destroy(*preemptee_job_list);
 				*preemptee_job_list = _get_preemptables(
-					bg_record, preemptee_candidates);
+					local_mode, bg_record,
+					preemptee_candidates);
+			}
+			if(!bg_record->bg_block_id) {
+				/* This is a fake record so we need to
+				 * destroy it after we get the info from
+				 * it.  If it was just testing then
+				 * we added this record to the
+				 * block_list.  If this is the case
+				 * it will be handled if se sync the
+				 * lists.  But we don't want to do
+				 * that so we will set blocks_added to
+				 * 0 so it doesn't happen. */
+				if(!blocks_added)
+					destroy_bg_record(bg_record);
+				blocks_added = 0;
 			}
 		} else {
 			error("we got a success, but no block back");

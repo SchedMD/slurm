@@ -295,6 +295,14 @@ documents those changes that are of interest to users and admins.
     from using of resources already allocated to a preemptable running job.
  -- Fix for sreport in interactive mode to honor parsable/2 options.
  -- Fixed minor bugs in sacct and sstat commands
+ -- BLUEGENE - Fixed issue if the slurmd becomes unresponsive and you have
+    blocks in an error state accounting is correct when the slurmd comes
+    back up.
+ -- Corrected documentation for -n option in srun/salloc/sbatch
+ -- BLUEGENE - when running a willrun test along with preemption the bluegene
+    plugin now does the correct thing.
+ -- Fix possible memory corruption issue which can cause slurmctld to abort.
+ -- BLUEGENE - fixed small memory leak when setting up env.
 
 * Changes in SLURM 2.1.8
 ========================
