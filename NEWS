@@ -29,6 +29,7 @@ documents those changes that are of interest to users and admins.
  -- Corrected documentation for -n option in srun/salloc/sbatch
  -- BLUEGENE - when running a willrun test along with preemption the bluegene
     plugin now does the correct thing.
+ -- Fix possible memory corruption issue which can cause slurmctld to abort.
 
 * Changes in SLURM 2.1.8
 ========================
