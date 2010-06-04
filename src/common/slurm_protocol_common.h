@@ -52,8 +52,10 @@
 /* for sendto and recvfrom commands */
 #define SLURM_PROTOCOL_NO_SEND_RECV_FLAGS 0
 
-/* for accpet commands */
-#define SLURM_PROTOCOL_DEFAULT_LISTEN_BACKLOG 128
+/* for listen API */
+#ifndef SLURM_PROTOCOL_DEFAULT_LISTEN_BACKLOG
+#define SLURM_PROTOCOL_DEFAULT_LISTEN_BACKLOG 4096
+#endif
 
 /* used in interface methods */
 #define SLURM_PROTOCOL_FUNCTION_NOT_IMPLEMENTED -2
