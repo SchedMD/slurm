@@ -27,6 +27,7 @@ documents those changes that are of interest to users and admins.
  -- Fixed bug in MinCPU and AveCPU calculations in sstat command
  -- Send message to srun when the Prolog takes too long (MessageTimeout) to
     complete.
+ -- Change timeout for socket connect() to be half of configured MessageTimeout.
 
 * Changes in SLURM 2.2.0.pre6
 =============================
