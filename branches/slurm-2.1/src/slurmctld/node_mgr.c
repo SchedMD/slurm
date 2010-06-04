@@ -1347,11 +1347,6 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 #endif
 		}
 	} else {
-		uint16_t err_cpus = 0;
-		select_g_select_nodeinfo_get(node_ptr->select_nodeinfo,
-					     SELECT_NODEDATA_SUBCNT,
-					     NODE_STATE_ERROR,
-					     &err_cpus);
 		if (IS_NODE_UNKNOWN(node_ptr)) {
 			last_node_update = now;
 			reset_job_priority();
@@ -1365,8 +1360,7 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 					node_flags;
 				node_ptr->last_idle = now;
 			}
-			if (!err_cpus
-			    && !IS_NODE_DRAIN(node_ptr)
+			if (!IS_NODE_DRAIN(node_ptr)
 			    && !IS_NODE_FAIL(node_ptr)) {
 				xfree(node_ptr->reason);
 				clusteracct_storage_g_node_up(
@@ -1392,8 +1386,7 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 			     reg_msg->node_name);
 			reset_job_priority();
 			trigger_node_up(node_ptr);
-			if (!err_cpus
-			    && !IS_NODE_DRAIN(node_ptr)
+			if (!IS_NODE_DRAIN(node_ptr)
 			    && !IS_NODE_FAIL(node_ptr)) {
 				xfree(node_ptr->reason);
 				clusteracct_storage_g_node_up(
