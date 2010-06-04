@@ -17,11 +17,15 @@ sustained basis (about 9 jobs per second).</p>
 <h2>System configuration</h2>
 
 <p>Three system configuration parameters must be set to support a large number
-of open files and TCP connections with large bursts of messages.</p>
+of open files and TCP connections with large bursts of messages. Changes can
+be made using the <b>/etc/rc.d/rc.local</b> or <b>/etc/sysctl.conf</b> 
+script to preserve changes after reboot. In either case, you can write values
+directly into these files
+(e.g. <i>"echo 32832 &gt; /proc/sys/fs/file-max"</i>).</p>
 <ul>
 <li><b>/proc/sys/fs/file-max</b>:
 The maximum number of concurrently open files.
-We recommend a limit of at least 8,096.</>
+We recommend a limit of at least 32,832.</li>
 <li><b>/proc/sys/net/ipv4/tcp_max_syn_backlog</b>:
 Maximum number of remembered connection requests, which are still did not
 receive an acknowledgment from connecting client.
