@@ -224,10 +224,9 @@ extern void reset_node_bitmap(job_resources_t *job_resrcs_ptr,
 {
 	if (job_resrcs_ptr) {
 		if (job_resrcs_ptr->node_bitmap)
-			bit_free(job_resrcs_ptr->node_bitmap);
+			FREE_NULL_BITMAP(job_resrcs_ptr->node_bitmap);
 		if (new_node_bitmap) {
-			job_resrcs_ptr->node_bitmap =
-				bit_copy(new_node_bitmap);
+			job_resrcs_ptr->node_bitmap = bit_copy(new_node_bitmap);
 			job_resrcs_ptr->nhosts = bit_set_count(new_node_bitmap);
 		} else
 			job_resrcs_ptr->nhosts = 0;
