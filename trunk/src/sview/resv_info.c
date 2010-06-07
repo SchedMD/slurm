@@ -996,7 +996,8 @@ display_it:
 	if(!info_list)
 		return;
 	/* set up the grid */
-	if(display_widget && gtk_tree_selection_count_selected_rows(
+	if(display_widget && GTK_IS_TREE_VIEW(display_widget)
+	   && gtk_tree_selection_count_selected_rows(
 		   gtk_tree_view_get_selection(
 			   GTK_TREE_VIEW(display_widget)))) {
 		GtkTreeViewColumn *focus_column = NULL;
