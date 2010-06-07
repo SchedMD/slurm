@@ -42,7 +42,7 @@ set timeout 60
 print_header $test_id
 
 proc _test_limits { } {
-	global test_acct file_in srun sbatch squeue bin_id number bin_sleep bin_rm
+	global test_acct file_in srun sbatch squeue scancel bin_id number bin_sleep bin_rm
 	# test maxcpumin maxcpu maxjob maxnode maxsubmit maxwall
 	set maxcpumin 10
 	set maxcpu 4
@@ -158,6 +158,8 @@ proc _test_limits { } {
 		return $exit_code
 	}
 
+	# This should overwrite the old file_in which has already been used,
+	# so no big deal.
 	make_bash_script $file_in "
 	$bin_sleep 5
         "
@@ -198,7 +200,6 @@ proc _test_limits { } {
 	}
 
 	if { $exit_code } {
-		exec $bin_rm -f $file_in
 		return $exit_code
 	}
 
@@ -230,7 +231,6 @@ proc _test_limits { } {
 	}
 
 	if { $exit_code } {
-		exec $bin_rm -f $file_in
 		return $exit_code
 	}
 
@@ -255,13 +255,20 @@ proc _test_limits { } {
 		}
 	}
 
+	spawn $scancel --quiet --account=$test_acct
+	expect {
+		eof {
+			wait
+		}
+	}
+
+
 	if { $matches != 4 } {
 		send_user "\nFAILURE: job's are in the state expected got $matches\n"
 		set exit_code 1
 		return $exit_code
 	}
 
-	exec $bin_rm -f $file_in
 	return $exit_code
 }
 

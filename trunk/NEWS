@@ -308,6 +308,9 @@ documents those changes that are of interest to users and admins.
     plugin now does the correct thing.
  -- Fix possible memory corruption issue which can cause slurmctld to abort.
  -- BLUEGENE - fixed small memory leak when setting up env.
+ -- Fixed deadlock if using accounting and cluster changes size in the
+    database.  This can happen if you mistakenly have multiple primary
+    slurmctld's running for a single cluster.
 
 * Changes in SLURM 2.1.8
 ========================
