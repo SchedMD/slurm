@@ -1019,7 +1019,10 @@ static int _accounting_cluster_ready()
 	int procs = 0;
 	bitstr_t *total_node_bitmap = NULL;
 	char *cluster_nodes = NULL;
+	slurmctld_lock_t node_read_lock = {
+		NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK };
 
+	lock_slurmctld(node_read_lock);
 	node_ptr = node_record_table_ptr;
 	for (i = 0; i < node_record_count; i++, node_ptr++) {
 		if (node_ptr->name == '\0')
@@ -1047,6 +1050,7 @@ static int _accounting_cluster_ready()
 	bit_nset(total_node_bitmap, 0, node_record_count-1);
 	cluster_nodes = bitmap2node_name(total_node_bitmap);
 	FREE_NULL_BITMAP(total_node_bitmap);
+	unlock_slurmctld(node_read_lock);
 
 	rc = clusteracct_storage_g_cluster_procs(acct_db_conn,
 						 slurmctld_cluster_name,
@@ -1160,9 +1164,6 @@ static void *_slurmctld_background(void *no_data)
 	 * (Might kill jobs on nodes set DOWN) */
 	slurmctld_lock_t node_write_lock = {
 		READ_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
-	/* Locks: Read node */
-	slurmctld_lock_t node_read_lock = {
-		NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK };
 	/* Locks: Write node */
 	slurmctld_lock_t node_write_lock2 = {
 		NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK };
@@ -1335,9 +1336,7 @@ static void *_slurmctld_background(void *no_data)
 			/* Report current node state to account for added
 			 * or reconfigured nodes */
 			last_node_acct = now;
-			lock_slurmctld(node_read_lock);
 			_accounting_cluster_ready();
-			unlock_slurmctld(node_read_lock);
 		}
 
 		/* Reassert this machine as the primary controller.
