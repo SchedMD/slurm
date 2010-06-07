@@ -305,10 +305,6 @@ static bg_record_t *_find_matching_block(List block_list,
 		if(bg_record->job_ptr)
 			bg_record->job_running = bg_record->job_ptr->job_id;
 
-		if((bg_record->job_running != NO_JOB_RUNNING)
-		   && (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK))
-			info("%s job_running = %d",
-			     bg_record->bg_block_id, bg_record->job_running);
 		/*block is messed up some how (BLOCK_ERROR_STATE)
 		 * ignore it or if state == RM_PARTITION_ERROR */
 		if((bg_record->job_running == BLOCK_ERROR_STATE)
