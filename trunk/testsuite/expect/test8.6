@@ -159,7 +159,7 @@ proc run_bgl_test { } {
 				if {$num_nodes >= 16384} {
 					incr started [run_batch_jobs 16k $16knode_block_cnt]
 					if {$num_nodes >= 32768} {
-						incr started [run_batch_jobs 32k $1knode_block_cnt]
+						incr started [run_batch_jobs 32k $32knode_block_cnt]
 					}
 				}
 			}
@@ -221,7 +221,7 @@ proc run_bgp_test { } {
 				if {$num_nodes >= 16384} {
 					incr started [run_batch_jobs 16k $16knode_block_cnt]
 					if {$num_nodes >= 32768} {
-						incr started [run_batch_jobs 32k $1knode_block_cnt]
+						incr started [run_batch_jobs 32k $32knode_block_cnt]
 					}
 				}
 			}
