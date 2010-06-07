@@ -551,7 +551,9 @@ static void _build_select_struct(struct job_record *job_ptr, bitstr_t *bitmap)
 
 	first_bit = bit_ffs(bitmap);
 	last_bit  = bit_fls(bitmap);
-	for (i=first_bit, j=0, k=-1; ((i<=last_bit) && (first_bit>=0)); i++) {
+	if (last_bit == -1)
+		last_bit = -2;	/* no bits set */
+	for (i=first_bit, j=0, k=-1; i<=last_bit; i++) {
 		if (!bit_test(bitmap, i))
 			continue;
 		node_ptr = &(select_node_ptr[i]);
@@ -2057,7 +2059,7 @@ static int _run_now(struct job_record *job_ptr, bitstr_t *bitmap,
 					remove_all = true;
 				/* Remove preemptable job now */
 				_rm_job_from_nodes(exp_cr, tmp_job_ptr,
-						   "_will_run_test",
+						   "_run_now",
 						   remove_all);
 				j = _job_count_bitmap(exp_cr, job_ptr,
 						      orig_map, bitmap,
