@@ -38,6 +38,11 @@ Limit of socket listen() backlog, known in userspace as SOMAXCONN. Defaults to
 For example, to support a burst of 1024 requests, set somaxconn to 1024.</li>
 </ul>
 
+<p>The transmit queue length (<b>txqueuelen</b>) may also need to be modified
+using the ifconfig command. A value of 4096 has been found to work well for one
+site with a very large cluster
+(e.g. <i>"ifconfig <interface> txqueuelen 4096"</i>).</p>
+
 <h2>User limits</h2>
 
 <p>The <b>ulimit</b> values in effect for the <b>slurmctld</b> daemon should
@@ -69,6 +74,6 @@ seconds if possible.</li>
 appropriate for your environment.</li>
 </ul>
 
-<p style="text-align:center;">Last modified 4 June 2010</p>
+<p style="text-align:center;">Last modified 7 June 2010</p>
 
 <!--#include virtual="footer.txt"-->
