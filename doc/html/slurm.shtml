@@ -49,6 +49,15 @@ mechanisms, schedulers, etc. These plugins are documented and  simple enough for
 <p>SLURM provides resource management on about 1000 computers worldwide,
 including many of the most powerful computers in the world:
 <ul>
+<li><a href="http://www.wcm.bull.com/internet/pr/rend.jsp?DocId=567851&lang=en">
+Tera 100</a> at CEA with 140,000 Intel Xeon 7500 processing cores, 300TB of 
+central memory and a theoretical computing power of 1.25 Petaflops. Europe's
+most powerful supercomputer.</li>
+<li><a href="http://news.xinhuanet.com/english/2009-10/29/content_12356478.htm">
+Tianhe</a> at The National University of Defence Technology (NUDT) with
+6,144 Intel CPUs and 5,120 AMD GPUs.
+Debuting as China's fastest super computer with a peak performance of
+1.206 Petaflops.</li>
 <li><a href="https://asc.llnl.gov/computing_resources/bluegenel/">BlueGene/L</a>
 at LLNL with 106,496 dual-core processors</li>
 <li><a href="http://c-r-labs.com/">EKA</a> at Computational Research Laboratories,
@@ -62,9 +71,7 @@ with 10,240 PowerPC processors and a Myrinet switch</li>
 a massively parallel supercomputer designed and built by
 <a href="http://www.deshawresearch.com/">D. E. Shaw Research</a>
 for molecular dynamics simulation using 512 custom-designed ASICs
-and a three-dimensional torus interconnect </li>
-<li><a href="http://news.xinhuanet.com/english/2009-10/29/content_12356478.htm">Tianhe</a> at The National University of Defence Technology (NUDT) with
-6,144 Intel CPUs and 5,120 AMD GPUs.  Debuting as China's fastest super computer</li>
+and a three-dimensional torus interconnect.</li>
 </ul>
 <p>SLURM is actively being developed, distributed and supported by
 <a href="https://www.llnl.gov">Lawrence Livermore National Laboratory</a>,
@@ -77,6 +84,6 @@ It is also distributed and supported by
 <a href="http://www.ibm.com">IBM</a> and
 <a href="http://www.sun.com">Sun Microsystems</a>.</p>
 
-<p style="text-align:center;">Last modified 26 May 2010</p>
+<p style="text-align:center;">Last modified 7 June 2010</p>
 
 <!--#include virtual="footer.txt"-->
