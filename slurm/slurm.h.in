@@ -1291,6 +1291,13 @@ typedef struct reservation_name_msg {
 #define DEBUG_FLAG_NO_CONF_HASH	0x00000020	/* no warning about slurm.conf
 						 * files checksum mismatch */
 #define DEBUG_FLAG_GRES		0x00000040	/* Generic Resource info */
+#define DEBUG_FLAG_BG_PICK      0x00000080	/* debug for bluegene
+						 * picking blocks */
+#define DEBUG_FLAG_BG_WIRES	0x00000100	/* debug for bluegene wires */
+#define DEBUG_FLAG_BG_ALGO	0x00000200	/* debug for bluegene algo */
+#define DEBUG_FLAG_BG_ALGO_DEEP	0x00000400	/* debug for bluegene
+						 * algo deep */
+#define DEBUG_FLAG_PRIO 	0x00000600	/* debug for priority plugin */
 
 
 #define GROUP_FORCE		0x8000	/* if set, update group membership

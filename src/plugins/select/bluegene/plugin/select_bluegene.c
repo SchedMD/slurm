@@ -1375,6 +1375,8 @@ extern int select_p_reconfigure(void)
 		      "want you will need to restart slurm for this "
 		      "change to be enforced in the bluegene plugin.",
 		      bg_conf->slurm_node_prefix, slurmctld_conf.node_prefix);
+	bg_conf->slurm_debug_flags = slurmctld_conf.debug_flags;
+	set_ba_debug_flags(bg_conf->slurm_debug_flags);
 	slurm_conf_unlock();
 
 	return SLURM_SUCCESS;

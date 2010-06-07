@@ -355,6 +355,7 @@ extern void init_wires();
  * destroy all the internal (global) data structs.
  */
 extern void ba_fini();
+extern void set_ba_debug_flags(uint32_t debug_flags);
 
 /*
  * set the node in the internal configuration as in, or not in use,
