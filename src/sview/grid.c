@@ -520,7 +520,11 @@ extern void highlight_grid(GtkTreeView *tree_view, GtkTreePath *path,
 
 	if(!node_inx)
 		return;
-
+	if(color_inx > sview_colors_cnt) {
+		g_print("hey the color_inx from %d was set to %d > %d\n",
+			color_inx_id, color_inx, sview_colors_cnt);
+		color_inx %= sview_colors_cnt;
+	}
 	gdk_color_parse(sview_colors[color_inx], &color);
 
 	itr = list_iterator_create(button_list);
