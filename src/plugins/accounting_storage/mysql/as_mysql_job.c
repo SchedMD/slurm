@@ -323,6 +323,11 @@ extern int as_mysql_job_start(mysql_conn_t *mysql_conn,
 		global_last_rollup = check_time;
 		slurm_mutex_unlock(&rollup_lock);
 
+		/* If the times here are later than the daily_rollup
+		   or monthly rollup it isn't a big deal since they
+		   are always shrunk down to the beginning of each
+		   time period.
+		*/
 		query = xstrdup_printf("update \"%s_%s\" set hourly_rollup=%d, "
 				       "daily_rollup=%d, monthly_rollup=%d",
 				       mysql_conn->cluster_name,
