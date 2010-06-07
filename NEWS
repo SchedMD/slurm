@@ -29,6 +29,8 @@ documents those changes that are of interest to users and admins.
     complete.
  -- Change timeout for socket connect() to be half of configured MessageTimeout.
  -- Added high-throughput computing web page with configuration guidance.
+ -- Use more srun sockets to process incoming PMI (MPICH2) connections for
+    better scalability.
 
 * Changes in SLURM 2.2.0.pre6
 =============================
