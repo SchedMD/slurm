@@ -91,33 +91,61 @@ extern List create_dynamic_block(List block_list,
 				bit_or(my_bitmap, bg_record->bitmap);
 				for(i=0; i<SYSTEM_DIMENSIONS; i++)
 					geo[i] = bg_record->geo[i];
-				debug2("adding %s %c%c%c %c%c%c",
-				       bg_record->nodes,
-				       alpha_num[bg_record->start[X]],
-				       alpha_num[bg_record->start[Y]],
-				       alpha_num[bg_record->start[Z]],
-				       alpha_num[geo[X]],
-				       alpha_num[geo[Y]],
-				       alpha_num[geo[Z]]);
+				if(bg_conf->slurm_debug_flags
+				   & DEBUG_FLAG_BG_PICK)
+					info("adding %s(%s) %s %c%c%c "
+					     "%c%c%c %u",
+					     bg_record->bg_block_id,
+					     bg_record->nodes,
+					     bg_block_state_string(
+						     bg_record->state),
+					     alpha_num[bg_record->start[X]],
+					     alpha_num[bg_record->start[Y]],
+					     alpha_num[bg_record->start[Z]],
+					     alpha_num[geo[X]],
+					     alpha_num[geo[Y]],
+					     alpha_num[geo[Z]],
+					     bg_record->node_cnt);
 
 				if(check_and_set_node_list(
 					   bg_record->bg_block_list)
 				   == SLURM_ERROR) {
-					debug2("something happened in "
-					       "the load of %s",
-					       bg_record->bg_block_id);
+					if(bg_conf->slurm_debug_flags
+					   & DEBUG_FLAG_BG_PICK)
+						info("something happened in "
+						     "the load of %s",
+						     bg_record->bg_block_id);
 					list_iterator_destroy(itr);
 					FREE_NULL_BITMAP(my_bitmap);
 					rc = SLURM_ERROR;
 					goto finished;
 				}
+			} else if(bg_conf->slurm_debug_flags
+				  & DEBUG_FLAG_BG_PICK) {
+				for(i=0; i<SYSTEM_DIMENSIONS; i++)
+					geo[i] = bg_record->geo[i];
+
+				info("not adding %s(%s) %s %c%c%c "
+				     "%c%c%c %u",
+				     bg_record->bg_block_id,
+				     bg_record->nodes,
+				     bg_block_state_string(
+					     bg_record->state),
+				     alpha_num[bg_record->start[X]],
+				     alpha_num[bg_record->start[Y]],
+				     alpha_num[bg_record->start[Z]],
+				     alpha_num[geo[X]],
+				     alpha_num[geo[Y]],
+				     alpha_num[geo[Z]],
+				     bg_record->node_cnt);
 			}
 		}
 		list_iterator_destroy(itr);
 		FREE_NULL_BITMAP(my_bitmap);
 	} else {
 		reset_ba_system(false);
-		debug("No list was given");
+		if(bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
+			info("No list was given");
 	}
 
 	if(request->avail_node_bitmap) {
@@ -216,7 +244,8 @@ extern List create_dynamic_block(List block_list,
 		list_sort(block_list, (ListCmpF)bg_record_sort_aval_inc);
 		list_destroy(new_blocks);
 		new_blocks = NULL;
-		debug2("small block not able to be placed inside others");
+		if(bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
+			info("small block not able to be placed inside others");
 	}
 
 	if(request->conn_type == SELECT_NAV)
@@ -249,9 +278,10 @@ extern List create_dynamic_block(List block_list,
 	if (allocate_block(request, results))
 		goto setup_records;
 
-	debug2("allocate failure for size %d base "
-	       "partitions of free midplanes",
-	       request->size);
+	if(bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
+		info("allocate failure for size %d base "
+		     "partitions of free midplanes",
+		     request->size);
 	rc = SLURM_ERROR;
 
 	if(!list_count(block_list) || !my_block_list)
@@ -274,8 +304,9 @@ extern List create_dynamic_block(List block_list,
 		   && (bit_ffs(bg_record->ionode_bitmap) != 0))
 			continue;
 
-		debug3("removing %s for request %d",
-		       bg_record->nodes, request->size);
+		if(bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
+			info("removing %s for request %d",
+			     bg_record->nodes, request->size);
 		remove_block(bg_record->bg_block_list, (int)NO_VAL,
 			     (int)bg_record->conn_type);
 		/* need to set any unusable nodes that this last block
@@ -289,8 +320,9 @@ extern List create_dynamic_block(List block_list,
 		if (allocate_block(request, results))
 			break;
 
-		debug2("allocate failure for size %d base partitions",
-		       request->size);
+		if(bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
+			info("allocate failure for size %d base partitions",
+			     request->size);
 		rc = SLURM_ERROR;
 	}
 	list_iterator_destroy(itr);
@@ -410,8 +442,9 @@ extern bg_record_t *create_small_record(bg_record_t *bg_record,
 	found_record->ionode_bitmap = bit_copy(ionodes);
 	bit_fmt(bitstring, BITSIZE, found_record->ionode_bitmap);
 	found_record->ionodes = xstrdup(bitstring);
-	debug4("made small block of %s[%s]",
-	       found_record->nodes, found_record->ionodes);
+	if(bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
+		info("made small block of %s[%s]",
+		     found_record->nodes, found_record->ionodes);
 	return found_record;
 }
 
@@ -586,17 +619,19 @@ static int _split_block(List block_list, List new_blocks,
 	}
 
 #ifdef HAVE_BGL
-	debug2("Asking for %u 32CNBlocks, and %u 128CNBlocks "
-	       "from a %u block, starting at ionode %d.",
-	       blockreq.small32, blockreq.small128,
-	       bg_record->node_cnt, start);
+	if(bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
+		info("Asking for %u 32CNBlocks, and %u 128CNBlocks "
+		     "from a %u block, starting at ionode %d.",
+		     blockreq.small32, blockreq.small128,
+		     bg_record->node_cnt, start);
 #else
-	debug2("Asking for %u 16CNBlocks, %u 32CNBlocks, "
-	       "%u 64CNBlocks, %u 128CNBlocks, and %u 256CNBlocks"
-	       "from a %u block, starting at ionode %d.",
-	       blockreq.small16, blockreq.small32,
-	       blockreq.small64, blockreq.small128,
-	       blockreq.small256, bg_record->node_cnt, start);
+	if(bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
+		info("Asking for %u 16CNBlocks, %u 32CNBlocks, "
+		     "%u 64CNBlocks, %u 128CNBlocks, and %u 256CNBlocks "
+		     "from a %u block, starting at ionode %d.",
+		     blockreq.small16, blockreq.small32,
+		     blockreq.small64, blockreq.small128,
+		     blockreq.small256, bg_record->node_cnt, start);
 #endif
 	handle_small_record_request(new_blocks, &blockreq, bg_record, start);
 
@@ -617,8 +652,9 @@ static int _breakup_blocks(List block_list, List new_blocks,
 	int cnodes = request->procs / bg_conf->cpu_ratio;
 	int curr_bp_bit = -1;
 
-	debug2("cpu_count= %d cnodes=%d o_free=%d o_small=%d",
-	       request->procs, cnodes, only_free, only_small);
+	if(bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
+		info("cpu_count= %d cnodes=%d o_free=%d o_small=%d",
+		     request->procs, cnodes, only_free, only_small);
 
 	switch(cnodes) {
 	case 16:
@@ -664,15 +700,18 @@ static int _breakup_blocks(List block_list, List new_blocks,
 		if (request->avail_node_bitmap &&
 		    !bit_super_set(bg_record->bitmap,
 				   request->avail_node_bitmap)) {
-			debug2("bg block %s has nodes not usable by this job",
-			       bg_record->bg_block_id);
+			if(bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
+				info("bg block %s has nodes not usable "
+				     "by this job",
+				     bg_record->bg_block_id);
 			continue;
 		}
 
 		if(bg_record->node_cnt == cnodes) {
-			debug2("found it here %s, %s",
-			       bg_record->bg_block_id,
-			       bg_record->nodes);
+			if(bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
+				info("found it here %s, %s",
+				     bg_record->bg_block_id,
+				     bg_record->nodes);
 			request->save_name = xstrdup_printf(
 				"%c%c%c",
 				alpha_num[bg_record->start[X]],
@@ -735,11 +774,12 @@ static int _breakup_blocks(List block_list, List new_blocks,
 				total_cnode_cnt += num_cnodes;
 
 			bit_fmt(bitstring, BITSIZE, ionodes);
-			debug2("1 adding %s %s %d got %d set "
-			       "ionodes %s total is %s",
-			       bg_record->bg_block_id, bg_record->nodes,
-			       num_cnodes, total_cnode_cnt,
-			       bg_record->ionodes, bitstring);
+			if(bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
+				info("1 adding %s %s %d got %d set "
+				     "ionodes %s total is %s",
+				     bg_record->bg_block_id, bg_record->nodes,
+				     num_cnodes, total_cnode_cnt,
+				     bg_record->ionodes, bitstring);
 			if(total_cnode_cnt == cnodes) {
 				request->save_name = xstrdup_printf(
 					"%c%c%c",
@@ -769,10 +809,12 @@ static int _breakup_blocks(List block_list, List new_blocks,
 		bg_record_t *found_record = NULL;
 
 		if(bg_record->original) {
-			debug3("This was a copy");
+			if(bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
+				info("This was a copy");
 			found_record = bg_record->original;
 		} else {
-			debug3("looking for original");
+			if(bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
+				info("looking for original");
 			found_record = find_org_in_bg_list(
 				bg_lists->main, bg_record);
 		}
@@ -784,9 +826,10 @@ static int _breakup_blocks(List block_list, List new_blocks,
 
 		format_node_name(found_record, tmp_char, sizeof(tmp_char));
 
-		debug2("going to split %s, %s",
-		       found_record->bg_block_id,
-		       tmp_char);
+		if(bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
+			info("going to split %s, %s",
+			     found_record->bg_block_id,
+			     tmp_char);
 		request->save_name = xstrdup_printf(
 			"%c%c%c",
 			alpha_num[found_record->start[X]],

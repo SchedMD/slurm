@@ -2774,6 +2774,26 @@ extern char * debug_flags2str(uint32_t debug_flags)
 {
 	char *rc = NULL;
 
+	if (debug_flags & DEBUG_FLAG_BG_ALGO) {
+		if (rc)
+			xstrcat(rc, ",");
+		xstrcat(rc, "BGBlockAlgo");
+	}
+	if (debug_flags & DEBUG_FLAG_BG_ALGO_DEEP) {
+		if (rc)
+			xstrcat(rc, ",");
+		xstrcat(rc, "BGBlockAlgoDeep");
+	}
+	if (debug_flags & DEBUG_FLAG_BG_PICK) {
+		if (rc)
+			xstrcat(rc, ",");
+		xstrcat(rc, "BGBlockPick");
+	}
+	if (debug_flags & DEBUG_FLAG_BG_WIRES) {
+		if (rc)
+			xstrcat(rc, ",");
+		xstrcat(rc, "BGBlockWires");
+	}
 	if (debug_flags & DEBUG_FLAG_CPU_BIND) {
 		if (rc)
 			xstrcat(rc, ",");
@@ -2788,6 +2808,11 @@ extern char * debug_flags2str(uint32_t debug_flags)
 		if (rc)
 			xstrcat(rc, ",");
 		xstrcat(rc, "NO_CONF_HASH");
+	}
+	if (debug_flags & DEBUG_FLAG_PRIO) {
+		if (rc)
+			xstrcat(rc, ",");
+		xstrcat(rc, "Priority");
 	}
 	if (debug_flags & DEBUG_FLAG_SELECT_TYPE) {
 		if (rc)
@@ -2829,12 +2854,22 @@ extern uint32_t debug_str2flags(char *debug_flags)
 	tmp_str = xstrdup(debug_flags);
 	tok = strtok_r(tmp_str, ",", &last);
 	while (tok) {
-		if      (strcasecmp(tok, "CPU_Bind") == 0)
+		if      (strcasecmp(tok, "BGBlockAlgo") == 0)
+			rc |= DEBUG_FLAG_BG_ALGO;
+		else if (strcasecmp(tok, "BGBlockAlgoDeep") == 0)
+			rc |= DEBUG_FLAG_BG_ALGO_DEEP;
+		else if (strcasecmp(tok, "BGBlockPick") == 0)
+			rc |= DEBUG_FLAG_BG_PICK;
+		else if (strcasecmp(tok, "BGBlockWires") == 0)
+			rc |= DEBUG_FLAG_BG_WIRES;
+		else if (strcasecmp(tok, "CPU_Bind") == 0)
 			rc |= DEBUG_FLAG_CPU_BIND;
 		else if (strcasecmp(tok, "Gres") == 0)
 			rc = DEBUG_FLAG_GRES;
 		else if (strcasecmp(tok, "NO_CONF_HASH") == 0)
 			rc |= DEBUG_FLAG_NO_CONF_HASH;
+		else if (strcasecmp(tok, "Priority") == 0)
+			rc |= DEBUG_FLAG_PRIO;
 		else if (strcasecmp(tok, "SelectType") == 0)
 			rc |= DEBUG_FLAG_SELECT_TYPE;
 		else if (strcasecmp(tok, "Steps") == 0)

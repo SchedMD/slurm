@@ -77,13 +77,13 @@ extern void print_bg_record(bg_record_t* bg_record)
 		info("\tbitmap: %s", bitstring);
 	}
 #else
-{
-	char tmp_char[256];
-	format_node_name(bg_record, tmp_char, sizeof(tmp_char));
-	info("Record: BlockID:%s Nodes:%s Conn:%s",
-	     bg_record->bg_block_id, tmp_char,
-	     conn_type_string(bg_record->conn_type));
-}
+	{
+		char tmp_char[256];
+		format_node_name(bg_record, tmp_char, sizeof(tmp_char));
+		info("Record: BlockID:%s Nodes:%s Conn:%s",
+		     bg_record->bg_block_id, tmp_char,
+		     conn_type_string(bg_record->conn_type));
+	}
 #endif
 }
 
@@ -129,15 +129,15 @@ extern int block_exist_in_list(List my_list, bg_record_t *bg_record)
 				found_record->ionode_bitmap)) {
 			if(bg_record->ionodes)
 				debug("This block %s[%s] "
-				       "is already in the list %s",
-				       bg_record->nodes,
-				       bg_record->ionodes,
-				       found_record->bg_block_id);
+				      "is already in the list %s",
+				      bg_record->nodes,
+				      bg_record->ionodes,
+				      found_record->bg_block_id);
 			else
 				debug("This block %s "
-				       "is already in the list %s",
-				       bg_record->nodes,
-				       found_record->bg_block_id);
+				      "is already in the list %s",
+				      bg_record->nodes,
+				      found_record->bg_block_id);
 
 			rc = 1;
 			break;
@@ -521,7 +521,7 @@ extern int bg_record_sort_aval_inc(bg_record_t* rec_a, bg_record_t* rec_b)
 	   && (rec_b->job_running != BLOCK_ERROR_STATE))
 		return 1;
 	else if((rec_a->job_running != BLOCK_ERROR_STATE)
-	   && (rec_b->job_running == BLOCK_ERROR_STATE))
+		&& (rec_b->job_running == BLOCK_ERROR_STATE))
 		return -1;
 	else if(!rec_a->job_ptr && rec_b->job_ptr)
 		return -1;
@@ -750,15 +750,17 @@ extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq,
 	/* bg_record->boot_state = 0; 	Implicit */
 	/* bg_record->state = 0;	Implicit */
 #ifdef HAVE_BGL
-	debug2("add_bg_record: asking for %s %d %d %s",
-	       blockreq->block, blockreq->small32, blockreq->small128,
-	       conn_type_string(blockreq->conn_type));
+	if(bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
+		info("add_bg_record: asking for %s %d %d %s",
+		     blockreq->block, blockreq->small32, blockreq->small128,
+		     conn_type_string(blockreq->conn_type));
 #else
-	debug2("add_bg_record: asking for %s %d %d %d %d %d %s",
-	       blockreq->block, blockreq->small256,
-	       blockreq->small128, blockreq->small64,
-	       blockreq->small32, blockreq->small16,
-	       conn_type_string(blockreq->conn_type));
+	if(bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
+		info("add_bg_record: asking for %s %d %d %d %d %d %s",
+		     blockreq->block, blockreq->small256,
+		     blockreq->small128, blockreq->small64,
+		     blockreq->small32, blockreq->small16,
+		     conn_type_string(blockreq->conn_type));
 #endif
 	/* Set the bitmap blank here if it is a full node we don't
 	   want anything set we also don't want the bg_record->ionodes set.
@@ -779,7 +781,7 @@ extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq,
 		len += strlen(bg_conf->slurm_node_prefix)+1;
 		bg_record->nodes = xmalloc(len);
 		snprintf(bg_record->nodes, len, "%s%s",
-			bg_conf->slurm_node_prefix, blockreq->block+i);
+			 bg_conf->slurm_node_prefix, blockreq->block+i);
 	} else
 		fatal("add_bg_record: BPs=%s is in a weird format",
 		      blockreq->block);
@@ -833,7 +835,8 @@ extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq,
 	} else {
 		List bg_block_list = NULL;
 
-		debug("add_bg_record: adding a small block");
+		if(bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
+			info("add_bg_record: adding a small block");
 		if(no_check)
 			goto no_check;
 		/* if the ionode cnt for small32 is 0 then don't
@@ -1040,8 +1043,8 @@ extern int format_node_name(bg_record_t *bg_record, char *buf, int buf_size)
 {
 	if(bg_record->ionodes) {
 		snprintf(buf, buf_size, "%s[%s]",
-			bg_record->nodes,
-			bg_record->ionodes);
+			 bg_record->nodes,
+			 bg_record->ionodes);
 	} else {
 		snprintf(buf, buf_size, "%s", bg_record->nodes);
 	}
@@ -1622,7 +1625,7 @@ static int _addto_node_list(bg_record_t *bg_record, int *start, int *end)
 		      start[X], start[Y], start[Z]);
 	}
 	if ((end[X] >= DIM_SIZE[X]) || (end[Y] >= DIM_SIZE[Y])
-	||  (end[Z] >= DIM_SIZE[Z])) {
+	    ||  (end[Z] >= DIM_SIZE[Z])) {
 		fatal("bluegene.conf matrix size exceeds space defined in "
 		      "slurm.conf %c%c%cx%d%d%d => %c%c%c",
 		      alpha_num[start[X]], alpha_num[start[Y]],

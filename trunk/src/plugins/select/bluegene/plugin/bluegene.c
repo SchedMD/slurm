@@ -95,6 +95,7 @@ extern int init_bg(void)
 	xassert(slurmctld_conf.node_prefix);
 	bg_conf->slurm_user_name = xstrdup(slurmctld_conf.slurm_user_name);
 	bg_conf->slurm_node_prefix = xstrdup(slurmctld_conf.node_prefix);
+	bg_conf->slurm_debug_flags = slurmctld_conf.debug_flags;
 	slurm_conf_unlock();
 
 #ifdef HAVE_BGL
@@ -198,7 +199,8 @@ extern int remove_all_users(char *bg_block_id, char *user_name)
 		returnc = REMOVE_USER_ERR;
 		user_count = 0;
 	} else
-		debug2("got %d users for %s", user_count, bg_block_id);
+		if(bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
+			info("got %d users for %s", user_count, bg_block_id);
 	for(i=0; i<user_count; i++) {
 		if(i) {
 			if ((rc = bridge_get_data(block_ptr,
@@ -263,9 +265,10 @@ extern int remove_all_users(char *bg_block_id, char *user_name)
 extern int set_block_user(bg_record_t *bg_record)
 {
 	int rc = 0;
-	debug("resetting the boot state flag and "
-	      "counter for block %s.",
-	      bg_record->bg_block_id);
+	if(bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
+		info("resetting the boot state flag and "
+		     "counter for block %s.",
+		     bg_record->bg_block_id);
 	bg_record->boot_state = 0;
 	bg_record->boot_count = 0;
 
@@ -408,7 +411,9 @@ extern bg_record_t *find_and_remove_org_from_bg_list(List my_list,
 			if(!strcmp(bg_record->bg_block_id,
 				   found_record->bg_block_id)) {
 				list_remove(itr);
-				debug2("got the block");
+				if(bg_conf->slurm_debug_flags
+				   & DEBUG_FLAG_SELECT_TYPE)
+					info("got the block");
 				break;
 			}
 		}
@@ -432,7 +437,9 @@ extern bg_record_t *find_org_in_bg_list(List my_list, bg_record_t *bg_record)
 
 			if(!strcmp(bg_record->bg_block_id,
 				   found_record->bg_block_id)) {
-				debug2("got the block");
+				if(bg_conf->slurm_debug_flags
+				   & DEBUG_FLAG_SELECT_TYPE)
+					info("got the block");
 				break;
 			}
 		}
@@ -466,7 +473,9 @@ extern int bg_free_block(bg_record_t *bg_record, bool wait, bool locked)
 		if (bg_record->state != NO_VAL
 		    && bg_record->state != RM_PARTITION_FREE
 		    && bg_record->state != RM_PARTITION_DEALLOCATING) {
-			debug2("bridge_destroy %s", bg_record->bg_block_id);
+			if(bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
+				info("bridge_destroy %s",
+				     bg_record->bg_block_id);
 #ifdef HAVE_BG_FILES
 			rc = bridge_destroy_block(bg_record->bg_block_id);
 			if (rc != STATUS_OK) {
@@ -486,11 +495,13 @@ extern int bg_free_block(bg_record_t *bg_record, bool wait, bool locked)
 					   == RM_PARTITION_ERROR)
 						break;
 #endif
-					debug2("bridge_destroy_partition"
-					       "(%s): %s State = %d",
-					       bg_record->bg_block_id,
-					       bg_err_str(rc),
-					       bg_record->state);
+					if(bg_conf->slurm_debug_flags
+					   & DEBUG_FLAG_SELECT_TYPE)
+						info("bridge_destroy_partition"
+						     "(%s): %s State = %d",
+						     bg_record->bg_block_id,
+						     bg_err_str(rc),
+						     bg_record->state);
 				} else {
 					error("bridge_destroy_partition"
 					      "(%s): %s State = %d",
@@ -553,9 +564,11 @@ extern void *mult_free_block(void *args)
 			     bg_record->job_running);
 			term_jobs_on_block(bg_record->bg_block_id);
 		}
-		debug("freeing the block %s.", bg_record->bg_block_id);
+		if(bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
+			info("freeing the block %s.", bg_record->bg_block_id);
 		bg_free_block(bg_record, 1, 0);
-		debug("done\n");
+		if(bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
+			info("done\n");
 		slurm_mutex_lock(&freed_cnt_mutex);
 		num_block_freed++;
 		slurm_mutex_unlock(&freed_cnt_mutex);
@@ -613,22 +626,27 @@ extern void *mult_destroy_block(void *args)
 			num_unused_cpus += bg_record->cpu_cnt;
 		}
 		slurm_mutex_unlock(&block_state_mutex);
-		debug3("removing the jobs on block %s\n",
-		       bg_record->bg_block_id);
+		if(bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
+			info("removing the jobs on block %s\n",
+			     bg_record->bg_block_id);
 		term_jobs_on_block(bg_record->bg_block_id);
 
-		debug2("destroying %s", (char *)bg_record->bg_block_id);
+		if(bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
+			info("destroying %s", (char *)bg_record->bg_block_id);
 		if(bg_free_block(bg_record, 1, 0) == SLURM_ERROR) {
 			debug("there was an error");
 			goto already_here;
 		}
-		debug2("done destroying");
+		if(bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
+			info("done destroying");
 		slurm_mutex_lock(&block_state_mutex);
 		remove_from_bg_list(bg_lists->freeing, bg_record);
 		slurm_mutex_unlock(&block_state_mutex);
 
 #ifdef HAVE_BG_FILES
-		debug2("removing %s from database", bg_record->bg_block_id);
+		if(bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
+			info("removing %s from database",
+			     bg_record->bg_block_id);
 
 		rc = bridge_remove_block(bg_record->bg_block_id);
 		if (rc != STATUS_OK) {
@@ -641,14 +659,16 @@ extern void *mult_destroy_block(void *args)
 				      bg_err_str(rc));
 			}
 		} else
-			debug2("done %s",
-			       (char *)bg_record->bg_block_id);
+			if(bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
+				info("done %s",
+				     (char *)bg_record->bg_block_id);
 #endif
 		slurm_mutex_lock(&block_state_mutex);
 		destroy_bg_record(bg_record);
 		slurm_mutex_unlock(&block_state_mutex);
 		last_bg_update = time(NULL);
-		debug2("destroyed");
+		if(bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
+			info("destroyed");
 
 	already_here:
 		slurm_mutex_lock(&freed_cnt_mutex);
@@ -701,7 +721,9 @@ extern int free_block_list(List delete_list)
 
 	while ((found_record = (bg_record_t*)list_pop(delete_list)) != NULL) {
 		/* push job onto queue in a FIFO */
-		debug3("adding %s to be freed", found_record->bg_block_id);
+		if(bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
+			info("adding %s to be freed",
+			     found_record->bg_block_id);
 		if(!block_ptr_exist_in_list(*block_list, found_record)) {
 			num_block_to_free++;
 			if (list_push(*block_list, found_record) == NULL)
@@ -775,7 +797,8 @@ extern int read_bg_conf(void)
 	ListIterator itr = NULL;
 	char* bg_conf_file = NULL;
 
-	debug("Reading the bluegene.conf file");
+	if(bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
+		info("Reading the bluegene.conf file");
 
 	/* check if config file has changed */
 	bg_conf_file = _get_bg_conf();
@@ -784,10 +807,12 @@ extern int read_bg_conf(void)
 		fatal("can't stat bluegene.conf file %s: %m", bg_conf_file);
 	if (last_config_update) {
 		_reopen_bridge_log();
-		if(last_config_update == config_stat.st_mtime)
-			debug("%s unchanged", bg_conf_file);
-		else {
-			info("Restart slurmctld for %s changes to take effect",
+		if(last_config_update == config_stat.st_mtime) {
+			if(bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
+				info("%s unchanged", bg_conf_file);
+		} else {
+			info("Restart slurmctld for %s changes "
+			     "to take effect",
 			     bg_conf_file);
 		}
 		last_config_update = config_stat.st_mtime;
@@ -826,7 +851,9 @@ extern int read_bg_conf(void)
 		     "If this isn't correct please set BlrtsImage",
 		     bg_conf->default_blrtsimage);
 	} else {
-		debug3("default BlrtsImage %s", bg_conf->default_blrtsimage);
+		if(bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
+			info("default BlrtsImage %s",
+			     bg_conf->default_blrtsimage);
 		image = xmalloc(sizeof(image_t));
 		image->name = xstrdup(bg_conf->default_blrtsimage);
 		image->def = true;
@@ -855,7 +882,9 @@ extern int read_bg_conf(void)
 		     "If this isn't correct please set LinuxImage",
 		     bg_conf->default_linuximage);
 	} else {
-		debug3("default LinuxImage %s", bg_conf->default_linuximage);
+		if(bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
+			info("default LinuxImage %s",
+			     bg_conf->default_linuximage);
 		image = xmalloc(sizeof(image_t));
 		image->name = xstrdup(bg_conf->default_linuximage);
 		image->def = true;
@@ -885,8 +914,9 @@ extern int read_bg_conf(void)
 		     "If this isn't correct please set RamDiskImage",
 		     bg_conf->default_ramdiskimage);
 	} else {
-		debug3("default RamDiskImage %s",
-		       bg_conf->default_ramdiskimage);
+		if(bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
+			info("default RamDiskImage %s",
+			     bg_conf->default_ramdiskimage);
 		image = xmalloc(sizeof(image_t));
 		image->name = xstrdup(bg_conf->default_ramdiskimage);
 		image->def = true;
@@ -916,7 +946,9 @@ extern int read_bg_conf(void)
 		     "If this isn't correct please set CnloadImage",
 		     bg_conf->default_linuximage);
 	} else {
-		debug3("default CnloadImage %s", bg_conf->default_linuximage);
+		if(bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
+			info("default CnloadImage %s",
+			     bg_conf->default_linuximage);
 		image = xmalloc(sizeof(image_t));
 		image->name = xstrdup(bg_conf->default_linuximage);
 		image->def = true;
@@ -946,7 +978,9 @@ extern int read_bg_conf(void)
 		     "If this isn't correct please set IoloadImage",
 		     bg_conf->default_ramdiskimage);
 	} else {
-		debug3("default IoloadImage %s", bg_conf->default_ramdiskimage);
+		if(bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
+			info("default IoloadImage %s",
+			     bg_conf->default_ramdiskimage);
 		image = xmalloc(sizeof(image_t));
 		image->name = xstrdup(bg_conf->default_ramdiskimage);
 		image->def = true;
@@ -977,8 +1011,9 @@ extern int read_bg_conf(void)
 		     "If this isn't correct please set MloaderImage",
 		     bg_conf->default_mloaderimage);
 	} else {
-		debug3("default MloaderImage %s",
-		       bg_conf->default_mloaderimage);
+		if(bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
+			info("default MloaderImage %s",
+			     bg_conf->default_mloaderimage);
 		image = xmalloc(sizeof(image_t));
 		image->name = xstrdup(bg_conf->default_mloaderimage);
 		image->def = true;
@@ -1087,8 +1122,9 @@ extern int read_bg_conf(void)
 			bg_conf->smallest_block=512;
 		}
 #endif
-		debug("Smallest block possible on this system is %u",
-		      bg_conf->smallest_block);
+		if(bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
+			info("Smallest block possible on this system is %u",
+			     bg_conf->smallest_block);
 		/* below we are creating all the possible bitmaps for
 		 * each size of small block
 		 */
@@ -1273,7 +1309,8 @@ extern int validate_current_blocks(char *dir)
 	last_bg_update = time(NULL);
 	sort_bg_record_inc_size(bg_lists->main);
 	slurm_mutex_unlock(&block_state_mutex);
-	debug("Blocks have finished being created.");
+	if(bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
+		info("Blocks have finished being created.");
 	return SLURM_SUCCESS;
 }
 
@@ -1654,8 +1691,9 @@ static int _reopen_bridge_log(void)
 	rc = bridge_set_log_params(bg_conf->bridge_api_file,
 				   bg_conf->bridge_api_verb);
 #endif
-	debug3("Bridge api file set to %s, verbose level %d\n",
-	       bg_conf->bridge_api_file, bg_conf->bridge_api_verb);
+	if(bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
+		info("Bridge api file set to %s, verbose level %d\n",
+		     bg_conf->bridge_api_file, bg_conf->bridge_api_verb);
 
 	return rc;
 }

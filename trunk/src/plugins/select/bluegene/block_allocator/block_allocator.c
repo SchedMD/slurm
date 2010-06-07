@@ -75,6 +75,7 @@ int cluster_base = 36;
 #endif
 uint32_t cluster_flags = 0;
 char *p = '\0';
+uint32_t ba_debug_flags = 0;
 
 /* extern Global */
 my_bluegene_t *bg = NULL;
@@ -178,7 +179,7 @@ static void _switch_config(ba_node_t* source, ba_node_t* target, int dim,
 
 /* */
 static int _set_external_wires(int dim, int count, ba_node_t* source,
-				ba_node_t* target);
+			       ba_node_t* target);
 
 /* */
 static char *_set_internal_wires(List nodes, int size, int conn_type);
@@ -357,7 +358,8 @@ extern int parse_image(void **dest, slurm_parser_enum_t type,
 	n = xmalloc(sizeof(image_t));
 	n->name = xstrdup(value);
 	n->def = false;
-	debug3("image %s", n->name);
+	if(ba_debug_flags & DEBUG_FLAG_BG_ALGO)
+		info("image %s", n->name);
 	n->groups = list_create(destroy_image_group_list);
 	s_p_get_string(&tmp, "Groups", tbl);
 	if(tmp) {
@@ -368,9 +370,11 @@ extern int parse_image(void **dest, slurm_parser_enum_t type,
 				snprintf(image_group->name,
 					 (i-j)+1, "%s", tmp+j);
 				gid_from_string (image_group->name,
-						&image_group->gid);
-				debug3("adding group %s %d", image_group->name,
-				       image_group->gid);
+						 &image_group->gid);
+				if(ba_debug_flags & DEBUG_FLAG_BG_ALGO)
+					info("adding group %s %d",
+					     image_group->name,
+					     image_group->gid);
 				list_append(n->groups, image_group);
 				j=i;
 				j++;
@@ -385,9 +389,10 @@ extern int parse_image(void **dest, slurm_parser_enum_t type,
 				fatal("Invalid bluegene.conf parameter "
 				      "Groups=%s",
 				      image_group->name);
-			else
-				debug3("adding group %s %d", image_group->name,
-				       image_group->gid);
+			else if(ba_debug_flags & DEBUG_FLAG_BG_ALGO)
+				info("adding group %s %d",
+				     image_group->name,
+				     image_group->gid);
 			list_append(n->groups, image_group);
 		}
 		xfree(tmp);
@@ -484,7 +489,7 @@ extern int new_ba_request(ba_request_t* ba_request)
 
 	if(!(cluster_flags & CLUSTER_FLAG_BG)) {
 		if(geo[X] != NO_VAL) {
-			for (i=0; i<cluster_dims; i++){
+			for (i=0; i<cluster_dims; i++) {
 				if ((geo[i] < 1) || (geo[i] > DIM_SIZE[i])) {
 					error("new_ba_request Error, "
 					      "request geometry is invalid %d",
@@ -569,21 +574,22 @@ extern int new_ba_request(ba_request_t* ba_request)
 		}
 		sz = ba_request->size % (DIM_SIZE[Y] * DIM_SIZE[Z]);
 		if(!sz) {
-		      i = ba_request->size / (DIM_SIZE[Y] * DIM_SIZE[Z]);
-		      geo[X] = i;
-		      geo[Y] = DIM_SIZE[Y];
-		      geo[Z] = DIM_SIZE[Z];
-		      sz=ba_request->size;
-		      if((geo[X]*geo[Y]*geo[Z]) == ba_request->size)
-			      _append_geo(geo,
-					  ba_request->elongate_geos,
-					  ba_request->rotate);
-		      else
-			      error("%d I was just trying to add a "
-				    "geo of %d%d%d "
-				    "while I am trying to request %d midplanes",
-				    __LINE__, geo[X], geo[Y], geo[Z],
-				    ba_request->size);
+			i = ba_request->size / (DIM_SIZE[Y] * DIM_SIZE[Z]);
+			geo[X] = i;
+			geo[Y] = DIM_SIZE[Y];
+			geo[Z] = DIM_SIZE[Z];
+			sz=ba_request->size;
+			if((geo[X]*geo[Y]*geo[Z]) == ba_request->size)
+				_append_geo(geo,
+					    ba_request->elongate_geos,
+					    ba_request->rotate);
+			else
+				error("%d I was just trying to add a "
+				      "geo of %d%d%d "
+				      "while I am trying to request "
+				      "%d midplanes",
+				      __LINE__, geo[X], geo[Y], geo[Z],
+				      ba_request->size);
 		}
 //	startagain:
 		picked=0;
@@ -739,7 +745,7 @@ extern int new_ba_request(ba_request_t* ba_request)
 		else
 			error("%d I was just trying to add a geo of %d%d%d "
 			      "while I am trying to request %d midplanes",
-			       __LINE__, geo[X], geo[Y], geo[Z],
+			      __LINE__, geo[X], geo[Y], geo[Z],
 			      ba_request->size);
 
 		/* see if We can find a cube or square root of the
@@ -839,7 +845,7 @@ extern void print_ba_request(ba_request_t* ba_request)
 /**
  * empty a list that we don't want to destroy the memory of the
  * elements always returns 1
-*/
+ */
 extern int empty_null_destroy_list(void *arg, void *key)
 {
 	return 1;
@@ -869,13 +875,14 @@ extern void ba_init(node_info_msg_t *node_info_ptr, bool sanity_check)
 	int rc = 0;
 #endif /* HAVE_BG_FILES */
 
-	cluster_dims = slurmdb_setup_cluster_dims();
-	cluster_flags = slurmdb_setup_cluster_flags();
-
 	/* We only need to initialize once, so return if already done so. */
 	if (_initialized) {
 		return;
 	}
+
+	cluster_dims = slurmdb_setup_cluster_dims();
+	cluster_flags = slurmdb_setup_cluster_flags();
+	set_ba_debug_flags(slurm_get_debug_flags());
 
 #ifdef HAVE_BG_FILES
 	bridge_init();
@@ -1043,8 +1050,8 @@ node_info_error:
 		}
 
 		if ((bg != NULL)
-		&&  ((rc = bridge_get_data(bg, RM_Msize, &bp_size))
-		     == STATUS_OK)) {
+		    &&  ((rc = bridge_get_data(bg, RM_Msize, &bp_size))
+			 == STATUS_OK)) {
 			verbose("BlueGene configured with "
 				"%d x %d x %d base blocks",
 				bp_size.X, bp_size.Y, bp_size.Z);
@@ -1182,6 +1189,10 @@ extern void ba_fini()
 //	debug3("pa system destroyed");
 }
 
+extern void set_ba_debug_flags(uint32_t debug_flags)
+{
+	ba_debug_flags = debug_flags;
+}
 
 /*
  * set the node in the internal configuration as in, or not in use,
@@ -1271,10 +1282,11 @@ extern int copy_node_path(List nodes, List *dest_nodes)
 		list_iterator_destroy(itr2);
 
 		if(!new_ba_node) {
-			debug3("adding %c%c%c as a new node",
-			       alpha_num[ba_node->coord[X]],
-			       alpha_num[ba_node->coord[Y]],
-			       alpha_num[ba_node->coord[Z]]);
+			if(ba_debug_flags & DEBUG_FLAG_BG_ALGO)
+				info("adding %c%c%c as a new node",
+				     alpha_num[ba_node->coord[X]],
+				     alpha_num[ba_node->coord[Y]],
+				     alpha_num[ba_node->coord[Z]]);
 			new_ba_node = ba_copy_node(ba_node);
 			_new_ba_node(new_ba_node, ba_node->coord, false);
 			list_push(*dest_nodes, new_ba_node);
@@ -1490,12 +1502,14 @@ extern int check_and_set_node_list(List nodes)
 			node_flags = curr_ba_node->state & NODE_STATE_FLAGS;
 			if (!(node_flags & (NODE_STATE_DRAIN | NODE_STATE_FAIL))
 			    && (base_state != NODE_STATE_DOWN)) {
-				debug4("I have already been to "
-				       "this node %c%c%c %s",
-				       alpha_num[ba_node->coord[X]],
-				       alpha_num[ba_node->coord[Y]],
-				       alpha_num[ba_node->coord[Z]],
-				       node_state_string(curr_ba_node->state));
+				if(ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
+					info("I have already been to "
+					     "this node %c%c%c %s",
+					     alpha_num[ba_node->coord[X]],
+					     alpha_num[ba_node->coord[Y]],
+					     alpha_num[ba_node->coord[Z]],
+					     node_state_string(
+						     curr_ba_node->state));
 				rc = SLURM_ERROR;
 				goto end_it;
 			}
@@ -1513,17 +1527,22 @@ extern int check_and_set_node_list(List nodes)
 
 				if(ba_switch->int_wire[j].used
 				   && curr_ba_switch->int_wire[j].used
-					&& j != curr_ba_switch->
+				   && j != curr_ba_switch->
 				   int_wire[j].port_tar) {
-					debug4("%c%c%c dim %d port %d "
-					       "is already in use to %d",
-					       alpha_num[ba_node->coord[X]],
-					       alpha_num[ba_node->coord[Y]],
-					       alpha_num[ba_node->coord[Z]],
-					       i,
-					       j,
-					       curr_ba_switch->
-					       int_wire[j].port_tar);
+					if(ba_debug_flags
+					   & DEBUG_FLAG_BG_ALGO_DEEP)
+						info("%c%c%c dim %d port %d "
+						     "is already in use to %d",
+						     alpha_num[ba_node->
+							       coord[X]],
+						     alpha_num[ba_node->
+							       coord[Y]],
+						     alpha_num[ba_node->
+							       coord[Z]],
+						     i,
+						     j,
+						     curr_ba_switch->
+						     int_wire[j].port_tar);
 					rc = SLURM_ERROR;
 					goto end_it;
 				}
@@ -1593,7 +1612,7 @@ extern char *set_bg_block(List results, int *start,
 			      alpha_num[geometry[Z]]);
 			return NULL;
 		}
-	     //info("looking at %d%d%d", geometry[X], geometry[Y], geometry[Z]);
+		//info("looking at %d%d%d", geometry[X], geometry[Y], geometry[Z]);
 		size = geometry[X] * geometry[Y] * geometry[Z];
 		ba_node = &ba_system_ptr->grid[start[X]][start[Y]][start[Z]];
 	}
@@ -1618,11 +1637,12 @@ extern char *set_bg_block(List results, int *start,
 		if(ba_node->letter == '.') {
 			ba_node->letter = letters[color_count%62];
 			ba_node->color = colors[color_count%6];
-			debug4("count %d setting letter = %c "
-			       "color = %d",
-			       color_count,
-			       ba_node->letter,
-			       ba_node->color);
+			if(ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
+				info("count %d setting letter = %c "
+				     "color = %d",
+				     color_count,
+				     ba_node->letter,
+				     ba_node->color);
 			color_count++;
 		}
 		goto end_it;
@@ -2186,7 +2206,8 @@ extern int load_block_wiring(char *bg_block_id)
 	ba_switch_t *ba_switch = NULL;
 	int *geo = NULL;
 
-	debug3("getting info for block %s\n", bg_block_id);
+	if(ba_debug_flags & DEBUG_FLAG_BG_ALGO)
+		info("getting info for block %s\n", bg_block_id);
 
 	if ((rc = bridge_get_block(bg_block_id,  &block_ptr)) != STATUS_OK) {
 		error("bridge_get_block(%s): %s",
@@ -2202,7 +2223,8 @@ extern int load_block_wiring(char *bg_block_id)
 		return SLURM_ERROR;
 	}
 	if(!switch_cnt) {
-		debug4("no switch_cnt");
+		if(ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
+			info("no switch_cnt");
 		if ((rc = bridge_get_data(block_ptr,
 					  RM_PartitionFirstBP,
 					  &curr_bp))
@@ -2275,8 +2297,9 @@ extern int load_block_wiring(char *bg_block_id)
 			      bg_err_str(rc));
 			return SLURM_ERROR;
 		}
-		debug3("switch id = %s dim %d conns = %d",
-		       switchid, dim, cnt);
+		if(ba_debug_flags & DEBUG_FLAG_BG_ALGO)
+			info("switch id = %s dim %d conns = %d",
+			     switchid, dim, cnt);
 		ba_switch = &ba_system_ptr->
 			grid[geo[X]][geo[Y]][geo[Z]].axis_switch[dim];
 		for (j=0; j<cnt; j++) {
@@ -2288,7 +2311,7 @@ extern int load_block_wiring(char *bg_block_id)
 				    != STATUS_OK) {
 					error("bridge_get_data: "
 					      "RM_SwitchNextConnection: %s",
-					       bg_err_str(rc));
+					      bg_err_str(rc));
 					return SLURM_ERROR;
 				}
 			} else {
@@ -2348,8 +2371,9 @@ extern int load_block_wiring(char *bg_block_id)
 				ba_system_ptr->grid[geo[X]][geo[Y]][geo[Z]].
 					used = true;
 			}
-			debug4("connection going from %d -> %d",
-			      curr_conn.p1, curr_conn.p2);
+			if(ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
+				info("connection going from %d -> %d",
+				     curr_conn.p1, curr_conn.p2);
 
 			if(ba_switch->int_wire[curr_conn.p1].used) {
 				debug("%c%c%c dim %d port %d "
@@ -2412,7 +2436,8 @@ extern List get_and_set_block_wiring(char *bg_block_id,
 	List results = list_create(destroy_ba_node);
 	ListIterator itr = NULL;
 
-	debug3("getting info for block %s\n", bg_block_id);
+	if(ba_debug_flags & DEBUG_FLAG_BG_ALGO)
+		info("getting info for block %s\n", bg_block_id);
 
 	if ((rc = bridge_get_data(block_ptr, RM_PartitionSwitchNum,
 				  &switch_cnt)) != STATUS_OK) {
@@ -2421,7 +2446,8 @@ extern List get_and_set_block_wiring(char *bg_block_id,
 		goto end_it;
 	}
 	if(!switch_cnt) {
-		debug4("no switch_cnt");
+		if(ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
+			info("no switch_cnt");
 		if ((rc = bridge_get_data(block_ptr,
 					  RM_PartitionFirstBP,
 					  &curr_bp))
@@ -2500,8 +2526,9 @@ extern List get_and_set_block_wiring(char *bg_block_id,
 			      bg_err_str(rc));
 			goto end_it;
 		}
-		debug3("switch id = %s dim %d conns = %d",
-		       switchid, dim, cnt);
+		if(ba_debug_flags & DEBUG_FLAG_BG_ALGO)
+			info("switch id = %s dim %d conns = %d",
+			     switchid, dim, cnt);
 
 		itr = list_iterator_create(results);
 		while((ba_node = list_next(itr))) {
@@ -2529,7 +2556,7 @@ extern List get_and_set_block_wiring(char *bg_block_id,
 				    != STATUS_OK) {
 					error("bridge_get_data: "
 					      "RM_SwitchNextConnection: %s",
-					       bg_err_str(rc));
+					      bg_err_str(rc));
 					goto end_it;
 				}
 			} else {
@@ -2587,8 +2614,9 @@ extern List get_and_set_block_wiring(char *bg_block_id,
 				}
 				ba_node->used = true;
 			}
-			debug4("connection going from %d -> %d",
-			      curr_conn.p1, curr_conn.p2);
+			if(ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
+				info("connection going from %d -> %d",
+				     curr_conn.p1, curr_conn.p2);
 
 			if(ba_switch->int_wire[curr_conn.p1].used) {
 				debug("%c%c%c dim %d port %d "
@@ -2650,14 +2678,15 @@ extern int validate_coord(int *coord)
 	if(coord[X]>=DIM_SIZE[X]
 	   || coord[Y]>=DIM_SIZE[Y]
 	   || coord[Z]>=DIM_SIZE[Z]) {
-		debug4("got coord %c%c%c greater than what we are using "
-		       "%c%c%c",
-		       alpha_num[coord[X]],
-		       alpha_num[coord[Y]],
-		       alpha_num[coord[Z]],
-		       alpha_num[DIM_SIZE[X]],
-		       alpha_num[DIM_SIZE[Y]],
-		       alpha_num[DIM_SIZE[Z]]);
+		if(ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
+			info("got coord %c%c%c greater than what we are using "
+			     "%c%c%c",
+			     alpha_num[coord[X]],
+			     alpha_num[coord[Y]],
+			     alpha_num[coord[Z]],
+			     alpha_num[DIM_SIZE[X]],
+			     alpha_num[DIM_SIZE[Y]],
+			     alpha_num[DIM_SIZE[Z]]);
 		return 0;
 	}
 #endif
@@ -2816,9 +2845,10 @@ static int _append_geo(int *geometry, List geos, int rotate)
 		geo[X] = geometry[X];
 		geo[Y] = geometry[Y];
 		geo[Z] = geometry[Z];
-		debug4("adding geo %c%c%c",
-		       alpha_num[geo[X]], alpha_num[geo[Y]],
-		       alpha_num[geo[Z]]);
+		if(ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
+			info("adding geo %c%c%c",
+			     alpha_num[geo[X]], alpha_num[geo[Y]],
+			     alpha_num[geo[Z]]);
 		list_append(geos, geo);
 	}
 	return 1;
@@ -2880,10 +2910,15 @@ static int _fill_in_coords(List results, List start_list,
 					continue;
 
 				if (!_node_used(ba_node, geometry[X])) {
-					debug4("here Adding %c%c%c",
-					       alpha_num[ba_node->coord[X]],
-					       alpha_num[ba_node->coord[Y]],
-					       alpha_num[ba_node->coord[Z]]);
+					if(ba_debug_flags
+					   & DEBUG_FLAG_BG_ALGO_DEEP)
+						info("here Adding %c%c%c",
+						     alpha_num[ba_node->
+							       coord[X]],
+						     alpha_num[ba_node->
+							       coord[Y]],
+						     alpha_num[ba_node->
+							       coord[Z]]);
 					list_append(results, ba_node);
 					next_switch = &ba_node->axis_switch[X];
 
@@ -2924,7 +2959,7 @@ static int _fill_in_coords(List results, List start_list,
 			debug("We don't allow Y passthoughs");
 			rc = 0;
 		} else if((*deny_pass & PASS_DENY_Z)
-		   && (*deny_pass & PASS_FOUND_Z)) {
+			  && (*deny_pass & PASS_FOUND_Z)) {
 			debug("We don't allow Z passthoughs");
 			rc = 0;
 		}
@@ -2984,16 +3019,17 @@ static int _copy_the_path(List nodes, ba_switch_t *curr_switch,
 	node_curr = curr_switch->ext_wire[0].node_tar;
 	node_tar = curr_switch->ext_wire[port_tar].node_tar;
 	if(mark_switch->int_wire[source].used)
-		debug3("setting dim %d %c%c%c %d-> %c%c%c %d",
-		       dim,
-		       alpha_num[node_curr[X]],
-		       alpha_num[node_curr[Y]],
-		       alpha_num[node_curr[Z]],
-		       source,
-		       alpha_num[node_tar[X]],
-		       alpha_num[node_tar[Y]],
-		       alpha_num[node_tar[Z]],
-		       port_tar);
+		if(ba_debug_flags & DEBUG_FLAG_BG_ALGO)
+			info("setting dim %d %c%c%c %d-> %c%c%c %d",
+			     dim,
+			     alpha_num[node_curr[X]],
+			     alpha_num[node_curr[Y]],
+			     alpha_num[node_curr[Z]],
+			     source,
+			     alpha_num[node_tar[X]],
+			     alpha_num[node_tar[Y]],
+			     alpha_num[node_tar[Z]],
+			     port_tar);
 
 	if(port_tar == 1) {
 		/* found the end of the line */
@@ -3052,10 +3088,11 @@ static int _copy_the_path(List nodes, ba_switch_t *curr_switch,
 					       [mark_node_tar[Z]]);
 			_new_ba_node(ba_node, mark_node_tar, false);
 			list_push(nodes, ba_node);
-			debug4("haven't seen %c%c%c adding it",
-			       alpha_num[ba_node->coord[X]],
-			       alpha_num[ba_node->coord[Y]],
-			       alpha_num[ba_node->coord[Z]]);
+			if(ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
+				info("haven't seen %c%c%c adding it",
+				     alpha_num[ba_node->coord[X]],
+				     alpha_num[ba_node->coord[Y]],
+				     alpha_num[ba_node->coord[Z]]);
 		}
 		next_mark_switch = &ba_node->axis_switch[dim];
 
@@ -3078,11 +3115,12 @@ static int _find_yz_path(ba_node_t *ba_node, int *first,
 
 	for(i2=1;i2<=2;i2++) {
 		if(geometry[i2] > 1) {
-			debug4("%d node %c%c%c port 2 -> ",
-			       i2,
-			       alpha_num[ba_node->coord[X]],
-			       alpha_num[ba_node->coord[Y]],
-			       alpha_num[ba_node->coord[Z]]);
+			if(ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
+				info("%d node %c%c%c port 2 -> ",
+				     i2,
+				     alpha_num[ba_node->coord[X]],
+				     alpha_num[ba_node->coord[Y]],
+				     alpha_num[ba_node->coord[Z]]);
 
 			dim_curr_switch = &ba_node->axis_switch[i2];
 			if(dim_curr_switch->int_wire[2].used) {
@@ -3095,13 +3133,15 @@ static int _find_yz_path(ba_node_t *ba_node, int *first,
 			next_node = &ba_system_ptr->
 				grid[node_tar[X]][node_tar[Y]][node_tar[Z]];
 			dim_next_switch = &next_node->axis_switch[i2];
-			debug4("%c%c%c port 5",
-			       alpha_num[next_node->coord[X]],
-			       alpha_num[next_node->coord[Y]],
-			       alpha_num[next_node->coord[Z]]);
+			if(ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
+				info("%c%c%c port 5",
+				     alpha_num[next_node->coord[X]],
+				     alpha_num[next_node->coord[Y]],
+				     alpha_num[next_node->coord[Z]]);
 
 			if(dim_next_switch->int_wire[5].used) {
-				debug3("returning here 2");
+				if(ba_debug_flags & DEBUG_FLAG_BG_ALGO)
+					info("returning here 2");
 				return 0;
 			}
 			debug5("%d %d %d %d",i2, node_tar[i2],
@@ -3144,16 +3184,20 @@ static int _find_yz_path(ba_node_t *ba_node, int *first,
 								PASS_FOUND_Z;
 					}
 					while(node_tar[i2] != first[i2]) {
-						debug4("on dim %d at %d "
-						       "looking for %d",
-						       i2,
-						       node_tar[i2],
-						       first[i2]);
+						if(ba_debug_flags
+						   & DEBUG_FLAG_BG_ALGO_DEEP)
+							info("on dim %d at %d "
+							     "looking for %d",
+							     i2,
+							     node_tar[i2],
+							     first[i2]);
 
 						if(dim_curr_switch->
 						   int_wire[2].used) {
-							debug4("returning "
-							       "here 3");
+							if(ba_debug_flags
+							   & DEBUG_FLAG_BG_ALGO_DEEP)
+								info("returning "
+								     "here 3");
 							return 0;
 						}
 
@@ -3182,11 +3226,13 @@ static int _find_yz_path(ba_node_t *ba_node, int *first,
 							axis_switch[i2];
 					}
 
-					debug4("back to first on dim %d "
-					       "at %d looking for %d",
-					       i2,
-					       node_tar[i2],
-					       first[i2]);
+					if(ba_debug_flags
+					   & DEBUG_FLAG_BG_ALGO_DEEP)
+						info("back to first on dim %d "
+						     "at %d looking for %d",
+						     i2,
+						     node_tar[i2],
+						     first[i2]);
 
 					dim_curr_switch->
 						int_wire[5].used = 1;
@@ -3253,11 +3299,12 @@ static int _find_yz_path(ba_node_t *ba_node, int *first,
 			*/
 
 			dim_curr_switch = &ba_node->axis_switch[i2];
-			debug4("%d node %c%c%c port 0 -> 1",
-			       i2,
-			       alpha_num[ba_node->coord[X]],
-			       alpha_num[ba_node->coord[Y]],
-			       alpha_num[ba_node->coord[Z]]);
+			if(ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
+				info("%d node %c%c%c port 0 -> 1",
+				     i2,
+				     alpha_num[ba_node->coord[X]],
+				     alpha_num[ba_node->coord[Y]],
+				     alpha_num[ba_node->coord[Z]]);
 			dim_curr_switch->int_wire[0].used = 1;
 			dim_curr_switch->int_wire[0].port_tar = 1;
 			dim_curr_switch->int_wire[1].used = 1;
@@ -3341,9 +3388,10 @@ static int _reset_the_path(ba_switch_t *curr_switch, int source,
 	/*set the switch to not be used */
 	if(!curr_switch->int_wire[source].used) {
 		/* This means something overlapping the removing block
-		already cleared this, or the path just never was
-		complete in the first place. */
-		debug3("I reached the end, the source isn't used");
+		   already cleared this, or the path just never was
+		   complete in the first place. */
+		if(ba_debug_flags & DEBUG_FLAG_BG_ALGO)
+			info("I reached the end, the source isn't used");
 		return 1;
 	}
 	curr_switch->int_wire[source].used = 0;
@@ -3406,7 +3454,7 @@ static void _new_ba_node(ba_node_t *ba_node, int *coord, bool track_down_nodes)
 	uint16_t node_base_state = ba_node->state & NODE_STATE_BASE;
 
 	if(((node_base_state != NODE_STATE_DOWN)
-	   && !(ba_node->state & NODE_STATE_DRAIN)) || !track_down_nodes)
+	    && !(ba_node->state & NODE_STATE_DRAIN)) || !track_down_nodes)
 		ba_node->used = false;
 
 	for (i=0; i<cluster_dims; i++){
@@ -3530,28 +3578,31 @@ start_again:
 		x = startx-1;
 	while(x!=startx) {
 		x++;
-		debug4("finding %c%c%c try %d",
-		       alpha_num[ba_request->geometry[X]],
-		       alpha_num[ba_request->geometry[Y]],
-		       alpha_num[ba_request->geometry[Z]],
-		       x);
+		if(ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
+			info("finding %c%c%c try %d",
+			     alpha_num[ba_request->geometry[X]],
+			     alpha_num[ba_request->geometry[Y]],
+			     alpha_num[ba_request->geometry[Z]],
+			     x);
 	new_node:
-		debug3("starting at %c%c%c",
-		       alpha_num[start[X]],
-		       alpha_num[start[Y]],
-		       alpha_num[start[Z]]);
+		if(ba_debug_flags & DEBUG_FLAG_BG_ALGO)
+			info("starting at %c%c%c",
+			     alpha_num[start[X]],
+			     alpha_num[start[Y]],
+			     alpha_num[start[Z]]);
 
 		ba_node = &ba_system_ptr->grid[start[X]][start[Y]][start[Z]];
 
 		if (!_node_used(ba_node, ba_request->geometry[X])) {
-			debug4("trying this node %c%c%c %c%c%c %d",
-			       alpha_num[start[X]],
-			       alpha_num[start[Y]],
-			       alpha_num[start[Z]],
-			       alpha_num[ba_request->geometry[X]],
-			       alpha_num[ba_request->geometry[Y]],
-			       alpha_num[ba_request->geometry[Z]],
-			       ba_request->conn_type);
+			if(ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
+				info("trying this node %c%c%c %c%c%c %d",
+				     alpha_num[start[X]],
+				     alpha_num[start[Y]],
+				     alpha_num[start[Z]],
+				     alpha_num[ba_request->geometry[X]],
+				     alpha_num[ba_request->geometry[Y]],
+				     alpha_num[ba_request->geometry[Z]],
+				     ba_request->conn_type);
 			name = set_bg_block(results,
 					    start,
 					    ba_request->geometry,
@@ -3622,10 +3673,11 @@ static bool _node_used(ba_node_t* ba_node, int x_size)
 	ba_switch_t* ba_switch = NULL;
 	/* if we've used this node in another block already */
 	if (!ba_node || ba_node->used) {
-		debug4("node %c%c%c used",
-		       alpha_num[ba_node->coord[X]],
-		       alpha_num[ba_node->coord[Y]],
-		       alpha_num[ba_node->coord[Z]]);
+		if(ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
+			info("node %c%c%c used",
+			     alpha_num[ba_node->coord[X]],
+			     alpha_num[ba_node->coord[Y]],
+			     alpha_num[ba_node->coord[Z]]);
 		return true;
 	}
 	/* Check If we've used this node's switches completely in another
@@ -3644,10 +3696,11 @@ static bool _node_used(ba_node_t* ba_node, int x_size)
 		   other they must be connected to the other ports.
 		*/
 		if(ba_switch->int_wire[3].used && ba_switch->int_wire[5].used) {
-			debug4("switch full in the X dim on node %c%c%c!",
-			       alpha_num[ba_node->coord[X]],
-			       alpha_num[ba_node->coord[Y]],
-			       alpha_num[ba_node->coord[Z]]);
+			if(ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
+				info("switch full in the X dim on node %c%c%c!",
+				     alpha_num[ba_node->coord[X]],
+				     alpha_num[ba_node->coord[Y]],
+				     alpha_num[ba_node->coord[Z]]);
 			return true;
 		}
 	}
@@ -3834,16 +3887,17 @@ static int _set_external_wires(int dim, int count, ba_node_t* source,
 			       _port_enum(from_port),
 			       _port_enum(to_port));
 
-		debug3("dim %d from %c%c%c %d -> %c%c%c %d",
-		       dim,
-		       alpha_num[source->coord[X]],
-		       alpha_num[source->coord[Y]],
-		       alpha_num[source->coord[Z]],
-		       _port_enum(from_port),
-		       alpha_num[target->coord[X]],
-		       alpha_num[target->coord[Y]],
-		       alpha_num[target->coord[Z]],
-		       _port_enum(to_port));
+		if(ba_debug_flags & DEBUG_FLAG_BG_ALGO)
+			info("dim %d from %c%c%c %d -> %c%c%c %d",
+			     dim,
+			     alpha_num[source->coord[X]],
+			     alpha_num[source->coord[Y]],
+			     alpha_num[source->coord[Z]],
+			     _port_enum(from_port),
+			     alpha_num[target->coord[X]],
+			     alpha_num[target->coord[Y]],
+			     alpha_num[target->coord[Z]],
+			     _port_enum(to_port));
 	}
 #else
 	_switch_config(source, source, dim, 0, 0);
@@ -4129,7 +4183,8 @@ static char *_set_internal_wires(List nodes, int size, int conn_type)
 			 alpha_num[ba_node[count]->coord[X]],
 			 alpha_num[ba_node[count]->coord[Y]],
 			 alpha_num[ba_node[count]->coord[Z]]);
-		debug4("name = %s", temp_name);
+		if(ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
+			info("name = %s", temp_name);
 		count++;
 		hostlist_push(hostlist, temp_name);
 	}
@@ -4146,11 +4201,12 @@ static char *_set_internal_wires(List nodes, int size, int conn_type)
 			if(ba_node[i]->letter == '.') {
 				ba_node[i]->letter = letters[color_count%62];
 				ba_node[i]->color = colors[color_count%6];
-				debug4("count %d setting letter = %c "
-				       "color = %d",
-				       color_count,
-				       ba_node[i]->letter,
-				       ba_node[i]->color);
+				if(ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
+					info("count %d setting letter = %c "
+					     "color = %d",
+					     color_count,
+					     ba_node[i]->letter,
+					     ba_node[i]->color);
 				set=1;
 			}
 		} else {
@@ -4243,7 +4299,8 @@ static int _find_x_path(List results, ba_node_t *ba_node,
 		return 0;
 	}
 
-	debug4("Algo(%d) found - %d", algo, found);
+	if(ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
+		info("Algo(%d) found - %d", algo, found);
 
 	/* Check the 2 ports we can leave though in ports_to_try */
 	for(i=0;i<2;i++) {
@@ -4283,14 +4340,16 @@ static int _find_x_path(List results, ba_node_t *ba_node,
 			   already been before */
 			itr = list_iterator_create(results);
 			while((next_node = list_next(itr))) {
-				debug4("Algo(%d) looking at %c%c%c and %c%c%c",
-				       algo,
-				       alpha_num[next_node->coord[X]],
-				       alpha_num[next_node->coord[Y]],
-				       alpha_num[next_node->coord[Z]],
-				       alpha_num[node_tar[X]],
-				       alpha_num[node_tar[Y]],
-				       alpha_num[node_tar[Z]]);
+				if(ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
+					info("Algo(%d) looking at %c%c%c "
+					     "and %c%c%c",
+					     algo,
+					     alpha_num[next_node->coord[X]],
+					     alpha_num[next_node->coord[Y]],
+					     alpha_num[next_node->coord[Z]],
+					     alpha_num[node_tar[X]],
+					     alpha_num[node_tar[Y]],
+					     alpha_num[node_tar[Z]]);
 				if((node_tar[X] == next_node->coord[X]
 				    && node_tar[Y] == next_node->coord[Y]
 				    && node_tar[Z] == next_node->coord[Z])) {
@@ -4300,8 +4359,9 @@ static int _find_x_path(List results, ba_node_t *ba_node,
 			}
 			list_iterator_destroy(itr);
 			if(not_first && found < DIM_SIZE[X]) {
-				debug3("Algo(%d) already been there before",
-				       algo);
+				if(ba_debug_flags & DEBUG_FLAG_BG_ALGO)
+					info("Algo(%d) already been there "
+					     "before", algo);
 				not_first = 0;
 				continue;
 			}
@@ -4314,17 +4374,22 @@ static int _find_x_path(List results, ba_node_t *ba_node,
 			next_switch = &next_node->axis_switch[X];
 
  			if((conn_type == SELECT_MESH) && (found == (x_size))) {
-				debug3("Algo(%d) we found the end of the mesh",
-				       algo);
+				if(ba_debug_flags & DEBUG_FLAG_BG_ALGO)
+					info("Algo(%d) we found the end of "
+					     "the mesh", algo);
 				return 1;
 			}
-			debug4("Algo(%d) Broke = %d Found = %d x_size = %d",
-			       algo, broke, found, x_size);
+			if(ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
+				info("Algo(%d) Broke = %d Found = %d "
+				     "x_size = %d",
+				     algo, broke, found, x_size);
 
 			if(broke && (found == x_size)) {
 				goto found_path;
 			} else if(found == x_size) {
-				debug3("Algo(%d) finishing the torus!", algo);
+				if(ba_debug_flags & DEBUG_FLAG_BG_ALGO)
+					info("Algo(%d) finishing the torus!",
+					     algo);
 
 				if(deny_pass && (*deny_pass & PASS_DENY_X)) {
 					info("we don't allow passthroughs 1");
@@ -4346,9 +4411,10 @@ static int _find_x_path(List results, ba_node_t *ba_node,
 					      curr_switch, 0, X, 0, start);
 
 				if(best_count < BEST_COUNT_INIT) {
-					debug3("Algo(%d) Found a best path "
-					       "with %d steps.",
-					       algo, best_count);
+					if(ba_debug_flags & DEBUG_FLAG_BG_ALGO)
+						info("Algo(%d) Found a best path "
+						     "with %d steps.",
+						     algo, best_count);
 					_set_best_path();
 					return 1;
 				} else {
@@ -4360,18 +4426,19 @@ static int _find_x_path(List results, ba_node_t *ba_node,
 			}
 
 			if (!_node_used(next_node, x_size)) {
-				debug3("Algo(%d) found %d looking at %c%c%c "
-				       "%d going to %c%c%c %d",
-				       algo,
-				       found,
-				       alpha_num[ba_node->coord[X]],
-				       alpha_num[ba_node->coord[Y]],
-				       alpha_num[ba_node->coord[Z]],
-				       ports_to_try[i],
-				       alpha_num[node_tar[X]],
-				       alpha_num[node_tar[Y]],
-				       alpha_num[node_tar[Z]],
-				       port_tar);
+				if(ba_debug_flags & DEBUG_FLAG_BG_ALGO)
+					info("Algo(%d) found %d looking at "
+					     "%c%c%c %d going to %c%c%c %d",
+					     algo,
+					     found,
+					     alpha_num[ba_node->coord[X]],
+					     alpha_num[ba_node->coord[Y]],
+					     alpha_num[ba_node->coord[Z]],
+					     ports_to_try[i],
+					     alpha_num[node_tar[X]],
+					     alpha_num[node_tar[Y]],
+					     alpha_num[node_tar[Z]],
+					     port_tar);
 				itr = list_iterator_create(results);
 				while((check_node = list_next(itr))) {
 					if((node_tar[X] == check_node->coord[X]
@@ -4384,19 +4451,24 @@ static int _find_x_path(List results, ba_node_t *ba_node,
 				}
 				list_iterator_destroy(itr);
 				if(!check_node) {
-					debug3("Algo(%d) add %c%c%c",
-					       algo,
-					       alpha_num[next_node->coord[X]],
-					       alpha_num[next_node->coord[Y]],
-					       alpha_num[next_node->coord[Z]]);
+					if(ba_debug_flags & DEBUG_FLAG_BG_ALGO)
+						info("Algo(%d) add %c%c%c",
+						     algo,
+						     alpha_num[next_node->
+							       coord[X]],
+						     alpha_num[next_node->
+							       coord[Y]],
+						     alpha_num[next_node->
+							       coord[Z]]);
 					list_append(results, next_node);
 				} else {
-					debug3("Algo(%d) Hey this is already "
-					       "added %c%c%c",
-					       algo,
-					       alpha_num[node_tar[X]],
-					       alpha_num[node_tar[Y]],
-					       alpha_num[node_tar[Z]]);
+					if(ba_debug_flags & DEBUG_FLAG_BG_ALGO)
+						info("Algo(%d) Hey this is "
+						     "already added %c%c%c",
+						     algo,
+						     alpha_num[node_tar[X]],
+						     alpha_num[node_tar[Y]],
+						     alpha_num[node_tar[Z]]);
 					continue;
 				}
 				found++;
@@ -4410,19 +4482,24 @@ static int _find_x_path(List results, ba_node_t *ba_node,
 					continue;
 				} else {
 				found_path:
-					debug3("Algo(%d) added node %c%c%c "
-					       "%d %d -> %c%c%c %d %d",
-					       algo,
-					       alpha_num[ba_node->coord[X]],
-					       alpha_num[ba_node->coord[Y]],
-					       alpha_num[ba_node->coord[Z]],
-					       source_port,
-					       ports_to_try[i],
-					       alpha_num[node_tar[X]],
-					       alpha_num[node_tar[Y]],
-					       alpha_num[node_tar[Z]],
-					       port_tar,
-					       target_port);
+					if(ba_debug_flags & DEBUG_FLAG_BG_ALGO)
+						info("Algo(%d) added node "
+						     "%c%c%c %d %d -> "
+						     "%c%c%c %d %d",
+						     algo,
+						     alpha_num[ba_node->
+							       coord[X]],
+						     alpha_num[ba_node->
+							       coord[Y]],
+						     alpha_num[ba_node->
+							       coord[Z]],
+						     source_port,
+						     ports_to_try[i],
+						     alpha_num[node_tar[X]],
+						     alpha_num[node_tar[Y]],
+						     alpha_num[node_tar[Z]],
+						     port_tar,
+						     target_port);
 					curr_switch->int_wire[source_port].used
 						= 1;
 					curr_switch->int_wire
@@ -4450,15 +4527,17 @@ static int _find_x_path(List results, ba_node_t *ba_node,
 	}
 
 	if(algo == BLOCK_ALGO_FIRST) {
-		debug3("Algo(%d) couldn't find path", algo);
+		if(ba_debug_flags & DEBUG_FLAG_BG_ALGO)
+			info("Algo(%d) couldn't find path", algo);
 		return 0;
 	} else if(algo == BLOCK_ALGO_SECOND) {
-		debug3("Algo(%d) looking for the next free node "
-		       "starting at %c%c%c",
-		       algo,
-		       alpha_num[ba_node->coord[X]],
-		       alpha_num[ba_node->coord[Y]],
-		       alpha_num[ba_node->coord[Z]]);
+		if(ba_debug_flags & DEBUG_FLAG_BG_ALGO)
+			info("Algo(%d) looking for the next free node "
+			     "starting at %c%c%c",
+			     algo,
+			     alpha_num[ba_node->coord[X]],
+			     alpha_num[ba_node->coord[Y]],
+			     alpha_num[ba_node->coord[Z]]);
 
 		if(best_path)
 			list_flush(best_path);
@@ -4473,8 +4552,9 @@ static int _find_x_path(List results, ba_node_t *ba_node,
 		_find_next_free_using_port_2(curr_switch, 0, results, X, 0);
 
 		if(best_count < BEST_COUNT_INIT) {
-			debug3("Algo(%d) yes found next free %d", algo,
-			       best_count);
+			if(ba_debug_flags & DEBUG_FLAG_BG_ALGO)
+				info("Algo(%d) yes found next free %d", algo,
+				     best_count);
 			node_tar = _set_best_path();
 
 			if(deny_pass && (*deny_pass & PASS_DENY_X)
@@ -4489,16 +4569,17 @@ static int _find_x_path(List results, ba_node_t *ba_node,
 
 			next_switch = &next_node->axis_switch[X];
 
-			debug3("Algo(%d) found %d looking at %c%c%c "
-			       "going to %c%c%c %d",
-			       algo, found,
-			       alpha_num[ba_node->coord[X]],
-			       alpha_num[ba_node->coord[Y]],
-			       alpha_num[ba_node->coord[Z]],
-			       alpha_num[node_tar[X]],
-			       alpha_num[node_tar[Y]],
-			       alpha_num[node_tar[Z]],
-			       port_tar);
+			if(ba_debug_flags & DEBUG_FLAG_BG_ALGO)
+				info("Algo(%d) found %d looking at %c%c%c "
+				     "going to %c%c%c %d",
+				     algo, found,
+				     alpha_num[ba_node->coord[X]],
+				     alpha_num[ba_node->coord[Y]],
+				     alpha_num[ba_node->coord[Z]],
+				     alpha_num[node_tar[X]],
+				     alpha_num[node_tar[Y]],
+				     alpha_num[node_tar[Z]],
+				     port_tar);
 
 			list_append(results, next_node);
 			found++;
@@ -4510,12 +4591,14 @@ static int _find_x_path(List results, ba_node_t *ba_node,
 				found--;
 				_reset_the_path(curr_switch, 0, 1, X);
 				_remove_node(results, next_node->coord);
-				debug3("Algo(%d) couldn't finish "
-				       "the path off this one", algo);
+				if(ba_debug_flags & DEBUG_FLAG_BG_ALGO)
+					info("Algo(%d) couldn't finish "
+					     "the path off this one", algo);
 			}
 		}
 
-		debug3("Algo(%d) couldn't find path", algo);
+		if(ba_debug_flags & DEBUG_FLAG_BG_ALGO)
+			info("Algo(%d) couldn't find path", algo);
 		return 0;
 	}
 
@@ -4536,17 +4619,19 @@ static int _remove_node(List results, int *node_tar)
 		if(node_tar[X] == ba_node->coord[X]
 		   && node_tar[Y] == ba_node->coord[Y]
 		   && node_tar[Z] == ba_node->coord[Z]) {
-			debug3("removing %c%c%c from list",
-			       alpha_num[node_tar[X]],
-			       alpha_num[node_tar[Y]],
-			       alpha_num[node_tar[Z]]);
+			if(ba_debug_flags & DEBUG_FLAG_BG_ALGO)
+				info("removing %c%c%c from list",
+				     alpha_num[node_tar[X]],
+				     alpha_num[node_tar[Y]],
+				     alpha_num[node_tar[Z]]);
 			list_remove (itr);
 			break;
 		}
 #else
 		if(node_tar[X] == ba_node->coord[X]) {
-			debug3("removing %d from list",
-			       node_tar[X]);
+			if(ba_debug_flags & DEBUG_FLAG_BG_ALGO)
+				info("removing %d from list",
+				     node_tar[X]);
 			list_remove (itr);
 			break;
 		}
@@ -4603,10 +4688,11 @@ static int _find_next_free_using_port_2(ba_switch_t *curr_switch,
 
 	if(!broke && count>0 &&
 	   !ba_system_ptr->grid[node_tar[X]][node_tar[Y]][node_tar[Z]].used) {
-		debug3("this one not found %c%c%c",
-		       alpha_num[node_tar[X]],
-		       alpha_num[node_tar[Y]],
-		       alpha_num[node_tar[Z]]);
+		if(ba_debug_flags & DEBUG_FLAG_BG_ALGO)
+			info("this one not found %c%c%c",
+			     alpha_num[node_tar[X]],
+			     alpha_num[node_tar[Y]],
+			     alpha_num[node_tar[Z]]);
 		broke = 0;
 
 		if((source_port%2))
@@ -4680,11 +4766,12 @@ static int _find_next_free_using_port_2(ba_switch_t *curr_switch,
 			path_add->out = port_to_try;
 			list_push(path, path_add);
 			_find_next_free_using_port_2(next_switch,
-					port_tar, nodes,
-					dim, count);
+						     port_tar, nodes,
+						     dim, count);
 			while((temp_switch = list_pop(path)) != path_add){
 				xfree(temp_switch);
-				debug4("something here 1");
+				if(ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
+					info("something here 1");
 			}
 		}
 	}
@@ -4828,14 +4915,20 @@ static int _finish_torus(List results,
 				   allow it. */
 				itr = list_iterator_create(results);
 				while((next_node = list_next(itr))) {
-					debug4("finishing_torus: "
-					       "looking at %c%c%c and %c%c%c",
-					       alpha_num[next_node->coord[X]],
-					       alpha_num[next_node->coord[Y]],
-					       alpha_num[next_node->coord[Z]],
-					       alpha_num[node_tar[X]],
-					       alpha_num[node_tar[Y]],
-					       alpha_num[node_tar[Z]]);
+					if(ba_debug_flags
+					   & DEBUG_FLAG_BG_ALGO_DEEP)
+						info("finishing_torus: "
+						     "looking at %c%c%c "
+						     "and %c%c%c",
+						     alpha_num[next_node->
+							       coord[X]],
+						     alpha_num[next_node->
+							       coord[Y]],
+						     alpha_num[next_node->
+							       coord[Z]],
+						     alpha_num[node_tar[X]],
+						     alpha_num[node_tar[Y]],
+						     alpha_num[node_tar[Z]]);
 					if((node_tar[X] == next_node->coord[X])
 					   && (node_tar[Y]
 					       == next_node->coord[Y])
@@ -4846,12 +4939,17 @@ static int _finish_torus(List results,
 				}
 				list_iterator_destroy(itr);
 				if(next_node) {
-					debug3("finishing_torus: "
-					       "Can't finish torus with "
-					       "%c%c%c we already were there.",
-					       alpha_num[next_node->coord[X]],
-					       alpha_num[next_node->coord[Y]],
-					       alpha_num[next_node->coord[Z]]);
+					if(ba_debug_flags & DEBUG_FLAG_BG_ALGO)
+						info("finishing_torus: "
+						     "Can't finish torus with "
+						     "%c%c%c we already were "
+						     "there.",
+						     alpha_num[next_node->
+							       coord[X]],
+						     alpha_num[next_node->
+							       coord[Y]],
+						     alpha_num[next_node->
+							       coord[Z]]);
 					continue;
 				}
 
@@ -4868,13 +4966,15 @@ static int _finish_torus(List results,
 				while((temp_switch = list_pop(path))
 				      != path_add){
 					xfree(temp_switch);
-					debug4("something here 3");
+					if(ba_debug_flags
+					   & DEBUG_FLAG_BG_ALGO_DEEP)
+						info("something here 3");
 				}
 			}
 		}
-       }
-       xfree(path_add);
-       return 0;
+	}
+	xfree(path_add);
+	return 0;
 }
 
 /*
@@ -4899,11 +4999,12 @@ static int *_set_best_path()
 			*deny_pass |= PASS_FOUND_X;
 			debug2("got a passthrough in X");
 		}
-		debug4("mapping %c%c%c %d->%d",
-		       alpha_num[path_switch->geometry[X]],
-		       alpha_num[path_switch->geometry[Y]],
-		       alpha_num[path_switch->geometry[Z]],
-		       path_switch->in, path_switch->out);
+		if(ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
+			info("mapping %c%c%c %d->%d",
+			     alpha_num[path_switch->geometry[X]],
+			     alpha_num[path_switch->geometry[Y]],
+			     alpha_num[path_switch->geometry[Z]],
+			     path_switch->in, path_switch->out);
 		if(!geo)
 			geo = path_switch->geometry;
 		curr_switch = &ba_system_ptr->grid

@@ -58,6 +58,7 @@ typedef struct {
 	uint16_t bp_nodecard_cnt;
 	char *bridge_api_file;
 	uint16_t bridge_api_verb;
+	uint32_t slurm_debug_flags;
 #ifdef HAVE_BGL
 	char *default_blrtsimage;
 #endif

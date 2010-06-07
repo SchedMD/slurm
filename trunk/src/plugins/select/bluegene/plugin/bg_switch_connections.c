@@ -222,7 +222,9 @@ static int _add_switch_conns(rm_switch_t* curr_switch,
 				break;
 			}
 			conn[i].part_state = RM_PARTITION_READY;
-			debug3("adding %d -> %d", source, ba_conn->port_tar);
+			if(bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_WIRES)
+				info("adding %d -> %d", source,
+				     ba_conn->port_tar);
 			list_push(conn_list, &conn[i]);
 		}
 	}
@@ -237,7 +239,8 @@ static int _add_switch_conns(rm_switch_t* curr_switch,
 			return SLURM_ERROR;
 		}
 	} else {
-		debug2("we got a switch with no connections");
+		if(bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_WIRES)
+			info("we got a switch with no connections");
 		list_destroy(conn_list);
                 return SLURM_ERROR;
 	}
@@ -288,12 +291,14 @@ static int _used_switches(ba_node_t* ba_node)
 	int i = 0, j = 0, switch_count = 0;
 	int source = 0;
 
-	debug5("checking node %c%c%c",
-	       alpha_num[ba_node->coord[X]],
-	       alpha_num[ba_node->coord[Y]],
-	       alpha_num[ba_node->coord[Z]]);
+	if(bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_WIRES)
+		info("checking node %c%c%c",
+		     alpha_num[ba_node->coord[X]],
+		     alpha_num[ba_node->coord[Y]],
+		     alpha_num[ba_node->coord[Z]]);
 	for(i=0; i<SYSTEM_DIMENSIONS; i++) {
-		debug5("dim %d", i);
+		if(bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_WIRES)
+			info("dim %d", i);
 		ba_switch = &ba_node->axis_switch[i];
 		for(j=0; j<num_connections; j++) {
 			/* set the source port(-) to check */
@@ -315,7 +320,9 @@ static int _used_switches(ba_node_t* ba_node)
 			ba_conn = &ba_switch->int_wire[source];
 			if(ba_conn->used && ba_conn->port_tar != source) {
 				switch_count++;
-				debug5("used");
+				if(bg_conf->slurm_debug_flags
+				   & DEBUG_FLAG_BG_WIRES)
+					info("used");
 				break;
 			}
 		}
@@ -631,7 +638,8 @@ cleanup:
 		return SLURM_ERROR;
 	}
 #endif
-	debug2("making the small block");
+	if(bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_WIRES)
+		info("making the small block");
 	return rc;
 }
 
@@ -688,8 +696,10 @@ extern int configure_block_switches(bg_record_t * bg_record)
 		goto cleanup;
 	}
 #endif
-	debug4("BP count %d", bg_record->bp_count);
-	debug4("switch count %d", bg_record->switch_count);
+	if(bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_WIRES)
+		info("BP count %d", bg_record->bp_count);
+	if(bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_WIRES)
+		info("switch count %d", bg_record->switch_count);
 
 	list_iterator_reset(itr);
 	while ((ba_node = list_next(itr))) {
@@ -701,16 +711,18 @@ extern int configure_block_switches(bg_record_t * bg_record)
 		}
 #endif
 		if(!ba_node->used) {
-			debug4("%c%c%c is a passthrough, "
-			       "not including in request",
-			       alpha_num[ba_node->coord[X]],
-			       alpha_num[ba_node->coord[Y]],
-			       alpha_num[ba_node->coord[Z]]);
+			if(bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_WIRES)
+				info("%c%c%c is a passthrough, "
+				     "not including in request",
+				     alpha_num[ba_node->coord[X]],
+				     alpha_num[ba_node->coord[Y]],
+				     alpha_num[ba_node->coord[Z]]);
 		} else {
-			debug3("using node %c%c%c",
-			       alpha_num[ba_node->coord[X]],
-			       alpha_num[ba_node->coord[Y]],
-			       alpha_num[ba_node->coord[Z]]);
+			if(bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_WIRES)
+				info("using node %c%c%c",
+				     alpha_num[ba_node->coord[X]],
+				     alpha_num[ba_node->coord[Y]],
+				     alpha_num[ba_node->coord[Z]]);
 #ifdef HAVE_BG_FILES
 			if (first_bp){
 				if ((rc = bridge_set_data(bg_record->bg_block,
@@ -758,7 +770,9 @@ extern int configure_block_switches(bg_record_t * bg_record)
 			if(_add_switch_conns(coord_switch[i],
 					     &ba_node->axis_switch[i])
 			   == SLURM_SUCCESS) {
-				debug3("adding switch dim %d", i);
+				if(bg_conf->slurm_debug_flags
+				   & DEBUG_FLAG_BG_WIRES)
+					info("adding switch dim %d", i);
 				if (first_switch){
 					if ((rc = bridge_set_data(
 						     bg_record->bg_block,

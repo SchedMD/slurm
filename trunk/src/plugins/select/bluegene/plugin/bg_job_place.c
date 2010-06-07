@@ -49,21 +49,21 @@
 #define _DEBUG 0
 #define MAX_GROUPS 128
 
-#define SWAP(a,b,t)	\
-_STMT_START {		\
-	(t) = (a);	\
-	(a) = (b);	\
-	(b) = (t);	\
-} _STMT_END
+#define SWAP(a,b,t)				\
+	_STMT_START {				\
+		(t) = (a);			\
+		(a) = (b);			\
+		(b) = (t);			\
+	} _STMT_END
 
 
 pthread_mutex_t create_dynamic_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static void _rotate_geo(uint16_t *req_geometry, int rot_cnt);
 static int _get_user_groups(uint32_t user_id, uint32_t group_id,
-			     gid_t *groups, int max_groups, int *ngroups);
+			    gid_t *groups, int max_groups, int *ngroups);
 static int _test_image_perms(char *image_name, List image_list,
-			      struct job_record* job_ptr);
+			     struct job_record* job_ptr);
 #ifdef HAVE_BGL
 static int _check_images(struct job_record* job_ptr,
 			 char **blrtsimage, char **linuximage,
@@ -105,16 +105,16 @@ static void _rotate_geo(uint16_t *req_geometry, int rot_cnt)
 	uint16_t tmp;
 
 	switch (rot_cnt) {
-		case 0:		/* ABC -> ACB */
-		case 2:		/* CAB -> CBA */
-		case 4:		/* BCA -> BAC */
-			SWAP(req_geometry[Y], req_geometry[Z], tmp);
-			break;
-		case 1:		/* ACB -> CAB */
-		case 3:		/* CBA -> BCA */
-		case 5:		/* BAC -> ABC */
-			SWAP(req_geometry[X], req_geometry[Y], tmp);
-			break;
+	case 0:		/* ABC -> ACB */
+	case 2:		/* CAB -> CBA */
+	case 4:		/* BCA -> BAC */
+		SWAP(req_geometry[Y], req_geometry[Z], tmp);
+		break;
+	case 1:		/* ACB -> CAB */
+	case 3:		/* CBA -> BCA */
+	case 5:		/* BAC -> ABC */
+		SWAP(req_geometry[X], req_geometry[Y], tmp);
+		break;
 	}
 }
 
@@ -205,16 +205,16 @@ static int _check_images(struct job_record* job_ptr,
 			 char **blrtsimage, char **linuximage,
 			 char **mloaderimage, char **ramdiskimage)
 #else
-static int _check_images(struct job_record* job_ptr,
-			 char **linuximage,
-			 char **mloaderimage, char **ramdiskimage)
+	static int _check_images(struct job_record* job_ptr,
+				 char **linuximage,
+				 char **mloaderimage, char **ramdiskimage)
 #endif
 {
 	int allow = 0;
 
 #ifdef HAVE_BGL
 	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
-			     SELECT_JOBDATA_BLRTS_IMAGE, blrtsimage);
+				    SELECT_JOBDATA_BLRTS_IMAGE, blrtsimage);
 
 	if (*blrtsimage) {
 		allow = _test_image_perms(*blrtsimage, bg_conf->blrts_list,
@@ -229,7 +229,7 @@ static int _check_images(struct job_record* job_ptr,
 	}
 #endif
 	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
-			     SELECT_JOBDATA_LINUX_IMAGE, linuximage);
+				    SELECT_JOBDATA_LINUX_IMAGE, linuximage);
 	if (*linuximage) {
 		allow = _test_image_perms(*linuximage, bg_conf->linux_list,
 					  job_ptr);
@@ -241,7 +241,7 @@ static int _check_images(struct job_record* job_ptr,
 	}
 
 	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
-			     SELECT_JOBDATA_MLOADER_IMAGE, mloaderimage);
+				    SELECT_JOBDATA_MLOADER_IMAGE, mloaderimage);
 	if (*mloaderimage) {
 		allow = _test_image_perms(*mloaderimage,
 					  bg_conf->mloader_list,
@@ -256,7 +256,7 @@ static int _check_images(struct job_record* job_ptr,
 	}
 
 	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
-			     SELECT_JOBDATA_RAMDISK_IMAGE, ramdiskimage);
+				    SELECT_JOBDATA_RAMDISK_IMAGE, ramdiskimage);
 	if (*ramdiskimage) {
 		allow = _test_image_perms(*ramdiskimage,
 					  bg_conf->ramdisk_list,
@@ -287,9 +287,11 @@ static bg_record_t *_find_matching_block(List block_list,
 	ListIterator itr = NULL;
 	char tmp_char[256];
 
-	debug("number of blocks to check: %d state %d",
-	      list_count(block_list),
-	      query_mode);
+	if(bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
+		info("number of blocks to check: %d state %d "
+		     "asking for %u-%u cpus",
+		     list_count(block_list),
+		     query_mode, request->procs, max_cpus);
 
 	itr = list_iterator_create(block_list);
 	while ((bg_record = list_next(itr))) {
@@ -303,41 +305,45 @@ static bg_record_t *_find_matching_block(List block_list,
 		if(bg_record->job_ptr)
 			bg_record->job_running = bg_record->job_ptr->job_id;
 
-		debug3("%s job_running = %d",
-		       bg_record->bg_block_id, bg_record->job_running);
+		if((bg_record->job_running != NO_JOB_RUNNING)
+		   && (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK))
+			info("%s job_running = %d",
+			     bg_record->bg_block_id, bg_record->job_running);
 		/*block is messed up some how (BLOCK_ERROR_STATE)
 		 * ignore it or if state == RM_PARTITION_ERROR */
 		if((bg_record->job_running == BLOCK_ERROR_STATE)
 		   || (bg_record->state == RM_PARTITION_ERROR)) {
-			debug("block %s is in an error state (can't use)",
-			      bg_record->bg_block_id);
+			if(bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
+				info("block %s is in an error "
+				     "state (can't use)",
+				     bg_record->bg_block_id);
 			continue;
 		} else if((bg_record->job_running != NO_JOB_RUNNING)
 			  && (bg_record->job_running != job_ptr->job_id)
 			  && (bg_conf->layout_mode == LAYOUT_DYNAMIC
 			      || (SELECT_IS_MODE_RUN_NOW(query_mode)
 				  && bg_conf->layout_mode != LAYOUT_DYNAMIC))) {
-			debug("block %s in use by %s job %d",
-			      bg_record->bg_block_id,
-			      bg_record->user_name,
-			      bg_record->job_running);
+			if(bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
+				info("block %s in use by %s job %d",
+				     bg_record->bg_block_id,
+				     bg_record->user_name,
+				     bg_record->job_running);
 			continue;
 		}
 
 		/* Check processor count */
-		debug3("asking for %u-%u looking at %d",
-		       request->procs, max_cpus, bg_record->cpu_cnt);
 		if ((bg_record->cpu_cnt < request->procs)
 		    || ((max_cpus != NO_VAL)
 			&& (bg_record->cpu_cnt > max_cpus))) {
 			/* We use the proccessor count per block here
 			   mostly to see if we can run on a smaller block.
-			 */
+			*/
 			convert_num_unit((float)bg_record->cpu_cnt, tmp_char,
 					 sizeof(tmp_char), UNIT_NONE);
-			debug("block %s CPU count (%s) not suitable",
-			      bg_record->bg_block_id,
-			      tmp_char);
+			if(bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
+				info("block %s CPU count (%s) not suitable",
+				     bg_record->bg_block_id,
+				     tmp_char);
 			continue;
 		}
 
@@ -349,8 +355,10 @@ static bg_record_t *_find_matching_block(List block_list,
 		 * SLURM block not available to this job.
 		 */
 		if (!bit_super_set(bg_record->bitmap, slurm_block_bitmap)) {
-			debug("bg block %s has nodes not usable by this job",
-			      bg_record->bg_block_id);
+			if(bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
+				info("bg block %s has nodes not "
+				     "usable by this job",
+				     bg_record->bg_block_id);
 			continue;
 		}
 
@@ -360,8 +368,9 @@ static bg_record_t *_find_matching_block(List block_list,
 		if (job_ptr->details->req_node_bitmap
 		    && (!bit_super_set(job_ptr->details->req_node_bitmap,
 				       bg_record->bitmap))) {
-			debug("bg block %s lacks required nodes",
-				bg_record->bg_block_id);
+			if(bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
+				info("bg block %s lacks required nodes",
+				     bg_record->bg_block_id);
 			continue;
 		}
 
@@ -430,15 +439,16 @@ static bg_record_t *_find_matching_block(List block_list,
 				goto good_conn_type;
 			}
 #endif
-			debug("bg block %s conn-type not usable asking for %s "
-			      "bg_record is %s",
-			      bg_record->bg_block_id,
-			      conn_type_string(request->conn_type),
-			      conn_type_string(bg_record->conn_type));
+			if(bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
+				info("bg block %s conn-type not usable "
+				     "asking for %s bg_record is %s",
+				     bg_record->bg_block_id,
+				     conn_type_string(request->conn_type),
+				     conn_type_string(bg_record->conn_type));
 			continue;
 		}
 #ifndef HAVE_BGL
-		good_conn_type:
+	good_conn_type:
 #endif
 		/*****************************************/
 		/* match up geometry as "best" possible  */
@@ -468,7 +478,8 @@ static bg_record_t *_find_matching_block(List block_list,
 			if (!match)
 				continue;	/* Not usable */
 		}
-		debug2("we found one! %s", bg_record->bg_block_id);
+		if(bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
+			info("we found one! %s", bg_record->bg_block_id);
 		break;
 	}
 	list_iterator_destroy(itr);
@@ -487,7 +498,7 @@ static int _check_for_booted_overlapping_blocks(
 	int overlap = 0;
 	bool is_test = SELECT_IS_TEST(query_mode);
 
-	 /* this test only is for actually picking a block not testing */
+	/* this test only is for actually picking a block not testing */
 	if(is_test && bg_conf->layout_mode == LAYOUT_DYNAMIC)
 		return rc;
 
@@ -498,9 +509,10 @@ static int _check_for_booted_overlapping_blocks(
 	while ((found_record = (bg_record_t*)list_next(itr)) != NULL) {
 		if ((!found_record->bg_block_id)
 		    || (bg_record == found_record)) {
-			debug4("Don't need to look at myself %s %s",
-			       bg_record->bg_block_id,
-			       found_record->bg_block_id);
+			if(bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
+				info("Don't need to look at myself %s %s",
+				     bg_record->bg_block_id,
+				     found_record->bg_block_id);
 			continue;
 		}
 
@@ -520,11 +532,13 @@ static int _check_for_booted_overlapping_blocks(
 			if(is_test && overlapped_list
 			   && found_record->job_ptr
 			   && bg_record->job_running == NO_JOB_RUNNING) {
-				debug2("found over lapping block %s "
-				       "overlapped %s with job %u",
-				       found_record->bg_block_id,
-				       bg_record->bg_block_id,
-				       found_record->job_ptr->job_id);
+				if(bg_conf->slurm_debug_flags
+				   & DEBUG_FLAG_BG_PICK)
+					info("found over lapping block %s "
+					     "overlapped %s with job %u",
+					     found_record->bg_block_id,
+					     bg_record->bg_block_id,
+					     found_record->job_ptr->job_id);
 				ListIterator itr = list_iterator_create(
 					overlapped_list);
 				bg_record_t *tmp_rec = NULL;
@@ -579,49 +593,63 @@ static int _check_for_booted_overlapping_blocks(
 					      bg_record->bg_block_id,
 					      found_record->bg_block_id);
 				else
-					debug("can't use %s, there is "
-					      "a job (%d) running on "
-					      "an overlapping "
-					      "block %s",
-					      bg_record->bg_block_id,
-					      found_record->job_running,
-					      found_record->bg_block_id);
+					if(bg_conf->slurm_debug_flags
+					   & DEBUG_FLAG_BG_PICK)
+						info("can't use %s, there is "
+						     "a job (%d) running on "
+						     "an overlapping "
+						     "block %s",
+						     bg_record->bg_block_id,
+						     found_record->job_running,
+						     found_record->bg_block_id);
 
 				if(bg_conf->layout_mode == LAYOUT_DYNAMIC) {
 					List temp_list = list_create(NULL);
 					/* this will remove and
 					 * destroy the memory for
 					 * bg_record
-					*/
+					 */
 					list_remove(bg_record_itr);
 					slurm_mutex_lock(&block_state_mutex);
 
 					if(bg_record->original) {
-						debug3("This was a copy");
+						if(bg_conf->slurm_debug_flags
+						   & DEBUG_FLAG_BG_PICK)
+							info("This was a copy");
 						found_record =
 							bg_record->original;
 						remove_from_bg_list(
 							bg_lists->main,
 							found_record);
 					} else {
-						debug("looking for original");
+						if(bg_conf->slurm_debug_flags
+						   & DEBUG_FLAG_BG_PICK)
+							info("looking for "
+							     "original");
 						found_record =
 							find_and_remove_org_from_bg_list(
 								bg_lists->main,
 								bg_record);
 					}
 
-					debug("Removing unusable block %s "
-					      "from the system.",
-					      bg_record->bg_block_id);
+					if(bg_conf->slurm_debug_flags
+					   & DEBUG_FLAG_BG_PICK)
+						info("Removing unusable block "
+						     "%s from the system.",
+						     bg_record->bg_block_id);
 
 					if(!found_record) {
-						debug("This record %s wasn't "
-						      "found in the "
-						      "bg_lists->main, "
-						      "no big deal, it "
-						      "probably wasn't added",
-						      bg_record->bg_block_id);
+						if(bg_conf->slurm_debug_flags
+						   & DEBUG_FLAG_BG_PICK)
+							info("This record %s "
+							     "wasn't found in "
+							     "the "
+							     "bg_lists->main, "
+							     "no big deal, it "
+							     "probably wasn't "
+							     "added",
+							     bg_record->
+							     bg_block_id);
 						found_record = bg_record;
 					} else
 						destroy_bg_record(bg_record);
@@ -663,7 +691,8 @@ static int _dynamically_request(List block_list, int *blocks_added,
 	int start_geo[SYSTEM_DIMENSIONS];
 
 	memcpy(start_geo, request->geometry, sizeof(int)*SYSTEM_DIMENSIONS);
-	debug2("going to create %d", request->size);
+	if(bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
+		info("going to create %d", request->size);
 	list_of_lists = list_create(NULL);
 
 	if(user_req_nodes)
@@ -691,11 +720,13 @@ static int _dynamically_request(List block_list, int *blocks_added,
 		   3- see if we can create one in the non
 		   job running bps
 		*/
-		debug("trying with %d", create_try);
+		if(bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
+			info("trying with %d", create_try);
 		if((new_blocks = create_dynamic_block(block_list,
 						      request, temp_list,
 						      true))) {
 			bg_record_t *bg_record = NULL;
+
 			while((bg_record = list_pop(new_blocks))) {
 				if(block_exist_in_list(block_list, bg_record))
 					destroy_bg_record(bg_record);
@@ -800,8 +831,9 @@ static int _find_best_block_match(List block_list,
 	}
 
 	if(!is_test && (req_procs > avail_cpus)) {
-		debug2("asking for %u I only got %d",
-		       req_procs, avail_cpus);
+		if(bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
+			info("asking for %u I only got %d",
+			     req_procs, avail_cpus);
 		return SLURM_ERROR;
 	}
 
@@ -832,12 +864,12 @@ static int _find_best_block_match(List block_list,
 		for (i=0; i<SYSTEM_DIMENSIONS; i++)
 			target_size *= (uint16_t)req_geometry[i];
 		if(target_size != min_nodes) {
-			debug2("min_nodes not set correctly %u should be %u "
-			      "from %u%u%u",
-			      min_nodes, target_size,
-			      req_geometry[X],
-			      req_geometry[Y],
-			      req_geometry[Z]);
+			debug2("min_nodes not set correctly %u "
+			       "should be %u from %u%u%u",
+			       min_nodes, target_size,
+			       req_geometry[X],
+			       req_geometry[Y],
+			       req_geometry[Z]);
 			min_nodes = target_size;
 		}
 		if(!req_nodes)
@@ -947,8 +979,7 @@ static int _find_best_block_match(List block_list,
 			format_node_name(bg_record, tmp_char, sizeof(tmp_char));
 
 			debug("_find_best_block_match %s <%s>",
-			      bg_record->bg_block_id,
-			      tmp_char);
+			      bg_record->bg_block_id, tmp_char);
 			bit_and(slurm_block_bitmap, bg_record->bitmap);
 			rc = SLURM_SUCCESS;
 			*found_bg_record = bg_record;
@@ -994,7 +1025,8 @@ static int _find_best_block_match(List block_list,
 			List new_blocks = NULL;
 			List job_list = list_create(NULL);
 			ListIterator itr = NULL;
-			debug("trying with empty machine");
+			if(bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
+				info("trying with empty machine");
 
 			/* Here we need to make sure the blocks in the
 			   job list are those in the block list so go
@@ -1035,15 +1067,21 @@ static int _find_best_block_match(List block_list,
 
 				if((bg_record = list_pop(job_list))) {
 					if(bg_record->job_ptr) {
-						debug2("taking off %d(%s) "
-						       "started at %d "
-						       "ends at %d",
-						       bg_record->job_running,
-						       bg_record->bg_block_id,
-						       bg_record->job_ptr->
-						       start_time,
-						       bg_record->job_ptr->
-						       end_time);
+						if(bg_conf->slurm_debug_flags
+						   & DEBUG_FLAG_BG_PICK)
+							info("taking off "
+							     "%d(%s) started "
+							     "at %d ends at %d",
+							     bg_record->
+							     job_running,
+							     bg_record->
+							     bg_block_id,
+							     bg_record->
+							     job_ptr->
+							     start_time,
+							     bg_record->
+							     job_ptr->
+							     end_time);
 						/* Mark the block as
 						   not running a job,
 						   this should
@@ -1057,12 +1095,14 @@ static int _find_best_block_match(List block_list,
 						*/
 						bg_record->job_running =
 							NO_JOB_RUNNING;
-					} else if(bg_record->job_running
+					} else if((bg_record->job_running
 						  == BLOCK_ERROR_STATE)
-						debug2("taking off (%s) "
-						       "which is in an error "
-						       "state",
-						       bg_record->bg_block_id);
+						  && (bg_conf->slurm_debug_flags
+						      & DEBUG_FLAG_BG_PICK))
+						info("taking off (%s) "
+						     "which is in an "
+						     "error state",
+						     bg_record->bg_block_id);
 				} else
 					/* This means we didn't have
 					   any jobs to take off
@@ -1098,7 +1138,9 @@ static int _find_best_block_match(List block_list,
 				 */
 				(*found_bg_record) = list_pop(new_blocks);
 				if(!(*found_bg_record)) {
-					error("got an empty list back");
+					if(bg_conf->slurm_debug_flags
+					   & DEBUG_FLAG_BG_PICK)
+						error("got an empty list back");
 					list_destroy(new_blocks);
 					if(bg_record)
 						continue;
@@ -1169,7 +1211,9 @@ static int _sync_block_lists(List full_list, List incomp_list)
 
 		if(!bg_record) {
 			list_remove(itr);
-			debug4("adding %s", new_record->bg_block_id);
+			if(bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
+				info("adding %s %x",
+				     new_record->bg_block_id, new_record);
 			list_append(incomp_list, new_record);
 			count++;
 		}
@@ -1422,6 +1466,10 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 	if(bg_conf->layout_mode == LAYOUT_DYNAMIC)
 		slurm_mutex_lock(&create_dynamic_mutex);
 
+	slurm_mutex_lock(&block_state_mutex);
+	block_list = copy_bg_list(bg_lists->main);
+	slurm_mutex_unlock(&block_state_mutex);
+
 	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
 				    SELECT_JOBDATA_CONN_TYPE, &conn_type);
 	if(conn_type == SELECT_NAV) {
@@ -1456,32 +1504,29 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 				       buf, sizeof(buf),
 				       SELECT_PRINT_BLRTS_IMAGE);
 #ifdef HAVE_BGL
-	debug2("BlrtsImage=%s", buf);
+	debug3("BlrtsImage=%s", buf);
 	select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,
 				       buf, sizeof(buf),
 				       SELECT_PRINT_LINUX_IMAGE);
 #endif
 #ifdef HAVE_BGL
-	debug2("LinuxImage=%s", buf);
+	debug3("LinuxImage=%s", buf);
 #else
-	debug2("ComputNodeImage=%s", buf);
+	debug3("ComputNodeImage=%s", buf);
 #endif
 
 	select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,
 				       buf, sizeof(buf),
 				       SELECT_PRINT_MLOADER_IMAGE);
-	debug2("MloaderImage=%s", buf);
+	debug3("MloaderImage=%s", buf);
 	select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,
 				       buf, sizeof(buf),
 				       SELECT_PRINT_RAMDISK_IMAGE);
 #ifdef HAVE_BGL
-	debug2("RamDiskImage=%s", buf);
+	debug3("RamDiskImage=%s", buf);
 #else
-	debug2("RamDiskIoLoadImage=%s", buf);
+	debug3("RamDiskIoLoadImage=%s", buf);
 #endif
-	slurm_mutex_lock(&block_state_mutex);
-	block_list = copy_bg_list(bg_lists->main);
-	slurm_mutex_unlock(&block_state_mutex);
 
 	/* First look at the empty space, and then remove the
 	   preemptable jobs and try again. */
@@ -1521,10 +1566,10 @@ preempt:
 						    SELECT_JOBDATA_IONODES,
 						    bg_record->ionodes);
 			if(!bg_record->bg_block_id) {
-				debug2("%d can start unassigned job %u at "
-				       "%u on %s",
-				       local_mode, job_ptr->job_id, starttime,
-				       bg_record->nodes);
+				debug("%d can start unassigned job %u "
+				      "at %u on %s",
+				      local_mode, job_ptr->job_id,
+				      starttime, bg_record->nodes);
 
 				select_g_select_jobinfo_set(
 					job_ptr->select_jobinfo,
@@ -1540,10 +1585,10 @@ preempt:
 					error("Small block used in "
 					      "non-shared partition");
 
-				debug2("%d can start job %u at %u on %s(%s)",
-				       local_mode, job_ptr->job_id, starttime,
-				       bg_record->bg_block_id,
-				       bg_record->nodes);
+				debug("%d can start job %u at %u on %s(%s)",
+				      local_mode, job_ptr->job_id,
+				      starttime, bg_record->bg_block_id,
+				      bg_record->nodes);
 
 				if (SELECT_IS_MODE_RUN_NOW(local_mode)) {
 					select_g_select_jobinfo_set(
@@ -1556,8 +1601,15 @@ preempt:
 					/* 	SELECT_JOBDATA_CONN_TYPE, */
 					/* 	&conn_type); */
 					if(job_ptr) {
-						job_ptr->job_state
-							|= JOB_CONFIGURING;
+						info("setting it up here %s %x",
+						     bg_record->bg_block_id,
+						     bg_record);
+						bg_record->job_running =
+							job_ptr->job_id;
+						bg_record->job_ptr = job_ptr;
+
+						job_ptr->job_state |=
+							JOB_CONFIGURING;
 						last_job_update = time(NULL);
 					}
 				} else
@@ -1593,8 +1645,10 @@ preempt:
 				 * lists.  But we don't want to do
 				 * that so we will set blocks_added to
 				 * 0 so it doesn't happen. */
-				if(!blocks_added)
+				if(!blocks_added) {
 					destroy_bg_record(bg_record);
+					bg_record = NULL;
+				}
 				blocks_added = 0;
 			}
 		} else {
