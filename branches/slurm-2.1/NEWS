@@ -33,7 +33,9 @@ documents those changes that are of interest to users and admins.
  -- BLUEGENE - fixed small memory leak when setting up env.
  -- Fixed deadlock if using accounting and cluster changes size in the
     database.  This can happen if you mistakenly have multiple primary
-    slurmctld's running for a single cluster.
+    slurmctld's running for a single cluster, which should rarely if ever
+    happen.
+ -- Fixed sacct -c option
 
 * Changes in SLURM 2.1.8
 ========================
