@@ -1429,8 +1429,7 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 	if (error_code == SLURM_SUCCESS) {
 		/* issue the RPC */
 		lock_slurmctld(job_write_lock);
-		error_code = step_create(req_step_msg, &step_rec,
-					 false, false);
+		error_code = step_create(req_step_msg, &step_rec, false);
 	}
 	if (error_code == SLURM_SUCCESS)
 		error_code = _make_step_cred(step_rec, &slurm_cred);
@@ -3309,7 +3308,7 @@ int _launch_batch_step(job_desc_msg_t *job_desc_msg, uid_t uid,
 	req_step_msg.task_dist = SLURM_DIST_CYCLIC;
 	req_step_msg.name = job_desc_msg->name;
 
-	error_code = step_create(&req_step_msg, &step_rec, false, true);
+	error_code = step_create(&req_step_msg, &step_rec, true);
 	xfree(req_step_msg.node_list);	/* may be set by step_create */
 
 	if (error_code != SLURM_SUCCESS)
