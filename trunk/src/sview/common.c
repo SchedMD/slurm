@@ -996,7 +996,10 @@ extern gboolean row_clicked(GtkTreeView *tree_view, GdkEventButton *event,
 	/* make the selection (highlight) here */
 	selection = gtk_tree_view_get_selection(tree_view);
 	gtk_tree_selection_unselect_all(selection);
-	gtk_tree_selection_select_path(selection, path);
+
+	/* Only select if control key is not held */
+	if(!(event->state & GDK_CONTROL_MASK))
+		gtk_tree_selection_select_path(selection, path);
 
 	if(event->x <= 20) {
 		/* When you try to resize a column this event happens
@@ -1019,6 +1022,13 @@ extern gboolean row_clicked(GtkTreeView *tree_view, GdkEventButton *event,
 		did_something = TRUE;
 	gtk_tree_path_free(path);
 
+	/* If control key held refresh main (which does the grid and
+	   exit with false to reset the treeview.  This has to happen
+	   after left_button_pressed to get other things correct. */
+	if(event->state & GDK_CONTROL_MASK) {
+		refresh_main(NULL, NULL);
+		return FALSE;
+	}
 	return did_something;
 }
 
