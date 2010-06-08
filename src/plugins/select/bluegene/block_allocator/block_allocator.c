@@ -876,9 +876,8 @@ extern void ba_init(node_info_msg_t *node_info_ptr, bool sanity_check)
 #endif /* HAVE_BG_FILES */
 
 	/* We only need to initialize once, so return if already done so. */
-	if (_initialized) {
+	if (_initialized)
 		return;
-	}
 
 	cluster_dims = slurmdb_setup_cluster_dims();
 	cluster_flags = slurmdb_setup_cluster_flags();
@@ -887,6 +886,7 @@ extern void ba_init(node_info_msg_t *node_info_ptr, bool sanity_check)
 #ifdef HAVE_BG_FILES
 	bridge_init();
 #endif
+
 	/* make the letters array only contain letters upper and lower
 	 * (62) */
 	y = 'A';
@@ -946,9 +946,8 @@ extern void ba_init(node_info_msg_t *node_info_ptr, bool sanity_check)
 			number = 0;
 
 			if(!node_ptr->name) {
-				DIM_SIZE[X] = 0;
-				DIM_SIZE[Y] = 0;
-				DIM_SIZE[Z] = 0;
+				for (j=0; j<HIGHEST_DIMENSIONS; j++)
+					DIM_SIZE[j] = 0;
 				goto node_info_error;
 			}
 
@@ -1158,6 +1157,8 @@ extern void init_wires()
  */
 extern void ba_fini()
 {
+	int i = 0;
+
 	if (!_initialized){
 		return;
 	}
@@ -1185,6 +1186,8 @@ extern void ba_fini()
 	_initialized = false;
 	_bp_map_initialized = false;
 	_wires_initialized = true;
+	for (i=0; i<HIGHEST_DIMENSIONS; i++)
+		DIM_SIZE[i] = 0;
 
 //	debug3("pa system destroyed");
 }
