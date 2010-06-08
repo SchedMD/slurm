@@ -520,7 +520,7 @@ static int _check_for_booted_overlapping_blocks(
 			if(is_test && overlapped_list
 			   && found_record->job_ptr
 			   && bg_record->job_running == NO_JOB_RUNNING) {
-				debug2("found over lapping block %s "
+				debug2("found overlapping block %s "
 				       "overlapped %s with job %u",
 				       found_record->bg_block_id,
 				       bg_record->bg_block_id,
@@ -898,7 +898,7 @@ static int _find_best_block_match(List block_list,
 		 * works we will have can look and see the earliest
 		 * the job can start.  This doesn't apply to Dynamic mode.
 		 */
-		if(is_test
+		if(is_test && SELECT_IS_CHECK_FULL_SET(query_mode)
 		   && bg_conf->layout_mode != LAYOUT_DYNAMIC)
 			overlapped_list = list_create(NULL);
 
@@ -911,8 +911,7 @@ static int _find_best_block_match(List block_list,
 						 overlap_check,
 						 overlapped_list,
 						 query_mode);
-		if(!bg_record && is_test
-		   && bg_conf->layout_mode != LAYOUT_DYNAMIC
+		if(!bg_record && overlapped_list
 		   && list_count(overlapped_list)) {
 			ListIterator itr =
 				list_iterator_create(overlapped_list);
@@ -926,7 +925,7 @@ static int _find_best_block_match(List block_list,
 			list_iterator_destroy(itr);
 		}
 
-		if(is_test && bg_conf->layout_mode != LAYOUT_DYNAMIC)
+		if(overlapped_list)
 			list_destroy(overlapped_list);
 
 		/* set the bitmap and do other allocation activities */
