@@ -176,6 +176,7 @@ extern int select_g_alter_node_cnt (enum select_node_cnt type, void *data);
 #define SELECT_MODE_WILL_RUN	 0x0002
 
 #define SELECT_MODE_PREEMPT_FLAG 0x0100
+#define SELECT_MODE_CHECK_FULL   0x0200
 
 #define SELECT_IS_MODE_RUN_NOW(_X) \
 	((_X & SELECT_MODE_BASE) == SELECT_MODE_RUN_NOW)
@@ -188,6 +189,9 @@ extern int select_g_alter_node_cnt (enum select_node_cnt type, void *data);
 
 #define SELECT_IS_PREEMPT_SET(_X) \
 	(_X & SELECT_MODE_PREEMPT_FLAG)
+
+#define SELECT_IS_CHECK_FULL_SET(_X) \
+	(_X & SELECT_MODE_CHECK_FULL)
 
 #define SELECT_IS_TEST(_X) \
 	(SELECT_IS_MODE_TEST_ONLY(_X) || SELECT_IS_MODE_WILL_RUN(_X))
