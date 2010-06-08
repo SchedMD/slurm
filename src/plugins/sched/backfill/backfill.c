@@ -598,7 +598,7 @@ static void _attempt_backfill(void)
 			continue;
 		}
 
-		if (node_space_recs == max_backfill_job_cnt) {
+		if (node_space_recs >= max_backfill_job_cnt) {
 			/* Already have too many jobs to deal with */
 			break;
 		}
