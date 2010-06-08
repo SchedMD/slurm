@@ -666,11 +666,15 @@ static int _dynamically_request(List block_list, int *blocks_added,
 	debug2("going to create %d", request->size);
 	list_of_lists = list_create(NULL);
 
-	if(user_req_nodes) {
-		if(SELECT_IS_PREEMPT_SET(query_mode))
-			list_append(list_of_lists, block_list);
+	/* If preempt is set and we are checking full system it means
+	   we altered the block list so only look at it.
+	*/
+	if(SELECT_IS_PREEMPT_SET(query_mode)
+	   && SELECT_IS_CHECK_FULL_SET(query_mode)) {
+		list_append(list_of_lists, block_list);
+	} else if(user_req_nodes)
 		list_append(list_of_lists, bg_lists->job_running);
-	} else {
+	else {
 		list_append(list_of_lists, block_list);
 		if(list_count(block_list) != list_count(bg_lists->booted)) {
 			list_append(list_of_lists, bg_lists->booted);
@@ -1325,7 +1329,7 @@ static List _get_preemptables(uint16_t query_mode, bg_record_t *bg_record,
 				break;
 		}
 		if(job_ptr) {
-			list_append(preempt, job_ptr);
+			list_push(preempt, job_ptr);
 /* 			info("going to preempt %u running on %s", */
 /* 			     job_ptr->job_id, found_record->bg_block_id); */
 		} else if(SELECT_IS_MODE_RUN_NOW(query_mode)) {
