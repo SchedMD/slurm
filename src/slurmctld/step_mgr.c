@@ -418,11 +418,6 @@ int job_step_complete(uint32_t job_id, uint32_t step_id, uid_t uid,
 	_step_dealloc_lps(step_ptr);
 	gres_plugin_step_dealloc(step_ptr->gres_list, job_ptr->gres_list);
 
-	if ((job_ptr->kill_on_step_done) &&
-	    (list_count(job_ptr->step_list) <= 1) &&
-	    (!IS_JOB_FINISHED(job_ptr)))
-		return job_complete(job_id, uid, requeue, job_return_code);
-
 	last_job_update = time(NULL);
 	error_code = delete_step_record(job_ptr, step_id);
 	if (error_code == ENOENT) {
@@ -1351,7 +1346,6 @@ static int _test_strlen(char *test_str, char *str_name, int max_str_len)
  *	according to the step_specs.
  * IN step_specs - job step specifications
  * OUT new_step_record - pointer to the new step_record (NULL on error)
- * IN kill_job_when_step_done - if set kill the job on step completion
  * IN batch_step - if set then step is a batch script
  * RET - 0 or error code
  * NOTE: don't free the returned step_record because that is managed through
@@ -1359,8 +1353,7 @@ static int _test_strlen(char *test_str, char *str_name, int max_str_len)
  */
 extern int
 step_create(job_step_create_request_msg_t *step_specs,
-	    struct step_record** new_step_record,
-	    bool kill_job_when_step_done, bool batch_step)
+	    struct step_record** new_step_record, bool batch_step)
 {
 	struct step_record *step_ptr;
 	struct job_record  *job_ptr;
@@ -1459,12 +1452,6 @@ step_create(job_step_create_request_msg_t *step_specs,
 
 	if (step_specs->no_kill > 1)
 		step_specs->no_kill = 1;
-
-	if (job_ptr->kill_on_step_done)
-		/* Don't start more steps, job already being cancelled */
-		return ESLURM_ALREADY_DONE;
-	job_ptr->kill_on_step_done = kill_job_when_step_done;
-
 
 	i = gres_plugin_step_state_validate(step_specs->gres,
 					    &step_gres_list,

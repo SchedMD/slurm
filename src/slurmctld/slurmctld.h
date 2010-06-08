@@ -291,7 +291,6 @@ extern time_t last_job_update;	/* time of last update to job records */
 #define DETAILS_MAGIC	0xdea84e7
 #define JOB_MAGIC	0xf0b7392c
 #define STEP_MAGIC	0xce593bc1
-#define KILL_ON_STEP_DONE	1
 
 #define FEATURE_OP_OR  0
 #define FEATURE_OP_AND 1
@@ -422,9 +421,6 @@ struct job_record {
 	enum job_states job_state;	/* state of the job */
 	uint16_t kill_on_node_fail;	/* 1 if job should be killed on
 					 * node failure */
-	uint16_t kill_on_step_done;	/* 1 if job should be killed when
-					 * the job step completes, 2 if kill
-					 * in progress */
 	char *licenses;			/* licenses required by the job */
 	List license_list;		/* structure with license info */
 	bool limit_set_max_nodes;	/* if max_nodes was set from
@@ -1452,16 +1448,13 @@ extern void step_alloc_lps(struct step_record *step_ptr);
  *	according to the step_specs.
  * IN step_specs - job step specifications
  * OUT new_step_record - pointer to the new step_record (NULL on error)
- * IN kill_job_when_step_done - if set kill the job on step completion
  * IN batch_step - set if step is a batch script
  * RET - 0 or error code
  * NOTE: don't free the returned step_record because that is managed through
  * 	the job.
  */
-extern int step_create ( job_step_create_request_msg_t *step_specs,
-			 struct step_record** new_step_record,
-			 bool kill_job_when_step_done,
-			 bool batch_step );
+extern int step_create(job_step_create_request_msg_t *step_specs,
+		       struct step_record** new_step_record, bool batch_step);
 
 /*
  * step_layout_create - creates a step_layout according to the inputs.

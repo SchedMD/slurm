@@ -735,7 +735,6 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	pack16(dump_job_ptr->direct_set_prio, buffer);
 	pack16(dump_job_ptr->job_state, buffer);
 	pack16(dump_job_ptr->kill_on_node_fail, buffer);
-	pack16(dump_job_ptr->kill_on_step_done, buffer);
 	pack16(dump_job_ptr->batch_flag, buffer);
 	pack16(dump_job_ptr->mail_type, buffer);
 	pack16(dump_job_ptr->qos, buffer);
@@ -815,7 +814,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	time_t start_time, end_time, suspend_time, pre_sus_time, tot_sus_time;
 	time_t resize_time = 0, now = time(NULL);
 	uint16_t job_state, details, batch_flag, step_flag;
-	uint16_t kill_on_node_fail, kill_on_step_done, direct_set_prio, qos;
+	uint16_t kill_on_node_fail, direct_set_prio, qos;
 	uint16_t alloc_resp_port, other_port, mail_type, state_reason;
 	uint16_t restart_cnt, resv_flags, ckpt_interval;
 	uint16_t wait_all_nodes, warn_signal, warn_time;
@@ -882,7 +881,6 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		safe_unpack16(&direct_set_prio, buffer);
 		safe_unpack16(&job_state, buffer);
 		safe_unpack16(&kill_on_node_fail, buffer);
-		safe_unpack16(&kill_on_step_done, buffer);
 		safe_unpack16(&batch_flag, buffer);
 		safe_unpack16(&mail_type, buffer);
 		safe_unpack16(&qos, buffer);
@@ -972,6 +970,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 			safe_unpack16(&step_flag, buffer);
 		}
 	} else if(protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
+		uint16_t kill_on_step_done;
 		uint32_t min_cpus;
 
 		safe_unpack32(&assoc_id, buffer);
@@ -1113,12 +1112,6 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		      job_id, job_state, batch_flag);
 		goto unpack_error;
 	}
-	if (kill_on_step_done > KILL_ON_STEP_DONE) {
-		error("Invalid data for job %u: "
-		      "kill_on_step_done=%u",
-		      job_id, kill_on_step_done);
-		goto unpack_error;
-	}
 	if (kill_on_node_fail > 1) {
 		error("Invalid data for job %u: kill_on_node_fail=%u",
 		      job_id, kill_on_node_fail);
@@ -1154,7 +1147,6 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	job_ptr->group_id     = group_id;
 	job_ptr->job_state    = job_state;
 	job_ptr->kill_on_node_fail = kill_on_node_fail;
-	job_ptr->kill_on_step_done = kill_on_step_done;
 	xfree(job_ptr->licenses);
 	job_ptr->licenses     = licenses;
 	licenses              = NULL;	/* reused, nothing left to free */
@@ -4992,12 +4984,6 @@ void reset_job_bitmaps(void)
 
 		if (_reset_detail_bitmaps(job_ptr))
 			job_fail = true;
-
-		if ((job_ptr->kill_on_step_done) &&
-		    (list_count(job_ptr->step_list) <= 1)) {
-			info("Single job step done, job is complete");
-			job_fail = true;
-		}
 
 		if (job_fail) {
 			if (IS_JOB_PENDING(job_ptr)) {
