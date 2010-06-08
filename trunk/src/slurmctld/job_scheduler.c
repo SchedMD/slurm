@@ -148,7 +148,7 @@ extern int build_job_queue(struct job_queue **job_queue)
 
 	/* build list pending jobs */
 	job_buffer_size = job_queue_size = 0;
-	job_queue[0] = my_job_queue = NULL;
+	*job_queue = my_job_queue = NULL;
 
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
@@ -180,7 +180,7 @@ extern int build_job_queue(struct job_queue **job_queue)
 	}
 	list_iterator_destroy(job_iterator);
 
-	job_queue[0] = my_job_queue;
+	*job_queue = my_job_queue;
 	return job_queue_size;
 }
 
