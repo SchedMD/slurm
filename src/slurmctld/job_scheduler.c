@@ -509,7 +509,8 @@ extern void sort_job_queue(struct job_queue *job_queue, int job_queue_size)
 		job_queue[i].job_ptr       = job_queue[top_prio_inx].job_ptr;
 		job_queue[i].job_priority  = job_queue[top_prio_inx].
 					     job_priority;
-
+		job_queue[i].part_priority = job_queue[top_prio_inx].
+					     part_priority;
 
 		job_queue[top_prio_inx].job_ptr       = tmp_job_ptr;
 		job_queue[top_prio_inx].job_priority  = tmp_job_prio;
