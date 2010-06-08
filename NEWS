@@ -35,7 +35,8 @@ documents those changes that are of interest to users and admins.
     database.  This can happen if you mistakenly have multiple primary
     slurmctld's running for a single cluster, which should rarely if ever
     happen.
- -- Fixed sacct -c option
+ -- Fixed sacct -c option.
+ -- Critical bug fix in sched/backfill plugin that caused in memory corruption.
 
 * Changes in SLURM 2.1.8
 ========================
