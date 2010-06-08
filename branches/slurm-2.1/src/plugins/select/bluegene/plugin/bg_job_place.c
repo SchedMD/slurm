@@ -666,9 +666,11 @@ static int _dynamically_request(List block_list, int *blocks_added,
 	debug2("going to create %d", request->size);
 	list_of_lists = list_create(NULL);
 
-	if(user_req_nodes)
+	if(user_req_nodes) {
+		if(SELECT_IS_PREEMPT_SET(query_mode))
+			list_append(list_of_lists, block_list);
 		list_append(list_of_lists, bg_lists->job_running);
-	else {
+	} else {
 		list_append(list_of_lists, block_list);
 		if(list_count(block_list) != list_count(bg_lists->booted)) {
 			list_append(list_of_lists, bg_lists->booted);
@@ -994,8 +996,10 @@ static int _find_best_block_match(List block_list,
 			continue;
 		}
 
-
-		if(is_test) {
+		/* Only look at the full system if we aren't going to
+		   preempt jobs later and look.
+		*/
+		if(is_test && SELECT_IS_CHECK_FULL_SET(query_mode)) {
 			List new_blocks = NULL;
 			List job_list = list_create(NULL);
 			ListIterator itr = NULL;
@@ -1422,6 +1426,8 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 	if (preemptee_candidates && preemptee_job_list
 	    && list_count(preemptee_candidates))
 		local_mode |= SELECT_MODE_PREEMPT_FLAG;
+	else
+		local_mode |= SELECT_MODE_CHECK_FULL;
 
 	if(bg_conf->layout_mode == LAYOUT_DYNAMIC)
 		slurm_mutex_lock(&create_dynamic_mutex);
@@ -1605,6 +1611,8 @@ preempt:
 			error("we got a success, but no block back");
 		}
 	} else if(!preempt_done && SELECT_IS_PREEMPT_SET(local_mode)) {
+		debug2("doing preemption");
+		local_mode |= SELECT_MODE_CHECK_FULL;
 		avail_cpus += _remove_preemptables(
 			block_list, preemptee_candidates);
 		preempt_done = true;
