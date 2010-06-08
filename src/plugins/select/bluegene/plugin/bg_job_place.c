@@ -528,16 +528,18 @@ static int _check_for_booted_overlapping_blocks(
 			if(is_test && overlapped_list
 			   && found_record->job_ptr
 			   && bg_record->job_running == NO_JOB_RUNNING) {
+				ListIterator itr = list_iterator_create(
+					overlapped_list);
+				bg_record_t *tmp_rec = NULL;
+
 				if(bg_conf->slurm_debug_flags
 				   & DEBUG_FLAG_BG_PICK)
-					info("found over lapping block %s "
+					info("found overlapping block %s "
 					     "overlapped %s with job %u",
 					     found_record->bg_block_id,
 					     bg_record->bg_block_id,
 					     found_record->job_ptr->job_id);
-				ListIterator itr = list_iterator_create(
-					overlapped_list);
-				bg_record_t *tmp_rec = NULL;
+
 				while((tmp_rec = list_next(itr))) {
 					if(tmp_rec == bg_record)
 						break;
@@ -691,7 +693,13 @@ static int _dynamically_request(List block_list, int *blocks_added,
 		info("going to create %d", request->size);
 	list_of_lists = list_create(NULL);
 
-	if(user_req_nodes)
+	/* If preempt is set and we are checking full system it means
+	   we altered the block list so only look at it.
+	*/
+	if(SELECT_IS_PREEMPT_SET(query_mode)
+	   && SELECT_IS_CHECK_FULL_SET(query_mode)) {
+		list_append(list_of_lists, block_list);
+	} else if(user_req_nodes)
 		list_append(list_of_lists, bg_lists->job_running);
 	else {
 		list_append(list_of_lists, block_list);
@@ -915,7 +923,7 @@ static int _find_best_block_match(List block_list,
 		 * works we will have can look and see the earliest
 		 * the job can start.  This doesn't apply to Dynamic mode.
 		 */
-		if(is_test
+		if(is_test && SELECT_IS_CHECK_FULL_SET(query_mode)
 		   && bg_conf->layout_mode != LAYOUT_DYNAMIC)
 			overlapped_list = list_create(NULL);
 
@@ -928,8 +936,7 @@ static int _find_best_block_match(List block_list,
 						 overlap_check,
 						 overlapped_list,
 						 query_mode);
-		if(!bg_record && is_test
-		   && bg_conf->layout_mode != LAYOUT_DYNAMIC
+		if(!bg_record && overlapped_list
 		   && list_count(overlapped_list)) {
 			ListIterator itr =
 				list_iterator_create(overlapped_list);
@@ -943,7 +950,7 @@ static int _find_best_block_match(List block_list,
 			list_iterator_destroy(itr);
 		}
 
-		if(is_test && bg_conf->layout_mode != LAYOUT_DYNAMIC)
+		if(overlapped_list)
 			list_destroy(overlapped_list);
 
 		/* set the bitmap and do other allocation activities */
@@ -1016,8 +1023,10 @@ static int _find_best_block_match(List block_list,
 			continue;
 		}
 
-
-		if(is_test) {
+		/* Only look at the full system if we aren't going to
+		   preempt jobs later and look.
+		*/
+		if(is_test && SELECT_IS_CHECK_FULL_SET(query_mode)) {
 			List new_blocks = NULL;
 			List job_list = list_create(NULL);
 			ListIterator itr = NULL;
@@ -1208,7 +1217,7 @@ static int _sync_block_lists(List full_list, List incomp_list)
 		if(!bg_record) {
 			list_remove(itr);
 			if(bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
-				info("adding %s %x",
+				info("sync: adding %s %x",
 				     new_record->bg_block_id, new_record);
 			list_append(incomp_list, new_record);
 			count++;
@@ -1357,7 +1366,7 @@ static List _get_preemptables(uint16_t query_mode, bg_record_t *bg_record,
 				break;
 		}
 		if(job_ptr) {
-			list_append(preempt, job_ptr);
+			list_push(preempt, job_ptr);
 /* 			info("going to preempt %u running on %s", */
 /* 			     job_ptr->job_id, found_record->bg_block_id); */
 		} else if(SELECT_IS_MODE_RUN_NOW(query_mode)) {
@@ -1458,6 +1467,8 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 	if (preemptee_candidates && preemptee_job_list
 	    && list_count(preemptee_candidates))
 		local_mode |= SELECT_MODE_PREEMPT_FLAG;
+	else
+		local_mode |= SELECT_MODE_CHECK_FULL;
 
 	if(bg_conf->layout_mode == LAYOUT_DYNAMIC)
 		slurm_mutex_lock(&create_dynamic_mutex);
@@ -1597,9 +1608,6 @@ preempt:
 					/* 	SELECT_JOBDATA_CONN_TYPE, */
 					/* 	&conn_type); */
 					if(job_ptr) {
-						info("setting it up here %s %x",
-						     bg_record->bg_block_id,
-						     bg_record);
 						bg_record->job_running =
 							job_ptr->job_id;
 						bg_record->job_ptr = job_ptr;
@@ -1651,6 +1659,9 @@ preempt:
 			error("we got a success, but no block back");
 		}
 	} else if(!preempt_done && SELECT_IS_PREEMPT_SET(local_mode)) {
+		if(bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
+			info("doing preemption");
+		local_mode |= SELECT_MODE_CHECK_FULL;
 		avail_cpus += _remove_preemptables(
 			block_list, preemptee_candidates);
 		preempt_done = true;
