@@ -45,4 +45,6 @@ extern int pmi_kvs_get(kvs_get_msg_t *kvs_get_ptr);
  */
 extern void pmi_server_max_threads(int max_threads);
 
+/* free local kvs set */
+extern void pmi_kvs_free(void);
 #endif

@@ -486,6 +486,7 @@ void slurm_step_launch_wait_finish(slurm_step_ctx_t *ctx)
 	pthread_mutex_unlock(&sls->lock);
 	pthread_join(sls->msg_thread, NULL);
 	pthread_mutex_lock(&sls->lock);
+	pmi_kvs_free();
 
 	eio_handle_destroy(sls->msg_handle);
 
