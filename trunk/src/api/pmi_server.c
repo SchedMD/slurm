@@ -497,3 +497,34 @@ extern void pmi_server_max_threads(int max_threads)
 	else
 		agent_max_cnt = max_threads;
 }
+
+/* copied from slurm_pmi.c */
+static void _free_kvs_comm(struct kvs_comm *kvs_comm_ptr)
+{
+        int i;
+
+        if (kvs_comm_ptr == NULL)
+                return;
+
+        for (i=0; i<kvs_comm_ptr->kvs_cnt; i++) {
+                xfree(kvs_comm_ptr->kvs_keys[i]);
+                xfree(kvs_comm_ptr->kvs_values[i]);
+        }
+        xfree(kvs_comm_ptr->kvs_name);
+        xfree(kvs_comm_ptr->kvs_keys);
+        xfree(kvs_comm_ptr->kvs_values);
+        xfree(kvs_comm_ptr);
+}
+
+/* free local kvs set*/
+extern void pmi_kvs_free(void)
+{
+	int i;
+	pthread_mutex_lock(&kvs_mutex);
+	for (i = 0; i < kvs_comm_cnt; i ++) {
+		_free_kvs_comm(kvs_comm_ptr[i]);
+	}
+	xfree(kvs_comm_ptr);
+	kvs_comm_cnt = 0;
+	pthread_mutex_unlock(&kvs_mutex);
+}

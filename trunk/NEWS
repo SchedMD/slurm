@@ -35,6 +35,7 @@ documents those changes that are of interest to users and admins.
     DEBUG_FLAG_BG_WIRES, DEBUG_FLAG_BG_ALGO, and DEBUG_FLAG_BG_ALGO_DEEP.
  -- Remove vestigial job record field "kill_on_step_done" (internal to the
     slurmctld daemon only).
+ -- For MPICH2 jobs: Clear PMI state between job steps.
 
 * Changes in SLURM 2.2.0.pre6
 =============================
