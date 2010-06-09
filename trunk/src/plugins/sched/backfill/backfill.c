@@ -666,7 +666,8 @@ static int _start_job(struct job_record *job_ptr, bitstr_t *resv_bitmap)
 			launch_job(job_ptr);
 		backfilled_jobs++;
 #if __DEBUG
-		info("backfill: Jobs backfilled: %d", backfilled_jobs);
+		info("backfill: Jobs backfilled since boot: %d",
+		     backfilled_jobs);
 #endif
 	} else if ((job_ptr->job_id != fail_jobid) &&
 		   (rc != ESLURM_ACCOUNTING_POLICY)) {
