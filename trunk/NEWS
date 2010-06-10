@@ -4,6 +4,8 @@ documents those changes that are of interest to users and admins.
 * Changes in SLURM 2.2.0.pre8
 =============================
  -- Add DebugFlags parameter of "Backfill" for sched/backfill detailed logging.
+ -- Add run time to mail message upon job termination and wait time for mail
+    message upon job begin.
  
 * Changes in SLURM 2.2.0.pre7
 =============================
