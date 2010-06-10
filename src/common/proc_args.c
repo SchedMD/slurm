@@ -633,8 +633,11 @@ uint16_t parse_mail_type(const char *arg)
 		rc = MAIL_JOB_END;
 	else if (strcasecmp(arg, "FAIL") == 0)
 		rc = MAIL_JOB_FAIL;
+	else if (strcasecmp(arg, "REQUEUE") == 0)
+		rc = MAIL_JOB_REQUEUE;
 	else if (strcasecmp(arg, "ALL") == 0)
-		rc = MAIL_JOB_BEGIN |  MAIL_JOB_END |  MAIL_JOB_FAIL;
+		rc = MAIL_JOB_BEGIN |  MAIL_JOB_END |  MAIL_JOB_FAIL | 
+		     MAIL_JOB_REQUEUE;
 	else
 		rc = 0;		/* failure */
 
@@ -651,7 +654,10 @@ char *print_mail_type(const uint16_t type)
 		return "END";
 	if (type == MAIL_JOB_FAIL)
 		return "FAIL";
-	if (type == (MAIL_JOB_BEGIN |  MAIL_JOB_END |  MAIL_JOB_FAIL))
+	if (type == MAIL_JOB_REQUEUE)
+		return "REQUEUE";
+	if (type == (MAIL_JOB_BEGIN |  MAIL_JOB_END |  MAIL_JOB_FAIL |
+		     MAIL_JOB_REQUEUE))
 		return "ALL";
 
 	return "MULTIPLE";

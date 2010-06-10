@@ -1240,7 +1240,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		if (IS_JOB_PENDING(job_ptr))
 			job_ptr->start_time = now;
 		job_ptr->end_time = now;
-		job_completion_logger(job_ptr);
+		job_completion_logger(job_ptr, false);
 		job_finished = 1;
 	} else {
 		job_ptr->assoc_id = assoc_rec.id;
@@ -1277,7 +1277,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 			if (IS_JOB_PENDING(job_ptr))
 				job_ptr->start_time = now;
 			job_ptr->end_time = now;
-			job_completion_logger(job_ptr);
+			job_completion_logger(job_ptr, false);
 			job_finished = 1;
 		}
 		job_ptr->qos = qos_rec.id;
@@ -1676,7 +1676,7 @@ extern int kill_job_by_part_name(char *part_name)
 			} else
 				job_ptr->end_time = now;
 			deallocate_nodes(job_ptr, false, suspended);
-			job_completion_logger(job_ptr);
+			job_completion_logger(job_ptr, false);
 		} else if (IS_JOB_PENDING(job_ptr)) {
 			job_count++;
 			info("Killing job_id %u on defunct partition %s",
@@ -1685,7 +1685,7 @@ extern int kill_job_by_part_name(char *part_name)
 			job_ptr->start_time	= now;
 			job_ptr->end_time	= now;
 			job_ptr->exit_code	= 1;
-			job_completion_logger(job_ptr);
+			job_completion_logger(job_ptr, false);
 		}
 
 	}
@@ -1797,7 +1797,7 @@ extern int kill_running_job_by_node_name(char *node_name)
 				 * job looks like a new job. */
 				job_ptr->job_state  = JOB_NODE_FAIL;
 				deallocate_nodes(job_ptr, false, suspended);
-				job_completion_logger(job_ptr);
+				job_completion_logger(job_ptr, true);
 				job_ptr->db_index = 0;
 				job_ptr->job_state = JOB_PENDING;
 				if (job_ptr->node_cnt)
@@ -1839,7 +1839,7 @@ extern int kill_running_job_by_node_name(char *node_name)
 				} else
 					job_ptr->end_time = time(NULL);
 				deallocate_nodes(job_ptr, false, suspended);
-				job_completion_logger(job_ptr);
+				job_completion_logger(job_ptr, false);
 			}
 		}
 
@@ -2156,7 +2156,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 			job_ptr->state_reason = FAIL_BAD_CONSTRAINTS;
 			xfree(job_ptr->state_desc);
 			job_ptr->start_time = job_ptr->end_time = now;
-			job_completion_logger(job_ptr);
+			job_completion_logger(job_ptr, false);
 		}
 		return error_code;
 	}
@@ -2196,7 +2196,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 		job_ptr->state_reason = FAIL_BAD_CONSTRAINTS;
 		xfree(job_ptr->state_desc);
 		job_ptr->start_time = job_ptr->end_time = now;
-		job_completion_logger(job_ptr);
+		job_completion_logger(job_ptr, false);
 		if (!independent)
 			return ESLURM_DEPENDENCY;
 		else if (too_fragmented)
@@ -2244,7 +2244,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 			job_ptr->state_reason = FAIL_BAD_CONSTRAINTS;
 			xfree(job_ptr->state_desc);
 			job_ptr->start_time = job_ptr->end_time = now;
-			job_completion_logger(job_ptr);
+			job_completion_logger(job_ptr, false);
 		} else {	/* job remains queued */
 			if ((error_code == ESLURM_NODES_BUSY) ||
 			    (error_code == ESLURM_ACCOUNTING_POLICY)) {
@@ -2260,7 +2260,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 		job_ptr->state_reason = FAIL_BAD_CONSTRAINTS;
 		xfree(job_ptr->state_desc);
 		job_ptr->start_time = job_ptr->end_time = now;
-		job_completion_logger(job_ptr);
+		job_completion_logger(job_ptr, false);
 		return error_code;
 	}
 
@@ -2322,7 +2322,7 @@ extern int job_fail(uint32_t job_id)
 		job_ptr->state_reason = FAIL_LAUNCH;
 		xfree(job_ptr->state_desc);
 		deallocate_nodes(job_ptr, false, suspended);
-		job_completion_logger(job_ptr);
+		job_completion_logger(job_ptr, false);
 		return SLURM_SUCCESS;
 	}
 	/* All other states */
@@ -2401,7 +2401,7 @@ extern int job_signal(uint32_t job_id, uint16_t signal, uint16_t batch_flag,
 		job_ptr->start_time	= now;
 		job_ptr->end_time	= now;
 		srun_allocate_abort(job_ptr);
-		job_completion_logger(job_ptr);
+		job_completion_logger(job_ptr, false);
 		verbose("job_signal of pending job %u successful", job_id);
 		return SLURM_SUCCESS;
 	}
@@ -2413,7 +2413,7 @@ extern int job_signal(uint32_t job_id, uint16_t signal, uint16_t batch_flag,
 		job_ptr->job_state      = JOB_CANCELLED | JOB_COMPLETING;
 		jobacct_storage_g_job_suspend(acct_db_conn, job_ptr);
 		deallocate_nodes(job_ptr, false, true);
-		job_completion_logger(job_ptr);
+		job_completion_logger(job_ptr, false);
 		verbose("job_signal %u of suspended job %u successful",
 			signal, job_id);
 		return SLURM_SUCCESS;
@@ -2427,7 +2427,7 @@ extern int job_signal(uint32_t job_id, uint16_t signal, uint16_t batch_flag,
 			last_job_update			= now;
 			job_ptr->job_state = JOB_CANCELLED | JOB_COMPLETING;
 			deallocate_nodes(job_ptr, false, false);
-			job_completion_logger(job_ptr);
+			job_completion_logger(job_ptr, false);
 		} else if (batch_flag) {
 			if (job_ptr->batch_flag)
 				_signal_batch_job(job_ptr, signal);
@@ -2543,13 +2543,13 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 		 * job looks like a new job. */
 		job_ptr->end_time = now;
 		job_ptr->job_state  = JOB_NODE_FAIL;
-		job_completion_logger(job_ptr);
+		job_completion_logger(job_ptr, true);
 		job_ptr->db_index = 0;
 		/* Since this could happen on a launch we need to make
-		   sure the submit isn't the same as the last submit so
-		   put now + 1 so we get different records in the
-		   database */
-		job_ptr->details->submit_time = now+1;
+		 * sure the submit isn't the same as the last submit so
+		 * put now + 1 so we get different records in the
+		 * database */
+		job_ptr->details->submit_time = now + 1;
 
 		job_ptr->batch_flag++;	/* only one retry */
 		job_ptr->restart_cnt++;
@@ -2596,7 +2596,7 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 				difftime(now, job_ptr->suspend_time);
 		} else
 			job_ptr->end_time = now;
-		job_completion_logger(job_ptr);
+		job_completion_logger(job_ptr, false);
 	}
 
 	last_job_update = now;
@@ -4156,7 +4156,7 @@ static void _job_timed_out(struct job_record *job_ptr)
 		job_ptr->job_state          = JOB_TIMEOUT | JOB_COMPLETING;
 		job_ptr->exit_code = MAX(job_ptr->exit_code, 1);
 		deallocate_nodes(job_ptr, true, false);
-		job_completion_logger(job_ptr);
+		job_completion_logger(job_ptr, false);
 	} else
 		job_signal(job_ptr->job_id, SIGKILL, 0, 0);
 	return;
@@ -4876,7 +4876,7 @@ void purge_old_job(void)
 			xfree(job_ptr->state_desc);
 			job_ptr->start_time	= now;
 			job_ptr->end_time	= now;
-			job_completion_logger(job_ptr);
+			job_completion_logger(job_ptr, false);
 			last_job_update		= now;
 		}
 	}
@@ -5006,7 +5006,7 @@ void reset_job_bitmaps(void)
 			job_ptr->exit_code = MAX(job_ptr->exit_code, 1);
 			job_ptr->state_reason = FAIL_DOWN_NODE;
 			xfree(job_ptr->state_desc);
-			job_completion_logger(job_ptr);
+			job_completion_logger(job_ptr, false);
 		}
 	}
 
@@ -6395,7 +6395,7 @@ extern void job_pre_resize_acctg(struct job_record *job_ptr)
 	job_ptr->resize_time = time(NULL);
 	/* NOTE: job_completion_logger() calls
 	 *	 acct_policy_remove_job_submit() */
-	job_completion_logger(job_ptr);
+	job_completion_logger(job_ptr, false);
 	job_ptr->job_state &= (~JOB_RESIZING);
 }
 
@@ -6831,7 +6831,7 @@ static void _validate_job_files(List batch_dirs)
 			job_ptr->state_reason = FAIL_SYSTEM;
 			xfree(job_ptr->state_desc);
 			job_ptr->start_time = job_ptr->end_time = time(NULL);
-			job_completion_logger(job_ptr);
+			job_completion_logger(job_ptr, false);
 		}
 	}
 	list_iterator_destroy(job_iterator);
@@ -7008,7 +7008,7 @@ void job_fini (void)
 }
 
 /* log the completion of the specified job */
-extern void job_completion_logger(struct job_record  *job_ptr)
+extern void job_completion_logger(struct job_record  *job_ptr, bool requeue)
 {
 	int base_state;
 	bool sent_start = false;
@@ -7029,7 +7029,9 @@ extern void job_completion_logger(struct job_record  *job_ptr)
 		base_state = job_ptr->job_state & JOB_STATE_BASE;
 		if ((base_state == JOB_COMPLETE) ||
 		    (base_state == JOB_CANCELLED)) {
-			if (job_ptr->mail_type & MAIL_JOB_END)
+			if (requeue && (job_ptr->mail_type & MAIL_JOB_REQUEUE))
+				mail_job_info(job_ptr, MAIL_JOB_REQUEUE);
+			if (!requeue && (job_ptr->mail_type & MAIL_JOB_END))
 				mail_job_info(job_ptr, MAIL_JOB_END);
 		} else {	/* JOB_FAILED, JOB_NODE_FAIL, or JOB_TIMEOUT */
 			if (job_ptr->mail_type & MAIL_JOB_FAIL)
@@ -7099,7 +7101,7 @@ extern bool job_independent(struct job_record *job_ptr, int will_run)
 		xfree(job_ptr->state_desc);
 		job_ptr->start_time	= now;
 		job_ptr->end_time	= now;
-		job_completion_logger(job_ptr);
+		job_completion_logger(job_ptr, false);
 		return false;
 	}
 
@@ -7553,7 +7555,7 @@ extern int job_requeue (uid_t uid, uint32_t job_id, slurm_fd conn_fd,
 	job_ptr->job_state  = JOB_CANCELLED;
 	deallocate_nodes(job_ptr, false, suspended);
 	xfree(job_ptr->details->req_node_layout);
-	job_completion_logger(job_ptr);
+	job_completion_logger(job_ptr, true);
 	job_ptr->db_index = 0;
 	job_ptr->job_state = JOB_PENDING;
 	if (job_ptr->node_cnt)
@@ -8323,7 +8325,7 @@ extern int send_jobs_to_accounting(void)
 				if (IS_JOB_PENDING(job_ptr))
 					job_ptr->start_time = now;
 				job_ptr->end_time = now;
-				job_completion_logger(job_ptr);
+				job_completion_logger(job_ptr, false);
 				continue;
 			} else
 				job_ptr->assoc_id = assoc_rec.id;
