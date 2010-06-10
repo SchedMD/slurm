@@ -928,8 +928,8 @@ This option may be used to spread several job steps out among the
 nodes of the current job. If \fB\-r\fR is used, the current job
 step will begin at node \fIn\fR of the allocated nodelist, where
 the first node is considered node 0.  The \fB\-r\fR option is not
-permitted along with \fB\-w\fR or \fB\-x\fR, and will be
-ignored when not running within a prior allocation (i.e. when
+permitted with \fB\-w\fR or \fB\-x\fR option and will result in a 
+fatal error when not running within a prior allocation (i.e. when
 SLURM_JOB_ID is not set). The default for \fIn\fR is 0. If the
 value of \fB\-\-nodes\fR exceeds the number of nodes identified
 with the \fB\-\-relative\fR option, a warning message will be
