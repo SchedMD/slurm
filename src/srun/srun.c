@@ -320,10 +320,8 @@ int srun(int ac, char **av)
 		}
 #endif
 		if (opt.relative_set && opt.relative) {
-			error("--relative option ignored in job allocation "
+			fatal("--relative option invalid for job allocation "
 			      "request");
-			opt.relative = NO_VAL;
-			opt.relative_set = false;
 		}
 
 		if ( !(resp = allocate_nodes()) )
