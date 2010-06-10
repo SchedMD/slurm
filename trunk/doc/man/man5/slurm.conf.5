@@ -275,7 +275,22 @@ Defines specific subsystems which should provide more detailed event logging.
 Multiple subsystems can be specified with comma separators.
 Valid subsystems available today (with more to come) include:
 .RS
-.TP 15
+.TP 17
+\fBBackfill\fR
+Backfill scheduler details
+.TP
+\fBBGBlockAlgo\fR
+BlueGene block allocation details
+.TP
+\fBBGBlockAlgoDeep\fR
+BlueGene block allocation, more details
+.TP
+\fBBGBlockPick\fR
+BlueGene block selection for jobs
+.TP
+\fBBGBlockWires\fR
+BlueGene block wiring (switch state details)
+.TP
 \fBCPU_Bind\fR
 CPU binding details for jobs and steps
 .TP
@@ -284,6 +299,12 @@ Generic resource details
 .TP
 \fBNO_CONF_HASH\fR
 Do not log when the slurm.conf files differs between SLURM daemons
+.TP
+\fBPriority\fB
+Job prioritization
+.TP
+\fBSelectType\fR
+Resource selection plugin
 .TP
 \fBSteps\fR
 Slurmctld resource allocation for job steps

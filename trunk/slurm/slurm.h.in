@@ -1298,7 +1298,7 @@ typedef struct reservation_name_msg {
 #define DEBUG_FLAG_BG_ALGO_DEEP	0x00000400	/* debug for bluegene
 						 * algo deep */
 #define DEBUG_FLAG_PRIO 	0x00000800	/* debug for priority plugin */
-
+#define DEBUG_FLAG_BACKFILL	0x00001000	/* debug for sched/backfill */
 
 #define GROUP_FORCE		0x8000	/* if set, update group membership
 					 * info even if no updates to

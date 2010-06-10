@@ -3,7 +3,8 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 2.2.0.pre8
 =============================
-
+ -- Add DebugFlags parameter of "Backfill" for sched/backfill detailed logging.
+ 
 * Changes in SLURM 2.2.0.pre7
 =============================
  -- Fixed issue with sacctmgr if quering against non-existant cluster it
