@@ -1467,21 +1467,25 @@ static char *_mail_type_str(uint16_t mail_type)
 static void _set_job_time(struct job_record *job_ptr, uint16_t mail_type,
 			  char *buf, int buf_len)
 {
-	time_t delay = NO_VAL;
+	time_t interval = NO_VAL;
 
+	buf[0] = '\0';
 	if ((mail_type == MAIL_JOB_BEGIN) && job_ptr->start_time &&
 	    job_ptr->details && job_ptr->details->submit_time) {
-		delay = job_ptr->start_time - job_ptr->details->submit_time;
+		interval = job_ptr->start_time - job_ptr->details->submit_time;
+		snprintf(buf, buf_len, ", Queued time ");
+		secs2time_str(interval, buf+14, buf_len-14);
 	}
+
 	if (((mail_type == MAIL_JOB_END) || (mail_type == MAIL_JOB_FAIL)) &&
 	    job_ptr->start_time && job_ptr->end_time) {
-		delay = job_ptr->end_time - job_ptr->start_time;
-	}
-	if (delay != NO_VAL) {
-		snprintf(buf, buf_len, " After ");
-		secs2time_str(delay, buf+7, buf_len-7);
-	} else if (buf_len) {
-		buf[0] = '\0';
+		if (job_ptr->suspend_time) {
+			interval  = job_ptr->end_time - job_ptr->suspend_time;
+			interval += job_ptr->pre_sus_time;
+		} else
+			interval = job_ptr->end_time - job_ptr->start_time;
+		snprintf(buf, buf_len, ", Run time ");
+		secs2time_str(interval, buf+11, buf_len-11);
 	}
 }
 
