@@ -79,6 +79,14 @@
 #include "src/slurmctld/srun_comm.h"
 #include "backfill.h"
 
+#ifndef BACKFILL_INTERVAL
+#  ifdef HAVE_BG
+#    define BACKFILL_INTERVAL	5
+#  else
+#    define BACKFILL_INTERVAL	10
+#  endif
+#endif
+
 typedef struct node_space_map {
 	time_t begin_time;
 	time_t end_time;
@@ -93,20 +101,11 @@ static bool stop_backfill = false;
 static pthread_mutex_t thread_flag_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t term_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  term_cond = PTHREAD_COND_INITIALIZER;
+static bool config_flag = false;
+static uint32_t debug_flags = 0;
+static int backfill_interval = BACKFILL_INTERVAL;
 
 static int max_backfill_job_cnt = 50;
-
-#ifndef BACKFILL_INTERVAL
-#  ifdef HAVE_BG
-#    define BACKFILL_INTERVAL	5
-#  else
-#    define BACKFILL_INTERVAL	10
-#  endif
-#endif
-
-/* Set __DEBUG to get detailed logging for this thread without
- * detailed logging for the entire slurmctld daemon */
-#define __DEBUG			0
 
 /* Do not build job/resource/time record for more than this
  * far in the future, in seconds, currently one day */
@@ -121,6 +120,7 @@ static void _attempt_backfill(void);
 static void _diff_tv_str(struct timeval *tv1,struct timeval *tv2,
 		char *tv_str, int len_tv_str);
 static bool _job_is_completing(void);
+static void _load_config(void);
 static bool _more_work(void);
 static void _my_sleep(int secs);
 static int  _num_feature_count(struct job_record *job_ptr);
@@ -134,7 +134,6 @@ static int  _try_sched(struct job_record *job_ptr, bitstr_t **avail_bitmap,
 		       uint32_t min_nodes, uint32_t max_nodes,
 		       uint32_t req_nodes);
 
-#if __DEBUG
 /* Log resource allocate table */
 static void _dump_node_space_table(node_space_map_t *node_space_ptr)
 {
@@ -156,7 +155,6 @@ static void _dump_node_space_table(node_space_map_t *node_space_ptr)
 	}
 	info("=========================================");
 }
-#endif
 
 /*
  * _diff_tv_str - build a string showing the time difference between two times
@@ -340,19 +338,12 @@ static void _my_sleep(int secs)
 	pthread_mutex_unlock(&term_lock);
 }
 
-/* backfill_agent - detached thread periodically attempts to backfill jobs */
-extern void *backfill_agent(void *args)
+static void _load_config(void)
 {
-	struct timeval tv1, tv2;
-	char tv_str[20], *sched_params, *tmp_ptr;
-	time_t now;
-	int backfill_interval = BACKFILL_INTERVAL;
-	static time_t last_backfill_time = 0;
-	/* Read config, and partitions; Write jobs and nodes */
-	slurmctld_lock_t all_locks = {
-		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK };
+	char *sched_params, *tmp_ptr;
 
 	sched_params = slurm_get_sched_params();
+	debug_flags  = slurm_get_debug_flags();
 	if (sched_params && (tmp_ptr=strstr(sched_params, "interval=")))
 		backfill_interval = atoi(tmp_ptr + 9);
 	if (backfill_interval < 1) {
@@ -365,12 +356,35 @@ extern void *backfill_agent(void *args)
 		fatal("Invalid backfill scheduler max_job_bf: %d",
 		      max_backfill_job_cnt);
 	}
+	xfree(sched_params);
+}
 
+/* Note that slurm.conf has changed */
+extern void backfill_reconfig(void)
+{
+	config_flag = true;
+}
+
+/* backfill_agent - detached thread periodically attempts to backfill jobs */
+extern void *backfill_agent(void *args)
+{
+	struct timeval tv1, tv2;
+	char tv_str[20];
+	time_t now;
+	static time_t last_backfill_time = 0;
+	/* Read config, and partitions; Write jobs and nodes */
+	slurmctld_lock_t all_locks = {
+		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK };
+
+	_load_config();
 	while (!stop_backfill) {
-		_my_sleep(BACKFILL_INTERVAL);
+		_my_sleep(backfill_interval);
 		if (stop_backfill)
 			break;
-
+		if (config_flag) {
+			config_flag = false;
+			_load_config();
+		}
 		now = time(NULL);
 		if ((difftime(now, last_backfill_time) < backfill_interval) ||
 		    _job_is_completing() || 
@@ -384,9 +398,8 @@ extern void *backfill_agent(void *args)
 		unlock_slurmctld(all_locks);
 		gettimeofday(&tv2, NULL);
 		_diff_tv_str(&tv1, &tv2, tv_str, 20);
-#if __DEBUG
-		info("backfill: completed, %s", tv_str);
-#endif
+		if (debug_flags & DEBUG_FLAG_BACKFILL)
+			info("backfill: completed, %s", tv_str);
 	}
 	return NULL;
 }
@@ -425,16 +438,14 @@ static void _attempt_backfill(void)
 	node_space[0].avail_bitmap = bit_copy(avail_node_bitmap);
 	node_space[0].next = 0;
 	node_space_recs = 1;
-#if __DEBUG
-	_dump_node_space_table(node_space);
-#endif
+	if (debug_flags & DEBUG_FLAG_BACKFILL)
+		_dump_node_space_table(node_space);
 
 	for (i = 0; i < job_queue_size; i++) {
 		job_ptr = job_queue[i].job_ptr;
 		part_ptr = job_ptr->part_ptr;
-#if __DEBUG
-		info("backfill test for job %u", job_ptr->job_id);
-#endif
+		if (debug_flags & DEBUG_FLAG_BACKFILL)
+			info("backfill test for job %u", job_ptr->job_id);
 
 		if (part_ptr == NULL) {
 			part_ptr = find_part_record(job_ptr->partition);
@@ -619,9 +630,8 @@ static void _attempt_backfill(void)
 		bit_not(avail_bitmap);
 		_add_reservation(job_ptr->start_time, end_reserve,
 				 avail_bitmap, node_space, &node_space_recs);
-#if __DEBUG
-		_dump_node_space_table(node_space);
-#endif
+		if (debug_flags & DEBUG_FLAG_BACKFILL)
+			_dump_node_space_table(node_space);
 		if ((time(NULL) - now) >= sched_timeout) {
 			debug("backfill: loop taking to long breaking out");
 			break;
@@ -665,10 +675,10 @@ static int _start_job(struct job_record *job_ptr, bitstr_t *resv_bitmap)
 		else if (job_ptr->details->prolog_running == 0)
 			launch_job(job_ptr);
 		backfilled_jobs++;
-#if __DEBUG
-		info("backfill: Jobs backfilled since boot: %d",
-		     backfilled_jobs);
-#endif
+		if (debug_flags & DEBUG_FLAG_BACKFILL) {
+			info("backfill: Jobs backfilled since boot: %d",
+			     backfilled_jobs);
+		}
 	} else if ((job_ptr->job_id != fail_jobid) &&
 		   (rc != ESLURM_ACCOUNTING_POLICY)) {
 		char *node_list;

@@ -2784,6 +2784,11 @@ extern char * debug_flags2str(uint32_t debug_flags)
 			xstrcat(rc, ",");
 		xstrcat(rc, "BGBlockAlgoDeep");
 	}
+	if (debug_flags & DEBUG_FLAG_BACKFILL) {
+		if (rc)
+			xstrcat(rc, ",");
+		xstrcat(rc, "Backfill");
+	}
 	if (debug_flags & DEBUG_FLAG_BG_PICK) {
 		if (rc)
 			xstrcat(rc, ",");
@@ -2854,7 +2859,9 @@ extern uint32_t debug_str2flags(char *debug_flags)
 	tmp_str = xstrdup(debug_flags);
 	tok = strtok_r(tmp_str, ",", &last);
 	while (tok) {
-		if      (strcasecmp(tok, "BGBlockAlgo") == 0)
+		if      (strcasecmp(tok, "Backfill") == 0)
+			rc |= DEBUG_FLAG_BACKFILL;
+		else if (strcasecmp(tok, "BGBlockAlgo") == 0)
 			rc |= DEBUG_FLAG_BG_ALGO;
 		else if (strcasecmp(tok, "BGBlockAlgoDeep") == 0)
 			rc |= DEBUG_FLAG_BG_ALGO_DEEP;

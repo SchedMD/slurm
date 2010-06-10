@@ -107,7 +107,8 @@ void fini( void )
 /**************************************************************************/
 int slurm_sched_plugin_reconfig( void )
 {
-       return SLURM_SUCCESS;
+	backfill_reconfig();
+	return SLURM_SUCCESS;
 }
 
 /***************************************************************************/
