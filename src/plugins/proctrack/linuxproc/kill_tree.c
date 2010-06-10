@@ -54,9 +54,10 @@
 #include <limits.h>
 
 #include "slurm/slurm.h"
+#include "slurm/slurm_errno.h"
+#include "src/common/log.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-#include "src/common/log.h"
 #include "kill_tree.h"
 
 typedef struct xpid_s {
@@ -163,12 +164,14 @@ static xppid_t **_build_hashtbl(void)
 
 	hashtbl = (xppid_t **)xmalloc(HASH_LEN * sizeof(xppid_t *));
 
+	slurm_seterrno(0);
 	while ((de = readdir(dir)) != NULL) {
 		num = de->d_name;
 		if ((num[0] < '0') || (num[0] > '9'))
 			continue;
 		ret_l = strtol(num, &endptr, 10);
-		if(errno == ERANGE) {
+		if ((ret_l == LONG_MIN) || (ret_l == LONG_MAX) ||
+		    (errno == ERANGE)) {
 			error("couldn't do a strtol on str %s(%d): %m",
 			      num, ret_l);
 		}
