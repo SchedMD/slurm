@@ -1310,7 +1310,7 @@ static int _sync_nodes_to_comp_job(void)
 			update_cnt++;
 			info("Killing job_id %u", job_ptr->job_id);
 			deallocate_nodes(job_ptr, false, false);
-			job_completion_logger(job_ptr);
+			job_completion_logger(job_ptr, false);
 		}
 	}
 	list_iterator_destroy(job_iterator);
@@ -1370,7 +1370,7 @@ static int _sync_nodes_to_active_job(struct job_record *job_ptr)
 			job_ptr->exit_code = MAX(job_ptr->exit_code, 1);
 			job_ptr->state_reason = FAIL_DOWN_NODE;
 			xfree(job_ptr->state_desc);
-			job_completion_logger(job_ptr);
+			job_completion_logger(job_ptr, false);
 			cnt++;
 		} else if (IS_NODE_IDLE(node_ptr)) {
 			cnt++;

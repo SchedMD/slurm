@@ -239,9 +239,10 @@ enum job_states {
 #define READY_NODE_STATE 0x01	/* node is ready */
 #define READY_JOB_STATE  0x02	/* job is ready to execute */
 
-#define MAIL_JOB_BEGIN 0x0001	/* notify when job begins */
-#define MAIL_JOB_END   0x0002	/* notify when job ends */
-#define MAIL_JOB_FAIL  0x0004	/* notify if job fails */
+#define MAIL_JOB_BEGIN    0x0001	/* notify when job begins */
+#define MAIL_JOB_END      0x0002	/* notify when job ends */
+#define MAIL_JOB_FAIL     0x0004	/* notify if job fails */
+#define MAIL_JOB_REQUEUE  0x0008	/* notify if job requeued */
 
 #define NICE_OFFSET 10000	/* offset for job's nice value */
 

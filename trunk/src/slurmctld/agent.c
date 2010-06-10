@@ -1461,6 +1461,8 @@ static char *_mail_type_str(uint16_t mail_type)
 		return "Ended";
 	if (mail_type == MAIL_JOB_FAIL)
 		return "Failed";
+	if (mail_type == MAIL_JOB_REQUEUE)
+		return "Requeued";
 	return "unknown";
 }
 
@@ -1477,8 +1479,9 @@ static void _set_job_time(struct job_record *job_ptr, uint16_t mail_type,
 		secs2time_str(interval, buf+14, buf_len-14);
 	}
 
-	if (((mail_type == MAIL_JOB_END) || (mail_type == MAIL_JOB_FAIL)) &&
-	    job_ptr->start_time && job_ptr->end_time) {
+	if (((mail_type == MAIL_JOB_END) || (mail_type == MAIL_JOB_FAIL) ||
+	     (mail_type == MAIL_JOB_REQUEUE)) &&
+	    (job_ptr->start_time && job_ptr->end_time)) {
 		if (job_ptr->suspend_time) {
 			interval  = job_ptr->end_time - job_ptr->suspend_time;
 			interval += job_ptr->pre_sus_time;

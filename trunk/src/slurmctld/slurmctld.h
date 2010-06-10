@@ -843,7 +843,7 @@ extern int job_checkpoint(checkpoint_msg_t *ckpt_ptr, uid_t uid,
 			  slurm_fd conn_fd, uint16_t protocol_version);
 
 /* log the completion of the specified job */
-extern void job_completion_logger(struct job_record  *job_ptr);
+extern void job_completion_logger(struct job_record  *job_ptr, bool requeue);
 
 /*
  * job_epilog_complete - Note the completion of the epilog script for a

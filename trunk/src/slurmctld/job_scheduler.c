@@ -409,7 +409,7 @@ extern int schedule(void)
 			job_ptr->state_reason = FAIL_BANK_ACCOUNT;
 			xfree(job_ptr->state_desc);
 			job_ptr->start_time = job_ptr->end_time = time(NULL);
-			job_completion_logger(job_ptr);
+			job_completion_logger(job_ptr, false);
 			delete_job_details(job_ptr);
 			continue;
 		}
@@ -508,7 +508,7 @@ extern int schedule(void)
 				job_ptr->state_reason = FAIL_BAD_CONSTRAINTS;
 				xfree(job_ptr->state_desc);
 				job_ptr->start_time = job_ptr->end_time = now;
-				job_completion_logger(job_ptr);
+				job_completion_logger(job_ptr, false);
 				delete_job_details(job_ptr);
 			}
 		}
