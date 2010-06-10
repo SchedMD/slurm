@@ -50,8 +50,8 @@ be set quite high for memory size, open file count and stack size.</p>
 
 <h2>SLURM Configuration</h2>
 
-<p>Several SLURM configuration parameter should be adjusted to reflect the
-needs of high throughput computing.</p>
+<p>Several SLURM configuration parameters should be adjusted to
+reflect the needs of high throughput computing.</p>
 
 <ul>
 <li><b>MaxJobCount</b>:
@@ -62,7 +62,7 @@ The default value is 10,000</li>
 Controls how long to wait for a response to messages.
 The default value is 10 seconds.
 While the <b>slurmctld</b> daemon is highly threaded, its responsiveness
-is load dependend. This value may need to be increased substantially.
+is load dependent. This value may need to be increased substantially.
 A value in of 30 or 60 seconds should be sufficient in any case.</li>
 <li><b>MinJobAge</b>:
 Controls how soon the record of a completed job can be purged from the
