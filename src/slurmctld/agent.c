@@ -76,18 +76,19 @@
 #include <unistd.h>
 #include <stdlib.h>
 
+#include "src/common/forward.h"
 #include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/node_select.h"
+#include "src/common/parse_time.h"
+#include "src/common/slurm_protocol_api.h"
+#include "src/common/slurm_protocol_interface.h"
+#include "src/common/uid.h"
 #include "src/common/xsignal.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-#include "src/common/slurm_protocol_api.h"
-#include "src/common/slurm_protocol_interface.h"
-#include "src/common/uid.h"
-#include "src/common/forward.h"
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/locks.h"
@@ -1463,6 +1464,27 @@ static char *_mail_type_str(uint16_t mail_type)
 	return "unknown";
 }
 
+static void _set_job_time(struct job_record *job_ptr, uint16_t mail_type,
+			  char *buf, int buf_len)
+{
+	time_t delay = NO_VAL;
+
+	if ((mail_type == MAIL_JOB_BEGIN) && job_ptr->start_time &&
+	    job_ptr->details && job_ptr->details->submit_time) {
+		delay = job_ptr->start_time - job_ptr->details->submit_time;
+	}
+	if (((mail_type == MAIL_JOB_END) || (mail_type == MAIL_JOB_FAIL)) &&
+	    job_ptr->start_time && job_ptr->end_time) {
+		delay = job_ptr->end_time - job_ptr->start_time;
+	}
+	if (delay != NO_VAL) {
+		snprintf(buf, buf_len, " After ");
+		secs2time_str(delay, buf+7, buf_len-7);
+	} else if (buf_len) {
+		buf[0] = '\0';
+	}
+}
+
 /*
  * mail_job_info - Send e-mail notice of job state change
  * IN job_ptr - job identification
@@ -1470,6 +1492,7 @@ static char *_mail_type_str(uint16_t mail_type)
  */
 extern void mail_job_info (struct job_record *job_ptr, uint16_t mail_type)
 {
+	char job_time[128];
 	mail_info_t *mi = _mail_alloc();
 
 	if (!job_ptr->mail_user)
@@ -1477,10 +1500,11 @@ extern void mail_job_info (struct job_record *job_ptr, uint16_t mail_type)
 	else
 		mi->user_name = xstrdup(job_ptr->mail_user);
 
-	mi->message = xmalloc(sizeof(char)*128);
-	sprintf(mi->message, "SLURM Job_id=%u Name=%.24s %s",
+	mi->message = xmalloc(256);
+	_set_job_time(job_ptr, mail_type, job_time, sizeof(job_time));
+	sprintf(mi->message, "SLURM Job_id=%u Name=%.24s %s%s",
 		job_ptr->job_id, job_ptr->name,
-		_mail_type_str(mail_type));
+		_mail_type_str(mail_type), job_time);
 
 	info ("msg to %s: %s", mi->user_name, mi->message);
 
