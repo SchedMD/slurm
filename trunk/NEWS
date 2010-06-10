@@ -1,6 +1,9 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in SLURM 2.2.0.pre8
+=============================
+
 * Changes in SLURM 2.2.0.pre7
 =============================
  -- Fixed issue with sacctmgr if quering against non-existant cluster it
