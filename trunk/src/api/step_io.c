@@ -1184,7 +1184,7 @@ client_io_handler_destroy(client_io_t *cio)
 	   (by calling client_io_handler_finish()) before freeing anything */
 
 	pthread_mutex_destroy(&cio->ioservers_lock);
-	bit_free(cio->ioservers_ready_bits);
+	FREE_NULL_BITMAP(cio->ioservers_ready_bits);
 	xfree(cio->ioserver); /* need to destroy the obj first? */
 	xfree(cio->listenport);
 	xfree(cio->listensock);

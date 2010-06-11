@@ -481,7 +481,7 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 				if (accumulate_bitmap) {
 					bit_or(accumulate_bitmap,
 					       feature_bitmap);
-					bit_free(feature_bitmap);
+					FREE_NULL_BITMAP(feature_bitmap);
 				} else
 					accumulate_bitmap = feature_bitmap;
 			}
@@ -555,7 +555,7 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 
 	/* Restore available node bitmap, ignoring reservations */
 	if (save_avail_node_bitmap) {
-		bit_free(avail_node_bitmap);
+		FREE_NULL_BITMAP(avail_node_bitmap);
 		avail_node_bitmap = save_avail_node_bitmap;
 	}
 
@@ -1331,15 +1331,15 @@ static bool _valid_feature_counts(struct job_details *detail_ptr,
 			bit_and(tmp_bitmap, feat_ptr->node_bitmap);
 			if (bit_set_count(tmp_bitmap) < job_feat_ptr->count)
 				rc = false;
-			bit_free(tmp_bitmap);
+			FREE_NULL_BITMAP(tmp_bitmap);
 			if (!rc)
 				break;
 		}
 		list_iterator_destroy(job_feat_iter);
-		bit_free(feature_bitmap);
+		FREE_NULL_BITMAP(feature_bitmap);
 	} else {
 		bit_and(node_bitmap, feature_bitmap);
-		bit_free(feature_bitmap);
+		FREE_NULL_BITMAP(feature_bitmap);
 	}
 
 	return rc;
@@ -1501,7 +1501,7 @@ static int _build_node_list(struct job_record *job_ptr,
 	if (!_valid_feature_counts(detail_ptr, usable_node_mask, &has_xor)) {
 		info("No job %u feature requirements can not be met",
 		     job_ptr->job_id);
-		bit_free(usable_node_mask);
+		FREE_NULL_BITMAP(usable_node_mask);
 		return ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
 	}
 
@@ -1574,7 +1574,7 @@ static int _build_node_list(struct job_record *job_ptr,
 			tmp_feature = bit_alloc(MAX_FEATURES);
 			bit_set(tmp_feature, 0);
 		}
-		/* NOTE: Must bit_free(tmp_feature) to avoid memory leak */
+		/* NOTE: FREE_NULL_BITMAP(tmp_feature) to avoid memory leak */
 
 		node_set_ptr[node_set_inx].cpus_per_node =
 			config_ptr->cpus;

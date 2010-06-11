@@ -267,8 +267,8 @@ static slurm_cred_t *_generate_fake_cred(uint32_t jobid, uint32_t stepid,
 
 	cred = slurm_cred_faker(&arg);
 
-	bit_free(arg.job_core_bitmap);
-	bit_free(arg.step_core_bitmap);
+	FREE_NULL_BITMAP(arg.job_core_bitmap);
+	FREE_NULL_BITMAP(arg.step_core_bitmap);
 	xfree(arg.cores_per_socket);
 	xfree(arg.sockets_per_node);
 	xfree(arg.sock_core_rep_count);
@@ -465,8 +465,8 @@ static void _msg_thr_destroy(message_thread_state_t *mts)
 	eio_handle_destroy(mts->msg_handle);
 	pthread_mutex_destroy(&mts->lock);
 	pthread_cond_destroy(&mts->cond);
-	bit_free(mts->tasks_started);
-	bit_free(mts->tasks_exited);
+	FREE_NULL_BITMAP(mts->tasks_started);
+	FREE_NULL_BITMAP(mts->tasks_exited);
 }
 
 static void

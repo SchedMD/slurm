@@ -248,7 +248,7 @@ static int	_start_job(uint32_t jobid, int task_cnt, char *hostlist,
 				"job %u, %s",
 				jobid, hostlist);
 			xfree(new_node_list);
-			bit_free(new_bitmap);
+			FREE_NULL_BITMAP(new_bitmap);
 			rc = -1;
 			goto fini;
 		}

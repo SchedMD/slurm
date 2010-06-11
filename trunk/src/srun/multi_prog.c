@@ -418,6 +418,6 @@ verify_multi_name(char *config_fname, int ntasks)
 	}
 
 fini:	fclose(config_fd);
-	bit_free(task_mask);
+	FREE_NULL_BITMAP(task_mask);
 	return rc;
 }

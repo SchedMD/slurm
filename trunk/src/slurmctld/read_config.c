@@ -241,7 +241,7 @@ static int _build_bitmaps(void)
 			fatal ("bit_copy malloc failure");
 		bit_not(tmp_bits);
 		bit_and(share_node_bitmap, tmp_bits);
-		bit_free(tmp_bits);
+		FREE_NULL_BITMAP(tmp_bits);
 	}
 	list_iterator_destroy(job_iterator);
 

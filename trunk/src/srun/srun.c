@@ -1186,7 +1186,7 @@ _task_array_to_string(int ntasks, uint32_t taskids[])
 		bit_set(tasks_bitmap, taskids[i]);
 	str = xmalloc(2048);
 	bit_fmt(str, 2048, tasks_bitmap);
-	bit_free(tasks_bitmap);
+	FREE_NULL_BITMAP(tasks_bitmap);
 
 	return str;
 }

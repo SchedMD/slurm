@@ -257,7 +257,7 @@ static void _validate_switches(void)
 				tmp_bitmap = bit_copy(switch_ptr->node_bitmap);
 				bit_and(tmp_bitmap, switches_bitmap);
 				bit_or(multi_homed_bitmap, tmp_bitmap);
-				bit_free(tmp_bitmap);
+				FREE_NULL_BITMAP(tmp_bitmap);
 				bit_or(switches_bitmap,
 				       switch_ptr->node_bitmap);
 			} else {
@@ -335,7 +335,7 @@ static void _validate_switches(void)
 			      i, child);
 			xfree(child);
 		}
-		bit_free(switches_bitmap);
+		FREE_NULL_BITMAP(switches_bitmap);
 	} else
 		fatal("switches contain no nodes");
 
@@ -356,7 +356,7 @@ static void _validate_switches(void)
 		      child);
 		xfree(child);
 	}
-	bit_free(multi_homed_bitmap);
+	FREE_NULL_BITMAP(multi_homed_bitmap);
 
 	s_p_hashtbl_destroy(conf_hashtbl);
 	_log_switches();
@@ -520,7 +520,7 @@ static void _destroy_switches(void *ptr)
  * OUT bitmap     - set to bitmap, may not have all bits set on error
  * IN/OUT invalid_hostlist - hostlist of invalid host names, initialize to NULL
  * RET 0 if no error, otherwise EINVAL
- * NOTE: call bit_free(bitmap) and hostlist_destroy(invalid_hostlist)
+ * NOTE: call FREE_NULL_BITMAP(bitmap) and hostlist_destroy(invalid_hostlist)
  *       to free memory when variables are no longer required
  */
 static int _node_name2bitmap(char *node_names, bitstr_t **bitmap, 

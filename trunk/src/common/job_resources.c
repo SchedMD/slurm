@@ -402,10 +402,8 @@ extern void free_job_resources(job_resources_t **job_resrcs_pptr)
 	job_resources_t *job_resrcs_ptr = *job_resrcs_pptr;
 
 	if (job_resrcs_ptr) {
-		if (job_resrcs_ptr->core_bitmap)
-			bit_free(job_resrcs_ptr->core_bitmap);
-		if (job_resrcs_ptr->core_bitmap_used)
-			bit_free(job_resrcs_ptr->core_bitmap_used);
+		FREE_NULL_BITMAP(job_resrcs_ptr->core_bitmap);
+		FREE_NULL_BITMAP(job_resrcs_ptr->core_bitmap_used);
 		xfree(job_resrcs_ptr->cores_per_socket);
 		xfree(job_resrcs_ptr->cpu_array_reps);
 		xfree(job_resrcs_ptr->cpu_array_value);
@@ -413,8 +411,7 @@ extern void free_job_resources(job_resources_t **job_resrcs_pptr)
 		xfree(job_resrcs_ptr->cpus_used);
 		xfree(job_resrcs_ptr->memory_allocated);
 		xfree(job_resrcs_ptr->memory_used);
-		if (job_resrcs_ptr->node_bitmap)
-			bit_free(job_resrcs_ptr->node_bitmap);
+		FREE_NULL_BITMAP(job_resrcs_ptr->node_bitmap);
 		xfree(job_resrcs_ptr->nodes);
 		xfree(job_resrcs_ptr->sock_core_rep_count);
 		xfree(job_resrcs_ptr->sockets_per_node);
