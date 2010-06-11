@@ -542,22 +542,18 @@ By default, no program will be executed.
 
 .TP
 \fBInactiveLimit\fR
-The interval, in seconds, a job or job step is permitted to be inactive
-before it is terminated. A job or job step is considered inactive if
-the associated srun command is not responding to slurm daemons. This
-could be due to the termination of the srun command or the program
-being is a stopped state. A batch job is considered inactive if it
-has no active job steps (e.g. periods of pre\- and post\-processing).
-This limit permits defunct jobs to be purged in a timely fashion
-without waiting for their time limit to be reached.
-This value should reflect the possibility that the srun command may
-stopped by a debugger or considerable time could be required for batch
-job pre\- and post\-processing.
+The interval, in seconds, after which a non\-responsive job allocation
+command (e.g. \fBsrun\fR or \fBsalloc\fR) will result in the job being
+terminated. If the node on which the command is executed fails or the
+command abnormally terminates, this will terminate its job allocation.
+This option has no effect upon batch jobs.
+When setting a value, take into consideration that a debugger using \fBsrun\fR
+to launch an application may leave the \fBsrun\fR command in a stopped state
+for extended periods of time.
 This limit is ignored for jobs running in partitions with the
 \fBRootOnly\fR flag set (the scheduler running as root will be
 responsible for the job).
-The default value is unlimited (zero).
-May not exceed 65533.
+The default value is unlimited (zero) and may not exceed 65533 seconds.
 
 .TP
 \fBJobAcctGatherType\fR
