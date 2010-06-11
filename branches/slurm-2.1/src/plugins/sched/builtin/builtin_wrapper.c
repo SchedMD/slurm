@@ -177,6 +177,7 @@ void slurm_sched_plugin_job_is_pending( void )
 
 		FREE_NULL_BITMAP(avail_bitmap);
 	}
+	xfree(job_queue);
 }
 
 /**************************************************************************/
