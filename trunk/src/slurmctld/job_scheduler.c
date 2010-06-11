@@ -79,6 +79,7 @@ static void	_feature_list_delete(void *x);
 static void *	_run_epilog(void *arg);
 static void *	_run_prolog(void *arg);
 static bool	_scan_depend(List dependency_list, uint32_t job_id);
+static int	_sort_job_queue(void *x, void *y);
 static int	_valid_feature_list(uint32_t job_id, List feature_list);
 static int	_valid_node_feature(char *feature);
 
@@ -88,23 +89,21 @@ static int	_valid_node_feature(char *feature);
  *			  and an optional job name
  * IN  user_id - user id
  * IN  job_name - job name constraint
- * OUT job_queue - pointer to job queue
- * RET number of entries in job_queue
- * NOTE: the buffer at *job_queue must be xfreed by the caller
+ * RET the job queue
+ * NOTE: the caller must call list_destroy() on RET value to free memory
  */
-static int _build_user_job_list(uint32_t user_id, char* job_name,
-			        struct job_queue **job_queue)
+static List _build_user_job_list(uint32_t user_id, char* job_name)
 {
+	List job_queue;
 	ListIterator job_iterator;
 	struct job_record *job_ptr = NULL;
-	int job_buffer_size, job_queue_size;
-	struct job_queue *my_job_queue;
 
-	/* build list pending jobs */
-	job_buffer_size = job_queue_size = 0;
-	job_queue[0] = my_job_queue = NULL;
-
+	job_queue = list_create(NULL);
+	if (job_queue == NULL)
+		fatal("list_create memory allocation failure");
 	job_iterator = list_iterator_create(job_list);
+	if (job_iterator == NULL)
+		fatal("list_iterator_create malloc failure");
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		xassert (job_ptr->magic == JOB_MAGIC);
 		if (job_ptr->user_id != user_id)
@@ -112,45 +111,31 @@ static int _build_user_job_list(uint32_t user_id, char* job_name,
 		if (job_name && job_ptr->name &&
 		    strcmp(job_name, job_ptr->name))
 			continue;
-		if (job_buffer_size <= job_queue_size) {
-			job_buffer_size += 200;
-			xrealloc(my_job_queue, job_buffer_size *
-				 sizeof(struct job_queue));
-		}
-		my_job_queue[job_queue_size].job_ptr = job_ptr;
-		my_job_queue[job_queue_size].job_priority = job_ptr->priority;
-		my_job_queue[job_queue_size].part_priority =
-				job_ptr->part_ptr->priority;
-		job_queue_size++;
+		list_append(job_queue, job_ptr);
 	}
 	list_iterator_destroy(job_iterator);
 
-	job_queue[0] = my_job_queue;
-	return job_queue_size;
+	return job_queue;
 }
 
 
 /*
  * build_job_queue - build (non-priority ordered) list of pending jobs
- * OUT job_queue - pointer to job queue
- * RET number of entries in job_queue
- * NOTE: the buffer at *job_queue must be xfreed by the caller
+ * RET the job queue
+ * NOTE: the caller must call list_destroy() on RET value to free memory
  */
-extern int build_job_queue(struct job_queue **job_queue)
+extern List build_job_queue(void)
 {
+	List job_queue;
 	ListIterator job_iterator;
 	struct job_record *job_ptr = NULL;
-	int job_buffer_size, job_queue_size;
-	struct job_queue *my_job_queue;
 
-	if (job_list == NULL)
-		return 0;
-
-	/* build list pending jobs */
-	job_buffer_size = job_queue_size = 0;
-	*job_queue = my_job_queue = NULL;
-
+	job_queue = list_create(NULL);
+	if (job_queue == NULL)
+		fatal("list_create memory allocation failure");
 	job_iterator = list_iterator_create(job_list);
+	if (job_iterator == NULL)
+		fatal("list_iterator_create memory allocation failure");
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		xassert (job_ptr->magic == JOB_MAGIC);
 		if ((!IS_JOB_PENDING(job_ptr)) || IS_JOB_COMPLETING(job_ptr))
@@ -167,21 +152,11 @@ extern int build_job_queue(struct job_queue **job_queue)
 		}
 		if (!job_independent(job_ptr, 0))	/* can not run now */
 			continue;
-		if (job_buffer_size <= job_queue_size) {
-			job_buffer_size += 200;
-			xrealloc(my_job_queue, job_buffer_size *
-				 sizeof(struct job_queue));
-		}
-		my_job_queue[job_queue_size].job_ptr  = job_ptr;
-		my_job_queue[job_queue_size].job_priority = job_ptr->priority;
-		my_job_queue[job_queue_size].part_priority =
-						job_ptr->part_ptr->priority;
-		job_queue_size++;
+		list_append(job_queue, job_ptr);
 	}
 	list_iterator_destroy(job_iterator);
 
-	*job_queue = my_job_queue;
-	return job_queue_size;
+	return job_queue;
 }
 
 /*
@@ -283,8 +258,9 @@ static bool _failed_partition(struct part_record *part_ptr,
  */
 extern int schedule(void)
 {
-	struct job_queue *job_queue;
-	int i, error_code, failed_part_cnt = 0, job_queue_size, job_cnt = 0;
+	List job_queue = NULL;
+	ListIterator job_iterator;
+	int error_code, failed_part_cnt = 0, job_cnt = 0;
 	struct job_record *job_ptr;
 	struct part_record **failed_parts = NULL;
 	bitstr_t *save_avail_node_bitmap;
@@ -329,22 +305,18 @@ extern int schedule(void)
 		return SLURM_SUCCESS;
 	}
 	debug("sched: Running job scheduler");
-	job_queue_size = build_job_queue(&job_queue);
-	if (job_queue_size == 0) {
-		debug3("sched: Job queue is empty");
-		unlock_slurmctld(job_write_lock);
-		return SLURM_SUCCESS;
-	}
-	sort_job_queue(job_queue, job_queue_size);
+	job_queue = build_job_queue();
+	sort_job_queue(job_queue);
 
 	failed_parts = xmalloc(sizeof(struct part_record *) *
 			       list_count(part_list));
 	save_avail_node_bitmap = bit_copy(avail_node_bitmap);
 
 	debug3("sched: Processing job queue...");
-	for (i = 0; i < job_queue_size; i++) {
-		job_ptr = job_queue[i].job_ptr;
-
+	job_iterator = list_iterator_create(job_queue);
+	if (job_iterator == NULL)
+		fatal("list_iterator_create memory allocation failure");
+	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		if (job_ptr->priority == 0)	{ /* held */
 			debug3("sched: JobId=%u. State=%s. Reason=%s. "
 			       "Priority=%u.",
@@ -518,64 +490,47 @@ extern int schedule(void)
 			break;
 		}
 	}
-
+	list_iterator_destroy(job_iterator);
+	
 	FREE_NULL_BITMAP(avail_node_bitmap);
 	avail_node_bitmap = save_avail_node_bitmap;
 	xfree(failed_parts);
-	xfree(job_queue);
+	list_destroy(job_queue);
 	unlock_slurmctld(job_write_lock);
 	END_TIMER2("schedule");
 	return job_cnt;
 }
 
-
 /*
  * sort_job_queue - sort job_queue in decending priority order
- * IN job_queue_size - count of elements in the job queue
- * IN/OUT job_queue - pointer to sorted job queue
+ * IN/OUT job_queue - sorted job queue
  */
-extern void sort_job_queue(struct job_queue *job_queue, int job_queue_size)
+extern void sort_job_queue(List job_queue)
 {
-	int i, j, top_prio_inx;
-	struct job_record *tmp_job_ptr;
-	uint32_t top_job_prio,  tmp_job_prio;
-	uint16_t top_part_prio, tmp_part_prio;
+	list_sort(job_queue, _sort_job_queue);
+}
 
-	for (i = 0; i < job_queue_size; i++) {
-		top_prio_inx  = i;
-		top_job_prio  = job_queue[i].job_priority;
-		top_part_prio = job_queue[i].part_priority;
+/* Note this differs from the ListCmpF typedef since we want jobs sorted
+ *	in order of decreasing priority */
+static int _sort_job_queue(void *x, void *y)
+{
+	struct job_record *job_ptr1 = (struct job_record *) x;
+	struct job_record *job_ptr2 = (struct job_record *) y;
 
-		for (j = (i + 1); j < job_queue_size; j++) {
-			if (top_part_prio > job_queue[j].part_priority)
-				continue;
-			if ((top_part_prio == job_queue[j].part_priority) &&
-			    (top_job_prio  >= job_queue[j].job_priority))
-				continue;
-
-			top_prio_inx  = j;
-			top_job_prio  = job_queue[j].job_priority;
-			top_part_prio = job_queue[j].part_priority;
-		}
-		if (top_prio_inx == i)
-			continue;	/* in correct order */
-
-		/* swap records at top_prio_inx and i */
-		tmp_job_ptr   = job_queue[i].job_ptr;
-		tmp_job_prio  = job_queue[i].job_priority;
-		tmp_part_prio = job_queue[i].part_priority;
-
-		job_queue[i].job_ptr       = job_queue[top_prio_inx].job_ptr;
-		job_queue[i].job_priority  = job_queue[top_prio_inx].
-					     job_priority;
-		job_queue[i].part_priority = job_queue[top_prio_inx].
-					     part_priority;
-
-		job_queue[top_prio_inx].job_ptr       = tmp_job_ptr;
-		job_queue[top_prio_inx].job_priority  = tmp_job_prio;
-		job_queue[top_prio_inx].part_priority = tmp_part_prio;
-
+	if (job_ptr1->part_ptr && job_ptr2->part_ptr) {
+		if (job_ptr1->part_ptr->priority <
+		    job_ptr2->part_ptr->priority)
+			return 1;
+		if (job_ptr1->part_ptr->priority >
+		    job_ptr2->part_ptr->priority)
+			return -1;
 	}
+
+	if (job_ptr1->priority < job_ptr2->priority)
+		return 1;
+	if (job_ptr1->priority > job_ptr2->priority)
+		return -1;
+	return 0;
 }
 
 /*
@@ -759,11 +714,11 @@ extern void print_job_dependency(struct job_record *job_ptr)
  */
 extern int test_job_dependency(struct job_record *job_ptr)
 {
-	ListIterator depend_iter;
+	ListIterator depend_iter, job_iterator;
 	struct depend_spec *dep_ptr;
 	bool failure = false, depends = false;
- 	struct job_queue *job_queue = NULL;
- 	int i, now, job_queue_size = 0;
+ 	List job_queue = NULL;
+ 	int now;
  	struct job_record *qjob_ptr;
 
 	if ((job_ptr->details == NULL) ||
@@ -777,12 +732,14 @@ extern int test_job_dependency(struct job_record *job_ptr)
  	        if ((dep_ptr->depend_type == SLURM_DEPEND_SINGLETON) &&
  		    job_ptr->name) {
  		        /* get user jobs with the same user and name */
- 			job_queue_size = _build_user_job_list(job_ptr->user_id,
-							      job_ptr->name,
-							      &job_queue);
+ 			job_queue = _build_user_job_list(job_ptr->user_id,
+							 job_ptr->name);
  			now = 1;
- 			for (i=0; i<job_queue_size; i++) {
-				qjob_ptr = job_queue[i].job_ptr;
+			job_iterator = list_iterator_create(job_queue);
+			if (job_iterator == NULL)
+				fatal("list_iterator_create malloc failure");
+			while ((qjob_ptr = (struct job_record *) 
+					   list_next(job_iterator))) {
 				/* already running/suspended job or previously
 				 * submitted pending job */
 				if (IS_JOB_RUNNING(qjob_ptr) ||
@@ -793,8 +750,8 @@ extern int test_job_dependency(struct job_record *job_ptr)
 					break;
  				}
  			}
- 			if (job_queue_size > 0)
-				xfree(job_queue);
+			list_iterator_destroy(job_iterator);
+			list_destroy(job_queue);
 			/* job can run now, delete dependency */
  			if (now)
  				list_delete_item(depend_iter);

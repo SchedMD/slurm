@@ -126,23 +126,23 @@ slurm_sched_plugin_initial_priority( uint32_t last_prio,
 /**************************************************************************/
 void slurm_sched_plugin_job_is_pending( void )
 {
-	int rc = SLURM_SUCCESS;
-	int i, j, job_queue_size;
+	int j, rc = SLURM_SUCCESS;
+	List job_queue;
 	List preemptee_candidates = NULL;
-	struct job_queue *job_queue = NULL;
+	ListIterator job_iterator;
 	struct job_record *job_ptr;
 	struct part_record *part_ptr;
 	bitstr_t *avail_bitmap = NULL;
 	uint32_t max_nodes, min_nodes, req_nodes;
 	time_t now = time(NULL);
 
-	job_queue_size = build_job_queue(&job_queue);
-	if (job_queue_size == 0) return;
+	job_queue = build_job_queue();
+	sort_job_queue(job_queue);
 
-	sort_job_queue(job_queue, job_queue_size);
-
-	for (i = 0; i < job_queue_size; i++) {
-		job_ptr = job_queue[i].job_ptr;
+	job_iterator = list_iterator_create(job_queue);
+        if (job_iterator == NULL)
+                fatal("list_iterator_create memory allocation failure");
+	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		part_ptr = job_ptr->part_ptr;
 
 		/* Determine minimum and maximum node counts */
@@ -178,6 +178,8 @@ void slurm_sched_plugin_job_is_pending( void )
 
 		FREE_NULL_BITMAP(avail_bitmap);
 	}
+	list_iterator_destroy(job_iterator);
+	list_destroy(job_queue);
 }
 
 /**************************************************************************/

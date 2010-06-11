@@ -44,12 +44,6 @@
 
 #include "src/slurmctld/slurmctld.h"
 
-struct job_queue {
-	struct job_record *job_ptr;
-	uint32_t job_priority;
-	uint16_t part_priority;
-};
-
 /*
  * build_feature_list - Translate a job's feature string into a feature_list
  * IN  details->features
@@ -60,11 +54,10 @@ extern int build_feature_list(struct job_record *job_ptr);
 
 /*
  * build_job_queue - build (non-priority ordered) list of pending jobs
- * OUT job_queue - pointer to job queue
- * RET number of entries in job_queue
- * NOTE: the buffer at *job_queue must be xfreed by the caller
+ * RET the job queue
+ * NOTE: the caller must call list_destroy() on RET value to free memory
  */
-extern int build_job_queue(struct job_queue **job_queue);
+extern List build_job_queue(void);
 
 /*
  * epilog_slurmctld - execute the prolog_slurmctld for a job that has just
@@ -137,10 +130,9 @@ extern void set_job_elig_time(void);
 
 /*
  * sort_job_queue - sort job_queue in decending priority order
- * IN job_queue_size - count of elements in the job queue
- * IN/OUT job_queue - pointer to sorted job queue
+ * IN/OUT job_queue - sorted job queue
  */
-extern void sort_job_queue(struct job_queue *job_queue, int job_queue_size);
+extern void sort_job_queue(List job_queue);
 
 /*
  * Determine if a job's dependencies are met
