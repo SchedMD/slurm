@@ -240,8 +240,7 @@ static void _del_resv_rec(void *x)
 			list_destroy(resv_ptr->license_list);
 		xfree(resv_ptr->licenses);
 		xfree(resv_ptr->name);
-		if (resv_ptr->node_bitmap)
-			bit_free(resv_ptr->node_bitmap);
+		FREE_NULL_BITMAP(resv_ptr->node_bitmap);
 		xfree(resv_ptr->node_list);
 		xfree(resv_ptr->partition);
 		xfree(resv_ptr->users);
@@ -1338,8 +1337,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 	xfree(account_list);
 	if (license_list)
 		list_destroy(license_list);
-	if (node_bitmap)
-		bit_free(node_bitmap);
+	FREE_NULL_BITMAP(node_bitmap);
 	xfree(user_list);
 	return rc;
 }
@@ -1997,7 +1995,7 @@ static void _validate_node_choice(slurmctld_resv_t *resv_ptr)
 	if (i == SLURM_SUCCESS) {
 		bit_and(resv_ptr->node_bitmap, avail_node_bitmap);
 		bit_or(resv_ptr->node_bitmap, tmp_bitmap);
-		bit_free(tmp_bitmap);
+		FREE_NULL_BITMAP(tmp_bitmap);
 		xfree(resv_ptr->node_list);
 		resv_ptr->node_list = bitmap2node_name(resv_ptr->node_bitmap);
 		info("modified reservation %s due to unusable nodes, "
@@ -2250,7 +2248,7 @@ static int  _resize_resv(slurmctld_resv_t *resv_ptr, uint32_t node_cnt)
 			/* Now eliminate allocated nodes from reservation */
 			tmp1_bitmap = bit_pick_cnt(resv_ptr->node_bitmap,
 						   node_cnt);
-			bit_free(resv_ptr->node_bitmap);
+			FREE_NULL_BITMAP(resv_ptr->node_bitmap);
 			resv_ptr->node_bitmap = tmp1_bitmap;
 		}
 		xfree(resv_ptr->node_list);
@@ -2272,7 +2270,7 @@ static int  _resize_resv(slurmctld_resv_t *resv_ptr, uint32_t node_cnt)
 	xfree(resv_desc.partition);
 	if (i == SLURM_SUCCESS) {
 		bit_or(resv_ptr->node_bitmap, tmp1_bitmap);
-		bit_free(tmp1_bitmap);
+		FREE_NULL_BITMAP(tmp1_bitmap);
 		xfree(resv_ptr->node_list);
 		resv_ptr->node_list = bitmap2node_name(resv_ptr->node_bitmap);
 		resv_ptr->node_cnt = node_cnt;
@@ -2381,7 +2379,7 @@ static int  _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 		}
 		xfree(features);
 		bit_and(node_bitmap, feature_bitmap);
-		bit_free(feature_bitmap);
+		FREE_NULL_BITMAP(feature_bitmap);
 	}
 
 	if ((resv_desc_ptr->flags & RESERVE_FLAG_MAINT) == 0) {
@@ -2409,7 +2407,7 @@ static int  _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 		*resv_bitmap = _pick_idle_nodes(node_bitmap, resv_desc_ptr);
 	}
 
-	bit_free(node_bitmap);
+	FREE_NULL_BITMAP(node_bitmap);
 	if (*resv_bitmap == NULL) {
 		if (rc == SLURM_SUCCESS)
 			rc = ESLURM_NODES_BUSY;
@@ -2476,7 +2474,7 @@ static bitstr_t *_pick_idle_nodes2(bitstr_t *avail_nodes,
 			/* Removed too many nodes, put them back */
 			bit_or(avail_nodes, tmp_bitmap);
 		}
-		bit_free(tmp_bitmap);
+		FREE_NULL_BITMAP(tmp_bitmap);
 	}
 	list_iterator_destroy(job_iterator);
 

@@ -370,7 +370,7 @@ int switch_p_build_jobinfo ( switch_jobinfo_t *switch_job, char *nodelist,
 				/* allocs hw context */
 	}
 
-	bit_free(nodeset);
+	FREE_NULL_BITMAP(nodeset);
 	return error_code;
 }
 

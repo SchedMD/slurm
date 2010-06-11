@@ -327,8 +327,7 @@ static void _destroy_parts(void)
 			xfree(tmp->job_list[i]);
 		}
 		xfree(tmp->shadow);
-		if (tmp->active_resmap)
-			bit_free(tmp->active_resmap);
+		FREE_NULL_BITMAP(tmp->active_resmap);
 		xfree(tmp->active_cpus);
 		xfree(tmp->job_list);
 	}
@@ -446,7 +445,7 @@ static int _job_fits_in_active_row(struct job_record *job_ptr,
 	/* any set bits indicate contention for the same resource */
 	count = bit_set_count(job_map);
 	debug3("gang: _job_fits_in_active_row: %d bits conflict", count);
-	bit_free(job_map);
+	FREE_NULL_BITMAP(job_map);
 	if (count == 0)
 		return 1;
 	if (gr_type == GS_CPU)

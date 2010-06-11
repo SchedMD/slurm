@@ -1885,7 +1885,7 @@ extern void excise_node_from_job(struct job_record *job_ptr,
 		 * to the job goes DOWN. */
 	}
 	job_ptr->node_cnt = new_pos + 1;
-	bit_free(orig_bitmap);
+	FREE_NULL_BITMAP(orig_bitmap);
 	(void) select_g_job_resized(job_ptr, node_ptr);
 }
 

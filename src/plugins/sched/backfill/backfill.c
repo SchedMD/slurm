@@ -641,7 +641,7 @@ static void _attempt_backfill(void)
 	FREE_NULL_BITMAP(resv_bitmap);
 
 	for (i=0; ; ) {
-		bit_free(node_space[i].avail_bitmap);
+		FREE_NULL_BITMAP(node_space[i].avail_bitmap);
 		if ((i = node_space[i].next) == 0)
 			break;
 	}
@@ -663,7 +663,7 @@ static int _start_job(struct job_record *job_ptr, bitstr_t *resv_bitmap)
 		job_ptr->details->exc_node_bitmap = bit_copy(resv_bitmap);
 
 	rc = select_nodes(job_ptr, false, NULL);
-	bit_free(job_ptr->details->exc_node_bitmap);
+	FREE_NULL_BITMAP(job_ptr->details->exc_node_bitmap);
 	job_ptr->details->exc_node_bitmap = orig_exc_nodes;
 	if (rc == SLURM_SUCCESS) {
 		/* job initiated */

@@ -80,14 +80,10 @@ void task_state_destroy (task_state_t ts)
 {
 	if (ts == NULL)
 		return;
-	if (ts->start_failed)
-		bit_free (ts->start_failed);
-	if (ts->running)
-		bit_free (ts->running);
-	if (ts->normal_exit)
-		bit_free (ts->normal_exit);
-	if (ts->abnormal_exit)
-		bit_free (ts->abnormal_exit);
+	FREE_NULL_BITMAP(ts->start_failed);
+	FREE_NULL_BITMAP(ts->running);
+	FREE_NULL_BITMAP(ts->normal_exit);
+	FREE_NULL_BITMAP(ts->abnormal_exit);
 	xfree (ts);
 }
 
@@ -196,6 +192,6 @@ void task_state_print (task_state_t ts, log_f fn)
 	bit_not (unseen);
 	if (bit_set_count (unseen))
 		_do_log_msg (unseen, fn, "unknown");
-	bit_free (unseen);
+	FREE_NULL_BITMAP(unseen);
 }
 

@@ -121,9 +121,7 @@ static void _lllp_free_masks(const uint32_t maxtasks, bitstr_t **masks)
 	bitstr_t *bitmask;
 	for (i = 0; i < maxtasks; i++) {
 		bitmask = masks[i];
-	    	if (bitmask) {
-			bit_free(bitmask);
-		}
+		FREE_NULL_BITMAP(bitmask);
 	}
 	xfree(masks);
 }
@@ -190,10 +188,8 @@ void batch_bind(batch_job_launch_msg_t *req)
 	hw_map  = (bitstr_t *) bit_alloc(conf->block_map_size);
 	if (!req_map || !hw_map) {
 		error("task/affinity: malloc error");
-		if (req_map)
-			bit_free(req_map);
-		if (hw_map)
-			bit_free(hw_map);
+		FREE_NULL_BITMAP(req_map);
+		FREE_NULL_BITMAP(hw_map);
 		slurm_cred_free_args(&arg);
 		return;
 	}
@@ -250,8 +246,8 @@ void batch_bind(batch_job_launch_msg_t *req)
 		error("task/affinity: job %u allocated no CPUs",
 		      req->job_id);
 	}
-	bit_free(hw_map);
-	bit_free(req_map);
+	FREE_NULL_BITMAP(hw_map);
+	FREE_NULL_BITMAP(req_map);
 	slurm_cred_free_args(&arg);
 }
 
@@ -480,7 +476,7 @@ static char *_alloc_mask(launch_tasks_request_msg_t *req,
 	alloc_mask = bit_alloc(bit_size(alloc_bitmap));
 	if (!alloc_mask) {
 		error("malloc error");
-		bit_free(alloc_bitmap);
+		FREE_NULL_BITMAP(alloc_bitmap);
 		return NULL;
 	}
 
@@ -515,7 +511,7 @@ static char *_alloc_mask(launch_tasks_request_msg_t *req,
 	}
 	if (!s_miss)
 		(*whole_node_cnt)++;
-	bit_free(alloc_bitmap);
+	FREE_NULL_BITMAP(alloc_bitmap);
 
 	/* translate abstract masks to actual hardware layout */
 	_lllp_map_abstract_masks(1, &alloc_mask);
@@ -527,7 +523,7 @@ static char *_alloc_mask(launch_tasks_request_msg_t *req,
 #endif
 
 	str_mask = bit_fmt_hexmask(alloc_mask);
-	bit_free(alloc_mask);
+	FREE_NULL_BITMAP(alloc_mask);
 	return str_mask;
 }
 
@@ -579,8 +575,8 @@ static bitstr_t *_get_avail_map(launch_tasks_request_msg_t *req,
 	hw_map  = (bitstr_t *) bit_alloc(conf->block_map_size);
 	if (!req_map || !hw_map) {
 		error("task/affinity: malloc error");
-		bit_free(req_map);
-		bit_free(hw_map);
+		FREE_NULL_BITMAP(req_map);
+		FREE_NULL_BITMAP(hw_map);
 		slurm_cred_free_args(&arg);
 		return NULL;
 	}
@@ -615,7 +611,7 @@ static bitstr_t *_get_avail_map(launch_tasks_request_msg_t *req,
 		req->job_id, req->job_step_id, str);
 	xfree(str);
 
-	bit_free(req_map);
+	FREE_NULL_BITMAP(req_map);
 	slurm_cred_free_args(&arg);
 	return hw_map;
 }
@@ -700,7 +696,7 @@ static int _task_layout_lllp_multi(launch_tasks_request_msg_t *req,
 	if (size < max_tasks) {
 		error("task/affinity: only %d bits in avail_map for %d tasks!",
 		      size, max_tasks);
-		bit_free(avail_map);
+		FREE_NULL_BITMAP(avail_map);
 		return SLURM_ERROR;
 	}
 	if (size < max_cpus) {
@@ -742,7 +738,7 @@ static int _task_layout_lllp_multi(launch_tasks_request_msg_t *req,
 				break;
 		}
 	}
-	bit_free(avail_map);
+	FREE_NULL_BITMAP(avail_map);
 
 	/* last step: expand the masks to bind each task
 	 * to the requested resource */
@@ -797,7 +793,7 @@ static int _task_layout_lllp_cyclic(launch_tasks_request_msg_t *req,
 	if (size < max_tasks) {
 		error("task/affinity: only %d bits in avail_map for %d tasks!",
 		      size, max_tasks);
-		bit_free(avail_map);
+		FREE_NULL_BITMAP(avail_map);
 		return SLURM_ERROR;
 	}
 	if (size < max_cpus) {
@@ -841,7 +837,7 @@ static int _task_layout_lllp_cyclic(launch_tasks_request_msg_t *req,
 				break;
 		}
 	}
-	bit_free(avail_map);
+	FREE_NULL_BITMAP(avail_map);
 
 	/* last step: expand the masks to bind each task
 	 * to the requested resource */
@@ -895,7 +891,7 @@ static int _task_layout_lllp_block(launch_tasks_request_msg_t *req,
 	if (size < max_tasks) {
 		error("task/affinity: only %d bits in avail_map for %d tasks!",
 		      size, max_tasks);
-		bit_free(avail_map);
+		FREE_NULL_BITMAP(avail_map);
 		return SLURM_ERROR;
 	}
 	if (size < max_cpus) {
@@ -913,7 +909,7 @@ static int _task_layout_lllp_block(launch_tasks_request_msg_t *req,
 	task_array = xmalloc(size * sizeof(int));
 	if (!task_array) {
 		error("In lllp_block: task_array memory error");
-		bit_free(avail_map);
+		FREE_NULL_BITMAP(avail_map);
 		return SLURM_ERROR;
 	}
 
@@ -984,7 +980,7 @@ static int _task_layout_lllp_block(launch_tasks_request_msg_t *req,
 	}
 
 	xfree(task_array);
-	bit_free(avail_map);
+	FREE_NULL_BITMAP(avail_map);
 
 	/* last step: expand the masks to bind each task
 	 * to the requested resource */
@@ -1041,7 +1037,7 @@ static void _lllp_map_abstract_masks(const uint32_t maxtasks, bitstr_t **masks)
 		bitstr_t *bitmask = masks[i];
 	    	if (bitmask) {
 			bitstr_t *newmask = _lllp_map_abstract_mask(bitmask);
-			bit_free(bitmask);
+			FREE_NULL_BITMAP(bitmask);
 			masks[i] = newmask;
 		}
 	}

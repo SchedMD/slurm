@@ -374,8 +374,7 @@ extern void node_config_delete(void *gres_data)
 
 	xassert(gres_data);
 	gres_ptr = (gpu_node_state_t *) gres_data;
-	if (gres_ptr->gpu_bit_alloc)
-		bit_free(gres_ptr->gpu_bit_alloc);
+	FREE_NULL_BITMAP(gres_ptr->gpu_bit_alloc);
 	xfree(gres_ptr);
 }
 
@@ -695,8 +694,7 @@ extern int node_state_unpack(void **gres_data, Buf buffer)
 	return SLURM_SUCCESS;
 
 unpack_error:
-	if (gres_ptr->gpu_bit_alloc)
-		bit_free(gres_ptr->gpu_bit_alloc);
+	FREE_NULL_BITMAP(gres_ptr->gpu_bit_alloc);
 	xfree(gres_ptr);
 	*gres_data = NULL;
 	return SLURM_ERROR;
@@ -854,17 +852,13 @@ extern void job_state_delete(void *gres_data)
 		return;
 
 	if (gres_ptr->gpu_bit_alloc) {
-		for (i=0; i<gres_ptr->node_cnt; i++) {
-			if (gres_ptr->gpu_bit_alloc[i])
-				bit_free(gres_ptr->gpu_bit_alloc[i]);
-		}
+		for (i=0; i<gres_ptr->node_cnt; i++)
+			FREE_NULL_BITMAP(gres_ptr->gpu_bit_alloc[i]);
 		xfree(gres_ptr->gpu_bit_alloc);
 	}
 	if (gres_ptr->gpu_bit_step_alloc) {
-		for (i=0; i<gres_ptr->node_cnt; i++) {
-			if (gres_ptr->gpu_bit_step_alloc[i])
-				bit_free(gres_ptr->gpu_bit_step_alloc[i]);
-		}
+		for (i=0; i<gres_ptr->node_cnt; i++)
+			FREE_NULL_BITMAP(gres_ptr->gpu_bit_step_alloc[i]);
 		xfree(gres_ptr->gpu_bit_step_alloc);
 	}
 	xfree(gres_ptr);
@@ -934,10 +928,8 @@ extern int job_state_unpack(void **gres_data, Buf buffer)
 unpack_error:
 	error("Unpacking %s job state info", plugin_name);
 	if (gres_ptr->gpu_bit_alloc) {
-		for (i=0; i<gres_ptr->node_cnt; i++) {
-			if (gres_ptr->gpu_bit_alloc[i])
-				bit_free(gres_ptr->gpu_bit_alloc[i]);
-		}
+		for (i=0; i<gres_ptr->node_cnt; i++)
+			FREE_NULL_BITMAP(gres_ptr->gpu_bit_alloc[i]);
 		xfree(gres_ptr->gpu_bit_alloc);
 	}
 	xfree(gres_ptr);
@@ -1149,10 +1141,8 @@ extern void step_state_delete(void *gres_data)
 		return;
 
 	if (gres_ptr->gpu_bit_alloc) {
-		for (i=0; i<gres_ptr->node_cnt; i++) {
-			if (gres_ptr->gpu_bit_alloc[i])
-				bit_free(gres_ptr->gpu_bit_alloc[i]);
-		}
+		for (i=0; i<gres_ptr->node_cnt; i++)
+			FREE_NULL_BITMAP(gres_ptr->gpu_bit_alloc[i]);
 		xfree(gres_ptr->gpu_bit_alloc);
 	}
 	xfree(gres_ptr);
@@ -1253,10 +1243,8 @@ extern int step_state_unpack(void **gres_data, Buf buffer)
 unpack_error:
 	error("Unpacking %s step state info", plugin_name);
 	if (gres_ptr->gpu_bit_alloc) {
-		for (i=0; i<gres_ptr->node_cnt; i++) {
-			if (gres_ptr->gpu_bit_alloc[i])
-				bit_free(gres_ptr->gpu_bit_alloc[i]);
-		}
+		for (i=0; i<gres_ptr->node_cnt; i++)
+			FREE_NULL_BITMAP(gres_ptr->gpu_bit_alloc[i]);
 		xfree(gres_ptr->gpu_bit_alloc);
 	}
 	xfree(gres_ptr);
@@ -1404,7 +1392,7 @@ extern int step_alloc(void *step_gres_data, void *job_gres_data,
 	if (step_gres_ptr->gpu_bit_alloc[node_offset]) {
 		error("%s step bit_alloc already exists", plugin_name);
 		bit_or(step_gres_ptr->gpu_bit_alloc[node_offset],gpu_bit_alloc);
-		bit_free(gpu_bit_alloc);
+		FREE_NULL_BITMAP(gpu_bit_alloc);
 	} else {
 		step_gres_ptr->gpu_bit_alloc[node_offset] = gpu_bit_alloc;
 	}
@@ -1455,8 +1443,7 @@ extern int step_dealloc(void *step_gres_data, void *job_gres_data)
 					  j);
 			}
 		}
-		bit_free(step_gres_ptr->gpu_bit_alloc[i]);
-		step_gres_ptr->gpu_bit_alloc[i] = NULL;
+		FREE_NULL_BITMAP(step_gres_ptr->gpu_bit_alloc[i]);
 	}
 
 	return SLURM_SUCCESS;

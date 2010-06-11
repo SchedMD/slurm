@@ -1310,13 +1310,13 @@ static int _run_now(struct job_record *job_ptr, bitstr_t *bitmap,
 		/* Remove preemptable jobs from simulated environment */
 		future_part = _dup_part_data(select_part_record);
 		if (future_part == NULL) {
-			bit_free(orig_map);
+			FREE_NULL_BITMAP(orig_map);
 			return SLURM_ERROR;
 		}
 		future_usage = _dup_node_usage(select_node_usage);
 		if (future_usage == NULL) {
 			_destroy_part_data(future_part);
-			bit_free(orig_map);
+			FREE_NULL_BITMAP(orig_map);
 			return SLURM_ERROR;
 		}
 
@@ -1388,7 +1388,7 @@ static int _run_now(struct job_record *job_ptr, bitstr_t *bitmap,
 		_destroy_part_data(future_part);
 		_destroy_node_data(future_usage, NULL);
 	}
-	bit_free(orig_map);
+	FREE_NULL_BITMAP(orig_map);
 
 	return rc;
 }
@@ -1420,7 +1420,7 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			 select_node_cnt, select_part_record,
 			 select_node_usage);
 	if (rc == SLURM_SUCCESS) {
-		bit_free(orig_map);
+		FREE_NULL_BITMAP(orig_map);
 		job_ptr->start_time = time(NULL);
 		return SLURM_SUCCESS;
 	}
@@ -1429,13 +1429,13 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	 * to determine when and where the job can start. */
 	future_part = _dup_part_data(select_part_record);
 	if (future_part == NULL) {
-		bit_free(orig_map);
+		FREE_NULL_BITMAP(orig_map);
 		return SLURM_ERROR;
 	}
 	future_usage = _dup_node_usage(select_node_usage);
 	if (future_usage == NULL) {
 		_destroy_part_data(future_part);
-		bit_free(orig_map);
+		FREE_NULL_BITMAP(orig_map);
 		return SLURM_ERROR;
 	}
 
@@ -1535,7 +1535,7 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	list_destroy(cr_job_list);
 	_destroy_part_data(future_part);
 	_destroy_node_data(future_usage, NULL);
-	bit_free(orig_map);
+	FREE_NULL_BITMAP(orig_map);
 	return rc;
 }
 

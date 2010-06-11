@@ -1140,10 +1140,10 @@ static int _update_node_weight(char *node_names, uint32_t weight)
 			config_ptr->nodes = bitmap2node_name(
 				config_ptr->node_bitmap);
 		}
-		bit_free(tmp_bitmap);
+		FREE_NULL_BITMAP(tmp_bitmap);
 	}
 	list_iterator_destroy(config_iterator);
-	bit_free(node_bitmap);
+	FREE_NULL_BITMAP(node_bitmap);
 
 	info("_update_node_weight: nodes %s weight set to: %u",
 		node_names, weight);
@@ -1215,10 +1215,10 @@ static int _update_node_features(char *node_names, char *features)
 			config_ptr->nodes = bitmap2node_name(config_ptr->
 							     node_bitmap);
 		}
-		bit_free(tmp_bitmap);
+		FREE_NULL_BITMAP(tmp_bitmap);
 	}
 	list_iterator_destroy(config_iterator);
-	bit_free(node_bitmap);
+	FREE_NULL_BITMAP(node_bitmap);
 
 	info("_update_node_features: nodes %s features set to: %s",
 		node_names, features);
@@ -1290,7 +1290,7 @@ static int _update_node_gres(char *node_names, char *gres)
 			config_ptr->nodes = bitmap2node_name(config_ptr->
 							     node_bitmap);
 		}
-		bit_free(tmp_bitmap);
+		FREE_NULL_BITMAP(tmp_bitmap);
 	}
 	list_iterator_destroy(config_iterator);
 
@@ -1305,7 +1305,7 @@ static int _update_node_gres(char *node_names, char *gres)
 						 slurmctld_conf.fast_schedule);
 		gres_plugin_node_state_log(node_ptr->gres_list, node_ptr->name);
 	}
-	bit_free(node_bitmap);
+	FREE_NULL_BITMAP(node_bitmap);
 
 	info("_update_node_gres: nodes %s gres set to: %s", node_names, gres);
 	return SLURM_SUCCESS;

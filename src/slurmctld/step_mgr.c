@@ -439,7 +439,7 @@ int job_step_complete(uint32_t job_id, uint32_t step_id, uid_t uid,
  * OUT return_code - exit code or SLURM_SUCCESS
  * global: node_record_table_ptr - pointer to global node table
  * NOTE: returns all of a job's nodes if step_spec->node_count == INFINITE
- * NOTE: returned bitmap must be freed by the caller using bit_free()
+ * NOTE: returned bitmap must be freed by the caller using FREE_NULL_BITMAP()
  */
 static bitstr_t *
 _pick_step_nodes (struct job_record  *job_ptr,
@@ -534,7 +534,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 				info("_pick_step_nodes: invalid node list (%s) "
 				     "for job step %u",
 				     step_spec->node_list, job_ptr->job_id);
-				bit_free(selected_nodes);
+				FREE_NULL_BITMAP(selected_nodes);
 				goto cleanup;
 			}
 			if (!bit_super_set(selected_nodes,
@@ -542,13 +542,13 @@ _pick_step_nodes (struct job_record  *job_ptr,
 				info("_pick_step_nodes: selected nodes (%s) "
 				     "not in job %u", 
 				     step_spec->node_list, job_ptr->job_id);
-				bit_free(selected_nodes);
+				FREE_NULL_BITMAP(selected_nodes);
 				goto cleanup;
 			}
 			if (!bit_super_set(selected_nodes, up_node_bitmap)) {
 				info("_pick_step_nodes: selected node is DOWN",
 				     step_spec->node_list);
-				bit_free(selected_nodes);
+				FREE_NULL_BITMAP(selected_nodes);
 				goto cleanup;
 			}
 		}
@@ -625,7 +625,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 				 * processors, defer request */
 				tasks_picked_cnt = 0;
 			}
-			bit_free(selected_nodes);
+			FREE_NULL_BITMAP(selected_nodes);
 		}
 
 		if (tasks_picked_cnt >= step_spec->num_tasks)
@@ -726,14 +726,14 @@ _pick_step_nodes (struct job_record  *job_ptr,
 		if (error_code) {
 			info("_pick_step_nodes: invalid node list %s",
 				step_spec->node_list);
-			bit_free(selected_nodes);
+			FREE_NULL_BITMAP(selected_nodes);
 			goto cleanup;
 		}
 		if (!bit_super_set(selected_nodes, job_ptr->node_bitmap)) {
 			info ("_pick_step_nodes: requested nodes %s not part "
 				"of job %u",
 				step_spec->node_list, job_ptr->job_id);
-			bit_free(selected_nodes);
+			FREE_NULL_BITMAP(selected_nodes);
 			goto cleanup;
 		}
 		if (!bit_super_set(selected_nodes, nodes_avail)) {
@@ -741,7 +741,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 			info ("_pick_step_nodes: requested nodes %s "
 			      "have inadequate memory",
 			       step_spec->node_list);
-			bit_free(selected_nodes);
+			FREE_NULL_BITMAP(selected_nodes);
 			goto cleanup;
 		}
 		if (step_spec->task_dist == SLURM_DIST_ARBITRARY) {
@@ -785,21 +785,21 @@ _pick_step_nodes (struct job_record  *job_ptr,
 				info("_pick_step_nodes: requested nodes %s "
 				     "exceed max node count for job step %u",
 				     step_spec->node_list, job_ptr->job_id);
-				bit_free(selected_nodes);
+				FREE_NULL_BITMAP(selected_nodes);
 				goto cleanup;
 			} else if (step_spec->min_nodes &&
 				   (node_cnt > step_spec->min_nodes)) {
 				nodes_picked = bit_alloc(bit_size(nodes_avail));
 				if (nodes_picked == NULL)
 					fatal("bit_alloc malloc failure");
-				bit_free(nodes_avail);
+				FREE_NULL_BITMAP(nodes_avail);
 				nodes_avail = selected_nodes;
 				selected_nodes = NULL;
 			} else {
 				nodes_picked = bit_copy(selected_nodes);
 				bit_not(selected_nodes);
 				bit_and(nodes_avail, selected_nodes);
-				bit_free(selected_nodes);
+				FREE_NULL_BITMAP(selected_nodes);
 			}
 		}
 	} else {
@@ -822,7 +822,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 		}
 		bit_not (relative_nodes);
 		bit_and (nodes_avail, relative_nodes);
-		bit_free (relative_nodes);
+		FREE_NULL_BITMAP (relative_nodes);
 	} else {
 		nodes_idle = bit_alloc (bit_size (nodes_avail) );
 		if (nodes_idle == NULL)
@@ -894,7 +894,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 			bit_not (node_tmp);
 			bit_and (nodes_idle, node_tmp);
 			bit_and (nodes_avail, node_tmp);
-			bit_free (node_tmp);
+			FREE_NULL_BITMAP (node_tmp);
 			node_tmp = NULL;
 			nodes_picked_cnt = step_spec->min_nodes;
 		}
@@ -916,7 +916,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 			bit_or  (nodes_picked, node_tmp);
 			bit_not (node_tmp);
 			bit_and (nodes_avail, node_tmp);
-			bit_free (node_tmp);
+			FREE_NULL_BITMAP (node_tmp);
 			node_tmp = NULL;
 			nodes_picked_cnt = step_spec->min_nodes;
 		}
@@ -938,7 +938,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 				bit_or  (nodes_picked, node_tmp);
 				bit_not (node_tmp);
 				bit_and (nodes_avail, node_tmp);
-				bit_free (node_tmp);
+				FREE_NULL_BITMAP (node_tmp);
 				node_tmp = NULL;
 				nodes_picked_cnt += 1;
 				if (step_spec->min_nodes)
@@ -1485,7 +1485,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 		      step_specs->num_tasks);
 		if (step_gres_list)
 			list_destroy(step_gres_list);
-		bit_free(nodeset);
+		FREE_NULL_BITMAP(nodeset);
 		return ESLURM_BAD_TASK_COUNT;
 	}
 
@@ -1493,7 +1493,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 	if (step_ptr == NULL) {
 		if (step_gres_list)
 			list_destroy(step_gres_list);
-		bit_free(nodeset);
+		FREE_NULL_BITMAP(nodeset);
 		return ESLURMD_TOOMANYSTEPS;
 	}
 	step_ptr->step_id = job_ptr->next_step_id++;

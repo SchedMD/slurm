@@ -206,7 +206,7 @@ static void _do_power_work(void)
 		else
 			error("power_save: bitmap2nodename");
 		xfree(nodes);
-		bit_free(sleep_node_bitmap);
+		FREE_NULL_BITMAP(sleep_node_bitmap);
 		last_node_update = now;
 	}
 
@@ -218,7 +218,7 @@ static void _do_power_work(void)
 		else
 			error("power_save: bitmap2nodename");
 		xfree(nodes);
-		bit_free(wake_node_bitmap);
+		FREE_NULL_BITMAP(wake_node_bitmap);
 		last_node_update = now;
 	}
 }
@@ -256,7 +256,7 @@ static void _re_wake(void)
 		} else
 			error("power_save: bitmap2nodename");
 		xfree(nodes);
-		bit_free(wake_node_bitmap);
+		FREE_NULL_BITMAP(wake_node_bitmap);
 	}
 }
 

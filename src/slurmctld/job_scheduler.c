@@ -519,7 +519,7 @@ extern int schedule(void)
 		}
 	}
 
-	bit_free(avail_node_bitmap);
+	FREE_NULL_BITMAP(avail_node_bitmap);
 	avail_node_bitmap = save_avail_node_bitmap;
 	xfree(failed_parts);
 	xfree(job_queue);

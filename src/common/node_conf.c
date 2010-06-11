@@ -742,7 +742,7 @@ extern void node_fini2 (void)
  * IN best_effort - if set don't return an error on invalid node name entries
  * OUT bitmap     - set to bitmap, may not have all bits set on error
  * RET 0 if no error, otherwise EINVAL
- * NOTE: the caller must bit_free() memory at bitmap when no longer required
+ * NOTE: call FREE_NULL_BITMAP() to free bitmap memory when no longer required
  */
 extern int node_name2bitmap (char *node_names, bool best_effort,
 			     bitstr_t **bitmap)

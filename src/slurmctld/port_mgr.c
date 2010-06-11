@@ -169,7 +169,7 @@ extern int reserve_port_config(char *mpi_params)
 		if (port_resv_table) {
 			info("Clearing port reservations");
 			for (i=0; i<port_resv_cnt; i++)
-				bit_free(port_resv_table[i]);
+				FREE_NULL_BITMAP(port_resv_table[i]);
 			xfree(port_resv_table);
 			port_resv_cnt = 0;
 			port_resv_min = port_resv_max = 0;

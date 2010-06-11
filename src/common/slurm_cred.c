@@ -803,14 +803,8 @@ slurm_cred_faker(slurm_cred_arg_t *arg)
 
 void slurm_cred_free_args(slurm_cred_arg_t *arg)
 {
-	if (arg->job_core_bitmap) {
-		bit_free(arg->job_core_bitmap);
-		arg->job_core_bitmap = NULL;
-	}
-	if (arg->step_core_bitmap) {
-		bit_free(arg->step_core_bitmap);
-		arg->step_core_bitmap = NULL;
-	}
+	FREE_NULL_BITMAP(arg->job_core_bitmap);
+	FREE_NULL_BITMAP(arg->step_core_bitmap);
 	xfree(arg->cores_per_socket);
 	if (arg->job_gres_list)
 		list_destroy(arg->job_gres_list);
@@ -978,14 +972,8 @@ slurm_cred_destroy(slurm_cred_t *cred)
 
 	slurm_mutex_lock(&cred->mutex);
 #ifndef HAVE_BG
-	if (cred->job_core_bitmap) {
-		bit_free(cred->job_core_bitmap);
-		cred->job_core_bitmap = NULL;
-	}
-	if (cred->step_core_bitmap) {
-		bit_free(cred->step_core_bitmap);
-		cred->step_core_bitmap = NULL;
-	}
+	FREE_NULL_BITMAP(cred->job_core_bitmap);
+	FREE_NULL_BITMAP(cred->step_core_bitmap);
 	xfree(cred->cores_per_socket);
 	xfree(cred->job_hostlist);
 	xfree(cred->sock_core_rep_count);
@@ -1245,7 +1233,7 @@ void format_core_allocs(slurm_cred_t *cred, char *node_name,
 	step_core_bitmap = bit_alloc(i_last_bit - i_first_bit);
 	if (step_core_bitmap == NULL) {
 		error("bit_alloc malloc failure");
-		bit_free(job_core_bitmap);
+		FREE_NULL_BITMAP(job_core_bitmap);
 		hostset_destroy(hset);
 		return;
 	}
@@ -1275,8 +1263,8 @@ void format_core_allocs(slurm_cred_t *cred, char *node_name,
 
 	*job_alloc_cores  = _core_format(job_core_bitmap);
 	*step_alloc_cores = _core_format(step_core_bitmap);
-	bit_free(job_core_bitmap);
-	bit_free(step_core_bitmap);
+	FREE_NULL_BITMAP(job_core_bitmap);
+	FREE_NULL_BITMAP(step_core_bitmap);
 	hostset_destroy(hset);
 #endif
 }

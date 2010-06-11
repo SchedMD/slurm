@@ -687,7 +687,7 @@ _alloc_hwcontext(bitstr_t *nodeset, uint32_t prognum, int num)
 			new = bit + QSW_CTX_START;
 		}
 		_unlock_qsw();
-		bit_free(busy_context);
+		FREE_NULL_BITMAP(busy_context);
 	} else {
 		_srand_if_needed();
 		new = lrand48() %

@@ -673,9 +673,9 @@ void step_launch_state_destroy(struct step_launch_state *sls)
 	/* First undo anything created in step_launch_state_create() */
 	pthread_mutex_destroy(&sls->lock);
 	pthread_cond_destroy(&sls->cond);
-	bit_free(sls->tasks_started);
-	bit_free(sls->tasks_exited);
-	bit_free(sls->node_io_error);
+	FREE_NULL_BITMAP(sls->tasks_started);
+	FREE_NULL_BITMAP(sls->tasks_exited);
+	FREE_NULL_BITMAP(sls->node_io_error);
 	xfree(sls->io_deadline);
 
 	/* Now clean up anything created by slurm_step_launch() */

@@ -915,7 +915,7 @@ static void _trigger_node_event(trig_mgr_info_t *trig_in, time_t now)
 					trig_in->nodes_bitmap);
 			trig_in->state = 1;
 		}
-		bit_free(trigger_idle_node_bitmap);
+		FREE_NULL_BITMAP(trigger_idle_node_bitmap);
 		if (trig_in->state == 1) {
 			trig_in->trig_time = now;
 			if (slurm_get_debug_flags() & DEBUG_FLAG_TRIGGERS) {
