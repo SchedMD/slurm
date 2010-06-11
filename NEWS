@@ -9,6 +9,10 @@ documents those changes that are of interest to users and admins.
  -- Add email notification option for job requeue.
  -- Generate a fatal error if the srun --relative option is used when not
     within an existing job allocation.
+ -- Modify the meaning of InactiveLimit slightly. It will now cancel the job
+    allocation created using the salloc or srun command if those commands
+    cease responding for the InactiveLimit regardless of any running job steps.
+    This parameter will no longer effect jobs spawned using sbatch.
  
 * Changes in SLURM 2.2.0.pre7
 =============================
