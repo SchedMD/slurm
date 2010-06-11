@@ -12,7 +12,7 @@ documents those changes that are of interest to users and admins.
  
 * Changes in SLURM 2.2.0.pre7
 =============================
- -- Fixed issue with sacctmgr if quering against non-existant cluster it
+ -- Fixed issue with sacctmgr if querying against non-existent cluster it
     works the same way as 2.1.
  -- Added infrastructure to support allocation of generic node resources (gres).
     -Modified select/linear and select/cons_res plugins to allocate resources
@@ -29,7 +29,7 @@ documents those changes that are of interest to users and admins.
     work fine, even sview.
  -- Added the ability to configure PreemptMode on a per-partition basis.
  -- Change slurmctld's default thread limit count to 1024, but adjust that down
-    as needed based upon the processs's resource limits.
+    as needed based upon the process's resource limits.
  -- Removed the non-functional "SystemCPU" and "TotalCPU" reporting fields from
     sstat and updated man page
  -- Correct location of apbasil command on Cray XT systems.
