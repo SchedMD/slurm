@@ -24,8 +24,6 @@ slurm_ctl_conf_to_hv(slurm_ctl_conf_t* conf, HV* hv)
 		STORE_FIELD(hv, conf, accounting_storage_host, charp);
 	if(conf->accounting_storage_loc)
 		STORE_FIELD(hv, conf, accounting_storage_loc, charp);
-	if(conf->accounting_storage_pass)
-		STORE_FIELD(hv, conf, accounting_storage_pass, charp);
 	STORE_FIELD(hv, conf, accounting_storage_port, uint32_t);
 	if(conf->accounting_storage_type)
 		STORE_FIELD(hv, conf, accounting_storage_type, charp);
@@ -75,8 +73,6 @@ slurm_ctl_conf_to_hv(slurm_ctl_conf_t* conf, HV* hv)
 		STORE_FIELD(hv, conf, job_comp_host, charp);
 	if(conf->job_comp_loc)
 		STORE_FIELD(hv, conf, job_comp_loc, charp);
-	if(conf->job_comp_pass)
-		STORE_FIELD(hv, conf, job_comp_pass, charp);
 	STORE_FIELD(hv, conf, job_comp_port, uint32_t);
 	if(conf->job_comp_type)
 		STORE_FIELD(hv, conf, job_comp_type, charp);

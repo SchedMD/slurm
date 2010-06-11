@@ -3823,7 +3823,6 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		packstr(build_ptr->accounting_storage_backup_host, buffer);
 		packstr(build_ptr->accounting_storage_host, buffer);
 		packstr(build_ptr->accounting_storage_loc, buffer);
-		packstr(build_ptr->accounting_storage_pass, buffer);
 		pack32(build_ptr->accounting_storage_port, buffer);
 		packstr(build_ptr->accounting_storage_type, buffer);
 		packstr(build_ptr->accounting_storage_user, buffer);
@@ -3872,7 +3871,6 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 
 		packstr(build_ptr->job_comp_host, buffer);
 		packstr(build_ptr->job_comp_loc, buffer);
-		packstr(build_ptr->job_comp_pass, buffer);
 		pack32((uint32_t)build_ptr->job_comp_port, buffer);
 		packstr(build_ptr->job_comp_type, buffer);
 		packstr(build_ptr->job_comp_user, buffer);
@@ -4018,7 +4016,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		packstr(build_ptr->accounting_storage_backup_host, buffer);
 		packstr(build_ptr->accounting_storage_host, buffer);
 		packstr(build_ptr->accounting_storage_loc, buffer);
-		packstr(build_ptr->accounting_storage_pass, buffer);
+		packstr("", buffer);
 		pack32(build_ptr->accounting_storage_port, buffer);
 		packstr(build_ptr->accounting_storage_type, buffer);
 		packstr(build_ptr->accounting_storage_user, buffer);
@@ -4067,7 +4065,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 
 		packstr(build_ptr->job_comp_host, buffer);
 		packstr(build_ptr->job_comp_loc, buffer);
-		packstr(build_ptr->job_comp_pass, buffer);
+		packstr("", buffer);
 		pack32((uint32_t)build_ptr->job_comp_port, buffer);
 		packstr(build_ptr->job_comp_type, buffer);
 		packstr(build_ptr->job_comp_user, buffer);
@@ -4236,8 +4234,6 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->accounting_storage_loc,
 				       &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&build_ptr->accounting_storage_pass,
-				       &uint32_tmp, buffer);
 		safe_unpack32(&build_ptr->accounting_storage_port, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->accounting_storage_type,
 				       &uint32_tmp, buffer);
@@ -4303,8 +4299,6 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpackstr_xmalloc(&build_ptr->job_comp_host,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->job_comp_loc,
-				       &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&build_ptr->job_comp_pass,
 				       &uint32_tmp, buffer);
 		safe_unpack32(&build_ptr->job_comp_port, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->job_comp_type,
@@ -4496,6 +4490,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 				       buffer);
 	} else if(protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
 		uint16_t max_job_cnt;
+		char *tmp_str = NULL;
 		/* unpack timestamp of snapshot */
 		safe_unpack_time(&build_ptr->last_update, buffer);
 
@@ -4507,8 +4502,8 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->accounting_storage_loc,
 				       &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&build_ptr->accounting_storage_pass,
-				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&tmp_str, &uint32_tmp, buffer);
+		xfree(tmp_str);
 		safe_unpack32(&build_ptr->accounting_storage_port, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->accounting_storage_type,
 				       &uint32_tmp, buffer);
@@ -4574,8 +4569,8 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->job_comp_loc,
 				       &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&build_ptr->job_comp_pass,
-				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&tmp_str, &uint32_tmp, buffer);
+		xfree(tmp_str);
 		safe_unpack32(&build_ptr->job_comp_port, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->job_comp_type,
 				       &uint32_tmp, buffer);

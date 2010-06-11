@@ -209,11 +209,6 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
 	key_pair->value = xstrdup(slurm_ctl_conf_ptr->accounting_storage_loc);
 	list_append(ret_list, key_pair);
 
-	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("AccountingStoragePass");
-	key_pair->value = xstrdup(slurm_ctl_conf_ptr->accounting_storage_pass);
-	list_append(ret_list, key_pair);
-
 	snprintf(tmp_str, sizeof(tmp_str), "%u",
 		 slurm_ctl_conf_ptr->accounting_storage_port);
 	key_pair = xmalloc(sizeof(config_key_pair_t));
@@ -462,11 +457,6 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("JobCompLoc");
 	key_pair->value = xstrdup(slurm_ctl_conf_ptr->job_comp_loc);
-	list_append(ret_list, key_pair);
-
-	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("JobCompPass");
-	key_pair->value = xstrdup(slurm_ctl_conf_ptr->job_comp_pass);
 	list_append(ret_list, key_pair);
 
 	snprintf(tmp_str, sizeof(tmp_str), "%u",

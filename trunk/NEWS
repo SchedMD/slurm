@@ -4,7 +4,7 @@ documents those changes that are of interest to users and admins.
 * Changes in SLURM 2.2.0.pre8
 =============================
  -- Add DebugFlags parameter of "Backfill" for sched/backfill detailed logging.
- -- Add run time to mail message upon job termination and wait time for mail
+ -- Add run time to mail message upon job termination and queue time for mail
     message upon job begin.
  -- Add email notification option for job requeue.
  -- Generate a fatal error if the srun --relative option is used when not
@@ -13,6 +13,10 @@ documents those changes that are of interest to users and admins.
     allocation created using the salloc or srun command if those commands
     cease responding for the InactiveLimit regardless of any running job steps.
     This parameter will no longer effect jobs spawned using sbatch.
+ -- Remove AccountingStoragePass and JobCompPass from configuration RPC and
+    scontrol show config command output. The use of SlurmDBD is still strongly
+    recommended as SLURM will have limited database functionality or protection
+    otherwise.
  
 * Changes in SLURM 2.2.0.pre7
 =============================
