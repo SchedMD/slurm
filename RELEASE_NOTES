@@ -1,5 +1,5 @@
 RELEASE NOTES FOR SLURM VERSION 2.2
-17 February 2010 (through SLURM 2.2.0-pre1+)
+10 June 2010 (through SLURM 2.2.0-pre7)
 
 
 IMPORTANT NOTE:
@@ -23,6 +23,7 @@ other state.
 
 
 HIGHLIGHTS
+==========
 * Slurmctld restart/reconfiguration operations have been altered.
   NOTE: There will be no change in behavior unless partition configuration
   or node Features/Weight are altered using the scontrol command to differ
@@ -57,11 +58,9 @@ HIGHLIGHTS
   as the one it is running.  If not an error message is displayed.  To
   silence this message add NO_CONF_HASH to DebugFlags in your slurm.conf.
 
-* SLURM commands (squeue, sinfo, etc...) can now go cross-cluster on like
-  linux systems.  Cross-cluster for bluegene to linux and such does not
-  currently work.  You can submit jobs with sbatch.  Salloc and srun are not
-  cross-cluster compatible, and given thier nature to talk to actual compute
-  nodes these will likely never be.
+* SLURM commands (squeue, sinfo, sview, etc...) can now go cross-cluster. Jobs
+  can also be submitted with sbatch to other cluster(s) with the job routed to
+  the one cluster expected to initiated the job first.
 
 CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
 =============================================================
@@ -89,6 +88,12 @@ CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
 * MaxJobCount changed from 16-bit to 32-bit field. The default MaxJobCount was
   changed from 5,000 to 10,000.
 
+* Added support for a PropagatePrioProcess configuration parameter value of 2
+  to restrict spawned task nice values to that of the slurmd daemon plus 1.
+  This insures that the slurmd daemon always have a higher scheduling priority
+  than spawned tasks. Also added support in slurmctld, slurmd and slurmdbd for
+  option of "-n <value>" to reset the daemon's nice value.
+
 * Added new configuration parameter GresPlugins which manages generic resources.
 
 * Added "--enable-partial-attach" option to configure (build) script.
@@ -96,6 +101,8 @@ CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
 * Added support for new partition states of DRAIN and INACTIVE and new partition
   option of "Alternate" (alternate partition to use for jobs submitted to
   partitions that are currently in a state of DRAIN or INACTIVE).
+
+* Added the ability to configure PreemptMode on a per-partition basis.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
@@ -110,14 +117,30 @@ COMMAND CHANGES (see man pages for details)
 
 * scontrol now has the ability to shrink a job's size. Use a command of
   "scontrol update JobId=# NumNodes=#" or
-  "scontrol update JobId=# NodeList=<names>". Subsequent job steps must
-  explicitly specify an appropriate node count to work properly.
+  "scontrol update JobId=# NodeList=<names>". This command generates a script
+  to be executed in order to reset SLURM environment variables for proper
+  execution of subsequent job steps.
 
 * Add support for slurmctld and slurmd option of "-n <value>" to reset the
   daemon's nice value.
 
 * srun's --core option has been removed. Use the SPANK "Core" plugin from
   http://code.google.com/p/slurm-spank-plugins/ for continued support.
+
+* Added salloc and sbatch option --wait-for-nodes. If set non-zero, job 
+  initiation will be delayed until all allocated nodes have booted. Salloc
+  will log the delay with the messages "Waiting for nodes to boot" and "Nodes
+  are ready for use".
+
+* Added scontrol "wait_job <job_id>" option to wait for nodes to boot as needed.
+  Useful for batch jobs (in Prolog, PrologSlurmctld or the script) if powering
+  down idle nodes.
+
+* Modified sview to display database configuration and add/remove visible tabs.
+
+* Modified sview to save default configuration in .slurm/sviewrc file.
+  Default setting can be set by using the menus Options->Set Default Settings
+  or typing Ctrl-S.
 
 BLUEGENE SPECIFIC CHANGES
 =========================
@@ -130,6 +153,9 @@ OTHER CHANGES
 * SLURM's PMI library (for MPICH2) has been modified to properly execute an
   executable program stand-alone (single MPI task launched without srun).
 
+* The PMI was also modified to use more socket connections for better
+  scalability and to clear state between job step invocations.
+
 * Added support for spank_get_item() to get S_STEP_ALLOC_CORES and
   S_STEP_ALLOC_MEM. Support will remain for S_JOB_ALLOC_CORES and
   S_JOB_ALLOC_MEM.
@@ -141,6 +167,9 @@ OTHER CHANGES
 
 * Added support for debugger partial task attach if the option
   "--enable-partial-attach" is passed to the configure (build) script.
+
+* Added proctrack/cgroup plugin which uses Linux control groups (aka cgroup) to
+  track processes on Linux systems with this feature (kernel >= 2.6.24).
 
 API CHANGES
 ===========
