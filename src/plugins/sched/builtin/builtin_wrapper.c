@@ -140,7 +140,7 @@ void slurm_sched_plugin_job_is_pending( void )
 	sort_job_queue(job_queue);
 
 	job_iterator = list_iterator_create(job_queue);
-        if (job_iterator == NULL)
+	if (job_iterator == NULL)
                 fatal("list_iterator_create memory allocation failure");
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		part_ptr = job_ptr->part_ptr;
