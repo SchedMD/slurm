@@ -407,8 +407,9 @@ extern void *backfill_agent(void *args)
 static void _attempt_backfill(void)
 {
 	bool filter_root = false;
-	struct job_queue *job_queue = NULL;
-	int i, j,job_queue_size, node_space_recs;
+	List job_queue;
+	ListIterator job_iterator;
+	int i, j, node_space_recs;
 	struct job_record *job_ptr;
 	struct part_record *part_ptr;
 	uint32_t end_time, end_reserve;
@@ -419,17 +420,14 @@ static void _attempt_backfill(void)
 	node_space_map_t *node_space;
 	static int sched_timeout = 0;
 
-	if(!sched_timeout)
+	if (!sched_timeout)
 		sched_timeout = MIN(slurm_get_msg_timeout(), 10);
 
 	if (slurm_get_root_filter())
 		filter_root = true;
 
-	job_queue_size = build_job_queue(&job_queue);
-	if (job_queue_size == 0)
-		return;
-
-	sort_job_queue(job_queue, job_queue_size);
+	job_queue = build_job_queue();
+	sort_job_queue(job_queue);
 
 	node_space = xmalloc(sizeof(node_space_map_t) *
 			     (max_backfill_job_cnt + 3));
@@ -441,8 +439,10 @@ static void _attempt_backfill(void)
 	if (debug_flags & DEBUG_FLAG_BACKFILL)
 		_dump_node_space_table(node_space);
 
-	for (i = 0; i < job_queue_size; i++) {
-		job_ptr = job_queue[i].job_ptr;
+	job_iterator = list_iterator_create(job_queue);
+	if (job_iterator == NULL)
+		fatal("list_iterator_create memory allocation failure");
+	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		part_ptr = job_ptr->part_ptr;
 		if (debug_flags & DEBUG_FLAG_BACKFILL)
 			info("backfill test for job %u", job_ptr->job_id);
@@ -637,6 +637,7 @@ static void _attempt_backfill(void)
 			break;
 		}
 	}
+	list_iterator_destroy(job_iterator);
 	FREE_NULL_BITMAP(avail_bitmap);
 	FREE_NULL_BITMAP(resv_bitmap);
 
@@ -646,7 +647,7 @@ static void _attempt_backfill(void)
 			break;
 	}
 	xfree(node_space);
-	xfree(job_queue);
+	list_destroy(job_queue);
 }
 
 /* Try to start the job on any non-reserved nodes */
