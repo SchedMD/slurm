@@ -294,6 +294,10 @@ documents those changes that are of interest to users and admins.
     like postgres over mysql for some reason here you go. (Work done
     primarily by Hongjia Cao, NUDT.)
 
+* Changes in SLURM 2.1.10
+=========================
+ -- Fix memory leak in sched/builtin plugin.
+
 * Changes in SLURM 2.1.9
 ========================
  -- In select/linear - Fix logic to prevent over-subscribing memory with shared
@@ -329,7 +333,7 @@ documents those changes that are of interest to users and admins.
     slurmctld's running for a single cluster, which should rarely if ever
     happen.
  -- Fixed sacct -c option.
- -- Critical bug fix in sched/backfill plugin that caused in memory corruption.
+ -- Critical bug fix in sched/backfill plugin that caused memory corruption.
 
 * Changes in SLURM 2.1.8
 ========================
