@@ -17,6 +17,10 @@ documents those changes that are of interest to users and admins.
     scontrol show config command output. The use of SlurmDBD is still strongly
     recommended as SLURM will have limited database functionality or protection
     otherwise.
+ -- Add sbatch options of --export and SBATCH_EXPORT to control which
+    environment variables (if any) get propagated to the spawned job. This is
+    particularly important for jobs that are submitted on one cluster and run
+    on a different cluster.
  
 * Changes in SLURM 2.2.0.pre7
 =============================

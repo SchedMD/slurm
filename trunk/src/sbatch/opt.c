@@ -111,6 +111,8 @@
 #define OPT_MEM_BIND    0x13
 #define OPT_WCKEY       0x14
 #define OPT_SIGNAL      0x15
+#define OPT_GET_USER_ENV  0x16
+#define OPT_EXPORT        0x17
 
 /* generic getopt_long flags, integers and *not* valid characters */
 #define LONG_OPT_PROPAGATE   0x100
@@ -163,6 +165,7 @@
 #define LONG_OPT_TIME_MIN        0x14e
 #define LONG_OPT_GRES            0x14f
 #define LONG_OPT_WAIT_ALL_NODES  0x150
+#define LONG_OPT_EXPORT          0x151
 
 /*---- global variables, defined in opt.h ----*/
 opt_t opt;
@@ -356,6 +359,7 @@ static void _opt_default()
 	opt.ofname = NULL;
 	opt.efname = NULL;
 
+	opt.export_env        = NULL;
 	opt.get_user_env_time = -1;
 	opt.get_user_env_mode = -1;
 	opt.acctg_freq        = -1;
@@ -461,6 +465,8 @@ env_vars_t env_vars[] = {
   {"SBATCH_TIMELIMIT",     OPT_STRING,     &opt.time_limit_str,NULL          },
   {"SBATCH_WAIT_ALL_NODES",OPT_INT,        &opt.wait_all_nodes,NULL          },
   {"SBATCH_WCKEY",         OPT_STRING,     &opt.wckey,         NULL          },
+  {"SBATCH_GET_USER_ENV",  OPT_GET_USER_ENV, NULL,             NULL          },
+  {"SBATCH_EXPORT",        OPT_STRING,     &opt.export_env,    NULL          },
 
   {NULL, 0, NULL, NULL}
 };
@@ -613,6 +619,12 @@ _process_env_var(env_vars_t *e, const char *val)
 			exit(error_exit);
 		}
 		break;
+	case OPT_GET_USER_ENV:
+		if (optarg)
+			_proc_get_user_env(optarg);
+		else
+			opt.get_user_env_time = 0;
+		break;
 	default:
 		/* do nothing */
 		break;
@@ -672,6 +684,7 @@ static struct option long_options[] = {
 	{"cores-per-socket", required_argument, 0, LONG_OPT_CORESPERSOCKET},
 	{"cpu_bind",      required_argument, 0, LONG_OPT_CPU_BIND},
 	{"exclusive",     no_argument,       0, LONG_OPT_EXCLUSIVE},
+	{"export",        required_argument, 0, LONG_OPT_EXPORT},
 	{"get-user-env",  optional_argument, 0, LONG_OPT_GET_USER_ENV},
 	{"gres",          required_argument, 0, LONG_OPT_GRES},
 	{"gid",           required_argument, 0, LONG_OPT_GID},
@@ -1582,6 +1595,10 @@ static void _set_options(int argc, char **argv)
 			break;
 		case LONG_OPT_WAIT_ALL_NODES:
 			opt.wait_all_nodes = strtol(optarg, NULL, 10);
+			break;
+		case LONG_OPT_EXPORT:
+			xfree(opt.export_env);
+			opt.export_env = xstrdup(optarg);
 			break;
 		default:
 			if (spank_process_option (opt_char, optarg) < 0) {
@@ -2670,7 +2687,7 @@ static void _usage(void)
 "              [--nodefile=file] [--nodelist=hosts] [--exclude=hosts]\n"
 "              [--network=type] [--mem-per-cpu=MB] [--qos=qos] [--gres=list]\n"
 "              [--cpu_bind=...] [--mem_bind=...] [--reservation=name]\n"
-"              executable [args...]\n");
+"              [--export[=names]] executable [args...]\n");
 }
 
 static void _help(void)
@@ -2688,7 +2705,8 @@ static void _help(void)
 "  -d, --dependency=type:jobid defer job until condition on jobid is satisfied\n"
 "  -D, --workdir=directory     set working directory for batch script\n"
 "  -e, --error=err             file for batch script's standard error\n"
-"      --get-user-env          used by Moab.  See srun man page.\n"
+"      --export[=names]        specify environment variables to export\n"
+"      --get-user-env          load environment from local cluster\n"
 "      --gid=group_id          group ID to run job as (user root only)\n"
 "      --gres=list             required generic resources\n"
 "  -H, --hold                  submit job in held state\n"
