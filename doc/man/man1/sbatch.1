@@ -127,6 +127,14 @@ Checkpoint files will be of the form "<job_id>.ckpt" for jobs
 and "<job_id>.<step_id>.ckpt" for job steps.
 
 .TP
+\fB\-\-cluster\fR=<\fIstring\fR>
+Cluster to issue commands to. Multiple cluster names may be comma separated.
+The job will be submitted to the one cluster providing the earliest expected
+job initiation time. The default value is the current cluster. If no name is
+specified, the current cluster will be used. Note the \fB\-\-export\fR option
+to control environment variables exported between clusters.
+
+.TP
 \fB\-\-comment\fR=<\fIstring\fR>
 An arbitrary comment.
 
@@ -333,6 +341,20 @@ will win.  (The default shared/exclusive behaviour depends on system
 configuration.)
 
 .TP
+\fB\-\-export\fR=<\fIenvironment variables | ALL | NONE\fR>
+Identify which environment variables are propagated to the batch job.
+Multiple environment variable names should be comma separated.
+Environment variable names may be specified to propagate the current 
+value of those variables (e.g. "\-\-export=EDITOR") or specific values
+for the variables may be exported (e.g.. "\-\-export=EDITOR=/bin/vi").
+This option particularly important for jobs that are submitted on one cluster
+and execute on a different cluster (e.g. with different paths). By default all
+environment variables are propagaged. If the argument is \fINONE\fR or
+specific environment variable names, then the \fB\-\-get\-user\-env\fR
+option will implicitly be set to load other environment variables based upon
+the user's configuration on the cluster which executes the job.
+
+.TP
 \fB\-F\fR, \fB\-\-nodefile\fR=<\fInode file\fR>
 Much like \-\-nodelist, but the list is contained in a file of name
 \fInode file\fR.  The node names of the list may also span multiple lines
@@ -359,8 +381,6 @@ If \fImode\fR not specified, the mode established at SLURM build time
 is used.
 Example of use include "\-\-get\-user\-env", "\-\-get\-user\-env=10"
 "\-\-get\-user\-env=10L", and "\-\-get\-user\-env=S".
-NOTE: This option only works if the caller has an
-effective uid of "root".
 This option was originally created for use by Moab.
 
 .TP
@@ -1061,6 +1081,9 @@ Specifies the exit code generated when a SLURM error occurs
 (e.g. invalid options).
 This can be used by a script to distinguish application exit codes from
 various SLURM error conditions.
+.TP
+\fBSBATCH_EXPORT\fR
+Same as \fB\-\-export\fR
 .TP
 \fBSBATCH_GEOMETRY\fR
 Same as \fB\-g, \-\-geometry\fR

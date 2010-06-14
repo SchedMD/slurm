@@ -53,19 +53,20 @@
 #include <slurm/slurm.h>
 
 #include "src/common/env.h"
+#include "src/common/plugstack.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_rlimits_info.h"
 #include "src/common/xstring.h"
 #include "src/common/xmalloc.h"
-#include "src/common/plugstack.h"
 
 #include "src/sbatch/opt.h"
 
 #define MAX_RETRIES 15
 
-static int   fill_job_desc_from_opts(job_desc_msg_t *desc);
-static void *get_script_buffer(const char *filename, int *size);
-static char *script_wrap(char *command_string);
+static void  _env_merge_filter(job_desc_msg_t *desc);
+static int   _fill_job_desc_from_opts(job_desc_msg_t *desc);
+static void *_get_script_buffer(const char *filename, int *size);
+static char *_script_wrap(char *command_string);
 static void  _set_exit_code(void);
 static void  _set_prio_process_env(void);
 static int   _set_rlimit_env(void);
@@ -106,9 +107,9 @@ int main(int argc, char *argv[])
 	}
 
 	if (opt.wrap != NULL) {
-		script_body = script_wrap(opt.wrap);
+		script_body = _script_wrap(opt.wrap);
 	} else {
-		script_body = get_script_buffer(script_name, &script_size);
+		script_body = _get_script_buffer(script_name, &script_size);
 	}
 	if (script_body == NULL)
 		exit(error_exit);
@@ -139,7 +140,7 @@ int main(int argc, char *argv[])
 	_set_submit_dir_env();
 	_set_umask_env();
 	slurm_init_job_desc_msg(&desc);
-	if (fill_job_desc_from_opts(&desc) == -1) {
+	if (_fill_job_desc_from_opts(&desc) == -1) {
 		exit(error_exit);
 	}
 
@@ -179,8 +180,39 @@ int main(int argc, char *argv[])
 	return 0;
 }
 
+/* Propagate select user environment variables to the job */
+static void _env_merge_filter(job_desc_msg_t *desc)
+{
+	extern char **environ;
+	int i, len;
+	char *save_env[2] = { NULL, NULL }, *tmp, *tok, *last = NULL;
+
+	tmp = xstrdup(opt.export_env);
+	tok = strtok_r(tmp, ",", &last);
+	while (tok) {
+		if (strchr(tok, '=')) {
+			save_env[0] = tok;
+			env_array_merge(&desc->environment,
+					(const char **)save_env);
+		} else {
+			len = strlen(tok);
+			for (i=0; environ[i]; i++) {
+				if (strncmp(tok, environ[i], len) ||
+				    (environ[i][len] != '='))
+					continue;
+				save_env[0] = environ[i];
+				env_array_merge(&desc->environment,
+						(const char **)save_env);
+				break;
+			}
+		}
+		tok = strtok_r(NULL, ",", &last);
+	}
+	xfree(tmp);
+}
+
 /* Returns 0 on success, -1 on failure */
-static int fill_job_desc_from_opts(job_desc_msg_t *desc)
+static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 {
 	extern char **environ;
 
@@ -314,19 +346,29 @@ static int fill_job_desc_from_opts(job_desc_msg_t *desc)
 		desc->warn_time = opt.warn_time;
 
 	desc->environment = NULL;
-	if (opt.get_user_env_time >= 0) {
+	if (opt.export_env == NULL) {
+		env_array_merge(&desc->environment, (const char **)environ);
+	} else if (!strcasecmp(opt.export_env, "ALL")) {
+		env_array_merge(&desc->environment, (const char **)environ);
+	} else if (!strcasecmp(opt.export_env, "NONE")) {
 		desc->environment = env_array_create();
+		opt.get_user_env_time = 0;
+	} else {
+		_env_merge_filter(desc);
+		opt.get_user_env_time = 0;
+	}
+	if (opt.get_user_env_time >= 0) {
 		env_array_overwrite(&desc->environment,
 				    "SLURM_GET_USER_ENV", "1");
 	}
-	env_array_merge(&desc->environment, (const char **)environ);
+
 	if(opt.distribution == SLURM_DIST_ARBITRARY) {
 		env_array_overwrite_fmt(&desc->environment,
 					"SLURM_ARBITRARY_NODELIST",
 					"%s", desc->req_nodes);
 	}
 
-	desc->env_size = envcount (desc->environment);
+	desc->env_size = envcount(desc->environment);
 	desc->argv = opt.script_argv;
 	desc->argc = opt.script_argc;
 	desc->std_err  = opt.efname;
@@ -501,7 +543,7 @@ static bool contains_dos_linebreak(const void *buf, int size)
 /*
  * If "filename" is NULL, the batch script is read from standard input.
  */
-static void *get_script_buffer(const char *filename, int *size)
+static void *_get_script_buffer(const char *filename, int *size)
 {
 	int fd;
 	char *buf = NULL;
@@ -577,7 +619,7 @@ fail:
 }
 
 /* Wrap a single command string in a simple shell script */
-static char *script_wrap(char *command_string)
+static char *_script_wrap(char *command_string)
 {
 	char *script = NULL;
 
