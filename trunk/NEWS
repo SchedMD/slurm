@@ -21,6 +21,7 @@ documents those changes that are of interest to users and admins.
     environment variables (if any) get propagated to the spawned job. This is
     particularly important for jobs that are submitted on one cluster and run
     on a different cluster.
+ -- Add DebugFlag=Gang for detailed logging of gang scheduling activities.
  
 * Changes in SLURM 2.2.0.pre7
 =============================
