@@ -839,6 +839,8 @@ extern char *job_reason_string(enum job_state_reason inx)
 		return "PartitionInactive";
 	case WAIT_HELD:
 		return "JobHeld";
+	case WAIT_USER_HELD:
+		return "UserHeld";
 	case WAIT_TIME:
 		return "BeginTime";
 	case WAIT_LICENSES:

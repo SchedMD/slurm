@@ -260,6 +260,7 @@ enum job_state_reason {
 	WAIT_PART_DOWN,		/* requested partition is down */
 	WAIT_PART_INACTIVE,	/* requested partition is inactive */
 	WAIT_HELD,		/* job is held, priority==0 */
+	WAIT_USER_HELD,		/* user-initiated job hold */
 	WAIT_TIME,		/* job waiting for specific begin time */
 	WAIT_LICENSES,		/* job is waiting for licenses */
 	WAIT_ASSOC_JOB_LIMIT,	/* user/bank job limit reached */
@@ -640,6 +641,7 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 				 * partition limit */
 	uint32_t time_min;	/* minimum run time in minutes, default is
 				 * time_limit */
+	uint16_t user_held;	/* set when user-initiated job hold */
 	uint32_t user_id;	/* set only if different from current UID,
 				 * can only be explicitly set by user root */
 	uint16_t wait_all_nodes;/* 0 to start job immediately after allocation

@@ -816,7 +816,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	uint16_t job_state, details, batch_flag, step_flag;
 	uint16_t kill_on_node_fail, direct_set_prio, qos;
 	uint16_t alloc_resp_port, other_port, mail_type, state_reason;
-	uint16_t restart_cnt, resv_flags, ckpt_interval;
+	uint16_t restart_cnt, resv_flags, ckpt_interval, user_held = 0;
 	uint16_t wait_all_nodes, warn_signal, warn_time;
 	char *nodes = NULL, *partition = NULL, *name = NULL, *resp_host = NULL;
 	char *account = NULL, *network = NULL, *mail_user = NULL;
@@ -887,6 +887,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		safe_unpack16(&state_reason, buffer);
 		safe_unpack16(&restart_cnt, buffer);
 		safe_unpack16(&resv_flags, buffer);
+		safe_unpack16(&user_held, buffer);
 		safe_unpack16(&wait_all_nodes, buffer);
 		safe_unpack16(&warn_signal, buffer);
 		safe_unpack16(&warn_time, buffer);
@@ -1206,6 +1207,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	job_ptr->total_cpus   = total_cpus;
 	job_ptr->cpu_cnt      = cpu_cnt;
 	job_ptr->tot_sus_time = tot_sus_time;
+	job_ptr->user_held    = user_held;
 	job_ptr->user_id      = user_id;
 	job_ptr->wait_all_nodes = wait_all_nodes;
 	job_ptr->warn_signal  = warn_signal;
@@ -1331,6 +1333,7 @@ void _dump_job_details(struct job_details *detail_ptr, Buf buffer)
 	pack16(detail_ptr->requeue, buffer);
 	pack16(detail_ptr->shared, buffer);
 	pack16(detail_ptr->task_dist, buffer);
+	pack16(detail_ptr->user_held, buffer);
 
 	packstr(detail_ptr->cpu_bind,     buffer);
 	pack16(detail_ptr->cpu_bind_type, buffer);
@@ -1380,7 +1383,7 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer,
 	uint32_t num_tasks, name_len, argc = 0, env_cnt = 0;
 	uint16_t shared, contiguous, nice, ntasks_per_node;
 	uint16_t acctg_freq, cpus_per_task, requeue, task_dist;
-	uint16_t cpu_bind_type, mem_bind_type, plane_size;
+	uint16_t cpu_bind_type, mem_bind_type, plane_size, user_held = 0;
 	uint8_t open_mode, overcommit, prolog_running;
 	time_t begin_time, submit_time;
 	int i;
@@ -1402,6 +1405,7 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer,
 		safe_unpack16(&requeue, buffer);
 		safe_unpack16(&shared, buffer);
 		safe_unpack16(&task_dist, buffer);
+		safe_unpack16(&user_held, buffer);
 
 		safe_unpackstr_xmalloc(&cpu_bind, &name_len, buffer);
 		safe_unpack16(&cpu_bind_type, buffer);
@@ -2628,7 +2632,6 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		       struct job_record **job_pptr, uid_t submit_uid)
 {
 	int error_code = SLURM_SUCCESS, i, qos_error;
-	struct job_details *detail_ptr;
 	enum job_state_reason fail_reason;
 	struct part_record *part_ptr, *orig_part_ptr;
 	bitstr_t *req_bitmap = NULL, *exc_bitmap = NULL;
@@ -3085,7 +3088,6 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 
 	/* Insure that requested partition is valid right now,
 	 * otherwise leave job queued and provide warning code */
-	detail_ptr = job_ptr->details;
 	fail_reason= WAIT_NO_REASON;
 	if (job_desc->min_nodes > part_ptr->max_nodes) {
 		info("Job %u requested too many nodes (%u) of "
@@ -3732,6 +3734,8 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 		detail_ptr->contiguous = job_desc->contiguous;
 	if (job_desc->task_dist != (uint16_t) NO_VAL)
 		detail_ptr->task_dist = job_desc->task_dist;
+	if (job_desc->user_held != (uint16_t) NO_VAL)
+		detail_ptr->user_held = job_desc->user_held;
 	if (job_desc->cpus_per_task != (uint16_t) NO_VAL)
 		detail_ptr->cpus_per_task = MAX(job_desc->cpus_per_task, 1);
 	else
@@ -4232,6 +4236,8 @@ static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 		if (job_desc_msg->nice < NICE_OFFSET)
 			job_desc_msg->nice = NICE_OFFSET;
 	}
+	if (job_desc_msg->user_held == (uint16_t) NO_VAL)
+		job_desc_msg->user_held = 0;
 
 	if (job_desc_msg->pn_min_memory == NO_VAL) {
 		/* Default memory limit is DefMemPerCPU (if set) or no limit */
@@ -5202,7 +5208,7 @@ static bool _top_priority(struct job_record *job_ptr)
 		return true;
 #endif
 
-	if (job_ptr->priority == 0)	/* user held */
+	if (job_ptr->priority == 0)	/* user/admin held */
 		top = false;
 	else {
 		ListIterator job_iterator;
@@ -5258,8 +5264,11 @@ static bool _top_priority(struct job_record *job_ptr)
 	}
 
 	if ((!top) && detail_ptr) {	/* not top prio */
-		if (job_ptr->priority == 0) {		/* user/admin hold */
-			job_ptr->state_reason = WAIT_HELD;
+		if (job_ptr->priority == 0) {		/* user/admin held */
+			if (job_ptr->details && job_ptr->details->user_held)
+				job_ptr->state_reason = USER_HELD;
+			else
+				job_ptr->state_reason = WAIT_HELD;
 			xfree(job_ptr->state_desc);
 		} else if (job_ptr->priority != 1) {	/* not system hold */
 			job_ptr->state_reason = WAIT_PRIORITY;
@@ -5730,6 +5739,25 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		detail_ptr->requeue = job_specs->requeue;
 		info("sched: update_job: setting requeue to %u for job_id %u",
 		     job_specs->requeue, job_specs->job_id);
+	}
+
+	if (job_specs->user_held != (uint16_t) NO_VAL) {
+		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
+			error_code = ESLURM_DISABLED;
+		else {
+			if (job_specs->user_held) {
+				job_ptr->direct_set_prio = 1;
+				job_ptr->priority = 0;
+				info("sched: update_job: setting user hold "
+				     "for job_id %u", job_specs->job_id);
+			} else {
+				job_ptr->direct_set_prio = 0;
+				_set_job_prio(job_ptr);
+				info("sched: update_job: releasing user hold "
+				     "for job_id %u", job_specs->job_id);
+			}
+			detail_ptr->user_held = job_specs->user_held;
+		}
 	}
 
 	if (job_specs->priority != NO_VAL) {
@@ -8660,6 +8688,7 @@ _copy_job_record_to_job_desc(struct job_record *job_ptr)
 	job_desc->task_dist         = details->task_dist;
 	job_desc->time_limit        = job_ptr->time_limit;
 	job_desc->time_min          = job_ptr->time_min;
+	job_desc->user_held         = details->user_held;
 	job_desc->user_id           = job_ptr->user_id;
 	job_desc->wait_all_nodes    = job_ptr->wait_all_nodes;
 	job_desc->warn_signal       = job_ptr->warn_signal;

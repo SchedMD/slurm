@@ -96,6 +96,7 @@ void slurm_init_job_desc_msg(job_desc_msg_t * job_desc_msg)
 	job_desc_msg->rotate		= (uint16_t) NO_VAL;
 	job_desc_msg->shared		= (uint16_t) NO_VAL;
 	job_desc_msg->task_dist		= (uint16_t) NO_VAL;
+	job_desc_msg->user_held		= (uint16_t) NO_VAL;
 	job_desc_msg->time_limit	= NO_VAL;
 	job_desc_msg->time_min		= NO_VAL;
 	job_desc_msg->user_id		= NO_VAL;
