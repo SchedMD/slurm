@@ -146,6 +146,8 @@ static int _apply_decay(double decay_factor)
 			continue;
 		assoc->usage_raw *= decay_factor;
 		assoc->grp_used_wall *= decay_factor;
+		if (assoc->user)
+			assoc_mgr_root_assoc->usage_raw += assoc->usage_raw;
 	}
 	list_iterator_destroy(itr);
 	slurm_mutex_unlock(&assoc_mgr_association_lock);
@@ -719,6 +721,8 @@ static void *_decay_thread(void *no_data)
 		debug3("Decay factor over %d seconds goes from %.15f -> %.15f",
 		       run_delta, decay_factor, real_decay);
 
+		assoc_mgr_root_assoc->usage_raw = 1.0;
+
 		/* first apply decay to used time */
 		if(_apply_decay(real_decay) != SLURM_SUCCESS) {
 			error("problem applying decay");
@@ -782,24 +786,20 @@ static void *_decay_thread(void *no_data)
 
 				slurm_mutex_lock(&assoc_mgr_association_lock);
 				while(assoc) {
-					/* we don't want to make the
-					   root assoc responsible for
-					   keeping track of time
-					*/
-					if (assoc == assoc_mgr_root_assoc)
-						break;
 					assoc->grp_used_wall += run_decay;
 					assoc->usage_raw +=
 						(long double)real_decay;
 					debug4("adding %f new usage to "
 					       "assoc %u (user='%s' acct='%s') "
 					       "raw usage is now %Lf.  Group "
-					       "wall added %d making it %f.",
+					       "wall added %f making it %f.",
 					       real_decay, assoc->id,
 					       assoc->user, assoc->acct,
 					       assoc->usage_raw, run_decay,
 					       assoc->grp_used_wall);
 
+					if (assoc == assoc_mgr_root_assoc)
+						break;
 					assoc = assoc->parent_assoc_ptr;
 				}
 				slurm_mutex_unlock(&assoc_mgr_association_lock);
@@ -1033,10 +1033,9 @@ extern int priority_p_set_max_cluster_usage(uint32_t procs, uint32_t half_life)
 	last_procs = procs;
 	last_half_life = half_life;
 
-	/* get the total decay for the entire cluster */
-	assoc_mgr_root_assoc->usage_raw =
-		(long double)procs * (long double)half_life * (long double)2;
+	assoc_mgr_root_assoc->usage_raw = 1.0;
 	assoc_mgr_root_assoc->usage_norm = 1.0;
+	assoc_mgr_root_assoc->usage_efctv = 1.0;
 	debug3("Total possible cpu usage for half_life of %d secs "
 	       "on the system is %.0Lf",
 	       half_life, assoc_mgr_root_assoc->usage_raw);
