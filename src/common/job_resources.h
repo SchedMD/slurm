@@ -224,17 +224,35 @@ extern int get_job_resources_cnt(job_resources_t *job_resrcs_ptr,
 				 uint32_t node_id, uint16_t *socket_cnt,
 				 uint16_t *cores_per_socket_cnt);
 
-/* check if given job can fit into the given full-length core_bitmap */
+/*
+ * Test if job can fit into the given full-length core_bitmap
+ * IN job_resrcs_ptr - resources allocated to a job
+ * IN full_bitmap - bitmap of available CPUs
+ * IN bits_per_node - bits per node in the full_bitmap
+ * IN bit_rep_count - repetition count for bits_per_node (how many consecutive 
+ *		      nodes have that same count), if NULL then assume 1 for
+ *		      each node
+ * RET 1 on success, 0 otherwise
+ */
 extern int job_fits_into_cores(job_resources_t *job_resrcs_ptr,
 			       bitstr_t *full_bitmap,
 			       const uint16_t *bits_per_node,
 			       const uint32_t *bit_rep_count);
 
-/* add the given job to the given full_core_bitmap */
+/*
+ * Add job to full-length core_bitmap
+ * IN job_resrcs_ptr - resources allocated to a job
+ * IN/OUT full_bitmap - bitmap of available CPUs, allocate as needed
+ * IN bits_per_node - bits per node in the full_bitmap
+ * IN bit_rep_count - repetition count for bits_per_node (how many consecutive 
+ *		      nodes have that same count), if NULL then assume 1 for
+ *		      each node
+ * RET 1 on success, 0 otherwise
+ */
 extern void add_job_to_cores(job_resources_t *job_resrcs_ptr,
 			     bitstr_t **full_core_bitmap,
-			     const uint16_t *cores_per_node,
-			     const uint32_t *core_rep_count);
+			     const uint16_t *bits_per_node,
+			     const uint32_t *bit_rep_count);
 
 /* Given a job pointer and a global node index, return the index of that
  * node in the job_resrcs_ptr->cpus. Return -1 if invalid */
