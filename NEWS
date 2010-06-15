@@ -4,6 +4,8 @@ documents those changes that are of interest to users and admins.
 * Changes in SLURM 2.2.0.pre8
 =============================
  -- Add DebugFlags parameter of "Backfill" for sched/backfill detailed logging.
+ -- Add DebugFlags parameter of "Gang" for detailed logging of gang scheduling
+    activities.
  -- Add run time to mail message upon job termination and queue time for mail
     message upon job begin.
  -- Add email notification option for job requeue.
@@ -21,7 +23,6 @@ documents those changes that are of interest to users and admins.
     environment variables (if any) get propagated to the spawned job. This is
     particularly important for jobs that are submitted on one cluster and run
     on a different cluster.
- -- Add DebugFlag=Gang for detailed logging of gang scheduling activities.
  
 * Changes in SLURM 2.2.0.pre7
 =============================
