@@ -142,6 +142,7 @@ struct gs_part {
 /* global variables */
 static uint32_t timeslicer_seconds = 0;
 static uint16_t gr_type = GS_NODE;
+static uint32_t gs_debug_flags = 0;
 static uint16_t gs_fast_schedule = 0;
 static struct gs_part *gs_part_list = NULL;
 static uint32_t default_job_list_size = 64;
@@ -183,25 +184,28 @@ static char *_print_flag(int flag)
 static void _print_jobs(struct gs_part *p_ptr)
 {
 	int i;
-	debug3("gang:  part %s has %u jobs, %u shadows:",
-	       p_ptr->part_name, p_ptr->num_jobs, p_ptr->num_shadows);
-	for (i = 0; i < p_ptr->num_shadows; i++) {
-		debug3("gang:   shadow job %u row_s %s, sig_s %s",
-			p_ptr->shadow[i]->job_ptr->job_id,
-			_print_flag(p_ptr->shadow[i]->row_state),
-			_print_flag(p_ptr->shadow[i]->sig_state));
-	}
-	for (i = 0; i < p_ptr->num_jobs; i++) {
-		debug3("gang:   job %u row_s %s, sig_s %s",
-			p_ptr->job_list[i]->job_ptr->job_id,
-			_print_flag(p_ptr->job_list[i]->row_state),
-			_print_flag(p_ptr->job_list[i]->sig_state));
-	}
-	if (p_ptr->active_resmap) {
-		int s = bit_size(p_ptr->active_resmap);
-		i = bit_set_count(p_ptr->active_resmap);
-		debug3("gang:  active resmap has %d of %d bits set",
-		       i, s);
+
+	if (gs_debug_flags & DEBUG_FLAG_GANG) {
+		info("gang:  part %s has %u jobs, %u shadows:",
+		       p_ptr->part_name, p_ptr->num_jobs, p_ptr->num_shadows);
+		for (i = 0; i < p_ptr->num_shadows; i++) {
+			info("gang:   shadow job %u row_s %s, sig_s %s",
+			     p_ptr->shadow[i]->job_ptr->job_id,
+			     _print_flag(p_ptr->shadow[i]->row_state),
+			     _print_flag(p_ptr->shadow[i]->sig_state));
+		}
+		for (i = 0; i < p_ptr->num_jobs; i++) {
+			info("gang:   job %u row_s %s, sig_s %s",
+			     p_ptr->job_list[i]->job_ptr->job_id,
+			     _print_flag(p_ptr->job_list[i]->row_state),
+			     _print_flag(p_ptr->job_list[i]->sig_state));
+		}
+		if (p_ptr->active_resmap) {
+			int s = bit_size(p_ptr->active_resmap);
+			i = bit_set_count(p_ptr->active_resmap);
+			info("gang:  active resmap has %d of %d bits set",
+			     i, s);
+		}
 	}
 }
 
@@ -494,7 +498,7 @@ static void _add_job_to_active(struct job_record *job_ptr,
 		/* GS_NODE or GS_CPU */
 		if (!p_ptr->active_resmap) {
 			debug3("gang: _add_job_to_active: job %u first",
-				job_ptr->job_id);
+			       job_ptr->job_id);
 			p_ptr->active_resmap = bit_copy(job_res->node_bitmap);
 		} else if (p_ptr->jobs_active == 0) {
 			debug3("gang: _add_job_to_active: job %u copied",
@@ -549,7 +553,10 @@ static int _suspend_job(uint32_t job_id)
 	suspend_msg_t msg;
 
 	msg.job_id = job_id;
-	verbose("gang: suspending %u", job_id);
+	if (gs_debug_flags & DEBUG_FLAG_GANG)
+		info("gang: suspending %u", job_id);
+	else
+		debug("gang: suspending %u", job_id);
 	msg.op = SUSPEND_JOB;
 	rc = job_suspend(&msg, 0, -1, false, (uint16_t)NO_VAL);
 	/* job_suspend() returns ESLURM_DISABLED if job is already suspended */
@@ -566,7 +573,10 @@ static void _resume_job(uint32_t job_id)
 	suspend_msg_t msg;
 
 	msg.job_id = job_id;
-	verbose("gang: resuming %u", job_id);
+	if (gs_debug_flags & DEBUG_FLAG_GANG)
+		info("gang: resuming %u", job_id);
+	else
+		debug("gang: resuming %u", job_id);
 	msg.op = RESUME_JOB;
 	rc = job_suspend(&msg, 0, -1, false, (uint16_t)NO_VAL);
 	if ((rc != SLURM_SUCCESS) && (rc != ESLURM_ALREADY_DONE)) {
@@ -1080,6 +1090,7 @@ extern int gs_init(void)
 	/* initialize global variables */
 	debug3("gang: entering gs_init");
 	timeslicer_seconds = slurmctld_conf.sched_time_slice;
+	gs_debug_flags = slurm_get_debug_flags();
 	gs_fast_schedule = slurm_get_fast_schedule();
 	gr_type = _get_gr_type();
 	preempt_job_list = list_create(_preempt_job_list_del);
@@ -1264,6 +1275,7 @@ extern int gs_reconfig(void)
 	gs_part_list = NULL;
 
 	/* reset global data */
+	gs_debug_flags = slurm_get_debug_flags();
 	gs_fast_schedule = slurm_get_fast_schedule();
 	gr_type = _get_gr_type();
 	_load_phys_res_cnt();
@@ -1311,7 +1323,7 @@ extern int gs_reconfig(void)
 			if (IS_JOB_SUSPENDED(job_ptr) &&
 			    (job_ptr->priority != 0)) {
 				debug3("resuming job %u apparently suspended "
-				     "by gang", job_ptr->job_id);
+				       "by gang", job_ptr->job_id);
 				_resume_job(job_ptr->job_id);
 			}
 
