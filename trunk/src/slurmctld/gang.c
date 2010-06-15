@@ -302,9 +302,8 @@ static void _destroy_parts(void)
 		ptr = ptr->next;
 
 		xfree(tmp->part_name);
-		for (i = 0; i < tmp->num_jobs; i++) {
+		for (i = 0; i < tmp->num_jobs; i++)
 			xfree(tmp->job_list[i]);
-		}
 		xfree(tmp->shadow);
 		FREE_NULL_BITMAP(tmp->active_resmap);
 		xfree(tmp->active_cpus);
@@ -1268,7 +1267,8 @@ extern int gs_reconfig(void)
 		return SLURM_SUCCESS;
 	}
 
-	debug3("gang: entering gs_reconfig");
+	if (gs_debug_flags & DEBUG_FLAG_GANG)
+		info("gang: entering gs_reconfig");
 	pthread_mutex_lock(&data_mutex);
 
 	old_part_list = gs_part_list;
@@ -1478,6 +1478,10 @@ static void *_timeslicer_thread(void *arg)
 
 	debug3("gang: starting timeslicer loop");
 	while (!thread_shutdown) {
+		_slice_sleep();
+		if (thread_shutdown)
+			break;
+
 		lock_slurmctld(job_write_lock);
 		pthread_mutex_lock(&data_mutex);
 		_sort_partitions();
@@ -1498,8 +1502,6 @@ static void *_timeslicer_thread(void *arg)
 		/* Preempt jobs that were formerly only suspended */
 		_preempt_job_dequeue();	/* MUST BE OUTSIDE data_mutex lock */
 		unlock_slurmctld(job_write_lock);
-
-		_slice_sleep();
 	}
 
 	timeslicer_thread_id = (pthread_t) 0;
