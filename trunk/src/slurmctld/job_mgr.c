@@ -7144,8 +7144,10 @@ extern int job_node_ready(uint32_t job_id, int *ready)
 	if (job_ptr == NULL)
 		return ESLURM_INVALID_JOB_ID;
 
-	if (!IS_JOB_RUNNING(job_ptr))
+	if (!IS_JOB_RUNNING(job_ptr) && !IS_JOB_SUSPENDED(job_ptr)) {
+		/* Gang scheduling might suspend job immediately */
 		return 0;
+	}
 
 	rc = select_g_job_ready(job_ptr);
 	if (rc == READY_JOB_FATAL)

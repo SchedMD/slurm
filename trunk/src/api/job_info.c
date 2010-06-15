@@ -1081,7 +1081,7 @@ extern int slurm_job_node_ready(uint32_t job_id)
 	msg.job_id   = job_id;
 
 	if (slurm_send_recv_controller_msg(&req, &resp) < 0)
-		return -1;
+		return READY_JOB_ERROR;
 
 	if (resp.msg_type == RESPONSE_JOB_READY) {
 		rc = ((return_code_msg_t *) resp.data)->return_code;
