@@ -145,11 +145,9 @@ static uint16_t gr_type = GS_NODE;
 static uint16_t gs_fast_schedule = 0;
 static struct gs_part *gs_part_list = NULL;
 static uint32_t default_job_list_size = 64;
-static uint32_t gs_resmap_size = 0;
 static pthread_mutex_t data_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-static uint16_t *gs_bits_per_node = NULL;
-static uint32_t *gs_bit_rep_count = NULL;
+static uint16_t *gs_cpus_per_node = NULL;
 
 static struct gs_part **gs_part_sorted = NULL;
 static uint32_t num_sorted_part = 0;
@@ -221,28 +219,23 @@ static uint16_t _get_gr_type(void)
 	return GS_NODE;
 }
 
-/* For GS_CPU gs_bits_per_node is the total number of CPUs per node.
- * For GS_CORE and GS_SOCKET gs_bits_per_node is the total number of
- *	cores per per node.
- * This function also sets gs_resmap_size;
+/* For GS_CPU gs_cpus_per_node is the total number of CPUs per node.
+ * For GS_CORE and GS_SOCKET gs_cpus_per_node is the total number of
+ *	cores per node.
  */
 static void _load_phys_res_cnt(void)
 {
 	uint16_t bit = 0, sock = 0;
-	uint32_t i, bit_index = 0;
+	uint32_t i;
 	struct node_record *node_ptr;
 
-	xfree(gs_bits_per_node);
-	xfree(gs_bit_rep_count);
+	xfree(gs_cpus_per_node);
 
 	if ((gr_type != GS_CPU) && (gr_type != GS_CORE) &&
 	    (gr_type != GS_SOCKET))
 		return;
 
-	gs_bits_per_node = xmalloc(node_record_count * sizeof(uint16_t));
-	gs_bit_rep_count = xmalloc(node_record_count * sizeof(uint32_t));
-
-	gs_resmap_size = 0;
+	gs_cpus_per_node = xmalloc(node_record_count * sizeof(uint16_t));
 	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
 	     i++, node_ptr++) {
 		if (gr_type == GS_CPU) {
@@ -259,25 +252,7 @@ static void _load_phys_res_cnt(void)
 				bit  = node_ptr->cores * sock;
 			}
 		}
-
-		gs_resmap_size += bit;
-		if (gs_bits_per_node[bit_index] != bit) {
-			if (gs_bit_rep_count[bit_index] > 0)
-				bit_index++;
-			gs_bits_per_node[bit_index] = bit;
-		}
-		gs_bit_rep_count[bit_index]++;
-	}
-
-	/* arrays must have trailing 0 */
-	bit_index += 2;
-	xrealloc(gs_bits_per_node, bit_index * sizeof(uint16_t));
-	xrealloc(gs_bit_rep_count, bit_index * sizeof(uint32_t));
-
-	bit_index--;
-	for (i = 0; i < bit_index; i++) {
-		debug3("gang: _load_phys_res_cnt: grp %d bits %u reps %u",
-		       i, gs_bits_per_node[i], gs_bit_rep_count[i]);
+		gs_cpus_per_node[i] = bit;
 	}
 }
 
@@ -433,8 +408,7 @@ static int _job_fits_in_active_row(struct job_record *job_ptr,
 
 	if ((gr_type == GS_CORE) || (gr_type == GS_SOCKET)) {
 		return job_fits_into_cores(job_res, p_ptr->active_resmap,
-						gs_bits_per_node,
-						gs_bit_rep_count);
+					   gs_cpus_per_node, NULL);
 	}
 
 	/* gr_type == GS_NODE || gr_type == GS_CPU */
@@ -513,7 +487,7 @@ static void _add_job_to_active(struct job_record *job_ptr,
 			bit_nclear(p_ptr->active_resmap, 0, size-1);
 		}
 		add_job_to_cores(job_res, &(p_ptr->active_resmap),
-				      gs_bits_per_node, gs_bit_rep_count);
+				 gs_cpus_per_node, NULL);
 		if (gr_type == GS_SOCKET)
 			_fill_sockets(job_res->node_bitmap, p_ptr);
 	} else {
@@ -575,7 +549,7 @@ static int _suspend_job(uint32_t job_id)
 	suspend_msg_t msg;
 
 	msg.job_id = job_id;
-	debug3("gang: suspending %u", job_id);
+	verbose("gang: suspending %u", job_id);
 	msg.op = SUSPEND_JOB;
 	rc = job_suspend(&msg, 0, -1, false, (uint16_t)NO_VAL);
 	/* job_suspend() returns ESLURM_DISABLED if job is already suspended */
@@ -592,7 +566,7 @@ static void _resume_job(uint32_t job_id)
 	suspend_msg_t msg;
 
 	msg.job_id = job_id;
-	debug3("gang: resuming %u", job_id);
+	verbose("gang: resuming %u", job_id);
 	msg.op = RESUME_JOB;
 	rc = job_suspend(&msg, 0, -1, false, (uint16_t)NO_VAL);
 	if ((rc != SLURM_SUCCESS) && (rc != ESLURM_ALREADY_DONE)) {
@@ -1148,8 +1122,7 @@ extern int gs_fini(void)
 	_destroy_parts();
 	xfree(gs_part_sorted);
 	gs_part_sorted = NULL;
-	xfree(gs_bits_per_node);
-	xfree(gs_bit_rep_count);
+	xfree(gs_cpus_per_node);
 	pthread_mutex_unlock(&data_mutex);
 	debug3("gang: leaving gs_fini");
 
@@ -1256,10 +1229,8 @@ extern int gs_job_fini(struct job_record *job_ptr)
  * - nodes can be removed from a partition, or added to a partition
  *   - this affects the size of the active resmap
  *
- * If nodes have been added or removed, then the node_record_count
- * will be different from gs_resmap_size. In this case, we need
- * to resize the existing resmaps to prevent errors when comparing
- * them.
+ * If nodes have been added or removed, we need to resize the existing resmaps
+ * to prevent errors when comparing them.
  *
  * Here's the plan:
  * 1. save a copy of the global structures, and then construct
@@ -1340,7 +1311,7 @@ extern int gs_reconfig(void)
 			if (IS_JOB_SUSPENDED(job_ptr) &&
 			    (job_ptr->priority != 0)) {
 				debug3("resuming job %u apparently suspended "
-				       " by gang", job_ptr->job_id);
+				     "by gang", job_ptr->job_id);
 				_resume_job(job_ptr->job_id);
 			}
 

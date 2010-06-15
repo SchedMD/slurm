@@ -1030,8 +1030,15 @@ extern int get_job_resources_cnt(job_resources_t *job_resrcs_ptr,
 	return SLURM_ERROR;
 }
 
-/* Return 1 if the given job can fit into the given full-length core_bitmap,
- * else return 0.
+/*
+ * Test if job can fit into the given full-length core_bitmap
+ * IN job_resrcs_ptr - resources allocated to a job
+ * IN full_bitmap - bitmap of available CPUs
+ * IN bits_per_node - bits per node in the full_bitmap
+ * IN bit_rep_count - repetition count for bits_per_node (how many consecutive 
+ *		      nodes have that same count), if NULL then assume 1 for
+ *		      each node
+ * RET 1 on success, 0 otherwise
  */
 extern int job_fits_into_cores(job_resources_t *job_resrcs_ptr,
 			       bitstr_t *full_bitmap,
@@ -1046,7 +1053,7 @@ extern int job_fits_into_cores(job_resources_t *job_resrcs_ptr,
 
 	for (i = 0, n = 0; i < job_resrcs_ptr->nhosts; n++) {
 		last_bit += bits_per_node[k];
-		if (++count > bit_rep_count[k]) {
+		if ((bit_rep_count == NULL) || (++count > bit_rep_count[k])) {
 			k++;
 			count = 1;
 		}
@@ -1064,11 +1071,20 @@ extern int job_fits_into_cores(job_resources_t *job_resrcs_ptr,
 	return 1;
 }
 
-/* add the given job to the given full_core_bitmap */
+/*
+ * Add job to full-length core_bitmap
+ * IN job_resrcs_ptr - resources allocated to a job
+ * IN/OUT full_bitmap - bitmap of available CPUs, allocate as needed
+ * IN bits_per_node - bits per node in the full_bitmap
+ * IN bit_rep_count - repetition count for bits_per_node (how many consecutive 
+ *		      nodes have that same count), if NULL then assume 1 for
+ *		      each node
+ * RET 1 on success, 0 otherwise
+ */
 extern void add_job_to_cores(job_resources_t *job_resrcs_ptr,
 			     bitstr_t **full_core_bitmap,
-			     const uint16_t *cores_per_node,
-			     const uint32_t *core_rep_count)
+			     const uint16_t *bits_per_node,
+			     const uint32_t *bit_rep_count)
 {
 	uint32_t i, n, count = 1, last_bit = 0;
 	uint32_t c = 0, j = 0, k = 0;
@@ -1080,8 +1096,12 @@ extern void add_job_to_cores(job_resources_t *job_resrcs_ptr,
 	/* add the job to the row_bitmap */
 	if (*full_core_bitmap == NULL) {
 		uint32_t size = 0;
-		for (i = 0; core_rep_count[i]; i++) {
-			size += cores_per_node[i] * core_rep_count[i];
+		if (bit_rep_count) {
+			for (i = 0; bit_rep_count[i]; i++)
+				size += bits_per_node[i] * bit_rep_count[i];
+		} else {
+			for (i = 0; node_record_count; i++)
+				size += bits_per_node[i];
 		}
 		*full_core_bitmap = bit_alloc(size);
 		if (!*full_core_bitmap)
@@ -1090,8 +1110,8 @@ extern void add_job_to_cores(job_resources_t *job_resrcs_ptr,
 
 	node_len = bit_size(job_resrcs_ptr->node_bitmap);
 	for (i = 0, n = 0; i < job_resrcs_ptr->nhosts; n++) {
-		last_bit += cores_per_node[k];
-		if (++count > core_rep_count[k]) {
+		last_bit += bits_per_node[k];
+		if ((bit_rep_count == NULL) || (++count > bit_rep_count[k])) {
 			k++;
 			count = 1;
 		}
