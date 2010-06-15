@@ -368,10 +368,6 @@ slurm_sched_job_is_pending( void )
 	if ( slurm_sched_init() < 0 )
 		return;
 
-	if ( (slurm_get_preempt_mode() & PREEMPT_MODE_GANG) &&
-	     (gs_reconfig() != SLURM_SUCCESS))
-		error( "cannot reconfigure gang scheduler" );
-
 	(*(g_sched_context->ops.job_is_pending))();
 }
 
