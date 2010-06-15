@@ -7437,8 +7437,8 @@ extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
 			wiki_sched_test = true;
 		}
 		if ((job_ptr->time_limit != INFINITE) && (!wiki2_sched)) {
- 			info("Job %u resumed, updating end_time",
- 			     job_ptr->job_id);
+ 			debug3("Job %u resumed, updating end_time",
+ 			       job_ptr->job_id);
 			job_ptr->end_time = now +
 				(job_ptr->time_limit * 60)
 				- job_ptr->pre_sus_time;
