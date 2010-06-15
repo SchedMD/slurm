@@ -23,6 +23,9 @@ documents those changes that are of interest to users and admins.
     environment variables (if any) get propagated to the spawned job. This is
     particularly important for jobs that are submitted on one cluster and run
     on a different cluster.
+ -- Fix bug in select/linear when used with gang scheduling and there are
+    preempted jobs at the time slurmctld restarts that can result in over-
+    subscribing resources.
  
 * Changes in SLURM 2.2.0.pre7
 =============================

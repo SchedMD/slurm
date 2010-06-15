@@ -1860,7 +1860,8 @@ static void _init_node_cr(void)
 			      job_ptr->job_id);
 			continue;
 		}
-		if (IS_JOB_RUNNING(job_ptr))
+		if (IS_JOB_RUNNING(job_ptr) ||
+		    (IS_JOB_SUSPENDED(job_ptr) && (job_ptr->priority != 0)))
 			_add_run_job(cr_ptr, job_ptr->job_id);
 		_add_tot_job(cr_ptr, job_ptr->job_id);
 
