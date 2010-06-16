@@ -149,4 +149,9 @@ char *xshort_hostname(void);
  */
 bool xstring_is_whitespace(const char *str);
 
+/*
+ * If str make everything lowercase.  Should not be called on static char *'s
+ */
+void xstrtolower(char *str);
+
 #endif /* !_XSTRING_H */
