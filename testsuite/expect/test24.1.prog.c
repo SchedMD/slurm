@@ -71,8 +71,14 @@ int _setup_assoc_list()
 {
 	acct_update_object_t update;
 	acct_association_rec_t *assoc = NULL;
+
 	/* make the main list */
 	assoc_mgr_association_list = list_create(destroy_acct_association_rec);
+	/* Here we make the qos list, we just do this now to make it
+	   so the decay thread will work.  Other than that this does
+	   nothing, so you can fill it with whatever.
+	*/
+	assoc_mgr_qos_list = list_create(destroy_acct_qos_rec);
 
 	/* we just want make it so we setup_childern so just pretend
 	   we are running off cache */
@@ -197,6 +203,7 @@ int _setup_assoc_list()
 
 	assoc_mgr_update_assocs(&update);
 	list_destroy(update.objects);
+
 	return SLURM_SUCCESS;
 }
 
@@ -227,6 +234,7 @@ int main (int argc, char **argv)
 	   only concerned about the fairshare we won't look at the other
 	   factors here.
 	*/
+	conf->priority_calc_period = 5;
 	conf->priority_decay_hl = 1;
 	conf->priority_favor_small = 0;
 	conf->priority_max_age = conf->priority_decay_hl;
@@ -249,8 +257,9 @@ int main (int argc, char **argv)
 	/* now init the priorities of the associations */
 	if (slurm_priority_init() != SLURM_SUCCESS)
 		fatal("failed to initialize priority plugin");
+	sleep(6);
 	/* on some systems that don't have multiple cores we need to
-	   sleep to make sure the tread get started. */
+	   sleep to make sure the thread get started. */
 	sleep(1);
 	memset(&resp, 0, sizeof(shares_response_msg_t));
 	resp.assoc_shares_list = assoc_mgr_get_shares(NULL, 0, NULL, NULL);
