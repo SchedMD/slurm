@@ -234,7 +234,6 @@ int main (int argc, char **argv)
 	   only concerned about the fairshare we won't look at the other
 	   factors here.
 	*/
-	conf->priority_calc_period = 5;
 	conf->priority_decay_hl = 1;
 	conf->priority_favor_small = 0;
 	conf->priority_max_age = conf->priority_decay_hl;
@@ -257,7 +256,6 @@ int main (int argc, char **argv)
 	/* now init the priorities of the associations */
 	if (slurm_priority_init() != SLURM_SUCCESS)
 		fatal("failed to initialize priority plugin");
-	sleep(6);
 	/* on some systems that don't have multiple cores we need to
 	   sleep to make sure the thread get started. */
 	sleep(1);
