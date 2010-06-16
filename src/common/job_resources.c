@@ -1045,28 +1045,30 @@ extern int job_fits_into_cores(job_resources_t *job_resrcs_ptr,
 			       const uint16_t *bits_per_node,
 			       const uint32_t *bit_rep_count)
 {
-	uint32_t i, n, count = 1, last_bit = 0;
-	uint32_t c = 0, j = 0, k = 0;
+	int full_node_inx = 0, full_bit_inx  = 0, job_bit_inx  = 0;
+	int bit_inx = 0, bit_reps = 0, i;
 
 	if (!full_bitmap)
 		return 1;
 
-	for (i = 0, n = 0; i < job_resrcs_ptr->nhosts; n++) {
-		last_bit += bits_per_node[k];
-		if ((bit_rep_count == NULL) || (++count > bit_rep_count[k])) {
-			k++;
-			count = 1;
+	for (full_node_inx = 0; full_node_inx < node_record_count;
+	     full_node_inx++) {
+		if (bit_test(job_resrcs_ptr->node_bitmap, full_node_inx)) {
+			for (i = 0; i < bits_per_node[bit_inx]; i++) {
+				if (bit_test(full_bitmap, full_bit_inx + i) &&
+				    bit_test(job_resrcs_ptr->core_bitmap,
+					     job_bit_inx + i)) {
+					return 0;
+				}
+			}
+			job_bit_inx += bits_per_node[bit_inx];
 		}
-		if (bit_test(job_resrcs_ptr->node_bitmap, n) == 0) {
-			c = last_bit;
-			continue;
+		full_bit_inx += bits_per_node[bit_inx];
+		if ((bit_rep_count == NULL) ||
+		    (++bit_reps >= bit_rep_count[bit_inx])) {
+			bit_inx++;
+			bit_reps = 0;
 		}
-		for (; c < last_bit; c++, j++) {
-			if (bit_test(full_bitmap, c) &&
-			    bit_test(job_resrcs_ptr->core_bitmap, j))
-				return 0;
-		}
-		i++;
 	}
 	return 1;
 }
@@ -1086,9 +1088,9 @@ extern void add_job_to_cores(job_resources_t *job_resrcs_ptr,
 			     const uint16_t *bits_per_node,
 			     const uint32_t *bit_rep_count)
 {
-	uint32_t i, n, count = 1, last_bit = 0;
-	uint32_t c = 0, j = 0, k = 0;
-	int node_len;
+	int full_node_inx = 0;
+	int job_bit_inx  = 0, full_bit_inx  = 0;
+	int bit_inx = 0, bit_reps = 0, i;
 
 	if (!job_resrcs_ptr->core_bitmap)
 		return;
@@ -1100,7 +1102,7 @@ extern void add_job_to_cores(job_resources_t *job_resrcs_ptr,
 			for (i = 0; bit_rep_count[i]; i++)
 				size += bits_per_node[i] * bit_rep_count[i];
 		} else {
-			for (i = 0; node_record_count; i++)
+			for (i = 0; i < node_record_count; i++)
 				size += bits_per_node[i];
 		}
 		*full_core_bitmap = bit_alloc(size);
@@ -1108,26 +1110,23 @@ extern void add_job_to_cores(job_resources_t *job_resrcs_ptr,
 			fatal("add_job_to_cores: bitmap memory error");
 	}
 
-	node_len = bit_size(job_resrcs_ptr->node_bitmap);
-	for (i = 0, n = 0; i < job_resrcs_ptr->nhosts; n++) {
-		last_bit += bits_per_node[k];
-		if ((bit_rep_count == NULL) || (++count > bit_rep_count[k])) {
-			k++;
-			count = 1;
+	for (full_node_inx = 0; full_node_inx < node_record_count;
+	     full_node_inx++) {
+		if (bit_test(job_resrcs_ptr->node_bitmap, full_node_inx)) {
+			for (i = 0; i < bits_per_node[bit_inx]; i++) {
+				if (!bit_test(job_resrcs_ptr->core_bitmap,
+					      job_bit_inx + i))
+					continue;
+				bit_set(*full_core_bitmap, full_bit_inx + i);
+			}
+			job_bit_inx += bits_per_node[bit_inx];
 		}
-		if (n >= node_len) {
-			error("add_job_to_cores: Invalid nhosts");
-			break;
+		full_bit_inx += bits_per_node[bit_inx];
+		if ((bit_rep_count == NULL) ||
+		    (++bit_reps >= bit_rep_count[bit_inx])) {
+			bit_inx++;
+			bit_reps = 0;
 		}
-		if (bit_test(job_resrcs_ptr->node_bitmap, n) == 0) {
-			c = last_bit;
-			continue;
-		}
-		for (; c < last_bit; c++, j++) {
-			if (bit_test(job_resrcs_ptr->core_bitmap, j))
-				bit_set(*full_core_bitmap, c);
-		}
-		i++;
 	}
 }
 
