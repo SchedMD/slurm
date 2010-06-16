@@ -283,7 +283,7 @@ static void _opt_default()
 	opt.nprocs_set = false;
 	opt.cpus_per_task = 1;
 	opt.cpus_set = false;
-	opt.min_nodes = 0;
+	opt.min_nodes = 1;
 	opt.max_nodes = 0;
 	opt.nodes_set = false;
 	opt.min_sockets_per_node = NO_VAL; /* requested min sockets */
@@ -1996,7 +1996,7 @@ static bool _opt_verify(void)
 
 	/* check for realistic arguments */
 	if (opt.nprocs <= 0) {
-		error("invalid number of processes (-n %d)", opt.nprocs);
+		error("invalid number of tasks (-n %d)", opt.nprocs);
 		verified = false;
 	}
 
