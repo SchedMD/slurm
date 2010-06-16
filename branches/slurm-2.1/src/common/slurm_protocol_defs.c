@@ -76,7 +76,6 @@ static void _slurm_free_reserve_info_members (reserve_info_t * part);
 
 static void _free_all_step_info (job_step_info_response_msg_t *msg);
 static void _slurm_free_job_step_info_members (job_step_info_t * msg);
-static void _make_lower(char *change);
 
 /*
  * slurm_msg_t_init - initialize a slurm message
@@ -172,7 +171,7 @@ extern int slurm_addto_char_list(List char_list, char *names)
 				else
 					count++;
 
-				_make_lower(name);
+				xstrtolower(name);
 				list_append(char_list, name);
 
 				list_iterator_reset(itr);
@@ -206,7 +205,7 @@ extern int slurm_addto_char_list(List char_list, char *names)
 		else
 			count++;
 
-		_make_lower(name);
+		xstrtolower(name);
 		list_append(char_list, name);
 	}
 	list_iterator_destroy(itr);
@@ -2004,20 +2003,6 @@ void inline slurm_free_job_notify_msg(job_notify_msg_t * msg)
 	if (msg) {
 		xfree(msg->message);
 		xfree(msg);
-	}
-}
-
-/* make everything lowercase should not be called on static char *'s */
-static void _make_lower(char *change)
-{
-	if(change) {
-		int j = 0;
-		while(change[j]) {
-			char lower = tolower(change[j]);
-			if(lower != change[j])
-				change[j] = lower;
-			j++;
-		}
 	}
 }
 

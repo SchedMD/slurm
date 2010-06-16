@@ -7,6 +7,8 @@ documents those changes that are of interest to users and admins.
  -- Fixed a fair-share calculation bug in the priority/multifactor plugin.
  -- Fixed sbatch to work correctly when no nodes are specified, but
     --ntasks-per-node is.
+ -- Make sure account and wckey for a job are lower case before inserting into
+    accounting.
 
 * Changes in SLURM 2.1.9
 ========================
