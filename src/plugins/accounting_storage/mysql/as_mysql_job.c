@@ -394,7 +394,7 @@ no_rollup_change:
 			begin_time = submit_time;
 		query = xstrdup_printf(
 			"insert into \"%s_%s\" "
-			"(id_job, id_assoc, id_wckey, id_user, "
+			"(id_job, id_assoc, id_qos, id_wckey, id_user, "
 			"id_group, nodelist, id_resv, timelimit, "
 			"time_eligible, time_submit, time_start, "
 			"job_name, track_steps, state, priority, cpus_req, "
@@ -413,9 +413,10 @@ no_rollup_change:
 			xstrcat(query, ", node_inx");
 
 		xstrfmtcat(query,
-			   ") values (%u, %u, %u, %u, %u, '%s', %u, %u, "
+			   ") values (%u, %u, %u, %u, %u, %u, '%s', %u, %u, "
 			   "%d, %d, %d, '%s', %u, %u, %u, %u, %u, %u",
-			   job_ptr->job_id, job_ptr->assoc_id, wckeyid,
+			   job_ptr->job_id, job_ptr->assoc_id,
+			   job_ptr->qos_id, wckeyid,
 			   job_ptr->user_id, job_ptr->group_id, nodes,
 			   job_ptr->resv_id, job_ptr->time_limit,
 			   begin_time, submit_time, start_time,
@@ -440,13 +441,13 @@ no_rollup_change:
 			   "id_wckey=%u, id_user=%u, id_group=%u, "
 			   "nodelist='%s', id_resv=%u, timelimit=%u, "
 			   "time_submit=%d, time_start=%d, "
-			   "job_name='%s', track_steps=%u, "
+			   "job_name='%s', track_steps=%u, id_qos=%u, "
 			   "state=greatest(state, %u), priority=%u, "
 			   "cpus_req=%u, cpus_alloc=%u, nodes_alloc=%u",
 			   wckeyid, job_ptr->user_id, job_ptr->group_id, nodes,
 			   job_ptr->resv_id, job_ptr->time_limit,
 			   submit_time, start_time,
-			   jname, track_steps, job_state,
+			   jname, track_steps, job_ptr->qos_id, job_state,
 			   job_ptr->priority, job_ptr->details->min_cpus,
 			   job_ptr->total_cpus, node_cnt);
 
@@ -497,11 +498,11 @@ no_rollup_change:
 			xstrfmtcat(query, "node_inx='%s', ", node_inx);
 
 		xstrfmtcat(query, "time_start=%d, job_name='%s', state=%u, "
-			   "cpus_alloc=%u, nodes_alloc=%u, "
+			   "cpus_alloc=%u, nodes_alloc=%u, id_qos=%u, "
 			   "id_assoc=%u, id_wckey=%u, id_resv=%u, timelimit=%u "
 			   "where job_db_inx=%d",
 			   start_time, jname, job_state,
-			   job_ptr->total_cpus, node_cnt,
+			   job_ptr->total_cpus, node_cnt, job_ptr->qos_id,
 			   job_ptr->assoc_id, wckeyid,
 			   job_ptr->resv_id, job_ptr->time_limit,
 			   job_ptr->db_index);

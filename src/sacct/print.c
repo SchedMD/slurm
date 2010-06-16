@@ -896,7 +896,7 @@ void print_fields(type_t type, void *object)
 		case PRINT_QOS:
 			switch(type) {
 			case JOB:
-				tmp_int = job->qos;
+				tmp_int = job->qosid;
 				break;
 			case JOBSTEP:
 
@@ -920,7 +920,7 @@ void print_fields(type_t type, void *object)
 		case PRINT_QOSRAW:
 			switch(type) {
 			case JOB:
-				tmp_int = job->qos;
+				tmp_int = job->qosid;
 				break;
 			case JOBSTEP:
 

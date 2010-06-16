@@ -26,7 +26,8 @@ documents those changes that are of interest to users and admins.
  -- Fix bug in select/linear when used with gang scheduling and there are
     preempted jobs at the time slurmctld restarts that can result in over-
     subscribing resources.
- 
+ -- Added keeping track of the qos a job is running with in accounting.
+
 * Changes in SLURM 2.2.0.pre7
 =============================
  -- Fixed issue with sacctmgr if querying against non-existent cluster it

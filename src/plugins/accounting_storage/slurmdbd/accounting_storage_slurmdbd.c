@@ -182,6 +182,7 @@ static int _setup_job_start_msg(dbd_job_start_msg_t *req,
 	req->timelimit     = job_ptr->time_limit;
 	req->wckey         = job_ptr->wckey;
 	req->uid           = job_ptr->user_id;
+	req->qos_id        = job_ptr->qos_id;
 
 	return SLURM_SUCCESS;
 }
