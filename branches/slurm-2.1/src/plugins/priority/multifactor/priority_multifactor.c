@@ -65,6 +65,11 @@
 
 #define SECS_PER_DAY	(24 * 60 * 60)
 #define SECS_PER_WEEK	(7 * 24 * 60 * 60)
+/* These are defined here so when we link with something other than
+ * the slurmctld we will have these symbols defined.  They will get
+ * overwritten when linking with the slurmctld.
+ */
+time_t last_job_update;
 
 /*
  * These variables are required by the generic plugin interface.  If they
