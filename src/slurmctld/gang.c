@@ -146,7 +146,6 @@ static uint32_t gs_debug_flags = 0;
 static uint16_t gs_fast_schedule = 0;
 static struct gs_part *gs_part_list = NULL;
 static uint32_t default_job_list_size = 64;
-static uint32_t gs_resmap_size = 0;
 static pthread_mutex_t data_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static uint16_t *gs_bits_per_node = NULL;
@@ -228,7 +227,6 @@ static uint16_t _get_gr_type(void)
 /* For GS_CPU gs_bits_per_node is the total number of CPUs per node.
  * For GS_CORE and GS_SOCKET gs_bits_per_node is the total number of
  *	cores per per node.
- * This function also sets gs_resmap_size;
  */
 static void _load_phys_res_cnt(void)
 {
@@ -246,7 +244,6 @@ static void _load_phys_res_cnt(void)
 	gs_bits_per_node = xmalloc(node_record_count * sizeof(uint16_t));
 	gs_bit_rep_count = xmalloc(node_record_count * sizeof(uint32_t));
 
-	gs_resmap_size = 0;
 	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
 	     i++, node_ptr++) {
 		if (gr_type == GS_CPU) {
@@ -264,7 +261,6 @@ static void _load_phys_res_cnt(void)
 			}
 		}
 
-		gs_resmap_size += bit;
 		if (gs_bits_per_node[bit_index] != bit) {
 			if (gs_bit_rep_count[bit_index] > 0)
 				bit_index++;
@@ -1266,11 +1262,6 @@ extern int gs_job_fini(struct job_record *job_ptr)
  *   - this affects the gs_part_list
  * - nodes can be removed from a partition, or added to a partition
  *   - this affects the size of the active resmap
- *
- * If nodes have been added or removed, then the node_record_count
- * will be different from gs_resmap_size. In this case, we need
- * to resize the existing resmaps to prevent errors when comparing
- * them.
  *
  * Here's the plan:
  * 1. save a copy of the global structures, and then construct
