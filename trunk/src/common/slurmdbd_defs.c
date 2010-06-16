@@ -3074,6 +3074,7 @@ slurmdbd_pack_job_start_msg(void *in,
 		packstr(msg->node_inx, buffer);
 		packstr(msg->partition, buffer);
 		pack32(msg->priority, buffer);
+		pack32(msg->qos_id, buffer);
 		pack32(msg->req_cpus, buffer);
 		pack32(msg->resv_id, buffer);
 		pack_time(msg->start_time, buffer);
@@ -3134,6 +3135,7 @@ slurmdbd_unpack_job_start_msg(void **msg,
 		safe_unpackstr_xmalloc(&msg_ptr->partition,
 				       &uint32_tmp, buffer);
 		safe_unpack32(&msg_ptr->priority, buffer);
+		safe_unpack32(&msg_ptr->qos_id, buffer);
 		safe_unpack32(&msg_ptr->req_cpus, buffer);
 		safe_unpack32(&msg_ptr->resv_id, buffer);
 		safe_unpack_time(&msg_ptr->start_time, buffer);

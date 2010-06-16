@@ -494,7 +494,7 @@ typedef struct {
 	char	*partition;
 	char	*nodes;
 	uint32_t priority;
-	uint16_t qos;
+	uint32_t qosid;
 	uint32_t req_cpus;
 	uint32_t requid;
 	uint32_t resvid;

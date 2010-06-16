@@ -269,6 +269,7 @@ typedef struct dbd_job_start_msg {
 				 * allocated to the job */
 	char *   partition;	/* partition job is running on */
 	uint32_t priority;	/* job priority */
+	uint32_t qos_id;        /* qos job is running with */
 	uint32_t req_cpus;	/* count of req processors */
 	uint32_t resv_id;	/* reservation id */
 	time_t   start_time;	/* job start time */

@@ -574,7 +574,7 @@ no_rollup_change:
 			nodes ?: "",
 			node_inx ?: "",
 			/* kill_requid=-1 */
-			job_ptr->qos,
+			job_ptr->qos_id,
 			job_ptr->resv_id);
 
 		query = xstrdup_printf("SELECT add_job_start(%s);", rec);
@@ -1504,8 +1504,9 @@ js_pg_get_jobs_cond(pgsql_conn_t *pg_conn, uid_t uid,
 	 * coordinator of.
 	 */
 	if(!is_admin && (private_data & PRIVATE_DATA_JOBS)) {
-		query = xstrdup_printf("SELECT lft FROM %s WHERE user_name='%s'",
-				       assoc_table, user.name);
+		query = xstrdup_printf(
+			"SELECT lft FROM %s WHERE user_name='%s'",
+			assoc_table, user.name);
 		if(user.coord_accts) {
 			slurmdb_coord_rec_t *coord = NULL;
 			itr = list_iterator_create(user.coord_accts);
@@ -1593,7 +1594,8 @@ js_pg_get_jobs_cond(pgsql_conn_t *pg_conn, uid_t uid,
 					ROW(JOB_REQ_NODE_INX), submit))
 			continue;
 
-		debug3("as/pg: get_job_conditions: job %d past node test", curr_id);
+		debug3("as/pg: get_job_conditions: job %d past node test",
+		       curr_id);
 
 		job = slurmdb_create_job_rec();
 		list_append(job_list, job);
@@ -1735,7 +1737,7 @@ js_pg_get_jobs_cond(pgsql_conn_t *pg_conn, uid_t uid,
 		job->priority = atoi(ROW(JOB_REQ_PRIORITY));
 		job->req_cpus = atoi(ROW(JOB_REQ_REQ_CPUS));
 		job->requid = atoi(ROW(JOB_REQ_KILL_REQUID));
-		job->qos = atoi(ROW(JOB_REQ_QOS));
+		job->qosid = atoi(ROW(JOB_REQ_QOS));
 		job->show_full = 1;
 
 		if(only_pending || (job_cond && job_cond->without_steps))

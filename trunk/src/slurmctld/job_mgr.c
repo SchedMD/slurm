@@ -724,6 +724,7 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	pack32(dump_job_ptr->assoc_id, buffer);
 	pack32(dump_job_ptr->resv_id, buffer);
 	pack32(dump_job_ptr->next_step_id, buffer);
+	pack32(dump_job_ptr->qos_id, buffer);
 
 	pack_time(dump_job_ptr->start_time, buffer);
 	pack_time(dump_job_ptr->end_time, buffer);
@@ -737,7 +738,6 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	pack16(dump_job_ptr->kill_on_node_fail, buffer);
 	pack16(dump_job_ptr->batch_flag, buffer);
 	pack16(dump_job_ptr->mail_type, buffer);
-	pack16(dump_job_ptr->qos, buffer);
 	pack16(dump_job_ptr->state_reason, buffer);
 	pack16(dump_job_ptr->restart_cnt, buffer);
 	pack16(dump_job_ptr->resv_flags, buffer);
@@ -810,11 +810,11 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	uint32_t job_id, user_id, group_id, time_limit, priority, alloc_sid;
 	uint32_t exit_code, assoc_id, db_index, name_len, time_min;
 	uint32_t next_step_id, total_cpus, cpu_cnt;
-	uint32_t resv_id, spank_job_env_size = 0;
+	uint32_t resv_id, spank_job_env_size = 0, qos_id;
 	time_t start_time, end_time, suspend_time, pre_sus_time, tot_sus_time;
 	time_t resize_time = 0, now = time(NULL);
 	uint16_t job_state, details, batch_flag, step_flag;
-	uint16_t kill_on_node_fail, direct_set_prio, qos;
+	uint16_t kill_on_node_fail, direct_set_prio;
 	uint16_t alloc_resp_port, other_port, mail_type, state_reason;
 	uint16_t restart_cnt, resv_flags, ckpt_interval;
 	uint16_t wait_all_nodes, warn_signal, warn_time;
@@ -870,6 +870,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		safe_unpack32(&assoc_id, buffer);
 		safe_unpack32(&resv_id, buffer);
 		safe_unpack32(&next_step_id, buffer);
+		safe_unpack32(&qos_id, buffer);
 
 		safe_unpack_time(&start_time, buffer);
 		safe_unpack_time(&end_time, buffer);
@@ -883,7 +884,6 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		safe_unpack16(&kill_on_node_fail, buffer);
 		safe_unpack16(&batch_flag, buffer);
 		safe_unpack16(&mail_type, buffer);
-		safe_unpack16(&qos, buffer);
 		safe_unpack16(&state_reason, buffer);
 		safe_unpack16(&restart_cnt, buffer);
 		safe_unpack16(&resv_flags, buffer);
@@ -1021,7 +1021,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		safe_unpack16(&kill_on_step_done, buffer);
 		safe_unpack16(&batch_flag, buffer);
 		safe_unpack16(&mail_type, buffer);
-		safe_unpack16(&qos, buffer);
+		safe_unpack16((uint16_t *)&qos_id, buffer);
 		safe_unpack16(&state_reason, buffer);
 		safe_unpack16(&restart_cnt, buffer);
 		safe_unpack16(&resv_flags, buffer);
@@ -1179,7 +1179,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	job_ptr->part_ptr = part_ptr;
 	job_ptr->pre_sus_time = pre_sus_time;
 	job_ptr->priority     = priority;
-	job_ptr->qos          = qos;
+	job_ptr->qos_id       = qos_id;
 	xfree(job_ptr->resp_host);
 	job_ptr->resp_host    = resp_host;
 	resp_host             = NULL;	/* reused, nothing left to free */
@@ -1264,9 +1264,9 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		}
 	}
 
-	if (!job_finished && job_ptr->qos) {
+	if (!job_finished && job_ptr->qos_id) {
 		memset(&qos_rec, 0, sizeof(slurmdb_qos_rec_t));
-		qos_rec.id = job_ptr->qos;
+		qos_rec.id = job_ptr->qos_id;
 		job_ptr->qos_ptr = _determine_and_validate_qos(
 			job_ptr->assoc_ptr, &qos_rec, &qos_error);
 		if (qos_error != SLURM_SUCCESS) {
@@ -1280,7 +1280,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 			job_completion_logger(job_ptr, false);
 			job_finished = 1;
 		}
-		job_ptr->qos = qos_rec.id;
+		job_ptr->qos_id = qos_rec.id;
 	}
 	build_node_details(job_ptr);	/* set node_addr */
 	return SLURM_SUCCESS;
@@ -3044,7 +3044,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	job_ptr->assoc_id = assoc_rec.id;
 	job_ptr->assoc_ptr = (void *) assoc_ptr;
 	job_ptr->qos_ptr = (void *) qos_ptr;
-	job_ptr->qos = qos_rec.id;
+	job_ptr->qos_id = qos_rec.id;
 
 	/* already confirmed submit_uid==0 */
 	/* If the priority isn't given we will figure it out later
@@ -4561,7 +4561,7 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 		slurm_mutex_lock(&assoc_mgr_qos_lock);
 		if (assoc_mgr_qos_list) {
 			packstr(slurmdb_qos_str(assoc_mgr_qos_list,
-					        dump_job_ptr->qos), buffer);
+					        dump_job_ptr->qos_id), buffer);
 		} else
 			packnull(buffer);
 		slurm_mutex_unlock(&assoc_mgr_qos_lock);
@@ -4659,7 +4659,7 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 		slurm_mutex_lock(&assoc_mgr_qos_lock);
 		if (assoc_mgr_qos_list)
 			packstr(slurmdb_qos_str(assoc_mgr_qos_list,
-					     dump_job_ptr->qos),
+						dump_job_ptr->qos_id),
 				buffer);
 		else
 			packnull(buffer);
@@ -5421,7 +5421,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 
 			job_ptr->qos_ptr = _determine_and_validate_qos(
 				job_ptr->assoc_ptr, &qos_rec, &error_code);
-			job_ptr->qos = qos_rec.id;
+			job_ptr->qos_id = qos_rec.id;
 			update_accounting = true;
 		}
 	} else if(job_specs->qos) {
@@ -5435,7 +5435,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 
 		job_ptr->qos_ptr = _determine_and_validate_qos(
 			job_ptr->assoc_ptr, &qos_rec, &error_code);
-		job_ptr->qos = qos_rec.id;
+		job_ptr->qos_id = qos_rec.id;
 		update_accounting = true;
 	}
 
@@ -8642,7 +8642,8 @@ _copy_job_record_to_job_desc(struct job_record *job_ptr)
 	job_desc->plane_size        = details->plane_size;
 	job_desc->priority          = job_ptr->priority;
 	if (job_ptr->qos_ptr) {
-		slurmdb_qos_rec_t *qos_ptr = (slurmdb_qos_rec_t *)job_ptr->qos_ptr;
+		slurmdb_qos_rec_t *qos_ptr =
+			(slurmdb_qos_rec_t *)job_ptr->qos_ptr;
 		job_desc->qos       = xstrdup(qos_ptr->name);
 	}
 	job_desc->resp_host         = xstrdup(job_ptr->resp_host);

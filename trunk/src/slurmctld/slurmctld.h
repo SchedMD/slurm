@@ -447,11 +447,10 @@ struct job_record {
 	uint32_t priority;		/* relative priority of the job,
 					 * zero == held (don't initiate) */
 	double priority_fs;		/* cached value used by sprio command */
-	uint16_t qos;			/* quality of service,
-					 * used only by Moab */
+	uint32_t qos_id;		/* quality of service id */
 	void *qos_ptr;	                /* pointer to the quality of
-					 * service record used for this job,
-					 * used only by Moab, it is
+					 * service record used for
+					 * this job, it is
 					 * void* because of interdependencies
 					 * in the header files, confirm the
 					 * value before use */

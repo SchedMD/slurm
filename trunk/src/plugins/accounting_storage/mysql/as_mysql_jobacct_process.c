@@ -62,6 +62,7 @@ char *job_req_inx[] = {
 	"t1.id_user",
 	"t1.id_group",
 	"t1.id_resv",
+	"t1.id_qos",
 	"t1.partition",
 	"t1.id_block",
 	"t1.account",
@@ -82,7 +83,6 @@ char *job_req_inx[] = {
 	"t1.nodelist",
 	"t1.node_inx",
 	"t1.kill_requid",
-	"t1.qos",
 	"t2.user",
 	"t2.acct",
 	"t2.lft"
@@ -97,6 +97,7 @@ enum {
 	JOB_REQ_UID,
 	JOB_REQ_GID,
 	JOB_REQ_RESVID,
+	JOB_REQ_QOS,
 	JOB_REQ_PARTITION,
 	JOB_REQ_BLOCKID,
 	JOB_REQ_ACCOUNT1,
@@ -117,7 +118,6 @@ enum {
 	JOB_REQ_NODELIST,
 	JOB_REQ_NODE_INX,
 	JOB_REQ_KILL_REQUID,
-	JOB_REQ_QOS,
 	JOB_REQ_USER_NAME,
 	JOB_REQ_ACCOUNT,
 	JOB_REQ_LFT,
@@ -588,7 +588,7 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 		job->priority = atoi(row[JOB_REQ_PRIORITY]);
 		job->req_cpus = atoi(row[JOB_REQ_REQ_CPUS]);
 		job->requid = atoi(row[JOB_REQ_KILL_REQUID]);
-		job->qos = atoi(row[JOB_REQ_QOS]);
+		job->qosid = atoi(row[JOB_REQ_QOS]);
 		job->show_full = 1;
 
 		if(only_pending || (job_cond && job_cond->without_steps))
