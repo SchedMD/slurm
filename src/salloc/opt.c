@@ -1241,7 +1241,7 @@ static bool _opt_verify(void)
 
 	/* check for realistic arguments */
 	if (opt.ntasks <= 0) {
-		error("invalid number of processes (-n %d)",
+		error("invalid number of tasks (-n %d)",
 		      opt.ntasks);
 		verified = false;
 	}

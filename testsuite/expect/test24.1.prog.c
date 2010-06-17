@@ -72,9 +72,15 @@ int _setup_assoc_list()
 {
 	slurmdb_update_object_t update;
 	slurmdb_association_rec_t *assoc = NULL;
+
 	/* make the main list */
 	assoc_mgr_association_list =
 		list_create(slurmdb_destroy_association_rec);
+	/* Here we make the qos list, we just do this now to make it
+	   so the decay thread will work.  Other than that this does
+	   nothing, so you can fill it with whatever.
+	*/
+	assoc_mgr_qos_list = list_create(destroy_acct_qos_rec);
 
 	/* we just want make it so we setup_childern so just pretend
 	   we are running off cache */
@@ -211,6 +217,7 @@ int _setup_assoc_list()
 
 	assoc_mgr_update_assocs(&update);
 	list_destroy(update.objects);
+
 	return SLURM_SUCCESS;
 }
 
