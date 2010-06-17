@@ -9,6 +9,8 @@ documents those changes that are of interest to users and admins.
     --ntasks-per-node is.
  -- Make sure account and wckey for a job are lower case before inserting into
     accounting.
+ -- Added note to squeue documentation about --jobs option displaying jobs
+    even if they are on hidden partitions.
 
 * Changes in SLURM 2.1.9
 ========================
