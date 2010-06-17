@@ -1607,7 +1607,7 @@ extern char *slurm_get_sched_params(void)
  	if(slurmdbd_conf) {
 	} else {
 		conf = slurm_conf_lock();
-		params = conf->sched_params;
+		params = xstrdup(conf->sched_params);
 		slurm_conf_unlock();
 	}
 	return params;
