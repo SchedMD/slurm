@@ -149,7 +149,6 @@ static uint32_t default_job_list_size = 64;
 static pthread_mutex_t data_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static uint16_t *gs_bits_per_node = NULL;
-static uint32_t *gs_bit_rep_count = NULL;
 
 static struct gs_part **gs_part_sorted = NULL;
 static uint32_t num_sorted_part = 0;
@@ -234,14 +233,12 @@ static void _load_phys_res_cnt(void)
 	struct node_record *node_ptr;
 
 	xfree(gs_bits_per_node);
-	xfree(gs_bit_rep_count);
 
 	if ((gr_type != GS_CPU) && (gr_type != GS_CORE) &&
 	    (gr_type != GS_SOCKET))
 		return;
 
 	gs_bits_per_node = xmalloc(node_record_count * sizeof(uint16_t));
-	gs_bit_rep_count = xmalloc(node_record_count * sizeof(uint32_t));
 
 	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
 	     i++, node_ptr++) {
@@ -260,25 +257,13 @@ static void _load_phys_res_cnt(void)
 			}
 		}
 
-		if (gs_bits_per_node[bit_index] != bit) {
-			if (gs_bit_rep_count[bit_index] > 0)
-				bit_index++;
-			gs_bits_per_node[bit_index] = bit;
-		}
-		gs_bit_rep_count[bit_index]++;
+		gs_bits_per_node[bit_index++] = bit;
 	}
 
-	/* arrays must have trailing 0 */
-	bit_index += 2;
-	xrealloc(gs_bits_per_node, bit_index * sizeof(uint16_t));
-	xrealloc(gs_bit_rep_count, bit_index * sizeof(uint32_t));
-
 	if (gs_debug_flags & DEBUG_FLAG_GANG) {
-		bit_index--;
 		for (i = 0; i < bit_index; i++) {
-			info("gang: _load_phys_res_cnt: bits_per_node[%d]=%u "
-			     "bit_rep_count[%d]=%u",
-			      i, gs_bits_per_node[i], i, gs_bit_rep_count[i]);
+			info("gang: _load_phys_res_cnt: bits_per_node[%d]=%u",
+			     i, gs_bits_per_node[i]);
 		}
 	}
 }
@@ -360,15 +345,15 @@ static void _build_parts(void)
 		fatal ("memory allocation failure");
 
 	gs_part_list = xmalloc(num_parts * sizeof(struct gs_part));
-	i = 0;
+	i = -1;
 	while ((p_ptr = (struct part_record *) list_next(part_iterator))) {
+		i++;
 		gs_part_list[i].part_name = xstrdup(p_ptr->name);
 		gs_part_list[i].priority = p_ptr->priority;
 		/* everything else is already set to zero/NULL */
 		gs_part_list[i].next = &(gs_part_list[i+1]);
-		i++;
 	}
-	gs_part_list[--i].next = NULL;
+	gs_part_list[i].next = NULL;
 	list_iterator_destroy(part_iterator);
 }
 
@@ -435,8 +420,7 @@ static int _job_fits_in_active_row(struct job_record *job_ptr,
 
 	if ((gr_type == GS_CORE) || (gr_type == GS_SOCKET)) {
 		return job_fits_into_cores(job_res, p_ptr->active_resmap,
-						gs_bits_per_node,
-						gs_bit_rep_count);
+					   gs_bits_per_node, NULL);
 	}
 
 	/* gr_type == GS_NODE || gr_type == GS_CPU */
@@ -516,7 +500,7 @@ static void _add_job_to_active(struct job_record *job_ptr,
 			bit_nclear(p_ptr->active_resmap, 0, size-1);
 		}
 		add_job_to_cores(job_res, &(p_ptr->active_resmap),
-				      gs_bits_per_node, gs_bit_rep_count);
+				 gs_bits_per_node, NULL);
 		if (gr_type == GS_SOCKET)
 			_fill_sockets(job_res->node_bitmap, p_ptr);
 	} else {
@@ -1185,7 +1169,6 @@ extern int gs_fini(void)
 	xfree(gs_part_sorted);
 	gs_part_sorted = NULL;
 	xfree(gs_bits_per_node);
-	xfree(gs_bit_rep_count);
 	pthread_mutex_unlock(&data_mutex);
 	if (gs_debug_flags & DEBUG_FLAG_GANG)
 		info("gang: leaving gs_fini");
