@@ -159,20 +159,22 @@ _get_db_index(pgsql_conn_t *pg_conn, time_t submit, uint32_t jobid,
 	      uint32_t associd)
 {
 	PGresult *result = NULL;
-	int db_index = -1;
+	int db_index = 0;
 	char *query;
 
 	query = xstrdup_printf("SELECT id FROM %s WHERE submit=%u AND "
-			       "  jobid=%u AND associd=%u",
+			       "jobid=%u AND associd=%u",
 			       job_table, (int)submit, jobid, associd);
 	result = DEF_QUERY_RET;
 	if(!result)
-		return -1;
+		return 0;
 
 	if(!PQntuples(result)) {
-		error("We can't get a db_index for this combo, "
-		      "submit=%u and jobid=%u and associd=%u.",
-		      (int)submit, jobid, associd);
+		debug4("We can't get a db_index for this combo, "
+		       "time_submit=%d and id_job=%u and id_assoc=%u.  "
+		       "We must not have heard about the start yet, "
+		       "no big deal, we will get one right after this.",
+		       (int)submit, jobid, associd);
 	} else {
 		db_index = atoi(PG_VAL(0));
 	}
