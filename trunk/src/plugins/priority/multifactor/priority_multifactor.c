@@ -65,6 +65,11 @@
 
 #define SECS_PER_DAY	(24 * 60 * 60)
 #define SECS_PER_WEEK	(7 * SECS_PER_DAY)
+/* These are defined here so when we link with something other than
+ * the slurmctld we will have these symbols defined.  They will get
+ * overwritten when linking with the slurmctld.
+ */
+time_t last_job_update;
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -1039,6 +1044,7 @@ extern int priority_p_set_max_cluster_usage(uint32_t procs, uint32_t half_life)
 	assoc_mgr_root_assoc->usage->usage_raw = 1.0;
 	assoc_mgr_root_assoc->usage->usage_norm = 1.0;
 	assoc_mgr_root_assoc->usage->usage_efctv = 1.0;
+
 	debug3("Total possible cpu usage for half_life of %d secs "
 	       "on the system is %.0Lf",
 	       half_life, assoc_mgr_root_assoc->usage->usage_raw);

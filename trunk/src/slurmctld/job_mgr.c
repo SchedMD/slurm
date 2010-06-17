@@ -1125,6 +1125,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 
 	xfree(job_ptr->account);
 	job_ptr->account = account;
+	xstrtolower(job_ptr->account);
 	account          = NULL;  /* reused, nothing left to free */
 	xfree(job_ptr->alloc_node);
 	job_ptr->alloc_node   = alloc_node;
@@ -1159,6 +1160,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	name                  = NULL;	/* reused, nothing left to free */
 	xfree(job_ptr->wckey);		/* in case duplicate record */
 	job_ptr->wckey        = wckey;
+	xstrtolower(job_ptr->wckey);
 	wckey                 = NULL;	/* reused, nothing left to free */
 	xfree(job_ptr->network);
 	job_ptr->network      = network;
@@ -2769,6 +2771,11 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		return error_code;
 	}
 
+	/* Make sure anything that may be put in the database will be
+	   lower case */
+	xstrtolower(job_desc->account);
+	xstrtolower(job_desc->wckey);
+
 	if ((error_code = _validate_job_desc(job_desc, allocate, submit_uid)))
 		return error_code;
 
@@ -3620,6 +3627,7 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 					return ESLURM_INVALID_WCKEY;
 				}
 			}
+			xfree(job_desc->wckey);
 			job_desc->wckey = xstrdup(job_desc->wckey);
 		} else if (accounting_enforce & ACCOUNTING_ENFORCE_WCKEYS) {
 			/* This should never happen */
@@ -5306,6 +5314,11 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		select_g_alter_node_cnt(SELECT_GET_NODE_CPU_CNT,
 					&cpus_per_node);
 #endif
+
+	/* Make sure anything that may be put in the database will be
+	   lower case */
+	xstrtolower(job_specs->account);
+	xstrtolower(job_specs->wckey);
 
 	job_ptr = find_job_record(job_specs->job_id);
 	if (job_ptr == NULL) {

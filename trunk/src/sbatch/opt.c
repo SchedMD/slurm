@@ -290,7 +290,7 @@ static void _opt_default()
 	opt.ntasks_set = false;
 	opt.cpus_per_task = 1;
 	opt.cpus_set = false;
-	opt.min_nodes = 0;
+	opt.min_nodes = 1;
 	opt.max_nodes = 0;
 	opt.nodes_set = false;
 	opt.sockets_per_node = NO_VAL; /* requested sockets */
@@ -2047,7 +2047,7 @@ static bool _opt_verify(void)
 
 	/* check for realistic arguments */
 	if (opt.ntasks <= 0) {
-		error("invalid number of processes (-n %d)", opt.ntasks);
+		error("invalid number of tasks (-n %d)", opt.ntasks);
 		verified = false;
 	}
 
