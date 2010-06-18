@@ -286,6 +286,7 @@ perl_sources = \
 	       $(perl_dir)/launch.c \
 	       $(perl_dir)/node.c \
 	       $(perl_dir)/partition.c \
+	       $(perl_dir)/reservation.c \
 	       $(perl_dir)/trigger.c
 
 AM_CPPFLAGS = \
