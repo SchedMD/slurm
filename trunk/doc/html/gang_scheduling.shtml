@@ -333,10 +333,11 @@ The following two examples illustrate the primary difference between
 </P>
 <P>
 When <I>CR_CPU</I> (or <I>CR_CPU_Memory</I>) is configured then the selector
-treats the CPUs as simple, <I>interchangeable</I> computing resources. However
-when <I>CR_Core</I> (or <I>CR_Core_Memory</I>) is enabled the selector treats
-the CPUs as individual resources that are <U>specifically</U> allocated to
-jobs.
+treats the CPUs as simple, <I>interchangeable</I> computing resources
+<U>unless</U> task affinity is enabled. However when task affinity is enabled
+with <I>CR_CPU</I> or <I>CR_Core</I> (or <I>CR_Core_Memory</I>) is enabled, the
+selector treats the CPUs as individual resources that are <U>specifically</U>
+allocated to jobs.
 This subtle difference is highlighted when timeslicing is enabled.
 </P>
 <P>
