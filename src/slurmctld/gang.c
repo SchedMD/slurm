@@ -68,7 +68,8 @@ enum entity_type {
 	GS_NODE,
 	GS_SOCKET,
 	GS_CORE,
-	GS_CPU
+	GS_CPU,		/* Without task affinity */
+	GS_CPU2		/* With task affinity */
 };
 
 enum gs_flags {
@@ -108,14 +109,15 @@ struct gs_part {
  *
  *       SUMMARY OF DATA MANAGEMENT
  *
- * For GS_NODE:   job_ptr->job_resrcs->node_bitmap only
- * For GS_CPU:    job_ptr->job_resrcs->{node_bitmap, cpus}
- * For GS_SOCKET: job_ptr->job_resrcs->{node,core}_bitmap
  * For GS_CORE:   job_ptr->job_resrcs->{node,core}_bitmap
+ * For GS_CPU:    job_ptr->job_resrcs->{node_bitmap, cpus}
+ * For GS_CPU2:   job_ptr->job_resrcs->{node,core}_bitmap
+ * For GS_SOCKET: job_ptr->job_resrcs->{node,core}_bitmap
+ * For GS_NODE:   job_ptr->job_resrcs->node_bitmap only
  *
- *         EVALUATION ALGORITHM
+ *	 EVALUATION ALGORITHM
  *
- * For GS_NODE, GS_SOCKET, and GS_CORE, the bits CANNOT conflict
+ * For GS_NODE, GS_SOCKET, GS_CORE, and GS_CPU2 the bits CANNOT conflict
  * For GS_CPU:  if bits conflict, make sure sum of CPUs per
  *              resource don't exceed physical resource count
  *
@@ -126,7 +128,7 @@ struct gs_part {
  *
  ******************************************
  *
- *        "Shadow" Design to support Preemption
+ *	"Shadow" Design to support Preemption
  *
  * Jobs in higher priority partitions "cast shadows" on the active
  * rows of lower priority partitions. The effect is that jobs that
@@ -210,8 +212,11 @@ static uint16_t _get_gr_type(void)
 {
 	if (slurmctld_conf.select_type_param & CR_CORE)
 		return GS_CORE;
-	if (slurmctld_conf.select_type_param & CR_CPU)
-		return GS_CPU;
+	if (slurmctld_conf.select_type_param & CR_CPU) {
+		if (!strcmp(slurmctld_conf.task_plugin, "task/none"))
+			return GS_CPU;
+		return GS_CPU2;
+	}
 	if (slurmctld_conf.select_type_param & CR_SOCKET)
 		return GS_SOCKET;
 
@@ -220,7 +225,7 @@ static uint16_t _get_gr_type(void)
 	return GS_NODE;
 }
 
-/* For GS_CPU gs_bits_per_node is the total number of CPUs per node.
+/* For GS_CPU and GS_CPU2 gs_bits_per_node is the total number of CPUs per node.
  * For GS_CORE and GS_SOCKET gs_bits_per_node is the total number of
  *	cores per per node.
  */
@@ -232,15 +237,14 @@ static void _load_phys_res_cnt(void)
 
 	xfree(gs_bits_per_node);
 
-	if ((gr_type != GS_CPU) && (gr_type != GS_CORE) &&
-	    (gr_type != GS_SOCKET))
+	if (gr_type == GS_NODE)
 		return;
 
 	gs_bits_per_node = xmalloc(node_record_count * sizeof(uint16_t));
 
 	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
 	     i++, node_ptr++) {
-		if (gr_type == GS_CPU) {
+		if ((gr_type == GS_CPU) || (gr_type == GS_CPU2)) {
 			if (gs_fast_schedule)
 				bit = node_ptr->config_ptr->cpus;
 			else
@@ -271,12 +275,12 @@ static uint16_t _get_phys_bit_cnt(int node_index)
 	struct node_record *node_ptr = node_record_table_ptr + node_index;
 
 	if (gs_fast_schedule) {
-		if (gr_type == GS_CPU)
+		if ((gr_type == GS_CPU) || (gr_type == GS_CPU2))
 			return node_ptr->config_ptr->cpus;
 		return node_ptr->config_ptr->cores *
 		       node_ptr->config_ptr->sockets;
 	} else {
-		if (gr_type == GS_CPU)
+		if ((gr_type == GS_CPU) || (gr_type == GS_CPU2))
 			return node_ptr->cpus;
 		return node_ptr->cores * node_ptr->sockets;
 	}
@@ -403,7 +407,8 @@ static int _job_fits_in_active_row(struct job_record *job_ptr,
 	if ((p_ptr->active_resmap == NULL) || (p_ptr->jobs_active == 0))
 		return 1;
 
-	if ((gr_type == GS_CORE) || (gr_type == GS_SOCKET)) {
+	if ((gr_type == GS_CPU2) || (gr_type == GS_CORE) ||
+	    (gr_type == GS_SOCKET)) {
 		return job_fits_into_cores(job_res, p_ptr->active_resmap,
 					   gs_bits_per_node, NULL);
 	}
@@ -420,9 +425,10 @@ static int _job_fits_in_active_row(struct job_record *job_ptr,
 	FREE_NULL_BITMAP(job_map);
 	if (count == 0)
 		return 1;
-	if (gr_type == GS_CPU)
+	if (gr_type == GS_CPU) {
 		/* For GS_CPU we check the CPU arrays */
 		return _can_cpus_fit(job_ptr, p_ptr);
+	}
 
 	return 0;
 }
@@ -479,7 +485,8 @@ static void _add_job_to_active(struct job_record *job_ptr,
 	job_resources_t *job_res = job_ptr->job_resrcs;
 
 	/* add job to active_resmap */
-	if (gr_type == GS_CORE || gr_type == GS_SOCKET) {
+	if ((gr_type == GS_CPU2) || (gr_type == GS_CORE) ||
+	    (gr_type == GS_SOCKET)) {
 		if (p_ptr->jobs_active == 0 && p_ptr->active_resmap) {
 			uint32_t size = bit_size(p_ptr->active_resmap);
 			bit_nclear(p_ptr->active_resmap, 0, size-1);
@@ -488,8 +495,7 @@ static void _add_job_to_active(struct job_record *job_ptr,
 				 gs_bits_per_node, NULL);
 		if (gr_type == GS_SOCKET)
 			_fill_sockets(job_res->node_bitmap, p_ptr);
-	} else {
-		/* GS_NODE or GS_CPU */
+	} else { /* GS_NODE or GS_CPU */
 		if (!p_ptr->active_resmap) {
 			if (gs_debug_flags & DEBUG_FLAG_GANG) {
 				info("gang: _add_job_to_active: job %u first",
@@ -672,7 +678,7 @@ static void _cast_shadow(struct gs_job *j_ptr, uint16_t priority)
 		}
 		p_ptr->shadow[p_ptr->num_shadows++] = j_ptr;
 	}
-	 list_iterator_destroy(part_iterator);
+	list_iterator_destroy(part_iterator);
 }
 
 
@@ -861,7 +867,7 @@ static void _remove_job_from_part(uint32_t job_id, struct gs_part *p_ptr,
 	if (!fini && (j_ptr->sig_state == GS_SUSPEND)) {
 		if (gs_debug_flags & DEBUG_FLAG_GANG) {
 			info("gang: _remove_job_from_part: resuming "
-		             "suspended job %u", j_ptr->job_id);
+			     "suspended job %u", j_ptr->job_id);
 		}
 		_resume_job(j_ptr->job_id);
 	}
@@ -909,7 +915,7 @@ static uint16_t _add_job_to_part(struct gs_part *p_ptr,
 		 */
 		if (gs_debug_flags & DEBUG_FLAG_GANG) {
 			info("gang: _add_job_to_part: duplicate job %u "
-		             "detected", job_ptr->job_id);
+			     "detected", job_ptr->job_id);
 		}
 		_remove_job_from_part(job_ptr->job_id, p_ptr, false);
 		_update_active_row(p_ptr, 0);

@@ -29,6 +29,10 @@ documents those changes that are of interest to users and admins.
  -- Added keeping track of the qos a job is running with in accounting.
  -- Fix for handling correctly jobs that resize, and also reporting correct
     stats on a job after it finishes.
+ -- Modify gang scheduler so with SelectTypeParameter=CR_CPUS and task 
+    affinity is enabled, keep track of the individual CPUs allocated to jobs
+    rather than just the count of CPUs allocated (which could overcommit
+    specific CPUs for running jobs).
 
 * Changes in SLURM 2.2.0.pre7
 =============================
