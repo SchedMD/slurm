@@ -186,8 +186,8 @@ static uint32_t _get_wckeyid(mysql_conn_t *mysql_conn, char **name,
 			   sure this was the slurm user before
 			   calling this */
 			if(as_mysql_add_wckeys(mysql_conn,
-					    slurm_get_slurm_user_id(),
-					    wckey_list)
+					       slurm_get_slurm_user_id(),
+					       wckey_list)
 			   == SLURM_SUCCESS)
 				acct_storage_p_commit(mysql_conn, 1);
 			/* If that worked lets get it */
@@ -359,7 +359,7 @@ no_rollup_change:
 
 	if(slurmdbd_conf) {
 		block_id = xstrdup(job_ptr->comment);
-		node_cnt = job_ptr->node_cnt;
+		node_cnt = job_ptr->total_nodes;
 		node_inx = job_ptr->network;
 	} else {
 		char temp_bit[BUF_SIZE];
@@ -376,7 +376,7 @@ no_rollup_change:
 					    SELECT_JOBDATA_NODE_CNT,
 					    &node_cnt);
 #else
-		node_cnt = job_ptr->node_cnt;
+		node_cnt = job_ptr->total_nodes;
 #endif
 	}
 
@@ -686,8 +686,8 @@ extern int as_mysql_step_start(mysql_conn_t *mysql_conn,
 #ifdef HAVE_BG
 		tasks = cpus = step_ptr->job_ptr->details->min_cpus;
 		select_g_select_jobinfo_get(step_ptr->job_ptr->select_jobinfo,
-				     SELECT_JOBDATA_IONODES,
-				     &ionodes);
+					    SELECT_JOBDATA_IONODES,
+					    &ionodes);
 		if(ionodes) {
 			snprintf(node_list, BUFFER_SIZE,
 				 "%s[%s]", step_ptr->job_ptr->nodes, ionodes);
@@ -696,14 +696,14 @@ extern int as_mysql_step_start(mysql_conn_t *mysql_conn,
 			snprintf(node_list, BUFFER_SIZE, "%s",
 				 step_ptr->job_ptr->nodes);
 		select_g_select_jobinfo_get(step_ptr->job_ptr->select_jobinfo,
-				     SELECT_JOBDATA_NODE_CNT,
-				     &nodes);
+					    SELECT_JOBDATA_NODE_CNT,
+					    &nodes);
 #else
 		if(!step_ptr->step_layout || !step_ptr->step_layout->task_cnt) {
 			tasks = cpus = step_ptr->job_ptr->total_cpus;
 			snprintf(node_list, BUFFER_SIZE, "%s",
 				 step_ptr->job_ptr->nodes);
-			nodes = step_ptr->job_ptr->node_cnt;
+			nodes = step_ptr->job_ptr->total_nodes;
 		} else {
 			cpus = step_ptr->cpu_count;
 			tasks = step_ptr->step_layout->task_cnt;
@@ -1066,12 +1066,14 @@ extern int as_mysql_flush_jobs_on_cluster(
 
 	if(suspended_char) {
 		xstrfmtcat(query,
-			   "update \"%s_%s\" set time_suspended=%d-time_suspended "
+			   "update \"%s_%s\" set "
+			   "time_suspended=%d-time_suspended "
 			   "where %s;",
 			   mysql_conn->cluster_name, job_table,
 			   event_time, suspended_char);
 		xstrfmtcat(query,
-			   "update \"%s_%s\" set time_suspended=%d-time_suspended "
+			   "update \"%s_%s\" set "
+			   "time_suspended=%d-time_suspended "
 			   "where %s;",
 			   mysql_conn->cluster_name, step_table,
 			   event_time, suspended_char);
@@ -1084,11 +1086,13 @@ extern int as_mysql_flush_jobs_on_cluster(
 	}
 	if(id_char) {
 		xstrfmtcat(query,
-			   "update \"%s_%s\" set state=%d, time_end=%u where %s;",
+			   "update \"%s_%s\" set state=%d, "
+			   "time_end=%u where %s;",
 			   mysql_conn->cluster_name, job_table,
 			   JOB_CANCELLED, event_time, id_char);
 		xstrfmtcat(query,
-			   "update \"%s_%s\" set state=%d, time_end=%u where %s;",
+			   "update \"%s_%s\" set state=%d, "
+			   "time_end=%u where %s;",
 			   mysql_conn->cluster_name, step_table,
 			   JOB_CANCELLED, event_time, id_char);
 		xfree(id_char);

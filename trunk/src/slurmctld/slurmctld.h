@@ -484,6 +484,8 @@ struct job_record {
 	time_t tot_sus_time;		/* total time in suspend state */
 	uint32_t total_cpus;		/* number of allocated cpus,
 					 * for accounting */
+	uint32_t total_nodes;	        /* number of allocated nodes
+					 * for accounting */
 	uint32_t user_id;		/* user the job runs as */
 	uint16_t wait_all_nodes;	/* if set, wait for all nodes to boot
 					 * before starting the job */

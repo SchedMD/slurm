@@ -27,6 +27,8 @@ documents those changes that are of interest to users and admins.
     preempted jobs at the time slurmctld restarts that can result in over-
     subscribing resources.
  -- Added keeping track of the qos a job is running with in accounting.
+ -- Fix for handling correctly jobs that resize, and also reporting correct
+    stats on a job after it finishes.
 
 * Changes in SLURM 2.2.0.pre7
 =============================

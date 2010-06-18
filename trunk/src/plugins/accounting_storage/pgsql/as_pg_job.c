@@ -505,7 +505,7 @@ no_rollup_change:
 
 	if(slurmdbd_conf) {
 		block_id = xstrdup(job_ptr->comment);
-		node_cnt = job_ptr->node_cnt;
+		node_cnt = job_ptr->total_nodes;
 		node_inx = job_ptr->network;
 	} else {
 		char temp_bit[BUF_SIZE];
@@ -522,7 +522,7 @@ no_rollup_change:
 					    SELECT_JOBDATA_NODE_CNT,
 					    &node_cnt);
 #else
-		node_cnt = job_ptr->node_cnt;
+		node_cnt = job_ptr->total_nodes;
 #endif
 	}
 
@@ -779,7 +779,7 @@ js_pg_step_start(pgsql_conn_t *pg_conn,
 			tasks = cpus = step_ptr->job_ptr->total_cpus;
 			snprintf(node_list, BUFFER_SIZE, "%s",
 				 step_ptr->job_ptr->nodes);
-			nodes = step_ptr->job_ptr->node_cnt;
+			nodes = step_ptr->job_ptr->total_nodes;
 		} else {
 			cpus = step_ptr->cpu_count;
 			tasks = step_ptr->step_layout->task_cnt;
