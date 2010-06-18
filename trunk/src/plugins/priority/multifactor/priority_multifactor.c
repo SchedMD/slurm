@@ -279,8 +279,15 @@ static int _write_last_decay_ran(time_t last_ran, time_t last_reset)
 	int error_code = SLURM_SUCCESS;
 	int state_fd;
 	char *old_file, *new_file, *state_file;
-	Buf buffer = init_buf(high_buffer_size);
+	Buf buffer;
 
+	if (!strcmp(slurmctld_conf.state_save_location, "/dev/null")) {
+		error("Can not save priority state information, "
+		      "StateSaveLocation is /dev/null");
+		return error_code;
+	}
+
+	buffer = init_buf(high_buffer_size);
 	pack_time(last_ran, buffer);
 	pack_time(last_reset, buffer);
 
