@@ -91,7 +91,7 @@ expect {
 		set job_id2 $expect_out(1,string)
 		exp_continue
 	}
-	-re "Account=MY_ACCT" {
+	-re "Account=my_acct" {
 		set match_acct 1
 		exp_continue
 	}
@@ -115,7 +115,7 @@ if {$match_acct == 0} {
 set match_acct 0
 spawn $scontrol show job $job_id2
 expect {
-	-re "Account=QA_ACCT" {
+	-re "Account=qa_acct" {
 		set match_acct 1
 		exp_continue
 	}
