@@ -23,6 +23,7 @@ extern void slurm_xfree(void **, const char *, int, const char *);
 struct slurm {
 	node_info_msg_t *node_info_msg;
 	partition_info_msg_t *part_info_msg;
+	reserve_info_msg_t *reserve_info_msg;
 	slurm_ctl_conf_t *ctl_conf;
 	job_info_msg_t *job_info_msg;
 	job_step_info_response_msg_t *job_step_info_msg;
@@ -41,6 +42,10 @@ free_slurm(void)
 	if(slurm.part_info_msg) {
 		slurm_free_partition_info_msg(slurm.part_info_msg);
 		slurm.part_info_msg = NULL;
+	}
+	if(slurm.reserve_info_msg) {
+		slurm_free_reservation_info_msg(slurm.reserve_info_msg);
+		slurm.reserve_info_msg = NULL;
 	}
 	if(slurm.ctl_conf) {
 		slurm_free_ctl_conf(slurm.ctl_conf);
@@ -396,6 +401,39 @@ slurm_load_ctl_conf(slurm_t self = NULL)
 #slurm_print_ctl_conf(slurm_t self, HV* conf)
 
 ######################################################################
+#	SLURM RESERVATION CONFIGURATION READ/PRINT/UPDATE FUNCTIONS
+######################################################################
+HV*
+slurm_load_reservations(slurm_t self = NULL)
+	PREINIT:
+		reserve_info_msg_t* new_reserve_info_msg = NULL;
+		int rc;
+	CODE:
+                rc = slurm_load_reservations(
+			self->reserve_info_msg ?
+			self->reserve_info_msg->last_update : 0,
+			&new_reserve_info_msg);
+		if(rc == SLURM_SUCCESS) {
+			slurm_free_reservation_info_msg(self->reserve_info_msg);
+			self->reserve_info_msg = new_reserve_info_msg;
+		} else if(slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
+			/* nothing to do */
+		} else {
+			XSRETURN_UNDEF;
+		}
+		RETVAL = newHV();
+		sv_2mortal((SV*)RETVAL);
+                reserve_info_msg_to_hv(self->reserve_info_msg, RETVAL);
+	OUTPUT:
+		RETVAL
+
+# To be implemented in perl code
+# slurm_print_reservation_info_msg
+# slurm_print_reservation_info
+# slurm_sprint_reservation_info
+
+
+######################################################################
 #	SLURM JOB CONTROL CONFIGURATION READ/PRINT/UPDATE FUNCTIONS
 ######################################################################
 HV*
@@ -721,7 +759,6 @@ slurm_delete_partition(slurm_t self, char* part_name)
 		delete_msg.name = part_name;
 	C_ARGS:
                 &delete_msg
-
 
 
 ######################################################################

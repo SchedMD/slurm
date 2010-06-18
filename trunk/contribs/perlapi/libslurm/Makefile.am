@@ -1,4 +1,4 @@
-AUTOMAKE_OPTIONS = foreign
+ AUTOMAKE_OPTIONS = foreign
 # copied from pidgin
 #
 perl_dir = perl
@@ -16,6 +16,7 @@ perl_sources = \
 	       $(perl_dir)/launch.c \
 	       $(perl_dir)/node.c \
 	       $(perl_dir)/partition.c \
+	       $(perl_dir)/reservation.c \
 	       $(perl_dir)/trigger.c
 
 $(perl_dir)/Makefile:	$(perl_dir)/Makefile.PL
