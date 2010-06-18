@@ -2524,7 +2524,7 @@ static void _process_job_start(slurmdbd_conn_t *slurmdbd_conn,
 	memset(id_rc_msg, 0, sizeof(dbd_id_rc_msg_t));
 
 	job.total_cpus = job_start_msg->alloc_cpus;
-	job.node_cnt = job_start_msg->alloc_nodes;
+	job.total_nodes = job_start_msg->alloc_nodes;
 	job.account = _replace_double_quotes(job_start_msg->account);
 	job.assoc_id = job_start_msg->assoc_id;
 	job.comment = job_start_msg->block_id;

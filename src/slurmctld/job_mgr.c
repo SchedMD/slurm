@@ -718,6 +718,7 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	pack32(dump_job_ptr->priority, buffer);
 	pack32(dump_job_ptr->alloc_sid, buffer);
 	pack32(dump_job_ptr->total_cpus, buffer);
+	pack32(dump_job_ptr->total_nodes, buffer);
 	pack32(dump_job_ptr->cpu_cnt, buffer);
 	pack32(dump_job_ptr->exit_code, buffer);
 	pack32(dump_job_ptr->db_index, buffer);
@@ -809,7 +810,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 {
 	uint32_t job_id, user_id, group_id, time_limit, priority, alloc_sid;
 	uint32_t exit_code, assoc_id, db_index, name_len, time_min;
-	uint32_t next_step_id, total_cpus, cpu_cnt;
+	uint32_t next_step_id, total_cpus, total_nodes = 0, cpu_cnt;
 	uint32_t resv_id, spank_job_env_size = 0, qos_id;
 	time_t start_time, end_time, suspend_time, pre_sus_time, tot_sus_time;
 	time_t resize_time = 0, now = time(NULL);
@@ -864,6 +865,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		safe_unpack32(&priority, buffer);
 		safe_unpack32(&alloc_sid, buffer);
 		safe_unpack32(&total_cpus, buffer);
+		safe_unpack32(&total_nodes, buffer);
 		safe_unpack32(&cpu_cnt, buffer);
 		safe_unpack32(&exit_code, buffer);
 		safe_unpack32(&db_index, buffer);
@@ -1206,6 +1208,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	job_ptr->time_limit   = time_limit;
 	job_ptr->time_min     = time_min;
 	job_ptr->total_cpus   = total_cpus;
+	job_ptr->total_nodes  = total_nodes;
 	job_ptr->cpu_cnt      = cpu_cnt;
 	job_ptr->tot_sus_time = tot_sus_time;
 	job_ptr->user_id      = user_id;
@@ -1886,7 +1889,9 @@ extern void excise_node_from_job(struct job_record *job_ptr,
 		 * data structure is unchanged  even after a node allocated
 		 * to the job goes DOWN. */
 	}
-	job_ptr->node_cnt = new_pos + 1;
+
+	job_ptr->total_nodes = job_ptr->node_cnt = new_pos + 1;
+
 	FREE_NULL_BITMAP(orig_bitmap);
 	(void) select_g_job_resized(job_ptr, node_ptr);
 }
@@ -4137,14 +4142,16 @@ extern int job_update_cpu_cnt(struct job_record *job_ptr, int node_inx)
 	} else
 		job_ptr->cpu_cnt -= cnt;
 
-	if (cnt > job_ptr->total_cpus) {
-		error("job_update_cpu_cnt: total_cpus underflow on job_id %u",
-		      job_ptr->job_id);
-		job_ptr->total_cpus = 0;
-		rc = SLURM_ERROR;
-	} else
-		job_ptr->total_cpus -= cnt;
-
+	if (IS_JOB_RESIZING(job_ptr)) {
+		if (cnt > job_ptr->total_cpus) {
+			error("job_update_cpu_cnt: total_cpus "
+			      "underflow on job_id %u",
+			      job_ptr->job_id);
+			job_ptr->total_cpus = 0;
+			rc = SLURM_ERROR;
+		} else
+			job_ptr->total_cpus -= cnt;
+	}
 	return rc;
 }
 
@@ -4752,10 +4759,17 @@ static void _pack_default_job_details(struct job_record *job_ptr,
 				pack32((uint32_t) 0, buffer);
 			} else {
 				pack32(detail_ptr->min_cpus, buffer);
-				pack32(detail_ptr->max_cpus, buffer);
+				if(detail_ptr->max_cpus != NO_VAL)
+					pack32(detail_ptr->max_cpus, buffer);
+				else
+					pack32((uint32_t) 0, buffer);
+
 			}
-			if (job_ptr->node_cnt) {
+			if (IS_JOB_COMPLETING(job_ptr) && job_ptr->node_cnt) {
 				pack32(job_ptr->node_cnt, buffer);
+				pack32((uint32_t) 0, buffer);
+			} else if (job_ptr->total_nodes) {
+				pack32(job_ptr->total_nodes, buffer);
 				pack32((uint32_t) 0, buffer);
 			} else {
 				pack32(detail_ptr->min_nodes, buffer);
@@ -6405,13 +6419,17 @@ extern void job_pre_resize_acctg(struct job_record *job_ptr)
 	/* NOTE: job_completion_logger() calls
 	 *	 acct_policy_remove_job_submit() */
 	job_completion_logger(job_ptr, false);
-	job_ptr->job_state &= (~JOB_RESIZING);
+	/* NOTE: The RESIZING FLAG needed to be cleared with
+	   job_post_resize_acctg */
 }
 
 /* Record accounting information for a job immediately after changing size */
 extern void job_post_resize_acctg(struct job_record *job_ptr)
 {
-	job_ptr->job_state |= JOB_RESIZING;
+	/* NOTE: The RESIZING FLAG needed to be set with
+	   job_pre_resize_acctg the assert is here to make sure we
+	   code it that way. */
+	xassert(IS_JOB_RESIZING(job_ptr));
 	acct_policy_add_job_submit(job_ptr);
 	acct_policy_job_begin(job_ptr);
 	jobacct_storage_g_job_start(acct_db_conn, job_ptr);

@@ -137,7 +137,7 @@ static int _setup_job_start_msg(dbd_job_start_msg_t *req,
 				    SELECT_JOBDATA_NODE_CNT,
 				    &req->alloc_nodes);
 #else
-	req->alloc_nodes   = job_ptr->node_cnt;
+	req->alloc_nodes   = job_ptr->total_nodes;
 #endif
 	req->block_id      = block_id;
 	if (job_ptr->resize_time) {
@@ -158,22 +158,20 @@ static int _setup_job_start_msg(dbd_job_start_msg_t *req,
 	req->name          = job_ptr->name;
 	req->nodes         = job_ptr->nodes;
 
-	/* since we could be sending this after the job is over we
-	   need the original bitmap */
-	if(job_ptr->job_resrcs)
-		req->alloc_cpus = job_ptr->job_resrcs->ncpus;
-	else
-		req->alloc_cpus = job_ptr->total_cpus;
-
-	if(job_ptr->job_resrcs && job_ptr->job_resrcs->node_bitmap) {
-		req->node_inx = bit_fmt(temp_bit, sizeof(temp_bit),
-					job_ptr->job_resrcs->node_bitmap);
-		req->alloc_nodes =
-			bit_set_count(job_ptr->job_resrcs->node_bitmap);
-	} else if(job_ptr->node_bitmap)
+#ifdef HAVE_BG
+	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
+				    SELECT_JOBDATA_BLOCK_ID,
+				    &block_id);
+	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
+				    SELECT_JOBDATA_NODE_CNT,
+				    &req->alloc_nodes);
+#else
+	req->alloc_nodes   = job_ptr->total_nodes;
+#endif
+	if(job_ptr->node_bitmap)
 		req->node_inx = bit_fmt(temp_bit, sizeof(temp_bit),
 					job_ptr->node_bitmap);
-
+	req->alloc_cpus = job_ptr->total_cpus;
 	req->partition     = job_ptr->partition;
 	if (job_ptr->details)
 		req->req_cpus      = job_ptr->details->min_cpus;
@@ -1985,7 +1983,7 @@ extern int jobacct_storage_p_step_start(void *db_conn,
 		cpus = tasks = step_ptr->job_ptr->total_cpus;
 		snprintf(node_list, BUFFER_SIZE, "%s",
 			 step_ptr->job_ptr->nodes);
-		nodes = step_ptr->job_ptr->node_cnt;
+		nodes = step_ptr->job_ptr->total_nodes;
 	} else {
 		cpus = step_ptr->cpu_count;
 		tasks = step_ptr->step_layout->task_cnt;
