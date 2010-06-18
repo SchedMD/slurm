@@ -4575,7 +4575,8 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 		if (!IS_JOB_COMPLETING(dump_job_ptr))
 			packstr(dump_job_ptr->nodes, buffer);
 		else {
-			nodelist = bitmap2node_name(dump_job_ptr->node_bitmap_cg);
+			nodelist =
+				bitmap2node_name(dump_job_ptr->node_bitmap_cg);
 			packstr(nodelist, buffer);
 			xfree(nodelist);
 		}
@@ -4677,7 +4678,8 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 		if (!IS_JOB_COMPLETING(dump_job_ptr))
 			packstr(dump_job_ptr->nodes, buffer);
 		else {
-			nodelist = bitmap2node_name(dump_job_ptr->node_bitmap_cg);
+			nodelist =
+				bitmap2node_name(dump_job_ptr->node_bitmap_cg);
 			packstr(nodelist, buffer);
 			xfree(nodelist);
 		}

@@ -1299,7 +1299,7 @@ static int _update_node_gres(char *node_names, char *gres)
 	for (i=i_first; i<=i_last; i++) {
 		node_ptr = node_record_table_ptr + i;
 		(void) gres_plugin_node_reconfig(node_ptr->name,
-						 node_ptr->config_ptr->gres, 
+						 node_ptr->config_ptr->gres,
 						 &node_ptr->gres,
 						 &node_ptr->gres_list,
 						 slurmctld_conf.fast_schedule);
@@ -2404,12 +2404,20 @@ void make_node_idle(struct node_record *node_ptr,
 	int inx = node_ptr - node_record_table_ptr;
 	uint16_t node_flags;
 	time_t now = time(NULL);
+	bitstr_t *node_bitmap = NULL;
+
+	if (job_ptr) { /* Specific job completed */
+		if(job_ptr->node_bitmap_cg)
+			node_bitmap = job_ptr->node_bitmap_cg;
+		else
+			node_bitmap = job_ptr->node_bitmap;
+	}
 
 	xassert(node_ptr);
-	if (job_ptr &&			/* Specific job completed */
-	    (bit_test(job_ptr->node_bitmap_cg, inx))) {	/* Not a replay */
+	if (node_bitmap && (bit_test(node_bitmap, inx))) {
+		/* Not a replay */
 		last_job_update = now;
-		bit_clear(job_ptr->node_bitmap_cg, inx);
+		bit_clear(node_bitmap, inx);
 
 		job_update_cpu_cnt(job_ptr, inx);
 
