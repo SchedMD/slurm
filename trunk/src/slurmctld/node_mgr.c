@@ -2407,7 +2407,7 @@ void make_node_idle(struct node_record *node_ptr,
 
 	xassert(node_ptr);
 	if (job_ptr &&			/* Specific job completed */
-	    (bit_test(job_ptr->node_bitmap, inx))) {	/* Not a replay */
+	    (bit_test(job_ptr->node_bitmap_cg, inx))) {	/* Not a replay */
 		last_job_update = now;
 		bit_clear(job_ptr->node_bitmap_cg, inx);
 
