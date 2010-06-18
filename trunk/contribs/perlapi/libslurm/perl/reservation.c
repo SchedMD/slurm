@@ -1,5 +1,6 @@
 /*
- * reservation.c - convert data between reservation related messages and perl HVs
+ * reservation.c - convert data between reservation related messages
+ *                 and perl HVs
  */
 
 #include <EXTERN.h>
@@ -40,7 +41,8 @@ reserve_info_to_hv(reserve_info_t* reserve_info, HV* hv)
 			if(reserve_info->node_inx[j] == -1)
 				break;
 			av_store(avp, j, newSVuv(reserve_info->node_inx[j]));
-			av_store(avp, j+1, newSVuv(reserve_info->node_inx[j+1]));
+			av_store(avp, j+1,
+				 newSVuv(reserve_info->node_inx[j+1]));
 		}
 		hv_store_sv(hv, "node_inx", newRV_noinc((SV*)avp));
 	}
@@ -67,7 +69,8 @@ reserve_info_msg_to_hv(reserve_info_msg_t* reserve_info_msg, HV* hv)
 	avp = newAV();
 	for(i = 0; i < reserve_info_msg->record_count; i ++) {
 		hvp = newHV();
-		if (reserve_info_to_hv(reserve_info_msg->reservation_array + i, hvp)
+		if (reserve_info_to_hv(reserve_info_msg->reservation_array + i,
+				       hvp)
 		    < 0) {
 			SvREFCNT_dec(hvp);
 			SvREFCNT_dec(avp);
