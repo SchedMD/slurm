@@ -1671,6 +1671,7 @@ extern int kill_job_by_part_name(char *part_name)
 			info("Killing job_id %u on defunct partition %s",
 			     job_ptr->job_id, part_name);
 			job_ptr->job_state = JOB_NODE_FAIL | JOB_COMPLETING;
+			build_cg_bitmap(job_ptr);
 			job_ptr->exit_code = MAX(job_ptr->exit_code, 1);
 			job_ptr->state_reason = FAIL_DOWN_PARTITION;
 			xfree(job_ptr->state_desc);
@@ -1740,7 +1741,7 @@ extern int kill_running_job_by_node_name(char *node_name)
 
 		if (IS_JOB_COMPLETING(job_ptr)) {
 			job_count++;
-			bit_clear(job_ptr->node_bitmap, bit_position);
+			bit_clear(job_ptr->node_bitmap_cg, bit_position);
 			job_update_cpu_cnt(job_ptr, bit_position);
 			if (job_ptr->node_cnt)
 				(job_ptr->node_cnt)--;
@@ -1805,8 +1806,10 @@ extern int kill_running_job_by_node_name(char *node_name)
 				job_completion_logger(job_ptr, true);
 				job_ptr->db_index = 0;
 				job_ptr->job_state = JOB_PENDING;
-				if (job_ptr->node_cnt)
+				if (job_ptr->node_cnt) {
 					job_ptr->job_state |= JOB_COMPLETING;
+					build_cg_bitmap(job_ptr);
+				}
 				job_ptr->details->submit_time = now;
 
 				/* restart from periodic checkpoint */
@@ -1832,6 +1835,7 @@ extern int kill_running_job_by_node_name(char *node_name)
 				srun_node_fail(job_ptr->job_id, node_name);
 				job_ptr->job_state = JOB_NODE_FAIL |
 						     JOB_COMPLETING;
+				build_cg_bitmap(job_ptr);
 				job_ptr->exit_code = MAX(job_ptr->exit_code, 1);
 				job_ptr->state_reason = FAIL_DOWN_NODE;
 				xfree(job_ptr->state_desc);
@@ -2325,6 +2329,7 @@ extern int job_fail(uint32_t job_id)
 			job_ptr->end_time       = now;
 		last_job_update                 = now;
 		job_ptr->job_state = JOB_FAILED | JOB_COMPLETING;
+		build_cg_bitmap(job_ptr);
 		job_ptr->exit_code = 1;
 		job_ptr->state_reason = FAIL_LAUNCH;
 		xfree(job_ptr->state_desc);
@@ -2398,6 +2403,7 @@ extern int job_signal(uint32_t job_id, uint16_t signal, uint16_t batch_flag,
 	if (IS_JOB_PENDING(job_ptr) && IS_JOB_COMPLETING(job_ptr) &&
 	    (signal == SIGKILL)) {
 		job_ptr->job_state = JOB_CANCELLED | JOB_COMPLETING;
+		/* build_cg_bitmap() not needed, job already completing */
 		verbose("job_signal of requeuing job %u successful", job_id);
 		return SLURM_SUCCESS;
 	}
@@ -2418,6 +2424,7 @@ extern int job_signal(uint32_t job_id, uint16_t signal, uint16_t batch_flag,
 		job_ptr->end_time       = job_ptr->suspend_time;
 		job_ptr->tot_sus_time  += difftime(now, job_ptr->suspend_time);
 		job_ptr->job_state      = JOB_CANCELLED | JOB_COMPLETING;
+		build_cg_bitmap(job_ptr);
 		jobacct_storage_g_job_suspend(acct_db_conn, job_ptr);
 		deallocate_nodes(job_ptr, false, true);
 		job_completion_logger(job_ptr, false);
@@ -2433,6 +2440,7 @@ extern int job_signal(uint32_t job_id, uint16_t signal, uint16_t batch_flag,
 			job_ptr->end_time		= now;
 			last_job_update			= now;
 			job_ptr->job_state = JOB_CANCELLED | JOB_COMPLETING;
+			build_cg_bitmap(job_ptr);
 			deallocate_nodes(job_ptr, false, false);
 			job_completion_logger(job_ptr, false);
 		} else if (batch_flag) {
@@ -2521,8 +2529,10 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 	if (IS_JOB_COMPLETING(job_ptr))
 		return SLURM_SUCCESS;	/* avoid replay */
 
-	if (IS_JOB_RUNNING(job_ptr))
+	if (IS_JOB_RUNNING(job_ptr)) {
 		job_comp_flag = JOB_COMPLETING;
+		build_cg_bitmap(job_ptr);
+	}
 	if (IS_JOB_SUSPENDED(job_ptr)) {
 		enum job_states suspend_job_state = job_ptr->job_state;
 		/* we can't have it as suspended when we call the
@@ -2532,6 +2542,7 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 		jobacct_storage_g_job_suspend(acct_db_conn, job_ptr);
 		job_ptr->job_state = suspend_job_state;
 		job_comp_flag = JOB_COMPLETING;
+		build_cg_bitmap(job_ptr);
 		suspended = true;
 	}
 
@@ -4165,6 +4176,7 @@ static void _job_timed_out(struct job_record *job_ptr)
 		job_ptr->end_time           = now;
 		job_ptr->time_last_active   = now;
 		job_ptr->job_state          = JOB_TIMEOUT | JOB_COMPLETING;
+		build_cg_bitmap(job_ptr);
 		job_ptr->exit_code = MAX(job_ptr->exit_code, 1);
 		deallocate_nodes(job_ptr, true, false);
 		job_completion_logger(job_ptr, false);
@@ -4307,6 +4319,7 @@ static void _list_delete_job(void *job_entry)
 	xfree(job_ptr->network);
 	xfree(job_ptr->node_addr);
 	FREE_NULL_BITMAP(job_ptr->node_bitmap);
+	FREE_NULL_BITMAP(job_ptr->node_bitmap_cg);
 	xfree(job_ptr->nodes);
 	xfree(job_ptr->nodes_completing);
 	xfree(job_ptr->partition);
@@ -4559,10 +4572,10 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 
 		/* Only send the allocated nodelist since we are only sending
 		 * the number of cpus and nodes that are currently allocated. */
-		if(!IS_JOB_COMPLETING(dump_job_ptr))
+		if (!IS_JOB_COMPLETING(dump_job_ptr))
 			packstr(dump_job_ptr->nodes, buffer);
 		else {
-			nodelist = bitmap2node_name(dump_job_ptr->node_bitmap);
+			nodelist = bitmap2node_name(dump_job_ptr->node_bitmap_cg);
 			packstr(nodelist, buffer);
 			xfree(nodelist);
 		}
@@ -4598,7 +4611,10 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 		packstr(dump_job_ptr->name, buffer);
 		packstr(dump_job_ptr->wckey, buffer);
 		packstr(dump_job_ptr->alloc_node, buffer);
-		pack_bit_fmt(dump_job_ptr->node_bitmap, buffer);
+		if (!IS_JOB_COMPLETING(dump_job_ptr))
+			pack_bit_fmt(dump_job_ptr->node_bitmap, buffer);
+		else
+			pack_bit_fmt(dump_job_ptr->node_bitmap_cg, buffer);
 
 		select_g_select_jobinfo_pack(dump_job_ptr->select_jobinfo,
 					     buffer, protocol_version);
@@ -4658,10 +4674,10 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 
 		/* Only send the allocated nodelist since we are only sending
 		 * the number of cpus and nodes that are currently allocated. */
-		if(!IS_JOB_COMPLETING(dump_job_ptr))
+		if (!IS_JOB_COMPLETING(dump_job_ptr))
 			packstr(dump_job_ptr->nodes, buffer);
 		else {
-			nodelist = bitmap2node_name(dump_job_ptr->node_bitmap);
+			nodelist = bitmap2node_name(dump_job_ptr->node_bitmap_cg);
 			packstr(nodelist, buffer);
 			xfree(nodelist);
 		}
@@ -4697,7 +4713,10 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 		packstr(dump_job_ptr->name, buffer);
 		packstr(dump_job_ptr->wckey, buffer);
 		packstr(dump_job_ptr->alloc_node, buffer);
-		pack_bit_fmt(dump_job_ptr->node_bitmap, buffer);
+		if (!IS_JOB_COMPLETING(dump_job_ptr))
+			pack_bit_fmt(dump_job_ptr->node_bitmap, buffer);
+		else
+			pack_bit_fmt(dump_job_ptr->node_bitmap_cg, buffer);
 
 		detail_ptr = dump_job_ptr->details;
 		if (IS_JOB_COMPLETING(dump_job_ptr) && dump_job_ptr->cpu_cnt)
@@ -4970,17 +4989,19 @@ void reset_job_bitmaps(void)
 		}
 		job_ptr->part_ptr = part_ptr;
 
-		FREE_NULL_BITMAP(job_ptr->node_bitmap);
-		if ((job_ptr->nodes_completing) &&
-		    (node_name2bitmap(job_ptr->nodes_completing,
-				      false,  &job_ptr->node_bitmap))) {
+		FREE_NULL_BITMAP(job_ptr->node_bitmap_cg);
+		if (job_ptr->nodes_completing &&
+		    node_name2bitmap(job_ptr->nodes_completing,
+				     false,  &job_ptr->node_bitmap_cg)) {
 			error("Invalid nodes (%s) for job_id %u",
 			      job_ptr->nodes_completing,
 			      job_ptr->job_id);
 			job_fail = true;
-		} else if ((job_ptr->node_bitmap == NULL)  && job_ptr->nodes &&
-			   (node_name2bitmap(job_ptr->nodes, false,
-					     &job_ptr->node_bitmap))) {
+		}
+		FREE_NULL_BITMAP(job_ptr->node_bitmap);
+		if (job_ptr->nodes &&
+		    node_name2bitmap(job_ptr->nodes, false,
+				     &job_ptr->node_bitmap) && !job_fail) {
 			error("Invalid nodes (%s) for job_id %u",
 		    	      job_ptr->nodes, job_ptr->job_id);
 			job_fail = true;
@@ -5012,10 +5033,12 @@ void reset_job_bitmaps(void)
 				job_ptr->end_time = time(NULL);
 				job_ptr->job_state = JOB_NODE_FAIL |
 					JOB_COMPLETING;
+				build_cg_bitmap(job_ptr);
 			} else if (IS_JOB_SUSPENDED(job_ptr)) {
 				job_ptr->end_time = job_ptr->suspend_time;
 				job_ptr->job_state = JOB_NODE_FAIL |
 					JOB_COMPLETING;
+				build_cg_bitmap(job_ptr);
 				job_ptr->tot_sus_time +=
 					difftime(now, job_ptr->suspend_time);
 				jobacct_storage_g_job_suspend(acct_db_conn,
@@ -7587,8 +7610,10 @@ extern int job_requeue (uid_t uid, uint32_t job_id, slurm_fd conn_fd,
 	job_completion_logger(job_ptr, true);
 	job_ptr->db_index = 0;
 	job_ptr->job_state = JOB_PENDING;
-	if (job_ptr->node_cnt)
+	if (job_ptr->node_cnt) {
 		job_ptr->job_state |= JOB_COMPLETING;
+		build_cg_bitmap(job_ptr);
+	}
 
 	job_ptr->details->submit_time = now;
 	job_ptr->pre_sus_time = (time_t) 0;
@@ -8952,4 +8977,15 @@ _read_job_ckpt_file(char *ckpt_file, int *size_ptr)
 	}
 	*size_ptr = data_size;
 	return data;
+}
+
+/* Build a bitmap of nodes completing this job */
+extern void build_cg_bitmap(struct job_record *job_ptr)
+{
+	FREE_NULL_BITMAP(job_ptr->node_bitmap_cg);
+	if (job_ptr->node_bitmap) {
+		job_ptr->node_bitmap_cg = bit_copy(job_ptr->node_bitmap);
+		if (job_ptr->node_bitmap_cg == NULL)
+			fatal("bit_copy: memory allocation failure");
+	}
 }

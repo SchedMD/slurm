@@ -435,6 +435,7 @@ struct job_record {
 	slurm_addr *node_addr;		/* addresses of the nodes allocated to
 					 * job */
 	bitstr_t *node_bitmap;		/* bitmap of nodes allocated to job */
+	bitstr_t *node_bitmap_cg;	/* bitmap of nodes completing job */
 	uint32_t node_cnt;		/* count of nodes currently
 					 * allocated to job */
 	char *nodes_completing;		/* nodes still in completing state
@@ -596,6 +597,9 @@ enum select_plugindata_info {
  */
 extern void abort_job_on_node(uint32_t job_id, struct job_record *job_ptr,
 			      struct node_record *node_ptr);
+
+/* Build a bitmap of nodes completing this job */
+extern void build_cg_bitmap(struct job_record *job_ptr);
 
 /* Given a config_record with it's bitmap already set, update feature_list */
 extern void  build_config_feature_list(struct config_record *config_ptr);
