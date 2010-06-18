@@ -257,6 +257,12 @@ int srun(int ac, char **av)
 	/* Set up slurmctld message handler */
 	slurmctld_msg_init();
 
+	/*
+	 *  Become --uid user
+	 */
+	if (_become_user () < 0)
+		info ("Warning: Unable to assume uid=%lu\n", opt.uid);
+
 	/* now global "opt" should be filled in and available,
 	 * create a job from opt
 	 */
@@ -279,9 +285,9 @@ int srun(int ac, char **av)
 		job_id = resp->job_id;
 		if (opt.nodes_set_env && !opt.nodes_set_opt &&
 		    (opt.min_nodes > resp->node_cnt)) {
-			/* This signifies the job used the --no-kill option 
+			/* This signifies the job used the --no-kill option
 			 * and a node went DOWN or it used a node count range
-			 * specification, was checkpointed from one size and 
+			 * specification, was checkpointed from one size and
 			 * restarted at a different size */
 			error("SLURM_NNODES environment varariable "
 			      "conflicts with allocated node count (%u!=%u).",
@@ -294,7 +300,7 @@ int srun(int ac, char **av)
 				opt.ntasks = opt.min_nodes;
 		}
 		if (opt.alloc_nodelist == NULL)
-                       opt.alloc_nodelist = xstrdup(resp->node_list);
+			opt.alloc_nodelist = xstrdup(resp->node_list);
 		if (opt.exclusive)
 			_step_opt_exclusive();
 		_set_cpu_env_var(resp);
@@ -348,12 +354,6 @@ int srun(int ac, char **av)
 
 		slurm_free_resource_allocation_response_msg(resp);
 	}
-
-	/*
-	 *  Become --uid user
-	 */
-	if (_become_user () < 0)
-		info ("Warning: Unable to assume uid=%lu", opt.uid);
 
 	/*
 	 *  Enhance environment for job
@@ -638,7 +638,7 @@ _print_job_information(resource_allocation_response_msg_t *resp)
 	for (i = 0; i < resp->num_cpu_groups; i++) {
 		xstrfmtcat(str, "%s%u(x%u)",
 			   sep, resp->cpus_per_node[i],
-		           resp->cpu_count_reps[i]);
+			   resp->cpu_count_reps[i]);
 		sep = ",";
 	}
 	verbose("%s", str);
@@ -1423,4 +1423,3 @@ static int _setup_signals(void)
 
 	return rc;
 }
-
