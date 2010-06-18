@@ -202,7 +202,7 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
 		if (IS_NODE_DOWN(node_ptr)) {
 			/* Issue the KILL RPC, but don't verify response */
 			down_node_cnt++;
-			bit_clear(job_ptr->node_bitmap, i);
+			bit_clear(job_ptr->node_bitmap_cg, i);
 			job_update_cpu_cnt(job_ptr, i);
 			job_ptr->node_cnt--;
 		}
@@ -1897,7 +1897,7 @@ extern void re_kill_job(struct job_record *job_ptr)
 			continue;
 		if (IS_NODE_DOWN(node_ptr)) {
 			/* Consider job already completed */
-			bit_clear(job_ptr->node_bitmap, i);
+			bit_clear(job_ptr->node_bitmap_cg, i);
 			job_update_cpu_cnt(job_ptr, i);
 			if (node_ptr->comp_job_cnt)
 				(node_ptr->comp_job_cnt)--;
