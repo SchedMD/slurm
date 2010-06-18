@@ -8587,22 +8587,21 @@ empty:
 
 			parent_id = atoi(row2[ASSOC2_REQ_PARENT_ID]);
 			if(!without_parent_limits) {
-				if(row2[ASSOC2_REQ_MCMPJ])
-					parent_mcmpj =
-						atoi(row2[ASSOC2_REQ_MCMPJ]);
+				if(row2[ASSOC2_REQ_MJ])
+					parent_mj = atoi(row2[ASSOC2_REQ_MJ]);
 				else
-					parent_mcmpj = INFINITE;
+					parent_mj = INFINITE;
+
+				if(row2[ASSOC2_REQ_MSJ])
+					parent_msj = atoi(row2[ASSOC2_REQ_MSJ]);
+				else
+					parent_msj = INFINITE;
 
 				if(row2[ASSOC2_REQ_MCPJ])
 					parent_mcpj =
 						atoi(row2[ASSOC2_REQ_MCPJ]);
 				else
 					parent_mcpj = INFINITE;
-
-				if(row2[ASSOC2_REQ_MJ])
-					parent_mj = atoi(row2[ASSOC2_REQ_MJ]);
-				else
-					parent_mj = INFINITE;
 
 				if(row2[ASSOC2_REQ_MNPJ])
 					parent_mnpj =
@@ -8631,15 +8630,10 @@ empty:
 
 				xfree(parent_delta_qos);
 				if(row2[ASSOC2_REQ_DELTA_QOS][0])
-					xstrcat(parent_delta_qos,
+					parent_delta_qos = xstrdup(
 						row2[ASSOC2_REQ_DELTA_QOS]);
 				else
 					parent_delta_qos = NULL;
-
-				if(row2[ASSOC2_REQ_MSJ])
-					parent_msj = atoi(row2[ASSOC2_REQ_MSJ]);
-				else
-					parent_msj = INFINITE;
 			}
 			last_acct = parent_acct;
 			last_cluster = row[ASSOC_REQ_CLUSTER];
