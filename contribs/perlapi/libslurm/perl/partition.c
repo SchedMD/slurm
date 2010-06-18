@@ -85,7 +85,7 @@ int
 hv_to_update_part_msg(HV* hv, update_part_msg_t* part_msg)
 {
 	slurm_init_part_desc_msg(part_msg);
-	
+
 	FETCH_FIELD(hv, part_msg, allow_alloc_nodes, charp, FALSE);
 	FETCH_FIELD(hv, part_msg, allow_groups, charp, FALSE);
 	FETCH_FIELD(hv, part_msg, default_time, uint32_t, FALSE);
