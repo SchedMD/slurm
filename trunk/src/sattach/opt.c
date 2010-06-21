@@ -83,6 +83,7 @@
 #define LONG_OPT_IN_FILTER     0x102
 #define LONG_OPT_OUT_FILTER    0x103
 #define LONG_OPT_ERR_FILTER    0x104
+#define LONG_OPT_PTY           0x105
 
 /*---- global variables, defined in opt.h ----*/
 opt_t opt;
@@ -218,6 +219,7 @@ static void _opt_default()
 	opt.output_filter_set = false;
 	opt.error_filter = (uint32_t)-1;
 	opt.error_filter_set = false;
+	opt.pty = false;
 }
 
 /*---[ env var processing ]-----------------------------------------------*/
@@ -292,6 +294,7 @@ void set_options(const int argc, char **argv)
 		{"input-filter", required_argument,0, LONG_OPT_IN_FILTER},
 		{"output-filter",required_argument,0, LONG_OPT_OUT_FILTER},
 		{"error-filter", required_argument,0, LONG_OPT_ERR_FILTER},
+		{"pty",          no_argument,      0, LONG_OPT_PTY},
 		{NULL}
 	};
 	char *opt_string = "+hlQuvV";
@@ -352,6 +355,14 @@ void set_options(const int argc, char **argv)
 			break;
 		case LONG_OPT_DEBUGGER_TEST:
 			opt.debugger_test = true;
+			break;
+		case LONG_OPT_PTY:
+#ifdef HAVE_PTY_H
+			opt.pty = true;
+#else
+			error("--pty not currently supported on this system "
+			      "type");
+#endif
 			break;
 		default:
 			error("Unrecognized command line parameter %c",
@@ -445,6 +456,11 @@ static bool _opt_verify(void)
 	/*
 	 * set up standard IO filters
 	 */
+	if ((opt.input_filter_set || opt.output_filter_set ||
+	     opt.error_filter_set) && opt.pty) {
+		error("don't specifiy both --pty and I/O filtering");
+		verified = false;
+	}
 	if (opt.input_filter_set)
 		opt.fds.in.taskid = opt.input_filter;
 	if (opt.output_filter_set)

@@ -72,6 +72,7 @@ typedef struct sbatch_options {
 	bool output_filter_set;
 	uint32_t error_filter;
 	bool error_filter_set;
+	bool pty;		/* --pty			*/
 } opt_t;
 
 extern opt_t opt;

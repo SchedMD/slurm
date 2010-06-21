@@ -30,41 +30,45 @@
 #  include "config.h"
 #endif
 
+#include <netinet/in.h>
+#include <pthread.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/wait.h>
-#include <time.h>
-#include <stdint.h>
-#include <netinet/in.h>
 #include <sys/socket.h>
+#include <sys/types.h>
 #include <sys/un.h>
-#include <pthread.h>
+#include <sys/wait.h>
+#include <termios.h>
+#include <time.h>
+#include <unistd.h>
 
 #include <slurm/slurm.h>
 
-#include "src/common/slurm_protocol_api.h"
-#include "src/common/slurm_protocol_defs.h"
-#include "src/common/xstring.h"
-#include "src/common/xmalloc.h"
-#include "src/common/hostlist.h"
-#include "src/common/slurm_cred.h"
-#include "src/common/bitstring.h"
-#include "src/common/net.h"
-#include "src/common/eio.h"
-#include "src/common/fd.h"
-#include "src/common/slurm_auth.h"
-#include "src/common/forward.h"
 #include "src/api/step_io.h"
 
-#include "src/sattach/opt.h"
+#include "src/common/bitstring.h"
+#include "src/common/eio.h"
+#include "src/common/fd.h"
+#include "src/common/forward.h"
+#include "src/common/hostlist.h"
+#include "src/common/net.h"
+#include "src/common/slurm_auth.h"
+#include "src/common/slurm_cred.h"
+#include "src/common/slurm_protocol_api.h"
+#include "src/common/slurm_protocol_defs.h"
+#include "src/common/xsignal.h"
+#include "src/common/xstring.h"
+#include "src/common/xmalloc.h"
+
 #include "src/sattach/attach.h"
+#include "src/sattach/opt.h"
 
 static void _mpir_init(int num_tasks);
 static void _mpir_cleanup(void);
 static void _mpir_dump_proctable(void);
+static void _pty_restore(void);
 static void print_layout_info(slurm_step_layout_t *layout);
 static slurm_cred_t *_generate_fake_cred(uint32_t jobid, uint32_t stepid,
 					uid_t uid, char *nodelist,
@@ -107,6 +111,8 @@ static struct io_operations message_socket_ops = {
 	handle_read:	&eio_message_socket_accept,
 	handle_msg:     &_handle_msg
 };
+
+static struct termios termdefaults;
 
 /**********************************************************************
  * sattach
@@ -162,6 +168,21 @@ int sattach(int argc, char *argv[])
 				      opt.labelio);
 	client_io_handler_start(io);
 
+	if (opt.pty) {
+		struct termios term;
+		int fd = STDIN_FILENO;
+		int pty_sigarray[] = { SIGWINCH, 0 };
+
+		/* Save terminal settings for restore */
+		tcgetattr(fd, &termdefaults);
+		tcgetattr(fd, &term);
+		/* Set raw mode on local tty */
+		cfmakeraw(&term);
+		tcsetattr(fd, TCSANOW, &term);
+		atexit(&_pty_restore);
+		xsignal_block(pty_sigarray);
+	}
+
 	_attach_to_tasks(opt.jobid, opt.stepid, layout, fake_cred,
 			 mts->num_resp_port, mts->resp_port,
 			 io->num_listen, io->listenport,
@@ -180,6 +201,13 @@ int sattach(int argc, char *argv[])
 	_mpir_cleanup();
 
 	return global_rc;
+}
+
+static void _pty_restore(void)
+{
+	/* STDIN is probably closed by now */
+	if (tcsetattr(STDOUT_FILENO, TCSANOW, &termdefaults) < 0)
+		fprintf(stderr, "tcsetattr: %s\n", strerror(errno));
 }
 
 static void _set_exit_code(void)

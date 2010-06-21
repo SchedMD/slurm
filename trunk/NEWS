@@ -40,6 +40,7 @@ documents those changes that are of interest to users and admins.
     that of the slurmctld daemon: the same directory used for log files,
     SlurmdLogFile (if specified with an absolute pathname) otherwise the
     directory used to save state, SlurmdSpoolDir.
+ -- Add sattach support for the --pty option.
 
 * Changes in SLURM 2.2.0.pre7
 =============================

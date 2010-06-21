@@ -1,4 +1,4 @@
-.TH "sattach" "1" "SLURM 2.1" "October 2009" "SLURM Commands"
+.TH "sattach" "1" "SLURM 2.2" "June 2010" "SLURM Commands"
 .SH "NAME"
 .LP
 sattach \- Attach to a SLURM job step.
@@ -41,6 +41,14 @@ number of its origin.
 Contacts the slurmctld to obtain the task layout information for the job step,
 prints the task layout information, and then exits without attaching to the
 job step.
+
+.TP
+\fB\-\-pty\fR
+Execute task zero in pseudo terminal.
+Not compatable with the \fB\-\-input\-filter\fR, \fB\-\-output\-filter\fR, or
+\fB\-\-error\-filter\fR options.
+Note: The terminal size and resize events are ignored by sattach.
+Not currently supported on AIX platforms.
 
 .TP
 \fB\-Q\fR, \fB\-\-quiet\fR
