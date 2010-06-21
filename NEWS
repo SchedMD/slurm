@@ -13,6 +13,10 @@ documents those changes that are of interest to users and admins.
     even if they are on hidden partitions.
  -- Fix srun to work correctly with --uid when getting an allocation
     and creating a step.
+ -- Fix for when removing a limit from a users association inside the
+    fairshare tree the parents limit is now inherited automatically in
+    the slurmctld.  Previously the slurmctld would have to be restarted.
+    This problem only exists when setting a users association limit to -1.
 
 * Changes in SLURM 2.1.9
 ========================

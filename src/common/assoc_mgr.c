@@ -1814,7 +1814,11 @@ extern int assoc_mgr_update_assocs(acct_update_object_t *update)
 							rec->valid_qos);
 						rec->valid_qos =
 							bit_alloc(g_qos_count);
-					}
+					} else
+						bit_nclear(rec->valid_qos, 0,
+							   (bit_size(rec->
+								     valid_qos)
+							    - 1));
 					set_qos_bitstr_from_list(
 						rec->valid_qos, rec->qos_list);
 				}
