@@ -22,6 +22,8 @@ documents those changes that are of interest to users and admins.
     as uint16_t's.
  -- Correct logic for creating a reservation with a Duration=Infinite (used to
     set reservation end time in the past).
+ -- Correct logic for creating a reservation that properly handles the OVERLAP
+    and IGNORE_JOBS flags (flags were ignored under some conditions).
 
 * Changes in SLURM 2.1.9
 ========================

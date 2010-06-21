@@ -1227,7 +1227,8 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 		}
 		if (resv_desc_ptr->node_cnt == NO_VAL)
 			resv_desc_ptr->node_cnt = 0;
-		if (_resv_overlap(resv_desc_ptr->start_time,
+		if (!(resv_desc_ptr->flags & RESERVE_FLAG_OVERLAP) &&
+		    _resv_overlap(resv_desc_ptr->start_time,
 				  resv_desc_ptr->end_time,
 				  resv_desc_ptr->flags, node_bitmap,
 				  NULL)) {
@@ -1236,7 +1237,8 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 			goto bad_parse;
 		}
 		resv_desc_ptr->node_cnt = bit_set_count(node_bitmap);
-		if (_job_overlap(resv_desc_ptr->start_time,
+		if (!(resv_desc_ptr->flags & RESERVE_FLAG_IGN_JOBS) &&
+		    _job_overlap(resv_desc_ptr->start_time,
 				 resv_desc_ptr->flags, node_bitmap)) {
 			info("Reservation request overlaps jobs");
 			rc = ESLURM_NODES_BUSY;
@@ -2286,19 +2288,21 @@ static int  _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 	node_bitmap = bit_copy((*part_ptr)->node_bitmap);
 
 	/* Don't use node already reserved */
-	iter = list_iterator_create(resv_list);
-	if (!iter)
-		fatal("malloc: list_iterator_create");
-	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
-		if ((resv_ptr->node_bitmap == NULL) ||
-		    (resv_ptr->start_time >= resv_desc_ptr->end_time) ||
-		    (resv_ptr->end_time   <= resv_desc_ptr->start_time))
-			continue;
-		bit_not(resv_ptr->node_bitmap);
-		bit_and(node_bitmap, resv_ptr->node_bitmap);
-		bit_not(resv_ptr->node_bitmap);
+	if (!resv_desc_ptr->flags & RESERVE_FLAG_OVERLAP) {
+		iter = list_iterator_create(resv_list);
+		if (!iter)
+			fatal("malloc: list_iterator_create");
+		while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
+			if ((resv_ptr->node_bitmap == NULL) ||
+			    (resv_ptr->start_time >= resv_desc_ptr->end_time) ||
+			    (resv_ptr->end_time   <= resv_desc_ptr->start_time))
+				continue;
+			bit_not(resv_ptr->node_bitmap);
+			bit_and(node_bitmap, resv_ptr->node_bitmap);
+			bit_not(resv_ptr->node_bitmap);
+		}
+		list_iterator_destroy(iter);
 	}
-	list_iterator_destroy(iter);
 
 	/* Satisfy feature specification */
 	if (resv_desc_ptr->features) {
