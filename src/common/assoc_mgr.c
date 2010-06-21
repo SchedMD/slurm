@@ -1955,7 +1955,13 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update)
 							rec->usage->valid_qos);
 						rec->usage->valid_qos =
 							bit_alloc(g_qos_count);
-					}
+					} else
+						bit_nclear(rec->usage->
+							   valid_qos, 0,
+							   (bit_size(rec->
+								     usage->
+								     valid_qos)
+							    - 1));
 					set_qos_bitstr_from_list(
 						rec->usage->valid_qos,
 						rec->qos_list);

@@ -1120,12 +1120,13 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 					 bool is_admin, List ret_list)
 {
 	ListIterator itr = NULL;
-	MYSQL_ROW row;
+	MYSQL_RES *result2;
+	MYSQL_ROW row, row2;
 	int added = 0;
 	int rc = SLURM_SUCCESS;
 	int set_qos_vals = 0;
 	int moved_parent = 0;
-	char *vals = NULL, *object = NULL, *name_char = NULL;
+	char *query = NULL, *vals = NULL, *object = NULL, *name_char = NULL;
 	time_t now = time(NULL);
 
 	xassert(result);
@@ -1144,24 +1145,26 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 		*/
 		uint32_t lft = atoi(row[MASSOC_LFT]);
 		uint32_t rgt = atoi(row[MASSOC_RGT]);
+		char *account = row[MASSOC_ACCT];
+
+		/* Here we want to see if the person
+		 * is a coord of the parent account
+		 * since we don't want him to be able
+		 * to alter the limits of the account
+		 * he is directly coord of.  They
+		 * should be able to alter the
+		 * sub-accounts though. If no parent account
+		 * that means we are talking about a user
+		 * association so account is really the parent
+		 * of the user a coord can change that all day long.
+		 */
+		if(row[MASSOC_PACCT][0])
+			account = row[MASSOC_PACCT];
+		else
+			account = row[MASSOC_ACCT];
 
 		if(!is_admin) {
 			slurmdb_coord_rec_t *coord = NULL;
-			char *account = row[MASSOC_ACCT];
-
-			/* Here we want to see if the person
-			 * is a coord of the parent account
-			 * since we don't want him to be able
-			 * to alter the limits of the account
-			 * he is directly coord of.  They
-			 * should be able to alter the
-			 * sub-accounts though. If no parent account
-			 * that means we are talking about a user
-			 * association so account is really the parent
-			 * of the user a coord can change that all day long.
-			 */
-			if(row[MASSOC_PACCT][0])
-				account = row[MASSOC_PACCT];
 
 			if(!user->coord_accts) { // This should never
 				// happen
@@ -1252,6 +1255,50 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 				   row[MASSOC_ID]);
 		else
 			xstrfmtcat(name_char, "(id_assoc=%s", row[MASSOC_ID]);
+
+		/* If there is a variable cleared here we need to make
+		   sure we get the parent's information, if any. */
+		query = xstrdup_printf(
+			"call get_parent_limits('%s', "
+			"'%s', '%s', %u);"
+			"select @par_id, @mj, @msj, @mcpj, "
+			"@mnpj, @mwpj, @mcmpj, @qos, @delta_qos;",
+			assoc_table, account,
+			cluster_name, 0);
+		debug4("%d(%s:%d) query\n%s",
+		       mysql_conn->conn, THIS_FILE, __LINE__, query);
+		if(!(result2 = mysql_db_query_ret(
+			     mysql_conn->db_conn, query, 1))) {
+			xfree(query);
+			break;
+		}
+		xfree(query);
+
+		if((row2 = mysql_fetch_row(result2))) {
+			if((assoc->max_jobs == INFINITE) && row2[ASSOC2_REQ_MJ])
+				assoc->max_jobs = atoi(row2[ASSOC2_REQ_MJ]);
+			if((assoc->max_submit_jobs == INFINITE)
+			   && row2[ASSOC2_REQ_MSJ])
+				assoc->max_submit_jobs =
+					atoi(row2[ASSOC2_REQ_MSJ]);
+			if((assoc->max_cpus_pj == INFINITE)
+			   && row2[ASSOC2_REQ_MCPJ])
+				assoc->max_cpus_pj =
+					atoi(row2[ASSOC2_REQ_MCPJ]);
+			if((assoc->max_nodes_pj == INFINITE)
+			   && row2[ASSOC2_REQ_MNPJ])
+				assoc->max_nodes_pj =
+					atoi(row2[ASSOC2_REQ_MNPJ]);
+			if((assoc->max_wall_pj == INFINITE)
+			   && row2[ASSOC2_REQ_MWPJ])
+				assoc->max_wall_pj =
+					atoi(row2[ASSOC2_REQ_MWPJ]);
+			if((assoc->max_cpu_mins_pj == INFINITE)
+			   && row2[ASSOC2_REQ_MCMPJ])
+				assoc->max_cpu_mins_pj =
+					atoi(row2[ASSOC2_REQ_MCMPJ]);
+		}
+		mysql_free_result(result2);
 
 		mod_assoc = xmalloc(sizeof(slurmdb_association_rec_t));
 		slurmdb_init_association_rec(mod_assoc);
@@ -1802,26 +1849,22 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 			assoc->max_submit_jobs = parent_msj;
 
 		if(row[ASSOC_REQ_MCPJ])
-			assoc->max_cpus_pj =
-				atoi(row[ASSOC_REQ_MCPJ]);
+			assoc->max_cpus_pj = atoi(row[ASSOC_REQ_MCPJ]);
 		else
 			assoc->max_cpus_pj = parent_mcpj;
 
 		if(row[ASSOC_REQ_MNPJ])
-			assoc->max_nodes_pj =
-				atoi(row[ASSOC_REQ_MNPJ]);
+			assoc->max_nodes_pj = atoi(row[ASSOC_REQ_MNPJ]);
 		else
 			assoc->max_nodes_pj = parent_mnpj;
 
 		if(row[ASSOC_REQ_MWPJ])
-			assoc->max_wall_pj =
-				atoi(row[ASSOC_REQ_MWPJ]);
+			assoc->max_wall_pj = atoi(row[ASSOC_REQ_MWPJ]);
 		else
 			assoc->max_wall_pj = parent_mwpj;
 
 		if(row[ASSOC_REQ_MCMPJ])
-			assoc->max_cpu_mins_pj =
-				atoi(row[ASSOC_REQ_MCMPJ]);
+			assoc->max_cpu_mins_pj = atoll(row[ASSOC_REQ_MCMPJ]);
 		else
 			assoc->max_cpu_mins_pj = parent_mcmpj;
 
