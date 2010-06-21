@@ -33,6 +33,9 @@ documents those changes that are of interest to users and admins.
     affinity is enabled, keep track of the individual CPUs allocated to jobs
     rather than just the count of CPUs allocated (which could overcommit
     specific CPUs for running jobs).
+ -- Modify select/linear plugin data structures to eliminate underflow errors
+    for the exclusive_cnt and tot_job_cnt variables (previously happened when
+    slurmctld reconfigured while the job was in completing state).
 
 * Changes in SLURM 2.2.0.pre7
 =============================
