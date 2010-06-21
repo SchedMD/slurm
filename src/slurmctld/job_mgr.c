@@ -3365,8 +3365,6 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 					return ESLURM_INVALID_WCKEY;
 				}
 			}
-			xfree(job_desc->wckey);
-			job_desc->wckey = xstrdup(job_desc->wckey);
 		} else if (accounting_enforce & ACCOUNTING_ENFORCE_WCKEYS) {
 			/* This should never happen */
 			info("_job_create: no wckey was given for "
