@@ -36,6 +36,10 @@ documents those changes that are of interest to users and admins.
  -- Modify select/linear plugin data structures to eliminate underflow errors
     for the exclusive_cnt and tot_job_cnt variables (previously happened when
     slurmctld reconfigured while the job was in completing state).
+ -- Change slurmd's working directory (and location of core files) to match
+    that of the slurmctld daemon: the same directory used for log files,
+    SlurmdLogFile (if specified with an absolute pathname) otherwise the
+    directory used to save state, SlurmdSpoolDir.
 
 * Changes in SLURM 2.2.0.pre7
 =============================
