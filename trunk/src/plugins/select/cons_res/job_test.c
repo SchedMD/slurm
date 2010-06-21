@@ -133,9 +133,10 @@ uint16_t _allocate_sockets(struct job_record *job_ptr, bitstr_t *core_map,
 	uint16_t si, cps, avail_cpus = 0, num_tasks = 0;
 	uint32_t core_begin    = cr_get_coremap_offset(node_i);
 	uint32_t core_end      = cr_get_coremap_offset(node_i+1);
+	uint32_t c;
 	uint16_t cpus_per_task = job_ptr->details->cpus_per_task;
 	uint16_t *used_cores, *free_cores, free_core_count = 0;
-	uint16_t i, c, sockets    = select_node_record[node_i].sockets;
+	uint16_t i, j, sockets    = select_node_record[node_i].sockets;
 	uint16_t cores_per_socket = select_node_record[node_i].cores;
 	uint16_t threads_per_core = select_node_record[node_i].vpus;
 	uint16_t min_cores = 1, min_sockets = 1, ntasks_per_socket = 0;
@@ -219,7 +220,7 @@ uint16_t _allocate_sockets(struct job_record *job_ptr, bitstr_t *core_map,
 	used_cores = xmalloc(sockets * sizeof(uint16_t));
 
 	for (c = core_begin; c < core_end; c++) {
-		i = (c - core_begin) / cores_per_socket;
+		i = (uint16_t) (c - core_begin) / cores_per_socket;
 		if (bit_test(core_map, c)) {
 			free_cores[i]++;
 			free_core_count++;
@@ -240,7 +241,7 @@ uint16_t _allocate_sockets(struct job_record *job_ptr, bitstr_t *core_map,
 	used_cores = NULL;
 
 	/* Step 2: check min_cores per socket and min_sockets per node */
-	c = 0;
+	j = 0;
 	for (i = 0; i < sockets; i++) {
 		if (free_cores[i] < min_cores) {
 			/* cannot use this socket */
@@ -249,16 +250,16 @@ uint16_t _allocate_sockets(struct job_record *job_ptr, bitstr_t *core_map,
 			continue;
 		}
 		/* count this socket as usable */
-		c++;
+		j++;
 	}
-	if (c < min_sockets) {
+	if (j < min_sockets) {
 		/* cannot use this node */
 		num_tasks = 0;
 		goto fini;
 	}
 
 	/* check max_cores and max_sockets */
-	c = 0;
+	j = 0;
 	for (i = 0; i < sockets; i++) {
 		if (free_cores[i] > max_cores) {
 			/* remove extra cores from this socket */
@@ -267,8 +268,8 @@ uint16_t _allocate_sockets(struct job_record *job_ptr, bitstr_t *core_map,
 			free_cores[i] -= tmp;
 		}
 		if (free_cores[i] > 0)
-			c++;
-		if (free_cores[i] && c > max_sockets) {
+			j++;
+		if (free_cores[i] && j > max_sockets) {
 			/* remove extra sockets from use */
 			free_core_count -= free_cores[i];
 			free_cores[i] = 0;
@@ -309,8 +310,8 @@ uint16_t _allocate_sockets(struct job_record *job_ptr, bitstr_t *core_map,
 		avail_cpus = num_tasks;
 		cps = num_tasks;
 	} else {
-		c = avail_cpus / cpus_per_task;
-		num_tasks = MIN(num_tasks, c);
+		j = avail_cpus / cpus_per_task;
+		num_tasks = MIN(num_tasks, j);
 		avail_cpus = num_tasks * cpus_per_task;
 	}
 	if (job_ptr->details->ntasks_per_node &&
@@ -333,7 +334,7 @@ uint16_t _allocate_sockets(struct job_record *job_ptr, bitstr_t *core_map,
 	for (c = core_begin; c < core_end && avail_cpus > 0; c++) {
 		if (bit_test(core_map, c) == 0)
 			continue;
-		i = (c - core_begin) / cores_per_socket;
+		i = (uint16_t) (c - core_begin) / cores_per_socket;
 		if (free_cores[i] > 0) {
 			/* this socket has free cores, but make sure
 			 * we don't use more than are needed for
@@ -389,9 +390,10 @@ uint16_t _allocate_cores(struct job_record *job_ptr, bitstr_t *core_map,
 	uint16_t cpu_count = 0, avail_cpus = 0, num_tasks = 0;
 	uint32_t core_begin    = cr_get_coremap_offset(node_i);
 	uint32_t core_end      = cr_get_coremap_offset(node_i+1);
+	uint32_t c;
 	uint16_t cpus_per_task = job_ptr->details->cpus_per_task;
 	uint16_t *free_cores, free_core_count = 0;
-	uint16_t i, c, sockets    = select_node_record[node_i].sockets;
+	uint16_t i, j, sockets    = select_node_record[node_i].sockets;
 	uint16_t cores_per_socket = select_node_record[node_i].cores;
 	uint16_t threads_per_core = select_node_record[node_i].vpus;
 	uint16_t min_cores = 1, min_sockets = 1;
@@ -470,7 +472,7 @@ uint16_t _allocate_cores(struct job_record *job_ptr, bitstr_t *core_map,
 	free_cores = xmalloc(sockets * sizeof(uint16_t));
 
 	for (c = core_begin; c < core_end; c++) {
-		i = (c - core_begin) / cores_per_socket;
+		i = (uint16_t) (c - core_begin) / cores_per_socket;
 		if (bit_test(core_map, c)) {
 			free_cores[i]++;
 			free_core_count++;
@@ -478,7 +480,7 @@ uint16_t _allocate_cores(struct job_record *job_ptr, bitstr_t *core_map,
 	}
 
 	/* Step 2a: check min_cores per socket and min_sockets per node */
-	c = 0;
+	j = 0;
 	for (i = 0; i < sockets; i++) {
 		if (free_cores[i] < min_cores) {
 			/* cannot use this socket */
@@ -487,16 +489,16 @@ uint16_t _allocate_cores(struct job_record *job_ptr, bitstr_t *core_map,
 			continue;
 		}
 		/* count this socket as usable */
-		c++;
+		j++;
 	}
-	if (c < min_sockets) {
+	if (j < min_sockets) {
 		/* cannot use this node */
 		num_tasks = 0;
 		goto fini;
 	}
 
 	/* Step 2b: check max_cores per socket and max_sockets per node */
-	c = 0;
+	j = 0;
 	for (i = 0; i < sockets; i++) {
 		if (free_cores[i] > max_cores) {
 			/* remove extra cores from this socket */
@@ -505,8 +507,8 @@ uint16_t _allocate_cores(struct job_record *job_ptr, bitstr_t *core_map,
 			free_cores[i] -= tmp;
 		}
 		if (free_cores[i] > 0)
-			c++;
-		if (free_cores[i] && (c > max_sockets)) {
+			j++;
+		if (free_cores[i] && (j > max_sockets)) {
 			/* remove extra sockets from use */
 			free_core_count -= free_cores[i];
 			free_cores[i] = 0;
@@ -547,8 +549,8 @@ uint16_t _allocate_cores(struct job_record *job_ptr, bitstr_t *core_map,
 	if (cpus_per_task < 2) {
 		avail_cpus = num_tasks;
 	} else {
-		c = avail_cpus / cpus_per_task;
-		num_tasks = MIN(num_tasks, c);
+		j = avail_cpus / cpus_per_task;
+		num_tasks = MIN(num_tasks, j);
 		avail_cpus = num_tasks * cpus_per_task;
 	}
 	if (job_ptr->details->ntasks_per_node &&
@@ -562,7 +564,7 @@ uint16_t _allocate_cores(struct job_record *job_ptr, bitstr_t *core_map,
 	for (c = core_begin; c < core_end && avail_cpus > 0; c++) {
 		if (bit_test(core_map, c) == 0)
 			continue;
-		i = (c - core_begin) / cores_per_socket;
+		i = (uint16_t) (c - core_begin) / cores_per_socket;
 		if (free_cores[i] == 0)
 			bit_clear(core_map, c);
 		else {

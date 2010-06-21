@@ -338,6 +338,13 @@ documents those changes that are of interest to users and admins.
     fairshare tree the parents limit is now inherited automatically in
     the slurmctld.  Previously the slurmctld would have to be restarted.
     This problem only exists when setting a users association limit to -1.
+ -- Patch from Matthieu Hautreux (CEA) dealing with possible overflows that
+    could come up with the select/cons_res plugin with uint32_t's being treated
+    as uint16_t's.
+ -- Correct logic for creating a reservation with a Duration=Infinite (used to
+    set reservation end time in the past).
+ -- Correct logic for creating a reservation that properly handles the OVERLAP
+    and IGNORE_JOBS flags (flags were ignored under some conditions).
 
 * Changes in SLURM 2.1.9
 ========================

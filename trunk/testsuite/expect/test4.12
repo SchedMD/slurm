@@ -61,8 +61,6 @@ proc scontrol_test { node proc_cnt } {
 			if {$proc_cnt != $num_alloc} {
 				send_user "\nFAILURE: requested $proc_cnt but got $num_alloc instead\n"
 				set rc 1
-			} else {
-				send_user "SUCCESS\n"
 			}
 			exp_continue
 		}
@@ -129,8 +127,6 @@ proc sinfo_test_1 { node proc_cnt total_procs idle_cpus } {
 			} elseif { $num_total != $total_procs } {
 				send_user "\nFAILURE: sinfo 1 total cpus wrong, got $num_total but needed $total_procs\n"
 				set rc 1
-			} else {
-				send_user "SUCCESS\n"
 			}
 			exp_continue
 		}
@@ -283,29 +279,7 @@ proc allocate_and_quit { node proc_cnt total_procs } {
 print_header $test_id
 
 # find the default partition
-log_user 0
-set def_part ""
-set def_part_found 0
-spawn $sinfo
-expect {
-	-re "($alpha_numeric_under)\\\* " {
-		set def_part $expect_out(1,string)
-		set def_part_found 1
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: sinfo not responding\n"
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-log_user 1
-if {!$def_part_found} {
-	send_user "\nFAILURE: could not default partition on the system\n"
-	exit 1
-}
+set def_part [default_partition]
 
 # find the nodes in the default partition
 log_user 0
@@ -357,33 +331,26 @@ if {$host_cnt == 0} {
 
 # find me an idle node in default partition
 log_user 0
+set inode_name ""
+set inode_cores_per_socket 0
 set inode_procs 0
-set host_inx 0
-while {$host_inx <= $host_cnt} {
-	spawn $scontrol -o show node $host_name($host_inx)
-	expect {
-		-re "^NodeName=($alpha_numeric_under) .*CoresPerSocket=($number) .*CPUTot=($number)(K?).* Sockets=($number) State=IDLE ThreadsPerCore=($number)"  {
-			set inode_name $expect_out(1,string)
-			set inode_cores_per_socket $expect_out(2,string)
-			set inode_procs $expect_out(3,string)
-			if {[string compare $expect_out(4,string) ""]} {
-				set inode_procs [expr $inode_procs * 1024]
-			}
-			set inode_sockets $expect_out(5,string)
-			set inode_threads_per_core $expect_out(6,string)
-			set host_inx $host_cnt
-			exp_continue
-		}
-		timeout {
-			send_user "\nFAILURE: scontrol not responding\n"
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
+set units ""
+set inode_sockets 0
+set inode_threads_per_core 0
+
+set fd [open "|$scontrol --oneliner show node $def_hostlist"]
+exp_internal 1
+while {[gets $fd line] != -1} {
+	if {[regexp {NodeName=(\w+).*CoresPerSocket=(\d+).*CPUTot=(\d+)(K?).*Sockets=(\d+) State=IDLE ThreadsPerCore=(\d+)} $line frag inode_name inode_cores_per_socket inode_procs units inode_sockets inode_threads_per_core] == 1} {
+		break
 	}
-	incr host_inx
 }
+exp_internal 0
+if {[string compare $units ""]} {
+	set inode_procs [expr $inode_procs * 1024]
+}
+catch {close $fd}
+
 log_user 1
 
 if {!$inode_procs} {
