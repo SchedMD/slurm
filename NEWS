@@ -20,6 +20,8 @@ documents those changes that are of interest to users and admins.
  -- Patch from Matthieu Hautreux (CEA) dealing with possible overflows that
     could come up with the select/cons_res plugin with uint32_t's being treated
     as uint16_t's.
+ -- Correct logic for creating a reservation with a Duration=Infinite (used to
+    set reservation end time in the past).
 
 * Changes in SLURM 2.1.9
 ========================

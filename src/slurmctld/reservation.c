@@ -1157,6 +1157,9 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 			rc = ESLURM_INVALID_TIME_VALUE;
 			goto bad_parse;
 		}
+	} else if (resv_desc_ptr->duration == INFINITE) {
+		resv_desc_ptr->end_time = resv_desc_ptr->start_time +
+					  (365 * 24 * 60 * 60);
 	} else if (resv_desc_ptr->duration) {
 		resv_desc_ptr->end_time = resv_desc_ptr->start_time +
 					  (resv_desc_ptr->duration * 60);
