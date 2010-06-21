@@ -283,7 +283,6 @@ proc allocate_and_quit { node proc_cnt total_procs } {
 print_header $test_id
 
 # find the default partition
-log_user 0
 set def_part [default_partition]
 
 # find the nodes in the default partition
@@ -347,7 +346,6 @@ set fd [open "|$scontrol --oneliner show node $def_hostlist"]
 exp_internal 1
 while {[gets $fd line] != -1} {
 	if {[regexp {NodeName=(\w+).*CoresPerSocket=(\d+).*CPUTot=(\d+)(K?).*Sockets=(\d+) State=IDLE ThreadsPerCore=(\d+)} $line frag inode_name inode_cores_per_socket inode_procs units inode_sockets inode_threads_per_core] == 1} {
-		send_user "got it here\n"
 		break
 	}
 }
