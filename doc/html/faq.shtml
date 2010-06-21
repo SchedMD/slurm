@@ -128,6 +128,8 @@ running?</a></li>
 <li><a href="#scontrol_multi_jobs">Can I update multiple jobs with a single
 <i>scontrol</i> command?</a></li>
 <li><a href="#amazon_ec2">Can SLURM be used to run jobs on Amazon's EC2?</a></li>
+<li><a href="#core_dump">If a SLURM daemon core dumps, where can I find the
+core file?</a></li>
 </ol>
 
 
@@ -1300,8 +1302,24 @@ which I then copy over the /usr/local on the first instance and NFS export to
 all other instances.  This way I have persistent home directories and a very
 simple first-login script that configures the virtual cluster for me.</p>
 
+<p><a name="core_dump"><b>41. If a SLURM daemon core dumps, where can I find the
+core file?</b></a></br>
+<p>For <i>slurmctld</i> the core file will be in the same directory as its
+log files (<i>SlurmctldLogFile</i>) iif configured using an fully qualified
+pathname (starting with "/").
+Otherwise it will be found in directory used for saving state
+(<i>StateSaveLocation</i>).</p>
+<p>For <i>slurmd</i> the core file will be in the same directory as its
+log files (<i>SlurmdLogFile</i>) if configured using an fully qualified
+pathname (starting with "/").
+Otherwise it will be found in directory used for saving state
+(<i>SlurmdSpoolDir</i>).</p>
+<p>For <i>slurmstepd</i> the core file will depend upon when the failure
+occurs. It will either be in spawned job's working directory on the same 
+location as that described above for the <i>slurmd</i> daemon.</p>
+
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 10 May 2010</p>
+<p style="text-align:center;">Last modified 21 June 2010</p>
 
 <!--#include virtual="footer.txt"-->

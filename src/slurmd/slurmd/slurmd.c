@@ -1249,9 +1249,27 @@ _slurmd_init(void)
 		stepd_cleanup_sockets(conf->spooldir, conf->node_name);
 	}
 
-	if (conf->daemonize && (chdir("/tmp") < 0)) {
-		error("Unable to chdir to /tmp");
-		return SLURM_FAILURE;
+	if (conf->daemonize) {
+		if (conf->logfile && (conf->logfile[0] == '/')) {
+			char *slash_ptr, *work_dir;
+			work_dir = xstrdup(conf->logfile);
+			slash_ptr = strrchr(work_dir, '/');
+			if (slash_ptr == work_dir)
+				work_dir[1] = '\0';
+			else
+				slash_ptr[0] = '\0';
+			if (chdir(work_dir) < 0) {
+				error("Unable to chdir to %s", work_dir);
+				xfree(work_dir);
+				return SLURM_FAILURE;
+			}
+			xfree(work_dir);
+		} else {
+			if (chdir(conf->spooldir) < 0) {
+				error("Unable to chdir to %s", conf->spooldir);
+				return SLURM_FAILURE;
+			}
+		}
 	}
 
 	/*
