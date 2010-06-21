@@ -1551,6 +1551,12 @@ extern void log_assoc_rec(slurmdb_association_rec_t *assoc_ptr,
 		if(temp_char) {
 			debug2("  Qos              : %s", temp_char);
 			xfree(temp_char);
+			if(assoc_ptr->usage && assoc_ptr->usage->valid_qos) {
+				temp_char = get_qos_complete_str_bitstr(
+					qos_list, assoc_ptr->usage->valid_qos);
+				debug3("  Valid Qos        : %s", temp_char);
+				xfree(temp_char);
+			}
 		}
 	} else {
 		debug2("  Qos              : %s", "Normal");
