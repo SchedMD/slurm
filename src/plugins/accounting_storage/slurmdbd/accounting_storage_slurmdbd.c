@@ -1860,9 +1860,12 @@ extern int jobacct_storage_p_job_start(void *db_conn,
 	msg.data          = &req;
 
 	/* if we already have the db_index don't wait around for it
-	 * again just send the message
+	 * again just send the message.  This also applies when the
+	 * slurmdbd is down and we are about to remove the job from
+	 * the system.
 	 */
-	if(req.db_index && !IS_JOB_RESIZING(job_ptr)) {
+	if((req.db_index && !IS_JOB_RESIZING(job_ptr))
+	    || (!req.db_index && IS_JOB_FINISHED(job_ptr))) {
 		if (slurm_send_slurmdbd_msg(SLURMDBD_VERSION, &msg) < 0) {
 			xfree(req.block_id);
 			return SLURM_ERROR;

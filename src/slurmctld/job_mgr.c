@@ -4387,6 +4387,12 @@ static int _list_find_job_old(void *job_entry, void *key)
 	if (!(IS_JOB_FINISHED(job_ptr)))
 		return 0;	/* Job still active */
 
+	/* If we don't have a db_index by now and we are running with
+	   the slurmdbd lets put it on the list to be handled later
+	   when it comes back up since we won't get another chance.
+	*/
+	if(with_slurmdbd && !job_ptr->db_index)
+		jobacct_storage_g_job_start(acct_db_conn, job_ptr);
 	return 1;		/* Purge the job */
 }
 
