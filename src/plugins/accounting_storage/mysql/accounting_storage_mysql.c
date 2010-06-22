@@ -3919,14 +3919,17 @@ extern int acct_storage_p_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 			xstrfmtcat(vals, ", %u", object->admin_level);
 			xstrfmtcat(extra, ", admin_level=%u",
 				   object->admin_level);
-		}
+		} else
+			xstrfmtcat(extra, ", admin_level=%u",
+				   ACCT_ADMIN_NONE);
 
 		if(object->default_wckey) {
 			xstrcat(cols, ", default_wckey");
 			xstrfmtcat(vals, ", \"%s\"", object->default_wckey);
 			xstrfmtcat(extra, ", default_wckey=\"%s\"",
 				   object->default_wckey);
-		}
+		} else
+			xstrcat(extra, ", default_wckey=\"\"");
 
 		query = xstrdup_printf(
 			"insert into %s (%s) values (%s) "
