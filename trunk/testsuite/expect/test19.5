@@ -100,7 +100,7 @@ make_bash_script $file_in_time "
 	$squeue -j $job_id >$cwd/$file_out_time"
 make_bash_script $file_in_fini "
 	$bin_sleep 5
-	$squeue -j $job_id -tall >$cwd/$file_out_fini"
+	$squeue -j $job_id -tall >$cwd/$file_out_fini 2>&1"
 
 set disabled 0
 set matches  0
@@ -219,8 +219,13 @@ if {[wait_for_file $file_out_fini] != 0} {
 #	Check that job run time was one minute. If SLURM is configured to
 #	power down idle nodes, this could possibly take a bit more time.
 	set job_fini 0
+	set job_purge 0
 	spawn $bin_cat $file_out_fini
 	expect {
+		-re "Invalid job id specified" {
+			set job_purge 1
+			exp_continue
+		}
 		-re "CD *1:($number)" {
 			set job_fini 1
 			exp_continue
@@ -230,7 +235,13 @@ if {[wait_for_file $file_out_fini] != 0} {
 		}
 	}
 	if {$job_fini == 0} {
-		if {[test_power_save] == 0} {
+		if {$job_purge == 1} {
+			set min_job_age [get_min_job_age]
+		}
+		if {$job_purge == 1 && $min_job_age < 60} {
+			send_user "\nWARNING: MinJobAge ($min_job_age) configured too low "
+			send_user "to capture job state after completion\n"
+		} elseif {[test_power_save] == 0} {
 			send_user "\nFAILURE: file $file_out_fini contents are bad, CD run time\n"
 			set exit_code 1
 		} else {
