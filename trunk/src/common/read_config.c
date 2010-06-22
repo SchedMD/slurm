@@ -2824,6 +2824,11 @@ extern char * debug_flags2str(uint32_t debug_flags)
 			xstrcat(rc, ",");
 		xstrcat(rc, "Priority");
 	}
+	if (debug_flags & DEBUG_FLAG_RESERVATION) {
+		if (rc)
+			xstrcat(rc, ",");
+		xstrcat(rc, "Reservation");
+	}
 	if (debug_flags & DEBUG_FLAG_SELECT_TYPE) {
 		if (rc)
 			xstrcat(rc, ",");
@@ -2884,10 +2889,16 @@ extern uint32_t debug_str2flags(char *debug_flags)
 			rc |= DEBUG_FLAG_NO_CONF_HASH;
 		else if (strcasecmp(tok, "Priority") == 0)
 			rc |= DEBUG_FLAG_PRIO;
+		else if (strcasecmp(tok, "Reservation") == 0)
+			rc |= DEBUG_FLAG_RESERVATION;
+		else if (strcasecmp(tok, "Reservations") == 0)
+			rc |= DEBUG_FLAG_RESERVATION;
 		else if (strcasecmp(tok, "SelectType") == 0)
 			rc |= DEBUG_FLAG_SELECT_TYPE;
 		else if (strcasecmp(tok, "Steps") == 0)
 			rc |= DEBUG_FLAG_STEPS;
+		else if (strcasecmp(tok, "Trigger") == 0)
+			rc |= DEBUG_FLAG_TRIGGERS;
 		else if (strcasecmp(tok, "Triggers") == 0)
 			rc |= DEBUG_FLAG_TRIGGERS;
 		else if (strcasecmp(tok, "Wiki") == 0)

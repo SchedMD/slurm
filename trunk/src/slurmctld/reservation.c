@@ -73,7 +73,6 @@
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/state_save.h"
 
-#define _RESV_DEBUG	0
 #define ONE_YEAR	(365 * 24 * 60 * 60)
 #define RESV_MAGIC	0x3b82
 
@@ -277,9 +276,11 @@ static int _find_resv_name(void *x, void *key)
 static void _dump_resv_req(resv_desc_msg_t *resv_ptr, char *mode)
 {
 
-#if _RESV_DEBUG
 	char start_str[32] = "-1", end_str[32] = "-1", *flag_str = NULL;
 	int duration;
+
+	if (!(slurm_get_debug_flags() & DEBUG_FLAG_RESERVATION))
+		return;
 
 	if (resv_ptr->start_time != (time_t) NO_VAL) {
 		slurm_make_time_str(&resv_ptr->start_time,
@@ -306,7 +307,6 @@ static void _dump_resv_req(resv_desc_msg_t *resv_ptr, char *mode)
 	     resv_ptr->users, resv_ptr->accounts, resv_ptr->licenses);
 
 	xfree(flag_str);
-#endif
 }
 
 static void _generate_resv_id(void)
@@ -1652,9 +1652,8 @@ extern int delete_resv(reservation_name_msg_t *resv_desc_ptr)
 	int rc = SLURM_SUCCESS;
 	time_t now = time(NULL);
 
-#ifdef _RESV_DEBUG
-	info("delete_resv: Name=%s", resv_desc_ptr->name);
-#endif
+	if (slurm_get_debug_flags() & DEBUG_FLAG_RESERVATION)
+		info("delete_resv: Name=%s", resv_desc_ptr->name);
 
 	iter = list_iterator_create(resv_list);
 	if (!iter)
@@ -2756,13 +2755,12 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 			overlap_resv = true;
 		}
 		list_iterator_destroy(iter);
-#if _RESV_DEBUG
-{
-		char *nodes=bitmap2node_name(*node_bitmap);
-		info("nodes:%s", nodes);
-		xfree(nodes);
-}
-#endif
+	
+		if (slurm_get_debug_flags() & DEBUG_FLAG_RESERVATION) {
+			char *nodes=bitmap2node_name(*node_bitmap);
+			info("nodes:%s", nodes);
+			xfree(nodes);
+		}
 		return SLURM_SUCCESS;
 	}
 

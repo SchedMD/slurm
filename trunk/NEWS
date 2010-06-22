@@ -6,6 +6,8 @@ documents those changes that are of interest to users and admins.
  -- Add DebugFlags parameter of "Backfill" for sched/backfill detailed logging.
  -- Add DebugFlags parameter of "Gang" for detailed logging of gang scheduling
     activities.
+ -- Add DebugFlags parameter of "Reservation" for detailed logging of advanced
+    reservations.
  -- Add run time to mail message upon job termination and queue time for mail
     message upon job begin.
  -- Add email notification option for job requeue.
