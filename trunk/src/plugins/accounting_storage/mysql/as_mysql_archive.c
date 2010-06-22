@@ -708,6 +708,9 @@ static int _process_old_sql_line(const char *data_in, char **data_full_out)
 		} else if(!strncmp("wckeyid", data_in+i, 7)) {
 			xstrcat(fields, "id_wckey");
 			i+=7;
+		} else if(!strncmp("qos", data_in+i, 3)) {
+			xstrcat(fields, "id_qos");
+			i+=3;
 		} else if(!strncmp("uid", data_in+i, 3)) {
 			xstrcat(fields, "id_user");
 			i+=3;
