@@ -2288,7 +2288,7 @@ static int  _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 	node_bitmap = bit_copy((*part_ptr)->node_bitmap);
 
 	/* Don't use node already reserved */
-	if (!resv_desc_ptr->flags & RESERVE_FLAG_OVERLAP) {
+	if (!(resv_desc_ptr->flags & RESERVE_FLAG_OVERLAP)) {
 		iter = list_iterator_create(resv_list);
 		if (!iter)
 			fatal("malloc: list_iterator_create");
