@@ -45,6 +45,8 @@ documents those changes that are of interest to users and admins.
  -- Add sattach support for the --pty option.
  -- Added Priority debug flag to get debug for the priority multifactor
     plugin easily.
+ -- Modify slurmctld communications logic to accept incoming messages on more
+    than one port for improved scalability.
 
 * Changes in SLURM 2.2.0.pre7
 =============================

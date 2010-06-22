@@ -404,6 +404,9 @@
 /* Define the default port number for slurmctld */
 #undef SLURMCTLD_PORT
 
+/* Define the default port count for slurmctld */
+#undef SLURMCTLD_PORT_COUNT
+
 /* Define the default port number for slurmdbd */
 #undef SLURMDBD_PORT
 

@@ -1460,7 +1460,8 @@ typedef struct slurm_ctl_conf {
 	uint16_t slurmctld_debug; /* slurmctld logging level */
 	char *slurmctld_logfile;/* where slurmctld error log gets written */
 	char *slurmctld_pidfile;/* where to put slurmctld pidfile         */
-	uint32_t slurmctld_port;/* default communications port to slurmctld */
+	uint32_t slurmctld_port;  /* default communications port to slurmctld */
+	uint16_t slurmctld_port_count; /* number of slurmctld comm ports */
 	uint16_t slurmctld_timeout;/* seconds that backup controller waits
 				    * on non-responding primarly controller */
 	uint16_t slurmd_debug;	/* slurmd logging level */

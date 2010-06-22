@@ -24,7 +24,7 @@ AC_DEFUN([X_AC_SLURM_PORTS],
   AC_DEFINE_UNQUOTED(SLURMCTLD_PORT, [$slurmctldport],
                      [Define the default port number for slurmctld])
   AC_SUBST(SLURMCTLD_PORT)
-  
+
 
   AC_MSG_CHECKING(for slurmd default port)
   AC_ARG_WITH(slurmd-port,
@@ -38,7 +38,7 @@ AC_DEFUN([X_AC_SLURM_PORTS],
   AC_DEFINE_UNQUOTED(SLURMD_PORT, [$slurmdport],
                      [Define the default port number for slurmd])
   AC_SUBST(SLURMD_PORT)
-  
+
 
   AC_MSG_CHECKING(for slurmdbd default port)
   AC_ARG_WITH(slurmdbd-port,
@@ -52,7 +52,21 @@ AC_DEFUN([X_AC_SLURM_PORTS],
   AC_DEFINE_UNQUOTED(SLURMDBD_PORT, [$slurmdbdport],
                      [Define the default port number for slurmdbd])
   AC_SUBST(SLURMDBD_PORT)
+
+  AC_MSG_CHECKING(for slurmctld default port count)
+  AC_ARG_WITH(slurmctld-port-count,
+    AS_HELP_STRING(--with-slurmctld-port-count=N,set slurmctld default port count [[1]]),
+        [ if test `expr match "$withval" '[[0-9]]*$'` -gt 0; then
+             slurmctldportcount="$withval"
+          fi
+        ]
+  )
+  AC_MSG_RESULT(${slurmctldportcount=$4})
+  AC_DEFINE_UNQUOTED(SLURMCTLD_PORT_COUNT, [$slurmctldportcount],
+                     [Define the default port count for slurmctld])
+  AC_SUBST(SLURMCTLD_PORT_COUNT)
 ])
+
 dnl
 dnl Check for program_invocation_name
 dnl

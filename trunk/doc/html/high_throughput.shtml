@@ -70,10 +70,15 @@ Controls how soon the record of a completed job can be purged from the
 The record of jobs run will be preserved in accounting records and logs.
 The default value is 300 seconds. The value should be reduced to a few
 seconds if possible.</li>
+<li><b>SlurmctldPort</b>:
+It is desirable to configure the <b>slurmctld</b> daemon to accept incoming
+messages on more than one port in order to avoid having incoming messages
+discarded by the operating system due to exceeding the SOMAXCONN limit
+described above.</li>
 <li>Other: Configure logging, accounting and other overhead to a minimum
 appropriate for your environment.</li>
 </ul>
 
-<p style="text-align:center;">Last modified 7 June 2010</p>
+<p style="text-align:center;">Last modified 22 June 2010</p>
 
 <!--#include virtual="footer.txt"-->

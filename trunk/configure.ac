@@ -213,9 +213,10 @@ X_AC_DEBUG
 AM_CONDITIONAL(DEBUG_MODULES, test "x$ac_debug" = "xtrue")
 
 
-dnl check for slurmctld, slurmd and slurmdbd default ports
+dnl check for slurmctld, slurmd and slurmdbd default ports,
+dnl and default number of slurmctld ports
 dnl
-X_AC_SLURM_PORTS([6817], [6818], [6819])
+X_AC_SLURM_PORTS([6817], [6818], [6819], [1])
 
 
 dnl add SLURM_PREFIX to config.h

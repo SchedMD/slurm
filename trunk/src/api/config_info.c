@@ -863,8 +863,15 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
 	key_pair->value = xstrdup(slurm_ctl_conf_ptr->sched_logfile);
 	list_append(ret_list, key_pair);
 
-	snprintf(tmp_str, sizeof(tmp_str), "%u",
-		 slurm_ctl_conf_ptr->slurmctld_port);
+	if (slurm_ctl_conf_ptr->slurmctld_port_count > 1) {
+		uint32_t high_port = slurm_ctl_conf_ptr->slurmctld_port;
+		high_port += (slurm_ctl_conf_ptr->slurmctld_port_count - 1);
+		snprintf(tmp_str, sizeof(tmp_str), "%u-%u",
+			 slurm_ctl_conf_ptr->slurmctld_port, high_port);
+	} else {
+		snprintf(tmp_str, sizeof(tmp_str), "%u",
+			 slurm_ctl_conf_ptr->slurmctld_port);
+	}
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("SlurmctldPort");
 	key_pair->value = xstrdup(tmp_str);
