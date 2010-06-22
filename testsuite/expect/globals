@@ -899,6 +899,7 @@ proc test_using_slurmdbd { } {
 proc priority_type {} {
 	global scontrol
 
+	log_user 0
 	set name ""
 	set fd [open "|$scontrol show config"]
 	while {[gets $fd line] != -1} {
@@ -908,12 +909,46 @@ proc priority_type {} {
 		}
 	}
 	catch {close $fd}
+	log_user 1
 
 	if {[string length $name] == 0} {
-		send_user "ERROR: could not identify the switch type\n"
+		send_user "ERROR: could not identify the Priority Type\n"
 	}
 
 	return $name
+}
+
+################################################################
+#
+# Proc: get_min_job_age
+#
+# Purpose: Use scontrol to determine the MinJobAge
+#
+# Returns: MinJobAge value
+#
+################################################################
+
+proc get_min_job_age {} {
+	global scontrol number
+
+	set age 0
+	log_user 0
+	spawn $scontrol show config
+	expect {
+		-re "MinJobAge *= ($number)" {
+			set age $expect_out(1,string)
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+	log_user 1
+
+	if {$age == 0} {
+		send_user "ERROR: could not identify the MinJobAge\n"
+	}
+	return $age
 }
 
 ################################################################
