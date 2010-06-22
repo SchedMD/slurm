@@ -11,8 +11,9 @@ for this material.</p>
 
 <h2>Performance Results</h2>
 
-<p>SLURM has been validated to execute 32,000 jobs per hour on a
-sustained basis (about 9 jobs per second).</p>
+<p>SLURM has been validated to accept 1,000 job creations in under 10 seconds
+and to fully execute those jobs in 16 seconds. Actual performance depends upon
+the jobs to be executed plus the hardware and configuration used.</p>
 
 <h2>System configuration</h2>
 
@@ -74,7 +75,8 @@ seconds if possible.</li>
 It is desirable to configure the <b>slurmctld</b> daemon to accept incoming
 messages on more than one port in order to avoid having incoming messages
 discarded by the operating system due to exceeding the SOMAXCONN limit
-described above.</li>
+described above. Using between two and ten ports is suggested when large
+numbers of simultaneous requests are to be supported.</li>
 <li>Other: Configure logging, accounting and other overhead to a minimum
 appropriate for your environment.</li>
 </ul>
