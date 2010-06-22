@@ -1530,6 +1530,9 @@ The default value is "/var/run/slurmctld.pid".
 The port number that the SLURM controller, \fBslurmctld\fR, listens
 to for work. The default value is SLURMCTLD_PORT as established at system
 build time. If none is explicitly specified, it will be set to 6817.
+\fBSlurmctldPort\fR may also be configured to support a range of port
+numbers in order to accept larger bursts of incoming messages by specifying
+two numbers separated by a dash (e.g. \fBSlurmctldPort=6817\-6818\fR).
 NOTE: Either \fBslurmctld\fR and \fBslurmd\fR daemons must not
 execute on the same nodes or the values of \fBSlurmctldPort\fR and
 \fBSlurmdPort\fR must be different.

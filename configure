@@ -781,6 +781,7 @@ HAVE_ELAN_FALSE
 HAVE_ELAN_TRUE
 ELAN_LIBS
 SLURM_PREFIX
+SLURMCTLD_PORT_COUNT
 SLURMDBD_PORT
 SLURMD_PORT
 SLURMCTLD_PORT
@@ -1009,6 +1010,7 @@ enable_partial_attach
 with_slurmctld_port
 with_slurmd_port
 with_slurmdbd_port
+with_slurmctld_port_count
 with_readline
 with_ssl
 with_munge
@@ -1702,6 +1704,8 @@ Optional Packages:
   --with-slurmctld-port=N set slurmctld default port [6817]
   --with-slurmd-port=N    set slurmd default port [6818]
   --with-slurmdbd-port=N  set slurmdbd default port [6819]
+  --with-slurmctld-port-count=N
+                          set slurmctld default port count [1]
   --without-readline      compile without readline support
   --with-ssl=PATH         Specify path to OpenSSL installation
   --with-munge=PATH       Specify path to munge installation
@@ -7007,13 +7011,13 @@ if test "${lt_cv_nm_interface+set}" = set; then :
 else
   lt_cv_nm_interface="BSD nm"
   echo "int some_variable = 0;" > conftest.$ac_ext
-  (eval echo "\"\$as_me:7010: $ac_compile\"" >&5)
+  (eval echo "\"\$as_me:7014: $ac_compile\"" >&5)
   (eval "$ac_compile" 2>conftest.err)
   cat conftest.err >&5
-  (eval echo "\"\$as_me:7013: $NM \\\"conftest.$ac_objext\\\"\"" >&5)
+  (eval echo "\"\$as_me:7017: $NM \\\"conftest.$ac_objext\\\"\"" >&5)
   (eval "$NM \"conftest.$ac_objext\"" 2>conftest.err > conftest.out)
   cat conftest.err >&5
-  (eval echo "\"\$as_me:7016: output\"" >&5)
+  (eval echo "\"\$as_me:7020: output\"" >&5)
   cat conftest.out >&5
   if $GREP 'External.*some_variable' conftest.out > /dev/null; then
     lt_cv_nm_interface="MS dumpbin"
@@ -8218,7 +8222,7 @@ ia64-*-hpux*)
   ;;
 *-*-irix6*)
   # Find out which ABI we are using.
-  echo '#line 8221 "configure"' > conftest.$ac_ext
+  echo '#line 8225 "configure"' > conftest.$ac_ext
   if { { eval echo "\"\$as_me\":${as_lineno-$LINENO}: \"$ac_compile\""; } >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -10007,11 +10011,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:10010: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:10014: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:10014: \$? = $ac_status" >&5
+   echo "$as_me:10018: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -10346,11 +10350,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:10349: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:10353: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:10353: \$? = $ac_status" >&5
+   echo "$as_me:10357: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -10451,11 +10455,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:10454: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:10458: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:10458: \$? = $ac_status" >&5
+   echo "$as_me:10462: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -10506,11 +10510,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:10509: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:10513: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:10513: \$? = $ac_status" >&5
+   echo "$as_me:10517: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -12890,7 +12894,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<_LT_EOF
-#line 12893 "configure"
+#line 12897 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -12986,7 +12990,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<_LT_EOF
-#line 12989 "configure"
+#line 12993 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -14942,11 +14946,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:14945: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:14949: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:14949: \$? = $ac_status" >&5
+   echo "$as_me:14953: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -15041,11 +15045,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:15044: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:15048: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:15048: \$? = $ac_status" >&5
+   echo "$as_me:15052: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -15093,11 +15097,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:15096: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:15100: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:15100: \$? = $ac_status" >&5
+   echo "$as_me:15104: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -19273,6 +19277,27 @@ $as_echo "${slurmdbdport=6819}" >&6; }
 
 cat >>confdefs.h <<_ACEOF
 #define SLURMDBD_PORT $slurmdbdport
+_ACEOF
+
+
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for slurmctld default port count" >&5
+$as_echo_n "checking for slurmctld default port count... " >&6; }
+
+# Check whether --with-slurmctld-port-count was given.
+if test "${with_slurmctld_port_count+set}" = set; then :
+  withval=$with_slurmctld_port_count;  if test `expr match "$withval" '[0-9]*$'` -gt 0; then
+             slurmctldportcount="$withval"
+          fi
+
+
+fi
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: ${slurmctldportcount=1}" >&5
+$as_echo "${slurmctldportcount=1}" >&6; }
+
+cat >>confdefs.h <<_ACEOF
+#define SLURMCTLD_PORT_COUNT $slurmctldportcount
 _ACEOF
 
 

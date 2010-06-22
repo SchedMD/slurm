@@ -46,6 +46,7 @@
 #include <assert.h>
 #include <ctype.h>
 #include <errno.h>
+#include <limits.h>
 #include <netdb.h>
 #include <pthread.h>
 #include <pwd.h>
@@ -255,7 +256,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"SlurmctldDebug", S_P_UINT16},
 	{"SlurmctldLogFile", S_P_STRING},
 	{"SlurmctldPidFile", S_P_STRING},
-	{"SlurmctldPort", S_P_UINT32},
+	{"SlurmctldPort", S_P_STRING},
 	{"SlurmctldTimeout", S_P_UINT16},
 	{"SlurmdDebug", S_P_UINT16},
 	{"SlurmdLogFile", S_P_STRING},
@@ -1608,6 +1609,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->sched_log_level		= (uint16_t) NO_VAL;
 	xfree (ctl_conf_ptr->slurmctld_pidfile);
 	ctl_conf_ptr->slurmctld_port		= (uint32_t) NO_VAL;
+	ctl_conf_ptr->slurmctld_port_count	= 1;
 	ctl_conf_ptr->slurmctld_timeout		= (uint16_t) NO_VAL;
 	ctl_conf_ptr->slurmd_debug		= (uint16_t) NO_VAL;
 	xfree (ctl_conf_ptr->slurmd_logfile);
@@ -2587,8 +2589,34 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 	s_p_get_string(&conf->slurmctld_logfile, "SlurmctldLogFile", hashtbl);
 
-	if (!s_p_get_uint32(&conf->slurmctld_port, "SlurmctldPort", hashtbl))
+	if (s_p_get_string(&temp_str, "SlurmctldPort", hashtbl)) {
+		char *end_ptr = NULL;
+		long port_long;
+		slurm_seterrno(0);
+		port_long = strtol(temp_str, &end_ptr, 10);
+		if ((port_long == LONG_MIN) || (port_long == LONG_MAX) ||
+		    (port_long <= 0) || errno) {
+			fatal("Invalid SlurmctldPort %s", temp_str);
+		}
+		conf->slurmctld_port = port_long;
+		if (end_ptr[0] == '-') {
+			port_long = strtol(end_ptr+1, NULL, 10);
+			if ((port_long == LONG_MIN) ||
+			    (port_long == LONG_MAX) ||
+			    (port_long <= conf->slurmctld_port) || errno) {
+				fatal("Invalid SlurmctldPort %s", temp_str);
+			}
+			conf->slurmctld_port_count = port_long + 1 -
+						     conf->slurmctld_port;
+		} else if (end_ptr[0] != '\0') {
+			fatal("Invalid SlurmctldPort %s", temp_str);
+		} else {
+			conf->slurmctld_port_count = 1;
+		}
+	} else {
 		conf->slurmctld_port = SLURMCTLD_PORT;
+		conf->slurmctld_port_count = SLURMCTLD_PORT_COUNT;
+	}
 
 	if (!s_p_get_uint16(&conf->slurmctld_timeout,
 			    "SlurmctldTimeout", hashtbl))

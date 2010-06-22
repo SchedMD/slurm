@@ -1915,19 +1915,28 @@ slurm_fd slurm_open_controller_conn(slurm_addr *addr)
 {
 	slurm_fd fd = -1;
 	slurm_ctl_conf_t *conf;
+	slurm_protocol_config_t *myproto = NULL;
 	int retry, have_backup = 0;
 
-	if(!working_cluster_rec) {
+	if (!working_cluster_rec) {
 		/* This means the addr wasn't set up already.
 		*/
 		if (slurm_api_set_default_config() < 0)
 			return SLURM_FAILURE;
+		myproto = xmalloc(sizeof(slurm_protocol_config_t));
+		memcpy(myproto, proto_conf, sizeof(slurm_protocol_config_t));
+		myproto->primary_controller.sin_port =
+				htons(slurmctld_conf.slurmctld_port +
+				(((time(NULL) + getpid()) %
+				slurmctld_conf.slurmctld_port_count)));
+		myproto->secondary_controller.sin_port =
+				myproto->primary_controller.sin_port;
 	}
 
 	for (retry=0; retry<4; retry++) {
 		if (retry)
 			sleep(1);
-		if(working_cluster_rec) {
+		if (working_cluster_rec) {
 			if(working_cluster_rec->control_addr.sin_port == 0) {
 				slurm_set_addr(
 					&working_cluster_rec->control_addr,
@@ -1941,8 +1950,7 @@ slurm_fd slurm_open_controller_conn(slurm_addr *addr)
 				goto end_it;
 			debug("Failed to contact controller: %m");
 		} else {
-			addr = &proto_conf->primary_controller;
-			fd = slurm_open_msg_conn(addr);
+			fd = slurm_open_msg_conn(&myproto->primary_controller);
 			if (fd >= 0)
 				goto end_it;
 			debug("Failed to contact primary controller: %m");
@@ -1955,8 +1963,8 @@ slurm_fd slurm_open_controller_conn(slurm_addr *addr)
 			}
 
 			if (have_backup) {
-				addr = &proto_conf->secondary_controller;
-				fd = slurm_open_msg_conn(addr);
+				fd = slurm_open_msg_conn(&myproto->
+							 secondary_controller);
 				if (fd >= 0)
 					goto end_it;
 				debug("Failed to contact secondary "
@@ -1966,7 +1974,9 @@ slurm_fd slurm_open_controller_conn(slurm_addr *addr)
 	}
 	addr = NULL;
 	slurm_seterrno_ret(SLURMCTLD_COMMUNICATIONS_CONNECTION_ERROR);
+
 end_it:
+	xfree(myproto);
 	return fd;
 }
 
