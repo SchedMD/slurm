@@ -1999,18 +1999,5 @@ static void _test_thread_limit(void)
 	}
 }
 #endif
-#ifdef RLIMIT_STACK
-{
-	struct rlimit rlim[1];
-	if (getrlimit(RLIMIT_STACK, rlim) < 0)
-		error("Unable to get stack size limit");
-	else if ((rlim->rlim_cur != RLIM_INFINITY) &&
-		 (max_server_threads > (rlim->rlim_cur / (1024*1024)))) {
-		max_server_threads = MAX(1, rlim->rlim_cur / (1024*1024));
-		info("Reducing max_server_thread to %u due to stack size limit "
-		     "of %u", max_server_threads, (uint32_t) rlim->rlim_cur);
-	}
-}
-#endif
 	return;
 }
