@@ -2152,6 +2152,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 			int allocate, uid_t submit_uid,
 			struct job_record **job_pptr)
 {
+	static int defer_sched = -1;
 	int error_code;
 	bool no_alloc, top_prio, test_only, too_fragmented, independent;
 	struct job_record *job_ptr;
@@ -2195,6 +2196,17 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 	 * meta-schedulers (e.g. LCRM). */
 	else
 		too_fragmented = false;
+
+	if (defer_sched == -1) {
+		char *sched_params = slurm_get_sched_params();
+		if (sched_params && strstr(sched_params, "defer"))
+			defer_sched = 1;
+		else
+			defer_sched = 0;
+		xfree(sched_params);
+	}
+	if (defer_sched == 1)
+		too_fragmented = true;
 
 	if (independent && (!too_fragmented))
 		top_prio = _top_priority(job_ptr);
