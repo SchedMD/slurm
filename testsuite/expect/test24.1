@@ -91,23 +91,31 @@ expect {
 		incr matches
 		exp_continue
 	}
-	"AccountD||60|0.600000|25|0.250000|0.250000|" {
+	"AccountD||30|0.300000|25|0.250000|0.250000|" {
 		incr matches
 		exp_continue
 	}
-	"AccountE||25|0.250000|25|0.250000|0.250000|" {
+	"AccountE||25|0.125000|25|0.250000|0.250000|" {
 		incr matches
 		exp_continue
 	}
-	"AccountE|User4|1|0.250000|25|0.250000|0.250000|" {
+	"AccountE|User4|1|0.125000|25|0.250000|0.250000|" {
 		incr matches
 		exp_continue
 	}
-	"AccountF||35|0.350000|0|0.000000|0.145833|" {
+	"AccountF||35|0.175000|0|0.000000|0.145833|" {
 		incr matches
 		exp_continue
 	}
-	"AccountF|User5|1|0.350000|0|0.000000|0.145833|" {
+	"AccountF|User5|1|0.175000|0|0.000000|0.145833|" {
+		incr matches
+		exp_continue
+	}
+	"AccountG||30|0.300000|30|0.300000|0.300000|" {
+		incr matches
+		exp_continue
+	}
+	"AccountG|User6|1|0.300000|30|0.300000|0.300000|" {
 		incr matches
 		exp_continue
 	}
@@ -121,7 +129,7 @@ expect {
 	}
 }
 
-if {$matches != 11} {
+if {$matches != 13} {
 	send_user "\nFAILURE: we didn't get the correct priorities from the plugin $matches\n"
 	set exit_code 1
 }
