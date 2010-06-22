@@ -74,11 +74,6 @@ int _setup_assoc_list()
 
 	/* make the main list */
 	assoc_mgr_association_list = list_create(destroy_acct_association_rec);
-	/* Here we make the qos list, we just do this now to make it
-	   so the decay thread will work.  Other than that this does
-	   nothing, so you can fill it with whatever.
-	*/
-	assoc_mgr_qos_list = list_create(destroy_acct_qos_rec);
 
 	/* we just want make it so we setup_childern so just pretend
 	   we are running off cache */
@@ -161,7 +156,7 @@ int _setup_assoc_list()
 	assoc = xmalloc(sizeof(acct_association_rec_t));
 	assoc->id = 3;
 	assoc->parent_id = 1;
-	assoc->shares_raw = 60;
+	assoc->shares_raw = 30;
 	assoc->acct = xstrdup("AccountD");
 	list_push(update.objects, assoc);
 
@@ -199,6 +194,23 @@ int _setup_assoc_list()
 	assoc->usage_raw = 0;
 	assoc->acct = xstrdup("AccountF");
 	assoc->user = xstrdup("User5");
+	list_push(update.objects, assoc);
+
+	assoc = xmalloc(sizeof(acct_association_rec_t));
+	assoc->id = 4;
+	assoc->parent_id = 1;
+	assoc->shares_raw = 30;
+	assoc->acct = xstrdup("AccountG");
+	list_push(update.objects, assoc);
+
+	/* sub of AccountG id 4 */
+	assoc = xmalloc(sizeof(acct_association_rec_t));
+	assoc->id = 41;
+	assoc->parent_id = 4;
+	assoc->shares_raw = 1;
+	assoc->usage_raw = 30;
+	assoc->acct = xstrdup("AccountG");
+	assoc->user = xstrdup("User6");
 	list_push(update.objects, assoc);
 
 	assoc_mgr_update_assocs(&update);

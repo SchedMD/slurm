@@ -146,13 +146,12 @@ static int _apply_decay(double decay_factor)
 
 	slurm_mutex_lock(&assoc_mgr_association_lock);
 	itr = list_iterator_create(assoc_mgr_association_list);
+	/* We want to do this to all associations including
+	   root.  All usage_raws are calculated from the bottom up.
+	*/
 	while((assoc = list_next(itr))) {
-		if (assoc == assoc_mgr_root_assoc)
-			continue;
 		assoc->usage_raw *= decay_factor;
 		assoc->grp_used_wall *= decay_factor;
-		if (assoc->user)
-			assoc_mgr_root_assoc->usage_raw += assoc->usage_raw;
 	}
 	list_iterator_destroy(itr);
 	slurm_mutex_unlock(&assoc_mgr_association_lock);
@@ -187,9 +186,10 @@ static int _reset_usage()
 
 	slurm_mutex_lock(&assoc_mgr_association_lock);
 	itr = list_iterator_create(assoc_mgr_association_list);
+	/* We want to do this to all associations including
+	   root.  All usage_raws are calculated from the bottom up.
+	*/
 	while((assoc = list_next(itr))) {
-		if (assoc == assoc_mgr_root_assoc)
-			continue;
 		assoc->usage_raw = 0;
 		assoc->grp_used_wall = 0;
 	}
@@ -726,8 +726,6 @@ static void *_decay_thread(void *no_data)
 		debug3("Decay factor over %d seconds goes from %.15f -> %.15f",
 		       run_delta, decay_factor, real_decay);
 
-		assoc_mgr_root_assoc->usage_raw = 1.0;
-
 		/* first apply decay to used time */
 		if(_apply_decay(real_decay) != SLURM_SUCCESS) {
 			error("problem applying decay");
@@ -790,6 +788,12 @@ static void *_decay_thread(void *no_data)
 				}
 
 				slurm_mutex_lock(&assoc_mgr_association_lock);
+				/* We want to do this all the way up
+				   to and including root.  This way we
+				   can keep track of how much usage
+				   has occured on the entire system
+				   and use that to normalize against.
+				*/
 				while(assoc) {
 					assoc->grp_used_wall += run_decay;
 					assoc->usage_raw +=
@@ -802,9 +806,6 @@ static void *_decay_thread(void *no_data)
 					       assoc->user, assoc->acct,
 					       assoc->usage_raw, run_decay,
 					       assoc->grp_used_wall);
-
-					if (assoc == assoc_mgr_root_assoc)
-						break;
 					assoc = assoc->parent_assoc_ptr;
 				}
 				slurm_mutex_unlock(&assoc_mgr_association_lock);
@@ -1038,8 +1039,9 @@ extern int priority_p_set_max_cluster_usage(uint32_t procs, uint32_t half_life)
 	last_procs = procs;
 	last_half_life = half_life;
 
-	assoc_mgr_root_assoc->usage_raw = 1.0;
-	assoc_mgr_root_assoc->usage_norm = 1.0;
+	/* This should always be 1 and it doesn't get calculated later
+	   so set it now. usage_raw and usage_norm get calculated the
+	   same way the other associations do. */
 	assoc_mgr_root_assoc->usage_efctv = 1.0;
 	debug3("Total possible cpu usage for half_life of %d secs "
 	       "on the system is %.0Lf",
@@ -1061,10 +1063,18 @@ extern void priority_p_set_assoc_usage(acct_association_rec_t *assoc)
 	}
 
 	xassert(assoc_mgr_root_assoc);
-	xassert(assoc_mgr_root_assoc->usage_raw);
 	xassert(assoc->parent_assoc_ptr);
 
-	assoc->usage_norm = assoc->usage_raw / assoc_mgr_root_assoc->usage_raw;
+	if(assoc_mgr_root_assoc->usage_raw)
+		assoc->usage_norm =
+			assoc->usage_raw / assoc_mgr_root_assoc->usage_raw;
+	else
+		/* This should only happen when no usage has occured
+		   at all so no big deal, the other usage should be 0
+		   as well here.
+		*/
+		assoc->usage_norm = 0;
+
 	debug4("Normalized usage for %s %s off %s %Lf / %Lf = %Lf",
 	       child, child_str, assoc->parent_assoc_ptr->acct,
 	       assoc->usage_raw, assoc_mgr_root_assoc->usage_raw,

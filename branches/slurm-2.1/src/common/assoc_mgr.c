@@ -2712,13 +2712,16 @@ extern int load_assoc_usage(char *state_save_location)
 			if(assoc->id == assoc_id)
 				break;
 
+		/* We want to do this all the way up to and including
+		   root.  This way we can keep track of how much usage
+		   has occured on the entire system and use that to
+		   normalize against.
+		*/
 		while(assoc) {
 			assoc->grp_used_wall += grp_used_wall;
 			assoc->usage_raw += (long double)usage_raw;
 
 			assoc = assoc->parent_assoc_ptr;
-			if(assoc == assoc_mgr_root_assoc)
-				break;
 		}
 		list_iterator_reset(itr);
 	}

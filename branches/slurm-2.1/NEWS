@@ -4,7 +4,6 @@ documents those changes that are of interest to users and admins.
 * Changes in SLURM 2.1.10
 =========================
  -- Fix memory leak in sched/builtin plugin.
- -- Fixed a fair-share calculation bug in the priority/multifactor plugin.
  -- Fixed sbatch to work correctly when no nodes are specified, but
     --ntasks-per-node is.
  -- Make sure account and wckey for a job are lower case before inserting into
@@ -24,6 +23,7 @@ documents those changes that are of interest to users and admins.
     set reservation end time in the past).
  -- Correct logic for creating a reservation that properly handles the OVERLAP
     and IGNORE_JOBS flags (flags were ignored under some conditions).
+ -- Fixed a fair-share calculation bug in the priority/multifactor plugin.
 
 * Changes in SLURM 2.1.9
 ========================
