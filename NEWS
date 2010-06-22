@@ -43,6 +43,8 @@ documents those changes that are of interest to users and admins.
     SlurmdLogFile (if specified with an absolute pathname) otherwise the
     directory used to save state, SlurmdSpoolDir.
  -- Add sattach support for the --pty option.
+ -- Added Priority debug flag to get debug for the priority multifactor
+    plugin easily.
 
 * Changes in SLURM 2.2.0.pre7
 =============================
