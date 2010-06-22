@@ -59,6 +59,7 @@ set mc		MinCPU
 set mn		MinCPUNode
 set mt		MinCPUTask
 set nt		NTasks
+
 #
 # Check accounting config and bail if not found.
 #
@@ -626,13 +627,13 @@ if {$matches != 4} {
 	set exit_code 1
 }
 
-set matches [sstat_vargs o $ac,$ap,$ar,$av,$ji,$mp,$mpn,$mpt,$mr,$mrn,$mrt,$mvs,$mvn,$mvt,$mc,$mn,$mt,$nt,$sc,$tc $job_id3]
+set matches [sstat_vargs o $ac,$ap,$ar,$av,$ji,$mp,$mpn,$mpt,$mr,$mrn,$mrt,$mvs,$mvn,$mvt,$mc,$mn,$mt,$nt $job_id3]
 if {$matches != 6} {
 	send_user "\nFAILURE: sstat -o failed ($matches)\n"
 	set exit_code 1
 }
 
-set matches [sstat_vargs -format $ac,$ap,$ar,$av,$ji,$mp,$mpn,$mpt,$mr,$mrn,$mrt,$mvs,$mvn,$mvt,$mc,$mn,$mt,$nt,$sc,$tc  $job_id3]
+set matches [sstat_vargs -format $ac,$ap,$ar,$av,$ji,$mp,$mpn,$mpt,$mr,$mrn,$mrt,$mvs,$mvn,$mvt,$mc,$mn,$mt,$nt $job_id3]
 if {$matches != 6} {
 	send_user "\nFAILURE: sstat --format failed ($matches)\n"
 	set exit_code 1
