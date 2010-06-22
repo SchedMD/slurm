@@ -47,6 +47,9 @@ documents those changes that are of interest to users and admins.
     plugin easily.
  -- Modify slurmctld communications logic to accept incoming messages on more
     than one port for improved scalability.
+ -- Add SchedulerParameters option of "defer" to avoid trying to schedule a
+    job at submission time, but to attempt scheduling many jobs at once for
+    improved performance under heavy load.
 
 * Changes in SLURM 2.2.0.pre7
 =============================

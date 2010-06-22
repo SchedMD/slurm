@@ -71,6 +71,10 @@ Controls how soon the record of a completed job can be purged from the
 The record of jobs run will be preserved in accounting records and logs.
 The default value is 300 seconds. The value should be reduced to a few
 seconds if possible.</li>
+<li><b>SchedulerParameters</b>:
+Set an option of <b>defer_sched</b> to avoid trying to schedule each job
+individually at job submit time. SLURM will attempt to schedule all jobs
+periodically for improved performance.</li>
 <li><b>SlurmctldPort</b>:
 It is desirable to configure the <b>slurmctld</b> daemon to accept incoming
 messages on more than one port in order to avoid having incoming messages
