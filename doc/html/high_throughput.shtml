@@ -12,7 +12,7 @@ for this material.</p>
 <h2>Performance Results</h2>
 
 <p>SLURM has been validated to accept 1,000 job creations in under 10 seconds
-and to fully execute those jobs in 16 seconds. Actual performance depends upon
+and to fully execute those jobs in 25 seconds. Actual performance depends upon
 the jobs to be executed plus the hardware and configuration used.</p>
 
 <h2>System configuration</h2>
