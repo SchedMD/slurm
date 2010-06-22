@@ -50,6 +50,8 @@ documents those changes that are of interest to users and admins.
  -- Add SchedulerParameters option of "defer" to avoid trying to schedule a
     job at submission time, but to attempt scheduling many jobs at once for
     improved performance under heavy load.
+ -- Correct logic controlling slurmctld thread limit eliminating check of
+    RLIMIT_STACK.
 
 * Changes in SLURM 2.2.0.pre7
 =============================
