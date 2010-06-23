@@ -276,8 +276,9 @@ static int _set_cond(int *start, int argc, char *argv[],
 					db_conn, my_uid, NULL);
 			}
 
-			if(addto_qos_char_list(assoc_cond->qos_list, g_qos_list,
-					       argv[i]+end, option))
+			if(slurmdb_addto_qos_char_list(assoc_cond->qos_list,
+						       g_qos_list,
+						       argv[i]+end, option))
 				set = 1;
 			else
 				exit_code = 1;

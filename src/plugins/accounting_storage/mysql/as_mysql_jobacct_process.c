@@ -1086,6 +1086,23 @@ extern int setup_job_cond_limits(mysql_conn_t *mysql_conn,
 		xstrcat(*extra, ")");
 	}
 
+	if(job_cond->qos_list && list_count(job_cond->qos_list)) {
+		set = 0;
+		if(*extra)
+			xstrcat(*extra, " && (");
+		else
+			xstrcat(*extra, " where (");
+		itr = list_iterator_create(job_cond->qos_list);
+		while((object = list_next(itr))) {
+			if(set)
+				xstrcat(*extra, " || ");
+			xstrfmtcat(*extra, "t1.id_qos='%s'", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(*extra, ")");
+	}
+
 	if(job_cond->step_list && list_count(job_cond->step_list)) {
 		set = 0;
 		if(*extra)
@@ -1138,6 +1155,25 @@ extern int setup_job_cond_limits(mysql_conn_t *mysql_conn,
 
 		}
 	}
+
+	if(job_cond->timelimit_min) {
+		if(*extra)
+			xstrcat(*extra, " && (");
+		else
+			xstrcat(*extra, " where (");
+
+		if(job_cond->timelimit_max) {
+			xstrfmtcat(*extra, "(t1.timelimit between %u and %u))",
+				   job_cond->timelimit_min,
+				   job_cond->timelimit_max);
+
+		} else {
+			xstrfmtcat(*extra, "(t1.timelimit='%u'))",
+				   job_cond->timelimit_min);
+
+		}
+	}
+
 	if(job_cond->state_list && list_count(job_cond->state_list)) {
 		set = 0;
 		if(*extra)

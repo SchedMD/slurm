@@ -269,7 +269,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	if (job_ptr->time_limit == NO_VAL)
 		sprintf(tmp_line, "Partition_Limit");
 	else {
-		secs2time_str(job_ptr->time_limit * 60, tmp_line,
+		mins2time_str(job_ptr->time_limit, tmp_line,
 			      sizeof(tmp_line));
 	}
 	xstrcat(out, tmp_line);
@@ -278,7 +278,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	if (job_ptr->time_min == 0)
 		sprintf(tmp_line, "N/A");
 	else {
-		secs2time_str(job_ptr->time_min * 60, tmp_line,
+		mins2time_str(job_ptr->time_min, tmp_line,
 			      sizeof(tmp_line));
 	}
 	xstrcat(out, tmp_line);

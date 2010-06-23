@@ -299,8 +299,9 @@ static int _set_cond(int *start, int argc, char *argv[],
 					db_conn, my_uid, NULL);
 			}
 
-			addto_qos_char_list(assoc_cond->qos_list,
-					    g_qos_list, argv[i]+end, option);
+			slurmdb_addto_qos_char_list(assoc_cond->qos_list,
+						    g_qos_list, argv[i]+end,
+						    option);
 			u_set = 1;
 		} else {
 			exit_code=1;
@@ -496,8 +497,9 @@ static int _set_rec(int *start, int argc, char *argv[],
 				g_qos_list = acct_storage_g_get_qos(
 					db_conn, my_uid, NULL);
 
-			if(addto_qos_char_list(assoc->qos_list,
-					       g_qos_list, argv[i]+end, option))
+			if(slurmdb_addto_qos_char_list(assoc->qos_list,
+						       g_qos_list, argv[i]+end,
+						       option))
 				a_set = 1;
 			else
 				exit_code = 1;
@@ -861,8 +863,9 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 				g_qos_list = acct_storage_g_get_qos(
 					db_conn, my_uid, NULL);
 
-			if(addto_qos_char_list(start_assoc.qos_list, g_qos_list,
-					       argv[i]+end, option))
+			if(slurmdb_addto_qos_char_list(start_assoc.qos_list,
+						       g_qos_list,
+						       argv[i]+end, option))
 				limit_set = 1;
 			else {
 				exit_code = 1;

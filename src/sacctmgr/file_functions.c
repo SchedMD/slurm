@@ -498,8 +498,9 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 					db_conn, my_uid, NULL);
 			}
 
-			addto_qos_char_list(file_opts->qos_list, g_qos_list,
-					    option, option2);
+			slurmdb_addto_qos_char_list(file_opts->qos_list,
+						    g_qos_list,
+						    option, option2);
 		} else if (!strncasecmp (sub, "WCKeys",
 					 MAX(command_len, 2))) {
 			if(!file_opts->wckey_list)

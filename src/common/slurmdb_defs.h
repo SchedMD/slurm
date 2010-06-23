@@ -134,6 +134,7 @@ extern int slurmdb_report_set_start_end_time(time_t *start, time_t *end);
 extern uint32_t slurmdb_parse_purge(char *string);
 extern char *slurmdb_purge_string(uint32_t purge, char *string, int len,
 				  bool with_archive);
-
+extern int slurmdb_addto_qos_char_list(List char_list, List qos_list,
+				       char *names, int option);
 
 #endif

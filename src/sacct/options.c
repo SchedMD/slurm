@@ -56,7 +56,7 @@ void *acct_db_conn = NULL;
 List print_fields_list = NULL;
 ListIterator print_fields_itr = NULL;
 int field_count = 0;
-List qos_list = NULL;
+List g_qos_list = NULL;
 
 void _help_fields_msg(void)
 {
@@ -441,6 +441,14 @@ sacct [<OPTION>]                                                            \n\
 	           Display jobs ran on all clusters. By default, only jobs  \n\
                    ran on the cluster from where sacct is called are        \n\
                    displayed.                                               \n\
+     -m, --timelimit-min:                                                   \n\
+                   Only send data about jobs with this timelimit.           \n\
+                   If used with timelimit_max this will be the minimum      \n\
+                   timelimit of the range.  Default is no restriction.      \n\
+     -M, --timelimit-max:                                                   \n\
+                   Ignored by itself, but if timelimit_min is set this will \n\
+                   be the maximum timelimit of the range.  Default is no    \n\
+                   restriction.                                             \n\
      -n, --noheader:                                                        \n\
 	           No header will be added to the beginning of output.      \n\
                    The default is to print a header; the option has no effect\n\
@@ -456,6 +464,8 @@ sacct [<OPTION>]                                                            \n\
                    primarily for debugging.                                 \n\
      -p, --parsable: output will be '|' delimited with a '|' at the end     \n\
      -P, --parsable2: output will be '|' delimited without a '|' at the end \n\
+     -q, --qos:                                                             \n\
+                   Only send data about jobs using these qos.  Default is all.\n\
      -r, --partition:                                                       \n\
 	           Comma separated list of partitions to select jobs and    \n\
                    job steps from. The default is all partitions.           \n\
@@ -609,8 +619,11 @@ void parse_command_line(int argc, char **argv)
 		{"helpformat", 0, &params.opt_help, 2},
 		{"nnodes", 1, 0, 'i'},
 		{"ncpus", 1, 0, 'I'},
+		{"qos", 1, 0, 'q'},
 		{"jobs", 1, 0, 'j'},
 		{"long", 0, 0, 'l'},
+		{"timelimit-min", 1, 0, 'm'},
+		{"timelimit-max", 1, 0, 'M'},
 		{"nodelist", 1, 0, 'N'},
 		{"noheader", 0, 0, 'n'},
 		{"fields", 1, 0, 'o'},
@@ -640,7 +653,7 @@ void parse_command_line(int argc, char **argv)
 
 	while (1) {		/* now cycle through the command line */
 		c = getopt_long(argc, argv,
-				"aA:bcC:dDeE:f:g:hi:I:j:lLnN:o:OpPr:s:S:Ttu:vVW:x:X",
+				"aA:bcC:dDeE:f:g:hi:I:j:lLnm:M:N:o:OpPq:r:s:S:Ttu:vVW:x:X",
 				long_options, &optionIndex);
 		if (c == -1)
 			break;
@@ -746,12 +759,6 @@ void parse_command_line(int argc, char **argv)
 		case 'l':
 			long_output = true;
 			break;
-		case 'o':
-			xstrfmtcat(params.opt_field_list, "%s,", optarg);
-			break;
-		case 'O':
-			params.opt_fdump = 1;
-			break;
 		case 'n':
 			print_fields_have_header = 0;
 			break;
@@ -763,6 +770,24 @@ void parse_command_line(int argc, char **argv)
 			}
 			job_cond->used_nodes = xstrdup(optarg);
 			break;
+		case 'm':
+			job_cond->timelimit_min = time_str2mins(optarg);
+			if (((int32_t)job_cond->timelimit_min <= 0)
+			    && (job_cond->timelimit_min != INFINITE))
+				fatal("Invalid time limit specification");
+			break;
+		case 'M':
+			job_cond->timelimit_max = time_str2mins(optarg);
+			if (((int32_t)job_cond->timelimit_max <= 0)
+			    && (job_cond->timelimit_max != INFINITE))
+				fatal("Invalid time limit specification");
+			break;
+		case 'o':
+			xstrfmtcat(params.opt_field_list, "%s,", optarg);
+			break;
+		case 'O':
+			params.opt_fdump = 1;
+			break;
 		case 'p':
 			print_fields_parsable_print =
 				PRINT_FIELDS_PARSABLE_ENDING;
@@ -770,6 +795,19 @@ void parse_command_line(int argc, char **argv)
 		case 'P':
 			print_fields_parsable_print =
 				PRINT_FIELDS_PARSABLE_NO_ENDING;
+			break;
+		case 'q':
+			if(!g_qos_list)
+				g_qos_list = slurmdb_qos_get(
+					acct_db_conn, NULL);
+
+			if(!job_cond->qos_list)
+				job_cond->qos_list =
+					list_create(slurm_destroy_char);
+
+			if(!slurmdb_addto_qos_char_list(job_cond->qos_list,
+							g_qos_list, optarg, 0))
+				fatal("problem processing qos list");
 			break;
 		case 'r':
 			if(!job_cond->partition_list)
@@ -1009,6 +1047,13 @@ void parse_command_line(int argc, char **argv)
 		list_iterator_destroy(itr);
 	}
 
+	/* specific qos' requested? */
+	if (job_cond->qos_list && list_count(job_cond->qos_list)) {
+		start = get_qos_complete_str(g_qos_list, job_cond->qos_list);
+		debug2("QOS requested\t: %s\n", start);
+		xfree(start);
+	}
+
 	/* specific jobs requested? */
 	if (job_cond->step_list && list_count(job_cond->step_list)) {
 		debug2("Jobs requested:");
@@ -1042,6 +1087,19 @@ void parse_command_line(int argc, char **argv)
 		while((start = list_next(itr)))
 			debug2("\t: %s\n", start);
 		list_iterator_destroy(itr);
+	}
+
+	if (job_cond->timelimit_min) {
+		char time_str[128], tmp1[32], tmp2[32];
+		mins2time_str(job_cond->timelimit_min, tmp1, sizeof(tmp1));
+		sprintf(time_str, "%s", tmp1);
+		if(job_cond->timelimit_max) {
+			int len = strlen(tmp1);
+			mins2time_str(job_cond->timelimit_max,
+				      tmp2, sizeof(tmp2));
+			sprintf(time_str+len, " - %s", tmp2);
+		}
+		debug2("Timelimit requested\t: %s", time_str);
 	}
 
 	/* select the output fields */
@@ -1427,8 +1485,8 @@ void sacct_fini()
 		list_destroy(print_fields_list);
 	if(jobs)
 		list_destroy(jobs);
-	if(qos_list)
-		list_destroy(qos_list);
+	if(g_qos_list)
+		list_destroy(g_qos_list);
 
 	if(params.opt_completion)
 		g_slurm_jobcomp_fini();
