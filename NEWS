@@ -52,6 +52,8 @@ documents those changes that are of interest to users and admins.
     improved performance under heavy load.
  -- Correct logic controlling slurmctld thread limit eliminating check of
     RLIMIT_STACK.
+ -- Make slurmctld's trigger logic more robust in the event that job records
+    get purged before their trigger can be processed (e.g. MinJobAge=1).
 
 * Changes in SLURM 2.2.0.pre7
 =============================

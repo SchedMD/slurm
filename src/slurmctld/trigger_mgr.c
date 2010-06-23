@@ -706,6 +706,7 @@ fini:	verbose("State of %d triggers recovered", trigger_cnt);
 static void _trigger_job_event(trig_mgr_info_t *trig_in, time_t now)
 {
 	if ((trig_in->job_ptr == NULL) ||
+	    (trig_in->job_ptr->magic != JOB_MAGIC) ||
 	    (trig_in->job_ptr->job_id != trig_in->job_id))
 		trig_in->job_ptr = find_job_record(trig_in->job_ptr->job_id);
 
