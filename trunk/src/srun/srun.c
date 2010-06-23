@@ -389,6 +389,10 @@ int srun(int ac, char **av)
 		env->jobid = job->jobid;
 		env->stepid = job->stepid;
 	}
+	if (opt.pty && (set_winsize(job) < 0)) {
+		error("Not using a pseudo-terminal, disregarding --pty option");
+		opt.pty = false;
+	}
 	if (opt.pty) {
 		struct termios term;
 		int fd = STDIN_FILENO;
@@ -401,7 +405,6 @@ int srun(int ac, char **av)
 		tcsetattr(fd, TCSANOW, &term);
 		atexit(&_pty_restore);
 
-		set_winsize(job);
 		block_sigwinch();
 		pty_thread_create(job);
 		env->pty_port = job->pty_port;
