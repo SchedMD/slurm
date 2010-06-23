@@ -1039,11 +1039,16 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	         (job_ptr->details->min_nodes > part_ptr->max_nodes))
 		 fail_reason = WAIT_PART_NODE_LIMIT;
 	if (fail_reason != WAIT_NO_REASON) {
-		job_ptr->state_reason = fail_reason;
-		xfree(job_ptr->state_desc);
 		last_job_update = now;
-		if (job_ptr->priority == 0)	/* user/admin hold */
+		xfree(job_ptr->state_desc);
+		if (job_ptr->priority == 0) {	/* user/admin hold */
+			if ((job_ptr->state_reason != WAIT_HELD) &&
+			    (job_ptr->state_reason != WAIT_HELD_USER)) {
+				job_ptr->state_reason = WAIT_HELD;
+			}
 			return ESLURM_JOB_HELD;
+		}
+		job_ptr->state_reason = fail_reason;
 		job_ptr->priority = 1;	/* sys hold, move to end of queue */
 		return ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
 	}

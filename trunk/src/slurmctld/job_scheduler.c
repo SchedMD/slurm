@@ -141,7 +141,11 @@ extern List build_job_queue(void)
 		if ((!IS_JOB_PENDING(job_ptr)) || IS_JOB_COMPLETING(job_ptr))
 			continue;
 		if (job_ptr->priority == 0)	{ /* held */
-			job_ptr->state_reason = WAIT_HELD;
+			if ((job_ptr->state_reason != WAIT_HELD) &&
+			    (job_ptr->state_reason != WAIT_HELD_USER)) {
+				job_ptr->state_reason = WAIT_HELD;
+				xfree(job_ptr->state_desc);
+			}
 			debug3("sched: JobId=%u. State=%s. Reason=%s. "
 			       "Priority=%u.",
 			       job_ptr->job_id,
