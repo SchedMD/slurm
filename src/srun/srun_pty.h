@@ -1,7 +1,8 @@
 /*****************************************************************************\
- * src/srun/srun_pty.h - srun signal handling
+ *  src/srun/srun_pty.h - srun signal handling
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Moe Jette <jette@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -45,6 +46,6 @@ typedef struct srun_job signal_job_t;
 
 void block_sigwinch(void);
 void pty_thread_create(srun_job_t *job);
-void set_winsize(srun_job_t *job);
+int set_winsize(srun_job_t *job);
 
 #endif /* !_SIGNALS_H */
