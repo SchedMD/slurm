@@ -1544,8 +1544,9 @@ extern List acct_storage_p_get_wckeys(void *db_conn, uid_t uid,
 	return ret_list;
 }
 
-extern List acct_storage_p_get_reservations(void *mysql_conn, uid_t uid,
-					    slurmdb_reservation_cond_t *resv_cond)
+extern List acct_storage_p_get_reservations(
+	void *mysql_conn, uid_t uid,
+	slurmdb_reservation_cond_t *resv_cond)
 {
 	slurmdbd_msg_t req, resp;
 	dbd_cond_msg_t get_msg;
@@ -1865,7 +1866,13 @@ extern int jobacct_storage_p_job_start(void *db_conn,
 	 * the system.
 	 */
 	if((req.db_index && !IS_JOB_RESIZING(job_ptr))
-	    || (!req.db_index && IS_JOB_FINISHED(job_ptr))) {
+           || (!req.db_index && IS_JOB_FINISHED(job_ptr))) {
+		/* This is to ensure we don't do this multiple times for the
+		   same job.  It will be fixed after this happens.
+		*/
+		if(!req.db_index)
+			job_ptr->db_index = NO_VAL;
+
 		if (slurm_send_slurmdbd_msg(SLURMDBD_VERSION, &msg) < 0) {
 			xfree(req.block_id);
 			return SLURM_ERROR;
