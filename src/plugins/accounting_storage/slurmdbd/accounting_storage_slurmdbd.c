@@ -1868,7 +1868,8 @@ extern int jobacct_storage_p_job_start(void *db_conn,
 	if((req.db_index && !IS_JOB_RESIZING(job_ptr))
            || (!req.db_index && IS_JOB_FINISHED(job_ptr))) {
 		/* This is to ensure we don't do this multiple times for the
-		   same job.  It will be fixed after this happens.
+		   same job.  This can happen when an account is being
+		   deleted and hense the associations dealing with it.
 		*/
 		if(!req.db_index)
 			job_ptr->db_index = NO_VAL;
