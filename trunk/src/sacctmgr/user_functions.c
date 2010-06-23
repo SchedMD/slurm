@@ -1232,7 +1232,8 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 					continue;
 				}
 
-				assoc = xmalloc(sizeof(slurmdb_association_rec_t));
+				assoc = xmalloc(
+					sizeof(slurmdb_association_rec_t));
 				slurmdb_init_association_rec(assoc);
 				assoc->user = xstrdup(name);
 				assoc->acct = xstrdup(account);
@@ -1336,7 +1337,7 @@ no_default:
 		printf(" Adding User(s)\n%s", user_str);
 		printf(" Settings =\n");
 		printf("  Default Account = %s\n", default_acct);
-		if(track_wckey)
+		if(default_wckey)
 			printf("  Default WCKey   = %s\n", default_wckey);
 
 		if(admin_level != SLURMDB_ADMIN_NOTSET)
