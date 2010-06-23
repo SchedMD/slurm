@@ -266,7 +266,7 @@ void *agent(void *args)
 		error("pthread_create error %m");
 		if (++retries > MAX_RETRIES)
 			fatal("Can't create pthread");
-		sleep(1);	/* sleep and again */
+		usleep(10000);	/* sleep and retry */
 	}
 	slurm_attr_destroy(&attr_wdog);
 #if 	AGENT_THREAD_COUNT < 1
@@ -305,7 +305,7 @@ void *agent(void *args)
 			else {
 				slurm_mutex_unlock(&agent_info_ptr->
 						     thread_mutex);
-				sleep(1);
+				usleep(10000);	/* sleep and retry */
 				slurm_mutex_lock(&agent_info_ptr->
 						   thread_mutex);
 			}
@@ -1282,9 +1282,7 @@ void agent_queue_request(agent_arg_t *agent_arg_ptr)
 				    agent, (void *) agent_arg_ptr);
 		slurm_attr_destroy(&attr_agent);
 		if (rc == 0) {
-			sleep(1);
-			if (!pthread_kill(thread_agent, 0))
-				info("Shutdown agent still running");
+			usleep(10000);	/* give agent a chance to start */
 			return;
 		}
 	}
@@ -1329,7 +1327,7 @@ static void _spawn_retry_agent(agent_arg_t * agent_arg_ptr)
 		error("pthread_create error %m");
 		if (++retries > MAX_RETRIES)
 			fatal("Can't create pthread");
-		sleep(1);	/* sleep and try again */
+		usleep(10000);	/* sleep and retry */
 	}
 	slurm_attr_destroy(&attr_agent);
 }
