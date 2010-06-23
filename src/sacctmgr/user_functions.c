@@ -1026,7 +1026,8 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 			default_acct =
 				xstrdup(list_peek(assoc_cond->acct_list));
 
-		memset(&query_assoc_cond, 0, sizeof(slurmdb_association_cond_t));
+		memset(&query_assoc_cond, 0,
+		       sizeof(slurmdb_association_cond_t));
 		query_assoc_cond.acct_list = assoc_cond->acct_list;
 		query_assoc_cond.cluster_list = assoc_cond->cluster_list;
 		local_assoc_list = acct_storage_g_get_associations(
@@ -1044,7 +1045,7 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 		}
 	}
 
-	if(track_wckey) {
+	if(track_wckey || default_wckey) {
 		if(!default_wckey)
 			default_wckey =
 				xstrdup(list_peek(wckey_cond->name_list));
@@ -1279,7 +1280,7 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 		acct_first = 0;
 
 		/* continue here if not doing wckeys */
-		if(!track_wckey)
+		if(!track_wckey && !default_wckey)
 			continue;
 
 		itr_w = list_iterator_create(wckey_cond->name_list);
