@@ -886,15 +886,15 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 	lock_slurmctld(config_read_lock);
 	nports = slurmctld_conf.slurmctld_port_count;
 	maxsockfd = slurmctld_conf.slurmctld_port + nports;
-	sockfd = xmalloc(sizeof(slurm_fd)*nports);
+	sockfd = xmalloc(sizeof(slurm_fd) * nports);
 	for (i=0; i<nports; i++) {
 		sockfd[i] = slurm_init_msg_engine_addrname_port(
 					node_addr,
 					slurmctld_conf.slurmctld_port+i);
 		if (sockfd[i] == SLURM_SOCKET_ERROR)
 			fatal("slurm_init_msg_engine_addrname_port error %m");
-		slurm_get_stream_addr(sockfd[i],&srv_addr);
-		slurm_get_ip_str(&srv_addr,&port, ip, sizeof(ip));
+		slurm_get_stream_addr(sockfd[i], &srv_addr);
+		slurm_get_ip_str(&srv_addr, &port, ip, sizeof(ip));
 		debug2("slurmctld listening on %s:%d", ip, ntohs(port));
 	}
 	unlock_slurmctld(config_read_lock);
