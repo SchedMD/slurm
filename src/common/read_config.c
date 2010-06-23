@@ -2613,6 +2613,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		} else {
 			conf->slurmctld_port_count = 1;
 		}
+		xfree(temp_str);
 	} else {
 		conf->slurmctld_port = SLURMCTLD_PORT;
 		conf->slurmctld_port_count = SLURMCTLD_PORT_COUNT;

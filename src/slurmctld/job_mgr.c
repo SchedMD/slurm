@@ -8181,10 +8181,14 @@ extern int job_cancel_by_assoc_id(uint32_t assoc_id)
 	int cnt = 0;
 	ListIterator job_iterator;
 	struct job_record *job_ptr;
+	/* Write lock on jobs */
+	slurmctld_lock_t job_write_lock =
+		{ NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
 
 	if (!job_list)
 		return cnt;
 
+	lock_slurmctld(job_write_lock);
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		if (job_ptr->assoc_id != assoc_id)
@@ -8224,6 +8228,7 @@ extern int job_cancel_by_assoc_id(uint32_t assoc_id)
 		cnt++;
 	}
 	list_iterator_destroy(job_iterator);
+	unlock_slurmctld(job_write_lock);
 	return cnt;
 }
 
