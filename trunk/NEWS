@@ -6,6 +6,8 @@ documents those changes that are of interest to users and admins.
  -- Add DebugFlags parameter of "Backfill" for sched/backfill detailed logging.
  -- Add DebugFlags parameter of "Gang" for detailed logging of gang scheduling
     activities.
+ -- Add DebugFlags parameter of "Priority" for detailed logging of priority
+    multifactor activities.
  -- Add DebugFlags parameter of "Reservation" for detailed logging of advanced
     reservations.
  -- Add run time to mail message upon job termination and queue time for mail
@@ -43,8 +45,6 @@ documents those changes that are of interest to users and admins.
     SlurmdLogFile (if specified with an absolute pathname) otherwise the
     directory used to save state, SlurmdSpoolDir.
  -- Add sattach support for the --pty option.
- -- Added Priority debug flag to get debug for the priority multifactor
-    plugin easily.
  -- Modify slurmctld communications logic to accept incoming messages on more
     than one port for improved scalability.
  -- Add SchedulerParameters option of "defer" to avoid trying to schedule a
