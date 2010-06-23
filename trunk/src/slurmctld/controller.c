@@ -917,6 +917,7 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 		if (select(maxsockfd, &rfds, NULL, NULL, NULL) == -1) {
 			if (errno != EINTR)
 				error("slurm_accept_msg_conn select: %m");
+			_free_server_thread();
 			continue;
 		}
 		/* find one to process */
@@ -935,9 +936,9 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 		if ((newsockfd = slurm_accept_msg_conn(sockfd[i],
 						       &cli_addr)) ==
 		    SLURM_SOCKET_ERROR) {
-			_free_server_thread();
 			if (errno != EINTR)
 				error("slurm_accept_msg_conn: %m");
+			_free_server_thread();
 			continue;
 		}
 		conn_arg = xmalloc(sizeof(connection_arg_t));
