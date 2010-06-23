@@ -203,8 +203,13 @@ expect {
 }
 exec $bin_sleep 5
 set found_job 0
+set purged_job 0
 spawn $squeue --jobs=$job_id --states=cg,cd
 expect {
+	-re "Invalid job id specified" {
+		set purged_job 1
+		exp_continue
+	}
 	-re "($job_id)" {
 		set found_job 1
 		exp_continue
@@ -214,15 +219,23 @@ expect {
 	}
 }
 if {$found_job == 0} {
-	send_user "\nFAILURE: job not killed on SIGHUP\n"
-	spawn $scontrol show job $job_id
-	expect {
-		eof {
-			wait
-		}
+	if {$purged_job == 1} {
+		set min_job_age [get_min_job_age]
 	}
-	exec $scancel --quiet $job_id
-	set exit_code 1
+	if {$purged_job == 1 && $min_job_age < 60} {
+		send_user "\nWARNING: MinJobAge ($min_job_age) configured too low "
+		send_user "to capture job state after completion\n"
+	} else {
+		send_user "\nFAILURE: job not killed on SIGHUP\n"
+		spawn $scontrol show job $job_id
+		expect {
+			eof {
+				wait
+			}
+		}
+		exec $scancel --quiet $job_id
+		set exit_code 1
+	}
 }
 
 
