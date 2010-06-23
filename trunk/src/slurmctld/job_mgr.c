@@ -4305,6 +4305,7 @@ static void _list_delete_job(void *job_entry)
 
 	xassert(job_entry);
 	xassert (job_ptr->magic == JOB_MAGIC);
+	job_ptr->magic = 0;	/* make sure we don't delete record twice */
 
 	/* Remove the record from the hash table */
 	job_pptr = &job_hash[JOB_HASH_INX(job_ptr->job_id)];
