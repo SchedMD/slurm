@@ -395,11 +395,11 @@ A list of available generic consumable resources will be printed and the
 command will exit if the option argument is "help".
 Examples of use include "\-\-gres=gpus:2*cpu,disk=40G" and "\-\-gres=help".
 
-.\".TP
-.\"NOTE: Do not document feature until user release mechanism is available.
-.\"\-H, \-\-hold
-.\"Specify the job is to be submitted in a held state (priority of zero).
-.\"A held job can now be released using scontrol to reset its priority.
+.TP
+\fB\-H, \-\-hold\fR
+Specify the job is to be submitted in a held state (priority of zero).
+A held job can now be released using scontrol to reset its priority
+(e.g. "\fIscontrol update jobid=<id> priority=1\fR".
 
 .TP
 \fB\-h\fR, \fB\-\-help\fR

@@ -2175,11 +2175,13 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 	xassert(job_ptr);
 	independent = job_independent(job_ptr, will_run);
 	/* priority needs to be calculated after this since we set a
-	   begin time in job_independent and that lets us know if the
-	   job is eligible.
-	*/
-	if(job_ptr->priority == NO_VAL)
+	 * begin time in job_independent and that lets us know if the
+	 * job is eligible.
+	 */
+	if (job_ptr->priority == NO_VAL)
 		_set_job_prio(job_ptr);
+	else if (job_ptr->priority == 0)
+		job_ptr->state_reason = WAIT_HELD_USER;
 
 	if (license_job_test(job_ptr, time(NULL)) != SLURM_SUCCESS)
 		independent = false;
@@ -3815,8 +3817,8 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 		detail_ptr->ckpt_dir = xstrdup(detail_ptr->work_dir);
 
 	/* The priority needs to be set after this since we don't have
-	   an association rec yet
-	*/
+	 * an association rec yet
+	 */
 
 	detail_ptr->mc_ptr = _set_multi_core_data(job_desc);
 	*job_rec_ptr = job_ptr;
@@ -5323,8 +5325,11 @@ static bool _top_priority(struct job_record *job_ptr)
 
 	if ((!top) && detail_ptr) {	/* not top prio */
 		if (job_ptr->priority == 0) {		/* user/admin hold */
-			job_ptr->state_reason = WAIT_HELD;
-			xfree(job_ptr->state_desc);
+			if ((job_ptr->state_reason != WAIT_HELD) &&
+			    (job_ptr->state_reason != WAIT_HELD_USER)) {
+				job_ptr->state_reason = WAIT_HELD;
+				xfree(job_ptr->state_desc);
+			}
 		} else if (job_ptr->priority != 1) {	/* not system hold */
 			job_ptr->state_reason = WAIT_PRIORITY;
 			xfree(job_ptr->state_desc);
@@ -5808,8 +5813,8 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		*/
 		if (IS_JOB_FINISHED(job_ptr) || (detail_ptr == NULL))
 			error_code = ESLURM_DISABLED;
-		else if (super_user
-			 ||  (job_ptr->priority > job_specs->priority)) {
+		else if (super_user ||
+			 (job_ptr->priority > job_specs->priority)) {
 			job_ptr->details->nice = NICE_OFFSET;
 			if(job_specs->priority == INFINITE) {
 				job_ptr->direct_set_prio = 0;
@@ -5822,6 +5827,21 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			     "job_id %u", job_ptr->priority,
 			     job_specs->job_id);
 			update_accounting = true;
+			if (job_ptr->priority == 0) {
+				if (super_user)
+					job_ptr->state_reason = WAIT_HELD;
+				else
+					job_ptr->state_reason = WAIT_HELD_USER;
+				xfree(job_ptr->state_desc);
+			}
+		} else if ((job_ptr->priority == 0) &&
+			   (job_ptr->state_reason == WAIT_HELD_USER)) {
+			job_ptr->direct_set_prio = 0;
+			_set_job_prio(job_ptr);
+			info("sched: update_job: releasing user hold "
+			     "for job_id %u", job_specs->job_id);
+			job_ptr->state_reason = WAIT_NO_REASON;
+			xfree(job_ptr->state_desc);
 		} else {
 			error("sched: Attempt to increase priority for job %u",
 			      job_specs->job_id);

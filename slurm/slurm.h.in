@@ -259,7 +259,7 @@ enum job_state_reason {
 	WAIT_PART_TIME_LIMIT,	/* request exceeds partition time limit */
 	WAIT_PART_DOWN,		/* requested partition is down */
 	WAIT_PART_INACTIVE,	/* requested partition is inactive */
-	WAIT_HELD,		/* job is held, priority==0 */
+	WAIT_HELD,		/* job is held by administrator */
 	WAIT_TIME,		/* job waiting for specific begin time */
 	WAIT_LICENSES,		/* job is waiting for licenses */
 	WAIT_ASSOC_JOB_LIMIT,	/* user/bank job limit reached */
@@ -267,7 +267,7 @@ enum job_state_reason {
 	WAIT_ASSOC_TIME_LIMIT,  /* user/bank time limit reached */
 	WAIT_RESERVATION,	/* reservation not available */
 	WAIT_NODE_NOT_AVAIL,	/* required node is DOWN or DRAINED */
-	WAIT_TBD1,
+	WAIT_HELD_USER,		/* job is held by user */
 	WAIT_TBD2,
 	FAIL_DOWN_PARTITION,	/* partition for job is DOWN */
 	FAIL_DOWN_NODE,		/* some node in the allocation failed */

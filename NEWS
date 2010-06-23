@@ -54,6 +54,9 @@ documents those changes that are of interest to users and admins.
     RLIMIT_STACK.
  -- Make slurmctld's trigger logic more robust in the event that job records
     get purged before their trigger can be processed (e.g. MinJobAge=1).
+ -- Add support for users to hold/release their own jobs (submit the job with
+    srun/sbatch --hold/-H option or use "scontrol update jobid=# priority=0"
+    to hold and "scontrol update jobid=# priority=1" to release).
 
 * Changes in SLURM 2.2.0.pre7
 =============================
