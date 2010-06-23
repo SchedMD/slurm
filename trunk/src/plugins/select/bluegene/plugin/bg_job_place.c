@@ -1564,6 +1564,10 @@ preempt:
 			} else if(bg_record->job_running == BLOCK_ERROR_STATE)
 				starttime = INFINITE;
 
+			/* make sure the job is eligible to run */
+			if(job_ptr->details->begin_time > starttime)
+				starttime = job_ptr->details->begin_time;
+
 			job_ptr->start_time = starttime;
 
 			select_g_select_jobinfo_set(job_ptr->select_jobinfo,
