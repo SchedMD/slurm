@@ -757,7 +757,8 @@ extern int test_job_dependency(struct job_record *job_ptr)
  				list_delete_item(depend_iter);
  			else
 				depends = true;
- 		} else if (dep_ptr->job_ptr->job_id != dep_ptr->job_id) {
+ 		} else if ((dep_ptr->job_ptr->magic != JOB_MAGIC) ||
+			   (dep_ptr->job_ptr->job_id != dep_ptr->job_id)) {
 			/* job is gone, dependency lifted */
 			list_delete_item(depend_iter);
 		} else if (dep_ptr->depend_type == SLURM_DEPEND_AFTER) {
