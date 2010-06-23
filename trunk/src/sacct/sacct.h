@@ -172,7 +172,7 @@ extern List jobs;
 extern List print_fields_list;
 extern ListIterator print_fields_itr;
 extern int field_count;
-extern List qos_list;
+extern List g_qos_list;
 
 /* process.c */
 char *find_hostname(uint32_t pos, char *hosts);

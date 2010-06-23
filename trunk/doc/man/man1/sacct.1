@@ -220,6 +220,17 @@ Display jobs ran on all clusters. By default, only jobs ran on the
 cluster from where sacct is called are displayed.
 
 .TP
+\f3\-m\fP\f3,\fP \f3\-\-timelimit-min\fP
+Only send data about jobs with this timelimit.  If used with
+timelimit_max this will be the minimum timelimit of the range.
+Default is no restriction.
+
+.TP
+\f3\-M\fP\f3,\fP \f3\-\-timelimit-max\fP
+Ignored by itself, but if timelimit_min is set this will be the
+maximum timelimit of the range.  Default is no restriction.
+
+.TP
 \f3\-n\fP\f3,\fP \f3\-\-noheader\fP
 No heading will be added to the output. The default action is to
 display a header.
@@ -259,6 +270,10 @@ output will be '|' delimited with a '|' at the end
 .TP
 \f3\-P\fP\f3,\fP \f3\-\-parsable2\fP
 output will be '|' delimited without a '|' at the end
+
+.TP
+\f3\-q\fP\f3,\fP \f3\-\-qos\fP
+Only send data about jobs using these qos.  Default is all.
 
 .TP
 \f3\-r\fP\f3,\fP \f3\-\-partition\fP

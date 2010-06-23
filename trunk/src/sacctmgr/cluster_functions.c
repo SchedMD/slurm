@@ -247,8 +247,9 @@ static int _set_rec(int *start, int argc, char *argv[],
 				g_qos_list = acct_storage_g_get_qos(
 					db_conn, my_uid, NULL);
 
-			if(addto_qos_char_list(assoc->qos_list,
-					       g_qos_list, argv[i]+end, option))
+			if(slurmdb_addto_qos_char_list(assoc->qos_list,
+						       g_qos_list, argv[i]+end,
+						       option))
 				set = 1;
 			else
 				exit_code = 1;

@@ -231,19 +231,23 @@ typedef struct {
 	uint32_t cpus_max;      /* number of cpus high range */
 	uint32_t cpus_min;      /* number of cpus low range */
 	uint16_t duplicates;    /* report duplicate job entries */
+	int32_t exitcode;       /* exit code of job */
 	List groupid_list;	/* list of char * */
 	uint32_t nodes_max;     /* number of nodes high range */
 	uint32_t nodes_min;     /* number of nodes low range */
 	List partition_list;	/* list of char * */
+	List qos_list;  	/* list of char * */
 	List resv_list;		/* list of char * */
 	List resvid_list;	/* list of char * */
 	List step_list;         /* list of jobacct_selected_step_t */
 	List state_list;        /* list of char * */
+	uint32_t timelimit_max; /* max timelimit */
+	uint32_t timelimit_min; /* min timelimit */
 	time_t usage_end;
 	time_t usage_start;
 	char *used_nodes;       /* a ranged node string where jobs ran */
-	List userid_list;		/* list of char * */
-	List wckey_list;		/* list of char * */
+	List userid_list;	/* list of char * */
+	List wckey_list;	/* list of char * */
 	uint16_t without_steps; /* don't give me step info */
 	uint16_t without_usage_truncation; /* give me the information
 					    * without truncating the
