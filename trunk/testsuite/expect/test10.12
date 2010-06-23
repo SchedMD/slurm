@@ -54,7 +54,7 @@ if {[file exists $smap] == 0} {
 #
 spawn $smap --resolve 000
 expect {
-	-re "Must be on BG" {
+	-re "Must be physically on a BG" {
 		set non_bg 1
 		exp_continue;
 	}
