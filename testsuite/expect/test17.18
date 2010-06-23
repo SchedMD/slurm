@@ -131,10 +131,15 @@ if {$match_state == 0} {
 # Confirm dependency info within second job
 #
 set match_jobid 0
+set purged_job 0
 spawn $scontrol show job $job_id2
 expect {
 	-re "Dependency=afterany:($number)" {
 		set match_jobid $expect_out(1,string)
+		exp_continue
+	}
+	-re "Invalid job id specified" {
+		set purged_job 1
 		exp_continue
 	}
 	timeout {
@@ -145,7 +150,16 @@ expect {
 		wait
 	}
 }
-if {$match_jobid != $job_id1} {
+if {$match_jobid == 0} {
+	set min_job_age [get_min_job_age]
+	if {$min_job_age < 60} {
+		send_user "\nWARNING: MinJobAge ($min_job_age) configured too low "
+		send_user "to capture job state after completion\n"
+	} else {
+		send_user "\nFAILURE: Dependency information is missing\n"
+		set exit_code 1
+	}
+} elseif {$match_jobid != $job_id1} {
 	send_user "\nFAILURE: Dependency information not processed\n"
 	set exit_code 1
 }
@@ -213,6 +227,7 @@ expect {
 }
 set delayed 0
 set is_done 0
+set purged_job 0
 while { $delayed < $max_job_delay } {
 	exec $bin_sleep 10
 	incr delayed +10
@@ -220,6 +235,11 @@ while { $delayed < $max_job_delay } {
 	expect {
 		-re "JobState=COMPLETED" {
 			set is_done 1
+			exp_continue
+		}
+		-re "Invalid job id specified" {
+			set is_done 1
+			set purged_job 1
 			exp_continue
 		}
 		timeout {
@@ -239,6 +259,16 @@ if {$is_done == 0} {
 	send_user "\nFAILURE: unexpected JobState\n"
 	cancel_job $job_id1
 	set exit_code 1
+}
+if {$purged_job == 1} {
+	set min_job_age [get_min_job_age]
+	if {$min_job_age < 60} {
+		send_user "\nWARNING: MinJobAge ($min_job_age) configured too low "
+		send_user "to capture job state after completion\n"
+	} else {
+		send_user "\nFAILURE: Could not find job $job_id1\n"
+		set exit_code 1
+	}
 }
 
 
