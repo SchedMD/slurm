@@ -72,9 +72,12 @@ The record of jobs run will be preserved in accounting records and logs.
 The default value is 300 seconds. The value should be reduced to a few
 seconds if possible.</li>
 <li><b>SchedulerParameters</b>:
-Set an option of <b>defer_sched</b> to avoid trying to schedule each job
-individually at job submit time. SLURM will attempt to schedule all jobs
-periodically for improved performance.</li>
+Setting option <b>defer</b> will avoid attempting to schedule each job
+individually at job submit time, but defer it until a later time when 
+scheduling multiple jobs simultaneously may be possible.
+This option may improve system responsiveness when large numbers of jobs
+(many hundreds) are submitted at the same time, but it will delay the
+initiation time of individual jobs.</li>
 <li><b>SlurmctldPort</b>:
 It is desirable to configure the <b>slurmctld</b> daemon to accept incoming
 messages on more than one port in order to avoid having incoming messages
@@ -85,6 +88,6 @@ numbers of simultaneous requests are to be supported.</li>
 appropriate for your environment.</li>
 </ul>
 
-<p style="text-align:center;">Last modified 22 June 2010</p>
+<p style="text-align:center;">Last modified 24 June 2010</p>
 
 <!--#include virtual="footer.txt"-->
