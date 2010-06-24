@@ -161,7 +161,8 @@ slurm_ctl_conf_to_hv(slurm_ctl_conf_t* conf, HV* hv)
 	STORE_FIELD(hv, conf, sched_log_level, uint16_t);
 	if(conf->slurmctld_pidfile)
 		STORE_FIELD(hv, conf, slurmctld_pidfile, charp);
-	STORE_FIELD(hv, conf, slurmctld_port, uint16_t);
+	STORE_FIELD(hv, conf, slurmctld_port, uint32_t);
+	STORE_FIELD(hv, conf, slurmctld_port_count, uint16_t);
 	STORE_FIELD(hv, conf, slurmctld_timeout, uint16_t);
 	STORE_FIELD(hv, conf, slurmd_debug, uint16_t);
 	if(conf->slurmd_logfile)
