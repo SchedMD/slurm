@@ -826,7 +826,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	char *resv_name = NULL, *gres = NULL;
 	char **spank_job_env = (char **) NULL;
 	List gres_list = NULL;
-	struct job_record *job_ptr;
+	struct job_record *job_ptr = NULL;
 	struct part_record *part_ptr;
 	int error_code, i, qos_error;
 	dynamic_plugin_data_t *select_jobinfo = NULL;
@@ -1311,6 +1311,11 @@ unpack_error:
 	xfree(wckey);
 	select_g_select_jobinfo_free(select_jobinfo);
 	checkpoint_free_jobinfo(check_job);
+	if (job_ptr) {
+		if (job_ptr->job_id == 0)
+			job_ptr->job_id = NO_VAL;
+		_purge_job_record(job_ptr->job_id);
+	}
 	return SLURM_FAILURE;
 }
 
@@ -3069,12 +3074,11 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 			error_code = ESLURM_ERROR_ON_DESC_TO_RECORD_COPY;
 		goto cleanup_fail;
 	}
-	if ((error_code=checkpoint_alloc_jobinfo(&((*job_pptr)->check_job)))) {
+	job_ptr = *job_pptr;
+	if ((error_code = checkpoint_alloc_jobinfo(&(job_ptr->check_job)))) {
 		error("Failed to allocate checkpoint info for job");
 		goto cleanup_fail;
 	}
-
-	job_ptr = *job_pptr;
 
 	job_ptr->limit_set_max_nodes = limit_set_max_nodes;
 
@@ -3171,6 +3175,7 @@ cleanup_fail:
 		job_ptr->state_reason = FAIL_SYSTEM;
 		xfree(job_ptr->state_desc);
 		job_ptr->start_time = job_ptr->end_time = time(NULL);
+		_purge_job_record(job_ptr->job_id);
 	}
 	if (license_list)
 		list_destroy(license_list);
