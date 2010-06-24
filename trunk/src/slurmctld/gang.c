@@ -244,7 +244,7 @@ static void _load_phys_res_cnt(void)
 
 	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
 	     i++, node_ptr++) {
-		if ((gr_type == GS_CPU) || (gr_type == GS_CPU2)) {
+		if (gr_type == GS_CPU) {
 			if (gs_fast_schedule)
 				bit = node_ptr->config_ptr->cpus;
 			else
@@ -275,12 +275,12 @@ static uint16_t _get_phys_bit_cnt(int node_index)
 	struct node_record *node_ptr = node_record_table_ptr + node_index;
 
 	if (gs_fast_schedule) {
-		if ((gr_type == GS_CPU) || (gr_type == GS_CPU2))
+		if (gr_type == GS_CPU)
 			return node_ptr->config_ptr->cpus;
 		return node_ptr->config_ptr->cores *
 		       node_ptr->config_ptr->sockets;
 	} else {
-		if ((gr_type == GS_CPU) || (gr_type == GS_CPU2))
+		if (gr_type == GS_CPU)
 			return node_ptr->cpus;
 		return node_ptr->cores * node_ptr->sockets;
 	}
