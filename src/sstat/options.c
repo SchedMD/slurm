@@ -75,13 +75,16 @@ sstat [<OPTION>] -j <job(.stepid)>                                          \n\
 	           Print a list of fields that can be specified with the    \n\
 	           '--format' option                                        \n\
      -h, --help:   Print this description of use.                           \n\
+     -i, --pidformat:                                                       \n\
+                   Predefined format to list the pids running for each      \n\
+                   job step.  (JobId,Nodes,Pids)                            \n\
      -j, --jobs:                                                            \n\
 	           Format is <job(.step)>. Stat this job step               \n\
                    or comma-separated list of job steps. This option is     \n\
-                   required.  The step portion will default to step 0 if not\n\
-                   specified, unless the --allsteps flag is set where not   \n\
-                   specifying a step will result in all running steps to be  \n\
-                   displayed.                                               \n\
+                   required.  The step portion will default to lowest step  \n\
+                   running if not specified, unless the --allsteps flag is  \n\
+                   set where not specifying a step will result in all       \n\
+                   running steps to be displayed.                           \n\
      -n, --noheader:                                                        \n\
 	           No header will be added to the beginning of output.      \n\
                    The default is to print a header.                        \n\
