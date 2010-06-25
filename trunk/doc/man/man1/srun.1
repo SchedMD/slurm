@@ -145,7 +145,8 @@ indicates that the job requires 16 nodes at that at least four of those
 nodes must have the feature "graphics."
 Constraints with node counts may only be combined with AND operators.
 If no nodes have the requested features, then the job will be rejected
-by the slurm job manager.
+by the slurm job manager. This option is used for job allocations, but ignored
+for job step allocations.
 
 .TP
 \fB\-\-contiguous\fR
@@ -153,6 +154,12 @@ If set, then the allocated nodes must form a contiguous set.
 Not honored with the \fBtopology/tree\fR or \fBtopology/3d_torus\fR
 plugins, both of which can modify the node ordering.
 Not honored for a job step's allocation.
+
+.TP
+\fB\-\-cores\-per\-socket\fR=<\fIcores\fR>
+Allocate the specified number of cores per socket. This may be used to avoid
+allocating more than one core per socket on multi\-core sockets. This option
+is used for job allocations, but ignored for job step allocations.
 
 .TP
 \fB\-\-cpu_bind\fR=[{\fIquiet,verbose\fR},]\fItype\fR
@@ -242,7 +249,7 @@ Bind to a NUMA locality domain by rank
 Bind by mapping NUMA locality domain IDs to tasks as specified where
 <list> is <ldom1>,<ldom2>,...<ldomN>.
 The locality domain IDs are interpreted as decimal values unless they are
-preceded with '0x' in which case they areinterpreted as hexadecimal values.
+preceded with '0x' in which case they are interpreted as hexadecimal values.
 Not supported unless the entire node is allocated to the job.
 .TP
 .B mask_ldom:<list>
@@ -291,6 +298,12 @@ unable to execute more than a total of 4 tasks.
 This option may also be useful to spawn tasks without allocating
 resources to the job step from the job's allocation when running
 multiple job steps with the \fB\-\-exclusive\fR option.
+\fBWARNING\fR: There are configurations and options interpreted differently by
+job and job step requests which can result in inconsistent for this option.
+For example \fIsrun \-c2 \-\-threads\-per\-core=1 prog\fR may allocate two
+cores for the job, but if each of those cores contains two threads, the job
+allocation will include four CPUs. The job step allocation will then launch two
+threads per CPU for a total of two tasks.
 
 .TP
 \fB\-d\fR, \fB\-\-dependency\fR=<\fIdependency_list\fR>
@@ -359,7 +372,7 @@ parameter in slurm.conf.
 When used to initiate a job, the job allocation cannot share nodes with
 other running jobs.  This is the oposite of \-\-share, whichever option
 is seen last on the command line will win.  (The default shared/exclusive
-behaviour depends on system configuration.)
+behavior depends on system configuration.)
 
 This option can also be used when initiating more than job step within
 an existing resource allocation and you want separate processors to
@@ -837,7 +850,7 @@ The default value is specified by the system configuration parameter
 .TP
 \fB\-p\fR, \fB\-\-partition\fR=<\fIpartition name\fR>
 Request a specific partition for the resource allocation.  If not specified,
-the default behaviour is to allow the slurm controller to select the default
+the default behavior is to allow the slurm controller to select the default
 partition as designated by the system administrator.
 
 .TP
@@ -974,6 +987,12 @@ operation].  The slurmd debug information is copied onto the stderr of
 the job. By default only errors are displayed.
 
 .TP
+\fB\-\-sockets\-per\-node\fR=<\fIsockets\fR>
+Allocate the specified number of sockets per node. This may be used to avoid
+allocating more than one task per node on multi\-socket nodes. This option
+is used for job allocations, but ignored for job step allocations.
+
+.TP
 \fB\-T\fR, \fB\-\-threads\fR=<\fInthreads\fR>
 Allows limiting the number of concurrent threads used to
 send the job request from the srun process to the slurmd
@@ -1033,6 +1052,12 @@ otherwise reserved for higher priority jobs.
 Acceptable time formats include "minutes", "minutes:seconds", 
 "hours:minutes:seconds", "days\-hours", "days\-hours:minutes" and 
 "days\-hours:minutes:seconds".
+
+.TP
+\fB\-\-threads\-per\-core\fR=<\fIthreads\fR>
+Allocate the specified number of threads per core. This may be used to avoid
+allocating more than one task per core on hyper\-threaded nodes. This option
+is used for job allocations, but ignored for job step allocations.
 
 .TP
 \fB\-\-tmp\fR=<\fIMB\fR>
@@ -1763,7 +1788,7 @@ dev[7\-10]
 
 .fi
 .PP
-The follwing script runs two job steps in parallel
+The following script runs two job steps in parallel
 within an allocated set of nodes.
 
 .nf
