@@ -59,197 +59,136 @@ proc sstat_job { soption } {
 	set not_support 0
 	send_user "sstat -$soption \n"
 
-	if { $soption == "e" || $soption == "-helpformat" } {
-
-	spawn $sstat -$soption
-	expect {
-		-re "AveCPU *AvePages *AveRSS *AveVMSize" {
-			if {$debug} {send_user "\nmatch1\n"}
-			incr matches
-			exp_continue
-		}
-		-re "JobID *MaxPages *MaxPagesNode *MaxPagesTask" {
-			if {$debug} {send_user "\nmatch2\n"}
-			incr matches
-			exp_continue
-		}
-		-re "MaxRSS *MaxRSSNode *MaxRSSTask *MaxVMSize" {
-			if {$debug} {send_user "\nmatch3\n"}
-			incr matches
-			exp_continue
-		}
-		-re "MaxVMSizeNode *MaxVMSizeTask *MinCPU *MinCPUNode" {
-			if {$debug} {send_user "\nmatch4\n"}
-			incr matches
-			exp_continue
-		}
-		-re "MinCPUTask *NTasks" {
-			if {$debug} {send_user "\nmatch5\n"}
-			incr matches
-			exp_continue
-		}
-		timeout {
-			send_user "\nFAILURE: sstat not responding\n"
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-
-	if {$matches != 5} {
-		send_user "\nFAILURE: sstat -$soption failed ($matches)\n"
-		set exit_code 1
-	}
-		return $matches
-	}
-
 	if { $soption == "h" || $soption == "-help" } {
 
-	spawn $sstat -$soption
-	expect {
-		-re "sstat...OPTION" {
-			if {$debug} {send_user "\nmatch6\n"}
-			incr matches
-			exp_continue
+		spawn $sstat -$soption
+		expect {
+			-re "sstat...OPTION" {
+				if {$debug} {send_user "\nmatch6\n"}
+				incr matches
+				exp_continue
+			}
+			-re "Valid..OPTION" {
+				if {$debug} {send_user "\nmatch7\n"}
+				incr matches
+				exp_continue
+			}
+			-re "-e, --helpformat" {
+				if {$debug} {send_user "\nmatch8\n"}
+				incr matches
+				exp_continue
+			}
+			timeout {
+				send_user "\nFAILURE: sstat not responding\n"
+				set exit_code 1
+			}
+			eof {
+				wait
+			}
 		}
-		-re "Valid..OPTION" {
-			if {$debug} {send_user "\nmatch7\n"}
-			incr matches
-			exp_continue
-		}
-		-re "-e, --helpformat" {
-			if {$debug} {send_user "\nmatch8\n"}
-			incr matches
-			exp_continue
-		}
-		timeout {
-			send_user "\nFAILURE: sstat not responding\n"
+
+		if {$matches != 3} {
+			send_user "\nFAILURE: sstat -$soption failed ($matches)\n"
 			set exit_code 1
 		}
-		eof {
-			wait
-		}
-	}
-
-	if {$matches != 3} {
-		send_user "\nFAILURE: sstat -$soption failed ($matches)\n"
-		set exit_code 1
-	}
 		return $matches
 	}
 
 	if { $soption == "-usage" } {
 
-	spawn $sstat -$soption
-	expect {
-		-re "Usage: sstat .options. -j .job..stepid." {
-			if {$debug} {send_user "\nmatch9\n"}
-			incr matches
-			exp_continue
+		spawn $sstat -$soption
+		expect {
+			-re "Usage: sstat .options. -j .job..stepid." {
+				if {$debug} {send_user "\nmatch9\n"}
+				incr matches
+				exp_continue
+			}
+			-re "Use --help for help" {
+				if {$debug} {send_user "\nmatch10\n"}
+				incr matches
+				exp_continue
+			}
+			timeout {
+				send_user "\nFAILURE: sstat not responding\n"
+				set exit_code 1
+			}
+			eof {
+				wait
+			}
 		}
-		-re "Use --help for help" {
-			if {$debug} {send_user "\nmatch10\n"}
-			incr matches
-			exp_continue
-		}
-		timeout {
-			send_user "\nFAILURE: sstat not responding\n"
+
+		if {$matches != 2} {
+			send_user "\nFAILURE: sstat -$soption failed ($matches)\n"
 			set exit_code 1
 		}
-		eof {
-			wait
-		}
-	}
-
-	if {$matches != 2} {
-		send_user "\nFAILURE: sstat -$soption failed ($matches)\n"
-		set exit_code 1
-	}
 		return $matches
 	}
 
 	if { $soption == "V" || $soption == "-version" } {
 
-	spawn $sstat -$soption
-	expect {
-		-re "slurm ($number).($number)." {
-			if {$debug} {send_user "\nmatch11\n"}
-			incr matches
-			exp_continue
+		spawn $sstat -$soption
+		expect {
+			-re "slurm ($number).($number)." {
+				if {$debug} {send_user "\nmatch11\n"}
+				incr matches
+				exp_continue
+			}
+			timeout {
+				send_user "\nFAILURE: sstat not responding\n"
+				set exit_code 1
+			}
+			eof {
+				wait
+			}
 		}
-		timeout {
-			send_user "\nFAILURE: sstat not responding\n"
+
+		if {$matches != 1} {
+			send_user "\nFAILURE: sstat -$soption failed ($matches)\n"
 			set exit_code 1
 		}
-		eof {
-			wait
-		}
-	}
-
-	if {$matches != 1} {
-		send_user "\nFAILURE: sstat -$soption failed ($matches)\n"
-		set exit_code 1
-	}
 		return $matches
 	}
 }
 ################################################################
 
-set matches [sstat_job e ]
-if {$matches != 5} {
-	send_user "\nFAILURE: sstat -e failed ($matches)\n"
-	set exit_code 1
-	}	else	{
-		send_user "\nsstat -e test GOOD!\n"
-}
-
-set matches [sstat_job -helpformat ]
-if {$matches != 5} {
-	send_user "\nFAILURE: sstat --helpformat failed ($matches)\n"
-	set exit_code 1
-	}	else	{
-		send_user "\nsstat --helpformat test GOOD!\n"
-}
-
 set matches [sstat_job h ]
 if {$matches != 3} {
 	send_user "\nFAILURE: sstat -h failed ($matches)\n"
 	set exit_code 1
-	}	else	{
-		send_user "\nsstat -h test GOOD!\n"
+} else {
+	send_user "\nsstat -h test GOOD!\n"
 }
 
 set matches [sstat_job -help ]
 if {$matches != 3} {
 	send_user "\nFAILURE: sstat --help failed ($matches)\n"
 	set exit_code 1
-	}	else	{
-		send_user "\nsstat --help test GOOD!\n"
+} else {
+	send_user "\nsstat --help test GOOD!\n"
 }
 
 set matches [sstat_job -usage ]
 if {$matches != 2} {
 	send_user "\nFAILURE: sstat --usage failed ($matches)\n"
 	set exit_code 1
-	}	else	{
-		send_user "\nsstat --usage test GOOD!\n"
+} else {
+	send_user "\nsstat --usage test GOOD!\n"
 }
 
 set matches [sstat_job V ]
 if {$matches != 1} {
 	send_user "\nFAILURE: sstat -V failed ($matches)\n"
 	set exit_code 1
-	}	else	{
-		send_user "\nsstat -V test GOOD!\n"
+} else {
+	send_user "\nsstat -V test GOOD!\n"
 }
 
 set matches [sstat_job -version ]
 if {$matches != 1} {
 	send_user "\nFAILURE: sstat --version failed ($matches)\n"
 	set exit_code 1
-	}	else	{
-		send_user "\nsstat --version test GOOD!\n"
+} else {
+	send_user "\nsstat --version test GOOD!\n"
 }
 
 
