@@ -67,7 +67,7 @@ set host           ""
 set timeout        $max_job_delay
 set task_cnt       0
 
-set srun_pid [spawn $srun -N1 --cpus-per-task=1 --exclusive -l -t1 $file_in]
+set srun_pid [spawn $srun -N1 --cpus-per-task=1 --threads-per-core=1 --exclusive -l -t1 $file_in]
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
@@ -119,7 +119,7 @@ if {$cpu_cnt != $task_cnt} {
 	set exit_code 1
 }
 if {$cpu_cnt < 2} {
-	send_user "\nWARNING: The node only has one CPU\n"
+	send_user "\nWARNING: The node only has one core\n"
 	exit $exit_code
 }
 
