@@ -552,6 +552,272 @@ enum ctx_keys {
 #define PROP_PRIO_ON		0x0001	/* Propagate user nice value */
 #define PROP_PRIO_NICER		0x0002	/* Insure that user tasks have a nice
 					 * value that is higher than slurmd */
+
+/*****************************************************************************\
+ *      SLURM HOSTLIST FUNCTIONS
+\*****************************************************************************/
+
+/* The hostlist opaque data type
+ *
+ * A hostlist is a list of hostnames optimized for a prefixXXXX style
+ * naming convention, where XXXX  is a decimal, numeric suffix.
+ */
+#ifndef   __hostlist_t_defined
+#  define __hostlist_t_defined
+typedef struct hostlist * hostlist_t;
+#endif
+
+/*
+ * slurm_hostlist_create():
+ *
+ * Create a new hostlist from a string representation.
+ *
+ * The string representation (str) may contain one or more hostnames or
+ * bracketed hostlists separated by either `,' or whitespace. A bracketed
+ * hostlist is denoted by a common prefix followed by a list of numeric
+ * ranges contained within brackets: e.g. "tux[0-5,12,20-25]"
+ *
+ * To support systems with 3-D topography, a rectangular prism may
+ * be described using two three digit numbers separated by "x": e.g.
+ * "bgl[123x456]". This selects all nodes between 1 and 4 inclusive
+ * in the first dimension, between 2 and 5 in the second, and between
+ * 3 and 6 in the third dimension for a total of 4*4*4=64 nodes
+ *
+ * Note: if this module is compiled with WANT_RECKLESS_HOSTRANGE_EXPANSION
+ * defined, a much more loose interpretation of host ranges is used.
+ * Reckless hostrange expansion allows all of the following (in addition to
+ * bracketed hostlists):
+ *
+ *  o tux0-5,tux12,tux20-25
+ *  o tux0-tux5,tux12,tux20-tux25
+ *  o tux0-5,12,20-25
+ *
+ * If str is NULL, and empty hostlist is created and returned.
+ *
+ * If the create fails, hostlist_create() returns NULL.
+ *
+ * The returned hostlist must be freed with hostlist_destroy()
+ *
+ */
+extern hostlist_t slurm_hostlist_create PARAMS((const char *hostlist));
+
+/* slurm_hostlist_count():
+ *
+ * Return the number of hosts in hostlist hl.
+ */
+extern int slurm_hostlist_count PARAMS((hostlist_t hl));
+
+/*
+ * slurm_hostlist_destroy():
+ *
+ * Destroy a hostlist object. Frees all memory allocated to the hostlist.
+ */
+extern void slurm_hostlist_destroy PARAMS((hostlist_t hl));
+
+/* slurm_hostlist_find():
+ *
+ * Searches hostlist hl for the first host matching hostname
+ * and returns position in list if found.
+ *
+ * Returns -1 if host is not found.
+ *
+ */
+extern int slurm_hostlist_find PARAMS((hostlist_t hl, const char *hostname));
+
+/* slurm_hostlist_push():
+ *
+ * push a string representation of hostnames onto a hostlist.
+ *
+ * The hosts argument may take the same form as in slurm_hostlist_create()
+ *
+ * Returns the number of hostnames inserted into the list,
+ * or 0 on failure.
+ */
+extern int slurm_hostlist_push PARAMS((hostlist_t hl, const char *hosts));
+
+/* slurm_hostlist_push_host():
+ *
+ * Push a single host onto the hostlist hl.
+ * This function is more efficient than slurm_hostlist_push() for a single
+ * hostname, since the argument does not need to be checked for ranges.
+ *
+ * return value is 1 for success, 0 for failure.
+ */
+extern int slurm_hostlist_push_host PARAMS((hostlist_t hl, const char *host));
+
+/* slurm_hostlist_ranged_string():
+ *
+ * Write the string representation of the hostlist hl into buf,
+ * writing at most n chars. Returns the number of bytes written,
+ * or -1 if truncation occurred.
+ *
+ * The result will be NULL terminated.
+ *
+ * slurm_hostlist_ranged_string() will write a bracketed hostlist representation
+ * where possible.
+ */
+extern ssize_t slurm_hostlist_ranged_string PARAMS((hostlist_t hl,
+						    size_t n, char *buf));
+
+/*
+ * slurm_hostlist_shift():
+ *
+ * Returns the string representation of the first host in the hostlist
+ * or NULL if the hostlist is empty or there was an error allocating memory.
+ * The host is removed from the hostlist.
+ *
+ * Note: Caller is responsible for freeing the returned memory.
+ */
+extern char * slurm_hostlist_shift PARAMS((hostlist_t hl));
+
+/* slurm_hostlist_uniq():
+ *
+ * Sort the hostlist hl and remove duplicate entries.
+ *
+ */
+extern void slurm_hostlist_uniq PARAMS((hostlist_t hl));
+
+/*****************************************************************************\
+ *      SLURM LIST FUNCTIONS
+\*****************************************************************************/
+
+#ifndef   __list_datatypes_defined
+#  define __list_datatypes_defined
+typedef struct list * List;
+/*
+ *  List opaque data type.
+ */
+
+typedef struct listIterator * ListIterator;
+/*
+ *  List Iterator opaque data type.
+ */
+
+typedef void (*ListDelF) (void *x);
+/*
+ *  Function prototype to deallocate data stored in a list.
+ *    This function is responsible for freeing all memory associated
+ *    with an item, including all subordinate items (if applicable).
+ */
+
+typedef int (*ListCmpF) (void *x, void *y);
+/*
+ *  Function prototype for comparing two items in a list.
+ *  Returns less-than-zero if (x<y), zero if (x==y), and
+ *    greather-than-zero if (x>y).
+ */
+
+typedef int (*ListFindF) (void *x, void *key);
+/*
+ *  Function prototype for matching items in a list.
+ *  Returns non-zero if (x==key); o/w returns zero.
+ */
+
+typedef int (*ListForF) (void *x, void *arg);
+/*
+ *  Function prototype for operating on each item in a list.
+ *  Returns less-than-zero on error.
+ */
+#endif
+
+/* slurm_list_append():
+ *
+ *  Inserts data [x] at the end of list [l].
+ *  Returns the data's ptr, or lsd_nomem_error() if insertion failed.
+ */
+extern void * slurm_list_append PARAMS((List l, void *x));
+
+/* slurm_list_count():
+ *
+ *  Returns the number of items in list [l].
+ */
+extern int slurm_list_count PARAMS((List l));
+
+/* slurm_list_create():
+ *
+ *  Creates and returns a new empty list, or lsd_nomem_error() on failure.
+ *  The deletion function [f] is used to deallocate memory used by items
+ *    in the list; if this is NULL, memory associated with these items
+ *    will not be freed when the list is destroyed.
+ *  Note: Abandoning a list without calling slurm_list_destroy() will result
+ *    in a memory leak.
+ */
+extern List slurm_list_create PARAMS((ListDelF f));
+
+/* slurm_list_destroy():
+ *
+ *  Destroys list [l], freeing memory used for list iterators and the
+ *    list itself; if a deletion function was specified when the list
+ *    was created, it will be called for each item in the list.
+ */
+extern void slurm_list_destroy PARAMS((List l));
+
+/* slurm_list_find():
+ *
+ *  Traverses the list from the point of the list iterator [i]
+ *    using [f] to match each item with [key].
+ *  Returns a ptr to the next item for which the function [f]
+ *    returns non-zero, or NULL once the end of the list is reached.
+ *  Example: i=slurm_list_iterator_reset(i);
+ *	     while ((x=slurm_list_find(i,f,k))) {...}
+ */
+extern void * slurm_list_find PARAMS((ListIterator i, ListFindF f, void *key));
+
+/* slurm_list_is_empty():
+ *
+ *  Returns non-zero if list [l] is empty; o/w returns zero.
+ */
+extern int slurm_list_is_empty PARAMS((List l));
+
+/*
+ *  Creates and returns a list iterator for non-destructively traversing
+ *    list [l], or lsd_nomem_error() on failure.
+ */
+extern ListIterator slurm_list_iterator_create PARAMS((List l));
+
+/* slurm_list_iterator_reset():
+ *
+ *  Resets the list iterator [i] to start traversal at the beginning
+ *    of the list.
+ */
+extern void slurm_list_iterator_reset PARAMS((ListIterator i));
+
+/* slurm_list_next():
+ *
+ *  Returns a ptr to the next item's data,
+ *    or NULL once the end of the list is reached.
+ *  Example: i=slurm_list_iterator_create(i);
+ *	     while ((x=slurm_list_next(i))) {...}
+ */
+extern void * slurm_list_next PARAMS((ListIterator i));
+
+/* slurm_list_sort():
+ *
+ *  Sorts list [l] into ascending order according to the function [f].
+ *  Note: Sorting a list resets all iterators associated with the list.
+ *  Note: The sort algorithm is stable.
+ */
+extern void slurm_list_sort PARAMS((List l, ListCmpF f));
+
+/*****************************************************************************\
+ *      SLURM BITSTR FUNCTIONS
+\*****************************************************************************/
+
+#ifndef   __bitstr_datatypes_defined
+#  define __bitstr_datatypes_defined
+
+#ifdef USE_64BIT_BITSTR
+typedef int64_t bitstr_t;
+#define BITSTR_SHIFT 		BITSTR_SHIFT_WORD64
+#else
+typedef int32_t bitstr_t;
+#define BITSTR_SHIFT 		BITSTR_SHIFT_WORD32
+#endif
+
+typedef bitstr_t bitoff_t;
+
+#endif
+
 /*****************************************************************************\
  *	PROTOCOL DATA STRUCTURE DEFINITIONS
 \*****************************************************************************/
@@ -991,6 +1257,31 @@ typedef struct job_step_info_response_msg {
 	uint32_t job_step_count;	/* number of records */
 	job_step_info_t *job_steps;	/* the job step records */
 } job_step_info_response_msg_t;
+
+typedef struct {
+   	char *node_name;
+        uint32_t *pid;
+	uint32_t pid_cnt;
+} job_step_pids_t;
+
+typedef struct {
+	uint32_t job_id;
+	List pid_list; /* List of job_step_pids_t *'s */
+	uint32_t step_id;
+} job_step_pids_response_msg_t;
+
+typedef struct {
+	jobacctinfo_t *jobacct;
+	uint32_t num_tasks;
+   	uint32_t return_code;
+	job_step_pids_t *step_pids;
+} job_step_stat_t;
+
+typedef struct {
+	uint32_t job_id;
+	List stats_list; /* List of job_step_stat_t *'s */
+	uint32_t step_id;
+} job_step_stat_response_msg_t;
 
 typedef struct node_info {
 	char *arch;		/* computer architecture */
@@ -2263,7 +2554,38 @@ extern slurm_step_layout_t *slurm_job_step_layout_get PARAMS(
 extern char *slurm_sprint_job_step_info PARAMS((job_step_info_t * step_ptr,
 						int one_liner));
 
-void slurm_job_step_layout_free PARAMS((slurm_step_layout_t *layout));
+/*
+ * slurm_job_step_stat - status a current step
+ *
+ * IN job_id
+ * IN step_id
+ * IN node_list, optional, if NULL then all nodes in step are returned.
+ * OUT resp
+ * RET SLURM_SUCCESS on success SLURM_ERROR else
+ */
+extern int slurm_job_step_stat PARAMS((uint32_t job_id, uint32_t step_id,
+				       char *node_list,
+				       job_step_stat_response_msg_t **resp));
+
+/*
+ * slurm_job_step_get_pids - get the complete list of pids for a given
+ *      job step
+ *
+ * IN job_id
+ * IN step_id
+ * OUT resp
+ * RET SLURM_SUCCESS on success SLURM_ERROR else
+ */
+extern int slurm_job_step_get_pids PARAMS(
+	(uint32_t job_id, uint32_t step_id,
+	 char *node_list,
+	 job_step_pids_response_msg_t **resp));
+
+extern void slurm_job_step_layout_free PARAMS((slurm_step_layout_t *layout));
+extern void slurm_job_step_pids_free PARAMS((job_step_pids_t *object));
+extern void slurm_job_step_pids_response_msg_free PARAMS((void *object));
+extern void slurm_job_step_stat_free(job_step_stat_t *object);
+extern void slurm_job_step_stat_response_msg_free(void *object);
 
 /*****************************************************************************\
  *	SLURM NODE CONFIGURATION READ/PRINT/UPDATE FUNCTIONS
@@ -2810,271 +3132,6 @@ extern int slurm_checkpoint_tasks PARAMS((uint32_t job_id, uint16_t step_id,
 					  time_t begin_time, char *image_dir,
 					  uint16_t max_wait, char *nodelist));
 
-
-/*****************************************************************************\
- *      SLURM HOSTLIST FUNCTIONS
-\*****************************************************************************/
-
-/* The hostlist opaque data type
- *
- * A hostlist is a list of hostnames optimized for a prefixXXXX style
- * naming convention, where XXXX  is a decimal, numeric suffix.
- */
-#ifndef   __hostlist_t_defined
-#  define __hostlist_t_defined
-typedef struct hostlist * hostlist_t;
-#endif
-
-/*
- * slurm_hostlist_create():
- *
- * Create a new hostlist from a string representation.
- *
- * The string representation (str) may contain one or more hostnames or
- * bracketed hostlists separated by either `,' or whitespace. A bracketed
- * hostlist is denoted by a common prefix followed by a list of numeric
- * ranges contained within brackets: e.g. "tux[0-5,12,20-25]"
- *
- * To support systems with 3-D topography, a rectangular prism may
- * be described using two three digit numbers separated by "x": e.g.
- * "bgl[123x456]". This selects all nodes between 1 and 4 inclusive
- * in the first dimension, between 2 and 5 in the second, and between
- * 3 and 6 in the third dimension for a total of 4*4*4=64 nodes
- *
- * Note: if this module is compiled with WANT_RECKLESS_HOSTRANGE_EXPANSION
- * defined, a much more loose interpretation of host ranges is used.
- * Reckless hostrange expansion allows all of the following (in addition to
- * bracketed hostlists):
- *
- *  o tux0-5,tux12,tux20-25
- *  o tux0-tux5,tux12,tux20-tux25
- *  o tux0-5,12,20-25
- *
- * If str is NULL, and empty hostlist is created and returned.
- *
- * If the create fails, hostlist_create() returns NULL.
- *
- * The returned hostlist must be freed with hostlist_destroy()
- *
- */
-extern hostlist_t slurm_hostlist_create PARAMS((const char *hostlist));
-
-/* slurm_hostlist_count():
- *
- * Return the number of hosts in hostlist hl.
- */
-extern int slurm_hostlist_count PARAMS((hostlist_t hl));
-
-/*
- * slurm_hostlist_destroy():
- *
- * Destroy a hostlist object. Frees all memory allocated to the hostlist.
- */
-extern void slurm_hostlist_destroy PARAMS((hostlist_t hl));
-
-/* slurm_hostlist_find():
- *
- * Searches hostlist hl for the first host matching hostname
- * and returns position in list if found.
- *
- * Returns -1 if host is not found.
- *
- */
-extern int slurm_hostlist_find PARAMS((hostlist_t hl, const char *hostname));
-
-/* slurm_hostlist_push():
- *
- * push a string representation of hostnames onto a hostlist.
- *
- * The hosts argument may take the same form as in slurm_hostlist_create()
- *
- * Returns the number of hostnames inserted into the list,
- * or 0 on failure.
- */
-extern int slurm_hostlist_push PARAMS((hostlist_t hl, const char *hosts));
-
-/* slurm_hostlist_push_host():
- *
- * Push a single host onto the hostlist hl.
- * This function is more efficient than slurm_hostlist_push() for a single
- * hostname, since the argument does not need to be checked for ranges.
- *
- * return value is 1 for success, 0 for failure.
- */
-extern int slurm_hostlist_push_host PARAMS((hostlist_t hl, const char *host));
-
-/* slurm_hostlist_ranged_string():
- *
- * Write the string representation of the hostlist hl into buf,
- * writing at most n chars. Returns the number of bytes written,
- * or -1 if truncation occurred.
- *
- * The result will be NULL terminated.
- *
- * slurm_hostlist_ranged_string() will write a bracketed hostlist representation
- * where possible.
- */
-extern ssize_t slurm_hostlist_ranged_string PARAMS((hostlist_t hl,
-						    size_t n, char *buf));
-
-/*
- * slurm_hostlist_shift():
- *
- * Returns the string representation of the first host in the hostlist
- * or NULL if the hostlist is empty or there was an error allocating memory.
- * The host is removed from the hostlist.
- *
- * Note: Caller is responsible for freeing the returned memory.
- */
-extern char * slurm_hostlist_shift PARAMS((hostlist_t hl));
-
-/* slurm_hostlist_uniq():
- *
- * Sort the hostlist hl and remove duplicate entries.
- *
- */
-extern void slurm_hostlist_uniq PARAMS((hostlist_t hl));
-
-/*****************************************************************************\
- *      SLURM LIST FUNCTIONS
-\*****************************************************************************/
-
-#ifndef   __list_datatypes_defined
-#  define __list_datatypes_defined
-typedef struct list * List;
-/*
- *  List opaque data type.
- */
-
-typedef struct listIterator * ListIterator;
-/*
- *  List Iterator opaque data type.
- */
-
-typedef void (*ListDelF) (void *x);
-/*
- *  Function prototype to deallocate data stored in a list.
- *    This function is responsible for freeing all memory associated
- *    with an item, including all subordinate items (if applicable).
- */
-
-typedef int (*ListCmpF) (void *x, void *y);
-/*
- *  Function prototype for comparing two items in a list.
- *  Returns less-than-zero if (x<y), zero if (x==y), and
- *    greather-than-zero if (x>y).
- */
-
-typedef int (*ListFindF) (void *x, void *key);
-/*
- *  Function prototype for matching items in a list.
- *  Returns non-zero if (x==key); o/w returns zero.
- */
-
-typedef int (*ListForF) (void *x, void *arg);
-/*
- *  Function prototype for operating on each item in a list.
- *  Returns less-than-zero on error.
- */
-#endif
-
-/* slurm_list_append():
- *
- *  Inserts data [x] at the end of list [l].
- *  Returns the data's ptr, or lsd_nomem_error() if insertion failed.
- */
-extern void * slurm_list_append PARAMS((List l, void *x));
-
-/* slurm_list_count():
- *
- *  Returns the number of items in list [l].
- */
-extern int slurm_list_count PARAMS((List l));
-
-/* slurm_list_create():
- *
- *  Creates and returns a new empty list, or lsd_nomem_error() on failure.
- *  The deletion function [f] is used to deallocate memory used by items
- *    in the list; if this is NULL, memory associated with these items
- *    will not be freed when the list is destroyed.
- *  Note: Abandoning a list without calling slurm_list_destroy() will result
- *    in a memory leak.
- */
-extern List slurm_list_create PARAMS((ListDelF f));
-
-/* slurm_list_destroy():
- *
- *  Destroys list [l], freeing memory used for list iterators and the
- *    list itself; if a deletion function was specified when the list
- *    was created, it will be called for each item in the list.
- */
-extern void slurm_list_destroy PARAMS((List l));
-
-/* slurm_list_find():
- *
- *  Traverses the list from the point of the list iterator [i]
- *    using [f] to match each item with [key].
- *  Returns a ptr to the next item for which the function [f]
- *    returns non-zero, or NULL once the end of the list is reached.
- *  Example: i=slurm_list_iterator_reset(i);
- *	     while ((x=slurm_list_find(i,f,k))) {...}
- */
-extern void * slurm_list_find PARAMS((ListIterator i, ListFindF f, void *key));
-
-/* slurm_list_is_empty():
- *
- *  Returns non-zero if list [l] is empty; o/w returns zero.
- */
-extern int slurm_list_is_empty PARAMS((List l));
-
-/*
- *  Creates and returns a list iterator for non-destructively traversing
- *    list [l], or lsd_nomem_error() on failure.
- */
-extern ListIterator slurm_list_iterator_create PARAMS((List l));
-
-/* slurm_list_iterator_reset():
- *
- *  Resets the list iterator [i] to start traversal at the beginning
- *    of the list.
- */
-extern void slurm_list_iterator_reset PARAMS((ListIterator i));
-
-/* slurm_list_next():
- *
- *  Returns a ptr to the next item's data,
- *    or NULL once the end of the list is reached.
- *  Example: i=slurm_list_iterator_create(i);
- *	     while ((x=slurm_list_next(i))) {...}
- */
-extern void * slurm_list_next PARAMS((ListIterator i));
-
-/* slurm_list_sort():
- *
- *  Sorts list [l] into ascending order according to the function [f].
- *  Note: Sorting a list resets all iterators associated with the list.
- *  Note: The sort algorithm is stable.
- */
-extern void slurm_list_sort PARAMS((List l, ListCmpF f));
-
-/*****************************************************************************\
- *      SLURM BITSTR FUNCTIONS
-\*****************************************************************************/
-
-#ifndef   __bitstr_datatypes_defined
-#  define __bitstr_datatypes_defined
-
-#ifdef USE_64BIT_BITSTR
-typedef int64_t bitstr_t;
-#define BITSTR_SHIFT 		BITSTR_SHIFT_WORD64
-#else
-typedef int32_t bitstr_t;
-#define BITSTR_SHIFT 		BITSTR_SHIFT_WORD32
-#endif
-
-typedef bitstr_t bitoff_t;
-
-#endif
 
 /*****************************************************************************\
  *      SLURM TRIGGER FUNCTIONS

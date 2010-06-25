@@ -68,7 +68,9 @@ print_field_t fields[] = {
 	{10, "MinCPU", print_fields_str, PRINT_MINCPU},
 	{10, "MinCPUNode", print_fields_str, PRINT_MINCPUNODE},
 	{10, "MinCPUTask", print_fields_int, PRINT_MINCPUTASK},
+	{20, "Nodes", print_fields_str, PRINT_NODES},
 	{8, "NTasks", print_fields_int, PRINT_NTASKS},
+	{20, "Pids", print_fields_str, PRINT_PIDS},
 	{0, NULL, NULL, 0}};
 
 List jobs = NULL;
@@ -118,13 +120,35 @@ int _do_stat(uint32_t jobid, uint32_t stepid)
 	while((step_stat = list_next(itr))) {
 		if(!step_stat->step_pids || !step_stat->step_pids->node_name)
 			continue;
-		hostlist_push(hl, step_stat->step_pids->node_name);
-		jobacct_gather_g_2_stats(&temp_stats, step_stat->jobacct);
-		ntasks += step_stat->num_tasks;
-		aggregate_stats(&step.stats, &temp_stats);
+		if (step_stat->step_pids->pid_cnt > 0 ) {
+			int i;
+			for(i=0; i<step_stat->step_pids->pid_cnt; i++) {
+				if(step.pid_str)
+					xstrcat(step.pid_str, ",");
+				xstrfmtcat(step.pid_str, "%u",
+					   step_stat->step_pids->pid[i]);
+			}
+		}
+
+		if(params.pid_format) {
+			step.nodes = step_stat->step_pids->node_name;
+			print_fields(&step);
+			xfree(step.pid_str);
+		} else {
+			hostlist_push(hl, step_stat->step_pids->node_name);
+			jobacct_gather_g_2_stats(&temp_stats,
+						 step_stat->jobacct);
+			ntasks += step_stat->num_tasks;
+			aggregate_stats(&step.stats, &temp_stats);
+		}
 	}
 	list_iterator_destroy(itr);
 	slurm_job_step_pids_response_msg_free(step_stat_response);
+	/* we printed it out already */
+	if (params.pid_format)
+		return rc;
+
+	hostlist_sort(hl);
 	hostlist_ranged_string(hl, BUF_SIZE, step.nodes);
 	hostlist_destroy(hl);
 	tot_tasks += ntasks;
@@ -178,8 +202,23 @@ int main(int argc, char **argv)
 			}
 			slurm_free_job_step_info_response_msg(step_ptr);
 			continue;
-		} else
-			stepid = 0;
+		} else {
+			/* get the first running step to query against. */
+			job_step_info_response_msg_t *step_ptr = NULL;
+			if(slurm_get_job_steps(
+				   0, selected_step->jobid, NO_VAL,
+				   &step_ptr, SHOW_ALL)) {
+				error("couldn't get steps for job %u",
+				      selected_step->jobid);
+				continue;
+			}
+			if(!step_ptr->job_step_count) {
+				error("no steps running for job %u",
+				      selected_step->jobid);
+				continue;
+			}
+			stepid = step_ptr->job_steps[0].step_id;
+		}
 		_do_stat(selected_step->jobid, stepid);
 	}
 	list_iterator_destroy(itr);

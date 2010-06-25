@@ -280,6 +280,7 @@ void parse_command_line(int argc, char **argv)
 		{"noheader", 0, 0, 'n'},
 		{"fields", 1, 0, 'o'},
 		{"format", 1, 0, 'o'},
+		{"pidformat", 0, 0, 'i'},
 		{"parsable", 0, 0, 'p'},
 		{"parsable2", 0, 0, 'P'},
 		{"usage", 0, &params.opt_help, 3},
@@ -294,7 +295,7 @@ void parse_command_line(int argc, char **argv)
 	opterr = 1;		/* Let getopt report problems to the user */
 
 	while (1) {		/* now cycle through the command line */
-		c = getopt_long(argc, argv, "aehj:no:pPvV",
+		c = getopt_long(argc, argv, "aehij:no:pPvV",
 				long_options, &optionIndex);
 		if (c == -1)
 			break;
@@ -307,6 +308,11 @@ void parse_command_line(int argc, char **argv)
 			break;
 		case 'h':
 			params.opt_help = 1;
+			break;
+		case 'i':
+			params.pid_format = 1;
+			xstrfmtcat(params.opt_field_list, "%s,",
+				   STAT_FIELDS_PID);
 			break;
 		case 'j':
 			if ((strspn(optarg, "0123456789, ") < strlen(optarg))
@@ -403,18 +409,32 @@ void parse_command_line(int argc, char **argv)
 
 	start = params.opt_field_list;
 	while ((end = strstr(start, ","))) {
+		char *tmp_char = NULL;
+		int command_len = 0;
+		int newlen = 0;
+
 		*end = 0;
 		while (isspace(*start))
 			start++;	/* discard whitespace */
 		if(!(int)*start)
 			continue;
+
+		if((tmp_char = strstr(start, "\%"))) {
+			newlen = atoi(tmp_char+1);
+			tmp_char[0] = '\0';
+		}
+
+		command_len = strlen(start);
+
 		for (i = 0; fields[i].name; i++) {
-			if (!strcasecmp(fields[i].name, start))
+			if (!strncasecmp(fields[i].name, start, command_len))
 				goto foundfield;
 		}
 		error("Invalid field requested: \"%s\"", start);
 		exit(1);
 	foundfield:
+		if(newlen)
+			fields[i].len = newlen;
 		list_append(print_fields_list, &fields[i]);
 		start = end + 1;
 	}

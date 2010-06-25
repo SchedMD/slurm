@@ -613,6 +613,7 @@ typedef struct {
 	uint32_t nnodes;
 	char *nodes;
 	uint32_t ntasks;
+	char *pid_str;
 	uint32_t requid;
 	time_t start;
 	enum job_states	state;
