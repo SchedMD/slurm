@@ -461,7 +461,7 @@ _handle_request(int fd, slurmd_job_t *job, uid_t uid, gid_t gid)
 			return SLURM_FAILURE;
 		}
 	}
-	debug3("Got request");
+	debug3("Got request %d", req);
 	rc = SLURM_SUCCESS;
 	switch (req) {
 	case REQUEST_SIGNAL_PROCESS_GROUP:
@@ -519,13 +519,13 @@ _handle_request(int fd, slurmd_job_t *job, uid_t uid, gid_t gid)
 		debug("Handling REQUEST_STEP_COMPLETION");
 		rc = _handle_completion(fd, job, uid);
 		break;
-	case MESSAGE_STAT_JOBACCT:
-		debug("Handling MESSAGE_STAT_JOBACCT");
-		rc = _handle_stat_jobacct(fd, job, uid);
-		break;
 	case REQUEST_STEP_TASK_INFO:
 		debug("Handling REQUEST_STEP_TASK_INFO");
 		rc = _handle_task_info(fd, job);
+		break;
+	case REQUEST_STEP_STAT:
+		debug("Handling REQUEST_STEP_STAT");
+		rc = _handle_stat_jobacct(fd, job, uid);
 		break;
 	case REQUEST_STEP_LIST_PIDS:
 		debug("Handling REQUEST_STEP_LIST_PIDS");
@@ -569,9 +569,9 @@ _handle_info(int fd, slurmd_job_t *job)
 	safe_write(fd, &job->jobid, sizeof(uint32_t));
 	safe_write(fd, &job->stepid, sizeof(uint32_t));
 
-	/* protocol_version was added in SLURM version 2.2, 
+	/* protocol_version was added in SLURM version 2.2,
 	 * so it needed to be added later in the data sent
-	 * for backward compatability (so that it doesn't 
+	 * for backward compatability (so that it doesn't
 	 * get confused for a huge UID, job ID or step ID;
 	 * we should be save in avoiding huge node IDs). */
 	safe_write(fd, &protocol_version, sizeof(uint16_t));
@@ -904,7 +904,7 @@ _handle_checkpoint_tasks(int fd, slurmd_job_t *job, uid_t uid)
 	/* set timestamp in case another request comes */
 	job->ckpt_timestamp = timestamp;
 
-	/* TODO: do we need job->ckpt_dir any more, 
+	/* TODO: do we need job->ckpt_dir any more,
 	 *	except for checkpoint/xlch? */
 /*	if (! image_dir) { */
 /*		image_dir = xstrdup(job->ckpt_dir); */
@@ -1413,12 +1413,14 @@ _handle_list_pids(int fd, slurmd_job_t *job)
 	int i;
 	pid_t *pids = NULL;
 	int npids = 0;
+	uint32_t pid;
 
 	debug("_handle_list_pids for job %u.%u", job->jobid, job->stepid);
 	slurm_container_get_pids(job->cont_id, &pids, &npids);
-	safe_write(fd, &npids, sizeof(int));
+	safe_write(fd, &npids, sizeof(uint32_t));
 	for (i = 0; i < npids; i++) {
-		safe_write(fd, &pids[i], sizeof(pid_t));
+		pid = (uint32_t)pids[i];
+		safe_write(fd, &pid, sizeof(uint32_t));
 	}
 	if (npids > 0)
 		xfree(pids);
@@ -1460,4 +1462,3 @@ done:
 rwfail:
 	return SLURM_FAILURE;
 }
-

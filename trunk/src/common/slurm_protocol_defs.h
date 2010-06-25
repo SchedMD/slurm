@@ -257,13 +257,16 @@ typedef enum {
 	REQUEST_STEP_COMPLETE,
 	REQUEST_COMPLETE_JOB_ALLOCATION,
 	REQUEST_COMPLETE_BATCH_SCRIPT,
-	MESSAGE_STAT_JOBACCT,
+	REQUEST_JOB_STEP_STAT,
+	RESPONSE_JOB_STEP_STAT,
 	REQUEST_STEP_LAYOUT,
 	RESPONSE_STEP_LAYOUT,
 	REQUEST_JOB_REQUEUE,
 	REQUEST_DAEMON_STATUS,
 	RESPONSE_SLURMD_STATUS,
 	RESPONSE_SLURMCTLD_STATUS,
+	REQUEST_JOB_STEP_PIDS,
+        RESPONSE_JOB_STEP_PIDS,
 
 	REQUEST_LAUNCH_TASKS = 6001,
 	RESPONSE_LAUNCH_TASKS,
@@ -514,14 +517,6 @@ typedef struct step_complete_msg {
  	uint32_t step_rc;	/* largest task return code */
 	jobacctinfo_t *jobacct;
 } step_complete_msg_t;
-
-typedef struct stat_jobacct_msg {
-	uint32_t job_id;
-	uint32_t return_code;
-	uint32_t step_id;
-	uint32_t num_tasks;
-	jobacctinfo_t *jobacct;
-} stat_jobacct_msg_t;
 
 typedef struct kill_tasks_msg {
 	uint32_t job_id;
@@ -1040,7 +1035,8 @@ void slurm_free_reserve_info_members(reserve_info_t * resv);
 void slurm_free_topo_info_msg(topo_info_response_msg_t *msg);
 void inline slurm_free_file_bcast_msg(file_bcast_msg_t *msg);
 void inline slurm_free_step_complete_msg(step_complete_msg_t *msg);
-void inline slurm_free_stat_jobacct_msg(stat_jobacct_msg_t *msg);
+void inline slurm_free_job_step_stat(void *object);
+void inline slurm_free_job_step_pids(void *object);
 void slurm_free_block_info_members(block_info_t *block_info);
 void slurm_free_block_info(block_info_t *block_info);
 void slurm_free_block_info_msg(block_info_msg_t *block_info_msg);

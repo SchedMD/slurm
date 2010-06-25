@@ -453,8 +453,8 @@ _list_pids_one_step(const char *node_name, uint32_t jobid, uint32_t stepid)
 {
 	int fd;
 	slurmstepd_task_info_t *task_info;
-	pid_t *pids;
-	int count = 0;
+	uint32_t *pids;
+	uint32_t count = 0;
 	uint32_t tcount = 0;
 	int i;
 
@@ -486,7 +486,7 @@ _list_pids_one_step(const char *node_name, uint32_t jobid, uint32_t stepid)
 
 	stepd_list_pids(fd, &pids, &count);
 	for (i = 0; i < count; i++) {
-		if (!_in_task_array(pids[i], task_info, tcount)) {
+		if (!_in_task_array((pid_t)pids[i], task_info, tcount)) {
 			printf("%-8d %-8u %-6u %-7s %-8s\n",
 			       pids[i], jobid, stepid, "-", "-");
 		}
