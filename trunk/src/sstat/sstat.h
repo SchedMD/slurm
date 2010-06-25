@@ -68,6 +68,8 @@
 
 #define STAT_FIELDS "jobid,maxvmsize,maxvmsizenode,maxvmsizetask,avevmsize,maxrss,maxrssnode,maxrsstask,averss,maxpages,maxpagesnode,maxpagestask,avepages,mincpu,mincpunode,mincputask,avecpu,ntasks"
 
+#define STAT_FIELDS_PID "jobid,nodes,pids"
+
 #define STATE_COUNT 10
 
 #define MAX_PRINTFIELDS 100
@@ -96,7 +98,9 @@ typedef enum {
 		PRINT_MINCPU,
 		PRINT_MINCPUNODE,
 		PRINT_MINCPUTASK,
+		PRINT_NODES,
 		PRINT_NTASKS,
+		PRINT_PIDS,
 } sstat_print_types_t;
 
 
@@ -107,6 +111,7 @@ typedef struct {
 	List opt_job_list;	/* --jobs */
 	int opt_noheader;	/* can only be cleared */
 	int opt_verbose;	/* --verbose */
+	bool pid_format;
 } sstat_parameters_t;
 
 extern List print_fields_list;
@@ -130,4 +135,4 @@ void print_fields(slurmdb_step_rec_t *step);
 /* options.c */
 void parse_command_line(int argc, char **argv);
 
-#endif /* !_SACCT_H */
+#endif /* !_SSTAT_H */

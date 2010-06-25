@@ -358,6 +358,7 @@ extern void slurmdb_destroy_step_rec(void *object)
 	slurmdb_step_rec_t *step = (slurmdb_step_rec_t *)object;
 	if (step) {
 		xfree(step->nodes);
+		xfree(step->pid_str);
 		xfree(step->stepname);
 		xfree(step);
 	}
