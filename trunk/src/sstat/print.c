@@ -227,7 +227,7 @@ void print_fields(slurmdb_step_rec_t *step)
 					     step->stats.cpu_min_taskid,
 					     (curr_inx == field_count));
 			break;
-		case PRINT_NODES:
+		case PRINT_NODELIST:
 			field->print_routine(field,
 					     step->nodes,
 					     (curr_inx == field_count));

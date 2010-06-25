@@ -68,7 +68,7 @@ print_field_t fields[] = {
 	{10, "MinCPU", print_fields_str, PRINT_MINCPU},
 	{10, "MinCPUNode", print_fields_str, PRINT_MINCPUNODE},
 	{10, "MinCPUTask", print_fields_int, PRINT_MINCPUTASK},
-	{20, "Nodes", print_fields_str, PRINT_NODES},
+	{20, "Nodelist", print_fields_str, PRINT_NODELIST},
 	{8, "NTasks", print_fields_int, PRINT_NTASKS},
 	{20, "Pids", print_fields_str, PRINT_PIDS},
 	{0, NULL, NULL, 0}};

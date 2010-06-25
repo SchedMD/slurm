@@ -53,6 +53,30 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
+static int _sort_pids_by_name(job_step_pids_t *rec_a, job_step_pids_t *rec_b)
+{
+	int diff = 0;
+
+	if(!rec_a->node_name || !rec_b->node_name)
+		return 0;
+
+	diff = strcmp(rec_a->node_name, rec_b->node_name);
+	if (diff > 0)
+		return 1;
+	else if (diff < 0)
+		return -1;
+
+	return 0;
+}
+
+static int _sort_stats_by_name(job_step_stat_t *rec_a, job_step_stat_t *rec_b)
+{
+	if(!rec_a->step_pids || !rec_b->step_pids)
+		return 0;
+
+	return _sort_pids_by_name(rec_a->step_pids, rec_b->step_pids);
+}
+
 /*
  * slurm_print_job_step_info_msg - output information about all Slurm
  *	job steps based upon message as loaded using slurm_get_job_steps
@@ -271,8 +295,6 @@ extern int slurm_job_step_stat(uint32_t job_id, uint32_t step_id,
 	List ret_list = NULL;
 	ret_data_info_t *ret_data_info = NULL;
 	int rc = SLURM_SUCCESS;
-	int ntasks = 0;
-	int tot_tasks = 0;
 	slurm_step_layout_t *step_layout = NULL;
 	job_step_stat_response_msg_t *resp_out;
 	bool created = 0;
@@ -353,7 +375,8 @@ extern int slurm_job_step_stat(uint32_t job_id, uint32_t step_id,
 	list_iterator_destroy(itr);
 	list_destroy(ret_list);
 
-	tot_tasks += ntasks;
+	if(resp_out->stats_list)
+		list_sort(resp_out->stats_list, (ListCmpF)_sort_stats_by_name);
 cleanup:
 	slurm_step_layout_destroy(step_layout);
 
@@ -460,7 +483,9 @@ extern int slurm_job_step_get_pids(uint32_t job_id, uint32_t step_id,
         list_iterator_destroy(itr);
         list_destroy(ret_list);
 
- cleanup:
+ 	if(resp_out->pid_list)
+		list_sort(resp_out->pid_list, (ListCmpF)_sort_pids_by_name);
+cleanup:
 	slurm_step_layout_destroy(step_layout);
 
         return rc;

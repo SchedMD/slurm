@@ -68,7 +68,7 @@
 
 #define STAT_FIELDS "jobid,maxvmsize,maxvmsizenode,maxvmsizetask,avevmsize,maxrss,maxrssnode,maxrsstask,averss,maxpages,maxpagesnode,maxpagestask,avepages,mincpu,mincpunode,mincputask,avecpu,ntasks"
 
-#define STAT_FIELDS_PID "jobid,nodes,pids"
+#define STAT_FIELDS_PID "jobid,nodelist,pids"
 
 #define STATE_COUNT 10
 
@@ -98,7 +98,7 @@ typedef enum {
 		PRINT_MINCPU,
 		PRINT_MINCPUNODE,
 		PRINT_MINCPUTASK,
-		PRINT_NODES,
+		PRINT_NODELIST,
 		PRINT_NTASKS,
 		PRINT_PIDS,
 } sstat_print_types_t;
