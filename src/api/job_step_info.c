@@ -252,8 +252,254 @@ slurm_job_step_layout_get(uint32_t job_id, uint32_t step_id)
 	}
 }
 
-void
-slurm_job_step_layout_free(slurm_step_layout_t *layout)
+/*
+ * slurm_job_step_stat - status a current step
+ *
+ * IN job_id
+ * IN step_id
+ * IN node_list, optional, if NULL then all nodes in step are returned.
+ * OUT resp
+ * RET SLURM_SUCCESS on success SLURM_ERROR else
+ */
+extern int slurm_job_step_stat(uint32_t job_id, uint32_t step_id,
+			       char *node_list,
+			       job_step_stat_response_msg_t **resp)
+{
+	slurm_msg_t req_msg;
+	ListIterator itr;
+	job_step_id_msg_t req;
+	List ret_list = NULL;
+	ret_data_info_t *ret_data_info = NULL;
+	int rc = SLURM_SUCCESS;
+	int ntasks = 0;
+	int tot_tasks = 0;
+	slurm_step_layout_t *step_layout = NULL;
+	job_step_stat_response_msg_t *resp_out;
+	bool created = 0;
+
+	xassert(resp);
+
+	if(!node_list) {
+		if(!(step_layout =
+		     slurm_job_step_layout_get(job_id, step_id))) {
+			rc = errno;
+			error("slurm_job_step_get_stat: "
+			      "problem getting step_layout for %u.%u: %s",
+			      job_id, step_id, slurm_strerror(rc));
+			return rc;
+		}
+		node_list = step_layout->node_list;
+	}
+
+ 	if(!*resp) {
+		resp_out = xmalloc(sizeof(job_step_stat_response_msg_t));
+		*resp = resp_out;
+		created = 1;
+	} else
+		resp_out = *resp;
+
+        debug("slurm_job_step_stat: "
+	      "getting pid information of job %u.%u on nodes %s",
+              job_id, step_id, node_list);
+
+	slurm_msg_t_init(&req_msg);
+
+	memset(&req, 0, sizeof(job_step_id_msg_t));
+        resp_out->job_id = req.job_id = job_id;
+	resp_out->step_id = req.step_id = step_id;
+
+	req_msg.msg_type = REQUEST_JOB_STEP_STAT;
+        req_msg.data = &req;
+
+        if(!(ret_list = slurm_send_recv_msgs(node_list, &req_msg, 0, false))) {
+                error("slurm_job_step_stat: got an error no list returned");
+		rc = SLURM_ERROR;
+		if(created) {
+			slurm_job_step_stat_response_msg_free(resp_out);
+			*resp = NULL;
+		}
+		goto cleanup;
+        }
+
+	itr = list_iterator_create(ret_list);
+	while((ret_data_info = list_next(itr))) {
+		switch (ret_data_info->type) {
+		case RESPONSE_JOB_STEP_STAT:
+			if(!resp_out->stats_list)
+				resp_out->stats_list = list_create(
+					slurm_free_job_step_stat);
+			list_push(resp_out->stats_list,
+				  ret_data_info->data);
+			ret_data_info->data = NULL;
+ 			break;
+		case RESPONSE_SLURM_RC:
+			rc = slurm_get_return_code(ret_data_info->type,
+						   ret_data_info->data);
+			error("slurm_job_step_stat: "
+			      "there was an error with the request to "
+			      "%s rc = %s",
+			      ret_data_info->node_name, slurm_strerror(rc));
+			break;
+		default:
+			rc = slurm_get_return_code(ret_data_info->type,
+						   ret_data_info->data);
+			error("slurm_job_step_stat: "
+			      "unknown return given from %s: %d rc = %s",
+			      ret_data_info->node_name, ret_data_info->type,
+			      slurm_strerror(rc));
+			break;
+		}
+	}
+	list_iterator_destroy(itr);
+	list_destroy(ret_list);
+
+	tot_tasks += ntasks;
+cleanup:
+	slurm_step_layout_destroy(step_layout);
+
+	return rc;
+}
+
+/*
+ * slurm_job_step_get_pids - get the complete list of pids for a given
+ *      job step
+ *
+ * IN job_id
+ * IN step_id
+ * IN node_list, optional, if NULL then all nodes in step are returned.
+ * OUT resp
+ * RET SLURM_SUCCESS on success SLURM_ERROR else
+ */
+extern int slurm_job_step_get_pids(uint32_t job_id, uint32_t step_id,
+				   char *node_list,
+				   job_step_pids_response_msg_t **resp)
+{
+        int rc = SLURM_SUCCESS;
+        slurm_msg_t req_msg;
+        job_step_id_msg_t req;
+        ListIterator itr;
+        List ret_list = NULL;
+        ret_data_info_t *ret_data_info = NULL;
+	slurm_step_layout_t *step_layout = NULL;
+	job_step_pids_response_msg_t *resp_out;
+	bool created = 0;
+
+	xassert(resp);
+
+	if(!node_list) {
+		if(!(step_layout =
+		     slurm_job_step_layout_get(job_id, step_id))) {
+			rc = errno;
+			error("slurm_job_step_get_pids: "
+			      "problem getting step_layout for %u.%u: %s",
+			      job_id, step_id, slurm_strerror(rc));
+			return rc;
+		}
+		node_list = step_layout->node_list;
+	}
+
+	if(!*resp) {
+		resp_out = xmalloc(sizeof(job_step_pids_response_msg_t));
+		*resp = resp_out;
+		created = 1;
+	} else
+		resp_out = *resp;
+
+        debug("slurm_job_step_get_pids: "
+	      "getting pid information of job %u.%u on nodes %s",
+              job_id, step_id, node_list);
+
+	slurm_msg_t_init(&req_msg);
+
+	memset(&req, 0, sizeof(job_step_id_msg_t));
+        resp_out->job_id = req.job_id = job_id;
+	resp_out->step_id = req.step_id = step_id;
+
+	req_msg.msg_type = REQUEST_JOB_STEP_PIDS;
+        req_msg.data = &req;
+
+        if(!(ret_list = slurm_send_recv_msgs(node_list,
+					     &req_msg, 0, false))) {
+                error("slurm_job_step_get_pids: got an error no list returned");
+                rc = SLURM_ERROR;
+		if(created) {
+			slurm_job_step_pids_response_msg_free(resp_out);
+			*resp = NULL;
+		}
+		goto cleanup;
+        }
+
+        itr = list_iterator_create(ret_list);
+        while((ret_data_info = list_next(itr))) {
+                switch (ret_data_info->type) {
+			case RESPONSE_JOB_STEP_PIDS:
+				if(!resp_out->pid_list)
+					resp_out->pid_list = list_create(
+						slurm_free_job_step_pids);
+				list_push(resp_out->pid_list,
+					  ret_data_info->data);
+				ret_data_info->data = NULL;
+                              break;
+                      case RESPONSE_SLURM_RC:
+                              rc = slurm_get_return_code(ret_data_info->type,
+                                                         ret_data_info->data);
+                              error("slurm_job_step_get_pids: "
+				    "there was an error with the "
+				    "list pid request rc = %s",
+                                    slurm_strerror(rc));
+                              break;
+                      default:
+                              rc = slurm_get_return_code(ret_data_info->type,
+                                                         ret_data_info->data);
+                              error("slurm_job_step_get_pids: "
+				    "unknown return given %d rc = %s",
+                                    ret_data_info->type, slurm_strerror(rc));
+                              break;
+                }
+        }
+        list_iterator_destroy(itr);
+        list_destroy(ret_list);
+
+ cleanup:
+	slurm_step_layout_destroy(step_layout);
+
+        return rc;
+}
+
+extern void slurm_job_step_layout_free(slurm_step_layout_t *layout)
 {
 	slurm_step_layout_destroy(layout);
 }
+
+extern void slurm_job_step_pids_free(job_step_pids_t *object)
+{
+	slurm_free_job_step_pids(object);
+}
+
+extern void slurm_job_step_pids_response_msg_free(void *object)
+{
+	job_step_pids_response_msg_t *step_pids_msg =
+		(job_step_pids_response_msg_t *) object;
+	if(step_pids_msg) {
+		if(step_pids_msg->pid_list)
+			list_destroy(step_pids_msg->pid_list);
+		xfree(step_pids_msg);
+	}
+}
+
+extern void slurm_job_step_stat_free(job_step_stat_t *object)
+{
+	slurm_free_job_step_stat(object);
+}
+
+extern void slurm_job_step_stat_response_msg_free(void *object)
+{
+	job_step_stat_response_msg_t *step_stat_msg =
+		(job_step_stat_response_msg_t *) object;
+	if(step_stat_msg) {
+		if(step_stat_msg->stats_list)
+			list_destroy(step_stat_msg->stats_list);
+		xfree(step_stat_msg);
+	}
+}
+

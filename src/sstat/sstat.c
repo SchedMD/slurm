@@ -78,24 +78,27 @@ List print_fields_list = NULL;
 ListIterator print_fields_itr = NULL;
 int field_count = 0;
 
-int _sstat_query(slurm_step_layout_t *step_layout, uint32_t job_id,
-		 uint32_t step_id)
+int _do_stat(uint32_t jobid, uint32_t stepid)
 {
-	slurm_msg_t msg;
-	stat_jobacct_msg_t r;
-	stat_jobacct_msg_t *jobacct_msg = NULL;
-	ListIterator itr;
-	List ret_list = NULL;
-	slurmdb_stats_t temp_stats;
-	ret_data_info_t *ret_data_info = NULL;
+	job_step_stat_response_msg_t *step_stat_response = NULL;
 	int rc = SLURM_SUCCESS;
+	ListIterator itr;
+	slurmdb_stats_t temp_stats;
+	job_step_stat_t *step_stat = NULL;
 	int ntasks = 0;
 	int tot_tasks = 0;
-	debug("getting the stat of job %d on %d nodes",
-	      job_id, step_layout->node_cnt);
+	hostlist_t hl = NULL;
+
+	debug("requesting info for job %u.%u", jobid, stepid);
+	if((rc = slurm_job_step_stat(jobid, stepid, NULL,
+				     &step_stat_response)) != SLURM_SUCCESS) {
+		error("problem getting step_layout for %u.%u: %s",
+		      jobid, stepid, slurm_strerror(rc));
+		return rc;
+	}
 
 	memset(&job, 0, sizeof(slurmdb_job_rec_t));
-	job.jobid = job_id;
+	job.jobid = jobid;
 
 	memset(&step, 0, sizeof(slurmdb_step_rec_t));
 
@@ -105,62 +108,26 @@ int _sstat_query(slurm_step_layout_t *step_layout, uint32_t job_id,
 	step.stats.cpu_min = NO_VAL;
 
 	step.job_ptr = &job;
-	step.stepid = step_id;
-	step.nodes = step_layout->node_list;
+	step.stepid = stepid;
+	step.nodes = xmalloc(BUF_SIZE);
 	step.stepname = NULL;
 	step.state = JOB_RUNNING;
-	slurm_msg_t_init(&msg);
-	/* Common message contents */
-	r.job_id      = job_id;
-	r.step_id     = step_id;
-	r.jobacct     = jobacct_gather_g_create(NULL);
-	msg.msg_type        = MESSAGE_STAT_JOBACCT;
-	msg.data            = &r;
 
-	ret_list = slurm_send_recv_msgs(step_layout->node_list, &msg, 0, false);
-	if (!ret_list) {
-		error("got an error no list returned");
-		goto cleanup;
-	}
-
-	itr = list_iterator_create(ret_list);
-	while((ret_data_info = list_next(itr))) {
-		switch (ret_data_info->type) {
-		case MESSAGE_STAT_JOBACCT:
-			jobacct_msg = (stat_jobacct_msg_t *)
-				ret_data_info->data;
-			if(jobacct_msg) {
-				debug2("got it back from %s for job %d",
-				       ret_data_info->node_name,
-				       jobacct_msg->job_id);
-				jobacct_gather_g_2_stats(
-					&temp_stats,
-					jobacct_msg->jobacct);
-				ntasks += jobacct_msg->num_tasks;
-				aggregate_stats(&step.stats, &temp_stats);
-			}
-			break;
-		case RESPONSE_SLURM_RC:
-			rc = slurm_get_return_code(ret_data_info->type,
-						   ret_data_info->data);
-			error("there was an error with the request to "
-			      "%s rc = %s",
-			      ret_data_info->node_name, slurm_strerror(rc));
-			break;
-		default:
-			rc = slurm_get_return_code(ret_data_info->type,
-						   ret_data_info->data);
-			error("unknown return given from %s: %d rc = %s",
-			      ret_data_info->node_name, ret_data_info->type,
-			      slurm_strerror(rc));
-			break;
-		}
+	hl = hostlist_create(NULL);
+	itr = list_iterator_create(step_stat_response->stats_list);
+	while((step_stat = list_next(itr))) {
+		if(!step_stat->step_pids || !step_stat->step_pids->node_name)
+			continue;
+		hostlist_push(hl, step_stat->step_pids->node_name);
+		jobacct_gather_g_2_stats(&temp_stats, step_stat->jobacct);
+		ntasks += step_stat->num_tasks;
+		aggregate_stats(&step.stats, &temp_stats);
 	}
 	list_iterator_destroy(itr);
-	list_destroy(ret_list);
-
+	slurm_job_step_pids_response_msg_free(step_stat_response);
+	hostlist_ranged_string(hl, BUF_SIZE, step.nodes);
+	hostlist_destroy(hl);
 	tot_tasks += ntasks;
-cleanup:
 
 	if(tot_tasks) {
 		step.stats.cpu_ave /= (double)tot_tasks;
@@ -169,55 +136,8 @@ cleanup:
 		step.stats.pages_ave /= (double)tot_tasks;
 		step.ntasks = tot_tasks;
 	}
-	jobacct_gather_g_destroy(r.jobacct);
-	return SLURM_SUCCESS;
-}
-
-int _do_stat(uint32_t jobid, uint32_t stepid)
-{
-	slurm_msg_t req_msg;
-	slurm_msg_t resp_msg;
-	job_step_id_msg_t req;
-	slurm_step_layout_t *step_layout = NULL;
-	int rc = SLURM_SUCCESS;
-
-	slurm_msg_t_init(&req_msg);
-	slurm_msg_t_init(&resp_msg);
-	debug("requesting info for job %u.%u", jobid, stepid);
-	req.job_id = jobid;
-	req.step_id = stepid;
-	req_msg.msg_type = REQUEST_STEP_LAYOUT;
-	req_msg.data     = &req;
-
-	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0) {
-		return SLURM_ERROR;
-	}
-
-	switch (resp_msg.msg_type) {
-	case RESPONSE_STEP_LAYOUT:
-		step_layout = (slurm_step_layout_t *)resp_msg.data;
-		break;
-	case RESPONSE_SLURM_RC:
-		rc = ((return_code_msg_t *) resp_msg.data)->return_code;
-		slurm_free_return_code_msg(resp_msg.data);
-		printf("problem getting job: %s\n", slurm_strerror(rc));
-		slurm_seterrno_ret(rc);
-		break;
-	default:
-		slurm_seterrno_ret(SLURM_UNEXPECTED_MSG_ERROR);
-		break;
-	}
-
-	if(!step_layout) {
-		error("didn't get the job record rc = %s", slurm_strerror(rc));
-		return rc;
-	}
-
-	_sstat_query(step_layout, jobid, stepid);
 
 	print_fields(&step);
-
-	slurm_step_layout_destroy(step_layout);
 
 	return rc;
 }

@@ -1864,13 +1864,26 @@ extern void slurm_free_step_complete_msg(step_complete_msg_t *msg)
 	}
 }
 
-extern void slurm_free_stat_jobacct_msg(stat_jobacct_msg_t *msg)
+extern void slurm_free_job_step_stat(void *object)
 {
+	job_step_stat_t *msg = (job_step_stat_t *)object;
 	if (msg) {
 		jobacct_gather_g_destroy(msg->jobacct);
+		slurm_free_job_step_pids(msg->step_pids);
 		xfree(msg);
 	}
 }
+
+extern void slurm_free_job_step_pids(void *object)
+{
+	job_step_pids_t *msg = (job_step_pids_t *)object;
+	if(msg) {
+		xfree(msg->node_name);
+		xfree(msg->pid);
+		xfree(msg);
+	}
+}
+
 
 extern void slurm_free_block_info_members(block_info_t *block_info)
 {
@@ -2037,6 +2050,9 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_JOB_STEP_INFO:
 		slurm_free_job_step_info_request_msg(data);
 		break;
+	case RESPONSE_JOB_STEP_PIDS:
+		slurm_job_step_pids_free(data);
+		break;
 	case REQUEST_RESOURCE_ALLOCATION:
 	case REQUEST_JOB_WILL_RUN:
 	case REQUEST_SUBMIT_BATCH_JOB:
@@ -2112,8 +2128,8 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_STEP_COMPLETE:
 		slurm_free_step_complete_msg(data);
 		break;
-	case MESSAGE_STAT_JOBACCT:
-		slurm_free_stat_jobacct_msg(data);
+	case RESPONSE_JOB_STEP_STAT:
+		slurm_free_job_step_stat(data);
 		break;
 	case REQUEST_BATCH_JOB_LAUNCH:
 		slurm_free_job_launch_msg(data);
@@ -2199,8 +2215,8 @@ extern uint32_t slurm_get_return_code(slurm_msg_type_t type, void *data)
 	case MESSAGE_EPILOG_COMPLETE:
 		rc = ((epilog_complete_msg_t *)data)->return_code;
 		break;
-	case MESSAGE_STAT_JOBACCT:
-		rc = ((stat_jobacct_msg_t *)data)->return_code;
+	case RESPONSE_JOB_STEP_STAT:
+		rc = ((job_step_stat_t *)data)->return_code;
 		break;
 	case RESPONSE_REATTACH_TASKS:
 		rc = ((reattach_tasks_response_msg_t *)data)->return_code;

@@ -341,15 +341,20 @@ static int _unpack_complete_batch_script_msg(
 	complete_batch_script_msg_t ** msg_ptr, Buf buffer,
 	uint16_t protocol_version);
 
-static void _pack_stat_jobacct_msg(stat_jobacct_msg_t * msg, Buf buffer,
-				   uint16_t protocol_version);
-static int _unpack_stat_jobacct_msg(stat_jobacct_msg_t ** msg_ptr, Buf buffer,
-				    uint16_t protocol_version);
+static void _pack_job_step_stat(job_step_stat_t * msg, Buf buffer,
+				uint16_t protocol_version);
+static int _unpack_job_step_stat(job_step_stat_t ** msg_ptr, Buf buffer,
+				 uint16_t protocol_version);
 
 static void _pack_job_step_id_msg(job_step_id_msg_t * msg, Buf buffer,
 				  uint16_t protocol_version);
 static int _unpack_job_step_id_msg(job_step_id_msg_t ** msg_ptr, Buf buffer,
 				   uint16_t protocol_version);
+
+static void _pack_job_step_pids(job_step_pids_t *msg, Buf buffer,
+				uint16_t protocol_version);
+static int _unpack_job_step_pids(job_step_pids_t **msg, Buf buffer,
+				 uint16_t protocol_version);
 
 static void _pack_step_complete_msg(step_complete_msg_t * msg,
 				    Buf buffer,
@@ -847,12 +852,14 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 					buffer,
 					msg->protocol_version);
 		break;
-	case MESSAGE_STAT_JOBACCT:
-		_pack_stat_jobacct_msg((stat_jobacct_msg_t *) msg->data,
-				       buffer,
-				       msg->protocol_version);
+	case RESPONSE_JOB_STEP_STAT:
+		_pack_job_step_stat((job_step_stat_t *) msg->data,
+				    buffer,
+				    msg->protocol_version);
 		break;
 	case REQUEST_STEP_LAYOUT:
+	case REQUEST_JOB_STEP_STAT:
+	case REQUEST_JOB_STEP_PIDS:
 		_pack_job_step_id_msg((job_step_id_msg_t *)msg->data, buffer,
 				      msg->protocol_version);
 		break;
@@ -860,6 +867,11 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 		pack_slurm_step_layout((slurm_step_layout_t *)msg->data,
 				       buffer,
 				       msg->protocol_version);
+		break;
+	case RESPONSE_JOB_STEP_PIDS:
+		_pack_job_step_pids((job_step_pids_t *)msg->data,
+				    buffer,
+				    msg->protocol_version);
 		break;
 	case REQUEST_SIGNAL_JOB:
 		_pack_signal_job_msg((signal_job_msg_t *) msg->data, buffer,
@@ -1164,8 +1176,8 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 		break;
 	case REQUEST_UPDATE_JOB_STEP:
 		rc = _unpack_update_job_step_msg(
-				(step_update_request_msg_t **) & (msg->data),
-				buffer, msg->protocol_version);
+			(step_update_request_msg_t **) & (msg->data),
+			buffer, msg->protocol_version);
 		break;
 	case REQUEST_JOB_END_TIME:
 	case REQUEST_JOB_ALLOCATION_INFO:
@@ -1326,12 +1338,14 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 					       buffer,
 					       msg->protocol_version);
 		break;
-	case MESSAGE_STAT_JOBACCT:
-		rc = _unpack_stat_jobacct_msg(
-			(stat_jobacct_msg_t **) &(msg->data), buffer,
+	case RESPONSE_JOB_STEP_STAT:
+		rc = _unpack_job_step_stat(
+			(job_step_stat_t **) &(msg->data), buffer,
 			msg->protocol_version);
 		break;
 	case REQUEST_STEP_LAYOUT:
+	case REQUEST_JOB_STEP_STAT:
+	case REQUEST_JOB_STEP_PIDS:
 		_unpack_job_step_id_msg((job_step_id_msg_t **)&msg->data,
 					buffer,
 					msg->protocol_version);
@@ -1340,6 +1354,11 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 		unpack_slurm_step_layout((slurm_step_layout_t **)&msg->data,
 					 buffer,
 					 msg->protocol_version);
+		break;
+	case RESPONSE_JOB_STEP_PIDS:
+		_unpack_job_step_pids(
+			(job_step_pids_t **)&msg->data,
+			buffer,	msg->protocol_version);
 		break;
 	case REQUEST_SIGNAL_JOB:
 		rc = _unpack_signal_job_msg((signal_job_msg_t **)&(msg->data),
@@ -2239,7 +2258,7 @@ _unpack_node_registration_status_msg(slurm_node_registration_status_msg_t
 		/* Compute slurmd_start_time, assuming it started at same
 		 * time that the node booted */
 		node_reg_ptr->slurmd_start_time = time(NULL) -
-						  node_reg_ptr->up_time;
+			node_reg_ptr->up_time;
 	}
 	return SLURM_SUCCESS;
 
@@ -6113,7 +6132,7 @@ unpack_error:
 
 static void
 _pack_update_job_step_msg(step_update_request_msg_t * msg, Buf buffer,
-			uint16_t protocol_version)
+			  uint16_t protocol_version)
 {
 	pack32(msg->job_id, buffer);
 	pack32(msg->step_id, buffer);
@@ -6204,43 +6223,41 @@ unpack_error:
 }
 
 static void
-_pack_stat_jobacct_msg(stat_jobacct_msg_t * msg, Buf buffer,
-		       uint16_t protocol_version)
+_pack_job_step_stat(job_step_stat_t * msg, Buf buffer,
+		    uint16_t protocol_version)
 {
-	pack32((uint32_t)msg->job_id, buffer);
 	pack32((uint32_t)msg->return_code, buffer);
-	pack32((uint32_t)msg->step_id, buffer);
 	pack32((uint32_t)msg->num_tasks, buffer);
 	jobacct_gather_g_pack(msg->jobacct,
 			      SLURMDBD_VERSION, buffer);
+	_pack_job_step_pids(msg->step_pids, buffer, protocol_version);
 }
 
 
 static int
-_unpack_stat_jobacct_msg(stat_jobacct_msg_t ** msg_ptr, Buf buffer,
-			 uint16_t protocol_version)
+_unpack_job_step_stat(job_step_stat_t ** msg_ptr, Buf buffer,
+		      uint16_t protocol_version)
 {
-	stat_jobacct_msg_t *msg;
+	job_step_stat_t *msg;
+	int rc = SLURM_SUCCESS;
 
-	msg = xmalloc(sizeof(stat_jobacct_msg_t));
+	msg = xmalloc(sizeof(job_step_stat_t));
 	*msg_ptr = msg;
 
-	safe_unpack32(&msg->job_id, buffer);
 	safe_unpack32(&msg->return_code, buffer);
-	safe_unpack32(&msg->step_id, buffer);
 	safe_unpack32(&msg->num_tasks, buffer);
 	if (jobacct_gather_g_unpack(&msg->jobacct,
 				    SLURMDBD_VERSION, buffer)
 	    != SLURM_SUCCESS)
 		goto unpack_error;
+	rc = _unpack_job_step_pids(&msg->step_pids, buffer, protocol_version);
 
-	return SLURM_SUCCESS;
+	return rc;
 
 unpack_error:
-	slurm_free_stat_jobacct_msg(msg);
+	slurm_free_job_step_stat(msg);
 	*msg_ptr = NULL;
 	return SLURM_ERROR;
-
 }
 
 static void
@@ -6270,9 +6287,41 @@ unpack_error:
 	slurm_free_job_step_id_msg(msg);
 	*msg_ptr = NULL;
 	return SLURM_ERROR;
-
 }
 
+static void
+_pack_job_step_pids(job_step_pids_t *msg, Buf buffer,
+		    uint16_t protocol_version)
+{
+	if(!msg) {
+		packnull(buffer);
+		pack32(0, buffer);
+		return;
+	}
+	packstr(msg->node_name, buffer);
+	pack32_array(msg->pid, msg->pid_cnt, buffer);
+}
+
+static int
+_unpack_job_step_pids(job_step_pids_t **msg_ptr, Buf buffer,
+		      uint16_t protocol_version)
+{
+	job_step_pids_t *msg;
+	uint32_t uint32_tmp;
+
+	msg = xmalloc(sizeof(job_step_pids_t));
+	*msg_ptr = msg;
+
+	safe_unpackstr_xmalloc(&msg->node_name, &uint32_tmp, buffer);
+	safe_unpack32_array(&msg->pid, &msg->pid_cnt, buffer);
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_job_step_pids_free(msg);
+	*msg_ptr = NULL;
+	return SLURM_ERROR;
+}
 
 static void
 _pack_step_complete_msg(step_complete_msg_t * msg, Buf buffer,

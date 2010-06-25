@@ -154,6 +154,7 @@ static int  _rpc_ping(slurm_msg_t *);
 static int  _rpc_health_check(slurm_msg_t *);
 static int  _rpc_step_complete(slurm_msg_t *msg);
 static int  _rpc_stat_jobacct(slurm_msg_t *msg);
+static int  _rpc_list_pids(slurm_msg_t *msg);
 static int  _rpc_daemon_status(slurm_msg_t *msg);
 static int  _run_prolog(uint32_t jobid, uid_t uid, char *resv_id,
 			char **spank_job_env, uint32_t spank_job_env_size);
@@ -338,9 +339,13 @@ slurmd_req(slurm_msg_t *msg)
 		rc = _rpc_step_complete(msg);
 		slurm_free_step_complete_msg(msg->data);
 		break;
-	case MESSAGE_STAT_JOBACCT:
+	case REQUEST_JOB_STEP_STAT:
 		rc = _rpc_stat_jobacct(msg);
-		slurm_free_stat_jobacct_msg(msg->data);
+		slurm_free_job_step_id_msg(msg->data);
+		break;
+	case REQUEST_JOB_STEP_PIDS:
+		rc = _rpc_list_pids(msg);
+		slurm_free_job_step_id_msg(msg->data);
 		break;
 	case REQUEST_DAEMON_STATUS:
 		_rpc_daemon_status(msg);
@@ -777,7 +782,7 @@ _check_job_credential(launch_tasks_request_msg_t *req, uid_t uid,
 			}
 			info("====================");
 			info("step_id:%u.%u job_mem:%uMB%s step_mem:%uMB%s",
-			     arg.jobid, arg.stepid, job_mem, per_job, 
+			     arg.jobid, arg.stepid, job_mem, per_job,
 			     step_mem, per_step);
 		}
 
@@ -849,14 +854,14 @@ _check_job_credential(launch_tasks_request_msg_t *req, uid_t uid,
 	 * Reset the CPU count on this node to correct value. */
 	if (arg.step_mem_limit) {
 		if (arg.step_mem_limit & MEM_PER_CPU) {
-			req->step_mem_lim  = arg.step_mem_limit & 
+			req->step_mem_lim  = arg.step_mem_limit &
 					     (~MEM_PER_CPU);
 			req->step_mem_lim *= step_cores;
 		} else
 			req->step_mem_lim  = arg.step_mem_limit;
 	} else {
 		if (arg.job_mem_limit & MEM_PER_CPU) {
-			req->step_mem_lim  = arg.job_mem_limit & 
+			req->step_mem_lim  = arg.job_mem_limit &
 					     (~MEM_PER_CPU);
 			req->step_mem_lim *= job_cores;
 		} else
@@ -975,7 +980,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 #if _LIMIT_INFO
 			info("AddLim step:%u.%u job_mem:%u step_mem:%u",
 			      job_limits_ptr->job_id, job_limits_ptr->step_id,
-			      job_limits_ptr->job_mem, 
+			      job_limits_ptr->job_mem,
 			      job_limits_ptr->step_mem);
 #endif
 			list_append(job_limits_list, job_limits_ptr);
@@ -1038,7 +1043,7 @@ _prolog_error(batch_job_launch_msg_t *req, int rc)
 		snprintf(path_name, MAXPATHLEN, "/%s", err_name_ptr);
 
 	if ((fd = open(path_name, (O_CREAT|O_APPEND|O_WRONLY), 0644)) == -1) {
-		error("Unable to open %s: %s", path_name, 
+		error("Unable to open %s: %s", path_name,
 		      slurm_strerror(errno));
 		return;
 	}
@@ -1117,7 +1122,7 @@ _set_batch_job_limits(slurm_msg_t *msg)
 			per_job = "_per_CPU";
 		}
 		info("====================");
-		info("batch_job:%u job_mem:%uMB%s", req->job_id, 
+		info("batch_job:%u job_mem:%uMB%s", req->job_id,
 		     job_mem, per_job);
 	}
 	if (cpu_log || (arg.job_mem_limit & MEM_PER_CPU)) {
@@ -1502,8 +1507,8 @@ _load_job_limits(void)
 		if (fd == -1)
 			continue;	/* step completed */
 		stepd_info_ptr = stepd_get_info(fd);
-		if (stepd_info_ptr && 
-		    (stepd_info_ptr->job_mem_limit || 
+		if (stepd_info_ptr &&
+		    (stepd_info_ptr->job_mem_limit ||
 		     stepd_info_ptr->step_mem_limit)) {
 			/* create entry for this job */
 			job_limits_ptr = xmalloc(sizeof(job_mem_limits_t));
@@ -1516,7 +1521,7 @@ _load_job_limits(void)
 #if _LIMIT_INFO
 			info("RecLim step:%u.%u job_mem:%u step_mem:%u",
 			      job_limits_ptr->job_id, job_limits_ptr->step_id,
-			      job_limits_ptr->job_mem, 
+			      job_limits_ptr->job_mem,
 			      job_limits_ptr->step_mem);
 #endif
 			list_append(job_limits_list, job_limits_ptr);
@@ -1553,7 +1558,7 @@ _cancel_step_mem_limit(uint32_t job_id, uint32_t step_id)
 	slurm_send_only_controller_msg(&msg);
 }
 
-/* Enforce job memory limits here in slurmd. Step memory limits are 
+/* Enforce job memory limits here in slurmd. Step memory limits are
  * enforced within slurmstepd (using jobacct_gather plugin). */
 static void
 _enforce_job_mem_limit(void)
@@ -1565,8 +1570,8 @@ _enforce_job_mem_limit(void)
 	int fd, i, job_inx, job_cnt;
 	uint16_t vsize_factor;
 	uint32_t step_rss, step_vsize;
-	stat_jobacct_msg_t acct_req;
-	stat_jobacct_msg_t *resp = NULL;
+	job_step_id_msg_t acct_req;
+	job_step_stat_t *resp = NULL;
 	struct job_mem_info {
 		uint32_t job_id;
 		uint32_t mem_limit;	/* MB */
@@ -1614,7 +1619,7 @@ _enforce_job_mem_limit(void)
 	for (i=0; i<job_cnt; i++) {
 		job_mem_info_ptr[i].vsize_limit = job_mem_info_ptr[i].
 						  mem_limit;
-		job_mem_info_ptr[i].vsize_limit *= (vsize_factor / 100.0); 
+		job_mem_info_ptr[i].vsize_limit *= (vsize_factor / 100.0);
 	}
 
 	steps = stepd_available(conf->spooldir, conf->node_name);
@@ -1633,7 +1638,7 @@ _enforce_job_mem_limit(void)
 			continue;	/* step completed */
 		acct_req.job_id  = stepd->jobid;
 		acct_req.step_id = stepd->stepid;
-		resp = xmalloc(sizeof(stat_jobacct_msg_t));
+		resp = xmalloc(sizeof(job_step_stat_t));
 		if ((!stepd_stat_jobacct(fd, &acct_req, resp)) &&
 		    (resp->jobacct)) {
 			/* resp->jobacct is NULL if account is disabled */
@@ -1646,8 +1651,8 @@ _enforce_job_mem_limit(void)
 					       JOBACCT_DATA_TOT_VSIZE,
 					       &step_vsize);
 #if _LIMIT_INFO
-			info("Step:%u.%u RSS:%u KB VSIZE:%u KB", 
-			     stepd->jobid, stepd->stepid, 
+			info("Step:%u.%u RSS:%u KB VSIZE:%u KB",
+			     stepd->jobid, stepd->stepid,
 			     step_rss, step_vsize);
 #endif
 			step_rss /= 1024;	/* KB to MB */
@@ -1657,7 +1662,7 @@ _enforce_job_mem_limit(void)
 			step_vsize = MAX(step_vsize, 1);
 			job_mem_info_ptr[job_inx].vsize_used += step_vsize;
 		}
-		slurm_free_stat_jobacct_msg(resp);
+		slurm_free_job_step_stat(resp);
 		close(fd);
 	}
 	list_iterator_destroy(step_iter);
@@ -1665,7 +1670,7 @@ _enforce_job_mem_limit(void)
 
 	for (i=0; i<job_cnt; i++) {
 		if (job_mem_info_ptr[i].mem_used == 0) {
-			/* no steps found, 
+			/* no steps found,
 			 * purge records for all steps of this job */
 			slurm_mutex_lock(&job_limits_mutex);
 			list_delete_all(job_limits_list, _job_limits_match,
@@ -1678,19 +1683,19 @@ _enforce_job_mem_limit(void)
 		    (job_mem_info_ptr[i].mem_used >
 		     job_mem_info_ptr[i].mem_limit)) {
 			info("Job %u exceeded memory limit (%u>%u), "
-			     "cancelling it", job_mem_info_ptr[i].job_id, 
+			     "cancelling it", job_mem_info_ptr[i].job_id,
 			     job_mem_info_ptr[i].mem_used,
 			     job_mem_info_ptr[i].mem_limit);
-			_cancel_step_mem_limit(job_mem_info_ptr[i].job_id, 
+			_cancel_step_mem_limit(job_mem_info_ptr[i].job_id,
 					       NO_VAL);
 		} else if ((job_mem_info_ptr[i].vsize_limit != 0) &&
 			   (job_mem_info_ptr[i].vsize_used >
 			    job_mem_info_ptr[i].vsize_limit)) {
 			info("Job %u exceeded virtual memory limit (%u>%u), "
-			     "cancelling it", job_mem_info_ptr[i].job_id, 
+			     "cancelling it", job_mem_info_ptr[i].job_id,
 			     job_mem_info_ptr[i].vsize_used,
 			     job_mem_info_ptr[i].vsize_limit);
-			_cancel_step_mem_limit(job_mem_info_ptr[i].job_id, 
+			_cancel_step_mem_limit(job_mem_info_ptr[i].job_id,
 					       NO_VAL);
 		}
 	}
@@ -1769,7 +1774,7 @@ _rpc_health_check(slurm_msg_t *msg)
 
 
 static int
-_signal_jobstep(uint32_t jobid, uint32_t stepid, uid_t req_uid, 
+_signal_jobstep(uint32_t jobid, uint32_t stepid, uid_t req_uid,
 		uint32_t signal)
 {
 	int               fd, rc = SLURM_SUCCESS;
@@ -2051,9 +2056,9 @@ _rpc_daemon_status(slurm_msg_t *msg)
 static int
 _rpc_stat_jobacct(slurm_msg_t *msg)
 {
-	stat_jobacct_msg_t *req = (stat_jobacct_msg_t *)msg->data;
+	job_step_id_msg_t *req = (job_step_id_msg_t *)msg->data;
 	slurm_msg_t        resp_msg;
-	stat_jobacct_msg_t *resp = NULL;
+	job_step_stat_t *resp = NULL;
 	int fd;
 	uid_t req_uid;
 	long job_uid;
@@ -2086,10 +2091,10 @@ _rpc_stat_jobacct(slurm_msg_t *msg)
 		}
 	}
 
-	resp = xmalloc(sizeof(stat_jobacct_msg_t));
+	resp = xmalloc(sizeof(job_step_stat_t));
+	resp->step_pids = xmalloc(sizeof(job_step_pids_t));
+	resp->step_pids->node_name = xstrdup(conf->node_name);
 	slurm_msg_t_copy(&resp_msg, msg);
-	resp->job_id = req->job_id;
-	resp->step_id = req->step_id;
 	resp->return_code = SLURM_SUCCESS;
 	fd = stepd_connect(conf->spooldir, conf->node_name,
 			   req->job_id, req->step_id);
@@ -2097,22 +2102,102 @@ _rpc_stat_jobacct(slurm_msg_t *msg)
 		error("stepd_connect to %u.%u failed: %m",
 		      req->job_id, req->step_id);
 		slurm_send_rc_msg(msg, ESLURM_INVALID_JOB_ID);
-		slurm_free_stat_jobacct_msg(resp);
+		slurm_free_job_step_stat(resp);
 		return	ESLURM_INVALID_JOB_ID;
 
 	}
+
 	if (stepd_stat_jobacct(fd, req, resp) == SLURM_ERROR) {
 		debug("accounting for nonexistent job %u.%u requested",
 		      req->job_id, req->step_id);
 	}
+
+	/* FIX ME: This should probably happen in the
+	   stepd_stat_jobacct to get more information about the pids.
+	*/
+	if (stepd_list_pids(fd, &resp->step_pids->pid,
+			    &resp->step_pids->pid_cnt) == SLURM_ERROR) {
+                debug("No pids for nonexistent job %u.%u requested",
+                      req->job_id, req->step_id);
+        }
+
 	close(fd);
 
-	resp_msg.msg_type     = MESSAGE_STAT_JOBACCT;
+	resp_msg.msg_type     = RESPONSE_JOB_STEP_STAT;
 	resp_msg.data         = resp;
 
 	slurm_send_node_msg(msg->conn_fd, &resp_msg);
-	slurm_free_stat_jobacct_msg(resp);
+	slurm_free_job_step_stat(resp);
 	return SLURM_SUCCESS;
+}
+
+static int
+_rpc_list_pids(slurm_msg_t *msg)
+{
+	job_step_id_msg_t *req = (job_step_id_msg_t *)msg->data;
+	slurm_msg_t        resp_msg;
+	job_step_pids_t *resp = NULL;
+	int fd;
+	uid_t req_uid;
+	long job_uid;
+
+        debug3("Entering _rpc_list_pids");
+        /* step completion messages are only allowed from other slurmstepd,
+           so only root or SlurmUser is allowed here */
+        req_uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
+
+        job_uid = _get_job_uid(req->job_id);
+        if (job_uid < 0) {
+                error("stat_pid for invalid job_id: %u",
+		      req->job_id);
+                if (msg->conn_fd >= 0)
+                        slurm_send_rc_msg(msg, ESLURM_INVALID_JOB_ID);
+                return  ESLURM_INVALID_JOB_ID;
+        }
+
+        /*
+         * check that requesting user ID is the SLURM UID or root
+         */
+        if ((req_uid != job_uid) && (!_slurm_authorized_user(req_uid))) {
+                error("stat_pid from uid %ld for job %u "
+                      "owned by uid %ld",
+                      (long) req_uid, req->job_id, job_uid);
+
+                if (msg->conn_fd >= 0) {
+                        slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
+                        return ESLURM_USER_ID_MISSING;/* or bad in this case */
+                }
+        }
+
+        resp = xmalloc(sizeof(job_step_pids_t));
+        slurm_msg_t_copy(&resp_msg, msg);
+ 	resp->node_name = xstrdup(conf->node_name);
+	resp->pid_cnt = 0;
+	resp->pid = NULL;
+        fd = stepd_connect(conf->spooldir, conf->node_name,
+                           req->job_id, req->step_id);
+        if (fd == -1) {
+                error("stepd_connect to %u.%u failed: %m",
+                      req->job_id, req->step_id);
+                slurm_send_rc_msg(msg, ESLURM_INVALID_JOB_ID);
+                slurm_job_step_pids_response_msg_free(resp);
+                return  ESLURM_INVALID_JOB_ID;
+
+        }
+
+	if (stepd_list_pids(fd, &resp->pid, &resp->pid_cnt) == SLURM_ERROR) {
+                debug("No pids for nonexistent job %u.%u requested",
+                      req->job_id, req->step_id);
+        }
+
+        close(fd);
+
+        resp_msg.msg_type = RESPONSE_JOB_STEP_PIDS;
+        resp_msg.data     = resp;
+
+        slurm_send_node_msg(msg->conn_fd, &resp_msg);
+        slurm_job_step_pids_response_msg_free(resp);
+        return SLURM_SUCCESS;
 }
 
 /*
@@ -2949,7 +3034,7 @@ _rpc_suspend_job(slurm_msg_t *msg)
 	if (msg->conn_fd >= 0) {
 		slurm_send_rc_msg(msg, rc);
 		if (slurm_close_accepted_conn(msg->conn_fd) < 0)
-			error("_rpc_suspend_job: close(%d): %m", 
+			error("_rpc_suspend_job: close(%d): %m",
 			      msg->conn_fd);
 		msg->conn_fd = -1;
 	}

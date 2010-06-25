@@ -898,12 +898,13 @@ rwfail:
  * jobacctinfo_t must be freed after calling this function.
  */
 int
-stepd_stat_jobacct(int fd, stat_jobacct_msg_t *sent, stat_jobacct_msg_t *resp)
+stepd_stat_jobacct(int fd, job_step_id_msg_t *sent, job_step_stat_t *resp)
 {
-	int req = MESSAGE_STAT_JOBACCT;
+	int req = REQUEST_STEP_STAT;
 	int rc = SLURM_SUCCESS;
 	//jobacctinfo_t *jobacct = NULL;
 	int tasks = 0;
+
 	debug("Entering stepd_stat_jobacct for job %u.%u",
 	      sent->job_id, sent->step_id);
 	safe_write(fd, &req, sizeof(int));
@@ -915,6 +916,7 @@ stepd_stat_jobacct(int fd, stat_jobacct_msg_t *sent, stat_jobacct_msg_t *resp)
 
 	safe_read(fd, &tasks, sizeof(int));
 	resp->num_tasks = tasks;
+
 	return rc;
 rwfail:
 	error("gathering job accounting: %d", rc);
@@ -973,20 +975,20 @@ rwfail:
  * and sets errno.
  */
 int
-stepd_list_pids(int fd, pid_t **pids_array, int *pids_count)
+stepd_list_pids(int fd, uint32_t **pids_array, uint32_t *pids_count)
 {
 	int req = REQUEST_STEP_LIST_PIDS;
-	int npids;
-	pid_t *pids;
+	uint32_t npids;
+	uint32_t *pids;
 	int i;
 
 	safe_write(fd, &req, sizeof(int));
 
 	/* read the pid list */
-	safe_read(fd, &npids, sizeof(int));
-	pids = (pid_t *)xmalloc(npids * sizeof(pid_t));
+	safe_read(fd, &npids, sizeof(uint32_t));
+	pids = xmalloc(npids * sizeof(uint32_t));
 	for (i = 0; i < npids; i++) {
-		safe_read(fd, &pids[i], sizeof(pid_t));
+		safe_read(fd, &pids[i], sizeof(uint32_t));
 	}
 
 	if (npids == 0) {

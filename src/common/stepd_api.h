@@ -72,7 +72,8 @@ typedef enum {
 	REQUEST_STEP_COMPLETION,
 	REQUEST_STEP_TASK_INFO,
 	REQUEST_STEP_LIST_PIDS,
-	REQUEST_STEP_RECONFIGURE
+	REQUEST_STEP_RECONFIGURE,
+	REQUEST_STEP_STAT,
 } step_msg_t;
 
 typedef enum {
@@ -239,14 +240,14 @@ int stepd_completion(int fd, step_complete_msg_t *sent);
  * Returns SLURM_SUCCESS on success or SLURM_ERROR on error.
  * resp receives a jobacctinfo_t which must be freed if SUCCESS.
  */
-int stepd_stat_jobacct(int fd, stat_jobacct_msg_t *sent,
-		       stat_jobacct_msg_t *resp);
+int stepd_stat_jobacct(int fd, job_step_id_msg_t *sent,
+		       job_step_stat_t *resp);
 
 
 int stepd_task_info(int fd, slurmstepd_task_info_t **task_info,
 		    uint32_t *task_info_count);
 
-int stepd_list_pids(int fd, pid_t **pids_array, int *pids_count);
+int stepd_list_pids(int fd, uint32_t **pids_array, uint32_t *pids_count);
 
 
 #endif /* _STEPD_API_H */
