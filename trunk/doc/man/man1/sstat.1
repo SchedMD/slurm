@@ -50,11 +50,17 @@ Print a list of fields that can be specified with the '\-\-format' option.
 Displays a general help message.
 
 .TP
+\f3\-i\fP\f3,\fP \f3\-\-pidformat\fP
+Predefined format to list the pids running for each job step.
+(JobId,Nodes,Pids)
+
+.TP
 \f3\-j\fP\f3,\fP \f3\-\-jobs\fP
 Format is <job(.step)>. Stat this job step or comma-separated list of
 job steps. This option is required.  The step portion will default to
-step 0 if not specified, unless the \-\-allsteps flag is set where not
-specifying a step will result in all running steps to be displayed.
+lowest step running if not specified, unless the --allsteps flag is
+set where not specifying a step will result in all running steps to be
+displayed.
 
 .TP
 \f3\-n\fP\f3,\fP \f3\-\-noheader\fP
@@ -65,6 +71,12 @@ display a header.
 \f3\-o\fP\f3,\fP \f3\-\-format\fP,\fP \f3\-\-fields\fP
 Comma separated list of fields.
 (use '\-\-helpformat' for a list of available fields).
+
+NOTE: When using the format option for listing various fields you can put a
+%NUMBER afterwards to specify how many characters should be printed.
+
+i.e. format=name%30 will print 30 characters of field name right
+justified.  A \-30 will print 30 characters left justified.
 
 .TP
 \f3\-p\fP\f3,\fP \f3\-\-parsable\fP
