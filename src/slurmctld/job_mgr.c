@@ -6481,6 +6481,12 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 /* Record accounting information for a job immediately before changing size */
 extern void job_pre_resize_acctg(struct job_record *job_ptr)
 {
+	/* if we don't have a db_index go a start this one up since if
+	   running with the slurmDBD the job may not have started yet.
+	*/
+	if(!job_ptr->db_index)
+		jobacct_storage_g_job_start(acct_db_conn, job_ptr);
+
 	job_ptr->job_state |= JOB_RESIZING;
 	job_ptr->resize_time = time(NULL);
 	/* NOTE: job_completion_logger() calls
