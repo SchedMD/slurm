@@ -240,7 +240,12 @@ extern int as_mysql_job_start(mysql_conn_t *mysql_conn,
 	 * be notified of the change also so make the state without
 	 * the resize. */
 	if(IS_JOB_RESIZING(job_ptr)) {
-		as_mysql_job_complete(mysql_conn, job_ptr);
+		/* If we have a db_index lets end the previous record. */
+		if(job_ptr->db_index)
+			as_mysql_job_complete(mysql_conn, job_ptr);
+		else
+			error("We don't have a db_index for job %u, "
+			      "this should never happen.", job_ptr->job_id);
 		job_state &= (~JOB_RESIZING);
 		job_ptr->db_index = 0;
 	}
