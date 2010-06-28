@@ -2168,6 +2168,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 
 	if (error_code) {
 		if (job_ptr && (immediate || will_run)) {
+			/* this should never really happen here */
 			job_ptr->job_state = JOB_FAILED;
 			job_ptr->exit_code = 1;
 			job_ptr->state_reason = FAIL_BAD_CONSTRAINTS;
@@ -2244,6 +2245,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 		job_ptr->job_state  = JOB_FAILED;
 		job_ptr->exit_code  = 1;
 		job_ptr->start_time = job_ptr->end_time = now;
+		_purge_job_record(job_ptr->job_id);
 		return rc;
 	}
 
@@ -2298,6 +2300,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 		job_ptr->job_state  = JOB_FAILED;
 		job_ptr->exit_code  = 1;
 		job_ptr->start_time = job_ptr->end_time = now;
+		_purge_job_record(job_ptr->job_id);
 	} else if(!with_slurmdbd && !job_ptr->db_index)
 		jobacct_storage_g_job_start(acct_db_conn, job_ptr);
 
