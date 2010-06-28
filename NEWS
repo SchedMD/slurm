@@ -29,6 +29,8 @@ documents those changes that are of interest to users and admins.
     given.
  -- BLUEGENE - Future start time is set correctly when eligible time for a job
     is in the future, but the job can physically run earlier.
+ -- Updated Documentation for sacctmgr for Wall and CPUMin options stating when
+    the limit is reached running jobs will be killed.
 
 * Changes in SLURM 2.1.9
 ========================
