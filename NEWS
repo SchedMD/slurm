@@ -58,7 +58,9 @@ documents those changes that are of interest to users and admins.
     srun/sbatch --hold/-H option or use "scontrol update jobid=# priority=0"
     to hold and "scontrol update jobid=# priority=1" to release).
  -- Added ability for sacct to query jobs by qos and a range of timelimits.
- -- Added ability for sstat to query pids of steps running
+ -- Added ability for sstat to query pids of steps running.
+ -- Support time specification in UTS format with a prefix of "uts" (e.g.
+    "sbatch --begin=uts458389988 my.script").
 
 * Changes in SLURM 2.2.0.pre7
 =============================

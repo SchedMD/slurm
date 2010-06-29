@@ -40,10 +40,12 @@
 #  include "config.h"
 #endif
 
+#include <limits.h>
 #include <stdio.h>
-#include <time.h>
+#include <stdlib.h>
 #include <string.h>
 #include <strings.h>
+#include <time.h>
 
 #ifndef   __USE_ISOC99
 #  define __USE_ISOC99 /* isblank() */
@@ -340,6 +342,15 @@ extern time_t parse_time(char *time_str, int past)
 	int    month = -1, mday = -1, year = -1;
 	int    pos = 0;
 	struct tm res_tm;
+
+	if (strncasecmp(time_str, "uts", 3) == 0) {
+		char *last = NULL;
+		long uts = strtol(time_str+3, &last, 10);
+		if ((uts < 1000000) || (uts == LONG_MAX) ||
+		    (last == NULL) || (last[0] != '\0'))
+			goto prob;
+		return (time_t) uts;
+	}
 
 	time_now = time(NULL);
 	time_now_tm = localtime(&time_now);
