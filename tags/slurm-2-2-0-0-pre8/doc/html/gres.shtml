@@ -1,0 +1,73 @@
+<!--#include virtual="header.txt"-->
+
+<h1>Generic Resource (Gres) Scheduling</h1>
+
+<P>Beginning in SLURM version 2.2 generic resource (Gres) scheduling is
+supported through a flexible plugin mechanism. Support is initially provided
+for Graphics Processing Units (GPUs), although support for any resources is
+possible though use of a customized plugin.</P>
+
+<!-------------------------------------------------------------------------->
+<h2>Configuration</h2>
+
+<P>SLURM supports no generic resourses in the default configuration.
+One must explicitly specify which resources are to be managed in the
+<I>slurm.conf</I> configuration file. The configuration parameters of
+interest are:</P>
+
+<UL>
+<LI><B>GresPlugins</B> a comma delimited list of generic resource plugins to be
+used (e.g. <I>GresPlugins=gpus,nic</I>).</LI>
+<LI><B>Gres</B> the specific generic resource and their count associated with
+each node (e.g. <I>NodeName=linux[0-999] Gres=gpu:8,nic:2</I>).</LI>
+</UL>
+
+<P>Note that the Gres specification for each node works in the same fashion
+as the other resources managed. Depending upon the value of the
+<I>FastSchedule</I> parameter, nodes which are found to have fewer resources
+than configured will be placed in a DOWN state.</P>
+
+<P>Note that the Gres specification is not supported on BlueGene systems.</P>
+
+<!-------------------------------------------------------------------------->
+<h2>Running Jobs</h2>
+
+<P>Jobs will not be allocated any generic resources unless specifically
+requested at job submit time using the <I>--gres</I> option supported by
+the <I>salloc</I>, <I>sbatch</I> and <I>srun</I> commands. The option
+requires an argument specifying which generic resources are required and
+how many resources. The resource specification is of the form
+<I>name[:count[</I>*cpu<I>]]</I>. The <I>name</I> is the same name as
+specified by the <I>GresPlugins</I> and <I>Gres</I> configuration parameters.
+<I>count</I> specifies how many resources are required and has a default
+value of 1. <I>*cpu</I> indicates that the resource count specified is per
+allocated CPU, otherwise the count is per allocated node. For example:
+<I>sbatch --gres=gpu:2*cpu,nic:1 ...</I>.</P>
+
+<P>Jobs will be allocated specific generic resources as needed to satisfy
+the request. If the job is suspended, those resources typically become available
+for use by other jobs (plugin dependent).</P>
+
+<P>Job steps can be allocated generic resources from those allocated to the
+job using the <I>--gres</I> option with the <I>srun</I> command as described
+above. By default a job step will have access to all generic resources
+allocated to the job, but lower values may be specified if running more than
+one job step concurrently. The job step will be allocated specific generic
+resources and those resources will not be available to other job steps. A
+simple example is shown below.</P>
+
+<PRE>
+#!/bin/bash
+#
+# gres_test.bash
+# Submit as follows: sbatch --gres=gpu:2 -n4 -N1-1 gres_test.bash
+#
+srun --gres=gpu:1 -n2 --exclusive job_1 &
+srun --gres=gpu:1 -n2 --exclusive job_2 &
+wait
+</PRE>
+<!-------------------------------------------------------------------------->
+
+<p style="text-align: center;">Last modified 26 May 2010</p>
+
+</ul></body></html>
