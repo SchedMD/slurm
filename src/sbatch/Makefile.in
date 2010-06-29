@@ -84,7 +84,8 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
-am_sbatch_OBJECTS = sbatch.$(OBJEXT) opt.$(OBJEXT)
+am_sbatch_OBJECTS = sbatch.$(OBJEXT) mult_cluster.$(OBJEXT) \
+	opt.$(OBJEXT)
 sbatch_OBJECTS = $(am_sbatch_OBJECTS)
 am__DEPENDENCIES_1 = $(top_builddir)/src/api/libslurm.o
 sbatch_DEPENDENCIES = $(am__DEPENDENCIES_1)
@@ -300,7 +301,7 @@ top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 CLEANFILES = core.*
 INCLUDES = -I$(top_srcdir)
-sbatch_SOURCES = sbatch.c opt.c opt.h
+sbatch_SOURCES = sbatch.c mult_cluster.c mult_cluster.h opt.c opt.h
 convenience_libs = $(top_builddir)/src/api/libslurm.o -ldl
 sbatch_LDADD = $(convenience_libs)
 sbatch_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
@@ -391,6 +392,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mult_cluster.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/opt.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sbatch.Po@am__quote@
 

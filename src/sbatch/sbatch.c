@@ -60,6 +60,7 @@
 #include "src/common/xmalloc.h"
 
 #include "src/sbatch/opt.h"
+#include "src/sbatch/mult_cluster.h"
 
 #define MAX_RETRIES 15
 
@@ -146,8 +147,11 @@ int main(int argc, char *argv[])
 
 	desc.script = (char *)script_body;
 
-	if(opt.clusters)
-		working_cluster_rec = list_peek(opt.clusters);
+	/* If can run on multiple clusters find the earliest run time
+	   and run it there */
+	if(sbatch_set_first_avail_cluster(&desc) != SLURM_SUCCESS)
+		exit(error_exit);
+
 	while (slurm_submit_batch_job(&desc, &resp) < 0) {
 		static char *msg;
 
@@ -174,7 +178,12 @@ int main(int argc, char *argv[])
 			error(msg);
 		sleep (++retries);
         }
-	printf("Submitted batch job %u\n", resp->job_id);
+
+	printf("Submitted batch job %u", resp->job_id);
+	if(working_cluster_rec)
+		printf(" on cluster %s", working_cluster_rec->name);
+	printf("\n");
+
 	xfree(desc.script);
 	slurm_free_submit_response_response_msg(resp);
 	return 0;
