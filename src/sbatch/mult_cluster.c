@@ -97,18 +97,15 @@ local_cluster_rec_t *_job_will_run (job_desc_msg_t *req)
 	rc = slurm_send_recv_controller_msg(&req_msg, &resp_msg);
 
 	if (rc < 0) {
-		errno = SLURM_SOCKET_ERROR;
+		slurm_seterrno(SLURM_SOCKET_ERROR);
 		return NULL;
 	}
-
 	switch (resp_msg.msg_type) {
 	case RESPONSE_SLURM_RC:
 		rc = ((return_code_msg_t *) resp_msg.data)->return_code;
 		slurm_free_return_code_msg(resp_msg.data);
-		if (rc < 0) {
-			errno = SLURM_PROTOCOL_ERROR;
-			return NULL;
-		}
+		if (rc)
+			slurm_seterrno(rc);
 		break;
 	case RESPONSE_JOB_WILL_RUN:
 		if(working_cluster_rec->flags & CLUSTER_FLAG_BG)
@@ -144,14 +141,12 @@ local_cluster_rec_t *_job_will_run (job_desc_msg_t *req)
 		}
 
 		slurm_free_will_run_response_msg(will_run_resp);
-		errno = 0;
 		break;
 	default:
-		errno = SLURM_UNEXPECTED_MSG_ERROR;
+		slurm_seterrno(SLURM_UNEXPECTED_MSG_ERROR);
 		return NULL;
 		break;
 	}
-
 	return local_cluster;
 }
 
@@ -187,7 +182,7 @@ extern int sbatch_set_first_avail_cluster(job_desc_msg_t *req)
 					_destroy_local_cluster_rec);
 			list_append(ret_list, local_cluster);
 		} else
-			error("problem talking to cluster %s: %m",
+			error("Problem with submit to cluster %s: %m",
 			      working_cluster_rec->name);
 	}
 	list_iterator_destroy(itr);
