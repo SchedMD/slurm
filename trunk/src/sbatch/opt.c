@@ -656,7 +656,7 @@ static struct option long_options[] = {
 	{"no-kill",       no_argument,       0, 'k'},
 	{"licenses",      required_argument, 0, 'L'},
 	{"distribution",  required_argument, 0, 'm'},
-	{"cluster",       required_argument, 0, 'M'},
+	{"clusters",      required_argument, 0, 'M'},
 	{"tasks",         required_argument, 0, 'n'},
 	{"ntasks",        required_argument, 0, 'n'},
 	{"nodes",         required_argument, 0, 'N'},
@@ -1214,7 +1214,7 @@ static void _set_options(int argc, char **argv)
 				list_destroy(opt.clusters);
 			if(!(opt.clusters =
 			     slurmdb_get_info_cluster(optarg))) {
-				error("'%s' invalid entry for --cluster",
+				error("'%s' invalid entry for --clusters",
 				      optarg);
 				exit(1);
 			}
@@ -2667,7 +2667,7 @@ static void _usage(void)
 "              [-c ncpus] [-r n] [-p partition] [--hold] [-t minutes]\n"
 "              [-D path] [--immediate] [--no-kill] [--overcommit]\n"
 "              [--input file] [--output file] [--error file]\n"
-"              [--time-min=minutes] [--licenses=names] [--cluster=cluster_name]\n"
+"              [--time-min=minutes] [--licenses=names] [--clusters=cluster_names]\n"
 "              [--workdir=directory] [--share] [-m dist] [-J jobname]\n"
 "              [--jobid=id] [--verbose] [--gid=group] [--uid=user] [-W sec] \n"
 "              [--contiguous] [--mincpus=n] [--mem=MB] [--tmp=MB] [-C list]\n"
@@ -2718,9 +2718,9 @@ static void _help(void)
 "  -L, --licenses=names        required license, comma separated\n"
 "  -m, --distribution=type     distribution method for processes to nodes\n"
 "                              (type = block|cyclic|arbitrary)\n"
-"  -M, --cluster=cluster_name  cluster to issue commands to.  Default is\n"
-"                              current cluster.  cluster with no name will\n"
-"                              reset to default.\n"
+"  -M, --clusters=names        Comma separated list of clusters to issue\n"
+"                              commands to.  Default is current cluster.\n"
+"                              Name of 'all' will submit to run on all clusters.\n"
 "      --mail-type=type        notify on state change: BEGIN, END, FAIL or ALL\n"
 "      --mail-user=user        who to send email notification for job state\n"
 "                              changes\n"

@@ -1009,13 +1009,17 @@ extern List slurmdb_get_info_cluster(char *cluster_names)
 	void *db_conn = NULL;
 	ListIterator itr, itr2;
 	int err = 0;
+	bool all_clusters = 0;
+
+	if(!strcmp(cluster_names, "all"))
+		all_clusters = 1;
 
 	cluster_name = slurm_get_cluster_name();
 	db_conn = acct_storage_g_get_connection(false, 0, 1, cluster_name);
 	xfree(cluster_name);
 
 	memset(&cluster_cond, 0, sizeof(slurmdb_cluster_cond_t));
-	if(cluster_names) {
+	if(cluster_names && !all_clusters) {
 		cluster_cond.cluster_list = list_create(slurm_destroy_char);
 		slurm_addto_char_list(cluster_cond.cluster_list, cluster_names);
 	}
@@ -1026,7 +1030,7 @@ extern List slurmdb_get_info_cluster(char *cluster_names)
 		goto end_it;
 	}
 	itr = list_iterator_create(temp_list);
-	if(!cluster_names) {
+	if(!cluster_names || all_clusters) {
 		while((cluster_rec = list_next(itr))) {
 			if(_setup_cluster_rec(cluster_rec) != SLURM_SUCCESS) {
 				err = 1;

@@ -127,12 +127,13 @@ Checkpoint files will be of the form "<job_id>.ckpt" for jobs
 and "<job_id>.<step_id>.ckpt" for job steps.
 
 .TP
-\fB\-\-cluster\fR=<\fIstring\fR>
-Cluster to issue commands to. Multiple cluster names may be comma separated.
+\fB\-\-clusters\fR=<\fIstring\fR>
+Clusters to issue commands to.  Multiple cluster names may be comma separated.
 The job will be submitted to the one cluster providing the earliest expected
-job initiation time. The default value is the current cluster. If no name is
-specified, the current cluster will be used. Note the \fB\-\-export\fR option
-to control environment variables exported between clusters.
+job initiation time. The default value is the current cluster.  A value of
+of '\fIall\fR' will query to run on all clusters.  Note the
+\fB\-\-export\fR option to control environment variables exported
+between clusters.
 
 .TP
 \fB\-\-comment\fR=<\fIstring\fR>
