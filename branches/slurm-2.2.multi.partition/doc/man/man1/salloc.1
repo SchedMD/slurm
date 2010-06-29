@@ -742,10 +742,12 @@ allowing more than one task per processor.  However no more than
 \fBMAX_TASKS_PER_NODE\fR tasks are permitted to execute per node.
 
 .TP
-\fB\-p\fR, \fB\-\-partition\fR=<\fIpartition name\fR>
+\fB\-p\fR, \fB\-\-partition\fR=<\fIpartition_names\fR>
 Request a specific partition for the resource allocation.  If not specified,
 the default behaviour is to allow the slurm controller to select the default
-partition as designated by the system administrator.
+partition as designated by the system administrator. If the job can use more
+than one partition, specify their names in a comma separate list and the one
+offering earliest initiation will be used.
 
 .TP
 \fB\-Q\fR, \fB\-\-quiet\fR

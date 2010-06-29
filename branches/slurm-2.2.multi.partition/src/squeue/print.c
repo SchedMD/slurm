@@ -1294,15 +1294,25 @@ static int _filter_job(job_info_t * job)
 	}
 
 	if (params.part_list) {
+		char *token = NULL, *last = NULL, *tmp_name = NULL;
+
 		filter = 1;
-		iterator = list_iterator_create(params.part_list);
-		while ((part = list_next(iterator))) {
-			if (strcmp(part, job->partition) == 0) {
-				filter = 0;
-				break;
-			}
+		if (job->partition) {
+			tmp_name = xstrdup(job->partition);
+			token = strtok_r(tmp_name, ",", &last);
 		}
-		list_iterator_destroy(iterator);
+		while (token && filter) {
+			iterator = list_iterator_create(params.part_list);
+			while ((part = list_next(iterator))) {
+				if (strcmp(part, token) == 0) {
+					filter = 0;
+					break;
+				}
+			}
+			list_iterator_destroy(iterator);
+			token = strtok_r(NULL, ",", &last);
+		}
+		xfree(tmp_name);
 		if (filter == 1)
 			return 2;
 	}

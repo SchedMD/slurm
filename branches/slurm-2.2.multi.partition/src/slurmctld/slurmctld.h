@@ -442,7 +442,8 @@ struct job_record {
 					 * for this job, used to insure
 					 * epilog is not re-run for job */
 	uint16_t other_port;		/* port for client communications */
-	char *partition;		/* name of the partition */
+	char *partition;		/* name of job partition(s) */
+	List part_ptr_list;		/* list of pointers to partition recs */
 	struct part_record *part_ptr;	/* pointer to the partition record */
 	time_t pre_sus_time;		/* time job ran prior to last suspend */
 	uint32_t priority;		/* relative priority of the job,
@@ -725,10 +726,9 @@ extern struct node_record *find_first_node_record (bitstr_t *node_bitmap);
 /*
  * find_part_record - find a record for partition with specified name
  * IN name - name of the desired partition
- * RET pointer to node partition or NULL if not found
- * global: part_list - global partition list
+ * RET pointer to partition or NULL if not found
  */
-extern struct part_record *find_part_record (char *name);
+extern struct part_record *find_part_record(char *name);
 
 /*
  * find_step_record - return a pointer to the step record with the given
@@ -761,6 +761,14 @@ extern char *get_job_script (struct job_record *job_ptr);
  *	the next job
  */
 extern uint32_t get_next_job_id(void);
+
+/*
+ * get_part_list - find record for named partition(s)
+ * IN name - partition name(s) in a comma separated list
+ * RET List of pointers to the partitions or NULL if not found
+ * NOTE: Caller must free the returned list
+ */
+extern List get_part_list(char *name);
 
 /*
  * init_job_conf - initialize the job configuration tables and values.

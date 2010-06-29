@@ -3,6 +3,8 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 2.2.0.pre9
 =============================
+ -- Jobs can now be submitted to multiple partitions (job queues) and use the
+    one permitting earliest start time
 
 * Changes in SLURM 2.2.0.pre8
 =============================
