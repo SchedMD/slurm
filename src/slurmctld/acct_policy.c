@@ -367,6 +367,7 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 	bool rc = true;
 	uint64_t usage_mins;
 	uint32_t wall_mins;
+	bool cancel_job = 0;
 	int parent = 0; /*flag to tell us if we are looking at the
 			 * parent or not
 			 */
@@ -438,7 +439,7 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 				     job_ptr->details->min_nodes,
 				     qos_ptr->grp_nodes,
 				     qos_ptr->name);
-				_cancel_job(job_ptr);
+				cancel_job = 1;
 			} else if ((qos_ptr->grp_used_nodes +
 				    job_ptr->details->min_nodes) >
 				   qos_ptr->grp_nodes) {
@@ -519,7 +520,7 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 				     job_ptr->job_id,
 				     job_ptr->details->min_nodes,
 				     qos_ptr->max_nodes_pj);
-				_cancel_job(job_ptr);
+				cancel_job = 1;
 				rc = false;
 				goto end_qos;
 			}
@@ -537,7 +538,7 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 				     "time limit %u exceeds account max %u",
 				     job_ptr->job_id, job_ptr->time_limit,
 				     time_limit);
-				_cancel_job(job_ptr);
+				cancel_job = 1;
 				rc = false;
 				goto end_qos;
 			}
@@ -599,7 +600,7 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 				     job_ptr->job_id,
 				     job_ptr->details->min_nodes,
 				     assoc_ptr->grp_nodes, assoc_ptr->acct);
-				_cancel_job(job_ptr);
+				cancel_job = 1;
 			} else if ((assoc_ptr->grp_used_nodes +
 				    job_ptr->details->min_nodes) >
 				   assoc_ptr->grp_nodes) {
@@ -686,7 +687,7 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 				     job_ptr->job_id,
 				     job_ptr->details->min_nodes,
 				     assoc_ptr->max_nodes_pj);
-				_cancel_job(job_ptr);
+				cancel_job = 1;
 				rc = false;
 				goto end_it;
 			}
@@ -706,7 +707,7 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 				     "time limit %u exceeds account max %u",
 				     job_ptr->job_id, job_ptr->time_limit,
 				     time_limit);
-				_cancel_job(job_ptr);
+				cancel_job = 1;
 				rc = false;
 				goto end_it;
 			}
@@ -719,5 +720,9 @@ end_it:
 	slurm_mutex_unlock(&assoc_mgr_association_lock);
 end_qos:
 	slurm_mutex_unlock(&assoc_mgr_qos_lock);
+
+	if(cancel_job)
+		_cancel_job(job_ptr);
+
 	return rc;
 }
