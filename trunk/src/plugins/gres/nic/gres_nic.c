@@ -567,7 +567,7 @@ extern int node_reconfig(char *node_name, char *orig_config, char **new_config,
 {
 	int rc = SLURM_SUCCESS;
 	nic_node_state_t *gres_ptr;
-	char *node_gres_config, *tok, *last = NULL;
+	char *node_gres_config = NULL, *tok = NULL, *last = NULL;
 	int32_t gres_config_cnt = 0;
 
 	xassert(gres_data);
@@ -579,8 +579,10 @@ extern int node_reconfig(char *node_name, char *orig_config, char **new_config,
 		gres_ptr->nic_cnt_found  = NO_VAL;
 	}
 
-	node_gres_config = xstrdup(orig_config);
-	tok = strtok_r(node_gres_config, ",", &last);
+	if (orig_config) {
+		node_gres_config = xstrdup(orig_config);
+		tok = strtok_r(node_gres_config, ",", &last);
+	}
 	while (tok) {
 		if (!strcmp(tok, "nic")) {
 			gres_config_cnt = 1;
@@ -725,7 +727,8 @@ extern void node_state_dealloc(void *gres_data)
 	gres_ptr->nic_cnt_alloc = 0;
 	if (gres_ptr->nic_bit_alloc) {
 		int i = bit_size(gres_ptr->nic_bit_alloc) - 1;
-		bit_nclear(gres_ptr->nic_bit_alloc, 0, i);
+		if (i > 0)
+			bit_nclear(gres_ptr->nic_bit_alloc, 0, i);
 	}
 }
 

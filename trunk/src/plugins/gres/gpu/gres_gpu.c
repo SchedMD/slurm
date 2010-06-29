@@ -567,7 +567,7 @@ extern int node_reconfig(char *node_name, char *orig_config, char **new_config,
 {
 	int rc = SLURM_SUCCESS;
 	gpu_node_state_t *gres_ptr;
-	char *node_gres_config, *tok, *last = NULL;
+	char *node_gres_config = NULL, *tok = NULL, *last = NULL;
 	int32_t gres_config_cnt = 0;
 
 	xassert(gres_data);
@@ -578,9 +578,10 @@ extern int node_reconfig(char *node_name, char *orig_config, char **new_config,
 		gres_ptr->gpu_cnt_config = NO_VAL;
 		gres_ptr->gpu_cnt_found  = NO_VAL;
 	}
-
-	node_gres_config = xstrdup(orig_config);
-	tok = strtok_r(node_gres_config, ",", &last);
+	if (orig_config) {
+		node_gres_config = xstrdup(orig_config);
+		tok = strtok_r(node_gres_config, ",", &last);
+	}
 	while (tok) {
 		if (!strcmp(tok, "gpu")) {
 			gres_config_cnt = 1;
@@ -725,7 +726,8 @@ extern void node_state_dealloc(void *gres_data)
 	gres_ptr->gpu_cnt_alloc = 0;
 	if (gres_ptr->gpu_bit_alloc) {
 		int i = bit_size(gres_ptr->gpu_bit_alloc) - 1;
-		bit_nclear(gres_ptr->gpu_bit_alloc, 0, i);
+		if (i > 0)
+			bit_nclear(gres_ptr->gpu_bit_alloc, 0, i);
 	}
 }
 
