@@ -1062,6 +1062,11 @@ end_it:
 		list_destroy(cluster_cond.cluster_list);
 	acct_storage_g_close_connection(&db_conn);
 
+	if(temp_list && !list_count(temp_list)) {
+		list_destroy(temp_list);
+		temp_list = NULL;
+	}
+
 	return temp_list;
 }
 

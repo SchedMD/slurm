@@ -3,6 +3,8 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 2.2.0.pre9
 =============================
+ -- sbatch can now submit jobs to multiple clusters and run on the earliest
+    available.
 
 * Changes in SLURM 2.2.0.pre8
 =============================
