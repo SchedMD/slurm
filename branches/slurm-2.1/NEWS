@@ -31,6 +31,8 @@ documents those changes that are of interest to users and admins.
     is in the future, but the job can physically run earlier.
  -- Updated Documentation for sacctmgr for Wall and CPUMin options stating when
     the limit is reached running jobs will be killed.
+ -- Fix deadlock issue in the slurmctld when lowering limits in accounting to
+    lower than that of pending jobs.
 
 * Changes in SLURM 2.1.9
 ========================
