@@ -155,6 +155,75 @@ static char *_get_qos_list_str(List qos_list)
 	return qos_char;
 }
 
+static int _setup_cluster_rec(slurmdb_cluster_rec_t *cluster_rec)
+{
+	int plugin_id_select = 0;
+
+	xassert(cluster_rec);
+
+	if(!cluster_rec->control_port) {
+		debug("Slurmctld on '%s' hasn't registered yet.",
+		      cluster_rec->name);
+		return SLURM_ERROR;
+	}
+
+	if(cluster_rec->rpc_version < 8) {
+		debug("Slurmctld on '%s' must be running at least "
+		      "SLURM 2.2 for cross-cluster communication.",
+		      cluster_rec->name);
+		return SLURM_ERROR;
+	}
+
+	if((plugin_id_select = select_get_plugin_id_pos(
+		    cluster_rec->plugin_id_select)) == SLURM_ERROR) {
+		error("Cluster '%s' has an unknown select plugin_id %u",
+		      cluster_rec->name,
+		      cluster_rec->plugin_id_select);
+		return SLURM_ERROR;
+	}
+
+	cluster_rec->plugin_id_select = plugin_id_select;
+
+	slurm_set_addr(&cluster_rec->control_addr,
+		       cluster_rec->control_port,
+		       cluster_rec->control_host);
+	if (cluster_rec->control_addr.sin_port == 0) {
+		error("Unable to establish control "
+		      "machine address for '%s'(%s:%u)",
+		      cluster_rec->name,
+		      cluster_rec->control_host,
+		      cluster_rec->control_port);
+		return SLURM_ERROR;
+	}
+
+	if(cluster_rec->flags & CLUSTER_FLAG_BG) {
+		int number, i, len;
+		char *nodes = cluster_rec->nodes;
+
+		cluster_rec->dim_size = xmalloc(
+			sizeof(int) * cluster_rec->dimensions);
+		len = strlen(nodes);
+		i = len - cluster_rec->dimensions;
+		if(nodes[len-1] == ']')
+			i--;
+		if(i > cluster_rec->dimensions) {
+			char *p = '\0';
+			number = xstrntol(nodes + i, &p,
+					  cluster_rec->dimensions,
+					  36);
+			hostlist_parse_int_to_array(
+				number, cluster_rec->dim_size,
+				cluster_rec->dimensions, 36);
+			/* all calculations this is for should
+			   be expecting 0 not to count as a
+			   number so add 1 to it. */
+			for(i=0; i<cluster_rec->dimensions; i++)
+				cluster_rec->dim_size[i]++;
+		}
+	}
+	return SLURM_SUCCESS;
+}
+
 extern slurmdb_job_rec_t *slurmdb_create_job_rec()
 {
 	slurmdb_job_rec_t *job = xmalloc(sizeof(slurmdb_job_rec_t));
@@ -827,73 +896,108 @@ extern uint32_t slurmdb_setup_cluster_flags()
 #endif
 	return cluster_flags;
 }
-static int _setup_cluster_rec(slurmdb_cluster_rec_t *cluster_rec)
+
+extern uint32_t slurmdb_str_2_cluster_flags(char *flags_in)
 {
-	int plugin_id_select = 0;
+	uint32_t cluster_flags = 0;
+	if (slurm_strcasestr(flags_in, "bluegene"))
+		cluster_flags |= CLUSTER_FLAG_BG;
 
-	xassert(cluster_rec);
+	if (slurm_strcasestr(flags_in, "bgl"))
+		cluster_flags |= CLUSTER_FLAG_BGL;
 
-	if(!cluster_rec->control_port) {
-		debug("Slurmctld on '%s' hasn't registered yet.",
-		      cluster_rec->name);
-		return SLURM_ERROR;
+	if (slurm_strcasestr(flags_in, "bgp"))
+		cluster_flags |= CLUSTER_FLAG_BGP;
+
+	if (slurm_strcasestr(flags_in, "bgq"))
+		cluster_flags |= CLUSTER_FLAG_BGQ;
+
+	if (slurm_strcasestr(flags_in, "SunConstellation"))
+		cluster_flags |= CLUSTER_FLAG_SC;
+
+	if (slurm_strcasestr(flags_in, "xcpu"))
+		cluster_flags |= CLUSTER_FLAG_XCPU;
+
+	if (slurm_strcasestr(flags_in, "aix"))
+		cluster_flags |= CLUSTER_FLAG_AIX;
+
+	if (slurm_strcasestr(flags_in, "MultipleSlurmd"))
+		cluster_flags |= CLUSTER_FLAG_MULTSD;
+
+	if (slurm_strcasestr(flags_in, "CrayXT"))
+		cluster_flags |= CLUSTER_FLAG_CRAYXT;
+
+	if (slurm_strcasestr(flags_in, "FrontEnd"))
+		cluster_flags |= CLUSTER_FLAG_FE;
+
+	return cluster_flags;
+}
+
+/*needs to be xfreed */
+extern char *slurmdb_cluster_flags_2_str(uint32_t flags_in)
+{
+	char *cluster_flags = NULL;
+
+	if (flags_in & CLUSTER_FLAG_BG)
+		xstrcat(cluster_flags, "Bluegene");
+
+	if (flags_in & CLUSTER_FLAG_BGL) {
+		if(cluster_flags)
+			xstrcat(cluster_flags, ",");
+		xstrcat(cluster_flags, "BGL");
+	}
+	if (flags_in & CLUSTER_FLAG_BGP) {
+		if(cluster_flags)
+			xstrcat(cluster_flags, ",");
+		xstrcat(cluster_flags, "BGP");
 	}
 
-	if(cluster_rec->rpc_version < 8) {
-		debug("Slurmctld on '%s' must be running at least "
-		      "SLURM 2.2 for cross-cluster communication.",
-		      cluster_rec->name);
-		return SLURM_ERROR;
+	if (flags_in & CLUSTER_FLAG_BGQ) {
+		if(cluster_flags)
+			xstrcat(cluster_flags, ",");
+		xstrcat(cluster_flags, "BGQ");
 	}
 
-	if((plugin_id_select = select_get_plugin_id_pos(
-		    cluster_rec->plugin_id_select)) == SLURM_ERROR) {
-		error("Cluster '%s' has an unknown select plugin_id %u",
-		      cluster_rec->name,
-		      cluster_rec->plugin_id_select);
-		return SLURM_ERROR;
+	if (flags_in & CLUSTER_FLAG_SC) {
+		if(cluster_flags)
+			xstrcat(cluster_flags, ",");
+		xstrcat(cluster_flags, "SunConstellation");
 	}
 
-	cluster_rec->plugin_id_select = plugin_id_select;
-
-	slurm_set_addr(&cluster_rec->control_addr,
-		       cluster_rec->control_port,
-		       cluster_rec->control_host);
-	if (cluster_rec->control_addr.sin_port == 0) {
-		error("Unable to establish control "
-		      "machine address for '%s'(%s:%u)",
-		      cluster_rec->name,
-		      cluster_rec->control_host,
-		      cluster_rec->control_port);
-		return SLURM_ERROR;
+	if (flags_in & CLUSTER_FLAG_XCPU) {
+		if(cluster_flags)
+			xstrcat(cluster_flags, ",");
+		xstrcat(cluster_flags, "XCPU");
 	}
 
-	if(cluster_rec->flags & CLUSTER_FLAG_BG) {
-		int number, i, len;
-		char *nodes = cluster_rec->nodes;
-
-		cluster_rec->dim_size = xmalloc(
-			sizeof(int) * cluster_rec->dimensions);
-		len = strlen(nodes);
-		i = len - cluster_rec->dimensions;
-		if(nodes[len-1] == ']')
-			i--;
-		if(i > cluster_rec->dimensions) {
-			char *p = '\0';
-			number = xstrntol(nodes + i, &p,
-					  cluster_rec->dimensions,
-					  36);
-			hostlist_parse_int_to_array(
-				number, cluster_rec->dim_size,
-				cluster_rec->dimensions, 36);
-			/* all calculations this is for should
-			   be expecting 0 not to count as a
-			   number so add 1 to it. */
-			for(i=0; i<cluster_rec->dimensions; i++)
-				cluster_rec->dim_size[i]++;
-		}
+	if (flags_in & CLUSTER_FLAG_AIX) {
+		if(cluster_flags)
+			xstrcat(cluster_flags, ",");
+		xstrcat(cluster_flags, "AIX");
 	}
-	return SLURM_SUCCESS;
+
+	if (flags_in & CLUSTER_FLAG_MULTSD) {
+		if(cluster_flags)
+			xstrcat(cluster_flags, ",");
+		xstrcat(cluster_flags, "MultipleSlurmd");
+	}
+
+	if (flags_in & CLUSTER_FLAG_CRAYXT) {
+		if(cluster_flags)
+			xstrcat(cluster_flags, ",");
+		xstrcat(cluster_flags, "CrayXT");
+	}
+
+	if (flags_in & CLUSTER_FLAG_FE) {
+		if(cluster_flags)
+			xstrcat(cluster_flags, ",");
+		xstrcat(cluster_flags, "FrontEnd");
+	}
+
+	if(!cluster_flags)
+		cluster_flags = xstrdup("None");
+
+	return cluster_flags;
 }
 
 extern List slurmdb_get_info_cluster(char *cluster_names)
@@ -992,6 +1096,15 @@ extern void slurmdb_init_association_rec(slurmdb_association_rec_t *assoc)
 	/* assoc->usage_raw = 0; */
 }
 
+extern void slurmdb_init_cluster_rec(slurmdb_cluster_rec_t *cluster)
+{
+	if(!cluster)
+		return;
+
+	memset(cluster, 0, sizeof(slurmdb_cluster_rec_t));
+	cluster->flags = NO_VAL;
+}
+
 extern void slurmdb_init_qos_rec(slurmdb_qos_rec_t *qos)
 {
 	if(!qos)
@@ -1016,6 +1129,15 @@ extern void slurmdb_init_qos_rec(slurmdb_qos_rec_t *qos)
 	qos->max_wall_pj = NO_VAL;
 
 	qos->usage_factor = NO_VAL;
+}
+
+extern void slurmdb_init_cluster_cond(slurmdb_cluster_cond_t *cluster)
+{
+	if(!cluster)
+		return;
+
+	memset(cluster, 0, sizeof(slurmdb_cluster_cond_t));
+	cluster->flags = NO_VAL;
 }
 
 extern char *slurmdb_qos_str(List qos_list, uint32_t level)

@@ -836,7 +836,8 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                             WithSubAccounts, WithDeleted, WOLimits,        \n\
                             WOPInfo, and WOPLimits                         \n\
                                                                            \n\
-       list cluster       - Format=, Names=, WOLimits                      \n\
+       list cluster       - Classification=, Flags=, Format=, Names=,      \n\
+                            RPC=, and WOLimits                             \n\
        add cluster        - Fairshare=, GrpCPUs=, GrpJobs=,                \n\
                             GrpNodes=, GrpSubmitJob=, MaxCPUMins=          \n\
                             MaxJobs=, MaxNodes=, MaxSubmitJobs=, MaxWall=, \n\
@@ -845,8 +846,9 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                             GrpCPUs=, GrpJobs=, GrpNodes=, GrpSubmitJob=,  \n\
                             MaxCPUMins=, MaxJobs=, MaxNodes=, MaxSubmitJobs=,\n\
                             MaxWall=, and QosLevel=                        \n\
-                            (where options) Names=                         \n\
-       delete cluster     - Names=                                         \n\
+                            (where options) Classification=, Flags=,       \n\
+                            and Names=                                     \n\
+       delete cluster     - Classification=, Flags=, and Names=            \n\
                                                                            \n\
        add coordinator    - Accounts=, and Names=                          \n\
        delete coordinator - Accounts=, and Names=                          \n\
@@ -914,11 +916,13 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                             MaxWall, QOS, ParentID, ParentName,            \n\
                             Partition, RawQOS, RGT, User                   \n\
                                                                            \n\
-       Cluster            - Cluster, ControlHost, ControlPort, CpuCount,   \n\
-                            Fairshare, GrpCPUMins, GrpCPUs, GrpJobs,       \n\
+       Cluster            - Classification, Cluster, ControlHost,          \n\
+                            ControlPort, CpuCount, Fairshare,              \n\
+                            Flags, GrpCPUMins, GrpCPUs, GrpJobs,           \n\
                             GrpNodes, GrpSubmitJob, MaxCPUMins,            \n\
                             MaxCPUs, MaxJobs, MaxNodes, MaxSubmitJobs,     \n\
-                            MaxWall, NodeCount, NodeNames                  \n\
+                            MaxWall, NodeCount, NodeNames, PluginIDSelect, \n\
+                            RPC                                            \n\
                                                                            \n\
        Event              - Cluster, ClusterNodes, CPUs, Duration, End,    \n\
                             Event, EventRaw, NodeName, Reason, Start,      \n\
