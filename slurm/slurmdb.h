@@ -403,6 +403,9 @@ typedef struct {
 typedef struct {
 	uint16_t classification; /* how this machine is classified */
 	List cluster_list; /* list of char * */
+	uint32_t flags;
+	List plugin_id_select_list; /* list of char * */
+	List rpc_version_list; /* list of char * */
 	time_t usage_end;
 	time_t usage_start;
 	uint16_t with_deleted;

@@ -43,6 +43,79 @@
 #include "as_mysql_wckey.h"
 #include "src/common/node_select.h"
 
+static int _setup_cluster_cond_limits(slurmdb_cluster_cond_t *cluster_cond,
+				      char **extra)
+{
+	int set = 0;
+	ListIterator itr = NULL;
+	char *object = NULL;
+
+	if(!cluster_cond)
+		return 0;
+
+	if(cluster_cond->with_deleted)
+		xstrcat(*extra, " where (deleted=0 || deleted=1)");
+	else
+		xstrcat(*extra, " where deleted=0");
+
+	if(cluster_cond->cluster_list
+	   && list_count(cluster_cond->cluster_list)) {
+		set = 0;
+		xstrcat(*extra, " && (");
+		itr = list_iterator_create(cluster_cond->cluster_list);
+		while((object = list_next(itr))) {
+			if(set)
+				xstrcat(*extra, " || ");
+			xstrfmtcat(*extra, "name='%s'", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(*extra, ")");
+	}
+
+	if(cluster_cond->plugin_id_select_list
+	   && list_count(cluster_cond->plugin_id_select_list)) {
+		set = 0;
+		xstrcat(*extra, " && (");
+		itr = list_iterator_create(cluster_cond->plugin_id_select_list);
+		while((object = list_next(itr))) {
+			if(set)
+				xstrcat(*extra, " || ");
+			xstrfmtcat(*extra, "plugin_id_select='%s'", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(*extra, ")");
+	}
+
+	if(cluster_cond->rpc_version_list
+	   && list_count(cluster_cond->rpc_version_list)) {
+		set = 0;
+		xstrcat(*extra, " && (");
+		itr = list_iterator_create(cluster_cond->rpc_version_list);
+		while((object = list_next(itr))) {
+			if(set)
+				xstrcat(*extra, " || ");
+			xstrfmtcat(*extra, "rpc_version='%s'", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(*extra, ")");
+	}
+
+	if(cluster_cond->classification) {
+		xstrfmtcat(*extra, " && (classification & %u)",
+			   cluster_cond->classification);
+	}
+
+	if(cluster_cond->flags) {
+		xstrfmtcat(*extra, " && (flags & %u)",
+			   cluster_cond->flags);
+	}
+
+	return set;
+}
+
 extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 			      List cluster_list)
 {
@@ -207,7 +280,6 @@ extern List as_mysql_modify_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 				     slurmdb_cluster_cond_t *cluster_cond,
 				     slurmdb_cluster_rec_t *cluster)
 {
-	ListIterator itr = NULL;
 	List ret_list = NULL;
 	int rc = SLURM_SUCCESS;
 	char *object = NULL;
@@ -233,27 +305,15 @@ extern List as_mysql_modify_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 	if(check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
 
-	xstrcat(extra, "where deleted=0");
+	/* force to only do non-deleted clusters */
+	cluster_cond->with_deleted = 0;
+	_setup_cluster_cond_limits(cluster_cond, &extra);
+
 	if(cluster_cond->cluster_list
 	   && list_count(cluster_cond->cluster_list)) {
-		set = 0;
-		xstrcat(extra, " && (");
-		itr = list_iterator_create(cluster_cond->cluster_list);
-		while((object = list_next(itr))) {
-			if(!mysql_conn->cluster_name)
-				mysql_conn->cluster_name = xstrdup(object);
-			if(set)
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "name='%s'", object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
-	}
-
-	if(cluster_cond->classification) {
-		xstrfmtcat(extra, " && (classification & %u)",
-			   cluster_cond->classification);
+		if(!mysql_conn->cluster_name)
+			mysql_conn->cluster_name =
+				list_peek(cluster_cond->cluster_list);
 	}
 
 	set = 0;
@@ -310,10 +370,9 @@ extern List as_mysql_modify_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 	}
 
 
-	xstrfmtcat(query, "select name, control_port from %s %s;",
+	xstrfmtcat(query, "select name, control_port from %s%s;",
 		   cluster_table, extra);
 
-	xfree(extra);
 	debug3("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, THIS_FILE, __LINE__, query);
 	if(!(result = mysql_db_query_ret(
@@ -321,8 +380,10 @@ extern List as_mysql_modify_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		xfree(query);
 		xfree(vals);
 		error("no result given for %s", extra);
+		xfree(extra);
 		return NULL;
 	}
+	xfree(extra);
 
 	rc = 0;
 	ret_list = list_create(slurm_destroy_char);
@@ -383,7 +444,6 @@ extern List as_mysql_remove_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		*name_char = NULL, *assoc_char = NULL;
 	time_t now = time(NULL);
 	char *user_name = NULL;
-	int set = 0;
 	slurmdb_wckey_cond_t wckey_cond;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
@@ -397,30 +457,16 @@ extern List as_mysql_remove_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 	if(check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
 
-	xstrcat(extra, "where deleted=0");
-	if(cluster_cond->cluster_list
-	   && list_count(cluster_cond->cluster_list)) {
-		set = 0;
-		xstrcat(extra, " && (");
-		itr = list_iterator_create(cluster_cond->cluster_list);
-		while((object = list_next(itr))) {
-			if(!object[0])
-				continue;
-			if(set)
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "name='%s'", object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
-	}
+	/* force to only do non-deleted clusters */
+	cluster_cond->with_deleted = 0;
+	_setup_cluster_cond_limits(cluster_cond, &extra);
 
 	if(!extra) {
 		error("Nothing to remove");
 		return NULL;
 	}
 
-	query = xstrdup_printf("select name from %s %s;", cluster_table, extra);
+	query = xstrdup_printf("select name from %s%s;", cluster_table, extra);
 	xfree(extra);
 	if(!(result = mysql_db_query_ret(
 		     mysql_conn->db_conn, query, 0))) {
@@ -530,8 +576,6 @@ extern List as_mysql_get_clusters(mysql_conn_t *mysql_conn, uid_t uid,
 	char *tmp = NULL;
 	List cluster_list = NULL;
 	ListIterator itr = NULL;
-	char *object = NULL;
-	int set = 0;
 	int i=0;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
@@ -569,29 +613,11 @@ extern List as_mysql_get_clusters(mysql_conn_t *mysql_conn, uid_t uid,
 
 
 	if(!cluster_cond) {
-		xstrcat(extra, "where deleted=0");
+		xstrcat(extra, " where deleted=0");
 		goto empty;
 	}
 
-	if(cluster_cond->with_deleted)
-		xstrcat(extra, "where (deleted=0 || deleted=1)");
-	else
-		xstrcat(extra, "where deleted=0");
-
-	if(cluster_cond->cluster_list
-	   && list_count(cluster_cond->cluster_list)) {
-		set = 0;
-		xstrcat(extra, " && (");
-		itr = list_iterator_create(cluster_cond->cluster_list);
-		while((object = list_next(itr))) {
-			if(set)
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "name='%s'", object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
-	}
+	_setup_cluster_cond_limits(cluster_cond, &extra);
 
 empty:
 
@@ -602,7 +628,7 @@ empty:
 		xstrfmtcat(tmp, ", %s", cluster_req_inx[i]);
 	}
 
-	query = xstrdup_printf("select %s from %s %s",
+	query = xstrdup_printf("select %s from %s%s",
 			       tmp, cluster_table, extra);
 	xfree(tmp);
 	xfree(extra);

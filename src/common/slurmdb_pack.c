@@ -1606,7 +1606,73 @@ extern void slurmdb_pack_cluster_cond(void *in, uint16_t rpc_version,
 	slurmdb_cluster_cond_t *object = (slurmdb_cluster_cond_t *)in;
 	uint32_t count = NO_VAL;
 
-	if(rpc_version >= 5) {
+	if(rpc_version >= 8) {
+		if(!object) {
+			pack16(0, buffer);
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+			pack_time(0, buffer);
+			pack_time(0, buffer);
+			pack16(0, buffer);
+			pack16(0, buffer);
+			return;
+		}
+
+		pack16(object->classification, buffer);
+
+		if(object->cluster_list)
+			count = list_count(object->cluster_list);
+
+		pack32(count, buffer);
+
+		if(count && count != NO_VAL) {
+			itr = list_iterator_create(object->cluster_list);
+			while((tmp_info = list_next(itr))) {
+				packstr(tmp_info, buffer);
+			}
+			list_iterator_destroy(itr);
+		}
+		count = NO_VAL;
+
+		pack32(object->flags, buffer);
+
+		if(object->plugin_id_select_list)
+			count = list_count(object->plugin_id_select_list);
+
+		pack32(count, buffer);
+
+		if(count && count != NO_VAL) {
+			itr = list_iterator_create(
+				object->plugin_id_select_list);
+			while((tmp_info = list_next(itr))) {
+				packstr(tmp_info, buffer);
+			}
+			list_iterator_destroy(itr);
+		}
+		count = NO_VAL;
+
+		if(object->rpc_version_list)
+			count = list_count(object->rpc_version_list);
+
+		pack32(count, buffer);
+
+		if(count && count != NO_VAL) {
+			itr = list_iterator_create(object->rpc_version_list);
+			while((tmp_info = list_next(itr))) {
+				packstr(tmp_info, buffer);
+			}
+			list_iterator_destroy(itr);
+		}
+		count = NO_VAL;
+
+		pack_time(object->usage_end, buffer);
+		pack_time(object->usage_start, buffer);
+
+		pack16(object->with_usage, buffer);
+		pack16(object->with_deleted, buffer);
+	} else if(rpc_version >= 5) {
 		if(!object) {
 			pack16(0, buffer);
 			pack32(NO_VAL, buffer);
@@ -1653,7 +1719,51 @@ extern int slurmdb_unpack_cluster_cond(void **object, uint16_t rpc_version,
 
 	*object = object_ptr;
 
-	if(rpc_version >= 5) {
+	if(rpc_version >= 8) {
+		safe_unpack16(&object_ptr->classification, buffer);
+		safe_unpack32(&count, buffer);
+		if(count && count != NO_VAL) {
+			object_ptr->cluster_list =
+				list_create(slurm_destroy_char);
+			for(i=0; i<count; i++) {
+				safe_unpackstr_xmalloc(&tmp_info,
+						       &uint32_tmp, buffer);
+				list_append(object_ptr->cluster_list, tmp_info);
+			}
+		}
+
+		safe_unpack32(&object_ptr->flags, buffer);
+
+		safe_unpack32(&count, buffer);
+		if(count && count != NO_VAL) {
+			object_ptr->plugin_id_select_list =
+				list_create(slurm_destroy_char);
+			for(i=0; i<count; i++) {
+				safe_unpackstr_xmalloc(&tmp_info,
+						       &uint32_tmp, buffer);
+				list_append(object_ptr->plugin_id_select_list,
+					    tmp_info);
+			}
+		}
+
+		safe_unpack32(&count, buffer);
+		if(count && count != NO_VAL) {
+			object_ptr->rpc_version_list =
+				list_create(slurm_destroy_char);
+			for(i=0; i<count; i++) {
+				safe_unpackstr_xmalloc(&tmp_info,
+						       &uint32_tmp, buffer);
+				list_append(object_ptr->rpc_version_list,
+					    tmp_info);
+			}
+		}
+
+		safe_unpack_time(&object_ptr->usage_end, buffer);
+		safe_unpack_time(&object_ptr->usage_start, buffer);
+
+		safe_unpack16(&object_ptr->with_usage, buffer);
+		safe_unpack16(&object_ptr->with_deleted, buffer);
+	} else if(rpc_version >= 5) {
 		safe_unpack16(&object_ptr->classification, buffer);
 		safe_unpack32(&count, buffer);
 		if(count && count != NO_VAL) {

@@ -40,16 +40,17 @@
 
 #include "src/sacctmgr/sacctmgr.h"
 #include "src/common/uid.h"
+
 static bool with_deleted = 0;
 static bool without_limits = 0;
 
 static int _set_cond(int *start, int argc, char *argv[],
-		     List cluster_list,
-		     List format_list,
-		     uint16_t *classification)
+		     slurmdb_cluster_cond_t *cluster_cond,
+		     List format_list)
 {
 	int i;
-	int set = 0;
+	int c_set = 0;
+	int a_set = 0;
 	int end = 0;
 	int command_len = 0;
 	int option = 0;
@@ -86,23 +87,44 @@ static int _set_cond(int *start, int argc, char *argv[],
 						MAX(command_len, 1))
 			  || !strncasecmp (argv[i], "Clusters",
 					   MAX(command_len, 3))) {
-			if(cluster_list) {
-				if(slurm_addto_char_list(cluster_list,
-							 argv[i]+end))
-					set = 1;
-			}
+			if(!cluster_cond->cluster_list)
+				cluster_cond->cluster_list =
+					list_create(slurm_destroy_char);
+			if(slurm_addto_char_list(cluster_cond->cluster_list,
+						 argv[i]+end))
+				a_set = 1;
 		} else if (!strncasecmp (argv[i], "Classification",
 					 MAX(command_len, 3))) {
-			if(classification) {
-				*classification =
-					str_2_classification(argv[i]+end);
-				if(*classification)
-					set = 1;
-			}
+			cluster_cond->classification =
+				str_2_classification(argv[i]+end);
+			if(cluster_cond->classification)
+				c_set = 1;
+		} else if (!strncasecmp (argv[i], "flags",
+					 MAX(command_len, 2))) {
+			cluster_cond->flags = slurmdb_str_2_cluster_flags(
+				argv[i]+end);
+			c_set = 1;
 		} else if (!strncasecmp (argv[i], "Format",
-					 MAX(command_len, 1))) {
+					 MAX(command_len, 2))) {
 			if(format_list)
 				slurm_addto_char_list(format_list, argv[i]+end);
+		} else if(!end || !strncasecmp (argv[i], "PluginIDSelect",
+						MAX(command_len, 1))) {
+			if(!cluster_cond->plugin_id_select_list)
+				cluster_cond->plugin_id_select_list =
+					list_create(slurm_destroy_char);
+			if(slurm_addto_char_list(
+				   cluster_cond->plugin_id_select_list,
+				   argv[i]+end))
+				c_set = 1;
+		} else if(!end || !strncasecmp (argv[i], "RPCVersions",
+						MAX(command_len, 1))) {
+			if(!cluster_cond->rpc_version_list)
+				cluster_cond->rpc_version_list =
+					list_create(slurm_destroy_char);
+			if(slurm_addto_char_list(cluster_cond->rpc_version_list,
+						 argv[i]+end))
+				c_set = 1;
 		} else {
 			exit_code=1;
 			fprintf(stderr, " Unknown condition: %s\n"
@@ -112,7 +134,13 @@ static int _set_cond(int *start, int argc, char *argv[],
 	}
 	(*start) = i;
 
-	return set;
+	if(c_set && a_set)
+		return 3;
+	else if(a_set) {
+		return 2;
+	} else if(c_set)
+		return 1;
+	return 0;
 }
 
 static int _set_rec(int *start, int argc, char *argv[],
@@ -303,7 +331,7 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 		List temp_list = NULL;
 		slurmdb_cluster_cond_t cluster_cond;
 
-		memset(&cluster_cond, 0, sizeof(slurmdb_cluster_cond_t));
+		slurmdb_init_cluster_cond(&cluster_cond);
 		cluster_cond.cluster_list = name_list;
 		cluster_cond.classification = class;
 
@@ -457,6 +485,7 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 		PRINT_CLASS,
 		PRINT_CPUS,
 		PRINT_FAIRSHARE,
+		PRINT_FLAGS,
 		PRINT_GRPCM,
 		PRINT_GRPC,
 		PRINT_GRPJ,
@@ -473,7 +502,8 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 		PRINT_NODES,
 		PRINT_QOS,
 		PRINT_QOS_RAW,
-		PRINT_RPC_VERSION
+		PRINT_RPC_VERSION,
+		PRINT_SELECT,
 	};
 
 
@@ -483,9 +513,7 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 		if (!strncasecmp (argv[i], "Where", MAX(command_len, 5))
 		    || !strncasecmp (argv[i], "Set", MAX(command_len, 3)))
 			i++;
-		_set_cond(&i, argc, argv, cluster_cond->cluster_list,
-			  format_list,
-			  &cluster_cond->classification);
+		_set_cond(&i, argc, argv, cluster_cond, format_list);
 	}
 
 	if(exit_code) {
@@ -501,7 +529,7 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 				      "Cl,Controlh,Controlp,RPC");
 		if(!without_limits)
 			slurm_addto_char_list(format_list,
-					      "F,GrpJ,GrpN,GrpS,MaxJ,MaxN,"
+					      "Fa,GrpJ,GrpN,GrpS,MaxJ,MaxN,"
 					      "MaxS,MaxW,QOS");
 	}
 
@@ -552,11 +580,17 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 			field->len = 9;
 			field->print_routine = print_fields_str;
 		} else if(!strncasecmp("FairShare", object,
-				       MAX(command_len, 1))) {
+				       MAX(command_len, 2))) {
 			field->type = PRINT_FAIRSHARE;
 			field->name = xstrdup("FairShare");
 			field->len = 9;
 			field->print_routine = print_fields_uint;
+		} else if(!strncasecmp("Flags", object,
+				       MAX(command_len, 2))) {
+			field->type = PRINT_FLAGS;
+			field->name = xstrdup("Flags");
+			field->len = 20;
+			field->print_routine = print_fields_str;
 		} else if(!strncasecmp("GrpCPUs", object,
 				       MAX(command_len, 8))) {
 			field->type = PRINT_GRPC;
@@ -647,10 +681,16 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 			field->len = 3;
 			field->print_routine = print_fields_uint;
 		} else if(!strncasecmp("Shares", object,
-				       MAX(command_len, 1))) {
+				       MAX(command_len, 2))) {
 			field->type = PRINT_FAIRSHARE;
 			field->name = xstrdup("Shares");
 			field->len = 9;
+			field->print_routine = print_fields_uint;
+		} else if(!strncasecmp("PluginIDSelect", object,
+				       MAX(command_len, 2))) {
+			field->type = PRINT_SELECT;
+			field->name = xstrdup("PluginIDSelect");
+			field->len = 14;
 			field->print_routine = print_fields_uint;
 		} else {
 			exit_code=1;
@@ -734,6 +774,17 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 					assoc->shares_raw,
 					(curr_inx == field_count));
 				break;
+			case PRINT_FLAGS:
+			{
+				char *tmp_char = slurmdb_cluster_flags_2_str(
+					cluster->flags);
+				field->print_routine(
+					field,
+					tmp_char,
+					(curr_inx == field_count));
+				xfree(tmp_char);
+				break;
+			}
 			case PRINT_GRPC:
 				field->print_routine(field,
 						     assoc->grp_cpus,
@@ -807,7 +858,6 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 					cluster->nodes,
 					(curr_inx == field_count));
 				break;
-
 			case PRINT_QOS:
 				if(!g_qos_list)
 					g_qos_list = acct_storage_g_get_qos(
@@ -827,6 +877,12 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 				field->print_routine(
 					field,
 					cluster->rpc_version,
+					(curr_inx == field_count));
+				break;
+			case PRINT_SELECT:
+				field->print_routine(
+					field,
+					cluster->plugin_id_select,
 					(curr_inx == field_count));
 				break;
 			default:
@@ -857,62 +913,57 @@ extern int sacctmgr_modify_cluster(int argc, char *argv[])
 		xmalloc(sizeof(slurmdb_association_rec_t));
 	slurmdb_association_cond_t *assoc_cond =
 		xmalloc(sizeof(slurmdb_association_cond_t));
-	int cond_set = 0, rec_set = 0, set = 0;
+	int cond_set = 0, prev_set = 0, rec_set = 0, set = 0;
 	List ret_list = NULL;
-	uint16_t class_cond = 0, class_rec = 0;
+	uint16_t class_rec = 0;
+	slurmdb_cluster_cond_t cluster_cond;
 
 	slurmdb_init_association_rec(assoc);
 
 	assoc_cond->cluster_list = list_create(slurm_destroy_char);
 	assoc_cond->acct_list = list_create(NULL);
 
+	slurmdb_init_cluster_cond(&cluster_cond);
+	cluster_cond.cluster_list = assoc_cond->cluster_list;
+
 	for (i=0; i<argc; i++) {
 		int command_len = strlen(argv[i]);
 		if (!strncasecmp (argv[i], "Where", MAX(command_len, 5))) {
 			i++;
-			if(_set_cond(&i, argc, argv,
-				     assoc_cond->cluster_list,
-				     NULL, &class_cond))
-				cond_set = 1;
+			prev_set = _set_cond(&i, argc, argv,
+					     &cluster_cond, NULL);
+			cond_set = MAX(cond_set, prev_set);
 		} else if (!strncasecmp (argv[i], "Set", MAX(command_len, 3))) {
 			i++;
-			if(_set_rec(&i, argc, argv, NULL, assoc, &class_rec))
-				rec_set = 1;
+			prev_set = _set_rec(&i, argc, argv,
+					    NULL, assoc, &class_rec);
+			rec_set = MAX(rec_set, prev_set);
 		} else {
-			if(_set_cond(&i, argc, argv,
-				     assoc_cond->cluster_list,
-				     NULL, &class_cond))
-				cond_set = 1;
+			prev_set = _set_cond(&i, argc, argv,
+					     &cluster_cond, NULL);
+			cond_set = MAX(cond_set, prev_set);
 		}
 	}
 
 	if(!rec_set) {
 		exit_code=1;
 		fprintf(stderr, " You didn't give me anything to set\n");
-		slurmdb_destroy_association_rec(assoc);
-		slurmdb_destroy_association_cond(assoc_cond);
-		return SLURM_ERROR;
+		rc = SLURM_ERROR;
+		goto end_it;
 	} else if(!cond_set) {
 		if(!commit_check("You didn't set any conditions with 'WHERE'.\n"
 				 "Are you sure you want to continue?")) {
 			printf("Aborted\n");
-			slurmdb_destroy_association_rec(assoc);
-			slurmdb_destroy_association_cond(assoc_cond);
-			return SLURM_SUCCESS;
+			rc = SLURM_SUCCESS;
+			goto end_it;
 		}
 	} else if(exit_code) {
-		slurmdb_destroy_association_rec(assoc);
-		slurmdb_destroy_association_cond(assoc_cond);
-		return SLURM_ERROR;
+		rc = SLURM_ERROR;
+		goto end_it;
 	}
 
-	if(class_cond) {
+	if(cond_set == 1 || cond_set == 3) {
 		List temp_list = NULL;
-		slurmdb_cluster_cond_t cluster_cond;
-
-		memset(&cluster_cond, 0, sizeof(slurmdb_cluster_cond_t));
-		cluster_cond.cluster_list = assoc_cond->cluster_list;
-		cluster_cond.classification = class_cond;
 
 		temp_list = acct_storage_g_get_clusters(db_conn, my_uid,
 							&cluster_cond);
@@ -921,18 +972,13 @@ extern int sacctmgr_modify_cluster(int argc, char *argv[])
 			fprintf(stderr,
 				" Problem getting clusters from database.  "
 				"Contact your admin.\n");
-			slurmdb_destroy_association_rec(assoc);
-			slurmdb_destroy_association_cond(assoc_cond);
-			return SLURM_ERROR;
+			rc = SLURM_ERROR;
+			goto end_it;
 		} else if(!list_count(temp_list)) {
 			fprintf(stderr,
-				" The class you gave %s didn't "
-				"return any clusters.\n",
-				get_classification_str(class_cond));
-			slurmdb_destroy_association_rec(assoc);
-			slurmdb_destroy_association_cond(assoc_cond);
-			list_destroy(temp_list);
-			return SLURM_ERROR;
+				" Query didn't return any clusters.\n");
+			rc = SLURM_ERROR;
+			goto end_it;
 		}
 		/* we are only looking for the clusters returned from
 		   this query, so we free the cluster_list and replace
@@ -977,17 +1023,12 @@ extern int sacctmgr_modify_cluster(int argc, char *argv[])
 		list_destroy(ret_list);
 
 	if(class_rec) {
-		slurmdb_cluster_cond_t cluster_cond;
 		slurmdb_cluster_rec_t cluster_rec;
 
-		memset(&cluster_cond, 0, sizeof(slurmdb_cluster_cond_t));
-		memset(&cluster_rec, 0, sizeof(slurmdb_cluster_rec_t));
+		slurmdb_init_cluster_rec(&cluster_rec);
 		/* the class has already returned these clusters so
 		   just go with it */
-		cluster_cond.cluster_list = assoc_cond->cluster_list;
-
 		cluster_rec.classification = class_rec;
-		cluster_rec.flags = NO_VAL;
 
 		ret_list = acct_storage_g_modify_clusters(
 			db_conn, my_uid, &cluster_cond, &cluster_rec);
@@ -1023,6 +1064,7 @@ extern int sacctmgr_modify_cluster(int argc, char *argv[])
 			acct_storage_g_commit(db_conn, 0);
 		}
 	}
+end_it:
 	slurmdb_destroy_association_cond(assoc_cond);
 	slurmdb_destroy_association_rec(assoc);
 
@@ -1036,7 +1078,7 @@ extern int sacctmgr_delete_cluster(int argc, char *argv[])
 		xmalloc(sizeof(slurmdb_cluster_cond_t));
 	int i=0;
 	List ret_list = NULL;
-	int cond_set = 0;
+	int cond_set = 0, prev_set;
 
 	cluster_cond->cluster_list = list_create(slurm_destroy_char);
 
@@ -1045,10 +1087,8 @@ extern int sacctmgr_delete_cluster(int argc, char *argv[])
 		if (!strncasecmp (argv[i], "Where", MAX(command_len, 5))
 		    || !strncasecmp (argv[i], "Set", MAX(command_len, 3)))
 			i++;
-		cond_set += _set_cond(&i, argc, argv,
-				      cluster_cond->cluster_list,
-				      NULL,
-				      &cluster_cond->classification);
+		prev_set = _set_cond(&i, argc, argv, cluster_cond, NULL);
+		cond_set = MAX(cond_set, prev_set);
 	}
 
 	if(exit_code) {
@@ -1187,7 +1227,7 @@ extern int sacctmgr_dump_cluster (int argc, char *argv[])
 		slurmdb_cluster_cond_t cluster_cond;
 		slurmdb_cluster_rec_t *cluster_rec = NULL;
 
-		memset(&cluster_cond, 0, sizeof(slurmdb_cluster_cond_t));
+		slurmdb_init_cluster_cond(&cluster_cond);
 		cluster_cond.cluster_list = list_create(NULL);
 		list_push(cluster_cond.cluster_list, cluster_name);
 

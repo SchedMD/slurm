@@ -597,10 +597,24 @@ The name of a user in the association.
 .SH "SPECIFICATIONS FOR CLUSTERS"
 
 .TP
+\fIClassification\fP=<classification>
+Type of machine, current classifications are capability and capacity.
+
+.TP
+\fIFlags\fP=<flag list>
+Comma separated list of Attributes for a particular cluster.  Current
+Flags include AIX, BGL, BGP, BGQ, Bluegene, CrayXT, FrontEnd, MultipleSlurmd,
+SunConstellation, and XCPU
+
+.TP
 \fIName\fP=<name>
 The name of a cluster.
 This should be equal to the \fIClusterName\fR parameter in the \fIslurm.conf\fR
 configuration file for some Slurm\-managed cluster.
+
+.TP
+\fIRPC\fP=<rpc list>
+Comma separated list of numeric RPC values.
 
 .TP
 \fIWOLimits\fP
@@ -616,30 +630,42 @@ NOTE: You can also use the general specifications list above in the
 .SH "LIST/SHOW CLUSTER FORMAT OPTIONS"
 
 .TP
+\fIClassification\fP
+Type of machine, i.e. capability or capacity.
+
+.TP
 \fICluster\fP
 The name of the cluster.
 
 .TP
-\fIControl Host\fP
+\fIControlHost\fP
 When a slurmctld registers with the database the ip address of the
 controller is placed here.
 
 .TP
-\fIControl Port\fP
+\fIControlPort\fP
 When a slurmctld registers with the database the port the controller
 is listening on is placed here.
 
 .TP
-\fICPU Count\fP
+\fICPUCount\fP
 The current count of cpus on the cluster.
+
+.TP
+\fIFlags\fP
+Attributes possessed by the cluster.
+
+.TP
+\fINodeCount\fP
+The current count of nodes associated with the cluster.
 
 .TP
 \fINodeNames\fP
 The current Nodes associated with the cluster.
 
 .TP
-\fINodeCount\fP
-The current count of nodes associated with the cluster.
+\fIPluginIDSelect\fP
+The numeric value of the select plugin the cluster is using.
 
 .TP
 \fIRPC\fP
