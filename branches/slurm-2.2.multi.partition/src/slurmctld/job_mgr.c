@@ -5553,7 +5553,13 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	}
 
 	if (job_specs->partition) {
+		List part_ptr_list = NULL;
 		tmp_part_ptr = find_part_record(job_specs->partition);
+		if (tmp_part_ptr == NULL) {
+			part_ptr_list = get_part_list(job_specs->partition);
+			if (part_ptr_list)
+				tmp_part_ptr = list_peek(part_ptr_list);
+		}
 		if (!IS_JOB_PENDING(job_ptr))
 			error_code = ESLURM_DISABLED;
 		else if (tmp_part_ptr == NULL)
@@ -5564,7 +5570,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			slurmdb_association_rec_t assoc_rec;
 			memset(&assoc_rec, 0, sizeof(slurmdb_association_rec_t));
 			assoc_rec.uid       = job_ptr->user_id;
-			assoc_rec.partition = job_specs->partition;
+			assoc_rec.partition = tmp_part_ptr->name;
 			assoc_rec.acct      = job_ptr->account;
 			if (assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
 						    accounting_enforce,
@@ -5582,6 +5588,9 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			xfree(job_ptr->partition);
 			job_ptr->partition = xstrdup(job_specs->partition);
 			job_ptr->part_ptr = tmp_part_ptr;
+			FREE_NULL_LIST(job_ptr->part_ptr_list);
+			job_ptr->part_ptr_list = part_ptr_list;
+			part_ptr_list = NULL;	/* nothing to free */
 			info("update_job: setting partition to %s for "
 			     "job_id %u", job_specs->partition,
 			     job_specs->job_id);
@@ -5591,6 +5600,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			      job_specs->job_id);
 			error_code = ESLURM_ACCESS_DENIED;
 		}
+		FREE_NULL_LIST(part_ptr_list);	/* error clean-up */
 	}
 
 	/* Always do this last just incase the assoc_ptr changed */
