@@ -108,7 +108,7 @@ static int _setup_cluster_cond_limits(slurmdb_cluster_cond_t *cluster_cond,
 			   cluster_cond->classification);
 	}
 
-	if(cluster_cond->flags) {
+	if(cluster_cond->flags != NO_VAL) {
 		xstrfmtcat(*extra, " && (flags & %u)",
 			   cluster_cond->flags);
 	}
@@ -158,7 +158,8 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 			   "name, classification) "
 			   "values (%d, %d, '%s', %u) "
 			   "on duplicate key update deleted=0, mod_time=%d, "
-			   "control_host='', control_port=0, classification=%u",
+			   "control_host='', control_port=0, "
+			   "classification=%u, flags=0",
 			   cluster_table,
 			   now, now, object->name, object->classification,
 			   now, object->classification);
@@ -1114,7 +1115,7 @@ extern int as_mysql_register_ctld(mysql_conn_t *mysql_conn,
 	query = xstrdup_printf(
 		"update %s set deleted=0, mod_time=%d, "
 		"control_host='%s', control_port=%u, rpc_version=%d, "
-		"dimensions=%d, flags=%d, plugin_id_select=%d where name='%s';",
+		"dimensions=%d, flags=%u, plugin_id_select=%d where name='%s';",
 		cluster_table, now, address, port, SLURMDBD_VERSION,
 		SYSTEM_DIMENSIONS, flags, select_get_plugin_id(), cluster);
 	xstrfmtcat(query,

@@ -673,7 +673,7 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 		List temp_list = NULL;
 		slurmdb_cluster_cond_t cluster_cond;
 
-		memset(&cluster_cond, 0, sizeof(slurmdb_cluster_cond_t));
+		slurmdb_init_cluster_cond(&cluster_cond);
 		cluster_cond.cluster_list = cluster_list;
 
 		temp_list = acct_storage_g_get_clusters(db_conn, my_uid,

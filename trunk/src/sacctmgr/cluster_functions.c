@@ -382,6 +382,7 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 			continue;
 		}
 		cluster = xmalloc(sizeof(slurmdb_cluster_rec_t));
+		slurmdb_init_cluster_rec(cluster);
 
 		list_append(cluster_list, cluster);
 		cluster->flags = NO_VAL;
@@ -506,7 +507,7 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 		PRINT_SELECT,
 	};
 
-
+	slurmdb_init_cluster_cond(cluster_cond);
 	cluster_cond->cluster_list = list_create(slurm_destroy_char);
 	for (i=0; i<argc; i++) {
 		int command_len = strlen(argv[i]);
@@ -1080,6 +1081,7 @@ extern int sacctmgr_delete_cluster(int argc, char *argv[])
 	List ret_list = NULL;
 	int cond_set = 0, prev_set;
 
+	slurmdb_init_cluster_cond(cluster_cond);
 	cluster_cond->cluster_list = list_create(slurm_destroy_char);
 
 	for (i=0; i<argc; i++) {
