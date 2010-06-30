@@ -45,6 +45,7 @@
 
 #include <slurm/slurmdb.h>
 
+#include "src/common/slurmdb_defs.h"
 #include "src/common/slurm_accounting_storage.h"
 #include "src/common/xstring.h"
 
@@ -116,7 +117,7 @@ extern List slurmdb_report_user_top_usage(void *db_conn,
 	   get the correct total time for the cluster if associations
 	   are not enforced.
 	*/
-	memset(&cluster_cond, 0, sizeof(slurmdb_cluster_cond_t));
+	slurmdb_init_cluster_cond(&cluster_cond);
 	cluster_cond.with_usage = 1;
 	cluster_cond.with_deleted = 1;
 	cluster_cond.usage_end = user_cond->assoc_cond->usage_end;
