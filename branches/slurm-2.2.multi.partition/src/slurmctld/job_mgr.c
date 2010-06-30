@@ -2683,7 +2683,42 @@ static int _alt_part_test(struct part_record *part_ptr,
 	return SLURM_SUCCESS;
 }
 
+/* Test user/job access to this partition */
+static int _part_access_check(struct part_record *part_ptr,
+			      job_desc_msg_t * job_desc, uid_t submit_uid)
+{
+	if ((part_ptr->flags & PART_FLAG_ROOT_ONLY) && (submit_uid != 0)) {
+		info("_job_create: uid %u access to partition %s denied, "
+		     "not root",
+		     (unsigned int) submit_uid, part_ptr->name);
+		return ESLURM_ACCESS_DENIED;
+	}
+
+	if ((job_desc->user_id == 0) && (part_ptr->flags & PART_FLAG_NO_ROOT)) {
+		error("Security violation, SUBMIT_JOB for user root disabled");
+		return ESLURM_USER_ID_MISSING;
+	}
+
+	if (validate_group(part_ptr, job_desc->user_id) == 0) {
+		info("_job_create: uid %u access to partition %s denied, "
+		     "bad group",
+		     (unsigned int) job_desc->user_id, part_ptr->name);
+		return ESLURM_JOB_MISSING_REQUIRED_PARTITION_GROUP;
+	}
+
+	if (validate_alloc_node(part_ptr, job_desc->alloc_node) == 0) {
+		info("_job_create: uid %u access to partition %s denied, "
+		     "bad allocating node: %s",
+		     (unsigned int) job_desc->user_id, part_ptr->name,
+		     job_desc->alloc_node);
+		return ESLURM_ACCESS_DENIED;
+	}
+
+	return SLURM_SUCCESS;
+}
+
 static int _valid_job_part(job_desc_msg_t * job_desc,
+			   uid_t submit_uid,
 			   struct part_record **part_pptr,
 			   List *part_pptr_list)
 {
@@ -2719,10 +2754,12 @@ static int _valid_job_part(job_desc_msg_t * job_desc,
 
 	/* Change partition pointer(s) to alternates as needed */
 	if (part_ptr_list) {
+		int fail_rc = SLURM_SUCCESS;
 		iter = list_iterator_create(part_ptr_list);
 		while ((part_ptr_tmp = (struct part_record *)list_next(iter))) {
 			rc = _alt_part_test(part_ptr_tmp, &part_ptr_new);
 			if (rc != SLURM_SUCCESS) {
+				fail_rc = rc;
 				list_remove(iter);
 				rebuild_name_list = true;
 				continue;
@@ -2738,10 +2775,16 @@ static int _valid_job_part(job_desc_msg_t * job_desc,
 			max_nodes_orig = MAX(max_nodes_orig,
 					     part_ptr_tmp->max_nodes_orig);
 			max_time = MAX(max_time, part_ptr_tmp->max_time);
+			rc = _part_access_check(part_ptr, job_desc, submit_uid);
+			if (rc != SLURM_SUCCESS)
+				goto fini;
 		}
 		list_iterator_destroy(iter);
 		if (list_is_empty(part_ptr_list)) {
-			rc = ESLURM_PARTITION_NOT_AVAIL;
+			if (fail_rc != SLURM_SUCCESS)
+				rc = fail_rc;
+			else
+				rc = ESLURM_PARTITION_NOT_AVAIL;
 			goto fini;
 		}	
 	} else {
@@ -2756,6 +2799,9 @@ static int _valid_job_part(job_desc_msg_t * job_desc,
 		min_nodes_orig = part_ptr->min_nodes_orig;
 		max_nodes_orig = part_ptr->max_nodes_orig;
 		max_time = part_ptr->max_time;
+		rc = _part_access_check(part_ptr, job_desc, submit_uid);
+		if (rc != SLURM_SUCCESS)
+			goto fini;
 	}
 	if (rebuild_name_list) {
 		part_ptr = NULL;
@@ -2889,7 +2935,8 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	if (error_code != SLURM_SUCCESS)
 		return error_code;
 
-	error_code = _valid_job_part(job_desc, &part_ptr, &part_ptr_list);
+	error_code = _valid_job_part(job_desc, submit_uid,
+				     &part_ptr, &part_ptr_list);
 	if (error_code != SLURM_SUCCESS)
 		return error_code;
 
@@ -2901,36 +2948,6 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	if ((error_code = _validate_job_desc(job_desc, allocate, submit_uid))) {
 		FREE_NULL_LIST(part_ptr_list);
 		return error_code;
-	}
-
-	if ((job_desc->user_id == 0) && (part_ptr->flags & PART_FLAG_NO_ROOT)) {
-		error("Security violation, SUBMIT_JOB for user root disabled");
-		FREE_NULL_LIST(part_ptr_list);
-		return ESLURM_USER_ID_MISSING;
-	}
-
-	/* can this user access this partition */
-	if ((part_ptr->flags & PART_FLAG_ROOT_ONLY) && (submit_uid != 0)) {
-		info("_job_create: uid %u access to partition %s denied, %s",
-		     (unsigned int) submit_uid, part_ptr->name, "not root");
-		FREE_NULL_LIST(part_ptr_list);
-		return ESLURM_ACCESS_DENIED;
-	}
-	if (validate_group(part_ptr, job_desc->user_id) == 0) {
-		info("_job_create: uid %u access to partition %s denied, %s",
-		     (unsigned int) job_desc->user_id, part_ptr->name,
-		     "bad group");
-		FREE_NULL_LIST(part_ptr_list);
-		return ESLURM_JOB_MISSING_REQUIRED_PARTITION_GROUP;
-	}
-
-	if (validate_alloc_node(part_ptr, job_desc->alloc_node) == 0) {
-		info("_job_create: uid %u access to partition %s denied, "
-		     "bad allocating node: %s",
-		     (unsigned int) job_desc->user_id, part_ptr->name,
-		     job_desc->alloc_node);
-		FREE_NULL_LIST(part_ptr_list);
-		return ESLURM_ACCESS_DENIED;
 	}
 
 	memset(&assoc_rec, 0, sizeof(slurmdb_association_rec_t));
