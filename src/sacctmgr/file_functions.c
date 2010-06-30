@@ -1751,15 +1751,16 @@ static int _print_file_slurmdb_hierarchical_rec_childern(FILE *fd,
 	char *line = NULL;
 	slurmdb_user_rec_t *user_rec = NULL;
 	slurmdb_account_rec_t *acct_rec = NULL;
-	uint16_t track_wckey = slurm_get_track_wckey();
 
 	itr = list_iterator_create(slurmdb_hierarchical_rec_list);
 	while((slurmdb_hierarchical_rec = list_next(itr))) {
 		if(slurmdb_hierarchical_rec->assoc->user) {
 			user_rec = sacctmgr_find_user_from_list(
-				user_list, slurmdb_hierarchical_rec->assoc->user);
+				user_list,
+				slurmdb_hierarchical_rec->assoc->user);
 			line = xstrdup_printf(
-				"User - %s", slurmdb_hierarchical_rec->sort_name);
+				"User - %s",
+				slurmdb_hierarchical_rec->sort_name);
 			if(slurmdb_hierarchical_rec->assoc->partition)
 				xstrfmtcat(line, ":Partition='%s'",
 					   slurmdb_hierarchical_rec->
@@ -1767,8 +1768,7 @@ static int _print_file_slurmdb_hierarchical_rec_childern(FILE *fd,
 			if(user_rec) {
 				xstrfmtcat(line, ":DefaultAccount='%s'",
 					   user_rec->default_acct);
-				if(track_wckey
-				   && user_rec->default_wckey
+				if(user_rec->default_wckey
 				   && user_rec->default_wckey[0])
 					xstrfmtcat(line, ":DefaultWCKey='%s'",
 						   user_rec->default_wckey);
