@@ -2645,6 +2645,125 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 	return SLURM_SUCCESS;
 }
 
+static int _alt_part_test(struct part_record *part_ptr,
+			  struct part_record **part_ptr_new)
+{
+	struct part_record *alt_part_ptr;
+	char *alt_name;
+
+	*part_ptr_new = NULL;
+	if ((part_ptr->state_up & PARTITION_SUBMIT) == 0) {
+		info("_alt_part_test: original partition is not available "
+		     "(drain or inactive): %s", part_ptr->name);
+		alt_name = part_ptr->alternate;
+		while (alt_name) {
+			alt_part_ptr = find_part_record(alt_name);
+			if (alt_part_ptr == NULL) {
+				info("_alt_part_test: invalid alternate "
+				     "partition name specified: %s", alt_name);
+				return ESLURM_INVALID_PARTITION_NAME;
+			}
+			if (alt_part_ptr == part_ptr) {
+				info("_alt_part_test: no valid alternate "
+				     "partition is available");
+				return ESLURM_PARTITION_NOT_AVAIL;
+			}
+			if (alt_part_ptr->state_up & PARTITION_SUBMIT)
+				break;
+			/* Try next alternate in the sequence */
+			alt_name = alt_part_ptr->alternate;
+		}
+		if (alt_name == NULL) {
+			info("_alt_part_test: no valid alternate partition is "
+			     "available");
+	    		return ESLURM_PARTITION_NOT_AVAIL;
+		}
+		*part_ptr_new = alt_part_ptr;
+	}
+	return SLURM_SUCCESS;
+}
+
+static int _valid_job_part(job_desc_msg_t * job_desc,
+			   struct part_record **part_pptr,
+			   List *part_pptr_list)
+{
+	int rc = SLURM_SUCCESS;
+	bool rebuild_name_list = false;
+	struct part_record *part_ptr, *part_ptr_tmp, *part_ptr_new;
+	List part_ptr_list = NULL;
+	ListIterator iter;
+
+	if (job_desc->partition) {
+		part_ptr = find_part_record(job_desc->partition);
+		if (part_ptr == NULL) {
+			part_ptr_list = get_part_list(job_desc->partition);
+			if (part_ptr_list)
+				part_ptr = list_peek(part_ptr_list);
+		}
+		if (part_ptr == NULL) {
+			info("_valid_job_part: invalid partition specified: %s",
+			     job_desc->partition);
+			return ESLURM_INVALID_PARTITION_NAME;
+		}
+	} else {
+		if (default_part_loc == NULL) {
+			error("_valid_job_part: default partition not set");
+			return ESLURM_DEFAULT_PARTITION_NOT_SET;
+		}
+		part_ptr = default_part_loc;
+		job_desc->partition = xstrdup(part_ptr->name);
+	}
+
+	if (part_ptr_list) {
+		iter = list_iterator_create(part_ptr_list);
+		while ((part_ptr_tmp = (struct part_record *)list_next(iter))) {
+			rc = _alt_part_test(part_ptr_tmp, &part_ptr_new);
+			if (rc != SLURM_SUCCESS) {
+				list_remove(iter);
+				rebuild_name_list = true;
+				continue;
+			}
+			if (part_ptr_new) {
+				list_insert(iter, part_ptr_new);
+				list_remove(iter);
+				rebuild_name_list = true;
+			}
+		}
+		list_iterator_destroy(iter);
+		if (list_is_empty(part_ptr_list)) {
+			list_destroy(part_ptr_list);
+			rc = ESLURM_PARTITION_NOT_AVAIL;
+			goto fini;
+		}	
+	} else {
+		rc = _alt_part_test(part_ptr, &part_ptr_new);
+		if (rc != SLURM_SUCCESS)
+			goto fini;
+		if (part_ptr_new) {
+			part_ptr = part_ptr_new;
+			xfree(job_desc->partition);
+			job_desc->partition = xstrdup(part_ptr->name);
+		}
+	}
+
+	if (rebuild_name_list) {
+		part_ptr = NULL;
+		xfree(job_desc->partition);
+		iter = list_iterator_create(part_ptr_list);
+		while ((part_ptr_tmp = (struct part_record *)list_next(iter))) {
+			if (job_desc->partition)
+				xstrcat(job_desc->partition, ",");
+			else
+				part_ptr = part_ptr_tmp;
+			xstrcat(job_desc->partition, part_ptr_tmp->name);
+		}
+		list_iterator_destroy(iter);
+	}
+	*part_pptr = part_ptr;
+	*part_pptr_list = part_ptr_list;
+fini:	return rc;
+}
+
 /*
  * _job_create - create a job table record for the supplied specifications.
  *	this performs only basic tests for request validity (access to
@@ -2657,10 +2776,6 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
  * RET 0 on success, otherwise ESLURM error code. If the job would only be
  *	able to execute with some change in partition configuration then
  *	ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE is returned
- * globals: job_list - pointer to global job list
- *	list_part - global list of partition info
- *	default_part_loc - pointer to default partition
- *	job_hash - hash table into job records
  */
 
 static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
@@ -2669,7 +2784,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	int error_code = SLURM_SUCCESS, i, qos_error;
 	struct job_details *detail_ptr;
 	enum job_state_reason fail_reason;
-	struct part_record *part_ptr, *orig_part_ptr;
+	struct part_record *part_ptr;
 	List part_ptr_list = NULL;
 	bitstr_t *req_bitmap = NULL, *exc_bitmap = NULL;
 	struct job_record *job_ptr = NULL;
@@ -2687,73 +2802,19 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	uint16_t conn_type;
 	static uint32_t cpus_per_bp = 0;
 
-	if(!cpus_per_bp)
+	if (!cpus_per_bp)
 		select_g_alter_node_cnt(SELECT_GET_BP_CPU_CNT, &cpus_per_bp);
 #endif
 
 	*job_pptr = (struct job_record *) NULL;
+
 	error_code = job_submit_plugin_submit(job_desc);
 	if (error_code != SLURM_SUCCESS)
 		return error_code;
 
-	/* find selected partition */
-	if (job_desc->partition) {
-		part_ptr = find_part_record(job_desc->partition);
-		if (part_ptr == NULL) {
-			part_ptr_list = get_part_list(job_desc->partition);
-			if (part_ptr_list)
-				part_ptr = list_peek(part_ptr_list);
-		}
-		if (part_ptr == NULL) {
-			info("_job_create: invalid partition specified: %s",
-			     job_desc->partition);
-			error_code = ESLURM_INVALID_PARTITION_NAME;
-			return error_code;
-		}
-	} else {
-		if (default_part_loc == NULL) {
-			error("_job_create: default partition not set.");
-			error_code = ESLURM_DEFAULT_PARTITION_NOT_SET;
-			return error_code;
-		}
-		part_ptr = default_part_loc;
-		job_desc->partition = xstrdup(part_ptr->name);
-	}
-
-	if ((part_ptr->state_up & PARTITION_SUBMIT) == 0) {
-		info("_job_create: original partition is not available "
-		     "(drain or inactive): %s", job_desc->partition);
-		orig_part_ptr = part_ptr;
-		xfree(job_desc->partition);
-		job_desc->partition = xstrdup(part_ptr->alternate);
-		while ((job_desc->partition != NULL)) {
-			part_ptr = find_part_record(job_desc->partition);
-			if (part_ptr == NULL) {
-				info("_job_create: invalid alternate partition "
-				     "name specified: %s", job_desc->partition);
-				FREE_NULL_LIST(part_ptr_list);
-				return ESLURM_INVALID_PARTITION_NAME;
-			}
-			if (part_ptr == orig_part_ptr) {
-				info("_job_create: no valid alternate partition"
-				     " is available");
-				FREE_NULL_LIST(part_ptr_list);
-				return ESLURM_PARTITION_NOT_AVAIL;
-			}
-			if (part_ptr->state_up & PARTITION_SUBMIT)
-				break;
-			/* Try next alternate in the sequence */
-			xfree(job_desc->partition);
-			job_desc->partition = xstrdup(part_ptr->alternate);
-		}
-		if ((job_desc->partition == NULL)) {
-			info("_job_create: no valid alternate partition is "
-			     "available");
-			FREE_NULL_LIST(part_ptr_list);
-	    		return ESLURM_PARTITION_NOT_AVAIL;
-		}
-	}
-
+	error_code = _valid_job_part(job_desc, &part_ptr, &part_ptr_list);
+	if (error_code != SLURM_SUCCESS)
+		return error_code;
 	if (job_desc->min_nodes == NO_VAL)
 		job_desc->min_nodes = part_ptr->min_nodes_orig;
 	else if ((job_desc->min_nodes > part_ptr->max_nodes_orig) &&
@@ -3175,8 +3236,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	}
 
 cleanup:
-	if (license_list)
-		list_destroy(license_list);
+	FREE_NULL_LIST(license_list);
 	FREE_NULL_BITMAP(req_bitmap);
 	FREE_NULL_BITMAP(exc_bitmap);
 	return error_code;
@@ -3190,8 +3250,7 @@ cleanup_fail:
 		job_ptr->start_time = job_ptr->end_time = time(NULL);
 		_purge_job_record(job_ptr->job_id);
 	}
-	if (license_list)
-		list_destroy(license_list);
+	FREE_NULL_LIST(license_list);
 	FREE_NULL_LIST(part_ptr_list);
 	FREE_NULL_BITMAP(req_bitmap);
 	FREE_NULL_BITMAP(exc_bitmap);
