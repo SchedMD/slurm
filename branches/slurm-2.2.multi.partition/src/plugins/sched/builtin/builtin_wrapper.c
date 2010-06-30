@@ -145,7 +145,8 @@ void slurm_sched_plugin_job_is_pending( void )
                 fatal("list_iterator_create memory allocation failure");
 	while ((job_queue_rec = (job_queue_rec_t *) list_next(job_iterator))) {
 		job_ptr  = job_queue_rec->job_ptr;
-		part_ptr = job_queue_rec->part_ptr;
+		if (job_queue_rec->part_ptr != job_ptr->part_ptr)
+			continue;	/* Only test one partition */
 
 		/* Determine minimum and maximum node counts */
 		min_nodes = MAX(job_ptr->details->min_nodes,

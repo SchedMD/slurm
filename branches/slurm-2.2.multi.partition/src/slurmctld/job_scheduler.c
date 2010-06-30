@@ -186,6 +186,19 @@ extern List build_job_queue(void)
 			}
 			list_iterator_destroy(part_iterator);
 		} else {
+			if (job_ptr->part_ptr == NULL) {
+				part_ptr = find_part_record(job_ptr->partition);
+				if (part_ptr == NULL) {
+					error("Could not find partition %s "
+					      "for job %u", job_ptr->partition, 
+					      job_ptr->job_id);
+					continue;
+				}
+				job_ptr->part_ptr = part_ptr;
+				error("partition pointer reset for job %u, "
+				      "part %s", job_ptr->job_id,
+				      job_ptr->partition);
+			}
 			_job_queue_append(job_queue, job_ptr,
 					  job_ptr->part_ptr);
 		}
