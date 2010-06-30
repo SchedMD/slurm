@@ -366,7 +366,7 @@ extern slurmdb_cluster_rec_t *sacctmgr_find_cluster(char *name)
 	if(!name)
 		return NULL;
 
-	memset(&cluster_cond, 0, sizeof(slurmdb_cluster_cond_t));
+	slurmdb_init_cluster_cond(&cluster_cond);
 	cluster_cond.cluster_list = list_create(NULL);
 	list_append(cluster_cond.cluster_list, name);
 

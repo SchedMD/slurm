@@ -1192,10 +1192,8 @@ static int _mod_cluster(sacctmgr_file_opts_t *file_opts,
 	slurmdb_cluster_rec_t mod_cluster;
 	slurmdb_cluster_cond_t cluster_cond;
 
-	memset(&mod_cluster, 0, sizeof(slurmdb_cluster_rec_t));
-	memset(&cluster_cond, 0, sizeof(slurmdb_cluster_cond_t));
-
-	mod_cluster.flags = NO_VAL;
+	slurmdb_init_cluster_rec(&mod_cluster);
+	slurmdb_init_cluster_cond(&cluster_cond);
 
 	if(file_opts->classification
 	   && (file_opts->classification != cluster->classification)) {
@@ -2219,8 +2217,7 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 					break;
 				}
 
-				memset(&cluster_cond, 0,
-				       sizeof(slurmdb_cluster_cond_t));
+				slurmdb_init_cluster_cond(&cluster_cond);
 				cluster_cond.cluster_list = list_create(NULL);
 				list_append(cluster_cond.cluster_list,
 					    cluster_name);
@@ -2256,6 +2253,7 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 
 				cluster = xmalloc(
 					sizeof(slurmdb_cluster_rec_t));
+				slurmdb_init_cluster_rec(cluster);
 				list_append(cluster_list, cluster);
 				cluster->name = xstrdup(cluster_name);
 				if(file_opts->classification) {
