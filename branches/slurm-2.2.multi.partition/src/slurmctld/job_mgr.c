@@ -2692,7 +2692,10 @@ static int _valid_job_part(job_desc_msg_t * job_desc,
 	struct part_record *part_ptr, *part_ptr_tmp, *part_ptr_new;
 	List part_ptr_list = NULL;
 	ListIterator iter;
+	uint32_t min_nodes_orig = INFINITE, max_nodes_orig = 1;
+	uint32_t max_time = 0;
 
+	/* Identify partition(s) and set pointer(s) to their struct */
 	if (job_desc->partition) {
 		part_ptr = find_part_record(job_desc->partition);
 		if (part_ptr == NULL) {
@@ -2714,6 +2717,7 @@ static int _valid_job_part(job_desc_msg_t * job_desc,
 		job_desc->partition = xstrdup(part_ptr->name);
 	}
 
+	/* Change partition pointer(s) to alternates as needed */
 	if (part_ptr_list) {
 		iter = list_iterator_create(part_ptr_list);
 		while ((part_ptr_tmp = (struct part_record *)list_next(iter))) {
@@ -2727,11 +2731,16 @@ static int _valid_job_part(job_desc_msg_t * job_desc,
 				list_insert(iter, part_ptr_new);
 				list_remove(iter);
 				rebuild_name_list = true;
+				part_ptr_tmp = part_ptr_new;
 			}
+			min_nodes_orig = MIN(min_nodes_orig,
+					     part_ptr_tmp->min_nodes_orig);
+			max_nodes_orig = MAX(max_nodes_orig,
+					     part_ptr_tmp->max_nodes_orig);
+			max_time = MAX(max_time, part_ptr_tmp->max_time);
 		}
 		list_iterator_destroy(iter);
 		if (list_is_empty(part_ptr_list)) {
-			list_destroy(part_ptr_list);
 			rc = ESLURM_PARTITION_NOT_AVAIL;
 			goto fini;
 		}	
@@ -2744,8 +2753,10 @@ static int _valid_job_part(job_desc_msg_t * job_desc,
 			xfree(job_desc->partition);
 			job_desc->partition = xstrdup(part_ptr->name);
 		}
+		min_nodes_orig = part_ptr->min_nodes_orig;
+		max_nodes_orig = part_ptr->max_nodes_orig;
+		max_time = part_ptr->max_time;
 	}
-
 	if (rebuild_name_list) {
 		part_ptr = NULL;
 		xfree(job_desc->partition);
@@ -2759,9 +2770,75 @@ static int _valid_job_part(job_desc_msg_t * job_desc,
 		}
 		list_iterator_destroy(iter);
 	}
+
+	/* Validate job limits against partition limits */
+	if (job_desc->min_nodes == NO_VAL) {
+		job_desc->min_nodes = min_nodes_orig;
+	} else if ((job_desc->min_nodes > max_nodes_orig) &&
+		   slurmctld_conf.enforce_part_limits) {
+		info("_job_create: job's min nodes greater than partition's "
+		     "max nodes (%u > %u)",
+		     job_desc->min_nodes, max_nodes_orig);
+		rc = ESLURM_INVALID_NODE_COUNT;
+		goto fini;
+	} else if ((job_desc->min_nodes < min_nodes_orig) &&
+		   ((job_desc->max_nodes == NO_VAL) ||
+		    (job_desc->max_nodes >= min_nodes_orig))) {
+		job_desc->min_nodes = min_nodes_orig;
+	}
+
+	if (job_desc->max_nodes == NO_VAL) {
+#ifdef HAVE_BG
+		job_desc->max_nodes = min_nodes_orig;
+#else
+		;
+#endif
+	} else if ((job_desc->max_nodes < min_nodes_orig) &&
+		   slurmctld_conf.enforce_part_limits) {
+		info("_job_create: job's max nodes less than partition's "
+		     "min nodes (%u < %u)",
+		     job_desc->max_nodes, min_nodes_orig);
+		rc = ESLURM_INVALID_NODE_COUNT;
+		goto fini;
+	}
+
+	if ((job_desc->time_limit   == NO_VAL) &&
+	    (part_ptr->default_time != NO_VAL))
+		job_desc->time_limit = part_ptr->default_time;
+
+	if ((job_desc->time_min != NO_VAL) &&
+	    (job_desc->time_min >  max_time)) {
+		info("_job_create: job's min time greater than partition's "
+		     "(%u > %u)",
+		     job_desc->time_min, max_time);
+		rc = ESLURM_INVALID_TIME_LIMIT;
+		goto fini;
+	}
+	if ((job_desc->time_limit != NO_VAL) &&
+	    (job_desc->time_limit >  max_time) &&
+	    (job_desc->time_min   == NO_VAL) &&
+	    slurmctld_conf.enforce_part_limits) {
+		info("_job_create: job's time limit greater than partition's "
+		     "(%u > %u)",
+		     job_desc->time_limit, max_time);
+		rc = ESLURM_INVALID_TIME_LIMIT;
+		goto fini;
+	}
+	if ((job_desc->time_min != NO_VAL) &&
+	    (job_desc->time_min >  job_desc->time_limit)) {
+		info("_job_create: job's min_time greater time limit "
+		     "(%u > %u)",
+		     job_desc->time_min, job_desc->time_limit);
+		rc = ESLURM_INVALID_TIME_LIMIT;
+		goto fini;
+	}
+
 	*part_pptr = part_ptr;
 	*part_pptr_list = part_ptr_list;
-fini:	return rc;
+	part_ptr_list = NULL;
+
+fini:	FREE_NULL_LIST(part_ptr_list);
+	return rc;
 }
 
 /*
@@ -2815,64 +2892,6 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	error_code = _valid_job_part(job_desc, &part_ptr, &part_ptr_list);
 	if (error_code != SLURM_SUCCESS)
 		return error_code;
-	if (job_desc->min_nodes == NO_VAL)
-		job_desc->min_nodes = part_ptr->min_nodes_orig;
-	else if ((job_desc->min_nodes > part_ptr->max_nodes_orig) &&
-		 slurmctld_conf.enforce_part_limits) {
-		info("_job_create: job's min nodes greater than partition's "
-		     "max nodes (%u > %u)",
-		     job_desc->min_nodes, part_ptr->max_nodes_orig);
-		FREE_NULL_LIST(part_ptr_list);
-		return ESLURM_INVALID_NODE_COUNT;
-	} else if ((job_desc->min_nodes < part_ptr->min_nodes_orig) &&
-		   ((job_desc->max_nodes == NO_VAL) ||
-		    (job_desc->max_nodes >= part_ptr->min_nodes_orig)))
-		job_desc->min_nodes = part_ptr->min_nodes_orig;
-
-	if (job_desc->max_nodes == NO_VAL) {
-#ifdef HAVE_BG
-		job_desc->max_nodes = part_ptr->min_nodes_orig;
-#else
-		;
-#endif
-	} else if ((job_desc->max_nodes < part_ptr->min_nodes_orig) &&
-		   slurmctld_conf.enforce_part_limits) {
-		info("_job_create: job's max nodes less than partition's "
-		     "min nodes (%u < %u)",
-		     job_desc->max_nodes, part_ptr->min_nodes_orig);
-		FREE_NULL_LIST(part_ptr_list);
-		return ESLURM_INVALID_NODE_COUNT;
-	}
-
-	if ((job_desc->time_limit == NO_VAL) &&
-	    (part_ptr->default_time != NO_VAL))
-		job_desc->time_limit = part_ptr->default_time;
-
-	if ((job_desc->time_limit != NO_VAL) &&
-	    (job_desc->time_limit > part_ptr->max_time) &&
-	    slurmctld_conf.enforce_part_limits) {
-		info("_job_create: job's time greater than partition's "
-		     "(%u > %u)",
-		     job_desc->time_limit, part_ptr->max_time);
-		FREE_NULL_LIST(part_ptr_list);
-		return ESLURM_INVALID_TIME_LIMIT;
-	}
-	if ((job_desc->time_min != NO_VAL) &&
-	    (job_desc->time_min > part_ptr->max_time)) {
-		info("_job_create: job's time greater than partition's "
-		     "(%u > %u)",
-		     job_desc->time_min, part_ptr->max_time);
-		FREE_NULL_LIST(part_ptr_list);
-		return ESLURM_INVALID_TIME_LIMIT;
-	}
-	if ((job_desc->time_min != NO_VAL) &&
-	    (job_desc->time_min > job_desc->time_limit)) {
-		info("_job_create: job's min_time greater time limit "
-		     "(%u > %u)",
-		     job_desc->time_min, job_desc->time_limit);
-		FREE_NULL_LIST(part_ptr_list);
-		return ESLURM_INVALID_TIME_LIMIT;
-	}
 
 	/* Make sure anything that may be put in the database will be
 	   lower case */
