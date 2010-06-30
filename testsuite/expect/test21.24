@@ -368,37 +368,42 @@ while {[gets $tfile line] != -1} {
 		send_user "FAILURE: there was a problem with the sacctmgr command\n"
 		incr exit_code 1
 	} elseif {![string compare $line "$clu - $cl3:$fs=$fs6:$gc=$gc6:$gj=$gj6:$gn=$gn6:$gs=$gs6:$mp=$mm6:$mu=$mc6:$mj=$mj6:$mnj=$mn6:$ms=$ms6:$md=$mw6:$qs='$qs2'"]} {
-		send_user "\nmatch 1\n"
+		send_user "match 1\n"
 		incr matches
 	} elseif {![string compare $line "$par - $roo"]} {
-		send_user "\nmatch 2\n"
+		send_user "match 2\n"
+		incr matches
+	} elseif {![string compare $line "$usr - $roo:$dac='$roo':$al='$ala':$fs=1"]} {
+		send_user "match 3\n"
 		incr matches
 	} elseif {![string compare $line "$acc - $nm4:$dsc='$ds4':$org='$or4':$fs=$fs5:$gm=$gm5:$gc=$gc5:$gj=$gj5:$gn=$gn5:$gs=$gs5:$gw=$gw5:$mp=$mm5:$mu=$mc5:$mj=$mj5:$mnj=$mn5:$ms=$ms5:$md=$mw5:$qs='$qs2'"]} {
-		send_user "\nmatch 3\n"
+		send_user "match 4\n"
 		incr matches
 	} elseif {![string compare $line "$par - $nm4"]} {
-		send_user "\nmatch 4\n"
+		send_user "match 5\n"
 		incr matches
 	} elseif {![string compare $line "$usr - $us3:$dac='$nm3':$dw='$wk3':$al='$ala':$wk='$wk3,$wk1,$wk2,$wk4':$fs=$fs3:$gm=$gm3:$gc=$gc3:$gj=$gj3:$gn=$gn3:$gs=$gs3:$gw=$gw3:$mp=$mm3:$mu=$mc3:$mj=$mj3:$mnj=$mn3:$ms=$ms3:$md=$mw3:$qs='$qs2'"]} {
-		send_user "\nmatch 5\n"
+		# should come through 2 times
+		send_user "match 6\n"
 		incr matches
 	} elseif {![string compare $line "$acc - $nm3:$dsc='$ds3':$org='$or3':$fs=$fs4:$gm=$gm4:$gc=$gc4:$gj=$gj4:$gn=$gn4:$gs=$gs4:$gw=$gw4:$mp=$mm4:$mu=$mc4:$mj=$mj4:$mnj=$mn4:$ms=$ms4:$md=$mw4:$qs='$qs2'"]} {
-		send_user "\nmatch 6\n"
+		send_user "match 7\n"
 		incr matches
 	} elseif {![string compare $line "$par - $nm3"]} {
-		send_user "\nmatch 7\n"
+		send_user "match 8\n"
 		incr matches
 	} elseif {![string compare $line "$acc - $nm2:$dsc='$ds2':$org='$or2':$fs=$fs3:$gm=$gm3:$gc=$gc3:$gj=$gj3:$gn=$gn3:$gs=$gs3:$gw=$gw3:$mp=$mm3:$mu=$mc3:$mj=$mj3:$mnj=$mn3:$ms=$ms3:$md=$mw3:$qs='$qs2'"]} {
-		send_user "\nmatch 8\n"
+		send_user "match 9\n"
 		incr matches
 	} elseif {![string compare $line "$par - $nm2"]} {
-		send_user "\nmatch 9\n"
+		send_user "match 10\n"
 		incr matches
 	} elseif {![string compare $line "$usr - $us1:$dac='$nm2':$dw='$wk1':$wk='$wk3,$wk1,$wk2,$wk4':$fs=$fs1:$gm=$gm1:$gc=$gc1:$gj=$gj1:$gn=$gn1:$gs=$gs1:$gw=$gw1:$mp=$mm1:$mu=$mc1:$mj=$mj1:$mnj=$mn1:$ms=$ms1:$md=$mw1:$qs='$qs2'"]} {
-		send_user "\nmatch 10\n"
+		send_user "match 11\n"
 		incr matches
 	} elseif {![string compare $line "$usr - $us2:$dac='$nm2':$dw='$wk2':$al='$alo':$wk='$wk3,$wk1,$wk2,$wk4':$fs=$fs2:$gm=$gm2:$gc=$gc2:$gj=$gj2:$gn=$gn2:$gs=$gs2:$gw=$gw2:$mp=$mm2:$mu=$mc2:$mj=$mj2:$mnj=$mn2:$ms=$ms2:$md=$mw2:$qs='$qs2'"]} {
-		send_user "\nmatch 11\n"
+		# should come through 2 times
+		send_user "match 12\n"
 		incr matches
 	}
 }
