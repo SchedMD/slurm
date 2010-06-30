@@ -2948,7 +2948,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	int error_code = SLURM_SUCCESS, i, qos_error;
 	struct job_details *detail_ptr;
 	enum job_state_reason fail_reason;
-	struct part_record *part_ptr;
+	struct part_record *part_ptr = NULL;
 	List part_ptr_list = NULL;
 	bitstr_t *req_bitmap = NULL, *exc_bitmap = NULL;
 	struct job_record *job_ptr = NULL;
