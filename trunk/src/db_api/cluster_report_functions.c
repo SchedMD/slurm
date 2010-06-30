@@ -284,7 +284,7 @@ static List _process_util_by_report(void *db_conn, char *calling_name,
 	uid_t my_uid = getuid();
 	List ret_list = list_create(slurmdb_destroy_report_cluster_rec);
 
-	memset(&cluster_cond, 0, sizeof(slurmdb_cluster_cond_t));
+	slurmdb_init_cluster_cond(&cluster_cond);
 
 	cluster_cond.with_deleted = 1;
 	cluster_cond.with_usage = 1;
