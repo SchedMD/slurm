@@ -2729,7 +2729,8 @@ static int _part_access_check(struct part_record *part_ptr,
 	if (job_desc->max_nodes == NO_VAL)
 		job_desc->max_nodes = 0;
 	if ((part_ptr->state_up & PARTITION_SCHED) &&
-	    (job_desc->min_cpus > part_ptr->total_cpus)) {
+	    (job_desc->min_cpus != NO_VAL) &&
+	    (job_desc->min_cpus >  part_ptr->total_cpus)) {
 		info("_job_create: Job requested too many cpus (%u) of "
 		     "partition %s(%u)",
 		     job_desc->min_cpus, part_ptr->name,
