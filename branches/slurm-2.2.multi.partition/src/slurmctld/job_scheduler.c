@@ -76,6 +76,9 @@
 static char **	_build_env(struct job_record *job_ptr);
 static void	_depend_list_del(void *dep_ptr);
 static void	_feature_list_delete(void *x);
+static void	_job_queue_append(List job_queue, struct job_record *job_ptr,
+				  struct part_record *part_ptr);
+static void	_job_queue_rec_del(void *x);
 static void *	_run_epilog(void *arg);
 static void *	_run_prolog(void *arg);
 static bool	_scan_depend(List dependency_list, uint32_t job_id);
@@ -118,6 +121,21 @@ static List _build_user_job_list(uint32_t user_id, char* job_name)
 	return job_queue;
 }
 
+static void _job_queue_append(List job_queue, struct job_record *job_ptr,
+			      struct part_record *part_ptr)
+{
+	job_queue_rec_t *job_queue_rec;
+
+	job_queue_rec = xmalloc(sizeof(job_queue_rec_t));
+	job_queue_rec->job_ptr  = job_ptr;
+	job_queue_rec->part_ptr = part_ptr;
+	list_append(job_queue, job_queue_rec);
+}
+
+static void _job_queue_rec_del(void *x)
+{
+	xfree(x);
+}
 
 /*
  * build_job_queue - build (non-priority ordered) list of pending jobs
@@ -127,10 +145,11 @@ static List _build_user_job_list(uint32_t user_id, char* job_name)
 extern List build_job_queue(void)
 {
 	List job_queue;
-	ListIterator job_iterator;
+	ListIterator job_iterator, part_iterator;
 	struct job_record *job_ptr = NULL;
+	struct part_record *part_ptr;
 
-	job_queue = list_create(NULL);
+	job_queue = list_create(_job_queue_rec_del);
 	if (job_queue == NULL)
 		fatal("list_create memory allocation failure");
 	job_iterator = list_iterator_create(job_list);
@@ -156,7 +175,20 @@ extern List build_job_queue(void)
 		}
 		if (!job_independent(job_ptr, 0))	/* can not run now */
 			continue;
-		list_append(job_queue, job_ptr);
+		if (job_ptr->part_ptr_list) {
+			part_iterator = list_iterator_create(job_ptr->
+							     part_ptr_list);
+			if (part_iterator == NULL)
+				fatal("list_iterator_create malloc failure");
+			while ((part_ptr = (struct part_record *) 
+					list_next(part_iterator))) {
+				_job_queue_append(job_queue, job_ptr, part_ptr);
+			}
+			list_iterator_destroy(part_iterator);
+		} else {
+			_job_queue_append(job_queue, job_ptr,
+					  job_ptr->part_ptr);
+		}
 	}
 	list_iterator_destroy(job_iterator);
 
@@ -265,6 +297,7 @@ extern int schedule(void)
 	List job_queue = NULL;
 	ListIterator job_iterator;
 	int error_code, failed_part_cnt = 0, job_cnt = 0;
+	job_queue_rec_t *job_queue_rec;
 	struct job_record *job_ptr;
 	struct part_record **failed_parts = NULL;
 	bitstr_t *save_avail_node_bitmap;
@@ -283,7 +316,7 @@ extern int schedule(void)
 
 	DEF_TIMERS;
 
-	if(!sched_timeout)
+	if (!sched_timeout)
 		sched_timeout = MIN(slurm_get_msg_timeout(), 10);
 
 	START_TIMER;
@@ -320,7 +353,10 @@ extern int schedule(void)
 	job_iterator = list_iterator_create(job_queue);
 	if (job_iterator == NULL)
 		fatal("list_iterator_create memory allocation failure");
-	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+	while ((job_queue_rec = (job_queue_rec_t *) list_next(job_iterator))) {
+		job_ptr = job_queue_rec->job_ptr;
+		if (!IS_JOB_PENDING(job_ptr))
+			continue;	/* started in other partition */
 		if (job_ptr->priority == 0)	{ /* held */
 			debug3("sched: JobId=%u. State=%s. Reason=%s. "
 			       "Priority=%u.",
@@ -329,6 +365,10 @@ extern int schedule(void)
 			       job_reason_string(job_ptr->state_reason),
 			       job_ptr->priority);
 			continue;
+		}
+		if (job_ptr->part_ptr != job_queue_rec->part_ptr) {
+			/* Cycle through partitions usabe for this job */
+			job_ptr->part_ptr = job_queue_rec->part_ptr;
 		}
 		if ((job_ptr->resv_name == NULL) &&
 		    _failed_partition(job_ptr->part_ptr, failed_parts,
@@ -518,21 +558,21 @@ extern void sort_job_queue(List job_queue)
  *	in order of decreasing priority */
 static int _sort_job_queue(void *x, void *y)
 {
-	struct job_record *job_ptr1 = (struct job_record *) x;
-	struct job_record *job_ptr2 = (struct job_record *) y;
+	job_queue_rec_t *job_rec1 = (job_queue_rec_t *) x;
+	job_queue_rec_t *job_rec2 = (job_queue_rec_t *) y;
 
-	if (job_ptr1->part_ptr && job_ptr2->part_ptr) {
-		if (job_ptr1->part_ptr->priority <
-		    job_ptr2->part_ptr->priority)
+	if (job_rec1->part_ptr && job_rec2->part_ptr) {
+		if (job_rec1->part_ptr->priority <
+		    job_rec2->part_ptr->priority)
 			return 1;
-		if (job_ptr1->part_ptr->priority >
-		    job_ptr2->part_ptr->priority)
+		if (job_rec1->part_ptr->priority >
+		    job_rec2->part_ptr->priority)
 			return -1;
 	}
 
-	if (job_ptr1->priority < job_ptr2->priority)
+	if (job_rec1->job_ptr->priority < job_rec2->job_ptr->priority)
 		return 1;
-	if (job_ptr1->priority > job_ptr2->priority)
+	if (job_rec1->job_ptr->priority > job_rec2->job_ptr->priority)
 		return -1;
 	return 0;
 }

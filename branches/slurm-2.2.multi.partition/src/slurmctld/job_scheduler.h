@@ -3,7 +3,7 @@
  *	of pending jobs in priority order
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette@llnl.gov>, et. al.
  *  Derived from dsh written by Jim Garlick <garlick1@llnl.gov>
@@ -43,6 +43,11 @@
 #define _JOB_SCHEDULER_H
 
 #include "src/slurmctld/slurmctld.h"
+
+typedef struct job_queue_rec {
+	struct job_record *job_ptr;
+	struct part_record *part_ptr;
+} job_queue_rec_t;
 
 /*
  * build_feature_list - Translate a job's feature string into a feature_list
@@ -130,7 +135,7 @@ extern void set_job_elig_time(void);
 
 /*
  * sort_job_queue - sort job_queue in decending priority order
- * IN/OUT job_queue - sorted job queue
+ * IN/OUT job_queue - sorted job queue previously made by build_job_queue()
  */
 extern void sort_job_queue(List job_queue);
 

@@ -128,6 +128,7 @@ void slurm_sched_plugin_job_is_pending( void )
 {
 	int j, rc = SLURM_SUCCESS;
 	List job_queue;
+	job_queue_rec_t *job_queue_rec;
 	List preemptee_candidates = NULL;
 	ListIterator job_iterator;
 	struct job_record *job_ptr;
@@ -142,8 +143,9 @@ void slurm_sched_plugin_job_is_pending( void )
 	job_iterator = list_iterator_create(job_queue);
 	if (job_iterator == NULL)
                 fatal("list_iterator_create memory allocation failure");
-	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
-		part_ptr = job_ptr->part_ptr;
+	while ((job_queue_rec = (job_queue_rec_t *) list_next(job_iterator))) {
+		job_ptr  = job_queue_rec->job_ptr;
+		part_ptr = job_queue_rec->part_ptr;
 
 		/* Determine minimum and maximum node counts */
 		min_nodes = MAX(job_ptr->details->min_nodes,
