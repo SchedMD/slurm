@@ -824,7 +824,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	char *licenses = NULL, *state_desc = NULL, *wckey = NULL;
 	char *resv_name = NULL, *gres = NULL;
 	char **spank_job_env = (char **) NULL;
-	List gres_list = NULL;
+	List gres_list = NULL, part_ptr_list = NULL;
 	struct job_record *job_ptr = NULL;
 	struct part_record *part_ptr;
 	int error_code, i, qos_error;
@@ -910,12 +910,16 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		}
 		part_ptr = find_part_record (partition);
 		if (part_ptr == NULL) {
+			part_ptr_list = get_part_list(partition);
+			if (part_ptr_list)
+				part_ptr = list_peek(part_ptr_list);
+		}
+		if (part_ptr == NULL) {
 			verbose("Invalid partition (%s) for job_id %u",
 				partition, job_id);
 			/* not fatal error, partition could have been removed,
 			 * reset_job_bitmaps() will clean-up this job */
 		}
-
 
 		safe_unpackstr_xmalloc(&name, &name_len, buffer);
 		safe_unpackstr_xmalloc(&wckey, &name_len, buffer);
@@ -1180,6 +1184,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	job_ptr->partition    = partition;
 	partition             = NULL;	/* reused, nothing left to free */
 	job_ptr->part_ptr = part_ptr;
+	job_ptr->part_ptr_list = part_ptr_list;
 	job_ptr->pre_sus_time = pre_sus_time;
 	job_ptr->priority     = priority;
 	job_ptr->qos_id       = qos_id;
@@ -1302,6 +1307,7 @@ unpack_error:
 	xfree(nodes);
 	xfree(nodes_completing);
 	xfree(partition);
+	FREE_NULL_LIST(part_ptr_list);
 	xfree(resv_name);
 	for (i=0; i<spank_job_env_size; i++)
 		xfree(spank_job_env[i]);
@@ -2303,8 +2309,11 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 	} else if(!with_slurmdbd && !job_ptr->db_index)
 		jobacct_storage_g_job_start(acct_db_conn, job_ptr);
 
-	debug2("sched: JobId=%u allocated resources: NodeList=%s",
-	       job_ptr->job_id, job_ptr->nodes);
+	if (!will_run) {
+		debug2("sched: JobId=%u allocated resources: NodeList=%s",
+		       job_ptr->job_id, job_ptr->nodes);
+		rebuild_job_part_list(job_ptr);
+	}
 
 	return SLURM_SUCCESS;
 }
@@ -2948,7 +2957,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	int error_code = SLURM_SUCCESS, i, qos_error;
 	struct job_details *detail_ptr;
 	enum job_state_reason fail_reason;
-	struct part_record *part_ptr = NULL;
+	struct part_record *part_ptr;
 	List part_ptr_list = NULL;
 	bitstr_t *req_bitmap = NULL, *exc_bitmap = NULL;
 	struct job_record *job_ptr = NULL;
@@ -5095,6 +5104,7 @@ void reset_job_bitmaps(void)
 	ListIterator job_iterator;
 	struct job_record  *job_ptr;
 	struct part_record *part_ptr;
+	List part_ptr_list = NULL;
 	bool job_fail = false;
 	time_t now = time(NULL);
 	bool gang_flag = false;
@@ -5123,15 +5133,25 @@ void reset_job_bitmaps(void)
 			part_ptr = NULL;
 			job_fail = true;
 		} else {
-			part_ptr = list_find_first(part_list, &list_find_part,
-						   job_ptr->partition);
+			part_ptr = find_part_record(job_ptr->partition);
 			if (part_ptr == NULL) {
-				error("Invalid partition (%s) for job_id %u",
+				part_ptr_list = get_part_list(job_ptr->
+							      partition);
+				if (part_ptr_list)
+					part_ptr = list_peek(part_ptr_list);
+			}
+			if (part_ptr == NULL) {
+				error("Invalid partition (%s) for job %u",
 		    		      job_ptr->partition, job_ptr->job_id);
 				job_fail = true;
 			}
 		}
 		job_ptr->part_ptr = part_ptr;
+		FREE_NULL_LIST(job_ptr->part_ptr_list);
+		if (part_ptr_list) {
+			job_ptr->part_ptr_list = part_ptr_list;
+			part_ptr_list = NULL;	/* clear for next job */
+		}
 
 		FREE_NULL_BITMAP(job_ptr->node_bitmap_cg);
 		if (job_ptr->nodes_completing &&

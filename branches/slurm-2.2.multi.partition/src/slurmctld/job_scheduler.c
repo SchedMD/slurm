@@ -523,6 +523,7 @@ extern int schedule(void)
 				srun_allocate(job_ptr->job_id);
 			else if (job_ptr->details->prolog_running == 0)
 				launch_job(job_ptr);
+			rebuild_job_part_list(job_ptr);
 			job_cnt++;
 		} else if ((error_code != 
 			    ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE) &&
@@ -1680,4 +1681,29 @@ static int _valid_node_feature(char *feature)
 	list_iterator_destroy(feature_iter);
 
 	return rc;
+}
+
+/* If a job can run in multiple partitions, make sure that the one 
+ * actually used is first in the string. Needed for job state save/restore */
+extern void rebuild_job_part_list(struct job_record *job_ptr)
+{
+	ListIterator part_iterator;
+	struct part_record *part_ptr;
+
+	if ((job_ptr->part_ptr_list == NULL) || (job_ptr->part_ptr == NULL))
+		return;
+
+	xfree(job_ptr->partition);
+	job_ptr->partition = xstrdup(job_ptr->part_ptr->name);
+
+	part_iterator = list_iterator_create(job_ptr->part_ptr_list);
+	if (part_iterator == NULL)
+		fatal("list_iterator_create malloc failure");
+	while ((part_ptr = (struct part_record *) list_next(part_iterator))) {
+		if (part_ptr == job_ptr->part_ptr)
+			continue;
+		xstrcat(job_ptr->partition, ",");
+		xstrcat(job_ptr->partition, job_ptr->part_ptr->name);
+	}
+	list_iterator_destroy(part_iterator);
 }
