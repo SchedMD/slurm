@@ -470,7 +470,7 @@ test17.17  Confirm that node sharing flags are respected  (--nodelist and
            --share options)
 test17.18  Test of job dependencies and deferred begin time (--depedency
            and --begin options).
-test17.19  REMOVED
+test17.19  Test of job submit to multiple partitions (--partition).
 test17.20  Test of mail options (--mail-type and --mail-user options)
 test17.21  Tests #SLURM entry functionality in a batch script
 test17.22  Test of running non-existant job, confirm timely termination.
