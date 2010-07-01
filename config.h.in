@@ -51,8 +51,14 @@
 /* Define to 1 if emulating or running on Blue Gene/P system */
 #undef HAVE_BGP
 
+/* Define to 1 if emulating or running on Blue Gene/P system */
+#undef HAVE_BGQ
+
 /* Define to 1 if have Blue Gene files */
 #undef HAVE_BG_FILES
+
+/* Define to 1 if emulating or running on Blue Gene/L or P system */
+#undef HAVE_BG_L_P
 
 /* Define to 1 if you have the `cfmakeraw' function. */
 #undef HAVE_CFMAKERAW

@@ -327,10 +327,18 @@ extern int slurm_select_init(void)
 		}
 #endif
 #ifdef HAVE_BG
+#  ifdef HAVE_BGQ
+		if(strcasecmp(select_type, "select/bgq")) {
+			error("%s is incompatible with BlueGene/Q",
+			      select_type);
+			fatal("Use SelectType=select/bgq");
+		}
+#  else
 		if(strcasecmp(select_type, "select/bluegene")) {
 			error("%s is incompatible with BlueGene", select_type);
 			fatal("Use SelectType=select/bluegene");
 		}
+#  endif
 #endif
 	}
 	select_context_cnt = 0;
@@ -338,6 +346,7 @@ extern int slurm_select_init(void)
 	one_name = strtok_r(names, ",", &last);
 	while (one_name) {
 		full_name = xstrdup_printf("select/%s", one_name);
+		info("trying %s", full_name);
 		for (i=0; i<select_context_cnt; i++) {
 			if (!strcmp(full_name, select_context[i].select_type))
 				break;

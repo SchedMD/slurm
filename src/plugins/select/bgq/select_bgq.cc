@@ -39,11 +39,373 @@
 
 #include "bgq.h"
 
+#define HUGE_BUF_SIZE (1024*16)
+#define NOT_FROM_CONTROLLER -2
+
+/* These are defined here so when we link with something other than
+ * the slurmctld we will have these symbols defined.  They will get
+ * overwritten when linking with the slurmctld.
+ */
+slurm_ctl_conf_t slurmctld_conf;
+struct node_record *node_record_table_ptr = NULL;
+int bg_recover = NOT_FROM_CONTROLLER;
+List part_list = NULL;
+int node_record_count;
+time_t last_node_update;
+time_t last_job_update;
+char *alpha_num = (char *)"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+void *acct_db_conn = NULL;
+char *slurmctld_cluster_name = NULL;
+slurmdb_cluster_rec_t *working_cluster_rec = NULL;
+
 extern "C" {
 
 const char plugin_name[]       	= "BG/Q node selection plugin";
 const char plugin_type[]       	= "select/bgq";
-//const uint32_t plugin_id	= 103;
-//const uint32_t plugin_version	= 100;
+const uint32_t plugin_id	= 103;
+const uint32_t plugin_version	= 100;
+
+/*
+ * init() is called when the plugin is loaded, before any other functions
+ * are called.  Put global initialization here.
+ */
+extern int init ( void )
+{
+
+#ifdef HAVE_BGQ
+	if(bg_recover != NOT_FROM_CONTROLLER) {
+#if (SYSTEM_DIMENSIONS != 4)
+		fatal("SYSTEM_DIMENSIONS value (%d) invalid for BGQ",
+		      SYSTEM_DIMENSIONS);
+#endif
+
+#ifdef HAVE_BG_FILES
+		if ((SELECT_MESH  != RM_MESH)
+		    || (SELECT_TORUS != RM_TORUS)
+		    || (SELECT_NAV   != RM_NAV))
+			fatal("enum conn_type out of sync with rm_api.h");
+#endif
+
+		verbose("%s loading...", plugin_name);
+		/* if this is coming from something other than the controller
+		   we don't want to read the config or anything like that. */
+	}
+	verbose("%s loaded", plugin_name);
+#endif
+	return SLURM_SUCCESS;
+}
+
+extern int fini ( void )
+{
+	int rc = SLURM_SUCCESS;
+
+	return rc;
+}
+
+/*
+ * The remainder of this file implements the standard SLURM
+ * node selection API.
+ */
+
+/* We rely upon DB2 to save and restore BlueGene state */
+extern int select_p_state_save(char *dir_name)
+{
+#ifdef HAVE_BGQ
+	return SLURM_SUCCESS;
+#else
+	return SLURM_ERROR;
+#endif
+}
+
+extern int select_p_state_restore(char *dir_name)
+{
+#ifdef HAVE_BGQ
+	debug("bgq: select_p_state_restore");
+
+	return SLURM_SUCCESS;
+#else
+	return SLURM_ERROR;
+#endif
+}
+
+/* Sync BG blocks to currently active jobs */
+extern int select_p_job_init(List job_list)
+{
+#ifdef HAVE_BGQ
+	int rc = SLURM_SUCCESS;
+	return rc;
+#else
+	return SLURM_ERROR;
+#endif
+}
+
+/* All initialization is performed by init() */
+extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
+{
+#ifdef HAVE_BGQ
+	return SLURM_SUCCESS;
+#else
+	return SLURM_ERROR;
+#endif
+}
+
+/*
+ * Called by slurmctld when a new configuration file is loaded
+ * or scontrol is used to change block configuration
+ */
+ extern int select_p_block_init(List part_list)
+{
+#ifdef HAVE_BGQ
+	return SLURM_SUCCESS;
+#else
+	return SLURM_ERROR;
+#endif
+}
+
+
+/*
+ * select_p_job_test - Given a specification of scheduling requirements,
+ *	identify the nodes which "best" satify the request. The specified
+ *	nodes may be DOWN or BUSY at the time of this test as may be used
+ *	to deterime if a job could ever run.
+ * IN/OUT job_ptr - pointer to job being scheduled start_time is set
+ *	when we can possibly start job.
+ * IN/OUT bitmap - usable nodes are set on input, nodes not required to
+ *	satisfy the request are cleared, other left set
+ * IN min_nodes - minimum count of nodes
+ * IN max_nodes - maximum count of nodes (0==don't care)
+ * IN req_nodes - requested (or desired) count of nodes
+ * IN mode - SELECT_MODE_RUN_NOW: try to schedule job now
+ *           SELECT_MODE_TEST_ONLY: test if job can ever run
+ *           SELECT_MODE_WILL_RUN: determine when and where job can run
+ * IN preemptee_candidates - List of pointers to jobs which can be preempted.
+ * IN/OUT preemptee_job_list - Pointer to list of job pointers. These are the
+ *		jobs to be preempted to initiate the pending job. Not set
+ *		if mode=SELECT_MODE_TEST_ONLY or input pointer is NULL.
+ * RET zero on success, EINVAL otherwise
+ * NOTE: bitmap must be a superset of req_nodes at the time that
+ *	select_p_job_test is called
+ */
+extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
+			     uint32_t min_nodes, uint32_t max_nodes,
+			     uint32_t req_nodes, uint16_t mode,
+			     List preemptee_candidates,
+			     List *preemptee_job_list)
+{
+#ifdef HAVE_BGQ
+	return SLURM_SUCCESS;
+#else
+	return SLURM_ERROR;
+#endif
+}
+
+extern int select_p_job_begin(struct job_record *job_ptr)
+{
+#ifdef HAVE_BGQ
+	return SLURM_SUCCESS;
+#else
+	return SLURM_ERROR;
+#endif
+}
+
+extern int select_p_job_ready(struct job_record *job_ptr)
+{
+#ifdef HAVE_BGQ
+	return SLURM_SUCCESS;
+#else
+	return SLURM_ERROR;
+#endif
+}
+
+extern int select_p_job_resized(struct job_record *job_ptr,
+				struct node_record *node_ptr)
+{
+	return ESLURM_NOT_SUPPORTED;
+}
+
+extern int select_p_job_fini(struct job_record *job_ptr)
+{
+#ifdef HAVE_BGQ
+	return SLURM_SUCCESS;
+#else
+	return SLURM_ERROR;
+#endif
+}
+
+extern int select_p_job_suspend(struct job_record *job_ptr)
+{
+	return ESLURM_NOT_SUPPORTED;
+}
+
+extern int select_p_job_resume(struct job_record *job_ptr)
+{
+	return ESLURM_NOT_SUPPORTED;
+}
+
+extern int select_p_pack_select_info(time_t last_query_time, Buf *buffer_ptr,
+				     uint16_t protocol_version)
+{
+#ifdef HAVE_BGQ
+	return SLURM_SUCCESS;
+#else
+	return SLURM_ERROR;
+#endif
+}
+
+extern int select_p_select_nodeinfo_pack(select_nodeinfo_t *nodeinfo,
+					 Buf buffer,
+					 uint16_t protocol_version)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int select_p_select_nodeinfo_unpack(select_nodeinfo_t **nodeinfo,
+					   Buf buffer,
+					   uint16_t protocol_version)
+{
+	return SLURM_SUCCESS;
+}
+
+extern select_nodeinfo_t *select_p_select_nodeinfo_alloc(uint32_t size)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int select_p_select_nodeinfo_free(select_nodeinfo_t *nodeinfo)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int select_p_select_nodeinfo_set_all(time_t last_query_time)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int select_p_select_nodeinfo_set(struct job_record *job_ptr)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int select_p_select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
+					enum select_nodedata_type dinfo,
+					enum node_states state,
+					void *data)
+{
+	return SLURM_SUCCESS;
+}
+
+select_jobinfo_t *select_p_select_jobinfo_alloc()
+{
+	return SLURM_SUCCESS;
+}
+
+extern int select_p_select_jobinfo_set(select_jobinfo_t *jobinfo,
+				       enum select_jobdata_type data_type,
+				       void *data)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int select_p_select_jobinfo_get (select_jobinfo_t *jobinfo,
+				 enum select_jobdata_type data_type, void *data)
+{
+	return SLURM_SUCCESS;
+}
+
+extern select_jobinfo_t *select_p_select_jobinfo_copy(select_jobinfo_t *jobinfo)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int select_p_select_jobinfo_free  (select_jobinfo_t *jobinfo)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int  select_p_select_jobinfo_pack(select_jobinfo_t *jobinfo, Buf buffer,
+					 uint16_t protocol_version)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int  select_p_select_jobinfo_unpack(select_jobinfo_t **jobinfo,
+					   Buf buffer,
+					   uint16_t protocol_version)
+{
+	return SLURM_SUCCESS;
+}
+
+extern char *select_p_select_jobinfo_sprint(select_jobinfo_t *jobinfo,
+				     char *buf, size_t size, int mode)
+{
+	return SLURM_SUCCESS;
+}
+
+extern char *select_p_select_jobinfo_xstrdup(select_jobinfo_t *jobinfo,
+					     int mode)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int select_p_update_block (update_block_msg_t *block_desc_ptr)
+{
+#ifdef HAVE_BGQ
+	int rc = SLURM_SUCCESS;
+	return rc;
+#else
+	return SLURM_ERROR;
+#endif
+}
+
+extern int select_p_update_sub_node (update_block_msg_t *block_desc_ptr)
+{
+#ifdef HAVE_BGQ
+	return SLURM_SUCCESS;
+#else
+	return SLURM_ERROR;
+#endif
+}
+
+extern int select_p_get_info_from_plugin (enum select_plugindata_info dinfo,
+					  struct job_record *job_ptr,
+					  void *data)
+{
+#ifdef HAVE_BGQ
+	return SLURM_SUCCESS;
+#else
+	return SLURM_ERROR;
+#endif
+}
+
+extern int select_p_update_node_config (int index)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int select_p_update_node_state (int index, uint16_t state)
+{
+#ifdef HAVE_BGQ
+	return SLURM_SUCCESS;
+#endif
+	return SLURM_ERROR;
+}
+
+extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
+{
+#ifdef HAVE_BGQ
+	return SLURM_SUCCESS;
+#else
+	return SLURM_ERROR;
+#endif
+}
+
+extern int select_p_reconfigure(void)
+{
+#ifdef HAVE_BGQ
+	return SLURM_SUCCESS;
+#else
+	return SLURM_ERROR;
+#endif
+}
 
 }

@@ -112,7 +112,11 @@ extern char *default_plugstack;
 #define DEFAULT_SCHED_TIME_SLICE    30
 #define DEFAULT_SCHEDTYPE           "sched/builtin"
 #ifdef HAVE_BG		/* Blue Gene specific default configuration parameters */
-#  define DEFAULT_SELECT_TYPE       "select/bluegene"
+#  ifdef HAVE_BGQ
+#     define DEFAULT_SELECT_TYPE       "select/bgq"
+#  else
+#     define DEFAULT_SELECT_TYPE       "select/bluegene"
+#  endif
 #else
 #  define DEFAULT_SELECT_TYPE       "select/linear"
 #endif
