@@ -586,5 +586,4 @@ int inline slurmdbd_unpack_usage_msg(dbd_usage_msg_t **msg,
 int inline slurmdbd_unpack_buffer(void **in,
 				  uint16_t rpc_version,
 				  Buf buffer);
-
 #endif	/* !_SLURMDBD_DEFS_H */

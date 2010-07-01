@@ -1050,20 +1050,10 @@ extern void priority_p_reconfig()
 
 extern int priority_p_set_max_cluster_usage(uint32_t procs, uint32_t half_life)
 {
-	static uint32_t last_procs = 0;
-	static uint32_t last_half_life = 0;
-
 	if(!calc_fairshare)
 		return SLURM_SUCCESS;
 
-	/* No need to do this if nothing has changed so just return */
-	if((procs == last_procs) && (half_life == last_half_life))
-		return SLURM_SUCCESS;
-
 	xassert(assoc_mgr_root_assoc);
-
-	last_procs = procs;
-	last_half_life = half_life;
 
 	/* This should always be 1 and it doesn't get calculated later
 	   so set it now. usage_raw and usage_norm get calculated the

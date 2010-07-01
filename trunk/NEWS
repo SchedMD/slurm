@@ -9,6 +9,7 @@ documents those changes that are of interest to users and admins.
     triggers from working without the --enable-debug configure option.
  -- Replaced slurm_addr with slurm_addr_t
  -- Replaced slurm_fd with slurm_fd_t
+ -- Skeleton code added for bgq.
 
 * Changes in SLURM 2.2.0.pre8
 =============================
