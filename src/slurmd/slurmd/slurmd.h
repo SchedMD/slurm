@@ -115,7 +115,7 @@ typedef struct slurmd_config {
 	char         *task_prolog;	/* per-task prolog script          */
 	char         *task_epilog;	/* per-task epilog script          */
 	int           port;		/* local slurmd port               */
-	slurm_fd      lfd;		/* slurmd listen file descriptor   */
+	slurm_fd_t      lfd;		/* slurmd listen file descriptor   */
 	pid_t         pid;		/* server pid                      */
 	log_options_t log_opts;         /* current logging options         */
 	int           debug_level;	/* logging detail level            */

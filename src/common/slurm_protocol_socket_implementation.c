@@ -108,17 +108,17 @@ static int _tot_wait (struct timeval *start_time)
 	return msec_delay;
 }
 
-slurm_fd _slurm_init_msg_engine ( slurm_addr_t * slurm_address )
+slurm_fd_t _slurm_init_msg_engine ( slurm_addr_t * slurm_address )
 {
 	return _slurm_listen_stream ( slurm_address ) ;
 }
 
-slurm_fd _slurm_open_msg_conn ( slurm_addr_t * slurm_address )
+slurm_fd_t _slurm_open_msg_conn ( slurm_addr_t * slurm_address )
 {
 	return _slurm_open_stream ( slurm_address, false ) ;
 }
 
-slurm_fd _slurm_accept_msg_conn (slurm_fd fd, slurm_addr_t *addr)
+slurm_fd_t _slurm_accept_msg_conn (slurm_fd_t fd, slurm_addr_t *addr)
 {
 	return _slurm_accept_stream(fd, addr);
 }
@@ -157,19 +157,19 @@ static void _sock_bind_wild(int sockfd)
 /*
  * This would be a no-op in a message implementation
  */
-int _slurm_close_accepted_conn (slurm_fd fd)
+int _slurm_close_accepted_conn (slurm_fd_t fd)
 {
 	return _slurm_close (fd);
 }
 
-ssize_t _slurm_msg_recvfrom(slurm_fd fd, char **pbuf, size_t *lenp,
+ssize_t _slurm_msg_recvfrom(slurm_fd_t fd, char **pbuf, size_t *lenp,
 			    uint32_t flags)
 {
 	return _slurm_msg_recvfrom_timeout(fd, pbuf, lenp, flags,
 				(slurm_get_msg_timeout() * 1000));
 }
 
-ssize_t _slurm_msg_recvfrom_timeout(slurm_fd fd, char **pbuf, size_t *lenp,
+ssize_t _slurm_msg_recvfrom_timeout(slurm_fd_t fd, char **pbuf, size_t *lenp,
 				    uint32_t flags, int tmout)
 {
 	ssize_t  len;
@@ -202,14 +202,14 @@ ssize_t _slurm_msg_recvfrom_timeout(slurm_fd fd, char **pbuf, size_t *lenp,
 	return (ssize_t) msglen;
 }
 
-ssize_t _slurm_msg_sendto(slurm_fd fd, char *buffer, size_t size,
+ssize_t _slurm_msg_sendto(slurm_fd_t fd, char *buffer, size_t size,
 			  uint32_t flags)
 {
 	return _slurm_msg_sendto_timeout( fd, buffer, size, flags,
 				(slurm_get_msg_timeout() * 1000));
 }
 
-ssize_t _slurm_msg_sendto_timeout(slurm_fd fd, char *buffer, size_t size,
+ssize_t _slurm_msg_sendto_timeout(slurm_fd_t fd, char *buffer, size_t size,
 				  uint32_t flags, int timeout)
 {
 	int   len;
@@ -240,7 +240,7 @@ ssize_t _slurm_msg_sendto_timeout(slurm_fd fd, char *buffer, size_t size,
 
 /* Send slurm message with timeout
  * RET message size (as specified in argument) or SLURM_ERROR on error */
-int _slurm_send_timeout(slurm_fd fd, char *buf, size_t size,
+int _slurm_send_timeout(slurm_fd_t fd, char *buf, size_t size,
 			uint32_t flags, int timeout)
 {
 	int rc;
@@ -347,7 +347,7 @@ int _slurm_send_timeout(slurm_fd fd, char *buf, size_t size,
 
 /* Get slurm message with timeout
  * RET message size (as specified in argument) or SLURM_ERROR on error */
-int _slurm_recv_timeout(slurm_fd fd, char *buffer, size_t size,
+int _slurm_recv_timeout(slurm_fd_t fd, char *buffer, size_t size,
 			uint32_t flags, int timeout )
 {
 	int rc;
@@ -443,15 +443,15 @@ int _slurm_recv_timeout(slurm_fd fd, char *buffer, size_t size,
 	return recvlen;
 }
 
-int _slurm_shutdown_msg_engine ( slurm_fd open_fd )
+int _slurm_shutdown_msg_engine ( slurm_fd_t open_fd )
 {
 	return _slurm_close ( open_fd ) ;
 }
 
-slurm_fd _slurm_listen_stream(slurm_addr_t *addr)
+slurm_fd_t _slurm_listen_stream(slurm_addr_t *addr)
 {
 	int rc;
-	slurm_fd fd;
+	slurm_fd_t fd;
 	const int one = 1;
 	const size_t sz1 = sizeof(one);
 
@@ -487,16 +487,16 @@ slurm_fd _slurm_listen_stream(slurm_addr_t *addr)
 
 }
 
-slurm_fd _slurm_accept_stream(slurm_fd fd, slurm_addr_t *addr)
+slurm_fd_t _slurm_accept_stream(slurm_fd_t fd, slurm_addr_t *addr)
 {
 	socklen_t len = sizeof(slurm_addr_t);
 	return _slurm_accept(fd, (struct sockaddr *)addr, &len);
 }
 
-slurm_fd _slurm_open_stream(slurm_addr_t *addr, bool retry)
+slurm_fd_t _slurm_open_stream(slurm_addr_t *addr, bool retry)
 {
 	int retry_cnt;
-	slurm_fd fd;
+	slurm_fd_t fd;
 	uint16_t port;
 	char ip[32];
 
@@ -547,25 +547,25 @@ slurm_fd _slurm_open_stream(slurm_addr_t *addr, bool retry)
 	return SLURM_SOCKET_ERROR;
 }
 
-int _slurm_get_stream_addr(slurm_fd fd, slurm_addr_t *addr )
+int _slurm_get_stream_addr(slurm_fd_t fd, slurm_addr_t *addr )
 {
 	socklen_t size = sizeof(addr);
 	return _slurm_getsockname(fd, (struct sockaddr *)addr, &size);
 }
 
-int _slurm_close_stream ( slurm_fd open_fd )
+int _slurm_close_stream ( slurm_fd_t open_fd )
 {
 	return _slurm_close ( open_fd ) ;
 }
 
 
-int _slurm_set_stream_non_blocking(slurm_fd fd)
+int _slurm_set_stream_non_blocking(slurm_fd_t fd)
 {
 	fd_set_nonblocking(fd);
 	return SLURM_SUCCESS;
 }
 
-int _slurm_set_stream_blocking(slurm_fd fd)
+int _slurm_set_stream_blocking(slurm_fd_t fd)
 {
 	fd_set_blocking(fd);
 	return SLURM_SUCCESS;
@@ -576,7 +576,7 @@ extern int _slurm_socket (int __domain, int __type, int __protocol)
 	return socket ( __domain, __type, __protocol ) ;
 }
 
-extern slurm_fd _slurm_create_socket ( slurm_socket_type_t type )
+extern slurm_fd_t _slurm_create_socket ( slurm_socket_type_t type )
 {
 	switch ( type )
 	{

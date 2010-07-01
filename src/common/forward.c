@@ -86,7 +86,7 @@ void *_forward_thread(void *arg)
 	Buf buffer = init_buf(fwd_msg->buf_len);
 	int i=0;
 	List ret_list = NULL;
-	slurm_fd fd = -1;
+	slurm_fd_t fd = -1;
 	ret_data_info_t *ret_data_info = NULL;
 	char *name = NULL;
 	hostlist_t hl = hostlist_create(fwd_msg->header.forward.nodelist);

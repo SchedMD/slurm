@@ -364,7 +364,7 @@ typedef struct slurm_protocol_config {
 typedef struct slurm_msg {
 	slurm_addr_t address;
 	void *auth_cred;
-	slurm_fd conn_fd;
+	slurm_fd_t conn_fd;
 	void *data;
 	uint32_t data_size;
 	uint16_t flags;

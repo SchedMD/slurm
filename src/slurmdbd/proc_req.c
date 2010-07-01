@@ -2642,7 +2642,7 @@ static int   _register_ctld(slurmdbd_conn_t *slurmdbd_conn,
 #if 0
 	{
 		/* Code to validate communications back to slurmctld */
-		slurm_fd fd;
+		slurm_fd_t fd;
 		slurm_set_addr_char(&ctld_address, register_ctld_msg->port, ip);
 		fd =  slurm_open_msg_conn(&ctld_address);
 		if (fd < 0) {

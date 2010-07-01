@@ -69,11 +69,11 @@ uint16_t use_host_exp = 0;
 static char *	_get_wiki_conf_path(void);
 static void *	_msg_thread(void *no_data);
 static int	_parse_msg(char *msg, char **req);
-static void	_proc_msg(slurm_fd new_fd, char *msg);
+static void	_proc_msg(slurm_fd_t new_fd, char *msg);
 static size_t	_read_bytes(int fd, char *buf, const size_t size);
-static char *	_recv_msg(slurm_fd new_fd);
-static size_t	_send_msg(slurm_fd new_fd, char *buf, size_t size);
-static void	_send_reply(slurm_fd new_fd, char *response);
+static char *	_recv_msg(slurm_fd_t new_fd);
+static size_t	_send_msg(slurm_fd_t new_fd, char *buf, size_t size);
+static void	_send_reply(slurm_fd_t new_fd, char *response);
 static size_t	_write_bytes(int fd, char *buf, const size_t size);
 
 /*****************************************************************************\
@@ -141,7 +141,7 @@ extern void term_msg_thread(void)
 \*****************************************************************************/
 static void *_msg_thread(void *no_data)
 {
-	slurm_fd sock_fd = -1, new_fd;
+	slurm_fd_t sock_fd = -1, new_fd;
 	slurm_addr_t cli_addr;
 	char *msg;
 	slurm_ctl_conf_t *conf;
@@ -453,7 +453,7 @@ static size_t	_write_bytes(int fd, char *buf, const size_t size)
  * RET - The message which must be xfreed or
  *       NULL on error
 \*****************************************************************************/
-static char *	_recv_msg(slurm_fd new_fd)
+static char *	_recv_msg(slurm_fd_t new_fd)
 {
 	char header[10];
 	unsigned long size;
@@ -493,7 +493,7 @@ static char *	_recv_msg(slurm_fd new_fd)
  *
  * RET - Number of data bytes written (excludes header)
 \*****************************************************************************/
-static size_t	_send_msg(slurm_fd new_fd, char *buf, size_t size)
+static size_t	_send_msg(slurm_fd_t new_fd, char *buf, size_t size)
 {
 	char header[10];
 	size_t data_sent;
@@ -594,7 +594,7 @@ static int	_parse_msg(char *msg, char **req)
 /*****************************************************************************\
  * Parse, process and respond to a request
 \*****************************************************************************/
-static void	_proc_msg(slurm_fd new_fd, char *msg)
+static void	_proc_msg(slurm_fd_t new_fd, char *msg)
 {
 	DEF_TIMERS;
 	char *req, *cmd_ptr, *msg_type = NULL;
@@ -667,7 +667,7 @@ static void	_proc_msg(slurm_fd new_fd, char *msg)
 	return;
 }
 
-static void	_send_reply(slurm_fd new_fd, char *response)
+static void	_send_reply(slurm_fd_t new_fd, char *response)
 {
 	size_t i;
 	char *buf, sum[20], *tmp;

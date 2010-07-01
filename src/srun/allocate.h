@@ -73,7 +73,7 @@ int cleanup_allocation();
 int allocate_test(void);
 
 /* Set up port to handle messages from slurmctld */
-slurm_fd slurmctld_msg_init(void);
+slurm_fd_t slurmctld_msg_init(void);
 
 /*
  * Create a job_desc_msg_t object, filled in from the current srun options

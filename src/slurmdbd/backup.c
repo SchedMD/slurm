@@ -50,7 +50,7 @@ bool primary_resumed = false;
 bool backup = false;
 bool have_control = false;
 
-static slurm_fd  slurmdbd_fd         = -1;
+static slurm_fd_t  slurmdbd_fd         = -1;
 
 /* Open a connection to the Slurm DBD and set slurmdbd_fd */
 static void _open_slurmdbd_fd(slurm_addr_t dbd_addr)

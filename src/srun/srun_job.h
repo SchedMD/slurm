@@ -137,6 +137,6 @@ extern srun_job_t * job_create_structure(
 void    job_update_io_fnames(srun_job_t *j);
 
 /* Set up port to handle messages from slurmctld */
-slurm_fd slurmctld_msg_init(void);
+slurm_fd_t slurmctld_msg_init(void);
 
 #endif /* !_HAVE_JOB_H */

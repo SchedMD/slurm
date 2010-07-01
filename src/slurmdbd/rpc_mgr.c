@@ -62,9 +62,9 @@
 #define MAX_THREAD_COUNT 50
 
 /* Local functions */
-static bool   _fd_readable(slurm_fd fd);
+static bool   _fd_readable(slurm_fd_t fd);
 static void   _free_server_thread(pthread_t my_tid);
-static int    _send_resp(slurm_fd fd, Buf buffer);
+static int    _send_resp(slurm_fd_t fd, Buf buffer);
 static void * _service_connection(void *arg);
 static void   _sig_handler(int signal);
 static int    _tot_wait (struct timeval *start_time);
@@ -82,7 +82,7 @@ static pthread_cond_t  thread_count_cond = PTHREAD_COND_INITIALIZER;
 extern void *rpc_mgr(void *no_data)
 {
 	pthread_attr_t thread_attr_rpc_req;
-	slurm_fd sockfd, newsockfd;
+	slurm_fd_t sockfd, newsockfd;
 	int i, retry_cnt, sigarray[] = {SIGUSR1, 0};
 	slurm_addr_t cli_addr;
 	slurmdbd_conn_t *conn_arg = NULL;
@@ -270,7 +270,7 @@ extern Buf make_dbd_rc_msg(uint16_t rpc_version,
 	return buffer;
 }
 
-static int _send_resp(slurm_fd fd, Buf buffer)
+static int _send_resp(slurm_fd_t fd, Buf buffer)
 {
 	uint32_t msg_size, nw_size;
 	ssize_t msg_wrote;
@@ -318,7 +318,7 @@ static int _tot_wait (struct timeval *start_time)
 }
 
 /* Wait until a file is readable, return false if can not be read */
-static bool _fd_readable(slurm_fd fd)
+static bool _fd_readable(slurm_fd_t fd)
 {
 	struct pollfd ufds;
 	int rc;
@@ -358,7 +358,7 @@ static bool _fd_readable(slurm_fd fd)
 
 /* Wait until a file is writeable,
  * RET false if can not be written to within 5 seconds */
-extern bool fd_writeable(slurm_fd fd)
+extern bool fd_writeable(slurm_fd_t fd)
 {
 	struct pollfd ufds;
 	int msg_timeout = 5000;

@@ -1949,7 +1949,7 @@ extern int kill_step_on_node(struct job_record  *job_ptr,
  * RET 0 on success, otherwise ESLURM error code
  */
 extern int job_step_checkpoint(checkpoint_msg_t *ckpt_ptr,
-			       uid_t uid, slurm_fd conn_fd,
+			       uid_t uid, slurm_fd_t conn_fd,
 			       uint16_t protocol_version)
 {
 	int rc = SLURM_SUCCESS;
@@ -2028,7 +2028,7 @@ extern int job_step_checkpoint(checkpoint_msg_t *ckpt_ptr,
  * RET 0 on success, otherwise ESLURM error code
  */
 extern int job_step_checkpoint_comp(checkpoint_comp_msg_t *ckpt_ptr,
-				    uid_t uid, slurm_fd conn_fd,
+				    uid_t uid, slurm_fd_t conn_fd,
 				    uint16_t protocol_version)
 {
 	int rc = SLURM_SUCCESS;
@@ -2086,7 +2086,7 @@ extern int job_step_checkpoint_comp(checkpoint_comp_msg_t *ckpt_ptr,
  * RET 0 on success, otherwise ESLURM error code
  */
 extern int job_step_checkpoint_task_comp(checkpoint_task_comp_msg_t *ckpt_ptr,
-					 uid_t uid, slurm_fd conn_fd,
+					 uid_t uid, slurm_fd_t conn_fd,
 					 uint16_t protocol_version)
 {
 	int rc = SLURM_SUCCESS;

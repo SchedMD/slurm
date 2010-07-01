@@ -116,7 +116,7 @@ static pthread_cond_t  active_cond    = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t fork_mutex     = PTHREAD_MUTEX_INITIALIZER;
 
 typedef struct connection {
-	slurm_fd fd;
+	slurm_fd_t fd;
 	slurm_addr_t *cli_addr;
 } conn_t;
 
@@ -137,7 +137,7 @@ static void      _decrement_thd_count(void);
 static void      _destroy_conf(void);
 static int       _drain_node(char *reason);
 static void      _fill_registration_msg(slurm_node_registration_status_msg_t *);
-static void      _handle_connection(slurm_fd fd, slurm_addr_t *client);
+static void      _handle_connection(slurm_fd_t fd, slurm_addr_t *client);
 static void      _hup_handler(int);
 static void      _increment_thd_count(void);
 static void      _init_conf(void);
@@ -385,7 +385,7 @@ static void
 _msg_engine(void)
 {
 	slurm_addr_t *cli;
-	slurm_fd sock;
+	slurm_fd_t sock;
 
 	msg_pthread = pthread_self();
 	slurmd_req(NULL);	/* initialize timer */
@@ -454,7 +454,7 @@ _wait_for_all_threads(void)
 }
 
 static void
-_handle_connection(slurm_fd fd, slurm_addr_t *cli)
+_handle_connection(slurm_fd_t fd, slurm_addr_t *cli)
 {
 	int            rc;
 	pthread_attr_t attr;
@@ -1137,7 +1137,7 @@ _create_msg_socket(void)
 {
 	char* node_addr;
 
-	slurm_fd ld = slurm_init_msg_engine_addrname_port(conf->node_addr,
+	slurm_fd_t ld = slurm_init_msg_engine_addrname_port(conf->node_addr,
 							  conf->port);
 	if (conf->node_addr == NULL)
 		node_addr = "*";

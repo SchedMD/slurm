@@ -100,7 +100,7 @@ static time_t    agent_shutdown = 0;
 
 static pthread_mutex_t slurmdbd_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  slurmdbd_cond = PTHREAD_COND_INITIALIZER;
-static slurm_fd  slurmdbd_fd         = -1;
+static slurm_fd_t  slurmdbd_fd         = -1;
 static char *    slurmdbd_auth_info  = NULL;
 static char *    slurmdbd_cluster    = NULL;
 static bool      rollback_started    = 0;
@@ -109,8 +109,8 @@ static bool      halt_agent          = 0;
 static void * _agent(void *x);
 static void   _close_slurmdbd_fd(void);
 static void   _create_agent(void);
-static bool   _fd_readable(slurm_fd fd, int read_timeout);
-static int    _fd_writeable(slurm_fd fd);
+static bool   _fd_readable(slurm_fd_t fd, int read_timeout);
+static int    _fd_writeable(slurm_fd_t fd);
 static int    _get_return_code(uint16_t rpc_version, int read_timeout);
 static Buf    _load_dbd_rec(int fd);
 static void   _load_dbd_state(void);
@@ -1733,7 +1733,7 @@ static int _tot_wait (struct timeval *start_time)
 
 /* Wait until a file is readable,
  * RET false if can not be read */
-static bool _fd_readable(slurm_fd fd, int read_timeout)
+static bool _fd_readable(slurm_fd_t fd, int read_timeout)
 {
 	struct pollfd ufds;
 	int rc, time_left;
@@ -1781,7 +1781,7 @@ static bool _fd_readable(slurm_fd fd, int read_timeout)
  *     0 if can not be written to within 5 seconds
  *     -1 if file has been closed POLLHUP
  */
-static int _fd_writeable(slurm_fd fd)
+static int _fd_writeable(slurm_fd_t fd)
 {
 	struct pollfd ufds;
 	int write_timeout = 5000;

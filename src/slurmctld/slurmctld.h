@@ -845,7 +845,7 @@ extern int job_cancel_by_assoc_id(uint32_t assoc_id);
 
 /* Perform checkpoint operation on a job */
 extern int job_checkpoint(checkpoint_msg_t *ckpt_ptr, uid_t uid,
-			  slurm_fd conn_fd, uint16_t protocol_version);
+			  slurm_fd_t conn_fd, uint16_t protocol_version);
 
 /* log the completion of the specified job */
 extern void job_completion_logger(struct job_record  *job_ptr, bool requeue);
@@ -908,7 +908,7 @@ extern void job_post_resize_acctg(struct job_record *job_ptr);
  * RET 0 on success, otherwise ESLURM error code
  */
 extern int job_restart(checkpoint_msg_t *ckpt_ptr, uid_t uid,
-		       slurm_fd conn_fd, uint16_t protocol_version);
+		       slurm_fd_t conn_fd, uint16_t protocol_version);
 
 /*
  * job_signal - signal the specified job
@@ -943,7 +943,7 @@ extern int job_step_cancel (uint32_t job_id, uint32_t job_step_id, uid_t uid );
  * RET 0 on success, otherwise ESLURM error code
  */
 extern int job_step_checkpoint(checkpoint_msg_t *ckpt_ptr,
-		uid_t uid, slurm_fd conn_fd, uint16_t protocol_version);
+		uid_t uid, slurm_fd_t conn_fd, uint16_t protocol_version);
 
 /*
  * job_step_checkpoint_comp - note job step checkpoint completion
@@ -954,7 +954,7 @@ extern int job_step_checkpoint(checkpoint_msg_t *ckpt_ptr,
  * RET 0 on success, otherwise ESLURM error code
  */
 extern int job_step_checkpoint_comp(checkpoint_comp_msg_t *ckpt_ptr,
-		uid_t uid, slurm_fd conn_fd, uint16_t protocol_version);
+		uid_t uid, slurm_fd_t conn_fd, uint16_t protocol_version);
 /*
  * job_step_checkpoint_task_comp - note task checkpoint completion
  * IN ckpt_ptr - checkpoint task complete status message
@@ -964,7 +964,7 @@ extern int job_step_checkpoint_comp(checkpoint_comp_msg_t *ckpt_ptr,
  * RET 0 on success, otherwise ESLURM error code
  */
 extern int job_step_checkpoint_task_comp(checkpoint_task_comp_msg_t *ckpt_ptr,
-                uid_t uid, slurm_fd conn_fd, uint16_t protocol_version);
+                uid_t uid, slurm_fd_t conn_fd, uint16_t protocol_version);
 
 /*
  * job_suspend - perform some suspend/resume operation
@@ -980,7 +980,7 @@ extern int job_step_checkpoint_task_comp(checkpoint_task_comp_msg_t *ckpt_ptr,
  * RET 0 on success, otherwise ESLURM error code
  */
 extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
-		       slurm_fd conn_fd, bool clear_prio,
+		       slurm_fd_t conn_fd, bool clear_prio,
 		       uint16_t protocol_version);
 
 /*
@@ -1024,7 +1024,7 @@ extern int job_req_node_filter(struct job_record *job_ptr,
  * IN protocol_version - slurm protocol version of client
  * RET 0 on success, otherwise ESLURM error code
  */
-extern int job_requeue (uid_t uid, uint32_t job_id, slurm_fd conn_fd,
+extern int job_requeue (uid_t uid, uint32_t job_id, slurm_fd_t conn_fd,
 			uint16_t protocol_version);
 
 /*
