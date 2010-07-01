@@ -159,7 +159,7 @@ typedef struct slurm_select_context {
 static int select_context_cnt = -1;
 static int select_context_default = -1;
 /* If there is a new select plugin, list it here */
-static char *select_plugin_list = "bluegene,cons_res,linear";
+static char *select_plugin_list = "bgq,bluegene,cons_res,linear";
 static slurm_select_context_t * select_context = NULL;
 static pthread_mutex_t		select_context_lock =
 	PTHREAD_MUTEX_INITIALIZER;
@@ -346,7 +346,6 @@ extern int slurm_select_init(void)
 	one_name = strtok_r(names, ",", &last);
 	while (one_name) {
 		full_name = xstrdup_printf("select/%s", one_name);
-		info("trying %s", full_name);
 		for (i=0; i<select_context_cnt; i++) {
 			if (!strcmp(full_name, select_context[i].select_type))
 				break;
