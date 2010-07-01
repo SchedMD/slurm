@@ -76,6 +76,9 @@ int main (int argc, char *argv[])
 	job_req.time_limit = 1;
 	if (slurm_allocate_resources(&job_req, &job_resp)) {
 		slurm_perror ("slurm_allocate_resources");
+		printf("INFO: min_nodes=%u max_nodes=%u user_id=%u group_id=%u",
+		       job_req.min_nodes, job_req.max_nodes,
+		       job_req.user_id, job_req.group_id);
 		exit(0);
 	}
 	printf("job_id %u\n", job_resp->job_id);

@@ -239,7 +239,7 @@ static char *   _dump_all_jobs(int *job_cnt, time_t update_time)
 static char *	_dump_job(struct job_record *job_ptr, time_t update_time)
 {
 	char *buf = NULL, tmp[16384];
-	char *gname, *quote, *uname;
+	char *gname, *pname, *quote, *uname;
 	uint32_t end_time, suspend_time, min_mem;
 	int i, rej_sent = 0;
 
@@ -355,11 +355,14 @@ static char *	_dump_job(struct job_record *job_ptr, time_t update_time)
 		_get_job_cpus_per_task(job_ptr));
 	xstrcat(buf, tmp);
 
+	if (job_ptr->part_ptr)
+		pname = job_ptr->part_ptr->name;
+	else
+		pname = "UNKNOWN";	/* should never see this */
 	snprintf(tmp, sizeof(tmp),
 		"QUEUETIME=%u;STARTTIME=%u;RCLASS=%s;",
 		_get_job_submit_time(job_ptr),
-		(uint32_t) job_ptr->start_time,
-		job_ptr->partition);
+		(uint32_t) job_ptr->start_time, pname);
 	xstrcat(buf, tmp);
 
 	min_mem = _get_pn_min_mem(job_ptr);

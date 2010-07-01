@@ -408,6 +408,7 @@ static void _attempt_backfill(void)
 {
 	bool filter_root = false;
 	List job_queue;
+	job_queue_rec_t *job_queue_rec;
 	ListIterator job_iterator;
 	int i, j, node_space_recs;
 	struct job_record *job_ptr;
@@ -442,22 +443,16 @@ static void _attempt_backfill(void)
 	job_iterator = list_iterator_create(job_queue);
 	if (job_iterator == NULL)
 		fatal("list_iterator_create memory allocation failure");
-	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+	while ((job_queue_rec = (job_queue_rec_t *) list_next(job_iterator))) {
+		job_ptr  = job_queue_rec->job_ptr;
+		if (!IS_JOB_PENDING(job_ptr))
+			continue;	/* started in other partition */
+		job_ptr->part_ptr = job_queue_rec->part_ptr;
 		part_ptr = job_ptr->part_ptr;
+
 		if (debug_flags & DEBUG_FLAG_BACKFILL)
 			info("backfill test for job %u", job_ptr->job_id);
 
-		if (part_ptr == NULL) {
-			part_ptr = find_part_record(job_ptr->partition);
-			if (part_ptr == NULL) {
-				error("Could not find partition %s for job %u",
-				      job_ptr->partition, job_ptr->job_id);
-				continue;
-			}
-			job_ptr->part_ptr = part_ptr;
-			error("partition pointer reset for job %u, part %s",
-			      job_ptr->job_id, job_ptr->partition);
-		}
 		if (((part_ptr->state_up & PARTITION_SCHED) == 0) ||
 		    (part_ptr->node_bitmap == NULL))
 		 	continue;
