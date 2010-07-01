@@ -286,7 +286,7 @@ extern int
 cluster_first_reg(char *host, uint16_t port, uint16_t rpc_version)
 {
 	slurm_addr_t ctld_address;
-	slurm_fd fd;
+	slurm_fd_t fd;
 	int rc = SLURM_SUCCESS;
 
 	info("First time to register cluster requesting "

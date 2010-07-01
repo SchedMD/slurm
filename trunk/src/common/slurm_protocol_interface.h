@@ -106,7 +106,7 @@ typedef enum slurm_socket_type {
 /* Create a socket of the specified type
  * IN type - SLURM_STREAM or SLURM_MESSAGE
  */
-slurm_fd _slurm_create_socket (slurm_socket_type_t type)  ;
+slurm_fd_t _slurm_create_socket (slurm_socket_type_t type)  ;
 
 /*****************/
 /* msg functions */
@@ -118,7 +118,7 @@ slurm_fd _slurm_create_socket (slurm_socket_type_t type)  ;
  * IN slurm_address - address to bind to
  * RET file descriptor
  */
-slurm_fd _slurm_init_msg_engine ( slurm_addr_t * slurm_address ) ;
+slurm_fd_t _slurm_init_msg_engine ( slurm_addr_t * slurm_address ) ;
 
 /* _slurm_open_msg_conn
  * In the bsd socket implementation it creates a SOCK_STREAM socket
@@ -130,7 +130,7 @@ slurm_fd _slurm_init_msg_engine ( slurm_addr_t * slurm_address ) ;
  * RET file descriptor
  */
 
-slurm_fd _slurm_open_msg_conn ( slurm_addr_t * slurm_address ) ;
+slurm_fd_t _slurm_open_msg_conn ( slurm_addr_t * slurm_address ) ;
 
 /* _slurm_msg_recvfrom
  * Get message over the given connection, default timeout value
@@ -141,14 +141,14 @@ slurm_fd _slurm_open_msg_conn ( slurm_addr_t * slurm_address ) ;
  *
  * RET number of bytes read
  */
-ssize_t _slurm_msg_recvfrom(slurm_fd fd, char **pbuf, size_t *buflen,
+ssize_t _slurm_msg_recvfrom(slurm_fd_t fd, char **pbuf, size_t *buflen,
 		            uint32_t flags);
 
 /* _slurm_msg_recvfrom_timeout reads len bytes from file descriptor fd
  * timing out after `timeout' milliseconds.
  *
  */
-ssize_t _slurm_msg_recvfrom_timeout(slurm_fd fd, char **buf, size_t *len,
+ssize_t _slurm_msg_recvfrom_timeout(slurm_fd_t fd, char **buf, size_t *len,
 		                    uint32_t flags, int timeout);
 
 /* _slurm_msg_sendto
@@ -159,11 +159,11 @@ ssize_t _slurm_msg_recvfrom_timeout(slurm_fd fd, char **buf, size_t *len,
  * IN flags - communication specific flags
  * RET number of bytes written
  */
-ssize_t _slurm_msg_sendto ( slurm_fd open_fd, char *buffer ,
+ssize_t _slurm_msg_sendto ( slurm_fd_t open_fd, char *buffer ,
 			    size_t size , uint32_t flags ) ;
 /* _slurm_msg_sendto_timeout is identical to _slurm_msg_sendto except
  * IN timeout - maximum time to wait for a message in milliseconds */
-ssize_t _slurm_msg_sendto_timeout ( slurm_fd open_fd, char *buffer,
+ssize_t _slurm_msg_sendto_timeout ( slurm_fd_t open_fd, char *buffer,
 				    size_t size, uint32_t flags, int timeout );
 
 /* _slurm_accept_msg_conn
@@ -172,7 +172,7 @@ ssize_t _slurm_msg_sendto_timeout ( slurm_fd open_fd, char *buffer,
  * OUT slurm_address 	- slurm_addr_t of the accepted connection
  * RET slurm_fd		- file descriptor of the connection created
  */
-slurm_fd _slurm_accept_msg_conn ( slurm_fd open_fd ,
+slurm_fd_t _slurm_accept_msg_conn ( slurm_fd_t open_fd ,
 				  slurm_addr_t * slurm_address ) ;
 
 
@@ -182,7 +182,7 @@ slurm_fd _slurm_accept_msg_conn ( slurm_fd open_fd ,
  * IN open_fd		- an open file descriptor to close
  * RET int		- the return code
  */
-int _slurm_close_accepted_conn ( slurm_fd open_fd ) ;
+int _slurm_close_accepted_conn ( slurm_fd_t open_fd ) ;
 
 /********************/
 /* stream functions */
@@ -193,7 +193,7 @@ int _slurm_close_accepted_conn ( slurm_fd open_fd ) ;
  * IN slurm_address 	- slurm_addr_t to bind the server stream to
  * RET slurm_fd		- file descriptor of the stream created
  */
-slurm_fd _slurm_listen_stream ( slurm_addr_t * slurm_address ) ;
+slurm_fd_t _slurm_listen_stream ( slurm_addr_t * slurm_address ) ;
 
 /* _slurm_accept_stream
  * accepts a incoming stream connection on a stream server slurm_fd
@@ -201,7 +201,7 @@ slurm_fd _slurm_listen_stream ( slurm_addr_t * slurm_address ) ;
  * OUT slurm_address 	- slurm_addr_t of the accepted connection
  * RET slurm_fd		- file descriptor of the accepted connection
  */
-slurm_fd _slurm_accept_stream ( slurm_fd open_fd ,
+slurm_fd_t _slurm_accept_stream ( slurm_fd_t open_fd ,
 				slurm_addr_t * slurm_address ) ;
 
 /* _slurm_open_stream
@@ -209,16 +209,16 @@ slurm_fd _slurm_accept_stream ( slurm_fd open_fd ,
  * IN slurm_address 	- slurm_addr_t of the connection destination
  * IN retry             - if true, retry as needed with various ports
  *                        to avoid socket address collision
- * RET slurm_fd         - file descriptor of the connection created
+ * RET slurm_fd_t         - file descriptor of the connection created
  */
-slurm_fd _slurm_open_stream ( slurm_addr_t * slurm_address, bool retry ) ;
+slurm_fd_t _slurm_open_stream ( slurm_addr_t * slurm_address, bool retry ) ;
 
 /* _slurm_get_stream_addr
  * esentially a encapsilated get_sockname
  * IN open_fd 		- file descriptor to retreive slurm_addr_t for
  * OUT address		- address that open_fd to bound to
  */
-extern int _slurm_get_stream_addr ( slurm_fd open_fd ,
+extern int _slurm_get_stream_addr ( slurm_fd_t open_fd ,
 				    slurm_addr_t * address ) ;
 
 /* _slurm_close_stream
@@ -226,19 +226,19 @@ extern int _slurm_get_stream_addr ( slurm_fd open_fd ,
  * IN open_fd	- an open file descriptor to close
  * RET int	- the return code
  */
-extern int _slurm_close_stream ( slurm_fd open_fd ) ;
+extern int _slurm_close_stream ( slurm_fd_t open_fd ) ;
 
 /* make an open slurm connection blocking or non-blocking
  *	(i.e. wait or do not wait for i/o completion )
  * IN open_fd	- an open file descriptor to change the effect
  * RET int	- the return code
  */
-extern inline int _slurm_set_stream_non_blocking ( slurm_fd open_fd ) ;
-extern inline int _slurm_set_stream_blocking ( slurm_fd open_fd ) ;
+extern inline int _slurm_set_stream_non_blocking ( slurm_fd_t open_fd ) ;
+extern inline int _slurm_set_stream_blocking ( slurm_fd_t open_fd ) ;
 
-int _slurm_send_timeout ( slurm_fd open_fd, char *buffer ,
+int _slurm_send_timeout ( slurm_fd_t open_fd, char *buffer ,
 			  size_t size , uint32_t flags, int timeout ) ;
-int _slurm_recv_timeout ( slurm_fd open_fd, char *buffer ,
+int _slurm_recv_timeout ( slurm_fd_t open_fd, char *buffer ,
 			  size_t size , uint32_t flags, int timeout ) ;
 
 /***************************/

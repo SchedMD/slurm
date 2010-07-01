@@ -156,7 +156,7 @@ int
 _send_message_controller (enum controller_id dest, slurm_msg_t *req)
 {
 	int rc = SLURM_PROTOCOL_SUCCESS;
-	slurm_fd fd = -1;
+	slurm_fd_t fd = -1;
 	slurm_msg_t *resp_msg = NULL;
 
 	/* always going to one node (primary or backup per value of "dest") */

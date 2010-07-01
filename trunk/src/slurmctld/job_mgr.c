@@ -7454,7 +7454,7 @@ static int _resume_job_nodes(struct job_record *job_ptr, bool clear_prio)
  * RET 0 on success, otherwise ESLURM error code
  */
 extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
-		       slurm_fd conn_fd, bool clear_prio,
+		       slurm_fd_t conn_fd, bool clear_prio,
 		       uint16_t protocol_version)
 {
 	int rc = SLURM_SUCCESS;
@@ -7580,7 +7580,7 @@ extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
  * IN protocol_version - slurm protocol version of client
  * RET 0 on success, otherwise ESLURM error code
  */
-extern int job_requeue (uid_t uid, uint32_t job_id, slurm_fd conn_fd,
+extern int job_requeue (uid_t uid, uint32_t job_id, slurm_fd_t conn_fd,
 			uint16_t protocol_version)
 {
 	int rc = SLURM_SUCCESS;
@@ -8463,7 +8463,7 @@ extern int send_jobs_to_accounting(void)
 
 /* Perform checkpoint operation on a job */
 extern int job_checkpoint(checkpoint_msg_t *ckpt_ptr, uid_t uid,
-			  slurm_fd conn_fd, uint16_t protocol_version)
+			  slurm_fd_t conn_fd, uint16_t protocol_version)
 {
 	int rc = SLURM_SUCCESS;
 	struct job_record *job_ptr;
@@ -8850,7 +8850,7 @@ _copy_job_record_to_job_desc(struct job_record *job_ptr)
  * IN protocol_version - slurm protocol version of client
  * RET 0 on success, otherwise ESLURM error code
  */
-extern int job_restart(checkpoint_msg_t *ckpt_ptr, uid_t uid, slurm_fd conn_fd,
+extern int job_restart(checkpoint_msg_t *ckpt_ptr, uid_t uid, slurm_fd_t conn_fd,
 		       uint16_t protocol_version)
 {
 	struct job_record *job_ptr;

@@ -197,7 +197,7 @@ struct task_read_info {
 struct window_info {
 	slurmd_task_info_t *task;
 	slurmd_job_t *job;
-	slurm_fd pty_fd;
+	slurm_fd_t pty_fd;
 };
 #ifdef HAVE_PTY_H
 static void  _spawn_window_manager(slurmd_task_info_t *task, slurmd_job_t *job);
@@ -866,7 +866,7 @@ static void
 _spawn_window_manager(slurmd_task_info_t *task, slurmd_job_t *job)
 {
 	char *host, *port, *rows, *cols;
-	slurm_fd pty_fd;
+	slurm_fd_t pty_fd;
 	slurm_addr_t pty_addr;
 	uint16_t port_u;
 	struct window_info *win_info;

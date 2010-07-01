@@ -841,9 +841,9 @@ static void _sig_handler(int signal)
 /* _slurmctld_rpc_mgr - Read incoming RPCs and create pthread for each */
 static void *_slurmctld_rpc_mgr(void *no_data)
 {
-	slurm_fd newsockfd;
-	slurm_fd maxsockfd;
-	slurm_fd *sockfd;	/* our set of socket file descriptors */
+	slurm_fd_t newsockfd;
+	slurm_fd_t maxsockfd;
+	slurm_fd_t *sockfd;	/* our set of socket file descriptors */
 	slurm_addr_t cli_addr, srv_addr;
 	uint16_t port;
 	char ip[32];
@@ -886,7 +886,7 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 	lock_slurmctld(config_read_lock);
 	nports = slurmctld_conf.slurmctld_port_count;
 	maxsockfd = slurmctld_conf.slurmctld_port + nports;
-	sockfd = xmalloc(sizeof(slurm_fd) * nports);
+	sockfd = xmalloc(sizeof(slurm_fd_t) * nports);
 	for (i=0; i<nports; i++) {
 		sockfd[i] = slurm_init_msg_engine_addrname_port(
 					node_addr,

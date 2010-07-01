@@ -606,7 +606,7 @@ uint16_t slurm_get_task_plugin_param(void);
  * IN port		- port to bind the msg server to
  * RET slurm_fd		- file descriptor of the connection created
  */
-slurm_fd inline slurm_init_msg_engine_port(uint16_t port);
+slurm_fd_t inline slurm_init_msg_engine_port(uint16_t port);
 
 /* In the socket implementation it creates a socket, binds to it, and
  *	listens for connections.
@@ -615,7 +615,7 @@ slurm_fd inline slurm_init_msg_engine_port(uint16_t port);
  * IN port		- port to bind the msg server to
  * RET slurm_fd		- file descriptor of the connection created
  */
-slurm_fd inline slurm_init_msg_engine_addrname_port(char *addr_name,
+slurm_fd_t inline slurm_init_msg_engine_addrname_port(char *addr_name,
 						    uint16_t port);
 
 /* In the socket implementation it creates a socket, binds to it, and
@@ -623,14 +623,14 @@ slurm_fd inline slurm_init_msg_engine_addrname_port(char *addr_name,
  * IN slurm_address 	- slurm_addr_t to bind the msg server to
  * RET slurm_fd		- file descriptor of the connection created
  */
-slurm_fd inline slurm_init_msg_engine(slurm_addr_t * slurm_address);
+slurm_fd_t inline slurm_init_msg_engine(slurm_addr_t * slurm_address);
 
 /* In the bsd implmentation maps directly to a accept call
  * IN open_fd		- file descriptor to accept connection on
  * OUT slurm_address 	- slurm_addr_t of the accepted connection
  * RET slurm_fd		- file descriptor of the connection created
  */
-slurm_fd inline slurm_accept_msg_conn(slurm_fd open_fd,
+slurm_fd_t inline slurm_accept_msg_conn(slurm_fd_t open_fd,
 				      slurm_addr_t * slurm_address);
 
 /* In the bsd implmentation maps directly to a close call, to close
@@ -638,13 +638,13 @@ slurm_fd inline slurm_accept_msg_conn(slurm_fd open_fd,
  * IN open_fd		- an open file descriptor to close
  * RET int		- the return code
  */
-int inline slurm_close_accepted_conn(slurm_fd open_fd);
+int inline slurm_close_accepted_conn(slurm_fd_t open_fd);
 
 /* just calls close on an established msg connection
  * IN open_fd	- an open file descriptor to close
  * RET int	- the return code
  */
-int inline slurm_shutdown_msg_engine(slurm_fd open_fd);
+int inline slurm_shutdown_msg_engine(slurm_fd_t open_fd);
 
 /**********************************************************************\
  * receive message functions
@@ -664,7 +664,7 @@ int inline slurm_shutdown_msg_engine(slurm_fd open_fd);
  * IN timeout	- how long to wait in milliseconds
  * RET int	- returns 0 on success, -1 on failure and sets errno
  */
-int slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout);
+int slurm_receive_msg(slurm_fd_t fd, slurm_msg_t *msg, int timeout);
 
 /*
  *  Receive a slurm message on the open slurm descriptor "fd" waiting
@@ -681,7 +681,7 @@ int slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout);
  *                (ret_data_info_t). NULL is returned on failure. and
  *                errno set.
  */
-List slurm_receive_msgs(slurm_fd fd, int steps, int timeout);
+List slurm_receive_msgs(slurm_fd_t fd, int steps, int timeout);
 
 /*
  *  Receive a slurm message on the open slurm descriptor "fd" waiting
@@ -700,7 +700,7 @@ List slurm_receive_msgs(slurm_fd fd, int steps, int timeout);
  * IN timeout	- how long to wait in milliseconds
  * RET int	- returns 0 on success, -1 on failure and sets errno
  */
-int slurm_receive_msg_and_forward(slurm_fd fd, slurm_addr_t *orig_addr,
+int slurm_receive_msg_and_forward(slurm_fd_t fd, slurm_addr_t *orig_addr,
 				  slurm_msg_t *resp, int timeout);
 
 /**********************************************************************\
@@ -713,7 +713,7 @@ int slurm_receive_msg_and_forward(slurm_fd fd, slurm_addr_t *orig_addr,
  * IN msg		- a slurm msg struct to be sent
  * RET int		- size of msg sent in bytes
  */
-int slurm_send_node_msg(slurm_fd open_fd, slurm_msg_t *msg);
+int slurm_send_node_msg(slurm_fd_t open_fd, slurm_msg_t *msg);
 
 /**********************************************************************\
  * msg connection establishment functions used by msg clients
@@ -724,8 +724,8 @@ int slurm_send_node_msg(slurm_fd open_fd, slurm_msg_t *msg);
  * IN/OUT addr     - address of controller contacted
  * RET slurm_fd	- file descriptor of the connection created
  */
-slurm_fd inline slurm_open_controller_conn(slurm_addr_t *addr);
-slurm_fd inline slurm_open_controller_conn_spec(enum controller_id dest);
+slurm_fd_t inline slurm_open_controller_conn(slurm_addr_t *addr);
+slurm_fd_t inline slurm_open_controller_conn_spec(enum controller_id dest);
 /* gets the slurm_addr_t of the specified controller
  *	primary or secondary slurmctld message engine
  * IN dest      - controller to contact, primary or secondary
@@ -742,13 +742,13 @@ void slurm_get_controller_addr_spec(enum controller_id dest,
  * IN slurm_address 	- slurm_addr_t of the connection destination
  * RET slurm_fd		- file descriptor of the connection created
  */
-slurm_fd inline slurm_open_msg_conn(slurm_addr_t * slurm_address);
+slurm_fd_t inline slurm_open_msg_conn(slurm_addr_t * slurm_address);
 
 /* just calls close on an established msg connection to close
  * IN open_fd	- an open file descriptor to close
  * RET int	- the return code
  */
-int inline slurm_shutdown_msg_conn(slurm_fd open_fd);
+int inline slurm_shutdown_msg_conn(slurm_fd_t open_fd);
 
 
 /**********************************************************************\
@@ -760,7 +760,7 @@ int inline slurm_shutdown_msg_conn(slurm_fd open_fd);
  * IN slurm_address 	- slurm_addr_t to bind the server stream to
  * RET slurm_fd		- file descriptor of the stream created
  */
-slurm_fd inline slurm_listen_stream(slurm_addr_t * slurm_address);
+slurm_fd_t inline slurm_listen_stream(slurm_addr_t * slurm_address);
 
 /* slurm_accept_stream
  * accepts a incoming stream connection on a stream server slurm_fd
@@ -768,22 +768,22 @@ slurm_fd inline slurm_listen_stream(slurm_addr_t * slurm_address);
  * OUT slurm_address 	- slurm_addr_t of the accepted connection
  * RET slurm_fd		- file descriptor of the accepted connection
  */
-slurm_fd inline slurm_accept_stream(slurm_fd open_fd,
+slurm_fd_t inline slurm_accept_stream(slurm_fd_t open_fd,
 				    slurm_addr_t * slurm_address);
 
 /* slurm_open_stream
  * opens a client connection to stream server
  * IN slurm_address 	- slurm_addr_t of the connection destination
- * RET slurm_fd         - file descriptor of the connection created
+ * RET slurm_fd_t         - file descriptor of the connection created
  */
-slurm_fd inline slurm_open_stream(slurm_addr_t * slurm_address);
+slurm_fd_t inline slurm_open_stream(slurm_addr_t * slurm_address);
 
 /* slurm_close_stream
  * closes either a server or client stream file_descriptor
  * IN open_fd	- an open file descriptor to close
  * RET int	- the return code
  */
-int inline slurm_close_stream(slurm_fd open_fd);
+int inline slurm_close_stream(slurm_fd_t open_fd);
 
 /* slurm_write_stream
  * writes a buffer out a stream file descriptor
@@ -793,9 +793,9 @@ int inline slurm_close_stream(slurm_fd open_fd);
  * IN timeout		- how long to wait in milliseconds
  * RET size_t		- bytes sent , or -1 on errror
  */
-size_t inline slurm_write_stream(slurm_fd open_fd, char *buffer,
+size_t inline slurm_write_stream(slurm_fd_t open_fd, char *buffer,
 				 size_t size);
-size_t inline slurm_write_stream_timeout(slurm_fd open_fd,
+size_t inline slurm_write_stream_timeout(slurm_fd_t open_fd,
 					 char *buffer, size_t size,
 					 int timeout);
 
@@ -807,9 +807,9 @@ size_t inline slurm_write_stream_timeout(slurm_fd open_fd,
  * IN timeout		- how long to wait in milliseconds
  * RET size_t		- bytes read , or -1 on errror
  */
-size_t inline slurm_read_stream(slurm_fd open_fd, char *buffer,
+size_t inline slurm_read_stream(slurm_fd_t open_fd, char *buffer,
 				size_t size);
-size_t inline slurm_read_stream_timeout(slurm_fd open_fd,
+size_t inline slurm_read_stream_timeout(slurm_fd_t open_fd,
 					char *buffer, size_t size,
 					int timeout);
 
@@ -818,15 +818,15 @@ size_t inline slurm_read_stream_timeout(slurm_fd open_fd,
  * IN open_fd 		- file descriptor to retreive slurm_addr_t for
  * OUT address		- address that open_fd to bound to
  */
-int inline slurm_get_stream_addr(slurm_fd open_fd, slurm_addr_t * address);
+int inline slurm_get_stream_addr(slurm_fd_t open_fd, slurm_addr_t * address);
 
 /* make an open slurm connection blocking or non-blocking
  *	(i.e. wait or do not wait for i/o completion )
  * IN open_fd	- an open file descriptor to change the effect
  * RET int	- the return code
  */
-int inline slurm_set_stream_non_blocking(slurm_fd open_fd);
-int inline slurm_set_stream_blocking(slurm_fd open_fd);
+int inline slurm_set_stream_non_blocking(slurm_fd_t open_fd);
+int inline slurm_set_stream_blocking(slurm_fd_t open_fd);
 
 /**********************************************************************\
  * address conversion and management functions
@@ -898,7 +898,7 @@ void inline slurm_get_ip_str(slurm_addr_t * slurm_address, uint16_t * port,
  * IN fd		- an open connection
  * OUT slurm_address	- place to park the peer's slurm_addr
  */
-int inline slurm_get_peer_addr(slurm_fd fd, slurm_addr_t * slurm_address);
+int inline slurm_get_peer_addr(slurm_fd_t fd, slurm_addr_t * slurm_address);
 
 /* slurm_print_slurm_addr
  * prints a slurm_addr_t into a buf

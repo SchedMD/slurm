@@ -42,7 +42,7 @@
 #include "src/common/pack.h"
 #include "src/common/assoc_mgr.h"
 
-extern bool fd_writeable(slurm_fd fd);
+extern bool fd_writeable(slurm_fd_t fd);
 
 /* Return a buffer containing a DBD_RC (return code) message
  * caller must free returned buffer */

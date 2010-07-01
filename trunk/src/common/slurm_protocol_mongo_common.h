@@ -62,7 +62,7 @@
 /* LINUX SPECIFIC */
 /* this is the slurm equivalent of the operating system file descriptor,
  * which in linux is just an int */
-typedef uint32_t slurm_fd ;
+typedef uint32_t slurm_fd_t ;
 
 /* this is the slurm equivalent of the BSD sockets sockaddr */
 typedef struct mongo_addr_t slurm_addr_t ;
