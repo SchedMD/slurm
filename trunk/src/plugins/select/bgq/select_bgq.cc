@@ -65,7 +65,7 @@ extern "C" {
  */
 extern "C" const char plugin_name[]       	= "BG/Q node selection plugin";
 extern "C" const char plugin_type[]       	= "select/bgq";
-extern "C" const uint32_t plugin_id	= 103;
+extern "C" const uint32_t plugin_id     	= 103;
 extern "C" const uint32_t plugin_version	= 100;
 
 /*
