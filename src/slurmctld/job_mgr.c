@@ -224,7 +224,7 @@ struct job_record *create_job_record(int *error_code)
 	job_ptr    = (struct job_record *) xmalloc(sizeof(struct job_record));
 	detail_ptr = (struct job_details *)xmalloc(sizeof(struct job_details));
 
-	xassert (job_ptr->magic = JOB_MAGIC); /* sets value */
+	job_ptr->magic = JOB_MAGIC;
 	job_ptr->details = detail_ptr;
 	job_ptr->step_list = list_create(NULL);
 	if (job_ptr->step_list == NULL)
@@ -4335,6 +4335,7 @@ static void _list_delete_job(void *job_entry)
 	xfree(job_ptr->licenses);
 	if (job_ptr->license_list)
 		list_destroy(job_ptr->license_list);
+	job_ptr->magic = 0;
 	xfree(job_ptr->mail_user);
 	xfree(job_ptr->name);
 	xfree(job_ptr->network);
