@@ -1703,7 +1703,7 @@ extern void rebuild_job_part_list(struct job_record *job_ptr)
 		if (part_ptr == job_ptr->part_ptr)
 			continue;
 		xstrcat(job_ptr->partition, ",");
-		xstrcat(job_ptr->partition, job_ptr->part_ptr->name);
+		xstrcat(job_ptr->partition, part_ptr->name);
 	}
 	list_iterator_destroy(part_iterator);
 }
