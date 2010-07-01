@@ -27,6 +27,7 @@ AC_CONFIG_HEADERS([slurm/slurm.h])
 dnl This needs to be close to the front to set CFLAGS=-m64
 X_AC_BGL
 X_AC_BGP
+X_AC_BGQ
 AM_CONDITIONAL(BLUEGENE_LOADED, test "x$ac_bluegene_loaded" = "xyes")
 AC_SUBST(BLUEGENE_LOADED)
 
@@ -38,9 +39,9 @@ dnl aliases for plugins.
 dnl
 case "$host" in
 	*-*-aix*) AC_DEFINE(USE_ALIAS, 0,
-                 	[Define slurm_ prefix function aliases for plusins]) ;;
+                 	[Define slurm_ prefix function aliases for plugins]) ;;
 	*darwin*) AC_DEFINE(USE_ALIAS, 0,
-                  	[Define slurm_ prefix function aliases for plusins]) ;;
+                  	[Define slurm_ prefix function aliases for plugins]) ;;
 	*)        AC_DEFINE(USE_ALIAS, 1,
 			[Define slurm_ prefix function aliases for plugins]) ;;
 esac

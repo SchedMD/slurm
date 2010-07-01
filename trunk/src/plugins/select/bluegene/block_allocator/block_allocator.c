@@ -1215,7 +1215,7 @@ extern void ba_update_node_state(ba_node_t *ba_node, uint16_t state)
 		ba_init(NULL, 1);
 	}
 
-#ifdef HAVE_BG
+#ifdef HAVE_BG_L_P
 	debug2("ba_update_node_state: new state of [%c%c%c] is %s",
 	       alpha_num[ba_node->coord[X]], alpha_num[ba_node->coord[Y]],
 	       alpha_num[ba_node->coord[Z]], node_state_string(state));
@@ -1261,7 +1261,7 @@ extern int copy_node_path(List nodes, List *dest_nodes)
 {
 	int rc = SLURM_ERROR;
 
-#ifdef HAVE_BG
+#ifdef HAVE_BG_L_P
 	ListIterator itr = NULL;
 	ListIterator itr2 = NULL;
 	ba_node_t *ba_node = NULL, *new_ba_node = NULL;
@@ -1474,7 +1474,7 @@ extern int check_and_set_node_list(List nodes)
 {
 	int rc = SLURM_ERROR;
 
-#ifdef HAVE_BG
+#ifdef HAVE_BG_L_P
 	int i, j;
 	ba_switch_t *ba_switch = NULL, *curr_ba_switch = NULL;
 	ba_node_t *ba_node = NULL, *curr_ba_node = NULL;
@@ -1745,7 +1745,7 @@ extern int reset_ba_system(bool track_down_nodes)
  */
 extern int removable_set_bps(char *bps)
 {
-#ifdef HAVE_BG
+#ifdef HAVE_BG_L_P
 	int j=0, number;
 	int x;
 	int y,z;
@@ -4618,7 +4618,7 @@ static int _remove_node(List results, int *node_tar)
 	itr = list_iterator_create(results);
 	while((ba_node = (ba_node_t*) list_next(itr))) {
 
-#ifdef HAVE_BG
+#ifdef HAVE_BG_L_P
 		if(node_tar[X] == ba_node->coord[X]
 		   && node_tar[Y] == ba_node->coord[Y]
 		   && node_tar[Z] == ba_node->coord[Z]) {

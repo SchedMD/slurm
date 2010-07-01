@@ -53,7 +53,7 @@ bool wait_full = false;
 static int _get_new_info_block(block_info_msg_t **block_ptr)
 {
 	int error_code = SLURM_NO_CHANGE_IN_DATA;
-#ifdef HAVE_BG
+#ifdef HAVE_BG_L_P
 	static block_info_msg_t *bg_info_ptr = NULL;
 	static block_info_msg_t *new_bg_ptr = NULL;
 

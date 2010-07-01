@@ -9,6 +9,6 @@ INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
 pkglib_LTLIBRARIES = select_bgq.la
 
 # Linear node selection plugin.
-select_bgq_la_SOURCES = select_bgq.cc block.cc job.cc node.cc
-select_bgq_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) -D__cplusplus
+select_bgq_la_SOURCES = select_bgq.cc bgq.h
+select_bgq_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 

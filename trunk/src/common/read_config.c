@@ -362,7 +362,7 @@ static int _defunct_option(void **dest, slurm_parser_enum_t type,
 	return 0;
 }
 
-#ifdef HAVE_3D
+#if (SYSTEM_DIMENSIONS > 1)
 /* Used to get the general name of the machine, used primarily
  * for bluegene systems.  Not in general use because some systems
  * have multiple prefix's such as foo[1-1000],bar[1-1000].
@@ -399,7 +399,7 @@ static void _set_node_prefix(const char *nodenames)
 	}
 	debug3("Prefix is %s %s %d", conf_ptr->node_prefix, nodenames, i);
 }
-#endif /* HAVE_3D */
+#endif /* SYSTEM_DIMENSIONS > 1 */
 
 
 static int _parse_nodename(void **dest, slurm_parser_enum_t type,
@@ -462,7 +462,7 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 		dflt = default_nodename_tbl;
 
 		n->nodenames = xstrdup(value);
-#ifdef HAVE_3D
+#if (SYSTEM_DIMENSIONS > 1)
 		if (conf_ptr->node_prefix == NULL)
 			_set_node_prefix(n->nodenames);
 #endif
@@ -1059,7 +1059,7 @@ static int _register_conf_node_aliases(slurm_conf_node_t *node_ptr)
 		goto cleanup;
 	}
 
-#ifdef HAVE_3D
+#if (SYSTEM_DIMENSIONS > 1)
 	if (conf_ptr->node_prefix == NULL)
 		_set_node_prefix(node_ptr->nodenames);
 #endif

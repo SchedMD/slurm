@@ -2,14 +2,14 @@
 ## $Id$
 ##*****************************************************************************
 #  AUTHOR:
-#    Morris Jette <jette1@llnl.gov>
+#    Morris Jette <jette1@llnl.gov>, Danny Auble <da@llnl.gov>
 #
 #  SYNOPSIS:
-#    X_AC_BG
+#    X_AC_BGL X_AC_BGP X_AC_BGQ
 #
 #  DESCRIPTION:
-#    Test for Blue Gene/L specific files.
-#    If found define HAVE_BG and HAVE_FRONT_END.
+#    Test for Blue Gene specific files.
+#    If found define HAVE_BG and HAVE_FRONT_END and others
 ##*****************************************************************************
 
 
@@ -39,6 +39,7 @@ AC_DEFUN([X_AC_BGL],
       		AC_DEFINE(HAVE_3D, 1, [Define to 1 if 3-dimensional architecture])
   		AC_DEFINE(SYSTEM_DIMENSIONS, 3, [3-dimensional architecture])
 		AC_DEFINE(HAVE_BG, 1, [Define to 1 if emulating or running on Blue Gene system])
+		AC_DEFINE(HAVE_BG_L_P, 1, [Define to 1 if emulating or running on Blue Gene/L or P system])
       		AC_DEFINE(HAVE_BGL, 1, [Define to 1 if emulating or running on Blue Gene/L system])
       		AC_DEFINE(HAVE_FRONT_END, 1, [Define to 1 if running slurmd on front-end only])
     		AC_MSG_NOTICE([Running in BG/L emulation mode])
@@ -92,6 +93,7 @@ AC_DEFUN([X_AC_BGL],
       		AC_DEFINE(HAVE_3D, 1, [Define to 1 if 3-dimensional architecture])
   		AC_DEFINE(SYSTEM_DIMENSIONS, 3, [3-dimensional architecture])
       		AC_DEFINE(HAVE_BG, 1, [Define to 1 if emulating or running on Blue Gene system])
+		AC_DEFINE(HAVE_BG_L_P, 1, [Define to 1 if emulating or running on Blue Gene/L or P system])
       		AC_DEFINE(HAVE_BGL, 1, [Define to 1 if emulating or running on Blue Gene/L system])
       		AC_DEFINE(HAVE_FRONT_END, 1, [Define to 1 if running slurmd on front-end only])
 		AC_DEFINE(HAVE_BG_FILES, 1, [Define to 1 if have Blue Gene files])
@@ -128,6 +130,7 @@ AC_DEFUN([X_AC_BGP],
       		AC_DEFINE(HAVE_3D, 1, [Define to 1 if 3-dimensional architecture])
   		AC_DEFINE(SYSTEM_DIMENSIONS, 3, [3-dimensional architecture])
 		AC_DEFINE(HAVE_BG, 1, [Define to 1 if emulating or running on Blue Gene system])
+		AC_DEFINE(HAVE_BG_L_P, 1, [Define to 1 if emulating or running on Blue Gene/L or P system])
       		AC_DEFINE(HAVE_BGP, 1, [Define to 1 if emulating or running on Blue Gene/P system])
       		AC_DEFINE(HAVE_FRONT_END, 1, [Define to 1 if running slurmd on front-end only])
     		AC_MSG_NOTICE([Running in BG/P emulation mode])
@@ -175,6 +178,7 @@ AC_DEFUN([X_AC_BGP],
       		AC_DEFINE(HAVE_3D, 1, [Define to 1 if 3-dimensional architecture])
   		AC_DEFINE(SYSTEM_DIMENSIONS, 3, [3-dimensional architecture])
       		AC_DEFINE(HAVE_BG, 1, [Define to 1 if emulating or running on Blue Gene system])
+		AC_DEFINE(HAVE_BG_L_P, 1, [Define to 1 if emulating or running on Blue Gene/L or P system])
       		AC_DEFINE(HAVE_BGP, 1, [Define to 1 if emulating or running on Blue Gene/P system])
       		AC_DEFINE(HAVE_FRONT_END, 1, [Define to 1 if running slurmd on front-end only])
 		AC_DEFINE(HAVE_BG_FILES, 1, [Define to 1 if have Blue Gene files])
@@ -182,6 +186,86 @@ AC_DEFUN([X_AC_BGP],
 
 		AC_MSG_CHECKING(for BG serial value)
 		bg_serial="BGP"
+    		AC_ARG_WITH(bg-serial,, [bg_serial="$withval"])
+     		AC_MSG_RESULT($bg_serial)
+     		AC_DEFINE_UNQUOTED(BG_SERIAL, "$bg_serial", [Define the BG_SERIAL value])
+ 		#define ac_bluegene_loaded so we don't load another bluegene conf
+		ac_bluegene_loaded=yes
+   	fi
+
+   	AC_SUBST(BG_INCLUDES)
+])
+
+AC_DEFUN([X_AC_BGQ],
+[
+	# test for bluegene emulation mode
+   	AC_ARG_ENABLE(bgq-emulation, AS_HELP_STRING(--enable-bgq-emulation,Run SLURM in BG/Q mode on a non-bluegene system),
+	[ case "$enableval" in
+	  yes) bgq_emulation=yes ;;
+	  no)  bgq_emulation=no ;;
+	  *)   AC_MSG_ERROR([bad value "$enableval" for --enable-bgq-emulation])  ;;
+    	esac ])
+
+	# Skip if already set
+   	if test "x$ac_bluegene_loaded" = "xyes" ; then
+		bg_default_dirs=""
+	elif test "x$bgq_emulation" = "xyes"; then
+  		AC_DEFINE(SYSTEM_DIMENSIONS, 4, [4-dimensional schedulable architecture])
+		AC_DEFINE(HAVE_BG, 1, [Define to 1 if emulating or running on Blue Gene system])
+      		AC_DEFINE(HAVE_BGQ, 1, [Define to 1 if emulating or running on Blue Gene/Q system])
+      		AC_DEFINE(HAVE_FRONT_END, 1, [Define to 1 if running slurmd on front-end only])
+    		AC_MSG_NOTICE([Running in BG/Q emulation mode])
+		bg_default_dirs=""
+ 		#define ac_bluegene_loaded so we don't load another bluegene conf
+		ac_bluegene_loaded=yes
+	else
+		bg_default_dirs="/bgsys/drivers/ppcfloor"
+	fi
+
+	libname=bgsched
+
+   	for bg_dir in $trydb2dir "" $bg_default_dirs; do
+      	# Skip directories that don't exist
+      		if test ! -z "$bg_dir" -a ! -d "$bg_dir" ; then
+			continue;
+      		fi
+
+		soloc=$bg_dir/lib64/lib$libname.so
+      		# Search for required BG API libraries in the directory
+      		if test -z "$have_bg_ar" -a -f "$soloc" ; then
+			have_bgq_ar=yes
+			bg_ldflags="$bg_ldflags -L$bg_dir/lib64 -L/usr/lib64 -Wl,--unresolved-symbols=ignore-in-shared-libs -l$libname"
+		fi
+
+      		# Search for headers in the directory
+      		if test -z "$have_bg_hdr" -a -f "$bg_dir/include/rm_api.h" ; then
+			have_bgq_hdr=yes
+			bg_includes="-I$bg_dir/include"
+      		fi
+   	done
+
+   	if test ! -z "$have_bgq_ar" -a ! -z "$have_bgq_hdr" ; then
+      		# ac_with_readline="no"
+		# Test to make sure the api is good
+		saved_LDFLAGS="$LDFLAGS"
+      	 	LDFLAGS="$saved_LDFLAGS $bg_ldflags -m64"
+		AC_LINK_IFELSE([AC_LANG_PROGRAM([[ int rm_set_serial(char *); ]], [[ rm_set_serial(""); ]])],[have_bgq_files=yes],[AC_MSG_ERROR(There is a problem linking to the BG/P api.)])
+		LDFLAGS="$saved_LDFLAGS"
+   	fi
+
+  	if test ! -z "$have_bgq_files" ; then
+      		BG_INCLUDES="$bg_includes"
+		CFLAGS="$CFLAGS -m64"
+      		AC_DEFINE(HAVE_3D, 1, [Define to 1 if 3-dimensional architecture])
+  		AC_DEFINE(SYSTEM_DIMENSIONS, 3, [3-dimensional architecture])
+      		AC_DEFINE(HAVE_BG, 1, [Define to 1 if emulating or running on Blue Gene system])
+      		AC_DEFINE(HAVE_BGQ, 1, [Define to 1 if emulating or running on Blue Gene/P system])
+      		AC_DEFINE(HAVE_FRONT_END, 1, [Define to 1 if running slurmd on front-end only])
+		AC_DEFINE(HAVE_BG_FILES, 1, [Define to 1 if have Blue Gene files])
+		AC_DEFINE_UNQUOTED(BG_BRIDGE_SO, "$soloc", [Define the BG_BRIDGE_SO value])
+
+		AC_MSG_CHECKING(for BG serial value)
+		bg_serial="BGQ"
     		AC_ARG_WITH(bg-serial,, [bg_serial="$withval"])
      		AC_MSG_RESULT($bg_serial)
      		AC_DEFINE_UNQUOTED(BG_SERIAL, "$bg_serial", [Define the BG_SERIAL value])

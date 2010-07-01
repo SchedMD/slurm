@@ -1637,7 +1637,8 @@ static int _synchronize_bitmaps(struct job_record *job_ptr,
 extern int init(void)
 {
 	cr_type = slurmctld_conf.select_type_param;
-	verbose("%s loaded with argument %u", plugin_name, cr_type);
+	if(cr_type)
+		verbose("%s loaded with argument %u", plugin_name, cr_type);
 
 	return SLURM_SUCCESS;
 }
