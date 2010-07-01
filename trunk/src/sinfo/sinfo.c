@@ -230,6 +230,9 @@ _query_server(partition_info_msg_t ** part_pptr,
 	old_node_ptr = new_node_ptr;
 	*node_pptr = new_node_ptr;
 
+	if(!params.bg_flag)
+		return SLURM_SUCCESS;
+
 	if(params.cluster_flags & CLUSTER_FLAG_BG) {
 		if (old_bg_ptr) {
 			error_code = slurm_load_block_info(

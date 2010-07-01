@@ -242,7 +242,7 @@ extern int select_p_pack_select_info(time_t last_query_time, Buf *buffer_ptr,
 				     uint16_t protocol_version)
 {
 #ifdef HAVE_BGQ
-	return SLURM_SUCCESS;
+	return ESLURM_NOT_SUPPORTED;
 #else
 	return SLURM_ERROR;
 #endif
@@ -252,14 +252,14 @@ extern int select_p_select_nodeinfo_pack(select_nodeinfo_t *nodeinfo,
 					 Buf buffer,
 					 uint16_t protocol_version)
 {
-	return SLURM_SUCCESS;
+	return ESLURM_NOT_SUPPORTED;
 }
 
 extern int select_p_select_nodeinfo_unpack(select_nodeinfo_t **nodeinfo,
 					   Buf buffer,
 					   uint16_t protocol_version)
 {
-	return SLURM_SUCCESS;
+	return ESLURM_NOT_SUPPORTED;
 }
 
 extern select_nodeinfo_t *select_p_select_nodeinfo_alloc(uint32_t size)
