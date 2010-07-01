@@ -60,10 +60,13 @@ slurmdb_cluster_rec_t *working_cluster_rec = NULL;
 
 extern "C" {
 
-const char plugin_name[]       	= "BG/Q node selection plugin";
-const char plugin_type[]       	= "select/bgq";
-const uint32_t plugin_id	= 103;
-const uint32_t plugin_version	= 100;
+/* for some reason the extern "C" wrap above doesn't work for these
+ * const vars, so we have to explicitly set it for each one.
+ */
+extern "C" const char plugin_name[]       	= "BG/Q node selection plugin";
+extern "C" const char plugin_type[]       	= "select/bgq";
+extern "C" const uint32_t plugin_id	= 103;
+extern "C" const uint32_t plugin_version	= 100;
 
 /*
  * init() is called when the plugin is loaded, before any other functions
@@ -77,13 +80,6 @@ extern int init ( void )
 #if (SYSTEM_DIMENSIONS != 4)
 		fatal("SYSTEM_DIMENSIONS value (%d) invalid for BGQ",
 		      SYSTEM_DIMENSIONS);
-#endif
-
-#ifdef HAVE_BG_FILES
-		if ((SELECT_MESH  != RM_MESH)
-		    || (SELECT_TORUS != RM_TORUS)
-		    || (SELECT_NAV   != RM_NAV))
-			fatal("enum conn_type out of sync with rm_api.h");
 #endif
 
 		verbose("%s loading...", plugin_name);
