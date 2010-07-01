@@ -2603,8 +2603,9 @@ static int   _register_ctld(slurmdbd_conn_t *slurmdbd_conn,
 	debug2("slurmctld at ip:%s, port:%d",
 	       slurmdbd_conn->ip, register_ctld_msg->port);
 
-	memset(&cluster_q, 0, sizeof(slurmdb_cluster_cond_t));
-	memset(&cluster, 0, sizeof(slurmdb_cluster_rec_t));
+	slurmdb_init_cluster_cond(&cluster_q);
+	slurmdb_init_cluster_rec(&cluster);
+
 	cluster_q.cluster_list = list_create(NULL);
 	list_append(cluster_q.cluster_list, slurmdbd_conn->cluster_name);
 	cluster.control_host = slurmdbd_conn->ip;
