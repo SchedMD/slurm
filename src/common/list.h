@@ -69,6 +69,13 @@
 #ifndef   __list_datatypes_defined
 #  define __list_datatypes_defined
 typedef struct list * List;
+
+#define FREE_NULL_LIST(_X)			\
+	do {					\
+		if (_X) list_destroy (_X);	\
+		_X	= NULL; 		\
+	} while (0)
+
 /*
  *  List opaque data type.
  */

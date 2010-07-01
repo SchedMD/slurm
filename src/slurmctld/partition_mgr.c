@@ -665,14 +665,48 @@ int load_all_part_state(void)
 /*
  * find_part_record - find a record for partition with specified name
  * IN name - name of the desired partition
- * RET pointer to node partition or NULL if not found
- * global: part_list - global partition list
+ * RET pointer to partition or NULL if not found
  */
 struct part_record *find_part_record(char *name)
 {
 	return list_find_first(part_list, &list_find_part, name);
 }
 
+/*
+ * get_part_list - find record for named partition(s)
+ * IN name - partition name(s) in a comma separated list
+ * RET List of pointers to the partitions or NULL if not found
+ * NOTE: Caller must free the returned list
+ */
+extern List get_part_list(char *name)
+{
+	struct part_record *part_ptr;
+	List job_part_list = NULL;
+	char *token, *last = NULL, *tmp_name;
+
+	if (name == NULL)
+		return job_part_list;
+
+	tmp_name = xstrdup(name);
+	token = strtok_r(tmp_name, ",", &last);
+	while (token) {
+		part_ptr = list_find_first(part_list, &list_find_part, token);
+		if (part_ptr) {
+			if (job_part_list == NULL) {
+				job_part_list = list_create(NULL);
+				if (job_part_list == NULL)
+					fatal("list_create: malloc failure");
+			}
+			list_append(job_part_list, part_ptr);
+		} else {
+			FREE_NULL_LIST(job_part_list);
+			break;
+		}
+		token = strtok_r(NULL, ",", &last);
+	}
+	xfree(tmp_name);
+	return job_part_list;
+}
 
 /*
  * init_part_conf - initialize the default partition configuration values
