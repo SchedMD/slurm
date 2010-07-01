@@ -126,8 +126,8 @@ extern int set_qos_bitstr_from_list(bitstr_t *valid_qos, List qos_list);
 extern char *get_qos_complete_str_bitstr(List qos_list, bitstr_t *valid_qos);
 extern char *get_qos_complete_str(List qos_list, List num_qos_list);
 
-extern char *get_classification_str(uint16_t class);
-extern uint16_t str_2_classification(char *class);
+extern char *get_classification_str(uint16_t classification);
+extern uint16_t str_2_classification(char *classification);
 
 extern char *slurmdb_problem_str_get(uint16_t problem);
 extern uint16_t str_2_slurmdb_problem(char *problem);
