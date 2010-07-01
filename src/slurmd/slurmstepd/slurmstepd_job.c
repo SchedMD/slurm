@@ -159,8 +159,8 @@ job_create(launch_tasks_request_msg_t *msg)
 	struct passwd *pwd = NULL;
 	slurmd_job_t  *job = NULL;
 	srun_info_t   *srun = NULL;
-	slurm_addr     resp_addr;
-	slurm_addr     io_addr;
+	slurm_addr_t     resp_addr;
+	slurm_addr_t     io_addr;
 	int            nodeid = NO_VAL;
 
 	xassert(msg != NULL);
@@ -250,13 +250,13 @@ job_create(launch_tasks_request_msg_t *msg)
 	job->envtp->ckpt_dir = NULL;
 	job->envtp->comm_port = msg->resp_port[nodeid % msg->num_resp_port];
 
-	memcpy(&resp_addr, &msg->orig_addr, sizeof(slurm_addr));
+	memcpy(&resp_addr, &msg->orig_addr, sizeof(slurm_addr_t));
 	slurm_set_addr(&resp_addr,
 		       msg->resp_port[nodeid % msg->num_resp_port],
 		       NULL);
 	job->user_managed_io = msg->user_managed_io;
 	if (!msg->user_managed_io) {
-		memcpy(&io_addr,   &msg->orig_addr, sizeof(slurm_addr));
+		memcpy(&io_addr,   &msg->orig_addr, sizeof(slurm_addr_t));
 		slurm_set_addr(&io_addr,
 			       msg->io_port[nodeid % msg->num_io_port],
 			       NULL);
@@ -574,7 +574,7 @@ _array_free(char ***array)
 
 
 struct srun_info *
-srun_info_create(slurm_cred_t *cred, slurm_addr *resp_addr, slurm_addr *ioaddr)
+srun_info_create(slurm_cred_t *cred, slurm_addr_t *resp_addr, slurm_addr_t *ioaddr)
 {
 	char             *data = NULL;
 	uint32_t          len  = 0;

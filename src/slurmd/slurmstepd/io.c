@@ -867,7 +867,7 @@ _spawn_window_manager(slurmd_task_info_t *task, slurmd_job_t *job)
 {
 	char *host, *port, *rows, *cols;
 	slurm_fd pty_fd;
-	slurm_addr pty_addr;
+	slurm_addr_t pty_addr;
 	uint16_t port_u;
 	struct window_info *win_info;
 	pthread_attr_t attr;

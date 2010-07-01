@@ -108,17 +108,17 @@ static int _tot_wait (struct timeval *start_time)
 	return msec_delay;
 }
 
-slurm_fd _slurm_init_msg_engine ( slurm_addr * slurm_address )
+slurm_fd _slurm_init_msg_engine ( slurm_addr_t * slurm_address )
 {
 	return _slurm_listen_stream ( slurm_address ) ;
 }
 
-slurm_fd _slurm_open_msg_conn ( slurm_addr * slurm_address )
+slurm_fd _slurm_open_msg_conn ( slurm_addr_t * slurm_address )
 {
 	return _slurm_open_stream ( slurm_address, false ) ;
 }
 
-slurm_fd _slurm_accept_msg_conn (slurm_fd fd, slurm_addr *addr)
+slurm_fd _slurm_accept_msg_conn (slurm_fd fd, slurm_addr_t *addr)
 {
 	return _slurm_accept_stream(fd, addr);
 }
@@ -132,7 +132,7 @@ slurm_fd _slurm_accept_msg_conn (slurm_fd fd, slurm_addr *addr)
 static void _sock_bind_wild(int sockfd)
 {
 	int rc, retry;
-	slurm_addr sin;
+	slurm_addr_t sin;
 	static bool seeded = false;
 
 	if (!seeded) {
@@ -448,7 +448,7 @@ int _slurm_shutdown_msg_engine ( slurm_fd open_fd )
 	return _slurm_close ( open_fd ) ;
 }
 
-slurm_fd _slurm_listen_stream(slurm_addr *addr)
+slurm_fd _slurm_listen_stream(slurm_addr_t *addr)
 {
 	int rc;
 	slurm_fd fd;
@@ -487,13 +487,13 @@ slurm_fd _slurm_listen_stream(slurm_addr *addr)
 
 }
 
-slurm_fd _slurm_accept_stream(slurm_fd fd, slurm_addr *addr)
+slurm_fd _slurm_accept_stream(slurm_fd fd, slurm_addr_t *addr)
 {
-	socklen_t len = sizeof(slurm_addr);
+	socklen_t len = sizeof(slurm_addr_t);
 	return _slurm_accept(fd, (struct sockaddr *)addr, &len);
 }
 
-slurm_fd _slurm_open_stream(slurm_addr *addr, bool retry)
+slurm_fd _slurm_open_stream(slurm_addr_t *addr, bool retry)
 {
 	int retry_cnt;
 	slurm_fd fd;
@@ -547,7 +547,7 @@ slurm_fd _slurm_open_stream(slurm_addr *addr, bool retry)
 	return SLURM_SOCKET_ERROR;
 }
 
-int _slurm_get_stream_addr(slurm_fd fd, slurm_addr *addr )
+int _slurm_get_stream_addr(slurm_fd fd, slurm_addr_t *addr )
 {
 	socklen_t size = sizeof(addr);
 	return _slurm_getsockname(fd, (struct sockaddr *)addr, &size);
@@ -840,8 +840,8 @@ extern int _slurm_vfcntl(int fd, int cmd, va_list va )
 	}
 }
 
-/* sets the fields of a slurm_addr */
-void _slurm_set_addr_uint (slurm_addr *addr, uint16_t port, uint32_t ipaddr)
+/* sets the fields of a slurm_addr_t */
+void _slurm_set_addr_uint (slurm_addr_t *addr, uint16_t port, uint32_t ipaddr)
 {
 	addr->sin_family      = AF_SLURM ;
 	addr->sin_port	= htons(port);
@@ -849,12 +849,12 @@ void _slurm_set_addr_uint (slurm_addr *addr, uint16_t port, uint32_t ipaddr)
 }
 
 /* resets the address field of a slurm_addr, port and family are unchanged */
-void _reset_slurm_addr (slurm_addr *addr, slurm_addr new_addr)
+void _reset_slurm_addr (slurm_addr_t *addr, slurm_addr_t new_addr)
 {
 	addr->sin_addr.s_addr = new_addr.sin_addr.s_addr;
 }
 
-void _slurm_set_addr_char (slurm_addr * addr, uint16_t port, char *host)
+void _slurm_set_addr_char (slurm_addr_t * addr, uint16_t port, char *host)
 {
 	struct hostent * he    = NULL;
 	int	   h_err = 0;
@@ -881,7 +881,7 @@ void _slurm_set_addr_char (slurm_addr * addr, uint16_t port, char *host)
 	return;
 }
 
-void _slurm_get_addr (slurm_addr *addr, uint16_t *port, char *host,
+void _slurm_get_addr (slurm_addr_t *addr, uint16_t *port, char *host,
 		      unsigned int buflen )
 {
 	struct hostent *he;
@@ -904,7 +904,7 @@ void _slurm_get_addr (slurm_addr *addr, uint16_t *port, char *host,
 	return;
 }
 
-void _slurm_print_slurm_addr ( slurm_addr * address, char *buf, size_t n )
+void _slurm_print_slurm_addr ( slurm_addr_t * address, char *buf, size_t n )
 {
 	char addrbuf[INET_ADDRSTRLEN];
 	inet_ntop(AF_INET, &address->sin_addr, addrbuf, INET_ADDRSTRLEN);
@@ -912,13 +912,13 @@ void _slurm_print_slurm_addr ( slurm_addr * address, char *buf, size_t n )
 	snprintf(buf, n, "%s:%d", addrbuf, ntohs(address->sin_port));
 }
 
-void _slurm_pack_slurm_addr(slurm_addr *addr, Buf buffer)
+void _slurm_pack_slurm_addr(slurm_addr_t *addr, Buf buffer)
 {
 	pack32( ntohl( addr->sin_addr.s_addr ), buffer );
 	pack16( ntohs( addr->sin_port ), buffer );
 }
 
-int _slurm_unpack_slurm_addr_no_alloc(slurm_addr *addr, Buf buffer)
+int _slurm_unpack_slurm_addr_no_alloc(slurm_addr_t *addr, Buf buffer)
 {
 	addr->sin_family = AF_SLURM ;
 	safe_unpack32(&addr->sin_addr.s_addr, buffer);

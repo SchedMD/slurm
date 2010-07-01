@@ -41,7 +41,7 @@
 
 static pthread_mutex_t	event_mutex = PTHREAD_MUTEX_INITIALIZER;
 static time_t		last_notify_time = (time_t) 0;
-static slurm_addr	moab_event_addr,  moab_event_addr_bu;
+static slurm_addr_t	moab_event_addr,  moab_event_addr_bu;
 static int		event_addr_set = 0;
 static slurm_fd		event_fd = (slurm_fd) -1;
 

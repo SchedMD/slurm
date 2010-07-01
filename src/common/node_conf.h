@@ -114,7 +114,7 @@ struct node_record {
 					 * associated with this node*/
 	char *comm_name;		/* communications path name to node */
 	uint16_t port;			/* TCP port number of the slurmd */
-	slurm_addr slurm_addr;		/* network address */
+	slurm_addr_t slurm_addr;	/* network address */
 	uint16_t comp_job_cnt;		/* count of jobs completing on node */
 	uint16_t run_job_cnt;		/* count of jobs running on node */
 	uint16_t no_share_job_cnt;	/* count of jobs running that will

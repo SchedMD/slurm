@@ -56,8 +56,8 @@ typedef struct env_options {
 	char *nodelist;		/* nodelist in string form */
 	char **env;             /* job environment */
 	uint16_t comm_port;	/* srun's communication port */
-	slurm_addr *cli;	/* launch node address */
-	slurm_addr *self;
+	slurm_addr_t *cli;	/* launch node address */
+	slurm_addr_t *self;
 	int jobid;		/* assigned job id */
 	int stepid;	        /* assigned step id */
 	int procid;		/* global task id (across nodes) */

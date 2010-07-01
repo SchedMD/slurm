@@ -173,7 +173,7 @@ int stepd_signal_container(int fd, int signal);
  *         probably be moved into a more generic stepd_api call so that
  *         this header does not need to include slurm_protocol_defs.h.
  */
-int stepd_attach(int fd, slurm_addr *ioaddr, slurm_addr *respaddr,
+int stepd_attach(int fd, slurm_addr_t *ioaddr, slurm_addr_t *respaddr,
 		 void *job_cred_sig, reattach_tasks_response_msg_t *resp);
 
 /*

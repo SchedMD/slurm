@@ -188,7 +188,7 @@ slurm_step_layout_t *fake_slurm_step_layout_create(
 	step_layout->tasks = xmalloc(sizeof(uint16_t) * node_cnt);
 	step_layout->tids  = xmalloc(sizeof(uint32_t *) * node_cnt);
 /* 	step_layout->node_addr =  */
-/* 		xmalloc(sizeof(slurm_addr) * node_cnt); */
+/* 		xmalloc(sizeof(slurm_addr_t) * node_cnt); */
 
 	step_layout->task_cnt = 0;
 	for (i=0; i<step_layout->node_cnt; i++) {
@@ -264,9 +264,9 @@ extern slurm_step_layout_t *slurm_step_layout_copy(
 	layout->task_cnt = step_layout->task_cnt;
 	layout->task_dist = step_layout->task_dist;
 
-/* 	layout->node_addr = xmalloc(sizeof(slurm_addr) * layout->node_cnt); */
+/* 	layout->node_addr = xmalloc(sizeof(slurm_addr_t) * layout->node_cnt); */
 /* 	memcpy(layout->node_addr, step_layout->node_addr,  */
-/* 	       (sizeof(slurm_addr) * layout->node_cnt)); */
+/* 	       (sizeof(slurm_addr_t) * layout->node_cnt)); */
 
 	layout->tasks = xmalloc(sizeof(uint16_t) * layout->node_cnt);
 	memcpy(layout->tasks, step_layout->tasks,

@@ -385,10 +385,10 @@ static void _pack_last_update_msg(last_update_msg_t * msg, Buf buffer,
 static int _unpack_last_update_msg(last_update_msg_t ** msg, Buf buffer,
 				   uint16_t protocol_version);
 
-static void _pack_slurm_addr_array(slurm_addr * slurm_address,
+static void _pack_slurm_addr_array(slurm_addr_t * slurm_address,
 				   uint32_t size_val, Buf buffer,
 				   uint16_t protocol_version);
-static int _unpack_slurm_addr_array(slurm_addr ** slurm_address,
+static int _unpack_slurm_addr_array(slurm_addr_t ** slurm_address,
 				    uint32_t * size_val, Buf buffer,
 				    uint16_t protocol_version);
 
@@ -6694,7 +6694,7 @@ unpack_error:
 }
 
 static void
-_pack_slurm_addr_array(slurm_addr * slurm_address,
+_pack_slurm_addr_array(slurm_addr_t * slurm_address,
 		       uint32_t size_val, Buf buffer,
 		       uint16_t protocol_version)
 {
@@ -6702,7 +6702,7 @@ _pack_slurm_addr_array(slurm_addr * slurm_address,
 }
 
 static int
-_unpack_slurm_addr_array(slurm_addr ** slurm_address,
+_unpack_slurm_addr_array(slurm_addr_t ** slurm_address,
 			 uint32_t * size_val, Buf buffer,
 			 uint16_t protocol_version)
 {

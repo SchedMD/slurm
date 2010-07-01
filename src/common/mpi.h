@@ -66,8 +66,8 @@ typedef struct {
 	uint32_t gtaskid;/* global task rank within the job step      */
 	int      ltaskid;/* task rank within the local node           */
 
-	slurm_addr *self;
-	slurm_addr *client;
+	slurm_addr_t *self;
+	slurm_addr_t *client;
 } mpi_plugin_task_info_t;
 
 /**********************************************************************

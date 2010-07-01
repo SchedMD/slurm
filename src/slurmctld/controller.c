@@ -844,7 +844,7 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 	slurm_fd newsockfd;
 	slurm_fd maxsockfd;
 	slurm_fd *sockfd;	/* our set of socket file descriptors */
-	slurm_addr cli_addr, srv_addr;
+	slurm_addr_t cli_addr, srv_addr;
 	uint16_t port;
 	char ip[32];
 	pthread_t thread_id_rpc_req;

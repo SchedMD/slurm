@@ -689,7 +689,7 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 	bool job_waiting = false;
 	struct job_record *job_ptr;
 	uint16_t port;	/* dummy value */
-	slurm_addr resp_addr;
+	slurm_addr_t resp_addr;
 
 	START_TIMER;
 	if ((uid != job_desc_msg->user_id) && (!validate_super_user(uid))) {
@@ -1544,7 +1544,7 @@ static void _slurm_rpc_job_will_run(slurm_msg_t * msg)
 		NO_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
 	uint16_t port;	/* dummy value */
-	slurm_addr resp_addr;
+	slurm_addr_t resp_addr;
 	will_run_response_msg_t *resp = NULL;
 
 	START_TIMER;
@@ -1717,10 +1717,10 @@ static void _slurm_rpc_job_alloc_info(slurm_msg_t * msg)
 		       (sizeof(uint16_t) * job_ptr->job_resrcs->cpu_array_cnt));
 		job_info_resp_msg.error_code     = error_code;
 		job_info_resp_msg.job_id         = job_info_msg->job_id;
-		job_info_resp_msg.node_addr      = xmalloc(sizeof(slurm_addr) *
-							   job_ptr->node_cnt);
+		job_info_resp_msg.node_addr      =
+			xmalloc(sizeof(slurm_addr_t) * job_ptr->node_cnt);
 		memcpy(job_info_resp_msg.node_addr, job_ptr->node_addr,
-		       (sizeof(slurm_addr) * job_ptr->node_cnt));
+		       (sizeof(slurm_addr_t) * job_ptr->node_cnt));
 		job_info_resp_msg.node_cnt       = job_ptr->node_cnt;
 		job_info_resp_msg.node_list      = xstrdup(job_ptr->nodes);
 		job_info_resp_msg.select_jobinfo =
@@ -1888,10 +1888,10 @@ static void _slurm_rpc_job_sbcast_cred(slurm_msg_t * msg)
 		     job_info_msg->job_id, job_ptr->nodes, TIME_STR);
 
 		job_info_resp_msg.job_id         = job_ptr->job_id;
-		job_info_resp_msg.node_addr      = xmalloc(sizeof(slurm_addr) *
+		job_info_resp_msg.node_addr      = xmalloc(sizeof(slurm_addr_t) *
 							   job_ptr->node_cnt);
 		memcpy(job_info_resp_msg.node_addr, job_ptr->node_addr,
-		       (sizeof(slurm_addr) * job_ptr->node_cnt));
+		       (sizeof(slurm_addr_t) * job_ptr->node_cnt));
 		job_info_resp_msg.node_cnt       = job_ptr->node_cnt;
 		job_info_resp_msg.node_list      = xstrdup(job_ptr->nodes);
 		job_info_resp_msg.sbcast_cred    = sbcast_cred;

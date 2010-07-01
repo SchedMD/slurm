@@ -432,7 +432,7 @@ struct job_record {
 	char *network;			/* network/switch requirement spec */
 	uint32_t next_step_id;		/* next step id to be used */
 	char *nodes;			/* list of nodes allocated to job */
-	slurm_addr *node_addr;		/* addresses of the nodes allocated to
+	slurm_addr_t *node_addr;	/* addresses of the nodes allocated to
 					 * job */
 	bitstr_t *node_bitmap;		/* bitmap of nodes allocated to job */
 	bitstr_t *node_bitmap_cg;	/* bitmap of nodes completing job */
@@ -1423,7 +1423,7 @@ extern void set_node_down (char *name, char *reason);
  */
 extern void set_slurmctld_state_loc(void);
 
-/* set_slurmd_addr - establish the slurm_addr for the slurmd on each node
+/* set_slurmd_addr - establish the slurm_addr_t for the slurmd on each node
  *	Uses common data structures. */
 extern void set_slurmd_addr (void);
 

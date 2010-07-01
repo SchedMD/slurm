@@ -86,7 +86,7 @@ struct check_job_info {
 };
 
 static void _send_sig(uint32_t job_id, uint32_t step_id, uint16_t signal,
-		char *node_name, slurm_addr node_addr);
+		char *node_name, slurm_addr_t node_addr);
 static int  _step_sig(struct step_record * step_ptr, uint16_t wait,
 		uint16_t signal, uint16_t sig_timeout);
 
@@ -101,12 +101,12 @@ struct ckpt_timeout_info {
 	time_t     start_time;
 	time_t     end_time;
 	char      *node_name;
-	slurm_addr node_addr;
+	slurm_addr_t node_addr;
 };
 static void *_ckpt_agent_thr(void *arg);
 static void  _ckpt_enqueue_timeout(uint32_t job_id, uint32_t step_id,
 		time_t start_time, uint16_t signal, uint16_t wait_time,
-		char *node_name, slurm_addr node_addr);
+		char *node_name, slurm_addr_t node_addr);
 static void  _ckpt_dequeue_timeout(uint32_t job_id, uint32_t step_id,
 		time_t start_time);
 static void  _ckpt_timeout_free(void *rec);
@@ -352,7 +352,7 @@ extern int slurm_ckpt_unpack_job(check_jobinfo_t jobinfo, Buf buffer)
 
 /* Send a signal RPC to a specific node */
 static void _send_sig(uint32_t job_id, uint32_t step_id, uint16_t signal,
-		char *node_name, slurm_addr node_addr)
+		char *node_name, slurm_addr_t node_addr)
 {
 	agent_arg_t *agent_args;
 	kill_tasks_msg_t *kill_tasks_msg;
@@ -462,7 +462,7 @@ static void _ckpt_signal_step(struct ckpt_timeout_info *rec)
 /* Queue a checkpoint request timeout */
 static void _ckpt_enqueue_timeout(uint32_t job_id, uint32_t step_id,
 		time_t start_time, uint16_t signal, uint16_t wait_time,
-		char *node_name, slurm_addr node_addr)
+		char *node_name, slurm_addr_t node_addr)
 {
 	struct ckpt_timeout_info *rec;
 

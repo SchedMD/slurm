@@ -331,7 +331,7 @@ typedef struct slurm_protocol_header {
 	uint32_t body_length;
 	uint16_t ret_cnt;
 	forward_t forward;
-	slurm_addr orig_addr;
+	slurm_addr_t orig_addr;
 	List ret_list;
 } header_t;
 
@@ -357,12 +357,12 @@ typedef struct forward_struct {
 } forward_struct_t;
 
 typedef struct slurm_protocol_config {
-	slurm_addr primary_controller;
-	slurm_addr secondary_controller;
+	slurm_addr_t primary_controller;
+	slurm_addr_t secondary_controller;
 } slurm_protocol_config_t;
 
 typedef struct slurm_msg {
-	slurm_addr address;
+	slurm_addr_t address;
 	void *auth_cred;
 	slurm_fd conn_fd;
 	void *data;
@@ -377,7 +377,7 @@ typedef struct slurm_msg {
 	/* The following were all added for the forward.c code */
 	forward_t forward;
 	forward_struct_t *forward_struct;
-	slurm_addr orig_addr;
+	slurm_addr_t orig_addr;
 	List ret_list;
 } slurm_msg_t;
 
@@ -624,7 +624,7 @@ typedef struct launch_tasks_request_msg {
 	uint16_t task_dist;  /* --distribution=, -m dist	*/
 	uint16_t  task_flags;
 	uint32_t **global_task_ids;
-	slurm_addr orig_addr;	  /* where message really came from for io */
+	slurm_addr_t orig_addr;	  /* where message really came from for io */
 
 	uint16_t user_managed_io; /* 0 for "normal" IO,
 				     1 for "user manged" IO */

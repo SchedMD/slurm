@@ -361,7 +361,7 @@ extern int slurm_send_slurmdbd_msg(uint16_t rpc_version, slurmdbd_msg_t *req)
 /* Open a connection to the Slurm DBD and set slurmdbd_fd */
 static void _open_slurmdbd_fd(bool need_db)
 {
-	slurm_addr dbd_addr;
+	slurm_addr_t dbd_addr;
 	uint16_t slurmdbd_port;
 	char *   slurmdbd_host;
 	bool try_backup = true;

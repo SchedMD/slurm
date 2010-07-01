@@ -1893,7 +1893,7 @@ extern void excise_node_from_job(struct job_record *job_ptr,
 		if (orig_pos == new_pos)
 			continue;
 		memcpy(&job_ptr->node_addr[new_pos],
-		       &job_ptr->node_addr[orig_pos], sizeof(slurm_addr));
+		       &job_ptr->node_addr[orig_pos], sizeof(slurm_addr_t));
 		/* NOTE: The job's allocation in the job_ptr->job_resrcs
 		 * data structure is unchanged  even after a node allocated
 		 * to the job goes DOWN. */

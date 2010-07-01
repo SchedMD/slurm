@@ -442,15 +442,15 @@ rwfail:
  * resp->gtids, resp->ntasks, and resp->executable.
  */
 int
-stepd_attach(int fd, slurm_addr *ioaddr, slurm_addr *respaddr,
+stepd_attach(int fd, slurm_addr_t *ioaddr, slurm_addr_t *respaddr,
 	     void *job_cred_sig, reattach_tasks_response_msg_t *resp)
 {
 	int req = REQUEST_ATTACH;
 	int rc = SLURM_SUCCESS;
 
 	safe_write(fd, &req, sizeof(int));
-	safe_write(fd, ioaddr, sizeof(slurm_addr));
-	safe_write(fd, respaddr, sizeof(slurm_addr));
+	safe_write(fd, ioaddr, sizeof(slurm_addr_t));
+	safe_write(fd, respaddr, sizeof(slurm_addr_t));
 	safe_write(fd, job_cred_sig, SLURM_IO_KEY_SIZE);
 
 	/* Receive the return code */
