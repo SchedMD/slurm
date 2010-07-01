@@ -318,13 +318,13 @@ extern char *slurm_conf_get_aliased_nodename(void);
 extern uint16_t slurm_conf_get_port(const char *node_name);
 
 /*
- * slurm_conf_get_addr - Return the slurm_addr for a given NodeName in
+ * slurm_conf_get_addr - Return the slurm_addr_t for a given NodeName in
  *	the parameter "address".  The return code is SLURM_SUCCESS on success,
  *	and SLURM_FAILURE if the address lookup failed.
  *
  * NOTE: Caller must NOT be holding slurm_conf_lock().
  */
-extern int slurm_conf_get_addr(const char *node_name, slurm_addr *address);
+extern int slurm_conf_get_addr(const char *node_name, slurm_addr_t *address);
 
 /*
  * slurm_conf_get_cpus_sct -

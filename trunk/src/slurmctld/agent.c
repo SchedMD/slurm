@@ -123,7 +123,7 @@ typedef struct thd {
 	time_t start_time;		/* start time */
 	time_t end_time;		/* end time or delta time
 					 * upon termination */
-	slurm_addr *addr;	        /* specific addr to send to
+	slurm_addr_t *addr;	        /* specific addr to send to
 					 * will not do nodelist if set */
 	char *nodelist;	                /* list of nodes to send to */
 	List ret_list;

@@ -84,7 +84,7 @@ extern void *rpc_mgr(void *no_data)
 	pthread_attr_t thread_attr_rpc_req;
 	slurm_fd sockfd, newsockfd;
 	int i, retry_cnt, sigarray[] = {SIGUSR1, 0};
-	slurm_addr cli_addr;
+	slurm_addr_t cli_addr;
 	slurmdbd_conn_t *conn_arg = NULL;
 
 	slurm_mutex_lock(&thread_count_lock);

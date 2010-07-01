@@ -104,7 +104,7 @@ void block_sigwinch(void)
 
 void pty_thread_create(srun_job_t *job)
 {
-	slurm_addr pty_addr;
+	slurm_addr_t pty_addr;
 	pthread_attr_t attr;
 
 	if ((job->pty_fd = slurm_init_msg_engine_port(0)) < 0) {
@@ -155,7 +155,7 @@ static void *_pty_thread(void *arg)
 {
 	int fd = -1;
 	srun_job_t *job = (srun_job_t *) arg;
-	slurm_addr client_addr;
+	slurm_addr_t client_addr;
 
 	xsignal_unblock(pty_sigarray);
 	xsignal(SIGWINCH, _handle_sigwinch);

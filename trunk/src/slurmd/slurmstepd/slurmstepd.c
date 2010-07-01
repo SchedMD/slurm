@@ -63,14 +63,14 @@
 #include "src/slurmd/slurmstepd/req.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
-static int _init_from_slurmd(int sock, char **argv, slurm_addr **_cli,
-			     slurm_addr **_self, slurm_msg_t **_msg,
+static int _init_from_slurmd(int sock, char **argv, slurm_addr_t **_cli,
+			     slurm_addr_t **_self, slurm_msg_t **_msg,
 			     int *_ngids, gid_t **_gids);
 
 static void _dump_user_env(void);
 static void _send_ok_to_slurmd(int sock);
 static void _send_fail_to_slurmd(int sock);
-static slurmd_job_t *_step_setup(slurm_addr *cli, slurm_addr *self,
+static slurmd_job_t *_step_setup(slurm_addr_t *cli, slurm_addr_t *self,
 				 slurm_msg_t *msg);
 #ifdef MEMORY_LEAK_DEBUG
 static void _step_cleanup(slurmd_job_t *job, slurm_msg_t *msg, int rc);
@@ -87,8 +87,8 @@ extern char  ** environ;
 int
 main (int argc, char *argv[])
 {
-	slurm_addr *cli;
-	slurm_addr *self;
+	slurm_addr_t *cli;
+	slurm_addr_t *self;
 	slurm_msg_t *msg;
 	slurmd_job_t *job;
 	int ngids;
@@ -203,15 +203,15 @@ rwfail:
  */
 static int
 _init_from_slurmd(int sock, char **argv,
-		  slurm_addr **_cli, slurm_addr **_self, slurm_msg_t **_msg,
+		  slurm_addr_t **_cli, slurm_addr_t **_self, slurm_msg_t **_msg,
 		  int *_ngids, gid_t **_gids)
 {
 	char *incoming_buffer = NULL;
 	Buf buffer;
 	int step_type;
 	int len;
-	slurm_addr *cli = NULL;
-	slurm_addr *self = NULL;
+	slurm_addr_t *cli = NULL;
+	slurm_addr_t *self = NULL;
 	slurm_msg_t *msg = NULL;
 	int ngids = 0;
 	gid_t *gids = NULL;
@@ -229,7 +229,7 @@ _init_from_slurmd(int sock, char **argv,
 	safe_read(sock, &step_complete.children, sizeof(int));
 	safe_read(sock, &step_complete.depth, sizeof(int));
 	safe_read(sock, &step_complete.max_depth, sizeof(int));
-	safe_read(sock, &step_complete.parent_addr, sizeof(slurm_addr));
+	safe_read(sock, &step_complete.parent_addr, sizeof(slurm_addr_t));
 	step_complete.bits = bit_alloc(step_complete.children);
 	step_complete.jobacct = jobacct_gather_g_create(NULL);
 	pthread_mutex_unlock(&step_complete.lock);
@@ -278,7 +278,7 @@ _init_from_slurmd(int sock, char **argv,
 	incoming_buffer = xmalloc(sizeof(char) * len);
 	safe_read(sock, incoming_buffer, len);
 	buffer = create_buf(incoming_buffer,len);
-	cli = xmalloc(sizeof(slurm_addr));
+	cli = xmalloc(sizeof(slurm_addr_t));
 	if(slurm_unpack_slurm_addr_no_alloc(cli, buffer) == SLURM_ERROR) {
 		fatal("slurmstepd: problem with unpack of slurmd_conf");
 	}
@@ -291,7 +291,7 @@ _init_from_slurmd(int sock, char **argv,
 		incoming_buffer = xmalloc(sizeof(char) * len);
 		safe_read(sock, incoming_buffer, len);
 		buffer = create_buf(incoming_buffer,len);
-		self = xmalloc(sizeof(slurm_addr));
+		self = xmalloc(sizeof(slurm_addr_t));
 		if(slurm_unpack_slurm_addr_no_alloc(self, buffer)
 		   == SLURM_ERROR) {
 			fatal("slurmstepd: problem with unpack of "
@@ -352,7 +352,7 @@ rwfail:
 }
 
 static slurmd_job_t *
-_step_setup(slurm_addr *cli, slurm_addr *self, slurm_msg_t *msg)
+_step_setup(slurm_addr_t *cli, slurm_addr_t *self, slurm_msg_t *msg)
 {
 	slurmd_job_t *job = NULL;
 

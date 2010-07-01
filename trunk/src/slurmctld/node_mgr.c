@@ -716,7 +716,7 @@ static void _pack_node (struct node_record *dump_node_ptr, Buf buffer,
 
 
 /*
- * set_slurmd_addr - establish the slurm_addr for the slurmd on each node
+ * set_slurmd_addr - establish the slurm_addr_t for the slurmd on each node
  *	Uses common data structures.
  * NOTE: READ lock_slurmctld config before entry
  */

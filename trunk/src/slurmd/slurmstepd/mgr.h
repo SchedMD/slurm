@@ -56,13 +56,13 @@ void batch_finish(slurmd_job_t *job, int rc);
  * Initialize a slurmd_job_t structure for a launch tasks
  */
 slurmd_job_t *mgr_launch_tasks_setup(launch_tasks_request_msg_t *msg,
-				     slurm_addr *client, slurm_addr *self);
+				     slurm_addr_t *client, slurm_addr_t *self);
 
 /*
  * Initialize a slurmd_job_t structure for a batch job
  */
 slurmd_job_t *mgr_launch_batch_job_setup(batch_job_launch_msg_t *msg,
-					 slurm_addr *client);
+					 slurm_addr_t *client);
 
 /*
  * Finalize a batch job.

@@ -303,7 +303,7 @@ static void *_background_rpc_mgr(void *no_data)
 {
 	slurm_fd newsockfd;
 	slurm_fd sockfd;
-	slurm_addr cli_addr;
+	slurm_addr_t cli_addr;
 	slurm_msg_t *msg = NULL;
 	int error_code;
 	char* node_addr = NULL;

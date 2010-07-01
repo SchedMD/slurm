@@ -285,7 +285,7 @@ dump_update_list(List update_list)
 extern int
 cluster_first_reg(char *host, uint16_t port, uint16_t rpc_version)
 {
-	slurm_addr ctld_address;
+	slurm_addr_t ctld_address;
 	slurm_fd fd;
 	int rc = SLURM_SUCCESS;
 

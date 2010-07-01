@@ -56,7 +56,7 @@
 int pmi_fd = -1;
 int pmi_time = 0;
 uint16_t srun_port = 0;
-slurm_addr srun_addr;
+slurm_addr_t srun_addr;
 
 static void _delay_rpc(int pmi_rank, int pmi_size);
 static int  _forward_comm_set(struct kvs_comm_set *kvs_set_ptr);
@@ -213,7 +213,7 @@ int  slurm_get_kvs_comm_set(struct kvs_comm_set **kvs_set_ptr,
 {
 	int rc, srun_fd, retries = 0, timeout = 0;
 	slurm_msg_t msg_send, msg_rcv;
-	slurm_addr slurm_addr, srun_reply_addr;
+	slurm_addr_t slurm_addr, srun_reply_addr;
 	char hostname[64];
 	uint16_t port;
 	kvs_get_msg_t data;

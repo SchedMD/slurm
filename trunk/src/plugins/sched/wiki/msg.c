@@ -110,7 +110,7 @@ extern void term_msg_thread(void)
 	pthread_mutex_lock(&thread_flag_mutex);
 	if (thread_running) {
 		int fd;
-                slurm_addr addr;
+                slurm_addr_t addr;
 
 		thread_shutdown = true;
 
@@ -142,7 +142,7 @@ extern void term_msg_thread(void)
 static void *_msg_thread(void *no_data)
 {
 	slurm_fd sock_fd = -1, new_fd;
-	slurm_addr cli_addr;
+	slurm_addr_t cli_addr;
 	char *msg;
 	slurm_ctl_conf_t *conf;
 	int i;

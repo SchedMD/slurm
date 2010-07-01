@@ -550,7 +550,7 @@ existing_allocation(void)
 slurm_fd
 slurmctld_msg_init(void)
 {
-	slurm_addr slurm_address;
+	slurm_addr_t slurm_address;
 	uint16_t port;
 	static slurm_fd slurmctld_fd   = (slurm_fd) 0;
 

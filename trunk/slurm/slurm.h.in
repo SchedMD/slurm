@@ -129,12 +129,12 @@ typedef unsigned char SLURM_BOOL;
 #define bool SLURM_BOOL
 #endif
 
-/* Define slurm_addr below to avoid including extraneous slurm headers */
+/* Define slurm_addr_t below to avoid including extraneous slurm headers */
 #ifdef	HAVE_SYS_SOCKET_H
-#  ifndef __slurm_addr_defined
+#  ifndef __slurm_addr_t_defined
 #    include <netinet/in.h>
-#    define  __slurm_addr_defined
-typedef struct sockaddr_in slurm_addr;
+#    define  __slurm_addr_t_defined
+typedef struct sockaddr_in slurm_addr_t;
 #  endif
 #endif
 
@@ -1403,7 +1403,7 @@ typedef struct job_alloc_info_response_msg {
 	uint16_t *cpus_per_node;/* cpus per node */
 	uint32_t *cpu_count_reps;/* how many nodes have same cpu count */
 	uint32_t node_cnt;	/* count of nodes */
-	slurm_addr *node_addr;	/* network addresses */
+	slurm_addr_t *node_addr;	/* network addresses */
 	uint32_t error_code;	/* error code for warning message */
 	dynamic_plugin_data_t *select_jobinfo;	/* opaque data structure,
 						 * use
@@ -1835,7 +1835,7 @@ typedef struct partition_info update_part_msg_t;
 
 typedef struct job_sbcast_cred_msg {
 	uint32_t      job_id;		/* assigned job id */
-	slurm_addr   *node_addr;	/* network addresses */
+	slurm_addr_t  *node_addr;	/* network addresses */
 	uint32_t      node_cnt;		/* count of nodes */
 	char         *node_list;	/* assigned list of nodes */
 	sbcast_cred_t *sbcast_cred;	/* opaque data structure */

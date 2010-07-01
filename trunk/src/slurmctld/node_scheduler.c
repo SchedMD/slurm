@@ -1786,12 +1786,12 @@ extern void build_node_details(struct job_record *job_ptr)
 		fatal("hostlist_create error for %s: %m", job_ptr->nodes);
 	job_ptr->total_nodes = job_ptr->node_cnt = hostlist_count(host_list);
 	xrealloc(job_ptr->node_addr,
-		 (sizeof(slurm_addr) * job_ptr->node_cnt));
+		 (sizeof(slurm_addr_t) * job_ptr->node_cnt));
 
 	while ((this_node_name = hostlist_shift(host_list))) {
 		if ((node_ptr = find_node_record(this_node_name))) {
 			memcpy(&job_ptr->node_addr[node_inx++],
-			       &node_ptr->slurm_addr, sizeof(slurm_addr));
+			       &node_ptr->slurm_addr, sizeof(slurm_addr_t));
 		} else {
 			error("Invalid node %s in JobId=%u",
 			      this_node_name, job_ptr->job_id);

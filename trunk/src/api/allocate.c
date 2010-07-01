@@ -74,7 +74,7 @@ extern pid_t getsid(pid_t pid);		/* missing from <unistd.h> */
 #define MIN_ALLOC_WAIT  5	/* seconds */
 
 typedef struct {
-	slurm_addr address;
+	slurm_addr_t address;
 	int fd;
 	char *hostname;
 	uint16_t port;
@@ -725,7 +725,7 @@ _accept_msg_connection(int listen_fd,
 {
 	int	     conn_fd;
 	slurm_msg_t  *msg = NULL;
-	slurm_addr   cli_addr;
+	slurm_addr_t   cli_addr;
 	char         host[256];
 	uint16_t     port;
 	int          rc = 0;

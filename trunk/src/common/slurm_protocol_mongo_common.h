@@ -65,7 +65,7 @@
 typedef uint32_t slurm_fd ;
 
 /* this is the slurm equivalent of the BSD sockets sockaddr */
-typedef struct mongo_addr_t slurm_addr ;
+typedef struct mongo_addr_t slurm_addr_t ;
 /* this is the slurm equivalent of the BSD sockets fd_set */
 typedef fd_set slurm_fd_set ;
 /*struct kevin {

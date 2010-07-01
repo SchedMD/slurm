@@ -90,7 +90,7 @@ void *_forward_thread(void *arg)
 	ret_data_info_t *ret_data_info = NULL;
 	char *name = NULL;
 	hostlist_t hl = hostlist_create(fwd_msg->header.forward.nodelist);
-	slurm_addr addr;
+	slurm_addr_t addr;
 	char buf[8196];
 	int steps = 0;
 	int start_timeout = fwd_msg->timeout;
@@ -467,7 +467,7 @@ extern int forward_msg(forward_struct_t *forward_struct,
 
 		memcpy(&forward_msg->header.orig_addr,
 		       &header->orig_addr,
-		       sizeof(slurm_addr));
+		       sizeof(slurm_addr_t));
 
 		forward_msg->header.version = header->version;
 		forward_msg->header.flags = header->flags;

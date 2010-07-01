@@ -68,8 +68,8 @@ typedef struct srun_key {
 
 typedef struct srun_info {
 	srun_key_t *key;	   /* srun key for IO verification         */
-	slurm_addr resp_addr;	   /* response addr for task exit msg      */
-	slurm_addr ioaddr;         /* Address to connect on for normal I/O.
+	slurm_addr_t resp_addr;	   /* response addr for task exit msg      */
+	slurm_addr_t ioaddr;       /* Address to connect on for normal I/O.
 				      Spawn IO uses messages to the normal
 				      resp_addr. */
 } srun_info_t;
@@ -214,8 +214,8 @@ void job_kill(slurmd_job_t *job, int signal);
 
 void job_destroy(slurmd_job_t *job);
 
-struct srun_info * srun_info_create(slurm_cred_t *cred, slurm_addr *respaddr,
-				    slurm_addr *ioaddr);
+struct srun_info * srun_info_create(slurm_cred_t *cred, slurm_addr_t *respaddr,
+				    slurm_addr_t *ioaddr);
 
 void  srun_info_destroy(struct srun_info *srun);
 

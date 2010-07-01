@@ -366,7 +366,7 @@ slurmd_req(slurm_msg_t *msg)
 
 static int
 _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
-		      slurm_addr *cli, slurm_addr *self,
+		      slurm_addr_t *cli, slurm_addr_t *self,
 		      hostset_t step_hset)
 {
 	int len = 0;
@@ -378,7 +378,7 @@ _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
 	int rank;
 	int parent_rank, children, depth, max_depth;
 	char *parent_alias = NULL;
-	slurm_addr parent_addr = {0};
+	slurm_addr_t parent_addr = {0};
 	char pwd_buffer[PW_BUF_SIZE];
 	struct passwd pwd, *pwd_result;
 
@@ -408,7 +408,7 @@ _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
 				  &depth, &max_depth);
 		if (rank > 0) { /* rank 0 talks directly to the slurmctld */
 			int rc;
-			/* Find the slurm_addr of this node's parent slurmd
+			/* Find the slurm_addr_t of this node's parent slurmd
 			   in the step host list */
 			parent_alias = hostset_nth(step_hset, parent_rank);
 			rc = slurm_conf_get_addr(parent_alias, &parent_addr);
@@ -445,7 +445,7 @@ _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
 	safe_write(fd, &children, sizeof(int));
 	safe_write(fd, &depth, sizeof(int));
 	safe_write(fd, &max_depth, sizeof(int));
-	safe_write(fd, &parent_addr, sizeof(slurm_addr));
+	safe_write(fd, &parent_addr, sizeof(slurm_addr_t));
 
 	/* send conf over to slurmstepd */
 	buffer = init_buf(0);
@@ -550,7 +550,7 @@ rwfail:
  */
 static int
 _forkexec_slurmstepd(slurmd_step_type_t type, void *req,
-		     slurm_addr *cli, slurm_addr *self,
+		     slurm_addr_t *cli, slurm_addr_t *self,
 		     const hostset_t step_hset)
 {
 	pid_t pid;
@@ -901,15 +901,15 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	launch_tasks_request_msg_t *req = msg->data;
 	bool     super_user = false;
 	bool     first_job_run;
-	slurm_addr self;
-	slurm_addr *cli = &msg->orig_addr;
+	slurm_addr_t self;
+	slurm_addr_t *cli = &msg->orig_addr;
 	socklen_t adlen;
 	hostset_t step_hset = NULL;
 	job_mem_limits_t *job_limits_ptr;
 	int nodeid = nodelist_find(req->complete_nodelist, conf->node_name);
 
 	req_uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
-	memcpy(&req->orig_addr, &msg->orig_addr, sizeof(slurm_addr));
+	memcpy(&req->orig_addr, &msg->orig_addr, sizeof(slurm_addr_t));
 
 	slurmd_launch_request(req->job_id, req, nodeid);
 
@@ -1172,7 +1172,7 @@ _rpc_batch_job(slurm_msg_t *msg)
 	uid_t    req_uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
 	char    *resv_id = NULL;
 	bool	 replied = false;
-	slurm_addr *cli = &msg->orig_addr;
+	slurm_addr_t *cli = &msg->orig_addr;
 
 	if (!_slurm_authorized_user(req_uid)) {
 		error("Security violation, batch launch RPC from uid %u",
@@ -2484,13 +2484,13 @@ _rpc_reattach_tasks(slurm_msg_t *msg)
 	int          rc   = SLURM_SUCCESS;
 	uint16_t     port = 0;
 	char         host[MAXHOSTNAMELEN];
-	slurm_addr   ioaddr;
+	slurm_addr_t   ioaddr;
 	void        *job_cred_sig;
 	uint32_t     len;
 	int               fd;
 	uid_t             req_uid;
 	slurmstepd_info_t *step = NULL;
-	slurm_addr *cli = &msg->orig_addr;
+	slurm_addr_t *cli = &msg->orig_addr;
 	uint32_t nodeid = (uint32_t)NO_VAL;
 
 	slurm_msg_t_copy(&resp_msg, msg);
@@ -2526,7 +2526,7 @@ _rpc_reattach_tasks(slurm_msg_t *msg)
 	/*
 	 * Set response address by resp_port and client address
 	 */
-	memcpy(&resp_msg.address, cli, sizeof(slurm_addr));
+	memcpy(&resp_msg.address, cli, sizeof(slurm_addr_t));
 	if (req->num_resp_port > 0) {
 		port = req->resp_port[nodeid % req->num_resp_port];
 		slurm_set_addr(&resp_msg.address, port, NULL);
@@ -2535,7 +2535,7 @@ _rpc_reattach_tasks(slurm_msg_t *msg)
 	/*
 	 * Set IO address by io_port and client address
 	 */
-	memcpy(&ioaddr, cli, sizeof(slurm_addr));
+	memcpy(&ioaddr, cli, sizeof(slurm_addr_t));
 
 	if (req->num_io_port > 0) {
 		port = req->io_port[nodeid % req->num_io_port];

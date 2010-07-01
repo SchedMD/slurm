@@ -164,7 +164,7 @@ typedef struct kill_thread {
  */
 static int  _access(const char *path, int modes, uid_t uid, gid_t gid);
 static void _send_launch_failure(launch_tasks_request_msg_t *,
-				 slurm_addr *, int);
+				 slurm_addr_t *, int);
 static int  _drain_node(char *reason);
 static int  _fork_all_tasks(slurmd_job_t *job);
 static int  _become_user(slurmd_job_t *job, struct priv_state *ps);
@@ -212,8 +212,8 @@ static slurmd_job_t *reattach_job;
  * Launch an job step on the current node
  */
 extern slurmd_job_t *
-mgr_launch_tasks_setup(launch_tasks_request_msg_t *msg, slurm_addr *cli,
-		       slurm_addr *self)
+mgr_launch_tasks_setup(launch_tasks_request_msg_t *msg, slurm_addr_t *cli,
+		       slurm_addr_t *self)
 {
 	slurmd_job_t *job = NULL;
 
@@ -294,7 +294,7 @@ batch_finish(slurmd_job_t *job, int rc)
  * Launch a batch job script on the current node
  */
 slurmd_job_t *
-mgr_launch_batch_job_setup(batch_job_launch_msg_t *msg, slurm_addr *cli)
+mgr_launch_batch_job_setup(batch_job_launch_msg_t *msg, slurm_addr_t *cli)
 {
 	slurmd_job_t *job = NULL;
 
@@ -1619,7 +1619,7 @@ static int _drain_node(char *reason)
 }
 
 static void
-_send_launch_failure (launch_tasks_request_msg_t *msg, slurm_addr *cli, int rc)
+_send_launch_failure (launch_tasks_request_msg_t *msg, slurm_addr_t *cli, int rc)
 {
 	slurm_msg_t resp_msg;
 	launch_tasks_response_msg_t resp;
@@ -1635,7 +1635,7 @@ _send_launch_failure (launch_tasks_request_msg_t *msg, slurm_addr *cli, int rc)
 	debug ("sending launch failure message: %s", slurm_strerror (rc));
 
 	slurm_msg_t_init(&resp_msg);
-	memcpy(&resp_msg.address, cli, sizeof(slurm_addr));
+	memcpy(&resp_msg.address, cli, sizeof(slurm_addr_t));
 	slurm_set_addr(&resp_msg.address,
 		       msg->resp_port[nodeid % msg->num_resp_port],
 		       NULL);

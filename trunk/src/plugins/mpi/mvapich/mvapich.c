@@ -1304,7 +1304,7 @@ static int mvapich_abort_timeout (void)
 
 static int mvapich_abort_accept (mvapich_state_t *st)
 {
-	slurm_addr addr;
+	slurm_addr_t addr;
 	int rc;
 	struct pollfd pfds[2];
 
@@ -1627,7 +1627,7 @@ again:
  */
 static int mvapich_accept_new (mvapich_state_t *st)
 {
-	slurm_addr addr;
+	slurm_addr_t addr;
 	int fd;
 
 	/*

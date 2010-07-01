@@ -5,8 +5,9 @@ documents those changes that are of interest to users and admins.
 =============================
  -- sbatch can now submit jobs to multiple clusters and run on the earliest
     available.
- -- Fix bug introduced in pre8 that prevented job dependencies and job 
+ -- Fix bug introduced in pre8 that prevented job dependencies and job
     triggers from working without the --enable-debug configure option.
+ -- Replaced slurm_addr with slurm_addr_t
 
 * Changes in SLURM 2.2.0.pre8
 =============================

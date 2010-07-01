@@ -109,7 +109,7 @@ typedef struct names_ll_s {
 	uint16_t sockets;
 	uint16_t cores;
 	uint16_t threads;
-	slurm_addr addr;
+	slurm_addr_t addr;
 	bool addr_initialized;
 	struct names_ll_s *next_alias;
 	struct names_ll_s *next_hostname;
@@ -1323,10 +1323,10 @@ extern uint16_t slurm_conf_get_port(const char *node_name)
 }
 
 /*
- * slurm_conf_get_addr - Return the slurm_addr for a given NodeName
+ * slurm_conf_get_addr - Return the slurm_addr_t for a given NodeName
  * Returns SLURM_SUCCESS on success, SLURM_FAILURE on failure.
  */
-extern int slurm_conf_get_addr(const char *node_name, slurm_addr *address)
+extern int slurm_conf_get_addr(const char *node_name, slurm_addr_t *address)
 {
 	int idx;
 	names_ll_t *p;

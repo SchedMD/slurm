@@ -58,7 +58,7 @@ typedef struct agent_arg {
 	uint32_t	node_count;	/* number of nodes to communicate
 					 * with */
 	uint16_t	retry;		/* if set, keep trying */
-	slurm_addr      *addr;          /* if set will send to this
+	slurm_addr_t    *addr;          /* if set will send to this
 					   addr not hostlist */
 	hostlist_t	hostlist;	/* hostlist containing the
 					 * nodes we are sending to */
