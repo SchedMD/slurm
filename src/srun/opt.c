@@ -1822,10 +1822,10 @@ static bool _opt_verify(void)
 		if ((opt.sockets_per_node != NO_VAL) &&
 		    (opt.cores_per_socket != NO_VAL) &&
 		    (opt.threads_per_core != NO_VAL)) {
-			opt.nprocs *= opt.min_sockets_per_node;
-			opt.nprocs *= opt.min_cores_per_socket;
-			opt.nprocs *= opt.min_threads_per_core;
-			opt.nprocs_set = true;
+			opt.ntasks *= opt.sockets_per_node;
+			opt.ntasks *= opt.cores_per_socket;
+			opt.ntasks *= opt.threads_per_core;
+			opt.ntasks_set = true;
 		}
 
 		/* massage the numbers */
