@@ -1825,6 +1825,7 @@ extern int clusteracct_storage_p_register_ctld(void *db_conn, uint16_t port)
 {
 	slurmdbd_msg_t msg;
 	dbd_register_ctld_msg_t req;
+	int rc = SLURM_SUCCESS;
 
 	info("Registering slurmctld at port %u with slurmdbd.", port);
 	memset(&req, 0, sizeof(dbd_register_ctld_msg_t));
@@ -1837,10 +1838,9 @@ extern int clusteracct_storage_p_register_ctld(void *db_conn, uint16_t port)
 	msg.msg_type     = DBD_REGISTER_CTLD;
 	msg.data         = &req;
 
-	if (slurm_send_slurmdbd_msg(SLURMDBD_VERSION, &msg) < 0)
-		return SLURM_ERROR;
+	slurm_send_slurmdbd_recv_rc_msg(SLURMDBD_VERSION, &msg, &rc);
 
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 /*

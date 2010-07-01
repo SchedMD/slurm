@@ -1154,7 +1154,11 @@ extern int as_mysql_cluster_cpus(mysql_conn_t *mysql_conn,
 	if(!(result = mysql_db_query_ret(
 		     mysql_conn->db_conn, query, 0))) {
 		xfree(query);
-		return SLURM_ERROR;
+		if(mysql_errno(mysql_conn->db_conn) == ER_NO_SUCH_TABLE)
+			rc = ESLURM_ACCESS_DENIED;
+		else
+			rc = SLURM_ERROR;
+		return rc;
 	}
 	xfree(query);
 

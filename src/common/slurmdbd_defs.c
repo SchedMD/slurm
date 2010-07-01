@@ -231,10 +231,25 @@ extern int slurm_send_slurmdbd_recv_rc_msg(uint16_t rpc_version,
 			char *comment = msg->comment;
 			if(!comment)
 				comment = slurm_strerror(msg->return_code);
-			debug("slurmdbd: Issue with call %s(%u): %u(%s)",
-			      slurmdbd_msg_type_2_str(msg->sent_type, 1),
-			      msg->sent_type, msg->return_code,
-			      comment);
+			if(msg->sent_type == DBD_REGISTER_CTLD &&
+			   slurm_get_accounting_storage_enforce()) {
+				error("slurmdbd: Issue with call "
+				      "%s(%u): %u(%s)",
+				      slurmdbd_msg_type_2_str(
+					      msg->sent_type, 1),
+				      msg->sent_type, msg->return_code,
+				      comment);
+				fatal("You need to add this cluster "
+				      "to accounting if you want to "
+				      "enforce associations, or no "
+				      "jobs will ever run.");
+			} else
+				debug("slurmdbd: Issue with call "
+				      "%s(%u): %u(%s)",
+				      slurmdbd_msg_type_2_str(
+					      msg->sent_type, 1),
+				      msg->sent_type, msg->return_code,
+				      comment);
 		}
 		slurmdbd_free_rc_msg(msg);
 	}
@@ -1653,7 +1668,6 @@ static int _handle_mult_rc_ret(uint16_t rpc_version, int read_timeout)
 						      msg->sent_type, 1),
 					      msg->sent_type,
 					      msg->comment);
-
 			}
 			slurmdbd_free_rc_msg(msg);
 		} else

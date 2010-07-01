@@ -967,22 +967,27 @@ static int _cluster_cpus(slurmdbd_conn_t *slurmdbd_conn,
 		goto end_it;
 	}
 	if (slurmdbd_unpack_cluster_cpus_msg(&cluster_cpus_msg,
-					     slurmdbd_conn->rpc_version, in_buffer) !=
+					     slurmdbd_conn->rpc_version,
+					     in_buffer) !=
 	    SLURM_SUCCESS) {
 		comment = "Failed to unpack DBD_CLUSTER_CPUS message";
 		error("%s", comment);
 		rc = SLURM_ERROR;
 		goto end_it;
 	}
-	/* debug2("DBD_CLUSTER_CPUS: called for %s(%u)", */
-	/*        cluster_cpus_msg->cluster_name, */
-	/*        cluster_cpus_msg->cpu_count); */
+	debug2("DBD_CLUSTER_CPUS: called for %s(%u)",
+	       slurmdbd_conn->cluster_name,
+	       cluster_cpus_msg->cpu_count);
 
 	rc = clusteracct_storage_g_cluster_cpus(
 		slurmdbd_conn->db_conn,
 		cluster_cpus_msg->cluster_nodes,
 		cluster_cpus_msg->cpu_count,
 		cluster_cpus_msg->event_time);
+	if(rc == ESLURM_ACCESS_DENIED) {
+		comment = "This cluster hasn't been added to accounting yet";
+		rc = SLURM_ERROR;
+	}
 end_it:
 	slurmdbd_free_cluster_cpus_msg(cluster_cpus_msg);
 	*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
@@ -1692,8 +1697,8 @@ static int _flush_jobs(slurmdbd_conn_t *slurmdbd_conn,
 		rc = SLURM_ERROR;
 		goto end_it;
 	}
-	/* debug2("DBD_FLUSH_JOBS: called for %s", */
-	/*        cluster_cpus_msg->cluster_name); */
+	debug2("DBD_FLUSH_JOBS: called for %s",
+	       slurmdbd_conn->cluster_name);
 
 	rc = acct_storage_g_flush_jobs_on_cluster(
 		slurmdbd_conn->db_conn,
