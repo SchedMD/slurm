@@ -1653,7 +1653,8 @@ extern int fini(void)
 	xfree(cr_node_num_cores);
 	xfree(cr_num_core_count);
 
-	verbose("%s shutting down ...", plugin_name);
+	if(cr_type)
+		verbose("%s shutting down ...", plugin_name);
 
 	return SLURM_SUCCESS;
 }
