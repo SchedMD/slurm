@@ -399,7 +399,7 @@ sub job_reason_string {
 	return "Resource" if $r == WAIT_RESOURCES;
 	return "PartitionNodeLimit" if $r == WAIT_PART_NODE_LIMIT;
 	return "PartitionTimeLimit" if $r == WAIT_PART_TIME_LIMIT;
-	return "PartitionDown" if $r == WAIT_PART_STATE;
+	return "PartitionDown" if $r == WAIT_PART_DOWN;
 	return "JobHeld" if $r == WAIT_HELD;
 	return "BeginTime" if $r == WAIT_TIME;
 	return "PartitionDown" if $r == FAIL_DOWN_PARTITION;
