@@ -1813,9 +1813,9 @@ static bool _opt_verify(void)
 		opt.nprocs = opt.min_nodes;
 
 		/* 1 proc / min_[socket * core * thread] default */
-		if ((opt.sockets_per_node != NO_VAL) &&
-		    (opt.cores_per_socket != NO_VAL) &&
-		    (opt.threads_per_core != NO_VAL)) {
+		if ((opt.min_sockets_per_node != NO_VAL) &&
+		    (opt.min_cores_per_socket != NO_VAL) &&
+		    (opt.min_threads_per_core != NO_VAL)) {
 			opt.nprocs *= opt.min_sockets_per_node;
 			opt.nprocs *= opt.min_cores_per_socket;
 			opt.nprocs *= opt.min_threads_per_core;
