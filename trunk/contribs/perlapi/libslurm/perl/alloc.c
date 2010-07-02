@@ -268,7 +268,7 @@ job_alloc_info_response_msg_to_hv(job_alloc_info_response_msg_t *resp_msg, HV* h
 		avp = newAV();
 		for(i = 0; i < resp_msg->node_cnt; i ++) {
 			/* XXX: This is a packed inet address */
-			av_store(avp, i, newSVpvn((char*)(resp_msg->node_addr + i), sizeof(slurm_addr)));
+			av_store(avp, i, newSVpvn((char*)(resp_msg->node_addr + i), sizeof(slurm_addr_t)));
 		}
 		hv_store_sv(hv, "node_addr", newRV_noinc((SV*)avp));
 	}
