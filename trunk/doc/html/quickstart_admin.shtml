@@ -318,20 +318,22 @@ expected that this library will be available in the near future. </p>
 <p>SLURM exports information for parallel debuggers using the specification
 detailed  <a href=http://www-unix.mcs.anl.gov/mpi/mpi-debug/mpich-attach.txt>here</a>.
 This is meant to be exploited by any parallel debugger (notably, TotalView),
-and support is unconditionally compiled into SLURM code.
-</p>
-<p>We use a patched version of TotalView that looks for a "totalview_jobid"
-symbol in <b>srun</b> that it then uses (per configuration) to perform a bulk
-launch of the <b>tvdsvr</b> daemons via a subsequent <b>srun</b>. Otherwise
-it is difficult to get TotalView to use <b>srun</b> for a bulk launch, since
-<b>srun</b> will be unable to determine for which job it is launching tasks.
-</p>
-<p>Another solution would be to run TotalView within an existing <b>srun</b>
-<i>--allocate</i> session. Then the Totalview bulk launch command to <b>srun</b>
-could be set to ensure only a single task per node. This functions properly
-because the SLRUM_JOBID environment variable is set in the allocation shell
-environment.
-</p>
+and support is unconditionally compiled into SLURM code.</p>
+
+<p>The following lines should also be added to the global <i>.tvdrc</i> file
+for TotalView to operate with SLURM:
+<pre>
+dset TV::parallel_configs {
+	name: SLURM;
+	description: SLURM;
+	starter: srun %s %p %a;
+	style: manager_process;
+	tasks_option: -n;
+	nodes_option: -N;
+	env: ;
+	force_env: false;
+}
+</pre></p>
 
 <h3>Compute node access</h3>
 <p>SLURM does not by itself limit access to allocated compute nodes,
@@ -664,6 +666,6 @@ Contents of major releases are also described in the RELEASE_NOTES file.
 
 </pre> <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 1 December 2009</p>
+<p style="text-align:center;">Last modified 2 July 2010</p>
 
 <!--#include virtual="footer.txt"-->

@@ -130,6 +130,8 @@ running?</a></li>
 <li><a href="#amazon_ec2">Can SLURM be used to run jobs on Amazon's EC2?</a></li>
 <li><a href="#core_dump">If a SLURM daemon core dumps, where can I find the
 core file?</a></li>
+<li><a href="#totalview">How can TotalView be configured to operate with
+SLURM?</a></li>
 </ol>
 
 
@@ -1318,8 +1320,24 @@ Otherwise it will be found in directory used for saving state
 occurs. It will either be in spawned job's working directory on the same 
 location as that described above for the <i>slurmd</i> daemon.</p>
 
+<p><a name="totalview"><b>42. How can TotalView be configured to operate with
+SLURM?</b></a></br>
+<p>The following lines should also be added to the global <i>.tvdrc</i> file
+for TotalView to operate with SLURM:
+<pre>
+dset TV::parallel_configs {
+	name: SLURM;
+	description: SLURM;
+	starter: srun %s %p %a;
+	style: manager_process;
+	tasks_option: -n;
+	nodes_option: -N;
+	env: ;
+	force_env: false;
+}
+</pre></p>
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 21 June 2010</p>
+<p style="text-align:center;">Last modified 2 July 2010</p>
 
 <!--#include virtual="footer.txt"-->
