@@ -18,7 +18,17 @@ such as SSH or RSH (BlueGene MPI and some MPICH1 modes).
 These tasks initiated outside of SLURM's monitoring
 or control. SLURM's epilog should be configured to purge
 these tasks when the job's allocation is relinquished. </li>
-</ol>
+</ol></p>
+
+<p>Two SLURM parameters control which MPI implementation will be
+supported. Proper configuration is essential for SLURM to establish the
+proper environment for the MPI job, such as setting the appropriate
+environment variables. The <i>MpiDefault</i> configuration parameter
+in <i>slurm.conf</i> establishes the system default MPI to be supported.
+The <i>srun</i> option <i>--mpi=</i> (or the equivalent environment 
+variable <i>SLURM_MPI_TYPE</i> can be used to specify when a
+different MPI implementation is to be supported for an individual job.</p>
+
 <p>Links to instructions for using several varieties of MPI
 with SLURM are provided below.
 <ul>
@@ -39,29 +49,8 @@ with SLURM are provided below.
 
 <h2><a name="open_mpi" href="http://www.open-mpi.org/"><b>Open MPI</b></a></h2>
 
-<p>Open MPI relies upon
-SLURM to allocate resources for the job and then mpirun to initiate the
-tasks. When using <span class="commandline">salloc</span> command,
-<span class="commandline">mpirun</span>'s -nolocal option is recommended.
-For example:
-<pre>
-$ salloc -n4 sh    # allocates 4 processors
-                   # and spawns shell for job
-&gt; mpirun -np 4 -nolocal a.out
-&gt; exit             # exits shell spawned by
-                   # initial srun command
-</pre>
-<p>Note that any direct use of <span class="commandline">srun</span>
-will only launch one task per node when the LAM/MPI plugin is used.
-To launch more than one task per node using the
-<span class="commandline">srun</span> command, the <i>--mpi=none</i>
-option will be required to explicitly disable the LAM/MPI plugin.</p>
-
-<h2>Future Use</h2>
-<p>There is work underway in both SLURM and Open MPI to support task launch
-using the <span class="commandline">srun</span> command.
-We expect this mode of operation to be supported late in 2009.
-It may differ slightly from the description below.
+<p>The current versions of SLURM and Open MPI support task launch using the
+<span class="commandline">srun</span> command.
 It relies upon SLURM version 2.0 (or higher) managing
 reservations of communication ports for the Open MPI's use.
 The system administrator must specify the range of ports to be reserved
@@ -83,6 +72,21 @@ After three failed attempts, the job step will be aborted.
 Repeated failures should be reported to your system administrator in
 order to rectify the problem by cancelling the processes holding those
 ports.</p>
+
+<h2>Older releases</h2>
+<p>Older versions of Open MPI and SLURM rely upon SLURM to allocate resources
+for the job and then mpirun to initiate the tasks.
+When using SLURM's <span class="commandline">salloc</span> command,
+<span class="commandline">mpirun</span>'s -nolocal option is recommended.
+For example:
+<pre>
+$ salloc -n4 sh    # allocates 4 processors
+                   # and spawns shell for job
+&gt; mpirun -np 4 -nolocal a.out
+&gt; exit             # exits shell spawned by
+                   # initial srun command
+</pre></p>
+
 <hr size=4 width="100%">
 
 
@@ -122,6 +126,7 @@ etc.
 &gt; exit            # exits shell spawned by
                   # initial srun command
 </pre>
+
 <p>Note that any direct use of <span class="commandline">srun</span>
 will only launch one task per node when the LAM/MPI plugin is configured
 as the default plugin.  To launch more than one task per node using the
@@ -311,6 +316,6 @@ sbatch: Submitted batch job 1234
 tasks. These tasks are not managed by SLURM since they are launched
 outside of its control.</p>
 
-<p style="text-align:center;">Last modified 20 January 2010</p>
+<p style="text-align:center;">Last modified 2 July 2010</p>
 
 <!--#include virtual="footer.txt"-->
