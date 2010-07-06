@@ -10,7 +10,7 @@
 #          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2002-2007 The Regents of the University of California.
-# Copyright (C) 2008 Lawrence Livermore National Security.
+# Copyright (C) 2008-2010 Lawrence Livermore National Security.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
 # CODE-OCEC-09-009. All rights reserved.
@@ -43,7 +43,6 @@ print_header $test_id
 #
 # Submit a 1 node job and validate that we don't get more than one
 #
-set can_not_run 0
 set job_id      0
 set host_0      ""
 set task_cnt  0
@@ -54,12 +53,16 @@ expect {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
-	-re "(Task count specification invalid|configuration is not available)" {
+	-re "(Task count specification invalid|configuration not available)" {
 		if { [test_front_end] } {
-			set can_not_run 1
 			send_user "\nWARNING: error expected, Testing is incompatible with front-end systems\n"
+		} else {
+			 send_user "\nWARNING: test not compatable with this configuration\n"
 		}
-		exp_continue
+		if {$job_id != 0} {
+                        cancel_job $job_id
+		}
+		exit $exit_code
 	}
 	-re "($number): ($alpha_numeric_under)" {
 		if {$task_cnt == 0} {
@@ -79,9 +82,6 @@ expect {
 	eof {
 		wait
 	}
-}
-if {$can_not_run == 1} {
-	exit 0
 }
 
 if {[string compare $host_0 ""] == 0} {
@@ -262,12 +262,11 @@ expect {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
-	-re "More processors requested than permitted" {
+	-re "More processors requested than permitted|Node count specification invalid|configuration not available" {
 		send_user "\nWARNING: can't test salloc task distribution\n"
-		exit $exit_code
-	}
-	-re "Node count specification invalid" {
-		send_user "\nWARNING: can't test salloc task distribution\n"
+		if {$job_id != 0} {
+			cancel_job $job_id
+		}
 		exit $exit_code
 	}
 	-re "($number): ($alpha_numeric_under)" {
