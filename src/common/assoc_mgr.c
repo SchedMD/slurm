@@ -1685,6 +1685,10 @@ extern int assoc_mgr_update_assocs(acct_update_object_t *update)
 	if(!assoc_mgr_association_list)
 		return SLURM_SUCCESS;
 
+	/* Since we could possibly need the qos lock handle it
+	   now to avoid deadlock.  Always do QOS first.
+	*/
+	slurm_mutex_lock(&assoc_mgr_qos_lock);
 	slurm_mutex_lock(&assoc_mgr_association_lock);
 	itr = list_iterator_create(assoc_mgr_association_list);
 	while((object = list_pop(update->objects))) {
@@ -1826,9 +1830,7 @@ extern int assoc_mgr_update_assocs(acct_update_object_t *update)
 
 			if(!slurmdbd_conf && !parents_changed) {
 				debug("updating assoc %u", rec->id);
-				slurm_mutex_lock(&assoc_mgr_qos_lock);
 				log_assoc_rec(rec, assoc_mgr_qos_list);
-				slurm_mutex_unlock(&assoc_mgr_qos_lock);
 			}
 			break;
 		case ACCT_ADD_ASSOC:
@@ -1946,18 +1948,17 @@ extern int assoc_mgr_update_assocs(acct_update_object_t *update)
 		}
 		if(setup_childern) {
 			/* Now normalize the static shares */
-			slurm_mutex_lock(&assoc_mgr_qos_lock);
 			list_iterator_reset(itr);
 			while((object = list_next(itr))) {
 				_normalize_assoc_shares(object);
 				log_assoc_rec(object, assoc_mgr_qos_list);
 			}
-			slurm_mutex_unlock(&assoc_mgr_qos_lock);
 		}
 	}
 
 	list_iterator_destroy(itr);
 	slurm_mutex_unlock(&assoc_mgr_association_lock);
+	slurm_mutex_unlock(&assoc_mgr_qos_lock);
 
 	/* This needs to happen outside of the
 	   assoc_mgr_association_lock */
@@ -2182,6 +2183,10 @@ extern int assoc_mgr_update_qos(acct_update_object_t *update)
 		return SLURM_SUCCESS;
 
 	slurm_mutex_lock(&assoc_mgr_qos_lock);
+	/* Since we could possibly need the association lock handle it
+	   now to avoid deadlock. Always do QOS first.
+	*/
+	slurm_mutex_lock(&assoc_mgr_association_lock);
 	itr = list_iterator_create(assoc_mgr_qos_list);
 	while((object = list_pop(update->objects))) {
 		list_iterator_reset(itr);
@@ -2281,7 +2286,6 @@ extern int assoc_mgr_update_qos(acct_update_object_t *update)
 			/* Remove this qos from all the associations
 			   on this cluster.
 			*/
-			slurm_mutex_lock(&assoc_mgr_association_lock);
 			assoc_itr = list_iterator_create(
 				assoc_mgr_association_list);
 			while((assoc = list_next(assoc_itr))) {
@@ -2292,7 +2296,6 @@ extern int assoc_mgr_update_qos(acct_update_object_t *update)
 					bit_clear(assoc->valid_qos, object->id);
 			}
 			list_iterator_destroy(assoc_itr);
-			slurm_mutex_unlock(&assoc_mgr_association_lock);
 
 			break;
 		default:
@@ -2314,7 +2317,6 @@ extern int assoc_mgr_update_qos(acct_update_object_t *update)
 					    g_qos_count);
 		}
 		if(assoc_mgr_association_list) {
-			slurm_mutex_lock(&assoc_mgr_association_lock);
 			assoc_itr = list_iterator_create(
 				assoc_mgr_association_list);
 			while((assoc = list_next(assoc_itr))) {
@@ -2325,11 +2327,11 @@ extern int assoc_mgr_update_qos(acct_update_object_t *update)
 						    g_qos_count);
 			}
 			list_iterator_destroy(assoc_itr);
-			slurm_mutex_unlock(&assoc_mgr_association_lock);
 		}
 	}
 	list_iterator_destroy(itr);
 
+	slurm_mutex_unlock(&assoc_mgr_association_lock);
 	slurm_mutex_unlock(&assoc_mgr_qos_lock);
 
 	return rc;
