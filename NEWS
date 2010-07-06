@@ -36,6 +36,9 @@ documents those changes that are of interest to users and admins.
  -- Fix bug in salloc, sbatch and srun that could under some conditions process
     the --threads-per-core, --cores-per-socket and --sockets-per-node options
     improperly.
+ -- Fix bug in select/cons_res with memory management plus job preemption with
+    job removal (e.g. requeue) which under some conditions failed to preempt
+    jobs.
  
 * Changes in SLURM 2.1.9
 ========================
