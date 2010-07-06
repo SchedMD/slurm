@@ -3651,9 +3651,6 @@ void job_time_limit(void)
 		if (!IS_JOB_RUNNING(job_ptr))
 			continue;
 
-		qos = (acct_qos_rec_t *)job_ptr->qos_ptr;
-		assoc =	(acct_association_rec_t *)job_ptr->assoc_ptr;
-
 		/* find out how many cpu minutes this job has been
 		 * running for. */
 		job_cpu_usage_mins = (uint64_t)
@@ -3715,6 +3712,14 @@ void job_time_limit(void)
 		    (list_count(job_ptr->step_list) > 0))
 			check_job_step_time_limit(job_ptr, now);
 
+		slurm_mutex_lock(&assoc_mgr_qos_lock);
+		/* Handle both locks here to avoid deadlock. Always do
+		 * QOS first.
+		*/
+		slurm_mutex_lock(&assoc_mgr_association_lock);
+		qos = (acct_qos_rec_t *)job_ptr->qos_ptr;
+		assoc =	(acct_association_rec_t *)job_ptr->assoc_ptr;
+
 		/* The idea here is for qos to trump what an association
 		 * has set for a limit, so if an association set of
 		 * wall 10 mins and the qos has 20 mins set and the
@@ -3722,7 +3727,6 @@ void job_time_limit(void)
 		 * until 20.
 		 */
 		if(qos) {
-			slurm_mutex_lock(&assoc_mgr_qos_lock);
 			usage_mins = (uint64_t)(qos->usage_raw / 60.0);
 			wall_mins = qos->grp_used_wall / 60;
 
@@ -3736,7 +3740,6 @@ void job_time_limit(void)
 				     qos->name, qos->grp_cpu_mins,
 				     usage_mins);
 				job_ptr->state_reason = FAIL_TIMEOUT;
-				slurm_mutex_unlock(&assoc_mgr_qos_lock);
 				goto job_failed;
 			}
 
@@ -3750,7 +3753,6 @@ void job_time_limit(void)
 				     qos->name, qos->grp_wall,
 				     wall_mins);
 				job_ptr->state_reason = FAIL_TIMEOUT;
-				slurm_mutex_unlock(&assoc_mgr_qos_lock);
 				goto job_failed;
 			}
 
@@ -3764,14 +3766,11 @@ void job_time_limit(void)
 				     qos->name, qos->max_cpu_mins_pj,
 				     job_cpu_usage_mins);
 				job_ptr->state_reason = FAIL_TIMEOUT;
-				slurm_mutex_unlock(&assoc_mgr_qos_lock);
 				goto job_failed;
 			}
-			slurm_mutex_unlock(&assoc_mgr_qos_lock);
 		}
 
 		/* handle any association stuff here */
-		slurm_mutex_lock(&assoc_mgr_association_lock);
 		while(assoc) {
 			usage_mins = (uint64_t)(assoc->usage_raw / 60.0);
 			wall_mins = assoc->grp_used_wall / 60;
@@ -3823,8 +3822,10 @@ void job_time_limit(void)
 			if(assoc == assoc_mgr_root_assoc)
 				break;
 		}
-		slurm_mutex_unlock(&assoc_mgr_association_lock);
 	job_failed:
+		slurm_mutex_unlock(&assoc_mgr_association_lock);
+		slurm_mutex_unlock(&assoc_mgr_qos_lock);
+
 		if(job_ptr->state_reason == FAIL_TIMEOUT) {
 			last_job_update = now;
 			_job_timed_out(job_ptr);
@@ -6976,7 +6977,9 @@ static bool _validate_acct_policy(job_desc_msg_t *job_desc,
 	xassert(limit_set_max_nodes);
 	//(*limit_set_max_nodes) = 0;
 
+	/* Handle both locks here to avoid deadlock. Always do QOS first. */
 	slurm_mutex_lock(&assoc_mgr_qos_lock);
+	slurm_mutex_lock(&assoc_mgr_association_lock);
 	if(qos_ptr) {
 		/* for validation we don't need to look at
 		 * qos_ptr->grp_cpu_mins.
@@ -7001,7 +7004,7 @@ static bool _validate_acct_policy(job_desc_msg_t *job_desc,
 				     qos_ptr->grp_nodes,
 				     qos_ptr->name);
 				rc = false;
-				goto end_qos;
+				goto end_it;
 			} else if (job_desc->max_nodes == 0
 				   || (*limit_set_max_nodes
 				       && (job_desc->max_nodes
@@ -7034,7 +7037,7 @@ static bool _validate_acct_policy(job_desc_msg_t *job_desc,
 			     qos_ptr->grp_submit_jobs,
 			     qos_ptr->name);
 			rc = false;
-			goto end_qos;
+			goto end_it;
 		}
 
 
@@ -7065,7 +7068,7 @@ static bool _validate_acct_policy(job_desc_msg_t *job_desc,
 				     job_desc->min_nodes,
 				     qos_ptr->max_nodes_pj);
 				rc = false;
-				goto end_qos;
+				goto end_it;
 			} else if (job_desc->max_nodes == 0
 				   || (*limit_set_max_nodes
 				       && (job_desc->max_nodes
@@ -7107,7 +7110,7 @@ static bool _validate_acct_policy(job_desc_msg_t *job_desc,
 				     job_desc->user_id,
 				     qos_ptr->max_submit_jobs_pu);
 				rc = false;
-				goto end_qos;
+				goto end_it;
 			}
 		}
 
@@ -7131,13 +7134,12 @@ static bool _validate_acct_policy(job_desc_msg_t *job_desc,
 				     job_desc->user_id,
 				     job_desc->time_limit, time_limit);
 				rc = false;
-				goto end_qos;
+				goto end_it;
 			}
 		}
 
 	}
 
-	slurm_mutex_lock(&assoc_mgr_association_lock);
 	while(assoc_ptr) {
 		/* for validation we don't need to look at
 		 * assoc_ptr->grp_cpu_mins.
@@ -7305,8 +7307,8 @@ static bool _validate_acct_policy(job_desc_msg_t *job_desc,
 		assoc_ptr = assoc_ptr->parent_assoc_ptr;
 		parent = 1;
 	}
+end_it:
 	slurm_mutex_unlock(&assoc_mgr_association_lock);
-end_qos:
 	slurm_mutex_unlock(&assoc_mgr_qos_lock);
 
 	return rc;
