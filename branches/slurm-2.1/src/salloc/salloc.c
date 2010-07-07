@@ -339,9 +339,9 @@ int main(int argc, char *argv[])
 		return 1;
 	} else {
 		allocation_state = GRANTED;
+		pthread_mutex_unlock(&allocation_state_lock);
 		command_pid = pid = _fork_command(command_argv);
 	}
-	pthread_mutex_unlock(&allocation_state_lock);
 
 	/*
 	 * Wait for command to exit, OR for waitpid to be interrupted by a
