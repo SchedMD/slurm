@@ -63,7 +63,7 @@ static int _get_user_coords(mysql_conn_t *mysql_conn, slurmdb_user_rec_t *user)
 
 	query = xstrdup_printf(
 		"select acct from %s where user='%s' && deleted=0",
-		slurmdb_coord_table, user->name);
+		acct_coord_table, user->name);
 
 	if(!(result =
 	     mysql_db_query_ret(mysql_conn->db_conn, query, 0))) {
@@ -328,7 +328,7 @@ extern int as_mysql_add_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 					"insert into %s (creation_time, "
 					"mod_time, acct, user) values "
 					"(%d, %d, '%s', '%s')",
-					slurmdb_coord_table,
+					acct_coord_table,
 					now, now, acct, user);
 
 			if(txn_query)
@@ -702,7 +702,7 @@ extern List as_mysql_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	query = xstrdup_printf(
 		"update %s as t2 set deleted=1, mod_time=%d where %s",
-		slurmdb_coord_table, now, assoc_char);
+		acct_coord_table, now, assoc_char);
 	xfree(assoc_char);
 
 	rc = mysql_db_query(mysql_conn->db_conn, query);
@@ -807,7 +807,7 @@ extern List as_mysql_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	query = xstrdup_printf(
 		"select user, acct from %s where deleted=0 && %s order by user",
-		slurmdb_coord_table, extra);
+		acct_coord_table, extra);
 
 	debug3("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, THIS_FILE, __LINE__, query);
@@ -867,7 +867,7 @@ extern List as_mysql_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 	itr = list_iterator_create(as_mysql_cluster_list);
 	while((object = list_next(itr))) {
 		if((rc = remove_common(mysql_conn, DBD_REMOVE_ACCOUNT_COORDS,
-				       now, user_name, slurmdb_coord_table,
+				       now, user_name, acct_coord_table,
 				       extra, NULL, object, NULL, NULL))
 		   != SLURM_SUCCESS)
 			break;

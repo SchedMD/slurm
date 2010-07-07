@@ -12,6 +12,8 @@ documents those changes that are of interest to users and admins.
  -- Skeleton code added for BlueGeneQ.
  -- Jobs can now be submitted to multiple partitions (job queues) and use the
     one permitting earliest start time.
+ -- Change slurmdb_coord_table back to acct_coord_table to keep consistant
+    with < 2.1.
 
 * Changes in SLURM 2.2.0.pre8
 =============================

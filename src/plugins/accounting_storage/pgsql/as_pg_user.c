@@ -40,8 +40,8 @@
 
 #include "as_pg_common.h"
 
-char *slurmdb_coord_table = "slurmdb_coord_table";
-static storage_field_t slurmdb_coord_table_fields[] = {
+char *acct_coord_table = "acct_coord_table";
+static storage_field_t acct_coord_table_fields[] = {
 	{ "creation_time", "INTEGER NOT NULL" },
 	{ "mod_time", "INTEGER DEFAULT 0 NOT NULL" },
 	{ "deleted", "INTEGER DEFAULT 0" },
@@ -49,7 +49,7 @@ static storage_field_t slurmdb_coord_table_fields[] = {
 	{ "user_name", "TEXT NOT NULL" },
 	{ NULL, NULL}
 };
-static char *slurmdb_coord_table_constraints = ", "
+static char *acct_coord_table_constraints = ", "
 	"PRIMARY KEY (acct, user_name) "
 	")";
 
@@ -120,7 +120,7 @@ _create_function_add_coord(PGconn *db_conn)
 		"    IF FOUND THEN RETURN; END IF; "
 		"  END; "
 		"END LOOP; END; $$ LANGUAGE PLPGSQL;",
-		slurmdb_coord_table, slurmdb_coord_table, slurmdb_coord_table);
+		acct_coord_table, acct_coord_table, acct_coord_table);
 	return create_function_xfree(db_conn, create_line);
 }
 
@@ -143,7 +143,7 @@ _create_function_add_coords(PGconn *db_conn)
 		"  EXIT WHEN rec IS NULL;"
 		"  PERFORM add_coord(rec); "
 		"END LOOP; END; $$ LANGUAGE PLPGSQL;",
-		slurmdb_coord_table, slurmdb_coord_table);
+		acct_coord_table, acct_coord_table);
 	return create_function_xfree(db_conn, create_line);
 }
 
@@ -208,7 +208,7 @@ _get_user_coords(pgsql_conn_t *pg_conn, slurmdb_user_rec_t *user)
 
 	query = xstrdup_printf(
 		"SELECT acct FROM %s WHERE user_name='%s' AND deleted=0",
-		slurmdb_coord_table, user->name);
+		acct_coord_table, user->name);
 	result = DEF_QUERY_RET;
 	if (!result)
 		return SLURM_ERROR;
@@ -295,8 +295,8 @@ check_user_tables(PGconn *db_conn, char *user)
 
 	rc = check_table(db_conn, user_table, user_table_fields,
 			 user_table_constraints, user);
-	rc |= check_table(db_conn, slurmdb_coord_table, slurmdb_coord_table_fields,
-			  slurmdb_coord_table_constraints, user);
+	rc |= check_table(db_conn, acct_coord_table, acct_coord_table_fields,
+			  acct_coord_table_constraints, user);
 	rc |= _create_function_add_user(db_conn);
 	rc |= _create_function_add_coord(db_conn);
 	rc |= _create_function_add_coords(db_conn);
@@ -622,7 +622,7 @@ as_pg_remove_users(pgsql_conn_t *pg_conn, uint32_t uid,
 
 	/* TODO: why execute this query after remove_coords */
 /* 	query = xstrdup_printf("UPDATE %s AS t2 SET deleted=1, mod_time=%d " */
-/* 			       "WHERE %s", slurmdb_coord_table, */
+/* 			       "WHERE %s", acct_coord_table, */
 /* 			       now, assoc_char); */
 /* 	xfree(assoc_char); */
 /* 	rc = pgsql_db_query(pg_conn->db_conn, query); */
@@ -852,14 +852,14 @@ as_pg_add_coord(pgsql_conn_t *pg_conn, uint32_t uid,
 		while((acct = list_next(itr2))) {
 			/*
 			 * order of vals must match structure of
-			 * slurmdb_coord_table: creation_time, mod_time, deleted,
+			 * acct_coord_table: creation_time, mod_time, deleted,
 			 * acct, user_name
 			 * CAST is required in ARRAY
 			 */
 			if(vals)
 				xstrcat(vals, ", ");
 			xstrfmtcat(vals, "CAST((%d, %d, 0, '%s', '%s') AS %s)",
-				   now, now, acct, user, slurmdb_coord_table);
+				   now, now, acct, user, acct_coord_table);
 
 			if(txn_query)
 				xstrfmtcat(txn_query,
@@ -961,7 +961,7 @@ as_pg_remove_coord(pgsql_conn_t *pg_conn, uint32_t uid,
 
 	query = xstrdup_printf("SELECT user_name, acct FROM %s "
 			       "WHERE deleted=0 %s ORDER BY user_name",
-			       slurmdb_coord_table, cond);
+			       acct_coord_table, cond);
 	/* cond used below */
 	result = DEF_QUERY_RET;
 	if(!result) {
@@ -1008,7 +1008,7 @@ as_pg_remove_coord(pgsql_conn_t *pg_conn, uint32_t uid,
 	/* cond begins with "AND ()" since constructed with concat_cond_list() */
 	/* TODO: fix this */
 	rc = pgsql_remove_common(pg_conn, DBD_REMOVE_ACCOUNT_COORDS, now,
-				 user_name, slurmdb_coord_table, (cond + 4), NULL);
+				 user_name, acct_coord_table, (cond + 4), NULL);
 	xfree(user_name);
 	xfree(cond);
 	if (rc != SLURM_SUCCESS) {

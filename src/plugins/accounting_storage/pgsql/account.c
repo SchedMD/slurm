@@ -110,7 +110,7 @@ _get_slurmdb_coords(pgsql_conn_t *pg_conn, slurmdb_account_rec_t *acct)
 	/* get direct coords */
 	query = xstrdup_printf("SELECT user_name FROM %s "
 			       "WHERE acct='%s' AND deleted=0",
-			       slurmdb_coord_table, acct->name);
+			       acct_coord_table, acct->name);
 	result = DEF_QUERY_RET;
 	if(!result)
 		return SLURM_ERROR;
@@ -130,7 +130,7 @@ _get_slurmdb_coords(pgsql_conn_t *pg_conn, slurmdb_account_rec_t *acct)
 		"  AND (t1.lft>t2.lft AND t1.rgt < t2.rgt)) "
 		"  AND t0.deleted=0 AND t0.acct=t2.acct "
 		"  AND t2.acct != '%s'",
-		slurmdb_coord_table, assoc_table, assoc_table,
+		acct_coord_table, assoc_table, assoc_table,
 		acct->name, acct->name);
 	result = DEF_QUERY_RET;
 	if(!result)

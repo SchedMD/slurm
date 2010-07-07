@@ -321,7 +321,7 @@ pgsql_remove_common(pgsql_conn_t *pg_conn, uint16_t type, time_t now,
 	 * check if there are jobs associated with the related associations.
 	 * if true, do not deleted the entities physically for accouting.
 	 */
-	if (table == slurmdb_coord_table) {
+	if (table == acct_coord_table) {
 		/* jobs not directly relate to coordinators. */
 	} else if (table == qos_table || table == wckey_table) {
 		has_jobs = _check_jobs_before_remove_without_assoctable(
@@ -362,7 +362,7 @@ pgsql_remove_common(pgsql_conn_t *pg_conn, uint16_t type, time_t now,
 
 	/* done if not assoc related entities */
 	if(table == qos_table ||
-	   table == slurmdb_coord_table ||
+	   table == acct_coord_table ||
 	   table == wckey_table)
 		return SLURM_SUCCESS;
 

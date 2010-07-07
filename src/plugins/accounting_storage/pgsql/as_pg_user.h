@@ -43,7 +43,7 @@
 #include "as_pg_common.h"
 
 /* table names */
-extern char *slurmdb_coord_table;
+extern char *acct_coord_table;
 extern char *user_table;
 
 extern int check_user_tables(PGconn *db_conn, char *user);

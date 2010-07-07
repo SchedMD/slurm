@@ -63,7 +63,7 @@ static int _get_account_coords(mysql_conn_t *mysql_conn,
 
 	query = xstrdup_printf(
 		"select user from %s where acct='%s' && deleted=0",
-		slurmdb_coord_table, acct->name);
+		acct_coord_table, acct->name);
 
 	if(!(result =
 	     mysql_db_query_ret(mysql_conn->db_conn, query, 0))) {
@@ -91,7 +91,7 @@ static int _get_account_coords(mysql_conn_t *mysql_conn,
 			   "t1.lft<t2.lft && t1.rgt>t2.lft && "
 			   "t1.user='' && t2.acct='%s' "
 			   "&& t1.acct!='%s' && !t0.deleted",
-			   slurmdb_coord_table, cluster_name, assoc_table,
+			   acct_coord_table, cluster_name, assoc_table,
 			   cluster_name, assoc_table,
 			   acct->name, acct->name);
 	}
