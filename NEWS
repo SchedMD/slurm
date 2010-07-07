@@ -40,6 +40,8 @@ documents those changes that are of interest to users and admins.
     job removal (e.g. requeue) which under some conditions failed to preempt
     jobs.
  -- Fix deadlock potential when using qos and associations in the slurmctld.
+ -- Update documentation to state --ntasks-per-* is for a maximum value
+    instead of an absolute.
 
 * Changes in SLURM 2.1.9
 ========================
