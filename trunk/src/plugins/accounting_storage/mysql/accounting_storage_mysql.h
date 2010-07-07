@@ -70,7 +70,7 @@
 
 #include "../common/common_as.h"
 
-extern char *slurmdb_coord_table;
+extern char *acct_coord_table;
 extern char *acct_table;
 extern char *assoc_day_table;
 extern char *assoc_hour_table;

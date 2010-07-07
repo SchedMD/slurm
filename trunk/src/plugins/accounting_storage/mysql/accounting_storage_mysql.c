@@ -104,7 +104,7 @@ static char *mysql_db_name = NULL;
 
 #define DELETE_SEC_BACK 86400
 
-char *slurmdb_coord_table = "slurmdb_coord_table";
+char *acct_coord_table = "acct_coord_table";
 char *acct_table = "acct_table";
 char *assoc_day_table = "assoc_usage_day_table";
 char *assoc_hour_table = "assoc_usage_hour_table";
@@ -418,7 +418,7 @@ static mysql_db_info_t *_as_mysql_acct_create_db_info()
 /* Any time a new table is added set it up here */
 static int _as_mysql_acct_check_tables(MYSQL *db_conn)
 {
-	storage_field_t slurmdb_coord_table_fields[] = {
+	storage_field_t acct_coord_table_fields[] = {
 		{ "creation_time", "int unsigned not null" },
 		{ "mod_time", "int unsigned default 0 not null" },
 		{ "deleted", "tinyint default 0" },
@@ -607,8 +607,8 @@ static int _as_mysql_acct_check_tables(MYSQL *db_conn)
 	/* END_TIMER; */
 	/* info("conversion took %s", TIME_STR); */
 
-	if(mysql_db_create_table(db_conn, slurmdb_coord_table,
-				 slurmdb_coord_table_fields,
+	if(mysql_db_create_table(db_conn, acct_coord_table,
+				 acct_coord_table_fields,
 				 ", primary key (acct(20), user(20)))")
 	   == SLURM_ERROR)
 		return SLURM_ERROR;
@@ -1408,7 +1408,7 @@ extern int modify_common(mysql_conn_t *mysql_conn,
 	bool cluster_centric = true;
 
 	/* figure out which tables we need to append the cluster name to */
-	if((table == cluster_table) || (table == slurmdb_coord_table)
+	if((table == cluster_table) || (table == acct_coord_table)
 	   || (table == acct_table) || (table == qos_table)
 	   || (table == txn_table) || (table == user_table))
 		cluster_centric = false;
@@ -1479,7 +1479,7 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 	bool cluster_centric = true;
 
 	/* figure out which tables we need to append the cluster name to */
-	if((table == cluster_table) || (table == slurmdb_coord_table)
+	if((table == cluster_table) || (table == acct_coord_table)
 	   || (table == acct_table) || (table == qos_table)
 	   || (table == txn_table) || (table == user_table))
 		cluster_centric = false;
@@ -1488,7 +1488,7 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 	 * really delete it for accounting purposes.  This is for
 	 * corner cases most of the time this won't matter.
 	 */
-	if(table == slurmdb_coord_table) {
+	if(table == acct_coord_table) {
 		/* This doesn't apply for these tables since we are
 		 * only looking for association type tables.
 		 */
@@ -1585,7 +1585,7 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 	if(rc != SLURM_SUCCESS) {
 		reset_mysql_conn(mysql_conn);
 		return SLURM_ERROR;
-	} else if((table == slurmdb_coord_table)
+	} else if((table == acct_coord_table)
 		  || (table == qos_table)
 		  || (table == wckey_table))
 		return SLURM_SUCCESS;
