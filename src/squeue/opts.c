@@ -563,9 +563,10 @@ extern int parse_format( char* format )
 							   right_justify,
 							   suffix );
 			else if (field[0] == 'G')
-				job_format_add_gres( params.format_list,
-						     field_size, right_justify,
-						     suffix );
+				job_format_add_group_id( params.format_list,
+							 field_size,
+							 right_justify,
+							 suffix );
 			else if (field[0] == 'h')
 				job_format_add_shared( params.format_list,
 						       field_size,

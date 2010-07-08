@@ -17,6 +17,8 @@ documents those changes that are of interest to users and admins.
  -- Introduced locking system similar to that in the slurmctld for the
     assoc_mgr.
  -- Added ability to change a users name in accounting.
+ -- Restore squeue support for "%G" format (group id) accidentally removed in
+    2.2.0.pre7.
 
 * Changes in SLURM 2.2.0.pre8
 =============================
