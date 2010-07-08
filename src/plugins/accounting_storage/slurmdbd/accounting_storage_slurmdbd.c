@@ -390,12 +390,14 @@ extern void *acct_storage_p_get_connection(bool make_agent, int conn_num,
 	if(slurm_open_slurmdbd_conn(slurmdbd_auth_info,
 				    make_agent, rollback) == SLURM_SUCCESS)
 		errno = SLURM_SUCCESS;
-
-	return NULL;
+	/* send something back to make sure we don't run this again */
+	return (void *)1;
 }
 
 extern int acct_storage_p_close_connection(void **db_conn)
 {
+	if(db_conn)
+		*db_conn = NULL;
 	return slurm_close_slurmdbd_conn();
 }
 
