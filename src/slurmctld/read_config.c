@@ -838,7 +838,7 @@ static void _gres_reconig(bool reconfig)
 	if (reconfig) {
 		gres_plugin_reconfig(&gres_changed);
 	} else {
-		for (i = 0, node_ptr = node_record_table_ptr; 
+		for (i = 0, node_ptr = node_record_table_ptr;
 		     i < node_record_count; i++, node_ptr++) {
 			if (node_ptr->gres)
 				gres_name = node_ptr->gres;
@@ -1024,7 +1024,7 @@ static int  _restore_part_state(List old_part_list, char *old_def_part_name)
 				part_ptr->default_time = old_part_ptr->
 							 default_time;
 			}
-			if ((part_ptr->flags & PART_FLAG_HIDDEN) != 
+			if ((part_ptr->flags & PART_FLAG_HIDDEN) !=
 			    (old_part_ptr->flags & PART_FLAG_HIDDEN)) {
 				error("Partition %s Hidden differs from "
 				      "slurm.conf", part_ptr->name);
@@ -1033,7 +1033,7 @@ static int  _restore_part_state(List old_part_list, char *old_def_part_name)
 				else
 					part_ptr->flags &= (~PART_FLAG_HIDDEN);
 			}
-			if ((part_ptr->flags & PART_FLAG_NO_ROOT) != 
+			if ((part_ptr->flags & PART_FLAG_NO_ROOT) !=
 			    (old_part_ptr->flags & PART_FLAG_NO_ROOT)) {
 				error("Partition %s DisableRootJobs differs "
 				      "from slurm.conf", part_ptr->name);
@@ -1042,7 +1042,7 @@ static int  _restore_part_state(List old_part_list, char *old_def_part_name)
 				else
 					part_ptr->flags &= (~PART_FLAG_NO_ROOT);
 			}
-			if ((part_ptr->flags & PART_FLAG_ROOT_ONLY) != 
+			if ((part_ptr->flags & PART_FLAG_ROOT_ONLY) !=
 			    (old_part_ptr->flags & PART_FLAG_ROOT_ONLY)) {
 				error("Partition %s RootOnly differs from "
 				      "slurm.conf", part_ptr->name);
@@ -1081,7 +1081,7 @@ static int  _restore_part_state(List old_part_list, char *old_def_part_name)
 				xfree(part_ptr->nodes);
 				part_ptr->nodes = xstrdup(old_part_ptr->nodes);
 			}
-			if (part_ptr->preempt_mode != 
+			if (part_ptr->preempt_mode !=
 			    old_part_ptr->preempt_mode) {
 				error("Partition %s PreemptMode differs from "
 				      "slurm.conf", part_ptr->name);
