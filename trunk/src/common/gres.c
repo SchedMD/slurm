@@ -62,12 +62,16 @@
 #endif /* HAVE_CONFIG_H */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <slurm/slurm.h>
 #include <slurm/slurm_errno.h>
+#include <sys/stat.h>
 
+#include "src/common/gres.h"
 #include "src/common/list.h"
 #include "src/common/macros.h"
 #include "src/common/pack.h"
+#include "src/common/parse_config.h"
 #include "src/common/plugin.h"
 #include "src/common/plugrack.h"
 #include "src/common/slurm_protocol_api.h"
@@ -82,7 +86,7 @@ typedef struct slurm_gres_ops {
 	int		(*node_config_init)	( char *node_name,
 						  char *orig_config,
 						  void **gres_data );
-	int		(*node_config_load)	( void );
+	int		(*node_config_load)	( List gres_conf_list );
 	int		(*node_config_pack)	( Buf buffer );
 	int		(*node_config_unpack)	( Buf buffer );
 	int		(*node_config_validate)	( char *node_name,
@@ -486,21 +490,127 @@ extern int gres_plugin_reconfig(bool *did_change)
 	return rc;
 }
 
+static char *_get_gres_conf(void)
+{
+	char *val = getenv("SLURM_CONF");
+	char *rc = NULL;
+	int i;
+
+	if (!val)
+		return xstrdup(GRES_CONFIG_FILE);
+
+	/* Replace file name on end of path */
+	i = strlen(val) - strlen("slurm.conf") + strlen("gres.conf") + 1;
+	rc = xmalloc(i);
+	strcpy(rc, val);
+	val = strrchr(rc, (int)'/');
+	if (val)	/* absolute path */
+		val++;
+	else		/* not absolute path */
+		val = rc;
+	strcpy(val, "gres.conf");
+	return rc;
+}
+
+static void _destroy_gres_conf(void *x)
+{
+	gres_conf_t *p = (gres_conf_t *) x;
+
+	xassert(p);
+	xfree(p->cpus);
+	xfree(p->file);
+	xfree(p->name);
+	xfree(p);
+}
+
+static int _log_gres_conf(void *x, void *arg)
+{
+	gres_conf_t *p;
+
+	if (!gres_debug)
+		return 0;
+
+	p = (gres_conf_t *) x;
+	xassert(p);
+	info("Gres Name:%s File:%s CPUs:%s Count:%u",
+	     p->name, p->file, p->cpus, p->count);
+	return 0;
+}
+
+static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
+			      const char *key, const char *value,
+			      const char *line, char **leftover)
+{
+	static s_p_options_t _gres_options[] = {
+		{"Count", S_P_UINT16},	/* Number of Gres available */
+		{"CPUs", S_P_STRING},	/* CPUs to bind to Gres resource */
+		{"File", S_P_STRING},	/* Path to Gres device */
+		{NULL}
+	};
+
+	s_p_hashtbl_t *tbl;
+	gres_conf_t *p;
+
+	tbl = s_p_hashtbl_create(_gres_options);
+	s_p_parse_line(tbl, *leftover, leftover);
+
+	p = xmalloc(sizeof(gres_conf_t));
+	p->name = xstrdup(value);
+	if (!s_p_get_uint16(&p->count, "Count", tbl))
+		p->count = 1;
+	s_p_get_string(&p->cpus, "CPUs", tbl);
+	s_p_get_string(&p->file, "File", tbl);
+
+	s_p_hashtbl_destroy(tbl);
+	*dest = (void *)p;
+
+	return 1;
+}
+
 /*
  * Load this node's gres configuration (i.e. how many resources it has)
  */
 extern int gres_plugin_node_config_load(void)
 {
-	int i, rc;
+	static s_p_options_t _gres_options[] = {
+		{"Name", S_P_ARRAY, _parse_gres_config, NULL},
+		{NULL}
+	};
+
+	int count, i, rc;
+	struct stat config_stat;
+	s_p_hashtbl_t *tbl;
+	gres_conf_t **gres_array;
+	List gres_conf_list = NULL;
+	char *gres_conf_file = _get_gres_conf();
+
+	if (stat(gres_conf_file, &config_stat) < 0)
+		fatal("can't stat gres.conf file %s: %m", gres_conf_file);
+	tbl = s_p_hashtbl_create(_gres_options);
+	if (s_p_parse_file(tbl, NULL, gres_conf_file) == SLURM_ERROR)
+		fatal("error opening/reading %s", gres_conf_file);
+	gres_conf_list = list_create(_destroy_gres_conf);
+	if (gres_conf_list == NULL)
+		fatal("list_create: malloc failure");
+	if (s_p_get_array((void ***) &gres_array, &count, "Name", tbl)) {
+		for (i = 0; i < count; i++) {
+			list_append(gres_conf_list, gres_array[i]);
+			gres_array[i] = NULL;
+		}
+	}
+	s_p_hashtbl_destroy(tbl);
+	list_for_each(gres_conf_list, _log_gres_conf, NULL);
 
 	rc = gres_plugin_init();
 
 	slurm_mutex_lock(&gres_context_lock);
 	for (i=0; ((i < gres_context_cnt) && (rc == SLURM_SUCCESS)); i++) {
-		rc = (*(gres_context[i].ops.node_config_load))();
+		rc = (*(gres_context[i].ops.node_config_load))(gres_conf_list);
 	}
 	slurm_mutex_unlock(&gres_context_lock);
 
+	list_destroy(gres_conf_list);
+	xfree(gres_conf_file);
 	return rc;
 }
 

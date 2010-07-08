@@ -8,6 +8,7 @@
 # only be 1 address per symbol.  If you link to the libcommon.la in
 # a plugin you will get 2 addresses for one symbol which could lead to problems.
 
+CPPFLAGS = -DGRES_CONFIG_FILE=\"$(sysconfdir)/gres.conf\"
 AUTOMAKE_OPTIONS = foreign
 
 if HAVE_UNSETENV
