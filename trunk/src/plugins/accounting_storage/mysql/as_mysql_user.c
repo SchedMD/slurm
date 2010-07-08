@@ -41,6 +41,45 @@
 #include "as_mysql_user.h"
 #include "as_mysql_wckey.h"
 
+static int _change_user_name(mysql_conn_t *mysql_conn, slurmdb_user_rec_t *user)
+{
+	int rc = SLURM_SUCCESS;
+	char *query = NULL;
+	ListIterator itr = NULL;
+	char *cluster_name = NULL;
+
+	xassert(user->old_name);
+	xassert(user->name);
+
+	slurm_mutex_lock(&as_mysql_cluster_list_lock);
+	itr = list_iterator_create(as_mysql_cluster_list);
+	while((cluster_name = list_next(itr))) {
+		// Change assoc_tables
+		xstrfmtcat(query, "update \"%s_%s\" set user='%s' "
+			   "where user='%s';", cluster_name, assoc_table,
+			   user->name, user->old_name);
+		// Change wckey_tables
+		xstrfmtcat(query, "update \"%s_%s\" set user='%s' "
+			   "where user='%s';", cluster_name, wckey_table,
+			   user->name, user->old_name);
+	}
+	list_iterator_destroy(itr);
+	slurm_mutex_unlock(&as_mysql_cluster_list_lock);
+	// Change coord_tables
+	xstrfmtcat(query, "update %s set user='%s' where user='%s';",
+		   acct_coord_table, user->name, user->old_name);
+
+	debug3("%d(%s:%d) query\n%s",
+	       mysql_conn->conn, THIS_FILE, __LINE__, query);
+	rc = mysql_db_query(mysql_conn->db_conn, query);
+	xfree(query);
+
+	if(rc != SLURM_SUCCESS)
+		reset_mysql_conn(mysql_conn);
+
+	return rc;
+}
+
 /* Fill in all the accounts this user is coordinator over.  This
  * will fill in all the sub accounts they are coordinator over also.
  */
@@ -459,6 +498,9 @@ extern List as_mysql_modify_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	if(user->default_wckey)
 		xstrfmtcat(vals, ", default_wckey='%s'", user->default_wckey);
 
+	if(user->name)
+		xstrfmtcat(vals, ", name='%s'", user->name);
+
 	if(user->admin_level != SLURMDB_ADMIN_NOTSET)
 		xstrfmtcat(vals, ", admin_level=%u", user->admin_level);
 
@@ -472,6 +514,12 @@ extern List as_mysql_modify_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	xfree(extra);
 	if(!(result = mysql_db_query_ret(
 		     mysql_conn->db_conn, query, 0))) {
+		xfree(query);
+		return NULL;
+	}
+
+	if(user->name && (mysql_num_rows(result) != 1)) {
+		errno = ESLURM_ONE_CHANGE;
 		xfree(query);
 		return NULL;
 	}
@@ -490,7 +538,17 @@ extern List as_mysql_modify_users(mysql_conn_t *mysql_conn, uint32_t uid,
 			xstrfmtcat(name_char, " || name='%s'", object);
 		}
 		user_rec = xmalloc(sizeof(slurmdb_user_rec_t));
-		user_rec->name = xstrdup(object);
+
+		if(!user->name)
+			user_rec->name = xstrdup(object);
+		else {
+			user_rec->name = xstrdup(user->name);
+			user_rec->old_name = xstrdup(object);
+			if(_change_user_name(mysql_conn, user_rec)
+			   != SLURM_SUCCESS)
+				break;
+		}
+
 		user_rec->default_acct = xstrdup(user->default_acct);
 		user_rec->default_wckey = xstrdup(user->default_wckey);
 		user_rec->admin_level = user->admin_level;

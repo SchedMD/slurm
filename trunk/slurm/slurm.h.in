@@ -42,7 +42,7 @@
 #define _SLURM_H
 
 /* BEGIN_C_DECLS should be used at the beginning of your declarations,
-   so that C++ compilers don't mangle their names.  Use _END_C_DECLS at
+   so that C++ compilers don't mangle their names.  Use END_C_DECLS at
    the end of C declarations. */
 #undef BEGIN_C_DECLS
 #undef END_C_DECLS
