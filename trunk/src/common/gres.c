@@ -601,6 +601,9 @@ extern int gres_plugin_node_config_load(void)
 	char *gres_conf_file = _get_gres_conf();
 
 	rc = gres_plugin_init();
+	if (gres_context_cnt == 0)
+		return SLURM_SUCCESS;
+
 	slurm_mutex_lock(&gres_context_lock);
 
 	if (stat(gres_conf_file, &config_stat) < 0)
