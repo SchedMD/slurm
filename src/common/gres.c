@@ -82,6 +82,7 @@
 
 typedef struct slurm_gres_ops {
 	uint32_t	(*plugin_id);
+	char		(*gres_name);
 	char		(*help_msg);
 	int		(*node_config_init)	( char *node_name,
 						  char *orig_config,
@@ -197,6 +198,7 @@ static int _load_gres_plugin(char *plugin_name,
 	 */
 	static const char *syms[] = {
 		"plugin_id",
+		"gres_name",
 		"help_msg",
 		"node_config_init",
 		"node_config_load",
@@ -545,9 +547,18 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 		{"File", S_P_STRING},	/* Path to Gres device */
 		{NULL}
 	};
-
+	int i;
 	s_p_hashtbl_t *tbl;
 	gres_conf_t *p;
+
+	for (i=0; i<gres_context_cnt; i++) {
+		if (strcasecmp(value, gres_context[i].ops.gres_name) == 0)
+			break;
+	}
+	if (i >= gres_context_cnt) {
+		error("Ignoring gres.conf Name=%s", value);
+		return 0;
+	}
 
 	tbl = s_p_hashtbl_create(_gres_options);
 	s_p_parse_line(tbl, *leftover, leftover);
@@ -556,8 +567,15 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 	p->name = xstrdup(value);
 	if (!s_p_get_uint16(&p->count, "Count", tbl))
 		p->count = 1;
-	s_p_get_string(&p->cpus, "CPUs", tbl);
-	s_p_get_string(&p->file, "File", tbl);
+	if (s_p_get_string(&p->cpus, "CPUs", tbl)) {
+//FIXME: change to bitmap, size?
+//bit_unfmt(bimap, p->cpus);
+	}
+	if (s_p_get_string(&p->file, "File", tbl)) {
+		struct stat config_stat;
+		if (stat(p->file, &config_stat) < 0)
+			fatal("can't stat gres.conf file %s: %m", p->file);
+	}
 
 	s_p_hashtbl_destroy(tbl);
 	*dest = (void *)p;
@@ -582,6 +600,9 @@ extern int gres_plugin_node_config_load(void)
 	List gres_conf_list = NULL;
 	char *gres_conf_file = _get_gres_conf();
 
+	rc = gres_plugin_init();
+	slurm_mutex_lock(&gres_context_lock);
+
 	if (stat(gres_conf_file, &config_stat) < 0)
 		fatal("can't stat gres.conf file %s: %m", gres_conf_file);
 	tbl = s_p_hashtbl_create(_gres_options);
@@ -599,9 +620,6 @@ extern int gres_plugin_node_config_load(void)
 	s_p_hashtbl_destroy(tbl);
 	list_for_each(gres_conf_list, _log_gres_conf, NULL);
 
-	rc = gres_plugin_init();
-
-	slurm_mutex_lock(&gres_context_lock);
 	for (i=0; ((i < gres_context_cnt) && (rc == SLURM_SUCCESS)); i++) {
 		rc = (*(gres_context[i].ops.node_config_load))(gres_conf_list);
 	}
