@@ -1011,7 +1011,7 @@ extern List slurmdb_get_info_cluster(char *cluster_names)
 	int err = 0;
 	bool all_clusters = 0;
 
-	if(!strcmp(cluster_names, "all"))
+	if(cluster_names && !strcmp(cluster_names, "all"))
 		all_clusters = 1;
 
 	cluster_name = slurm_get_cluster_name();
