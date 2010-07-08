@@ -82,7 +82,7 @@
 
 typedef struct slurm_gres_ops {
 	uint32_t	(*plugin_id);
-	int		(*help_msg)		( char *msg, int msg_size );
+	char		(*help_msg);
 	int		(*node_config_init)	( char *node_name,
 						  char *orig_config,
 						  void **gres_data );
@@ -432,19 +432,17 @@ extern int gres_plugin_help_msg(char *msg, int msg_size)
 
 	slurm_mutex_lock(&gres_context_lock);
 	for (i=0; ((i < gres_context_cnt) && (rc == SLURM_SUCCESS)); i++) {
-		rc = (*(gres_context[i].ops.help_msg))(tmp_msg, msg_size);
-		if ((rc != SLURM_SUCCESS) || (tmp_msg[0] == '\0'))
+		tmp_msg = (gres_context[i].ops.help_msg);
+		if ((tmp_msg == NULL) || (tmp_msg[0] == '\0'))
 			continue;
 		if ((strlen(msg) + strlen(tmp_msg) + 2) > msg_size)
 			break;
 		if (msg[0])
 			strcat(msg, "\n");
 		strcat(msg, tmp_msg);
-		tmp_msg[0] = '\0';
 	}
 	slurm_mutex_unlock(&gres_context_lock);
 
-	xfree(tmp_msg);
 	return rc;
 }
 
