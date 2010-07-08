@@ -104,14 +104,14 @@ static bool _valid_job_assoc(struct job_record *job_ptr)
 static void _adjust_limit_usage(int type, struct job_record *job_ptr)
 {
 	slurmdb_association_rec_t *assoc_ptr = NULL;
+	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK,
+				   WRITE_LOCK, NO_LOCK, NO_LOCK };
 
 	if (!(accounting_enforce & ACCOUNTING_ENFORCE_LIMITS)
 	    || !_valid_job_assoc(job_ptr))
 		return;
 
-	/* Handle both locks here to avoid deadlock. Always do QOS first. */
-	slurm_mutex_lock(&assoc_mgr_qos_lock);
-	slurm_mutex_lock(&assoc_mgr_association_lock);
+	assoc_mgr_lock(&locks);
 	if (job_ptr->qos_ptr && (accounting_enforce & ACCOUNTING_ENFORCE_QOS)) {
 		ListIterator itr = NULL;
 		slurmdb_qos_rec_t *qos_ptr = NULL;
@@ -245,8 +245,7 @@ static void _adjust_limit_usage(int type, struct job_record *job_ptr)
 		/* now handle all the group limits of the parents */
 		assoc_ptr = assoc_ptr->usage->parent_assoc_ptr;
 	}
-	slurm_mutex_unlock(&assoc_mgr_association_lock);
-	slurm_mutex_unlock(&assoc_mgr_qos_lock);
+	assoc_mgr_unlock(&locks);
 }
 
 /*
@@ -307,6 +306,8 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 	int parent = 0; /*flag to tell us if we are looking at the
 			 * parent or not
 			 */
+	assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK,
+				   READ_LOCK, NO_LOCK, NO_LOCK };
 
 	/* check to see if we are enforcing associations */
 	if (!accounting_enforce)
@@ -331,11 +332,7 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 	job_cpu_time_limit = (uint64_t)job_ptr->time_limit
 		* (uint64_t)job_ptr->details->min_cpus;
 
-	slurm_mutex_lock(&assoc_mgr_qos_lock);
-	/* Since we could possibly need the association lock handle it
-	   now to avoid deadlock. Always do QOS first.
-	*/
-	slurm_mutex_lock(&assoc_mgr_association_lock);
+	assoc_mgr_lock(&locks);
 	qos_ptr = job_ptr->qos_ptr;
 	if(qos_ptr) {
 		usage_mins = (uint64_t)(qos_ptr->usage->usage_raw / 60.0);
@@ -364,7 +361,9 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 				     job_ptr->details->min_cpus,
 				     qos_ptr->grp_cpus,
 				     qos_ptr->name);
-				_cancel_job(job_ptr);
+				cancel_job = 1;
+				rc = false;
+				goto end_it;
 			} else if ((qos_ptr->usage->grp_used_cpus +
 				    job_ptr->details->min_cpus) >
 				   qos_ptr->grp_cpus) {
@@ -411,6 +410,8 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 				     qos_ptr->grp_nodes,
 				     qos_ptr->name);
 				cancel_job = 1;
+				rc = false;
+				goto end_it;
 			} else if ((qos_ptr->usage->grp_used_nodes +
 				    job_ptr->details->min_nodes) >
 				   qos_ptr->grp_nodes) {
@@ -459,7 +460,7 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 				     "qos max per job %u",
 				     job_ptr->job_id, job_cpu_time_limit,
 				     cpu_time_limit);
-				_cancel_job(job_ptr);
+				cancel_job = 1;
 				rc = false;
 				goto end_it;
 			}
@@ -474,7 +475,7 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 				     job_ptr->job_id,
 				     job_ptr->details->min_cpus,
 				     qos_ptr->max_cpus_pj);
-				_cancel_job(job_ptr);
+				cancel_job = 1;
 				rc = false;
 				goto end_it;
 			}
@@ -575,7 +576,9 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 				     job_ptr->job_id,
 				     job_ptr->details->min_cpus,
 				     assoc_ptr->grp_cpus, assoc_ptr->acct);
-				_cancel_job(job_ptr);
+				cancel_job = 1;
+				rc = false;
+				goto end_it;
 			} else if ((assoc_ptr->usage->grp_used_cpus +
 				    job_ptr->details->min_cpus) >
 				   assoc_ptr->grp_cpus) {
@@ -626,6 +629,8 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 				     job_ptr->details->min_nodes,
 				     assoc_ptr->grp_nodes, assoc_ptr->acct);
 				cancel_job = 1;
+				rc = false;
+				goto end_it;
 			} else if ((assoc_ptr->usage->grp_used_nodes +
 				    job_ptr->details->min_nodes) >
 				   assoc_ptr->grp_nodes) {
@@ -688,7 +693,7 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 				     "assoc max per job %u",
 				     job_ptr->job_id, job_cpu_time_limit,
 				     cpu_time_limit);
-				_cancel_job(job_ptr);
+				cancel_job = 1;
 				rc = false;
 				goto end_it;
 			}
@@ -705,7 +710,7 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 				     job_ptr->job_id,
 				     job_ptr->details->min_cpus,
 				     assoc_ptr->max_cpus_pj);
-				_cancel_job(job_ptr);
+				cancel_job = 1;
 				rc = false;
 				goto end_it;
 			}
@@ -768,8 +773,7 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 		parent = 1;
 	}
 end_it:
-	slurm_mutex_unlock(&assoc_mgr_association_lock);
-	slurm_mutex_unlock(&assoc_mgr_qos_lock);
+	assoc_mgr_unlock(&locks);
 
 	if(cancel_job)
 		_cancel_job(job_ptr);
@@ -785,9 +789,12 @@ extern bool acct_policy_node_usable(struct job_record *job_ptr,
 	slurmdb_association_rec_t *assoc_ptr;
 	bool rc = true;
 	uint32_t total_cpus = used_cpus + node_cpus;
+	bool cancel_job = 0;
 	int parent = 0; /* flag to tell us if we are looking at the
 			 * parent or not
 			 */
+	assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK,
+				   READ_LOCK, NO_LOCK, NO_LOCK };
 
 	/* check to see if we are enforcing associations */
 	if (!accounting_enforce)
@@ -809,9 +816,7 @@ extern bool acct_policy_node_usable(struct job_record *job_ptr,
                 job_ptr->state_reason = WAIT_NO_REASON;
 
 
-	/* Handle both locks here to avoid deadlock. Always do QOS first. */
-	slurm_mutex_lock(&assoc_mgr_qos_lock);
-	slurm_mutex_lock(&assoc_mgr_association_lock);
+	assoc_mgr_lock(&locks);
 	qos_ptr = job_ptr->qos_ptr;
 	if(qos_ptr) {
 		if (qos_ptr->grp_cpus != INFINITE) {
@@ -838,7 +843,7 @@ extern bool acct_policy_node_usable(struct job_record *job_ptr,
 				      node_cpus,
 				      qos_ptr->max_cpus_pj,
 				      qos_ptr->name);
-				_cancel_job(job_ptr);
+				cancel_job = 1;
 				rc = false;
 				goto end_it;
 			}
@@ -893,7 +898,10 @@ extern bool acct_policy_node_usable(struct job_record *job_ptr,
 		parent = 1;
 	}
 end_it:
-	slurm_mutex_unlock(&assoc_mgr_association_lock);
-	slurm_mutex_unlock(&assoc_mgr_qos_lock);
+	assoc_mgr_unlock(&locks);
+
+	if(cancel_job)
+		_cancel_job(job_ptr);
+
 	return rc;
 }

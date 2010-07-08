@@ -14,6 +14,8 @@ documents those changes that are of interest to users and admins.
     one permitting earliest start time.
  -- Change slurmdb_coord_table back to acct_coord_table to keep consistant
     with < 2.1.
+ -- Introduced locking system similar to that in the slurmctld for the
+    assoc_mgr.
 
 * Changes in SLURM 2.2.0.pre8
 =============================
