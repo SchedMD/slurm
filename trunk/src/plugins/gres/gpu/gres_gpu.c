@@ -107,6 +107,7 @@
 const char	plugin_name[]		= "Gres GPU plugin";
 const char	plugin_type[]		= "gres/gpu";
 const uint32_t	plugin_id		= 101;
+const char	gres_name[]		= "gpu";
 const char	help_msg[]		= "gpu[:count[*cpu]]";
 
 const uint32_t	plugin_version		= 100;
@@ -185,7 +186,8 @@ extern int fini(void)
 	return SLURM_SUCCESS;
 }
 
-/* Load configuration based upon gres.conf */
+/* We could load gres state or validate it using various mechanisms here.
+ * This only validates that the configuration was specified in gres.conf. */
 extern int node_config_load(List gres_conf_list)
 {
 	int rc = SLURM_ERROR;
@@ -488,6 +490,7 @@ extern int node_reconfig(char *node_name, char *orig_config, char **new_config,
 		gres_ptr->gpu_cnt_config = NO_VAL;
 		gres_ptr->gpu_cnt_found  = NO_VAL;
 	}
+
 	if (orig_config) {
 		node_gres_config = xstrdup(orig_config);
 		tok = strtok_r(node_gres_config, ",", &last);

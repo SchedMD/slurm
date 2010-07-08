@@ -107,18 +107,11 @@
 const char	plugin_name[]		= "Gres NIC plugin";
 const char	plugin_type[]		= "gres/nic";
 const uint32_t	plugin_id		= 102;
+const char	gres_name[]		= "nic";
 const char	help_msg[]		= "nic[:count[*cpu]]";
 
 const uint32_t	plugin_version		= 100;
 const uint32_t	min_plug_version	= 100;
-
-/* Identification of valid NIC names are reported by hwloc-info.
- * Add to this list and send message to slurm-dev@lists.llnl.gov so we
- * can update the SLURM code as appropriate. */
-char *nic_names[] = {
-	"Intel Corporation 82571EB Gigabit Ethernet Controller",
-	NULL
-};
 
 /* Gres configuration loaded/used by slurmd. Modify or expand as
  * additional information becomes available (e.g. topology). */
@@ -193,7 +186,8 @@ extern int fini(void)
 	return SLURM_SUCCESS;
 }
 
-/* Load configuration based upon gres.conf */
+/* We could load gres state or validate it using various mechanisms here.
+ * This only validates that the configuration was specified in gres.conf. */
 extern int node_config_load(List gres_conf_list)
 {
 	int rc = SLURM_ERROR;
