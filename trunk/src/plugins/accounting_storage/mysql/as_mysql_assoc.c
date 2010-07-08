@@ -404,7 +404,8 @@ static int _set_assoc_lft_rgt(
 	xassert(assoc->cluster);
 	xassert(assoc->id);
 
-	query = xstrdup_printf("select lft, rgt from \"%s_%s\" where id_assoc=%u;",
+	query = xstrdup_printf("select lft, rgt from \"%s_%s\" "
+			       "where id_assoc=%u;",
 			       assoc->cluster, assoc_table, assoc->id);
 	debug4("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, THIS_FILE, __LINE__, query);
@@ -807,8 +808,9 @@ static char *_setup_association_cond_qos(slurmdb_association_cond_t *assoc_cond,
 }
 
 /* When doing a select on this all the select should have a prefix of t1. */
-static int _setup_association_cond_limits(slurmdb_association_cond_t *assoc_cond,
-					  const char *prefix, char **extra)
+static int _setup_association_cond_limits(
+	slurmdb_association_cond_t *assoc_cond,
+	const char *prefix, char **extra)
 {
 	int set = 0;
 	ListIterator itr = NULL;
@@ -819,7 +821,7 @@ static int _setup_association_cond_limits(slurmdb_association_cond_t *assoc_cond
 
 	if(assoc_cond->with_deleted)
 		xstrfmtcat(*extra, " (%s.deleted=0 || %s.deleted=1)",
-			prefix, prefix);
+			   prefix, prefix);
 	else
 		xstrfmtcat(*extra, " %s.deleted=0", prefix);
 
@@ -1451,7 +1453,7 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 			mysql_conn, user->uid, &local_assoc_cond);
 		list_destroy(local_assoc_cond.cluster_list);
 		if(!local_assoc_list)
-			   goto end_it;
+			goto end_it;
 		/* NOTE: you can not use list_pop, or list_push
 		   anywhere either, since as_mysql is
 		   exporting something of the same type as a macro,
@@ -1502,7 +1504,7 @@ static int _process_remove_assoc_results(mysql_conn_t *mysql_conn,
 		if(!is_admin) {
 			slurmdb_coord_rec_t *coord = NULL;
 			if(!user->coord_accts) { // This should never
-						// happen
+				// happen
 				error("We are here with no coord accts");
 				rc = ESLURM_ACCESS_DENIED;
 				goto end_it;
@@ -1558,8 +1560,8 @@ static int _process_remove_assoc_results(mysql_conn_t *mysql_conn,
 		rem_assoc->id = atoi(row[RASSOC_ID]);
 		rem_assoc->cluster = xstrdup(cluster_name);
 		if(addto_update_list(mysql_conn->update_list,
-				      SLURMDB_REMOVE_ASSOC,
-				      rem_assoc) != SLURM_SUCCESS)
+				     SLURMDB_REMOVE_ASSOC,
+				     rem_assoc) != SLURM_SUCCESS)
 			error("couldn't add to the update list");
 
 	}
@@ -2059,7 +2061,7 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 		}
 
 		setup_association_limits(object, &cols, &vals, &extra,
-					  QOS_LEVEL_NONE, 1);
+					 QOS_LEVEL_NONE, 1);
 
 		xstrcat(tmp_char, aassoc_req_inx[0]);
 		for(i=1; i<AASSOC_COUNT; i++)
@@ -2110,12 +2112,15 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 
 				if(incr) {
 					char *up_query = xstrdup_printf(
-						"UPDATE \"%s_%s\" SET rgt = rgt+%d "
+						"UPDATE \"%s_%s\" SET "
+						"rgt = rgt+%d "
 						"WHERE rgt > %d && deleted < 2;"
-						"UPDATE \"%s_%s\" SET lft = lft+%d "
+						"UPDATE \"%s_%s\" SET "
+						"lft = lft+%d "
 						"WHERE lft > %d "
 						"&& deleted < 2;"
-						"UPDATE \"%s_%s\" SET deleted = 0 "
+						"UPDATE \"%s_%s\" SET "
+						"deleted = 0 "
 						"WHERE deleted = 2;",
 						old_cluster, assoc_table,
 						incr, my_left,
@@ -2177,7 +2182,8 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 			}
 			incr += 2;
 			xstrfmtcat(query,
-				   "insert into \"%s_%s\" (%s, lft, rgt, deleted) "
+				   "insert into \"%s_%s\" "
+				   "(%s, lft, rgt, deleted) "
 				   "values (%s, %d, %d, 2);",
 				   object->cluster, assoc_table, cols,
 				   vals, my_left+(incr-1), my_left+incr);
@@ -2298,7 +2304,7 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 		}
 
 		if(addto_update_list(mysql_conn->update_list, SLURMDB_ADD_ASSOC,
-				      object) == SLURM_SUCCESS) {
+				     object) == SLURM_SUCCESS) {
 			list_remove(itr);
 		}
 
@@ -2383,7 +2389,8 @@ end_it:
 			 * since you can't query on mod time here and I don't
 			 * want to rewrite code to make it happen
 			 */
-			memset(&assoc_cond, 0, sizeof(slurmdb_association_cond_t));
+			memset(&assoc_cond, 0,
+			       sizeof(slurmdb_association_cond_t));
 			assoc_cond.cluster_list = local_cluster_list;
 			if(!(assoc_list =
 			     as_mysql_get_assocs(mysql_conn, uid, NULL))) {
@@ -2401,8 +2408,8 @@ end_it:
 			itr = list_iterator_create(assoc_list);
 			while((assoc = list_next(itr))) {
 				if(addto_update_list(mysql_conn->update_list,
-						      SLURMDB_MODIFY_ASSOC,
-						      assoc) == SLURM_SUCCESS)
+						     SLURMDB_MODIFY_ASSOC,
+						     assoc) == SLURM_SUCCESS)
 					list_remove(itr);
 			}
 			list_iterator_destroy(itr);
@@ -2417,8 +2424,8 @@ end_it:
 }
 
 extern List as_mysql_modify_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
-				slurmdb_association_cond_t *assoc_cond,
-				slurmdb_association_rec_t *assoc)
+				   slurmdb_association_cond_t *assoc_cond,
+				   slurmdb_association_rec_t *assoc)
 {
 	ListIterator itr = NULL;
 	List ret_list = NULL;
@@ -2551,7 +2558,7 @@ extern List as_mysql_modify_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 }
 
 extern List as_mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
-					 slurmdb_association_cond_t *assoc_cond)
+				   slurmdb_association_cond_t *assoc_cond)
 {
 	ListIterator itr = NULL;
 	List ret_list = NULL;
