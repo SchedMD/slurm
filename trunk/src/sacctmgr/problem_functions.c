@@ -238,7 +238,8 @@ extern int sacctmgr_list_problem(int argc, char *argv[])
 
 	if(!assoc_list) {
 		exit_code=1;
-		fprintf(stderr, " Problem with query.\n");
+		fprintf(stderr, " Error with request: %s\n",
+			slurm_strerror(errno));
 		list_destroy(print_fields_list);
 		return SLURM_ERROR;
 	}
