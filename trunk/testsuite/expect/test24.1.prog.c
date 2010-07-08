@@ -76,6 +76,8 @@ int _setup_assoc_list()
 	/* make the main list */
 	assoc_mgr_association_list =
 		list_create(slurmdb_destroy_association_rec);
+	assoc_mgr_qos_list =
+		list_create(slurmdb_destroy_qos_rec);
 
 	/* we just want make it so we setup_childern so just pretend
 	   we are running off cache */
@@ -265,6 +267,7 @@ int main (int argc, char **argv)
 	conf->priority_decay_hl = 1;
 	conf->priority_favor_small = 0;
 	conf->priority_max_age = conf->priority_decay_hl;
+	conf->priority_reset_period = 0;
 	conf->priority_weight_age = 0;
 	conf->priority_weight_fs = 10000;
 	conf->priority_weight_js = 0;
@@ -300,5 +303,7 @@ int main (int argc, char **argv)
 		list_destroy(resp.assoc_shares_list);
 	if(assoc_mgr_association_list)
 		list_destroy(assoc_mgr_association_list);
+	if(assoc_mgr_qos_list)
+		list_destroy(assoc_mgr_qos_list);
 	return 0;
 }
