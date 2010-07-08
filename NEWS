@@ -16,6 +16,7 @@ documents those changes that are of interest to users and admins.
     with < 2.1.
  -- Introduced locking system similar to that in the slurmctld for the
     assoc_mgr.
+ -- Added ability to change a users name in accounting.
 
 * Changes in SLURM 2.2.0.pre8
 =============================
@@ -396,7 +397,10 @@ documents those changes that are of interest to users and admins.
  -- Fix bug in select/cons_res with memory management plus job preemption with
     job removal (e.g. requeue) which under some conditions failed to preempt
     jobs.
- 
+ -- Fix deadlock potential when using qos and associations in the slurmctld.
+ -- Update documentation to state --ntasks-per-* is for a maximum value
+    instead of an absolute.
+
 * Changes in SLURM 2.1.9
 ========================
  -- In select/linear - Fix logic to prevent over-subscribing memory with shared

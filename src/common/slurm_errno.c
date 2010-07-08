@@ -371,7 +371,9 @@ static slurm_errtab_t slurm_errtab[] = {
 	{ ESLURM_JOBS_RUNNING_ON_ASSOC,
 	  "Job(s) running, cancel job(s) before remove"         },
 	{ ESLURM_CLUSTER_DELETED,
-	  "Cluster deleted, commit/rollback immediately"        }
+	  "Cluster deleted, commit/rollback immediately"        },
+	{ ESLURM_ONE_CHANGE,
+	  "Can only change one at a time"                       }
 };
 
 /*

@@ -39,7 +39,7 @@
 #define _SLURMDB_H
 
 /* BEGIN_C_DECLS should be used at the beginning of your declarations,
-   so that C++ compilers don't mangle their names.  Use _END_C_DECLS at
+   so that C++ compilers don't mangle their names.  Use END_C_DECLS at
    the end of C declarations. */
 #undef BEGIN_C_DECLS
 #undef END_C_DECLS
@@ -695,6 +695,7 @@ typedef struct {
 	char *default_acct;
 	char *default_wckey;
 	char *name;
+	char *old_name;
 	uint32_t uid;
 	List wckey_list; /* list of slurmdb_wckey_rec_t *'s */
 } slurmdb_user_rec_t;

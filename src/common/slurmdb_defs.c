@@ -266,6 +266,7 @@ extern void slurmdb_destroy_user_rec(void *object)
 		xfree(slurmdb_user->default_acct);
 		xfree(slurmdb_user->default_wckey);
 		xfree(slurmdb_user->name);
+		xfree(slurmdb_user->old_name);
 		if(slurmdb_user->wckey_list)
 			list_destroy(slurmdb_user->wckey_list);
 		xfree(slurmdb_user);

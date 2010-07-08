@@ -210,7 +210,8 @@ int main(int argc, char *argv[])
 		/* Daemon is fully operational here */
 		if(!shutdown_time || primary_resumed) {
 			shutdown_time = 0;
-			info("slurmdbd version %s started", SLURM_VERSION_STRING);
+			info("slurmdbd version %s started",
+			     SLURM_VERSION_STRING);
 			if(backup)
 				run_backup();
 		}

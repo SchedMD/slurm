@@ -130,6 +130,56 @@ static int _clear_used_info(slurmdb_association_rec_t *assoc)
 	return SLURM_SUCCESS;
 }
 
+/* Locks should be in place before calling this. */
+static int _change_user_name(slurmdb_user_rec_t *user)
+{
+	int rc = SLURM_SUCCESS;
+	ListIterator itr = NULL;
+	slurmdb_association_rec_t *assoc = NULL;
+	slurmdb_wckey_rec_t *wckey = NULL;
+	uid_t pw_uid;
+
+	xassert(user->name);
+	xassert(user->old_name);
+
+	if (uid_from_string(user->name, &pw_uid) < 0) {
+		debug("_change_user_name: couldn't get new uid for user %s",
+		      user->name);
+		user->uid = NO_VAL;
+	} else
+		user->uid = pw_uid;
+
+	if(assoc_mgr_association_list) {
+		itr = list_iterator_create(assoc_mgr_association_list);
+		while((assoc = list_next(itr))) {
+			if(!assoc->user)
+				continue;
+			if(!strcmp(user->old_name, assoc->user)) {
+				xfree(assoc->user);
+				assoc->user = xstrdup(user->name);
+				assoc->uid = user->uid;
+				debug3("changing assoc %d", assoc->id);
+			}
+		}
+		list_iterator_destroy(itr);
+	}
+
+	if(assoc_mgr_wckey_list) {
+		itr = list_iterator_create(assoc_mgr_wckey_list);
+		while((wckey = list_next(itr))) {
+			if(!strcmp(user->old_name, wckey->user)) {
+				xfree(wckey->user);
+				assoc->user = xstrdup(wckey->name);
+				wckey->uid = user->uid;
+				debug3("changing wckey %d", wckey->id);
+			}
+		}
+		list_iterator_destroy(itr);
+	}
+
+	return rc;
+}
+
 static int _grab_parents_qos(slurmdb_association_rec_t *assoc)
 {
 	slurmdb_association_rec_t *parent_assoc = NULL;
@@ -289,7 +339,7 @@ static int _set_assoc_parent_and_user(slurmdb_association_rec_t *assoc,
 		/* set up new root since if running off cache the
 		   total usage for the cluster doesn't get set up again */
 		if(last_root) {
-			assoc_mgr_root_assoc->usage->usage_raw = 
+			assoc_mgr_root_assoc->usage->usage_raw =
 				last_root->usage->usage_raw;
 			assoc_mgr_root_assoc->usage->usage_norm =
 				last_root->usage->usage_norm;
@@ -813,7 +863,9 @@ static int _refresh_assoc_wckey_list(void *db_conn, int enforce)
 /* _wr_rdlock - Issue a read lock on the specified data type */
 static void _wr_rdlock(lock_datatype_t datatype)
 {
+	//info("going to read lock on %d", datatype);
 	slurm_mutex_lock(&locks_mutex);
+	//info("read lock on %d", datatype);
 	while (1) {
 		if ((assoc_mgr_locks.entity[write_wait_lock(datatype)] ==
 		     0)
@@ -831,7 +883,9 @@ static void _wr_rdlock(lock_datatype_t datatype)
 /* _wr_rdunlock - Issue a read unlock on the specified data type */
 static void _wr_rdunlock(lock_datatype_t datatype)
 {
+	//info("going to read unlock on %d", datatype);
 	slurm_mutex_lock(&locks_mutex);
+	//info("read unlock on %d", datatype);
 	assoc_mgr_locks.entity[read_lock(datatype)]--;
 	pthread_cond_broadcast(&locks_cond);
 	slurm_mutex_unlock(&locks_mutex);
@@ -840,9 +894,11 @@ static void _wr_rdunlock(lock_datatype_t datatype)
 /* _wr_wrlock - Issue a write lock on the specified data type */
 static void _wr_wrlock(lock_datatype_t datatype)
 {
+	//info("going to write lock on %d", datatype);
 	slurm_mutex_lock(&locks_mutex);
 	assoc_mgr_locks.entity[write_wait_lock(datatype)]++;
 
+	//info("write lock on %d", datatype);
 	while (1) {
 		if ((assoc_mgr_locks.entity[read_lock(datatype)] == 0) &&
 		    (assoc_mgr_locks.entity[write_lock(datatype)] == 0)) {
@@ -860,7 +916,9 @@ static void _wr_wrlock(lock_datatype_t datatype)
 /* _wr_wrunlock - Issue a write unlock on the specified data type */
 static void _wr_wrunlock(lock_datatype_t datatype)
 {
+	//info("going to write unlock on %d", datatype);
 	slurm_mutex_lock(&locks_mutex);
+	//info("write unlock on %d", datatype);
 	assoc_mgr_locks.entity[write_lock(datatype)]--;
 	pthread_cond_broadcast(&locks_cond);
 	slurm_mutex_unlock(&locks_mutex);
@@ -976,17 +1034,17 @@ extern void assoc_mgr_lock(assoc_mgr_lock_t *locks)
 		_wr_wrlock(USER_LOCK);
 
 	if (locks->wckey == READ_LOCK)
-		_wr_rdlock(PART_LOCK);
+		_wr_rdlock(WCKEY_LOCK);
 	else if (locks->wckey == WRITE_LOCK)
-		_wr_wrlock(PART_LOCK);
+		_wr_wrlock(WCKEY_LOCK);
 }
 
 extern void assoc_mgr_unlock(assoc_mgr_lock_t *locks)
 {
 	if (locks->wckey == READ_LOCK)
-		_wr_rdunlock(PART_LOCK);
+		_wr_rdunlock(WCKEY_LOCK);
 	else if (locks->wckey == WRITE_LOCK)
-		_wr_wrunlock(PART_LOCK);
+		_wr_wrunlock(WCKEY_LOCK);
 
 	if (locks->user == READ_LOCK)
 		_wr_rdunlock(USER_LOCK);
@@ -2363,8 +2421,8 @@ extern int assoc_mgr_update_users(slurmdb_update_object_t *update)
 	ListIterator itr = NULL;
 	int rc = SLURM_SUCCESS;
 	uid_t pw_uid;
-	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK,
-				   NO_LOCK, WRITE_LOCK, NO_LOCK };
+	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK,
+				   NO_LOCK, WRITE_LOCK, WRITE_LOCK };
 
 	if(!assoc_mgr_user_list)
 		return SLURM_SUCCESS;
@@ -2374,7 +2432,12 @@ extern int assoc_mgr_update_users(slurmdb_update_object_t *update)
 	while((object = list_pop(update->objects))) {
 		list_iterator_reset(itr);
 		while((rec = list_next(itr))) {
-			if(!strcasecmp(object->name, rec->name))
+			char *name;
+			if(object->old_name)
+				name = object->old_name;
+			else
+				name = object->name;
+			if(!strcasecmp(name, rec->name))
 				break;
 		}
 
@@ -2384,6 +2447,20 @@ extern int assoc_mgr_update_users(slurmdb_update_object_t *update)
 			if(!rec) {
 				rc = SLURM_ERROR;
 				break;
+			}
+
+			if(object->old_name) {
+				if(!object->name) {
+					error("Tried to alter user %s's name "
+					      "without giving a new one.",
+					      rec->name);
+					break;
+				}
+				xfree(rec->old_name);
+				rec->old_name = rec->name;
+				rec->name = object->name;
+				object->name = NULL;
+				rc = _change_user_name(rec);
 			}
 
 			if(object->default_acct) {

@@ -485,6 +485,12 @@ static int _set_rec(int *start, int argc, char *argv[],
 					" Bad MaxWall time format: %s\n",
 					argv[i]);
 			}
+		} else if (!strncasecmp (argv[i], "NewName",
+					 MAX(command_len, 1))) {
+			if(user->name)
+				xfree(user->name);
+			user->name = strip_quotes(argv[i]+end, NULL, 1);
+			u_set = 1;
 		} else if (!strncasecmp (argv[i], "QosLevel",
 					 MAX(command_len, 1))) {
 			if(!assoc)
