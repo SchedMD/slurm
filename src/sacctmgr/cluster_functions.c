@@ -191,9 +191,9 @@ static int _set_rec(int *start, int argc, char *argv[],
 		} else if (!strncasecmp (argv[i], "FairShare",
 					 MAX(command_len, 1))
 			   || !strncasecmp (argv[i], "Shares",
-					 MAX(command_len, 1))) {
+					    MAX(command_len, 1))) {
 			if (get_uint(argv[i]+end, &assoc->shares_raw,
-			    "FairShare") == SLURM_SUCCESS)
+				     "FairShare") == SLURM_SUCCESS)
 				set = 1;
 		} else if (!strncasecmp (argv[i], "GrpCPUMins",
 					 MAX(command_len, 7))) {
@@ -204,22 +204,22 @@ static int _set_rec(int *start, int argc, char *argv[],
 		} else if (!strncasecmp (argv[i], "GrpCpus",
 					 MAX(command_len, 7))) {
 			if (get_uint(argv[i]+end, &assoc->grp_cpus,
-			    "GrpCpus") == SLURM_SUCCESS)
+				     "GrpCpus") == SLURM_SUCCESS)
 				set = 1;
 		} else if (!strncasecmp (argv[i], "GrpJobs",
 					 MAX(command_len, 4))) {
 			if (get_uint(argv[i]+end, &assoc->grp_jobs,
-			    "GrpJobs") == SLURM_SUCCESS)
+				     "GrpJobs") == SLURM_SUCCESS)
 				set = 1;
 		} else if (!strncasecmp (argv[i], "GrpNodes",
 					 MAX(command_len, 4))) {
 			if (get_uint(argv[i]+end, &assoc->grp_nodes,
-			    "GrpNodes") == SLURM_SUCCESS)
+				     "GrpNodes") == SLURM_SUCCESS)
 				set = 1;
 		} else if (!strncasecmp (argv[i], "GrpSubmitJobs",
 					 MAX(command_len, 4))) {
 			if (get_uint(argv[i]+end, &assoc->grp_submit_jobs,
-			    "GrpSubmitJobs") == SLURM_SUCCESS)
+				     "GrpSubmitJobs") == SLURM_SUCCESS)
 				set = 1;
 		} else if (!strncasecmp (argv[i], "GrpWall",
 					 MAX(command_len, 4))) {
@@ -235,23 +235,23 @@ static int _set_rec(int *start, int argc, char *argv[],
 		} else if (!strncasecmp (argv[i], "MaxCpusPerJob",
 					 MAX(command_len, 7))) {
 			if (get_uint(argv[i]+end, &assoc->max_cpus_pj,
-			    "MaxCpus") == SLURM_SUCCESS)
+				     "MaxCpus") == SLURM_SUCCESS)
 				set = 1;
 		} else if (!strncasecmp (argv[i], "MaxJobs",
 					 MAX(command_len, 4))) {
 			if (get_uint(argv[i]+end, &assoc->max_jobs,
-			    "MaxJobs") == SLURM_SUCCESS)
+				     "MaxJobs") == SLURM_SUCCESS)
 				set = 1;
 		} else if (!strncasecmp (argv[i], "MaxNodesPerJob",
 					 MAX(command_len, 4))) {
 			if (get_uint(argv[i]+end,
-			    &assoc->max_nodes_pj,
-			    "MaxNodes") == SLURM_SUCCESS)
+				     &assoc->max_nodes_pj,
+				     "MaxNodes") == SLURM_SUCCESS)
 				set = 1;
 		} else if (!strncasecmp (argv[i], "MaxSubmitJobs",
 					 MAX(command_len, 4))) {
 			if (get_uint(argv[i]+end, &assoc->max_submit_jobs,
-			    "MaxSubmitJobs") == SLURM_SUCCESS)
+				     "MaxSubmitJobs") == SLURM_SUCCESS)
 				set = 1;
 		} else if (!strncasecmp (argv[i], "MaxWallDurationPerJob",
 					 MAX(command_len, 4))) {
@@ -317,7 +317,7 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 		    || !strncasecmp (argv[i], "Set", MAX(command_len, 3)))
 			i++;
 		limit_set += _set_rec(&i, argc, argv,
-				     name_list, &start_assoc, &class);
+				      name_list, &start_assoc, &class);
 	}
 	if(exit_code) {
 		list_destroy(name_list);
@@ -1016,7 +1016,8 @@ extern int sacctmgr_modify_cluster(int argc, char *argv[])
 		printf(" Nothing modified\n");
 	} else {
 		exit_code=1;
-		fprintf(stderr, " Error with request\n");
+		fprintf(stderr, " Error with request: %s\n",
+			slurm_strerror(errno));
 		rc = SLURM_ERROR;
 	}
 
@@ -1047,7 +1048,8 @@ extern int sacctmgr_modify_cluster(int argc, char *argv[])
 			printf(" Nothing modified\n");
 		} else {
 			exit_code=1;
-			fprintf(stderr, " Error with request\n");
+			fprintf(stderr, " Error with request: %s\n",
+				slurm_strerror(errno));
 			rc = SLURM_ERROR;
 		}
 
@@ -1152,7 +1154,8 @@ extern int sacctmgr_delete_cluster(int argc, char *argv[])
 		printf(" Nothing deleted\n");
 	} else {
 		exit_code=1;
-		fprintf(stderr, " Error with request\n");
+		fprintf(stderr, " Error with request: %s\n",
+			slurm_strerror(errno));
 		rc = SLURM_ERROR;
 	}
 
@@ -1200,7 +1203,7 @@ extern int sacctmgr_dump_cluster (int argc, char *argv[])
 				exit_code=1;
 				fprintf(stderr,
 					" Can only do one cluster at a time.  "
-				       "Already doing %s\n", cluster_name);
+					"Already doing %s\n", cluster_name);
 				continue;
 			}
 			cluster_name = xstrdup(argv[i]+end);
@@ -1291,7 +1294,7 @@ extern int sacctmgr_dump_cluster (int argc, char *argv[])
 
 	} else {
 		if(my_uid != slurm_get_slurm_user_id() && my_uid != 0
-		    && user->admin_level < SLURMDB_ADMIN_SUPER_USER) {
+		   && user->admin_level < SLURMDB_ADMIN_SUPER_USER) {
 			exit_code=1;
 			fprintf(stderr, " Your user does not have sufficient "
 				"privileges to dump clusters.\n");

@@ -865,7 +865,8 @@ extern int sacctmgr_modify_qos(int argc, char *argv[])
 		printf(" Nothing modified\n");
 	} else {
 		exit_code=1;
-		fprintf(stderr, " Error with request\n");
+		fprintf(stderr, " Error with request: %s\n",
+			slurm_strerror(errno));
 		rc = SLURM_ERROR;
 	}
 
@@ -941,7 +942,8 @@ extern int sacctmgr_delete_qos(int argc, char *argv[])
 		printf(" Nothing deleted\n");
 	} else {
 		exit_code=1;
-		fprintf(stderr, " Error with request\n");
+		fprintf(stderr, " Error with request: %s\n",
+			slurm_strerror(errno));
 		rc = SLURM_ERROR;
 	}
 
