@@ -99,6 +99,7 @@
  * of "auth/".
  *
  * plugin_id        - unique id for this plugin, value of 100+
+ * help_msg         - response for srun --gres=help
  * plugin_version   - specifies the version number of the plugin.
  * min_plug_version - specifies the minumum version number of incoming
  *                    messages that this plugin can accept
@@ -106,6 +107,8 @@
 const char	plugin_name[]		= "Gres NIC plugin";
 const char	plugin_type[]		= "gres/nic";
 const uint32_t	plugin_id		= 102;
+const char	help_msg[]		= "nic[:count[*cpu]]";
+
 const uint32_t	plugin_version		= 100;
 const uint32_t	min_plug_version	= 100;
 
@@ -187,22 +190,6 @@ static void _purge_old_node_config(void)
 extern int fini(void)
 {
 	_purge_old_node_config();
-	return SLURM_SUCCESS;
-}
-
-/*
- * This will be the output for "--gres=help" option.
- * Called only by salloc, sbatch and srun.
- */
-extern int help_msg(char *msg, int msg_size)
-{
-	char *response = "nic[:count[*cpu]]";
-	int resp_len = strlen(response) + 1;
-
-	if (msg_size < resp_len)
-		return SLURM_ERROR;
-
-	memcpy(msg, response, resp_len);
 	return SLURM_SUCCESS;
 }
 
