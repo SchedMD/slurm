@@ -48,6 +48,7 @@
 #include "src/common/slurm_accounting_storage.h"
 #include "src/common/slurmdbd_defs.h"
 #include "src/slurmctld/slurmctld.h"
+#include "src/slurmctld/locks.h"
 #include <slurm/slurm.h>
 #include <slurm/slurm_errno.h>
 
@@ -56,6 +57,34 @@
 #define ASSOC_MGR_CACHE_USER 0x0004
 #define ASSOC_MGR_CACHE_WCKEY 0x0008
 #define ASSOC_MGR_CACHE_ALL 0xffff
+
+/* to lock or not */
+typedef struct {
+	lock_level_t assoc;
+	lock_level_t file;
+	lock_level_t qos;
+	lock_level_t user;
+	lock_level_t wckey;
+} assoc_mgr_lock_t;
+
+/* Interval lock structure
+ * we actually use three semaphores for each data type, see macros below
+ *	(assoc_mgr_lock_datatype_t * 3 + 0) = read_lock
+ *	(assoc_mgr_lock_datatype_t * 3 + 1) = write_lock
+ *	(assoc_mgr_lock_datatype_t * 3 + 2) = write_wait_lock
+ */
+typedef enum {
+	ASSOC_LOCK,
+	FILE_LOCK,
+	QOS_LOCK,
+	USER_LOCK,
+	WCKEY_LOCK,
+	ASSOC_MGR_ENTITY_COUNT
+} assoc_mgr_lock_datatype_t;
+
+typedef struct {
+	int entity[ASSOC_MGR_ENTITY_COUNT * 3];
+} assoc_mgr_lock_flags_t;
 
 typedef struct {
 	uint16_t cache_level;
@@ -121,11 +150,6 @@ extern List assoc_mgr_user_list;
 extern List assoc_mgr_wckey_list;
 
 extern slurmdb_association_rec_t *assoc_mgr_root_assoc;
-extern pthread_mutex_t assoc_mgr_association_lock;
-extern pthread_mutex_t assoc_mgr_qos_lock;
-extern pthread_mutex_t assoc_mgr_user_lock;
-extern pthread_mutex_t assoc_mgr_file_lock;
-extern pthread_mutex_t assoc_mgr_wckey_lock;
 
 extern uint32_t g_qos_max_priority; /* max priority in all qos's */
 extern uint32_t g_qos_count; /* count used for generating qos bitstr's */
@@ -133,6 +157,8 @@ extern uint32_t g_qos_count; /* count used for generating qos bitstr's */
 
 extern int assoc_mgr_init(void *db_conn, assoc_init_args_t *args);
 extern int assoc_mgr_fini(char *state_save_location);
+extern void assoc_mgr_lock(assoc_mgr_lock_t *locks);
+extern void assoc_mgr_unlock(assoc_mgr_lock_t *locks);
 
 extern assoc_mgr_association_usage_t *create_assoc_mgr_association_usage();
 extern void destroy_assoc_mgr_association_usage(void *object);

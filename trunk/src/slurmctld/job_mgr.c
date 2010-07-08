@@ -4111,6 +4111,8 @@ void job_time_limit(void)
 	while ((job_ptr =(struct job_record *) list_next(job_iterator))) {
 		slurmdb_qos_rec_t *qos = NULL;
 		slurmdb_association_rec_t *assoc =	NULL;
+		assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK,
+					   READ_LOCK, NO_LOCK, NO_LOCK };
 
 		xassert (job_ptr->magic == JOB_MAGIC);
 
@@ -4198,11 +4200,7 @@ void job_time_limit(void)
 		    (list_count(job_ptr->step_list) > 0))
 			check_job_step_time_limit(job_ptr, now);
 
-		slurm_mutex_lock(&assoc_mgr_qos_lock);
-		/* Handle both locks here to avoid deadlock. Always do
-		 * QOS first.
-		*/
-		slurm_mutex_lock(&assoc_mgr_association_lock);
+		assoc_mgr_lock(&locks);
 		qos = (slurmdb_qos_rec_t *)job_ptr->qos_ptr;
 		assoc =	(slurmdb_association_rec_t *)job_ptr->assoc_ptr;
 
@@ -4309,8 +4307,7 @@ void job_time_limit(void)
 				break;
 		}
 	job_failed:
-		slurm_mutex_unlock(&assoc_mgr_association_lock);
-		slurm_mutex_unlock(&assoc_mgr_qos_lock);
+		assoc_mgr_unlock(&locks);
 
 		if(job_ptr->state_reason == FAIL_TIMEOUT) {
 			last_job_update = now;
@@ -4739,6 +4736,8 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 	struct job_details *detail_ptr;
 	time_t begin_time = 0;
 	char *nodelist = NULL;
+	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK,
+				   READ_LOCK, NO_LOCK, NO_LOCK };
 
 	if(protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
 		pack32(dump_job_ptr->assoc_id, buffer);
@@ -4802,13 +4801,13 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 		packstr(dump_job_ptr->comment, buffer);
 		packstr(dump_job_ptr->gres, buffer);
 
-		slurm_mutex_lock(&assoc_mgr_qos_lock);
+		assoc_mgr_lock(&locks);
 		if (assoc_mgr_qos_list) {
 			packstr(slurmdb_qos_str(assoc_mgr_qos_list,
 					        dump_job_ptr->qos_id), buffer);
 		} else
 			packnull(buffer);
-		slurm_mutex_unlock(&assoc_mgr_qos_lock);
+		assoc_mgr_unlock(&locks);
 
 		packstr(dump_job_ptr->licenses, buffer);
 		packstr(dump_job_ptr->state_desc, buffer);
@@ -4907,14 +4906,14 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 		packstr(dump_job_ptr->network, buffer);
 		packstr(dump_job_ptr->comment, buffer);
 
-		slurm_mutex_lock(&assoc_mgr_qos_lock);
+		assoc_mgr_lock(&locks);
 		if (assoc_mgr_qos_list)
 			packstr(slurmdb_qos_str(assoc_mgr_qos_list,
 						dump_job_ptr->qos_id),
 				buffer);
 		else
 			packnull(buffer);
-		slurm_mutex_unlock(&assoc_mgr_qos_lock);
+		assoc_mgr_unlock(&locks);
 
 		packstr(dump_job_ptr->licenses, buffer);
 		packstr(dump_job_ptr->state_desc, buffer);
@@ -7958,13 +7957,13 @@ static bool _validate_acct_policy(job_desc_msg_t *job_desc,
 	char *user_name = assoc_ptr->user;
 	bool rc = true;
 	bool limit_set_max_cpus = 0;
+	assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK,
+				   READ_LOCK, NO_LOCK, NO_LOCK };
 
 	xassert(limit_set_max_nodes);
 	//(*limit_set_max_nodes) = 0;
 
-	/* Handle both locks here to avoid deadlock. Always do QOS first. */
-	slurm_mutex_lock(&assoc_mgr_qos_lock);
-	slurm_mutex_lock(&assoc_mgr_association_lock);
+	assoc_mgr_lock(&locks);
 	if(qos_ptr) {
 		/* for validation we don't need to look at
 		 * qos_ptr->grp_cpu_mins.
@@ -8411,8 +8410,7 @@ static bool _validate_acct_policy(job_desc_msg_t *job_desc,
 		parent = 1;
 	}
 end_it:
-	slurm_mutex_unlock(&assoc_mgr_association_lock);
-	slurm_mutex_unlock(&assoc_mgr_qos_lock);
+	assoc_mgr_unlock(&locks);
 
 	return rc;
 }

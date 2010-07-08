@@ -133,6 +133,8 @@ static int _apply_decay(double decay_factor)
 	ListIterator itr = NULL;
 	slurmdb_association_rec_t *assoc = NULL;
 	slurmdb_qos_rec_t *qos = NULL;
+	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK,
+				   WRITE_LOCK, NO_LOCK, NO_LOCK };
 
 	/* continue if decay_factor is 0 or 1 since that doesn't help
 	   us at all. 1 means no decay and 0 will just zero
@@ -145,7 +147,7 @@ static int _apply_decay(double decay_factor)
 	xassert(assoc_mgr_association_list);
 	xassert(assoc_mgr_qos_list);
 
-	slurm_mutex_lock(&assoc_mgr_association_lock);
+	assoc_mgr_lock(&locks);
 	itr = list_iterator_create(assoc_mgr_association_list);
 	/* We want to do this to all associations including
 	   root.  All usage_raws are calculated from the bottom up.
@@ -155,16 +157,14 @@ static int _apply_decay(double decay_factor)
 		assoc->usage->grp_used_wall *= decay_factor;
 	}
 	list_iterator_destroy(itr);
-	slurm_mutex_unlock(&assoc_mgr_association_lock);
 
-	slurm_mutex_lock(&assoc_mgr_qos_lock);
 	itr = list_iterator_create(assoc_mgr_qos_list);
 	while((qos = list_next(itr))) {
 		qos->usage->usage_raw *= decay_factor;
 		qos->usage->grp_used_wall *= decay_factor;
 	}
 	list_iterator_destroy(itr);
-	slurm_mutex_unlock(&assoc_mgr_qos_lock);
+	assoc_mgr_unlock(&locks);
 
 	return SLURM_SUCCESS;
 }
@@ -179,13 +179,15 @@ static int _reset_usage()
 	ListIterator itr = NULL;
 	slurmdb_association_rec_t *assoc = NULL;
 	slurmdb_qos_rec_t *qos = NULL;
+	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK,
+				   WRITE_LOCK, NO_LOCK, NO_LOCK };
 
 	if(!calc_fairshare)
 		return SLURM_SUCCESS;
 
 	xassert(assoc_mgr_association_list);
 
-	slurm_mutex_lock(&assoc_mgr_association_lock);
+	assoc_mgr_lock(&locks);
 	itr = list_iterator_create(assoc_mgr_association_list);
 	/* We want to do this to all associations including
 	   root.  All usage_raws are calculated from the bottom up.
@@ -195,16 +197,14 @@ static int _reset_usage()
 		assoc->usage->grp_used_wall = 0;
 	}
 	list_iterator_destroy(itr);
-	slurm_mutex_unlock(&assoc_mgr_association_lock);
 
-	slurm_mutex_lock(&assoc_mgr_qos_lock);
 	itr = list_iterator_create(assoc_mgr_qos_list);
 	while((qos = list_next(itr))) {
 		qos->usage->usage_raw = 0;
 		qos->usage->grp_used_wall = 0;
 	}
 	list_iterator_destroy(itr);
-	slurm_mutex_unlock(&assoc_mgr_qos_lock);
+	assoc_mgr_unlock(&locks);
 
 	return SLURM_SUCCESS;
 }
@@ -386,6 +386,8 @@ static double _get_fairshare_priority( struct job_record *job_ptr)
 	slurmdb_association_rec_t *assoc =
 		(slurmdb_association_rec_t *)job_ptr->assoc_ptr;
 	double priority_fs = 0.0;
+	assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK,
+				   NO_LOCK, NO_LOCK, NO_LOCK };
 
 	if(!calc_fairshare)
 		return 0;
@@ -396,7 +398,7 @@ static double _get_fairshare_priority( struct job_record *job_ptr)
 		return 0;
 	}
 
-	slurm_mutex_lock(&assoc_mgr_association_lock);
+	assoc_mgr_lock(&locks);
 	if(assoc->usage->usage_efctv == (long double)NO_VAL)
 		priority_p_set_assoc_usage(assoc);
 
@@ -410,7 +412,7 @@ static double _get_fairshare_priority( struct job_record *job_ptr)
 		     assoc->user, assoc->acct, assoc->usage->shares_norm,
 		     assoc->usage->usage_efctv, priority_fs);
 
-	slurm_mutex_unlock(&assoc_mgr_association_lock);
+	assoc_mgr_unlock(&locks);
 
 	if(priority_debug)
 		info("job %u has a fairshare priority of %f",
@@ -647,6 +649,8 @@ static void *_decay_thread(void *no_data)
 	/* Write lock on jobs, read lock on nodes and partitions */
 	slurmctld_lock_t job_write_lock =
 		{ NO_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
+	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK,
+				   WRITE_LOCK, NO_LOCK, NO_LOCK };
 
 	if(decay_hl > 0)
 		decay_factor = 1 - (0.693 / decay_hl);
@@ -750,11 +754,8 @@ static void *_decay_thread(void *no_data)
 			/* apply new usage */
 			if(!IS_JOB_PENDING(job_ptr) &&
 			   job_ptr->start_time && job_ptr->assoc_ptr) {
-				slurmdb_qos_rec_t *qos =
-					(slurmdb_qos_rec_t *)job_ptr->qos_ptr;
-				slurmdb_association_rec_t *assoc =
-					(slurmdb_association_rec_t *)
-					job_ptr->assoc_ptr;
+				slurmdb_qos_rec_t *qos;
+				slurmdb_association_rec_t *assoc;
 				time_t start_period = last_ran;
 				time_t end_period = start_time;
 				double run_decay = 0;
@@ -784,10 +785,13 @@ static void *_decay_thread(void *no_data)
 				real_decay = run_decay
 					* (double)job_ptr->total_cpus;
 
+				assoc_mgr_lock(&locks);
+				qos = (slurmdb_qos_rec_t *)job_ptr->qos_ptr;
+				assoc = (slurmdb_association_rec_t *)
+					job_ptr->assoc_ptr;
 				/* now apply the usage factor for this
 				   qos */
 				if(qos) {
-					slurm_mutex_lock(&assoc_mgr_qos_lock);
 					if(qos->usage_factor > 0) {
 						real_decay *= qos->usage_factor;
 						run_decay *= qos->usage_factor;
@@ -795,10 +799,8 @@ static void *_decay_thread(void *no_data)
 					qos->usage->grp_used_wall += run_decay;
 					qos->usage->usage_raw +=
 						(long double)real_decay;
-					slurm_mutex_unlock(&assoc_mgr_qos_lock);
 				}
 
-				slurm_mutex_lock(&assoc_mgr_association_lock);
 				/* We want to do this all the way up
 				   to and including root.  This way we
 				   can keep track of how much usage
@@ -824,7 +826,7 @@ static void *_decay_thread(void *no_data)
 						     grp_used_wall);
 					assoc = assoc->usage->parent_assoc_ptr;
 				}
-				slurm_mutex_unlock(&assoc_mgr_association_lock);
+				assoc_mgr_unlock(&locks);
 			}
 
 			/*
@@ -847,10 +849,12 @@ static void *_decay_thread(void *no_data)
 
 	get_usage:
 		/* now calculate all the normalized usage here */
-		slurm_mutex_lock(&assoc_mgr_association_lock);
+		locks.qos = NO_LOCK;
+		assoc_mgr_lock(&locks);
 		_set_children_usage_efctv(
 			assoc_mgr_root_assoc->usage->childern_list);
-		slurm_mutex_unlock(&assoc_mgr_association_lock);
+		assoc_mgr_unlock(&locks);
+		locks.qos = WRITE_LOCK;
 
 		last_ran = start_time;
 

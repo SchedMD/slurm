@@ -59,15 +59,12 @@ List assoc_mgr_wckey_list = NULL;
 
 static char *assoc_mgr_cluster_name = NULL;
 static int setup_childern = 0;
+static assoc_mgr_lock_flags_t assoc_mgr_locks;
 
 void (*remove_assoc_notify) (slurmdb_association_rec_t *rec) = NULL;
 
-pthread_mutex_t assoc_mgr_association_lock = PTHREAD_MUTEX_INITIALIZER;
-
-pthread_mutex_t assoc_mgr_qos_lock = PTHREAD_MUTEX_INITIALIZER;
-pthread_mutex_t assoc_mgr_user_lock = PTHREAD_MUTEX_INITIALIZER;
-pthread_mutex_t assoc_mgr_file_lock = PTHREAD_MUTEX_INITIALIZER;
-pthread_mutex_t assoc_mgr_wckey_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t locks_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t locks_cond = PTHREAD_COND_INITIALIZER;
 
 /*
  * Comparator used for sorting assocs largest cpu to smallest cpu
@@ -460,9 +457,11 @@ static int _get_assoc_mgr_association_list(void *db_conn, int enforce)
 {
 	slurmdb_association_cond_t assoc_q;
 	uid_t uid = getuid();
+	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK,
+				   NO_LOCK, NO_LOCK, NO_LOCK };
 
 //	DEF_TIMERS;
-	slurm_mutex_lock(&assoc_mgr_association_lock);
+	assoc_mgr_lock(&locks);
 	if(assoc_mgr_association_list)
 		list_destroy(assoc_mgr_association_list);
 
@@ -489,7 +488,7 @@ static int _get_assoc_mgr_association_list(void *db_conn, int enforce)
 		   isn't anything there */
 		assoc_mgr_association_list =
 			list_create(slurmdb_destroy_association_rec);
-		slurm_mutex_unlock(&assoc_mgr_association_lock);
+		assoc_mgr_unlock(&locks);
 		if(enforce & ACCOUNTING_ENFORCE_ASSOCS) {
 			error("_get_assoc_mgr_association_list: "
 			      "no list was made.");
@@ -503,7 +502,7 @@ static int _get_assoc_mgr_association_list(void *db_conn, int enforce)
 
 	_post_association_list(assoc_mgr_association_list);
 
-	slurm_mutex_unlock(&assoc_mgr_association_lock);
+	assoc_mgr_unlock(&locks);
 
 	return SLURM_SUCCESS;
 }
@@ -511,14 +510,16 @@ static int _get_assoc_mgr_association_list(void *db_conn, int enforce)
 static int _get_assoc_mgr_qos_list(void *db_conn, int enforce)
 {
 	uid_t uid = getuid();
+	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK,
+				   WRITE_LOCK, NO_LOCK, NO_LOCK };
 
-	slurm_mutex_lock(&assoc_mgr_qos_lock);
+	assoc_mgr_lock(&locks);
 	if(assoc_mgr_qos_list)
 		list_destroy(assoc_mgr_qos_list);
 	assoc_mgr_qos_list = acct_storage_g_get_qos(db_conn, uid, NULL);
 
 	if(!assoc_mgr_qos_list) {
-		slurm_mutex_unlock(&assoc_mgr_qos_lock);
+		assoc_mgr_unlock(&locks);
 		if(enforce & ACCOUNTING_ENFORCE_ASSOCS) {
 			error("_get_assoc_mgr_qos_list: no list was made.");
 			return SLURM_ERROR;
@@ -529,7 +530,7 @@ static int _get_assoc_mgr_qos_list(void *db_conn, int enforce)
 
 	_post_qos_list(assoc_mgr_qos_list);
 
-	slurm_mutex_unlock(&assoc_mgr_qos_lock);
+	assoc_mgr_unlock(&locks);
 	return SLURM_SUCCESS;
 }
 
@@ -537,17 +538,19 @@ static int _get_assoc_mgr_user_list(void *db_conn, int enforce)
 {
 	slurmdb_user_cond_t user_q;
 	uid_t uid = getuid();
+	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK,
+				   NO_LOCK, WRITE_LOCK, NO_LOCK };
 
 	memset(&user_q, 0, sizeof(slurmdb_user_cond_t));
 	user_q.with_coords = 1;
 
-	slurm_mutex_lock(&assoc_mgr_user_lock);
+	assoc_mgr_lock(&locks);
 	if(assoc_mgr_user_list)
 		list_destroy(assoc_mgr_user_list);
 	assoc_mgr_user_list = acct_storage_g_get_users(db_conn, uid, &user_q);
 
 	if(!assoc_mgr_user_list) {
-		slurm_mutex_unlock(&assoc_mgr_user_lock);
+		assoc_mgr_unlock(&locks);
 		if(enforce & ACCOUNTING_ENFORCE_ASSOCS) {
 			error("_get_assoc_mgr_user_list: "
 			      "no list was made.");
@@ -559,7 +562,7 @@ static int _get_assoc_mgr_user_list(void *db_conn, int enforce)
 
 	_post_user_list(assoc_mgr_user_list);
 
-	slurm_mutex_unlock(&assoc_mgr_user_lock);
+	assoc_mgr_unlock(&locks);
 	return SLURM_SUCCESS;
 }
 
@@ -568,9 +571,11 @@ static int _get_local_wckey_list(void *db_conn, int enforce)
 {
 	slurmdb_wckey_cond_t wckey_q;
 	uid_t uid = getuid();
+	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK,
+				   NO_LOCK, NO_LOCK, WRITE_LOCK };
 
 //	DEF_TIMERS;
-	slurm_mutex_lock(&assoc_mgr_wckey_lock);
+	assoc_mgr_lock(&locks);
 	if(assoc_mgr_wckey_list)
 		list_destroy(assoc_mgr_wckey_list);
 
@@ -596,7 +601,7 @@ static int _get_local_wckey_list(void *db_conn, int enforce)
 		/* create list so we don't keep calling this if there
 		   isn't anything there */
 		assoc_mgr_wckey_list = list_create(slurmdb_destroy_wckey_rec);
-		slurm_mutex_unlock(&assoc_mgr_wckey_lock);
+		assoc_mgr_unlock(&locks);
 		if(enforce & ACCOUNTING_ENFORCE_WCKEYS) {
 			error("_get_local_wckey_list: "
 			      "no list was made.");
@@ -610,7 +615,7 @@ static int _get_local_wckey_list(void *db_conn, int enforce)
 
 	_post_wckey_list(assoc_mgr_wckey_list);
 
-	slurm_mutex_unlock(&assoc_mgr_wckey_lock);
+	assoc_mgr_unlock(&locks);
 
 	return SLURM_SUCCESS;
 }
@@ -623,6 +628,8 @@ static int _refresh_assoc_mgr_association_list(void *db_conn, int enforce)
 	ListIterator curr_itr = NULL;
 	ListIterator assoc_mgr_itr = NULL;
 	slurmdb_association_rec_t *curr_assoc = NULL, *assoc = NULL;
+	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK,
+				   NO_LOCK, NO_LOCK, NO_LOCK };
 //	DEF_TIMERS;
 
 	memset(&assoc_q, 0, sizeof(slurmdb_association_cond_t));
@@ -635,7 +642,7 @@ static int _refresh_assoc_mgr_association_list(void *db_conn, int enforce)
 		      "all associations.");
 	}
 
-	slurm_mutex_lock(&assoc_mgr_association_lock);
+	assoc_mgr_lock(&locks);
 
 	current_assocs = assoc_mgr_association_list;
 
@@ -649,7 +656,7 @@ static int _refresh_assoc_mgr_association_list(void *db_conn, int enforce)
 
 	if(!assoc_mgr_association_list) {
 		assoc_mgr_association_list = current_assocs;
-		slurm_mutex_unlock(&assoc_mgr_association_lock);
+		assoc_mgr_unlock(&locks);
 
 		error("_refresh_assoc_mgr_association_list: "
 		      "no new list given back keeping cached one.");
@@ -659,7 +666,7 @@ static int _refresh_assoc_mgr_association_list(void *db_conn, int enforce)
 	_post_association_list(assoc_mgr_association_list);
 
 	if(!current_assocs) {
-		slurm_mutex_unlock(&assoc_mgr_association_lock);
+		assoc_mgr_unlock(&locks);
 		return SLURM_SUCCESS;
 	}
 
@@ -688,7 +695,7 @@ static int _refresh_assoc_mgr_association_list(void *db_conn, int enforce)
 	list_iterator_destroy(curr_itr);
 	list_iterator_destroy(assoc_mgr_itr);
 
-	slurm_mutex_unlock(&assoc_mgr_association_lock);
+	assoc_mgr_unlock(&locks);
 
 	if(current_assocs)
 		list_destroy(current_assocs);
@@ -703,6 +710,8 @@ static int _refresh_assoc_mgr_qos_list(void *db_conn, int enforce)
 {
 	List current_qos = NULL;
 	uid_t uid = getuid();
+	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK,
+				   WRITE_LOCK, NO_LOCK, NO_LOCK };
 
 	current_qos = acct_storage_g_get_qos(db_conn, uid, NULL);
 
@@ -713,14 +722,14 @@ static int _refresh_assoc_mgr_qos_list(void *db_conn, int enforce)
 	}
 	_post_qos_list(current_qos);
 
-	slurm_mutex_lock(&assoc_mgr_qos_lock);
+	assoc_mgr_lock(&locks);
 
 	if(assoc_mgr_qos_list)
 		list_destroy(assoc_mgr_qos_list);
 
 	assoc_mgr_qos_list = current_qos;
 
-	slurm_mutex_unlock(&assoc_mgr_qos_lock);
+	assoc_mgr_unlock(&locks);
 
 	return SLURM_SUCCESS;
 }
@@ -733,6 +742,8 @@ static int _refresh_assoc_mgr_user_list(void *db_conn, int enforce)
 	List current_users = NULL;
 	slurmdb_user_cond_t user_q;
 	uid_t uid = getuid();
+	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK,
+				   NO_LOCK, WRITE_LOCK, NO_LOCK };
 
 	memset(&user_q, 0, sizeof(slurmdb_user_cond_t));
 	user_q.with_coords = 1;
@@ -746,14 +757,14 @@ static int _refresh_assoc_mgr_user_list(void *db_conn, int enforce)
 	}
 	_post_user_list(current_users);
 
-	slurm_mutex_lock(&assoc_mgr_user_lock);
+	assoc_mgr_lock(&locks);
 
 	if(assoc_mgr_user_list)
 		list_destroy(assoc_mgr_user_list);
 
 	assoc_mgr_user_list = current_users;
 
-	slurm_mutex_unlock(&assoc_mgr_user_lock);
+	assoc_mgr_unlock(&locks);
 
 	return SLURM_SUCCESS;
 }
@@ -766,6 +777,8 @@ static int _refresh_assoc_wckey_list(void *db_conn, int enforce)
 	slurmdb_wckey_cond_t wckey_q;
 	List current_wckeys = NULL;
 	uid_t uid = getuid();
+	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK,
+				   NO_LOCK, WRITE_LOCK, NO_LOCK };
 
 	memset(&wckey_q, 0, sizeof(slurmdb_wckey_cond_t));
 	if(assoc_mgr_cluster_name) {
@@ -787,14 +800,70 @@ static int _refresh_assoc_wckey_list(void *db_conn, int enforce)
 
 	_post_user_list(current_wckeys);
 
-	slurm_mutex_lock(&assoc_mgr_wckey_lock);
+	assoc_mgr_lock(&locks);
 	if(assoc_mgr_wckey_list)
 		list_destroy(assoc_mgr_wckey_list);
 
 	assoc_mgr_wckey_list = current_wckeys;
-	slurm_mutex_unlock(&assoc_mgr_wckey_lock);
+	assoc_mgr_unlock(&locks);
 
 	return SLURM_SUCCESS;
+}
+
+/* _wr_rdlock - Issue a read lock on the specified data type */
+static void _wr_rdlock(lock_datatype_t datatype)
+{
+	slurm_mutex_lock(&locks_mutex);
+	while (1) {
+		if ((assoc_mgr_locks.entity[write_wait_lock(datatype)] ==
+		     0)
+		    && (assoc_mgr_locks.entity[write_lock(datatype)] ==
+			0)) {
+			assoc_mgr_locks.entity[read_lock(datatype)]++;
+			break;
+		} else {	/* wait for state change and retry */
+			pthread_cond_wait(&locks_cond, &locks_mutex);
+		}
+	}
+	slurm_mutex_unlock(&locks_mutex);
+}
+
+/* _wr_rdunlock - Issue a read unlock on the specified data type */
+static void _wr_rdunlock(lock_datatype_t datatype)
+{
+	slurm_mutex_lock(&locks_mutex);
+	assoc_mgr_locks.entity[read_lock(datatype)]--;
+	pthread_cond_broadcast(&locks_cond);
+	slurm_mutex_unlock(&locks_mutex);
+}
+
+/* _wr_wrlock - Issue a write lock on the specified data type */
+static void _wr_wrlock(lock_datatype_t datatype)
+{
+	slurm_mutex_lock(&locks_mutex);
+	assoc_mgr_locks.entity[write_wait_lock(datatype)]++;
+
+	while (1) {
+		if ((assoc_mgr_locks.entity[read_lock(datatype)] == 0) &&
+		    (assoc_mgr_locks.entity[write_lock(datatype)] == 0)) {
+			assoc_mgr_locks.entity[write_lock(datatype)]++;
+			assoc_mgr_locks.
+				entity[write_wait_lock(datatype)]--;
+			break;
+		} else {	/* wait for state change and retry */
+			pthread_cond_wait(&locks_cond, &locks_mutex);
+		}
+	}
+	slurm_mutex_unlock(&locks_mutex);
+}
+
+/* _wr_wrunlock - Issue a write unlock on the specified data type */
+static void _wr_wrunlock(lock_datatype_t datatype)
+{
+	slurm_mutex_lock(&locks_mutex);
+	assoc_mgr_locks.entity[write_lock(datatype)]--;
+	pthread_cond_broadcast(&locks_cond);
+	slurm_mutex_unlock(&locks_mutex);
 }
 
 extern int assoc_mgr_init(void *db_conn, assoc_init_args_t *args)
@@ -810,6 +879,7 @@ extern int assoc_mgr_init(void *db_conn, assoc_init_args_t *args)
 
 		xfree(prio);
 		checked_prio = 1;
+		memset((void *) &assoc_mgr_locks, 0, sizeof(assoc_mgr_locks));
 	}
 
 	if(args) {
@@ -888,6 +958,52 @@ extern int assoc_mgr_fini(char *state_save_location)
 	return SLURM_SUCCESS;
 }
 
+extern void assoc_mgr_lock(assoc_mgr_lock_t *locks)
+{
+	if (locks->assoc == READ_LOCK)
+		_wr_rdlock(ASSOC_LOCK);
+	else if (locks->assoc == WRITE_LOCK)
+		_wr_wrlock(ASSOC_LOCK);
+
+	if (locks->qos == READ_LOCK)
+		_wr_rdlock(QOS_LOCK);
+	else if (locks->qos == WRITE_LOCK)
+		_wr_wrlock(QOS_LOCK);
+
+	if (locks->user == READ_LOCK)
+		_wr_rdlock(USER_LOCK);
+	else if (locks->user == WRITE_LOCK)
+		_wr_wrlock(USER_LOCK);
+
+	if (locks->wckey == READ_LOCK)
+		_wr_rdlock(PART_LOCK);
+	else if (locks->wckey == WRITE_LOCK)
+		_wr_wrlock(PART_LOCK);
+}
+
+extern void assoc_mgr_unlock(assoc_mgr_lock_t *locks)
+{
+	if (locks->wckey == READ_LOCK)
+		_wr_rdunlock(PART_LOCK);
+	else if (locks->wckey == WRITE_LOCK)
+		_wr_wrunlock(PART_LOCK);
+
+	if (locks->user == READ_LOCK)
+		_wr_rdunlock(USER_LOCK);
+	else if (locks->user == WRITE_LOCK)
+		_wr_wrunlock(USER_LOCK);
+
+	if (locks->qos == READ_LOCK)
+		_wr_rdunlock(QOS_LOCK);
+	else if (locks->qos == WRITE_LOCK)
+		_wr_wrunlock(QOS_LOCK);
+
+	if (locks->assoc == READ_LOCK)
+		_wr_rdunlock(ASSOC_LOCK);
+	else if (locks->assoc == WRITE_LOCK)
+		_wr_wrunlock(ASSOC_LOCK);
+}
+
 extern assoc_mgr_association_usage_t *create_assoc_mgr_association_usage()
 {
 	assoc_mgr_association_usage_t *usage =
@@ -947,6 +1063,8 @@ extern int assoc_mgr_get_user_assocs(void *db_conn,
 	ListIterator itr = NULL;
 	slurmdb_association_rec_t *found_assoc = NULL;
 	int set = 1;
+	assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK,
+				   NO_LOCK, NO_LOCK, NO_LOCK };
 
 	xassert(assoc);
 	xassert(assoc->uid != (uint32_t)NO_VAL);
@@ -963,7 +1081,7 @@ extern int assoc_mgr_get_user_assocs(void *db_conn,
 	   && !(enforce & ACCOUNTING_ENFORCE_ASSOCS))
 		return SLURM_SUCCESS;
 
-	slurm_mutex_lock(&assoc_mgr_association_lock);
+	assoc_mgr_lock(&locks);
 	itr = list_iterator_create(assoc_mgr_association_list);
 	while((found_assoc = list_next(itr))) {
 		if(assoc->uid != found_assoc->uid) {
@@ -976,7 +1094,7 @@ extern int assoc_mgr_get_user_assocs(void *db_conn,
 		set = 1;
 	}
 	list_iterator_destroy(itr);
-	slurm_mutex_unlock(&assoc_mgr_association_lock);
+	assoc_mgr_unlock(&locks);
 
 	if(set)
 		return SLURM_SUCCESS;
@@ -994,6 +1112,8 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn,
 	ListIterator itr = NULL;
 	slurmdb_association_rec_t * found_assoc = NULL;
 	slurmdb_association_rec_t * ret_assoc = NULL;
+	assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK,
+				   NO_LOCK, NO_LOCK, NO_LOCK };
 
 	if (assoc_pptr)
 		*assoc_pptr = NULL;
@@ -1059,7 +1179,7 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn,
 /* 	     "cluster=%s, partition=%s", */
 /* 	     assoc->user, assoc->uid, assoc->acct, */
 /* 	     assoc->cluster, assoc->partition); */
-	slurm_mutex_lock(&assoc_mgr_association_lock);
+	assoc_mgr_lock(&locks);
 	itr = list_iterator_create(assoc_mgr_association_list);
 	while((found_assoc = list_next(itr))) {
 		if(assoc->id) {
@@ -1110,7 +1230,7 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn,
 	list_iterator_destroy(itr);
 
 	if(!ret_assoc) {
-		slurm_mutex_unlock(&assoc_mgr_association_lock);
+		assoc_mgr_unlock(&locks);
 		if(enforce & ACCOUNTING_ENFORCE_ASSOCS)
 			return SLURM_ERROR;
 		else
@@ -1193,8 +1313,7 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn,
 	if(!assoc->user)
 		assoc->user = ret_assoc->user;
 
-
-	slurm_mutex_unlock(&assoc_mgr_association_lock);
+	assoc_mgr_unlock(&locks);
 
 	return SLURM_SUCCESS;
 }
@@ -1205,6 +1324,8 @@ extern int assoc_mgr_fill_in_user(void *db_conn, slurmdb_user_rec_t *user,
 {
 	ListIterator itr = NULL;
 	slurmdb_user_rec_t * found_user = NULL;
+	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK,
+				   NO_LOCK, READ_LOCK, NO_LOCK };
 
 	if(user_pptr)
 		*user_pptr = NULL;
@@ -1216,7 +1337,7 @@ extern int assoc_mgr_fill_in_user(void *db_conn, slurmdb_user_rec_t *user,
 	   && !(enforce & ACCOUNTING_ENFORCE_ASSOCS))
 		return SLURM_SUCCESS;
 
-	slurm_mutex_lock(&assoc_mgr_user_lock);
+	assoc_mgr_lock(&locks);
 	itr = list_iterator_create(assoc_mgr_user_list);
 	while((found_user = list_next(itr))) {
 		if(user->uid != NO_VAL) {
@@ -1229,7 +1350,7 @@ extern int assoc_mgr_fill_in_user(void *db_conn, slurmdb_user_rec_t *user,
 	list_iterator_destroy(itr);
 
 	if(!found_user) {
-		slurm_mutex_unlock(&assoc_mgr_user_lock);
+		assoc_mgr_unlock(&locks);
 		if(enforce & ACCOUNTING_ENFORCE_ASSOCS)
 			return SLURM_ERROR;
 		else
@@ -1260,7 +1381,7 @@ extern int assoc_mgr_fill_in_user(void *db_conn, slurmdb_user_rec_t *user,
 	if(!user->wckey_list)
 		user->wckey_list = found_user->wckey_list;
 
-	slurm_mutex_unlock(&assoc_mgr_user_lock);
+	assoc_mgr_unlock(&locks);
 	return SLURM_SUCCESS;
 
 }
@@ -1271,6 +1392,8 @@ extern int assoc_mgr_fill_in_qos(void *db_conn, slurmdb_qos_rec_t *qos,
 {
 	ListIterator itr = NULL;
 	slurmdb_qos_rec_t * found_qos = NULL;
+	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK,
+				   READ_LOCK, NO_LOCK, NO_LOCK };
 
 	if(qos_pptr)
 		*qos_pptr = NULL;
@@ -1282,7 +1405,7 @@ extern int assoc_mgr_fill_in_qos(void *db_conn, slurmdb_qos_rec_t *qos,
 	   && !(enforce & ACCOUNTING_ENFORCE_QOS))
 		return SLURM_SUCCESS;
 
-	slurm_mutex_lock(&assoc_mgr_qos_lock);
+	assoc_mgr_lock(&locks);
 	itr = list_iterator_create(assoc_mgr_qos_list);
 	while((found_qos = list_next(itr))) {
 		if(qos->id == found_qos->id)
@@ -1293,7 +1416,7 @@ extern int assoc_mgr_fill_in_qos(void *db_conn, slurmdb_qos_rec_t *qos,
 	list_iterator_destroy(itr);
 
 	if(!found_qos) {
-		slurm_mutex_unlock(&assoc_mgr_qos_lock);
+		assoc_mgr_unlock(&locks);
 		if(enforce & ACCOUNTING_ENFORCE_QOS)
 			return SLURM_ERROR;
 		else
@@ -1356,7 +1479,7 @@ extern int assoc_mgr_fill_in_qos(void *db_conn, slurmdb_qos_rec_t *qos,
 	/* 	qos->usage->user_limit_list = found_qos->usage->user_limit_list; */
 	qos->usage_factor = found_qos->usage_factor;
 
-	slurm_mutex_unlock(&assoc_mgr_qos_lock);
+	assoc_mgr_unlock(&locks);
 	return SLURM_SUCCESS;
 }
 
@@ -1367,6 +1490,8 @@ extern int assoc_mgr_fill_in_wckey(void *db_conn, slurmdb_wckey_rec_t *wckey,
 	ListIterator itr = NULL;
 	slurmdb_wckey_rec_t * found_wckey = NULL;
 	slurmdb_wckey_rec_t * ret_wckey = NULL;
+	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK,
+				   NO_LOCK, NO_LOCK, READ_LOCK };
 
 	if (wckey_pptr)
 		*wckey_pptr = NULL;
@@ -1443,7 +1568,7 @@ extern int assoc_mgr_fill_in_wckey(void *db_conn, slurmdb_wckey_rec_t *wckey,
 /* 	     "cluster=%s", */
 /* 	     wckey->user, wckey->uid, wckey->name, */
 /* 	     wckey->cluster); */
-	slurm_mutex_lock(&assoc_mgr_wckey_lock);
+	assoc_mgr_lock(&locks);
 	itr = list_iterator_create(assoc_mgr_wckey_list);
 	while((found_wckey = list_next(itr))) {
 		if(wckey->id) {
@@ -1494,7 +1619,7 @@ extern int assoc_mgr_fill_in_wckey(void *db_conn, slurmdb_wckey_rec_t *wckey,
 	list_iterator_destroy(itr);
 
 	if(!ret_wckey) {
-		slurm_mutex_unlock(&assoc_mgr_wckey_lock);
+		assoc_mgr_unlock(&locks);
 		if(enforce & ACCOUNTING_ENFORCE_WCKEYS)
 			return SLURM_ERROR;
 		else
@@ -1516,7 +1641,7 @@ extern int assoc_mgr_fill_in_wckey(void *db_conn, slurmdb_wckey_rec_t *wckey,
 	if(!wckey->user)
 		wckey->user = ret_wckey->user;
 
-	slurm_mutex_unlock(&assoc_mgr_wckey_lock);
+	assoc_mgr_unlock(&locks);
 
 	return SLURM_SUCCESS;
 }
@@ -1526,6 +1651,8 @@ extern slurmdb_admin_level_t assoc_mgr_get_admin_level(void *db_conn,
 {
 	ListIterator itr = NULL;
 	slurmdb_user_rec_t * found_user = NULL;
+	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK,
+				   NO_LOCK, READ_LOCK, NO_LOCK };
 
 	if(!assoc_mgr_user_list)
 		if(_get_assoc_mgr_user_list(db_conn, 0) == SLURM_ERROR)
@@ -1534,14 +1661,14 @@ extern slurmdb_admin_level_t assoc_mgr_get_admin_level(void *db_conn,
 	if(!assoc_mgr_user_list)
 		return SLURMDB_ADMIN_NOTSET;
 
-	slurm_mutex_lock(&assoc_mgr_user_lock);
+	assoc_mgr_lock(&locks);
 	itr = list_iterator_create(assoc_mgr_user_list);
 	while((found_user = list_next(itr))) {
 		if(uid == found_user->uid)
 			break;
 	}
 	list_iterator_destroy(itr);
-	slurm_mutex_unlock(&assoc_mgr_user_lock);
+	assoc_mgr_unlock(&locks);
 
 	if(found_user)
 		return found_user->admin_level;
@@ -1556,6 +1683,8 @@ extern int assoc_mgr_is_user_acct_coord(void *db_conn,
 	ListIterator itr = NULL;
 	slurmdb_coord_rec_t *acct = NULL;
 	slurmdb_user_rec_t * found_user = NULL;
+	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK,
+				   NO_LOCK, READ_LOCK, NO_LOCK };
 
 	if(!assoc_mgr_user_list)
 		if(_get_assoc_mgr_user_list(db_conn, 0) == SLURM_ERROR)
@@ -1564,7 +1693,7 @@ extern int assoc_mgr_is_user_acct_coord(void *db_conn,
 	if(!assoc_mgr_user_list)
 		return SLURMDB_ADMIN_NOTSET;
 
-	slurm_mutex_lock(&assoc_mgr_user_lock);
+	assoc_mgr_lock(&locks);
 	itr = list_iterator_create(assoc_mgr_user_list);
 	while((found_user = list_next(itr))) {
 		if(uid == found_user->uid)
@@ -1573,7 +1702,7 @@ extern int assoc_mgr_is_user_acct_coord(void *db_conn,
 	list_iterator_destroy(itr);
 
 	if(!found_user || !found_user->coord_accts) {
-		slurm_mutex_unlock(&assoc_mgr_user_lock);
+		assoc_mgr_unlock(&locks);
 		return 0;
 	}
 	itr = list_iterator_create(found_user->coord_accts);
@@ -1584,10 +1713,10 @@ extern int assoc_mgr_is_user_acct_coord(void *db_conn,
 	list_iterator_destroy(itr);
 
 	if(acct) {
-		slurm_mutex_unlock(&assoc_mgr_user_lock);
+		assoc_mgr_unlock(&locks);
 		return 1;
 	}
-	slurm_mutex_unlock(&assoc_mgr_user_lock);
+	assoc_mgr_unlock(&locks);
 
 	return 0;
 }
@@ -1605,6 +1734,8 @@ extern List assoc_mgr_get_shares(void *db_conn,
 	slurmdb_user_rec_t user;
 	int is_admin=1;
 	uint16_t private_data = slurm_get_private_data();
+	assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK,
+				   NO_LOCK, NO_LOCK, NO_LOCK };
 
 	if(!assoc_mgr_association_list
 	   || !list_count(assoc_mgr_association_list))
@@ -1641,7 +1772,7 @@ extern List assoc_mgr_get_shares(void *db_conn,
 
 	ret_list = list_create(slurm_destroy_association_shares_object);
 
-	slurm_mutex_lock(&assoc_mgr_association_lock);
+	assoc_mgr_lock(&locks);
 	itr = list_iterator_create(assoc_mgr_association_list);
 	while((assoc = list_next(itr))) {
 		if(user_itr && assoc->user) {
@@ -1740,7 +1871,7 @@ extern List assoc_mgr_get_shares(void *db_conn,
 		share->usage_efctv = (double)assoc->usage->usage_efctv;
 	}
 	list_iterator_destroy(itr);
-	slurm_mutex_unlock(&assoc_mgr_association_lock);
+	assoc_mgr_unlock(&locks);
 end_it:
 	if(user_itr)
 		list_iterator_destroy(user_itr);
@@ -1817,15 +1948,13 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update)
 	int rc = SLURM_SUCCESS;
 	int parents_changed = 0;
 	List remove_list = NULL;
+	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK,
+				   WRITE_LOCK, NO_LOCK, NO_LOCK };
 
 	if(!assoc_mgr_association_list)
 		return SLURM_SUCCESS;
 
-	/* Since we could possibly need the qos lock handle it
-	   now to avoid deadlock.  Always do QOS first.
-	*/
-	slurm_mutex_lock(&assoc_mgr_qos_lock);
-	slurm_mutex_lock(&assoc_mgr_association_lock);
+	assoc_mgr_lock(&locks);
 	itr = list_iterator_create(assoc_mgr_association_list);
 	while((object = list_pop(update->objects))) {
 		if(object->cluster && assoc_mgr_cluster_name) {
@@ -2105,8 +2234,7 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update)
 	}
 
 	list_iterator_destroy(itr);
-	slurm_mutex_unlock(&assoc_mgr_association_lock);
-	slurm_mutex_unlock(&assoc_mgr_qos_lock);
+	assoc_mgr_unlock(&locks);
 
 	/* This needs to happen outside of the
 	   assoc_mgr_association_lock */
@@ -2130,11 +2258,13 @@ extern int assoc_mgr_update_wckeys(slurmdb_update_object_t *update)
 	ListIterator itr = NULL;
 	int rc = SLURM_SUCCESS;
 	uid_t pw_uid;
+	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK,
+				   NO_LOCK, NO_LOCK, WRITE_LOCK };
 
 	if(!assoc_mgr_wckey_list)
 		return SLURM_SUCCESS;
 
-	slurm_mutex_lock(&assoc_mgr_wckey_lock);
+	assoc_mgr_lock(&locks);
 	itr = list_iterator_create(assoc_mgr_wckey_list);
 	while((object = list_pop(update->objects))) {
 		if(object->cluster && assoc_mgr_cluster_name) {
@@ -2220,7 +2350,7 @@ extern int assoc_mgr_update_wckeys(slurmdb_update_object_t *update)
 		slurmdb_destroy_wckey_rec(object);
 	}
 	list_iterator_destroy(itr);
-	slurm_mutex_unlock(&assoc_mgr_wckey_lock);
+	assoc_mgr_unlock(&locks);
 
 	return rc;
 }
@@ -2233,11 +2363,13 @@ extern int assoc_mgr_update_users(slurmdb_update_object_t *update)
 	ListIterator itr = NULL;
 	int rc = SLURM_SUCCESS;
 	uid_t pw_uid;
+	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK,
+				   NO_LOCK, WRITE_LOCK, NO_LOCK };
 
 	if(!assoc_mgr_user_list)
 		return SLURM_SUCCESS;
 
-	slurm_mutex_lock(&assoc_mgr_user_lock);
+	assoc_mgr_lock(&locks);
 	itr = list_iterator_create(assoc_mgr_user_list);
 	while((object = list_pop(update->objects))) {
 		list_iterator_reset(itr);
@@ -2316,7 +2448,7 @@ extern int assoc_mgr_update_users(slurmdb_update_object_t *update)
 		slurmdb_destroy_user_rec(object);
 	}
 	list_iterator_destroy(itr);
-	slurm_mutex_unlock(&assoc_mgr_user_lock);
+	assoc_mgr_unlock(&locks);
 
 	return rc;
 }
@@ -2331,15 +2463,13 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update)
 	slurmdb_association_rec_t *assoc = NULL;
 	int rc = SLURM_SUCCESS;
 	bool resize_qos_bitstr = 0;
+	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK,
+				   WRITE_LOCK, NO_LOCK, NO_LOCK };
 
 	if(!assoc_mgr_qos_list)
 		return SLURM_SUCCESS;
 
-	slurm_mutex_lock(&assoc_mgr_qos_lock);
-	/* Since we could possibly need the association lock handle it
-	   now to avoid deadlock. Always do QOS first.
-	*/
-	slurm_mutex_lock(&assoc_mgr_association_lock);
+	assoc_mgr_lock(&locks);
 	itr = list_iterator_create(assoc_mgr_qos_list);
 	while((object = list_pop(update->objects))) {
 		list_iterator_reset(itr);
@@ -2417,7 +2547,7 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update)
 
 				rec->preempt_bitstr = object->preempt_bitstr;
 				object->preempt_bitstr = NULL;
-	/* 			char *tmp = get_qos_complete_str_bitstr( */
+				/* 			char *tmp = get_qos_complete_str_bitstr( */
 /* 					assoc_mgr_qos_list, */
 /* 					rec->preempt_bitstr); */
 
@@ -2490,8 +2620,7 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update)
 	}
 	list_iterator_destroy(itr);
 
-	slurm_mutex_unlock(&assoc_mgr_association_lock);
-	slurm_mutex_unlock(&assoc_mgr_qos_lock);
+	assoc_mgr_unlock(&locks);
 
 	return rc;
 }
@@ -2502,6 +2631,8 @@ extern int assoc_mgr_validate_assoc_id(void *db_conn,
 {
 	ListIterator itr = NULL;
 	slurmdb_association_rec_t * found_assoc = NULL;
+	assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK,
+				   NO_LOCK, NO_LOCK, NO_LOCK };
 
 	if(!assoc_mgr_association_list)
 		if(_get_assoc_mgr_association_list(db_conn, enforce)
@@ -2513,14 +2644,14 @@ extern int assoc_mgr_validate_assoc_id(void *db_conn,
 	   && !(enforce & ACCOUNTING_ENFORCE_ASSOCS))
 		return SLURM_SUCCESS;
 
-	slurm_mutex_lock(&assoc_mgr_association_lock);
+	assoc_mgr_lock(&locks);
 	itr = list_iterator_create(assoc_mgr_association_list);
 	while((found_assoc = list_next(itr))) {
 		if(assoc_id == found_assoc->id)
 			break;
 	}
 	list_iterator_destroy(itr);
-	slurm_mutex_unlock(&assoc_mgr_association_lock);
+	assoc_mgr_unlock(&locks);
 
 	if(found_assoc || !(enforce & ACCOUNTING_ENFORCE_ASSOCS))
 		return SLURM_SUCCESS;
@@ -2532,17 +2663,19 @@ extern void assoc_mgr_clear_used_info(void)
 {
 	ListIterator itr = NULL;
 	slurmdb_association_rec_t * found_assoc = NULL;
+	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK,
+				   NO_LOCK, NO_LOCK, NO_LOCK };
 
 	if (!assoc_mgr_association_list)
 		return;
 
-	slurm_mutex_lock(&assoc_mgr_association_lock);
+	assoc_mgr_lock(&locks);
 	itr = list_iterator_create(assoc_mgr_association_list);
 	while((found_assoc = list_next(itr))) {
 		_clear_used_info(found_assoc);
 	}
 	list_iterator_destroy(itr);
-	slurm_mutex_unlock(&assoc_mgr_association_lock);
+	assoc_mgr_unlock(&locks);
 }
 
 extern int dump_assoc_mgr_state(char *state_save_location)
@@ -2552,6 +2685,8 @@ extern int dump_assoc_mgr_state(char *state_save_location)
 	char *old_file = NULL, *new_file = NULL, *reg_file = NULL;
 	dbd_list_msg_t msg;
 	Buf buffer = init_buf(high_buffer_size);
+	assoc_mgr_lock_t locks = { READ_LOCK, WRITE_LOCK,
+				   READ_LOCK, READ_LOCK, READ_LOCK };
 	DEF_TIMERS;
 
 	START_TIMER;
@@ -2559,49 +2694,42 @@ extern int dump_assoc_mgr_state(char *state_save_location)
 	pack16(SLURMDBD_VERSION, buffer);
 	pack_time(time(NULL), buffer);
 
+	assoc_mgr_lock(&locks);
 	if(assoc_mgr_user_list) {
 		memset(&msg, 0, sizeof(dbd_list_msg_t));
-		slurm_mutex_lock(&assoc_mgr_user_lock);
 		msg.my_list = assoc_mgr_user_list;
 		/* let us know what to unpack */
 		pack16(DBD_ADD_USERS, buffer);
 		slurmdbd_pack_list_msg(&msg, SLURMDBD_VERSION,
 				       DBD_ADD_USERS, buffer);
-		slurm_mutex_unlock(&assoc_mgr_user_lock);
 	}
 
 	if(assoc_mgr_qos_list) {
 		memset(&msg, 0, sizeof(dbd_list_msg_t));
-		slurm_mutex_lock(&assoc_mgr_qos_lock);
 		msg.my_list = assoc_mgr_qos_list;
 		/* let us know what to unpack */
 		pack16(DBD_ADD_QOS, buffer);
 		slurmdbd_pack_list_msg(&msg, SLURMDBD_VERSION,
 				       DBD_ADD_QOS, buffer);
-		slurm_mutex_unlock(&assoc_mgr_qos_lock);
 	}
 
 	if(assoc_mgr_wckey_list) {
 		memset(&msg, 0, sizeof(dbd_list_msg_t));
-		slurm_mutex_lock(&assoc_mgr_wckey_lock);
 		msg.my_list = assoc_mgr_wckey_list;
 		/* let us know what to unpack */
 		pack16(DBD_ADD_WCKEYS, buffer);
 		slurmdbd_pack_list_msg(&msg, SLURMDBD_VERSION,
 				       DBD_ADD_WCKEYS, buffer);
-		slurm_mutex_unlock(&assoc_mgr_wckey_lock);
 	}
 	/* this needs to be done last so qos is set up
 	 * before hand when loading it back */
 	if(assoc_mgr_association_list) {
 		memset(&msg, 0, sizeof(dbd_list_msg_t));
-		slurm_mutex_lock(&assoc_mgr_association_lock);
 		msg.my_list = assoc_mgr_association_list;
 		/* let us know what to unpack */
 		pack16(DBD_ADD_ASSOCS, buffer);
 		slurmdbd_pack_list_msg(&msg, SLURMDBD_VERSION,
 				       DBD_ADD_ASSOCS, buffer);
-		slurm_mutex_unlock(&assoc_mgr_association_lock);
 	}
 
 	/* write the buffer to file */
@@ -2609,7 +2737,6 @@ extern int dump_assoc_mgr_state(char *state_save_location)
 	old_file = xstrdup_printf("%s.old", reg_file);
 	new_file = xstrdup_printf("%s.new", reg_file);
 
-	slurm_mutex_lock(&assoc_mgr_file_lock);
 	log_fd = creat(new_file, 0600);
 	if (log_fd < 0) {
 		error("Can't save state, create file %s error %m",
@@ -2660,7 +2787,6 @@ extern int dump_assoc_mgr_state(char *state_save_location)
 	if(assoc_mgr_association_list) {
 		ListIterator itr = NULL;
 		slurmdb_association_rec_t *assoc = NULL;
-		slurm_mutex_lock(&assoc_mgr_association_lock);
 		itr = list_iterator_create(assoc_mgr_association_list);
 		while((assoc = list_next(itr))) {
 			if(!assoc->user)
@@ -2674,7 +2800,6 @@ extern int dump_assoc_mgr_state(char *state_save_location)
 			pack32(assoc->usage->grp_used_wall, buffer);
 		}
 		list_iterator_destroy(itr);
-		slurm_mutex_unlock(&assoc_mgr_association_lock);
 	}
 
 	reg_file = xstrdup_printf("%s/assoc_usage", state_save_location);
@@ -2731,7 +2856,6 @@ extern int dump_assoc_mgr_state(char *state_save_location)
 	if(assoc_mgr_qos_list) {
 		ListIterator itr = NULL;
 		slurmdb_qos_rec_t *qos = NULL;
-		slurm_mutex_lock(&assoc_mgr_qos_lock);
 		itr = list_iterator_create(assoc_mgr_qos_list);
 		while((qos = list_next(itr))) {
 			pack32(qos->id, buffer);
@@ -2742,7 +2866,6 @@ extern int dump_assoc_mgr_state(char *state_save_location)
 			pack32(qos->usage->grp_used_wall, buffer);
 		}
 		list_iterator_destroy(itr);
-		slurm_mutex_unlock(&assoc_mgr_qos_lock);
 	}
 
 	reg_file = xstrdup_printf("%s/qos_usage", state_save_location);
@@ -2787,7 +2910,7 @@ extern int dump_assoc_mgr_state(char *state_save_location)
 	xfree(old_file);
 	xfree(reg_file);
 	xfree(new_file);
-	slurm_mutex_unlock(&assoc_mgr_file_lock);
+	assoc_mgr_unlock(&locks);
 
 	free_buf(buffer);
 	END_TIMER2("dump_assoc_mgr_state");
@@ -2805,6 +2928,8 @@ extern int load_assoc_usage(char *state_save_location)
 	Buf buffer;
 	time_t buf_time;
 	ListIterator itr = NULL;
+	assoc_mgr_lock_t locks = { WRITE_LOCK, READ_LOCK,
+				   NO_LOCK, NO_LOCK, NO_LOCK };
 
 	if(!assoc_mgr_association_list)
 		return SLURM_SUCCESS;
@@ -2813,7 +2938,7 @@ extern int load_assoc_usage(char *state_save_location)
 	state_file = xstrdup(state_save_location);
 	xstrcat(state_file, "/assoc_usage");	/* Always ignore .old file */
 	//info("looking at the %s file", state_file);
-	slurm_mutex_lock(&assoc_mgr_file_lock);
+	assoc_mgr_lock(&locks);
 	state_fd = open(state_file, O_RDONLY);
 	if (state_fd < 0) {
 		debug2("No Assoc usage file (%s) to recover", state_file);
@@ -2841,7 +2966,6 @@ extern int load_assoc_usage(char *state_save_location)
 		close(state_fd);
 	}
 	xfree(state_file);
-	slurm_mutex_unlock(&assoc_mgr_file_lock);
 
 	buffer = create_buf(data, data_size);
 
@@ -2853,12 +2977,12 @@ extern int load_assoc_usage(char *state_save_location)
 		      "got %u need %u", ver, ASSOC_USAGE_VERSION);
 		error("***********************************************");
 		free_buf(buffer);
+		assoc_mgr_unlock(&locks);
 		return EFAULT;
 	}
 
 	safe_unpack_time(&buf_time, buffer);
 
-	slurm_mutex_lock(&assoc_mgr_association_lock);
 	itr = list_iterator_create(assoc_mgr_association_list);
 	while (remaining_buf(buffer) > 0) {
 		uint32_t assoc_id = 0;
@@ -2887,7 +3011,7 @@ extern int load_assoc_usage(char *state_save_location)
 		list_iterator_reset(itr);
 	}
 	list_iterator_destroy(itr);
-	slurm_mutex_unlock(&assoc_mgr_association_lock);
+	assoc_mgr_unlock(&locks);
 
 	free_buf(buffer);
 	return SLURM_SUCCESS;
@@ -2895,10 +3019,9 @@ extern int load_assoc_usage(char *state_save_location)
 unpack_error:
 	if(buffer)
 		free_buf(buffer);
-	if(itr) {
+	if(itr)
 		list_iterator_destroy(itr);
-		slurm_mutex_unlock(&assoc_mgr_association_lock);
-	}
+	assoc_mgr_unlock(&locks);
 	return SLURM_ERROR;
 }
 
@@ -2912,6 +3035,8 @@ extern int load_qos_usage(char *state_save_location)
 	Buf buffer;
 	time_t buf_time;
 	ListIterator itr = NULL;
+	assoc_mgr_lock_t locks = { NO_LOCK, READ_LOCK,
+				   WRITE_LOCK, NO_LOCK, NO_LOCK };
 
 	if(!assoc_mgr_qos_list)
 		return SLURM_SUCCESS;
@@ -2920,7 +3045,7 @@ extern int load_qos_usage(char *state_save_location)
 	state_file = xstrdup(state_save_location);
 	xstrcat(state_file, "/qos_usage");	/* Always ignore .old file */
 	//info("looking at the %s file", state_file);
-	slurm_mutex_lock(&assoc_mgr_file_lock);
+	assoc_mgr_lock(&locks);
 	state_fd = open(state_file, O_RDONLY);
 	if (state_fd < 0) {
 		debug2("No Qos usage file (%s) to recover", state_file);
@@ -2948,7 +3073,6 @@ extern int load_qos_usage(char *state_save_location)
 		close(state_fd);
 	}
 	xfree(state_file);
-	slurm_mutex_unlock(&assoc_mgr_file_lock);
 
 	buffer = create_buf(data, data_size);
 
@@ -2960,12 +3084,12 @@ extern int load_qos_usage(char *state_save_location)
 		      "got %u need %u", ver, ASSOC_USAGE_VERSION);
 		error("***********************************************");
 		free_buf(buffer);
+		assoc_mgr_unlock(&locks);
 		return EFAULT;
 	}
 
 	safe_unpack_time(&buf_time, buffer);
 
-	slurm_mutex_lock(&assoc_mgr_qos_lock);
 	itr = list_iterator_create(assoc_mgr_qos_list);
 	while (remaining_buf(buffer) > 0) {
 		uint32_t qos_id = 0;
@@ -2987,7 +3111,7 @@ extern int load_qos_usage(char *state_save_location)
 		list_iterator_reset(itr);
 	}
 	list_iterator_destroy(itr);
-	slurm_mutex_unlock(&assoc_mgr_qos_lock);
+	assoc_mgr_unlock(&locks);
 
 	free_buf(buffer);
 	return SLURM_SUCCESS;
@@ -2995,10 +3119,9 @@ extern int load_qos_usage(char *state_save_location)
 unpack_error:
 	if(buffer)
 		free_buf(buffer);
-	if(itr) {
+	if(itr)
 		list_iterator_destroy(itr);
-		slurm_mutex_unlock(&assoc_mgr_qos_lock);
-	}
+	assoc_mgr_unlock(&locks);
 	return SLURM_ERROR;
 }
 
@@ -3013,12 +3136,14 @@ extern int load_assoc_mgr_state(char *state_save_location)
 	Buf buffer;
 	time_t buf_time;
 	dbd_list_msg_t *msg = NULL;
+	assoc_mgr_lock_t locks = { WRITE_LOCK, READ_LOCK,
+				   WRITE_LOCK, WRITE_LOCK, WRITE_LOCK };
 
 	/* read the file */
 	state_file = xstrdup(state_save_location);
 	xstrcat(state_file, "/assoc_mgr_state"); /* Always ignore .old file */
 	//info("looking at the %s file", state_file);
-	slurm_mutex_lock(&assoc_mgr_file_lock);
+	assoc_mgr_lock(&locks);
 	state_fd = open(state_file, O_RDONLY);
 	if (state_fd < 0) {
 		debug2("No association state file (%s) to recover", state_file);
@@ -3046,7 +3171,6 @@ extern int load_assoc_mgr_state(char *state_save_location)
 		close(state_fd);
 	}
 	xfree(state_file);
-	slurm_mutex_unlock(&assoc_mgr_file_lock);
 
 	buffer = create_buf(data, data_size);
 
@@ -3059,6 +3183,7 @@ extern int load_assoc_mgr_state(char *state_save_location)
 		      SLURMDBD_VERSION_MIN, SLURMDBD_VERSION);
 		error("***********************************************");
 		free_buf(buffer);
+		assoc_mgr_unlock(&locks);
 		return EFAULT;
 	}
 
@@ -3075,7 +3200,6 @@ extern int load_assoc_mgr_state(char *state_save_location)
 				error("No associations retrieved");
 				break;
 			}
-			slurm_mutex_lock(&assoc_mgr_association_lock);
 			if(assoc_mgr_association_list)
 				list_destroy(assoc_mgr_association_list);
 			assoc_mgr_association_list = msg->my_list;
@@ -3083,7 +3207,6 @@ extern int load_assoc_mgr_state(char *state_save_location)
 
 			debug("Recovered %u associations",
 			      list_count(assoc_mgr_association_list));
-			slurm_mutex_unlock(&assoc_mgr_association_lock);
 			msg->my_list = NULL;
 			slurmdbd_free_list_msg(msg);
 			break;
@@ -3096,14 +3219,12 @@ extern int load_assoc_mgr_state(char *state_save_location)
 				error("No users retrieved");
 				break;
 			}
-			slurm_mutex_lock(&assoc_mgr_user_lock);
 			if(assoc_mgr_user_list)
 				list_destroy(assoc_mgr_user_list);
 			assoc_mgr_user_list = msg->my_list;
 			_post_user_list(assoc_mgr_user_list);
 			debug("Recovered %u users",
 			      list_count(assoc_mgr_user_list));
-			slurm_mutex_unlock(&assoc_mgr_user_lock);
 			msg->my_list = NULL;
 			slurmdbd_free_list_msg(msg);
 			break;
@@ -3116,14 +3237,12 @@ extern int load_assoc_mgr_state(char *state_save_location)
 				error("No qos retrieved");
 				break;
 			}
-			slurm_mutex_lock(&assoc_mgr_qos_lock);
 			if(assoc_mgr_qos_list)
 				list_destroy(assoc_mgr_qos_list);
 			assoc_mgr_qos_list = msg->my_list;
 			_post_qos_list(assoc_mgr_qos_list);
 			debug("Recovered %u qos",
 			      list_count(assoc_mgr_qos_list));
-			slurm_mutex_unlock(&assoc_mgr_qos_lock);
 			msg->my_list = NULL;
 			slurmdbd_free_list_msg(msg);
 			break;
@@ -3136,13 +3255,11 @@ extern int load_assoc_mgr_state(char *state_save_location)
 				error("No qos retrieved");
 				break;
 			}
-			slurm_mutex_lock(&assoc_mgr_wckey_lock);
 			if(assoc_mgr_wckey_list)
 				list_destroy(assoc_mgr_wckey_list);
 			assoc_mgr_wckey_list = msg->my_list;
 			debug("Recovered %u wckeys",
 			      list_count(assoc_mgr_wckey_list));
-			slurm_mutex_unlock(&assoc_mgr_wckey_lock);
 			msg->my_list = NULL;
 			slurmdbd_free_list_msg(msg);
 			break;
@@ -3154,11 +3271,13 @@ extern int load_assoc_mgr_state(char *state_save_location)
 	}
 	running_cache = 1;
 	free_buf(buffer);
+	assoc_mgr_unlock(&locks);
 	return SLURM_SUCCESS;
 
 unpack_error:
 	if(buffer)
 		free_buf(buffer);
+	assoc_mgr_unlock(&locks);
 	return SLURM_ERROR;
 }
 
@@ -3200,10 +3319,12 @@ extern int assoc_mgr_set_missing_uids()
 {
 	uid_t pw_uid;
 	ListIterator itr = NULL;
+	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK,
+				   NO_LOCK, WRITE_LOCK, WRITE_LOCK };
 
+	assoc_mgr_lock(&locks);
 	if(assoc_mgr_association_list) {
 		slurmdb_association_rec_t *object = NULL;
-		slurm_mutex_lock(&assoc_mgr_association_lock);
 		itr = list_iterator_create(assoc_mgr_association_list);
 		while((object = list_next(itr))) {
 			if(object->user && object->uid == (uint32_t)NO_VAL) {
@@ -3217,12 +3338,10 @@ extern int assoc_mgr_set_missing_uids()
 			}
 		}
 		list_iterator_destroy(itr);
-		slurm_mutex_unlock(&assoc_mgr_association_lock);
 	}
 
 	if(assoc_mgr_wckey_list) {
 		slurmdb_wckey_rec_t *object = NULL;
-		slurm_mutex_lock(&assoc_mgr_wckey_lock);
 		itr = list_iterator_create(assoc_mgr_wckey_list);
 		while((object = list_next(itr))) {
 			if(object->user && object->uid == (uint32_t)NO_VAL) {
@@ -3236,12 +3355,10 @@ extern int assoc_mgr_set_missing_uids()
 			}
 		}
 		list_iterator_destroy(itr);
-		slurm_mutex_unlock(&assoc_mgr_wckey_lock);
 	}
 
 	if(assoc_mgr_user_list) {
 		slurmdb_user_rec_t *object = NULL;
-		slurm_mutex_lock(&assoc_mgr_user_lock);
 		itr = list_iterator_create(assoc_mgr_user_list);
 		while((object = list_next(itr))) {
 			if(object->name && object->uid == (uint32_t)NO_VAL) {
@@ -3255,8 +3372,8 @@ extern int assoc_mgr_set_missing_uids()
 			}
 		}
 		list_iterator_destroy(itr);
-		slurm_mutex_unlock(&assoc_mgr_user_lock);
 	}
+	assoc_mgr_unlock(&locks);
 
 	return SLURM_SUCCESS;
 }
