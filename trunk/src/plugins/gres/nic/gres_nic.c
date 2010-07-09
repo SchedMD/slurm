@@ -211,7 +211,7 @@ extern int node_config_load(List gres_conf_list)
 	list_iterator_destroy(iter);
 
 	if (rc != SLURM_SUCCESS)
-		error("%s failed to load configuration", plugin_name);
+		fatal("%s failed to load configuration", plugin_name);
 	return rc;
 }
 

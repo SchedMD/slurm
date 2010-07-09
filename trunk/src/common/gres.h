@@ -43,10 +43,11 @@
 #include "src/common/pack.h"
 
 typedef struct gres_conf {
-	uint16_t count;
+	uint32_t count;
 	char *cpus;
 	char *file;
 	char *name;
+	uint32_t plugin_id;
 } gres_conf_t;
 
 /*
@@ -88,12 +89,13 @@ extern int gres_plugin_help_msg(char *msg, int msg_size);
  **************************************************************************
  */
 /*
- * Load this node's configuration (i.e. how many resources it has)
+ * Load this node's configuration (how many resources it has, topology, etc.)
  */
 extern int gres_plugin_node_config_load(void);
 
 /*
- * Pack this node's configuration into a buffer
+ * Pack this node's gres configuration into a buffer
+ * IN/OUT buffer - message buffer to pack
  */
 extern int gres_plugin_node_config_pack(Buf buffer);
 
@@ -112,8 +114,8 @@ extern int gres_plugin_init_node_config(char *node_name, char *orig_config,
 					List *gres_list);
 
 /*
- * Unpack this node's configuration from a buffer
- * IN buffer - message buffer to unpack
+ * Unpack this node's configuration from a buffer (build/packed by slurmd)
+ * IN/OUT buffer - message buffer to unpack
  * IN node_name - name of node whose data is being unpacked
  */
 extern int gres_plugin_node_config_unpack(Buf buffer, char *node_name);
