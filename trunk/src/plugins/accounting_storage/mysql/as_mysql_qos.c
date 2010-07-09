@@ -981,13 +981,13 @@ empty:
 			qos->grp_wall = INFINITE;
 
 		if(row[QOS_REQ_MCMPJ])
-			qos->max_cpu_mins_pj = atoi(row[QOS_REQ_MCMPJ]);
+			qos->max_cpu_mins_pj = atoll(row[QOS_REQ_MCMPJ]);
 		else
-			qos->max_cpu_mins_pj = INFINITE;
+			qos->max_cpu_mins_pj = (uint64_t)INFINITE;
 		if(row[QOS_REQ_MCRM])
-			qos->max_cpu_run_mins_pu = atoi(row[QOS_REQ_MCRM]);
+			qos->max_cpu_run_mins_pu = atoll(row[QOS_REQ_MCRM]);
 		else
-			qos->max_cpu_run_mins_pu = INFINITE;
+			qos->max_cpu_run_mins_pu = (uint64_t)INFINITE;
 		if(row[QOS_REQ_MCPJ])
 			qos->max_cpus_pj = atoi(row[QOS_REQ_MCPJ]);
 		else
