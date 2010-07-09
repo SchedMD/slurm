@@ -40,8 +40,10 @@
 #define _GRES_H
 
 #include <slurm/slurm.h>
+#include "src/common/bitstring.h"
 #include "src/common/pack.h"
 
+/* Gres state information gathered by slurmd daemon */
 typedef struct gres_slurmd_conf {
 	uint32_t count;
 	char *cpus;
@@ -49,6 +51,22 @@ typedef struct gres_slurmd_conf {
 	char *name;
 	uint32_t plugin_id;
 } gres_slurmd_conf_t;
+
+/* Current gres state information managed by slurmctld daemon */
+typedef struct gres_node_state {
+	/* Actual hardware found */
+	uint32_t gres_cnt_found;
+
+	/* Configured resources via Gres parameter */
+	uint32_t gres_cnt_config;
+
+	/* Total resources available for allocation to jobs */
+	uint32_t gres_cnt_avail;
+
+	/* Resources currently allocated to jobs */
+	uint32_t  gres_cnt_alloc;
+	bitstr_t *gres_bit_alloc;
+} gres_node_state_t;
 
 /*
  * Initialize the gres plugin.
