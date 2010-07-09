@@ -191,56 +191,6 @@ extern int node_config_load(List gres_conf_list)
 	return rc;
 }
 
-extern int node_state_pack(void *gres_data, Buf buffer)
-{
-	gpu_node_state_t *gres_ptr = (gpu_node_state_t *) gres_data;
-
-	pack32(gres_ptr->gpu_cnt_avail,  buffer);
-	pack32(gres_ptr->gpu_cnt_alloc,  buffer);
-	pack_bit_str(gres_ptr->gpu_bit_alloc, buffer);
-
-	return SLURM_SUCCESS;
-}
-
-extern int node_state_unpack(void **gres_data, Buf buffer)
-{
-	gpu_node_state_t *gres_ptr;
-
-	gres_ptr = xmalloc(sizeof(gpu_node_state_t));
-
-	gres_ptr->gpu_cnt_found = NO_VAL;
-	if (buffer) {
-		safe_unpack32(&gres_ptr->gpu_cnt_avail,  buffer);
-		safe_unpack32(&gres_ptr->gpu_cnt_alloc,  buffer);
-		unpack_bit_str(&gres_ptr->gpu_bit_alloc, buffer);
-		if (gres_ptr->gpu_bit_alloc == NULL)
-			goto unpack_error;
-		if (gres_ptr->gpu_cnt_avail != 
-		    bit_size(gres_ptr->gpu_bit_alloc)) {
-			gres_ptr->gpu_bit_alloc =
-					bit_realloc(gres_ptr->gpu_bit_alloc,
-						    gres_ptr->gpu_cnt_avail);
-			if (gres_ptr->gpu_bit_alloc == NULL)
-				goto unpack_error;
-		}
-		if (gres_ptr->gpu_cnt_alloc != 
-		    bit_set_count(gres_ptr->gpu_bit_alloc)) {
-			error("%s node_state_unpack bit count inconsistent",
-			      plugin_name);
-			goto unpack_error;
-		}
-	}
-
-	*gres_data = gres_ptr;
-	return SLURM_SUCCESS;
-
-unpack_error:
-	FREE_NULL_BITMAP(gres_ptr->gpu_bit_alloc);
-	xfree(gres_ptr);
-	*gres_data = NULL;
-	return SLURM_ERROR;
-}
-
 extern void *node_state_dup(void *gres_data)
 {
 	gpu_node_state_t *gres_ptr = (gpu_node_state_t *) gres_data;
