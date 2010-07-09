@@ -286,14 +286,10 @@ static int _setup_qos_limits(slurmdb_qos_rec_t *qos,
 	}
 
 	qos->preempt_mode &= (~PREEMPT_MODE_GANG);
-	if((int)qos->preempt_mode >= 0) {
+	if((int16_t)qos->preempt_mode >= 0) {
 		xstrcat(*cols, ", preempt_mode");
 		xstrfmtcat(*vals, ", %u", qos->preempt_mode);
 		xstrfmtcat(*extra, ", preempt_mode=%u", qos->preempt_mode);
-	} else if ((int)qos->preempt_mode == INFINITE) {
-		xstrcat(*cols, ", preempt_mode");
-		xstrcat(*vals, ", 0");
-		xstrcat(*extra, ", preempt_mode=0");
 	}
 
 	if((int)qos->priority >= 0) {
