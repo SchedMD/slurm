@@ -1222,7 +1222,7 @@ extern int setup_association_limits(slurmdb_association_rec_t *assoc,
 		xstrfmtcat(*vals, ", %llu", assoc->grp_cpu_mins);
 		xstrfmtcat(*extra, ", grp_cpu_mins=%llu",
 			   assoc->grp_cpu_mins);
-	} else if(assoc->grp_cpu_mins == INFINITE) {
+	} else if(assoc->grp_cpu_mins == (uint64_t)INFINITE) {
 		xstrcat(*cols, ", grp_cpu_mins");
 		xstrcat(*vals, ", NULL");
 		xstrcat(*extra, ", grp_cpu_mins=NULL");
@@ -1286,7 +1286,7 @@ extern int setup_association_limits(slurmdb_association_rec_t *assoc,
 		xstrfmtcat(*vals, ", %llu", assoc->max_cpu_mins_pj);
 		xstrfmtcat(*extra, ", max_cpu_mins_pj=%u",
 			   assoc->max_cpu_mins_pj);
-	} else if(assoc->max_cpu_mins_pj == INFINITE) {
+	} else if(assoc->max_cpu_mins_pj == (uint64_t)INFINITE) {
 		xstrcat(*cols, ", max_cpu_mins_pj");
 		xstrcat(*vals, ", NULL");
 		xstrcat(*extra, ", max_cpu_mins_pj=NULL");
