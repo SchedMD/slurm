@@ -1342,11 +1342,11 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 			   && row2[ASSOC2_REQ_MWPJ])
 				assoc->max_wall_pj =
 					atoi(row2[ASSOC2_REQ_MWPJ]);
-			if((assoc->max_cpu_mins_pj == INFINITE)
+			if((assoc->max_cpu_mins_pj == (uint64_t)INFINITE)
 			   && row2[ASSOC2_REQ_MCMPJ])
 				assoc->max_cpu_mins_pj =
 					atoll(row2[ASSOC2_REQ_MCMPJ]);
-			if((assoc->max_cpu_run_mins == INFINITE)
+			if((assoc->max_cpu_run_mins == (uint64_t)INFINITE)
 			   && row2[ASSOC2_REQ_MCRM])
 				assoc->max_cpu_run_mins =
 					atoll(row2[ASSOC2_REQ_MCRM]);
@@ -1649,8 +1649,8 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 	uint32_t parent_mcpj = INFINITE;
 	uint32_t parent_mnpj = INFINITE;
 	uint32_t parent_mwpj = INFINITE;
-	uint64_t parent_mcmpj = INFINITE;
-	uint64_t parent_mcrm = INFINITE;
+	uint64_t parent_mcmpj = (uint64_t)INFINITE;
+	uint64_t parent_mcrm = (uint64_t)INFINITE;
 	char *parent_acct = NULL;
 	char *parent_qos = NULL;
 	char *parent_delta_qos = NULL;
@@ -1885,7 +1885,7 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 					parent_mcrm =
 						atoll(row2[ASSOC2_REQ_MCRM]);
 				else
-					parent_mcmpj = INFINITE;
+					parent_mcrm = (uint64_t)INFINITE;
 
 				xfree(parent_qos);
 				if(row2[ASSOC2_REQ_QOS][0])

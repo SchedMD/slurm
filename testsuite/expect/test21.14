@@ -235,10 +235,12 @@ expect {
 	    	incr exit_code 1
 	}
 	-re "$nm3.$nm2.$tc1.1.$mc2.$mj2.$mn2.$mw2." {
+		send_user "hey\n"
 		incr matches
 		exp_continue
 	}
 	-re "$nm3.root.$tc2.1....." {
+		send_user "hey 2\n"
 		incr matches
 		exp_continue
 	}
