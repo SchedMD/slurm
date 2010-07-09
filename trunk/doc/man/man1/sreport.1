@@ -286,7 +286,9 @@ separate line without any hierarchy.
 List of group ids to include in report.  Default is all.
 .TP
 .B Grouping=<OPT>
-Comma separated list of size groupings.   (i.e. 50,100,150 would group job cpu count 1-49, 50-99, 100-149, > 150).
+Comma separated list of size groupings.   (i.e. 50,100,150 would group
+job cpu count 1-49, 50-99, 100-149, > 150).  grouping=individual will
+result in a single column for each job size found.
 .TP
 .B Jobs=<OPT>
 List of jobs/steps to include in report.  Default is all.

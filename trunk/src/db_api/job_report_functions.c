@@ -50,6 +50,18 @@
 #include "src/common/slurm_accounting_storage.h"
 #include "src/common/xstring.h"
 
+static int _sort_group_asc(char *group_a, char *group_b)
+{
+	int size_a = atoi(group_a);
+	int size_b = atoi(group_b);
+
+	if (size_a < size_b)
+		return -1;
+	else if (size_a > size_b)
+		return 1;
+	return 0;
+}
+
 static List _process_grouped_report(void *db_conn,
 	slurmdb_job_cond_t *job_cond, List grouping_list,
 	bool flat_view, bool wckey_type)
@@ -76,6 +88,7 @@ static List _process_grouped_report(void *db_conn,
 	List tmp_acct_list = NULL;
 	bool destroy_job_cond = 0;
 	bool destroy_grouping_list = 0;
+	bool individual = 0;
 
 	uid_t my_uid = getuid();
 
@@ -92,6 +105,7 @@ static List _process_grouped_report(void *db_conn,
 		grouping_list = list_create(slurm_destroy_char);
 		slurm_addto_char_list(grouping_list, "50,250,500,1000");
 	}
+
 	tmp_acct_list = job_cond->acct_list;
 	job_cond->acct_list = NULL;
 
@@ -105,10 +119,35 @@ static List _process_grouped_report(void *db_conn,
 		goto end_it;
 	}
 
+	group_itr = list_iterator_create(grouping_list);
+	/* make a group for each job size we find. */
+	if(!list_count(grouping_list)) {
+		char *group = NULL;
+		char *tmp = NULL;
+		individual = 1;
+		itr = list_iterator_create(job_list);
+		while((job = list_next(itr))) {
+			if(!job->elapsed || !job->alloc_cpus)
+				continue;
+			tmp = xstrdup_printf("%u", job->alloc_cpus);
+			while((group = list_next(group_itr))) {
+				if(!strcmp(group, tmp)) {
+					break;
+				}
+			}
+			if(!group)
+				list_append(grouping_list, tmp);
+			else
+				xfree(tmp);
+			list_iterator_reset(group_itr);
+		}
+		list_iterator_destroy(itr);
+		list_sort(grouping_list, (ListCmpF)_sort_group_asc);
+	}
+
 	cluster_list = list_create(slurmdb_destroy_report_cluster_grouping);
 
 	cluster_itr = list_iterator_create(cluster_list);
-	group_itr = list_iterator_create(grouping_list);
 
 	if(flat_view)
 		goto no_objects;
@@ -198,17 +237,26 @@ static List _process_grouped_report(void *db_conn,
 				job_group = xmalloc(
 					sizeof(slurmdb_report_job_grouping_t));
 				job_group->jobs = list_create(NULL);
-				job_group->min_size = last_size;
+				if(!individual)
+					job_group->min_size = last_size;
 				last_size = atoi(group);
-				job_group->max_size = last_size-1;
+				if(!individual)
+					job_group->max_size = last_size-1;
+				else
+					job_group->min_size =
+						job_group->max_size = last_size;
 				list_append(acct_group->groups, job_group);
 			}
-			if(last_size) {
+			if(last_size && !individual) {
 				job_group = xmalloc(
 					sizeof(slurmdb_report_job_grouping_t));
 				job_group->jobs = list_create(NULL);
 				job_group->min_size = last_size;
-				job_group->max_size = INFINITE;
+				if(individual)
+					job_group->max_size =
+						job_group->min_size;
+				else
+					job_group->max_size = INFINITE;
 				list_append(acct_group->groups, job_group);
 			}
 			list_iterator_reset(group_itr);
@@ -294,17 +342,26 @@ no_objects:
 				job_group = xmalloc(
 					sizeof(slurmdb_report_job_grouping_t));
 				job_group->jobs = list_create(NULL);
-				job_group->min_size = last_size;
+				if(!individual)
+					job_group->min_size = last_size;
 				last_size = atoi(group);
-				job_group->max_size = last_size-1;
+				if(!individual)
+					job_group->max_size = last_size-1;
+				else
+					job_group->min_size =
+						job_group->max_size = last_size;
 				list_append(acct_group->groups, job_group);
 			}
-			if(last_size) {
+			if(last_size && !individual) {
 				job_group = xmalloc(
 					sizeof(slurmdb_report_job_grouping_t));
 				job_group->jobs = list_create(NULL);
 				job_group->min_size = last_size;
-				job_group->max_size = INFINITE;
+				if(individual)
+					job_group->max_size =
+						job_group->min_size;
+				else
+					job_group->max_size = INFINITE;
 				list_append(acct_group->groups, job_group);
 			}
 			list_iterator_reset(group_itr);
