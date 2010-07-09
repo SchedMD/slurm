@@ -1206,142 +1206,142 @@ extern int setup_association_limits(slurmdb_association_rec_t *assoc,
 	if(!assoc)
 		return SLURM_ERROR;
 
-	if((int)assoc->shares_raw >= 0) {
+	if((int32_t)assoc->shares_raw >= 0) {
 		xstrcat(*cols, ", shares");
 		xstrfmtcat(*vals, ", %u", assoc->shares_raw);
 		xstrfmtcat(*extra, ", shares=%u", assoc->shares_raw);
-	} else if (((int)assoc->shares_raw == INFINITE) || get_fs) {
+	} else if ((assoc->shares_raw == INFINITE) || get_fs) {
 		xstrcat(*cols, ", shares");
 		xstrcat(*vals, ", 1");
 		xstrcat(*extra, ", shares=1");
 		assoc->shares_raw = 1;
 	}
 
-	if((int)assoc->grp_cpu_mins >= 0) {
+	if((int64_t)assoc->grp_cpu_mins >= 0) {
 		xstrcat(*cols, ", grp_cpu_mins");
 		xstrfmtcat(*vals, ", %llu", assoc->grp_cpu_mins);
 		xstrfmtcat(*extra, ", grp_cpu_mins=%llu",
 			   assoc->grp_cpu_mins);
-	} else if((int)assoc->grp_cpu_mins == INFINITE) {
+	} else if(assoc->grp_cpu_mins == INFINITE) {
 		xstrcat(*cols, ", grp_cpu_mins");
 		xstrcat(*vals, ", NULL");
 		xstrcat(*extra, ", grp_cpu_mins=NULL");
 	}
 
-	if((int)assoc->grp_cpus >= 0) {
+	if((int32_t)assoc->grp_cpus >= 0) {
 		xstrcat(*cols, ", grp_cpus");
 		xstrfmtcat(*vals, ", %u", assoc->grp_cpus);
 		xstrfmtcat(*extra, ", grp_cpus=%u", assoc->grp_cpus);
-	} else if((int)assoc->grp_cpus == INFINITE) {
+	} else if(assoc->grp_cpus == INFINITE) {
 		xstrcat(*cols, ", grp_cpus");
 		xstrcat(*vals, ", NULL");
 		xstrcat(*extra, ", grp_cpus=NULL");
 	}
 
-	if((int)assoc->grp_jobs >= 0) {
+	if((int32_t)assoc->grp_jobs >= 0) {
 		xstrcat(*cols, ", grp_jobs");
 		xstrfmtcat(*vals, ", %u", assoc->grp_jobs);
 		xstrfmtcat(*extra, ", grp_jobs=%u", assoc->grp_jobs);
-	} else if((int)assoc->grp_jobs == INFINITE) {
+	} else if(assoc->grp_jobs == INFINITE) {
 		xstrcat(*cols, ", grp_jobs");
 		xstrcat(*vals, ", NULL");
 		xstrcat(*extra, ", grp_jobs=NULL");
 	}
 
-	if((int)assoc->grp_nodes >= 0) {
+	if((int32_t)assoc->grp_nodes >= 0) {
 		xstrcat(*cols, ", grp_nodes");
 		xstrfmtcat(*vals, ", %u", assoc->grp_nodes);
 		xstrfmtcat(*extra, ", grp_nodes=%u", assoc->grp_nodes);
-	} else if((int)assoc->grp_nodes == INFINITE) {
+	} else if(assoc->grp_nodes == INFINITE) {
 		xstrcat(*cols, ", grp_nodes");
 		xstrcat(*vals, ", NULL");
 		xstrcat(*extra, ", grp_nodes=NULL");
 	}
 
-	if((int)assoc->grp_submit_jobs >= 0) {
+	if((int32_t)assoc->grp_submit_jobs >= 0) {
 		xstrcat(*cols, ", grp_submit_jobs");
 		xstrfmtcat(*vals, ", %u",
 			   assoc->grp_submit_jobs);
 		xstrfmtcat(*extra, ", grp_submit_jobs=%u",
 			   assoc->grp_submit_jobs);
-	} else if((int)assoc->grp_submit_jobs == INFINITE) {
+	} else if(assoc->grp_submit_jobs == INFINITE) {
 		xstrcat(*cols, ", grp_submit_jobs");
 		xstrcat(*vals, ", NULL");
 		xstrcat(*extra, ", grp_submit_jobs=NULL");
 	}
 
-	if((int)assoc->grp_wall >= 0) {
+	if((int32_t)assoc->grp_wall >= 0) {
 		xstrcat(*cols, ", grp_wall");
 		xstrfmtcat(*vals, ", %u", assoc->grp_wall);
 		xstrfmtcat(*extra, ", grp_wall=%u",
 			   assoc->grp_wall);
-	} else if((int)assoc->grp_wall == INFINITE) {
+	} else if(assoc->grp_wall == INFINITE) {
 		xstrcat(*cols, ", grp_wall");
 		xstrcat(*vals, ", NULL");
 		xstrcat(*extra, ", grp_wall=NULL");
 	}
 
-	if((int)assoc->max_cpu_mins_pj >= 0) {
+	if((int64_t)assoc->max_cpu_mins_pj >= 0) {
 		xstrcat(*cols, ", max_cpu_mins_pj");
 		xstrfmtcat(*vals, ", %llu", assoc->max_cpu_mins_pj);
 		xstrfmtcat(*extra, ", max_cpu_mins_pj=%u",
 			   assoc->max_cpu_mins_pj);
-	} else if((int)assoc->max_cpu_mins_pj == INFINITE) {
+	} else if(assoc->max_cpu_mins_pj == INFINITE) {
 		xstrcat(*cols, ", max_cpu_mins_pj");
 		xstrcat(*vals, ", NULL");
 		xstrcat(*extra, ", max_cpu_mins_pj=NULL");
 	}
 
-	if((int)assoc->max_cpus_pj >= 0) {
+	if((int32_t)assoc->max_cpus_pj >= 0) {
 		xstrcat(*cols, ", max_cpus_pj");
 		xstrfmtcat(*vals, ", %u", assoc->max_cpus_pj);
 		xstrfmtcat(*extra, ", max_cpus_pj=%u",
 			   assoc->max_cpus_pj);
-	} else if((int)assoc->max_cpus_pj == INFINITE) {
+	} else if(assoc->max_cpus_pj == INFINITE) {
 		xstrcat(*cols, ", max_cpus_pj");
 		xstrcat(*vals, ", NULL");
 		xstrcat(*extra, ", max_cpus_pj=NULL");
 	}
 
-	if((int)assoc->max_jobs >= 0) {
+	if((int32_t)assoc->max_jobs >= 0) {
 		xstrcat(*cols, ", max_jobs");
 		xstrfmtcat(*vals, ", %u", assoc->max_jobs);
 		xstrfmtcat(*extra, ", max_jobs=%u",
 			   assoc->max_jobs);
-	} else if((int)assoc->max_jobs == INFINITE) {
+	} else if(assoc->max_jobs == INFINITE) {
 		xstrcat(*cols, ", max_jobs");
 		xstrcat(*vals, ", NULL");
 		xstrcat(*extra, ", max_jobs=NULL");
 	}
 
-	if((int)assoc->max_nodes_pj >= 0) {
+	if((int32_t)assoc->max_nodes_pj >= 0) {
 		xstrcat(*cols, ", max_nodes_pj");
 		xstrfmtcat(*vals, ", %u", assoc->max_nodes_pj);
 		xstrfmtcat(*extra, ", max_nodes_pj=%u",
 			   assoc->max_nodes_pj);
-	} else if((int)assoc->max_nodes_pj == INFINITE) {
+	} else if(assoc->max_nodes_pj == INFINITE) {
 		xstrcat(*cols, ", max_nodes_pj");
 		xstrcat(*vals, ", NULL");
 		xstrcat(*extra, ", max_nodes_pj=NULL");
 	}
 
-	if((int)assoc->max_submit_jobs >= 0) {
+	if((int32_t)assoc->max_submit_jobs >= 0) {
 		xstrcat(*cols, ", max_submit_jobs");
 		xstrfmtcat(*vals, ", %u", assoc->max_submit_jobs);
 		xstrfmtcat(*extra, ", max_submit_jobs=%u",
 			   assoc->max_submit_jobs);
-	} else if((int)assoc->max_submit_jobs == INFINITE) {
+	} else if(assoc->max_submit_jobs == INFINITE) {
 		xstrcat(*cols, ", max_submit_jobs");
 		xstrcat(*vals, ", NULL");
 		xstrcat(*extra, ", max_submit_jobs=NULL");
 	}
 
-	if((int)assoc->max_wall_pj >= 0) {
+	if((int32_t)assoc->max_wall_pj >= 0) {
 		xstrcat(*cols, ", max_wall_pj");
 		xstrfmtcat(*vals, ", %u", assoc->max_wall_pj);
 		xstrfmtcat(*extra, ", max_wall_pj=%u",
 			   assoc->max_wall_pj);
-	} else if((int)assoc->max_wall_pj == INFINITE) {
+	} else if(assoc->max_wall_pj == INFINITE) {
 		xstrcat(*cols, ", max_wall_pj");
 		xstrcat(*vals, ", NULL");
 		xstrcat(*extra, ", max_wall_pj=NULL");
