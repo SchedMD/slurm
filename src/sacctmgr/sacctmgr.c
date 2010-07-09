@@ -625,8 +625,8 @@ static void _show_it (int argc, char *argv[])
 		error_code = sacctmgr_list_problem((argc - 1), &argv[1]);
 	} else if (strncasecmp (argv[0], "QOS", MAX(command_len, 1)) == 0) {
 		error_code = sacctmgr_list_qos((argc - 1), &argv[1]);
-	} else if (strncasecmp (argv[0], "Transactions",
-				MAX(command_len, 1)) == 0) {
+	} else if (!strncasecmp (argv[0], "Transactions", MAX(command_len, 1))
+		   || !strncasecmp (argv[0], "Txn", MAX(command_len, 1))) {
 		error_code = sacctmgr_list_txn((argc - 1), &argv[1]);
 	} else if (strncasecmp (argv[0], "Users", MAX(command_len, 1)) == 0) {
 		error_code = sacctmgr_list_user((argc - 1), &argv[1]);
@@ -858,11 +858,12 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                             Start=, States=, and User=                     \n\
                                                                            \n\
        list qos           - Descriptions=, Format=, Ids=, Names=,          \n\
-                            and WithDeleted                                \n\
+                            PreemptMode=, and WithDeleted                  \n\
        add qos            - Description=, GrpCPUMins=, GrpCPUs=, GrpJobs=, \n\
                             GrpNodes=, GrpSubmitJob=, GrpWall=,            \n\
                             MaxCPUMins=, MaxJobs=, MaxNodes=, MaxSubmitJobs=,\n\
-                            MaxWall=, Preempt=, Priority=, and Names=      \n\
+                            MaxWall=, Preempt=, PreemptMode=, Priority=,   \n\
+                            and Names=                                     \n\
        delete qos         - Descriptions=, IDs=, and Names=                \n\
                                                                            \n\
        list transactions  - Accounts=, Action=, Actor=, Clusters=, End=,   \n\
@@ -932,7 +933,7 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                             GrpNodes, GrpSubmitJob, GrpWall, ID,           \n\
                             MaxCPUMins, MaxCPUs, MaxJobs, MaxNodes,        \n\
                             MaxSubmitJobs, MaxWall, Name,                  \n\
-                            Preempt, Priority, UsageFactor                 \n\
+                            Preempt, PreemptMode, Priority, UsageFactor    \n\
                                                                            \n\
        Transactions       - Action, Actor, Info, TimeStamp, Where          \n\
                                                                            \n\

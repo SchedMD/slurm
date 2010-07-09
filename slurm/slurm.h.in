@@ -1605,9 +1605,9 @@ typedef struct reservation_name_msg {
 #define PREEMPT_MODE_OFF	0x0000	/* disable job preemption */
 #define PREEMPT_MODE_SUSPEND	0x0001	/* suspend jobs to preempt */
 #define PREEMPT_MODE_REQUEUE	0x0002	/* requeue or kill jobs to preempt */
-#define PREEMPT_MODE_CHECKPOINT	0x0003	/* checkpoint job to preempt,
+#define PREEMPT_MODE_CHECKPOINT	0x0004	/* checkpoint job to preempt,
 					 * no automatic restart */
-#define PREEMPT_MODE_CANCEL	0x0004	/* always cancel the job */
+#define PREEMPT_MODE_CANCEL	0x0008	/* always cancel the job */
 #define PREEMPT_MODE_GANG	0x8000	/* enable gang scheduling */
 
 typedef struct slurm_ctl_conf {

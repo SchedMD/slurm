@@ -187,6 +187,7 @@ typedef struct {
 	List fairshare_list;	/* fairshare number */
 
 	List grp_cpu_mins_list; /* list of char * */
+	List grp_cpu_run_mins_list; /* list of char * */
 	List grp_cpus_list; /* list of char * */
 	List grp_jobs_list;	/* list of char * */
 	List grp_nodes_list; /* list of char * */
@@ -196,6 +197,7 @@ typedef struct {
 	List id_list;		/* list of char */
 
 	List max_cpu_mins_pj_list; /* list of char * */
+	List max_cpu_run_mins_list; /* list of char * */
 	List max_cpus_pj_list; /* list of char * */
 	List max_jobs_list;	/* list of char * */
 	List max_nodes_pj_list; /* list of char * */
@@ -337,67 +339,75 @@ typedef struct {
 /* slurmdb_association_cond_t is defined above alphabetical */
 
 typedef struct {
-	List accounting_list; 	/* list of slurmdb_accounting_rec_t *'s */
-	char *acct;		/* account/project associated to association */
-	char *cluster;		/* cluster associated to association
-				 * */
+	List accounting_list; 	   /* list of slurmdb_accounting_rec_t *'s */
+	char *acct;		   /* account/project associated to
+				    * association */
+	char *cluster;		   /* cluster associated to association */
 
-	uint64_t grp_cpu_mins; /* max number of cpu minutes the
-				* underlying group of
-				* associations can run for */
-	uint32_t grp_cpus; /* max number of cpus the
-			    * underlying group of
-			    * associations can allocate at one time */
-	uint32_t grp_jobs;	/* max number of jobs the
-				 * underlying group of associations can run
-				 * at one time */
-	uint32_t grp_nodes; /* max number of nodes the
-			     * underlying group of
-			     * associations can allocate at once */
-	uint32_t grp_submit_jobs; /* max number of jobs the
-				   * underlying group of
-				   * associations can submit at
-				   * one time */
-	uint32_t grp_wall; /* total time in hours the
-			    * underlying group of
-			    * associations can run for */
+	uint64_t grp_cpu_mins;     /* max number of cpu minutes the
+				    * underlying group of
+				    * associations can run for */
+	uint64_t grp_cpu_run_mins; /* max number of cpu minutes the
+				    * undeflying group of
+				    * assoiciations can
+				    * having running at one time */
+	uint32_t grp_cpus;         /* max number of cpus the
+				    * underlying group of
+				    * associations can allocate at one time */
+	uint32_t grp_jobs;	   /* max number of jobs the
+				    * underlying group of associations can run
+				    * at one time */
+	uint32_t grp_nodes;        /* max number of nodes the
+				    * underlying group of
+				    * associations can allocate at once */
+	uint32_t grp_submit_jobs;  /* max number of jobs the
+				    * underlying group of
+				    * associations can submit at
+				    * one time */
+	uint32_t grp_wall;         /* total time in hours the
+				    * underlying group of
+				    * associations can run for */
 
-	uint32_t id;		/* id identifing a combination of
-				 * user-account-cluster(-partition) */
+	uint32_t id;		   /* id identifing a combination of
+				    * user-account-cluster(-partition) */
 
-	uint32_t lft;		/* lft used for grouping sub
-				 * associations and jobs as a left
-				 * most container used with rgt */
+	uint32_t lft;		   /* lft used for grouping sub
+				    * associations and jobs as a left
+				    * most container used with rgt */
 
-	uint64_t max_cpu_mins_pj; /* max number of cpu seconds this
-				   * association can have per job */
-	uint32_t max_cpus_pj; /* max number of cpus this
-			       * association can allocate per job */
-	uint32_t max_jobs;	/* max number of jobs this association can run
-				 * at one time */
-	uint32_t max_nodes_pj; /* max number of nodes this
-				* association can allocate per job */
-	uint32_t max_submit_jobs; /* max number of jobs that can be
-				     submitted by association */
-	uint32_t max_wall_pj; /* longest time this
-			       * association can run a job */
+	uint64_t max_cpu_mins_pj;  /* max number of cpu seconds this
+				    * association can have per job */
+	uint64_t max_cpu_run_mins; /* max number of cpu minutes this
+				    * assoiciation can
+				    * having running at one time */
+	uint32_t max_cpus_pj;      /* max number of cpus this
+				    * association can allocate per job */
+	uint32_t max_jobs;	   /* max number of jobs this
+				    * association can run at one time */
+	uint32_t max_nodes_pj;     /* max number of nodes this
+				    * association can allocate per job */
+	uint32_t max_submit_jobs;  /* max number of jobs that can be
+				      submitted by association */
+	uint32_t max_wall_pj;      /* longest time this
+				    * association can run a job */
 
-	char *parent_acct;	/* name of parent account */
-	uint32_t parent_id;	/* id of parent account */
-	char *partition;	/* optional partition in a cluster
-				 * associated to association */
+	char *parent_acct;	   /* name of parent account */
+	uint32_t parent_id;	   /* id of parent account */
+	char *partition;	   /* optional partition in a cluster
+				    * associated to association */
 
-	List qos_list;          /* list of char * */
+	List qos_list;             /* list of char * */
 
-	uint32_t rgt;		/* rgt used for grouping sub
-				 * associations and jobs as a right
-				 * most container used with lft */
+	uint32_t rgt;		   /* rgt used for grouping sub
+				    * associations and jobs as a right
+				    * most container used with lft */
 
-	uint32_t shares_raw;	/* number of shares allocated to association */
+	uint32_t shares_raw;	   /* number of shares allocated to
+				    * association */
 
-	uint32_t uid;		/* user ID */
+	uint32_t uid;		   /* user ID */
 	assoc_mgr_association_usage_t *usage;
-	char *user;		/* user associated to association */
+	char *user;		   /* user associated to association */
 } slurmdb_association_rec_t;
 
 typedef struct {
@@ -531,6 +541,9 @@ typedef struct {
 	uint32_t id;
 	uint64_t grp_cpu_mins; /* max number of cpu minutes all jobs
 				* running under this qos can run for */
+	uint64_t grp_cpu_run_mins; /* max number of cpu minutes all jobs
+				    * running under this qos can
+				    * having running at one time */
 	uint32_t grp_cpus; /* max number of cpus this qos
 			      can allocate at one time */
 	uint32_t grp_jobs;	/* max number of jobs this qos can run
@@ -541,8 +554,11 @@ typedef struct {
 				   * one time */
 	uint32_t grp_wall; /* total time in hours this qos can run for */
 
-	uint64_t max_cpu_mins_pj; /* max number of cpu mins a user can
+	uint64_t max_cpu_mins_pj; /* max number of cpu mins a job can
 				   * use with this qos */
+	uint64_t max_cpu_run_mins_pu; /* max number of cpu mins a user can
+				   * allocate at a given time when
+				   * using this qos */
 	uint32_t max_cpus_pj; /* max number of cpus a job can
 			       * allocate with this qos */
 	uint32_t max_jobs_pu;	/* max number of jobs a user can
@@ -559,9 +575,10 @@ typedef struct {
 	List preempt_list; /* list of char *'s only used to add or
 			    * change the other qos' this can preempt,
 			    * when doing a get use the preempt_bitstr */
+	uint16_t preempt_mode;	/* See PREEMPT_MODE_* in slurm/slurm.h */
 	uint32_t priority;  /* ranged int needs to be a unint for
 			     * heterogeneous systems */
-	assoc_mgr_qos_usage_t *usage;
+	assoc_mgr_qos_usage_t *usage; /* For internal use only, DON'T PACK */
 	double usage_factor; /* factor to apply to usage in this qos */
 } slurmdb_qos_rec_t;
 
@@ -569,6 +586,7 @@ typedef struct {
 	List description_list; /* list of char * */
 	List id_list; /* list of char * */
 	List name_list; /* list of char * */
+	uint16_t preempt_mode;	/* See PREEMPT_MODE_* in slurm/slurm.h */
 	uint16_t with_deleted;
 } slurmdb_qos_cond_t;
 
@@ -664,6 +682,8 @@ typedef struct {
 /* Right now this is used in the slurmdb_qos_rec_t structure.  In the
  * user_limit_list. */
 typedef struct {
+	uint64_t cpu_run_mins; /* how many cpu mins are allocated
+				* currently */
 	uint32_t jobs;	/* count of active jobs */
 	uint32_t submit_jobs; /* count of jobs pending or running */
 	uint32_t uid;

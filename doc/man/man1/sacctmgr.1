@@ -888,6 +888,14 @@ Name of the QOS.
 Other QOS\' this QOS can preempt.
 
 .TP
+\fIPreemptMode\fP
+Mechanism used to preempt jobs of this QOS if the clusters \fIPreemptType\fP
+is configured to \fIpreempt/qos\fP.  The default preemption mechanism
+is specified by the cluster\-wide \fIPreemptMode\fP configuration parameter.
+Possible values are "Cluster" (meaning use cluster default), "Cancel",
+"Checkpoint", "Requeue" and "Suspend".
+
+.TP
 \fIPriority\fP
 What priority will be added to a job\'s priority when using this QOS.
 
@@ -1006,6 +1014,14 @@ Setting a Preempt to '' (two single
 quotes with nothing between them) restores it's default setting.  You
 can also use the operator += and \-= to add or remove certain QOS's
 from a QOS list.
+
+.TP
+\fIPreemptMode\fP
+Mechanism used to preempt jobs of this QOS if the clusters \fIPreemptType\fP
+is configured to \fIpreempt/qos\fP.  The default preemption mechanism
+is specified by the cluster\-wide \fIPreemptMode\fP configuration parameter.
+Possible values are "Cluster" (meaning use cluster default), "Cancel",
+"Checkpoint", "Requeue" and "Suspend".
 
 .TP
 \fIPriority\fP

@@ -116,6 +116,8 @@ static int _set_cond(int *start, int argc, char *argv[],
 			if(slurm_addto_char_list(assoc_cond->user_list,
 						 argv[i]+end))
 				u_set = 1;
+			else
+				exit_code=1;
 		} else if (!strncasecmp (argv[i], "Account",
 					 MAX(command_len, 2))
 			   || !strncasecmp (argv[i], "Acct",
@@ -127,6 +129,8 @@ static int _set_cond(int *start, int argc, char *argv[],
 			if(slurm_addto_char_list(assoc_cond->acct_list,
 						 argv[i]+end))
 				a_set = 1;
+			else
+				exit_code=1;
 		} else if (!strncasecmp (argv[i], "AdminLevel",
 					 MAX(command_len, 2))) {
 			user_cond->admin_level =
@@ -141,6 +145,8 @@ static int _set_cond(int *start, int argc, char *argv[],
 			if(slurm_addto_char_list(assoc_cond->cluster_list,
 						 argv[i]+end))
 				a_set = 1;
+			else
+				exit_code=1;
 		} else if (!strncasecmp (argv[i], "DefaultAccount",
 					 MAX(command_len, 8))) {
 			if(!user_cond->def_acct_list) {
@@ -150,6 +156,8 @@ static int _set_cond(int *start, int argc, char *argv[],
 			if(slurm_addto_char_list(user_cond->def_acct_list,
 						 argv[i]+end))
 				u_set = 1;
+			else
+				exit_code=1;
 		} else if (!strncasecmp (argv[i], "DefaultWCKey",
 					 MAX(command_len, 8))) {
 			if(!user_cond->def_wckey_list) {
@@ -159,6 +167,8 @@ static int _set_cond(int *start, int argc, char *argv[],
 			if(slurm_addto_char_list(user_cond->def_wckey_list,
 						 argv[i]+end))
 				u_set = 1;
+			else
+				exit_code=1;
 		} else if (!strncasecmp (argv[i], "Format",
 					 MAX(command_len, 1))) {
 			if(format_list)
@@ -173,6 +183,8 @@ static int _set_cond(int *start, int argc, char *argv[],
 			if(slurm_addto_char_list(assoc_cond->fairshare_list,
 						 argv[i]+end))
 				a_set = 1;
+			else
+				exit_code=1;
 		} else if (!strncasecmp (argv[i], "GrpCPUMins",
 					 MAX(command_len, 7))) {
 			if(!assoc_cond->grp_cpu_mins_list)
@@ -181,6 +193,8 @@ static int _set_cond(int *start, int argc, char *argv[],
 			if(slurm_addto_char_list(assoc_cond->grp_cpu_mins_list,
 						 argv[i]+end))
 				a_set = 1;
+			else
+				exit_code=1;
 		} else if (!strncasecmp (argv[i], "GrpCpus",
 					 MAX(command_len, 7))) {
 			if(!assoc_cond->grp_cpus_list)
@@ -189,6 +203,8 @@ static int _set_cond(int *start, int argc, char *argv[],
 			if(slurm_addto_char_list(assoc_cond->grp_cpus_list,
 						 argv[i]+end))
 				a_set = 1;
+			else
+				exit_code=1;
 		} else if (!strncasecmp (argv[i], "GrpJobs",
 					 MAX(command_len, 4))) {
 			if(!assoc_cond->grp_jobs_list)
@@ -197,6 +213,8 @@ static int _set_cond(int *start, int argc, char *argv[],
 			if(slurm_addto_char_list(assoc_cond->grp_jobs_list,
 						 argv[i]+end))
 				a_set = 1;
+			else
+				exit_code=1;
 		} else if (!strncasecmp (argv[i], "GrpNodes",
 					 MAX(command_len, 4))) {
 			if(!assoc_cond->grp_nodes_list)
@@ -205,6 +223,8 @@ static int _set_cond(int *start, int argc, char *argv[],
 			if(slurm_addto_char_list(assoc_cond->grp_nodes_list,
 						 argv[i]+end))
 				a_set = 1;
+			else
+				exit_code=1;
 		} else if (!strncasecmp (argv[i], "GrpSubmitJobs",
 					 MAX(command_len, 4))) {
 			if(!assoc_cond->grp_submit_jobs_list)
@@ -214,6 +234,8 @@ static int _set_cond(int *start, int argc, char *argv[],
 				   assoc_cond->grp_submit_jobs_list,
 				   argv[i]+end))
 				a_set = 1;
+			else
+				exit_code=1;
 		} else if (!strncasecmp (argv[i], "GrpWall",
 					 MAX(command_len, 4))) {
 			if(!assoc_cond->grp_wall_list)
@@ -223,6 +245,8 @@ static int _set_cond(int *start, int argc, char *argv[],
 				   assoc_cond->grp_wall_list,
 				   argv[i]+end))
 				a_set = 1;
+			else
+				exit_code=1;
 		} else if (!strncasecmp (argv[i], "MaxCPUMinsPerJob",
 					 MAX(command_len, 7))) {
 			if(!assoc_cond->max_cpu_mins_pj_list)
@@ -232,6 +256,8 @@ static int _set_cond(int *start, int argc, char *argv[],
 				   assoc_cond->max_cpu_mins_pj_list,
 				   argv[i]+end))
 				a_set = 1;
+			else
+				exit_code=1;
 		} else if (!strncasecmp (argv[i], "MaxCpusPerJob",
 					 MAX(command_len, 7))) {
 			if(!assoc_cond->max_cpus_pj_list)
@@ -241,6 +267,8 @@ static int _set_cond(int *start, int argc, char *argv[],
 				   assoc_cond->max_cpus_pj_list,
 				   argv[i]+end))
 				a_set = 1;
+			else
+				exit_code=1;
 		} else if (!strncasecmp (argv[i], "MaxJobs",
 					 MAX(command_len, 4))) {
 			if(!assoc_cond->max_jobs_list)
@@ -250,6 +278,8 @@ static int _set_cond(int *start, int argc, char *argv[],
 				   assoc_cond->max_jobs_list,
 				   argv[i]+end))
 				a_set = 1;
+			else
+				exit_code=1;
 		} else if (!strncasecmp (argv[i], "MaxNodesPerJob",
 					 MAX(command_len, 4))) {
 			if(!assoc_cond->max_nodes_pj_list)
@@ -259,6 +289,8 @@ static int _set_cond(int *start, int argc, char *argv[],
 				   assoc_cond->max_nodes_pj_list,
 				   argv[i]+end))
 				a_set = 1;
+			else
+				exit_code=1;
 		} else if (!strncasecmp (argv[i], "MaxSubmitJobs",
 					 MAX(command_len, 4))) {
 			if(!assoc_cond->max_submit_jobs_list)
@@ -268,6 +300,8 @@ static int _set_cond(int *start, int argc, char *argv[],
 				   assoc_cond->max_submit_jobs_list,
 				   argv[i]+end))
 				a_set = 1;
+			else
+				exit_code=1;
 		} else if (!strncasecmp (argv[i], "MaxWallDurationPerJob",
 					 MAX(command_len, 4))) {
 			if(!assoc_cond->max_wall_pj_list)
@@ -277,6 +311,8 @@ static int _set_cond(int *start, int argc, char *argv[],
 				   assoc_cond->max_wall_pj_list,
 				   argv[i]+end))
 				a_set = 1;
+			else
+				exit_code=1;
 		} else if (!strncasecmp (argv[i], "Partition",
 					 MAX(command_len, 3))) {
 			if(!assoc_cond->partition_list) {
@@ -287,6 +323,8 @@ static int _set_cond(int *start, int argc, char *argv[],
 				   assoc_cond->partition_list,
 				   argv[i]+end))
 				a_set = 1;
+			else
+				exit_code=1;
 		} else if (!strncasecmp (argv[i], "QosLevel",
 					 MAX(command_len, 1))) {
 			if(!assoc_cond->qos_list) {
@@ -299,10 +337,12 @@ static int _set_cond(int *start, int argc, char *argv[],
 					db_conn, my_uid, NULL);
 			}
 
-			slurmdb_addto_qos_char_list(assoc_cond->qos_list,
-						    g_qos_list, argv[i]+end,
-						    option);
-			u_set = 1;
+			if(slurmdb_addto_qos_char_list(assoc_cond->qos_list,
+						       g_qos_list, argv[i]+end,
+						       option))
+				u_set = 1;
+			else
+				exit_code=1;
 		} else {
 			exit_code=1;
 			fprintf(stderr, " Unknown condition: %s\n"
@@ -732,21 +772,24 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 		if(!end
 		   || !strncasecmp (argv[i], "Names", MAX(command_len, 1))
 		   || !strncasecmp (argv[i], "Users", MAX(command_len, 1))) {
-			slurm_addto_char_list(assoc_cond->user_list,
-					      argv[i]+end);
+			if(!slurm_addto_char_list(assoc_cond->user_list,
+						 argv[i]+end))
+				exit_code=1;
 		} else if (!strncasecmp (argv[i], "Accounts",
 					 MAX(command_len, 2))
 			   || !strncasecmp (argv[i], "Acct",
 					    MAX(command_len, 4))) {
-			slurm_addto_char_list(assoc_cond->acct_list,
-					      argv[i]+end);
+			if(!slurm_addto_char_list(assoc_cond->acct_list,
+						  argv[i]+end))
+				exit_code=1;
 		} else if (!strncasecmp (argv[i], "AdminLevel",
 					 MAX(command_len, 2))) {
 			admin_level = str_2_slurmdb_admin_level(argv[i]+end);
 		} else if (!strncasecmp (argv[i], "Clusters",
 					 MAX(command_len, 1))) {
-			slurm_addto_char_list(assoc_cond->cluster_list,
-					      argv[i]+end);
+			if(!slurm_addto_char_list(assoc_cond->cluster_list,
+						  argv[i]+end))
+				exit_code=1;
 		} else if (!strncasecmp (argv[i], "DefaultAccount",
 					 MAX(command_len, 8))) {
 			if(default_acct) {

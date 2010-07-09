@@ -1307,6 +1307,7 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn,
 		assoc->cluster = ret_assoc->cluster;
 
 	assoc->grp_cpu_mins    = ret_assoc->grp_cpu_mins;
+	assoc->grp_cpu_run_mins= ret_assoc->grp_cpu_run_mins;
 	assoc->grp_cpus        = ret_assoc->grp_cpus;
 	assoc->grp_jobs        = ret_assoc->grp_jobs;
 	assoc->grp_nodes       = ret_assoc->grp_nodes;
@@ -1316,6 +1317,7 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn,
 	assoc->lft             = ret_assoc->lft;
 
 	assoc->max_cpu_mins_pj = ret_assoc->max_cpu_mins_pj;
+	assoc->max_cpu_run_mins= ret_assoc->max_cpu_run_mins;
 	assoc->max_cpus_pj     = ret_assoc->max_cpus_pj;
 	assoc->max_jobs        = ret_assoc->max_jobs;
 	assoc->max_nodes_pj    = ret_assoc->max_nodes_pj;
@@ -1491,6 +1493,7 @@ extern int assoc_mgr_fill_in_qos(void *db_conn, slurmdb_qos_rec_t *qos,
 	qos->id = found_qos->id;
 
 	qos->grp_cpu_mins    = found_qos->grp_cpu_mins;
+	qos->grp_cpu_run_mins= found_qos->grp_cpu_run_mins;
 	qos->grp_cpus        = found_qos->grp_cpus;
 	qos->grp_jobs        = found_qos->grp_jobs;
 	qos->grp_nodes       = found_qos->grp_nodes;
@@ -1498,6 +1501,7 @@ extern int assoc_mgr_fill_in_qos(void *db_conn, slurmdb_qos_rec_t *qos,
 	qos->grp_wall        = found_qos->grp_wall;
 
 	qos->max_cpu_mins_pj = found_qos->max_cpu_mins_pj;
+	qos->max_cpu_run_mins_pu = found_qos->max_cpu_run_mins_pu;
 	qos->max_cpus_pj     = found_qos->max_cpus_pj;
 	qos->max_jobs_pu     = found_qos->max_jobs_pu;
 	qos->max_nodes_pj    = found_qos->max_nodes_pj;
@@ -1513,6 +1517,7 @@ extern int assoc_mgr_fill_in_qos(void *db_conn, slurmdb_qos_rec_t *qos,
 	} else
 		qos->preempt_bitstr = found_qos->preempt_bitstr;
 
+	qos->preempt_mode = found_qos->preempt_mode;
 	qos->priority = found_qos->priority;
 
 	/* Don't send any usage info since we don't know if the usage
@@ -2091,8 +2096,11 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update)
 				}
 			}
 
-			if(object->grp_cpu_mins != NO_VAL)
+			if(object->grp_cpu_mins != (uint64_t)NO_VAL)
 				rec->grp_cpu_mins = object->grp_cpu_mins;
+			if(object->grp_cpu_run_mins != (uint64_t)NO_VAL)
+				rec->grp_cpu_run_mins =
+					object->grp_cpu_run_mins;
 			if(object->grp_cpus != NO_VAL)
 				rec->grp_cpus = object->grp_cpus;
 			if(object->grp_jobs != NO_VAL)
@@ -2104,8 +2112,11 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update)
 			if(object->grp_wall != NO_VAL)
 				rec->grp_wall = object->grp_wall;
 
-			if(object->max_cpu_mins_pj != NO_VAL)
+			if(object->max_cpu_mins_pj != (uint64_t)NO_VAL)
 				rec->max_cpu_mins_pj = object->max_cpu_mins_pj;
+			if(object->max_cpu_run_mins != (uint64_t)NO_VAL)
+				rec->max_cpu_run_mins =
+					object->max_cpu_run_mins;
 			if(object->max_cpus_pj != NO_VAL)
 				rec->max_cpus_pj = object->max_cpus_pj;
 			if(object->max_jobs != NO_VAL)
@@ -2591,8 +2602,11 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update)
 				break;
 			}
 
-			if(object->grp_cpu_mins != NO_VAL)
+			if(object->grp_cpu_mins != (uint64_t)NO_VAL)
 				rec->grp_cpu_mins = object->grp_cpu_mins;
+			if(object->grp_cpu_run_mins != (uint64_t)NO_VAL)
+				rec->grp_cpu_run_mins =
+					object->grp_cpu_run_mins;
 			if(object->grp_cpus != NO_VAL)
 				rec->grp_cpus = object->grp_cpus;
 			if(object->grp_jobs != NO_VAL)
@@ -2604,8 +2618,11 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update)
 			if(object->grp_wall != NO_VAL)
 				rec->grp_wall = object->grp_wall;
 
-			if(object->max_cpu_mins_pj != NO_VAL)
+			if(object->max_cpu_mins_pj != (uint64_t)NO_VAL)
 				rec->max_cpu_mins_pj = object->max_cpu_mins_pj;
+			if(object->max_cpu_run_mins_pu != (uint64_t)NO_VAL)
+				rec->max_cpu_run_mins_pu =
+					object->max_cpu_run_mins_pu;
 			if(object->max_cpus_pj != NO_VAL)
 				rec->max_cpus_pj = object->max_cpus_pj;
 			if(object->max_jobs_pu != NO_VAL)
@@ -2624,7 +2641,7 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update)
 
 				rec->preempt_bitstr = object->preempt_bitstr;
 				object->preempt_bitstr = NULL;
-				/* 			char *tmp = get_qos_complete_str_bitstr( */
+				/* char *tmp = get_qos_complete_str_bitstr( */
 /* 					assoc_mgr_qos_list, */
 /* 					rec->preempt_bitstr); */
 
@@ -2632,6 +2649,9 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update)
 /* 				     rec->name, rec->id, tmp); */
 /* 				xfree(tmp); */
 			}
+
+			if(object->preempt_mode != (uint16_t)NO_VAL)
+				rec->preempt_mode = object->preempt_mode;
 
 			if(object->priority != NO_VAL)
 				rec->priority = object->priority;

@@ -465,13 +465,16 @@ static int _as_mysql_acct_check_tables(MYSQL *db_conn)
 		{ "max_nodes_per_job", "int default NULL" },
 		{ "max_wall_duration_per_job", "int default NULL" },
 		{ "max_cpu_mins_per_job", "bigint default NULL" },
+		{ "max_cpu_run_mins_per_user", "bigint default NULL" },
 		{ "grp_jobs", "int default NULL" },
 		{ "grp_submit_jobs", "int default NULL" },
 		{ "grp_cpus", "int default NULL" },
 		{ "grp_nodes", "int default NULL" },
 		{ "grp_wall", "int default NULL" },
 		{ "grp_cpu_mins", "bigint default NULL" },
+		{ "grp_cpu_run_mins", "bigint default NULL" },
 		{ "preempt", "text not null default ''" },
+		{ "preempt_mode", "int default 0" },
 		{ "priority", "int default 0" },
 		{ "usage_factor", "double default 1.0 not null" },
 		{ NULL, NULL}
@@ -511,6 +514,7 @@ static int _as_mysql_acct_check_tables(MYSQL *db_conn)
 		"set @mnpj = NULL; "
 		"set @mwpj = NULL; "
 		"set @mcmpj = NULL; "
+		"set @mcrm = NULL; "
 		"set @qos = ''; "
 		"set @delta_qos = ''; "
 		"set @my_acct = acct; "
@@ -521,6 +525,7 @@ static int _as_mysql_acct_check_tables(MYSQL *db_conn)
 		"set @mnpj = 0; "
 		"set @mwpj = 0; "
 		"set @mcmpj = 0; "
+		"set @mcrm = 0; "
 		"set @qos = 0; "
 		"set @delta_qos = 0; "
 		"end if; "
@@ -547,6 +552,9 @@ static int _as_mysql_acct_check_tables(MYSQL *db_conn)
 		"if @mcmpj is NULL then set @s = CONCAT("
 		"@s, '@mcmpj := max_cpu_mins_pj, '); "
 		"end if; "
+		"if @mcrm is NULL then set @s = CONCAT("
+		"@s, '@mcrm := max_cpu_run_mins, '); "
+		"end if; "
 		"if @qos = '' then set @s = CONCAT("
 		"@s, '@qos := qos, "
 		"@delta_qos := CONCAT(delta_qos, @delta_qos), '); "
@@ -558,8 +566,8 @@ static int _as_mysql_acct_check_tables(MYSQL *db_conn)
 		"execute query; "
 		"deallocate prepare query; "
 		"UNTIL (@mj != -1 && @msj != -1 && @mcpj != -1 "
-		"&& @mnpj != -1 && @mwpj != -1 "
-		"&& @mcmpj != -1 && @qos != '') || @my_acct = '' END REPEAT; "
+		"&& @mnpj != -1 && @mwpj != -1 && @mcmpj != -1 "
+		"&& @mcrm != -1 && @qos != '') || @my_acct = '' END REPEAT; "
 		"END;";
 	char *query = NULL;
 	time_t now = time(NULL);
@@ -803,12 +811,14 @@ extern int create_cluster_tables(MYSQL *db_conn, char *cluster_name)
 		{ "max_nodes_pj", "int default NULL" },
 		{ "max_wall_pj", "int default NULL" },
 		{ "max_cpu_mins_pj", "bigint default NULL" },
+		{ "max_cpu_run_mins", "bigint default NULL" },
 		{ "grp_jobs", "int default NULL" },
 		{ "grp_submit_jobs", "int default NULL" },
 		{ "grp_cpus", "int default NULL" },
 		{ "grp_nodes", "int default NULL" },
 		{ "grp_wall", "int default NULL" },
 		{ "grp_cpu_mins", "bigint default NULL" },
+		{ "grp_cpu_run_mins", "bigint default NULL" },
 		{ "qos", "blob not null default ''" },
 		{ "delta_qos", "blob not null default ''" },
 		{ NULL, NULL}

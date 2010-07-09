@@ -19,6 +19,7 @@ documents those changes that are of interest to users and admins.
  -- Added ability to change a users name in accounting.
  -- Restore squeue support for "%G" format (group id) accidentally removed in
     2.2.0.pre7.
+ -- Added preempt_mode option to qos.
 
 * Changes in SLURM 2.2.0.pre8
 =============================

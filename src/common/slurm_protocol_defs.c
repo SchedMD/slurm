@@ -221,7 +221,8 @@ extern int slurm_addto_char_list(List char_list, char *names)
 					info("There is a problem with "
 					     "your request.  It appears you "
 					     "have spaces inside your list.");
-					break;
+					count = 0;
+					goto endit;
 				}
 			}
 			i++;
@@ -247,6 +248,7 @@ extern int slurm_addto_char_list(List char_list, char *names)
 		xstrtolower(name);
 		list_append(char_list, name);
 	}
+endit:
 	list_iterator_destroy(itr);
 	return count;
 }
@@ -939,7 +941,8 @@ extern uint16_t preempt_mode_num(const char *preempt_mode)
 	while (tok) {
 		if (strcasecmp(tok, "gang") == 0) {
 			mode_num |= PREEMPT_MODE_GANG;
-		} else if (strcasecmp(tok, "off") == 0) {
+		} else if ((strcasecmp(tok, "off") == 0)
+			   || (strcasecmp(tok, "cluster") == 0)) {
 			mode_num += PREEMPT_MODE_OFF;
 			preempt_modes++;
 		} else if (strcasecmp(tok, "cancel") == 0) {
