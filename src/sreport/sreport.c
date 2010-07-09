@@ -744,6 +744,8 @@ sreport [<OPTION>] [<COMMAND>]                                             \n\
              - Grouping=<OPT>   - Comma separated list of size groupings.  \n\
                                   (i.e. 50,100,150 would group job cpu count\n\
                                    1-49, 50-99, 100-149, > 150).           \n\
+                                  grouping=individual will result in a     \n\
+                                  single column for each job size found.   \n\
              - Jobs=<OPT>       - List of jobs/steps to include in report. \n\
                                   Default is all.                          \n\
              - Nodes=<OPT>      - Only show jobs that ran on these nodes.  \n\

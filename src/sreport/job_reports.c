@@ -56,6 +56,7 @@ static List print_fields_list = NULL; /* types are of print_field_t */
 static List grouping_print_fields_list = NULL; /* types are of print_field_t */
 static int print_job_count = 0;
 static bool flat_view = false;
+static bool individual_grouping = 0;
 
 /*
  * Comparator used for sorting clusters alphabetically
@@ -284,7 +285,9 @@ static int _set_cond(int *start, int argc, char *argv[],
 			set = 1;
 		} else if (!strncasecmp (argv[i], "grouping",
 					 MAX(command_len, 2))) {
-			if(grouping_list)
+			if(!strcasecmp(argv[i]+end, "individual")) {
+				individual_grouping = 1;
+			} else if(grouping_list)
 				slurm_addto_char_list(grouping_list,
 						      argv[i]+end);
 		} else if (!strncasecmp (argv[i], "Jobs",
@@ -509,7 +512,11 @@ static int _setup_grouping_print_fields_list(List grouping_list)
 			field->type = PRINT_JOB_COUNT;
 		else
 			field->type = PRINT_JOB_SIZE;
-		field->name = xstrdup_printf("%u-%u cpus", last_size, size-1);
+		if(individual_grouping)
+			field->name = xstrdup_printf("%u cpus", size);
+		else
+			field->name = xstrdup_printf("%u-%u cpus",
+						     last_size, size-1);
 		if(time_format == SLURMDB_REPORT_TIME_SECS_PER
 		   || time_format == SLURMDB_REPORT_TIME_MINS_PER
 		   || time_format == SLURMDB_REPORT_TIME_HOURS_PER)
@@ -532,12 +539,13 @@ static int _setup_grouping_print_fields_list(List grouping_list)
 	}
 	list_iterator_destroy(itr);
 
-	if(last_size) {
+	if(last_size && !individual_grouping) {
 		field = xmalloc(sizeof(print_field_t));
 		if(print_job_count)
 			field->type = PRINT_JOB_COUNT;
 		else
 			field->type = PRINT_JOB_SIZE;
+
 		field->name = xstrdup_printf(">= %u cpus", last_size);
 		if(time_format == SLURMDB_REPORT_TIME_SECS_PER
 		   || time_format == SLURMDB_REPORT_TIME_MINS_PER
@@ -599,13 +607,11 @@ extern int job_sizes_grouped_by_top_acct(int argc, char *argv[])
 	if(!list_count(format_list))
 		slurm_addto_char_list(format_list, "Cl,a");
 
-	if(!list_count(grouping_list))
+	if(!individual_grouping && !list_count(grouping_list))
 		slurm_addto_char_list(grouping_list, "50,250,500,1000");
 
 	_setup_print_fields_list(format_list);
 	list_destroy(format_list);
-
-	_setup_grouping_print_fields_list(grouping_list);
 
 	if(!(slurmdb_report_cluster_grouping_list =
 	     slurmdb_report_job_sizes_grouped_by_top_account(db_conn,
@@ -613,6 +619,8 @@ extern int job_sizes_grouped_by_top_acct(int argc, char *argv[])
 		exit_code = 1;
 		goto end_it;
 	}
+
+	_setup_grouping_print_fields_list(grouping_list);
 
 	if(print_fields_have_header) {
 		char start_char[20];
@@ -729,6 +737,9 @@ end_it:
 	if(print_job_count)
 		print_job_count = 0;
 
+	if(individual_grouping)
+		individual_grouping = 0;
+
 	slurmdb_destroy_job_cond(job_cond);
 
 	if(grouping_list) {
@@ -797,13 +808,11 @@ extern int job_sizes_grouped_by_wckey(int argc, char *argv[])
 	if(!list_count(format_list))
 		slurm_addto_char_list(format_list, "Cl,wc");
 
-	if(!list_count(grouping_list))
+	if(!individual_grouping && !list_count(grouping_list))
 		slurm_addto_char_list(grouping_list, "50,250,500,1000");
 
 	_setup_print_fields_list(format_list);
 	list_destroy(format_list);
-
-	_setup_grouping_print_fields_list(grouping_list);
 
 	if(!(slurmdb_report_cluster_grouping_list =
 	     slurmdb_report_job_sizes_grouped_by_wckey(db_conn,
@@ -811,6 +820,8 @@ extern int job_sizes_grouped_by_wckey(int argc, char *argv[])
 		exit_code = 1;
 		goto end_it;
 	}
+
+	_setup_grouping_print_fields_list(grouping_list);
 
 	if(print_fields_have_header) {
 		char start_char[20];
@@ -926,6 +937,9 @@ extern int job_sizes_grouped_by_wckey(int argc, char *argv[])
 end_it:
 	if(print_job_count)
 		print_job_count = 0;
+
+	if(individual_grouping)
+		individual_grouping = 0;
 
 	slurmdb_destroy_job_cond(job_cond);
 

@@ -20,6 +20,7 @@ documents those changes that are of interest to users and admins.
  -- Restore squeue support for "%G" format (group id) accidentally removed in
     2.2.0.pre7.
  -- Added preempt_mode option to qos.
+ -- added a grouping=individual for sreport size reports
 
 * Changes in SLURM 2.2.0.pre8
 =============================
