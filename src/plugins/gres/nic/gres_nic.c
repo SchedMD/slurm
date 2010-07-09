@@ -113,14 +113,6 @@ const char	help_msg[]		= "nic[:count[*cpu]]";
 const uint32_t	plugin_version		= 100;
 const uint32_t	min_plug_version	= 100;
 
-/* Gres configuration loaded/used by slurmd. Modify or expand as
- * additional information becomes available (e.g. topology). */
-typedef struct nic_config {
-	bool       loaded;		/* flag if structure is loaded */
-	uint32_t   nic_cnt;		/* total count of NICs on system */
-} nic_config_t;
-static nic_config_t gres_config;
-
 /* Gres node state as used by slurmctld. Includes data from gres_config loaded
  * from slurmd, resources configured (may be more or less than actually found)
  * plus resource allocation information. */
@@ -172,20 +164,6 @@ typedef struct nic_step_state {
 	bitstr_t **nic_bit_alloc;
 } nic_step_state_t;
 
-/* Purge node configuration state removed */
-static void _purge_old_node_config(void)
-{
-	gres_config.loaded 	= false;
-	gres_config.nic_cnt	= 0;
-}
-
-/* Purge all allocated memory when the plugin is removed */
-extern int fini(void)
-{
-	_purge_old_node_config();
-	return SLURM_SUCCESS;
-}
-
 /* We could load gres state or validate it using various mechanisms here.
  * This only validates that the configuration was specified in gres.conf. */
 extern int node_config_load(List gres_conf_list)
@@ -195,85 +173,20 @@ extern int node_config_load(List gres_conf_list)
 	gres_conf_t *gres_conf;
 
 	xassert(gres_conf_list);
-	gres_config.loaded  = false;
-	gres_config.nic_cnt = 0;
-
 	iter = list_iterator_create(gres_conf_list);
 	if (iter == NULL)
 		fatal("list_iterator_create: malloc failure");
 	while ((gres_conf = list_next(iter))) {
-		if (strcmp(gres_conf->name, "nic"))
-			continue;
-		gres_config.loaded   = true;
-		gres_config.nic_cnt += gres_conf->count;
-		rc = SLURM_SUCCESS;
+		if (strcmp(gres_conf->name, "nic") == 0) {
+			gres_conf->plugin_id = plugin_id;
+			rc = SLURM_SUCCESS;
+		}
 	}
 	list_iterator_destroy(iter);
 
 	if (rc != SLURM_SUCCESS)
 		fatal("%s failed to load configuration", plugin_name);
 	return rc;
-}
-
-/*
- * Pack this node's current configuration.
- * Include the version number so that we can possibly un/pack differnt
- *	versions of the data structure.
- * Keep the pack and unpack functions in sync.
- * Called only by slurmd.
- */
-extern int node_config_pack(Buf buffer)
-{
-	int rc = SLURM_SUCCESS;
-
-	pack32(plugin_version, buffer);
-
-	if (!gres_config.loaded)
-		fatal("%s failed to load configuration", plugin_name);
-
-	/* Pack whatever node information is relevant to the slurmctld,
-	 * including topology. */
-	pack32(gres_config.nic_cnt, buffer);
-
-	return rc;
-}
-
-/*
- * Unpack this node's current configuration.
- * Include the version number so that we can possibly un/pack differnt
- *	versions of the data structure.
- * Keep the pack and unpack functions in sync.
- * Called only by slurmctld.
- */
-extern int node_config_unpack(Buf buffer)
-{
-	uint32_t version;
-
-	_purge_old_node_config();
-	if (!buffer) {
-		/* The node failed to pack this gres info, likely due to
-		 * inconsistent GresPlugins configuration. Set a reasonable
-		 * default configuration. */
-		gres_config.nic_cnt = NO_VAL;
-		return SLURM_SUCCESS;
-	}
-
-	safe_unpack32(&version, buffer);
-
-	if (version == plugin_version) {
-		safe_unpack32(&gres_config.nic_cnt, buffer);
-		/* info("nic_cnt=%u", gres_config.nic_cnt); */
-	} else {
-		error("node_config_unpack error for %s, invalid version", 
-		      plugin_name);
-		return SLURM_ERROR;
-	}
-
-	return SLURM_SUCCESS;
-
-unpack_error:
-	_purge_old_node_config();
-	return SLURM_ERROR;
 }
 
 /*
@@ -361,7 +274,7 @@ extern int node_config_init(char *node_name, char *orig_config,
  *		      2: Don't validate hardware, use slurm.conf configuration
  * OUT reason_down - set to an explanation of failure, if any, don't set if NULL
  */
-extern int node_config_validate(char *node_name, 
+extern int node_config_validate(char *node_name, uint32_t gres_cnt,
 				char *orig_config, char **new_config,
 				void **gres_data, uint16_t fast_schedule,
 				char **reason_down)
@@ -378,15 +291,15 @@ extern int node_config_validate(char *node_name,
 		gres_ptr = xmalloc(sizeof(nic_node_state_t));
 		*gres_data = gres_ptr;
 		gres_ptr->nic_cnt_config = NO_VAL;
-		gres_ptr->nic_cnt_found  = gres_config.nic_cnt;
+		gres_ptr->nic_cnt_found  = gres_cnt;
 		updated_config = true;
-	} else if (gres_ptr->nic_cnt_found != gres_config.nic_cnt) {
+	} else if (gres_ptr->nic_cnt_found != gres_cnt) {
 		if (gres_ptr->nic_cnt_found != NO_VAL) {
 			info("%s count changed for node %s from %u to %u",
-			     plugin_name, node_name, gres_config.nic_cnt,
-			     gres_ptr->nic_cnt_found);
+			     plugin_name, node_name,
+			     gres_ptr->nic_cnt_found, gres_cnt);
 		}
-		gres_ptr->nic_cnt_found = gres_config.nic_cnt;
+		gres_ptr->nic_cnt_found = gres_cnt;
 		updated_config = true;
 	}
 	if (updated_config == false)

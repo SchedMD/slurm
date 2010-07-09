@@ -88,9 +88,8 @@ typedef struct slurm_gres_ops {
 						  char *orig_config,
 						  void **gres_data );
 	int		(*node_config_load)	( List gres_conf_list );
-	int		(*node_config_pack)	( Buf buffer );
-	int		(*node_config_unpack)	( Buf buffer );
 	int		(*node_config_validate)	( char *node_name,
+						  uint32_t gres_cnt,
 						  char *orig_config,
 						  char **new_config,
 						  void **gres_data,
@@ -172,6 +171,7 @@ static bool gres_debug = false;
 static slurm_gres_context_t *gres_context = NULL;
 static char *gres_plugin_list = NULL;
 static pthread_mutex_t gres_context_lock = PTHREAD_MUTEX_INITIALIZER;
+static List gres_conf_list = NULL;
 
 typedef struct gres_state {
 	uint32_t	plugin_id;
@@ -202,8 +202,6 @@ static int _load_gres_plugin(char *plugin_name,
 		"help_msg",
 		"node_config_init",
 		"node_config_load",
-		"node_config_pack",
-		"node_config_unpack",
 		"node_config_validate",
 		"node_config_delete",
 		"node_reconfig",
@@ -403,6 +401,7 @@ extern int gres_plugin_fini(void)
 	}
 	xfree(gres_context);
 	xfree(gres_plugin_list);
+	FREE_NULL_LIST(gres_conf_list);
 	gres_context_cnt = -1;
 
 fini:	slurm_mutex_unlock(&gres_context_lock);
@@ -551,15 +550,6 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 	s_p_hashtbl_t *tbl;
 	gres_conf_t *p;
 
-	for (i=0; i<gres_context_cnt; i++) {
-		if (strcasecmp(value, gres_context[i].ops.gres_name) == 0)
-			break;
-	}
-	if (i >= gres_context_cnt) {
-		error("Ignoring gres.conf Name=%s", value);
-		return 0;
-	}
-
 	tbl = s_p_hashtbl_create(_gres_options);
 	s_p_parse_line(tbl, *leftover, leftover);
 
@@ -576,10 +566,19 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 		if (stat(p->file, &config_stat) < 0)
 			fatal("can't stat gres.conf file %s: %m", p->file);
 	}
-
 	s_p_hashtbl_destroy(tbl);
-	*dest = (void *)p;
 
+	for (i=0; i<gres_context_cnt; i++) {
+		if (strcasecmp(value, gres_context[i].ops.gres_name) == 0)
+			break;
+	}
+	if (i >= gres_context_cnt) {
+		error("Ignoring gres.conf Name=%s", value);
+		_destroy_gres_conf(p);
+		return 0;
+	}
+
+	*dest = (void *)p;
 	return 1;
 }
 
@@ -597,7 +596,6 @@ extern int gres_plugin_node_config_load(void)
 	struct stat config_stat;
 	s_p_hashtbl_t *tbl;
 	gres_conf_t **gres_array;
-	List gres_conf_list = NULL;
 	char *gres_conf_file = _get_gres_conf();
 
 	rc = gres_plugin_init();
@@ -628,7 +626,6 @@ extern int gres_plugin_node_config_load(void)
 	}
 	slurm_mutex_unlock(&gres_context_lock);
 
-	list_destroy(gres_conf_list);
 	xfree(gres_conf_file);
 	return rc;
 }
@@ -639,28 +636,30 @@ extern int gres_plugin_node_config_load(void)
  */
 extern int gres_plugin_node_config_pack(Buf buffer)
 {
-	int i, rc;
-	uint32_t gres_size = 0, magic = GRES_MAGIC;
-	uint32_t header_offset, data_offset, tail_offset;
-	uint16_t rec_cnt;
-
+	int rc;
+	uint32_t magic = GRES_MAGIC;
+	uint16_t rec_cnt = 0, version= SLURM_PROTOCOL_VERSION;
+	ListIterator iter;
+	gres_conf_t *gres_conf;
+ 
 	rc = gres_plugin_init();
 
 	slurm_mutex_lock(&gres_context_lock);
-	rec_cnt = MAX(0, gres_context_cnt);
+	pack16(version, buffer);
+	if (gres_conf_list)
+		rec_cnt = list_count(gres_conf_list);
 	pack16(rec_cnt, buffer);
-	for (i=0; ((i < gres_context_cnt) && (rc == SLURM_SUCCESS)); i++) {
-		pack32(magic, buffer);
-		pack32(*(gres_context[i].ops.plugin_id), buffer);
-		header_offset = get_buf_offset(buffer);
-		pack32(gres_size, buffer);	/* Placeholder for now */
-		data_offset = get_buf_offset(buffer);
-		rc = (*(gres_context[i].ops.node_config_pack))(buffer);
-		tail_offset = get_buf_offset(buffer);
-		gres_size = tail_offset - data_offset;
-		set_buf_offset(buffer, header_offset);
-		pack32(gres_size, buffer);	/* The actual buffer size */
-		set_buf_offset(buffer, tail_offset);
+	if (rec_cnt) {
+		iter = list_iterator_create(gres_conf_list);
+		if (iter == NULL)
+			fatal("list_iterator_create: malloc failure");
+		while ((gres_conf = (gres_conf_t *) list_next(iter))) {
+			pack32(magic, buffer);
+			pack32(gres_conf->plugin_id, buffer);
+			pack32(gres_conf->count, buffer);
+			packstr(gres_conf->cpus, buffer);
+		}
+		list_iterator_destroy(iter);
 	}
 	slurm_mutex_unlock(&gres_context_lock);
 
@@ -674,68 +673,76 @@ extern int gres_plugin_node_config_pack(Buf buffer)
  */
 extern int gres_plugin_node_config_unpack(Buf buffer, char* node_name)
 {
-	int i, rc, rc2;
-	uint32_t gres_size, magic, tail_offset, plugin_id;
-	uint16_t rec_cnt;
+	int i, j, rc;
+	uint32_t count, magic, plugin_id, utmp32;
+	uint16_t rec_cnt, version;
+	char *tmp_cpus;
+	gres_conf_t *p;
 
 	rc = gres_plugin_init();
+
+	FREE_NULL_LIST(gres_conf_list);
+	gres_conf_list = list_create(_destroy_gres_conf);
+	if (gres_conf_list == NULL)
+		fatal("list_create: malloc failure");
+
+	safe_unpack16(&version, buffer);
+	if (version != SLURM_2_2_PROTOCOL_VERSION)
+		return SLURM_ERROR;
+
 	safe_unpack16(&rec_cnt, buffer);
 	if (rec_cnt == 0)
 		return SLURM_SUCCESS;
 
 	slurm_mutex_lock(&gres_context_lock);
-	for (i=0; i<gres_context_cnt; i++)
-		gres_context[i].unpacked_info = false;
-
-	while (rc == SLURM_SUCCESS) {
-		if ((buffer == NULL) || (remaining_buf(buffer) == 0))
-			break;
+ 	for (j=0; j<gres_context_cnt; j++)
+ 		gres_context[j].unpacked_info = false;
+	for (i=0; i<rec_cnt; i++) {
 		safe_unpack32(&magic, buffer);
 		if (magic != GRES_MAGIC)
 			goto unpack_error;
 		safe_unpack32(&plugin_id, buffer);
-		safe_unpack32(&gres_size, buffer);
-		for (i=0; i<gres_context_cnt; i++) {
-			if (*(gres_context[i].ops.plugin_id) == plugin_id)
-				break;
-		}
-		if (i >= gres_context_cnt) {
+		safe_unpack32(&count, buffer);
+		safe_unpackstr_xmalloc(&tmp_cpus, &utmp32, buffer);
+ 		for (j=0; j<gres_context_cnt; j++) {
+ 			if (*(gres_context[j].ops.plugin_id) == plugin_id) {
+				gres_context[j].unpacked_info = true;
+ 				break;
+			}
+ 		}
+		if (j >= gres_context_cnt) {
+			/* A likely sign that GresPlugins is inconsistently
+			 * configured. Not a fatal error, skip over the data. */
 			error("gres_plugin_node_config_unpack: no plugin "
 			      "configured to unpack data type %u from node %s",
 			      plugin_id, node_name);
-			/* A likely sign that GresPlugins is inconsistently
-			 * configured. Not a fatal error, skip over the data. */
-			tail_offset = get_buf_offset(buffer);
-			tail_offset += gres_size;
-			set_buf_offset(buffer, tail_offset);
+			xfree(tmp_cpus);
 			continue;
 		}
-		gres_context[i].unpacked_info = true;
-		rc = (*(gres_context[i].ops.node_config_unpack))(buffer);
+		p = xmalloc(sizeof(gres_conf_t));
+		p->count = count;
+		p->plugin_id = plugin_id;
+		p->cpus = tmp_cpus;
+		tmp_cpus = NULL;	/* Nothing left to xfree */
+		list_append(gres_conf_list, p);
 	}
-
-fini:	/* Insure that every gres plugin is called for unpack, even if no data
-	 * was packed by the node. A likely sign that GresPlugins is
-	 * inconsistently configured. */
-	for (i=0; i<gres_context_cnt; i++) {
-		if (gres_context[i].unpacked_info)
+ 	for (j=0; j<gres_context_cnt; j++) {
+ 		if (gres_context[j].unpacked_info)
 			continue;
-		error("gres_plugin_node_config_unpack: no info packed for %s "
-		      "by node %s",
-		      gres_context[i].gres_type, node_name);
-		rc2 = (*(gres_context[i].ops.node_config_unpack))(NULL);
-		if (rc2 != SLURM_SUCCESS)
-			rc = rc2;
+
+		/* A likely sign GresPlugins is inconsistently configured. */
+		error("gres_plugin_node_config_unpack: no data type of type %s "
+		      "from node %s", gres_context[j].gres_type, node_name);
 	}
 	slurm_mutex_unlock(&gres_context_lock);
-
 	return rc;
 
 unpack_error:
 	error("gres_plugin_node_config_unpack: unpack error from node %s",
 	      node_name);
-	rc = SLURM_ERROR;
-	goto fini;
+	xfree(tmp_cpus);
+	slurm_mutex_unlock(&gres_context_lock);
+	return SLURM_ERROR;
 }
 
 static void _gres_node_list_delete(void *list_element)
@@ -803,6 +810,26 @@ extern int gres_plugin_init_node_config(char *node_name, char *orig_config,
 	return rc;
 }
 
+static uint32_t _get_tot_gres_cnt(uint32_t plugin_id)
+{
+	ListIterator iter;
+	gres_conf_t *gres_conf;
+	uint32_t gres_cnt = 0;
+
+	if (gres_conf_list == NULL)
+		return gres_cnt;
+
+	iter = list_iterator_create(gres_conf_list);
+	if (iter == NULL)
+		fatal("list_iterator_create: malloc failure");
+	while ((gres_conf = (gres_conf_t *) list_next(iter))) {
+		if (gres_conf->plugin_id == plugin_id)
+			gres_cnt += gres_conf->count;
+	}
+	list_iterator_destroy(iter);
+	return gres_cnt;
+}
+
 /*
  * Validate a node's configuration and put a gres record onto a list
  * Called immediately after gres_plugin_node_config_unpack().
@@ -822,9 +849,10 @@ extern int  gres_plugin_node_config_validate(char *node_name,
 					    uint16_t fast_schedule,
 					    char **reason_down)
 {
-	int i, rc;
+	int i, rc, rc2;
 	ListIterator gres_iter;
 	gres_state_t *gres_ptr;
+	uint32_t gres_cnt;
 
 	rc = gres_plugin_init();
 
@@ -848,10 +876,11 @@ extern int  gres_plugin_node_config_validate(char *node_name,
 			gres_ptr->plugin_id = *(gres_context[i].ops.plugin_id);
 			list_append(*gres_list, gres_ptr);
 		}
-
-		rc = (*(gres_context[i].ops.node_config_validate))
-			(node_name, orig_config, new_config,
+		gres_cnt = _get_tot_gres_cnt(*gres_context[i].ops.plugin_id);
+		rc2 = (*(gres_context[i].ops.node_config_validate))
+			(node_name, gres_cnt, orig_config, new_config,
 			 &gres_ptr->gres_data, fast_schedule, reason_down);
+		rc = MAX(rc, rc2);
 	}
 	slurm_mutex_unlock(&gres_context_lock);
 
