@@ -116,6 +116,8 @@ struct assoc_mgr_association_usage {
 	long double usage_norm;	/* normalized usage (DON'T PACK) */
 	long double usage_raw;	/* measure of resource usage (DON'T PACK) */
 
+	uint64_t used_cpu_run_mins; /* count of running cpu mins
+				     * (DON'T PACK) */
 	uint32_t used_jobs;	/* count of active jobs (DON'T PACK) */
 	uint32_t used_submit_jobs; /* count of jobs pending or running
 				    * (DON'T PACK) */
@@ -130,6 +132,8 @@ struct assoc_mgr_qos_usage {
 			  jobs (DON'T PACK) */
 	uint32_t grp_used_cpus; /* count of cpus in use in this qos
 				 * (DON'T PACK) */
+	uint64_t grp_used_cpu_run_mins; /* count of running cpu mins
+					 * (DON'T PACK) */
 	uint32_t grp_used_jobs;	/* count of active jobs (DON'T PACK) */
 	uint32_t grp_used_nodes; /* count of nodes in use in this qos
 				  * (DON'T PACK) */

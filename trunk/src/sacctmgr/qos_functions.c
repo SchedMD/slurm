@@ -39,6 +39,77 @@
 
 #include "src/sacctmgr/sacctmgr.h"
 
+static uint16_t _parse_preempt_modes(char *names)
+{
+	int i=0, start=0;
+	char *name = NULL;
+	char quote_c = '\0';
+	int quote = 0;
+	int count = 0;
+	uint16_t preempt_mode = 0;
+	uint16_t ret_mode = 0;
+
+	if(names) {
+		if (names[i] == '\"' || names[i] == '\'') {
+			quote_c = names[i];
+			quote = 1;
+			i++;
+		}
+		start = i;
+		while(names[i]) {
+			//info("got %d - %d = %d", i, start, i-start);
+			if(quote && names[i] == quote_c)
+				break;
+			else if (names[i] == '\"' || names[i] == '\'')
+				names[i] = '`';
+			else if(names[i] == ',') {
+				name = xmalloc((i-start+1));
+				memcpy(name, names+start, (i-start));
+				//info("got %s %d", name, i-start);
+
+				ret_mode = preempt_mode_num(name);
+				if(ret_mode == (uint16_t)NO_VAL) {
+					error("Unknown preempt_mode given '%s'",
+					      name);
+					xfree(name);
+					preempt_mode = (uint16_t)NO_VAL;
+					break;
+				}
+				preempt_mode |= ret_mode;
+				count++;
+				xfree(name);
+
+				i++;
+				start = i;
+				if(!names[i]) {
+					info("There is a problem with "
+					     "your request.  It appears you "
+					     "have spaces inside your list.");
+					break;
+				}
+			}
+			i++;
+		}
+
+		name = xmalloc((i-start+1));
+		memcpy(name, names+start, (i-start));
+		//info("got %s %d", name, i-start);
+
+		ret_mode = preempt_mode_num(name);
+		if(ret_mode == (uint16_t)NO_VAL) {
+			error("Unknown preempt_mode given '%s'",
+			      name);
+			xfree(name);
+			preempt_mode = (uint16_t)NO_VAL;
+			return preempt_mode;
+		}
+		preempt_mode |= ret_mode;
+		count++;
+		xfree(name);
+	}
+	return preempt_mode;
+}
+
 static int _set_cond(int *start, int argc, char *argv[],
 		     slurmdb_qos_cond_t *qos_cond,
 		     List format_list)
@@ -123,6 +194,19 @@ static int _set_cond(int *start, int argc, char *argv[],
 				}
 			}
 			list_iterator_destroy(itr);
+		} else if (!strncasecmp (argv[i], "PreemptMode",
+					 MAX(command_len, 3))) {
+			if(!qos_cond)
+				continue;
+			qos_cond->preempt_mode |=
+				_parse_preempt_modes(argv[i]+end);
+			if(qos_cond->preempt_mode == (uint16_t)NO_VAL) {
+				fprintf(stderr,
+					" Bad Preempt Mode given: %s\n",
+					argv[i]);
+				exit_code = 1;
+			} else
+				set = 1;
 		} else {
 			exit_code=1;
 			fprintf(stderr, " Unknown condition: %s\n"
@@ -276,7 +360,7 @@ static int _set_rec(int *start, int argc, char *argv[],
 					argv[i]);
 			}
 		} else if (!strncasecmp (argv[i], "Preempt",
-					 MAX(command_len, 3))) {
+					 MAX(command_len, 7))) {
 			if(!qos)
 				continue;
 
@@ -294,6 +378,18 @@ static int _set_rec(int *start, int argc, char *argv[],
 				set = 1;
 			else
 				exit_code = 1;
+		} else if (!strncasecmp (argv[i], "PreemptMode",
+					 MAX(command_len, 8))) {
+			if(!qos)
+				continue;
+			qos->preempt_mode = preempt_mode_num(argv[i]+end);
+			if(qos->preempt_mode == (uint16_t)NO_VAL) {
+				fprintf(stderr,
+					" Bad Preempt Mode given: %s\n",
+					argv[i]);
+				exit_code = 1;
+			} else
+				set = 1;
 		} else if (!strncasecmp (argv[i], "Priority",
 					 MAX(command_len, 3))) {
 			if(!qos)
@@ -495,6 +591,7 @@ extern int sacctmgr_list_qos(int argc, char *argv[])
 		PRINT_MAXS,
 		PRINT_MAXW,
 		PRINT_PREE,
+		PRINT_PREEM,
 		PRINT_PRIO,
 		PRINT_UF,
 	};
@@ -512,7 +609,7 @@ extern int sacctmgr_list_qos(int argc, char *argv[])
 		list_destroy(format_list);
 		return SLURM_ERROR;
 	} else if(!list_count(format_list)) {
-		slurm_addto_char_list(format_list, "N,Prio,Pree,"
+		slurm_addto_char_list(format_list, "N,Prio,Preempt,PreemptM,"
 				      "GrpJ,GrpN,GrpS,MaxJ,MaxN,MaxS,MaxW");
 	}
 
@@ -632,11 +729,17 @@ extern int sacctmgr_list_qos(int argc, char *argv[])
 			field->len = 10;
 			field->print_routine = print_fields_str;
 		} else if(!strncasecmp("Preempt", object,
-				       MAX(command_len, 3))) {
+				       MAX(command_len, 7))) {
 			field->type = PRINT_PREE;
 			field->name = xstrdup("Preempt");
 			field->len = 10;
 			field->print_routine = sacctmgr_print_qos_bitstr;
+		} else if(!strncasecmp("PreemptMode", object,
+				       MAX(command_len, 8))) {
+			field->type = PRINT_PREEM;
+			field->name = xstrdup("PreemptMode");
+			field->len = 11;
+			field->print_routine = print_fields_str;
 		} else if(!strncasecmp("Priority", object,
 				       MAX(command_len, 3))) {
 			field->type = PRINT_PRIO;
@@ -775,6 +878,19 @@ extern int sacctmgr_list_qos(int argc, char *argv[])
 					field, g_qos_list, qos->preempt_bitstr,
 					(curr_inx == field_count));
 				break;
+			case PRINT_PREEM:
+			{
+				char *tmp_char = "cluster";
+				if(qos->preempt_mode)
+					tmp_char = xstrtolower(
+						preempt_mode_string(
+							qos->preempt_mode));
+				field->print_routine(
+					field,
+					tmp_char,
+					(curr_inx == field_count));
+				break;
+			}
 			case PRINT_PRIO:
 				field->print_routine(
 					field, qos->priority,

@@ -572,6 +572,9 @@ extern void slurmdb_destroy_association_cond(void *object)
 
 		if(slurmdb_association->grp_cpu_mins_list)
 			list_destroy(slurmdb_association->grp_cpu_mins_list);
+		if(slurmdb_association->grp_cpu_run_mins_list)
+			list_destroy(slurmdb_association->
+				     grp_cpu_run_mins_list);
 		if(slurmdb_association->grp_cpus_list)
 			list_destroy(slurmdb_association->grp_cpus_list);
 		if(slurmdb_association->grp_jobs_list)
@@ -588,6 +591,9 @@ extern void slurmdb_destroy_association_cond(void *object)
 
 		if(slurmdb_association->max_cpu_mins_pj_list)
 			list_destroy(slurmdb_association->max_cpu_mins_pj_list);
+		if(slurmdb_association->max_cpu_run_mins_list)
+			list_destroy(slurmdb_association->
+				     max_cpu_run_mins_list);
 		if(slurmdb_association->max_cpus_pj_list)
 			list_destroy(slurmdb_association->max_cpus_pj_list);
 		if(slurmdb_association->max_jobs_list)
@@ -1082,7 +1088,8 @@ extern void slurmdb_init_association_rec(slurmdb_association_rec_t *assoc)
 
 	memset(assoc, 0, sizeof(slurmdb_association_rec_t));
 
-	assoc->grp_cpu_mins = NO_VAL;
+	assoc->grp_cpu_mins = (uint64_t)NO_VAL;
+	assoc->grp_cpu_run_mins = (uint64_t)NO_VAL;
 	assoc->grp_cpus = NO_VAL;
 	assoc->grp_jobs = NO_VAL;
 	assoc->grp_nodes = NO_VAL;
@@ -1091,7 +1098,8 @@ extern void slurmdb_init_association_rec(slurmdb_association_rec_t *assoc)
 
 	/* assoc->level_shares = NO_VAL; */
 
-	assoc->max_cpu_mins_pj = NO_VAL;
+	assoc->max_cpu_mins_pj = (uint64_t)NO_VAL;
+	assoc->max_cpu_run_mins = (uint64_t)NO_VAL;
 	assoc->max_cpus_pj = NO_VAL;
 	assoc->max_jobs = NO_VAL;
 	assoc->max_nodes_pj = NO_VAL;
@@ -1122,16 +1130,19 @@ extern void slurmdb_init_qos_rec(slurmdb_qos_rec_t *qos)
 
 	memset(qos, 0, sizeof(slurmdb_qos_rec_t));
 
+	qos->preempt_mode = (uint16_t)NO_VAL;
 	qos->priority = NO_VAL;
 
-	qos->grp_cpu_mins = NO_VAL;
+	qos->grp_cpu_mins = (uint64_t)NO_VAL;
+	qos->grp_cpu_run_mins = (uint64_t)NO_VAL;
 	qos->grp_cpus = NO_VAL;
 	qos->grp_jobs = NO_VAL;
 	qos->grp_nodes = NO_VAL;
 	qos->grp_submit_jobs = NO_VAL;
 	qos->grp_wall = NO_VAL;
 
-	qos->max_cpu_mins_pj = NO_VAL;
+	qos->max_cpu_mins_pj = (uint64_t)NO_VAL;
+	qos->max_cpu_run_mins_pu = (uint64_t)NO_VAL;
 	qos->max_cpus_pj = NO_VAL;
 	qos->max_jobs_pu = NO_VAL;
 	qos->max_nodes_pj = NO_VAL;
@@ -1638,6 +1649,12 @@ extern void log_assoc_rec(slurmdb_association_rec_t *assoc_ptr,
 	else if(assoc_ptr->grp_cpu_mins != NO_VAL)
 		debug2("  GrpCPUMins       : %llu", assoc_ptr->grp_cpu_mins);
 
+	if(assoc_ptr->grp_cpu_run_mins == INFINITE)
+		debug2("  GrpCPURunMins    : NONE");
+	else if(assoc_ptr->grp_cpu_mins != NO_VAL)
+		debug2("  GrpCPURunMins    : %llu",
+		       assoc_ptr->grp_cpu_run_mins);
+
 	if(assoc_ptr->grp_cpus == INFINITE)
 		debug2("  GrpCPUs          : NONE");
 	else if(assoc_ptr->grp_cpus != NO_VAL)
@@ -1671,6 +1688,12 @@ extern void log_assoc_rec(slurmdb_association_rec_t *assoc_ptr,
 		debug2("  MaxCPUMins       : NONE");
 	else if(assoc_ptr->max_cpu_mins_pj != NO_VAL)
 		debug2("  MaxCPUMins       : %llu", assoc_ptr->max_cpu_mins_pj);
+
+	if(assoc_ptr->max_cpu_run_mins == INFINITE)
+		debug2("  MaxCPURunMins    : NONE");
+	else if(assoc_ptr->max_cpu_run_mins != NO_VAL)
+		debug2("  MaxCPURunMins    : %llu",
+		       assoc_ptr->max_cpu_run_mins);
 
 	if(assoc_ptr->max_cpus_pj == INFINITE)
 		debug2("  MaxCPUs          : NONE");

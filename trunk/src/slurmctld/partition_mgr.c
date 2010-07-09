@@ -742,7 +742,7 @@ int init_part_conf(void)
 	xfree(default_part.allow_groups);
 	xfree(default_part.allow_uids);
 	xfree(default_part.allow_alloc_nodes);
-	xfree(default_part.alternate); 	
+	xfree(default_part.alternate);
 	FREE_NULL_BITMAP(default_part.node_bitmap);
 
 	if (part_list)		/* delete defunct partitions */
