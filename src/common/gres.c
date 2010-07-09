@@ -542,7 +542,7 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 			      const char *line, char **leftover)
 {
 	static s_p_options_t _gres_options[] = {
-		{"Count", S_P_UINT16},	/* Number of Gres available */
+		{"Count", S_P_UINT32},	/* Number of Gres available */
 		{"CPUs", S_P_STRING},	/* CPUs to bind to Gres resource */
 		{"File", S_P_STRING},	/* Path to Gres device */
 		{NULL}
@@ -565,10 +565,10 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 
 	p = xmalloc(sizeof(gres_conf_t));
 	p->name = xstrdup(value);
-	if (!s_p_get_uint16(&p->count, "Count", tbl))
+	if (!s_p_get_uint32(&p->count, "Count", tbl))
 		p->count = 1;
 	if (s_p_get_string(&p->cpus, "CPUs", tbl)) {
-//FIXME: change to bitmap, size?
+//FIXME: change to bitmap, size? change from cpuset/numa to slurmctld format
 //bit_unfmt(bimap, p->cpus);
 	}
 	if (s_p_get_string(&p->file, "File", tbl)) {
@@ -635,12 +635,7 @@ extern int gres_plugin_node_config_load(void)
 
 /*
  * Pack this node's gres configuration into a buffer
- *
- * Data format:
- *	uint32_t	magic cookie
- *	uint32_t	plugin_id name (must be unique)
- *	uint32_t	gres data block size
- *	void *		gres data packed by plugin
+ * IN/OUT buffer - message buffer to pack
  */
 extern int gres_plugin_node_config_pack(Buf buffer)
 {
@@ -673,8 +668,8 @@ extern int gres_plugin_node_config_pack(Buf buffer)
 }
 
 /*
- * Unpack this node's configuration from a buffer
- * IN buffer - message buffer to unpack
+ * Unpack this node's configuration from a buffer (build/packed by slurmd)
+ * IN/OUT buffer - message buffer to unpack
  * IN node_name - name of node whose data is being unpacked
  */
 extern int gres_plugin_node_config_unpack(Buf buffer, char* node_name)
