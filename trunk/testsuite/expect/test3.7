@@ -48,6 +48,10 @@ set not_supported  0
 
 print_header $test_id
 
+if {[test_gang] != 0} {
+	send_user "\nWARNING: This test can't be run with gang scheduling\n"
+	exit 0
+}
 if {[is_super_user] == 0} {
 	send_user "\nWARNING: This test can't be run except as SlurmUser\n"
 	exit 0
