@@ -164,21 +164,23 @@ typedef struct nic_step_state {
 	bitstr_t **nic_bit_alloc;
 } nic_step_state_t;
 
-/* We could load gres state or validate it using various mechanisms here.
- * This only validates that the configuration was specified in gres.conf. */
+/*
+ * We could load gres state or validate it using various mechanisms here.
+ * This only validates that the configuration was specified in gres.conf.
+ */
 extern int node_config_load(List gres_conf_list)
 {
 	int rc = SLURM_ERROR;
 	ListIterator iter;
-	gres_conf_t *gres_conf;
+	gres_slurmd_conf_t *gres_slurmd_conf;
 
 	xassert(gres_conf_list);
 	iter = list_iterator_create(gres_conf_list);
 	if (iter == NULL)
 		fatal("list_iterator_create: malloc failure");
-	while ((gres_conf = list_next(iter))) {
-		if (strcmp(gres_conf->name, "nic") == 0) {
-			gres_conf->plugin_id = plugin_id;
+	while ((gres_slurmd_conf = list_next(iter))) {
+		if (strcmp(gres_slurmd_conf->name, "nic") == 0) {
+			gres_slurmd_conf->plugin_id = plugin_id;
 			rc = SLURM_SUCCESS;
 		}
 	}
