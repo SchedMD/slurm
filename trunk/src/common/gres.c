@@ -84,9 +84,6 @@ typedef struct slurm_gres_ops {
 	uint32_t	(*plugin_id);
 	char		(*gres_name);
 	char		(*help_msg);
-	int		(*node_config_init)	( char *node_name,
-						  char *orig_config,
-						  void **gres_data );
 	int		(*node_config_load)	( List gres_conf_list );
 	int		(*node_config_validate)	( char *node_name,
 						  uint32_t gres_cnt,
@@ -95,7 +92,6 @@ typedef struct slurm_gres_ops {
 						  void **gres_data,
 						  uint16_t fast_schedule,
 						  char **reason_down );
-	void		(*node_config_delete)	( void *gres_data );
 	int		(*node_reconfig)	( char *node_name,
 						  char *orig_config,
 						  char **new_config,
@@ -200,10 +196,8 @@ static int _load_gres_plugin(char *plugin_name,
 		"plugin_id",
 		"gres_name",
 		"help_msg",
-		"node_config_init",
 		"node_config_load",
 		"node_config_validate",
-		"node_config_delete",
 		"node_reconfig",
 		"node_state_pack",
 		"node_state_unpack",
@@ -758,25 +752,84 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+/*
+ * Delete an element placed on gres_list by node_config_validate()
+ * free associated memory
+ */
 static void _gres_node_list_delete(void *list_element)
 {
-	int i;
 	gres_state_t *gres_ptr;
-
-	if (gres_plugin_init() != SLURM_SUCCESS)
-		return;
+	gres_node_state_t *gres_node_ptr;
 
 	gres_ptr = (gres_state_t *) list_element;
-	slurm_mutex_lock(&gres_context_lock);
-	for (i=0; i<gres_context_cnt; i++) {
-		if (gres_ptr->plugin_id != *(gres_context[i].ops.plugin_id))
-			continue;
-		(*(gres_context[i].ops.node_config_delete))
-				(gres_ptr->gres_data);
-		xfree(gres_ptr);
-		break;
+	gres_node_ptr = (gres_node_state_t *) gres_ptr->gres_data;
+	FREE_NULL_BITMAP(gres_node_ptr->gres_bit_alloc);
+	xfree(gres_node_ptr);
+	xfree(gres_ptr);
+}
+
+/*
+ * Build a node's gres record based only upon the slurm.conf contents
+ */
+extern int _node_config_init(char *node_name, char *orig_config,
+			     char *gres_name, void **gres_data)
+{
+	int rc = SLURM_SUCCESS;
+	gres_node_state_t *gres_ptr;
+	char *node_gres_config, *tok, *last = NULL;
+	char name_colon[128];
+	int32_t gres_config_cnt = 0;
+	bool updated_config = false;
+
+	xassert(gres_data);
+	gres_ptr = (gres_node_state_t *) *gres_data;
+	if (gres_ptr == NULL) {
+		gres_ptr = xmalloc(sizeof(gres_node_state_t));
+		*gres_data = gres_ptr;
+		gres_ptr->gres_cnt_config = NO_VAL;
+		gres_ptr->gres_cnt_found  = NO_VAL;
+		updated_config = true;
 	}
-	slurm_mutex_unlock(&gres_context_lock);
+
+	/* If the resource isn't configured for use with this node,
+	 * just return leaving gres_cnt_config=0, gres_cnt_avail=0, etc. */
+	if ((orig_config == NULL) || (orig_config[0] == '\0') ||
+	    (updated_config == false))
+		return rc;
+
+	snprintf(name_colon, sizeof(name_colon), "%s:", gres_name);
+	node_gres_config = xstrdup(orig_config);
+	tok = strtok_r(node_gres_config, ",", &last);
+	while (tok) {
+		if (!strcmp(tok, gres_name)) {
+			gres_config_cnt = 1;
+			break;
+		}
+		if (!strncmp(tok, name_colon, 4)) {
+			gres_config_cnt = strtol(tok+4, &last, 10);
+			if (last[0] == '\0')
+				;
+			else if ((last[0] == 'k') || (last[0] == 'K'))
+				gres_config_cnt *= 1024;
+			break;
+		}
+		tok = strtok_r(NULL, ",", &last);
+	}
+	xfree(node_gres_config);
+
+	gres_ptr->gres_cnt_config = gres_config_cnt;
+	gres_ptr->gres_cnt_avail  = gres_config_cnt;
+	if (gres_ptr->gres_bit_alloc == NULL) {
+		gres_ptr->gres_bit_alloc = bit_alloc(gres_ptr->gres_cnt_avail);
+	} else if (gres_ptr->gres_cnt_avail > 
+		   bit_size(gres_ptr->gres_bit_alloc)) {
+		gres_ptr->gres_bit_alloc = bit_realloc(gres_ptr->gres_bit_alloc,
+						       gres_ptr->gres_cnt_avail);
+	}
+	if (gres_ptr->gres_bit_alloc == NULL)
+		fatal("bit_alloc: malloc failure");
+
+	return rc;
 }
 
 /*
@@ -815,8 +868,9 @@ extern int gres_plugin_init_node_config(char *node_name, char *orig_config,
 			list_append(*gres_list, gres_ptr);
 		}
 
-		rc = (*(gres_context[i].ops.node_config_init))
-			(node_name, orig_config, &gres_ptr->gres_data);
+		rc = _node_config_init(node_name, orig_config,
+				       gres_context[i].ops.gres_name,
+				       &gres_ptr->gres_data);
 	}
 	slurm_mutex_unlock(&gres_context_lock);
 
