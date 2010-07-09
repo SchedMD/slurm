@@ -1311,7 +1311,7 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 			"call get_parent_limits('%s', "
 			"'%s', '%s', %u);"
 			"select @par_id, @mj, @msj, @mcpj, "
-			"@mnpj, @mwpj, @mcmpj, @qos, @delta_qos;",
+			"@mnpj, @mwpj, @mcmpj, @mcrm, @qos, @delta_qos;",
 			assoc_table, account,
 			cluster_name, 0);
 		debug4("%d(%s:%d) query\n%s",
@@ -1826,7 +1826,8 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 				"call get_parent_limits('%s', "
 				"'%s', '%s', %u);"
 				"select @par_id, @mj, @msj, @mcpj, "
-				"@mnpj, @mwpj, @mcmpj, @qos, @delta_qos;",
+				"@mnpj, @mwpj, @mcmpj, @mcrm, "
+				"@qos, @delta_qos;",
 				assoc_table, parent_acct,
 				cluster_name,
 				without_parent_limits);
