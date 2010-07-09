@@ -42,13 +42,13 @@
 #include <slurm/slurm.h>
 #include "src/common/pack.h"
 
-typedef struct gres_conf {
+typedef struct gres_slurmd_conf {
 	uint32_t count;
 	char *cpus;
 	char *file;
 	char *name;
 	uint32_t plugin_id;
-} gres_conf_t;
+} gres_slurmd_conf_t;
 
 /*
  * Initialize the gres plugin.

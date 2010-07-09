@@ -489,6 +489,9 @@ extern int gres_plugin_reconfig(bool *did_change)
 	return rc;
 }
 
+/*
+ * Return the pathname of the gres.conf file
+ */
 static char *_get_gres_conf(void)
 {
 	char *val = getenv("SLURM_CONF");
@@ -511,9 +514,12 @@ static char *_get_gres_conf(void)
 	return rc;
 }
 
-static void _destroy_gres_conf(void *x)
+/*
+ * Destroy a gres_slurmd_conf_t record, free it's memory
+ */
+static void _destroy_gres_slurmd_conf(void *x)
 {
-	gres_conf_t *p = (gres_conf_t *) x;
+	gres_slurmd_conf_t *p = (gres_slurmd_conf_t *) x;
 
 	xassert(p);
 	xfree(p->cpus);
@@ -522,20 +528,26 @@ static void _destroy_gres_conf(void *x)
 	xfree(p);
 }
 
-static int _log_gres_conf(void *x, void *arg)
+/*
+ * Log the contents of a gres_slurmd_conf_t record
+ */
+static int _log_gres_slurmd_conf(void *x, void *arg)
 {
-	gres_conf_t *p;
+	gres_slurmd_conf_t *p;
 
 	if (!gres_debug)
 		return 0;
 
-	p = (gres_conf_t *) x;
+	p = (gres_slurmd_conf_t *) x;
 	xassert(p);
 	info("Gres Name:%s File:%s CPUs:%s Count:%u",
 	     p->name, p->file, p->cpus, p->count);
 	return 0;
 }
 
+/*
+ * Build gres_slurmd_conf_t record based upon a line from the gres.conf file
+ */
 static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 			      const char *key, const char *value,
 			      const char *line, char **leftover)
@@ -548,12 +560,12 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 	};
 	int i;
 	s_p_hashtbl_t *tbl;
-	gres_conf_t *p;
+	gres_slurmd_conf_t *p;
 
 	tbl = s_p_hashtbl_create(_gres_options);
 	s_p_parse_line(tbl, *leftover, leftover);
 
-	p = xmalloc(sizeof(gres_conf_t));
+	p = xmalloc(sizeof(gres_slurmd_conf_t));
 	p->name = xstrdup(value);
 	if (!s_p_get_uint32(&p->count, "Count", tbl))
 		p->count = 1;
@@ -574,7 +586,7 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 	}
 	if (i >= gres_context_cnt) {
 		error("Ignoring gres.conf Name=%s", value);
-		_destroy_gres_conf(p);
+		_destroy_gres_slurmd_conf(p);
 		return 0;
 	}
 
@@ -595,7 +607,7 @@ extern int gres_plugin_node_config_load(void)
 	int count, i, rc;
 	struct stat config_stat;
 	s_p_hashtbl_t *tbl;
-	gres_conf_t **gres_array;
+	gres_slurmd_conf_t **gres_array;
 	char *gres_conf_file = _get_gres_conf();
 
 	rc = gres_plugin_init();
@@ -609,7 +621,7 @@ extern int gres_plugin_node_config_load(void)
 	tbl = s_p_hashtbl_create(_gres_options);
 	if (s_p_parse_file(tbl, NULL, gres_conf_file) == SLURM_ERROR)
 		fatal("error opening/reading %s", gres_conf_file);
-	gres_conf_list = list_create(_destroy_gres_conf);
+	gres_conf_list = list_create(_destroy_gres_slurmd_conf);
 	if (gres_conf_list == NULL)
 		fatal("list_create: malloc failure");
 	if (s_p_get_array((void ***) &gres_array, &count, "Name", tbl)) {
@@ -619,7 +631,7 @@ extern int gres_plugin_node_config_load(void)
 		}
 	}
 	s_p_hashtbl_destroy(tbl);
-	list_for_each(gres_conf_list, _log_gres_conf, NULL);
+	list_for_each(gres_conf_list, _log_gres_slurmd_conf, NULL);
 
 	for (i=0; ((i < gres_context_cnt) && (rc == SLURM_SUCCESS)); i++) {
 		rc = (*(gres_context[i].ops.node_config_load))(gres_conf_list);
@@ -640,7 +652,7 @@ extern int gres_plugin_node_config_pack(Buf buffer)
 	uint32_t magic = GRES_MAGIC;
 	uint16_t rec_cnt = 0, version= SLURM_PROTOCOL_VERSION;
 	ListIterator iter;
-	gres_conf_t *gres_conf;
+	gres_slurmd_conf_t *gres_slurmd_conf;
  
 	rc = gres_plugin_init();
 
@@ -653,11 +665,12 @@ extern int gres_plugin_node_config_pack(Buf buffer)
 		iter = list_iterator_create(gres_conf_list);
 		if (iter == NULL)
 			fatal("list_iterator_create: malloc failure");
-		while ((gres_conf = (gres_conf_t *) list_next(iter))) {
+		while ((gres_slurmd_conf = 
+				(gres_slurmd_conf_t *) list_next(iter))) {
 			pack32(magic, buffer);
-			pack32(gres_conf->plugin_id, buffer);
-			pack32(gres_conf->count, buffer);
-			packstr(gres_conf->cpus, buffer);
+			pack32(gres_slurmd_conf->plugin_id, buffer);
+			pack32(gres_slurmd_conf->count, buffer);
+			packstr(gres_slurmd_conf->cpus, buffer);
 		}
 		list_iterator_destroy(iter);
 	}
@@ -677,12 +690,12 @@ extern int gres_plugin_node_config_unpack(Buf buffer, char* node_name)
 	uint32_t count, magic, plugin_id, utmp32;
 	uint16_t rec_cnt, version;
 	char *tmp_cpus;
-	gres_conf_t *p;
+	gres_slurmd_conf_t *p;
 
 	rc = gres_plugin_init();
 
 	FREE_NULL_LIST(gres_conf_list);
-	gres_conf_list = list_create(_destroy_gres_conf);
+	gres_conf_list = list_create(_destroy_gres_slurmd_conf);
 	if (gres_conf_list == NULL)
 		fatal("list_create: malloc failure");
 
@@ -719,7 +732,7 @@ extern int gres_plugin_node_config_unpack(Buf buffer, char* node_name)
 			xfree(tmp_cpus);
 			continue;
 		}
-		p = xmalloc(sizeof(gres_conf_t));
+		p = xmalloc(sizeof(gres_slurmd_conf_t));
 		p->count = count;
 		p->plugin_id = plugin_id;
 		p->cpus = tmp_cpus;
@@ -813,7 +826,7 @@ extern int gres_plugin_init_node_config(char *node_name, char *orig_config,
 static uint32_t _get_tot_gres_cnt(uint32_t plugin_id)
 {
 	ListIterator iter;
-	gres_conf_t *gres_conf;
+	gres_slurmd_conf_t *gres_slurmd_conf;
 	uint32_t gres_cnt = 0;
 
 	if (gres_conf_list == NULL)
@@ -822,9 +835,9 @@ static uint32_t _get_tot_gres_cnt(uint32_t plugin_id)
 	iter = list_iterator_create(gres_conf_list);
 	if (iter == NULL)
 		fatal("list_iterator_create: malloc failure");
-	while ((gres_conf = (gres_conf_t *) list_next(iter))) {
-		if (gres_conf->plugin_id == plugin_id)
-			gres_cnt += gres_conf->count;
+	while ((gres_slurmd_conf = (gres_slurmd_conf_t *) list_next(iter))) {
+		if (gres_slurmd_conf->plugin_id == plugin_id)
+			gres_cnt += gres_slurmd_conf->count;
 	}
 	list_iterator_destroy(iter);
 	return gres_cnt;
@@ -842,7 +855,7 @@ static uint32_t _get_tot_gres_cnt(uint32_t plugin_id)
  *		      2: Don't validate hardware, use slurm.conf configuration
  * OUT reason_down - set to an explanation of failure, if any, don't set if NULL
  */
-extern int  gres_plugin_node_config_validate(char *node_name,
+extern int gres_plugin_node_config_validate(char *node_name,
 					    char *orig_config,
 					    char **new_config,
 					    List *gres_list,
