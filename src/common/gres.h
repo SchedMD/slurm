@@ -43,6 +43,8 @@
 #include "src/common/bitstring.h"
 #include "src/common/pack.h"
 
+#define GRES_MAGIC 0x438a34d4
+
 /* Gres state information gathered by slurmd daemon */
 typedef struct gres_slurmd_conf {
 	uint32_t count;
