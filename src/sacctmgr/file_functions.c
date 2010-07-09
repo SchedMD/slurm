@@ -122,14 +122,14 @@ static int _init_sacctmgr_file_opts(sacctmgr_file_opts_t *file_opts)
 
 	file_opts->fairshare = NO_VAL;
 
-	file_opts->grp_cpu_mins = NO_VAL;
+	file_opts->grp_cpu_mins = (uint64_t)NO_VAL;
 	file_opts->grp_cpus = NO_VAL;
 	file_opts->grp_jobs = NO_VAL;
 	file_opts->grp_nodes = NO_VAL;
 	file_opts->grp_submit_jobs = NO_VAL;
 	file_opts->grp_wall = NO_VAL;
 
-	file_opts->max_cpu_mins_pj = NO_VAL;
+	file_opts->max_cpu_mins_pj = (uint64_t)NO_VAL;
 	file_opts->max_cpus_pj = NO_VAL;
 	file_opts->max_jobs = NO_VAL;
 	file_opts->max_nodes_pj = NO_VAL;
@@ -991,7 +991,7 @@ static int _mod_assoc(sacctmgr_file_opts_t *file_opts,
 			   file_opts->grp_wall);
 	}
 
-	if((file_opts->max_cpu_mins_pj != NO_VAL)
+	if((file_opts->max_cpu_mins_pj != (uint64_t)NO_VAL)
 	   && (assoc->max_cpu_mins_pj != file_opts->max_cpu_mins_pj)) {
 		mod_assoc.max_cpu_mins_pj =
 			file_opts->max_cpu_mins_pj;
@@ -1894,7 +1894,7 @@ extern int print_file_add_limits_to_line(char **line,
 	if(assoc->grp_wall != INFINITE)
 		xstrfmtcat(*line, ":GrpWall=%u", assoc->grp_wall);
 
-	if(assoc->max_cpu_mins_pj != INFINITE)
+	if(assoc->max_cpu_mins_pj != (uint64_t)INFINITE)
 		xstrfmtcat(*line, ":MaxCPUMinsPerJob=%llu",
 			   assoc->max_cpu_mins_pj);
 

@@ -914,9 +914,9 @@ extern void sacctmgr_print_assoc_limits(slurmdb_association_rec_t *assoc)
 		printf("  GrpWall       = %s\n", time_buf);
 	}
 
-	if(assoc->max_cpu_mins_pj == INFINITE)
+	if(assoc->max_cpu_mins_pj == (uint64_t)INFINITE)
 		printf("  MaxCPUMins    = NONE\n");
-	else if(assoc->max_cpu_mins_pj != NO_VAL)
+	else if(assoc->max_cpu_mins_pj != (uint64_t)NO_VAL)
 		printf("  MaxCPUMins    = %llu\n",
 		       (long long unsigned)assoc->max_cpu_mins_pj);
 
@@ -1007,9 +1007,9 @@ extern void sacctmgr_print_qos_limits(slurmdb_qos_rec_t *qos)
 		printf("  GrpWall        = %s\n", time_buf);
 	}
 
-	if(qos->max_cpu_mins_pj == INFINITE)
+	if(qos->max_cpu_mins_pj == (uint64_t)INFINITE)
 		printf("  MaxCPUMins     = NONE\n");
-	else if(qos->max_cpu_mins_pj != NO_VAL)
+	else if(qos->max_cpu_mins_pj != (uint64_t)NO_VAL)
 		printf("  MaxCPUMins     = %llu\n",
 		       (long long unsigned)qos->max_cpu_mins_pj);
 

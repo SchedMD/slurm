@@ -491,9 +491,9 @@ static int _set_assoc_limits_for_add(
 		assoc->max_nodes_pj = atoi(row[ASSOC_REQ_MNPJ]);
 	if(row[ASSOC_REQ_MWPJ] && assoc->max_wall_pj == NO_VAL)
 		assoc->max_wall_pj = atoi(row[ASSOC_REQ_MWPJ]);
-	if(row[ASSOC_REQ_MCMPJ] && assoc->max_cpu_mins_pj == NO_VAL)
+	if(row[ASSOC_REQ_MCMPJ] && assoc->max_cpu_mins_pj == (uint64_t)NO_VAL)
 		assoc->max_cpu_mins_pj = atoll(row[ASSOC_REQ_MCMPJ]);
-	if(row[ASSOC_REQ_MCRM] && assoc->max_cpu_run_mins == NO_VAL)
+	if(row[ASSOC_REQ_MCRM] && assoc->max_cpu_run_mins == (uint64_t)NO_VAL)
 		assoc->max_cpu_run_mins = atoll(row[ASSOC_REQ_MCRM]);
 
 	if(assoc->qos_list) {
@@ -655,12 +655,14 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 			modified = 1;
 		}
 
-		if(!row[ASSOC_MCMPJ] && assoc->max_cpu_mins_pj != NO_VAL) {
+		if(!row[ASSOC_MCMPJ]
+		   && assoc->max_cpu_mins_pj != (uint64_t)NO_VAL) {
 			mod_assoc->max_cpu_mins_pj = assoc->max_cpu_mins_pj;
 			modified = 1;
 		}
 
-		if(!row[ASSOC_MCRM] && assoc->max_cpu_run_mins != NO_VAL) {
+		if(!row[ASSOC_MCRM]
+		   && assoc->max_cpu_run_mins != (uint64_t)NO_VAL) {
 			mod_assoc->max_cpu_run_mins = assoc->max_cpu_run_mins;
 			modified = 1;
 		}
