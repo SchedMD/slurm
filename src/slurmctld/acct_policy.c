@@ -168,14 +168,14 @@ static void _adjust_limit_usage(int type, struct job_record *job_ptr)
 				       "underflow for qos %s", qos_ptr->name);
 
 			qos_ptr->usage->grp_used_cpus -= job_ptr->total_cpus;
-			if((int)qos_ptr->usage->grp_used_cpus < 0) {
+			if((int32_t)qos_ptr->usage->grp_used_cpus < 0) {
 				qos_ptr->usage->grp_used_cpus = 0;
 				debug2("acct_policy_job_fini: grp_used_cpus "
 				       "underflow for qos %s", qos_ptr->name);
 			}
 
 			qos_ptr->usage->grp_used_nodes -= job_ptr->node_cnt;
-			if((int)qos_ptr->usage->grp_used_nodes < 0) {
+			if((int32_t)qos_ptr->usage->grp_used_nodes < 0) {
 				qos_ptr->usage->grp_used_nodes = 0;
 				debug2("acct_policy_job_fini: grp_used_nodes "
 				       "underflow for qos %s", qos_ptr->name);
@@ -223,7 +223,7 @@ static void _adjust_limit_usage(int type, struct job_record *job_ptr)
 				       assoc_ptr->acct);
 
 			assoc_ptr->usage->grp_used_cpus -= job_ptr->total_cpus;
-			if ((int)assoc_ptr->usage->grp_used_cpus < 0) {
+			if ((int32_t)assoc_ptr->usage->grp_used_cpus < 0) {
 				assoc_ptr->usage->grp_used_cpus = 0;
 				debug2("acct_policy_job_fini: grp_used_cpus "
 				       "underflow for account %s",
@@ -231,7 +231,7 @@ static void _adjust_limit_usage(int type, struct job_record *job_ptr)
 			}
 
 			assoc_ptr->usage->grp_used_nodes -= job_ptr->node_cnt;
-			if ((int)assoc_ptr->usage->grp_used_nodes < 0) {
+			if ((int32_t)assoc_ptr->usage->grp_used_nodes < 0) {
 				assoc_ptr->usage->grp_used_nodes = 0;
 				debug2("acct_policy_job_fini: grp_used_nodes "
 				       "underflow for account %s",
