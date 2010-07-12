@@ -44,6 +44,8 @@ documents those changes that are of interest to users and admins.
     instead of an absolute.
  -- Get ReturnToService=2 working for front-end configurations (e.g. Cray or
     BlueGene).
+ -- Fix issue when deleting a QOS on a pending/running job which previously
+    would create possible memory corruption.
 
 * Changes in SLURM 2.1.9
 ========================

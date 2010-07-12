@@ -61,6 +61,7 @@ typedef struct {
 	uint16_t cache_level;
 	uint16_t enforce;
  	void (*remove_assoc_notify) (acct_association_rec_t *rec);
+	void (*remove_qos_notify) (acct_qos_rec_t *rec);
 } assoc_init_args_t;
 
 extern List assoc_mgr_association_list;

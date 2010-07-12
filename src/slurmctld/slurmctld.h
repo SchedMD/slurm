@@ -815,6 +815,14 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
  */
 extern int job_cancel_by_assoc_id(uint32_t assoc_id);
 
+/*
+ * job_cancel_by_qos_id - Cancel all pending and running jobs with a given
+ *	QOS ID. This happens when a QOS is deleted (e.g. when
+ *	a QOS is removed from the association database).
+ * RET count of cancelled jobs
+ */
+extern int job_cancel_by_qos_id(uint16_t qos_id);
+
 /* Perform checkpoint operation on a job */
 extern int job_checkpoint(checkpoint_msg_t *ckpt_ptr, uid_t uid,
 			  slurm_fd conn_fd);
