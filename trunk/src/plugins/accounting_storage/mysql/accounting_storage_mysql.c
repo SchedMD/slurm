@@ -1217,7 +1217,6 @@ extern int setup_association_limits(slurmdb_association_rec_t *assoc,
 		assoc->shares_raw = 1;
 	}
 
-	/* All 64 bit numbers have to be dealt with this way. */
 	if(assoc->grp_cpu_mins == (uint64_t)INFINITE) {
 		xstrcat(*cols, ", grp_cpu_mins");
 		xstrcat(*vals, ", NULL");
@@ -1230,125 +1229,128 @@ extern int setup_association_limits(slurmdb_association_rec_t *assoc,
 			   assoc->grp_cpu_mins);
 	}
 
-	if((int32_t)assoc->grp_cpus >= 0) {
-		xstrcat(*cols, ", grp_cpus");
-		xstrfmtcat(*vals, ", %u", assoc->grp_cpus);
-		xstrfmtcat(*extra, ", grp_cpus=%u", assoc->grp_cpus);
-	} else if(assoc->grp_cpus == INFINITE) {
+	if(assoc->grp_cpus == INFINITE) {
 		xstrcat(*cols, ", grp_cpus");
 		xstrcat(*vals, ", NULL");
 		xstrcat(*extra, ", grp_cpus=NULL");
+	} else if((assoc->grp_cpus != NO_VAL)
+		  && ((int32_t)assoc->grp_cpus >= 0)) {
+		xstrcat(*cols, ", grp_cpus");
+		xstrfmtcat(*vals, ", %u", assoc->grp_cpus);
+		xstrfmtcat(*extra, ", grp_cpus=%u", assoc->grp_cpus);
 	}
 
-	if((int32_t)assoc->grp_jobs >= 0) {
-		xstrcat(*cols, ", grp_jobs");
-		xstrfmtcat(*vals, ", %u", assoc->grp_jobs);
-		xstrfmtcat(*extra, ", grp_jobs=%u", assoc->grp_jobs);
-	} else if(assoc->grp_jobs == INFINITE) {
+	if(assoc->grp_jobs == INFINITE) {
 		xstrcat(*cols, ", grp_jobs");
 		xstrcat(*vals, ", NULL");
 		xstrcat(*extra, ", grp_jobs=NULL");
+	} else if((assoc->grp_jobs != NO_VAL)
+		  && ((int32_t)assoc->grp_jobs >= 0)) {
+		xstrcat(*cols, ", grp_jobs");
+		xstrfmtcat(*vals, ", %u", assoc->grp_jobs);
+		xstrfmtcat(*extra, ", grp_jobs=%u", assoc->grp_jobs);
 	}
 
-	if((int32_t)assoc->grp_nodes >= 0) {
-		xstrcat(*cols, ", grp_nodes");
-		xstrfmtcat(*vals, ", %u", assoc->grp_nodes);
-		xstrfmtcat(*extra, ", grp_nodes=%u", assoc->grp_nodes);
-	} else if(assoc->grp_nodes == INFINITE) {
+	if(assoc->grp_nodes == INFINITE) {
 		xstrcat(*cols, ", grp_nodes");
 		xstrcat(*vals, ", NULL");
 		xstrcat(*extra, ", grp_nodes=NULL");
+	} else if((assoc->grp_nodes != NO_VAL)
+		  && ((int32_t)assoc->grp_nodes >= 0)) {
+		xstrcat(*cols, ", grp_nodes");
+		xstrfmtcat(*vals, ", %u", assoc->grp_nodes);
+		xstrfmtcat(*extra, ", grp_nodes=%u", assoc->grp_nodes);
 	}
 
-	if((int32_t)assoc->grp_submit_jobs >= 0) {
-		xstrcat(*cols, ", grp_submit_jobs");
-		xstrfmtcat(*vals, ", %u",
-			   assoc->grp_submit_jobs);
-		xstrfmtcat(*extra, ", grp_submit_jobs=%u",
-			   assoc->grp_submit_jobs);
-	} else if(assoc->grp_submit_jobs == INFINITE) {
+	if(assoc->grp_submit_jobs == INFINITE) {
 		xstrcat(*cols, ", grp_submit_jobs");
 		xstrcat(*vals, ", NULL");
 		xstrcat(*extra, ", grp_submit_jobs=NULL");
+	} else if((assoc->grp_submit_jobs != NO_VAL)
+		  && ((int32_t)assoc->grp_submit_jobs >= 0)) {
+		xstrcat(*cols, ", grp_submit_jobs");
+		xstrfmtcat(*vals, ", %u", assoc->grp_submit_jobs);
+		xstrfmtcat(*extra, ", grp_submit_jobs=%u",
+			   assoc->grp_submit_jobs);
 	}
 
-	if((int32_t)assoc->grp_wall >= 0) {
-		xstrcat(*cols, ", grp_wall");
-		xstrfmtcat(*vals, ", %u", assoc->grp_wall);
-		xstrfmtcat(*extra, ", grp_wall=%u",
-			   assoc->grp_wall);
-	} else if(assoc->grp_wall == INFINITE) {
+	if(assoc->grp_wall == INFINITE) {
 		xstrcat(*cols, ", grp_wall");
 		xstrcat(*vals, ", NULL");
 		xstrcat(*extra, ", grp_wall=NULL");
+	} else if((assoc->grp_wall != NO_VAL)
+		  && ((int32_t)assoc->grp_wall >= 0)) {
+		xstrcat(*cols, ", grp_wall");
+		xstrfmtcat(*vals, ", %u", assoc->grp_wall);
+		xstrfmtcat(*extra, ", grp_wall=%u", assoc->grp_wall);
 	}
 
-	/* All 64 bit numbers have to be dealt with this way. */
 	if(assoc->max_cpu_mins_pj == (uint64_t)INFINITE) {
 		xstrcat(*cols, ", max_cpu_mins_pj");
 		xstrcat(*vals, ", NULL");
 		xstrcat(*extra, ", max_cpu_mins_pj=NULL");
 	} else if((assoc->max_cpu_mins_pj != (uint64_t)NO_VAL)
-	   && ((int64_t)assoc->max_cpu_mins_pj >= 0)) {
+		  && ((int64_t)assoc->max_cpu_mins_pj >= 0)) {
 		xstrcat(*cols, ", max_cpu_mins_pj");
 		xstrfmtcat(*vals, ", %llu", assoc->max_cpu_mins_pj);
 		xstrfmtcat(*extra, ", max_cpu_mins_pj=%u",
 			   assoc->max_cpu_mins_pj);
 	}
 
-	if((int32_t)assoc->max_cpus_pj >= 0) {
-		xstrcat(*cols, ", max_cpus_pj");
-		xstrfmtcat(*vals, ", %u", assoc->max_cpus_pj);
-		xstrfmtcat(*extra, ", max_cpus_pj=%u",
-			   assoc->max_cpus_pj);
-	} else if(assoc->max_cpus_pj == INFINITE) {
+	if(assoc->max_cpus_pj == INFINITE) {
 		xstrcat(*cols, ", max_cpus_pj");
 		xstrcat(*vals, ", NULL");
 		xstrcat(*extra, ", max_cpus_pj=NULL");
+	} else if((assoc->max_cpus_pj != NO_VAL)
+		  && ((int32_t)assoc->max_cpus_pj >= 0)) {
+		xstrcat(*cols, ", max_cpus_pj");
+		xstrfmtcat(*vals, ", %u", assoc->max_cpus_pj);
+		xstrfmtcat(*extra, ", max_cpus_pj=%u", assoc->max_cpus_pj);
 	}
 
-	if((int32_t)assoc->max_jobs >= 0) {
-		xstrcat(*cols, ", max_jobs");
-		xstrfmtcat(*vals, ", %u", assoc->max_jobs);
-		xstrfmtcat(*extra, ", max_jobs=%u",
-			   assoc->max_jobs);
-	} else if(assoc->max_jobs == INFINITE) {
+	if(assoc->max_jobs == INFINITE) {
 		xstrcat(*cols, ", max_jobs");
 		xstrcat(*vals, ", NULL");
 		xstrcat(*extra, ", max_jobs=NULL");
+	} else if((assoc->max_jobs != NO_VAL)
+		  && ((int32_t)assoc->max_jobs >= 0)) {
+		xstrcat(*cols, ", max_jobs");
+		xstrfmtcat(*vals, ", %u", assoc->max_jobs);
+		xstrfmtcat(*extra, ", max_jobs=%u", assoc->max_jobs);
 	}
 
-	if((int32_t)assoc->max_nodes_pj >= 0) {
-		xstrcat(*cols, ", max_nodes_pj");
-		xstrfmtcat(*vals, ", %u", assoc->max_nodes_pj);
-		xstrfmtcat(*extra, ", max_nodes_pj=%u",
-			   assoc->max_nodes_pj);
-	} else if(assoc->max_nodes_pj == INFINITE) {
+	if(assoc->max_nodes_pj == INFINITE) {
 		xstrcat(*cols, ", max_nodes_pj");
 		xstrcat(*vals, ", NULL");
 		xstrcat(*extra, ", max_nodes_pj=NULL");
+	} else if((assoc->max_nodes_pj != NO_VAL)
+		  && ((int32_t)assoc->max_nodes_pj >= 0)) {
+		xstrcat(*cols, ", max_nodes_pj");
+		xstrfmtcat(*vals, ", %u", assoc->max_nodes_pj);
+		xstrfmtcat(*extra, ", max_nodes_pj=%u", assoc->max_nodes_pj);
 	}
 
-	if((int32_t)assoc->max_submit_jobs >= 0) {
+	if(assoc->max_submit_jobs == INFINITE) {
+		xstrcat(*cols, ", max_submit_jobs");
+		xstrcat(*vals, ", NULL");
+		xstrcat(*extra, ", max_submit_jobs=NULL");
+	} else if((assoc->max_submit_jobs != NO_VAL)
+		  && ((int32_t)assoc->max_submit_jobs >= 0)) {
 		xstrcat(*cols, ", max_submit_jobs");
 		xstrfmtcat(*vals, ", %u", assoc->max_submit_jobs);
 		xstrfmtcat(*extra, ", max_submit_jobs=%u",
 			   assoc->max_submit_jobs);
-	} else if(assoc->max_submit_jobs == INFINITE) {
-		xstrcat(*cols, ", max_submit_jobs");
-		xstrcat(*vals, ", NULL");
-		xstrcat(*extra, ", max_submit_jobs=NULL");
 	}
 
-	if((int32_t)assoc->max_wall_pj >= 0) {
-		xstrcat(*cols, ", max_wall_pj");
-		xstrfmtcat(*vals, ", %u", assoc->max_wall_pj);
-		xstrfmtcat(*extra, ", max_wall_pj=%u",
-			   assoc->max_wall_pj);
-	} else if(assoc->max_wall_pj == INFINITE) {
+	if(assoc->max_wall_pj == INFINITE) {
 		xstrcat(*cols, ", max_wall_pj");
 		xstrcat(*vals, ", NULL");
 		xstrcat(*extra, ", max_wall_pj=NULL");
+	} else if((assoc->max_wall_pj != NO_VAL)
+		  && ((int32_t)assoc->max_wall_pj >= 0)) {
+		xstrcat(*cols, ", max_wall_pj");
+		xstrfmtcat(*vals, ", %u", assoc->max_wall_pj);
+		xstrfmtcat(*extra, ", max_wall_pj=%u", assoc->max_wall_pj);
 	}
 
 	/* when modifying the qos it happens in the actual function
