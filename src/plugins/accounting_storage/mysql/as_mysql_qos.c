@@ -744,9 +744,9 @@ extern List as_mysql_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 		else
 			xstrfmtcat(name_char, " || id='%s'", row[0]);
 		if(!assoc_char)
-			xstrfmtcat(assoc_char, "qos='%s'", row[0]);
+			xstrfmtcat(assoc_char, "id_qos='%s'", row[0]);
 		else
-			xstrfmtcat(assoc_char, " || qos='%s'", row[0]);
+			xstrfmtcat(assoc_char, " || id_qos='%s'", row[0]);
 		xstrfmtcat(extra,
 			   ", qos=replace(qos, ',%s', '')"
 			   ", delta_qos=replace(delta_qos, ',+%s', '')"
