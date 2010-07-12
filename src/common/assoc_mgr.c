@@ -62,6 +62,7 @@ static int setup_childern = 0;
 static assoc_mgr_lock_flags_t assoc_mgr_locks;
 
 void (*remove_assoc_notify) (slurmdb_association_rec_t *rec) = NULL;
+void (*remove_qos_notify) (slurmdb_qos_rec_t *rec) = NULL;
 
 static pthread_mutex_t locks_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t locks_cond = PTHREAD_COND_INITIALIZER;
@@ -944,6 +945,8 @@ extern int assoc_mgr_init(void *db_conn, assoc_init_args_t *args)
 		enforce = args->enforce;
 		if(args->remove_assoc_notify)
 			remove_assoc_notify = args->remove_assoc_notify;
+		if(args->remove_qos_notify)
+			remove_qos_notify = args->remove_qos_notify;
 		cache_level = args->cache_level;
 		assoc_mgr_refresh_lists(db_conn, args);
 	}
@@ -2306,7 +2309,7 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update)
 	assoc_mgr_unlock(&locks);
 
 	/* This needs to happen outside of the
-	   assoc_mgr_association_lock */
+	   assoc_mgr_lock */
 	if(remove_list) {
 		itr = list_iterator_create(remove_list);
 
@@ -2551,6 +2554,7 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update)
 	slurmdb_association_rec_t *assoc = NULL;
 	int rc = SLURM_SUCCESS;
 	bool resize_qos_bitstr = 0;
+	List remove_list = NULL;
 	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK,
 				   WRITE_LOCK, NO_LOCK, NO_LOCK };
 
@@ -2662,7 +2666,22 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update)
 
 			break;
 		case SLURMDB_REMOVE_QOS:
-			if(rec)
+			if(!rec) {
+				//rc = SLURM_ERROR;
+				break;
+			}
+
+			if(remove_qos_notify) {
+				/* since there are some deadlock
+				   issues while inside our lock here
+				   we have to process a notify later
+				*/
+				if(!remove_list)
+					remove_list = list_create(
+						slurmdb_destroy_qos_rec);
+				list_remove(itr);
+				list_append(remove_list, rec);
+			} else
 				list_delete_item(itr);
 
 			if(!assoc_mgr_association_list)
@@ -2718,6 +2737,18 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update)
 	list_iterator_destroy(itr);
 
 	assoc_mgr_unlock(&locks);
+
+	/* This needs to happen outside of the
+	   assoc_mgr_lock */
+	if(remove_list) {
+		itr = list_iterator_create(remove_list);
+
+		while((rec = list_next(itr)))
+			remove_qos_notify(rec);
+
+		list_iterator_destroy(itr);
+		list_destroy(remove_list);
+	}
 
 	return rc;
 }
