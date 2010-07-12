@@ -1281,7 +1281,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		if (qos_error != SLURM_SUCCESS) {
 			info("Cancelling job %u with invalid qos", job_id);
 			job_ptr->job_state = JOB_CANCELLED;
-			job_ptr->state_reason = FAIL_BANK_ACCOUNT;
+			job_ptr->state_reason = FAIL_QOS;
 			xfree(job_ptr->state_desc);
 			if (IS_JOB_PENDING(job_ptr))
 				job_ptr->start_time = now;
@@ -8465,10 +8465,63 @@ extern int job_cancel_by_assoc_id(uint32_t assoc_id)
 
 		info("Association deleted, cancelling job %u",
 		     job_ptr->job_id);
-		/* make sure the assoc_mgr_association_lock isn't
-		   locked before this. */
+		/* make sure the assoc_mgr_lock isn't locked before this. */
 		job_signal(job_ptr->job_id, SIGKILL, 0, 0);
 		job_ptr->state_reason = FAIL_BANK_ACCOUNT;
+		xfree(job_ptr->state_desc);
+		cnt++;
+	}
+	list_iterator_destroy(job_iterator);
+	unlock_slurmctld(job_write_lock);
+	return cnt;
+}
+
+/*
+ * job_cancel_by_qos_id - Cancel all pending and running jobs with a given
+ *	QOS ID. This happens when a QOS is deleted (e.g. when
+ *	a QOS is removed from the association database).
+ * RET count of cancelled jobs
+ */
+extern int job_cancel_by_qos_id(uint32_t qos_id)
+{
+	int cnt = 0;
+	ListIterator job_iterator;
+	struct job_record *job_ptr;
+	/* Write lock on jobs */
+	slurmctld_lock_t job_write_lock =
+		{ NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
+
+	if (!job_list)
+		return cnt;
+
+	lock_slurmctld(job_write_lock);
+	job_iterator = list_iterator_create(job_list);
+	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+		if (job_ptr->qos_id != qos_id)
+			continue;
+
+		/* move up to the parent that should still exist */
+		if(job_ptr->qos_ptr) {
+			/* Force a start so the association doesn't
+			   get lost.  Since there could be some delay
+			   in the start of the job when running with
+			   the slurmdbd.
+			*/
+			if(!job_ptr->db_index) {
+				jobacct_storage_g_job_start(acct_db_conn,
+							    job_ptr);
+			}
+			job_ptr->qos_ptr = NULL;
+		}
+
+		if(IS_JOB_FINISHED(job_ptr))
+			continue;
+
+		info("QOS deleted, cancelling job %u",
+		     job_ptr->job_id);
+		/* make sure the assoc_mgr_lock isn't locked before this. */
+		job_signal(job_ptr->job_id, SIGKILL, 0, 0);
+		job_ptr->state_reason = FAIL_QOS;
 		xfree(job_ptr->state_desc);
 		cnt++;
 	}

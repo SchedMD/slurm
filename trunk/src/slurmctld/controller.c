@@ -194,6 +194,7 @@ static void         _init_pidfile(void);
 static void         _kill_old_slurmctld(void);
 static void         _parse_commandline(int argc, char *argv[]);
 static void         _remove_assoc(slurmdb_association_rec_t *rec);
+static void         _remove_qos(slurmdb_qos_rec_t *rec);
 inline static int   _report_locks_set(void);
 static void *       _service_connection(void *arg);
 static int          _shutdown_backup_controller(int wait_time);
@@ -350,6 +351,7 @@ int main(int argc, char *argv[])
 	memset(&assoc_init_arg, 0, sizeof(assoc_init_args_t));
 	assoc_init_arg.enforce = accounting_enforce;
 	assoc_init_arg.remove_assoc_notify = _remove_assoc;
+	assoc_init_arg.remove_qos_notify = _remove_qos;
 	assoc_init_arg.cache_level = ASSOC_MGR_CACHE_ASSOC |
 		ASSOC_MGR_CACHE_USER | ASSOC_MGR_CACHE_QOS;
 
@@ -1183,6 +1185,18 @@ static void _remove_assoc(slurmdb_association_rec_t *rec)
 		     rec->id, rec->user, cnt);
 	} else
 		debug("Removed association id:%u user:%s", rec->id, rec->user);
+}
+
+static void _remove_qos(slurmdb_qos_rec_t *rec)
+{
+	int cnt = 0;
+
+	cnt = job_cancel_by_qos_id(rec->id);
+
+	if (cnt) {
+		info("Removed QOS:%s cancelled %u jobs", rec->name, cnt);
+	} else
+		debug("Removed QOS:%s", rec->name);
 }
 
 /*

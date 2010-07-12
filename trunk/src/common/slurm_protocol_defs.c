@@ -874,6 +874,8 @@ extern char *job_reason_string(enum job_state_reason inx)
 		return "InactiveLimit";
 	case FAIL_BANK_ACCOUNT:
 		return "InvalidBankAccount";
+	case FAIL_QOS:
+		return "InvalidQOS";
 	default:
 		return "?";
 	}

@@ -21,6 +21,7 @@ documents those changes that are of interest to users and admins.
     2.2.0.pre7.
  -- Added preempt_mode option to qos.
  -- added a grouping=individual for sreport size reports
+ -- Added remove_qos logic to jobs running under a QOS that was removed.
 
 * Changes in SLURM 2.2.0.pre8
 =============================

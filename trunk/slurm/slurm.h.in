@@ -277,7 +277,8 @@ enum job_state_reason {
 	FAIL_EXIT_CODE,		/* exit code was non-zero */
 	FAIL_TIMEOUT,		/* reached end of time limit */
 	FAIL_INACTIVE_LIMIT,	/* reached slurm InactiveLimit */
-	FAIL_BANK_ACCOUNT	/* invalid bank account */
+	FAIL_BANK_ACCOUNT,	/* invalid bank account */
+	FAIL_QOS        	/* invalid QOS */
 };
 
 enum job_acct_types {
