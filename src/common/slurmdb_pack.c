@@ -736,6 +736,7 @@ extern int slurmdb_unpack_cluster_rec(void **object, uint16_t rpc_version,
 
 	*object = object_ptr;
 
+	slurmdb_init_cluster_rec(object_ptr);
 	if(rpc_version >= 8) {
 		safe_unpack32(&count, buffer);
 		if(count != NO_VAL) {
@@ -2132,6 +2133,7 @@ extern int slurmdb_unpack_cluster_cond(void **object, uint16_t rpc_version,
 
 	*object = object_ptr;
 
+	slurmdb_init_cluster_cond(object_ptr);
 	if(rpc_version >= 8) {
 		safe_unpack16(&object_ptr->classification, buffer);
 		safe_unpack32(&count, buffer);

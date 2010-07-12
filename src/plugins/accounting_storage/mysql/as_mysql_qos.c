@@ -90,26 +90,28 @@ static int _setup_qos_limits(slurmdb_qos_rec_t *qos,
 			   qos->description);
 	}
 
-	if((int64_t)qos->grp_cpu_mins >= 0) {
+	if(qos->grp_cpu_mins == (uint64_t)INFINITE) {
+		xstrcat(*cols, ", grp_cpu_mins");
+		xstrcat(*vals, ", NULL");
+		xstrcat(*extra, ", grp_cpu_mins=NULL");
+	} else if((qos->grp_cpu_mins != (uint64_t)NO_VAL)
+		  && ((int64_t)qos->grp_cpu_mins >= 0)) {
 		xstrcat(*cols, ", grp_cpu_mins");
 		xstrfmtcat(*vals, ", %llu", qos->grp_cpu_mins);
 		xstrfmtcat(*extra, ", grp_cpu_mins=%llu",
 			   qos->grp_cpu_mins);
-	} else if(qos->grp_cpu_mins == (uint64_t)INFINITE) {
-		xstrcat(*cols, ", grp_cpu_mins");
-		xstrcat(*vals, ", NULL");
-		xstrcat(*extra, ", grp_cpu_mins=NULL");
 	}
 
-	if((int64_t)qos->grp_cpu_run_mins >= 0) {
+	if(qos->grp_cpu_run_mins == (uint64_t)INFINITE) {
+		xstrcat(*cols, ", grp_cpu_run_mins");
+		xstrcat(*vals, ", NULL");
+		xstrcat(*extra, ", grp_cpu_run_mins=NULL");
+	} else if((qos->grp_cpu_run_mins != (uint64_t)NO_VAL)
+		  && (int64_t)qos->grp_cpu_run_mins >= 0) {
 		xstrcat(*cols, ", grp_cpu_run_mins");
 		xstrfmtcat(*vals, ", %llu", qos->grp_cpu_run_mins);
 		xstrfmtcat(*extra, ", grp_cpu_run_mins=%llu",
 			   qos->grp_cpu_run_mins);
-	} else if(qos->grp_cpu_run_mins == (uint64_t)INFINITE) {
-		xstrcat(*cols, ", grp_cpu_run_mins");
-		xstrcat(*vals, ", NULL");
-		xstrcat(*extra, ", grp_cpu_run_mins=NULL");
 	}
 
 	if((int32_t)qos->grp_cpus >= 0) {
@@ -165,26 +167,28 @@ static int _setup_qos_limits(slurmdb_qos_rec_t *qos,
 		xstrcat(*extra, ", grp_wall=NULL");
 	}
 
-	if((int64_t)qos->max_cpu_mins_pj >= 0) {
+	if(qos->max_cpu_mins_pj == (uint64_t)INFINITE) {
+		xstrcat(*cols, ", max_cpu_mins_per_job");
+		xstrcat(*vals, ", NULL");
+		xstrcat(*extra, ", max_cpu_mins_per_job=NULL");
+	} else if((qos->max_cpu_mins_pj != (uint64_t)NO_VAL)
+		  && ((int64_t)qos->max_cpu_mins_pj >= 0)) {
 		xstrcat(*cols, ", max_cpu_mins_per_job");
 		xstrfmtcat(*vals, ", %llu", qos->max_cpu_mins_pj);
 		xstrfmtcat(*extra, ", max_cpu_mins_per_job=%u",
 			   qos->max_cpu_mins_pj);
-	} else if(qos->max_cpu_mins_pj == (uint64_t)INFINITE) {
-		xstrcat(*cols, ", max_cpu_mins_per_job");
-		xstrcat(*vals, ", NULL");
-		xstrcat(*extra, ", max_cpu_mins_per_job=NULL");
 	}
 
-	if((int64_t)qos->max_cpu_run_mins_pu >= 0) {
+	if(qos->max_cpu_run_mins_pu == (uint64_t)INFINITE) {
+		xstrcat(*cols, ", max_cpu_run_mins_per_user");
+		xstrcat(*vals, ", NULL");
+		xstrcat(*extra, ", max_cpu_run_mins_per_user=NULL");
+	} else if((qos->max_cpu_run_mins_pu != (uint64_t)NO_VAL)
+		  && ((int64_t)qos->max_cpu_run_mins_pu >= 0)) {
 		xstrcat(*cols, ", max_cpu_run_mins_per_user");
 		xstrfmtcat(*vals, ", %llu", qos->max_cpu_run_mins_pu);
 		xstrfmtcat(*extra, ", max_cpu_run_mins_per_user=%u",
 			   qos->max_cpu_run_mins_pu);
-	} else if(qos->max_cpu_run_mins_pu == (uint64_t)INFINITE) {
-		xstrcat(*cols, ", max_cpu_run_mins_per_user");
-		xstrcat(*vals, ", NULL");
-		xstrcat(*extra, ", max_cpu_run_mins_per_user=NULL");
 	}
 
 	if((int32_t)qos->max_cpus_pj >= 0) {
