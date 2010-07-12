@@ -47,10 +47,20 @@
 
 /* Gres state information gathered by slurmd daemon */
 typedef struct gres_slurmd_conf {
+	/* Count of gres available in this configuration record */
 	uint32_t count;
+
+	/* Specific CPUs associated with this configuration record */
+	uint16_t cpu_cnt;
 	char *cpus;
+
+	/* Device file associated with this configuration record */
 	char *file;
+
+	/* Name of this gres type */
 	char *name;
+
+	/* Gres ID number */
 	uint32_t plugin_id;
 } gres_slurmd_conf_t;
 
@@ -142,8 +152,9 @@ extern int gres_plugin_help_msg(char *msg, int msg_size);
  */
 /*
  * Load this node's configuration (how many resources it has, topology, etc.)
+ * IN cpu_cnt - Number of CPUs on configured on this node
  */
-extern int gres_plugin_node_config_load(void);
+extern int gres_plugin_node_config_load(uint32_t cpu_cnt);
 
 /*
  * Pack this node's gres configuration into a buffer
