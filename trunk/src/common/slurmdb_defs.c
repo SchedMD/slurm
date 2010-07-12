@@ -1025,7 +1025,7 @@ extern List slurmdb_get_info_cluster(char *cluster_names)
 	db_conn = acct_storage_g_get_connection(false, 0, 1, cluster_name);
 	xfree(cluster_name);
 
-	memset(&cluster_cond, 0, sizeof(slurmdb_cluster_cond_t));
+	slurmdb_init_cluster_cond(&cluster_cond);
 	if(cluster_names && !all_clusters) {
 		cluster_cond.cluster_list = list_create(slurm_destroy_char);
 		slurm_addto_char_list(cluster_cond.cluster_list, cluster_names);
