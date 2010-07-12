@@ -405,6 +405,8 @@ documents those changes that are of interest to users and admins.
  -- Fix deadlock potential when using qos and associations in the slurmctld.
  -- Update documentation to state --ntasks-per-* is for a maximum value
     instead of an absolute.
+ -- Get ReturnToService=2 working for front-end configurations (e.g. Cray or
+    BlueGene).
 
 * Changes in SLURM 2.1.9
 ========================
