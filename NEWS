@@ -46,6 +46,7 @@ documents those changes that are of interest to users and admins.
     BlueGene).
  -- Fix issue when deleting a QOS on a pending/running job which previously
     would create possible memory corruption.
+ -- Fix bug that could schedule jobs or steps on non-responding nodes.
 
 * Changes in SLURM 2.1.9
 ========================
