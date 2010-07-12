@@ -1217,15 +1217,17 @@ extern int setup_association_limits(slurmdb_association_rec_t *assoc,
 		assoc->shares_raw = 1;
 	}
 
-	if((int64_t)assoc->grp_cpu_mins >= 0) {
+	/* All 64 bit numbers have to be dealt with this way. */
+	if(assoc->grp_cpu_mins == (uint64_t)INFINITE) {
+		xstrcat(*cols, ", grp_cpu_mins");
+		xstrcat(*vals, ", NULL");
+		xstrcat(*extra, ", grp_cpu_mins=NULL");
+	} else if((assoc->grp_cpu_mins != (uint64_t)NO_VAL)
+		  && ((int64_t)assoc->grp_cpu_mins >= 0)) {
 		xstrcat(*cols, ", grp_cpu_mins");
 		xstrfmtcat(*vals, ", %llu", assoc->grp_cpu_mins);
 		xstrfmtcat(*extra, ", grp_cpu_mins=%llu",
 			   assoc->grp_cpu_mins);
-	} else if(assoc->grp_cpu_mins == (uint64_t)INFINITE) {
-		xstrcat(*cols, ", grp_cpu_mins");
-		xstrcat(*vals, ", NULL");
-		xstrcat(*extra, ", grp_cpu_mins=NULL");
 	}
 
 	if((int32_t)assoc->grp_cpus >= 0) {
@@ -1281,15 +1283,17 @@ extern int setup_association_limits(slurmdb_association_rec_t *assoc,
 		xstrcat(*extra, ", grp_wall=NULL");
 	}
 
-	if((int64_t)assoc->max_cpu_mins_pj >= 0) {
+	/* All 64 bit numbers have to be dealt with this way. */
+	if(assoc->max_cpu_mins_pj == (uint64_t)INFINITE) {
+		xstrcat(*cols, ", max_cpu_mins_pj");
+		xstrcat(*vals, ", NULL");
+		xstrcat(*extra, ", max_cpu_mins_pj=NULL");
+	} else if((assoc->max_cpu_mins_pj != (uint64_t)NO_VAL)
+	   && ((int64_t)assoc->max_cpu_mins_pj >= 0)) {
 		xstrcat(*cols, ", max_cpu_mins_pj");
 		xstrfmtcat(*vals, ", %llu", assoc->max_cpu_mins_pj);
 		xstrfmtcat(*extra, ", max_cpu_mins_pj=%u",
 			   assoc->max_cpu_mins_pj);
-	} else if(assoc->max_cpu_mins_pj == (uint64_t)INFINITE) {
-		xstrcat(*cols, ", max_cpu_mins_pj");
-		xstrcat(*vals, ", NULL");
-		xstrcat(*extra, ", max_cpu_mins_pj=NULL");
 	}
 
 	if((int32_t)assoc->max_cpus_pj >= 0) {
