@@ -1435,7 +1435,8 @@ static void set_options(const int argc, char **argv)
 			opt.time_min_str = xstrdup(optarg);
 			break;
 		case LONG_OPT_GRES:
-			if (!strcasecmp(optarg, "help")) {
+			if (!strcasecmp(optarg, "help") ||
+			    !strcasecmp(optarg, "list")) {
 				print_gres_help();
 				exit(0);
 			}

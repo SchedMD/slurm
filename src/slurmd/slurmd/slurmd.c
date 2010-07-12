@@ -890,7 +890,8 @@ _reconfigure(void)
 
 	gres_plugin_reconfig(&did_change);
 	if (did_change) {
-		(void) gres_plugin_node_config_load();
+		uint32_t cpu_cnt = MAX(conf->conf_cpus, conf->block_map_size);
+		(void) gres_plugin_node_config_load(cpu_cnt);
 		send_registration_msg(SLURM_SUCCESS, false);
 	}
 
@@ -1168,6 +1169,8 @@ _slurmd_init(void)
 	slurm_ctl_conf_t *cf;
 	struct stat stat_buf;
 	char slurm_stepd_path[MAXPATHLEN];
+	uint32_t cpu_cnt;
+
 	/*
 	 * Process commandline arguments first, since one option may be
 	 * an alternate location for the slurm config file.
@@ -1180,9 +1183,9 @@ _slurmd_init(void)
 	 *
 	 */
 	_read_config();
-
+	cpu_cnt = MAX(conf->conf_cpus, conf->block_map_size);
 	if ((gres_plugin_init() != SLURM_SUCCESS) ||
-	    (gres_plugin_node_config_load() != SLURM_SUCCESS))
+	    (gres_plugin_node_config_load(cpu_cnt) != SLURM_SUCCESS))
 		return SLURM_FAILURE;
 	if (slurm_topo_init() != SLURM_SUCCESS)
 		return SLURM_FAILURE;

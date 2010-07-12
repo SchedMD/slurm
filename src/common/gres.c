@@ -97,11 +97,23 @@ typedef struct slurm_gres_context {
 } slurm_gres_context_t;
 
 static int gres_context_cnt = -1;
+static uint32_t gres_cpu_cnt = 0;
 static bool gres_debug = false;
 static slurm_gres_context_t *gres_context = NULL;
 static char *gres_plugin_list = NULL;
 static pthread_mutex_t gres_context_lock = PTHREAD_MUTEX_INITIALIZER;
 static List gres_conf_list = NULL;
+
+static void	_destroy_gres_slurmd_conf(void *x);
+static char *	_get_gres_conf(void);
+static int	_load_gres_plugin(char *plugin_name,
+				  slurm_gres_context_t *plugin_context);
+static int	_log_gres_slurmd_conf(void *x, void *arg);
+static int	_parse_gres_config(void **dest, slurm_parser_enum_t type,
+				   const char *key, const char *value,
+				   const char *line, char **leftover);
+static int	_strcmp(const char *s1, const char *s2);
+static int	_unload_gres_plugin(slurm_gres_context_t *plugin_context);
 
 typedef struct gres_state {
 	uint32_t	plugin_id;
@@ -325,6 +337,7 @@ extern int gres_plugin_help_msg(char *msg, int msg_size)
 {
 	int i, rc;
 	char *tmp_msg;
+	char *header = "Valid gres options are:\n";
 
 	if (msg_size < 1)
 		return EINVAL;
@@ -333,6 +346,8 @@ extern int gres_plugin_help_msg(char *msg, int msg_size)
 	tmp_msg = xmalloc(msg_size);
 	rc = gres_plugin_init();
 
+	if ((strlen(header) + 2) <= msg_size)
+		strcat(msg, header);
 	slurm_mutex_lock(&gres_context_lock);
 	for (i=0; ((i < gres_context_cnt) && (rc == SLURM_SUCCESS)); i++) {
 		tmp_msg = (gres_context[i].ops.help_msg);
@@ -340,9 +355,8 @@ extern int gres_plugin_help_msg(char *msg, int msg_size)
 			continue;
 		if ((strlen(msg) + strlen(tmp_msg) + 2) > msg_size)
 			break;
-		if (msg[0])
-			strcat(msg, "\n");
 		strcat(msg, tmp_msg);
+		strcat(msg, "\n");
 	}
 	slurm_mutex_unlock(&gres_context_lock);
 
@@ -442,8 +456,13 @@ static int _log_gres_slurmd_conf(void *x, void *arg)
 
 	p = (gres_slurmd_conf_t *) x;
 	xassert(p);
-	info("Gres Name:%s File:%s CPUs:%s Count:%u",
-	     p->name, p->file, p->cpus, p->count);
+	if (p->cpus) {
+		info("Gres Name:%s Count:%u File:%s CPUs:%s CpuCnt:%u",
+		     p->name, p->count, p->file, p->cpus, p->cpu_cnt);
+	} else {
+		info("Gres Name:%s Count:%u File:%s",
+		     p->name, p->count, p->file);
+	}
 	return 0;
 }
 
@@ -472,8 +491,17 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 	if (!s_p_get_uint32(&p->count, "Count", tbl))
 		p->count = 1;
 	if (s_p_get_string(&p->cpus, "CPUs", tbl)) {
-//FIXME: change to bitmap, size? change from cpuset/numa to slurmctld format
-//bit_unfmt(bimap, p->cpus);
+		bitstr_t *cpu_bitmap;	/* Just use to validate config */
+		p->cpu_cnt = gres_cpu_cnt;
+		cpu_bitmap = bit_alloc(gres_cpu_cnt);
+		if (cpu_bitmap == NULL)
+			fatal("bit_alloc: malloc failure");
+		i = bit_unfmt(cpu_bitmap, p->cpus);
+		if (i != 0) {
+			fatal("Invalid gres data for %s, CPUs=%s",
+			      p->name, p->cpus);
+		}
+		FREE_NULL_BITMAP(cpu_bitmap);
 	}
 	if (s_p_get_string(&p->file, "File", tbl)) {
 		struct stat config_stat;
@@ -497,9 +525,10 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 }
 
 /*
- * Load this node's gres configuration (i.e. how many resources it has)
+ * Load this node's configuration (how many resources it has, topology, etc.)
+ * IN cpu_cnt - Number of CPUs on configured on this node
  */
-extern int gres_plugin_node_config_load(void)
+extern int gres_plugin_node_config_load(uint32_t cpu_cnt)
 {
 	static s_p_options_t _gres_options[] = {
 		{"Name", S_P_ARRAY, _parse_gres_config, NULL},
@@ -517,7 +546,7 @@ extern int gres_plugin_node_config_load(void)
 		return SLURM_SUCCESS;
 
 	slurm_mutex_lock(&gres_context_lock);
-
+	gres_cpu_cnt = cpu_cnt;
 	if (stat(gres_conf_file, &config_stat) < 0)
 		fatal("can't stat gres.conf file %s: %m", gres_conf_file);
 	tbl = s_p_hashtbl_create(_gres_options);
@@ -572,6 +601,7 @@ extern int gres_plugin_node_config_pack(Buf buffer)
 			pack32(magic, buffer);
 			pack32(gres_slurmd_conf->plugin_id, buffer);
 			pack32(gres_slurmd_conf->count, buffer);
+			pack32(gres_slurmd_conf->cpu_cnt, buffer);
 			packstr(gres_slurmd_conf->cpus, buffer);
 		}
 		list_iterator_destroy(iter);
@@ -589,7 +619,7 @@ extern int gres_plugin_node_config_pack(Buf buffer)
 extern int gres_plugin_node_config_unpack(Buf buffer, char* node_name)
 {
 	int i, j, rc;
-	uint32_t count, magic, plugin_id, utmp32;
+	uint32_t count, cpu_cnt, magic, plugin_id, utmp32;
 	uint16_t rec_cnt, version;
 	char *tmp_cpus;
 	gres_slurmd_conf_t *p;
@@ -618,6 +648,7 @@ extern int gres_plugin_node_config_unpack(Buf buffer, char* node_name)
 			goto unpack_error;
 		safe_unpack32(&plugin_id, buffer);
 		safe_unpack32(&count, buffer);
+		safe_unpack32(&cpu_cnt, buffer);
 		safe_unpackstr_xmalloc(&tmp_cpus, &utmp32, buffer);
  		for (j=0; j<gres_context_cnt; j++) {
  			if (*(gres_context[j].ops.plugin_id) == plugin_id) {
@@ -636,8 +667,9 @@ extern int gres_plugin_node_config_unpack(Buf buffer, char* node_name)
 		}
 		p = xmalloc(sizeof(gres_slurmd_conf_t));
 		p->count = count;
-		p->plugin_id = plugin_id;
+		p->cpu_cnt = cpu_cnt;
 		p->cpus = tmp_cpus;
+		p->plugin_id = plugin_id;
 		tmp_cpus = NULL;	/* Nothing left to xfree */
 		list_append(gres_conf_list, p);
 	}

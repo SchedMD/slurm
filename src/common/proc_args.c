@@ -91,7 +91,7 @@ void print_gres_help(void)
 
 	gres_plugin_help_msg(help_msg, sizeof(help_msg));
 	if (help_msg[0])
-		printf("%s\n", help_msg);
+		printf("%s", help_msg);
 	else
 		printf("No gres help is available\n");
 }
