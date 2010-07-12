@@ -996,7 +996,7 @@ static void _preempt_jobs(List preemptee_job_list, int *error_code)
  *	3) Call allocate_nodes() to perform the actual allocation
  */
 extern int select_nodes(struct job_record *job_ptr, bool test_only,
-		bitstr_t **select_node_bitmap)
+			bitstr_t **select_node_bitmap)
 {
 	int error_code = SLURM_SUCCESS, i, node_set_size = 0;
 	bitstr_t *select_bitmap = NULL;

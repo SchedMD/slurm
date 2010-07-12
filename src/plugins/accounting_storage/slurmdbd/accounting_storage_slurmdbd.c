@@ -1918,7 +1918,7 @@ extern int jobacct_storage_p_job_start(void *db_conn,
 	 * the system.
 	 */
 	if((req.db_index && !IS_JOB_RESIZING(job_ptr))
-           || (!req.db_index && IS_JOB_FINISHED(job_ptr))) {
+	   || (!req.db_index && IS_JOB_FINISHED(job_ptr))) {
 		/* This is to ensure we don't do this multiple times for the
 		   same job.  This can happen when an account is being
 		   deleted and hense the associations dealing with it.
@@ -1933,7 +1933,6 @@ extern int jobacct_storage_p_job_start(void *db_conn,
 		xfree(req.block_id);
 		return SLURM_SUCCESS;
 	}
-
 	/* If we don't have the db_index we need to wait for it to be
 	 * used in the other submissions for this job.
 	 */
@@ -2228,7 +2227,7 @@ extern List jobacct_storage_p_get_jobs_cond(void *db_conn, uid_t uid,
 	dbd_cond_msg_t get_msg;
 	dbd_list_msg_t *got_msg;
 	int rc;
-	List job_list = NULL;
+	List my_job_list = NULL;
 
 	memset(&get_msg, 0, sizeof(dbd_cond_msg_t));
 
@@ -2244,7 +2243,7 @@ extern List jobacct_storage_p_get_jobs_cond(void *db_conn, uid_t uid,
 		dbd_rc_msg_t *msg = resp.data;
 		if(msg->return_code == SLURM_SUCCESS) {
 			info("%s", msg->comment);
-			job_list = list_create(NULL);
+			my_job_list = list_create(NULL);
 		} else {
 			slurm_seterrno(msg->return_code);
 			error("%s", msg->comment);
@@ -2255,12 +2254,12 @@ extern List jobacct_storage_p_get_jobs_cond(void *db_conn, uid_t uid,
 		      resp.msg_type);
 	} else {
 		got_msg = (dbd_list_msg_t *) resp.data;
-		job_list = got_msg->my_list;
+		my_job_list = got_msg->my_list;
 		got_msg->my_list = NULL;
 		slurmdbd_free_list_msg(got_msg);
 	}
 
-	return job_list;
+	return my_job_list;
 }
 
 /*
