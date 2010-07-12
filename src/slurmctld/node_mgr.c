@@ -1884,7 +1884,11 @@ extern int validate_nodes_via_front_end(
 						node_ptr, now);
 				}
 			} else if (IS_NODE_DOWN(node_ptr) &&
-			           (slurmctld_conf.ret2service == 1)) {
+				   ((slurmctld_conf.ret2service == 2) ||
+			            ((slurmctld_conf.ret2service == 1) &&
+				     (node_ptr->reason != NULL) &&
+				     (strncmp(node_ptr->reason, 
+					      "Not responding", 14) == 0)))) {
 				updated_job = true;
 				if (jobs_on_node) {
 					node_ptr->node_state =
