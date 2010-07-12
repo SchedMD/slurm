@@ -61,6 +61,7 @@ static char *assoc_mgr_cluster_name = NULL;
 static int setup_childern = 0;
 
 void (*remove_assoc_notify) (acct_association_rec_t *rec) = NULL;
+void (*remove_qos_notify) (acct_qos_rec_t *rec) = NULL;
 
 pthread_mutex_t assoc_mgr_association_lock = PTHREAD_MUTEX_INITIALIZER;
 
@@ -802,6 +803,8 @@ extern int assoc_mgr_init(void *db_conn, assoc_init_args_t *args)
 		enforce = args->enforce;
 		if(args->remove_assoc_notify)
 			remove_assoc_notify = args->remove_assoc_notify;
+		if(args->remove_qos_notify)
+			remove_qos_notify = args->remove_qos_notify;
 		cache_level = args->cache_level;
 		assoc_mgr_refresh_lists(db_conn, args);
 	}
@@ -2178,6 +2181,7 @@ extern int assoc_mgr_update_qos(acct_update_object_t *update)
 	acct_association_rec_t *assoc = NULL;
 	int rc = SLURM_SUCCESS;
 	bool resize_qos_bitstr = 0;
+	List remove_list = NULL;
 
 	if(!assoc_mgr_qos_list)
 		return SLURM_SUCCESS;
@@ -2278,7 +2282,22 @@ extern int assoc_mgr_update_qos(acct_update_object_t *update)
 
 			break;
 		case ACCT_REMOVE_QOS:
-			if(rec)
+			if(!rec) {
+				//rc = SLURM_ERROR;
+				break;
+			}
+
+			if(remove_qos_notify) {
+				/* since there are some deadlock
+				   issues while inside our lock here
+				   we have to process a notify later
+				*/
+				if(!remove_list)
+					remove_list = list_create(
+						destroy_acct_qos_rec);
+				list_remove(itr);
+				list_append(remove_list, rec);
+			} else
 				list_delete_item(itr);
 
 			if(!assoc_mgr_association_list)
@@ -2333,6 +2352,18 @@ extern int assoc_mgr_update_qos(acct_update_object_t *update)
 
 	slurm_mutex_unlock(&assoc_mgr_association_lock);
 	slurm_mutex_unlock(&assoc_mgr_qos_lock);
+
+	/* This needs to happen outside of the
+	   assoc_mgr_association_lock */
+	if(remove_list) {
+		itr = list_iterator_create(remove_list);
+
+		while((rec = list_next(itr)))
+			remove_qos_notify(rec);
+
+		list_iterator_destroy(itr);
+		list_destroy(remove_list);
+	}
 
 	return rc;
 }

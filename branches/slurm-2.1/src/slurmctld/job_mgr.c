@@ -7361,6 +7361,50 @@ extern int job_cancel_by_assoc_id(uint32_t assoc_id)
 }
 
 /*
+ * job_cancel_by_qos_id - Cancel all pending and running jobs with a given
+ *	QOS ID. This happens when a QOS is deleted (e.g. when
+ *	a QOS is removed from the association database).
+ * RET count of cancelled jobs
+ */
+extern int job_cancel_by_qos_id(uint16_t qos_id)
+{
+	int cnt = 0;
+	ListIterator job_iterator;
+	struct job_record *job_ptr;
+	/* Write lock on jobs */
+	slurmctld_lock_t job_write_lock =
+		{ NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
+
+	if (!job_list)
+		return cnt;
+
+	lock_slurmctld(job_write_lock);
+	job_iterator = list_iterator_create(job_list);
+	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+		if (job_ptr->qos != qos_id)
+			continue;
+
+		/* move up to the parent that should still exist */
+		if(job_ptr->qos_ptr)
+			job_ptr->qos_ptr = NULL;
+
+		if(IS_JOB_FINISHED(job_ptr))
+			continue;
+
+		info("QOS deleted, cancelling job %u",
+		     job_ptr->job_id);
+		/* make sure the assoc_mgr_qos_lock isn't locked before this. */
+		job_signal(job_ptr->job_id, SIGKILL, 0, 0);
+		job_ptr->state_reason = FAIL_BANK_ACCOUNT;
+		xfree(job_ptr->state_desc);
+		cnt++;
+	}
+	list_iterator_destroy(job_iterator);
+	unlock_slurmctld(job_write_lock);
+	return cnt;
+}
+
+/*
  * Modify the account associated with a pending job
  * IN module - where this is called from
  * IN job_ptr - pointer to job which should be modified
