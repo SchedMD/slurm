@@ -70,6 +70,38 @@ typedef struct gres_node_state {
 	bitstr_t *gres_bit_alloc;
 } gres_node_state_t;
 
+/* Gres job state as used by slurmctld daemon */
+typedef struct gres_job_state {
+	/* Count of resources needed */
+	uint32_t gres_cnt_alloc;
+
+	/* If 0 then gres_cnt_alloc is per node,
+	 * if 1 then gres_cnt_alloc is per CPU */
+	uint8_t  gres_cnt_mult;
+
+	/* Resources currently allocated to job on each node */
+	uint32_t node_cnt;
+	bitstr_t **gres_bit_alloc;
+
+	/* Resources currently allocated to job steps on each node.
+	 * This will be a subset of resources allocated to the job.
+	 * gres_bit_step_alloc is a subset of gres_bit_alloc */
+	bitstr_t **gres_bit_step_alloc;
+} gres_job_state_t;
+
+/* Gres job step state as used by slurmctld daemon */
+typedef struct gres_step_state {
+	/* Count of resources needed */
+	uint32_t gres_cnt_alloc;
+
+	/* If 0 then gres_cnt_alloc is per node,
+	 * if 1 then gres_cnt_alloc is per CPU */
+	uint8_t  gres_cnt_mult;
+
+	/* Resources currently allocated to the job step on each node */
+	uint32_t node_cnt;
+	bitstr_t **gres_bit_alloc;
+} gres_step_state_t;
 /*
  * Initialize the gres plugin.
  *
