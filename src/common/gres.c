@@ -100,7 +100,9 @@ typedef struct slurm_gres_context {
 	bool		unpacked_info;
 } slurm_gres_context_t;
 
-/* Generic gres data structure for adding to a list */
+/* Generic gres data structure for adding to a list. Depending upon the
+ * context, gres_data points to gres_node_state_t, gres_job_state_t or
+ * gres_step_state_t */
 typedef struct gres_state {
 	uint32_t	plugin_id;
 	void		*gres_data;
