@@ -760,14 +760,16 @@ int update_node ( update_node_msg_t * update_node_msg )
 				}	/* else already fully available */
 				node_ptr->node_state &= (~NODE_STATE_DRAIN);
 				node_ptr->node_state &= (~NODE_STATE_FAIL);
-				bit_set (avail_node_bitmap, node_inx);
+				if (!IS_NODE_NO_RESPOND(node_ptr))
+					bit_set (avail_node_bitmap, node_inx);
 				bit_set (idle_node_bitmap, node_inx);
 				bit_set (up_node_bitmap, node_inx);
 				node_ptr->last_idle = now;
 				reset_job_priority();
 			} else if (state_val == NODE_STATE_ALLOCATED) {
 				if (!IS_NODE_DRAIN(node_ptr) &&
-				    !IS_NODE_FAIL(node_ptr))
+				    !IS_NODE_FAIL(node_ptr)  &&
+				    !IS_NODE_NO_RESPOND(node_ptr))
 					bit_set(avail_node_bitmap, node_inx);
 				bit_set (up_node_bitmap, node_inx);
 				bit_clear (idle_node_bitmap, node_inx);
@@ -1688,7 +1690,7 @@ static void _sync_bitmaps(struct node_record *node_ptr, int job_count)
 		bit_set (share_node_bitmap, node_inx);
 	}
 	if (IS_NODE_DOWN(node_ptr) || IS_NODE_DRAIN(node_ptr) ||
-	    IS_NODE_FAIL(node_ptr))
+	    IS_NODE_FAIL(node_ptr) || IS_NODE_NO_RESPOND(node_ptr))
 		bit_clear (avail_node_bitmap, node_inx);
 	else
 		bit_set   (avail_node_bitmap, node_inx);
