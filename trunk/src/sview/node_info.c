@@ -588,7 +588,7 @@ update_color:
 
 extern int get_new_info_node(node_info_msg_t **info_ptr, int force)
 {
-	static node_info_msg_t *new_node_ptr = NULL;
+	node_info_msg_t *new_node_ptr = NULL;
 	uint16_t show_flags = 0;
 	int error_code = SLURM_NO_CHANGE_IN_DATA;
 	time_t now = time(NULL);
@@ -631,10 +631,10 @@ extern int get_new_info_node(node_info_msg_t **info_ptr, int force)
 	last_flags = show_flags;
 	g_node_info_ptr = new_node_ptr;
 
-	if(*info_ptr != g_node_info_ptr) {
+	if(g_node_info_ptr && (*info_ptr != g_node_info_ptr))
 		error_code = SLURM_SUCCESS;
-	}
- 	if(new_node_ptr && changed) {
+
+ 	if(new_node_ptr && new_node_ptr->node_array && changed) {
 		int i;
 		node_info_t *node_ptr = NULL;
 		uint16_t err_cpus = 0, alloc_cpus = 0;
@@ -708,7 +708,7 @@ extern int get_new_info_node(node_info_msg_t **info_ptr, int force)
 		}
 	}
 
-	*info_ptr = new_node_ptr;
+	*info_ptr = g_node_info_ptr;
 	return error_code;
 }
 

@@ -81,6 +81,7 @@ node_info_msg_t *g_node_info_ptr = NULL;
 partition_info_msg_t *g_part_info_ptr = NULL;
 reserve_info_msg_t *g_resv_info_ptr = NULL;
 slurm_ctl_conf_info_msg_t *g_ctl_info_ptr = NULL;
+job_step_info_response_msg_t *g_step_info_ptr = NULL;
 
 static GtkActionGroup *admin_action_group = NULL;
 static GtkActionGroup *menu_action_group = NULL;
@@ -878,6 +879,8 @@ extern void _change_cluster_main(GtkComboBox *combo, gpointer extra)
 	g_resv_info_ptr = NULL;
 	slurm_free_ctl_conf(g_ctl_info_ptr);
 	g_ctl_info_ptr = NULL;
+	slurm_free_job_step_info_response_msg(g_step_info_ptr);
+	g_step_info_ptr = NULL;
 
 	/* set up working_cluster_rec */
 	if(cluster_dims > 1) {

@@ -1726,7 +1726,7 @@ extern int get_new_info_part(partition_info_msg_t **part_ptr, int force)
 	last_flags = show_flags;
 	g_part_info_ptr = new_part_ptr;
 
-	if(*part_ptr != g_part_info_ptr)
+	if(g_part_info_ptr && (*part_ptr != g_part_info_ptr))
 		error_code = SLURM_SUCCESS;
 
 	*part_ptr = new_part_ptr;
