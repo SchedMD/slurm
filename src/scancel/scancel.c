@@ -76,7 +76,7 @@ static void *_cancel_step_id (void *cancel_info);
 static int  _confirmation (int i, uint32_t step_id);
 static void _filter_job_records (void);
 static void _load_job_records (void);
-static void _verify_job_ids (void);
+static int _verify_job_ids (void);
 
 static job_info_msg_t * job_buffer_ptr = NULL;
 
@@ -98,6 +98,7 @@ int
 main (int argc, char *argv[])
 {
 	log_options_t log_opts = LOG_OPTS_STDERR_ONLY ;
+	int rc = 0;
 
 	log_init (xbasename(argv[0]), log_opts, SYSLOG_FACILITY_DAEMON, NULL);
 	initialize_and_process_args(argc, argv);
@@ -107,7 +108,7 @@ main (int argc, char *argv[])
 	}
 
 	_load_job_records();
-	_verify_job_ids();
+	rc = _verify_job_ids();
 
 	if ((opt.account) ||
 	    (opt.interactive) ||
@@ -122,7 +123,7 @@ main (int argc, char *argv[])
 	}
 	_cancel_jobs ();
 
-	exit (0);
+	exit (rc);
 }
 
 
@@ -141,13 +142,14 @@ _load_job_records (void)
 }
 
 
-static void
+static int
 _verify_job_ids (void)
 {
 	/* If a list of jobs was given, make sure each job is actually in
          * our list of job records. */
 	int i, j;
 	job_info_t *job_ptr = job_buffer_ptr->job_array;
+	int rc = 0;
 
 	for (j = 0; j < opt.job_cnt; j++ ) {
 		for (i = 0; i < job_buffer_ptr->record_count; i++) {
@@ -165,8 +167,11 @@ _verify_job_ids (void)
 				error("Kill job error on job step id %u.%u: %s",
 				      opt.job_id[j], opt.step_id[j],
 				      slurm_strerror(ESLURM_INVALID_JOB_ID));
+			rc = 1;
 		}
 	}
+
+	return rc;
 }
 
 
