@@ -1022,24 +1022,12 @@ extern int get_system_stats(GtkTable *table)
 	node_info_msg_t *node_info_ptr = NULL;
 	List node_list = NULL;
 	int changed = 1;
-	static GtkWidget *label = NULL;
-	char error_char[100];
-
-	if(label)
-		gtk_widget_destroy(label);
 
 	if((error_code = get_new_info_node(&node_info_ptr, force_refresh))
 	   == SLURM_NO_CHANGE_IN_DATA) {
 		changed = 0;
-	} else if (error_code != SLURM_SUCCESS) {
-		snprintf(error_char, 100, "slurm_load_node: %s\n",
-			 slurm_strerror(error_code));
-		label = gtk_label_new(error_char);
-		gtk_table_attach_defaults(table, label, 0, 1, 0, 1);
-		gtk_widget_show(label);
-
+	} else if (error_code != SLURM_SUCCESS)
 		return SLURM_ERROR;
-	}
 
 	ba_init(node_info_ptr, 0);
 

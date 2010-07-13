@@ -698,7 +698,7 @@ extern void refresh_block(GtkAction *action, gpointer user_data)
 extern int get_new_info_block(block_info_msg_t **block_ptr, int force)
 {
 	int error_code = SLURM_NO_CHANGE_IN_DATA;
-	static block_info_msg_t *new_bg_ptr = NULL;
+	block_info_msg_t *new_bg_ptr = NULL;
 	time_t now = time(NULL);
 	static time_t last;
 	static bool changed = 0;
@@ -735,10 +735,10 @@ extern int get_new_info_block(block_info_msg_t **block_ptr, int force)
 
 	g_block_info_ptr = new_bg_ptr;
 	if(block_ptr) {
-		if(*block_ptr != g_block_info_ptr)
+		if(g_block_info_ptr && (*block_ptr != g_block_info_ptr))
 			error_code = SLURM_SUCCESS;
 
-		*block_ptr = new_bg_ptr;
+		*block_ptr = g_block_info_ptr;
 	}
 	return error_code;
 }

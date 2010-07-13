@@ -2609,7 +2609,7 @@ extern void refresh_job(GtkAction *action, gpointer user_data)
 extern int get_new_info_job(job_info_msg_t **info_ptr,
 			    int force)
 {
-	static job_info_msg_t *new_job_ptr = NULL;
+	job_info_msg_t *new_job_ptr = NULL;
 	uint16_t show_flags = 0;
 	int error_code = SLURM_NO_CHANGE_IN_DATA;
 	time_t now = time(NULL);
@@ -2652,28 +2652,28 @@ extern int get_new_info_job(job_info_msg_t **info_ptr,
 	last_flags = show_flags;
 	g_job_info_ptr = new_job_ptr;
 
-	if(*info_ptr != g_job_info_ptr)
+	if(g_job_info_ptr && (*info_ptr != g_job_info_ptr))
 		error_code = SLURM_SUCCESS;
 
-	*info_ptr = new_job_ptr;
+	*info_ptr = g_job_info_ptr;
 	return error_code;
 }
 
 extern int get_new_info_job_step(job_step_info_response_msg_t **info_ptr,
 				 int force)
 {
-	static job_step_info_response_msg_t *old_step_ptr = NULL;
-	static job_step_info_response_msg_t *new_step_ptr = NULL;
+	job_step_info_response_msg_t *new_step_ptr = NULL;
 	uint16_t show_flags = 0;
 	int error_code = SLURM_NO_CHANGE_IN_DATA;
 	time_t now = time(NULL);
 	static time_t last;
 	static bool changed = 0;
 
-	if(!force && ((now - last) < working_sview_config.refresh_delay)) {
-		if(*info_ptr != old_step_ptr)
+	if(g_step_info_ptr && !force
+	   && ((now - last) < working_sview_config.refresh_delay)) {
+		if(*info_ptr != g_step_info_ptr)
 			error_code = SLURM_SUCCESS;
-		*info_ptr = old_step_ptr;
+		*info_ptr = g_step_info_ptr;
 		if(changed)
 			return SLURM_SUCCESS;
 		return error_code;
@@ -2684,16 +2684,16 @@ extern int get_new_info_job_step(job_step_info_response_msg_t **info_ptr,
 	   looking for non-hidden jobs or you will get an error below.
 	*/
 	show_flags |= SHOW_ALL;
-	if (old_step_ptr) {
-		error_code = slurm_get_job_steps(old_step_ptr->last_update,
+	if (g_step_info_ptr) {
+		error_code = slurm_get_job_steps(g_step_info_ptr->last_update,
 						 NO_VAL, NO_VAL, &new_step_ptr,
 						 show_flags);
 		if (error_code == SLURM_SUCCESS) {
-			slurm_free_job_step_info_response_msg(old_step_ptr);
+			slurm_free_job_step_info_response_msg(g_step_info_ptr);
 			changed = 1;
 		} else if (slurm_get_errno () == SLURM_NO_CHANGE_IN_DATA) {
 			error_code = SLURM_NO_CHANGE_IN_DATA;
-			new_step_ptr = old_step_ptr;
+			new_step_ptr = g_step_info_ptr;
 			changed = 0;
 		}
 	} else {
@@ -2702,12 +2702,12 @@ extern int get_new_info_job_step(job_step_info_response_msg_t **info_ptr,
 		changed = 1;
 	}
 
-	old_step_ptr = new_step_ptr;
+	g_step_info_ptr = new_step_ptr;
 
-	if(*info_ptr != old_step_ptr)
+	if(g_step_info_ptr && (*info_ptr != g_step_info_ptr))
 		error_code = SLURM_SUCCESS;
 
-	*info_ptr = new_step_ptr;
+	*info_ptr = g_step_info_ptr;
 	return error_code;
 }
 

@@ -302,6 +302,7 @@ extern node_info_msg_t *g_node_info_ptr;
 extern partition_info_msg_t *g_part_info_ptr;
 extern reserve_info_msg_t *g_resv_info_ptr;
 extern slurm_ctl_conf_info_msg_t *g_ctl_info_ptr;
+extern job_step_info_response_msg_t *g_step_info_ptr;
 
 extern void init_grid(node_info_msg_t *node_info_ptr);
 extern int set_grid(int start, int end, int count);
