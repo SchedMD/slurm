@@ -23,6 +23,9 @@ documents those changes that are of interest to users and admins.
  -- Added a grouping=individual for sreport size reports.
  -- Added remove_qos logic to jobs running under a QOS that was removed.
  -- scancel now exits with a 1 if any job is non-existant when canceling.
+ -- Better handling of select plugins that don't exist on various systems for
+    cross cluster communication.  Slurmctld, slurmd, and slurmstepd now only
+    load the default select plugin as well.
 
 * Changes in SLURM 2.2.0.pre8
 =============================

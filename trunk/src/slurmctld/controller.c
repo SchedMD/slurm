@@ -419,7 +419,7 @@ int main(int argc, char *argv[])
 	 */
 	if (gres_plugin_init() != SLURM_SUCCESS )
 		fatal( "failed to initialize gres plugin" );
-	if (slurm_select_init() != SLURM_SUCCESS )
+	if (slurm_select_init(1) != SLURM_SUCCESS )
 		fatal( "failed to initialize node selection plugin" );
 	if (slurm_preempt_init() != SLURM_SUCCESS )
 		fatal( "failed to initialize preempt plugin" );

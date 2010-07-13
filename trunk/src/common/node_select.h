@@ -74,7 +74,7 @@ extern int node_select_unpack_block_info(block_info_t **block_info, Buf buffer,
 /*
  * Initialize context for node selection plugin
  */
-extern int slurm_select_init(void);
+extern int slurm_select_init(bool only_default);
 
 /*
  * Terminate plugin and free all associated memory
