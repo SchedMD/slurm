@@ -46,6 +46,9 @@ documents those changes that are of interest to users and admins.
     BlueGene).
  -- Fix issue when deleting a QOS on a pending/running job which previously
     would create possible memory corruption.
+ -- Do not make a non-responding node available for use after running
+    "scontrol update nodename=<name> state=resume". Wait for node to respond
+    before use.
 
 * Changes in SLURM 2.1.9
 ========================
