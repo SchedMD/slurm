@@ -407,7 +407,9 @@ documents those changes that are of interest to users and admins.
     instead of an absolute.
  -- Get ReturnToService=2 working for front-end configurations (e.g. Cray or
     BlueGene).
- -- Fix bug that could schedule jobs or steps on non-responding nodes.
+ -- Do not make a non-responding node available for use after running
+    "scontrol update nodename=<name> state=resume". Wait for node to respond
+    before use.
 
 * Changes in SLURM 2.1.9
 ========================
