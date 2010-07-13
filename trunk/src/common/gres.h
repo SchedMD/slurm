@@ -112,6 +112,7 @@ typedef struct gres_step_state {
 	uint32_t node_cnt;
 	bitstr_t **gres_bit_alloc;
 } gres_step_state_t;
+
 /*
  * Initialize the gres plugin.
  *
