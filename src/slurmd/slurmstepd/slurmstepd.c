@@ -105,6 +105,8 @@ main (int argc, char *argv[])
 	conf->argv = &argv;
 	conf->argc = &argc;
 	init_setproctitle(argc, argv);
+	if (slurm_select_init(1) != SLURM_SUCCESS )
+		fatal( "failed to initialize node selection plugin" );
 
 	/* Receive job parameters from the slurmd */
 	_init_from_slurmd(STDIN_FILENO, argv, &cli, &self, &msg,

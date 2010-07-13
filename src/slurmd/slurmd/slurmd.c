@@ -226,6 +226,9 @@ main (int argc, char *argv[])
 	}
 	init_setproctitle(argc, argv);
 
+	if (slurm_select_init(1) != SLURM_SUCCESS )
+		fatal( "failed to initialize node selection plugin" );
+
 	/* NOTE: conf->logfile always NULL at this point */
 	log_init(argv[0], conf->log_opts, LOG_DAEMON, conf->logfile);
 
