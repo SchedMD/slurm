@@ -101,7 +101,6 @@
 #  endif
 #endif
 
-#include "src/common/slurm_xlator.h"
 #include "select_cons_res.h"
 #include "dist_tasks.h"
 #include "job_test.h"
