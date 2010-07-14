@@ -51,6 +51,8 @@ documents those changes that are of interest to users and admins.
     before use.
  -- Added slurm_xlator.h to jobacct_gather plugins so they resolve symbols
     correctly when linking to the slurm api.
+ -- You can now update a jobs QOS from scontrol.  Previously you could only do
+    this from sview.
 
 * Changes in SLURM 2.1.9
 ========================
