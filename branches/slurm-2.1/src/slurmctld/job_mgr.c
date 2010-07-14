@@ -4952,32 +4952,41 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 
 		if (wiki_sched && strstr(job_ptr->comment, "QOS:")) {
 			acct_qos_rec_t qos_rec;
+			if (!IS_JOB_PENDING(job_ptr))
+				error_code = ESLURM_DISABLED;
+			else {
+				memset(&qos_rec, 0, sizeof(acct_qos_rec_t));
+
+				if (strstr(job_ptr->comment,
+					   "FLAGS:PREEMPTOR"))
+					qos_rec.name = "expedite";
+				else if (strstr(job_ptr->comment,
+						"FLAGS:PREEMPTEE"))
+					qos_rec.name = "standby";
+
+				job_ptr->qos_ptr = _determine_and_validate_qos(
+					job_ptr->assoc_ptr, &qos_rec,
+					&error_code);
+				job_ptr->qos = qos_rec.id;
+				update_accounting = true;
+			}
+		}
+	} else if(job_specs->qos) {
+		acct_qos_rec_t qos_rec;
+		if (!IS_JOB_PENDING(job_ptr))
+			error_code = ESLURM_DISABLED;
+		else {
+			info("update_job: setting qos to %s for job_id %u",
+			     job_specs->qos, job_specs->job_id);
 
 			memset(&qos_rec, 0, sizeof(acct_qos_rec_t));
-
-			if (strstr(job_ptr->comment, "FLAGS:PREEMPTOR"))
-				qos_rec.name = "expedite";
-			else if (strstr(job_ptr->comment, "FLAGS:PREEMPTEE"))
-				qos_rec.name = "standby";
+			qos_rec.name = job_specs->qos;
 
 			job_ptr->qos_ptr = _determine_and_validate_qos(
 				job_ptr->assoc_ptr, &qos_rec, &error_code);
 			job_ptr->qos = qos_rec.id;
 			update_accounting = true;
 		}
-	} else if(job_specs->qos) {
-		acct_qos_rec_t qos_rec;
-
-		info("update_job: setting qos to %s for job_id %u",
-		     job_specs->qos, job_specs->job_id);
-
-		memset(&qos_rec, 0, sizeof(acct_qos_rec_t));
-		qos_rec.name = job_specs->qos;
-
-		job_ptr->qos_ptr = _determine_and_validate_qos(
-			job_ptr->assoc_ptr, &qos_rec, &error_code);
-		job_ptr->qos = qos_rec.id;
-		update_accounting = true;
 	}
 
 	if (!super_user && (accounting_enforce & ACCOUNTING_ENFORCE_LIMITS) &&
