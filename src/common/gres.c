@@ -118,6 +118,8 @@ static pthread_mutex_t gres_context_lock = PTHREAD_MUTEX_INITIALIZER;
 static List gres_conf_list = NULL;
 
 /* Local functions */
+static gres_node_state_t *
+		_build_gres_node_state(void);
 static void	_destroy_gres_slurmd_conf(void *x);
 static uint32_t	_get_gres_cnt(char *orig_config, char *gres_name,
 			      char *gres_name_colon, int gres_name_colon_len);
@@ -126,7 +128,7 @@ static uint32_t	_get_tot_gres_cnt(uint32_t plugin_id, uint32_t *set_cnt);
 static int	_load_gres_plugin(char *plugin_name,
 				  slurm_gres_context_t *plugin_context);
 static int	_log_gres_slurmd_conf(void *x, void *arg);
-extern int	_node_config_init(char *node_name, char *orig_config,
+static int	_node_config_init(char *node_name, char *orig_config,
 				  slurm_gres_context_t *context_ptr,
 				  gres_state_t *gres_ptr);
 static int	_parse_gres_config(void **dest, slurm_parser_enum_t type,
@@ -745,8 +747,11 @@ static void _gres_node_list_delete(void *list_element)
 static uint32_t _get_gres_cnt(char *orig_config, char *gres_name,
 			      char *gres_name_colon, int gres_name_colon_len)
 {
-	char *node_gres_config, *tok, *last_num, *last_tok;
+	char *node_gres_config, *tok, *last_num = NULL, *last_tok = NULL;
 	uint32_t gres_config_cnt = 0;
+
+	if (orig_config == NULL)
+		return gres_config_cnt;
 
 	node_gres_config = xstrdup(orig_config);
 	tok = strtok_r(node_gres_config, ",", &last_tok);
@@ -779,8 +784,11 @@ static void _set_gres_cnt(char *orig_config, char **new_config,
 
 	if (*new_config)
 		node_gres_config = xstrdup(*new_config);
-	else
+	else if (orig_config)
 		node_gres_config = xstrdup(orig_config);
+	else
+		return;
+
 	tok = strtok_r(node_gres_config, ",", &last_tok);
 	while (tok) {
 		if (new_configured_res)
@@ -799,10 +807,21 @@ static void _set_gres_cnt(char *orig_config, char **new_config,
 	*new_config = new_configured_res;
 }
 
+static gres_node_state_t *_build_gres_node_state(void)
+{
+	gres_node_state_t *gres_data;
+
+	gres_data = xmalloc(sizeof(gres_node_state_t));
+	gres_data->gres_cnt_config = NO_VAL;
+	gres_data->gres_cnt_found  = NO_VAL;
+
+	return gres_data;
+}
+
 /*
  * Build a node's gres record based only upon the slurm.conf contents
  */
-extern int _node_config_init(char *node_name, char *orig_config,
+static int _node_config_init(char *node_name, char *orig_config,
 			     slurm_gres_context_t *context_ptr,
 			     gres_state_t *gres_ptr)
 {
@@ -812,14 +831,10 @@ extern int _node_config_init(char *node_name, char *orig_config,
 	gres_node_state_t *gres_data;
 
 	if (gres_ptr->gres_data == NULL) {
-		gres_data = xmalloc(sizeof(gres_node_state_t));
-		gres_ptr->gres_data = gres_data;
-		gres_data->gres_cnt_config = NO_VAL;
-		gres_data->gres_cnt_found  = NO_VAL;
+		gres_ptr->gres_data = _build_gres_node_state();
 		updated_config = true;
-	} else {
-		gres_data = (gres_node_state_t *) gres_ptr->gres_data;
 	}
+	gres_data = (gres_node_state_t *) gres_ptr->gres_data;
 
 	/* If the resource isn't configured for use with this node*/
 	if ((orig_config == NULL) || (orig_config[0] == '\0') ||
@@ -833,7 +848,9 @@ extern int _node_config_init(char *node_name, char *orig_config,
 					context_ptr->gres_name_colon,
 					context_ptr->gres_name_colon_len);
 	gres_data->gres_cnt_config = gres_config_cnt;
-	gres_data->gres_cnt_avail  = gres_config_cnt;
+	/* Use count from recovered state, if higher */
+	gres_data->gres_cnt_avail  = MAX(gres_data->gres_cnt_avail,
+					 gres_config_cnt);
 	if (gres_data->gres_bit_alloc == NULL) {
 		gres_data->gres_bit_alloc =
 			bit_alloc(gres_data->gres_cnt_avail);
@@ -931,13 +948,9 @@ extern int _node_config_validate(char *node_name, char *orig_config,
 	ListIterator iter;
 	gres_slurmd_conf_t *gres_slurmd_conf;
 
+	if (gres_ptr->gres_data == NULL)
+		gres_ptr->gres_data = _build_gres_node_state();
 	gres_data = (gres_node_state_t *) gres_ptr->gres_data;
-	if (gres_data == NULL) {
-		gres_ptr->gres_data = xmalloc(sizeof(gres_node_state_t));
-		gres_data = (gres_node_state_t *) gres_ptr->gres_data;
-		gres_data->gres_cnt_config = NO_VAL;
-		gres_data->gres_cnt_found  = NO_VAL;
-	}
 
 	gres_cnt = _get_tot_gres_cnt(*context_ptr->ops.plugin_id, &set_cnt);
 	if (gres_data->gres_cnt_found != gres_cnt) {
@@ -1004,8 +1017,10 @@ extern int _node_config_validate(char *node_name, char *orig_config,
 
 	if ((gres_data->gres_cnt_config == 0) || (fast_schedule > 0))
 		gres_data->gres_cnt_avail = gres_data->gres_cnt_config;
-	else
+	else if (gres_data->gres_cnt_found != NO_VAL)
 		gres_data->gres_cnt_avail = gres_data->gres_cnt_found;
+	else if (gres_data->gres_cnt_avail == NO_VAL)
+		gres_data->gres_cnt_avail = 0;
 
 	if (gres_data->gres_bit_alloc == NULL) {
 		gres_data->gres_bit_alloc =
@@ -1105,16 +1120,12 @@ static int _node_reconfig(char *node_name, char *orig_config, char **new_config,
 	int32_t gres_config_cnt = 0;
 
 	xassert(gres_data);
+	if (*gres_data == NULL)
+		*gres_data = _build_gres_node_state();
+	gres_ptr = (gres_node_state_t *) *gres_data;
+
 	name_colon_len = snprintf(name_colon, sizeof(name_colon), "%s:",
 				  gres_name);
-	gres_ptr = (gres_node_state_t *) *gres_data;
-	if (gres_ptr == NULL) {
-		gres_ptr = xmalloc(sizeof(gres_node_state_t));
-		*gres_data = gres_ptr;
-		gres_ptr->gres_cnt_config = NO_VAL;
-		gres_ptr->gres_cnt_found  = NO_VAL;
-	}
-
 	if (orig_config) {
 		node_gres_config = xstrdup(orig_config);
 		tok = strtok_r(node_gres_config, ",", &last);
@@ -1137,11 +1148,12 @@ static int _node_reconfig(char *node_name, char *orig_config, char **new_config,
 	gres_ptr->gres_cnt_config = gres_config_cnt;
 	xfree(node_gres_config);
 
-	if ((gres_ptr->gres_cnt_config == 0) || (fast_schedule > 0) ||
-	    (gres_ptr->gres_cnt_found == NO_VAL))
+	if ((gres_ptr->gres_cnt_config == 0) || (fast_schedule > 0))
 		gres_ptr->gres_cnt_avail = gres_ptr->gres_cnt_config;
-	else
+	else if (gres_ptr->gres_cnt_found != NO_VAL)
 		gres_ptr->gres_cnt_avail = gres_ptr->gres_cnt_found;
+	else if (gres_ptr->gres_cnt_avail == NO_VAL)
+		gres_ptr->gres_cnt_avail = 0;
 
 	if (gres_ptr->gres_bit_alloc == NULL) {
 		gres_ptr->gres_bit_alloc = bit_alloc(gres_ptr->gres_cnt_avail);
@@ -1219,7 +1231,7 @@ extern int gres_plugin_node_reconfig(char *node_name,
 	for (i=0; ((i < gres_context_cnt) && (rc == SLURM_SUCCESS)); i++) {
 		/* Find gres_state entry on the list */
 		gres_iter = list_iterator_create(*gres_list);
-		while ((gres_ptr = (gres_state_t *) list_next(gres_iter))){
+		while ((gres_ptr = (gres_state_t *) list_next(gres_iter))) {
 			if (gres_ptr->plugin_id ==
 			    *(gres_context[i].ops.plugin_id))
 				break;
