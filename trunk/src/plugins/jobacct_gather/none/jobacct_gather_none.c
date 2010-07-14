@@ -39,6 +39,7 @@
  *  Copyright (C) 2002 The Regents of the University of California.
 \*****************************************************************************/
 
+#include "src/common/slurm_xlator.h"
 #include "src/common/slurm_jobacct_gather.h"
 
 /*

@@ -433,6 +433,10 @@ scontrol_update_job (int argc, char *argv[])
 			job_msg.partition = val;
 			update_cnt++;
 		}
+		else if (strncasecmp(tag, "QOS", MAX(taglen, 2)) == 0) {
+			job_msg.qos = val;
+			update_cnt++;
+		}
 		else if (strncasecmp(tag, "ReservationName",
 				     MAX(taglen, 3)) == 0) {
 			job_msg.reservation = val;
