@@ -122,7 +122,7 @@ static void	_destroy_gres_slurmd_conf(void *x);
 static uint32_t	_get_gres_cnt(char *orig_config, char *gres_name,
 			      char *gres_name_colon, int gres_name_colon_len);
 static char *	_get_gres_conf(void);
-static uint32_t	_get_tot_gres_cnt(uint32_t plugin_id);
+static uint32_t	_get_tot_gres_cnt(uint32_t plugin_id, uint32_t *set_cnt);
 static int	_load_gres_plugin(char *plugin_name,
 				  slurm_gres_context_t *plugin_context);
 static int	_log_gres_slurmd_conf(void *x, void *arg);
@@ -725,12 +725,19 @@ unpack_error:
  */
 static void _gres_node_list_delete(void *list_element)
 {
+	int i;
 	gres_state_t *gres_ptr;
 	gres_node_state_t *gres_node_ptr;
 
 	gres_ptr = (gres_state_t *) list_element;
 	gres_node_ptr = (gres_node_state_t *) gres_ptr->gres_data;
 	FREE_NULL_BITMAP(gres_node_ptr->gres_bit_alloc);
+	for (i=0; i<gres_node_ptr->topo_cnt; i++) {
+		FREE_NULL_BITMAP(gres_node_ptr->cpus_bitmap[i]);
+		FREE_NULL_BITMAP(gres_node_ptr->gres_block_bitmap[i]);
+	}
+	xfree(gres_node_ptr->cpus_bitmap);
+	xfree(gres_node_ptr->gres_block_bitmap);
 	xfree(gres_node_ptr);
 	xfree(gres_ptr);
 }
@@ -887,12 +894,14 @@ extern int gres_plugin_init_node_config(char *node_name, char *orig_config,
 }
 
 /* Return the number of gres resources found on some node by slurmd */
-static uint32_t _get_tot_gres_cnt(uint32_t plugin_id)
+static uint32_t _get_tot_gres_cnt(uint32_t plugin_id, uint32_t *set_cnt)
 {
 	ListIterator iter;
 	gres_slurmd_conf_t *gres_slurmd_conf;
 	uint32_t gres_cnt = 0;
 
+	xassert(set_cnt);
+	*set_cnt = 0;
 	if (gres_conf_list == NULL)
 		return gres_cnt;
 
@@ -900,8 +909,11 @@ static uint32_t _get_tot_gres_cnt(uint32_t plugin_id)
 	if (iter == NULL)
 		fatal("list_iterator_create: malloc failure");
 	while ((gres_slurmd_conf = (gres_slurmd_conf_t *) list_next(iter))) {
-		if (gres_slurmd_conf->plugin_id == plugin_id)
-			gres_cnt += gres_slurmd_conf->count;
+		if (gres_slurmd_conf->plugin_id != plugin_id)
+			continue;
+		gres_cnt += gres_slurmd_conf->count;
+		if (gres_slurmd_conf->cpus)
+			(*set_cnt)++;
 	}
 	list_iterator_destroy(iter);
 	return gres_cnt;
@@ -912,22 +924,25 @@ extern int _node_config_validate(char *node_name, char *orig_config,
 				 uint16_t fast_schedule, char **reason_down,
 				 slurm_gres_context_t *context_ptr)
 {
-	int rc = SLURM_SUCCESS;
-	uint32_t gres_cnt;
+	int i, gres_inx, rc = SLURM_SUCCESS;
+	uint32_t gres_cnt, set_cnt = 0;
 	bool updated_config = false;
 	gres_node_state_t *gres_data;
+	ListIterator iter;
+	gres_slurmd_conf_t *gres_slurmd_conf;
 
-	gres_cnt = _get_tot_gres_cnt(*context_ptr->ops.plugin_id);
 	gres_data = (gres_node_state_t *) gres_ptr->gres_data;
 	if (gres_data == NULL) {
 		gres_ptr->gres_data = xmalloc(sizeof(gres_node_state_t));
 		gres_data = (gres_node_state_t *) gres_ptr->gres_data;
 		gres_data->gres_cnt_config = NO_VAL;
-		gres_data->gres_cnt_found  = gres_cnt;
-		updated_config = true;
-	} else if (gres_data->gres_cnt_found != gres_cnt) {
+		gres_data->gres_cnt_found  = NO_VAL;
+	}
+
+	gres_cnt = _get_tot_gres_cnt(*context_ptr->ops.plugin_id, &set_cnt);
+	if (gres_data->gres_cnt_found != gres_cnt) {
 		if (gres_data->gres_cnt_found != NO_VAL) {
-			info("%s:count changed for node %s from %u to %u",
+			info("%s: count changed for node %s from %u to %u",
 			     context_ptr->gres_type, node_name,
 			     gres_data->gres_cnt_found, gres_cnt);
 		}
@@ -937,6 +952,46 @@ extern int _node_config_validate(char *node_name, char *orig_config,
 	if (updated_config == false)
 		return SLURM_SUCCESS;
 
+	if (set_cnt != gres_data->topo_cnt) {
+		for (i=0; i<gres_data->topo_cnt; i++) {
+			FREE_NULL_BITMAP(gres_data->cpus_bitmap[i]);
+			FREE_NULL_BITMAP(gres_data->gres_block_bitmap[i]);
+		}
+		gres_data->topo_cnt = set_cnt;
+		gres_data->cpus_bitmap = 
+			xrealloc(gres_data->cpus_bitmap,
+				 gres_data->topo_cnt * sizeof(bitstr_t *));
+		gres_data->gres_block_bitmap = 
+			xrealloc(gres_data->gres_block_bitmap,
+				 gres_data->topo_cnt * sizeof(bitstr_t *));
+		if ((gres_data->cpus_bitmap == NULL) ||
+		    (gres_data->gres_block_bitmap == NULL))
+			fatal("xrealloc: malloc failure");
+		iter = list_iterator_create(gres_conf_list);
+		if (iter == NULL)
+			fatal("list_iterator_create: malloc failure");
+		gres_inx = i = 0;
+		while ((gres_slurmd_conf = (gres_slurmd_conf_t *) 
+			list_next(iter))) {
+			if ((gres_slurmd_conf->cpus == 0) ||
+			    (gres_slurmd_conf->plugin_id !=
+			     *context_ptr->ops.plugin_id))
+				continue;
+			gres_data->cpus_bitmap[i] =
+					bit_alloc(gres_slurmd_conf->cpu_cnt);
+			gres_data->gres_block_bitmap[i] = bit_alloc(gres_cnt);
+			if ((gres_data->cpus_bitmap[i] == NULL) ||
+			    (gres_data->gres_block_bitmap[i] == NULL))
+				fatal("bit_alloc: malloc failure");
+			bit_unfmt(gres_data->cpus_bitmap[i],
+				  gres_slurmd_conf->cpus);
+			bit_nset(gres_data->gres_block_bitmap[i], gres_inx,
+				 gres_inx + gres_slurmd_conf->count - 1);
+			gres_inx += gres_slurmd_conf->count;
+			i++;
+		}
+		list_iterator_destroy(iter);
+	}
 	if ((orig_config == NULL) || (orig_config[0] == '\0'))
 		gres_data->gres_cnt_config = 0;
 	else if (gres_data->gres_cnt_config == NO_VAL) {
@@ -960,9 +1015,9 @@ extern int _node_config_validate(char *node_name, char *orig_config,
 		gres_data->gres_bit_alloc =
 			bit_realloc(gres_data->gres_bit_alloc,
 				    gres_data->gres_cnt_avail);
-		if (gres_data->gres_bit_alloc == NULL)
-			fatal("bit_alloc: malloc failure");
 	}
+	if (gres_data->gres_bit_alloc == NULL)
+		fatal("bit_alloc: malloc failure");
 
 	if ((fast_schedule < 2) && 
 	    (gres_data->gres_cnt_found < gres_data->gres_cnt_config)) {
@@ -1639,20 +1694,29 @@ extern int gres_plugin_node_state_realloc(List job_gres_list, int node_offset,
 
 static void _node_state_log(void *gres_data, char *node_name, char *gres_name)
 {
-	gres_node_state_t *gres_ptr;
+	gres_node_state_t *gres_node_ptr;
+	int i;
+	char tmp_str[128];
 
 	xassert(gres_data);
-	gres_ptr = (gres_node_state_t *) gres_data;
+	gres_node_ptr = (gres_node_state_t *) gres_data;
 	info("gres/%s: state for %s", gres_name, node_name);
 	info("  gres_cnt found:%u configured:%u avail:%u alloc:%u",
-	     gres_ptr->gres_cnt_found, gres_ptr->gres_cnt_config,
-	     gres_ptr->gres_cnt_avail, gres_ptr->gres_cnt_alloc);
-	if (gres_ptr->gres_bit_alloc) {
-		char tmp_str[128];
-		bit_fmt(tmp_str, sizeof(tmp_str), gres_ptr->gres_bit_alloc);
+	     gres_node_ptr->gres_cnt_found, gres_node_ptr->gres_cnt_config,
+	     gres_node_ptr->gres_cnt_avail, gres_node_ptr->gres_cnt_alloc);
+	if (gres_node_ptr->gres_bit_alloc) {
+		bit_fmt(tmp_str, sizeof(tmp_str), gres_node_ptr->gres_bit_alloc);
 		info("  gres_bit_alloc:%s", tmp_str);
 	} else {
 		info("  gres_bit_alloc:NULL");
+	}
+	for (i=0; i<gres_node_ptr->topo_cnt; i++) {
+		bit_fmt(tmp_str, sizeof(tmp_str),
+			gres_node_ptr->cpus_bitmap[i]);
+		info("  gres_cpu_bitmap[%d]:%s", i, tmp_str);
+		bit_fmt(tmp_str, sizeof(tmp_str),
+			gres_node_ptr->gres_block_bitmap[i]);
+		info("  gres_block_bitmap[%d]:%s", i, tmp_str);
 	}
 }
 
