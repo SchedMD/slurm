@@ -78,6 +78,11 @@ typedef struct gres_node_state {
 	/* Resources currently allocated to jobs */
 	uint32_t  gres_cnt_alloc;
 	bitstr_t *gres_bit_alloc;
+
+	/* Topology specific information (if gres.conf contains CPUs spec) */
+	uint16_t topo_cnt;
+	bitstr_t **cpus_bitmap;
+	bitstr_t **gres_block_bitmap;
 } gres_node_state_t;
 
 /* Gres job state as used by slurmctld daemon */
@@ -178,7 +183,7 @@ extern int gres_plugin_init_node_config(char *node_name, char *orig_config,
 					List *gres_list);
 
 /*
- * Unpack this node's configuration from a buffer (build/packed by slurmd)
+ * Unpack this node's configuration from a buffer (built/packed by slurmd)
  * IN/OUT buffer - message buffer to unpack
  * IN node_name - name of node whose data is being unpacked
  */
