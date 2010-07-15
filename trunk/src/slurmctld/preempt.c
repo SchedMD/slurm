@@ -94,6 +94,12 @@ static slurm_preempt_ops_t *
         if ( c->cur_plugin != PLUGIN_INVALID_HANDLE )
         	return &c->ops;
 
+	if(errno != EPLUGIN_NOTFOUND) {
+		error("Couldn't load specified plugin name for %s: %s",
+		      c->preempt_type, plugin_strerror(errno));
+		return NULL;
+	}
+
 	error("Couldn't find the specified plugin name for %s "
 	      "looking at all files",
 	      c->preempt_type);

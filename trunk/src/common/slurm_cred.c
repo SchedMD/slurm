@@ -355,6 +355,12 @@ _slurm_crypto_get_ops( slurm_crypto_context_t *c )
 	if ( c->cur_plugin != PLUGIN_INVALID_HANDLE )
 		return &c->ops;
 
+	if(errno != EPLUGIN_NOTFOUND) {
+		error("Couldn't load specified plugin name for %s: %s",
+		      c->crypto_type, plugin_strerror(errno));
+		return NULL;
+	}
+
 	error("Couldn't find the specified plugin name for %s "
 	      "looking at all files",
 	      c->crypto_type);

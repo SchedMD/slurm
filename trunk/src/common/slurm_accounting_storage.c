@@ -277,6 +277,12 @@ static slurm_acct_storage_ops_t * _acct_storage_get_ops(
         if ( c->cur_plugin != PLUGIN_INVALID_HANDLE )
         	return &c->ops;
 
+	if(errno != EPLUGIN_NOTFOUND) {
+		error("Couldn't load specified plugin name for %s: %s",
+		      c->acct_storage_type, plugin_strerror(errno));
+		return NULL;
+	}
+
 	error("Couldn't find the specified plugin name for %s "
 	      "looking at all files",
 	      c->acct_storage_type);

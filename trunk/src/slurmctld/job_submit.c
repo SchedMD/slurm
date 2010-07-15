@@ -92,7 +92,7 @@ static slurm_submit_context_t *submit_context = NULL;
 static char *submit_plugin_list = NULL;
 static pthread_mutex_t submit_context_lock = PTHREAD_MUTEX_INITIALIZER;
 
-static int _load_submit_plugin(char *plugin_name, 
+static int _load_submit_plugin(char *plugin_name,
 			       slurm_submit_context_t *plugin_context)
 {
 	/*
@@ -111,12 +111,19 @@ static int _load_submit_plugin(char *plugin_name,
 	plugin_context->cur_plugin	= PLUGIN_INVALID_HANDLE;
 	plugin_context->sched_errno 	= SLURM_SUCCESS;
 
-        plugin_context->cur_plugin = plugin_load_and_link(
-					plugin_context->sched_type, 
+	plugin_context->cur_plugin = plugin_load_and_link(
+					plugin_context->sched_type,
 					n_syms, syms,
 					(void **) &plugin_context->ops);
-        if (plugin_context->cur_plugin != PLUGIN_INVALID_HANDLE)
-        	return SLURM_SUCCESS;
+	if (plugin_context->cur_plugin != PLUGIN_INVALID_HANDLE)
+		return SLURM_SUCCESS;
+
+	if(errno != EPLUGIN_NOTFOUND) {
+		error("job_submit: Couldn't load specified plugin name "
+		      "for %s: %s",
+		      plugin_context->sched_type, plugin_strerror(errno));
+		return SLURM_ERROR;
+	}
 
 	error("job_submit: Couldn't find the specified plugin name for %s "
 	      "looking at all files",
@@ -143,7 +150,7 @@ static int _load_submit_plugin(char *plugin_name,
 					plugin_context->plugin_list,
 					plugin_context->sched_type );
 	if (plugin_context->cur_plugin == PLUGIN_INVALID_HANDLE) {
-		error("job_submit: cannot find scheduler plugin for %s", 
+		error("job_submit: cannot find scheduler plugin for %s",
 		       plugin_context->sched_type);
 		return SLURM_ERROR;
 	}
@@ -200,9 +207,9 @@ extern int job_submit_plugin_init(void)
 	names = xstrdup(submit_plugin_list);
 	one_name = strtok_r(names, ",", &last);
 	while (one_name) {
-		xrealloc(submit_context, (sizeof(slurm_submit_context_t) * 
+		xrealloc(submit_context, (sizeof(slurm_submit_context_t) *
 			 (submit_context_cnt + 1)));
-		rc = _load_submit_plugin(one_name, 
+		rc = _load_submit_plugin(one_name,
 					 submit_context + submit_context_cnt);
 		if (rc != SLURM_SUCCESS)
 			break;
