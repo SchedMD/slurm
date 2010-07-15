@@ -2911,9 +2911,9 @@ extern uint32_t debug_str2flags(char *debug_flags)
 		else if (strcasecmp(tok, "CPU_Bind") == 0)
 			rc |= DEBUG_FLAG_CPU_BIND;
 		else if (strcasecmp(tok, "Gang") == 0)
-			rc = DEBUG_FLAG_GANG;
+			rc |= DEBUG_FLAG_GANG;
 		else if (strcasecmp(tok, "Gres") == 0)
-			rc = DEBUG_FLAG_GRES;
+			rc |= DEBUG_FLAG_GRES;
 		else if (strcasecmp(tok, "NO_CONF_HASH") == 0)
 			rc |= DEBUG_FLAG_NO_CONF_HASH;
 		else if (strcasecmp(tok, "Priority") == 0)
