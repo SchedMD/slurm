@@ -311,15 +311,19 @@ extern int gres_plugin_job_state_unpack(List *gres_list, Buf buffer,
 
 /*
  * Determine how many CPUs on the node can be used by this job
- * IN job_gres_list - job's gres_list built by gres_plugin_job_state_validate()
+ * IN job_gres_list  - job's gres_list built by gres_plugin_job_state_validate()
  * IN node_gres_list - node's gres_list built by gres_plugin_node_config_validate()
  * IN use_total_gres - if set then consider all gres resources as available,
  *		       and none are commited to running jobs
+ * IN cpu_bitmap     - Identification of available CPUs (NULL if no restriction)
+ * IN cpu_start_bit  - index into cpu_bitmap for this node's first CPU
+ * IN cpu_end_bit    - index into cpu_bitmap for this node's last CPU
  * RET: NO_VAL    - All CPUs on node are available
  *      otherwise - Specific CPU count
  */
 extern uint32_t gres_plugin_job_test(List job_gres_list, List node_gres_list, 
-				     bool use_total_gres);
+				     bool use_total_gres, bitstr_t *cpu_bitmap,
+				     int cpu_start_bit, int cpu_end_bit);
 
 /*
  * Allocate resource to a job and update node and job gres information

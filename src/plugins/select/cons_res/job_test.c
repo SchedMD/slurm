@@ -617,6 +617,7 @@ uint16_t _can_job_run_on_node(struct job_record *job_ptr, bitstr_t *core_map,
 {
 	uint16_t cpus;
 	uint32_t avail_mem, req_mem, gres_cpus;
+	int core_start_bit, core_end_bit;
 	struct node_record *node_ptr;
 	List gres_list;
 
@@ -627,13 +628,17 @@ uint16_t _can_job_run_on_node(struct job_record *job_ptr, bitstr_t *core_map,
 	else
 		cpus = _allocate_cores(job_ptr, core_map, node_i, 1);
 
+	core_start_bit = cr_get_coremap_offset(node_i);
+	core_end_bit   = cr_get_coremap_offset(node_i+1) - 1;
 	node_ptr = select_node_record[node_i].node_ptr;
 	if (node_usage[node_i].gres_list)
 		gres_list = node_usage[node_i].gres_list;
 	else
 		gres_list = node_ptr->gres_list;
 	gres_cpus = gres_plugin_job_test(job_ptr->gres_list,
-					 node_ptr->gres_list, test_only);
+					 node_ptr->gres_list, test_only,
+					 core_map, core_start_bit,
+					 core_end_bit);
 	if (gres_cpus < cpus)
 		cpus = gres_cpus;
 
@@ -660,10 +665,8 @@ uint16_t _can_job_run_on_node(struct job_record *job_ptr, bitstr_t *core_map,
 		if (req_mem > avail_mem)
 			cpus = 0;
 	}
-	if (cpus == 0) {
-		bit_nclear(core_map, cr_get_coremap_offset(node_i),
-			   (cr_get_coremap_offset(node_i+1))-1);
-	}
+	if (cpus == 0)
+		bit_nclear(core_map, core_start_bit, core_end_bit);
 
 	debug3("cons_res: _can_job_run_on_node: %u cpus on %s(%d), mem %u/%u",
 		cpus, select_node_record[node_i].node_ptr->name,
@@ -731,7 +734,7 @@ static int _verify_node_state(struct part_res_record *cr_part_ptr,
 			      enum node_cr_state job_node_req)
 {
 	struct node_record *node_ptr;
-	uint32_t i, free_mem, min_mem, size;
+	uint32_t i, free_mem, gres_cpus, min_mem, size;
 	List gres_list;
 
 	min_mem = job_ptr->details->pn_min_memory & (~MEM_PER_CPU);
@@ -759,8 +762,10 @@ static int _verify_node_state(struct part_res_record *cr_part_ptr,
 			gres_list = node_usage[i].gres_list;
 		else
 			gres_list = node_ptr->gres_list;
-		if (gres_plugin_job_test(job_ptr->gres_list, 
-					 node_ptr->gres_list, true) == 0) {
+		gres_cpus = gres_plugin_job_test(job_ptr->gres_list, 
+						 node_ptr->gres_list, true,
+						 NULL, 0, 0);
+		if (gres_cpus == 0) {
 			info("cons_res: _vns: node %s lacks gres",
 			     node_ptr->name);
 			goto clear_bit;

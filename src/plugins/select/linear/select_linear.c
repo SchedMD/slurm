@@ -648,7 +648,8 @@ static int _job_count_bitmap(struct cr_record *cr_ptr,
 		else
 			gres_list = node_ptr->gres_list;
 		gres_cpus = gres_plugin_job_test(job_ptr->gres_list, 
-						 gres_list, use_total_gres);
+						 gres_list, use_total_gres,
+						 NULL, 0, 0);
 		if ((gres_cpus != NO_VAL) && (gres_cpus < cpu_cnt)) {
 			bit_clear(jobmap, i);
 			continue;
