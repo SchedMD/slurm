@@ -208,6 +208,7 @@ plugin_load_and_link(const char *type_name, int n_syms,
 	char *head=NULL, *dir_array=NULL, *so_name = NULL,
 		*file_name=NULL;
 	int i=0;
+	plugin_err_t err = EPLUGIN_NOTFOUND;
 
 	if (!type_name)
 		return plug;
@@ -240,15 +241,23 @@ plugin_load_and_link(const char *type_name, int n_syms,
 			debug4("%s: Does not exist or not a regular file.",
 			       file_name);
 			xfree(file_name);
+			err = EPLUGIN_NOTFOUND;
 		} else {
-			plugin_load_from_file(&plug, file_name);
-			xfree(file_name);
-			if (plugin_get_syms(plug, n_syms, names, ptrs) >=
-			    n_syms) {
-				debug3("Success.");
-				break;
+			if((err = plugin_load_from_file(&plug, file_name))
+			   == EPLUGIN_SUCCESS) {
+				if (plugin_get_syms(plug, n_syms,
+						    names, ptrs) >=
+				       n_syms) {
+					debug3("Success.");
+					xfree(file_name);
+					break;
+				} else {
+					err = EPLUGIN_MISSING_SYMBOL;
+					plug = PLUGIN_INVALID_HANDLE;
+				}
 			} else
 				plug = PLUGIN_INVALID_HANDLE;
+			xfree(file_name);
 		}
 
 		if (got_colon) {
@@ -259,6 +268,7 @@ plugin_load_and_link(const char *type_name, int n_syms,
 
 	xfree(dir_array);
 	xfree(so_name);
+	errno = err;
 	return plug;
 }
 /*

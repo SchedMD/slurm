@@ -207,6 +207,12 @@ static int _load_gres_plugin(char *plugin_name,
 	if (plugin_context->cur_plugin != PLUGIN_INVALID_HANDLE)
 		return SLURM_SUCCESS;
 
+	if(errno != EPLUGIN_NOTFOUND) {
+		error("Couldn't load specified plugin name for %s: %s",
+		      plugin_context->gres_type, plugin_strerror(errno));
+		return SLURM_ERROR;
+	}
+
 	error("gres: Couldn't find the specified plugin name for %s "
 	      "looking at all files",
 	      plugin_context->gres_type);

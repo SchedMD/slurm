@@ -238,6 +238,12 @@ static int _select_get_ops(char *select_type,
         if ( c->cur_plugin != PLUGIN_INVALID_HANDLE )
         	return SLURM_SUCCESS;
 
+	if(errno != EPLUGIN_NOTFOUND) {
+		error("Couldn't load specified plugin name for %s: %s",
+		      c->select_type, plugin_strerror(errno));
+		return SLURM_ERROR;
+	}
+
 	error("Couldn't find the specified plugin name for %s "
 	      "looking at all files",
 	      c->select_type);
