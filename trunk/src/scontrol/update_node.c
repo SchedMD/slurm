@@ -128,9 +128,11 @@ scontrol_update_node (int argc, char *argv[])
 				reason_str[len] = '\0';
 
 			node_msg.reason = reason_str;
-			if (uid_from_string(getlogin(),
-					    &node_msg.reason_uid) < 0)
+			if (getlogin() == NULL ||
+			    uid_from_string(getlogin(),
+					    &node_msg.reason_uid) < 0) {
 				node_msg.reason_uid = getuid();
+			}
 			update_cnt++;
 		}
 		else if (strncasecmp(tag, "State", MAX(taglen, 1)) == 0) {
