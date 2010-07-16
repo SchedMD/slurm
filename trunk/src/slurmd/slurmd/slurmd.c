@@ -1545,8 +1545,10 @@ _kill_old_slurmd(void)
 		/*
 		 * Wait for previous daemon to terminate
 		 */
-		if (fd_get_readw_lock(fd) < 0)
-			fatal ("unable to wait for readw lock: %m");
+		if (fd_get_readw_lock(fd) < 0) {
+			fatal ("error getting readw lock on file %s: %m",
+			       conf->pidfile);
+		}
 		(void) close(fd); /* Ignore errors */
 	}
 }
