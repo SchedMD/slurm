@@ -514,6 +514,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/*.so*
 %{_libdir}/slurm/src/*
 %{_mandir}/man1/*
+%{_mandir}/man5/gres.*
 %{_mandir}/man5/slurm.*
 %{_mandir}/man5/topology.*
 %{_mandir}/man5/wiki.*
