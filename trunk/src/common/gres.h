@@ -72,7 +72,8 @@ typedef struct gres_node_state {
 	/* Configured resources via Gres parameter */
 	uint32_t gres_cnt_config;
 
-	/* Total resources available for allocation to jobs */
+	/* Total resources available for allocation to jobs.
+	 * gres_cnt_found or gres_cnt_config, depending upon FastSchedule */
 	uint32_t gres_cnt_avail;
 
 	/* Resources currently allocated to jobs */
@@ -90,10 +91,6 @@ typedef struct gres_job_state {
 	/* Count of resources needed */
 	uint32_t gres_cnt_alloc;
 
-	/* If 0 then gres_cnt_alloc is per node,
-	 * if 1 then gres_cnt_alloc is per CPU */
-	uint8_t  gres_cnt_mult;
-
 	/* Resources currently allocated to job on each node */
 	uint32_t node_cnt;
 	bitstr_t **gres_bit_alloc;
@@ -108,10 +105,6 @@ typedef struct gres_job_state {
 typedef struct gres_step_state {
 	/* Count of resources needed */
 	uint32_t gres_cnt_alloc;
-
-	/* If 0 then gres_cnt_alloc is per node,
-	 * if 1 then gres_cnt_alloc is per CPU */
-	uint8_t  gres_cnt_mult;
 
 	/* Resources currently allocated to the job step on each node */
 	uint32_t node_cnt;

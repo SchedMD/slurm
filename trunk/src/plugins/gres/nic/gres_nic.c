@@ -106,7 +106,7 @@ const char	plugin_name[]		= "Gres NIC plugin";
 const char	plugin_type[]		= "gres/nic";
 const uint32_t	plugin_id		= 102;
 const char	gres_name[]		= "nic";
-const char	help_msg[]		= "nic[:count[*cpu]]";
+const char	help_msg[]		= "nic[:count]";
 const uint32_t	plugin_version		= 100;
 
 /*
