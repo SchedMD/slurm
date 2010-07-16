@@ -314,8 +314,8 @@ static bg_record_t *_find_matching_block(List block_list,
 			continue;
 		} else if((bg_record->job_running != NO_JOB_RUNNING)
 			  && (bg_record->job_running != job_ptr->job_id)
-			  && (bg_conf->layout_mode == LAYOUT_DYNAMIC
-			      || (SELECT_IS_MODE_RUN_NOW(query_mode)
+			  && ((bg_conf->layout_mode == LAYOUT_DYNAMIC)
+			      || (!SELECT_IS_CHECK_FULL_SET(query_mode)
 				  && bg_conf->layout_mode != LAYOUT_DYNAMIC))) {
 			debug("block %s in use by %s job %d",
 			      bg_record->bg_block_id,
