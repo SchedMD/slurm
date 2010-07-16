@@ -150,6 +150,7 @@ man3_MANS = man3/slurm_hostlist_create.3 \
 
 man5_MANS = man5/bluegene.conf.5 \
 	man5/cgroup.conf.5 \
+	man5/gres.conf.5 \
 	man5/slurm.conf.5 \
 	man5/slurmdbd.conf.5 \
 	man5/topology.conf.5 \
