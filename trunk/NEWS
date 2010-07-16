@@ -369,6 +369,9 @@ documents those changes that are of interest to users and admins.
     like postgres over mysql for some reason here you go. (Work done
     primarily by Hongjia Cao, NUDT.)
 
+* Changes in SLURM 2.1.11
+=========================
+
 * Changes in SLURM 2.1.10
 =========================
  -- Fix memory leak in sched/builtin plugin.
