@@ -128,8 +128,7 @@ am__libcommon_la_SOURCES_DIST = assoc_mgr.c assoc_mgr.h \
 	global_defaults.c timers.c timers.h slurm_xlator.h stepd_api.c \
 	stepd_api.h write_labelled_message.c write_labelled_message.h \
 	proc_args.c proc_args.h slurm_strcasestr.c slurm_strcasestr.h \
-	node_conf.h node_conf.c gres.h gres.c gres_job.c gres_node.c \
-	gres_step.c
+	node_conf.h node_conf.c gres.h gres.c
 @HAVE_UNSETENV_FALSE@am__objects_1 = unsetenv.lo
 am_libcommon_la_OBJECTS = assoc_mgr.lo basil_resv_conf.lo xmalloc.lo \
 	xassert.lo xstring.lo xsignal.lo forward.lo strlcpy.lo list.lo \
@@ -149,7 +148,7 @@ am_libcommon_la_OBJECTS = assoc_mgr.lo basil_resv_conf.lo xmalloc.lo \
 	checkpoint.lo job_resources.lo parse_time.lo job_options.lo \
 	global_defaults.lo timers.lo stepd_api.lo \
 	write_labelled_message.lo proc_args.lo slurm_strcasestr.lo \
-	node_conf.lo gres.lo gres_job.lo gres_node.lo gres_step.lo
+	node_conf.lo gres.lo
 am__EXTRA_libcommon_la_SOURCES_DIST = unsetenv.c unsetenv.h
 libcommon_la_OBJECTS = $(am_libcommon_la_OBJECTS)
 libcommon_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
@@ -479,7 +478,7 @@ libcommon_la_SOURCES = \
 	proc_args.c proc_args.h		\
 	slurm_strcasestr.c slurm_strcasestr.h \
 	node_conf.h node_conf.c		\
-	gres.h gres.c gres_job.c gres_node.c gres_step.c
+	gres.h gres.c
 
 EXTRA_libcommon_la_SOURCES = \
 	$(extra_unsetenv_src)
@@ -593,9 +592,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/getopt1.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/global_defaults.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gres.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gres_job.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gres_node.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gres_step.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hostlist.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/io_hdr.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_options.Plo@am__quote@
