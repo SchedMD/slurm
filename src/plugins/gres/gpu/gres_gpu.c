@@ -106,7 +106,7 @@ const char	plugin_name[]		= "Gres GPU plugin";
 const char	plugin_type[]		= "gres/gpu";
 const uint32_t	plugin_id		= 101;
 const char	gres_name[]		= "gpu";
-const char	help_msg[]		= "gpu[:count[*cpu]]";
+const char	help_msg[]		= "gpu[:count]";
 const uint32_t	plugin_version		= 100;
 
 /*
