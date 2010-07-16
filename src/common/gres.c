@@ -553,7 +553,10 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 
 	p = xmalloc(sizeof(gres_slurmd_conf_t));
 	p->name = xstrdup(value);
-	if (!s_p_get_uint32(&p->count, "Count", tbl))
+	if (s_p_get_uint32(&p->count, "Count", tbl)) {
+		if (p->count == 0)
+			fatal("Invalid gres data for %s, Count=0", p->name);
+	} else
 		p->count = 1;
 	if (s_p_get_string(&p->cpus, "CPUs", tbl)) {
 		bitstr_t *cpu_bitmap;	/* Just use to validate config */
@@ -572,6 +575,10 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 		struct stat config_stat;
 		if (stat(p->file, &config_stat) < 0)
 			fatal("can't stat gres.conf file %s: %m", p->file);
+		if (p->count > 1) {
+			fatal("Invalid gres data for %s, Count=%u and File=...",
+			      p->name, p->count);
+		}
 	}
 	s_p_hashtbl_destroy(tbl);
 
@@ -770,12 +777,9 @@ static void _gres_node_list_delete(void *list_element)
 	gres_ptr = (gres_state_t *) list_element;
 	gres_node_ptr = (gres_node_state_t *) gres_ptr->gres_data;
 	FREE_NULL_BITMAP(gres_node_ptr->gres_bit_alloc);
-	for (i=0; i<gres_node_ptr->topo_cnt; i++) {
+	for (i=0; i<gres_node_ptr->topo_cnt; i++)
 		FREE_NULL_BITMAP(gres_node_ptr->cpus_bitmap[i]);
-		FREE_NULL_BITMAP(gres_node_ptr->gres_block_bitmap[i]);
-	}
 	xfree(gres_node_ptr->cpus_bitmap);
-	xfree(gres_node_ptr->gres_block_bitmap);
 	xfree(gres_node_ptr);
 	xfree(gres_ptr);
 }
@@ -1006,19 +1010,13 @@ extern int _node_config_validate(char *node_name, char *orig_config,
 		/* Rebuild GRES information when the node registers.
 		 * Do we want to do this for every node registration
 		 * since it is fairly high overhead? */
-		for (i=0; i<gres_data->topo_cnt; i++) {
+		for (i=0; i<gres_data->topo_cnt; i++)
 			FREE_NULL_BITMAP(gres_data->cpus_bitmap[i]);
-			FREE_NULL_BITMAP(gres_data->gres_block_bitmap[i]);
-		}
 		gres_data->topo_cnt = set_cnt;
 		gres_data->cpus_bitmap = 
 			xrealloc(gres_data->cpus_bitmap,
 				 gres_data->topo_cnt * sizeof(bitstr_t *));
-		gres_data->gres_block_bitmap = 
-			xrealloc(gres_data->gres_block_bitmap,
-				 gres_data->topo_cnt * sizeof(bitstr_t *));
-		if ((gres_data->cpus_bitmap == NULL) ||
-		    (gres_data->gres_block_bitmap == NULL))
+		if (gres_data->cpus_bitmap == NULL)
 			fatal("xrealloc: malloc failure");
 		iter = list_iterator_create(gres_conf_list);
 		if (iter == NULL)
@@ -1032,14 +1030,10 @@ extern int _node_config_validate(char *node_name, char *orig_config,
 				continue;
 			gres_data->cpus_bitmap[i] =
 					bit_alloc(gres_slurmd_conf->cpu_cnt);
-			gres_data->gres_block_bitmap[i] = bit_alloc(gres_cnt);
-			if ((gres_data->cpus_bitmap[i] == NULL) ||
-			    (gres_data->gres_block_bitmap[i] == NULL))
+			if (gres_data->cpus_bitmap[i] == NULL)
 				fatal("bit_alloc: malloc failure");
 			bit_unfmt(gres_data->cpus_bitmap[i],
 				  gres_slurmd_conf->cpus);
-			bit_nset(gres_data->gres_block_bitmap[i], gres_inx,
-				 gres_inx + gres_slurmd_conf->count - 1);
 			gres_inx += gres_slurmd_conf->count;
 			i++;
 		}
@@ -1485,13 +1479,8 @@ static void *_node_state_dup(void *gres_data)
 	new_gres->topo_cnt        = gres_ptr->topo_cnt;
 	new_gres->cpus_bitmap     = xmalloc(gres_ptr->topo_cnt *
 					    sizeof(bitstr_t *));
-	new_gres->gres_block_bitmap = xmalloc(gres_ptr->topo_cnt *
-					      sizeof(bitstr_t *));
-	for (i=0; i<gres_ptr->topo_cnt; i++) {
+	for (i=0; i<gres_ptr->topo_cnt; i++)
 		new_gres->cpus_bitmap[i] = bit_copy(gres_ptr->cpus_bitmap[i]);
-		new_gres->gres_block_bitmap[i] = bit_copy(gres_ptr->
-							  gres_block_bitmap[i]);
-	}
 
 	return new_gres;
 }
@@ -1725,9 +1714,6 @@ static void _node_state_log(void *gres_data, char *node_name, char *gres_name)
 		bit_fmt(tmp_str, sizeof(tmp_str),
 			gres_node_ptr->cpus_bitmap[i]);
 		info("  gres_cpu_bitmap[%d]:%s", i, tmp_str);
-		bit_fmt(tmp_str, sizeof(tmp_str),
-			gres_node_ptr->gres_block_bitmap[i]);
-		info("  gres_block_bitmap[%d]:%s", i, tmp_str);
 	}
 }
 
@@ -2275,9 +2261,7 @@ static uint32_t _job_test(void *job_gres_data, void *node_gres_data,
 				continue;
 			tot_cpu_cnt += cpu_cnt;
 			for (j=0; j<node_gres_ptr->gres_cnt_avail; j++) {
-				if (!bit_test(node_gres_ptr->
-					      gres_block_bitmap[i], j) &&
-				    !bit_test(node_gres_ptr->gres_bit_alloc, j))
+				if (!bit_test(node_gres_ptr->gres_bit_alloc, j))
 					bit_set(new_gres_bitmap, j);
 			}
 		}

@@ -80,11 +80,11 @@
  * These variables are required by the generic plugin interface.  If they
  * are not found in the plugin, the plugin loader will ignore it.
  *
- * plugin_name - a string giving a human-readable description of the
+ * plugin_name - A string giving a human-readable description of the
  * plugin.  There is no maximum length, but the symbol must refer to
  * a valid string.
  *
- * plugin_type - a string suggesting the type of the plugin or its
+ * plugin_type - A string suggesting the type of the plugin or its
  * applicability to a particular form of data or method of data handling.
  * If the low-level plugin API is used, the contents of this string are
  * unimportant and may be anything.  SLURM uses the higher-level plugin
@@ -98,9 +98,12 @@
  * only load authentication plugins if the plugin_type string has a prefix
  * of "auth/".
  *
- * plugin_id        - unique id for this plugin, value of 100+
- * help_msg         - response for srun --gres=help
- * plugin_version   - specifies the version number of the plugin.
+ * plugin_id        - Unique id for this plugin, value of 100+
+ *
+ * help_msg         - Response for srun --gres=help
+ *
+ * plugin_version   - Specifies the version number of the plugin. This would
+ * typically be the same for all plugins.
  */
 const char	plugin_name[]		= "Gres NIC plugin";
 const char	plugin_type[]		= "gres/nic";
@@ -112,20 +115,26 @@ const uint32_t	plugin_version		= 100;
 /*
  * We could load gres state or validate it using various mechanisms here.
  * This only validates that the configuration was specified in gres.conf.
+ * In the general case, no code would need to be changed.
  */
 extern int node_config_load(List gres_conf_list)
 {
 	int rc = SLURM_ERROR;
 	ListIterator iter;
 	gres_slurmd_conf_t *gres_slurmd_conf;
+	bool has_file = false, lacks_file = false;
 
 	xassert(gres_conf_list);
 	iter = list_iterator_create(gres_conf_list);
 	if (iter == NULL)
 		fatal("list_iterator_create: malloc failure");
 	while ((gres_slurmd_conf = list_next(iter))) {
-		if (strcmp(gres_slurmd_conf->name, "nic") == 0) {
+		if (strcmp(gres_slurmd_conf->name, gres_name) == 0) {
 			gres_slurmd_conf->plugin_id = plugin_id;
+			if (gres_slurmd_conf->file)
+				has_file = true;
+			else
+				lacks_file = true;
 			rc = SLURM_SUCCESS;
 		}
 	}
@@ -133,5 +142,9 @@ extern int node_config_load(List gres_conf_list)
 
 	if (rc != SLURM_SUCCESS)
 		fatal("%s failed to load configuration", plugin_name);
+	if (has_file && lacks_file) {
+		fatal("%s invalid configuration has both File and Count lines",
+		      plugin_name);
+	}
 	return rc;
 }
