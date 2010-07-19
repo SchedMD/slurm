@@ -4,6 +4,8 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 2.1.11
 =========================
+ -- BLUEGENE - fix sinfo to not get duplicate entries when running command
+    sinfo -e -o "%9P %6m %.4c %.22F %f"
 
 * Changes in SLURM 2.1.10
 =========================
