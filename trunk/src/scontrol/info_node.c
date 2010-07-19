@@ -92,7 +92,8 @@ scontrol_print_node (char *node_name, node_info_msg_t  * node_buffer_ptr)
 	for (j = 0; j < node_buffer_ptr->record_count; j++) {
 		if (node_name) {
 			i = (j + last_inx) % node_buffer_ptr->record_count;
-			if (strcmp (node_name,
+			if ((node_buffer_ptr->node_array[i].name == NULL) ||
+			    strcmp (node_name,
 				    node_buffer_ptr->node_array[i].name))
 				continue;
 		} else if (node_buffer_ptr->node_array[j].name == NULL)
