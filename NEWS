@@ -28,6 +28,7 @@ documents those changes that are of interest to users and admins.
     load the default select plugin as well.
  -- Prevent scontrol from aborting if getlogin() returns NULL.
  -- Prevent scontrol segfault when there are hidden nodes.
+ -- Prevent srun segfault after task launch failure.
 
 * Changes in SLURM 2.2.0.pre8
 =============================

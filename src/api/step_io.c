@@ -737,9 +737,14 @@ again:
 		for (i = 0; i < info->cio->num_nodes; i++) {
 			msg->ref_count++;
 			if (info->cio->ioserver[i] == NULL)
-				fatal("ioserver stream not yet initialized");
-			server = info->cio->ioserver[i]->arg;
-			list_enqueue(server->msg_queue, msg);
+				/* client_io_handler_abort() or 
+				 * client_io_handler_downnodes() called */
+				verbose("ioserver stream of node %d not yet "
+					"initialized", i);
+			else {
+				server = info->cio->ioserver[i]->arg;
+				list_enqueue(server->msg_queue, msg);
+			}
 		}
 	} else if (header.type == SLURM_IO_STDIN) {
 		uint32_t nodeid;

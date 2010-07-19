@@ -1275,8 +1275,14 @@ static int _fail_step_tasks(slurm_step_ctx_t *ctx, char *node, int ret_code)
 	step_complete_msg_t msg;
 	int rc = -1;
 	int nodeid = NO_VAL;
+	struct step_launch_state *sls = ctx->launch_state;
 
 	nodeid = nodelist_find(ctx->step_resp->step_layout->node_list, node);
+
+	pthread_mutex_lock(&sls->lock);
+	sls->abort = true;
+	pthread_cond_broadcast(&sls->cond);
+	pthread_mutex_unlock(&sls->lock);
 
 	memset(&msg, 0, sizeof(step_complete_msg_t));
 	msg.job_id = ctx->job_id;
