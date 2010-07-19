@@ -734,6 +734,30 @@ _process_command (int argc, char *argv[])
 		}
 
 	}
+	else if ((strncasecmp (tag, "hold", MAX(taglen, 4)) == 0) ||
+	         (strncasecmp (tag, "release", MAX(taglen, 3)) == 0)) {
+		if (argc > 2) {
+			exit_code = 1;
+			if (quiet_flag != 1)
+				fprintf(stderr,
+					"too many arguments for keyword:%s\n",
+					tag);
+		}
+		else if (argc < 2) {
+			exit_code = 1;
+			if (quiet_flag != 1)
+				fprintf(stderr,
+					"too few arguments for keyword:%s\n",
+					tag);
+		} else {
+			error_code = scontrol_hold(argv[0], argv[1]);
+			if (error_code) {
+				exit_code = 1;
+				if (quiet_flag != 1)
+					slurm_perror ("slurm_update_job error");
+			}
+		}
+	}
 	else if ((strncasecmp (tag, "suspend", MAX(taglen, 2)) == 0) ||
 	         (strncasecmp (tag, "resume", MAX(taglen, 3)) == 0)) {
 		if (argc > 2) {
@@ -1516,6 +1540,7 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
                               delete blocks.                               \n\
      exit                     terminate scontrol                           \n\
      help                     print this description of use.               \n\
+     hold <job_id>            prevent specified job from starting (see release)\n\
      hide                     do not display information about hidden      \n\
                               partitions                                   \n\
      listpids <job_id<.step>> List pids associated with the given jobid, or\n\
@@ -1531,16 +1556,17 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
      quiet                    print no messages other than error messages. \n\
      quit                     terminate this command.                      \n\
      reconfigure              re-read configuration files.                 \n\
+     release <job_id>         permit specified job to start (see hold)     \n\
      requeue <job_id>         re-queue a batch job                         \n\
+     resume <job_id>          resume previously suspended job (see suspend)\n\
      setdebug <level>         set slurmctld debug level                    \n\
      schedloglevel <slevel>   set scheduler log level                      \n\
      show <ENTITY> [<ID>]     display state of identified entity, default  \n\
                               is all records.                              \n\
      shutdown <OPTS>          shutdown slurm daemons                       \n\
-     takeover                 ask slurm backup controller to take over     \n\
                               (the primary controller will be stopped)     \n\
-     suspend <job_id>         susend specified job                         \n\
-     resume <job_id>          resume previously suspended job              \n\
+     suspend <job_id>         susend specified job (see resume)            \n\
+     takeover                 ask slurm backup controller to take over     \n\
      update <SPECIFICATIONS>  update job, node, partition, reservation,    \n\
                               step or bluegene block/subbp configuration   \n\
      verbose                  enable detailed logging.                     \n\

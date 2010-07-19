@@ -1,4 +1,4 @@
-.TH SCONTROL "1" "March 2010" "scontrol 2.2" "Slurm components"
+.TH SCONTROL "1" "July 2010" "scontrol 2.2" "Slurm components"
 
 .SH "NAME"
 scontrol \- Used view and modify Slurm configuration and state.
@@ -152,6 +152,14 @@ configured as hidden or partitions that are unavailable to the user's group.
 This is the default behavior.
 
 .TP
+\fBhold\fP \fIjob_id\fP
+Prevent a pending job from beginning started (sets it's priority to 0).
+Use the \fIrelease\fP command to permit the job to be scheduled.
+Note that when a job is held by a system administrator, only a system
+administrator may release the job for execution. When the job is held by
+its owner, it may also be released by the job's owner.
+
+.TP
 \fBnotify\fP \fIjob_id\fP \fImessage\fP
 Send a message to standard error of the salloc or srun command or batch job 
 associated with the specified \fIjob_id\fP.
@@ -212,12 +220,16 @@ ControlAddr, ControlMach, PluginDir, StateSaveLocation, SlurmctldPort
 or SlurmdPort.
 
 .TP
-\fBresume\fP \fIjob_id\fP
-Resume a previously suspended job.
+\fBrelease\fP \fIjob_id\fP
+Release a previously held job to begin execution. Also see \fBhold\fR.
 
 .TP
 \fBrequeue\fP \fIjob_id\fP
 Requeue a running or pending SLURM batch job.
+
+.TP
+\fBresume\fP \fIjob_id\fP
+Resume a previously suspended job. Also see \fBsuspend\fR.
 
 .TP
 \fBschedloglevel\fP \fILEVEL\fP

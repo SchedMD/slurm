@@ -33,6 +33,8 @@ documents those changes that are of interest to users and admins.
  -- Added job_submit/lua plugin
  -- Fixed sinfo on a bluegene system to print correctly the command
     sinfo -e -o "%9P %6m %.4c %.22F %f"
+ -- Add scontrol commands "hold" and "release" to simplify setting a job's
+    priority to 0 or 1.
 
 * Changes in SLURM 2.2.0.pre8
 =============================

@@ -117,6 +117,7 @@ extern int	scontrol_checkpoint(char *op, char *job_step_id_str, int argc,
 extern int	scontrol_create_part(int argc, char *argv[]);
 extern int	scontrol_create_res(int argc, char *argv[]);
 extern int	scontrol_encode_hostlist(char *hostlist);
+extern int	scontrol_hold(char *op, char *job_id_str);
 extern int	scontrol_job_notify(int argc, char *argv[]);
 extern int	scontrol_job_ready(char *job_id_str);
 extern void	scontrol_list_pids(const char *jobid_str,
