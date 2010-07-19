@@ -71,8 +71,7 @@ static sinfo_data_t *_create_sinfo(partition_info_t* part_ptr,
 				   uint32_t node_scaling);
 static bool _filter_out(node_info_t *node_ptr);
 static void _sinfo_list_delete(void *data);
-static bool _match_node_data(sinfo_data_t *sinfo_ptr,
-                             node_info_t *node_ptr, uint32_t node_scaling);
+static bool _match_node_data(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr);
 static bool _match_part_data(sinfo_data_t *sinfo_ptr,
                              partition_info_t* part_ptr);
 static int  _query_server(partition_info_msg_t ** part_pptr,
@@ -508,8 +507,7 @@ static void _sort_hostlist(List sinfo_list)
 	list_iterator_destroy(i);
 }
 
-static bool _match_node_data(sinfo_data_t *sinfo_ptr,
-                             node_info_t *node_ptr, uint32_t node_scaling)
+static bool _match_node_data(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr)
 {
 	if (sinfo_ptr->nodes &&
 	    params.match_flags.features_flag &&
@@ -535,7 +533,7 @@ static bool _match_node_data(sinfo_data_t *sinfo_ptr,
 		return true;
 
 	if (params.match_flags.cpus_flag &&
-	    ((node_ptr->cpus / node_scaling) != sinfo_ptr->min_cpus))
+	    ((node_ptr->cpus / g_node_scaling) != sinfo_ptr->min_cpus))
 		return false;
 	if (params.match_flags.sockets_flag &&
 	    (node_ptr->sockets     != sinfo_ptr->min_sockets))
@@ -786,7 +784,7 @@ static int _insert_node_ptr(List sinfo_list, uint16_t part_num,
 		if (!_match_part_data(sinfo_ptr, part_ptr))
 			continue;
 		if (sinfo_ptr->nodes_total &&
-		    (!_match_node_data(sinfo_ptr, node_ptr, node_scaling)))
+		    (!_match_node_data(sinfo_ptr, node_ptr)))
 			continue;
 		_update_sinfo(sinfo_ptr, node_ptr, node_scaling);
 		break;
