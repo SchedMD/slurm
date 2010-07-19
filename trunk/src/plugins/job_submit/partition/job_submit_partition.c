@@ -161,7 +161,7 @@ extern int job_submit(struct job_descriptor *job_desc)
 	return SLURM_SUCCESS;
 }
 
-extern int job_modify(struct job_descriptor *job_desc, 
+extern int job_modify(struct job_descriptor *job_desc,
 		      struct job_record *job_ptr)
 {
 	return SLURM_SUCCESS;

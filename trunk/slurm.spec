@@ -324,7 +324,7 @@ Requires: slurm lua
 BuildRequires: lua-devel
 %description lua
 SLURM lua bindings
-Includes the SLURM proctrack/lua plugin
+Includes the SLURM proctrack/lua and job_submit/lua plugin
 %endif
 
 %package sjstat
@@ -656,6 +656,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/slurm/sched_wiki.so
 %{_libdir}/slurm/sched_wiki2.so
 %{_libdir}/slurm/select_bluegene.so
+%{_libdir}/slurm/select_bgq.so
 %{_libdir}/slurm/select_cons_res.so
 %{_libdir}/slurm/select_linear.so
 %{_libdir}/slurm/switch_none.so
@@ -701,6 +702,7 @@ rm -rf $RPM_BUILD_ROOT
 %files lua
 %defattr(-,root,root)
 %doc contribs/lua/proctrack.lua
+%{_libdir}/slurm/job_submit_lua.so
 %{_libdir}/slurm/proctrack_lua.so
 %endif
 #############################################################################

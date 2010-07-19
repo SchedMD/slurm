@@ -401,6 +401,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/job_submit/Makefile
 		 src/plugins/job_submit/defaults/Makefile
 		 src/plugins/job_submit/logging/Makefile
+		 src/plugins/job_submit/lua/Makefile
 		 src/plugins/job_submit/partition/Makefile
 		 src/plugins/preempt/Makefile
 		 src/plugins/preempt/none/Makefile

@@ -5654,14 +5654,16 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			error_code = ESLURM_PARTITION_NOT_AVAIL;
 		else if (super_user) {
 			slurmdb_association_rec_t assoc_rec;
-			memset(&assoc_rec, 0, sizeof(slurmdb_association_rec_t));
+			memset(&assoc_rec, 0,
+			       sizeof(slurmdb_association_rec_t));
 			assoc_rec.uid       = job_ptr->user_id;
 			assoc_rec.partition = tmp_part_ptr->name;
 			assoc_rec.acct      = job_ptr->account;
-			if (assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
-						    accounting_enforce,
-						    (slurmdb_association_rec_t **)
-						    &job_ptr->assoc_ptr)) {
+			if (assoc_mgr_fill_in_assoc(
+				    acct_db_conn, &assoc_rec,
+				    accounting_enforce,
+				    (slurmdb_association_rec_t **)
+				    &job_ptr->assoc_ptr)) {
 				info("job_update: invalid account %s "
 				     "for job %u",
 				     job_specs->account, job_ptr->job_id);
