@@ -195,21 +195,23 @@ _parse_restart_args(int argc, char **argv, uint16_t *stick, char **image_dir)
 }
 
 /*
- * scontrol_suspend - perform some suspend/resume operation
+ * scontrol_hold - perform some job hold/release operation
  * IN op - suspend/resume operation
  * IN job_id_str - a job id
  * RET 0 if no slurm error, errno otherwise. parsing error prints
  *		error message and returns 0
  */
 extern int
-scontrol_suspend(char *op, char *job_id_str)
+scontrol_hold(char *op, char *job_id_str)
 {
 	int rc = SLURM_SUCCESS;
-	uint32_t job_id = 0;
 	char *next_str;
+	job_desc_msg_t job_msg;
+
+	slurm_init_job_desc_msg (&job_msg);
 
 	if (job_id_str) {
-		job_id = (uint32_t) strtol (job_id_str, &next_str, 10);
+		job_msg.job_id = (uint32_t) strtol (job_id_str, &next_str, 10);
 		if (next_str[0] != '\0') {
 			fprintf(stderr, "Invalid job id specified\n");
 			exit_code = 1;
@@ -221,12 +223,47 @@ scontrol_suspend(char *op, char *job_id_str)
 		return 0;
 	}
 
-	if (strncasecmp(op, "suspend", MAX(strlen(op), 2)) == 0)
-		rc = slurm_suspend (job_id);
+	if (strncasecmp(op, "hold", MAX(strlen(op), 4)) == 0)
+		job_msg.priority = 0;
 	else
-		rc = slurm_resume (job_id);
+		job_msg.priority = 1;
 
+	if (slurm_update_job(&job_msg))
+		return slurm_get_errno();
 	return rc;
+}
+
+
+/*
+ * scontrol_suspend - perform some suspend/resume operation
+ * IN op - suspend/resume operation
+ * IN job_id_str - a job id
+ * RET 0 if no slurm error, errno otherwise. parsing error prints
+ *		error message and returns 0
+ */
+extern int
+scontrol_suspend(char *op, char *job_id_str)
+{
+	uint32_t job_id = 0;
+	char *next_str;
+
+	if (job_id_str) {
+		job_id = (uint32_t) strtol (job_id_str, &next_str, 10);
+		if (next_str[0] != '\0') {
+			fprintf(stderr, "Invalid job id specified\n");
+			exit_code = 1;
+			return SLURM_SUCCESS;
+		}
+	} else {
+		fprintf(stderr, "Invalid job id specified\n");
+		exit_code = 1;
+		return SLURM_SUCCESS;
+	}
+
+	if (strncasecmp(op, "suspend", MAX(strlen(op), 2)) == 0)
+		return slurm_suspend(job_id);
+	else
+		return slurm_resume(job_id);
 }
 
 /*
