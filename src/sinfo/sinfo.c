@@ -283,6 +283,7 @@ static int _build_sinfo_data(List sinfo_list,
 		for (j=0; j<partition_msg->record_count; j++, part_ptr++) {
 			if ((!params.partition) ||
 			    (_strcmp(params.partition, part_ptr->name) == 0)) {
+info("_build_sinfo_data: scaling:%d", node_msg->node_scaling);
 				list_append(sinfo_list, _create_sinfo(
 						    part_ptr, (uint16_t) j,
 						    NULL,
@@ -478,7 +479,7 @@ static bool _match_node_data(sinfo_data_t *sinfo_ptr,
 		state1 = node_state_string(node_ptr->node_state);
 		state2 = node_state_string(sinfo_ptr->node_state);
 		if (strcmp(state1, state2))
-			return false;
+		return false;
 	}
 
 	/* If no need to exactly match sizes, just return here
@@ -487,8 +488,11 @@ static bool _match_node_data(sinfo_data_t *sinfo_ptr,
 		return true;
 
 	if (params.match_flags.cpus_flag &&
-	    ((node_ptr->cpus / node_scaling) != sinfo_ptr->min_cpus))
+	    ((node_ptr->cpus / node_scaling) != sinfo_ptr->min_cpus)) {
+info("cpus scaling error %d:%d", node_scaling, g_node_scaling);
+info("node_cpus:%u part_cpus:%u", node_ptr->cpus, sinfo_ptr->min_cpus);
 		return false;
+}
 	if (params.match_flags.sockets_flag &&
 	    (node_ptr->sockets     != sinfo_ptr->min_sockets))
 		return false;
@@ -522,53 +526,53 @@ static bool _match_part_data(sinfo_data_t *sinfo_ptr,
 	if (part_ptr == sinfo_ptr->part_info) /* identical partition */
 		return true;
 	if ((part_ptr == NULL) || (sinfo_ptr->part_info == NULL))
-		return false;
+		abort();
 
 	if (params.match_flags.avail_flag &&
 	    (part_ptr->state_up != sinfo_ptr->part_info->state_up))
-		return false;
+		abort();
 
 	if (params.match_flags.groups_flag &&
 	    (_strcmp(part_ptr->allow_groups,
 	             sinfo_ptr->part_info->allow_groups)))
-		return false;
+		abort();
 
 	if (params.match_flags.job_size_flag &&
 	    (part_ptr->min_nodes != sinfo_ptr->part_info->min_nodes))
-		return false;
+		abort();
 
 	if (params.match_flags.job_size_flag &&
 	    (part_ptr->max_nodes != sinfo_ptr->part_info->max_nodes))
-		return false;
+		abort();
 
 	if (params.match_flags.default_time_flag &&
 	    (part_ptr->default_time != sinfo_ptr->part_info->default_time))
-		return false;
+		abort();
 
 	if (params.match_flags.max_time_flag &&
 	    (part_ptr->max_time != sinfo_ptr->part_info->max_time))
-		return false;
+		abort();
 
 	if (params.match_flags.partition_flag &&
 	    (_strcmp(part_ptr->name, sinfo_ptr->part_info->name)))
-		return false;
+		abort();
 
 	if (params.match_flags.root_flag &&
 	    ((part_ptr->flags & PART_FLAG_ROOT_ONLY) !=
 	     (sinfo_ptr->part_info->flags & PART_FLAG_ROOT_ONLY)))
-		return false;
+		abort();
 
 	if (params.match_flags.share_flag &&
 	    (part_ptr->max_share != sinfo_ptr->part_info->max_share))
-		return false;
+		abort();
 
 	if (params.match_flags.preempt_mode_flag &&
 	    (part_ptr->preempt_mode != sinfo_ptr->part_info->preempt_mode))
-		return false;
+		abort();
 
 	if (params.match_flags.priority_flag &&
 	    (part_ptr->priority != sinfo_ptr->part_info->priority))
-		return false;
+		abort();
 
 	return true;
 }
@@ -732,11 +736,6 @@ static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr,
 		sinfo_ptr->cpus_other += total_cpus;
 	} else
 		sinfo_ptr->cpus_idle += total_cpus;
-
-	/* info("count is now %d %d %d %d %d", */
-	/*      sinfo_ptr->cpus_alloc, sinfo_ptr->cpus_idle, */
-	/*      sinfo_ptr->cpus_other, sinfo_ptr->cpus_total, */
-	/*      sinfo_ptr->nodes_total); */
 }
 
 static int _insert_node_ptr(List sinfo_list, uint16_t part_num,
@@ -747,23 +746,31 @@ static int _insert_node_ptr(List sinfo_list, uint16_t part_num,
 	sinfo_data_t *sinfo_ptr = NULL;
 	ListIterator itr = NULL;
 
+info("_insert_node_ptr scaling:%u", node_scaling);
 	itr = list_iterator_create(sinfo_list);
 	while ((sinfo_ptr = list_next(itr))) {
+info("scanning");
 		if (!_match_part_data(sinfo_ptr, part_ptr))
 			continue;
+info("test1 %u", sinfo_ptr->nodes_total);
 		if (sinfo_ptr->nodes_total &&
 		    (!_match_node_data(sinfo_ptr, node_ptr, node_scaling)))
 			continue;
+info("update");
 		_update_sinfo(sinfo_ptr, node_ptr, node_scaling);
 		break;
 	}
 	list_iterator_destroy(itr);
 
 	/* if no match, create new sinfo_data entry */
-	if (!sinfo_ptr)
+	if (!sinfo_ptr) {
+info("append");
+abort();
 		list_append(sinfo_list,
 			    _create_sinfo(part_ptr, part_num,
 					  node_ptr, node_scaling));
+	}
+
 	return rc;
 }
 
@@ -771,31 +778,18 @@ static int _handle_subgrps(List sinfo_list, uint16_t part_num,
 			   partition_info_t *part_ptr,
 			   node_info_t *node_ptr, uint32_t node_scaling)
 {
-/* 	char *tmp_char = NULL, *orig_name = NULL; */
-/* 	bitstr_t *tmp_bitmap = NULL; */
 	uint16_t size;
 	int *node_state;
-/* 	bitstr_t *bitmap = NULL; */
 	int i=0, state_cnt = 2;
 	ListIterator iterator = NULL;
-/* 	bool set = 0; */
 	enum node_states state[] =
 		{ NODE_STATE_ALLOCATED, NODE_STATE_ERROR };
-/* 	if(select_g_select_nodeinfo_get(node_ptr->select_nodeinfo,  */
-/* 					SELECT_NODEDATA_BITMAP_SIZE, */
-/* 					0, */
-/* 					&size) != SLURM_SUCCESS) */
-/* 		return SLURM_ERROR; */
-
-/* 	bitmap = bit_alloc(size); */
 
 	/* If we ever update the hostlist stuff to support this stuff
 	 * then we can use this to tack on the end of the node name
 	 * the subgrp stuff.  On bluegene systems this would be nice
 	 * to see the ionodes in certain states.
 	 */
-/* 	orig_name = node_ptr->name; */
-/* 	node_ptr->name = NULL; */
 	if (params.state_list)
 		iterator = list_iterator_create(params.state_list);
 
@@ -819,49 +813,14 @@ static int _handle_subgrps(List sinfo_list, uint16_t part_num,
 						state[i],
 						&size) == SLURM_SUCCESS
 		   && size) {
-/* 			if(select_g_select_nodeinfo_get( */
-/* 				   node_ptr->select_nodeinfo,  */
-/* 				   SELECT_NODEDATA_BITMAP, */
-/* 				   state[i], */
-/* 				   &tmp_bitmap) != SLURM_SUCCESS) */
-/* 				continue; */
-
-/* 			if(select_g_select_nodeinfo_get( */
-/* 				   node_ptr->select_nodeinfo,  */
-/* 				   SELECT_NODEDATA_STR, */
-/* 				   state[i], */
-/* 				   &tmp_char) != SLURM_SUCCESS) { */
-/* 				FREE_NULL_BITMAP(tmp_bitmap); */
-/* 				continue; */
-/* 			} */
-/* 			bit_or(bitmap, tmp_bitmap); */
-/* 			FREE_NULL_BITMAP(tmp_bitmap); */
-/* 			xfree(node_ptr->name); */
-/* 			node_ptr->name = xstrdup_printf("%s[%s]", */
-/* 						  orig_name, tmp_char); */
-/* 			xfree(tmp_char); */
+info("decrement node_scaling %u by %u", node_scaling, size);
 			node_scaling -= size;
 			node_ptr->node_state &= NODE_STATE_FLAGS;
 			node_ptr->node_state |= state[i];
-			/* info("1 %s got %s of %u", node_ptr->name, */
-			/*      node_state_string(node_ptr->node_state), size); */
 			_insert_node_ptr(sinfo_list, part_num, part_ptr,
 					 node_ptr, size);
-/* 			set = 1; */
 		}
 	}
-/* 	xfree(node_ptr->name); */
-/* 	if(set) { */
-/* 		char bitstring[BITSIZE]; */
-/* 		bit_not(bitmap); */
-/* 		bit_fmt(bitstring, BITSIZE, bitmap); */
-
-/* 		node_ptr->name = xstrdup_printf("%s[%s]", */
-/* 						orig_name, bitstring); */
-/* 	} else { */
-/* 		xfree(node_ptr->name); */
-/* 		node_ptr->name = orig_name; */
-/* 	} */
 
 	/* now handle the idle */
 	if(iterator) {
@@ -879,17 +838,10 @@ static int _handle_subgrps(List sinfo_list, uint16_t part_num,
 	}
 	node_ptr->node_state &= NODE_STATE_FLAGS;
 	node_ptr->node_state |= NODE_STATE_IDLE;
-	/* info("2 %s got %s of %u", node_ptr->name, */
-	/*      node_state_string(node_ptr->node_state), node_scaling); */
 	if((int)node_scaling > 0)
 		_insert_node_ptr(sinfo_list, part_num, part_ptr,
 				 node_ptr, node_scaling);
 
-/* 	FREE_NULL_BITMAP(bitmap); */
-/* 	if(set) { */
-/* 		xfree(node_ptr->name); */
-/* 		node_ptr->name = orig_name; */
-/* 	} */
 	return SLURM_SUCCESS;
 }
 
