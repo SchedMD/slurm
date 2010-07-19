@@ -1,3 +1,7 @@
 # Makefile for job_submit plugins
 
-SUBDIRS = defaults logging lua partition
+if HAVE_LUA
+LUA = lua
+endif
+
+SUBDIRS = defaults logging $(LUA) partition
