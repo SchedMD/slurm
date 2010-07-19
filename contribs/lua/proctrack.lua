@@ -18,10 +18,10 @@ local use_release_agent = false
 
 function slurm_container_create (job)
     local id = cpuset_id_create (job)
-    local cpu_list = cpumap:convert_ids (job.CPUs)
+    local cpu_list = cpumap:convert_ids (job.JobCPUs)
 
     log_verbose ("slurm_container_create: job=%u.%u CPUs=%s (%s) cpuset=%d",
-            job.jobid, job.stepid, job.CPUs, cpu_list, id)
+            job.jobid, job.stepid, job.JobCPUs, cpu_list, id)
     if not cpuset_create (id, cpu_list) then return nil end
     return id
 end

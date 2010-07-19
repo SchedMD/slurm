@@ -26,9 +26,11 @@ documents those changes that are of interest to users and admins.
  -- Better handling of select plugins that don't exist on various systems for
     cross cluster communication.  Slurmctld, slurmd, and slurmstepd now only
     load the default select plugin as well.
+ -- Better error handling when loading plugins.
  -- Prevent scontrol from aborting if getlogin() returns NULL.
  -- Prevent scontrol segfault when there are hidden nodes.
  -- Prevent srun segfault after task launch failure.
+ -- Added job_submit/lua plugin
 
 * Changes in SLURM 2.2.0.pre8
 =============================

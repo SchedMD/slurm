@@ -28,7 +28,7 @@ AC_DEFUN([X_AC_LUA],
 	  AC_MSG_CHECKING([for whether we can link to liblua])
 	  AC_TRY_LINK(
 		[#include <lua.h>
-         #include <lauxlib.h>
+                 #include <lauxlib.h>
 		 #include <lualib.h>
 		],
 		[lua_State *L = luaL_newstate ();

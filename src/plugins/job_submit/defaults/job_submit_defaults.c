@@ -131,7 +131,7 @@ extern int job_submit(struct job_descriptor *job_desc)
  * of less than 30 seconds in order to insure more precise accounting.
  * Also remove any QOS value set by the user in order to use the default value
  * from the database. */
-extern int job_modify(struct job_descriptor *job_desc, 
+extern int job_modify(struct job_descriptor *job_desc,
 		      struct job_record *job_ptr)
 {
 	if (job_desc->acctg_freq < MIN_ACCTG_FREQUENCY) {
@@ -142,7 +142,7 @@ extern int job_modify(struct job_descriptor *job_desc,
 	}
 
 	if (job_desc->qos) {
-		info("Clearing QOS (%s) from modify of job %u", 
+		info("Clearing QOS (%s) from modify of job %u",
 		     job_desc->qos, job_ptr->job_id);
 		xfree(job_desc->qos);
 	}
