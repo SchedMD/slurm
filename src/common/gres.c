@@ -2234,48 +2234,80 @@ static uint32_t _job_test(void *job_gres_data, void *node_gres_data,
 			  bool use_total_gres, bitstr_t *cpu_bitmap,
 			  int cpu_start_bit, int cpu_end_bit)
 {
-	int i, j, cpus_ctld, cpu_cnt, tot_cpu_cnt = 0, gres_avail;
+	int i, j, cpus_ctld, gres_avail, top_inx;
 	gres_job_state_t  *job_gres_ptr  = (gres_job_state_t *)  job_gres_data;
 	gres_node_state_t *node_gres_ptr = (gres_node_state_t *) node_gres_data;
-	bitstr_t *new_gres_bitmap = NULL;
+	uint32_t *cpus_avail = NULL, cpu_cnt = 0;
+	bitstr_t *alloc_cpu_bitmap = NULL;
 
-	if (!use_total_gres && cpu_bitmap && node_gres_ptr->topo_cnt) {
+	if (job_gres_ptr->gres_cnt_alloc && node_gres_ptr->topo_cnt) {
 		/* Need to determine which specific CPUs can be used */
-		new_gres_bitmap = bit_alloc(node_gres_ptr->gres_cnt_avail);
-		if (new_gres_bitmap == NULL)
+		if (cpu_bitmap) {
+			cpus_ctld = cpu_end_bit - cpu_start_bit + 1;
+			if (cpus_ctld < 1) {
+				error("gres_plugin_job_test: cpus on node < 1");
+				return (uint32_t) 0;
+			}
+			_validate_gres_node_cpus(node_gres_ptr, cpus_ctld);
+		} else {
+			cpus_ctld = bit_size(node_gres_ptr->cpus_bitmap[0]);
+		}
+		cpus_avail = xmalloc(sizeof(uint32_t) * node_gres_ptr->topo_cnt);
+		alloc_cpu_bitmap = bit_alloc(cpus_ctld);
+		if (alloc_cpu_bitmap == NULL)
 			fatal("bit_alloc: malloc failure");
-		cpus_ctld = cpu_end_bit - cpu_start_bit + 1;
-		_validate_gres_node_cpus(node_gres_ptr, cpus_ctld);
-		if (cpus_ctld < 1) {
-			error("gres_plugin_job_test: cpus on node < 1");
-			return (uint32_t) 0;
-		}
 		for (i=0; i<node_gres_ptr->topo_cnt; i++) {
-			cpu_cnt = 0;
-			for (j=0; j<cpus_ctld; j++) {
-				if (bit_test(node_gres_ptr->cpus_bitmap[i],j)&&
-				    bit_test(cpu_bitmap, cpu_start_bit+j))
-					cpu_cnt++;
+			if (!use_total_gres &&
+			    bit_test(node_gres_ptr->gres_bit_alloc, i)) {
+				continue;	/* gres already allocated */
 			}
-			if (cpu_cnt == 0)
-				continue;
-			tot_cpu_cnt += cpu_cnt;
-			for (j=0; j<node_gres_ptr->gres_cnt_avail; j++) {
-				if (!bit_test(node_gres_ptr->gres_bit_alloc, j))
-					bit_set(new_gres_bitmap, j);
+			for (j=0; j<cpus_ctld; j++) {
+				if (cpu_bitmap && 
+				    !bit_test(cpu_bitmap, cpu_start_bit+j))
+					continue;
+				if (bit_test(node_gres_ptr->cpus_bitmap[i],j) &&
+				    !bit_test(alloc_cpu_bitmap, j)) {
+					bit_set(alloc_cpu_bitmap, j);
+					cpus_avail[i]++;
+				}
 			}
 		}
-		gres_avail = bit_set_count(new_gres_bitmap);
-		FREE_NULL_BITMAP(new_gres_bitmap);
-		if (job_gres_ptr->gres_cnt_alloc > gres_avail)
-			return (uint32_t) 0;
-		return tot_cpu_cnt;
+
+		/* Pick the gres with the most CPUs available */
+		bit_nclear(alloc_cpu_bitmap, 0, (cpus_ctld - 1));
+		for (i=0; i<job_gres_ptr->gres_cnt_alloc; i++) {
+			top_inx = -1;
+			for (j=0; j<node_gres_ptr->topo_cnt; j++) {
+				if (top_inx == -1) {
+					if (cpus_avail[j])
+						top_inx = j;
+				} else if (cpus_avail[j] > cpus_avail[top_inx])
+					top_inx = j;
+			}
+			if ((top_inx < 0) || (cpus_avail[top_inx] == 0)) {
+				cpu_cnt = 0;
+				break;
+			}
+			cpu_cnt += cpus_avail[top_inx];
+			cpus_avail[top_inx] = 0;
+			bit_or(alloc_cpu_bitmap,
+			       node_gres_ptr->cpus_bitmap[top_inx]);
+		}
+		if (cpu_bitmap && (cpu_cnt > 0)) {
+			for (i=0; i<cpus_ctld; i++) {
+				if (!bit_test(alloc_cpu_bitmap, i))
+					bit_clear(cpu_bitmap, cpu_start_bit+i);
+			}
+		}
+		FREE_NULL_BITMAP(alloc_cpu_bitmap);
+		xfree(cpus_avail);
+		return cpu_cnt;
 	} else {
 		gres_avail = node_gres_ptr->gres_cnt_avail;
 		if (!use_total_gres)
 			gres_avail -= node_gres_ptr->gres_cnt_alloc;
 		if (job_gres_ptr->gres_cnt_alloc > gres_avail)
-			return (uint32_t) 0;
+			return (uint32_t) 0;	/* insufficient, gres to use */
 		return NO_VAL;
 	}
 }
