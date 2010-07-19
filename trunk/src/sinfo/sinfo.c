@@ -71,7 +71,7 @@ static sinfo_data_t *_create_sinfo(partition_info_t* part_ptr,
 static bool _filter_out(node_info_t *node_ptr);
 static void _sinfo_list_delete(void *data);
 static bool _match_node_data(sinfo_data_t *sinfo_ptr,
-                             node_info_t *node_ptr, uint32_t node_scaling);
+                             node_info_t *node_ptr);
 static bool _match_part_data(sinfo_data_t *sinfo_ptr,
                              partition_info_t* part_ptr);
 static int  _query_server(partition_info_msg_t ** part_pptr,
@@ -283,7 +283,6 @@ static int _build_sinfo_data(List sinfo_list,
 		for (j=0; j<partition_msg->record_count; j++, part_ptr++) {
 			if ((!params.partition) ||
 			    (_strcmp(params.partition, part_ptr->name) == 0)) {
-info("_build_sinfo_data: scaling:%d", node_msg->node_scaling);
 				list_append(sinfo_list, _create_sinfo(
 						    part_ptr, (uint16_t) j,
 						    NULL,
@@ -456,8 +455,7 @@ static void _sort_hostlist(List sinfo_list)
 	list_iterator_destroy(i);
 }
 
-static bool _match_node_data(sinfo_data_t *sinfo_ptr,
-                             node_info_t *node_ptr, uint32_t node_scaling)
+static bool _match_node_data(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr)
 {
 	if (sinfo_ptr->nodes &&
 	    params.match_flags.features_flag &&
@@ -479,7 +477,7 @@ static bool _match_node_data(sinfo_data_t *sinfo_ptr,
 		state1 = node_state_string(node_ptr->node_state);
 		state2 = node_state_string(sinfo_ptr->node_state);
 		if (strcmp(state1, state2))
-		return false;
+			return false;
 	}
 
 	/* If no need to exactly match sizes, just return here
@@ -488,11 +486,9 @@ static bool _match_node_data(sinfo_data_t *sinfo_ptr,
 		return true;
 
 	if (params.match_flags.cpus_flag &&
-	    ((node_ptr->cpus / node_scaling) != sinfo_ptr->min_cpus)) {
-info("cpus scaling error %d:%d", node_scaling, g_node_scaling);
-info("node_cpus:%u part_cpus:%u", node_ptr->cpus, sinfo_ptr->min_cpus);
+	    ((node_ptr->cpus / g_node_scaling) != sinfo_ptr->min_cpus))
 		return false;
-}
+
 	if (params.match_flags.sockets_flag &&
 	    (node_ptr->sockets     != sinfo_ptr->min_sockets))
 		return false;
@@ -526,53 +522,53 @@ static bool _match_part_data(sinfo_data_t *sinfo_ptr,
 	if (part_ptr == sinfo_ptr->part_info) /* identical partition */
 		return true;
 	if ((part_ptr == NULL) || (sinfo_ptr->part_info == NULL))
-		abort();
+		return false;
 
 	if (params.match_flags.avail_flag &&
 	    (part_ptr->state_up != sinfo_ptr->part_info->state_up))
-		abort();
+		return false;
 
 	if (params.match_flags.groups_flag &&
 	    (_strcmp(part_ptr->allow_groups,
 	             sinfo_ptr->part_info->allow_groups)))
-		abort();
+		return false;
 
 	if (params.match_flags.job_size_flag &&
 	    (part_ptr->min_nodes != sinfo_ptr->part_info->min_nodes))
-		abort();
+		return false;
 
 	if (params.match_flags.job_size_flag &&
 	    (part_ptr->max_nodes != sinfo_ptr->part_info->max_nodes))
-		abort();
+		return false;
 
 	if (params.match_flags.default_time_flag &&
 	    (part_ptr->default_time != sinfo_ptr->part_info->default_time))
-		abort();
+		return false;
 
 	if (params.match_flags.max_time_flag &&
 	    (part_ptr->max_time != sinfo_ptr->part_info->max_time))
-		abort();
+		return false;
 
 	if (params.match_flags.partition_flag &&
 	    (_strcmp(part_ptr->name, sinfo_ptr->part_info->name)))
-		abort();
+		return false;
 
 	if (params.match_flags.root_flag &&
 	    ((part_ptr->flags & PART_FLAG_ROOT_ONLY) !=
 	     (sinfo_ptr->part_info->flags & PART_FLAG_ROOT_ONLY)))
-		abort();
+		return false;
 
 	if (params.match_flags.share_flag &&
 	    (part_ptr->max_share != sinfo_ptr->part_info->max_share))
-		abort();
+		return false;
 
 	if (params.match_flags.preempt_mode_flag &&
 	    (part_ptr->preempt_mode != sinfo_ptr->part_info->preempt_mode))
-		abort();
+		return false;
 
 	if (params.match_flags.priority_flag &&
 	    (part_ptr->priority != sinfo_ptr->part_info->priority))
-		abort();
+		return false;
 
 	return true;
 }
@@ -746,30 +742,23 @@ static int _insert_node_ptr(List sinfo_list, uint16_t part_num,
 	sinfo_data_t *sinfo_ptr = NULL;
 	ListIterator itr = NULL;
 
-info("_insert_node_ptr scaling:%u", node_scaling);
 	itr = list_iterator_create(sinfo_list);
 	while ((sinfo_ptr = list_next(itr))) {
-info("scanning");
 		if (!_match_part_data(sinfo_ptr, part_ptr))
 			continue;
-info("test1 %u", sinfo_ptr->nodes_total);
 		if (sinfo_ptr->nodes_total &&
-		    (!_match_node_data(sinfo_ptr, node_ptr, node_scaling)))
+		    (!_match_node_data(sinfo_ptr, node_ptr)))
 			continue;
-info("update");
 		_update_sinfo(sinfo_ptr, node_ptr, node_scaling);
 		break;
 	}
 	list_iterator_destroy(itr);
 
 	/* if no match, create new sinfo_data entry */
-	if (!sinfo_ptr) {
-info("append");
-abort();
+	if (!sinfo_ptr)
 		list_append(sinfo_list,
 			    _create_sinfo(part_ptr, part_num,
 					  node_ptr, node_scaling));
-	}
 
 	return rc;
 }
@@ -813,7 +802,6 @@ static int _handle_subgrps(List sinfo_list, uint16_t part_num,
 						state[i],
 						&size) == SLURM_SUCCESS
 		   && size) {
-info("decrement node_scaling %u by %u", node_scaling, size);
 			node_scaling -= size;
 			node_ptr->node_state &= NODE_STATE_FLAGS;
 			node_ptr->node_state |= state[i];

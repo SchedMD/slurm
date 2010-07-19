@@ -31,6 +31,8 @@ documents those changes that are of interest to users and admins.
  -- Prevent scontrol segfault when there are hidden nodes.
  -- Prevent srun segfault after task launch failure.
  -- Added job_submit/lua plugin
+ -- Fixed sinfo on a bluegene system to print correctly the command
+    sinfo -e -o "%9P %6m %.4c %.22F %f"
 
 * Changes in SLURM 2.2.0.pre8
 =============================
