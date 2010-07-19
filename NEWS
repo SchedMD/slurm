@@ -379,6 +379,8 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 2.1.11
 =========================
+ -- BLUEGENE - fix sinfo to not get duplicate entries when running command
+    sinfo -e -o "%9P %6m %.4c %.22F %f"
 
 * Changes in SLURM 2.1.10
 =========================
@@ -430,6 +432,8 @@ documents those changes that are of interest to users and admins.
     correctly when linking to the slurm api.
  -- You can now update a jobs QOS from scontrol.  Previously you could only do
     this from sview.
+ -- BLUEGENE - Fixed bug where if running in non-dynamic mode sometimes the
+    start time returned for a job when using test-only would not be correct.
 
 * Changes in SLURM 2.1.9
 ========================
