@@ -34,7 +34,7 @@ documents those changes that are of interest to users and admins.
  -- Fixed sinfo on a bluegene system to print correctly the output for:
     sinfo -e -o "%9P %6m %.4c %.22F %f"
  -- Add scontrol commands "hold" and "release" to simplify setting a job's
-    priority to 0 or 1.
+    priority to 0 or 1. Also tests that the job is in pending state.
  -- Increase maximum node list size (for incoming RPC) from 1024 bytes to 64k.
 
 * Changes in SLURM 2.2.0.pre8

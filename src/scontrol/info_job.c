@@ -238,6 +238,36 @@ scontrol_print_completing_job(job_info_t *job_ptr,
 	hostlist_destroy(down_nodes);
 }
 
+extern uint16_t
+scontrol_get_job_state(uint32_t job_id)
+{
+	job_info_msg_t * job_buffer_ptr = NULL;
+	int error_code = SLURM_SUCCESS, i;
+	job_info_t *job_ptr = NULL;
+
+	error_code = _scontrol_load_jobs(&job_buffer_ptr, job_id);
+	if (error_code) {
+		exit_code = 1;
+		if (quiet_flag != 1)
+			slurm_perror ("slurm_load_jobs error");
+		return 0;
+	}
+	if (quiet_flag == -1) {
+		char time_str[32];
+		slurm_make_time_str((time_t *)&job_buffer_ptr->last_update,
+				    time_str, sizeof(time_str));
+		printf("last_update_time=%s, records=%d\n",
+		       time_str, job_buffer_ptr->record_count);
+	}
+
+	job_ptr = job_buffer_ptr->job_array ;
+	for (i = 0; i < job_buffer_ptr->record_count; i++) {
+		if (job_ptr->job_id == job_id)
+			return job_ptr->job_state;
+	}
+	return 0;
+}
+
 /*
  * scontrol_print_job - print the specified job's information
  * IN job_id - job's id or NULL to print information about all jobs
@@ -260,7 +290,6 @@ scontrol_print_job (char * job_id_str)
 			slurm_perror ("slurm_load_jobs error");
 		return;
 	}
-
 	if (quiet_flag == -1) {
 		char time_str[32];
 		slurm_make_time_str ((time_t *)&job_buffer_ptr->last_update,
@@ -268,8 +297,6 @@ scontrol_print_job (char * job_id_str)
 		printf ("last_update_time=%s, records=%d\n",
 			time_str, job_buffer_ptr->record_count);
 	}
-
-
 
 	job_ptr = job_buffer_ptr->job_array ;
 	for (i = 0; i < job_buffer_ptr->record_count; i++) {
