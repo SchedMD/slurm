@@ -6,7 +6,9 @@ documents those changes that are of interest to users and admins.
 =========================
  -- BLUEGENE - fix sinfo to not get duplicate entries when running command
     sinfo -e -o "%9P %6m %.4c %.22F %f"
- -- Fix bug that caused segv when deleting a partition with pending jobs. 
+ -- Fix bug that caused segv when deleting a partition with pending jobs.
+ -- Better error message for when trying to modify an account's name with
+    sacctmgr.
 
 * Changes in SLURM 2.1.10
 =========================
