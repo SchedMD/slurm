@@ -1423,8 +1423,7 @@ extern int kill_job_by_part_name(char *part_name)
 			job_ptr->job_state = suspend_job_state;
 			suspended = true;
 		}
-		if (IS_JOB_RUNNING(job_ptr) || IS_JOB_PENDING(job_ptr) ||
-		    suspended) {
+		if (IS_JOB_RUNNING(job_ptr) || suspended) {
 			job_count++;
 			info("Killing job_id %u on defunct partition %s",
 			     job_ptr->job_id, part_name);
