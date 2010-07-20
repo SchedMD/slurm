@@ -36,6 +36,8 @@ documents those changes that are of interest to users and admins.
  -- Add scontrol commands "hold" and "release" to simplify setting a job's
     priority to 0 or 1. Also tests that the job is in pending state.
  -- Increase maximum node list size (for incoming RPC) from 1024 bytes to 64k.
+ -- In the backup slurmctld, purge triggers before recovering trigger state to
+    avoid duplicate entries.
 
 * Changes in SLURM 2.2.0.pre8
 =============================
