@@ -227,6 +227,8 @@ scontrol_hold(char *op, char *job_id_str)
 		job_msg.priority = 0;
 	else {
 		uint16_t job_state = scontrol_get_job_state(job_msg.job_id);
+		if (job_state == (uint16_t) NO_VAL)
+			return SLURM_ERROR;
 		if ((job_state & JOB_STATE_BASE) != JOB_PENDING) {
 			slurm_seterrno(ESLURM_JOB_NOT_PENDING);
 			return ESLURM_JOB_NOT_PENDING;

@@ -248,9 +248,9 @@ scontrol_get_job_state(uint32_t job_id)
 	error_code = _scontrol_load_jobs(&job_buffer_ptr, job_id);
 	if (error_code) {
 		exit_code = 1;
-		if (quiet_flag != 1)
+		if (quiet_flag == -1)
 			slurm_perror ("slurm_load_jobs error");
-		return 0;
+		return (uint16_t) NO_VAL;
 	}
 	if (quiet_flag == -1) {
 		char time_str[32];
@@ -265,7 +265,9 @@ scontrol_get_job_state(uint32_t job_id)
 		if (job_ptr->job_id == job_id)
 			return job_ptr->job_state;
 	}
-	return 0;
+	if (quiet_flag == -1)
+		printf("Could not find job %u", job_id);
+	return (uint16_t) NO_VAL;
 }
 
 /*
