@@ -184,6 +184,7 @@ enum {
 	ESLURM_PARTITION_NOT_AVAIL,
 	ESLURM_CIRCULAR_DEPENDENCY,
 	ESLURM_INVALID_GRES,
+	ESLURM_JOB_NOT_PENDING,
 
 	/* switch specific error codes, specific values defined in plugin module */
 	ESLURM_SWITCH_MIN = 3000,

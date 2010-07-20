@@ -6056,11 +6056,18 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			     job_specs->job_id);
 			update_accounting = true;
 			if (job_ptr->priority == 0) {
-				if (super_user)
-					job_ptr->state_reason = WAIT_HELD;
-				else
-					job_ptr->state_reason = WAIT_HELD_USER;
-				xfree(job_ptr->state_desc);
+				if (!IS_JOB_PENDING(job_ptr)) {
+					error_code = ESLURM_JOB_NOT_PENDING;
+				} else {
+					if (super_user) {
+						job_ptr->state_reason =
+							WAIT_HELD;
+					} else {
+						job_ptr->state_reason =
+							WAIT_HELD_USER;
+					}
+					xfree(job_ptr->state_desc);
+				}
 			}
 		} else if ((job_ptr->priority == 0) &&
 			   (job_ptr->state_reason == WAIT_HELD_USER)) {

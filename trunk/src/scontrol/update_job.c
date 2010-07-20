@@ -211,8 +211,8 @@ scontrol_hold(char *op, char *job_id_str)
 	slurm_init_job_desc_msg (&job_msg);
 
 	if (job_id_str) {
-		job_msg.job_id = (uint32_t) strtol (job_id_str, &next_str, 10);
-		if (next_str[0] != '\0') {
+		job_msg.job_id = (uint32_t) strtol(job_id_str, &next_str, 10);
+		if ((job_msg.job_id == 0) || (next_str[0] != '\0')) {
 			fprintf(stderr, "Invalid job id specified\n");
 			exit_code = 1;
 			return 0;
@@ -225,8 +225,14 @@ scontrol_hold(char *op, char *job_id_str)
 
 	if (strncasecmp(op, "hold", MAX(strlen(op), 4)) == 0)
 		job_msg.priority = 0;
-	else
+	else {
+		uint16_t job_state = scontrol_get_job_state(job_msg.job_id);
+		if ((job_state & JOB_STATE_BASE) != JOB_PENDING) {
+			slurm_seterrno(ESLURM_JOB_NOT_PENDING);
+			return ESLURM_JOB_NOT_PENDING;
+		}
 		job_msg.priority = 1;
+	}
 
 	if (slurm_update_job(&job_msg))
 		return slurm_get_errno();

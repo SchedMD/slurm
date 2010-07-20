@@ -270,6 +270,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Circular job dependency"				},
 	{ ESLURM_INVALID_GRES,
 	  "Invalid generic resource (gres) specification"	},
+	{ ESLURM_JOB_NOT_PENDING,
+	  "Job is no longer pending execution"			},
 
 	/* slurmd error codes */
 
