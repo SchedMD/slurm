@@ -207,6 +207,7 @@ scontrol_hold(char *op, char *job_id_str)
 	int rc = SLURM_SUCCESS;
 	char *next_str;
 	job_desc_msg_t job_msg;
+	uint16_t job_state;
 
 	slurm_init_job_desc_msg (&job_msg);
 
@@ -223,19 +224,18 @@ scontrol_hold(char *op, char *job_id_str)
 		return 0;
 	}
 
-	if (strncasecmp(op, "hold", MAX(strlen(op), 4)) == 0)
-		job_msg.priority = 0;
-	else {
-		uint16_t job_state = scontrol_get_job_state(job_msg.job_id);
-		if (job_state == (uint16_t) NO_VAL)
-			return SLURM_ERROR;
-		if ((job_state & JOB_STATE_BASE) != JOB_PENDING) {
-			slurm_seterrno(ESLURM_JOB_NOT_PENDING);
-			return ESLURM_JOB_NOT_PENDING;
-		}
-		job_msg.priority = 1;
+	job_state = scontrol_get_job_state(job_msg.job_id);
+	if (job_state == (uint16_t) NO_VAL)
+		return SLURM_ERROR;
+	if ((job_state & JOB_STATE_BASE) != JOB_PENDING) {
+		slurm_seterrno(ESLURM_JOB_NOT_PENDING);
+		return ESLURM_JOB_NOT_PENDING;
 	}
 
+	if (strncasecmp(op, "hold", MAX(strlen(op), 4)) == 0)
+		job_msg.priority = 0;
+	else
+		job_msg.priority = 1;
 	if (slurm_update_job(&job_msg))
 		return slurm_get_errno();
 	return rc;
