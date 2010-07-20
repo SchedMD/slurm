@@ -354,12 +354,23 @@ static int _set_rec(int *start, int argc, char *argv[],
 					   MAX(command_len, 4))) {
 			if(acct_list)
 				slurm_addto_char_list(acct_list, argv[i]+end);
-
+			else {
+				exit_code=1;
+				fprintf(stderr,
+					" Can't modify the name "
+					"of an account\n");
+			}
 		} else if (!strncasecmp (argv[i], "Cluster",
 					 MAX(command_len, 1))) {
 			if(cluster_list)
 				slurm_addto_char_list(cluster_list,
 						      argv[i]+end);
+			else {
+				exit_code=1;
+				fprintf(stderr,
+					" Can't modify the cluster "
+					"of an account\n");
+			}
 		} else if (!strncasecmp (argv[i], "Description",
 					 MAX(command_len, 1))) {
 			acct->description =  strip_quotes(argv[i]+end, NULL, 1);
