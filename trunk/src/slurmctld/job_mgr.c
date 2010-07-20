@@ -3396,7 +3396,7 @@ static int _validate_job_create_req(job_desc_msg_t * job_desc)
 	    _test_strlen(job_desc->comment, "comment", 1024)		||
 	    _test_strlen(job_desc->cpu_bind, "cpu_bind", 1024)		||
 	    _test_strlen(job_desc->dependency, "dependency", 1024)	||
-	    _test_strlen(job_desc->exc_nodes, "exc_nodes", 1024)	||
+	    _test_strlen(job_desc->exc_nodes, "exc_nodes", 1024*64)	||
 	    _test_strlen(job_desc->features, "features", 1024)		||
 	    _test_strlen(job_desc->gres, "gres", 1024)			||
 	    _test_strlen(job_desc->licenses, "licenses", 1024)		||
@@ -3409,7 +3409,7 @@ static int _validate_job_create_req(job_desc_msg_t * job_desc)
 	    _test_strlen(job_desc->partition, "partition", 1024)	||
 	    _test_strlen(job_desc->qos, "qos", 1024)			||
 	    _test_strlen(job_desc->ramdiskimage, "ramdiskimage", 1024)	||
-	    _test_strlen(job_desc->req_nodes, "req_nodes", 1024)	||
+	    _test_strlen(job_desc->req_nodes, "req_nodes", 1024*64)	||
 	    _test_strlen(job_desc->reservation, "reservation", 1024)	||
 	    _test_strlen(job_desc->script, "script", 1024*128)		||
 	    _test_strlen(job_desc->std_err, "std_err", 1024)		||
