@@ -30,8 +30,8 @@ documents those changes that are of interest to users and admins.
  -- Prevent scontrol from aborting if getlogin() returns NULL.
  -- Prevent scontrol segfault when there are hidden nodes.
  -- Prevent srun segfault after task launch failure.
- -- Added job_submit/lua plugin
- -- Fixed sinfo on a bluegene system to print correctly the command
+ -- Added job_submit/lua plugin.
+ -- Fixed sinfo on a bluegene system to print correctly the output for:
     sinfo -e -o "%9P %6m %.4c %.22F %f"
  -- Add scontrol commands "hold" and "release" to simplify setting a job's
     priority to 0 or 1.
@@ -381,6 +381,7 @@ documents those changes that are of interest to users and admins.
 =========================
  -- BLUEGENE - fix sinfo to not get duplicate entries when running command
     sinfo -e -o "%9P %6m %.4c %.22F %f"
+ -- Fix bug that caused segv when deleting a partition with pending jobs. 
 
 * Changes in SLURM 2.1.10
 =========================
