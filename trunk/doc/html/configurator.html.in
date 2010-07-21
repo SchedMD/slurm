@@ -198,7 +198,6 @@ function displayfile()
    "#TrackWCKey=no <br>" +
    "#TreeWidth= <br>" +
    "#UnkillableStepProgram= <br>" +
-   "#UnkillableStepTimeout= <br>" +
    "#UsePAM=0 <br>" +
    "# <br>" +
    "# <br>" +
@@ -217,7 +216,6 @@ function displayfile()
    "#OverTimeLimit=0 <br>" +
    "SlurmctldTimeout=" + document.config.slurmctld_timeout.value + "<br>" +
    "SlurmdTimeout=" + document.config.slurmd_timeout.value + "<br>" +
-   "#UnkillableStepProgram= <br>" +
    "#UnkillableStepTimeout=60 <br>" +
    "#VSizeFactor=0 <br>" +
    "Waittime=" + document.config.wait_time.value + "<br>" +
