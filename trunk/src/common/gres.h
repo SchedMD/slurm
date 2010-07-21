@@ -83,7 +83,6 @@ typedef struct gres_node_state {
 	/* Topology specific information (if gres.conf contains CPUs spec) */
 	uint16_t topo_cnt;
 	bitstr_t **cpus_bitmap;
-	bitstr_t **gres_block_bitmap;
 } gres_node_state_t;
 
 /* Gres job state as used by slurmctld daemon */
