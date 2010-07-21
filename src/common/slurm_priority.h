@@ -56,15 +56,6 @@ extern int slurm_priority_init(void);
 extern int slurm_priority_fini(void);
 extern uint32_t priority_g_set(uint32_t last_prio, struct job_record *job_ptr);
 extern void priority_g_reconfig();
-/*
- * set up how much usage can happen on the cluster during a given half
- * life.  This can only be done after we get a correct proc count for
- * the system.
- * IN: procs - number of proccessors on the system
- * IN: half_life - time half_life is in seconds.
- * RET: SLURM_SUCCESS on SUCCESS, SLURM_ERROR else.
- */
-extern int priority_g_set_max_cluster_usage(uint32_t procs, uint32_t half_life);
 
 /* sets up the normalized usage and the effective usage of an
  * association.
