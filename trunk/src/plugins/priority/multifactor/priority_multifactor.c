@@ -118,7 +118,6 @@ static uint32_t weight_js; /* weight for Job Size factor */
 static uint32_t weight_part; /* weight for Partition factor */
 static uint32_t weight_qos; /* weight for QOS factor */
 
-extern int priority_p_set_max_cluster_usage(uint32_t procs, uint32_t half_life);
 extern void priority_p_set_assoc_usage(slurmdb_association_rec_t *assoc);
 
 /*
@@ -981,8 +980,7 @@ int init ( void )
 			fatal("We need to have a cluster cpu count "
 			      "before we can init the priority/multifactor "
 			      "plugin");
-		priority_p_set_max_cluster_usage(cluster_cpus,
-						 slurm_get_priority_decay_hl());
+		assoc_mgr_root_assoc->usage->usage_efctv = 1.0;
 		slurm_attr_init(&thread_attr);
 		if (pthread_create(&decay_handler_thread, &thread_attr,
 				   _decay_thread, NULL))
@@ -1050,25 +1048,6 @@ extern void priority_p_reconfig()
 	debug2("%s reconfigured", plugin_name);
 
 	return;
-}
-
-extern int priority_p_set_max_cluster_usage(uint32_t procs, uint32_t half_life)
-{
-	if(!calc_fairshare)
-		return SLURM_SUCCESS;
-
-	xassert(assoc_mgr_root_assoc);
-
-	/* This should always be 1 and it doesn't get calculated later
-	   so set it now. usage_raw and usage_norm get calculated the
-	   same way the other associations do. */
-	assoc_mgr_root_assoc->usage->usage_efctv = 1.0;
-	if(priority_debug)
-		info("Current cpu usage for half_life of %d secs "
-		     "on the system is %.0Lf",
-		     half_life, assoc_mgr_root_assoc->usage->usage_raw);
-
-	return SLURM_SUCCESS;
 }
 
 extern void priority_p_set_assoc_usage(slurmdb_association_rec_t *assoc)

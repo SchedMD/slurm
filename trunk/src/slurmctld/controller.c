@@ -1126,12 +1126,6 @@ static int _accounting_cluster_ready()
 		rc = SLURM_SUCCESS;
 	}
 
-	/* just incase the numbers change we need to
-	   update the cpu count on the cluster inside
-	   the priority plugin */
-	priority_g_set_max_cluster_usage(cluster_cpus,
-					 slurmctld_conf.priority_decay_hl);
-
 	return rc;
 }
 

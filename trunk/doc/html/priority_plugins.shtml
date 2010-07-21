@@ -90,16 +90,6 @@ configuration. Called whenever slurmctld is reconfigured.</p>
 <span class="commandline">none</span></p>
 <p style="margin-left:.2in"><b>Returns</b>: void</p>
 
-<p class="commandline">int priority_p_set_max_cluster_usage(uint32_t procs, uint32_t half_life)</p>
-<p style="margin-left:.2in"><b>Description</b>: Conveys the maximum
-raw usage to the priority plugin.  This establishes the reference by
-which each job's usage can be normalized.</p>
-<p style="margin-left:.2in"><b>Arguments</b>:<br>
-<span class="commandline">procs</span> (input) the machine's processor count<br>
-<span class="commandline">half_life</span> (input) the configured half-life</p>
-<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful,
-otherwise SLURM_ERROR</p>
-
 <p class="commandline">void priority_p_set_assoc_usage(acct_association_rec_t *assoc)</p>
 <p style="margin-left:.2in"><b>Description</b>: Set the normalized and
 effective usage for an association.</p>
