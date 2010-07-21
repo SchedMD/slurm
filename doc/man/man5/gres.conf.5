@@ -32,7 +32,9 @@ use this resources. For example, it may be strongly preferable
 to use specific CPUs with specific devices (e.g. on a NUMA
 architecture). Multiple CPUs may be specified using a comma
 delimited list. If not specified, then any CPU can be used with
-the resources.
+the resources. If any CPU can be used with the resources, then
+do not specify the \fBCPUs\fR option for improved speed in the
+SLURM scheduling logic.
 
 .TP
 \fBFile\fR
