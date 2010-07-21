@@ -38,6 +38,7 @@ documents those changes that are of interest to users and admins.
  -- Increase maximum node list size (for incoming RPC) from 1024 bytes to 64k.
  -- In the backup slurmctld, purge triggers before recovering trigger state to
     avoid duplicate entries.
+ -- Fix bug in sacct processing of --fields= option.
 
 * Changes in SLURM 2.2.0.pre8
 =============================

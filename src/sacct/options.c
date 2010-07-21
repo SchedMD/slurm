@@ -1146,7 +1146,11 @@ void parse_command_line(int argc, char **argv)
 
 		if((tmp_char = strstr(start, "\%"))) {
 			newlen = atoi(tmp_char+1);
-			tmp_char[0] = '\0';
+			start++;
+			if (*start == '-')
+				start++;
+			while (isdigit(*start))
+				start++;
 		}
 
 		command_len = strlen(start);
