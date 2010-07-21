@@ -39,6 +39,8 @@ documents those changes that are of interest to users and admins.
  -- In the backup slurmctld, purge triggers before recovering trigger state to
     avoid duplicate entries.
  -- Fix bug in sacct processing of --fields= option.
+ -- Fix bug in checkpoint/blcr for jobs spanning multiple nodes introduced when
+    changing some variable names in version 2.2.0.pre5.
 
 * Changes in SLURM 2.2.0.pre8
 =============================

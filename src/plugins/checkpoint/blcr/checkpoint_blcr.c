@@ -407,19 +407,19 @@ extern int slurm_ckpt_signal_tasks(slurmd_job_t *job, char *image_dir)
 	/*
 	 * the tasks must be checkpointed concurrently.
 	 */
-	children = xmalloc(sizeof(pid_t) * job->ntasks);
-	fd = xmalloc(sizeof(int) * 2 * job->ntasks);
+	children = xmalloc(sizeof(pid_t) * job->node_tasks);
+	fd = xmalloc(sizeof(int) * 2 * job->node_tasks);
 	if (!children || !fd) {
 		error("slurm_ckpt_signal_tasks: memory exhausted");
 		rc = SLURM_FAILURE;
 		goto out;
 	}
-	for (i = 0; i < job->ntasks; i ++) {
+	for (i = 0; i < job->node_tasks; i ++) {
 		fd[i*2] = -1;
 		fd[i*2+1] = -1;
 	}
 
-	for (i = 0; i < job->ntasks; i ++) {
+	for (i = 0; i < job->node_tasks; i ++) {
 		if (job->batch) {
 			sprintf(context_file, "%s/script.ckpt", image_dir);
 		} else {
@@ -479,13 +479,13 @@ extern int slurm_ckpt_signal_tasks(slurmd_job_t *job, char *image_dir)
 
  out_wait:
 	c = (rc == SLURM_SUCCESS) ? 0 : 1;
-	for (i = 0; i < job->ntasks; i ++) {
+	for (i = 0; i < job->node_tasks; i ++) {
 		if (fd[i*2+1] >= 0) {
 			while(write(fd[i*2+1], &c, 1) < 0 && errno == EINTR);
 		}
 	}
 	/* wait children in sequence is OK */
-	for (i = 0; i < job->ntasks; i ++) {
+	for (i = 0; i < job->node_tasks; i ++) {
 		if (children[i] == 0)
 			continue;
 		while(waitpid(children[i], &status, 0) < 0 && errno == EINTR);
