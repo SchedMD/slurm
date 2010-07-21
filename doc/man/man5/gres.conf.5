@@ -31,18 +31,19 @@ Specify the CPU index numbers for the specific CPUs which can
 use this resources. For example, it may be strongly preferable
 to use specific CPUs with specific devices (e.g. on a NUMA
 architecture). Multiple CPUs may be specified using a comma
-delimited list. If not specified, then any CPU can be used with
-the resources. If any CPU can be used with the resources, then
-do not specify the \fBCPUs\fR option for improved speed in the
-SLURM scheduling logic.
+delimited list or a range may be specified using a "\-" separator
+(e.g. "0,1,2,3" or "0\-3").
+If not specified, then any CPU can be used with the resources.
+If any CPU can be used with the resources, then do not specify the
+\fBCPUs\fR option for improved speed in the SLURM scheduling logic.
 
 .TP
 \fBFile\fR
 Fully qualified pathname of the device file associated with a resource.
 This field is generally required if enforcement of generic resource
 allocations is to be supported (i.e. prevents a users from making
-use of resources allocated to a different user. If specified then
-\fBCount\fR must be one.
+use of resources allocated to a different user. If \fBFile\fR is specified then
+\fBCount\fR must be either set to one or not set (the default value is one).
 
 .TP
 \fBName\fR

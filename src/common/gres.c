@@ -553,6 +553,7 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 
 	p = xmalloc(sizeof(gres_slurmd_conf_t));
 	p->name = xstrdup(value);
+	p->cpu_cnt = gres_cpu_cnt;
 	if (s_p_get_uint32(&p->count, "Count", tbl)) {
 		if (p->count == 0)
 			fatal("Invalid gres data for %s, Count=0", p->name);
@@ -560,7 +561,6 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 		p->count = 1;
 	if (s_p_get_string(&p->cpus, "CPUs", tbl)) {
 		bitstr_t *cpu_bitmap;	/* Just use to validate config */
-		p->cpu_cnt = gres_cpu_cnt;
 		cpu_bitmap = bit_alloc(gres_cpu_cnt);
 		if (cpu_bitmap == NULL)
 			fatal("bit_alloc: malloc failure");
@@ -956,7 +956,7 @@ static uint32_t _get_tot_gres_cnt(uint32_t plugin_id, uint32_t *set_cnt)
 {
 	ListIterator iter;
 	gres_slurmd_conf_t *gres_slurmd_conf;
-	uint32_t gres_cnt = 0;
+	uint32_t gres_cnt = 0, cpu_set_cnt = 0, rec_cnt = 0;
 
 	xassert(set_cnt);
 	*set_cnt = 0;
@@ -970,10 +970,13 @@ static uint32_t _get_tot_gres_cnt(uint32_t plugin_id, uint32_t *set_cnt)
 		if (gres_slurmd_conf->plugin_id != plugin_id)
 			continue;
 		gres_cnt += gres_slurmd_conf->count;
+		rec_cnt++;
 		if (gres_slurmd_conf->cpus)
-			(*set_cnt)++;
+			cpu_set_cnt++;
 	}
 	list_iterator_destroy(iter);
+	if (cpu_set_cnt)
+		*set_cnt = rec_cnt;
 	return gres_cnt;
 }
 
@@ -1006,7 +1009,7 @@ extern int _node_config_validate(char *node_name, char *orig_config,
 	if (updated_config == false)
 		return SLURM_SUCCESS;
 
-	if ((set_cnt != gres_data->topo_cnt) || 1) {
+	if ((set_cnt != 0) || (set_cnt != gres_data->topo_cnt)) {
 		/* Rebuild GRES information when the node registers.
 		 * Do we want to do this for every node registration
 		 * since it is fairly high overhead? */
@@ -1024,16 +1027,23 @@ extern int _node_config_validate(char *node_name, char *orig_config,
 		gres_inx = i = 0;
 		while ((gres_slurmd_conf = (gres_slurmd_conf_t *) 
 			list_next(iter))) {
-			if ((gres_slurmd_conf->cpus == 0) ||
-			    (gres_slurmd_conf->plugin_id !=
-			     *context_ptr->ops.plugin_id))
+			if (gres_slurmd_conf->plugin_id !=
+			    *context_ptr->ops.plugin_id)
 				continue;
 			gres_data->cpus_bitmap[i] =
 					bit_alloc(gres_slurmd_conf->cpu_cnt);
 			if (gres_data->cpus_bitmap[i] == NULL)
 				fatal("bit_alloc: malloc failure");
-			bit_unfmt(gres_data->cpus_bitmap[i],
-				  gres_slurmd_conf->cpus);
+			if (gres_slurmd_conf->cpus) {
+				bit_unfmt(gres_data->cpus_bitmap[i],
+					  gres_slurmd_conf->cpus);
+			} else {
+				error("%s: has CPUs configured for only some "
+				      "of the records on node %s",
+				      context_ptr->gres_type, node_name);
+				bit_nset(gres_data->cpus_bitmap[i], 0,
+					 (gres_slurmd_conf->cpu_cnt - 1));
+			}
 			gres_inx += gres_slurmd_conf->count;
 			i++;
 		}
