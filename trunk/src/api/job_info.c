@@ -139,7 +139,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 {
 	int i, j;
 	char time_str[32], *group_name, *user_name;
-	char tmp1[128], tmp2[128], *tmp3_ptr;
+	char tmp1[128], tmp2[128], tmp3[128], tmp4[128], tmp5[128], *tmp3_ptr;
 	char tmp_line[512];
 	char *ionodes = NULL;
 	uint16_t exit_status = 0, term_sig = 0;
@@ -401,11 +401,21 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 
 	_sprint_range(tmp1, sizeof(tmp1), job_ptr->num_cpus, job_ptr->max_cpus);
 	_sprint_range(tmp2, sizeof(tmp2), min_nodes, max_nodes);
+	if (job_ptr->sockets_per_node == (uint16_t) NO_VAL)
+		strcpy(tmp3, "*");
+	else
+		snprintf(tmp3, sizeof(tmp3), "%u", job_ptr->sockets_per_node);
+	if (job_ptr->cores_per_socket == (uint16_t) NO_VAL)
+		strcpy(tmp4, "*");
+	else
+		snprintf(tmp4, sizeof(tmp4), "%u", job_ptr->cores_per_socket);
+	if (job_ptr->threads_per_core == (uint16_t) NO_VAL)
+		strcpy(tmp5, "*");
+	else
+		snprintf(tmp5, sizeof(tmp5), "%u", job_ptr->threads_per_core);
 	snprintf(tmp_line, sizeof(tmp_line),
-		 "NumNodes=%s NumCPUs=%s CPUs/Task=%u ReqS:C:T=%u:%u:%u",
-		 tmp2, tmp1, job_ptr->cpus_per_task,
-		 job_ptr->sockets_per_node, job_ptr->cores_per_socket,
-		 job_ptr->threads_per_core);
+		 "NumNodes=%s NumCPUs=%s CPUs/Task=%u ReqS:C:T=%s:%s:%s",
+		 tmp2, tmp1, job_ptr->cpus_per_task, tmp3, tmp4, tmp5);
 	xstrcat(out, tmp_line);
 	if (one_liner)
 		xstrcat(out, " ");
