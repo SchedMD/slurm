@@ -139,7 +139,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 {
 	int i, j;
 	char time_str[32], *group_name, *user_name;
-	char tmp1[128], tmp2[128], tmp3[128], tmp4[128], tmp5[128], *tmp3_ptr;
+	char tmp1[128], tmp2[128], tmp3[128], tmp4[128], tmp5[128], *tmp6_ptr;
 	char tmp_line[512];
 	char *ionodes = NULL;
 	uint16_t exit_status = 0, term_sig = 0;
@@ -212,12 +212,12 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 			if (isspace(job_ptr->state_desc[j]))
 				job_ptr->state_desc[j] = '_';
 		}
-		tmp3_ptr = job_ptr->state_desc;
+		tmp6_ptr = job_ptr->state_desc;
 	} else
-		tmp3_ptr = job_reason_string(job_ptr->state_reason);
+		tmp6_ptr = job_reason_string(job_ptr->state_reason);
 	snprintf(tmp_line, sizeof(tmp_line),
 		 "JobState=%s Reason=%s Dependency=%s",
-		 job_state_string(job_ptr->job_state), tmp3_ptr,
+		 job_state_string(job_ptr->job_state), tmp6_ptr,
 		 job_ptr->dependency);
 	xstrcat(out, tmp_line);
 	if (one_liner)
@@ -423,7 +423,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 		xstrcat(out, "\n   ");
 
 	if (!job_resrcs)
-		goto line14;
+		goto line15;
 
 	if(cluster_flags & CLUSTER_FLAG_BG) {
 		if ((job_resrcs->cpu_array_cnt > 0) &&
@@ -466,11 +466,11 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 		}
 	} else {
 		if (!job_resrcs->core_bitmap)
-			goto line14;
+			goto line15;
 
 		last  = bit_fls(job_resrcs->core_bitmap);
 		if (last == -1)
-			goto line14;
+			goto line15;
 
 		hl = hostlist_create(job_ptr->nodes);
 		if (!hl) {
@@ -585,12 +585,12 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 		hostlist_destroy(hl_last);
 	}
 	/****** Line 15 ******/
-line14:
+line15:
 	if (job_ptr->pn_min_memory & MEM_PER_CPU) {
 		job_ptr->pn_min_memory &= (~MEM_PER_CPU);
-		tmp3_ptr = "CPU";
+		tmp6_ptr = "CPU";
 	} else
-		tmp3_ptr = "Node";
+		tmp6_ptr = "Node";
 
 	if(cluster_flags & CLUSTER_FLAG_BG) {
 		convert_num_unit((float)job_ptr->pn_min_cpus,
@@ -608,7 +608,7 @@ line14:
 			 UNIT_MEGA);
 	snprintf(tmp_line, sizeof(tmp_line),
 		 " MinMemory%s=%s MinTmpDiskNode=%s",
-		 tmp3_ptr, tmp1, tmp2);
+		 tmp6_ptr, tmp1, tmp2);
 	xstrcat(out, tmp_line);
 	if (one_liner)
 		xstrcat(out, " ");
