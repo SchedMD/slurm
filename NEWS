@@ -394,6 +394,10 @@ documents those changes that are of interest to users and admins.
  -- Fix bug that caused segv when deleting a partition with pending jobs.
  -- Better error message for when trying to modify an account's name with
     sacctmgr.
+ -- Added back removal of #include "src/common/slurm_xlator.h" from
+    select/cons_res.
+ -- Fix incorrect logic in global_accounting in regression tests for
+    setting QOS.
 
 * Changes in SLURM 2.1.10
 =========================
