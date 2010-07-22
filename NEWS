@@ -42,7 +42,9 @@ documents those changes that are of interest to users and admins.
  -- Fix bug in checkpoint/blcr for jobs spanning multiple nodes introduced when
     changing some variable names in version 2.2.0.pre5.
  -- Removed the vestigal set_max_cluster_usage() function from the Priority
-    Plugin API
+    Plugin API.
+ -- Modify the output of "scontrol show job" for the field ReqS:C:T=. Fields
+    not specified by the user will be reported as "*" instead of 65534.
 
 * Changes in SLURM 2.2.0.pre8
 =============================
