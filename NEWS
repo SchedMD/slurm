@@ -11,6 +11,8 @@ documents those changes that are of interest to users and admins.
     sacctmgr.
  -- Added back removal of #include "src/common/slurm_xlator.h" from
     select/cons_res.
+ -- Fix incorrect logic in global_accounting in regression tests for
+    setting QOS.
 
 * Changes in SLURM 2.1.10
 =========================
