@@ -282,7 +282,7 @@ are able to run inside the limit.
 
 .TP
 \fIMaxCPUMins\fP=<max cpu minutes>
-Maximum number of CPU minutes each job is able to use in this account.
+Maximum number of CPU minutes each job is able to use in this association.
 This is overridden if set directly on a user.
 Default is the cluster's limit.
 To clear a previously set value use the modify command with a new
@@ -290,7 +290,7 @@ value of \-1.
 
 .TP
 \fIMaxCPUs\fP=<max cpus>
-Maximum number of CPUs each job is able to use in this account.
+Maximum number of CPUs each job is able to use in this association.
 This is overridden if set directly on a user.
 Default is the cluster's limit.
 To clear a previously set value use the modify command with a new
@@ -299,14 +299,15 @@ Consumable Resouce plugin.)
 
 .TP
 \fIMaxJobs\fP=<max jobs>
-Maximum number of jobs each user is allowed to run at one time in this account.
+Maximum number of jobs each user is allowed to run at one time in this
+association.
 This is overridden if set directly on a user.
 Default is the cluster's limit.
 To clear a previously set value use the modify command with a new value of \-1.
 
 .TP
 \fIMaxNodes\fP=<max nodes>
-Maximum number of nodes each job is able to use in this account.
+Maximum number of nodes each job is able to use in this association.
 This is overridden if set directly on a user.
 Default is the cluster's limit.
 To clear a previously set value use the modify command with a new value of \-1.
@@ -321,7 +322,7 @@ To clear a previously set value use the modify command with a new value of \-1.
 
 .TP
 \fIMaxWall\fP=<max wall>
-Maximum wall clock time each job is able to use in this account.
+Maximum wall clock time each job is able to use in this association.
 This is overridden if set directly on a user.
 Default is the cluster's limit.
 <max wall> format is <min> or <min>:<sec> or <hr>:<min>:<sec> or
@@ -332,7 +333,7 @@ To clear a previously set value use the modify command with a new value of \-1.
 .TP
 \fIQosLevel\fP<operator><comma separated list of qos names>
 Specify the default Quality of Service's that jobs are able to run at
-for this account.  To get a list of valid QOS's use 'sacctmgr list qos'.
+for this association.  To get a list of valid QOS's use 'sacctmgr list qos'.
 This value will override it's parents value and push down to it's
 children as the new default.  Setting a QosLevel to '' (two single
 quotes with nothing between them) restores it's default setting.  You
