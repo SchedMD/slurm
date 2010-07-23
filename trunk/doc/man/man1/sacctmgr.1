@@ -217,6 +217,19 @@ Workload  Characterization  Key. An arbitrary  string  for  grouping orthogonal 
 .SH "GENERAL SPECIFICATIONS FOR ASSOCIATION BASED ENTITIES"
 
 .TP
+\fIDefaultQOS\fP=<default qos>
+The default QOS this associaiton and it's childern should have.
+This is overridden if set directly on a user.
+To clear a previously set value use the modify command with a new value of \-1.
+NOTE: Because this could be inherited from a parent an association can
+easily end up with a default qos that it does not have access to.
+There is no current checking to make sure this doesn't happen.  When
+read in from the slurmctld the default qos is checked against and if
+the default qos isn't in the list of valid QOS for that association
+and the association only has access to 1 QOS that will become the
+default, otherwise, no default will be set.
+
+.TP
 \fIFairshare\fP=<fairshare>
 Number used in conjunction with other accounts to determine job priority.
 To clear a previously set value use the modify command with a new value of \-1.
@@ -490,6 +503,11 @@ The name of a bank account in the association.
 .TP
 \fICluster\fP
 The name of a cluster in the association.
+
+.TP
+\fIDefaultQOS\fP
+The QOS the association will use by default if it as access to it in
+the QOS list mentioned below.
 
 .TP
 \fIFairshare\fP

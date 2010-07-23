@@ -68,8 +68,10 @@ hv_to_assoc_cond(HV* hv, slurmdb_association_cond_t* assoc_cond)
 
     FETCH_LIST_FIELD(hv, assoc_cond, acct_list);
     FETCH_LIST_FIELD(hv, assoc_cond, cluster_list);
+    FETCH_LIST_FIELD(hv, assoc_cond, def_qos_id_list);
     FETCH_LIST_FIELD(hv, assoc_cond, fairshare_list);
     FETCH_LIST_FIELD(hv, assoc_cond, grp_cpu_mins_list);
+    FETCH_LIST_FIELD(hv, assoc_cond, grp_cpu_run_mins_list);
     FETCH_LIST_FIELD(hv, assoc_cond, grp_cpus_list);
     FETCH_LIST_FIELD(hv, assoc_cond, grp_jobs_list);
     FETCH_LIST_FIELD(hv, assoc_cond, grp_nodes_list);
@@ -77,6 +79,7 @@ hv_to_assoc_cond(HV* hv, slurmdb_association_cond_t* assoc_cond)
     FETCH_LIST_FIELD(hv, assoc_cond, grp_wall_list);
     FETCH_LIST_FIELD(hv, assoc_cond, id_list);
     FETCH_LIST_FIELD(hv, assoc_cond, max_cpu_mins_pj_list);
+    FETCH_LIST_FIELD(hv, assoc_cond, max_cpu_run_mins_list);
     FETCH_LIST_FIELD(hv, assoc_cond, max_cpus_pj_list);
     FETCH_LIST_FIELD(hv, assoc_cond, max_jobs_list);
     FETCH_LIST_FIELD(hv, assoc_cond, max_nodes_pj_list);
@@ -104,12 +107,15 @@ hv_to_cluster_cond(HV* hv, slurmdb_cluster_cond_t* cluster_cond)
     cluster_cond->with_usage = 1;
 
     FETCH_FIELD(hv, cluster_cond, classification, uint16_t, FALSE);
+    FETCH_FIELD(hv, cluster_cond, flags,          uint32_t, FALSE);
     FETCH_FIELD(hv, cluster_cond, usage_end,      time_t , FALSE);
     FETCH_FIELD(hv, cluster_cond, usage_start,    time_t , FALSE);
     FETCH_FIELD(hv, cluster_cond, with_deleted,   uint16_t, FALSE);
     FETCH_FIELD(hv, cluster_cond, with_usage,     uint16_t, FALSE);
 
     FETCH_LIST_FIELD(hv, cluster_cond, cluster_list);
+    FETCH_LIST_FIELD(hv, cluster_cond, plugin_id_select_list);
+    FETCH_LIST_FIELD(hv, cluster_cond, rpc_version_list);
 
     return 0;
 }
@@ -146,8 +152,13 @@ hv_to_job_cond(HV* hv, slurmdb_job_cond_t* job_cond)
     FETCH_FIELD(hv, job_cond, cpus_max,                 uint32_t, FALSE);
     FETCH_FIELD(hv, job_cond, cpus_min,                 uint32_t, FALSE);
     FETCH_FIELD(hv, job_cond, duplicates,               uint16_t, FALSE);
+    FETCH_FIELD(hv, job_cond, exitcode,                 int32_t, FALSE);
     FETCH_FIELD(hv, job_cond, nodes_max,                uint32_t, FALSE);
     FETCH_FIELD(hv, job_cond, nodes_min,                uint32_t, FALSE);
+    FETCH_FIELD(hv, job_cond, timelimit_max,            uint32_t, FALSE);
+    FETCH_FIELD(hv, job_cond, timelimit_min,            uint32_t, FALSE);
+    FETCH_FIELD(hv, job_cond, usage_end,                time_t, FALSE);
+    FETCH_FIELD(hv, job_cond, usage_start,              time_t, FALSE);
     FETCH_FIELD(hv, job_cond, used_nodes,               charp, FALSE);
     FETCH_FIELD(hv, job_cond, without_steps,            uint16_t, FALSE);
     FETCH_FIELD(hv, job_cond, without_usage_truncation, uint16_t, FALSE);
@@ -157,6 +168,7 @@ hv_to_job_cond(HV* hv, slurmdb_job_cond_t* job_cond)
     FETCH_LIST_FIELD(hv, job_cond, cluster_list);
     FETCH_LIST_FIELD(hv, job_cond, groupid_list);
     FETCH_LIST_FIELD(hv, job_cond, partition_list);
+    FETCH_LIST_FIELD(hv, job_cond, qos_list);
     FETCH_LIST_FIELD(hv, job_cond, resv_list);
     FETCH_LIST_FIELD(hv, job_cond, resvid_list);
     FETCH_LIST_FIELD(hv, job_cond, state_list);
@@ -337,8 +349,11 @@ cluster_rec_to_hv(slurmdb_cluster_rec_t* rec, HV* hv)
     STORE_FIELD(hv, rec, control_host,   charp);
     STORE_FIELD(hv, rec, control_port,   uint32_t);
     STORE_FIELD(hv, rec, cpu_count,      uint32_t);
+    STORE_FIELD(hv, rec, dimensions,     uint16_t);
+    STORE_FIELD(hv, rec, flags,          uint32_t);
     STORE_FIELD(hv, rec, name,           charp);
     STORE_FIELD(hv, rec, nodes,          charp);
+    STORE_FIELD(hv, rec, plugin_id_select, uint32_t);
     /* slurmdb_association_rec_t* root_assoc; */
     STORE_FIELD(hv, rec, rpc_version,    uint16_t);
 

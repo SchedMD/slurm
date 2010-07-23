@@ -184,6 +184,8 @@ typedef struct {
 	List acct_list;		/* list of char * */
 	List cluster_list;	/* list of char * */
 
+	List def_qos_id_list;   /* list of char * */
+
 	List fairshare_list;	/* fairshare number */
 
 	List grp_cpu_mins_list; /* list of char * */
@@ -241,8 +243,8 @@ typedef struct {
 	List qos_list;  	/* list of char * */
 	List resv_list;		/* list of char * */
 	List resvid_list;	/* list of char * */
-	List step_list;         /* list of jobacct_selected_step_t */
 	List state_list;        /* list of char * */
+	List step_list;         /* list of jobacct_selected_step_t */
 	uint32_t timelimit_max; /* max timelimit */
 	uint32_t timelimit_min; /* min timelimit */
 	time_t usage_end;
@@ -343,6 +345,8 @@ typedef struct {
 	char *acct;		   /* account/project associated to
 				    * association */
 	char *cluster;		   /* cluster associated to association */
+
+	uint32_t def_qos_id;   /* list of char * */
 
 	uint64_t grp_cpu_mins;     /* max number of cpu minutes the
 				    * underlying group of

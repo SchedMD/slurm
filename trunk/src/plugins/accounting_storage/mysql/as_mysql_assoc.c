@@ -64,6 +64,7 @@ char *assoc_req_inx[] = {
 	"max_submit_jobs",
 	"max_wall_pj",
 	"parent_acct",
+	"def_qos_id",
 	"qos",
 	"delta_qos",
 };
@@ -90,10 +91,16 @@ enum {
 	ASSOC_REQ_MSJ,
 	ASSOC_REQ_MWPJ,
 	ASSOC_REQ_PARENT,
+	ASSOC_REQ_DEF_QOS,
 	ASSOC_REQ_QOS,
 	ASSOC_REQ_DELTA_QOS,
 	ASSOC_REQ_COUNT
 };
+
+static char *get_parent_limits_select =
+	"select @par_id, @mj, @msj, @mcpj, "
+	"@mnpj, @mwpj, @mcmpj, @mcrm, "
+	"@def_qos_id, @qos, @delta_qos;";
 
 enum {
 	ASSOC2_REQ_PARENT_ID,
@@ -104,6 +111,7 @@ enum {
 	ASSOC2_REQ_MWPJ,
 	ASSOC2_REQ_MCMPJ,
 	ASSOC2_REQ_MCRM,
+	ASSOC2_REQ_DEF_QOS,
 	ASSOC2_REQ_QOS,
 	ASSOC2_REQ_DELTA_QOS,
 };
@@ -466,10 +474,9 @@ static int _set_assoc_limits_for_add(
 		return SLURM_SUCCESS;
 
 	query = xstrdup_printf("call get_parent_limits('%s', "
-			       "'%s', '%s', %u);"
-			       "select @par_id, @mj, @msj, @mcpj, "
-			       "@mnpj, @mwpj, @mcmpj, @mcrm, @qos, @delta_qos;",
-			       assoc_table, parent, assoc->cluster, 0);
+			       "'%s', '%s', %u); %s",
+			       assoc_table, parent, assoc->cluster, 0,
+			       get_parent_limits_select);
 	debug4("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, THIS_FILE, __LINE__, query);
 	if(!(result = mysql_db_query_ret(mysql_conn->db_conn, query, 1))) {
@@ -481,20 +488,25 @@ static int _set_assoc_limits_for_add(
 	if(!(row = mysql_fetch_row(result)))
 		goto end_it;
 
-	if(row[ASSOC_REQ_MJ] && assoc->max_jobs == NO_VAL)
-		assoc->max_jobs = atoi(row[ASSOC_REQ_MJ]);
-	if(row[ASSOC_REQ_MSJ] && assoc->max_submit_jobs == NO_VAL)
-		assoc->max_submit_jobs = atoi(row[ASSOC_REQ_MSJ]);
-	if(row[ASSOC_REQ_MCPJ] && assoc->max_cpus_pj == NO_VAL)
-		assoc->max_cpus_pj = atoi(row[ASSOC_REQ_MCPJ]);
-	if(row[ASSOC_REQ_MNPJ] && assoc->max_nodes_pj == NO_VAL)
-		assoc->max_nodes_pj = atoi(row[ASSOC_REQ_MNPJ]);
-	if(row[ASSOC_REQ_MWPJ] && assoc->max_wall_pj == NO_VAL)
-		assoc->max_wall_pj = atoi(row[ASSOC_REQ_MWPJ]);
-	if(row[ASSOC_REQ_MCMPJ] && assoc->max_cpu_mins_pj == (uint64_t)NO_VAL)
-		assoc->max_cpu_mins_pj = atoll(row[ASSOC_REQ_MCMPJ]);
-	if(row[ASSOC_REQ_MCRM] && assoc->max_cpu_run_mins == (uint64_t)NO_VAL)
-		assoc->max_cpu_run_mins = atoll(row[ASSOC_REQ_MCRM]);
+	if(row[ASSOC2_REQ_DEF_QOS] && assoc->def_qos_id == NO_VAL)
+		assoc->def_qos_id = atoi(row[ASSOC2_REQ_DEF_QOS]);
+	else if(assoc->def_qos_id == NO_VAL)
+		assoc->def_qos_id = 0;
+
+	if(row[ASSOC2_REQ_MJ] && assoc->max_jobs == NO_VAL)
+		assoc->max_jobs = atoi(row[ASSOC2_REQ_MJ]);
+	if(row[ASSOC2_REQ_MSJ] && assoc->max_submit_jobs == NO_VAL)
+		assoc->max_submit_jobs = atoi(row[ASSOC2_REQ_MSJ]);
+	if(row[ASSOC2_REQ_MCPJ] && assoc->max_cpus_pj == NO_VAL)
+		assoc->max_cpus_pj = atoi(row[ASSOC2_REQ_MCPJ]);
+	if(row[ASSOC2_REQ_MNPJ] && assoc->max_nodes_pj == NO_VAL)
+		assoc->max_nodes_pj = atoi(row[ASSOC2_REQ_MNPJ]);
+	if(row[ASSOC2_REQ_MWPJ] && assoc->max_wall_pj == NO_VAL)
+		assoc->max_wall_pj = atoi(row[ASSOC2_REQ_MWPJ]);
+	if(row[ASSOC2_REQ_MCMPJ] && assoc->max_cpu_mins_pj == (uint64_t)NO_VAL)
+		assoc->max_cpu_mins_pj = atoll(row[ASSOC2_REQ_MCMPJ]);
+	if(row[ASSOC2_REQ_MCRM] && assoc->max_cpu_run_mins == (uint64_t)NO_VAL)
+		assoc->max_cpu_run_mins = atoll(row[ASSOC2_REQ_MCRM]);
 
 	if(assoc->qos_list) {
 		int set = 0;
@@ -523,12 +535,12 @@ static int _set_assoc_limits_for_add(
 	} else
 		assoc->qos_list = list_create(slurm_destroy_char);
 
-	if(row[ASSOC_REQ_QOS][0])
-		slurm_addto_char_list(assoc->qos_list, row[ASSOC_REQ_QOS]+1);
+	if(row[ASSOC2_REQ_QOS][0])
+		slurm_addto_char_list(assoc->qos_list, row[ASSOC2_REQ_QOS]+1);
 
-	if(row[ASSOC_REQ_DELTA_QOS][0])
+	if(row[ASSOC2_REQ_DELTA_QOS][0])
 		slurm_addto_char_list(assoc->qos_list,
-				      row[ASSOC_REQ_DELTA_QOS]+1);
+				      row[ASSOC2_REQ_DELTA_QOS]+1);
 	if(qos_delta) {
 		slurm_addto_char_list(assoc->qos_list, qos_delta+1);
 		xfree(qos_delta);
@@ -567,6 +579,7 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 		"max_wall_pj",
 		"max_cpu_mins_pj",
 		"max_cpu_run_mins",
+		"def_qos_id",
 		"qos",
 		"delta_qos",
 		"lft",
@@ -585,6 +598,7 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 		ASSOC_MWPJ,
 		ASSOC_MCMPJ,
 		ASSOC_MCRM,
+		ASSOC_DEF_QOS,
 		ASSOC_QOS,
 		ASSOC_DELTA_QOS,
 		ASSOC_LFT,
@@ -629,6 +643,11 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 		slurmdb_init_association_rec(mod_assoc);
 		mod_assoc->id = atoi(row[ASSOC_ID]);
 		mod_assoc->cluster = xstrdup(assoc->cluster);
+
+		if(!row[ASSOC_DEF_QOS] && assoc->def_qos_id != NO_VAL) {
+			mod_assoc->def_qos_id = assoc->def_qos_id;
+			modified = 1;
+		}
 
 		if(!row[ASSOC_MJ] && assoc->max_jobs != NO_VAL) {
 			mod_assoc->max_jobs = assoc->max_jobs;
@@ -850,6 +869,22 @@ static int _setup_association_cond_limits(
 			if(set)
 				xstrcat(*extra, " || ");
 			xstrfmtcat(*extra, "%s.acct='%s'", prefix, object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(*extra, ")");
+	}
+
+	if(assoc_cond->def_qos_id_list
+	   && list_count(assoc_cond->def_qos_id_list)) {
+		set = 0;
+		xstrcat(*extra, " && (");
+		itr = list_iterator_create(assoc_cond->def_qos_id_list);
+		while((object = list_next(itr))) {
+			if(set)
+				xstrcat(*extra, " || ");
+			xstrfmtcat(*extra, "%s.def_qos_id='%s'",
+				   prefix, object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -1311,11 +1346,10 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 		   sure we get the parent's information, if any. */
 		query = xstrdup_printf(
 			"call get_parent_limits('%s', "
-			"'%s', '%s', %u);"
-			"select @par_id, @mj, @msj, @mcpj, "
-			"@mnpj, @mwpj, @mcmpj, @mcrm, @qos, @delta_qos;",
+			"'%s', '%s', %u); %s",
 			assoc_table, account,
-			cluster_name, 0);
+			cluster_name, 0,
+			get_parent_limits_select);
 		debug4("%d(%s:%d) query\n%s",
 		       mysql_conn->conn, THIS_FILE, __LINE__, query);
 		if(!(result2 = mysql_db_query_ret(
@@ -1326,6 +1360,10 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 		xfree(query);
 
 		if((row2 = mysql_fetch_row(result2))) {
+			if(!assoc->def_qos_id && row2[ASSOC2_REQ_DEF_QOS])
+				assoc->def_qos_id =
+					atoi(row2[ASSOC2_REQ_DEF_QOS]);
+
 			if((assoc->max_jobs == INFINITE) && row2[ASSOC2_REQ_MJ])
 				assoc->max_jobs = atoi(row2[ASSOC2_REQ_MJ]);
 			if((assoc->max_submit_jobs == INFINITE)
@@ -1359,6 +1397,8 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 		slurmdb_init_association_rec(mod_assoc);
 		mod_assoc->id = atoi(row[MASSOC_ID]);
 		mod_assoc->cluster = xstrdup(cluster_name);
+
+		mod_assoc->def_qos_id = assoc->def_qos_id;
 
 		mod_assoc->shares_raw = assoc->shares_raw;
 
@@ -1450,14 +1490,13 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 				     SLURMDB_MODIFY_ASSOC,
 				     mod_assoc) != SLURM_SUCCESS)
 			error("couldn't add to the update list");
-		if(account_type) {
+		if(account_type)
 			_modify_unset_users(mysql_conn,
 					    mod_assoc,
 					    row[MASSOC_ACCT],
 					    lft, rgt,
 					    ret_list,
 					    moved_parent);
-		}
 	}
 
 	xstrcat(name_char, ")");
@@ -1646,6 +1685,7 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 	ListIterator itr = NULL;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
+	uint32_t parent_def_qos_id = 0;
 	uint32_t parent_mj = INFINITE;
 	uint32_t parent_msj = INFINITE;
 	uint32_t parent_mcpj = INFINITE;
@@ -1826,13 +1866,11 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 		    || strcmp(cluster_name, last_cluster))) {
 			query = xstrdup_printf(
 				"call get_parent_limits('%s', "
-				"'%s', '%s', %u);"
-				"select @par_id, @mj, @msj, @mcpj, "
-				"@mnpj, @mwpj, @mcmpj, @mcrm, "
-				"@qos, @delta_qos;",
+				"'%s', '%s', %u); %s",
 				assoc_table, parent_acct,
 				cluster_name,
-				without_parent_limits);
+				without_parent_limits,
+				get_parent_limits_select);
 			debug4("%d(%s:%d) query\n%s",
 			       mysql_conn->conn, THIS_FILE, __LINE__, query);
 			if(!(result2 = mysql_db_query_ret(
@@ -1849,6 +1887,12 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 
 			parent_id = atoi(row2[ASSOC2_REQ_PARENT_ID]);
 			if(!without_parent_limits) {
+				if(row2[ASSOC2_REQ_DEF_QOS])
+					parent_def_qos_id =
+						atoi(row2[ASSOC2_REQ_DEF_QOS]);
+				else
+					parent_def_qos_id = 0;
+
 				if(row2[ASSOC2_REQ_MJ])
 					parent_mj = atoi(row2[ASSOC2_REQ_MJ]);
 				else
@@ -1908,6 +1952,12 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 		no_parent_limits:
 			mysql_free_result(result2);
 		}
+
+		if(row[ASSOC_REQ_DEF_QOS])
+			assoc->def_qos_id = atoi(row[ASSOC_REQ_DEF_QOS]);
+		else
+			assoc->def_qos_id = parent_def_qos_id;
+
 		if(row[ASSOC_REQ_MJ])
 			assoc->max_jobs = atoi(row[ASSOC_REQ_MJ]);
 		else

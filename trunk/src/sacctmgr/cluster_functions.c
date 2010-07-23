@@ -188,6 +188,32 @@ static int _set_rec(int *start, int argc, char *argv[],
 				if(*classification)
 					set = 1;
 			}
+		} else if (!strncasecmp (argv[i], "DefaultQOS",
+					 MAX(command_len, 8))) {
+			if(!assoc)
+				continue;
+
+			if(!g_qos_list) {
+				g_qos_list = acct_storage_g_get_qos(
+					db_conn, my_uid, NULL);
+			}
+
+			if(atoi(argv[i]+end) == -1)
+				assoc->def_qos_id = -1;
+			else
+				assoc->def_qos_id = str_2_slurmdb_qos(
+					g_qos_list, argv[i]+end);
+
+			if(assoc->def_qos_id == NO_VAL) {
+				fprintf(stderr,
+					"You gave a bad qos '%s'.  "
+					"Use 'list qos' to get "
+					"complete list.\n",
+					argv[i]+end);
+				exit_code = 1;
+				break;
+			}
+			set = 1;
 		} else if (!strncasecmp (argv[i], "FairShare",
 					 MAX(command_len, 1))
 			   || !strncasecmp (argv[i], "Shares",
@@ -471,6 +497,7 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 	ListIterator itr2 = NULL;
 	slurmdb_cluster_rec_t *cluster = NULL;
 	char *object;
+	char *tmp_char = NULL;
 
 	int field_count = 0;
 
@@ -485,6 +512,7 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 		PRINT_CPORT,
 		PRINT_CLASS,
 		PRINT_CPUS,
+		PRINT_DEF_QOS,
 		PRINT_FAIRSHARE,
 		PRINT_FLAGS,
 		PRINT_GRPCM,
@@ -531,14 +559,13 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 		if(!without_limits)
 			slurm_addto_char_list(format_list,
 					      "Fa,GrpJ,GrpN,GrpS,MaxJ,MaxN,"
-					      "MaxS,MaxW,QOS");
+					      "MaxS,MaxW,QOS,DefaultQOS");
 	}
 
 	cluster_cond->with_deleted = with_deleted;
 
 	itr = list_iterator_create(format_list);
 	while((object = list_next(itr))) {
-		char *tmp_char = NULL;
 		int command_len = 0;
 		int newlen = 0;
 
@@ -578,6 +605,12 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 				       MAX(command_len, 2))) {
 			field->type = PRINT_CPUS;
 			field->name = xstrdup("CPUCount");
+			field->len = 9;
+			field->print_routine = print_fields_str;
+		} else if(!strncasecmp("DefaultQOS", object,
+				       MAX(command_len, 8))) {
+			field->type = PRINT_DEF_QOS;
+			field->name = xstrdup("Def QOS");
 			field->len = 9;
 			field->print_routine = print_fields_str;
 		} else if(!strncasecmp("FairShare", object,
@@ -769,6 +802,20 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 						     (curr_inx == field_count));
 				break;
 			}
+			case PRINT_DEF_QOS:
+				if(!g_qos_list) {
+					g_qos_list = acct_storage_g_get_qos(
+						db_conn,
+						my_uid,
+						NULL);
+				}
+				tmp_char = slurmdb_qos_str(g_qos_list,
+							   assoc->def_qos_id);
+				field->print_routine(
+					field,
+					tmp_char,
+					(curr_inx == field_count));
+				break;
 			case PRINT_FAIRSHARE:
 				field->print_routine(
 					field,
@@ -1327,7 +1374,8 @@ extern int sacctmgr_dump_cluster (int argc, char *argv[])
 		return SLURM_ERROR;
 	}
 
-	slurmdb_hierarchical_rec_list = slurmdb_get_acct_hierarchical_rec_list(assoc_list);
+	slurmdb_hierarchical_rec_list = slurmdb_get_acct_hierarchical_rec_list(
+		assoc_list);
 
 	acct_list = acct_storage_g_get_accounts(db_conn, my_uid, NULL);
 

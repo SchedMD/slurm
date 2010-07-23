@@ -45,6 +45,7 @@ documents those changes that are of interest to users and admins.
     Plugin API.
  -- Modify the output of "scontrol show job" for the field ReqS:C:T=. Fields
     not specified by the user will be reported as "*" instead of 65534.
+ -- Added DefaultQOS option for an association.
 
 * Changes in SLURM 2.2.0.pre8
 =============================

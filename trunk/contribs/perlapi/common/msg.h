@@ -70,6 +70,14 @@ inline static int av_store_int(AV* av, int index, int val)
 }
 
 /*
+ * store an uint32_t into AV
+ */
+inline static int av_store_int32_t(AV* av, int index, int32_t val)
+{
+	return av_store_int(av, index, val);
+}
+
+/*
  * store a string into HV
  */
 inline static int hv_store_charp(HV* hv, const char *key, charp val)
@@ -208,6 +216,14 @@ inline static int hv_store_int(HV* hv, const char *key, int val)
 }
 
 /*
+ * store a signed 32b int into HV
+ */
+inline static int hv_store_int32_t(HV* hv, const char *key, int32_t val)
+{
+	return hv_store_int(hv, key, val);
+}
+
+/*
  * store a bool into HV
  */
 inline static int hv_store_bool(HV* hv, const char *key, bool val)
@@ -262,6 +278,7 @@ inline static int hv_store_ptr(HV* hv, const char *key, void* ptr)
 	return 0;
 }
 
+#define SV2int32_t(sv)  SvUV(sv)
 #define SV2uint32_t(sv) SvUV(sv)
 #define SV2uint16_t(sv) SvUV(sv)
 #define SV2uint8_t(sv)  SvUV(sv)

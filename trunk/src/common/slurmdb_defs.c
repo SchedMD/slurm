@@ -566,6 +566,8 @@ extern void slurmdb_destroy_association_cond(void *object)
 			list_destroy(slurmdb_association->acct_list);
 		if(slurmdb_association->cluster_list)
 			list_destroy(slurmdb_association->cluster_list);
+		if(slurmdb_association->def_qos_id_list)
+			list_destroy(slurmdb_association->def_qos_id_list);
 
 		if(slurmdb_association->fairshare_list)
 			list_destroy(slurmdb_association->fairshare_list);
@@ -1087,6 +1089,8 @@ extern void slurmdb_init_association_rec(slurmdb_association_rec_t *assoc)
 		return;
 
 	memset(assoc, 0, sizeof(slurmdb_association_rec_t));
+
+	assoc->def_qos_id = NO_VAL;
 
 	assoc->grp_cpu_mins = (uint64_t)NO_VAL;
 	assoc->grp_cpu_run_mins = (uint64_t)NO_VAL;
@@ -1643,6 +1647,12 @@ extern void log_assoc_rec(slurmdb_association_rec_t *assoc_ptr,
 		debug2("  RawShares        : NONE");
 	else if(assoc_ptr->shares_raw != NO_VAL)
 		debug2("  RawShares        : %u", assoc_ptr->shares_raw);
+
+	if(assoc_ptr->def_qos_id)
+		debug2("  Default QOS      : %s",
+		       slurmdb_qos_str(qos_list, assoc_ptr->def_qos_id));
+	else
+		debug2("  Default QOS      : NONE");
 
 	if(assoc_ptr->grp_cpu_mins == INFINITE)
 		debug2("  GrpCPUMins       : NONE");

@@ -128,6 +128,24 @@ static int _set_cond(int *start, int argc, char *argv[],
 			slurm_addto_char_list(assoc_cond->cluster_list,
 					argv[i]+end);
 			set = 1;
+		} else if (!strncasecmp (argv[i], "DefaultQOS",
+					 MAX(command_len, 8))) {
+			if(!assoc_cond->def_qos_id_list) {
+				assoc_cond->def_qos_id_list =
+					list_create(slurm_destroy_char);
+			}
+			if(!g_qos_list) {
+				g_qos_list = acct_storage_g_get_qos(
+					db_conn, my_uid, NULL);
+			}
+
+			if(slurmdb_addto_qos_char_list(
+				   assoc_cond->def_qos_id_list,
+				   g_qos_list,
+				   argv[i]+end, 0))
+				set = 1;
+			else
+				exit_code = 1;
 		} else if (!strncasecmp (argv[i], "Format",
 					 MAX(command_len, 1))) {
 			if(format_list)
@@ -313,6 +331,7 @@ extern int sacctmgr_list_association(int argc, char *argv[])
 	ListIterator itr = NULL;
 	ListIterator itr2 = NULL;
 	char *object = NULL;
+	char *tmp_char = NULL;
 	char *print_acct = NULL, *last_cluster = NULL;
 	List tree_list = NULL;
 
@@ -326,6 +345,7 @@ extern int sacctmgr_list_association(int argc, char *argv[])
 	enum {
 		PRINT_ACCOUNT,
 		PRINT_CLUSTER,
+		PRINT_DQOS,
 		PRINT_FAIRSHARE,
 		PRINT_GRPCM,
 		PRINT_GRPC,
@@ -366,16 +386,15 @@ extern int sacctmgr_list_association(int argc, char *argv[])
 		slurm_addto_char_list(format_list, "C,A,U,Part");
 		if(!assoc_cond->without_parent_limits)
 			slurm_addto_char_list(format_list,
-					      "F,GrpJ,GrpN,GrpCPUs,"
+					      "Shares,GrpJ,GrpN,GrpCPUs,"
 					      "GrpS,GrpWall,GrpCPUMins,MaxJ,"
 					      "MaxN,MaxCPUs,MaxS,MaxW,"
-					      "MaxCPUMins,QOS");
+					      "MaxCPUMins,QOS,DefaultQOS");
 	}
 	print_fields_list = list_create(destroy_print_field);
 
 	itr = list_iterator_create(format_list);
 	while((object = list_next(itr))) {
-		char *tmp_char = NULL;
 		int command_len = 0;
 		int newlen = 0;
 
@@ -402,6 +421,12 @@ extern int sacctmgr_list_association(int argc, char *argv[])
 			field->type = PRINT_CLUSTER;
 			field->name = xstrdup("Cluster");
 			field->len = 10;
+			field->print_routine = print_fields_str;
+		} else if(!strncasecmp("DefaultQOS", object,
+				       MAX(command_len, 1))) {
+			field->type = PRINT_DQOS;
+			field->name = xstrdup("Def QOS");
+			field->len = 9;
 			field->print_routine = print_fields_str;
 		} else if(!strncasecmp("FairShare", object,
 				       MAX(command_len, 1))) {
@@ -622,6 +647,17 @@ extern int sacctmgr_list_association(int argc, char *argv[])
 				field->print_routine(
 					field,
 					assoc->cluster,
+					(curr_inx == field_count));
+				break;
+			case PRINT_DQOS:
+				if(!g_qos_list)
+					g_qos_list = acct_storage_g_get_qos(
+						db_conn, my_uid, NULL);
+				tmp_char = slurmdb_qos_str(g_qos_list,
+							   assoc->def_qos_id);
+				field->print_routine(
+					field,
+					tmp_char,
 					(curr_inx == field_count));
 				break;
 			case PRINT_FAIRSHARE:
