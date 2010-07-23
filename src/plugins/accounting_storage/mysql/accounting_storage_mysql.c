@@ -515,6 +515,7 @@ static int _as_mysql_acct_check_tables(MYSQL *db_conn)
 		"set @mwpj = NULL; "
 		"set @mcmpj = NULL; "
 		"set @mcrm = NULL; "
+		"set @def_qos_id = NULL; "
 		"set @qos = ''; "
 		"set @delta_qos = ''; "
 		"set @my_acct = acct; "
@@ -526,6 +527,7 @@ static int _as_mysql_acct_check_tables(MYSQL *db_conn)
 		"set @mwpj = 0; "
 		"set @mcmpj = 0; "
 		"set @mcrm = 0; "
+		"set @def_qos_id = 0; "
 		"set @qos = 0; "
 		"set @delta_qos = 0; "
 		"end if; "
@@ -555,6 +557,9 @@ static int _as_mysql_acct_check_tables(MYSQL *db_conn)
 		"if @mcrm is NULL then set @s = CONCAT("
 		"@s, '@mcrm := max_cpu_run_mins, '); "
 		"end if; "
+		"if @def_qos_id is NULL then set @s = CONCAT("
+		"@s, '@def_qos_id := def_qos_id, '); "
+		"end if; "
 		"if @qos = '' then set @s = CONCAT("
 		"@s, '@qos := qos, "
 		"@delta_qos := CONCAT(delta_qos, @delta_qos), '); "
@@ -567,7 +572,8 @@ static int _as_mysql_acct_check_tables(MYSQL *db_conn)
 		"deallocate prepare query; "
 		"UNTIL (@mj != -1 && @msj != -1 && @mcpj != -1 "
 		"&& @mnpj != -1 && @mwpj != -1 && @mcmpj != -1 "
-		"&& @mcrm != -1 && @qos != '') || @my_acct = '' END REPEAT; "
+		"&& @mcrm != -1 && @def_qos_id != -1 && @qos != '') "
+		"|| @my_acct = '' END REPEAT; "
 		"END;";
 	char *query = NULL;
 	time_t now = time(NULL);
@@ -819,6 +825,7 @@ extern int create_cluster_tables(MYSQL *db_conn, char *cluster_name)
 		{ "grp_wall", "int default NULL" },
 		{ "grp_cpu_mins", "bigint default NULL" },
 		{ "grp_cpu_run_mins", "bigint default NULL" },
+		{ "def_qos_id", "int default NULL" },
 		{ "qos", "blob not null default ''" },
 		{ "delta_qos", "blob not null default ''" },
 		{ NULL, NULL}
@@ -1353,6 +1360,19 @@ extern int setup_association_limits(slurmdb_association_rec_t *assoc,
 		xstrfmtcat(*extra, ", max_wall_pj=%u", assoc->max_wall_pj);
 	}
 
+	if(assoc->def_qos_id == INFINITE) {
+		xstrcat(*cols, ", def_qos_id");
+		xstrcat(*vals, ", NULL");
+		xstrcat(*extra, ", def_qos_id=NULL");
+		/* 0 is the no def_qos_id, so it that way */
+		assoc->def_qos_id = 0;
+	} else if((assoc->def_qos_id != NO_VAL)
+		  && ((int32_t)assoc->def_qos_id > 0)) {
+		xstrcat(*cols, ", def_qos_id");
+		xstrfmtcat(*vals, ", %u", assoc->def_qos_id);
+		xstrfmtcat(*extra, ", def_qos_id=%u", assoc->def_qos_id);
+	}
+
 	/* when modifying the qos it happens in the actual function
 	   since we have to wait until we hear about the parent first. */
 	if(qos_level == QOS_LEVEL_MODIFY)
@@ -1624,7 +1644,7 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 				       "from \"%s_%s\" as t1, \"%s_%s\" as t2 "
 				       "where (%s) && t1.lft between "
 				       "t2.lft and t2.rgt && t1.deleted=0 "
-				       " && t2.deleted=0;",
+				       "&& t2.deleted=0;",
 				       cluster_name, assoc_table,
 				       cluster_name, assoc_table, assoc_char);
 
@@ -1774,7 +1794,7 @@ just_update:
 	 * around.
 	 */
 	query = xstrdup_printf("update \"%s_%s\" as t1 set "
-			       "mod_time=%d, deleted=1, "
+			       "mod_time=%d, deleted=1, def_qos_id=NULL, "
 			       "shares=1, max_jobs=NULL, "
 			       "max_nodes_pj=NULL, "
 			       "max_wall_pj=NULL, "

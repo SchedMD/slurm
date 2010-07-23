@@ -812,23 +812,25 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                   \"transaction\", \"user\",or \"wckey\"                   \n\
                                                                            \n\
   <SPECS> are different for each command entity pair.                      \n\
-       list account       - Clusters=, Descriptions=, Format=, Names=,     \n\
-                            Organizations=, Parents=, WithAssocs,          \n\
+       list account       - Clusters=, Descriptions=, Format=,             \n\
+                            Names=, Organizations=, Parents=, WithAssocs,  \n\
                             WithDeleted, WithCoordinators, WithRawQOS,     \n\
                             and WOPLimits                                  \n\
-       add account        - Clusters=, Description=, Fairshare=,           \n\
+       add account        - Clusters=, DefaultQOS=, Description=, Fairshare=,\n\
                             GrpCPUMins=, GrpCPUs=, GrpJobs=, GrpNodes=,    \n\
                             GrpSubmitJob=, GrpWall=, MaxCPUMins=, MaxCPUs=,\n\
                             MaxJobs=, MaxNodes=, MaxSubmitJobs=, MaxWall=, \n\
                             Names=, Organization=, Parent=, and QosLevel=  \n\
-       modify account     - (set options) Description=, Fairshare=,        \n\
-                            GrpCPUMins=, GrpCPUs=, GrpJobs=, GrpNodes=,    \n\
-                            GrpSubmitJob=, GrpWall=, MaxCPUMins=, MaxCPUs=,\n\
+       modify account     - (set options) DefaultQOS=, Description=,       \n\
+                            Fairshare=, GrpCPUMins=, GrpCPUs=,             \n\
+                            GrpJobs=, GrpNodes=, GrpSubmitJob=,            \n\
+                            GrpWall=, MaxCPUMins=, MaxCPUs=,               \n\
                             MaxJobs=, MaxNodes=, MaxSubmitJobs=, MaxWall=, \n\
                             Names=, Organization=, Parent=, and QosLevel=  \n\
-                            (where options) Clusters=, Descriptions=,      \n\
-                            Names=, Organizations=, Parent=, and QosLevel= \n\
-       delete account     - Clusters=, Descriptions=, Names=,              \n\
+                            (where options) Clusters=, DefaultQOS=,        \n\
+                            Descriptions=, Names=, Organizations=,         \n\
+                            Parent=, and QosLevel=                         \n\
+       delete account     - Clusters=, DefaultQOS=, Descriptions=, Names=, \n\
                             Organizations=, and Parents=                   \n\
                                                                            \n\
        list associations  - Accounts=, Clusters=, Format=, IDs=,           \n\
@@ -836,19 +838,19 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                             WithSubAccounts, WithDeleted, WOLimits,        \n\
                             WOPInfo, and WOPLimits                         \n\
                                                                            \n\
-       list cluster       - Classification=, Flags=, Format=, Names=,      \n\
-                            RPC=, and WOLimits                             \n\
-       add cluster        - Fairshare=, GrpCPUs=, GrpJobs=,                \n\
+       list cluster       - Classification=, DefaultQOS=, Flags=, Format=, \n\
+                            Names=, RPC=, and WOLimits                     \n\
+       add cluster        - DefaultQOS=, Fairshare=, GrpCPUs=, GrpJobs=,   \n\
                             GrpNodes=, GrpSubmitJob=, MaxCPUMins=          \n\
                             MaxJobs=, MaxNodes=, MaxSubmitJobs=, MaxWall=, \n\
                             Name=, and QosLevel=                           \n\
-       modify cluster     - (set options) Fairshare=,                      \n\
+       modify cluster     - (set options) DefaultQOS=, Fairshare=,         \n\
                             GrpCPUs=, GrpJobs=, GrpNodes=, GrpSubmitJob=,  \n\
                             MaxCPUMins=, MaxJobs=, MaxNodes=, MaxSubmitJobs=,\n\
                             MaxWall=, and QosLevel=                        \n\
                             (where options) Classification=, Flags=,       \n\
                             and Names=                                     \n\
-       delete cluster     - Classification=, Flags=, and Names=            \n\
+       delete cluster     - Classification=, DefaultQOS=, Flags=, and Names=\n\
                                                                            \n\
        add coordinator    - Accounts=, and Names=                          \n\
        delete coordinator - Accounts=, and Names=                          \n\
@@ -874,13 +876,13 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                             QosLevel=, WithAssocs, WithCoordinators,       \n\
                             WithDeleted, WithRawQOS, and WOPLimits         \n\
        add user           - Accounts=, AdminLevel=, Clusters=,             \n\
-                            DefaultAccount=, DefaultWCKey=,                \n\
+                            DefaultAccount=, DefaultQOS=, DefaultWCKey=,   \n\
                             Fairshare=, MaxCPUMins=, MaxCPUs=,             \n\
                             MaxJobs=, MaxNodes=, MaxSubmitJobs=, MaxWall=, \n\
                             Names=, Partitions=, and QosLevel=             \n\
        modify user        - (set options) AdminLevel=, DefaultAccount=,    \n\
-                            DefaultWCKey=, Fairshare=, MaxCPUMins=,        \n\
-                            MaxCPUs=, MaxJobs=, MaxNodes=,                 \n\
+                            DefaultQOS=, DefaultWCKey=, Fairshare=,        \n\
+                            MaxCPUMins=,MaxCPUs=, MaxJobs=, MaxNodes=,     \n\
                             MaxSubmitJobs=, MaxWall=, and QosLevel=        \n\
                             (where options) Accounts=, AdminLevel=,        \n\
                             Clusters=, DefaultAccounts=, Names=,           \n\
@@ -910,15 +912,15 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
        Account            - Account, CoordinatorList, Description,         \n\
                             Organization                                   \n\
                                                                            \n\
-       Association        - Account, Cluster, Fairshare, GrpCPUMins,       \n\
-                            GrpCPUs, GrpJobs, GrpNodes, GrpSubmitJob,      \n\
-                            GrpWall, ID, LFT, MaxCPUMins, MaxCPUs,         \n\
-                            MaxJobs, MaxNodes, MaxSubmitJobs,              \n\
+       Association        - Account, Cluster, DefaultQOS, Fairshare,       \n\
+                            GrpCPUMins,GrpCPUs, GrpJobs, GrpNodes,         \n\
+                            GrpSubmitJob,GrpWall, ID, LFT, MaxCPUMins,     \n\
+                            MaxCPUs, MaxJobs, MaxNodes, MaxSubmitJobs,     \n\
                             MaxWall, QOS, ParentID, ParentName,            \n\
                             Partition, RawQOS, RGT, User                   \n\
                                                                            \n\
        Cluster            - Classification, Cluster, ControlHost,          \n\
-                            ControlPort, CpuCount, Fairshare,              \n\
+                            ControlPort, CpuCount, DefaultQOS, Fairshare,  \n\
                             Flags, GrpCPUMins, GrpCPUs, GrpJobs,           \n\
                             GrpNodes, GrpSubmitJob, MaxCPUMins,            \n\
                             MaxCPUs, MaxJobs, MaxNodes, MaxSubmitJobs,     \n\

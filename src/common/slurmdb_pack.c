@@ -865,6 +865,8 @@ extern void slurmdb_pack_association_rec(void *in, uint16_t rpc_version,
 
 			pack32(NO_VAL, buffer);
 
+			pack32(NO_VAL, buffer);
+
 			pack64(NO_VAL, buffer);
 			pack64(NO_VAL, buffer);
 			pack32(NO_VAL, buffer);
@@ -915,6 +917,8 @@ extern void slurmdb_pack_association_rec(void *in, uint16_t rpc_version,
 
 		packstr(object->acct, buffer);
 		packstr(object->cluster, buffer);
+
+		pack32(object->def_qos_id, buffer);
 
 		/* this used to be named fairshare to not have to redo
 		   the order of things just to be in alpha order we
@@ -1100,6 +1104,8 @@ extern int slurmdb_unpack_association_rec(void **object, uint16_t rpc_version,
 		safe_unpackstr_xmalloc(&object_ptr->acct, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&object_ptr->cluster, &uint32_tmp,
 				       buffer);
+
+		safe_unpack32(&object_ptr->def_qos_id, buffer);
 
 		safe_unpack32(&object_ptr->shares_raw, buffer);
 
@@ -2221,6 +2227,8 @@ extern void slurmdb_pack_association_cond(void *in, uint16_t rpc_version,
 			pack32(NO_VAL, buffer);
 
 			pack32(NO_VAL, buffer);
+
+			pack32(NO_VAL, buffer);
 			pack32(NO_VAL, buffer);
 			pack32(NO_VAL, buffer);
 			pack32(NO_VAL, buffer);
@@ -2276,6 +2284,19 @@ extern void slurmdb_pack_association_cond(void *in, uint16_t rpc_version,
 		pack32(count, buffer);
 		if(count && count != NO_VAL) {
 			itr = list_iterator_create(object->cluster_list);
+			while((tmp_info = list_next(itr))) {
+				packstr(tmp_info, buffer);
+			}
+			list_iterator_destroy(itr);
+		}
+		count = NO_VAL;
+
+		if(object->def_qos_id_list)
+			count = list_count(object->def_qos_id_list);
+
+		pack32(count, buffer);
+		if(count && count != NO_VAL) {
+			itr = list_iterator_create(object->def_qos_id_list);
 			while((tmp_info = list_next(itr))) {
 				packstr(tmp_info, buffer);
 			}
@@ -2895,6 +2916,18 @@ extern int slurmdb_unpack_association_cond(void **object,
 				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 						       buffer);
 				list_append(object_ptr->cluster_list,
+					    tmp_info);
+			}
+		}
+
+		safe_unpack32(&count, buffer);
+		if(count != NO_VAL) {
+			object_ptr->def_qos_id_list =
+				list_create(slurm_destroy_char);
+			for(i=0; i<count; i++) {
+				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
+						       buffer);
+				list_append(object_ptr->def_qos_id_list,
 					    tmp_info);
 			}
 		}

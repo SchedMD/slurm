@@ -127,6 +127,24 @@ static int _set_cond(int *start, int argc, char *argv[],
 				   assoc_cond->cluster_list,
 				   argv[i]+end))
 				a_set = 1;
+		} else if (!strncasecmp (argv[i], "DefaultQOS",
+					 MAX(command_len, 8))) {
+			if(!assoc_cond->def_qos_id_list) {
+				assoc_cond->def_qos_id_list =
+					list_create(slurm_destroy_char);
+			}
+			if(!g_qos_list) {
+				g_qos_list = acct_storage_g_get_qos(
+					db_conn, my_uid, NULL);
+			}
+
+			if(slurmdb_addto_qos_char_list(
+				   assoc_cond->def_qos_id_list,
+				   g_qos_list,
+				   argv[i]+end, 0))
+				a_set = 1;
+			else
+				exit_code = 1;
 		} else if (!strncasecmp (argv[i], "Descriptions",
 					 MAX(command_len, 1))) {
 			if(!acct_cond->description_list) {
@@ -371,6 +389,32 @@ static int _set_rec(int *start, int argc, char *argv[],
 					" Can't modify the cluster "
 					"of an account\n");
 			}
+		} else if (!strncasecmp (argv[i], "DefaultQOS",
+					 MAX(command_len, 8))) {
+			if(!assoc)
+				continue;
+
+			if(!g_qos_list) {
+				g_qos_list = acct_storage_g_get_qos(
+					db_conn, my_uid, NULL);
+			}
+
+			if(atoi(argv[i]+end) == -1)
+				assoc->def_qos_id = -1;
+			else
+				assoc->def_qos_id = str_2_slurmdb_qos(
+					g_qos_list, argv[i]+end);
+
+			if(assoc->def_qos_id == NO_VAL) {
+				fprintf(stderr,
+					"You gave a bad qos '%s'.  "
+					"Use 'list qos' to get "
+					"complete list.\n",
+					argv[i]+end);
+				exit_code = 1;
+				break;
+			}
+			a_set = 1;
 		} else if (!strncasecmp (argv[i], "Description",
 					 MAX(command_len, 1))) {
 			acct->description =  strip_quotes(argv[i]+end, NULL, 1);
@@ -382,7 +426,7 @@ static int _set_rec(int *start, int argc, char *argv[],
 			if(!assoc)
 				continue;
 			if (get_uint(argv[i]+end, &assoc->shares_raw,
-				     "FairShare") == SLURM_SUCCESS)
+				     "Shares") == SLURM_SUCCESS)
 				a_set = 1;
 		} else if (!strncasecmp (argv[i], "GrpCPUMins",
 					 MAX(command_len, 7))) {
@@ -588,7 +632,8 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 	char *acct_str = NULL;
 	char *assoc_str = NULL;
 	int limit_set = 0;
-	slurmdb_account_rec_t *start_acct = xmalloc(sizeof(slurmdb_account_rec_t));
+	slurmdb_account_rec_t *start_acct =
+		xmalloc(sizeof(slurmdb_account_rec_t));
 	slurmdb_association_rec_t *start_assoc =
 		xmalloc(sizeof(slurmdb_association_rec_t));
 
@@ -942,6 +987,7 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 	slurmdb_account_rec_t *acct = NULL;
 	slurmdb_association_rec_t *assoc = NULL;
 	char *object;
+	char *tmp_char = NULL;
 
 	int field_count = 0;
 
@@ -954,6 +1000,7 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 		PRINT_ACCOUNT,
 		PRINT_CLUSTER,
 		PRINT_COORDS,
+		PRINT_DQOS,
 		PRINT_DESC,
 		PRINT_FAIRSHARE,
 		PRINT_GRPCM,
@@ -994,13 +1041,13 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 		list_destroy(format_list);
 		return SLURM_ERROR;
 	} else if(!list_count(format_list)) {
-		slurm_addto_char_list(format_list, "A,D,O");
+		slurm_addto_char_list(format_list, "A,Des,O");
 		if(acct_cond->with_assocs)
 			slurm_addto_char_list(format_list,
-					      "Cl,ParentN,U,F,GrpJ,GrpN,"
+					      "Cl,ParentN,U,Shares,GrpJ,GrpN,"
 					      "GrpCPUs,GrpS,GrpWall,GrpCPUMins,"
 					      "MaxJ,MaxN,MaxCPUs,MaxS,MaxW,"
-					      "MaxCPUMins,QOS");
+					      "MaxCPUMins,QOS,DefaultQOS");
 
 		if(acct_cond->with_coords)
 			slurm_addto_char_list(format_list, "Coord");
@@ -1022,7 +1069,6 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 
 	itr = list_iterator_create(format_list);
 	while((object = list_next(itr))) {
-		char *tmp_char = NULL;
 		int command_len = 0;
 		int newlen = 0;
 
@@ -1053,8 +1099,14 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 			field->name = xstrdup("Coordinators");
 			field->len = 20;
 			field->print_routine = sacctmgr_print_coord_list;
+		} else if(!strncasecmp("DefaultQOS", object,
+				       MAX(command_len, 3))) {
+			field->type = PRINT_DQOS;
+			field->name = xstrdup("Def QOS");
+			field->len = 9;
+			field->print_routine = print_fields_str;
 		} else if(!strncasecmp("Description", object,
-				       MAX(command_len, 1))) {
+				       MAX(command_len, 3))) {
 			field->type = PRINT_DESC;
 			field->name = xstrdup("Descr");
 			field->len = 20;
@@ -1247,6 +1299,23 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 							(curr_inx ==
 							 field_count));
 						break;
+					case PRINT_DQOS:
+						if(!g_qos_list) {
+							g_qos_list =
+								acct_storage_g_get_qos(
+									db_conn,
+									my_uid,
+									NULL);
+						}
+						tmp_char = slurmdb_qos_str(
+							g_qos_list,
+							assoc->def_qos_id);
+						field->print_routine(
+							field,
+							tmp_char,
+							(curr_inx ==
+							 field_count));
+						break;
 					case PRINT_DESC:
 						field->print_routine(
 							field,
@@ -1427,6 +1496,7 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 				switch(field->type) {
 					/* All the association stuff */
 				case PRINT_CLUSTER:
+				case PRINT_DQOS:
 				case PRINT_FAIRSHARE:
 				case PRINT_GRPCM:
 				case PRINT_GRPC:
@@ -1509,7 +1579,8 @@ extern int sacctmgr_modify_account(int argc, char *argv[])
 	slurmdb_account_cond_t *acct_cond =
 		xmalloc(sizeof(slurmdb_account_cond_t));
 	slurmdb_account_rec_t *acct = xmalloc(sizeof(slurmdb_account_rec_t));
-	slurmdb_association_rec_t *assoc = xmalloc(sizeof(slurmdb_association_rec_t));
+	slurmdb_association_rec_t *assoc =
+		xmalloc(sizeof(slurmdb_association_rec_t));
 
 	int i=0;
 	int cond_set = 0, prev_set = 0, rec_set = 0, set = 0;

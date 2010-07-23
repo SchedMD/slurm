@@ -46,6 +46,7 @@ typedef struct {
 	uint16_t classification;
 	List coord_list; /* char *list */
 	char *def_acct;
+	uint32_t def_qos_id;
 	char *def_wckey;
 	char *desc;
 	uint32_t fairshare;
@@ -78,6 +79,7 @@ enum {
 	PRINT_CLUSTER,
 	PRINT_COORDS,
 	PRINT_DACCT,
+	PRINT_DQOS,
 	PRINT_DWCKEY,
 	PRINT_DESC,
 	PRINT_FAIRSHARE,
@@ -121,6 +123,8 @@ static int _init_sacctmgr_file_opts(sacctmgr_file_opts_t *file_opts)
 	file_opts->admin = SLURMDB_ADMIN_NOTSET;
 
 	file_opts->fairshare = NO_VAL;
+
+	file_opts->def_qos_id = 0;
 
 	file_opts->grp_cpu_mins = (uint64_t)NO_VAL;
 	file_opts->grp_cpus = NO_VAL;
@@ -330,6 +334,25 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 		} else if (!strncasecmp (sub, "DefaultAccount",
 					 MAX(command_len, 8))) {
 			file_opts->def_acct = xstrdup(option);
+		} else if (!strncasecmp (sub, "DefaultQOS",
+					 MAX(command_len, 8))) {
+			if(!g_qos_list) {
+				g_qos_list = acct_storage_g_get_qos(
+					db_conn, my_uid, NULL);
+			}
+
+			file_opts->def_qos_id = str_2_slurmdb_qos(
+				g_qos_list, option);
+
+			if(file_opts->def_qos_id == NO_VAL) {
+				fprintf(stderr,
+					"You gave a bad qos '%s'.  "
+					"Use 'list qos' to get "
+					"complete list.\n",
+					option);
+				_destroy_sacctmgr_file_opts(file_opts);
+				break;
+			}
 		} else if (!strncasecmp (sub, "DefaultWCKey",
 					 MAX(command_len, 8))) {
 			file_opts->def_wckey = xstrdup(option);
@@ -585,6 +608,12 @@ static List _set_up_print_fields(List format_list)
 			field->name = xstrdup("Def Acct");
 			field->len = 10;
 			field->print_routine = print_fields_str;
+		} else if(!strncasecmp("DefaultQOS", object,
+				       MAX(command_len, 8))) {
+			field->type = PRINT_DQOS;
+			field->name = xstrdup("Def QOS");
+			field->len = 9;
+			field->print_routine = print_fields_str;
 		} else if(!strncasecmp("DefaultWckey", object,
 				       MAX(command_len, 8))) {
 			field->type = PRINT_DWCKEY;
@@ -747,6 +776,7 @@ static int _print_out_assoc(List assoc_list, bool user, bool add)
 	print_field_t *field = NULL;
 	slurmdb_association_rec_t *assoc = NULL;
 	int rc = SLURM_SUCCESS;
+	char *tmp_char = NULL;
 
 	if(!assoc_list || !list_count(assoc_list))
 		return rc;
@@ -754,14 +784,14 @@ static int _print_out_assoc(List assoc_list, bool user, bool add)
 	format_list = list_create(slurm_destroy_char);
 	if(user)
 		slurm_addto_char_list(format_list,
-				      "User,Account,F,GrpCPUM,GrpCPUs,"
-				      "GrpJ,GrpN,GrpS,GrpW,MaxCPUM,MaxCPUs,"
-				      "MaxJ,MaxS,MaxN,MaxW,QOS");
+				      "User,Account");
 	else
 		slurm_addto_char_list(format_list,
-				      "Account,Parent,F,GrpCPUM,GrpCPUs,"
-				      "GrpJ,GrpN,GrpS,GrpW,MaxCPUM,MaxCPUs,"
-				      "MaxJ,MaxS,MaxN,MaxW,QOS");
+				      "Account,Parent");
+	slurm_addto_char_list(format_list,
+			      "F,GrpCPUM,GrpCPUs,"
+			      "GrpJ,GrpN,GrpS,GrpW,MaxCPUM,MaxCPUs,"
+			      "MaxJ,MaxS,MaxN,MaxW,QOS,DefaultQOS");
 
 	print_fields_list = _set_up_print_fields(format_list);
 	list_destroy(format_list);
@@ -776,6 +806,20 @@ static int _print_out_assoc(List assoc_list, bool user, bool add)
 			case PRINT_ACCOUNT:
 				field->print_routine(field,
 						     assoc->acct);
+				break;
+			case PRINT_DQOS:
+				if(!g_qos_list)
+					g_qos_list = acct_storage_g_get_qos(
+						db_conn,
+						my_uid,
+						NULL);
+
+				tmp_char = slurmdb_qos_str(
+					g_qos_list,
+					assoc->def_qos_id);
+				field->print_routine(
+					field,
+					tmp_char);
 				break;
 			case PRINT_FAIRSHARE:
 				field->print_routine(field,
@@ -1211,6 +1255,7 @@ static int _mod_cluster(sacctmgr_file_opts_t *file_opts,
 		List ret_list = NULL;
 
 		cluster_cond.cluster_list = list_create(NULL);
+
 		list_append(cluster_cond.cluster_list, cluster->name);
 
 		notice_thread_init();
@@ -1237,6 +1282,12 @@ static int _mod_cluster(sacctmgr_file_opts_t *file_opts,
 		} else
 			changed = 0;
 		xfree(my_info);
+	}
+	if(!cluster->root_assoc || !cluster->root_assoc->cluster) {
+		error("Cluster %s doesn't appear to have a root association.  "
+		      "Try removing this cluster and then re-run load.",
+		      cluster->name);
+		exit(1);
 	}
 
 	changed += _mod_assoc(file_opts, cluster->root_assoc,
@@ -1717,8 +1768,9 @@ static slurmdb_association_rec_t *_set_assoc_up(sacctmgr_file_opts_t *file_opts,
 		break;
 	}
 
-
 	assoc->shares_raw = file_opts->fairshare;
+
+	assoc->def_qos_id = file_opts->def_qos_id;
 
 	assoc->grp_cpu_mins = file_opts->grp_cpu_mins;
 	assoc->grp_cpus = file_opts->grp_cpus;
@@ -1741,10 +1793,9 @@ static slurmdb_association_rec_t *_set_assoc_up(sacctmgr_file_opts_t *file_opts,
 	return assoc;
 }
 
-static int _print_file_slurmdb_hierarchical_rec_childern(FILE *fd,
-					       List slurmdb_hierarchical_rec_list,
-					       List user_list,
-					       List acct_list)
+static int _print_file_slurmdb_hierarchical_rec_childern(
+	FILE *fd, List slurmdb_hierarchical_rec_list,
+	List user_list, List acct_list)
 {
 	ListIterator itr = NULL;
 	slurmdb_hierarchical_rec_t *slurmdb_hierarchical_rec = NULL;
@@ -1836,7 +1887,8 @@ static int _print_file_slurmdb_hierarchical_rec_childern(FILE *fd,
 			}
 		} else {
 			acct_rec = sacctmgr_find_account_from_list(
-				acct_list, slurmdb_hierarchical_rec->assoc->acct);
+				acct_list,
+				slurmdb_hierarchical_rec->assoc->acct);
 			line = xstrdup_printf(
 				"Account - %s",
 				slurmdb_hierarchical_rec->sort_name);
@@ -1861,8 +1913,9 @@ static int _print_file_slurmdb_hierarchical_rec_childern(FILE *fd,
 		xfree(line);
 	}
 	list_iterator_destroy(itr);
-	print_file_slurmdb_hierarchical_rec_list(fd, slurmdb_hierarchical_rec_list,
-				       user_list, acct_list);
+	print_file_slurmdb_hierarchical_rec_list(fd,
+						 slurmdb_hierarchical_rec_list,
+						 user_list, acct_list);
 
 	return SLURM_SUCCESS;
 }
@@ -1873,10 +1926,18 @@ extern int print_file_add_limits_to_line(char **line,
 	if(!assoc)
 		return SLURM_ERROR;
 
+	if(assoc->def_qos_id) {
+		char *tmp_char;
+		if(!g_qos_list)
+			g_qos_list = acct_storage_g_get_qos(
+				db_conn, my_uid, NULL);
+		tmp_char = slurmdb_qos_str(g_qos_list, assoc->def_qos_id);
+		xstrfmtcat(*line, ":DefaultQOS='%s'", tmp_char);
+	}
 	if(assoc->shares_raw != INFINITE)
 		xstrfmtcat(*line, ":Fairshare=%u", assoc->shares_raw);
 
-	if(assoc->grp_cpu_mins != INFINITE)
+	if(assoc->grp_cpu_mins != (uint64_t)INFINITE)
 		xstrfmtcat(*line, ":GrpCPUMins=%llu", assoc->grp_cpu_mins);
 
 	if(assoc->grp_cpus != INFINITE)
@@ -1929,10 +1990,11 @@ extern int print_file_add_limits_to_line(char **line,
 }
 
 
-extern int print_file_slurmdb_hierarchical_rec_list(FILE *fd,
-					  List slurmdb_hierarchical_rec_list,
-					  List user_list,
-					  List acct_list)
+extern int print_file_slurmdb_hierarchical_rec_list(
+	FILE *fd,
+	List slurmdb_hierarchical_rec_list,
+	List user_list,
+	List acct_list)
 {
 	ListIterator itr = NULL;
 	slurmdb_hierarchical_rec_t *slurmdb_hierarchical_rec = NULL;

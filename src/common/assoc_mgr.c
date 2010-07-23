@@ -353,6 +353,7 @@ static int _set_assoc_parent_and_user(slurmdb_association_rec_t *assoc,
 			assoc->uid = (uint32_t)NO_VAL;
 		else
 			assoc->uid = pw_uid;
+
 		/* get the qos bitmap here */
 		if(g_qos_count > 0) {
 			if(!assoc->usage->valid_qos
@@ -367,7 +368,18 @@ static int _set_assoc_parent_and_user(slurmdb_association_rec_t *assoc,
 					    - 1));
 			set_qos_bitstr_from_list(assoc->usage->valid_qos,
 						 assoc->qos_list);
-		}
+			if(((int32_t)assoc->def_qos_id > 0)
+			   && !bit_test(assoc->usage->valid_qos,
+					assoc->def_qos_id)) {
+				error("assoc %u doesn't have access "
+				      "to it's default %s",
+				      assoc->id,
+				      slurmdb_qos_str(assoc_mgr_qos_list,
+						      assoc->def_qos_id));
+				assoc->def_qos_id = 0;
+			}
+		} else
+			assoc->def_qos_id = 0;
 	} else {
 		assoc->uid = (uint32_t)NO_VAL;
 	}
@@ -509,7 +521,7 @@ static int _get_assoc_mgr_association_list(void *db_conn, int enforce)
 	slurmdb_association_cond_t assoc_q;
 	uid_t uid = getuid();
 	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK,
-				   NO_LOCK, NO_LOCK, NO_LOCK };
+				   READ_LOCK, NO_LOCK, NO_LOCK };
 
 //	DEF_TIMERS;
 	assoc_mgr_lock(&locks);
@@ -680,7 +692,7 @@ static int _refresh_assoc_mgr_association_list(void *db_conn, int enforce)
 	ListIterator assoc_mgr_itr = NULL;
 	slurmdb_association_rec_t *curr_assoc = NULL, *assoc = NULL;
 	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK,
-				   NO_LOCK, NO_LOCK, NO_LOCK };
+				   READ_LOCK, NO_LOCK, NO_LOCK };
 //	DEF_TIMERS;
 
 	memset(&assoc_q, 0, sizeof(slurmdb_association_cond_t));
@@ -2142,6 +2154,10 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update)
 				// reset the parent pointers below
 				parents_changed = 1;
 			}
+			/* info("rec has def of %d %d", */
+			/*      rec->def_qos_id, object->def_qos_id); */
+			if(object->def_qos_id != NO_VAL)
+				rec->def_qos_id = object->def_qos_id;
 
 			if(object->qos_list) {
 				if(rec->qos_list) {
@@ -2172,6 +2188,17 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update)
 						rec->qos_list);
 				}
 			}
+
+			if(rec->def_qos_id && rec->user
+			   && rec->usage && rec->usage->valid_qos
+			   && !bit_test(rec->usage->valid_qos,
+					rec->def_qos_id)) {
+				error("assoc %u doesn't have access "
+				      "to it's default %d",
+				      rec->id, rec->def_qos_id);
+				rec->def_qos_id = 0;
+			}
+			/* info("now rec has def of %d", rec->def_qos_id); */
 
 			if(!slurmdbd_conf && !parents_changed) {
 				debug("updating assoc %u", rec->id);
@@ -2692,6 +2719,10 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update)
 			assoc_itr = list_iterator_create(
 				assoc_mgr_association_list);
 			while((assoc = list_next(assoc_itr))) {
+
+				if(assoc->def_qos_id == object->id)
+					assoc->def_qos_id = 0;
+
 				if(!assoc->usage->valid_qos)
 					continue;
 
@@ -3420,15 +3451,15 @@ extern int assoc_mgr_refresh_lists(void *db_conn, assoc_init_args_t *args)
 		return SLURM_SUCCESS;
 	}
 
+	if(cache_level & ASSOC_MGR_CACHE_QOS)
+		if(_refresh_assoc_mgr_qos_list(db_conn, enforce) == SLURM_ERROR)
+			return SLURM_ERROR;
+
 	if(cache_level & ASSOC_MGR_CACHE_ASSOC) {
 		if(_refresh_assoc_mgr_association_list(db_conn, enforce)
 		   == SLURM_ERROR)
 			return SLURM_ERROR;
 	}
-	if(cache_level & ASSOC_MGR_CACHE_QOS)
-		if(_refresh_assoc_mgr_qos_list(db_conn, enforce) == SLURM_ERROR)
-			return SLURM_ERROR;
-
 	if(cache_level & ASSOC_MGR_CACHE_USER)
 		if(_refresh_assoc_mgr_user_list(db_conn, enforce)
 		   == SLURM_ERROR)
