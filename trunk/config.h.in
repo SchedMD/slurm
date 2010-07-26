@@ -51,7 +51,7 @@
 /* Define to 1 if emulating or running on Blue Gene/P system */
 #undef HAVE_BGP
 
-/* Define to 1 if emulating or running on Blue Gene/P system */
+/* Define to 1 if emulating or running on Blue Gene/Q system */
 #undef HAVE_BGQ
 
 /* Define to 1 if have Blue Gene files */

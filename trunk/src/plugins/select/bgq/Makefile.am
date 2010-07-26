@@ -1,10 +1,11 @@
 # Makefile for select/bgq plugin
 
+CPPFLAGS = -DBLUEGENE_CONFIG_FILE=\"$(sysconfdir)/bluegene.conf\"
 AUTOMAKE_OPTIONS = foreign
 
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 
-INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
+INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common $(BG_INCLUDES)
 
 pkglib_LTLIBRARIES = select_bgq.la
 

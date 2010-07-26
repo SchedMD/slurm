@@ -90,6 +90,7 @@ AC_DEFUN([X_AC_BGL],
   	if test ! -z "$have_bg_files" ; then
       		BG_INCLUDES="$bg_includes"
 		CFLAGS="$CFLAGS -m64"
+		CXXFLAGS="$CXXFLAGS $CFLAGS"
       		AC_DEFINE(HAVE_3D, 1, [Define to 1 if 3-dimensional architecture])
   		AC_DEFINE(SYSTEM_DIMENSIONS, 3, [3-dimensional architecture])
       		AC_DEFINE(HAVE_BG, 1, [Define to 1 if emulating or running on Blue Gene system])
@@ -175,6 +176,7 @@ AC_DEFUN([X_AC_BGP],
   	if test ! -z "$have_bgp_files" ; then
       		BG_INCLUDES="$bg_includes"
 		CFLAGS="$CFLAGS -m64"
+		CXXFLAGS="$CXXFLAGS $CFLAGS"
       		AC_DEFINE(HAVE_3D, 1, [Define to 1 if 3-dimensional architecture])
   		AC_DEFINE(SYSTEM_DIMENSIONS, 3, [3-dimensional architecture])
       		AC_DEFINE(HAVE_BG, 1, [Define to 1 if emulating or running on Blue Gene system])
@@ -256,10 +258,11 @@ AC_DEFUN([X_AC_BGQ],
   	if test ! -z "$have_bgq_files" ; then
       		BG_INCLUDES="$bg_includes"
 		CFLAGS="$CFLAGS -m64"
+   		CXXFLAGS="$CXXFLAGS $CFLAGS"
       		AC_DEFINE(HAVE_3D, 1, [Define to 1 if 3-dimensional architecture])
   		AC_DEFINE(SYSTEM_DIMENSIONS, 3, [3-dimensional architecture])
       		AC_DEFINE(HAVE_BG, 1, [Define to 1 if emulating or running on Blue Gene system])
-      		AC_DEFINE(HAVE_BGQ, 1, [Define to 1 if emulating or running on Blue Gene/P system])
+      		AC_DEFINE(HAVE_BGQ, 1, [Define to 1 if emulating or running on Blue Gene/Q system])
       		AC_DEFINE(HAVE_FRONT_END, 1, [Define to 1 if running slurmd on front-end only])
 		AC_DEFINE(HAVE_BG_FILES, 1, [Define to 1 if have Blue Gene files])
 		AC_DEFINE_UNQUOTED(BG_BRIDGE_SO, "$soloc", [Define the BG_BRIDGE_SO value])
