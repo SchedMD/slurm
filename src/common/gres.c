@@ -83,9 +83,6 @@
 
 /* Gres symbols provided by the plugin */
 typedef struct slurm_gres_ops {
-	uint32_t	(*plugin_id);
-	char		(*gres_name);
-	char		(*help_msg);
 	int		(*node_config_load)	( List gres_conf_list );
 } slurm_gres_ops_t;
 
@@ -93,10 +90,13 @@ typedef struct slurm_gres_ops {
 typedef struct slurm_gres_context {
 	plugin_handle_t	cur_plugin;
 	int		gres_errno;
+	uint32_t	gres_id;
+	char *		gres_name;
 	char *		gres_name_colon;
 	int		gres_name_colon_len;
 	char *		gres_type;
 	slurm_gres_ops_t ops;
+	uint32_t	plugin_id;
 	plugrack_t	plugin_list;
 	bool		unpacked_info;
 } slurm_gres_context_t;
@@ -121,6 +121,7 @@ static List gres_conf_list = NULL;
 /* Local functions */
 static gres_node_state_t *
 		_build_gres_node_state(void);
+static uint32_t	_build_id(char *gres_name);
 static bitstr_t *_cpu_bitmap_rebuild(bitstr_t *old_cpu_bitmap, int new_size);
 static void	_destroy_gres_slurmd_conf(void *x);
 static uint32_t	_get_gres_cnt(char *orig_config, char *gres_name,
@@ -174,6 +175,20 @@ static void	_validate_gres_node_cpus(gres_node_state_t *node_gres_ptr,
 					 int cpus_ctld);
 
 
+/* Convert a gres_name into a number for faster comparision operations */
+static uint32_t	_build_id(char *gres_name)
+{
+	int i, j;
+	uint32_t id = 0;
+
+	for (i=0, j=0; gres_name[i]; i++) {
+		id += (gres_name[i] << j);
+		j = (j + 8) % 32;
+	}
+
+	return id;
+}
+
 /* Variant of strcmp that will accept NULL string pointers */
 static int  _strcmp(const char *s1, const char *s2)
 {
@@ -193,9 +208,6 @@ static int _load_gres_plugin(char *plugin_name,
 	 * Must be synchronized with slurm_gres_ops_t above.
 	 */
 	static const char *syms[] = {
-		"plugin_id",
-		"gres_name",
-		"help_msg",
 		"node_config_load",
 	};
 	int n_syms = sizeof(syms) / sizeof(char *);
@@ -327,6 +339,10 @@ extern int gres_plugin_init(void)
 					       gres_context + gres_context_cnt);
 			if (rc != SLURM_SUCCESS)
 				break;
+			gres_context[gres_context_cnt].gres_name =
+				xstrdup(one_name);
+			gres_context[gres_context_cnt].plugin_id =
+				_build_id(one_name);
 			gres_context_cnt++;
 		}
 		one_name = strtok_r(NULL, ",", &last);
@@ -336,22 +352,18 @@ extern int gres_plugin_init(void)
 	/* Insure that plugin_id is valid and unique */
 	for (i=0; i<gres_context_cnt; i++) {
 		for (j=i+1; j<gres_context_cnt; j++) {
-			if (*(gres_context[i].ops.plugin_id) !=
-			    *(gres_context[j].ops.plugin_id))
+			if (gres_context[i].plugin_id !=
+			    gres_context[j].plugin_id)
 				continue;
 			fatal("GresPlugins: Duplicate plugin_id %u for %s and %s",
-			      *(gres_context[i].ops.plugin_id),
+			      gres_context[i].plugin_id,
 			      gres_context[i].gres_type,
 			      gres_context[j].gres_type);
 		}
-		if (*(gres_context[i].ops.plugin_id) < 100) {
-			fatal("GresPlugins: Invalid plugin_id %u (<100) %s",
-			      *(gres_context[i].ops.plugin_id),
-			      gres_context[i].gres_type);
-		}
-		xassert(gres_context[i].ops.gres_name);
+		xassert(gres_context[i].gres_name);
+	
 		gres_context[i].gres_name_colon =
-			xstrdup_printf("%s:", gres_context[i].ops.gres_name);
+			xstrdup_printf("%s:", gres_context[i].gres_name);
 		gres_context[i].gres_name_colon_len =
 			strlen(gres_context[i].gres_name_colon);
 	}
@@ -401,27 +413,23 @@ fini:	slurm_mutex_unlock(&gres_context_lock);
 extern int gres_plugin_help_msg(char *msg, int msg_size)
 {
 	int i, rc;
-	char *tmp_msg;
 	char *header = "Valid gres options are:\n";
 
 	if (msg_size < 1)
 		return EINVAL;
 
 	msg[0] = '\0';
-	tmp_msg = xmalloc(msg_size);
 	rc = gres_plugin_init();
 
 	if ((strlen(header) + 2) <= msg_size)
 		strcat(msg, header);
 	slurm_mutex_lock(&gres_context_lock);
 	for (i=0; ((i < gres_context_cnt) && (rc == SLURM_SUCCESS)); i++) {
-		tmp_msg = (gres_context[i].ops.help_msg);
-		if ((tmp_msg == NULL) || (tmp_msg[0] == '\0'))
-			continue;
-		if ((strlen(msg) + strlen(tmp_msg) + 2) > msg_size)
-			break;
-		strcat(msg, tmp_msg);
-		strcat(msg, "\n");
+		if ((strlen(msg) + strlen(gres_context[i].gres_name) + 9) >
+		    msg_size)
+ 			break;
+		strcat(msg, gres_context[i].gres_name);
+		strcat(msg, "[:count]\n");
 	}
 	slurm_mutex_unlock(&gres_context_lock);
 
@@ -642,7 +650,7 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 	s_p_hashtbl_destroy(tbl);
 
 	for (i=0; i<gres_context_cnt; i++) {
-		if (strcasecmp(value, gres_context[i].ops.gres_name) == 0)
+		if (strcasecmp(value, gres_context[i].gres_name) == 0)
 			break;
 	}
 	if (i >= gres_context_cnt) {
@@ -650,7 +658,7 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 		_destroy_gres_slurmd_conf(p);
 		return 0;
 	}
-
+	p->plugin_id = gres_context[i].plugin_id;
 	*dest = (void *)p;
 	return 1;
 }
@@ -730,9 +738,9 @@ extern int gres_plugin_node_config_pack(Buf buffer)
 		while ((gres_slurmd_conf = 
 				(gres_slurmd_conf_t *) list_next(iter))) {
 			pack32(magic, buffer);
-			pack32(gres_slurmd_conf->plugin_id, buffer);
 			pack32(gres_slurmd_conf->count, buffer);
 			pack32(gres_slurmd_conf->cpu_cnt, buffer);
+			pack32(gres_slurmd_conf->plugin_id, buffer);
 			packstr(gres_slurmd_conf->cpus, buffer);
 		}
 		list_iterator_destroy(iter);
@@ -777,12 +785,12 @@ extern int gres_plugin_node_config_unpack(Buf buffer, char* node_name)
 		safe_unpack32(&magic, buffer);
 		if (magic != GRES_MAGIC)
 			goto unpack_error;
-		safe_unpack32(&plugin_id, buffer);
 		safe_unpack32(&count, buffer);
 		safe_unpack32(&cpu_cnt, buffer);
+		safe_unpack32(&plugin_id, buffer);
 		safe_unpackstr_xmalloc(&tmp_cpus, &utmp32, buffer);
  		for (j=0; j<gres_context_cnt; j++) {
- 			if (*(gres_context[j].ops.plugin_id) == plugin_id) {
+ 			if (gres_context[j].plugin_id == plugin_id) {
 				gres_context[j].unpacked_info = true;
  				break;
 			}
@@ -944,7 +952,7 @@ static int _node_config_init(char *node_name, char *orig_config,
 	}
 
 	gres_config_cnt = _get_gres_cnt(orig_config,
-					context_ptr->ops.gres_name,
+					context_ptr->gres_name,
 					context_ptr->gres_name_colon,
 					context_ptr->gres_name_colon_len);
 	gres_data->gres_cnt_config = gres_config_cnt;
@@ -991,14 +999,13 @@ extern int gres_plugin_init_node_config(char *node_name, char *orig_config,
 		/* Find or create gres_state entry on the list */
 		gres_iter = list_iterator_create(*gres_list);
 		while ((gres_ptr = (gres_state_t *) list_next(gres_iter))) {
-			if (gres_ptr->plugin_id ==
-			    *(gres_context[i].ops.plugin_id))
+			if (gres_ptr->plugin_id == gres_context[i].plugin_id)
 				break;
 		}
 		list_iterator_destroy(gres_iter);
 		if (gres_ptr == NULL) {
 			gres_ptr = xmalloc(sizeof(gres_state_t));
-			gres_ptr->plugin_id = *(gres_context[i].ops.plugin_id);
+			gres_ptr->plugin_id = gres_context[i].plugin_id;
 			list_append(*gres_list, gres_ptr);
 		}
 
@@ -1055,7 +1062,7 @@ extern int _node_config_validate(char *node_name, char *orig_config,
 		gres_ptr->gres_data = _build_gres_node_state();
 	gres_data = (gres_node_state_t *) gres_ptr->gres_data;
 
-	gres_cnt = _get_tot_gres_cnt(*context_ptr->ops.plugin_id, &set_cnt);
+	gres_cnt = _get_tot_gres_cnt(context_ptr->plugin_id, &set_cnt);
 	if (gres_data->gres_cnt_found != gres_cnt) {
 		if (gres_data->gres_cnt_found != NO_VAL) {
 			info("%s: count changed for node %s from %u to %u",
@@ -1087,7 +1094,7 @@ extern int _node_config_validate(char *node_name, char *orig_config,
 		while ((gres_slurmd_conf = (gres_slurmd_conf_t *) 
 			list_next(iter))) {
 			if (gres_slurmd_conf->plugin_id !=
-			    *context_ptr->ops.plugin_id)
+			    context_ptr->plugin_id)
 				continue;
 			gres_data->cpus_bitmap[i] =
 					bit_alloc(gres_slurmd_conf->cpu_cnt);
@@ -1114,7 +1121,7 @@ extern int _node_config_validate(char *node_name, char *orig_config,
 	else if (gres_data->gres_cnt_config == NO_VAL) {
 		/* This should have been filled in by _node_config_init() */
 		gres_data->gres_cnt_config =
-			_get_gres_cnt(orig_config, context_ptr->ops.gres_name,
+			_get_gres_cnt(orig_config, context_ptr->gres_name,
 				      context_ptr->gres_name_colon,
 				      context_ptr->gres_name_colon_len);
 	}
@@ -1162,7 +1169,7 @@ extern int _node_config_validate(char *node_name, char *orig_config,
 		/* need to rebuild new_config */
 		_set_gres_cnt(orig_config, new_config,
 			      gres_data->gres_cnt_found, 
-			      context_ptr->ops.gres_name,
+			      context_ptr->gres_name,
 			      context_ptr->gres_name_colon,
 			      context_ptr->gres_name_colon_len);
 	}
@@ -1205,14 +1212,13 @@ extern int gres_plugin_node_config_validate(char *node_name,
 		/* Find or create gres_state entry on the list */
 		gres_iter = list_iterator_create(*gres_list);
 		while ((gres_ptr = (gres_state_t *) list_next(gres_iter))) {
-			if (gres_ptr->plugin_id ==
-			    *(gres_context[i].ops.plugin_id))
+			if (gres_ptr->plugin_id == gres_context[i].plugin_id)
 				break;
 		}
 		list_iterator_destroy(gres_iter);
 		if (gres_ptr == NULL) {
 			gres_ptr = xmalloc(sizeof(gres_state_t));
-			gres_ptr->plugin_id = *(gres_context[i].ops.plugin_id);
+			gres_ptr->plugin_id = gres_context[i].plugin_id;
 			list_append(*gres_list, gres_ptr);
 		}
 		rc2 = _node_config_validate(node_name, orig_config, new_config,
@@ -1238,7 +1244,7 @@ static int _node_reconfig(char *node_name, char *orig_config, char **new_config,
 	gres_data = gres_ptr->gres_data;
 
 	gres_data->gres_cnt_config = _get_gres_cnt(orig_config, 
-						   context_ptr->ops.gres_name,
+						   context_ptr->gres_name,
 						   context_ptr->gres_name_colon,
 						   context_ptr->
 						   gres_name_colon_len);
@@ -1270,7 +1276,7 @@ static int _node_reconfig(char *node_name, char *orig_config, char **new_config,
 		   (gres_data->gres_cnt_found >  gres_data->gres_cnt_config)) {
 		_set_gres_cnt(orig_config, new_config,
 			      gres_data->gres_cnt_found,
-			      context_ptr->ops.gres_name,
+			      context_ptr->gres_name,
 			      context_ptr->gres_name_colon,
 			      context_ptr->gres_name_colon_len);
 	}
@@ -1309,8 +1315,7 @@ extern int gres_plugin_node_reconfig(char *node_name,
 		/* Find gres_state entry on the list */
 		gres_iter = list_iterator_create(*gres_list);
 		while ((gres_ptr = (gres_state_t *) list_next(gres_iter))) {
-			if (gres_ptr->plugin_id ==
-			    *(gres_context[i].ops.plugin_id))
+			if (gres_ptr->plugin_id == gres_context[i].plugin_id)
 				break;
 		}
 		list_iterator_destroy(gres_iter);
@@ -1406,8 +1411,7 @@ extern int gres_plugin_node_state_pack(List gres_list, Buf buffer,
 	gres_iter = list_iterator_create(gres_list);
 	while ((gres_ptr = (gres_state_t *) list_next(gres_iter))) {
 		for (i=0; i<gres_context_cnt; i++) {
-			if (gres_ptr->plugin_id !=
-			    *(gres_context[i].ops.plugin_id))
+			if (gres_ptr->plugin_id != gres_context[i].plugin_id)
 				continue;
 			header_offset = get_buf_offset(buffer);
 			pack32(magic, buffer);
@@ -1482,7 +1486,7 @@ extern int gres_plugin_node_state_unpack(List *gres_list, Buf buffer,
 		safe_unpack32(&plugin_id, buffer);
 		safe_unpack32(&gres_size, buffer);
 		for (i=0; i<gres_context_cnt; i++) {
-			if (*(gres_context[i].ops.plugin_id) == plugin_id)
+			if (gres_context[i].plugin_id == plugin_id)
 				break;
 		}
 		if (i >= gres_context_cnt) {
@@ -1501,11 +1505,11 @@ extern int gres_plugin_node_state_unpack(List *gres_list, Buf buffer,
 		if (rc2 != SLURM_SUCCESS) {
 			error("gres_plugin_node_state_unpack: error unpacking "
 			      "data of type %s from node %s",
-			      gres_context[i].ops.gres_name, node_name);
+			      gres_context[i].gres_name, node_name);
 			rc = rc2;
 		} else {
 			gres_ptr = xmalloc(sizeof(gres_state_t));
-			gres_ptr->plugin_id = *(gres_context[i].ops.plugin_id);
+			gres_ptr->plugin_id = gres_context[i].plugin_id;
 			gres_ptr->gres_data = gres_data;
 			list_append(*gres_list, gres_ptr);
 		}
@@ -1525,7 +1529,7 @@ fini:	/* Insure that every gres plugin is called for unpack, even if no data
 			rc = rc2;
 		} else {
 			gres_ptr = xmalloc(sizeof(gres_state_t));
-			gres_ptr->plugin_id = *(gres_context[i].ops.plugin_id);
+			gres_ptr->plugin_id = gres_context[i].plugin_id;
 			gres_ptr->gres_data = gres_data;
 			list_append(*gres_list, gres_ptr);
 		}
@@ -1593,8 +1597,7 @@ extern List gres_plugin_node_state_dup(List gres_list)
 	gres_iter = list_iterator_create(gres_list);
 	while ((gres_ptr = (gres_state_t *) list_next(gres_iter))) {
 		for (i=0; i<gres_context_cnt; i++) {
-			if (gres_ptr->plugin_id !=
-			    *(gres_context[i].ops.plugin_id))
+			if (gres_ptr->plugin_id != gres_context[i].plugin_id)
 				continue;
 			gres_data = _node_state_dup(gres_ptr->gres_data);
 			if (gres_data) {
@@ -1758,12 +1761,12 @@ extern int gres_plugin_node_state_realloc(List job_gres_list, int node_offset,
 
 		for (i=0; i<gres_context_cnt; i++) {
 			if (job_gres_ptr->plugin_id !=
-			    *(gres_context[i].ops.plugin_id))
+			    gres_context[i].plugin_id)
 				continue;
 			_node_state_realloc(job_gres_ptr->gres_data, 
 					    node_offset,
 					    node_gres_ptr->gres_data,
-					    gres_context[i].ops.gres_name);
+					    gres_context[i].gres_name);
 			break;
 		}
 	}
@@ -1819,10 +1822,10 @@ extern void gres_plugin_node_state_log(List gres_list, char *node_name)
 	while ((gres_ptr = (gres_state_t *) list_next(gres_iter))) {
 		for (i=0; i<gres_context_cnt; i++) {
 			if (gres_ptr->plugin_id !=
-			    *(gres_context[i].ops.plugin_id))
+			    gres_context[i].plugin_id)
 				continue;
 			_node_state_log(gres_ptr->gres_data, node_name,
-					gres_context[i].ops.gres_name);
+					gres_context[i].gres_name);
 			break;
 		}
 	}
@@ -1871,7 +1874,7 @@ static int _job_config_validate(char *config, uint32_t *gres_cnt,
 	char *last_num = NULL;
 	int cnt;
 
-	if (!strcmp(config, context_ptr->ops.gres_name)) {
+	if (!strcmp(config, context_ptr->gres_name)) {
 		cnt = 1;
 	} else if (!strncmp(config, context_ptr->gres_name_colon,
 			    context_ptr->gres_name_colon_len)) {
@@ -1947,7 +1950,7 @@ extern int gres_plugin_job_state_validate(char *req_config, List *gres_list)
 			if (rc2 != SLURM_SUCCESS)
 				continue;
 			gres_ptr = xmalloc(sizeof(gres_state_t));
-			gres_ptr->plugin_id = *(gres_context[i].ops.plugin_id);
+			gres_ptr->plugin_id = gres_context[i].plugin_id;
 			gres_ptr->gres_data = gres_data;
 			list_append(*gres_list, gres_ptr);
 			break;		/* processed it */
@@ -2012,7 +2015,7 @@ List gres_plugin_job_state_dup(List gres_list)
 	while ((gres_ptr = (gres_state_t *) list_next(gres_iter))) {
 		for (i=0; i<gres_context_cnt; i++) {
 			if (gres_ptr->plugin_id !=
-			    *(gres_context[i].ops.plugin_id))
+			    gres_context[i].plugin_id)
 				continue;
 			new_gres_data = _job_state_dup(gres_ptr->gres_data);
 			if (new_gres_data == NULL)
@@ -2082,7 +2085,7 @@ extern int gres_plugin_job_state_pack(List gres_list, Buf buffer,
 	while ((gres_ptr = (gres_state_t *) list_next(gres_iter))) {
 		for (i=0; i<gres_context_cnt; i++) {
 			if (gres_ptr->plugin_id !=
-			    *(gres_context[i].ops.plugin_id))
+			    gres_context[i].plugin_id)
 				continue;
 			header_offset = get_buf_offset(buffer);
 			pack32(magic, buffer);
@@ -2193,7 +2196,7 @@ extern int gres_plugin_job_state_unpack(List *gres_list, Buf buffer,
 		safe_unpack32(&plugin_id, buffer);
 		safe_unpack32(&gres_size, buffer);
 		for (i=0; i<gres_context_cnt; i++) {
-			if (*(gres_context[i].ops.plugin_id) == plugin_id)
+			if (gres_context[i].plugin_id == plugin_id)
 				break;
 		}
 		if (i >= gres_context_cnt) {
@@ -2209,12 +2212,12 @@ extern int gres_plugin_job_state_unpack(List *gres_list, Buf buffer,
 		}
 		gres_context[i].unpacked_info = true;
 		rc2 = _job_state_unpack(&gres_data, buffer,
-					gres_context[i].ops.gres_name);
+					gres_context[i].gres_name);
 		if (rc2 != SLURM_SUCCESS) {
 			rc = rc2;
 		} else {
 			gres_ptr = xmalloc(sizeof(gres_state_t));
-			gres_ptr->plugin_id = *(gres_context[i].ops.plugin_id);
+			gres_ptr->plugin_id = gres_context[i].plugin_id;
 			gres_ptr->gres_data = gres_data;
 			list_append(*gres_list, gres_ptr);
 		}
@@ -2230,12 +2233,12 @@ fini:	/* Insure that every gres plugin is called for unpack, even if no data
 		      "by job %u",
 		      gres_context[i].gres_type, job_id);
 		rc2 = _job_state_unpack(&gres_data, NULL,
-					gres_context[i].ops.gres_name);
+					gres_context[i].gres_name);
 		if (rc2 != SLURM_SUCCESS) {
 			rc = rc2;
 		} else {
 			gres_ptr = xmalloc(sizeof(gres_state_t));
-			gres_ptr->plugin_id = *(gres_context[i].ops.plugin_id);
+			gres_ptr->plugin_id = gres_context[i].plugin_id;
 			gres_ptr->gres_data = gres_data;
 			list_append(*gres_list, gres_ptr);
 		}
@@ -2474,7 +2477,7 @@ extern uint32_t gres_plugin_job_test(List job_gres_list, List node_gres_list,
 
 		for (i=0; i<gres_context_cnt; i++) {
 			if (job_gres_ptr->plugin_id !=
-			    *(gres_context[i].ops.plugin_id))
+			    gres_context[i].plugin_id)
 				continue;
 			tmp_cnt = _job_test(job_gres_ptr->gres_data,
 					    node_gres_ptr->gres_data,
@@ -2617,12 +2620,12 @@ extern int gres_plugin_job_alloc(List job_gres_list, List node_gres_list,
 
 		for (i=0; i<gres_context_cnt; i++) {
 			if (job_gres_ptr->plugin_id != 
-			    *(gres_context[i].ops.plugin_id))
+			    gres_context[i].plugin_id)
 				continue;
 			rc2 = _job_alloc(job_gres_ptr->gres_data, 
 					 node_gres_ptr->gres_data, node_cnt,
 					 node_offset, cpu_cnt,
-					 gres_context[i].ops.gres_name);
+					 gres_context[i].gres_name);
 			if (rc2 != SLURM_SUCCESS)
 				rc = rc2;
 			break;
@@ -2721,12 +2724,12 @@ extern int gres_plugin_job_dealloc(List job_gres_list, List node_gres_list,
 
 		for (i=0; i<gres_context_cnt; i++) {
 			if (job_gres_ptr->plugin_id != 
-			    *(gres_context[i].ops.plugin_id))
+			    gres_context[i].plugin_id)
 				continue;
 			rc2 = _job_dealloc(job_gres_ptr->gres_data, 
 					   node_gres_ptr->gres_data,
 					   node_offset,
-					   gres_context[i].ops.gres_name);
+					   gres_context[i].gres_name);
 			if (rc2 != SLURM_SUCCESS)
 				rc = rc2;
 			break;
@@ -2792,10 +2795,10 @@ extern void gres_plugin_job_state_log(List gres_list, uint32_t job_id)
 	while ((gres_ptr = (gres_state_t *) list_next(gres_iter))) {
 		for (i=0; i<gres_context_cnt; i++) {
 			if (gres_ptr->plugin_id !=
-			    *(gres_context[i].ops.plugin_id))
+			    gres_context[i].plugin_id)
 				continue;
 			_job_state_log(gres_ptr->gres_data, job_id,
-				       gres_context[i].ops.gres_name);
+				       gres_context[i].gres_name);
 			break;
 		}
 	}
@@ -2830,7 +2833,7 @@ static void _gres_step_list_delete(void *list_element)
 	gres_ptr = (gres_state_t *) list_element;
 	slurm_mutex_lock(&gres_context_lock);
 	for (i=0; i<gres_context_cnt; i++) {
-		if (gres_ptr->plugin_id != *(gres_context[i].ops.plugin_id))
+		if (gres_ptr->plugin_id != gres_context[i].plugin_id)
 			continue;
 		_step_state_delete(gres_ptr->gres_data);
 		xfree(gres_ptr);
@@ -2948,7 +2951,7 @@ extern int gres_plugin_step_state_validate(char *req_config,
 			while ((job_gres_ptr = (gres_state_t *)
 					list_next(job_gres_iter))) {
 				if (job_gres_ptr->plugin_id ==
-				    *(gres_context[i].ops.plugin_id))
+				    gres_context[i].plugin_id)
 					break;
 			}
 			list_iterator_destroy(job_gres_iter);
@@ -2960,7 +2963,7 @@ extern int gres_plugin_step_state_validate(char *req_config,
 			}
 			job_gres_data = job_gres_ptr->gres_data;
 			rc3 = _step_test(step_gres_data, job_gres_data, NO_VAL,
-					 true, gres_context[i].ops.gres_name);
+					 true, gres_context[i].gres_name);
 			if (rc3 == 0) {
 				info("Step gres more than in job allocation %s",
 				     tok);
@@ -2969,8 +2972,7 @@ extern int gres_plugin_step_state_validate(char *req_config,
 			}
 
 			step_gres_ptr = xmalloc(sizeof(gres_state_t));
-			step_gres_ptr->plugin_id = *(gres_context[i].ops.
-						     plugin_id);
+			step_gres_ptr->plugin_id = gres_context[i].plugin_id;
 			step_gres_ptr->gres_data = step_gres_data;
 			list_append(*step_gres_list, step_gres_ptr);
 			break;		/* processed it */
@@ -3035,7 +3037,7 @@ List gres_plugin_step_state_dup(List gres_list)
 	while ((gres_ptr = (gres_state_t *) list_next(gres_iter))) {
 		for (i=0; i<gres_context_cnt; i++) {
 			if (gres_ptr->plugin_id !=
-			    *(gres_context[i].ops.plugin_id))
+			    gres_context[i].plugin_id)
 				continue;
 			new_gres_data = _step_state_dup(gres_ptr->gres_data);
 			if (new_gres_data == NULL)
@@ -3105,7 +3107,7 @@ extern int gres_plugin_step_state_pack(List gres_list, Buf buffer,
 	while ((gres_ptr = (gres_state_t *) list_next(gres_iter))) {
 		for (i=0; i<gres_context_cnt; i++) {
 			if (gres_ptr->plugin_id !=
-			    *(gres_context[i].ops.plugin_id))
+			    gres_context[i].plugin_id)
 				continue;
 			header_offset = get_buf_offset(buffer);
 			pack32(magic, buffer);
@@ -3216,7 +3218,7 @@ extern int gres_plugin_step_state_unpack(List *gres_list, Buf buffer,
 		safe_unpack32(&plugin_id, buffer);
 		safe_unpack32(&gres_size, buffer);
 		for (i=0; i<gres_context_cnt; i++) {
-			if (*(gres_context[i].ops.plugin_id) == plugin_id)
+			if (gres_context[i].plugin_id == plugin_id)
 				break;
 		}
 		if (i >= gres_context_cnt) {
@@ -3233,12 +3235,12 @@ extern int gres_plugin_step_state_unpack(List *gres_list, Buf buffer,
 		}
 		gres_context[i].unpacked_info = true;
 		rc2 = _step_state_unpack(&gres_data, buffer,
-					 gres_context[i].ops.gres_name);
+					 gres_context[i].gres_name);
 		if (rc2 != SLURM_SUCCESS) {
 			rc = rc2;
 		} else {
 			gres_ptr = xmalloc(sizeof(gres_state_t));
-			gres_ptr->plugin_id = *(gres_context[i].ops.plugin_id);
+			gres_ptr->plugin_id = gres_context[i].plugin_id;
 			gres_ptr->gres_data = gres_data;
 			list_append(*gres_list, gres_ptr);
 		}
@@ -3254,12 +3256,12 @@ fini:	/* Insure that every gres plugin is called for unpack, even if no data
 		      "by step %u.%u",
 		      gres_context[i].gres_type, job_id, step_id);
 		rc2 = _step_state_unpack(&gres_data, NULL,
-					 gres_context[i].ops.gres_name);
+					 gres_context[i].gres_name);
 		if (rc2 != SLURM_SUCCESS) {
 			rc = rc2;
 		} else {
 			gres_ptr = xmalloc(sizeof(gres_state_t));
-			gres_ptr->plugin_id = *(gres_context[i].ops.plugin_id);
+			gres_ptr->plugin_id = gres_context[i].plugin_id;
 			gres_ptr->gres_data = gres_data;
 			list_append(*gres_list, gres_ptr);
 		}
@@ -3320,10 +3322,10 @@ extern void gres_plugin_step_state_log(List gres_list, uint32_t job_id,
 	while ((gres_ptr = (gres_state_t *) list_next(gres_iter))) {
 		for (i=0; i<gres_context_cnt; i++) {
 			if (gres_ptr->plugin_id !=
-			    *(gres_context[i].ops.plugin_id))
+			    gres_context[i].plugin_id)
 				continue;
 			_step_state_log(gres_ptr->gres_data, job_id, step_id,
-					gres_context[i].ops.gres_name);
+					gres_context[i].gres_name);
 			break;
 		}
 	}
@@ -3374,12 +3376,12 @@ extern uint32_t gres_plugin_step_test(List step_gres_list, List job_gres_list,
 
 		for (i=0; i<gres_context_cnt; i++) {
 			if (step_gres_ptr->plugin_id !=
-			    *(gres_context[i].ops.plugin_id))
+			    gres_context[i].plugin_id)
 				continue;
 			tmp_cnt = _step_test(step_gres_ptr->gres_data,
 					     job_gres_ptr->gres_data,
 					     node_offset, ignore_alloc,
-					     gres_context[i].ops.gres_name);
+					     gres_context[i].gres_name);
 			cpu_cnt = MIN(tmp_cnt, cpu_cnt);
 			break;
 		}
@@ -3506,12 +3508,12 @@ extern int gres_plugin_step_alloc(List step_gres_list, List job_gres_list,
 
 		for (i=0; i<gres_context_cnt; i++) {
 			if (step_gres_ptr->plugin_id != 
-			    *(gres_context[i].ops.plugin_id))
+			    gres_context[i].plugin_id)
 				continue;
 			rc2 = _step_alloc(step_gres_ptr->gres_data, 
 					  job_gres_ptr->gres_data,
 					  node_offset, cpu_cnt,
-					  gres_context[i].ops.gres_name);
+					  gres_context[i].gres_name);
 			if (rc2 != SLURM_SUCCESS)
 				rc = rc2;
 			break;
@@ -3611,11 +3613,11 @@ extern int gres_plugin_step_dealloc(List step_gres_list, List job_gres_list)
 
 		for (i=0; i<gres_context_cnt; i++) {
 			if (step_gres_ptr->plugin_id != 
-			    *(gres_context[i].ops.plugin_id))
+			    gres_context[i].plugin_id)
 				continue;
 			rc2 = _step_dealloc(step_gres_ptr->gres_data, 
 					   job_gres_ptr->gres_data,
-					   gres_context[i].ops.gres_name);
+					   gres_context[i].gres_name);
 			if (rc2 != SLURM_SUCCESS)
 				rc = rc2;
 			break;
