@@ -221,7 +221,7 @@ void 	packdouble(double val, Buf buffer)
 
 	if (remaining_buf(buffer) < sizeof(nl)) {
 		if (buffer->size > (MAX_BUF_SIZE - BUF_SIZE)) {
-			error("pack64: buffer size too large");
+			error("packdouble: buffer size too large");
 			return;
 		}
 		buffer->size += BUF_SIZE;
