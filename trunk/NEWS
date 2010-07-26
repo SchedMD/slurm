@@ -48,6 +48,7 @@ documents those changes that are of interest to users and admins.
  -- Added DefaultQOS option for an association.
  -- BLUEGENE - Added -B option to the slurmctld to clear created blocks from
     the system on start.
+ -- BLUEGENE - Added option to scontrol & sview to recreate existing blocks.
 
 * Changes in SLURM 2.2.0.pre8
 =============================
