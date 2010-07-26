@@ -2725,7 +2725,7 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 static int _alt_part_test(struct part_record *part_ptr,
 			  struct part_record **part_ptr_new)
 {
-	struct part_record *alt_part_ptr;
+	struct part_record *alt_part_ptr = NULL;
 	char *alt_name;
 
 	*part_ptr_new = NULL;
