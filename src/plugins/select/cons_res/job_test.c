@@ -1339,7 +1339,7 @@ static int _eval_nodes_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 	switches_cpu_cnt  = xmalloc(sizeof(int)        * switch_record_cnt);
 	switches_node_cnt = xmalloc(sizeof(int)        * switch_record_cnt);
 	switches_required = xmalloc(sizeof(int)        * switch_record_cnt);
-	avail_nodes_bitmap = bit_alloc(node_record_count);
+	avail_nodes_bitmap = bit_alloc(cr_node_cnt);
 	for (i=0; i<switch_record_cnt; i++) {
 		switches_bitmap[i] = bit_copy(switch_record_table[i].
 					      node_bitmap);
@@ -1351,7 +1351,7 @@ static int _eval_nodes_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 			switches_required[i] = 1;
 		}
 	}
-	bit_nclear(bitmap, 0, node_record_count - 1);
+	bit_nclear(bitmap, 0, cr_node_cnt - 1);
 
 #if SELECT_DEBUG
 	/* Don't compile this, it slows things down too much */
