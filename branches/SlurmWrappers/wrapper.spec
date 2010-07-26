@@ -57,13 +57,12 @@ export CC
 #
 # build util.
 #
-%ifos aix5.3
 # This is a date conversion routine used to make the wrappers compatible with
 # LCRM syntax.
+#
+%ifos aix5.3
   gmake -C Date2Epoch
 %else
-# This is a date conversion routine used to make the wrappers compatible with
-# LCRM syntax.
   make -C Date2Epoch
 %endif
 
@@ -74,25 +73,59 @@ rm -rf "$RPM_BUILD_ROOT"
 mkdir -p "$RPM_BUILD_ROOT"
 chmod -R 755 "$RPM_BUILD_ROOT"
 
+#
 # Install the LCRM perl wrappers and support utilities
+#
 install -D -m755 Date2Epoch/LCRM_date2epoch $RPM_BUILD_ROOT%{_bindir}/LCRM_date2epoch
 
 #
-# Move scripts that aren't supported anymore to bin so if a user tries to use them at least
+# LCRM wrappers.
 #
-install -D -m755 Wrappers/palter.pl $RPM_BUILD_ROOT%{_bindir}/palter
-install -D -m755 Wrappers/phold.pl $RPM_BUILD_ROOT%{_bindir}/phold
-install -D -m755 Wrappers/prel.pl $RPM_BUILD_ROOT%{_bindir}/prel
-install -D -m755 Wrappers/prm.pl $RPM_BUILD_ROOT%{_bindir}/prm
-install -D -m755 Wrappers/pstat.pl $RPM_BUILD_ROOT%{_bindir}/pstat
-install -D -m755 Wrappers/psub.pl $RPM_BUILD_ROOT%{_bindir}/psub
+install -D -m755 wrappers/palter.pl $RPM_BUILD_ROOT%{_bindir}/palter
+install -D -m755 wrappers/phold.pl $RPM_BUILD_ROOT%{_bindir}/phold
+install -D -m755 wrappers/prel.pl $RPM_BUILD_ROOT%{_bindir}/prel
+install -D -m755 wrappers/prm.pl $RPM_BUILD_ROOT%{_bindir}/prm
+install -D -m755 wrappers/pstat.pl $RPM_BUILD_ROOT%{_bindir}/pstat
+install -D -m755 wrappers/psub.pl $RPM_BUILD_ROOT%{_bindir}/psub
+
+#
+# Moab wrappers.
+#
+install -D -m755 wrappers/canceljob.pl $RPM_BUILD_ROOT%{_bindir}/canceljob
+install -D -m755 wrappers/checknode.pl $RPM_BUILD_ROOT%{_bindir}/checknode
+install -D -m755 wrappers/mdiag.pl $RPM_BUILD_ROOT%{_bindir}/mdiag
+install -D -m755 wrappers/mjobctl.pl $RPM_BUILD_ROOT%{_bindir}/mjobctl
+install -D -m755 wrappers/mshow.pl $RPM_BUILD_ROOT%{_bindir}/mshow
+install -D -m755 wrappers/msub.pl $RPM_BUILD_ROOT%{_bindir}/msub
+install -D -m755 wrappers/releasehold.pl $RPM_BUILD_ROOT%{_bindir}/releasehold
+install -D -m755 wrappers/sethold.pl $RPM_BUILD_ROOT%{_bindir}/sethold
+install -D -m755 wrappers/showbf.pl $RPM_BUILD_ROOT%{_bindir}/showbf
+install -D -m755 wrappers/showq.pl $RPM_BUILD_ROOT%{_bindir}/showq
+install -D -m755 wrappers/showres.pl $RPM_BUILD_ROOT%{_bindir}/showres
+install -D -m755 wrappers/showstart.pl $RPM_BUILD_ROOT%{_bindir}/showstart
+install -D -m755 wrappers/showstate.pl $RPM_BUILD_ROOT%{_bindir}/showstate
+
 
 #
 # Generate man pages from the perl scripts' perldoc documentation
 #
 mkdir -p $RPM_BUILD_ROOT%{_mandir}/man1
 chmod -R 755 $RPM_BUILD_ROOT%{_mandir}/man1
+
+#
+# Do LCRM man pages.
+#
 for cmd in palter phold prel prm pstat psub; do
+    $RPM_BUILD_ROOT%{_bindir}/${cmd} --roff > $RPM_BUILD_ROOT%{_mandir}/man1/${cmd}.1
+done
+
+#
+# Do Moab man pages.
+#
+# No man pages for:
+#	mshow releasehold sethold
+#
+for cmd in canceljob checknode mdiag mjobctl mshow msub showbf showq showres showstart showstate; do
     $RPM_BUILD_ROOT%{_bindir}/${cmd} --roff > $RPM_BUILD_ROOT%{_mandir}/man1/${cmd}.1
 done
 chmod 644 $RPM_BUILD_ROOT%{_mandir}/man1/*.1
@@ -105,8 +138,7 @@ rm -rf $RPM_BUILD_ROOT
 
 %files 
 
-%{_bindir}/p*
-%{_bindir}/L*
+%{_bindir}/*
 %{_mandir}/man1/*
 
 %defattr(-,root,root,0755)
