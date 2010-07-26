@@ -748,7 +748,7 @@ extern char *select_p_select_jobinfo_xstrdup(select_jobinfo_t *jobinfo,
 	return xstrdup_select_jobinfo(jobinfo, mode);
 }
 
-extern int select_p_update_block (update_block_msg_t *block_desc_ptr)
+extern int select_p_update_block(update_block_msg_t *block_desc_ptr)
 {
 #ifdef HAVE_BG_L_P
 	int rc = SLURM_SUCCESS;
@@ -768,16 +768,20 @@ extern int select_p_update_block (update_block_msg_t *block_desc_ptr)
 		return ESLURM_INVALID_BLOCK_NAME;
 	}
 
-	if(block_desc_ptr->state == RM_PARTITION_NAV) {
+	if(block_desc_ptr->state == RM_PARTITION_CONFIGURING)
+		snprintf(reason, sizeof(reason),
+			 "update_block: "
+			 "Admin recreated %s.", bg_record->bg_block_id);
+	else if(block_desc_ptr->state == RM_PARTITION_NAV) {
 		if(bg_record->conn_type < SELECT_SMALL)
 			snprintf(reason, sizeof(reason),
 				 "update_block: "
-				 "Admin removing block %s",
+				 "Admin removed block %s",
 				 bg_record->bg_block_id);
 		else
 			snprintf(reason, sizeof(reason),
 				 "update_block: "
-				 "Removing all blocks on midplane %s",
+				 "Removed all blocks on midplane %s",
 				 bg_record->nodes);
 
 	} else {
@@ -921,6 +925,60 @@ extern int select_p_update_block (update_block_msg_t *block_desc_ptr)
 
 		free_block_list(delete_list);
 		list_destroy(delete_list);
+		slurm_mutex_unlock(&block_state_mutex);
+	} else if (block_desc_ptr->state == RM_PARTITION_CONFIGURING) {
+		/* This means recreate the block, remove it and then
+		   recreate it.
+		*/
+		remove_from_bg_list(bg_lists->main, bg_record);
+
+		/* make sure if we are removing a block to put it back
+		   to a normal state in accounting first */
+		if(bg_record->state == RM_PARTITION_ERROR)
+			resume_block(bg_record);
+
+		term_jobs_on_block(bg_record->bg_block_id);
+		if(bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
+			info("select_p_update_block: "
+			     "freeing the block %s.", bg_record->bg_block_id);
+		bg_free_block(bg_record, 1, 1);
+		if(bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
+			info("select_p_update_block: done");
+
+#ifdef HAVE_BG_FILES
+		if(bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
+			info("select_p_update_block: "
+			     "removing %s from database",
+			     bg_record->bg_block_id);
+
+		rc = bridge_remove_block(bg_record->bg_block_id);
+		if (rc != STATUS_OK) {
+			if(rc == PARTITION_NOT_FOUND) {
+				debug("select_p_update_block: "
+				      "block %s is not found",
+				      bg_record->bg_block_id);
+			} else {
+				error("select_p_update_block: "
+				      "rm_remove_partition(%s): %s",
+				      bg_record->bg_block_id,
+				      bg_err_str(rc));
+			}
+		} else
+			if(bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
+				info("select_p_update_block: done %s",
+				     (char *)bg_record->bg_block_id);
+#endif
+		xfree(bg_record->bg_block_id);
+		if(configure_block(bg_record) == SLURM_ERROR) {
+			destroy_bg_record(bg_record);
+			error("select_p_update_block: "
+			      "unable to configure block in api");
+		} else {
+			print_bg_record(bg_record);
+			list_append(bg_lists->main, bg_record);
+			sort_bg_record_inc_size(bg_lists->main);
+		}
+
 		slurm_mutex_unlock(&block_state_mutex);
 	} else {
 		slurm_mutex_unlock(&block_state_mutex);

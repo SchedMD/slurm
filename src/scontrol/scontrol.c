@@ -1362,7 +1362,9 @@ _update_bluegene_block (int argc, char *argv[])
 				block_msg.state = RM_PARTITION_ERROR;
 			else if (!strncasecmp(val, "FREE", MAX(vallen, 1)))
 				block_msg.state = RM_PARTITION_FREE;
-			else if (!strncasecmp(val, "REMOVE", MAX(vallen, 1)))
+			else if (!strncasecmp(val, "RECREATE", MAX(vallen, 3)))
+				block_msg.state = RM_PARTITION_CONFIGURING;
+			else if (!strncasecmp(val, "REMOVE", MAX(vallen, 3)))
 				block_msg.state = RM_PARTITION_NAV;
 			else {
 				exit_code = 1;
@@ -1370,7 +1372,7 @@ _update_bluegene_block (int argc, char *argv[])
 					 argv[i]);
 				fprintf (stderr,
 					 "Acceptable State values "
-					 "are FREE, ERROR, REMOVE\n");
+					 "are FREE, ERROR, RECREATE, REMOVE\n");
 				return 0;
 			}
 			update_cnt++;

@@ -148,6 +148,8 @@ static display_data_t options_data_block[] = {
 	 TRUE, ADMIN_PAGE},
 	{G_TYPE_STRING, BLOCK_PAGE, "Put block in free state",
 	 TRUE, ADMIN_PAGE},
+	{G_TYPE_STRING, BLOCK_PAGE, "Recreate block",
+	 TRUE, ADMIN_PAGE},
 	{G_TYPE_STRING, BLOCK_PAGE, "Remove block",
 	 TRUE, ADMIN_PAGE},
 	{G_TYPE_STRING, JOB_PAGE, "Jobs", TRUE, BLOCK_PAGE},
@@ -779,6 +781,11 @@ extern int update_state_block(GtkDialog *dialog,
 			 "in an error state?",
 			 blockid);
 		block_msg.state = RM_PARTITION_ERROR;
+	} else if(!strcasecmp("Recreate block", type)) {
+		snprintf(tmp_char, sizeof(tmp_char),
+			 "Are you sure you want to recreate block %s?",
+			 blockid);
+		block_msg.state = RM_PARTITION_CONFIGURING;
 	} else if(!strcasecmp("Remove block", type)) {
 		snprintf(tmp_char, sizeof(tmp_char),
 			 "Are you sure you want to remove block %s?",
