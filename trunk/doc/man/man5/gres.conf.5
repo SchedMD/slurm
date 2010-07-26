@@ -52,9 +52,10 @@ specified).
 
 .TP
 \fBName\fR
-Name of the generic resource. Each generic resource has an
-optional plugin which can provide resource\-specific options.
-Currently supported generic resource names include
+Name of the generic resource. Any desired name may be used.
+Each generic resource has an optional plugin which can provide
+resource\-specific options.
+Generic resources that currently include an optional plugin are:
 .RS
 .TP
 \fBgpu\fR
@@ -84,7 +85,7 @@ Name=gpu File=/dev/nvidia2 CPUs=2,3
 .br
 Name=gpu File=/dev/nvidia3 CPUs=2,3
 .br
-Name=nic Count=2
+Name=bandwidth Count=20
 
 .SH "COPYING"
 Copyright (C) 2010 The Regents of the University of California.
