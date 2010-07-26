@@ -99,7 +99,8 @@ static int _compute_c_b_task_dist(struct job_record *job_ptr)
 		for (n = 0; ((n < job_res->nhosts) && (tid < maxtasks)); n++) {
 			if ((i < avail_cpus[n]) || over_subscribe) {
 				tid++;
-				for (l = 0; l < job_ptr->details->cpus_per_task; l++) {
+				for (l = 0; l < job_ptr->details->cpus_per_task;
+				     l++) {
 					if (job_res->cpus[n] < avail_cpus[n])
 						job_res->cpus[n]++;
 					if ((i + 1) < avail_cpus[n])

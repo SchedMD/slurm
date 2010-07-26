@@ -167,7 +167,6 @@ uint16_t cr_type = CR_CPU; /* cr_type is overwritten in init() */
 uint16_t select_fast_schedule;
 
 uint16_t *cr_node_num_cores = NULL;
-uint32_t *cr_num_core_count = NULL;
 struct part_res_record *select_part_record = NULL;
 struct node_res_record *select_node_record = NULL;
 struct node_use_record *select_node_usage  = NULL;
@@ -270,19 +269,15 @@ static void _dump_state(struct part_res_record *p_ptr)
 }
 #endif
 
-#define CR_NUM_CORE_ARRAY_INCREMENT 8
-
-/* (re)set cr_node_num_cores and cr_num_core_count arrays */
+/* (re)set cr_node_num_cores arrays */
 static void _init_global_core_data(struct node_record *node_ptr, int node_cnt)
 {
-	uint32_t i, n, array_size = CR_NUM_CORE_ARRAY_INCREMENT;
+	uint32_t n;
 
-	xfree(cr_num_core_count);
 	xfree(cr_node_num_cores);
-	cr_node_num_cores = xmalloc(array_size * sizeof(uint16_t));
-	cr_num_core_count = xmalloc(array_size * sizeof(uint32_t));
+	cr_node_num_cores = xmalloc(node_cnt * sizeof(uint16_t));
 
-	for (i = 0, n = 0; n < node_cnt; n++) {
+	for (n = 0; n < node_cnt; n++) {
 		uint16_t cores;
 		if (select_fast_schedule) {
 			cores  = node_ptr[n].config_ptr->cores;
@@ -291,27 +286,7 @@ static void _init_global_core_data(struct node_record *node_ptr, int node_cnt)
 			cores  = node_ptr[n].cores;
 			cores *= node_ptr[n].sockets;
 		}
-		if (cr_node_num_cores[i] == cores) {
-			cr_num_core_count[i]++;
-			continue;
-		}
-		if (cr_num_core_count[i] > 0) {
-			if (++i >= array_size) {
-				array_size += CR_NUM_CORE_ARRAY_INCREMENT;
-				xrealloc(cr_node_num_cores,
-					array_size * sizeof(uint16_t));
-				xrealloc(cr_num_core_count,
-					array_size * sizeof(uint32_t));
-			}
-		}
-		cr_node_num_cores[i] = cores;
-		cr_num_core_count[i] = 1;
-	}
-	/* make sure we have '0'-terminate the arrays */
-	if (++i >= array_size) {
-		array_size = i + 1;
-		xrealloc(cr_node_num_cores, array_size * sizeof(uint16_t));
-		xrealloc(cr_num_core_count, array_size * sizeof(uint32_t));
+		cr_node_num_cores[n] = cores;
 	}
 }
 
@@ -319,31 +294,13 @@ static void _init_global_core_data(struct node_record *node_ptr, int node_cnt)
 /* return the coremap index to the first core of the given node */
 extern uint32_t cr_get_coremap_offset(uint32_t node_index)
 {
-	uint32_t i;
+	int i;
 	uint32_t cindex = 0;
-	uint32_t n = cr_num_core_count[0];
-	for (i = 0; cr_num_core_count[i] && node_index > n; i++) {
-		cindex += cr_node_num_cores[i] * cr_num_core_count[i];
-		n += cr_num_core_count[i+1];
-	}
-	if (!cr_num_core_count[i])
-		return cindex;
-	n -= cr_num_core_count[i];
 
-	cindex += cr_node_num_cores[i] * (node_index-n);
+	for (i=0; i<node_index; i++)
+		cindex += cr_node_num_cores[i];
+
 	return cindex;
-}
-
-
-/* return the total number of cores in a given node */
-extern uint32_t cr_get_node_num_cores(uint32_t node_index)
-{
-	uint32_t i = 0;
-	uint32_t pos = cr_num_core_count[i++];
-	while (node_index >= pos) {
-		pos += cr_num_core_count[i++];
-	}
-	return cr_node_num_cores[i-1];
 }
 
 
@@ -536,8 +493,7 @@ static void _add_job_to_row(struct job_resources *job,
 		uint32_t size = bit_size(r_ptr->row_bitmap);
 		bit_nclear(r_ptr->row_bitmap, 0, size-1);
 	}
-	add_job_to_cores(job, &(r_ptr->row_bitmap), cr_node_num_cores,
-				cr_num_core_count);
+	add_job_to_cores(job, &(r_ptr->row_bitmap), cr_node_num_cores);
 
 	/*  add the job to the job_list */
 	if (r_ptr->num_jobs >= r_ptr->job_list_size) {
@@ -553,10 +509,10 @@ static void _add_job_to_row(struct job_resources *job,
 static int _can_job_fit_in_row(struct job_resources *job,
 			       struct part_row_data *r_ptr)
 {
-	if (r_ptr->num_jobs == 0 || !r_ptr->row_bitmap)
+	if ((r_ptr->num_jobs == 0) || !r_ptr->row_bitmap)
 		return 1;
-	return job_fits_into_cores(job, r_ptr->row_bitmap,
-					cr_node_num_cores, cr_num_core_count);
+
+	return job_fits_into_cores(job, r_ptr->row_bitmap, cr_node_num_cores);
 }
 
 
@@ -788,8 +744,7 @@ static void _build_row_bitmaps(struct part_res_record *p_ptr)
 			for (j = 0; j < p_ptr->row[i].num_jobs; j++) {
 				add_job_to_cores(p_ptr->row[i].job_list[j],
 						 &(p_ptr->row[i].row_bitmap),
-						 cr_node_num_cores,
-						 cr_num_core_count);
+						 cr_node_num_cores);
 			}
 		}
 	}
@@ -1637,7 +1592,7 @@ static int _synchronize_bitmaps(struct job_record *job_ptr,
 extern int init(void)
 {
 	cr_type = slurmctld_conf.select_type_param;
-	if(cr_type)
+	if (cr_type)
 		verbose("%s loaded with argument %u", plugin_name, cr_type);
 
 	return SLURM_SUCCESS;
@@ -1651,9 +1606,8 @@ extern int fini(void)
 	_destroy_part_data(select_part_record);
 	select_part_record = NULL;
 	xfree(cr_node_num_cores);
-	xfree(cr_num_core_count);
 
-	if(cr_type)
+	if (cr_type)
 		verbose("%s shutting down ...", plugin_name);
 
 	return SLURM_SUCCESS;

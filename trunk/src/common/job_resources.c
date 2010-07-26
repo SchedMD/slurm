@@ -1035,18 +1035,13 @@ extern int get_job_resources_cnt(job_resources_t *job_resrcs_ptr,
  * IN job_resrcs_ptr - resources allocated to a job
  * IN full_bitmap - bitmap of available CPUs
  * IN bits_per_node - bits per node in the full_bitmap
- * IN bit_rep_count - repetition count for bits_per_node (how many consecutive 
- *		      nodes have that same count), if NULL then assume 1 for
- *		      each node
  * RET 1 on success, 0 otherwise
  */
 extern int job_fits_into_cores(job_resources_t *job_resrcs_ptr,
 			       bitstr_t *full_bitmap,
-			       const uint16_t *bits_per_node,
-			       const uint32_t *bit_rep_count)
+			       const uint16_t *bits_per_node)
 {
-	int full_node_inx = 0, full_bit_inx  = 0, job_bit_inx  = 0;
-	int bit_inx = 0, bit_reps = 0, i;
+	int full_node_inx = 0, full_bit_inx  = 0, job_bit_inx  = 0, i;
 
 	if (!full_bitmap)
 		return 1;
@@ -1054,21 +1049,16 @@ extern int job_fits_into_cores(job_resources_t *job_resrcs_ptr,
 	for (full_node_inx = 0; full_node_inx < node_record_count;
 	     full_node_inx++) {
 		if (bit_test(job_resrcs_ptr->node_bitmap, full_node_inx)) {
-			for (i = 0; i < bits_per_node[bit_inx]; i++) {
+			for (i = 0; i < bits_per_node[full_node_inx]; i++) {
 				if (bit_test(full_bitmap, full_bit_inx + i) &&
 				    bit_test(job_resrcs_ptr->core_bitmap,
 					     job_bit_inx + i)) {
 					return 0;
 				}
 			}
-			job_bit_inx += bits_per_node[bit_inx];
+			job_bit_inx += bits_per_node[full_node_inx];
 		}
-		full_bit_inx += bits_per_node[bit_inx];
-		if ((bit_rep_count == NULL) ||
-		    (++bit_reps >= bit_rep_count[bit_inx])) {
-			bit_inx++;
-			bit_reps = 0;
-		}
+		full_bit_inx += bits_per_node[full_node_inx];
 	}
 	return 1;
 }
@@ -1078,19 +1068,14 @@ extern int job_fits_into_cores(job_resources_t *job_resrcs_ptr,
  * IN job_resrcs_ptr - resources allocated to a job
  * IN/OUT full_bitmap - bitmap of available CPUs, allocate as needed
  * IN bits_per_node - bits per node in the full_bitmap
- * IN bit_rep_count - repetition count for bits_per_node (how many consecutive 
- *		      nodes have that same count), if NULL then assume 1 for
- *		      each node
  * RET 1 on success, 0 otherwise
  */
 extern void add_job_to_cores(job_resources_t *job_resrcs_ptr,
 			     bitstr_t **full_core_bitmap,
-			     const uint16_t *bits_per_node,
-			     const uint32_t *bit_rep_count)
+			     const uint16_t *bits_per_node)
 {
 	int full_node_inx = 0;
-	int job_bit_inx  = 0, full_bit_inx  = 0;
-	int bit_inx = 0, bit_reps = 0, i;
+	int job_bit_inx  = 0, full_bit_inx  = 0, i;
 
 	if (!job_resrcs_ptr->core_bitmap)
 		return;
@@ -1098,13 +1083,8 @@ extern void add_job_to_cores(job_resources_t *job_resrcs_ptr,
 	/* add the job to the row_bitmap */
 	if (*full_core_bitmap == NULL) {
 		uint32_t size = 0;
-		if (bit_rep_count) {
-			for (i = 0; bit_rep_count[i]; i++)
-				size += bits_per_node[i] * bit_rep_count[i];
-		} else {
-			for (i = 0; i < node_record_count; i++)
-				size += bits_per_node[i];
-		}
+		for (i = 0; i < node_record_count; i++)
+			size += bits_per_node[i];
 		*full_core_bitmap = bit_alloc(size);
 		if (!*full_core_bitmap)
 			fatal("add_job_to_cores: bitmap memory error");
@@ -1113,20 +1093,15 @@ extern void add_job_to_cores(job_resources_t *job_resrcs_ptr,
 	for (full_node_inx = 0; full_node_inx < node_record_count;
 	     full_node_inx++) {
 		if (bit_test(job_resrcs_ptr->node_bitmap, full_node_inx)) {
-			for (i = 0; i < bits_per_node[bit_inx]; i++) {
+			for (i = 0; i < bits_per_node[full_node_inx]; i++) {
 				if (!bit_test(job_resrcs_ptr->core_bitmap,
 					      job_bit_inx + i))
 					continue;
 				bit_set(*full_core_bitmap, full_bit_inx + i);
 			}
-			job_bit_inx += bits_per_node[bit_inx];
+			job_bit_inx += bits_per_node[full_node_inx];
 		}
-		full_bit_inx += bits_per_node[bit_inx];
-		if ((bit_rep_count == NULL) ||
-		    (++bit_reps >= bit_rep_count[bit_inx])) {
-			bit_inx++;
-			bit_reps = 0;
-		}
+		full_bit_inx += bits_per_node[full_node_inx];
 	}
 }
 
