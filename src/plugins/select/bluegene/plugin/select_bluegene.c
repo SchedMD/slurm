@@ -858,8 +858,8 @@ extern int select_p_update_block (update_block_msg_t *block_desc_ptr)
 		   to a normal state in accounting first */
 		itr = list_iterator_create(delete_list);
 		while ((found_record = list_next(itr))) {
-			if(bg_record->state == RM_PARTITION_ERROR)
-				resume_block(bg_record);
+			if(found_record->state == RM_PARTITION_ERROR)
+				resume_block(found_record);
 		}
 		list_iterator_destroy(itr);
 
