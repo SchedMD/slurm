@@ -410,7 +410,7 @@ static int _job_fits_in_active_row(struct job_record *job_ptr,
 	if ((gr_type == GS_CPU2) || (gr_type == GS_CORE) ||
 	    (gr_type == GS_SOCKET)) {
 		return job_fits_into_cores(job_res, p_ptr->active_resmap,
-					   gs_bits_per_node, NULL);
+					   gs_bits_per_node);
 	}
 
 	/* gr_type == GS_NODE || gr_type == GS_CPU */
@@ -492,7 +492,7 @@ static void _add_job_to_active(struct job_record *job_ptr,
 			bit_nclear(p_ptr->active_resmap, 0, size-1);
 		}
 		add_job_to_cores(job_res, &(p_ptr->active_resmap),
-				 gs_bits_per_node, NULL);
+				 gs_bits_per_node);
 		if (gr_type == GS_SOCKET)
 			_fill_sockets(job_res->node_bitmap, p_ptr);
 	} else { /* GS_NODE or GS_CPU */
