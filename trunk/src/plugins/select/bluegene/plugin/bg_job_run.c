@@ -444,7 +444,7 @@ static void _remove_jobs_on_block_and_reset(rm_job_list_t *job_list,
 		debug2("Hopefully we are destroying this block %s "
 		       "since it isn't in the bg_lists->main",
 		       block_id);
-	} else {
+	} else if(job_cnt) {
 		error("Could not find block %s previously assigned to job.  "
 		      "If this is happening at startup and you just changed "
 		      "your bluegene.conf this is expected.  Else you should "
