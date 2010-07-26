@@ -1557,10 +1557,15 @@ static void _parse_commandline(int argc, char *argv[])
 {
 	int c = 0;
 	char *tmp_char;
+	bool bg_recover_override = 0;
 
 	opterr = 0;
-	while ((c = getopt(argc, argv, "cdDf:hL:n:rRvV")) != -1)
+	while ((c = getopt(argc, argv, "BcdDf:hL:n:rRvV")) != -1)
 		switch (c) {
+		case 'B':
+			bg_recover = 0;
+			bg_recover_override = 1;
+			break;
 		case 'c':
 			recover = 0;
 			bg_recover = 0;
@@ -1591,11 +1596,13 @@ static void _parse_commandline(int argc, char *argv[])
 			break;
 		case 'r':
 			recover = 1;
-			bg_recover = 1;
+			if(!bg_recover_override)
+				bg_recover = 1;
 			break;
 		case 'R':
 			recover = 2;
-			bg_recover = 1;
+			if(!bg_recover_override)
+				bg_recover = 1;
 			break;
 		case 'v':
 			debug_level++;
@@ -1615,6 +1622,10 @@ static void _parse_commandline(int argc, char *argv[])
 static void _usage(char *prog_name)
 {
 	fprintf(stderr, "Usage: %s [OPTIONS]\n", prog_name);
+#ifdef HAVE_BG
+	fprintf(stderr, "  -B      "
+			"\tDo not recover state of bluegene blocks.\n");
+#endif
 #if (DEFAULT_RECOVER != 0)
 	fprintf(stderr, "  -c      "
 			"\tDo not recover state from last checkpoint.\n");

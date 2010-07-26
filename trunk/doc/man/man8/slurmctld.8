@@ -13,6 +13,11 @@ the primary server fails.
 OPTIONS
 
 .TP
+\fB\-B\fR
+Do not recover state of BlueGene blocks when running on a bluegene
+system.
+
+.TP
 \fB\-c\fR
 Clear all previous \fBslurmctld\fR state from its last checkpoint.
 Without this option, previously running jobs will be preserved along
@@ -37,11 +42,17 @@ Write log messages to the specified file.
 Set the daemon's nice value to the specified value, typically a negative number.
 
 .TP
+\fB\-r\fR
+Recover partial state from last checkpoint: jobs and node DOWN/DRAIN
+state and reason information state.  No partition state is recovered.
+This is the default action.
+
+.TP
 \fB\-R\fR
-Recover full state from last checkpoint: jobs, node, and partition state. 
+Recover full state from last checkpoint: jobs, node, and partition state.
 Without this option, previously running jobs will be preserved along
 with node \fIState\fR of DOWN, DRAINED and DRAINING nodes and the associated
-\fIReason\fR field for those nodes. No other node or partition state will 
+\fIReason\fR field for those nodes. No other node or partition state will
 be preserved.
 
 .TP
