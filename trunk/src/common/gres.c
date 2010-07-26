@@ -58,6 +58,7 @@
 #  include <sys/types.h>
 #  include <unistd.h>
 #  include <stdint.h>
+#  include <stdlib.h>
 #  include <string.h>
 #endif /* HAVE_CONFIG_H */
 
@@ -142,6 +143,7 @@ extern uint32_t	_job_test(void *job_gres_data, void *node_gres_data,
 static int	_load_gres_plugin(char *plugin_name,
 				  slurm_gres_context_t *plugin_context);
 static int	_log_gres_slurmd_conf(void *x, void *arg);
+static void	_my_stat(char *file_name);
 static int	_node_config_init(char *node_name, char *orig_config,
 				  slurm_gres_context_t *context_ptr,
 				  gres_state_t *gres_ptr);
@@ -167,6 +169,7 @@ static int	_step_state_validate(char *config, void **gres_data,
 				     slurm_gres_context_t *context_ptr);
 static int	_strcmp(const char *s1, const char *s2);
 static int	_unload_gres_plugin(slurm_gres_context_t *plugin_context);
+static int	_validate_file(char *path_name, char *gres_name);
 static void	_validate_gres_node_cpus(gres_node_state_t *node_gres_ptr,
 					 int cpus_ctld);
 
@@ -531,6 +534,60 @@ static int _log_gres_slurmd_conf(void *x, void *arg)
 	return 0;
 }
 
+static void _my_stat(char *file_name)
+{
+	struct stat config_stat;
+
+	if (stat(file_name, &config_stat) < 0)
+		fatal("can't stat gres.conf file %s: %m", file_name);
+}
+
+static int _validate_file(char *path_name, char *gres_name)
+{
+	char *file_name, *slash, *one_name, *root_path;
+	char *formatted_path = NULL;
+	hostlist_t hl;
+	int i, file_count = 0;
+
+	i = strlen(path_name);
+	if ((i < 3) || (path_name[i-1] != ']')) {
+		_my_stat(path_name);
+		return 1;
+	}
+
+	slash = strrchr(path_name, '/');
+	if (slash) {
+		i = strlen(path_name);
+		formatted_path = xmalloc(i+1);
+		slash[0] = '\0';
+		root_path = xstrdup(path_name);
+		xstrcat(root_path, "/");
+		slash[0] = '/';
+		file_name = slash + 1;
+	} else {
+		file_name = path_name;
+		root_path = NULL;
+	}
+	hl = hostlist_create(file_name);
+	if (hl == NULL)
+		fatal("can't parse File=%s", path_name);
+	while ((one_name = hostlist_shift(hl))) {
+		if (slash) {
+			sprintf(formatted_path, "%s/%s", root_path, one_name);
+			_my_stat(formatted_path);
+		} else {
+			_my_stat(one_name);
+		}
+		file_count++;
+		free(one_name);
+	}
+	hostlist_destroy(hl);
+	xfree(formatted_path);
+	xfree(root_path);
+
+	return file_count;
+}
+
 /*
  * Build gres_slurmd_conf_t record based upon a line from the gres.conf file
  */
@@ -547,6 +604,7 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 	int i;
 	s_p_hashtbl_t *tbl;
 	gres_slurmd_conf_t *p;
+	uint32_t tmp_u32;
 
 	tbl = s_p_hashtbl_create(_gres_options);
 	s_p_parse_line(tbl, *leftover, leftover);
@@ -554,11 +612,6 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 	p = xmalloc(sizeof(gres_slurmd_conf_t));
 	p->name = xstrdup(value);
 	p->cpu_cnt = gres_cpu_cnt;
-	if (s_p_get_uint32(&p->count, "Count", tbl)) {
-		if (p->count == 0)
-			fatal("Invalid gres data for %s, Count=0", p->name);
-	} else
-		p->count = 1;
 	if (s_p_get_string(&p->cpus, "CPUs", tbl)) {
 		bitstr_t *cpu_bitmap;	/* Just use to validate config */
 		cpu_bitmap = bit_alloc(gres_cpu_cnt);
@@ -571,15 +624,21 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 		}
 		FREE_NULL_BITMAP(cpu_bitmap);
 	}
-	if (s_p_get_string(&p->file, "File", tbl)) {
-		struct stat config_stat;
-		if (stat(p->file, &config_stat) < 0)
-			fatal("can't stat gres.conf file %s: %m", p->file);
-		if (p->count > 1) {
-			fatal("Invalid gres data for %s, Count=%u and File=...",
-			      p->name, p->count);
+
+	if (s_p_get_string(&p->file, "File", tbl))
+		p->count = _validate_file(p->file, p->name);
+
+	if (s_p_get_uint32(&tmp_u32, "Count", tbl)) {
+		if (tmp_u32 == 0)
+			fatal("Invalid gres data for %s, Count=0", p->name);
+		if (p->count && (p->count != tmp_u32)) {
+			fatal("Invalid gres data for %s, Count does not match "
+			      "File value", p->name);
 		}
-	}
+		p->count = tmp_u32;
+	} else if (p->count == 0)
+		p->count = 1;
+
 	s_p_hashtbl_destroy(tbl);
 
 	for (i=0; i<gres_context_cnt; i++) {

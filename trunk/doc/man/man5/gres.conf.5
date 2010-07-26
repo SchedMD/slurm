@@ -23,7 +23,8 @@ The overall configuration parameters available include:
 .TP
 \fBCount\fR
 Number of resources of this type available on this node.
-The default value is one.
+The default value is set to the number of \fBFile\fR values specified (if any),
+otherwise the default value is one.
 
 .TP
 \fBCPUs\fR
@@ -39,11 +40,15 @@ If any CPU can be used with the resources, then do not specify the
 
 .TP
 \fBFile\fR
-Fully qualified pathname of the device file associated with a resource.
+Fully qualified pathname of the device files associated with a resource. 
+The name can include a numberic range suffix to be interpretted by SLURM
+(e.g. \fIFile=/dev/nvidia[0-3]\fR).
 This field is generally required if enforcement of generic resource
 allocations is to be supported (i.e. prevents a users from making
-use of resources allocated to a different user. If \fBFile\fR is specified then
-\fBCount\fR must be either set to one or not set (the default value is one).
+use of resources allocated to a different user).
+If \fBFile\fR is specified then \fBCount\fR must be either set to the number
+of file names specified or not set (the default value is the number of files
+specified).
 
 .TP
 \fBName\fR
