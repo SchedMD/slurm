@@ -1949,7 +1949,7 @@ extern int select_p_select_nodeinfo_set_all(void)
 	}
 	last_set_all = last_node_update;
 
-	for (n=0; n < node_record_count; n++) {
+	for (n=0; n < select_node_cnt; n++) {
 		node_ptr = &(node_record_table_ptr[n]);
 		if (slurmctld_conf.fast_schedule) {
 			node_cpus    = node_ptr->config_ptr->cpus;
