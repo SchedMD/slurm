@@ -1991,7 +1991,6 @@ extern int set_bp_map(void)
 	int bp_num, i;
 	char *bp_id = NULL;
 	rm_location_t bp_loc;
-	int number = 0;
 
 	if(_bp_map_initialized)
 		return 1;
@@ -2165,7 +2164,7 @@ extern char *find_bp_rack_mid(char* xyz)
 		return NULL;
 	}
 
-	number = xstrntol(xyz[X]+len, &p, cluster_dims, cluster_base);
+	number = xstrntol(xyz + len, &p, cluster_dims, cluster_base);
 	hostlist_parse_int_to_array(number, coord, cluster_dims, cluster_base);
 
 	if(!bp_map_list) {
