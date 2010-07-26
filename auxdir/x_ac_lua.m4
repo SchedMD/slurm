@@ -20,7 +20,7 @@ AC_DEFUN([X_AC_LUA],
                 [x_ac_have_lua="yes"],
                 [x_ac_have_lua="no"])
 
-	if test x"$x_ac_have_lua" = "xyes"; then
+	if test "x$x_ac_have_lua" = "xyes"; then
 	  saved_CFLAGS="$CFLAGS"
 	  saved_LDFLAGS="$LDFLAGS"
 	  CFLAGS="$CFLAGS $lua_CFLAGS"
@@ -38,7 +38,7 @@ AC_DEFUN([X_AC_LUA],
 	  AC_MSG_RESULT([$x_ac_have_lua])
 	  CFLAGS="$saved_CFLAGS"
 	  LDFLAGS="$saved_LDFLAGS"
-     fi
+	fi
 
 	AM_CONDITIONAL(HAVE_LUA, test "x$x_ac_have_lua" = "xyes")
 ])
