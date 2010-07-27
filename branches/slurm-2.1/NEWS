@@ -16,6 +16,8 @@ documents those changes that are of interest to users and admins.
  -- BLUEGENE - Fixed issue where removing a small block in dynamic mode,
     and other blocks also in that midplane needed to be removed and were in
     and error state.  They all weren't removed correctly in accounting.
+ -- Prevent scontrol segv with "scontrol show node <name>" command with nodes
+    in a hidden partition.
 
 * Changes in SLURM 2.1.10
 =========================
