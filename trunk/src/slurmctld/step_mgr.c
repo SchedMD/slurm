@@ -974,6 +974,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 
 	FREE_NULL_BITMAP(nodes_avail);
 	FREE_NULL_BITMAP(nodes_idle);
+	xfree(usable_cpu_cnt);
 	return nodes_picked;
 
 cleanup:
