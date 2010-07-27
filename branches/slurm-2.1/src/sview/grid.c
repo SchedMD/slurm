@@ -846,6 +846,12 @@ extern void put_buttons_in_table(GtkTable *table, List button_list)
 	}
 	list_iterator_destroy(itr);
 
+#ifndef HAVE_3D
+	/* This is needed to get the correct width of the grid
+	   window.  If it is not given then we get a really narrow
+	   window. */
+	gtk_table_set_row_spacing(table, coord_y-1, 1);
+#endif
 	gtk_widget_show_all(GTK_WIDGET(table));
 }
 
@@ -959,11 +965,12 @@ extern int update_grid_table(GtkTable *table, List button_list, List node_list)
 		}
 		inx++;
 	}
-#ifdef HAVE_3D
+
 	/* This is needed to get the correct width of the grid
 	   window.  If it is not given then we get a really narrow
 	   window. */
 	gtk_table_set_row_spacing(table, coord_y-1, 1);
+#ifdef HAVE_3D
 end_it:
 #endif
 	list_iterator_destroy(itr);
@@ -1119,11 +1126,11 @@ extern int setup_grid_table(GtkTable *table, List button_list, List node_list)
 #endif
 	}
 
-#ifdef HAVE_3D
 	/* This is needed to get the correct width of the grid
 	   window.  If it is not given then we get a really narrow
 	   window. */
 	gtk_table_set_row_spacing(table, coord_y-1, 1);
+#ifdef HAVE_3D
 end_it:
 #endif
 	list_iterator_destroy(itr);
