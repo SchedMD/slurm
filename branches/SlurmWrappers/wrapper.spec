@@ -92,6 +92,7 @@ install -D -m755 wrappers/psub.pl $RPM_BUILD_ROOT%{_bindir}/psub
 # Moab wrappers.
 #
 install -D -m755 wrappers/canceljob.pl $RPM_BUILD_ROOT%{_bindir}/canceljob
+install -D -m755 wrappers/checkjob.pl $RPM_BUILD_ROOT%{_bindir}/checkjob
 install -D -m755 wrappers/checknode.pl $RPM_BUILD_ROOT%{_bindir}/checknode
 install -D -m755 wrappers/mdiag.pl $RPM_BUILD_ROOT%{_bindir}/mdiag
 install -D -m755 wrappers/mjobctl.pl $RPM_BUILD_ROOT%{_bindir}/mjobctl
@@ -123,9 +124,10 @@ done
 # Do Moab man pages.
 #
 # No man pages for:
-#	mshow releasehold sethold
 #
-for cmd in canceljob checknode mdiag mjobctl mshow msub showbf showq showres showstart showstate; do
+#	releasehold sethold
+#
+for cmd in canceljob checkjob checknode mdiag mjobctl mshow msub showbf showq showres showstart showstate; do
     $RPM_BUILD_ROOT%{_bindir}/${cmd} --roff > $RPM_BUILD_ROOT%{_mandir}/man1/${cmd}.1
 done
 chmod 644 $RPM_BUILD_ROOT%{_mandir}/man1/*.1
