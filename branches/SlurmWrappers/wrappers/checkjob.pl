@@ -13,6 +13,22 @@ use strict;
 use Getopt::Long;
 use autouse 'Pod::Usage' => qw(pod2usage);
 
+
+BEGIN {
+#
+#	Just dump the man page in *roff format and exit if --roff specified.
+#
+	foreach my $arg (@ARGV) {
+		last if ($arg eq "--");
+		if ($arg eq "--roff") {
+			use Pod::Man;
+			my $parser = Pod::Man->new (section => 1);
+			$parser->parse_from_file($0, \*STDOUT);
+			exit 0;
+		}
+	}
+}
+
 Main:
 	my ($jid,
 	    @jid,
