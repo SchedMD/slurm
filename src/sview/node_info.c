@@ -607,8 +607,8 @@ extern int get_new_info_node(node_info_msg_t **info_ptr, int force)
 	}
 	last = now;
 
-	if(working_sview_config.show_hidden)
-		show_flags |= SHOW_ALL;
+	//if(working_sview_config.show_hidden)
+	show_flags |= SHOW_ALL;
 	if (g_node_info_ptr) {
 		if(show_flags != last_flags)
 			g_node_info_ptr->last_update = 0;
