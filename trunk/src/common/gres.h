@@ -56,6 +56,7 @@ typedef struct gres_slurmd_conf {
 
 	/* Device file associated with this configuration record */
 	char *file;
+	uint8_t has_file;	/* non-zero if file is set, flag for RPC */
 
 	/* Name of this gres type */
 	char *name;
@@ -78,7 +79,7 @@ typedef struct gres_node_state {
 
 	/* Resources currently allocated to jobs */
 	uint32_t  gres_cnt_alloc;
-	bitstr_t *gres_bit_alloc;
+	bitstr_t *gres_bit_alloc;	/* If gres.conf contains File spec */
 
 	/* Topology specific information (if gres.conf contains CPUs spec) */
 	uint16_t topo_cnt;
