@@ -4516,6 +4516,7 @@ static void _list_delete_job(void *job_entry)
 	xfree(job_ptr->alloc_node);
 	xfree(job_ptr->comment);
 	xfree(job_ptr->gres);
+	FREE_NULL_LIST(job_ptr->gres_list);
 	xfree(job_ptr->licenses);
 	if (job_ptr->license_list)
 		list_destroy(job_ptr->license_list);

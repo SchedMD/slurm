@@ -371,7 +371,8 @@ static void _list_delete_config (void *config_entry)
 
 	xassert(config_ptr);
 	xassert(config_ptr->magic == CONFIG_MAGIC);
-	xfree (config_ptr->feature);
+	xfree(config_ptr->feature);
+	xfree(config_ptr->gres);
 	build_config_feature_list(config_ptr);
 	xfree (config_ptr->nodes);
 	FREE_NULL_BITMAP (config_ptr->node_bitmap);
