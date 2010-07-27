@@ -19,7 +19,7 @@
 #
 # For debugging.
 #
-use lib "/var/opt/slurm_banana/lib64/perl5/site_perl/5.8.8/x86_64-linux-thread-multi/";
+#use lib "/var/opt/slurm_banana/lib64/perl5/site_perl/5.8.8/x86_64-linux-thread-multi/";
 
 #
 # For generating man pages.

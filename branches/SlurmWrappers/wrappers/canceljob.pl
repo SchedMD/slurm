@@ -33,23 +33,27 @@ BEGIN {
 #
 # Define the options variables.
 #
-my ($help, $jobid, $man, $verbose);
+my ($help, @joblist, $man, $worststatus, $verbose);
 
 #
 # Get input from user.
 #
 GetOpts();
 
-my $result = `scancel -v $jobid 2>&1`;
-my $status = $?;
+foreach my $jobid (@joblist) {
+	my $result = `scancel -v $jobid 2>&1`;
+	my $status = $?;
 
-if ($result =~ /Terminating/) {
-	printf("\njob '$jobid' cancelled\n");
-} else {
-	printf("ERROR:  invalid job specified ($jobid)\n\n");
+	if ($result =~ /Terminating/) {
+		printf("\njob '$jobid' cancelled\n");
+	} else {
+		printf("ERROR:  invalid job specified ($jobid)\n\n");
+	}
+	$worststatus = $status if ($status != 0);
 }
+printf("\n");
 
-exit($status);
+exit($worststatus);
 
 
 #
@@ -97,9 +101,12 @@ sub GetOpts
 #
 #	Make sure we have a job id.
 #
-	if (!($jobid = shift(@ARGV)) || !isnumber($jobid)) {
-		printf("\n Job Id needed.\n\n"); 
-		pod2usage(2);
+	while (my $arg = shift(@ARGV)) {
+		if (!isnumber($arg)) {
+			printf("\n Job Id needed.\n\n"); 
+			pod2usage(2);
+		}
+		push @joblist, $arg;
 	}
 
 	return;

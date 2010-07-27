@@ -42,10 +42,10 @@ my @slurmArgs;
 my @SAVEDARGV = @ARGV;
 
 my (
-	$activationTime,  $bankName,         $bglAttributes,
+	$startTime, 	  $bankName,         $bglAttributes,
 	$creds,           $cpuLimit,         $command,
 	$coreLimit,       $dataLimit,        $dependencyJobId,
-	$dm,              $errorFile,        $exemptionList,
+	$dm,              $errorFile,        $exempt,
 	$expedite,        $featureList,      $fileSizeLimit,
 	$fileSpaceLimit,  $flushError,       $flushOutput,
 	$geometry,        $help,             $jobName,
@@ -55,7 +55,7 @@ my (
 	$networkProtocol, $networkType,      $noBulkXfer,
 	$noKill,          $nodeDistribution, $nonCheckpointable,
 	$nonRestartable,  $openFilesLimit,   $outputFile,
-	$poolList,        $priority,         $procsPerNode,
+	$poolList,        $priority,   	     $procsPerNode,
 	$projectName,     $requiredMemory,   $scriptFile,
 	$scriptArgs,      $shellPath,        $signal,
 	$stackLimit,      $standby,          $taskCpuLimit,
@@ -238,11 +238,11 @@ my ($outputFileName, @outputFileRedirects, $errorFileName, @errorFileRedirects);
 # extesnionElement uses, which is now needed.
 #
 
-if ($activationTime) {
-	my $epoch_time = `LCRM_date2epoch "$activationTime"`;
+if ($startTime) {
+	my $epoch_time = `LCRM_date2epoch "$startTime"`;
 	chomp $epoch_time;
 	if ($epoch_time == 0) {
-		die("Invalid time specification ($activationTime).\n");
+		die("Invalid time specification ($startTime).\n");
 	}
 	if ($sversion >= 2.2) {
 		push @slurmArgs, "--begin=uts$epoch_time";
@@ -269,12 +269,16 @@ if ($dependencyJobId) {
 	push @slurmArgs, "--dependency=$dependencyJobId";
 }
 
-if (defined $exemptionList) {
-# don't know yet.
+if ($standby) {
+	push @slurmArgs, "--qos=standby";
+}
+
+if ($exempt) {
+	push @slurmArgs, "--qos=exempt";
 }
 
 if ($expedite) {
-# don't know yet.
+	push @slurmArgs, "--qos=expedite";
 }
 
 if ($coreLimit) {
@@ -456,9 +460,6 @@ if ($shellPath) {
 	NoOptionSupport("-s");
 }
 
-if ($standby) {
-	NoOptionSupport("-standby");
-}
 
 if ($wallclockLimit || $taskCpuLimit) {
 	my $lim = $wallclockLimit ? $wallclockLimit : $taskCpuLimit;
@@ -550,7 +551,7 @@ if (%environment) {
 if ($os eq "AIX") {
 
 #
-# Last minute things for passing info using --slurm option.
+#	Last minute things for passing info using --slurm option.
 #
 	my $nstring = "--network=";
 
@@ -591,7 +592,6 @@ if ($os eq "AIX") {
 	if (defined $nstring) {      
 		push @slurmArgs, $nstring;
 	}
-	
 }
 
 
@@ -640,7 +640,7 @@ sub getopt
 	@ARGV = @_;
 
 	return GetOptions(
-		'A=s'        => \$activationTime,
+		'A=s'        => \$startTime,
 		'b=s'        => \$bankName,
 		'bgl=s'      => \$bglAttributes,
 		'c=s'        => \$featureList,
@@ -650,7 +650,7 @@ sub getopt
 		'dm'         => \$dm,
 		'e=s'        => \$errorFile,
 		'eo'         => \$mergeError,
-		'exempt:s'   => \$exemptionList,
+		'exempt'     => \$exempt,
 		'expedite'   => \$expedite,
 		'g=s'        => \$geometry,
 		'help|?|H'   => \$help,
@@ -694,8 +694,14 @@ sub getopt
 		'wckey=s'    => \$wcKey,
 		'x'          => \$export,
 	);
+
+	return;
 }
 
+
+#
+# Take a epoch time and convert it into SLURM format.
+#
 sub fixtime
 {
 	my ($epoch_time) = @_;
@@ -781,7 +787,8 @@ sub NoOptionSupport
 }
 
 
-# Target SYNOPSIS B<psub> [B<-A> I<date_time>] [B<-b> I<bank_name>] [B<-bgl> I<attributes>] [B<-c> I<constraints>] [B<-d> I<job_id>] [B<-e> I<file_name>] [B<-eo>] [B<-exempt> I<exemption_list>] [B<-expedite>] [B<-g> [I<tasks>][I<switch>][I<@layout>]] [B<-lc> I<limit>] [B<-ld> I<limit>] [B<-lF> I<limit>] [B<-lf> I<limit>] [B<-lM> I<jsize>] [B<-ln> I<node_count_range>] [B<-lo> I<limit>] [B<-lr> I<limit>] [B<-ls> I<limit>] [B<-lt> I<limit>] [B<-mb>] [B<-me>] [B<-mn>] [B<-nettype> I<network_type>] [B<-nobulkxfer>] [B<-nokill>] [B<-np> I<cpus_per_node>] [B<-o> I<file_name>] [B<-p> I<priority>] [B<-pool> I<pool_name>] [B<-prj> I<project_name>] [B<-r> I<job_name>] [B<-s> I<shell_name>] [B<-standby>] [B<-tM> I<time>] [B<-tW> I<time>] [B<-v>] [B<-wckey> I<wckey_name>] [B<-x>] [B<-H, -?, --help>] [B<--man>] [B<-i> <command> | {F<job_command_file> [I<session_args>]}]
+# Target SYNOPSIS B<psub> [B<-A> I<date_time>] [B<-b> I<bank_name>] [B<-bgl> I<attributes>] [B<-c> I<constraints>] [B<-d> I<job_id>] [B<-e> I<file_name>] [B<-eo>] [B<-exempt>] [B<-expedite>] [B<-g> [I<tasks>][I<switch>][I<@layout>]] [B<-lc> I<limit>] [B<-ld> I<limit>] [B<-lF> I<limit>] [B<-lf> I<limit>] [B<-lM> I<jsize>] [B<-ln> I<node_count_range>] [B<-lo> I<limit>] [B<-lr> I<limit>] [B<-ls> I<limit>] [B<-lt> I<limit>] [B<-mb>] [B<-me>] [B<-mn>] [B<-nettype> I<network_type>] [B<-nobulkxfer>] [B<-nokill>] [B<-np> I<cpus_per_node>] [B<-o> I<file_name>] [B<-p> I<priority>] [B<-pool> I<pool_name>] [B<-prj> I<project_name>] [B<-r> I<job_name>] [B<-s> I<shell_name>] [B<-standby>] [B<-tM> I<time>] [B<-tW> I<time>] [B<-v>] [B<-wckey> I<wckey_name>] [B<-x>] [B<-H, -?, --help>] [B<--man>] [B<-i> <command> | {F<job_command_file> [I<session_args>]}]
+
 
 ##############################################################################
 
@@ -793,7 +800,7 @@ B<psub> - submits jobs in a familiar lcrm format
 
 =head1 SYNOPSIS
 
-B<psub> [B<-A> I<date_time>] [B<-b> I<bank_name>] [B<-c> I<constraints>] [B<-d> I<job_id>] [B<-e> I<file_name>] [B<-eo>] [B<-exempt> I<exemption_list>] [B<-expedite>] [B<-ln> I<node_count_range>] [B<-mb>] [B<-me>] [B<-mn>] [B<-nettype> I<network_type>] [B<-nokill>] [B<-np> I<cpus_per_node>] [B<-o> I<file_name>] [B<-pool> I<pool_name>] [B<-prj> I<project_name>] [B<-r> I<job_name>] [B<-S> I<signal>[@I<remaining_time>]] [B<-standby>] [B<-tW> I<time>] [B<-v>] [B<-wckey> I<wckey_name>] [B<-x>] [B<-H, -?, --help>] [B<--man>] [B<-i> <command> | {F<job_command_file> [I<session_args>]}]
+B<psub> [B<-A> I<date_time>] [B<-b> I<bank_name>] [B<-c> I<constraints>] [B<-d> I<job_id>] [B<-e> I<file_name>] [B<-eo>] [B<-exempt>] [B<-expedite>] [B<-ln> I<node_count_range>] [B<-mb>] [B<-me>] [B<-mn>] [B<-nettype> I<network_type>] [B<-nokill>] [B<-np> I<cpus_per_node>] [B<-o> I<file_name>] [B<-pool> I<pool_name>] [B<-prj> I<project_name>] [B<-r> I<job_name>] [B<-S> I<signal>[@I<remaining_time>]] [B<-standby>] [B<-tW> I<time>] [B<-v>] [B<-wckey> I<wckey_name>] [B<-x>] [B<-H, -?, --help>] [B<--man>] [B<-i> <command> | {F<job_command_file> [I<session_args>]}]
 
 =head1 DESCRIPTION
 
@@ -867,9 +874,9 @@ Specifies the name of file to which standard error will be directed.
 
 Merge stderr with the stdout file.  This option may not be used in conjunction with the B<-e> I<error_file> option.
 
-=item B<-exempt> I<exemption_list>
+=item B<-exempt>
 
-Makes the job exempt from specified limits or policies. The I<exemption_list> is a comma-separated list of any of the following exemptions:
+Makes the job exempt from specified limits.
 
 =over 4
 

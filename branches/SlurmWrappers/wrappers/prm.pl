@@ -10,7 +10,7 @@
 #
 # For debugging.
 #
-use lib "/var/opt/slurm_banana/lib64/perl5/site_perl/5.8.8/x86_64-linux-thread-multi/";
+#use lib "/var/opt/slurm_banana/lib64/perl5/site_perl/5.8.8/x86_64-linux-thread-multi/";
 my $debug=0;
 
 BEGIN {
@@ -27,18 +27,15 @@ BEGIN {
     }
 }
 
-
-use strict;
 use Getopt::Long 2.24 qw(:config no_ignore_case);
 use Time::Local;
 use autouse 'Pod::Usage' => qw(pod2usage);
 use Slurm ':all';
 
-
 my ($cmd, $rc, $output);
 
 my (
-	$activationTime, $bankName,   $force,    $graceTime,
+	$startTime, 	$bankName,   $force,    $graceTime,
 	$help,           $machine,    $man,      $message,
 	$jobList,        $terminated, $userName, $verbose
 );
@@ -47,16 +44,9 @@ my $hst = `scontrol show config | grep ClusterName`;
 my ($host) = ($hst =~ m/ = (\S+)/);
 
 #
-# Slurm Version.
-#
-chomp(my $soutput = `sinfo --version`);
-my ($sversion) = ($soutput =~ m/slurm (\d+\.\d+)/);
-
-#
 # Get options.
 #
 GetOpts();
-
 
 $graceTime = seconds($graceTime) if ($graceTime);
 
@@ -85,7 +75,7 @@ foreach my $jobs (@{$tmp->{job_array}}) {
 	$user    = getpwuid($jobs->{user_id});
 	$account = $jobs->{account} || "N/A";
 	$state   = Slurm::job_state_string($jobs->{job_state}) || 'N/A';
-	next if ($state eq "CANCELLED");
+	next if ($state eq "CANCELLED" || $state eq "TIMEOUT");
 
 	$start   = $jobs->{start_time};
 	$allocPartition = $host;
@@ -145,10 +135,14 @@ printf("No jobs were deleted.\n") unless $deleteCount;
 #
 exit($worstRc);
 
+
+#
+# Get user options.
+#
 sub GetOpts
 {
 	GetOptions(
-		'A'        => \$activationTime,
+		'A'        => \$startTime,
 		'b=s'      => \$bankName,
 		'f'        => \$force,
 		'gt=s'     => \$graceTime,
@@ -208,7 +202,7 @@ sub GetOpts
 #	Fail on unsupported options
 #
 	notSupported("-T") if $terminated;
-	notSupported("-A <date time>") if $activationTime;
+	notSupported("-A <date time>") if $startTime;
 	notSupported("-m <host>") if $machine;
 
 	return;

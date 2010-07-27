@@ -121,6 +121,7 @@ foreach my $jobs (@{$tmp->{job_array}}) {
 #
 exit($worstRc);
 
+
 #
 # $boolean = confirm()
 # Confirm the job release with y[es] or n[o]

@@ -183,7 +183,7 @@ foreach my $tmp (@{$resp->{job_array}}) {
 	}
 }
 
-die("Job ID $jobId not found\n") if (!$job);
+die("Job $jobId not found\n") if (!$job);
 
 #
 # Require confirmation unless force option specified

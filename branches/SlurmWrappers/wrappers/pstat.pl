@@ -10,7 +10,7 @@
 #
 # For debugging.
 #
-use lib "/var/opt/slurm_banana/lib64/perl5/site_perl/5.8.8/x86_64-linux-thread-multi/";
+#use lib "/var/opt/slurm_banana/lib64/perl5/site_perl/5.8.8/x86_64-linux-thread-multi/";
 
 BEGIN {
 #
@@ -90,7 +90,7 @@ my $spectable = {
 # Parse Command Line Arguments
 #
 my (
-	$all,          $bank,      $constraintList, $delayed,
+	$all,          $bank,      $constraints, $delayed,
 	$full,         $help,      $jobList,        $long,
 	$man,          $multiple,  $noHeader,       $outputFormat,
 	$running,      $sortOrder, $terminated,     $userName,
@@ -120,13 +120,13 @@ GetOptions(
 	'A'          => \$all,
 	'a'          => \$all,
 	'b=s'        => \$bank,
-	'c=s'        => \$constraintList,
+	'c=s'        => \$constraints,
 	'D'          => \$delayed,
 	'f'          => \$full,
 	'noheader|H' => \$noHeader,
 	'help|h|?'   => \$help,
 	'L'          => \$long,
-	'm=s'        => \$constraintList,
+	'm=s'        => \$constraints,
 	'man'        => \$man,
 	'M'          => \$multiple,
 	'n=s'        => \$jobList,
@@ -257,7 +257,7 @@ if (!defined $sortOrder) {
 # Build command
 #
 
-#### new code ###
+#### new code for SLURM stuff ###
 
 my $Now = time();
 
@@ -270,7 +270,7 @@ my ($host) = ($tmp =~ m/ = (\S+)/);
 my $jobs = Slurm->load_jobs();
 unless($jobs) {
 	my $errmsg = Slurm->strerror();
-	print "Error loading nodes: $errmsg";
+	print "Error loading jobs: $errmsg";
 }
 
 #
@@ -291,7 +291,6 @@ foreach my $job (@{$jobs->{job_array}}) {
 		  $state eq "FAILED") || 
 		  $state eq "CANCELLED" ||
 		  $state eq "TIMEOUT" && !$terminated);
-#	next if (($job->{job_state} & $mask) == $mask);	# Skip jobs that are in completing state.
 	my $hold            = 'N/A';
 	my $allocPartition  = $host;
 	my $reqPartition    = $host;
@@ -317,39 +316,38 @@ foreach my $job (@{$jobs->{job_array}}) {
 	my $aWDuration      = ($Now - $job->{start_time}) if ($state ne "PENDING");;
 	my $cpuLimit        = $job->{time_limit};
 	my $sid             = $job->{alloc_sid} || "???";
-
 #
 #	Prepare variables
 #
-	my $stateWord = stateWord($state, $reason);
+	my $finalState = finalState($state, $reason);
 
 #
-#	If the earliest start time is defined, rewrite stateWord.
+#	If the earliest start time is defined, rewrite finalState.
 #
-#	if (exists $job->{'ReqSMinTime'} && $stateWord !~ /RUN/) {
+#	if (exists $job->{'ReqSMinTime'} && $finalState !~ /RUN/) {
 #		my $now = time();
-#		if ($job->{'ReqSMinTime'} > $now) { $stateWord = "*WAIT"; }
+#		if ($job->{'ReqSMinTime'} > $now) { $finalState = "*WAIT"; }
 #	}
 
 #
-# Remove quotes from jobName.
+#	Remove quotes from jobName.
 #
 	$jobName =~ s/\"//g;
 
 #
-# if the Hold is defined, rewrite stateWord.
+# if the Hold is defined, rewrite finalState.
 #
 #	if (exists $job->{'Hold'}) {
 #		if ($hold eq "User") {
-#			$stateWord = "*HELDu";
+#			$finalState = "*HELDu";
 #		} else {
-#			$stateWord = "*HELDs";
+#			$finalState = "*HELDs";
 #		}
 #	}
 
 #
-# The job class. 'D' means delayed, 'E' means exempted,
-# 'N' means normal, 'S' means standby, 'X' means expedited.
+#	The job class. 'D' means delayed, 'E' means exempted,
+#	'N' means normal, 'S' means standby, 'X' means expedited.
 #
 	my $status = "N";
 	if (defined $qosReq) {
@@ -358,17 +356,17 @@ foreach my $job (@{$jobs->{job_array}}) {
 		$status = "X" if $qosReq eq "expedite";
 	}
 	my $exeHost = "???";
-	if ($stateWord =~ /RUN/ && defined $allocPartition) {
+	if ($finalState =~ /RUN/ && defined $allocPartition) {
 		$exeHost = $allocPartition;
 	} elsif (defined $reqPartition) {
 		$exeHost = $reqPartition;
 	}
 	my $agingTime = $submissionTime;
-	if ($stateWord =~ /ELIG|IDLE/ && defined $systemQueueTime) {
+	if ($finalState =~ /ELIG|IDLE/ && defined $systemQueueTime) {
 		$agingTime = $systemQueueTime;
-	} elsif ($stateWord =~ /RUN/ && defined $startTime) {
+	} elsif ($finalState =~ /RUN/ && defined $startTime) {
 		$agingTime = $startTime;
-	} elsif ($stateWord =~ /COMPLETE|REMOVED/ && defined $systemQueueTime) {
+	} elsif ($finalState =~ /COMPLETE|REMOVED/ && defined $systemQueueTime) {
 		$agingTime = $completionTime;
 	}
 #
@@ -398,21 +396,21 @@ foreach my $job (@{$jobs->{job_array}}) {
 #
 	if ($bank)     { next unless $account eq $bank; }
 	if ($userName) { next unless $user    eq $userName; }
-	if ($constraintList) {
+	if ($constraints) {
 		my $matchConstraint = 0;
-	        foreach my $constraint (split /,/, $constraintList) {
+	        foreach my $constraint (split /,/, $constraints) {
 			$matchConstraint = 1 if grep { $constraint eq $_ } @eff_features;
 		}
 		next unless $matchConstraint;
 	}
 	if ($delayed) { next unless $status eq "D"; }
-	if ($running) { next unless $stateWord =~ /RUN/; }
+	if ($running) { next unless $finalState =~ /RUN/; }
 	if ($jobList) {
 		next unless grep { $_ eq $jobId } split(/,/, $jobList);
 	}
 	if (   ! $all
 	    && ! $bank
-	    && ! $constraintList
+	    && ! $constraints
 	    && ! $delayed
 	    && ! $jobList
 	    && ! $running
@@ -423,14 +421,14 @@ foreach my $job (@{$jobs->{job_array}}) {
 	}
 
 #
-# Rewrite stateWord if job is dependent on another job.
+#	Rewrite finalState if job is dependent on another job.
 #
 	if ($dependency ne "none") {
-		$stateWord = "*DEPEND";
+		$finalState = "*DEPEND";
 	}
 
 #
-# Full output
+#	Full output
 #
 	if ($full) {
 #
@@ -458,10 +456,9 @@ foreach my $job (@{$jobs->{job_array}}) {
 			printf( "  executing host:                 N/A  job status:                      DELAYED\n");
 		} else {
 			printf("  executing host: %19s  job status:           %18s\n",
-				$exeHost, $stateWord);
+				$exeHost, $finalState);
 		}
-		printf(
-			"  expedited:        %17s  standby:               %17s\n",
+		printf("  expedited:        %17s  standby:               %17s\n",
 			$status eq "X" ? "yes" : "no",
 			$status eq "S" ? "yes" : "no");
 		printf("  priority:         %17s  suspended by:          %17s\n",
@@ -497,7 +494,7 @@ foreach my $job (@{$jobs->{job_array}}) {
        			hRTime($submissionTime),
 			$reqSMinTime ? hRTime($reqSMinTime) : "N/A");
 		printf("  must stop at:   %19s", "N/A");
-		if ($stateWord eq "REMOVED" || $stateWord eq "COMPLETE") {
+		if ($finalState eq "REMOVED" || $finalState eq "COMPLETE") {
 			printf("  terminated at:       %19s\n", hRTime($completionTime));
 		} else {
 			printf("  estimated completion:%19s\n", "N/A");
@@ -541,7 +538,7 @@ foreach my $job (@{$jobs->{job_array}}) {
 		$value->{'pool'} = $class if $class;
 		$value->{'priority'} = $startPriority if $startPriority;
 		$value->{'runtime'} = hhmm($aWDuration) if $aWDuration;
-		$value->{'status'} = $stateWord;
+		$value->{'status'} = $finalState;
 		$value->{'submitted'} = hRTime($submissionTime);
 		if ($reqAWDuration && $aWDuration) {
 			$value->{'timeleft'} =
@@ -557,7 +554,7 @@ foreach my $job (@{$jobs->{job_array}}) {
 
 if (!$full) {
 #
-# first print the header
+#	first print the header
 #
 	if (!$noHeader) {
 		my $format;
@@ -575,13 +572,13 @@ if (!$full) {
 	}
 
 #
-# Then sort the @all_jobs job info
+#	Then sort the @all_jobs job info
 #
 	my $spec = 'jid';
 	my @sorted = sort job_cmp @all_jobs;
 
 #
-# Finally, print out the job lines
+#	Finally, print out the job lines
 #
 	foreach my $job (@sorted) {
 		my $format;
@@ -600,7 +597,7 @@ if (!$full) {
 			$line .= sprintf "$format", $value;
 			$line .= " ";
 		}
-		$line =~ s/\s+$//;	# Remove trailing whitespace
+		$line =~ s/\s+$//;
 		print "$line\n";
 	}
 }
@@ -610,10 +607,10 @@ if (!$full) {
 #
 exit(0);
 
-################################################################################
+#
 # $speckey = abbreviation($hashptr, $abbrev)
 # Determines if a abbrev is a unique abbreviation of a key in the hashtable
-################################################################################
+#
 sub abbreviation
 {
 	my ($hashptr, $abbrev) = @_;
@@ -626,17 +623,16 @@ sub abbreviation
 			$matches++;
 		}
 	}
-	if ($matches > 1) {
-		logDie("\"$abbrev\" is a non-unique abbreviation.\n");
-	}
+
+	Die("\"$abbrev\" is a non-unique abbreviation.\n") if ($matches > 1);
 
 	return($match);
 }
 
-################################################################################
+#
 # $dateTime = hRTime($epochTime)
 # Converts an epoch time to human readable time
-################################################################################
+#
 sub hRTime
 {
 	my ($epochTime) = @_;
@@ -650,14 +646,14 @@ sub hRTime
 		$mon + 1, $mday, ($year + 1900) - 2000,
 		$hour, $min, $sec);
 
-	return $hRTime;
+	return($hRTime);
 }
 
-################################################################################
+#
 # $hhmmss = hhmm($hhmmss)
 # Converts a duration in hh:mm:ss to hh:mm
 #   OR in form XXXdays to hh:mm
-################################################################################
+#
 sub hhmm
 {
 	my ($hhmmss) = @_;
@@ -696,53 +692,52 @@ sub hhmm
 	return($hhmm);
 }
 
-################################################################################
-# $stateWord = stateWord($state)
-# Converts a moab state into an lcrm state word
-################################################################################
-sub stateWord
+#
+# $finalState = finalState($state)
+# Converts a SLURM state into an lcrm state.
+#
+sub finalState
 {
 	my ($state, $reason) = @_;
 
-	my $stateWord;
-	if    ($state =~ /Cancelled|Removed|Vacated/) { $stateWord = ' REMOVED'; }
-	elsif ($state =~ /COMPLETED/)                 { $stateWord = ' COMPLETE'; }
-	elsif ($state =~ /RUNNING/)     	      { $stateWord = ' RUN'; }
+	my $finalState;
+	if    ($state =~ /Cancelled|Removed|Vacated/) { $finalState = ' REMOVED'; }
+	elsif ($state =~ /COMPLETED/)                 { $finalState = ' COMPLETE'; }
+	elsif ($state =~ /RUNNING/)     	      { $finalState = ' RUN'; }
 	elsif ($state =~ /PENDING/)  {
 		if ($reason =~ /None/) {
-		 	$stateWord = '*ELIG'; 
+		 	$finalState = '*ELIG'; 
 		} else {
-			$stateWord = '*' . uc($reason); 
+			$finalState = '*' . uc($reason); 
 		}
 	}
-	elsif ($state =~ /SUSPENDED/)                 { $stateWord = ' SUSPENDED'; }
-	else { $stateWord = $state; }
+	elsif ($state =~ /SUSPENDED/)                 { $finalState = ' SUSPENDED'; }
+	else { $finalState = $state; }
 
-	$stateWord = "*DEPEND"  if ($reason =~ /Depend/);
-	$stateWord = "*HELDu"   if ($reason =~ /JobHeldUser/);
-	$stateWord = "*HELDs"   if ($reason =~ /JobHeldAdmin/);
-	$stateWord = "*TooLong" if ($reason =~ /PartitionTimeLimit/);
-	$stateWord = "*Wait"    if ($reason =~ /BeginTime/);
+	$finalState = "*DEPEND"  if ($reason =~ /Depend/);
+	$finalState = "*HELDu"   if ($reason =~ /JobHeldUser/);
+	$finalState = "*HELDs"   if ($reason =~ /JobHeldAdmin/);
+	$finalState = "*TooLong" if ($reason =~ /PartitionTimeLimit/);
+	$finalState = "*Wait"    if ($reason =~ /BeginTime/);
 
-
-	return($stateWord);
+	return($finalState);
 }
 
 
-################################################################################
+#
 # [-1,0,1] = job_cmp($a, $b)
 # Compare two jobs based on the global @sort_order, and return less than
 # equal to, or greater than zero, as suitable for the perl "sort" builtin.
-################################################################################
+#
 sub job_cmp
 {
 	my $rc = 0;
 	my $vala = '';
 	my $valb = '';
 
-	foreach my $foo (@sort_order) {
-		my $ascending = $foo->[0];
-		my $spec = $foo->[1];
+	foreach my $tmp (@sort_order) {
+		my $ascending = $tmp->[0];
+		my $spec = $tmp->[1];
 
 		if (exists $a->{$spec}) {
 			$vala = $a->{$spec};

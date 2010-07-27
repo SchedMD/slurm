@@ -9,7 +9,6 @@
 #
 # For debugging.
 #
-#use lib "/var/opt/slurm_banana/lib64/perl5/site_perl/5.8.8/x86_64-linux-thread-multi/";
 my $debug=0;
 
 use Getopt::Long 2.24 qw(:config no_ignore_case);

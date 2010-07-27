@@ -258,7 +258,7 @@ if ($procs) {
 }
 
 if ($qos) {
-	# not defined yet.
+	 push @slurmArgs, "--qos=$qos";
 }
 
 if ($resfail) {
