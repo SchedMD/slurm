@@ -89,16 +89,15 @@ typedef struct slurm_gres_ops {
 /* Gres plugin context, one for each gres type */
 typedef struct slurm_gres_context {
 	plugin_handle_t	cur_plugin;
-	int		gres_errno;
-	uint32_t	gres_id;
-	char *		gres_name;
-	char *		gres_name_colon;
-	int		gres_name_colon_len;
-	char *		gres_type;
-	slurm_gres_ops_t ops;
-	uint32_t	plugin_id;
-	plugrack_t	plugin_list;
-	bool		unpacked_info;
+	char *		gres_name;		/* name (e.g. "gpu") */
+	char *		gres_name_colon;	/* name + colon (e.g. "gpu:") */
+	int		gres_name_colon_len;	/* size of gres_name_colon */
+	char *		gres_type;		/* plugin name (e.g. "gres/gpu") */
+	bool		has_file;		/* found "File=" in slurm.conf */
+	slurm_gres_ops_t ops;			/* pointers to plugin symbols */
+	uint32_t	plugin_id;		/* key for searches */
+	plugrack_t	plugin_list;		/* plugrack info */
+	bool		unpacked_info;		/* info unpacked */
 } slurm_gres_context_t;
 
 /* Generic gres data structure for adding to a list. Depending upon the
@@ -218,7 +217,6 @@ static int _load_gres_plugin(char *plugin_name,
 	xstrcat(plugin_context->gres_type, plugin_name);
 	plugin_context->plugin_list	= NULL;
 	plugin_context->cur_plugin	= PLUGIN_INVALID_HANDLE;
-	plugin_context->gres_errno 	= SLURM_SUCCESS;
 
 	plugin_context->cur_plugin = plugin_load_and_link(
 					plugin_context->gres_type,
@@ -834,10 +832,23 @@ extern int gres_plugin_node_config_unpack(Buf buffer, char* node_name)
 		safe_unpackstr_xmalloc(&tmp_cpus, &utmp32, buffer);
 		safe_unpackstr_xmalloc(&tmp_name, &utmp32, buffer);
  		for (j=0; j<gres_context_cnt; j++) {
- 			if (gres_context[j].plugin_id == plugin_id) {
-				gres_context[j].unpacked_info = true;
- 				break;
+ 			if (gres_context[j].plugin_id != plugin_id)
+				continue;
+			if (gres_context[j].has_file && !has_file) {
+				error("gres_plugin_node_config_unpack: gres/%s"
+				      " lacks File parameter for node %s",
+				      tmp_name, node_name);
+				has_file = 1;
 			}
+			if (has_file && (count > 1024)) {
+				error("gres_plugin_node_config_unpack: gres/%s"
+				      " has File plus very large Count (%u) "
+				      "for node %s",
+				      tmp_name, count, node_name);
+			}
+			gres_context[j].has_file = has_file;
+			gres_context[j].unpacked_info = true;
+			break;
  		}
 		if (j >= gres_context_cnt) {
 			/* A sign that GresPlugins is inconsistently
@@ -1609,7 +1620,8 @@ static void *_node_state_dup(void *gres_data)
 	new_gres->gres_cnt_config = gres_ptr->gres_cnt_config;
 	new_gres->gres_cnt_avail  = gres_ptr->gres_cnt_avail;
 	new_gres->gres_cnt_alloc  = gres_ptr->gres_cnt_alloc;
-	new_gres->gres_bit_alloc  = bit_copy(gres_ptr->gres_bit_alloc);
+	if (gres_ptr->gres_bit_alloc)
+		new_gres->gres_bit_alloc = bit_copy(gres_ptr->gres_bit_alloc);
 
 	new_gres->topo_cnt        = gres_ptr->topo_cnt;
 	new_gres->cpus_bitmap     = xmalloc(gres_ptr->topo_cnt *
