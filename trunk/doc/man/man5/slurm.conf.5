@@ -2357,10 +2357,11 @@ root to execute jobs).
 .TP
 \fBHidden\fR
 Specifies if the partition and its jobs are to be hidden by default.
-Hidden partitions will by default not be reported by the SLURM
-APIs or commands.
+Hidden partitions will by default not be reported by the SLURM APIs or commands.
 Possible values are "YES" and "NO".
 The default value is "NO".
+Note that partitions that a user lacks access to by virtue of the
+\fBAllowGroups\fR parameter will also be hidden by default.
 
 .TP
 \fBMaxNodes\fR
