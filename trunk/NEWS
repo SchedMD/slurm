@@ -407,6 +407,7 @@ documents those changes that are of interest to users and admins.
     and error state.  They all weren't removed correctly in accounting.
  -- Prevent scontrol segv with "scontrol show node <name>" command with nodes
     in a hidden partition.
+ -- Fixed sizing of popup grids in sview.
 
 * Changes in SLURM 2.1.10
 =========================
