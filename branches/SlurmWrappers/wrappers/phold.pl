@@ -3,15 +3,14 @@
 #
 # phold - hold SLURM jobs in an LCRM manner.
 #
-# Author:        Phil Eckert
-# Date:          07/14/2010
+# Modified:	2010-07-27
+# By:		Phil Eckert
 #
 
 #
 # For debugging.
 #
 #use lib "/var/opt/slurm_banana/lib64/perl5/site_perl/5.8.8/x86_64-linux-thread-multi/";
-
 
 BEGIN {
     # Just dump the man page in *roff format and exit if --roff specified.

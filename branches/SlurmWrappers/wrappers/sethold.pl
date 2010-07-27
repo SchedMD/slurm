@@ -4,6 +4,12 @@
 #
 # Author:Phil Eckert
 # Date: 2010-07-20
+# Last Update: 2010-07-27
+#
+# Copyright (C) 2010 Lawrence Livermore National Security.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Philip D. Eckert <eckert2@llnl.gov>
+# CODE-OCEC-09-009. All rights reserved.
 #
 
 #
@@ -13,7 +19,6 @@ my $debug=0;
 
 use Getopt::Long 2.24 qw(:config no_ignore_case);
 use strict;
-
 
 #
 # Define the options variables.

@@ -3,8 +3,8 @@
 #
 # pstat - Show SLURM jobs in LCRM format.
 #
-# Author:        Phil Eckert
-# Date:          07/14/2010
+# Modified:	07/14/2010
+# By:		Phil Eckert
 #
 
 #

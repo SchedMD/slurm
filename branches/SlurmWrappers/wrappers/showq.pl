@@ -11,9 +11,12 @@
 #
 # A future rewrite will undoubtably handle this differently.
 #
-# Author:        Phil Eckert
-# Date:          09/06/2007
-# Last Modified: 07/14/2010	 Port to SLURM
+# Last Update: 2010-07-27
+#
+# Copyright (C) 2010 Lawrence Livermore National Security.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Philip D. Eckert <eckert2@llnl.gov>
+# CODE-OCEC-09-009. All rights reserved.
 #
 
 #

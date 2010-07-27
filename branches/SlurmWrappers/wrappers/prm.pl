@@ -3,8 +3,8 @@
 #
 # prm - cancel slurm jobs in familar lcrm format.
 #
-# Author:        Phil Eckert
-# Date:           07/14/2010
+# Modified:	07/14/2010
+# By:     	Phil Eckert
 #
 
 #

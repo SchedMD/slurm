@@ -1,9 +1,10 @@
 #! /usr/bin/perl -w
+
 #
 # A utility to emulate palter.
 #
-# Author:        Phil Eckert
-# Date:          07/14/2010
+# Modified:	2010-07-27
+# By:		Phil Eckert
 #
 
 #

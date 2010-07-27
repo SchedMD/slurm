@@ -4,6 +4,12 @@
 #
 # Author:Phil Eckert
 # Date: 07/11/2010
+# Last Update: 2010-07-27
+#
+# Copyright (C) 2010 Lawrence Livermore National Security.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Philip D. Eckert <eckert2@llnl.gov>
+# CODE-OCEC-09-009. All rights reserved.
 #
 
 use Getopt::Long 2.24 qw(:config no_ignore_case);
