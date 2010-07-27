@@ -170,6 +170,7 @@ static int	_step_state_validate(char *config, void **gres_data,
 				     slurm_gres_context_t *context_ptr);
 static int	_strcmp(const char *s1, const char *s2);
 static int	_unload_gres_plugin(slurm_gres_context_t *plugin_context);
+static void	_validate_config(slurm_gres_context_t *context_ptr);
 static int	_validate_file(char *path_name, char *gres_name);
 static void	_validate_gres_node_cpus(gres_node_state_t *node_gres_ptr,
 					 int cpus_ctld);
@@ -637,8 +638,10 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 		FREE_NULL_BITMAP(cpu_bitmap);
 	}
 
-	if (s_p_get_string(&p->file, "File", tbl))
+	if (s_p_get_string(&p->file, "File", tbl)) {
 		p->count = _validate_file(p->file, p->name);
+		p->has_file = 1;
+	}
 
 	if (s_p_get_uint32(&tmp_u32, "Count", tbl)) {
 		if (tmp_u32 == 0)
@@ -665,6 +668,35 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 	p->plugin_id = gres_context[i].plugin_id;
 	*dest = (void *)p;
 	return 1;
+}
+
+static void _validate_config(slurm_gres_context_t *context_ptr)
+{
+	ListIterator iter;
+	gres_slurmd_conf_t *gres_slurmd_conf;
+	int has_file = -1, rec_count = 0;
+
+	iter = list_iterator_create(gres_conf_list);
+	if (iter == NULL)
+		fatal("list_iterator_create: malloc failure");
+	while ((gres_slurmd_conf = (gres_slurmd_conf_t *) list_next(iter))) {
+		if (gres_slurmd_conf->plugin_id != context_ptr->plugin_id)
+			continue;
+		rec_count++;
+		if (has_file == -1)
+			has_file = (int) gres_slurmd_conf->has_file;
+		else if (( has_file && !gres_slurmd_conf->has_file) ||
+			 (!has_file &&  gres_slurmd_conf->has_file)) {
+			fatal("gres.conf for %s, some records have File "
+			      "specification while others do not",
+			      context_ptr->gres_name);
+		}
+		if ((has_file == 0) && (rec_count > 1)) {
+			fatal("gres.conf duplicate records for %s",
+			      context_ptr->gres_name);
+		}
+	}
+	list_iterator_destroy(iter);
 }
 
 /*
@@ -708,6 +740,7 @@ extern int gres_plugin_node_config_load(uint32_t cpu_cnt)
 	list_for_each(gres_conf_list, _log_gres_slurmd_conf, NULL);
 
 	for (i=0; ((i < gres_context_cnt) && (rc == SLURM_SUCCESS)); i++) {
+		_validate_config(&gres_context[i]);
 		if (gres_context[i].ops.node_config_load == NULL)
 			continue;	/* No plugin */
 		rc = (*(gres_context[i].ops.node_config_load))(gres_conf_list);
@@ -746,6 +779,7 @@ extern int gres_plugin_node_config_pack(Buf buffer)
 			pack32(magic, buffer);
 			pack32(gres_slurmd_conf->count, buffer);
 			pack32(gres_slurmd_conf->cpu_cnt, buffer);
+			pack8(gres_slurmd_conf->has_file, buffer);
 			pack32(gres_slurmd_conf->plugin_id, buffer);
 			packstr(gres_slurmd_conf->cpus, buffer);
 			packstr(gres_slurmd_conf->name, buffer);
@@ -767,6 +801,7 @@ extern int gres_plugin_node_config_unpack(Buf buffer, char* node_name)
 	int i, j, rc;
 	uint32_t count, cpu_cnt, magic, plugin_id, utmp32;
 	uint16_t rec_cnt, version;
+	uint8_t has_file;
 	char *tmp_cpus, *tmp_name;
 	gres_slurmd_conf_t *p;
 
@@ -794,6 +829,7 @@ extern int gres_plugin_node_config_unpack(Buf buffer, char* node_name)
 			goto unpack_error;
 		safe_unpack32(&count, buffer);
 		safe_unpack32(&cpu_cnt, buffer);
+		safe_unpack8(&has_file, buffer);
 		safe_unpack32(&plugin_id, buffer);
 		safe_unpackstr_xmalloc(&tmp_cpus, &utmp32, buffer);
 		safe_unpackstr_xmalloc(&tmp_name, &utmp32, buffer);
@@ -816,6 +852,7 @@ extern int gres_plugin_node_config_unpack(Buf buffer, char* node_name)
 		p = xmalloc(sizeof(gres_slurmd_conf_t));
 		p->count = count;
 		p->cpu_cnt = cpu_cnt;
+		p->has_file = has_file;
 		p->cpus = tmp_cpus;
 		tmp_cpus = NULL;	/* Nothing left to xfree */
 		xfree(tmp_name);	/* Don't bother to save */
@@ -885,6 +922,8 @@ static uint32_t _get_gres_cnt(char *orig_config, char *gres_name,
 				;
 			else if ((last_num[0] == 'k') || (last_num[0] == 'K'))
 				gres_config_cnt *= 1024;
+			else if ((last_num[0] == 'm') || (last_num[0] == 'M'))
+				gres_config_cnt *= (1024 * 1024);
 			break;
 		}
 		tok = strtok_r(NULL, ",", &last_tok);
