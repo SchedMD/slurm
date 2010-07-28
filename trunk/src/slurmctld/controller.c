@@ -914,10 +914,13 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 	 * Process incoming RPCs until told to shutdown
 	 */
 	while (_wait_for_server_thread()) {
+		int max_fd = -1;
 		FD_ZERO(&rfds);
-		for (i=0; i<nports; i++)
+		for (i=0; i<nports; i++) {
 			FD_SET(sockfd[i], &rfds);
-		if (select(nports, &rfds, NULL, NULL, NULL) == -1) {
+			max_fd = MAX(sockfd[i], max_fd);
+		}
+		if (select(max_fd+1, &rfds, NULL, NULL, NULL) == -1) {
 			if (errno != EINTR)
 				error("slurm_accept_msg_conn select: %m");
 			_free_server_thread();
