@@ -863,6 +863,7 @@ static void _slurm_rpc_dump_jobs(slurm_msg_t * msg)
 
 		/* init response_msg structure */
 		slurm_msg_t_init(&response_msg);
+		response_msg.flags = msg->flags;
 		response_msg.protocol_version = msg->protocol_version;
 		response_msg.address = msg->address;
 		response_msg.msg_type = RESPONSE_JOB_INFO;
@@ -906,6 +907,7 @@ static void _slurm_rpc_dump_job_single(slurm_msg_t * msg)
 		slurm_send_rc_msg(msg, rc);
 	} else {
 		slurm_msg_t_init(&response_msg);
+		response_msg.flags = msg->flags;
 		response_msg.protocol_version = msg->protocol_version;
 		response_msg.address = msg->address;
 		response_msg.msg_type = RESPONSE_JOB_INFO;
@@ -933,6 +935,7 @@ static void  _slurm_rpc_get_shares(slurm_msg_t *msg)
 							  req_msg->acct_list,
 							  req_msg->user_list);
 	slurm_msg_t_init(&response_msg);
+	response_msg.flags = msg->flags;
 	response_msg.protocol_version = msg->protocol_version;
 	response_msg.address  = msg->address;
 	response_msg.msg_type = RESPONSE_SHARE_INFO;
@@ -960,6 +963,7 @@ static void  _slurm_rpc_get_priority_factors(slurm_msg_t *msg)
 	resp_msg.priority_factors_list = priority_g_get_priority_factors_list(
 					 req_msg);
 	slurm_msg_t_init(&response_msg);
+	response_msg.flags = msg->flags;
 	response_msg.protocol_version = msg->protocol_version;
 	response_msg.address  = msg->address;
 	response_msg.msg_type = RESPONSE_PRIORITY_FACTORS;
@@ -997,6 +1001,7 @@ static void _slurm_rpc_end_time(slurm_msg_t * msg)
 		slurm_send_rc_msg(msg, rc);
 	} else {
 		slurm_msg_t_init(&response_msg);
+		response_msg.flags = msg->flags;
 		response_msg.protocol_version = msg->protocol_version;
 		response_msg.address  = msg->address;
 		response_msg.msg_type = SRUN_TIMEOUT;
@@ -1052,6 +1057,7 @@ static void _slurm_rpc_dump_nodes(slurm_msg_t * msg)
 
 		/* init response_msg structure */
 		slurm_msg_t_init(&response_msg);
+		response_msg.flags = msg->flags;
 		response_msg.protocol_version = msg->protocol_version;
 		response_msg.address = msg->address;
 		response_msg.msg_type = RESPONSE_NODE_INFO;
@@ -1104,6 +1110,7 @@ static void _slurm_rpc_dump_partitions(slurm_msg_t * msg)
 
 		/* init response_msg structure */
 		slurm_msg_t_init(&response_msg);
+		response_msg.flags = msg->flags;
 		response_msg.protocol_version = msg->protocol_version;
 		response_msg.address = msg->address;
 		response_msg.msg_type = RESPONSE_PARTITION_INFO;
@@ -1456,6 +1463,7 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 
 		unlock_slurmctld(job_write_lock);
 		slurm_msg_t_init(&resp);
+		resp.flags = msg->flags;
 		resp.address = msg->address;
 		resp.msg_type = RESPONSE_JOB_STEP_CREATE;
 		resp.data = &job_step_resp;
@@ -1520,6 +1528,7 @@ static void _slurm_rpc_job_step_get_info(slurm_msg_t * msg)
 		slurm_msg_t response_msg;
 
 		slurm_msg_t_init(&response_msg);
+		response_msg.flags = msg->flags;
 		response_msg.protocol_version = msg->protocol_version;
 		response_msg.address = msg->address;
 		response_msg.msg_type = RESPONSE_JOB_STEP_INFO;
@@ -1589,6 +1598,7 @@ static void _slurm_rpc_job_will_run(slurm_msg_t * msg)
 		slurm_msg_t response_msg;
 		/* init response_msg structure */
 		slurm_msg_t_init(&response_msg);
+		response_msg.flags = msg->flags;
 		response_msg.protocol_version = msg->protocol_version;
 		response_msg.address = msg->address;
 		response_msg.msg_type = RESPONSE_JOB_WILL_RUN;
@@ -1728,6 +1738,7 @@ static void _slurm_rpc_job_alloc_info(slurm_msg_t * msg)
 		unlock_slurmctld(job_read_lock);
 
 		slurm_msg_t_init(&response_msg);
+		response_msg.flags = msg->flags;
 		response_msg.msg_type    = RESPONSE_JOB_ALLOCATION_INFO;
 		response_msg.data        = &job_info_resp_msg;
 
@@ -1833,6 +1844,7 @@ static void _slurm_rpc_job_alloc_info_lite(slurm_msg_t * msg)
 		unlock_slurmctld(job_read_lock);
 
 		slurm_msg_t_init(&response_msg);
+		response_msg.flags = msg->flags;
 		response_msg.msg_type    = RESPONSE_JOB_ALLOCATION_INFO_LITE;
 		response_msg.data        = &job_info_resp_msg;
 
@@ -1898,6 +1910,7 @@ static void _slurm_rpc_job_sbcast_cred(slurm_msg_t * msg)
 		unlock_slurmctld(job_read_lock);
 
 		slurm_msg_t_init(&response_msg);
+		response_msg.flags = msg->flags;
 		response_msg.msg_type    = RESPONSE_JOB_SBCAST_CRED;
 		response_msg.data        = &job_info_resp_msg;
 
@@ -2230,6 +2243,7 @@ static void _slurm_rpc_step_layout(slurm_msg_t *msg)
 	unlock_slurmctld(job_read_lock);
 
 	slurm_msg_t_init(&response_msg);
+	response_msg.flags = msg->flags;
 	response_msg.protocol_version = msg->protocol_version;
 	response_msg.msg_type    = RESPONSE_STEP_LAYOUT;
 	response_msg.data        = step_layout;
@@ -2283,6 +2297,7 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 		(unsigned int) uid);
 
 	slurm_msg_t_init(&response_msg);
+	response_msg.flags = msg->flags;
 	response_msg.protocol_version = msg->protocol_version;
 
 	/* do RPC call */
@@ -2699,6 +2714,7 @@ static void _slurm_rpc_resv_create(slurm_msg_t * msg)
 			resv_desc_ptr->name, TIME_STR);
 		/* send reservation name */
 		slurm_msg_t_init(&response_msg);
+		response_msg.flags = msg->flags;
 		response_msg.protocol_version = msg->protocol_version;
 		resv_resp_msg.name    = resv_desc_ptr->name;
 		response_msg.msg_type = RESPONSE_CREATE_RESERVATION;
@@ -2844,6 +2860,7 @@ static void _slurm_rpc_resv_show(slurm_msg_t * msg)
 
 		/* init response_msg structure */
 		slurm_msg_t_init(&response_msg);
+		response_msg.flags = msg->flags;
 		response_msg.protocol_version = msg->protocol_version;
 		response_msg.address = msg->address;
 		response_msg.msg_type = RESPONSE_RESERVATION_INFO;
@@ -2931,6 +2948,7 @@ static void _slurm_rpc_job_ready(slurm_msg_t * msg)
 		debug2("_slurm_rpc_job_ready(%u)=%d %s", id_msg->job_id,
 		       result, TIME_STR);
 		slurm_msg_t_init(&response_msg);
+		response_msg.flags = msg->flags;
 		response_msg.protocol_version = msg->protocol_version;
 		response_msg.address = msg->address;
 		response_msg.msg_type = RESPONSE_JOB_READY;
@@ -2979,6 +2997,7 @@ static void  _slurm_rpc_block_info(slurm_msg_t * msg)
 	} else {
 		/* init response_msg structure */
 		slurm_msg_t_init(&response_msg);
+		response_msg.flags = msg->flags;
 		response_msg.protocol_version = msg->protocol_version;
 		response_msg.address = msg->address;
 		response_msg.msg_type = RESPONSE_BLOCK_INFO;
@@ -3466,6 +3485,7 @@ inline static void  _slurm_rpc_trigger_get(slurm_msg_t * msg)
 	END_TIMER2("_slurm_rpc_trigger_get");
 
 	slurm_msg_t_init(&response_msg);
+	response_msg.flags = msg->flags;
 	response_msg.address  = msg->address;
 	response_msg.msg_type = RESPONSE_TRIGGER_GET;
 	response_msg.data     = resp_data;
@@ -3523,6 +3543,7 @@ inline static void  _slurm_rpc_get_topo(slurm_msg_t * msg)
 	END_TIMER2("_slurm_rpc_get_topo");
 
 	slurm_msg_t_init(&response_msg);
+	response_msg.flags = msg->flags;
 	response_msg.protocol_version = msg->protocol_version;
 	response_msg.address  = msg->address;
 	response_msg.msg_type = RESPONSE_TOPO_INFO;
