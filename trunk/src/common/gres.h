@@ -79,11 +79,14 @@ typedef struct gres_node_state {
 
 	/* Resources currently allocated to jobs */
 	uint32_t  gres_cnt_alloc;
-	bitstr_t *gres_bit_alloc;	/* If gres.conf contains File spec */
+	bitstr_t *gres_bit_alloc;	/* If gres.conf contains File field */
 
 	/* Topology specific information (if gres.conf contains CPUs spec) */
 	uint16_t topo_cnt;
 	bitstr_t **cpus_bitmap;
+	bitstr_t **topo_gres_bitmap;
+	uint32_t *topo_gres_cnt_alloc;
+	uint32_t *topo_gres_cnt_avail;
 } gres_node_state_t;
 
 /* Gres job state as used by slurmctld daemon */
@@ -94,11 +97,13 @@ typedef struct gres_job_state {
 	/* Resources currently allocated to job on each node */
 	uint32_t node_cnt;
 	bitstr_t **gres_bit_alloc;
+	uint32_t  *gres_cnt_job_alloc;
 
 	/* Resources currently allocated to job steps on each node.
 	 * This will be a subset of resources allocated to the job.
 	 * gres_bit_step_alloc is a subset of gres_bit_alloc */
 	bitstr_t **gres_bit_step_alloc;
+	uint32_t  *gres_cnt_step_alloc;
 } gres_job_state_t;
 
 /* Gres job step state as used by slurmctld daemon */
@@ -109,6 +114,7 @@ typedef struct gres_step_state {
 	/* Resources currently allocated to the job step on each node */
 	uint32_t node_cnt;
 	bitstr_t **gres_bit_alloc;
+	uint32_t  *gres_cnt_step_alloc;
 } gres_step_state_t;
 
 /*
