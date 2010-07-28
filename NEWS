@@ -19,6 +19,7 @@ documents those changes that are of interest to users and admins.
  -- Prevent scontrol segv with "scontrol show node <name>" command with nodes
     in a hidden partition.
  -- Fixed sizing of popup grids in sview.
+ -- Fixed sacct when querying against a jobid the start time is not set.
 
 * Changes in SLURM 2.1.10
 =========================
