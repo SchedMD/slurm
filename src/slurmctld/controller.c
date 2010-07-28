@@ -917,7 +917,7 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 		FD_ZERO(&rfds);
 		for (i=0; i<nports; i++)
 			FD_SET(sockfd[i], &rfds);
-		if (select(maxsockfd, &rfds, NULL, NULL, NULL) == -1) {
+		if (select(nports, &rfds, NULL, NULL, NULL) == -1) {
 			if (errno != EINTR)
 				error("slurm_accept_msg_conn select: %m");
 			_free_server_thread();
