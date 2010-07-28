@@ -797,7 +797,7 @@ extern int update_state_block(GtkDialog *dialog,
 		snprintf(tmp_char, sizeof(tmp_char),
 			 "Are you sure you want to resume block %s?",
 			 blockid);
-		block_msg.state = RM_PARTITION_READY;
+		block_msg.state = RM_PARTITION_DEALLOCATING;
 	} else {
 		snprintf(tmp_char, sizeof(tmp_char),
 			 "Are you sure you want to put block %s "

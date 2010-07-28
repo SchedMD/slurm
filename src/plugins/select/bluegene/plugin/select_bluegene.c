@@ -858,7 +858,11 @@ extern int select_p_update_block(update_block_msg_t *block_desc_ptr)
 		bg_free_block(bg_record, 0, 1);
 		resume_block(bg_record);
 		slurm_mutex_unlock(&block_state_mutex);
-	} else if(block_desc_ptr->state == RM_PARTITION_READY) {
+	} else if(block_desc_ptr->state == RM_PARTITION_DEALLOCATING) {
+		/* This can't be RM_PARTITION_READY since the enum
+		   changed from BGL to BGP and if we are running cross
+		   cluster it just doesn't work.
+		*/
 		resume_block(bg_record);
 		slurm_mutex_unlock(&block_state_mutex);
 	} else if (bg_conf->layout_mode == LAYOUT_DYNAMIC
