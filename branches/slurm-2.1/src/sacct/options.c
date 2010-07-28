@@ -848,7 +848,6 @@ void parse_command_line(int argc, char **argv)
 					list_create(slurm_destroy_char);
 			slurm_addto_char_list(job_cond->associd_list, optarg);
 			break;
-			
 		case 't':
 		case 'X':
 			params.opt_allocs = 1;
@@ -876,7 +875,7 @@ void parse_command_line(int argc, char **argv)
 	job_cond->duplicates = params.opt_dup;
 	job_cond->without_steps = params.opt_allocs;
 
-	if(!job_cond->usage_start) {
+	if(!job_cond->usage_start && !job_cond->step_list) {
 		job_cond->usage_start = time(NULL);
 		if(!job_cond->state_list) {
 			struct tm start_tm;
