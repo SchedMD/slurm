@@ -50,7 +50,7 @@ print_header $test_id
 # A single slurmd can't handle a large task count without
 # running out of memory and pthreads
 #
-if {[test_front_end] != 0} {
+if {[test_front_end] != 0 || $enable_memory_leak_debug != 0} {
 	set task_cnt 2
 }
 
