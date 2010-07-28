@@ -1521,10 +1521,13 @@ extern int resume_block(bg_record_t *bg_record)
 	if(remove_from_bg_list(bg_lists->job_running, bg_record)
 	   == SLURM_SUCCESS)
 		num_unused_cpus += bg_record->cpu_cnt;
-	remove_from_bg_list(bg_lists->booted, bg_record);
+	if(bg_record->state != RM_PARTITION_READY)
+		remove_from_bg_list(bg_lists->booted, bg_record);
 
 	bg_record->job_running = NO_JOB_RUNNING;
+#ifndef HAVE_BG_FILES
 	bg_record->state = RM_PARTITION_FREE;
+#endif
 	last_bg_update = time(NULL);
 	_set_block_nodes_accounting(bg_record, NULL);
 

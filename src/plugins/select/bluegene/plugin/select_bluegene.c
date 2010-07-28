@@ -858,6 +858,9 @@ extern int select_p_update_block(update_block_msg_t *block_desc_ptr)
 		bg_free_block(bg_record, 0, 1);
 		resume_block(bg_record);
 		slurm_mutex_unlock(&block_state_mutex);
+	} else if(block_desc_ptr->state == RM_PARTITION_READY) {
+		resume_block(bg_record);
+		slurm_mutex_unlock(&block_state_mutex);
 	} else if (bg_conf->layout_mode == LAYOUT_DYNAMIC
 		   && (block_desc_ptr->state == RM_PARTITION_NAV)) {
 		/* This means remove the block from the system.  If

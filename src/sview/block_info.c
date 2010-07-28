@@ -152,6 +152,8 @@ static display_data_t options_data_block[] = {
 	 TRUE, ADMIN_PAGE},
 	{G_TYPE_STRING, BLOCK_PAGE, "Remove block",
 	 TRUE, ADMIN_PAGE},
+	{G_TYPE_STRING, BLOCK_PAGE, "Resume block",
+	 TRUE, ADMIN_PAGE},
 	{G_TYPE_STRING, JOB_PAGE, "Jobs", TRUE, BLOCK_PAGE},
 	{G_TYPE_STRING, PART_PAGE, "Partitions", TRUE, BLOCK_PAGE},
 	{G_TYPE_STRING, NODE_PAGE, "Base Partitions", TRUE, BLOCK_PAGE},
@@ -791,6 +793,11 @@ extern int update_state_block(GtkDialog *dialog,
 			 "Are you sure you want to remove block %s?",
 			 blockid);
 		block_msg.state = RM_PARTITION_NAV;
+	} else if(!strcasecmp("Resume block", type)) {
+		snprintf(tmp_char, sizeof(tmp_char),
+			 "Are you sure you want to resume block %s?",
+			 blockid);
+		block_msg.state = RM_PARTITION_READY;
 	} else {
 		snprintf(tmp_char, sizeof(tmp_char),
 			 "Are you sure you want to put block %s "

@@ -51,6 +51,8 @@ documents those changes that are of interest to users and admins.
  -- BLUEGENE - Added option to scontrol & sview to recreate existing blocks.
  -- Fixed flags for returning messages to use the correct munge key when going
     cross-cluster.
+ -- BLUEGENE - Added option to scontrol & sview to resume blocks in an error
+    state instead of just freeing them.
 
 * Changes in SLURM 2.2.0.pre8
 =============================
