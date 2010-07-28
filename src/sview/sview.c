@@ -370,7 +370,7 @@ static void _set_ruled(GtkToggleAction *action)
 	cluster_change_part();
 	cluster_change_job();
 	cluster_change_node();
-	
+
 	refresh_main(NULL, NULL);
 	display_edit_note(tmp);
 	g_free(tmp);
