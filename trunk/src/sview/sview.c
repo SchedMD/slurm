@@ -850,13 +850,13 @@ extern void _change_cluster_main(GtkComboBox *combo, gpointer extra)
 		g_print("nothing selected\n");
 		return;
 	}
-
+	
 	gtk_tree_model_get(model, &iter, 1, &cluster_rec, -1);
 	if(!cluster_rec) {
 		g_print("no cluster_rec pointer here!");
 		return;
 	}
-
+	
 	/* From testing it doesn't appear you can get here without a
 	   legitimate change, so there isn't a need to check if we are
 	   going back to the same cluster we were just at.
@@ -1028,13 +1028,22 @@ static GtkWidget *_create_cluster_combo()
 	model = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_POINTER);
 	itr = list_iterator_create(cluster_list);
 	while((cluster_rec = list_next(itr))) {
+		/* Set up the working_cluster_rec just incase we are on a node
+		   that doesn't technically belong to a cluster (like
+		   the node running the slurmdbd).
+		*/
+		if(!working_cluster_rec)
+			working_cluster_rec = cluster_rec;
 		gtk_list_store_append(model, &iter);
 		gtk_list_store_set(model, &iter,
 				   0, cluster_rec->name,
 				   1, cluster_rec,
 				   -1);
-		if(!strcmp(cluster_rec->name, orig_cluster_name))
+		if(!strcmp(cluster_rec->name, orig_cluster_name)) {
+			/* clear it since we found the current cluster */
+			working_cluster_rec = NULL;
 			spot = count;
+		}
 		count++;
 	}
 	list_iterator_destroy(itr);
