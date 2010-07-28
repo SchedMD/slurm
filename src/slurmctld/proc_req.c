@@ -768,6 +768,7 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 		unlock_slurmctld(job_write_lock);
 
 		slurm_msg_t_init(&response_msg);
+		response_msg.flags = msg->flags;
 		response_msg.msg_type = RESPONSE_RESOURCE_ALLOCATION;
 		response_msg.data = &alloc_msg;
 
@@ -817,6 +818,7 @@ static void _slurm_rpc_dump_conf(slurm_msg_t * msg)
 
 		/* init response_msg structure */
 		slurm_msg_t_init(&response_msg);
+		response_msg.flags = msg->flags;
 		response_msg.protocol_version = msg->protocol_version;
 		response_msg.address = msg->address;
 		response_msg.msg_type = RESPONSE_BUILD_INFO;
@@ -1464,6 +1466,7 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 		unlock_slurmctld(job_write_lock);
 		slurm_msg_t_init(&resp);
 		resp.flags = msg->flags;
+		resp.protocol_version = msg->protocol_version;
 		resp.address = msg->address;
 		resp.msg_type = RESPONSE_JOB_STEP_CREATE;
 		resp.data = &job_step_resp;
@@ -1739,6 +1742,7 @@ static void _slurm_rpc_job_alloc_info(slurm_msg_t * msg)
 
 		slurm_msg_t_init(&response_msg);
 		response_msg.flags = msg->flags;
+		response_msg.protocol_version = msg->protocol_version;
 		response_msg.msg_type    = RESPONSE_JOB_ALLOCATION_INFO;
 		response_msg.data        = &job_info_resp_msg;
 
@@ -1845,6 +1849,7 @@ static void _slurm_rpc_job_alloc_info_lite(slurm_msg_t * msg)
 
 		slurm_msg_t_init(&response_msg);
 		response_msg.flags = msg->flags;
+		response_msg.protocol_version = msg->protocol_version;
 		response_msg.msg_type    = RESPONSE_JOB_ALLOCATION_INFO_LITE;
 		response_msg.data        = &job_info_resp_msg;
 
@@ -1911,6 +1916,7 @@ static void _slurm_rpc_job_sbcast_cred(slurm_msg_t * msg)
 
 		slurm_msg_t_init(&response_msg);
 		response_msg.flags = msg->flags;
+		response_msg.protocol_version = msg->protocol_version;
 		response_msg.msg_type    = RESPONSE_JOB_SBCAST_CRED;
 		response_msg.data        = &job_info_resp_msg;
 
@@ -3486,6 +3492,7 @@ inline static void  _slurm_rpc_trigger_get(slurm_msg_t * msg)
 
 	slurm_msg_t_init(&response_msg);
 	response_msg.flags = msg->flags;
+	response_msg.protocol_version = msg->protocol_version;
 	response_msg.address  = msg->address;
 	response_msg.msg_type = RESPONSE_TRIGGER_GET;
 	response_msg.data     = resp_data;

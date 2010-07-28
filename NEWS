@@ -49,6 +49,8 @@ documents those changes that are of interest to users and admins.
  -- BLUEGENE - Added -B option to the slurmctld to clear created blocks from
     the system on start.
  -- BLUEGENE - Added option to scontrol & sview to recreate existing blocks.
+ -- Fixed flags for returning messages to use the correct munge key when going
+    cross-cluster.
 
 * Changes in SLURM 2.2.0.pre8
 =============================
