@@ -558,7 +558,7 @@ extern void *mult_free_block(void *args)
 		}
 		if(bg_record->job_ptr) {
 			info("We are freeing a block (%s) that "
-			     "has job %u(%u), This should never happen.\n",
+			     "has job %u(%u), This should never happen.",
 			     bg_record->bg_block_id,
 			     bg_record->job_ptr->job_id,
 			     bg_record->job_running);
@@ -568,7 +568,7 @@ extern void *mult_free_block(void *args)
 			info("freeing the block %s.", bg_record->bg_block_id);
 		bg_free_block(bg_record, 1, 0);
 		if(bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
-			info("done\n");
+			info("done");
 		slurm_mutex_lock(&freed_cnt_mutex);
 		num_block_freed++;
 		slurm_mutex_unlock(&freed_cnt_mutex);

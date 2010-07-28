@@ -1366,6 +1366,8 @@ _update_bluegene_block (int argc, char *argv[])
 				block_msg.state = RM_PARTITION_CONFIGURING;
 			else if (!strncasecmp(val, "REMOVE", MAX(vallen, 3)))
 				block_msg.state = RM_PARTITION_NAV;
+			else if (!strncasecmp(val, "RESUME", MAX(vallen, 3)))
+				block_msg.state = RM_PARTITION_READY;
 			else {
 				exit_code = 1;
 				fprintf (stderr, "Invalid input: %s\n",

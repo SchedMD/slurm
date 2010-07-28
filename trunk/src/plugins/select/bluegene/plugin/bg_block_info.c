@@ -189,7 +189,7 @@ extern int block_ready(struct job_record *job_ptr)
 				*/
 				job_ptr->job_state &= (~JOB_CONFIGURING);
 				last_job_update = time(NULL);
-				
+
 				rc = 1;
 			} else if (bg_record->user_uid != job_ptr->user_id)
 				rc = 0;
@@ -439,9 +439,8 @@ extern int update_block_list()
 			else if(bg_record->state == RM_PARTITION_FREE) {
 				if(remove_from_bg_list(bg_lists->job_running,
 						       bg_record)
-				   == SLURM_SUCCESS) {
+				   == SLURM_SUCCESS)
 					num_unused_cpus += bg_record->cpu_cnt;
-				}
 				remove_from_bg_list(bg_lists->booted,
 						    bg_record);
 			} else if(bg_record->state == RM_PARTITION_ERROR) {
@@ -455,7 +454,12 @@ extern int update_block_list()
 				remove_from_bg_list(bg_lists->booted,
 						    bg_record);
 				trigger_block_error();
+			} else if(bg_record->state == RM_PARTITION_READY) {
+				if(!block_ptr_exist_in_list(bg_lists->booted,
+							    bg_record))
+					list_push(bg_lists->booted, bg_record);
 			}
+
 			updated = 1;
 		}
 	nochange_state:
