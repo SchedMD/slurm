@@ -1823,8 +1823,6 @@ static int _get_modified_lfts(mysql_conn_t *mysql_conn, uint32_t start_lft)
 		assoc->id = atoi(row[0]);
 		assoc->lft = atoi(row[1]);
 		assoc->cluster = xstrdup(row[2]);
-		if(!strcmp(assoc->cluster, "snowflake"))
-			info("got %d %d", assoc->id, assoc->lft);
 		if(_addto_update_list(mysql_conn->update_list,
 				      ACCT_MODIFY_ASSOC,
 				      assoc) != SLURM_SUCCESS)
