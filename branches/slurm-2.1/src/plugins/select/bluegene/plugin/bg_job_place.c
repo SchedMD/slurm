@@ -319,6 +319,12 @@ static bg_record_t *_find_matching_block(List block_list,
 				   || SELECT_IS_MODE_RUN_NOW(query_mode))
 				  && (bg_conf->layout_mode
 				      != LAYOUT_DYNAMIC)))) {
+			/* Look here if you are trying to run now or
+			   if you aren't looking at the full set.  We
+			   don't continue on running blocks for the
+			   full set because we are seeing if the job
+			   can ever run so look here.
+			*/
 			debug("block %s in use by %s job %d",
 			      bg_record->bg_block_id,
 			      bg_record->user_name,
