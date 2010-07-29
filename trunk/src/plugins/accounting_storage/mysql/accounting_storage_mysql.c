@@ -1513,6 +1513,7 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 	bool has_jobs = false;
 	char *tmp_name_char = NULL;
 	bool cluster_centric = true;
+	uint32_t smallest_lft = 0xFFFFFFFF;
 
 	/* figure out which tables we need to append the cluster name to */
 	if((table == cluster_table) || (table == acct_coord_table)
@@ -1735,6 +1736,7 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 	while((row = mysql_fetch_row(result))) {
 		MYSQL_RES *result2 = NULL;
 		MYSQL_ROW row2;
+		uint32_t lft;
 
 		/* we have to do this one at a time since the lft's and rgt's
 		   change. If you think you need to remove this make
@@ -1770,6 +1772,10 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 			   cluster_name, assoc_table, row2[2], row2[1],
 			   cluster_name, assoc_table, row2[2], row2[1]);
 
+		lft = atoi(row2[0]);
+		if(lft < smallest_lft)
+			smallest_lft = lft;
+
 		mysql_free_result(result2);
 
 		debug3("%d(%s:%d) query\n%s",
@@ -1782,6 +1788,11 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 		}
 	}
 	mysql_free_result(result);
+
+	if(rc == SLURM_SUCCESS)
+		rc = as_mysql_get_modified_lfts(mysql_conn,
+						cluster_name, smallest_lft);
+
 	if(rc == SLURM_ERROR) {
 		reset_mysql_conn(mysql_conn);
 		return rc;

@@ -2025,6 +2025,7 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update)
 	ListIterator itr = NULL;
 	int rc = SLURM_SUCCESS;
 	int parents_changed = 0;
+	int resort = 0;
 	List remove_list = NULL;
 	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK,
 				   WRITE_LOCK, NO_LOCK, NO_LOCK };
@@ -2126,6 +2127,11 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update)
 				rec->grp_submit_jobs = object->grp_submit_jobs;
 			if(object->grp_wall != NO_VAL)
 				rec->grp_wall = object->grp_wall;
+
+			if(object->lft != NO_VAL) {
+				rec->lft = object->lft;
+				resort = 1;
+			}
 
 			if(object->max_cpu_mins_pj != (uint64_t)NO_VAL)
 				rec->max_cpu_mins_pj = object->max_cpu_mins_pj;
@@ -2330,7 +2336,9 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update)
 				log_assoc_rec(object, assoc_mgr_qos_list);
 			}
 		}
-	}
+	} else if (resort)
+		list_sort(assoc_mgr_association_list,
+			  (ListCmpF)_sort_assoc_dec);
 
 	list_iterator_destroy(itr);
 	assoc_mgr_unlock(&locks);
