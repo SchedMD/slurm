@@ -1806,7 +1806,7 @@ static int _get_modified_lfts(mysql_conn_t *mysql_conn, uint32_t start_lft)
 		"select id, lft, cluster from %s where lft > %u",
 		assoc_table, start_lft);
 
-	debug("%d(%d) query\n%s",
+	debug3("%d(%d) query\n%s",
 	       mysql_conn->conn, __LINE__, query);
 	if(!(result = mysql_db_query_ret(
 		     mysql_conn->db_conn, query, 0))) {
