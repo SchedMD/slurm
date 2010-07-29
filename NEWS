@@ -415,6 +415,7 @@ documents those changes that are of interest to users and admins.
  -- Fixed sacct when querying against a jobid the start time is not set.
  -- Fix configure to get correct version of pkg-config if both 32bit and 64bit
     libs are installed.
+ -- Fix issue with sshare not sorting correctly the tree of associations.
 
 * Changes in SLURM 2.1.10
 =========================

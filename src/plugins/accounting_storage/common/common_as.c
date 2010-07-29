@@ -58,6 +58,21 @@ extern char *wckey_day_table;
 extern char *wckey_month_table;
 
 /*
+ * We want SLURMDB_MODIFY_ASSOC always to be the last
+ */
+static int _sort_update_object_dec(slurmdb_update_object_t *object_a,
+				   slurmdb_update_object_t *object_b)
+{
+	if ((object_a->type == SLURMDB_MODIFY_ASSOC)
+	    && (object_b->type != SLURMDB_MODIFY_ASSOC))
+		return 1;
+	else if((object_b->type == SLURMDB_MODIFY_ASSOC)
+		&& (object_a->type != SLURMDB_MODIFY_ASSOC))
+		return -1;
+	return 0;
+}
+
+/*
  * send_accounting_update - send update to controller of cluster
  * IN update_list: updates to send
  * IN cluster: name of cluster
@@ -159,6 +174,8 @@ addto_update_list(List update_list, slurmdb_update_type_t type, void *object)
 	list_append(update_list, update_object);
 
 	update_object->type = type;
+
+	list_sort(update_list, (ListCmpF)_sort_update_object_dec);
 
 	switch(type) {
 	case SLURMDB_MODIFY_USER:

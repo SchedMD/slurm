@@ -160,6 +160,7 @@ enum {
  * enum below also t1 is step_table */
 static char *rassoc_req_inx[] = {
 	"id_assoc",
+	"lft",
 	"acct",
 	"parent_acct",
 	"user",
@@ -168,6 +169,7 @@ static char *rassoc_req_inx[] = {
 
 enum {
 	RASSOC_ID,
+	RASSOC_LFT,
 	RASSOC_ACCT,
 	RASSOC_PACCT,
 	RASSOC_USER,
@@ -1588,6 +1590,7 @@ static int _process_remove_assoc_results(mysql_conn_t *mysql_conn,
 	char *assoc_char = NULL, *object = NULL;
 	time_t now = time(NULL);
 	char *user_name = NULL;
+	uint32_t smallest_lft = 0xFFFFFFFF;
 
 	xassert(result);
 	if(*jobs_running)
@@ -1595,6 +1598,8 @@ static int _process_remove_assoc_results(mysql_conn_t *mysql_conn,
 
 	while((row = mysql_fetch_row(result))) {
 		slurmdb_association_rec_t *rem_assoc = NULL;
+		uint32_t lft;
+
 		if(!is_admin) {
 			slurmdb_coord_rec_t *coord = NULL;
 			if(!user->coord_accts) { // This should never
@@ -1649,6 +1654,13 @@ static int _process_remove_assoc_results(mysql_conn_t *mysql_conn,
 		else
 			xstrfmtcat(assoc_char, "id_assoc=%s", row[RASSOC_ID]);
 
+		/* get the smallest lft here to be able to send all
+		   the modified lfts after it.
+		*/
+		lft = atoi(row[RASSOC_LFT]);
+		if(lft < smallest_lft)
+			smallest_lft = lft;
+
 		rem_assoc = xmalloc(sizeof(slurmdb_association_rec_t));
 		slurmdb_init_association_rec(rem_assoc);
 		rem_assoc->id = atoi(row[RASSOC_ID]);
@@ -1659,6 +1671,11 @@ static int _process_remove_assoc_results(mysql_conn_t *mysql_conn,
 			error("couldn't add to the update list");
 
 	}
+
+	if ((rc = as_mysql_get_modified_lfts(
+		     mysql_conn, cluster_name, smallest_lft)) != SLURM_SUCCESS)
+		goto end_it;
+
 
 skip_process:
 	user_name = uid_to_string((uid_t) user->uid);
@@ -2096,6 +2113,42 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 	return SLURM_SUCCESS;
 }
 
+extern int as_mysql_get_modified_lfts(mysql_conn_t *mysql_conn,
+				      char *cluster_name, uint32_t start_lft)
+{
+	MYSQL_RES *result = NULL;
+	MYSQL_ROW row;
+	char *query = xstrdup_printf(
+		"select id_assoc, lft from \"%s_%s\" where lft > %u",
+		cluster_name, assoc_table, start_lft);
+
+	debug3("%d(%d) query\n%s",
+	       mysql_conn->conn, __LINE__, query);
+	if(!(result = mysql_db_query_ret(
+		     mysql_conn->db_conn, query, 0))) {
+		xfree(query);
+		error("couldn't query the database for modified lfts");
+		return SLURM_ERROR;
+	}
+	xfree(query);
+
+	while((row = mysql_fetch_row(result))) {
+		slurmdb_association_rec_t *assoc =
+			xmalloc(sizeof(slurmdb_association_rec_t));
+		slurmdb_init_association_rec(assoc);
+		assoc->id = atoi(row[0]);
+		assoc->lft = atoi(row[1]);
+		assoc->cluster = xstrdup(cluster_name);
+		if(addto_update_list(mysql_conn->update_list,
+				     SLURMDB_MODIFY_ASSOC,
+				     assoc) != SLURM_SUCCESS)
+			slurmdb_destroy_association_rec(assoc);
+	}
+	mysql_free_result(result);
+
+	return SLURM_SUCCESS;
+}
+
 extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 			       List association_list)
 {
@@ -2481,6 +2534,49 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	}
 
+	if(!moved_parent) {
+		slurmdb_update_object_t *update_object = NULL;
+
+		itr = list_iterator_create(
+			mysql_conn->update_list);;
+		while((update_object = list_next(itr))) {
+			if(!update_object->objects
+			   || !list_count(update_object->objects))
+				continue;
+			if(update_object->type == SLURMDB_ADD_ASSOC)
+				break;
+		}
+		list_iterator_destroy(itr);
+
+		if(update_object && update_object->objects
+		   && list_count(update_object->objects)) {
+			char *cluster_name;
+			ListIterator itr2 =
+				list_iterator_create(update_object->objects);
+
+			slurm_mutex_lock(&as_mysql_cluster_list_lock);
+			itr = list_iterator_create(as_mysql_cluster_list);
+			while((cluster_name = list_next(itr))) {
+				uint32_t smallest_lft = 0xFFFFFFFF;
+				while((object = list_next(itr2))) {
+					if(object->lft < smallest_lft
+					   && !strcmp(object->cluster,
+						      cluster_name))
+						smallest_lft = object->lft;
+				}
+				list_iterator_reset(itr2);
+				/* now get the lowest lft from the
+				   added files by cluster */
+				if(smallest_lft != 0xFFFFFFFF)
+					rc = as_mysql_get_modified_lfts(
+						mysql_conn, cluster_name,
+						smallest_lft);
+			}
+			list_iterator_destroy(itr);
+			slurm_mutex_unlock(&as_mysql_cluster_list_lock);
+			list_iterator_destroy(itr2);
+		}
+	}
 end_it:
 
 	if(rc != SLURM_ERROR) {
