@@ -1683,6 +1683,7 @@ extern int assoc_mgr_update_assocs(acct_update_object_t *update)
 	ListIterator itr = NULL;
 	int rc = SLURM_SUCCESS;
 	int parents_changed = 0;
+	int resort = 0;
 	List remove_list = NULL;
 
 	if(!assoc_mgr_association_list)
@@ -1778,6 +1779,11 @@ extern int assoc_mgr_update_assocs(acct_update_object_t *update)
 				rec->grp_submit_jobs = object->grp_submit_jobs;
 			if(object->grp_wall != NO_VAL)
 				rec->grp_wall = object->grp_wall;
+
+			if(object->lft != NO_VAL) {
+				rec->lft = object->lft;
+				resort = 1;
+			}
 
 			if(object->max_cpu_mins_pj != NO_VAL)
 				rec->max_cpu_mins_pj = object->max_cpu_mins_pj;
@@ -1957,7 +1963,9 @@ extern int assoc_mgr_update_assocs(acct_update_object_t *update)
 				log_assoc_rec(object, assoc_mgr_qos_list);
 			}
 		}
-	}
+	} else if (resort)
+		list_sort(assoc_mgr_association_list,
+			  (ListCmpF)_sort_assoc_dec);
 
 	list_iterator_destroy(itr);
 	slurm_mutex_unlock(&assoc_mgr_association_lock);
