@@ -44,8 +44,8 @@ my (
 	$help,		$join,		$man, 		$nope, 		
 	$jobname,	$mailoptions,	$mailusers,	$nodes,
 	$opath,		$priority,	$rerun, 	$shellpath,
-	$silent,	$slurm,		$starttime, 	$variable,
-	$var,		$wclim
+	$silent, 	$slurm,		$starttime, 	$variable,
+	$wclim
 );
 
 #
@@ -56,8 +56,7 @@ my (
 	$feature,	$gres,		$flags,
 	$maxmem, 	$jobname, 	$host,
 	$procs,		$qos,		$resfail,
-	$signal,	$tpn,		$ttc,
-	$variable
+	$signal,	$tpn,		$ttc
 );
 
 my (@lreslist, @slurmArgs, @xslurmArgs, @nargv);
@@ -209,6 +208,9 @@ if (@lreslist) {
 	}
 }
 
+#
+# Mimimum memory required per allocated CPU in MegaBytes.
+#
 if ($dmem) {
 	push @slurmArgs, "--mem-per-cpu=$dmem";
 }
@@ -234,55 +236,101 @@ if ($ddisk) {
 	push @slurmArgs, "--tmp=$ddisk";
 }
 
+#
+# The constraints are features that have been assigned to the
+# nodes  by  the  slurm  administrator.
+#
 if ($feature) {
 	push @slurmArgs, "--constraint=$feature";
 }
 
-if ($gres) {
-	push @slurmArgs, "--licenses=$gres";
-} else {
-	my $tgres = GetGres();
-	push @slurmArgs, "--licenses=$tgres";
-}
+#if ($gres) {
+#        push @slurmArgs, "--licenses=$gres";
+#} else {
+#        my $tgres = GetGres();
+#        push @slurmArgs, "--licenses=$tgres";
+#}
 
+#
+# The host to run the job on, currently it can only
+# be the local host, in the future one or more hsts
+# can be specified.
+# 
 if ($host) {
-	# not defined yet.
+	push @slurmArgs, "--partition=$host";
 }
 
+#
+# Specify the real memory required per node in MegaBytes.
+#
 if ($maxmem) {
 	push @slurmArgs, "--mem=$maxmem";
 }
 
+#
+# Request that a minimum of minnodes nodes be allocated to this job.
+#
 if ($nodes) {
-	 push @slurmArgs, "--nodes=$nodes";
+	push @slurmArgs, "--nodes=$nodes";
 }
 
+#
+# Priority (nice adjustment).
+#
+if ($priority) {
+	push @slurmArgs, "--nice[=adjustment]";
+}
+
+#
+# Guarantees that SLURM will allocate enough resources for this number of tasks.
+#
 if ($procs) {
-	 push @slurmArgs, "--ntasks=$procs";
+	push @slurmArgs, "--ntasks=$procs";
 }
 
+#
+# Request a quality of service for the job.
+#
 if ($qos) {
-	 push @slurmArgs, "--qos=$qos";
+	push @slurmArgs, "--qos=$qos";
 }
 
+#
+# Tell SLURM how to handle a node failure.
+# (Do no allow it to run again if rerun is set to no.)
+#
 if ($resfail) {
-	 push @slurmArgs, "--requeue"    if ($resfail eq "requeue");
-	 push @slurmArgs, "--no-requeue" if ($resfail eq "cancel");
-	 push @slurmArgs, "--no-kill"    if ($resfail eq "ignore");
+	$rerun = 'y' if (!defined $rerun);
+	push @slurmArgs, "--requeue"    if ($resfail eq "requeue");
+	push @slurmArgs, "--no-requeue" if ($resfail eq "cancel" || $rerun =~ /n/);
+	push @slurmArgs, "--no-kill"    if ($resfail eq "ignore");
 }
 
+#
+# When a job is within sig_time seconds of its end time, send it the signal sig_num. 
+#
 if ($signal) {
-	 push @slurmArgs, "--signal=$signal";
+	push @slurmArgs, "--signal=$signal";
 }
 
+#
+# Specify a minimum number of logical cpus/processors per node.
+#
 if ($tpn) {
-	 push @slurmArgs, " --mincpus=$tpn";
+	push @slurmArgs, " --mincpus=$tpn";
 }
 
+#
+# Guarantees that SLURM will allocate enough resources for this number of tasks.
+#
 if ($ttc) {
-	 push @slurmArgs, "--ntasks=$ttc";
+	push @slurmArgs, "--ntasks=$ttc";
 }
 
+#
+# Submit the batch script to the SLURM controller immediately, like normal, but
+# tell the  controller to defer the allocation of the job until the specified time.
+#
 if ($starttime) {
 	my $epoch_time = DateToEpoch($starttime);
 	if ($sversion >= 2.2) {
@@ -293,66 +341,78 @@ if ($starttime) {
 	}
 }
 
+#
+# Charge resources used by this job to specified account.
+#
 if ($account) {
-	 push @slurmArgs, "--account=$account";
+	push @slurmArgs, "--account=$account";
 }
 
+#
+# Set the working directory of the batch script to directory before it it executed.
+#
 if ($dpath) {
-	 push @slurmArgs, "--workdir=$dpath";
+	push @slurmArgs, "--workdir=$dpath";
 }
 
+#
+# Instruct SLURM to connect the batch script's standard output directly to the
+# file name specified.
+#
+if ($opath) {
+	push @slurmArgs, "--output=$opath";
+}
+
+#
+# Instruct SLURM to connect the batch script's standard error directly to the
+# file name specified.
+#
 if ($epath) {
-	 push @slurmArgs, "--error=$epath";
+	push @slurmArgs, "--error=$epath";
 }
 
+#
+# Join stderr and stdout together.
+# (If no stderr defined, all output goes to stdout.)
+#
 if ($join) {
 	undefine $epath if ($epath);
 }
 
+#
+# Handle mail options.
+#
 if ($mailoptions) {
 	push @slurmArgs, "--mail-type=BEGIN" if ($mailoptions =~ /b/);
 	push @slurmArgs, "--mail-type=END"   if ($mailoptions =~ /e/);
 	push @slurmArgs, "--mail-type=ALL"   if ($mailoptions =~ /a/);
 }
 
+#
+# Send mail, based on mail options, to the specified users.
+#
 if ($mailusers) {
 	push @slurmArgs, "--mail-user=$mailusers";
 }
 
+#
+# Specify  a name for the job allocation.
+#
 if ($jobname) {
 	push @slurmArgs, "--job-name=jobname";
 }
 
-if ($opath) {
-	 push @slurmArgs, "--error=$opath";
-}
-
-if ($priority) {
-}
-
+#
+# Request  a  specific  partition (class, queue) for the resource allocation.
+#
 if ($class) {
-	 push @slurmArgs, "--partition=$class";
+	push @slurmArgs, "--partition=$class";
 }
 
-if ($rerun) {
-}
-
-if ($variable) {
-	# nope.
-}
-
-if ($var) {
-	 push @slurmArgs, "--comment=$var";
-}
-
-if ($silent) {
-	#Add code at appropriate place to not print stdout,stderr.
-}
-
-
+#
+# Execute sbatch.
+#
 if ($debug == 1) {
-	#printf("the list is: '@slurmArgs'\n");
-	#printf("and '@xslurmArgs'\n") if (@xslurmArgs);
 	printf("sbatch args: '@slurmArgs' '@xslurmArgs' $scriptFile\n");
 } else {
 	my $rval;
@@ -365,7 +425,6 @@ if ($debug == 1) {
 }
 
 exit;
-
 
 #
 # Run scontrol and get the license (gres).
@@ -384,10 +443,9 @@ sub GetGres
 	return($line);
 }
 
-
-
-
-
+#
+# Get user options.
+#
 sub GetOpts
 {
 	@ARGV = @_;
@@ -403,27 +461,29 @@ sub GetOpts
 		'j=s' 	=> \$join,		
 		'm=s' 	=> \$mailoptions,
 		'o=s' 	=> \$opath,
-		'p=s' 	=> \$priority,		# ??? does slurm support?
+		'p=s' 	=> \$priority,
 		'q=s' 	=> \$class,
 		'N=s' 	=> \$jobname,
 		'S=s'   => \$shellpath,		
 		'M=s' 	=> \$mailusers,		
-		'r=s'	=> \$rerun,
+		'r:s'	=> \$rerun,
 		'd=s' 	=> \$dpath,		# execution directory.
 		'W=s' 	=> \@lreslist,
+		'V'	=> \$variable,
 		'z'	=> \$silent,
-#
-		'c=s' 	=> \$nope,		# n/a
-		'C=s' 	=> \$nope,		# n/a
-		'E'	=> \$nope,		# Moab environment variables.
-		'h'	=> \$nope,		# submit job as held.
-		'I'	=> \$nope,		# N/A
-		'k=s' 	=> \$nope,		# N/A
-		'K'	=> \$nope,		# N/A
-		'V'	=> \$nope,
-		'v=s' 	=> \$nope,		# N/A
 	);
 
+#
+# Not supported in SLURM only systems.
+#
+#		'c=s' 	=> \$nope,		# n/a
+#		'C=s' 	=> \$nope,		# n/a
+#		'E'	=> \$nope,		# Moab environment variables.
+#		'h'	=> \$nope,		# submit job as held.
+#		'I'	=> \$nope,		# N/A
+#		'k=s' 	=> \$nope,		# N/A
+#		'K'	=> \$nope,		# N/A
+#		'v=s' 	=> \$nope,		# N/A
 
 	return;
 }
@@ -512,11 +572,23 @@ sub fixtime
 }
 
 
+#
+# Warn about invalid options used.
+#
+sub invalidopt
+{
+	my ($opt) = @_;
+
+	print STDERR "\n $opt is an invalid option.\n\n";
+	exit(1);
+}
+
+
+#
+# Proces the -l/-w extensions.
+#
 sub process
 {
-#
-#	Break down the -l/-W options
-#
 	my (@opts) = @_;
 
 	foreach my $opt (@opts) {
@@ -528,7 +600,8 @@ sub process
 			$opt =~ s/x=//;
 			$opt =~ s/:/=/;
 		}
-		my ($o,$r) = split(/=/, $opt);
+		my ($ot,$r) = split(/=/, $opt);
+		my $o = lc($ot);
 
 		$host	  = $r if ($o =~ /partition/);
 		$feature  = $r if ($o =~ /feature/);
@@ -540,7 +613,6 @@ sub process
 		$resfail  = $r if ($o =~ /resfail/);
 		$ttc	  = $r if ($o =~ /ttc/);
 		$tpn	  = $r if ($o =~ /tpn/);
-		$var	  = $r if ($o =~ /var:Project/);
 		$wclim	  = $r if ($o =~ /walltime/);
 		$signal	  = $r if ($o =~ /signal/);
 		$ddisk    = $r if ($o =~ /ddisk/);
@@ -549,8 +621,8 @@ sub process
 		invalidopt("flags")   if ($o =~ /flags/);
 #		invalidopt("gres")    if ($o =~ /gres/);
 		invalidopt("procs")   if ($o =~ /procs/);
+		invalidopt("var")     if ($o =~ /var/);
 	}
-
 
 #
 #	See if nodes is in "nn:ppn=pp" format,
@@ -578,7 +650,7 @@ B<msub> - submit batch jobs.
 
        msub [-a datetime][-A account][-d path]
 	     [-e path][-h][-j join][-l resourcelist][-m mailoptions]
-	     [-M user_list][-N name][-o path][-p priority][-q class][-r]
+	     [-M user_list][-N name][-o path][-p priority][-q class][-r y|n]
 	     [-S pathlist][-V][-W additionalattributes] [-z][script]
 
 =head1 DESCRIPTION
@@ -700,6 +772,8 @@ B<msub> - submit batch jobs.
 	       scheduler resource manager extensions may be specified. See the Resource Manager Extensions heading
 	       below.
 
+	       NOTE: gres not yet supported on SLURM only systems.
+
        EXAMPLES
 	       ----------------------
 	       msub -l partition=zeus|atlas,nodes=32,walltime=12:00:00,qos=expedite,gres=ignore cmd.sh
@@ -810,20 +884,19 @@ B<msub> - submit batch jobs.
 
        NAME    Priority
 
-       FORMAT  <INTEGER> (between -1024 and 0)
-
-       DEFAULT 0
+       FORMAT  <INTEGER> (between -10000 and 10000)
 
        DESCRIPTION
-	       Defines the priority of the job
-
-	       To enable priority range from -1024 to +1023, see ENABLEPOSUSERPRIORITY
+               Defines the priority of the job
+	       Run the job with an adjusted scheduling priority within SLURM.  The adjustment range is from
+	       -10000 (highest priority)  to  10000  (lowest priority). Only privileged users can specify a
+	       negative adjustment.
 
        EXAMPLE ----------------------
-	       msub -p 25 cmd.sh
-	       ----------------------
+               msub -p 25 cmd.sh
+               ----------------------
 
-	       the job will have a user priority of 25
+               the job will have a user priority of 25
 
        ==============================
        FLAG    -q
@@ -889,6 +962,7 @@ B<msub> - submit batch jobs.
 
        DESCRIPTION
 	       Declares that all environment variables in the msub environment are exported to the batch job
+	       (SLURM only systems will always pass all environment variables.)
 
        EXAMPLE ----------------------
 	       msub -V cmd.sh
