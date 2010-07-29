@@ -1712,6 +1712,21 @@ end_it:
 	return SLURM_SUCCESS;
 }
 
+/*
+ * We want ACCT_MODIFY_ASSOC always to be the last
+ */
+static int _sort_update_object_dec(acct_update_object_t *object_a,
+				   acct_update_object_t *object_b)
+{
+	if ((object_a->type == ACCT_MODIFY_ASSOC)
+	    && (object_b->type != ACCT_MODIFY_ASSOC))
+		return 1;
+	else if((object_b->type == ACCT_MODIFY_ASSOC)
+		&& (object_a->type != ACCT_MODIFY_ASSOC))
+		return -1;
+	return 0;
+}
+
 /* This function will take the object given and free it later so it
  * needed to be removed from a list if in one before
  */
@@ -1745,6 +1760,8 @@ static int _addto_update_list(List update_list, acct_update_type_t type,
 
 	update_object->type = type;
 
+	list_sort(update_list, (ListCmpF)_sort_update_object_dec);
+
 	switch(type) {
 	case ACCT_MODIFY_USER:
 	case ACCT_ADD_USER:
@@ -1777,6 +1794,44 @@ static int _addto_update_list(List update_list, acct_update_type_t type,
 		return SLURM_ERROR;
 	}
 	list_append(update_object->objects, object);
+
+	return SLURM_SUCCESS;
+}
+
+static int _get_modified_lfts(mysql_conn_t *mysql_conn, uint32_t start_lft)
+{
+	MYSQL_RES *result = NULL;
+	MYSQL_ROW row;
+	char *query = xstrdup_printf(
+		"select id, lft, cluster from %s where lft > %u",
+		assoc_table, start_lft);
+
+	debug("%d(%d) query\n%s",
+	       mysql_conn->conn, __LINE__, query);
+	if(!(result = mysql_db_query_ret(
+		     mysql_conn->db_conn, query, 0))) {
+		xfree(query);
+		error("couldn't query the database for modified lfts");
+		return SLURM_ERROR;
+	}
+	xfree(query);
+
+	while((row = mysql_fetch_row(result))) {
+		acct_association_rec_t *assoc =
+			xmalloc(sizeof(acct_association_rec_t));
+		init_acct_association_rec(assoc);
+		assoc->id = atoi(row[0]);
+		assoc->lft = atoi(row[1]);
+		assoc->cluster = xstrdup(row[2]);
+		if(!strcmp(assoc->cluster, "snowflake"))
+			info("got %d %d", assoc->id, assoc->lft);
+		if(_addto_update_list(mysql_conn->update_list,
+				      ACCT_MODIFY_ASSOC,
+				      assoc) != SLURM_SUCCESS)
+			destroy_acct_association_rec(assoc);
+	}
+	mysql_free_result(result);
+
 	return SLURM_SUCCESS;
 }
 
@@ -2364,6 +2419,7 @@ static int _remove_common(mysql_conn_t *mysql_conn,
 	time_t day_old = now - DELETE_SEC_BACK;
 	bool has_jobs = false;
 	char *tmp_name_char = NULL;
+	uint32_t smallest_lft = 0xFFFFFFFF;
 
 	/* If we have jobs associated with this we do not want to
 	 * really delete it for accounting purposes.  This is for
@@ -2549,6 +2605,7 @@ static int _remove_common(mysql_conn_t *mysql_conn,
 	while((row = mysql_fetch_row(result))) {
 		MYSQL_RES *result2 = NULL;
 		MYSQL_ROW row2;
+		uint32_t lft;
 
 		/* we have to do this one at a time since the lft's and rgt's
 		   change. If you think you need to remove this make
@@ -2582,6 +2639,10 @@ static int _remove_common(mysql_conn_t *mysql_conn,
 			   assoc_table, row2[2], row2[1],
 			   assoc_table, row2[2], row2[1]);
 
+		lft = atoi(row2[0]);
+		if(lft < smallest_lft)
+			smallest_lft = lft;
+
 		mysql_free_result(result2);
 
 		debug3("%d(%d) query\n%s",
@@ -2594,6 +2655,10 @@ static int _remove_common(mysql_conn_t *mysql_conn,
 		}
 	}
 	mysql_free_result(result);
+
+	if(rc == SLURM_SUCCESS)
+		rc = _get_modified_lfts(mysql_conn, smallest_lft);
+
 	if(rc == SLURM_ERROR) {
 		if(mysql_conn->rollback) {
 			mysql_db_rollback(mysql_conn->db_conn);
@@ -4401,6 +4466,7 @@ extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 	int moved_parent = 0;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
+	uint32_t smallest_lft = 0xFFFFFFFF;
 	char *old_parent = NULL, *old_cluster = NULL;
 	char *last_parent = NULL, *last_cluster = NULL;
 	char *massoc_req_inx[] = {
@@ -4721,6 +4787,9 @@ extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 				_set_assoc_lft_rgt(mysql_conn, object);
 		}
 
+		if(object->lft < smallest_lft)
+			smallest_lft = object->lft;
+
 		if(_addto_update_list(mysql_conn->update_list, ACCT_ADD_ASSOC,
 				      object) == SLURM_SUCCESS) {
 			list_remove(itr);
@@ -4773,6 +4842,9 @@ extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 			error("Couldn't do update 2");
 
 	}
+
+	if(!moved_parent)
+		rc = _get_modified_lfts(mysql_conn, smallest_lft);
 
 end_it:
 
@@ -7134,11 +7206,13 @@ extern List acct_storage_p_remove_associations(
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 	acct_user_rec_t user;
+	uint32_t smallest_lft = 0xFFFFFFFF;
 
 	/* if this changes you will need to edit the corresponding
 	 * enum below also t1 is step_table */
 	char *rassoc_req_inx[] = {
 		"id",
+		"lft",
 		"acct",
 		"parent_acct",
 		"cluster",
@@ -7148,6 +7222,7 @@ extern List acct_storage_p_remove_associations(
 
 	enum {
 		RASSOC_ID,
+		RASSOC_LFT,
 		RASSOC_ACCT,
 		RASSOC_PACCT,
 		RASSOC_CLUSTER,
@@ -7269,6 +7344,8 @@ extern List acct_storage_p_remove_associations(
 	ret_list = list_create(slurm_destroy_char);
 	while((row = mysql_fetch_row(result))) {
 		acct_association_rec_t *rem_assoc = NULL;
+		uint32_t lft;
+
 		if(!is_admin) {
 			acct_coord_rec_t *coord = NULL;
 			if(!user.coord_accts) { // This should never
@@ -7324,6 +7401,13 @@ extern List acct_storage_p_remove_associations(
 			xstrfmtcat(assoc_char, " || id=%s", row[RASSOC_ID]);
 		}
 
+		/* get the smallest lft here to be able to send all
+		   the modified lfts after it.
+		*/
+		lft = atoi(row[RASSOC_LFT]);
+		if(lft < smallest_lft)
+			smallest_lft = lft;
+
 		rem_assoc = xmalloc(sizeof(acct_association_rec_t));
 		init_acct_association_rec(rem_assoc);
 		rem_assoc->id = atoi(row[RASSOC_ID]);
@@ -7334,6 +7418,10 @@ extern List acct_storage_p_remove_associations(
 
 	}
 	mysql_free_result(result);
+
+	if((rc = _get_modified_lfts(mysql_conn, smallest_lft))
+	   != SLURM_SUCCESS)
+		goto end_it;
 
 	user_name = uid_to_string((uid_t) uid);
 	rc = _remove_common(mysql_conn, DBD_REMOVE_ASSOCS, now,
