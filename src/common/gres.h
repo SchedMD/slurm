@@ -83,7 +83,7 @@ typedef struct gres_node_state {
 
 	/* Topology specific information (if gres.conf contains CPUs spec) */
 	uint16_t topo_cnt;
-	bitstr_t **cpus_bitmap;
+	bitstr_t **topo_cpus_bitmap;
 	bitstr_t **topo_gres_bitmap;
 	uint32_t *topo_gres_cnt_alloc;
 	uint32_t *topo_gres_cnt_avail;
@@ -97,7 +97,6 @@ typedef struct gres_job_state {
 	/* Resources currently allocated to job on each node */
 	uint32_t node_cnt;
 	bitstr_t **gres_bit_alloc;
-	uint32_t  *gres_cnt_job_alloc;
 
 	/* Resources currently allocated to job steps on each node.
 	 * This will be a subset of resources allocated to the job.
