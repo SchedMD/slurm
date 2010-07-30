@@ -7506,16 +7506,20 @@ extern List get_acct_hierarchical_rec_list(List assoc_list)
 		else
 			arch_rec->sort_name = assoc->acct;
 
-		if(last_parent && assoc->parent_id == last_parent->assoc->id) {
+		if(last_parent && assoc->parent_id == last_parent->assoc->id
+		   && !strcmp(assoc->cluster, last_parent->assoc->cluster)) {
 			par_arch_rec = last_parent;
 		} else if(last_acct_parent
-			  && assoc->parent_id == last_acct_parent->assoc->id) {
+			  && (assoc->parent_id == last_acct_parent->assoc->id)
+			  && !strcmp(assoc->cluster,
+				     last_acct_parent->assoc->cluster)) {
 			par_arch_rec = last_acct_parent;
 		} else {
 			list_iterator_reset(itr2);
 			while((par_arch_rec = list_next(itr2))) {
-				if(assoc->parent_id
-				   == par_arch_rec->assoc->id) {
+				if(assoc->parent_id == par_arch_rec->assoc->id
+				   && !strcmp(assoc->cluster,
+					      par_arch_rec->assoc->cluster)) {
 					if(assoc->user)
 						last_parent = par_arch_rec;
 					else
