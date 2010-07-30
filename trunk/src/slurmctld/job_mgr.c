@@ -1880,14 +1880,13 @@ extern int kill_running_job_by_node_name(char *node_name)
 				 * Set a new submit time so the restarted
 				 * job looks like a new job. */
 				job_ptr->job_state  = JOB_NODE_FAIL;
+				build_cg_bitmap(job_ptr);
 				deallocate_nodes(job_ptr, false, suspended);
 				job_completion_logger(job_ptr, true);
 				job_ptr->db_index = 0;
 				job_ptr->job_state = JOB_PENDING;
-				if (job_ptr->node_cnt) {
+				if (job_ptr->node_cnt)
 					job_ptr->job_state |= JOB_COMPLETING;
-					build_cg_bitmap(job_ptr);
-				}
 				job_ptr->details->submit_time = now;
 
 				/* restart from periodic checkpoint */
@@ -2627,10 +2626,9 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 	if (IS_JOB_COMPLETING(job_ptr))
 		return SLURM_SUCCESS;	/* avoid replay */
 
-	if (IS_JOB_RUNNING(job_ptr)) {
+	if (IS_JOB_RUNNING(job_ptr))
 		job_comp_flag = JOB_COMPLETING;
-		build_cg_bitmap(job_ptr);
-	}
+
 	if (IS_JOB_SUSPENDED(job_ptr)) {
 		enum job_states suspend_job_state = job_ptr->job_state;
 		/* we can't have it as suspended when we call the
@@ -2640,7 +2638,6 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 		jobacct_storage_g_job_suspend(acct_db_conn, job_ptr);
 		job_ptr->job_state = suspend_job_state;
 		job_comp_flag = JOB_COMPLETING;
-		build_cg_bitmap(job_ptr);
 		suspended = true;
 	}
 
@@ -2716,8 +2713,10 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 	}
 
 	last_job_update = now;
-	if (job_comp_flag) 	/* job was running */
+	if (job_comp_flag) {	/* job was running */
+		build_cg_bitmap(job_ptr);
 		deallocate_nodes(job_ptr, false, suspended);
+	}
 	info("sched: job_complete for JobId=%u successful", job_id);
 	return SLURM_SUCCESS;
 }
@@ -7886,15 +7885,14 @@ extern int job_requeue (uid_t uid, uint32_t job_id, slurm_fd_t conn_fd,
 	 * accounting logs. Set a new submit time so the restarted
 	 * job looks like a new job. */
 	job_ptr->job_state  = JOB_CANCELLED;
+	build_cg_bitmap(job_ptr);
 	deallocate_nodes(job_ptr, false, suspended);
 	xfree(job_ptr->details->req_node_layout);
 	job_completion_logger(job_ptr, true);
 	job_ptr->db_index = 0;
 	job_ptr->job_state = JOB_PENDING;
-	if (job_ptr->node_cnt) {
+	if (job_ptr->node_cnt)
 		job_ptr->job_state |= JOB_COMPLETING;
-		build_cg_bitmap(job_ptr);
-	}
 
 	job_ptr->details->submit_time = now;
 	job_ptr->pre_sus_time = (time_t) 0;

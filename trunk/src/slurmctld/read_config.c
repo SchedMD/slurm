@@ -1314,6 +1314,8 @@ static int _sync_nodes_to_comp_job(void)
 		if ((job_ptr->node_bitmap) && IS_JOB_COMPLETING(job_ptr)) {
 			update_cnt++;
 			info("Killing job_id %u", job_ptr->job_id);
+			if(!job_ptr->node_bitmap_cg)
+				build_cg_bitmap(job_ptr);
 			deallocate_nodes(job_ptr, false, false);
 			job_completion_logger(job_ptr, false);
 		}
