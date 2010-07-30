@@ -1904,7 +1904,7 @@ extern void re_kill_job(struct job_record *job_ptr)
 	}
 
 	if (agent_args->node_count == 0) {
-		xfree(kill_job);
+		slurm_free_kill_job_msg(kill_job);
 		if(agent_args->hostlist)
 			hostlist_destroy(agent_args->hostlist);
 		xfree(agent_args);
