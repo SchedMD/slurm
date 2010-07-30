@@ -113,7 +113,7 @@ int _get_syms(int n_syms, const char *names[], void *ptrs[])
 	db_handle = dlopen (BG_DB2_SO, RTLD_LAZY);
 	if (!db_handle) {
 		have_db2 = false;
-		debug("%s\n", dlerror());
+		debug("%s", dlerror());
 		return 0;
 	}
 	dlclose(db_handle);
@@ -126,7 +126,7 @@ int _get_syms(int n_syms, const char *names[], void *ptrs[])
 	handle = dlopen (BG_BRIDGE_SO, RTLD_LAZY);
 	if (!handle) {
 		have_db2 = false;
-		debug("%s\n", dlerror());
+		debug("%s", dlerror());
 		return 0;
 	}
 #else

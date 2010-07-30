@@ -183,7 +183,7 @@ static int _post_allocate(bg_record_t *bg_record)
 	uid_t my_uid;
 
 	/* Add partition record to the DB */
-	debug2("adding block\n");
+	debug2("adding block");
 
 	for(i=0;i<MAX_ADD_RETRY; i++) {
 		if ((rc = bridge_add_block(bg_record->bg_block))
@@ -203,7 +203,7 @@ static int _post_allocate(bg_record_t *bg_record)
 			error("bridge_free_block(): %s", bg_err_str(rc));
 		fatal("couldn't add last block.");
 	}
-	debug2("done adding\n");
+	debug2("done adding");
 
 	/* Get back the new block id */
 	if ((rc = bridge_get_data(bg_record->bg_block, RM_PartitionID,

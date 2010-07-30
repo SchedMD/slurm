@@ -381,7 +381,7 @@ static void _remove_jobs_on_block_and_reset(rm_job_list_t *job_list,
 		}
 
 		if(!job_elem) {
-			error("No Job Elem breaking out job count = %d\n", i);
+			error("No Job Elem breaking out job count = %d", i);
 			break;
 		}
 		if ((rc = bridge_get_data(job_elem, RM_JobPartitionID,
@@ -397,7 +397,7 @@ static void _remove_jobs_on_block_and_reset(rm_job_list_t *job_list,
 			continue;
 		}
 
-		debug2("looking at block %s looking for %s\n",
+		debug2("looking at block %s looking for %s",
 		       job_block, block_id);
 
 		if (strcmp(job_block, block_id)) {

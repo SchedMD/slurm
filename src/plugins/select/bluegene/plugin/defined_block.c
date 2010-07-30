@@ -102,7 +102,7 @@ extern int create_defined_blocks(bg_layout_t overlapped,
 					bg_found_block_list);
 				while ((found_record = (bg_record_t*)
 					list_next(itr_found)) != NULL) {
-/* 					info("%s[%s] ?= %s[%s]\n", */
+/* 					info("%s[%s] ?= %s[%s]", */
 /* 					     bg_record->nodes, */
 /* 					     bg_record->ionodes, */
 /* 					     found_record->nodes, */

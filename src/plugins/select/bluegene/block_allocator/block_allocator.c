@@ -2209,7 +2209,7 @@ extern int load_block_wiring(char *bg_block_id)
 	int *geo = NULL;
 
 	if(ba_debug_flags & DEBUG_FLAG_BG_ALGO)
-		info("getting info for block %s\n", bg_block_id);
+		info("getting info for block %s", bg_block_id);
 
 	if ((rc = bridge_get_block(bg_block_id,  &block_ptr)) != STATUS_OK) {
 		error("bridge_get_block(%s): %s",
@@ -2439,7 +2439,7 @@ extern List get_and_set_block_wiring(char *bg_block_id,
 	ListIterator itr = NULL;
 
 	if(ba_debug_flags & DEBUG_FLAG_BG_ALGO)
-		info("getting info for block %s\n", bg_block_id);
+		info("getting info for block %s", bg_block_id);
 
 	if ((rc = bridge_get_data(block_ptr, RM_PartitionSwitchNum,
 				  &switch_cnt)) != STATUS_OK) {
