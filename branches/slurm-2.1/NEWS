@@ -2,6 +2,9 @@ This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
 
+* Changes in SLURM 2.1.12
+=========================
+
 * Changes in SLURM 2.1.11
 =========================
  -- BLUEGENE - fix sinfo to not get duplicate entries when running command
