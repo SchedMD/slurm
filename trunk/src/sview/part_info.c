@@ -2080,7 +2080,7 @@ display_it:
 	}
 
 	if(path)
-		highlight_grid(GTK_TREE_VIEW(display_widget), path,
+		highlight_grid(GTK_TREE_VIEW(display_widget),
 			       SORTID_NODE_INX, SORTID_COLOR_INX,
 			       grid_button_list);
 	else
@@ -2309,7 +2309,7 @@ extern void set_menus_part(void *arg, void *arg2, GtkTreePath *path, int type)
 		make_options_menu(tree_view, path, menu, options_data_part);
 		break;
 	case ROW_LEFT_CLICKED:
-		highlight_grid(tree_view, path, SORTID_NODE_INX,
+		highlight_grid(tree_view, SORTID_NODE_INX,
 			       SORTID_COLOR_INX, button_list);
 		break;
 	case FULL_CLICKED:

@@ -29,13 +29,19 @@
 
 #include "src/sview/sview.h"
 #include "src/common/parse_time.h"
-
 static bool menu_right_pressed = false;
 
 typedef struct {
 	GtkTreeModel *model;
+	GtkTreeView  *treeview;
 	GtkTreeIter iter;
 } treedata_t;
+
+static const int KEY_UP = 111;
+static const int KEY_DOWN = 116;
+static const int KEY_ENTER = 36;
+static const int KEY_CONTROL = 16777253;
+static gboolean control_key_in_effect = FALSE;
 
 /* These next 2 functions are here to make it so we don't magically
  * click on something before we really want to in a menu.
@@ -459,7 +465,7 @@ static void _selected_page(GtkMenuItem *menuitem, display_data_t *display_data)
 		switch(display_data->id) {
 		case JOB_PAGE:
 			admin_job(treedata->model, &treedata->iter,
-				  display_data->name);
+				  display_data->name,treedata->treeview);
 			break;
 		case PART_PAGE:
 			admin_part(treedata->model, &treedata->iter,
@@ -614,7 +620,8 @@ extern void make_options_menu(GtkTreeView *tree_view, GtkTreePath *path,
 	GtkWidget *menuitem = NULL;
 	treedata_t *treedata = xmalloc(sizeof(treedata_t));
 	treedata->model = gtk_tree_view_get_model(tree_view);
-
+	treedata->treeview = tree_view;
+	gint row_count=0;
 	g_signal_connect(G_OBJECT(menu), "button-press-event",
 			 G_CALLBACK(_menu_button_pressed),
 			 NULL);
@@ -626,21 +633,45 @@ extern void make_options_menu(GtkTreeView *tree_view, GtkTreePath *path,
 		g_error("make menus error getting iter from model\n");
 		return;
 	}
+
+	/* check selection list */
+	row_count=gtk_tree_selection_count_selected_rows(
+		gtk_tree_view_get_selection(tree_view));
+
 	if(display_data->user_data)
 		xfree(display_data->user_data);
 
 	while(display_data++) {
-		if(display_data->id == -1)
+		if(display_data->id == -1) {
 			break;
+		}
+
 		if(!display_data->name)
 			continue;
-
 		display_data->user_data = treedata;
 		menuitem = gtk_menu_item_new_with_label(display_data->name);
-		g_signal_connect(menuitem, "activate",
-				 G_CALLBACK(_selected_page),
-				 display_data);
-		gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem);
+		/* do not show FULL Info,etc. as an option for multiple
+		 * selections */
+		if (global_multi_count > 0 || row_count > 1) {
+			/*determine how much of the popup items to include*/
+			if (!strcmp(display_data->name,"Full Info")
+			    || !strcmp(display_data->name,"Edit Job")
+			    || !strcmp(display_data->name,"Nodes")
+			    || !strcmp(display_data->name,"Partition")
+			    || !strcmp(display_data->name,"Reservation")) {
+			} else {
+				g_signal_connect(menuitem, "activate",
+						 G_CALLBACK(_selected_page),
+						 display_data);
+				gtk_menu_shell_append(GTK_MENU_SHELL(menu),
+						      menuitem);
+			}
+		} else {
+			g_signal_connect(menuitem, "activate",
+					 G_CALLBACK(_selected_page),
+					 display_data);
+			gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem);
+		}
 	}
 }
 
@@ -742,6 +773,10 @@ extern GtkTreeView *create_treeview(display_data_t *local, List *button_list)
 	g_signal_connect(G_OBJECT(tree_view), "button-press-event",
 			 G_CALLBACK(row_clicked),
 			 signal_params);
+	g_signal_connect(G_OBJECT(tree_view), "key_release_event",
+			 G_CALLBACK(key_released),
+			 signal_params);
+
 	g_signal_connect(G_OBJECT(tree_view), "row-activated",
 			 G_CALLBACK(row_activated),
 			 signal_params);
@@ -899,7 +934,10 @@ extern gboolean right_button_pressed(GtkTreeView *tree_view,
 	if(type == ROW_CLICKED) {
 		/* These next 2 functions are there to keep the keyboard in
 		   sync */
-		gtk_tree_view_set_cursor(tree_view, path, NULL, false);
+		if(!(event->state & GDK_CONTROL_MASK)
+		   && (global_multi_count > 0))
+			gtk_tree_view_set_cursor(tree_view, path, NULL, false);
+
 		gtk_widget_grab_focus(GTK_WIDGET(tree_view));
 
 		/* highlight the nodes from this row */
@@ -917,7 +955,8 @@ extern gboolean right_button_pressed(GtkTreeView *tree_view,
 
 extern gboolean left_button_pressed(GtkTreeView *tree_view,
 				    GtkTreePath *path,
-				    const signal_params_t *signal_params)
+				    const signal_params_t *signal_params,
+				    GdkEventButton *event)
 {
 	static time_t last_time = 0;
 	time_t now = time(NULL);
@@ -926,11 +965,13 @@ extern gboolean left_button_pressed(GtkTreeView *tree_view,
 	GtkTreeModel *model = gtk_tree_view_get_model(tree_view);
 	display_data_t *display_data = signal_params->display_data;
 	static gpointer *last_user_data = NULL;
-
 	/* These next 2 functions are there to keep the keyboard in
 	   sync */
-	gtk_tree_view_set_cursor(tree_view, path, NULL, false);
-	gtk_widget_grab_focus(GTK_WIDGET(tree_view));
+	if(!((event->state & GDK_CONTROL_MASK)
+	     || (event->state & GDK_SHIFT_MASK)))
+		gtk_tree_view_set_cursor(tree_view, path, NULL, false);
+
+	gtk_widget_grab_focus(GTK_WIDGET(tree_view)); /*give keyboard focus*/
 
 	/* highlight the nodes from this row */
 	(display_data->set_menu)(tree_view, *signal_params->button_list,
@@ -970,10 +1011,58 @@ extern gboolean row_activated(GtkTreeView *tree_view, GtkTreePath *path,
 	return false;
 }
 
+extern gboolean key_pressed(GtkTreeView *tree_view, GdkEventButton *event,
+			    const signal_params_t *signal_params)
+{
+	if((event->state == KEY_CONTROL))
+		control_key_in_effect = TRUE;
+
+	return FALSE;
+}/*key_pressed ^^^*/
+
+
+extern gboolean key_released(GtkTreeView *tree_view, GdkEventButton *event,
+			     const signal_params_t *signal_params)
+{
+
+	GtkTreePath *path = NULL;
+	GtkTreeViewColumn *column;
+	GtkTreeSelection *selection = NULL;
+	/*GtkTreeIter iter;
+	  GtkTreeModel *model = gtk_tree_view_get_model(tree_view);*/
+
+
+	int row_count = 0;
+	/*go use row-click logic and monitor state there*/
+	if (!(event->state == KEY_UP) && !(event->state == KEY_DOWN)) {
+		return FALSE;
+	}
+
+
+	/*set path based on current cursor*/
+	gtk_tree_view_get_cursor(GTK_TREE_VIEW(tree_view), &path, &column);
+	/*gtk_tree_model_get_iter(model, &iter, path);*/
+	/*pull the current selection object*/
+	selection = gtk_tree_view_get_selection(tree_view);
+	/*path = gtk_tree_path_new_from_indices(5,-1);
+	  gtk_tree_path_next (path); */
+
+	row_count=gtk_tree_selection_count_selected_rows(
+		gtk_tree_view_get_selection(GTK_TREE_VIEW(tree_view)));
+	gtk_tree_selection_select_path(selection, path);
+	gtk_tree_path_free(path);
+	return TRUE;
+
+
+}/*key_released ^^^*/
+
+
+
 extern gboolean row_clicked(GtkTreeView *tree_view, GdkEventButton *event,
 			    const signal_params_t *signal_params)
 {
 	GtkTreePath *path = NULL;
+	GtkTreePath *last_path = NULL;
 	GtkTreeSelection *selection = NULL;
 	gboolean did_something = FALSE;
 
@@ -982,11 +1071,18 @@ extern gboolean row_clicked(GtkTreeView *tree_view, GdkEventButton *event,
 					  (gint) event->y,
 					  &path, NULL, NULL, NULL)) {
 		selection = gtk_tree_view_get_selection(tree_view);
-		/* If there is a selection clear it up by doing a
-		   refresh.  If there wasn't a selection before do
-		   nothing. */
+
+		/* If there is a selection AND we are not under
+		 * multi-selection processing via the ctrl key clear
+		 * it up by doing a refresh.  If there wasn't a
+		 * selection before OR we are stacking selections via
+		 * the ctrl key do nothing here. */
 		if(gtk_tree_selection_count_selected_rows(selection)){
-			gtk_tree_selection_unselect_all(selection);
+			if(!(event->state & GDK_CONTROL_MASK)) {
+				gtk_tree_selection_unselect_all(selection);
+				//reset selections counter.
+				global_multi_count = 0;
+			}
 			refresh_main(NULL, NULL);
 			return TRUE;
 		}
@@ -995,11 +1091,42 @@ extern gboolean row_clicked(GtkTreeView *tree_view, GdkEventButton *event,
 
 	/* make the selection (highlight) here */
 	selection = gtk_tree_view_get_selection(tree_view);
-	gtk_tree_selection_unselect_all(selection);
 
-	/* Only select if control key is not held */
-	if(!(event->state & GDK_CONTROL_MASK))
-		gtk_tree_selection_select_path(selection, path);
+	/*if shift is down then pull a range out*/
+	if((event->state & GDK_SHIFT_MASK)) {
+		if (last_event_x != 0) {
+			if(gtk_tree_view_get_path_at_pos(tree_view,
+							 (gint) last_event_x,
+							 (gint) last_event_y,
+							 &last_path, NULL,
+							 NULL, NULL)) {
+				if (last_path != NULL) {
+					gtk_tree_selection_select_range(
+						selection, last_path, path);
+					gtk_tree_path_free(last_path);
+				}
+			}
+		} else {
+			/*ignore shift and pull single row anyway*/
+			gtk_tree_selection_select_path(selection, path);
+		}
+	} /*shift down^^*/
+	else {
+		/* Only select path if control key is not held in order to
+		 * establish anchor*/
+		if(!(event->state & GDK_CONTROL_MASK))
+			gtk_tree_selection_select_path(selection, path);
+		else {
+			if (!gtk_tree_selection_count_selected_rows(
+				    gtk_tree_view_get_selection(
+					    GTK_TREE_VIEW(tree_view)))) {
+				gtk_tree_selection_select_path(selection, path);
+			}
+		}
+	} /*ctrl down ^^^*/
+	last_event_x = event->x; /*save THIS x*/
+	last_event_y = event->y; /*save THIS y*/
+	global_multi_count++;
 
 	if(event->x <= 20) {
 		/* When you try to resize a column this event happens
@@ -1011,10 +1138,19 @@ extern gboolean row_clicked(GtkTreeView *tree_view, GdkEventButton *event,
 		did_something = FALSE;
 	} else if(event->button == 1) {
 		/*  left click */
+		if(!(event->state & GDK_CONTROL_MASK)
+		   && !(event->state & GDK_SHIFT_MASK)) {
+			/* unselect current on naked left clicks..*/
+			gtk_tree_selection_unselect_all(selection);
+			global_multi_count = 0; //reset selections counter.
+		}
 		did_something = left_button_pressed(
-			tree_view, path, signal_params);
+			tree_view, path, signal_params, event);
 	} else if(event->button == 3) {
 		/*  right click */
+		if(!(event->state & GDK_CONTROL_MASK))
+			global_multi_count = 0; //reset selections counter.
+
 		right_button_pressed(tree_view, path, event,
 				     signal_params, ROW_CLICKED);
 		did_something = TRUE;
@@ -1027,7 +1163,7 @@ extern gboolean row_clicked(GtkTreeView *tree_view, GdkEventButton *event,
 	   after left_button_pressed to get other things correct. */
 	if(event->state & GDK_CONTROL_MASK) {
 		refresh_main(NULL, NULL);
-		return FALSE;
+		return FALSE; /*propagate event*/
 	}
 	return did_something;
 }
