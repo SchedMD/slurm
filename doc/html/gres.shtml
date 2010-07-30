@@ -5,7 +5,7 @@
 <P>Beginning in SLURM version 2.2 generic resource (Gres) scheduling is
 supported through a flexible plugin mechanism. Support is initially provided
 for Graphics Processing Units (GPUs), although support for any resources is
-possible though use of a customized plugin.</P>
+possible..</P>
 
 <!-------------------------------------------------------------------------->
 <h2>Configuration</h2>
@@ -16,8 +16,9 @@ One must explicitly specify which resources are to be managed in the
 interest are:</P>
 
 <UL>
-<LI><B>GresPlugins</B> a comma delimited list of generic resource plugins to be
-used (e.g. <I>GresPlugins=gpus,nic</I>).</LI>
+<LI><B>GresTypes</B> a comma delimited list of generic resources to be
+managed (e.g. <I>GresPlugins=gpus,nic</I>). This name may be that of an
+optional plugin providing additional control over the resources.</LI>
 <LI><B>Gres</B> the specific generic resource and their count associated with
 each node (e.g. <I>NodeName=linux[0-999] Gres=gpu:8,nic:2</I>).</LI>
 </UL>
@@ -29,6 +30,54 @@ than configured will be placed in a DOWN state.</P>
 
 <P>Note that the Gres specification is not supported on BlueGene systems.</P>
 
+<P>Each compute node with generic resources must also contain a <I>gres.conf</I>
+file describing which resources are available on the node, their count, 
+associated device files and CPUs which should be used with those resources.
+The configuration parameters available are:</P>
+
+<UL>
+<LI><B>Name</B> name of a generic resource (must match <B>GresTypes</B>
+values in <I>slurm.conf</I>.</LI>
+
+<LI><B>Count</B> Number of resources of this type available on this node.
+The default value is set to the number of <B>File</B> values specified (if any),
+otherwise the default value is one.</LI>
+
+<LI><B>CPUs</B> Specify the CPU index numbers for the specific CPUs which can
+use this resources. For example, it may be strongly preferable to use specific
+CPUs with specific devices (e.g. on a NUMA architecture).
+Multiple CPUs may be specified using a comma delimited list or a range may be
+specified using a "-" separator (e.g. "0,1,2,3" or "0-3").
+If not specified, then any CPU can be used with the resources.
+If any CPU can be used with the resources, then do not specify the
+<B>CPUs</B> option for improved speed in the SLURM scheduling logic.
+
+<LI><B>File</B>Fully qualified pathname of the device files associated with a
+resource.
+The name can include a numberic range suffix to be interpretted by SLURM
+(e.g. \fIFile=/dev/nvidia[0-3]\fR).
+This field is generally required if enforcement of generic resource
+allocations is to be supported (i.e. prevents a users from making
+use of resources allocated to a different user).
+If \fBFile\fR is specified then \fBCount\fR must be either set to the number
+of file names specified or not set (the default value is the number of files
+specified).
+NOTE: If you specify the \fBFile\fR parameter for a resource on some node,
+the option must be specified on all nodes and SLURM will track the assignment
+of each specific resource on each node. Otherwise SLURM will only track a
+count of allocated resources rather than the state of each individual device
+file.</LI>
+</UL>
+
+<P>Sample gres.conf file:</P>
+<PRE>
+# Configure support for our four GPUs
+Name=gpu File=/dev/nvidia0 CPUs=0,1
+Name=gpu File=/dev/nvidia1 CPUs=0,1
+Name=gpu File=/dev/nvidia2 CPUs=2,3
+Name=gpu File=/dev/nvidia3 CPUs=2,3
+Name=bandwidth Count=20M
+</PRE>
 <!-------------------------------------------------------------------------->
 <h2>Running Jobs</h2>
 
@@ -68,6 +117,6 @@ wait
 </PRE>
 <!-------------------------------------------------------------------------->
 
-<p style="text-align: center;">Last modified 26 May 2010</p>
+<p style="text-align: center;">Last modified 29 August 2010</p>
 
-</ul></body></html>
+</body></html>

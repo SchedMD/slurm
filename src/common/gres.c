@@ -357,7 +357,8 @@ extern int gres_plugin_init(void)
 			if (gres_context[i].plugin_id !=
 			    gres_context[j].plugin_id)
 				continue;
-			fatal("Gres: Duplicate plugin_id %u for %s and %s",
+			fatal("Gres: Duplicate plugin_id %u for %s and %s, "
+			      "change gres name for one of them",
 			      gres_context[i].plugin_id,
 			      gres_context[i].gres_type,
 			      gres_context[j].gres_type);
@@ -514,7 +515,7 @@ static void _destroy_gres_slurmd_conf(void *x)
 
 	xassert(p);
 	xfree(p->cpus);
-	xfree(p->file);
+	xfree(p->file);		/* Only used by slurmd */
 	xfree(p->name);
 	xfree(p);
 }
@@ -608,15 +609,16 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 			      const char *line, char **leftover)
 {
 	static s_p_options_t _gres_options[] = {
-		{"Count", S_P_UINT32},	/* Number of Gres available */
-		{"CPUs", S_P_STRING},	/* CPUs to bind to Gres resource */
-		{"File", S_P_STRING},	/* Path to Gres device */
+		{"Count", S_P_STRING},	/* Number of Gres available */
+		{"CPUs" , S_P_STRING},	/* CPUs to bind to Gres resource */
+		{"File",  S_P_STRING},	/* Path to Gres device */
 		{NULL}
 	};
 	int i;
 	s_p_hashtbl_t *tbl;
 	gres_slurmd_conf_t *p;
-	uint32_t tmp_u32;
+	long tmp_long;
+	char *tmp_str, *last;
 
 	tbl = s_p_hashtbl_create(_gres_options);
 	s_p_parse_line(tbl, *leftover, leftover);
@@ -642,14 +644,28 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 		p->has_file = 1;
 	}
 
-	if (s_p_get_uint32(&tmp_u32, "Count", tbl)) {
-		if (tmp_u32 == 0)
+	if (s_p_get_string(&tmp_str, "Count", tbl)) {
+		tmp_long = strtol(tmp_str, &last, 10);
+		if ((tmp_long == LONG_MIN) || (tmp_long == LONG_MAX)) {
+			fatal("Invalid gres data for %s, Count=%s", p->name,
+			      tmp_str);
+		}
+		if ((last[0] == 'k') || (last[0] == 'K'))
+			tmp_long *= 1024;
+		else if ((last[0] == 'm') || (last[0] == 'M'))
+			tmp_long *= (1024 * 1024);
+		else if (last[0] != '\0') {
+			fatal("Invalid gres data for %s, Count=%s", p->name,
+			      tmp_str);
+		}
+		if (tmp_long == 0)
 			fatal("Invalid gres data for %s, Count=0", p->name);
-		if (p->count && (p->count != tmp_u32)) {
+		if (p->count && (p->count != tmp_long)) {
 			fatal("Invalid gres data for %s, Count does not match "
 			      "File value", p->name);
 		}
-		p->count = tmp_u32;
+		p->count = tmp_long;
+		xfree(tmp_str);
 	} else if (p->count == 0)
 		p->count = 1;
 
@@ -835,6 +851,14 @@ extern int gres_plugin_node_config_unpack(Buf buffer, char* node_name)
  		for (j=0; j<gres_context_cnt; j++) {
  			if (gres_context[j].plugin_id != plugin_id)
 				continue;
+			if (strcmp(gres_context[j].gres_name, tmp_name)) {
+				/* Should be caught in gres_plugin_init() */
+				error("gres_plugin_node_config_unpack: gres/%s"
+				      " duplicate plugin ID with %s, unable "
+				      "to process",
+				      tmp_name, gres_context[j].gres_name);
+				continue;
+			}
 			if (gres_context[j].has_file && !has_file) {
 				error("gres_plugin_node_config_unpack: gres/%s"
 				      " lacks File parameter for node %s",
@@ -870,7 +894,7 @@ extern int gres_plugin_node_config_unpack(Buf buffer, char* node_name)
 		p->has_file = has_file;
 		p->cpus = tmp_cpus;
 		tmp_cpus = NULL;	/* Nothing left to xfree */
-		xfree(tmp_name);	/* Don't bother to save */
+		xfree(tmp_name);	/* Don't bother to preserve */
 		p->plugin_id = plugin_id;
 		list_append(gres_conf_list, p);
 	}
@@ -974,6 +998,14 @@ static void _set_gres_cnt(char *orig_config, char **new_config,
 		if (strcmp(tok, gres_name) &&
 		    strncmp(tok, gres_name_colon, gres_name_colon_len)) {
 			xstrcat(new_configured_res, tok);
+		} else if ((new_cnt % (1024 * 1024)) == 0) {
+			new_cnt /= (1024 * 1024);
+			xstrfmtcat(new_configured_res, "%s:%uM",
+				   gres_name, new_cnt);
+		} else if ((new_cnt % 1024) == 0) {
+			new_cnt /= 1024;
+			xstrfmtcat(new_configured_res, "%s:%uK",
+				   gres_name, new_cnt);
 		} else {
 			xstrfmtcat(new_configured_res, "%s:%u",
 				   gres_name, new_cnt);

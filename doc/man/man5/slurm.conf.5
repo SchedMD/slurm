@@ -496,10 +496,11 @@ the user's environment from the cache file.
 The default value is 2 seconds.
 
 .TP
-\fBGresPlugins\fR
-A comma delimited list of generic resource management plugins to be used.
-The specified plugins will be executed in the order listed.
-No plugins are used by default.
+\fBGresTypes\fR
+A comma delimited list of generic resources to be managed.
+These generic resources may have an associated plugin available to provide
+additional functionality.
+No generic resources are managed by default.
 Insure this parameter is consistent across all nodes in the cluster for
 proper operation.
 The slurmctld daemon must be restarted for changes to this parameter to become
@@ -2890,7 +2891,7 @@ The file must be accessible by the primary and backup control machines.
 
 .SH "COPYING"
 Copyright (C) 2002\-2007 The Regents of the University of California.
-Copyright (C) 2008\-2009 Lawrence Livermore National Security.
+Copyright (C) 2008\-2010 Lawrence Livermore National Security.
 Portions Copyright (C) 2010 SchedMD <http://www.sched\-md.com>.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 CODE\-OCEC\-09\-009. All rights reserved.
@@ -2914,7 +2915,7 @@ details.
 .SH "SEE ALSO"
 .LP
 \fBbluegene.conf\fR(5), \fBcgroup.conf\fR(5), \fBgethostbyname\fR(3),
-\fBgetrlimit\fR(2), \fBgroup\fR(5), \fBhostname\fR(1),
+\fBgetrlimit\fR(2), \fBgres.conf\fR(5), \fBgroup\fR(5), \fBhostname\fR(1),
 \fBscontrol\fR(1), \fBslurmctld\fR(8), \fBslurmd\fR(8),
 \fBslurmdbd\fR(8), \fBslurmdbd.conf\fR(5), \fBsrun(1)\fR,
 \fBspank(8)\fR, \fBsyslog\fR(2), \fBtopology.conf\fR(5), \fBwiki.conf\fR(5)
