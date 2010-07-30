@@ -1322,8 +1322,7 @@ extern List slurmdb_get_acct_hierarchical_rec_list(List assoc_list)
 		   && !strcmp(assoc->cluster, last_parent->assoc->cluster)) {
 			par_arch_rec = last_parent;
 		} else if(last_acct_parent
-			  && (assoc->parent_id ==
-			      last_acct_parent->assoc->id)
+			  && (assoc->parent_id == last_acct_parent->assoc->id)
 			  && !strcmp(assoc->cluster,
 				     last_acct_parent->assoc->cluster)) {
 			par_arch_rec = last_acct_parent;

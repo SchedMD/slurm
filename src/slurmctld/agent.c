@@ -1395,7 +1395,8 @@ static void _purge_agent_args(agent_arg_t *agent_arg_ptr)
 		else if (agent_arg_ptr->msg_type == SRUN_NODE_FAIL)
 			slurm_free_srun_node_fail_msg(agent_arg_ptr->msg_args);
 		else if (agent_arg_ptr->msg_type == SRUN_STEP_MISSING)
-			slurm_free_srun_step_missing_msg(agent_arg_ptr->msg_args);
+			slurm_free_srun_step_missing_msg(
+				agent_arg_ptr->msg_args);
 		else if (agent_arg_ptr->msg_type == REQUEST_JOB_NOTIFY)
 			slurm_free_job_notify_msg(agent_arg_ptr->msg_args);
 		else

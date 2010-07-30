@@ -317,8 +317,16 @@ static bg_record_t *_find_matching_block(List block_list,
 		} else if((bg_record->job_running != NO_JOB_RUNNING)
 			  && (bg_record->job_running != job_ptr->job_id)
 			  && ((bg_conf->layout_mode == LAYOUT_DYNAMIC)
-			      || (!SELECT_IS_CHECK_FULL_SET(query_mode)
-				  && bg_conf->layout_mode != LAYOUT_DYNAMIC))) {
+			      || ((!SELECT_IS_CHECK_FULL_SET(query_mode)
+				   || SELECT_IS_MODE_RUN_NOW(query_mode))
+				  && (bg_conf->layout_mode
+				      != LAYOUT_DYNAMIC)))) {
+			/* Look here if you are trying to run now or
+			   if you aren't looking at the full set.  We
+			   don't continue on running blocks for the
+			   full set because we are seeing if the job
+			   can ever run so look here.
+			*/
 			if(bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
 				info("block %s in use by %s job %d",
 				     bg_record->bg_block_id,
