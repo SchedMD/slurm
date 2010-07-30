@@ -333,7 +333,7 @@ extern void process_nodes(bg_record_t *bg_record, bool startup)
 	}
 	list_iterator_destroy(itr);
 	debug3("process_nodes: "
-	       "geo = %c%c%c bp count is %d start is %c%c%c\n",
+	       "geo = %c%c%c bp count is %d start is %c%c%c",
 	       alpha_num[bg_record->geo[X]],
 	       alpha_num[bg_record->geo[Y]],
 	       alpha_num[bg_record->geo[Z]],

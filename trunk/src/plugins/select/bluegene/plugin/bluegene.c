@@ -627,7 +627,7 @@ extern void *mult_destroy_block(void *args)
 		}
 		slurm_mutex_unlock(&block_state_mutex);
 		if(bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
-			info("removing the jobs on block %s\n",
+			info("removing the jobs on block %s",
 			     bg_record->bg_block_id);
 		term_jobs_on_block(bg_record->bg_block_id);
 
@@ -1692,7 +1692,7 @@ static int _reopen_bridge_log(void)
 				   bg_conf->bridge_api_verb);
 #endif
 	if(bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
-		info("Bridge api file set to %s, verbose level %d\n",
+		info("Bridge api file set to %s, verbose level %d",
 		     bg_conf->bridge_api_file, bg_conf->bridge_api_verb);
 
 	return rc;
