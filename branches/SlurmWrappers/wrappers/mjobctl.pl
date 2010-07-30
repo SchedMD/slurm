@@ -58,7 +58,7 @@ GetOpts();
 #
 # If Slurm is earlier than 2.2.
 #
-if ($sversion < 2.2)&&  ($hold || $unhold)) {
+if ($sversion < 2.2 && ($hold || $unhold)) {
 	printf("\n Hold/Release functionality not available in this release.\n\n");
 	exit(1);
 }

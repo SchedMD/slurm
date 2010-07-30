@@ -22,7 +22,7 @@
 #
 # For debugging.
 #
-#use lib "/var/opt/slurm_banana/lib64/perl5/site_perl/5.8.8/x86_64-linux-thread-multi/";
+#use lib "/var/opt/slurm_bgp/lib64/perl5/site_perl/5.8.8/x86_64-linux-thread-multi/";
 
 #
 # For generating man pages.
@@ -75,6 +75,8 @@ my $rev_off = color("clear");
 # Other global variables.
 #
 my ($total, $opt);
+
+my $bglflag = 1  if (`scontrol show config | grep -i bluegene`);
 
 #
 # Each entry in this hash table must have a subhash.  The possible keys are:
@@ -269,6 +271,11 @@ foreach my $ct ($min .. $max) {
 		my $depend      = $job->{depend};
 		my $startpri    = $job->{priority};
 		my $nodes       = $job->{nodes};
+		if ($bglflag) {
+			if (($nodes > 1024) && ($nodes % 1024 == 0)) {
+				($nodes /= 1024) .= "k";
+			}
+		}
 		my $procs       = $job->{procs};
 		my $tpn         = $job->{tpn};
 		my $class       = $job->{class};
@@ -276,7 +283,7 @@ foreach my $ct ($min .. $max) {
 		my $subtime     = $job->{subtime};
 		my $starttime   = $job->{starttime};
 		my $comptime    = $job->{comptime};
-		my $masternode  = $job->{master};
+		my $masternode  = $job->{master} || "N/A";
 		my $duration    = $job->{duration};
 		my $remaining   = $job->{remaining};
 		my $status      = $job->{status};
@@ -310,7 +317,7 @@ foreach my $ct ($min .. $max) {
 		$value->{'ccode'}         = $compcode        if (defined $compcode);
 		$value->{'jobname'}       = $jobname         if (defined $jobname);
 		$value->{'exehost'}       = $exehost         if (defined $exehost);
-		$value->{'exehost'}       = $masternode      if ($status eq "active");
+		$value->{'exehost'}       = $masternode      if ($master_arg && defined $masternode && ($masternode ne "N/A"));
 
 		if ($status eq "active" || $status eq "eligible") {
 			my  $qtime = $starttime - $subtime;

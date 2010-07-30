@@ -10,7 +10,7 @@
 #
 # For debugging.
 #
-#use lib "/var/opt/slurm_banana/lib64/perl5/site_perl/5.8.8/x86_64-linux-thread-multi/";
+#use lib "/var/opt/slurm_bgp/lib64/perl5/site_perl/5.8.8/x86_64-linux-thread-multi/";
 
 use File::Basename;
 use Slurm;
@@ -292,7 +292,6 @@ if (scalar(@cmds) == 0) {
 #
 # Run each of the job attribute modification commands
 #
-$translate = 1;
 foreach my $cmd (@cmds) {
 	print "Running SLURM command: $cmd\n" if defined $translate;
 	my $output = `$cmd 2>&1`;

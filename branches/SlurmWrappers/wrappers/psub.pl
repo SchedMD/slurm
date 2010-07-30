@@ -106,15 +106,15 @@ if ($man) {
 #
 # Handle unsupported options
 #
-NoOptionSupport("-creds")  if $creds;
-NoOptionSupport("-dm")     if $dm;
-NoOptionSupport("-ke")     if $keepError;
-NoOptionSupport("-ko")     if $keepOutput;
-NoOptionSupport("-nc")     if $nonCheckpointable;
-NoOptionSupport("-net")    if $networkProtocol;
-NoOptionSupport("-nr")     if $nonRestartable;
-NoOptionSupport("-re")     if $flushError;
-NoOptionSupport("-ro")     if $flushOutput;
+NoOptionSupport("-creds")  if ($creds);
+NoOptionSupport("-dm")     if ($dm);
+NoOptionSupport("-ke")     if ($keepError);
+NoOptionSupport("-ko")     if ($keepOutput);
+NoOptionSupport("-nc")     if ($nonCheckpointable);
+NoOptionSupport("-net")    if ($networkProtocol);
+NoOptionSupport("-nr")     if ($nonRestartable);
+NoOptionSupport("-re")     if ($flushError);
+NoOptionSupport("-ro")     if ($flushOutput);
 
 #
 # Determine os.
@@ -174,7 +174,7 @@ unless ($command) {
 	my $lineNumber = 0;
 	foreach my $line (<SCRIPTIN>) {
 		$lineNumber++;
-		print SCRIPTOUT $line if $tmpScriptFile;
+		print SCRIPTOUT $line if ($tmpScriptFile);
 		if ($lineNumber == 1 && $line =~ /^\s*#\s*!\s*(\S+)/) {
 			$assignedShell = $1;
 		} elsif ($line =~ s/^\s*#\s*PSUB\s+//) {
@@ -308,10 +308,10 @@ if (defined $nodeDistribution) {
 
 	my ($min, $max) = ($1, $2);
 	if (defined $min && defined $max) {
-		push @slurmArgs, "--nodes==$min-$max";
+		push @slurmArgs, "--nodes=$min-$max";
 	} elsif (defined $min) {
-		die("Invalid node count ($min).\n") if $min <= 0;
-		push @slurmArgs, "--nodes==$min";
+		die("Invalid node count ($min).\n") if ($min <= 0);
+		push @slurmArgs, "--nodes=$min";
 	}
 }
 
@@ -411,7 +411,7 @@ if ($poolList) {
 # Had to modify to use unnamed an extensions 
 #
 if ($projectName) {
-	die("The project name ($projectName) may not contain white space.\n") if $projectName =~ /\s/;
+	die("The project name ($projectName) may not contain white space.\n") if ($projectName =~ /\s/);
 	push @slurmArgs, "--comment=$projectName";
 }
 
@@ -433,7 +433,7 @@ push @slurmArgs, "--job-name=$assignedJobName";
 #
 $outputFileName = $assignedJobName . ".o%j";
 if ($outputFile) {
-	die("Output file ($outputFile) may not contain a colon.\n") if $outputFile =~ /:/;
+	die("Output file ($outputFile) may not contain a colon.\n") if ($outputFile =~ /:/);
 	$outputFileName = $outputFile;
 } else {
 	$outputFile = $outputFileName;
@@ -445,7 +445,7 @@ if ($mergeError) {
 } else {
 	$errorFileName = $assignedJobName . ".e%j";
 	if ($errorFile) {
-		die("Error file ($errorFile) may not contain a colon.\n") if $errorFile =~ /:/;
+		die("Error file ($errorFile) may not contain a colon.\n") if ($errorFile =~ /:/);
 		$errorFileName = $errorFile;
 	} else {
 		$errorFile = $errorFileName;
@@ -462,12 +462,14 @@ if ($shellPath) {
 
 
 if ($wallclockLimit || $taskCpuLimit) {
-	my $lim = $wallclockLimit ? $wallclockLimit : $taskCpuLimit;
+	my $lim = seconds($wallclockLimit ? $wallclockLimit : $taskCpuLimit);
+printf("it is $wallclockLimit and $lim\n");
+	$lim = int ($lim / 60);
 	push @slurmArgs, "--time=$lim";
 }
 
 if ($wcKey) {
-	die("The wckey name ($wcKey) may not contain white space.\n") if $wcKey =~ /\s/;
+	die("The wckey name ($wcKey) may not contain white space.\n") if ($wcKey =~ /\s/);
 	push @slurmArgs, "--wckey=$wcKey";
 }
 
@@ -493,18 +495,18 @@ if ($errorFileName) {
 chomp(my $hostname = `hostname`);
 
 $environment{ENVIRONMENT}  = "BATCH";
-$environment{PSUB_HOME}    = $ENV{HOME} if $ENV{HOME};
+$environment{PSUB_HOME}    = $ENV{HOME} if ($ENV{HOME});
 $environment{PSUB_HOST}    = $hostname;
-$environment{PSUB_LOGNAME} = $ENV{LOGNAME} if $ENV{LOGNAME};
-$environment{PSUB_PATH}    = $SAVEDPATH if $SAVEDPATH;
+$environment{PSUB_LOGNAME} = $ENV{LOGNAME} if ($ENV{LOGNAME});
+$environment{PSUB_PATH}    = $SAVEDPATH if ($SAVEDPATH);
 $environment{PSUB_REQNAME} = $assignedJobName;
 unless ($environment{PSUB_SUBDIR} = getcwd) {
         die " Can't get current working directory:$!\n";
 }
-$environment{PSUB_TZ}      = $ENV{TZ} if $ENV{TZ};
-$environment{PSUB_USER}    = $ENV{USER} if $ENV{USER};
-$assignedShell = $ENV{SHELL} if $ENV{SHELL} && ! $assignedShell;
-$environment{PSUB_SHELL}   = $assignedShell if $assignedShell;
+$environment{PSUB_TZ}      = $ENV{TZ} if ($ENV{TZ});
+$environment{PSUB_USER}    = $ENV{USER} if ($ENV{USER});
+$assignedShell = $ENV{SHELL} if ($ENV{SHELL} && ! $assignedShell);
+$environment{PSUB_SHELL}   = $assignedShell if ($assignedShell);
 
 #
 # Add command file
@@ -605,9 +607,7 @@ printf("@slurmArgs  $command\n") if ($debug);
 #
 my $output = `sbatch  @slurmArgs $command 2>&1`;
 my $rc     = $?;
-if ($rc) {
-	die("Unable to submit moab job (sbatch @slurmArgs $command) [rc=$rc]: $output\n");
-}
+die("Unable to submit moab job (sbatch @slurmArgs $command) [rc=$rc]: $output\n") if ($rc);
 
 #
 # Remove temporary job script
@@ -618,7 +618,6 @@ unlink $tmpScriptFile if ($tmpScriptFile);
 # Parse the response
 #
 if (! $rc && $output =~ /Submitted batch job (\S+)/m) {
-
 	my $msg = "Job $1 submitted to batch\n";
 	print $msg;
 } else {
@@ -701,6 +700,8 @@ sub getopt
 
 #
 # Take a epoch time and convert it into SLURM format.
+# (Not needed in Slurm 2.2 or later, it takes a uts
+#  time value.)
 #
 sub fixtime
 {
@@ -722,49 +723,55 @@ sub fixtime
 
 
 #
-# $seconds = seconds($duration)
 # Converts a duration in nnnn[dhms] or [[dd:]hh:]mm to seconds
 #
 sub seconds
 {
-#
-# Convert time to total seconds.
-#
-	my ($wclim) = @_;
-
-	my $total_time = 0;
+	my ($duration) = @_;
+	$duration = 0 unless $duration;
+	my $seconds = 0;
 
 #
-#	Speical case for 'days'.
+#	Convert [[dd:]hh:]mm to duration in seconds
 #
-	if ($wclim =~ /days/) {
-		my ($dd) = ($wclim =~ m/(\W+)days/);
-		$total_time += (($dd * 24) *3600); 
-		return($total_time);
+	if ($duration =~ /^(?:(\d+):)?(\d*):(\d+)$/) {
+		my ($dd, $hh, $mm) = ($1 || 0, $2 || 0, $3);
+		$seconds += $mm * 60;
+		$seconds += $hh * 60 * 60;
+		$seconds += $dd * 24 * 60 * 60;
 	}
 
 #
-#	Will be either 3 or 4 argumnets, handle both cases.
+#	Convert nnnn[dhms] to duration in seconds
 #
-	my @lst  = split(/:/,$wclim);
-	my $items = scalar @lst;
-
-	if ($items == 3) {
-		my ($hh,$mm,$ss) = split(/:/,$wclim);
-		$total_time += ($hh * 3600); 
-		$total_time += ($mm * 60); 
-		$total_time += $ss; 
+	elsif ($duration =~ /^(\d+)([dhms])$/) {
+		my ($number, $metric) = ($1, $2);
+		if    ($metric eq 's') { $seconds = $number; }
+		elsif ($metric eq 'm') { $seconds = $number * 60; }
+		elsif ($metric eq 'h') { $seconds = $number * 60 * 60; }
+		elsif ($metric eq 'd') { $seconds = $number * 24 * 60 * 60; }
 	}
 
-	if ($items == 4) {
-		my ($dd, $hh,$mm,$ss) = split(/:/,$wclim);
-		$total_time += (($dd * 24) *3600); 
-		$total_time += ($hh * 3600); 
-		$total_time += ($mm * 60); 
-		$total_time += $ss; 
+#
+#	Convert number in minutes to seconds
+#
+	elsif ($duration =~ /^(\d+)$/) {
+		$seconds = $duration * 60;
 	}
 
-	return($total_time);
+#
+#	Unsupported format
+#
+	else {
+		Die("Invalid time limit specified ($duration)\n");
+	}
+
+#
+#	Time must be at least 1 minute (60 seconds)
+#
+	$seconds = 60 if $seconds < 60;
+
+	return $seconds;
 }
 
 

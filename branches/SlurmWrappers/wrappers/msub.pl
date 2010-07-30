@@ -410,6 +410,13 @@ if ($class) {
 }
 
 #
+# Request  a  time limit for the job.
+#
+if ($wclim) {
+	push @slurmArgs, "--time=$wclim";
+}
+
+#
 # Execute sbatch.
 #
 if ($debug == 1) {

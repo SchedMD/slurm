@@ -10,7 +10,7 @@
 #
 # For debugging.
 #
-#use lib "/var/opt/slurm_banana/lib64/perl5/site_perl/5.8.8/x86_64-linux-thread-multi/";
+#use lib "/var/opt/slurm_bgp/lib64/perl5/site_perl/5.8.8/x86_64-linux-thread-multi/";
 
 BEGIN {
 #
@@ -41,49 +41,49 @@ use Switch;
 #   long - long format, falls back to short
 #   obsolete - SPECIAL CASE, when first parsed, this spec will be
 #              replaced by the spec specified in the 'obsolete' subkey
-#
+ #
 my $spectable = {
-	'aging_time' =>     {'short' => '%-19.19s'},
-	'bank' =>           {'short' => '%-11.11s', 'long' => '%-31s'},
-	'batchid' =>        {'short' => '%-10s'},
-	'cl' =>             {'short' => '%-2s'},
-	'constraint' =>     {'short' => '%-10.10s'},
-	'cpus' =>           {'short' => '%5s'},
-	'cpn' =>            {'short' => '%6s'},
-	'default' =>        {}, # SPECIAL CASE!  Expanded later in the code.
-	'depend' =>         {'short' => '%-6s'},
-	'ecomptime' =>      {},
-	'earliest_start' => {'short' => '%-17s'},
-	'exehost' =>        {'short' => '%-9s'},
-	'highwater' =>      {},
-	'jid' =>            {'short' => '%12.12s'},
-	'maxcputime' =>     {'short' => '%10s'},
-	'maxmem' =>         {},
-	'maxnodes' =>       {'obsolete' => 'nodes'},
-	'maxphyss' =>       {},
-	'maxrss' =>         {},
-	'maxruntime' =>     {'short' => '%10s'},
-	'maxtime' =>        {'obsolete' => 'maxcputime'},
-	'memint' =>         {},
-	'memsize' =>        {'short' => '%8.8s'},
-	'name' =>           {'short' => '%-17.17s'},
-	'nodes' =>          {'short' => '%6s'},
-	'not_before_time' =>{'obsolete' => 'earliest_start'},
-	'pool' =>           {'short' => '%8s'},
-	'preempted_by' =>   {},
-	'priority' =>       {'short' => '%8.8s'},
-	'runtime' =>        {'short' => '%10s'},
-	'sid' =>            {},
-	'status' =>         {'short' => '%-10s'},
-	'stoptime' =>       {},
-	'submitted' =>      {'short' => '%-17s'},
-	'suspended_by' =>   {},
-	'tasks' =>          {},
-	'timecharged' =>    {},
-	'timeleft' =>       {'short' => '%10s'},
-	'used' =>           {'short' => '%10.10s'},
-	'user' =>           {'short' => '%-11.11s', 'long' => '%-31s'},
-	'vmemint' => {}
+	'aging_time'       => {'short'    => '%-19.19s'},
+	'bank'             => {'short'    => '%-11.11s', 'long' => '%-31s'},
+	'batchid'          => {'short'    => '%-10s'},
+	'cl'               => {'short'    => '%-2s'},
+	'constraint'       => {'short'    => '%-10.10s'},
+	'cpus'             => {'short'    => '%5s'},
+	'cpn'              => {'short'    => '%6s'},
+	'default'          => {}, # SPECIAL CASE!  Expanded later in the code.
+	'depend'           => {'short'    => '%-6s'},
+	'ecomptime'        => {},
+	'earliest_start'   => {'short'    => '%-17s'},
+	'exehost'          => {'short'    => '%-9s'},
+	'highwater'        => {},
+	'jid'              => {'short'    => '%12.12s'},
+	'maxcputime'       => {'short'    => '%10s'},
+	'maxmem'           => {},
+	'maxnodes'         => {'obsolete' => 'nodes'},
+	'maxphyss'         => {},
+	'maxrss'           => {},
+	'maxruntime'       => {'short'    => '%10s'},
+	'maxtime'          => {'obsolete' => 'maxcputime'},
+	'memint'           => {},
+	'memsize'          => {'short'    => '%8.8s'},
+	'name'             => {'short'    => '%-17.17s'},
+	'nodes'            => {'short'    => '%6s'},
+	'not_before_time'  => {'obsolete' => 'earliest_start'},
+	'pool'             => {'short'    => '%8s'},
+	'preempted_by'     => {},
+	'priority'         => {'short'    => '%8.8s'},
+	'runtime'          => {'short'    => '%10s'},
+	'sid'              => {},
+	'status'           => {'short'    => '%-10s'},
+	'stoptime'         => {},
+	'submitted'        => {'short'    => '%-17s'},
+	'suspended_by'     => {},
+	'tasks'            => {},
+	'timecharged'      => {},
+	'timeleft'         => {'short'    => '%10s'},
+	'used'             => {'short'    => '%10.10s'},
+	'user'             => {'short'    => '%-11.11s', 'long' => '%-31s'},
+	'vmemint'          => {}
 };
 
 #
@@ -171,7 +171,7 @@ if ($man) {
 # Use single argument as job id or fail if extra args
 #
 if (@ARGV) {
-	if (! $jobList && @ARGV == 1) {
+	if (!$jobList && @ARGV == 1) {
 		$jobList = $ARGV[0];
 	} else {
 		pod2usage(2);
@@ -190,7 +190,7 @@ pod2usage(-message => "The -v and -f options may not be used together", -verbose
 # Create the output spec array
 #
 my @outspec = ();
-my @outspec_normal = ('jid', 'name', 'user', 'bank',
+my @outspec_normal  = ('jid', 'name', 'user', 'bank',
 		      'status', 'exehost', 'cl');
 my @outspec_verbose = (@outspec_normal,
 		       'aging_time', 'maxcputime', 'memsize',
@@ -256,8 +256,6 @@ if (!defined $sortOrder) {
 #
 # Build command
 #
-
-#### new code for SLURM stuff ###
 
 my $Now = time();
 
@@ -335,17 +333,6 @@ foreach my $job (@{$jobs->{job_array}}) {
 	$jobName =~ s/\"//g;
 
 #
-# if the Hold is defined, rewrite finalState.
-#
-#	if (exists $job->{'Hold'}) {
-#		if ($hold eq "User") {
-#			$finalState = "*HELDu";
-#		} else {
-#			$finalState = "*HELDs";
-#		}
-#	}
-
-#
 #	The job class. 'D' means delayed, 'E' means exempted,
 #	'N' means normal, 'S' means standby, 'X' means expedited.
 #
@@ -408,14 +395,14 @@ foreach my $job (@{$jobs->{job_array}}) {
 	if ($jobList) {
 		next unless grep { $_ eq $jobId } split(/,/, $jobList);
 	}
-	if (   ! $all
-	    && ! $bank
-	    && ! $constraints
-	    && ! $delayed
-	    && ! $jobList
-	    && ! $running
-	    && ! $terminated
-	    && ! $userName) {
+	if (!$all &&
+	    !$bank &&
+	    !$constraints &&
+	    !$delayed &&
+	    !$jobList &&
+	    !$running &&
+	    !$terminated &&
+	    !$userName) {
 		my $userId = (getpwuid($<))[0];
 		next unless $user eq $userId;
 	}
@@ -423,9 +410,7 @@ foreach my $job (@{$jobs->{job_array}}) {
 #
 #	Rewrite finalState if job is dependent on another job.
 #
-	if ($dependency ne "none") {
-		$finalState = "*DEPEND";
-	}
+	$finalState = "*DEPEND" if ($dependency ne "none");
 
 #
 #	Full output
@@ -725,7 +710,6 @@ sub finalState
 
 
 #
-# [-1,0,1] = job_cmp($a, $b)
 # Compare two jobs based on the global @sort_order, and return less than
 # equal to, or greater than zero, as suitable for the perl "sort" builtin.
 #

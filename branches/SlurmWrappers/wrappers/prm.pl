@@ -10,7 +10,7 @@
 #
 # For debugging.
 #
-#use lib "/var/opt/slurm_banana/lib64/perl5/site_perl/5.8.8/x86_64-linux-thread-multi/";
+#use lib "/var/opt/slurm_bgp/lib64/perl5/site_perl/5.8.8/x86_64-linux-thread-multi/";
 my $debug=0;
 
 BEGIN {
@@ -35,7 +35,7 @@ use Slurm ':all';
 my ($cmd, $rc, $output);
 
 my (
-	$startTime, 	$bankName,   $force,    $graceTime,
+	$startTime, 	 $bankName,   $force,    $graceTime,
 	$help,           $machine,    $man,      $message,
 	$jobList,        $terminated, $userName, $verbose
 );
@@ -102,6 +102,7 @@ foreach my $jobs (@{$tmp->{job_array}}) {
 	if ($graceTime) {
 		my $diff = $now - $start;
 		my $new_time = $diff + $graceTime;
+		$new_time = int ($new_time / 60);
 		$cmd = "scontrol update job=$jobId timelimit=$new_time 2>&1";
 	} else {
 		$cmd = "scancel  $jobId 2>&1";
@@ -222,7 +223,6 @@ sub notSupported
 }
 
 #
-# $boolean = confirm()
 # Confirm the job deletion with y[es] or n[o]
 # Timout after 10 seconds
 #
@@ -261,6 +261,7 @@ sub confirm
 	return;
 }
 
+
 #
 # $seconds = seconds($duration)
 # Converts a duration in nnnn[dhms] or [[dd:]hh:]mm to seconds
@@ -268,47 +269,50 @@ sub confirm
 sub seconds
 {
 	my ($duration) = @_;
+
 	$duration = 0 unless $duration;
 	my $seconds = 0;
 
 #
-#	Convert [[dd:]hh:]mm to duration in seconds
+# Convert [[dd:]hh:]mm to duration in seconds
 #
 	if ($duration =~ /^(?:(\d+):)?(\d*):(\d+)$/) {
 		my ($dd, $hh, $mm) = ($1 || 0, $2 || 0, $3);
 		$seconds += $mm * 60;
 		$seconds += $hh * 60 * 60;
 		$seconds += $dd * 24 * 60 * 60;
+	}
+
+
 #
-#	Convert nnnn[dhms] to duration in seconds
+#	Convert nnnn[dhms] to duration in seconds.
 #
-	} elsif ($duration =~ /^(\d+)([dhms])$/) {
+	elsif ($duration =~ /^(\d+)([dhms])$/) {
 		my ($number, $metric) = ($1, $2);
-		if    ($metric eq 's') {
-			$seconds = $number; 
-		} elsif ($metric eq 'm') {
-			$seconds = $number * 60; 
-		} elsif ($metric eq 'h') {
-			$seconds = $number * 60 * 60; 
-		} elsif ($metric eq 'd') {
-			$seconds = $number * 24 * 60 * 60;
-		}
-#
-#	Convert number in minutes to seconds
-#
-	} elsif ($duration =~ /^(\d+)$/) {
-		$seconds = $duration * 60;
-#
-#	Unsupported format
-#
-	} else {
-		die("Invalid time limit specified ($duration)\n");
+		if    ($metric eq 's') { $seconds = $number; }
+		elsif ($metric eq 'm') { $seconds = $number * 60; }
+		elsif ($metric eq 'h') { $seconds = $number * 60 * 60; }
+		elsif ($metric eq 'd') { $seconds = $number * 24 * 60 * 60; }
 	}
 
 #
-#	Time must be at least 1 minute (60 seconds)
+#	Convert number in minutes to seconds.
 #
-	$seconds = 60 if ($seconds < 60);
+	elsif ($duration =~ /^(\d+)$/) {
+		$seconds = $duration * 60;
+	}
+
+#
+#	Unsupported format.
+#
+	else {
+		logDie("Invalid time limit specified ($duration)\n");
+	}
+
+#
+#	Time must be at least 1 minute (60 seconds).
+#
+	$seconds = 60 if $seconds < 60;
 
 	return($seconds);
 }

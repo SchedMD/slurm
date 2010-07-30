@@ -13,7 +13,7 @@
 #
 # For debugging.
 #
-my $debug=1;
+my $debug=0;
 
 use Getopt::Long 2.24 qw(:config no_ignore_case);
 use strict;
