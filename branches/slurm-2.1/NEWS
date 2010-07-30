@@ -25,6 +25,7 @@ documents those changes that are of interest to users and admins.
  -- Fix issue with sshare not sorting correctly the tree of associations.
  -- Update documentation for sreport.
  -- BLUEGENE - fix regression in 2.1.10 on assigning multiple jobs to one block.
+ -- Minor memory leak fixed when killing job error happens.
 
 * Changes in SLURM 2.1.10
 =========================
