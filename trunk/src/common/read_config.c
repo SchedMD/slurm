@@ -174,7 +174,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"FastSchedule", S_P_UINT16},
 	{"FirstJobId", S_P_UINT32},
 	{"GetEnvTimeout", S_P_UINT16},
-	{"GresPlugins", S_P_STRING},
+	{"GresTypes", S_P_STRING},
 	{"GroupUpdateForce", S_P_UINT16},
 	{"GroupUpdateTime", S_P_UINT16},
 	{"HashBase", S_P_LONG, _defunct_option},
@@ -1991,7 +1991,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	if (!s_p_get_uint32(&conf->first_job_id, "FirstJobId", hashtbl))
 		conf->first_job_id = DEFAULT_FIRST_JOB_ID;
 
-	s_p_get_string(&conf->gres_plugins, "GresPlugins", hashtbl);
+	s_p_get_string(&conf->gres_plugins, "GresTypes", hashtbl);
 
 	if (s_p_get_uint16(&conf->inactive_limit, "InactiveLimit", hashtbl)) {
 #ifdef HAVE_BG
