@@ -62,6 +62,12 @@ int page_running = -1;
 bool global_entry_changed = 0;
 bool global_send_update_msg = 0;
 bool global_edit_error = 0;
+int global_error_code = 0;
+int global_multi_count = 0;
+gint last_event_x = 0;
+gint last_event_y = 0;
+GdkCursor* standard_cursor;
+GdkCursor* in_process_cursor;
 gchar *global_edit_error_msg = NULL;
 GtkWidget *main_notebook = NULL;
 GtkWidget *main_statusbar = NULL;
@@ -455,8 +461,8 @@ static void _init_pages()
 }
 
 static gboolean _delete(GtkWidget *widget,
-                        GtkWidget *event,
-                        gpointer data)
+			GtkWidget *event,
+			gpointer data)
 {
 	fini = 1;
 	gtk_main_quit();
@@ -466,6 +472,8 @@ static gboolean _delete(GtkWidget *widget,
 		list_destroy(popup_list);
 	if(grid_button_list)
 		list_destroy(grid_button_list);
+	if(multi_button_list)
+		list_destroy(multi_button_list);
 	if(signal_params_list)
 		list_destroy(signal_params_list);
 	if(cluster_list)
@@ -1217,9 +1225,12 @@ int main(int argc, char *argv[])
 	gtk_table_attach_defaults(GTK_TABLE(table), main_notebook, 1, 2, 0, 1);
 
 	gtk_box_pack_start(GTK_BOX(GTK_DIALOG(main_window)->vbox),
-			   table, TRUE, TRUE, 0);
+		   table, TRUE, TRUE, 0);
 	gtk_box_pack_start(GTK_BOX(GTK_DIALOG(main_window)->vbox),
-			   main_statusbar, FALSE, FALSE, 0);
+		   main_statusbar, FALSE, FALSE, 0);
+
+	in_process_cursor = gdk_cursor_new(GDK_WATCH);
+	standard_cursor = gdk_cursor_new(GDK_TOP_LEFT_ARROW);
 
 	for(i=0; i<PAGE_CNT; i++) {
 		if(main_display_data[i].id == -1)
@@ -1280,4 +1291,3 @@ int main(int argc, char *argv[])
 	gdk_threads_leave();
 	return 0;
 }
-

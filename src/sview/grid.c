@@ -41,6 +41,7 @@
 
 List grid_button_list = NULL;
 List blinking_button_list = NULL;
+List multi_button_list = NULL;
 
 char *sview_colors[] = {"#0000FF", "#00FF00", "#00FFFF", "#FFFF00",
 			"#FF0000", "#4D4DC6", "#F09A09", "#BDFA19",
@@ -51,6 +52,12 @@ char *blank_color = "#919191";
 char *white_color = "#FFFFFF";
 
 int sview_colors_cnt = 20;
+
+typedef struct {
+	int node_inx_id;
+	int color_inx_id;
+	List button_list;
+} grid_foreach_t;
 
 GStaticMutex blinking_mutex = G_STATIC_MUTEX_INIT;
 
@@ -66,7 +73,7 @@ static int _coord(char coord)
 static gboolean _mouseover_node(GtkWidget *widget, GdkEventButton *event,
 				grid_button_t *grid_button)
 {
-	gboolean rc = false;
+	gboolean rc = true;
 
 	grid_button->last_state = GTK_WIDGET_STATE(widget);
 #ifdef GTK2_USE_TOOLTIP
@@ -80,19 +87,23 @@ static gboolean _mouseover_node(GtkWidget *widget, GdkEventButton *event,
 			     grid_button->node_name,
 			     "click for node stats");
 #endif
-        return rc;
+	//g_print("on at %s\n", grid_button->node_name);
+	gtk_widget_set_state(grid_button->button, GTK_STATE_PRELIGHT);
+
+	return rc;
 }
 
 static gboolean _mouseoff_node(GtkWidget *widget, GdkEventButton *event,
-				grid_button_t *grid_button)
+			       grid_button_t *grid_button)
 {
 	gboolean rc = false;
 
 	if(grid_button->last_state == GTK_STATE_ACTIVE) {
 		gtk_widget_set_state(grid_button->button, GTK_STATE_ACTIVE);
 		rc = true;
+		//g_print("off of %s\n", grid_button->node_name);
 	}
-        return rc;
+	return rc;
 }
 
 static gboolean _open_node(GtkWidget *widget, GdkEventButton *event,
@@ -146,8 +157,18 @@ static void _open_block(GtkWidget *widget, GdkEventButton *event,
 	return;
 }
 
+/* static void _state_changed(GtkWidget *button, GtkStateType state, */
+/* 			   grid_button_t *grid_button) */
+/* { */
+/* 	g_print("state of %s is now %d\n", grid_button->node_name, state); */
+/* } */
+
 static void _add_button_signals(grid_button_t *grid_button)
 {
+	/* g_signal_connect(G_OBJECT(grid_button->button), */
+	/* 		 "state-changed", */
+	/* 		 G_CALLBACK(_state_changed), */
+	/* 		 grid_button); */
 	g_signal_connect(G_OBJECT(grid_button->button),
 			 "button-press-event",
 			 G_CALLBACK(_open_node),
@@ -339,6 +360,75 @@ static bool _change_button_color(grid_button_t *grid_button,
 	return changed;
 }
 
+static void selected_foreach_func(GtkTreeModel *model,
+				  GtkTreePath *path,
+				  GtkTreeIter *iter,
+				  gpointer userdata)
+{
+	ListIterator itr = NULL;
+	grid_button_t *grid_button = NULL;
+	int *node_inx = NULL;
+	int color_inx;
+
+	int j=0;
+	GdkColor color;
+	bool changed = 0;
+
+	grid_foreach_t *grid_foreach = userdata;
+
+	gtk_tree_model_get(model, iter, grid_foreach->node_inx_id,
+			   &node_inx, -1);
+	gtk_tree_model_get(model, iter, grid_foreach->color_inx_id,
+			   &color_inx, -1);
+
+	if(!node_inx)
+		return;
+
+	if(color_inx > sview_colors_cnt) {
+		g_print("hey the color_inx from %d was set to %d > %d\n",
+			grid_foreach->color_inx_id, color_inx,
+			sview_colors_cnt);
+		color_inx %= sview_colors_cnt;
+	}
+	gdk_color_parse(sview_colors[color_inx], &color);
+
+	itr = list_iterator_create(grid_foreach->button_list);
+	while((grid_button = list_next(itr))) {
+		/*For multiple selections, need to retain all selected.
+		 *(previously this assumed only one selected).
+		 */
+		if((node_inx[j] < 0)
+		   || (grid_button->inx < node_inx[j])
+		   || (grid_button->inx > node_inx[j+1])) {
+			continue;
+		}
+
+		if(_change_button_color(grid_button, color_inx,
+					sview_colors[color_inx],
+					color, 0, 0)) {
+			changed = 1;
+		}
+		if(GTK_WIDGET_STATE(grid_button->button) != GTK_STATE_NORMAL) {
+			gtk_widget_set_state(grid_button->button,
+					     GTK_STATE_NORMAL);
+		}
+
+		if(grid_button->inx == node_inx[j+1]) {
+			j+=2;
+		}
+	}
+
+
+	list_iterator_destroy(itr);
+	if(changed && working_sview_config.grid_speedup) {
+		gtk_widget_set_sensitive(GTK_WIDGET(main_grid_table), 0);
+		gtk_widget_set_sensitive(GTK_WIDGET(main_grid_table), 1);
+	}
+	return;
+
+}
+
+
 static int _block_in_node(int *bp_inx, int inx)
 {
 	int j=0;
@@ -348,6 +438,15 @@ static int _block_in_node(int *bp_inx, int inx)
 	}
 	return 0;
 }
+
+/* static void _destroy_grid_foreach(void *arg) */
+/* { */
+/* 	grid_foreach_t *grid_foreach = (grid_foreach_t *)arg; */
+
+/* 	if(grid_foreach) { */
+/* 		xfree(grid_foreach); */
+/* 	} */
+/* } */
 
 extern void destroy_grid_button(void *arg)
 {
@@ -494,69 +593,37 @@ extern char *change_grid_color(List button_list, int start, int end,
 	return sview_colors[color_inx];
 }
 
-extern void highlight_grid(GtkTreeView *tree_view, GtkTreePath *path,
+extern void highlight_grid(GtkTreeView *tree_view,
 			   int node_inx_id, int color_inx_id, List button_list)
 {
 	ListIterator itr = NULL;
 	grid_button_t *grid_button = NULL;
-	GtkTreeModel *model = gtk_tree_view_get_model(tree_view);
-	GtkTreeIter iter;
-	int *node_inx = NULL;
-	int color_inx;
-/* 	static int *last_node_inx = NULL; */
-	int j=0;
-	GdkColor color;
-	bool changed = 0;
+	grid_foreach_t grid_foreach;
 
 	if(!button_list)
 		return;
 
-	if (!gtk_tree_model_get_iter(model, &iter, path)) {
-		g_error("highlight, error getting iter from model\n");
-		return;
-	}
-	gtk_tree_model_get(model, &iter, node_inx_id, &node_inx, -1);
-	gtk_tree_model_get(model, &iter, color_inx_id, &color_inx, -1);
-
-	if(!node_inx)
-		return;
-	if(color_inx > sview_colors_cnt) {
-		g_print("hey the color_inx from %d was set to %d > %d\n",
-			color_inx_id, color_inx, sview_colors_cnt);
-		color_inx %= sview_colors_cnt;
-	}
-	gdk_color_parse(sview_colors[color_inx], &color);
-
+	/*first clear all grid buttons*/
 	itr = list_iterator_create(button_list);
 	while((grid_button = list_next(itr))) {
-		if((node_inx[j] < 0)
-		   || (grid_button->inx < node_inx[j])
-		   || (grid_button->inx > node_inx[j+1])) {
-			/* clear everyone else */
-			if((GTK_WIDGET_STATE(grid_button->button)
-			    != GTK_STATE_ACTIVE))
-				gtk_widget_set_state(grid_button->button,
-						     GTK_STATE_ACTIVE);
-			continue;
-		}
-
-		if(_change_button_color(grid_button, color_inx,
-				     sview_colors[color_inx],
-					color, 0, 0))
-			changed = 1;
-		if(GTK_WIDGET_STATE(grid_button->button) != GTK_STATE_NORMAL)
+		/* clear everyone */
+		if((GTK_WIDGET_STATE(grid_button->button)
+		    != GTK_STATE_ACTIVE)) {
 			gtk_widget_set_state(grid_button->button,
-					     GTK_STATE_NORMAL);
-
-		if(grid_button->inx == node_inx[j+1])
-			j+=2;
+					     GTK_STATE_ACTIVE);
+		}
+		continue;
 	}
-	list_iterator_destroy(itr);
 
-	if(changed && working_sview_config.grid_speedup) {
-		gtk_widget_set_sensitive(GTK_WIDGET(main_grid_table), 0);
-		gtk_widget_set_sensitive(GTK_WIDGET(main_grid_table), 1);
-	}
+	/* for each currently selected row,go back & ensure the
+	 * corresponding grid button is highlighted */
+	memset(&grid_foreach, 0, sizeof(grid_foreach_t));
+	grid_foreach.node_inx_id = node_inx_id;
+	grid_foreach.color_inx_id = color_inx_id;
+	grid_foreach.button_list = button_list;
+	gtk_tree_selection_selected_foreach(
+		gtk_tree_view_get_selection(tree_view),
+		selected_foreach_func, &grid_foreach);
 	return;
 }
 

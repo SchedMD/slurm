@@ -53,6 +53,8 @@ documents those changes that are of interest to users and admins.
     cross-cluster.
  -- BLUEGENE - Added option to scontrol & sview to resume blocks in an error
     state instead of just freeing them.
+ -- sview patched to allow multiple row selection of jobs, patch from Dan Rusak
+    (rosemontelabs@cox.net)
 
 * Changes in SLURM 2.2.0.pre8
 =============================

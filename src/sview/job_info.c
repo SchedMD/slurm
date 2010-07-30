@@ -48,6 +48,24 @@ typedef struct {
 	List step_list;
 } sview_job_info_t;
 
+static List foreach_list = NULL;
+static char *stacked_job_list = NULL;
+
+typedef struct {
+	int job_id;
+	int state;
+	int step_id;
+} jobs_foreach_t;
+
+typedef struct {
+	int edit_type;
+	GtkWidget *entry;
+	job_desc_msg_t *job_msg;
+	char *type;
+} jobs_foreach_common_t;
+
+
+
 enum {
 	EDIT_SIGNAL = 1,
 	EDIT_SIGNAL_USER,
@@ -429,6 +447,44 @@ static void _update_info_step(sview_job_info_t *sview_job_info_ptr,
 			      GtkTreeIter *step_iter,
 			      GtkTreeIter *iter);
 
+
+static void _job_info_list_del(void *object)
+{
+	sview_job_info_t *sview_job_info = (sview_job_info_t *)object;
+
+	if (sview_job_info) {
+		xfree(sview_job_info->nodes);
+		if(sview_job_info->step_list)
+			list_destroy(sview_job_info->step_list);
+		xfree(sview_job_info);
+	}
+}
+
+static void _destroy_jobs_foreach(void *object)
+{
+	jobs_foreach_t *jobs_foreach = (jobs_foreach_t *)object;
+
+	if (jobs_foreach) {
+		xfree(jobs_foreach);
+	}
+}
+
+/* static void _destroy_jobs_foreach_common(void *object) */
+/* { */
+/* 	jobs_foreach_common_t *jobs_foreach = (jobs_foreach_common_t *)object; */
+
+/* 	if (jobs_foreach) { */
+/* 		if(jobs_foreach->entry) { */
+/* 			gtk_widget_destroy(jobs_foreach->entry); */
+/* 			jobs_foreach->entry = NULL; */
+/* 		} */
+/*  		/\* job_msg is freed elsewhere *\/ */
+/* 		//slurm_free_job_desc_msg(jobs_foreach->job_msg); */
+/* 		xfree(jobs_foreach->type); */
+/* 		xfree(jobs_foreach); */
+/* 	} */
+/* } */
+
 /* translate name name to number */
 static uint16_t _xlate_signal_name(const char *signal_name)
 {
@@ -457,7 +513,7 @@ static uint16_t _xlate_signal_name(const char *signal_name)
 	return (uint16_t)NO_VAL;
 }
 
-static void _cancel_job_id (uint32_t job_id, uint16_t signal)
+static int _cancel_job_id (uint32_t job_id, uint16_t signal)
 {
 	int error_code = SLURM_SUCCESS, i;
 	char *temp = NULL;
@@ -467,9 +523,9 @@ static void _cancel_job_id (uint32_t job_id, uint16_t signal)
 			signal = 9;
 			error_code = slurm_kill_job(job_id, SIGKILL,
 						    false);
-		} else {
+		} else
 			error_code = slurm_signal_job(job_id, signal);
-		}
+
 		if (error_code == 0
 		    || (errno != ESLURM_TRANSITION_STATE_NO_UPDATE
 			&& errno != ESLURM_JOB_PENDING))
@@ -492,15 +548,12 @@ static void _cancel_job_id (uint32_t job_id, uint16_t signal)
 		} else {
 			display_edit_note(slurm_strerror(slurm_get_errno()));
 		}
-	} else {
-		temp = g_strdup_printf("Signal successfully sent to job %u",
-				       job_id);
-		display_edit_note(temp);
-		g_free(temp);
 	}
+
+	return error_code;
 }
 
-static void _cancel_step_id(uint32_t job_id, uint32_t step_id,
+static int _cancel_step_id(uint32_t job_id, uint32_t step_id,
 			    uint16_t signal)
 {
 	int error_code = SLURM_SUCCESS, i;
@@ -537,13 +590,9 @@ static void _cancel_step_id(uint32_t job_id, uint32_t step_id,
 		} else {
 			display_edit_note(slurm_strerror(slurm_get_errno()));
 		}
-	} else {
-		temp = g_strdup_printf(
-			"Signal successfully sent to job step %u.%u",
-			job_id, step_id);
-		display_edit_note(temp);
-		g_free(temp);
 	}
+
+	return error_code;
 }
 
 static void _set_active_combo_job(GtkComboBox *combo,
@@ -2359,18 +2408,6 @@ static void _update_info_job(List info_list,
 	return;
 }
 
-static void _job_info_list_del(void *object)
-{
-	sview_job_info_t *sview_job_info = (sview_job_info_t *)object;
-
-	if (sview_job_info) {
-		xfree(sview_job_info->nodes);
-		if(sview_job_info->step_list)
-			list_destroy(sview_job_info->step_list);
-		xfree(sview_job_info);
-	}
-}
-
 static int _sview_job_sort_aval_dec(sview_job_info_t* rec_a,
 				    sview_job_info_t* rec_b)
 {
@@ -2852,7 +2889,7 @@ extern void admin_edit_job(GtkCellRendererText *cell,
 	if(got_edit_signal) {
 		temp = got_edit_signal;
 		got_edit_signal = NULL;
-		admin_job(GTK_TREE_MODEL(treestore), &iter, temp);
+		admin_job(GTK_TREE_MODEL(treestore), &iter, temp, NULL);
 		xfree(temp);
 		goto no_input;
 	}
@@ -3010,7 +3047,10 @@ display_it:
 	if(!display_widget) {
 		tree_view = create_treeview(local_display_data,
 					    &grid_button_list);
-
+		/*set multiple capability here*/
+		gtk_tree_selection_set_mode(
+	   			gtk_tree_view_get_selection(tree_view),
+	   			GTK_SELECTION_MULTIPLE);
 		display_widget = gtk_widget_ref(GTK_WIDGET(tree_view));
 		gtk_table_attach_defaults(GTK_TABLE(table),
 					  GTK_WIDGET(tree_view),
@@ -3032,7 +3072,7 @@ display_it:
 	}
 
 	if(path)
-		highlight_grid(GTK_TREE_VIEW(display_widget), path,
+		highlight_grid(GTK_TREE_VIEW(display_widget),
 			       SORTID_NODE_INX, SORTID_COLOR_INX,
 			       grid_button_list);
 	else
@@ -3299,7 +3339,7 @@ extern void set_menus_job(void *arg, void *arg2, GtkTreePath *path, int type)
 		make_options_menu(tree_view, path, menu, options_data_job);
 		break;
 	case ROW_LEFT_CLICKED:
-		highlight_grid(tree_view, path, SORTID_NODE_INX,
+		highlight_grid(tree_view, SORTID_NODE_INX,
 			       SORTID_COLOR_INX, button_list);
 		break;
 	case FULL_CLICKED:
@@ -3463,15 +3503,220 @@ extern void popup_all_job(GtkTreeModel *model, GtkTreeIter *iter, int id)
 	default:
 		g_print("jobs got %d\n", id);
 	}
-	if (!g_thread_create((gpointer)popup_thr, popup_win, FALSE, &error))
-	{
+	if (!g_thread_create((gpointer)popup_thr, popup_win, FALSE, &error)) {
 		g_printerr ("Failed to create part popup thread: %s\n",
 			    error->message);
 		return;
 	}
 }
 
-extern void admin_job(GtkTreeModel *model, GtkTreeIter *iter, char *type)
+static void process_foreach_list (jobs_foreach_common_t *jobs_foreach_common)
+{
+	int jobid;
+	int state;
+	int stepid;
+	uint16_t signal = SIGKILL;
+	int response = 0;
+	char *tmp_char_ptr = "";
+	jobs_foreach_t *job_foreach = NULL;
+	ListIterator itr = NULL;
+
+	if (jobs_foreach_common->edit_type == EDIT_SIGNAL) {
+		const gchar *entry_txt = gtk_entry_get_text(
+			GTK_ENTRY(jobs_foreach_common->entry));
+		signal = _xlate_signal_name(entry_txt);
+		if(signal == (uint16_t)NO_VAL) {
+			tmp_char_ptr = g_strdup_printf(
+				"%s is not a valid signal.",
+				entry_txt);
+			display_edit_note(tmp_char_ptr);
+			g_free(tmp_char_ptr);
+			goto end_it;
+		}
+	}
+
+	itr = list_iterator_create(foreach_list);
+	while ((job_foreach = list_next(itr))) {
+		/*stop processing remaining jobs on any error*/
+		if (global_error_code)
+			break;
+
+		jobid = job_foreach->job_id;
+		stepid = job_foreach->step_id;
+		state = job_foreach->state;
+
+		switch(jobs_foreach_common->edit_type) {
+			case EDIT_SIGNAL:
+				/* fall through to the cancel now the signal
+				 * is set (Default is SIGKILL from above for
+				 * just a regular cancel).
+				 */
+			case EDIT_CANCEL:
+				if(stepid == NO_VAL)
+					global_error_code =
+						_cancel_job_id(jobid, signal);
+				else
+					global_error_code =
+						_cancel_step_id(jobid,
+								stepid, signal);
+				break;
+			case EDIT_REQUEUE:
+				response = slurm_requeue(jobid);
+
+				if(response) {
+					/* stop rest of jobs */
+					global_error_code = response;
+					tmp_char_ptr = g_strdup_printf(
+						"Error %d happened trying "
+						"to requeue job %u.",
+						response, jobid);
+					display_edit_note(tmp_char_ptr);
+					g_free(tmp_char_ptr);
+				}
+
+				break;
+			case EDIT_SUSPEND:
+				//note: derive state from job_foreach..
+				if(state == JOB_SUSPENDED)
+					response = slurm_resume(jobid);
+				else
+					response = slurm_suspend(jobid);
+				if(response) {
+					/* stop rest of jobs */
+					global_error_code = 1;
+					tmp_char_ptr = g_strdup_printf(
+						"Error happened trying to "
+						"SUSPEND/RESUME job %u.",
+						jobid);
+					display_edit_note(tmp_char_ptr);
+					g_free(tmp_char_ptr);
+				}
+				break;
+			case EDIT_EDIT:
+				/* note: this case only applies to
+				   single jobs, but still gets
+				   processed here */
+				if(got_edit_signal)
+					goto end_it;
+
+				if(global_edit_error)
+					tmp_char_ptr = global_edit_error_msg;
+				else if(!global_send_update_msg) {
+					tmp_char_ptr = g_strdup_printf(
+						"No change detected.");
+				} else if(slurm_update_job(
+						  jobs_foreach_common->job_msg)
+					  == SLURM_SUCCESS) {
+					tmp_char_ptr = g_strdup_printf(
+						"Job %u updated successfully",
+						jobid);
+				} else if(errno == ESLURM_DISABLED) {
+					tmp_char_ptr = g_strdup_printf(
+						"Can't edit that part of "
+						"non-pending job %u.",
+						jobid);
+				} else {
+					tmp_char_ptr = g_strdup_printf(
+						"Problem updating job %u.",
+						jobid);
+				}
+				display_edit_note(tmp_char_ptr);
+				g_free(tmp_char_ptr);
+				break;
+			default:
+				break;
+
+		}/*end switch*/
+	} /*spin thru selected jobs*/
+
+	if(global_edit_error)
+		goto end_it;
+
+	switch(jobs_foreach_common->edit_type) {
+	case EDIT_SIGNAL:
+		tmp_char_ptr = g_strdup_printf(
+			"Signal successfully sent to job(s)%s",
+			stacked_job_list);
+		display_edit_note(tmp_char_ptr);
+		g_free(tmp_char_ptr);
+		break;
+	case EDIT_CANCEL:
+		tmp_char_ptr = g_strdup_printf(
+			"Cancel successful for job(s)%s",
+			stacked_job_list);
+		display_edit_note(tmp_char_ptr);
+		g_free(tmp_char_ptr);
+		break;
+	case EDIT_REQUEUE:
+		tmp_char_ptr = g_strdup_printf(
+			"Requeue successful for job(s)%s",
+			stacked_job_list);
+		display_edit_note(tmp_char_ptr);
+		g_free(tmp_char_ptr);
+		break;
+	case EDIT_SUSPEND:
+		tmp_char_ptr = g_strdup_printf(
+			"SUSPEND/RESUME action successful for job(s)%s",
+			stacked_job_list);
+		display_edit_note(tmp_char_ptr);
+		g_free(tmp_char_ptr);
+		break;
+	default:
+		break;
+
+	}/*end switch*/
+
+end_it:
+	xfree(stacked_job_list);
+	gdk_window_set_cursor(main_window->window, standard_cursor);
+
+} /*process_foreach_list ^^^*/
+
+static void selected_foreach_build_list(GtkTreeModel  *model,
+					GtkTreePath   *path,
+					GtkTreeIter   *iter,
+					gpointer       userdata)
+{
+	uint32_t jobid = NO_VAL;
+	uint32_t stepid = NO_VAL;
+	int state;
+	jobs_foreach_t *fe_ptr = NULL;
+
+	gtk_tree_model_get(model, iter, SORTID_JOBID, &jobid, -1);
+	gtk_tree_model_get(model, iter, SORTID_ALLOC, &stepid, -1);
+
+	if(stepid)
+		stepid = NO_VAL;
+	else {
+		stepid = jobid;
+		gtk_tree_model_get(model, iter, SORTID_POS, &jobid, -1);
+	}
+
+	gtk_tree_model_get(model, iter, SORTID_STATE_NUM, &state, -1);
+
+	/* alc mem for individual job processor target */
+	fe_ptr = xmalloc(sizeof(jobs_foreach_t));
+	fe_ptr->job_id = jobid;
+	fe_ptr->step_id = stepid;
+	fe_ptr->state = state;
+
+	list_append(foreach_list, fe_ptr); /* stuff target away*/
+
+	if(stacked_job_list)
+		xstrcat(stacked_job_list, ", ");
+	else
+		xstrcat(stacked_job_list, ": ");
+
+	if(stepid == NO_VAL)
+		xstrfmtcat(stacked_job_list, "%u", jobid);
+	else
+		xstrfmtcat(stacked_job_list, "%u.%u", jobid, stepid);
+	//g_print("got '%s'\n", stacked_job_list);
+}
+/*selected_foreach_build_list ^^^*/
+
+extern void admin_job(GtkTreeModel *model, GtkTreeIter *iter,
+		      char *type, GtkTreeView *treeview)
 {
 	int jobid = NO_VAL;
 	int stepid = NO_VAL;
@@ -3480,9 +3725,8 @@ extern void admin_job(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 	char tmp_char[255];
 	char *tmp_char_ptr = NULL;
 	int edit_type = 0;
-	uint16_t signal = SIGKILL;
+	int row_count=0;
 	job_desc_msg_t *job_msg = xmalloc(sizeof(job_desc_msg_t));
-
 	GtkWidget *label = NULL;
 	GtkWidget *entry = NULL;
 	GtkWidget *popup = gtk_dialog_new_with_buttons(
@@ -3490,7 +3734,12 @@ extern void admin_job(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 		GTK_WINDOW(main_window),
 		GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
 		NULL);
+
 	gtk_window_set_transient_for(GTK_WINDOW(popup), NULL);
+
+	if (treeview)
+		row_count = gtk_tree_selection_count_selected_rows(
+			gtk_tree_view_get_selection(treeview));
 
 	gtk_tree_model_get(model, iter, SORTID_JOBID, &jobid, -1);
 	gtk_tree_model_get(model, iter, SORTID_ALLOC, &stepid, -1);
@@ -3500,8 +3749,8 @@ extern void admin_job(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 		stepid = jobid;
 		gtk_tree_model_get(model, iter, SORTID_POS, &jobid, -1);
 	}
-	slurm_init_job_desc_msg(job_msg);
 
+	slurm_init_job_desc_msg(job_msg);
 
 	if(!strcasecmp("Signal", type)) {
 		label = gtk_dialog_add_button(GTK_DIALOG(popup),
@@ -3519,26 +3768,44 @@ extern void admin_job(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 		gtk_window_set_default(GTK_WINDOW(popup), label);
 		gtk_dialog_add_button(GTK_DIALOG(popup),
 				      GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL);
-
-		snprintf(tmp_char, sizeof(tmp_char),
+		if (row_count > 1) {
+			snprintf(tmp_char, sizeof(tmp_char),
+			 "Are you sure you want to requeue these jobs?");
+			} else {
+			snprintf(tmp_char, sizeof(tmp_char),
 			 "Are you sure you want to requeue job %u?", jobid);
+	}
 		label = gtk_label_new(tmp_char);
 		edit_type = EDIT_REQUEUE;
 	} else if(!strcasecmp("Cancel", type)) {
+		gdk_window_set_cursor(main_window->window, in_process_cursor);
 		label = gtk_dialog_add_button(GTK_DIALOG(popup),
 					      GTK_STOCK_YES, GTK_RESPONSE_OK);
 		gtk_window_set_default(GTK_WINDOW(popup), label);
 		gtk_dialog_add_button(GTK_DIALOG(popup),
 				      GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL);
 
-		if(stepid != NO_VAL)
-			snprintf(tmp_char, sizeof(tmp_char),
-				 "Are you sure you want to cancel job %u.%u?",
-				 jobid, stepid);
-		else
-			snprintf(tmp_char, sizeof(tmp_char),
-				 "Are you sure you want to cancel job %u?",
-				 jobid);
+		if (row_count > 1) {
+			if(stepid != NO_VAL)
+				snprintf(tmp_char, sizeof(tmp_char),
+					 "Are you sure you want to cancel "
+					 "these job steps?");
+			else
+				snprintf(tmp_char, sizeof(tmp_char),
+					 "Are you sure you want to cancel "
+					 "these jobs?");
+		} else {
+			if(stepid != NO_VAL)
+				snprintf(tmp_char, sizeof(tmp_char),
+					 "Are you sure you want to cancel "
+					 "job %u.%u?",
+					 jobid, stepid);
+			else
+				snprintf(tmp_char, sizeof(tmp_char),
+					 "Are you sure you want to cancel job "
+					 "%u?",
+					 jobid);
+		}
 		label = gtk_label_new(tmp_char);
 		edit_type = EDIT_CANCEL;
 	} else if(!strcasecmp("Suspend/Resume", type)) {
@@ -3553,7 +3820,17 @@ extern void admin_job(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 			tmp_char_ptr = "resume";
 		else
 			tmp_char_ptr = "suspend";
-
+		if (row_count > 1) {
+			if(stepid != NO_VAL)
+				snprintf(tmp_char, sizeof(tmp_char),
+					 "Are you sure you want to toggle "
+					 "suspend/resume on these "
+					 "job steps?");
+			else
+				snprintf(tmp_char, sizeof(tmp_char),
+					 "Are you sure you want to toggle "
+					 "suspend/resume on these jobs?");
+		} else {
 		if(stepid != NO_VAL)
 			snprintf(tmp_char, sizeof(tmp_char),
 				 "Are you sure you want to %s job %u.%u?",
@@ -3562,6 +3839,7 @@ extern void admin_job(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 			snprintf(tmp_char, sizeof(tmp_char),
 				 "Are you sure you want to %s job %u?",
 				 tmp_char_ptr, jobid);
+		}
 		label = gtk_label_new(tmp_char);
 		edit_type = EDIT_SUSPEND;
 	} else {
@@ -3588,113 +3866,44 @@ extern void admin_job(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 				   entry, TRUE, TRUE, 0);
 	gtk_widget_show_all(popup);
 	response = gtk_dialog_run (GTK_DIALOG(popup));
+
 	if (response == GTK_RESPONSE_OK) {
-		switch(edit_type) {
-		case EDIT_SIGNAL:
-			signal = _xlate_signal_name(
-				gtk_entry_get_text(GTK_ENTRY(entry)));
-			if(signal == (uint16_t)NO_VAL) {
-				tmp_char_ptr = g_strdup_printf(
-					"%s is not a valid signal.",
-					gtk_entry_get_text(GTK_ENTRY(entry)));
-				display_edit_note(tmp_char_ptr);
-				g_free(tmp_char_ptr);
-				break;
-			}
+		jobs_foreach_common_t job_foreach_common;
+		/* switch to whirlwind cursor while busy*/
+		gdk_window_set_cursor(main_window->window, in_process_cursor);
+		global_error_code = SLURM_SUCCESS;
+		/* setup params that applies to ALL selections */
+		memset(&job_foreach_common, 0, sizeof(jobs_foreach_common_t));
+		job_foreach_common.type = type;
+		job_foreach_common.edit_type = edit_type;
+		job_foreach_common.entry = entry;
 
-			/* fall through to the cancel now the signal
-			 * is set (Default is SIGKILL from above for
-			 * just a regular cancel).
-			 */
-		case EDIT_CANCEL:
-			if(stepid == NO_VAL)
-				_cancel_job_id(jobid, signal);
-			else
-				_cancel_step_id(jobid, stepid, signal);
+		/* pass this ptr for single job selections */
+		job_foreach_common.job_msg = job_msg;
 
-			break;
-		case EDIT_REQUEUE:
-			response = slurm_requeue(jobid);
-			if(response) {
-				tmp_char_ptr = g_strdup_printf(
-					"Error happened trying to requeue "
-					"job %u.",
-					jobid);
-				display_edit_note(tmp_char_ptr);
-				g_free(tmp_char_ptr);
+		/* create a list to stack the selected jobs */
+		foreach_list = list_create(_destroy_jobs_foreach);
+		/* build array of job(s) to process */
+		if(treeview)
+			gtk_tree_selection_selected_foreach(
+				gtk_tree_view_get_selection(treeview),
+				selected_foreach_build_list, NULL);
+		else
+			selected_foreach_build_list(model, NULL, iter, NULL);
+		/* determine what to do with them/it */
+		process_foreach_list(&job_foreach_common); /*go do them*/
+		list_destroy(foreach_list);
+	}/*response OK ^^*/
+	/* switch back to standard cursor*/
+	gdk_window_set_cursor(main_window->window,standard_cursor);
 
-			} else {
-				tmp_char_ptr = g_strdup_printf(
-					"Job %u requeued successfully.",
-					jobid);
-				display_edit_note(tmp_char_ptr);
-				g_free(tmp_char_ptr);
-			}
-
-			break;
-		case EDIT_SUSPEND:
-			if(state == JOB_SUSPENDED)
-				response = slurm_resume(jobid);
-			else
-				response = slurm_suspend(jobid);
-			if(response) {
-				tmp_char_ptr = g_strdup_printf(
-					"Error happened trying to %s job %u.",
-					tmp_char_ptr, jobid);
-				display_edit_note(tmp_char_ptr);
-				g_free(tmp_char_ptr);
-
-			} else {
-				if(state == JOB_SUSPENDED)
-					tmp_char_ptr = "resumed";
-				else
-					tmp_char_ptr = "suspended";
-				tmp_char_ptr = g_strdup_printf(
-					"Job %u %s successfully.",
-					jobid, tmp_char_ptr);
-				display_edit_note(tmp_char_ptr);
-				g_free(tmp_char_ptr);
-			}
-			break;
-		case EDIT_EDIT:
-			if(got_edit_signal)
-				goto end_it;
-
-			if(global_edit_error)
-				tmp_char_ptr = global_edit_error_msg;
-			else if(!global_send_update_msg) {
-				tmp_char_ptr = g_strdup_printf(
-					"No change detected.");
-			} else if(slurm_update_job(job_msg)
-				  == SLURM_SUCCESS) {
-				tmp_char_ptr = g_strdup_printf(
-					"Job %u updated successfully",
-					jobid);
-			} else if(errno == ESLURM_DISABLED) {
-				tmp_char_ptr = g_strdup_printf(
-					"Can't edit that part of non-pending "
-					"job %u.",
-					jobid);
-			} else {
-				tmp_char_ptr = g_strdup_printf(
-					"Problem updating job %u.",
-					jobid);
-			}
-			display_edit_note(tmp_char_ptr);
-			g_free(tmp_char_ptr);
-			break;
-		default:
-			break;
-		}
-	}
-end_it:
 	global_entry_changed = 0;
 	slurm_free_job_desc_msg(job_msg);
 	gtk_widget_destroy(popup);
 	if(got_edit_signal) {
 		type = got_edit_signal;
 		got_edit_signal = NULL;
-		admin_job(model, iter, type);
+		admin_job(model, iter, type, treeview);
 		xfree(type);
 	}
 	return;
