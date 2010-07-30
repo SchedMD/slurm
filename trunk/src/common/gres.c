@@ -56,12 +56,12 @@
 #  endif /* HAVE_INTTYPES_H */
 #else /* ! HAVE_CONFIG_H */
 #  include <sys/types.h>
-#  include <unistd.h>
 #  include <stdint.h>
 #  include <stdlib.h>
 #  include <string.h>
 #endif /* HAVE_CONFIG_H */
 
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <slurm/slurm.h>
@@ -1117,7 +1117,14 @@ extern int gres_plugin_init_node_config(char *node_name, char *orig_config,
 	return rc;
 }
 
-/* Return the number of gres resources found on some node by slurmd */
+/*
+ * Determine gres availability on some node
+ * plugin_id IN - plugin number to search for
+ * set_cnt OUT - count of gres.conf records of this id found by slurmd
+ *		 (each can have different topology)
+ * RET - total number of gres available of this ID on this node in (sum
+ *	 across all records of this ID)
+ */
 static uint32_t _get_tot_gres_cnt(uint32_t plugin_id, uint32_t *set_cnt)
 {
 	ListIterator iter;
@@ -1175,10 +1182,21 @@ extern int _node_config_validate(char *node_name, char *orig_config,
 	if (updated_config == false)
 		return SLURM_SUCCESS;
 
-	if ((set_cnt != 0) || (set_cnt != gres_data->topo_cnt)) {
-		/* Rebuild GRES information when the node registers.
-		 * Do we want to do this for every node registration
-		 * since it is fairly high overhead? */
+	if ((set_cnt == 0) && (set_cnt != gres_data->topo_cnt)) {
+		/* Need to clear topology info */
+		xfree(gres_data->topo_gres_cnt_alloc);
+		xfree(gres_data->topo_gres_cnt_avail);
+		for (i=0; i<gres_data->topo_cnt; i++) {
+			FREE_NULL_BITMAP(gres_data->topo_gres_bitmap[i]);
+			FREE_NULL_BITMAP(gres_data->topo_cpus_bitmap[i]);
+		}
+		xfree(gres_data->topo_gres_bitmap);
+		xfree(gres_data->topo_cpus_bitmap);
+		gres_data->topo_cnt = set_cnt;
+	}
+	if (context_ptr->has_file && (set_cnt != gres_data->topo_cnt)) {
+		/* Need to rebuild topology info */
+		/* Resize the data structures here */
 		gres_data->topo_gres_cnt_alloc = 
 			xrealloc(gres_data->topo_gres_cnt_alloc,
 				 set_cnt * sizeof(uint32_t));
@@ -1230,8 +1248,7 @@ extern int _node_config_validate(char *node_name, char *orig_config,
 				bit_nset(gres_data->topo_cpus_bitmap[i], 0,
 					 (gres_slurmd_conf->cpu_cnt - 1));
 			}
-			j = gres_inx + gres_slurmd_conf->count;
-			gres_data->topo_gres_bitmap[i] = bit_alloc(j);
+			gres_data->topo_gres_bitmap[i] = bit_alloc(gres_cnt);
 			if (gres_data->topo_gres_bitmap[i] == NULL)
 				fatal("bit_alloc: malloc failure");
 			for (j=0; j<gres_slurmd_conf->count; j++) {
@@ -1437,7 +1454,7 @@ extern int gres_plugin_node_reconfig(char *node_name,
 				     List *gres_list,
 				     uint16_t fast_schedule)
 {
-	int i, rc;
+	int i, rc, rc2;
 	ListIterator gres_iter;
 	gres_state_t *gres_ptr;
 
@@ -1460,8 +1477,9 @@ extern int gres_plugin_node_reconfig(char *node_name,
 		if (gres_ptr == NULL)
 			continue;
 
-		rc = _node_reconfig(node_name, orig_config, new_config,
-				    gres_ptr, fast_schedule, &gres_context[i]);
+		rc2 = _node_reconfig(node_name, orig_config, new_config,
+				     gres_ptr, fast_schedule, &gres_context[i]);
+		rc = MAX(rc, rc2);
 	}
 	slurm_mutex_unlock(&gres_context_lock);
 
