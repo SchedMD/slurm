@@ -841,7 +841,6 @@ extern void change_grid_popup(GtkAction *action, gpointer user_data)
 			get_system_stats(main_grid_table);
 			if(refresh)
 				refresh_main(NULL, NULL);
-
 		}
 		gtk_statusbar_pop(GTK_STATUSBAR(main_statusbar),
 				  STATUS_REFRESH);
