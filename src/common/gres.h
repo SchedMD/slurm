@@ -283,9 +283,11 @@ extern void gres_plugin_node_state_log(List gres_list, char *node_name);
 extern int gres_plugin_job_state_validate(char *req_config, List *gres_list);
 
 /*
- * Create a copy of a job's gres state
+ * Create a (partial) copy of a job's gres state for job binding
  * IN gres_list - List of Gres records for this job to track usage
  * RET The copy or NULL on failure
+ * NOTE: Only gres_cnt_alloc, node_cnt and gres_bit_alloc are copied
+ *	 Job step details are NOT copied.
  */
 List gres_plugin_job_state_dup(List gres_list);
 

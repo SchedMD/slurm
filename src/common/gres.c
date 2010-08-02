@@ -1803,11 +1803,7 @@ static int _node_state_realloc(void *job_gres_data, int node_offset,
 		return EINVAL;
 	}
 
-	if ((job_gres_ptr->gres_bit_alloc == NULL) ||
-	    (job_gres_ptr->gres_bit_alloc[node_offset] == NULL)) {
-		error("gres/%s:job bit_alloc is NULL", gres_name);
-		return EINVAL;
-	}
+	node_gres_ptr->gres_cnt_alloc += job_gres_ptr->gres_cnt_alloc;
 
 	if (node_gres_ptr->gres_bit_alloc && job_gres_ptr->gres_bit_alloc &&
 	    job_gres_ptr->gres_bit_alloc[node_offset]) {
@@ -1845,7 +1841,6 @@ static int _node_state_realloc(void *job_gres_data, int node_offset,
 				bit_set_count(node_gres_ptr->gres_bit_alloc);
 		}
 	}
-/* FIXME: update counts only */
 
 	return SLURM_SUCCESS;
 }
@@ -2139,9 +2134,11 @@ static void *_job_state_dup(void *gres_data)
 }
 
 /*
- * Create a copy of a job's gres state
+ * Create a (partial) copy of a job's gres state for job binding
  * IN gres_list - List of Gres records for this job to track usage
  * RET The copy or NULL on failure
+ * NOTE: Only gres_cnt_alloc, node_cnt and gres_bit_alloc are copied
+ *	 Job step details are NOT copied.
  */
 List gres_plugin_job_state_dup(List gres_list)
 {
@@ -2160,8 +2157,7 @@ List gres_plugin_job_state_dup(List gres_list)
 	gres_iter = list_iterator_create(gres_list);
 	while ((gres_ptr = (gres_state_t *) list_next(gres_iter))) {
 		for (i=0; i<gres_context_cnt; i++) {
-			if (gres_ptr->plugin_id !=
-			    gres_context[i].plugin_id)
+			if (gres_ptr->plugin_id != gres_context[i].plugin_id)
 				continue;
 			new_gres_data = _job_state_dup(gres_ptr->gres_data);
 			if (new_gres_data == NULL)
@@ -3005,22 +3001,10 @@ static void _step_state_delete(void *gres_data)
 
 static void _gres_step_list_delete(void *list_element)
 {
-	int i;
-	gres_state_t *gres_ptr;
+	gres_state_t *gres_ptr = (gres_state_t *) list_element;
 
-	if (gres_plugin_init() != SLURM_SUCCESS)
-		return;
-
-	gres_ptr = (gres_state_t *) list_element;
-	slurm_mutex_lock(&gres_context_lock);
-	for (i=0; i<gres_context_cnt; i++) {
-		if (gres_ptr->plugin_id != gres_context[i].plugin_id)
-			continue;
-		_step_state_delete(gres_ptr->gres_data);
-		xfree(gres_ptr);
-		break;
-	}
-	slurm_mutex_unlock(&gres_context_lock);
+	_step_state_delete(gres_ptr->gres_data);
+	xfree(gres_ptr);
 }
 
 static int _step_state_validate(char *config, void **gres_data,
@@ -3127,7 +3111,7 @@ extern int gres_plugin_step_state_validate(char *req_config,
 		return SLURM_SUCCESS;
 	if (job_gres_list == NULL) {
 		info("step has gres spec, while job has none");
-		return SLURM_ERROR;
+		return ESLURM_INVALID_GRES;
 	}
 
 	if ((rc = gres_plugin_init()) != SLURM_SUCCESS)
@@ -3148,7 +3132,7 @@ extern int gres_plugin_step_state_validate(char *req_config,
 			rc2 = _step_state_validate(tok, &step_gres_data,
 						   &gres_context[i]);
 			if (rc2 != SLURM_SUCCESS)
-				continue;
+				break;
 			/* Now make sure the step's request isn't too big for
 			 * the job's gres allocation */
 			job_gres_iter = list_iterator_create(job_gres_list);
@@ -3163,15 +3147,17 @@ extern int gres_plugin_step_state_validate(char *req_config,
 				info("Step gres request not in job alloc %s",
 				     tok);
 				rc = ESLURM_INVALID_GRES;
+				_step_state_delete(step_gres_data);
 				break;
 			}
 			job_gres_data = job_gres_ptr->gres_data;
 			rc3 = _step_test(step_gres_data, job_gres_data, NO_VAL,
 					 true, gres_context[i].gres_name);
 			if (rc3 == 0) {
-				info("Step gres more than in job allocation %s",
-				     tok);
+				info("Step gres higher than in job allocation "
+				     "%s", tok);
 				rc = ESLURM_INVALID_GRES;
+				_step_state_delete(step_gres_data);
 				break;
 			}
 
@@ -3201,9 +3187,7 @@ static void *_step_state_dup(void *gres_data)
 	gres_step_state_t *gres_ptr = (gres_step_state_t *) gres_data;
 	gres_step_state_t *new_gres_ptr;
 
-	if (gres_ptr == NULL)
-		return NULL;
-
+	xassert(gres_ptr);
 	new_gres_ptr = xmalloc(sizeof(gres_step_state_t));
 	new_gres_ptr->gres_cnt_alloc	= gres_ptr->gres_cnt_alloc;
 	new_gres_ptr->node_cnt		= gres_ptr->node_cnt;
@@ -3241,28 +3225,16 @@ List gres_plugin_step_state_dup(List gres_list)
 	slurm_mutex_lock(&gres_context_lock);
 	gres_iter = list_iterator_create(gres_list);
 	while ((gres_ptr = (gres_state_t *) list_next(gres_iter))) {
-		for (i=0; i<gres_context_cnt; i++) {
-			if (gres_ptr->plugin_id !=
-			    gres_context[i].plugin_id)
-				continue;
-			new_gres_data = _step_state_dup(gres_ptr->gres_data);
-			if (new_gres_data == NULL)
-				break;
-			if (new_gres_list == NULL) {
-				new_gres_list = list_create(_gres_step_list_delete);
-				if (new_gres_list == NULL)
-					fatal("list_create: malloc failure");
-			}
-			new_gres_state = xmalloc(sizeof(gres_state_t));
-			new_gres_state->plugin_id = gres_ptr->plugin_id;
-			new_gres_state->gres_data = new_gres_data;
-			list_append(new_gres_list, new_gres_state);
-			break;
+		new_gres_data = _step_state_dup(gres_ptr->gres_data);
+		if (new_gres_list == NULL) {
+			new_gres_list = list_create(_gres_step_list_delete);
+			if (new_gres_list == NULL)
+				fatal("list_create: malloc failure");
 		}
-		if (i >= gres_context_cnt) {
-			error("Could not find plugin id %u to dup step record",
-			      gres_ptr->plugin_id);
-		}
+		new_gres_state = xmalloc(sizeof(gres_state_t));
+		new_gres_state->plugin_id = gres_ptr->plugin_id;
+		new_gres_state->gres_data = new_gres_data;
+		list_append(new_gres_list, new_gres_state);
 	}
 	list_iterator_destroy(gres_iter);
 	slurm_mutex_unlock(&gres_context_lock);
