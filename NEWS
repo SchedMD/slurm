@@ -1,6 +1,9 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in SLURM 2.2.0.pre10
+==============================
+
 * Changes in SLURM 2.2.0.pre9
 =============================
  -- sbatch can now submit jobs to multiple clusters and run on the earliest
