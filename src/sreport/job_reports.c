@@ -254,7 +254,9 @@ static int _set_cond(int *start, int argc, char *argv[],
 					      argv[i]+end);
 			set = 1;
 		} else if (!strncasecmp (argv[i], "Accounts",
-					 MAX(command_len, 2))) {
+					 MAX(command_len, 2))
+			   || !strncasecmp(argv[i], "Acct",
+					   MAX(command_len, 4))) {
 			if(!job_cond->acct_list)
 				job_cond->acct_list =
 					list_create(slurm_destroy_char);
@@ -285,7 +287,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 			set = 1;
 		} else if (!strncasecmp (argv[i], "grouping",
 					 MAX(command_len, 2))) {
-			if(!strcasecmp(argv[i]+end, "individual")) {
+			if(!strncasecmp(argv[i]+end, "individual", 1)) {
 				individual_grouping = 1;
 			} else if(grouping_list)
 				slurm_addto_char_list(grouping_list,
@@ -420,7 +422,8 @@ static int _setup_print_fields_list(List format_list)
 		command_len = strlen(object);
 
 		field = xmalloc(sizeof(print_field_t));
-		if(!strncasecmp("Account", object, MAX(command_len, 1))) {
+		if(!strncasecmp("Account", object, MAX(command_len, 1))
+		   || !strncasecmp("Acct", object, MAX(command_len, 4))) {
 			field->type = PRINT_JOB_ACCOUNT;
 			field->name = xstrdup("Account");
 			field->len = 9;
