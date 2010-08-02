@@ -984,7 +984,7 @@ extern int update_grid_table(GtkTable *table, List button_list, List node_list)
 	}
 
 	if(!node_list) {
-		g_print("setup_grid_table: no node_list given\n");
+		g_print("update_grid_table: no node_list given\n");
 		return SLURM_ERROR;
 	}
 

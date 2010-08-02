@@ -821,13 +821,27 @@ extern void change_grid_popup(GtkAction *action, gpointer user_data)
 		   && (vert == working_sview_config.grid_vert)) {
 			temp = g_strdup_printf("Grid: Nothing changed.");
 		} else {
+			bool refresh = 0;
 			temp = g_strdup_printf(
 				"Grid set to %d nodes breaks "
 				"at %d H and %d V.",
 				working_sview_config.grid_x_width,
 				working_sview_config.grid_hori,
 				working_sview_config.grid_vert);
+			/* If the old width was wider than the
+			 * current we need to remake the list so the
+			 * table gets set up correctly, so destroy it
+			 * here and it will be remade in get_system_stats(). */
+			if((width > working_sview_config.grid_x_width)
+			   && grid_button_list) {
+				list_destroy(grid_button_list);
+				grid_button_list = NULL;
+				refresh = 1;
+			}
 			get_system_stats(main_grid_table);
+			if(refresh)
+				refresh_main(NULL, NULL);
+
 		}
 		gtk_statusbar_pop(GTK_STATUSBAR(main_statusbar),
 				  STATUS_REFRESH);
