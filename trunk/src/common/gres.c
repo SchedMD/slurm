@@ -100,7 +100,6 @@ typedef struct slurm_gres_context {
 	slurm_gres_ops_t ops;			/* pointers to plugin symbols */
 	uint32_t	plugin_id;		/* key for searches */
 	plugrack_t	plugin_list;		/* plugrack info */
-	bool		unpacked_info;		/* info unpacked */
 } slurm_gres_context_t;
 
 /* Generic gres data structure for adding to a list. Depending upon the
@@ -135,9 +134,6 @@ static int	_job_config_validate(char *config, uint32_t *gres_cnt,
 				     slurm_gres_context_t *context_ptr);
 static void	_job_state_delete(void *gres_data);
 static void *	_job_state_dup(void *gres_data);
-static int	_job_state_pack(void *gres_data, Buf buffer);
-static int	_job_state_unpack(void **gres_data, Buf buffer,
-				  char *gres_name);
 static int	_job_state_validate(char *config, void **gres_data,
 				    slurm_gres_context_t *gres_name);
 extern uint32_t	_job_test(void *job_gres_data, void *node_gres_data,
@@ -837,8 +833,6 @@ extern int gres_plugin_node_config_unpack(Buf buffer, char* node_name)
 		return SLURM_SUCCESS;
 
 	slurm_mutex_lock(&gres_context_lock);
- 	for (j=0; j<gres_context_cnt; j++)
- 		gres_context[j].unpacked_info = false;
 	for (i=0; i<rec_cnt; i++) {
 		safe_unpack32(&magic, buffer);
 		if (magic != GRES_MAGIC)
@@ -876,7 +870,6 @@ extern int gres_plugin_node_config_unpack(Buf buffer, char* node_name)
 				count = 1024;
 			}
 			gres_context[j].has_file = has_file;
-			gres_context[j].unpacked_info = true;
 			break;
  		}
 		if (j >= gres_context_cnt) {
@@ -898,14 +891,6 @@ extern int gres_plugin_node_config_unpack(Buf buffer, char* node_name)
 		xfree(tmp_name);	/* Don't bother to preserve */
 		p->plugin_id = plugin_id;
 		list_append(gres_conf_list, p);
-	}
- 	for (j=0; j<gres_context_cnt; j++) {
- 		if (gres_context[j].unpacked_info)
-			continue;
-
-		/* A likely sign GresPlugins is inconsistently configured. */
-		error("gres_plugin_node_config_unpack: no data type of type "
-		      "%s from node %s", gres_context[j].gres_type, node_name);
 	}
 	slurm_mutex_unlock(&gres_context_lock);
 	return rc;
@@ -1575,9 +1560,6 @@ extern int gres_plugin_node_state_unpack(List *gres_list, Buf buffer,
 			fatal("list_create malloc failure");
 	}
 
-	for (i=0; i<gres_context_cnt; i++)
-		gres_context[i].unpacked_info = false;
-
 	while ((rc == SLURM_SUCCESS) && (rec_cnt)) {
 		if ((buffer == NULL) || (remaining_buf(buffer) == 0))
 			break;
@@ -1600,7 +1582,6 @@ extern int gres_plugin_node_state_unpack(List *gres_list, Buf buffer,
 			 * Not a fatal error, skip over the data. */
 			continue;
 		}
-		gres_context[i].unpacked_info = true;
 		gres_node_ptr = _build_gres_node_state();
 		gres_node_ptr->gres_cnt_avail = gres_cnt_avail;
 		if (has_bitmap) {
@@ -1614,30 +1595,14 @@ extern int gres_plugin_node_state_unpack(List *gres_list, Buf buffer,
 		gres_ptr->gres_data = gres_node_ptr;
 		list_append(*gres_list, gres_ptr);
 	}
-
-fini:	/* Insure that every gres plugin is called for unpack, even if no data
-	 * was packed by the node. A likely sign that GresPlugins is
-	 * inconsistently configured. */
-	for (i=0; i<gres_context_cnt; i++) {
-		if (gres_context[i].unpacked_info)
-			continue;
-		error("gres_plugin_node_state_unpack: no info packed for %s "
-		      "by node %s", gres_context[i].gres_type, node_name);
-		gres_node_ptr = _build_gres_node_state();
-		gres_ptr = xmalloc(sizeof(gres_state_t));
-		gres_ptr->plugin_id = gres_context[i].plugin_id;
-		gres_ptr->gres_data = gres_node_ptr;
-		list_append(*gres_list, gres_ptr);
-	}
 	slurm_mutex_unlock(&gres_context_lock);
-
 	return rc;
 
 unpack_error:
 	error("gres_plugin_node_state_unpack: unpack error from node %s",
 	      node_name);
-	rc = SLURM_ERROR;
-	goto fini;
+	slurm_mutex_unlock(&gres_context_lock);
+	return SLURM_ERROR;
 }
 
 static void *_node_state_dup(void *gres_data)
@@ -2142,7 +2107,6 @@ static void *_job_state_dup(void *gres_data)
  */
 List gres_plugin_job_state_dup(List gres_list)
 {
-	int i;
 	ListIterator gres_iter;
 	gres_state_t *gres_ptr, *new_gres_state;
 	List new_gres_list = NULL;
@@ -2156,45 +2120,23 @@ List gres_plugin_job_state_dup(List gres_list)
 	slurm_mutex_lock(&gres_context_lock);
 	gres_iter = list_iterator_create(gres_list);
 	while ((gres_ptr = (gres_state_t *) list_next(gres_iter))) {
-		for (i=0; i<gres_context_cnt; i++) {
-			if (gres_ptr->plugin_id != gres_context[i].plugin_id)
-				continue;
-			new_gres_data = _job_state_dup(gres_ptr->gres_data);
-			if (new_gres_data == NULL)
-				break;
-			if (new_gres_list == NULL) {
-				new_gres_list = list_create(_gres_job_list_delete);
-				if (new_gres_list == NULL)
-					fatal("list_create: malloc failure");
-			}
-			new_gres_state = xmalloc(sizeof(gres_state_t));
-			new_gres_state->plugin_id = gres_ptr->plugin_id;
-			new_gres_state->gres_data = new_gres_data;
-			list_append(new_gres_list, new_gres_state);
+		new_gres_data = _job_state_dup(gres_ptr->gres_data);
+		if (new_gres_data == NULL)
 			break;
+		if (new_gres_list == NULL) {
+			new_gres_list = list_create(_gres_job_list_delete);
+			if (new_gres_list == NULL)
+				fatal("list_create: malloc failure");
 		}
-		if (i >= gres_context_cnt) {
-			error("Could not find plugin id %u to dup job record",
-			      gres_ptr->plugin_id);
-		}
+		new_gres_state = xmalloc(sizeof(gres_state_t));
+		new_gres_state->plugin_id = gres_ptr->plugin_id;
+		new_gres_state->gres_data = new_gres_data;
+		list_append(new_gres_list, new_gres_state);
 	}
 	list_iterator_destroy(gres_iter);
 	slurm_mutex_unlock(&gres_context_lock);
 
 	return new_gres_list;
-}
-
-static int _job_state_pack(void *gres_data, Buf buffer)
-{
-	int i;
-	gres_job_state_t *gres_ptr = (gres_job_state_t *) gres_data;
-
-	pack32(gres_ptr->gres_cnt_alloc, buffer);
-	pack32(gres_ptr->node_cnt,       buffer);
-	for (i=0; i<gres_ptr->node_cnt; i++)
-		pack_bit_str(gres_ptr->gres_bit_alloc[i], buffer);
-
-	return SLURM_SUCCESS;
 }
 
 /*
@@ -2206,13 +2148,14 @@ static int _job_state_pack(void *gres_data, Buf buffer)
 extern int gres_plugin_job_state_pack(List gres_list, Buf buffer,
 				      uint32_t job_id)
 {
-	int i, rc = SLURM_SUCCESS, rc2;
-	uint32_t top_offset, gres_size = 0;
-	uint32_t header_offset, size_offset, data_offset, tail_offset;
+	int i, rc = SLURM_SUCCESS;
+	uint32_t top_offset, tail_offset;
 	uint32_t magic = GRES_MAGIC;
 	uint16_t rec_cnt = 0;
+	uint8_t  has_bitmap;
 	ListIterator gres_iter;
 	gres_state_t *gres_ptr;
+	gres_job_state_t *gres_job_ptr;
 
 	top_offset = get_buf_offset(buffer);
 	pack16(rec_cnt, buffer);	/* placeholder if data */
@@ -2225,35 +2168,23 @@ extern int gres_plugin_job_state_pack(List gres_list, Buf buffer,
 	slurm_mutex_lock(&gres_context_lock);
 	gres_iter = list_iterator_create(gres_list);
 	while ((gres_ptr = (gres_state_t *) list_next(gres_iter))) {
-		for (i=0; i<gres_context_cnt; i++) {
-			if (gres_ptr->plugin_id !=
-			    gres_context[i].plugin_id)
-				continue;
-			header_offset = get_buf_offset(buffer);
-			pack32(magic, buffer);
-			pack32(gres_ptr->plugin_id, buffer);
-			size_offset = get_buf_offset(buffer);
-			pack32(gres_size, buffer);	/* placeholder */
-			data_offset = get_buf_offset(buffer);
-			rc2 = _job_state_pack(gres_ptr->gres_data, buffer);
-			if (rc2 != SLURM_SUCCESS) {
-				rc = rc2;
-				set_buf_offset(buffer, header_offset);
-				continue;
+		gres_job_ptr = (gres_job_state_t *) gres_ptr->gres_data;
+		pack32(magic, buffer);
+		pack32(gres_ptr->plugin_id, buffer);
+		pack32(gres_job_ptr->gres_cnt_alloc, buffer);
+		pack32(gres_job_ptr->node_cnt, buffer);
+		if (gres_job_ptr->gres_bit_alloc) {
+			has_bitmap = 1;
+			pack8(has_bitmap, buffer);
+			for (i=0; i<gres_job_ptr->node_cnt; i++) {
+				pack_bit_str(gres_job_ptr->gres_bit_alloc[i],
+					     buffer);
 			}
-			tail_offset = get_buf_offset(buffer);
-			set_buf_offset(buffer, size_offset);
-			gres_size = tail_offset - data_offset;
-			pack32(gres_size, buffer);
-			set_buf_offset(buffer, tail_offset);
-			rec_cnt++;
-			break;
+		} else {
+			has_bitmap = 0;
+			pack8(has_bitmap, buffer);
 		}
-		if (i >= gres_context_cnt) {
-			error("Could not find plugin id %u to pack record for "
-			      "job %u",
-			      gres_ptr->plugin_id, job_id);
-		}
+		rec_cnt++;
 	}
 	list_iterator_destroy(gres_iter);
 	slurm_mutex_unlock(&gres_context_lock);
@@ -2266,37 +2197,6 @@ extern int gres_plugin_job_state_pack(List gres_list, Buf buffer,
 	return rc;
 }
 
-static int _job_state_unpack(void **gres_data, Buf buffer, char *gres_name)
-{
-	int i;
-	gres_job_state_t *gres_ptr;
-
-	gres_ptr = xmalloc(sizeof(gres_job_state_t));
-
-	if (buffer) {
-		safe_unpack32(&gres_ptr->gres_cnt_alloc, buffer);
-		safe_unpack32(&gres_ptr->node_cnt,       buffer);
-		gres_ptr->gres_bit_alloc = xmalloc(sizeof(bitstr_t *) *
-						   gres_ptr->node_cnt);
-		for (i=0; i<gres_ptr->node_cnt; i++)
-			unpack_bit_str(&gres_ptr->gres_bit_alloc[i], buffer);
-	}
-
-	*gres_data = gres_ptr;
-	return SLURM_SUCCESS;
-
-unpack_error:
-	error("Unpacking gres/%s job state info", gres_name);
-	if (gres_ptr->gres_bit_alloc) {
-		for (i=0; i<gres_ptr->node_cnt; i++)
-			FREE_NULL_BITMAP(gres_ptr->gres_bit_alloc[i]);
-		xfree(gres_ptr->gres_bit_alloc);
-	}
-	xfree(gres_ptr);
-	*gres_data = NULL;
-	return SLURM_ERROR;
-}
-
 /*
  * Unpack a job's current gres status, called from slurmctld for save/restore
  * OUT gres_list - restored state stored by gres_plugin_job_state_pack()
@@ -2306,11 +2206,12 @@ unpack_error:
 extern int gres_plugin_job_state_unpack(List *gres_list, Buf buffer,
 					uint32_t job_id)
 {
-	int i, rc, rc2;
-	uint32_t gres_size, magic, tail_offset, plugin_id;
+	int i, rc;
+	uint32_t magic, plugin_id;
 	uint16_t rec_cnt;
+	uint8_t  has_bitmap;
 	gres_state_t *gres_ptr;
-	void *gres_data;
+	gres_job_state_t *gres_job_ptr = NULL;
 
 	safe_unpack16(&rec_cnt, buffer);
 	if (rec_cnt == 0)
@@ -2325,9 +2226,6 @@ extern int gres_plugin_job_state_unpack(List *gres_list, Buf buffer,
 			fatal("list_create malloc failure");
 	}
 
-	for (i=0; i<gres_context_cnt; i++)
-		gres_context[i].unpacked_info = false;
-
 	while ((rc == SLURM_SUCCESS) && (rec_cnt)) {
 		if ((buffer == NULL) || (remaining_buf(buffer) == 0))
 			break;
@@ -2336,7 +2234,19 @@ extern int gres_plugin_job_state_unpack(List *gres_list, Buf buffer,
 		if (magic != GRES_MAGIC)
 			goto unpack_error;
 		safe_unpack32(&plugin_id, buffer);
-		safe_unpack32(&gres_size, buffer);
+		gres_job_ptr = xmalloc(sizeof(gres_job_state_t));
+		safe_unpack32(&gres_job_ptr->gres_cnt_alloc, buffer);
+		safe_unpack32(&gres_job_ptr->node_cnt, buffer);
+		safe_unpack8(&has_bitmap, buffer);
+		if (has_bitmap) {
+			gres_job_ptr->gres_bit_alloc =
+				xmalloc(sizeof(bitstr_t *) *
+					gres_job_ptr->node_cnt);
+			for (i=0; i<gres_job_ptr->node_cnt; i++) {
+				unpack_bit_str(&gres_job_ptr->gres_bit_alloc[i],
+					       buffer);
+			}
+		}
 		for (i=0; i<gres_context_cnt; i++) {
 			if (gres_context[i].plugin_id == plugin_id)
 				break;
@@ -2347,53 +2257,25 @@ extern int gres_plugin_job_state_unpack(List *gres_list, Buf buffer,
 			      plugin_id, job_id);
 			/* A likely sign that GresPlugins has changed.
 			 * Not a fatal error, skip over the data. */
-			tail_offset = get_buf_offset(buffer);
-			tail_offset += gres_size;
-			set_buf_offset(buffer, tail_offset);
+			_job_state_delete(gres_job_ptr);
 			continue;
 		}
-		gres_context[i].unpacked_info = true;
-		rc2 = _job_state_unpack(&gres_data, buffer,
-					gres_context[i].gres_name);
-		if (rc2 != SLURM_SUCCESS) {
-			rc = rc2;
-		} else {
-			gres_ptr = xmalloc(sizeof(gres_state_t));
-			gres_ptr->plugin_id = gres_context[i].plugin_id;
-			gres_ptr->gres_data = gres_data;
-			list_append(*gres_list, gres_ptr);
-		}
-	}
-
-fini:	/* Insure that every gres plugin is called for unpack, even if no data
-	 * was packed by the job. A likely sign that GresPlugins is
-	 * inconsistently configured. */
-	for (i=0; i<gres_context_cnt; i++) {
-		if (gres_context[i].unpacked_info)
-			continue;
-		debug("gres_plugin_job_state_unpack: no info packed for %s "
-		      "by job %u",
-		      gres_context[i].gres_type, job_id);
-		rc2 = _job_state_unpack(&gres_data, NULL,
-					gres_context[i].gres_name);
-		if (rc2 != SLURM_SUCCESS) {
-			rc = rc2;
-		} else {
-			gres_ptr = xmalloc(sizeof(gres_state_t));
-			gres_ptr->plugin_id = gres_context[i].plugin_id;
-			gres_ptr->gres_data = gres_data;
-			list_append(*gres_list, gres_ptr);
-		}
+		gres_ptr = xmalloc(sizeof(gres_state_t));
+		gres_ptr->plugin_id = gres_context[i].plugin_id;
+		gres_ptr->gres_data = gres_job_ptr;
+		gres_job_ptr = NULL;	/* nothing left to free on error */
+		list_append(*gres_list, gres_ptr);
 	}
 	slurm_mutex_unlock(&gres_context_lock);
-
 	return rc;
 
 unpack_error:
 	error("gres_plugin_job_state_unpack: unpack error from job %u",
 	      job_id);
-	rc = SLURM_ERROR;
-	goto fini;
+	if (gres_job_ptr)
+		_job_state_delete(gres_job_ptr);
+	slurm_mutex_unlock(&gres_context_lock);
+	return SLURM_ERROR;
 }
 
 /* If CPU bitmap from slurmd differs in size from that in slurmctld,
@@ -3211,7 +3093,6 @@ static void *_step_state_dup(void *gres_data)
  */
 List gres_plugin_step_state_dup(List gres_list)
 {
-	int i;
 	ListIterator gres_iter;
 	gres_state_t *gres_ptr, *new_gres_state;
 	List new_gres_list = NULL;
@@ -3393,9 +3274,6 @@ extern int gres_plugin_step_state_unpack(List *gres_list, Buf buffer,
 			fatal("list_create malloc failure");
 	}
 
-	for (i=0; i<gres_context_cnt; i++)
-		gres_context[i].unpacked_info = false;
-
 	while ((rc == SLURM_SUCCESS) && (rec_cnt)) {
 		if ((buffer == NULL) || (remaining_buf(buffer) == 0))
 			break;
@@ -3421,29 +3299,7 @@ extern int gres_plugin_step_state_unpack(List *gres_list, Buf buffer,
 			set_buf_offset(buffer, tail_offset);
 			continue;
 		}
-		gres_context[i].unpacked_info = true;
 		rc2 = _step_state_unpack(&gres_data, buffer,
-					 gres_context[i].gres_name);
-		if (rc2 != SLURM_SUCCESS) {
-			rc = rc2;
-		} else {
-			gres_ptr = xmalloc(sizeof(gres_state_t));
-			gres_ptr->plugin_id = gres_context[i].plugin_id;
-			gres_ptr->gres_data = gres_data;
-			list_append(*gres_list, gres_ptr);
-		}
-	}
-
-fini:	/* Insure that every gres plugin is called for unpack, even if no data
-	 * was packed by the job. A likely sign that GresPlugins is
-	 * inconsistently configured. */
-	for (i=0; i<gres_context_cnt; i++) {
-		if (gres_context[i].unpacked_info)
-			continue;
-		debug("gres_plugin_job_state_unpack: no info packed for %s "
-		      "by step %u.%u",
-		      gres_context[i].gres_type, job_id, step_id);
-		rc2 = _step_state_unpack(&gres_data, NULL,
 					 gres_context[i].gres_name);
 		if (rc2 != SLURM_SUCCESS) {
 			rc = rc2;
@@ -3461,8 +3317,8 @@ fini:	/* Insure that every gres plugin is called for unpack, even if no data
 unpack_error:
 	error("gres_plugin_job_state_unpack: unpack error from step %u.%u",
 	      job_id, step_id);
-	rc = SLURM_ERROR;
-	goto fini;
+	slurm_mutex_unlock(&gres_context_lock);
+	return SLURM_ERROR;
 }
 
 static void _step_state_log(void *gres_data, uint32_t job_id, uint32_t step_id,
