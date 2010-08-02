@@ -202,6 +202,11 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
 		if (IS_NODE_DOWN(node_ptr)) {
 			/* Issue the KILL RPC, but don't verify response */
 			down_node_cnt++;
+			if (job_ptr->node_bitmap_cg == NULL) {
+				error("deallocate_nodes: node_bitmap_cg is "
+				      "not set");
+				build_cg_bitmap(job_ptr);
+			}
 			bit_clear(job_ptr->node_bitmap_cg, i);
 			job_update_cpu_cnt(job_ptr, i);
 			job_ptr->node_cnt--;

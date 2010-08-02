@@ -9322,7 +9322,10 @@ extern void build_cg_bitmap(struct job_record *job_ptr)
 	FREE_NULL_BITMAP(job_ptr->node_bitmap_cg);
 	if (job_ptr->node_bitmap) {
 		job_ptr->node_bitmap_cg = bit_copy(job_ptr->node_bitmap);
-		if (job_ptr->node_bitmap_cg == NULL)
-			fatal("bit_copy: memory allocation failure");
+	} else {
+		error("build_cg_bitmap: node_bitmap is NULL");
+		job_ptr->node_bitmap_cg = bit_alloc(node_record_count);
 	}
+	if (job_ptr->node_bitmap_cg == NULL)
+		fatal("bit_copy: memory allocation failure");
 }
