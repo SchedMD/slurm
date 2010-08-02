@@ -1,0 +1,71 @@
+###
+#
+# Slurm cgroup support configuration file
+#
+###
+
+#--
+# Slurm cgroup plugins require a valid and functional 
+# cgroup system mounted on /dev/cgroup
+# When launched, plugins check cgroup availability
+# If cgroup is not available, the plugin launch fails
+# unless CgroupAutomount is set to yes. In that case,
+# the plugin will first try to mount the cgroup system.
+# CgroupMountOptions and CgroupReleaseAgent can be used to
+# tune the cgroup system behavior
+#--
+CgroupAutomount=yes
+CgroupMountOptions="memory,cpuset"
+CgroupReleaseAgent="/etc/slurm/cgroup.release_agent"
+
+#--
+# Slurm cgroup proctrack plugin creates a hierarchical set of
+# directories for each step, putting the step tasks into the leaf
+#
+# This directory structure is like the following : 
+#     /dev/cgroup/slurm/uid_%uid/job_%jobid/step_%stepid
+#
+# job cgroup and jobstep cgroup can be tuned using the two next 
+# parameters. The format of the parameter is the following :
+#
+# "a=b c=d e=f" where a,c,d corresponds to files under the cgroup 
+# directory and b,d,f the values to write in these files
+#--
+JobCgroupParams="memory.swappiness=30"
+JobStepCgroupParams=""
+
+#--
+# Slurm cgroup proctrack plugin can constrain memory usage at the job
+# level. The constraints correspond to the amount of RAM space allowed
+# to the whole job as well as the amount of additional swap space.
+#
+# The amount of space of these two notions are expressed in percent of
+# the memory limit set to the job on the execution node.
+#
+# Thus, the following configuration :
+#     ConstrainRAMSpace=no
+#     ConstrainSwapSpace=yes
+# will request that no constraint are set for the jobs,
+#     ConstrainRAMSpace=yes
+#     AllowedRAMSpace=100
+#     ConstrainSwapSpace=yes
+#     AllowedSwapSpace=10
+# will request to constrain RAM and Swap space letting the job use
+# as many RAM space than memory asked in slurm but not more than
+# 110% of this limit in both RAM+Swap space
+#
+# Warning: setting ConstrainSwapSpace to yes automatically set 
+# ConstrainRAMSpace to yes and the corresponding limit to 100%
+# of the memory limit + the configured percent of Swap space
+#--
+ConstrainRAMSpace=yes
+AllowedRAMSpace=100
+ConstrainSwapSpace=yes
+AllowedSwapSpace=10
+
+#--
+# Slurm cgroup proctrack plugin can constrain allowed cores to 
+# the subset of allocated resources.
+# To do that, you just have to set to yes the following parameter
+#--
+ConstrainCores=yes
