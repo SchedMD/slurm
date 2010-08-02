@@ -87,7 +87,7 @@
 \*****************************************************************************/
 /* Maximum parallel threads to service incoming RPCs */
 #ifndef MAX_SERVER_THREADS
-#define MAX_SERVER_THREADS 1024
+#define MAX_SERVER_THREADS 256
 #endif
 
 /* Perform full slurmctld's state every PERIODIC_CHECKPOINT seconds */
