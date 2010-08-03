@@ -848,6 +848,8 @@ extern void _change_cluster_main(GtkComboBox *combo, gpointer extra)
 	char *tmp, *ui_description;
 	GError *error = NULL;
 	GtkWidget *node_tab = NULL;
+	int rc;
+	bool got_grid = 0;
 
 	if(!gtk_combo_box_get_active_iter(combo, &iter)) {
 		g_print("nothing selected\n");
@@ -960,6 +962,7 @@ extern void _change_cluster_main(GtkComboBox *combo, gpointer extra)
 	if(grid_button_list) {
 		list_destroy(grid_button_list);
 		grid_button_list = NULL;
+		got_grid = 1;
 	}
 	ba_fini();
 
@@ -1000,11 +1003,27 @@ extern void _change_cluster_main(GtkComboBox *combo, gpointer extra)
 						page_check_widget[NODE_PAGE]),
 				     main_display_data[NODE_PAGE].name);
 	}
-
 	/* reinit */
-	get_system_stats(main_grid_table);
+	rc = get_system_stats(main_grid_table);
 
-	refresh_main(NULL, NULL);
+	if(rc == SLURM_SUCCESS) {
+		/* It turns out if we didn't have the grid before the
+		   new grid doesn't get set up correctly.  Redoing the
+		   system_stats fixes it.  There is probably a better
+		   way of doing this, but it doesn't happen very often
+		   and isn't that bad to handle every once in a while.
+		*/
+		if(!got_grid) {
+			if(grid_button_list) {
+				list_destroy(grid_button_list);
+				grid_button_list = NULL;
+			}
+			get_system_stats(main_grid_table);
+		}
+
+		refresh_main(NULL, NULL);
+	}
+
 	tmp = g_strdup_printf("Cluster changed to %s", cluster_rec->name);
 	display_edit_note(tmp);
 	g_free(tmp);
