@@ -169,7 +169,7 @@ expect {
 	}
 	-re "\\\(N\\\/y\\\):" {
 		incr amatches
-		send "Y\r"
+		send "Y"
 		exp_continue
 	}
 	timeout {
@@ -256,7 +256,7 @@ expect {
 	}
 	-re "\\\(N\\\/y\\\):" {
 		incr dmatches
-		send "Y\r"
+		send "Y"
 		exp_continue
 	}
 	timeout {

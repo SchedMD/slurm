@@ -35,48 +35,48 @@ source ./globals_accounting
 
 set test_id     "test21.29"
 set exit_code   0
-set nm		name        	
-set qs		QOS        	
-set qs1		tnormal              	
-set rs		-1           
-set dsc		description    	
-set ds1		tqos1        	
-set gc		GrpCpus	       
-set gc1		80		
-set gcm		GrpCpuMins	
-set gcm1	240000	     
-set gj		GrpJobs      	
-set gj1		500            
-set gn		GrpNodes     	
-set gn1		10             	
-set gs		GrpSubmit    	
-set gs1		800            	
-set gw		GrpWall		
-set gw1		01:00:00	
-set mc		MaxCpus	      
-set mc1		80		
-set mcm		MaxCpuMins	
-set mcm1	60000		
-set mj		MaxJobs        	
-set mj1		50            
-set mn		MaxNodes     
-set mn1		2            	
-set ms		MaxSubmit     
-set ms1		100            	
-set msj		MaxSubmitJobs  
-set msj1	100		
-set mw		Maxwall        
-set mw1		01:00:00       	
-set pre		Preempt        
-set pe1		normal         	
-set pm		PreemptMode    	
-set pm1		cluster        	
-set pri		Priority       
-set pi1		2500           
-set pi3		0           
-set uf		UsageFactor    	
-set uf1		5.000000              
-set uf3		1.000000             	
+set nm		name
+set qs		QOS
+set qs1		tnormal
+set rs		-1
+set dsc		description
+set ds1		tqos1
+set gc		GrpCpus
+set gc1		80
+set gcm		GrpCpuMins
+set gcm1	240000
+set gj		GrpJobs
+set gj1		500
+set gn		GrpNodes
+set gn1		10
+set gs		GrpSubmit
+set gs1		800
+set gw		GrpWall
+set gw1		01:00:00
+set mc		MaxCpus
+set mc1		80
+set mcm		MaxCpuMins
+set mcm1	60000
+set mj		MaxJobs
+set mj1		50
+set mn		MaxNodes
+set mn1		2
+set ms		MaxSubmit
+set ms1		100
+set msj		MaxSubmitJobs
+set msj1	100
+set mw		Maxwall
+set mw1		01:00:00
+set pre		Preempt
+set pe1		normal
+set pm		PreemptMode
+set pm1		cluster
+set pri		Priority
+set pi1		2500
+set pi3		0
+set uf		UsageFactor
+set uf1		5.000000
+set uf3		1.000000
 set access_err  0
 
 print_header $test_id
@@ -112,19 +112,19 @@ set matches 0
 set my_pid [spawn $sacctmgr -n -p list qos $qs1 format="$gc,$gcm,$gj,$gn,$gs,$gw,$mc,$mcm,$mj,$mn,$ms,$msj,$mw,$pre,$pm,$pri,$uf" ]
 expect {
 	-re "No valid entity in list command" {
-	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
+		send_user "FAILURE: there was a problem with the sacctmgr command\n"
 	    	incr exit_code 1
 	}
 	-re "invalid keyword" {
-	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
+		send_user "FAILURE: there was a problem with the sacctmgr command\n"
 	    	incr exit_code 1
 	}
 	-re "Unknown condition" {
-	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
+		send_user "FAILURE: there was a problem with the sacctmgr command\n"
 	    	incr exit_code 1
 	}
 	-re "Unknown field" {
-	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
+		send_user "FAILURE: there was a problem with the sacctmgr command\n"
 	    	incr exit_code 1
 	}
 	-re "($gc1.$gcm1.$gj1.$gn1.$gs1.01.00.00.$mc1.$mcm1.$mj1.$mn1.$ms1.$msj1.01.00.00.$pe1.$pm1.$pi1.$uf1)" {
@@ -153,23 +153,23 @@ set matches 0
 set my_pid [eval spawn $sacctmgr -i mod qos where $nm=$qs1 set $gc=$rs $gcm=$rs $gj=$rs $gn=$rs $gs=$rs $gw=$rs $mc=$rs $mcm=$rs $mj=$rs $mn=$rs $ms=$rs $msj=$rs $mw=$rs $pri=$rs $uf=$rs]
 expect {
 	-re "No valid entity in list command" {
-	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
+		send_user "FAILURE: there was a problem with the sacctmgr command\n"
 	    	incr exit_code 1
 	}
 	-re "invalid keyword" {
-	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
+		send_user "FAILURE: there was a problem with the sacctmgr command\n"
 	    	incr exit_code 1
 	}
 	-re "Unknown condition" {
-	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
+		send_user "FAILURE: there was a problem with the sacctmgr command\n"
 	    	incr exit_code 1
 	}
 	-re "Nothing modified" {
-	        send_user "FAILURE: sacctmgr command unable to modify\n"
+		send_user "FAILURE: sacctmgr command unable to modify\n"
 	    	incr exit_code 1
 	}
 	-re "Unknown field" {
-	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
+		send_user "FAILURE: there was a problem with the sacctmgr command\n"
 	    	incr exit_code 1
 	}
 	-re "Modified qos" {
@@ -201,19 +201,19 @@ set matches 0
 set my_pid [spawn $sacctmgr -n -p list qos $qs1 format="$gc,$gcm,$gj,$gn,$gs,$gw,$mc,$mcm,$mj,$mn,$ms,$msj,$mw,$pre,$pm,$pri,$uf" ]
 expect {
 	-re "No valid entity in list command" {
-	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
+		send_user "FAILURE: there was a problem with the sacctmgr command\n"
 	    	incr exit_code 1
 	}
 	-re "invalid keyword" {
-	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
+		send_user "FAILURE: there was a problem with the sacctmgr command\n"
 	    	incr exit_code 1
 	}
 	-re "Unknown condition" {
-	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
+		send_user "FAILURE: there was a problem with the sacctmgr command\n"
 	    	incr exit_code 1
 	}
 	-re "Unknown field" {
-	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
+		send_user "FAILURE: there was a problem with the sacctmgr command\n"
 	    	incr exit_code 1
 	}
 	-re "(.............$pe1.$pm1.$pi3.$uf3)" {
@@ -247,4 +247,3 @@ if {$exit_code == 0} {
 	send_user "\nFAILURE\n"
 }
 exit $exit_code
-

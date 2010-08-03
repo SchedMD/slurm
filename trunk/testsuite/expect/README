@@ -538,7 +538,8 @@ test21.24  sacctmgr dump file
 test21.25  sacctmgr show config
 test21.26  sacctmgr +=, -= modify QoS test
 test21.27  sacctmgr problems test
-test21.25  sacctmgr abort delete
+test21.28  sacctmgr abort delete
+test21.29  sacctmgr clear (modify) QoS values
 
 test22.#   Testing of sreport commands and options.
            These also test the sacctmgr archive dump/load functions.
