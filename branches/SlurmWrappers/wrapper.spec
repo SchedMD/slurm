@@ -81,6 +81,7 @@ install -D -m755 Date2Epoch/LCRM_date2epoch $RPM_BUILD_ROOT%{_bindir}/LCRM_date2
 #
 # LCRM wrappers.
 #
+install -D -m755 wrappers/mjstat.pl $RPM_BUILD_ROOT%{_bindir}/mjstat
 install -D -m755 wrappers/palter.pl $RPM_BUILD_ROOT%{_bindir}/palter
 install -D -m755 wrappers/phold.pl $RPM_BUILD_ROOT%{_bindir}/phold
 install -D -m755 wrappers/prel.pl $RPM_BUILD_ROOT%{_bindir}/prel
@@ -116,7 +117,7 @@ chmod -R 755 $RPM_BUILD_ROOT%{_mandir}/man1
 #
 # Do LCRM man pages.
 #
-for cmd in palter phold prel prm pstat psub; do
+for cmd in mjstat palter phold prel prm pstat psub; do
     $RPM_BUILD_ROOT%{_bindir}/${cmd} --roff > $RPM_BUILD_ROOT%{_mandir}/man1/${cmd}.1
 done
 
