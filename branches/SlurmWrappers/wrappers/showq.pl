@@ -851,18 +851,18 @@ __END__
 
 =head1 NAME
 
-B<showq.pl> - an expanded version of showq.
+B<showq> - an expanded version of showq.
 
 =head1 SYNOPSIS
 
-B<showq.pl> [B<-C> I<class>] [B<-H>] [B<-P>] [B<-M>] [B<-a> I<account>] [B<-b>] [B<-c>]
+B<showq>    [B<-C> I<class>] [B<-H>] [B<-P>] [B<-M>] [B<-a> I<account>] [B<-b>] [B<-c>]
 B<>         [B<-hp> I<pattern>] [B<-i>] [B<-j> I<jobid>] [B<-m>] [B<-o> I<outspec>] [B<-p> I<partition>]
 B<>         [B<-q> I<qos>] [B<-r>] [B<-s> I<status>] [B<-u> I<username>] [B<-version>]
 B<>         [B<-h>] [B<-man>]
 
 =head1 DESCRIPTION
 
-The B<showq.pl> command displays information about Moab jobs.
+The B<showq> command displays information about Moab jobs.
 
 =head1 OPTIONS
 
@@ -905,7 +905,7 @@ Display a brief help message
 
 If supported by your terminal, will display the specified pattern in inverse
 video. (Note: if your terminal should get hung up in inverse video mode,
-using "showq.pl -cc" should clear it.)
+using "showq -cc" should clear it.)
 
 =item B<-i>
 
