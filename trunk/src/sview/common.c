@@ -312,7 +312,7 @@ static void *_editing_thr(gpointer arg)
 	msg_id = GPOINTER_TO_INT(arg);
 	gtk_statusbar_remove(GTK_STATUSBAR(main_statusbar),
 			     STATUS_ADMIN_EDIT, msg_id);
-	gdk_flush();
+	//gdk_flush();
 	gdk_threads_leave();
 	return NULL;
 }
@@ -1428,7 +1428,7 @@ extern void *popup_thr(popup_info_t *popup_win)
 		//g_print("locked popup_thr\n");
 		gdk_threads_enter();
 		(specifc_info)(popup_win);
-		gdk_flush();
+		//gdk_flush();
 		gdk_threads_leave();
 		g_static_mutex_unlock(&sview_mutex);
 		//g_print("done popup_thr\n");

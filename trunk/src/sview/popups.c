@@ -47,7 +47,7 @@ void *_refresh_thr(gpointer arg)
 	gdk_threads_enter();
 	gtk_statusbar_remove(GTK_STATUSBAR(main_statusbar),
 			     STATUS_REFRESH, msg_id);
-	gdk_flush();
+	//gdk_flush();
 	gdk_threads_leave();
 	return NULL;
 }
