@@ -1848,7 +1848,7 @@ static void _init_node_cr(void)
 	/* Clear existing node Gres allocations */
 	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
 	     i++, node_ptr++) {
-		gres_plugin_node_state_dealloc(node_ptr->gres_list);
+		gres_plugin_node_state_dealloc_all(node_ptr->gres_list);
 	}
 
 	/* record running and suspended jobs in node_cr_records */
@@ -1913,9 +1913,12 @@ static void _init_node_cr(void)
 			}
 
 			if (bit_test(job_ptr->node_bitmap, i)) {
-				gres_plugin_node_state_realloc(
-						job_ptr->gres_list, node_offset,
-						node_ptr->gres_list);
+				gres_plugin_job_alloc(job_ptr->gres_list,
+						      node_ptr->gres_list, 
+						      job_resrcs_ptr->nhosts,
+						      node_offset,
+						      job_resrcs_ptr->
+						      cpus[node_offset]);
 			}
 
 			part_cr_ptr = cr_ptr->nodes[i].parts;
