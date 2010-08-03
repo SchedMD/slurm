@@ -182,7 +182,7 @@ void *_page_thr(void *arg)
 		sview_init_grid(reset_highlight);
 		reset_highlight=false;
 		(display_data->get_info)(table, display_data);
-		gdk_flush();
+		//gdk_flush();
 		gdk_threads_leave();
 //		g_static_mutex_unlock(&sview_mutex);
 /* 		END_TIMER; */
@@ -226,7 +226,7 @@ void *_grid_init_thr(void *arg)
 		table = GTK_TABLE(bin->child);
 		/* set up the main grid */
 		rc = get_system_stats(table);
-		gdk_flush();
+		//gdk_flush();
 		gdk_threads_leave();
 
 		if(rc != SLURM_SUCCESS)
