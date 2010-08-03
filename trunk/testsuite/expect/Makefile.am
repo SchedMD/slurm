@@ -329,6 +329,7 @@ EXTRA_DIST = \
 	test21.26			\
 	test21.27			\
 	test21.28			\
+	test21.29			\
 	test22.1			\
 	test22.2			\
 	test23.1			\
