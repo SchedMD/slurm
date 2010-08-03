@@ -355,11 +355,13 @@ extern void gres_plugin_job_state_log(List gres_list, uint32_t job_id);
  * IN req_config - step request's gres input string
  * OUT step_gres_list - List of Gres records for this step to track usage
  * IN job_gres_list - List of Gres records for this job
+ * IN job_id, step_id - ID of the step being allocated.
  * RET SLURM_SUCCESS or ESLURM_INVALID_GRES
  */
 extern int gres_plugin_step_state_validate(char *req_config,
 					   List *step_gres_list,
-					   List job_gres_list);
+					   List job_gres_list, uint32_t job_id,
+					   uint32_t step_id);
 
 /*
  * Create a copy of a step's gres state
@@ -401,10 +403,12 @@ extern void gres_plugin_step_state_log(List gres_list, uint32_t job_id,
  * IN/OUT step_gres_list - a pending job step's gres requirements
  * IN node_offset - index into the job's node allocation
  * IN ignore_alloc - if set ignore resources already allocated to running steps
+ * IN job_id, step_id - ID of the step being allocated.
  * RET Count of available CPUs on this node, NO_VAL if no limit
  */
 extern uint32_t gres_plugin_step_test(List step_gres_list, List job_gres_list,
-				      int node_offset, bool ignore_alloc);
+				      int node_offset, bool ignore_alloc,
+				      uint32_t job_id, uint32_t step_id);
 
 /*
  * Allocate resource to a step and update job and step gres information
@@ -413,18 +417,22 @@ extern uint32_t gres_plugin_step_test(List step_gres_list, List job_gres_list,
  * IN job_gres_list - job's gres_list built by gres_plugin_job_state_validate()
  * IN node_offset - zero-origin index to the node of interest
  * IN cpu_cnt - number of CPUs allocated to this job on this node
+ * IN job_id, step_id - ID of the step being allocated.
  * RET SLURM_SUCCESS or error code
  */
 extern int gres_plugin_step_alloc(List step_gres_list, List job_gres_list,
-				  int node_offset, int cpu_cnt);
+				  int node_offset, int cpu_cnt,
+				  uint32_t job_id, uint32_t step_id);
 
 /*
  * Deallocate resource to a step and update job and step gres information
  * IN step_gres_list - step's gres_list built by
  *		gres_plugin_step_state_validate()
  * IN job_gres_list - job's gres_list built by gres_plugin_job_state_validate()
+ * IN job_id, step_id - ID of the step being allocated.
  * RET SLURM_SUCCESS or error code
  */
-extern int gres_plugin_step_dealloc(List step_gres_list, List job_gres_list);
+extern int gres_plugin_step_dealloc(List step_gres_list, List job_gres_list,
+				    uint32_t job_id, uint32_t step_id);
 
 #endif /* !_GRES_H */

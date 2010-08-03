@@ -416,7 +416,8 @@ int job_step_complete(uint32_t job_id, uint32_t step_id, uid_t uid,
 
 	jobacct_storage_g_step_complete(acct_db_conn, step_ptr);
 	_step_dealloc_lps(step_ptr);
-	gres_plugin_step_dealloc(step_ptr->gres_list, job_ptr->gres_list);
+	gres_plugin_step_dealloc(step_ptr->gres_list, job_ptr->gres_list,
+				 job_id, step_id);
 
 	last_job_update = time(NULL);
 	error_code = delete_step_record(job_ptr, step_id);
@@ -591,13 +592,17 @@ _pick_step_nodes (struct job_record  *job_ptr,
 
 			gres_cnt = gres_plugin_step_test(step_gres_list,
 							 job_ptr->gres_list,
-							 node_inx, false);
+							 node_inx, false,
+							 job_ptr->job_id,
+							 NO_VAL);
 			if (cpus_per_task > 0)
 				gres_cnt /= cpus_per_task;
 			avail_tasks = MIN(avail_tasks, gres_cnt);
 			gres_cnt = gres_plugin_step_test(step_gres_list,
 							 job_ptr->gres_list,
-							 node_inx, true);
+							 node_inx, true,
+							 job_ptr->job_id,
+							 NO_VAL);
 			if (cpus_per_task > 0)
 				gres_cnt /= cpus_per_task;
 			total_tasks = MIN(total_tasks, gres_cnt);
@@ -676,12 +681,16 @@ _pick_step_nodes (struct job_record  *job_ptr,
 				/* ignore current step allocations */
 				tmp_cpus = gres_plugin_step_test(step_gres_list,
 							job_ptr->gres_list,
-							node_inx, true);
+							node_inx, true,
+							job_ptr->job_id,
+							NO_VAL);
 				total_cpus = MIN(total_cpus, tmp_cpus);
 				/* consider current step allocations */
 				tmp_cpus = gres_plugin_step_test(step_gres_list,
 							job_ptr->gres_list,
-							node_inx, false);
+							node_inx, false,
+							job_ptr->job_id,
+							NO_VAL);
 				if (tmp_cpus < avail_cpus) {
 					avail_cpus = tmp_cpus;
 					usable_cpu_cnt[i] = avail_cpus;
@@ -1181,7 +1190,8 @@ extern void step_alloc_lps(struct step_record *step_ptr)
 			     step_ptr->cpus_per_task;
 		job_resrcs_ptr->cpus_used[job_node_inx] += cpus_alloc;
 		gres_plugin_step_alloc(step_ptr->gres_list, job_ptr->gres_list,
-				       job_node_inx, cpus_alloc);
+				       job_node_inx, cpus_alloc,
+				       job_ptr->job_id, step_ptr->step_id);
 		if (step_ptr->mem_per_cpu && _is_mem_resv()) {
 			job_resrcs_ptr->memory_used[job_node_inx] +=
 				(step_ptr->mem_per_cpu * cpus_alloc);
@@ -1454,9 +1464,9 @@ step_create(job_step_create_request_msg_t *step_specs,
 	if (step_specs->no_kill > 1)
 		step_specs->no_kill = 1;
 
-	i = gres_plugin_step_state_validate(step_specs->gres,
-					    &step_gres_list,
-					    job_ptr->gres_list);
+	i = gres_plugin_step_state_validate(step_specs->gres, &step_gres_list,
+					    job_ptr->gres_list, job_ptr->job_id,
+					    NO_VAL);
 	if (i != SLURM_SUCCESS) {
 		if (step_gres_list)
 			list_destroy(step_gres_list);
@@ -1703,7 +1713,9 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 			gres_cpus = gres_plugin_step_test(step_ptr->gres_list,
 							  job_ptr->gres_list,
 							  job_node_offset,
-							  false);
+							  false,
+							  job_ptr->job_id,
+							  step_ptr->step_id);
 			usable_cpus = MIN(usable_cpus, gres_cpus);
 			if (usable_cpus <= 0) {
 				error("step_layout_create no usable cpus");
