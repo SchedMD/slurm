@@ -787,7 +787,7 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 		      dump_job_ptr->spank_job_env_size, buffer);
 
 	(void) gres_plugin_job_state_pack(dump_job_ptr->gres_list, buffer,
-					  dump_job_ptr->job_id);
+					  dump_job_ptr->job_id, true);
 
 	/* Dump job details, if available */
 	detail_ptr = dump_job_ptr->details;

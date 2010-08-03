@@ -1645,7 +1645,8 @@ _pack_cred(slurm_cred_t *cred, Buf buffer)
 	pack32(cred->stepid,         buffer);
 	pack32(cred_uid,             buffer);
 
-	gres_plugin_job_state_pack(cred->job_gres_list, buffer, cred->jobid);
+	(void) gres_plugin_job_state_pack(cred->job_gres_list, buffer,
+					  cred->jobid, false);
 	gres_plugin_step_state_pack(cred->step_gres_list, buffer,
 				    cred->jobid, cred->stepid);
 	pack32(cred->job_mem_limit,  buffer);
