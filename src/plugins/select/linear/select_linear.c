@@ -649,7 +649,8 @@ static int _job_count_bitmap(struct cr_record *cr_ptr,
 			gres_list = node_ptr->gres_list;
 		gres_cpus = gres_plugin_job_test(job_ptr->gres_list, 
 						 gres_list, use_total_gres,
-						 NULL, 0, 0);
+						 NULL, 0, 0, job_ptr->job_id,
+						 node_ptr->name);
 		if ((gres_cpus != NO_VAL) && (gres_cpus < cpu_cnt)) {
 			bit_clear(jobmap, i);
 			continue;
@@ -1389,7 +1390,8 @@ static int _rm_job_from_nodes(struct cr_record *cr_ptr,
 		else
 			gres_list = node_ptr->gres_list;
 		gres_plugin_job_dealloc(job_ptr->gres_list, gres_list,
-					node_offset);
+					node_offset, job_ptr->job_id,
+					node_ptr->name);
 		gres_plugin_node_state_log(gres_list, node_ptr->name);
 
 		if (exclusive) {
@@ -1536,7 +1538,8 @@ static int _rm_job_from_one_node(struct job_record *job_ptr,
 		gres_list = cr_ptr->nodes[i].gres_list;
 	else
 		gres_list = node_ptr->gres_list;
-	gres_plugin_job_dealloc(job_ptr->gres_list, gres_list, node_offset);
+	gres_plugin_job_dealloc(job_ptr->gres_list, gres_list, node_offset,
+				job_ptr->job_id, node_ptr->name);
 	gres_plugin_node_state_log(gres_list, node_ptr->name);
 
 	exclusive = (job_ptr->details->shared == 0);
@@ -1662,7 +1665,8 @@ static int _add_job_to_nodes(struct cr_record *cr_ptr,
 		else
 			gres_list = node_ptr->gres_list;
 		gres_plugin_job_alloc(job_ptr->gres_list, gres_list,
-				      node_cnt, node_offset, cpu_cnt);
+				      node_cnt, node_offset, cpu_cnt,
+				      job_ptr->job_id, node_ptr->name);
 		gres_plugin_node_state_log(gres_list, node_ptr->name);
 
 		if (exclusive)
@@ -1918,7 +1922,9 @@ static void _init_node_cr(void)
 						      job_resrcs_ptr->nhosts,
 						      node_offset,
 						      job_resrcs_ptr->
-						      cpus[node_offset]);
+						      cpus[node_offset],
+						      job_ptr->job_id,
+						      node_ptr->name);
 			}
 
 			part_cr_ptr = cr_ptr->nodes[i].parts;
