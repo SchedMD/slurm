@@ -2539,9 +2539,16 @@ extern int _job_alloc(void *job_gres_data, void *node_gres_data,
 	 */	
 	if (job_gres_ptr->gres_bit_alloc[node_offset]) {
 		/* Resuming a suspended job, resources already allocated */
-		debug("gres/%s: job %u bit_alloc is already set for node %s",
 		      gres_name, job_id, node_name);
-		if (node_gres_ptr->gres_bit_alloc) {
+		if (node_gres_ptr->gres_bit_alloc == NULL) {
+			node_gres_ptr->gres_bit_alloc =
+				bit_copy(job_gres_ptr->
+					 gres_bit_alloc[node_offset]);
+			if (node_gres_ptr->gres_bit_alloc == NULL)
+				fatal("bit_copy: malloc failure");
+			node_gres_ptr->gres_cnt_alloc +=
+				bit_set_count(node_gres_ptr->gres_bit_alloc);
+		} else if (node_gres_ptr->gres_bit_alloc) {
 			gres_cnt = MIN(bit_size(node_gres_ptr->gres_bit_alloc),
 				       bit_size(job_gres_ptr->
 						gres_bit_alloc[node_offset]));
@@ -2608,6 +2615,19 @@ extern int gres_plugin_job_alloc(List job_gres_list, List node_gres_list,
 	slurm_mutex_lock(&gres_context_lock);
 	job_gres_iter = list_iterator_create(job_gres_list);
 	while ((job_gres_ptr = (gres_state_t *) list_next(job_gres_iter))) {
+		for (i=0; i<gres_context_cnt; i++) {
+			if (job_gres_ptr->plugin_id == 
+			    gres_context[i].plugin_id)
+				break;
+		}
+		if (i >= gres_context_cnt) {
+			error("gres_plugin_job_alloc: no plugin configured "
+                              "for data type %u for job %u and node %s",
+                              job_gres_ptr->plugin_id, job_id, node_name);
+                        /* A likely sign that GresPlugins has changed */
+			continue;
+                }
+
 		node_gres_iter = list_iterator_create(node_gres_list);
 		while ((node_gres_ptr = (gres_state_t *) 
 				list_next(node_gres_iter))) {
@@ -2615,22 +2635,19 @@ extern int gres_plugin_job_alloc(List job_gres_list, List node_gres_list,
 				break;
 		}
 		list_iterator_destroy(node_gres_iter);
-		if (node_gres_ptr == NULL)
+		if (node_gres_ptr == NULL) {
+			error("gres_plugin_job_alloc: job %u allocated gres/%s "
+			      "on node %s lacking that gres",
+                              job_id, gres_context[i].gres_name, node_name);
 			continue;
-
-		for (i=0; i<gres_context_cnt; i++) {
-			if (job_gres_ptr->plugin_id != 
-			    gres_context[i].plugin_id)
-				continue;
-			rc2 = _job_alloc(job_gres_ptr->gres_data, 
-					 node_gres_ptr->gres_data, node_cnt,
-					 node_offset, cpu_cnt,
-					 gres_context[i].gres_name, job_id,
-					 node_name);
-			if (rc2 != SLURM_SUCCESS)
-				rc = rc2;
-			break;
 		}
+
+		rc2 = _job_alloc(job_gres_ptr->gres_data, 
+				 node_gres_ptr->gres_data, node_cnt,
+				 node_offset, cpu_cnt,
+				 gres_context[i].gres_name, job_id, node_name);
+		if (rc2 != SLURM_SUCCESS)
+			rc = rc2;
 	}
 	list_iterator_destroy(job_gres_iter);
 	slurm_mutex_unlock(&gres_context_lock);
@@ -2717,6 +2734,7 @@ extern int gres_plugin_job_dealloc(List job_gres_list, List node_gres_list,
 	int i, rc, rc2;
 	ListIterator job_gres_iter,  node_gres_iter;
 	gres_state_t *job_gres_ptr, *node_gres_ptr;
+	char *gres_name = NULL;
 
 	if (job_gres_list == NULL)
 		return SLURM_SUCCESS;
@@ -2731,6 +2749,20 @@ extern int gres_plugin_job_dealloc(List job_gres_list, List node_gres_list,
 	slurm_mutex_lock(&gres_context_lock);
 	job_gres_iter = list_iterator_create(job_gres_list);
 	while ((job_gres_ptr = (gres_state_t *) list_next(job_gres_iter))) {
+		for (i=0; i<gres_context_cnt; i++) {
+			if (job_gres_ptr->plugin_id == 
+			    gres_context[i].plugin_id)
+				break;
+		}
+		if (i >= gres_context_cnt) {
+			error("gres_plugin_job_dealloc: no plugin configured "
+                              "for data type %u for job %u and node %s",
+                              job_gres_ptr->plugin_id, job_id, node_name);
+                        /* A likely sign that GresPlugins has changed */
+			gres_name = "UNKNOWN";
+                } else
+			gres_name = gres_context[i].gres_name;
+
 		node_gres_iter = list_iterator_create(node_gres_list);
 		while ((node_gres_ptr = (gres_state_t *) 
 				list_next(node_gres_iter))) {
@@ -2738,22 +2770,17 @@ extern int gres_plugin_job_dealloc(List job_gres_list, List node_gres_list,
 				break;
 		}
 		list_iterator_destroy(node_gres_iter);
-		if (node_gres_ptr == NULL)
+		if (node_gres_ptr == NULL) {
+			error("gres_plugin_job_dealloc: node %s lacks gres/%s "
+                              "for job %u", node_name, gres_name , job_id);
 			continue;
-
-		for (i=0; i<gres_context_cnt; i++) {
-			if (job_gres_ptr->plugin_id != 
-			    gres_context[i].plugin_id)
-				continue;
-			rc2 = _job_dealloc(job_gres_ptr->gres_data, 
-					   node_gres_ptr->gres_data,
-					   node_offset,
-					   gres_context[i].gres_name, job_id,
-					   node_name);
-			if (rc2 != SLURM_SUCCESS)
-				rc = rc2;
-			break;
 		}
+
+		rc2 = _job_dealloc(job_gres_ptr->gres_data, 
+				   node_gres_ptr->gres_data, node_offset,
+				   gres_name, job_id, node_name);
+		if (rc2 != SLURM_SUCCESS)
+			rc = rc2;
 	}
 	list_iterator_destroy(job_gres_iter);
 	slurm_mutex_unlock(&gres_context_lock);
@@ -2994,7 +3021,7 @@ extern int gres_plugin_step_state_validate(char *req_config,
 			rc2 = _step_state_validate(tok, &step_gres_data,
 						   &gres_context[i]);
 			if (rc2 != SLURM_SUCCESS)
-				break;
+				continue;
 			/* Now make sure the step's request isn't too big for
 			 * the job's gres allocation */
 			job_gres_iter = list_iterator_create(job_gres_list);
