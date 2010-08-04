@@ -1,4 +1,4 @@
-.TH STRIGGER "1" "May 2008" "strigger 2.0" "Slurm components"
+.TH STRIGGER "1" "May 2008" "strigger 2.2" "Slurm components"
 
 .SH "NAME"
 strigger \- Used set, get or clear Slurm trigger information.
@@ -45,8 +45,32 @@ To check the value of \fISlurmUser\fR, run the command:
 
 .SH "ARGUMENTS"
 .TP
+\fB\-a\fR, \fB\-\-primary_slurmctld_failure\fR
+Trigger an event when the primary slurmctld fails.
+
+.TP
+\fB\-A\fR, \fB\-\-primary_slurmctld_resumed_operation\fR
+Trigger an event when the primary slurmctld resuming operation after failure.
+
+.TP
+\fB\-b\fR, \fB\-\-primary_slurmctld_resumed_control\fR
+Trigger an event when primary slurmctld resumes control.
+                                     
+.TP
+\fB\-B\fR, \fB\-\-backup_slurmctld_failure\fR
+Trigger anevent when the backup slurmctld fails.
+
+.TP
 \fB\-\-block_err\fP
 Trigger an event when a BlueGene block enters an ERROR state.
+
+.TP
+\fB\-c\fR, \fB\-\-backup_slurmctld_resumed_operation\fR
+Trigger an event when the backup slurmctld resumes operation after failure.
+
+.TP
+\fB\-C\fR, \fB\-\-backup_slurmctld_assumed_control\fR
+Trigger event when backup slurmctld assumes control.
 
 .TP
 \fB\-\-clear\fP
@@ -65,6 +89,10 @@ Trigger an event if the specified node goes into a DOWN state.
 Trigger an event if the specified node goes into a DRAINED state.
 
 .TP
+\fB\-e\fR, \fB\-\-primary_slurmctld_acct_buffer_full\fR
+Trigger an event when primary slurmctld accounting buffer is full.
+
+.TP
 \fB\-F\fR, \fB\-\-fail\fR
 Trigger an event if the specified node goes into a FAILING state.
 
@@ -73,9 +101,25 @@ Trigger an event if the specified node goes into a FAILING state.
 Trigger an event when the specified job completes execution.
 
 .TP
+\fB\-g\fR, \fB\-\-primary_slurmdbd_failure\fR
+Trigger an event when the primary slurmdbd fails.
+
+.TP
+\fB\-G\fR, \fB\-\-primary_slurmdbd_resumed_operation\fR
+Trigger an event when the primary slurmdbd resumes operation after failure.
+
+.TP
 \fB\-\-get\fP
 Show registered event triggers.
 Options can be used for filtering purposes.
+
+.TP
+\fB\-h\fR, \fB\-\-primary_database_failure\fR
+Trigger an event when the primary database fails.
+
+.TP
+\fB\-H\fR, \fB\-\-primary_database_resumed_operation\fR
+Trigger an event when the primary database resumes operation after failure.
 
 .TP
 \fB\-i\fR, \fB\-\-id\fR=\fIid\fR
@@ -199,6 +243,23 @@ Name of the user requesting the action
 Pathname of the program to execute when the event occurs
 
 .SH "EXAMPLES"
+Execute the program "/usr/sbin/primary_slurmctld_failure" whenever the
+primary slurmctld fails.
+
+.nf
+	> cat /usr/sbin/primary_slurmctld_failure
+	#!/bin/bash
+	# Submit trigger for next primary slurmctld failure event
+	strigger \-\-set \-\-primary_slurmctld_failure \\
+	         \-\-program=/usr/sbin/primary_slurmctld_failure
+	# Notify the administrator of the failure using by e\-mail
+	/bin/mail slurm_admin@site.com \-s Primary_SLURMCTLD_FAILURE
+
+	> strigger \-\-set \-\-primary_slurmctld_failure \\
+	           \-\-program=/usr/sbin/primary_slurmctld_failure
+.fi
+
+.PP
 Execute the program "/usr/sbin/slurm_admin_notify" whenever
 any node in the cluster goes down. The subject line will include
 the node names which have entered the down state (passed as an
@@ -271,6 +332,7 @@ Execute /home/joe/job_fini upon completion of job 1237.
 
 .SH "COPYING"
 Copyright (C) 2007 The Regents of the University of California.
+Copyright (C) 2008\-2009 Lawrence Livermore National Security.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 CODE\-OCEC\-09\-009. All rights reserved.
 .LP
