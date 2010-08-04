@@ -132,18 +132,18 @@ extern char *slurm_add_slash_to_quotes(char *str)
 	int i=0, start=0;
 	char *fixed = NULL;
 
-	if(!str)
+	if (!str)
 		return NULL;
 
 	while(str[i]) {
-		if((str[i] == '"')) {
+		if ((str[i] == '"')) {
 			char *tmp = xstrndup(str+start, i-start);
 			xstrfmtcat(fixed, "%s\\\"", tmp);
 			xfree(tmp);
 			start = i+1;
 		}
 
-		if((str[i] == '\'')) {
+		if ((str[i] == '\'')) {
 			char *tmp = xstrndup(str+start, i-start);
 			xstrfmtcat(fixed, "%s\\\'", tmp);
 			xfree(tmp);
@@ -153,7 +153,7 @@ extern char *slurm_add_slash_to_quotes(char *str)
 		i++;
 	}
 
-	if((i-start) > 0) {
+	if ((i-start) > 0) {
 		char *tmp = xstrndup(str+start, i-start);
 		xstrcat(fixed, tmp);
 		xfree(tmp);
@@ -172,13 +172,13 @@ extern int slurm_addto_char_list(List char_list, char *names)
 	int quote = 0;
 	int count = 0;
 
-	if(!char_list) {
+	if (!char_list) {
 		error("No list was given to fill in");
 		return 0;
 	}
 
 	itr = list_iterator_create(char_list);
-	if(names) {
+	if (names) {
 		if (names[i] == '\"' || names[i] == '\'') {
 			quote_c = names[i];
 			quote = 1;
@@ -187,17 +187,17 @@ extern int slurm_addto_char_list(List char_list, char *names)
 		start = i;
 		while(names[i]) {
 			//info("got %d - %d = %d", i, start, i-start);
-			if(quote && names[i] == quote_c)
+			if (quote && names[i] == quote_c)
 				break;
 			else if (names[i] == '\"' || names[i] == '\'')
 				names[i] = '`';
-			else if(names[i] == ',') {
+			else if (names[i] == ',') {
 				name = xmalloc((i-start+1));
 				memcpy(name, names+start, (i-start));
 				//info("got %s %d", name, i-start);
 
 				while((tmp_char = list_next(itr))) {
-					if(!strcasecmp(tmp_char, name))
+					if (!strcasecmp(tmp_char, name))
 						break;
 				}
 				/* If we get a duplicate remove the
@@ -205,7 +205,7 @@ extern int slurm_addto_char_list(List char_list, char *names)
 				   This is needed for get associations
 				   with qos.
 				*/
-				if(tmp_char)
+				if (tmp_char)
 					list_delete_item(itr);
 				else
 					count++;
@@ -217,7 +217,7 @@ extern int slurm_addto_char_list(List char_list, char *names)
 
 				i++;
 				start = i;
-				if(!names[i]) {
+				if (!names[i]) {
 					info("There is a problem with "
 					     "your request.  It appears you "
 					     "have spaces inside your list.");
@@ -231,7 +231,7 @@ extern int slurm_addto_char_list(List char_list, char *names)
 		name = xmalloc((i-start)+1);
 		memcpy(name, names+start, (i-start));
 		while((tmp_char = list_next(itr))) {
-			if(!strcasecmp(tmp_char, name))
+			if (!strcasecmp(tmp_char, name))
 				break;
 		}
 
@@ -240,7 +240,7 @@ extern int slurm_addto_char_list(List char_list, char *names)
 		   This is needed for get associations
 		   with qos.
 		*/
-		if(tmp_char)
+		if (tmp_char)
 			list_delete_item(itr);
 		else
 			count++;
@@ -650,7 +650,7 @@ void slurm_free_launch_tasks_request_msg(launch_tasks_request_msg_t * msg)
 		xfree(msg->spank_job_env[i]);
 	}
 	xfree(msg->spank_job_env);
-	if(msg->nnodes && msg->global_task_ids)
+	if (msg->nnodes && msg->global_task_ids)
 		for(i=0; i<msg->nnodes; i++) {
 			xfree(msg->global_task_ids[i]);
 		}
@@ -1469,16 +1469,16 @@ extern char *bg_block_state_string(uint16_t state)
 	 * states are extremely rare so it isn't that big of a deal.
 	 */
 #ifdef HAVE_BGL
-	if(working_cluster_rec) {
-		if(!(working_cluster_rec->flags & CLUSTER_FLAG_BGL)) {
-			if(state == RM_PARTITION_BUSY)
+	if (working_cluster_rec) {
+		if (!(working_cluster_rec->flags & CLUSTER_FLAG_BGL)) {
+			if (state == RM_PARTITION_BUSY)
 				state = RM_PARTITION_READY;
 		}
 	}
 #else
-	if(working_cluster_rec) {
-		if(working_cluster_rec->flags & CLUSTER_FLAG_BGL) {
-			if(state == RM_PARTITION_REBOOTING)
+	if (working_cluster_rec) {
+		if (working_cluster_rec->flags & CLUSTER_FLAG_BGL) {
+			if (state == RM_PARTITION_REBOOTING)
 				state = RM_PARTITION_READY;
 		}
 	}
@@ -1883,7 +1883,7 @@ extern void slurm_free_job_step_stat(void *object)
 extern void slurm_free_job_step_pids(void *object)
 {
 	job_step_pids_t *msg = (job_step_pids_t *)object;
-	if(msg) {
+	if (msg) {
 		xfree(msg->node_name);
 		xfree(msg->pid);
 		xfree(msg);
@@ -1893,7 +1893,7 @@ extern void slurm_free_job_step_pids(void *object)
 
 extern void slurm_free_block_info_members(block_info_t *block_info)
 {
-	if(block_info) {
+	if (block_info) {
 		xfree(block_info->bg_block_id);
 		xfree(block_info->blrtsimage);
 		xfree(block_info->bp_inx);
@@ -1909,7 +1909,7 @@ extern void slurm_free_block_info_members(block_info_t *block_info)
 
 extern void slurm_free_block_info(block_info_t *block_info)
 {
-	if(block_info) {
+	if (block_info) {
 		slurm_free_block_info_members(block_info);
 		xfree(block_info);
 	}
@@ -1917,7 +1917,7 @@ extern void slurm_free_block_info(block_info_t *block_info)
 
 extern void slurm_free_block_info_msg(block_info_msg_t *block_info_msg)
 {
-	if(block_info_msg) {
+	if (block_info_msg) {
 		if (block_info_msg->block_array) {
 			int i;
 			for(i=0; i<block_info_msg->record_count; i++)
@@ -1956,7 +1956,7 @@ void inline slurm_destroy_association_shares_object(void *object)
 	association_shares_object_t *obj_ptr =
 		(association_shares_object_t *)object;
 
-	if(obj_ptr) {
+	if (obj_ptr) {
 		xfree(obj_ptr->cluster);
 		xfree(obj_ptr->name);
 		xfree(obj_ptr->parent);
@@ -1966,10 +1966,10 @@ void inline slurm_destroy_association_shares_object(void *object)
 
 void inline slurm_free_shares_request_msg(shares_request_msg_t *msg)
 {
-	if(msg) {
-		if(msg->acct_list)
+	if (msg) {
+		if (msg->acct_list)
 			list_destroy(msg->acct_list);
-		if(msg->user_list)
+		if (msg->user_list)
 			list_destroy(msg->user_list);
 		xfree(msg);
 	}
@@ -1977,8 +1977,8 @@ void inline slurm_free_shares_request_msg(shares_request_msg_t *msg)
 
 void inline slurm_free_shares_response_msg(shares_response_msg_t *msg)
 {
-	if(msg) {
-		if(msg->assoc_shares_list)
+	if (msg) {
+		if (msg->assoc_shares_list)
 			list_destroy(msg->assoc_shares_list);
 		xfree(msg);
 	}
@@ -1994,10 +1994,10 @@ void inline slurm_destroy_priority_factors_object(void *object)
 void inline slurm_free_priority_factors_request_msg(
 	priority_factors_request_msg_t *msg)
 {
-	if(msg) {
-		if(msg->job_id_list)
+	if (msg) {
+		if (msg->job_id_list)
 			list_destroy(msg->job_id_list);
-		if(msg->uid_list)
+		if (msg->uid_list)
 			list_destroy(msg->uid_list);
 		xfree(msg);
 	}
@@ -2006,8 +2006,8 @@ void inline slurm_free_priority_factors_request_msg(
 void inline slurm_free_priority_factors_response_msg(
 	priority_factors_response_msg_t *msg)
 {
-	if(msg) {
-		if(msg->priority_factors_list)
+	if (msg) {
+		if (msg->priority_factors_list)
 			list_destroy(msg->priority_factors_list);
 		xfree(msg);
 	}
@@ -2016,8 +2016,8 @@ void inline slurm_free_priority_factors_response_msg(
 
 void inline slurm_free_accounting_update_msg(accounting_update_msg_t *msg)
 {
-	if(msg) {
-		if(msg->update_list)
+	if (msg) {
+		if (msg->update_list)
 			list_destroy(msg->update_list);
 		xfree(msg);
 	}

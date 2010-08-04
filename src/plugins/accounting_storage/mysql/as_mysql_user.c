@@ -74,7 +74,7 @@ static int _change_user_name(mysql_conn_t *mysql_conn, slurmdb_user_rec_t *user)
 	rc = mysql_db_query(mysql_conn->db_conn, query);
 	xfree(query);
 
-	if(rc != SLURM_SUCCESS)
+	if (rc != SLURM_SUCCESS)
 		reset_mysql_conn(mysql_conn);
 
 	return rc;
@@ -92,19 +92,19 @@ static int _get_user_coords(mysql_conn_t *mysql_conn, slurmdb_user_rec_t *user)
 	ListIterator itr = NULL, itr2 = NULL;
 	char *cluster_name = NULL;
 
-	if(!user) {
+	if (!user) {
 		error("We need a user to fill in.");
 		return SLURM_ERROR;
 	}
 
-	if(!user->coord_accts)
+	if (!user->coord_accts)
 		user->coord_accts = list_create(slurmdb_destroy_coord_rec);
 
 	query = xstrdup_printf(
 		"select acct from %s where user='%s' && deleted=0",
 		acct_coord_table, user->name);
 
-	if(!(result =
+	if (!(result =
 	     mysql_db_query_ret(mysql_conn->db_conn, query, 0))) {
 		xfree(query);
 		return SLURM_ERROR;
@@ -119,7 +119,7 @@ static int _get_user_coords(mysql_conn_t *mysql_conn, slurmdb_user_rec_t *user)
 	}
 	mysql_free_result(result);
 
-	if(!list_count(user->coord_accts))
+	if (!list_count(user->coord_accts))
 		return SLURM_SUCCESS;
 
 	slurm_mutex_lock(&as_mysql_cluster_list_lock);
@@ -127,11 +127,11 @@ static int _get_user_coords(mysql_conn_t *mysql_conn, slurmdb_user_rec_t *user)
 	itr = list_iterator_create(user->coord_accts);
 	while((cluster_name = list_next(itr2))) {
 		int set = 0;
-		if(query)
+		if (query)
 			xstrcat(query, " union ");
 
 		while((coord = list_next(itr))) {
-			if(set)
+			if (set)
 				xstrcat(query, " || ");
 			else
 				xstrfmtcat(query,
@@ -156,10 +156,10 @@ static int _get_user_coords(mysql_conn_t *mysql_conn, slurmdb_user_rec_t *user)
 	list_iterator_destroy(itr2);
 	slurm_mutex_unlock(&as_mysql_cluster_list_lock);
 
-	if(query) {
+	if (query) {
 		debug4("%d(%s:%d) query\n%s",
 		       mysql_conn->conn, THIS_FILE, __LINE__, query);
-		if(!(result = mysql_db_query_ret(
+		if (!(result = mysql_db_query_ret(
 			     mysql_conn->db_conn, query, 0))) {
 			xfree(query);
 			return SLURM_ERROR;
@@ -169,11 +169,11 @@ static int _get_user_coords(mysql_conn_t *mysql_conn, slurmdb_user_rec_t *user)
 		while((row = mysql_fetch_row(result))) {
 			list_iterator_reset(itr);
 			while((coord = list_next(itr))) {
-				if(!strcmp(coord->name, row[0]))
+				if (!strcmp(coord->name, row[0]))
 					break;
 			}
 
-			if(coord)
+			if (coord)
 				continue;
 
 			coord = xmalloc(sizeof(slurmdb_coord_rec_t));
@@ -202,13 +202,13 @@ extern int as_mysql_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	List assoc_list = list_create(slurmdb_destroy_association_rec);
 	List wckey_list = list_create(slurmdb_destroy_wckey_rec);
 
-	if(check_connection(mysql_conn) != SLURM_SUCCESS)
+	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
 
 	user_name = uid_to_string((uid_t) uid);
 	itr = list_iterator_create(user_list);
 	while((object = list_next(itr))) {
-		if(!object->name || !object->name[0]
+		if (!object->name || !object->name[0]
 		   || !object->default_acct || !object->default_acct[0]) {
 			error("We need a user name and "
 			      "default acct to add.");
@@ -221,7 +221,7 @@ extern int as_mysql_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		xstrfmtcat(extra, ", default_acct='%s'",
 			   object->default_acct);
 
-		if(object->admin_level != SLURMDB_ADMIN_NOTSET) {
+		if (object->admin_level != SLURMDB_ADMIN_NOTSET) {
 			xstrcat(cols, ", admin_level");
 			xstrfmtcat(vals, ", %u", object->admin_level);
 			xstrfmtcat(extra, ", admin_level=%u",
@@ -230,7 +230,7 @@ extern int as_mysql_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 			xstrfmtcat(extra, ", admin_level=%u",
 				   SLURMDB_ADMIN_NONE);
 
-		if(object->default_wckey) {
+		if (object->default_wckey) {
 			xstrcat(cols, ", default_wckey");
 			xstrfmtcat(vals, ", '%s'", object->default_wckey);
 			xstrfmtcat(extra, ", default_wckey='%s'",
@@ -249,27 +249,27 @@ extern int as_mysql_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		xfree(vals);
 		rc = mysql_db_query(mysql_conn->db_conn, query);
 		xfree(query);
-		if(rc != SLURM_SUCCESS) {
+		if (rc != SLURM_SUCCESS) {
 			error("Couldn't add user %s", object->name);
 			xfree(extra);
 			continue;
 		}
 
 		affect_rows = last_affected_rows(mysql_conn->db_conn);
-		if(!affect_rows) {
+		if (!affect_rows) {
 			debug("nothing changed");
 			xfree(extra);
 			continue;
 		}
 
-		if(addto_update_list(mysql_conn->update_list, SLURMDB_ADD_USER,
+		if (addto_update_list(mysql_conn->update_list, SLURMDB_ADD_USER,
 				     object) == SLURM_SUCCESS)
 			list_remove(itr);
 
 		/* we always have a ', ' as the first 2 chars */
 		tmp_extra = slurm_add_slash_to_quotes(extra+2);
 
-		if(txn_query)
+		if (txn_query)
 			xstrfmtcat(txn_query,
 				   ", (%d, %u, '%s', '%s', '%s')",
 				   now, DBD_ADD_USERS, object->name,
@@ -285,22 +285,22 @@ extern int as_mysql_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		xfree(tmp_extra);
 		xfree(extra);
 
-		if(object->assoc_list)
+		if (object->assoc_list)
 			list_transfer(assoc_list, object->assoc_list);
 
-		if(object->wckey_list)
+		if (object->wckey_list)
 			list_transfer(wckey_list, object->wckey_list);
 	}
 	list_iterator_destroy(itr);
 	xfree(user_name);
 
-	if(rc != SLURM_ERROR) {
-		if(txn_query) {
+	if (rc != SLURM_ERROR) {
+		if (txn_query) {
 			xstrcat(txn_query, ";");
 			rc = mysql_db_query(mysql_conn->db_conn,
 					    txn_query);
 			xfree(txn_query);
-			if(rc != SLURM_SUCCESS) {
+			if (rc != SLURM_SUCCESS) {
 				error("Couldn't add txn");
 				rc = SLURM_SUCCESS;
 			}
@@ -308,8 +308,8 @@ extern int as_mysql_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	} else
 		xfree(txn_query);
 
-	if(list_count(assoc_list)) {
-		if(as_mysql_add_assocs(mysql_conn, uid, assoc_list)
+	if (list_count(assoc_list)) {
+		if (as_mysql_add_assocs(mysql_conn, uid, assoc_list)
 		   == SLURM_ERROR) {
 			error("Problem adding user associations");
 			rc = SLURM_ERROR;
@@ -317,8 +317,8 @@ extern int as_mysql_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	}
 	list_destroy(assoc_list);
 
-	if(list_count(wckey_list)) {
-		if(as_mysql_add_wckeys(mysql_conn, uid, wckey_list)
+	if (list_count(wckey_list)) {
+		if (as_mysql_add_wckeys(mysql_conn, uid, wckey_list)
 		   == SLURM_ERROR) {
 			error("Problem adding user wckeys");
 			rc = SLURM_ERROR;
@@ -339,7 +339,7 @@ extern int as_mysql_add_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 	int rc = SLURM_SUCCESS;
 	slurmdb_user_rec_t *user_rec = NULL;
 
-	if(!user_cond || !user_cond->assoc_cond
+	if (!user_cond || !user_cond->assoc_cond
 	   || !user_cond->assoc_cond->user_list
 	   || !list_count(user_cond->assoc_cond->user_list)
 	   || !acct_list || !list_count(acct_list)) {
@@ -347,19 +347,19 @@ extern int as_mysql_add_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 		return SLURM_ERROR;
 	}
 
-	if(check_connection(mysql_conn) != SLURM_SUCCESS)
+	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
 
 	user_name = uid_to_string((uid_t) uid);
 	itr = list_iterator_create(user_cond->assoc_cond->user_list);
 	itr2 = list_iterator_create(acct_list);
 	while((user = list_next(itr))) {
-		if(!user[0])
+		if (!user[0])
 			continue;
 		while((acct = list_next(itr2))) {
-			if(!acct[0])
+			if (!acct[0])
 				continue;
-			if(query)
+			if (query)
 				xstrfmtcat(query, ", (%d, %d, '%s', '%s')",
 					   now, now, acct, user);
 			else
@@ -370,7 +370,7 @@ extern int as_mysql_add_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 					acct_coord_table,
 					now, now, acct, user);
 
-			if(txn_query)
+			if (txn_query)
 				xstrfmtcat(txn_query,
 					   ", (%d, %u, '%s', '%s', '%s')",
 					   now, DBD_ADD_ACCOUNT_COORDS, user,
@@ -392,7 +392,7 @@ extern int as_mysql_add_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 	list_iterator_destroy(itr);
 	list_iterator_destroy(itr2);
 
-	if(query) {
+	if (query) {
 		xstrfmtcat(query,
 			   " on duplicate key update mod_time=%d, deleted=0;%s",
 			   now, txn_query);
@@ -402,7 +402,7 @@ extern int as_mysql_add_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 		xfree(query);
 		xfree(txn_query);
 
-		if(rc != SLURM_SUCCESS) {
+		if (rc != SLURM_SUCCESS) {
 			error("Couldn't add cluster hour rollup");
 			return rc;
 		}
@@ -436,22 +436,22 @@ extern List as_mysql_modify_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 
-	if(!user_cond || !user) {
+	if (!user_cond || !user) {
 		error("we need something to change");
 		return NULL;
 	}
 
-	if(check_connection(mysql_conn) != SLURM_SUCCESS)
+	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
 
 	xstrcat(extra, "where deleted=0");
-	if(user_cond->assoc_cond && user_cond->assoc_cond->user_list
+	if (user_cond->assoc_cond && user_cond->assoc_cond->user_list
 	   && list_count(user_cond->assoc_cond->user_list)) {
 		set = 0;
 		xstrcat(extra, " && (");
 		itr = list_iterator_create(user_cond->assoc_cond->user_list);
 		while((object = list_next(itr))) {
-			if(set)
+			if (set)
 				xstrcat(extra, " || ");
 			xstrfmtcat(extra, "name='%s'", object);
 			set = 1;
@@ -460,12 +460,12 @@ extern List as_mysql_modify_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		xstrcat(extra, ")");
 	}
 
-	if(user_cond->def_acct_list && list_count(user_cond->def_acct_list)) {
+	if (user_cond->def_acct_list && list_count(user_cond->def_acct_list)) {
 		set = 0;
 		xstrcat(extra, " && (");
 		itr = list_iterator_create(user_cond->def_acct_list);
 		while((object = list_next(itr))) {
-			if(set)
+			if (set)
 				xstrcat(extra, " || ");
 			xstrfmtcat(extra, "default_acct='%s'", object);
 			set = 1;
@@ -474,12 +474,12 @@ extern List as_mysql_modify_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		xstrcat(extra, ")");
 	}
 
-	if(user_cond->def_wckey_list && list_count(user_cond->def_wckey_list)) {
+	if (user_cond->def_wckey_list && list_count(user_cond->def_wckey_list)) {
 		set = 0;
 		xstrcat(extra, " && (");
 		itr = list_iterator_create(user_cond->def_wckey_list);
 		while((object = list_next(itr))) {
-			if(set)
+			if (set)
 				xstrcat(extra, " || ");
 			xstrfmtcat(extra, "default_wckey='%s'", object);
 			set = 1;
@@ -488,23 +488,23 @@ extern List as_mysql_modify_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		xstrcat(extra, ")");
 	}
 
-	if(user_cond->admin_level != SLURMDB_ADMIN_NOTSET) {
+	if (user_cond->admin_level != SLURMDB_ADMIN_NOTSET) {
 		xstrfmtcat(extra, " && admin_level=%u", user_cond->admin_level);
 	}
 
-	if(user->default_acct)
+	if (user->default_acct)
 		xstrfmtcat(vals, ", default_acct='%s'", user->default_acct);
 
-	if(user->default_wckey)
+	if (user->default_wckey)
 		xstrfmtcat(vals, ", default_wckey='%s'", user->default_wckey);
 
-	if(user->name)
+	if (user->name)
 		xstrfmtcat(vals, ", name='%s'", user->name);
 
-	if(user->admin_level != SLURMDB_ADMIN_NOTSET)
+	if (user->admin_level != SLURMDB_ADMIN_NOTSET)
 		xstrfmtcat(vals, ", admin_level=%u", user->admin_level);
 
-	if(!extra || !vals) {
+	if (!extra || !vals) {
 		errno = SLURM_NO_CHANGE_IN_DATA;
 		error("Nothing to change");
 		return NULL;
@@ -512,13 +512,13 @@ extern List as_mysql_modify_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	query = xstrdup_printf("select name from %s %s;",
 			       user_table, extra);
 	xfree(extra);
-	if(!(result = mysql_db_query_ret(
+	if (!(result = mysql_db_query_ret(
 		     mysql_conn->db_conn, query, 0))) {
 		xfree(query);
 		return NULL;
 	}
 
-	if(user->name && (mysql_num_rows(result) != 1)) {
+	if (user->name && (mysql_num_rows(result) != 1)) {
 		errno = ESLURM_ONE_CHANGE;
 		xfree(query);
 		return NULL;
@@ -531,7 +531,7 @@ extern List as_mysql_modify_users(mysql_conn_t *mysql_conn, uint32_t uid,
 
 		object = xstrdup(row[0]);
 		list_append(ret_list, object);
-		if(!rc) {
+		if (!rc) {
 			xstrfmtcat(name_char, "(name='%s'", object);
 			rc = 1;
 		} else  {
@@ -539,12 +539,12 @@ extern List as_mysql_modify_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		}
 		user_rec = xmalloc(sizeof(slurmdb_user_rec_t));
 
-		if(!user->name)
+		if (!user->name)
 			user_rec->name = xstrdup(object);
 		else {
 			user_rec->name = xstrdup(user->name);
 			user_rec->old_name = xstrdup(object);
-			if(_change_user_name(mysql_conn, user_rec)
+			if (_change_user_name(mysql_conn, user_rec)
 			   != SLURM_SUCCESS)
 				break;
 		}
@@ -557,7 +557,7 @@ extern List as_mysql_modify_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	}
 	mysql_free_result(result);
 
-	if(!list_count(ret_list)) {
+	if (!list_count(ret_list)) {
 		errno = SLURM_NO_CHANGE_IN_DATA;
 		debug3("didn't effect anything\n%s", query);
 		xfree(vals);
@@ -602,25 +602,25 @@ extern List as_mysql_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	slurmdb_wckey_cond_t wckey_cond;
 	bool jobs_running = 0;
 
-	if(!user_cond) {
+	if (!user_cond) {
 		error("we need something to remove");
 		return NULL;
 	}
 
-	if(check_connection(mysql_conn) != SLURM_SUCCESS)
+	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
 
 	xstrcat(extra, "where deleted=0");
 
-	if(user_cond->assoc_cond && user_cond->assoc_cond->user_list
+	if (user_cond->assoc_cond && user_cond->assoc_cond->user_list
 	   && list_count(user_cond->assoc_cond->user_list)) {
 		set = 0;
 		xstrcat(extra, " && (");
 		itr = list_iterator_create(user_cond->assoc_cond->user_list);
 		while((object = list_next(itr))) {
-			if(!object[0])
+			if (!object[0])
 				continue;
-			if(set)
+			if (set)
 				xstrcat(extra, " || ");
 			xstrfmtcat(extra, "name='%s'", object);
 			set = 1;
@@ -629,14 +629,14 @@ extern List as_mysql_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		xstrcat(extra, ")");
 	}
 
-	if(user_cond->def_acct_list && list_count(user_cond->def_acct_list)) {
+	if (user_cond->def_acct_list && list_count(user_cond->def_acct_list)) {
 		set = 0;
 		xstrcat(extra, " && (");
 		itr = list_iterator_create(user_cond->def_acct_list);
 		while((object = list_next(itr))) {
-			if(!object[0])
+			if (!object[0])
 				continue;
-			if(set)
+			if (set)
 				xstrcat(extra, " || ");
 			xstrfmtcat(extra, "default_acct='%s'", object);
 			set = 1;
@@ -645,14 +645,14 @@ extern List as_mysql_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		xstrcat(extra, ")");
 	}
 
-	if(user_cond->def_wckey_list && list_count(user_cond->def_wckey_list)) {
+	if (user_cond->def_wckey_list && list_count(user_cond->def_wckey_list)) {
 		set = 0;
 		xstrcat(extra, " && (");
 		itr = list_iterator_create(user_cond->def_wckey_list);
 		while((object = list_next(itr))) {
-			if(!object[0])
+			if (!object[0])
 				continue;
-			if(set)
+			if (set)
 				xstrcat(extra, " || ");
 			xstrfmtcat(extra, "default_wckey='%s'", object);
 			set = 1;
@@ -661,18 +661,18 @@ extern List as_mysql_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		xstrcat(extra, ")");
 	}
 
-	if(user_cond->admin_level != SLURMDB_ADMIN_NOTSET) {
+	if (user_cond->admin_level != SLURMDB_ADMIN_NOTSET) {
 		xstrfmtcat(extra, " && admin_level=%u", user_cond->admin_level);
 	}
 
-	if(!extra) {
+	if (!extra) {
 		error("Nothing to remove");
 		return NULL;
 	}
 
 	query = xstrdup_printf("select name from %s %s;", user_table, extra);
 	xfree(extra);
-	if(!(result = mysql_db_query_ret(
+	if (!(result = mysql_db_query_ret(
 		     mysql_conn->db_conn, query, 0))) {
 		xfree(query);
 		return NULL;
@@ -695,7 +695,7 @@ extern List as_mysql_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		list_append(ret_list, object);
 		list_append(assoc_cond.user_list, object);
 
-		if(!rc) {
+		if (!rc) {
 			xstrfmtcat(name_char, "name='%s'", object);
 			xstrfmtcat(assoc_char, "t2.user='%s'", object);
 			rc = 1;
@@ -711,7 +711,7 @@ extern List as_mysql_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	}
 	mysql_free_result(result);
 
-	if(!list_count(ret_list)) {
+	if (!list_count(ret_list)) {
 		errno = SLURM_NO_CHANGE_IN_DATA;
 		debug3("didn't effect anything\n%s", query);
 		xfree(query);
@@ -723,7 +723,7 @@ extern List as_mysql_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	/* We need to remove these accounts from the coord's that have it */
 	coord_list = as_mysql_remove_coord(
 		mysql_conn, uid, NULL, &user_coord_cond);
-	if(coord_list)
+	if (coord_list)
 		list_destroy(coord_list);
 
 	/* We need to remove these users from the wckey table */
@@ -731,7 +731,7 @@ extern List as_mysql_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	wckey_cond.user_list = assoc_cond.user_list;
 	coord_list = as_mysql_remove_wckeys(
 		mysql_conn, uid, &wckey_cond);
-	if(coord_list)
+	if (coord_list)
 		list_destroy(coord_list);
 
 	list_destroy(assoc_cond.user_list);
@@ -740,7 +740,7 @@ extern List as_mysql_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	slurm_mutex_lock(&as_mysql_cluster_list_lock);
 	itr = list_iterator_create(as_mysql_cluster_list);
 	while((object = list_next(itr))) {
-		if((rc = remove_common(mysql_conn, DBD_REMOVE_USERS, now,
+		if ((rc = remove_common(mysql_conn, DBD_REMOVE_USERS, now,
 				       user_name, user_table, name_char,
 				       assoc_char, object, ret_list,
 				       &jobs_running))
@@ -765,13 +765,13 @@ extern List as_mysql_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	rc = mysql_db_query(mysql_conn->db_conn, query);
 	xfree(query);
-	if(rc != SLURM_SUCCESS) {
+	if (rc != SLURM_SUCCESS) {
 		error("Couldn't remove user coordinators");
 		list_destroy(ret_list);
 		return NULL;
 	}
 
-	if(jobs_running)
+	if (jobs_running)
 		errno = ESLURM_JOBS_RUNNING_ON_ASSOC;
 	else
 		errno = SLURM_SUCCESS;
@@ -793,21 +793,21 @@ extern List as_mysql_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 	MYSQL_ROW row;
 	slurmdb_user_rec_t user;
 
-	if(!user_cond && !acct_list) {
+	if (!user_cond && !acct_list) {
 		error("we need something to remove");
 		return NULL;
-	} else if(user_cond && user_cond->assoc_cond)
+	} else if (user_cond && user_cond->assoc_cond)
 		user_list = user_cond->assoc_cond->user_list;
 
-	if(check_connection(mysql_conn) != SLURM_SUCCESS)
+	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
 
 	memset(&user, 0, sizeof(slurmdb_user_rec_t));
 	user.uid = uid;
 
-	if(!(is_admin = is_user_min_admin_level(
+	if (!(is_admin = is_user_min_admin_level(
 		     mysql_conn, uid, SLURMDB_ADMIN_OPERATOR))) {
-		if(!is_user_any_coord(mysql_conn, &user)) {
+		if (!is_user_any_coord(mysql_conn, &user)) {
 			error("Only admins/coordinators can "
 			      "remove coordinators");
 			errno = ESLURM_ACCESS_DENIED;
@@ -817,18 +817,18 @@ extern List as_mysql_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	/* Leave it this way since we are using extra below */
 
-	if(user_list && list_count(user_list)) {
+	if (user_list && list_count(user_list)) {
 		set = 0;
-		if(extra)
+		if (extra)
 			xstrcat(extra, " && (");
 		else
 			xstrcat(extra, "(");
 
 		itr = list_iterator_create(user_list);
 		while((object = list_next(itr))) {
-			if(!object[0])
+			if (!object[0])
 				continue;
-			if(set)
+			if (set)
 				xstrcat(extra, " || ");
 			xstrfmtcat(extra, "user='%s'", object);
 			set = 1;
@@ -837,18 +837,18 @@ extern List as_mysql_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 		xstrcat(extra, ")");
 	}
 
-	if(acct_list && list_count(acct_list)) {
+	if (acct_list && list_count(acct_list)) {
 		set = 0;
-		if(extra)
+		if (extra)
 			xstrcat(extra, " && (");
 		else
 			xstrcat(extra, "(");
 
 		itr = list_iterator_create(acct_list);
 		while((object = list_next(itr))) {
-			if(!object[0])
+			if (!object[0])
 				continue;
-			if(set)
+			if (set)
 				xstrcat(extra, " || ");
 			xstrfmtcat(extra, "acct='%s'", object);
 			set = 1;
@@ -857,7 +857,7 @@ extern List as_mysql_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 		xstrcat(extra, ")");
 	}
 
-	if(!extra) {
+	if (!extra) {
 		errno = SLURM_ERROR;
 		debug3("No conditions given");
 		return NULL;
@@ -869,7 +869,7 @@ extern List as_mysql_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	debug3("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, THIS_FILE, __LINE__, query);
-	if(!(result =
+	if (!(result =
 	     mysql_db_query_ret(mysql_conn->db_conn, query, 0))) {
 		xfree(query);
 		xfree(extra);
@@ -880,9 +880,9 @@ extern List as_mysql_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 	ret_list = list_create(slurm_destroy_char);
 	user_list = list_create(slurm_destroy_char);
 	while((row = mysql_fetch_row(result))) {
-		if(!is_admin) {
+		if (!is_admin) {
 			slurmdb_coord_rec_t *coord = NULL;
-			if(!user.coord_accts) { // This should never
+			if (!user.coord_accts) { // This should never
 						// happen
 				error("We are here with no coord accts");
 				errno = ESLURM_ACCESS_DENIED;
@@ -894,12 +894,12 @@ extern List as_mysql_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 			}
 			itr = list_iterator_create(user.coord_accts);
 			while((coord = list_next(itr))) {
-				if(!strcasecmp(coord->name, row[1]))
+				if (!strcasecmp(coord->name, row[1]))
 					break;
 			}
 			list_iterator_destroy(itr);
 
-			if(!coord) {
+			if (!coord) {
 				error("User %s(%d) does not have the "
 				      "ability to change this account (%s)",
 				      user.name, user.uid, row[1]);
@@ -911,7 +911,7 @@ extern List as_mysql_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 				return NULL;
 			}
 		}
-		if(!last_user || strcasecmp(last_user, row[0])) {
+		if (!last_user || strcasecmp(last_user, row[0])) {
 			list_append(user_list, xstrdup(row[0]));
 			last_user = row[0];
 		}
@@ -924,7 +924,7 @@ extern List as_mysql_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 	slurm_mutex_lock(&as_mysql_cluster_list_lock);
 	itr = list_iterator_create(as_mysql_cluster_list);
 	while((object = list_next(itr))) {
-		if((rc = remove_common(mysql_conn, DBD_REMOVE_ACCOUNT_COORDS,
+		if ((rc = remove_common(mysql_conn, DBD_REMOVE_ACCOUNT_COORDS,
 				       now, user_name, acct_coord_table,
 				       extra, NULL, object, NULL, NULL))
 		   != SLURM_SUCCESS)
@@ -988,7 +988,7 @@ extern List as_mysql_get_users(mysql_conn_t *mysql_conn, uid_t uid,
 		USER_REQ_COUNT
 	};
 
-	if(check_connection(mysql_conn) != SLURM_SUCCESS)
+	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
 
 	memset(&user, 0, sizeof(slurmdb_user_rec_t));
@@ -996,30 +996,30 @@ extern List as_mysql_get_users(mysql_conn_t *mysql_conn, uid_t uid,
 
 	private_data = slurm_get_private_data();
 	if (private_data & PRIVATE_DATA_USERS) {
-		if(!(is_admin = is_user_min_admin_level(
+		if (!(is_admin = is_user_min_admin_level(
 			     mysql_conn, uid, SLURMDB_ADMIN_OPERATOR)))
 			is_user_any_coord(mysql_conn, &user);
 	}
 
-	if(!user_cond) {
+	if (!user_cond) {
 		xstrcat(extra, "where deleted=0");
 		goto empty;
 	}
 
-	if(user_cond->with_deleted)
+	if (user_cond->with_deleted)
 		xstrcat(extra, "where (deleted=0 || deleted=1)");
 	else
 		xstrcat(extra, "where deleted=0");
 
 
-	if(user_cond->assoc_cond &&
+	if (user_cond->assoc_cond &&
 	   user_cond->assoc_cond->user_list
 	   && list_count(user_cond->assoc_cond->user_list)) {
 		set = 0;
 		xstrcat(extra, " && (");
 		itr = list_iterator_create(user_cond->assoc_cond->user_list);
 		while((object = list_next(itr))) {
-			if(set)
+			if (set)
 				xstrcat(extra, " || ");
 			xstrfmtcat(extra, "name='%s'", object);
 			set = 1;
@@ -1028,12 +1028,12 @@ extern List as_mysql_get_users(mysql_conn_t *mysql_conn, uid_t uid,
 		xstrcat(extra, ")");
 	}
 
-	if(user_cond->def_acct_list && list_count(user_cond->def_acct_list)) {
+	if (user_cond->def_acct_list && list_count(user_cond->def_acct_list)) {
 		set = 0;
 		xstrcat(extra, " && (");
 		itr = list_iterator_create(user_cond->def_acct_list);
 		while((object = list_next(itr))) {
-			if(set)
+			if (set)
 				xstrcat(extra, " || ");
 			xstrfmtcat(extra, "default_acct='%s'", object);
 			set = 1;
@@ -1042,12 +1042,12 @@ extern List as_mysql_get_users(mysql_conn_t *mysql_conn, uid_t uid,
 		xstrcat(extra, ")");
 	}
 
-	if(user_cond->def_wckey_list && list_count(user_cond->def_wckey_list)) {
+	if (user_cond->def_wckey_list && list_count(user_cond->def_wckey_list)) {
 		set = 0;
 		xstrcat(extra, " && (");
 		itr = list_iterator_create(user_cond->def_wckey_list);
 		while((object = list_next(itr))) {
-			if(set)
+			if (set)
 				xstrcat(extra, " || ");
 			xstrfmtcat(extra, "default_wckey='%s'", object);
 			set = 1;
@@ -1056,7 +1056,7 @@ extern List as_mysql_get_users(mysql_conn_t *mysql_conn, uid_t uid,
 		xstrcat(extra, ")");
 	}
 
-	if(user_cond->admin_level != SLURMDB_ADMIN_NOTSET) {
+	if (user_cond->admin_level != SLURMDB_ADMIN_NOTSET) {
 		xstrfmtcat(extra, " && admin_level=%u",
 			   user_cond->admin_level);
 	}
@@ -1064,7 +1064,7 @@ empty:
 	/* This is here to make sure we are looking at only this user
 	 * if this flag is set.
 	 */
-	if(!is_admin && (private_data & PRIVATE_DATA_USERS)) {
+	if (!is_admin && (private_data & PRIVATE_DATA_USERS)) {
 		xstrfmtcat(extra, " && name='%s'", user.name);
 	}
 
@@ -1080,7 +1080,7 @@ empty:
 
 	debug3("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, THIS_FILE, __LINE__, query);
-	if(!(result = mysql_db_query_ret(
+	if (!(result = mysql_db_query_ret(
 		     mysql_conn->db_conn, query, 0))) {
 		xfree(query);
 		return NULL;
@@ -1096,7 +1096,7 @@ empty:
 
 		user->name =  xstrdup(row[USER_REQ_NAME]);
 		user->default_acct = xstrdup(row[USER_REQ_DA]);
-		if(row[USER_REQ_DW])
+		if (row[USER_REQ_DW])
 			user->default_wckey = xstrdup(row[USER_REQ_DW]);
 		else
 			user->default_wckey = xstrdup("");
@@ -1112,12 +1112,12 @@ empty:
 /* 		else */
 /* 			user->uid = passwd_ptr->pw_uid; */
 
-		if(user_cond && user_cond->with_coords)
+		if (user_cond && user_cond->with_coords)
 			_get_user_coords(mysql_conn, user);
 	}
 	mysql_free_result(result);
 
-	if(user_cond && user_cond->with_assocs) {
+	if (user_cond && user_cond->with_assocs) {
 		ListIterator assoc_itr = NULL;
 		slurmdb_user_rec_t *user = NULL;
 		slurmdb_association_rec_t *assoc = NULL;
@@ -1126,17 +1126,17 @@ empty:
 		/* Make sure we don't get any non-user associations
 		 * this is done by at least having a user_list
 		 * defined */
-		if(!user_cond->assoc_cond)
+		if (!user_cond->assoc_cond)
 			user_cond->assoc_cond =
 				xmalloc(sizeof(slurmdb_association_cond_t));
 
-		if(!user_cond->assoc_cond->user_list)
+		if (!user_cond->assoc_cond->user_list)
 			user_cond->assoc_cond->user_list = list_create(NULL);
 
 		assoc_list = as_mysql_get_assocs(
 			mysql_conn, uid, user_cond->assoc_cond);
 
-		if(!assoc_list) {
+		if (!assoc_list) {
 			error("no associations");
 			goto get_wckeys;
 		}
@@ -1145,10 +1145,10 @@ empty:
 		assoc_itr = list_iterator_create(assoc_list);
 		while((user = list_next(itr))) {
 			while((assoc = list_next(assoc_itr))) {
-				if(strcmp(assoc->user, user->name))
+				if (strcmp(assoc->user, user->name))
 					continue;
 
-				if(!user->assoc_list)
+				if (!user->assoc_list)
 					user->assoc_list = list_create(
 						slurmdb_destroy_association_rec);
 				list_append(user->assoc_list, assoc);
@@ -1163,7 +1163,7 @@ empty:
 	}
 
 get_wckeys:
-	if(user_cond && user_cond->with_wckeys) {
+	if (user_cond && user_cond->with_wckeys) {
 		ListIterator wckey_itr = NULL;
 		slurmdb_user_rec_t *user = NULL;
 		slurmdb_wckey_rec_t *wckey = NULL;
@@ -1171,7 +1171,7 @@ get_wckeys:
 		slurmdb_wckey_cond_t wckey_cond;
 
 		memset(&wckey_cond, 0, sizeof(slurmdb_wckey_cond_t));
-		if(user_cond->assoc_cond) {
+		if (user_cond->assoc_cond) {
 			wckey_cond.user_list =
 				user_cond->assoc_cond->user_list;
 			wckey_cond.cluster_list =
@@ -1180,17 +1180,17 @@ get_wckeys:
 		wckey_list = as_mysql_get_wckeys(
 			mysql_conn, uid, &wckey_cond);
 
-		if(!wckey_list)
+		if (!wckey_list)
 			return user_list;
 
 		itr = list_iterator_create(user_list);
 		wckey_itr = list_iterator_create(wckey_list);
 		while((user = list_next(itr))) {
 			while((wckey = list_next(wckey_itr))) {
-				if(strcmp(wckey->user, user->name))
+				if (strcmp(wckey->user, user->name))
 					continue;
 
-				if(!user->wckey_list)
+				if (!user->wckey_list)
 					user->wckey_list = list_create(
 						slurmdb_destroy_wckey_rec);
 				list_append(user->wckey_list, wckey);

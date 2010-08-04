@@ -202,7 +202,7 @@ main (int argc, char *argv[])
 	conf->argc = &argc;
 	slurmd_uid = slurm_get_slurmd_user_id();
 	curr_uid = getuid();
-	if(curr_uid != slurmd_uid) {
+	if (curr_uid != slurmd_uid) {
 		struct passwd *pw = NULL;
 		char *slurmd_user = NULL;
 		char *curr_user = NULL;
@@ -507,7 +507,7 @@ _service_connection(void *arg)
 
 	debug3("in the service_connection");
 	slurm_msg_t_init(msg);
-	if((rc = slurm_receive_msg_and_forward(con->fd, con->cli_addr, msg, 0))
+	if ((rc = slurm_receive_msg_and_forward(con->fd, con->cli_addr, msg, 0))
 	   != SLURM_SUCCESS) {
 		error("service_connection: slurm_receive_msg: %m");
 		/* if this fails we need to make sure the nodes we forward
@@ -784,7 +784,7 @@ _read_config(void)
 		conf->threads = conf->conf_threads;
 	}
 
-	if(cf->fast_schedule &&
+	if (cf->fast_schedule &&
 	   ((conf->cpus    != conf->actual_cpus)    ||
 	    (conf->sockets != conf->actual_sockets) ||
 	    (conf->cores   != conf->actual_cores)   ||
@@ -883,7 +883,7 @@ _reconfigure(void)
 				   stepd->jobid, stepd->stepid);
 		if (fd == -1)
 			continue;
-		if(stepd_reconfig(fd) != SLURM_SUCCESS)
+		if (stepd_reconfig(fd) != SLURM_SUCCESS)
 			debug("Reconfig jobid=%u.%u failed: %m",
 			      stepd->jobid, stepd->stepid);
 		close(fd);
@@ -1015,7 +1015,7 @@ _init_conf(void)
 static void
 _destroy_conf(void)
 {
-	if(conf) {
+	if (conf) {
 		xfree(conf->block_map);
 		xfree(conf->block_map_inv);
 		xfree(conf->conffile);
@@ -1422,11 +1422,11 @@ int save_cred_state(slurm_cred_ctx_t ctx)
 		goto cleanup;
 	}
 	(void) unlink(old_file);
-	if(link(reg_file, old_file))
+	if (link(reg_file, old_file))
 		debug4("unable to create link for %s -> %s: %m",
 		       reg_file, old_file);
 	(void) unlink(reg_file);
-	if(link(new_file, reg_file))
+	if (link(new_file, reg_file))
 		debug4("unable to create link for %s -> %s: %m",
 		       new_file, reg_file);
 	(void) unlink(new_file);

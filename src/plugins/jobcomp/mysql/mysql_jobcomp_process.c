@@ -83,17 +83,17 @@ extern List mysql_jobcomp_process_get_jobs(slurmdb_job_cond_t *job_cond)
 	   add this extra field to the structure since it only applies
 	   to this plugin.
 	*/
-	if(job_cond) {
+	if (job_cond) {
 		fdump_flag = job_cond->duplicates & FDUMP_FLAG;
 		job_cond->duplicates &= (~FDUMP_FLAG);
 	}
 
-	if(job_cond->step_list && list_count(job_cond->step_list)) {
+	if (job_cond->step_list && list_count(job_cond->step_list)) {
 		set = 0;
 		xstrcat(extra, " where (");
 		itr = list_iterator_create(job_cond->step_list);
 		while((selected_step = list_next(itr))) {
-			if(set)
+			if (set)
 				xstrcat(extra, " || ");
 			tmp = xstrdup_printf("jobid=%d",
 					      selected_step->jobid);
@@ -105,16 +105,16 @@ extern List mysql_jobcomp_process_get_jobs(slurmdb_job_cond_t *job_cond)
 		xstrcat(extra, ")");
 	}
 
-	if(job_cond->partition_list && list_count(job_cond->partition_list)) {
+	if (job_cond->partition_list && list_count(job_cond->partition_list)) {
 		set = 0;
-		if(extra)
+		if (extra)
 			xstrcat(extra, " && (");
 		else
 			xstrcat(extra, " where (");
 
 		itr = list_iterator_create(job_cond->partition_list);
 		while((selected_part = list_next(itr))) {
-			if(set)
+			if (set)
 				xstrcat(extra, " || ");
 			tmp = xstrdup_printf("partition='%s'",
 					      selected_part);
@@ -128,7 +128,7 @@ extern List mysql_jobcomp_process_get_jobs(slurmdb_job_cond_t *job_cond)
 
 	i = 0;
 	while(jobcomp_table_fields[i].name) {
-		if(i)
+		if (i)
 			xstrcat(tmp, ", ");
 		xstrcat(tmp, jobcomp_table_fields[i].name);
 		i++;
@@ -137,13 +137,13 @@ extern List mysql_jobcomp_process_get_jobs(slurmdb_job_cond_t *job_cond)
 	query = xstrdup_printf("select %s from %s", tmp, jobcomp_table);
 	xfree(tmp);
 
-	if(extra) {
+	if (extra) {
 		xstrcat(query, extra);
 		xfree(extra);
 	}
 
 	//info("query = %s", query);
-	if(!(result =
+	if (!(result =
 	     mysql_db_query_ret(jobcomp_mysql_db, query, 0))) {
 		xfree(query);
 		list_destroy(job_list);
@@ -159,7 +159,7 @@ extern List mysql_jobcomp_process_get_jobs(slurmdb_job_cond_t *job_cond)
 			continue;
 		}
 		job = xmalloc(sizeof(jobcomp_job_rec_t));
-		if(row[JOBCOMP_REQ_JOBID])
+		if (row[JOBCOMP_REQ_JOBID])
 			job->jobid = atoi(row[JOBCOMP_REQ_JOBID]);
 		job->partition = xstrdup(row[JOBCOMP_REQ_PARTITION]);
 		temp_time = atoi(row[JOBCOMP_REQ_STARTTIME]);
@@ -174,22 +174,22 @@ extern List mysql_jobcomp_process_get_jobs(slurmdb_job_cond_t *job_cond)
 				    sizeof(time_str));
 
 		job->end_time = xstrdup(time_str);
-		if(row[JOBCOMP_REQ_UID])
+		if (row[JOBCOMP_REQ_UID])
 			job->uid = atoi(row[JOBCOMP_REQ_UID]);
 		job->uid_name = xstrdup(row[JOBCOMP_REQ_USER_NAME]);
-		if(row[JOBCOMP_REQ_GID])
+		if (row[JOBCOMP_REQ_GID])
 			job->gid = atoi(row[JOBCOMP_REQ_GID]);
 		job->gid_name = xstrdup(row[JOBCOMP_REQ_GROUP_NAME]);
 		job->jobname = xstrdup(row[JOBCOMP_REQ_NAME]);
 		job->nodelist = xstrdup(row[JOBCOMP_REQ_NODELIST]);
-		if(row[JOBCOMP_REQ_NODECNT])
+		if (row[JOBCOMP_REQ_NODECNT])
 			job->node_cnt = atoi(row[JOBCOMP_REQ_NODECNT]);
-		if(row[JOBCOMP_REQ_STATE]) {
+		if (row[JOBCOMP_REQ_STATE]) {
 			i = atoi(row[JOBCOMP_REQ_STATE]);
 			job->state = xstrdup(job_state_string(i));
 		}
 		job->timelimit = xstrdup(row[JOBCOMP_REQ_TIMELIMIT]);
-		if(row[JOBCOMP_REQ_MAXPROCS])
+		if (row[JOBCOMP_REQ_MAXPROCS])
 			job->max_procs = atoi(row[JOBCOMP_REQ_MAXPROCS]);
 		job->connection = xstrdup(row[JOBCOMP_REQ_CONNECTION]);
 		job->reboot = xstrdup(row[JOBCOMP_REQ_REBOOT]);

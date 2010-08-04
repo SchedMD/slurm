@@ -559,7 +559,7 @@ void slurm_step_launch_fwd_signal(slurm_step_ctx_t *ctx, int signo)
 		active = 0;
 		num_tasks = sls->layout->tasks[node_id];
 		for (j = 0; j < num_tasks; j++) {
-			if(bit_test(sls->tasks_started,
+			if (bit_test(sls->tasks_started,
 				    sls->layout->tids[node_id][j]) &&
 			   !bit_test(sls->tasks_exited,
 				     sls->layout->tids[node_id][j])) {
@@ -579,7 +579,7 @@ void slurm_step_launch_fwd_signal(slurm_step_ctx_t *ctx, int signo)
 
 	pthread_mutex_unlock(&sls->lock);
 
-	if(!hostlist_count(hl)) {
+	if (!hostlist_count(hl)) {
 		hostlist_destroy(hl);
 		goto nothing_left;
 	}
@@ -798,7 +798,7 @@ static int _msg_thr_create(struct step_launch_state *sls, int num_nodes)
 	/* multiple jobs (easily induced via no_alloc) and highly
 	 * parallel jobs using PMI sometimes result in slow message
 	 * responses and timeouts. Raise the default timeout for srun. */
-	if(!message_socket_ops.timeout)
+	if (!message_socket_ops.timeout)
 		message_socket_ops.timeout = slurm_get_msg_timeout() * 8000;
 
 	for (i = 0; i < sls->num_resp_port; i++) {
@@ -1328,7 +1328,7 @@ static int _launch_tasks(slurm_step_ctx_t *ctx,
 	msg.msg_type = REQUEST_LAUNCH_TASKS;
 	msg.data = launch_msg;
 
-	if(!(ret_list = slurm_send_recv_msgs(
+	if (!(ret_list = slurm_send_recv_msgs(
 		     ctx->step_resp->step_layout->node_list,
 		     &msg, timeout, false))) {
 		error("slurm_send_recv_msgs failed miserably: %m");
@@ -1365,7 +1365,7 @@ static int _launch_tasks(slurm_step_ctx_t *ctx,
 	list_iterator_destroy(ret_itr);
 	list_destroy(ret_list);
 
-	if(tot_rc != SLURM_SUCCESS)
+	if (tot_rc != SLURM_SUCCESS)
 		return tot_rc;
 	return rc;
 }

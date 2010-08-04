@@ -162,14 +162,14 @@ _make_resv_cond(slurmdb_reservation_cond_t *resv_cond, char **cond)
 	concat_cond_list(resv_cond->cluster_list, NULL, "cluster", cond);
 	concat_cond_list(resv_cond->id_list, NULL, "id", cond);
 	concat_cond_list(resv_cond->name_list, NULL, "name", cond);
-	if(resv_cond->time_start) {
-		if(!resv_cond->time_end)
+	if (resv_cond->time_start) {
+		if (!resv_cond->time_end)
 			resv_cond->time_end = now;
 
 		xstrfmtcat(*cond, "AND (start < %d "
 			   "AND (endtime >= %d OR endtime = 0))",
 			   resv_cond->time_end, resv_cond->time_start);
-	} else if(resv_cond->time_end) {
+	} else if (resv_cond->time_end) {
 		xstrfmtcat(*cond,
 			   "AND (start < %d)", resv_cond->time_end);
 	}
@@ -208,19 +208,19 @@ as_pg_add_reservation(pgsql_conn_t *pg_conn, slurmdb_reservation_rec_t *resv)
 	int rc = SLURM_SUCCESS;
 	char *query = NULL, *rec = NULL;
 
-	if(!resv) {
+	if (!resv) {
 		error("as/pg: add_reservation: no reservation given");
 		return SLURM_ERROR;
 	}
-	if(!resv->id) {
+	if (!resv->id) {
 		error("as/pg: add_reservation: reservation id not given");
 		return SLURM_ERROR;
 	}
-	if(!resv->time_start) {
+	if (!resv->time_start) {
 		error("as/pg: add_reservation: start time not given");
 		return SLURM_ERROR;
 	}
-	if(!resv->cluster) {
+	if (!resv->cluster) {
 		error("as/pg: add_reservation: cluster name not given");
 		return SLURM_ERROR;
 	}
@@ -265,23 +265,23 @@ as_pg_modify_reservation(pgsql_conn_t *pg_conn,
 		RESV_COUNT
 	};
 
-	if(!resv) {
+	if (!resv) {
 		error("as/pg: modify_reservation: no reservation given");
 		return SLURM_ERROR;
 	}
-	if(!resv->id) {
+	if (!resv->id) {
 		error("as/pg: modify_reservation: reservation id not given");
 		return SLURM_ERROR;
 	}
-	if(!resv->time_start) {
+	if (!resv->time_start) {
 		error("as/pg: modify_reservation: time_start not given");
 		return SLURM_ERROR;
 	}
-	if(!resv->cluster) {
+	if (!resv->cluster) {
 		error("as/pg: modify_reservation: cluster not given");
 		return SLURM_ERROR;
 	}
-	if(!resv->time_start_prev) {
+	if (!resv->time_start_prev) {
 		error("as/pg: modify_reservation: time_start_prev not given");
 		return SLURM_ERROR;
 	}
@@ -310,7 +310,7 @@ try_again:
 		error("as/pg: modify_reservation: There is no reservation"
 		      " by id %u, start %d, and cluster '%s'", resv->id,
 		      resv->time_start_prev, resv->cluster);
-		if(!set && resv->time_end) {
+		if (!set && resv->time_end) {
 			/* This should never really happen,
 			   but just incase the controller and the
 			   database get out of sync we check
@@ -335,36 +335,36 @@ try_again:
 	set = 0;
 
 	/* check differences here */
-	if(!resv->name && !PG_EMPTY(RESV_NAME))
+	if (!resv->name && !PG_EMPTY(RESV_NAME))
 		// if this changes we just update the
 		// record, no need to create a new one since
 		// this doesn't really effect the
 		// reservation accounting wise
 		resv->name = xstrdup(PG_VAL(RESV_NAME));
 
-	if(resv->assocs)
+	if (resv->assocs)
 		set = 1;
-	else if(!PG_EMPTY(RESV_ASSOCS))
+	else if (!PG_EMPTY(RESV_ASSOCS))
 		resv->assocs = xstrdup(PG_VAL(RESV_ASSOCS));
 
-	if(resv->cpus != (uint32_t)NO_VAL)
+	if (resv->cpus != (uint32_t)NO_VAL)
 		set = 1;
 	else
 		resv->cpus = atoi(PG_VAL(RESV_CPU));
 
-	if(resv->flags != (uint16_t)NO_VAL)
+	if (resv->flags != (uint16_t)NO_VAL)
 		set = 1;
 	else
 		resv->flags = atoi(PG_VAL(RESV_FLAGS));
 
-	if(resv->nodes)
+	if (resv->nodes)
 		set = 1;
-	else if(! PG_EMPTY(RESV_NODES)) {
+	else if (! PG_EMPTY(RESV_NODES)) {
 		resv->nodes = xstrdup(PG_VAL(RESV_NODES));
 		resv->node_inx = xstrdup(PG_VAL(RESV_NODE_INX));
 	}
 
-	if(!resv->time_end)
+	if (!resv->time_end)
 		resv->time_end = atoi(PG_VAL(RESV_END));
 
 	PQclear(result);
@@ -374,7 +374,7 @@ try_again:
 	 * just incase we have a different one from being out
 	 * of sync
 	 */
-	if((start > now) || !set) {
+	if ((start > now) || !set) {
 		/* we haven't started the reservation yet, or
 		   we are changing the associations or end
 		   time which we can just update it */
@@ -412,11 +412,11 @@ as_pg_remove_reservation(pgsql_conn_t *pg_conn,
 	int rc = SLURM_SUCCESS;
 	char *query = NULL;//, *tmp_extra = NULL;
 
-	if(!resv) {
+	if (!resv) {
 		error("as/pg: remove_reservation: no reservation given");
 		return SLURM_ERROR;
 	}
-	if(!resv->id || !resv->time_start || !resv->cluster) {
+	if (!resv->id || !resv->time_start || !resv->cluster) {
 		error("as/pg: remove_reservation: id, start time "
 		      " or cluster not given");
 		return SLURM_ERROR;
@@ -498,21 +498,21 @@ as_pg_get_reservations(pgsql_conn_t *pg_conn, uid_t uid,
 		}
 	}
 
-	if(!resv_cond) {
+	if (!resv_cond) {
 		goto empty;
 	}
 
 	with_usage = resv_cond->with_usage;
 
 	memset(&job_cond, 0, sizeof(slurmdb_job_cond_t));
-	if(resv_cond->nodes) {
+	if (resv_cond->nodes) {
 		job_cond.usage_start = resv_cond->time_start;
 		job_cond.usage_end = resv_cond->time_end;
 		job_cond.used_nodes = resv_cond->nodes;
 		job_cond.cluster_list = resv_cond->cluster_list;
 		local_cluster_list = setup_cluster_list_with_inx(
 			pg_conn, &job_cond, (void **)&curr_cluster);
-	} else if(with_usage) {
+	} else if (with_usage) {
 		job_cond.usage_start = resv_cond->time_start;
 		job_cond.usage_end = resv_cond->time_end;
 	}
@@ -526,9 +526,9 @@ empty:
 			       gr_fields, resv_table, cond ?: "");
 	xfree(cond);
 	result = DEF_QUERY_RET;
-	if(!result) {
+	if (!result) {
 		error("as/pg: get_reservations: failed to get resv from db");
-		if(local_cluster_list)
+		if (local_cluster_list)
 			list_destroy(local_cluster_list);
 		return NULL;
 	}
@@ -543,13 +543,13 @@ empty:
 		list_append(resv_list, resv);
 
 		start = atoi(ROW(GR_START));
-		if(!good_nodes_from_inx(local_cluster_list, &curr_cluster,
+		if (!good_nodes_from_inx(local_cluster_list, &curr_cluster,
 					ROW(GR_NODE_INX), start))
 			continue;
 
 		resv->id = atoi(ROW(GR_ID));
-		if(with_usage) {
-			if(!job_cond.resvid_list)
+		if (with_usage) {
+			if (!job_cond.resvid_list)
 				job_cond.resvid_list = list_create(NULL);
 			list_append(job_cond.resvid_list, ROW(GR_ID));
 		}
@@ -563,17 +563,17 @@ empty:
 		resv->flags = atoi(ROW(GR_FLAGS));
 	} END_EACH_ROW;
 
-	if(local_cluster_list)
+	if (local_cluster_list)
 		list_destroy(local_cluster_list);
 
-	if(with_usage && resv_list && list_count(resv_list)) {
+	if (with_usage && resv_list && list_count(resv_list)) {
 		ListIterator itr = NULL, itr2 = NULL;
 		slurmdb_job_rec_t *job = NULL;
 		slurmdb_reservation_rec_t *resv = NULL;
 		List job_list = jobacct_storage_p_get_jobs_cond(
 			pg_conn, uid, &job_cond);
 
-		if(!job_list || !list_count(job_list))
+		if (!job_list || !list_count(job_list))
 			goto no_jobs;
 
 		itr = list_iterator_create(job_list);
@@ -589,24 +589,24 @@ empty:
 				   have to make sure we get the time
 				   in the correct record.
 				*/
-				if(resv->id != job->resvid)
+				if (resv->id != job->resvid)
 					continue;
 				set = 1;
 
-				if(start < resv->time_start)
+				if (start < resv->time_start)
 					start = resv->time_start;
-				if(!end || end > resv->time_end)
+				if (!end || end > resv->time_end)
 					end = resv->time_end;
 
-				if((elapsed = (end - start)) < 1)
+				if ((elapsed = (end - start)) < 1)
 					continue;
 
-				if(job->alloc_cpus)
+				if (job->alloc_cpus)
 					resv->alloc_secs +=
 						elapsed * job->alloc_cpus;
 			}
 			list_iterator_reset(itr2);
-			if(!set) {
+			if (!set) {
 				error("we got a job %u with no reservation "
 				      "associatied with it?", job->jobid);
 			}
@@ -614,11 +614,11 @@ empty:
 		list_iterator_destroy(itr2);
 		list_iterator_destroy(itr);
 	no_jobs:
-		if(job_list)
+		if (job_list)
 			list_destroy(job_list);
 	}
 
-	if(job_cond.resvid_list) {
+	if (job_cond.resvid_list) {
 		list_destroy(job_cond.resvid_list);
 		job_cond.resvid_list = NULL;
 	}

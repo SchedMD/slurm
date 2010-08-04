@@ -119,7 +119,7 @@ main (int argc, char *argv[])
 
 	/* Create the slurmd_job_t, mostly from info in a
 	   launch_tasks_request_msg_t or a batch_job_launch_msg_t */
-	if(!(job = _step_setup(cli, self, msg))) {
+	if (!(job = _step_setup(cli, self, msg))) {
 		_send_fail_to_slurmd(STDOUT_FILENO);
 		rc = SLURM_FAILURE;
 		goto ending;
@@ -241,7 +241,7 @@ _init_from_slurmd(int sock, char **argv,
 	incoming_buffer = xmalloc(len);
 	safe_read(sock, incoming_buffer, len);
 	buffer = create_buf(incoming_buffer,len);
-	if(unpack_slurmd_conf_lite_no_alloc(conf, buffer) == SLURM_ERROR) {
+	if (unpack_slurmd_conf_lite_no_alloc(conf, buffer) == SLURM_ERROR) {
 		fatal("slurmstepd: problem with unpack of slurmd_conf");
 	}
 	free_buf(buffer);
@@ -281,20 +281,20 @@ _init_from_slurmd(int sock, char **argv,
 	safe_read(sock, incoming_buffer, len);
 	buffer = create_buf(incoming_buffer,len);
 	cli = xmalloc(sizeof(slurm_addr_t));
-	if(slurm_unpack_slurm_addr_no_alloc(cli, buffer) == SLURM_ERROR) {
+	if (slurm_unpack_slurm_addr_no_alloc(cli, buffer) == SLURM_ERROR) {
 		fatal("slurmstepd: problem with unpack of slurmd_conf");
 	}
 	free_buf(buffer);
 
 	/* receive self from slurmd */
 	safe_read(sock, &len, sizeof(int));
-	if(len > 0) {
+	if (len > 0) {
 		/* receive packed self from main slurmd */
 		incoming_buffer = xmalloc(sizeof(char) * len);
 		safe_read(sock, incoming_buffer, len);
 		buffer = create_buf(incoming_buffer,len);
 		self = xmalloc(sizeof(slurm_addr_t));
-		if(slurm_unpack_slurm_addr_no_alloc(self, buffer)
+		if (slurm_unpack_slurm_addr_no_alloc(self, buffer)
 		   == SLURM_ERROR) {
 			fatal("slurmstepd: problem with unpack of "
 			      "slurmd_conf");
@@ -322,7 +322,7 @@ _init_from_slurmd(int sock, char **argv,
 		fatal("Unrecognized launch RPC");
 		break;
 	}
-	if(unpack_msg(msg, buffer) == SLURM_ERROR)
+	if (unpack_msg(msg, buffer) == SLURM_ERROR)
 		fatal("slurmstepd: we didn't unpack the request correctly");
 	free_buf(buffer);
 
@@ -371,7 +371,7 @@ _step_setup(slurm_addr_t *cli, slurm_addr_t *self, slurm_msg_t *msg)
 		fatal("handle_launch_message: Unrecognized launch RPC");
 		break;
 	}
-	if(!job) {
+	if (!job) {
 		error("_step_setup: no job returned");
 		return NULL;
 	}

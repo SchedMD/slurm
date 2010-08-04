@@ -1031,7 +1031,7 @@ inx2bitfmt (int *inx)
 		return NULL;
 
 	while (inx[j] >= 0) {
-		if(bit_char_ptr)
+		if (bit_char_ptr)
 			xstrfmtcat(bit_char_ptr, ",%d-%d", inx[j], inx[j+1]);
 		else
 			xstrfmtcat(bit_char_ptr, "%d-%d", inx[j], inx[j+1]);
@@ -1235,13 +1235,13 @@ bit_get_bit_num(bitstr_t *b, int pos)
 
 	for (bit = 0; bit < bit_cnt; bit++) {
 		if (bit_test(b, bit)) {	/* we got one */
-			if(cnt == pos)
+			if (cnt == pos)
 				break;
 			cnt++;
 		}
 	}
 
-	if(bit >= bit_cnt)
+	if (bit >= bit_cnt)
 		bit = -1;
 
 	return bit;

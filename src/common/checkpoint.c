@@ -176,7 +176,7 @@ _slurm_checkpoint_get_ops( slurm_checkpoint_context_t c )
         if ( c->cur_plugin != PLUGIN_INVALID_HANDLE )
         	return &c->ops;
 
-	if(errno != EPLUGIN_NOTFOUND) {
+	if (errno != EPLUGIN_NOTFOUND) {
 		error("Couldn't load specified plugin name for %s: %s",
 		      c->checkpoint_type, plugin_strerror(errno));
 		return NULL;
@@ -470,7 +470,7 @@ extern int checkpoint_tasks (uint32_t job_id, uint32_t step_id,
 		while((ret_data_info = list_pop(ret_list))) {
                         temp_rc = slurm_get_return_code(ret_data_info->type,
                                                         ret_data_info->data);
-                        if(temp_rc)
+                        if (temp_rc)
                                 rc = temp_rc;
                 }
 	} else {

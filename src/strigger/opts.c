@@ -161,9 +161,9 @@ extern void parse_command_line(int argc, char *argv[])
 			params.job_id = tmp_l;
 			break;
 		case (int) 'M':
-			if(params.clusters)
+			if (params.clusters)
 				list_destroy(params.clusters);
-			if(!(params.clusters =
+			if (!(params.clusters =
 			     slurmdb_get_info_cluster(optarg))) {
 				error("'%s' invalid entry for --cluster",
 				      optarg);

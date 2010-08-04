@@ -46,14 +46,14 @@ static int _setup_resv_limits(slurmdb_reservation_rec_t *resv,
 {
 	/* strip off the action item from the flags */
 
-	if(resv->assocs) {
+	if (resv->assocs) {
 		int start = 0;
 		int len = strlen(resv->assocs)-1;
 
 		/* strip off extra ,'s */
-		if(resv->assocs[0] == ',')
+		if (resv->assocs[0] == ',')
 			start = 1;
-		if(resv->assocs[len] == ',')
+		if (resv->assocs[len] == ',')
 			resv->assocs[len] = '\0';
 
 		xstrcat(*cols, ", assoclist");
@@ -61,43 +61,43 @@ static int _setup_resv_limits(slurmdb_reservation_rec_t *resv,
 		xstrfmtcat(*extra, ", assoclist='%s'", resv->assocs+start);
 	}
 
-	if(resv->cpus != (uint32_t)NO_VAL) {
+	if (resv->cpus != (uint32_t)NO_VAL) {
 		xstrcat(*cols, ", cpus");
 		xstrfmtcat(*vals, ", %u", resv->cpus);
 		xstrfmtcat(*extra, ", cpus=%u", resv->cpus);
 	}
 
-	if(resv->flags != (uint16_t)NO_VAL) {
+	if (resv->flags != (uint16_t)NO_VAL) {
 		xstrcat(*cols, ", flags");
 		xstrfmtcat(*vals, ", %u", resv->flags);
 		xstrfmtcat(*extra, ", flags=%u", resv->flags);
 	}
 
-	if(resv->name) {
+	if (resv->name) {
 		xstrcat(*cols, ", resv_name");
 		xstrfmtcat(*vals, ", '%s'", resv->name);
 		xstrfmtcat(*extra, ", resv_name='%s'", resv->name);
 	}
 
-	if(resv->nodes) {
+	if (resv->nodes) {
 		xstrcat(*cols, ", nodelist");
 		xstrfmtcat(*vals, ", '%s'", resv->nodes);
 		xstrfmtcat(*extra, ", nodelist='%s'", resv->nodes);
 	}
 
-	if(resv->node_inx) {
+	if (resv->node_inx) {
 		xstrcat(*cols, ", node_inx");
 		xstrfmtcat(*vals, ", '%s'", resv->node_inx);
 		xstrfmtcat(*extra, ", node_inx='%s'", resv->node_inx);
 	}
 
-	if(resv->time_end) {
+	if (resv->time_end) {
 		xstrcat(*cols, ", time_end");
 		xstrfmtcat(*vals, ", %u", resv->time_end);
 		xstrfmtcat(*extra, ", time_end=%u", resv->time_end);
 	}
 
-	if(resv->time_start) {
+	if (resv->time_start) {
 		xstrcat(*cols, ", time_start");
 		xstrfmtcat(*vals, ", %u", resv->time_start);
 		xstrfmtcat(*extra, ", time_start=%u", resv->time_start);
@@ -115,18 +115,18 @@ static int _setup_resv_cond_limits(slurmdb_reservation_cond_t *resv_cond,
 	char *prefix = "t1";
 	time_t now = time(NULL);
 
-	if(!resv_cond)
+	if (!resv_cond)
 		return 0;
 
-	if(resv_cond->id_list && list_count(resv_cond->id_list)) {
+	if (resv_cond->id_list && list_count(resv_cond->id_list)) {
 		set = 0;
-		if(*extra)
+		if (*extra)
 			xstrcat(*extra, " && (");
 		else
 			xstrcat(*extra, " where (");
 		itr = list_iterator_create(resv_cond->id_list);
 		while((object = list_next(itr))) {
-			if(set)
+			if (set)
 				xstrcat(*extra, " || ");
 			xstrfmtcat(*extra, "%s.id_resv=%s", prefix, object);
 			set = 1;
@@ -135,15 +135,15 @@ static int _setup_resv_cond_limits(slurmdb_reservation_cond_t *resv_cond,
 		xstrcat(*extra, ")");
 	}
 
-	if(resv_cond->name_list && list_count(resv_cond->name_list)) {
+	if (resv_cond->name_list && list_count(resv_cond->name_list)) {
 		set = 0;
-		if(*extra)
+		if (*extra)
 			xstrcat(*extra, " && (");
 		else
 			xstrcat(*extra, " where (");
 		itr = list_iterator_create(resv_cond->name_list);
 		while((object = list_next(itr))) {
-			if(set)
+			if (set)
 				xstrcat(*extra, " || ");
 			xstrfmtcat(*extra, "%s.resv_name='%s'",
 				   prefix, object);
@@ -153,11 +153,11 @@ static int _setup_resv_cond_limits(slurmdb_reservation_cond_t *resv_cond,
 		xstrcat(*extra, ")");
 	}
 
-	if(resv_cond->time_start) {
-		if(!resv_cond->time_end)
+	if (resv_cond->time_start) {
+		if (!resv_cond->time_end)
 			resv_cond->time_end = now;
 
-		if(*extra)
+		if (*extra)
 			xstrcat(*extra, " && (");
 		else
 			xstrcat(*extra, " where (");
@@ -165,8 +165,8 @@ static int _setup_resv_cond_limits(slurmdb_reservation_cond_t *resv_cond,
 			   "(t1.time_start < %d "
 			   "&& (t1.time_end >= %d || t1.time_end = 0)))",
 			   resv_cond->time_end, resv_cond->time_start);
-	} else if(resv_cond->time_end) {
-		if(*extra)
+	} else if (resv_cond->time_end) {
+		if (*extra)
 			xstrcat(*extra, " && (");
 		else
 			xstrcat(*extra, " where (");
@@ -185,20 +185,20 @@ extern int as_mysql_add_resv(mysql_conn_t *mysql_conn,
 	char *cols = NULL, *vals = NULL, *extra = NULL,
 		*query = NULL;//, *tmp_extra = NULL;
 
-	if(!resv) {
+	if (!resv) {
 		error("No reservation was given to edit");
 		return SLURM_ERROR;
 	}
 
-	if(!resv->id) {
+	if (!resv->id) {
 		error("We need an id to edit a reservation.");
 		return SLURM_ERROR;
 	}
-	if(!resv->time_start) {
+	if (!resv->time_start) {
 		error("We need a start time to edit a reservation.");
 		return SLURM_ERROR;
 	}
-	if(!resv->cluster || !resv->cluster[0]) {
+	if (!resv->cluster || !resv->cluster[0]) {
 		error("We need a cluster name to edit a reservation.");
 		return SLURM_ERROR;
 	}
@@ -212,7 +212,7 @@ extern int as_mysql_add_resv(mysql_conn_t *mysql_conn,
 	debug3("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, THIS_FILE, __LINE__, query);
 
-	if((rc = mysql_db_query(mysql_conn->db_conn, query)
+	if ((rc = mysql_db_query(mysql_conn->db_conn, query)
 	    == SLURM_SUCCESS))
 		rc = mysql_clear_results(mysql_conn->db_conn);
 
@@ -257,25 +257,25 @@ extern int as_mysql_modify_resv(mysql_conn_t *mysql_conn,
 		RESV_COUNT
 	};
 
-	if(!resv) {
+	if (!resv) {
 		error("No reservation was given to edit");
 		return SLURM_ERROR;
 	}
 
-	if(!resv->id) {
+	if (!resv->id) {
 		error("We need an id to edit a reservation.");
 		return SLURM_ERROR;
 	}
-	if(!resv->time_start) {
+	if (!resv->time_start) {
 		error("We need a start time to edit a reservation.");
 		return SLURM_ERROR;
 	}
-	if(!resv->cluster || !resv->cluster[0]) {
+	if (!resv->cluster || !resv->cluster[0]) {
 		error("We need a cluster name to edit a reservation.");
 		return SLURM_ERROR;
 	}
 
-	if(!resv->time_start_prev) {
+	if (!resv->time_start_prev) {
 		error("We need a time to check for last "
 		      "start of reservation.");
 		return SLURM_ERROR;
@@ -299,18 +299,18 @@ extern int as_mysql_modify_resv(mysql_conn_t *mysql_conn,
 try_again:
 	debug4("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, THIS_FILE, __LINE__, query);
-	if(!(result = mysql_db_query_ret(
+	if (!(result = mysql_db_query_ret(
 		     mysql_conn->db_conn, query, 0))) {
 		rc = SLURM_ERROR;
 		goto end_it;
 	}
-	if(!(row = mysql_fetch_row(result))) {
+	if (!(row = mysql_fetch_row(result))) {
 		rc = SLURM_ERROR;
 		mysql_free_result(result);
 		error("There is no reservation by id %u, "
 		      "time_start %d, and cluster '%s'", resv->id,
 		      resv->time_start_prev, resv->cluster);
-		if(!set && resv->time_end) {
+		if (!set && resv->time_end) {
 			/* This should never really happen,
 			   but just incase the controller and the
 			   database get out of sync we check
@@ -339,7 +339,7 @@ try_again:
 
 	/* check differences here */
 
-	if(!resv->name
+	if (!resv->name
 	   && row[RESV_NAME] && row[RESV_NAME][0])
 		// if this changes we just update the
 		// record, no need to create a new one since
@@ -347,29 +347,29 @@ try_again:
 		// reservation accounting wise
 		resv->name = xstrdup(row[RESV_NAME]);
 
-	if(resv->assocs)
+	if (resv->assocs)
 		set = 1;
-	else if(row[RESV_ASSOCS] && row[RESV_ASSOCS][0])
+	else if (row[RESV_ASSOCS] && row[RESV_ASSOCS][0])
 		resv->assocs = xstrdup(row[RESV_ASSOCS]);
 
-	if(resv->cpus != (uint32_t)NO_VAL)
+	if (resv->cpus != (uint32_t)NO_VAL)
 		set = 1;
 	else
 		resv->cpus = atoi(row[RESV_CPU]);
 
-	if(resv->flags != (uint16_t)NO_VAL)
+	if (resv->flags != (uint16_t)NO_VAL)
 		set = 1;
 	else
 		resv->flags = atoi(row[RESV_FLAGS]);
 
-	if(resv->nodes)
+	if (resv->nodes)
 		set = 1;
-	else if(row[RESV_NODES] && row[RESV_NODES][0]) {
+	else if (row[RESV_NODES] && row[RESV_NODES][0]) {
 		resv->nodes = xstrdup(row[RESV_NODES]);
 		resv->node_inx = xstrdup(row[RESV_NODE_INX]);
 	}
 
-	if(!resv->time_end)
+	if (!resv->time_end)
 		resv->time_end = atoi(row[RESV_END]);
 
 	mysql_free_result(result);
@@ -379,7 +379,7 @@ try_again:
 	 * just incase we have a different one from being out
 	 * of sync
 	 */
-	if((start > now) || !set) {
+	if ((start > now) || !set) {
 		/* we haven't started the reservation yet, or
 		   we are changing the associations or end
 		   time which we can just update it */
@@ -409,7 +409,7 @@ try_again:
 	debug3("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, THIS_FILE, __LINE__, query);
 
-	if((rc = mysql_db_query(mysql_conn->db_conn, query)
+	if ((rc = mysql_db_query(mysql_conn->db_conn, query)
 	    == SLURM_SUCCESS))
 		rc = mysql_clear_results(mysql_conn->db_conn);
 
@@ -429,12 +429,12 @@ extern int as_mysql_remove_resv(mysql_conn_t *mysql_conn,
 	int rc = SLURM_SUCCESS;
 	char *query = NULL;//, *tmp_extra = NULL;
 
-	if(!resv) {
+	if (!resv) {
 		error("No reservation was given to edit");
 		return SLURM_ERROR;
 	}
 
-	if(!resv->id || !resv->time_start || !resv->cluster) {
+	if (!resv->id || !resv->time_start || !resv->cluster) {
 		error("We need an id, start time, and cluster "
 		      "name to edit a reservation.");
 		return SLURM_ERROR;
@@ -460,7 +460,7 @@ extern int as_mysql_remove_resv(mysql_conn_t *mysql_conn,
 	debug3("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, THIS_FILE, __LINE__, query);
 
-	if((rc = mysql_db_query(mysql_conn->db_conn, query)
+	if ((rc = mysql_db_query(mysql_conn->db_conn, query)
 	    == SLURM_SUCCESS))
 		rc = mysql_clear_results(mysql_conn->db_conn);
 
@@ -517,17 +517,17 @@ extern List as_mysql_get_resvs(mysql_conn_t *mysql_conn, uid_t uid,
 		RESV_REQ_COUNT
 	};
 
-	if(!resv_cond) {
+	if (!resv_cond) {
 		xstrcat(extra, " where deleted=0");
 		goto empty;
 	}
 
-	if(check_connection(mysql_conn) != SLURM_SUCCESS)
+	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
 
 	private_data = slurm_get_private_data();
 	if (private_data & PRIVATE_DATA_RESERVATIONS) {
-		if(!(is_admin = is_user_min_admin_level(
+		if (!(is_admin = is_user_min_admin_level(
 			     mysql_conn, uid, SLURMDB_ADMIN_OPERATOR))) {
 			error("Only admins can look at reservations");
 			errno = ESLURM_ACCESS_DENIED;
@@ -536,14 +536,14 @@ extern List as_mysql_get_resvs(mysql_conn_t *mysql_conn, uid_t uid,
 	}
 
 	memset(&job_cond, 0, sizeof(slurmdb_job_cond_t));
-	if(resv_cond->nodes) {
+	if (resv_cond->nodes) {
 		job_cond.usage_start = resv_cond->time_start;
 		job_cond.usage_end = resv_cond->time_end;
 		job_cond.used_nodes = resv_cond->nodes;
 		job_cond.cluster_list = resv_cond->cluster_list;
 		local_cluster_list = setup_cluster_list_with_inx(
 			mysql_conn, &job_cond, (void **)&curr_cluster);
-	} else if(with_usage) {
+	} else if (with_usage) {
 		job_cond.usage_start = resv_cond->time_start;
 		job_cond.usage_end = resv_cond->time_end;
 	}
@@ -559,14 +559,14 @@ empty:
 		xstrfmtcat(tmp, ", t1.%s", resv_req_inx[i]);
 	}
 
-	if(resv_cond->cluster_list && list_count(resv_cond->cluster_list))
+	if (resv_cond->cluster_list && list_count(resv_cond->cluster_list))
 		use_cluster_list = resv_cond->cluster_list;
 	else
 		slurm_mutex_lock(&as_mysql_cluster_list_lock);
 
 	itr = list_iterator_create(use_cluster_list);
 	while((cluster_name = list_next(itr))) {
-		if(query)
+		if (query)
 			xstrcat(query, " union ");
 		//START_TIMER;
 		xstrfmtcat(query, "select distinct %s,'%s' as cluster "
@@ -574,19 +574,19 @@ empty:
 			   tmp, cluster_name, cluster_name, resv_table, extra);
 	}
 	list_iterator_destroy(itr);
-	if(use_cluster_list == as_mysql_cluster_list)
+	if (use_cluster_list == as_mysql_cluster_list)
 		slurm_mutex_unlock(&as_mysql_cluster_list_lock);
 
-	if(query)
+	if (query)
 		xstrcat(query, " order by cluster, resv_name;");
 
 	xfree(tmp);
 	xfree(extra);
 	debug3("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, THIS_FILE, __LINE__, query);
-	if(!(result = mysql_db_query_ret(mysql_conn->db_conn, query, 0))) {
+	if (!(result = mysql_db_query_ret(mysql_conn->db_conn, query, 0))) {
 		xfree(query);
-		if(local_cluster_list)
+		if (local_cluster_list)
 			list_destroy(local_cluster_list);
 		return NULL;
 	}
@@ -600,13 +600,13 @@ empty:
 		int start = atoi(row[RESV_REQ_START]);
 		list_append(resv_list, resv);
 
-		if(!good_nodes_from_inx(local_cluster_list, &curr_cluster,
+		if (!good_nodes_from_inx(local_cluster_list, &curr_cluster,
 					row[RESV_REQ_NODE_INX], start))
 			continue;
 
 		resv->id = atoi(row[RESV_REQ_ID]);
-		if(with_usage) {
-			if(!job_cond.resvid_list)
+		if (with_usage) {
+			if (!job_cond.resvid_list)
 				job_cond.resvid_list = list_create(NULL);
 			list_append(job_cond.resvid_list, row[RESV_REQ_ID]);
 		}
@@ -620,17 +620,17 @@ empty:
 		resv->flags = atoi(row[RESV_REQ_FLAGS]);
 	}
 
-	if(local_cluster_list)
+	if (local_cluster_list)
 		list_destroy(local_cluster_list);
 
-	if(with_usage && resv_list && list_count(resv_list)) {
+	if (with_usage && resv_list && list_count(resv_list)) {
 		List job_list = as_mysql_jobacct_process_get_jobs(
 			mysql_conn, uid, &job_cond);
 		ListIterator itr = NULL, itr2 = NULL;
 		slurmdb_job_rec_t *job = NULL;
 		slurmdb_reservation_rec_t *resv = NULL;
 
-		if(!job_list || !list_count(job_list))
+		if (!job_list || !list_count(job_list))
 			goto no_jobs;
 
 		itr = list_iterator_create(job_list);
@@ -646,24 +646,24 @@ empty:
 				   have to make sure we get the time
 				   in the correct record.
 				*/
-				if(resv->id != job->resvid)
+				if (resv->id != job->resvid)
 					continue;
 				set = 1;
 
-				if(start < resv->time_start)
+				if (start < resv->time_start)
 					start = resv->time_start;
-				if(!end || end > resv->time_end)
+				if (!end || end > resv->time_end)
 					end = resv->time_end;
 
-				if((elapsed = (end - start)) < 1)
+				if ((elapsed = (end - start)) < 1)
 					continue;
 
-				if(job->alloc_cpus)
+				if (job->alloc_cpus)
 					resv->alloc_secs +=
 						elapsed * job->alloc_cpus;
 			}
 			list_iterator_reset(itr2);
-			if(!set) {
+			if (!set) {
 				error("we got a job %u with no reservation "
 				      "associatied with it?", job->jobid);
 			}
@@ -672,11 +672,11 @@ empty:
 		list_iterator_destroy(itr2);
 		list_iterator_destroy(itr);
 	no_jobs:
-		if(job_list)
+		if (job_list)
 			list_destroy(job_list);
 	}
 
-	if(job_cond.resvid_list) {
+	if (job_cond.resvid_list) {
 		list_destroy(job_cond.resvid_list);
 		job_cond.resvid_list = NULL;
 	}

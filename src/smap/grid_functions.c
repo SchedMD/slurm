@@ -63,11 +63,11 @@ extern int set_grid_name(char *nodes, int count)
 	if (!nodes)
 		return 1;
 
-	if(params.cluster_dims == 4) {
+	if (params.cluster_dims == 4) {
 		/* FIX ME: smap doesn't do anything correctly with
 		   more than 3 dims yet.
 		*/
-	} else if(params.cluster_dims == 3) {
+	} else if (params.cluster_dims == 3) {
 		hl = hostlist_create(nodes);
 		while ((node = hostlist_shift(hl))) {
 			i = strlen(node);
@@ -148,7 +148,7 @@ extern int set_grid_bg(int *start, int *end, int count, int set)
 				   block if the set flag is specified
 				   or if the letter hasn't been set yet
 				*/
-				if(set
+				if (set
 				   || ((ba_system_ptr->grid[x][y][z].letter
 					== '.')
 				       && (ba_system_ptr->grid[x][y][z].letter
@@ -223,7 +223,7 @@ bitstr_t *get_requested_node_bitmap()
 	int i = 0;
 	node_info_t *node_ptr = NULL;
 
-	if(!params.hl)
+	if (!params.hl)
 		return NULL;
 
 	if (old_node_ptr) {
@@ -238,7 +238,7 @@ bitstr_t *get_requested_node_bitmap()
 		error_code = slurm_load_node((time_t) NULL, &new_node_ptr,
 					     SHOW_ALL);
 
-	if(bitmap)
+	if (bitmap)
 		FREE_NULL_BITMAP(bitmap);
 
 	if (error_code) {
@@ -251,7 +251,7 @@ bitstr_t *get_requested_node_bitmap()
 	bitmap = bit_alloc(old_node_ptr->record_count);
 	for(i=0; i<old_node_ptr->record_count; i++) {
 		node_ptr = &(old_node_ptr->node_array[i]);
-		if(hostlist_find(params.hl, node_ptr->name) != -1)
+		if (hostlist_find(params.hl, node_ptr->name) != -1)
 			bit_set(bitmap, i);
 	}
 	return bitmap;

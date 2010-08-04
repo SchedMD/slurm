@@ -66,7 +66,7 @@ static int _sort_update_object_dec(slurmdb_update_object_t *object_a,
 	if ((object_a->type == SLURMDB_MODIFY_ASSOC)
 	    && (object_b->type != SLURMDB_MODIFY_ASSOC))
 		return 1;
-	else if((object_b->type == SLURMDB_MODIFY_ASSOC)
+	else if ((object_b->type == SLURMDB_MODIFY_ASSOC)
 		&& (object_a->type != SLURMDB_MODIFY_ASSOC))
 		return -1;
 	return 0;
@@ -89,7 +89,7 @@ extern int send_accounting_update(List update_list, char *cluster, char *host,
 	slurm_msg_t resp;
 	int rc;
 
-	if(rpc_version > SLURMDBD_VERSION) {
+	if (rpc_version > SLURMDBD_VERSION) {
 		error("%s at %s(%hu) ver %hu > %u, can't update",
 		      cluster, host, port, rpc_version,
 		      SLURMDBD_VERSION);
@@ -105,7 +105,7 @@ extern int send_accounting_update(List update_list, char *cluster, char *host,
 	slurm_msg_t_init(&req);
 	slurm_set_addr_char(&req.address, port, host);
 	req.msg_type = ACCOUNTING_UPDATE_MSG;
-	if(slurmdbd_conf)
+	if (slurmdbd_conf)
 		req.flags = SLURM_GLOBAL_AUTH_KEY;
 	req.data = &msg;
 	slurm_msg_t_init(&resp);
@@ -126,7 +126,7 @@ extern int send_accounting_update(List update_list, char *cluster, char *host,
 		slurm_free_return_code_msg(resp.data);
 		break;
 	default:
-		if(rc != SLURM_ERROR)
+		if (rc != SLURM_ERROR)
 			error("Unknown response message %u", resp.msg_type);
 		rc = SLURM_ERROR;
 		break;
@@ -150,19 +150,19 @@ addto_update_list(List update_list, slurmdb_update_type_t type, void *object)
 {
 	slurmdb_update_object_t *update_object = NULL;
 	ListIterator itr = NULL;
-	if(!update_list) {
+	if (!update_list) {
 		error("no update list given");
 		return SLURM_ERROR;
 	}
 
 	itr = list_iterator_create(update_list);
 	while((update_object = list_next(itr))) {
-		if(update_object->type == type)
+		if (update_object->type == type)
 			break;
 	}
 	list_iterator_destroy(itr);
 
-	if(update_object) {
+	if (update_object) {
 		/* here we prepend primarly for remove association
 		   since parents need to be removed last, and they are
 		   removed first in the calling code */
@@ -249,7 +249,7 @@ dump_update_list(List update_list)
 	debug3("========== DUMP UPDATE LIST ==========");
 	itr = list_iterator_create(update_list);
 	while((object = list_next(itr))) {
-		if(!object->objects || !list_count(object->objects)) {
+		if (!object->objects || !list_count(object->objects)) {
 			debug3("\tUPDATE OBJECT WITH NO RECORDS, type: %d",
 			       object->type);
 			continue;
@@ -358,15 +358,15 @@ set_usage_information(char **usage_table, slurmdbd_msg_type_t type,
 	char *my_usage_table = (*usage_table);
 
 	/* Default is going to be the last day */
-	if(!end) {
-		if(!localtime_r(&my_time, &end_tm)) {
+	if (!end) {
+		if (!localtime_r(&my_time, &end_tm)) {
 			error("Couldn't get localtime from end %d",
 			      my_time);
 			return SLURM_ERROR;
 		}
 		end_tm.tm_hour = 0;
 	} else {
-		if(!localtime_r(&end, &end_tm)) {
+		if (!localtime_r(&end, &end_tm)) {
 			error("Couldn't get localtime from user end %d",
 			      end);
 			return SLURM_ERROR;
@@ -377,8 +377,8 @@ set_usage_information(char **usage_table, slurmdbd_msg_type_t type,
 	end_tm.tm_isdst = -1;
 	end = mktime(&end_tm);
 
-	if(!start) {
-		if(!localtime_r(&my_time, &start_tm)) {
+	if (!start) {
+		if (!localtime_r(&my_time, &start_tm)) {
 			error("Couldn't get localtime from start %d",
 			      my_time);
 			return SLURM_ERROR;
@@ -386,7 +386,7 @@ set_usage_information(char **usage_table, slurmdbd_msg_type_t type,
 		start_tm.tm_hour = 0;
 		start_tm.tm_mday--;
 	} else {
-		if(!localtime_r(&start, &start_tm)) {
+		if (!localtime_r(&start, &start_tm)) {
 			error("Couldn't get localtime from user start %d",
 			      start);
 			return SLURM_ERROR;
@@ -397,9 +397,9 @@ set_usage_information(char **usage_table, slurmdbd_msg_type_t type,
 	start_tm.tm_isdst = -1;
 	start = mktime(&start_tm);
 
-	if(end-start < 3600) {
+	if (end-start < 3600) {
 		end = start + 3600;
-		if(!localtime_r(&end, &end_tm)) {
+		if (!localtime_r(&end, &end_tm)) {
 			error("2 Couldn't get localtime from user end %d",
 			      end);
 			return SLURM_ERROR;
@@ -409,7 +409,7 @@ set_usage_information(char **usage_table, slurmdbd_msg_type_t type,
 	 * boundaries other wise use the day table.
 	 */
 	//info("%d %d %d", start_tm.tm_hour, end_tm.tm_hour, end-start);
-	if(start_tm.tm_hour || end_tm.tm_hour || (end-start < 86400)
+	if (start_tm.tm_hour || end_tm.tm_hour || (end-start < 86400)
 	   || (end > my_time)) {
 		switch (type) {
 		case DBD_GET_ASSOC_USAGE:
@@ -426,7 +426,7 @@ set_usage_information(char **usage_table, slurmdbd_msg_type_t type,
 			     slurmdbd_msg_type_2_str(type, 1));
 			break;
 		}
-	} else if(start_tm.tm_mday == 0 && end_tm.tm_mday == 0
+	} else if (start_tm.tm_mday == 0 && end_tm.tm_mday == 0
 		  && (end-start > 86400)) {
 		switch (type) {
 		case DBD_GET_ASSOC_USAGE:
@@ -466,21 +466,21 @@ merge_delta_qos_list(List qos_list, List delta_qos_list)
 	char *new_qos = NULL, *curr_qos = NULL;
 
 	while((new_qos = list_next(new_itr))) {
-		if(new_qos[0] == '-') {
+		if (new_qos[0] == '-') {
 			while((curr_qos = list_next(curr_itr))) {
-				if(!strcmp(curr_qos, new_qos+1)) {
+				if (!strcmp(curr_qos, new_qos+1)) {
 					list_delete_item(curr_itr);
 					break;
 				}
 			}
 			list_iterator_reset(curr_itr);
-		} else if(new_qos[0] == '+') {
+		} else if (new_qos[0] == '+') {
 			while((curr_qos = list_next(curr_itr))) {
-				if(!strcmp(curr_qos, new_qos+1)) {
+				if (!strcmp(curr_qos, new_qos+1)) {
 					break;
 				}
 			}
-			if(!curr_qos) {
+			if (!curr_qos) {
 				list_append(qos_list, xstrdup(new_qos+1));
 			}
 			list_iterator_reset(curr_itr);
@@ -498,12 +498,12 @@ extern bool is_user_min_admin_level(void *db_conn, uid_t uid,
 	 * THERE IS NO AUTHENTICATION WHEN RUNNNING OUT OF THE
 	 * SLURMDBD!
 	 */
-	if(slurmdbd_conf) {
+	if (slurmdbd_conf) {
 		/* We have to check the authentication here in the
 		 * plugin since we don't know what accounts are being
 		 * referenced until after the query.
 		 */
-		if((uid != slurmdbd_conf->slurm_user_id && uid != 0)
+		if ((uid != slurmdbd_conf->slurm_user_id && uid != 0)
 		   && assoc_mgr_get_admin_level(db_conn, uid) < min_level)
 			is_admin = 0;
 	}
@@ -523,7 +523,7 @@ extern bool is_user_coord(slurmdb_user_rec_t *user, char *account)
 
 	itr = list_iterator_create(user->coord_accts);
 	while((coord = list_next(itr))) {
-		if(!strcasecmp(coord->name, account))
+		if (!strcasecmp(coord->name, account))
 			break;
 	}
 	list_iterator_destroy(itr);
@@ -533,7 +533,7 @@ extern bool is_user_coord(slurmdb_user_rec_t *user, char *account)
 extern bool is_user_any_coord(void *db_conn, slurmdb_user_rec_t *user)
 {
 	xassert(user);
-	if(assoc_mgr_fill_in_user(db_conn, user, 1, NULL) != SLURM_SUCCESS) {
+	if (assoc_mgr_fill_in_user(db_conn, user, 1, NULL) != SLURM_SUCCESS) {
 		error("couldn't get information for this user %s(%d)",
 		      user->name, user->uid);
 		return 0;

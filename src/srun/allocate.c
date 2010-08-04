@@ -134,7 +134,7 @@ static void _exit_on_signal(int signo)
 /* This typically signifies the job was cancelled by scancel */
 static void _job_complete_handler(srun_job_complete_msg_t *msg)
 {
-	if((int)msg->step_id >= 0)
+	if ((int)msg->step_id >= 0)
 		info("Force Terminated job %u.%u", msg->job_id, msg->step_id);
 	else
 		info("Force Terminated job %u", msg->job_id);
@@ -310,7 +310,7 @@ static int _blocks_dealloc(void)
 		return -1;
 	}
 	for (i=0; i<new_bg_ptr->record_count; i++) {
-		if(new_bg_ptr->block_array[i].state
+		if (new_bg_ptr->block_array[i].state
 		   == RM_PARTITION_DEALLOCATING) {
 			rc = 1;
 			break;
@@ -399,7 +399,7 @@ allocate_test(void)
 {
 	int rc;
 	job_desc_msg_t *j = job_desc_msg_create_from_opts();
-	if(!j)
+	if (!j)
 		return SLURM_ERROR;
 
 	rc = slurm_job_will_run(j);
@@ -449,7 +449,7 @@ allocate_nodes(void)
 		if (destroy_job) {
 			/* cancelled by signal */
 			break;
-		} else if(!resp && !_retry()) {
+		} else if (!resp && !_retry()) {
 			break;
 		}
 	}
@@ -460,14 +460,14 @@ allocate_nodes(void)
 		 */
 #ifdef HAVE_BG
 		if (!_wait_bluegene_block_ready(resp)) {
-			if(!destroy_job)
+			if (!destroy_job)
 				error("Something is wrong with the "
 				      "boot of the block.");
 			goto relinquish;
 		}
 #else
 		if (!_wait_nodes_ready(resp)) {
-			if(!destroy_job)
+			if (!destroy_job)
 				error("Something is wrong with the "
 				      "boot of the nodes.");
 			goto relinquish;
@@ -475,7 +475,7 @@ allocate_nodes(void)
 #endif
 #ifdef HAVE_CRAY_XT
 		if (!_claim_reservation(resp)) {
-			if(!destroy_job)
+			if (!destroy_job)
 				error("Something is wrong with the ALPS "
 				      "resource reservation.");
 			goto relinquish;
@@ -500,7 +500,7 @@ allocate_nodes(void)
 relinquish:
 
 	slurm_free_resource_allocation_response_msg(resp);
-	if(!destroy_job)
+	if (!destroy_job)
 		slurm_complete_job(resp->job_id, 1);
 	exit(error_exit);
 	return NULL;
@@ -609,7 +609,7 @@ job_desc_msg_create_from_opts (void)
 
 	/* simplify the job allocation nodelist,
 	 * not laying out tasks until step */
-	if(j->req_nodes) {
+	if (j->req_nodes) {
 		hl = hostlist_create(j->req_nodes);
 		hostlist_ranged_string(hl, sizeof(buf), buf);
 		xfree(opt.nodelist);
@@ -622,7 +622,7 @@ job_desc_msg_create_from_opts (void)
 		j->req_nodes = xstrdup(buf);
 	}
 
-	if(opt.distribution == SLURM_DIST_ARBITRARY
+	if (opt.distribution == SLURM_DIST_ARBITRARY
 	   && !j->req_nodes) {
 		error("With Arbitrary distribution you need to "
 		      "specify a nodelist or hostfile with the -w option");

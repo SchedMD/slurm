@@ -169,7 +169,7 @@ static char * _task_list(struct job_record *job_ptr)
 
 	xassert(job_resrcs_ptr);
 #ifdef HAVE_BG
-	if(job_ptr->node_cnt) {
+	if (job_ptr->node_cnt) {
 		task_cnt = job_resrcs_ptr->cpu_array_value[0];
 	} else
 		task_cnt = 1;
@@ -276,7 +276,7 @@ static char * _task_list_exp(struct job_record *job_ptr)
 
 	xassert(job_resrcs_ptr);
 #ifdef HAVE_BG
-	if(job_ptr->node_cnt) {
+	if (job_ptr->node_cnt) {
 		task_cnt = job_resrcs_ptr->cpu_array_value[0];
 	} else
 		task_cnt = 1;

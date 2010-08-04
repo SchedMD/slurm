@@ -164,7 +164,7 @@ _slurm_jobcomp_get_ops( slurm_jobcomp_context_t c )
         if ( c->cur_plugin != PLUGIN_INVALID_HANDLE )
         	return &c->ops;
 
-	if(errno != EPLUGIN_NOTFOUND) {
+	if (errno != EPLUGIN_NOTFOUND) {
 		error("Couldn't load specified plugin name for %s: %s",
 		      c->jobcomp_type, plugin_strerror(errno));
 		return NULL;

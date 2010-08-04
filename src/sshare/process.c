@@ -70,7 +70,7 @@ extern int process(shares_response_msg_t *resp)
 		PRINT_USER,
 	};
 
-	if(!resp)
+	if (!resp)
 		return SLURM_ERROR;
 
 	format_list = list_create(slurm_destroy_char);
@@ -91,52 +91,52 @@ extern int process(shares_response_msg_t *resp)
 	while((object = list_next(itr))) {
 		char *tmp_char = NULL;
 		field = xmalloc(sizeof(print_field_t));
-		if(!strncasecmp("Account", object, 1)) {
+		if (!strncasecmp("Account", object, 1)) {
 			field->type = PRINT_ACCOUNT;
 			field->name = xstrdup("Account");
 			field->len = -20;
 			field->print_routine = print_fields_str;
-		} else if(!strncasecmp("Cluster", object, 1)) {
+		} else if (!strncasecmp("Cluster", object, 1)) {
 			field->type = PRINT_CLUSTER;
 			field->name = xstrdup("Cluster");
 			field->len = 10;
 			field->print_routine = print_fields_str;
-		} else if(!strncasecmp("EffUsage", object, 1)) {
+		} else if (!strncasecmp("EffUsage", object, 1)) {
 			field->type = PRINT_EUSED;
 			field->name = xstrdup("Effectv Usage");
 			field->len = 13;
 			field->print_routine = print_fields_double;
-		} else if(!strncasecmp("FSFctr", object, 1)) {
+		} else if (!strncasecmp("FSFctr", object, 1)) {
 			field->type = PRINT_FSFACTOR;
 			field->name = xstrdup("Fair-share");
 			field->len = 10;
 			field->print_routine = print_fields_double;
-		} else if(!strncasecmp("ID", object, 1)) {
+		} else if (!strncasecmp("ID", object, 1)) {
 			field->type = PRINT_ID;
 			field->name = xstrdup("ID");
 			field->len = 6;
 			field->print_routine = print_fields_uint;
-		} else if(!strncasecmp("NormShares", object, 5)) {
+		} else if (!strncasecmp("NormShares", object, 5)) {
 			field->type = PRINT_NORMS;
 			field->name = xstrdup("Norm Shares");
 			field->len = 11;
 			field->print_routine = print_fields_double;
-		} else if(!strncasecmp("NormUsage", object, 5)) {
+		} else if (!strncasecmp("NormUsage", object, 5)) {
 			field->type = PRINT_NORMU;
 			field->name = xstrdup("Norm Usage");
 			field->len = 11;
 			field->print_routine = print_fields_double;
-		} else if(!strncasecmp("RawShares", object, 4)) {
+		} else if (!strncasecmp("RawShares", object, 4)) {
 			field->type = PRINT_RAWS;
 			field->name = xstrdup("Raw Shares");
 			field->len = 10;
 			field->print_routine = print_fields_uint32;
-		} else if(!strncasecmp("RawUsage", object, 4)) {
+		} else if (!strncasecmp("RawUsage", object, 4)) {
 			field->type = PRINT_RAWU;
 			field->name = xstrdup("Raw Usage");
 			field->len = 11;
 			field->print_routine = print_fields_uint64;
-		} else if(!strncasecmp("User", object, 1)) {
+		} else if (!strncasecmp("User", object, 1)) {
 			field->type = PRINT_USER;
 			field->name = xstrdup("User");
 			field->len = 10;
@@ -148,9 +148,9 @@ extern int process(shares_response_msg_t *resp)
 			xfree(field);
 			continue;
 		}
-		if((tmp_char = strstr(object, "\%"))) {
+		if ((tmp_char = strstr(object, "\%"))) {
 			int newlen = atoi(tmp_char+1);
-			if(newlen)
+			if (newlen)
 				field->len = newlen;
 		}
 		list_append(print_fields_list, field);
@@ -158,7 +158,7 @@ extern int process(shares_response_msg_t *resp)
 	list_iterator_destroy(itr);
 	list_destroy(format_list);
 
-	if(exit_code) {
+	if (exit_code) {
 		list_destroy(print_fields_list);
 		return SLURM_ERROR;
 	}
@@ -168,7 +168,7 @@ extern int process(shares_response_msg_t *resp)
 
 	field_count = list_count(print_fields_list);
 
-	if(!resp->assoc_shares_list || !list_count(resp->assoc_shares_list))
+	if (!resp->assoc_shares_list || !list_count(resp->assoc_shares_list))
 		return SLURM_SUCCESS;
 	tree_list = list_create(slurmdb_destroy_print_tree);
 	itr = list_iterator_create(resp->assoc_shares_list);
@@ -180,7 +180,7 @@ extern int process(shares_response_msg_t *resp)
 		while((field = list_next(itr2))) {
 			switch(field->type) {
 			case PRINT_ACCOUNT:
-				if(assoc->user)
+				if (assoc->user)
 					local_acct = xstrdup_printf(
 						"|%s", assoc->name);
 				else
@@ -239,7 +239,7 @@ extern int process(shares_response_msg_t *resp)
 						     (curr_inx == field_count));
 				break;
 			case PRINT_USER:
-				if(assoc->user)
+				if (assoc->user)
 					tmp_char = assoc->name;
 				field->print_routine(field,
 						     tmp_char,
@@ -257,7 +257,7 @@ extern int process(shares_response_msg_t *resp)
 		printf("\n");
 	}
 
-	if(tree_list)
+	if (tree_list)
 		list_destroy(tree_list);
 
 	list_iterator_destroy(itr2);

@@ -102,10 +102,10 @@ static void *_cluster_rollup_usage(void *arg)
 	 * sent from the parent thread. */
 	rc = check_connection(&mysql_conn);
 
-	if(rc != SLURM_SUCCESS)
+	if (rc != SLURM_SUCCESS)
 		goto end_it;
 
-	if(!local_rollup->sent_start) {
+	if (!local_rollup->sent_start) {
 		char *tmp = NULL;
 		int i=0;
 		xstrfmtcat(tmp, "%s", update_req_inx[i]);
@@ -119,7 +119,7 @@ static void *_cluster_rollup_usage(void *arg)
 
 		debug4("%d(%s:%d) query\n%s", mysql_conn.conn,
 		       THIS_FILE, __LINE__, query);
-		if(!(result = mysql_db_query_ret(
+		if (!(result = mysql_db_query_ret(
 			     mysql_conn.db_conn, query, 0))) {
 			xfree(query);
 			rc = SLURM_ERROR;
@@ -128,7 +128,7 @@ static void *_cluster_rollup_usage(void *arg)
 
 		xfree(query);
 		row = mysql_fetch_row(result);
-		if(row) {
+		if (row) {
 			last_hour = atoi(row[UPDATE_HOUR]);
 			last_day = atoi(row[UPDATE_DAY]);
 			last_month = atoi(row[UPDATE_MONTH]);
@@ -146,16 +146,16 @@ static void *_cluster_rollup_usage(void *arg)
 				local_rollup->cluster_name, event_table);
 			debug3("%d(%s:%d) query\n%s", mysql_conn.conn,
 			       THIS_FILE, __LINE__, query);
-			if(!(result = mysql_db_query_ret(
+			if (!(result = mysql_db_query_ret(
 				     mysql_conn.db_conn, query, 0))) {
 				xfree(query);
 				rc = SLURM_ERROR;
 				goto end_it;
 			}
 			xfree(query);
-			if((row = mysql_fetch_row(result))) {
+			if ((row = mysql_fetch_row(result))) {
 				time_t check = atoi(row[0]);
-				if(check < lowest)
+				if (check < lowest)
 					lowest = check;
 			}
 			mysql_free_result(result);
@@ -176,12 +176,12 @@ static void *_cluster_rollup_usage(void *arg)
 			       THIS_FILE, __LINE__, query);
 			rc = mysql_db_query(mysql_conn.db_conn, query);
 			xfree(query);
-			if(rc != SLURM_SUCCESS) {
+			if (rc != SLURM_SUCCESS) {
 				rc = SLURM_ERROR;
 				goto end_it;
 			}
 
-			if(lowest == now) {
+			if (lowest == now) {
 				debug("Cluster %s not registered, "
 				      "not doing rollup",
 				      local_rollup->cluster_name);
@@ -193,7 +193,7 @@ static void *_cluster_rollup_usage(void *arg)
 		}
 	}
 
-	if(!my_time)
+	if (!my_time)
 		my_time = time(NULL);
 
 	/* test month gap */
@@ -212,13 +212,13 @@ static void *_cluster_rollup_usage(void *arg)
 //	last_day = 1197033199;
 //	last_month = 1204358399;
 
-	if(!localtime_r(&last_hour, &start_tm)) {
+	if (!localtime_r(&last_hour, &start_tm)) {
 		error("Couldn't get localtime from hour start %d", last_hour);
 		rc = SLURM_ERROR;
 		goto end_it;
 	}
 
-	if(!localtime_r(&my_time, &end_tm)) {
+	if (!localtime_r(&my_time, &end_tm)) {
 		error("Couldn't get localtime from hour end %d", my_time);
 		rc = SLURM_ERROR;
 		goto end_it;
@@ -249,7 +249,7 @@ static void *_cluster_rollup_usage(void *arg)
 	slurm_mutex_unlock(&rollup_lock);
 
 	/* set up the day period */
-	if(!localtime_r(&last_day, &start_tm)) {
+	if (!localtime_r(&last_day, &start_tm)) {
 		error("Couldn't get localtime from day %d", last_day);
 		rc = SLURM_ERROR;
 		goto end_it;
@@ -270,7 +270,7 @@ static void *_cluster_rollup_usage(void *arg)
 /* 	info("diff is %d", day_end-day_start); */
 
 	/* set up the month period */
-	if(!localtime_r(&last_month, &start_tm)) {
+	if (!localtime_r(&last_month, &start_tm)) {
 		error("Couldn't get localtime from month %d", last_month);
 		rc = SLURM_ERROR;
 		goto end_it;
@@ -294,7 +294,7 @@ static void *_cluster_rollup_usage(void *arg)
 /* 	info("month end %s", ctime(&month_end)); */
 /* 	info("diff is %d", month_end-month_start); */
 
-	if((hour_end - hour_start) > 0) {
+	if ((hour_end - hour_start) > 0) {
 		START_TIMER;
 		rc = as_mysql_hourly_rollup(&mysql_conn,
 					    local_rollup->cluster_name,
@@ -304,11 +304,11 @@ static void *_cluster_rollup_usage(void *arg)
 		snprintf(timer_str, sizeof(timer_str),
 			 "hourly_rollup for %s", local_rollup->cluster_name);
 		END_TIMER3(timer_str, 5000000);
-		if(rc != SLURM_SUCCESS)
+		if (rc != SLURM_SUCCESS)
 			goto end_it;
 	}
 
-	if((day_end - day_start) > 0) {
+	if ((day_end - day_start) > 0) {
 		START_TIMER;
 		rc = as_mysql_daily_rollup(&mysql_conn,
 					   local_rollup->cluster_name,
@@ -318,11 +318,11 @@ static void *_cluster_rollup_usage(void *arg)
 		snprintf(timer_str, sizeof(timer_str),
 			 "daily_rollup for %s", local_rollup->cluster_name);
 		END_TIMER3(timer_str, 5000000);
-		if(rc != SLURM_SUCCESS)
+		if (rc != SLURM_SUCCESS)
 			goto end_it;
 	}
 
-	if((month_end - month_start) > 0) {
+	if ((month_end - month_start) > 0) {
 		START_TIMER;
 		rc = as_mysql_monthly_rollup(&mysql_conn,
 					     local_rollup->cluster_name,
@@ -332,13 +332,13 @@ static void *_cluster_rollup_usage(void *arg)
 		snprintf(timer_str, sizeof(timer_str),
 			 "monthly_rollup for %s", local_rollup->cluster_name);
 		END_TIMER3(timer_str, 5000000);
-		if(rc != SLURM_SUCCESS)
+		if (rc != SLURM_SUCCESS)
 			goto end_it;
 	}
 
-	if((hour_end - hour_start) > 0) {
+	if ((hour_end - hour_start) > 0) {
 		/* If we have a sent_end do not update the last_run_table */
-		if(!local_rollup->sent_end)
+		if (!local_rollup->sent_end)
 			query = xstrdup_printf(
 				"update \"%s_%s\" set hourly_rollup=%d",
 				local_rollup->cluster_name,
@@ -347,10 +347,10 @@ static void *_cluster_rollup_usage(void *arg)
 		debug2("No need to roll cluster %s this hour %d <= %d",
 		       local_rollup->cluster_name, hour_end, hour_start);
 
-	if((day_end - day_start) > 0) {
-		if(query && !local_rollup->sent_end)
+	if ((day_end - day_start) > 0) {
+		if (query && !local_rollup->sent_end)
 			xstrfmtcat(query, ", daily_rollup=%d", day_end);
-		else if(!local_rollup->sent_end)
+		else if (!local_rollup->sent_end)
 			query = xstrdup_printf(
 				"update \"%s_%s\" set daily_rollup=%d",
 				local_rollup->cluster_name,
@@ -359,10 +359,10 @@ static void *_cluster_rollup_usage(void *arg)
 		debug2("No need to roll cluster %s this day %d <= %d",
 		       local_rollup->cluster_name, day_end, day_start);
 
-	if((month_end - month_start) > 0) {
-		if(query && !local_rollup->sent_end)
+	if ((month_end - month_start) > 0) {
+		if (query && !local_rollup->sent_end)
 			xstrfmtcat(query, ", monthly_rollup=%d", month_end);
-		else if(!local_rollup->sent_end)
+		else if (!local_rollup->sent_end)
 			query = xstrdup_printf(
 				"update \"%s_%s\" set monthly_rollup=%d",
 				local_rollup->cluster_name,
@@ -371,22 +371,22 @@ static void *_cluster_rollup_usage(void *arg)
 		debug2("No need to roll cluster %s this month %d <= %d",
 		       local_rollup->cluster_name, month_end, month_start);
 
-	if(query) {
+	if (query) {
 		debug3("%d(%s:%d) query\n%s",
 		       mysql_conn.conn, THIS_FILE, __LINE__, query);
 		rc = mysql_db_query(mysql_conn.db_conn, query);
 		xfree(query);
 	}
 end_it:
-	if(rc == SLURM_SUCCESS) {
-		if(mysql_db_commit(mysql_conn.db_conn)) {
+	if (rc == SLURM_SUCCESS) {
+		if (mysql_db_commit(mysql_conn.db_conn)) {
 			error("Couldn't commit rollup of cluster %s",
 			      local_rollup->cluster_name);
 			rc = SLURM_ERROR;
 		}
 	} else {
 		error("Cluster %s rollup failed", local_rollup->cluster_name);
-		if(mysql_conn.db_conn && mysql_db_rollback(mysql_conn.db_conn))
+		if (mysql_conn.db_conn && mysql_db_rollback(mysql_conn.db_conn))
 			error("rollback failed");
 	}
 
@@ -394,7 +394,7 @@ end_it:
 
 	slurm_mutex_lock(local_rollup->rolledup_lock);
 	(*local_rollup->rolledup)++;
-	if((rc != SLURM_SUCCESS) && ((*local_rollup->rc) == SLURM_SUCCESS))
+	if ((rc != SLURM_SUCCESS) && ((*local_rollup->rc) == SLURM_SUCCESS))
 		(*local_rollup->rc) = rc;
 	pthread_cond_signal(local_rollup->rolledup_cond);
 	slurm_mutex_unlock(local_rollup->rolledup_lock);
@@ -439,12 +439,12 @@ static int _get_cluster_usage(mysql_conn_t *mysql_conn, uid_t uid,
 		CLUSTER_COUNT
 	};
 
-	if(!cluster_rec->name || !cluster_rec->name[0]) {
+	if (!cluster_rec->name || !cluster_rec->name[0]) {
 		error("We need a cluster name to set data for");
 		return SLURM_ERROR;
 	}
 
-	if(set_usage_information(&my_usage_table, type, &start, &end)
+	if (set_usage_information(&my_usage_table, type, &start, &end)
 	   != SLURM_SUCCESS) {
 		return SLURM_ERROR;
 	}
@@ -464,14 +464,14 @@ static int _get_cluster_usage(mysql_conn_t *mysql_conn, uid_t uid,
 	xfree(tmp);
 	debug4("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, THIS_FILE, __LINE__, query);
-	if(!(result = mysql_db_query_ret(
+	if (!(result = mysql_db_query_ret(
 		     mysql_conn->db_conn, query, 0))) {
 		xfree(query);
 		return SLURM_ERROR;
 	}
 	xfree(query);
 
-	if(!cluster_rec->accounting_list)
+	if (!cluster_rec->accounting_list)
 		cluster_rec->accounting_list =
 			list_create(slurmdb_destroy_cluster_accounting_rec);
 
@@ -529,12 +529,12 @@ extern int get_usage_for_list(mysql_conn_t *mysql_conn,
 	};
 
 
-	if(!object_list) {
+	if (!object_list) {
 		error("We need an object to set data for getting usage");
 		return SLURM_ERROR;
 	}
 
-	if(check_connection(mysql_conn) != SLURM_SUCCESS)
+	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
 
 	switch (type) {
@@ -549,7 +549,7 @@ extern int get_usage_for_list(mysql_conn_t *mysql_conn,
 
 		itr = list_iterator_create(object_list);
 		while((assoc = list_next(itr))) {
-			if(id_str)
+			if (id_str)
 				xstrfmtcat(id_str, " || t3.id_assoc=%d",
 					   assoc->id);
 			else
@@ -571,7 +571,7 @@ extern int get_usage_for_list(mysql_conn_t *mysql_conn,
 
 		itr = list_iterator_create(object_list);
 		while((wckey = list_next(itr))) {
-			if(id_str)
+			if (id_str)
 				xstrfmtcat(id_str, " || id_wckey=%d",
 					   wckey->id);
 			else
@@ -588,7 +588,7 @@ extern int get_usage_for_list(mysql_conn_t *mysql_conn,
 		break;
 	}
 
-	if(set_usage_information(&my_usage_table, type, &start, &end)
+	if (set_usage_information(&my_usage_table, type, &start, &end)
 	   != SLURM_SUCCESS) {
 		xfree(id_str);
 		return SLURM_ERROR;
@@ -632,7 +632,7 @@ extern int get_usage_for_list(mysql_conn_t *mysql_conn,
 
 	debug4("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, THIS_FILE, __LINE__, query);
-	if(!(result = mysql_db_query_ret(
+	if (!(result = mysql_db_query_ret(
 		     mysql_conn->db_conn, query, 0))) {
 		xfree(query);
 		return SLURM_ERROR;
@@ -661,7 +661,7 @@ extern int get_usage_for_list(mysql_conn_t *mysql_conn,
 		switch (type) {
 		case DBD_GET_ASSOC_USAGE:
 			assoc = (slurmdb_association_rec_t *)object;
-			if(!assoc->accounting_list)
+			if (!assoc->accounting_list)
 				assoc->accounting_list = list_create(
 					slurmdb_destroy_accounting_rec);
 			acct_list = assoc->accounting_list;
@@ -669,7 +669,7 @@ extern int get_usage_for_list(mysql_conn_t *mysql_conn,
 			break;
 		case DBD_GET_WCKEY_USAGE:
 			wckey = (slurmdb_wckey_rec_t *)object;
-			if(!wckey->accounting_list)
+			if (!wckey->accounting_list)
 				wckey->accounting_list = list_create(
 					slurmdb_destroy_accounting_rec);
 			acct_list = wckey->accounting_list;
@@ -681,11 +681,11 @@ extern int get_usage_for_list(mysql_conn_t *mysql_conn,
 		}
 
 		while((accounting_rec = list_next(u_itr))) {
-			if(id == accounting_rec->id) {
+			if (id == accounting_rec->id) {
 				list_append(acct_list, accounting_rec);
 				list_remove(u_itr);
 				found = 1;
-			} else if(found) {
+			} else if (found) {
 				/* here we know the
 				   list is in id order so
 				   if the next record
@@ -704,7 +704,7 @@ extern int get_usage_for_list(mysql_conn_t *mysql_conn,
 	list_iterator_destroy(itr);
 	list_iterator_destroy(u_itr);
 
-	if(list_count(usage_list))
+	if (list_count(usage_list))
 		error("we have %d records not added "
 		      "to the association list",
 		      list_count(usage_list));
@@ -787,15 +787,15 @@ extern int as_mysql_get_usage(mysql_conn_t *mysql_conn, uid_t uid,
 		break;
 	}
 
-	if(!id) {
+	if (!id) {
 		error("We need an id to set data for getting usage");
 		return SLURM_ERROR;
-	} else if(!cluster_name) {
+	} else if (!cluster_name) {
 		error("We need a cluster_name to set data for getting usage");
 		return SLURM_ERROR;
 	}
 
-	if(check_connection(mysql_conn) != SLURM_SUCCESS)
+	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
 
 	memset(&user, 0, sizeof(slurmdb_user_rec_t));
@@ -803,24 +803,24 @@ extern int as_mysql_get_usage(mysql_conn_t *mysql_conn, uid_t uid,
 
 	private_data = slurm_get_private_data();
 	if (private_data & PRIVATE_DATA_USAGE) {
-		if(!(is_admin = is_user_min_admin_level(
+		if (!(is_admin = is_user_min_admin_level(
 			     mysql_conn, uid, SLURMDB_ADMIN_OPERATOR))) {
 			ListIterator itr = NULL;
 			slurmdb_coord_rec_t *coord = NULL;
 			is_user_any_coord(mysql_conn, &user);
 
-			if(username && !strcmp(slurmdb_assoc->user, user.name))
+			if (username && !strcmp(slurmdb_assoc->user, user.name))
 				goto is_user;
 
-			if(type != DBD_GET_ASSOC_USAGE)
+			if (type != DBD_GET_ASSOC_USAGE)
 				goto bad_user;
 
-			if(!user.coord_accts) {
+			if (!user.coord_accts) {
 				debug4("This user isn't a coord.");
 				goto bad_user;
 			}
 
-			if(!slurmdb_assoc->acct) {
+			if (!slurmdb_assoc->acct) {
 				debug("No account name given "
 				      "in association.");
 				goto bad_user;
@@ -828,11 +828,11 @@ extern int as_mysql_get_usage(mysql_conn_t *mysql_conn, uid_t uid,
 
 			itr = list_iterator_create(user.coord_accts);
 			while((coord = list_next(itr)))
-				if(!strcasecmp(coord->name, slurmdb_assoc->acct))
+				if (!strcasecmp(coord->name, slurmdb_assoc->acct))
 					break;
 			list_iterator_destroy(itr);
 
-			if(coord)
+			if (coord)
 				goto is_user;
 
 		bad_user:
@@ -842,7 +842,7 @@ extern int as_mysql_get_usage(mysql_conn_t *mysql_conn, uid_t uid,
 	}
 is_user:
 
-	if(set_usage_information(&my_usage_table, type, &start, &end)
+	if (set_usage_information(&my_usage_table, type, &start, &end)
 	   != SLURM_SUCCESS) {
 		return SLURM_ERROR;
 	}
@@ -882,14 +882,14 @@ is_user:
 	xfree(tmp);
 	debug4("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, THIS_FILE, __LINE__, query);
-	if(!(result = mysql_db_query_ret(
+	if (!(result = mysql_db_query_ret(
 		     mysql_conn->db_conn, query, 0))) {
 		xfree(query);
 		return SLURM_ERROR;
 	}
 	xfree(query);
 
-	if(!(*my_list))
+	if (!(*my_list))
 		(*my_list) = list_create(slurmdb_destroy_accounting_rec);
 
 	while((row = mysql_fetch_row(result))) {
@@ -917,7 +917,7 @@ extern int as_mysql_roll_usage(mysql_conn_t *mysql_conn,
 	pthread_cond_t rolledup_cond;
 	//DEF_TIMERS;
 
-	if(check_connection(mysql_conn) != SLURM_SUCCESS)
+	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
 
 	slurm_mutex_lock(&usage_rollup_lock);

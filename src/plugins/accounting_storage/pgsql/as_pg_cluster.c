@@ -128,7 +128,7 @@ as_pg_add_clusters(pgsql_conn_t *pg_conn, uint32_t uid,
 	user_name = uid_to_string((uid_t) uid);
 	itr = list_iterator_create(cluster_list);
 	while((object = list_next(itr))) {
-		if(!object->name) {
+		if (!object->name) {
 			error("as/pg: add_clusters: We need a cluster "
 			      "name to add.");
 			rc = SLURM_ERROR;
@@ -140,7 +140,7 @@ as_pg_add_clusters(pgsql_conn_t *pg_conn, uint32_t uid,
 			now, now, object->name,
 			object->classification);
 		rc = DEF_QUERY_RET_RC;
-		if(rc != SLURM_SUCCESS) {
+		if (rc != SLURM_SUCCESS) {
 			error("Couldn't add cluster %s", object->name);
 			added = 0; /* rollback modification to DB */
 			break;
@@ -173,7 +173,7 @@ as_pg_add_clusters(pgsql_conn_t *pg_conn, uint32_t uid,
 		assoc->cluster = xstrdup(object->name);
 		assoc->user = xstrdup("root");
 		assoc->acct = xstrdup("root");
-		if(acct_storage_p_add_associations(pg_conn, uid, assoc_list)
+		if (acct_storage_p_add_associations(pg_conn, uid, assoc_list)
 		   == SLURM_ERROR) {
 			error("Problem adding root user association");
 			rc = SLURM_ERROR;
@@ -184,8 +184,8 @@ as_pg_add_clusters(pgsql_conn_t *pg_conn, uint32_t uid,
 	xfree(user_name);
 	list_destroy(assoc_list);
 
-	if(!added) {
-		if(pg_conn->rollback) {
+	if (!added) {
+		if (pg_conn->rollback) {
 			pgsql_db_rollback(pg_conn->db_conn);
 		}
 		list_flush(pg_conn->update_list);
@@ -224,48 +224,48 @@ as_pg_modify_clusters(pgsql_conn_t *pg_conn, uint32_t uid,
 		return NULL;
 	}
 
-	if(check_db_connection(pg_conn) != SLURM_SUCCESS)
+	if (check_db_connection(pg_conn) != SLURM_SUCCESS)
 		return NULL;
 
-	if(!pg_conn->cluster_name
+	if (!pg_conn->cluster_name
 	   && cluster_cond->cluster_list
 	   && list_count(cluster_cond->cluster_list))
 		pg_conn->cluster_name =
 			xstrdup(list_peek(cluster_cond->cluster_list));
 
 	concat_cond_list(cluster_cond->cluster_list, NULL, "name", &cond);
-	if(cluster_cond->classification) {
+	if (cluster_cond->classification) {
 		xstrfmtcat(cond, " AND (classification & %u)",
 			   cluster_cond->classification);
 	}
 
 	set = 0;
-	if(cluster->control_host) {
+	if (cluster->control_host) {
 		xstrfmtcat(vals, ", control_host='%s'", cluster->control_host);
 		set++;
 		clust_reg = true;
 	}
-	if(cluster->control_port) {
+	if (cluster->control_port) {
 		xstrfmtcat(vals, ", control_port=%u", cluster->control_port);
 		set++;
 		clust_reg = true;
 	}
-	if(cluster->rpc_version) {
+	if (cluster->rpc_version) {
 		xstrfmtcat(vals, ", rpc_version=%u", cluster->rpc_version);
 		set++;
 		clust_reg = true;
 	}
-	if(cluster->classification) {
+	if (cluster->classification) {
 		xstrfmtcat(vals, ", classification=%u",
 			   cluster->classification);
 	}
 
-	if(!vals) {
+	if (!vals) {
 		xfree(cond);
 		errno = SLURM_NO_CHANGE_IN_DATA;
 		error("as/pg: modify_clusters: nothing to change");
 		return NULL;
-	} else if(clust_reg && (set != 3)) {
+	} else if (clust_reg && (set != 3)) {
 		xfree(vals);
 		xfree(cond);
 		errno = EFAULT;
@@ -290,7 +290,7 @@ as_pg_modify_clusters(pgsql_conn_t *pg_conn, uint32_t uid,
 	FOR_EACH_ROW {
 		object = xstrdup(ROW(0));
 		list_append(ret_list, object);
-		if(!rc) {
+		if (!rc) {
 			xstrfmtcat(name_char, "name='%s'", object);
 			rc = 1;
 		} else  {
@@ -299,14 +299,14 @@ as_pg_modify_clusters(pgsql_conn_t *pg_conn, uint32_t uid,
 	} END_EACH_ROW;
 	PQclear(result);
 
-	if(!list_count(ret_list)) {
+	if (!list_count(ret_list)) {
 		errno = SLURM_NO_CHANGE_IN_DATA;
 		debug3("as/pg: modify_cluster: nothing effected");
 		xfree(vals);
 		return ret_list;
 	}
 
-	if(vals) {
+	if (vals) {
 		send_char = xstrdup_printf("(%s)", name_char);
 		user_name = uid_to_string((uid_t) uid);
 		rc = pgsql_modify_common(pg_conn, DBD_MODIFY_CLUSTERS, now,
@@ -350,16 +350,16 @@ as_pg_remove_clusters(pgsql_conn_t *pg_conn, uint32_t uid,
 	slurmdb_wckey_cond_t wckey_cond;
 	PGresult *result = NULL;
 
-	if(!cluster_cond) {
+	if (!cluster_cond) {
 		error("as/pg: remove_clusters: we need something to remove");
 		return NULL;
 	}
 
-	if(check_db_connection(pg_conn) != SLURM_SUCCESS)
+	if (check_db_connection(pg_conn) != SLURM_SUCCESS)
 		return NULL;
 
 	concat_cond_list(cluster_cond->cluster_list, NULL, "name", &cond);
-	if(!cond) {
+	if (!cond) {
 		error("as/pg: remove_clusters: nothing to remove");
 		return NULL;
 	}
@@ -378,7 +378,7 @@ as_pg_remove_clusters(pgsql_conn_t *pg_conn, uint32_t uid,
 	FOR_EACH_ROW {
 		char *object = xstrdup(ROW(0));
 		list_append(ret_list, object);
-		if(!rc) {
+		if (!rc) {
 			xstrfmtcat(name_char, "name='%s'", object);
 			xstrfmtcat(cond, "cluster='%s'", object);
 			xstrfmtcat(assoc_char, "t1.cluster='%s'", object);
@@ -391,7 +391,7 @@ as_pg_remove_clusters(pgsql_conn_t *pg_conn, uint32_t uid,
 	} END_EACH_ROW;
 	PQclear(result);
 
-	if(!list_count(ret_list)) {
+	if (!list_count(ret_list)) {
 		errno = SLURM_NO_CHANGE_IN_DATA;
 		debug3("as/pg: remove_clusters: didn't effect anything");
 		return ret_list;
@@ -401,7 +401,7 @@ as_pg_remove_clusters(pgsql_conn_t *pg_conn, uint32_t uid,
 	memset(&wckey_cond, 0, sizeof(slurmdb_wckey_cond_t));
 	wckey_cond.cluster_list = ret_list;
 	tmp_list = acct_storage_p_remove_wckeys(pg_conn, uid, &wckey_cond);
-	if(tmp_list)
+	if (tmp_list)
 		list_destroy(tmp_list);
 
 	/* We should not need to delete any cluster usage just set it
@@ -417,8 +417,8 @@ as_pg_remove_clusters(pgsql_conn_t *pg_conn, uint32_t uid,
 		   cluster_month_table, now, cond);
 	xfree(cond);
 	rc = DEF_QUERY_RET_RC;
-	if(rc != SLURM_SUCCESS) {
-		if(pg_conn->rollback) {
+	if (rc != SLURM_SUCCESS) {
+		if (pg_conn->rollback) {
 			pgsql_db_rollback(pg_conn->db_conn);
 		}
 		list_flush(pg_conn->update_list);
@@ -479,12 +479,12 @@ as_pg_get_clusters(pgsql_conn_t *pg_conn, uid_t uid,
 	if (check_db_connection(pg_conn) != SLURM_SUCCESS)
 		return NULL;
 
-	if(!cluster_cond) {
+	if (!cluster_cond) {
 		xstrcat(cond, "WHERE deleted=0");
 		goto empty;
 	}
 
-	if(cluster_cond->with_deleted)
+	if (cluster_cond->with_deleted)
 		xstrcat(cond, "WHERE (deleted=0 OR deleted=1)");
 	else
 		xstrcat(cond, "WHERE deleted=0");
@@ -501,7 +501,7 @@ empty:
 
 	cluster_list = list_create(slurmdb_destroy_cluster_rec);
 	memset(&assoc_cond, 0, sizeof(slurmdb_association_cond_t));
-	if(cluster_cond) {
+	if (cluster_cond) {
 		/* I don't think we want the with_usage flag here.
 		 * We do need the with_deleted though. */
 		//assoc_cond.with_usage = cluster_cond->with_usage;
@@ -518,7 +518,7 @@ empty:
 		list_append(assoc_cond.cluster_list, cluster->name);
 
 		/* get the usage if requested */
-		if(cluster_cond && cluster_cond->with_usage) {
+		if (cluster_cond && cluster_cond->with_usage) {
 			as_pg_get_usage(pg_conn, uid, cluster,
 				       DBD_GET_CLUSTER_USAGE,
 				       cluster_cond->usage_start,
@@ -534,7 +534,7 @@ empty:
 	} END_EACH_ROW;
 	PQclear(result);
 
-	if(!list_count(assoc_cond.cluster_list)) {
+	if (!list_count(assoc_cond.cluster_list)) {
 		list_destroy(assoc_cond.cluster_list);
 		return cluster_list;
 	}
@@ -551,17 +551,17 @@ empty:
 	list_destroy(assoc_cond.acct_list);
 	list_destroy(assoc_cond.user_list);
 
-	if(!assoc_list)
+	if (!assoc_list)
 		return cluster_list;
 
 	itr = list_iterator_create(cluster_list);
 	assoc_itr = list_iterator_create(assoc_list);
 	while((cluster = list_next(itr))) {
 		while((assoc = list_next(assoc_itr))) {
-			if(strcmp(assoc->cluster, cluster->name))
+			if (strcmp(assoc->cluster, cluster->name))
 				continue;
 
-			if(cluster->root_assoc) {
+			if (cluster->root_assoc) {
 				debug("This cluster %s already has "
 				      "an association.");
 				continue;
@@ -573,7 +573,7 @@ empty:
 	}
 	list_iterator_destroy(itr);
 	list_iterator_destroy(assoc_itr);
-	if(list_count(assoc_list))
+	if (list_count(assoc_list))
 		error("I have %d left over associations",
 		      list_count(assoc_list));
 	list_destroy(assoc_list);

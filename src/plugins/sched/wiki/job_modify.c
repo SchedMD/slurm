@@ -100,7 +100,7 @@ static int	_job_modify(uint32_t jobid, char *bank_ptr,
 	}
 
 	if (bank_ptr) {
-		if(update_job_account("wiki", job_ptr, bank_ptr)
+		if (update_job_account("wiki", job_ptr, bank_ptr)
 		   != SLURM_SUCCESS)
 			return EINVAL;
 		else
@@ -203,7 +203,7 @@ host_fini:	if (rc) {
 		}
 	}
 
-	if(update_accounting) {
+	if (update_accounting) {
 		if (job_ptr->details && job_ptr->details->begin_time) {
 			/* Update job record in accounting to reflect changes */
 			jobacct_storage_g_job_start(acct_db_conn, job_ptr);

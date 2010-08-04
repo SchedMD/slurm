@@ -268,13 +268,13 @@ _lookup_fed_status_tab(int status)
 	int i;
 
 	for(i = 0; i < sizeof(fed_status_tab) / sizeof(fed_status_t); i++) {
-		if(fed_status_tab[i].status_number == status) {
+		if (fed_status_tab[i].status_number == status) {
 			res = fed_status_tab[i].status_msg;
 			break;
 		}
 	}
 
-	if(!res)
+	if (!res)
 		res = fed_status_tab[FED_STATUS_UNKNOWN].status_msg;
 
 	return res;
@@ -311,11 +311,11 @@ char *fed_sprint_jobinfo(fed_jobinfo_t *j, char *buf,
 		j->job_desc,
 		j->window_memory,
 		j->tables_per_task);
-	if(count < 0)
+	if (count < 0)
 		return buf;
 	remaining -= count;
 	tmp += count;
-	if(remaining < 1)
+	if (remaining < 1)
 		return buf;
 
 	return buf;
@@ -446,7 +446,7 @@ static int _set_up_adapter(fed_adapter_t *fed_adapter, char *adapter_name)
 	error_code = ntbl_adapter_resources(NTBL_VERSION,
 					    adapter_name,
 					    &res);
-	if(error_code != NTBL_SUCCESS)
+	if (error_code != NTBL_SUCCESS)
 		return SLURM_ERROR;
 	strncpy(fed_adapter->name,
 		adapter_name,
@@ -467,11 +467,11 @@ static int _set_up_adapter(fed_adapter_t *fed_adapter, char *adapter_name)
 					 &win_count,
 					 &status);
 	umask(fed_umask);
-	if(error_code)
+	if (error_code)
 		slurm_seterrno_ret(ESTATUS);
 	tmp_winlist = (fed_window_t *)xmalloc(sizeof(fed_window_t) *
 					     res.window_count);
-	if(!tmp_winlist)
+	if (!tmp_winlist)
 		slurm_seterrno_ret(ENOMEM);
 	for(i = 0; i < res.window_count; i++) {
 		tmp_winlist[i].id = status->window_id;
@@ -517,7 +517,7 @@ static int _parse_fed_file(hostlist_t *adapter_list)
 		fed_conf = _get_fed_conf();
 
 	tbl = s_p_hashtbl_create(options);
-	if(s_p_parse_file(tbl, NULL, fed_conf) == SLURM_ERROR)
+	if (s_p_parse_file(tbl, NULL, fed_conf) == SLURM_ERROR)
 		fatal("something wrong with opening/reading federation "
 		      "conf file");
 
@@ -552,7 +552,7 @@ _get_adapters(fed_adapter_t *list, int *count)
 
 	adapter_iter = hostlist_iterator_create(adapter_list);
 	for (i = 0; (adapter = hostlist_next(adapter_iter)); i++) {
-		if(_set_up_adapter(list + i, adapter) == SLURM_ERROR)
+		if (_set_up_adapter(list + i, adapter) == SLURM_ERROR)
 			fatal("Failed to set up adapter %s.", adapter);
 		free(adapter);
 	}
@@ -562,7 +562,7 @@ _get_adapters(fed_adapter_t *list, int *count)
 	*count = i;
 	info("Number of adapters is = %d", *count);
 
-	if(!*count)
+	if (!*count)
 		slurm_seterrno_ret(ENOADAPTER);
 
 	return 0;
@@ -597,11 +597,11 @@ fed_alloc_nodeinfo(fed_nodeinfo_t **n)
  	assert(n);
 
 	new = (fed_nodeinfo_t *)xmalloc(sizeof(fed_nodeinfo_t));
-	if(!new)
+	if (!new)
 		slurm_seterrno_ret(ENOMEM);
 	new->adapter_list = (fed_adapter_t *)xmalloc(sizeof(fed_adapter_t)
 		* FED_MAXADAPTERS);
-	if(!new->adapter_list) {
+	if (!new->adapter_list) {
 		xfree(new);
 		slurm_seterrno_ret(ENOMEM);
 	}
@@ -635,7 +635,7 @@ fed_build_nodeinfo(fed_nodeinfo_t *n, char *name)
 	_lock();
 	err = _get_adapters(n->adapter_list, &count);
 	_unlock();
-	if(err != 0)
+	if (err != 0)
 		return err;
 	n->adapter_count = count;
 	return 0;
@@ -803,11 +803,11 @@ fed_print_nodeinfo(fed_nodeinfo_t *n, char *buf, size_t size)
 	count = snprintf(tmp, remaining,
 			 "Node: %s\n",
 			 n->name);
-	if(count < 0)
+	if (count < 0)
 		return buf;
 	remaining -= count;
 	tmp += count;
-	if(remaining < 1)
+	if (remaining < 1)
 		return buf;
 	for(i = 0; i < n->adapter_count; i++) {
 		a = n->adapter_list + i;
@@ -834,11 +834,11 @@ fed_print_nodeinfo(fed_nodeinfo_t *n, char *buf, size_t size)
 			a->name,
 			a->window_count);
 #endif
-		if(count < 0)
+		if (count < 0)
 			return buf;
 		remaining -= count;
 		tmp += count;
-		if(remaining < 1)
+		if (remaining < 1)
 			return buf;
 
 		w = a->window_list;
@@ -847,17 +847,17 @@ fed_print_nodeinfo(fed_nodeinfo_t *n, char *buf, size_t size)
 			count = _print_window_struct(&w[j], tmp, remaining);
 #else
 
-			if(w[j].status != NTBL_UNLOADED_STATE)
+			if (w[j].status != NTBL_UNLOADED_STATE)
 				count = _print_window_struct(&w[j], tmp,
 						remaining);
 			else
 				count = 0;
 #endif
-			if(count < 0)
+			if (count < 0)
 				return buf;
 			remaining -= count;
 			tmp += count;
-			if(remaining < 1)
+			if (remaining < 1)
 				return buf;
 		}
 	}
@@ -934,7 +934,7 @@ _copy_node(fed_nodeinfo_t *dest, fed_nodeinfo_t *src)
 		da->window_count = sa->window_count;
 		da->window_list = (fed_window_t *)xmalloc(sizeof(fed_window_t) *
 			da->window_count);
-		if(!da->window_list) {
+		if (!da->window_list) {
 			slurm_seterrno_ret(ENOMEM);
 		}
 		for(j = 0; j < da->window_count; j++)
@@ -991,7 +991,7 @@ _find_node(fed_libstate_t *lp, char *name)
 		n = lp->hash_table[i];
 		while(n) {
 			assert(n->magic == FED_NODEINFO_MAGIC);
-			if(!strncmp(n->name, name, FED_HOSTLEN))
+			if (!strncmp(n->name, name, FED_HOSTLEN))
 				return n;
 			n = n->next;
 		}
@@ -1010,7 +1010,7 @@ _hash_add_nodeinfo(fed_libstate_t *state, fed_nodeinfo_t *node)
 	assert(state);
 	assert(state->hash_table);
 	assert(state->hash_max >= state->node_count);
-	if(!strlen(node->name))
+	if (!strlen(node->name))
 		return;
 	index = _hash_index(node->name);
 	node->next = state->hash_table[index];
@@ -1028,7 +1028,7 @@ _hash_rebuild(fed_libstate_t *state)
 
 	assert(state);
 
-	if(state->hash_table)
+	if (state->hash_table)
 		xfree(state->hash_table);
 	if (state->node_count > state->hash_max || state->hash_max == 0)
 		state->hash_max += FED_HASHCOUNT;
@@ -1055,25 +1055,25 @@ _alloc_node(fed_libstate_t *lp, char *name)
 
 	assert(lp);
 
-	if(name != NULL) {
+	if (name != NULL) {
 		n = _find_node(lp, name);
-		if(n != NULL)
+		if (n != NULL)
 			return n;
 	}
 
 	fed_need_state_save = true;
 
-	if(lp->node_count >= lp->node_max) {
+	if (lp->node_count >= lp->node_max) {
 		lp->node_max += FED_NODECOUNT;
 		new_bufsize = lp->node_max * sizeof(fed_nodeinfo_t);
-		if(lp->node_list == NULL)
+		if (lp->node_list == NULL)
 			lp->node_list = (fed_nodeinfo_t *)xmalloc(new_bufsize);
 		else
 			lp->node_list = (fed_nodeinfo_t *)xrealloc(lp->node_list,
 								   new_bufsize);
 		need_hash_rebuild = true;
 	}
-	if(lp->node_list == NULL) {
+	if (lp->node_list == NULL) {
 		slurm_seterrno(ENOMEM);
 		return NULL;
 	}
@@ -1084,7 +1084,7 @@ _alloc_node(fed_libstate_t *lp, char *name)
 	n->adapter_list = (fed_adapter_t *)xmalloc(FED_MAXADAPTERS *
 		sizeof(fed_adapter_t));
 
-	if(name != NULL) {
+	if (name != NULL) {
 		strncpy(n->name, name, FED_HOSTLEN);
 		if (need_hash_rebuild || lp->node_count > lp->hash_max)
 			_hash_rebuild(lp);
@@ -1185,10 +1185,10 @@ _unpack_nodeinfo(fed_nodeinfo_t *n, Buf buf, bool believe_window_status)
 	/* Extract node name from buffer
 	 */
 	safe_unpack32(&magic, buf);
-	if(magic != FED_NODEINFO_MAGIC)
+	if (magic != FED_NODEINFO_MAGIC)
 		slurm_seterrno_ret(EBADMAGIC_FEDNODEINFO);
 	safe_unpackmem_ptr(&name_ptr, &size, buf);
-	if(size != FED_HOSTLEN)
+	if (size != FED_HOSTLEN)
 		goto unpack_error;
 	memcpy(name, name_ptr, size);
 
@@ -1229,14 +1229,14 @@ _unpack_nodeinfo(fed_nodeinfo_t *n, Buf buf, bool believe_window_status)
 	/* Update global libstate with this nodes' info.
 	 */
 	tmp_n = _alloc_node(fed_state, name);
-	if(tmp_n == NULL)
+	if (tmp_n == NULL)
 		return SLURM_ERROR;
 	tmp_n->magic = magic;
 	safe_unpack32(&tmp_n->adapter_count, buf);
 	for(i = 0; i < tmp_n->adapter_count; i++) {
 		tmp_a = tmp_n->adapter_list + i;
 		safe_unpackmem_ptr(&name_ptr, &size, buf);
-		if(size != FED_ADAPTERNAME_LEN)
+		if (size != FED_ADAPTERNAME_LEN)
 			goto unpack_error;
 		memcpy(tmp_a->name, name_ptr, size);
 		safe_unpack16(&tmp_a->lid, buf);
@@ -1247,7 +1247,7 @@ _unpack_nodeinfo(fed_nodeinfo_t *n, Buf buf, bool believe_window_status)
 		safe_unpack32(&tmp_a->window_count, buf);
 		tmp_w = (fed_window_t *)xmalloc(sizeof(fed_window_t) *
 			tmp_a->window_count);
-		if(!tmp_w)
+		if (!tmp_w)
 			slurm_seterrno_ret(ENOMEM);
 		for(j = 0; j < tmp_a->window_count; j++) {
 			safe_unpack16(&tmp_w[j].id, buf);
@@ -1264,8 +1264,8 @@ _unpack_nodeinfo(fed_nodeinfo_t *n, Buf buf, bool believe_window_status)
 
 copy_node:
 	/* Only copy the node_info structure if the caller wants it */
-	if(n != NULL)
-		if(_copy_node(n, tmp_n) != SLURM_SUCCESS)
+	if (n != NULL)
+		if (_copy_node(n, tmp_n) != SLURM_SUCCESS)
 			return SLURM_ERROR;
 
 #if FED_DEBUG
@@ -1302,12 +1302,12 @@ fed_free_nodeinfo(fed_nodeinfo_t *n, bool ptr_into_array)
 	fed_adapter_t *adapter;
 	int i;
 
-	if(!n)
+	if (!n)
 		return;
 
 	assert(n->magic == FED_NODEINFO_MAGIC);
 
-	if(n->adapter_list) {
+	if (n->adapter_list) {
 		adapter = n->adapter_list;
 		for (i = 0; i < n->adapter_count; i++) {
 			xfree(adapter[i].window_list);
@@ -1397,7 +1397,7 @@ _allocate_windows_all(int adapter_cnt, fed_tableinfo_t *tableinfo,
 	assert(hostname);
 
 	node = _find_node(fed_state, hostname);
-	if(node == NULL) {
+	if (node == NULL) {
 		error("Failed to find node in node_list: %s", hostname);
 		return SLURM_ERROR;
 	}
@@ -1449,7 +1449,7 @@ _allocate_window_single(char *adapter_name, fed_tableinfo_t *tableinfo,
 
 	debug("in _allocate_window_single");
 	node = _find_node(fed_state, hostname);
-	if(node == NULL) {
+	if (node == NULL) {
 		error("Failed to find node in node_list: %s", hostname);
 		return SLURM_ERROR;
 	}
@@ -1656,10 +1656,10 @@ _job_step_window_state(fed_jobinfo_t *jp, hostlist_t hl, enum NTBL_RC state)
 	_lock();
 	for  (i = 0; i < nnodes; i++) {
 		host = hostlist_next(hi);
-		if(!host)
+		if (!host)
 			error("Failed to get next host");
 
-		if(i < full_node_cnt)
+		if (i < full_node_cnt)
 			task_cnt = max_procs_per_node;
 		else
 			task_cnt = min_procs_per_node;
@@ -1827,7 +1827,7 @@ fed_build_jobinfo(fed_jobinfo_t *jp, hostlist_t hl, int nprocs,
 	assert(jp->magic == FED_JOBINFO_MAGIC);
 	assert(!hostlist_is_empty(hl));
 
-	if(nprocs <= 0)
+	if (nprocs <= 0)
 		slurm_seterrno_ret(EINVAL);
 
 	jp->bulk_xfer = (uint8_t) bulk_xfer;
@@ -1879,10 +1879,10 @@ fed_build_jobinfo(fed_jobinfo_t *jp, hostlist_t hl, int nprocs,
 	_lock();
 	for  (i = 0; i < nnodes; i++) {
 		host = hostlist_next(hi);
-		if(!host)
+		if (!host)
 			error("Failed to get next host");
 
-		if(i < full_node_cnt)
+		if (i < full_node_cnt)
 			task_cnt = max_procs_per_node;
 		else
 			task_cnt = min_procs_per_node;
@@ -2005,7 +2005,7 @@ fed_unpack_jobinfo(fed_jobinfo_t *j, Buf buf)
 	assert(j->magic == FED_JOBINFO_MAGIC);
 	safe_unpack16(&j->job_key, buf);
 	safe_unpackmem(j->job_desc, &size, buf);
-	if(size != DESCLEN)
+	if (size != DESCLEN)
 		goto unpack_error;
 	safe_unpack32(&j->window_memory, buf);
 	safe_unpack8(&j->bulk_xfer, buf);
@@ -2013,7 +2013,7 @@ fed_unpack_jobinfo(fed_jobinfo_t *j, Buf buf)
 
 	j->tableinfo = (fed_tableinfo_t *) xmalloc(j->tables_per_task
 						   * sizeof(fed_tableinfo_t));
-	if(!j->tableinfo)
+	if (!j->tableinfo)
 		slurm_seterrno_ret(ENOMEM);
 	for (i = 0; i < j->tables_per_task; i++) {
 		if (_unpack_tableinfo(&j->tableinfo[i], buf) != 0)
@@ -2046,7 +2046,7 @@ fed_copy_jobinfo(fed_jobinfo_t *job)
 	assert(job);
 	assert(job->magic == FED_JOBINFO_MAGIC);
 
-	if(fed_alloc_jobinfo(&new)) {
+	if (fed_alloc_jobinfo(&new)) {
 		debug("fed_alloc_jobinfo failed");
 		goto cleanup1;
 	}
@@ -2310,10 +2310,10 @@ fed_load_table(fed_jobinfo_t *jp, int uid, int pid)
 		if (rc != SLURM_SUCCESS)
 			return rc;
 
-		if(adapter == NULL)
+		if (adapter == NULL)
 			continue;
 		winmem = jp->window_memory;
-		if(jp->bulk_xfer) {
+		if (jp->bulk_xfer) {
 			if (i == 0) {
 				rc = _check_rdma_job_count(adapter);
 				if (rc != SLURM_SUCCESS)
@@ -2345,7 +2345,7 @@ fed_load_table(fed_jobinfo_t *jp, int uid, int pid)
 				jp->tableinfo[i].table_length,
 				jp->tableinfo[i].table);
 		}
-		if(err != NTBL_SUCCESS) {
+		if (err != NTBL_SUCCESS) {
 			error("unable to load table: [%d] %s",
 			      err, _lookup_fed_status_tab(err));
 			return SLURM_ERROR;
@@ -2415,7 +2415,7 @@ fed_unload_table(fed_jobinfo_t *jp)
 		local_lid = _get_lid_from_adapter(adapter_name);
 
 		for(j = 0; j < table_length; j++) {
-			if(table[j]->lid != local_lid)
+			if (table[j]->lid != local_lid)
 				continue;
 			debug3("freeing adapter %s lid %d window %d job_key %d",
 			       adapter_name, table[j]->lid,
@@ -2424,7 +2424,7 @@ fed_unload_table(fed_jobinfo_t *jp)
 					     jp->job_key,
 					     table[j]->window_id,
 					     retry);
-			if(err != SLURM_SUCCESS) {
+			if (err != SLURM_SUCCESS) {
 				rc = err;
 				slurm_seterrno(EUNLOAD);
 				retry = 2;
@@ -2440,7 +2440,7 @@ _alloc_libstate(void)
 	fed_libstate_t *tmp;
 
 	tmp = (fed_libstate_t *)xmalloc(sizeof(fed_libstate_t));
-	if(!tmp) {
+	if (!tmp) {
 		slurm_seterrno(ENOMEM);
 		return NULL;
 	}
@@ -2465,7 +2465,7 @@ fed_init(void)
 	fed_libstate_t *tmp;
 
 	tmp = _alloc_libstate();
-	if(!tmp)
+	if (!tmp)
 		return SLURM_FAILURE;
 	_lock();
 	assert(!fed_state);
@@ -2555,7 +2555,7 @@ _unpack_libstate(fed_libstate_t *lp, Buf buffer)
 		if (_unpack_nodeinfo(NULL, buffer, false) != SLURM_SUCCESS)
 			goto unpack_error;
 	}
-	if(lp->node_count != node_count) {
+	if (lp->node_count != node_count) {
 		error("Failed to recover switch state of all nodes (%d of %u)",
 		      lp->node_count, node_count);
 		return SLURM_ERROR;
@@ -2578,7 +2578,7 @@ fed_libstate_restore(Buf buffer)
 	assert(!fed_state);
 
 	fed_state = _alloc_libstate();
-	if(!fed_state) {
+	if (!fed_state) {
 		error("fed_libstate_restore fed_state is NULL");
 		_unlock();
 		return SLURM_FAILURE;

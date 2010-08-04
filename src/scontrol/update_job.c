@@ -425,7 +425,7 @@ scontrol_update_job (int argc, char *argv[])
 				(int *)&job_msg.min_nodes,
 				(int *)&job_msg.max_nodes,
 				false);
-			if(!rc)
+			if (!rc)
 				return rc;
 			update_size = true;
 			update_cnt++;
@@ -598,7 +598,7 @@ scontrol_update_job (int argc, char *argv[])
 		}
 		else if (strncasecmp(tag, "Conn-Type", MAX(taglen, 2)) == 0) {
 			job_msg.conn_type = verify_conn_type(val);
-			if(job_msg.conn_type != (uint16_t)NO_VAL)
+			if (job_msg.conn_type != (uint16_t)NO_VAL)
 				update_cnt++;
 		}
 		else if (strncasecmp(tag, "Licenses", MAX(taglen, 1)) == 0) {
@@ -607,8 +607,8 @@ scontrol_update_job (int argc, char *argv[])
 		}
 		else if (!strncasecmp(tag, "EligibleTime", MAX(taglen, 2)) ||
 			 !strncasecmp(tag, "StartTime",    MAX(taglen, 2))) {
-			if((job_msg.begin_time = parse_time(val, 0))) {
-				if(job_msg.begin_time < time(NULL))
+			if ((job_msg.begin_time = parse_time(val, 0))) {
+				if (job_msg.begin_time < time(NULL))
 					job_msg.begin_time = time(NULL);
 				update_cnt++;
 			}

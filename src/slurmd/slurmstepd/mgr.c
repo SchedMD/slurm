@@ -248,7 +248,7 @@ batch_finish(slurmd_job_t *job, int rc)
 	for (i = 0; i < job->node_tasks; i++) {
 		/* If signalled we only need to check one and then
 		 * break out of the loop */
-		if(WIFSIGNALED(job->task[i]->estatus)) {
+		if (WIFSIGNALED(job->task[i]->estatus)) {
 			switch(WTERMSIG(job->task[i]->estatus)) {
 			case SIGTERM:
 			case SIGKILL:
@@ -490,7 +490,7 @@ _setup_normal_io(slurmd_job_t *job)
 			}
 		}
 
-		if(io_initial_client_connect(srun, job, srun_stdout_tasks,
+		if (io_initial_client_connect(srun, job, srun_stdout_tasks,
 					     srun_stderr_tasks) < 0) {
 			rc = ESLURMD_IO_ERROR;
 			goto claim;
@@ -628,7 +628,7 @@ _wait_for_children_slurmstepd(slurmd_job_t *job)
 	for (i = 0; i < job->node_tasks; i++) {
 		/* If signalled we only need to check one and then
 		   break out of the loop */
-		if(WIFSIGNALED(job->task[i]->estatus)) {
+		if (WIFSIGNALED(job->task[i]->estatus)) {
 			switch(WTERMSIG(job->task[i]->estatus)) {
 			case SIGTERM:
 			case SIGKILL:
@@ -675,7 +675,7 @@ _one_step_complete_msg(slurmd_job_t *job, int first, int last)
 	msg.step_rc = step_complete.step_rc;
 	msg.jobacct = jobacct_gather_g_create(NULL);
 	/************* acct stuff ********************/
-	if(!acct_sent) {
+	if (!acct_sent) {
 		jobacct_gather_g_aggregate(step_complete.jobacct, job->jobacct);
 		jobacct_gather_g_getinfo(step_complete.jobacct,
 					 JOBACCT_DATA_TOTAL, msg.jobacct);
@@ -869,7 +869,7 @@ job_manager(slurmd_job_t *job)
 	/*
 	 * Initialize log facility to copy errors back to srun
 	 */
-	if(!rc)
+	if (!rc)
 		rc = _slurmd_job_log_init(job);
 
 	if (rc) {
@@ -915,7 +915,7 @@ job_manager(slurmd_job_t *job)
 	/* if we are not polling then we need to make sure we get some
 	 * information here
 	 */
-	if(!conf->job_acct_gather_freq)
+	if (!conf->job_acct_gather_freq)
 		jobacct_gather_g_stat_task(0);
 
 	/* Send job launch response with list of pids */
@@ -1372,7 +1372,7 @@ _wait_for_any_task(slurmd_job_t *job, bool waitflag)
 
 		/************* acct stuff ********************/
 		jobacct = jobacct_gather_g_remove_task(pid);
-		if(jobacct) {
+		if (jobacct) {
 			jobacct_gather_g_setinfo(jobacct,
 						 JOBACCT_DATA_RUSAGE, &rusage);
 			jobacct_gather_g_aggregate(job->jobacct, jobacct);
@@ -1745,7 +1745,7 @@ _drop_privileges(slurmd_job_t *job, bool do_setuid, struct priv_state *ps)
 
 	ps->gid_list = (gid_t *) xmalloc(ps->ngids * sizeof(gid_t));
 
-	if(getgroups(ps->ngids, ps->gid_list) == -1) {
+	if (getgroups(ps->ngids, ps->gid_list) == -1) {
 		error("_drop_privileges: couldn't get %d groups: %m",
 		      ps->ngids);
 		xfree(ps->gid_list);
@@ -2040,7 +2040,7 @@ _run_script_as_user(const char *name, const char *path, slurmd_job_t *job,
 			exit(127);
 		}
 
-		if(chdir(job->cwd) == -1)
+		if (chdir(job->cwd) == -1)
 			error("run_script_as_user: couldn't "
 			      "change working dir to %s: %m", job->cwd);
 #ifdef SETPGRP_TWO_ARGS

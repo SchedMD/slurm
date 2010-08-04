@@ -262,7 +262,7 @@ int init (void)
 	 */
 	rc = (int) lua_tonumber (L, -1);
 	lua_pop (L, 1);
-	if(rc != SLURM_SUCCESS)
+	if (rc != SLURM_SUCCESS)
 		return rc;
 
 	/*
