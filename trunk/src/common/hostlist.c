@@ -607,7 +607,7 @@ static int host_prefix_end(const char *hostname)
 
 	len = strlen(hostname);
 
-	if(dims > 1) {
+	if (dims > 1) {
 		idx = len - 1;
 
 		while (idx >= 0) {
@@ -665,7 +665,7 @@ static hostname_t hostname_create(const char *hostname)
 
 	hn->suffix = hn->hostname + idx + 1;
 
-	if((dims > 1) && (strlen(hn->suffix) != dims))
+	if ((dims > 1) && (strlen(hn->suffix) != dims))
 		hostlist_base = 10;
 
 	hn->num = strtoul(hn->suffix, &p, hostlist_base);
@@ -958,7 +958,7 @@ static char *hostrange_pop(hostrange_t hr)
 		size = strlen(hr->prefix) + hr->width + 16;
 		if (!(host = (char *) malloc(size * sizeof(char))))
 			out_of_memory("hostrange pop");
-		if(dims > 1) {
+		if (dims > 1) {
 			if (hr->width == dims) {
 				int len = 0;
 				int i2=0;
@@ -969,7 +969,7 @@ static char *hostrange_pop(hostrange_t hr)
 
 				len = snprintf(host, size, "%s", hr->prefix);
 				for(i2 = 0; i2<dims; i2++) {
-					if(len <= size)
+					if (len <= size)
 						host[len++] =
 							alpha_num[coord[i2]];
 				}
@@ -1005,7 +1005,7 @@ static char *hostrange_shift(hostrange_t hr)
 		size = strlen(hr->prefix) + hr->width + 16;
 		if (!(host = (char *) malloc(size * sizeof(char))))
 			out_of_memory("hostrange shift");
-		if(dims > 1) {
+		if (dims > 1) {
 			if (hr->width == dims) {
 				int len = 0;
 				int i2=0;
@@ -1016,7 +1016,7 @@ static char *hostrange_shift(hostrange_t hr)
 
 				len = snprintf(host, size, "%s", hr->prefix);
 				for(i2 = 0; i2<dims; i2++) {
-					if(len <= size)
+					if (len <= size)
 						host[len++] =
 							alpha_num[coord[i2]];
 				}
@@ -1181,7 +1181,7 @@ hostrange_to_string(hostrange_t hr, size_t n, char *buf, char *separator)
 	for (i = hr->lo; i <= hr->hi; i++) {
 		size_t m = (n - len) <= n ? n - len : 0; /* check for < 0 */
 		int ret = 0;
-		if(dims > 1) {
+		if (dims > 1) {
 			if (hr->width == dims) {
 				int i2=0;
 				int coord[dims];
@@ -1190,7 +1190,7 @@ hostrange_to_string(hostrange_t hr, size_t n, char *buf, char *separator)
 					i, coord, dims, 0);
 				ret = snprintf(buf+len, m, "%s", hr->prefix);
 				for(i2 = 0; i2<dims; i2++) {
-					if(len+ret < n)
+					if (len+ret < n)
 						buf[len+ret] =
 							alpha_num[coord[i2]];
 					ret++;
@@ -1237,7 +1237,7 @@ static size_t hostrange_numstr(hostrange_t hr, size_t n, char *buf)
 	if (hr->singlehost || n == 0)
 		return 0;
 
-	if(dims > 1) {
+	if (dims > 1) {
 		if (hr->width == dims) {
 			int i2=0;
 			int coord[dims];
@@ -1246,7 +1246,7 @@ static size_t hostrange_numstr(hostrange_t hr, size_t n, char *buf)
 				hr->lo, coord, dims, 0);
 
 			for(i2 = 0; i2<dims; i2++) {
-				if(len <= n)
+				if (len <= n)
 					buf[len++] = alpha_num[coord[i2]];
 			}
 			buf[len] = '\0';
@@ -1259,7 +1259,7 @@ static size_t hostrange_numstr(hostrange_t hr, size_t n, char *buf)
 
 	if ((len >= 0) && (len < n) && (hr->lo < hr->hi)) {
 		int len2 = 0;
-		if(dims > 1) {
+		if (dims > 1) {
 			if (hr->width == dims) {
 				int i2=0;
 				int coord[dims];
@@ -1269,7 +1269,7 @@ static size_t hostrange_numstr(hostrange_t hr, size_t n, char *buf)
 
 				buf[len++] = '-';
 				for(i2 = 0; i2<dims; i2++) {
-					if(len <= n)
+					if (len <= n)
 						buf[len++] =
 							alpha_num[coord[i2]];
 				}
@@ -1505,8 +1505,8 @@ hostlist_t _hostlist_create(const char *hostlist, char *sep, char *r_op)
 
 	if (hostlist == NULL)
 		return new;
-	if(working_cluster_rec) {
-		if(working_cluster_rec->dimensions > 1)
+	if (working_cluster_rec) {
+		if (working_cluster_rec->dimensions > 1)
 			fatal("WANT_RECKLESS_HOSTRANGE_EXPANSION does not "
 			      "work on Mulitdimentional systems!!!!");
 	} else {
@@ -1629,7 +1629,7 @@ hostlist_t _hostlist_create(const char *hostlist, char *sep, char *r_op)
 	}
 
 done:
-	if(orig)
+	if (orig)
 		free(orig);
 
 	return new;
@@ -1656,7 +1656,7 @@ static int _parse_box_range(char *str, struct _range *ranges,
 	char coord2[dims+1];
 	int i, a;
 
-	if(dims <= 1)
+	if (dims <= 1)
 		fatal("Unsupported dimensions count %d", dims);
 
 	if ((str[dims] != 'x') ||
@@ -1717,12 +1717,12 @@ static int _parse_single_range(const char *str, struct _range *range)
 
 	range->width = strlen(str);
 
-	if(dims > 1) {
+	if (dims > 1) {
 		/* If we get something here where the width is not
 		   SYSTEM_DIMENSIONS we need to treat it as a regular number
 		   since that is how it will be treated in the future.
 		*/
-		if(range->width != dims)
+		if (range->width != dims)
 			hostlist_base = 10;
 	}
 	range->lo = strtoul(str, &q, hostlist_base);
@@ -1891,7 +1891,7 @@ _hostlist_create_bracketed(const char *hostlist, char *sep, char *r_op)
 				 * wanted. We will just tack one on
 				 * the end. */
 				strcat(cur_tok, "]");
-				if(prefix && prefix[0])
+				if (prefix && prefix[0])
 					hostlist_push_host(new, cur_tok);
 				else
 					hostlist_push_host(new, p);
@@ -2029,7 +2029,7 @@ int hostlist_push_list(hostlist_t h1, hostlist_t h2)
 char *hostlist_pop(hostlist_t hl)
 {
 	char *host = NULL;
-	if(!hl) {
+	if (!hl) {
 		error("hostlist_pop: no hostlist given");
 		return NULL;
 	}
@@ -2054,7 +2054,7 @@ static void
 hostlist_shift_iterators(hostlist_t hl, int idx, int depth, int n)
 {
 	hostlist_iterator_t i;
-	if(!hl) {
+	if (!hl) {
 		error("hostlist_shift_iterators: no hostlist given");
 		return;
 	}
@@ -2077,7 +2077,7 @@ char *hostlist_shift(hostlist_t hl)
 {
 	char *host = NULL;
 
-	if(!hl){
+	if (!hl){
 		error("hostlist_shift: no hostlist given");
 		return NULL;
 	}
@@ -2109,7 +2109,7 @@ char *hostlist_pop_range(hostlist_t hl)
 	hostlist_t hltmp;
 	hostrange_t tail;
 
-	if(!hl)
+	if (!hl)
 		return NULL;
 	LOCK_HOSTLIST(hl);
 	if (hl->nranges < 1 || !(hltmp = hostlist_new())) {
@@ -2184,7 +2184,7 @@ int hostlist_delete(hostlist_t hl, const char *hosts)
 	int n = 0;
 	char *hostname = NULL;
 	hostlist_t hltmp;
-	if(!hl)
+	if (!hl)
 		return -1;
 
 	if (!(hltmp = hostlist_create(hosts)))
@@ -2205,7 +2205,7 @@ int hostlist_delete_host(hostlist_t hl, const char *hostname)
 {
 	int n;
 
-	if(!hl)
+	if (!hl)
 		return -1;
 	n = hostlist_find(hl, hostname);
 
@@ -2232,7 +2232,7 @@ _hostrange_string(hostrange_t hr, int depth)
 					(hr->lo+depth), coord, dims, 0);
 
 				for(i2 = 0; i2<dims; i2++) {
-					if(len <= (MAXHOSTNAMELEN + 15))
+					if (len <= (MAXHOSTNAMELEN + 15))
 						buf[len++] =
 							alpha_num[coord[i2]];
 				}
@@ -2254,7 +2254,7 @@ char * hostlist_nth(hostlist_t hl, int n)
 	char *host = NULL;
 	int   i, count;
 
-	if(!hl)
+	if (!hl)
 		return NULL;
 	LOCK_HOSTLIST(hl);
 	count = 0;
@@ -2278,7 +2278,7 @@ int hostlist_delete_nth(hostlist_t hl, int n)
 {
 	int i, count;
 
-	if(!hl)
+	if (!hl)
 		return -1;
 	LOCK_HOSTLIST(hl);
 	assert(n >= 0 && n <= hl->nhosts);
@@ -2316,7 +2316,7 @@ done:
 int hostlist_count(hostlist_t hl)
 {
 	int retval;
-	if(!hl)
+	if (!hl)
 		return -1;
 
 	LOCK_HOSTLIST(hl);
@@ -2536,8 +2536,8 @@ ssize_t hostlist_deranged_string(hostlist_t hl, size_t n, char *buf)
 int hostlist_get_base()
 {
 	int hostlist_base;
-	if(working_cluster_rec) {
-		if(working_cluster_rec->dimensions > 1)
+	if (working_cluster_rec) {
+		if (working_cluster_rec->dimensions > 1)
 			hostlist_base = 36;
 		else
 			hostlist_base = 10;
@@ -2558,10 +2558,10 @@ void hostlist_parse_int_to_array(int in, int *out, int dims, int hostlist_base)
         int my_pow_minus = my_start_pow_minus;
 	int my_pow = my_start_pow;
 
-	if(!hostlist_base)
+	if (!hostlist_base)
 		hostlist_base = hostlist_get_base();
 
-	if(!my_start_pow || (last_dims != dims)) {
+	if (!my_start_pow || (last_dims != dims)) {
 		/* this will never change so just calculate it once */
 		my_start_pow = 1;
 
@@ -2581,13 +2581,13 @@ void hostlist_parse_int_to_array(int in, int *out, int dims, int hostlist_base)
 		/* This only needs to be done until we get a 0 here
 		   meaning we are on the last dimension. This avoids
 		   dividing by 0. */
-		if(dims - a) {
+		if (dims - a) {
 			out[a] /= my_pow_minus;
 			/* set this up for the next dimension */
 			my_pow = my_pow_minus;
 			my_pow_minus /= hostlist_base;
 		}
-		if(out[a] < 0) {
+		if (out[a] < 0) {
 			error("Dim %d returned negitive %d from %d %d %d",
 			      a, out[a], in, my_pow, my_pow_minus);
 			xassert(0);
@@ -2670,15 +2670,15 @@ static int _tell_if_used(int dim, int curr,
 
 	for (last[dim]=start[dim]; last[dim]<=grid_end[dim]; last[dim]++) {
 		curr = start_curr + (last[dim] * offset[dim]);
-		if(dim == (dims-1)) {
+		if (dim == (dims-1)) {
 			if (!grid[curr]) {
 /* 				for(i = 0; i<dims; i++) { */
 /* 					coord[i] = alpha_num[last[i]]; */
 /* 				} */
 /* 				info("%s not used", coord); */
-				if((*found) == -1)
+				if ((*found) == -1)
 					continue;
-				else if(end[dim] < grid_end[dim]) {
+				else if (end[dim] < grid_end[dim]) {
 					/* try to get a box out of
 					   this slice. */
 					grid_end[dim] = end[dim];
@@ -2690,7 +2690,7 @@ static int _tell_if_used(int dim, int curr,
 /* 				coord[i] = alpha_num[last[i]]; */
 /* 			} */
 /* 			info("%s used", coord); */
-			if((*found) == -1) {
+			if ((*found) == -1) {
 /* 				for(i = 0; i<dims; i++) { */
 /* 					coord[i] = alpha_num[last[i]]; */
 /* 				} */
@@ -2698,7 +2698,7 @@ static int _tell_if_used(int dim, int curr,
 				memcpy(start, last, dim_grid_size);
 				memcpy(end, last, dim_grid_size);
 				(*found) = dims;
-			} else if((*found) >= dim) {
+			} else if ((*found) >= dim) {
 /* 				for(i = 0; i<dims; i++) { */
 /* 					coord[i] = alpha_num[last[i]]; */
 /* 				} */
@@ -2707,19 +2707,19 @@ static int _tell_if_used(int dim, int curr,
 				(*found) = dim;
 			}
 		} else {
-			if((rc = _tell_if_used(dim+1, curr,
+			if ((rc = _tell_if_used(dim+1, curr,
 					       start, end,
 					       last, found)) != 1) {
 				return rc;
 			}
-			if((*found) >= dim) {
+			if ((*found) >= dim) {
 /* 				for(i = 0; i<dims; i++) { */
 /* 					coord[i] = alpha_num[last[i]]; */
 /* 				} */
 /* 				info("%d here %s", dim, coord); */
 				memcpy(end, last, dim_grid_size);
 				(*found) = dim;
-			} else if((*found) == -1)
+			} else if ((*found) == -1)
 				start[dim] = grid_start[dim];
 		}
 	}
@@ -2749,7 +2749,7 @@ static int _get_next_box(int *start,
 /* 	memset(coord2, 0, sizeof(coord2)); */
 
 again:
-	if(start[A] == -1) {
+	if (start[A] == -1) {
 		memcpy(start, grid_start, dim_grid_size);
 		/* We need to keep track of this to make sure we get
 		   all the nodes marked since this could change based
@@ -2786,7 +2786,7 @@ again:
 	_set_min_max_of_grid(A, 0, grid_start, orig_grid_end,
 			     new_min, new_max, pos);
 
-	if(new_max[A] != -1) {
+	if (new_max[A] != -1) {
 /* 		for(i = 0; i<dims; i++) { */
 /* 			coord[i] = alpha_num[new_min[i]]; */
 /* 			coord2[i] = alpha_num[new_max[i]]; */
@@ -2799,7 +2799,7 @@ again:
 /* 		for(i = 0; i<dims; i++)  */
 /* 			coord[i] = alpha_num[last[i]]; */
 /* 		info("next start %s", coord); */
-		if(found == -1) {
+		if (found == -1) {
 			/* There are still nodes set in the grid, so we need
 			   to go through them again to make sure we got all
 			   the nodes that weren't included in the boxes of
@@ -2808,7 +2808,7 @@ again:
 		}
 	}
 
-	if(found != -1)
+	if (found != -1)
 		rc = 1;
 
 	return rc;
@@ -2838,7 +2838,7 @@ _get_boxes(char *buf, int max_len)
 	curr_min[A] = -1;
 
 /* 	for(i=0; i<HOSTLIST_BASE*HOSTLIST_BASE*HOSTLIST_BASE*HOSTLIST_BASE; i++) { */
-/* 		if(grid[i]) */
+/* 		if (grid[i]) */
 /* 			info("got one at %d", i); */
 /* 	} */
 
@@ -2848,30 +2848,30 @@ _get_boxes(char *buf, int max_len)
 /* 			coord2[i] = alpha_num[curr_max[i]]; */
 /* 		} */
 /* 		info("%sx%s is a box", coord, coord2); */
-		if(!memcmp(curr_min, curr_max, dim_grid_size)) {
+		if (!memcmp(curr_min, curr_max, dim_grid_size)) {
 			for(i = 0; i<dims; i++) {
-				if(len >= max_len)
+				if (len >= max_len)
 					goto end_it;
 				buf[len++] = alpha_num[curr_min[i]];
 			}
-			if(len >= max_len)
+			if (len >= max_len)
 				goto end_it;
 			buf[len++] = ',';
 		} else {
 			for(i = 0; i<dims; i++) {
-				if(len >= max_len)
+				if (len >= max_len)
 					goto end_it;
 				buf[len++] = alpha_num[curr_min[i]];
 			}
-			if(len >= max_len)
+			if (len >= max_len)
 				goto end_it;
 			buf[len++] = 'x';
 			for(i = 0; i<dims; i++) {
-				if(len >= max_len)
+				if (len >= max_len)
 					goto end_it;
 				buf[len++] = alpha_num[curr_max[i]];
 			}
-			if(len >= max_len)
+			if (len >= max_len)
 				goto end_it;
 			buf[len++] = ',';
 		}
@@ -2896,7 +2896,7 @@ _set_box_in_grid(int dim, int curr, int *start,
 
 	for (i=start[dim]; i<=end[dim]; i++) {
 		curr = start_curr + (i * offset[dim]);
-		if(dim == (dims-1))
+		if (dim == (dims-1))
 			grid[curr] = value;
 		else
 			_set_box_in_grid(dim+1, curr, start, end, value);
@@ -2917,7 +2917,7 @@ static int _add_box_ranges(int dim,  int curr,
 
 	for (pos[dim]=start[dim]; pos[dim]<=end[dim]; pos[dim]++) {
 		curr = start_curr + (pos[dim] * offset[dim]);
-		if(dim == (dims-2)) {
+		if (dim == (dims-2)) {
 			char new_str[(dims*2)+2];
 			memset(new_str, 0, sizeof(new_str));
 
@@ -2943,7 +2943,7 @@ static int _add_box_ranges(int dim,  int curr,
 				return 0;
 			(*count)++;
 		} else
-			if(!_add_box_ranges(dim+1, curr, start, end, pos,
+			if (!_add_box_ranges(dim+1, curr, start, end, pos,
 					    ranges, len, count))
 				return 0;
 	}
@@ -2963,8 +2963,8 @@ static void _set_min_max_of_grid(int dim, int curr,
 
 	for (pos[dim]=start[dim]; pos[dim]<=end[dim]; pos[dim]++) {
 		curr = start_curr + (pos[dim] * offset[dim]);
-		if(dim == (dims-1)) {
-			if(!grid[curr])
+		if (dim == (dims-1)) {
+			if (!grid[curr])
 				continue;
 			for(i = 0; i<dims; i++) {
 				min[i] = MIN(min[i], pos[i]);
@@ -3011,11 +3011,11 @@ _test_box_in_grid(int dim, int curr,
 
 	for (i=start[dim]; i<=end[dim]; i++) {
 		curr = start_curr + (i * offset[dim]);
-		if(dim == (dims-1)) {
-			if(!grid[curr])
+		if (dim == (dims-1)) {
+			if (!grid[curr])
 				return false;
 		} else {
-			if(!_test_box_in_grid(dim+1, curr, start, end))
+			if (!_test_box_in_grid(dim+1, curr, start, end))
 				return false;
 		}
 	}
@@ -3029,7 +3029,7 @@ _test_box(int *start, int *end)
 	int i;
 	int dims = slurmdb_setup_cluster_dims();
 
-	if(!memcmp(start, end, dim_grid_size)) /* single node */
+	if (!memcmp(start, end, dim_grid_size)) /* single node */
 		return false;
 
 	for(i = 0; i<dims; i++)
@@ -3052,11 +3052,11 @@ ssize_t hostlist_ranged_string(hostlist_t hl, size_t n, char *buf)
 	START_TIMER;
 	LOCK_HOSTLIST(hl);
 
-	if(dims > 1) {	/* logic for block node description */
+	if (dims > 1) {	/* logic for block node description */
 		slurm_mutex_lock(&multi_dim_lock);
 
 		/* compute things that only need to be calculated once */
-		if(dim_grid_size == -1) {
+		if (dim_grid_size == -1) {
 			int i;
 
 			dim_grid_size = sizeof(int) * dims;
@@ -3104,7 +3104,7 @@ ssize_t hostlist_ranged_string(hostlist_t hl, size_t n, char *buf)
 		if (!memcmp(grid_start, grid_end, dim_grid_size)) {
 			len += snprintf(buf, n, "%s", hl->hr[0]->prefix);
 			for(i = 0; i<dims; i++) {
-				if(len > n)
+				if (len > n)
 					goto too_long;
 				buf[len++] = alpha_num[grid_start[i]];
 			}
@@ -3115,19 +3115,19 @@ ssize_t hostlist_ranged_string(hostlist_t hl, size_t n, char *buf)
 		} else {
 			len += snprintf(buf, n, "%s[", hl->hr[0]->prefix);
 			for(i = 0; i<dims; i++) {
-				if(len > n)
+				if (len > n)
 					goto too_long;
 				buf[len++] = alpha_num[grid_start[i]];
 			}
-			if(len <= n)
+			if (len <= n)
 				buf[len++] = 'x';
 
 			for(i = 0; i<dims; i++) {
-				if(len > n)
+				if (len > n)
 					goto too_long;
 				buf[len++] = alpha_num[grid_end[i]];
 			}
-			if(len <= n)
+			if (len <= n)
 				buf[len++] = ']';
 		}
 		if ((len < 0) || (len > n))
@@ -3157,7 +3157,7 @@ notbox:
 		buf[len > 0 ? len : 0] = '\0';
 
 	END_TIMER;
-	if(dims > 1)	/* logic for block node description */
+	if (dims > 1)	/* logic for block node description */
 		slurm_mutex_unlock(&multi_dim_lock);
 
 //	info("time was %s", TIME_STR);
@@ -3291,7 +3291,7 @@ char *hostlist_next(hostlist_iterator_t i)
 				hostlist_parse_int_to_array(
 					(i->hr->lo + i->depth), coord, dims, 0);
 				for(i2 = 0; i2<dims; i2++) {
-					if(len <= (MAXHOSTNAMELEN + 15))
+					if (len <= (MAXHOSTNAMELEN + 15))
 						buf[len++] =
 							alpha_num[coord[i2]];
 				}

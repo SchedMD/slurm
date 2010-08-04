@@ -62,21 +62,21 @@ static int _setup_wckey_cond_limits(slurmdb_wckey_cond_t *wckey_cond, char **ext
 	ListIterator itr = NULL;
 	char *object = NULL;
 	char *prefix = "t1";
-	if(!wckey_cond)
+	if (!wckey_cond)
 		return 0;
 
-	if(wckey_cond->with_deleted)
+	if (wckey_cond->with_deleted)
 		xstrfmtcat(*extra, " where (%s.deleted=0 || %s.deleted=1)",
 			prefix, prefix);
 	else
 		xstrfmtcat(*extra, " where %s.deleted=0", prefix);
 
-	if(wckey_cond->name_list && list_count(wckey_cond->name_list)) {
+	if (wckey_cond->name_list && list_count(wckey_cond->name_list)) {
 		set = 0;
 		xstrcat(*extra, " && (");
 		itr = list_iterator_create(wckey_cond->name_list);
 		while((object = list_next(itr))) {
-			if(set)
+			if (set)
 				xstrcat(*extra, " || ");
 			xstrfmtcat(*extra, "%s.wckey_name='%s'",
 				   prefix, object);
@@ -86,12 +86,12 @@ static int _setup_wckey_cond_limits(slurmdb_wckey_cond_t *wckey_cond, char **ext
 		xstrcat(*extra, ")");
 	}
 
-	if(wckey_cond->id_list && list_count(wckey_cond->id_list)) {
+	if (wckey_cond->id_list && list_count(wckey_cond->id_list)) {
 		set = 0;
 		xstrcat(*extra, " && (");
 		itr = list_iterator_create(wckey_cond->id_list);
 		while((object = list_next(itr))) {
-			if(set)
+			if (set)
 				xstrcat(*extra, " || ");
 			xstrfmtcat(*extra, "%s.id_wckey=%s", prefix, object);
 			set = 1;
@@ -100,12 +100,12 @@ static int _setup_wckey_cond_limits(slurmdb_wckey_cond_t *wckey_cond, char **ext
 		xstrcat(*extra, ")");
 	}
 
-	if(wckey_cond->user_list && list_count(wckey_cond->user_list)) {
+	if (wckey_cond->user_list && list_count(wckey_cond->user_list)) {
 		set = 0;
 		xstrcat(*extra, " && (");
 		itr = list_iterator_create(wckey_cond->user_list);
 		while((object = list_next(itr))) {
-			if(set)
+			if (set)
 				xstrcat(*extra, " || ");
 			xstrfmtcat(*extra, "%s.user='%s'", prefix, object);
 			set = 1;
@@ -131,13 +131,13 @@ static int _cluster_remove_wckeys(mysql_conn_t *mysql_conn,
 	char *query = xstrdup_printf("select t1.id_wckey, t1.wckey_name "
 				     "from \"%s_%s\" as t1%s;",
 				     cluster_name, wckey_table, extra);
-	if(!(result = mysql_db_query_ret(
+	if (!(result = mysql_db_query_ret(
 		     mysql_conn->db_conn, query, 0))) {
 		xfree(query);
 		return SLURM_ERROR;
 	}
 
-	if(!mysql_num_rows(result)) {
+	if (!mysql_num_rows(result)) {
 		mysql_free_result(result);
 		xfree(query);
 		return SLURM_SUCCESS;
@@ -147,7 +147,7 @@ static int _cluster_remove_wckeys(mysql_conn_t *mysql_conn,
 		slurmdb_wckey_rec_t *wckey_rec = NULL;
 
 		list_append(ret_list, xstrdup(row[1]));
-		if(!assoc_char)
+		if (!assoc_char)
 			xstrfmtcat(assoc_char, "id_wckey='%s'", row[0]);
 		else
 			xstrfmtcat(assoc_char, " || id_wckey='%s'", row[0]);
@@ -162,7 +162,7 @@ static int _cluster_remove_wckeys(mysql_conn_t *mysql_conn,
 	}
 	mysql_free_result(result);
 
-	if(!list_count(ret_list)) {
+	if (!list_count(ret_list)) {
 		errno = SLURM_NO_CHANGE_IN_DATA;
 		debug3("didn't effect anything\n%s", query);
 		xfree(query);
@@ -197,7 +197,7 @@ static int _cluster_get_wckeys(mysql_conn_t *mysql_conn,
 	char *query = NULL;
 	bool with_usage = 0;
 
-	if(wckey_cond)
+	if (wckey_cond)
 		with_usage = wckey_cond->with_usage;
 
 	xstrfmtcat(query, "select distinct %s from \"%s_%s\" as t1%s "
@@ -206,17 +206,17 @@ static int _cluster_get_wckeys(mysql_conn_t *mysql_conn,
 
 	debug3("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, THIS_FILE, __LINE__, query);
-	if(!(result = mysql_db_query_ret(
+	if (!(result = mysql_db_query_ret(
 		     mysql_conn->db_conn, query, 0))) {
 		xfree(query);
-		if(mysql_errno(mysql_conn->db_conn) == ER_NO_SUCH_TABLE)
+		if (mysql_errno(mysql_conn->db_conn) == ER_NO_SUCH_TABLE)
 			return SLURM_SUCCESS;
 		else
 			return SLURM_ERROR;
 	}
 	xfree(query);
 
-	if(!mysql_num_rows(result)) {
+	if (!mysql_num_rows(result)) {
 		mysql_free_result(result);
 		return SLURM_SUCCESS;
 	}
@@ -231,7 +231,7 @@ static int _cluster_get_wckeys(mysql_conn_t *mysql_conn,
 		wckey->user = xstrdup(row[WCKEY_REQ_USER]);
 
 		/* we want a blank wckey if the name is null */
-		if(row[WCKEY_REQ_NAME])
+		if (row[WCKEY_REQ_NAME])
 			wckey->name = xstrdup(row[WCKEY_REQ_NAME]);
 		else
 			wckey->name = xstrdup("");
@@ -240,7 +240,7 @@ static int _cluster_get_wckeys(mysql_conn_t *mysql_conn,
 	}
 	mysql_free_result(result);
 
-	if(with_usage && wckey_list && list_count(wckey_list))
+	if (with_usage && wckey_list && list_count(wckey_list))
 		get_usage_for_list(mysql_conn, DBD_GET_WCKEY_USAGE,
 				   wckey_list, cluster_name,
 				   wckey_cond->usage_start,
@@ -265,13 +265,13 @@ extern int as_mysql_add_wckeys(mysql_conn_t *mysql_conn, uint32_t uid,
 	int affect_rows = 0;
 	int added = 0;
 
-	if(check_connection(mysql_conn) != SLURM_SUCCESS)
+	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
 
 	user_name = uid_to_string((uid_t) uid);
 	itr = list_iterator_create(wckey_list);
 	while((object = list_next(itr))) {
-		if(!object->cluster || !object->cluster[0]
+		if (!object->cluster || !object->cluster[0]
 		   || !object->user || !object->user[0]) {
 			error("We need a wckey name, cluster, "
 			      "and user to add.");
@@ -284,7 +284,7 @@ extern int as_mysql_add_wckeys(mysql_conn_t *mysql_conn, uint32_t uid,
 		xstrfmtcat(extra, ", mod_time=%d, user='%s'",
 			   now, object->user);
 
-		if(object->name) {
+		if (object->name) {
 			xstrcat(cols, ", wckey_name");
 			xstrfmtcat(vals, ", '%s'", object->name);
 			xstrfmtcat(extra, ", wckey_name='%s'", object->name);
@@ -300,7 +300,7 @@ extern int as_mysql_add_wckeys(mysql_conn_t *mysql_conn, uint32_t uid,
 		       mysql_conn->conn, THIS_FILE, __LINE__, query);
 		object->id = mysql_insert_ret_id(mysql_conn->db_conn, query);
 		xfree(query);
-		if(!object->id) {
+		if (!object->id) {
 			error("Couldn't add wckey %s", object->name);
 			added=0;
 			xfree(cols);
@@ -311,7 +311,7 @@ extern int as_mysql_add_wckeys(mysql_conn_t *mysql_conn, uint32_t uid,
 
 		affect_rows = last_affected_rows(mysql_conn->db_conn);
 
-		if(!affect_rows) {
+		if (!affect_rows) {
 			debug2("nothing changed %d", affect_rows);
 			xfree(cols);
 			xfree(extra);
@@ -337,10 +337,10 @@ extern int as_mysql_add_wckeys(mysql_conn_t *mysql_conn, uint32_t uid,
 		debug4("query\n%s",query);
 		rc = mysql_db_query(mysql_conn->db_conn, query);
 		xfree(query);
-		if(rc != SLURM_SUCCESS) {
+		if (rc != SLURM_SUCCESS) {
 			error("Couldn't add txn");
 		} else {
-			if(addto_update_list(mysql_conn->update_list,
+			if (addto_update_list(mysql_conn->update_list,
 					      SLURMDB_ADD_WCKEY,
 					      object) == SLURM_SUCCESS)
 				list_remove(itr);
@@ -351,7 +351,7 @@ extern int as_mysql_add_wckeys(mysql_conn_t *mysql_conn, uint32_t uid,
 	list_iterator_destroy(itr);
 	xfree(user_name);
 
-	if(!added) {
+	if (!added) {
 		reset_mysql_conn(mysql_conn);
 	}
 
@@ -378,25 +378,25 @@ extern List as_mysql_remove_wckeys(mysql_conn_t *mysql_conn,
 	List use_cluster_list = as_mysql_cluster_list;
 	ListIterator itr;
 
-	if(!wckey_cond) {
+	if (!wckey_cond) {
 		xstrcat(extra, " where deleted=0");
 		goto empty;
 	}
 
-	if(check_connection(mysql_conn) != SLURM_SUCCESS)
+	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
 
 	set = _setup_wckey_cond_limits(wckey_cond, &extra);
 
 empty:
-	if(!extra) {
+	if (!extra) {
 		error("Nothing to remove");
 		return NULL;
 	}
 
 	user_name = uid_to_string((uid_t) uid);
 
-	if(wckey_cond->cluster_list && list_count(wckey_cond->cluster_list))
+	if (wckey_cond->cluster_list && list_count(wckey_cond->cluster_list))
 		use_cluster_list = wckey_cond->cluster_list;
 	else
 		slurm_mutex_lock(&as_mysql_cluster_list_lock);
@@ -404,7 +404,7 @@ empty:
 	ret_list = list_create(slurm_destroy_char);
 	itr = list_iterator_create(use_cluster_list);
 	while((object = list_next(itr))) {
-		if((rc = _cluster_remove_wckeys(
+		if ((rc = _cluster_remove_wckeys(
 			    mysql_conn, extra, object, user_name, ret_list))
 		   != SLURM_SUCCESS)
 			break;
@@ -413,7 +413,7 @@ empty:
 	xfree(extra);
 	xfree(user_name);
 
-	if(use_cluster_list == as_mysql_cluster_list)
+	if (use_cluster_list == as_mysql_cluster_list)
 		slurm_mutex_unlock(&as_mysql_cluster_list_lock);
 
 	if (rc == SLURM_ERROR) {
@@ -439,12 +439,12 @@ extern List as_mysql_get_wckeys(mysql_conn_t *mysql_conn, uid_t uid,
 	List use_cluster_list = as_mysql_cluster_list;
 	ListIterator itr;
 
-	if(!wckey_cond) {
+	if (!wckey_cond) {
 		xstrcat(extra, " where deleted=0");
 		goto empty;
 	}
 
-	if(check_connection(mysql_conn) != SLURM_SUCCESS)
+	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
 
 	memset(&user, 0, sizeof(slurmdb_user_rec_t));
@@ -452,7 +452,7 @@ extern List as_mysql_get_wckeys(mysql_conn_t *mysql_conn, uid_t uid,
 
 	private_data = slurm_get_private_data();
 	if (private_data & PRIVATE_DATA_USERS) {
-		if(!(is_admin = is_user_min_admin_level(
+		if (!(is_admin = is_user_min_admin_level(
 			     mysql_conn, uid, SLURMDB_ADMIN_OPERATOR)))
 			is_user_any_coord(mysql_conn, &user);
 	}
@@ -470,12 +470,12 @@ empty:
 	 * if this flag is set.  We also include any accounts they may be
 	 * coordinator of.
 	 */
-	if(!is_admin && (private_data & PRIVATE_DATA_USERS))
+	if (!is_admin && (private_data & PRIVATE_DATA_USERS))
 		xstrfmtcat(extra, " && t1.user='%s'", user.name);
 
 	wckey_list = list_create(slurmdb_destroy_wckey_rec);
 
-	if(wckey_cond->cluster_list && list_count(wckey_cond->cluster_list))
+	if (wckey_cond->cluster_list && list_count(wckey_cond->cluster_list))
 		use_cluster_list = wckey_cond->cluster_list;
 	else
 		slurm_mutex_lock(&as_mysql_cluster_list_lock);
@@ -483,7 +483,7 @@ empty:
 	//START_TIMER;
 	itr = list_iterator_create(use_cluster_list);
 	while((cluster_name = list_next(itr))) {
-		if(_cluster_get_wckeys(mysql_conn, wckey_cond, tmp, extra,
+		if (_cluster_get_wckeys(mysql_conn, wckey_cond, tmp, extra,
 				       cluster_name, wckey_list)
 		   != SLURM_SUCCESS) {
 			list_destroy(wckey_list);
@@ -493,7 +493,7 @@ empty:
 	}
 	list_iterator_destroy(itr);
 
-	if(use_cluster_list == as_mysql_cluster_list)
+	if (use_cluster_list == as_mysql_cluster_list)
 		slurm_mutex_unlock(&as_mysql_cluster_list_lock);
 
 	xfree(tmp);

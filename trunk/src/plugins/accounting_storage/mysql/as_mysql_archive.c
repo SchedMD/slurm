@@ -547,19 +547,19 @@ static time_t _setup_end_time(time_t last_submit, uint32_t purge)
 	struct tm time_tm;
 	int16_t units;
 
-	if(purge == NO_VAL) {
+	if (purge == NO_VAL) {
 		error("Invalid purge set");
 		return 0;
 	}
 
 	units = SLURMDB_PURGE_GET_UNITS(purge);
-	if(units < 0) {
+	if (units < 0) {
 		error("invalid units from purge '%d'", units);
 		return 0;
 	}
 
 	/* use localtime to avoid any daylight savings issues */
-	if(!localtime_r(&last_submit, &time_tm)) {
+	if (!localtime_r(&last_submit, &time_tm)) {
 		error("Couldn't get localtime from first "
 		      "suspend start %d",
 		      last_submit);
@@ -569,12 +569,12 @@ static time_t _setup_end_time(time_t last_submit, uint32_t purge)
 	time_tm.tm_sec = 0;
 	time_tm.tm_min = 0;
 
-	if(SLURMDB_PURGE_IN_HOURS(purge))
+	if (SLURMDB_PURGE_IN_HOURS(purge))
 		time_tm.tm_hour -= units;
-	else if(SLURMDB_PURGE_IN_DAYS(purge)) {
+	else if (SLURMDB_PURGE_IN_DAYS(purge)) {
 		time_tm.tm_hour = 0;
 		time_tm.tm_mday -= units;
-	} else if(SLURMDB_PURGE_IN_MONTHS(purge)) {
+	} else if (SLURMDB_PURGE_IN_MONTHS(purge)) {
 		time_tm.tm_hour = 0;
 		time_tm.tm_mday = 1;
 		time_tm.tm_mon -= units;
@@ -607,21 +607,21 @@ static int _process_old_sql_line(const char *data_in, char **data_full_out)
 	bool new_cluster = 0;
 
 	while(data_in[i]) {
-		if(!strncmp("insert into ", data_in+i, 12)) {
+		if (!strncmp("insert into ", data_in+i, 12)) {
 			beginning = xstrndup(data_in+i, 11);
 			break;
-		} else if(!strncmp("delete from ", data_in+i, 12)) {
+		} else if (!strncmp("delete from ", data_in+i, 12)) {
 			beginning = xstrndup(data_in+i, 11);
 			delete = 1;
 			break;
-		} else if(!strncmp("drop table ", data_in+i, 11)) {
+		} else if (!strncmp("drop table ", data_in+i, 11)) {
 			start = i;
 			i+=11;
 			while(data_in[i] && data_in[i-1] != ';')
 				i++;
 			xstrncat(data_out, data_in+start, i-start);
 			goto end_it;
-		} else if(!strncmp("truncate table ", data_in+i, 15)) {
+		} else if (!strncmp("truncate table ", data_in+i, 15)) {
 			start = i;
 			i+=15;
 			while(data_in[i] && data_in[i-1] != ';')
@@ -632,7 +632,7 @@ static int _process_old_sql_line(const char *data_in, char **data_full_out)
 		i++;
 	}
 
-	if(!data_in[i])
+	if (!data_in[i])
 		goto end_it;
 
 	beginning = xstrndup(data_in+i, 11);
@@ -640,34 +640,34 @@ static int _process_old_sql_line(const char *data_in, char **data_full_out)
 
 	//info("processing %s", data_in);
 	/* get table name */
-	if(!strncmp("cluster_event_table", data_in+i, 19)) {
+	if (!strncmp("cluster_event_table", data_in+i, 19)) {
 		i+=19;
 		table = event_table;
-	} else if(!strncmp("job_table", data_in+i, 9)) {
+	} else if (!strncmp("job_table", data_in+i, 9)) {
 		i+=9;
 		table = job_table;
-	} else if(!strncmp("step_table", data_in+i, 10)) {
+	} else if (!strncmp("step_table", data_in+i, 10)) {
 		i+=10;
 		table = step_table;
-	} else if(!strncmp("suspend_table", data_in+i, 13)) {
+	} else if (!strncmp("suspend_table", data_in+i, 13)) {
 		i+=13;
 		table = suspend_table;
-	} else if(!strncmp("cluster_day_usage_table", data_in+i, 23)) {
+	} else if (!strncmp("cluster_day_usage_table", data_in+i, 23)) {
 		i+=23;
 		table = cluster_day_table;
-	} else if(!strncmp("cluster_hour_usage_table", data_in+i, 24)) {
+	} else if (!strncmp("cluster_hour_usage_table", data_in+i, 24)) {
 		i+=24;
 		table = cluster_hour_table;
-	} else if(!strncmp("cluster_month_usage_table", data_in+i, 25)) {
+	} else if (!strncmp("cluster_month_usage_table", data_in+i, 25)) {
 		i+=25;
 		table = cluster_month_table;
-	} else if(!strncmp("assoc_day_usage_table", data_in+i, 21)) {
+	} else if (!strncmp("assoc_day_usage_table", data_in+i, 21)) {
 		i+=21;
 		table = assoc_day_table;
-	} else if(!strncmp("assoc_hour_usage_table", data_in+i, 22)) {
+	} else if (!strncmp("assoc_hour_usage_table", data_in+i, 22)) {
 		i+=22;
 		table = assoc_hour_table;
-	} else if(!strncmp("assoc_month_usage_table", data_in+i, 23)) {
+	} else if (!strncmp("assoc_month_usage_table", data_in+i, 23)) {
 		i+=23;
 		table = assoc_month_table;
 	} else {
@@ -676,7 +676,7 @@ static int _process_old_sql_line(const char *data_in, char **data_full_out)
 		goto end_it;
 	}
 	/* get to the columns */
-	if(!delete)
+	if (!delete)
 		while(data_in[i] && data_in[i-1] != '(' && data_in[i-1] != ';')
 			i++;
 	else
@@ -684,75 +684,75 @@ static int _process_old_sql_line(const char *data_in, char **data_full_out)
 			i++;
 	//info("table is %s '%s'", table, data_in+i);
 	while(data_in[i] && data_in[i] != ')') {
-		if(delete && !strncmp("where ", data_in+i, 6)) {
+		if (delete && !strncmp("where ", data_in+i, 6)) {
 			i+=6;
 			continue;
-		} else if(!strncmp("period_start", data_in+i, 12)) {
+		} else if (!strncmp("period_start", data_in+i, 12)) {
 			xstrcat(fields, "time_start");
 			i+=12;
-		} else if(!strncmp("period_end", data_in+i, 10)) {
+		} else if (!strncmp("period_end", data_in+i, 10)) {
 			xstrcat(fields, "time_end");
 			i+=10;
-		} else if(!strncmp("jobid", data_in+i, 5)) {
+		} else if (!strncmp("jobid", data_in+i, 5)) {
 			xstrcat(fields, "id_job");
 			i+=5;
-		} else if(!strncmp("stepid", data_in+i, 6)) {
+		} else if (!strncmp("stepid", data_in+i, 6)) {
 			xstrcat(fields, "id_step");
 			i+=6;
-		} else if(!strncmp("associd", data_in+i, 7)) {
+		} else if (!strncmp("associd", data_in+i, 7)) {
 			xstrcat(fields, "id_assoc");
 			i+=7;
-		} else if(!strncmp("blockid", data_in+i, 7)) {
+		} else if (!strncmp("blockid", data_in+i, 7)) {
 			xstrcat(fields, "id_block");
 			i+=7;
-		} else if(!strncmp("wckeyid", data_in+i, 7)) {
+		} else if (!strncmp("wckeyid", data_in+i, 7)) {
 			xstrcat(fields, "id_wckey");
 			i+=7;
-		} else if(!strncmp("qos", data_in+i, 3)) {
+		} else if (!strncmp("qos", data_in+i, 3)) {
 			xstrcat(fields, "id_qos");
 			i+=3;
-		} else if(!strncmp("uid", data_in+i, 3)) {
+		} else if (!strncmp("uid", data_in+i, 3)) {
 			xstrcat(fields, "id_user");
 			i+=3;
-		} else if(!strncmp("gid", data_in+i, 3)) {
+		} else if (!strncmp("gid", data_in+i, 3)) {
 			xstrcat(fields, "id_group");
 			i+=3;
-		} else if(!strncmp("submit", data_in+i, 6)) {
+		} else if (!strncmp("submit", data_in+i, 6)) {
 			xstrcat(fields, "time_submit");
 			i+=6;
-		} else if(!strncmp("eligible", data_in+i, 8)) {
+		} else if (!strncmp("eligible", data_in+i, 8)) {
 			xstrcat(fields, "time_eligible");
 			i+=8;
-		} else if(!strncmp("start", data_in+i, 5)) {
+		} else if (!strncmp("start", data_in+i, 5)) {
 			xstrcat(fields, "time_start");
 			i+=5;
-		} else if(!strncmp("suspended", data_in+i, 9)) {
+		} else if (!strncmp("suspended", data_in+i, 9)) {
 			xstrcat(fields, "time_suspended");
 			i+=9;
-		} else if(!strncmp("end", data_in+i, 3)) {
+		} else if (!strncmp("end", data_in+i, 3)) {
 			xstrcat(fields, "time_end");
 			i+=3;
-		} else if(!strncmp("comp_code", data_in+i, 9)) {
+		} else if (!strncmp("comp_code", data_in+i, 9)) {
 			xstrcat(fields, "exit_code");
 			i+=9;
-		} else if(!strncmp("alloc_cpus", data_in+i, 10)) {
+		} else if (!strncmp("alloc_cpus", data_in+i, 10)) {
 			xstrcat(fields, "cpus_alloc");
 			i+=10;
-		} else if(!strncmp("req_cpus", data_in+i, 8)) {
+		} else if (!strncmp("req_cpus", data_in+i, 8)) {
 			xstrcat(fields, "cpus_req");
 			i+=8;
-		} else if(!strncmp("alloc_nodes", data_in+i, 11)) {
+		} else if (!strncmp("alloc_nodes", data_in+i, 11)) {
 			xstrcat(fields, "nodes_alloc");
 			i+=11;
-		} else if(!strncmp("name", data_in+i, 4)) {
-			if(table == job_table)
+		} else if (!strncmp("name", data_in+i, 4)) {
+			if (table == job_table)
 				xstrcat(fields, "job_name");
-			else if(table == step_table)
+			else if (table == step_table)
 				xstrcat(fields, "step_name");
 			i+=4;
-		} else if(!strncmp("id", data_in+i, 2)) {
+		} else if (!strncmp("id", data_in+i, 2)) {
 			i+=2;
-			if((table == assoc_day_table)
+			if ((table == assoc_day_table)
 			   || (table == assoc_hour_table)
 			   || (table == assoc_month_table)) {
 				char *id_assoc = NULL;
@@ -765,12 +765,12 @@ static int _process_old_sql_line(const char *data_in, char **data_full_out)
 				      && data_in[i] != ';') {
 					i++;
 				}
-				if(!data_in[i]) {
+				if (!data_in[i]) {
 					error("returning at id_assoc");
 					rc = SLURM_ERROR;
 					goto end_it;
 				}
-				if(data_in[i] == ' ') {
+				if (data_in[i] == ' ') {
 					while(data_in[i] && data_in[i] == ' ')
 						i++;
 					while(data_in[i] && data_in[i] == '|')
@@ -779,22 +779,22 @@ static int _process_old_sql_line(const char *data_in, char **data_full_out)
 						i++;
 				}
 				xstrncat(id_assoc, data_in+start, (i-start));
-				if(!fields)
+				if (!fields)
 					xstrcat(fields, "where ");
 				xstrfmtcat(fields, "id_assoc=%s", id_assoc);
 				xfree(id_assoc);
 			} else
 				xstrcat(fields, "job_db_inx");
-		} else if(!strncmp("cluster_nodes", data_in+i, 13)) {
+		} else if (!strncmp("cluster_nodes", data_in+i, 13)) {
 			/* this is here just to make it easier to
 			   handle the cluster field. */
 			xstrcat(fields, "cluster_nodes");
 			i+=13;
-		} else if(!strncmp("cluster", data_in+i, 7)) {
+		} else if (!strncmp("cluster", data_in+i, 7)) {
 			i+=7;
-			if(!delete) {
+			if (!delete) {
 				cluster_inx = cnt;
-				if(cnt)
+				if (cnt)
 					fields[strlen(fields)-2] = '\0';
 			} else {
 				while(data_in[i] && data_in[i-1] != '\'')
@@ -802,7 +802,7 @@ static int _process_old_sql_line(const char *data_in, char **data_full_out)
 				start = i;
 				while(data_in[i] && data_in[i] != '\'')
 					i++;
-				if(!data_in[i]) {
+				if (!data_in[i]) {
 					error("returning here cluster");
 					rc = SLURM_ERROR;
 					goto end_it;
@@ -818,20 +818,20 @@ static int _process_old_sql_line(const char *data_in, char **data_full_out)
 			      && data_in[i] != ',' && data_in[i] != ')') {
 				i++;
 			}
-			if(!data_in[i]) {
+			if (!data_in[i]) {
 				error("returning here end");
 				rc = SLURM_ERROR;
 				goto end_it;
 			}
 			xstrncat(fields, data_in+start, (i-start));
 		}
-		if(data_in[i]) {
-			if(!delete || ((table != assoc_day_table)
+		if (data_in[i]) {
+			if (!delete || ((table != assoc_day_table)
 				       && (table != assoc_hour_table)
 				       && (table != assoc_month_table))) {
-				if(data_in[i] == ',')
+				if (data_in[i] == ',')
 					xstrcat(fields, ", ");
-				else if(data_in[i] == ')'
+				else if (data_in[i] == ')'
 					|| data_in[i] == ';') {
 					break;
 				} else {
@@ -841,7 +841,7 @@ static int _process_old_sql_line(const char *data_in, char **data_full_out)
 				}
 				i++;
 			} else {
-				if(data_in[i] == ';')
+				if (data_in[i] == ';')
 					break;
 			}
 			while(data_in[i] && data_in[i] == ' ')
@@ -850,97 +850,97 @@ static int _process_old_sql_line(const char *data_in, char **data_full_out)
 		cnt++;
 	}
 
-	if(data_in[i] && data_in[i] == ')') {
+	if (data_in[i] && data_in[i] == ')') {
 		ending_end = i;
 		ending_start = 0;
 		while(data_in[ending_end] && data_in[ending_end-1] != ';') {
-			if(!strncmp(data_in+ending_end,
+			if (!strncmp(data_in+ending_end,
 				    "on duplicate key", 16)) {
 				ending_start = ending_end;
 			}
-			if(ending_start) {
-				if(!strncmp("period_start",
+			if (ending_start) {
+				if (!strncmp("period_start",
 					    data_in+ending_end, 12)) {
 					xstrcat(ending, "time_start");
 					ending_end+=12;
-				} else if(!strncmp("period_end",
+				} else if (!strncmp("period_end",
 						   data_in+ending_end, 10)) {
 					xstrcat(ending, "time_end");
 					ending_end+=10;
-				} else if(!strncmp("jobid",
+				} else if (!strncmp("jobid",
 						   data_in+ending_end, 5)) {
 					xstrcat(ending, "id_job");
 					ending_end+=5;
-				} else if(!strncmp("stepid",
+				} else if (!strncmp("stepid",
 						   data_in+ending_end, 6)) {
 					xstrcat(ending, "id_step");
 					ending_end+=6;
-				} else if(!strncmp("associd",
+				} else if (!strncmp("associd",
 						   data_in+ending_end, 7)) {
 					xstrcat(ending, "id_assoc");
 					ending_end+=7;
-				} else if(!strncmp("blockid",
+				} else if (!strncmp("blockid",
 						   data_in+ending_end, 7)) {
 					xstrcat(ending, "id_block");
 					ending_end+=7;
-				} else if(!strncmp("wckeyid",
+				} else if (!strncmp("wckeyid",
 						   data_in+ending_end, 7)) {
 					xstrcat(ending, "id_wckey");
 					ending_end+=7;
-				} else if(!strncmp("uid",
+				} else if (!strncmp("uid",
 						   data_in+ending_end, 3)) {
 					xstrcat(ending, "id_user");
 					ending_end+=3;
-				} else if(!strncmp("gid",
+				} else if (!strncmp("gid",
 						   data_in+ending_end, 3)) {
 					xstrcat(ending, "id_group");
 					ending_end+=3;
-				} else if(!strncmp("submit",
+				} else if (!strncmp("submit",
 						   data_in+ending_end, 6)) {
 					xstrcat(ending, "time_submit");
 					ending_end+=6;
-				} else if(!strncmp("eligible",
+				} else if (!strncmp("eligible",
 						   data_in+ending_end, 8)) {
 					xstrcat(ending, "time_eligible");
 					ending_end+=8;
-				} else if(!strncmp("start",
+				} else if (!strncmp("start",
 						   data_in+ending_end, 5)) {
 					xstrcat(ending, "time_start");
 					ending_end+=5;
-				} else if(!strncmp("suspended",
+				} else if (!strncmp("suspended",
 						   data_in+ending_end, 9)) {
 					xstrcat(ending, "time_suspended");
 					ending_end+=9;
-				} else if(!strncmp("end",
+				} else if (!strncmp("end",
 						   data_in+ending_end, 3)) {
 					xstrcat(ending, "time_end");
 					ending_end+=3;
-				} else if(!strncmp("comp_code",
+				} else if (!strncmp("comp_code",
 						   data_in+ending_end, 9)) {
 					xstrcat(ending, "exit_code");
 					ending_end+=9;
-				} else if(!strncmp("alloc_cpus",
+				} else if (!strncmp("alloc_cpus",
 						   data_in+ending_end, 10)) {
 					xstrcat(ending, "cpus_alloc");
 					ending_end+=10;
-				} else if(!strncmp("req_cpus",
+				} else if (!strncmp("req_cpus",
 						   data_in+ending_end, 8)) {
 					xstrcat(ending, "cpus_req");
 					ending_end+=8;
-				} else if(!strncmp("alloc_nodes",
+				} else if (!strncmp("alloc_nodes",
 						   data_in+ending_end, 11)) {
 					xstrcat(ending, "nodes_alloc");
 					ending_end+=11;
-				} else if(!strncmp("name",
+				} else if (!strncmp("name",
 						   data_in+ending_end, 4)) {
-					if(table == job_table)
+					if (table == job_table)
 						xstrcat(ending, "job_name");
-					else if(table == step_table)
+					else if (table == step_table)
 						xstrcat(ending, "step_name");
 					ending_end+=4;
-				} else if(!strncmp("id",
+				} else if (!strncmp("id",
 						   data_in+ending_end, 2)) {
-					if((table == assoc_day_table)
+					if ((table == assoc_day_table)
 					   || (table == assoc_hour_table)
 					   || (table == assoc_month_table))
 						xstrcat(ending, "id_assoc");
@@ -949,7 +949,7 @@ static int _process_old_sql_line(const char *data_in, char **data_full_out)
 					ending_end+=2;
 				}
 
-				if(data_in[ending_end])
+				if (data_in[ending_end])
 					xstrcatchar(ending,
 						    data_in[ending_end]);
 			}
@@ -971,17 +971,17 @@ static int _process_old_sql_line(const char *data_in, char **data_full_out)
 				      && data_in[i] != ')') {
 					i++;
 				}
-				if(!data_in[i]) {
+				if (!data_in[i]) {
 					rc = SLURM_ERROR;
 					goto end_it;
 				}
-				if(cnt == cluster_inx) {
+				if (cnt == cluster_inx) {
 					/* get the cluster name and remove the
 					   ticks */
 					xstrncat(new_cluster_name,
 						 data_in+start+1, (i-start-2));
-					if(cluster_name) {
-						if(strcmp(cluster_name,
+					if (cluster_name) {
+						if (strcmp(cluster_name,
 							  new_cluster_name))
 							new_cluster = 1;
 						else
@@ -993,10 +993,10 @@ static int _process_old_sql_line(const char *data_in, char **data_full_out)
 				} else {
 					xstrncat(new_vals, data_in+start,
 						 (i-start));
-					if(data_in[i]) {
-						if(data_in[i] == ',')
+					if (data_in[i]) {
+						if (data_in[i] == ',')
 							xstrcat(new_vals, ", ");
-						else if(data_in[i] == ')'
+						else if (data_in[i] == ')'
 							|| data_in[i] == ';') {
 							i++;
 							break;
@@ -1014,7 +1014,7 @@ static int _process_old_sql_line(const char *data_in, char **data_full_out)
 					i++;
 				cnt++;
 			}
-			if(new_cluster) {
+			if (new_cluster) {
 				/* info("new cluster, adding insert\n%s " */
 				/*      "\"%s_%s\" (%s) values %s %s", */
 				/*      beginning, cluster_name, table, */
@@ -1030,8 +1030,8 @@ static int _process_old_sql_line(const char *data_in, char **data_full_out)
 				new_cluster_name = NULL;
 			}
 
-			if(new_vals) {
-				if(vals)
+			if (new_vals) {
+				if (vals)
 					xstrfmtcat(vals, ", (%s)", new_vals);
 				else
 					xstrfmtcat(vals, "(%s)", new_vals);
@@ -1041,19 +1041,19 @@ static int _process_old_sql_line(const char *data_in, char **data_full_out)
 		i = ending_end;
 	}
 
-	if(!cluster_name) {
+	if (!cluster_name) {
 		error("No cluster given for %s", table);
 		goto end_it;
 	}
 
-	if(!delete) {
+	if (!delete) {
 		/* info("adding insert\n%s \"%s_%s\" (%s) values %s %s",
 		     beginning, cluster_name, table, fields, vals, ending); */
 		xstrfmtcat(data_out, "%s \"%s_%s\" (%s) values %s %s",
 			   beginning, cluster_name, table, fields,
 			   vals, ending);
 	} else {
-		if(fields) {
+		if (fields) {
 			/* info("adding delete\n%s \"%s_%s\" %s", */
 			/*      beginning, cluster_name, table, fields); */
 			xstrfmtcat(data_out, "%s \"%s_%s\" %s",
@@ -1074,7 +1074,7 @@ end_it:
 	xfree(vals);
 	*data_full_out = data_out;
 	//info("returning\n%s", data_out);
-	if(rc == SLURM_ERROR)
+	if (rc == SLURM_ERROR)
 		return -1;
 	return i;
 }
@@ -1087,14 +1087,14 @@ static int _process_old_sql(char **data)
 	int rc = SLURM_SUCCESS;
 
 	while(data_in[i]) {
-		if((rc = _process_old_sql_line(data_in+i, &data_out)) == -1)
+		if ((rc = _process_old_sql_line(data_in+i, &data_out)) == -1)
 			break;
 		i += rc;
 	}
 	//rc = -1;
 
 	xfree(data_in);
-	if(rc == -1)
+	if (rc == -1)
 		xfree(data_out);
 	//info("returning\n%s", data_out);
 	*data = data_out;
@@ -1114,8 +1114,8 @@ static char *_make_archive_name(time_t period_start, time_t period_end,
 	time_tm.tm_min = 0;
 
 	/* set up the start time based off the period we are purging */
-	if(SLURMDB_PURGE_IN_HOURS(archive_period)) {
-	} else if(SLURMDB_PURGE_IN_DAYS(archive_period)) {
+	if (SLURMDB_PURGE_IN_HOURS(archive_period)) {
+	} else if (SLURMDB_PURGE_IN_DAYS(archive_period)) {
 		time_tm.tm_hour = 0;
 	} else {
 		time_tm.tm_hour = 0;
@@ -1243,13 +1243,13 @@ static uint32_t _archive_events(mysql_conn_t *mysql_conn, char *cluster_name,
 //	START_TIMER;
 	debug3("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, THIS_FILE, __LINE__, query);
-	if(!(result = mysql_db_query_ret(mysql_conn->db_conn, query, 0))) {
+	if (!(result = mysql_db_query_ret(mysql_conn->db_conn, query, 0))) {
 		xfree(query);
 		return SLURM_ERROR;
 	}
 	xfree(query);
 
-	if(!(cnt = mysql_num_rows(result))) {
+	if (!(cnt = mysql_num_rows(result))) {
 		mysql_free_result(result);
 		return 0;
 	}
@@ -1262,7 +1262,7 @@ static uint32_t _archive_events(mysql_conn_t *mysql_conn, char *cluster_name,
 	pack32(cnt, buffer);
 
 	while((row = mysql_fetch_row(result))) {
-		if(!period_start)
+		if (!period_start)
 			period_start = atoi(row[EVENT_REQ_START]);
 
 		memset(&event, 0, sizeof(local_event_t));
@@ -1288,7 +1288,7 @@ static uint32_t _archive_events(mysql_conn_t *mysql_conn, char *cluster_name,
 					 arch_dir, "event", archive_period);
 	free_buf(buffer);
 
-	if(error_code != SLURM_SUCCESS)
+	if (error_code != SLURM_SUCCESS)
 		return error_code;
 
 	return cnt;
@@ -1313,14 +1313,14 @@ static char *_load_events(uint16_t rpc_version, Buf buffer,
 	xstrcat(format, ")");
 	for(i=0; i<rec_cnt; i++) {
 		memset(&object, 0, sizeof(local_event_t));
-		if(_unpack_local_event(&object, rpc_version, buffer)
+		if (_unpack_local_event(&object, rpc_version, buffer)
 		   != SLURM_SUCCESS) {
 			error("issue unpacking");
 			xfree(format);
 			xfree(insert);
 			break;
 		}
-		if(i)
+		if (i)
 			xstrcat(insert, ", ");
 
 		xstrfmtcat(insert, format,
@@ -1371,13 +1371,13 @@ static uint32_t _archive_jobs(mysql_conn_t *mysql_conn, char *cluster_name,
 //	START_TIMER;
 	debug3("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, THIS_FILE, __LINE__, query);
-	if(!(result = mysql_db_query_ret(mysql_conn->db_conn, query, 0))) {
+	if (!(result = mysql_db_query_ret(mysql_conn->db_conn, query, 0))) {
 		xfree(query);
 		return SLURM_ERROR;
 	}
 	xfree(query);
 
-	if(!(cnt = mysql_num_rows(result))) {
+	if (!(cnt = mysql_num_rows(result))) {
 		mysql_free_result(result);
 		return 0;
 	}
@@ -1390,7 +1390,7 @@ static uint32_t _archive_jobs(mysql_conn_t *mysql_conn, char *cluster_name,
 	pack32(cnt, buffer);
 
 	while((row = mysql_fetch_row(result))) {
-		if(!period_start)
+		if (!period_start)
 			period_start = atoi(row[JOB_REQ_SUBMIT]);
 
 		memset(&job, 0, sizeof(local_job_t));
@@ -1437,7 +1437,7 @@ static uint32_t _archive_jobs(mysql_conn_t *mysql_conn, char *cluster_name,
 					 arch_dir, "job", archive_period);
 	free_buf(buffer);
 
-	if(error_code != SLURM_SUCCESS)
+	if (error_code != SLURM_SUCCESS)
 		return error_code;
 
 	return cnt;
@@ -1462,14 +1462,14 @@ static char *_load_jobs(uint16_t rpc_version, Buf buffer,
 	xstrcat(format, ")");
 	for(i=0; i<rec_cnt; i++) {
 		memset(&object, 0, sizeof(local_job_t));
-		if(_unpack_local_job(&object, rpc_version, buffer)
+		if (_unpack_local_job(&object, rpc_version, buffer)
 		   != SLURM_SUCCESS) {
 			error("issue unpacking");
 			xfree(format);
 			xfree(insert);
 			break;
 		}
-		if(i)
+		if (i)
 			xstrcat(insert, ", ");
 
 		xstrfmtcat(insert, format,
@@ -1541,13 +1541,13 @@ static uint32_t _archive_steps(mysql_conn_t *mysql_conn, char *cluster_name,
 //	START_TIMER;
 	debug3("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, THIS_FILE, __LINE__, query);
-	if(!(result = mysql_db_query_ret(mysql_conn->db_conn, query, 0))) {
+	if (!(result = mysql_db_query_ret(mysql_conn->db_conn, query, 0))) {
 		xfree(query);
 		return SLURM_ERROR;
 	}
 	xfree(query);
 
-	if(!(cnt = mysql_num_rows(result))) {
+	if (!(cnt = mysql_num_rows(result))) {
 		mysql_free_result(result);
 		return 0;
 	}
@@ -1560,7 +1560,7 @@ static uint32_t _archive_steps(mysql_conn_t *mysql_conn, char *cluster_name,
 	pack32(cnt, buffer);
 
 	while((row = mysql_fetch_row(result))) {
-		if(!period_start)
+		if (!period_start)
 			period_start = atoi(row[STEP_REQ_START]);
 
 		memset(&step, 0, sizeof(local_step_t));
@@ -1613,7 +1613,7 @@ static uint32_t _archive_steps(mysql_conn_t *mysql_conn, char *cluster_name,
 					 arch_dir, "event", archive_period);
 	free_buf(buffer);
 
-	if(error_code != SLURM_SUCCESS)
+	if (error_code != SLURM_SUCCESS)
 		return error_code;
 
 	return cnt;
@@ -1638,14 +1638,14 @@ static char *_load_steps(uint16_t rpc_version, Buf buffer,
 	xstrcat(format, ")");
 	for(i=0; i<rec_cnt; i++) {
 		memset(&object, 0, sizeof(local_step_t));
-		if(_unpack_local_step(&object, rpc_version, buffer)
+		if (_unpack_local_step(&object, rpc_version, buffer)
 		   != SLURM_SUCCESS) {
 			error("issue unpacking");
 			xfree(format);
 			xfree(insert);
 			break;
 		}
-		if(i)
+		if (i)
 			xstrcat(insert, ", ");
 
 		xstrfmtcat(insert, format,
@@ -1723,13 +1723,13 @@ static uint32_t _archive_suspend(mysql_conn_t *mysql_conn, char *cluster_name,
 //	START_TIMER;
 	debug3("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, THIS_FILE, __LINE__, query);
-	if(!(result = mysql_db_query_ret(mysql_conn->db_conn, query, 0))) {
+	if (!(result = mysql_db_query_ret(mysql_conn->db_conn, query, 0))) {
 		xfree(query);
 		return SLURM_ERROR;
 	}
 	xfree(query);
 
-	if(!(cnt = mysql_num_rows(result))) {
+	if (!(cnt = mysql_num_rows(result))) {
 		mysql_free_result(result);
 		return 0;
 	}
@@ -1742,7 +1742,7 @@ static uint32_t _archive_suspend(mysql_conn_t *mysql_conn, char *cluster_name,
 	pack32(cnt, buffer);
 
 	while((row = mysql_fetch_row(result))) {
-		if(!period_start)
+		if (!period_start)
 			period_start = atoi(row[SUSPEND_REQ_START]);
 
 		memset(&suspend, 0, sizeof(local_suspend_t));
@@ -1764,7 +1764,7 @@ static uint32_t _archive_suspend(mysql_conn_t *mysql_conn, char *cluster_name,
 					 arch_dir, "suspend", archive_period);
 	free_buf(buffer);
 
-	if(error_code != SLURM_SUCCESS)
+	if (error_code != SLURM_SUCCESS)
 		return error_code;
 
 	return cnt;
@@ -1789,14 +1789,14 @@ static char *_load_suspend(uint16_t rpc_version, Buf buffer,
 	xstrcat(format, ")");
 	for(i=0; i<rec_cnt; i++) {
 		memset(&object, 0, sizeof(local_suspend_t));
-		if(_unpack_local_suspend(&object, rpc_version, buffer)
+		if (_unpack_local_suspend(&object, rpc_version, buffer)
 		   != SLURM_SUCCESS) {
 			error("issue unpacking");
 			xfree(format);
 			xfree(insert);
 			break;
 		}
-		if(i)
+		if (i)
 			xstrcat(insert, ", ");
 
 		xstrfmtcat(insert, format,
@@ -1854,8 +1854,8 @@ static int _archive_script(slurmdb_archive_cond_t *arch_cond,
 	env_array_append_fmt(&env, "SLURM_ARCHIVE_CLUSTER", "%s",
 			     cluster_name);
 
-	if(arch_cond->purge_event != NO_VAL) {
-		if(!(curr_end = _setup_end_time(
+	if (arch_cond->purge_event != NO_VAL) {
+		if (!(curr_end = _setup_end_time(
 			     last_submit, arch_cond->purge_event))) {
 			error("Parsing purge events");
 			return SLURM_ERROR;
@@ -1868,8 +1868,8 @@ static int _archive_script(slurmdb_archive_cond_t *arch_cond,
 				     curr_end);
 	}
 
-	if(arch_cond->purge_job != NO_VAL) {
-		if(!(curr_end = _setup_end_time(
+	if (arch_cond->purge_job != NO_VAL) {
+		if (!(curr_end = _setup_end_time(
 			     last_submit, arch_cond->purge_job))) {
 			error("Parsing purge job");
 			return SLURM_ERROR;
@@ -1882,8 +1882,8 @@ static int _archive_script(slurmdb_archive_cond_t *arch_cond,
 				      curr_end);
 	}
 
-	if(arch_cond->purge_step != NO_VAL) {
-		if(!(curr_end = _setup_end_time(
+	if (arch_cond->purge_step != NO_VAL) {
+		if (!(curr_end = _setup_end_time(
 			     last_submit, arch_cond->purge_step))) {
 			error("Parsing purge step");
 			return SLURM_ERROR;
@@ -1896,8 +1896,8 @@ static int _archive_script(slurmdb_archive_cond_t *arch_cond,
 				     curr_end);
 	}
 
-	if(arch_cond->purge_suspend != NO_VAL) {
-		if(!(curr_end = _setup_end_time(
+	if (arch_cond->purge_suspend != NO_VAL) {
+		if (!(curr_end = _setup_end_time(
 			     last_submit, arch_cond->purge_suspend))) {
 			error("Parsing purge suspend");
 			return SLURM_ERROR;
@@ -1931,18 +1931,18 @@ static int _execute_archive(mysql_conn_t *mysql_conn,
 	time_t curr_end;
 	time_t last_submit = time(NULL);
 
-	if(arch_cond->archive_script)
+	if (arch_cond->archive_script)
 		return _archive_script(arch_cond, cluster_name, last_submit);
-	else if(!arch_cond->archive_dir) {
+	else if (!arch_cond->archive_dir) {
 		error("No archive dir given, can't process");
 		return SLURM_ERROR;
 	}
 
-	if(arch_cond->purge_event != NO_VAL) {
+	if (arch_cond->purge_event != NO_VAL) {
 		/* remove all data from event table that was older than
 		 * period_start * arch_cond->purge_event.
 		 */
-		if(!(curr_end = _setup_end_time(
+		if (!(curr_end = _setup_end_time(
 			     last_submit, arch_cond->purge_event))) {
 			error("Parsing purge event");
 			return SLURM_ERROR;
@@ -1951,13 +1951,13 @@ static int _execute_archive(mysql_conn_t *mysql_conn,
 		debug4("Purging event entries before %d for %s",
 		       curr_end, cluster_name);
 
-		if(SLURMDB_PURGE_ARCHIVE_SET(arch_cond->purge_event)) {
+		if (SLURMDB_PURGE_ARCHIVE_SET(arch_cond->purge_event)) {
 			rc = _archive_events(mysql_conn, cluster_name,
 					     curr_end, arch_cond->archive_dir,
 					     arch_cond->purge_event);
-			if(!rc)
+			if (!rc)
 				goto exit_events;
-			else if(rc == SLURM_ERROR)
+			else if (rc == SLURM_ERROR)
 				return rc;
 		}
 		query = xstrdup_printf("delete from \"%s_%s\" where "
@@ -1967,7 +1967,7 @@ static int _execute_archive(mysql_conn_t *mysql_conn,
 		       mysql_conn->conn, THIS_FILE, __LINE__, query);
 		rc = mysql_db_query(mysql_conn->db_conn, query);
 		xfree(query);
-		if(rc != SLURM_SUCCESS) {
+		if (rc != SLURM_SUCCESS) {
 			error("Couldn't remove old event data");
 			return SLURM_ERROR;
 		}
@@ -1975,11 +1975,11 @@ static int _execute_archive(mysql_conn_t *mysql_conn,
 
 exit_events:
 
-	if(arch_cond->purge_suspend != NO_VAL) {
+	if (arch_cond->purge_suspend != NO_VAL) {
 		/* remove all data from suspend table that was older than
 		 * period_start * arch_cond->purge_suspend.
 		 */
-		if(!(curr_end = _setup_end_time(
+		if (!(curr_end = _setup_end_time(
 			     last_submit, arch_cond->purge_suspend))) {
 			error("Parsing purge suspend");
 			return SLURM_ERROR;
@@ -1988,13 +1988,13 @@ exit_events:
 		debug4("Purging suspend entries before %d for %s",
 		       curr_end, cluster_name);
 
-		if(SLURMDB_PURGE_ARCHIVE_SET(arch_cond->purge_suspend)) {
+		if (SLURMDB_PURGE_ARCHIVE_SET(arch_cond->purge_suspend)) {
 			rc = _archive_suspend(mysql_conn, cluster_name,
 					      curr_end, arch_cond->archive_dir,
 					      arch_cond->purge_suspend);
-			if(!rc)
+			if (!rc)
 				goto exit_suspend;
-			else if(rc == SLURM_ERROR)
+			else if (rc == SLURM_ERROR)
 				return rc;
 		}
 		query = xstrdup_printf("delete from \"%s_%s\" where "
@@ -2004,7 +2004,7 @@ exit_events:
 		       mysql_conn->conn, THIS_FILE, __LINE__, query);
 		rc = mysql_db_query(mysql_conn->db_conn, query);
 		xfree(query);
-		if(rc != SLURM_SUCCESS) {
+		if (rc != SLURM_SUCCESS) {
 			error("Couldn't remove old suspend data");
 			return SLURM_ERROR;
 		}
@@ -2012,11 +2012,11 @@ exit_events:
 
 exit_suspend:
 
-	if(arch_cond->purge_step != NO_VAL) {
+	if (arch_cond->purge_step != NO_VAL) {
 		/* remove all data from step table that was older than
 		 * start * arch_cond->purge_step.
 		 */
-		if(!(curr_end = _setup_end_time(
+		if (!(curr_end = _setup_end_time(
 			     last_submit, arch_cond->purge_step))) {
 			error("Parsing purge step");
 			return SLURM_ERROR;
@@ -2025,13 +2025,13 @@ exit_suspend:
 		debug4("Purging step entries before %d for %s",
 		       curr_end, cluster_name);
 
-		if(SLURMDB_PURGE_ARCHIVE_SET(arch_cond->purge_step)) {
+		if (SLURMDB_PURGE_ARCHIVE_SET(arch_cond->purge_step)) {
 			rc = _archive_steps(mysql_conn, cluster_name,
 					    curr_end, arch_cond->archive_dir,
 					    arch_cond->purge_step);
-			if(!rc)
+			if (!rc)
 				goto exit_steps;
-			else if(rc == SLURM_ERROR)
+			else if (rc == SLURM_ERROR)
 				return rc;
 		}
 
@@ -2042,18 +2042,18 @@ exit_suspend:
 		       mysql_conn->conn, THIS_FILE, __LINE__, query);
 		rc = mysql_db_query(mysql_conn->db_conn, query);
 		xfree(query);
-		if(rc != SLURM_SUCCESS) {
+		if (rc != SLURM_SUCCESS) {
 			error("Couldn't remove old step data");
 			return SLURM_ERROR;
 		}
 	}
 exit_steps:
 
-	if(arch_cond->purge_job != NO_VAL) {
+	if (arch_cond->purge_job != NO_VAL) {
 		/* remove all data from job table that was older than
 		 * last_submit * arch_cond->purge_job.
 		 */
-		if(!(curr_end = _setup_end_time(
+		if (!(curr_end = _setup_end_time(
 			     last_submit, arch_cond->purge_job))) {
 			error("Parsing purge job");
 			return SLURM_ERROR;
@@ -2062,13 +2062,13 @@ exit_steps:
 		debug4("Purging job entires before %d for %s",
 		       curr_end, cluster_name);
 
-		if(SLURMDB_PURGE_ARCHIVE_SET(arch_cond->purge_job)) {
+		if (SLURMDB_PURGE_ARCHIVE_SET(arch_cond->purge_job)) {
 			rc = _archive_jobs(mysql_conn, cluster_name,
 					   curr_end, arch_cond->archive_dir,
 					   arch_cond->purge_job);
-			if(!rc)
+			if (!rc)
 				goto exit_jobs;
-			else if(rc == SLURM_ERROR)
+			else if (rc == SLURM_ERROR)
 				return rc;
 		}
 
@@ -2080,7 +2080,7 @@ exit_steps:
 		       mysql_conn->conn, THIS_FILE, __LINE__, query);
 		rc = mysql_db_query(mysql_conn->db_conn, query);
 		xfree(query);
-		if(rc != SLURM_SUCCESS) {
+		if (rc != SLURM_SUCCESS) {
 			error("Couldn't remove old job data");
 			return SLURM_ERROR;
 		}
@@ -2099,12 +2099,12 @@ extern int as_mysql_jobacct_process_archive(mysql_conn_t *mysql_conn,
 
 //	DEF_TIMERS;
 
-	if(!arch_cond) {
+	if (!arch_cond) {
 		error("No arch_cond was given to archive from.  returning");
 		return SLURM_ERROR;
 	}
 
-	if(arch_cond->job_cond && arch_cond->job_cond->cluster_list
+	if (arch_cond->job_cond && arch_cond->job_cond->cluster_list
 	   && list_count(arch_cond->job_cond->cluster_list))
 		use_cluster_list = arch_cond->job_cond->cluster_list;
 	else
@@ -2112,12 +2112,12 @@ extern int as_mysql_jobacct_process_archive(mysql_conn_t *mysql_conn,
 
 	itr = list_iterator_create(use_cluster_list);
 	while((cluster_name = list_next(itr))) {
-		if((rc = _execute_archive(mysql_conn, cluster_name, arch_cond))
+		if ((rc = _execute_archive(mysql_conn, cluster_name, arch_cond))
 		   != SLURM_SUCCESS)
 			break;
 	}
 	list_iterator_destroy(itr);
-	if(use_cluster_list == as_mysql_cluster_list)
+	if (use_cluster_list == as_mysql_cluster_list)
 		slurm_mutex_unlock(&as_mysql_cluster_list_lock);
 
 	return rc;
@@ -2133,14 +2133,14 @@ extern int as_mysql_jobacct_process_archive_load(
 	uint16_t type = 0, ver = 0;
 	uint32_t data_size = 0, rec_cnt = 0, tmp32 = 0;
 
-	if(!arch_rec) {
+	if (!arch_rec) {
 		error("We need a slurmdb_archive_rec to load anything.");
 		return SLURM_ERROR;
 	}
 
-	if(arch_rec->insert) {
+	if (arch_rec->insert) {
 		data = xstrdup(arch_rec->insert);
-	} else if(arch_rec->archive_file) {
+	} else if (arch_rec->archive_file) {
 		int data_allocated, data_read = 0;
 		int state_fd = open(arch_rec->archive_file, O_RDONLY);
 		if (state_fd < 0) {
@@ -2169,7 +2169,7 @@ extern int as_mysql_jobacct_process_archive_load(
 			}
 			close(state_fd);
 		}
-		if(error_code != SLURM_SUCCESS) {
+		if (error_code != SLURM_SUCCESS) {
 			xfree(data);
 			return error_code;
 		}
@@ -2179,14 +2179,14 @@ extern int as_mysql_jobacct_process_archive_load(
 		return SLURM_ERROR;
 	}
 
-	if(!data) {
+	if (!data) {
 		error("It doesn't appear we have anything to load.");
 		return SLURM_ERROR;
 	}
 
 	/* this is the old version of an archive file where the file
 	   was straight sql. */
-	if((strlen(data) >= 12)
+	if ((strlen(data) >= 12)
 	   && (!strncmp("insert into ", data, 12)
 	       || !strncmp("delete from ", data, 12)
 	       || !strncmp("drop table ", data, 11)
@@ -2213,7 +2213,7 @@ extern int as_mysql_jobacct_process_archive_load(
 	unpackstr_ptr(&cluster_name, &tmp32, buffer);
 	safe_unpack32(&rec_cnt, buffer);
 
-	if(!rec_cnt) {
+	if (!rec_cnt) {
 		error("we didn't get any records from this file of type '%s'",
 		      slurmdbd_msg_type_2_str(type, 0));
 		free_buf(buffer);
@@ -2240,7 +2240,7 @@ extern int as_mysql_jobacct_process_archive_load(
 	free_buf(buffer);
 
 got_sql:
-	if(!data) {
+	if (!data) {
 		error("No data to load");
 		return SLURM_ERROR;
 	}
@@ -2248,7 +2248,7 @@ got_sql:
 	       mysql_conn->conn, THIS_FILE, __LINE__, data);
 	error_code = mysql_db_query_check_after(mysql_conn->db_conn, data);
 	xfree(data);
-	if(error_code != SLURM_SUCCESS) {
+	if (error_code != SLURM_SUCCESS) {
 	unpack_error:
 		error("Couldn't load old data");
 		return SLURM_ERROR;

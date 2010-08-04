@@ -59,7 +59,7 @@ static void _destroy_filetxt_jobcomp_info(void *object)
 {
 	filetxt_jobcomp_info_t *jobcomp_info =
 		(filetxt_jobcomp_info_t *)object;
-	if(jobcomp_info) {
+	if (jobcomp_info) {
 		xfree(jobcomp_info);
 	}
 }
@@ -106,22 +106,22 @@ static jobcomp_job_rec_t *_parse_line(List job_info_list)
 
 	itr = list_iterator_create(job_info_list);
 	while((jobcomp_info = list_next(itr))) {
-		if(!strcasecmp("JobID", jobcomp_info->name)) {
+		if (!strcasecmp("JobID", jobcomp_info->name)) {
 			job->jobid = atoi(jobcomp_info->val);
-		} else if(!strcasecmp("Partition", jobcomp_info->name)) {
+		} else if (!strcasecmp("Partition", jobcomp_info->name)) {
 			job->partition = xstrdup(jobcomp_info->val);
-		} else if(!strcasecmp("StartTime", jobcomp_info->name)) {
+		} else if (!strcasecmp("StartTime", jobcomp_info->name)) {
 			job->start_time = xstrdup(jobcomp_info->val);
-		} else if(!strcasecmp("EndTime", jobcomp_info->name)) {
+		} else if (!strcasecmp("EndTime", jobcomp_info->name)) {
 			job->end_time = xstrdup(jobcomp_info->val);
-		} else if(!strcasecmp("Userid", jobcomp_info->name)) {
+		} else if (!strcasecmp("Userid", jobcomp_info->name)) {
 			temp = strstr(jobcomp_info->val, "(");
-			if(!temp)
+			if (!temp)
 				job->uid = atoi(jobcomp_info->val);
 			*temp++ = 0;
 			temp2 = temp;
 			temp = strstr(temp, ")");
-			if(!temp) {
+			if (!temp) {
 				error("problem getting correct uid from %s",
 				      jobcomp_info->val);
 			} else {
@@ -129,14 +129,14 @@ static jobcomp_job_rec_t *_parse_line(List job_info_list)
 				job->uid = atoi(temp2);
 				job->uid_name = xstrdup(jobcomp_info->val);
 			}
-		} else if(!strcasecmp("GroupId", jobcomp_info->name)) {
+		} else if (!strcasecmp("GroupId", jobcomp_info->name)) {
 			temp = strstr(jobcomp_info->val, "(");
-			if(!temp)
+			if (!temp)
 				job->gid = atoi(jobcomp_info->val);
 			*temp++ = 0;
 			temp2 = temp;
 			temp = strstr(temp, ")");
-			if(!temp) {
+			if (!temp) {
 				error("problem getting correct gid from %s",
 				      jobcomp_info->val);
 			} else {
@@ -144,31 +144,31 @@ static jobcomp_job_rec_t *_parse_line(List job_info_list)
 				job->gid = atoi(temp2);
 				job->gid_name = xstrdup(jobcomp_info->val);
 			}
-		} else if(!strcasecmp("Name", jobcomp_info->name)) {
+		} else if (!strcasecmp("Name", jobcomp_info->name)) {
 			job->jobname = xstrdup(jobcomp_info->val);
-		} else if(!strcasecmp("NodeList", jobcomp_info->name)) {
+		} else if (!strcasecmp("NodeList", jobcomp_info->name)) {
 			job->nodelist = xstrdup(jobcomp_info->val);
-		} else if(!strcasecmp("NodeCnt", jobcomp_info->name)) {
+		} else if (!strcasecmp("NodeCnt", jobcomp_info->name)) {
 			job->node_cnt = atoi(jobcomp_info->val);
-		} else if(!strcasecmp("JobState", jobcomp_info->name)) {
+		} else if (!strcasecmp("JobState", jobcomp_info->name)) {
 			job->state = xstrdup(jobcomp_info->val);
-		} else if(!strcasecmp("Timelimit", jobcomp_info->name)) {
+		} else if (!strcasecmp("Timelimit", jobcomp_info->name)) {
 			job->timelimit = xstrdup(jobcomp_info->val);
 		}
 #ifdef HAVE_BG
-		else if(!strcasecmp("MaxProcs", jobcomp_info->name)) {
+		else if (!strcasecmp("MaxProcs", jobcomp_info->name)) {
 			job->max_procs = atoi(jobcomp_info->val);
-		} else if(!strcasecmp("Block_Id", jobcomp_info->name)) {
+		} else if (!strcasecmp("Block_Id", jobcomp_info->name)) {
 			job->blockid = xstrdup(jobcomp_info->val);
-		} else if(!strcasecmp("Connection", jobcomp_info->name)) {
+		} else if (!strcasecmp("Connection", jobcomp_info->name)) {
 			job->connection = xstrdup(jobcomp_info->val);
-		} else if(!strcasecmp("reboot", jobcomp_info->name)) {
+		} else if (!strcasecmp("reboot", jobcomp_info->name)) {
 			job->reboot = xstrdup(jobcomp_info->val);
-		} else if(!strcasecmp("rotate", jobcomp_info->name)) {
+		} else if (!strcasecmp("rotate", jobcomp_info->name)) {
 			job->rotate = xstrdup(jobcomp_info->val);
-		} else if(!strcasecmp("geometry", jobcomp_info->name)) {
+		} else if (!strcasecmp("geometry", jobcomp_info->name)) {
 			job->geo = xstrdup(jobcomp_info->val);
-		} else if(!strcasecmp("start", jobcomp_info->name)) {
+		} else if (!strcasecmp("start", jobcomp_info->name)) {
 			job->bg_start_point = xstrdup(jobcomp_info->val);
 		}
 #endif
@@ -204,7 +204,7 @@ extern List filetxt_jobcomp_process_get_jobs(slurmdb_job_cond_t *job_cond)
 	   add this extra field to the structure since it only applies
 	   to this plugin.
 	*/
-	if(job_cond) {
+	if (job_cond) {
 		fdump_flag = job_cond->duplicates & FDUMP_FLAG;
 		job_cond->duplicates &= (~FDUMP_FLAG);
 	}
@@ -216,7 +216,7 @@ extern List filetxt_jobcomp_process_get_jobs(slurmdb_job_cond_t *job_cond)
 		lc++;
 		fptr = line;	/* break the record into NULL-
 				   terminated strings */
-		if(job_info_list)
+		if (job_info_list)
 			list_destroy(job_info_list);
 		jobid = 0;
 		partition = NULL;
@@ -230,21 +230,21 @@ extern List filetxt_jobcomp_process_get_jobs(slurmdb_job_cond_t *job_cond)
 			*fptr++ = 0;
 			jobcomp_info->val = fptr;
 			fptr = strstr(fptr, " ");
-			if(!strcasecmp("JobId", jobcomp_info->name))
+			if (!strcasecmp("JobId", jobcomp_info->name))
 				jobid = atoi(jobcomp_info->val);
-			else if(!strcasecmp("Partition",
+			else if (!strcasecmp("Partition",
 					    jobcomp_info->name))
 				partition = jobcomp_info->val;
 
 
-			if(!fptr) {
+			if (!fptr) {
 				fptr = strstr(jobcomp_info->val, "\n");
 				if (fptr)
 					*fptr = 0;
 				break;
 			} else {
 				*fptr++ = 0;
-				if(*fptr == '\n') {
+				if (*fptr == '\n') {
 					*fptr = 0;
 					break;
 				}
@@ -252,7 +252,7 @@ extern List filetxt_jobcomp_process_get_jobs(slurmdb_job_cond_t *job_cond)
 		}
 
 		if (job_cond->step_list && list_count(job_cond->step_list)) {
-			if(!jobid)
+			if (!jobid)
 				continue;
 			itr = list_iterator_create(job_cond->step_list);
 			while((selected_step = list_next(itr))) {
@@ -269,7 +269,7 @@ extern List filetxt_jobcomp_process_get_jobs(slurmdb_job_cond_t *job_cond)
 
 		if (job_cond->partition_list
 		    && list_count(job_cond->partition_list)) {
-			if(!partition)
+			if (!partition)
 				continue;
 			itr = list_iterator_create(job_cond->partition_list);
 			while((selected_part = list_next(itr)))
@@ -290,11 +290,11 @@ extern List filetxt_jobcomp_process_get_jobs(slurmdb_job_cond_t *job_cond)
 
 		job = _parse_line(job_info_list);
 
-		if(job)
+		if (job)
 			list_append(job_list, job);
 	}
 
-	if(job_info_list)
+	if (job_info_list)
 		list_destroy(job_info_list);
 
 	if (ferror(fd)) {

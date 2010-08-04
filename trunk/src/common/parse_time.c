@@ -224,7 +224,7 @@ static int _get_date(char *time_str, int *pos, int *month, int *mday, int *year)
 	int mon, day, yr;
 	int offset = *pos;
 
-	if(time_str[offset+4] && (time_str[offset+4] == '-')
+	if (time_str[offset+4] && (time_str[offset+4] == '-')
 	   && time_str[offset+7] && (time_str[offset+7] == '-')) {
 		/* get year */
 		if ((time_str[offset] < '0') || (time_str[offset] > '9'))

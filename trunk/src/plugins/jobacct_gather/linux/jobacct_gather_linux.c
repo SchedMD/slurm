@@ -193,12 +193,12 @@ static void _get_process_data(void)
 	static int processing = 0;
 	long		hertz;
 
-	if(!pgid_plugin && cont_id == (uint32_t)NO_VAL) {
+	if (!pgid_plugin && cont_id == (uint32_t)NO_VAL) {
 		debug("cont_id hasn't been set yet not running poll");
 		return;
 	}
 
-	if(processing) {
+	if (processing) {
 		debug("already running, returning");
 		return;
 	}
@@ -211,10 +211,10 @@ static void _get_process_data(void)
 		hertz = 100;	/* default on many systems */
 	}
 
-	if(!pgid_plugin) {
+	if (!pgid_plugin) {
 		/* get only the processes in the proctrack container */
 		slurm_container_get_pids(cont_id, &pids, &npids);
-		if(!npids) {
+		if (!npids) {
 			debug4("no pids in this container %d", cont_id);
 			goto finished;
 		}
@@ -271,14 +271,14 @@ static void _get_process_data(void)
 			iptr = slash_proc_entry->d_name;
 			i = 0;
 			do {
-				if((*iptr < '0')
+				if ((*iptr < '0')
 				   || ((*optr++ = *iptr++) > '9')) {
 					i = -1;
 					break;
 				}
 			} while (*iptr);
 
-			if(i == -1)
+			if (i == -1)
 				continue;
 			iptr = (char*)"/stat";
 
@@ -318,7 +318,7 @@ static void _get_process_data(void)
 	}
 
 	slurm_mutex_lock(&jobacct_lock);
-	if(!task_list || !list_count(task_list)) {
+	if (!task_list || !list_count(task_list)) {
 		slurm_mutex_unlock(&jobacct_lock);
 		goto finished;
 	}
@@ -543,7 +543,7 @@ static void *_watch_tasks(void *arg)
 	_task_sleep(1);
 
 	while(!jobacct_shutdown) {  /* Do this until shutdown is requested */
-		if(!jobacct_suspended) {
+		if (!jobacct_suspended) {
 			_get_process_data();	/* Update the data */
 		}
 		_task_sleep(freq);
@@ -566,7 +566,7 @@ static void _destroy_prec(void *object)
 extern int init ( void )
 {
 	char *temp = slurm_get_proctrack_type();
-	if(!strcasecmp(temp, "proctrack/pgid")) {
+	if (!strcasecmp(temp, "proctrack/pgid")) {
 		info("WARNING: We will use a much slower algorithm with "
 		     "proctrack/pgid, use Proctracktype=proctrack/linuxproc "
 		     "or Proctracktype=proctrack/rms with %s",
@@ -575,7 +575,7 @@ extern int init ( void )
 	}
 	xfree(temp);
 	temp = slurm_get_accounting_storage_type();
-	if(!strcasecmp(temp, ACCOUNTING_STORAGE_TYPE_NONE)) {
+	if (!strcasecmp(temp, ACCOUNTING_STORAGE_TYPE_NONE)) {
 		error("WARNING: Even though we are collecting accounting "
 		      "information you have asked for it not to be stored "
 		      "(%s) if this is not what you have in mind you will "
@@ -680,7 +680,7 @@ extern int jobacct_gather_p_startpoll(uint16_t frequency)
 extern int jobacct_gather_p_endpoll()
 {
 	slurm_mutex_lock(&jobacct_lock);
-	if(task_list)
+	if (task_list)
 		list_destroy(task_list);
 	task_list = NULL;
 	slurm_mutex_unlock(&jobacct_lock);
@@ -698,7 +698,7 @@ extern int jobacct_gather_p_endpoll()
 
 extern void jobacct_gather_p_change_poll(uint16_t frequency)
 {
-	if(freq == 0 && frequency != 0) {
+	if (freq == 0 && frequency != 0) {
 		pthread_attr_t attr;
 		pthread_t _watch_tasks_thread_id;
 		/* create polling thread */
@@ -738,14 +738,14 @@ extern void jobacct_gather_p_resume_poll()
 
 extern int jobacct_gather_p_set_proctrack_container_id(uint32_t id)
 {
-	if(pgid_plugin)
+	if (pgid_plugin)
 		return SLURM_SUCCESS;
 
-	if(cont_id != (uint32_t)NO_VAL)
+	if (cont_id != (uint32_t)NO_VAL)
 		info("Warning: jobacct: set_proctrack_container_id: "
 		     "cont_id is already set to %d you are setting it to %d",
 		     cont_id, id);
-	if(id <= 0) {
+	if (id <= 0) {
 		error("jobacct: set_proctrack_container_id: "
 		      "I was given most likely an unset cont_id %d",
 		      id);
@@ -764,7 +764,7 @@ extern int jobacct_gather_p_add_task(pid_t pid, jobacct_id_t *jobacct_id)
 
 extern struct jobacctinfo *jobacct_gather_p_stat_task(pid_t pid)
 {
-	if(pid) {
+	if (pid) {
 		_get_process_data();
 		return jobacct_common_stat_task(pid, task_list);
 	} else {

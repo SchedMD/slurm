@@ -138,7 +138,7 @@ extern void parse_command_line(int argc, char *argv[])
 			break;
 		case (int)'b':
 			params.cluster_flags = slurmdb_setup_cluster_flags();
-			if(params.cluster_flags & CLUSTER_FLAG_BG)
+			if (params.cluster_flags & CLUSTER_FLAG_BG)
 				params.bg_flag = true;
 			else {
 				error("Must be on a BG system to use --bg "
@@ -169,9 +169,9 @@ extern void parse_command_line(int argc, char *argv[])
 			params.long_output = true;
 			break;
 		case (int) 'M':
-			if(params.clusters)
+			if (params.clusters)
 				list_destroy(params.clusters);
-			if(!(params.clusters =
+			if (!(params.clusters =
 			     slurmdb_get_info_cluster(optarg))) {
 				error("'%s' invalid entry for --cluster",
 				      optarg);
@@ -248,7 +248,7 @@ extern void parse_command_line(int argc, char *argv[])
 
 	if ( params.format == NULL ) {
 		if ( params.summarize ) {
-			if(params.cluster_flags & CLUSTER_FLAG_BG)
+			if (params.cluster_flags & CLUSTER_FLAG_BG)
 				params.format = "%9P %.5a %.10l %.32F  %N";
 			else
 				params.format = "%9P %.5a %.10l %.16F  %N";
@@ -327,7 +327,7 @@ _build_state_list (char *state_str)
 
 	if (state_str == NULL)
 		return NULL;
-	if (strcasecmp (state_str, "all") == 0 )
+	if (strcasecmp(state_str, "all") == 0 )
 		return _build_all_states_list ();
 
 	orig = str = xstrdup (state_str);

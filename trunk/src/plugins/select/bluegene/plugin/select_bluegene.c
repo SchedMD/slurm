@@ -192,16 +192,16 @@ static List _get_config(void)
 	key_pair->value = xstrdup_printf("%u", bg_conf->bridge_api_verb);
 	list_append(my_list, key_pair);
 
-	if(bg_conf->deny_pass) {
+	if (bg_conf->deny_pass) {
 		key_pair = xmalloc(sizeof(config_key_pair_t));
 		key_pair->name = xstrdup("DenyPassThrough");
-		if(bg_conf->deny_pass & PASS_DENY_X)
+		if (bg_conf->deny_pass & PASS_DENY_X)
 			xstrcat(key_pair->value, "X,");
-		if(bg_conf->deny_pass & PASS_DENY_Y)
+		if (bg_conf->deny_pass & PASS_DENY_Y)
 			xstrcat(key_pair->value, "Y,");
-		if(bg_conf->deny_pass & PASS_DENY_Z)
+		if (bg_conf->deny_pass & PASS_DENY_Z)
 			xstrcat(key_pair->value, "Z,");
-		if(key_pair->value)
+		if (key_pair->value)
 			key_pair->value[strlen(key_pair->value)-1] = '\0';
 		list_append(my_list, key_pair);
 	}
@@ -253,7 +253,7 @@ extern int init ( void )
 {
 
 #ifdef HAVE_BG_L_P
-	if(bg_recover != NOT_FROM_CONTROLLER) {
+	if (bg_recover != NOT_FROM_CONTROLLER) {
 #if (SYSTEM_DIMENSIONS != 3)
 		fatal("SYSTEM_DIMENSIONS value (%d) invalid for BlueGene",
 		      SYSTEM_DIMENSIONS);
@@ -343,7 +343,7 @@ extern int select_p_state_save(char *dir_name)
 		 * the blocks in an error state
 		 */
 #ifdef HAVE_BG_FILES
-		if(bg_record->state != RM_PARTITION_ERROR)
+		if (bg_record->state != RM_PARTITION_ERROR)
 			continue;
 #endif
 		xassert(bg_record->bg_block_id != NULL);
@@ -396,11 +396,11 @@ extern int select_p_state_save(char *dir_name)
 		(void) unlink(new_file);
 	else {			/* file shuffle */
 		(void) unlink(old_file);
-		if(link(reg_file, old_file))
+		if (link(reg_file, old_file))
 			debug4("unable to create link for %s -> %s: %m",
 			       reg_file, old_file);
 		(void) unlink(reg_file);
-		if(link(new_file, reg_file))
+		if (link(new_file, reg_file))
 			debug4("unable to create link for %s -> %s: %m",
 			       new_file, reg_file);
 		(void) unlink(new_file);
@@ -447,8 +447,8 @@ extern int select_p_job_init(List job_list)
 extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 {
 #ifdef HAVE_BG_L_P
-	if(node_cnt>0 && bg_conf)
-		if(node_ptr->cpus >= bg_conf->bp_node_cnt)
+	if (node_cnt>0 && bg_conf)
+		if (node_ptr->cpus >= bg_conf->bp_node_cnt)
 			bg_conf->cpus_per_bp = node_ptr->cpus;
 
 	return SLURM_SUCCESS;
@@ -467,12 +467,12 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 	/* select_p_node_init needs to be called before this to set
 	   this up correctly
 	*/
-	if(read_bg_conf() == SLURM_ERROR) {
+	if (read_bg_conf() == SLURM_ERROR) {
 		fatal("Error, could not read the file");
 		return SLURM_ERROR;
 	}
 
-	if(part_list) {
+	if (part_list) {
 		struct part_record *part_ptr = NULL;
 		ListIterator itr = list_iterator_create(part_list);
 		while((part_ptr = list_next(itr))) {
@@ -597,14 +597,14 @@ extern int select_p_pack_select_info(time_t last_query_time, Buf *buffer_ptr,
 		debug2("Node select info hasn't changed since %d",
 			last_bg_update);
 		return SLURM_NO_CHANGE_IN_DATA;
-	} else if(blocks_are_created) {
+	} else if (blocks_are_created) {
 		*buffer_ptr = NULL;
 		buffer = init_buf(HUGE_BUF_SIZE);
 		pack32(blocks_packed, buffer);
 		pack_time(last_bg_update, buffer);
 
-		if(protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
-			if(bg_lists->main) {
+		if (protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
+			if (bg_lists->main) {
 				slurm_mutex_lock(&block_state_mutex);
 				itr = list_iterator_create(bg_lists->main);
 				while ((bg_record = list_next(itr))) {
@@ -623,7 +623,7 @@ extern int select_p_pack_select_info(time_t last_query_time, Buf *buffer_ptr,
 			 * get all the blocks we are freeing since they have
 			 * been moved here
 			 */
-			if(bg_lists->freeing) {
+			if (bg_lists->freeing) {
 				slurm_mutex_lock(&block_state_mutex);
 				itr = list_iterator_create(bg_lists->freeing);
 				while ((bg_record = list_next(itr))) {
@@ -755,7 +755,7 @@ extern int select_p_update_block(update_block_msg_t *block_desc_ptr)
 	bg_record_t *bg_record = NULL;
 	char reason[200];
 
-	if(!block_desc_ptr->bg_block_id) {
+	if (!block_desc_ptr->bg_block_id) {
 		error("update_block: No name specified");
 		return ESLURM_INVALID_BLOCK_NAME;
 	}
@@ -763,17 +763,17 @@ extern int select_p_update_block(update_block_msg_t *block_desc_ptr)
 	slurm_mutex_lock(&block_state_mutex);
 	bg_record = find_bg_record_in_list(bg_lists->main,
 					   block_desc_ptr->bg_block_id);
-	if(!bg_record) {
+	if (!bg_record) {
 		slurm_mutex_unlock(&block_state_mutex);
 		return ESLURM_INVALID_BLOCK_NAME;
 	}
 
-	if(block_desc_ptr->state == RM_PARTITION_CONFIGURING)
+	if (block_desc_ptr->state == RM_PARTITION_CONFIGURING)
 		snprintf(reason, sizeof(reason),
 			 "update_block: "
 			 "Admin recreated %s.", bg_record->bg_block_id);
-	else if(block_desc_ptr->state == RM_PARTITION_NAV) {
-		if(bg_record->conn_type < SELECT_SMALL)
+	else if (block_desc_ptr->state == RM_PARTITION_NAV) {
+		if (bg_record->conn_type < SELECT_SMALL)
 			snprintf(reason, sizeof(reason),
 				 "update_block: "
 				 "Admin removed block %s",
@@ -792,7 +792,7 @@ extern int select_p_update_block(update_block_msg_t *block_desc_ptr)
 			 bg_block_state_string(block_desc_ptr->state));
 	}
 	/* First fail any job running on this block */
-	if(bg_record->job_running > NO_JOB_RUNNING) {
+	if (bg_record->job_running > NO_JOB_RUNNING) {
 		slurm_fail_job(bg_record->job_running);
 		/* need to set the job_ptr to NULL
 		   here or we will get error message
@@ -815,13 +815,13 @@ extern int select_p_update_block(update_block_msg_t *block_desc_ptr)
 			if (bg_record == found_record)
 				continue;
 
-			if(!blocks_overlap(bg_record, found_record)) {
+			if (!blocks_overlap(bg_record, found_record)) {
 				debug2("block %s isn't part of errored %s",
 				       found_record->bg_block_id,
 				       bg_record->bg_block_id);
 				continue;
 			}
-			if(found_record->job_running > NO_JOB_RUNNING) {
+			if (found_record->job_running > NO_JOB_RUNNING) {
 				info("Failing job %u block %s "
 				     "failed because overlapping block %s "
 				     "is in an error state.",
@@ -851,14 +851,14 @@ extern int select_p_update_block(update_block_msg_t *block_desc_ptr)
 		list_destroy(delete_list);
 	}
 
-	if(block_desc_ptr->state == RM_PARTITION_ERROR) {
+	if (block_desc_ptr->state == RM_PARTITION_ERROR) {
 		slurm_mutex_unlock(&block_state_mutex);
 		put_block_in_error_state(bg_record, BLOCK_ERROR_STATE, reason);
-	} else if(block_desc_ptr->state == RM_PARTITION_FREE) {
+	} else if (block_desc_ptr->state == RM_PARTITION_FREE) {
 		bg_free_block(bg_record, 0, 1);
 		resume_block(bg_record);
 		slurm_mutex_unlock(&block_state_mutex);
-	} else if(block_desc_ptr->state == RM_PARTITION_DEALLOCATING) {
+	} else if (block_desc_ptr->state == RM_PARTITION_DEALLOCATING) {
 		/* This can't be RM_PARTITION_READY since the enum
 		   changed from BGL to BGP and if we are running cross
 		   cluster it just doesn't work.
@@ -878,7 +878,7 @@ extern int select_p_update_block(update_block_msg_t *block_desc_ptr)
 		list_push(delete_list, bg_record);
 		/* only do the while loop if we are dealing with a
 		   small block */
-		if(bg_record->conn_type < SELECT_SMALL)
+		if (bg_record->conn_type < SELECT_SMALL)
 			goto large_block;
 
 		itr = list_iterator_create(bg_lists->main);
@@ -886,14 +886,14 @@ extern int select_p_update_block(update_block_msg_t *block_desc_ptr)
 			if (bg_record == found_record)
 				continue;
 
-			if(!bit_equal(bg_record->bitmap,
+			if (!bit_equal(bg_record->bitmap,
 				      found_record->bitmap)) {
 				debug2("block %s isn't part of to be freed %s",
 				       found_record->bg_block_id,
 				       bg_record->bg_block_id);
 				continue;
 			}
-			if(found_record->job_running > NO_JOB_RUNNING) {
+			if (found_record->job_running > NO_JOB_RUNNING) {
 				info("Failing job %u block %s "
 				     "failed because overlapping block %s "
 				     "is in an error state.",
@@ -925,7 +925,7 @@ extern int select_p_update_block(update_block_msg_t *block_desc_ptr)
 		   to a normal state in accounting first */
 		itr = list_iterator_create(delete_list);
 		while ((found_record = list_next(itr))) {
-			if(found_record->state == RM_PARTITION_ERROR)
+			if (found_record->state == RM_PARTITION_ERROR)
 				resume_block(found_record);
 		}
 		list_iterator_destroy(itr);
@@ -941,26 +941,26 @@ extern int select_p_update_block(update_block_msg_t *block_desc_ptr)
 
 		/* make sure if we are removing a block to put it back
 		   to a normal state in accounting first */
-		if(bg_record->state == RM_PARTITION_ERROR)
+		if (bg_record->state == RM_PARTITION_ERROR)
 			resume_block(bg_record);
 
 		term_jobs_on_block(bg_record->bg_block_id);
-		if(bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
+		if (bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
 			info("select_p_update_block: "
 			     "freeing the block %s.", bg_record->bg_block_id);
 		bg_free_block(bg_record, 1, 1);
-		if(bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
+		if (bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
 			info("select_p_update_block: done");
 
 #ifdef HAVE_BG_FILES
-		if(bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
+		if (bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
 			info("select_p_update_block: "
 			     "removing %s from database",
 			     bg_record->bg_block_id);
 
 		rc = bridge_remove_block(bg_record->bg_block_id);
 		if (rc != STATUS_OK) {
-			if(rc == PARTITION_NOT_FOUND) {
+			if (rc == PARTITION_NOT_FOUND) {
 				debug("select_p_update_block: "
 				      "block %s is not found",
 				      bg_record->bg_block_id);
@@ -971,12 +971,12 @@ extern int select_p_update_block(update_block_msg_t *block_desc_ptr)
 				      bg_err_str(rc));
 			}
 		} else
-			if(bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
+			if (bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
 				info("select_p_update_block: done %s",
 				     (char *)bg_record->bg_block_id);
 #endif
 		xfree(bg_record->bg_block_id);
-		if(configure_block(bg_record) == SLURM_ERROR) {
+		if (configure_block(bg_record) == SLURM_ERROR) {
 			destroy_bg_record(bg_record);
 			error("select_p_update_block: "
 			      "unable to configure block in api");
@@ -1015,7 +1015,7 @@ extern int select_p_update_sub_node (update_block_msg_t *block_desc_ptr)
 	bitstr_t *ionode_bitmap = NULL;
 	char *name = NULL;
 
-	if(bg_conf->layout_mode != LAYOUT_DYNAMIC) {
+	if (bg_conf->layout_mode != LAYOUT_DYNAMIC) {
 		info("You can't use this call unless you are on a Dynamically "
 		     "allocated system.  Please use update BlockName instead");
 		rc = ESLURM_INVALID_BLOCK_LAYOUT;
@@ -1024,7 +1024,7 @@ extern int select_p_update_sub_node (update_block_msg_t *block_desc_ptr)
 
 	memset(coord, 0, sizeof(coord));
 	memset(ionodes, 0, 128);
-	if(!block_desc_ptr->nodes) {
+	if (!block_desc_ptr->nodes) {
 		error("update_sub_node: No name specified");
 		rc = ESLURM_INVALID_BLOCK_NAME;
 		goto end_it;
@@ -1033,12 +1033,12 @@ extern int select_p_update_sub_node (update_block_msg_t *block_desc_ptr)
 
 	while (name[j] != '\0') {
 		if (name[j] == '[') {
-			if(set<1) {
+			if (set<1) {
 				rc = SLURM_ERROR;
 				goto end_it;
 			}
 			i = j++;
-			if((name[j] < '0'
+			if ((name[j] < '0'
 			    || name[j] > 'Z'
 			    || (name[j] > '9'
 				&& name[j] < 'A'))) {
@@ -1047,11 +1047,11 @@ extern int select_p_update_sub_node (update_block_msg_t *block_desc_ptr)
 				goto end_it;
 			}
 			while(name[i] != '\0') {
-				if(name[i] == ']')
+				if (name[i] == ']')
 					break;
 				i++;
 			}
-			if(name[i] != ']') {
+			if (name[i] != ']') {
 				error("update_sub_node: "
 				      "No close (']') on sub block");
 				rc = SLURM_ERROR;
@@ -1061,17 +1061,17 @@ extern int select_p_update_sub_node (update_block_msg_t *block_desc_ptr)
 			strncpy(ionodes, name+j, i-j);
 			set++;
 			break;
-		} else if((name[j] >= '0'
+		} else if ((name[j] >= '0'
 			   && name[j] <= '9')
 			  || (name[j] >= 'A'
 			      && name[j] <= 'Z')) {
-			if(set) {
+			if (set) {
 				rc = SLURM_ERROR;
 				goto end_it;
 			}
 			/* make sure we are asking for a correct name */
 			for(i = 0; i < SYSTEM_DIMENSIONS; i++) {
-				if((name[j+i] >= '0'
+				if ((name[j+i] >= '0'
 				    && name[j+i] <= '9')
 				   || (name[j+i] >= 'A'
 				      && name[j+i] <= 'Z'))
@@ -1092,7 +1092,7 @@ extern int select_p_update_sub_node (update_block_msg_t *block_desc_ptr)
 		j++;
 	}
 
-	if(set != 2) {
+	if (set != 2) {
 		error("update_sub_node: "
 		      "I didn't get the base partition and the sub part.");
 		rc = SLURM_ERROR;
@@ -1100,7 +1100,7 @@ extern int select_p_update_sub_node (update_block_msg_t *block_desc_ptr)
 	}
 	ionode_bitmap = bit_alloc(bg_conf->numpsets);
 	bit_unfmt(ionode_bitmap, ionodes);
-	if(bit_ffs(ionode_bitmap) == -1) {
+	if (bit_ffs(ionode_bitmap) == -1) {
 		error("update_sub_node: Invalid ionode '%s' given.", ionodes);
 		rc = SLURM_ERROR;
 		FREE_NULL_BITMAP(ionode_bitmap);
@@ -1108,12 +1108,12 @@ extern int select_p_update_sub_node (update_block_msg_t *block_desc_ptr)
 	}
 	node_name = xstrdup_printf("%s%s", bg_conf->slurm_node_prefix, coord);
 	/* find out how many nodecards to get for each ionode */
-	if(block_desc_ptr->state == RM_PARTITION_ERROR) {
+	if (block_desc_ptr->state == RM_PARTITION_ERROR) {
 		info("Admin setting %s[%s] in an error state",
 		     node_name, ionodes);
 		for(i = 0; i<bg_conf->numpsets; i++) {
-			if(bit_test(ionode_bitmap, i)) {
-				if((int)nc_pos != (int)last_pos) {
+			if (bit_test(ionode_bitmap, i)) {
+				if ((int)nc_pos != (int)last_pos) {
 					/* find first bit in nc */
 					int start_io =
 						(int)nc_pos * bg_conf->io_ratio;
@@ -1123,7 +1123,7 @@ extern int select_p_update_sub_node (update_block_msg_t *block_desc_ptr)
 			}
 			nc_pos += bg_conf->nc_ratio;
 		}
-	} else if(block_desc_ptr->state == RM_PARTITION_FREE) {
+	} else if (block_desc_ptr->state == RM_PARTITION_FREE) {
 		info("Admin setting %s[%s] in an free state",
 		     node_name, ionodes);
 		up_nodecard(node_name, ionode_bitmap);
@@ -1216,38 +1216,38 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 	int i;
 	uint16_t req_geometry[SYSTEM_DIMENSIONS];
 
-	if(!bg_conf->bp_node_cnt) {
+	if (!bg_conf->bp_node_cnt) {
 		fatal("select_p_alter_node_cnt: This can't be called "
 		      "before init");
 	}
 
 	switch (type) {
 	case SELECT_GET_NODE_SCALING:
-		if((*nodes) != INFINITE)
+		if ((*nodes) != INFINITE)
 			(*nodes) = bg_conf->bp_node_cnt;
 		break;
 	case SELECT_GET_NODE_CPU_CNT:
-		if((*cpus) != (uint16_t)INFINITE)
+		if ((*cpus) != (uint16_t)INFINITE)
 			(*cpus) = bg_conf->cpu_ratio;
 		break;
 	case SELECT_GET_BP_CPU_CNT:
-		if((*nodes) != INFINITE)
+		if ((*nodes) != INFINITE)
 			(*nodes) = bg_conf->cpus_per_bp;
 		break;
 	case SELECT_SET_BP_CNT:
-		if(((*nodes) == INFINITE) || ((*nodes) == NO_VAL))
+		if (((*nodes) == INFINITE) || ((*nodes) == NO_VAL))
 			tmp = (*nodes);
-		else if((*nodes) > bg_conf->bp_node_cnt) {
+		else if ((*nodes) > bg_conf->bp_node_cnt) {
 			tmp = (*nodes);
 			tmp /= bg_conf->bp_node_cnt;
-			if(tmp < 1)
+			if (tmp < 1)
 				tmp = 1;
 		} else
 			tmp = 1;
 		(*nodes) = tmp;
 		break;
 	case SELECT_APPLY_NODE_MIN_OFFSET:
-		if((*nodes) == 1) {
+		if ((*nodes) == 1) {
 			/* Job will actually get more than one c-node,
 			 * but we can't be sure exactly how much so we
 			 * don't scale up this value. */
@@ -1256,26 +1256,26 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 		(*nodes) *= bg_conf->bp_node_cnt;
 		break;
 	case SELECT_APPLY_NODE_MAX_OFFSET:
-		if((*nodes) != INFINITE)
+		if ((*nodes) != INFINITE)
 			(*nodes) *= bg_conf->bp_node_cnt;
 		break;
 	case SELECT_SET_NODE_CNT:
 		get_select_jobinfo(job_desc->select_jobinfo->data,
 				   SELECT_JOBDATA_ALTERED, &tmp);
-		if(tmp == 1) {
+		if (tmp == 1) {
 			return SLURM_SUCCESS;
 		}
 		tmp = 1;
 		set_select_jobinfo(job_desc->select_jobinfo->data,
 				   SELECT_JOBDATA_ALTERED, &tmp);
 
-		if(job_desc->min_nodes == (uint32_t) NO_VAL)
+		if (job_desc->min_nodes == (uint32_t) NO_VAL)
 			return SLURM_SUCCESS;
 
 		get_select_jobinfo(job_desc->select_jobinfo->data,
 				   SELECT_JOBDATA_GEOMETRY, &req_geometry);
 
-		if(req_geometry[0] != 0
+		if (req_geometry[0] != 0
 		   && req_geometry[0] != (uint16_t)NO_VAL) {
 			job_desc->min_nodes = 1;
 			for (i=0; i<SYSTEM_DIMENSIONS; i++)
@@ -1288,7 +1288,7 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 		/* make sure if the user only specified min_cpus to
 		   set min_nodes correctly
 		*/
-		if((job_desc->min_cpus != NO_VAL)
+		if ((job_desc->min_cpus != NO_VAL)
 		   && (job_desc->min_cpus > job_desc->min_nodes))
 			job_desc->min_nodes =
 				job_desc->min_cpus / bg_conf->cpu_ratio;
@@ -1296,26 +1296,26 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 		/* initialize min_cpus to the min_nodes */
 		job_desc->min_cpus = job_desc->min_nodes * bg_conf->cpu_ratio;
 
-		if((job_desc->max_nodes == (uint32_t) NO_VAL)
+		if ((job_desc->max_nodes == (uint32_t) NO_VAL)
 		   || (job_desc->max_nodes < job_desc->min_nodes))
 			job_desc->max_nodes = job_desc->min_nodes;
 
 		/* See if min_nodes is greater than one base partition */
-		if(job_desc->min_nodes > bg_conf->bp_node_cnt) {
+		if (job_desc->min_nodes > bg_conf->bp_node_cnt) {
 			/*
 			 * if it is make sure it is a factor of
 			 * bg_conf->bp_node_cnt, if it isn't make it
 			 * that way
 			 */
 			tmp = job_desc->min_nodes % bg_conf->bp_node_cnt;
-			if(tmp > 0)
+			if (tmp > 0)
 				job_desc->min_nodes +=
 					(bg_conf->bp_node_cnt-tmp);
 		}
 		tmp = job_desc->min_nodes / bg_conf->bp_node_cnt;
 
 		/* this means it is greater or equal to one bp */
-		if(tmp > 0) {
+		if (tmp > 0) {
 			set_select_jobinfo(job_desc->select_jobinfo->data,
 					   SELECT_JOBDATA_NODE_CNT,
 					   &job_desc->min_nodes);
@@ -1323,11 +1323,11 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 			job_desc->min_cpus = bg_conf->cpus_per_bp * tmp;
 		} else {
 #ifdef HAVE_BGL
-			if(job_desc->min_nodes <= bg_conf->nodecard_node_cnt
+			if (job_desc->min_nodes <= bg_conf->nodecard_node_cnt
 			   && bg_conf->nodecard_ionode_cnt)
 				job_desc->min_nodes =
 					bg_conf->nodecard_node_cnt;
-			else if(job_desc->min_nodes
+			else if (job_desc->min_nodes
 				<= bg_conf->quarter_node_cnt)
 				job_desc->min_nodes =
 					bg_conf->quarter_node_cnt;
@@ -1346,7 +1346,7 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 #else
 			i = bg_conf->smallest_block;
 			while(i <= bg_conf->bp_node_cnt) {
-				if(job_desc->min_nodes <= i) {
+				if (job_desc->min_nodes <= i) {
 					job_desc->min_nodes = i;
 					break;
 				}
@@ -1363,26 +1363,26 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 #endif
 		}
 
-		if(job_desc->max_nodes > bg_conf->bp_node_cnt) {
+		if (job_desc->max_nodes > bg_conf->bp_node_cnt) {
 			tmp = job_desc->max_nodes % bg_conf->bp_node_cnt;
-			if(tmp > 0)
+			if (tmp > 0)
 				job_desc->max_nodes +=
 					(bg_conf->bp_node_cnt-tmp);
 		}
 		tmp = job_desc->max_nodes / bg_conf->bp_node_cnt;
 
-		if(tmp > 0) {
+		if (tmp > 0) {
 			job_desc->max_nodes = tmp;
 			job_desc->max_cpus =
 				job_desc->max_nodes * bg_conf->cpus_per_bp;
 			tmp = NO_VAL;
 		} else {
 #ifdef HAVE_BGL
-			if(job_desc->max_nodes <= bg_conf->nodecard_node_cnt
+			if (job_desc->max_nodes <= bg_conf->nodecard_node_cnt
 			   && bg_conf->nodecard_ionode_cnt)
 				job_desc->max_nodes =
 					bg_conf->nodecard_node_cnt;
-			else if(job_desc->max_nodes
+			else if (job_desc->max_nodes
 				<= bg_conf->quarter_node_cnt)
 				job_desc->max_nodes =
 					bg_conf->quarter_node_cnt;
@@ -1396,7 +1396,7 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 #else
 			i = bg_conf->smallest_block;
 			while(i <= bg_conf->bp_node_cnt) {
-				if(job_desc->max_nodes <= i) {
+				if (job_desc->max_nodes <= i) {
 					job_desc->max_nodes = i;
 					break;
 				}
@@ -1425,14 +1425,14 @@ extern int select_p_reconfigure(void)
 {
 #ifdef HAVE_BG_L_P
 	slurm_conf_lock();
-	if(!slurmctld_conf.slurm_user_name
+	if (!slurmctld_conf.slurm_user_name
 	   || strcmp(bg_conf->slurm_user_name, slurmctld_conf.slurm_user_name))
 		error("The slurm user has changed from '%s' to '%s'.  "
 		      "If this is really what you "
 		      "want you will need to restart slurm for this "
 		      "change to be enforced in the bluegene plugin.",
 		      bg_conf->slurm_user_name, slurmctld_conf.slurm_user_name);
-	if(!slurmctld_conf.node_prefix
+	if (!slurmctld_conf.node_prefix
 	   || strcmp(bg_conf->slurm_node_prefix, slurmctld_conf.node_prefix))
 		error("Node Prefix has changed from '%s' to '%s'.  "
 		      "If this is really what you "

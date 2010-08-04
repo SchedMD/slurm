@@ -166,10 +166,10 @@ _get_db_index(pgsql_conn_t *pg_conn, time_t submit, uint32_t jobid,
 			       "jobid=%u AND associd=%u",
 			       job_table, (int)submit, jobid, associd);
 	result = DEF_QUERY_RET;
-	if(!result)
+	if (!result)
 		return 0;
 
-	if(!PQntuples(result)) {
+	if (!PQntuples(result)) {
 		debug4("We can't get a db_index for this combo, "
 		       "time_submit=%d and id_job=%u and id_assoc=%u.  "
 		       "We must not have heard about the start yet, "
@@ -199,7 +199,7 @@ _check_job_db_index(pgsql_conn_t *pg_conn, struct job_record *job_ptr)
 	else
 		submit_time = job_ptr->details->submit_time;
 
-	if(!job_ptr->db_index) {
+	if (!job_ptr->db_index) {
 		job_ptr->db_index = _get_db_index(
 			pg_conn,
 			submit_time,
@@ -209,7 +209,7 @@ _check_job_db_index(pgsql_conn_t *pg_conn, struct job_record *job_ptr)
 			/* If we get an error with this just fall
 			 * through to avoid an infinite loop
 			 */
-			if(jobacct_storage_p_job_start(pg_conn, job_ptr)
+			if (jobacct_storage_p_job_start(pg_conn, job_ptr)
 			   == SLURM_ERROR) {
 				error("couldn't add job %u ",
 				      job_ptr->job_id);
@@ -402,7 +402,7 @@ js_pg_job_start(pgsql_conn_t *pg_conn,
 	 * removed. This is most likely the only time we are going to
 	 * be notified of the change also so make the state without
 	 * the resize. */
-	if(job_state & JOB_RESIZING) {
+	if (job_state & JOB_RESIZING) {
 		js_pg_job_complete(pg_conn, job_ptr);
 		job_state &= (~JOB_RESIZING);
 		job_ptr->db_index = 0;
@@ -431,7 +431,7 @@ js_pg_job_start(pgsql_conn_t *pg_conn,
 		check_time = submit_time;
 
 	slurm_mutex_lock(&rollup_lock);
-	if(check_time < global_last_rollup) {
+	if (check_time < global_last_rollup) {
 		PGresult *result = NULL;
 		/* check to see if we are hearing about this time for the
 		 * first time.
@@ -442,7 +442,7 @@ js_pg_job_start(pgsql_conn_t *pg_conn,
 				       job_table, job_ptr->job_id,
 				       submit_time, begin_time, start_time);
 		result = DEF_QUERY_RET;
-		if(!result) {
+		if (!result) {
 			slurm_mutex_unlock(&rollup_lock);
 			return SLURM_ERROR;
 		}
@@ -456,13 +456,13 @@ js_pg_job_start(pgsql_conn_t *pg_conn,
 		}
 		PQclear(result);
 
-		if(start_time)
+		if (start_time)
 			debug("Need to reroll usage from %sJob %u "
 			      "from %s started then and we are just "
 			      "now hearing about it.",
 			      ctime(&check_time),
 			      job_ptr->job_id, pg_conn->cluster_name);
-		else if(begin_time)
+		else if (begin_time)
 			debug("Need to reroll usage from %sJob %u "
 			      "from %s became eligible then and we are just "
 			      "now hearing about it.",
@@ -500,17 +500,17 @@ no_rollup_change:
 	else
 		nodes = "None assigned";
 
-	if(job_ptr->batch_flag)
+	if (job_ptr->batch_flag)
 		track_steps = 1;
 
-	if(slurmdbd_conf) {
+	if (slurmdbd_conf) {
 		block_id = xstrdup(job_ptr->comment);
 		node_cnt = job_ptr->total_nodes;
 		node_inx = job_ptr->network;
 	} else {
 		char temp_bit[BUF_SIZE];
 
-		if(job_ptr->node_bitmap) {
+		if (job_ptr->node_bitmap) {
 			node_inx = bit_fmt(temp_bit, sizeof(temp_bit),
 					   job_ptr->node_bitmap);
 		}
@@ -528,12 +528,12 @@ no_rollup_change:
 
 	/* If there is a start_time get the wckeyid.  If the job is
 	 * cancelled before the job starts we also want to grab it. */
-	if(job_ptr->assoc_id && (start_time || IS_JOB_CANCELLED(job_ptr)))
+	if (job_ptr->assoc_id && (start_time || IS_JOB_CANCELLED(job_ptr)))
 		wckeyid = get_wckeyid(pg_conn, &job_ptr->wckey,
 				      job_ptr->user_id, pg_conn->cluster_name,
 				      job_ptr->assoc_id);
 
-	if(!job_ptr->db_index) {
+	if (!job_ptr->db_index) {
 		if (!begin_time)
 			begin_time = submit_time;
 
@@ -587,7 +587,7 @@ no_rollup_change:
 		job_ptr->db_index = pgsql_query_ret_id(pg_conn->db_conn,
 						       query);
 		if (!job_ptr->db_index) {
-			if(!reinit) {
+			if (!reinit) {
 				error("It looks like the storage has gone "
 				      "away trying to reconnect");
 				check_db_connection(pg_conn);
@@ -600,17 +600,17 @@ no_rollup_change:
 	} else {
 		query = xstrdup_printf("UPDATE %s SET nodelist='%s', ",
 				       job_table, nodes);
-		if(job_ptr->account)
+		if (job_ptr->account)
 			xstrfmtcat(query, "account='%s', ",
 				   job_ptr->account);
-		if(job_ptr->partition)
+		if (job_ptr->partition)
 			xstrfmtcat(query, "partition='%s', ",
 				   job_ptr->partition);
-		if(block_id)
+		if (block_id)
 			xstrfmtcat(query, "blockid='%s', ", block_id);
-		if(job_ptr->wckey)
+		if (job_ptr->wckey)
 			xstrfmtcat(query, "wckey='%s', ", job_ptr->wckey);
-		if(node_inx)
+		if (node_inx)
 			xstrfmtcat(query, "node_inx='%s', ", node_inx);
 
 		xstrfmtcat(query, "start=%d, name='%s', state=%u, "
@@ -672,7 +672,7 @@ js_pg_job_complete(pgsql_conn_t *pg_conn,
 	}
 
 	slurm_mutex_lock(&rollup_lock);
-	if(end_time < global_last_rollup) {
+	if (end_time < global_last_rollup) {
 		global_last_rollup = job_ptr->end_time;
 		slurm_mutex_unlock(&rollup_lock);
 
@@ -736,15 +736,15 @@ js_pg_step_start(pgsql_conn_t *pg_conn,
 		return SLURM_ERROR;
 	}
 
-	if(step_ptr->start_time > step_ptr->job_ptr->resize_time)
+	if (step_ptr->start_time > step_ptr->job_ptr->resize_time)
 		start_time = step_ptr->start_time;
 	else
 		start_time = step_ptr->job_ptr->resize_time;
 
-	if(check_db_connection(pg_conn) != SLURM_SUCCESS)
+	if (check_db_connection(pg_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
 
-	if(slurmdbd_conf) {
+	if (slurmdbd_conf) {
 		tasks = step_ptr->job_ptr->details->num_tasks;
 		cpus = step_ptr->cpu_count;
 		snprintf(node_list, BUFFER_SIZE, "%s",
@@ -755,7 +755,7 @@ js_pg_step_start(pgsql_conn_t *pg_conn,
 	} else {
 		char temp_bit[BUF_SIZE];
 
-		if(step_ptr->step_node_bitmap) {
+		if (step_ptr->step_node_bitmap) {
 			node_inx = bit_fmt(temp_bit, sizeof(temp_bit),
 					   step_ptr->step_node_bitmap);
 		}
@@ -764,7 +764,7 @@ js_pg_step_start(pgsql_conn_t *pg_conn,
 		select_g_select_jobinfo_get(step_ptr->job_ptr->select_jobinfo,
 					    SELECT_JOBDATA_IONODES,
 					    &ionodes);
-		if(ionodes) {
+		if (ionodes) {
 			snprintf(node_list, BUFFER_SIZE,
 				 "%s[%s]", step_ptr->job_ptr->nodes, ionodes);
 			xfree(ionodes);
@@ -775,7 +775,7 @@ js_pg_step_start(pgsql_conn_t *pg_conn,
 					    SELECT_JOBDATA_NODE_CNT,
 					    &nodes);
 #else
-		if(!step_ptr->step_layout || !step_ptr->step_layout->task_cnt) {
+		if (!step_ptr->step_layout || !step_ptr->step_layout->task_cnt) {
 			tasks = cpus = step_ptr->job_ptr->total_cpus;
 			snprintf(node_list, BUFFER_SIZE, "%s",
 				 step_ptr->job_ptr->nodes);
@@ -856,12 +856,12 @@ js_pg_step_complete(pgsql_conn_t *pg_conn,
 		return SLURM_ERROR;
 	}
 
-	if(step_ptr->start_time > step_ptr->job_ptr->resize_time)
+	if (step_ptr->start_time > step_ptr->job_ptr->resize_time)
 		start_time = step_ptr->start_time;
 	else
 		start_time = step_ptr->job_ptr->resize_time;
 
-	if(check_db_connection(pg_conn) != SLURM_SUCCESS)
+	if (check_db_connection(pg_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
 
 	if (jobacct == NULL) {
@@ -870,7 +870,7 @@ js_pg_step_complete(pgsql_conn_t *pg_conn,
 		jobacct = &dummy_jobacct;
 	}
 
-	if(slurmdbd_conf) {
+	if (slurmdbd_conf) {
 		now = step_ptr->job_ptr->end_time;
 		tasks = step_ptr->job_ptr->details->num_tasks;
 		cpus = step_ptr->cpu_count;
@@ -880,7 +880,7 @@ js_pg_step_complete(pgsql_conn_t *pg_conn,
 		tasks = cpus = step_ptr->job_ptr->details->min_cpus;
 
 #else
-		if(!step_ptr->step_layout || !step_ptr->step_layout->task_cnt)
+		if (!step_ptr->step_layout || !step_ptr->step_layout->task_cnt)
 			tasks = cpus = step_ptr->job_ptr->total_cpus;
 		else {
 			cpus = step_ptr->cpu_count;
@@ -902,7 +902,7 @@ js_pg_step_complete(pgsql_conn_t *pg_conn,
 		comp_status = JOB_COMPLETE;
 
 	/* figure out the ave of the totals sent */
-	if(cpus > 0) {
+	if (cpus > 0) {
 		ave_vsize = (double)jobacct->tot_vsize;
 		ave_vsize /= (double)cpus;
 		ave_rss = (double)jobacct->tot_rss;
@@ -913,7 +913,7 @@ js_pg_step_complete(pgsql_conn_t *pg_conn,
 		ave_cpu /= (double)cpus;
 	}
 
-	if(jobacct->min_cpu != (uint32_t)NO_VAL) {
+	if (jobacct->min_cpu != (uint32_t)NO_VAL) {
 		ave_cpu2 = (double)jobacct->min_cpu;
 	}
 
@@ -982,7 +982,7 @@ js_pg_suspend(pgsql_conn_t *pg_conn, struct job_record *job_ptr)
 	int rc = SLURM_SUCCESS;
 	bool suspended = false;
 
-	if(check_db_connection(pg_conn) != SLURM_SUCCESS)
+	if (check_db_connection(pg_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
 
 	if (_check_job_db_index(pg_conn, job_ptr) != SLURM_SUCCESS)
@@ -998,7 +998,7 @@ js_pg_suspend(pgsql_conn_t *pg_conn, struct job_record *job_ptr)
 		job_ptr->job_state & JOB_STATE_BASE,
 		job_ptr->db_index);
 
-	if(job_ptr->job_state == JOB_SUSPENDED)
+	if (job_ptr->job_state == JOB_SUSPENDED)
 		/* XXX: xstrfmtcat() cannot work on non-xmalloc-ed strings */
 		xstrfmtcat(query,
 			   "INSERT INTO %s (id, associd, start, end) "
@@ -1012,7 +1012,7 @@ js_pg_suspend(pgsql_conn_t *pg_conn, struct job_record *job_ptr)
 			   job_ptr->db_index);
 
 	rc = DEF_QUERY_RET_RC;
-	if(rc != SLURM_ERROR) {
+	if (rc != SLURM_ERROR) {
 		query = xstrdup_printf(
 			"UPDATE %s SET suspended=%u-suspended, "
 			"state=%d WHERE id=%u and endtime=0",
@@ -1029,15 +1029,15 @@ static void _state_time_string(char **extra, uint32_t state,
 {
 	int base_state = state & JOB_STATE_BASE;
 
-	if(!start && !end) {
+	if (!start && !end) {
 		xstrfmtcat(*extra, "t1.state='%u'", state);
 		return;
 	}
 
  	switch(base_state) {
 	case JOB_PENDING:
-		if(start) {
-			if(!end) {
+		if (start) {
+			if (!end) {
 				xstrfmtcat(*extra,
 					   "(t1.eligible AND (t1.start=0 OR "
 					   "(%d BETWEEN "
@@ -1060,8 +1060,8 @@ static void _state_time_string(char **extra, uint32_t state,
 		/* FIX ME: this should do something with the suspended
 		   table, but it doesn't right now. */
 	case JOB_RUNNING:
-		if(start) {
-			if(!end) {
+		if (start) {
+			if (!end) {
 				xstrfmtcat(*extra,
 					   "(t1.start AND (t1.endtime=0 OR "
 					   "(%d BETWEEN t1.start AND t1.endtime)))",
@@ -1085,15 +1085,15 @@ static void _state_time_string(char **extra, uint32_t state,
 	case JOB_NODE_FAIL:
 	default:
 		xstrfmtcat(*extra, "(t1.state='%u' AND (t1.endtime AND ", state);
-		if(start) {
-			if(!end) {
+		if (start) {
+			if (!end) {
 				xstrfmtcat(*extra, "(t1.endtime >= %d)))", start);
 			} else {
 				xstrfmtcat(*extra,
 					   "(t1.endtime BETWEEN %d AND %d)))",
 					   start, end);
 			}
-		} else if(end) {
+		} else if (end) {
 			xstrfmtcat(*extra, "(t1.endtime <= %d)))", end);
 		}
 		break;
@@ -1122,11 +1122,11 @@ _make_job_cond_str(pgsql_conn_t *pg_conn, slurmdb_job_cond_t *job_cond,
 
 	xstrcat (*cond, " WHERE TRUE");
 
-	if(!job_cond)
+	if (!job_cond)
 		return;
 
 	/* THIS ASSOCID CHECK ALWAYS NEEDS TO BE FIRST!!!!!!! */
-	if(job_cond->associd_list && list_count(job_cond->associd_list)) {
+	if (job_cond->associd_list && list_count(job_cond->associd_list)) {
 		set = 0;
 		xstrfmtcat(*extra_table, ", %s AS t3", assoc_table);
 		table_level = "t3";
@@ -1150,7 +1150,7 @@ _make_job_cond_str(pgsql_conn_t *pg_conn, slurmdb_job_cond_t *job_cond,
 
 	/* this must be done before resvid_list since we set
 	   resvid_list up here */
-	if(job_cond->resv_list && list_count(job_cond->resv_list)) {
+	if (job_cond->resv_list && list_count(job_cond->resv_list)) {
 		PGresult *result = NULL;
 		char *query = xstrdup_printf(
 			"SELECT DISTINCT id FROM %s WHERE (", resv_table);
@@ -1159,11 +1159,11 @@ _make_job_cond_str(pgsql_conn_t *pg_conn, slurmdb_job_cond_t *job_cond,
 		concat_cond_list(job_cond->resv_list, NULL, "name", &query);
 		//xstrcat(query, ";");
 		result = DEF_QUERY_RET;
-		if(!result) {
+		if (!result) {
 			error("as/pg: couldn't get resv id");
 			goto no_resv;
 		}
-		if(!job_cond->resvid_list)
+		if (!job_cond->resvid_list)
 			job_cond->resvid_list = list_create(slurm_destroy_char);
 		FOR_EACH_ROW {
 			list_append(job_cond->resvid_list, xstrdup(ROW(0)));
@@ -1173,12 +1173,12 @@ _make_job_cond_str(pgsql_conn_t *pg_conn, slurmdb_job_cond_t *job_cond,
 no_resv:
 	concat_cond_list(job_cond->resvid_list, "t1", "resvid", cond);
 
-	if(job_cond->step_list && list_count(job_cond->step_list)) {
+	if (job_cond->step_list && list_count(job_cond->step_list)) {
 		set = 0;
 		xstrcat(*cond, " AND (");
 		itr = list_iterator_create(job_cond->step_list);
 		while((selected_step = list_next(itr))) {
-			if(set)
+			if (set)
 				xstrcat(*cond, " OR ");
 			xstrfmtcat(*cond, "t1.jobid=%u", selected_step->jobid);
 			set = 1;
@@ -1187,13 +1187,13 @@ no_resv:
 		xstrcat(*cond, ")");
 	}
 
-	if(job_cond->state_list && list_count(job_cond->state_list)) {
+	if (job_cond->state_list && list_count(job_cond->state_list)) {
 		set = 0;
 		xstrcat(*cond, " AND (");
 
 		itr = list_iterator_create(job_cond->state_list);
 		while((object = list_next(itr))) {
-			if(set)
+			if (set)
 				xstrcat(*cond, " OR ");
 			_state_time_string(cond, atoi(object),
 					   job_cond->usage_start,
@@ -1205,10 +1205,10 @@ no_resv:
 	} else {
 		/* Only do this (default of all eligible jobs) if no
 		   state is given */
-		if(job_cond->usage_start) {
+		if (job_cond->usage_start) {
 			xstrcat(*cond, " AND (");
 
-			if(!job_cond->usage_end)
+			if (!job_cond->usage_end)
 				xstrfmtcat(*cond,
 					   "(t1.endtime >= %d OR t1.endtime = 0))",
 					   job_cond->usage_start);
@@ -1218,7 +1218,7 @@ no_resv:
 					   "AND (t1.endtime >= %d OR t1.endtime = 0)))",
 					   job_cond->usage_end,
 					   job_cond->usage_start);
-		} else if(job_cond->usage_end) {
+		} else if (job_cond->usage_end) {
 			xstrcat(*cond, " AND (");
 			xstrfmtcat(*cond,
 				   "(t1.eligible < %d))", job_cond->usage_end);
@@ -1228,12 +1228,12 @@ no_resv:
 	concat_cond_list(job_cond->state_list, "t1", "state", cond);
 
 	/* we need to put all the associations (t2) stuff together here */
-	if(job_cond->cluster_list && list_count(job_cond->cluster_list)) {
+	if (job_cond->cluster_list && list_count(job_cond->cluster_list)) {
 		set = 0;
 		xstrcat(*cond, " AND (");
 		itr = list_iterator_create(job_cond->cluster_list);
 		while((object = list_next(itr))) {
-			if(set)
+			if (set)
 				xstrcat(*cond, " OR ");
 			xstrfmtcat(*cond,
 				   "(t1.cluster='%s' OR %s.cluster='%s')",
@@ -1246,9 +1246,9 @@ no_resv:
 
 	concat_cond_list(job_cond->wckey_list, "t1", "wckey", cond);
 
-	if(job_cond->cpus_min) {
+	if (job_cond->cpus_min) {
 		xstrcat(*cond, " AND (");
-		if(job_cond->cpus_max) {
+		if (job_cond->cpus_max) {
 			xstrfmtcat(*cond, "(t1.alloc_cpus BETWEEN %u AND %u))",
 				   job_cond->cpus_min, job_cond->cpus_max);
 
@@ -1259,10 +1259,10 @@ no_resv:
 		}
 	}
 
-	if(job_cond->nodes_min) {
+	if (job_cond->nodes_min) {
 		xstrcat(*cond, " AND (");
 
-		if(job_cond->nodes_max) {
+		if (job_cond->nodes_max) {
 			xstrfmtcat(*cond,
 				   "(t1.alloc_nodes BETWEEN %u AND %u))",
 				   job_cond->nodes_min, job_cond->nodes_max);
@@ -1459,7 +1459,7 @@ js_pg_get_jobs_cond(pgsql_conn_t *pg_conn, uid_t uid,
 		STEP_REQ_COUNT
 	};
 
-	if(check_db_connection(pg_conn) != SLURM_SUCCESS)
+	if (check_db_connection(pg_conn) != SLURM_SUCCESS)
 		return NULL;
 
 	memset(&user, 0, sizeof(slurmdb_user_rec_t));
@@ -1479,16 +1479,16 @@ js_pg_get_jobs_cond(pgsql_conn_t *pg_conn, uid_t uid,
 	   things work.  This should go before the setup of conds
 	   since we could update the start/end time.
 	*/
-	if(job_cond && job_cond->used_nodes) {
+	if (job_cond && job_cond->used_nodes) {
 		local_cluster_list = setup_cluster_list_with_inx(
 			pg_conn, job_cond, (void **)&curr_cluster);
-		if(!local_cluster_list) {
+		if (!local_cluster_list) {
 			list_destroy(job_list);
 			return NULL;
 		}
 	}
 
-	if(job_cond->state_list && (list_count(job_cond->state_list) == 1)
+	if (job_cond->state_list && (list_count(job_cond->state_list) == 1)
 	   && (atoi(list_peek(job_cond->state_list)) == JOB_PENDING))
 		only_pending = 1;
 
@@ -1505,11 +1505,11 @@ js_pg_get_jobs_cond(pgsql_conn_t *pg_conn, uid_t uid,
 	 * if this flag is set.  We also include any accounts they may be
 	 * coordinator of.
 	 */
-	if(!is_admin && (private_data & PRIVATE_DATA_JOBS)) {
+	if (!is_admin && (private_data & PRIVATE_DATA_JOBS)) {
 		query = xstrdup_printf(
 			"SELECT lft FROM %s WHERE user_name='%s'",
 			assoc_table, user.name);
-		if(user.coord_accts) {
+		if (user.coord_accts) {
 			slurmdb_coord_rec_t *coord = NULL;
 			itr = list_iterator_create(user.coord_accts);
 			while((coord = list_next(itr))) {
@@ -1519,18 +1519,18 @@ js_pg_get_jobs_cond(pgsql_conn_t *pg_conn, uid_t uid,
 			list_iterator_destroy(itr);
 		}
 		result = DEF_QUERY_RET;
-		if(!result) {
+		if (!result) {
 			xfree(cond);
 			xfree(extra_table);
 			list_destroy(job_list);
-			if(local_cluster_list)
+			if (local_cluster_list)
 				list_destroy(local_cluster_list);
 			return NULL;
 		}
 
 		set = 0;
 		FOR_EACH_ROW {
-			if(set) {
+			if (set) {
 				xstrfmtcat(cond,
 					   " OR (%s BETWEEN %s.lft AND %s.rgt)",
 					   ROW(0), table_level, table_level);
@@ -1543,7 +1543,7 @@ js_pg_get_jobs_cond(pgsql_conn_t *pg_conn, uid_t uid,
 					   table_level);
 			}
 		} END_EACH_ROW;
-		if(set)
+		if (set)
 			xstrcat(cond, ")");
 		PQclear(result);
 	}
@@ -1552,7 +1552,7 @@ js_pg_get_jobs_cond(pgsql_conn_t *pg_conn, uid_t uid,
 			       "ON t1.associd=t2.id",
 			       tmp, job_table, assoc_table);
 	xfree(tmp);
-	if(extra_table) {
+	if (extra_table) {
 		xstrcat(query, extra_table);
 		xfree(extra_table);
 	}
@@ -1562,15 +1562,15 @@ js_pg_get_jobs_cond(pgsql_conn_t *pg_conn, uid_t uid,
 	/* Here we want to order them this way in such a way so it is
 	   easy to look for duplicates
 	*/
-	if(job_cond && !job_cond->duplicates)
+	if (job_cond && !job_cond->duplicates)
 		xstrcat(query, " ORDER BY t1.cluster, jobid, submit DESC;");
 	else
 		xstrcat(query, " ORDER BY t1.cluster, submit DESC;");
 
 	result = DEF_QUERY_RET;
-	if(!result) {
+	if (!result) {
 		list_destroy(job_list);
-		if(local_cluster_list)
+		if (local_cluster_list)
 			list_destroy(local_cluster_list);
 		return NULL;
 	}
@@ -1584,14 +1584,14 @@ js_pg_get_jobs_cond(pgsql_conn_t *pg_conn, uid_t uid,
 		submit = atoi(ROW(JOB_REQ_SUBMIT));
 		curr_id = atoi(ROW(JOB_REQ_JOBID));
 
-		if(job_cond && !job_cond->duplicates && curr_id == last_id)
+		if (job_cond && !job_cond->duplicates && curr_id == last_id)
 			continue;
 
 		last_id = curr_id;
 
 		/* check the bitmap to see if this is one of the jobs
 		   we are looking for */
-		if(!good_nodes_from_inx(local_cluster_list,
+		if (!good_nodes_from_inx(local_cluster_list,
 					(void **)&curr_cluster,
 					ROW(JOB_REQ_NODE_INX), submit))
 			continue;
@@ -1609,31 +1609,31 @@ js_pg_get_jobs_cond(pgsql_conn_t *pg_conn, uid_t uid,
 		job->state = atoi(ROW(JOB_REQ_STATE));
 
 		/* we want a blank wckey if the name is null */
-		if(ROW(JOB_REQ_WCKEY))
+		if (ROW(JOB_REQ_WCKEY))
 			job->wckey = xstrdup(ROW(JOB_REQ_WCKEY));
 		else
 			job->wckey = xstrdup("");
 		job->wckeyid = atoi(ROW(JOB_REQ_WCKEYID));
 
-		if(! ISEMPTY(JOB_REQ_CLUSTER)) /* ISNULL => ISEMPTY */
+		if (! ISEMPTY(JOB_REQ_CLUSTER)) /* ISNULL => ISEMPTY */
 			job->cluster = xstrdup(ROW(JOB_REQ_CLUSTER));
-		else if(! ISEMPTY(JOB_REQ_CLUSTER1))
+		else if (! ISEMPTY(JOB_REQ_CLUSTER1))
 			job->cluster = xstrdup(ROW(JOB_REQ_CLUSTER1));
 
-		if(! ISNULL(JOB_REQ_USER_NAME))
+		if (! ISNULL(JOB_REQ_USER_NAME))
 			job->user = xstrdup(ROW(JOB_REQ_USER_NAME));
 		else
 			job->uid = atoi(ROW(JOB_REQ_UID));
 
-		if(! ISNULL(JOB_REQ_LFT))
+		if (! ISNULL(JOB_REQ_LFT))
 			job->lft = atoi(ROW(JOB_REQ_LFT));
 
-		if(! ISEMPTY(JOB_REQ_ACCOUNT))
+		if (! ISEMPTY(JOB_REQ_ACCOUNT))
 			job->account = xstrdup(ROW(JOB_REQ_ACCOUNT));
-		else if(! ISEMPTY(JOB_REQ_ACCOUNT1))
+		else if (! ISEMPTY(JOB_REQ_ACCOUNT1))
 			job->account = xstrdup(ROW(JOB_REQ_ACCOUNT1));
 
-		if(! ISNULL(JOB_REQ_BLOCKID))
+		if (! ISNULL(JOB_REQ_BLOCKID))
 			job->blockid = xstrdup(ROW(JOB_REQ_BLOCKID));
 
 		job->eligible = atoi(ROW(JOB_REQ_ELIGIBLE));
@@ -1642,26 +1642,26 @@ js_pg_get_jobs_cond(pgsql_conn_t *pg_conn, uid_t uid,
 		job->end = atoi(ROW(JOB_REQ_END));
 
 		/* since the job->end could be set later end it here */
-		if(job->end) {
+		if (job->end) {
 			job_ended = 1;
-			if(!job->start || (job->start > job->end))
+			if (!job->start || (job->start > job->end))
 				job->start = job->end;
 		}
 
-		if(job_cond && !job_cond->without_usage_truncation
+		if (job_cond && !job_cond->without_usage_truncation
 		   && job_cond->usage_start) {
-			if(job->start && (job->start < job_cond->usage_start))
+			if (job->start && (job->start < job_cond->usage_start))
 				job->start = job_cond->usage_start;
 
-			if(!job->end || job->end > job_cond->usage_end)
+			if (!job->end || job->end > job_cond->usage_end)
 				job->end = job_cond->usage_end;
 
-			if(!job->start)
+			if (!job->start)
 				job->start = job->end;
 
 			job->elapsed = job->end - job->start;
 
-			if(ROW(JOB_REQ_SUSPENDED)) {
+			if (ROW(JOB_REQ_SUSPENDED)) {
 				int local_start, local_end;
 
 				/* get the suspended time for this job */
@@ -1673,7 +1673,7 @@ js_pg_get_jobs_cond(pgsql_conn_t *pg_conn, uid_t uid,
 					suspend_table, job_cond->usage_end,
 					job_cond->usage_start, id);
 				result2 = DEF_QUERY_RET;
-				if(!result2) {
+				if (!result2) {
 					list_destroy(job_list);
 					job_list = NULL;
 					break;
@@ -1681,15 +1681,15 @@ js_pg_get_jobs_cond(pgsql_conn_t *pg_conn, uid_t uid,
 				FOR_EACH_ROW2 {
 					local_start = atoi(ROW2(0));
 					local_end =  atoi(ROW2(1));
-					if(!local_start)
+					if (!local_start)
 						continue;
 
-					if(job->start > local_start)
+					if (job->start > local_start)
 						local_start = job->start;
-					if(job->end < local_end)
+					if (job->end < local_end)
 						local_end = job->end;
 
-					if((local_end - local_start) < 1)
+					if ((local_end - local_start) < 1)
 						continue;
 
 					job->elapsed -=
@@ -1705,9 +1705,9 @@ js_pg_get_jobs_cond(pgsql_conn_t *pg_conn, uid_t uid,
 			if (job->state == JOB_SUSPENDED)
 				job->suspended = now - job->suspended;
 
-			if(!job->start) {
+			if (!job->start) {
 				job->elapsed = 0;
-			} else if(!job->end) {
+			} else if (!job->end) {
 				job->elapsed = now - job->start;
 			} else {
 				job->elapsed = job->end - job->start;
@@ -1716,7 +1716,7 @@ js_pg_get_jobs_cond(pgsql_conn_t *pg_conn, uid_t uid,
 			job->elapsed -= job->suspended;
 		}
 
-		if((int)job->elapsed < 0)
+		if ((int)job->elapsed < 0)
 			job->elapsed = 0;
 
 		job->jobid = curr_id;
@@ -1724,10 +1724,10 @@ js_pg_get_jobs_cond(pgsql_conn_t *pg_conn, uid_t uid,
 		job->gid = atoi(ROW(JOB_REQ_GID));
 		job->exitcode = atoi(ROW(JOB_REQ_COMP_CODE));
 
-		if(ROW(JOB_REQ_PARTITION))
+		if (ROW(JOB_REQ_PARTITION))
 			job->partition = xstrdup(ROW(JOB_REQ_PARTITION));
 
-		if(ROW(JOB_REQ_NODELIST))
+		if (ROW(JOB_REQ_NODELIST))
 			job->nodes = xstrdup(ROW(JOB_REQ_NODELIST));
 
 		if (!job->nodes || !strcmp(job->nodes, "(null)")) {
@@ -1742,15 +1742,15 @@ js_pg_get_jobs_cond(pgsql_conn_t *pg_conn, uid_t uid,
 		job->qosid = atoi(ROW(JOB_REQ_QOS));
 		job->show_full = 1;
 
-		if(only_pending || (job_cond && job_cond->without_steps))
+		if (only_pending || (job_cond && job_cond->without_steps))
 			goto skip_steps;
 
-		if(job_cond && job_cond->step_list
+		if (job_cond && job_cond->step_list
 		   && list_count(job_cond->step_list)) {
 			set = 0;
 			itr = list_iterator_create(job_cond->step_list);
 			while((selected_step = list_next(itr))) {
-				if(selected_step->jobid != job->jobid) {
+				if (selected_step->jobid != job->jobid) {
 					continue;
 				} else if (selected_step->stepid
 					   == (uint32_t)NO_VAL) {
@@ -1758,7 +1758,7 @@ js_pg_get_jobs_cond(pgsql_conn_t *pg_conn, uid_t uid,
 					break;
 				}
 
-				if(set)
+				if (set)
 					xstrcat(cond, " OR ");
 				else
 					xstrcat(cond, " AND (");
@@ -1769,11 +1769,11 @@ js_pg_get_jobs_cond(pgsql_conn_t *pg_conn, uid_t uid,
 				job->show_full = 0;
 			}
 			list_iterator_destroy(itr);
-			if(set)
+			if (set)
 				xstrcat(cond, ")");
 		}
 		for(i=0; i<STEP_REQ_COUNT; i++) {
-			if(i)
+			if (i)
 				xstrcat(tmp, ", ");
 			xstrcat(tmp, step_req_inx[i]);
 		}
@@ -1781,15 +1781,15 @@ js_pg_get_jobs_cond(pgsql_conn_t *pg_conn, uid_t uid,
 				       tmp, step_table, id);
 		xfree(tmp);
 
-		if(cond) {
+		if (cond) {
 			xstrcat(query, cond);
 			xfree(cond);
 		}
 
 		result2 = DEF_QUERY_RET;
-		if(!result2) {
+		if (!result2) {
 			list_destroy(job_list);
-			if(local_cluster_list)
+			if (local_cluster_list)
 				list_destroy(local_cluster_list);
 			return NULL;
 		}
@@ -1801,7 +1801,7 @@ js_pg_get_jobs_cond(pgsql_conn_t *pg_conn, uid_t uid,
 		FOR_EACH_ROW2 {
 			/* check the bitmap to see if this is one of the steps
 			   we are looking for */
-			if(!good_nodes_from_inx(local_cluster_list,
+			if (!good_nodes_from_inx(local_cluster_list,
 						(void **)&curr_cluster,
 						ROW2(STEP_REQ_NODE_INX),
 						submit))
@@ -1811,7 +1811,7 @@ js_pg_get_jobs_cond(pgsql_conn_t *pg_conn, uid_t uid,
 			step->tot_cpu_sec = 0;
 			step->tot_cpu_usec = 0;
 			step->job_ptr = job;
-			if(!job->first_step_ptr)
+			if (!job->first_step_ptr)
 				job->first_step_ptr = step;
 			list_append(job->steps, step);
 			step->stepid = atoi(ROW2(STEP_REQ_STEPID));
@@ -1824,42 +1824,42 @@ js_pg_get_jobs_cond(pgsql_conn_t *pg_conn, uid_t uid,
 
 			step->ntasks = atoi(ROW2(STEP_REQ_TASKS));
 			step->task_dist = atoi(ROW2(STEP_REQ_TASKDIST));
-			if(!step->ntasks)
+			if (!step->ntasks)
 				step->ntasks = step->ncpus;
 
 			step->start = atoi(ROW2(STEP_REQ_START));
 
 			step->end = atoi(ROW2(STEP_REQ_END));
 			/* if the job has ended end the step also */
-			if(!step->end && job_ended) {
+			if (!step->end && job_ended) {
 				step->end = job->end;
 				step->state = job->state;
 			}
 
-			if(job_cond && !job_cond->without_usage_truncation
+			if (job_cond && !job_cond->without_usage_truncation
 			   && job_cond->usage_start) {
-				if(step->start
+				if (step->start
 				   && (step->start < job_cond->usage_start))
 					step->start = job_cond->usage_start;
 
-				if(!step->start && step->end)
+				if (!step->start && step->end)
 					step->start = step->end;
 
-				if(!step->end
+				if (!step->end
 				   || (step->end > job_cond->usage_end))
 					step->end = job_cond->usage_end;
 			}
 
 			/* figure this out by start stop */
 			step->suspended = atoi(ROW2(STEP_REQ_SUSPENDED));
-			if(!step->end) {
+			if (!step->end) {
 				step->elapsed = now - step->start;
 			} else {
 				step->elapsed = step->end - step->start;
 			}
 			step->elapsed -= step->suspended;
 
-			if((int)step->elapsed < 0)
+			if ((int)step->elapsed < 0)
 				step->elapsed = 0;
 
 			step->user_cpu_sec = atoi(ROW2(STEP_REQ_USER_SEC));
@@ -1909,7 +1909,7 @@ js_pg_get_jobs_cond(pgsql_conn_t *pg_conn, uid_t uid,
 		} END_EACH_ROW2;
 		PQclear(result2);
 
-		if(!job->track_steps) {
+		if (!job->track_steps) {
 			/* If we don't have track_steps we want to see
 			   if we have multiple steps.  If we only have
 			   1 step check the job name against the step
@@ -1917,10 +1917,10 @@ js_pg_get_jobs_cond(pgsql_conn_t *pg_conn, uid_t uid,
 			   different.  If it is different print out
 			   the step separate.
 			*/
-			if(list_count(job->steps) > 1)
+			if (list_count(job->steps) > 1)
 				job->track_steps = 1;
-			else if(step && step->stepname && job->jobname) {
-				if(strcmp(step->stepname, job->jobname))
+			else if (step && step->stepname && job->jobname) {
+				if (strcmp(step->stepname, job->jobname))
 					job->track_steps = 1;
 			}
 		}
@@ -1929,7 +1929,7 @@ js_pg_get_jobs_cond(pgsql_conn_t *pg_conn, uid_t uid,
 		step = NULL;
 	} END_EACH_ROW;
 	PQclear(result);
-	if(local_cluster_list)
+	if (local_cluster_list)
 		list_destroy(local_cluster_list);
 
 	return job_list;

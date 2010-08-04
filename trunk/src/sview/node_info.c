@@ -148,7 +148,7 @@ static void _layout_node_record(GtkTreeView *treeview,
 	int idle_cpus = node_ptr->cpus;
 	GtkTreeStore *treestore =
 		GTK_TREE_STORE(gtk_tree_view_get_model(treeview));
-	if(!treestore)
+	if (!treestore)
 		return;
 
 	add_display_treestore_line(update, treestore, &iter,
@@ -167,8 +167,8 @@ static void _layout_node_record(GtkTreeView *treeview,
 				     SELECT_NODEDATA_SUBCNT,
 				     NODE_STATE_ALLOCATED,
 				     &alloc_cpus);
-	if(cluster_flags & CLUSTER_FLAG_BG) {
-		if(!alloc_cpus
+	if (cluster_flags & CLUSTER_FLAG_BG) {
+		if (!alloc_cpus
 		   && ((node_ptr->node_state & NODE_STATE_ALLOCATED)
 		       ||  (node_ptr->node_state & NODE_STATE_COMPLETING)))
 			alloc_cpus = node_ptr->cpus;
@@ -188,7 +188,7 @@ static void _layout_node_record(GtkTreeView *treeview,
 				     NODE_STATE_ERROR,
 				     &err_cpus);
 
-	if(cluster_flags & CLUSTER_FLAG_BG)
+	if (cluster_flags & CLUSTER_FLAG_BG)
 		err_cpus *= cpus_per_node;
 
 	idle_cpus -= err_cpus;
@@ -292,8 +292,8 @@ static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 				     SELECT_NODEDATA_SUBCNT,
 				     NODE_STATE_ALLOCATED,
 				     &alloc_cpus);
-	if(cluster_flags & CLUSTER_FLAG_BG) {
-		if(!alloc_cpus
+	if (cluster_flags & CLUSTER_FLAG_BG) {
+		if (!alloc_cpus
 		   && (IS_NODE_ALLOCATED(node_ptr)
 		       || IS_NODE_COMPLETING(node_ptr)))
 			alloc_cpus = node_ptr->cpus;
@@ -312,7 +312,7 @@ static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 				     NODE_STATE_ERROR,
 				     &err_cpus);
 
-	if(cluster_flags & CLUSTER_FLAG_BG)
+	if (cluster_flags & CLUSTER_FLAG_BG)
 		err_cpus *= cpus_per_node;
 
 	idle_cpus -= err_cpus;
@@ -320,10 +320,10 @@ static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 	gtk_tree_store_set(treestore, iter, SORTID_ERR_CPUS,
 			   tmp_cnt, -1);
 
-	if(IS_NODE_DRAIN(node_ptr)) {
+	if (IS_NODE_DRAIN(node_ptr)) {
 		/* don't worry about mixed since the
 		   whole node is being drained. */
-	} else if((alloc_cpus && err_cpus)
+	} else if ((alloc_cpus && err_cpus)
 		  || (idle_cpus  && (idle_cpus != node_ptr->cpus))) {
 		node_ptr->node_state &= NODE_STATE_FLAGS;
 		node_ptr->node_state |= NODE_STATE_MIXED;
@@ -388,7 +388,7 @@ static void _update_info_node(List info_list, GtkTreeView *tree_view)
 		while(1) {
 			gtk_tree_store_set(GTK_TREE_STORE(model), &iter,
 					   SORTID_UPDATED, 0, -1);
-			if(!gtk_tree_model_iter_next(model, &iter)) {
+			if (!gtk_tree_model_iter_next(model, &iter)) {
 				break;
 			}
 		}
@@ -406,7 +406,7 @@ static void _update_info_node(List info_list, GtkTreeView *tree_view)
 			   it is in the list */
 			gtk_tree_model_get(model, &iter, SORTID_NAME,
 					   &name, -1);
-			if(!strcmp(name, node_ptr->name)) {
+			if (!strcmp(name, node_ptr->name)) {
 				/* update with new info */
 				g_free(name);
 				_update_node_record(sview_node_info,
@@ -416,7 +416,7 @@ static void _update_info_node(List info_list, GtkTreeView *tree_view)
 			}
 			g_free(name);
 
-			if(!gtk_tree_model_iter_next(model, &iter)) {
+			if (!gtk_tree_model_iter_next(model, &iter)) {
 				break;
 			}
 		}
@@ -454,11 +454,11 @@ void _display_info_node(List info_list,	popup_info_t *popup_win)
 	sview_node_info_t *sview_node_info = NULL;
 	int i = -1;
 
-	if(!spec_info->search_info->gchar_data) {
+	if (!spec_info->search_info->gchar_data) {
 		goto finished;
 	}
 need_refresh:
-	if(!spec_info->display_widget) {
+	if (!spec_info->display_widget) {
 		treeview = create_treeview_2cols_attach_to_table(
 			popup_win->table);
 		spec_info->display_widget =
@@ -472,7 +472,7 @@ need_refresh:
 	while ((sview_node_info = (sview_node_info_t*) list_next(itr))) {
 		node_ptr = sview_node_info->node_ptr;
 		i++;
-		if(!strcmp(node_ptr->name, name)) {
+		if (!strcmp(node_ptr->name, name)) {
 			change_grid_color(popup_win->grid_button_list,
 					  i, i, i, true, 0);
 			_layout_node_record(treeview, sview_node_info, update);
@@ -481,13 +481,13 @@ need_refresh:
 		}
 	}
 	list_iterator_destroy(itr);
-	if(!found) {
-		if(!popup_win->not_found) {
+	if (!found) {
+		if (!popup_win->not_found) {
 			char *temp;
 			GtkTreeIter iter;
 			GtkTreeModel *model = NULL;
 
-			if(cluster_flags & CLUSTER_FLAG_BG)
+			if (cluster_flags & CLUSTER_FLAG_BG)
 				temp = "BP NOT FOUND\n";
 			else
 				temp = "NODE NOT FOUND\n";
@@ -500,7 +500,7 @@ need_refresh:
 		}
 		popup_win->not_found = true;
 	} else {
-		if(popup_win->not_found) {
+		if (popup_win->not_found) {
 			popup_win->not_found = false;
 			gtk_widget_destroy(spec_info->display_widget);
 
@@ -532,11 +532,11 @@ extern List create_node_info_list(node_info_msg_t *node_info_ptr, int changed)
 	node_info_t *node_ptr = NULL;
 	char user[32], time_str[32];
 
-	if(!node_info_ptr || (!changed && info_list)) {
+	if (!node_info_ptr || (!changed && info_list)) {
 		goto update_color;
 	}
 
-	if(info_list)
+	if (info_list)
 		list_flush(info_list);
 	else
 		info_list = list_create(_node_info_list_del);
@@ -554,7 +554,7 @@ extern List create_node_info_list(node_info_msg_t *node_info_ptr, int changed)
 		list_append(info_list, sview_node_info_ptr);
 		sview_node_info_ptr->node_ptr = node_ptr;
 		sview_node_info_ptr->pos = i;
-		if(node_ptr->reason &&
+		if (node_ptr->reason &&
 		   (node_ptr->reason_uid != NO_VAL) && node_ptr->reason_time) {
 			struct passwd *pw = NULL;
 
@@ -569,12 +569,12 @@ extern List create_node_info_list(node_info_msg_t *node_info_ptr, int changed)
 				"%s [%s@%s]", node_ptr->reason, user, time_str);
 		} else
 			sview_node_info_ptr->reason = xstrdup(node_ptr->reason);
-		if(node_ptr->boot_time) {
+		if (node_ptr->boot_time) {
 			slurm_make_time_str(&node_ptr->boot_time,
 					    time_str, sizeof(time_str));
 			sview_node_info_ptr->boot_time = xstrdup(time_str);
 		}
-		if(node_ptr->slurmd_start_time) {
+		if (node_ptr->slurmd_start_time) {
 			slurm_make_time_str(&node_ptr->slurmd_start_time,
 					    time_str, sizeof(time_str));
 			sview_node_info_ptr->slurmd_start_time =
@@ -596,21 +596,21 @@ extern int get_new_info_node(node_info_msg_t **info_ptr, int force)
 	static bool changed = 0;
 	static uint16_t last_flags = 0;
 
-	if(g_node_info_ptr && !force
+	if (g_node_info_ptr && !force
 	   && ((now - last) < working_sview_config.refresh_delay)) {
-		if(*info_ptr != g_node_info_ptr)
+		if (*info_ptr != g_node_info_ptr)
 			error_code = SLURM_SUCCESS;
 		*info_ptr = g_node_info_ptr;
-		if(changed)
+		if (changed)
 			return SLURM_SUCCESS;
 		return error_code;
 	}
 	last = now;
 
-	//if(working_sview_config.show_hidden)
+	//if (working_sview_config.show_hidden)
 	show_flags |= SHOW_ALL;
 	if (g_node_info_ptr) {
-		if(show_flags != last_flags)
+		if (show_flags != last_flags)
 			g_node_info_ptr->last_update = 0;
 		error_code = slurm_load_node(g_node_info_ptr->last_update,
 					     &new_node_ptr, show_flags);
@@ -631,10 +631,10 @@ extern int get_new_info_node(node_info_msg_t **info_ptr, int force)
 	last_flags = show_flags;
 	g_node_info_ptr = new_node_ptr;
 
-	if(g_node_info_ptr && (*info_ptr != g_node_info_ptr))
+	if (g_node_info_ptr && (*info_ptr != g_node_info_ptr))
 		error_code = SLURM_SUCCESS;
 
- 	if(new_node_ptr && new_node_ptr->node_array && changed) {
+ 	if (new_node_ptr && new_node_ptr->node_array && changed) {
 		int i;
 		node_info_t *node_ptr = NULL;
 		uint16_t err_cpus = 0, alloc_cpus = 0;
@@ -656,8 +656,8 @@ extern int get_new_info_node(node_info_msg_t **info_ptr, int force)
 				SELECT_NODEDATA_SUBCNT,
 				NODE_STATE_ALLOCATED,
 				&alloc_cpus);
-			if(cluster_flags & CLUSTER_FLAG_BG) {
-				if(!alloc_cpus
+			if (cluster_flags & CLUSTER_FLAG_BG) {
+				if (!alloc_cpus
 				   && (IS_NODE_ALLOCATED(node_ptr)
 				       || IS_NODE_COMPLETING(node_ptr)))
 					alloc_cpus = node_ptr->cpus;
@@ -671,37 +671,37 @@ extern int get_new_info_node(node_info_msg_t **info_ptr, int force)
 				SELECT_NODEDATA_SUBCNT,
 				NODE_STATE_ERROR,
 				&err_cpus);
-			if(cluster_flags & CLUSTER_FLAG_BG)
+			if (cluster_flags & CLUSTER_FLAG_BG)
 				err_cpus *= cpus_per_node;
 
 			idle_cpus -= err_cpus;
 
-			if(IS_NODE_DRAIN(node_ptr)) {
+			if (IS_NODE_DRAIN(node_ptr)) {
 				/* don't worry about mixed since the
 				   whole node is being drained. */
 			} else if ((alloc_cpus && err_cpus) ||
 			    (idle_cpus  && (idle_cpus != node_ptr->cpus))) {
 				node_ptr->node_state &= NODE_STATE_FLAGS;
-				if(err_cpus)
+				if (err_cpus)
 					node_ptr->node_state
 						|= NODE_STATE_ERROR;
 
 				node_ptr->node_state |= NODE_STATE_MIXED;
-			} else if(err_cpus) {
+			} else if (err_cpus) {
 				node_ptr->node_state &= NODE_STATE_FLAGS;
 				node_ptr->node_state |= NODE_STATE_ERROR;
 			}
 
-/* 			if(alloc_cpus && err_cpus && !idle_cpus) { */
+/* 			if (alloc_cpus && err_cpus && !idle_cpus) { */
 /* 				node_ptr->node_state &= NODE_STATE_FLAGS; */
 /* 				node_ptr->node_state |= NODE_STATE_AE; */
-/* 			} else if(alloc_cpus && err_cpus && idle_cpus) { */
+/* 			} else if (alloc_cpus && err_cpus && idle_cpus) { */
 /* 				node_ptr->node_state &= NODE_STATE_FLAGS; */
 /* 				node_ptr->node_state |= NODE_STATE_AEI; */
-/* 			} else if(alloc_cpus && !err_cpus && idle_cpus) { */
+/* 			} else if (alloc_cpus && !err_cpus && idle_cpus) { */
 /* 				node_ptr->node_state &= NODE_STATE_FLAGS; */
 /* 				node_ptr->node_state |= NODE_STATE_AI; */
-/* 			} else if(!alloc_cpus && err_cpus && idle_cpus) { */
+/* 			} else if (!alloc_cpus && err_cpus && idle_cpus) { */
 /* 				node_ptr->node_state &= NODE_STATE_FLAGS; */
 /* 				node_ptr->node_state |= NODE_STATE_EI; */
 /* 			} */
@@ -724,7 +724,7 @@ extern int update_features_node(GtkDialog *dialog, const char *nodelist,
 	int no_dialog = 0;
 	int rc = SLURM_SUCCESS;
 
-	if(!dialog) {
+	if (!dialog) {
 		snprintf(tmp_char, sizeof(tmp_char),
 			 "Update Features for Node(s) %s?", nodelist);
 
@@ -755,10 +755,10 @@ extern int update_features_node(GtkDialog *dialog, const char *nodelist,
 			   label, FALSE, FALSE, 0);
 
 	entry = create_entry();
-	if(!entry)
+	if (!entry)
 		goto end_it;
 
-	if(old_features)
+	if (old_features)
 		gtk_entry_set_text(GTK_ENTRY(entry), old_features);
 
 	gtk_box_pack_start(GTK_BOX(dialog->vbox), entry, TRUE, TRUE, 0);
@@ -768,13 +768,13 @@ extern int update_features_node(GtkDialog *dialog, const char *nodelist,
 	if (response == GTK_RESPONSE_OK) {
 		node_msg->features =
 			xstrdup(gtk_entry_get_text(GTK_ENTRY(entry)));
-		if(!node_msg->features) {
+		if (!node_msg->features) {
 			edit = g_strdup_printf("No features given.");
 			display_edit_note(edit);
 			g_free(edit);
 			goto end_it;
 		}
-		if(slurm_update_node(node_msg)
+		if (slurm_update_node(node_msg)
 		   == SLURM_SUCCESS) {
 			edit = g_strdup_printf(
 				"Nodes %s updated successfully.",
@@ -793,7 +793,7 @@ extern int update_features_node(GtkDialog *dialog, const char *nodelist,
 
 end_it:
 	slurm_free_update_node_msg(node_msg);
-	if(no_dialog)
+	if (no_dialog)
 		gtk_widget_destroy(GTK_WIDGET(dialog));
 
 	return rc;
@@ -811,7 +811,7 @@ extern int update_gres_node(GtkDialog *dialog, const char *nodelist,
 	int no_dialog = 0;
 	int rc = SLURM_SUCCESS;
 
-	if(!dialog) {
+	if (!dialog) {
 		snprintf(tmp_char, sizeof(tmp_char),
 			 "Update Gres for Node(s) %s?", nodelist);
 
@@ -842,10 +842,10 @@ extern int update_gres_node(GtkDialog *dialog, const char *nodelist,
 			   label, FALSE, FALSE, 0);
 
 	entry = create_entry();
-	if(!entry)
+	if (!entry)
 		goto end_it;
 
-	if(old_gres)
+	if (old_gres)
 		gtk_entry_set_text(GTK_ENTRY(entry), old_gres);
 
 	gtk_box_pack_start(GTK_BOX(dialog->vbox), entry, TRUE, TRUE, 0);
@@ -855,13 +855,13 @@ extern int update_gres_node(GtkDialog *dialog, const char *nodelist,
 	if (response == GTK_RESPONSE_OK) {
 		node_msg->gres =
 			xstrdup(gtk_entry_get_text(GTK_ENTRY(entry)));
-		if(!node_msg->gres) {
+		if (!node_msg->gres) {
 			edit = g_strdup_printf("No gres given.");
 			display_edit_note(edit);
 			g_free(edit);
 			goto end_it;
 		}
-		if(slurm_update_node(node_msg)
+		if (slurm_update_node(node_msg)
 		   == SLURM_SUCCESS) {
 			edit = g_strdup_printf(
 				"Nodes %s updated successfully.",
@@ -880,7 +880,7 @@ extern int update_gres_node(GtkDialog *dialog, const char *nodelist,
 
 end_it:
 	slurm_free_update_node_msg(node_msg);
-	if(no_dialog)
+	if (no_dialog)
 		gtk_widget_destroy(GTK_WIDGET(dialog));
 
 	return rc;
@@ -899,7 +899,7 @@ extern int update_state_node(GtkDialog *dialog,
 	GtkWidget *entry = NULL;
 	int no_dialog = 0;
 
-	if(!dialog) {
+	if (!dialog) {
 		dialog = GTK_DIALOG(
 			gtk_dialog_new_with_buttons(
 				type,
@@ -920,7 +920,7 @@ extern int update_state_node(GtkDialog *dialog,
 	node_msg->reason = NULL;
 	node_msg->node_names = xstrdup(nodelist);
 
-	if(!strncasecmp("drain", type, 5)) {
+	if (!strncasecmp("drain", type, 5)) {
 	   	snprintf(tmp_char, sizeof(tmp_char),
 			 "Are you sure you want to drain nodes %s?\n\n"
 			 "Please put reason.",
@@ -928,21 +928,21 @@ extern int update_state_node(GtkDialog *dialog,
 		entry = create_entry();
 		label = gtk_label_new(tmp_char);
 		state = NODE_STATE_DRAIN;
-	} else if(!strncasecmp("resume", type, 5)) {
+	} else if (!strncasecmp("resume", type, 5)) {
 		snprintf(tmp_char, sizeof(tmp_char),
 			 "Are you sure you want to resume nodes %s?",
 			 nodelist);
 		label = gtk_label_new(tmp_char);
 		state = NODE_RESUME;
 	} else {
-		if(!strncasecmp("make", type, 4))
+		if (!strncasecmp("make", type, 4))
 			type = "idle";
-		else if(!strncasecmp("put", type, 3))
+		else if (!strncasecmp("put", type, 3))
 			type = "down";
 		for(i = 0; i < NODE_STATE_END; i++) {
 			upper = node_state_string(i);
 			lower = str_tolower(upper);
-			if(!strcmp(lower, type)) {
+			if (!strcmp(lower, type)) {
 				snprintf(tmp_char, sizeof(tmp_char),
 					 "Are you sure you want to set "
 					 "nodes %s to %s?",
@@ -955,20 +955,20 @@ extern int update_state_node(GtkDialog *dialog,
 			xfree(lower);
 		}
 	}
-	if(!label)
+	if (!label)
 		goto end_it;
 	node_msg->node_state = (uint16_t)state;
 	gtk_box_pack_start(GTK_BOX(dialog->vbox), label, FALSE, FALSE, 0);
-	if(entry)
+	if (entry)
 		gtk_box_pack_start(GTK_BOX(dialog->vbox),
 				   entry, TRUE, TRUE, 0);
 	gtk_widget_show_all(GTK_WIDGET(dialog));
 	i = gtk_dialog_run(dialog);
 	if (i == GTK_RESPONSE_OK) {
-		if(entry) {
+		if (entry) {
 			node_msg->reason = xstrdup(
 				gtk_entry_get_text(GTK_ENTRY(entry)));
-			if(!node_msg->reason || !strlen(node_msg->reason)) {
+			if (!node_msg->reason || !strlen(node_msg->reason)) {
 				lower = g_strdup_printf(
 					"You need a reason to do that.");
 				display_edit_note(lower);
@@ -980,7 +980,7 @@ extern int update_state_node(GtkDialog *dialog,
 				node_msg->reason_uid = getuid();
 			}
 		}
-		if(slurm_update_node(node_msg)
+		if (slurm_update_node(node_msg)
 		   == SLURM_SUCCESS) {
 			lower = g_strdup_printf(
 				"Nodes %s updated successfully.",
@@ -998,7 +998,7 @@ extern int update_state_node(GtkDialog *dialog,
 	}
 end_it:
 	slurm_free_update_node_msg(node_msg);
-	if(no_dialog)
+	if (no_dialog)
 		gtk_widget_destroy(GTK_WIDGET(dialog));
 
 	return rc;
@@ -1058,7 +1058,7 @@ extern void admin_edit_node(GtkCellRendererText *cell,
 	char *nodelist = NULL;
 	int column = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(cell),
 						       "column"));
-	if(!new_text || !strcmp(new_text, ""))
+	if (!new_text || !strcmp(new_text, ""))
 		goto no_input;
 
 	gtk_tree_model_get_iter(GTK_TREE_MODEL(treestore), &iter, path);
@@ -1095,35 +1095,35 @@ extern void get_info_node(GtkTable *table, display_data_t *display_data)
 	ListIterator itr = NULL;
 
 	/* reset */
-	if(!table && !display_data) {
-		if(display_widget)
+	if (!table && !display_data) {
+		if (display_widget)
 			gtk_widget_destroy(display_widget);
 		display_widget = NULL;
 		return;
 	}
 
-	if(display_data)
+	if (display_data)
 		local_display_data = display_data;
-	if(!table) {
+	if (!table) {
 		display_data_node->set_menu = local_display_data->set_menu;
 		return;
 	}
-	if(display_widget && toggled) {
+	if (display_widget && toggled) {
 		gtk_widget_destroy(display_widget);
 		display_widget = NULL;
 		goto display_it;
 	}
 
-	if((error_code = get_new_info_node(&node_info_ptr, force_refresh))
+	if ((error_code = get_new_info_node(&node_info_ptr, force_refresh))
 	   == SLURM_NO_CHANGE_IN_DATA) {
-		if(!display_widget || view == ERROR_VIEW)
+		if (!display_widget || view == ERROR_VIEW)
 			goto display_it;
 		changed = 0;
 	} else if (error_code != SLURM_SUCCESS) {
-		if(view == ERROR_VIEW)
+		if (view == ERROR_VIEW)
 			goto end_it;
 		view = ERROR_VIEW;
-		if(display_widget)
+		if (display_widget)
 			gtk_widget_destroy(display_widget);
 		sprintf(error_char, "slurm_load_node: %s",
 			slurm_strerror(slurm_get_errno()));
@@ -1136,7 +1136,7 @@ extern void get_info_node(GtkTable *table, display_data_t *display_data)
 display_it:
 	info_list = create_node_info_list(node_info_ptr, changed);
 
-	if(!info_list)
+	if (!info_list)
 		return;
 	i=0;
 	/* set up the grid */
@@ -1147,16 +1147,16 @@ display_it:
 	}
 	list_iterator_destroy(itr);
 	change_grid_color(grid_button_list, -1, -1, MAKE_WHITE, true, 0);
-	if(working_sview_config.grid_speedup) {
+	if (working_sview_config.grid_speedup) {
 		gtk_widget_set_sensitive(GTK_WIDGET(main_grid_table), 0);
 		gtk_widget_set_sensitive(GTK_WIDGET(main_grid_table), 1);
 	}
 
-	if(view == ERROR_VIEW && display_widget) {
+	if (view == ERROR_VIEW && display_widget) {
 		gtk_widget_destroy(display_widget);
 		display_widget = NULL;
 	}
-	if(!display_widget) {
+	if (!display_widget) {
 		tree_view = create_treeview(local_display_data,
 					    &grid_button_list);
 
@@ -1198,26 +1198,26 @@ extern void specific_info_node(popup_info_t *popup_win)
 	int i = -1;
 	sview_search_info_t *search_info = spec_info->search_info;
 
-	if(!spec_info->display_widget)
+	if (!spec_info->display_widget)
 		setup_popup_info(popup_win, display_data_node, SORTID_CNT);
 
-	if(node_info_ptr && popup_win->toggled) {
+	if (node_info_ptr && popup_win->toggled) {
 		gtk_widget_destroy(spec_info->display_widget);
 		spec_info->display_widget = NULL;
 		goto display_it;
 	}
 
-	if((error_code = get_new_info_node(&node_info_ptr,
+	if ((error_code = get_new_info_node(&node_info_ptr,
 					   popup_win->force_refresh))
 	   == SLURM_NO_CHANGE_IN_DATA) {
-		if(!spec_info->display_widget || spec_info->view == ERROR_VIEW)
+		if (!spec_info->display_widget || spec_info->view == ERROR_VIEW)
 			goto display_it;
 		changed = 0;
-	} else if(error_code != SLURM_SUCCESS) {
-		if(spec_info->view == ERROR_VIEW)
+	} else if (error_code != SLURM_SUCCESS) {
+		if (spec_info->view == ERROR_VIEW)
 			goto end_it;
 		spec_info->view = ERROR_VIEW;
-		if(spec_info->display_widget)
+		if (spec_info->display_widget)
 			gtk_widget_destroy(spec_info->display_widget);
 		sprintf(error_char, "slurm_load_node: %s",
 			slurm_strerror(slurm_get_errno()));
@@ -1232,14 +1232,14 @@ extern void specific_info_node(popup_info_t *popup_win)
 display_it:
 	info_list = create_node_info_list(node_info_ptr, changed);
 
-	if(!info_list)
+	if (!info_list)
 		return;
 
-	if(spec_info->view == ERROR_VIEW && spec_info->display_widget) {
+	if (spec_info->view == ERROR_VIEW && spec_info->display_widget) {
 		gtk_widget_destroy(spec_info->display_widget);
 		spec_info->display_widget = NULL;
 	}
-	if(spec_info->type != INFO_PAGE && !spec_info->display_widget) {
+	if (spec_info->type != INFO_PAGE && !spec_info->display_widget) {
 		tree_view = create_treeview(local_display_data,
 					    &popup_win->grid_button_list);
 
@@ -1258,7 +1258,7 @@ display_it:
 	setup_popup_grid_list(popup_win);
 
 	spec_info->view = INFO_VIEW;
-	if(spec_info->type == INFO_PAGE) {
+	if (spec_info->type == INFO_PAGE) {
 		_display_info_node(info_list, popup_win);
 		goto end_it;
 	}
@@ -1268,7 +1268,7 @@ display_it:
 	/* just linking to another list, don't free the inside, just
 	   the list */
 	send_info_list = list_create(NULL);
-	if(search_info->gchar_data) {
+	if (search_info->gchar_data) {
 		hostlist = hostlist_create(search_info->gchar_data);
 		host_itr = hostlist_iterator_create(hostlist);
 	}
@@ -1284,10 +1284,10 @@ display_it:
 
 		switch(search_info->search_type) {
 		case SEARCH_NODE_STATE:
-			if(search_info->int_data == NO_VAL)
+			if (search_info->int_data == NO_VAL)
 				continue;
-			else if(search_info->int_data != node_ptr->node_state) {
-				if(IS_NODE_MIXED(node_ptr)) {
+			else if (search_info->int_data != node_ptr->node_state) {
+				if (IS_NODE_MIXED(node_ptr)) {
 					uint16_t alloc_cnt = 0, err_cnt = 0;
 					uint16_t idle_cnt = node_ptr->cpus;
 					select_g_select_nodeinfo_get(
@@ -1301,20 +1301,20 @@ display_it:
 						NODE_STATE_ERROR,
 						&err_cnt);
 					idle_cnt -= (alloc_cnt + err_cnt);
-					if((search_info->int_data
+					if ((search_info->int_data
 					    & NODE_STATE_BASE)
 					   == NODE_STATE_ALLOCATED) {
-						if(alloc_cnt)
+						if (alloc_cnt)
 							break;
-					} else if((search_info->int_data
+					} else if ((search_info->int_data
 						   & NODE_STATE_BASE)
 						  == NODE_STATE_ERROR) {
-						if(err_cnt)
+						if (err_cnt)
 							break;
-					} else if((search_info->int_data
+					} else if ((search_info->int_data
 						   & NODE_STATE_BASE)
 						  == NODE_STATE_IDLE) {
-						if(idle_cnt)
+						if (idle_cnt)
 							break;
 					}
 				}
@@ -1323,10 +1323,10 @@ display_it:
 			break;
 		case SEARCH_NODE_NAME:
 		default:
-			if(!search_info->gchar_data)
+			if (!search_info->gchar_data)
 				continue;
 			while((host = hostlist_next(host_itr))) {
-				if(!strcmp(host, node_ptr->name)) {
+				if (!strcmp(host, node_ptr->name)) {
 					free(host);
 					found = 1;
 					break;
@@ -1335,7 +1335,7 @@ display_it:
 			}
 			hostlist_iterator_reset(host_itr);
 
-			if(!found)
+			if (!found)
 				continue;
 			break;
 		}
@@ -1346,7 +1346,7 @@ display_it:
 	list_iterator_destroy(itr);
 	post_setup_popup_grid_list(popup_win);
 
-	if(search_info->gchar_data) {
+	if (search_info->gchar_data) {
 		hostlist_iterator_destroy(host_itr);
 		hostlist_destroy(hostlist);
 	}
@@ -1429,7 +1429,7 @@ extern void popup_all_node_name(char *name, int id)
 	GError *error = NULL;
 	char *node;
 
-	if(cluster_flags & CLUSTER_FLAG_BG)
+	if (cluster_flags & CLUSTER_FLAG_BG)
 		node = "Base partition";
 	else
 		node = "Node";
@@ -1459,15 +1459,15 @@ extern void popup_all_node_name(char *name, int id)
 
 	itr = list_iterator_create(popup_list);
 	while((popup_win = list_next(itr))) {
-		if(popup_win->spec_info)
-			if(!strcmp(popup_win->spec_info->title, title)) {
+		if (popup_win->spec_info)
+			if (!strcmp(popup_win->spec_info->title, title)) {
 				break;
 			}
 	}
 	list_iterator_destroy(itr);
 
-	if(!popup_win) {
-		if(id == INFO_PAGE)
+	if (!popup_win) {
+		if (id == INFO_PAGE)
 			popup_win = create_popup_info(id, NODE_PAGE, title);
 		else
 			popup_win = create_popup_info(NODE_PAGE, id, title);
@@ -1509,9 +1509,9 @@ extern void admin_menu_node_name(char *name, GdkEventButton *event)
 	GtkWidget *menuitem;
 
 	while(display_data++) {
-		if(display_data->id == -1)
+		if (display_data->id == -1)
 			break;
-		if(!display_data->name)
+		if (!display_data->name)
 			continue;
 
 		display_data->user_data = name;
@@ -1533,19 +1533,19 @@ extern void admin_node(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 	char *old_value = NULL;
 
 	gtk_tree_model_get(model, iter, SORTID_NAME, &name, -1);
-	if(!strcasecmp("Update Features", type)) {  /* get old features */
+	if (!strcasecmp("Update Features", type)) {  /* get old features */
 		gtk_tree_model_get(model, iter, SORTID_FEATURES,
 				   &old_value, -1);
-	} else if(!strcasecmp("Update Gres", type)) {  /* get old gres */
+	} else if (!strcasecmp("Update Gres", type)) {  /* get old gres */
 		gtk_tree_model_get(model, iter, SORTID_GRES,
 				   &old_value, -1);
 	}
 
 	admin_node_name(name, old_value, type);
 
-	if(name)
+	if (name)
 		g_free(name);
-	if(old_value)
+	if (old_value)
 		g_free(old_value);
 
 	return;
@@ -1560,9 +1560,9 @@ extern void admin_node_name(char *name, char *old_value, char *type)
 		NULL);
 	gtk_window_set_transient_for(GTK_WINDOW(popup), NULL);
 
-	if(!strcasecmp("Update Features", type)) { /* update features */
+	if (!strcasecmp("Update Features", type)) { /* update features */
 		update_features_node(GTK_DIALOG(popup), name, old_value);
-	} else if(!strcasecmp("Update Gres", type)) { /* update gres */
+	} else if (!strcasecmp("Update Gres", type)) { /* update gres */
 		update_gres_node(GTK_DIALOG(popup), name, old_value);
 	} else /* something that has to deal with a node state change */
 		update_state_node(GTK_DIALOG(popup), name, type);
@@ -1576,23 +1576,23 @@ extern void cluster_change_node()
 {
 	display_data_t *display_data = options_data_node;
 	while(display_data++) {
-		if(display_data->id == -1)
+		if (display_data->id == -1)
 			break;
-		if(cluster_flags & CLUSTER_FLAG_BG) {
+		if (cluster_flags & CLUSTER_FLAG_BG) {
 			switch(display_data->id) {
 			case BLOCK_PAGE:
 				display_data->name = "Blocks";
 				break;
 			}
 
-			if(!display_data->name) {
-			} else if(!strcmp(display_data->name, "Drain Node"))
+			if (!display_data->name) {
+			} else if (!strcmp(display_data->name, "Drain Node"))
 				display_data->name = "Drain Base Partition";
-			else if(!strcmp(display_data->name, "Resume Node"))
+			else if (!strcmp(display_data->name, "Resume Node"))
 				display_data->name = "Resume Base Partition";
-			else if(!strcmp(display_data->name, "Put Node Down"))
+			else if (!strcmp(display_data->name, "Put Node Down"))
 				display_data->name = "Put Base Partition Down";
-			else if(!strcmp(display_data->name, "Make Node Idle"))
+			else if (!strcmp(display_data->name, "Make Node Idle"))
 				display_data->name =
 					"Make Base Partition Idle";
 		} else {
@@ -1602,17 +1602,17 @@ extern void cluster_change_node()
 				break;
 			}
 
-			if(!display_data->name) {
-			} else if(!strcmp(display_data->name,
+			if (!display_data->name) {
+			} else if (!strcmp(display_data->name,
 					  "Drain Base Partitions"))
 				display_data->name = "Drain Nodes";
-			else if(!strcmp(display_data->name,
+			else if (!strcmp(display_data->name,
 					"Resume Base Partitions"))
 				display_data->name = "Resume Nodes";
-			else if(!strcmp(display_data->name,
+			else if (!strcmp(display_data->name,
 					"Put Base Partitions Down"))
 				display_data->name = "Put Nodes Down";
-			else if(!strcmp(display_data->name,
+			else if (!strcmp(display_data->name,
 					"Make Base Partitions Idle"))
 				display_data->name = "Make Nodes Idle";
 		}

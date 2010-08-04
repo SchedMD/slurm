@@ -80,7 +80,7 @@ main (int argc, char *argv[])
 	}
 	max_line_size = _get_window_width( );
 
-	if(params.clusters)
+	if (params.clusters)
 		working_cluster_rec = list_peek(params.clusters);
 
 	while (1)

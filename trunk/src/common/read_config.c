@@ -375,20 +375,20 @@ static void _set_node_prefix(const char *nodenames)
 
 	xassert(nodenames != NULL);
 	for (i = 1; nodenames[i] != '\0'; i++) {
-		if((nodenames[i-1] == '[')
+		if ((nodenames[i-1] == '[')
 		   || (nodenames[i-1] <= '9'
 		       && nodenames[i-1] >= '0'))
 			break;
 	}
 
-	if(i == 1) {
+	if (i == 1) {
 		error("In your Node definition in your slurm.conf you "
 		      "gave a nodelist '%s' without a prefix.  "
 		      "Please try something like bg%s.", nodenames, nodenames);
 	}
 
 	xfree(conf_ptr->node_prefix);
-	if(nodenames[i] == '\0')
+	if (nodenames[i] == '\0')
 		conf_ptr->node_prefix = xstrdup(nodenames);
 	else {
 		tmp = xmalloc(sizeof(char)*i+1);
@@ -1128,7 +1128,7 @@ static void _init_slurmd_nodehash(void)
 	else
 		nodehash_initialized = true;
 
-	if(!conf_initialized) {
+	if (!conf_initialized) {
 		_init_slurm_conf(NULL);
 		conf_initialized = true;
 	}
@@ -1479,7 +1479,7 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->sched_params);
 	xfree (ctl_conf_ptr->schedtype);
 	xfree (ctl_conf_ptr->select_type);
-	if(ctl_conf_ptr->select_conf_key_pairs)
+	if (ctl_conf_ptr->select_conf_key_pairs)
 		list_destroy((List)ctl_conf_ptr->select_conf_key_pairs);
 	xfree (ctl_conf_ptr->slurm_conf);
 	xfree (ctl_conf_ptr->slurm_user_name);
@@ -1658,7 +1658,7 @@ static void _init_slurm_conf(const char *file_name)
 		if (name == NULL)
 			name = default_slurm_config_file;
 	}
-       	if(conf_initialized) {
+       	if (conf_initialized) {
 		error("the conf_hashtbl is already inited");
 	}
 	conf_hashtbl = s_p_hashtbl_create(slurm_conf_options);
@@ -1666,7 +1666,7 @@ static void _init_slurm_conf(const char *file_name)
 
 	/* init hash to 0 */
 	conf_ptr->hash_val = 0;
-	if(s_p_parse_file(conf_hashtbl, &conf_ptr->hash_val, name)
+	if (s_p_parse_file(conf_hashtbl, &conf_ptr->hash_val, name)
 	   == SLURM_ERROR)
 		fatal("something wrong with opening/reading conf file");
 	/* s_p_dump_values(conf_hashtbl, slurm_conf_options); */
@@ -1876,7 +1876,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	   the cluster name is lower case since sacctmgr makes sure
 	   this is the case as well.
 	*/
-	if(conf->cluster_name) {
+	if (conf->cluster_name) {
 		int i;
 		for (i = 0; conf->cluster_name[i] != '\0'; i++)
 			conf->cluster_name[i] =
@@ -2028,7 +2028,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		      "documentation for further explanation.");
 	}
 
-	if(!s_p_get_string(&conf->job_acct_gather_type,
+	if (!s_p_get_string(&conf->job_acct_gather_type,
 			   "JobAcctGatherType", hashtbl))
 		conf->job_acct_gather_type =
 			xstrdup(DEFAULT_JOB_ACCT_GATHER_TYPE);
@@ -2037,8 +2037,8 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		conf->job_ckpt_dir = xstrdup(DEFAULT_JOB_CKPT_DIR);
 
 	if (!s_p_get_string(&conf->job_comp_type, "JobCompType", hashtbl)) {
-		if(default_storage_type) {
-			if(!strcasecmp("slurmdbd", default_storage_type)) {
+		if (default_storage_type) {
+			if (!strcasecmp("slurmdbd", default_storage_type)) {
 				error("Can not use the default storage type "
 				      "specified for jobcomp since there is "
 				      "not slurmdbd type.  We are using %s "
@@ -2055,9 +2055,9 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 			conf->job_comp_type = xstrdup(DEFAULT_JOB_COMP_TYPE);
 	}
 	if (!s_p_get_string(&conf->job_comp_loc, "JobCompLoc", hashtbl)) {
-		if(default_storage_loc)
+		if (default_storage_loc)
 			conf->job_comp_loc = xstrdup(default_storage_loc);
-		else if(!strcmp(conf->job_comp_type, "job_comp/mysql")
+		else if (!strcmp(conf->job_comp_type, "job_comp/mysql")
 			|| !strcmp(conf->job_comp_type, "job_comp/pgsql"))
 			conf->job_comp_loc = xstrdup(DEFAULT_JOB_COMP_DB);
 		else
@@ -2066,30 +2066,30 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 	if (!s_p_get_string(&conf->job_comp_host, "JobCompHost",
 			    hashtbl)) {
-		if(default_storage_host)
+		if (default_storage_host)
 			conf->job_comp_host = xstrdup(default_storage_host);
 		else
 			conf->job_comp_host = xstrdup(DEFAULT_STORAGE_HOST);
 	}
 	if (!s_p_get_string(&conf->job_comp_user, "JobCompUser",
 			    hashtbl)) {
-		if(default_storage_user)
+		if (default_storage_user)
 			conf->job_comp_user = xstrdup(default_storage_user);
 		else
 			conf->job_comp_user = xstrdup(DEFAULT_STORAGE_USER);
 	}
 	if (!s_p_get_string(&conf->job_comp_pass, "JobCompPass",
 			    hashtbl)) {
-		if(default_storage_pass)
+		if (default_storage_pass)
 			conf->job_comp_pass = xstrdup(default_storage_pass);
 	}
 	if (!s_p_get_uint32(&conf->job_comp_port, "JobCompPort",
 			    hashtbl)) {
-		if(default_storage_port)
+		if (default_storage_port)
 			conf->job_comp_port = default_storage_port;
-		else if(!strcmp(conf->job_comp_type, "job_comp/mysql"))
+		else if (!strcmp(conf->job_comp_type, "job_comp/mysql"))
 			conf->job_comp_port = DEFAULT_MYSQL_PORT;
-		else if(!strcmp(conf->job_comp_type, "job_comp/pgsql"))
+		else if (!strcmp(conf->job_comp_type, "job_comp/pgsql"))
 			conf->job_comp_port = DEFAULT_PGSQL_PORT;
 		else
 			conf->job_comp_port = DEFAULT_STORAGE_PORT;
@@ -2156,13 +2156,13 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 	s_p_get_string(&conf->mpi_params, "MpiParams", hashtbl);
 
-	if(!s_p_get_boolean((bool *)&conf->track_wckey,
+	if (!s_p_get_boolean((bool *)&conf->track_wckey,
 			    "TrackWCKey", hashtbl))
 		conf->track_wckey = false;
 
 	if (!s_p_get_string(&conf->accounting_storage_type,
 			    "AccountingStorageType", hashtbl)) {
-		if(default_storage_type)
+		if (default_storage_type)
 			conf->accounting_storage_type =
 				xstrdup_printf("accounting_storage/%s",
 					       default_storage_type);
@@ -2212,7 +2212,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 	if (!s_p_get_string(&conf->accounting_storage_host,
 			    "AccountingStorageHost", hashtbl)) {
-		if(default_storage_host)
+		if (default_storage_host)
 			conf->accounting_storage_host =
 				xstrdup(default_storage_host);
 		else
@@ -2228,10 +2228,10 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 			    "AccountingStorageLoc", hashtbl)
 		&& !s_p_get_string(&conf->accounting_storage_loc,
 			       "JobAcctLogFile", hashtbl)) {
-		if(default_storage_loc)
+		if (default_storage_loc)
 			conf->accounting_storage_loc =
 				xstrdup(default_storage_loc);
-		else if(!strcmp(conf->accounting_storage_type,
+		else if (!strcmp(conf->accounting_storage_type,
 				"accounting_storage/mysql")
 			|| !strcmp(conf->accounting_storage_type,
 				"accounting_storage/pgsql"))
@@ -2243,7 +2243,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	}
 	if (!s_p_get_string(&conf->accounting_storage_user,
 			    "AccountingStorageUser", hashtbl)) {
-		if(default_storage_user)
+		if (default_storage_user)
 			conf->accounting_storage_user =
 				xstrdup(default_storage_user);
 		else
@@ -2252,21 +2252,21 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	}
 	if (!s_p_get_string(&conf->accounting_storage_pass,
 			    "AccountingStoragePass", hashtbl)) {
-		if(default_storage_pass)
+		if (default_storage_pass)
 			conf->accounting_storage_pass =
 				xstrdup(default_storage_pass);
 	}
 	if (!s_p_get_uint32(&conf->accounting_storage_port,
 			    "AccountingStoragePort", hashtbl)) {
-		if(default_storage_port)
+		if (default_storage_port)
 			conf->accounting_storage_port = default_storage_port;
-		else if(!strcmp(conf->accounting_storage_type,
+		else if (!strcmp(conf->accounting_storage_type,
 				"accounting_storage/slurmdbd"))
 			conf->accounting_storage_port = SLURMDBD_PORT;
-		else if(!strcmp(conf->accounting_storage_type,
+		else if (!strcmp(conf->accounting_storage_type,
 			  "accounting_storage/mysql"))
 			conf->accounting_storage_port = DEFAULT_MYSQL_PORT;
-		else if(!strcmp(conf->accounting_storage_type,
+		else if (!strcmp(conf->accounting_storage_type,
 			  "accounting_storage/pgsql"))
 			conf->accounting_storage_port = DEFAULT_PGSQL_PORT;
 		else
@@ -2274,7 +2274,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	}
 
 	/* remove the user and loc if using slurmdbd */
-	if(!strcmp(conf->accounting_storage_type,
+	if (!strcmp(conf->accounting_storage_type,
 		   "accounting_storage/slurmdbd")) {
 		xfree(conf->accounting_storage_loc);
 		conf->accounting_storage_loc = xstrdup("N/A");
@@ -2388,7 +2388,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		xfree(temp_str);
 	} else {
 		conf->priority_reset_period = PRIORITY_RESET_NONE;
-		if(!conf->priority_decay_hl) {
+		if (!conf->priority_decay_hl) {
 			fatal("You have to either have "
 			      "PriorityDecayHalfLife != 0 or "
 			      "PriorityUsageResetPeriod set to something "
@@ -2948,7 +2948,7 @@ extern void destroy_config_key_pair(void *object)
 {
 	config_key_pair_t *key_pair_ptr = (config_key_pair_t *)object;
 
-	if(key_pair_ptr) {
+	if (key_pair_ptr) {
 		xfree(key_pair_ptr->name);
 		xfree(key_pair_ptr->value);
 		xfree(key_pair_ptr);

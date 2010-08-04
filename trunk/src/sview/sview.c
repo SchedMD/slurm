@@ -156,7 +156,7 @@ void *_page_thr(void *arg)
 	/* 	DEF_TIMERS; */
 	xfree(page);
 
-	if(!grid_init) {
+	if (!grid_init) {
 		/* we need to signal any threads that are waiting */
 		g_mutex_lock(grid_mutex);
 		g_cond_signal(grid_cond);
@@ -168,7 +168,7 @@ void *_page_thr(void *arg)
 		g_mutex_unlock(grid_mutex);
 
 		/* if the grid isn't there just return */
-		if(!grid_init)
+		if (!grid_init)
 			return NULL;
 	}
 
@@ -189,7 +189,7 @@ void *_page_thr(void *arg)
 /* 		g_print("got for initeration: %s\n", TIME_STR); */
 		sleep(working_sview_config.refresh_delay);
 		g_static_mutex_lock(&sview_mutex);
-		if(thread_count > 1) {
+		if (thread_count > 1) {
 			g_static_mutex_unlock(&sview_mutex);
 			break;
 		}
@@ -229,7 +229,7 @@ void *_grid_init_thr(void *arg)
 		//gdk_flush();
 		gdk_threads_leave();
 
-		if(rc != SLURM_SUCCESS)
+		if (rc != SLURM_SUCCESS)
 			sleep(working_sview_config.refresh_delay);
 		else
 			grid_init = 1;
@@ -249,7 +249,7 @@ static void _page_switched(GtkNotebook     *notebook,
 {
 	GtkScrolledWindow *window = GTK_SCROLLED_WINDOW(
 		gtk_notebook_get_nth_page(notebook, page_num));
-	if(!window)
+	if (!window)
 		return;
 	GtkBin *bin = GTK_BIN(&window->container);
 	GtkViewport *view = GTK_VIEWPORT(bin->child);
@@ -261,9 +261,9 @@ static void _page_switched(GtkNotebook     *notebook,
 	static int started_grid_init = 0;
 
 	/* make sure we aren't adding the page, and really asking for info */
-	if(adding)
+	if (adding)
 		return;
-	else if(!grid_init && !started_grid_init) {
+	else if (!grid_init && !started_grid_init) {
 		/* start the thread to make the grid only once */
 		if (!g_thread_create(_grid_init_thr, notebook, FALSE, &error)) {
 			g_printerr ("Failed to create grid init thread: %s\n",
@@ -273,22 +273,22 @@ static void _page_switched(GtkNotebook     *notebook,
 		started_grid_init = 1;
 	}
 
-	if(page_running != -1)
+	if (page_running != -1)
 		page_running = page_num;
 
 	for(i=0; i<PAGE_CNT; i++) {
-		if((main_display_data[i].id == -1)
+		if ((main_display_data[i].id == -1)
 		   || (main_display_data[i].extra == page_num))
 			break;
 	}
 
-	if(main_display_data[i].extra != page_num)
+	if (main_display_data[i].extra != page_num)
 		return;
-	if(main_display_data[i].get_info) {
+	if (main_display_data[i].get_info) {
 		page_running = i;
 		/* If we return here we would not clear the grid which
 		   may need to be done. */
-		/* if(toggled || force_refresh) { */
+		/* if (toggled || force_refresh) { */
 		/* 	(main_display_data[i].get_info)( */
 		/* 		table, &main_display_data[i]); */
 		/* 	return; */
@@ -309,10 +309,10 @@ static void _page_switched(GtkNotebook     *notebook,
 static void _set_admin_mode(GtkToggleAction *action)
 {
 //	GtkAction *admin_action = NULL;
-	if(action)
+	if (action)
 		working_sview_config.admin_mode
 			= gtk_toggle_action_get_active(action);
-	if(!working_sview_config.admin_mode)
+	if (!working_sview_config.admin_mode)
 		gtk_statusbar_pop(GTK_STATUSBAR(main_statusbar),
 				  STATUS_ADMIN_MODE);
 	else
@@ -327,10 +327,10 @@ static void _set_admin_mode(GtkToggleAction *action)
 
 static void _set_grid(GtkToggleAction *action)
 {
-	if(action)
+	if (action)
 		working_sview_config.show_grid
 			= gtk_toggle_action_get_active(action);
-	if(!working_sview_config.show_grid)
+	if (!working_sview_config.show_grid)
 		gtk_widget_hide(grid_window);
 	else
 		gtk_widget_show(grid_window);
@@ -341,10 +341,10 @@ static void _set_grid(GtkToggleAction *action)
 static void _set_hidden(GtkToggleAction *action)
 {
 	char *tmp;
-	if(action)
+	if (action)
 		working_sview_config.show_hidden
 			= gtk_toggle_action_get_active(action);
-	if(!working_sview_config.show_hidden)
+	if (!working_sview_config.show_hidden)
 		tmp = g_strdup_printf(
 			"Hidden partitions and their jobs are now hidden");
 	else
@@ -360,10 +360,10 @@ static void _set_hidden(GtkToggleAction *action)
 static void _set_ruled(GtkToggleAction *action)
 {
 	char *tmp;
-	if(action)
+	if (action)
 		working_sview_config.ruled_treeview
 			= gtk_toggle_action_get_active(action);
-	if(!working_sview_config.ruled_treeview)
+	if (!working_sview_config.ruled_treeview)
 		tmp = g_strdup_printf(
 			"Tables not ruled");
 	else
@@ -387,7 +387,7 @@ static void _reconfigure(GtkToggleAction *action)
 {
 	char *temp = NULL;
 
-	if(!slurm_reconfigure())
+	if (!slurm_reconfigure())
 		temp = g_strdup_printf(
 			"Reconfigure sent to slurm successfully");
 	else
@@ -403,15 +403,15 @@ static void _get_current_debug(GtkRadioAction *action)
 	static GtkAction *debug_action = NULL;
 	int err_code = get_new_info_config(&slurm_ctl_conf_ptr);
 
-	if(err_code != SLURM_ERROR)
+	if (err_code != SLURM_ERROR)
 		debug_level = slurm_ctl_conf_ptr->slurmctld_debug;
 
-	if(!debug_action)
+	if (!debug_action)
 		debug_action = gtk_action_group_get_action(
 			menu_action_group, "debug_quiet");
 	/* Since this is the inital value we don't signal anything
 	   changed so we need to make it happen here */
-	if(debug_level == 0)
+	if (debug_level == 0)
 		debug_inited = 1;
 	sview_radio_action_set_current_value(GTK_RADIO_ACTION(debug_action),
 					     debug_level);
@@ -427,13 +427,13 @@ static void _set_debug(GtkRadioAction *action,
 	   beginning.  This gets called when the value is
 	   changed. And since we don't set it at the beginning we
 	   need to check it here. */
-	if(!debug_inited) {
+	if (!debug_inited) {
 		debug_inited = 1;
 		return;
 	}
 
 	level = gtk_radio_action_get_current_value(action);
-	if(!slurm_set_debug_level(level)) {
+	if (!slurm_set_debug_level(level)) {
 		temp = g_strdup_printf(
 			"Slurmctld debug level is now set to %d", level);
 	} else
@@ -454,7 +454,7 @@ static void _init_pages()
 {
 	int i;
 	for(i=0; i<PAGE_CNT; i++) {
-		if(!main_display_data[i].get_info)
+		if (!main_display_data[i].get_info)
 			continue;
 		(main_display_data[i].get_info)(NULL, &main_display_data[i]);
 	}
@@ -468,15 +468,15 @@ static gboolean _delete(GtkWidget *widget,
 	gtk_main_quit();
 	ba_fini();
 
-	if(popup_list)
+	if (popup_list)
 		list_destroy(popup_list);
-	if(grid_button_list)
+	if (grid_button_list)
 		list_destroy(grid_button_list);
-	if(multi_button_list)
+	if (multi_button_list)
 		list_destroy(multi_button_list);
-	if(signal_params_list)
+	if (signal_params_list)
 		list_destroy(signal_params_list);
-	if(cluster_list)
+	if (cluster_list)
 		list_destroy(cluster_list);
 	xfree(orig_cluster_name);
 	return FALSE;
@@ -495,7 +495,7 @@ static char *_get_ui_description()
 		"        <menuitem action='jobid'/>"
 		"        <menuitem action='user_jobs'/>"
 		"        <menuitem action='state_jobs'/>");
-	if(cluster_flags & CLUSTER_FLAG_BG)
+	if (cluster_flags & CLUSTER_FLAG_BG)
 		xstrcat(ui_description,
 			"      <separator/>"
 			"        <menuitem action='bg_block_name'/>"
@@ -507,7 +507,7 @@ static char *_get_ui_description()
 		"        <menuitem action='partition_name'/>"
 		"        <menuitem action='partition_state'/>"
 		"      <separator/>");
-	if(cluster_flags & CLUSTER_FLAG_BG)
+	if (cluster_flags & CLUSTER_FLAG_BG)
 		xstrcat(ui_description,
 			"        <menuitem action='node_name_bg'/>"
 			"        <menuitem action='node_state_bg'/>");
@@ -540,7 +540,7 @@ static char *_get_ui_description()
 		"      <menuitem action='grid'/>"
 		"      <menuitem action='hidden'/>"
 		"      <menuitem action='ruled'/>");
-	if(!(cluster_flags & CLUSTER_FLAG_BG))
+	if (!(cluster_flags & CLUSTER_FLAG_BG))
 		xstrcat(ui_description,
 			"      <menuitem action='grid_specs'/>");
 
@@ -718,7 +718,7 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 	gtk_action_group_add_actions(menu_action_group, entries,
 				     G_N_ELEMENTS(entries), window);
 
-	//if(cluster_flags & CLUSTER_FLAG_BG)
+	//if (cluster_flags & CLUSTER_FLAG_BG)
 		gtk_action_group_add_actions(menu_action_group, bg_entries,
 					     G_N_ELEMENTS(bg_entries), window);
 		//else
@@ -803,19 +803,19 @@ static void _get_info_tabs(GtkTable *table, display_data_t *display_data)
 	int i;
 	static bool init = 0;
 
-	if(!table || init) {
+	if (!table || init) {
 		return;
 	}
 
 	init = 1;
 	/* This only needs to be ran once */
 	for(i=0; i<PAGE_CNT; i++) {
-		if(main_display_data[i].id == -1)
+		if (main_display_data[i].id == -1)
 			break;
 
-		if(!main_display_data[i].name || (i == TAB_PAGE))
+		if (!main_display_data[i].name || (i == TAB_PAGE))
 			continue;
-		if(!default_sview_config.page_check_widget[i])
+		if (!default_sview_config.page_check_widget[i])
 			default_sview_config.page_check_widget[i] =
 				gtk_check_button_new_with_label(
 					main_display_data[i].name);
@@ -851,18 +851,18 @@ extern void _change_cluster_main(GtkComboBox *combo, gpointer extra)
 	int rc;
 	bool got_grid = 0;
 
-	if(!gtk_combo_box_get_active_iter(combo, &iter)) {
+	if (!gtk_combo_box_get_active_iter(combo, &iter)) {
 		g_print("nothing selected\n");
 		return;
 	}
 	model = gtk_combo_box_get_model(combo);
-	if(!model) {
+	if (!model) {
 		g_print("nothing selected\n");
 		return;
 	}
 
 	gtk_tree_model_get(model, &iter, 1, &cluster_rec, -1);
-	if(!cluster_rec) {
+	if (!cluster_rec) {
 		g_print("no cluster_rec pointer here!");
 		return;
 	}
@@ -871,8 +871,8 @@ extern void _change_cluster_main(GtkComboBox *combo, gpointer extra)
 	   legitimate change, so there isn't a need to check if we are
 	   going back to the same cluster we were just at.
 	*/
-	/* if(working_cluster_rec) { */
-	/* 	if(!strcmp(cluster_rec->name, working_cluster_rec->name)) */
+	/* if (working_cluster_rec) { */
+	/* 	if (!strcmp(cluster_rec->name, working_cluster_rec->name)) */
 	/* 		return; */
 	/* } */
 
@@ -893,7 +893,7 @@ extern void _change_cluster_main(GtkComboBox *combo, gpointer extra)
 	g_step_info_ptr = NULL;
 
 	/* set up working_cluster_rec */
-	if(cluster_dims > 1) {
+	if (cluster_dims > 1) {
 		/* reset from a multi-dim cluster */
 		working_sview_config.grid_x_width =
 			default_sview_config.grid_x_width;
@@ -901,9 +901,9 @@ extern void _change_cluster_main(GtkComboBox *combo, gpointer extra)
 		working_sview_config.grid_vert = default_sview_config.grid_vert;
 	}
 
-	if(!orig_cluster_name)
+	if (!orig_cluster_name)
 		orig_cluster_name = slurm_get_cluster_name();
-	if(!strcmp(cluster_rec->name, orig_cluster_name))
+	if (!strcmp(cluster_rec->name, orig_cluster_name))
 		working_cluster_rec = NULL;
 	else
 		working_cluster_rec = cluster_rec;
@@ -912,9 +912,9 @@ extern void _change_cluster_main(GtkComboBox *combo, gpointer extra)
 
 	display_data = main_display_data;
 	while(display_data++) {
-		if(display_data->id == -1)
+		if (display_data->id == -1)
 			break;
-		if(cluster_flags & CLUSTER_FLAG_BG) {
+		if (cluster_flags & CLUSTER_FLAG_BG) {
 			switch(display_data->id) {
 			case BLOCK_PAGE:
 				display_data->show = TRUE;
@@ -959,7 +959,7 @@ extern void _change_cluster_main(GtkComboBox *combo, gpointer extra)
 	cluster_change_node();
 
 	/* destroy old stuff */
-	if(grid_button_list) {
+	if (grid_button_list) {
 		list_destroy(grid_button_list);
 		grid_button_list = NULL;
 		got_grid = 1;
@@ -967,9 +967,9 @@ extern void _change_cluster_main(GtkComboBox *combo, gpointer extra)
 	ba_fini();
 
 	/* sorry popups can't survive a cluster change */
-	if(popup_list)
+	if (popup_list)
 		list_flush(popup_list);
-	if(signal_params_list)
+	if (signal_params_list)
 		list_flush(signal_params_list);
 
 	/* change the node tab name if needed */
@@ -991,14 +991,14 @@ extern void _change_cluster_main(GtkComboBox *combo, gpointer extra)
 	node_tab = NULL;
 	g_object_get(node_tab, "focus-child", &node_tab, NULL);
 #endif
-	if(node_tab)
+	if (node_tab)
 		gtk_label_set_text(GTK_LABEL(node_tab),
 				   main_display_data[NODE_PAGE].name);
 
 	/* The name in the visible tabs is easier since it is really
 	   just a button with a label on it.
 	*/
-	if(default_sview_config.page_check_widget[NODE_PAGE]) {
+	if (default_sview_config.page_check_widget[NODE_PAGE]) {
 		gtk_button_set_label(GTK_BUTTON(default_sview_config.
 						page_check_widget[NODE_PAGE]),
 				     main_display_data[NODE_PAGE].name);
@@ -1006,15 +1006,15 @@ extern void _change_cluster_main(GtkComboBox *combo, gpointer extra)
 	/* reinit */
 	rc = get_system_stats(main_grid_table);
 
-	if(rc == SLURM_SUCCESS) {
+	if (rc == SLURM_SUCCESS) {
 		/* It turns out if we didn't have the grid before the
 		   new grid doesn't get set up correctly.  Redoing the
 		   system_stats fixes it.  There is probably a better
 		   way of doing this, but it doesn't happen very often
 		   and isn't that bad to handle every once in a while.
 		*/
-		if(!got_grid) {
-			if(grid_button_list) {
+		if (!got_grid) {
+			if (grid_button_list) {
 				list_destroy(grid_button_list);
 				grid_button_list = NULL;
 			}
@@ -1040,17 +1040,17 @@ static GtkWidget *_create_cluster_combo()
 	bool got_db = slurm_get_is_association_based_accounting();
 	int count = 0, spot = 0;
 
-	if(!got_db)
+	if (!got_db)
 		return NULL;
 
 	cluster_list = slurmdb_get_info_cluster(NULL);
-	if(!cluster_list || !list_count(cluster_list)) {
-		if(cluster_list)
+	if (!cluster_list || !list_count(cluster_list)) {
+		if (cluster_list)
 			list_destroy(cluster_list);
 		return NULL;
 	}
 
-	if(!orig_cluster_name)
+	if (!orig_cluster_name)
 		orig_cluster_name = slurm_get_cluster_name();
 	model = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_POINTER);
 
@@ -1066,7 +1066,7 @@ static GtkWidget *_create_cluster_combo()
 				   0, cluster_rec->name,
 				   1, cluster_rec,
 				   -1);
-		if(!strcmp(cluster_rec->name, orig_cluster_name)) {
+		if (!strcmp(cluster_rec->name, orig_cluster_name)) {
 			/* clear it since we found the current cluster */
 			working_cluster_rec = NULL;
 			spot = count;
@@ -1092,7 +1092,7 @@ static GtkWidget *_create_cluster_combo()
 extern void refresh_main(GtkAction *action, gpointer user_data)
 {
 	int page = gtk_notebook_get_current_page(GTK_NOTEBOOK(main_notebook));
-	if(page == -1)
+	if (page == -1)
 		g_error("no pages in notebook for refresh\n");
 	force_refresh = 1;
 	_page_switched(GTK_NOTEBOOK(main_notebook), NULL, page, NULL);
@@ -1108,24 +1108,24 @@ extern void toggle_tab_visiblity(GtkToggleButton *toggle_button,
 	/* When calling the set active below it signals this again, so
 	   to avoid an infinite loop we will just fall out.
 	*/
-	if(already_here)
+	if (already_here)
 		return;
 
 	already_here = true;
 	page_num = display_data->extra;
 	visible_tab = gtk_notebook_get_nth_page(
 		GTK_NOTEBOOK(main_notebook), page_num);
-	if(toggle_button) {
+	if (toggle_button) {
 		working_sview_config.page_visible[page_num] =
 			gtk_toggle_button_get_active(toggle_button);
 	}
 
-	if(working_sview_config.page_visible[page_num])
+	if (working_sview_config.page_visible[page_num])
 		gtk_widget_show(visible_tab);
 	else
 		gtk_widget_hide(visible_tab);
 
-	if(default_sview_config.page_check_widget[page_num])
+	if (default_sview_config.page_check_widget[page_num])
 		gtk_toggle_button_set_active(
 			GTK_TOGGLE_BUTTON(default_sview_config.
 					  page_check_widget[page_num]),
@@ -1146,7 +1146,7 @@ extern void tab_pressed(GtkWidget *widget, GdkEventButton *event,
 	/* single click with the right mouse button? */
 	gtk_notebook_set_current_page(GTK_NOTEBOOK(main_notebook),
 				      display_data->extra);
-	if((display_data->extra != TAB_PAGE) && (event->button == 3)) {
+	if ((display_data->extra != TAB_PAGE) && (event->button == 3)) {
 		right_button_pressed(NULL, NULL, event,
 				     &signal_params, TAB_CLICKED);
 	}
@@ -1155,7 +1155,7 @@ extern void tab_pressed(GtkWidget *widget, GdkEventButton *event,
 extern void close_tab(GtkWidget *widget, GdkEventButton *event,
 		      display_data_t *display_data)
 {
-	if(event->button == 3)
+	if (event->button == 3)
 		/* don't do anything with a right click */
 		return;
 	working_sview_config.page_visible[display_data->extra] = false;
@@ -1218,7 +1218,7 @@ int main(int argc, char *argv[])
 	menubar = _get_menubar_menu(main_window, main_notebook);
 	gtk_table_attach_defaults(GTK_TABLE(table), menubar, 0, 1, 0, 1);
 
-	if((combo = _create_cluster_combo())) {
+	if ((combo = _create_cluster_combo())) {
 		GtkWidget *label = gtk_label_new("Cluster ");
 		gtk_table_attach(GTK_TABLE(table), label, 1, 2, 0, 1,
 				 GTK_FILL, GTK_SHRINK, 0, 0);
@@ -1252,7 +1252,7 @@ int main(int argc, char *argv[])
 	standard_cursor = gdk_cursor_new(GDK_TOP_LEFT_ARROW);
 
 	for(i=0; i<PAGE_CNT; i++) {
-		if(main_display_data[i].id == -1)
+		if (main_display_data[i].id == -1)
 			break;
 
 		create_page(GTK_NOTEBOOK(main_notebook),
@@ -1268,18 +1268,18 @@ int main(int argc, char *argv[])
 
 	adding = 0;
 	/* apply default settings */
-	if(!working_sview_config.show_grid)
+	if (!working_sview_config.show_grid)
 		gtk_widget_hide(grid_window);
 
 	for(i=0; i<PAGE_CNT; i++) {
 		GtkWidget *visible_tab = NULL;
 
-		if(main_display_data[i].id == -1)
+		if (main_display_data[i].id == -1)
 			break;
 
 		visible_tab = gtk_notebook_get_nth_page(
 			GTK_NOTEBOOK(main_notebook), i);
-		if(working_sview_config.page_visible[i]
+		if (working_sview_config.page_visible[i]
 		   || (i == working_sview_config.default_page)
 		   || (i == TAB_PAGE))
 			gtk_widget_show(visible_tab);
@@ -1296,7 +1296,7 @@ int main(int argc, char *argv[])
 	   pages is already this the signal doesn't happen so handle
 	   it here.
 	*/
-	if(gtk_notebook_get_current_page(GTK_NOTEBOOK(main_notebook))
+	if (gtk_notebook_get_current_page(GTK_NOTEBOOK(main_notebook))
 	   == working_sview_config.default_page)
 		_page_switched(GTK_NOTEBOOK(main_notebook), NULL,
 			       working_sview_config.default_page, NULL);

@@ -517,7 +517,7 @@ int srun(int ac, char **av)
 	}
 
 cleanup:
-	if(got_alloc) {
+	if (got_alloc) {
 		cleanup_allocation();
 
 		/* send the controller we were cancelled */
@@ -602,7 +602,7 @@ static char *_uint16_array_to_str(int array_len, const uint16_t *array)
 	char *sep = ",";  /* seperator */
 	char *str = xstrdup("");
 
-	if(array == NULL)
+	if (array == NULL)
 		return str;
 
 	for (i = 0; i < array_len; i++) {
@@ -1072,7 +1072,7 @@ _task_start(launch_tasks_response_msg_t *msg)
 	int taskid;
 	int i;
 
-	if(msg->count_of_pids)
+	if (msg->count_of_pids)
 		verbose("Node %s, %d tasks started",
 			msg->node_name, msg->count_of_pids);
 	else
@@ -1367,7 +1367,7 @@ static void _handle_pipe(int signo)
 {
 	static int ending = 0;
 
-	if(ending)
+	if (ending)
 		return;
 	ending = 1;
 	slurm_step_launch_abort(job->step_ctx);

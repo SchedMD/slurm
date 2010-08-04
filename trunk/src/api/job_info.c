@@ -92,14 +92,14 @@ static void _sprint_range(char *str, uint32_t str_size,
 	char tmp[128];
 	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 
-	if(cluster_flags & CLUSTER_FLAG_BG) {
+	if (cluster_flags & CLUSTER_FLAG_BG) {
 		convert_num_unit((float)lower, tmp, sizeof(tmp), UNIT_NONE);
 	} else {
 		snprintf(tmp, sizeof(tmp), "%u", lower);
 	}
 	if (upper > 0) {
     		char tmp2[128];
-		if(cluster_flags & CLUSTER_FLAG_BG) {
+		if (cluster_flags & CLUSTER_FLAG_BG) {
 			convert_num_unit((float)upper, tmp2,
 					 sizeof(tmp2), UNIT_NONE);
 		} else {
@@ -160,7 +160,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	char select_buf[122];
 	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 
-	if(cluster_flags & CLUSTER_FLAG_BG) {
+	if (cluster_flags & CLUSTER_FLAG_BG) {
 		nodelist = "BP_List";
 		select_g_select_jobinfo_get(job_ptr->select_jobinfo,
 					    SELECT_JOBDATA_IONODES,
@@ -195,7 +195,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 		 "Priority=%u Account=%s QOS=%s",
 		 job_ptr->priority, job_ptr->account, job_ptr->qos);
 	xstrcat(out, tmp_line);
-	if(slurm_get_track_wckey()) {
+	if (slurm_get_track_wckey()) {
 		snprintf(tmp_line, sizeof(tmp_line),
 			 " WCKey=%s", job_ptr->wckey);
 		xstrcat(out, tmp_line);
@@ -374,7 +374,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	/****** Line 13 ******/
 	xstrfmtcat(out, "%s=", nodelist);
 	xstrcat(out, job_ptr->nodes);
-	if(job_ptr->nodes && ionodes) {
+	if (job_ptr->nodes && ionodes) {
 		snprintf(tmp_line, sizeof(tmp_line), "[%s]", ionodes);
 		xstrcat(out, tmp_line);
 		xfree(ionodes);
@@ -385,14 +385,14 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 		xstrcat(out, "\n   ");
 
 	/****** Line 14 ******/
-	if(cluster_flags & CLUSTER_FLAG_BG) {
+	if (cluster_flags & CLUSTER_FLAG_BG) {
 		select_g_select_jobinfo_get(job_ptr->select_jobinfo,
 					    SELECT_JOBDATA_NODE_CNT,
 					    &min_nodes);
 		if ((min_nodes == 0) || (min_nodes == NO_VAL)) {
 			min_nodes = job_ptr->num_nodes;
 			max_nodes = job_ptr->max_nodes;
-		} else if(job_ptr->max_nodes)
+		} else if (job_ptr->max_nodes)
 			max_nodes = min_nodes;
 	} else {
 		min_nodes = job_ptr->num_nodes;
@@ -425,7 +425,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	if (!job_resrcs)
 		goto line15;
 
-	if(cluster_flags & CLUSTER_FLAG_BG) {
+	if (cluster_flags & CLUSTER_FLAG_BG) {
 		if ((job_resrcs->cpu_array_cnt > 0) &&
 		    (job_resrcs->cpu_array_value) &&
 		    (job_resrcs->cpu_array_reps)) {
@@ -592,7 +592,7 @@ line15:
 	} else
 		tmp6_ptr = "Node";
 
-	if(cluster_flags & CLUSTER_FLAG_BG) {
+	if (cluster_flags & CLUSTER_FLAG_BG) {
 		convert_num_unit((float)job_ptr->pn_min_cpus,
 				 tmp1, sizeof(tmp1), UNIT_NONE);
 		snprintf(tmp_line, sizeof(tmp_line), "MinCPUsNode=%s",	tmp1);
@@ -656,7 +656,7 @@ line15:
 		xstrcat(out, tmp_line);
 	}
 
-	if(cluster_flags & CLUSTER_FLAG_BG) {
+	if (cluster_flags & CLUSTER_FLAG_BG) {
 		/****** Line 20 (optional) ******/
 		select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,
 					       select_buf, sizeof(select_buf),
@@ -683,7 +683,7 @@ line15:
 			xstrcat(out, select_buf);
 		}
 
-		if(cluster_flags & CLUSTER_FLAG_BGL) {
+		if (cluster_flags & CLUSTER_FLAG_BGL) {
 			/****** Line 22 (optional) ******/
 			select_g_select_jobinfo_sprint(
 				job_ptr->select_jobinfo,
@@ -708,7 +708,7 @@ line15:
 				xstrcat(out, " ");
 			else
 				xstrcat(out, "\n   ");
-			if(cluster_flags & CLUSTER_FLAG_BGL)
+			if (cluster_flags & CLUSTER_FLAG_BGL)
 				snprintf(tmp_line, sizeof(tmp_line),
 					 "LinuxImage=%s", select_buf);
 			else
@@ -739,7 +739,7 @@ line15:
 				xstrcat(out, " ");
 			else
 				xstrcat(out, "\n   ");
-			if(cluster_flags & CLUSTER_FLAG_BGL)
+			if (cluster_flags & CLUSTER_FLAG_BGL)
 				snprintf(tmp_line, sizeof(tmp_line),
 					 "RamDiskImage=%s", select_buf);
 			else
@@ -881,8 +881,8 @@ slurm_pid2jobid (pid_t job_pid, uint32_t *jobid)
 	slurm_msg_t_init(&req_msg);
 	slurm_msg_t_init(&resp_msg);
 
-	if(cluster_flags & CLUSTER_FLAG_MULTSD) {
-		if((this_addr = getenv("SLURMD_NODENAME"))) {
+	if (cluster_flags & CLUSTER_FLAG_MULTSD) {
+		if ((this_addr = getenv("SLURMD_NODENAME"))) {
 			slurm_conf_get_addr(this_addr, &req_msg.address);
 		} else {
 			this_addr = "localhost";
@@ -911,13 +911,13 @@ slurm_pid2jobid (pid_t job_pid, uint32_t *jobid)
 
 	rc = slurm_send_recv_node_msg(&req_msg, &resp_msg, 0);
 
-	if(rc != 0 || !resp_msg.auth_cred) {
+	if (rc != 0 || !resp_msg.auth_cred) {
 		error("slurm_pid2jobid: %m");
-		if(resp_msg.auth_cred)
+		if (resp_msg.auth_cred)
 			g_slurm_auth_destroy(resp_msg.auth_cred);
 		return SLURM_ERROR;
 	}
-	if(resp_msg.auth_cred)
+	if (resp_msg.auth_cred)
 		g_slurm_auth_destroy(resp_msg.auth_cred);
 	switch (resp_msg.msg_type) {
 	case RESPONSE_JOB_ID:
@@ -1123,7 +1123,7 @@ extern int slurm_job_cpus_allocated_on_node_id(
 
 	for (i = 0; i < job_resrcs_ptr->cpu_array_cnt; i++) {
 		start_node += job_resrcs_ptr->cpu_array_reps[i];
-		if(start_node >= node_id)
+		if (start_node >= node_id)
 			break;
 	}
 

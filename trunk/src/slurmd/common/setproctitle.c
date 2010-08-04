@@ -302,7 +302,7 @@ init_setproctitle(int argc, char *argv[])
 		new_environ[i] = strdup(environ[i]);
 		//free(environ[i]);
 	}
-	/* if(environ) */
+	/* if (environ) */
 /* 		free(environ); */
 	new_environ[i] = NULL;
 	environ = new_environ;

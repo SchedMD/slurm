@@ -51,7 +51,7 @@ char *_elapsed_time(long secs, long usecs)
 	long    subsec = 0;
 	char *str = NULL;
 
-	if(secs < 0 || secs == NO_VAL)
+	if (secs < 0 || secs == NO_VAL)
 		return NULL;
 
 
@@ -59,7 +59,7 @@ char *_elapsed_time(long secs, long usecs)
 		secs++;
 		usecs -= 1E6;
 	}
-	if(usecs > 0) {
+	if (usecs > 0) {
 		/* give me 3 significant digits to tack onto the sec */
 		subsec = (usecs/1000);
 	}

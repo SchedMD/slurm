@@ -943,7 +943,7 @@ static void  _slurm_rpc_get_shares(slurm_msg_t *msg)
 	response_msg.msg_type = RESPONSE_SHARE_INFO;
 	response_msg.data     = &resp_msg;
 	slurm_send_node_msg(msg->conn_fd, &response_msg);
-	if(resp_msg.assoc_shares_list)
+	if (resp_msg.assoc_shares_list)
 		list_destroy(resp_msg.assoc_shares_list);
 	END_TIMER2("_slurm_rpc_get_share");
 	debug2("_slurm_rpc_get_shares %s", TIME_STR);
@@ -971,7 +971,7 @@ static void  _slurm_rpc_get_priority_factors(slurm_msg_t *msg)
 	response_msg.msg_type = RESPONSE_PRIORITY_FACTORS;
 	response_msg.data     = &resp_msg;
 	slurm_send_node_msg(msg->conn_fd, &response_msg);
-	if(resp_msg.priority_factors_list)
+	if (resp_msg.priority_factors_list)
 		list_destroy(resp_msg.priority_factors_list);
 	END_TIMER2("_slurm_rpc_get_priority_factors");
 	debug2("_slurm_rpc_get_priority_factors %s", TIME_STR);
@@ -1640,7 +1640,7 @@ static void _slurm_rpc_node_registration(slurm_msg_t * msg)
 	}
 	if (error_code == SLURM_SUCCESS) {
 		/* do RPC call */
-		if(!(slurm_get_debug_flags() & DEBUG_FLAG_NO_CONF_HASH)
+		if (!(slurm_get_debug_flags() & DEBUG_FLAG_NO_CONF_HASH)
 		   && (node_reg_stat_msg->hash_val != NO_VAL)
 		   && (node_reg_stat_msg->hash_val != slurm_get_hash_val())) {
 			error("Node %s appears to have a different slurm.conf "
@@ -2237,7 +2237,7 @@ static void _slurm_rpc_step_layout(slurm_msg_t *msg)
 	}
 
 	step_ptr = find_step_record(job_ptr, req->step_id);
-	if(!step_ptr) {
+	if (!step_ptr) {
 		unlock_slurmctld(job_read_lock);
 		debug2("_slurm_rpc_step_layout: "
 		       "JobId=%u.%u Not Found",
@@ -2900,11 +2900,11 @@ static void _slurm_rpc_update_block(slurm_msg_t * msg)
 
 	if (error_code == SLURM_SUCCESS) {
 		/* do RPC call */
-		if(block_desc_ptr->bg_block_id) {
+		if (block_desc_ptr->bg_block_id) {
 			error_code = select_g_update_block(block_desc_ptr);
 			END_TIMER2("_slurm_rpc_update_block");
 			name = block_desc_ptr->bg_block_id;
-		} else if(block_desc_ptr->nodes) {
+		} else if (block_desc_ptr->nodes) {
 			error_code = select_g_update_sub_node(block_desc_ptr);
 			END_TIMER2("_slurm_rpc_update_subbp");
 			name = block_desc_ptr->nodes;
@@ -3712,7 +3712,7 @@ inline static void  _slurm_rpc_accounting_update_msg(slurm_msg_t *msg)
 		slurm_send_rc_msg(msg, EACCES);
 		return;
 	}
-	if(update_ptr->update_list && list_count(update_ptr->update_list))
+	if (update_ptr->update_list && list_count(update_ptr->update_list))
 		rc = assoc_mgr_update(update_ptr->update_list);
 
 	END_TIMER2("_slurm_rpc_accounting_update_msg");

@@ -57,10 +57,10 @@ inline void diff_tv_str(struct timeval *tv1,struct timeval *tv2,
 	delta_t  = (tv2->tv_sec  - tv1->tv_sec) * 1000000;
 	delta_t +=  tv2->tv_usec - tv1->tv_usec;
 	snprintf(tv_str, len_tv_str, "usec=%ld", delta_t);
-	if(from) {
-		if(!limit)
+	if (from) {
+		if (!limit)
 			limit = 1000000;
-		if(delta_t > limit) {
+		if (delta_t > limit) {
 			verbose("Warning: Note very large processing "
 				"time from %s: %s",
 				from, tv_str);

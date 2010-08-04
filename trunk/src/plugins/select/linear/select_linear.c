@@ -2604,7 +2604,7 @@ extern select_nodeinfo_t *select_p_select_nodeinfo_alloc(uint32_t size)
 
 extern int select_p_select_nodeinfo_free(select_nodeinfo_t *nodeinfo)
 {
-	if(nodeinfo) {
+	if (nodeinfo) {
 		if (nodeinfo->magic != NODEINFO_MAGIC) {
 			error("select_p_select_nodeinfo_free: "
 			      "nodeinfo magic bad");
@@ -2624,7 +2624,7 @@ extern int select_p_select_nodeinfo_set_all(time_t last_query_time)
 
 	/* only set this once when the last_node_update is newer than
 	 * the last time we set things up. */
-	if(last_set_all && (last_node_update < last_set_all)) {
+	if (last_set_all && (last_node_update < last_set_all)) {
 		debug2("Node select info for set all hasn't "
 		       "changed since %d",
 		       last_set_all);

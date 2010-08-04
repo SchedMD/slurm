@@ -277,7 +277,7 @@ static slurm_acct_storage_ops_t * _acct_storage_get_ops(
         if ( c->cur_plugin != PLUGIN_INVALID_HANDLE )
         	return &c->ops;
 
-	if(errno != EPLUGIN_NOTFOUND) {
+	if (errno != EPLUGIN_NOTFOUND) {
 		error("Couldn't load specified plugin name for %s: %s",
 		      c->acct_storage_type, plugin_strerror(errno));
 		return NULL;
@@ -382,7 +382,7 @@ extern int slurm_acct_storage_init(char *loc)
 
 	if ( g_acct_storage_context )
 		goto done;
-	if(loc)
+	if (loc)
 		slurm_set_accounting_storage_loc(loc);
 
 	acct_storage_type = slurm_get_accounting_storage_type();
@@ -800,13 +800,13 @@ extern int clusteracct_storage_g_node_up(void *db_conn,
 
 	/* on some systems we need to make sure we don't say something
 	   is completely up if there are cpus in an error state */
-	if(node_ptr->select_nodeinfo) {
+	if (node_ptr->select_nodeinfo) {
 		uint16_t err_cpus = 0;
 		select_g_select_nodeinfo_get(node_ptr->select_nodeinfo,
 					     SELECT_NODEDATA_SUBCNT,
 					     NODE_STATE_ERROR,
 					     &err_cpus);
-		if(err_cpus) {
+		if (err_cpus) {
 			char *reason = "Setting partial node down.";
 			struct node_record send_node;
 			struct config_record config_rec;

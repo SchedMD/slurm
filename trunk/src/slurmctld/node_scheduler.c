@@ -1221,7 +1221,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	acct_policy_job_begin(job_ptr);
 
 	/* If ran with slurmdbd this is handled out of band in the job */
-	if(!with_slurmdbd)
+	if (!with_slurmdbd)
 		jobacct_storage_g_job_start(acct_db_conn, job_ptr);
 
 	prolog_slurmctld(job_ptr);
@@ -1932,7 +1932,7 @@ extern void re_kill_job(struct job_record *job_ptr)
 
 	if (agent_args->node_count == 0) {
 		slurm_free_kill_job_msg(kill_job);
-		if(agent_args->hostlist)
+		if (agent_args->hostlist)
 			hostlist_destroy(agent_args->hostlist);
 		xfree(agent_args);
 		hostlist_destroy(kill_hostlist);

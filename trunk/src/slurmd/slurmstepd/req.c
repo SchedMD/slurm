@@ -1368,7 +1368,7 @@ _handle_stat_jobacct(int fd, slurmd_job_t *job, uid_t uid)
 
 	for (i = 0; i < job->node_tasks; i++) {
 		temp_jobacct = jobacct_gather_g_stat_task(job->task[i]->pid);
-		if(temp_jobacct) {
+		if (temp_jobacct) {
 			jobacct_gather_g_aggregate(jobacct, temp_jobacct);
 			jobacct_gather_g_destroy(temp_jobacct);
 			num_tasks++;

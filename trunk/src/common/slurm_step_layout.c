@@ -101,7 +101,7 @@ slurm_step_layout_t *slurm_step_layout_create(
 	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 
 	step_layout->task_dist = task_dist;
-	if(task_dist == SLURM_DIST_ARBITRARY) {
+	if (task_dist == SLURM_DIST_ARBITRARY) {
 		hostlist_t hl = NULL;
 		char buf[65536];
 		/* set the node list for the task layout later if user
@@ -118,20 +118,20 @@ slurm_step_layout_t *slurm_step_layout_create(
 	}
 
 	step_layout->task_cnt  = num_tasks;
-	if(cluster_flags & CLUSTER_FLAG_FE) {
+	if (cluster_flags & CLUSTER_FLAG_FE) {
 		/* Limited job step support */
 		/* All jobs execute through front-end on Blue Gene.
 		 * Normally we would not permit execution of job steps,
 		 * but can fake it by just allocating all tasks to
 		 * one of the allocated nodes. */
-		if(cluster_flags & CLUSTER_FLAG_BG)
+		if (cluster_flags & CLUSTER_FLAG_BG)
 			step_layout->node_cnt  = num_hosts;
 		else
 			step_layout->node_cnt  = 1;
 	} else
 		step_layout->node_cnt  = num_hosts;
 
-	if(_init_task_layout(step_layout, arbitrary_nodes,
+	if (_init_task_layout(step_layout, arbitrary_nodes,
 			     cpus_per_node, cpu_count_reps,
 			     cpus_per_task,
 			     task_dist, plane_size)
@@ -170,7 +170,7 @@ slurm_step_layout_t *fake_slurm_step_layout_create(
 	hostlist_t hl = NULL;
 	slurm_step_layout_t *step_layout = NULL;
 
-	if((node_cnt <= 0) || (task_cnt <= 0 && !cpus_per_node) || !tlist) {
+	if ((node_cnt <= 0) || (task_cnt <= 0 && !cpus_per_node) || !tlist) {
 		error("there is a problem with your fake_step_layout request\n"
 		      "node_cnt = %u, task_cnt = %u, tlist = %s",
 		      node_cnt, task_cnt, tlist);
@@ -179,7 +179,7 @@ slurm_step_layout_t *fake_slurm_step_layout_create(
 
 	hl = hostlist_create(tlist);
 	/* make out how many cpus there are on each node */
-	if(task_cnt > 0)
+	if (task_cnt > 0)
 		cpn = (task_cnt + node_cnt - 1) / node_cnt;
 
 	step_layout = xmalloc(sizeof(slurm_step_layout_t));
@@ -192,7 +192,7 @@ slurm_step_layout_t *fake_slurm_step_layout_create(
 
 	step_layout->task_cnt = 0;
 	for (i=0; i<step_layout->node_cnt; i++) {
-		if(cpus_per_node && cpu_count_reps) {
+		if (cpus_per_node && cpu_count_reps) {
 			step_layout->tasks[i] = cpus_per_node[cpu_inx];
 			step_layout->tids[i] = xmalloc(sizeof(uint32_t) *
 						       step_layout->tasks[i]);
@@ -207,7 +207,7 @@ slurm_step_layout_t *fake_slurm_step_layout_create(
 				cpu_cnt = 0;
 			}
 		} else {
-			if(step_layout->task_cnt >= task_cnt) {
+			if (step_layout->task_cnt >= task_cnt) {
 				step_layout->tasks[i] = 0;
 				step_layout->tids[i] = NULL;
 			} else {
@@ -218,7 +218,7 @@ slurm_step_layout_t *fake_slurm_step_layout_create(
 				for (j=0; j<cpn; j++) {
 					step_layout->tids[i][j] =
 						step_layout->task_cnt++;
-					if(step_layout->task_cnt >= task_cnt) {
+					if (step_layout->task_cnt >= task_cnt) {
 						step_layout->tasks[i] = j + 1;
 						break;
 					}
@@ -226,12 +226,12 @@ slurm_step_layout_t *fake_slurm_step_layout_create(
 			}
 		}
 /* 		name = hostlist_shift(hl); */
-/* 		if(!name) { */
+/* 		if (!name) { */
 /* 			error("fake_slurm_step_layout_create: " */
 /* 			      "We don't have the correct nodelist."); */
 /* 			goto error;			       */
 /* 		} */
-/* 		if(slurm_conf_get_addr(name, &step_layout->node_addr[i]) ==  */
+/* 		if (slurm_conf_get_addr(name, &step_layout->node_addr[i]) ==  */
 /* 		   SLURM_ERROR) { */
 /* 			error("fake_slurm_step_layout_create: " */
 /* 			      "we didn't get an addr for host %s.", name); */
@@ -255,7 +255,7 @@ extern slurm_step_layout_t *slurm_step_layout_copy(
 {
 	slurm_step_layout_t *layout;
 	int i=0;
-	if(!step_layout)
+	if (!step_layout)
 		return NULL;
 
 	layout = xmalloc(sizeof(slurm_step_layout_t));
@@ -286,12 +286,12 @@ extern void pack_slurm_step_layout(slurm_step_layout_t *step_layout,
 				   Buf buffer, uint16_t protocol_version)
 {
 	uint16_t i = 0;
-	if(protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
-		if(step_layout)
+	if (protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
+		if (step_layout)
 			i=1;
 
 		pack16(i, buffer);
-		if(!i)
+		if (!i)
 			return;
 		packstr(step_layout->node_list, buffer);
 		pack32(step_layout->node_cnt, buffer);
@@ -316,9 +316,9 @@ extern int unpack_slurm_step_layout(slurm_step_layout_t **layout, Buf buffer,
 	slurm_step_layout_t *step_layout = NULL;
 	int i;
 
-	if(protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
 		safe_unpack16(&uint16_tmp, buffer);
-		if(!uint16_tmp)
+		if (!uint16_tmp)
 			return SLURM_SUCCESS;
 
 		step_layout = xmalloc(sizeof(slurm_step_layout_t));
@@ -363,7 +363,7 @@ unpack_error:
 extern int slurm_step_layout_destroy(slurm_step_layout_t *step_layout)
 {
 	int i=0;
-	if(step_layout) {
+	if (step_layout) {
 		xfree(step_layout->node_list);
 /* 		xfree(step_layout->node_addr); */
 		xfree(step_layout->tasks);
@@ -385,7 +385,7 @@ int slurm_step_layout_host_id (slurm_step_layout_t *s, int taskid)
 		return SLURM_ERROR;
 	for (i=0; i < s->node_cnt; i++)
 		for (j=0; j<s->tasks[i]; j++)
-			if(s->tids[i][j] == taskid)
+			if (s->tids[i][j] == taskid)
 				return i;
 
 	return SLURM_ERROR;
@@ -419,7 +419,7 @@ static int _init_task_layout(slurm_step_layout_t *step_layout,
 	if (step_layout->tasks)	/* layout already completed */
 		return SLURM_SUCCESS;
 
-	if((int)cpus_per_task < 1 || cpus_per_task == (uint16_t)NO_VAL)
+	if ((int)cpus_per_task < 1 || cpus_per_task == (uint16_t)NO_VAL)
 		cpus_per_task = 1;
 
 	step_layout->plane_size = plane_size;
@@ -428,26 +428,26 @@ static int _init_task_layout(slurm_step_layout_t *step_layout,
 				     * step_layout->node_cnt);
 	step_layout->tids  = xmalloc(sizeof(uint32_t *)
 				     * step_layout->node_cnt);
-	if(!(cluster_flags & CLUSTER_FLAG_BG)) {
+	if (!(cluster_flags & CLUSTER_FLAG_BG)) {
 		hostlist_t hl = hostlist_create(step_layout->node_list);
 		/* make sure the number of nodes we think we have
 		 * is the correct number */
 		i = hostlist_count(hl);
-		if(step_layout->node_cnt > i)
+		if (step_layout->node_cnt > i)
 			step_layout->node_cnt = i;
 		hostlist_destroy(hl);
 	}
 	debug("laying out the %u tasks on %u hosts %s",
 	      step_layout->task_cnt, step_layout->node_cnt,
 	      step_layout->node_list);
-	if(step_layout->node_cnt < 1) {
+	if (step_layout->node_cnt < 1) {
 		error("no hostlist given can't layout tasks");
 		return SLURM_ERROR;
 	}
 
 	for (i=0; i<step_layout->node_cnt; i++) {
 /* 		name = hostlist_shift(hl); */
-/* 		if(!name) { */
+/* 		if (!name) { */
 /* 			error("hostlist incomplete for this job request"); */
 /* 			hostlist_destroy(hl); */
 /* 			return SLURM_ERROR; */
@@ -473,10 +473,10 @@ static int _init_task_layout(slurm_step_layout_t *step_layout,
             (task_dist == SLURM_DIST_CYCLIC_CYCLIC) ||
             (task_dist == SLURM_DIST_CYCLIC_BLOCK))
 		return _task_layout_cyclic(step_layout, cpus);
-	else if(task_dist == SLURM_DIST_ARBITRARY
+	else if (task_dist == SLURM_DIST_ARBITRARY
 		&& !(cluster_flags & CLUSTER_FLAG_FE))
 		return _task_layout_hostfile(step_layout, arbitrary_nodes);
-        else if(task_dist == SLURM_DIST_PLANE)
+        else if (task_dist == SLURM_DIST_PLANE)
                 return _task_layout_plane(step_layout, cpus);
 	else
 		return _task_layout_block(step_layout, cpus);
@@ -498,14 +498,14 @@ static int _task_layout_hostfile(slurm_step_layout_t *step_layout,
 	debug2("job list is %s", step_layout->node_list);
 	job_alloc_hosts = hostlist_create(step_layout->node_list);
 	itr = hostlist_iterator_create(job_alloc_hosts);
-	if(!arbitrary_nodes) {
+	if (!arbitrary_nodes) {
 		error("no hostlist given for arbitrary dist");
 		return SLURM_ERROR;
 	}
 
 	debug2("list is %s", arbitrary_nodes);
 	step_alloc_hosts = hostlist_create(arbitrary_nodes);
-	if(hostlist_count(step_alloc_hosts) != step_layout->task_cnt) {
+	if (hostlist_count(step_alloc_hosts) != step_layout->task_cnt) {
 		error("Asked for %u tasks have %d in the nodelist.  "
 		      "Check your nodelist, or set the -n option to be %d",
 		      step_layout->task_cnt,
@@ -517,16 +517,16 @@ static int _task_layout_hostfile(slurm_step_layout_t *step_layout,
 	while((host = hostlist_next(itr))) {
 		step_layout->tasks[i] = 0;
 		while((host_task = hostlist_next(itr_task))) {
-			if(!strcmp(host, host_task)) {
+			if (!strcmp(host, host_task)) {
 				step_layout->tasks[i]++;
 				task_cnt++;
 			}
 			free(host_task);
-			if(task_cnt >= step_layout->task_cnt)
+			if (task_cnt >= step_layout->task_cnt)
 				break;
 		}
 		debug3("%s got %u tasks", host, step_layout->tasks[i]);
-		if(step_layout->tasks[i] == 0)
+		if (step_layout->tasks[i] == 0)
 			goto reset_hosts;
 		step_layout->tids[i] = xmalloc(sizeof(uint32_t)
 					       * step_layout->tasks[i]);
@@ -534,27 +534,27 @@ static int _task_layout_hostfile(slurm_step_layout_t *step_layout,
 		j = 0;
 		hostlist_iterator_reset(itr_task);
 		while((host_task = hostlist_next(itr_task))) {
-			if(!strcmp(host, host_task)) {
+			if (!strcmp(host, host_task)) {
 				step_layout->tids[i][j] = taskid;
 				j++;
 			}
 			taskid++;
 			free(host_task);
-			if(j >= step_layout->tasks[i])
+			if (j >= step_layout->tasks[i])
 				break;
 		}
 		i++;
 	reset_hosts:
 		hostlist_iterator_reset(itr_task);
 		free(host);
-		if(i > step_layout->task_cnt)
+		if (i > step_layout->task_cnt)
 			break;
 	}
 	hostlist_iterator_destroy(itr);
 	hostlist_iterator_destroy(itr_task);
 	hostlist_destroy(job_alloc_hosts);
 	hostlist_destroy(step_alloc_hosts);
-	if(task_cnt != step_layout->task_cnt) {
+	if (task_cnt != step_layout->task_cnt) {
 		error("Asked for %u tasks but placed %d. Check your nodelist",
 		      step_layout->task_cnt, task_cnt);
 		return SLURM_ERROR;
@@ -701,7 +701,7 @@ static int _task_layout_plane(slurm_step_layout_t *step_layout,
 		return SLURM_ERROR;
 	}
 
-#if(0)
+#if (0)
 	/* debugging only */
 	for (i=0; i < step_layout->node_cnt; i++) {
 		info("tasks[%d]: %u", i, step_layout->tasks[i]);

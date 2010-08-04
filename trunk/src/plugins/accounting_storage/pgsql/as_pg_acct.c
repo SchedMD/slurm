@@ -99,12 +99,12 @@ _get_slurmdb_coords(pgsql_conn_t *pg_conn, slurmdb_account_rec_t *acct)
 	slurmdb_coord_rec_t *coord = NULL;
 	PGresult *result = NULL;
 
-	if(!acct) {
+	if (!acct) {
 		error("as/pg: _get_slurmdb_coords: account not given");
 		return SLURM_ERROR;
 	}
 
-	if(!acct->coordinators)
+	if (!acct->coordinators)
 		acct->coordinators = list_create(slurmdb_destroy_coord_rec);
 
 	/* get direct coords */
@@ -112,7 +112,7 @@ _get_slurmdb_coords(pgsql_conn_t *pg_conn, slurmdb_account_rec_t *acct)
 			       "WHERE acct='%s' AND deleted=0",
 			       acct_coord_table, acct->name);
 	result = DEF_QUERY_RET;
-	if(!result)
+	if (!result)
 		return SLURM_ERROR;
 
 	FOR_EACH_ROW {
@@ -133,7 +133,7 @@ _get_slurmdb_coords(pgsql_conn_t *pg_conn, slurmdb_account_rec_t *acct)
 		acct_coord_table, assoc_table, assoc_table,
 		acct->name, acct->name);
 	result = DEF_QUERY_RET;
-	if(!result)
+	if (!result)
 		return SLURM_ERROR;
 
 	FOR_EACH_ROW {
@@ -190,7 +190,7 @@ as_pg_add_accts(pgsql_conn_t *pg_conn, uint32_t uid, List acct_list)
 
 	itr = list_iterator_create(acct_list);
 	while((object = list_next(itr))) {
-		if(!object->name || !object->description
+		if (!object->name || !object->description
 		   || !object->organization) {
 			error("as/pg: add_accts: We need an account name, "
 			      "description, and organization to add. %s %s %s",
@@ -206,7 +206,7 @@ as_pg_add_accts(pgsql_conn_t *pg_conn, uint32_t uid, List acct_list)
 		query = xstrdup_printf("SELECT add_acct(%s);", rec);
 		xfree(rec);
 		rc = DEF_QUERY_RET_RC;
-		if(rc != SLURM_SUCCESS) {
+		if (rc != SLURM_SUCCESS) {
 			error("as/pg: couldn't add acct");
 			continue;
 		}
@@ -214,7 +214,7 @@ as_pg_add_accts(pgsql_conn_t *pg_conn, uint32_t uid, List acct_list)
 		info = xstrdup_printf("description='%s', organization='%s'",
 				      object->description,
 				      object->organization);
-		if(txn_query)
+		if (txn_query)
 			xstrfmtcat(txn_query,
 				   ", (%d, %u, '%s', '%s', $$%s$$)",
 				   now, DBD_ADD_ACCOUNTS, object->name,
@@ -229,7 +229,7 @@ as_pg_add_accts(pgsql_conn_t *pg_conn, uint32_t uid, List acct_list)
 				   user_name, info);
 		xfree(info);
 
-		if(!object->assoc_list)
+		if (!object->assoc_list)
 			continue;
 
 		list_transfer(assoc_list, object->assoc_list);
@@ -237,12 +237,12 @@ as_pg_add_accts(pgsql_conn_t *pg_conn, uint32_t uid, List acct_list)
 	list_iterator_destroy(itr);
 	xfree(user_name);
 
-	if(rc == SLURM_SUCCESS) {
-		if(txn_query) {
+	if (rc == SLURM_SUCCESS) {
+		if (txn_query) {
 			xstrcat(txn_query, ";");
 			rc = pgsql_db_query(pg_conn->db_conn, txn_query);
 			xfree(txn_query);
-			if(rc != SLURM_SUCCESS) {
+			if (rc != SLURM_SUCCESS) {
 				error("as/pg: add_accts: couldn't add txn");
 				/* TODO: why succees if add txn failed? */
 /* 				rc = SLURM_SUCCESS; */
@@ -251,8 +251,8 @@ as_pg_add_accts(pgsql_conn_t *pg_conn, uint32_t uid, List acct_list)
 	} else
 		xfree(txn_query);
 
-	if(rc == SLURM_SUCCESS && list_count(assoc_list)) {
-		if(acct_storage_p_add_associations(pg_conn, uid, assoc_list)
+	if (rc == SLURM_SUCCESS && list_count(assoc_list)) {
+		if (acct_storage_p_add_associations(pg_conn, uid, assoc_list)
 		   != SLURM_SUCCESS) {
 			error("as/pg: add_accts: problem adding account "
 			      "associations");
@@ -285,14 +285,14 @@ as_pg_modify_accounts(pgsql_conn_t *pg_conn, uint32_t uid,
 	PGresult *result = NULL;
 	time_t now = time(NULL);
 
-	if(!acct_cond || !acct) {
+	if (!acct_cond || !acct) {
 		error("as/pg: modify_accounts: we need something to change");
 		return NULL;
 	}
 	if (check_db_connection(pg_conn) != SLURM_SUCCESS)
 		return NULL;
 
-	if(acct_cond->assoc_cond)
+	if (acct_cond->assoc_cond)
 		concat_cond_list(acct_cond->assoc_cond->acct_list,
 				 NULL, "name", &cond);
 	concat_cond_list(acct_cond->description_list,
@@ -305,11 +305,11 @@ as_pg_modify_accounts(pgsql_conn_t *pg_conn, uint32_t uid,
 		return NULL;
 	}
 
-	if(acct->description)
+	if (acct->description)
 		xstrfmtcat(vals, ", description='%s'", acct->description);
-	if(acct->organization)
+	if (acct->organization)
 		xstrfmtcat(vals, ", organization='%s'", acct->organization);
-	if(!vals) {
+	if (!vals) {
 		xfree(cond);
 		errno = SLURM_NO_CHANGE_IN_DATA;
 		error("as/pg: modify_accounts: no new values given");
@@ -321,7 +321,7 @@ as_pg_modify_accounts(pgsql_conn_t *pg_conn, uint32_t uid,
 			       acct_table, cond);
 	xfree(cond);
 	result = DEF_QUERY_RET;
-	if(!result) {
+	if (!result) {
 		xfree(vals);
 		return NULL;
 	}
@@ -331,7 +331,7 @@ as_pg_modify_accounts(pgsql_conn_t *pg_conn, uint32_t uid,
 	FOR_EACH_ROW {
 		object = xstrdup(ROW(0));
 		list_append(ret_list, object);
-		if(!rc) {
+		if (!rc) {
 			xstrfmtcat(name_char, "(name='%s'", object);
 			rc = 1;
 		} else  {
@@ -341,7 +341,7 @@ as_pg_modify_accounts(pgsql_conn_t *pg_conn, uint32_t uid,
 	} END_EACH_ROW;
 	PQclear(result);
 
-	if(!list_count(ret_list)) {
+	if (!list_count(ret_list)) {
 		errno = SLURM_NO_CHANGE_IN_DATA;
 		debug3("as/pg: modify_accounts: didn't effect anything");
 		xfree(vals);
@@ -385,21 +385,21 @@ as_pg_remove_accts(pgsql_conn_t *pg_conn, uint32_t uid,
 	PGresult *result = NULL;
 	time_t now = time(NULL);
 
-	if(!acct_cond) {
+	if (!acct_cond) {
 		error("as/pg: remove_accts: we need something to remove");
 		return NULL;
 	}
 	if (check_db_connection(pg_conn) != SLURM_SUCCESS)
 		return NULL;
 
-	if(acct_cond->assoc_cond)
+	if (acct_cond->assoc_cond)
 		concat_cond_list(acct_cond->assoc_cond->acct_list,
 				 NULL, "name", &cond);
 	concat_cond_list(acct_cond->description_list,
 			 NULL, "description", &cond);
 	concat_cond_list(acct_cond->organization_list,
 			 NULL, "organization", &cond);
-	if(!cond) {
+	if (!cond) {
 		error("as/pg: remove_accts: nothing to remove");
 		return NULL;
 	}
@@ -410,7 +410,7 @@ as_pg_remove_accts(pgsql_conn_t *pg_conn, uint32_t uid,
 	xfree(cond);
 
 	result = DEF_QUERY_RET;
-	if(!result)
+	if (!result)
 		return NULL;
 
 	rc = 0;
@@ -418,7 +418,7 @@ as_pg_remove_accts(pgsql_conn_t *pg_conn, uint32_t uid,
 	FOR_EACH_ROW {
 		char *object = xstrdup(ROW(0));
 		list_append(ret_list, object);
-		if(!rc) {
+		if (!rc) {
 			xstrfmtcat(name_char, "name='%s'", object);
 			xstrfmtcat(assoc_char, "t1.acct='%s'", object);
 			rc = 1;
@@ -429,7 +429,7 @@ as_pg_remove_accts(pgsql_conn_t *pg_conn, uint32_t uid,
 	} END_EACH_ROW;
 	PQclear(result);
 
-	if(!list_count(ret_list)) {
+	if (!list_count(ret_list)) {
 		errno = SLURM_NO_CHANGE_IN_DATA;
 		debug3("as/pg: remove_accts: didn't effect anything");
 		return ret_list;
@@ -437,7 +437,7 @@ as_pg_remove_accts(pgsql_conn_t *pg_conn, uint32_t uid,
 
 	/* remove these accounts from the coord's that have it */
 	coord_list = acct_storage_p_remove_coord(pg_conn, uid, ret_list, NULL);
-	if(coord_list)
+	if (coord_list)
 		list_destroy(coord_list);
 
 	user_name = uid_to_string((uid_t) uid);
@@ -498,17 +498,17 @@ as_pg_get_accts(pgsql_conn_t *pg_conn, uid_t uid,
 		}
 	}
 
-	if(!acct_cond) {
+	if (!acct_cond) {
 		xstrcat(cond, "WHERE deleted=0");
 		goto empty;
 	}
 
-	if(acct_cond->with_deleted)
+	if (acct_cond->with_deleted)
 		xstrcat(cond, "WHERE (deleted=0 OR deleted=1)");
 	else
 		xstrcat(cond, "WHERE deleted=0");
 
-	if(acct_cond->assoc_cond)
+	if (acct_cond->assoc_cond)
 		concat_cond_list(acct_cond->assoc_cond->acct_list,
 				 NULL, "name", &cond);
 	concat_cond_list(acct_cond->description_list,
@@ -517,12 +517,12 @@ as_pg_get_accts(pgsql_conn_t *pg_conn, uid_t uid,
 			 NULL, "organization", &cond);
 
 empty:
-	if(!is_admin && (private_data & PRIVATE_DATA_ACCOUNTS)) {
+	if (!is_admin && (private_data & PRIVATE_DATA_ACCOUNTS)) {
 		slurmdb_coord_rec_t *coord = NULL;
 		set = 0;
 		itr = list_iterator_create(user.coord_accts);
 		while((coord = list_next(itr))) {
-			if(set) {
+			if (set) {
 				xstrfmtcat(cond, " OR name='%s'",
 					   coord->name);
 			} else {
@@ -532,7 +532,7 @@ empty:
 			}
 		}
 		list_iterator_destroy(itr);
-		if(set)
+		if (set)
 			xstrcat(cond,")");
 	}
 
@@ -545,11 +545,11 @@ empty:
 
 	acct_list = list_create(slurmdb_destroy_account_rec);
 
-	if(acct_cond && acct_cond->with_assocs) {
-		if(!acct_cond->assoc_cond)
+	if (acct_cond && acct_cond->with_assocs) {
+		if (!acct_cond->assoc_cond)
 			acct_cond->assoc_cond = xmalloc(
 				sizeof(slurmdb_association_cond_t));
-		else if(acct_cond->assoc_cond->acct_list)
+		else if (acct_cond->assoc_cond->acct_list)
 			list_destroy(acct_cond->assoc_cond->acct_list);
 		acct_cond->assoc_cond->acct_list = list_create(NULL);
 	}
@@ -561,9 +561,9 @@ empty:
 		acct->name =  xstrdup(ROW(GA_NAME));
 		acct->description = xstrdup(ROW(GA_DESC));
 		acct->organization = xstrdup(ROW(GA_ORG));
-		if(acct_cond && acct_cond->with_coords)
+		if (acct_cond && acct_cond->with_coords)
 			_get_slurmdb_coords(pg_conn, acct);
-		if(acct_cond && acct_cond->with_assocs) {
+		if (acct_cond && acct_cond->with_assocs) {
 			list_append(acct_cond->assoc_cond->acct_list,
 				    acct->name);
 		}
@@ -571,7 +571,7 @@ empty:
 	PQclear(result);
 
 	/* get associations */
-	if(acct_cond && acct_cond->with_assocs &&
+	if (acct_cond && acct_cond->with_assocs &&
 	   list_count(acct_cond->assoc_cond->acct_list)) {
 		ListIterator assoc_itr = NULL;
 		slurmdb_account_rec_t *acct = NULL;
@@ -579,7 +579,7 @@ empty:
 		List assoc_list = acct_storage_p_get_associations(
 			pg_conn, uid, acct_cond->assoc_cond);
 
-		if(!assoc_list) {
+		if (!assoc_list) {
 			error("as/pg: get_accounts: no associations");
 			return acct_list;
 		}
@@ -588,17 +588,17 @@ empty:
 		assoc_itr = list_iterator_create(assoc_list);
 		while((acct = list_next(itr))) {
 			while((assoc = list_next(assoc_itr))) {
-				if(strcmp(assoc->acct, acct->name))
+				if (strcmp(assoc->acct, acct->name))
 					continue;
 
-				if(!acct->assoc_list)
+				if (!acct->assoc_list)
 					acct->assoc_list = list_create(
 						slurmdb_destroy_association_rec);
 				list_append(acct->assoc_list, assoc);
 				list_remove(assoc_itr);
 			}
 			list_iterator_reset(assoc_itr);
-			if(!acct->assoc_list) /* problem acct */
+			if (!acct->assoc_list) /* problem acct */
 				list_remove(itr);
 		}
 		list_iterator_destroy(itr);
@@ -632,7 +632,7 @@ get_acct_no_assocs(pgsql_conn_t *pg_conn, slurmdb_association_cond_t *assoc_q,
 		concat_cond_list(assoc_q->acct_list, NULL, "name", &query);
 
 	result = DEF_QUERY_RET;
-	if(!result)
+	if (!result)
 		return SLURM_ERROR;
 
 	FOR_EACH_ROW {
@@ -644,7 +644,7 @@ get_acct_no_assocs(pgsql_conn_t *pg_conn, slurmdb_association_cond_t *assoc_q,
 				       "acct='%s' LIMIT 1;",
 				       assoc_table, ROW(0));
 		result2 = DEF_QUERY_RET;
-		if(!result2) {
+		if (!result2) {
 			rc = SLURM_ERROR;
 			break;
 		}
@@ -705,7 +705,7 @@ get_acct_no_users(pgsql_conn_t *pg_conn, slurmdb_association_cond_t *assoc_q,
 	}
 	xstrcat(query, " ORDER BY cluster, acct;");
 	result = DEF_QUERY_RET;
-	if(!result)
+	if (!result)
 		return SLURM_ERROR;
 
 	FOR_EACH_ROW {
@@ -713,13 +713,13 @@ get_acct_no_users(pgsql_conn_t *pg_conn, slurmdb_association_cond_t *assoc_q,
 			xmalloc(sizeof(slurmdb_association_rec_t));
 		list_append(ret_list, assoc);
 		assoc->id = SLURMDB_PROBLEM_ACCT_NO_USERS;
-/* 		if(ROW(GA_USER)[0]) */
+/* 		if (ROW(GA_USER)[0]) */
 /* 			assoc->user = xstrdup(ROW(GA_USER)); */
 		assoc->acct = xstrdup(ROW(GA_ACCT));
 		assoc->cluster = xstrdup(ROW(GA_CLUSTER));
-		if(ROW(GA_PARENT)[0])
+		if (ROW(GA_PARENT)[0])
 			assoc->parent_acct = xstrdup(ROW(GA_PARENT));
-/* 		if(ROW(GA_PART)[0]) */
+/* 		if (ROW(GA_PART)[0]) */
 /* 			assoc->partition = xstrdup(ROW(GA_PART)); */
 	} END_EACH_ROW;
 	PQclear(result);

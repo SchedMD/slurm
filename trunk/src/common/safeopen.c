@@ -62,7 +62,7 @@ FILE * safeopen(const char *path, const char *mode, int flags)
 	int oflags;
 	struct stat fb1, fb2;
 
-	if(mode[0] == 'w') {
+	if (mode[0] == 'w') {
 		oflags = O_WRONLY;
 	} else if (mode[0] == 'a') {
 		oflags = O_CREAT | O_WRONLY | O_APPEND;

@@ -267,14 +267,14 @@ int main(int argc, char *argv[])
 		info("Granted job allocation %d", alloc->job_id);
 #ifdef HAVE_BG
 		if (!_wait_bluegene_block_ready(alloc)) {
-			if(!allocation_interrupted)
+			if (!allocation_interrupted)
 				error("Something is wrong with the "
 				      "boot of the block.");
 			goto relinquish;
 		}
 #else
 		if (!_wait_nodes_ready(alloc)) {
-			if(!allocation_interrupted)
+			if (!allocation_interrupted)
 				error("Something is wrong with the "
 				      "boot of the nodes.");
 			goto relinquish;
@@ -282,7 +282,7 @@ int main(int argc, char *argv[])
 #endif
 #ifdef HAVE_CRAY_XT
 		if (!_claim_reservation(alloc)) {
-			if(!allocation_interrupted)
+			if (!allocation_interrupted)
 				error("Something is wrong with the ALPS "
 				      "resource reservation.");
 			goto relinquish;
@@ -862,7 +862,7 @@ static int _blocks_dealloc(void)
 		return -1;
 	}
 	for (i=0; i<new_bg_ptr->record_count; i++) {
-		if(new_bg_ptr->block_array[i].state
+		if (new_bg_ptr->block_array[i].state
 		   == RM_PARTITION_DEALLOCATING) {
 			rc = 1;
 			break;

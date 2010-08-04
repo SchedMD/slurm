@@ -246,12 +246,12 @@ static bool _valid_node_list(char **node_list_pptr)
 	   procs to use then we need exactly this many since we are
 	   saying, lay it out this way!  Same for max and min nodes.
 	   Other than that just read in as many in the hostfile */
-	if(opt.ntasks_set)
+	if (opt.ntasks_set)
 		count = opt.ntasks;
-	else if(opt.nodes_set) {
-		if(opt.max_nodes)
+	else if (opt.nodes_set) {
+		if (opt.max_nodes)
 			count = opt.max_nodes;
-		else if(opt.min_nodes)
+		else if (opt.min_nodes)
 			count = opt.min_nodes;
 	}
 
@@ -1210,9 +1210,9 @@ static void _set_options(int argc, char **argv)
 			}
 			break;
 		case 'M':
-			if(opt.clusters)
+			if (opt.clusters)
 				list_destroy(opt.clusters);
-			if(!(opt.clusters =
+			if (!(opt.clusters =
 			     slurmdb_get_info_cluster(optarg))) {
 				error("'%s' invalid entry for --clusters",
 				      optarg);
@@ -1790,7 +1790,7 @@ static char *_get_pbs_node_name(char *node_options, int *i)
 	value = xmalloc((*i)-start+1);
 	memcpy(value, node_options+start, (*i)-start);
 
-	if(node_options[*i])
+	if (node_options[*i])
 		(*i)++;
 
 	return value;
@@ -1802,7 +1802,7 @@ static void _get_next_pbs_node_part(char *node_options, int *i)
 	      && node_options[*i] != '+'
 	      && node_options[*i] != ':')
 		(*i)++;
-	if(node_options[*i])
+	if (node_options[*i])
 		(*i)++;
 }
 
@@ -1816,14 +1816,14 @@ static void _parse_pbs_nodes_opts(char *node_opts)
 	hostlist_t hl = hostlist_create(NULL);
 
 	while(node_opts[i]) {
-		if(!strncmp(node_opts+i, "ppn=", 4)) {
+		if (!strncmp(node_opts+i, "ppn=", 4)) {
 			i+=4;
 			ppn += strtol(node_opts+i, NULL, 10);
 			_get_next_pbs_node_part(node_opts, &i);
-		} else if(isdigit(node_opts[i])) {
+		} else if (isdigit(node_opts[i])) {
 			node_cnt += strtol(node_opts+i, NULL, 10);
 			_get_next_pbs_node_part(node_opts, &i);
-		} else if(isalpha(node_opts[i])) {
+		} else if (isalpha(node_opts[i])) {
 			temp = _get_pbs_node_name(node_opts, &i);
 			hostlist_push(hl, temp);
 			xfree(temp);
@@ -1832,20 +1832,20 @@ static void _parse_pbs_nodes_opts(char *node_opts)
 
 	}
 
-	if(!node_cnt)
+	if (!node_cnt)
 		node_cnt = 1;
 	else {
 		opt.nodes_set = true;
 		opt.min_nodes = opt.max_nodes = node_cnt;
 	}
 
-	if(ppn) {
+	if (ppn) {
 		ppn *= node_cnt;
 		opt.ntasks_set = true;
 		opt.ntasks = ppn;
 	}
 
-	if(hostlist_count(hl) > 0) {
+	if (hostlist_count(hl) > 0) {
 		hostlist_ranged_string(hl, sizeof(buf), buf);
 		xfree(opt.nodelist);
 		opt.nodelist = xstrdup(buf);
@@ -1864,7 +1864,7 @@ static void _get_next_pbs_option(char *pbs_options, int *i)
 {
 	while(pbs_options[*i] && pbs_options[*i] != ',')
 		(*i)++;
-	if(pbs_options[*i])
+	if (pbs_options[*i])
 		(*i)++;
 }
 
@@ -1878,7 +1878,7 @@ static char *_get_pbs_option_value(char *pbs_options, int *i)
 	value = xmalloc((*i)-start+1);
 	memcpy(value, pbs_options+start, (*i)-start);
 
-	if(pbs_options[*i])
+	if (pbs_options[*i])
 		(*i)++;
 
 	return value;
@@ -1890,10 +1890,10 @@ static void _parse_pbs_resource_list(char *rl)
 	char *temp = NULL;
 
 	while(rl[i]) {
-		if(!strncmp(rl+i, "arch=", 5)) {
+		if (!strncmp(rl+i, "arch=", 5)) {
 			i+=5;
 			_get_next_pbs_option(rl, &i);
-		} else if(!strncmp(rl+i, "cput=", 5)) {
+		} else if (!strncmp(rl+i, "cput=", 5)) {
 			i+=5;
 			temp = _get_pbs_option_value(rl, &i);
 			if (!temp) {
@@ -1903,12 +1903,12 @@ static void _parse_pbs_resource_list(char *rl)
 			xfree(opt.time_limit_str);
 			opt.time_limit_str = xstrdup(temp);
 			xfree(temp);
-		} else if(!strncmp(rl+i, "file=", 5)) {
+		} else if (!strncmp(rl+i, "file=", 5)) {
 			int end = 0;
 
 			i+=5;
 			temp = _get_pbs_option_value(rl, &i);
-			if(!temp) {
+			if (!temp) {
 				error("No value given for file");
 				exit(error_exit);
 			}
@@ -1926,15 +1926,15 @@ static void _parse_pbs_resource_list(char *rl)
 				exit(error_exit);
 			}
 			xfree(temp);
-		} else if(!strncmp(rl+i, "host=", 5)) {
+		} else if (!strncmp(rl+i, "host=", 5)) {
 			i+=5;
 			_get_next_pbs_option(rl, &i);
-		} else if(!strncmp(rl+i, "mem=", 4)) {
+		} else if (!strncmp(rl+i, "mem=", 4)) {
 			int end = 0;
 
 			i+=4;
 			temp = _get_pbs_option_value(rl, &i);
-			if(!temp) {
+			if (!temp) {
 				error("No value given for mem");
 				exit(error_exit);
 			}
@@ -1953,7 +1953,7 @@ static void _parse_pbs_resource_list(char *rl)
 			}
 
 			xfree(temp);
-		} else if(!strncmp(rl+i, "nice=", 5)) {
+		} else if (!strncmp(rl+i, "nice=", 5)) {
 			i+=5;
 			temp = _get_pbs_option_value(rl, &i);
 			if (temp)
@@ -1966,47 +1966,47 @@ static void _parse_pbs_resource_list(char *rl)
 				exit(error_exit);
 			}
 			xfree(temp);
-		} else if(!strncmp(rl+i, "nodes=", 6)) {
+		} else if (!strncmp(rl+i, "nodes=", 6)) {
 			i+=6;
 			temp = _get_pbs_option_value(rl, &i);
-			if(!temp) {
+			if (!temp) {
 				error("No value given for nodes");
 				exit(error_exit);
 			}
 			_parse_pbs_nodes_opts(temp);
 			xfree(temp);
-		} else if(!strncmp(rl+i, "opsys=", 6)) {
+		} else if (!strncmp(rl+i, "opsys=", 6)) {
  			i+=6;
 			_get_next_pbs_option(rl, &i);
-		} else if(!strncmp(rl+i, "other=", 6)) {
+		} else if (!strncmp(rl+i, "other=", 6)) {
 			i+=6;
 			_get_next_pbs_option(rl, &i);
-		} else if(!strncmp(rl+i, "pcput=", 6)) {
+		} else if (!strncmp(rl+i, "pcput=", 6)) {
 			i+=6;
 			temp = _get_pbs_option_value(rl, &i);
-			if(!temp) {
+			if (!temp) {
 				error("No value given for pcput");
 				exit(error_exit);
 			}
 			xfree(opt.time_limit_str);
 			opt.time_limit_str = xstrdup(temp);
 			xfree(temp);
-		} else if(!strncmp(rl+i, "pmem=", 5)) {
+		} else if (!strncmp(rl+i, "pmem=", 5)) {
 			i+=5;
 			_get_next_pbs_option(rl, &i);
-		} else if(!strncmp(rl+i, "pvmem=", 6)) {
+		} else if (!strncmp(rl+i, "pvmem=", 6)) {
 			i+=6;
 			_get_next_pbs_option(rl, &i);
-		} else if(!strncmp(rl+i, "software=", 9)) {
+		} else if (!strncmp(rl+i, "software=", 9)) {
 			i+=9;
 			_get_next_pbs_option(rl, &i);
-		} else if(!strncmp(rl+i, "vmem=", 5)) {
+		} else if (!strncmp(rl+i, "vmem=", 5)) {
 			i+=5;
 			_get_next_pbs_option(rl, &i);
-		} else if(!strncmp(rl+i, "walltime=", 9)) {
+		} else if (!strncmp(rl+i, "walltime=", 9)) {
 			i+=9;
 			temp = _get_pbs_option_value(rl, &i);
-			if(!temp) {
+			if (!temp) {
 				error("No value given for walltime");
 				exit(error_exit);
 			}
@@ -2119,7 +2119,7 @@ static bool _opt_verify(void)
 		if ((opt.min_nodes <= 0) ||
 		    ((opt.ntasks/opt.plane_size) < opt.min_nodes)) {
 			if (((opt.min_nodes-1)*opt.plane_size) >= opt.ntasks) {
-#if(0)
+#if (0)
 				info("Too few processes ((n/plane_size) %d < N %d) "
 				     "and ((N-1)*(plane_size) %d >= n %d)) ",
 				     opt.ntasks/opt.plane_size, opt.min_nodes,
@@ -2133,18 +2133,18 @@ static bool _opt_verify(void)
 	}
 
 	_set_distribution(opt.distribution, &dist, &lllp_dist);
-	if(dist)
+	if (dist)
 		if (setenvf(NULL, "SLURM_DISTRIBUTION", "%s", dist)) {
 			error("Can't set SLURM_DISTRIBUTION env variable");
 		}
 
-	if(opt.distribution == SLURM_DIST_PLANE)
+	if (opt.distribution == SLURM_DIST_PLANE)
 		if (setenvf(NULL, "SLURM_DIST_PLANESIZE", "%d",
 			    opt.plane_size)) {
 			error("Can't set SLURM_DIST_PLANESIZE env variable");
 		}
 
-	if(lllp_dist)
+	if (lllp_dist)
 		if (setenvf(NULL, "SLURM_DIST_LLLP", "%s", lllp_dist)) {
 			error("Can't set SLURM_DIST_LLLP env variable");
 		}
@@ -2211,12 +2211,12 @@ static bool _opt_verify(void)
 
 	} /* else if (opt.ntasks_set && !opt.nodes_set) */
 
-	if(!opt.nodelist) {
-		if((opt.nodelist = xstrdup(getenv("SLURM_HOSTFILE")))) {
+	if (!opt.nodelist) {
+		if ((opt.nodelist = xstrdup(getenv("SLURM_HOSTFILE")))) {
 			/* make sure the file being read in has a / in
 			   it to make sure it is a file in the
 			   valid_node_list function */
-			if(!strstr(opt.nodelist, "/")) {
+			if (!strstr(opt.nodelist, "/")) {
 				char *add_slash = xstrdup("./");
 				xstrcat(add_slash, opt.nodelist);
 				xfree(opt.nodelist);
@@ -2239,14 +2239,14 @@ static bool _opt_verify(void)
 
 	/* set up the proc and node counts based on the arbitrary list
 	   of nodes */
-	if((opt.distribution == SLURM_DIST_ARBITRARY)
+	if ((opt.distribution == SLURM_DIST_ARBITRARY)
 	   && (!opt.nodes_set || !opt.ntasks_set)) {
 		hostlist_t hl = hostlist_create(opt.nodelist);
-		if(!opt.ntasks_set) {
+		if (!opt.ntasks_set) {
 			opt.ntasks_set = 1;
 			opt.ntasks = hostlist_count(hl);
 		}
-		if(!opt.nodes_set) {
+		if (!opt.nodes_set) {
 			opt.nodes_set = 1;
 			hostlist_uniq(hl);
 			opt.min_nodes = opt.max_nodes
@@ -2587,7 +2587,7 @@ static void _opt_list()
 	info("wckey             : `%s'", opt.wckey);
 	info("distribution      : %s",
 	     format_task_dist_states(opt.distribution));
-	if(opt.distribution == SLURM_DIST_PLANE)
+	if (opt.distribution == SLURM_DIST_PLANE)
 		info("plane size        : %u", opt.plane_size);
 	info("verbose           : %d", opt.verbose);
 	info("immediate         : %s", tf_(opt.immediate));

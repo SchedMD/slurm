@@ -384,7 +384,7 @@ list_append_list (List l, List sub)
     assert(sub != NULL);
     itr = list_iterator_create(sub);
     while((v = list_next(itr))) {
-	if(list_append(l, v))
+	if (list_append(l, v))
 	    n++;
 	else
 	    break;
@@ -404,10 +404,10 @@ list_transfer (List l, List sub)
     assert(sub != NULL);
     assert(l->fDel == sub->fDel);
     while((v = list_pop(sub))) {
-	if(list_append(l, v))
+	if (list_append(l, v))
 	    n++;
 	else {
-	    if(l->fDel)
+	    if (l->fDel)
 		l->fDel(v);
 	    break;
 	}

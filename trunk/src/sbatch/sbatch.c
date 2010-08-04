@@ -149,7 +149,7 @@ int main(int argc, char *argv[])
 
 	/* If can run on multiple clusters find the earliest run time
 	   and run it there */
-	if(sbatch_set_first_avail_cluster(&desc) != SLURM_SUCCESS)
+	if (sbatch_set_first_avail_cluster(&desc) != SLURM_SUCCESS)
 		exit(error_exit);
 
 	while (slurm_submit_batch_job(&desc, &resp) < 0) {
@@ -180,7 +180,7 @@ int main(int argc, char *argv[])
         }
 
 	printf("Submitted batch job %u", resp->job_id);
-	if(working_cluster_rec)
+	if (working_cluster_rec)
 		printf(" on cluster %s", working_cluster_rec->name);
 	printf("\n");
 
@@ -371,7 +371,7 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 				    "SLURM_GET_USER_ENV", "1");
 	}
 
-	if(opt.distribution == SLURM_DIST_ARBITRARY) {
+	if (opt.distribution == SLURM_DIST_ARBITRARY) {
 		env_array_overwrite_fmt(&desc->environment,
 					"SLURM_ARBITRARY_NODELIST",
 					"%s", desc->req_nodes);

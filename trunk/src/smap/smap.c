@@ -94,11 +94,11 @@ int main(int argc, char *argv[])
 		log_alter(opts, SYSLOG_FACILITY_USER, NULL);
 	}
 
-	if(params.cluster_dims == 4) {
+	if (params.cluster_dims == 4) {
 		/* FIX ME: smap doesn't do anything correctly with
 		   more than 3 dims yet.
 		*/
-	} else if(params.cluster_dims == 3)
+	} else if (params.cluster_dims == 3)
 		min_screen_width = 92;
 
 	while (slurm_load_node((time_t) NULL, &new_node_ptr, SHOW_ALL)) {
@@ -115,7 +115,7 @@ int main(int argc, char *argv[])
 
 	ba_init(new_node_ptr, 0);
 
-	if(params.resolve) {
+	if (params.resolve) {
 
 #ifdef HAVE_BG_FILES
 		if (!have_db2) {
@@ -126,17 +126,17 @@ int main(int argc, char *argv[])
 			goto part_fini;
 		}
 
-		if(!mapset)
+		if (!mapset)
 			mapset = set_bp_map();
-		if(params.resolve[0] != 'R') {
+		if (params.resolve[0] != 'R') {
 			i = strlen(params.resolve);
 			i -= 3;
-			if(i<0) {
+			if (i<0) {
 				printf("No real block was entered\n");
 				goto part_fini;
 			}
 			char *rack_mid = find_bp_rack_mid(params.resolve+i);
-			if(rack_mid)
+			if (rack_mid)
 				printf("X=%c Y=%c Z=%c resolves to %s\n",
 				       params.resolve[X+i],
 				       params.resolve[Y+i],
@@ -150,7 +150,7 @@ int main(int argc, char *argv[])
 
 		} else {
 			int *coord = find_bp_loc(params.resolve);
-			if(coord)
+			if (coord)
 				printf("%s resolves to X=%d Y=%d Z=%d\n",
 				       params.resolve,
 				       coord[X], coord[Y], coord[Z]);
@@ -166,16 +166,16 @@ part_fini:
 		xfree(params.resolve);
 		exit(0);
 	}
-	if(!params.commandline) {
+	if (!params.commandline) {
 		int check_width = min_screen_width;
 		signal(SIGWINCH, (void (*)(int))_resize_handler);
 		initscr();
 
-		if(params.cluster_dims == 4) {
+		if (params.cluster_dims == 4) {
 			/* FIX ME: smap doesn't do anything correctly with
 			   more than 3 dims yet.
 			*/
-		} else if(params.cluster_dims == 3) {
+		} else if (params.cluster_dims == 3) {
 			height = DIM_SIZE[Y] * DIM_SIZE[Z] + DIM_SIZE[Y] + 3;
 			width = DIM_SIZE[X] + DIM_SIZE[Z] + 3;
 			check_width += width;
@@ -210,11 +210,11 @@ part_fini:
 		max_display = grid_win->_maxy * grid_win->_maxx;
 		//scrollok(grid_win, TRUE);
 
-		if(params.cluster_dims == 4) {
+		if (params.cluster_dims == 4) {
 			/* FIX ME: smap doesn't do anything correctly with
 			   more than 3 dims yet.
 			*/
-		} else if(params.cluster_dims == 3) {
+		} else if (params.cluster_dims == 3) {
 			startx = width;
 			COLS -= 2;
 			width = COLS - width;
@@ -228,7 +228,7 @@ part_fini:
 		text_win = newwin(height, width, starty, startx);
         }
 	while (!end) {
-		if(!params.commandline) {
+		if (!params.commandline) {
 			_get_option();
 		redraw:
 
@@ -241,7 +241,7 @@ part_fini:
 			main_ycord = 1;
 		}
 
-		if(!params.no_header)
+		if (!params.no_header)
 			print_date();
 
 		switch (params.display) {
@@ -255,8 +255,8 @@ part_fini:
 			get_slurm_part();
 			break;
 		case COMMANDS:
-			if(params.cluster_flags & CLUSTER_FLAG_BG) {
-				if(!mapset) {
+			if (params.cluster_flags & CLUSTER_FLAG_BG) {
+				if (!mapset) {
 					mapset = set_bp_map();
 					wclear(text_win);
 					//doupdate();
@@ -266,19 +266,19 @@ part_fini:
 			} else {
 				error("Must be on a BG SYSTEM to "
 				      "run this command");
-				if(!params.commandline)
+				if (!params.commandline)
 					endwin();
 				ba_fini();
 				exit(1);
 			}
 			break;
 		case BGPART:
-			if(params.cluster_flags & CLUSTER_FLAG_BG)
+			if (params.cluster_flags & CLUSTER_FLAG_BG)
 				get_bg_part();
 			else {
 				error("Must be on a BG SYSTEM to "
 				      "run this command");
-				if(!params.commandline)
+				if (!params.commandline)
 					endwin();
 				ba_fini();
 				exit(1);
@@ -286,7 +286,7 @@ part_fini:
 			break;
 		}
 
-		if(!params.commandline) {
+		if (!params.commandline) {
 			//wscrl(grid_win,-1);
 			box(text_win, 0, 0);
 			wnoutrefresh(text_win);
@@ -316,7 +316,7 @@ part_fini:
 					&new_node_ptr, SHOW_ALL);
 			}
 			if (error_code && (quiet_flag != 1)) {
-				if(!params.commandline) {
+				if (!params.commandline) {
 					mvwprintw(
 						text_win,
 						main_ycord,
@@ -337,7 +337,7 @@ part_fini:
 			for (i = 0; i < params.iterate; i++) {
 
 				sleep(1);
-				if(!params.commandline) {
+				if (!params.commandline) {
 					if ((rc = _get_option()) == 1)
 						goto redraw;
 					else if (resize_screen) {
@@ -351,7 +351,7 @@ part_fini:
 
 	}
 
-	if(!params.commandline) {
+	if (!params.commandline) {
 		nodelay(stdscr, FALSE);
 		getch();
 		endwin();
@@ -377,7 +377,7 @@ static int _get_option()
 	case '=':
 	case '+':
 		text_line_cnt--;
-	if(text_line_cnt<0) {
+	if (text_line_cnt<0) {
 		text_line_cnt = 0;
 		return 0;
 
@@ -387,7 +387,7 @@ static int _get_option()
 
 	case 'H':
 	case 'h':
-		if(params.all_flag)
+		if (params.all_flag)
 			params.all_flag = 0;
 		else
 			params.all_flag = 1;
@@ -412,7 +412,7 @@ static int _get_option()
 		return 1;
 		break;
 	case 'b':
-		if(params.cluster_flags & CLUSTER_FLAG_BG) {
+		if (params.cluster_flags & CLUSTER_FLAG_BG) {
 			text_line_cnt = 0;
 			grid_line_cnt = 0;
 			params.display = BGPART;
@@ -420,16 +420,16 @@ static int _get_option()
 		}
 		break;
 	case 'c':
-		if(params.cluster_flags & CLUSTER_FLAG_BG) {
+		if (params.cluster_flags & CLUSTER_FLAG_BG) {
 			params.display = COMMANDS;
 			return 1;
 		}
 		break;
 	case 'u':
 	case KEY_UP:
-		if(!(params.cluster_flags & CLUSTER_FLAG_BG)) {
+		if (!(params.cluster_flags & CLUSTER_FLAG_BG)) {
 			grid_line_cnt--;
-			if(grid_line_cnt<0) {
+			if (grid_line_cnt<0) {
 				grid_line_cnt = 0;
 				return 0;
 			}
@@ -438,9 +438,9 @@ static int _get_option()
 	break;
 	case 'd':
 	case KEY_DOWN:
-		if(!(params.cluster_flags & CLUSTER_FLAG_BG)) {
+		if (!(params.cluster_flags & CLUSTER_FLAG_BG)) {
 			grid_line_cnt++;
-			if((((grid_line_cnt-2) * (grid_win->_maxx-1)) +
+			if ((((grid_line_cnt-2) * (grid_win->_maxx-1)) +
 			    max_display) > DIM_SIZE[X]) {
 				grid_line_cnt--;
 				return 0;
@@ -479,11 +479,11 @@ static void *_resize_handler(int sig)
 	doupdate();	/* update now to make sure we get the new size */
 	getmaxyx(stdscr,LINES,COLS);
 
-	if(params.cluster_dims == 4) {
+	if (params.cluster_dims == 4) {
 		/* FIX ME: smap doesn't do anything correctly with
 		   more than 3 dims yet.
 		*/
-	} else if(params.cluster_dims == 3) {
+	} else if (params.cluster_dims == 3) {
 		height = DIM_SIZE[Y] * DIM_SIZE[Z] + DIM_SIZE[Y] + 3;
 		width = DIM_SIZE[X] + DIM_SIZE[Z] + 3;
 		check_width += width;
@@ -504,11 +504,11 @@ static void *_resize_handler(int sig)
 	grid_win = newwin(height, width, starty, startx);
 	max_display = grid_win->_maxy * grid_win->_maxx;
 
-	if(params.cluster_dims == 4) {
+	if (params.cluster_dims == 4) {
 		/* FIX ME: smap doesn't do anything correctly with
 		   more than 3 dims yet.
 		*/
-	} else if(params.cluster_dims == 3) {
+	} else if (params.cluster_dims == 3) {
 		startx = width;
 		COLS -= 2;
 		width = COLS - width;
@@ -533,11 +533,11 @@ static void *_resize_handler(int sig)
 		get_slurm_part();
 		break;
 	case COMMANDS:
-		if(params.cluster_flags & CLUSTER_FLAG_BG)
+		if (params.cluster_flags & CLUSTER_FLAG_BG)
 			get_command();
 		break;
 	case BGPART:
-		if(params.cluster_flags & CLUSTER_FLAG_BG)
+		if (params.cluster_flags & CLUSTER_FLAG_BG)
 			get_bg_part();
 		break;
 	}

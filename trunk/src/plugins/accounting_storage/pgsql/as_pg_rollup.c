@@ -78,14 +78,14 @@ typedef struct {
 static void _destroy_local_id_usage(void *object)
 {
 	local_id_usage_t *a_usage = (local_id_usage_t *)object;
-	if(a_usage) {
+	if (a_usage) {
 		xfree(a_usage);
 	}
 }
 static void _destroy_local_cluster_usage(void *object)
 {
 	local_cluster_usage_t *c_usage = (local_cluster_usage_t *)object;
-	if(c_usage) {
+	if (c_usage) {
 		xfree(c_usage->name);
 		xfree(c_usage);
 	}
@@ -93,9 +93,9 @@ static void _destroy_local_cluster_usage(void *object)
 static void _destroy_local_resv_usage(void *object)
 {
 	local_resv_usage_t *r_usage = (local_resv_usage_t *)object;
-	if(r_usage) {
+	if (r_usage) {
 		xfree(r_usage->cluster);
-		if(r_usage->local_assocs)
+		if (r_usage->local_assocs)
 			list_destroy(r_usage->local_assocs);
 		xfree(r_usage);
 	}
@@ -150,7 +150,7 @@ _process_event_usage(pgsql_conn_t *pg_conn, time_t start,
 		"  ORDER BY node_name, period_start",
 	       	ge_fields, event_table, NODE_STATE_MAINT, end, start);
 	result = DEF_QUERY_RET;
-	if(!result) {
+	if (!result) {
 		error("failed to get events");
 		return SLURM_ERROR;
 	}
@@ -161,15 +161,15 @@ _process_event_usage(pgsql_conn_t *pg_conn, time_t start,
 		int row_cpu = atoi(ROW(GE_CPU));
 		char *row_cluster = ROW(GE_CLUSTER);
 
-		if(row_start < start)
+		if (row_start < start)
 			row_start = start;
-		if(!row_end || row_end > end)
+		if (!row_end || row_end > end)
 			row_end = end;
 		/* Ignore time less than 1 second. */
-		if((row_end - row_start) < 1)
+		if ((row_end - row_start) < 1)
 			continue;
 
-		if(last_c_usage && !strcmp(last_c_usage->name, row_cluster))
+		if (last_c_usage && !strcmp(last_c_usage->name, row_cluster))
 			c_usage = last_c_usage;
 		else {
 			c_usage = list_find_first(cu_list, _cmp_cluster_name,
@@ -181,14 +181,14 @@ _process_event_usage(pgsql_conn_t *pg_conn, time_t start,
 		 * node_name=='' means cluster registration entry,
 		 * else, node down entry
 		 */
-		if(ISEMPTY(GE_NAME)) {
+		if (ISEMPTY(GE_NAME)) {
 			/* if the cpu count changes we will
 			 * only care about the last cpu count but
 			 * we will keep a total of the time for
 			 * all cpus to get the correct cpu time
 			 * for the entire period.
 			 */
-			if(!c_usage) {
+			if (!c_usage) {
 				c_usage = xmalloc(
 					sizeof(local_cluster_usage_t));
 				list_append(cu_list, c_usage);
@@ -207,15 +207,15 @@ _process_event_usage(pgsql_conn_t *pg_conn, time_t start,
 		   are looking for.  If it was during this
 		   time period we would already have it.
 		*/
-		if(c_usage) {
+		if (c_usage) {
 			int local_start = row_start;
 			int local_end = row_end;
-			if(c_usage->start > local_start)
+			if (c_usage->start > local_start)
 				local_start = c_usage->start;
-			if(c_usage->end < local_end)
+			if (c_usage->end < local_end)
 				local_end = c_usage->end;
 
-			if((local_end - local_start) > 0) {
+			if ((local_end - local_start) > 0) {
 				seconds = (local_end - local_start);
 				c_usage->d_cpu += seconds * row_cpu;
 			}
@@ -261,7 +261,7 @@ _process_resv_usage(pgsql_conn_t *pg_conn, time_t start,
 			       "ORDER BY cluster, start",
 			       gr_fields, resv_table, end, start);
 	result = DEF_QUERY_RET;
-	if(!result) {
+	if (!result) {
 		error("failed to get resv");
 		return SLURM_ERROR;
 	}
@@ -283,12 +283,12 @@ _process_resv_usage(pgsql_conn_t *pg_conn, time_t start,
 		int row_cpu = atoi(ROW(GR_CPU));
 		int row_flags = atoi(ROW(GR_FLAGS));
 
-		if(row_start < start)
+		if (row_start < start)
 			row_start = start;
-		if(!row_end || row_end > end)
+		if (!row_end || row_end > end)
 			row_end = end;
 		/* ignore time less than 1 seconds */
-		if((row_end - row_start) < 1)
+		if ((row_end - row_start) < 1)
 			continue;
 
 		r_usage = xmalloc(sizeof(local_resv_usage_t));
@@ -309,7 +309,7 @@ _process_resv_usage(pgsql_conn_t *pg_conn, time_t start,
 		   maintenance then we add the time to planned
 		   down time.
 		*/
-		if(last_c_usage && !strcmp(last_c_usage->name,
+		if (last_c_usage && !strcmp(last_c_usage->name,
 					   r_usage->cluster))
 			c_usage = last_c_usage;
 		else {
@@ -323,7 +323,7 @@ _process_resv_usage(pgsql_conn_t *pg_conn, time_t start,
 			}
 			last_c_usage = c_usage;
 		}
-		if(row_flags & RESERVE_FLAG_MAINT)
+		if (row_flags & RESERVE_FLAG_MAINT)
 			c_usage->pd_cpu += r_usage->total_time;
 		else
 			c_usage->a_cpu += r_usage->total_time;
@@ -379,7 +379,7 @@ _process_job_usage(pgsql_conn_t *pg_conn, time_t start, time_t end,
 		"  (endtime >= %d OR endtime = 0)) ORDER BY associd, eligible",
 		gj_fields, job_table, end, start);
 	result = DEF_QUERY_RET;
-	if(!result) {
+	if (!result) {
 		error("failed to get jobs");
 		return SLURM_ERROR;
 	}
@@ -399,36 +399,36 @@ _process_job_usage(pgsql_conn_t *pg_conn, time_t start, time_t end,
 		char *row_cluster = ROW(GJ_CLUSTER);
 		seconds = 0;
 
-		if(row_start && (row_start < start))
+		if (row_start && (row_start < start))
 			row_start = start;
-		if(!row_start && row_end)
+		if (!row_start && row_end)
 			row_start = row_end;
-		if(!row_end || row_end > end)
+		if (!row_end || row_end > end)
 			row_end = end;
-		if(!row_start || ((row_end - row_start) < 1))
+		if (!row_start || ((row_end - row_start) < 1))
 			goto calc_cluster;
 
 		seconds = (row_end - row_start);
 
-		if(! ISNULL(GJ_SUSPENDED)) {
+		if (! ISNULL(GJ_SUSPENDED)) {
 			/* function created in jobacct.c */
 			query = xstrdup_printf(
 				"SELECT get_job_suspend_time(%s, %d, %d);",
 				ROW(GJ_DB_INX), start, end);
 			result2 = DEF_QUERY_RET;
-			if(!result2)
+			if (!result2)
 				return SLURM_ERROR;
 			seconds -= atoi(PQgetvalue(result2, 0, 0));
 			PQclear(result2);
 		}
-		if(seconds < 1) {
+		if (seconds < 1) {
 			debug4("This job (%u) was suspended "
 			       "the entire hour", job_id);
 			/* TODO: how about resv usage? */
 			continue;
 		}
 
-		if(last_id != assoc_id) { /* ORDER BY associd */
+		if (last_id != assoc_id) { /* ORDER BY associd */
 			a_usage = xmalloc(sizeof(local_id_usage_t));
 			a_usage->id = assoc_id;
 			list_append(au_list, a_usage);
@@ -436,14 +436,14 @@ _process_job_usage(pgsql_conn_t *pg_conn, time_t start, time_t end,
 		}
 		a_usage->a_cpu += seconds * row_acpu;
 
-		if(!track_wckey)
+		if (!track_wckey)
 			goto calc_cluster;
 
 		/* do the wckey calculation */
-		if(last_wckeyid != wckey_id) {
+		if (last_wckeyid != wckey_id) {
 			w_usage = list_find_first(wu_list, _cmp_local_id,
 						  &wckey_id);
-			if(!w_usage) {
+			if (!w_usage) {
 				w_usage = xmalloc(sizeof(local_id_usage_t));
 				w_usage->id = wckey_id;
 				list_append(wu_list, w_usage);
@@ -454,12 +454,12 @@ _process_job_usage(pgsql_conn_t *pg_conn, time_t start, time_t end,
 
 		/* do the cluster allocated calculation */
 	calc_cluster:
-		if(!row_cluster || !row_cluster[0])
+		if (!row_cluster || !row_cluster[0])
 			continue;
 
 		/* first figure out the reservation */
-		if(resv_id) {
-			if(seconds <= 0)
+		if (resv_id) {
+			if (seconds <= 0)
 				continue;
 			/* Since we have already added the
 			   entire reservation as used time on
@@ -484,17 +484,17 @@ _process_job_usage(pgsql_conn_t *pg_conn, time_t start, time_t end,
 				   sure all the reservations
 				   are checked to see if such
 				   a thing has happened */
-				if((r_usage->id == resv_id)
+				if ((r_usage->id == resv_id)
 				   && !strcmp(r_usage->cluster,
 					      row_cluster)) {
 					int temp_end = row_end;
 					int temp_start = row_start;
-					if(r_usage->start > temp_start)
+					if (r_usage->start > temp_start)
 						temp_start = r_usage->start;
-					if(r_usage->end < temp_end)
+					if (r_usage->end < temp_end)
 						temp_end = r_usage->end;
 
-					if((temp_end - temp_start) > 0) {
+					if ((temp_end - temp_start) > 0) {
 						r_usage->a_cpu += row_acpu *
 							(temp_end - temp_start);
 					}
@@ -504,7 +504,7 @@ _process_job_usage(pgsql_conn_t *pg_conn, time_t start, time_t end,
 			continue;
 		}
 
-		if(last_c_usage && !strcmp(last_c_usage->name,
+		if (last_c_usage && !strcmp(last_c_usage->name,
 					   row_cluster)) {
 			c_usage = last_c_usage;
 		} else {
@@ -517,10 +517,10 @@ _process_job_usage(pgsql_conn_t *pg_conn, time_t start, time_t end,
 		   registered.  This continue should rarely if
 		   ever happen.
 		*/
-		if(!c_usage)
+		if (!c_usage)
 			continue;
 
-		if(row_start && (seconds > 0)) {
+		if (row_start && (seconds > 0)) {
 /* 					info("%d assoc %d adds " */
 /* 					     "(%d)(%d-%d) * %d = %d " */
 /* 					     "to %d", */
@@ -540,15 +540,15 @@ _process_job_usage(pgsql_conn_t *pg_conn, time_t start, time_t end,
 		 * by (start_time - eligible_time) seconds
 		 * large r_cpu means cluster overload or bad scheduling?
 		 */
-		if(!row_start || (row_start >= c_usage->start)) {
+		if (!row_start || (row_start >= c_usage->start)) {
 			row_end = row_start;
 			row_start = row_eligible;
-			if(c_usage->start > row_start)
+			if (c_usage->start > row_start)
 				row_start = c_usage->start;
-			if(c_usage->end < row_end)
+			if (c_usage->end < row_end)
 				row_end = c_usage->end;
 
-			if((row_end - row_start) > 0) {
+			if ((row_end - row_start) > 0) {
 				seconds = (row_end - row_start)
 					* row_rcpu;
 
@@ -593,7 +593,7 @@ _process_resv_idle_time(List resv_usage_list, List assoc_usage_list)
 		ListIterator tmp_itr = NULL;
 		int64_t idle = r_usage->total_time - r_usage->a_cpu;
 
-		if(idle <= 0)
+		if (idle <= 0)
 			continue;
 
 		/* now divide that time by the number of
@@ -606,12 +606,12 @@ _process_resv_idle_time(List resv_usage_list, List assoc_usage_list)
 		tmp_itr = list_iterator_create(r_usage->local_assocs);
 		while((assoc = list_next(tmp_itr))) {
 			int associd = atoi(assoc);
-			if(last_id != associd) {
+			if (last_id != associd) {
 				a_usage = list_find_first(assoc_usage_list,
 							  _cmp_local_id,
 							  &associd);
 			}
-			if(!a_usage) {
+			if (!a_usage) {
 				a_usage = xmalloc(sizeof(local_id_usage_t));
 				a_usage->id = associd;
 				list_append(assoc_usage_list, a_usage);
@@ -638,7 +638,7 @@ _cluster_usage_sanity_check(local_cluster_usage_t *c_usage,
 	uint64_t total_used = 0;
 
 	/* no more allocated cpus than possible. */
-	if(c_usage->total_time < c_usage->a_cpu) {
+	if (c_usage->total_time < c_usage->a_cpu) {
 		char *start_char = xstrdup(ctime(&curr_start));
 		char *end_char = xstrdup(ctime(&curr_end));
 		error("We have more allocated time than is "
@@ -657,7 +657,7 @@ _cluster_usage_sanity_check(local_cluster_usage_t *c_usage,
 
 	/* Make sure the total time we care about
 	   doesn't go over the limit */
-	if(c_usage->total_time < (total_used)) {
+	if (c_usage->total_time < (total_used)) {
 		char *start_char = xstrdup(ctime(&curr_start));
 		char *end_char = xstrdup(ctime(&curr_end));
 		int64_t overtime;
@@ -680,14 +680,14 @@ _cluster_usage_sanity_check(local_cluster_usage_t *c_usage,
 		overtime = (int64_t)(c_usage->total_time -
 				     (c_usage->a_cpu
 				      + c_usage->d_cpu));
-		if(overtime < 0)
+		if (overtime < 0)
 			c_usage->d_cpu += overtime;
 
 		overtime = (int64_t)(c_usage->total_time -
 				     (c_usage->a_cpu
 				      + c_usage->d_cpu
 				      + c_usage->pd_cpu));
-		if(overtime < 0)
+		if (overtime < 0)
 			c_usage->pd_cpu += overtime;
 
 		total_used = c_usage->a_cpu +
@@ -709,13 +709,13 @@ _cluster_usage_sanity_check(local_cluster_usage_t *c_usage,
 	 */
 /* 	info("%s got idle of %lld", c_usage->name,  */
 /* 	     (int64_t)c_usage->i_cpu); */
-	if((int64_t)c_usage->i_cpu < 0) {
+	if ((int64_t)c_usage->i_cpu < 0) {
 /* 		info("got %d %d %d", c_usage->r_cpu, */
 /* 		     c_usage->i_cpu, c_usage->o_cpu); */
 		c_usage->r_cpu += (int64_t)c_usage->i_cpu;
 		c_usage->o_cpu -= (int64_t)c_usage->i_cpu;
 		c_usage->i_cpu = 0;
-		if((int64_t)c_usage->r_cpu < 0)
+		if ((int64_t)c_usage->r_cpu < 0)
 			c_usage->r_cpu = 0;
 	}
 }
@@ -825,26 +825,26 @@ pgsql_hourly_rollup(pgsql_conn_t *pg_conn, time_t start, time_t end)
 /* 			info("association (%d) %d alloc %d", */
 /* 			     a_usage->id, last_id, */
 /* 			     a_usage->a_cpu); */
-			if(usage_recs)
+			if (usage_recs)
 				xstrcat(usage_recs, ", ");
 			xstrfmtcat(usage_recs,
 				   "CAST((%d, %d, 0, %d, %d, %llu) AS %s)",
 				   now, now, a_usage->id, curr_start,
 				   a_usage->a_cpu, assoc_hour_table);
 		}
-		if(usage_recs) {
+		if (usage_recs) {
 			query = xstrdup_printf(
 				"SELECT add_assoc_hour_usages(ARRAY[%s]);",
 				usage_recs);
 			xfree(usage_recs);
 			rc = DEF_QUERY_RET_RC;
-			if(rc != SLURM_SUCCESS) {
+			if (rc != SLURM_SUCCESS) {
 				error("Couldn't add assoc hour rollup");
 				goto end_it;
 			}
 		}
 
-		if(!track_wckey)
+		if (!track_wckey)
 			goto end_loop;
 
 		list_iterator_reset(w_itr);
@@ -852,20 +852,20 @@ pgsql_hourly_rollup(pgsql_conn_t *pg_conn, time_t start, time_t end)
 /* 			info("association (%d) %d alloc %d", */
 /* 			     w_usage->id, last_id, */
 /* 			     w_usage->a_cpu); */
-			if(usage_recs)
+			if (usage_recs)
 				xstrcat(usage_recs, ", ");
 			xstrfmtcat(usage_recs,
 				   "CAST((%d, %d, 0, %d, %d, %llu, 0, 0) AS %s)",
 				   now, now, w_usage->id, curr_start,
 				   w_usage->a_cpu, wckey_hour_table);
 		}
-		if(usage_recs) {
+		if (usage_recs) {
 			query = xstrdup_printf(
 				"SELECT add_wckey_hour_usages(ARRAY[%s]);",
 				usage_recs);
 			xfree(usage_recs);
 			rc = DEF_QUERY_RET_RC;
-			if(rc != SLURM_SUCCESS) {
+			if (rc != SLURM_SUCCESS) {
 				error("Couldn't add wckey hour rollup");
 				goto end_it;
 			}
@@ -920,7 +920,7 @@ pgsql_daily_rollup(pgsql_conn_t *pg_conn, time_t start, time_t end,
 	time_t curr_start = start; /* already aligned to day boundary */
 	uint16_t track_wckey = slurm_get_track_wckey();
 
-	if(!localtime_r(&curr_start, &start_tm)) {
+	if (!localtime_r(&curr_start, &start_tm)) {
 		error("Couldn't get localtime from day start %d", curr_start);
 		return SLURM_ERROR;
 	}
@@ -945,13 +945,13 @@ pgsql_daily_rollup(pgsql_conn_t *pg_conn, time_t start, time_t end,
 				   now, curr_start, curr_end);
 		}
 		rc = DEF_QUERY_RET_RC;
-		if(rc != SLURM_SUCCESS) {
+		if (rc != SLURM_SUCCESS) {
 			error("Couldn't add day rollup");
 			return SLURM_ERROR;
 		}
 
 		curr_start = curr_end;
-		if(!localtime_r(&curr_start, &start_tm)) {
+		if (!localtime_r(&curr_start, &start_tm)) {
 			error("Couldn't get localtime from day start %d",
 			      curr_start);
 			return SLURM_ERROR;
@@ -993,7 +993,7 @@ pgsql_monthly_rollup(pgsql_conn_t *pg_conn,
 	time_t curr_start = start; /* already aligned to month boundary */
 	uint16_t track_wckey = slurm_get_track_wckey();
 
-	if(!localtime_r(&curr_start, &start_tm)) {
+	if (!localtime_r(&curr_start, &start_tm)) {
 		error("Couldn't get localtime from month start %d", curr_start);
 		return SLURM_ERROR;
 	}
@@ -1021,12 +1021,12 @@ pgsql_monthly_rollup(pgsql_conn_t *pg_conn,
 				   now, curr_start, curr_end);
 		}
 		rc = DEF_QUERY_RET_RC;
-		if(rc != SLURM_SUCCESS) {
+		if (rc != SLURM_SUCCESS) {
 			error("Couldn't add month rollup");
 			return SLURM_ERROR;
 		}
 		curr_start = curr_end;
-		if(!localtime_r(&curr_start, &start_tm)) {
+		if (!localtime_r(&curr_start, &start_tm)) {
 			error("Couldn't get localtime from month start %d",
 			      curr_start);
 		}
@@ -1042,10 +1042,10 @@ pgsql_monthly_rollup(pgsql_conn_t *pg_conn,
 	/* if we didn't ask for archive data return here and don't do
 	   anything extra just rollup */
 
-	if(!archive_data)
+	if (!archive_data)
 		return SLURM_SUCCESS;
 
-	if(!slurmdbd_conf)
+	if (!slurmdbd_conf)
 		return SLURM_SUCCESS;
 
 	memset(&arch_cond, 0, sizeof(arch_cond));

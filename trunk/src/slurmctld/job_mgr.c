@@ -323,15 +323,15 @@ static slurmdb_qos_rec_t *_determine_and_validate_qos(
 	   with the association.  If not just fill in the qos and
 	   continue. */
 
-	if(accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS)
+	if (accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS)
 		xassert(assoc_ptr);
 	xassert(qos_rec);
 
-	if(!qos_rec->name && !qos_rec->id) {
-		if(assoc_ptr && assoc_ptr->usage->valid_qos)
-			if(assoc_ptr->def_qos_id)
+	if (!qos_rec->name && !qos_rec->id) {
+		if (assoc_ptr && assoc_ptr->usage->valid_qos)
+			if (assoc_ptr->def_qos_id)
 				qos_rec->id = assoc_ptr->def_qos_id;
-			else if(bit_set_count(assoc_ptr->usage->valid_qos) == 1)
+			else if (bit_set_count(assoc_ptr->usage->valid_qos) == 1)
 				qos_rec->id =
 					bit_ffs(assoc_ptr->usage->valid_qos);
 			else
@@ -340,7 +340,7 @@ static slurmdb_qos_rec_t *_determine_and_validate_qos(
 			qos_rec->name = "normal";
 	}
 
-	if(assoc_mgr_fill_in_qos(acct_db_conn, qos_rec, accounting_enforce,
+	if (assoc_mgr_fill_in_qos(acct_db_conn, qos_rec, accounting_enforce,
 				 &qos_ptr)
 	   != SLURM_SUCCESS) {
 		error("Invalid qos (%s)", qos_rec->name);
@@ -348,7 +348,7 @@ static slurmdb_qos_rec_t *_determine_and_validate_qos(
 		return NULL;
 	}
 
-	if((accounting_enforce & ACCOUNTING_ENFORCE_QOS)
+	if ((accounting_enforce & ACCOUNTING_ENFORCE_QOS)
 	   && assoc_ptr
 	   && (!assoc_ptr->usage->valid_qos
 	       || !bit_test(assoc_ptr->usage->valid_qos, qos_rec->id))) {
@@ -471,11 +471,11 @@ int dump_all_job_state(void)
 		(void) unlink(new_file);
 	else {			/* file shuffle */
 		(void) unlink(old_file);
-		if(link(reg_file, old_file))
+		if (link(reg_file, old_file))
 			debug4("unable to create link for %s -> %s: %m",
 			       reg_file, old_file);
 		(void) unlink(reg_file);
-		if(link(new_file, reg_file))
+		if (link(new_file, reg_file))
 			debug4("unable to create link for %s -> %s: %m",
 			       new_file, reg_file);
 		(void) unlink(new_file);
@@ -576,10 +576,10 @@ extern int load_all_job_state(void)
 	buffer = create_buf(data, data_size);
 	safe_unpackstr_xmalloc(&ver_str, &ver_str_len, buffer);
 	debug3("Version string in job_state header is %s", ver_str);
-	if(ver_str) {
-		if(!strcmp(ver_str, JOB_STATE_VERSION)) {
+	if (ver_str) {
+		if (!strcmp(ver_str, JOB_STATE_VERSION)) {
 			protocol_version = SLURM_PROTOCOL_VERSION;
-		} else if(!strcmp(ver_str, JOB_2_1_STATE_VERSION)) {
+		} else if (!strcmp(ver_str, JOB_2_1_STATE_VERSION)) {
 			protocol_version = SLURM_2_1_PROTOCOL_VERSION;
 		}
 	}
@@ -840,7 +840,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	slurmdb_qos_rec_t qos_rec;
 	bool job_finished = false;
 
-	if(protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
 		safe_unpack32(&assoc_id, buffer);
 		safe_unpack32(&job_id, buffer);
 
@@ -979,7 +979,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 				goto unpack_error;
 			safe_unpack16(&step_flag, buffer);
 		}
-	} else if(protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
+	} else if (protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
 		uint16_t kill_on_step_done;
 		uint32_t min_cpus;
 
@@ -1232,7 +1232,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	 * association record.  If not look for it by
 	 * account,partition, user_id.
 	 */
-	if(job_ptr->assoc_id)
+	if (job_ptr->assoc_id)
 		assoc_rec.id = job_ptr->assoc_id;
 	else {
 		assoc_rec.acct      = job_ptr->account;
@@ -1261,7 +1261,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		info("Recovered job %u %u", job_id, job_ptr->assoc_id);
 
 		/* make sure we have started this job in accounting */
-		if(!job_ptr->db_index) {
+		if (!job_ptr->db_index) {
 			debug("starting job %u in accounting",
 			      job_ptr->job_id);
 			jobacct_storage_g_job_start(acct_db_conn, job_ptr);
@@ -1272,7 +1272,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		}
 		/* make sure we have this job completed in the
 		 * database */
-		if(IS_JOB_FINISHED(job_ptr)) {
+		if (IS_JOB_FINISHED(job_ptr)) {
 			jobacct_storage_g_job_complete(acct_db_conn, job_ptr);
 			job_finished = 1;
 		}
@@ -1407,7 +1407,7 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer,
 	multi_core_data_t *mc_ptr;
 
 	/* unpack the job's details from the buffer */
-	if(protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
 		safe_unpack32(&min_cpus, buffer);
 		safe_unpack32(&max_cpus, buffer);
 		safe_unpack32(&min_nodes, buffer);
@@ -1455,7 +1455,7 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer,
 			goto unpack_error;
 		safe_unpackstr_array(&argv, &argc, buffer);
 		safe_unpackstr_array(&env_sup, &env_cnt, buffer);
-	} else if(protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
+	} else if (protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
 		safe_unpack32(&min_nodes, buffer);
 		safe_unpack32(&max_nodes, buffer);
 		safe_unpack32(&num_tasks, buffer);
@@ -2373,7 +2373,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 		job_ptr->exit_code  = 1;
 		job_ptr->start_time = job_ptr->end_time = now;
 		_purge_job_record(job_ptr->job_id);
-	} else if(!with_slurmdbd && !job_ptr->db_index)
+	} else if (!with_slurmdbd && !job_ptr->db_index)
 		jobacct_storage_g_job_start(acct_db_conn, job_ptr);
 
 	if (!will_run) {
@@ -2495,7 +2495,7 @@ extern int job_signal(uint32_t job_id, uint16_t signal, uint16_t batch_flag,
 		return ESLURM_ALREADY_DONE;
 
 	/* save user ID of the one who requested the job be cancelled */
-	if(signal == SIGKILL)
+	if (signal == SIGKILL)
 		job_ptr->requid = uid;
 	if (IS_JOB_PENDING(job_ptr) && IS_JOB_COMPLETING(job_ptr) &&
 	    (signal == SIGKILL)) {
@@ -3100,7 +3100,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		     job_desc->user_id, assoc_rec.acct, assoc_rec.partition);
 		error_code = ESLURM_INVALID_ACCOUNT;
 		goto cleanup_fail;
-	} else if(association_based_accounting
+	} else if (association_based_accounting
 		  && !assoc_ptr
 		  && !(accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS)) {
 		/* if not enforcing associations we want to look for
@@ -3110,7 +3110,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		assoc_rec.acct = NULL;
 		assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
 					accounting_enforce, &assoc_ptr);
-		if(assoc_ptr) {
+		if (assoc_ptr) {
 			info("_job_create: account '%s' has no association "
 			     "for user %u using default account '%s'",
 			     job_desc->account, job_desc->user_id,
@@ -3229,7 +3229,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		select_g_select_jobinfo_set(job_desc->select_jobinfo,
 					    SELECT_JOBDATA_CONN_TYPE,
 					    &conn_type);
-	} else if(((conn_type >= SELECT_SMALL)
+	} else if (((conn_type >= SELECT_SMALL)
 		   && (job_desc->min_cpus >= cpus_per_bp))
 		  || (((conn_type == SELECT_TORUS)|| (conn_type == SELECT_MESH))
 		      && (job_desc->min_cpus < cpus_per_bp))) {
@@ -3258,7 +3258,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 						       job_pptr,
 						       &req_bitmap,
 						       &exc_bitmap))) {
-		if(error_code == SLURM_ERROR)
+		if (error_code == SLURM_ERROR)
 			error_code = ESLURM_ERROR_ON_DESC_TO_RECORD_COPY;
 		goto cleanup_fail;
 	}
@@ -3812,8 +3812,8 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	struct job_details *detail_ptr;
 	struct job_record *job_ptr;
 
-	if(slurm_get_track_wckey()) {
-		if(!job_desc->wckey) {
+	if (slurm_get_track_wckey()) {
+		if (!job_desc->wckey) {
 			/* get the default wckey for this user since none was
 			 * given */
 			slurmdb_user_rec_t user_rec;
@@ -3821,10 +3821,10 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 			user_rec.uid = job_desc->user_id;
 			assoc_mgr_fill_in_user(acct_db_conn, &user_rec,
 					       accounting_enforce, NULL);
-			if(user_rec.default_wckey)
+			if (user_rec.default_wckey)
 				job_desc->wckey = xstrdup_printf(
 					"*%s", user_rec.default_wckey);
-			else if(!(accounting_enforce
+			else if (!(accounting_enforce
 				  & ACCOUNTING_ENFORCE_WCKEYS))
 				job_desc->wckey = xstrdup("*");
 			else {
@@ -3832,7 +3832,7 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 				      "%d has no default.", job_desc->user_id);
 				return ESLURM_INVALID_WCKEY;
 			}
-		} else if(job_desc->wckey) {
+		} else if (job_desc->wckey) {
 			slurmdb_wckey_rec_t wckey_rec, *wckey_ptr = NULL;
 
 			memset(&wckey_rec, 0, sizeof(slurmdb_wckey_rec_t));
@@ -3842,7 +3842,7 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 			if (assoc_mgr_fill_in_wckey(acct_db_conn, &wckey_rec,
 						    accounting_enforce,
 						    &wckey_ptr)) {
-				if(accounting_enforce
+				if (accounting_enforce
 				   & ACCOUNTING_ENFORCE_WCKEYS) {
 					error("_job_create: invalid wckey '%s' "
 					      "for user %u.",
@@ -4213,7 +4213,7 @@ void job_time_limit(void)
 		 * job has been running for 11 minutes it continues
 		 * until 20.
 		 */
-		if(qos) {
+		if (qos) {
 			usage_mins = (uint64_t)(qos->usage->usage_raw / 60.0);
 			wall_mins = qos->usage->grp_used_wall / 60;
 
@@ -4306,13 +4306,13 @@ void job_time_limit(void)
 
 			assoc = assoc->usage->parent_assoc_ptr;
 			/* these limits don't apply to the root assoc */
-			if(assoc == assoc_mgr_root_assoc)
+			if (assoc == assoc_mgr_root_assoc)
 				break;
 		}
 	job_failed:
 		assoc_mgr_unlock(&locks);
 
-		if(job_ptr->state_reason == FAIL_TIMEOUT) {
+		if (job_ptr->state_reason == FAIL_TIMEOUT) {
 			last_job_update = now;
 			_job_timed_out(job_ptr);
 			xfree(job_ptr->state_desc);
@@ -4598,7 +4598,7 @@ static int _list_find_job_old(void *job_entry, void *key)
 	   the slurmdbd lets put it on the list to be handled later
 	   when it comes back up since we won't get another chance.
 	*/
-	if(with_slurmdbd && !job_ptr->db_index)
+	if (with_slurmdbd && !job_ptr->db_index)
 		jobacct_storage_g_job_start(acct_db_conn, job_ptr);
 	return 1;		/* Purge the job */
 }
@@ -4743,7 +4743,7 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK,
 				   READ_LOCK, NO_LOCK, NO_LOCK };
 
-	if(protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
 		pack32(dump_job_ptr->assoc_id, buffer);
 		pack32(dump_job_ptr->job_id, buffer);
 		pack32(dump_job_ptr->user_id, buffer);
@@ -4774,7 +4774,7 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 
 		pack_time(begin_time, buffer);
 		/* Actual or expected start time */
-		if((dump_job_ptr->start_time) || (begin_time <= time(NULL)))
+		if ((dump_job_ptr->start_time) || (begin_time <= time(NULL)))
 			pack_time(dump_job_ptr->start_time, buffer);
 		else	/* earliest start time in the future */
 			pack_time(begin_time, buffer);
@@ -4851,7 +4851,7 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 		else
 			_pack_pending_job_details(NULL, buffer,
 						  protocol_version);
-	} else if(protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
+	} else if (protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
 		pack32(dump_job_ptr->assoc_id, buffer);
 		pack32(dump_job_ptr->job_id, buffer);
 		pack32(dump_job_ptr->user_id, buffer);
@@ -4881,7 +4881,7 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 
 		pack_time(begin_time, buffer);
 		/* Actual or expected start time */
-		if((dump_job_ptr->start_time) || (begin_time <= time(NULL)))
+		if ((dump_job_ptr->start_time) || (begin_time <= time(NULL)))
 			pack_time(dump_job_ptr->start_time, buffer);
 		else	/* earliest start time in the future */
 			pack_time(begin_time, buffer);
@@ -4946,7 +4946,7 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 			pack32(dump_job_ptr->cpu_cnt, buffer);
 		else if (dump_job_ptr->total_cpus)
 			pack32(dump_job_ptr->total_cpus, buffer);
-		else if(detail_ptr)
+		else if (detail_ptr)
 			pack32(detail_ptr->min_cpus, buffer);
 		else
 			pack32(dump_job_ptr->cpu_cnt, buffer);
@@ -4977,7 +4977,7 @@ static void _pack_default_job_details(struct job_record *job_ptr,
 	struct job_details *detail_ptr = job_ptr->details;
 	char *cmd_line = NULL;
 
-	if(protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
 		if (detail_ptr) {
 			packstr(detail_ptr->features,   buffer);
 			packstr(detail_ptr->work_dir,   buffer);
@@ -5001,7 +5001,7 @@ static void _pack_default_job_details(struct job_record *job_ptr,
 				pack32((uint32_t) 0, buffer);
 			} else {
 				pack32(detail_ptr->min_cpus, buffer);
-				if(detail_ptr->max_cpus != NO_VAL)
+				if (detail_ptr->max_cpus != NO_VAL)
 					pack32(detail_ptr->max_cpus, buffer);
 				else
 					pack32((uint32_t) 0, buffer);
@@ -5034,7 +5034,7 @@ static void _pack_default_job_details(struct job_record *job_ptr,
 			pack32((uint32_t) 0, buffer);
 			pack16((uint16_t) 0, buffer);
 		}
-	} else if(protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
+	} else if (protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
 		if (detail_ptr) {
 			packstr(detail_ptr->features,   buffer);
 			packstr(detail_ptr->work_dir,   buffer);
@@ -5075,7 +5075,7 @@ static void _pack_default_job_details(struct job_record *job_ptr,
 static void _pack_pending_job_details(struct job_details *detail_ptr,
 				      Buf buffer, uint16_t protocol_version)
 {
-	if(protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
 		if (detail_ptr) {
 			pack16(detail_ptr->shared, buffer);
 			pack16(detail_ptr->contiguous, buffer);
@@ -5471,7 +5471,7 @@ static bool _top_priority(struct job_record *job_ptr)
 	 * execute on different sets of nodes. While sched/backfill would
 	 * eventually start the job if delayed here based upon priority,
 	 * that could delay the initiation of a job by a few seconds. */
-	if(static_part == (uint16_t)NO_VAL) {
+	if (static_part == (uint16_t)NO_VAL) {
 		/* Since this never changes we can just set it once
 		   and not look at it again. */
 		rc = select_g_get_info_from_plugin(SELECT_STATIC_PART, job_ptr,
@@ -5582,9 +5582,9 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	static uint32_t cpus_per_bp = 0;
 	static uint16_t cpus_per_node = 0;
 
-	if(!cpus_per_bp)
+	if (!cpus_per_bp)
 		select_g_alter_node_cnt(SELECT_GET_BP_CPU_CNT, &cpus_per_bp);
-	if(!cpus_per_node)
+	if (!cpus_per_node)
 		select_g_alter_node_cnt(SELECT_GET_NODE_CPU_CNT,
 					&cpus_per_node);
 #endif
@@ -5728,7 +5728,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 				update_accounting = true;
 			}
 		}
-	} else if(job_specs->qos) {
+	} else if (job_specs->qos) {
 		slurmdb_qos_rec_t qos_rec;
 		if (!IS_JOB_PENDING(job_ptr))
 			error_code = ESLURM_DISABLED;
@@ -5802,7 +5802,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	if (save_min_cpus) {
 #ifdef HAVE_BG
 		uint32_t node_cnt = detail_ptr->min_cpus;
-		if(cpus_per_node)
+		if (cpus_per_node)
 			node_cnt /= cpus_per_node;
 		/* This is only set up so accounting is set up
 		   correctly */
@@ -5852,7 +5852,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		else {
 #ifdef HAVE_BG
 			uint32_t node_cnt = job_specs->num_tasks;
-			if(cpus_per_node)
+			if (cpus_per_node)
 				node_cnt /= cpus_per_node;
 			/* This is only set up so accounting is set up
 			   correctly */
@@ -5864,10 +5864,10 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			info("update_job: setting num_tasks to %u for "
 			     "job_id %u", job_specs->num_tasks,
 			     job_specs->job_id);
-			if(detail_ptr->cpus_per_task) {
+			if (detail_ptr->cpus_per_task) {
 				uint32_t new_cpus = detail_ptr->num_tasks
 					/ detail_ptr->cpus_per_task;
-				if((new_cpus < detail_ptr->min_cpus)
+				if ((new_cpus < detail_ptr->min_cpus)
 				   || (!detail_ptr->overcommit
 				       && (new_cpus > detail_ptr->min_cpus))) {
 					detail_ptr->min_cpus = new_cpus;
@@ -6477,7 +6477,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			   started in the past since the job isn't
 			   going to start until now as the earliest.
 			*/
-			if(job_specs->begin_time < now)
+			if (job_specs->begin_time < now)
 				job_specs->begin_time = now;
 
 			detail_ptr->begin_time = job_specs->begin_time;
@@ -6539,7 +6539,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
 			error_code = ESLURM_DISABLED;
 		else {
-			if((conn_type >= SELECT_SMALL)
+			if ((conn_type >= SELECT_SMALL)
 			   && (detail_ptr->min_cpus >= cpus_per_bp)) {
 				info("update_job: could not change "
 				     "conn_type to '%s' because cpu "
@@ -6549,7 +6549,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 				     detail_ptr->min_cpus,
 				     job_ptr->job_id);
 				error_code = ESLURM_INVALID_NODE_COUNT;
-			} else if(((conn_type == SELECT_TORUS)
+			} else if (((conn_type == SELECT_TORUS)
 				   || (conn_type == SELECT_MESH))
 				  && (detail_ptr->min_cpus < cpus_per_bp)) {
 				info("update_job: could not change "
@@ -6574,7 +6574,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	/* check to make sure we didn't mess up with the proc count */
 	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
 				    SELECT_JOBDATA_CONN_TYPE, &conn_type);
-	if(detail_ptr &&
+	if (detail_ptr &&
 	   (((conn_type >= SELECT_SMALL)
 	     && (detail_ptr->min_cpus >= cpus_per_bp))
 	    || (((conn_type == SELECT_TORUS)|| (conn_type == SELECT_MESH))
@@ -6696,7 +6696,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	 }
 
 #endif
-	 if(update_accounting) {
+	 if (update_accounting) {
 		 info("updating accounting");
 		 if (job_ptr->details && job_ptr->details->begin_time) {
 			/* Update job record in accounting to reflect
@@ -6714,7 +6714,7 @@ extern void job_pre_resize_acctg(struct job_record *job_ptr)
 	/* if we don't have a db_index go a start this one up since if
 	   running with the slurmDBD the job may not have started yet.
 	*/
-	if(!job_ptr->db_index)
+	if (!job_ptr->db_index)
 		jobacct_storage_g_job_start(acct_db_conn, job_ptr);
 
 	job_ptr->job_state |= JOB_RESIZING;
@@ -7378,7 +7378,7 @@ extern void job_completion_logger(struct job_record  *job_ptr, bool requeue)
 	if (IS_JOB_RESIZING(job_ptr))
 		return;
 
-	if(!job_ptr->assoc_id) {
+	if (!job_ptr->assoc_id) {
 		slurmdb_association_rec_t assoc_rec;
 		/* In case accounting enabled after starting the job */
 		memset(&assoc_rec, 0, sizeof(slurmdb_association_rec_t));
@@ -7386,7 +7386,7 @@ extern void job_completion_logger(struct job_record  *job_ptr, bool requeue)
 		assoc_rec.partition = job_ptr->partition;
 		assoc_rec.uid       = job_ptr->user_id;
 
-		if(!(assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
+		if (!(assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
 					     accounting_enforce,
 					     (slurmdb_association_rec_t **)
 					     &job_ptr->assoc_ptr))) {
@@ -7398,7 +7398,7 @@ extern void job_completion_logger(struct job_record  *job_ptr, bool requeue)
 		}
 	}
 
-	if(!with_slurmdbd && !job_ptr->db_index)
+	if (!with_slurmdbd && !job_ptr->db_index)
 		jobacct_storage_g_job_start(acct_db_conn, job_ptr);
 
 	jobacct_storage_g_job_complete(acct_db_conn, job_ptr);
@@ -7979,7 +7979,7 @@ static bool _validate_acct_policy(job_desc_msg_t *job_desc,
 	//(*limit_set_max_nodes) = 0;
 
 	assoc_mgr_lock(&locks);
-	if(qos_ptr) {
+	if (qos_ptr) {
 		/* for validation we don't need to look at
 		 * qos_ptr->grp_cpu_mins.
 		 */
@@ -8011,7 +8011,7 @@ static bool _validate_acct_policy(job_desc_msg_t *job_desc,
 				     job_desc->user_id,
 				     job_desc->max_cpus,
 				     qos_ptr->grp_cpus);
-				if(job_desc->max_cpus == NO_VAL)
+				if (job_desc->max_cpus == NO_VAL)
 					limit_set_max_cpus = 1;
 				job_desc->max_cpus = qos_ptr->grp_cpus;
 			}
@@ -8048,7 +8048,7 @@ static bool _validate_acct_policy(job_desc_msg_t *job_desc,
 				     job_desc->user_id,
 				     job_desc->max_nodes,
 				     qos_ptr->grp_nodes);
-				if(job_desc->max_nodes == NO_VAL)
+				if (job_desc->max_nodes == NO_VAL)
 					(*limit_set_max_nodes) = 1;
 				job_desc->max_nodes = qos_ptr->grp_nodes;
 			}
@@ -8105,7 +8105,7 @@ static bool _validate_acct_policy(job_desc_msg_t *job_desc,
 				     job_desc->user_id,
 				     job_desc->max_cpus,
 				     qos_ptr->max_cpus_pj);
-				if(job_desc->max_cpus == NO_VAL)
+				if (job_desc->max_cpus == NO_VAL)
 					limit_set_max_cpus = 1;
 				job_desc->max_cpus = qos_ptr->max_cpus_pj;
 			}
@@ -8141,7 +8141,7 @@ static bool _validate_acct_policy(job_desc_msg_t *job_desc,
 				     job_desc->user_id,
 				     job_desc->max_nodes,
 				     qos_ptr->max_nodes_pj);
-				if(job_desc->max_nodes == NO_VAL)
+				if (job_desc->max_nodes == NO_VAL)
 					(*limit_set_max_nodes) = 1;
 				job_desc->max_nodes = qos_ptr->max_nodes_pj;
 			}
@@ -8149,17 +8149,17 @@ static bool _validate_acct_policy(job_desc_msg_t *job_desc,
 
 		if (qos_ptr->max_submit_jobs_pu != INFINITE) {
 			slurmdb_used_limits_t *used_limits = NULL;
-			if(qos_ptr->usage->user_limit_list) {
+			if (qos_ptr->usage->user_limit_list) {
 				ListIterator itr = list_iterator_create(
 					qos_ptr->usage->user_limit_list);
 				while((used_limits = list_next(itr))) {
-					if(used_limits->uid
+					if (used_limits->uid
 					   == job_desc->user_id)
 						break;
 				}
 				list_iterator_destroy(itr);
 			}
-			if(used_limits && (used_limits->submit_jobs
+			if (used_limits && (used_limits->submit_jobs
 					   >= qos_ptr->max_submit_jobs_pu)) {
 				info("job submit for user %s(%u): "
 				     "account max submit job limit exceeded %u",
@@ -8230,7 +8230,7 @@ static bool _validate_acct_policy(job_desc_msg_t *job_desc,
 				     job_desc->user_id,
 				     job_desc->max_cpus,
 				     assoc_ptr->grp_cpus);
-				if(job_desc->max_cpus == NO_VAL)
+				if (job_desc->max_cpus == NO_VAL)
 					limit_set_max_cpus = 1;
 				job_desc->max_cpus = assoc_ptr->grp_cpus;
 			}
@@ -8269,7 +8269,7 @@ static bool _validate_acct_policy(job_desc_msg_t *job_desc,
 				     job_desc->user_id,
 				     job_desc->max_nodes,
 				     assoc_ptr->grp_nodes);
-				if(job_desc->max_nodes == NO_VAL)
+				if (job_desc->max_nodes == NO_VAL)
 					(*limit_set_max_nodes) = 1;
 				job_desc->max_nodes = assoc_ptr->grp_nodes;
 			}
@@ -8300,7 +8300,7 @@ static bool _validate_acct_policy(job_desc_msg_t *job_desc,
 		 * parents since we have pre-propogated them, so just
 		 * continue with the next parent
 		 */
-		if(parent) {
+		if (parent) {
 			assoc_ptr = assoc_ptr->usage->parent_assoc_ptr;
 			continue;
 		}
@@ -8337,7 +8337,7 @@ static bool _validate_acct_policy(job_desc_msg_t *job_desc,
 				     job_desc->user_id,
 				     job_desc->max_cpus,
 				     assoc_ptr->max_cpus_pj);
-				if(job_desc->max_cpus == NO_VAL)
+				if (job_desc->max_cpus == NO_VAL)
 					limit_set_max_cpus = 1;
 				job_desc->max_cpus = assoc_ptr->max_cpus_pj;
 			}
@@ -8375,7 +8375,7 @@ static bool _validate_acct_policy(job_desc_msg_t *job_desc,
 				     job_desc->user_id,
 				     job_desc->max_nodes,
 				     assoc_ptr->max_nodes_pj);
-				if(job_desc->max_nodes == NO_VAL)
+				if (job_desc->max_nodes == NO_VAL)
 					(*limit_set_max_nodes) = 1;
 				job_desc->max_nodes = assoc_ptr->max_nodes_pj;
 			}
@@ -8455,13 +8455,13 @@ extern int job_cancel_by_assoc_id(uint32_t assoc_id)
 			continue;
 
 		/* move up to the parent that should still exist */
-		if(job_ptr->assoc_ptr) {
+		if (job_ptr->assoc_ptr) {
 			/* Force a start so the association doesn't
 			   get lost.  Since there could be some delay
 			   in the start of the job when running with
 			   the slurmdbd.
 			*/
-			if(!job_ptr->db_index) {
+			if (!job_ptr->db_index) {
 				jobacct_storage_g_job_start(acct_db_conn,
 							    job_ptr);
 			}
@@ -8469,13 +8469,13 @@ extern int job_cancel_by_assoc_id(uint32_t assoc_id)
 			job_ptr->assoc_ptr =
 				((slurmdb_association_rec_t *)
 				 job_ptr->assoc_ptr)->usage->parent_assoc_ptr;
-			if(job_ptr->assoc_ptr)
+			if (job_ptr->assoc_ptr)
 				job_ptr->assoc_id =
 					((slurmdb_association_rec_t *)
 					 job_ptr->assoc_ptr)->id;
 		}
 
-		if(IS_JOB_FINISHED(job_ptr))
+		if (IS_JOB_FINISHED(job_ptr))
 			continue;
 
 		info("Association deleted, cancelling job %u",
@@ -8516,20 +8516,20 @@ extern int job_cancel_by_qos_id(uint32_t qos_id)
 			continue;
 
 		/* move up to the parent that should still exist */
-		if(job_ptr->qos_ptr) {
+		if (job_ptr->qos_ptr) {
 			/* Force a start so the association doesn't
 			   get lost.  Since there could be some delay
 			   in the start of the job when running with
 			   the slurmdbd.
 			*/
-			if(!job_ptr->db_index) {
+			if (!job_ptr->db_index) {
 				jobacct_storage_g_job_start(acct_db_conn,
 							    job_ptr);
 			}
 			job_ptr->qos_ptr = NULL;
 		}
 
-		if(IS_JOB_FINISHED(job_ptr))
+		if (IS_JOB_FINISHED(job_ptr))
 			continue;
 
 		info("QOS deleted, cancelling job %u",
@@ -8575,7 +8575,7 @@ extern int update_job_account(char *module, struct job_record *job_ptr,
 		info("%s: invalid account %s for job_id %u",
 		     module, new_account, job_ptr->job_id);
 		return ESLURM_INVALID_ACCOUNT;
-	} else if(association_based_accounting &&
+	} else if (association_based_accounting &&
 		  !job_ptr->assoc_ptr          &&
 		  !(accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS)) {
 		/* if not enforcing associations we want to look for
@@ -8587,7 +8587,7 @@ extern int update_job_account(char *module, struct job_record *job_ptr,
 					accounting_enforce,
 					(slurmdb_association_rec_t **)
 					&job_ptr->assoc_ptr);
-		if(!job_ptr->assoc_ptr) {
+		if (!job_ptr->assoc_ptr) {
 			debug("%s: we didn't have an association for account "
 			      "'%s' and user '%u', and we can't seem to find "
 			      "a default one either.  Keeping new account "
@@ -8643,7 +8643,7 @@ extern int update_job_wckey(char *module, struct job_record *job_ptr,
 		info("%s: invalid wckey %s for job_id %u",
 		     module, new_wckey, job_ptr->job_id);
 		return ESLURM_INVALID_WCKEY;
-	} else if(association_based_accounting
+	} else if (association_based_accounting
 		  && !wckey_ptr
 		  && !(accounting_enforce & ACCOUNTING_ENFORCE_WCKEYS)) {
 		/* if not enforcing associations we want to look for
@@ -8653,7 +8653,7 @@ extern int update_job_wckey(char *module, struct job_record *job_ptr,
 		wckey_rec.name = NULL;
 		assoc_mgr_fill_in_wckey(acct_db_conn, &wckey_rec,
 					accounting_enforce, &wckey_ptr);
-		if(!wckey_ptr) {
+		if (!wckey_ptr) {
 			debug("%s: we didn't have a wckey record for wckey "
 			      "'%s' and user '%u', and we can't seem to find "
 			      "a default one either.  Setting it anyway. "
@@ -8693,7 +8693,7 @@ extern int send_jobs_to_accounting(void)
 	lock_slurmctld(job_write_lock);
 	itr = list_iterator_create(job_list);
 	while ((job_ptr = list_next(itr))) {
-		if(!job_ptr->assoc_id) {
+		if (!job_ptr->assoc_id) {
 			slurmdb_association_rec_t assoc_rec;
 			memset(&assoc_rec, 0,
 			       sizeof(slurmdb_association_rec_t));
@@ -8701,7 +8701,7 @@ extern int send_jobs_to_accounting(void)
 			assoc_rec.partition = job_ptr->partition;
 			assoc_rec.acct      = job_ptr->account;
 
-			if(assoc_mgr_fill_in_assoc(
+			if (assoc_mgr_fill_in_assoc(
 				   acct_db_conn, &assoc_rec,
 				   accounting_enforce,
 				   (slurmdb_association_rec_t **)
@@ -8723,7 +8723,7 @@ extern int send_jobs_to_accounting(void)
 		}
 
 		/* we only want active, un accounted for jobs */
-		if(job_ptr->db_index || IS_JOB_FINISHED(job_ptr))
+		if (job_ptr->db_index || IS_JOB_FINISHED(job_ptr))
 			continue;
 
 		debug("first reg: starting job %u in accounting",
@@ -8921,11 +8921,11 @@ static int _checkpoint_job_record (struct job_record *job_ptr, char *image_dir)
 		(void) unlink(new_file);
 	else {			/* file shuffle */
 		(void) unlink(old_file);
-		if(link(ckpt_file, old_file))
+		if (link(ckpt_file, old_file))
 			debug4("unable to create link for %s -> %s: %m",
 			       ckpt_file, old_file);
 		(void) unlink(ckpt_file);
-		if(link(new_file, ckpt_file))
+		if (link(new_file, ckpt_file))
 			debug4("unable to create link for %s -> %s: %m",
 			       new_file, ckpt_file);
 		(void) unlink(new_file);

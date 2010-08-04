@@ -130,7 +130,7 @@ static pgsql_db_info_t *_pgsql_jobcomp_create_db_info()
 	db_info->port = slurm_get_jobcomp_port();
 	/* it turns out it is better if using defaults to let postgres
 	   handle them on it's own terms */
-	if(!db_info->port) {
+	if (!db_info->port) {
 		db_info->port = DEFAULT_PGSQL_PORT;
 		slurm_set_jobcomp_port(db_info->port);
 	}
@@ -149,7 +149,7 @@ static int _pgsql_jobcomp_check_tables(char *user)
 				     "where tableowner='%s' "
 				     "and tablename !~ '^pg_+'", user);
 
-	if(!(result =
+	if (!(result =
 	     pgsql_db_query_ret(jobcomp_pgsql_db, query))) {
 		xfree(query);
 		return SLURM_ERROR;
@@ -157,14 +157,14 @@ static int _pgsql_jobcomp_check_tables(char *user)
 	xfree(query);
 
 	for (i = 0; i < PQntuples(result); i++) {
-		if(!job_found
+		if (!job_found
 		   && !strcmp(jobcomp_table, PQgetvalue(result, i, 0)))
 			job_found = 1;
 	}
 	PQclear(result);
 
-	if(!job_found)
-		if(pgsql_db_create_table(jobcomp_pgsql_db, jobcomp_table,
+	if (!job_found)
+		if (pgsql_db_create_table(jobcomp_pgsql_db, jobcomp_table,
 					 jobcomp_table_fields,
 					 ")") == SLURM_ERROR)
 			return SLURM_ERROR;
@@ -239,7 +239,7 @@ extern int init ( void )
 {
 	static int first = 1;
 
-	if(first) {
+	if (first) {
 		/* since this can be loaded from many different places
 		   only tell us once. */
 		verbose("%s loaded", plugin_name);
@@ -267,14 +267,14 @@ extern int slurm_jobcomp_set_location(char *location)
 	char *db_name = NULL;
 	int i = 0;
 
-	if(jobcomp_pgsql_db && PQstatus(jobcomp_pgsql_db) == CONNECTION_OK)
+	if (jobcomp_pgsql_db && PQstatus(jobcomp_pgsql_db) == CONNECTION_OK)
 		return SLURM_SUCCESS;
 
-	if(!location)
+	if (!location)
 		db_name = DEFAULT_JOB_COMP_DB;
 	else {
 		while(location[i]) {
-			if(location[i] == '.' || location[i] == '/') {
+			if (location[i] == '.' || location[i] == '/') {
 				debug("%s doesn't look like a database "
 				      "name using %s",
 				      location, DEFAULT_JOB_COMP_DB);
@@ -282,7 +282,7 @@ extern int slurm_jobcomp_set_location(char *location)
 			}
 			i++;
 		}
-		if(location[i])
+		if (location[i])
 			db_name = DEFAULT_JOB_COMP_DB;
 		else
 			db_name = location;
@@ -296,7 +296,7 @@ extern int slurm_jobcomp_set_location(char *location)
 
 	destroy_pgsql_db_info(db_info);
 
-	if(rc == SLURM_SUCCESS)
+	if (rc == SLURM_SUCCESS)
 		debug("Jobcomp database init finished");
 	else
 		debug("Jobcomp database init failed");
@@ -314,9 +314,9 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 	char *query = NULL;
 	uint32_t time_limit, start_time, end_time;
 
-	if(!jobcomp_pgsql_db || PQstatus(jobcomp_pgsql_db) != CONNECTION_OK) {
+	if (!jobcomp_pgsql_db || PQstatus(jobcomp_pgsql_db) != CONNECTION_OK) {
 		char *loc = slurm_get_jobcomp_loc();
-		if(slurm_jobcomp_set_location(loc) == SLURM_ERROR) {
+		if (slurm_jobcomp_set_location(loc) == SLURM_ERROR) {
 			xfree(loc);
 			return SLURM_ERROR;
 		}
@@ -379,21 +379,21 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 		"starttime, endtime, nodecnt",
 		jobcomp_table);
 
-	if(job_ptr->nodes)
+	if (job_ptr->nodes)
 		xstrcat(query, ", nodelist");
-	if(connect_type)
+	if (connect_type)
 		xstrcat(query, ", connect_type");
-	if(reboot)
+	if (reboot)
 		xstrcat(query, ", reboot");
-	if(rotate)
+	if (rotate)
 		xstrcat(query, ", rotate");
-	if(job_ptr->details && (job_ptr->details->max_cpus != NO_VAL))
+	if (job_ptr->details && (job_ptr->details->max_cpus != NO_VAL))
 		xstrcat(query, ", maxprocs");
-	if(geometry)
+	if (geometry)
 		xstrcat(query, ", geometry");
-	if(start)
+	if (start)
 		xstrcat(query, ", start");
-	if(blockid)
+	if (blockid)
 		xstrcat(query, ", blockid");
 
 	xstrfmtcat(query, ") values (%u, %u, '%s', %u, '%s', \"%s\", %d, %u, "
@@ -403,32 +403,32 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 		   job_state, job_ptr->total_cpus, job_ptr->partition, lim_str,
 		   start_time, end_time, job_ptr->node_cnt);
 
-	if(job_ptr->nodes)
+	if (job_ptr->nodes)
 		xstrfmtcat(query, ", '%s'", job_ptr->nodes);
 
-	if(connect_type) {
+	if (connect_type) {
 		xstrfmtcat(query, ", '%s'", connect_type);
 		xfree(connect_type);
 	}
-	if(reboot) {
+	if (reboot) {
 		xstrfmtcat(query, ", '%s'", reboot);
 		xfree(reboot);
 	}
-	if(rotate) {
+	if (rotate) {
 		xstrfmtcat(query, ", '%s'", rotate);
 		xfree(rotate);
 	}
-	if(job_ptr->details && (job_ptr->details->max_cpus != NO_VAL))
+	if (job_ptr->details && (job_ptr->details->max_cpus != NO_VAL))
 		xstrfmtcat(query, ", '%u'", job_ptr->details->max_cpus);
-	if(geometry) {
+	if (geometry) {
 		xstrfmtcat(query, ", '%s'", geometry);
 		xfree(geometry);
 	}
-	if(start) {
+	if (start) {
 		xstrfmtcat(query, ", '%s'", start);
 		xfree(start);
 	}
-	if(blockid) {
+	if (blockid) {
 		xstrfmtcat(query, ", '%s'", blockid);
 		xfree(blockid);
 	}
@@ -461,9 +461,9 @@ extern List slurm_jobcomp_get_jobs(slurmdb_job_cond_t *job_cond)
 {
 	List job_list = NULL;
 
-	if(!jobcomp_pgsql_db || PQstatus(jobcomp_pgsql_db) != CONNECTION_OK) {
+	if (!jobcomp_pgsql_db || PQstatus(jobcomp_pgsql_db) != CONNECTION_OK) {
 		char *loc = slurm_get_jobcomp_loc();
-		if(slurm_jobcomp_set_location(loc) == SLURM_ERROR) {
+		if (slurm_jobcomp_set_location(loc) == SLURM_ERROR) {
 			xfree(loc);
 			return NULL;
 		}
@@ -480,9 +480,9 @@ extern List slurm_jobcomp_get_jobs(slurmdb_job_cond_t *job_cond)
  */
 extern int slurm_jobcomp_archive(slurmdb_archive_cond_t *arch_cond)
 {
-	if(!jobcomp_pgsql_db || PQstatus(jobcomp_pgsql_db) != CONNECTION_OK) {
+	if (!jobcomp_pgsql_db || PQstatus(jobcomp_pgsql_db) != CONNECTION_OK) {
 		char *loc = slurm_get_jobcomp_loc();
-		if(slurm_jobcomp_set_location(loc) == SLURM_ERROR) {
+		if (slurm_jobcomp_set_location(loc) == SLURM_ERROR) {
 			xfree(loc);
 			return SLURM_ERROR;
 		}
