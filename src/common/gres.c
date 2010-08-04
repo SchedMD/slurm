@@ -3168,7 +3168,7 @@ extern int gres_plugin_step_state_unpack(List *gres_list, Buf buffer,
 		safe_unpack8(&has_file, buffer);
 		if (has_file) {
 			gres_step_ptr->gres_bit_alloc =
-				xmalloc(sizeof(bitstr_t) *
+				xmalloc(sizeof(bitstr_t *) *
 					gres_step_ptr->node_cnt);
 			for (i=0; i<gres_step_ptr->node_cnt; i++) {
 				unpack_bit_str(&gres_step_ptr->gres_bit_alloc[i],
