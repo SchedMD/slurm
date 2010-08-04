@@ -236,7 +236,7 @@ struct part_record *create_part_record(void)
 	part_ptr->max_share         = default_part.max_share;
 	part_ptr->preempt_mode      = default_part.preempt_mode;
 	part_ptr->priority          = default_part.priority;
-	if (part_max_priority)
+	if(part_max_priority)
 		part_ptr->norm_priority = (double)default_part.priority
 			/ (double)part_max_priority;
 	part_ptr->node_bitmap       = NULL;
@@ -358,11 +358,11 @@ int dump_all_part_state(void)
 		(void) unlink(new_file);
 	else {			/* file shuffle */
 		(void) unlink(old_file);
-		if (link(reg_file, old_file))
+		if(link(reg_file, old_file))
 			debug4("unable to create link for %s -> %s: %m",
 			       reg_file, old_file);
 		(void) unlink(reg_file);
-		if (link(new_file, reg_file))
+		if(link(new_file, reg_file))
 			debug4("unable to create link for %s -> %s: %m",
 			       new_file, reg_file);
 		(void) unlink(new_file);
@@ -500,10 +500,10 @@ int load_all_part_state(void)
 
 	safe_unpackstr_xmalloc( &ver_str, &name_len, buffer);
 	debug3("Version string in part_state header is %s", ver_str);
-	if (ver_str) {
-		if (!strcmp(ver_str, PART_STATE_VERSION)) {
+	if(ver_str) {
+		if(!strcmp(ver_str, PART_STATE_VERSION)) {
 			protocol_version = SLURM_PROTOCOL_VERSION;
-		} else if (!strcmp(ver_str, PART_2_1_STATE_VERSION)) {
+		} else if(!strcmp(ver_str, PART_2_1_STATE_VERSION)) {
 			protocol_version = SLURM_2_1_PROTOCOL_VERSION;
 		}
 	}
@@ -520,7 +520,7 @@ int load_all_part_state(void)
 	safe_unpack_time(&time, buffer);
 
 	while (remaining_buf(buffer) > 0) {
-		if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
+		if(protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
 			safe_unpackstr_xmalloc(&part_name, &name_len, buffer);
 			safe_unpack32(&max_time, buffer);
 			safe_unpack32(&default_time, buffer);
@@ -532,7 +532,7 @@ int load_all_part_state(void)
 			safe_unpack16(&preempt_mode, buffer);
 			safe_unpack16(&priority,     buffer);
 
-			if (priority > part_max_priority)
+			if(priority > part_max_priority)
 				part_max_priority = priority;
 
 			safe_unpack16(&state_up, buffer);
@@ -925,7 +925,7 @@ void pack_part(struct part_record *part_ptr, Buf buffer,
 {
 	uint32_t altered;
 
-	if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
+	if(protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
 		if (default_part_loc == part_ptr)
 			part_ptr->flags |= PART_FLAG_DEFAULT;
 		else
@@ -1176,7 +1176,7 @@ extern int update_part (update_part_msg_t * part_desc, bool create_flag)
 		   the normalized priorities of all the other
 		   partitions.  If not then just set this partitions.
 		*/
-		if (part_ptr->priority > part_max_priority) {
+		if(part_ptr->priority > part_max_priority) {
 			ListIterator itr = list_iterator_create(part_list);
 			struct part_record *part2 = NULL;
 
@@ -1334,7 +1334,7 @@ extern int validate_alloc_node(struct part_record *part_ptr, char* alloc_node)
  	status=hostlist_find(hl,alloc_node);
  	hostlist_destroy(hl);
 
- 	if (status==-1)
+ 	if(status==-1)
 		status=0;
  	else
 		status=1;

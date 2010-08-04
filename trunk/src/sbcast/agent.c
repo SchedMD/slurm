@@ -149,7 +149,7 @@ extern void send_rpc(file_bcast_msg_t *bcast_msg,
 		while (i < sbcast_cred->node_cnt) {
 			int j = 0;
 			name = hostlist_shift(hl);
-			if (!name) {
+			if(!name) {
 				debug3("no more nodes to send to");
 				break;
 			}
@@ -158,7 +158,7 @@ extern void send_rpc(file_bcast_msg_t *bcast_msg,
 			i++;
 			for(j = 0; j < span[threads_used]; j++) {
 				name = hostlist_shift(hl);
-				if (!name)
+				if(!name)
 					break;
 				hostlist_push(new_hl, name);
 				free(name);

@@ -120,16 +120,16 @@ extern void parse_command_line(int argc, char *argv[])
 			 * pset size.  This number should be large enough.
 			 */
 			params.io_bit = bit_alloc(128);
-			if (bit_unfmt(params.io_bit, optarg) == -1) {
+			if(bit_unfmt(params.io_bit, optarg) == -1) {
 				error("'%s' invalid entry for --ionodes",
 				      optarg);
 				exit(1);
 			}
 			break;
 		case 'M':
-			if (params.clusters)
+			if(params.clusters)
 				list_destroy(params.clusters);
-			if (!(params.clusters =
+			if(!(params.clusters =
 			     slurmdb_get_info_cluster(optarg))) {
 				error("'%s' invalid entry for --cluster",
 				      optarg);

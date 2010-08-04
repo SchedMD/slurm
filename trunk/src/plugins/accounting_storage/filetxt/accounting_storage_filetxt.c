@@ -137,7 +137,7 @@ static int _print_record(struct job_record *job_ptr,
 {
 	static int   rc=SLURM_SUCCESS;
 	char *block_id = NULL;
-	if (!job_ptr->details) {
+	if(!job_ptr->details) {
 		error("job_acct: job=%u doesn't exist", job_ptr->job_id);
 		return SLURM_ERROR;
 	}
@@ -149,7 +149,7 @@ static int _print_record(struct job_record *job_ptr,
 			     &block_id);
 
 #endif
-	if (!block_id)
+	if(!block_id)
 		block_id = xstrdup("-");
 
 	slurm_mutex_lock( &logfile_lock );
@@ -182,7 +182,7 @@ extern int init ( void )
 	mode_t		prot = 0600;
 	struct stat	statbuf;
 
-	if (slurmdbd_conf) {
+	if(slurmdbd_conf) {
 		fatal("The filetxt plugin should not "
 		      "be run from the slurmdbd.  "
 		      "Please use a database plugin");
@@ -193,10 +193,10 @@ extern int init ( void )
 	 * file in append mode stats could fail on it if the file
 	 * isn't world writable.
 	 */
-	if (first && (getuid() == slurm_get_slurm_user_id())) {
+	if(first && (getuid() == slurm_get_slurm_user_id())) {
 		debug2("slurmdb_init() called");
 		log_file = slurm_get_accounting_storage_loc();
-		if (!log_file)
+		if(!log_file)
 			log_file = xstrdup(DEFAULT_STORAGE_LOC);
 		slurm_mutex_lock( &logfile_lock );
 		if (LOGFILE)
@@ -526,7 +526,7 @@ extern int jobacct_storage_p_job_start(void *db_conn,
 	long	priority;
 	int track_steps = 0;
 
-	if (!storage_init) {
+	if(!storage_init) {
 		debug("jobacct init was not called or it failed");
 		return SLURM_ERROR;
 	}
@@ -563,7 +563,7 @@ extern int jobacct_storage_p_job_start(void *db_conn,
 	else
 		nodes = "(null)";
 
-	if (job_ptr->batch_flag)
+	if(job_ptr->batch_flag)
 		track_steps = 1;
 
 	job_ptr->requid = -1; /* force to -1 for stats to know this
@@ -591,7 +591,7 @@ extern int jobacct_storage_p_job_complete(void *db_conn,
 	uint16_t job_state;
 	int duration;
 
-	if (!storage_init) {
+	if(!storage_init) {
 		debug("jobacct init was not called or it failed");
 		return SLURM_ERROR;
 	}
@@ -639,20 +639,20 @@ extern int jobacct_storage_p_step_start(void *db_conn,
 	float float_tmp = 0;
 	char *account;
 
-	if (!storage_init) {
+	if(!storage_init) {
 		debug("jobacct init was not called or it failed");
 		return SLURM_ERROR;
 	}
 
 #ifdef HAVE_BG
-	if (step_ptr->job_ptr->details)
+	if(step_ptr->job_ptr->details)
 		cpus = step_ptr->job_ptr->details->min_cpus;
 	else
 		cpus = step_ptr->job_ptr->cpu_cnt;
 	select_g_select_jobinfo_get(step_ptr->job_ptr->select_jobinfo,
 			     SELECT_JOBDATA_IONODES,
 			     &ionodes);
-	if (ionodes) {
+	if(ionodes) {
 		snprintf(node_list, BUFFER_SIZE,
 			 "%s[%s]", step_ptr->job_ptr->nodes, ionodes);
 		xfree(ionodes);
@@ -661,7 +661,7 @@ extern int jobacct_storage_p_step_start(void *db_conn,
 			 step_ptr->job_ptr->nodes);
 
 #else
-	if (!step_ptr->step_layout || !step_ptr->step_layout->task_cnt) {
+	if(!step_ptr->step_layout || !step_ptr->step_layout->task_cnt) {
 		cpus = step_ptr->job_ptr->total_cpus;
 		snprintf(node_list, BUFFER_SIZE, "%s", step_ptr->job_ptr->nodes);
 	} else {
@@ -753,7 +753,7 @@ extern int jobacct_storage_p_step_complete(void *db_conn,
 	char *account;
 	uint32_t exit_code;
 
-	if (!storage_init) {
+	if(!storage_init) {
 		debug("jobacct init was not called or it failed");
 		return SLURM_ERROR;
 	}
@@ -779,14 +779,14 @@ extern int jobacct_storage_p_step_complete(void *db_conn,
 		comp_status = JOB_COMPLETE;
 
 #ifdef HAVE_BG
-	if (step_ptr->job_ptr->details)
+	if(step_ptr->job_ptr->details)
 		cpus = step_ptr->job_ptr->details->min_cpus;
 	else
 		cpus = step_ptr->job_ptr->cpu_cnt;
 	select_g_select_jobinfo_get(step_ptr->job_ptr->select_jobinfo,
 			     SELECT_JOBDATA_IONODES,
 			     &ionodes);
-	if (ionodes) {
+	if(ionodes) {
 		snprintf(node_list, BUFFER_SIZE,
 			 "%s[%s]", step_ptr->job_ptr->nodes, ionodes);
 		xfree(ionodes);
@@ -795,7 +795,7 @@ extern int jobacct_storage_p_step_complete(void *db_conn,
 			 step_ptr->job_ptr->nodes);
 
 #else
-	if (!step_ptr->step_layout || !step_ptr->step_layout->task_cnt) {
+	if(!step_ptr->step_layout || !step_ptr->step_layout->task_cnt) {
 		cpus = step_ptr->job_ptr->total_cpus;
 		snprintf(node_list, BUFFER_SIZE, "%s", step_ptr->job_ptr->nodes);
 
@@ -806,7 +806,7 @@ extern int jobacct_storage_p_step_complete(void *db_conn,
 	}
 #endif
 	/* figure out the ave of the totals sent */
-	if (cpus > 0) {
+	if(cpus > 0) {
 		ave_vsize = jobacct->tot_vsize;
 		ave_vsize /= cpus;
 		ave_rss = jobacct->tot_rss;
@@ -817,7 +817,7 @@ extern int jobacct_storage_p_step_complete(void *db_conn,
 		ave_cpu /= cpus;
 	}
 
-	if (jobacct->min_cpu != (uint32_t)NO_VAL) {
+	if(jobacct->min_cpu != (uint32_t)NO_VAL) {
 		ave_cpu2 = jobacct->min_cpu;
 	}
 
@@ -892,13 +892,13 @@ extern int jobacct_storage_p_suspend(void *db_conn,
 	static time_t	now = 0;
 	static time_t	temp = 0;
 	int elapsed;
-	if (!storage_init) {
+	if(!storage_init) {
 		debug("jobacct init was not called or it failed");
 		return SLURM_ERROR;
 	}
 
 	/* tell what time has passed */
-	if (!now)
+	if(!now)
 		now = job_ptr->start_time;
 	temp = now;
 	now = time(NULL);

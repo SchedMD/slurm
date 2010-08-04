@@ -73,7 +73,7 @@ typedef struct {
 static void _destroy_local_id_usage(void *object)
 {
 	local_id_usage_t *a_usage = (local_id_usage_t *)object;
-	if (a_usage) {
+	if(a_usage) {
 		xfree(a_usage);
 	}
 }
@@ -81,7 +81,7 @@ static void _destroy_local_id_usage(void *object)
 static void _destroy_local_cluster_usage(void *object)
 {
 	local_cluster_usage_t *c_usage = (local_cluster_usage_t *)object;
-	if (c_usage) {
+	if(c_usage) {
 		xfree(c_usage);
 	}
 }
@@ -89,8 +89,8 @@ static void _destroy_local_cluster_usage(void *object)
 static void _destroy_local_resv_usage(void *object)
 {
 	local_resv_usage_t *r_usage = (local_resv_usage_t *)object;
-	if (r_usage) {
-		if (r_usage->local_assocs)
+	if(r_usage) {
+		if(r_usage->local_assocs)
 			list_destroy(r_usage->local_assocs);
 		xfree(r_usage);
 	}
@@ -108,10 +108,10 @@ static int _process_purge(mysql_conn_t *mysql_conn,
 	/* if we didn't ask for archive data return here and don't do
 	   anything extra just rollup */
 
-	if (!archive_data)
+	if(!archive_data)
 		return SLURM_SUCCESS;
 
-	if (!slurmdbd_conf)
+	if(!slurmdbd_conf)
 		return SLURM_SUCCESS;
 
 	memset(&job_cond, 0, sizeof(job_cond));
@@ -119,19 +119,19 @@ static int _process_purge(mysql_conn_t *mysql_conn,
 	arch_cond.archive_dir = slurmdbd_conf->archive_dir;
 	arch_cond.archive_script = slurmdbd_conf->archive_script;
 
-	if (purge_period & slurmdbd_conf->purge_event)
+	if(purge_period & slurmdbd_conf->purge_event)
 		arch_cond.purge_event = slurmdbd_conf->purge_event;
 	else
 		arch_cond.purge_event = NO_VAL;
-	if (purge_period & slurmdbd_conf->purge_job)
+	if(purge_period & slurmdbd_conf->purge_job)
 		arch_cond.purge_job = slurmdbd_conf->purge_job;
 	else
 		arch_cond.purge_job = NO_VAL;
-	if (purge_period & slurmdbd_conf->purge_step)
+	if(purge_period & slurmdbd_conf->purge_step)
 		arch_cond.purge_step = slurmdbd_conf->purge_step;
 	else
 		arch_cond.purge_step = NO_VAL;
-	if (purge_period & slurmdbd_conf->purge_suspend)
+	if(purge_period & slurmdbd_conf->purge_suspend)
 		arch_cond.purge_suspend = slurmdbd_conf->purge_suspend;
 	else
 		arch_cond.purge_suspend = NO_VAL;
@@ -304,7 +304,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 
 		debug3("%d(%s:%d) query\n%s",
 		       mysql_conn->conn, THIS_FILE, __LINE__, query);
-		if (!(result = mysql_db_query_ret(
+		if(!(result = mysql_db_query_ret(
 			     mysql_conn->db_conn, query, 0))) {
 			xfree(query);
 			return SLURM_ERROR;
@@ -316,28 +316,28 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			int row_end = atoi(row[EVENT_REQ_END]);
 			int row_cpu = atoi(row[EVENT_REQ_CPU]);
 
-			if (row_start < curr_start)
+			if(row_start < curr_start)
 				row_start = curr_start;
 
-			if (!row_end || row_end > curr_end)
+			if(!row_end || row_end > curr_end)
 				row_end = curr_end;
 
 			/* Don't worry about it if the time is less
 			 * than 1 second.
 			 */
-			if ((row_end - row_start) < 1)
+			if((row_end - row_start) < 1)
 				continue;
 
 			/* this means we are a cluster registration
 			   entry */
-			if (!row[EVENT_REQ_NAME][0]) {
+			if(!row[EVENT_REQ_NAME][0]) {
 				/* if the cpu count changes we will
 				 * only care about the last cpu count but
 				 * we will keep a total of the time for
 				 * all cpus to get the correct cpu time
 				 * for the entire period.
 				 */
-				if (!c_usage) {
+				if(!c_usage) {
 					c_usage = xmalloc(
 						sizeof(local_cluster_usage_t));
 					c_usage->cpu_count = row_cpu;
@@ -360,15 +360,15 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			   are looking for.  If it was during this
 			   time period we would already have it.
 			*/
-			if (c_usage) {
+			if(c_usage) {
 				int local_start = row_start;
 				int local_end = row_end;
-				if (c_usage->start > local_start)
+				if(c_usage->start > local_start)
 					local_start = c_usage->start;
-				if (c_usage->end < local_end)
+				if(c_usage->end < local_end)
 					local_end = c_usage->end;
 
-				if ((local_end - local_start) > 0) {
+				if((local_end - local_start) > 0) {
 					seconds = (local_end - local_start);
 
 /* 					info("node %s adds " */
@@ -395,7 +395,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 
 		debug3("%d(%s:%d) query\n%s",
 		       mysql_conn->conn, THIS_FILE, __LINE__, query);
-		if (!(result = mysql_db_query_ret(
+		if(!(result = mysql_db_query_ret(
 			     mysql_conn->db_conn, query, 0))) {
 			xfree(query);
 			return SLURM_ERROR;
@@ -424,16 +424,16 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			int row_cpu = atoi(row[RESV_REQ_CPU]);
 			int row_flags = atoi(row[RESV_REQ_FLAGS]);
 
-			if (row_start < curr_start)
+			if(row_start < curr_start)
 				row_start = curr_start;
 
-			if (!row_end || row_end > curr_end)
+			if(!row_end || row_end > curr_end)
 				row_end = curr_end;
 
 			/* Don't worry about it if the time is less
 			 * than 1 second.
 			 */
-			if ((row_end - row_start) < 1)
+			if((row_end - row_start) < 1)
 				continue;
 
 			r_usage = xmalloc(sizeof(local_resv_usage_t));
@@ -461,9 +461,9 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			   registered.  This continue should rarely if
 			   ever happen.
 			*/
-			if (!c_usage)
+			if(!c_usage)
 				continue;
-			else if (row_flags & RESERVE_FLAG_MAINT)
+			else if(row_flags & RESERVE_FLAG_MAINT)
 				c_usage->pd_cpu += r_usage->total_time;
 			else
 				c_usage->a_cpu += r_usage->total_time;
@@ -490,7 +490,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 
 		debug3("%d(%s:%d) query\n%s",
 		       mysql_conn->conn, THIS_FILE, __LINE__, query);
-		if (!(result = mysql_db_query_ret(
+		if(!(result = mysql_db_query_ret(
 			     mysql_conn->db_conn, query, 0))) {
 			xfree(query);
 			return SLURM_ERROR;
@@ -509,21 +509,21 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			int row_rcpu = atoi(row[JOB_REQ_RCPU]);
 			seconds = 0;
 
-			if (row_start && (row_start < curr_start))
+			if(row_start && (row_start < curr_start))
 				row_start = curr_start;
 
-			if (!row_start && row_end)
+			if(!row_start && row_end)
 				row_start = row_end;
 
-			if (!row_end || row_end > curr_end)
+			if(!row_end || row_end > curr_end)
 				row_end = curr_end;
 
-			if (!row_start || ((row_end - row_start) < 1))
+			if(!row_start || ((row_end - row_start) < 1))
 				goto calc_cluster;
 
 			seconds = (row_end - row_start);
 
-			if (row[JOB_REQ_SUSPENDED]) {
+			if(row[JOB_REQ_SUSPENDED]) {
 				MYSQL_RES *result2 = NULL;
 				MYSQL_ROW row2;
 				/* get the suspended time for this job */
@@ -540,7 +540,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 				debug4("%d(%s:%d) query\n%s",
 				       mysql_conn->conn, THIS_FILE,
 				       __LINE__, query);
-				if (!(result2 = mysql_db_query_ret(
+				if(!(result2 = mysql_db_query_ret(
 					     mysql_conn->db_conn,
 					     query, 0))) {
 					xfree(query);
@@ -553,28 +553,28 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 					int local_end =
 						atoi(row2[SUSPEND_REQ_END]);
 
-					if (!local_start)
+					if(!local_start)
 						continue;
 
-					if (row_start > local_start)
+					if(row_start > local_start)
 						local_start = row_start;
-					if (row_end < local_end)
+					if(row_end < local_end)
 						local_end = row_end;
 
-					if ((local_end - local_start) < 1)
+					if((local_end - local_start) < 1)
 						continue;
 
 					seconds -= (local_end - local_start);
 				}
 				mysql_free_result(result2);
 			}
-			if (seconds < 1) {
+			if(seconds < 1) {
 				debug4("This job (%u) was suspended "
 				       "the entire hour", job_id);
 				continue;
 			}
 
-			if (last_id != assoc_id) {
+			if(last_id != assoc_id) {
 				a_usage = xmalloc(sizeof(local_id_usage_t));
 				a_usage->id = assoc_id;
 				list_append(assoc_usage_list, a_usage);
@@ -583,17 +583,17 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 
 			a_usage->a_cpu += seconds * row_acpu;
 
-			if (!track_wckey)
+			if(!track_wckey)
 				goto calc_cluster;
 
 			/* do the wckey calculation */
-			if (last_wckeyid != wckey_id) {
+			if(last_wckeyid != wckey_id) {
 				list_iterator_reset(w_itr);
 				while((w_usage = list_next(w_itr)))
-					if (w_usage->id == wckey_id)
+					if(w_usage->id == wckey_id)
 						break;
 
-				if (!w_usage) {
+				if(!w_usage) {
 					w_usage = xmalloc(
 						sizeof(local_id_usage_t));
 					w_usage->id = wckey_id;
@@ -608,8 +608,8 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 		calc_cluster:
 
 			/* first figure out the reservation */
-			if (resv_id) {
-				if (seconds <= 0)
+			if(resv_id) {
+				if(seconds <= 0)
 					continue;
 				/* Since we have already added the
 				   entire reservation as used time on
@@ -634,16 +634,16 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 					   sure all the reservations
 					   are checked to see if such
 					   a thing has happened */
-					if (r_usage->id == resv_id) {
+					if(r_usage->id == resv_id) {
 						int temp_end = row_end;
 						int temp_start = row_start;
-						if (r_usage->start > temp_start)
+						if(r_usage->start > temp_start)
 							temp_start =
 								r_usage->start;
-						if (r_usage->end < temp_end)
+						if(r_usage->end < temp_end)
 							temp_end = r_usage->end;
 
-						if ((temp_end - temp_start)
+						if((temp_end - temp_start)
 						   > 0) {
 							r_usage->a_cpu +=
 								(temp_end
@@ -659,10 +659,10 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			   registered.  This continue should rarely if
 			   ever happen.
 			*/
-			if (!c_usage)
+			if(!c_usage)
 				continue;
 
-			if (row_start && (seconds > 0)) {
+			if(row_start && (seconds > 0)) {
 /* 					info("%d assoc %d adds " */
 /* 					     "(%d)(%d-%d) * %d = %d " */
 /* 					     "to %d", */
@@ -678,15 +678,15 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			}
 
 			/* now reserved time */
-			if (!row_start || (row_start >= c_usage->start)) {
+			if(!row_start || (row_start >= c_usage->start)) {
 				row_end = row_start;
 				row_start = row_eligible;
-				if (c_usage->start > row_start)
+				if(c_usage->start > row_start)
 					row_start = c_usage->start;
-				if (c_usage->end < row_end)
+				if(c_usage->end < row_end)
 					row_end = c_usage->end;
 
-				if ((row_end - row_start) > 0) {
+				if((row_end - row_start) > 0) {
 					seconds = (row_end - row_start)
 						* row_rcpu;
 
@@ -715,7 +715,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			char *assoc = NULL;
 			ListIterator tmp_itr = NULL;
 
-			if (idle <= 0)
+			if(idle <= 0)
 				continue;
 
 			/* now divide that time by the number of
@@ -728,17 +728,17 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			tmp_itr = list_iterator_create(r_usage->local_assocs);
 			while((assoc = list_next(tmp_itr))) {
 				int associd = atoi(assoc);
-				if (last_id != associd) {
+				if(last_id != associd) {
 					list_iterator_reset(a_itr);
 					while((a_usage = list_next(a_itr))) {
-						if (!a_usage->id == associd) {
+						if(!a_usage->id == associd) {
 							last_id = a_usage->id;
 							break;
 						}
 					}
 				}
 
-				if (!a_usage) {
+				if(!a_usage) {
 					a_usage = xmalloc(
 						sizeof(local_id_usage_t));
 					a_usage->id = associd;
@@ -758,7 +758,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 
 			/* sanity check to make sure we don't have more
 			   allocated cpus than possible. */
-			if (c_usage->total_time < c_usage->a_cpu) {
+			if(c_usage->total_time < c_usage->a_cpu) {
 				char *start_char = xstrdup(ctime(&curr_start));
 				char *end_char = xstrdup(ctime(&curr_end));
 				start_char[strlen(start_char)-1] = '\0';
@@ -778,7 +778,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 
 			/* Make sure the total time we care about
 			   doesn't go over the limit */
-			if (c_usage->total_time < (total_used)) {
+			if(c_usage->total_time < (total_used)) {
 				char *start_char = xstrdup(ctime(&curr_start));
 				char *end_char = xstrdup(ctime(&curr_end));
 				int64_t overtime;
@@ -802,14 +802,14 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 				overtime = (int64_t)(c_usage->total_time -
 						     (c_usage->a_cpu
 						      + c_usage->d_cpu));
-				if (overtime < 0)
+				if(overtime < 0)
 					c_usage->d_cpu += overtime;
 
 				overtime = (int64_t)(c_usage->total_time -
 						     (c_usage->a_cpu
 						      + c_usage->d_cpu
 						      + c_usage->pd_cpu));
-				if (overtime < 0)
+				if(overtime < 0)
 					c_usage->pd_cpu += overtime;
 
 				total_used = c_usage->a_cpu +
@@ -830,13 +830,13 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			 */
 /* 			info("%s got idle of %lld", c_usage->name,  */
 /* 			     (int64_t)c_usage->i_cpu); */
-			if ((int64_t)c_usage->i_cpu < 0) {
+			if((int64_t)c_usage->i_cpu < 0) {
 /* 				info("got %d %d %d", c_usage->r_cpu, */
 /* 				     c_usage->i_cpu, c_usage->o_cpu); */
 				c_usage->r_cpu += (int64_t)c_usage->i_cpu;
 				c_usage->o_cpu -= (int64_t)c_usage->i_cpu;
 				c_usage->i_cpu = 0;
-				if ((int64_t)c_usage->r_cpu < 0)
+				if((int64_t)c_usage->r_cpu < 0)
 					c_usage->r_cpu = 0;
 			}
 
@@ -852,7 +852,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 /* 			     c_usage->total_time, */
 /* 			     ctime(&c_usage->start)); */
 /* 			info("to %s", ctime(&c_usage->end)); */
-			if (query) {
+			if(query) {
 				xstrfmtcat(query,
 					   ", (%d, %d, %d, %d, "
 					   "%llu, %llu, %llu, "
@@ -889,7 +889,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 		   all at once in the end proves to be faster.  Just FYI
 		   so we don't go testing again and again.
 		*/
-		if (query) {
+		if(query) {
 			xstrfmtcat(query,
 				   " on duplicate key update "
 				   "mod_time=%d, cpu_count=VALUES(cpu_count), "
@@ -904,7 +904,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			       mysql_conn->conn, THIS_FILE, __LINE__, query);
 			rc = mysql_db_query(mysql_conn->db_conn, query);
 			xfree(query);
-			if (rc != SLURM_SUCCESS) {
+			if(rc != SLURM_SUCCESS) {
 				error("Couldn't add cluster hour rollup");
 				goto end_it;
 			}
@@ -915,7 +915,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 /* 			info("association (%d) %d alloc %d", */
 /* 			     a_usage->id, last_id, */
 /* 			     a_usage->a_cpu); */
-			if (query) {
+			if(query) {
 				xstrfmtcat(query,
 					   ", (%d, %d, %d, %d, %llu)",
 					   now, now,
@@ -934,7 +934,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 					   a_usage->a_cpu);
 			}
 		}
-		if (query) {
+		if(query) {
 			xstrfmtcat(query,
 				   " on duplicate key update "
 				   "mod_time=%d, "
@@ -945,13 +945,13 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			       mysql_conn->conn, THIS_FILE, __LINE__, query);
 			rc = mysql_db_query(mysql_conn->db_conn, query);
 			xfree(query);
-			if (rc != SLURM_SUCCESS) {
+			if(rc != SLURM_SUCCESS) {
 				error("Couldn't add assoc hour rollup");
 				goto end_it;
 			}
 		}
 
-		if (!track_wckey)
+		if(!track_wckey)
 			goto end_loop;
 
 		list_iterator_reset(w_itr);
@@ -959,7 +959,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 /* 			info("association (%d) %d alloc %d", */
 /* 			     w_usage->id, last_id, */
 /* 			     w_usage->a_cpu); */
-			if (query) {
+			if(query) {
 				xstrfmtcat(query,
 					   ", (%d, %d, %d, %d, %llu)",
 					   now, now,
@@ -978,7 +978,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 					   w_usage->a_cpu);
 			}
 		}
-		if (query) {
+		if(query) {
 			xstrfmtcat(query,
 				   " on duplicate key update "
 				   "mod_time=%d, "
@@ -989,7 +989,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			       mysql_conn->conn, THIS_FILE, __LINE__, query);
 			rc = mysql_db_query(mysql_conn->db_conn, query);
 			xfree(query);
-			if (rc != SLURM_SUCCESS) {
+			if(rc != SLURM_SUCCESS) {
 				error("Couldn't add wckey hour rollup");
 				goto end_it;
 			}
@@ -1023,7 +1023,7 @@ end_it:
 
 	/* go check to see if we archive and purge */
 
-	if ( rc == SLURM_SUCCESS)
+	if( rc == SLURM_SUCCESS)
 		rc = _process_purge(mysql_conn, cluster_name, archive_data,
 				    SLURMDB_PURGE_HOURS);
 
@@ -1045,7 +1045,7 @@ extern int as_mysql_daily_rollup(mysql_conn_t *mysql_conn,
 	char *query = NULL;
 	uint16_t track_wckey = slurm_get_track_wckey();
 
-	if (!localtime_r(&curr_start, &start_tm)) {
+	if(!localtime_r(&curr_start, &start_tm)) {
 		error("Couldn't get localtime from day start %d", curr_start);
 		return SLURM_ERROR;
 	}
@@ -1100,7 +1100,7 @@ extern int as_mysql_daily_rollup(mysql_conn_t *mysql_conn,
 			   now, now, curr_start,
 			   cluster_name, cluster_hour_table,
 			   curr_end, curr_start, now);
-		if (track_wckey) {
+		if(track_wckey) {
 			xstrfmtcat(query,
 				   "insert into \"%s_%s\" (creation_time, "
 				   "mod_time, id_wckey, time_start, "
@@ -1119,13 +1119,13 @@ extern int as_mysql_daily_rollup(mysql_conn_t *mysql_conn,
 		       mysql_conn->conn, THIS_FILE, __LINE__, query);
 		rc = mysql_db_query(mysql_conn->db_conn, query);
 		xfree(query);
-		if (rc != SLURM_SUCCESS) {
+		if(rc != SLURM_SUCCESS) {
 			error("Couldn't add day rollup");
 			return SLURM_ERROR;
 		}
 
 		curr_start = curr_end;
-		if (!localtime_r(&curr_start, &start_tm)) {
+		if(!localtime_r(&curr_start, &start_tm)) {
 			error("Couldn't get localtime from day start %d",
 			      curr_start);
 			return SLURM_ERROR;
@@ -1159,7 +1159,7 @@ extern int as_mysql_monthly_rollup(mysql_conn_t *mysql_conn,
 	char *query = NULL;
 	uint16_t track_wckey = slurm_get_track_wckey();
 
-	if (!localtime_r(&curr_start, &start_tm)) {
+	if(!localtime_r(&curr_start, &start_tm)) {
 		error("Couldn't get localtime from month start %d", curr_start);
 		return SLURM_ERROR;
 	}
@@ -1214,7 +1214,7 @@ extern int as_mysql_monthly_rollup(mysql_conn_t *mysql_conn,
 			   now, now, curr_start,
 			   cluster_name, cluster_day_table,
 			   curr_end, curr_start, now);
-		if (track_wckey) {
+		if(track_wckey) {
 			xstrfmtcat(query,
 				   "insert into \"%s_%s\" "
 				   "(creation_time, mod_time, "
@@ -1234,13 +1234,13 @@ extern int as_mysql_monthly_rollup(mysql_conn_t *mysql_conn,
 		       mysql_conn->conn, THIS_FILE, __LINE__, query);
 		rc = mysql_db_query(mysql_conn->db_conn, query);
 		xfree(query);
-		if (rc != SLURM_SUCCESS) {
+		if(rc != SLURM_SUCCESS) {
 			error("Couldn't add day rollup");
 			return SLURM_ERROR;
 		}
 
 		curr_start = curr_end;
-		if (!localtime_r(&curr_start, &start_tm)) {
+		if(!localtime_r(&curr_start, &start_tm)) {
 			error("Couldn't get localtime from month start %d",
 			      curr_start);
 		}

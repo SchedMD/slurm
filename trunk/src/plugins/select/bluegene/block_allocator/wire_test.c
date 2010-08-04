@@ -87,7 +87,7 @@ int main(int argc, char** argv)
 /* 	request->conn_type = SELECT_TORUS; */
 /* 	new_ba_request(request); */
 /* 	print_ba_request(request); */
-/* 	if (!allocate_block(request, results)) { */
+/* 	if(!allocate_block(request, results)) { */
 /*        		debug("couldn't allocate %c%c%c", */
 /* 		       alpha_num[request->geometry[0]], */
 /* 		       alpha_num[request->geometry[1]], */
@@ -110,7 +110,7 @@ int main(int argc, char** argv)
 /* 	request->conn_type = SELECT_TORUS; */
 /* 	new_ba_request(request); */
 /* 	print_ba_request(request); */
-/* 	if (!allocate_block(request, results)) { */
+/* 	if(!allocate_block(request, results)) { */
 /*        		debug("couldn't allocate %c%c%c", */
 /* 		       request->geometry[0], */
 /* 		       request->geometry[1], */
@@ -133,7 +133,7 @@ int main(int argc, char** argv)
 	request->conn_type = SELECT_TORUS;
 	new_ba_request(request);
 	print_ba_request(request);
-	if (!allocate_block(request, results)) {
+	if(!allocate_block(request, results)) {
        		debug("couldn't allocate %c%c%c",
 		       request->geometry[0],
 		       request->geometry[1],

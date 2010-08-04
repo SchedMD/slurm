@@ -505,7 +505,7 @@ extern int schedule(void)
 			select_g_select_jobinfo_get(job_ptr->select_jobinfo,
 						    SELECT_JOBDATA_IONODES,
 						    &ionodes);
-			if (ionodes) {
+			if(ionodes) {
 				sprintf(tmp_char,"%s[%s]",
 					job_ptr->nodes, ionodes);
 			} else {

@@ -118,7 +118,7 @@ static int _load_submit_plugin(char *plugin_name,
 	if (plugin_context->cur_plugin != PLUGIN_INVALID_HANDLE)
 		return SLURM_SUCCESS;
 
-	if (errno != EPLUGIN_NOTFOUND) {
+	if(errno != EPLUGIN_NOTFOUND) {
 		error("job_submit: Couldn't load specified plugin name "
 		      "for %s: %s",
 		      plugin_context->sched_type, plugin_strerror(errno));

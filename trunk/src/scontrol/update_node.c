@@ -163,7 +163,7 @@ scontrol_update_node (int argc, char *argv[])
 			} else {
 				state_val = (uint16_t) NO_VAL;
 				for (j = 0; j < NODE_STATE_END; j++) {
-					if (strncasecmp(node_state_string(j),
+					if (strncasecmp (node_state_string(j),
 							 val,
 							 MAX(vallen, 3)) == 0){
 						state_val = (uint16_t) j;

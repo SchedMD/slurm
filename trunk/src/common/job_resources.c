@@ -528,7 +528,7 @@ extern void pack_job_resources(job_resources_t *job_resrcs_ptr, Buf buffer,
 {
 	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 
-	if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
+	if(protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
 		if (job_resrcs_ptr == NULL) {
 			uint32_t empty = NO_VAL;
 			pack32(empty, buffer);
@@ -579,7 +579,7 @@ extern void pack_job_resources(job_resources_t *job_resrcs_ptr, Buf buffer,
 				     job_resrcs_ptr->nhosts, buffer);
 		else
 			pack32_array(job_resrcs_ptr->memory_used, 0, buffer);
-		if (!(cluster_flags & CLUSTER_FLAG_BG)) {
+		if(!(cluster_flags & CLUSTER_FLAG_BG)) {
 			int i;
 			uint32_t core_cnt = 0, sock_recs = 0;
 			xassert(job_resrcs_ptr->cores_per_socket);
@@ -702,7 +702,7 @@ extern int unpack_job_resources(job_resources_t **job_resrcs_pptr,
 	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 
 	xassert(job_resrcs_pptr);
-	if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
+	if(protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
 		safe_unpack32(&empty, buffer);
 		if (empty == NO_VAL) {
 			*job_resrcs_pptr = NULL;
@@ -746,7 +746,7 @@ extern int unpack_job_resources(job_resources_t **job_resrcs_pptr,
 		if (tmp32 == 0)
 			xfree(job_resrcs->memory_used);
 
-		if (!(cluster_flags & CLUSTER_FLAG_BG)) {
+		if(!(cluster_flags & CLUSTER_FLAG_BG)) {
 			safe_unpack16_array(&job_resrcs->sockets_per_node,
 					    &tmp32, buffer);
 			if (tmp32 == 0)

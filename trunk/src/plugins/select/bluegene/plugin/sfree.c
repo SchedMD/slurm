@@ -73,7 +73,7 @@ static int _get_new_info_block(block_info_msg_t **block_ptr)
 
 	bg_info_ptr = new_bg_ptr;
 
-	if (*block_ptr != bg_info_ptr)
+	if(*block_ptr != bg_info_ptr)
 		error_code = SLURM_SUCCESS;
 
 	*block_ptr = new_bg_ptr;
@@ -91,16 +91,16 @@ static int _check_status()
 	while(list_count(block_list)) {
 		info("waiting for %d bgblocks to free...",
 		     list_count(block_list));
-		if (_get_new_info_block(&block_ptr)
+		if(_get_new_info_block(&block_ptr)
 		   == SLURM_SUCCESS) {
 			while((block_name = list_next(itr))) {
 				for (i=0; i<block_ptr->record_count;
 				     i++) {
-					if (!strcmp(block_name,
+					if(!strcmp(block_name,
 						   block_ptr->
 						   block_array[i].
 						   bg_block_id)) {
-						if (block_ptr->
+						if(block_ptr->
 						   block_array[i].
 						   state == RM_PARTITION_FREE)
 							list_delete_item(itr);
@@ -109,7 +109,7 @@ static int _check_status()
 				}
 				/* Here if we didn't find the record
 				   it is gone so we just will delete it. */
-				if (i >= block_ptr->record_count)
+				if(i >= block_ptr->record_count)
 					list_delete_item(itr);
 			}
 			list_iterator_reset(itr);
@@ -132,16 +132,16 @@ int main(int argc, char *argv[])
 	parse_command_line(argc, argv);
 
 	memset(&msg, 0, sizeof(update_block_msg_t));
-	if (!all_blocks && (!block_list || !list_count(block_list))) {
+	if(!all_blocks && (!block_list || !list_count(block_list))) {
 		error("you need at least one block to remove.");
 		exit(1);
 	}
 
-	if (all_blocks) {
+	if(all_blocks) {
 		int i=0;
 		block_info_msg_t *block_ptr = NULL;
 		_get_new_info_block(&block_ptr);
-		if (block_list)
+		if(block_list)
 			list_flush(block_list);
 		else
 			block_list = list_create(slurm_destroy_char);
@@ -155,18 +155,18 @@ int main(int argc, char *argv[])
 
 	itr = list_iterator_create(block_list);
 	while((block_name = list_next(itr))) {
-		if (remove_blocks)
+		if(remove_blocks)
 			msg.state = RM_PARTITION_NAV;
 		else
 			msg.state = RM_PARTITION_FREE;
 		msg.bg_block_id = block_name;
 		rc = slurm_update_block(&msg);
-		if (rc != SLURM_SUCCESS)
+		if(rc != SLURM_SUCCESS)
 			error("Error trying to free block %s: %s",
 			      block_name, slurm_strerror(rc));
 	}
 	list_iterator_destroy(itr);
-	if (wait_full)
+	if(wait_full)
 		_check_status();
 	list_destroy(block_list);
 	info("done");

@@ -238,7 +238,7 @@ static int _select_get_ops(char *select_type,
         if ( c->cur_plugin != PLUGIN_INVALID_HANDLE )
         	return SLURM_SUCCESS;
 
-	if (errno != EPLUGIN_NOTFOUND) {
+	if(errno != EPLUGIN_NOTFOUND) {
 		error("Couldn't load specified plugin name for %s: %s",
 		      c->select_type, plugin_strerror(errno));
 		return SLURM_ERROR;
@@ -326,24 +326,24 @@ extern int slurm_select_init(bool only_default)
 		goto done;
 
 	select_type = slurm_get_select_type();
-	if (working_cluster_rec) {
+	if(working_cluster_rec) {
 		/* just ignore warnings here */
 	} else {
 #ifdef HAVE_XCPU
-		if (strcasecmp(select_type, "select/linear")) {
+		if(strcasecmp(select_type, "select/linear")) {
 			error("%s is incompatible with XCPU use", select_type);
 			fatal("Use SelectType=select/linear");
 		}
 #endif
 #ifdef HAVE_BG
 #  ifdef HAVE_BGQ
-		if (strcasecmp(select_type, "select/bgq")) {
+		if(strcasecmp(select_type, "select/bgq")) {
 			error("%s is incompatible with BlueGene/Q",
 			      select_type);
 			fatal("Use SelectType=select/bgq");
 		}
 #  else
-		if (strcasecmp(select_type, "select/bluegene")) {
+		if(strcasecmp(select_type, "select/bluegene")) {
 			error("%s is incompatible with BlueGene", select_type);
 			fatal("Use SelectType=select/bluegene");
 		}
@@ -352,7 +352,7 @@ extern int slurm_select_init(bool only_default)
 	}
 
 	select_context_cnt = 0;
-	if (only_default) {
+	if(only_default) {
 		select_context = xmalloc(sizeof(slurm_select_context_t));
 		rc = _select_get_ops(select_type, select_context);
 		if (rc == SLURM_SUCCESS) {
@@ -362,7 +362,7 @@ extern int slurm_select_init(bool only_default)
 		goto skip_load_all;
 	}
 
-	if (!(dir_array = slurm_get_plugin_dir())) {
+	if(!(dir_array = slurm_get_plugin_dir())) {
 		error("plugin_load_and_link: No plugin dir given");
 		goto done;
 	}
@@ -373,11 +373,11 @@ extern int slurm_select_init(bool only_default)
 		if (dir_array[i] == ':') {
 			dir_array[i] = '\0';
 			got_colon = 1;
-		} else if (dir_array[i] != '\0')
+		} else if(dir_array[i] != '\0')
 			continue;
 
 		/* Open the directory. */
-		if (!(dirp = opendir(head))) {
+		if(!(dirp = opendir(head))) {
 			error("cannot open plugin directory %s", dir_array[i]);
 			goto done;
 		}
@@ -385,7 +385,7 @@ extern int slurm_select_init(bool only_default)
 		while (1) {
 			char full_name[128];
 
-			if (!(e = readdir( dirp )))
+			if(!(e = readdir( dirp )))
 				break;
 			/* Check only files with select_ in them. */
 			if (strncmp(e->d_name, "select_", 7))
@@ -437,7 +437,7 @@ extern int slurm_select_init(bool only_default)
 	}
 
 skip_load_all:
-	if (select_context_default == -1)
+	if(select_context_default == -1)
 		fatal("Can't find plugin for %s", select_type);
 
 	/* Insure that plugin_id is valid and unique */
@@ -495,10 +495,10 @@ extern int select_get_plugin_id_pos(uint32_t plugin_id)
 		return SLURM_ERROR;
 
 	for (i=0; i<select_context_cnt; i++) {
-		if (*(select_context[i].ops.plugin_id) == plugin_id)
+		if(*(select_context[i].ops.plugin_id) == plugin_id)
 			break;
 	}
-	if (i >= select_context_cnt)
+	if(i >= select_context_cnt)
 		return SLURM_ERROR;
 	return i;
 }
@@ -720,13 +720,13 @@ extern int select_g_select_nodeinfo_pack(dynamic_plugin_data_t *nodeinfo,
 	if (slurm_select_init(0) < 0)
 		return SLURM_ERROR;
 
-	if (nodeinfo) {
+	if(nodeinfo) {
 		data = nodeinfo->data;
 		plugin_id = nodeinfo->plugin_id;
 	} else
 		plugin_id = select_context_default;
 
-	if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION)
+	if(protocol_version >= SLURM_2_2_PROTOCOL_VERSION)
 		pack32(*(select_context[plugin_id].ops.plugin_id),
 		       buffer);
 
@@ -746,12 +746,12 @@ extern int select_g_select_nodeinfo_unpack(dynamic_plugin_data_t **nodeinfo,
 	nodeinfo_ptr = xmalloc(sizeof(dynamic_plugin_data_t));
 	*nodeinfo = nodeinfo_ptr;
 
-	if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
+	if(protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
 		int i;
 		uint32_t plugin_id;
 		safe_unpack32(&plugin_id, buffer);
 		for (i=0; i<select_context_cnt; i++)
-			if (*(select_context[i].ops.plugin_id) == plugin_id) {
+			if(*(select_context[i].ops.plugin_id) == plugin_id) {
 				nodeinfo_ptr->plugin_id = i;
 				break;
 			}
@@ -794,8 +794,8 @@ extern int select_g_select_nodeinfo_free(dynamic_plugin_data_t *nodeinfo)
 	if (slurm_select_init(0) < 0)
 		return SLURM_ERROR;
 
-	if (nodeinfo) {
-		if (nodeinfo->data)
+	if(nodeinfo) {
+		if(nodeinfo->data)
 			rc = (*(select_context[nodeinfo->plugin_id].ops.
 				nodeinfo_free))(nodeinfo->data);
 		xfree(nodeinfo);
@@ -832,7 +832,7 @@ extern int select_g_select_nodeinfo_get(dynamic_plugin_data_t *nodeinfo,
 	if (slurm_select_init(0) < 0)
 		return SLURM_ERROR;
 
-	if (nodeinfo) {
+	if(nodeinfo) {
 		nodedata = nodeinfo->data;
 		plugin_id = nodeinfo->plugin_id;
 	} else
@@ -1205,8 +1205,8 @@ extern int select_g_select_jobinfo_free(dynamic_plugin_data_t *jobinfo)
 
 	if (slurm_select_init(0) < 0)
 		return SLURM_ERROR;
-	if (jobinfo) {
-		if (jobinfo->data)
+	if(jobinfo) {
+		if(jobinfo->data)
 			rc = (*(select_context[jobinfo->plugin_id].ops.
 				jobinfo_free))(jobinfo->data);
 		xfree(jobinfo);
@@ -1224,7 +1224,7 @@ extern int select_g_select_jobinfo_set(dynamic_plugin_data_t *jobinfo,
 	if (slurm_select_init(0) < 0)
 		return SLURM_ERROR;
 
-	if (jobinfo) {
+	if(jobinfo) {
 		jobdata = jobinfo->data;
 		plugin_id = jobinfo->plugin_id;
 	} else
@@ -1249,7 +1249,7 @@ extern int select_g_select_jobinfo_get(dynamic_plugin_data_t *jobinfo,
 	if (slurm_select_init(0) < 0)
 		return SLURM_ERROR;
 
-	if (jobinfo) {
+	if(jobinfo) {
 		jobdata = jobinfo->data;
 		plugin_id = jobinfo->plugin_id;
 	} else
@@ -1272,7 +1272,7 @@ extern dynamic_plugin_data_t *select_g_select_jobinfo_copy(
 		return NULL;
 
 	jobinfo_ptr = xmalloc(sizeof(dynamic_plugin_data_t));
-	if (jobinfo) {
+	if(jobinfo) {
 		jobinfo_ptr->plugin_id = jobinfo->plugin_id;
 		jobinfo_ptr->data = (*(select_context[jobinfo->plugin_id].ops.
 				       jobinfo_copy))(jobinfo->data);
@@ -1297,13 +1297,13 @@ extern int select_g_select_jobinfo_pack(dynamic_plugin_data_t *jobinfo,
 	if (slurm_select_init(0) < 0)
 		return SLURM_ERROR;
 
-	if (jobinfo) {
+	if(jobinfo) {
 		data = jobinfo->data;
 		plugin_id = jobinfo->plugin_id;
 	} else
 		plugin_id = select_context_default;
 
-	if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION)
+	if(protocol_version >= SLURM_2_2_PROTOCOL_VERSION)
 		pack32(*(select_context[plugin_id].ops.plugin_id),
 		       buffer);
 	return (*(select_context[plugin_id].ops.
@@ -1327,12 +1327,12 @@ extern int select_g_select_jobinfo_unpack(
 	jobinfo_ptr = xmalloc(sizeof(dynamic_plugin_data_t));
 	*jobinfo = jobinfo_ptr;
 
-	if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
+	if(protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
 		int i;
 		uint32_t plugin_id;
 		safe_unpack32(&plugin_id, buffer);
 		for (i=0; i<select_context_cnt; i++)
-			if (*(select_context[i].ops.plugin_id) == plugin_id) {
+			if(*(select_context[i].ops.plugin_id) == plugin_id) {
 				jobinfo_ptr->plugin_id = i;
 				break;
 			}
@@ -1367,7 +1367,7 @@ extern char *select_g_select_jobinfo_sprint(dynamic_plugin_data_t *jobinfo,
 
 	if (slurm_select_init(0) < 0)
 		return NULL;
-	if (jobinfo) {
+	if(jobinfo) {
 		data = jobinfo->data;
 		plugin_id = jobinfo->plugin_id;
 	} else
@@ -1391,7 +1391,7 @@ extern char *select_g_select_jobinfo_xstrdup(
 	if (slurm_select_init(0) < 0)
 		return NULL;
 
-	if (jobinfo) {
+	if(jobinfo) {
 		data = jobinfo->data;
 		plugin_id = jobinfo->plugin_id;
 	} else

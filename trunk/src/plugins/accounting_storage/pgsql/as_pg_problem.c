@@ -55,20 +55,20 @@ as_pg_get_problems(pgsql_conn_t *pg_conn, uid_t uid,
 {
 	List ret_list = NULL;
 
-	if (check_db_connection(pg_conn) != SLURM_SUCCESS)
+	if(check_db_connection(pg_conn) != SLURM_SUCCESS)
 		return NULL;
 
 	ret_list = list_create(slurmdb_destroy_association_rec);
 
-	if (get_acct_no_assocs(pg_conn, assoc_q, ret_list)
+	if(get_acct_no_assocs(pg_conn, assoc_q, ret_list)
 	   != SLURM_SUCCESS)
 		goto end_it;
 
-	if (get_acct_no_users(pg_conn, assoc_q, ret_list)
+	if(get_acct_no_users(pg_conn, assoc_q, ret_list)
 	   != SLURM_SUCCESS)
 		goto end_it;
 
-	if (get_user_no_assocs_or_no_uid(pg_conn, assoc_q, ret_list)
+	if(get_user_no_assocs_or_no_uid(pg_conn, assoc_q, ret_list)
 	   != SLURM_SUCCESS)
 		goto end_it;
 

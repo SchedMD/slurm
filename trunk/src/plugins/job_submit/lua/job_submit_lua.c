@@ -242,7 +242,7 @@ static int _check_lua_script_functions()
 
 	i = 0;
 	do {
-		if (_check_lua_script_function(fns[i]) < 0) {
+		if(_check_lua_script_function(fns[i]) < 0) {
 			error("job_submit/lua: %s: "
 			      "missing required function %s",
 			      lua_script_path, fns[i]);
@@ -502,7 +502,7 @@ int init (void)
 	 */
 	rc = (int) lua_tonumber(L, -1);
 	lua_pop (L, 1);
-	if (rc != SLURM_SUCCESS)
+	if(rc != SLURM_SUCCESS)
 		return rc;
 
 	/*

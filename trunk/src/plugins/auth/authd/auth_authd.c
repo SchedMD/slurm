@@ -306,7 +306,7 @@ slurm_auth_unpack( Buf buf )
 	}
 
 	safe_unpack32( &version, buf );
-	if ( version < min_plug_version ) {
+	if( version < min_plug_version ) {
 		plugin_errno = SLURM_AUTH_VERSION;
 		return NULL;
 	}

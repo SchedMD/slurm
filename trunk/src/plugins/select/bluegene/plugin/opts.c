@@ -78,7 +78,7 @@ void parse_command_line(int argc, char *argv[])
 		        break;
 		case (int) 'b':
 		case (int) 'p':
-			if (!block_list)
+			if(!block_list)
 				block_list = list_create(slurm_destroy_char);
 		        slurm_addto_char_list(block_list, optarg);
 			break;

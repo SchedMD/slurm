@@ -333,7 +333,7 @@ int _print_cpus_aiot(sinfo_data_t * sinfo_data, int width,
 	char tmpo[8];
 	char tmpt[8];
 	if (sinfo_data) {
-		if (params.cluster_flags & CLUSTER_FLAG_BG) {
+		if(params.cluster_flags & CLUSTER_FLAG_BG) {
 			convert_num_unit((float)sinfo_data->cpus_alloc,
 					 tmpa, sizeof(tmpa), UNIT_NONE);
 			convert_num_unit((float)sinfo_data->cpus_idle,
@@ -562,7 +562,7 @@ int _print_node_list(sinfo_data_t * sinfo_data, int width,
 		_print_str(tmp, width, right_justify, true);
 	} else {
 		char *title = "NODELIST";
-		if (params.cluster_flags & CLUSTER_FLAG_BG)
+		if(params.cluster_flags & CLUSTER_FLAG_BG)
 			title = "BP_LIST";
 
 		_print_str(title, width, right_justify, false);
@@ -579,7 +579,7 @@ int _print_nodes_t(sinfo_data_t * sinfo_data, int width,
 	char id[FORMAT_STRING_SIZE];
 	char tmp[8];
 	if (sinfo_data) {
-		if (params.cluster_flags & CLUSTER_FLAG_BG)
+		if(params.cluster_flags & CLUSTER_FLAG_BG)
 			convert_num_unit((float)sinfo_data->nodes_total,
 					 tmp, sizeof(tmp), UNIT_NONE);
 		else
@@ -602,7 +602,7 @@ int _print_nodes_ai(sinfo_data_t * sinfo_data, int width,
 	char tmpa[8];
 	char tmpi[8];
 	if (sinfo_data) {
-		if (params.cluster_flags & CLUSTER_FLAG_BG) {
+		if(params.cluster_flags & CLUSTER_FLAG_BG) {
 			convert_num_unit((float)sinfo_data->nodes_alloc,
 					 tmpa, sizeof(tmpa), UNIT_NONE);
 			convert_num_unit((float)sinfo_data->nodes_idle,
@@ -633,7 +633,7 @@ int _print_nodes_aiot(sinfo_data_t * sinfo_data, int width,
 	char tmpo[8];
 	char tmpt[8];
 	if (sinfo_data) {
-		if (params.cluster_flags & CLUSTER_FLAG_BG) {
+		if(params.cluster_flags & CLUSTER_FLAG_BG) {
 			convert_num_unit((float)sinfo_data->nodes_alloc,
 					 tmpa, sizeof(tmpa), UNIT_NONE);
 			convert_num_unit((float)sinfo_data->nodes_idle,

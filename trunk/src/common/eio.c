@@ -169,7 +169,7 @@ int eio_message_socket_accept(eio_obj_t *obj, List objs)
 	msg = xmalloc(sizeof(slurm_msg_t));
 	slurm_msg_t_init(msg);
 again:
-	if (slurm_receive_msg(fd, msg, obj->ops->timeout) != 0) {
+	if(slurm_receive_msg(fd, msg, obj->ops->timeout) != 0) {
 		if (errno == EINTR) {
 			goto again;
 		}

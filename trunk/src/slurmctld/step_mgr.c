@@ -1645,7 +1645,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 		fatal ("step_create: checkpoint_alloc_jobinfo error");
 	*new_step_record = step_ptr;
 
-	if (!with_slurmdbd && !job_ptr->db_index)
+	if(!with_slurmdbd && !job_ptr->db_index)
 		jobacct_storage_g_job_start(acct_db_conn, job_ptr);
 
 	jobacct_storage_g_step_start(acct_db_conn, step_ptr);
@@ -1800,7 +1800,7 @@ static void _pack_ctld_job_step_info(struct step_record *step_ptr, Buf buffer)
 		task_cnt = step_ptr->step_layout->task_cnt;
 		node_list = step_ptr->step_layout->node_list;
 	} else {
-		if (step_ptr->job_ptr->details)
+		if(step_ptr->job_ptr->details)
 			task_cnt = step_ptr->job_ptr->details->min_cpus;
 		else
 			task_cnt = step_ptr->job_ptr->cpu_cnt;
@@ -1814,7 +1814,7 @@ static void _pack_ctld_job_step_info(struct step_record *step_ptr, Buf buffer)
 #ifdef HAVE_BG
 	if (step_ptr->job_ptr->total_cpus)
 		pack32(step_ptr->job_ptr->total_cpus, buffer);
-	else if (step_ptr->job_ptr->details)
+	else if(step_ptr->job_ptr->details)
 		pack32(step_ptr->job_ptr->details->min_cpus, buffer);
 	else
 		pack32(step_ptr->job_ptr->cpu_cnt, buffer);
@@ -2510,7 +2510,7 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer,
 	slurm_step_layout_t *step_layout = NULL;
 	List gres_list = NULL;
 
-	if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
+	if(protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
 		safe_unpack32(&step_id, buffer);
 		safe_unpack16(&cyclic_alloc, buffer);
 		safe_unpack16(&port, buffer);

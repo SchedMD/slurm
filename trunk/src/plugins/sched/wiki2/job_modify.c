@@ -333,7 +333,7 @@ host_fini:	if (rc) {
 						&cpus_per_node);
 		}
 #endif
-		if (!IS_JOB_PENDING(job_ptr) || !job_ptr->details) {
+		if(!IS_JOB_PENDING(job_ptr) || !job_ptr->details) {
 			error("wiki: MODIFYJOB node count of non-pending "
 			      "job %u", jobid);
 			return ESLURM_DISABLED;

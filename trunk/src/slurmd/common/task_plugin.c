@@ -102,7 +102,7 @@ _slurmd_task_get_ops(slurmd_task_context_t *c)
 	if ( c->cur_plugin != PLUGIN_INVALID_HANDLE )
 		return &c->ops;
 
-	if (errno != EPLUGIN_NOTFOUND) {
+	if(errno != EPLUGIN_NOTFOUND) {
 		error("Couldn't load specified plugin name for %s: %s",
 		      c->task_type, plugin_strerror(errno));
 		return NULL;

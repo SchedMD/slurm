@@ -185,7 +185,7 @@ static int _switch_p_libstate_save ( char * dir_name, bool free_flag )
 	xstrcat(file_name, "/fed_state");
 	(void)unlink(file_name);
 	state_fd = creat(file_name, 0600);
-	if (state_fd < 0) {
+	if(state_fd < 0) {
 		error ("Can't save state, error creating file %s %m",
 			file_name);
 		ret = SLURM_ERROR;
@@ -210,7 +210,7 @@ static int _switch_p_libstate_save ( char * dir_name, bool free_flag )
 	}
 	xfree(file_name);
 
-	if (buffer)
+	if(buffer)
 		free_buf(buffer);
 
 	return ret;
@@ -307,7 +307,7 @@ int switch_p_clear_node_state(void)
 	for(i = 0; i < FED_MAXADAPTERS; i++) {
 		name[3] = i + ZERO;
 		err = ntbl_adapter_resources(NTBL_VERSION, name, &res);
-		if (err != NTBL_SUCCESS)
+		if(err != NTBL_SUCCESS)
 			continue;
 		for(j = 0; j < res.window_count; j++)
 			ntbl_clean_window(NTBL_VERSION, name,
@@ -328,11 +328,11 @@ int switch_p_build_node_info(switch_node_info_t *switch_node)
 	char hostname[256];
 	char *tmp;
 
-	if (gethostname(hostname, 256) < 0)
+	if(gethostname(hostname, 256) < 0)
 		slurm_seterrno_ret(EHOSTNAME);
 	/* remove the domain portion, if necessary */
 	tmp = strstr(hostname, ".");
-	if (tmp)
+	if(tmp)
 		*tmp = '\0';
 	return fed_build_nodeinfo((fed_nodeinfo_t *)switch_node, hostname);
 }
@@ -349,7 +349,7 @@ int switch_p_unpack_node_info(switch_node_info_t *switch_node, Buf buffer)
 
 void switch_p_free_node_info(switch_node_info_t **switch_node)
 {
-	if (switch_node)
+	if(switch_node)
 		fed_free_nodeinfo((fed_nodeinfo_t *)*switch_node, false);
 }
 
@@ -401,7 +401,7 @@ int switch_p_build_jobinfo(switch_jobinfo_t *switch_job, char *nodelist,
 	char *adapter_name = NULL;
 
 	debug3("network = \"%s\"", network);
-	if (strstr(network, "ip") || strstr(network, "IP")) {
+	if(strstr(network, "ip") || strstr(network, "IP")) {
 		debug2("federation: \"ip\" found in network string, "
 		       "no network tables allocated");
 		return SLURM_SUCCESS;
@@ -424,7 +424,7 @@ int switch_p_build_jobinfo(switch_jobinfo_t *switch_job, char *nodelist,
 		}
 
 		list = hostlist_create(nodelist);
-		if (!list)
+		if(!list)
 			fatal("hostlist_create(%s): %m", nodelist);
 		for (i = 0; i < hostlist_count(list); i++)
 			nprocs += tasks_per_node[i];
@@ -540,7 +540,7 @@ int switch_p_node_init(void)
 	/* check to make sure the version of the library we compiled with
 	 * matches the one dynamically linked
 	 */
-	if (!_ntbl_version_ok()) {
+	if(!_ntbl_version_ok()) {
 		slurm_seterrno_ret(EVERSION);
 	}
 
@@ -578,7 +578,7 @@ int switch_p_job_postfini(switch_jobinfo_t *jobinfo, uid_t pgid,
 	/*
 	 *  Kill all processes in the job's session
 	 */
-	if (pgid) {
+	if(pgid) {
 		debug2("Sending SIGKILL to pgid %lu",
 			(unsigned long) pgid);
 		kill(-pgid, SIGKILL);
@@ -587,7 +587,7 @@ int switch_p_job_postfini(switch_jobinfo_t *jobinfo, uid_t pgid,
 		      step_id, (unsigned long) pgid);
 
 	err = fed_unload_table((fed_jobinfo_t *)jobinfo);
-	if (err != SLURM_SUCCESS)
+	if(err != SLURM_SUCCESS)
 		return SLURM_ERROR;
 
 	return SLURM_SUCCESS;

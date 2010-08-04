@@ -196,7 +196,7 @@ job_create(launch_tasks_request_msg_t *msg)
 	nodeid = 0;
 	job->node_name = xstrdup(msg->complete_nodelist);
 #endif
-	if (nodeid < 0) {
+	if(nodeid < 0) {
 		error("couldn't find node %s in %s",
 		      job->node_name, msg->complete_nodelist);
 		job_destroy(job);
@@ -339,7 +339,7 @@ job_batch_job_create(batch_job_launch_msg_t *msg)
 		_pwd_destroy(pwd);
 		return NULL;
 	}
-	if (msg->job_mem && (msg->acctg_freq != (uint16_t) NO_VAL)
+	if(msg->job_mem && (msg->acctg_freq != (uint16_t) NO_VAL)
 	   && (msg->acctg_freq > conf->job_acct_gather_freq)) {
 		error("Can't set frequency to %u, it is higher than %u.  "
 		      "We need it to be at least at this level to "

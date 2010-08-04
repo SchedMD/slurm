@@ -750,7 +750,7 @@ _get_assoc_usage(pgsql_conn_t *pg_conn, uid_t uid,
 		USAGE_COUNT
 	};
 
-	if (!slurmdb_assoc->id) {
+	if(!slurmdb_assoc->id) {
 		error("We need an assoc id to set data for getting usage");
 		return SLURM_ERROR;
 	}
@@ -767,27 +767,27 @@ _get_assoc_usage(pgsql_conn_t *pg_conn, uid_t uid,
 			slurmdb_coord_rec_t *coord = NULL;
 			assoc_mgr_fill_in_user(pg_conn, &user, 1, NULL);
 
-			if (slurmdb_assoc->user &&
+			if(slurmdb_assoc->user &&
 			   !strcmp(slurmdb_assoc->user, user.name))
 				goto is_user;
 
-			if (!user.coord_accts) {
+			if(!user.coord_accts) {
 				debug4("This user isn't a coord.");
 				goto bad_user;
 			}
-			if (!slurmdb_assoc->acct) {
+			if(!slurmdb_assoc->acct) {
 				debug("No account name given "
 				      "in association.");
 				goto bad_user;
 			}
 			itr = list_iterator_create(user.coord_accts);
 			while((coord = list_next(itr))) {
-				if (!strcasecmp(coord->name,
+				if(!strcasecmp(coord->name,
 					       slurmdb_assoc->acct))
 					break;
 			}
 			list_iterator_destroy(itr);
-			if (coord)
+			if(coord)
 				goto is_user;
 
 		bad_user:
@@ -798,7 +798,7 @@ _get_assoc_usage(pgsql_conn_t *pg_conn, uid_t uid,
 
 is_user:
 	usage_table = assoc_day_table;
-	if (set_usage_information(&usage_table, DBD_GET_ASSOC_USAGE,
+	if(set_usage_information(&usage_table, DBD_GET_ASSOC_USAGE,
 				 &start, &end) != SLURM_SUCCESS)
 		return SLURM_ERROR;
 
@@ -812,10 +812,10 @@ is_user:
 		usage_table, assoc_table, assoc_table,
 		end, start, slurmdb_assoc->id);
 	result = DEF_QUERY_RET;
-	if (!result)
+	if(!result)
 		return SLURM_ERROR;
 
-	if (!slurmdb_assoc->accounting_list)
+	if(!slurmdb_assoc->accounting_list)
 		slurmdb_assoc->accounting_list =
 			list_create(slurmdb_destroy_accounting_rec);
 
@@ -859,7 +859,7 @@ _get_wckey_usage(pgsql_conn_t *pg_conn, uid_t uid,
 		USAGE_COUNT
 	};
 
-	if (!slurmdb_wckey->id) {
+	if(!slurmdb_wckey->id) {
 		error("We need an wckey id to set data for getting usage");
 		return SLURM_ERROR;
 	}
@@ -873,7 +873,7 @@ _get_wckey_usage(pgsql_conn_t *pg_conn, uid_t uid,
 			pg_conn, uid, SLURMDB_ADMIN_OPERATOR);
 		if (!is_admin) {
 			assoc_mgr_fill_in_user(pg_conn, &user, 1, NULL);
-			if (! slurmdb_wckey->user ||
+			if(! slurmdb_wckey->user ||
 			   strcmp(slurmdb_wckey->user, user.name)) {
 				errno = ESLURM_ACCESS_DENIED;
 				return SLURM_ERROR;
@@ -882,7 +882,7 @@ _get_wckey_usage(pgsql_conn_t *pg_conn, uid_t uid,
 	}
 
 	usage_table = wckey_day_table;
-	if (set_usage_information(&usage_table, DBD_GET_WCKEY_USAGE,
+	if(set_usage_information(&usage_table, DBD_GET_WCKEY_USAGE,
 				 &start, &end) != SLURM_SUCCESS) {
 		return SLURM_ERROR;
 	}
@@ -893,10 +893,10 @@ _get_wckey_usage(pgsql_conn_t *pg_conn, uid_t uid,
 		"AND id=%d ORDER BY id, period_start;",
 		usage_table, end, start, slurmdb_wckey->id);
 	result = DEF_QUERY_RET;
-	if (!result)
+	if(!result)
 		return SLURM_ERROR;
 
-	if (!slurmdb_wckey->accounting_list)
+	if(!slurmdb_wckey->accounting_list)
 		slurmdb_wckey->accounting_list =
 			list_create(slurmdb_destroy_accounting_rec);
 
@@ -980,17 +980,17 @@ as_pg_roll_usage(pgsql_conn_t *pg_conn,  time_t sent_start,
 		RU_COUNT
 	};
 
-	if (check_db_connection(pg_conn) != SLURM_SUCCESS)
+	if(check_db_connection(pg_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
 
-	if (!sent_start) {
+	if(!sent_start) {
 		query = xstrdup_printf("SELECT %s FROM %s LIMIT 1",
 				       ru_fields, last_ran_table);
 		result = DEF_QUERY_RET;
-		if (!result)
+		if(!result)
 			return SLURM_ERROR;
 
-		if (PQntuples(result)) {
+		if(PQntuples(result)) {
 			last_hour = atoi(PG_VAL(RU_HOUR));
 			last_day = atoi(PG_VAL(RU_DAY));
 			last_month = atoi(PG_VAL(RU_MONTH));
@@ -1000,7 +1000,7 @@ as_pg_roll_usage(pgsql_conn_t *pg_conn,  time_t sent_start,
 			PQclear(result);
 			query = xstrdup_printf("SELECT init_last_ran(%d);", now);
 			result = DEF_QUERY_RET;
-			if (!result)
+			if(!result)
 				return SLURM_ERROR;
 			last_hour = last_day = last_month =
 				atoi(PG_VAL(0));
@@ -1013,7 +1013,7 @@ as_pg_roll_usage(pgsql_conn_t *pg_conn,  time_t sent_start,
 		}
 	}
 
-	if (!my_time)
+	if(!my_time)
 		my_time = time(NULL);
 
 	/* test month gap */
@@ -1032,11 +1032,11 @@ as_pg_roll_usage(pgsql_conn_t *pg_conn,  time_t sent_start,
 //	last_day = 1197033199;
 //	last_month = 1204358399;
 
-	if (!localtime_r(&last_hour, &start_tm)) {
+	if(!localtime_r(&last_hour, &start_tm)) {
 		error("Couldn't get localtime from hour start %d", last_hour);
 		return SLURM_ERROR;
 	}
-	if (!localtime_r(&my_time, &end_tm)) {
+	if(!localtime_r(&my_time, &end_tm)) {
 		error("Couldn't get localtime from hour end %d", my_time);
 		return SLURM_ERROR;
 	}
@@ -1065,14 +1065,14 @@ as_pg_roll_usage(pgsql_conn_t *pg_conn,  time_t sent_start,
 	global_last_rollup = end_time;
 	slurm_mutex_unlock(&rollup_lock);
 
-	if (end_time-start_time > 0) {
+	if(end_time-start_time > 0) {
 		START_TIMER;
-		if ((rc = pgsql_hourly_rollup(pg_conn, start_time, end_time))
+		if((rc = pgsql_hourly_rollup(pg_conn, start_time, end_time))
 		   != SLURM_SUCCESS)
 			return rc;
 		END_TIMER3("hourly_rollup", 5000000);
 		/* If we have a sent_end do not update the last_run_table */
-		if (!sent_end)
+		if(!sent_end)
 			query = xstrdup_printf("UPDATE %s SET hourly_rollup=%d",
 					       last_ran_table, end_time);
 	} else {
@@ -1081,7 +1081,7 @@ as_pg_roll_usage(pgsql_conn_t *pg_conn,  time_t sent_start,
 	}
 
 
-	if (!localtime_r(&last_day, &start_tm)) {
+	if(!localtime_r(&last_day, &start_tm)) {
 		error("Couldn't get localtime from day %d", last_day);
 		return SLURM_ERROR;
 	}
@@ -1099,16 +1099,16 @@ as_pg_roll_usage(pgsql_conn_t *pg_conn,  time_t sent_start,
 /* 	info("day end %s", ctime(&end_time)); */
 /* 	info("diff is %d", end_time-start_time); */
 
-	if (end_time-start_time > 0) {
+	if(end_time-start_time > 0) {
 		START_TIMER;
-		if ((rc = pgsql_daily_rollup(pg_conn, start_time, end_time,
+		if((rc = pgsql_daily_rollup(pg_conn, start_time, end_time,
 					    archive_data))
 		   != SLURM_SUCCESS)
 			return rc;
 		END_TIMER2("daily_rollup");
-		if (query && !sent_end)
+		if(query && !sent_end)
 			xstrfmtcat(query, ", daily_rollup=%d", end_time);
-		else if (!sent_end)
+		else if(!sent_end)
 			query = xstrdup_printf("UPDATE %s SET daily_rollup=%d",
 					       last_ran_table, end_time);
 	} else {
@@ -1116,7 +1116,7 @@ as_pg_roll_usage(pgsql_conn_t *pg_conn,  time_t sent_start,
 		       end_time, start_time);
 	}
 
-	if (!localtime_r(&last_month, &start_tm)) {
+	if(!localtime_r(&last_month, &start_tm)) {
 		error("Couldn't get localtime from month %d", last_month);
 		return SLURM_ERROR;
 	}
@@ -1141,17 +1141,17 @@ as_pg_roll_usage(pgsql_conn_t *pg_conn,  time_t sent_start,
 /* 	info("month end %s", ctime(&end_time)); */
 /* 	info("diff is %d", end_time-start_time); */
 
-	if (end_time-start_time > 0) {
+	if(end_time-start_time > 0) {
 		START_TIMER;
-		if ((rc = pgsql_monthly_rollup(
+		if((rc = pgsql_monthly_rollup(
 			    pg_conn, start_time, end_time, archive_data))
 		   != SLURM_SUCCESS)
 			return rc;
 		END_TIMER2("monthly_rollup");
 
-		if (query && !sent_end)
+		if(query && !sent_end)
 			xstrfmtcat(query, ", monthly_rollup=%d", end_time);
-		else if (!sent_end)
+		else if(!sent_end)
 			query = xstrdup_printf(
 				"UPDATE %s SET monthly_rollup=%d",
 				last_ran_table, end_time);
@@ -1160,7 +1160,7 @@ as_pg_roll_usage(pgsql_conn_t *pg_conn,  time_t sent_start,
 		       end_time, start_time);
 	}
 
-	if (query) {
+	if(query) {
 		rc = DEF_QUERY_RET_RC;
 	}
 	return rc;
@@ -1193,19 +1193,19 @@ get_usage_for_assoc_list(pgsql_conn_t *pg_conn, List assoc_list,
 		USAGE_COUNT
 	};
 
-	if (!assoc_list) {
+	if(!assoc_list) {
 		error("We need an object to set data for getting usage");
 		return SLURM_ERROR;
 	}
 	usage_table = assoc_day_table;
-	if (set_usage_information(&usage_table, DBD_GET_ASSOC_USAGE,
+	if(set_usage_information(&usage_table, DBD_GET_ASSOC_USAGE,
 				 &start, &end) != SLURM_SUCCESS) {
 		return SLURM_ERROR;
 	}
 
 	itr = list_iterator_create(assoc_list);
 	while((assoc = list_next(itr))) {
-		if (id_str)
+		if(id_str)
 			xstrfmtcat(id_str, " OR t3.id=%d", assoc->id);
 		else
 			xstrfmtcat(id_str, "t3.id=%d", assoc->id);
@@ -1223,7 +1223,7 @@ get_usage_for_assoc_list(pgsql_conn_t *pg_conn, List assoc_list,
 		end, start, id_str);
 	xfree(id_str);
 	result = DEF_QUERY_RET;
-	if (!result)
+	if(!result)
 		return SLURM_ERROR;
 
 	usage_list = list_create(slurmdb_destroy_accounting_rec);
@@ -1241,16 +1241,16 @@ get_usage_for_assoc_list(pgsql_conn_t *pg_conn, List assoc_list,
 	itr = list_iterator_create(assoc_list);
 	while((assoc = list_next(itr))) {
 		int found = 0;
-		if (!assoc->accounting_list)
+		if(!assoc->accounting_list)
 			assoc->accounting_list = list_create(
 				slurmdb_destroy_accounting_rec);
 		while((accounting_rec = list_next(u_itr))) {
-			if (assoc->id == accounting_rec->id) {
+			if(assoc->id == accounting_rec->id) {
 				list_append(assoc->accounting_list,
 					    accounting_rec);
 				list_remove(u_itr);
 				found = 1;
-			} else if (found) {
+			} else if(found) {
 				/* here we know the
 				   list is in id order so
 				   if the next record
@@ -1269,7 +1269,7 @@ get_usage_for_assoc_list(pgsql_conn_t *pg_conn, List assoc_list,
 	list_iterator_destroy(itr);
 	list_iterator_destroy(u_itr);
 
-	if (list_count(usage_list))
+	if(list_count(usage_list))
 		error("we have %d records not added "
 		      "to the association list",
 		      list_count(usage_list));
@@ -1304,20 +1304,20 @@ get_usage_for_wckey_list(pgsql_conn_t *pg_conn, List wckey_list,
 		USAGE_COUNT
 	};
 
-	if (!wckey_list) {
+	if(!wckey_list) {
 		error("We need an object to set data for getting usage");
 		return SLURM_ERROR;
 	}
 
 	usage_table = wckey_day_table;
-	if (set_usage_information(&usage_table, DBD_GET_WCKEY_USAGE,
+	if(set_usage_information(&usage_table, DBD_GET_WCKEY_USAGE,
 				 &start, &end) != SLURM_SUCCESS) {
 		return SLURM_ERROR;
 	}
 
 	itr = list_iterator_create(wckey_list);
 	while((wckey = list_next(itr))) {
-		if (id_str)
+		if(id_str)
 			xstrfmtcat(id_str, " OR id=%d", wckey->id);
 		else
 			xstrfmtcat(id_str, "id=%d", wckey->id);
@@ -1331,7 +1331,7 @@ get_usage_for_wckey_list(pgsql_conn_t *pg_conn, List wckey_list,
 		usage_table, end, start, id_str);
 	xfree(id_str);
 	result = DEF_QUERY_RET;
-	if (!result)
+	if(!result)
 		return SLURM_ERROR;
 
 	usage_list = list_create(slurmdb_destroy_accounting_rec);
@@ -1349,16 +1349,16 @@ get_usage_for_wckey_list(pgsql_conn_t *pg_conn, List wckey_list,
 	itr = list_iterator_create(wckey_list);
 	while((wckey = list_next(itr))) {
 		int found = 0;
-		if (!wckey->accounting_list)
+		if(!wckey->accounting_list)
 			wckey->accounting_list = list_create(
 				slurmdb_destroy_accounting_rec);
 		while((accounting_rec = list_next(u_itr))) {
-			if (wckey->id == accounting_rec->id) {
+			if(wckey->id == accounting_rec->id) {
 				list_append(wckey->accounting_list,
 					    accounting_rec);
 				list_remove(u_itr);
 				found = 1;
-			} else if (found) {
+			} else if(found) {
 				/* here we know the
 				   list is in id order so
 				   if the next record
@@ -1377,7 +1377,7 @@ get_usage_for_wckey_list(pgsql_conn_t *pg_conn, List wckey_list,
 	list_iterator_destroy(itr);
 	list_iterator_destroy(u_itr);
 
-	if (list_count(usage_list))
+	if(list_count(usage_list))
 		error("we have %d records not added "
 		      "to the wckey list",
 		      list_count(usage_list));

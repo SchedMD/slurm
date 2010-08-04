@@ -67,12 +67,12 @@ _concat_txn_cond_list(List cond_list, char *col, char **cond)
 	char *object;
 	ListIterator itr;
 
-	if (cond_list && list_count(cond_list)) {
+	if(cond_list && list_count(cond_list)) {
 		xstrcat(*cond, " AND (");
 		itr = list_iterator_create(cond_list);
 		list_iterator_destroy(itr);
 		while((object = list_next(itr))) {
-			if (set)
+			if(set)
 				xstrcat(*cond, " OR ");
 			xstrfmtcat(*cond,
 				   "name LIKE '%%%s%%' OR "
@@ -101,11 +101,11 @@ _make_txn_cond(pgsql_conn_t *pg_conn, slurmdb_txn_cond_t *txn_cond)
 	concat_cond_list(txn_cond->acct_list, NULL, "acct", &assoc_cond);
 	concat_cond_list(txn_cond->cluster_list, NULL, "cluster", &assoc_cond);
 	concat_cond_list(txn_cond->user_list, NULL, "user_name", &assoc_cond);
-	if (assoc_cond) {
+	if(assoc_cond) {
 		List assoc_id_list;
 		ListIterator id_itr;
 		assoc_id_list = get_assoc_ids(pg_conn, assoc_cond);
-		if (assoc_id_list) {
+		if(assoc_id_list) {
 			id_itr = list_iterator_create(assoc_id_list);
 			set = 0;
 			xstrcat(cond, "AND (");
@@ -134,7 +134,7 @@ _make_txn_cond(pgsql_conn_t *pg_conn, slurmdb_txn_cond_t *txn_cond)
 	concat_like_cond_list(txn_cond->info_list, NULL, "info", &cond);
 	concat_like_cond_list(txn_cond->name_list, NULL, "name", &cond);
 
-	if (txn_cond->time_start)
+	if(txn_cond->time_start)
 		xstrfmtcat(cond, " AND (timestamp >= %d) ",
 			   txn_cond->time_start);
 	if (txn_cond->time_end)
@@ -189,16 +189,16 @@ as_pg_get_txn(pgsql_conn_t *pg_conn, uid_t uid,
 	if (check_db_connection(pg_conn) != SLURM_SUCCESS)
 		return NULL;
 
-	if (txn_cond)
+	if(txn_cond)
 		cond = _make_txn_cond(pg_conn, txn_cond);
 	query = xstrdup_printf("SELECT %s FROM %s", gt_fields, txn_table);
-	if (cond) {
+	if(cond) {
 		xstrfmtcat(query, " WHERE TRUE %s", cond);
 		xfree(cond);
 	}
 	xstrcat(query, " ORDER BY timestamp;");
 	result = DEF_QUERY_RET;
-	if (!result)
+	if(!result)
 		return NULL;
 
 	txn_list = list_create(slurmdb_destroy_txn_rec);
@@ -213,7 +213,7 @@ as_pg_get_txn(pgsql_conn_t *pg_conn, uid_t uid,
 		txn->timestamp = atoi(ROW(GT_TS));
 		txn->where_query = xstrdup(ROW(GT_NAME));
 
-		if (txn_cond && txn_cond->with_assoc_info
+		if(txn_cond && txn_cond->with_assoc_info
 		   && (txn->action == DBD_ADD_ASSOCS
 		       || txn->action == DBD_MODIFY_ASSOCS
 		       || txn->action == DBD_REMOVE_ASSOCS)) {

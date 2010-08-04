@@ -74,18 +74,18 @@ extern List slurmdb_report_user_top_usage(void *db_conn,
 		delete_cluster_list = 0;
 	time_t start_time, end_time;
 
-	if (!user_cond) {
+	if(!user_cond) {
 		delete_user_cond = 1;
 		user_cond = xmalloc(sizeof(slurmdb_user_cond_t));
 	}
 
-	if (!user_cond->assoc_cond) {
+	if(!user_cond->assoc_cond) {
 		delete_assoc_cond = 1;
 		user_cond->assoc_cond =
 			xmalloc(sizeof(slurmdb_association_cond_t));
 	}
 
-	if (!user_cond->assoc_cond->cluster_list) {
+	if(!user_cond->assoc_cond->cluster_list) {
 		delete_cluster_list = 1;
 		user_cond->assoc_cond->cluster_list =
 			list_create(slurm_destroy_char);
@@ -107,7 +107,7 @@ extern List slurmdb_report_user_top_usage(void *db_conn,
 	user_cond->assoc_cond->usage_end = end_time;
 
 	user_list = acct_storage_g_get_users(db_conn, my_uid, user_cond);
-	if (!user_list) {
+	if(!user_list) {
 		exit_code=1;
 		fprintf(stderr, " Problem with user query.\n");
 		goto end_it;
@@ -126,7 +126,7 @@ extern List slurmdb_report_user_top_usage(void *db_conn,
 
 	usage_cluster_list = acct_storage_g_get_clusters(
 		db_conn, my_uid, &cluster_cond);
-	if (!usage_cluster_list) {
+	if(!usage_cluster_list) {
 		exit_code=1;
 		fprintf(stderr, " Problem with cluster query.\n");
 		goto end_it;
@@ -140,7 +140,7 @@ extern List slurmdb_report_user_top_usage(void *db_conn,
 
 		/* check to see if this cluster is around during the
 		   time we are looking at */
-		if (!cluster->accounting_list
+		if(!cluster->accounting_list
 		   || !list_count(cluster->accounting_list))
 			continue;
 
@@ -174,11 +174,11 @@ extern List slurmdb_report_user_top_usage(void *db_conn,
 	cluster_itr = list_iterator_create(cluster_list);
 	while((user = list_next(itr))) {
 		struct passwd *passwd_ptr = NULL;
-		if (!user->assoc_list || !list_count(user->assoc_list))
+		if(!user->assoc_list || !list_count(user->assoc_list))
 			continue;
 
 		passwd_ptr = getpwnam(user->name);
-		if (passwd_ptr)
+		if(passwd_ptr)
 			user->uid = passwd_ptr->pw_uid;
 		else
 			user->uid = (uint32_t)NO_VAL;
@@ -186,16 +186,16 @@ extern List slurmdb_report_user_top_usage(void *db_conn,
 		itr2 = list_iterator_create(user->assoc_list);
 		while((assoc = list_next(itr2))) {
 
-			if (!assoc->accounting_list
+			if(!assoc->accounting_list
 			   || !list_count(assoc->accounting_list))
 				continue;
 
 			while((slurmdb_report_cluster =
 			       list_next(cluster_itr))) {
-				if (!strcmp(slurmdb_report_cluster->name,
+				if(!strcmp(slurmdb_report_cluster->name,
 					   assoc->cluster)) {
 					ListIterator user_itr = NULL;
-					if (!group_accounts) {
+					if(!group_accounts) {
 						slurmdb_report_user = NULL;
 						goto new_user;
 					}
@@ -204,13 +204,13 @@ extern List slurmdb_report_user_top_usage(void *db_conn,
 						user_list);
 					while((slurmdb_report_user
 					       = list_next(user_itr))) {
-						if (slurmdb_report_user->uid
+						if(slurmdb_report_user->uid
 						   != NO_VAL) {
-							if (slurmdb_report_user->
+							if(slurmdb_report_user->
 							   uid
 							   == user->uid)
 								break;
-						} else if (slurmdb_report_user->
+						} else if(slurmdb_report_user->
 							  name
 							  && !strcasecmp(
 								  slurmdb_report_user->
@@ -220,7 +220,7 @@ extern List slurmdb_report_user_top_usage(void *db_conn,
 					}
 					list_iterator_destroy(user_itr);
 				new_user:
-					if (!slurmdb_report_user) {
+					if(!slurmdb_report_user) {
 						slurmdb_report_user = xmalloc(
 							sizeof
 							(slurmdb_report_user_rec_t));
@@ -238,7 +238,7 @@ extern List slurmdb_report_user_top_usage(void *db_conn,
 					break;
 				}
 			}
-			if (!slurmdb_report_cluster) {
+			if(!slurmdb_report_cluster) {
 				error("This cluster '%s' hasn't "
 				      "registered yet, but we have jobs "
 				      "that ran?", assoc->cluster);
@@ -263,12 +263,12 @@ extern List slurmdb_report_user_top_usage(void *db_conn,
 			itr3 = list_iterator_create(
 				slurmdb_report_user->acct_list);
 			while((object = list_next(itr3))) {
-				if (!strcmp(object, assoc->acct))
+				if(!strcmp(object, assoc->acct))
 					break;
 			}
 			list_iterator_destroy(itr3);
 
-			if (!object)
+			if(!object)
 				list_append(slurmdb_report_user->acct_list,
 					    xstrdup(assoc->acct));
 			itr3 = list_iterator_create(assoc->accounting_list);
@@ -286,28 +286,28 @@ extern List slurmdb_report_user_top_usage(void *db_conn,
 	list_iterator_destroy(cluster_itr);
 
 end_it:
-	if (delete_cluster_list) {
+	if(delete_cluster_list) {
 		list_destroy(user_cond->assoc_cond->cluster_list);
 		user_cond->assoc_cond->cluster_list = NULL;
 	}
 
-	if (delete_assoc_cond) {
+	if(delete_assoc_cond) {
 		slurmdb_destroy_association_cond(user_cond->assoc_cond);
 		user_cond->assoc_cond = NULL;
 	}
 
-	if (delete_user_cond) {
+	if(delete_user_cond) {
 		slurmdb_destroy_user_cond(user_cond);
 		user_cond = NULL;
 	}
 
-	if (user_list) {
+	if(user_list) {
 		list_destroy(user_list);
 		user_list = NULL;
 	}
 
-	if (exit_code) {
-		if (cluster_list) {
+	if(exit_code) {
+		if(cluster_list) {
 			list_destroy(cluster_list);
 			cluster_list = NULL;
 		}

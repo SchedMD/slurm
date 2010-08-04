@@ -50,66 +50,66 @@ static int _set_cond(int *start, int argc, char *argv[],
 	int option = 0;
 	for (i=(*start); i<argc; i++) {
 		end = parse_option_end(argv[i]);
-		if (!end)
+		if(!end)
 			command_len=strlen(argv[i]);
 		else {
 			command_len=end-1;
-			if (argv[i][end] == '=') {
+			if(argv[i][end] == '=') {
 				option = (int)argv[i][end-1];
 				end++;
 			}
 		}
 
-		if (!end && !strncasecmp(argv[i], "Tree",
+		if (!end && !strncasecmp (argv[i], "Tree",
 					  MAX(command_len, 4))) {
 			tree_display = 1;
-		} else if (!end && !strncasecmp(argv[i], "where",
+		} else if(!end && !strncasecmp(argv[i], "where",
 					       MAX(command_len, 5))) {
 			continue;
-		} else if (!end || !strncasecmp(argv[i], "Ids",
+		} else if(!end || !strncasecmp (argv[i], "Ids",
 						MAX(command_len, 1))
-			  || !strncasecmp(argv[i], "Problems",
+			  || !strncasecmp (argv[i], "Problems",
 					   MAX(command_len, 2))) {
-			if (!assoc_cond->id_list)
+			if(!assoc_cond->id_list)
 				assoc_cond->id_list =
 					list_create(slurm_destroy_char);
 			slurm_addto_char_list(assoc_cond->id_list,
 					      argv[i]+end);
 			set = 1;
-		} else if (!strncasecmp(argv[i], "Accounts",
+		} else if (!strncasecmp (argv[i], "Accounts",
 					 MAX(command_len, 2))
-			   || !strncasecmp(argv[i], "Acct",
+			   || !strncasecmp (argv[i], "Acct",
 					    MAX(command_len, 4))) {
-			if (!assoc_cond->acct_list)
+			if(!assoc_cond->acct_list)
 				assoc_cond->acct_list =
 					list_create(slurm_destroy_char);
 			slurm_addto_char_list(assoc_cond->acct_list,
 					argv[i]+end);
 			set = 1;
-		} else if (!strncasecmp(argv[i], "Clusters",
+		} else if (!strncasecmp (argv[i], "Clusters",
 					 MAX(command_len, 1))) {
-			if (!assoc_cond->cluster_list)
+			if(!assoc_cond->cluster_list)
 				assoc_cond->cluster_list =
 					list_create(slurm_destroy_char);
 			slurm_addto_char_list(assoc_cond->cluster_list,
 					argv[i]+end);
 			set = 1;
-		} else if (!strncasecmp(argv[i], "Format",
+		} else if (!strncasecmp (argv[i], "Format",
 					 MAX(command_len, 1))) {
-			if (format_list)
+			if(format_list)
 				slurm_addto_char_list(format_list,
 						      argv[i]+end);
-		} else if (!strncasecmp(argv[i], "Partitions",
+		} else if (!strncasecmp (argv[i], "Partitions",
 					 MAX(command_len, 4))) {
-			if (!assoc_cond->partition_list)
+			if(!assoc_cond->partition_list)
 				assoc_cond->partition_list =
 					list_create(slurm_destroy_char);
 			slurm_addto_char_list(assoc_cond->partition_list,
 					argv[i]+end);
 			set = 1;
-		} else if (!strncasecmp(argv[i], "Users",
+		} else if (!strncasecmp (argv[i], "Users",
 					 MAX(command_len, 1))) {
-			if (!assoc_cond->user_list)
+			if(!assoc_cond->user_list)
 				assoc_cond->user_list =
 					list_create(slurm_destroy_char);
 			slurm_addto_char_list(assoc_cond->user_list,
@@ -155,17 +155,17 @@ extern int sacctmgr_list_problem(int argc, char *argv[])
 
 	for (i=0; i<argc; i++) {
 		int command_len = strlen(argv[i]);
-		if (!strncasecmp(argv[i], "Where", MAX(command_len, 5))
-		    || !strncasecmp(argv[i], "Set", MAX(command_len, 3)))
+		if (!strncasecmp (argv[i], "Where", MAX(command_len, 5))
+		    || !strncasecmp (argv[i], "Set", MAX(command_len, 3)))
 			i++;
 		_set_cond(&i, argc, argv, assoc_cond, format_list);
 	}
 
-	if (exit_code) {
+	if(exit_code) {
 		slurmdb_destroy_association_cond(assoc_cond);
 		list_destroy(format_list);
 		return SLURM_ERROR;
-	} else if (!list_count(format_list))
+	} else if(!list_count(format_list))
 		slurm_addto_char_list(format_list, "C,A,U,Problem");
 
 	print_fields_list = list_create(destroy_print_field);
@@ -176,7 +176,7 @@ extern int sacctmgr_list_problem(int argc, char *argv[])
 		int command_len = 0;
 		int newlen = 0;
 
-		if ((tmp_char = strstr(object, "\%"))) {
+		if((tmp_char = strstr(object, "\%"))) {
 			newlen = atoi(tmp_char+1);
 			tmp_char[0] = '\0';
 		}
@@ -185,28 +185,28 @@ extern int sacctmgr_list_problem(int argc, char *argv[])
 
 		field = xmalloc(sizeof(print_field_t));
 
-		if (!strncasecmp("Account", object, MAX(command_len, 1))
+		if(!strncasecmp("Account", object, MAX(command_len, 1))
 		   || !strncasecmp("Acct", object, MAX(command_len, 4))) {
 			field->type = PRINT_ACCOUNT;
 			field->name = xstrdup("Account");
-			if (tree_display)
+			if(tree_display)
 				field->len = -20;
 			else
 				field->len = 10;
 			field->print_routine = print_fields_str;
-		} else if (!strncasecmp("Cluster", object,
+		} else if(!strncasecmp("Cluster", object,
 				       MAX(command_len, 1))) {
 			field->type = PRINT_CLUSTER;
 			field->name = xstrdup("Cluster");
 			field->len = 10;
 			field->print_routine = print_fields_str;
-		} else if (!strncasecmp("Problem", object,
+		} else if(!strncasecmp("Problem", object,
 				       MAX(command_len, 1))) {
 			field->type = PRINT_PROBLEM;
 			field->name = xstrdup("Problem");
 			field->len = 40;
 			field->print_routine = print_fields_str;
-		} else if (!strncasecmp("User", object, MAX(command_len, 1))) {
+		} else if(!strncasecmp("User", object, MAX(command_len, 1))) {
 			field->type = PRINT_USER;
 			field->name = xstrdup("User");
 			field->len = 10;
@@ -219,7 +219,7 @@ extern int sacctmgr_list_problem(int argc, char *argv[])
 			continue;
 		}
 
-		if (newlen)
+		if(newlen)
 			field->len = newlen;
 
 		list_append(print_fields_list, field);
@@ -227,7 +227,7 @@ extern int sacctmgr_list_problem(int argc, char *argv[])
 	list_iterator_destroy(itr);
 	list_destroy(format_list);
 
-	if (exit_code) {
+	if(exit_code) {
 		slurmdb_destroy_association_cond(assoc_cond);
 		list_destroy(print_fields_list);
 		return SLURM_ERROR;
@@ -236,7 +236,7 @@ extern int sacctmgr_list_problem(int argc, char *argv[])
 	assoc_list = acct_storage_g_get_problems(db_conn, my_uid, assoc_cond);
 	slurmdb_destroy_association_cond(assoc_cond);
 
-	if (!assoc_list) {
+	if(!assoc_list) {
 		exit_code=1;
 		fprintf(stderr, " Error with request: %s\n",
 			slurm_strerror(errno));
@@ -294,7 +294,7 @@ extern int sacctmgr_list_problem(int argc, char *argv[])
 		printf("\n");
 	}
 
-	if (tree_list)
+	if(tree_list)
 		list_destroy(tree_list);
 
 	list_iterator_destroy(itr2);
