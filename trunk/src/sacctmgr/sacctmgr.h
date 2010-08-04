@@ -100,6 +100,13 @@ extern void *db_conn;
 extern uint32_t my_uid;
 extern List g_qos_list;
 
+extern int sacctmgr_set_association_cond(slurmdb_association_cond_t *assoc_cond,
+					 char *type, char *value,
+					 int command_len);
+extern int sacctmgr_set_association_rec(slurmdb_association_rec_t *assoc_rec,
+					char *type, char *value,
+					int command_len, int option);
+
 extern int sacctmgr_add_association(int argc, char *argv[]);
 extern int sacctmgr_add_user(int argc, char *argv[]);
 extern int sacctmgr_add_account(int argc, char *argv[]);
