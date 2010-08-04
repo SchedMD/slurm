@@ -2539,7 +2539,6 @@ extern int _job_alloc(void *job_gres_data, void *node_gres_data,
 	 */	
 	if (job_gres_ptr->gres_bit_alloc[node_offset]) {
 		/* Resuming a suspended job, resources already allocated */
-		      gres_name, job_id, node_name);
 		if (node_gres_ptr->gres_bit_alloc == NULL) {
 			node_gres_ptr->gres_bit_alloc =
 				bit_copy(job_gres_ptr->
