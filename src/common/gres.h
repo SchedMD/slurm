@@ -110,8 +110,14 @@ typedef struct gres_step_state {
 	/* Count of resources needed */
 	uint32_t gres_cnt_alloc;
 
-	/* Resources currently allocated to the job step on each node */
+	/* Resources currently allocated to the job step on each node
+	 *
+	 * NOTE: node_cnt and the size of node_in_use and gres_bit_alloc are
+	 * identical to that of the job for simplicity. Bits in node_in_use
+	 * are set for those node of the job that are used by this step and 
+	 * gres_bit_alloc are also set if the job's gres_bit_alloc is set */
 	uint32_t node_cnt;
+	bitstr_t *node_in_use;
 	bitstr_t **gres_bit_alloc;
 } gres_step_state_t;
 
@@ -415,7 +421,7 @@ extern uint32_t gres_plugin_step_test(List step_gres_list, List job_gres_list,
  * IN step_gres_list - step's gres_list built by
  *		gres_plugin_step_state_validate()
  * IN job_gres_list - job's gres_list built by gres_plugin_job_state_validate()
- * IN node_offset - zero-origin index to the node of interest
+ * IN node_offset - job's zero-origin index to the node of interest
  * IN cpu_cnt - number of CPUs allocated to this job on this node
  * IN job_id, step_id - ID of the step being allocated.
  * RET SLURM_SUCCESS or error code

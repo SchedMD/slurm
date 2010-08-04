@@ -2808,6 +2808,7 @@ static void _step_state_delete(void *gres_data)
 	if (gres_ptr == NULL)
 		return;
 
+	FREE_NULL_BITMAP(gres_ptr->node_in_use);
 	if (gres_ptr->gres_bit_alloc) {
 		for (i=0; i<gres_ptr->node_cnt; i++)
 			FREE_NULL_BITMAP(gres_ptr->gres_bit_alloc[i]);
@@ -3017,6 +3018,8 @@ static void *_step_state_dup(void *gres_data)
 	new_gres_ptr = xmalloc(sizeof(gres_step_state_t));
 	new_gres_ptr->gres_cnt_alloc	= gres_ptr->gres_cnt_alloc;
 	new_gres_ptr->node_cnt		= gres_ptr->node_cnt;
+	if (gres_ptr->node_in_use)
+		new_gres_ptr->node_in_use = bit_copy(gres_ptr->node_in_use);
 	if (gres_ptr->gres_bit_alloc) {
 		new_gres_ptr->gres_bit_alloc = xmalloc(sizeof(bitstr_t *) *
 					       gres_ptr->node_cnt);
@@ -3099,6 +3102,7 @@ extern int gres_plugin_step_state_pack(List gres_list, Buf buffer,
 		pack32(gres_ptr->plugin_id, buffer);
 		pack32(gres_step_ptr->gres_cnt_alloc, buffer);
 		pack32(gres_step_ptr->node_cnt, buffer);
+		pack_bit_str(gres_step_ptr->node_in_use, buffer);
 		if (gres_step_ptr->gres_bit_alloc) {
 			pack8((uint8_t) 1, buffer);
 			for (i=0; i<gres_step_ptr->node_cnt; i++)
@@ -3160,6 +3164,7 @@ extern int gres_plugin_step_state_unpack(List *gres_list, Buf buffer,
 		gres_step_ptr = xmalloc(sizeof(gres_step_state_t));
 		safe_unpack32(&gres_step_ptr->gres_cnt_alloc, buffer);
 		safe_unpack32(&gres_step_ptr->node_cnt, buffer);
+		unpack_bit_str(&gres_step_ptr->node_in_use, buffer);
 		safe_unpack8(&has_file, buffer);
 		if (has_file) {
 			gres_step_ptr->gres_bit_alloc =
@@ -3216,10 +3221,14 @@ static void _step_state_log(void *gres_data, uint32_t job_id, uint32_t step_id,
 	info("  gres_cnt:%u node_cnt:%u", gres_ptr->gres_cnt_alloc,
 	     gres_ptr->node_cnt);
 
-	if (gres_ptr->gres_bit_alloc == NULL)
+	if (gres_ptr->node_in_use == NULL)
+		info("  node_in_use:NULL");
+	else if (gres_ptr->gres_bit_alloc == NULL)
 		info("  gres_bit_alloc:NULL");
 	else {
 		for (i=0; i<gres_ptr->node_cnt; i++) {
+			if (!bit_test(gres_ptr->node_in_use, i))
+				continue;
 			if (gres_ptr->gres_bit_alloc[i]) {
 				bit_fmt(tmp_str, sizeof(tmp_str),
 					gres_ptr->gres_bit_alloc[i]);
@@ -3332,12 +3341,13 @@ static int _step_alloc(void *step_gres_data, void *job_gres_data,
 {
 	gres_job_state_t  *job_gres_ptr  = (gres_job_state_t *)  job_gres_data;
 	gres_step_state_t *step_gres_ptr = (gres_step_state_t *) step_gres_data;
-	uint32_t gres_avail, gres_needed;
+	uint32_t gres_needed;
 	bitstr_t *gres_bit_alloc;
+	int i, len;
 
 	xassert(job_gres_ptr);
 	xassert(step_gres_ptr);
-	step_gres_ptr->node_cnt = job_gres_ptr->node_cnt;	/* FIXME */
+
 	if (node_offset >= job_gres_ptr->node_cnt) {
 		error("gres/%s: step_alloc for %u.%u, node offset invalid "
 		      "(%d >= %u)",
@@ -3345,18 +3355,43 @@ static int _step_alloc(void *step_gres_data, void *job_gres_data,
 		      job_gres_ptr->node_cnt);
 		return SLURM_ERROR;
 	}
-	if (job_gres_ptr->gres_cnt_step_alloc) {
-		if (step_gres_ptr->gres_cnt_alloc >
-		    (job_gres_ptr->gres_cnt_alloc - 
-		     job_gres_ptr->gres_cnt_step_alloc[node_offset]))
-			return SLURM_ERROR;
-		job_gres_ptr->gres_cnt_step_alloc[node_offset] +=
-			step_gres_ptr->gres_cnt_alloc;
-	} else {
-		error("gres/%s: gres_cnt_step_alloc gres_bit_alloc is NULL",
-		      gres_name);
+
+	if (step_gres_ptr->gres_cnt_alloc > job_gres_ptr->gres_cnt_alloc) {
+		error("gres/%s: step_alloc for %u.%u, step's > job's "
+		      "for node %d (%d > %u)",
+		      gres_name, job_id, step_id, node_offset,
+		      step_gres_ptr->gres_cnt_alloc,
+		      job_gres_ptr->gres_cnt_alloc);
 		return SLURM_ERROR;
 	}
+
+	if (job_gres_ptr->gres_cnt_step_alloc == NULL) {
+		job_gres_ptr->gres_cnt_step_alloc =
+			xmalloc(sizeof(uint32_t) * job_gres_ptr->node_cnt);
+	}
+
+	if (step_gres_ptr->gres_cnt_alloc >
+	    (job_gres_ptr->gres_cnt_alloc - 
+	     job_gres_ptr->gres_cnt_step_alloc[node_offset])) {
+		error("gres/%s: step_alloc for %u.%u, step's > job's "
+		      "remaining for node %d (%d > (%u - %u))",
+		      gres_name, job_id, step_id, node_offset,
+		      step_gres_ptr->gres_cnt_alloc,
+		      job_gres_ptr->gres_cnt_alloc,
+		      job_gres_ptr->gres_cnt_step_alloc[node_offset]);
+		return SLURM_ERROR;
+	}
+
+	step_gres_ptr->node_cnt = job_gres_ptr->node_cnt;
+	if (step_gres_ptr->node_in_use == NULL) {
+		step_gres_ptr->node_in_use = bit_alloc(job_gres_ptr->node_cnt);
+		if (step_gres_ptr->node_in_use == NULL)
+			fatal("bit_alloc malloc failure");
+	}
+	bit_set(step_gres_ptr->node_in_use, node_offset);
+	job_gres_ptr->gres_cnt_step_alloc[node_offset] +=
+		step_gres_ptr->gres_cnt_alloc;
+
 	if ((job_gres_ptr->gres_bit_alloc == NULL) ||
 	    (job_gres_ptr->gres_bit_alloc[node_offset] == NULL)) {
 		debug("gres/%s: step_alloc gres_bit_alloc for %u.%u is NULL",
@@ -3374,22 +3409,20 @@ static int _step_alloc(void *step_gres_data, void *job_gres_data,
 			job_gres_ptr->gres_bit_step_alloc[node_offset]);
 		bit_not(job_gres_ptr->gres_bit_step_alloc[node_offset]);
 	}
-	gres_avail  = bit_set_count(gres_bit_alloc);
+
 	gres_needed = step_gres_ptr->gres_cnt_alloc;
-	if (gres_needed > gres_avail) {
-		error("gres/%s: step %u.%u oversubscribing resources on node %d",
-		      gres_name, job_id, step_id, node_offset);
-	} else {
-		int gres_rem = gres_needed;
-		int i, len = bit_size(gres_bit_alloc);
-		for (i=0; i<len; i++) {
-			if (gres_rem > 0) {
-				if (bit_test(gres_bit_alloc, i))
-					gres_rem--;
-			} else {
-				bit_clear(gres_bit_alloc, i);
-			}
+	len = bit_size(gres_bit_alloc);
+	for (i=0; i<len; i++) {
+		if (gres_needed > 0) {
+			if (bit_test(gres_bit_alloc, i))
+				gres_needed--;
+		} else {
+			bit_clear(gres_bit_alloc, i);
 		}
+	}
+	if (gres_needed) {
+		error("gres/%s: step %u.%u oversubscribed resources on node %d",
+		      gres_name, job_id, step_id, node_offset);
 	}
 
 	if (job_gres_ptr->gres_bit_step_alloc == NULL) {
@@ -3410,7 +3443,8 @@ static int _step_alloc(void *step_gres_data, void *job_gres_data,
 	if (step_gres_ptr->gres_bit_alloc[node_offset]) {
 		error("gres/%s: step %u.%u bit_alloc already exists",
 		      gres_name, job_id, step_id);
-		bit_or(step_gres_ptr->gres_bit_alloc[node_offset],gres_bit_alloc);
+		bit_or(step_gres_ptr->gres_bit_alloc[node_offset],
+		       gres_bit_alloc);
 		FREE_NULL_BITMAP(gres_bit_alloc);
 	} else {
 		step_gres_ptr->gres_bit_alloc[node_offset] = gres_bit_alloc;
@@ -3424,7 +3458,7 @@ static int _step_alloc(void *step_gres_data, void *job_gres_data,
  * IN step_gres_list - step's gres_list built by
  *		gres_plugin_step_state_validate()
  * IN job_gres_list - job's gres_list built by gres_plugin_job_state_validate()
- * IN node_offset - zero-origin index to the node of interest
+ * IN node_offset - job's zero-origin index to the node of interest
  * IN cpu_cnt - number of CPUs allocated to this job on this node
  * IN job_id, step_id - ID of the step being allocated.
  * RET SLURM_SUCCESS or error code
@@ -3450,6 +3484,19 @@ extern int gres_plugin_step_alloc(List step_gres_list, List job_gres_list,
 	slurm_mutex_lock(&gres_context_lock);
 	step_gres_iter = list_iterator_create(step_gres_list);
 	while ((step_gres_ptr = (gres_state_t *) list_next(step_gres_iter))) {
+		for (i=0; i<gres_context_cnt; i++) {
+			if (step_gres_ptr->plugin_id == 
+			    gres_context[i].plugin_id)
+				break;
+		}
+		if (i >= gres_context_cnt) {
+			error("gres: step_alloc, could not find plugin %u for "
+			      "step %u.%u",
+			      step_gres_ptr->plugin_id, job_id, step_id);
+			rc = ESLURM_INVALID_GRES;
+			break;
+		}
+
 		job_gres_iter = list_iterator_create(job_gres_list);
 		while ((job_gres_ptr = (gres_state_t *) 
 				list_next(job_gres_iter))) {
@@ -3457,22 +3504,19 @@ extern int gres_plugin_step_alloc(List step_gres_list, List job_gres_list,
 				break;
 		}
 		list_iterator_destroy(job_gres_iter);
-		if (job_gres_ptr == NULL)
-			continue;
-
-		for (i=0; i<gres_context_cnt; i++) {
-			if (step_gres_ptr->plugin_id != 
-			    gres_context[i].plugin_id)
-				continue;
-			rc2 = _step_alloc(step_gres_ptr->gres_data, 
-					  job_gres_ptr->gres_data,
-					  node_offset, cpu_cnt,
-					  gres_context[i].gres_name, job_id,
-					  step_id);
-			if (rc2 != SLURM_SUCCESS)
-				rc = rc2;
+		if (job_gres_ptr == NULL) {
+			info("gres: job %u lacks gres/%s for step %u",
+			     job_id, gres_context[i].gres_name, step_id);
+			rc = ESLURM_INVALID_GRES;
 			break;
 		}
+
+		rc2 = _step_alloc(step_gres_ptr->gres_data, 
+				  job_gres_ptr->gres_data, node_offset,
+				  cpu_cnt, gres_context[i].gres_name, job_id,
+				  step_id);
+		if (rc2 != SLURM_SUCCESS)
+			rc = rc2;
 	}
 	list_iterator_destroy(step_gres_iter);
 	slurm_mutex_unlock(&gres_context_lock);
@@ -3492,8 +3536,17 @@ static int _step_dealloc(void *step_gres_data, void *job_gres_data,
 
 	xassert(job_gres_ptr);
 	xassert(step_gres_ptr);
+	if (step_gres_ptr->node_in_use == NULL) {
+		error("gres/%s: step %u.%u dealloc, node_in_use is NULL",
+		      gres_name, job_id, step_id);
+		return SLURM_ERROR;
+	}
+
 	node_cnt = MIN(job_gres_ptr->node_cnt, step_gres_ptr->node_cnt);
 	for (i=0; i<node_cnt; i++) {
+		if (!bit_test(step_gres_ptr->node_in_use, i))
+			continue;
+
 		if (job_gres_ptr->gres_cnt_step_alloc) {
 			if (job_gres_ptr->gres_cnt_step_alloc[i] >=
 			    step_gres_ptr->gres_cnt_alloc) {
