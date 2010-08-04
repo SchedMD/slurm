@@ -705,7 +705,7 @@ slurm_cred_copy(slurm_cred_t *cred)
 	rcred->stepid = cred->stepid;
 	rcred->uid    = cred->uid;
 	rcred->job_gres_list  = gres_plugin_job_state_dup(cred->job_gres_list);
-	rcred->step_gres_list = gres_plugin_job_state_dup(cred->step_gres_list);
+	rcred->step_gres_list = gres_plugin_step_state_dup(cred->step_gres_list);
 	rcred->job_mem_limit  = cred->job_mem_limit;
 	rcred->step_mem_limit = cred->step_mem_limit;
 	rcred->step_hostlist  = xstrdup(cred->step_hostlist);
@@ -836,7 +836,7 @@ slurm_cred_get_args(slurm_cred_t *cred, slurm_cred_arg_t *arg)
 	arg->stepid   = cred->stepid;
 	arg->uid      = cred->uid;
 	arg->job_gres_list  = gres_plugin_job_state_dup(cred->job_gres_list);
-	arg->step_gres_list = gres_plugin_job_state_dup(cred->step_gres_list);
+	arg->step_gres_list = gres_plugin_step_state_dup(cred->step_gres_list);
 	arg->job_mem_limit  = cred->job_mem_limit;
 	arg->step_mem_limit = cred->step_mem_limit;
 	arg->step_hostlist  = xstrdup(cred->step_hostlist);
@@ -924,7 +924,7 @@ slurm_cred_verify(slurm_cred_ctx_t ctx, slurm_cred_t *cred,
 	arg->stepid   = cred->stepid;
 	arg->uid      = cred->uid;
 	arg->job_gres_list  = gres_plugin_job_state_dup(cred->job_gres_list);
-	arg->step_gres_list = gres_plugin_job_state_dup(cred->step_gres_list);
+	arg->step_gres_list = gres_plugin_step_state_dup(cred->step_gres_list);
 	arg->job_mem_limit  = cred->job_mem_limit;
 	arg->step_mem_limit = cred->step_mem_limit;
 	arg->step_hostlist  = xstrdup(cred->step_hostlist);
