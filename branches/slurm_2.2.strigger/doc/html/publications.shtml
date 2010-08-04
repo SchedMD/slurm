@@ -1,0 +1,59 @@
+<!--#include virtual="header.txt"-->
+
+<h1>Publications and Presentations</h1>
+
+<p>Note that some of these contained dated information.</p>
+
+<h2>Presentations</h2>
+
+<ul>
+<li><a href="slurm.sc08.bof.pdf">High Scalability Resource Management with
+SLURM</a> (Supercomputing 2008, November 2008)</li>
+<li><a href="slurm.sc08.status.pdf">SLURM Status Report</a>
+(Supercomputing 2008, November 2008)</li>
+<li><a href="slurm_v1.3.pdf">SLURM Version 1.3</a> (May 2008)</li>
+<li><a href="slurm_moab.pdf">Managing Clusters with Moab and SLURM</a>
+(May 2008)</li>
+<li><a href="slurm_v1.2.pdf">Resource Management at LLNL, SLURM Version 1.2</a>
+(April 2007)</li>
+<li><a href="lci.7.tutorial.pdf">Resource Management Using SLURM</a>,
+(Tutorial, The 7th International Conference on Linux Clusters, May 2006)</li>
+</ul>
+
+<h2>Publications</h2>
+
+<p><a href="http://www.linux-mag.com/id/7239/1/">
+<b>Caos NSA and Perceus: All-in-one Cluster Software Stack</b></a>,
+Jeffrey B. Layton,
+<i>Linux Magazine</i>,
+5 February 2009.
+</p>
+
+<p><b>Enhancing an Open Source Resource Manager with Multi-Core/Multi-threaded Support</b>,
+S. M. Balle and D. Palermo,
+<i>Job Scheduling Strategies for Parallel Processing</i>,
+2007.</p>
+
+<p><a href="slurm_design.pdf">
+<b>SLURM: Simple Linux Utility for Resource Management</b></a> [PDF],
+M. Jette and M. Grondona,
+<i>Proceedings of ClusterWorld Conference and Expo</i>,
+San Jose, California, June 2003.</p>
+
+<p><b>SLURM: Simple Linux Utility for Resource Management</b>,
+A. Yoo, M. Jette, and M. Grondona,
+<i>Job Scheduling Strategies for Parallel Processing</i>,
+volume 2862 of <i>Lecture Notes in Computer Science</i>,
+pages 44-60,
+Springer-Verlag, 2003.</p>
+
+<h2>Interview</h2>
+
+<p><a href="http://www.rce-cast.com/index.php/Podcast/rce-10-slurm.html">
+RCE 10: SLURM (podcast)</a>:
+Brock Palen and Jeff Squyres speak with Morris Jette and
+Danny Auble of LLNL about SLURM.</p>
+
+<p style="text-align:center;">Last modified 27 May 2009</p>
+
+<!--#include virtual="footer.txt"-->
