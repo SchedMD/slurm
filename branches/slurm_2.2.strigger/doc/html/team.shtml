@@ -24,6 +24,7 @@ Linux NetworX and many other contributors.
 <li>Anton Blanchard (Samba)</li>
 <li>Janne Blomqvist (Aalto University, Finland)</li>
 <li>David Bremer (LLNL)</li>
+<li>Bill Brophy (Bull)</li>
 <li>Hongjia Cao (National University of Defense Techonogy, China)</li>
 <li>Daniel Christians (HP)</li>
 <li>Gilles Civario (Bull)</li>
@@ -59,8 +60,7 @@ Linux NetworX and many other contributors.
 <li>Pere Munt (Barcelona Supercomputer Center, Spain)</li>
 <li>Michal Novotny (Masaryk University, Czech Republic)</li>
 <li>Bryan O'Sullivan (Pathscale)</li>
-<li>Gennaro Oliva (Institute of High Performance Computing and
-    Networking, Italy)</li>
+<li>Gennaro Oliva (Institute of High Performance Computing and Networking, Italy)</li>
 <li>Daniel Palermo (HP)</li>
 <li>Dan Phung (LLNL/Columbia University)</li>
 <li>Ashley Pittman (Quadrics, UK)</li>
@@ -82,6 +82,6 @@ Linux NetworX and many other contributors.
 <li>Anne-Marie Wunderlin (Bull)</li>
 </ul>
 
-<p style="text-align:center;">Last modified 9 February 2010</p>
+<p style="text-align:center;">Last modified 4 August 2010</p>
 
 <!--#include virtual="footer.txt"-->
