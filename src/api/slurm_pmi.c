@@ -306,7 +306,7 @@ int  slurm_get_kvs_comm_set(struct kvs_comm_set **kvs_set_ptr,
 		slurm_close_accepted_conn(srun_fd);
 		return errno;
 	}
-	if (msg_rcv.auth_cred)
+	if(msg_rcv.auth_cred)
 		(void)g_slurm_auth_destroy(msg_rcv.auth_cred);
 
 	if (msg_rcv.msg_type != PMI_KVS_GET_RESP) {

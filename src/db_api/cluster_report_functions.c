@@ -68,17 +68,17 @@ static void _process_ua(List user_list, slurmdb_association_rec_t *assoc)
 	*/
 	itr = list_iterator_create(user_list);
 	while((slurmdb_report_user = list_next(itr))) {
-		if (!strcmp(slurmdb_report_user->name, assoc->user)
+		if(!strcmp(slurmdb_report_user->name, assoc->user)
 		   && !strcmp(slurmdb_report_user->acct, assoc->acct))
 			break;
 	}
 	list_iterator_destroy(itr);
 
-	if (!slurmdb_report_user) {
+	if(!slurmdb_report_user) {
 		struct passwd *passwd_ptr = NULL;
 		uid_t uid = NO_VAL;
 		passwd_ptr = getpwnam(assoc->user);
-		if (passwd_ptr)
+		if(passwd_ptr)
 			uid = passwd_ptr->pw_uid;
 		/* In this report we are using the slurmdb_report user
 		   structure to store the information we want
@@ -137,7 +137,7 @@ static void _process_uw(List user_list, slurmdb_wckey_rec_t *wckey)
 	uid_t uid = NO_VAL;
 
 	passwd_ptr = getpwnam(wckey->user);
-	if (passwd_ptr)
+	if(passwd_ptr)
 		uid = passwd_ptr->pw_uid;
 	/* In this report we are using the slurmdb_report user
 	   structure to store the information we want
@@ -172,12 +172,12 @@ static void _process_wu(List assoc_list, slurmdb_wckey_rec_t *wckey)
 	/* find the parent */
 	itr = list_iterator_create(assoc_list);
 	while((parent_assoc = list_next(itr))) {
-		if (!parent_assoc->user
+		if(!parent_assoc->user
 		   && !strcmp(parent_assoc->acct, wckey->name))
 			break;
 	}
 	list_iterator_destroy(itr);
-	if (!parent_assoc) {
+	if(!parent_assoc) {
 		parent_assoc = xmalloc(sizeof(slurmdb_report_assoc_rec_t));
 
 		list_append(assoc_list,
@@ -214,20 +214,20 @@ static void _process_assoc_type(
 
 	/* now add the associations of interest here by user */
 	while((assoc = list_next(itr))) {
-		if (!assoc->accounting_list
+		if(!assoc->accounting_list
 		   || !list_count(assoc->accounting_list)
 		   || ((type == CLUSTER_REPORT_UA) && !assoc->user)) {
 			list_delete_item(itr);
 			continue;
 		}
 
-		if (strcmp(cluster_name, assoc->cluster))
+		if(strcmp(cluster_name, assoc->cluster))
 			continue;
 
-		if (type == CLUSTER_REPORT_UA)
+		if(type == CLUSTER_REPORT_UA)
 			_process_ua(slurmdb_report_cluster->user_list,
 				    assoc);
-		else if (type == CLUSTER_REPORT_AU)
+		else if(type == CLUSTER_REPORT_AU)
 			_process_au(slurmdb_report_cluster->assoc_list,
 				    assoc);
 
@@ -245,20 +245,20 @@ static void _process_wckey_type(
 
 	/* now add the wckeyiations of interest here by user */
 	while((wckey = list_next(itr))) {
-		if (!wckey->accounting_list
+		if(!wckey->accounting_list
 		   || !list_count(wckey->accounting_list)
 		   || ((type == CLUSTER_REPORT_UW) && !wckey->user)) {
 			list_delete_item(itr);
 			continue;
 		}
 
-		if (strcmp(cluster_name, wckey->cluster))
+		if(strcmp(cluster_name, wckey->cluster))
 			continue;
 
-		if (type == CLUSTER_REPORT_UW)
+		if(type == CLUSTER_REPORT_UW)
 			_process_uw(slurmdb_report_cluster->user_list,
 				    wckey);
-		else if (type == CLUSTER_REPORT_WU)
+		else if(type == CLUSTER_REPORT_WU)
 			_process_wu(slurmdb_report_cluster->assoc_list,
 				    wckey);
 
@@ -288,13 +288,13 @@ static List _process_util_by_report(void *db_conn, char *calling_name,
 
 	cluster_cond.with_deleted = 1;
 	cluster_cond.with_usage = 1;
-	if ((type == CLUSTER_REPORT_UA) || (type == CLUSTER_REPORT_AU)) {
+	if((type == CLUSTER_REPORT_UA) || (type == CLUSTER_REPORT_AU)) {
 		start_time = ((slurmdb_association_cond_t *)cond)->usage_start;
 		end_time = ((slurmdb_association_cond_t *)cond)->usage_end;
 
 		cluster_cond.cluster_list =
 			((slurmdb_association_cond_t *)cond)->cluster_list;
-	} else if ((type == CLUSTER_REPORT_UW) || (type == CLUSTER_REPORT_WU)) {
+	} else if((type == CLUSTER_REPORT_UW) || (type == CLUSTER_REPORT_WU)) {
 		start_time = ((slurmdb_wckey_cond_t *)cond)->usage_start;
 		end_time = ((slurmdb_wckey_cond_t *)cond)->usage_end;
 
@@ -317,32 +317,32 @@ static List _process_util_by_report(void *db_conn, char *calling_name,
 	cluster_list = acct_storage_g_get_clusters(
 		db_conn, my_uid, &cluster_cond);
 
-	if (!cluster_list) {
+	if(!cluster_list) {
 		exit_code=1;
 		fprintf(stderr, "%s: Problem with cluster query.\n",
 			calling_name);
 		goto end_it;
 	}
 
-	if ((type == CLUSTER_REPORT_UA) || (type == CLUSTER_REPORT_AU)) {
+	if((type == CLUSTER_REPORT_UA) || (type == CLUSTER_REPORT_AU)) {
 		((slurmdb_association_cond_t *)cond)->usage_start = start_time;
 		((slurmdb_association_cond_t *)cond)->usage_end = end_time;
 		type_list = acct_storage_g_get_associations(
 			db_conn, my_uid, cond);
-	} else if ((type == CLUSTER_REPORT_UW) || (type == CLUSTER_REPORT_WU)) {
+	} else if((type == CLUSTER_REPORT_UW) || (type == CLUSTER_REPORT_WU)) {
 		((slurmdb_wckey_cond_t *)cond)->usage_start = start_time;
 		((slurmdb_wckey_cond_t *)cond)->usage_end = end_time;
 		type_list = acct_storage_g_get_wckeys(
 			db_conn, my_uid, cond);
 	}
 
-	if (!type_list) {
+	if(!type_list) {
 		exit_code=1;
 		fprintf(stderr, "%s: Problem with get query.\n", calling_name);
 		goto end_it;
 	}
 
-	if ((type == CLUSTER_REPORT_UA) || (type == CLUSTER_REPORT_AU)) {
+	if((type == CLUSTER_REPORT_UA) || (type == CLUSTER_REPORT_AU)) {
 		first_list = type_list;
 		type_list = slurmdb_get_hierarchical_sorted_assoc_list(
 			first_list);
@@ -356,7 +356,7 @@ static List _process_util_by_report(void *db_conn, char *calling_name,
 
 		/* check to see if this cluster is around during the
 		   time we are looking at */
-		if (!cluster->accounting_list
+		if(!cluster->accounting_list
 		   || !list_count(cluster->accounting_list))
 			continue;
 
@@ -366,10 +366,10 @@ static List _process_util_by_report(void *db_conn, char *calling_name,
 		list_append(ret_list, slurmdb_report_cluster);
 
 		slurmdb_report_cluster->name = xstrdup(cluster->name);
-		if ((type == CLUSTER_REPORT_UA) || (type == CLUSTER_REPORT_UW))
+		if((type == CLUSTER_REPORT_UA) || (type == CLUSTER_REPORT_UW))
 			slurmdb_report_cluster->user_list =
 				list_create(slurmdb_destroy_report_user_rec);
-		else if ((type == CLUSTER_REPORT_AU)
+		else if((type == CLUSTER_REPORT_AU)
 			|| (type == CLUSTER_REPORT_WU))
 			slurmdb_report_cluster->assoc_list =
 				list_create(slurmdb_destroy_report_assoc_rec);
@@ -387,10 +387,10 @@ static List _process_util_by_report(void *db_conn, char *calling_name,
 
 		slurmdb_report_cluster->cpu_count /=
 			list_count(cluster->accounting_list);
-		if ((type == CLUSTER_REPORT_UA) || (type == CLUSTER_REPORT_AU))
+		if((type == CLUSTER_REPORT_UA) || (type == CLUSTER_REPORT_AU))
 			_process_assoc_type(type_itr, slurmdb_report_cluster,
 					    cluster->name, type);
-		else if ((type == CLUSTER_REPORT_UW)
+		else if((type == CLUSTER_REPORT_UW)
 			|| (type == CLUSTER_REPORT_WU))
 			_process_wckey_type(type_itr, slurmdb_report_cluster,
 					    cluster->name, type);
@@ -401,23 +401,23 @@ static List _process_util_by_report(void *db_conn, char *calling_name,
 
 end_it:
 
-	if (type_list) {
+	if(type_list) {
 		list_destroy(type_list);
 		type_list = NULL;
 	}
 
-	if (first_list) {
+	if(first_list) {
 		list_destroy(first_list);
 		first_list = NULL;
 	}
 
-	if (cluster_list) {
+	if(cluster_list) {
 		list_destroy(cluster_list);
 		cluster_list = NULL;
 	}
 
-	if (exit_code) {
-		if (ret_list) {
+	if(exit_code) {
+		if(ret_list) {
 			list_destroy(ret_list);
 			ret_list = NULL;
 		}

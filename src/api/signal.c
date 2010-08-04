@@ -173,11 +173,11 @@ _local_send_recv_rc_msgs(const char *nodelist, slurm_msg_type_t type,
 	msg->msg_type = type;
 	msg->data = data;
 
-	if ((ret_list = slurm_send_recv_msgs(nodelist, msg, 0, false))) {
+	if((ret_list = slurm_send_recv_msgs(nodelist, msg, 0, false))) {
 		while((ret_data_info = list_pop(ret_list))) {
 			temp_rc = slurm_get_return_code(ret_data_info->type,
 							ret_data_info->data);
-			if (temp_rc)
+			if(temp_rc)
 				rc = temp_rc;
 		}
 	} else {
@@ -213,7 +213,7 @@ static int _signal_batch_script_step(
 	kill_tasks_msg_t rpc;
 	int rc = SLURM_SUCCESS;
 	char *name = nodelist_nth_host(allocation->node_list, 0);
-	if (!name) {
+	if(!name) {
 		error("_signal_batch_script_step: "
 		      "can't get the first name out of %s",
 		      allocation->node_list);
@@ -226,7 +226,7 @@ static int _signal_batch_script_step(
 	slurm_msg_t_init(&msg);
 	msg.msg_type = REQUEST_SIGNAL_TASKS;
 	msg.data = &rpc;
-	if (slurm_conf_get_addr(name, &msg.address) == SLURM_ERROR) {
+	if(slurm_conf_get_addr(name, &msg.address) == SLURM_ERROR) {
 		error("_signal_batch_script_step: "
 		      "can't find address for host %s, check slurm.conf",
 		      name);
@@ -375,7 +375,7 @@ static int _terminate_batch_script_step(
 	int rc = SLURM_SUCCESS;
 	int i;
 	char *name = nodelist_nth_host(allocation->node_list, 0);
-	if (!name) {
+	if(!name) {
 		error("_signal_batch_script_step: "
 		      "can't get the first name out of %s",
 		      allocation->node_list);
@@ -390,7 +390,7 @@ static int _terminate_batch_script_step(
 	msg.msg_type = REQUEST_TERMINATE_TASKS;
 	msg.data = &rpc;
 
-	if (slurm_conf_get_addr(name, &msg.address) == SLURM_ERROR) {
+	if(slurm_conf_get_addr(name, &msg.address) == SLURM_ERROR) {
 		error("_signal_batch_script_step: "
 		      "can't find address for host %s, check slurm.conf",
 		      name);

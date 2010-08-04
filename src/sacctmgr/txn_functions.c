@@ -52,37 +52,37 @@ static int _set_cond(int *start, int argc, char *argv[],
 
 	for (i=(*start); i<argc; i++) {
 		end = parse_option_end(argv[i]);
-		if (!end)
+		if(!end)
 			command_len=strlen(argv[i]);
 		else {
 			command_len=end-1;
-			if (argv[i][end] == '=') {
+			if(argv[i][end] == '=') {
 				option = (int)argv[i][end-1];
 				end++;
 			}
 		}
 
-		if (!end && !strncasecmp(argv[i], "where",
+		if(!end && !strncasecmp(argv[i], "where",
 					MAX(command_len, 5))) {
 			continue;
-		} else if (!end && !strncasecmp(argv[i], "withassocinfo",
+		} else if(!end && !strncasecmp(argv[i], "withassocinfo",
 					  MAX(command_len, 5))) {
 			txn_cond->with_assoc_info = 1;
 			set = 1;
-		} else if (!end
-			  || (!strncasecmp(argv[i], "Ids",
+		} else if(!end
+			  || (!strncasecmp (argv[i], "Ids",
 					    MAX(command_len, 1)))
-			  || (!strncasecmp(argv[i], "Txn",
+			  || (!strncasecmp (argv[i], "Txn",
 					    MAX(command_len, 1)))) {
 			ListIterator itr = NULL;
 			char *temp = NULL;
 			uint32_t id = 0;
 
-			if (!txn_cond->id_list)
+			if(!txn_cond->id_list)
 				txn_cond->id_list =
 					list_create(slurm_destroy_char);
 
-			if (slurm_addto_char_list(txn_cond->id_list,
+			if(slurm_addto_char_list(txn_cond->id_list,
 						 argv[i]+end))
 				set = 1;
 
@@ -96,58 +96,58 @@ static int _set_cond(int *start, int argc, char *argv[],
 				}
 			}
 			list_iterator_destroy(itr);
-		} else if (!strncasecmp(argv[i], "Accounts",
+		} else if (!strncasecmp (argv[i], "Accounts",
 					 MAX(command_len, 3))) {
-			if (!txn_cond->acct_list)
+			if(!txn_cond->acct_list)
 				txn_cond->acct_list =
 					list_create(slurm_destroy_char);
-			if (slurm_addto_char_list(txn_cond->acct_list,
+			if(slurm_addto_char_list(txn_cond->acct_list,
 						 argv[i]+end))
 				set = 1;
-		} else if (!strncasecmp(argv[i], "Action",
+		} else if (!strncasecmp (argv[i], "Action",
 					 MAX(command_len, 4))) {
-			if (!txn_cond->action_list)
+			if(!txn_cond->action_list)
 				txn_cond->action_list =
 					list_create(slurm_destroy_char);
 
-			if (addto_action_char_list(txn_cond->action_list,
+			if(addto_action_char_list(txn_cond->action_list,
 						  argv[i]+end))
 				set = 1;
 			else
 				exit_code=1;
-		} else if (!strncasecmp(argv[i], "Actors",
+		} else if (!strncasecmp (argv[i], "Actors",
 					 MAX(command_len, 4))) {
-			if (!txn_cond->actor_list)
+			if(!txn_cond->actor_list)
 				txn_cond->actor_list =
 					list_create(slurm_destroy_char);
-			if (slurm_addto_char_list(txn_cond->actor_list,
+			if(slurm_addto_char_list(txn_cond->actor_list,
 						 argv[i]+end))
 				set = 1;
-		} else if (!strncasecmp(argv[i], "Clusters",
+		} else if (!strncasecmp (argv[i], "Clusters",
 					 MAX(command_len, 3))) {
-			if (!txn_cond->cluster_list)
+			if(!txn_cond->cluster_list)
 				txn_cond->cluster_list =
 					list_create(slurm_destroy_char);
-			if (slurm_addto_char_list(txn_cond->cluster_list,
+			if(slurm_addto_char_list(txn_cond->cluster_list,
 						 argv[i]+end))
 				set = 1;
-		} else if (!strncasecmp(argv[i], "End", MAX(command_len, 1))) {
+		} else if (!strncasecmp (argv[i], "End", MAX(command_len, 1))) {
 			txn_cond->time_end = parse_time(argv[i]+end, 1);
 			set = 1;
-		} else if (!strncasecmp(argv[i], "Format",
+		} else if (!strncasecmp (argv[i], "Format",
 					 MAX(command_len, 1))) {
-			if (format_list)
+			if(format_list)
 				slurm_addto_char_list(format_list, argv[i]+end);
-		} else if (!strncasecmp(argv[i], "Start",
+		} else if (!strncasecmp (argv[i], "Start",
 					 MAX(command_len, 1))) {
 			txn_cond->time_start = parse_time(argv[i]+end, 1);
 			set = 1;
-		} else if (!strncasecmp(argv[i], "User",
+		} else if (!strncasecmp (argv[i], "User",
 					 MAX(command_len, 1))) {
-			if (!txn_cond->user_list)
+			if(!txn_cond->user_list)
 				txn_cond->user_list =
 					list_create(slurm_destroy_char);
-			if (slurm_addto_char_list(txn_cond->user_list,
+			if(slurm_addto_char_list(txn_cond->user_list,
 						 argv[i]+end))
 				set = 1;
 		} else {
@@ -193,13 +193,13 @@ extern int sacctmgr_list_txn(int argc, char *argv[])
 
 	for (i=0; i<argc; i++) {
 		int command_len = strlen(argv[i]);
-		if (!strncasecmp(argv[i], "Where", MAX(command_len, 5))
-		    || !strncasecmp(argv[i], "Set", MAX(command_len, 3)))
+		if (!strncasecmp (argv[i], "Where", MAX(command_len, 5))
+		    || !strncasecmp (argv[i], "Set", MAX(command_len, 3)))
 			i++;
 		_set_cond(&i, argc, argv, txn_cond, format_list);
 	}
 
-	if (exit_code) {
+	if(exit_code) {
 		slurmdb_destroy_txn_cond(txn_cond);
 		list_destroy(format_list);
 		return SLURM_ERROR;
@@ -207,9 +207,9 @@ extern int sacctmgr_list_txn(int argc, char *argv[])
 
 	print_fields_list = list_create(destroy_print_field);
 
-	if (!list_count(format_list)) {
+	if(!list_count(format_list)) {
 		slurm_addto_char_list(format_list, "T,Action,Actor,Where,Info");
-		if (txn_cond->with_assoc_info)
+		if(txn_cond->with_assoc_info)
 			slurm_addto_char_list(format_list,
 					      "User,Account,Cluster");
 	}
@@ -220,7 +220,7 @@ extern int sacctmgr_list_txn(int argc, char *argv[])
 		int command_len = 0;
 		int newlen = 0;
 
-		if ((tmp_char = strstr(object, "\%"))) {
+		if((tmp_char = strstr(object, "\%"))) {
 			newlen = atoi(tmp_char+1);
 			tmp_char[0] = '\0';
 		}
@@ -228,57 +228,57 @@ extern int sacctmgr_list_txn(int argc, char *argv[])
 		command_len = strlen(object);
 
 		field = xmalloc(sizeof(print_field_t));
-		if (!strncasecmp("Accounts", object, MAX(command_len, 3))) {
+		if(!strncasecmp("Accounts", object, MAX(command_len, 3))) {
 			field->type = PRINT_ACCT;
 			field->name = xstrdup("Accounts");
 			field->len = 20;
 			field->print_routine = print_fields_str;
-		} else if (!strncasecmp("ActionRaw", object,
+		} else if(!strncasecmp("ActionRaw", object,
 				       MAX(command_len, 7))) {
 			field->type = PRINT_ACTIONRAW;
 			field->name = xstrdup("ActionRaw");
 			field->len = 10;
 			field->print_routine = print_fields_uint;
-		} else if (!strncasecmp("Action", object,
+		} else if(!strncasecmp("Action", object,
 				       MAX(command_len, 4))) {
 			field->type = PRINT_ACTION;
 			field->name = xstrdup("Action");
 			field->len = 20;
 			field->print_routine = print_fields_str;
-		} else if (!strncasecmp("Actor", object,
+		} else if(!strncasecmp("Actor", object,
 				       MAX(command_len, 4))) {
 			field->type = PRINT_ACTOR;
 			field->name = xstrdup("Actor");
 			field->len = 10;
 			field->print_routine = print_fields_str;
-		} else if (!strncasecmp("Clusters", object,
+		} else if(!strncasecmp("Clusters", object,
 				       MAX(command_len, 4))) {
 			field->type = PRINT_CLUSTER;
 			field->name = xstrdup("Clusters");
 			field->len = 20;
 			field->print_routine = print_fields_str;
-		} else if (!strncasecmp("ID", object, MAX(command_len, 2))) {
+		} else if(!strncasecmp("ID", object, MAX(command_len, 2))) {
 			field->type = PRINT_ID;
 			field->name = xstrdup("ID");
 			field->len = 6;
 			field->print_routine = print_fields_uint;
-		} else if (!strncasecmp("Info", object, MAX(command_len, 2))) {
+		} else if(!strncasecmp("Info", object, MAX(command_len, 2))) {
 			field->type = PRINT_INFO;
 			field->name = xstrdup("Info");
 			field->len = 20;
 			field->print_routine = print_fields_str;
-		} else if (!strncasecmp("TimeStamp", object,
+		} else if(!strncasecmp("TimeStamp", object,
 				       MAX(command_len, 1))) {
 			field->type = PRINT_TS;
 			field->name = xstrdup("Time");
 			field->len = 19;
 			field->print_routine = print_fields_date;
-		} else if (!strncasecmp("Users", object, MAX(command_len, 4))) {
+		} else if(!strncasecmp("Users", object, MAX(command_len, 4))) {
 			field->type = PRINT_USER;
 			field->name = xstrdup("Users");
 			field->len = 20;
 			field->print_routine = print_fields_str;
-		} else if (!strncasecmp("Where", object, MAX(command_len, 1))) {
+		} else if(!strncasecmp("Where", object, MAX(command_len, 1))) {
 			field->type = PRINT_WHERE;
 			field->name = xstrdup("Where");
 			field->len = 20;
@@ -290,7 +290,7 @@ extern int sacctmgr_list_txn(int argc, char *argv[])
 			continue;
 		}
 
-		if (newlen)
+		if(newlen)
 			field->len = newlen;
 
 		list_append(print_fields_list, field);
@@ -298,7 +298,7 @@ extern int sacctmgr_list_txn(int argc, char *argv[])
 	list_iterator_destroy(itr);
 	list_destroy(format_list);
 
-	if (exit_code) {
+	if(exit_code) {
 		list_destroy(print_fields_list);
 		return SLURM_ERROR;
 	}
@@ -306,7 +306,7 @@ extern int sacctmgr_list_txn(int argc, char *argv[])
 	txn_list = acct_storage_g_get_txn(db_conn, my_uid, txn_cond);
 	slurmdb_destroy_txn_cond(txn_cond);
 
-	if (!txn_list) {
+	if(!txn_list) {
 		exit_code=1;
 		fprintf(stderr, " Error with request: %s\n",
 			slurm_strerror(errno));

@@ -259,12 +259,12 @@ static bool _valid_node_list(char **node_list_pptr)
 	   procs to use then we need exactly this many since we are
 	   saying, lay it out this way!  Same for max and min nodes.
 	   Other than that just read in as many in the hostfile */
-	if (opt.ntasks_set)
+	if(opt.ntasks_set)
 		count = opt.ntasks;
-	else if (opt.nodes_set) {
-		if (opt.max_nodes)
+	else if(opt.nodes_set) {
+		if(opt.max_nodes)
 			count = opt.max_nodes;
-		else if (opt.min_nodes)
+		else if(opt.min_nodes)
 			count = opt.min_nodes;
 	}
 
@@ -831,7 +831,7 @@ static void set_options(const int argc, char **argv)
 		exit(error_exit);
 	}
 
-	if (opt.progname == NULL)
+	if(opt.progname == NULL)
 		opt.progname = xbasename(argv[0]);
 	else
 		error("opt.progname is already set.");
@@ -1524,7 +1524,7 @@ static void _opt_args(int argc, char **argv)
 	if (opt.distribution == SLURM_DIST_PLANE && opt.plane_size) {
 		if ((opt.ntasks/opt.plane_size) < opt.min_nodes) {
 			if (((opt.min_nodes-1)*opt.plane_size) >= opt.ntasks) {
-#if (0)
+#if(0)
 				info("Too few processes ((n/plane_size) %d < N %d) "
 				     "and ((N-1)*(plane_size) %d >= n %d)) ",
 				     opt.ntasks/opt.plane_size, opt.min_nodes,
@@ -1642,12 +1642,12 @@ static bool _opt_verify(void)
 	if (opt.argc > 0)
 		opt.cmd_name = base_name(opt.argv[0]);
 
-	if (!opt.nodelist) {
-		if ((opt.nodelist = xstrdup(getenv("SLURM_HOSTFILE")))) {
+	if(!opt.nodelist) {
+		if((opt.nodelist = xstrdup(getenv("SLURM_HOSTFILE")))) {
 			/* make sure the file being read in has a / in
 			   it to make sure it is a file in the
 			   valid_node_list function */
-			if (!strstr(opt.nodelist, "/")) {
+			if(!strstr(opt.nodelist, "/")) {
 				char *add_slash = xstrdup("./");
 				xstrcat(add_slash, opt.nodelist);
 				xfree(opt.nodelist);
@@ -1670,14 +1670,14 @@ static bool _opt_verify(void)
 
 	/* set up the proc and node counts based on the arbitrary list
 	   of nodes */
-	if ((opt.distribution == SLURM_DIST_ARBITRARY)
+	if((opt.distribution == SLURM_DIST_ARBITRARY)
 	   && (!opt.nodes_set || !opt.ntasks_set)) {
 		hostlist_t hl = hostlist_create(opt.nodelist);
-		if (!opt.ntasks_set) {
+		if(!opt.ntasks_set) {
 			opt.ntasks_set = true;
 			opt.ntasks = hostlist_count(hl);
 		}
-		if (!opt.nodes_set) {
+		if(!opt.nodes_set) {
 			opt.nodes_set = true;
 			opt.nodes_set_opt = true;
 			hostlist_uniq(hl);
@@ -1690,11 +1690,11 @@ static bool _opt_verify(void)
 	 * nodelist but only if it isn't arbitrary since the user has
 	 * laid it out how it should be so don't mess with it print an
 	 * error later if it doesn't work the way they wanted */
-	if (opt.max_nodes && opt.nodelist
+	if(opt.max_nodes && opt.nodelist
 	   && opt.distribution != SLURM_DIST_ARBITRARY) {
 		hostlist_t hl = hostlist_create(opt.nodelist);
 		int count = hostlist_count(hl);
-		if (count > opt.max_nodes) {
+		if(count > opt.max_nodes) {
 			int i = 0;
 			char buf[8192];
 			error("Required nodelist includes more nodes than "
@@ -1704,7 +1704,7 @@ static bool _opt_verify(void)
 			count -= opt.max_nodes;
 			while(i<count) {
 				char *name = hostlist_pop(hl);
-				if (name)
+				if(name)
 					free(name);
 				else
 					break;
@@ -1838,7 +1838,7 @@ static bool _opt_verify(void)
 				error("memory allocation failure");
 				exit(error_exit);
 			}
-			if (opt.distribution == SLURM_DIST_ARBITRARY
+			if(opt.distribution == SLURM_DIST_ARBITRARY
 			   && !opt.ntasks_set) {
 				opt.ntasks = hostlist_count(hl);
 				opt.ntasks_set = true;
@@ -2146,7 +2146,7 @@ static void _opt_list()
 	info("reservation    : `%s'", opt.reservation);
 	info("wckey          : `%s'", opt.wckey);
 	info("distribution   : %s", format_task_dist_states(opt.distribution));
-	if (opt.distribution == SLURM_DIST_PLANE)
+	if(opt.distribution == SLURM_DIST_PLANE)
 		info("plane size   : %u", opt.plane_size);
 	info("cpu_bind       : %s",
 	     opt.cpu_bind == NULL ? "default" : opt.cpu_bind);

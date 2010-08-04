@@ -177,7 +177,7 @@ _slurm_mpi_get_ops( slurm_mpi_context_t c )
 		xfree(plugin_dir);
 	}
 
-	if (strcasecmp(c->mpi_type, "mpi/list") == 0) {
+	if (strcasecmp (c->mpi_type, "mpi/list") == 0) {
 		plugrack_print_all_plugin(c->plugin_list);
 		exit(0);
 	} else {
@@ -245,7 +245,7 @@ int _mpi_init (char *mpi_type)
 
 
 done:
-	if (got_default)
+	if(got_default)
 		xfree(mpi_type);
 	slurm_mutex_unlock( &context_lock );
 	return retval;
@@ -257,7 +257,7 @@ int mpi_hook_slurmstepd_init (char ***env)
 
 	debug("mpi type = %s", mpi_type);
 
-	if (_mpi_init(mpi_type) == SLURM_ERROR)
+	if(_mpi_init(mpi_type) == SLURM_ERROR)
 		return SLURM_ERROR;
 
 	unsetenvp (*env, "SLURM_MPI_TYPE");
@@ -277,7 +277,7 @@ int mpi_hook_client_init (char *mpi_type)
 {
 	debug("mpi type = %s", mpi_type);
 
-	if (_mpi_init(mpi_type) == SLURM_ERROR)
+	if(_mpi_init(mpi_type) == SLURM_ERROR)
 		return SLURM_ERROR;
 
 	return SLURM_SUCCESS;

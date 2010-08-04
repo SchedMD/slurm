@@ -425,12 +425,12 @@ static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr)
 		thread_ptr[thr_count].state      = DSH_NEW;
 		thread_ptr[thr_count].addr = agent_arg_ptr->addr;
 		name = hostlist_shift(agent_arg_ptr->hostlist);
-		if (!name) {
+		if(!name) {
 			debug3("no more nodes to send to");
 			break;
 		}
 		hl = hostlist_create(name);
-		if (thread_ptr[thr_count].addr && span[thr_count]) {
+		if(thread_ptr[thr_count].addr && span[thr_count]) {
 			debug("warning: you will only be sending this to %s",
 			      name);
 			span[thr_count] = 0;
@@ -439,7 +439,7 @@ static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr)
 		i++;
 		for(j = 0; j < span[thr_count]; j++) {
 			name = hostlist_shift(agent_arg_ptr->hostlist);
-			if (!name)
+			if(!name)
 				break;
 			hostlist_push(hl, name);
 			free(name);
@@ -550,7 +550,7 @@ static void *_wdog(void *args)
 		slurm_mutex_lock(&agent_ptr->thread_mutex);
 		for (i = 0; i < agent_ptr->thread_count; i++) {
 			//info("thread name %s",thread_ptr[i].node_name);
-			if (!thread_ptr[i].ret_list) {
+			if(!thread_ptr[i].ret_list) {
 				_update_wdog_state(&thread_ptr[i],
 						   &thread_ptr[i].state,
 						   &thd_comp);
@@ -677,7 +677,7 @@ static void _notify_slurmctld_nodes(agent_info_t *agent_ptr,
 #if AGENT_IS_THREAD
 	lock_slurmctld(node_write_lock);
 	for (i = 0; i < agent_ptr->thread_count; i++) {
-		if (!thread_ptr[i].ret_list) {
+		if(!thread_ptr[i].ret_list) {
 			state = thread_ptr[i].state;
 			is_ret_list = 0;
 			goto switch_on_state;
@@ -690,7 +690,7 @@ static void _notify_slurmctld_nodes(agent_info_t *agent_ptr,
 		switch_on_state:
 			switch(state) {
 			case DSH_NO_RESP:
-				if (!is_ret_list) {
+				if(!is_ret_list) {
 					node_not_resp(thread_ptr[i].nodelist,
 						      thread_ptr[i].
 						      start_time);
@@ -704,7 +704,7 @@ static void _notify_slurmctld_nodes(agent_info_t *agent_ptr,
 #ifdef HAVE_BG
 				error("Prolog/epilog failure");
 #else
-				if (!is_ret_list) {
+				if(!is_ret_list) {
 					set_node_down(thread_ptr[i].nodelist,
 						      "Prolog/epilog failure");
 					break;
@@ -714,14 +714,14 @@ static void _notify_slurmctld_nodes(agent_info_t *agent_ptr,
 #endif
 				break;
 			case DSH_DONE:
-				if (!is_ret_list) {
+				if(!is_ret_list) {
 					node_did_resp(thread_ptr[i].nodelist);
 					break;
 				}
 				node_did_resp(ret_data_info->node_name);
 				break;
 			default:
-				if (!is_ret_list) {
+				if(!is_ret_list) {
 					error("unknown state returned for %s",
 					      thread_ptr[i].nodelist);
 					break;
@@ -730,7 +730,7 @@ static void _notify_slurmctld_nodes(agent_info_t *agent_ptr,
 				      ret_data_info->node_name);
 				break;
 			}
-			if (!is_ret_list)
+			if(!is_ret_list)
 				goto finished;
 		}
 		list_iterator_destroy(itr);
@@ -849,10 +849,10 @@ static void *_thread_per_group_rpc(void *args)
  	info("sending message type %u to %s", msg_type, thread_ptr->nodelist);
 #endif
 	if (task_ptr->get_reply) {
-		if (thread_ptr->addr) {
+		if(thread_ptr->addr) {
 			msg.address = *thread_ptr->addr;
 
-			if (!(ret_list = slurm_send_addr_recv_msgs(
+			if(!(ret_list = slurm_send_addr_recv_msgs(
 				     &msg, thread_ptr->nodelist, 0))) {
 				error("_thread_per_group_rpc: "
 				      "no ret_list given");
@@ -861,7 +861,7 @@ static void *_thread_per_group_rpc(void *args)
 
 
 		} else {
-			if (!(ret_list = slurm_send_recv_msgs(
+			if(!(ret_list = slurm_send_recv_msgs(
 				     thread_ptr->nodelist,
 				     &msg, 0, true))) {
 				error("_thread_per_group_rpc: "
@@ -870,12 +870,12 @@ static void *_thread_per_group_rpc(void *args)
 			}
 		}
 	} else {
-		if (thread_ptr->addr) {
+		if(thread_ptr->addr) {
 			//info("got the address");
 			msg.address = *thread_ptr->addr;
 		} else {
 			//info("no address given");
-			if (slurm_conf_get_addr(thread_ptr->nodelist,
+			if(slurm_conf_get_addr(thread_ptr->nodelist,
 					       &msg.address) == SLURM_ERROR) {
 				error("_thread_per_group_rpc: "
 				      "can't find address for host %s, "
@@ -985,9 +985,9 @@ static void *_thread_per_group_rpc(void *args)
 				errno = ret_data_info->err;
 				rc = _comm_err(ret_data_info->node_name);
 			}
-			if (srun_agent)
+			if(srun_agent)
 				thread_state = DSH_FAILED;
-			else if (ret_data_info->type == RESPONSE_FORWARD_FAILED)
+			else if(ret_data_info->type == RESPONSE_FORWARD_FAILED)
 				/* check if a forward failed */
 				thread_state = DSH_NO_RESP;
 			else {	/* some will fail that don't mean anything went
@@ -1039,7 +1039,7 @@ static int _setup_requeue(agent_arg_t *agent_arg_ptr, thd_t *thread_ptr,
 		debug("got the name %s to resend out of %d",
 		      ret_data_info->node_name, count);
 
-		if (agent_arg_ptr) {
+		if(agent_arg_ptr) {
 			hostlist_push(agent_arg_ptr->hostlist,
 				      ret_data_info->node_name);
 
@@ -1079,7 +1079,7 @@ static void _queue_agent_retry(agent_info_t * agent_info_ptr, int count)
 
 	j = 0;
 	for (i = 0; i < agent_info_ptr->thread_count; i++) {
-		if (!thread_ptr[i].ret_list) {
+		if(!thread_ptr[i].ret_list) {
 			if (thread_ptr[i].state != DSH_NO_RESP)
 				continue;
 
@@ -1091,7 +1091,7 @@ static void _queue_agent_retry(agent_info_t * agent_info_ptr, int count)
 			if ((++j) == count)
 				break;
 		} else {
-			if (_setup_requeue(agent_arg_ptr, &thread_ptr[i],
+			if(_setup_requeue(agent_arg_ptr, &thread_ptr[i],
 					  count, &j))
 				break;
 		}
@@ -1435,9 +1435,9 @@ static void _mail_proc(mail_info_t *mi)
 		(void) close(1);
 		(void) close(2);
 		fd = open("/dev/null", O_RDWR); // 0
-		if (dup(fd) == -1) // 1
+		if(dup(fd) == -1) // 1
 			error("Couldn't do a dup for 1: %m");
-		if (dup(fd) == -1) // 2
+		if(dup(fd) == -1) // 2
 			error("Couldn't do a dup for 2 %m");
 		execle(slurmctld_conf.mail_prog, "mail",
 			"-s", mi->message, mi->user_name,

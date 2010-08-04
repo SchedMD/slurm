@@ -256,58 +256,58 @@ static void _set_active_combo_part(GtkComboBox *combo,
 	char *upper = NULL;
 
 	gtk_tree_model_get(model, iter, type, &temp_char, -1);
-	if (!temp_char)
+	if(!temp_char)
 		goto end_it;
 	switch(type) {
 	case SORTID_DEFAULT:
 	case SORTID_HIDDEN:
 	case SORTID_ROOT:
-		if (!strcmp(temp_char, "yes"))
+		if(!strcmp(temp_char, "yes"))
 			action = 0;
-		else if (!strcmp(temp_char, "no"))
+		else if(!strcmp(temp_char, "no"))
 			action = 1;
 		else
 			action = 0;
 
 		break;
 	case SORTID_SHARE:
-		if (!strncmp(temp_char, "force", 5))
+		if(!strncmp(temp_char, "force", 5))
 			action = 0;
-		else if (!strcmp(temp_char, "no"))
+		else if(!strcmp(temp_char, "no"))
 			action = 1;
-		else if (!strncmp(temp_char, "yes", 3))
+		else if(!strncmp(temp_char, "yes", 3))
 			action = 2;
-		else if (!strcmp(temp_char, "exclusive"))
+		else if(!strcmp(temp_char, "exclusive"))
 			action = 3;
 		else
 			action = 0;
 		break;
 	case SORTID_PART_STATE:
-		if (!strcmp(temp_char, "up"))
+		if(!strcmp(temp_char, "up"))
 			action = 0;
-		else if (!strcmp(temp_char, "down"))
+		else if(!strcmp(temp_char, "down"))
 			action = 1;
-		else if (!strcmp(temp_char, "inactive"))
+		else if(!strcmp(temp_char, "inactive"))
 			action = 2;
-		else if (!strcmp(temp_char, "drain"))
+		else if(!strcmp(temp_char, "drain"))
 			action = 3;
 		else
 			action = 0;
 		break;
 	case SORTID_NODE_STATE:
-		if (!strcasecmp(temp_char, "drain"))
+		if(!strcasecmp(temp_char, "drain"))
 			action = 0;
-		else if (!strcasecmp(temp_char, "resume"))
+		else if(!strcasecmp(temp_char, "resume"))
 			action = 1;
 		else
 			for(i = 0; i < NODE_STATE_END; i++) {
 				upper = node_state_string(i);
-				if (!strcmp(upper, "UNKNOWN")) {
+				if(!strcmp(upper, "UNKNOWN")) {
 					unknown_found++;
 					continue;
 				}
 
-				if (!strcasecmp(temp_char, upper)) {
+				if(!strcasecmp(temp_char, upper)) {
 					action = i + 2 - unknown_found;
 					break;
 				}
@@ -379,7 +379,7 @@ static const char *_set_part_msg(update_part_msg_t *part_msg,
 
 	global_edit_error = 0;
 
-	if (!part_msg)
+	if(!part_msg)
 		return NULL;
 
 	switch(column) {
@@ -414,7 +414,7 @@ static const char *_set_part_msg(update_part_msg_t *part_msg,
 			temp_int = time_str2mins((char *)new_text);
 
 		type = "timelimit";
-		if ((temp_int <= 0) && (temp_int != INFINITE))
+		if((temp_int <= 0) && (temp_int != INFINITE))
 			goto return_error;
 		part_msg->max_time = (uint32_t)temp_int;
 		break;
@@ -434,7 +434,7 @@ static const char *_set_part_msg(update_part_msg_t *part_msg,
 		temp_int = strtol(new_text, (char **)NULL, 10);
 		type = "min_nodes";
 
-		if (temp_int <= 0)
+		if(temp_int <= 0)
 			goto return_error;
 		part_msg->min_nodes = (uint32_t)temp_int;
 		break;
@@ -446,7 +446,7 @@ static const char *_set_part_msg(update_part_msg_t *part_msg,
 		}
 
 		type = "max_nodes";
-		if (temp_int <= 0 && temp_int != INFINITE)
+		if(temp_int <= 0 && temp_int != INFINITE)
 			goto return_error;
 		part_msg->max_nodes = (uint32_t)temp_int;
 		break;
@@ -514,7 +514,7 @@ static const char *_set_part_msg(update_part_msg_t *part_msg,
 		break;
 	}
 
-	if (strcmp(type, "unknown"))
+	if(strcmp(type, "unknown"))
 		global_send_update_msg = 1;
 
 	return type;
@@ -534,15 +534,15 @@ static void _admin_edit_combo_box_part(GtkComboBox *combo,
 	char *name = NULL;
 	const char *col_name = NULL;
 
-	if (!part_msg)
+	if(!part_msg)
 		return;
 
-	if (!gtk_combo_box_get_active_iter(combo, &iter)) {
+	if(!gtk_combo_box_get_active_iter(combo, &iter)) {
 		g_print("nothing selected\n");
 		return;
 	}
 	model = gtk_combo_box_get_model(combo);
-	if (!model) {
+	if(!model) {
 		g_print("nothing selected\n");
 		return;
 	}
@@ -551,7 +551,7 @@ static void _admin_edit_combo_box_part(GtkComboBox *combo,
 	gtk_tree_model_get(model, &iter, 1, &column, -1);
 
 	col_name = _set_part_msg(part_msg, name, column);
-	if (name)
+	if(name)
 		g_free(name);
 }
 
@@ -559,14 +559,14 @@ static gboolean _admin_focus_out_part(GtkEntry *entry,
 				      GdkEventFocus *event,
 				      update_part_msg_t *part_msg)
 {
-	if (global_entry_changed) {
+	if(global_entry_changed) {
 		const char *col_name = NULL;
 		int type = gtk_entry_get_max_length(entry);
 		const char *name = gtk_entry_get_text(entry);
 		type -= DEFAULT_ENTRY_LENGTH;
 		col_name = _set_part_msg(part_msg, name, type);
-		if (global_edit_error) {
-			if (global_edit_error_msg)
+		if(global_edit_error) {
+			if(global_edit_error_msg)
 				g_free(global_edit_error_msg);
 			global_edit_error_msg = g_strdup_printf(
 				"Partition %s %s can't be set to %s",
@@ -603,11 +603,11 @@ static GtkWidget *_admin_full_edit_part(update_part_msg_t *part_msg,
 
 	for(i = 0; i < SORTID_CNT; i++) {
 		while(display_data++) {
-			if (display_data->id == -1)
+			if(display_data->id == -1)
 				break;
-			if (!display_data->name)
+			if(!display_data->name)
 				continue;
-			if (display_data->id != i)
+			if(display_data->id != i)
 				continue;
 			display_admin_edit(
 				table, part_msg, &row, model, iter,
@@ -643,7 +643,7 @@ static void _subdivide_part(sview_part_info_t *sview_part_info,
 		while(1) {
 			gtk_tree_store_set(GTK_TREE_STORE(model), sub_iter,
 					   SORTID_UPDATED, 0, -1);
-			if (!gtk_tree_model_iter_next(model, sub_iter)) {
+			if(!gtk_tree_model_iter_next(model, sub_iter)) {
 				break;
 			}
 		}
@@ -651,7 +651,7 @@ static void _subdivide_part(sview_part_info_t *sview_part_info,
 		set = 1;
 	}
 	itr = list_iterator_create(sview_part_info->sub_list);
-	if (list_count(sview_part_info->sub_list) == 1) {
+	if(list_count(sview_part_info->sub_list) == 1) {
 		gtk_tree_store_set(GTK_TREE_STORE(model), iter,
 				   SORTID_ONLY_LINE, 1, -1);
 		sview_part_sub = list_next(itr);
@@ -679,7 +679,7 @@ static void _subdivide_part(sview_part_info_t *sview_part_info,
 				gtk_tree_model_get(model, sub_iter,
 						   SORTID_NODE_STATE_NUM,
 						   &state, -1);
-				if ((uint16_t)state
+				if((uint16_t)state
 				   == sview_part_sub->node_state) {
 					/* update with new info */
 					_update_part_sub_record(
@@ -690,7 +690,7 @@ static void _subdivide_part(sview_part_info_t *sview_part_info,
 				}
 
 				line++;
-				if (!gtk_tree_model_iter_next(model,
+				if(!gtk_tree_model_iter_next(model,
 							     sub_iter)) {
 					break;
 				}
@@ -699,7 +699,7 @@ static void _subdivide_part(sview_part_info_t *sview_part_info,
 			_append_part_sub_record(sview_part_sub,
 						GTK_TREE_STORE(model),
 						iter, line);
-/* 			if (i == NO_VAL) */
+/* 			if(i == NO_VAL) */
 /* 				line++; */
 		found:
 			;
@@ -707,21 +707,21 @@ static void _subdivide_part(sview_part_info_t *sview_part_info,
 	}
 	list_iterator_destroy(itr);
 
-	if (set) {
+	if(set) {
 		sub_iter = &first_sub_iter;
 		/* clear all steps that aren't active */
 		while(1) {
 			gtk_tree_model_get(model, sub_iter,
 					   SORTID_UPDATED, &i, -1);
-			if (!i) {
-				if (!gtk_tree_store_remove(
+			if(!i) {
+				if(!gtk_tree_store_remove(
 					   GTK_TREE_STORE(model),
 					   sub_iter))
 					break;
 				else
 					continue;
 			}
-			if (!gtk_tree_model_iter_next(model, sub_iter)) {
+			if(!gtk_tree_model_iter_next(model, sub_iter)) {
 				break;
 			}
 		}
@@ -761,9 +761,9 @@ static void _layout_part_record(GtkTreeView *treeview,
 
 	itr = list_iterator_create(sview_part_info->sub_list);
 	while((sview_part_sub = list_next(itr))) {
-		if (sview_part_sub->node_state == NODE_STATE_IDLE)
+		if(sview_part_sub->node_state == NODE_STATE_IDLE)
 			temp_part_sub = &idle_part_sub;
-		else if (sview_part_sub->node_state == NODE_STATE_ALLOCATED)
+		else if(sview_part_sub->node_state == NODE_STATE_ALLOCATED)
 			temp_part_sub = &alloc_part_sub;
 		else
 			temp_part_sub = &other_part_sub;
@@ -774,7 +774,7 @@ static void _layout_part_record(GtkTreeView *treeview,
 		/* temp_part_sub->disk_total += sview_part_sub->disk_total; */
 /* 		temp_part_sub->mem_total += sview_part_sub->mem_total; */
 
-		if (!global_set) {
+		if(!global_set) {
 			global_set = 1;
 			/* store features and reasons in the others
 			   group */
@@ -820,7 +820,7 @@ static void _layout_part_record(GtkTreeView *treeview,
 			}
 			break;
 		case SORTID_ALTERNATE:
-			if (part_ptr->alternate)
+			if(part_ptr->alternate)
 				temp_char = part_ptr->alternate;
 			else
 				temp_char = "";
@@ -842,7 +842,7 @@ static void _layout_part_record(GtkTreeView *treeview,
 			temp_char = sview_part_sub->features;
 			break;
 		case SORTID_GROUPS:
-			if (part_ptr->allow_groups)
+			if(part_ptr->allow_groups)
 				temp_char = part_ptr->allow_groups;
 			else
 				temp_char = "all";
@@ -872,7 +872,7 @@ static void _layout_part_record(GtkTreeView *treeview,
 			temp_char = part_ptr->allow_alloc_nodes;
 			break;
 		case SORTID_NODES:
-			if (cluster_flags & CLUSTER_FLAG_BG)
+			if(cluster_flags & CLUSTER_FLAG_BG)
 				convert_num_unit((float)part_ptr->total_nodes,
 						 tmp_cnt,
 						 sizeof(tmp_cnt), UNIT_NONE);
@@ -912,14 +912,14 @@ static void _layout_part_record(GtkTreeView *treeview,
 				yes_no = 0;
 			break;
 		case SORTID_SHARE:
-			if (part_ptr->max_share & SHARED_FORCE) {
+			if(part_ptr->max_share & SHARED_FORCE) {
 				snprintf(tmp_buf, sizeof(tmp_buf), "force:%u",
 					 (part_ptr->max_share
 					  & ~(SHARED_FORCE)));
 				temp_char = tmp_buf;
-			} else if (part_ptr->max_share == 0)
+			} else if(part_ptr->max_share == 0)
 				temp_char = "exclusive";
-			else if (part_ptr->max_share > 1) {
+			else if(part_ptr->max_share > 1) {
 				snprintf(tmp_buf, sizeof(tmp_buf), "yes:%u",
 					 part_ptr->max_share);
 				temp_char = tmp_buf;
@@ -939,19 +939,19 @@ static void _layout_part_record(GtkTreeView *treeview,
 			break;
 		}
 
-		if (up_down != -1) {
-			if (up_down)
+		if(up_down != -1) {
+			if(up_down)
 				temp_char = "up";
 			else
 				temp_char = "down";
 			up_down = -1;
-		} if (yes_no != -1) {
-			if (yes_no)
+		} if(yes_no != -1) {
+			if(yes_no)
 				temp_char = "yes";
 			else
 				temp_char = "no";
 			yes_no = -1;
-		} else if (limit_set != NO_VAL) {
+		} else if(limit_set != NO_VAL) {
 			if (limit_set == (uint32_t) INFINITE)
 				temp_char = "infinite";
 			else {
@@ -963,13 +963,13 @@ static void _layout_part_record(GtkTreeView *treeview,
 			limit_set = NO_VAL;
 		}
 
-		if (temp_char) {
+		if(temp_char) {
 			add_display_treestore_line(
 				update, treestore, &iter,
 				find_col_name(display_data_part,
 					      i),
 				temp_char);
-			if (i == SORTID_NODES) {
+			if(i == SORTID_NODES) {
 				add_display_treestore_line(
 					update, treestore, &iter,
 					"Nodes (Allocated/Idle/Other)",
@@ -999,19 +999,19 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 
 	gtk_tree_store_set(treestore, iter, SORTID_NAME, part_ptr->name, -1);
 
-	if (part_ptr->flags & PART_FLAG_DEFAULT)
+	if(part_ptr->flags & PART_FLAG_DEFAULT)
 		temp_char = "yes";
 	else
 		temp_char = "no";
 	gtk_tree_store_set(treestore, iter, SORTID_DEFAULT, temp_char, -1);
 
-	if (part_ptr->flags & PART_FLAG_HIDDEN)
+	if(part_ptr->flags & PART_FLAG_HIDDEN)
 		temp_char = "yes";
 	else
 		temp_char = "no";
 	gtk_tree_store_set(treestore, iter, SORTID_HIDDEN, temp_char, -1);
 
-	if (part_ptr->alternate)
+	if(part_ptr->alternate)
 		temp_char = part_ptr->alternate;
 	else
 		temp_char = "";
@@ -1071,19 +1071,19 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 	gtk_tree_store_set(treestore, iter, SORTID_NODES_MAX,
 			   time_buf, -1);
 
-	if (part_ptr->flags & PART_FLAG_ROOT_ONLY)
+	if(part_ptr->flags & PART_FLAG_ROOT_ONLY)
 		temp_char = "yes";
 	else
 		temp_char = "no";
 	gtk_tree_store_set(treestore, iter, SORTID_ROOT, temp_char, -1);
 
-	if (part_ptr->max_share & SHARED_FORCE) {
+	if(part_ptr->max_share & SHARED_FORCE) {
 		snprintf(tmp_buf, sizeof(tmp_buf), "force:%u",
 			 (part_ptr->max_share & ~(SHARED_FORCE)));
 		temp_char = tmp_buf;
-	} else if (part_ptr->max_share == 0)
+	} else if(part_ptr->max_share == 0)
 		temp_char = "exclusive";
-	else if (part_ptr->max_share > 1) {
+	else if(part_ptr->max_share > 1) {
 		snprintf(tmp_buf, sizeof(tmp_buf), "yes:%u",
 			 part_ptr->max_share);
 		temp_char = tmp_buf;
@@ -1091,20 +1091,20 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 		temp_char = "no";
 	gtk_tree_store_set(treestore, iter, SORTID_SHARE, temp_char, -1);
 
-	if (part_ptr->allow_groups)
+	if(part_ptr->allow_groups)
 		temp_char = part_ptr->allow_groups;
 	else
 		temp_char = "all";
 	gtk_tree_store_set(treestore, iter, SORTID_GROUPS, temp_char, -1);
 
-	if (cluster_flags & CLUSTER_FLAG_BG)
+	if(cluster_flags & CLUSTER_FLAG_BG)
 		convert_num_unit((float)part_ptr->total_nodes, tmp_cnt,
 				 sizeof(tmp_cnt), UNIT_NONE);
 	else
 		sprintf(tmp_cnt, "%u", part_ptr->total_nodes);
 	gtk_tree_store_set(treestore, iter, SORTID_NODES, tmp_cnt, -1);
 
-	if (cluster_flags & CLUSTER_FLAG_BG)
+	if(cluster_flags & CLUSTER_FLAG_BG)
 		convert_num_unit((float)part_ptr->total_cpus, tmp_cnt,
 				 sizeof(tmp_cnt), UNIT_NONE);
 	else
@@ -1130,7 +1130,7 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 
 	childern = gtk_tree_model_iter_children(GTK_TREE_MODEL(treestore),
 						&sub_iter, iter);
-	if (gtk_tree_model_iter_children(GTK_TREE_MODEL(treestore),
+	if(gtk_tree_model_iter_children(GTK_TREE_MODEL(treestore),
 					&sub_iter, iter))
 		_subdivide_part(sview_part_info,
 				GTK_TREE_MODEL(treestore), &sub_iter, iter);
@@ -1162,13 +1162,13 @@ static void _update_part_sub_record(sview_part_sub_t *sview_part_sub,
 	gtk_tree_store_set(treestore, iter, SORTID_NODE_STATE_NUM,
 			   sview_part_sub->node_state, -1);
 
-	if ((sview_part_sub->node_state & NODE_STATE_BASE) == NODE_STATE_MIXED) {
-		if (sview_part_sub->cpu_alloc_cnt) {
+	if((sview_part_sub->node_state & NODE_STATE_BASE) == NODE_STATE_MIXED) {
+		if(sview_part_sub->cpu_alloc_cnt) {
 			convert_num_unit((float)sview_part_sub->cpu_alloc_cnt,
 					 tmp_cnt,
 					 sizeof(tmp_cnt), UNIT_NONE);
 			xstrfmtcat(cpu_tmp, "Alloc:%s", tmp_cnt);
-			if (cluster_flags & CLUSTER_FLAG_BG) {
+			if(cluster_flags & CLUSTER_FLAG_BG) {
 				convert_num_unit(
 					(float)(sview_part_sub->cpu_alloc_cnt
 						/ cpus_per_node),
@@ -1177,38 +1177,38 @@ static void _update_part_sub_record(sview_part_sub_t *sview_part_sub,
 				xstrfmtcat(node_tmp, "Alloc:%s", tmp_cnt);
 			}
 		}
-		if (sview_part_sub->cpu_error_cnt) {
+		if(sview_part_sub->cpu_error_cnt) {
 			convert_num_unit((float)sview_part_sub->cpu_error_cnt,
 					 tmp_cnt,
 					 sizeof(tmp_cnt), UNIT_NONE);
-			if (cpu_tmp)
+			if(cpu_tmp)
 				xstrcat(cpu_tmp, " ");
 			xstrfmtcat(cpu_tmp, "Err:%s", tmp_cnt);
-			if (cluster_flags & CLUSTER_FLAG_BG) {
+			if(cluster_flags & CLUSTER_FLAG_BG) {
 				convert_num_unit(
 					(float)(sview_part_sub->cpu_error_cnt
 						/ cpus_per_node),
 					tmp_cnt,
 					sizeof(tmp_cnt), UNIT_NONE);
-				if (node_tmp)
+				if(node_tmp)
 					xstrcat(node_tmp, " ");
 				xstrfmtcat(node_tmp, "Err:%s", tmp_cnt);
 			}
 		}
-		if (sview_part_sub->cpu_idle_cnt) {
+		if(sview_part_sub->cpu_idle_cnt) {
 			convert_num_unit((float)sview_part_sub->cpu_idle_cnt,
 					 tmp_cnt,
 					 sizeof(tmp_cnt), UNIT_NONE);
-			if (cpu_tmp)
+			if(cpu_tmp)
 				xstrcat(cpu_tmp, " ");
 			xstrfmtcat(cpu_tmp, "Idle:%s", tmp_cnt);
-			if (cluster_flags & CLUSTER_FLAG_BG) {
+			if(cluster_flags & CLUSTER_FLAG_BG) {
 				convert_num_unit(
 					(float)(sview_part_sub->cpu_idle_cnt
 						/ cpus_per_node),
 					tmp_cnt,
 					sizeof(tmp_cnt), UNIT_NONE);
-				if (node_tmp)
+				if(node_tmp)
 					xstrcat(node_tmp, " ");
 				xstrfmtcat(node_tmp, "Idle:%s", tmp_cnt);
 			}
@@ -1229,7 +1229,7 @@ static void _update_part_sub_record(sview_part_sub_t *sview_part_sub,
 			 sizeof(tmp_cnt), UNIT_MEGA);
 	gtk_tree_store_set(treestore, iter, SORTID_MEM, tmp_cnt, -1);
 
-	if (!node_tmp) {
+	if(!node_tmp) {
 		convert_num_unit((float)sview_part_sub->node_cnt, tmp_cnt,
 				 sizeof(tmp_cnt), UNIT_NONE);
 		node_tmp = xstrdup(tmp_cnt);
@@ -1288,7 +1288,7 @@ static void _update_info_part(List info_list,
 		while(1) {
 			gtk_tree_store_set(GTK_TREE_STORE(model), &iter,
 					   SORTID_UPDATED, 0, -1);
-			if (!gtk_tree_model_iter_next(model, &iter)) {
+			if(!gtk_tree_model_iter_next(model, &iter)) {
 				break;
 			}
 		}
@@ -1307,7 +1307,7 @@ static void _update_info_part(List info_list,
 			   it is in the list */
 			gtk_tree_model_get(model, &iter, SORTID_NAME,
 					   &part_name, -1);
-			if (!strcmp(part_name, part_ptr->name)) {
+			if(!strcmp(part_name, part_ptr->name)) {
 				/* update with new info */
 				g_free(part_name);
 				_update_part_record(sview_part_info,
@@ -1318,7 +1318,7 @@ static void _update_info_part(List info_list,
 			g_free(part_name);
 
 			line++;
-			if (!gtk_tree_model_iter_next(model, &iter)) {
+			if(!gtk_tree_model_iter_next(model, &iter)) {
 				break;
 			}
 		}
@@ -1329,7 +1329,7 @@ static void _update_info_part(List info_list,
 		;
 	}
 	list_iterator_destroy(itr);
-	if (host)
+	if(host)
 		free(host);
 
 	gtk_tree_path_free(path);
@@ -1343,7 +1343,7 @@ static void _part_info_list_del(void *object)
 	sview_part_info_t *sview_part_info = (sview_part_info_t *)object;
 
 	if (sview_part_info) {
-		if (sview_part_info->sub_list)
+		if(sview_part_info->sub_list)
 			list_destroy(sview_part_info->sub_list);
 		xfree(sview_part_info);
 	}
@@ -1356,9 +1356,9 @@ static void _destroy_part_sub(void *object)
 	if (sview_part_sub) {
 		xfree(sview_part_sub->features);
 		xfree(sview_part_sub->reason);
-		if (sview_part_sub->hl)
+		if(sview_part_sub->hl)
 			hostlist_destroy(sview_part_sub->hl);
-		if (sview_part_sub->node_ptr_list)
+		if(sview_part_sub->node_ptr_list)
 			list_destroy(sview_part_sub->node_ptr_list);
 		xfree(sview_part_sub);
 	}
@@ -1372,7 +1372,7 @@ static void _update_sview_part_sub(sview_part_sub_t *sview_part_sub,
 	int idle_cpus = node_ptr->cpus;
 	uint16_t err_cpus = 0, alloc_cpus = 0;
 
-	if (node_scaling)
+	if(node_scaling)
 		cpus_per_node = node_ptr->cpus / node_scaling;
 
 	xassert(sview_part_sub);
@@ -1390,13 +1390,13 @@ static void _update_sview_part_sub(sview_part_sub_t *sview_part_sub,
 		return;
 	}
 
-	if ((sview_part_sub->node_state & NODE_STATE_BASE) == NODE_STATE_MIXED) {
+	if((sview_part_sub->node_state & NODE_STATE_BASE) == NODE_STATE_MIXED) {
 		slurm_get_select_nodeinfo(node_ptr->select_nodeinfo,
 					  SELECT_NODEDATA_SUBCNT,
 					  NODE_STATE_ALLOCATED,
 					  &alloc_cpus);
-		if (cluster_flags & CLUSTER_FLAG_BG) {
-			if (!alloc_cpus
+		if(cluster_flags & CLUSTER_FLAG_BG) {
+			if(!alloc_cpus
 			   && (IS_NODE_ALLOCATED(node_ptr)
 			       || IS_NODE_COMPLETING(node_ptr)))
 				alloc_cpus = node_ptr->cpus;
@@ -1409,7 +1409,7 @@ static void _update_sview_part_sub(sview_part_sub_t *sview_part_sub,
 					  SELECT_NODEDATA_SUBCNT,
 					  NODE_STATE_ERROR,
 					  &err_cpus);
-		if (cluster_flags & CLUSTER_FLAG_BG)
+		if(cluster_flags & CLUSTER_FLAG_BG)
 			err_cpus *= cpus_per_node;
 
 		idle_cpus -= err_cpus;
@@ -1465,7 +1465,7 @@ static int _insert_sview_part_sub(sview_part_info_t *sview_part_info,
 	ListIterator itr = list_iterator_create(sview_part_info->sub_list);
 
 	while((sview_part_sub = list_next(itr))) {
-		if (sview_part_sub->node_state
+		if(sview_part_sub->node_state
 		   == node_ptr->node_state) {
 			_update_sview_part_sub(sview_part_sub,
 					       node_ptr,
@@ -1475,8 +1475,8 @@ static int _insert_sview_part_sub(sview_part_info_t *sview_part_info,
 	}
 	list_iterator_destroy(itr);
 
-	if (!sview_part_sub) {
-		if ((sview_part_sub = _create_sview_part_sub(
+	if(!sview_part_sub) {
+		if((sview_part_sub = _create_sview_part_sub(
 			   part_ptr, node_ptr, node_scaling)))
 			list_push(sview_part_info->sub_list,
 				  sview_part_sub);
@@ -1512,7 +1512,7 @@ static int _sview_part_sort_aval_dec(sview_part_info_t* rec_a,
 	else if (size_a > size_b)
 		return 1;
 
-	if (rec_a->part_ptr->nodes && rec_b->part_ptr->nodes) {
+	if(rec_a->part_ptr->nodes && rec_b->part_ptr->nodes) {
 		size_a = strcmp(rec_a->part_ptr->nodes, rec_b->part_ptr->nodes);
 		if (size_a < 0)
 			return -1;
@@ -1545,11 +1545,11 @@ static List _create_part_info_list(partition_info_msg_t *part_info_ptr,
 	static List info_list = NULL;
 	int i, j2;
 
-	if (!changed && info_list) {
+	if(!changed && info_list) {
 		return info_list;
 	}
 
-	if (info_list)
+	if(info_list)
 		list_flush(info_list);
 	else
 		info_list = list_create(_part_info_list_del);
@@ -1601,15 +1601,15 @@ void _display_info_part(List info_list,	popup_info_t *popup_win)
 	int j = 0;
 	int first_time = 0;
 
-	if (!spec_info->search_info->gchar_data) {
+	if(!spec_info->search_info->gchar_data) {
 		//info = xstrdup("No pointer given!");
 		goto finished;
 	}
-	if (!list_count(popup_win->grid_button_list))
+	if(!list_count(popup_win->grid_button_list))
 		first_time = 1;
 
 need_refresh:
-	if (!spec_info->display_widget) {
+	if(!spec_info->display_widget) {
 		treeview = create_treeview_2cols_attach_to_table(
 			popup_win->table);
 		spec_info->display_widget =
@@ -1622,7 +1622,7 @@ need_refresh:
 	itr = list_iterator_create(info_list);
 	while ((sview_part_info = (sview_part_info_t*) list_next(itr))) {
 		part_ptr = sview_part_info->part_ptr;
-		if (!strcmp(part_ptr->name, name)) {
+		if(!strcmp(part_ptr->name, name)) {
 			j=0;
 			while(part_ptr->node_inx[j] >= 0) {
 				change_grid_color(
@@ -1641,8 +1641,8 @@ need_refresh:
 	list_iterator_destroy(itr);
 	post_setup_popup_grid_list(popup_win);
 
-	if (!found) {
-		if (!popup_win->not_found) {
+	if(!found) {
+		if(!popup_win->not_found) {
 			char *temp = "PARTITION DOESN'T EXSIST\n";
 			GtkTreeIter iter;
 			GtkTreeModel *model = NULL;
@@ -1656,7 +1656,7 @@ need_refresh:
 		}
 		popup_win->not_found = true;
 	} else {
-		if (popup_win->not_found) {
+		if(popup_win->not_found) {
 			popup_win->not_found = false;
 			gtk_widget_destroy(spec_info->display_widget);
 
@@ -1690,22 +1690,22 @@ extern int get_new_info_part(partition_info_msg_t **part_ptr, int force)
 	static bool changed = 0;
 	static uint16_t last_flags = 0;
 
-	if (g_part_info_ptr && !force
+	if(g_part_info_ptr && !force
 	   && ((now - last) < working_sview_config.refresh_delay)) {
-		if (*part_ptr != g_part_info_ptr)
+		if(*part_ptr != g_part_info_ptr)
 			error_code = SLURM_SUCCESS;
 		*part_ptr = g_part_info_ptr;
-		if (changed)
+		if(changed)
 			return SLURM_SUCCESS;
 		return error_code;
 	}
 	last = now;
 
-	if (working_sview_config.show_hidden)
+	if(working_sview_config.show_hidden)
 		show_flags |= SHOW_ALL;
 
 	if (g_part_info_ptr) {
-		if (show_flags != last_flags)
+		if(show_flags != last_flags)
 			g_part_info_ptr->last_update = 0;
 		error_code = slurm_load_partitions(g_part_info_ptr->last_update,
 						   &new_part_ptr, show_flags);
@@ -1726,7 +1726,7 @@ extern int get_new_info_part(partition_info_msg_t **part_ptr, int force)
 	last_flags = show_flags;
 	g_part_info_ptr = new_part_ptr;
 
-	if (g_part_info_ptr && (*part_ptr != g_part_info_ptr))
+	if(g_part_info_ptr && (*part_ptr != g_part_info_ptr))
 		error_code = SLURM_SUCCESS;
 
 	*part_ptr = new_part_ptr;
@@ -1851,7 +1851,7 @@ extern GtkListStore *create_model_part(int type)
 				   -1);
 		for(i = 0; i < NODE_STATE_END; i++) {
 			upper = node_state_string(i);
-			if (!strcmp(upper, "UNKNOWN"))
+			if(!strcmp(upper, "UNKNOWN"))
 				continue;
 
 			gtk_list_store_append(model, &iter);
@@ -1885,12 +1885,12 @@ extern void admin_edit_part(GtkCellRendererText *cell,
 	int column = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(cell),
 						       "column"));
 
-	if (!new_text || !strcmp(new_text, ""))
+	if(!new_text || !strcmp(new_text, ""))
 		goto no_input;
 
 	gtk_tree_model_get_iter(GTK_TREE_MODEL(treestore), &iter, path);
 
-	if (column != SORTID_NODE_STATE) {
+	if(column != SORTID_NODE_STATE) {
 		slurm_init_part_desc_msg(part_msg);
 		gtk_tree_model_get(GTK_TREE_MODEL(treestore), &iter,
 				   SORTID_NAME, &temp,
@@ -1901,9 +1901,9 @@ extern void admin_edit_part(GtkCellRendererText *cell,
 	}
 
 	type = _set_part_msg(part_msg, new_text, column);
-	if (global_edit_error)
+	if(global_edit_error)
 		goto print_error;
-	if (got_edit_signal) {
+	if(got_edit_signal) {
 		temp = got_edit_signal;
 		got_edit_signal = NULL;
 		admin_part(GTK_TREE_MODEL(treestore), &iter, temp);
@@ -1911,15 +1911,15 @@ extern void admin_edit_part(GtkCellRendererText *cell,
 		goto no_input;
 	}
 
-	if (got_features_edit_signal) {
+	if(got_features_edit_signal) {
 		admin_part(GTK_TREE_MODEL(treestore), &iter, (char *)type);
 		goto no_input;
 	}
 
-	if (column != SORTID_NODE_STATE && column != SORTID_FEATURES ) {
-		if (old_text && !strcmp(old_text, new_text)) {
+	if(column != SORTID_NODE_STATE && column != SORTID_FEATURES ) {
+		if(old_text && !strcmp(old_text, new_text)) {
 			temp = g_strdup_printf("No change in value.");
-		} else if (slurm_update_partition(part_msg)
+		} else if(slurm_update_partition(part_msg)
 			  == SLURM_SUCCESS) {
 			gtk_tree_store_set(treestore, &iter, column,
 					   new_text, -1);
@@ -1965,8 +1965,8 @@ extern void get_info_part(GtkTable *table, display_data_t *display_data)
 	GtkTreePath *path = NULL;
 
 	/* reset */
-	if (!table && !display_data) {
-		if (display_widget)
+	if(!table && !display_data) {
+		if(display_widget)
 			gtk_widget_destroy(display_widget);
 		display_widget = NULL;
 		part_info_ptr = NULL;
@@ -1974,25 +1974,25 @@ extern void get_info_part(GtkTable *table, display_data_t *display_data)
 		return;
 	}
 
-	if (display_data)
+	if(display_data)
 		local_display_data = display_data;
-	if (!table) {
+	if(!table) {
 		display_data_part->set_menu = local_display_data->set_menu;
 		return;
 	}
-	if (display_widget && toggled) {
+	if(display_widget && toggled) {
 		gtk_widget_destroy(display_widget);
 		display_widget = NULL;
 		goto display_it;
 	}
 
-	if ((part_error_code = get_new_info_part(&part_info_ptr, force_refresh))
+	if((part_error_code = get_new_info_part(&part_info_ptr, force_refresh))
 	   == SLURM_NO_CHANGE_IN_DATA) {
 		// just goto the new info node
 	} else 	if (part_error_code != SLURM_SUCCESS) {
-		if (view == ERROR_VIEW)
+		if(view == ERROR_VIEW)
 			goto end_it;
-		if (display_widget)
+		if(display_widget)
 			gtk_widget_destroy(display_widget);
 		view = ERROR_VIEW;
 		snprintf(error_char, 100, "slurm_load_partitions: %s",
@@ -2004,16 +2004,16 @@ extern void get_info_part(GtkTable *table, display_data_t *display_data)
 		goto end_it;
 	}
 
-	if ((node_error_code = get_new_info_node(&node_info_ptr, force_refresh))
+	if((node_error_code = get_new_info_node(&node_info_ptr, force_refresh))
 	   == SLURM_NO_CHANGE_IN_DATA) {
-		if ((!display_widget || view == ERROR_VIEW)
+		if((!display_widget || view == ERROR_VIEW)
 		   || (part_error_code != SLURM_NO_CHANGE_IN_DATA))
 			goto display_it;
 		changed = 0;
 	} else if (node_error_code != SLURM_SUCCESS) {
-		if (view == ERROR_VIEW)
+		if(view == ERROR_VIEW)
 			goto end_it;
-		if (display_widget)
+		if(display_widget)
 			gtk_widget_destroy(display_widget);
 		view = ERROR_VIEW;
 		snprintf(error_char, 100, "slurm_load_node: %s",
@@ -2030,11 +2030,11 @@ display_it:
 	info_list = _create_part_info_list(part_info_ptr,
 					   node_info_ptr,
 					   changed);
-	if (!info_list)
+	if(!info_list)
 		return;
 
 	/* set up the grid */
-	if (display_widget && GTK_IS_TREE_VIEW(display_widget)
+	if(display_widget && GTK_IS_TREE_VIEW(display_widget)
 	   && gtk_tree_selection_count_selected_rows(
 		   gtk_tree_view_get_selection(
 			   GTK_TREE_VIEW(display_widget)))) {
@@ -2043,7 +2043,7 @@ display_it:
 		gtk_tree_view_get_cursor(GTK_TREE_VIEW(display_widget),
 					 &path, &focus_column);
 	}
-	if (!path) {
+	if(!path) {
 		itr = list_iterator_create(info_list);
 		while ((sview_part_info = list_next(itr))) {
 			part_ptr = sview_part_info->part_ptr;
@@ -2060,11 +2060,11 @@ display_it:
 		list_iterator_destroy(itr);
 	}
 
-	if (view == ERROR_VIEW && display_widget) {
+	if(view == ERROR_VIEW && display_widget) {
 		gtk_widget_destroy(display_widget);
 		display_widget = NULL;
 	}
-	if (!display_widget) {
+	if(!display_widget) {
 		tree_view = create_treeview(local_display_data,
 					    &grid_button_list);
 
@@ -2079,14 +2079,14 @@ display_it:
 				 SORTID_CNT, SORTID_NAME, SORTID_COLOR);
 	}
 
-	if (path)
+	if(path)
 		highlight_grid(GTK_TREE_VIEW(display_widget),
 			       SORTID_NODE_INX, SORTID_COLOR_INX,
 			       grid_button_list);
 	else
 		change_grid_color(grid_button_list, -1, -1,
 				  MAKE_WHITE, true, 0);
-	if (working_sview_config.grid_speedup) {
+	if(working_sview_config.grid_speedup) {
 		gtk_widget_set_sensitive(GTK_WIDGET(main_grid_table), 0);
 		gtk_widget_set_sensitive(GTK_WIDGET(main_grid_table), 1);
 	}
@@ -2119,23 +2119,23 @@ extern void specific_info_part(popup_info_t *popup_win)
 	ListIterator itr = NULL;
 	hostset_t hostset = NULL;
 
-	if (!spec_info->display_widget)
+	if(!spec_info->display_widget)
 		setup_popup_info(popup_win, display_data_part, SORTID_CNT);
 
-	if (spec_info->display_widget && popup_win->toggled) {
+	if(spec_info->display_widget && popup_win->toggled) {
 		gtk_widget_destroy(spec_info->display_widget);
 		spec_info->display_widget = NULL;
 		goto display_it;
 	}
 
-	if ((part_error_code = get_new_info_part(&part_info_ptr,
+	if((part_error_code = get_new_info_part(&part_info_ptr,
 						popup_win->force_refresh))
 	   == SLURM_NO_CHANGE_IN_DATA)  {
 
 	} else if (part_error_code != SLURM_SUCCESS) {
-		if (spec_info->view == ERROR_VIEW)
+		if(spec_info->view == ERROR_VIEW)
 			goto end_it;
-		if (spec_info->display_widget) {
+		if(spec_info->display_widget) {
 			gtk_widget_destroy(spec_info->display_widget);
 			spec_info->display_widget = NULL;
 		}
@@ -2149,18 +2149,18 @@ extern void specific_info_part(popup_info_t *popup_win)
 		goto end_it;
 	}
 
-	if ((node_error_code = get_new_info_node(&node_info_ptr,
+	if((node_error_code = get_new_info_node(&node_info_ptr,
 						popup_win->force_refresh))
 	   == SLURM_NO_CHANGE_IN_DATA) {
-		if ((!spec_info->display_widget
+		if((!spec_info->display_widget
 		    || spec_info->view == ERROR_VIEW)
 		   || (part_error_code != SLURM_NO_CHANGE_IN_DATA))
 			goto display_it;
 		changed = 0;
 	} else if (node_error_code != SLURM_SUCCESS) {
-		if (spec_info->view == ERROR_VIEW)
+		if(spec_info->view == ERROR_VIEW)
 			goto end_it;
-		if (spec_info->display_widget)
+		if(spec_info->display_widget)
 			gtk_widget_destroy(spec_info->display_widget);
 		spec_info->view = ERROR_VIEW;
 		snprintf(error_char, 100, "slurm_load_node: %s",
@@ -2177,15 +2177,15 @@ display_it:
 	info_list = _create_part_info_list(part_info_ptr,
 					   node_info_ptr,
 					   changed);
-	if (!info_list)
+	if(!info_list)
 		return;
 
-	if (spec_info->view == ERROR_VIEW && spec_info->display_widget) {
+	if(spec_info->view == ERROR_VIEW && spec_info->display_widget) {
 		gtk_widget_destroy(spec_info->display_widget);
 		spec_info->display_widget = NULL;
 	}
 
-	if (spec_info->type != INFO_PAGE && !spec_info->display_widget) {
+	if(spec_info->type != INFO_PAGE && !spec_info->display_widget) {
 		tree_view = create_treeview(local_display_data,
 					    &popup_win->grid_button_list);
 
@@ -2205,7 +2205,7 @@ display_it:
 	setup_popup_grid_list(popup_win);
 
 	spec_info->view = INFO_VIEW;
-	if (spec_info->type == INFO_PAGE) {
+	if(spec_info->type == INFO_PAGE) {
 		_display_info_part(info_list, popup_win);
 		goto end_it;
 	}
@@ -2222,13 +2222,13 @@ display_it:
 		switch(spec_info->type) {
 		case RESV_PAGE:
 		case NODE_PAGE:
-			if (!part_ptr->nodes)
+			if(!part_ptr->nodes)
 				continue;
 
-			if (!(hostset = hostset_create(
+			if(!(hostset = hostset_create(
 				     spec_info->search_info->gchar_data)))
 				continue;
-			if (!hostset_intersects(hostset, part_ptr->nodes)) {
+			if(!hostset_intersects(hostset, part_ptr->nodes)) {
 				hostset_destroy(hostset);
 				continue;
 			}
@@ -2237,17 +2237,17 @@ display_it:
 		case PART_PAGE:
 			switch(spec_info->search_info->search_type) {
 			case SEARCH_PARTITION_NAME:
-				if (!spec_info->search_info->gchar_data)
+				if(!spec_info->search_info->gchar_data)
 					continue;
 
-				if (strcmp(part_ptr->name,
+				if(strcmp(part_ptr->name,
 					  spec_info->search_info->gchar_data))
 					continue;
 				break;
 			case SEARCH_PARTITION_STATE:
-				if (spec_info->search_info->int_data == NO_VAL)
+				if(spec_info->search_info->int_data == NO_VAL)
 					continue;
-				if (part_ptr->state_up !=
+				if(part_ptr->state_up !=
 				   spec_info->search_info->int_data)
 					continue;
 				break;
@@ -2258,10 +2258,10 @@ display_it:
 			break;
 		case BLOCK_PAGE:
 		case JOB_PAGE:
-			if (!spec_info->search_info->gchar_data)
+			if(!spec_info->search_info->gchar_data)
 				continue;
 
-			if (strcmp(part_ptr->name,
+			if(strcmp(part_ptr->name,
 				  spec_info->search_info->gchar_data))
 				continue;
 			break;
@@ -2357,11 +2357,11 @@ extern void popup_all_part(GtkTreeModel *model, GtkTreeIter *iter, int id)
 	case NODE_PAGE:
 		gtk_tree_model_get(model, iter, SORTID_ONLY_LINE,
 				   &only_line, -1);
-		if (!only_line)
+		if(!only_line)
 			gtk_tree_model_get(model, iter,
 					   SORTID_NODE_STATE, &state, -1);
-		if (cluster_flags & CLUSTER_FLAG_BG) {
-			if (!state || !strlen(state))
+		if(cluster_flags & CLUSTER_FLAG_BG) {
+			if(!state || !strlen(state))
 				snprintf(title, 100,
 					 "Base partition(s) in partition %s",
 					 name);
@@ -2371,7 +2371,7 @@ extern void popup_all_part(GtkTreeModel *model, GtkTreeIter *iter, int id)
 					 "that are in '%s' state",
 					 name, state);
 		} else {
-			if (!state || !strlen(state))
+			if(!state || !strlen(state))
 				snprintf(title, 100, "Node(s) in partition %s ",
 					 name);
 			else
@@ -2396,15 +2396,15 @@ extern void popup_all_part(GtkTreeModel *model, GtkTreeIter *iter, int id)
 
 	itr = list_iterator_create(popup_list);
 	while((popup_win = list_next(itr))) {
-		if (popup_win->spec_info)
-			if (!strcmp(popup_win->spec_info->title, title)) {
+		if(popup_win->spec_info)
+			if(!strcmp(popup_win->spec_info->title, title)) {
 				break;
 			}
 	}
 	list_iterator_destroy(itr);
 
-	if (!popup_win) {
-		if (id == INFO_PAGE)
+	if(!popup_win) {
+		if(id == INFO_PAGE)
 			popup_win = create_popup_info(id, PART_PAGE, title);
 		else
 			popup_win = create_popup_info(PART_PAGE, id, title);
@@ -2434,14 +2434,14 @@ extern void popup_all_part(GtkTreeModel *model, GtkTreeIter *iter, int id)
 		g_free(name);
 		/* we want to include the parent's nodes here not just
 		   the subset */
-		if (gtk_tree_model_iter_parent(model, &par_iter, iter))
+		if(gtk_tree_model_iter_parent(model, &par_iter, iter))
 			gtk_tree_model_get(model, &par_iter,
 					   SORTID_NODELIST, &name, -1);
 		else
 			gtk_tree_model_get(model, iter,
 					   SORTID_NODELIST, &name, -1);
 		popup_win->spec_info->search_info->gchar_data = name;
-		if (state && strlen(state)) {
+		if(state && strlen(state)) {
 			popup_win->spec_info->search_info->search_type =
 				SEARCH_NODE_STATE;
 			gtk_tree_model_get(
@@ -2493,11 +2493,11 @@ extern void admin_part(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 
 	part_msg->name = xstrdup(partid);
 
-	if (!strcasecmp("Change Part State", type)) {
+	if(!strcasecmp("Change Part State", type)) {
 		GtkCellRenderer *renderer = NULL;
 		GtkTreeModel *model2 = GTK_TREE_MODEL(
 			create_model_part(SORTID_PART_STATE));
-		if (!model2) {
+		if(!model2) {
 			g_print("In change part, no model set up for %d(%s)\n",
 				SORTID_PART_STATE, partid);
 			return;
@@ -2529,7 +2529,7 @@ extern void admin_part(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 			 partid);
 		label = gtk_label_new(tmp_char);
 		edit_type = EDIT_PART_STATE;
-	} else if (!strcasecmp("Edit Part", type)) {
+	} else if(!strcasecmp("Edit Part", type)) {
 		label = gtk_dialog_add_button(GTK_DIALOG(popup),
 					      GTK_STOCK_OK, GTK_RESPONSE_OK);
 		gtk_window_set_default(GTK_WINDOW(popup), label);
@@ -2543,16 +2543,16 @@ extern void admin_part(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 		label = gtk_label_new(tmp_char);
 		edit_type = EDIT_EDIT;
 		entry = _admin_full_edit_part(part_msg, model, iter);
-	} else if (!strncasecmp("Update", type, 6)) {
+	} else if(!strncasecmp("Update", type, 6)) {
 		char *old_features = NULL;
-		if (got_features_edit_signal)
+		if(got_features_edit_signal)
 			old_features = got_features_edit_signal;
 		else
 			gtk_tree_model_get(model, iter, SORTID_FEATURES,
 					   &old_features, -1);
 		update_features_node(GTK_DIALOG(popup),
 				     nodelist, old_features);
-		if (got_features_edit_signal) {
+		if(got_features_edit_signal) {
 			got_features_edit_signal = NULL;
 			xfree(old_features);
 		} else
@@ -2566,18 +2566,18 @@ extern void admin_part(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 
 	gtk_box_pack_start(GTK_BOX(GTK_DIALOG(popup)->vbox),
 			   label, FALSE, FALSE, 0);
-	if (entry)
+	if(entry)
 		gtk_box_pack_start(GTK_BOX(GTK_DIALOG(popup)->vbox),
 				   entry, TRUE, TRUE, 0);
 	gtk_widget_show_all(popup);
 	response = gtk_dialog_run (GTK_DIALOG(popup));
 
 	if (response == GTK_RESPONSE_OK) {
-		if (global_edit_error)
+		if(global_edit_error)
 			temp = global_edit_error_msg;
-		else if (!global_send_update_msg) {
+		else if(!global_send_update_msg) {
 			temp = g_strdup_printf("No change detected.");
-		} else if (slurm_update_partition(part_msg)
+		} else if(slurm_update_partition(part_msg)
 			  == SLURM_SUCCESS) {
 			temp = g_strdup_printf(
 				"Partition %s updated successfully",
@@ -2597,13 +2597,13 @@ end_it:
 	global_entry_changed = 0;
 	slurm_free_update_part_msg(part_msg);
 	gtk_widget_destroy(popup);
-	if (got_edit_signal) {
+	if(got_edit_signal) {
 		type = got_edit_signal;
 		got_edit_signal = NULL;
 		admin_part(model, iter, type);
 		xfree(type);
 	}
-	if (got_features_edit_signal) {
+	if(got_features_edit_signal) {
 		type = "Update Features";
 		admin_part(model, iter, type);
 	}
@@ -2615,9 +2615,9 @@ extern void cluster_change_part()
 {
 	display_data_t *display_data = display_data_part;
 	while(display_data++) {
-		if (display_data->id == -1)
+		if(display_data->id == -1)
 			break;
-		if (cluster_flags & CLUSTER_FLAG_BG) {
+		if(cluster_flags & CLUSTER_FLAG_BG) {
 			switch(display_data->id) {
 			case SORTID_NODES_ALLOWED:
 				display_data->name = "BPs Allowed Allocating";
@@ -2643,10 +2643,10 @@ extern void cluster_change_part()
 	}
 	display_data = options_data_part;
 	while(display_data++) {
-		if (display_data->id == -1)
+		if(display_data->id == -1)
 			break;
 
-		if (cluster_flags & CLUSTER_FLAG_BG) {
+		if(cluster_flags & CLUSTER_FLAG_BG) {
 			switch(display_data->id) {
 			case BLOCK_PAGE:
 				display_data->name = "Blocks";
@@ -2656,17 +2656,17 @@ extern void cluster_change_part()
 				break;
 			}
 
-			if (!display_data->name) {
-			} else if (!strcmp(display_data->name, "Drain Nodes"))
+			if(!display_data->name) {
+			} else if(!strcmp(display_data->name, "Drain Nodes"))
 				display_data->name = "Drain Base Partitions";
-			else if (!strcmp(display_data->name, "Resume Nodes"))
+			else if(!strcmp(display_data->name, "Resume Nodes"))
 				display_data->name = "Resume Base Partitions";
-			else if (!strcmp(display_data->name, "Put Nodes Down"))
+			else if(!strcmp(display_data->name, "Put Nodes Down"))
 				display_data->name = "Put Base Partitions Down";
-			else if (!strcmp(display_data->name, "Make Nodes Idle"))
+			else if(!strcmp(display_data->name, "Make Nodes Idle"))
 				display_data->name =
 					"Make Base Partitions Idle";
-			else if (!strcmp(display_data->name,
+			else if(!strcmp(display_data->name,
 					"Update Node Features"))
 				display_data->name =
 					"Update Base Partitions Features";
@@ -2680,20 +2680,20 @@ extern void cluster_change_part()
 				break;
 			}
 
-			if (!display_data->name) {
-			} else if (!strcmp(display_data->name,
+			if(!display_data->name) {
+			} else if(!strcmp(display_data->name,
 					  "Drain Base Partitions"))
 				display_data->name = "Drain Nodes";
-			else if (!strcmp(display_data->name,
+			else if(!strcmp(display_data->name,
 					"Resume Base Partitions"))
 				display_data->name = "Resume Nodes";
-			else if (!strcmp(display_data->name,
+			else if(!strcmp(display_data->name,
 					"Put Base Partitions Down"))
 				display_data->name = "Put Nodes Down";
-			else if (!strcmp(display_data->name,
+			else if(!strcmp(display_data->name,
 					"Make Base Partitions Idle"))
 				display_data->name = "Make Nodes Idle";
-			else if (!strcmp(display_data->name,
+			else if(!strcmp(display_data->name,
 					"Update Node Features"))
 				display_data->name =
 					"Update Base Partitions Features";

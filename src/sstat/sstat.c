@@ -92,7 +92,7 @@ int _do_stat(uint32_t jobid, uint32_t stepid)
 	hostlist_t hl = NULL;
 
 	debug("requesting info for job %u.%u", jobid, stepid);
-	if ((rc = slurm_job_step_stat(jobid, stepid, NULL,
+	if((rc = slurm_job_step_stat(jobid, stepid, NULL,
 				     &step_stat_response)) != SLURM_SUCCESS) {
 		error("problem getting step_layout for %u.%u: %s",
 		      jobid, stepid, slurm_strerror(rc));
@@ -118,19 +118,19 @@ int _do_stat(uint32_t jobid, uint32_t stepid)
 	hl = hostlist_create(NULL);
 	itr = list_iterator_create(step_stat_response->stats_list);
 	while((step_stat = list_next(itr))) {
-		if (!step_stat->step_pids || !step_stat->step_pids->node_name)
+		if(!step_stat->step_pids || !step_stat->step_pids->node_name)
 			continue;
 		if (step_stat->step_pids->pid_cnt > 0 ) {
 			int i;
 			for(i=0; i<step_stat->step_pids->pid_cnt; i++) {
-				if (step.pid_str)
+				if(step.pid_str)
 					xstrcat(step.pid_str, ",");
 				xstrfmtcat(step.pid_str, "%u",
 					   step_stat->step_pids->pid[i]);
 			}
 		}
 
-		if (params.pid_format) {
+		if(params.pid_format) {
 			step.nodes = step_stat->step_pids->node_name;
 			print_fields(&step);
 			xfree(step.pid_str);
@@ -153,7 +153,7 @@ int _do_stat(uint32_t jobid, uint32_t stepid)
 	hostlist_destroy(hl);
 	tot_tasks += ntasks;
 
-	if (tot_tasks) {
+	if(tot_tasks) {
 		step.stats.cpu_ave /= (double)tot_tasks;
 		step.stats.rss_ave /= (double)tot_tasks;
 		step.stats.vsize_ave /= (double)tot_tasks;
@@ -176,7 +176,7 @@ int main(int argc, char **argv)
 	print_fields_itr = list_iterator_create(print_fields_list);
 
 	parse_command_line(argc, argv);
-	if (!params.opt_job_list || !list_count(params.opt_job_list)) {
+	if(!params.opt_job_list || !list_count(params.opt_job_list)) {
 		error("You didn't give me any jobs to stat.");
 		return 1;
 	}
@@ -184,12 +184,12 @@ int main(int argc, char **argv)
 	print_fields_header(print_fields_list);
 	itr = list_iterator_create(params.opt_job_list);
 	while((selected_step = list_next(itr))) {
-		if (selected_step->stepid != NO_VAL)
+		if(selected_step->stepid != NO_VAL)
 			stepid = selected_step->stepid;
-		else if (params.opt_all_steps) {
+		else if(params.opt_all_steps) {
 			job_step_info_response_msg_t *step_ptr = NULL;
 			int i = 0;
-			if (slurm_get_job_steps(
+			if(slurm_get_job_steps(
 				   0, selected_step->jobid, NO_VAL,
 				   &step_ptr, SHOW_ALL)) {
 				error("couldn't get steps for job %u",
@@ -205,14 +205,14 @@ int main(int argc, char **argv)
 		} else {
 			/* get the first running step to query against. */
 			job_step_info_response_msg_t *step_ptr = NULL;
-			if (slurm_get_job_steps(
+			if(slurm_get_job_steps(
 				   0, selected_step->jobid, NO_VAL,
 				   &step_ptr, SHOW_ALL)) {
 				error("couldn't get steps for job %u",
 				      selected_step->jobid);
 				continue;
 			}
-			if (!step_ptr->job_step_count) {
+			if(!step_ptr->job_step_count) {
 				error("no steps running for job %u",
 				      selected_step->jobid);
 				continue;
@@ -224,12 +224,12 @@ int main(int argc, char **argv)
 	list_iterator_destroy(itr);
 
 	xfree(params.opt_field_list);
-	if (params.opt_job_list)
+	if(params.opt_job_list)
 		list_destroy(params.opt_job_list);
 
-	if (print_fields_itr)
+	if(print_fields_itr)
 		list_iterator_destroy(print_fields_itr);
-	if (print_fields_list)
+	if(print_fields_list)
 		list_destroy(print_fields_list);
 
 	return 0;

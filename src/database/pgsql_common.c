@@ -46,7 +46,7 @@ pthread_mutex_t pgsql_lock = PTHREAD_MUTEX_INITIALIZER;
 
 extern int *destroy_pgsql_db_info(pgsql_db_info_t *db_info)
 {
-	if (db_info) {
+	if(db_info) {
 		xfree(db_info->host);
 		xfree(db_info->user);
 		xfree(db_info->pass);
@@ -113,8 +113,8 @@ extern int pgsql_get_db_connection(PGconn **pgsql_db, char *db_name,
 		//debug2("pgsql connect: %s", connect_line);
 		*pgsql_db = PQconnectdb(connect_line);
 
-		if (PQstatus(*pgsql_db) != CONNECTION_OK) {
-			if (!strcmp(PQerrorMessage(*pgsql_db),
+		if(PQstatus(*pgsql_db) != CONNECTION_OK) {
+			if(!strcmp(PQerrorMessage(*pgsql_db),
 				   "no password supplied")) {
 				PQfinish(*pgsql_db);
 				fatal("This Postgres connection needs "
@@ -157,7 +157,7 @@ extern int pgsql_get_db_connection(PGconn **pgsql_db, char *db_name,
 
 extern int pgsql_close_db_connection(PGconn **pgsql_db)
 {
-	if (pgsql_db && *pgsql_db) {
+	if(pgsql_db && *pgsql_db) {
 		PQfinish(*pgsql_db);
 		*pgsql_db = NULL;
 	}
@@ -168,10 +168,10 @@ extern int pgsql_db_query(PGconn *pgsql_db, char *query)
 {
 	PGresult *result = NULL;
 
-	if (!pgsql_db)
+	if(!pgsql_db)
 		fatal("You haven't inited this storage yet.");
 
-	if (!(result = pgsql_db_query_ret(pgsql_db, query)))
+	if(!(result = pgsql_db_query_ret(pgsql_db, query)))
 		return SLURM_ERROR;
 
 	PQclear(result);
@@ -197,12 +197,12 @@ extern PGresult *pgsql_db_query_ret(PGconn *pgsql_db, char *query)
 {
 	PGresult *result = NULL;
 
-	if (!pgsql_db)
+	if(!pgsql_db)
 		fatal("You haven't inited this storage yet.");
 
 	result = PQexec(pgsql_db, query);
 
-	if (PQresultStatus(result) != PGRES_COMMAND_OK
+	if(PQresultStatus(result) != PGRES_COMMAND_OK
 	   && PQresultStatus(result) != PGRES_TUPLES_OK) {
 		error("PQexec failed: %d %s", PQresultStatus(result),
 		      PQerrorMessage(pgsql_db));
@@ -220,16 +220,16 @@ extern int pgsql_insert_ret_id(PGconn *pgsql_db, char *sequence_name,
 	PGresult *result = NULL;
 
 	slurm_mutex_lock(&pgsql_lock);
-	if (pgsql_db_query(pgsql_db, query) != SLURM_ERROR)  {
+	if(pgsql_db_query(pgsql_db, query) != SLURM_ERROR)  {
 		char *new_query = xstrdup_printf(
 			"select last_value from %s", sequence_name);
 
-		if ((result = pgsql_db_query_ret(pgsql_db, new_query))) {
+		if((result = pgsql_db_query_ret(pgsql_db, new_query))) {
 			new_id = atoi(PQgetvalue(result, 0, 0));
 			PQclear(result);
 		}
 		xfree(new_query);
-		if (!new_id) {
+		if(!new_id) {
 			/* should have new id */
 			error("We should have gotten a new id: %s",
 			      PQerrorMessage(pgsql_db));
@@ -277,7 +277,7 @@ extern int pgsql_db_create_table(PGconn *pgsql_db,
 		next = xstrdup_printf(" %s %s",
 				      fields->name,
 				      fields->options);
-		if (i)
+		if(i)
 			xstrcat(tmp, ",");
 		xstrcat(tmp, next);
 		xfree(next);
@@ -288,7 +288,7 @@ extern int pgsql_db_create_table(PGconn *pgsql_db,
 	xfree(tmp);
 	xstrcat(query, ending);
 
-	if (pgsql_db_query(pgsql_db, query) == SLURM_ERROR) {
+	if(pgsql_db_query(pgsql_db, query) == SLURM_ERROR) {
 		xfree(query);
 		return SLURM_ERROR;
 	}
@@ -317,7 +317,7 @@ extern int pgsql_db_make_table_current(PGconn *pgsql_db, char *table_name,
 			       "information_schema.columns where "
 			       "table_name='%s'", table_name);
 
-	if (!(result = pgsql_db_query_ret(pgsql_db, query))) {
+	if(!(result = pgsql_db_query_ret(pgsql_db, query))) {
 		xfree(query);
 		return SLURM_ERROR;
 	}
@@ -335,25 +335,25 @@ extern int pgsql_db_make_table_current(PGconn *pgsql_db, char *table_name,
 	while(fields[i].name) {
 		int found = 0;
 		not_null = 0;
-		if (!strcasecmp("serial", fields[i].options)) {
+		if(!strcasecmp("serial", fields[i].options)) {
 			i++;
 			continue;
 		}
 		opt_part = xstrdup(fields[i].options);
 		original_ptr = opt_part;
 		opt_part = strtok_r(opt_part, " ", &temp_char);
-		if (opt_part) {
+		if(opt_part) {
 			type = xstrdup(opt_part); /* XXX: only one identifier supported */
 			opt_part = strtok_r(NULL, " ", &temp_char);
 			while(opt_part) {
-				if (!strcasecmp("not", opt_part)) {
+				if(!strcasecmp("not", opt_part)) {
 					opt_part = strtok_r(NULL, " ",
 							    &temp_char);
 					if (!strcasecmp("null", opt_part)) {
 						not_null = 1;
 
 					}
-				} else if (!strcasecmp("default", opt_part)){
+				} else if(!strcasecmp("default", opt_part)){
 					opt_part = strtok_r(NULL,
 							    " ", &temp_char);
 					default_str = xstrdup(opt_part);
@@ -367,7 +367,7 @@ extern int pgsql_db_make_table_current(PGconn *pgsql_db, char *table_name,
 		xfree(original_ptr);
 		list_iterator_reset(itr);
 		while((col = list_next(itr))) {
-			if (!strcmp(col, fields[i].name)) {
+			if(!strcmp(col, fields[i].name)) {
 				list_delete_item(itr);
 				found = 1;
 				break;
@@ -375,23 +375,23 @@ extern int pgsql_db_make_table_current(PGconn *pgsql_db, char *table_name,
 		}
 
 		temp_char = NULL;
-		if (!found) {
+		if(!found) {
 			info("adding column %s", fields[i].name);
-			if (default_str)
+			if(default_str)
 				xstrfmtcat(temp_char,
 					   " default %s", default_str);
 
-			if (not_null)
+			if(not_null)
 				xstrcat(temp_char, " not null");
 
 			xstrfmtcat(query,
 				   " add %s %s",
 				   fields[i].name, type);
-			if (temp_char)
+			if(temp_char)
 				xstrcat(query, temp_char);
 			xstrcat(query, ",");
 		} else {
-			if (default_str)
+			if(default_str)
 				xstrfmtcat(temp_char,
 					   " alter %s set default %s,",
 					   fields[i].name, default_str);
@@ -400,7 +400,7 @@ extern int pgsql_db_make_table_current(PGconn *pgsql_db, char *table_name,
 					   " alter %s drop default,",
 					   fields[i].name);
 
-			if (not_null)
+			if(not_null)
 				xstrfmtcat(temp_char,
 					   " alter %s set not null,",
 					   fields[i].name);
@@ -422,7 +422,7 @@ extern int pgsql_db_make_table_current(PGconn *pgsql_db, char *table_name,
 	query[strlen(query)-1] = ';';
 
 	//debug4("pgsql db create/alter table:\n %s", query);
-	if (pgsql_db_query(pgsql_db, query)) {
+	if(pgsql_db_query(pgsql_db, query)) {
 		xfree(query);
 		return SLURM_ERROR;
 	}

@@ -80,7 +80,7 @@ static gboolean _mouseover_node(GtkWidget *widget, GdkEventButton *event,
 	gtk_widget_set_tooltip_text(grid_button->button,
 				    grid_button->node_name);
 #else
-	if (!grid_button->tip)
+	if(!grid_button->tip)
 		grid_button->tip = gtk_tooltips_new();
 	gtk_tooltips_set_tip(grid_button->tip,
 			     grid_button->button,
@@ -98,7 +98,7 @@ static gboolean _mouseoff_node(GtkWidget *widget, GdkEventButton *event,
 {
 	gboolean rc = false;
 
-	if (grid_button->last_state == GTK_STATE_ACTIVE) {
+	if(grid_button->last_state == GTK_STATE_ACTIVE) {
 		gtk_widget_set_state(grid_button->button, GTK_STATE_ACTIVE);
 		rc = true;
 		//g_print("off of %s\n", grid_button->node_name);
@@ -109,9 +109,9 @@ static gboolean _mouseoff_node(GtkWidget *widget, GdkEventButton *event,
 static gboolean _open_node(GtkWidget *widget, GdkEventButton *event,
 			   grid_button_t *grid_button)
 {
-	if (event->button == 1) {
+	if(event->button == 1) {
 		popup_all_node_name(grid_button->node_name, INFO_PAGE);
-	} else if (event->button == 3) {
+	} else if(event->button == 3) {
 		/* right click */
 		admin_menu_node_name(grid_button->node_name, event);
 	}
@@ -132,14 +132,14 @@ static void _open_block(GtkWidget *widget, GdkEventButton *event,
 
 	itr = list_iterator_create(popup_list);
 	while((popup_win = list_next(itr))) {
-		if (popup_win->spec_info)
-			if (!strcmp(popup_win->spec_info->title, title)) {
+		if(popup_win->spec_info)
+			if(!strcmp(popup_win->spec_info->title, title)) {
 				break;
 			}
 	}
 	list_iterator_destroy(itr);
 
-	if (!popup_win) {
+	if(!popup_win) {
 		popup_win = create_popup_info(INFO_PAGE, BLOCK_PAGE, title);
 		popup_win->spec_info->search_info->search_type =
 			SEARCH_BLOCK_NODENAME;
@@ -208,7 +208,7 @@ void _put_button_as_down(grid_button_t *grid_button, int state)
 	GtkWidget *image = NULL;
 /* 	GdkColor color; */
 
-	if (GTK_IS_EVENT_BOX(grid_button->button)) {
+	if(GTK_IS_EVENT_BOX(grid_button->button)) {
 		//gtk_widget_set_sensitive (grid_button->button, TRUE);
 		return;
 	}
@@ -222,10 +222,10 @@ void _put_button_as_down(grid_button_t *grid_button, int state)
 				      FALSE);
 	_add_button_signals(grid_button);
 
-/* 	if (grid_button->frame) */
+/* 	if(grid_button->frame) */
 /* 		gtk_container_add(GTK_CONTAINER(grid_button->frame), */
 /* 				  grid_button->button); */
-	if (grid_button->table)
+	if(grid_button->table)
 		gtk_table_attach(grid_button->table, grid_button->button,
 				 grid_button->table_x,
 				 (grid_button->table_x+1),
@@ -238,7 +238,7 @@ void _put_button_as_down(grid_button_t *grid_button, int state)
 	//sview_widget_modify_bg(grid_button->button, GTK_STATE_NORMAL, color);
 	//gdk_color_parse(white_color, &color);
 	//sview_widget_modify_bg(grid_button->button, GTK_STATE_ACTIVE, color);
-	if (state == NODE_STATE_DRAIN)
+	if(state == NODE_STATE_DRAIN)
 		image = gtk_image_new_from_stock(GTK_STOCK_DIALOG_ERROR,
 						 GTK_ICON_SIZE_SMALL_TOOLBAR);
 	else
@@ -252,7 +252,7 @@ void _put_button_as_down(grid_button_t *grid_button, int state)
 
 void _put_button_as_up(grid_button_t *grid_button)
 {
-	if (GTK_IS_BUTTON(grid_button->button)) {
+	if(GTK_IS_BUTTON(grid_button->button)) {
 		return;
 	}
 	gtk_widget_destroy(grid_button->button);
@@ -260,10 +260,10 @@ void _put_button_as_up(grid_button_t *grid_button)
 	gtk_widget_set_size_request(grid_button->button, 10, 10);
 	_add_button_signals(grid_button);
 
-/* 	if (grid_button->frame) */
+/* 	if(grid_button->frame) */
 /* 		gtk_container_add(GTK_CONTAINER(grid_button->frame), */
 /* 				  grid_button->button); */
-	if (grid_button->table)
+	if(grid_button->table)
 		gtk_table_attach(grid_button->table, grid_button->button,
 				 grid_button->table_x,
 				 (grid_button->table_x+1),
@@ -277,7 +277,7 @@ void _put_button_as_up(grid_button_t *grid_button)
 
 void _put_button_as_inactive(grid_button_t *grid_button)
 {
-	if (GTK_IS_BUTTON(grid_button->button)) {
+	if(GTK_IS_BUTTON(grid_button->button)) {
 		//gtk_widget_set_sensitive (grid_button->button, FALSE);
 		return;
 	}
@@ -288,10 +288,10 @@ void _put_button_as_inactive(grid_button_t *grid_button)
 
 	_add_button_signals(grid_button);
 
-/* 	if (grid_button->frame) */
+/* 	if(grid_button->frame) */
 /* 		gtk_container_add(GTK_CONTAINER(grid_button->frame), */
 /* 				  grid_button->button); */
-	if (grid_button->table)
+	if(grid_button->table)
 		gtk_table_attach(grid_button->table, grid_button->button,
 				 grid_button->table_x,
 				 (grid_button->table_x+1),
@@ -314,12 +314,12 @@ static bool _change_button_color(grid_button_t *grid_button,
 
 	xassert(grid_button);
 
-	if (only_change_unused && grid_button->used)
+	if(only_change_unused && grid_button->used)
 		return 0;
 
 	grid_button->used = true;
-	if (color_inx == MAKE_BLACK) {
-		if (grid_button->color_inx != color_inx) {
+	if(color_inx == MAKE_BLACK) {
+		if(grid_button->color_inx != color_inx) {
 			_put_button_as_inactive(grid_button);
 			grid_button->color = new_col;
 			grid_button->color_inx = color_inx;
@@ -334,7 +334,7 @@ static bool _change_button_color(grid_button_t *grid_button,
 		return changed;
 	}
 
-	if (state_override != NODE_STATE_UNKNOWN)
+	if(state_override != NODE_STATE_UNKNOWN)
 		state = state_override;
 	else
 		state = grid_button->state;
@@ -346,7 +346,7 @@ static bool _change_button_color(grid_button_t *grid_button,
 	} else if ((state & NODE_STATE_DRAIN)
 		   || (node_base_state == NODE_STATE_ERROR)) {
 		_put_button_as_down(grid_button, NODE_STATE_DRAIN);
-	} else if (grid_button->color_inx != color_inx) {
+	} else if(grid_button->color_inx != color_inx) {
 		_put_button_as_up(grid_button);
 		grid_button->color = new_col;
 		grid_button->color_inx = color_inx;
@@ -381,10 +381,10 @@ static void selected_foreach_func(GtkTreeModel *model,
 	gtk_tree_model_get(model, iter, grid_foreach->color_inx_id,
 			   &color_inx, -1);
 
-	if (!node_inx)
+	if(!node_inx)
 		return;
 
-	if (color_inx > sview_colors_cnt) {
+	if(color_inx > sview_colors_cnt) {
 		g_print("hey the color_inx from %d was set to %d > %d\n",
 			grid_foreach->color_inx_id, color_inx,
 			sview_colors_cnt);
@@ -397,30 +397,30 @@ static void selected_foreach_func(GtkTreeModel *model,
 		/*For multiple selections, need to retain all selected.
 		 *(previously this assumed only one selected).
 		 */
-		if ((node_inx[j] < 0)
+		if((node_inx[j] < 0)
 		   || (grid_button->inx < node_inx[j])
 		   || (grid_button->inx > node_inx[j+1])) {
 			continue;
 		}
 
-		if (_change_button_color(grid_button, color_inx,
+		if(_change_button_color(grid_button, color_inx,
 					sview_colors[color_inx],
 					color, 0, 0)) {
 			changed = 1;
 		}
-		if (GTK_WIDGET_STATE(grid_button->button) != GTK_STATE_NORMAL) {
+		if(GTK_WIDGET_STATE(grid_button->button) != GTK_STATE_NORMAL) {
 			gtk_widget_set_state(grid_button->button,
 					     GTK_STATE_NORMAL);
 		}
 
-		if (grid_button->inx == node_inx[j+1]) {
+		if(grid_button->inx == node_inx[j+1]) {
 			j+=2;
 		}
 	}
 
 
 	list_iterator_destroy(itr);
-	if (changed && working_sview_config.grid_speedup) {
+	if(changed && working_sview_config.grid_speedup) {
 		gtk_widget_set_sensitive(GTK_WIDGET(main_grid_table), 0);
 		gtk_widget_set_sensitive(GTK_WIDGET(main_grid_table), 1);
 	}
@@ -432,7 +432,7 @@ static void selected_foreach_func(GtkTreeModel *model,
 static int _block_in_node(int *bp_inx, int inx)
 {
 	int j=0;
-	if (bp_inx[j] >= 0) {
+	if(bp_inx[j] >= 0) {
 		if ((bp_inx[j] == inx) && (bp_inx[j+1] == inx))
 			return 1;
 	}
@@ -443,7 +443,7 @@ static int _block_in_node(int *bp_inx, int inx)
 /* { */
 /* 	grid_foreach_t *grid_foreach = (grid_foreach_t *)arg; */
 
-/* 	if (grid_foreach) { */
+/* 	if(grid_foreach) { */
 /* 		xfree(grid_foreach); */
 /* 	} */
 /* } */
@@ -451,8 +451,8 @@ static int _block_in_node(int *bp_inx, int inx)
 extern void destroy_grid_button(void *arg)
 {
 	grid_button_t *grid_button = (grid_button_t *)arg;
-	if (grid_button) {
-		if (grid_button->button) {
+	if(grid_button) {
+		if(grid_button->button) {
 			gtk_widget_destroy(grid_button->button);
 			grid_button->button = NULL;
 		}
@@ -476,12 +476,12 @@ extern grid_button_t *create_grid_button_from_another(
 	uint16_t node_base_state;
 	char *new_col = NULL;
 
-	if (!grid_button || !name)
+	if(!grid_button || !name)
 		return NULL;
-	if (color_inx >= 0) {
+	if(color_inx >= 0) {
 		color_inx %= sview_colors_cnt;
 		new_col = sview_colors[color_inx];
-	} else if (color_inx == MAKE_BLACK)
+	} else if(color_inx == MAKE_BLACK)
 		new_col = blank_color;
 	else
 		new_col = white_color;
@@ -494,7 +494,7 @@ extern grid_button_t *create_grid_button_from_another(
 	/* need to set the table to empty because we will want to fill
 	   this into the new table later */
 	send_grid_button->table = NULL;
-	if (color_inx == MAKE_BLACK) {
+	if(color_inx == MAKE_BLACK) {
 		send_grid_button->button = gtk_button_new();
 		//gtk_widget_set_sensitive (send_grid_button->button, FALSE);
 		gdk_color_parse(new_col, &color);
@@ -503,7 +503,7 @@ extern grid_button_t *create_grid_button_from_another(
 				       GTK_STATE_NORMAL, color);
 /* 		sview_widget_modify_bg(send_grid_button->button,  */
 /* 				       GTK_STATE_ACTIVE, color); */
-	} else if ((color_inx >= 0) && node_base_state == NODE_STATE_DOWN) {
+	} else if((color_inx >= 0) && node_base_state == NODE_STATE_DOWN) {
 		GtkWidget *image = gtk_image_new_from_stock(
 			GTK_STOCK_CANCEL,
 			GTK_ICON_SIZE_SMALL_TOOLBAR);
@@ -520,7 +520,7 @@ extern grid_button_t *create_grid_button_from_another(
 		gtk_container_add(
 			GTK_CONTAINER(send_grid_button->button),
 			image);
-	} else if ((color_inx >= 0)
+	} else if((color_inx >= 0)
 		  && ((send_grid_button->state & NODE_STATE_DRAIN)
 		      || (node_base_state == NODE_STATE_ERROR))) {
 		GtkWidget *image = gtk_image_new_from_stock(
@@ -566,13 +566,13 @@ extern char *change_grid_color(List button_list, int start, int end,
 	GdkColor color;
 	char *new_col = NULL;
 
-	if (!button_list)
+	if(!button_list)
 		return NULL;
 
-	if (color_inx >= 0) {
+	if(color_inx >= 0) {
 		color_inx %= sview_colors_cnt;
 		new_col = sview_colors[color_inx];
-	} else if (color_inx == MAKE_BLACK)
+	} else if(color_inx == MAKE_BLACK)
 		new_col = blank_color;
 	else
 		new_col = white_color;
@@ -581,7 +581,7 @@ extern char *change_grid_color(List button_list, int start, int end,
 
 	itr = list_iterator_create(button_list);
 	while((grid_button = list_next(itr))) {
-		if (start != -1)
+		if(start != -1)
 			if ((grid_button->inx < start)
 			    ||  (grid_button->inx > end))
 				continue;
@@ -600,14 +600,14 @@ extern void highlight_grid(GtkTreeView *tree_view,
 	grid_button_t *grid_button = NULL;
 	grid_foreach_t grid_foreach;
 
-	if (!button_list)
+	if(!button_list)
 		return;
 
 	/*first clear all grid buttons*/
 	itr = list_iterator_create(button_list);
 	while((grid_button = list_next(itr))) {
 		/* clear everyone */
-		if ((GTK_WIDGET_STATE(grid_button->button)
+		if((GTK_WIDGET_STATE(grid_button->button)
 		    != GTK_STATE_ACTIVE)) {
 			gtk_widget_set_state(grid_button->button,
 					     GTK_STATE_ACTIVE);
@@ -633,16 +633,16 @@ extern void highlight_grid_range(int start, int end, List button_list)
 	ListIterator itr = NULL;
 	grid_button_t *grid_button = NULL;
 
-	if (!button_list)
+	if(!button_list)
 		return;
 
 	itr = list_iterator_create(button_list);
 	while((grid_button = list_next(itr))) {
-		if (start != -1)
+		if(start != -1)
 			if ((grid_button->inx < start)
 			    || (grid_button->inx > end)) {
 				/* clear everyone else */
-				if ((GTK_WIDGET_STATE(grid_button->button)
+				if((GTK_WIDGET_STATE(grid_button->button)
 				    != GTK_STATE_ACTIVE))
 					gtk_widget_set_state(
 						grid_button->button,
@@ -652,7 +652,7 @@ extern void highlight_grid_range(int start, int end, List button_list)
 		/* highlight this one, if it is already hightlighted,
 		 * put it back to normal */
 		//g_print("highlighting %d\n", grid_button->inx);
-		if ((GTK_WIDGET_STATE(grid_button->button)
+		if((GTK_WIDGET_STATE(grid_button->button)
 		    != GTK_STATE_NORMAL))
 			gtk_widget_set_state(grid_button->button,
 					     GTK_STATE_NORMAL);
@@ -668,17 +668,17 @@ extern void set_grid_used(List button_list, int start, int end,
 	ListIterator itr = NULL;
 	grid_button_t *grid_button = NULL;
 
-	if (!button_list)
+	if(!button_list)
 		return;
 
 	itr = list_iterator_create(button_list);
 	while((grid_button = list_next(itr))) {
-		if (start != -1)
+		if(start != -1)
 			if ((grid_button->inx < start)
 			    || (grid_button->inx > end))
 				continue;
 		grid_button->used = used;
-		if (reset_highlight)
+		if(reset_highlight)
 			gtk_widget_set_state(grid_button->button,
 					     GTK_STATE_NORMAL);
 
@@ -696,7 +696,7 @@ extern void get_button_list_from_main(List *button_list, int start, int end,
 	grid_button_t *grid_button = NULL;
 	grid_button_t *send_grid_button = NULL;
 
-	if (!*button_list)
+	if(!*button_list)
 		*button_list = list_create(destroy_grid_button);
 
 	color_inx %= sview_colors_cnt;
@@ -707,16 +707,16 @@ extern void get_button_list_from_main(List *button_list, int start, int end,
 			continue;
 		button_itr = list_iterator_create(*button_list);
 		while((send_grid_button = list_next(button_itr))) {
-			if (send_grid_button->inx == grid_button->inx)
+			if(send_grid_button->inx == grid_button->inx)
 				break;
 		}
 		list_iterator_destroy(button_itr);
-		if (send_grid_button)
+		if(send_grid_button)
 			continue;
 
 		send_grid_button = create_grid_button_from_another(
 			grid_button, grid_button->node_name, color_inx);
-		if (send_grid_button) {
+		if(send_grid_button) {
 			send_grid_button->button_list = *button_list;
 			_add_button_signals(send_grid_button);
 			list_append(*button_list, send_grid_button);
@@ -737,7 +737,7 @@ extern List copy_main_button_list(int initial_color)
 	while((grid_button = list_next(itr))) {
 		send_grid_button = create_grid_button_from_another(
 			grid_button, grid_button->node_name, initial_color);
-		if (send_grid_button) {
+		if(send_grid_button) {
 			send_grid_button->button_list = button_list;
 			_add_button_signals(send_grid_button);
 			send_grid_button->used = false;
@@ -771,7 +771,7 @@ extern void add_extra_bluegene_buttons(List *button_list, int inx,
 		return;
 	}
 
-	if (!*button_list)
+	if(!*button_list)
 		*button_list = list_create(NULL);
 
 	*color_inx %= sview_colors_cnt;
@@ -783,7 +783,7 @@ extern void add_extra_bluegene_buttons(List *button_list, int inx,
 	}
 	list_iterator_destroy(itr);
 
-	if (!grid_button)
+	if(!grid_button)
 		return;
 	orig_state = grid_button->state;
 	/* remove all (if any) buttons pointing to this node since we
@@ -791,32 +791,32 @@ extern void add_extra_bluegene_buttons(List *button_list, int inx,
 
 	itr = list_iterator_create(*button_list);
 	while((send_grid_button = list_next(itr))) {
-		if (send_grid_button->inx == grid_button->inx)
+		if(send_grid_button->inx == grid_button->inx)
 			list_remove(itr);
 	}
 	list_iterator_destroy(itr);
 
 	for (i=0; i < block_ptr->record_count; i++) {
 		bg_info_ptr = &block_ptr->block_array[i];
-		if (!_block_in_node(bg_info_ptr->bp_inx, inx))
+		if(!_block_in_node(bg_info_ptr->bp_inx, inx))
 			continue;
 		found = 1;
 		nodes = bg_info_ptr->nodes;
-		if (bg_info_ptr->ionodes) {
+		if(bg_info_ptr->ionodes) {
 			sprintf(tmp_nodes, "%s[%s]", nodes,
 				bg_info_ptr->ionodes);
 			nodes = tmp_nodes;
 		}
-		if (bg_info_ptr->state == RM_PARTITION_ERROR)
+		if(bg_info_ptr->state == RM_PARTITION_ERROR)
 			grid_button->state = NODE_STATE_ERROR;
-		else if (bg_info_ptr->job_running > NO_JOB_RUNNING)
+		else if(bg_info_ptr->job_running > NO_JOB_RUNNING)
 			grid_button->state = NODE_STATE_ALLOCATED;
 		else
 			grid_button->state = NODE_STATE_IDLE;
 		send_grid_button = create_grid_button_from_another(
 			grid_button, nodes, *color_inx);
 		grid_button->state = orig_state;
-		if (send_grid_button) {
+		if(send_grid_button) {
 			send_grid_button->button_list = *button_list;
 			send_grid_button->table_x = 0;
 			send_grid_button->table_y = coord_y++;
@@ -839,10 +839,10 @@ extern void add_extra_bluegene_buttons(List *button_list, int inx,
 			(*color_inx)++;
 		}
 	}
-	if (!found) {
+	if(!found) {
 		send_grid_button = create_grid_button_from_another(
 			grid_button, grid_button->node_name, *color_inx);
-		if (send_grid_button) {
+		if(send_grid_button) {
 			send_grid_button->button_list = *button_list;
 			send_grid_button->table_x = 0;
 			send_grid_button->table_y = coord_y++;
@@ -872,18 +872,18 @@ extern void put_buttons_in_table(GtkTable *table, List button_list)
 
 	list_sort(button_list, (ListCmpF) _sort_button_inx);
 
-	if (cluster_dims == 4) {
+	if(cluster_dims == 4) {
 		/* FIXME: */
 		return;
-	} else if (cluster_dims == 3) {
+	} else if(cluster_dims == 3) {
 		node_count = DIM_SIZE[X];
 		working_sview_config.grid_x_width = DIM_SIZE[X] + DIM_SIZE[Z];
 		table_y = (DIM_SIZE[Z] * DIM_SIZE[Y]) + DIM_SIZE[Y];
 	} else {
-		if (!working_sview_config.grid_x_width) {
-			if (node_count < 50) {
+		if(!working_sview_config.grid_x_width) {
+			if(node_count < 50) {
 				working_sview_config.grid_x_width = 1;
-			} else if (node_count < 500) {
+			} else if(node_count < 500) {
 				working_sview_config.grid_x_width = 10;
 			} else {
 				working_sview_config.grid_x_width=20;
@@ -896,10 +896,10 @@ extern void put_buttons_in_table(GtkTable *table, List button_list)
 	gtk_table_resize(table, table_y, working_sview_config.grid_x_width);
 	itr = list_iterator_create(button_list);
 	while((grid_button = list_next(itr))) {
-		if (cluster_dims == 4) {
+		if(cluster_dims == 4) {
 			/* FIXME: */
 			return;
-		} else if (cluster_dims == 3) {
+		} else if(cluster_dims == 3) {
 			grid_button->table = table;
 			gtk_table_attach(table, grid_button->button,
 					 grid_button->table_x,
@@ -908,7 +908,7 @@ extern void put_buttons_in_table(GtkTable *table, List button_list)
 					 (grid_button->table_y+1),
 					 GTK_SHRINK, GTK_SHRINK,
 					 1, 1);
-			if (!grid_button->table_x)
+			if(!grid_button->table_x)
 				gtk_table_set_row_spacing(table,
 							  grid_button->table_y,
 							  5);
@@ -922,18 +922,18 @@ extern void put_buttons_in_table(GtkTable *table, List button_list)
 					 GTK_SHRINK, GTK_SHRINK,
 					 1, 1);
 			coord_x++;
-			if (coord_x == working_sview_config.grid_x_width) {
+			if(coord_x == working_sview_config.grid_x_width) {
 				coord_x = 0;
 				coord_y++;
-				if (!(coord_y % working_sview_config.grid_vert))
+				if(!(coord_y % working_sview_config.grid_vert))
 					gtk_table_set_row_spacing(
 						table, coord_y-1, 5);
 			}
 
-			if (coord_y == table_y)
+			if(coord_y == table_y)
 				break;
 
-			if (coord_x
+			if(coord_x
 			   && !(coord_x % working_sview_config.grid_hori))
 				gtk_table_set_col_spacing(table, coord_x-1, 5);
 		}
@@ -959,10 +959,10 @@ extern int update_grid_table(GtkTable *table, List button_list, List node_list)
 	sview_node_info_t *sview_node_info_ptr = NULL;
 	int default_y_offset = 0;
 
-	if (cluster_dims == 4) {
+	if(cluster_dims == 4) {
 		/* FIXME: */
 		return SLURM_ERROR;
-	} else if (cluster_dims == 3) {
+	} else if(cluster_dims == 3) {
 		default_y_offset = (DIM_SIZE[Z] * DIM_SIZE[Y])
 			+ (DIM_SIZE[Y] - DIM_SIZE[Z]);
 		node_count = DIM_SIZE[X];
@@ -970,10 +970,10 @@ extern int update_grid_table(GtkTable *table, List button_list, List node_list)
 		table_y = (DIM_SIZE[Z] * DIM_SIZE[Y]) + DIM_SIZE[Y];
 	} else {
 		node_count = list_count(node_list);
-		if (!working_sview_config.grid_x_width) {
-			if (node_count < 50) {
+		if(!working_sview_config.grid_x_width) {
+			if(node_count < 50) {
 				working_sview_config.grid_x_width = 1;
-			} else if (node_count < 500) {
+			} else if(node_count < 500) {
 				working_sview_config.grid_x_width = 10;
 			} else {
 				working_sview_config.grid_x_width = 20;
@@ -983,7 +983,7 @@ extern int update_grid_table(GtkTable *table, List button_list, List node_list)
 		table_y++;
 	}
 
-	if (!node_list) {
+	if(!node_list) {
 		g_print("update_grid_table: no node_list given\n");
 		return SLURM_ERROR;
 	}
@@ -997,13 +997,13 @@ extern int update_grid_table(GtkTable *table, List button_list, List node_list)
 		int found = 0;
 	again:
 		while((grid_button = list_next(itr2))) {
-			if (grid_button->inx != inx)
+			if(grid_button->inx != inx)
 				continue;
 			found = 1;
-			if (cluster_dims == 4) {
+			if(cluster_dims == 4) {
 				/* FIXME: */
 				return SLURM_ERROR;
-			} else if (cluster_dims == 3) {
+			} else if(cluster_dims == 3) {
 				int i = strlen(
 					sview_node_info_ptr->node_ptr->name);
 				int x=0, y=0, z=0, y_offset=0;
@@ -1044,7 +1044,7 @@ extern int update_grid_table(GtkTable *table, List button_list, List node_list)
 						"bottom-attach", (coord_y+1),
 						NULL);
 
-			if (cluster_dims < 3) {
+			if(cluster_dims < 3) {
 				/* On linear systems we just up the
 				   x_coord until we hit the side of
 				   the table and then incrememnt the
@@ -1052,27 +1052,27 @@ extern int update_grid_table(GtkTable *table, List button_list, List node_list)
 				   each 10th row.
 				*/
 				coord_x++;
-				if (coord_x
+				if(coord_x
 				   == working_sview_config.grid_x_width) {
 					coord_x = 0;
 					coord_y++;
-					if (!(coord_y
+					if(!(coord_y
 					     % working_sview_config.grid_vert))
 						gtk_table_set_row_spacing(
 							table, coord_y-1, 5);
 				}
 
-				if (coord_y == table_y)
+				if(coord_y == table_y)
 					break;
 
-				if (coord_x
+				if(coord_x
 				   && !(coord_x%working_sview_config.grid_hori))
 					gtk_table_set_col_spacing(
 						table, coord_x-1, 5);
 			}
 			break;
 		}
-		if (!found) {
+		if(!found) {
 			list_iterator_reset(itr2);
 			goto again;
 		}
@@ -1097,7 +1097,7 @@ extern int get_system_stats(GtkTable *table)
 	List node_list = NULL;
 	int changed = 1;
 
-	if ((error_code = get_new_info_node(&node_info_ptr, force_refresh))
+	if((error_code = get_new_info_node(&node_info_ptr, force_refresh))
 	   == SLURM_NO_CHANGE_IN_DATA) {
 		changed = 0;
 	} else if (error_code != SLURM_SUCCESS)
@@ -1107,7 +1107,7 @@ extern int get_system_stats(GtkTable *table)
 
 	node_list = create_node_info_list(node_info_ptr, changed);
 
-	if (grid_button_list)
+	if(grid_button_list)
 		update_grid_table(main_grid_table, grid_button_list, node_list);
 	else {
 		grid_button_list = list_create(destroy_grid_button);
@@ -1129,10 +1129,10 @@ extern int setup_grid_table(GtkTable *table, List button_list, List node_list)
 	sview_node_info_t *sview_node_info_ptr = NULL;
 	int default_y_offset = 0;
 
-	if (cluster_dims == 4) {
+	if(cluster_dims == 4) {
 		/* FIXME: */
 		return SLURM_ERROR;
-	} else if (cluster_dims == 3) {
+	} else if(cluster_dims == 3) {
 		default_y_offset = (DIM_SIZE[Z] * DIM_SIZE[Y])
 			+ (DIM_SIZE[Y] - DIM_SIZE[Z]);
 		node_count = DIM_SIZE[X];
@@ -1140,10 +1140,10 @@ extern int setup_grid_table(GtkTable *table, List button_list, List node_list)
 		table_y = (DIM_SIZE[Z] * DIM_SIZE[Y]) + DIM_SIZE[Y];
 	} else {
 		node_count = list_count(node_list);
-		if (!working_sview_config.grid_x_width) {
-			if (node_count < 50) {
+		if(!working_sview_config.grid_x_width) {
+			if(node_count < 50) {
 				working_sview_config.grid_x_width = 1;
-			} else if (node_count < 500) {
+			} else if(node_count < 500) {
 				working_sview_config.grid_x_width = 10;
 			} else {
 				working_sview_config.grid_x_width = 20;
@@ -1153,7 +1153,7 @@ extern int setup_grid_table(GtkTable *table, List button_list, List node_list)
 		table_y++;
 	}
 
-	if (!node_list) {
+	if(!node_list) {
 		g_print("setup_grid_table: no node_list given\n");
 		return SLURM_ERROR;
 	}
@@ -1161,10 +1161,10 @@ extern int setup_grid_table(GtkTable *table, List button_list, List node_list)
 	gtk_table_resize(table, table_y, working_sview_config.grid_x_width);
 	itr = list_iterator_create(node_list);
 	while((sview_node_info_ptr = list_next(itr))) {
-		if (cluster_dims == 4) {
+		if(cluster_dims == 4) {
 			/* FIXME: */
 			return SLURM_ERROR;
-		} else if (cluster_dims == 3) {
+		} else if(cluster_dims == 3) {
 			int i = strlen(sview_node_info_ptr->node_ptr->name);
 			int x=0, y=0, z=0, y_offset=0;
 			/* On 3D system we need to translate a
@@ -1218,7 +1218,7 @@ extern int setup_grid_table(GtkTable *table, List button_list, List node_list)
 /* 				  grid_button->button); */
 /* 		gtk_frame_set_shadow_type(GTK_FRAME(grid_button->frame), */
 /* 					  GTK_SHADOW_ETCHED_OUT); */
-		if (cluster_dims < 3) {
+		if(cluster_dims < 3) {
 			/* On linear systems we just up the
 			   x_coord until we hit the side of
 			   the table and then incrememnt the
@@ -1226,19 +1226,19 @@ extern int setup_grid_table(GtkTable *table, List button_list, List node_list)
 			   each 10th row.
 			*/
 			coord_x++;
-			if (coord_x
+			if(coord_x
 			   == working_sview_config.grid_x_width) {
 				coord_x = 0;
 				coord_y++;
-				if (!(coord_y % working_sview_config.grid_vert))
+				if(!(coord_y % working_sview_config.grid_vert))
 					gtk_table_set_row_spacing(
 						table, coord_y-1, 5);
 			}
 
-			if (coord_y == table_y)
+			if(coord_y == table_y)
 				break;
 
-			if (coord_x && !(coord_x%working_sview_config.grid_hori))
+			if(coord_x && !(coord_x%working_sview_config.grid_hori))
 				gtk_table_set_col_spacing(
 					table, coord_x-1, 5);
 		}
@@ -1265,7 +1265,7 @@ extern void sview_init_grid(bool reset_highlight)
 	ListIterator itr = NULL;
 	grid_button_t *grid_button = NULL;
 
-	if ((error_code = get_new_info_node(&node_info_ptr, force_refresh))
+	if((error_code = get_new_info_node(&node_info_ptr, force_refresh))
 	   == SLURM_NO_CHANGE_IN_DATA) {
 		/* need to clear out old data */
 		set_grid_used(grid_button_list, -1, -1, false, reset_highlight);
@@ -1274,7 +1274,7 @@ extern void sview_init_grid(bool reset_highlight)
 		return;
 	}
 
-	if (!grid_button_list) {
+	if(!grid_button_list) {
 		g_print("you need to run get_system_stats() first\n");
 		exit(0);
 	}
@@ -1294,7 +1294,7 @@ extern void sview_init_grid(bool reset_highlight)
 
 			break;
 		}
-		if (!grid_button && !tried_again) {
+		if(!grid_button && !tried_again) {
 			/* the order should never change but just to
 			 * make sure we don't miss it */
 			list_iterator_reset(itr);
@@ -1310,7 +1310,7 @@ extern void setup_popup_grid_list(popup_info_t *popup_win)
 {
 	int def_color = MAKE_BLACK;
 
-	if (popup_win->grid_button_list) {
+	if(popup_win->grid_button_list) {
 		set_grid_used(popup_win->grid_button_list,
 			      -1, -1, false, false);
 	} else {
@@ -1326,7 +1326,7 @@ extern void setup_popup_grid_list(popup_info_t *popup_win)
 extern void post_setup_popup_grid_list(popup_info_t *popup_win)
 {
 	/* refresh the pointer */
-	if (popup_win->model
+	if(popup_win->model
 	   && gtk_tree_store_iter_is_valid(GTK_TREE_STORE(popup_win->model),
 					   &popup_win->iter)) {
 		gtk_tree_model_get(popup_win->model, &popup_win->iter,
@@ -1336,7 +1336,7 @@ extern void post_setup_popup_grid_list(popup_info_t *popup_win)
 		popup_win->node_inx = NULL;
 	}
 
-	if (popup_win->node_inx) {
+	if(popup_win->node_inx) {
 		int j=0;
 		while(popup_win->node_inx[j] >= 0) {
 			change_grid_color(
@@ -1349,7 +1349,7 @@ extern void post_setup_popup_grid_list(popup_info_t *popup_win)
 
 	change_grid_color(popup_win->grid_button_list, -1, -1,
 			  MAKE_BLACK, true, NODE_STATE_IDLE);
-	if (working_sview_config.grid_speedup) {
+	if(working_sview_config.grid_speedup) {
 		gtk_widget_set_sensitive(GTK_WIDGET(popup_win->grid_table), 0);
 		gtk_widget_set_sensitive(GTK_WIDGET(popup_win->grid_table), 1);
 	}

@@ -230,10 +230,10 @@ _query_server(partition_info_msg_t ** part_pptr,
 	old_node_ptr = new_node_ptr;
 	*node_pptr = new_node_ptr;
 
-	if (!params.bg_flag)
+	if(!params.bg_flag)
 		return SLURM_SUCCESS;
 
-	if (params.cluster_flags & CLUSTER_FLAG_BG) {
+	if(params.cluster_flags & CLUSTER_FLAG_BG) {
 		if (old_bg_ptr) {
 			error_code = slurm_load_block_info(
 				old_bg_ptr->last_update,
@@ -313,7 +313,7 @@ static int _build_sinfo_data(List sinfo_list,
 				     _filter_out(node_ptr)))
 					continue;
 
-				if (select_g_select_nodeinfo_get(
+				if(select_g_select_nodeinfo_get(
 					   node_ptr->select_nodeinfo,
 					   SELECT_NODEDATA_SUBGRP_SIZE,
 					   0,
@@ -406,7 +406,7 @@ static bool _filter_out(node_info_t *node_ptr)
 					SELECT_NODEDATA_SUBCNT,
 					NODE_STATE_ERROR,
 					&cpus);
-				if (cpus) {
+				if(cpus) {
 					match = true;
 					break;
 				}
@@ -416,7 +416,7 @@ static bool _filter_out(node_info_t *node_ptr)
 					SELECT_NODEDATA_SUBCNT,
 					NODE_STATE_ALLOCATED,
 					&cpus);
-				if (cpus) {
+				if(cpus) {
 					match = true;
 					break;
 				}
@@ -661,15 +661,15 @@ static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr,
 				     NODE_STATE_ERROR,
 				     &error_cpus);
 
-	if (params.cluster_flags & CLUSTER_FLAG_BG) {
-		if (error_cpus) {
+	if(params.cluster_flags & CLUSTER_FLAG_BG) {
+		if(error_cpus) {
 			xfree(node_ptr->reason);
 			node_ptr->reason = xstrdup("Block(s) in error state");
 			sinfo_ptr->reason     = node_ptr->reason;
 			sinfo_ptr->reason_time= node_ptr->reason_time;
 			sinfo_ptr->reason_uid = node_ptr->reason_uid;
 		}
-		if (!params.match_flags.state_flag
+		if(!params.match_flags.state_flag
 		   && (used_cpus || error_cpus)) {
 			/* We only get one shot at this (because all states
 			   are combined together), so we need to make
@@ -783,21 +783,21 @@ static int _handle_subgrps(List sinfo_list, uint16_t part_num,
 		iterator = list_iterator_create(params.state_list);
 
 	for(i=0; i<state_cnt; i++) {
-		if (iterator) {
+		if(iterator) {
 			node_info_t tmp_node, *tmp_node_ptr = &tmp_node;
 			while ((node_state = list_next(iterator))) {
 				tmp_node_ptr->node_state = *node_state;
-				if ((((state[i] == NODE_STATE_ALLOCATED)
+				if((((state[i] == NODE_STATE_ALLOCATED)
 				     && IS_NODE_DRAINING(tmp_node_ptr))
 				    || (*node_state == NODE_STATE_DRAIN))
 				   || (*node_state == state[i]))
 					break;
 			}
 			list_iterator_reset(iterator);
-			if (!node_state)
+			if(!node_state)
 				continue;
 		}
-		if (select_g_select_nodeinfo_get(node_ptr->select_nodeinfo,
+		if(select_g_select_nodeinfo_get(node_ptr->select_nodeinfo,
 						SELECT_NODEDATA_SUBCNT,
 						state[i],
 						&size) == SLURM_SUCCESS
@@ -811,22 +811,22 @@ static int _handle_subgrps(List sinfo_list, uint16_t part_num,
 	}
 
 	/* now handle the idle */
-	if (iterator) {
+	if(iterator) {
 		while ((node_state = list_next(iterator))) {
 			node_info_t tmp_node, *tmp_node_ptr = &tmp_node;
 			tmp_node_ptr->node_state = *node_state;
-			if (((*node_state == NODE_STATE_DRAIN)
+			if(((*node_state == NODE_STATE_DRAIN)
 			    || IS_NODE_DRAINED(tmp_node_ptr))
 			   || (*node_state == NODE_STATE_IDLE))
 				break;
 		}
 		list_iterator_destroy(iterator);
-		if (!node_state)
+		if(!node_state)
 			return SLURM_SUCCESS;
 	}
 	node_ptr->node_state &= NODE_STATE_FLAGS;
 	node_ptr->node_state |= NODE_STATE_IDLE;
-	if ((int)node_scaling > 0)
+	if((int)node_scaling > 0)
 		_insert_node_ptr(sinfo_list, part_num, part_ptr,
 				 node_ptr, node_scaling);
 

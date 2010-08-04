@@ -87,20 +87,20 @@ static int _block_is_deallocating(bg_record_t *bg_record)
 	int jobid = bg_record->job_running;
 	char *user_name = NULL;
 
-	if (bg_record->modifying)
+	if(bg_record->modifying)
 		return SLURM_SUCCESS;
 
 	user_name = xstrdup(bg_conf->slurm_user_name);
-	if (remove_all_users(bg_record->bg_block_id, NULL)
+	if(remove_all_users(bg_record->bg_block_id, NULL)
 	   == REMOVE_USER_ERR) {
 		error("Something happened removing "
 		      "users from block %s",
 		      bg_record->bg_block_id);
 	}
 
-	if (bg_record->target_name && bg_record->user_name) {
-		if (!strcmp(bg_record->target_name, user_name)) {
-			if (strcmp(bg_record->target_name, bg_record->user_name)
+	if(bg_record->target_name && bg_record->user_name) {
+		if(!strcmp(bg_record->target_name, user_name)) {
+			if(strcmp(bg_record->target_name, bg_record->user_name)
 			   || (jobid > NO_JOB_RUNNING)) {
 				kill_job_struct_t *freeit =
 					xmalloc(sizeof(freeit));
@@ -123,7 +123,7 @@ static int _block_is_deallocating(bg_record_t *bg_record)
 			      "for block %s.",
 			      bg_record->bg_block_id);
 		}
-	} else if (bg_record->user_name) {
+	} else if(bg_record->user_name) {
 		error("Target Name was not set "
 		      "not set for block %s.",
 		      bg_record->bg_block_id);
@@ -136,7 +136,7 @@ static int _block_is_deallocating(bg_record_t *bg_record)
 		bg_record->target_name = xstrdup(bg_record->user_name);
 	}
 
-	if (remove_from_bg_list(bg_lists->job_running, bg_record)
+	if(remove_from_bg_list(bg_lists->job_running, bg_record)
 	   == SLURM_SUCCESS)
 		num_unused_cpus += bg_record->cpu_cnt;
 	remove_from_bg_list(bg_lists->booted, bg_record);
@@ -149,7 +149,7 @@ static void _destroy_kill_struct(void *object)
 {
 	kill_job_struct_t *freeit = (kill_job_struct_t *)object;
 
-	if (freeit) {
+	if(freeit) {
 		xfree(freeit);
 	}
 }
@@ -178,8 +178,8 @@ extern int block_ready(struct job_record *job_ptr)
 		slurm_mutex_lock(&block_state_mutex);
 		bg_record = find_bg_record_in_list(bg_lists->main, block_id);
 
-		if (bg_record) {
-			if (bg_record->job_running != job_ptr->job_id) {
+		if(bg_record) {
+			if(bg_record->job_running != job_ptr->job_id) {
 				rc = 0;
 			} else if ((bg_record->user_uid == job_ptr->user_id)
 				   && (bg_record->state
@@ -217,7 +217,7 @@ extern int block_ready(struct job_record *job_ptr)
 extern void pack_block(bg_record_t *bg_record, Buf buffer,
 		       uint16_t protocol_version)
 {
-	if (protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
+	if(protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
 		packstr(bg_record->bg_block_id, buffer);
 #ifdef HAVE_BGL
 		packstr(bg_record->blrtsimage, buffer);
@@ -257,21 +257,21 @@ extern int update_block_list()
 	slurmctld_lock_t job_write_lock = {
 		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
 
-	if (!kill_job_list)
+	if(!kill_job_list)
 		kill_job_list = list_create(_destroy_kill_struct);
 
-	if (!bg_lists->main)
+	if(!bg_lists->main)
 		return updated;
 
 	slurm_mutex_lock(&block_state_mutex);
 	itr = list_iterator_create(bg_lists->main);
 	while ((bg_record = (bg_record_t *) list_next(itr)) != NULL) {
-		if (!bg_record->bg_block_id)
+		if(!bg_record->bg_block_id)
 			continue;
 		name = bg_record->bg_block_id;
 		if ((rc = bridge_get_block_info(name, &block_ptr))
 		    != STATUS_OK) {
-			if (bg_conf->layout_mode == LAYOUT_DYNAMIC) {
+			if(bg_conf->layout_mode == LAYOUT_DYNAMIC) {
 				switch(rc) {
 				case INCONSISTENT_DATA:
 					debug2("got inconsistent data when "
@@ -294,7 +294,7 @@ extern int update_block_list()
 			   iteration.  It usually means something like
 			   rm_get_BG was called which can be a very
 			   long call */
-			if (rc == EBUSY) {
+			if(rc == EBUSY) {
 				debug5("lock was busy, aborting");
 				break;
 			}
@@ -313,7 +313,7 @@ extern int update_block_list()
 			      bg_err_str(rc));
 			updated = -1;
 			goto next_block;
-		} else if (bg_record->node_use != node_use) {
+		} else if(bg_record->node_use != node_use) {
 			debug("node_use of Block %s was %d "
 			      "and now is %d",
 			      bg_record->bg_block_id,
@@ -323,7 +323,7 @@ extern int update_block_list()
 			updated = 1;
 		}
 #else
-		if ((bg_record->node_cnt < bg_conf->bp_node_cnt)
+		if((bg_record->node_cnt < bg_conf->bp_node_cnt)
 		   || (bg_conf->bp_node_cnt == bg_conf->nodecard_node_cnt)) {
 			char *mode = NULL;
 			uint16_t conn_type = SELECT_SMALL;
@@ -335,7 +335,7 @@ extern int update_block_list()
 				      "%s", bg_err_str(rc));
 				updated = -1;
 				goto next_block;
-			} else if (mode) {
+			} else if(mode) {
 				switch(mode[0]) {
 				case 's':
 					conn_type = SELECT_HTC_S;
@@ -356,7 +356,7 @@ extern int update_block_list()
 				free(mode);
 			}
 
-			if (bg_record->conn_type != conn_type) {
+			if(bg_record->conn_type != conn_type) {
 				debug("mode of small Block %s was %u "
 				      "and now is %u",
 				      bg_record->bg_block_id,
@@ -374,7 +374,7 @@ extern int update_block_list()
 			      bg_err_str(rc));
 			updated = -1;
 			goto next_block;
-		} else if (bg_record->job_running != BLOCK_ERROR_STATE
+		} else if(bg_record->job_running != BLOCK_ERROR_STATE
 			  //plugin set error
 			  && bg_record->state != state) {
 			int skipped_dealloc = 0;
@@ -387,11 +387,11 @@ extern int update_block_list()
 			   check to make sure block went
 			   through freeing correctly
 			*/
-			if ((bg_record->state != RM_PARTITION_DEALLOCATING
+			if((bg_record->state != RM_PARTITION_DEALLOCATING
 			    && bg_record->state != RM_PARTITION_ERROR)
 			   && state == RM_PARTITION_FREE)
 				skipped_dealloc = 1;
-			else if ((bg_record->state == RM_PARTITION_READY)
+			else if((bg_record->state == RM_PARTITION_READY)
 				&& (state == RM_PARTITION_CONFIGURING)) {
 				/* This means the user did a reboot through
 				   mpirun but we missed the state
@@ -404,7 +404,7 @@ extern int update_block_list()
 				xfree(bg_record->target_name);
 				bg_record->target_name =
 					xstrdup(bg_record->user_name);
-			} else if ((bg_record->state
+			} else if((bg_record->state
 				   == RM_PARTITION_DEALLOCATING)
 				  && (state == RM_PARTITION_CONFIGURING))
 				/* This is a funky state IBM says
@@ -418,11 +418,11 @@ extern int update_block_list()
 
 			bg_record->state = state;
 
-			if (bg_record->state == RM_PARTITION_DEALLOCATING
+			if(bg_record->state == RM_PARTITION_DEALLOCATING
 			   || skipped_dealloc)
 				_block_is_deallocating(bg_record);
 #ifndef HAVE_BGL
-			else if (bg_record->state == RM_PARTITION_REBOOTING) {
+			else if(bg_record->state == RM_PARTITION_REBOOTING) {
 				/* This means the user did a reboot through
 				   mpirun */
 				debug("Block %s rebooting.  "
@@ -434,17 +434,17 @@ extern int update_block_list()
 					xstrdup(bg_record->user_name);
 			}
 #endif
-			else if (bg_record->state == RM_PARTITION_CONFIGURING)
+			else if(bg_record->state == RM_PARTITION_CONFIGURING)
 				bg_record->boot_state = 1;
-			else if (bg_record->state == RM_PARTITION_FREE) {
-				if (remove_from_bg_list(bg_lists->job_running,
+			else if(bg_record->state == RM_PARTITION_FREE) {
+				if(remove_from_bg_list(bg_lists->job_running,
 						       bg_record)
 				   == SLURM_SUCCESS)
 					num_unused_cpus += bg_record->cpu_cnt;
 				remove_from_bg_list(bg_lists->booted,
 						    bg_record);
-			} else if (bg_record->state == RM_PARTITION_ERROR) {
-				if (bg_record->boot_state == 1)
+			} else if(bg_record->state == RM_PARTITION_ERROR) {
+				if(bg_record->boot_state == 1)
 					error("Block %s in an error "
 					      "state while booting.",
 					      bg_record->bg_block_id);
@@ -454,8 +454,8 @@ extern int update_block_list()
 				remove_from_bg_list(bg_lists->booted,
 						    bg_record);
 				trigger_block_error();
-			} else if (bg_record->state == RM_PARTITION_READY) {
-				if (!block_ptr_exist_in_list(bg_lists->booted,
+			} else if(bg_record->state == RM_PARTITION_READY) {
+				if(!block_ptr_exist_in_list(bg_lists->booted,
 							    bg_record))
 					list_push(bg_lists->booted, bg_record);
 			}
@@ -468,16 +468,16 @@ extern int update_block_list()
 		debug3("boot state for block %s is %d",
 		       bg_record->bg_block_id,
 		       bg_record->boot_state);
-		if (bg_record->boot_state == 1) {
+		if(bg_record->boot_state == 1) {
 			switch(bg_record->state) {
 			case RM_PARTITION_CONFIGURING:
 				debug3("checking to make sure user %s "
 				       "is the user.",
 				       bg_record->target_name);
 
-				if (update_block_user(bg_record, 0) == 1)
+				if(update_block_user(bg_record, 0) == 1)
 					last_bg_update = time(NULL);
-				if (bg_record->job_ptr) {
+				if(bg_record->job_ptr) {
 					bg_record->job_ptr->job_state |=
 						JOB_CONFIGURING;
 					last_job_update = time(NULL);
@@ -494,9 +494,9 @@ extern int update_block_list()
 				 */
 				break;
 			case RM_PARTITION_FREE:
-				if (bg_record->boot_count < RETRY_BOOT_COUNT) {
+				if(bg_record->boot_count < RETRY_BOOT_COUNT) {
 					slurm_mutex_unlock(&block_state_mutex);
-					if ((rc = boot_block(bg_record))
+					if((rc = boot_block(bg_record))
 					   != SLURM_SUCCESS) {
 						updated = -1;
 					}
@@ -519,7 +519,7 @@ extern int update_block_list()
 					slurm_mutex_lock(&block_state_mutex);
 					bg_record->boot_state = 0;
 					bg_record->boot_count = 0;
-					if (remove_from_bg_list(
+					if(remove_from_bg_list(
 						   bg_lists->job_running,
 						   bg_record)
 					   == SLURM_SUCCESS) {
@@ -534,13 +534,13 @@ extern int update_block_list()
 			case RM_PARTITION_READY:
 				debug("block %s is ready.",
 				      bg_record->bg_block_id);
-				if (bg_record->job_ptr) {
+				if(bg_record->job_ptr) {
 					bg_record->job_ptr->job_state &=
 						(~JOB_CONFIGURING);
 					last_job_update = time(NULL);
 				}
 
-				if (set_block_user(bg_record) == SLURM_ERROR) {
+				if(set_block_user(bg_record) == SLURM_ERROR) {
 					freeit = xmalloc(
 						sizeof(kill_job_struct_t));
 					freeit->jobid = bg_record->job_running;
@@ -582,7 +582,7 @@ extern int update_block_list()
 	while((freeit = list_pop(kill_job_list))) {
 		debug2("Trying to requeue job %d", freeit->jobid);
 		lock_slurmctld(job_write_lock);
-		if ((rc = job_requeue(0, freeit->jobid,
+		if((rc = job_requeue(0, freeit->jobid,
 				     -1, (uint16_t)NO_VAL))) {
 			error("couldn't requeue job %u, failing it: %s",
 			      freeit->jobid,
@@ -608,19 +608,19 @@ extern int update_freeing_block_list()
 	bg_record_t *bg_record = NULL;
 	ListIterator itr = NULL;
 
-	if (!bg_lists->freeing)
+	if(!bg_lists->freeing)
 		return updated;
 
 	slurm_mutex_lock(&block_state_mutex);
 	itr = list_iterator_create(bg_lists->freeing);
 	while ((bg_record = (bg_record_t *) list_next(itr)) != NULL) {
-		if (!bg_record->bg_block_id)
+		if(!bg_record->bg_block_id)
 			continue;
 
 		name = bg_record->bg_block_id;
 		if ((rc = bridge_get_block_info(name, &block_ptr))
 		    != STATUS_OK) {
-			if (bg_conf->layout_mode == LAYOUT_DYNAMIC) {
+			if(bg_conf->layout_mode == LAYOUT_DYNAMIC) {
 				switch(rc) {
 				case INCONSISTENT_DATA:
 					debug2("got inconsistent data when "
@@ -642,7 +642,7 @@ extern int update_freeing_block_list()
 			   iteration.  It usually means something like
 			   rm_get_BG was called which can be a very
 			   long call */
-			if (rc == EBUSY) {
+			if(rc == EBUSY) {
 				debug5("lock was busy, aborting");
 				break;
 			}
@@ -660,7 +660,7 @@ extern int update_freeing_block_list()
 			      bg_err_str(rc));
 			updated = -1;
 			goto next_block;
-		} else if (bg_record->state != state) {
+		} else if(bg_record->state != state) {
 			debug("freeing state of Block %s was %d and now is %d",
 			      bg_record->bg_block_id,
 			      bg_record->state,

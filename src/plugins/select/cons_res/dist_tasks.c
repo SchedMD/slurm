@@ -39,11 +39,11 @@
 #include "select_cons_res.h"
 #include "dist_tasks.h"
 
-#if (0)
+#if(0)
 #define CR_DEBUG 1
 #endif
 
-#if (0)
+#if(0)
 /* Using CR_SOCKET or CR_SOCKET_MEMORY will not allocate a socket to more
  * than one job at a time, but it also will not grant a job access to more
  * CPUs on the socket than requested. If ALLOCATE_FULL_SOCKET is defined,

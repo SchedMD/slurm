@@ -85,7 +85,7 @@ daemon(int nochdir, int noclose)
 		default: _exit(0);      /* exit parent */
 	}
 
-	if (!nochdir && chdir("/") < 0) {
+	if(!nochdir && chdir("/") < 0) {
 		error("chdir(/): %m");
 		return -1;
 	}

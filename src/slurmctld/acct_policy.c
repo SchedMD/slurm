@@ -80,7 +80,7 @@ static bool _valid_job_assoc(struct job_record *job_ptr)
 	    (assoc_ptr->uid != job_ptr->user_id)) {
 		error("Invalid assoc_ptr for jobid=%u", job_ptr->job_id);
 		memset(&assoc_rec, 0, sizeof(slurmdb_association_rec_t));
-		if (job_ptr->assoc_id)
+		if(job_ptr->assoc_id)
 			assoc_rec.id = job_ptr->assoc_id;
 		else {
 			assoc_rec.uid       = job_ptr->user_id;
@@ -118,16 +118,16 @@ static void _adjust_limit_usage(int type, struct job_record *job_ptr)
 		slurmdb_used_limits_t *used_limits = NULL;
 
 		qos_ptr = (slurmdb_qos_rec_t *)job_ptr->qos_ptr;
-		if (!qos_ptr->usage->user_limit_list)
+		if(!qos_ptr->usage->user_limit_list)
 			qos_ptr->usage->user_limit_list =
 				list_create(slurmdb_destroy_used_limits);
 		itr = list_iterator_create(qos_ptr->usage->user_limit_list);
 		while((used_limits = list_next(itr))) {
-			if (used_limits->uid == job_ptr->user_id)
+			if(used_limits->uid == job_ptr->user_id)
 				break;
 		}
 		list_iterator_destroy(itr);
-		if (!used_limits) {
+		if(!used_limits) {
 			used_limits = xmalloc(sizeof(slurmdb_used_limits_t));
 			used_limits->uid = job_ptr->user_id;
 			list_append(qos_ptr->usage->user_limit_list,
@@ -139,14 +139,14 @@ static void _adjust_limit_usage(int type, struct job_record *job_ptr)
 			used_limits->submit_jobs++;
 			break;
 		case ACCT_POLICY_REM_SUBMIT:
-			if (qos_ptr->usage->grp_used_submit_jobs)
+			if(qos_ptr->usage->grp_used_submit_jobs)
 				qos_ptr->usage->grp_used_submit_jobs--;
 			else
 				debug2("acct_policy_remove_job_submit: "
 				       "grp_submit_jobs underflow for qos %s",
 				       qos_ptr->name);
 
-			if (used_limits->submit_jobs)
+			if(used_limits->submit_jobs)
 				used_limits->submit_jobs--;
 			else
 				debug2("acct_policy_remove_job_submit: "
@@ -161,27 +161,27 @@ static void _adjust_limit_usage(int type, struct job_record *job_ptr)
 			used_limits->jobs++;
 			break;
 		case ACCT_POLICY_JOB_FINI:
-			if (qos_ptr->usage->grp_used_jobs)
+			if(qos_ptr->usage->grp_used_jobs)
 				qos_ptr->usage->grp_used_jobs--;
 			else
 				debug2("acct_policy_job_fini: used_jobs "
 				       "underflow for qos %s", qos_ptr->name);
 
 			qos_ptr->usage->grp_used_cpus -= job_ptr->total_cpus;
-			if ((int32_t)qos_ptr->usage->grp_used_cpus < 0) {
+			if((int32_t)qos_ptr->usage->grp_used_cpus < 0) {
 				qos_ptr->usage->grp_used_cpus = 0;
 				debug2("acct_policy_job_fini: grp_used_cpus "
 				       "underflow for qos %s", qos_ptr->name);
 			}
 
 			qos_ptr->usage->grp_used_nodes -= job_ptr->node_cnt;
-			if ((int32_t)qos_ptr->usage->grp_used_nodes < 0) {
+			if((int32_t)qos_ptr->usage->grp_used_nodes < 0) {
 				qos_ptr->usage->grp_used_nodes = 0;
 				debug2("acct_policy_job_fini: grp_used_nodes "
 				       "underflow for qos %s", qos_ptr->name);
 			}
 
-			if (used_limits->jobs)
+			if(used_limits->jobs)
 				used_limits->jobs--;
 			else
 				debug2("acct_policy_job_fini: used_jobs "
@@ -334,7 +334,7 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 
 	assoc_mgr_lock(&locks);
 	qos_ptr = job_ptr->qos_ptr;
-	if (qos_ptr) {
+	if(qos_ptr) {
 		usage_mins = (uint64_t)(qos_ptr->usage->usage_raw / 60.0);
 		wall_mins = qos_ptr->usage->grp_used_wall / 60;
 
@@ -483,16 +483,16 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 
 		if (qos_ptr->max_jobs_pu != INFINITE) {
 			slurmdb_used_limits_t *used_limits = NULL;
-			if (qos_ptr->usage->user_limit_list) {
+			if(qos_ptr->usage->user_limit_list) {
 				ListIterator itr = list_iterator_create(
 					qos_ptr->usage->user_limit_list);
 				while((used_limits = list_next(itr))) {
-					if (used_limits->uid == job_ptr->user_id)
+					if(used_limits->uid == job_ptr->user_id)
 						break;
 				}
 				list_iterator_destroy(itr);
 			}
-			if (used_limits && (used_limits->jobs
+			if(used_limits && (used_limits->jobs
 					   >= qos_ptr->max_jobs_pu)) {
 				debug2("job %u being held, "
 				       "the job is at or exceeds "
@@ -677,7 +677,7 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 		 * parents since we have pre-propogated them, so just
 		 * continue with the next parent
 		 */
-		if (parent) {
+		if(parent) {
 			assoc_ptr = assoc_ptr->usage->parent_assoc_ptr;
 			continue;
 		}
@@ -775,7 +775,7 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 end_it:
 	assoc_mgr_unlock(&locks);
 
-	if (cancel_job)
+	if(cancel_job)
 		_cancel_job(job_ptr);
 
 	return rc;
@@ -818,7 +818,7 @@ extern bool acct_policy_node_usable(struct job_record *job_ptr,
 
 	assoc_mgr_lock(&locks);
 	qos_ptr = job_ptr->qos_ptr;
-	if (qos_ptr) {
+	if(qos_ptr) {
 		if (qos_ptr->grp_cpus != INFINITE) {
 			if ((total_cpus+qos_ptr->usage->grp_used_cpus)
 			    > qos_ptr->grp_cpus) {
@@ -873,7 +873,7 @@ extern bool acct_policy_node_usable(struct job_record *job_ptr,
 		 * parents since we have pre-propogated them, so just
 		 * continue with the next parent
 		 */
-		if (parent) {
+		if(parent) {
 			assoc_ptr = assoc_ptr->usage->parent_assoc_ptr;
 			continue;
 		}
@@ -900,7 +900,7 @@ extern bool acct_policy_node_usable(struct job_record *job_ptr,
 end_it:
 	assoc_mgr_unlock(&locks);
 
-	if (cancel_job)
+	if(cancel_job)
 		_cancel_job(job_ptr);
 
 	return rc;

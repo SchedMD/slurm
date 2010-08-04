@@ -1009,7 +1009,7 @@ static bitstr_t *_lllp_map_abstract_mask(bitstr_t *bitmask)
 	for (i = 0; i < num_bits; i++) {
 		if (bit_test(bitmask,i)) {
 			bit = BLOCK_MAP(i);
-			if (bit < bit_size(newmask))
+			if(bit < bit_size(newmask))
 				bit_set(newmask, bit);
 			else
 				error("_lllp_map_abstract_mask: can't go from "

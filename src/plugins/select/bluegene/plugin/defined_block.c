@@ -73,7 +73,7 @@ extern int create_defined_blocks(bg_layout_t overlapped,
 		/* we only want to use bps that are in
 		 * partitions
 		 */
-		if (!part_ptr->node_bitmap) {
+		if(!part_ptr->node_bitmap) {
 			debug4("Partition %s doesn't have any nodes in it.",
 			       part_ptr->name);
 			continue;
@@ -83,7 +83,7 @@ extern int create_defined_blocks(bg_layout_t overlapped,
 	list_iterator_destroy(itr);
 
 	bit_not(bitmap);
-	if (bit_ffs(bitmap) != -1) {
+	if(bit_ffs(bitmap) != -1) {
 		fatal("We don't have any nodes in any partitions.  "
 		      "Can't create blocks.  "
 		      "Please check your slurm.conf.");
@@ -94,10 +94,10 @@ extern int create_defined_blocks(bg_layout_t overlapped,
 
 	slurm_mutex_lock(&block_state_mutex);
 	reset_ba_system(false);
-	if (bg_lists->main) {
+	if(bg_lists->main) {
 		itr = list_iterator_create(bg_lists->main);
 		while((bg_record = list_next(itr))) {
-			if (bg_found_block_list) {
+			if(bg_found_block_list) {
 				itr_found = list_iterator_create(
 					bg_found_block_list);
 				while ((found_record = (bg_record_t*)
@@ -124,12 +124,12 @@ extern int create_defined_blocks(bg_layout_t overlapped,
 				error("create_defined_blocks: "
 				      "no bg_found_block_list 1");
 			}
-			if (bg_record->bp_count > 0
+			if(bg_record->bp_count > 0
 			   && !bg_record->full_block
 			   && bg_record->cpu_cnt >= bg_conf->cpus_per_bp) {
 				char *name = NULL;
 
-				if (overlapped == LAYOUT_OVERLAP) {
+				if(overlapped == LAYOUT_OVERLAP) {
 					reset_ba_system(false);
 					removable_set_bps(non_usable_nodes);
 				}
@@ -137,7 +137,7 @@ extern int create_defined_blocks(bg_layout_t overlapped,
 				/* we want the bps that aren't
 				 * in this record to mark them as used
 				 */
-				if (set_all_bps_except(bg_record->nodes)
+				if(set_all_bps_except(bg_record->nodes)
 				   != SLURM_SUCCESS)
 					fatal("something happened in "
 					      "the load of %s.  "
@@ -156,9 +156,9 @@ extern int create_defined_blocks(bg_layout_t overlapped,
 				       alpha_num[geo[X]],
 				       alpha_num[geo[Y]],
 				       alpha_num[geo[Z]]);
-				if (bg_record->bg_block_list
+				if(bg_record->bg_block_list
 				   && list_count(bg_record->bg_block_list)) {
-					if (check_and_set_node_list(
+					if(check_and_set_node_list(
 						   bg_record->bg_block_list)
 					   == SLURM_ERROR) {
 						debug2("something happened in "
@@ -182,7 +182,7 @@ extern int create_defined_blocks(bg_layout_t overlapped,
 						geo,
 						bg_record->conn_type);
 					reset_all_removed_bps();
-					if (!name) {
+					if(!name) {
 						error("I was unable to "
 						      "make the "
 						      "requested block.");
@@ -199,7 +199,7 @@ extern int create_defined_blocks(bg_layout_t overlapped,
 						 name);
 
 					xfree(name);
-					if (strcmp(temp, bg_record->nodes)) {
+					if(strcmp(temp, bg_record->nodes)) {
 						fatal("given list of %s "
 						      "but allocated %s, "
 						      "your order might be "
@@ -207,7 +207,7 @@ extern int create_defined_blocks(bg_layout_t overlapped,
 						      bg_record->nodes,
 						      temp);
 					}
-					if (bg_record->bg_block_list)
+					if(bg_record->bg_block_list)
 						list_destroy(bg_record->
 							     bg_block_list);
 					bg_record->bg_block_list =
@@ -218,8 +218,8 @@ extern int create_defined_blocks(bg_layout_t overlapped,
 					list_destroy(results);
 				}
 			}
-			if (found_record == NULL) {
-				if (bg_record->full_block) {
+			if(found_record == NULL) {
+				if(bg_record->full_block) {
 					/* if this is defined we need
 					   to remove it since we are
 					   going to try to create it
@@ -235,7 +235,7 @@ extern int create_defined_blocks(bg_layout_t overlapped,
 					list_remove(itr);
 					continue;
 				}
-				if ((rc = configure_block(bg_record))
+				if((rc = configure_block(bg_record))
 				   == SLURM_ERROR) {
 					list_iterator_destroy(itr);
 					slurm_mutex_unlock(&block_state_mutex);
@@ -262,7 +262,7 @@ extern int create_defined_blocks(bg_layout_t overlapped,
 	slurm_mutex_unlock(&block_state_mutex);
 
 #ifdef _PRINT_BLOCKS_AND_EXIT
-	if (bg_lists->main) {
+	if(bg_lists->main) {
 		itr = list_iterator_create(bg_lists->main);
 		debug("\n\n");
 		while ((found_record = (bg_record_t *) list_next(itr))
@@ -300,7 +300,7 @@ extern int create_full_system_block(List bg_found_block_list)
 		/* we only want to use bps that are in
 		 * partitions
 		 */
-		if (!part_ptr->node_bitmap) {
+		if(!part_ptr->node_bitmap) {
 			debug4("Partition %s doesn't have any nodes in it.",
 			       part_ptr->name);
 			continue;
@@ -310,7 +310,7 @@ extern int create_full_system_block(List bg_found_block_list)
 	list_iterator_destroy(itr);
 
 	bit_not(bitmap);
-	if (bit_ffs(bitmap) != -1) {
+	if(bit_ffs(bitmap) != -1) {
 		error("We don't have the entire system covered by partitions, "
 		      "can't create full system block");
 		FREE_NULL_BITMAP(bitmap);
@@ -329,7 +329,7 @@ extern int create_full_system_block(List bg_found_block_list)
 
 	i = (10+strlen(bg_conf->slurm_node_prefix));
 	name = xmalloc(i);
-	if ((geo[X] == 0) && (geo[Y] == 0) && (geo[Z] == 0))
+	if((geo[X] == 0) && (geo[Y] == 0) && (geo[Z] == 0))
 		snprintf(name, i, "%s000",
 			 bg_conf->slurm_node_prefix);
 	else
@@ -339,7 +339,7 @@ extern int create_full_system_block(List bg_found_block_list)
 			 alpha_num[geo[Z]]);
 
 
-	if (bg_found_block_list) {
+	if(bg_found_block_list) {
 		itr = list_iterator_create(bg_found_block_list);
 		while ((bg_record = (bg_record_t *) list_next(itr)) != NULL) {
 			if (!strcmp(name, bg_record->nodes)) {
@@ -354,7 +354,7 @@ extern int create_full_system_block(List bg_found_block_list)
 		error("create_full_system_block: no bg_found_block_list 2");
 	}
 
-	if (bg_lists->main) {
+	if(bg_lists->main) {
 		itr = list_iterator_create(bg_lists->main);
 		while ((bg_record = (bg_record_t *) list_next(itr))
 		       != NULL) {
@@ -383,7 +383,7 @@ extern int create_full_system_block(List bg_found_block_list)
 	xfree(name);
 
 	bg_record = (bg_record_t *) list_pop(records);
-	if (!bg_record) {
+	if(!bg_record) {
 		error("Nothing was returned from full system create");
 		rc = SLURM_ERROR;
 		goto no_total;
@@ -404,7 +404,7 @@ extern int create_full_system_block(List bg_found_block_list)
 			    bg_record->start,
 			    geo,
 			    bg_record->conn_type);
-	if (!name) {
+	if(!name) {
 		error("I was unable to make the full system block.");
 		list_destroy(results);
 		list_iterator_destroy(itr);
@@ -412,13 +412,13 @@ extern int create_full_system_block(List bg_found_block_list)
 		return SLURM_ERROR;
 	}
 	xfree(name);
-	if (bg_record->bg_block_list)
+	if(bg_record->bg_block_list)
 		list_destroy(bg_record->bg_block_list);
 	bg_record->bg_block_list = list_create(destroy_ba_node);
 	copy_node_path(results, &bg_record->bg_block_list);
 	list_destroy(results);
 
-	if ((rc = configure_block(bg_record)) == SLURM_ERROR) {
+	if((rc = configure_block(bg_record)) == SLURM_ERROR) {
 		error("create_full_system_block: "
 		      "unable to configure block in api");
 		destroy_bg_record(bg_record);
@@ -429,7 +429,7 @@ extern int create_full_system_block(List bg_found_block_list)
 	list_append(bg_lists->main, bg_record);
 
 no_total:
-	if (records)
+	if(records)
 		list_destroy(records);
 	slurm_mutex_unlock(&block_state_mutex);
 	return rc;

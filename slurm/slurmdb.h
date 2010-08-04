@@ -352,7 +352,7 @@ typedef struct {
 				    * underlying group of
 				    * associations can run for */
 	uint64_t grp_cpu_run_mins; /* max number of cpu minutes the
-				    * undeflying group of
+				    * underlying group of
 				    * assoiciations can
 				    * having running at one time */
 	uint32_t grp_cpus;         /* max number of cpus the

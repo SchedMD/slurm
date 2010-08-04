@@ -464,7 +464,7 @@ _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
 	free_buf(buffer);
 
 	/* send self address over to slurmstepd */
-	if (self) {
+	if(self) {
 		buffer = init_buf(0);
 		slurm_pack_slurm_addr(self, buffer);
 		len = get_buf_offset(buffer);
@@ -530,7 +530,7 @@ _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
 	return 0;
 
 rwfail:
-	if (buffer)
+	if(buffer)
 		free_buf(buffer);
 	error("_send_slurmstepd_init failed");
 	return -1;
@@ -672,7 +672,7 @@ _forkexec_slurmstepd(slurmd_step_type_t type, void *req,
 		}
 		fd_set_noclose_on_exec(STDERR_FILENO);
 		log_fini();
-		if (!failed) {
+		if(!failed) {
 			execvp(argv[0], argv);
 			error("exec of slurmstepd failed: %m");
 		}
@@ -3651,7 +3651,7 @@ _destroy_env(char **env)
 {
 	int i=0;
 
-	if (env) {
+	if(env) {
 		for(i=0; env[i]; i++) {
 			xfree(env[i]);
 		}
@@ -3920,7 +3920,7 @@ _getgroups(void)
 		return NULL;
 	}
 	gg = (gid_t *)xmalloc(n * sizeof(gid_t));
-	if (getgroups(n, gg) == -1) {
+	if(getgroups(n, gg) == -1) {
 		error("_getgroups: couldn't get %d groups: %m", n);
 		xfree(gg);
 		return NULL;
@@ -3958,7 +3958,7 @@ init_gids_cache(int cache)
 		return;
 	}
 	orig_gids = (gid_t *)xmalloc(ngids * sizeof(gid_t));
-	if (getgroups(ngids, orig_gids) == -1) {
+	if(getgroups(ngids, orig_gids) == -1) {
 		error("init_gids_cache: couldn't get %d groups: %m", ngids);
 		xfree(orig_gids);
 		return;

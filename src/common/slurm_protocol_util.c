@@ -56,7 +56,7 @@
  */
 int check_header_version(header_t * header)
 {
-	if (slurmdbd_conf) {
+	if(slurmdbd_conf) {
 		if (header->version != SLURM_PROTOCOL_VERSION
 		    && header->version != SLURM_2_1_PROTOCOL_VERSION
 		    && header->version != SLURM_2_0_PROTOCOL_VERSION
@@ -100,7 +100,7 @@ int check_header_version(header_t * header)
 		case REQUEST_UPDATE_BLOCK:
 		case REQUEST_UPDATE_JOB:
 		case REQUEST_UPDATE_PARTITION:
-			if (header->version == SLURM_2_1_PROTOCOL_VERSION)
+			if(header->version == SLURM_2_1_PROTOCOL_VERSION)
 				break;
 		default:
 			slurm_seterrno_ret(SLURM_PROTOCOL_VERSION_ERROR);
@@ -124,17 +124,17 @@ void init_header(header_t *header, slurm_msg_t *msg,
 	/* Since the slurmdbd could talk to a host of different
 	   versions of slurm this needs to be kept current when the
 	   protocol version changes. */
-	if (msg->protocol_version != (uint16_t)NO_VAL)
+	if(msg->protocol_version != (uint16_t)NO_VAL)
 		header->version = msg->protocol_version;
-	else if (msg->msg_type == ACCOUNTING_UPDATE_MSG
+	else if(msg->msg_type == ACCOUNTING_UPDATE_MSG
 	   || msg->msg_type == ACCOUNTING_FIRST_REG) {
 		uint32_t rpc_version =
 			((accounting_update_msg_t *)msg->data)->rpc_version;
-		if (rpc_version >= 8)
+		if(rpc_version >= 8)
 			header->version = SLURM_PROTOCOL_VERSION;
-		else if (rpc_version >= 6)
+		else if(rpc_version >= 6)
 			header->version = SLURM_2_1_PROTOCOL_VERSION;
-		else if (rpc_version >= 5)
+		else if(rpc_version >= 5)
 			header->version = SLURM_2_0_PROTOCOL_VERSION;
 		else
 			header->version = SLURM_1_3_PROTOCOL_VERSION;
@@ -145,7 +145,7 @@ void init_header(header_t *header, slurm_msg_t *msg,
 	header->msg_type = msg->msg_type;
 	header->body_length = 0;	/* over-written later */
 	header->forward = msg->forward;
-	if (msg->ret_list)
+	if(msg->ret_list)
 		header->ret_cnt = list_count(msg->ret_list);
 	else
 		header->ret_cnt = 0;

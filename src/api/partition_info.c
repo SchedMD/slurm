@@ -157,7 +157,7 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 	/****** Line added here for BG partitions
 	 to keep with alphabetized output******/
 
-	if (cluster_flags & CLUSTER_FLAG_BG) {
+	if(cluster_flags & CLUSTER_FLAG_BG) {
 		snprintf(tmp_line, sizeof(tmp_line), "BasePartitions=%s",
 			 part_ptr->nodes);
 		xstrcat(out, tmp_line);
@@ -201,7 +201,7 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 	if (part_ptr->max_nodes == INFINITE)
 		sprintf(tmp_line, "MaxNodes=UNLIMITED");
 	else {
-		if (cluster_flags & CLUSTER_FLAG_BG)
+		if(cluster_flags & CLUSTER_FLAG_BG)
 			convert_num_unit((float)part_ptr->max_nodes,
 					 tmp1, sizeof(tmp1), UNIT_NONE);
 		else
@@ -219,7 +219,7 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 		sprintf(tmp_line, " MaxTime=%s", time_line);
 	}
 	xstrcat(out, tmp_line);
-	if (cluster_flags & CLUSTER_FLAG_BG)
+	if(cluster_flags & CLUSTER_FLAG_BG)
 		convert_num_unit((float)part_ptr->min_nodes, tmp1, sizeof(tmp1),
 				 UNIT_NONE);
 	else
@@ -236,7 +236,7 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 	/****** Line added here for non BG nodes
 	 to keep with alphabetized output******/
 
-	if (!(cluster_flags & CLUSTER_FLAG_BG)) {
+	if(!(cluster_flags & CLUSTER_FLAG_BG)) {
 		snprintf(tmp_line, sizeof(tmp_line), "Nodes=%s",
 			 part_ptr->nodes);
 		xstrcat(out, tmp_line);
@@ -295,7 +295,7 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 
 	xstrcat(out, tmp_line);
 
-	if (cluster_flags & CLUSTER_FLAG_BG)
+	if(cluster_flags & CLUSTER_FLAG_BG)
 		convert_num_unit((float)part_ptr->total_cpus, tmp1,
 				 sizeof(tmp1), UNIT_NONE);
 	else
@@ -303,7 +303,7 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 
 	sprintf(tmp_line, " TotalCPUs=%s", tmp1);
 	xstrcat(out, tmp_line);
-	if (cluster_flags & CLUSTER_FLAG_BG)
+	if(cluster_flags & CLUSTER_FLAG_BG)
 		convert_num_unit((float)part_ptr->total_nodes, tmp2,
 				 sizeof(tmp2), UNIT_NONE);
 	else

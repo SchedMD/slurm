@@ -567,13 +567,13 @@ static char *vxstrfmt(const char *fmt, va_list ap)
 					xstrcat(buf, "%u");
 				break;
 			case 'l':
-				if ((unprocessed == 0) && (*(p+1) == 'l')) {
+				if((unprocessed == 0) && (*(p+1) == 'l')) {
 					long_long = 1;
 					p++;
 				}
 
 				if ((unprocessed == 0) && (*(p+1) == 'u')) {
-					if (long_long) {
+					if(long_long) {
 						snprintf(tmp, sizeof(tmp),
 							"%llu",
 							 va_arg(ap,
@@ -587,7 +587,7 @@ static char *vxstrfmt(const char *fmt, va_list ap)
 					xstrcat(buf, tmp);
 					p++;
 				} else if ((unprocessed==0) && (*(p+1)=='d')) {
-					if (long_long) {
+					if(long_long) {
 						snprintf(tmp, sizeof(tmp),
 							"%lld",
 							 va_arg(ap,
@@ -600,7 +600,7 @@ static char *vxstrfmt(const char *fmt, va_list ap)
 					xstrcat(buf, tmp);
 					p++;
 				} else if ((unprocessed==0) && (*(p+1)=='f')) {
-					if (long_long) {
+					if(long_long) {
 						xstrcat(buf, "%llf");
 						long_long = 0;
 					} else
@@ -610,7 +610,7 @@ static char *vxstrfmt(const char *fmt, va_list ap)
 					xstrcat(buf, tmp);
 					p++;
 				} else if ((unprocessed==0) && (*(p+1)=='x')) {
-					if (long_long) {
+					if(long_long) {
 						snprintf(tmp, sizeof(tmp),
 							 "%llx",
 							 va_arg(ap,
@@ -622,7 +622,7 @@ static char *vxstrfmt(const char *fmt, va_list ap)
 							 va_arg(ap, long int));
 					xstrcat(buf, tmp);
 					p++;
-				} else if (long_long) {
+				} else if(long_long) {
 					xstrcat(buf, "%ll");
 					long_long = 0;
 				} else

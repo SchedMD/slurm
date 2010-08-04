@@ -176,11 +176,11 @@ int dump_all_node_state ( void )
 		(void) unlink (new_file);
 	else {	/* file shuffle */
 		(void) unlink (old_file);
-		if (link(reg_file, old_file))
+		if(link(reg_file, old_file))
 			debug4("unable to create link for %s -> %s: %m",
 			       reg_file, old_file);
 		(void) unlink (reg_file);
-		if (link(new_file, reg_file))
+		if(link(new_file, reg_file))
 			debug4("unable to create link for %s -> %s: %m",
 			       new_file, reg_file);
 		(void) unlink (new_file);
@@ -317,10 +317,10 @@ extern int load_all_node_state ( bool state_only )
 
 	safe_unpackstr_xmalloc( &ver_str, &name_len, buffer);
 	debug3("Version string in node_state header is %s", ver_str);
-	if (ver_str) {
-		if (!strcmp(ver_str, NODE_STATE_VERSION)) {
+	if(ver_str) {
+		if(!strcmp(ver_str, NODE_STATE_VERSION)) {
 			protocol_version = SLURM_PROTOCOL_VERSION;
-		} else if (!strcmp(ver_str, NODE_2_1_STATE_VERSION)) {
+		} else if(!strcmp(ver_str, NODE_2_1_STATE_VERSION)) {
 			protocol_version = SLURM_2_1_PROTOCOL_VERSION;
 		}
 	}
@@ -339,7 +339,7 @@ extern int load_all_node_state ( bool state_only )
 
 	while (remaining_buf (buffer) > 0) {
 		uint16_t base_state;
-		if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
+		if(protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
 			safe_unpackstr_xmalloc (&node_name, &name_len, buffer);
 			safe_unpackstr_xmalloc (&reason,    &name_len, buffer);
 			safe_unpackstr_xmalloc (&features,  &name_len, buffer);
@@ -357,7 +357,7 @@ extern int load_all_node_state ( bool state_only )
 					node_name) != SLURM_SUCCESS)
 				goto unpack_error;
 			base_state = node_state & NODE_STATE_BASE;
-		} else if (protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
+		} else if(protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
 			safe_unpackstr_xmalloc (&node_name, &name_len, buffer);
 			safe_unpackstr_xmalloc (&reason,    &name_len, buffer);
 			safe_unpackstr_xmalloc (&features,  &name_len, buffer);
@@ -573,7 +573,7 @@ extern void pack_all_node (char **buffer_ptr, int *buffer_size,
 	buffer = init_buf (BUF_SIZE*16);
 	nodes_packed = 0;
 
-	if (protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
+	if(protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
 		/* write header: version and time */
 		pack32(nodes_packed, buffer);
 		select_g_alter_node_cnt(SELECT_GET_NODE_SCALING,
@@ -641,7 +641,7 @@ extern void pack_all_node (char **buffer_ptr, int *buffer_size,
 static void _pack_node (struct node_record *dump_node_ptr, Buf buffer,
 			uint16_t protocol_version)
 {
-	if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
+	if(protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
 		packstr (dump_node_ptr->name, buffer);
 		pack16  (dump_node_ptr->node_state, buffer);
 		if (slurmctld_conf.fast_schedule) {
@@ -679,7 +679,7 @@ static void _pack_node (struct node_record *dump_node_ptr, Buf buffer,
 			packstr(dump_node_ptr->config_ptr->gres, buffer);
 		packstr(dump_node_ptr->os, buffer);
 		packstr(dump_node_ptr->reason, buffer);
-	} else if (protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
+	} else if(protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
 		packstr (dump_node_ptr->name, buffer);
 		pack16  (dump_node_ptr->node_state, buffer);
 		if (slurmctld_conf.fast_schedule) {
@@ -1661,7 +1661,7 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 			   && (node_ptr->boot_time > node_ptr->last_response)
 			   && (slurmctld_conf.ret2service != 2)) {
 			last_node_update = now;
-			if (!node_ptr->reason) {
+			if(!node_ptr->reason) {
 				node_ptr->reason_time = now;
 				node_ptr->reason_uid =
 					slurm_get_slurm_user_id();
@@ -2413,7 +2413,7 @@ void make_node_idle(struct node_record *node_ptr,
 	bitstr_t *node_bitmap = NULL;
 
 	if (job_ptr) { /* Specific job completed */
-		if (job_ptr->node_bitmap_cg)
+		if(job_ptr->node_bitmap_cg)
 			node_bitmap = job_ptr->node_bitmap_cg;
 		else
 			node_bitmap = job_ptr->node_bitmap;
@@ -2509,7 +2509,7 @@ extern int send_nodes_to_accounting(time_t event_time)
 	/* send nodes not in not 'up' state */
 	node_ptr = node_record_table_ptr;
 	for (i = 0; i < node_record_count; i++, node_ptr++) {
-		if (node_ptr->reason)
+		if(node_ptr->reason)
 			reason = node_ptr->reason;
 		else
 			reason = "First Registration";
@@ -2519,14 +2519,14 @@ extern int send_nodes_to_accounting(time_t event_time)
 			/* At this point, the node appears to be up,
 			   but on some systems we need to make sure there
 			   aren't some part of a node in an error state. */
-			if (node_ptr->select_nodeinfo) {
+			if(node_ptr->select_nodeinfo) {
 				uint16_t err_cpus = 0;
 				select_g_select_nodeinfo_get(
 					node_ptr->select_nodeinfo,
 					SELECT_NODEDATA_SUBCNT,
 					NODE_STATE_ERROR,
 					&err_cpus);
-				if (err_cpus) {
+				if(err_cpus) {
 					struct node_record send_node;
 					struct config_record config_rec;
 					int cpus_per_node = 1;
@@ -2541,7 +2541,7 @@ extern int send_nodes_to_accounting(time_t event_time)
 						SELECT_GET_NODE_SCALING,
 						&node_scaling);
 
-					if (node_scaling)
+					if(node_scaling)
 						cpus_per_node = node_ptr->cpus
 							/ node_scaling;
 					err_cpus *= cpus_per_node;

@@ -73,8 +73,8 @@ typedef struct {
 
 void _destroy_tree_fwd(fwd_tree_t *fwd_tree)
 {
-	if (fwd_tree) {
-		if (fwd_tree->tree_hl)
+	if(fwd_tree) {
+		if(fwd_tree->tree_hl)
 			hostlist_destroy(fwd_tree->tree_hl);
 		xfree(fwd_tree);
 	}
@@ -97,7 +97,7 @@ void *_forward_thread(void *arg)
 
 	/* repeat until we are sure the message was sent */
 	while((name = hostlist_shift(hl))) {
-		if (slurm_conf_get_addr(name, &addr) == SLURM_ERROR) {
+		if(slurm_conf_get_addr(name, &addr) == SLURM_ERROR) {
 			error("forward_thread: can't find address for host "
 			      "%s, check slurm.conf", name);
 			slurm_mutex_lock(fwd_msg->forward_mutex);
@@ -154,7 +154,7 @@ void *_forward_thread(void *arg)
 		/*
 		 * forward message
 		 */
-		if (_slurm_msg_sendto(fd,
+		if(_slurm_msg_sendto(fd,
 				     get_buf_data(buffer),
 				     get_buf_offset(buffer),
 				     SLURM_PROTOCOL_NO_SEND_RECV_FLAGS ) < 0) {
@@ -164,7 +164,7 @@ void *_forward_thread(void *arg)
 			mark_as_failed_forward(&fwd_msg->ret_list, name,
 					       errno);
 			free(name);
-			if (hostlist_count(hl) > 0) {
+			if(hostlist_count(hl) > 0) {
 				free_buf(buffer);
 				buffer = init_buf(fwd_msg->buf_len);
 				slurm_mutex_unlock(fwd_msg->forward_mutex);
@@ -193,7 +193,7 @@ void *_forward_thread(void *arg)
 			goto cleanup;
 		}
 
-		if (fwd_msg->header.forward.cnt > 0) {
+		if(fwd_msg->header.forward.cnt > 0) {
 			static int message_timeout = -1;
 			if (message_timeout < 0)
 				message_timeout =
@@ -211,13 +211,13 @@ void *_forward_thread(void *arg)
 		/* info("sent %d forwards got %d back", */
 /* 		     fwd_msg->header.forward.cnt, list_count(ret_list)); */
 
-		if (!ret_list || (fwd_msg->header.forward.cnt != 0
+		if(!ret_list || (fwd_msg->header.forward.cnt != 0
 				 && list_count(ret_list) <= 1)) {
 			slurm_mutex_lock(fwd_msg->forward_mutex);
 			mark_as_failed_forward(&fwd_msg->ret_list, name,
 					       errno);
 			free(name);
-			if (ret_list)
+			if(ret_list)
 				list_destroy(ret_list);
 			if (hostlist_count(hl) > 0) {
 				free_buf(buffer);
@@ -228,7 +228,7 @@ void *_forward_thread(void *arg)
 				continue;
 			}
 			goto cleanup;
-		} else if ((fwd_msg->header.forward.cnt+1)
+		} else if((fwd_msg->header.forward.cnt+1)
 			  != list_count(ret_list)) {
 			/* this should never be called since the above
 			   should catch the failed forwards and pipe
@@ -248,19 +248,19 @@ void *_forward_thread(void *arg)
 				int node_found = 0;
 				itr = list_iterator_create(ret_list);
 				while((ret_data_info = list_next(itr))) {
-					if (!ret_data_info->node_name) {
+					if(!ret_data_info->node_name) {
 						first_node_found = 1;
 						ret_data_info->node_name =
 							xstrdup(name);
 					}
-					if (!strcmp(tmp,
+					if(!strcmp(tmp,
 						   ret_data_info->node_name)) {
 						node_found = 1;
 						break;
 					}
 				}
 				list_iterator_destroy(itr);
-				if (!node_found) {
+				if(!node_found) {
 					mark_as_failed_forward(
 						&fwd_msg->ret_list,
 						tmp,
@@ -269,7 +269,7 @@ void *_forward_thread(void *arg)
 				free(tmp);
 			}
 			hostlist_iterator_destroy(host_itr);
-			if (!first_node_found) {
+			if(!first_node_found) {
 				mark_as_failed_forward(&fwd_msg->ret_list,
 						       name,
 						       SLURM_COMMUNICATIONS_CONNECTION_ERROR);
@@ -278,9 +278,9 @@ void *_forward_thread(void *arg)
 		break;
 	}
 	slurm_mutex_lock(fwd_msg->forward_mutex);
-	if (ret_list) {
+	if(ret_list) {
 		while((ret_data_info = list_pop(ret_list)) != NULL) {
-			if (!ret_data_info->node_name) {
+			if(!ret_data_info->node_name) {
 				ret_data_info->node_name = xstrdup(name);
 			}
 			list_push(fwd_msg->ret_list, ret_data_info);
@@ -316,7 +316,7 @@ void *_fwd_tree_thread(void *arg)
 
 	/* repeat until we are sure the message was sent */
 	while((name = hostlist_shift(fwd_tree->tree_hl))) {
-		if (slurm_conf_get_addr(name, &send_msg.address)
+		if(slurm_conf_get_addr(name, &send_msg.address)
 		   == SLURM_ERROR) {
 			error("fwd_tree_thread: can't find address for host "
 			      "%s, check slurm.conf", name);
@@ -331,7 +331,7 @@ void *_fwd_tree_thread(void *arg)
 		}
 
 		send_msg.forward.timeout = fwd_tree->timeout;
-		if ((send_msg.forward.cnt = hostlist_count(fwd_tree->tree_hl))) {
+		if((send_msg.forward.cnt = hostlist_count(fwd_tree->tree_hl))) {
 			hostlist_ranged_string(fwd_tree->tree_hl,
 					       sizeof(buf), buf);
 			send_msg.forward.nodelist = xstrdup(buf);
@@ -349,7 +349,7 @@ void *_fwd_tree_thread(void *arg)
 
 		xfree(send_msg.forward.nodelist);
 
-		if (ret_list) {
+		if(ret_list) {
 			slurm_mutex_lock(fwd_tree->tree_mutex);
 			list_transfer(fwd_tree->ret_list, ret_list);
 			pthread_cond_signal(fwd_tree->notify);
@@ -375,7 +375,7 @@ void *_fwd_tree_thread(void *arg)
 		free(name);
 
 		/* check for error and try again */
-		if (errno == SLURM_COMMUNICATIONS_CONNECTION_ERROR)
+		if(errno == SLURM_COMMUNICATIONS_CONNECTION_ERROR)
  			continue;
 
 		break;
@@ -395,7 +395,7 @@ void *_fwd_tree_thread(void *arg)
  */
 extern void forward_init(forward_t *forward, forward_t *from)
 {
-	if (from && from->init == FORWARD_INIT) {
+	if(from && from->init == FORWARD_INIT) {
 		forward->cnt = from->cnt;
 		forward->timeout = from->timeout;
 		forward->nodelist = from->nodelist;
@@ -432,7 +432,7 @@ extern int forward_msg(forward_struct_t *forward_struct,
 	hostlist_t forward_hl = NULL;
 	char *name = NULL;
 
-	if (!forward_struct->ret_list) {
+	if(!forward_struct->ret_list) {
 		error("didn't get a ret_list from forward_struct");
 		xfree(span);
 		return SLURM_ERROR;
@@ -455,7 +455,7 @@ extern int forward_msg(forward_struct_t *forward_struct,
 
 		forward_msg->timeout = forward_struct->timeout;
 
-		if (forward_msg->timeout <= 0) {
+		if(forward_msg->timeout <= 0) {
 			/* convert secs to msec */
 			forward_msg->timeout  = slurm_get_msg_timeout() * 1000;
 		}
@@ -480,7 +480,7 @@ extern int forward_msg(forward_struct_t *forward_struct,
 		free(name);
 		for(j = 0; j < span[thr_count]; j++) {
 			name = hostlist_shift(hl);
-			if (!name)
+			if(!name)
 				break;
 			hostlist_push(forward_hl, name);
 			free(name);
@@ -560,7 +560,7 @@ extern List start_msg_tree(hostlist_t hl, slurm_msg_t *msg, int timeout)
 		fwd_tree->notify = &notify;
 		fwd_tree->tree_mutex = &tree_mutex;
 
-		if (fwd_tree->timeout <= 0) {
+		if(fwd_tree->timeout <= 0) {
 			/* convert secs to msec */
 			fwd_tree->timeout  = slurm_get_msg_timeout() * 1000;
 		}
@@ -569,7 +569,7 @@ extern List start_msg_tree(hostlist_t hl, slurm_msg_t *msg, int timeout)
 		free(name);
 		for(j = 0; j < span[thr_count]; j++) {
 			name = hostlist_shift(hl);
-			if (!name)
+			if(!name)
 				break;
 			hostlist_push(fwd_tree->tree_hl, name);
 			free(name);
@@ -618,7 +618,7 @@ extern void mark_as_failed_forward(List *ret_list, char *node_name, int err)
 	ret_data_info_t *ret_data_info = NULL;
 
 	debug3("problems with %s", node_name);
-	if (!*ret_list)
+	if(!*ret_list)
 		*ret_list = list_create(destroy_data_info);
 
 	ret_data_info = xmalloc(sizeof(ret_data_info_t));
@@ -635,7 +635,7 @@ extern void forward_wait(slurm_msg_t * msg)
 	int count = 0;
 
 	/* wait for all the other messages on the tree under us */
-	if (msg->forward_struct) {
+	if(msg->forward_struct) {
 		debug2("looking for %d", msg->forward_struct->fwd_cnt);
 		slurm_mutex_lock(&msg->forward_struct->forward_mutex);
 		count = 0;
@@ -663,7 +663,7 @@ extern void forward_wait(slurm_msg_t * msg)
 void destroy_data_info(void *object)
 {
 	ret_data_info_t *ret_data_info = (ret_data_info_t *)object;
-	if (ret_data_info) {
+	if(ret_data_info) {
 		slurm_free_msg_data(ret_data_info->type,
 				    ret_data_info->data);
 		xfree(ret_data_info->node_name);
@@ -673,7 +673,7 @@ void destroy_data_info(void *object)
 
 void destroy_forward(forward_t *forward)
 {
-	if (forward->init == FORWARD_INIT) {
+	if(forward->init == FORWARD_INIT) {
 		xfree(forward->nodelist);
 		forward->init = 0;
 	} else {
@@ -683,7 +683,7 @@ void destroy_forward(forward_t *forward)
 
 void destroy_forward_struct(forward_struct_t *forward_struct)
 {
-	if (forward_struct) {
+	if(forward_struct) {
 		xfree(forward_struct->buf);
 		xfree(forward_struct->forward_msg);
 		slurm_mutex_destroy(&forward_struct->forward_mutex);

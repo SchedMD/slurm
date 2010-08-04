@@ -95,12 +95,12 @@ static pgsql_db_info_t *_pgsql_acct_create_db_info()
 	db_info->port = slurm_get_accounting_storage_port();
 	/* it turns out it is better if using defaults to let postgres
 	   handle them on it's own terms */
-	if (!db_info->port) {
+	if(!db_info->port) {
 		db_info->port = DEFAULT_PGSQL_PORT;
 		slurm_set_accounting_storage_port(db_info->port);
 	}
 	db_info->host = slurm_get_accounting_storage_host();
-	if (!db_info->host)
+	if(!db_info->host)
 		db_info->host = xstrdup("localhost");
 	db_info->user = slurm_get_accounting_storage_user();
 	db_info->pass = slurm_get_accounting_storage_pass();
@@ -159,12 +159,12 @@ extern int init ( void )
 
 	/* since this can be loaded from many different places
 	   only tell us once. */
-	if (!first)
+	if(!first)
 		return SLURM_SUCCESS;
 
 	first = 0;
 
-	if (!slurmdbd_conf) {
+	if(!slurmdbd_conf) {
 		char *cluster_name = NULL;
 		if (!(cluster_name = slurm_get_cluster_name()))
 			fatal("%s requires ClusterName in slurm.conf",
@@ -175,12 +175,12 @@ extern int init ( void )
 	pgsql_db_info = _pgsql_acct_create_db_info();
 
 	location = slurm_get_accounting_storage_loc();
-	if (!location)
+	if(!location)
 		pgsql_db_name = xstrdup(DEFAULT_ACCOUNTING_DB);
 	else {
 		int i = 0;
 		while(location[i]) {
-			if (location[i] == '.' || location[i] == '/') {
+			if(location[i] == '.' || location[i] == '/') {
 				debug("%s doesn't look like a database "
 				      "name using %s",
 				      location, DEFAULT_ACCOUNTING_DB);
@@ -188,7 +188,7 @@ extern int init ( void )
 			}
 			i++;
 		}
-		if (location[i]) {
+		if(location[i]) {
 			pgsql_db_name = xstrdup(DEFAULT_ACCOUNTING_DB);
 			xfree(location);
 		} else
@@ -200,7 +200,7 @@ extern int init ( void )
 	rc = _pgsql_acct_check_tables(acct_pgsql_db, pgsql_db_info->user);
 	pgsql_close_db_connection(&acct_pgsql_db);
 
-	if (rc == SLURM_SUCCESS)
+	if(rc == SLURM_SUCCESS)
 		verbose("%s loaded", plugin_name);
 	else
 		verbose("%s failed", plugin_name);
@@ -220,7 +220,7 @@ extern void *acct_storage_p_get_connection(bool make_agent, int conn_num,
 {
 	pgsql_conn_t *pg_conn = xmalloc(sizeof(pgsql_conn_t));
 
-	if (!pgsql_db_info)
+	if(!pgsql_db_info)
 		init();
 
 	debug2("as/pg: get_connection: request new connection");
@@ -234,7 +234,7 @@ extern void *acct_storage_p_get_connection(bool make_agent, int conn_num,
 	pgsql_get_db_connection(&pg_conn->db_conn,
 				pgsql_db_name, pgsql_db_info);
 
-	if (pg_conn->db_conn && rollback) {
+	if(pg_conn->db_conn && rollback) {
 		pgsql_db_start_transaction(pg_conn->db_conn);
 	}
 	return (void *)pg_conn;
@@ -242,7 +242,7 @@ extern void *acct_storage_p_get_connection(bool make_agent, int conn_num,
 
 extern int acct_storage_p_close_connection(pgsql_conn_t **pg_conn)
 {
-	if (!pg_conn || !*pg_conn)
+	if(!pg_conn || !*pg_conn)
 		return SLURM_SUCCESS;
 
 	acct_storage_p_commit((*pg_conn), 0); /* discard changes */
@@ -262,14 +262,14 @@ extern int acct_storage_p_commit(pgsql_conn_t *pg_conn, bool commit)
 	debug4("as/pg: commit: got %d commits",
 	       list_count(pg_conn->update_list));
 
-	if (pg_conn->rollback) {
-		if (!commit) {
-			if (pgsql_db_rollback(pg_conn->db_conn)) {
+	if(pg_conn->rollback) {
+		if(!commit) {
+			if(pgsql_db_rollback(pg_conn->db_conn)) {
 				error("as/pg: commit: rollback failed");
 				return SLURM_ERROR;
 			}
 		} else {
-			if (pgsql_db_commit(pg_conn->db_conn)) {
+			if(pgsql_db_commit(pg_conn->db_conn)) {
 				error("as/pg: commit: commit failed");
 				return SLURM_ERROR;
 			}
@@ -278,7 +278,7 @@ extern int acct_storage_p_commit(pgsql_conn_t *pg_conn, bool commit)
 		pgsql_db_start_transaction(pg_conn->db_conn);
 	}
 
-	if (commit && list_count(pg_conn->update_list)) {
+	if(commit && list_count(pg_conn->update_list)) {
 		char *query;
 		PGresult *result;
 
@@ -523,7 +523,7 @@ extern int acct_storage_p_get_usage(pgsql_conn_t *pg_conn, uid_t uid,
 {
 	int rc = SLURM_SUCCESS;
 
-	if (type == DBD_GET_CLUSTER_USAGE)
+	if(type == DBD_GET_CLUSTER_USAGE)
 		cs_pg_get_usage(pg_conn, uid, in, type, start, end);
 	else
 		as_pg_get_usage(pg_conn, uid, in, type, start, end);
@@ -543,7 +543,7 @@ extern int clusteracct_storage_p_node_down(pgsql_conn_t *pg_conn,
 					   time_t event_time, char *reason,
 					   uint32_t reason_uid)
 {
-	if (!pg_conn->cluster_name) {
+	if(!pg_conn->cluster_name) {
 		error("%s:%d no cluster name", THIS_FILE, __LINE__);
 		return SLURM_ERROR;
 	}
@@ -555,7 +555,7 @@ extern int clusteracct_storage_p_node_up(pgsql_conn_t *pg_conn,
 					 struct node_record *node_ptr,
 					 time_t event_time)
 {
-	if (!pg_conn->cluster_name) {
+	if(!pg_conn->cluster_name) {
 		error("%s:%d no cluster name", THIS_FILE, __LINE__);
 		return SLURM_ERROR;
 	}
@@ -566,7 +566,7 @@ extern int clusteracct_storage_p_node_up(pgsql_conn_t *pg_conn,
 extern int clusteracct_storage_p_register_ctld(pgsql_conn_t *pg_conn,
 					       uint16_t port)
 {
-	if (!pg_conn->cluster_name) {
+	if(!pg_conn->cluster_name) {
 		error("%s:%d no cluster name", THIS_FILE, __LINE__);
 		return SLURM_ERROR;
 	}
@@ -579,7 +579,7 @@ extern int clusteracct_storage_p_cluster_cpus(pgsql_conn_t *pg_conn,
 					      uint32_t cpus,
 					      time_t event_time)
 {
-	if (!pg_conn->cluster_name) {
+	if(!pg_conn->cluster_name) {
 		error("%s:%d no cluster name", THIS_FILE, __LINE__);
 		return SLURM_ERROR;
 	}
@@ -594,7 +594,7 @@ extern int clusteracct_storage_p_cluster_cpus(pgsql_conn_t *pg_conn,
 extern int jobacct_storage_p_job_start(pgsql_conn_t *pg_conn,
 				       struct job_record *job_ptr)
 {
-	if (!pg_conn->cluster_name) {
+	if(!pg_conn->cluster_name) {
 		error("%s:%d no cluster name", THIS_FILE, __LINE__);
 		return SLURM_ERROR;
 	}
@@ -608,7 +608,7 @@ extern int jobacct_storage_p_job_start(pgsql_conn_t *pg_conn,
 extern int jobacct_storage_p_job_complete(pgsql_conn_t *pg_conn,
 					  struct job_record *job_ptr)
 {
-	if (!pg_conn->cluster_name) {
+	if(!pg_conn->cluster_name) {
 		error("%s:%d no cluster name", THIS_FILE, __LINE__);
 		return SLURM_ERROR;
 	}
@@ -622,7 +622,7 @@ extern int jobacct_storage_p_job_complete(pgsql_conn_t *pg_conn,
 extern int jobacct_storage_p_step_start(pgsql_conn_t *pg_conn,
 					struct step_record *step_ptr)
 {
-	if (!pg_conn->cluster_name) {
+	if(!pg_conn->cluster_name) {
 		error("%s:%d no cluster name", THIS_FILE, __LINE__);
 		return SLURM_ERROR;
 	}
@@ -636,7 +636,7 @@ extern int jobacct_storage_p_step_start(pgsql_conn_t *pg_conn,
 extern int jobacct_storage_p_step_complete(pgsql_conn_t *pg_conn,
 					   struct step_record *step_ptr)
 {
-	if (!pg_conn->cluster_name) {
+	if(!pg_conn->cluster_name) {
 		error("%s:%d no cluster name", THIS_FILE, __LINE__);
 		return SLURM_ERROR;
 	}
@@ -650,7 +650,7 @@ extern int jobacct_storage_p_step_complete(pgsql_conn_t *pg_conn,
 extern int jobacct_storage_p_suspend(pgsql_conn_t *pg_conn,
 				     struct job_record *job_ptr)
 {
-	if (!pg_conn->cluster_name) {
+	if(!pg_conn->cluster_name) {
 		error("%s:%d no cluster name", THIS_FILE, __LINE__);
 		return SLURM_ERROR;
 	}

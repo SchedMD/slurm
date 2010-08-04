@@ -69,7 +69,7 @@ extern void get_reservation(void)
 
 	if (error_code) {
 		if (quiet_flag != 1) {
-			if (!params.commandline) {
+			if(!params.commandline) {
 				mvwprintw(text_win,
 					  main_ycord, 1,
 					  "slurm_load_reservations: %s",
@@ -91,22 +91,22 @@ extern void get_reservation(void)
 		recs = 0;
 
 	if (!params.commandline) {
-		if ((text_line_cnt+printed_resv) > count)
+		if((text_line_cnt+printed_resv) > count)
 			text_line_cnt--;
 	}
 	printed_resv = 0;
 	count = 0;
-	if (params.hl)
+	if(params.hl)
 		nodes_req = get_requested_node_bitmap();
 	for (i = 0; i < recs; i++) {
 		resv = new_resv_ptr->reservation_array[i];
-		if (nodes_req) {
+		if(nodes_req) {
 			int overlap = 0;
 			bitstr_t *loc_bitmap = bit_alloc(bit_size(nodes_req));
 			inx2bitstr(loc_bitmap, resv.node_inx);
 			overlap = bit_overlap(loc_bitmap, nodes_req);
 			FREE_NULL_BITMAP(loc_bitmap);
-			if (!overlap)
+			if(!overlap)
 				continue;
 		}
 

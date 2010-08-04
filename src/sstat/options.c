@@ -55,7 +55,7 @@ void _help_fields_msg(void)
 	for (i = 0; fields[i].name; i++) {
 		if (i & 3)
 			printf("  ");
-		else if (i)
+		else if(i)
 			printf("\n");
 		printf("%-13s", fields[i].name);
 	}
@@ -146,13 +146,13 @@ static int _addto_job_list(List job_list, char *names)
 	int quote = 0;
 	int count = 0;
 
-	if (!job_list) {
+	if(!job_list) {
 		error("No list was given to fill in");
 		return 0;
 	}
 
 	itr = list_iterator_create(job_list);
-	if (names) {
+	if(names) {
 		if (names[i] == '\"' || names[i] == '\'') {
 			quote_c = names[i];
 			quote = 1;
@@ -161,12 +161,12 @@ static int _addto_job_list(List job_list, char *names)
 		start = i;
 		while(names[i]) {
 			//info("got %d - %d = %d", i, start, i-start);
-			if (quote && names[i] == quote_c)
+			if(quote && names[i] == quote_c)
 				break;
 			else if (names[i] == '\"' || names[i] == '\'')
 				names[i] = '`';
-			else if (names[i] == ',') {
-				if ((i-start) > 0) {
+			else if(names[i] == ',') {
+				if((i-start) > 0) {
 					char *dot = NULL;
 					name = xmalloc((i-start+1));
 					memcpy(name, names+start, (i-start));
@@ -186,7 +186,7 @@ static int _addto_job_list(List job_list, char *names)
 					xfree(name);
 
 					while((curr_step = list_next(itr))) {
-						if ((curr_step->jobid
+						if((curr_step->jobid
 						    == selected_step->jobid)
 						   && (curr_step->stepid
 						       == selected_step->
@@ -194,7 +194,7 @@ static int _addto_job_list(List job_list, char *names)
 							break;
 					}
 
-					if (!curr_step) {
+					if(!curr_step) {
 						list_append(job_list,
 							    selected_step);
 						count++;
@@ -208,7 +208,7 @@ static int _addto_job_list(List job_list, char *names)
 			}
 			i++;
 		}
-		if ((i-start) > 0) {
+		if((i-start) > 0) {
 			name = xmalloc((i-start)+1);
 			memcpy(name, names+start, (i-start));
 
@@ -226,13 +226,13 @@ static int _addto_job_list(List job_list, char *names)
 			xfree(name);
 
 			while((curr_step = list_next(itr))) {
-				if ((curr_step->jobid == selected_step->jobid)
+				if((curr_step->jobid == selected_step->jobid)
 				   && (curr_step->stepid
 				       == selected_step->stepid))
 					break;
 			}
 
-			if (!curr_step) {
+			if(!curr_step) {
 				list_append(job_list, selected_step);
 				count++;
 			} else
@@ -325,7 +325,7 @@ void parse_command_line(int argc, char **argv)
 					optarg);
 				exit(1);
 			}
-			if (!params.opt_job_list)
+			if(!params.opt_job_list)
 				params.opt_job_list = list_create(
 					slurmdb_destroy_selected_step);
 			_addto_job_list(params.opt_job_list, optarg);
@@ -364,7 +364,7 @@ void parse_command_line(int argc, char **argv)
 		}
 	}
 
-	if (params.opt_help) {
+	if(params.opt_help) {
 		_do_help();
 		exit(0);
 	}
@@ -378,13 +378,13 @@ void parse_command_line(int argc, char **argv)
 				optarg);
 			exit(1);
 		}
-		if (!params.opt_job_list)
+		if(!params.opt_job_list)
 			params.opt_job_list = list_create(
 				slurmdb_destroy_selected_step);
 		_addto_job_list(params.opt_job_list, optarg);
 	}
 
-	if (!params.opt_field_list)
+	if(!params.opt_field_list)
 		xstrfmtcat(params.opt_field_list, "%s,", STAT_FIELDS);
 
 	if (params.opt_verbose) {
@@ -399,7 +399,7 @@ void parse_command_line(int argc, char **argv)
 		debug("Jobs requested:\n");
 		itr = list_iterator_create(params.opt_job_list);
 		while((selected_step = list_next(itr))) {
-			if (selected_step->stepid != NO_VAL)
+			if(selected_step->stepid != NO_VAL)
 				debug("\t: %d.%d\n",
 					selected_step->jobid,
 					selected_step->stepid);
@@ -419,10 +419,10 @@ void parse_command_line(int argc, char **argv)
 		*end = 0;
 		while (isspace(*start))
 			start++;	/* discard whitespace */
-		if (!(int)*start)
+		if(!(int)*start)
 			continue;
 
-		if ((tmp_char = strstr(start, "\%"))) {
+		if((tmp_char = strstr(start, "\%"))) {
 			newlen = atoi(tmp_char+1);
 			tmp_char[0] = '\0';
 		}
@@ -436,7 +436,7 @@ void parse_command_line(int argc, char **argv)
 		error("Invalid field requested: \"%s\"", start);
 		exit(1);
 	foundfield:
-		if (newlen)
+		if(newlen)
 			fields[i].len = newlen;
 		list_append(print_fields_list, &fields[i]);
 		start = end + 1;

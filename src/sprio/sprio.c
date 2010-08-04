@@ -83,7 +83,7 @@ int main (int argc, char *argv[])
 
 	/* Check to see if we are running a supported accounting plugin */
 	temp = slurm_get_priority_type();
-	if (strcasecmp(temp, "priority/multifactor")) {
+	if(strcasecmp(temp, "priority/multifactor")) {
 		fprintf (stderr, "You are not running a supported "
 			 "priority plugin\n(%s).\n"
 			 "Only 'priority/multifactor' is supported.\n",

@@ -147,11 +147,11 @@ void slurm_print_ctl_conf ( FILE* out,
 	char *select_title = "";
 	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 
-	if (cluster_flags & CLUSTER_FLAG_BGL)
+	if(cluster_flags & CLUSTER_FLAG_BGL)
 		select_title = "\nBluegene/L configuration\n";
-	else if (cluster_flags & CLUSTER_FLAG_BGP)
+	else if(cluster_flags & CLUSTER_FLAG_BGP)
 		select_title = "\nBluegene/P configuration\n";
-	else if (cluster_flags & CLUSTER_FLAG_BGQ)
+	else if(cluster_flags & CLUSTER_FLAG_BGQ)
 		select_title = "\nBluegene/Q configuration\n";
 
 	if ( slurm_ctl_conf_ptr == NULL )
@@ -163,7 +163,7 @@ void slurm_print_ctl_conf ( FILE* out,
 		 time_str);
 
 	ret_list = slurm_ctl_conf_2_key_pairs(slurm_ctl_conf_ptr);
-	if (ret_list) {
+	if(ret_list) {
 		slurm_print_key_pairs(out, ret_list, tmp_str);
 
 		list_destroy((List)ret_list);
@@ -319,7 +319,7 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	list_append(ret_list, key_pair);
 	key_pair->name = xstrdup("DisableRootJobs");
-	if (slurm_ctl_conf_ptr->disable_root_jobs)
+	if(slurm_ctl_conf_ptr->disable_root_jobs)
 		key_pair->value = xstrdup("YES");
 	else
 		key_pair->value = xstrdup("NO");
@@ -327,7 +327,7 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	list_append(ret_list, key_pair);
 	key_pair->name = xstrdup("EnforcePartLimits");
-	if (slurm_ctl_conf_ptr->enforce_part_limits)
+	if(slurm_ctl_conf_ptr->enforce_part_limits)
 		key_pair->value = xstrdup("YES");
 	else
 		key_pair->value = xstrdup("NO");
@@ -391,8 +391,8 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
 	key_pair->value = xstrdup(tmp_str);
 	list_append(ret_list, key_pair);
 
-	if (slurm_ctl_conf_ptr->hash_val != NO_VAL) {
-		if (slurm_ctl_conf_ptr->hash_val == slurm_get_hash_val())
+	if(slurm_ctl_conf_ptr->hash_val != NO_VAL) {
+		if(slurm_ctl_conf_ptr->hash_val == slurm_get_hash_val())
 			snprintf(tmp_str, sizeof(tmp_str), "Match");
 		else {
 			snprintf(tmp_str, sizeof(tmp_str),
@@ -418,7 +418,7 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
 	key_pair->value = xstrdup(slurm_ctl_conf_ptr->health_check_program);
 	list_append(ret_list, key_pair);
 
-	if (cluster_flags & CLUSTER_FLAG_XCPU) {
+	if(cluster_flags & CLUSTER_FLAG_XCPU) {
 		key_pair = xmalloc(sizeof(config_key_pair_t));
 		key_pair->name = xstrdup("HAVE_XCPU");
 		key_pair->value = xstrdup("1");
@@ -585,7 +585,7 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
 	key_pair->value = xstrdup(slurm_ctl_conf_ptr->mpi_params);
 	list_append(ret_list, key_pair);
 
-	if (cluster_flags & CLUSTER_FLAG_MULTSD) {
+	if(cluster_flags & CLUSTER_FLAG_MULTSD) {
 		key_pair = xmalloc(sizeof(config_key_pair_t));
 		key_pair->name = xstrdup("MULTIPLE_SLURMD");
 		key_pair->value = xstrdup("1");
@@ -1156,8 +1156,8 @@ slurm_load_slurmd_status(slurmd_status_t **slurmd_status_ptr)
 	slurm_msg_t_init(&req_msg);
 	slurm_msg_t_init(&resp_msg);
 
-	if (cluster_flags & CLUSTER_FLAG_MULTSD) {
-		if ((this_addr = getenv("SLURMD_NODENAME"))) {
+	if(cluster_flags & CLUSTER_FLAG_MULTSD) {
+		if((this_addr = getenv("SLURMD_NODENAME"))) {
 			slurm_conf_get_addr(this_addr, &req_msg.address);
 		} else {
 			this_addr = "localhost";

@@ -53,7 +53,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
-#if (0)
+#if(0)
 #define DEBUG 1
 #endif
 
@@ -151,7 +151,7 @@ int slurm_get_avail_procs(const uint16_t socket_cnt,
 		if (alloc_cores[i])
 			allocated_sockets++;
 	}
-#if (DEBUG)
+#if(DEBUG)
 	info("get_avail_procs %u %s User_ sockets %u cores %u threads %u",
 			job_id, name, socket_cnt, core_cnt, thread_cnt);
 	info("get_avail_procs %u %s HW_   sockets %u cores %u threads %u",
@@ -286,7 +286,7 @@ int slurm_get_avail_procs(const uint16_t socket_cnt,
 	avail_cpus = (*cpus / cpus_per_task) * cpus_per_task;
 	avail_cpus = MIN(avail_cpus, max_cpus);
 
-#if (DEBUG)
+#if(DEBUG)
 	info("get_avail_procs %u %s return cpus %u sockets %u cores %u threads %u",
 			job_id, name, *cpus, *sockets, *cores, *threads);
 	info("get_avail_procs %d %s avail_cpus %u",  job_id, name, avail_cpus);

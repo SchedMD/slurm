@@ -345,7 +345,7 @@ static void _compute_hash_val(uint32_t *hash_val, char *line)
 {
 	int idx, i, len;
 
-	if (!hash_val)
+	if(!hash_val)
 		return;
 
 	len = strlen(line);

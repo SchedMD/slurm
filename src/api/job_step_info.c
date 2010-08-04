@@ -57,7 +57,7 @@ static int _sort_pids_by_name(job_step_pids_t *rec_a, job_step_pids_t *rec_b)
 {
 	int diff = 0;
 
-	if (!rec_a->node_name || !rec_b->node_name)
+	if(!rec_a->node_name || !rec_b->node_name)
 		return 0;
 
 	diff = strcmp(rec_a->node_name, rec_b->node_name);
@@ -71,7 +71,7 @@ static int _sort_pids_by_name(job_step_pids_t *rec_a, job_step_pids_t *rec_b)
 
 static int _sort_stats_by_name(job_step_stat_t *rec_a, job_step_stat_t *rec_b)
 {
-	if (!rec_a->step_pids || !rec_b->step_pids)
+	if(!rec_a->step_pids || !rec_b->step_pids)
 		return 0;
 
 	return _sort_pids_by_name(rec_a->step_pids, rec_b->step_pids);
@@ -301,8 +301,8 @@ extern int slurm_job_step_stat(uint32_t job_id, uint32_t step_id,
 
 	xassert(resp);
 
-	if (!node_list) {
-		if (!(step_layout =
+	if(!node_list) {
+		if(!(step_layout =
 		     slurm_job_step_layout_get(job_id, step_id))) {
 			rc = errno;
 			error("slurm_job_step_get_stat: "
@@ -313,7 +313,7 @@ extern int slurm_job_step_stat(uint32_t job_id, uint32_t step_id,
 		node_list = step_layout->node_list;
 	}
 
- 	if (!*resp) {
+ 	if(!*resp) {
 		resp_out = xmalloc(sizeof(job_step_stat_response_msg_t));
 		*resp = resp_out;
 		created = 1;
@@ -333,10 +333,10 @@ extern int slurm_job_step_stat(uint32_t job_id, uint32_t step_id,
 	req_msg.msg_type = REQUEST_JOB_STEP_STAT;
         req_msg.data = &req;
 
-        if (!(ret_list = slurm_send_recv_msgs(node_list, &req_msg, 0, false))) {
+        if(!(ret_list = slurm_send_recv_msgs(node_list, &req_msg, 0, false))) {
                 error("slurm_job_step_stat: got an error no list returned");
 		rc = SLURM_ERROR;
-		if (created) {
+		if(created) {
 			slurm_job_step_stat_response_msg_free(resp_out);
 			*resp = NULL;
 		}
@@ -347,7 +347,7 @@ extern int slurm_job_step_stat(uint32_t job_id, uint32_t step_id,
 	while((ret_data_info = list_next(itr))) {
 		switch (ret_data_info->type) {
 		case RESPONSE_JOB_STEP_STAT:
-			if (!resp_out->stats_list)
+			if(!resp_out->stats_list)
 				resp_out->stats_list = list_create(
 					slurm_free_job_step_stat);
 			list_push(resp_out->stats_list,
@@ -375,7 +375,7 @@ extern int slurm_job_step_stat(uint32_t job_id, uint32_t step_id,
 	list_iterator_destroy(itr);
 	list_destroy(ret_list);
 
-	if (resp_out->stats_list)
+	if(resp_out->stats_list)
 		list_sort(resp_out->stats_list, (ListCmpF)_sort_stats_by_name);
 cleanup:
 	slurm_step_layout_destroy(step_layout);
@@ -409,8 +409,8 @@ extern int slurm_job_step_get_pids(uint32_t job_id, uint32_t step_id,
 
 	xassert(resp);
 
-	if (!node_list) {
-		if (!(step_layout =
+	if(!node_list) {
+		if(!(step_layout =
 		     slurm_job_step_layout_get(job_id, step_id))) {
 			rc = errno;
 			error("slurm_job_step_get_pids: "
@@ -421,7 +421,7 @@ extern int slurm_job_step_get_pids(uint32_t job_id, uint32_t step_id,
 		node_list = step_layout->node_list;
 	}
 
-	if (!*resp) {
+	if(!*resp) {
 		resp_out = xmalloc(sizeof(job_step_pids_response_msg_t));
 		*resp = resp_out;
 		created = 1;
@@ -441,11 +441,11 @@ extern int slurm_job_step_get_pids(uint32_t job_id, uint32_t step_id,
 	req_msg.msg_type = REQUEST_JOB_STEP_PIDS;
         req_msg.data = &req;
 
-        if (!(ret_list = slurm_send_recv_msgs(node_list,
+        if(!(ret_list = slurm_send_recv_msgs(node_list,
 					     &req_msg, 0, false))) {
                 error("slurm_job_step_get_pids: got an error no list returned");
                 rc = SLURM_ERROR;
-		if (created) {
+		if(created) {
 			slurm_job_step_pids_response_msg_free(resp_out);
 			*resp = NULL;
 		}
@@ -456,7 +456,7 @@ extern int slurm_job_step_get_pids(uint32_t job_id, uint32_t step_id,
         while((ret_data_info = list_next(itr))) {
                 switch (ret_data_info->type) {
 			case RESPONSE_JOB_STEP_PIDS:
-				if (!resp_out->pid_list)
+				if(!resp_out->pid_list)
 					resp_out->pid_list = list_create(
 						slurm_free_job_step_pids);
 				list_push(resp_out->pid_list,
@@ -483,7 +483,7 @@ extern int slurm_job_step_get_pids(uint32_t job_id, uint32_t step_id,
         list_iterator_destroy(itr);
         list_destroy(ret_list);
 
- 	if (resp_out->pid_list)
+ 	if(resp_out->pid_list)
 		list_sort(resp_out->pid_list, (ListCmpF)_sort_pids_by_name);
 cleanup:
 	slurm_step_layout_destroy(step_layout);
@@ -505,8 +505,8 @@ extern void slurm_job_step_pids_response_msg_free(void *object)
 {
 	job_step_pids_response_msg_t *step_pids_msg =
 		(job_step_pids_response_msg_t *) object;
-	if (step_pids_msg) {
-		if (step_pids_msg->pid_list)
+	if(step_pids_msg) {
+		if(step_pids_msg->pid_list)
 			list_destroy(step_pids_msg->pid_list);
 		xfree(step_pids_msg);
 	}
@@ -521,8 +521,8 @@ extern void slurm_job_step_stat_response_msg_free(void *object)
 {
 	job_step_stat_response_msg_t *step_stat_msg =
 		(job_step_stat_response_msg_t *) object;
-	if (step_stat_msg) {
-		if (step_stat_msg->stats_list)
+	if(step_stat_msg) {
+		if(step_stat_msg->stats_list)
 			list_destroy(step_stat_msg->stats_list);
 		xfree(step_stat_msg);
 	}

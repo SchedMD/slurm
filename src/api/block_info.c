@@ -143,14 +143,14 @@ char *slurm_sprint_block_info(
 	xstrfmtcat(out, "User=%s ConnType=%s",
 		   block_ptr->owner_name,
 		   conn_type_string(block_ptr->conn_type));
-	if (cluster_flags & CLUSTER_FLAG_BGL)
+	if(cluster_flags & CLUSTER_FLAG_BGL)
 		xstrfmtcat(out, " NodeUse=%s",
 			   node_use_string(block_ptr->node_use));
 
 	xstrcat(out, line_end);
 
 	/****** Line 3 ******/
-	if (block_ptr->ionodes)
+	if(block_ptr->ionodes)
 		xstrfmtcat(out, "BasePartitions=%s[%s] BPIndices=",
 			   block_ptr->nodes, block_ptr->ionodes);
 	else
@@ -170,7 +170,7 @@ char *slurm_sprint_block_info(
 	xstrfmtcat(out, "MloaderImage=%s%s",
 		   block_ptr->mloaderimage, line_end);
 
-	if (cluster_flags & CLUSTER_FLAG_BGL) {
+	if(cluster_flags & CLUSTER_FLAG_BGL) {
 		/****** Line 5 ******/
 		xstrfmtcat(out, "BlrtsImage=%s%s", block_ptr->blrtsimage,
 			   line_end);

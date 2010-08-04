@@ -73,11 +73,11 @@ concat_cond_list(List cond_list, char *prefix, char *col, char **cond_str)
 	char *object;
 	ListIterator itr = NULL;
 
-	if (cond_list && list_count(cond_list)) {
+	if(cond_list && list_count(cond_list)) {
 		xstrcat(*cond_str, " AND (");
 		itr = list_iterator_create(cond_list);
 		while((object = list_next(itr))) {
-			if (set)
+			if(set)
 				xstrcat(*cond_str, " OR ");
 			if (prefix)
 				xstrfmtcat(*cond_str, "%s.%s='%s'",
@@ -108,11 +108,11 @@ concat_like_cond_list(List cond_list, char *prefix, char *col, char **cond_str)
 	char *object;
 	ListIterator itr = NULL;
 
-	if (cond_list && list_count(cond_list)) {
+	if(cond_list && list_count(cond_list)) {
 		xstrcat(*cond_str, " AND (");
 		itr = list_iterator_create(cond_list);
 		while((object = list_next(itr))) {
-			if (set)
+			if(set)
 				xstrcat(*cond_str, " OR ");
 			if (prefix)
 				xstrfmtcat(*cond_str, "%s.%s like '%%%s%%'",
@@ -183,8 +183,8 @@ pgsql_modify_common(pgsql_conn_t *pg_conn, uint16_t type, time_t now,
 	if (rc == SLURM_SUCCESS)
 		rc = add_txn(pg_conn, now, type, name_char, user_name, vals);
 
-	if (rc != SLURM_SUCCESS) {
-		if (pg_conn->rollback) {
+	if(rc != SLURM_SUCCESS) {
+		if(pg_conn->rollback) {
 			pgsql_db_rollback(pg_conn->db_conn);
 		}
 		list_flush(pg_conn->update_list);
@@ -215,11 +215,11 @@ _check_jobs_before_remove(pgsql_conn_t *pg_conn, char *assoc_char)
 		job_table, assoc_table, assoc_table, assoc_char);
 
 	result = DEF_QUERY_RET;
-	if (!result) {
+	if(!result) {
 		return rc;
 	}
 
-	if (PQntuples(result)) {
+	if(PQntuples(result)) {
 		debug4("We have jobs for this combo");
 		rc = true;
 	}
@@ -249,9 +249,9 @@ _check_jobs_before_remove_assoc(pgsql_conn_t *pg_conn, char *assoc_char)
 			       job_table, assoc_table, assoc_char);
 
 	result = DEF_QUERY_RET;
-	if (! result)
+	if(! result)
 		return rc;
-	if (PQntuples(result)) {
+	if(PQntuples(result)) {
 		debug4("We have jobs for this assoc");
 		rc = true;
 	}
@@ -279,10 +279,10 @@ _check_jobs_before_remove_without_assoctable(pgsql_conn_t *pg_conn,
 			       job_table, where_char);
 
 	result = DEF_QUERY_RET;
-	if (!result)
+	if(!result)
 		return rc;
 
-	if (PQntuples(result)) {
+	if(PQntuples(result)) {
 		debug4("We have jobs for this combo");
 		rc = true;
 	}
@@ -334,12 +334,12 @@ pgsql_remove_common(pgsql_conn_t *pg_conn, uint16_t type, time_t now,
 	}
 
 	/* remove completely all that is less than a day old */
-	if (!has_jobs && (table != assoc_table)) {
+	if(!has_jobs && (table != assoc_table)) {
 		query = xstrdup_printf(
 			"DELETE FROM %s WHERE creation_time>%d AND (%s);",
 			table, day_old, name_char);
 	}
-	if (table != assoc_table) {
+	if(table != assoc_table) {
 		xstrfmtcat(query,
 			   "UPDATE %s SET mod_time=%d, deleted=1 "
 			   "WHERE deleted=0 AND (%s);",
@@ -352,7 +352,7 @@ pgsql_remove_common(pgsql_conn_t *pg_conn, uint16_t type, time_t now,
 	if (rc == SLURM_SUCCESS)
 		add_txn(pg_conn, now, type, name_char, user_name, "");
 	if (rc != SLURM_SUCCESS) {
-		if (pg_conn->rollback) {
+		if(pg_conn->rollback) {
 			pgsql_db_rollback(pg_conn->db_conn);
 		}
 		list_flush(pg_conn->update_list);
@@ -361,26 +361,26 @@ pgsql_remove_common(pgsql_conn_t *pg_conn, uint16_t type, time_t now,
 	}
 
 	/* done if not assoc related entities */
-	if (table == qos_table ||
+	if(table == qos_table ||
 	   table == acct_coord_table ||
 	   table == wckey_table)
 		return SLURM_SUCCESS;
 
 	/* mark deleted=1 or remove completely the accounting tables */
-	if (table == assoc_table) { /* children assoc included in assoc_char */
+	if(table == assoc_table) { /* children assoc included in assoc_char */
 		loc_assoc_char = assoc_char; /* XXX: TODO: assoc_char or name_char? */
 	} else { /* for other tables, find all children associations */
 		List assoc_list;
 		ListIterator itr;
 		char *id;
-		if (!assoc_char) {
+		if(!assoc_char) {
 			error("as/pg: remove_common: no assoc_char");
 			rc = SLURM_ERROR;
 			goto err_out;
 		}
 
 		/* TODO: define */
-		if (!(assoc_list = find_children_assoc(pg_conn, assoc_char))) {
+		if(!(assoc_list = find_children_assoc(pg_conn, assoc_char))) {
 			error("as/pg: remove_common: failed to "
 			      "find children assoc");
 			goto err_out;
@@ -389,7 +389,7 @@ pgsql_remove_common(pgsql_conn_t *pg_conn, uint16_t type, time_t now,
 		while((id = list_next(itr))) {
 			slurmdb_association_rec_t *rem_assoc;
 
-			if (!rc) {
+			if(!rc) {
 				xstrfmtcat(loc_assoc_char, "t1.id=%s", id);
 				rc = 1;
 			} else {
@@ -399,7 +399,7 @@ pgsql_remove_common(pgsql_conn_t *pg_conn, uint16_t type, time_t now,
 			slurmdb_init_association_rec(rem_assoc);
 
 			rem_assoc->id = atoi(id);
-			if (addto_update_list(pg_conn->update_list,
+			if(addto_update_list(pg_conn->update_list,
 					     SLURMDB_REMOVE_ASSOC,
 					     rem_assoc) != SLURM_SUCCESS)
 				error("couldn't add to the update list");
@@ -408,14 +408,14 @@ pgsql_remove_common(pgsql_conn_t *pg_conn, uint16_t type, time_t now,
 		list_destroy(assoc_list);
 	}
 
-	if (!loc_assoc_char) {
+	if(!loc_assoc_char) {
 		debug2("No associations with object being deleted");
 		return rc;
 	}
 
 	/* mark association usage as deleted */
 	rc = delete_assoc_usage(pg_conn, now, loc_assoc_char);
-	if (rc != SLURM_SUCCESS) {
+	if(rc != SLURM_SUCCESS) {
 		goto err_out;
 	}
 
@@ -423,7 +423,7 @@ pgsql_remove_common(pgsql_conn_t *pg_conn, uint16_t type, time_t now,
 	 * removing the associations. Since we may want them for
 	 * reports in the future since jobs had ran.
 	 */
-	if (has_jobs)
+	if(has_jobs)
 		goto just_update;
 
 	/* remove completely all the associations for this added in the last
@@ -431,7 +431,7 @@ pgsql_remove_common(pgsql_conn_t *pg_conn, uint16_t type, time_t now,
 	 * the first place.
 	 */
 	rc = remove_young_assoc(pg_conn, now, loc_assoc_char);
-	if (rc != SLURM_SUCCESS) {
+	if(rc != SLURM_SUCCESS) {
 		goto err_out;
 	}
 
@@ -450,7 +450,7 @@ just_update:
 			       assoc_table, now,
 			       loc_assoc_char);
 
-	if (table != assoc_table)
+	if(table != assoc_table)
 		xfree(loc_assoc_char);
 
 	DEBUG_QUERY;
@@ -458,8 +458,8 @@ just_update:
 	xfree(query);
 
 err_out:
-	if (rc != SLURM_SUCCESS) {
-		if (pg_conn->rollback) {
+	if(rc != SLURM_SUCCESS) {
+		if(pg_conn->rollback) {
 			pgsql_db_rollback(pg_conn->db_conn);
 		}
 		list_flush(pg_conn->update_list);
@@ -482,7 +482,7 @@ check_db_connection(pgsql_conn_t *pg_conn)
 		error("as/pg: we need a connection to run this");
 		errno = SLURM_ERROR;
 		return SLURM_ERROR;
-	} else if (!pg_conn->db_conn ||
+	} else if(!pg_conn->db_conn ||
 		  PQstatus(pg_conn->db_conn) != CONNECTION_OK) {
 		info("as/pg: database connection lost.");
 		PQreset(pg_conn->db_conn);
@@ -537,11 +537,11 @@ check_table(PGconn *db_conn, char *table, storage_field_t *fields,
 
 	if (!tables[i]) {
 		debug("as/pg: table %s not found, create it", table);
-		if (pgsql_db_create_table(db_conn, table, fields, constraint)
+		if(pgsql_db_create_table(db_conn, table, fields, constraint)
 		   == SLURM_ERROR)
 			return SLURM_ERROR;
 	} else {
-		if (pgsql_db_make_table_current(db_conn, table, fields))
+		if(pgsql_db_make_table_current(db_conn, table, fields))
 			return SLURM_ERROR;
 	}
 	return SLURM_SUCCESS;
@@ -550,8 +550,8 @@ check_table(PGconn *db_conn, char *table, storage_field_t *fields,
 static void _destroy_local_cluster(void *object)
 {
 	local_cluster_t *local_cluster = (local_cluster_t *)object;
-	if (local_cluster) {
-		if (local_cluster->hl)
+	if(local_cluster) {
+		if(local_cluster->hl)
 			hostlist_destroy(local_cluster->hl);
 		FREE_NULL_BITMAP(local_cluster->asked_bitmap);
 		xfree(local_cluster);
@@ -580,10 +580,10 @@ setup_cluster_list_with_inx(pgsql_conn_t *pg_conn, slurmdb_job_cond_t *job_cond,
 	hostlist_iterator_t h_itr = NULL;
 	char *object = NULL, *query = NULL;
 
-	if (!job_cond || !job_cond->used_nodes)
+	if(!job_cond || !job_cond->used_nodes)
 		return NULL;
 
-	if (!job_cond->cluster_list || list_count(job_cond->cluster_list) != 1) {
+	if(!job_cond->cluster_list || list_count(job_cond->cluster_list) != 1) {
 		error("If you are doing a query against nodes "
 		      "you must only have 1 cluster "
 		      "you are asking for.");
@@ -591,7 +591,7 @@ setup_cluster_list_with_inx(pgsql_conn_t *pg_conn, slurmdb_job_cond_t *job_cond,
 	}
 
 	temp_hl = hostlist_create(job_cond->used_nodes);
-	if (!hostlist_count(temp_hl)) {
+	if(!hostlist_count(temp_hl)) {
 		error("we didn't get any real hosts to look for.");
 		goto no_hosts;
 	}
@@ -601,11 +601,11 @@ setup_cluster_list_with_inx(pgsql_conn_t *pg_conn, slurmdb_job_cond_t *job_cond,
 			       "AND cluster_nodes !=''",
 			       event_table);
 
-	if ((object = list_peek(job_cond->cluster_list)))
+	if((object = list_peek(job_cond->cluster_list)))
 		xstrfmtcat(query, " AND cluster='%s'", object);
 
-	if (job_cond->usage_start) {
-		if (!job_cond->usage_end)
+	if(job_cond->usage_start) {
+		if(!job_cond->usage_end)
 			job_cond->usage_end = now;
 
 		xstrfmtcat(query, " AND ((period_start < %d) "
@@ -614,7 +614,7 @@ setup_cluster_list_with_inx(pgsql_conn_t *pg_conn, slurmdb_job_cond_t *job_cond,
 	}
 
 	result = DEF_QUERY_RET;
-	if (!result) {
+	if(!result) {
 		hostlist_destroy(temp_hl);
 		return NULL;
 	}
@@ -632,15 +632,15 @@ setup_cluster_list_with_inx(pgsql_conn_t *pg_conn, slurmdb_job_cond_t *job_cond,
 		local_cluster->asked_bitmap =
 			bit_alloc(hostlist_count(local_cluster->hl));
 		while((host = hostlist_next(h_itr))) {
-			if ((loc = hostlist_find(
+			if((loc = hostlist_find(
 				    local_cluster->hl, host)) != -1)
 				bit_set(local_cluster->asked_bitmap, loc);
 			free(host);
 		}
 		hostlist_iterator_reset(h_itr);
-		if (bit_ffs(local_cluster->asked_bitmap) != -1) {
+		if(bit_ffs(local_cluster->asked_bitmap) != -1) {
 			list_append(local_cluster_list, local_cluster);
-			if (local_cluster->end == 0) {
+			if(local_cluster->end == 0) {
 				local_cluster->end = now;
 				(*curr_cluster) = local_cluster;
 			}
@@ -649,7 +649,7 @@ setup_cluster_list_with_inx(pgsql_conn_t *pg_conn, slurmdb_job_cond_t *job_cond,
 	} END_EACH_ROW;
 	PQclear(result);
 	hostlist_iterator_destroy(h_itr);
-	if (!list_count(local_cluster_list)) {
+	if(!list_count(local_cluster_list)) {
 		list_destroy(local_cluster_list);
 		local_cluster_list = NULL;
 	}
@@ -678,18 +678,18 @@ good_nodes_from_inx(List local_cluster_list, void **object,
 	/* check the bitmap to see if this is one of the jobs
 	   we are looking for */
 	/* TODO: curr_cluster only set if end==0 above */
-	if (*curr_cluster) {
+	if(*curr_cluster) {
 		bitstr_t *job_bitmap = NULL;
-		if (!node_inx || !node_inx[0])
+		if(!node_inx || !node_inx[0])
 			return 0;
-		if ((submit < (*curr_cluster)->start)
+		if((submit < (*curr_cluster)->start)
 		   || (submit > (*curr_cluster)->end)) {
 			local_cluster_t *local_cluster = NULL;
 
 			ListIterator itr =
 				list_iterator_create(local_cluster_list);
 			while((local_cluster = list_next(itr))) {
-				if ((submit >= local_cluster->start)
+				if((submit >= local_cluster->start)
 				   && (submit <= local_cluster->end)) {
 					*curr_cluster = local_cluster;
 					break;
@@ -700,7 +700,7 @@ good_nodes_from_inx(List local_cluster_list, void **object,
 		}
 		job_bitmap = bit_alloc(hostlist_count((*curr_cluster)->hl));
 		bit_unfmt(job_bitmap, node_inx);
-		if (!bit_overlap((*curr_cluster)->asked_bitmap, job_bitmap)) {
+		if(!bit_overlap((*curr_cluster)->asked_bitmap, job_bitmap)) {
 			FREE_NULL_BITMAP(job_bitmap);
 			return 0;
 		}

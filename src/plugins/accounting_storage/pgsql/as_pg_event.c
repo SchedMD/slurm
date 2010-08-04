@@ -154,7 +154,7 @@ cs_pg_node_down(pgsql_conn_t *pg_conn,
 	int rc = SLURM_ERROR;
 	char *query = NULL, *my_reason;
 
-	if (check_db_connection(pg_conn) != SLURM_SUCCESS)
+	if(check_db_connection(pg_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
 
 	if (!node_ptr) {
@@ -198,7 +198,7 @@ cs_pg_node_up(pgsql_conn_t *pg_conn,
 	char* query;
 	int rc = SLURM_ERROR;
 
-	if (check_db_connection(pg_conn) != SLURM_SUCCESS)
+	if(check_db_connection(pg_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
 
 	query = xstrdup_printf(
@@ -227,11 +227,11 @@ cs_pg_register_ctld(pgsql_conn_t *pg_conn, char *cluster, uint16_t port)
 	int rc;
 	time_t now = time(NULL);
 
-	if (slurmdbd_conf)
+	if(slurmdbd_conf)
 		fatal("clusteracct_storage_g_register_ctld "
 		      "should never be called from the slurmdbd.");
 
-	if (check_db_connection(pg_conn) != SLURM_SUCCESS)
+	if(check_db_connection(pg_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
 
 	info("Registering slurmctld for cluster %s at port %u in database.",
@@ -239,7 +239,7 @@ cs_pg_register_ctld(pgsql_conn_t *pg_conn, char *cluster, uint16_t port)
 	gethostname(hostname, sizeof(hostname));
 
 	/* check if we are running on the backup controller */
-	if (slurmctld_conf.backup_controller
+	if(slurmctld_conf.backup_controller
 	   && !strcmp(slurmctld_conf.backup_controller, hostname)) {
 		address = slurmctld_conf.backup_addr;
 	} else
@@ -278,7 +278,7 @@ cs_pg_cluster_cpus(pgsql_conn_t *pg_conn, char *cluster_nodes,
 	char* query;
 	int rc = SLURM_SUCCESS, got_cpus = 0, first = 0;
 
-	if (check_db_connection(pg_conn) != SLURM_SUCCESS)
+	if(check_db_connection(pg_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
 
 	/* Record the processor count */
@@ -287,11 +287,11 @@ cs_pg_cluster_cpus(pgsql_conn_t *pg_conn, char *cluster_nodes,
 		"AND period_end=0 AND node_name='' LIMIT 1;",
 		event_table, pg_conn->cluster_name);
 	result = DEF_QUERY_RET;
-	if (!result)
+	if(!result)
 		return SLURM_ERROR;
 
 	/* we only are checking the first one here */
-	if (!PQntuples(result)) {
+	if(!PQntuples(result)) {
 		debug("We don't have an entry for this machine %s "
 		      "most likely a first time running.",
 		      pg_conn->cluster_name);
@@ -307,12 +307,12 @@ cs_pg_cluster_cpus(pgsql_conn_t *pg_conn, char *cluster_nodes,
 		goto add_it;
 	}
 	got_cpus = atoi(PG_VAL(0));
-	if (got_cpus == cpus) {
+	if(got_cpus == cpus) {
 		debug3("we have the same cpu count as before for %s, "
 		       "no need to update the database.",
 		       pg_conn->cluster_name);
-		if (cluster_nodes) {
-			if (PG_EMPTY(1)) {
+		if(cluster_nodes) {
+			if(PG_EMPTY(1)) {
 				debug("Adding cluster nodes '%s' to "
 				      "last instance of cluster '%s'.",
 				      cluster_nodes, pg_conn->cluster_name);
@@ -324,7 +324,7 @@ cs_pg_cluster_cpus(pgsql_conn_t *pg_conn, char *cluster_nodes,
 					pg_conn->cluster_name);
 				rc = DEF_QUERY_RET_RC;
 				goto end_it;
-			} else if (!strcmp(cluster_nodes,
+			} else if(!strcmp(cluster_nodes,
 					  PG_VAL(1))) {
 				debug3("we have the same nodes in the cluster "
 				       "as before no need to "
@@ -346,7 +346,7 @@ cs_pg_cluster_cpus(pgsql_conn_t *pg_conn, char *cluster_nodes,
 			       pg_conn->cluster_name);
 	rc = DEF_QUERY_RET_RC;
 	first = 1;
-	if (rc != SLURM_SUCCESS)
+	if(rc != SLURM_SUCCESS)
 		goto end_it;
 add_it:
 	query = xstrdup_printf(
@@ -394,13 +394,13 @@ cs_pg_get_usage(pgsql_conn_t *pg_conn, uid_t uid,
 		CU_COUNT
 	};
 
-	if (!cluster_rec->name) {
+	if(!cluster_rec->name) {
 		error("We need a cluster name to set data for");
 		return SLURM_ERROR;
 	}
 
 	usage_table = cluster_day_table;
-	if (set_usage_information(&usage_table, type, &start, &end)
+	if(set_usage_information(&usage_table, type, &start, &end)
 	   != SLURM_SUCCESS)
 		return SLURM_ERROR;
 
@@ -409,10 +409,10 @@ cs_pg_get_usage(pgsql_conn_t *pg_conn, uid_t uid,
 		"AND period_start >= %d) AND cluster='%s'",
 		cu_fields, usage_table, end, start, cluster_rec->name);
 	result = DEF_QUERY_RET;
-	if (!result)
+	if(!result)
 		return SLURM_ERROR;
 
-	if (!cluster_rec->accounting_list)
+	if(!cluster_rec->accounting_list)
 		cluster_rec->accounting_list =
 			list_create(slurmdb_destroy_cluster_accounting_rec);
 	FOR_EACH_ROW {
@@ -467,16 +467,16 @@ as_pg_get_events(pgsql_conn_t *pg_conn, uid_t uid,
                 GE_COUNT
         };
 
-        if (check_db_connection(pg_conn) != SLURM_SUCCESS)
+        if(check_db_connection(pg_conn) != SLURM_SUCCESS)
                 return NULL;
 
 	cond = xstrdup("WHERE TRUE");
 	
-        if (!event_cond)
+        if(!event_cond)
                 goto empty;
 
-        if (event_cond->cpus_min) {
-                if (event_cond->cpus_max) {
+        if(event_cond->cpus_min) {
+                if(event_cond->cpus_max) {
                         xstrfmtcat(cond, " AND (cpu_count BETWEEN %u AND %u)",
                                    event_cond->cpus_min, event_cond->cpus_max);
 
@@ -502,8 +502,8 @@ as_pg_get_events(pgsql_conn_t *pg_conn, uid_t uid,
 
 	concat_cond_list(event_cond->node_list, NULL, "node_name", &cond);
 
-        if (event_cond->period_start) {
-                if (!event_cond->period_end)
+        if(event_cond->period_start) {
+                if(!event_cond->period_end)
                         event_cond->period_end = now;
                 xstrfmtcat(cond,
                            " AND (time_start < %d) "
@@ -533,7 +533,7 @@ empty:
 
                 event->cluster = xstrdup(ROW(GE_CLUSTER));
 
-                if (ISEMPTY(GE_NODE)) {
+                if(ISEMPTY(GE_NODE)) {
                         event->event_type = SLURMDB_EVENT_CLUSTER;
                 } else
                         event->node_name = xstrdup(ROW(GE_NODE));
@@ -544,11 +544,11 @@ empty:
                 event->period_start = atoi(ROW(GE_START));
                 event->period_end = atoi(ROW(GE_END));
 
-                if (!ISEMPTY(GE_REASON))
+                if(!ISEMPTY(GE_REASON))
                         event->reason = xstrdup(ROW(GE_REASON));
                 event->reason_uid = atoi(ROW(GE_REASON_UID));
 
-                if (!ISEMPTY(GE_CNODES))
+                if(!ISEMPTY(GE_CNODES))
                         event->cluster_nodes =
                                 xstrdup(ROW(GE_CNODES));
         } END_EACH_ROW;

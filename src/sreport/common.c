@@ -45,16 +45,16 @@ extern void slurmdb_report_print_time(print_field_t *field,
 {
 	int abs_len = abs(field->len);
 
-	if (!total_time)
+	if(!total_time)
 		total_time = 1;
 
 	/* (value == unset)  || (value == cleared) */
-	if ((value == NO_VAL) || (value == INFINITE)) {
-		if (print_fields_parsable_print
+	if((value == NO_VAL) || (value == INFINITE)) {
+		if(print_fields_parsable_print
 		   == PRINT_FIELDS_PARSABLE_NO_ENDING
 		   && last)
 			;
-		else if (print_fields_parsable_print)
+		else if(print_fields_parsable_print)
 			printf("|");
 		else
 			printf("%-*s ", abs_len, " ");
@@ -106,13 +106,13 @@ extern void slurmdb_report_print_time(print_field_t *field,
 			break;
 		}
 
-		if (print_fields_parsable_print
+		if(print_fields_parsable_print
 		   == PRINT_FIELDS_PARSABLE_NO_ENDING
 		   && last)
 			printf("%s", output);
-		else if (print_fields_parsable_print)
+		else if(print_fields_parsable_print)
 			printf("%s|", output);
-		else if (field->len == abs_len)
+		else if(field->len == abs_len)
 			printf("%*.*s ", abs_len, abs_len, output);
 		else
 			printf("%-*.*s ", abs_len, abs_len, output);
@@ -125,12 +125,12 @@ extern int parse_option_end(char *option)
 {
 	int end = 0;
 
-	if (!option)
+	if(!option)
 		return 0;
 
 	while(option[end] && option[end] != '=')
 		end++;
-	if (!option[end])
+	if(!option[end])
 		return 0;
 	end++;
 	return end;
@@ -143,7 +143,7 @@ extern char *strip_quotes(char *option, int *increased)
 	int i=0, start=0;
 	char *meat = NULL;
 
-	if (!option)
+	if(!option)
 		return NULL;
 
 	/* first strip off the ("|')'s */
@@ -152,7 +152,7 @@ extern char *strip_quotes(char *option, int *increased)
 	start = i;
 
 	while(option[i]) {
-		if (option[i] == '\"' || option[i] == '\'') {
+		if(option[i] == '\"' || option[i] == '\'') {
 			end++;
 			break;
 		}
@@ -163,7 +163,7 @@ extern char *strip_quotes(char *option, int *increased)
 	meat = xmalloc((i-start)+1);
 	memcpy(meat, option+start, (i-start));
 
-	if (increased)
+	if(increased)
 		(*increased) += end;
 
 	return meat;
@@ -175,30 +175,30 @@ extern void addto_char_list(List char_list, char *names)
 	char *name = NULL, *tmp_char = NULL;
 	ListIterator itr = NULL;
 
-	if (!char_list) {
+	if(!char_list) {
 		error("No list was given to fill in");
 		return;
 	}
 
 	itr = list_iterator_create(char_list);
-	if (names) {
+	if(names) {
 		if (names[i] == '\"' || names[i] == '\'')
 			i++;
 		start = i;
 		while(names[i]) {
-			if (names[i] == '\"' || names[i] == '\'')
+			if(names[i] == '\"' || names[i] == '\'')
 				break;
-			else if (names[i] == ',') {
-				if ((i-start) > 0) {
+			else if(names[i] == ',') {
+				if((i-start) > 0) {
 					name = xmalloc((i-start+1));
 					memcpy(name, names+start, (i-start));
 
 					while((tmp_char = list_next(itr))) {
-						if (!strcasecmp(tmp_char, name))
+						if(!strcasecmp(tmp_char, name))
 							break;
 					}
 
-					if (!tmp_char)
+					if(!tmp_char)
 						list_append(char_list, name);
 					else
 						xfree(name);
@@ -209,15 +209,15 @@ extern void addto_char_list(List char_list, char *names)
 			}
 			i++;
 		}
-		if ((i-start) > 0) {
+		if((i-start) > 0) {
 			name = xmalloc((i-start)+1);
 			memcpy(name, names+start, (i-start));
 			while((tmp_char = list_next(itr))) {
-				if (!strcasecmp(tmp_char, name))
+				if(!strcasecmp(tmp_char, name))
 					break;
 			}
 
-			if (!tmp_char)
+			if(!tmp_char)
 				list_append(char_list, name);
 			else
 				xfree(name);
@@ -237,14 +237,14 @@ extern int sort_user_dec(slurmdb_report_user_rec_t *user_a,
 {
 	int diff = 0;
 
-	if (sort_flag == SLURMDB_REPORT_SORT_TIME) {
+	if(sort_flag == SLURMDB_REPORT_SORT_TIME) {
 		if (user_a->cpu_secs > user_b->cpu_secs)
 			return -1;
 		else if (user_a->cpu_secs < user_b->cpu_secs)
 			return 1;
 	}
 
-	if (!user_a->name || !user_b->name)
+	if(!user_a->name || !user_b->name)
 		return 0;
 
 	diff = strcmp(user_a->name, user_b->name);
@@ -270,7 +270,7 @@ extern int sort_cluster_dec(slurmdb_report_cluster_rec_t *cluster_a,
 {
 	int diff = 0;
 
-	if (!cluster_a->name || !cluster_b->name)
+	if(!cluster_a->name || !cluster_b->name)
 		return 0;
 
 	diff = strcmp(cluster_a->name, cluster_b->name);
@@ -298,7 +298,7 @@ extern int sort_assoc_dec(slurmdb_report_assoc_rec_t *assoc_a,
 {
 	int diff = 0;
 
-	if (!assoc_a->acct || !assoc_b->acct)
+	if(!assoc_a->acct || !assoc_b->acct)
 		return 0;
 
 	diff = strcmp(assoc_a->acct, assoc_b->acct);
@@ -308,9 +308,9 @@ extern int sort_assoc_dec(slurmdb_report_assoc_rec_t *assoc_a,
 	else if (diff < 0)
 		return -1;
 
-	if (!assoc_a->user && assoc_b->user)
+	if(!assoc_a->user && assoc_b->user)
 		return 1;
-	else if (!assoc_b->user)
+	else if(!assoc_b->user)
 		return -1;
 
 	diff = strcmp(assoc_a->user, assoc_b->user);
@@ -335,7 +335,7 @@ extern int sort_reservations_dec(slurmdb_reservation_rec_t *resv_a,
 {
 	int diff = 0;
 
-	if (!resv_a->cluster || !resv_b->cluster)
+	if(!resv_a->cluster || !resv_b->cluster)
 		return 0;
 
 	diff = strcmp(resv_a->cluster, resv_b->cluster);
@@ -345,7 +345,7 @@ extern int sort_reservations_dec(slurmdb_reservation_rec_t *resv_a,
 	else if (diff < 0)
 		return -1;
 
-	if (!resv_a->name || !resv_b->name)
+	if(!resv_a->name || !resv_b->name)
 		return 0;
 
 	diff = strcmp(resv_a->name, resv_b->name);
@@ -355,9 +355,9 @@ extern int sort_reservations_dec(slurmdb_reservation_rec_t *resv_a,
 	else if (diff < 0)
 		return -1;
 
-	if (resv_a->time_start < resv_b->time_start)
+	if(resv_a->time_start < resv_b->time_start)
 		return 1;
-	else if (resv_a->time_start > resv_b->time_start)
+	else if(resv_a->time_start > resv_b->time_start)
 		return -1;
 
 	return 0;
@@ -368,7 +368,7 @@ extern int get_uint(char *in_value, uint32_t *out_value, char *type)
 	char *ptr = NULL, *meat = NULL;
 	long num;
 
-	if (!(meat = strip_quotes(in_value, NULL))) {
+	if(!(meat = strip_quotes(in_value, NULL))) {
 		error("Problem with strip_quotes");
 		return SLURM_ERROR;
 	}

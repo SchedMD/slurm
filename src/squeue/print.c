@@ -585,7 +585,7 @@ int _print_job_nodes(job_info_t * job, int width, bool right, char* suffix)
 {
 	if (job == NULL) {       /* Print the Header instead */
 		char *title = "NODELIST";
-		if (params.cluster_flags & CLUSTER_FLAG_BG)
+		if(params.cluster_flags & CLUSTER_FLAG_BG)
 			title = "BP_LIST";
 		_print_str(title, width, right, false);
 	} else
@@ -601,7 +601,7 @@ int _print_job_reason_list(job_info_t * job, int width, bool right,
 {
 	if (job == NULL) {	/* Print the Header instead */
 		char *title = "NODELIST(REASON)";
-		if (params.cluster_flags & CLUSTER_FLAG_BG)
+		if(params.cluster_flags & CLUSTER_FLAG_BG)
 			title = "BP_LIST(REASON)";
 		_print_str(title, width, right, false);
 	} else if (!IS_JOB_COMPLETING(job)
@@ -621,7 +621,7 @@ int _print_job_reason_list(job_info_t * job, int width, bool right,
 		select_g_select_jobinfo_get(job->select_jobinfo,
 					    SELECT_JOBDATA_IONODES,
 					    &ionodes);
-		if (ionodes) {
+		if(ionodes) {
 			xstrfmtcat(nodes, "[%s]", ionodes);
 			xfree(ionodes);
 			_print_str(nodes, width, right, false);
@@ -661,7 +661,7 @@ int _print_job_num_cpus(job_info_t * job, int width, bool right, char* suffix)
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("CPUS", width, right, true);
 	else {
-		if (params.cluster_flags & CLUSTER_FLAG_BG)
+		if(params.cluster_flags & CLUSTER_FLAG_BG)
 			convert_num_unit((float)job->num_cpus, tmp_char,
 					 sizeof(tmp_char), UNIT_NONE);
 		else
@@ -683,7 +683,7 @@ int _print_job_num_nodes(job_info_t * job, int width, bool right_justify,
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("NODES", width, right_justify, true);
 	else {
-		if (params.cluster_flags & CLUSTER_FLAG_BG)
+		if(params.cluster_flags & CLUSTER_FLAG_BG)
 			select_g_select_jobinfo_get(job->select_jobinfo,
 						    SELECT_JOBDATA_NODE_CNT,
 						    &node_cnt);
@@ -691,7 +691,7 @@ int _print_job_num_nodes(job_info_t * job, int width, bool right_justify,
 		if ((node_cnt == 0) || (node_cnt == NO_VAL))
 			node_cnt = _get_node_cnt(job);
 
-		if (params.cluster_flags & CLUSTER_FLAG_BG)
+		if(params.cluster_flags & CLUSTER_FLAG_BG)
 			convert_num_unit((float)node_cnt, tmp_char,
 					 sizeof(tmp_char), UNIT_NONE);
 		else
@@ -1234,7 +1234,7 @@ int _print_step_nodes(job_step_info_t * step, int width, bool right,
 {
 	if (step == NULL) {	/* Print the Header instead */
 		char *title = "NODELIST";
-		if (params.cluster_flags & CLUSTER_FLAG_BG)
+		if(params.cluster_flags & CLUSTER_FLAG_BG)
 			title = "BP_LIST";
 
 		_print_str(title, width, right, false);
