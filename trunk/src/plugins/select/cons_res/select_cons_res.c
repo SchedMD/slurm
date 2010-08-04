@@ -830,7 +830,8 @@ static int _add_job_to_res(struct job_record *job_ptr, int action)
 		else
 			gres_list = node_ptr->gres_list;
 		gres_plugin_job_alloc(job_ptr->gres_list, gres_list,
-				      job->nhosts, n, job->cpus[n]);
+				      job->nhosts, n, job->cpus[n],
+				      job_ptr->job_id, node_ptr->name);
 		gres_plugin_node_state_log(gres_list, node_ptr->name);
 
 		if (action != 2) {
@@ -940,7 +941,8 @@ static int _rm_job_from_res(struct part_res_record *part_record_ptr,
 			gres_list = node_usage[i].gres_list;
 		else
 			gres_list = node_ptr->gres_list;
-		gres_plugin_job_dealloc(job_ptr->gres_list, gres_list, n);
+		gres_plugin_job_dealloc(job_ptr->gres_list, gres_list, n,
+					job_ptr->job_id, node_ptr->name);
 		gres_plugin_node_state_log(gres_list, node_ptr->name);
 
 		if (action != 2) {
@@ -950,7 +952,7 @@ static int _rm_job_from_res(struct part_res_record *part_record_ptr,
 			    job->memory_allocated[n]) {
 				error("error: node %s mem is underallocated "
 				      "(%u-%u) for job %u",
-				      select_node_record[i].node_ptr->name,
+				      node_ptr->name,
 				      node_usage[i].alloc_memory,
 				      job->memory_allocated[n],
 				      job_ptr->job_id);
@@ -1085,7 +1087,8 @@ static int _rm_job_from_one_node(struct job_record *job_ptr,
 			gres_list = node_usage[i].gres_list;
 		else
 			gres_list = node_ptr->gres_list;
-		gres_plugin_job_dealloc(job_ptr->gres_list, gres_list, n);
+		gres_plugin_job_dealloc(job_ptr->gres_list, gres_list, n,
+					job_ptr->job_id, node_ptr->name);
 		gres_plugin_node_state_log(gres_list, node_ptr->name);
 
 		job->cpus[n] = 0;

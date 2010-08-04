@@ -130,15 +130,22 @@ static uint32_t	_get_gres_cnt(char *orig_config, char *gres_name,
 static char *	_get_gres_conf(void);
 static uint32_t	_get_tot_gres_cnt(uint32_t plugin_id, uint32_t *set_cnt);
 static void	_gres_job_list_delete(void *list_element);
+extern int	_job_alloc(void *job_gres_data, void *node_gres_data,
+			   int node_cnt, int node_offset, uint32_t cpu_cnt,
+			   char *gres_name, uint32_t job_id, char *node_name);
 static int	_job_config_validate(char *config, uint32_t *gres_cnt,
 				     slurm_gres_context_t *context_ptr);
+static int	_job_dealloc(void *job_gres_data, void *node_gres_data,
+			     int node_offset, char *gres_name, uint32_t job_id,
+			     char *node_name);
 static void	_job_state_delete(void *gres_data);
 static void *	_job_state_dup(void *gres_data);
 static int	_job_state_validate(char *config, void **gres_data,
 				    slurm_gres_context_t *gres_name);
 extern uint32_t	_job_test(void *job_gres_data, void *node_gres_data,
 			  bool use_total_gres, bitstr_t *cpu_bitmap,
-			  int cpu_start_bit, int cpu_end_bit, bool *topo_set);
+			  int cpu_start_bit, int cpu_end_bit, bool *topo_set,
+			  uint32_t job_id, char *node_name);
 static int	_load_gres_plugin(char *plugin_name,
 				  slurm_gres_context_t *plugin_context);
 static int	_log_gres_slurmd_conf(void *x, void *arg);
@@ -176,7 +183,7 @@ static int	_unload_gres_plugin(slurm_gres_context_t *plugin_context);
 static void	_validate_config(slurm_gres_context_t *context_ptr);
 static int	_validate_file(char *path_name, char *gres_name);
 static void	_validate_gres_node_cpus(gres_node_state_t *node_gres_ptr,
-					 int cpus_ctld);
+					 int cpus_ctld, char *node_name);
 
 
 /* Convert a gres_name into a number for faster comparision operations */
@@ -2248,7 +2255,7 @@ static bitstr_t *_cpu_bitmap_rebuild(bitstr_t *old_cpu_bitmap, int new_size)
 }
 
 static void _validate_gres_node_cpus(gres_node_state_t *node_gres_ptr,
-				     int cpus_ctld)
+				     int cpus_ctld, char *node_name)
 {
 	int i, cpus_slurmd;
 	bitstr_t *new_cpu_bitmap;
@@ -2259,7 +2266,8 @@ static void _validate_gres_node_cpus(gres_node_state_t *node_gres_ptr,
 	if (cpus_slurmd == cpus_ctld)
 		return;
 
-	debug("Gres CPU count mismatch (%d != %d)", cpus_slurmd, cpus_ctld);
+	debug("Gres CPU count mismatch on node %s (%d != %d)",
+	      node_name, cpus_slurmd, cpus_ctld);
 	for (i=0; i<node_gres_ptr->topo_cnt; i++) {
 		if (i != 0) {
 			cpus_slurmd = bit_size(node_gres_ptr->
@@ -2277,7 +2285,8 @@ static void _validate_gres_node_cpus(gres_node_state_t *node_gres_ptr,
 
 extern uint32_t _job_test(void *job_gres_data, void *node_gres_data,
 			  bool use_total_gres, bitstr_t *cpu_bitmap,
-			  int cpu_start_bit, int cpu_end_bit, bool *topo_set)
+			  int cpu_start_bit, int cpu_end_bit, bool *topo_set,
+			  uint32_t job_id, char *node_name)
 {
 	int i, j, cpus_ctld, gres_avail = 0, top_inx;
 	gres_job_state_t  *job_gres_ptr  = (gres_job_state_t *)  job_gres_data;
@@ -2292,12 +2301,15 @@ extern uint32_t _job_test(void *job_gres_data, void *node_gres_data,
 		if (cpu_bitmap) {
 			cpus_ctld = cpu_end_bit - cpu_start_bit + 1;
 			if (cpus_ctld < 1) {
-				error("gres_plugin_job_test: cpus on node < 1");
+				error("gres_plugin_job_test: job %u cpus on "
+				      "node %s < 1", job_id, node_name);
 				return (uint32_t) 0;
 			}
-			_validate_gres_node_cpus(node_gres_ptr, cpus_ctld);
+			_validate_gres_node_cpus(node_gres_ptr, cpus_ctld,
+						 node_name);
 		} else {
-			cpus_ctld = bit_size(node_gres_ptr->topo_cpus_bitmap[0]);
+			cpus_ctld = bit_size(node_gres_ptr->
+					     topo_cpus_bitmap[0]);
 		}
 		for (i=0; i<node_gres_ptr->topo_cnt; i++) {
 			for (j=0; j<cpus_ctld; j++) {
@@ -2324,14 +2336,17 @@ extern uint32_t _job_test(void *job_gres_data, void *node_gres_data,
 		if (cpu_bitmap) {
 			cpus_ctld = cpu_end_bit - cpu_start_bit + 1;
 			if (cpus_ctld < 1) {
-				error("gres_plugin_job_test: cpus on node < 1");
+				error("gres_plugin_job_test: job %u cpus on "
+				      "node %s < 1", job_id, node_name);
 				return (uint32_t) 0;
 			}
-			_validate_gres_node_cpus(node_gres_ptr, cpus_ctld);
+			_validate_gres_node_cpus(node_gres_ptr, cpus_ctld,
+						 node_name);
 		} else {
-			cpus_ctld = bit_size(node_gres_ptr->topo_cpus_bitmap[0]);
+			cpus_ctld = bit_size(node_gres_ptr->
+					     topo_cpus_bitmap[0]);
 		}
-		cpus_avail = xmalloc(sizeof(uint32_t) * node_gres_ptr->topo_cnt);
+		cpus_avail = xmalloc(sizeof(uint32_t)*node_gres_ptr->topo_cnt);
 		alloc_cpu_bitmap = bit_alloc(cpus_ctld);
 		if (alloc_cpu_bitmap == NULL)
 			fatal("bit_alloc: malloc failure");
@@ -2355,7 +2370,7 @@ extern uint32_t _job_test(void *job_gres_data, void *node_gres_data,
 			}
 		}
 
-		/* Pick the gres with the most CPUs available */
+		/* Pick the topology entries with the most CPUs available */
 		bit_nclear(alloc_cpu_bitmap, 0, (cpus_ctld - 1));
 		for (i=0; i<job_gres_ptr->gres_cnt_alloc; i++) {
 			top_inx = -1;
@@ -2404,12 +2419,15 @@ extern uint32_t _job_test(void *job_gres_data, void *node_gres_data,
  * IN cpu_bitmap     - Identification of available CPUs (NULL if no restriction)
  * IN cpu_start_bit  - index into cpu_bitmap for this node's first CPU
  * IN cpu_end_bit    - index into cpu_bitmap for this node's last CPU
+ * IN job_id         - job's ID (for logging)
+ * IN node_name      - name of the node (for logging)
  * RET: NO_VAL    - All CPUs on node are available
  *      otherwise - Specific CPU count
  */
 extern uint32_t gres_plugin_job_test(List job_gres_list, List node_gres_list, 
 				     bool use_total_gres, bitstr_t *cpu_bitmap,
-				     int cpu_start_bit, int cpu_end_bit)
+				     int cpu_start_bit, int cpu_end_bit,
+				     uint32_t job_id, char *node_name)
 {
 	int i;
 	uint32_t cpu_cnt, tmp_cnt;
@@ -2449,7 +2467,7 @@ extern uint32_t gres_plugin_job_test(List job_gres_list, List node_gres_list,
 					    node_gres_ptr->gres_data,
 					    use_total_gres, cpu_bitmap,
 					    cpu_start_bit, cpu_end_bit,
-					    &topo_set);
+					    &topo_set, job_id, node_name);
 			cpu_cnt = MIN(tmp_cnt, cpu_cnt);
 			break;
 		}
@@ -2464,7 +2482,7 @@ extern uint32_t gres_plugin_job_test(List job_gres_list, List node_gres_list,
 
 extern int _job_alloc(void *job_gres_data, void *node_gres_data,
 		      int node_cnt, int node_offset, uint32_t cpu_cnt,
-		      char *gres_name)
+		      char *gres_name, uint32_t job_id, char *node_name)
 {
 	int i;
 	uint32_t gres_cnt;
@@ -2482,20 +2500,20 @@ extern int _job_alloc(void *job_gres_data, void *node_gres_data,
 	if (job_gres_ptr->node_cnt == 0) {
 		job_gres_ptr->node_cnt = node_cnt;
 		if (job_gres_ptr->gres_bit_alloc) {
-			error("gres/%s: node_cnt==0 and bit_alloc is set",
-			      gres_name);
+			error("gres/%s: job %u node_cnt==0 and bit_alloc is "
+			      "set", gres_name, job_id);
 			xfree(job_gres_ptr->gres_bit_alloc);
 		}
 		job_gres_ptr->gres_bit_alloc = xmalloc(sizeof(bitstr_t *) *
 						      node_cnt);
 	} else if (job_gres_ptr->node_cnt < node_cnt) {
-		error("gres/%s: node_cnt increase from %u to %d",
-		      gres_name, job_gres_ptr->node_cnt, node_cnt);
+		error("gres/%s: job %u node_cnt increase from %u to %d",
+		      gres_name, job_id, job_gres_ptr->node_cnt, node_cnt);
 		if (node_offset >= job_gres_ptr->node_cnt)
 			return SLURM_ERROR;
 	} else if (job_gres_ptr->node_cnt > node_cnt) {
-		error("gres/%s: node_cnt decrease from %u to %d",
-		      gres_name, job_gres_ptr->node_cnt, node_cnt);
+		error("gres/%s: job %u node_cnt decrease from %u to %d",
+		      gres_name, job_id, job_gres_ptr->node_cnt, node_cnt);
 	}
 
 	/*
@@ -2505,8 +2523,8 @@ extern int _job_alloc(void *job_gres_data, void *node_gres_data,
 	i = node_gres_ptr->gres_cnt_alloc + gres_cnt;
 	i -= node_gres_ptr->gres_cnt_avail;
 	if (i > 0) {
-		error("gres/%s: overallocated resources by %d",
-		      gres_name, i);
+		error("gres/%s: job %u node %s overallocated resources by %d",
+		      gres_name, job_id, node_name, i);
 		/* proceed with request, give job what's available */
 	}
 
@@ -2521,8 +2539,8 @@ extern int _job_alloc(void *job_gres_data, void *node_gres_data,
 	 */	
 	if (job_gres_ptr->gres_bit_alloc[node_offset]) {
 		/* Resuming a suspended job, resources already allocated */
-		debug("gres/%s: job's bit_alloc is already set for node %d",
-		      gres_name, node_offset);
+		debug("gres/%s: job %u bit_alloc is already set for node %s",
+		      gres_name, job_id, node_name);
 		if (node_gres_ptr->gres_bit_alloc) {
 			gres_cnt = MIN(bit_size(node_gres_ptr->gres_bit_alloc),
 				       bit_size(job_gres_ptr->
@@ -2561,14 +2579,17 @@ extern int _job_alloc(void *job_gres_data, void *node_gres_data,
  * IN job_gres_list - job's gres_list built by gres_plugin_job_state_validate()
  * IN node_gres_list - node's gres_list built by
  *		gres_plugin_node_config_validate()
- * IN node_cnt - total number of nodes originally allocated to the job
+ * IN node_cnt    - total number of nodes originally allocated to the job
  * IN node_offset - zero-origin index to the node of interest
- * IN cpu_cnt - number of CPUs allocated to this job on this node
+ * IN cpu_cnt     - number of CPUs allocated to this job on this node
+ * IN job_id      - job's ID (for logging)
+ * IN node_name   - name of the node (for logging)
  * RET SLURM_SUCCESS or error code
  */
 extern int gres_plugin_job_alloc(List job_gres_list, List node_gres_list, 
 				 int node_cnt, int node_offset,
-				 uint32_t cpu_cnt)
+				 uint32_t cpu_cnt, uint32_t job_id,
+				 char *node_name)
 {
 	int i, rc, rc2;
 	ListIterator job_gres_iter,  node_gres_iter;
@@ -2576,8 +2597,11 @@ extern int gres_plugin_job_alloc(List job_gres_list, List node_gres_list,
 
 	if (job_gres_list == NULL)
 		return SLURM_SUCCESS;
-	if (node_gres_list == NULL)
+	if (node_gres_list == NULL) {
+		error("gres_job_alloc: job %u has gres specification while "
+		      "node %s has none", job_id, node_name);
 		return SLURM_ERROR;
+	}
 
 	rc = gres_plugin_init();
 
@@ -2601,7 +2625,8 @@ extern int gres_plugin_job_alloc(List job_gres_list, List node_gres_list,
 			rc2 = _job_alloc(job_gres_ptr->gres_data, 
 					 node_gres_ptr->gres_data, node_cnt,
 					 node_offset, cpu_cnt,
-					 gres_context[i].gres_name);
+					 gres_context[i].gres_name, job_id,
+					 node_name);
 			if (rc2 != SLURM_SUCCESS)
 				rc = rc2;
 			break;
@@ -2614,7 +2639,8 @@ extern int gres_plugin_job_alloc(List job_gres_list, List node_gres_list,
 }
 
 static int _job_dealloc(void *job_gres_data, void *node_gres_data,
-		        int node_offset, char *gres_name)
+		        int node_offset, char *gres_name, uint32_t job_id,
+		        char *node_name)
 {
 	int i, len;
 	gres_job_state_t  *job_gres_ptr  = (gres_job_state_t *)  job_gres_data;
@@ -2628,8 +2654,9 @@ static int _job_dealloc(void *job_gres_data, void *node_gres_data,
 	xassert(job_gres_ptr);
 	xassert(node_gres_ptr);
 	if (job_gres_ptr->node_cnt <= node_offset) {
-		error("gres/%s bad node_offset %d count is %u",
-		      gres_name, node_offset, job_gres_ptr->node_cnt);
+		error("gres/%s: job %u dealloc of node %s bad node_offset %d "
+		      "count is %u", gres_name, job_id, node_name, node_offset,
+		      job_gres_ptr->node_cnt);
 		return SLURM_ERROR;
 	}
 
@@ -2638,8 +2665,9 @@ static int _job_dealloc(void *job_gres_data, void *node_gres_data,
 		len = bit_size(job_gres_ptr->gres_bit_alloc[node_offset]);
 		i   = bit_size(node_gres_ptr->gres_bit_alloc);
 		if (i != len) {
-			error("gres/%s: job and node bitmap sizes differ "
-			      "(%d != %d)", gres_name, len, i);
+			error("gres/%s: job %u and node %s bitmap sizes differ "
+			      "(%d != %d)", gres_name, job_id, node_name, len,
+			       i);
 			len = MIN(len, i);
 			/* proceed with request, make best effort */
 		}
@@ -2655,8 +2683,9 @@ static int _job_dealloc(void *job_gres_data, void *node_gres_data,
 			if (node_gres_ptr->gres_cnt_alloc)
 				node_gres_ptr->gres_cnt_alloc--;
 			else {
-				error("gres/%s: job's gres count underflow",
-				      gres_name);
+				error("gres/%s: job %u dealloc node %s gres "
+				      "count underflow", gres_name, job_id,
+				      node_name);
 			}
 		}
 	} else if (node_gres_ptr->gres_cnt_alloc >= 
@@ -2664,7 +2693,8 @@ static int _job_dealloc(void *job_gres_data, void *node_gres_data,
 		node_gres_ptr->gres_cnt_alloc -= job_gres_ptr->gres_cnt_alloc;
 	} else {
 		node_gres_ptr->gres_cnt_alloc = 0;
-		error("gres/%s: job's gres count underflow", gres_name);
+		error("gres/%s: job %u node %s gres count underflow",
+		      gres_name, job_id, node_name);
 	}
 
 	return SLURM_SUCCESS;
@@ -2676,10 +2706,13 @@ static int _job_dealloc(void *job_gres_data, void *node_gres_data,
  * IN node_gres_list - node's gres_list built by
  *		gres_plugin_node_config_validate()
  * IN node_offset - zero-origin index to the node of interest
+ * IN job_id      - job's ID (for logging)
+ * IN node_name   - name of the node (for logging)
  * RET SLURM_SUCCESS or error code
  */
 extern int gres_plugin_job_dealloc(List job_gres_list, List node_gres_list, 
-				   int node_offset)
+				   int node_offset, uint32_t job_id,
+				   char *node_name)
 {
 	int i, rc, rc2;
 	ListIterator job_gres_iter,  node_gres_iter;
@@ -2687,8 +2720,11 @@ extern int gres_plugin_job_dealloc(List job_gres_list, List node_gres_list,
 
 	if (job_gres_list == NULL)
 		return SLURM_SUCCESS;
-	if (node_gres_list == NULL)
+	if (node_gres_list == NULL) {
+		error("gres_job_dealloc: job %u has gres specification while "
+		      "node %s has none", job_id, node_name);
 		return SLURM_ERROR;
+	}
 
 	rc = gres_plugin_init();
 
@@ -2712,7 +2748,8 @@ extern int gres_plugin_job_dealloc(List job_gres_list, List node_gres_list,
 			rc2 = _job_dealloc(job_gres_ptr->gres_data, 
 					   node_gres_ptr->gres_data,
 					   node_offset,
-					   gres_context[i].gres_name);
+					   gres_context[i].gres_name, job_id,
+					   node_name);
 			if (rc2 != SLURM_SUCCESS)
 				rc = rc2;
 			break;
