@@ -6249,22 +6249,29 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	}
 
 	if (job_specs->gres) {
-		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
+		List tmp_gres_list = NULL;
+		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL)) {
 			error_code = ESLURM_DISABLED;
-		else if (job_specs->gres[0] != '\0') {
-//FIXME: Validate input
+		} else if (job_specs->gres[0] == '\0') {
+			info("sched: update_job: cleared gres for job %u",
+			     job_specs->job_id);
+			xfree(job_ptr->gres);
+			FREE_NULL_LIST(job_ptr->gres_list);
+		} else if (gres_plugin_job_state_validate(job_specs->gres,
+							  &tmp_gres_list)) {
+			info("sched: update_job: invalid gres %s for job %u",
+			     job_specs->gres, job_specs->job_id);
+			error_code = ESLURM_INVALID_GRES;
+			FREE_NULL_LIST(tmp_gres_list);
+		} else {
 			info("sched: update_job: setting gres to "
 			     "%s for job_id %u",
 			     job_specs->gres, job_specs->job_id);
 			xfree(job_ptr->gres);
 			job_ptr->gres = job_specs->gres;
 			job_specs->gres = NULL;
-//FIXME: rebuild struct
-		} else {
-			info("sched: update_job: cleared gres for job %u",
-			     job_specs->job_id);
-			xfree(job_ptr->gres);
-//FIXME: clear struct
+			FREE_NULL_LIST(job_ptr->gres_list);
+			job_ptr->gres_list = tmp_gres_list;
 		}
 	}
 
