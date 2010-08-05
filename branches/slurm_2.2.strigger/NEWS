@@ -3,6 +3,8 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 2.2.0.pre10
 ==============================
+ -- Add support for serveral new trigger types: SlurmDBD failure/restart,
+    Database failure/restart, Slurmctld failure/restart.
 
 * Changes in SLURM 2.2.0.pre9
 =============================

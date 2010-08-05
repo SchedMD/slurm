@@ -161,7 +161,7 @@ extern int slurm_pull_trigger (trigger_info_t *trigger_pull)
 	/*
 	 * Request message:
 	 */
-	memset(&req, 0, sizeof(trigger_info_t));
+	memset(&req, 0, sizeof(trigger_info_msg_t));
 	req.record_count  = 1;
 	req.trigger_array = trigger_pull;
 	msg.msg_type      = REQUEST_TRIGGER_PULL;
