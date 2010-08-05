@@ -61,6 +61,8 @@ documents those changes that are of interest to users and admins.
  -- Lower default slurmctld server thread count from 1024 to 256. Some systems
     process threads on a last-in first-out basis and the high thread count was
     causing unexpectedly high delays for some RPCs.
+ -- Added to sacctmgr the ability for admins to reset the raw usage of a user
+    or account
 
 * Changes in SLURM 2.2.0.pre8
 =============================

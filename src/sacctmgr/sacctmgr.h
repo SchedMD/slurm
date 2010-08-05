@@ -165,6 +165,7 @@ extern void sacctmgr_print_qos_bitstr(print_field_t *field, List qos_list,
 
 extern void sacctmgr_print_assoc_limits(slurmdb_association_rec_t *assoc);
 extern void sacctmgr_print_qos_limits(slurmdb_qos_rec_t *qos);
+extern int sacctmgr_remove_assoc_usage(slurmdb_association_cond_t *assoc_cond);
 extern int sort_coord_list(slurmdb_coord_rec_t *coord_a,
 			   slurmdb_coord_rec_t *coord_b);
 

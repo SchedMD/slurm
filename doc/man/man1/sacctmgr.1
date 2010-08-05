@@ -391,6 +391,13 @@ Parent account of this account. Default is the root account, a top
 level account.
 
 .TP
+\fIRawUsage\fP=<value>
+This allows an administrator to reset the raw usage accrued to an
+account.  The only value currently supported is 0 (zero).  This is a
+settable specification only - it cannot be used as a filter to list
+accounts.
+
+.TP
 \fIWithAssoc\fP
 Display all associations for this account.
 
@@ -1143,6 +1150,12 @@ Name of user.
 .TP
 \fIPartition\fP=<name>
 Partition name.
+
+.TP
+\fIRawUsage\fP=<value>
+This allows an administrator to reset the raw usage accrued to a user.
+The only value currently supported is 0 (zero).  This is a settable
+specification only - it cannot be used as a filter to list users.
 
 .TP
 \fIWCKeys\fP=<wckeys>

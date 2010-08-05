@@ -89,11 +89,9 @@ extern int send_accounting_update(List update_list, char *cluster, char *host,
 	slurm_msg_t resp;
 	int rc;
 
-	if(rpc_version > SLURMDBD_VERSION) {
-		error("%s at %s(%hu) ver %hu > %u, can't update",
-		      cluster, host, port, rpc_version,
-		      SLURMDBD_VERSION);
-		return SLURM_ERROR;
+	// Set highest version that we can use
+	if (rpc_version > SLURMDBD_VERSION) {
+		rpc_version = SLURMDBD_VERSION;
 	}
 	memset(&msg, 0, sizeof(accounting_update_msg_t));
 	msg.rpc_version = rpc_version;

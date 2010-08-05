@@ -38,6 +38,7 @@
 \*****************************************************************************/
 
 #include "src/sacctmgr/sacctmgr.h"
+#include "src/common/assoc_mgr.h"
 
 static int _set_cond(int *start, int argc, char *argv[],
 		     slurmdb_account_cond_t *acct_cond,
@@ -226,6 +227,18 @@ static int _set_rec(int *start, int argc, char *argv[],
 					 MAX(command_len, 1))) {
 			acct->organization = strip_quotes(argv[i]+end, NULL, 1);
 			u_set = 1;
+		} else if (!strncasecmp (argv[i], "RawUsage",
+					 MAX(command_len, 7))) {
+			uint32_t usage;
+			if(!assoc)
+				continue;
+			assoc->usage = xmalloc(sizeof(
+						assoc_mgr_association_usage_t));
+			if (get_uint(argv[i]+end, &usage,
+				     "RawUsage") == SLURM_SUCCESS) {
+				assoc->usage->usage_raw = usage;
+				a_set = 1;
+			}
 		} else if(!assoc ||
 			  (assoc && !(a_set = sacctmgr_set_association_rec(
 					      assoc, argv[i], argv[i]+end,
@@ -1266,7 +1279,7 @@ extern int sacctmgr_modify_account(int argc, char *argv[])
 			i++;
 			prev_set = _set_rec(&i, argc, argv, NULL, NULL,
 					    acct, assoc);
-			rec_set = MAX(rec_set, prev_set);
+			rec_set |= prev_set;
 		} else {
 			prev_set = _set_cond(&i, argc, argv, acct_cond, NULL);
 			cond_set = MAX(cond_set, prev_set);
@@ -1296,8 +1309,22 @@ extern int sacctmgr_modify_account(int argc, char *argv[])
 		}
 	}
 
+	// Special case:  reset raw usage only
+	if (assoc->usage) {
+		rc = SLURM_ERROR;
+		if (assoc->usage->usage_raw == 0.0)
+			rc = sacctmgr_remove_assoc_usage(acct_cond->assoc_cond);
+		else
+			error("Raw usage can only be set to 0 (zero)");
+
+		slurmdb_destroy_account_cond(acct_cond);
+		slurmdb_destroy_account_rec(acct);
+		slurmdb_destroy_association_rec(assoc);
+		return rc;
+	}
+
 	notice_thread_init();
-	if(rec_set == 3 || rec_set == 1) { // process the account changes
+	if (rec_set | 1) { // process the account changes
 		if(cond_set == 2) {
 			exit_code=1;
 			fprintf(stderr,
@@ -1333,7 +1360,7 @@ extern int sacctmgr_modify_account(int argc, char *argv[])
 	}
 
 assoc_start:
-	if(rec_set == 3 || rec_set == 2) { // process the association changes
+	if (rec_set | 2) { // process the association changes
 		if(cond_set == 1 && !acct_cond->assoc_cond->acct_list) {
 			rc = SLURM_ERROR;
 			exit_code=1;

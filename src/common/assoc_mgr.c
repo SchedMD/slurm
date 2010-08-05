@@ -1988,6 +1988,7 @@ extern int assoc_mgr_update(List update_list)
 		case SLURMDB_ADD_ASSOC:
 		case SLURMDB_MODIFY_ASSOC:
 		case SLURMDB_REMOVE_ASSOC:
+		case SLURMDB_REMOVE_ASSOC_USAGE:
 			rc = assoc_mgr_update_assocs(object);
 			break;
 		case SLURMDB_ADD_QOS:
@@ -2247,6 +2248,13 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update)
 				list_append(remove_list, rec);
 			} else
 				list_delete_item(itr);
+			break;
+		case SLURMDB_REMOVE_ASSOC_USAGE:
+			if(!rec) {
+				//rc = SLURM_ERROR;
+				break;
+			}
+			assoc_mgr_remove_assoc_usage(rec);
 			break;
 		default:
 			break;
@@ -2843,6 +2851,73 @@ extern void assoc_mgr_clear_used_info(void)
 	}
 	list_iterator_destroy(itr);
 	assoc_mgr_unlock(&locks);
+}
+
+static void _reset_children_usages(List childern_list)
+{
+	slurmdb_association_rec_t *assoc = NULL;
+	ListIterator itr = NULL;
+
+	if(!childern_list || !list_count(childern_list))
+		return;
+
+	itr = list_iterator_create(childern_list);
+	while((assoc = list_next(itr))) {
+		assoc->usage->usage_raw = 0.0;
+		assoc->usage->grp_used_wall = 0.0;
+		if (assoc->user)
+			continue;
+
+		_reset_children_usages(assoc->usage->childern_list);
+	}
+	list_iterator_destroy(itr);
+}
+
+extern void assoc_mgr_remove_assoc_usage(slurmdb_association_rec_t *assoc)
+{
+	long double old_usage_raw = 0.0;
+	double old_grp_used_wall = 0.0;
+	slurmdb_association_rec_t *sav_assoc = assoc;
+
+	xassert(assoc);
+	xassert(assoc->usage);
+	xassert(assoc->usage->parent_assoc_ptr);
+
+	char *child;
+	char *child_str;
+
+	if (assoc->user) {
+		child = "user";
+		child_str = assoc->user;
+	} else {
+		child = "account";
+		child_str = assoc->acct;
+	}
+	info("Resetting usage for %s %s", child, child_str);
+
+	old_usage_raw = assoc->usage->usage_raw;
+	old_grp_used_wall = assoc->usage->usage_raw;
+/*
+ *	Reset this association's raw and group usages and subtract its
+ *	current usages from all parental units
+ */
+	while (assoc) {
+		info("Subtracting %Lf from %Lf raw usage and %f from "
+		     "%f group wall for assoc %u (user='%s' acct='%s')",
+		     old_usage_raw, assoc->usage->usage_raw,
+		     old_grp_used_wall, assoc->usage->grp_used_wall,
+		     assoc->id, assoc->user, assoc->acct);
+
+		assoc->usage->usage_raw -= old_usage_raw;
+		assoc->usage->grp_used_wall -= old_grp_used_wall;
+		assoc = assoc->usage->parent_assoc_ptr;
+	}
+	if (sav_assoc->user)
+		return;
+/*
+ *	The assoc is an account, so reset all children
+ */
+	_reset_children_usages(sav_assoc->usage->childern_list);
 }
 
 extern int dump_assoc_mgr_state(char *state_save_location)

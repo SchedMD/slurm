@@ -39,6 +39,7 @@
 
 #include "src/sacctmgr/sacctmgr.h"
 #include "src/common/slurmdbd_defs.h"
+#include "src/common/slurm_auth.h"
 
 #include <unistd.h>
 #include <termios.h>
@@ -202,10 +203,60 @@ extern int commit_check(char *warning)
 	return 0;
 }
 
+extern int send_accounting_update(List update_list, char *cluster, char *host,
+				  uint16_t port, uint16_t rpc_version)
+{
+	accounting_update_msg_t msg;
+	slurm_msg_t req;
+	slurm_msg_t resp;
+	int rc;
+
+	// Set highest version that sacctmgr can use
+	if (rpc_version > SLURMDBD_VERSION) {
+		rpc_version = SLURMDBD_VERSION;
+	}
+	memset(&msg, 0, sizeof(accounting_update_msg_t));
+	msg.rpc_version = rpc_version;
+	msg.update_list = update_list;
+
+	debug("sending updates to %s at %s(%hu) ver %hu",
+	      cluster, host, port, rpc_version);
+
+	slurm_msg_t_init(&req);
+	slurm_set_addr_char(&req.address, port, host);
+	req.msg_type = ACCOUNTING_UPDATE_MSG;
+	req.data = &msg;
+	req.flags = SLURM_GLOBAL_AUTH_KEY;
+	slurm_msg_t_init(&resp);
+
+	rc = slurm_send_recv_node_msg(&req, &resp, 0);
+	if ((rc != 0) || ! resp.auth_cred) {
+		error("update cluster: %m to %s at %s(%hu)",
+		      cluster, host, port);
+		rc = SLURM_ERROR;
+	}
+	if (resp.auth_cred)
+		g_slurm_auth_destroy(resp.auth_cred);
+
+	switch (resp.msg_type) {
+	case RESPONSE_SLURM_RC:
+		rc = ((return_code_msg_t *)resp.data)->return_code;
+		slurm_free_return_code_msg(resp.data);
+		break;
+	default:
+		if(rc != SLURM_ERROR)
+			error("Unknown response message %u", resp.msg_type);
+		rc = SLURM_ERROR;
+		break;
+	}
+
+	return rc;
+}
+
 extern slurmdb_association_rec_t *sacctmgr_find_association(char *user,
-							 char *account,
-							 char *cluster,
-							 char *partition)
+							    char *account,
+							    char *cluster,
+							    char *partition)
 {
 	slurmdb_association_rec_t * assoc = NULL;
 	slurmdb_association_cond_t assoc_cond;
@@ -255,6 +306,106 @@ extern slurmdb_association_rec_t *sacctmgr_find_association(char *user,
 	list_destroy(assoc_list);
 
 	return assoc;
+}
+
+extern int sacctmgr_remove_assoc_usage(slurmdb_association_cond_t *assoc_cond)
+{
+	List update_list;
+	ListIterator itr = NULL;
+	ListIterator itr2 = NULL;
+	ListIterator itr3 = NULL;
+	char *account = NULL;
+	char *cluster = NULL;
+	char *user = NULL;
+	slurmdb_association_rec_t* rec = NULL;
+	slurmdb_cluster_rec_t* cluster_rec = NULL;
+	slurmdb_update_object_t* update_obj = NULL;
+	int rc = SLURM_SUCCESS;
+
+	if (!assoc_cond->cluster_list ||
+	    !list_count(assoc_cond->cluster_list)) {
+		error("A cluster name is required to remove usage");
+		return SLURM_ERROR;
+	}
+
+	if(commit_check("Would you like to reset usage?")) {
+
+		itr = list_iterator_create(assoc_cond->cluster_list);
+		itr2 = list_iterator_create(assoc_cond->acct_list);
+
+		while((cluster = list_next(itr))) {
+			cluster_rec = sacctmgr_find_cluster(cluster);
+			if (!cluster_rec) {
+				error("Failed to find cluster %s in database",
+				      cluster);
+				return SLURM_ERROR;
+			}
+
+			update_list = list_create(slurmdb_destroy_update_object);
+			update_obj = xmalloc(sizeof(slurmdb_update_object_t));
+			update_obj->type = SLURMDB_REMOVE_ASSOC_USAGE;
+			update_obj->objects = list_create(
+				slurmdb_destroy_association_rec);
+
+			if (assoc_cond->user_list &&
+			    list_count(assoc_cond->user_list)) {
+				itr3 = list_iterator_create(
+					assoc_cond->user_list);
+				while((user = list_next(itr3))) {
+					while((account = list_next(itr2))) {
+						rec = sacctmgr_find_association(
+							user, account, cluster,
+							NULL);
+						if (!rec) {
+							error("Failed to find "
+							      "cluster %s "
+							      "account %s user "
+							      "%s association "
+							      "in database",
+							      cluster, account,
+							      user);
+							return SLURM_ERROR;
+						}
+						list_append(update_obj->objects,
+							    rec);
+					}
+					list_iterator_reset(itr2);
+				}
+				list_iterator_destroy(itr3);
+			} else {
+				while((account = list_next(itr2))) {
+					rec = sacctmgr_find_association(
+						NULL, account, cluster, NULL);
+					if (!rec) {
+						error(
+						    "Failed to find cluster %s "
+						    "account %s association in "
+						    "database",
+						    cluster, account);
+						return SLURM_ERROR;
+					}
+					list_append(update_obj->objects, rec);
+				}
+				list_iterator_reset(itr2);
+			}
+
+			if (list_count(update_obj->objects)) {
+				list_append(update_list, update_obj);
+				rc = send_accounting_update(update_list,
+						      cluster,
+						      cluster_rec->control_host,
+						      cluster_rec->control_port,
+						      cluster_rec->rpc_version);
+			}
+			list_destroy(update_list);
+		}
+		list_iterator_destroy(itr);
+		list_iterator_destroy(itr2);
+	} else {
+		printf(" Changes Discarded\n");
+	}
+
+	return rc;
 }
 
 extern slurmdb_association_rec_t *sacctmgr_find_account_base_assoc(char *account,

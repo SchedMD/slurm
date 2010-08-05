@@ -827,6 +827,7 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                             GrpWall=, MaxCPUMins=, MaxCPUs=,               \n\
                             MaxJobs=, MaxNodes=, MaxSubmitJobs=, MaxWall=, \n\
                             Names=, Organization=, Parent=, and QosLevel=  \n\
+                            RawUsage= (with admin privileges only)         \n\
                             (where options) Clusters=, DefaultQOS=,        \n\
                             Descriptions=, Names=, Organizations=,         \n\
                             Parent=, and QosLevel=                         \n\
@@ -884,6 +885,7 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                             DefaultQOS=, DefaultWCKey=, Fairshare=,        \n\
                             MaxCPUMins=,MaxCPUs=, MaxJobs=, MaxNodes=,     \n\
                             MaxSubmitJobs=, MaxWall=, and QosLevel=        \n\
+                            RawUsage= (with admin privileges only)         \n\
                             (where options) Accounts=, AdminLevel=,        \n\
                             Clusters=, DefaultAccounts=, Names=,           \n\
                             Partitions=, and QosLevel=                     \n\
