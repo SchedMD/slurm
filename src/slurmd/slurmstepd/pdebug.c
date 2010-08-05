@@ -94,14 +94,14 @@ pdebug_trace_process(slurmd_job_t *job, pid_t pid)
 			return SLURM_ERROR;
 		}
 
-#ifdef PT_DETACH
+#ifdef BSD
+		if (_PTRACE(PT_DETACH, pid, (caddr_t)1, 0)) {
+#elif defined(PT_DETACH)
 		if (_PTRACE(PT_DETACH, pid, NULL, 0)) {
-#else
-#if defined (__sun)
+#elif defined(__sun)
 		if (_PTRACE(7, pid, NULL, 0)) {
 #else
 		if (_PTRACE(PTRACE_DETACH, pid, NULL, 0)) {
-#endif
 #endif
 			error("ptrace(%lu): %m", (unsigned long) pid);
 			return SLURM_ERROR;
@@ -120,14 +120,14 @@ pdebug_stop_current(slurmd_job_t *job)
 	 * Stop the task on exec for TotalView to connect
 	 */
 	if ( (job->task_flags & TASK_PARALLEL_DEBUG)
-#ifdef PT_TRACE_ME
+#ifdef BSD
+	     && (_PTRACE(PT_TRACE_ME, 0, (caddr_t)0, 0) < 0) )
+#elif defined(PT_TRACE_ME)
 	     && (_PTRACE(PT_TRACE_ME, 0, NULL, 0) < 0) )
-#else
-#if defined (__sun)
+#elif defined(__sun)
 	     && (_PTRACE(0, 0, NULL, 0) < 0))
 #else
 	     && (_PTRACE(PTRACE_TRACEME, 0, NULL, 0) < 0) )
-#endif
 #endif
 		error("ptrace: %m");
 }
