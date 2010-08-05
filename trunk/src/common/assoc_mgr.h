@@ -325,6 +325,12 @@ extern int assoc_mgr_validate_assoc_id(void *db_conn,
  */
 extern void assoc_mgr_clear_used_info(void);
 
+/*
+ * Remove the association's accumulated usage
+ * IN:  slurmdb_association_rec_t *assoc
+ * RET: SLURM_SUCCESS on success or else SLURM_ERROR
+ */
+extern void assoc_mgr_remove_assoc_usage(slurmdb_association_rec_t *assoc);
 
 /*
  * Dump the state information of the association mgr just incase the

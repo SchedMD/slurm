@@ -38,6 +38,7 @@
 \*****************************************************************************/
 
 #include "src/sacctmgr/sacctmgr.h"
+#include "src/common/assoc_mgr.h"
 #include "src/common/uid.h"
 
 static int _set_cond(int *start, int argc, char *argv[],
@@ -229,6 +230,18 @@ static int _set_rec(int *start, int argc, char *argv[],
 				xfree(user->name);
 			user->name = strip_quotes(argv[i]+end, NULL, 1);
 			u_set = 1;
+		} else if (!strncasecmp (argv[i], "RawUsage",
+					 MAX(command_len, 7))) {
+			uint32_t usage;
+			if(!assoc)
+				continue;
+			assoc->usage = xmalloc(sizeof(
+						assoc_mgr_association_usage_t));
+			if (get_uint(argv[i]+end, &usage,
+				     "RawUsage") == SLURM_SUCCESS) {
+				assoc->usage->usage_raw = usage;
+				a_set = 1;
+			}
 		} else if(!assoc ||
 			  (assoc && !(a_set = sacctmgr_set_association_rec(
 					      assoc, argv[i], argv[i]+end,
@@ -1793,7 +1806,7 @@ extern int sacctmgr_modify_user(int argc, char *argv[])
 		} else if (!strncasecmp(argv[i], "Set", MAX(command_len, 3))) {
 			i++;
 			prev_set = _set_rec(&i, argc, argv, user, assoc);
-			rec_set = MAX(rec_set, prev_set);
+			rec_set |= prev_set;
 		} else {
 			prev_set = _set_cond(&i, argc, argv, user_cond, NULL);
 			cond_set = MAX(cond_set, prev_set);
@@ -1823,8 +1836,27 @@ extern int sacctmgr_modify_user(int argc, char *argv[])
 		}
 	}
 
+	// Special case:  reset raw usage only
+	if (assoc->usage) {
+		rc = SLURM_ERROR;
+		if (user_cond->assoc_cond->acct_list) {
+			if (assoc->usage->usage_raw == 0.0)
+				rc = sacctmgr_remove_assoc_usage(
+					user_cond->assoc_cond);
+			else
+				error("Raw usage can only be set to 0 (zero)");
+		} else {
+			error("An account must be specified");
+		}
+
+		slurmdb_destroy_user_cond(user_cond);
+		slurmdb_destroy_user_rec(user);
+		slurmdb_destroy_association_rec(assoc);
+		return rc;
+	}
+
 	notice_thread_init();
-	if(rec_set == 3 || rec_set == 1) { // process the account changes
+	if(rec_set | 1) { // process the account changes
 		if(cond_set == 2) {
 			rc = SLURM_ERROR;
 			exit_code=1;
@@ -1919,7 +1951,7 @@ extern int sacctmgr_modify_user(int argc, char *argv[])
 	}
 
 assoc_start:
-	if(rec_set == 3 || rec_set == 2) { // process the association changes
+	if(rec_set | 2) { // process the association changes
 		if(cond_set == 1
 		   && !list_count(user_cond->assoc_cond->user_list)) {
 			rc = SLURM_ERROR;

@@ -5506,6 +5506,7 @@ extern void slurmdb_pack_update_object(slurmdb_update_object_t *object,
 	case SLURMDB_ADD_ASSOC:
 	case SLURMDB_MODIFY_ASSOC:
 	case SLURMDB_REMOVE_ASSOC:
+	case SLURMDB_REMOVE_ASSOC_USAGE:
 		my_function = slurmdb_pack_association_rec;
 		break;
 	case SLURMDB_ADD_QOS:
@@ -5569,6 +5570,7 @@ extern int slurmdb_unpack_update_object(slurmdb_update_object_t **object,
 	case SLURMDB_ADD_ASSOC:
 	case SLURMDB_MODIFY_ASSOC:
 	case SLURMDB_REMOVE_ASSOC:
+	case SLURMDB_REMOVE_ASSOC_USAGE:
 		my_function = slurmdb_unpack_association_rec;
 		my_destroy = slurmdb_destroy_association_rec;
 		break;
