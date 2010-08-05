@@ -38,7 +38,6 @@
 \*****************************************************************************/
 
 #include "src/sacctmgr/sacctmgr.h"
-static bool tree_display = 0;
 
 static int _set_cond(int *start, int argc, char *argv[],
 		     slurmdb_association_cond_t *assoc_cond,
@@ -136,7 +135,6 @@ extern int sacctmgr_list_problem(int argc, char *argv[])
 	int i=0;
 	ListIterator itr = NULL;
 	ListIterator itr2 = NULL;
-	char *object = NULL;
 	List tree_list = NULL;
 
 	int field_count = 0;
@@ -145,13 +143,6 @@ extern int sacctmgr_list_problem(int argc, char *argv[])
 
 	List format_list = list_create(slurm_destroy_char);
 	List print_fields_list; /* types are of print_field_t */
-
-	enum {
-		PRINT_ACCOUNT,
-		PRINT_CLUSTER,
-		PRINT_PROBLEM,
-		PRINT_USER,
-	};
 
 	for (i=0; i<argc; i++) {
 		int command_len = strlen(argv[i]);
@@ -166,65 +157,9 @@ extern int sacctmgr_list_problem(int argc, char *argv[])
 		list_destroy(format_list);
 		return SLURM_ERROR;
 	} else if(!list_count(format_list))
-		slurm_addto_char_list(format_list, "C,A,U,Problem");
+		slurm_addto_char_list(format_list, "Cl,Acct,User,Problem");
 
-	print_fields_list = list_create(destroy_print_field);
-
-	itr = list_iterator_create(format_list);
-	while((object = list_next(itr))) {
-		char *tmp_char = NULL;
-		int command_len = 0;
-		int newlen = 0;
-
-		if((tmp_char = strstr(object, "\%"))) {
-			newlen = atoi(tmp_char+1);
-			tmp_char[0] = '\0';
-		}
-
-		command_len = strlen(object);
-
-		field = xmalloc(sizeof(print_field_t));
-
-		if(!strncasecmp("Account", object, MAX(command_len, 1))
-		   || !strncasecmp("Acct", object, MAX(command_len, 4))) {
-			field->type = PRINT_ACCOUNT;
-			field->name = xstrdup("Account");
-			if(tree_display)
-				field->len = -20;
-			else
-				field->len = 10;
-			field->print_routine = print_fields_str;
-		} else if(!strncasecmp("Cluster", object,
-				       MAX(command_len, 1))) {
-			field->type = PRINT_CLUSTER;
-			field->name = xstrdup("Cluster");
-			field->len = 10;
-			field->print_routine = print_fields_str;
-		} else if(!strncasecmp("Problem", object,
-				       MAX(command_len, 1))) {
-			field->type = PRINT_PROBLEM;
-			field->name = xstrdup("Problem");
-			field->len = 40;
-			field->print_routine = print_fields_str;
-		} else if(!strncasecmp("User", object, MAX(command_len, 1))) {
-			field->type = PRINT_USER;
-			field->name = xstrdup("User");
-			field->len = 10;
-			field->print_routine = print_fields_str;
-		} else {
-			exit_code=1;
-			fprintf(stderr, "Unknown field '%s'\n", object);
-			exit(1);
-			xfree(field);
-			continue;
-		}
-
-		if(newlen)
-			field->len = newlen;
-
-		list_append(print_fields_list, field);
-	}
-	list_iterator_destroy(itr);
+	print_fields_list = sacctmgr_process_format_list(format_list);
 	list_destroy(format_list);
 
 	if(exit_code) {
@@ -254,7 +189,7 @@ extern int sacctmgr_list_problem(int argc, char *argv[])
 		int curr_inx = 1;
 		while((field = list_next(itr2))) {
 			switch(field->type) {
-			case PRINT_ACCOUNT:
+			case PRINT_ACCT:
 				field->print_routine(
 					field,
 					assoc->acct,
@@ -301,5 +236,6 @@ extern int sacctmgr_list_problem(int argc, char *argv[])
 	list_iterator_destroy(itr);
 	list_destroy(assoc_list);
 	list_destroy(print_fields_list);
+	tree_display = 0;
 	return rc;
 }

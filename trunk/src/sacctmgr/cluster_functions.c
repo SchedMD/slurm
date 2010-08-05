@@ -392,7 +392,6 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 	ListIterator itr = NULL;
 	ListIterator itr2 = NULL;
 	slurmdb_cluster_rec_t *cluster = NULL;
-	char *object;
 	char *tmp_char = NULL;
 
 	int field_count = 0;
@@ -401,35 +400,6 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 
 	List format_list = list_create(slurm_destroy_char);
 	List print_fields_list; /* types are of print_field_t */
-
-	enum {
-		PRINT_CLUSTER,
-		PRINT_CHOST,
-		PRINT_CPORT,
-		PRINT_CLASS,
-		PRINT_CPUS,
-		PRINT_DEF_QOS,
-		PRINT_FAIRSHARE,
-		PRINT_FLAGS,
-		PRINT_GRPCM,
-		PRINT_GRPC,
-		PRINT_GRPJ,
-		PRINT_GRPN,
-		PRINT_GRPS,
-		PRINT_GRPW,
-		PRINT_MAXC,
-		PRINT_MAXCM,
-		PRINT_MAXJ,
-		PRINT_MAXN,
-		PRINT_MAXS,
-		PRINT_MAXW,
-		PRINT_NODECNT,
-		PRINT_NODES,
-		PRINT_QOS,
-		PRINT_QOS_RAW,
-		PRINT_RPC_VERSION,
-		PRINT_SELECT,
-	};
 
 	slurmdb_init_cluster_cond(cluster_cond);
 	cluster_cond->cluster_list = list_create(slurm_destroy_char);
@@ -447,8 +417,6 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 		return SLURM_ERROR;
 	}
 
-	print_fields_list = list_create(destroy_print_field);
-
 	if(!list_count(format_list)) {
 		slurm_addto_char_list(format_list,
 				      "Cl,Controlh,Controlp,RPC");
@@ -460,181 +428,7 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 
 	cluster_cond->with_deleted = with_deleted;
 
-	itr = list_iterator_create(format_list);
-	while((object = list_next(itr))) {
-		int command_len = 0;
-		int newlen = 0;
-
-		if((tmp_char = strstr(object, "\%"))) {
-			newlen = atoi(tmp_char+1);
-			tmp_char[0] = '\0';
-		}
-
-		command_len = strlen(object);
-
-		field = xmalloc(sizeof(print_field_t));
-		if(!strncasecmp("Cluster", object, MAX(command_len, 2))
-		   || !strncasecmp("Name", object, MAX(command_len, 2))) {
-			field->type = PRINT_CLUSTER;
-			field->name = xstrdup("Cluster");
-			field->len = 10;
-			field->print_routine = print_fields_str;
-		} else if(!strncasecmp("ControlHost", object,
-				       MAX(command_len, 8))) {
-			field->type = PRINT_CHOST;
-			field->name = xstrdup("ControlHost");
-			field->len = 15;
-			field->print_routine = print_fields_str;
-		} else if(!strncasecmp("ControlPort", object,
-				       MAX(command_len, 8))) {
-			field->type = PRINT_CPORT;
-			field->name = xstrdup("ControlPort");
-			field->len = 12;
-			field->print_routine = print_fields_uint;
-		} else if(!strncasecmp("Classification", object,
-				       MAX(command_len, 2))) {
-			field->type = PRINT_CPUS;
-			field->name = xstrdup("Class");
-			field->len = 9;
-			field->print_routine = print_fields_str;
-		} else if(!strncasecmp("CPUCount", object,
-				       MAX(command_len, 2))) {
-			field->type = PRINT_CPUS;
-			field->name = xstrdup("CPUCount");
-			field->len = 9;
-			field->print_routine = print_fields_str;
-		} else if(!strncasecmp("DefaultQOS", object,
-				       MAX(command_len, 8))) {
-			field->type = PRINT_DEF_QOS;
-			field->name = xstrdup("Def QOS");
-			field->len = 9;
-			field->print_routine = print_fields_str;
-		} else if(!strncasecmp("FairShare", object,
-				       MAX(command_len, 2))) {
-			field->type = PRINT_FAIRSHARE;
-			field->name = xstrdup("FairShare");
-			field->len = 9;
-			field->print_routine = print_fields_uint;
-		} else if(!strncasecmp("Flags", object,
-				       MAX(command_len, 2))) {
-			field->type = PRINT_FLAGS;
-			field->name = xstrdup("Flags");
-			field->len = 20;
-			field->print_routine = print_fields_str;
-		} else if(!strncasecmp("GrpCPUs", object,
-				       MAX(command_len, 8))) {
-			field->type = PRINT_GRPC;
-			field->name = xstrdup("GrpCPUs");
-			field->len = 8;
-			field->print_routine = print_fields_uint;
-		} else if(!strncasecmp("GrpJobs", object,
-				       MAX(command_len, 4))) {
-			field->type = PRINT_GRPJ;
-			field->name = xstrdup("GrpJobs");
-			field->len = 7;
-			field->print_routine = print_fields_uint;
-		} else if(!strncasecmp("GrpNodes", object,
-				       MAX(command_len, 4))) {
-			field->type = PRINT_GRPN;
-			field->name = xstrdup("GrpNodes");
-			field->len = 8;
-			field->print_routine = print_fields_uint;
-		} else if(!strncasecmp("GrpSubmitJobs", object,
-				       MAX(command_len, 4))) {
-			field->type = PRINT_GRPS;
-			field->name = xstrdup("GrpSubmit");
-			field->len = 9;
-			field->print_routine = print_fields_uint;
-		} else if(!strncasecmp("MaxCPUMinsPerJob", object,
-				       MAX(command_len, 7))) {
-			field->type = PRINT_MAXCM;
-			field->name = xstrdup("MaxCPUMins");
-			field->len = 11;
-			field->print_routine = print_fields_uint64;
-		} else if(!strncasecmp("MaxCPUsPerJob", object,
-				       MAX(command_len, 7))) {
-			field->type = PRINT_MAXC;
-			field->name = xstrdup("MaxCPUs");
-			field->len = 8;
-			field->print_routine = print_fields_uint;
-		} else if(!strncasecmp("MaxJobs", object,
-				       MAX(command_len, 4))) {
-			field->type = PRINT_MAXJ;
-			field->name = xstrdup("MaxJobs");
-			field->len = 7;
-			field->print_routine = print_fields_uint;
-		} else if(!strncasecmp("MaxNodesPerJob", object,
-				       MAX(command_len, 4))) {
-			field->type = PRINT_MAXN;
-			field->name = xstrdup("MaxNodes");
-			field->len = 8;
-			field->print_routine = print_fields_uint;
-		} else if(!strncasecmp("MaxSubmitJobs", object,
-				       MAX(command_len, 4))) {
-			field->type = PRINT_MAXS;
-			field->name = xstrdup("MaxSubmit");
-			field->len = 9;
-			field->print_routine = print_fields_uint;
-		} else if(!strncasecmp("MaxWallDurationPerJob", object,
-				       MAX(command_len, 4))) {
-			field->type = PRINT_MAXW;
-			field->name = xstrdup("MaxWall");
-			field->len = 11;
-			field->print_routine = print_fields_time;
-		} else if(!strncasecmp("NodeCount", object,
-				       MAX(command_len, 5))) {
-			field->type = PRINT_NODECNT;
-			field->name = xstrdup("NodeCount");
-			field->len = 9;
-			field->print_routine = print_fields_uint;
-		} else if(!strncasecmp("NodeNames", object,
-				       MAX(command_len, 5))) {
-			field->type = PRINT_NODES;
-			field->name = xstrdup("NodeNames");
-			field->len = 20;
-			field->print_routine = print_fields_str;
-		} else if(!strncasecmp("QOSRAWLevel", object,
-				       MAX(command_len, 4))) {
-			field->type = PRINT_QOS_RAW;
-			field->name = xstrdup("QOS_RAW");
-			field->len = 10;
-			field->print_routine = print_fields_char_list;
-		} else if(!strncasecmp("QOSLevel", object,
-				       MAX(command_len, 1))) {
-			field->type = PRINT_QOS;
-			field->name = xstrdup("QOS");
-			field->len = 20;
-			field->print_routine = sacctmgr_print_qos_list;
-		} else if(!strncasecmp("RPC", object, MAX(command_len, 1))) {
-			field->type = PRINT_RPC_VERSION;
-			field->name = xstrdup("RPC");
-			field->len = 3;
-			field->print_routine = print_fields_uint;
-		} else if(!strncasecmp("Shares", object,
-				       MAX(command_len, 2))) {
-			field->type = PRINT_FAIRSHARE;
-			field->name = xstrdup("Shares");
-			field->len = 9;
-			field->print_routine = print_fields_uint;
-		} else if(!strncasecmp("PluginIDSelect", object,
-				       MAX(command_len, 2))) {
-			field->type = PRINT_SELECT;
-			field->name = xstrdup("PluginIDSelect");
-			field->len = 14;
-			field->print_routine = print_fields_uint;
-		} else {
-			exit_code=1;
-			fprintf(stderr, "Unknown field '%s'\n", object);
-			xfree(field);
-			continue;
-		}
-
-		if(newlen)
-			field->len = newlen;
-
-		list_append(print_fields_list, field);
-	}
-	list_iterator_destroy(itr);
+	print_fields_list = sacctmgr_process_format_list(format_list);
 	list_destroy(format_list);
 
 	if(exit_code) {
@@ -698,7 +492,7 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 						     (curr_inx == field_count));
 				break;
 			}
-			case PRINT_DEF_QOS:
+			case PRINT_DQOS:
 				if(!g_qos_list) {
 					g_qos_list = acct_storage_g_get_qos(
 						db_conn,
@@ -796,7 +590,7 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 					(curr_inx == field_count));
 				break;
 			}
-			case PRINT_NODES:
+			case PRINT_CLUSTER_NODES:
 				field->print_routine(
 					field,
 					cluster->nodes,

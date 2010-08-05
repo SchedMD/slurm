@@ -72,41 +72,6 @@ typedef struct {
 	List wckey_list;
 } sacctmgr_file_opts_t;
 
-enum {
-	PRINT_ACCOUNT,
-	PRINT_CLASSIFICATION,
-	PRINT_ADMIN,
-	PRINT_CLUSTER,
-	PRINT_COORDS,
-	PRINT_DACCT,
-	PRINT_DQOS,
-	PRINT_DWCKEY,
-	PRINT_DESC,
-	PRINT_FAIRSHARE,
-	PRINT_GRPCM,
-	PRINT_GRPC,
-	PRINT_GRPJ,
-	PRINT_GRPN,
-	PRINT_GRPS,
-	PRINT_GRPW,
-	PRINT_ID,
-	PRINT_MAXC,
-	PRINT_MAXCM,
-	PRINT_MAXJ,
-	PRINT_MAXN,
-	PRINT_MAXS,
-	PRINT_MAXW,
-	PRINT_NAME,
-	PRINT_ORG,
-	PRINT_QOS,
-	PRINT_QOS_RAW,
-	PRINT_PID,
-	PRINT_PARENT,
-	PRINT_PART,
-	PRINT_USER,
-	PRINT_WCKEYS
-};
-
 typedef enum {
 	MOD_CLUSTER,
 	MOD_ACCT,
@@ -561,213 +526,6 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 	return file_opts;
 }
 
-static List _set_up_print_fields(List format_list)
-{
-	ListIterator itr = NULL;
-	List print_fields_list = NULL;
-	print_field_t *field = NULL;
-	char *object = NULL;
-
-	print_fields_list = list_create(destroy_print_field);
-	itr = list_iterator_create(format_list);
-	while((object = list_next(itr))) {
-		int command_len = strlen(object);
-		field = xmalloc(sizeof(print_field_t));
-		if(!strncasecmp("Account", object, MAX(command_len, 2))) {
-			field->type = PRINT_ACCOUNT;
-			field->name = xstrdup("Account");
-			field->len = 10;
-			field->print_routine = print_fields_str;
-		} else if(!strncasecmp("AdminLevel", object,
-				       MAX(command_len, 2))) {
-			field->type = PRINT_ADMIN;
-			field->name = xstrdup("Admin");
-			field->len = 9;
-			field->print_routine = print_fields_str;
-		} else if(!strncasecmp("Cluster", object,
-				       MAX(command_len, 3))) {
-			field->type = PRINT_CLUSTER;
-			field->name = xstrdup("Cluster");
-			field->len = 10;
-			field->print_routine = print_fields_str;
-		} else if(!strncasecmp("Classification", object,
-				       MAX(command_len, 3))) {
-			field->type = PRINT_CLASSIFICATION;
-			field->name = xstrdup("Classif");
-			field->len = 10;
-			field->print_routine = print_fields_str;
-		} else if(!strncasecmp("Coordinators", object,
-				       MAX(command_len, 2))) {
-			field->type = PRINT_COORDS;
-			field->name = xstrdup("Coord Accounts");
-			field->len = 20;
-			field->print_routine = sacctmgr_print_coord_list;
-		} else if(!strncasecmp("DefaultAccount", object,
-				       MAX(command_len, 8))) {
-			field->type = PRINT_DACCT;
-			field->name = xstrdup("Def Acct");
-			field->len = 10;
-			field->print_routine = print_fields_str;
-		} else if(!strncasecmp("DefaultQOS", object,
-				       MAX(command_len, 8))) {
-			field->type = PRINT_DQOS;
-			field->name = xstrdup("Def QOS");
-			field->len = 9;
-			field->print_routine = print_fields_str;
-		} else if(!strncasecmp("DefaultWckey", object,
-				       MAX(command_len, 8))) {
-			field->type = PRINT_DWCKEY;
-			field->name = xstrdup("Def WCKey");
-			field->len = 10;
-			field->print_routine = print_fields_str;
-		} else if(!strncasecmp("Description", object,
-				       MAX(command_len, 3))) {
-			field->type = PRINT_DESC;
-			field->name = xstrdup("Descr");
-			field->len = 20;
-			field->print_routine = print_fields_str;
-		} else if(!strncasecmp("FairShare", object,
-				       MAX(command_len, 1))
-			  || !strncasecmp("Shares", object,
-					  MAX(command_len, 1))) {
-			field->type = PRINT_FAIRSHARE;
-			field->name = xstrdup("FairShare");
-			field->len = 9;
-			field->print_routine = print_fields_uint;
-		} else if(!strncasecmp("GrpCPUMins", object,
-				       MAX(command_len, 7))) {
-			field->type = PRINT_GRPCM;
-			field->name = xstrdup("GrpCPUMins");
-			field->len = 11;
-			field->print_routine = print_fields_uint64;
-		} else if(!strncasecmp("GrpCPUs", object,
-				       MAX(command_len, 7))) {
-			field->type = PRINT_GRPC;
-			field->name = xstrdup("GrpCPUs");
-			field->len = 8;
-			field->print_routine = print_fields_uint;
-		} else if(!strncasecmp("GrpJobs", object,
-				       MAX(command_len, 4))) {
-			field->type = PRINT_GRPJ;
-			field->name = xstrdup("GrpJobs");
-			field->len = 7;
-			field->print_routine = print_fields_uint;
-		} else if(!strncasecmp("GrpNodes", object,
-				       MAX(command_len, 4))) {
-			field->type = PRINT_GRPN;
-			field->name = xstrdup("GrpNodes");
-			field->len = 8;
-			field->print_routine = print_fields_uint;
-		} else if(!strncasecmp("GrpSubmitJobs", object,
-				       MAX(command_len, 4))) {
-			field->type = PRINT_GRPS;
-			field->name = xstrdup("GrpSubmit");
-			field->len = 9;
-			field->print_routine = print_fields_uint;
-		} else if(!strncasecmp("GrpWall", object,
-				       MAX(command_len, 4))) {
-			field->type = PRINT_GRPW;
-			field->name = xstrdup("GrpWall");
-			field->len = 11;
-			field->print_routine = print_fields_time;
-		} else if(!strncasecmp("ID", object, MAX(command_len, 1))) {
-			field->type = PRINT_ID;
-			field->name = xstrdup("ID");
-			field->len = 6;
-			field->print_routine = print_fields_uint;
-		} else if(!strncasecmp("MaxCPUMinsPerJob", object,
-				       MAX(command_len, 7))) {
-			field->type = PRINT_MAXCM;
-			field->name = xstrdup("MaxCPUMins");
-			field->len = 11;
-			field->print_routine = print_fields_uint64;
-		} else if(!strncasecmp("MaxCPUsPerJob", object,
-				       MAX(command_len, 7))) {
-			field->type = PRINT_MAXC;
-			field->name = xstrdup("MaxCPUs");
-			field->len = 8;
-			field->print_routine = print_fields_uint;
-		} else if(!strncasecmp("MaxJobs", object,
-				       MAX(command_len, 4))) {
-			field->type = PRINT_MAXJ;
-			field->name = xstrdup("MaxJobs");
-			field->len = 7;
-			field->print_routine = print_fields_uint;
-		} else if(!strncasecmp("MaxNodesPerJob", object,
-				       MAX(command_len, 4))) {
-			field->type = PRINT_MAXN;
-			field->name = xstrdup("MaxNodes");
-			field->len = 8;
-			field->print_routine = print_fields_uint;
-		} else if(!strncasecmp("MaxSubmitJobs", object,
-				       MAX(command_len, 4))) {
-			field->type = PRINT_MAXS;
-			field->name = xstrdup("MaxSubmit");
-			field->len = 9;
-			field->print_routine = print_fields_uint;
-		} else if(!strncasecmp("MaxWallDurationPerJob", object,
-				       MAX(command_len, 4))) {
-			field->type = PRINT_MAXW;
-			field->name = xstrdup("MaxWall");
-			field->len = 11;
-			field->print_routine = print_fields_time;
-		} else if(!strncasecmp("Name", object, MAX(command_len, 1))) {
-			field->type = PRINT_NAME;
-			field->name = xstrdup("Name");
-			field->len = 10;
-			field->print_routine = print_fields_str;
-		} else if(!strncasecmp("Organization", object,
-				       MAX(command_len, 1))) {
-			field->type = PRINT_ORG;
-			field->name = xstrdup("Org");
-			field->len = 20;
-			field->print_routine = print_fields_str;
-		} else if(!strncasecmp("QOSRAWLevel", object,
-				       MAX(command_len, 4))) {
-			field->type = PRINT_QOS_RAW;
-			field->name = xstrdup("QOS_RAW");
-			field->len = 7;
-			field->print_routine = print_fields_char_list;
-		} else if(!strncasecmp("QOSLevel", object,
-				       MAX(command_len, 1))) {
-			field->type = PRINT_QOS;
-			field->name = xstrdup("QOS");
-			field->len = 9;
-			field->print_routine = sacctmgr_print_qos_list;
-		} else if(!strncasecmp("Parent", object, MAX(command_len, 4))) {
-			field->type = PRINT_PARENT;
-			field->name = xstrdup("Parent");
-			field->len = 10;
-			field->print_routine = print_fields_str;
-		} else if(!strncasecmp("Partition", object,
-				       MAX(command_len, 4))) {
-			field->type = PRINT_PART;
-			field->name = xstrdup("Partition");
-			field->len = 10;
-			field->print_routine = print_fields_str;
-		} else if(!strncasecmp("User", object, MAX(command_len, 1))) {
-			field->type = PRINT_USER;
-			field->name = xstrdup("User");
-			field->len = 10;
-			field->print_routine = print_fields_str;
-		} else if(!strncasecmp("WCKeys", object,
-				       MAX(command_len, 2))) {
-			field->type = PRINT_WCKEYS;
-			field->name = xstrdup("WCKeys");
-			field->len = 20;
-			field->print_routine = print_fields_char_list;
-		} else {
-			exit_code=1;
-			fprintf(stderr, "Unknown field '%s'\n", object);
-			xfree(field);
-			continue;
-		}
-		list_append(print_fields_list, field);
-	}
-	list_iterator_destroy(itr);
-	return print_fields_list;
-}
-
 static int _print_out_assoc(List assoc_list, bool user, bool add)
 {
 	List format_list = NULL;
@@ -787,13 +545,13 @@ static int _print_out_assoc(List assoc_list, bool user, bool add)
 				      "User,Account");
 	else
 		slurm_addto_char_list(format_list,
-				      "Account,Parent");
+				      "Account,ParentName");
 	slurm_addto_char_list(format_list,
-			      "F,GrpCPUM,GrpCPUs,"
+			      "Share,GrpCPUM,GrpCPUs,"
 			      "GrpJ,GrpN,GrpS,GrpW,MaxCPUM,MaxCPUs,"
 			      "MaxJ,MaxS,MaxN,MaxW,QOS,DefaultQOS");
 
-	print_fields_list = _set_up_print_fields(format_list);
+	print_fields_list = sacctmgr_process_format_list(format_list);
 	list_destroy(format_list);
 
 	print_fields_header(print_fields_list);
@@ -803,7 +561,7 @@ static int _print_out_assoc(List assoc_list, bool user, bool add)
 	while((assoc = list_next(itr))) {
 		while((field = list_next(itr2))) {
 			switch(field->type) {
-			case PRINT_ACCOUNT:
+			case PRINT_ACCT:
 				field->print_routine(field,
 						     assoc->acct);
 				break;
@@ -877,7 +635,7 @@ static int _print_out_assoc(List assoc_list, bool user, bool add)
 					field,
 					assoc->max_wall_pj);
 				break;
-			case PRINT_PARENT:
+			case PRINT_PNAME:
 				field->print_routine(field,
 						     assoc->parent_acct);
 				break;
@@ -2635,7 +2393,7 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 		slurm_addto_char_list(format_list,
 				"Name,Description,Organization,QOS");
 
-		print_fields_list = _set_up_print_fields(format_list);
+		print_fields_list = sacctmgr_process_format_list(format_list);
 		list_flush(format_list);
 
 		print_fields_header(print_fields_list);
@@ -2686,7 +2444,7 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 		slurm_addto_char_list(format_list,
 				      "Name,DefaultA,DefaultW,QOS,Admin,Coord");
 
-		print_fields_list = _set_up_print_fields(format_list);
+		print_fields_list = sacctmgr_process_format_list(format_list);
 		list_flush(format_list);
 		print_fields_header(print_fields_list);
 
