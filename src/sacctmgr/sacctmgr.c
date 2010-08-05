@@ -58,6 +58,7 @@ int with_assoc_flag = 0;
 void *db_conn = NULL;
 uint32_t my_uid = 0;
 List g_qos_list = NULL;
+bool tree_display = 0;
 
 static void	_add_it (int argc, char *argv[]);
 static void	_archive_it (int argc, char *argv[]);
@@ -921,13 +922,12 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                             MaxWall, QOS, ParentID, ParentName,            \n\
                             Partition, RawQOS, RGT, User                   \n\
                                                                            \n\
-       Cluster            - Classification, Cluster, ControlHost,          \n\
-                            ControlPort, CpuCount, DefaultQOS, Fairshare,  \n\
-                            Flags, GrpCPUMins, GrpCPUs, GrpJobs,           \n\
+       Cluster            - Classification, Cluster, ClusterNodes,         \n\
+                            ControlHost, ControlPort, CpuCount, DefaultQOS,\n\
+                            Fairshare, Flags, GrpCPUMins, GrpCPUs, GrpJobs,\n\
                             GrpNodes, GrpSubmitJob, MaxCPUMins,            \n\
                             MaxCPUs, MaxJobs, MaxNodes, MaxSubmitJobs,     \n\
-                            MaxWall, NodeCount, NodeNames, PluginIDSelect, \n\
-                            RPC                                            \n\
+                            MaxWall, NodeCount, PluginIDSelect, RPC        \n\
                                                                            \n\
        Event              - Cluster, ClusterNodes, CPUs, Duration, End,    \n\
                             Event, EventRaw, NodeName, Reason, Start,      \n\

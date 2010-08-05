@@ -170,26 +170,12 @@ extern int sacctmgr_list_txn(int argc, char *argv[])
 	int i=0;
 	ListIterator itr = NULL;
 	ListIterator itr2 = NULL;
-	char *object = NULL;
 	int field_count = 0;
 
 	print_field_t *field = NULL;
 
 	List format_list = list_create(slurm_destroy_char);
 	List print_fields_list; /* types are of print_field_t */
-
-	enum {
-		PRINT_ACCT,
-		PRINT_ACTIONRAW,
-		PRINT_ACTION,
-		PRINT_ACTOR,
-		PRINT_CLUSTER,
-		PRINT_ID,
-		PRINT_INFO,
-		PRINT_TS,
-		PRINT_USER,
-		PRINT_WHERE
-	};
 
 	for (i=0; i<argc; i++) {
 		int command_len = strlen(argv[i]);
@@ -205,8 +191,6 @@ extern int sacctmgr_list_txn(int argc, char *argv[])
 		return SLURM_ERROR;
 	}
 
-	print_fields_list = list_create(destroy_print_field);
-
 	if(!list_count(format_list)) {
 		slurm_addto_char_list(format_list, "T,Action,Actor,Where,Info");
 		if(txn_cond->with_assoc_info)
@@ -214,88 +198,7 @@ extern int sacctmgr_list_txn(int argc, char *argv[])
 					      "User,Account,Cluster");
 	}
 
-	itr = list_iterator_create(format_list);
-	while((object = list_next(itr))) {
-		char *tmp_char = NULL;
-		int command_len = 0;
-		int newlen = 0;
-
-		if((tmp_char = strstr(object, "\%"))) {
-			newlen = atoi(tmp_char+1);
-			tmp_char[0] = '\0';
-		}
-
-		command_len = strlen(object);
-
-		field = xmalloc(sizeof(print_field_t));
-		if(!strncasecmp("Accounts", object, MAX(command_len, 3))) {
-			field->type = PRINT_ACCT;
-			field->name = xstrdup("Accounts");
-			field->len = 20;
-			field->print_routine = print_fields_str;
-		} else if(!strncasecmp("ActionRaw", object,
-				       MAX(command_len, 7))) {
-			field->type = PRINT_ACTIONRAW;
-			field->name = xstrdup("ActionRaw");
-			field->len = 10;
-			field->print_routine = print_fields_uint;
-		} else if(!strncasecmp("Action", object,
-				       MAX(command_len, 4))) {
-			field->type = PRINT_ACTION;
-			field->name = xstrdup("Action");
-			field->len = 20;
-			field->print_routine = print_fields_str;
-		} else if(!strncasecmp("Actor", object,
-				       MAX(command_len, 4))) {
-			field->type = PRINT_ACTOR;
-			field->name = xstrdup("Actor");
-			field->len = 10;
-			field->print_routine = print_fields_str;
-		} else if(!strncasecmp("Clusters", object,
-				       MAX(command_len, 4))) {
-			field->type = PRINT_CLUSTER;
-			field->name = xstrdup("Clusters");
-			field->len = 20;
-			field->print_routine = print_fields_str;
-		} else if(!strncasecmp("ID", object, MAX(command_len, 2))) {
-			field->type = PRINT_ID;
-			field->name = xstrdup("ID");
-			field->len = 6;
-			field->print_routine = print_fields_uint;
-		} else if(!strncasecmp("Info", object, MAX(command_len, 2))) {
-			field->type = PRINT_INFO;
-			field->name = xstrdup("Info");
-			field->len = 20;
-			field->print_routine = print_fields_str;
-		} else if(!strncasecmp("TimeStamp", object,
-				       MAX(command_len, 1))) {
-			field->type = PRINT_TS;
-			field->name = xstrdup("Time");
-			field->len = 19;
-			field->print_routine = print_fields_date;
-		} else if(!strncasecmp("Users", object, MAX(command_len, 4))) {
-			field->type = PRINT_USER;
-			field->name = xstrdup("Users");
-			field->len = 20;
-			field->print_routine = print_fields_str;
-		} else if(!strncasecmp("Where", object, MAX(command_len, 1))) {
-			field->type = PRINT_WHERE;
-			field->name = xstrdup("Where");
-			field->len = 20;
-			field->print_routine = print_fields_str;
-		} else {
-			exit_code=1;
-			fprintf(stderr, " Unknown field '%s'\n", object);
-			xfree(field);
-			continue;
-		}
-
-		if(newlen)
-			field->len = newlen;
-
-		list_append(print_fields_list, field);
-	}
-	list_iterator_destroy(itr);
+	print_fields_list = sacctmgr_process_format_list(format_list);
 	list_destroy(format_list);
 
 	if(exit_code) {

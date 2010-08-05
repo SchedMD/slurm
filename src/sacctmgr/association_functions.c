@@ -38,7 +38,6 @@
 \*****************************************************************************/
 
 #include "src/sacctmgr/sacctmgr.h"
-static bool tree_display = 0;
 
 static int _set_cond(int *start, int argc, char *argv[],
 		     slurmdb_association_cond_t *assoc_cond,
@@ -178,8 +177,7 @@ extern int sacctmgr_set_association_cond(slurmdb_association_cond_t *assoc_cond,
 				db_conn, my_uid, NULL);
 
 		if (slurmdb_addto_qos_char_list(assoc_cond->def_qos_id_list,
-					       g_qos_list,
-					       value, 0))
+						g_qos_list, value, 0))
 			set = 1;
 		else
 			exit_code = 1;
@@ -432,6 +430,134 @@ extern int sacctmgr_set_association_rec(slurmdb_association_rec_t *assoc,
 	return set;
 }
 
+extern void sacctmgr_print_association_rec(slurmdb_association_rec_t *assoc,
+					   print_field_t *field, List tree_list,
+					   bool last)
+{
+	char *print_acct = NULL;
+	char *tmp_char = NULL;
+
+	xassert(field);
+
+	if(!assoc) {
+		field->print_routine(field, NULL, last);
+		return;
+	}
+
+	switch(field->type) {
+	case PRINT_ACCT:
+		if (tree_display) {
+			char *local_acct = NULL;
+			char *parent_acct = NULL;
+			if (assoc->user) {
+				local_acct = xstrdup_printf("|%s", assoc->acct);
+				parent_acct = assoc->acct;
+			} else {
+				local_acct =
+					xstrdup(assoc->acct);
+				parent_acct =
+					assoc->parent_acct;
+			}
+			print_acct = slurmdb_tree_name_get(
+				local_acct, parent_acct, tree_list);
+			xfree(local_acct);
+		} else {
+			print_acct = assoc->acct;
+		}
+		field->print_routine(field, print_acct, last);
+		break;
+	case PRINT_CLUSTER:
+		field->print_routine(field, assoc->cluster, last);
+		break;
+	case PRINT_DQOS:
+		if (!g_qos_list)
+			g_qos_list = acct_storage_g_get_qos(
+				db_conn, my_uid, NULL);
+		tmp_char = slurmdb_qos_str(g_qos_list, assoc->def_qos_id);
+		field->print_routine(field, tmp_char, last);
+		break;
+	case PRINT_FAIRSHARE:
+		field->print_routine(field, assoc->shares_raw, last);
+		break;
+	case PRINT_GRPCM:
+		field->print_routine(field, assoc->grp_cpu_mins, last);
+		break;
+	case PRINT_GRPCRM:
+		field->print_routine(field, assoc->grp_cpu_run_mins, last);
+		break;
+	case PRINT_GRPC:
+		field->print_routine(field, assoc->grp_cpus, last);
+		break;
+	case PRINT_GRPJ:
+		field->print_routine(field, assoc->grp_jobs, last);
+		break;
+	case PRINT_GRPN:
+		field->print_routine(field, assoc->grp_nodes, last);
+		break;
+	case PRINT_GRPS:
+		field->print_routine(field, assoc->grp_submit_jobs, last);
+		break;
+	case PRINT_GRPW:
+		field->print_routine(field, assoc->grp_wall, last);
+		break;
+	case PRINT_ID:
+		field->print_routine(field, assoc->id, last);
+		break;
+	case PRINT_LFT:
+		field->print_routine(field, assoc->lft, last);
+		break;
+	case PRINT_MAXCM:
+		field->print_routine(field, assoc->max_cpu_mins_pj, last);
+		break;
+	case PRINT_MAXCRM:
+		field->print_routine(field, assoc->max_cpu_run_mins, last);
+		break;
+	case PRINT_MAXC:
+		field->print_routine(field, assoc->max_cpus_pj, last);
+		break;
+	case PRINT_MAXJ:
+		field->print_routine(field, assoc->max_jobs, last);
+		break;
+	case PRINT_MAXN:
+		field->print_routine(field, assoc->max_nodes_pj, last);
+		break;
+	case PRINT_MAXS:
+		field->print_routine(field, assoc->max_submit_jobs, last);
+		break;
+	case PRINT_MAXW:
+		field->print_routine(field, assoc->max_wall_pj,	last);
+		break;
+	case PRINT_PID:
+		field->print_routine(field, assoc->parent_id, last);
+		break;
+	case PRINT_PNAME:
+		field->print_routine(field, assoc->parent_acct, last);
+		break;
+	case PRINT_PART:
+		field->print_routine(field, assoc->partition, last);
+		break;
+	case PRINT_QOS:
+		if (!g_qos_list)
+			g_qos_list = acct_storage_g_get_qos(
+				db_conn, my_uid, NULL);
+
+		field->print_routine(field, g_qos_list, assoc->qos_list, last);
+		break;
+	case PRINT_QOS_RAW:
+		field->print_routine(field, assoc->qos_list, last);
+		break;
+	case PRINT_RGT:
+		field->print_routine(field, assoc->rgt, last);
+		break;
+	case PRINT_USER:
+		field->print_routine(field, assoc->user, last);
+		break;
+	default:
+		field->print_routine(field, NULL, last);
+		break;
+	}
+}
+
 extern int sacctmgr_list_association(int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
@@ -443,9 +569,7 @@ extern int sacctmgr_list_association(int argc, char *argv[])
 	int i=0;
 	ListIterator itr = NULL;
 	ListIterator itr2 = NULL;
-	char *object = NULL;
-	char *tmp_char = NULL;
-	char *print_acct = NULL, *last_cluster = NULL;
+	char *last_cluster = NULL;
 	List tree_list = NULL;
 
 	int field_count = 0;
@@ -454,34 +578,6 @@ extern int sacctmgr_list_association(int argc, char *argv[])
 
 	List format_list = list_create(slurm_destroy_char);
 	List print_fields_list; /* types are of print_field_t */
-
-	enum {
-		PRINT_ACCOUNT,
-		PRINT_CLUSTER,
-		PRINT_DQOS,
-		PRINT_FAIRSHARE,
-		PRINT_GRPCM,
-		PRINT_GRPC,
-		PRINT_GRPJ,
-		PRINT_GRPN,
-		PRINT_GRPS,
-		PRINT_GRPW,
-		PRINT_ID,
-		PRINT_LFT,
-		PRINT_MAXC,
-		PRINT_MAXCM,
-		PRINT_MAXJ,
-		PRINT_MAXN,
-		PRINT_MAXS,
-		PRINT_MAXW,
-		PRINT_PID,
-		PRINT_PNAME,
-		PRINT_PART,
-		PRINT_QOS,
-		PRINT_QOS_RAW,
-		PRINT_RGT,
-		PRINT_USER
-	};
 
 	for (i=0; i<argc; i++) {
 		int command_len = strlen(argv[i]);
@@ -496,199 +592,15 @@ extern int sacctmgr_list_association(int argc, char *argv[])
 		list_destroy(format_list);
 		return SLURM_ERROR;
 	} else if (!list_count(format_list)) {
-		slurm_addto_char_list(format_list, "C,A,U,Part");
+		slurm_addto_char_list(format_list, "Cluster,Account,User,Part");
 		if (!assoc_cond->without_parent_limits)
 			slurm_addto_char_list(format_list,
-					      "Shares,GrpJ,GrpN,GrpCPUs,"
+					      "Share,GrpJ,GrpN,GrpCPUs,"
 					      "GrpS,GrpWall,GrpCPUMins,MaxJ,"
 					      "MaxN,MaxCPUs,MaxS,MaxW,"
 					      "MaxCPUMins,QOS,DefaultQOS");
 	}
-	print_fields_list = list_create(destroy_print_field);
-
-	itr = list_iterator_create(format_list);
-	while((object = list_next(itr))) {
-		int command_len = 0;
-		int newlen = 0;
-
-		if ((tmp_char = strstr(object, "\%"))) {
-			newlen = atoi(tmp_char+1);
-			tmp_char[0] = '\0';
-		}
-
-		command_len = strlen(object);
-
-		field = xmalloc(sizeof(print_field_t));
-
-		if (!strncasecmp("Account", object, MAX(command_len, 1))
-		   || !strncasecmp("Acct", object, MAX(command_len, 4))) {
-			field->type = PRINT_ACCOUNT;
-			field->name = xstrdup("Account");
-			if (tree_display)
-				field->len = -20;
-			else
-				field->len = 10;
-			field->print_routine = print_fields_str;
-		} else if (!strncasecmp("Cluster", object,
-				       MAX(command_len, 1))) {
-			field->type = PRINT_CLUSTER;
-			field->name = xstrdup("Cluster");
-			field->len = 10;
-			field->print_routine = print_fields_str;
-		} else if (!strncasecmp("DefaultQOS", object,
-				       MAX(command_len, 1))) {
-			field->type = PRINT_DQOS;
-			field->name = xstrdup("Def QOS");
-			field->len = 9;
-			field->print_routine = print_fields_str;
-		} else if (!strncasecmp("FairShare", object,
-				       MAX(command_len, 1))) {
-			field->type = PRINT_FAIRSHARE;
-			field->name = xstrdup("FairShare");
-			field->len = 9;
-			field->print_routine = print_fields_uint;
-		} else if (!strncasecmp("GrpCPUMins", object,
-				       MAX(command_len, 8))) {
-			field->type = PRINT_GRPCM;
-			field->name = xstrdup("GrpCPUMins");
-			field->len = 11;
-			field->print_routine = print_fields_uint64;
-		} else if (!strncasecmp("GrpCPUs", object,
-				       MAX(command_len, 8))) {
-			field->type = PRINT_GRPC;
-			field->name = xstrdup("GrpCPUs");
-			field->len = 8;
-			field->print_routine = print_fields_uint;
-		} else if (!strncasecmp("GrpJobs", object,
-				       MAX(command_len, 4))) {
-			field->type = PRINT_GRPJ;
-			field->name = xstrdup("GrpJobs");
-			field->len = 7;
-			field->print_routine = print_fields_uint;
-		} else if (!strncasecmp("GrpNodes", object,
-				       MAX(command_len, 4))) {
-			field->type = PRINT_GRPN;
-			field->name = xstrdup("GrpNodes");
-			field->len = 8;
-			field->print_routine = print_fields_uint;
-		} else if (!strncasecmp("GrpSubmitJobs", object,
-				       MAX(command_len, 4))) {
-			field->type = PRINT_GRPS;
-			field->name = xstrdup("GrpSubmit");
-			field->len = 9;
-			field->print_routine = print_fields_uint;
-		} else if (!strncasecmp("GrpWall", object,
-				       MAX(command_len, 4))) {
-			field->type = PRINT_GRPW;
-			field->name = xstrdup("GrpWall");
-			field->len = 11;
-			field->print_routine = print_fields_time;
-		} else if (!strncasecmp("ID", object, MAX(command_len, 1))) {
-			field->type = PRINT_ID;
-			field->name = xstrdup("ID");
-			field->len = 6;
-			field->print_routine = print_fields_uint;
-		} else if (!strncasecmp("LFT", object, MAX(command_len, 1))) {
-			field->type = PRINT_LFT;
-			field->name = xstrdup("LFT");
-			field->len = 6;
-			field->print_routine = print_fields_uint;
-		} else if (!strncasecmp("MaxCPUMinsPerJob", object,
-				       MAX(command_len, 7))) {
-			field->type = PRINT_MAXCM;
-			field->name = xstrdup("MaxCPUMins");
-			field->len = 11;
-			field->print_routine = print_fields_uint64;
-		} else if (!strncasecmp("MaxCPUsPerJob", object,
-				       MAX(command_len, 7))) {
-			field->type = PRINT_MAXC;
-			field->name = xstrdup("MaxCPUs");
-			field->len = 8;
-			field->print_routine = print_fields_uint;
-		} else if (!strncasecmp("MaxJobs", object,
-				       MAX(command_len, 4))) {
-			field->type = PRINT_MAXJ;
-			field->name = xstrdup("MaxJobs");
-			field->len = 7;
-			field->print_routine = print_fields_uint;
-		} else if (!strncasecmp("MaxNodesPerJob", object,
-				       MAX(command_len, 4))) {
-			field->type = PRINT_MAXN;
-			field->name = xstrdup("MaxNodes");
-			field->len = 8;
-			field->print_routine = print_fields_uint;
-		} else if (!strncasecmp("MaxSubmitJobs", object,
-				       MAX(command_len, 4))) {
-			field->type = PRINT_MAXS;
-			field->name = xstrdup("MaxSubmit");
-			field->len = 9;
-			field->print_routine = print_fields_uint;
-		} else if (!strncasecmp("MaxWallDurationPerJob", object,
-				       MAX(command_len, 4))) {
-			field->type = PRINT_MAXW;
-			field->name = xstrdup("MaxWall");
-			field->len = 11;
-			field->print_routine = print_fields_time;
-		} else if (!strncasecmp("QOSRAWLevel", object,
-				       MAX(command_len, 4))) {
-			field->type = PRINT_QOS_RAW;
-			field->name = xstrdup("QOS_RAW");
-			field->len = 10;
-			field->print_routine = print_fields_char_list;
-		} else if (!strncasecmp("QOSLevel", object,
-				       MAX(command_len, 1))) {
-			field->type = PRINT_QOS;
-			field->name = xstrdup("QOS");
-			field->len = 20;
-			field->print_routine = sacctmgr_print_qos_list;
-		} else if (!strncasecmp("ParentID", object,
-				       MAX(command_len, 7))) {
-			field->type = PRINT_PID;
-			field->name = xstrdup("Par ID");
-			field->len = 6;
-			field->print_routine = print_fields_uint;
-		} else if (!strncasecmp("ParentName", object,
-				       MAX(command_len, 7))) {
-			field->type = PRINT_PNAME;
-			field->name = xstrdup("Par Name");
-			field->len = 10;
-			field->print_routine = print_fields_str;
-		} else if (!strncasecmp("Partition", object,
-				       MAX(command_len, 4))) {
-			field->type = PRINT_PART;
-			field->name = xstrdup("Partition");
-			field->len = 10;
-			field->print_routine = print_fields_str;
-		} else if (!strncasecmp("RGT", object, MAX(command_len, 1))) {
-			field->type = PRINT_RGT;
-			field->name = xstrdup("RGT");
-			field->len = 6;
-			field->print_routine = print_fields_uint;
-		} else if (!strncasecmp("Shares", object,
-				       MAX(command_len, 1))) {
-			field->type = PRINT_FAIRSHARE;
-			field->name = xstrdup("Shares");
-			field->len = 9;
-			field->print_routine = print_fields_uint;
-		} else if (!strncasecmp("User", object, MAX(command_len, 1))) {
-			field->type = PRINT_USER;
-			field->name = xstrdup("User");
-			field->len = 10;
-			field->print_routine = print_fields_str;
-		} else {
-			exit_code=1;
-			fprintf(stderr, "Unknown field '%s'\n", object);
-			exit(1);
-			xfree(field);
-			continue;
-		}
-
-		if (newlen)
-			field->len = newlen;
-
-		list_append(print_fields_list, field);
-	}
-	list_iterator_destroy(itr);
+	print_fields_list = sacctmgr_process_format_list(format_list);
 	list_destroy(format_list);
 
 	if (exit_code) {
@@ -729,176 +641,9 @@ extern int sacctmgr_list_association(int argc, char *argv[])
 			last_cluster = assoc->cluster;
 		}
 		while((field = list_next(itr2))) {
-			switch(field->type) {
-			case PRINT_ACCOUNT:
-				if (tree_display) {
-					char *local_acct = NULL;
-					char *parent_acct = NULL;
-					if (assoc->user) {
-						local_acct = xstrdup_printf(
-							"|%s", assoc->acct);
-						parent_acct = assoc->acct;
-					} else {
-						local_acct =
-							xstrdup(assoc->acct);
-						parent_acct =
-							assoc->parent_acct;
-					}
-					print_acct = slurmdb_tree_name_get(
-						local_acct,
-						parent_acct, tree_list);
-					xfree(local_acct);
-				} else {
-					print_acct = assoc->acct;
-				}
-				field->print_routine(
-					field,
-					print_acct,
-					(curr_inx == field_count));
-				break;
-			case PRINT_CLUSTER:
-				field->print_routine(
-					field,
-					assoc->cluster,
-					(curr_inx == field_count));
-				break;
-			case PRINT_DQOS:
-				if (!g_qos_list)
-					g_qos_list = acct_storage_g_get_qos(
-						db_conn, my_uid, NULL);
-				tmp_char = slurmdb_qos_str(g_qos_list,
-							   assoc->def_qos_id);
-				field->print_routine(
-					field,
-					tmp_char,
-					(curr_inx == field_count));
-				break;
-			case PRINT_FAIRSHARE:
-				field->print_routine(
-					field,
-					assoc->shares_raw,
-					(curr_inx == field_count));
-				break;
-			case PRINT_GRPCM:
-				field->print_routine(
-					field,
-					assoc->grp_cpu_mins,
-					(curr_inx == field_count));
-				break;
-			case PRINT_GRPC:
-				field->print_routine(field,
-						     assoc->grp_cpus,
-						     (curr_inx == field_count));
-				break;
-			case PRINT_GRPJ:
-				field->print_routine(field,
-						     assoc->grp_jobs,
-						     (curr_inx == field_count));
-				break;
-			case PRINT_GRPN:
-				field->print_routine(field,
-						     assoc->grp_nodes,
-						     (curr_inx == field_count));
-				break;
-			case PRINT_GRPS:
-				field->print_routine(field,
-						     assoc->grp_submit_jobs,
-						     (curr_inx == field_count));
-				break;
-			case PRINT_GRPW:
-				field->print_routine(
-					field,
-					assoc->grp_wall,
-					(curr_inx == field_count));
-				break;
-			case PRINT_ID:
-				field->print_routine(field,
-						     assoc->id,
-						     (curr_inx == field_count));
-				break;
-			case PRINT_LFT:
-				field->print_routine(field,
-						     assoc->lft,
-						     (curr_inx == field_count));
-				break;
-			case PRINT_MAXCM:
-				field->print_routine(
-					field,
-					assoc->max_cpu_mins_pj,
-					(curr_inx == field_count));
-				break;
-			case PRINT_MAXC:
-				field->print_routine(field,
-						     assoc->max_cpus_pj,
-						     (curr_inx == field_count));
-				break;
-			case PRINT_MAXJ:
-				field->print_routine(field,
-						     assoc->max_jobs,
-						     (curr_inx == field_count));
-				break;
-			case PRINT_MAXN:
-				field->print_routine(field,
-						     assoc->max_nodes_pj,
-						     (curr_inx == field_count));
-				break;
-			case PRINT_MAXS:
-				field->print_routine(field,
-						     assoc->max_submit_jobs,
-						     (curr_inx == field_count));
-				break;
-			case PRINT_MAXW:
-				field->print_routine(
-					field,
-					assoc->max_wall_pj,
-					(curr_inx == field_count));
-				break;
-			case PRINT_PID:
-				field->print_routine(field,
-						     assoc->parent_id,
-						     (curr_inx == field_count));
-				break;
-			case PRINT_PNAME:
-				field->print_routine(field,
-						     assoc->parent_acct,
-						     (curr_inx == field_count));
-				break;
-			case PRINT_PART:
-				field->print_routine(field,
-						     assoc->partition,
-						     (curr_inx == field_count));
-				break;
-			case PRINT_QOS:
-				if (!g_qos_list)
-					g_qos_list = acct_storage_g_get_qos(
-						db_conn, my_uid, NULL);
-
-				field->print_routine(field,
-						     g_qos_list,
-						     assoc->qos_list,
-						     (curr_inx == field_count));
-				break;
-			case PRINT_QOS_RAW:
-				field->print_routine(field,
-						     assoc->qos_list,
-						     (curr_inx == field_count));
-				break;
-			case PRINT_RGT:
-				field->print_routine(field,
-						     assoc->rgt,
-						     (curr_inx == field_count));
-				break;
-			case PRINT_USER:
-				field->print_routine(field,
-						     assoc->user,
-						     (curr_inx == field_count));
-				break;
-			default:
-				field->print_routine(
-					field, NULL,
-					(curr_inx == field_count));
-				break;
-			}
+			sacctmgr_print_association_rec(
+				assoc, field, tree_list,
+				(curr_inx == field_count));
 			curr_inx++;
 		}
 		list_iterator_reset(itr2);
@@ -913,6 +658,7 @@ extern int sacctmgr_list_association(int argc, char *argv[])
 	list_destroy(first_list);
 	list_destroy(assoc_list);
 	list_destroy(print_fields_list);
+	tree_display = 0;
 	return rc;
 }
 

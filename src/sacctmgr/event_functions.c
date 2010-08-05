@@ -471,22 +471,6 @@ extern int sacctmgr_list_event(int argc, char *argv[])
 	List format_list = list_create(slurm_destroy_char);
 	List print_fields_list; /* types are of print_field_t */
 
-	enum {
-		PRINT_CLUSTER,
-		PRINT_CLUSTER_NODES,
-		PRINT_CPUS,
-		PRINT_DURATION,
-		PRINT_END,
-		PRINT_EVENTRAW,
-		PRINT_EVENT,
-		PRINT_NODENAME,
-		PRINT_START,
-		PRINT_REASON,
-		PRINT_STATERAW,
-		PRINT_STATE,
-		PRINT_USER
-	};
-
 	for (i=0; i<argc; i++) {
 		int command_len = strlen(argv[i]);
 		if (!strncasecmp (argv[i], "Where", MAX(command_len, 5))

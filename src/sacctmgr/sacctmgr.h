@@ -87,6 +87,94 @@
 #define CKPT_WAIT	10
 #define	MAX_INPUT_FIELDS 128
 
+typedef enum {
+	/* COMMON */
+	PRINT_ACCT,
+	PRINT_CLUSTER,
+	PRINT_COORDS,
+	PRINT_DESC,
+	PRINT_NAME,
+	PRINT_PART,
+	PRINT_QOS,
+	PRINT_QOS_RAW,
+	PRINT_USER,
+	PRINT_WCKEYS,
+
+	/* LIMITS */
+	PRINT_FAIRSHARE = 1000,
+	PRINT_GRPCM,
+	PRINT_GRPCRM,
+	PRINT_GRPC,
+	PRINT_GRPJ,
+	PRINT_GRPN,
+	PRINT_GRPS,
+	PRINT_GRPW,
+	PRINT_MAXCM,
+	PRINT_MAXCRM,
+	PRINT_MAXC,
+	PRINT_MAXJ,
+	PRINT_MAXN,
+	PRINT_MAXS,
+	PRINT_MAXW,
+
+	/* ASSOCIATION */
+	PRINT_DQOS = 2000,
+	PRINT_ID,
+	PRINT_LFT,
+	PRINT_PID,
+	PRINT_PNAME,
+	PRINT_RGT,
+
+	/* CLUSTER */
+	PRINT_CHOST = 3000,
+	PRINT_CPORT,
+	PRINT_CLASS,
+	PRINT_CPUS,
+	PRINT_FLAGS,
+	PRINT_NODECNT,
+	PRINT_CLUSTER_NODES,
+	PRINT_RPC_VERSION,
+	PRINT_SELECT,
+
+	/* ACCT */
+	PRINT_ORG = 4000,
+
+	/* USER */
+	PRINT_ADMIN = 5000,
+	PRINT_DACCT,
+	PRINT_DWCKEY,
+
+	/* QOS */
+	PRINT_PREE = 6000,
+	PRINT_PREEM,
+	PRINT_PRIO,
+	PRINT_UF,
+
+	/* PROBLEM */
+	PRINT_PROBLEM = 7000,
+
+	/* TXN */
+	PRINT_ACTIONRAW = 8000,
+	PRINT_ACTION,
+	PRINT_ACTOR,
+	PRINT_INFO,
+	PRINT_TS,
+	PRINT_WHERE,
+
+	/* EVENT */
+	PRINT_DURATION,
+	PRINT_END,
+	PRINT_EVENTRAW,
+	PRINT_EVENT,
+	PRINT_NODENAME,
+	PRINT_REASON,
+	PRINT_START,
+	PRINT_STATERAW,
+	PRINT_STATE,
+
+} sacctmgr_print_t;
+
+
 extern char *command_name;
 extern int exit_code;	/* sacctmgr's exit code, =1 on any error at any time */
 extern int exit_flag;	/* program to terminate if =1 */
@@ -99,6 +187,7 @@ extern int readonly_flag; /* make it so you can only run list commands */
 extern void *db_conn;
 extern uint32_t my_uid;
 extern List g_qos_list;
+extern bool tree_display;
 
 extern int sacctmgr_set_association_cond(slurmdb_association_cond_t *assoc_cond,
 					 char *type, char *value,
@@ -106,6 +195,9 @@ extern int sacctmgr_set_association_cond(slurmdb_association_cond_t *assoc_cond,
 extern int sacctmgr_set_association_rec(slurmdb_association_rec_t *assoc_rec,
 					char *type, char *value,
 					int command_len, int option);
+extern void sacctmgr_print_association_rec(slurmdb_association_rec_t *assoc,
+					   print_field_t *field, List tree_list,
+					   bool last);
 
 extern int sacctmgr_add_association(int argc, char *argv[]);
 extern int sacctmgr_add_user(int argc, char *argv[]);
@@ -168,6 +260,7 @@ extern void sacctmgr_print_qos_limits(slurmdb_qos_rec_t *qos);
 extern int sacctmgr_remove_assoc_usage(slurmdb_association_cond_t *assoc_cond);
 extern int sort_coord_list(slurmdb_coord_rec_t *coord_a,
 			   slurmdb_coord_rec_t *coord_b);
+extern List sacctmgr_process_format_list(List format_list);
 
 /* you need to free the objects returned from these functions */
 extern slurmdb_association_rec_t *sacctmgr_find_association(char *user,
