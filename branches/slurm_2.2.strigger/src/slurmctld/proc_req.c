@@ -3533,8 +3533,12 @@ inline static void  _slurm_rpc_trigger_pull(slurm_msg_t * msg)
 	START_TIMER;
 	debug("Processing RPC: REQUEST_TRIGGER_PULL from uid=%u",
 	      (unsigned int) uid);
-
-	rc = trigger_pull(trigger_ptr);
+	if (!validate_super_user(uid)) {
+		rc = ESLURM_USER_ID_MISSING;
+		error("Security violation, REQUEST_JOB_NOTIFY RPC from uid=%u",
+		      (unsigned int) uid);
+	} else
+		rc = trigger_pull(trigger_ptr);
 	END_TIMER2("_slurm_rpc_trigger_pull");
 
 	slurm_send_rc_msg(msg, rc);
