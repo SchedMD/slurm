@@ -1255,6 +1255,9 @@ uid_t *_get_group_members(char *group_name)
 	setgrent_r(&fp);
 	while (!getgrent_r(&grp, grp_buffer, PW_BUF_SIZE, &fp)) {
 		grp_result = &grp;
+#elif defined (__APPLE__)
+	setgrent();
+	while ((grp_result = getgrent()) != NULL) {
 #else
 	setgrent();
 	while (getgrent_r(&grp, grp_buffer, PW_BUF_SIZE,
@@ -1274,6 +1277,9 @@ uid_t *_get_group_members(char *group_name)
 	setgrent_r(&fp);
 	while (!getgrent_r(&grp, grp_buffer, PW_BUF_SIZE, &fp)) {
 		grp_result = &grp;
+#elif defined (__APPLE__)
+	setgrent();
+	while ((grp_result = getgrent()) != NULL) {
 #else
 	setgrent();
 	while (getgrent_r(&grp, grp_buffer, PW_BUF_SIZE,
@@ -1309,6 +1315,8 @@ uid_t *_get_group_members(char *group_name)
 	setpwent();
 #if defined (__sun)
 	while ((pwd_result = getpwent_r(&pw, pw_buffer, PW_BUF_SIZE)) != NULL) {
+#elif defined (__APPLE__)
+	while ((pwd_result = getpwent()) != NULL) {
 #else
 
 	while (!getpwent_r(&pw, pw_buffer, PW_BUF_SIZE, &pwd_result)) {
