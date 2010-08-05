@@ -81,14 +81,25 @@
  * the slurmctld we will have these symbols defined.  They will get
  * overwritten when linking with the slurmctld.
  */
-slurm_ctl_conf_t slurmctld_conf;
-struct node_record *node_record_table_ptr;
-List part_list;
-List job_list;
-int node_record_count;
-time_t last_node_update;
-struct switch_record *switch_record_table;
-int switch_record_cnt;
+#if defined (__APPLE__)
+	slurm_ctl_conf_t slurmctld_conf __attribute__((weak_import));
+	struct node_record *node_record_table_ptr __attribute__((weak_import));
+	List part_list __attribute__((weak_import));
+	List job_list __attribute__((weak_import));
+	int node_record_count __attribute__((weak_import));
+	time_t last_node_update __attribute__((weak_import));
+	struct switch_record *switch_record_table __attribute__((weak_import));
+	int switch_record_cnt __attribute__((weak_import));
+#else
+	slurm_ctl_conf_t slurmctld_conf;
+	struct node_record *node_record_table_ptr;
+	List part_list;
+	List job_list;
+	int node_record_count;
+	time_t last_node_update;
+	struct switch_record *switch_record_table;
+	int switch_record_cnt;
+#endif
 
 struct select_nodeinfo {
 	uint16_t magic;		/* magic number */
