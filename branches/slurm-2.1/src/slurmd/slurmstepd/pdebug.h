@@ -43,6 +43,7 @@
 #endif
 
 #include <unistd.h>
+#include <sys/param.h>
 #ifdef HAVE_SYS_PTRACE_H
 #  include <sys/ptrace.h>
 #endif
@@ -64,6 +65,8 @@ int pdebug_trace_process(slurmd_job_t *job, pid_t pid);
 #else
 #  ifdef PTRACE_FIVE_ARGS
 #    define _PTRACE(r,p,a,d) ptrace((r),(p),(a),(d),NULL)
+#  elif defined BSD
+#    define _PTRACE(r,p,a,d) ptrace((r),(p),(a),(d))
 #  else
 #    define _PTRACE(r,p,a,d) ptrace((r),(p),(a),(void *)(d))
 #  endif
