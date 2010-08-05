@@ -1279,7 +1279,7 @@ extern int sacctmgr_modify_account(int argc, char *argv[])
 			i++;
 			prev_set = _set_rec(&i, argc, argv, NULL, NULL,
 					    acct, assoc);
-			rec_set |= prev_set;
+			rec_set = MAX(rec_set, prev_set);
 		} else {
 			prev_set = _set_cond(&i, argc, argv, acct_cond, NULL);
 			cond_set = MAX(cond_set, prev_set);
@@ -1324,7 +1324,7 @@ extern int sacctmgr_modify_account(int argc, char *argv[])
 	}
 
 	notice_thread_init();
-	if (rec_set | 1) { // process the account changes
+	if(rec_set == 3 || rec_set == 1) { // process the account changes
 		if(cond_set == 2) {
 			exit_code=1;
 			fprintf(stderr,
@@ -1360,7 +1360,7 @@ extern int sacctmgr_modify_account(int argc, char *argv[])
 	}
 
 assoc_start:
-	if (rec_set | 2) { // process the association changes
+	if(rec_set == 3 || rec_set == 2) { // process the association changes
 		if(cond_set == 1 && !acct_cond->assoc_cond->acct_list) {
 			rc = SLURM_ERROR;
 			exit_code=1;
