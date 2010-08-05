@@ -306,7 +306,11 @@ static pid_t _run_prog(char *prog, char *arg)
 	if (child == 0) {
 		for (i=0; i<128; i++)
 			close(i);
+#ifdef SETPGRP_TWO_ARGS
+		setpgrp(0, 0);
+#else
 		setpgrp();
+#endif
 		execl(program, arg0, arg1, NULL);
 		exit(1);
 	} else if (child < 0) {
