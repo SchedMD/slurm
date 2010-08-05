@@ -99,6 +99,7 @@ static void *_signal_handler(void *no_data);
 static void  _update_logging(void);
 static void  _update_nice(void);
 static void  _usage(char *prog_name);
+static void  _trigger_slurmdbd_event(uint32_t trig_type);
 
 /* main - slurmctld main function, start various threads and process RPCs */
 int main(int argc, char *argv[])
@@ -107,6 +108,7 @@ int main(int argc, char *argv[])
 	char node_name[128];
 	void *db_conn = NULL;
 	assoc_init_args_t assoc_init_arg;
+	uint32_t trigger_type;
 
 	_init_config();
 	log_init(argv[0], log_opts, LOG_DAEMON, NULL);
@@ -181,6 +183,8 @@ int main(int argc, char *argv[])
 			    !strcmp(slurmdbd_conf->dbd_host, "localhost"))) {
 			backup = false;
 			have_control = true;
+			trigger_type = TRIGGER_TYPE_PRI_DBD_RES_OP;
+			_trigger_slurmdbd_event(trigger_type);
 		} else {
 			fatal("This host not configured to run SlurmDBD "
 			      "(%s != %s | (backup) %s)",
@@ -618,4 +622,18 @@ static void _become_slurm_user(void)
 		fatal("Can not set uid to SlurmUser(%u): %m",
 		      slurmdbd_conf->slurm_user_id);
 	}
+}
+
+static void _trigger_slurmdbd_event(uint32_t trig_type)
+{
+	trigger_info_t ti;
+	memset(&ti, 0, sizeof(trigger_info_t));
+	ti.res_id = "*";
+	ti.res_type = TRIGGER_RES_TYPE_SLURMDBD;
+	ti.trig_type = trig_type;
+	if (slurm_pull_trigger(&ti) != SLURM_SUCCESS)
+		error("processing trigger_slurmdbd_event: %m");
+	else
+		verbose("trigger pulled for SLURMDBD event successful");
+	return;
 }

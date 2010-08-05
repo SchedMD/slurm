@@ -66,6 +66,7 @@
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/read_config.h"
 #include "src/slurmctld/slurmctld.h"
+#include "src/slurmctld/trigger_mgr.h"
 
 #ifndef VOLATILE
 #if defined(__STDC__) || defined(__cplusplus)
@@ -83,6 +84,7 @@ static void *       _background_signal_hand(void *no_data);
 static int          _backup_reconfig(void);
 static int          _ping_controller(void);
 static int          _shutdown_primary_controller(int wait_time);
+static void	     _trigger_slurmctld_event(uint32_t trig_type);
 inline static void  _update_cred_key(void);
 
 /* Local variables */
@@ -104,6 +106,8 @@ static int backup_sigarray[] = {
  *	mode, assuming control when the primary controller stops responding */
 void run_backup(void)
 {
+	uint32_t trigger_type;
+
 	time_t last_ping = 0;
 	pthread_attr_t thread_attr_sig, thread_attr_rpc;
 	slurmctld_lock_t config_read_lock = {
@@ -142,6 +146,8 @@ void run_backup(void)
 		sleep(1);
 	}
 	slurm_attr_destroy(&thread_attr_sig);
+	trigger_type = TRIGGER_TYPE_BU_CTLD_RES_OP;
+	_trigger_slurmctld_event(trigger_type);
 
 	sleep(5);       /* Give the primary slurmctld set-up time */
 	/* repeatedly ping ControlMachine */
@@ -198,6 +204,9 @@ void run_backup(void)
 		slurmctld_conf.control_machine,
 		slurmctld_conf.backup_controller);
 	unlock_slurmctld(config_read_lock);
+
+	trigger_pri_ctld_fail();
+	trigger_bu_ctld_as_ctrl();
 
 	pthread_kill(slurmctld_config.thread_id_sig, SIGTERM);
 	pthread_join(slurmctld_config.thread_id_sig, NULL);
@@ -521,4 +530,20 @@ static int _shutdown_primary_controller(int wait_time)
 		sleep(wait_time);
 
 	return SLURM_SUCCESS;
+}
+
+static void _trigger_slurmctld_event(uint32_t trig_type)
+{
+	trigger_info_t ti;
+
+	memset(&ti, 0, sizeof(trigger_info_t));
+	ti.res_id = "*";
+	ti.res_type = TRIGGER_RES_TYPE_SLURMCTLD;
+	ti.trig_type = trig_type;
+	if (slurm_pull_trigger(&ti)) {
+		error("error from _trigger_slurmctld_event in backup.c");
+		return;
+	}
+	verbose("trigger pulled for SLURMCTLD event successful");
+	return;
 }

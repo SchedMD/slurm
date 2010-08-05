@@ -142,6 +142,7 @@ inline static void  _slurm_rpc_suspend(slurm_msg_t * msg);
 inline static void  _slurm_rpc_trigger_clear(slurm_msg_t * msg);
 inline static void  _slurm_rpc_trigger_get(slurm_msg_t * msg);
 inline static void  _slurm_rpc_trigger_set(slurm_msg_t * msg);
+inline static void  _slurm_rpc_trigger_pull(slurm_msg_t * msg);
 inline static void  _slurm_rpc_update_job(slurm_msg_t * msg);
 inline static void  _slurm_rpc_update_node(slurm_msg_t * msg);
 inline static void  _slurm_rpc_update_partition(slurm_msg_t * msg);
@@ -365,6 +366,10 @@ void slurmctld_req (slurm_msg_t * msg)
 		break;
 	case REQUEST_TRIGGER_CLEAR:
 		_slurm_rpc_trigger_clear(msg);
+		slurm_free_trigger_msg(msg->data);
+		break;
+	case REQUEST_TRIGGER_PULL:
+		_slurm_rpc_trigger_pull(msg);
 		slurm_free_trigger_msg(msg->data);
 		break;
 	case REQUEST_JOB_NOTIFY:
@@ -3514,6 +3519,23 @@ inline static void  _slurm_rpc_trigger_set(slurm_msg_t * msg)
 
 	rc = trigger_set(uid, gid, trigger_ptr);
 	END_TIMER2("_slurm_rpc_trigger_set");
+
+	slurm_send_rc_msg(msg, rc);
+}
+
+inline static void  _slurm_rpc_trigger_pull(slurm_msg_t * msg)
+{
+	int rc;
+	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
+	trigger_info_msg_t * trigger_ptr = (trigger_info_msg_t *) msg->data;
+	DEF_TIMERS;
+	
+	START_TIMER;
+	debug("Processing RPC: REQUEST_TRIGGER_PULL from uid=%u",
+	      (unsigned int) uid);
+
+	rc = trigger_pull(trigger_ptr);
+	END_TIMER2("_slurm_rpc_trigger_pull");
 
 	slurm_send_rc_msg(msg, rc);
 }

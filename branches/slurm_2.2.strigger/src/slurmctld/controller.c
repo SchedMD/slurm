@@ -161,6 +161,7 @@ int      cluster_cpus = 0;
 int   with_slurmdbd = 0;
 
 /* Local variables */
+static bool     bu_ctld_running = true;
 static int	daemonize = DEFAULT_DAEMONIZE;
 static int	debug_level = 0;
 static char	*debug_logfile = NULL;
@@ -168,11 +169,12 @@ static bool     dump_core = false;
 static uint32_t max_server_threads = MAX_SERVER_THREADS;
 static int	new_nice = 0;
 static char	node_name[MAX_SLURM_NAME];
+static int      primary = 1 ;
 static int	recover   = DEFAULT_RECOVER;
 static pthread_cond_t server_thread_cond = PTHREAD_COND_INITIALIZER;
 static pid_t	slurmctld_pid;
 static char    *slurm_conf_filename;
-static int      primary = 1 ;
+
 /*
  * Static list of signals to block in this process
  * *Must be zero-terminated*
@@ -193,6 +195,7 @@ static void         _init_config(void);
 static void         _init_pidfile(void);
 static void         _kill_old_slurmctld(void);
 static void         _parse_commandline(int argc, char *argv[]);
+inline static int   _ping_backup_controller(void);
 static void         _remove_assoc(slurmdb_association_rec_t *rec);
 static void         _remove_qos(slurmdb_qos_rec_t *rec);
 inline static int   _report_locks_set(void);
@@ -446,6 +449,9 @@ int main(int argc, char *argv[])
 			run_backup();
 		} else if (_valid_controller()) {
 			(void) _shutdown_backup_controller(SHUTDOWN_WAIT);
+			trigger_pri_ctld_res_ctrl();
+			debug3("main in controller.c called "
+			       "trigger_pri_ctld_res_ctrl");
 			/* Now recover the remaining state information */
 			lock_slurmctld(config_write_lock);
 			if (switch_restore(slurmctld_conf.state_save_location,
@@ -490,6 +496,12 @@ int main(int argc, char *argv[])
 		}
 
 		info("Running as primary controller");
+		if ((slurmctld_config.resume_backup == false) &&
+		    (primary == 1)) {
+			trigger_pri_ctld_res_op();
+			debug3("main in controller.c called "
+			       "trigger_pri_ctld_res_op");
+		}
 
 		clusteracct_storage_g_register_ctld(
 			acct_db_conn,
@@ -545,7 +557,7 @@ int main(int argc, char *argv[])
 
 		/*
 		 * create attached thread for node power management
-		 */
+  		 */
 		start_power_mgr(&slurmctld_config.thread_id_power);
 
 		/*
@@ -1217,9 +1229,10 @@ static void *_slurmctld_background(void *no_data)
 	static time_t last_assert_primary_time;
 	static time_t last_trigger;
 	static time_t last_node_acct;
+	static time_t last_ctld_bu_ping;
 	time_t now;
 	int no_resp_msg_interval, ping_interval, purge_job_interval;
-	int group_time, group_force;
+	int group_time, group_force, rc;
 	DEF_TIMERS;
 
 	/* Locks: Read config */
@@ -1247,7 +1260,7 @@ static void *_slurmctld_background(void *no_data)
 	last_sched_time = last_checkpoint_time = last_group_time = now;
 	last_purge_job_time = last_trigger = last_health_check_time = now;
 	last_timelimit_time = last_assert_primary_time = now;
-	last_no_resp_msg_time = last_resv_time = now;
+	last_no_resp_msg_time = last_resv_time = last_ctld_bu_ping = now;
 
 	if ((slurmctld_conf.min_job_age > 0) &&
 	    (slurmctld_conf.min_job_age < PURGE_JOB_INTERVAL)) {
@@ -1403,6 +1416,21 @@ static void *_slurmctld_background(void *no_data)
 			if (schedule())
 				last_checkpoint_time = 0; /* force state save */
 			set_job_elig_time();
+		}
+
+		if (slurmctld_conf.slurmctld_timeout &&
+		    (difftime(now, last_ctld_bu_ping) >
+		     slurmctld_conf.slurmctld_timeout)) {
+			rc = _ping_backup_controller();
+			if (rc == SLURM_PROTOCOL_SUCCESS)
+				bu_ctld_running = true;
+			else if (bu_ctld_running) {
+				debug3("controller.c calling "
+				       "trigger_backup_slurmctld_failure");  
+				trigger_bu_ctld_acct_fail();
+				bu_ctld_running = false;
+			}
+			last_ctld_bu_ping = now;
 		}
 
 		if (difftime(now, last_trigger) > TRIGGER_INTERVAL) {
@@ -2024,4 +2052,39 @@ static void _test_thread_limit(void)
 }
 #endif
 	return;
+}
+
+/* Ping primary ControlMachine
+ * RET 0 if no error */
+static int _ping_backup_controller(void)
+{
+	int rc;
+	slurm_msg_t req;
+	/* Locks: Read configuration */
+	slurmctld_lock_t config_read_lock = {
+		READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
+
+	/*
+	 *  Set address of controller to ping
+	 */
+	slurm_msg_t_init(&req);
+	lock_slurmctld(config_read_lock);
+	debug3("pinging backup slurmctld at %s", slurmctld_conf.backup_addr);
+	slurm_set_addr(&req.address, slurmctld_conf.slurmctld_port,
+		       slurmctld_conf.backup_addr);
+	unlock_slurmctld(config_read_lock);
+
+	req.msg_type = REQUEST_PING;
+
+	if (slurm_send_recv_rc_msg_only_one(&req, &rc, 0) < 0) {
+		debug2("_ping_backup_controller/slurm_send_node_msg error: %m");
+		return SLURM_ERROR;
+	}
+
+	if (rc) {
+		debug2("_ping_backup_controller/response error %d", rc);
+		return SLURM_PROTOCOL_ERROR;
+	}
+
+	return SLURM_PROTOCOL_SUCCESS;
 }

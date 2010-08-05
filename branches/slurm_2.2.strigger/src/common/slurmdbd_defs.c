@@ -105,6 +105,7 @@ static char *    slurmdbd_auth_info  = NULL;
 static char *    slurmdbd_cluster    = NULL;
 static bool      rollback_started    = 0;
 static bool      halt_agent          = 0;
+static bool      database_failure    = 0;
 
 static void * _agent(void *x);
 static void   _close_slurmdbd_fd(void);
@@ -128,6 +129,9 @@ static void   _shutdown_agent(void);
 static void   _slurmdbd_packstr(void *str, uint16_t rpc_version, Buf buffer);
 static int    _slurmdbd_unpackstr(void **str, uint16_t rpc_version, Buf buffer);
 static int    _tot_wait (struct timeval *start_time);
+static void   _trigger_slurmctld_event(uint32_t trig_type);
+static void   _trigger_slurmdbd_event(uint32_t trig_type);
+static void   _trigger_database_event(uint32_t trig_type);
 
 /****************************************************************************
  * Socket open/close/read/write functions
@@ -337,7 +341,7 @@ extern int slurm_send_slurmdbd_msg(uint16_t rpc_version, slurmdbd_msg_t *req)
 	Buf buffer;
 	int cnt, rc = SLURM_SUCCESS;
 	static time_t syslog_time = 0;
-
+	uint32_t trigger_type;
 
 	buffer = pack_slurmdbd_msg(req, rpc_version);
 
@@ -357,6 +361,8 @@ extern int slurm_send_slurmdbd_msg(uint16_t rpc_version, slurmdbd_msg_t *req)
 		syslog_time = time(NULL);
 		error("slurmdbd: agent queue filling, RESTART SLURMDBD NOW");
 		syslog(LOG_CRIT, "*** RESTART SLURMDBD NOW ***");
+		trigger_type = TRIGGER_TYPE_PRI_DBD_FAIL;
+		_trigger_slurmdbd_event(trigger_type);
 	}
 	if (cnt == (MAX_AGENT_QUEUE - 1))
 		cnt -= _purge_job_start_req();
@@ -365,6 +371,9 @@ extern int slurm_send_slurmdbd_msg(uint16_t rpc_version, slurmdbd_msg_t *req)
 			fatal("list_enqueue: memory allocation failure");
 	} else {
 		error("slurmdbd: agent queue is full, discarding request");
+		trigger_type = TRIGGER_TYPE_PRI_CTLD_ACCT_FULL;
+		_trigger_slurmctld_event(trigger_type);
+
 		rc = SLURM_ERROR;
 	}
 
@@ -380,6 +389,8 @@ static void _open_slurmdbd_fd(bool need_db)
 	uint16_t slurmdbd_port;
 	char *   slurmdbd_host;
 	bool try_backup = true;
+	uint32_t trigger_type;
+
 	if (slurmdbd_fd >= 0) {
 		debug("Attempt to re-open slurmdbd socket");
 		/* clear errno (checked after this for errors) */
@@ -420,14 +431,27 @@ again:
 			int rc;
 			fd_set_nonblocking(slurmdbd_fd);
 			rc = _send_init_msg();
-			if((!need_db && rc == ESLURM_DB_CONNECTION)
-			   || (rc == SLURM_SUCCESS)) {
+			if ((!need_db && (rc == ESLURM_DB_CONNECTION)) ||
+			    (rc == SLURM_SUCCESS)) {
 				debug("slurmdbd: Sent DbdInit msg");
 				/* clear errno (checked after this for
 				   errors)
 				*/
 				errno = 0;
 			} else {
+				if ((database_failure == false) &&
+				    (rc == ESLURM_DB_CONNECTION)) {
+					trigger_type = TRIGGER_TYPE_PRI_DB_FAIL;
+					_trigger_database_event(trigger_type);
+					database_failure = true;
+				}
+				if ((database_failure == true) &&
+				    (rc == SLURM_SUCCESS)) {
+					trigger_type = TRIGGER_TYPE_PRI_DB_RES_OP;
+					_trigger_database_event(trigger_type);
+					database_failure = false;
+				}
+			
 				error("slurmdbd: Sending DbdInit msg: %m");
 				_close_slurmdbd_fd();
 			}
@@ -1802,6 +1826,7 @@ static int _fd_writeable(slurm_fd_t fd)
 	int rc, time_left;
 	struct timeval tstart;
 	char temp[2];
+	uint32_t trigger_type;
 
 	ufds.fd     = fd;
 	ufds.events = POLLOUT;
@@ -1826,6 +1851,8 @@ static int _fd_writeable(slurm_fd_t fd)
 		 */
 		if (ufds.revents & POLLHUP || (recv(fd, &temp, 1, 0) == 0)) {
 			debug2("SlurmDBD connection is closed");
+			trigger_type = TRIGGER_TYPE_PRI_DBD_FAIL;
+			_trigger_slurmdbd_event(trigger_type);
 			return -1;
 		}
 		if (ufds.revents & POLLNVAL) {
@@ -3914,4 +3941,49 @@ unpack_error:
 	*out = NULL;
 	return SLURM_ERROR;
 
+}
+
+static void _trigger_slurmctld_event(uint32_t trig_type)
+{
+	trigger_info_t ti;
+
+	memset(&ti, 0, sizeof(trigger_info_t));
+	ti.res_id = "*";
+	ti.res_type = TRIGGER_RES_TYPE_SLURMCTLD;
+	ti.trig_type = trig_type;
+	if (slurm_pull_trigger(&ti))
+		error("processing_trigger_slurmctld_event: %m");
+	else
+		verbose("trigger pulled for slurmctld event successful");
+	return;
+}
+
+static void _trigger_slurmdbd_event(uint32_t trig_type)
+{
+	trigger_info_t ti;
+
+	memset(&ti, 0, sizeof(trigger_info_t));
+	ti.res_id = "*";
+	ti.res_type = TRIGGER_RES_TYPE_SLURMDBD;
+	ti.trig_type = trig_type;
+	if (slurm_pull_trigger(&ti))
+		error("processing_trigger_slurmdbd_event: %m");
+	else
+		verbose("trigger pulled for slurmdbd event successful");
+	return;
+}
+
+static void _trigger_database_event(uint32_t trig_type)
+{
+	trigger_info_t ti;
+
+	memset(&ti, 0, sizeof(trigger_info_t));
+	ti.res_id = "*";
+	ti.res_type = TRIGGER_RES_TYPE_DATABASE;
+	ti.trig_type = trig_type;
+	if (slurm_pull_trigger(&ti))
+		error("processing_trigger_database_event: %m");
+	else
+		verbose("trigger pulled for database event successful");
+	return;
 }

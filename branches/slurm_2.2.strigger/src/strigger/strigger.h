@@ -57,6 +57,17 @@ struct strigger_parameters {
 	bool     mode_set;
 	bool     mode_get;
 	bool     mode_clear;
+	bool	 primary_slurmctld_failure;
+	bool	 primary_slurmctld_resumed_operation;
+	bool	 primary_slurmctld_resumed_control;
+	bool	 primary_slurmctld_acct_buffer_full;
+	bool	 backup_slurmctld_failure;
+	bool	 backup_slurmctld_resumed_operation;
+	bool	 backup_slurmctld_assumed_control;
+	bool	 primary_slurmdbd_failure;
+	bool	 primary_slurmdbd_resumed_operation;
+	bool	 primary_database_failure;
+	bool	 primary_database_resumed_operation;
 	bool     node_down;
 	bool     node_drained;
 	char *   node_id;

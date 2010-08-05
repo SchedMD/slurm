@@ -45,10 +45,11 @@
 #include <src/common/slurm_protocol_defs.h>
 
 
-/* User RPC processing to set, get, and clear triggers */
+/* User RPC processing to set, get, clear, and pull triggers */
 extern int trigger_clear(uid_t uid, trigger_info_msg_t *msg);
 extern trigger_info_msg_t * trigger_get(uid_t uid, trigger_info_msg_t *msg);
 extern int trigger_set(uid_t uid, gid_t gid, trigger_info_msg_t *msg);
+extern int trigger_pull(trigger_info_msg_t *msg);
 
 /* Note the some event has occured and flag triggers as needed */
 extern void trigger_block_error(void);
@@ -57,6 +58,17 @@ extern void trigger_node_drained(struct node_record *node_ptr);
 extern void trigger_node_failing(struct node_record *node_ptr);
 extern void trigger_node_up(struct node_record *node_ptr);
 extern void trigger_reconfig(void);
+extern void trigger_pri_ctld_fail(void);
+extern void trigger_pri_ctld_res_op(void);
+extern void trigger_pri_ctld_res_ctrl(void);
+extern void trigger_pri_ctld_acct_full(void);
+extern void trigger_bu_ctld_acct_fail(void);
+extern void trigger_bu_ctld_res_op(void);
+extern void trigger_bu_ctld_as_ctrl(void);
+extern void trigger_pri_dbd_fail(void);
+extern void trigger_pri_dbd_res_op(void);
+extern void trigger_pri_db_fail(void);
+extern void trigger_pri_db_res_op(void);
 
 /* Save and restore state for slurmctld fail-over or restart */
 extern int  trigger_state_save(void);

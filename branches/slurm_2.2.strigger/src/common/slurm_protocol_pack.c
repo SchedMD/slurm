@@ -1062,6 +1062,7 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 	case RESPONSE_TRIGGER_GET:
 	case REQUEST_TRIGGER_SET:
 	case REQUEST_TRIGGER_CLEAR:
+	case REQUEST_TRIGGER_PULL:
 		_pack_trigger_msg((trigger_info_msg_t *) msg->data, buffer,
 				  msg->protocol_version);
 		break;
@@ -1569,6 +1570,7 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 	case RESPONSE_TRIGGER_GET:
 	case REQUEST_TRIGGER_SET:
 	case REQUEST_TRIGGER_CLEAR:
+	case REQUEST_TRIGGER_PULL:
 		rc = _unpack_trigger_msg((trigger_info_msg_t **)
 					 &msg->data, buffer,
 					 msg->protocol_version);
@@ -7431,16 +7433,31 @@ static void _pack_trigger_msg(trigger_info_msg_t *msg , Buf buffer,
 			      uint16_t protocol_version)
 {
 	int i;
+	uint16_t uint16_tmp;
 
-	pack32(msg->record_count, buffer);
-	for (i=0; i<msg->record_count; i++) {
-		pack32 (msg->trigger_array[i].trig_id,   buffer);
-		pack16 (msg->trigger_array[i].res_type,  buffer);
-		packstr(msg->trigger_array[i].res_id,    buffer);
-		pack16 (msg->trigger_array[i].trig_type, buffer);
-		pack16 (msg->trigger_array[i].offset,    buffer);
-		pack32 (msg->trigger_array[i].user_id,   buffer);
-		packstr(msg->trigger_array[i].program,   buffer);
+	if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
+		pack32(msg->record_count, buffer);
+		for (i=0; i<msg->record_count; i++) {
+			pack32 (msg->trigger_array[i].trig_id,   buffer);
+			pack16 (msg->trigger_array[i].res_type,  buffer);
+			packstr(msg->trigger_array[i].res_id,    buffer);
+			pack32 (msg->trigger_array[i].trig_type, buffer);
+			pack16 (msg->trigger_array[i].offset,    buffer);
+			pack32 (msg->trigger_array[i].user_id,   buffer);
+			packstr(msg->trigger_array[i].program,   buffer);
+		}
+	} else {
+		pack32(msg->record_count, buffer);
+		for (i=0; i<msg->record_count; i++) {
+			pack32 (msg->trigger_array[i].trig_id,   buffer);
+			pack16 (msg->trigger_array[i].res_type,  buffer);
+			packstr(msg->trigger_array[i].res_id,    buffer);
+			uint16_tmp = msg->trigger_array[i].trig_type;
+			pack16 (uint16_tmp,                      buffer);
+			pack16 (msg->trigger_array[i].offset,    buffer);
+			pack32 (msg->trigger_array[i].user_id,   buffer);
+			packstr(msg->trigger_array[i].program,   buffer);
+		}
 	}
 }
 
@@ -7448,22 +7465,41 @@ static int  _unpack_trigger_msg(trigger_info_msg_t ** msg_ptr , Buf buffer,
 				uint16_t protocol_version)
 {
 	int i;
+	uint16_t uint16_tmp;
 	uint32_t uint32_tmp;
 	trigger_info_msg_t *msg = xmalloc(sizeof(trigger_info_msg_t));
 
-	safe_unpack32  (&msg->record_count, buffer);
-	msg->trigger_array = xmalloc(sizeof(trigger_info_t) *
-				     msg->record_count);
-	for (i=0; i<msg->record_count; i++) {
-		safe_unpack32(&msg->trigger_array[i].trig_id,   buffer);
-		safe_unpack16(&msg->trigger_array[i].res_type,  buffer);
-		safe_unpackstr_xmalloc(&msg->trigger_array[i].res_id,
-				       &uint32_tmp, buffer);
-		safe_unpack16(&msg->trigger_array[i].trig_type, buffer);
-		safe_unpack16(&msg->trigger_array[i].offset,    buffer);
-		safe_unpack32(&msg->trigger_array[i].user_id,   buffer);
-		safe_unpackstr_xmalloc(&msg->trigger_array[i].program,
-				       &uint32_tmp, buffer);
+	if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
+		safe_unpack32  (&msg->record_count, buffer);
+		msg->trigger_array = xmalloc(sizeof(trigger_info_t) *
+					     msg->record_count);
+		for (i=0; i<msg->record_count; i++) {
+			safe_unpack32(&msg->trigger_array[i].trig_id,   buffer);
+			safe_unpack16(&msg->trigger_array[i].res_type,  buffer);
+			safe_unpackstr_xmalloc(&msg->trigger_array[i].res_id,
+					       &uint32_tmp, buffer);
+			safe_unpack32(&msg->trigger_array[i].trig_type, buffer);
+			safe_unpack16(&msg->trigger_array[i].offset,    buffer);
+			safe_unpack32(&msg->trigger_array[i].user_id,   buffer);
+			safe_unpackstr_xmalloc(&msg->trigger_array[i].program,
+					       &uint32_tmp, buffer);
+		}
+	} else {
+		safe_unpack32  (&msg->record_count, buffer);
+		msg->trigger_array = xmalloc(sizeof(trigger_info_t) *
+					     msg->record_count);
+		for (i=0; i<msg->record_count; i++) {
+			safe_unpack32(&msg->trigger_array[i].trig_id,   buffer);
+			safe_unpack16(&msg->trigger_array[i].res_type,  buffer);
+			safe_unpackstr_xmalloc(&msg->trigger_array[i].res_id,
+					       &uint32_tmp, buffer);
+			safe_unpack16(&uint16_tmp, buffer);
+			msg->trigger_array[i].trig_type = uint16_tmp;
+			safe_unpack16(&msg->trigger_array[i].offset,    buffer);
+			safe_unpack32(&msg->trigger_array[i].user_id,   buffer);
+			safe_unpackstr_xmalloc(&msg->trigger_array[i].program,
+					       &uint32_tmp, buffer);
+		}
 	}
 	*msg_ptr = msg;
 	return SLURM_SUCCESS;

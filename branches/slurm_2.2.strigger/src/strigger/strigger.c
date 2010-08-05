@@ -62,10 +62,10 @@
 
 static int   _clear_trigger(void);
 static int   _get_trigger(void);
-static char *_res_type(uint8_t  res_type);
+static char *_res_type(uint16_t  res_type);
 static int   _set_trigger(void);
 static int   _trig_offset(uint16_t offset);
-static char *_trig_type(uint16_t trig_type);
+static char *_trig_type(uint32_t trig_type);
 static char *_trig_user(uint32_t user_id);
 
 int main(int argc, char *argv[])
@@ -159,6 +159,50 @@ static int _set_trigger(void)
 		ti.trig_type |= TRIGGER_TYPE_UP;
 	if (params.reconfig)
 		ti.trig_type |= TRIGGER_TYPE_RECONFIG;
+	if (params.primary_slurmctld_failure) {
+		ti.trig_type |= TRIGGER_TYPE_PRI_CTLD_FAIL;
+		ti.res_type = TRIGGER_RES_TYPE_SLURMCTLD;
+	}
+	if (params.primary_slurmctld_resumed_operation) {
+		ti.trig_type |= TRIGGER_TYPE_PRI_CTLD_RES_OP;
+		ti.res_type = TRIGGER_RES_TYPE_SLURMCTLD;
+	}
+	if (params.primary_slurmctld_resumed_control) {
+		ti.trig_type |=  TRIGGER_TYPE_PRI_CTLD_RES_CTRL;
+		ti.res_type = TRIGGER_RES_TYPE_SLURMCTLD;
+	}
+	if (params.primary_slurmctld_acct_buffer_full) {
+		ti.trig_type |= TRIGGER_TYPE_PRI_CTLD_ACCT_FULL;
+		ti.res_type = TRIGGER_RES_TYPE_SLURMCTLD;
+	}
+	if (params.backup_slurmctld_failure) {
+		ti.trig_type |= TRIGGER_TYPE_BU_CTLD_FAIL;
+		ti.res_type = TRIGGER_RES_TYPE_SLURMCTLD;
+	}
+	if (params.backup_slurmctld_resumed_operation) {
+		ti.trig_type |= TRIGGER_TYPE_BU_CTLD_RES_OP;
+		ti.res_type = TRIGGER_RES_TYPE_SLURMCTLD;
+	}
+	if (params.backup_slurmctld_assumed_control) {
+		ti.trig_type |= TRIGGER_TYPE_BU_CTLD_AS_CTRL;
+		ti.res_type = TRIGGER_RES_TYPE_SLURMCTLD;
+	}
+	if (params.primary_slurmdbd_failure) {
+		ti.trig_type |= TRIGGER_TYPE_PRI_DBD_FAIL;
+		ti.res_type = TRIGGER_RES_TYPE_SLURMDBD;
+	}
+	if (params.primary_slurmdbd_resumed_operation) {
+		ti.trig_type |= TRIGGER_TYPE_PRI_DBD_RES_OP;
+		ti.res_type = TRIGGER_RES_TYPE_SLURMDBD;
+	}
+	if (params.primary_database_failure) {
+		ti.trig_type |= TRIGGER_TYPE_PRI_DB_FAIL;
+		ti.res_type = TRIGGER_RES_TYPE_DATABASE;
+	}
+	if (params.primary_database_resumed_operation) {
+		ti.trig_type |= TRIGGER_TYPE_PRI_DB_RES_OP;
+		ti.res_type = TRIGGER_RES_TYPE_DATABASE;
+	}
 
 	ti.offset = params.offset + 0x8000;
 	ti.program = params.program;
@@ -189,68 +233,68 @@ static int _get_trigger(void)
 	for (i=0; i<trig_msg->record_count; i++) {
 		/* perform filtering */
 		if (params.block_err) {
-			if (trig_msg->trigger_array[i].trig_type
-					!= TRIGGER_TYPE_BLOCK_ERR)
+			if (trig_msg->trigger_array[i].trig_type !=
+			    TRIGGER_TYPE_BLOCK_ERR)
 				continue;
 		}
 		if (params.job_fini) {
-			if (trig_msg->trigger_array[i].trig_type
-					!= TRIGGER_TYPE_FINI)
+			if (trig_msg->trigger_array[i].trig_type !=
+			    TRIGGER_TYPE_FINI)
 				continue;
 		}
 		if (params.job_id) {
 			long jid;
-			if (trig_msg->trigger_array[i].res_type
-					!= TRIGGER_RES_TYPE_JOB)
+			if (trig_msg->trigger_array[i].res_type !=
+			    TRIGGER_RES_TYPE_JOB)
 				continue;
 			jid = atol(trig_msg->trigger_array[i].res_id);
 			if (jid != params.job_id)
 				continue;
 		}
 		if (params.node_down) {
-			if ((trig_msg->trigger_array[i].res_type
-					!= TRIGGER_RES_TYPE_NODE)
-			||  (trig_msg->trigger_array[i].trig_type
-					!= TRIGGER_TYPE_DOWN))
+			if ((trig_msg->trigger_array[i].res_type !=
+			     TRIGGER_RES_TYPE_NODE) ||
+			   (trig_msg->trigger_array[i].trig_type !=
+			    TRIGGER_TYPE_DOWN))
 				continue;
 		}
 		if (params.node_drained) {
-			if ((trig_msg->trigger_array[i].res_type
-					!= TRIGGER_RES_TYPE_NODE)
-			||  (trig_msg->trigger_array[i].trig_type
-					!= TRIGGER_TYPE_DRAINED))
+			if ((trig_msg->trigger_array[i].res_type !=
+			     TRIGGER_RES_TYPE_NODE) ||
+			    (trig_msg->trigger_array[i].trig_type !=
+			     TRIGGER_TYPE_DRAINED))
 				continue;
 		}
 		if (params.node_fail) {
-			if ((trig_msg->trigger_array[i].res_type
-					!= TRIGGER_RES_TYPE_NODE)
-			||  (trig_msg->trigger_array[i].trig_type
-					!= TRIGGER_TYPE_FAIL))
+			if ((trig_msg->trigger_array[i].res_type !=
+			     TRIGGER_RES_TYPE_NODE) ||
+			    (trig_msg->trigger_array[i].trig_type !=
+			     TRIGGER_TYPE_FAIL))
 				continue;
 		}
 		if (params.node_id) {
-			if (trig_msg->trigger_array[i].res_type
-					!= TRIGGER_RES_TYPE_NODE)
+			if (trig_msg->trigger_array[i].res_type !=
+			    TRIGGER_RES_TYPE_NODE)
 				continue;
 		}
 		if (params.node_idle) {
-			if ((trig_msg->trigger_array[i].res_type
-					!= TRIGGER_RES_TYPE_NODE)
-			||  (trig_msg->trigger_array[i].trig_type
-					!= TRIGGER_TYPE_IDLE))
+			if ((trig_msg->trigger_array[i].res_type !=
+			     TRIGGER_RES_TYPE_NODE) ||
+			    (trig_msg->trigger_array[i].trig_type !=
+			     TRIGGER_TYPE_IDLE))
 				continue;
 		}
 		if (params.node_up) {
-			if ((trig_msg->trigger_array[i].res_type
-					!= TRIGGER_RES_TYPE_NODE)
-			||  (trig_msg->trigger_array[i].trig_type
-					!= TRIGGER_TYPE_UP))
+			if ((trig_msg->trigger_array[i].res_type !=
+			     TRIGGER_RES_TYPE_NODE) ||
+			    (trig_msg->trigger_array[i].trig_type !=
+			     TRIGGER_TYPE_UP))
 				continue;
 		}
 		if (params.time_limit) {
 			if ((trig_msg->trigger_array[i].res_type
-					!= TRIGGER_RES_TYPE_JOB)
-			||  (trig_msg->trigger_array[i].trig_type
+					!= TRIGGER_RES_TYPE_JOB) ||
+			    (trig_msg->trigger_array[i].trig_type
 					!= TRIGGER_TYPE_TIME))
 				continue;
 		}
@@ -264,14 +308,93 @@ static int _get_trigger(void)
 			    trig_msg->trigger_array[i].user_id)
 				continue;
 		}
+		if (params.primary_slurmctld_failure) {
+			if ((trig_msg->trigger_array[i].res_type !=
+			     TRIGGER_RES_TYPE_SLURMCTLD) ||
+			    (trig_msg->trigger_array[i].trig_type !=
+			     TRIGGER_TYPE_PRI_CTLD_FAIL))
+				continue;
+		}
+		if (params.primary_slurmctld_resumed_operation) {
+			if ((trig_msg->trigger_array[i].res_type !=
+			     TRIGGER_RES_TYPE_SLURMCTLD) ||
+			    (trig_msg->trigger_array[i].trig_type !=
+			     TRIGGER_TYPE_PRI_CTLD_RES_OP))
+				continue;
+		}
+		if (params.primary_slurmctld_resumed_control) {
+			if ((trig_msg->trigger_array[i].res_type !=
+			     TRIGGER_RES_TYPE_SLURMCTLD) ||
+			    (trig_msg->trigger_array[i].trig_type !=
+			     TRIGGER_TYPE_PRI_CTLD_RES_CTRL))
+				continue;
+		}
+		if (params.primary_slurmctld_acct_buffer_full) {
+			if ((trig_msg->trigger_array[i].res_type !=
+			     TRIGGER_RES_TYPE_SLURMCTLD) ||
+			    (trig_msg->trigger_array[i].trig_type !=
+			     TRIGGER_TYPE_PRI_CTLD_ACCT_FULL))
+				continue;
+		}
+		if (params.backup_slurmctld_failure){
+			if ((trig_msg->trigger_array[i].res_type !=
+			     TRIGGER_RES_TYPE_SLURMCTLD) ||
+			    (trig_msg->trigger_array[i].trig_type !=
+			     TRIGGER_TYPE_BU_CTLD_FAIL))
+				continue;
+		}
+		if (params.backup_slurmctld_resumed_operation){
+			if ((trig_msg->trigger_array[i].res_type !=
+			     TRIGGER_RES_TYPE_SLURMCTLD) ||
+			    (trig_msg->trigger_array[i].trig_type !=
+			     TRIGGER_TYPE_BU_CTLD_RES_OP))
+				continue;
+		}
+		if (params.backup_slurmctld_assumed_control){
+			if ((trig_msg->trigger_array[i].res_type !=
+			     TRIGGER_RES_TYPE_SLURMCTLD) ||
+			    (trig_msg->trigger_array[i].trig_type !=
+			     TRIGGER_TYPE_BU_CTLD_AS_CTRL))
+				continue;
+		}
+		if (params.primary_slurmdbd_failure){
+			if ((trig_msg->trigger_array[i].res_type !=
+			     TRIGGER_RES_TYPE_SLURMDBD) ||
+			    (trig_msg->trigger_array[i].trig_type !=
+			     TRIGGER_TYPE_PRI_DBD_FAIL))
+				continue;
+		}
+		if (params.primary_slurmdbd_resumed_operation){
+			if ((trig_msg->trigger_array[i].res_type !=
+			     TRIGGER_RES_TYPE_SLURMDBD) ||
+			    (trig_msg->trigger_array[i].trig_type !=
+			     TRIGGER_TYPE_PRI_DBD_RES_OP))
+				continue;
+		}
+		if (params.primary_database_failure){
+			if ((trig_msg->trigger_array[i].res_type !=
+			     TRIGGER_RES_TYPE_DATABASE) ||
+			    (trig_msg->trigger_array[i].trig_type !=
+			     TRIGGER_TYPE_PRI_DB_FAIL))
+				continue;
+		}
+		if (params.primary_database_resumed_operation){
+			if ((trig_msg->trigger_array[i].res_type !=
+			     TRIGGER_RES_TYPE_DATABASE) ||
+			    (trig_msg->trigger_array[i].trig_type !=
+			     TRIGGER_TYPE_PRI_DB_RES_OP))
+				continue;
+		}
 
 		if (line_no == 0) {
-			/*      7777777 88888888 7777777 999999999 666666 88888888 xxxxxxx */
-			printf("TRIG_ID RES_TYPE  RES_ID TYPE      OFFSET USER     PROGRAM\n");
+			/*      7777777 88888888 7777777 20202020202020202020 */
+			printf("TRIG_ID RES_TYPE  RES_ID        TYPE          "
+			       "OFFSET USER     PROGRAM\n");
+			/*      666666 88888888 xxxxxxx */
 		}
 		line_no++;
 
-		printf("%7u %-8s %7s %-9s %6d %-8s %s\n",
+		printf("%7u %-8s %7s %-20s %6d %-8s %s\n",
 			trig_msg->trigger_array[i].trig_id,
 			_res_type(trig_msg->trigger_array[i].res_type),
 			trig_msg->trigger_array[i].res_id,
@@ -285,17 +408,23 @@ static int _get_trigger(void)
 	return 0;
 }
 
-static char *_res_type(uint8_t res_type)
+static char *_res_type(uint16_t res_type)
 {
 	if      (res_type == TRIGGER_RES_TYPE_JOB)
 		return "job";
 	else if (res_type == TRIGGER_RES_TYPE_NODE)
 		return "node";
+	else if (res_type == TRIGGER_RES_TYPE_SLURMCTLD)
+		return "slurmctld";
+	else if (res_type == TRIGGER_RES_TYPE_SLURMDBD)
+		return "slurmdbd";
+	else if (res_type == TRIGGER_RES_TYPE_DATABASE)
+		return "database";
 	else
 		return "unknown";
 }
 
-static char *_trig_type(uint16_t trig_type)
+static char *_trig_type(uint32_t trig_type)
 {
 	if      (trig_type == TRIGGER_TYPE_UP)
 		return "up";
@@ -313,6 +442,28 @@ static char *_trig_type(uint16_t trig_type)
 		return "fini";
 	else if (trig_type == TRIGGER_TYPE_RECONFIG)
 		return "reconfig";
+	else if (trig_type == TRIGGER_TYPE_PRI_CTLD_FAIL)
+		return "primary_slurmctld_failure";
+	else if (trig_type == TRIGGER_TYPE_PRI_CTLD_RES_OP)
+		return "primary_slurmctld_resumed_operation";
+	else if (trig_type == TRIGGER_TYPE_PRI_CTLD_RES_CTRL)
+		return "primary_slurmctld_resumed_control";
+	else if (trig_type == TRIGGER_TYPE_PRI_CTLD_ACCT_FULL)
+		return "primary_slurmctld_acct_buffer_full";
+	else if (trig_type == TRIGGER_TYPE_BU_CTLD_FAIL)
+		return "backup_slurmctld_failure";
+	else if (trig_type == TRIGGER_TYPE_BU_CTLD_RES_OP)
+		return "backup_slurmctld_resumed_operation";
+	else if (trig_type == TRIGGER_TYPE_BU_CTLD_AS_CTRL)
+		return "backup_slurmctld_assumed_control";
+	else if (trig_type == TRIGGER_TYPE_PRI_DBD_FAIL)
+		return "primary_slurmdbd_failure";
+	else if (trig_type == TRIGGER_TYPE_PRI_DBD_RES_OP)
+		return "primary_slurmdbd_resumed_operation";
+	else if (trig_type == TRIGGER_TYPE_PRI_DB_FAIL)
+		return "primary_database_failure";
+	else if (trig_type == TRIGGER_TYPE_PRI_DB_RES_OP)
+		return "primary_database_resumed_operation";
 	else if (trig_type == TRIGGER_TYPE_BLOCK_ERR)
 		return "block_err";
 	else
