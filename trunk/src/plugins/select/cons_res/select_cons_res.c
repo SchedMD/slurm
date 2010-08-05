@@ -116,17 +116,32 @@
  * the slurmctld we will have these symbols defined.  They will get
  * overwritten when linking with the slurmctld.
  */
-slurm_ctl_conf_t slurmctld_conf;
-struct node_record *node_record_table_ptr;
-List part_list;
-List job_list;
-int node_record_count;
-time_t last_node_update;
-struct switch_record *switch_record_table;
-int switch_record_cnt;
-bitstr_t *avail_node_bitmap;
-bitstr_t *idle_node_bitmap;
-List slurm_find_preemptable_jobs(struct job_record *job_ptr);
+#if defined (__APPLE__)
+	slurm_ctl_conf_t slurmctld_conf __attribute__((weak_import));
+	struct node_record *node_record_table_ptr __attribute__((weak_import));
+	List part_list __attribute__((weak_import));
+	List job_list __attribute__((weak_import));
+	int node_record_count __attribute__((weak_import));
+	time_t last_node_update __attribute__((weak_import));
+	struct switch_record *switch_record_table __attribute__((weak_import));
+	int switch_record_cnt __attribute__((weak_import));
+	bitstr_t *avail_node_bitmap __attribute__((weak_import));
+	bitstr_t *idle_node_bitmap __attribute__((weak_import));
+	List slurm_find_preemptable_jobs(struct job_record *job_ptr)
+			__attribute__((weak_import));
+#else
+	slurm_ctl_conf_t slurmctld_conf;
+	struct node_record *node_record_table_ptr;
+	List part_list;
+	List job_list;
+	int node_record_count;
+	time_t last_node_update;
+	struct switch_record *switch_record_table;
+	int switch_record_cnt;
+	bitstr_t *avail_node_bitmap;
+	bitstr_t *idle_node_bitmap;
+	List slurm_find_preemptable_jobs(struct job_record *job_ptr);
+#endif
 
 /*
  * These variables are required by the generic plugin interface.  If they

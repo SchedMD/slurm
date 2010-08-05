@@ -3972,6 +3972,8 @@ init_gids_cache(int cache)
 	setpwent();
 #if defined (__sun)
 	while ((pwd = getpwent_r(&pw, buf, BUF_SIZE)) != NULL) {
+#elif defined (__APPLE__)
+	while ((pwd = getpwent()) != NULL) {
 #else
 
 	while (!getpwent_r(&pw, buf, BUF_SIZE, &pwd)) {
