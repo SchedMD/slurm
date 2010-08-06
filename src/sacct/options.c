@@ -396,8 +396,6 @@ sacct [<OPTION>]                                                            \n\
 	           Equivalent to '--format=jobstep,state,error'. This option\n\
 	           has no effect if --dump is specified.                    \n\
      -c, --completion: Use job completion instead of accounting data.       \n\
-     -C, --clusters:                                                        \n\
-                   Only send data about these clusters. -1 for all clusters.\n\
      -d, --dump:   Dump the raw data records                                \n\
      -D, --duplicates:                                                      \n\
 	           If SLURM job ids are reset, some job numbers will        \n\
@@ -429,6 +427,14 @@ sacct [<OPTION>]                                                            \n\
                    job or comma-separated list of jobs. The default is all  \n\
                    jobs. Adding .step will display the specfic job step of  \n\
                    that job.                                                \n\
+     -k, --timelimit-min:                                                   \n\
+                   Only send data about jobs with this timelimit.           \n\
+                   If used with timelimit_max this will be the minimum      \n\
+                   timelimit of the range.  Default is no restriction.      \n\
+     -K, --timelimit-max:                                                   \n\
+                   Ignored by itself, but if timelimit_min is set this will \n\
+                   be the maximum timelimit of the range.  Default is no    \n\
+                   restriction.                                             \n\
      -l, --long:                                                            \n\
 	           Equivalent to specifying                                 \n\
 	           '--fields=jobid,jobname,partition,maxvsize,maxvsizenode, \n\
@@ -441,14 +447,8 @@ sacct [<OPTION>]                                                            \n\
 	           Display jobs ran on all clusters. By default, only jobs  \n\
                    ran on the cluster from where sacct is called are        \n\
                    displayed.                                               \n\
-     -m, --timelimit-min:                                                   \n\
-                   Only send data about jobs with this timelimit.           \n\
-                   If used with timelimit_max this will be the minimum      \n\
-                   timelimit of the range.  Default is no restriction.      \n\
-     -M, --timelimit-max:                                                   \n\
-                   Ignored by itself, but if timelimit_min is set this will \n\
-                   be the maximum timelimit of the range.  Default is no    \n\
-                   restriction.                                             \n\
+     -M, --clusters:                                                        \n\
+                   Only send data about these clusters. -1 for all clusters.\n\
      -n, --noheader:                                                        \n\
 	           No header will be added to the beginning of output.      \n\
                    The default is to print a header; the option has no effect\n\
@@ -601,12 +601,10 @@ void parse_command_line(int argc, char **argv)
 
 	static struct option long_options[] = {
 		{"allusers", 0,0, 'a'},
-		{"allclusters", 0,0, 'L'},
 		{"accounts", 1, 0, 'A'},
 		{"allocations", 0, &params.opt_allocs,  1},
 		{"brief", 0, 0, 'b'},
 		{"completion", 0, &params.opt_completion, 'c'},
-		{"clusters", 1, 0, 'C'},
 		{"dump", 0, 0, 'd'},
 		{"duplicates", 0, &params.opt_dup, 1},
 		{"helpformat", 0, 0, 'e'},
@@ -619,11 +617,12 @@ void parse_command_line(int argc, char **argv)
 		{"helpformat", 0, &params.opt_help, 2},
 		{"nnodes", 1, 0, 'i'},
 		{"ncpus", 1, 0, 'I'},
-		{"qos", 1, 0, 'q'},
 		{"jobs", 1, 0, 'j'},
+		{"timelimit-min", 1, 0, 'k'},
+		{"timelimit-max", 1, 0, 'K'},
 		{"long", 0, 0, 'l'},
-		{"timelimit-min", 1, 0, 'm'},
-		{"timelimit-max", 1, 0, 'M'},
+		{"allclusters", 0,0, 'L'},
+		{"clusters", 1, 0, 'M'},
 		{"nodelist", 1, 0, 'N'},
 		{"noheader", 0, 0, 'n'},
 		{"fields", 1, 0, 'o'},
@@ -631,6 +630,7 @@ void parse_command_line(int argc, char **argv)
 		{"formatted_dump", 0, 0, 'O'},
 		{"parsable", 0, 0, 'p'},
 		{"parsable2", 0, 0, 'P'},
+		{"qos", 1, 0, 'q'},
 		{"partition", 1, 0, 'r'},
 		{"state", 1, 0, 's'},
 		{"starttime", 1, 0, 'S'},
@@ -653,7 +653,7 @@ void parse_command_line(int argc, char **argv)
 
 	while (1) {		/* now cycle through the command line */
 		c = getopt_long(argc, argv,
-				"aA:bcC:dDeE:f:g:hi:I:j:lLnm:M:N:o:OpPq:r:s:S:Ttu:vVW:x:X",
+				"aA:bcC:dDeE:f:g:hi:I:j:k:K:lLM:nN:o:OpPq:r:s:S:Ttu:vVW:x:X",
 				long_options, &optionIndex);
 		if (c == -1)
 			break;
@@ -674,6 +674,10 @@ void parse_command_line(int argc, char **argv)
 			params.opt_completion = 1;
 			break;
 		case 'C':
+			/* 'C' is deprecated since 'M' is cluster on
+			   everything else.
+			*/
+		case 'M':
 			if(!strcasecmp(optarg, "-1")) {
 				all_clusters = 1;
 				break;
@@ -753,6 +757,18 @@ void parse_command_line(int argc, char **argv)
 					slurmdb_destroy_selected_step);
 			_addto_step_list(job_cond->step_list, optarg);
 			break;
+		case 'k':
+			job_cond->timelimit_min = time_str2mins(optarg);
+			if (((int32_t)job_cond->timelimit_min <= 0)
+			    && (job_cond->timelimit_min != INFINITE))
+				fatal("Invalid time limit specification");
+			break;
+		case 'K':
+			job_cond->timelimit_max = time_str2mins(optarg);
+			if (((int32_t)job_cond->timelimit_max <= 0)
+			    && (job_cond->timelimit_max != INFINITE))
+				fatal("Invalid time limit specification");
+			break;
 		case 'L':
 			all_clusters = 1;
 			break;
@@ -769,18 +785,6 @@ void parse_command_line(int argc, char **argv)
 				break;
 			}
 			job_cond->used_nodes = xstrdup(optarg);
-			break;
-		case 'm':
-			job_cond->timelimit_min = time_str2mins(optarg);
-			if (((int32_t)job_cond->timelimit_min <= 0)
-			    && (job_cond->timelimit_min != INFINITE))
-				fatal("Invalid time limit specification");
-			break;
-		case 'M':
-			job_cond->timelimit_max = time_str2mins(optarg);
-			if (((int32_t)job_cond->timelimit_max <= 0)
-			    && (job_cond->timelimit_max != INFINITE))
-				fatal("Invalid time limit specification");
 			break;
 		case 'o':
 			xstrfmtcat(params.opt_field_list, "%s,", optarg);
