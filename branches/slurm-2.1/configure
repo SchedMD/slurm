@@ -864,6 +864,9 @@ CMD_LDFLAGS
 BLUEGENE_LOADED
 BLUEGENE_LOADED_FALSE
 BLUEGENE_LOADED_TRUE
+BGL_LOADED
+BGL_LOADED_FALSE
+BGL_LOADED_TRUE
 BG_INCLUDES
 am__fastdepCC_FALSE
 am__fastdepCC_TRUE
@@ -4475,37 +4478,37 @@ $as_echo "$as_me: Running in BG/L emulation mode" >&6;}
    	for bg_dir in $trydb2dir "" $bg_default_dirs; do
       	# Skip directories that don't exist
       		if test ! -z "$bg_dir" -a ! -d "$bg_dir" ; then
-         		continue;
+			continue;
       		fi
 
       		# Search for required BG API libraries in the directory
       		if test -z "$have_bg_ar" -a -f "$bg_dir/lib64/libbglbridge.so" ; then
-         		have_bg_ar=yes
+			have_bg_ar=yes
 			bg_bridge_so="$bg_dir/lib64/libbglbridge.so"
        	 		bg_ldflags="$bg_ldflags -L$bg_dir/lib64 -L/usr/lib64 -Wl,--unresolved-symbols=ignore-in-shared-libs -lbglbridge -lbgldb -ltableapi -lbglmachine -lexpat -lsaymessage"
-        	fi
+		fi
 
       		# Search for required DB2 library in the directory
       		if test -z "$have_db2" -a -f "$bg_dir/lib64/libdb2.so" ; then
-         		have_db2=yes
+			have_db2=yes
 	 	 	bg_db2_so="$bg_dir/lib64/libdb2.so"
        	 		bg_ldflags="$bg_ldflags -L$bg_dir/lib64 -ldb2"
        		fi
 
       		# Search for headers in the directory
       		if test -z "$have_bg_hdr" -a -f "$bg_dir/include/rm_api.h" ; then
-         		have_bg_hdr=yes
-         		bg_includes="-I$bg_dir/include"
+			have_bg_hdr=yes
+			bg_includes="-I$bg_dir/include"
       		fi
    	done
 
    	if test ! -z "$have_bg_ar" -a ! -z "$have_bg_hdr" -a ! -z "$have_db2" ; then
       		# ac_with_readline="no"
 		# Test to make sure the api is good
-                have_bg_files=yes
+		have_bg_files=yes
       		saved_LDFLAGS="$LDFLAGS"
       	 	LDFLAGS="$saved_LDFLAGS $bg_ldflags -m64"
-         	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+		cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
  int rm_set_serial(char *);
 int
@@ -4528,7 +4531,7 @@ rm -f core conftest.err conftest.$ac_objext \
 
   	if test ! -z "$have_bg_files" ; then
       		BG_INCLUDES="$bg_includes"
-	        CFLAGS="$CFLAGS -m64"
+		CFLAGS="$CFLAGS -m64"
 
 $as_echo "#define HAVE_3D 1" >>confdefs.h
 
@@ -4581,6 +4584,17 @@ _ACEOF
 
 
 
+ if test "x$ac_bluegene_loaded" = "xyes"; then
+  BGL_LOADED_TRUE=
+  BGL_LOADED_FALSE='#'
+else
+  BGL_LOADED_TRUE='#'
+  BGL_LOADED_FALSE=
+fi
+
+
+
+
 	# test for bluegene emulation mode
    	# Check whether --enable-bgp-emulation was given.
 if test "${enable_bgp_emulation+set}" = set; then :
@@ -4625,29 +4639,29 @@ $as_echo "$as_me: Running in BG/P emulation mode" >&6;}
    	for bg_dir in $trydb2dir "" $bg_default_dirs; do
       	# Skip directories that don't exist
       		if test ! -z "$bg_dir" -a ! -d "$bg_dir" ; then
-         		continue;
+			continue;
       		fi
 
 		soloc=$bg_dir/lib64/lib$libname.so
       		# Search for required BG API libraries in the directory
       		if test -z "$have_bg_ar" -a -f "$soloc" ; then
-         		have_bgp_ar=yes
+			have_bgp_ar=yes
 			bg_ldflags="$bg_ldflags -L$bg_dir/lib64 -L/usr/lib64 -Wl,--unresolved-symbols=ignore-in-shared-libs -l$libname"
-        	fi
+		fi
 
       		# Search for headers in the directory
       		if test -z "$have_bg_hdr" -a -f "$bg_dir/include/rm_api.h" ; then
-         		have_bgp_hdr=yes
-         		bg_includes="-I$bg_dir/include"
+			have_bgp_hdr=yes
+			bg_includes="-I$bg_dir/include"
       		fi
    	done
 
    	if test ! -z "$have_bgp_ar" -a ! -z "$have_bgp_hdr" ; then
       		# ac_with_readline="no"
 		# Test to make sure the api is good
-                saved_LDFLAGS="$LDFLAGS"
+		saved_LDFLAGS="$LDFLAGS"
       	 	LDFLAGS="$saved_LDFLAGS $bg_ldflags -m64"
-         	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+		cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
  int rm_set_serial(char *);
 int
@@ -4670,7 +4684,7 @@ rm -f core conftest.err conftest.$ac_objext \
 
   	if test ! -z "$have_bgp_files" ; then
       		BG_INCLUDES="$bg_includes"
-	        CFLAGS="$CFLAGS -m64"
+		CFLAGS="$CFLAGS -m64"
 
 $as_echo "#define HAVE_3D 1" >>confdefs.h
 
@@ -4697,7 +4711,7 @@ _ACEOF
 
 		{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for BG serial value" >&5
 $as_echo_n "checking for BG serial value... " >&6; }
-        	bg_serial="BGP"
+		bg_serial="BGP"
 
 # Check whether --with-bg-serial was given.
 if test "${with_bg_serial+set}" = set; then :
@@ -4714,6 +4728,7 @@ _ACEOF
  		#define ac_bluegene_loaded so we don't load another bluegene conf
 		ac_bluegene_loaded=yes
    	fi
+
 
 
 
@@ -6998,13 +7013,13 @@ if test "${lt_cv_nm_interface+set}" = set; then :
 else
   lt_cv_nm_interface="BSD nm"
   echo "int some_variable = 0;" > conftest.$ac_ext
-  (eval echo "\"\$as_me:7001: $ac_compile\"" >&5)
+  (eval echo "\"\$as_me:7016: $ac_compile\"" >&5)
   (eval "$ac_compile" 2>conftest.err)
   cat conftest.err >&5
-  (eval echo "\"\$as_me:7004: $NM \\\"conftest.$ac_objext\\\"\"" >&5)
+  (eval echo "\"\$as_me:7019: $NM \\\"conftest.$ac_objext\\\"\"" >&5)
   (eval "$NM \"conftest.$ac_objext\"" 2>conftest.err > conftest.out)
   cat conftest.err >&5
-  (eval echo "\"\$as_me:7007: output\"" >&5)
+  (eval echo "\"\$as_me:7022: output\"" >&5)
   cat conftest.out >&5
   if $GREP 'External.*some_variable' conftest.out > /dev/null; then
     lt_cv_nm_interface="MS dumpbin"
@@ -8209,7 +8224,7 @@ ia64-*-hpux*)
   ;;
 *-*-irix6*)
   # Find out which ABI we are using.
-  echo '#line 8212 "configure"' > conftest.$ac_ext
+  echo '#line 8227 "configure"' > conftest.$ac_ext
   if { { eval echo "\"\$as_me\":${as_lineno-$LINENO}: \"$ac_compile\""; } >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -9998,11 +10013,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:10001: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:10016: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:10005: \$? = $ac_status" >&5
+   echo "$as_me:10020: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -10337,11 +10352,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:10340: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:10355: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:10344: \$? = $ac_status" >&5
+   echo "$as_me:10359: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -10442,11 +10457,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:10445: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:10460: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:10449: \$? = $ac_status" >&5
+   echo "$as_me:10464: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -10497,11 +10512,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:10500: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:10515: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:10504: \$? = $ac_status" >&5
+   echo "$as_me:10519: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -12881,7 +12896,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<_LT_EOF
-#line 12884 "configure"
+#line 12899 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -12977,7 +12992,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<_LT_EOF
-#line 12980 "configure"
+#line 12995 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -14933,11 +14948,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:14936: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:14951: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:14940: \$? = $ac_status" >&5
+   echo "$as_me:14955: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -15032,11 +15047,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:15035: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:15050: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:15039: \$? = $ac_status" >&5
+   echo "$as_me:15054: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -15084,11 +15099,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:15087: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:15102: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:15091: \$? = $ac_status" >&5
+   echo "$as_me:15106: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -20386,6 +20401,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${am__fastdepCC_TRUE}" && test -z "${am__fastdepCC_FALSE}"; then
   as_fn_error "conditional \"am__fastdepCC\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${BGL_LOADED_TRUE}" && test -z "${BGL_LOADED_FALSE}"; then
+  as_fn_error "conditional \"BGL_LOADED\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${BLUEGENE_LOADED_TRUE}" && test -z "${BLUEGENE_LOADED_FALSE}"; then
