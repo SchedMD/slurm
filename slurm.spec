@@ -560,7 +560,7 @@ rm -rf $RPM_BUILD_ROOT
 #############################################################################
 
 %if %{slurm_with bluegene}
-%files bluegene.files bluegene
+%files -f bluegene.files bluegene
 %defattr(-,root,root)
 %{_libdir}/slurm/select_bluegene.so
 %dir /etc/ld.so.conf.d
