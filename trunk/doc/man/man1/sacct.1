@@ -94,14 +94,6 @@ This option has no effect when the
 option is also specified.
 
 .TP
-\f3\-C \fP\f2cluster_list\fP\f3,\fP  \f3\-\-cluster\fP\f3=\fP\f2cluster_list\fP
-Displays the statistics only for the jobs started on the clusters specified by
-the \f2cluster_list\fP operand, which is a comma\-separated list of clusters.
-Space characters are not allowed in the \f2cluster_list\fP. \-1 for
-all clusters, default is current cluster you are executing the sacct
-command on\&.
-
-.TP
 \f3\-c\fP\f3,\fP \f3\-\-completion\fP
 Use job completion instead of job accounting.
 .IP
@@ -206,6 +198,17 @@ Space characters are not permitted in this list.
 The default is to display information on all jobs.
 
 .TP
+\f3\-k\fP\f3,\fP \f3\-\-timelimit-min\fP
+Only send data about jobs with this timelimit.  If used with
+timelimit_max this will be the minimum timelimit of the range.
+Default is no restriction.
+
+.TP
+\f3\-K\fP\f3,\fP \f3\-\-timelimit-max\fP
+Ignored by itself, but if timelimit_min is set this will be the
+maximum timelimit of the range.  Default is no restriction.
+
+.TP
 \f3\-l\fP\f3,\fP \f3\-\-long\fP
 Equivalent to specifying:
 .IP
@@ -213,22 +216,18 @@ Equivalent to specifying:
 \'\-\-fields=jobid,jobname,partition,maxvsize,maxvsizenode,maxvsizetask,avevsize,maxrss,maxrssnode,maxrsstask,averss,maxpages,maxpagesnode,maxpagestask,avepages,mincpu,mincpunode,mincputask,avecpu,ntasks,alloccpus,elapsed,state,exitcode\'
 .ad
 
-
 .TP
 \f3\-L\fP\f3,\fP \f3\-\-allclusters\fP
 Display jobs ran on all clusters. By default, only jobs ran on the
 cluster from where sacct is called are displayed.
 
 .TP
-\f3\-m\fP\f3,\fP \f3\-\-timelimit-min\fP
-Only send data about jobs with this timelimit.  If used with
-timelimit_max this will be the minimum timelimit of the range.
-Default is no restriction.
-
-.TP
-\f3\-M\fP\f3,\fP \f3\-\-timelimit-max\fP
-Ignored by itself, but if timelimit_min is set this will be the
-maximum timelimit of the range.  Default is no restriction.
+\f3\-M \fP\f2cluster_list\fP\f3,\fP  \f3\-\-cluster\fP\f3=\fP\f2cluster_list\fP
+Displays the statistics only for the jobs started on the clusters specified by
+the \f2cluster_list\fP operand, which is a comma\-separated list of clusters.
+Space characters are not allowed in the \f2cluster_list\fP. \-1 for
+all clusters, default is current cluster you are executing the sacct
+command on\&.
 
 .TP
 \f3\-n\fP\f3,\fP \f3\-\-noheader\fP
