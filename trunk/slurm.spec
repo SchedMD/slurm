@@ -750,7 +750,6 @@ rm -rf $RPM_BUILD_ROOT
 %post
 if [ -x /sbin/ldconfig ]; then
     /sbin/ldconfig %{_libdir}
-    /sbin/ldconfig %{_libdir}
     if [ $1 = 1 ]; then
 	[ -x /sbin/chkconfig ] && /sbin/chkconfig --add slurm
     fi
