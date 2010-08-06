@@ -8,7 +8,7 @@
 #    X_AC_BG
 #
 #  DESCRIPTION:
-#    Test for Blue Gene/L specific files. 
+#    Test for Blue Gene/L specific files.
 #    If found define HAVE_BG and HAVE_FRONT_END.
 ##*****************************************************************************
 
@@ -21,20 +21,20 @@ AC_DEFUN([X_AC_BGL],
 
 	# test for bluegene emulation mode
 
-  	AC_ARG_ENABLE(bluegene-emulation, AS_HELP_STRING(--enable-bluegene-emulation, deprecated use --enable-bgl-emulation), 
+  	AC_ARG_ENABLE(bluegene-emulation, AS_HELP_STRING(--enable-bluegene-emulation, deprecated use --enable-bgl-emulation),
 	[ case "$enableval" in
 	  yes) bluegene_emulation=yes ;;
 	  no)  bluegene_emulation=no ;;
 	  *)   AC_MSG_ERROR([bad value "$enableval" for --enable-bluegene-emulation])  ;;
-    	esac ])	
+    	esac ])
 
-  	AC_ARG_ENABLE(bgl-emulation, AS_HELP_STRING(--enable-bgl-emulation,Run SLURM in BGL mode on a non-bluegene system), 
+  	AC_ARG_ENABLE(bgl-emulation, AS_HELP_STRING(--enable-bgl-emulation,Run SLURM in BGL mode on a non-bluegene system),
 	[ case "$enableval" in
 	  yes) bgl_emulation=yes ;;
 	  no)  bgl_emulation=no ;;
 	  *)   AC_MSG_ERROR([bad value "$enableval" for --enable-bgl-emulation])  ;;
-    	esac ])	
- 	
+    	esac ])
+
 	if test "x$bluegene_emulation" = "xyes" -o "x$bgl_emulation" = "xyes"; then
       		AC_DEFINE(HAVE_3D, 1, [Define to 1 if 3-dimensional architecture])
   		AC_DEFINE(SYSTEM_DIMENSIONS, 3, [3-dimensional architecture])
@@ -52,43 +52,43 @@ AC_DEFUN([X_AC_BGL],
    	for bg_dir in $trydb2dir "" $bg_default_dirs; do
       	# Skip directories that don't exist
       		if test ! -z "$bg_dir" -a ! -d "$bg_dir" ; then
-         		continue;
+			continue;
       		fi
 
       		# Search for required BG API libraries in the directory
       		if test -z "$have_bg_ar" -a -f "$bg_dir/lib64/libbglbridge.so" ; then
-         		have_bg_ar=yes
+			have_bg_ar=yes
 			bg_bridge_so="$bg_dir/lib64/libbglbridge.so"
        	 		bg_ldflags="$bg_ldflags -L$bg_dir/lib64 -L/usr/lib64 -Wl,--unresolved-symbols=ignore-in-shared-libs -lbglbridge -lbgldb -ltableapi -lbglmachine -lexpat -lsaymessage"
-        	fi
-      
+		fi
+
       		# Search for required DB2 library in the directory
       		if test -z "$have_db2" -a -f "$bg_dir/lib64/libdb2.so" ; then
-         		have_db2=yes
+			have_db2=yes
 	 	 	bg_db2_so="$bg_dir/lib64/libdb2.so"
        	 		bg_ldflags="$bg_ldflags -L$bg_dir/lib64 -ldb2"
        		fi
 
       		# Search for headers in the directory
       		if test -z "$have_bg_hdr" -a -f "$bg_dir/include/rm_api.h" ; then
-         		have_bg_hdr=yes
-         		bg_includes="-I$bg_dir/include"
+			have_bg_hdr=yes
+			bg_includes="-I$bg_dir/include"
       		fi
    	done
-	
+
    	if test ! -z "$have_bg_ar" -a ! -z "$have_bg_hdr" -a ! -z "$have_db2" ; then
       		# ac_with_readline="no"
 		# Test to make sure the api is good
-                have_bg_files=yes
+		have_bg_files=yes
       		saved_LDFLAGS="$LDFLAGS"
       	 	LDFLAGS="$saved_LDFLAGS $bg_ldflags -m64"
-         	AC_LINK_IFELSE([AC_LANG_PROGRAM([[ int rm_set_serial(char *); ]], [[ rm_set_serial(""); ]])],[have_bg_files=yes],[AC_MSG_ERROR(There is a problem linking to the BG/L api.)])
-		LDFLAGS="$saved_LDFLAGS"         	
+		AC_LINK_IFELSE([AC_LANG_PROGRAM([[ int rm_set_serial(char *); ]], [[ rm_set_serial(""); ]])],[have_bg_files=yes],[AC_MSG_ERROR(There is a problem linking to the BG/L api.)])
+		LDFLAGS="$saved_LDFLAGS"
    	fi
 
   	if test ! -z "$have_bg_files" ; then
       		BG_INCLUDES="$bg_includes"
-	        CFLAGS="$CFLAGS -m64"
+		CFLAGS="$CFLAGS -m64"
       		AC_DEFINE(HAVE_3D, 1, [Define to 1 if 3-dimensional architecture])
   		AC_DEFINE(SYSTEM_DIMENSIONS, 3, [3-dimensional architecture])
       		AC_DEFINE(HAVE_BG, 1, [Define to 1 if emulating or running on Blue Gene system])
@@ -101,9 +101,9 @@ AC_DEFUN([X_AC_BGL],
 		AC_MSG_CHECKING(for BG serial value)
       		bg_serial="BGL"
       		AC_ARG_WITH(bg-serial,
-         	AS_HELP_STRING(--with-bg-serial=NAME,set BG_SERIAL value), [bg_serial="$withval"])
+		AS_HELP_STRING(--with-bg-serial=NAME,set BG_SERIAL value), [bg_serial="$withval"])
      		AC_MSG_RESULT($bg_serial)
-     		AC_DEFINE_UNQUOTED(BG_SERIAL, "$bg_serial", [Define the BG_SERIAL value])	
+     		AC_DEFINE_UNQUOTED(BG_SERIAL, "$bg_serial", [Define the BG_SERIAL value])
  		#define ac_bluegene_loaded so we don't load another bluegene conf
 		ac_bluegene_loaded=yes
   	fi
@@ -114,15 +114,15 @@ AC_DEFUN([X_AC_BGL],
 AC_DEFUN([X_AC_BGP],
 [
 	# test for bluegene emulation mode
-   	AC_ARG_ENABLE(bgp-emulation, AS_HELP_STRING(--enable-bgp-emulation,Run SLURM in BG/P mode on a non-bluegene system), 
+   	AC_ARG_ENABLE(bgp-emulation, AS_HELP_STRING(--enable-bgp-emulation,Run SLURM in BG/P mode on a non-bluegene system),
 	[ case "$enableval" in
 	  yes) bgp_emulation=yes ;;
 	  no)  bgp_emulation=no ;;
 	  *)   AC_MSG_ERROR([bad value "$enableval" for --enable-bgp-emulation])  ;;
-    	esac ])	
+    	esac ])
 
 	# Skip if already set
-   	if test "x$ac_bluegene_loaded" = "xyes" ; then 
+   	if test "x$ac_bluegene_loaded" = "xyes" ; then
 		bg_default_dirs=""
 	elif test "x$bgp_emulation" = "xyes"; then
       		AC_DEFINE(HAVE_3D, 1, [Define to 1 if 3-dimensional architecture])
@@ -136,42 +136,42 @@ AC_DEFUN([X_AC_BGP],
 		ac_bluegene_loaded=yes
 	else
 		bg_default_dirs="/bgsys/drivers/ppcfloor"
-	fi	
-	
+	fi
+
 	libname=bgpbridge
 
    	for bg_dir in $trydb2dir "" $bg_default_dirs; do
       	# Skip directories that don't exist
       		if test ! -z "$bg_dir" -a ! -d "$bg_dir" ; then
-         		continue;
+			continue;
       		fi
 
 		soloc=$bg_dir/lib64/lib$libname.so
       		# Search for required BG API libraries in the directory
       		if test -z "$have_bg_ar" -a -f "$soloc" ; then
-         		have_bgp_ar=yes
+			have_bgp_ar=yes
 			bg_ldflags="$bg_ldflags -L$bg_dir/lib64 -L/usr/lib64 -Wl,--unresolved-symbols=ignore-in-shared-libs -l$libname"
-        	fi
-      
+		fi
+
       		# Search for headers in the directory
       		if test -z "$have_bg_hdr" -a -f "$bg_dir/include/rm_api.h" ; then
-         		have_bgp_hdr=yes
-         		bg_includes="-I$bg_dir/include"
+			have_bgp_hdr=yes
+			bg_includes="-I$bg_dir/include"
       		fi
    	done
-	
+
    	if test ! -z "$have_bgp_ar" -a ! -z "$have_bgp_hdr" ; then
       		# ac_with_readline="no"
 		# Test to make sure the api is good
-                saved_LDFLAGS="$LDFLAGS"
+		saved_LDFLAGS="$LDFLAGS"
       	 	LDFLAGS="$saved_LDFLAGS $bg_ldflags -m64"
-         	AC_LINK_IFELSE([AC_LANG_PROGRAM([[ int rm_set_serial(char *); ]], [[ rm_set_serial(""); ]])],[have_bgp_files=yes],[AC_MSG_ERROR(There is a problem linking to the BG/P api.)])
-		LDFLAGS="$saved_LDFLAGS"         	
+		AC_LINK_IFELSE([AC_LANG_PROGRAM([[ int rm_set_serial(char *); ]], [[ rm_set_serial(""); ]])],[have_bgp_files=yes],[AC_MSG_ERROR(There is a problem linking to the BG/P api.)])
+		LDFLAGS="$saved_LDFLAGS"
    	fi
 
   	if test ! -z "$have_bgp_files" ; then
       		BG_INCLUDES="$bg_includes"
-	        CFLAGS="$CFLAGS -m64"
+		CFLAGS="$CFLAGS -m64"
       		AC_DEFINE(HAVE_3D, 1, [Define to 1 if 3-dimensional architecture])
   		AC_DEFINE(SYSTEM_DIMENSIONS, 3, [3-dimensional architecture])
       		AC_DEFINE(HAVE_BG, 1, [Define to 1 if emulating or running on Blue Gene system])
@@ -179,12 +179,12 @@ AC_DEFUN([X_AC_BGP],
       		AC_DEFINE(HAVE_FRONT_END, 1, [Define to 1 if running slurmd on front-end only])
 		AC_DEFINE(HAVE_BG_FILES, 1, [Define to 1 if have Blue Gene files])
 		AC_DEFINE_UNQUOTED(BG_BRIDGE_SO, "$soloc", [Define the BG_BRIDGE_SO value])
-		
+
 		AC_MSG_CHECKING(for BG serial value)
-        	bg_serial="BGP"
+		bg_serial="BGP"
     		AC_ARG_WITH(bg-serial,, [bg_serial="$withval"])
      		AC_MSG_RESULT($bg_serial)
-     		AC_DEFINE_UNQUOTED(BG_SERIAL, "$bg_serial", [Define the BG_SERIAL value])	
+     		AC_DEFINE_UNQUOTED(BG_SERIAL, "$bg_serial", [Define the BG_SERIAL value])
  		#define ac_bluegene_loaded so we don't load another bluegene conf
 		ac_bluegene_loaded=yes
    	fi
