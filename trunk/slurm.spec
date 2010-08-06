@@ -84,15 +84,15 @@
 %slurm_with_opt sgijob
 %endif
 
-Name:    See META file
-Version: See META file
-Release: See META file
+Name:    slurm
+Version: 2.2.0
+Release: 1008061411%{?dist}
 
 Summary: Simple Linux Utility for Resource Management
 
 License: GPL
 Group: System Environment/Base
-Source: %{name}-%{version}-%{release}.tgz
+Source: slurm-2.2.0-1008061411.tar.bz2
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}
 URL: https://computing.llnl.gov/linux/slurm/
 
@@ -360,7 +360,7 @@ Gives the ability for SLURM to use Berkeley Lab Checkpoint/Restart
 #############################################################################
 
 %prep
-%setup -n %{name}-%{version}-%{release}
+%setup -n slurm-2.2.0-1008061411
 
 %build
 %configure --program-prefix=%{?_program_prefix:%{_program_prefix}} \
@@ -767,6 +767,7 @@ if [ ! -f %{_sysconfdir}/slurmdbd.conf ]; then
     echo "Edit %{_sysconfdir}/slurmdbd.conf.example and copy it to slurmdbd.conf"
 fi
 
+%if %{slurm_with bluegene}
 %post bluegene
 if [ -x /sbin/ldconfig ]; then
     /sbin/ldconfig %{_libdir}/slurm
@@ -775,7 +776,7 @@ if [ ! -f %{_sysconfdir}/bluegene.conf ]; then
     echo "You need to build and install a bluegene.conf file"
     echo "Edit %{_sysconfdir}/bluegene.conf.example and copy it to bluegene.conf"
 fi
-
+%endif
 
 %preun
 if [ "$1" = 0 ]; then
