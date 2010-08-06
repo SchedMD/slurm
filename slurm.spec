@@ -445,6 +445,14 @@ install -D -m644 etc/bluegene.conf.example ${RPM_BUILD_ROOT}%{_sysconfdir}/blueg
 mkdir -p ${RPM_BUILD_ROOT}/etc/ld.so.conf.d
 echo "%{_libdir}/slurm" > ${RPM_BUILD_ROOT}/etc/ld.so.conf.d/slurm.conf
 chmod 644 ${RPM_BUILD_ROOT}/etc/ld.so.conf.d/slurm.conf
+
+LIST=./bluegene.files
+touch $LIST
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/libsched_if.so &&
+   echo %{_libdir}/slurm/libsched_if.so >> $LIST
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/libsched_if64.so &&
+   echo %{_libdir}/slurm/libsched_if64.so >> $LIST
+
 %endif
 
 LIST=./aix.files
@@ -571,9 +579,8 @@ rm -rf $RPM_BUILD_ROOT
 #############################################################################
 
 %if %{slurm_with bluegene}
-%files bluegene
+%files -f bluegene.files bluegene
 %defattr(-,root,root)
-%{_libdir}/slurm/libsched_if64.so
 %dir /etc/ld.so.conf.d
 /etc/ld.so.conf.d/slurm.conf
 %{_mandir}/man5/bluegene.*
@@ -754,6 +761,21 @@ if [ ! -f %{_sysconfdir}/slurm.conf ]; then
     echo "Build a new one using http://www.llnl.gov/linux/slurm/configurator.html"
 fi
 
+%post slurmdbd
+if [ ! -f %{_sysconfdir}/slurmdbd.conf ]; then
+    echo "You need to build and install a slurmdbd.conf file"
+    echo "Edit %{_sysconfdir}/slurmdbd.conf.example and copy it to slurmdbd.conf"
+fi
+
+%post bluegene
+if [ -x /sbin/ldconfig ]; then
+    /sbin/ldconfig %{_libdir}/slurm
+fi
+if [ ! -f %{_sysconfdir}/bluegene.conf ]; then
+    echo "You need to build and install a bluegene.conf file"
+    echo "Edit %{_sysconfdir}/bluegene.conf.example and copy it to bluegene.conf"
+fi
+
 
 %preun
 if [ "$1" = 0 ]; then
@@ -763,6 +785,10 @@ if [ "$1" = 0 ]; then
 	    /etc/init.d/slurm stop
 	fi
     fi
+fi
+
+%preun slurmdbd
+if [ "$1" = 0 ]; then
     if [ -x /etc/init.d/slurmdbd ]; then
 	[ -x /sbin/chkconfig ] && /sbin/chkconfig --del slurmdbd
 	if /etc/init.d/slurmdbd status | grep -q running; then

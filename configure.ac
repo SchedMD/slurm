@@ -26,8 +26,16 @@ AC_CONFIG_HEADERS([slurm/slurm.h])
 
 dnl This needs to be close to the front to set CFLAGS=-m64
 X_AC_BGL
+
+dnl we need to know if this is a bgl in the Makefile.am to do
+dnl some things differently
+AM_CONDITIONAL(BGL_LOADED, test "x$ac_bluegene_loaded" = "xyes")
+AC_SUBST(BGL_LOADED)
+
 X_AC_BGP
 X_AC_BGQ
+
+dnl ok now check if bluegene was loaded at all
 AM_CONDITIONAL(BLUEGENE_LOADED, test "x$ac_bluegene_loaded" = "xyes")
 AC_SUBST(BLUEGENE_LOADED)
 

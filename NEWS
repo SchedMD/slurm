@@ -410,6 +410,11 @@ documents those changes that are of interest to users and admins.
 =========================
  -- Fixes for building on OS X 10.5.
 
+* Changes in SLURM 2.1.11-2
+===========================
+ -- BLUEGENE - make it so libsched_if.so is named correctly on 'L' it is
+    libsched_if64.so and on 'P' it is libsched_if.so
+
 * Changes in SLURM 2.1.11
 =========================
  -- BLUEGENE - fix sinfo to not get duplicate entries when running command
