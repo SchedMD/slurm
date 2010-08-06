@@ -9,7 +9,11 @@ INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common $(BG_INCLUDES)
 
 if BLUEGENE_LOADED
 
+if BGL_LOADED
 pkglib_LTLIBRARIES = select_bluegene.la libsched_if64.la
+else
+pkglib_LTLIBRARIES = select_bluegene.la libsched_if.la
+endif
 
 # Blue Gene node selection plugin.
 select_bluegene_la_SOURCES = select_bluegene.c \
@@ -34,8 +38,13 @@ select_bluegene_la_LIBADD  = ../block_allocator/libbluegene_block_allocator.la
 
 
 # MPIRUN dynamic lib.
+if BGL_LOADED
 libsched_if64_la_SOURCES = libsched_if64.c
 libsched_if64_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+else
+libsched_if_la_SOURCES = libsched_if64.c
+libsched_if_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+endif
 
 
 sbin_PROGRAMS = slurm_prolog slurm_epilog sfree
