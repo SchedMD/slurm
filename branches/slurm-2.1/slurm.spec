@@ -733,9 +733,6 @@ fi
 %post bluegene
 if [ -x /sbin/ldconfig ]; then
     /sbin/ldconfig %{_libdir}/slurm
-    if [ $1 = 1 ]; then
-	[ -x /sbin/chkconfig ] && /sbin/chkconfig --add slurm
-    fi
 fi
 if [ ! -f %{_sysconfdir}/bluegene.conf ]; then
     echo "You need to build and install a bluegene.conf file"
