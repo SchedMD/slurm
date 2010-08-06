@@ -475,7 +475,9 @@ seconds
 
 .TP
 \f3exitcode\fP
-The first non\-zero error code returned by any job step.
+The exit code returned by the job script or salloc, typically as set
+by the exit() function.  Following the colon is the signal that caused
+the process to terminate if it was terminated by a signal.
 
 .TP
 \f3gid\fP
@@ -1110,7 +1112,7 @@ option.
 .nf
 .ft 3
 # sacct \-\-brief
-Jobid      Status     Exitcode
+Jobid      Status     ExitCode
 \-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-
 2          RUNNING           0
 3          RUNNING           0
@@ -1125,7 +1127,7 @@ Jobid      Status     Exitcode
 .nf
 .ft 3
 # sacct \-\-allocations
-Jobid      Jobname    Partition Account    AllocCPUS  State     Exitcode
+Jobid      Jobname    Partition Account    AllocCPUS  State     ExitCode
 \-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-
 3          sja_init   andy       acct1            1 COMPLETED         0
 4          sjaload    andy       acct1            2 COMPLETED         0
