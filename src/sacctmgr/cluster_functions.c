@@ -457,6 +457,9 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 	while((cluster = list_next(itr))) {
 		int curr_inx = 1;
 		slurmdb_association_rec_t *assoc = cluster->root_assoc;
+		/* set up the working cluster rec so nodecnt's and node names
+		 * are handled correctly */
+		working_cluster_rec = cluster;
 		while((field = list_next(itr2))) {
 			switch(field->type) {
 			case PRINT_CLUSTER:
@@ -634,6 +637,8 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 		list_iterator_reset(itr2);
 		printf("\n");
 	}
+	/* clear the working cluster rec */
+	working_cluster_rec = NULL;
 
 	list_iterator_destroy(itr2);
 	list_iterator_destroy(itr);
