@@ -730,6 +730,7 @@ if [ ! -f %{_sysconfdir}/slurm.conf ]; then
     echo "Build a new one using http://www.llnl.gov/linux/slurm/configurator.html"
 fi
 
+%if %{slurm_with bluegene}
 %post bluegene
 if [ -x /sbin/ldconfig ]; then
     /sbin/ldconfig %{_libdir}/slurm
@@ -738,7 +739,7 @@ if [ ! -f %{_sysconfdir}/bluegene.conf ]; then
     echo "You need to build and install a bluegene.conf file"
     echo "Edit %{_sysconfdir}/bluegene.conf.example and copy it to bluegene.conf"
 fi
-
+%endif
 
 %preun
 if [ "$1" = 0 ]; then
