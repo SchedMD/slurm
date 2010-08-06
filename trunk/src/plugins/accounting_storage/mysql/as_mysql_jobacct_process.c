@@ -1316,11 +1316,9 @@ extern List as_mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn,
 		if((rc = _cluster_get_jobs(mysql_conn, &user, job_cond,
 					   cluster_name, tmp, tmp2, extra,
 					   is_admin, only_pending, job_list))
-		   != SLURM_SUCCESS) {
-			list_destroy(job_list);
-			job_list = NULL;
-			break;
-		}
+		   != SLURM_SUCCESS)
+			error("Problem getting jobs for cluster %s",
+			      cluster_name);
 	}
 	list_iterator_destroy(itr);
 
