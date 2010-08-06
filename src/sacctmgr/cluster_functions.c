@@ -670,16 +670,16 @@ extern int sacctmgr_modify_cluster(int argc, char *argv[])
 			i++;
 			prev_set = _set_cond(&i, argc, argv,
 					     &cluster_cond, NULL);
-			cond_set = MAX(cond_set, prev_set);
+			cond_set |= prev_set;
 		} else if (!strncasecmp(argv[i], "Set", MAX(command_len, 3))) {
 			i++;
 			prev_set = _set_rec(&i, argc, argv,
 					    NULL, assoc, &class_rec);
-			rec_set = MAX(rec_set, prev_set);
+			rec_set |= prev_set;
 		} else {
 			prev_set = _set_cond(&i, argc, argv,
 					     &cluster_cond, NULL);
-			cond_set = MAX(cond_set, prev_set);
+			cond_set |= prev_set;
 		}
 	}
 
@@ -700,7 +700,7 @@ extern int sacctmgr_modify_cluster(int argc, char *argv[])
 		goto end_it;
 	}
 
-	if(cond_set == 1 || cond_set == 3) {
+	if(cond_set & 1) {
 		List temp_list = NULL;
 
 		temp_list = acct_storage_g_get_clusters(db_conn, my_uid,
@@ -829,7 +829,7 @@ extern int sacctmgr_delete_cluster(int argc, char *argv[])
 		    || !strncasecmp(argv[i], "Set", MAX(command_len, 3)))
 			i++;
 		prev_set = _set_cond(&i, argc, argv, cluster_cond, NULL);
-		cond_set = MAX(cond_set, prev_set);
+		cond_set |= prev_set;
 	}
 
 	if(exit_code) {

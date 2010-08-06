@@ -1064,7 +1064,7 @@ extern int sacctmgr_add_coord(int argc, char *argv[])
 		    || !strncasecmp(argv[i], "Set", MAX(command_len, 3)))
 			i++;
 		prev_set = _set_cond(&i, argc, argv, user_cond, NULL);
-		cond_set = MAX(cond_set, prev_set);
+		cond_set |= prev_set;
 	}
 
 	if(exit_code) {
@@ -1148,7 +1148,7 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 		    || !strncasecmp(argv[i], "Set", MAX(command_len, 3)))
 			i++;
 		prev_set = _set_cond(&i, argc, argv, user_cond, format_list);
-		cond_set = MAX(cond_set, prev_set);
+		cond_set |= prev_set;
 	}
 
 	if(exit_code) {
@@ -1344,14 +1344,14 @@ extern int sacctmgr_modify_user(int argc, char *argv[])
 		if (!strncasecmp(argv[i], "Where", MAX(command_len, 5))) {
 			i++;
 			prev_set = _set_cond(&i, argc, argv, user_cond, NULL);
-			cond_set = MAX(cond_set, prev_set);
+			cond_set |= prev_set;
 		} else if (!strncasecmp(argv[i], "Set", MAX(command_len, 3))) {
 			i++;
 			prev_set = _set_rec(&i, argc, argv, user, assoc);
-			rec_set = MAX(rec_set, prev_set);
+			rec_set |= prev_set;
 		} else {
 			prev_set = _set_cond(&i, argc, argv, user_cond, NULL);
-			cond_set = MAX(cond_set, prev_set);
+			cond_set |= prev_set;
 		}
 	}
 
@@ -1398,7 +1398,7 @@ extern int sacctmgr_modify_user(int argc, char *argv[])
 	}
 
 	notice_thread_init();
-	if(rec_set == 3 || rec_set == 1) { // process the account changes
+	if(rec_set & 1) { // process the account changes
 		if(cond_set == 2) {
 			rc = SLURM_ERROR;
 			exit_code=1;
@@ -1493,7 +1493,7 @@ extern int sacctmgr_modify_user(int argc, char *argv[])
 	}
 
 assoc_start:
-	if(rec_set == 3 || rec_set == 2) { // process the association changes
+	if(rec_set & 2) { // process the association changes
 		if(cond_set == 1
 		   && !list_count(user_cond->assoc_cond->user_list)) {
 			rc = SLURM_ERROR;
@@ -1561,7 +1561,7 @@ extern int sacctmgr_delete_user(int argc, char *argv[])
 		    || !strncasecmp(argv[i], "Set", MAX(command_len, 3)))
 			i++;
 		prev_set = _set_cond(&i, argc, argv, user_cond, NULL);
-		cond_set = MAX(cond_set, prev_set);
+		cond_set |= prev_set;
 	}
 
 	if(!cond_set) {
@@ -1581,7 +1581,7 @@ extern int sacctmgr_delete_user(int argc, char *argv[])
 	if(cond_set == 1) {
 		ret_list = acct_storage_g_remove_users(
 			db_conn, my_uid, user_cond);
-	} else if(cond_set == 2 || cond_set == 3) {
+	} else if(cond_set & 2) {
 		ret_list = acct_storage_g_remove_associations(
 			db_conn, my_uid, user_cond->assoc_cond);
 	}
@@ -1609,7 +1609,7 @@ extern int sacctmgr_delete_user(int argc, char *argv[])
 		}
 		if(cond_set == 1) {
 			printf(" Deleting users...\n");
-		} else if(cond_set == 2 || cond_set == 3) {
+		} else if(cond_set & 2) {
 			printf(" Deleting user associations...\n");
 		}
 		while((object = list_next(itr))) {
@@ -1657,7 +1657,7 @@ extern int sacctmgr_delete_coord(int argc, char *argv[])
 		    || !strncasecmp(argv[i], "Set", MAX(command_len, 3)))
 			i++;
 		prev_set = _set_cond(&i, argc, argv, user_cond, NULL);
-		cond_set = MAX(cond_set, prev_set);
+		cond_set |= prev_set;
 	}
 
 	if(exit_code) {

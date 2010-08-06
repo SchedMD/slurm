@@ -683,7 +683,7 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 		    || !strncasecmp(argv[i], "Set", MAX(command_len, 3)))
 			i++;
 		prev_set = _set_cond(&i, argc, argv, acct_cond, format_list);
-		cond_set = MAX(cond_set, prev_set);
+		cond_set |=  prev_set;
 	}
 
 	if(exit_code) {
@@ -864,15 +864,15 @@ extern int sacctmgr_modify_account(int argc, char *argv[])
 		if (!strncasecmp(argv[i], "Where", MAX(command_len, 5))) {
 			i++;
 			prev_set = _set_cond(&i, argc, argv, acct_cond, NULL);
-			cond_set = MAX(cond_set, prev_set);
+			cond_set |= prev_set;
 		} else if (!strncasecmp(argv[i], "Set", MAX(command_len, 3))) {
 			i++;
 			prev_set = _set_rec(&i, argc, argv, NULL, NULL,
 					    acct, assoc);
-			rec_set = MAX(rec_set, prev_set);
+			rec_set |= prev_set;
 		} else {
 			prev_set = _set_cond(&i, argc, argv, acct_cond, NULL);
-			cond_set = MAX(cond_set, prev_set);
+			cond_set |= prev_set;
 		}
 	}
 
@@ -914,7 +914,7 @@ extern int sacctmgr_modify_account(int argc, char *argv[])
 	}
 
 	notice_thread_init();
-	if(rec_set == 3 || rec_set == 1) { // process the account changes
+	if(rec_set & 1) { // process the account changes
 		if(cond_set == 2) {
 			exit_code=1;
 			fprintf(stderr,
@@ -1033,7 +1033,7 @@ extern int sacctmgr_delete_account(int argc, char *argv[])
 		    || !strncasecmp(argv[i], "Set", MAX(command_len, 3)))
 			i++;
 		prev_set = _set_cond(&i, argc, argv, acct_cond, NULL);
-		cond_set = MAX(cond_set, prev_set);
+		cond_set |= prev_set;
 	}
 
 	if(!cond_set) {
@@ -1075,7 +1075,7 @@ extern int sacctmgr_delete_account(int argc, char *argv[])
 	if(cond_set == 1) {
 		ret_list = acct_storage_g_remove_accounts(
 			db_conn, my_uid, acct_cond);
-	} else if(cond_set == 2 || cond_set == 3) {
+	} else if(cond_set & 2) {
 		ret_list = acct_storage_g_remove_associations(
 			db_conn, my_uid, acct_cond->assoc_cond);
 	}
@@ -1119,7 +1119,7 @@ extern int sacctmgr_delete_account(int argc, char *argv[])
 
 		if(cond_set == 1) {
 			printf(" Deleting accounts...\n");
-		} else if(cond_set == 2 || cond_set == 3) {
+		} else if(cond_set & 2) {
 			printf(" Deleting account associations...\n");
 		}
 		while((object = list_next(itr))) {

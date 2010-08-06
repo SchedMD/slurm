@@ -63,6 +63,7 @@ documents those changes that are of interest to users and admins.
     causing unexpectedly high delays for some RPCs.
  -- Added to sacctmgr the ability for admins to reset the raw usage of a user
     or account
+ -- Improved the efficiency of a few lines in sacctmgr
 
 * Changes in SLURM 2.2.0.pre8
 =============================
