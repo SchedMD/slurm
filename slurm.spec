@@ -434,6 +434,14 @@ install -D -m644 etc/bluegene.conf.example ${RPM_BUILD_ROOT}%{_sysconfdir}/blueg
 mkdir -p ${RPM_BUILD_ROOT}/etc/ld.so.conf.d
 echo "%{_libdir}/slurm" > ${RPM_BUILD_ROOT}/etc/ld.so.conf.d/slurm.conf
 chmod 644 ${RPM_BUILD_ROOT}/etc/ld.so.conf.d/slurm.conf
+
+LIST=./bluegene.files
+touch $LIST
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/libsched_if.so &&
+   echo %{_libdir}/slurm/libsched_if.so >> $LIST
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/libsched_if64.so &&
+   echo %{_libdir}/slurm/libsched_if64.so >> $LIST
+
 %endif
 
 LIST=./aix.files
@@ -552,10 +560,9 @@ rm -rf $RPM_BUILD_ROOT
 #############################################################################
 
 %if %{slurm_with bluegene}
-%files bluegene
+%files -f bluegene.files bluegene
 %defattr(-,root,root)
 %{_libdir}/slurm/select_bluegene.so
-%{_libdir}/slurm/libsched_if64.so
 %dir /etc/ld.so.conf.d
 /etc/ld.so.conf.d/slurm.conf
 %{_mandir}/man5/bluegene.*
