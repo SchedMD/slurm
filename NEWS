@@ -3,6 +3,9 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 2.2.0.pre10
 ==============================
+ -- Fix issue when EnforcePartLimits=yes in slurm.conf all jobs where no nodecnt
+    was specified the job would be seen to have maxnodes=0 which would not
+    allow jobs to run.
 
 * Changes in SLURM 2.2.0.pre9
 =============================

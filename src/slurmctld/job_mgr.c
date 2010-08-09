@@ -2793,8 +2793,6 @@ static int _part_access_check(struct part_record *part_ptr,
 		return ESLURM_ACCESS_DENIED;
 	}
 
-	if (job_desc->max_nodes == NO_VAL)
-		job_desc->max_nodes = 0;
 	if ((part_ptr->state_up & PARTITION_SCHED) &&
 	    (job_desc->min_cpus != NO_VAL) &&
 	    (job_desc->min_cpus >  part_ptr->total_cpus)) {
@@ -2813,12 +2811,6 @@ static int _part_access_check(struct part_record *part_ptr,
 		info("_job_create: Job requested too many nodes (%u) of "
 		     "partition %s(%u)",
 		     job_desc->min_nodes, part_ptr->name, total_nodes);
-		return ESLURM_INVALID_NODE_COUNT;
-	}
-	if (job_desc->max_nodes &&
-	    (job_desc->max_nodes < job_desc->min_nodes)) {
-		info("_job_create: Job's max_nodes(%u) < min_nodes(%u)",
-		     job_desc->max_nodes, job_desc->min_nodes);
 		return ESLURM_INVALID_NODE_COUNT;
 	}
 
@@ -2921,6 +2913,7 @@ static int _valid_job_part(job_desc_msg_t * job_desc,
 		if (rc != SLURM_SUCCESS)
 			goto fini;
 	}
+
 	if (rebuild_name_list) {
 		part_ptr = NULL;
 		xfree(job_desc->partition);
@@ -3242,6 +3235,17 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		goto cleanup_fail;
 	}
 #endif
+
+	if (job_desc->max_nodes == NO_VAL)
+		job_desc->max_nodes = 0;
+
+	if (job_desc->max_nodes &&
+	    (job_desc->max_nodes < job_desc->min_nodes)) {
+		info("_job_create: Job's max_nodes(%u) < min_nodes(%u)",
+		     job_desc->max_nodes, job_desc->min_nodes);
+		error_code = ESLURM_INVALID_NODE_COUNT;
+		goto cleanup_fail;
+	}
 
 	license_list = license_validate(job_desc->licenses, &valid);
 	if (!valid) {
