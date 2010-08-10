@@ -6,6 +6,8 @@ documents those changes that are of interest to users and admins.
  -- Fix issue when EnforcePartLimits=yes in slurm.conf all jobs where no nodecnt
     was specified the job would be seen to have maxnodes=0 which would not
     allow jobs to run.
+ -- Fix issue where if not suspending a job the gang scheduler does the correct
+    kill procedure.
 
 * Changes in SLURM 2.2.0.pre9
 =============================
