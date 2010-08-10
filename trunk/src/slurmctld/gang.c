@@ -608,6 +608,7 @@ static void _preempt_job_dequeue(void)
 	struct job_record *job_ptr;
 	uint32_t job_id, *tmp_id;
 	uint16_t preempt_mode;
+	int rc;
 
 	xassert(preempt_job_list);
 	while ((tmp_id = list_pop(preempt_job_list))) {
@@ -620,11 +621,43 @@ static void _preempt_job_dequeue(void)
 			continue;
 		}
 		preempt_mode = slurm_job_preempt_mode(job_ptr);
-		if (preempt_mode != PREEMPT_MODE_SUSPEND) {
-			error("Job %u allocated resources overlap other jobs",
-			      job_id);
-		}
-		(void) _suspend_job(job_id);
+
+		if (preempt_mode == PREEMPT_MODE_SUSPEND)
+			(void) _suspend_job(job_id);
+		else if (preempt_mode == PREEMPT_MODE_CANCEL) {
+			rc = job_signal(job_ptr->job_id, SIGKILL, 0, 0);
+			if (rc == SLURM_SUCCESS) {
+				info("preempted job %u has been killed",
+				     job_ptr->job_id);
+			}
+		} else if (preempt_mode == PREEMPT_MODE_CHECKPOINT) {
+			checkpoint_msg_t ckpt_msg;
+			memset(&ckpt_msg, 0, sizeof(checkpoint_msg_t));
+			ckpt_msg.op        = CHECK_VACATE;
+			ckpt_msg.job_id    = job_ptr->job_id;
+			rc = job_checkpoint(&ckpt_msg, 0, -1,
+					    (uint16_t) NO_VAL);
+			if (rc == SLURM_SUCCESS) {
+				info("preempted job %u has been checkpointed",
+				     job_ptr->job_id);
+			}
+		} else if (preempt_mode == PREEMPT_MODE_REQUEUE) {
+			rc = job_requeue(0, job_ptr->job_id, -1,
+					 (uint16_t)NO_VAL);
+			if (rc == SLURM_SUCCESS) {
+				info("preempted job %u has been requeued",
+				     job_ptr->job_id);
+			}
+		} else {
+			rc = job_signal(job_ptr->job_id, SIGKILL, 0, 0);
+			if (rc == SLURM_SUCCESS)
+				info("preempted job %u had to be killed",
+				     job_ptr->job_id);
+			else {
+				info("preempted job %u kill failure %s",
+				     job_ptr->job_id, slurm_strerror(rc));
+			}
+		}			
 	}
 
 	return;
