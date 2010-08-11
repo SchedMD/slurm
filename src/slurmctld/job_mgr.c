@@ -6319,6 +6319,34 @@ extern bool job_epilog_complete(uint32_t job_id, char *node_name,
 	if (!IS_JOB_COMPLETING(job_ptr)) {	/* COMPLETED */
 		if (IS_JOB_PENDING(job_ptr) && (job_ptr->batch_flag)) {
 			info("requeue batch job %u", job_ptr->job_id);
+			/* Clear everything so this appears to
+			   be a new job and then restart it
+			   up in accounting.
+			*/
+			job_ptr->start_time = job_ptr->end_time = 0;
+			job_ptr->total_procs = 0;
+			/* Current code (<= 2.1) has it so we start the new
+			   job with the next step id.  This could be
+			   used when restarting to figure out which
+			   step the previous run of this job stopped
+			   on.
+			*/
+
+			//job_ptr->next_step_id = 0;
+#ifdef HAVE_BG
+			select_g_select_jobinfo_set(
+				job_ptr->select_jobinfo,
+				SELECT_JOBDATA_BLOCK_ID,
+				NULL);
+			select_g_select_jobinfo_set(
+				job_ptr->select_jobinfo,
+				SELECT_JOBDATA_NODE_CNT,
+				0);
+#endif
+			job_ptr->node_cnt = 0;
+			xfree(job_ptr->nodes);
+			xfree(job_ptr->nodes_completing);
+			FREE_NULL_BITMAP(job_ptr->node_bitmap);
 			if (job_ptr->details) {
 				/* the time stamp on the new batch launch
 				 * credential must be larger than the time
@@ -6327,7 +6355,6 @@ extern bool job_epilog_complete(uint32_t job_id, char *node_name,
 				 * named socket purged, so delay for at
 				 * least ten seconds. */
 				job_ptr->details->begin_time = time(NULL) + 10;
-				job_ptr->start_time = job_ptr->end_time = 0;
 				jobacct_storage_g_job_start(
 					acct_db_conn, slurmctld_cluster_name,
 					job_ptr);
