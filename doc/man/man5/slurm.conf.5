@@ -9,9 +9,7 @@ how those nodes are grouped into partitions, and various scheduling
 parameters associated with those partitions. This file should be
 consistent across all nodes in the cluster.
 .LP
-The file location can be modified at system build time using the
-DEFAULT_SLURM_CONF parameter. In addition, you can use the
-\fBSLURM_CONF\fR environment variable to override the built\-in
+You can use the \fBSLURM_CONF\fR environment variable to override the built\-in
 location of this file. The SLURM daemons also allow you to override
 both the built\-in and environment\-provided location using the "\-f"
 option on the command line.
@@ -59,8 +57,8 @@ Only used for database type storage plugins, ignored otherwise.
 .TP
 \fBAccountingStorageEnforce\fR
 This controls what level of enforcement you want on associations when new
-jobs are submitted.  Valid options are any combination of associations, limits,
-and wckeys, or all for all things.  If limits is set associations is implied.
+jobs are submitted.  Valid options are any combination of \fIassociations\fR, \fIlimits\fR,
+and \fIwckeys\fR, or \fIall\fR for all things.  If limits is set associations is implied.
 If wckeys is set both limits and associations are implied along with
 TrackWckey being set.  By enforcing Associations no new job is allowed to run
 unless a corresponding association exists in the system.  If limits are

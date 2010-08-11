@@ -5,8 +5,8 @@ slurmdbd.conf \- Slurm Database Daemon (SlurmDBD) configuration file
 .SH "DESCRIPTION"
 \fB/etc/slurmdb.conf\fP is an ASCII file which describes Slurm Database
 Daemon (SlurmDBD) configuration information.
-The file location can be modified at system build time using the
-DEFAULT_SLURM_CONF parameter.
+You can use the \fBSLURM_CONF\fR environment variable to override the built\-in
+location of this file.
 .LP
 The contents of the file are case insensitive except for the names of nodes
 and files. Any text following a "#" in the configuration file is treated
@@ -84,8 +84,8 @@ The interpretation of this option is specific to the configured \fBAuthType\fR.
 In the case of \fIauth/munge\fR, this can be configured to use a Munge daemon
 specifically configured to provide authentication between clusters while the
 default Munge daemon provides authentication within a cluster.
-In that case, this will specify the pathname of the socket to use.
-The default value is NULL, which results in the default authentication
+In that case, this will specify the pathname of the socket to use. Per default
+this value is left unspecified, which results in the default authentication
 mechanism being used.
 
 .TP

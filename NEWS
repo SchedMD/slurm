@@ -8,6 +8,8 @@ documents those changes that are of interest to users and admins.
  -- Fixed a few '-' without a '\' in front of them in the man pages.
  -- Fixed issues in client tools where a requeued job did get displayed
     correctly.
+ -- Update typos in doc/html/accounting.shtml doc/html/resource_limits.shtml
+    doc/man/man5/slurmdbd.conf.5 and doc/man/man5/slurm.conf.5
 
 * Changes in SLURM 2.1.11-2
 ===========================
