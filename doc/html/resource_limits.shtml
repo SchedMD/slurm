@@ -8,7 +8,7 @@ integration used for storing accounting information.
 This document describes the capabilities available in
 SLURM version 2.0.
 New features are under active development.
-Familiarity with SLURM's <a href="accounting">Accounting</a> web page
+Familiarity with SLURM's <a href="accounting.html">Accounting</a> web page
 is strongly recommended before use of this document.</p>
 
 <p>Note for users of Maui or Moab schedulers: <br>
@@ -87,8 +87,8 @@ its use.</p>
 
 <p>Changes made to the scheduling policy are uploaded to
 the SLURM control daemons on the various clusters and take effect
-immediately. When an association is delete, all jobs running or
-pending which belong to that association are immediately canceled.
+immediately. When an association is deleted, all running or pending
+jobs which belong to that association are immediately canceled.
 When limits are lowered, running jobs will not be canceled to
 satisfy the new limits, but the new lower limits will be enforced.</p>
 
@@ -100,11 +100,11 @@ The available options are expected to increase as development
 continues.
 Most of these scheduling policy options are available not only
 for a user association, but also for each cluster and account.
-If a new association is created for some user and some scheduling
-policy options is not specified, the default will be the option
-for the cluster plus account pair and if that is not specified
-then the cluster and if that is not specified then no limit
-will apply.</p>
+If a new association is created for some user and a scheduling
+policy option is not specified the default will be: the option
+for the cluster/account pair, and if both are not specified
+then the option for the cluster, and if that also is not
+specified then no limit will apply.</p>
 
 <p>Currently available scheduling policy options:</p>
 <ul>
