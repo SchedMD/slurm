@@ -782,7 +782,8 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 			   SLURM_PROTOCOL_VERSION);
 
 	pack16(dump_job_ptr->ckpt_interval, buffer);
-	checkpoint_pack_jobinfo(dump_job_ptr->check_job, buffer);
+	checkpoint_pack_jobinfo(dump_job_ptr->check_job, buffer,
+				SLURM_PROTOCOL_VERSION);
 	packstr_array(dump_job_ptr->spank_job_env,
 		      dump_job_ptr->spank_job_env_size, buffer);
 
@@ -946,7 +947,8 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 
 		safe_unpack16(&ckpt_interval, buffer);
 		if (checkpoint_alloc_jobinfo(&check_job) ||
-		    checkpoint_unpack_jobinfo(check_job, buffer))
+		    checkpoint_unpack_jobinfo(check_job, buffer,
+					      protocol_version))
 			goto unpack_error;
 
 		safe_unpackstr_array(&spank_job_env, &spank_job_env_size,
@@ -1091,7 +1093,8 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 
 		safe_unpack16(&ckpt_interval, buffer);
 		if (checkpoint_alloc_jobinfo(&check_job) ||
-		    checkpoint_unpack_jobinfo(check_job, buffer))
+		    checkpoint_unpack_jobinfo(check_job, buffer,
+					      protocol_version))
 			goto unpack_error;
 
 		safe_unpackstr_array(&spank_job_env, &spank_job_env_size,
