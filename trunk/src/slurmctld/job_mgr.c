@@ -788,7 +788,8 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 		      dump_job_ptr->spank_job_env_size, buffer);
 
 	(void) gres_plugin_job_state_pack(dump_job_ptr->gres_list, buffer,
-					  dump_job_ptr->job_id, true);
+					  dump_job_ptr->job_id, true,
+					  SLURM_PROTOCOL_VERSION);
 
 	/* Dump job details, if available */
 	detail_ptr = dump_job_ptr->details;
@@ -954,7 +955,8 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		safe_unpackstr_array(&spank_job_env, &spank_job_env_size,
 				     buffer);
 
-		if (gres_plugin_job_state_unpack(&gres_list, buffer, job_id) !=
+		if (gres_plugin_job_state_unpack(&gres_list, buffer, job_id,
+						 protocol_version) !=
 		    SLURM_SUCCESS)
 			goto unpack_error;
 		gres_plugin_job_state_log(gres_list, job_id);

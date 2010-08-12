@@ -3239,7 +3239,7 @@ _unpack_job_step_create_response_msg(job_step_create_response_msg_t ** msg,
 				     protocol_version))
 		goto unpack_error;
 
-	if (!(tmp_ptr->cred = slurm_cred_unpack(buffer)))
+	if (!(tmp_ptr->cred = slurm_cred_unpack(buffer, protocol_version)))
 		goto unpack_error;
 
 	switch_alloc_jobinfo(&tmp_ptr->switch_job);
@@ -5493,7 +5493,7 @@ _unpack_reattach_tasks_request_msg(reattach_tasks_request_msg_t ** msg_ptr,
 			safe_unpack16(&msg->io_port[i], buffer);
 	}
 
-	if (!(msg->cred = slurm_cred_unpack(buffer)))
+	if (!(msg->cred = slurm_cred_unpack(buffer, protocol_version)))
 		goto unpack_error;
 
 	return SLURM_SUCCESS;
@@ -5790,7 +5790,7 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 		safe_unpack16(&msg->cpus_per_task, buffer);
 		safe_unpack16(&msg->task_dist, buffer);
 
-		if (!(msg->cred = slurm_cred_unpack(buffer)))
+		if (!(msg->cred = slurm_cred_unpack(buffer, protocol_version)))
 			goto unpack_error;
 		msg->tasks_to_launch = xmalloc(sizeof(uint16_t) * msg->nnodes);
 		msg->cpus_allocated = xmalloc(sizeof(uint16_t) * msg->nnodes);
@@ -5878,7 +5878,7 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 		safe_unpack16(&msg->cpus_per_task, buffer);
 		safe_unpack16(&msg->task_dist, buffer);
 
-		if (!(msg->cred = slurm_cred_unpack(buffer)))
+		if (!(msg->cred = slurm_cred_unpack(buffer, protocol_version)))
 			goto unpack_error;
 		msg->tasks_to_launch = xmalloc(sizeof(uint16_t) * msg->nnodes);
 		msg->cpus_allocated = xmalloc(sizeof(uint16_t) * msg->nnodes);
@@ -6888,7 +6888,8 @@ _unpack_batch_job_launch_msg(batch_job_launch_msg_t ** msg, Buf buffer,
 
 	safe_unpack32(&launch_msg_ptr->job_mem, buffer);
 
-	if (!(launch_msg_ptr->cred = slurm_cred_unpack(buffer)))
+	if (!(launch_msg_ptr->cred = slurm_cred_unpack(buffer,
+						       protocol_version)))
 		goto unpack_error;
 
 	if (select_g_select_jobinfo_unpack(&launch_msg_ptr->select_jobinfo,
