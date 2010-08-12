@@ -346,8 +346,8 @@ extern int  pack_select_jobinfo(select_jobinfo_t *jobinfo, Buf buffer,
 				uint16_t protocol_version)
 {
 	int i;
-	int dims = working_cluster_rec ?
-		working_cluster_rec->dimensions : SYSTEM_DIMENSIONS;
+	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
+	int dims = slurmdb_setup_cluster_dims();
 
 	if(protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
 		if (jobinfo) {
@@ -407,9 +407,10 @@ extern int  pack_select_jobinfo(select_jobinfo_t *jobinfo, Buf buffer,
 			packstr(jobinfo->bg_block_id, buffer);
 			packstr(jobinfo->nodes, buffer);
 			packstr(jobinfo->ionodes, buffer);
-#ifdef HAVE_BGL
-			packstr(jobinfo->blrtsimage, buffer);
-#endif
+
+			if(cluster_flags & CLUSTER_FLAG_BGL)
+				packstr(jobinfo->blrtsimage, buffer);
+
 			packstr(jobinfo->linuximage, buffer);
 			packstr(jobinfo->mloaderimage, buffer);
 			packstr(jobinfo->ramdiskimage, buffer);
@@ -426,9 +427,10 @@ extern int  pack_select_jobinfo(select_jobinfo_t *jobinfo, Buf buffer,
 			packnull(buffer); //bg_block_id
 			packnull(buffer); //nodes
 			packnull(buffer); //ionodes
-#ifdef HAVE_BGL
-			packnull(buffer); //blrts
-#endif
+
+			if(cluster_flags & CLUSTER_FLAG_BGL)
+				packnull(buffer); //blrts
+
 			packnull(buffer); //linux
 			packnull(buffer); //mloader
 			packnull(buffer); //ramdisk
@@ -449,8 +451,8 @@ extern int unpack_select_jobinfo(select_jobinfo_t **jobinfo_pptr, Buf buffer,
 {
 	int i;
 	uint32_t uint32_tmp;
-	int dims = working_cluster_rec ?
-		working_cluster_rec->dimensions : SYSTEM_DIMENSIONS;
+	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
+	int dims = slurmdb_setup_cluster_dims();
 	select_jobinfo_t *jobinfo = xmalloc(sizeof(struct select_jobinfo));
 	*jobinfo_pptr = jobinfo;
 
@@ -497,10 +499,9 @@ extern int unpack_select_jobinfo(select_jobinfo_t **jobinfo_pptr, Buf buffer,
 		safe_unpackstr_xmalloc(&(jobinfo->ionodes), &uint32_tmp,
 				       buffer);
 
-#ifdef HAVE_BGL
-		safe_unpackstr_xmalloc(&(jobinfo->blrtsimage),
-				       &uint32_tmp, buffer);
-#endif
+		if(cluster_flags & CLUSTER_FLAG_BGL)
+			safe_unpackstr_xmalloc(&(jobinfo->blrtsimage),
+					       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&(jobinfo->linuximage), &uint32_tmp,
 				       buffer);
 		safe_unpackstr_xmalloc(&(jobinfo->mloaderimage), &uint32_tmp,
