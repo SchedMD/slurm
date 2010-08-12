@@ -229,6 +229,7 @@ extern int reset_node_bitmap(job_resources_t *job_resrcs_ptr, uint32_t job_id)
 
 	if (job_resrcs_ptr->node_bitmap)
 		FREE_NULL_BITMAP(job_resrcs_ptr->node_bitmap);
+
 	if (job_resrcs_ptr->nodes &&
 	    (node_name2bitmap(job_resrcs_ptr->nodes, false,
 			      &job_resrcs_ptr->node_bitmap))) {
@@ -1107,7 +1108,7 @@ extern void add_job_to_cores(job_resources_t *job_resrcs_ptr,
 
 /* Given a job pointer and a global node index, return the index of that
  * node in the job_resrcs_ptr->cpus. Return -1 if invalid */
-extern int job_resources_node_inx_to_cpu_inx(job_resources_t *job_resrcs_ptr, 
+extern int job_resources_node_inx_to_cpu_inx(job_resources_t *job_resrcs_ptr,
 					     int node_inx)
 {
 	int first_inx, i, node_offset;
@@ -1142,7 +1143,7 @@ extern int job_resources_node_inx_to_cpu_inx(job_resources_t *job_resrcs_ptr,
 
 	if (node_offset >= job_resrcs_ptr->nhosts) {
 		error("job_resources_node_inx_to_cpu_inx: "
-		      "Found %d of %d nodes", 
+		      "Found %d of %d nodes",
 		      job_resrcs_ptr->nhosts, node_offset);
 		return -1;
 	}

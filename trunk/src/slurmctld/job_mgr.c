@@ -1080,6 +1080,15 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 					 protocol_version))
 			goto unpack_error;
 
+		/* Below is needed in 2.2 but isn't set in 2.1 so
+		 * we will use an educated guess to make things work
+		 * correctly */
+
+		xfree(job_resources->nodes); /* in case duplicate record */
+		job_resources->nodes = xstrdup(nodes);
+
+		/**************************************/
+
 		safe_unpack16(&ckpt_interval, buffer);
 		if (checkpoint_alloc_jobinfo(&check_job) ||
 		    checkpoint_unpack_jobinfo(check_job, buffer))

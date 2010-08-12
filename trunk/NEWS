@@ -8,6 +8,8 @@ documents those changes that are of interest to users and admins.
     allow jobs to run.
  -- Fix issue where if not suspending a job the gang scheduler does the correct
     kill procedure.
+ -- Fixed some issues when dealing with jobs from a 2.1 system so they live
+    after an upgrade.
 
 * Changes in SLURM 2.2.0.pre9
 =============================

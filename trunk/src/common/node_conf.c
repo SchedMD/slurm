@@ -776,7 +776,7 @@ extern int node_name2bitmap (char *node_names, bool best_effort,
 		node_ptr = find_node_record (this_node_name);
 		if (node_ptr) {
 			bit_set (my_bitmap, (bitoff_t) (node_ptr -
-						node_record_table_ptr));
+							node_record_table_ptr));
 		} else {
 			error ("node_name2bitmap: invalid node specified %s",
 			       this_node_name);
