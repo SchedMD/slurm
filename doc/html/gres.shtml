@@ -5,7 +5,7 @@
 <P>Beginning in SLURM version 2.2 generic resource (Gres) scheduling is
 supported through a flexible plugin mechanism. Support is initially provided
 for Graphics Processing Units (GPUs), although support for any resources is
-possible..</P>
+possible.</P>
 
 <!-------------------------------------------------------------------------->
 <h2>Configuration</h2>
@@ -37,7 +37,7 @@ The configuration parameters available are:</P>
 
 <UL>
 <LI><B>Name</B> name of a generic resource (must match <B>GresTypes</B>
-values in <I>slurm.conf</I>.</LI>
+values in <I>slurm.conf</I> ).</LI>
 
 <LI><B>Count</B> Number of resources of this type available on this node.
 The default value is set to the number of <B>File</B> values specified (if any),
@@ -52,17 +52,17 @@ If not specified, then any CPU can be used with the resources.
 If any CPU can be used with the resources, then do not specify the
 <B>CPUs</B> option for improved speed in the SLURM scheduling logic.
 
-<LI><B>File</B>Fully qualified pathname of the device files associated with a
+<LI><B>File</B> Fully qualified pathname of the device files associated with a
 resource.
 The name can include a numberic range suffix to be interpretted by SLURM
-(e.g. \fIFile=/dev/nvidia[0-3]\fR).
+(e.g. <I>File=/dev/nvidia[0-3]</I>).
 This field is generally required if enforcement of generic resource
 allocations is to be supported (i.e. prevents a users from making
 use of resources allocated to a different user).
-If \fBFile\fR is specified then \fBCount\fR must be either set to the number
+If <B>File</B> is specified then <B>Count</B> must be either set to the number
 of file names specified or not set (the default value is the number of files
 specified).
-NOTE: If you specify the \fBFile\fR parameter for a resource on some node,
+NOTE: If you specify the <B>File</B> parameter for a resource on some node,
 the option must be specified on all nodes and SLURM will track the assignment
 of each specific resource on each node. Otherwise SLURM will only track a
 count of allocated resources rather than the state of each individual device
