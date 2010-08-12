@@ -128,12 +128,14 @@ extern int slurm_ckpt_free_job(check_jobinfo_t jobinfo)
 	return SLURM_SUCCESS;
 }
 
-extern int slurm_ckpt_pack_job(check_jobinfo_t jobinfo, Buf buffer)
+extern int slurm_ckpt_pack_job(check_jobinfo_t jobinfo, Buf buffer,
+			       uint16_t protocol_version)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int slurm_ckpt_unpack_job(check_jobinfo_t jobinfo, Buf buffer)
+extern int slurm_ckpt_unpack_job(check_jobinfo_t jobinfo, Buf buffer,
+				 uint16_t protocol_version)
 {
 	return SLURM_SUCCESS;
 }

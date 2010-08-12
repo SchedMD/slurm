@@ -321,29 +321,36 @@ extern int slurm_ckpt_free_job(check_jobinfo_t jobinfo)
 	return SLURM_SUCCESS;
 }
 
-extern int slurm_ckpt_pack_job(check_jobinfo_t jobinfo, Buf buffer)
+extern int slurm_ckpt_pack_job(check_jobinfo_t jobinfo, Buf buffer,
+			       uint16_t protocol_version)
 {
 	struct check_job_info *check_ptr =
 		(struct check_job_info *)jobinfo;
 
-	pack16(check_ptr->disabled, buffer);
-	pack_time(check_ptr->time_stamp, buffer);
-	pack32(check_ptr->error_code, buffer);
-	packstr(check_ptr->error_msg, buffer);
+	if(protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
+		pack16(check_ptr->disabled, buffer);
+		pack_time(check_ptr->time_stamp, buffer);
+		pack32(check_ptr->error_code, buffer);
+		packstr(check_ptr->error_msg, buffer);
+	}
 
 	return SLURM_SUCCESS;
 }
 
-extern int slurm_ckpt_unpack_job(check_jobinfo_t jobinfo, Buf buffer)
+extern int slurm_ckpt_unpack_job(check_jobinfo_t jobinfo, Buf buffer,
+				 uint16_t protocol_version)
 {
 	uint32_t uint32_tmp;
 	struct check_job_info *check_ptr =
 		(struct check_job_info *)jobinfo;
 
-	safe_unpack16(&check_ptr->disabled, buffer);
-	safe_unpack_time(&check_ptr->time_stamp, buffer);
-	safe_unpack32(&check_ptr->error_code, buffer);
-	safe_unpackstr_xmalloc(&check_ptr->error_msg, &uint32_tmp, buffer);
+	if(protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
+		safe_unpack16(&check_ptr->disabled, buffer);
+		safe_unpack_time(&check_ptr->time_stamp, buffer);
+		safe_unpack32(&check_ptr->error_code, buffer);
+		safe_unpackstr_xmalloc(&check_ptr->error_msg,
+				       &uint32_tmp, buffer);
+	}
 
 	return SLURM_SUCCESS;
 

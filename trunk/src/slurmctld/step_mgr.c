@@ -2483,7 +2483,8 @@ extern void dump_job_step_state(struct job_record *job_ptr,
 				       SLURM_PROTOCOL_VERSION);
 		switch_pack_jobinfo(step_ptr->switch_job, buffer);
 	}
-	checkpoint_pack_jobinfo(step_ptr->check_job, buffer);
+	checkpoint_pack_jobinfo(step_ptr->check_job, buffer,
+				SLURM_PROTOCOL_VERSION);
 }
 
 /*
@@ -2558,7 +2559,8 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer,
 				goto unpack_error;
 		}
 		checkpoint_alloc_jobinfo(&check_tmp);
-		if (checkpoint_unpack_jobinfo(check_tmp, buffer))
+		if (checkpoint_unpack_jobinfo(check_tmp, buffer,
+					      protocol_version))
 			goto unpack_error;
 
 		/* validity test as possible */
@@ -2614,7 +2616,8 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer,
 				goto unpack_error;
 		}
 		checkpoint_alloc_jobinfo(&check_tmp);
-		if (checkpoint_unpack_jobinfo(check_tmp, buffer))
+		if (checkpoint_unpack_jobinfo(check_tmp, buffer,
+					      protocol_version))
 			goto unpack_error;
 
 		/* validity test as possible */

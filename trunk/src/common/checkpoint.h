@@ -79,11 +79,12 @@ extern int checkpoint_op(uint32_t job_id, uint32_t step_id,
 			 uint32_t *error_code, char **error_msg);
 
 /* note checkpoint completion */
-extern int checkpoint_comp(void * step_ptr, time_t event_time, uint32_t error_code,
-		char *error_msg);
+extern int checkpoint_comp(void * step_ptr, time_t event_time,
+			   uint32_t error_code, char *error_msg);
 
 extern int checkpoint_task_comp(void * step_ptr, uint32_t task_id,
-			time_t event_time, uint32_t error_code, char *error_msg);
+				time_t event_time, uint32_t error_code,
+				char *error_msg);
 
 /* gather checkpoint error info */
 extern int checkpoint_error(void * step_ptr,
@@ -96,8 +97,10 @@ extern int checkpoint_alloc_jobinfo(check_jobinfo_t *jobinfo);
 extern int checkpoint_free_jobinfo(check_jobinfo_t jobinfo);
 
 /* un/pack a job step's checkpoint context */
-extern int  checkpoint_pack_jobinfo  (check_jobinfo_t jobinfo, Buf buffer);
-extern int  checkpoint_unpack_jobinfo  (check_jobinfo_t jobinfo, Buf buffer);
+extern int  checkpoint_pack_jobinfo  (check_jobinfo_t jobinfo, Buf buffer,
+				      uint16_t protocol_version);
+extern int  checkpoint_unpack_jobinfo  (check_jobinfo_t jobinfo, Buf buffer,
+					uint16_t protocol_version);
 
 /* create the necessary threads before forking the tasks */
 extern int checkpoint_stepd_prefork (void *slurmd_job);
