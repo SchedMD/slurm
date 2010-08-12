@@ -30,6 +30,8 @@ extern int hv_to_update_part_msg(HV* hv, update_part_msg_t* part_msg);
 extern int slurm_ctl_conf_to_hv(slurm_ctl_conf_t* conf, HV* hv);
 
 extern int reserve_info_msg_to_hv(reserve_info_msg_t* conf, HV* hv);
+extern int hv_to_update_reservation_msg(HV* hv, resv_desc_msg_t* resv_msg);
+extern int hv_to_delete_reservation_msg(HV* hv, reservation_name_msg_t* resv_name);
 
 extern int trigger_info_to_hv(trigger_info_t *info, HV* hv);
 extern int trigger_info_msg_to_hv(trigger_info_msg_t *msg, HV* hv);
