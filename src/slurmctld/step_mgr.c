@@ -2434,7 +2434,7 @@ resume_job_step(struct job_record *job_ptr)
  * IN step_ptr - pointer to job step for which information is to be dumpped
  * IN/OUT buffer - location to store data, pointers automatically advanced
  */
-extern void dump_job_step_state(struct job_record *job_ptr, 
+extern void dump_job_step_state(struct job_record *job_ptr,
 				struct step_record *step_ptr, Buf buffer)
 {
 	pack32(step_ptr->step_id, buffer);
@@ -2475,7 +2475,8 @@ extern void dump_job_step_state(struct job_record *job_ptr,
 
 	packstr(step_ptr->gres, buffer);
 	(void) gres_plugin_step_state_pack(step_ptr->gres_list, buffer,
-					   job_ptr->job_id, step_ptr->step_id);
+					   job_ptr->job_id, step_ptr->step_id,
+					   SLURM_PROTOCOL_VERSION);
 
 	pack16(step_ptr->batch_step, buffer);
 	if (!step_ptr->batch_step) {
@@ -2546,7 +2547,9 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer,
 
 		safe_unpackstr_xmalloc(&gres, &name_len, buffer);
 		if (gres_plugin_step_state_unpack(&gres_list, buffer,
-				job_ptr->job_id, step_id) != SLURM_SUCCESS)
+						  job_ptr->job_id, step_id,
+						  protocol_version)
+		    != SLURM_SUCCESS)
 			goto unpack_error;
 
 		safe_unpack16(&batch_step, buffer);

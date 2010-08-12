@@ -374,7 +374,7 @@ extern int gres_plugin_init(void)
 			      gres_context[j].gres_type);
 		}
 		xassert(gres_context[i].gres_name);
-	
+
 		gres_context[i].gres_name_colon =
 			xstrdup_printf("%s:", gres_context[i].gres_name);
 		gres_context[i].gres_name_colon_len =
@@ -479,7 +479,7 @@ extern int gres_plugin_reconfig(bool *did_change)
 		*did_change = true;
 #if 0
 		/* This logic would load new plugins, but we need the old
-		 * plugins to persist in order to process old state 
+		 * plugins to persist in order to process old state
 		 * information. */
 		rc = gres_plugin_fini();
 		if (rc == SLURM_SUCCESS)
@@ -788,7 +788,7 @@ extern int gres_plugin_node_config_pack(Buf buffer)
 	uint16_t rec_cnt = 0, version= SLURM_PROTOCOL_VERSION;
 	ListIterator iter;
 	gres_slurmd_conf_t *gres_slurmd_conf;
- 
+
 	rc = gres_plugin_init();
 
 	slurm_mutex_lock(&gres_context_lock);
@@ -800,8 +800,8 @@ extern int gres_plugin_node_config_pack(Buf buffer)
 		iter = list_iterator_create(gres_conf_list);
 		if (iter == NULL)
 			fatal("list_iterator_create: malloc failure");
-		while ((gres_slurmd_conf = 
-				(gres_slurmd_conf_t *) list_next(iter))) {
+		while ((gres_slurmd_conf =
+			(gres_slurmd_conf_t *) list_next(iter))) {
 			pack32(magic, buffer);
 			pack32(gres_slurmd_conf->count, buffer);
 			pack32(gres_slurmd_conf->cpu_cnt, buffer);
@@ -839,7 +839,7 @@ extern int gres_plugin_node_config_unpack(Buf buffer, char* node_name)
 		fatal("list_create: malloc failure");
 
 	safe_unpack16(&version, buffer);
-	if (version != SLURM_2_2_PROTOCOL_VERSION)
+	if (version != SLURM_PROTOCOL_VERSION)
 		return SLURM_ERROR;
 
 	safe_unpack16(&rec_cnt, buffer);
@@ -851,12 +851,14 @@ extern int gres_plugin_node_config_unpack(Buf buffer, char* node_name)
 		safe_unpack32(&magic, buffer);
 		if (magic != GRES_MAGIC)
 			goto unpack_error;
+
 		safe_unpack32(&count, buffer);
 		safe_unpack32(&cpu_cnt, buffer);
 		safe_unpack8(&has_file, buffer);
 		safe_unpack32(&plugin_id, buffer);
 		safe_unpackstr_xmalloc(&tmp_cpus, &utmp32, buffer);
 		safe_unpackstr_xmalloc(&tmp_name, &utmp32, buffer);
+
  		for (j=0; j<gres_context_cnt; j++) {
  			if (gres_context[j].plugin_id != plugin_id)
 				continue;
@@ -1062,7 +1064,7 @@ static int _node_config_init(char *node_name, char *orig_config,
 	gres_data->gres_cnt_avail  = MAX(gres_data->gres_cnt_avail,
 					 gres_config_cnt);
 	if ((gres_data->gres_bit_alloc != NULL) &&
-	    (gres_data->gres_cnt_avail > 
+	    (gres_data->gres_cnt_avail >
 	     bit_size(gres_data->gres_bit_alloc))) {
 		gres_data->gres_bit_alloc =
 			bit_realloc(gres_data->gres_bit_alloc,
@@ -1197,26 +1199,26 @@ extern int _node_config_validate(char *node_name, char *orig_config,
 	if (context_ptr->has_file && (set_cnt != gres_data->topo_cnt)) {
 		/* Need to rebuild topology info */
 		/* Resize the data structures here */
-		gres_data->topo_gres_cnt_alloc = 
+		gres_data->topo_gres_cnt_alloc =
 			xrealloc(gres_data->topo_gres_cnt_alloc,
 				 set_cnt * sizeof(uint32_t));
 		if (gres_data->topo_gres_cnt_alloc == NULL)
 			fatal("xrealloc: malloc failure");
-		gres_data->topo_gres_cnt_avail = 
+		gres_data->topo_gres_cnt_avail =
 			xrealloc(gres_data->topo_gres_cnt_avail,
 				 set_cnt * sizeof(uint32_t));
 		if (gres_data->topo_gres_cnt_alloc == NULL)
 			fatal("xrealloc: malloc failure");
 		for (i=0; i<gres_data->topo_cnt; i++)
 			FREE_NULL_BITMAP(gres_data->topo_gres_bitmap[i]);
-		gres_data->topo_gres_bitmap = 
+		gres_data->topo_gres_bitmap =
 			xrealloc(gres_data->topo_gres_bitmap,
 				 set_cnt * sizeof(bitstr_t *));
 		if (gres_data->topo_gres_bitmap == NULL)
 			fatal("xrealloc: malloc failure");
 		for (i=0; i<gres_data->topo_cnt; i++)
 			FREE_NULL_BITMAP(gres_data->topo_cpus_bitmap[i]);
-		gres_data->topo_cpus_bitmap = 
+		gres_data->topo_cpus_bitmap =
 			xrealloc(gres_data->topo_cpus_bitmap,
 				 set_cnt * sizeof(bitstr_t *));
 		if (gres_data->topo_cpus_bitmap == NULL)
@@ -1227,7 +1229,7 @@ extern int _node_config_validate(char *node_name, char *orig_config,
 		if (iter == NULL)
 			fatal("list_iterator_create: malloc failure");
 		gres_inx = i = 0;
-		while ((gres_slurmd_conf = (gres_slurmd_conf_t *) 
+		while ((gres_slurmd_conf = (gres_slurmd_conf_t *)
 			list_next(iter))) {
 			if (gres_slurmd_conf->plugin_id !=
 			    context_ptr->plugin_id)
@@ -1291,7 +1293,7 @@ extern int _node_config_validate(char *node_name, char *orig_config,
 			fatal("bit_alloc: malloc failure");
 	}
 
-	if ((fast_schedule < 2) && 
+	if ((fast_schedule < 2) &&
 	    (gres_data->gres_cnt_found < gres_data->gres_cnt_config)) {
 		if (reason_down && (*reason_down == NULL)) {
 			xstrfmtcat(*reason_down, "%s count too low",
@@ -1315,11 +1317,11 @@ extern int _node_config_validate(char *node_name, char *orig_config,
 			xfree(gres_data->topo_gres_cnt_avail);
 		}
 		gres_data->topo_cnt = 0;
-	} else if ((fast_schedule == 0) && 
+	} else if ((fast_schedule == 0) &&
 		   (gres_data->gres_cnt_found > gres_data->gres_cnt_config)) {
 		/* need to rebuild new_config */
 		_set_gres_cnt(orig_config, new_config,
-			      gres_data->gres_cnt_found, 
+			      gres_data->gres_cnt_found,
 			      context_ptr->gres_name,
 			      context_ptr->gres_name_colon,
 			      context_ptr->gres_name_colon_len);
@@ -1394,7 +1396,7 @@ static int _node_reconfig(char *node_name, char *orig_config, char **new_config,
 		gres_ptr->gres_data = _build_gres_node_state();
 	gres_data = gres_ptr->gres_data;
 
-	gres_data->gres_cnt_config = _get_gres_cnt(orig_config, 
+	gres_data->gres_cnt_config = _get_gres_cnt(orig_config,
 						   context_ptr->gres_name,
 						   context_ptr->gres_name_colon,
 						   context_ptr->
@@ -1423,7 +1425,7 @@ static int _node_reconfig(char *node_name, char *orig_config, char **new_config,
 	if ((fast_schedule < 2) &&
 	    (gres_data->gres_cnt_found != NO_VAL) &&
 	    (gres_data->gres_cnt_found <  gres_data->gres_cnt_config)) {
-		/* Do not set node DOWN, but give the node 
+		/* Do not set node DOWN, but give the node
 		 * a chance to register with more resources */
 		gres_data->gres_cnt_found = NO_VAL;
 	} else if ((fast_schedule == 0) &&
@@ -1552,7 +1554,8 @@ extern int gres_plugin_node_state_pack(List gres_list, Buf buffer,
  * IN node_name - name of the node for which the gres information applies
  */
 extern int gres_plugin_node_state_unpack(List *gres_list, Buf buffer,
-					 char *node_name)
+					 char *node_name,
+					 uint16_t protocol_version)
 {
 	int i, rc;
 	uint32_t gres_cnt_avail, magic, plugin_id;
@@ -1578,12 +1581,14 @@ extern int gres_plugin_node_state_unpack(List *gres_list, Buf buffer,
 		if ((buffer == NULL) || (remaining_buf(buffer) == 0))
 			break;
 		rec_cnt--;
-		safe_unpack32(&magic, buffer);
-		if (magic != GRES_MAGIC)
-			goto unpack_error;
-		safe_unpack32(&plugin_id, buffer);
-		safe_unpack32(&gres_cnt_avail, buffer);
-		safe_unpack8(&has_bitmap, buffer);
+		if(protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
+			safe_unpack32(&magic, buffer);
+			if (magic != GRES_MAGIC)
+				goto unpack_error;
+			safe_unpack32(&plugin_id, buffer);
+			safe_unpack32(&gres_cnt_avail, buffer);
+			safe_unpack8(&has_bitmap, buffer);
+		}
 		for (i=0; i<gres_context_cnt; i++) {
 			if (gres_context[i].plugin_id == plugin_id)
 				break;
@@ -2052,7 +2057,8 @@ List gres_plugin_job_state_dup(List gres_list)
  *	 the job step state information upon slurmctld restart.
  */
 extern int gres_plugin_job_state_pack(List gres_list, Buf buffer,
-				      uint32_t job_id, bool details)
+				      uint32_t job_id, bool details,
+				      uint16_t protocol_version)
 {
 	int i, rc = SLURM_SUCCESS;
 	uint32_t top_offset, tail_offset;
@@ -2074,36 +2080,41 @@ extern int gres_plugin_job_state_pack(List gres_list, Buf buffer,
 	gres_iter = list_iterator_create(gres_list);
 	while ((gres_ptr = (gres_state_t *) list_next(gres_iter))) {
 		gres_job_ptr = (gres_job_state_t *) gres_ptr->gres_data;
-		pack32(magic, buffer);
-		pack32(gres_ptr->plugin_id, buffer);
-		pack32(gres_job_ptr->gres_cnt_alloc, buffer);
-		pack32(gres_job_ptr->node_cnt, buffer);
-		if (gres_job_ptr->gres_bit_alloc) {
-			pack8((uint8_t) 1, buffer);
-			for (i=0; i<gres_job_ptr->node_cnt; i++) {
-				pack_bit_str(gres_job_ptr->gres_bit_alloc[i],
-					     buffer);
+		if(protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
+			pack32(magic, buffer);
+			pack32(gres_ptr->plugin_id, buffer);
+			pack32(gres_job_ptr->gres_cnt_alloc, buffer);
+			pack32(gres_job_ptr->node_cnt, buffer);
+			if (gres_job_ptr->gres_bit_alloc) {
+				pack8((uint8_t) 1, buffer);
+				for (i=0; i<gres_job_ptr->node_cnt; i++) {
+					pack_bit_str(gres_job_ptr->
+						     gres_bit_alloc[i],
+						     buffer);
+				}
+			} else {
+				pack8((uint8_t) 0, buffer);
 			}
-		} else {
-			pack8((uint8_t) 0, buffer);
-		}
-		if (details && gres_job_ptr->gres_bit_step_alloc) {
-			pack8((uint8_t) 1, buffer);
-			for (i=0; i<gres_job_ptr->node_cnt; i++) {
-				pack_bit_str(gres_job_ptr->
-					     gres_bit_step_alloc[i], buffer);
+			if (details && gres_job_ptr->gres_bit_step_alloc) {
+				pack8((uint8_t) 1, buffer);
+				for (i=0; i<gres_job_ptr->node_cnt; i++) {
+					pack_bit_str(gres_job_ptr->
+						     gres_bit_step_alloc[i],
+						     buffer);
+				}
+			} else {
+				pack8((uint8_t) 0, buffer);
 			}
-		} else {
-			pack8((uint8_t) 0, buffer);
-		}
-		if (details && gres_job_ptr->gres_cnt_step_alloc) {
-			pack8((uint8_t) 1, buffer);
-			for (i=0; i<gres_job_ptr->node_cnt; i++) {
-				pack32(gres_job_ptr->gres_cnt_step_alloc[i],
-				       buffer);
+			if (details && gres_job_ptr->gres_cnt_step_alloc) {
+				pack8((uint8_t) 1, buffer);
+				for (i=0; i<gres_job_ptr->node_cnt; i++) {
+					pack32(gres_job_ptr->
+					       gres_cnt_step_alloc[i],
+					       buffer);
+				}
+			} else {
+				pack8((uint8_t) 0, buffer);
 			}
-		} else {
-			pack8((uint8_t) 0, buffer);
 		}
 		rec_cnt++;
 	}
@@ -2125,7 +2136,8 @@ extern int gres_plugin_job_state_pack(List gres_list, Buf buffer,
  * IN job_id - job's ID
  */
 extern int gres_plugin_job_state_unpack(List *gres_list, Buf buffer,
-					uint32_t job_id)
+					uint32_t job_id,
+					uint16_t protocol_version)
 {
 	int i, rc;
 	uint32_t magic, plugin_id;
@@ -2151,47 +2163,54 @@ extern int gres_plugin_job_state_unpack(List *gres_list, Buf buffer,
 		if ((buffer == NULL) || (remaining_buf(buffer) == 0))
 			break;
 		rec_cnt--;
-		safe_unpack32(&magic, buffer);
-		if (magic != GRES_MAGIC)
-			goto unpack_error;
-		safe_unpack32(&plugin_id, buffer);
-		gres_job_ptr = xmalloc(sizeof(gres_job_state_t));
-		safe_unpack32(&gres_job_ptr->gres_cnt_alloc, buffer);
-		safe_unpack32(&gres_job_ptr->node_cnt, buffer);
-		safe_unpack8(&has_more, buffer);
-		if (has_more) {
-			gres_job_ptr->gres_bit_alloc =
-				xmalloc(sizeof(bitstr_t *) *
-					gres_job_ptr->node_cnt);
-			for (i=0; i<gres_job_ptr->node_cnt; i++) {
-				unpack_bit_str(&gres_job_ptr->gres_bit_alloc[i],
-					       buffer);
+
+		if(protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
+			safe_unpack32(&magic, buffer);
+			if (magic != GRES_MAGIC)
+				goto unpack_error;
+			safe_unpack32(&plugin_id, buffer);
+			gres_job_ptr = xmalloc(sizeof(gres_job_state_t));
+			safe_unpack32(&gres_job_ptr->gres_cnt_alloc, buffer);
+			safe_unpack32(&gres_job_ptr->node_cnt, buffer);
+			safe_unpack8(&has_more, buffer);
+			if (has_more) {
+				gres_job_ptr->gres_bit_alloc =
+					xmalloc(sizeof(bitstr_t *) *
+						gres_job_ptr->node_cnt);
+				for (i=0; i<gres_job_ptr->node_cnt; i++) {
+					unpack_bit_str(&gres_job_ptr->
+						       gres_bit_alloc[i],
+						       buffer);
+				}
+			}
+			safe_unpack8(&has_more, buffer);
+			if (has_more) {
+				gres_job_ptr->gres_bit_step_alloc =
+					xmalloc(sizeof(bitstr_t *) *
+						gres_job_ptr->node_cnt);
+				for (i=0; i<gres_job_ptr->node_cnt; i++) {
+					unpack_bit_str(&gres_job_ptr->
+						       gres_bit_step_alloc[i],
+						       buffer);
+				}
+			}
+			safe_unpack8(&has_more, buffer);
+			if (has_more) {
+				gres_job_ptr->gres_cnt_step_alloc =
+					xmalloc(sizeof(uint32_t) *
+						gres_job_ptr->node_cnt);
+				for (i=0; i<gres_job_ptr->node_cnt; i++) {
+					safe_unpack32(&gres_job_ptr->
+						      gres_cnt_step_alloc[i],
+						      buffer);
+				}
+			}
+			for (i=0; i<gres_context_cnt; i++) {
+				if (gres_context[i].plugin_id == plugin_id)
+					break;
 			}
 		}
-		safe_unpack8(&has_more, buffer);
-		if (has_more) {
-			gres_job_ptr->gres_bit_step_alloc =
-				xmalloc(sizeof(bitstr_t *) *
-					gres_job_ptr->node_cnt);
-			for (i=0; i<gres_job_ptr->node_cnt; i++) {
-				unpack_bit_str(&gres_job_ptr->
-					       gres_bit_step_alloc[i], buffer);
-			}
-		}
-		safe_unpack8(&has_more, buffer);
-		if (has_more) {
-			gres_job_ptr->gres_cnt_step_alloc =
-				xmalloc(sizeof(uint32_t) *
-					gres_job_ptr->node_cnt);
-			for (i=0; i<gres_job_ptr->node_cnt; i++) {
-				safe_unpack32(&gres_job_ptr->
-					      gres_cnt_step_alloc[i], buffer);
-			}
-		}
-		for (i=0; i<gres_context_cnt; i++) {
-			if (gres_context[i].plugin_id == plugin_id)
-				break;
-		}
+
 		if (i >= gres_context_cnt) {
 			/* A likely sign that GresPlugins has changed.
 			 * Not a fatal error, skip over the data. */
@@ -2296,7 +2315,7 @@ extern uint32_t _job_test(void *job_gres_data, void *node_gres_data,
 
 	if (job_gres_ptr->gres_cnt_alloc && node_gres_ptr->topo_cnt &&
 	    *topo_set) {
-		/* Need to determine how many gres available for these 
+		/* Need to determine how many gres available for these
 		 * specific CPUs */
 		if (cpu_bitmap) {
 			cpus_ctld = cpu_end_bit - cpu_start_bit + 1;
@@ -2313,7 +2332,7 @@ extern uint32_t _job_test(void *job_gres_data, void *node_gres_data,
 		}
 		for (i=0; i<node_gres_ptr->topo_cnt; i++) {
 			for (j=0; j<cpus_ctld; j++) {
-				if (cpu_bitmap && 
+				if (cpu_bitmap &&
 				    !bit_test(cpu_bitmap, cpu_start_bit+j))
 					continue;
 				if (!bit_test(node_gres_ptr->
@@ -2358,7 +2377,7 @@ extern uint32_t _job_test(void *job_gres_data, void *node_gres_data,
 			     node_gres_ptr->topo_gres_cnt_avail[i]))
 				continue;
 			for (j=0; j<cpus_ctld; j++) {
-				if (cpu_bitmap && 
+				if (cpu_bitmap &&
 				    !bit_test(cpu_bitmap, cpu_start_bit+j))
 					continue;
 				if (bit_test(node_gres_ptr->
@@ -2424,7 +2443,7 @@ extern uint32_t _job_test(void *job_gres_data, void *node_gres_data,
  * RET: NO_VAL    - All CPUs on node are available
  *      otherwise - Specific CPU count
  */
-extern uint32_t gres_plugin_job_test(List job_gres_list, List node_gres_list, 
+extern uint32_t gres_plugin_job_test(List job_gres_list, List node_gres_list,
 				     bool use_total_gres, bitstr_t *cpu_bitmap,
 				     int cpu_start_bit, int cpu_end_bit,
 				     uint32_t job_id, char *node_name)
@@ -2536,7 +2555,7 @@ extern int _job_alloc(void *job_gres_data, void *node_gres_data,
 	/*
 	 * Select the specific resources to use for this job.
 	 * We'll need to add topology information in the future
-	 */	
+	 */
 	if (job_gres_ptr->gres_bit_alloc[node_offset]) {
 		/* Resuming a suspended job, resources already allocated */
 		if (node_gres_ptr->gres_bit_alloc == NULL) {
@@ -2561,7 +2580,7 @@ extern int _job_alloc(void *job_gres_data, void *node_gres_data,
 			}
 		}
 	} else if (node_gres_ptr->gres_bit_alloc) {
-		job_gres_ptr->gres_bit_alloc[node_offset] = 
+		job_gres_ptr->gres_bit_alloc[node_offset] =
 				bit_alloc(node_gres_ptr->gres_cnt_avail);
 		if (job_gres_ptr->gres_bit_alloc[node_offset] == NULL)
 			fatal("bit_copy: malloc failure");
@@ -2592,7 +2611,7 @@ extern int _job_alloc(void *job_gres_data, void *node_gres_data,
  * IN node_name   - name of the node (for logging)
  * RET SLURM_SUCCESS or error code
  */
-extern int gres_plugin_job_alloc(List job_gres_list, List node_gres_list, 
+extern int gres_plugin_job_alloc(List job_gres_list, List node_gres_list,
 				 int node_cnt, int node_offset,
 				 uint32_t cpu_cnt, uint32_t job_id,
 				 char *node_name)
@@ -2615,20 +2634,20 @@ extern int gres_plugin_job_alloc(List job_gres_list, List node_gres_list,
 	job_gres_iter = list_iterator_create(job_gres_list);
 	while ((job_gres_ptr = (gres_state_t *) list_next(job_gres_iter))) {
 		for (i=0; i<gres_context_cnt; i++) {
-			if (job_gres_ptr->plugin_id == 
+			if (job_gres_ptr->plugin_id ==
 			    gres_context[i].plugin_id)
 				break;
 		}
 		if (i >= gres_context_cnt) {
 			error("gres_plugin_job_alloc: no plugin configured "
-                              "for data type %u for job %u and node %s",
-                              job_gres_ptr->plugin_id, job_id, node_name);
-                        /* A likely sign that GresPlugins has changed */
+			      "for data type %u for job %u and node %s",
+			      job_gres_ptr->plugin_id, job_id, node_name);
+			/* A likely sign that GresPlugins has changed */
 			continue;
-                }
+		}
 
 		node_gres_iter = list_iterator_create(node_gres_list);
-		while ((node_gres_ptr = (gres_state_t *) 
+		while ((node_gres_ptr = (gres_state_t *)
 				list_next(node_gres_iter))) {
 			if (job_gres_ptr->plugin_id == node_gres_ptr->plugin_id)
 				break;
@@ -2637,11 +2656,11 @@ extern int gres_plugin_job_alloc(List job_gres_list, List node_gres_list,
 		if (node_gres_ptr == NULL) {
 			error("gres_plugin_job_alloc: job %u allocated gres/%s "
 			      "on node %s lacking that gres",
-                              job_id, gres_context[i].gres_name, node_name);
+			      job_id, gres_context[i].gres_name, node_name);
 			continue;
 		}
 
-		rc2 = _job_alloc(job_gres_ptr->gres_data, 
+		rc2 = _job_alloc(job_gres_ptr->gres_data,
 				 node_gres_ptr->gres_data, node_cnt,
 				 node_offset, cpu_cnt,
 				 gres_context[i].gres_name, job_id, node_name);
@@ -2655,8 +2674,8 @@ extern int gres_plugin_job_alloc(List job_gres_list, List node_gres_list,
 }
 
 static int _job_dealloc(void *job_gres_data, void *node_gres_data,
-		        int node_offset, char *gres_name, uint32_t job_id,
-		        char *node_name)
+			int node_offset, char *gres_name, uint32_t job_id,
+			char *node_name)
 {
 	int i, len;
 	gres_job_state_t  *job_gres_ptr  = (gres_job_state_t *)  job_gres_data;
@@ -2677,7 +2696,7 @@ static int _job_dealloc(void *job_gres_data, void *node_gres_data,
 	}
 
 	if (node_gres_ptr->gres_bit_alloc && job_gres_ptr->gres_bit_alloc &&
-	    job_gres_ptr->gres_bit_alloc[node_offset]) {    
+	    job_gres_ptr->gres_bit_alloc[node_offset]) {
 		len = bit_size(job_gres_ptr->gres_bit_alloc[node_offset]);
 		i   = bit_size(node_gres_ptr->gres_bit_alloc);
 		if (i != len) {
@@ -2704,7 +2723,7 @@ static int _job_dealloc(void *job_gres_data, void *node_gres_data,
 				      node_name);
 			}
 		}
-	} else if (node_gres_ptr->gres_cnt_alloc >= 
+	} else if (node_gres_ptr->gres_cnt_alloc >=
 		   job_gres_ptr->gres_cnt_alloc) {
 		node_gres_ptr->gres_cnt_alloc -= job_gres_ptr->gres_cnt_alloc;
 	} else {
@@ -2726,7 +2745,7 @@ static int _job_dealloc(void *job_gres_data, void *node_gres_data,
  * IN node_name   - name of the node (for logging)
  * RET SLURM_SUCCESS or error code
  */
-extern int gres_plugin_job_dealloc(List job_gres_list, List node_gres_list, 
+extern int gres_plugin_job_dealloc(List job_gres_list, List node_gres_list,
 				   int node_offset, uint32_t job_id,
 				   char *node_name)
 {
@@ -2749,21 +2768,21 @@ extern int gres_plugin_job_dealloc(List job_gres_list, List node_gres_list,
 	job_gres_iter = list_iterator_create(job_gres_list);
 	while ((job_gres_ptr = (gres_state_t *) list_next(job_gres_iter))) {
 		for (i=0; i<gres_context_cnt; i++) {
-			if (job_gres_ptr->plugin_id == 
+			if (job_gres_ptr->plugin_id ==
 			    gres_context[i].plugin_id)
 				break;
 		}
 		if (i >= gres_context_cnt) {
 			error("gres_plugin_job_dealloc: no plugin configured "
-                              "for data type %u for job %u and node %s",
-                              job_gres_ptr->plugin_id, job_id, node_name);
-                        /* A likely sign that GresPlugins has changed */
+			      "for data type %u for job %u and node %s",
+			      job_gres_ptr->plugin_id, job_id, node_name);
+			/* A likely sign that GresPlugins has changed */
 			gres_name = "UNKNOWN";
-                } else
+		} else
 			gres_name = gres_context[i].gres_name;
 
 		node_gres_iter = list_iterator_create(node_gres_list);
-		while ((node_gres_ptr = (gres_state_t *) 
+		while ((node_gres_ptr = (gres_state_t *)
 				list_next(node_gres_iter))) {
 			if (job_gres_ptr->plugin_id == node_gres_ptr->plugin_id)
 				break;
@@ -2771,11 +2790,11 @@ extern int gres_plugin_job_dealloc(List job_gres_list, List node_gres_list,
 		list_iterator_destroy(node_gres_iter);
 		if (node_gres_ptr == NULL) {
 			error("gres_plugin_job_dealloc: node %s lacks gres/%s "
-                              "for job %u", node_name, gres_name , job_id);
+			      "for job %u", node_name, gres_name , job_id);
 			continue;
 		}
 
-		rc2 = _job_dealloc(job_gres_ptr->gres_data, 
+		rc2 = _job_dealloc(job_gres_ptr->gres_data,
 				   node_gres_ptr->gres_data, node_offset,
 				   gres_name, job_id, node_name);
 		if (rc2 != SLURM_SUCCESS)
@@ -2963,7 +2982,7 @@ static uint32_t _step_test(void *step_gres_data, void *job_gres_data,
 		if (step_gres_ptr->gres_cnt_alloc > gres_cnt)
 			gres_cnt = 0;
 		else
-			gres_cnt = NO_VAL;	
+			gres_cnt = NO_VAL;
 	} else {
 		/* Note: We already validated the gres count above */
 		debug("gres/%s: step_test %u.%u gres_bit_alloc is NULL",
@@ -3140,7 +3159,8 @@ List gres_plugin_step_state_dup(List gres_list)
  * IN job_id, step_id - job and step ID for logging
  */
 extern int gres_plugin_step_state_pack(List gres_list, Buf buffer,
-				       uint32_t job_id, uint32_t step_id)
+				       uint32_t job_id, uint32_t step_id,
+				       uint16_t protocol_version)
 {
 	int i, rc = SLURM_SUCCESS;
 	uint32_t top_offset, tail_offset, magic = GRES_MAGIC;
@@ -3161,18 +3181,21 @@ extern int gres_plugin_step_state_pack(List gres_list, Buf buffer,
 	gres_iter = list_iterator_create(gres_list);
 	while ((gres_ptr = (gres_state_t *) list_next(gres_iter))) {
 		gres_step_ptr = (gres_step_state_t *) gres_ptr->gres_data;
-		pack32(magic, buffer);
-		pack32(gres_ptr->plugin_id, buffer);
-		pack32(gres_step_ptr->gres_cnt_alloc, buffer);
-		pack32(gres_step_ptr->node_cnt, buffer);
-		pack_bit_str(gres_step_ptr->node_in_use, buffer);
-		if (gres_step_ptr->gres_bit_alloc) {
-			pack8((uint8_t) 1, buffer);
-			for (i=0; i<gres_step_ptr->node_cnt; i++)
-				pack_bit_str(gres_step_ptr->gres_bit_alloc[i],
-					     buffer);
-		} else {
-			pack8((uint8_t) 0, buffer);
+		if(protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
+			pack32(magic, buffer);
+			pack32(gres_ptr->plugin_id, buffer);
+			pack32(gres_step_ptr->gres_cnt_alloc, buffer);
+			pack32(gres_step_ptr->node_cnt, buffer);
+			pack_bit_str(gres_step_ptr->node_in_use, buffer);
+			if (gres_step_ptr->gres_bit_alloc) {
+				pack8((uint8_t) 1, buffer);
+				for (i=0; i<gres_step_ptr->node_cnt; i++)
+					pack_bit_str(gres_step_ptr->
+						     gres_bit_alloc[i],
+						     buffer);
+			} else {
+				pack8((uint8_t) 0, buffer);
+			}
 		}
 		rec_cnt++;
 	}
@@ -3194,7 +3217,8 @@ extern int gres_plugin_step_state_pack(List gres_list, Buf buffer,
  * IN job_id, step_id - job and step ID for logging
  */
 extern int gres_plugin_step_state_unpack(List *gres_list, Buf buffer,
-					 uint32_t job_id, uint32_t step_id)
+					 uint32_t job_id, uint32_t step_id,
+					 uint16_t protocol_version)
 {
 	int i, rc;
 	uint32_t magic, plugin_id;
@@ -3220,22 +3244,26 @@ extern int gres_plugin_step_state_unpack(List *gres_list, Buf buffer,
 		if ((buffer == NULL) || (remaining_buf(buffer) == 0))
 			break;
 		rec_cnt--;
-		safe_unpack32(&magic, buffer);
-		if (magic != GRES_MAGIC)
-			goto unpack_error;
-		safe_unpack32(&plugin_id, buffer);
-		gres_step_ptr = xmalloc(sizeof(gres_step_state_t));
-		safe_unpack32(&gres_step_ptr->gres_cnt_alloc, buffer);
-		safe_unpack32(&gres_step_ptr->node_cnt, buffer);
-		unpack_bit_str(&gres_step_ptr->node_in_use, buffer);
-		safe_unpack8(&has_file, buffer);
-		if (has_file) {
-			gres_step_ptr->gres_bit_alloc =
-				xmalloc(sizeof(bitstr_t *) *
-					gres_step_ptr->node_cnt);
-			for (i=0; i<gres_step_ptr->node_cnt; i++) {
-				unpack_bit_str(&gres_step_ptr->gres_bit_alloc[i],
-                                               buffer);
+
+		if(protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
+			safe_unpack32(&magic, buffer);
+			if (magic != GRES_MAGIC)
+				goto unpack_error;
+			safe_unpack32(&plugin_id, buffer);
+			gres_step_ptr = xmalloc(sizeof(gres_step_state_t));
+			safe_unpack32(&gres_step_ptr->gres_cnt_alloc, buffer);
+			safe_unpack32(&gres_step_ptr->node_cnt, buffer);
+			unpack_bit_str(&gres_step_ptr->node_in_use, buffer);
+			safe_unpack8(&has_file, buffer);
+			if (has_file) {
+				gres_step_ptr->gres_bit_alloc =
+					xmalloc(sizeof(bitstr_t *) *
+						gres_step_ptr->node_cnt);
+				for (i=0; i<gres_step_ptr->node_cnt; i++) {
+					unpack_bit_str(&gres_step_ptr->
+						       gres_bit_alloc[i],
+						       buffer);
+				}
 			}
 		}
 
@@ -3434,7 +3462,7 @@ static int _step_alloc(void *step_gres_data, void *job_gres_data,
 	}
 
 	if (step_gres_ptr->gres_cnt_alloc >
-	    (job_gres_ptr->gres_cnt_alloc - 
+	    (job_gres_ptr->gres_cnt_alloc -
 	     job_gres_ptr->gres_cnt_step_alloc[node_offset])) {
 		error("gres/%s: step_alloc for %u.%u, step's > job's "
 		      "remaining for node %d (%d > (%u - %u))",
@@ -3548,7 +3576,7 @@ extern int gres_plugin_step_alloc(List step_gres_list, List job_gres_list,
 	step_gres_iter = list_iterator_create(step_gres_list);
 	while ((step_gres_ptr = (gres_state_t *) list_next(step_gres_iter))) {
 		for (i=0; i<gres_context_cnt; i++) {
-			if (step_gres_ptr->plugin_id == 
+			if (step_gres_ptr->plugin_id ==
 			    gres_context[i].plugin_id)
 				break;
 		}
@@ -3561,7 +3589,7 @@ extern int gres_plugin_step_alloc(List step_gres_list, List job_gres_list,
 		}
 
 		job_gres_iter = list_iterator_create(job_gres_list);
-		while ((job_gres_ptr = (gres_state_t *) 
+		while ((job_gres_ptr = (gres_state_t *)
 				list_next(job_gres_iter))) {
 			if (step_gres_ptr->plugin_id == job_gres_ptr->plugin_id)
 				break;
@@ -3574,7 +3602,7 @@ extern int gres_plugin_step_alloc(List step_gres_list, List job_gres_list,
 			break;
 		}
 
-		rc2 = _step_alloc(step_gres_ptr->gres_data, 
+		rc2 = _step_alloc(step_gres_ptr->gres_data,
 				  job_gres_ptr->gres_data, node_offset,
 				  cpu_cnt, gres_context[i].gres_name, job_id,
 				  step_id);
@@ -3682,7 +3710,7 @@ extern int gres_plugin_step_dealloc(List step_gres_list, List job_gres_list,
 	step_gres_iter = list_iterator_create(step_gres_list);
 	while ((step_gres_ptr = (gres_state_t *) list_next(step_gres_iter))) {
 		job_gres_iter = list_iterator_create(job_gres_list);
-		while ((job_gres_ptr = (gres_state_t *) 
+		while ((job_gres_ptr = (gres_state_t *)
 				list_next(job_gres_iter))) {
 			if (step_gres_ptr->plugin_id == job_gres_ptr->plugin_id)
 				break;
@@ -3692,10 +3720,10 @@ extern int gres_plugin_step_dealloc(List step_gres_list, List job_gres_list,
 			continue;
 
 		for (i=0; i<gres_context_cnt; i++) {
-			if (step_gres_ptr->plugin_id != 
+			if (step_gres_ptr->plugin_id !=
 			    gres_context[i].plugin_id)
 				continue;
-			rc2 = _step_dealloc(step_gres_ptr->gres_data, 
+			rc2 = _step_dealloc(step_gres_ptr->gres_data,
 					   job_gres_ptr->gres_data,
 					   gres_context[i].gres_name, job_id,
 					   step_id);

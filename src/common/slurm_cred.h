@@ -148,8 +148,8 @@ typedef struct {
 	uint32_t  stepid;
 	uid_t     uid;
 
-	/* job_core_bitmap and step_core_bitmap cover the same set of nodes, 
-	 * namely the set of nodes allocated to the job. The core and socket 
+	/* job_core_bitmap and step_core_bitmap cover the same set of nodes,
+	 * namely the set of nodes allocated to the job. The core and socket
 	 * information below applies to job_core_bitmap AND step_core_bitmap */
 	uint16_t *cores_per_socket;	/* Used for job/step_core_bitmaps */
 	uint16_t *sockets_per_node;	/* Used for job/step_core_bitmaps */
@@ -296,7 +296,7 @@ void slurm_cred_pack(slurm_cred_t *cred, Buf buffer);
 /*
  * Unpack a slurm job credential
  */
-slurm_cred_t *slurm_cred_unpack(Buf buffer);
+slurm_cred_t *slurm_cred_unpack(Buf buffer, uint16_t protocol_version);
 
 /*
  * Get a pointer to the slurm credential signature
@@ -306,7 +306,7 @@ int slurm_cred_get_signature(slurm_cred_t *cred, char **datap,
 			     uint32_t *len);
 
 /*
- * Retrieve the set of cores that were allocated to the job and step then 
+ * Retrieve the set of cores that were allocated to the job and step then
  * format them in the List Format (e.g., "0-2,7,12-14"). Also return
  * job and step's memory limit.
  *

@@ -206,7 +206,7 @@ extern int gres_plugin_node_config_unpack(Buf buffer, char *node_name);
  * OUT reason_down - set to an explanation of failure, if any, don't set if NULL
  */
 extern int gres_plugin_node_config_validate(char *node_name,
-					    char *orig_config, 
+					    char *orig_config,
 					    char **new_config,
 					    List *gres_list,
 					    uint16_t fast_schedule,
@@ -223,7 +223,7 @@ extern int gres_plugin_node_config_validate(char *node_name,
  *		      2: Don't validate hardware, use slurm.conf configuration
  */
 extern int gres_plugin_node_reconfig(char *node_name,
-				     char *orig_config, 
+				     char *orig_config,
 				     char **new_config,
 				     List *gres_list,
 				     uint16_t fast_schedule);
@@ -243,7 +243,8 @@ extern int gres_plugin_node_state_pack(List gres_list, Buf buffer,
  * IN node_name - name of the node for which the gres information applies
  */
 extern int gres_plugin_node_state_unpack(List *gres_list, Buf buffer,
-					 char *node_name);
+					 char *node_name,
+					 uint16_t protocol_version);
 
 /*
  * Duplicate a node gres status (used for will-run logic)
@@ -297,7 +298,8 @@ List gres_plugin_job_state_dup(List gres_list);
  *	 the job step state information upon slurmctld restart.
  */
 extern int gres_plugin_job_state_pack(List gres_list, Buf buffer,
-				      uint32_t job_id, bool details);
+				      uint32_t job_id, bool details,
+				      uint16_t protocol_version);
 
 /*
  * Unpack a job's current gres status, called from slurmctld for save/restore
@@ -306,12 +308,14 @@ extern int gres_plugin_job_state_pack(List gres_list, Buf buffer,
  * IN job_id - job's ID
  */
 extern int gres_plugin_job_state_unpack(List *gres_list, Buf buffer,
-					uint32_t job_id);
+					uint32_t job_id,
+					uint16_t protocol_version);
 
 /*
  * Determine how many CPUs on the node can be used by this job
  * IN job_gres_list  - job's gres_list built by gres_plugin_job_state_validate()
- * IN node_gres_list - node's gres_list built by gres_plugin_node_config_validate()
+ * IN node_gres_list - node's gres_list built by
+ *                     gres_plugin_node_config_validate()
  * IN use_total_gres - if set then consider all gres resources as available,
  *		       and none are commited to running jobs
  * IN cpu_bitmap     - Identification of available CPUs (NULL if no restriction)
@@ -322,7 +326,7 @@ extern int gres_plugin_job_state_unpack(List *gres_list, Buf buffer,
  * RET: NO_VAL    - All CPUs on node are available
  *      otherwise - Specific CPU count
  */
-extern uint32_t gres_plugin_job_test(List job_gres_list, List node_gres_list, 
+extern uint32_t gres_plugin_job_test(List job_gres_list, List node_gres_list,
 				     bool use_total_gres, bitstr_t *cpu_bitmap,
 				     int cpu_start_bit, int cpu_end_bit,
 				     uint32_t job_id, char *node_name);
@@ -392,7 +396,8 @@ List gres_plugin_step_state_dup(List gres_list);
  * IN job_id, step_id - job and step ID for logging
  */
 extern int gres_plugin_step_state_pack(List gres_list, Buf buffer,
-				       uint32_t job_id, uint32_t step_id);
+				       uint32_t job_id, uint32_t step_id,
+				       uint16_t protocol_version);
 
 /*
  * Unpack a step's current gres status, called from slurmctld for save/restore
@@ -401,7 +406,8 @@ extern int gres_plugin_step_state_pack(List gres_list, Buf buffer,
  * IN job_id, step_id - job and step ID for logging
  */
 extern int gres_plugin_step_state_unpack(List *gres_list, Buf buffer,
-					 uint32_t job_id, uint32_t step_id);
+					 uint32_t job_id, uint32_t step_id,
+					 uint16_t protocol_version);
 
 /*
  * Log a step's current gres state

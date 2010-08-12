@@ -353,8 +353,9 @@ extern int load_all_node_state ( bool state_only )
 			safe_unpack32 (&tmp_disk,    buffer);
 			safe_unpack32 (&reason_uid,  buffer);
 			safe_unpack_time (&reason_time, buffer);
-			if (gres_plugin_node_state_unpack(&gres_list, buffer,
-					node_name) != SLURM_SUCCESS)
+			if (gres_plugin_node_state_unpack(
+				    &gres_list, buffer, node_name,
+				    protocol_version) != SLURM_SUCCESS)
 				goto unpack_error;
 			base_state = node_state & NODE_STATE_BASE;
 		} else if(protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
@@ -1012,7 +1013,7 @@ static int _strcmp(char *str1, char *str2)
 /*
  * restore_node_features - Make node and config (from slurm.conf) fields
  *	consistent for Features, Gres and Weight
- * IN recover - 
+ * IN recover -
  *              0, 1 - use data from config record, built using slurm.conf
  *              2 = use data from node record, built from saved state
  */
@@ -1021,14 +1022,14 @@ extern void restore_node_features(int recover)
 	int i;
 	struct node_record *node_ptr;
 
-	for (i=0, node_ptr=node_record_table_ptr; i<node_record_count; 
+	for (i=0, node_ptr=node_record_table_ptr; i<node_record_count;
 	     i++, node_ptr++) {
 
 		if (node_ptr->weight != node_ptr->config_ptr->weight) {
 			error("Node %s Weight(%u) differ from slurm.conf",
 			      node_ptr->name, node_ptr->weight);
 			if (recover == 2) {
-				_update_node_weight(node_ptr->name, 
+				_update_node_weight(node_ptr->name,
 						    node_ptr->weight);
 			} else {
 				node_ptr->weight = node_ptr->config_ptr->
@@ -1053,7 +1054,7 @@ extern void restore_node_features(int recover)
 		/* We lose the gres information updated manually and always
 		 * use the information from slurm.conf */
 		(void) gres_plugin_node_reconfig(node_ptr->name,
-						 node_ptr->config_ptr->gres, 
+						 node_ptr->config_ptr->gres,
 						 &node_ptr->gres,
 						 &node_ptr->gres_list,
 						 slurmctld_conf.fast_schedule);
@@ -1479,16 +1480,17 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 		gang_flag = true;
 
 	if (gres_plugin_node_config_unpack(reg_msg->gres_info,
-			node_ptr->name) != SLURM_SUCCESS) {
+					   node_ptr->name) != SLURM_SUCCESS) {
 		error_code = SLURM_ERROR;
 		reason_down = "Could not unpack gres data";
-	} else if (gres_plugin_node_config_validate(node_ptr->name,
-			config_ptr->gres, &node_ptr->gres, &node_ptr->gres_list,
-			slurmctld_conf.fast_schedule, &reason_down) 
-			!= SLURM_SUCCESS) {
+	} else if (gres_plugin_node_config_validate(
+			   node_ptr->name, config_ptr->gres,
+			   &node_ptr->gres, &node_ptr->gres_list,
+			   slurmctld_conf.fast_schedule, &reason_down)
+		   != SLURM_SUCCESS) {
 		error_code = EINVAL;
 		/* reason_down set in function above */
-	}	
+	}
 	gres_plugin_node_state_log(node_ptr->gres_list, node_ptr->name);
 
 	if (slurmctld_conf.fast_schedule != 2) {
@@ -1632,7 +1634,7 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 			}
 		} else if (IS_NODE_DOWN(node_ptr) &&
 			   ((slurmctld_conf.ret2service == 2) ||
-		            ((slurmctld_conf.ret2service == 1) &&
+			    ((slurmctld_conf.ret2service == 1) &&
 			     (node_ptr->reason != NULL) &&
 			     (strncmp(node_ptr->reason, "Not responding", 14)
 					== 0)))) {
@@ -1820,7 +1822,7 @@ extern int validate_nodes_via_front_end(
 							config_ptr->gres,
 							&node_ptr->gres,
 							&node_ptr->gres_list,
-							slurmctld_conf.fast_schedule, 
+							slurmctld_conf.fast_schedule,
 							NULL);
 		gres_plugin_node_state_log(node_ptr->gres_list, node_ptr->name);
 
@@ -1887,9 +1889,9 @@ extern int validate_nodes_via_front_end(
 				}
 			} else if (IS_NODE_DOWN(node_ptr) &&
 				   ((slurmctld_conf.ret2service == 2) ||
-			            ((slurmctld_conf.ret2service == 1) &&
+				    ((slurmctld_conf.ret2service == 1) &&
 				     (node_ptr->reason != NULL) &&
-				     (strncmp(node_ptr->reason, 
+				     (strncmp(node_ptr->reason,
 					      "Not responding", 14) == 0)))) {
 				updated_job = true;
 				if (jobs_on_node) {
@@ -1920,7 +1922,7 @@ extern int validate_nodes_via_front_end(
 					node_flags;
 				node_ptr->last_idle = now;
 			} else if (IS_NODE_COMPLETING(node_ptr) &&
-			           (jobs_on_node == 0)) {
+				   (jobs_on_node == 0)) {
 				/* job already done */
 				updated_job = true;
 				node_ptr->node_state &=
@@ -2294,7 +2296,7 @@ void msg_to_slurmd (slurm_msg_type_t msg_type)
  * IN job_ptr  - pointer to job that is starting
  */
 extern void make_node_alloc(struct node_record *node_ptr,
-		            struct job_record *job_ptr)
+			    struct job_record *job_ptr)
 {
 	int inx = node_ptr - node_record_table_ptr;
 	uint16_t node_flags;
@@ -2471,8 +2473,8 @@ void make_node_idle(struct node_record *node_ptr,
 		debug3("make_node_idle: Node %s being left DOWN",
 			node_ptr->name);
 	} else if ((IS_NODE_DRAIN(node_ptr) || IS_NODE_FAIL(node_ptr)) &&
-	           (node_ptr->run_job_cnt == 0) &&
-	           (node_ptr->comp_job_cnt == 0)) {
+		   (node_ptr->run_job_cnt == 0) &&
+		   (node_ptr->comp_job_cnt == 0)) {
 		node_ptr->node_state = NODE_STATE_IDLE | node_flags;
 		bit_set(idle_node_bitmap, inx);
 		bit_clear(avail_node_bitmap, inx);
@@ -2580,4 +2582,3 @@ extern void node_fini (void)
 	FREE_NULL_BITMAP(up_node_bitmap);
 	node_fini2();
 }
-
