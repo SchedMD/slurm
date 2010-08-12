@@ -82,3 +82,50 @@ reserve_info_msg_to_hv(reserve_info_msg_t* reserve_info_msg, HV* hv)
 	return 0;
 }
 
+/*
+ * convert perl HV to resv_desc_msg_t.
+ */
+int
+hv_to_update_reservation_msg(HV* hv, resv_desc_msg_t* resv_msg)
+{
+ 	resv_msg->accounts = NULL;
+	resv_msg->duration = (uint32_t) NO_VAL;
+	resv_msg->end_time = (time_t) NO_VAL;
+	resv_msg->features = NULL;
+	resv_msg->flags = (uint16_t) NO_VAL;
+	resv_msg->licenses = NULL;
+	resv_msg->name = NULL;
+	resv_msg->node_cnt = (uint32_t) NO_VAL;
+	resv_msg->node_list = NULL;
+	resv_msg->partition = NULL;
+	resv_msg->start_time = (time_t) NO_VAL;
+	resv_msg->users = NULL;
+
+ 	FETCH_FIELD(hv, resv_msg, accounts, charp, FALSE);
+	FETCH_FIELD(hv, resv_msg, duration, uint32_t, FALSE);
+	FETCH_FIELD(hv, resv_msg, end_time, time_t, FALSE);
+	FETCH_FIELD(hv, resv_msg, features, charp, FALSE);
+	FETCH_FIELD(hv, resv_msg, flags, uint16_t, FALSE);
+	FETCH_FIELD(hv, resv_msg, licenses, charp, FALSE);
+	FETCH_FIELD(hv, resv_msg, name, charp, FALSE);
+	FETCH_FIELD(hv, resv_msg, node_cnt, uint32_t, FALSE);
+	FETCH_FIELD(hv, resv_msg, node_list, charp, FALSE);
+	FETCH_FIELD(hv, resv_msg, partition, charp, FALSE);
+	FETCH_FIELD(hv, resv_msg, start_time, time_t, FALSE);
+	FETCH_FIELD(hv, resv_msg, users, charp, FALSE);
+
+	return 0;
+}
+
+/*
+ * convert perl HV to reservation_name_msg_t.
+ */
+int
+hv_to_delete_reservation_msg(HV* hv, reservation_name_msg_t* resv_name)
+{
+	resv_name->name = NULL;
+
+	FETCH_FIELD(hv, resv_name, name, charp, FALSE);
+
+	return 0;
+}

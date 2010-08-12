@@ -427,6 +427,42 @@ slurm_load_reservations(slurm_t self = NULL)
 	OUTPUT:
 		RETVAL
 
+char *
+slurm_create_reservation(slurm_t self, HV* res_info = NULL)
+	PREINIT:
+		resv_desc_msg_t resv_msg;
+	CODE:
+		if(hv_to_update_reservation_msg(res_info, &resv_msg) < 0) {
+			XSRETURN_UNDEF;
+		}
+                RETVAL = slurm_create_reservation(&resv_msg);
+	OUTPUT:
+		RETVAL
+
+int
+slurm_update_reservation(slurm_t self, HV* res_info = NULL)
+	PREINIT:
+		resv_desc_msg_t resv_msg;
+	CODE:
+		if(hv_to_update_reservation_msg(res_info, &resv_msg) < 0) {
+			XSRETURN_UNDEF;
+		}
+                RETVAL = slurm_update_reservation(&resv_msg);
+	OUTPUT:
+		RETVAL
+
+int
+slurm_delete_reservation(slurm_t self, HV* res_info = NULL)
+	PREINIT:
+		reservation_name_msg_t resv_name;
+	CODE:
+		if(hv_to_delete_reservation_msg(res_info, &resv_name) < 0) {
+			XSRETURN_UNDEF;
+		}
+                RETVAL = slurm_delete_reservation(&resv_name);
+	OUTPUT:
+		RETVAL
+
 # To be implemented in perl code
 # slurm_print_reservation_info_msg
 # slurm_print_reservation_info
