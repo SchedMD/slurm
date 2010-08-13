@@ -421,6 +421,9 @@ documents those changes that are of interest to users and admins.
     correctly.
  -- Update typos in doc/html/accounting.shtml doc/html/resource_limits.shtml
     doc/man/man5/slurmdbd.conf.5 and doc/man/man5/slurm.conf.5
+ -- Fixed a bug in exitcode:signal display in sacct
+ -- Fix bug when request comes in for consumable resources and the -c option
+    is used in conjunction with -O
 
 * Changes in SLURM 2.1.11-2
 ===========================
