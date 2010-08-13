@@ -893,13 +893,14 @@ js_pg_step_complete(pgsql_conn_t *pg_conn,
 		elapsed = 0;	/* For *very* short jobs, if clock is wrong */
 
 	exit_code = step_ptr->exit_code;
-	if (exit_code == NO_VAL) {
+	if (WIFSIGNALED(exit_code)) {
 		comp_status = JOB_CANCELLED;
-		exit_code = 0;
 	} else if (exit_code)
 		comp_status = JOB_FAILED;
-	else
+	else {
+		step_ptr->requid = -1;
 		comp_status = JOB_COMPLETE;
+	}
 
 	/* figure out the ave of the totals sent */
 	if(cpus > 0) {
