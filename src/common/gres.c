@@ -2139,7 +2139,7 @@ extern int gres_plugin_job_state_unpack(List *gres_list, Buf buffer,
 					uint32_t job_id,
 					uint16_t protocol_version)
 {
-	int i, rc;
+	int i = 0, rc;
 	uint32_t magic, plugin_id;
 	uint16_t rec_cnt;
 	uint8_t  has_more;
@@ -2205,12 +2205,12 @@ extern int gres_plugin_job_state_unpack(List *gres_list, Buf buffer,
 						      buffer);
 				}
 			}
-			for (i=0; i<gres_context_cnt; i++) {
-				if (gres_context[i].plugin_id == plugin_id)
-					break;
-			}
 		}
 
+		for (i=0; i<gres_context_cnt; i++) {
+			if (gres_context[i].plugin_id == plugin_id)
+				break;
+		}
 		if (i >= gres_context_cnt) {
 			/* A likely sign that GresPlugins has changed.
 			 * Not a fatal error, skip over the data. */

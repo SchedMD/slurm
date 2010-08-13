@@ -1394,7 +1394,8 @@ void _dump_job_details(struct job_details *detail_ptr, Buf buffer)
 	packstr(detail_ptr->ckpt_dir,  buffer);
 	packstr(detail_ptr->restart_dir, buffer);
 
-	pack_multi_core_data(detail_ptr->mc_ptr, buffer);
+	pack_multi_core_data(detail_ptr->mc_ptr, buffer,
+			     SLURM_PROTOCOL_VERSION);
 	packstr_array(detail_ptr->argv, detail_ptr->argc, buffer);
 	packstr_array(detail_ptr->env_sup, detail_ptr->env_cnt, buffer);
 }
@@ -1465,7 +1466,7 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer,
 		safe_unpackstr_xmalloc(&ckpt_dir, &name_len, buffer);
 		safe_unpackstr_xmalloc(&restart_dir, &name_len, buffer);
 
-		if (unpack_multi_core_data(&mc_ptr, buffer))
+		if (unpack_multi_core_data(&mc_ptr, buffer, protocol_version))
 			goto unpack_error;
 		safe_unpackstr_array(&argv, &argc, buffer);
 		safe_unpackstr_array(&env_sup, &env_cnt, buffer);
@@ -1511,7 +1512,7 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer,
 		safe_unpackstr_xmalloc(&ckpt_dir, &name_len, buffer);
 		safe_unpackstr_xmalloc(&restart_dir, &name_len, buffer);
 
-		if (unpack_multi_core_data(&mc_ptr, buffer))
+		if (unpack_multi_core_data(&mc_ptr, buffer, protocol_version))
 			goto unpack_error;
 		safe_unpackstr_array(&argv, &argc, buffer);
 		safe_unpackstr_array(&env_sup, &env_cnt, buffer);
@@ -5109,7 +5110,8 @@ static void _pack_pending_job_details(struct job_details *detail_ptr,
 			packstr(detail_ptr->exc_nodes, buffer);
 			pack_bit_fmt(detail_ptr->exc_node_bitmap, buffer);
 
-			pack_multi_core_data(detail_ptr->mc_ptr, buffer);
+			pack_multi_core_data(detail_ptr->mc_ptr, buffer,
+					     protocol_version);
 		} else {
 			pack16((uint16_t) 0, buffer);
 			pack16((uint16_t) 0, buffer);
@@ -5124,7 +5126,7 @@ static void _pack_pending_job_details(struct job_details *detail_ptr,
 			packnull(buffer);
 			packnull(buffer);
 
-			pack_multi_core_data(NULL, buffer);
+			pack_multi_core_data(NULL, buffer, protocol_version);
 		}
 	}
 }
