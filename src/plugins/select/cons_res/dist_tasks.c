@@ -83,8 +83,17 @@ static int _compute_c_b_task_dist(struct job_record *job_ptr)
 	avail_cpus = job_res->cpus;
 	job_res->cpus = xmalloc(job_res->nhosts * sizeof(uint16_t));
 
-        if (job_ptr->details->cpus_per_task > 1)
+	if ((job_ptr->details->cpus_per_task > 1)
+	    && (maxtasks > job_ptr->details->cpus_per_task))
                  maxtasks = maxtasks / job_ptr->details->cpus_per_task;	
+
+	/* Safe guard if the user didn't specified a lower number of
+	 * cpus than cpus_per_task or didn't specify the number. */
+	if(!maxtasks) {
+		error("_compute_c_b_task_dist: request was for 0 tasks, "
+		      "setting to 1");
+		maxtasks = 1;
+	}
 
 	for (tid = 0, i = 0; (tid < maxtasks); i++) { /* cycle counter */
 		bool space_remaining = false;
