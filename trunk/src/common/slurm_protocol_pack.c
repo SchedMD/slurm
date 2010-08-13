@@ -3705,7 +3705,7 @@ _unpack_job_info_members(job_info_t * job, Buf buffer,
 			xfree(node_inx_str);
 		}
 
-		if (unpack_multi_core_data(&mc_ptr, buffer))
+		if (unpack_multi_core_data(&mc_ptr, buffer, protocol_version))
 			goto unpack_error;
 		if (mc_ptr) {
 			job->sockets_per_node  = mc_ptr->sockets_per_node;
@@ -3809,7 +3809,7 @@ _unpack_job_info_members(job_info_t * job, Buf buffer,
 			xfree(node_inx_str);
 		}
 
-		if (unpack_multi_core_data(&mc_ptr, buffer))
+		if (unpack_multi_core_data(&mc_ptr, buffer, protocol_version))
 			goto unpack_error;
 		if (mc_ptr) {
 			job->sockets_per_node  = mc_ptr->sockets_per_node;
@@ -7628,7 +7628,8 @@ unpack_error:
 }
 
 extern void
-pack_multi_core_data (multi_core_data_t *multi_core, Buf buffer)
+pack_multi_core_data (multi_core_data_t *multi_core, Buf buffer,
+		      uint16_t protocol_version)
 {
 	if (multi_core == NULL) {
 		pack8((uint8_t) 0, buffer);	/* flag as Empty */
@@ -7647,7 +7648,8 @@ pack_multi_core_data (multi_core_data_t *multi_core, Buf buffer)
 }
 
 extern int
-unpack_multi_core_data (multi_core_data_t **mc_ptr, Buf buffer)
+unpack_multi_core_data (multi_core_data_t **mc_ptr, Buf buffer,
+			uint16_t protocol_version)
 {
 	uint8_t flag;
 	multi_core_data_t *multi_core;
