@@ -12,6 +12,7 @@ documents those changes that are of interest to users and admins.
  -- Fixed a bug in exitcode:signal display in sacct
  -- Fix bug when request comes in for consumable resources and the -c option
     is used in conjunction with -O
+ -- Fixed squeue -o "%h" output formatting
 
 * Changes in SLURM 2.1.11-2
 ===========================
