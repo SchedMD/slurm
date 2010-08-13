@@ -83,8 +83,18 @@ static int _compute_c_b_task_dist(struct job_record *job_ptr)
 	avail_cpus = job_res->cpus;
 	job_res->cpus = xmalloc(job_res->nhosts * sizeof(uint16_t));
 
-        if (job_ptr->details->cpus_per_task > 1)
-                 maxtasks = maxtasks / job_ptr->details->cpus_per_task;	
+	/* ncpus is already set the number of tasks if overcommit is used */
+	if (!job_ptr->details->overcommit
+	    && (job_ptr->details->cpus_per_task > 1))
+		maxtasks = maxtasks / job_ptr->details->cpus_per_task;
+
+	/* Safe guard if the user didn't specified a lower number of
+	 * cpus than cpus_per_task or didn't specify the number. */
+	if(!maxtasks) {
+		error("_compute_c_b_task_dist: request was for 0 tasks, "
+		      "setting to 1");
+		maxtasks = 1;
+	}
 
 	for (tid = 0, i = 0; (tid < maxtasks); i++) { /* cycle counter */
 		bool space_remaining = false;
@@ -139,7 +149,8 @@ static int _compute_plane_dist(struct job_record *job_ptr)
 		plane_size = job_ptr->details->mc_ptr->plane_size;
 
 	if (plane_size <= 0) {
-		error("cons_res: _compute_plane_dist received invalid plane_size");
+		error("cons_res: _compute_plane_dist received invalid "
+		      "plane_size");
 		return SLURM_ERROR;
 	}
 	job_res->cpus = xmalloc(job_res->nhosts * sizeof(uint16_t));
@@ -415,6 +426,7 @@ static void _cyclic_sync_core_bitmap(struct job_record *job_ptr,
 		if (mc_ptr->ntasks_per_core) {
 			ntasks_per_core = mc_ptr->ntasks_per_core;
 		}
+
 		if ((mc_ptr->threads_per_core != (uint16_t) NO_VAL) &&
 		    (mc_ptr->threads_per_core <  ntasks_per_core)) {
 			ntasks_per_core = mc_ptr->threads_per_core;
@@ -441,7 +453,7 @@ static void _cyclic_sync_core_bitmap(struct job_record *job_ptr,
 		     vpus, job_res->cpus[i]);
 #endif
 		if ((c + (sockets * cps)) > csize)
-			fatal ("cons_res: _cyclic_sync_core_bitmap index error");
+			fatal("cons_res: _cyclic_sync_core_bitmap index error");
 
 		if (sockets > sock_size) {
 			sock_size = sockets;
@@ -560,14 +572,16 @@ extern int cr_dist(struct job_record *job_ptr, const uint16_t cr_type)
 		/* perform a plane distribution on the 'cpus' array */
 		error_code = _compute_plane_dist(job_ptr);
 		if (error_code != SLURM_SUCCESS) {
-			error("cons_res: cr_dist: Error in _compute_plane_dist");
+			error("cons_res: cr_dist: Error in "
+			      "_compute_plane_dist");
 			return error_code;
 		}
 	} else {
 		/* perform a cyclic distribution on the 'cpus' array */
 		error_code = _compute_c_b_task_dist(job_ptr);
 		if (error_code != SLURM_SUCCESS) {
-			error("cons_res: cr_dist: Error in _compute_c_b_task_dist");
+			error("cons_res: cr_dist: Error in "
+			      "_compute_c_b_task_dist");
 			return error_code;
 		}
 	}
