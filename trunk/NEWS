@@ -10,6 +10,8 @@ documents those changes that are of interest to users and admins.
     kill procedure.
  -- Fixed some issues when dealing with jobs from a 2.1 system so they live
     after an upgrade.
+ -- In srun, log if --cpu_bind options are specified, but not supported by the
+    current system configuration.
 
 * Changes in SLURM 2.2.0.pre9
 =============================

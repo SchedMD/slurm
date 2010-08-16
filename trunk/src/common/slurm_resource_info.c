@@ -86,6 +86,17 @@ static int _isvalue(char *arg) {
 	return 0;	/* not a value */
 }
 
+static bool _have_task_affinity(void)
+{
+	bool rc = true;
+	char *plugin_name = slurm_get_task_plugin();
+
+	if (plugin_name && !strcmp(plugin_name, "task/none"))
+		rc = false;
+	xfree(plugin_name);
+	return rc;
+}
+
 /*
  * slurm_get_avail_procs - Get the number of "available" cpus on a node
  *	given this number given the number of cpus_per_task and
@@ -378,7 +389,11 @@ void slurm_sprint_mem_bind_type(char *str, mem_bind_type_t mem_bind_type)
 
 void slurm_print_cpu_bind_help(void)
 {
-	printf(
+	if (_have_task_affinity()) {
+		printf("CPU bind options not supported with current "
+		       "configuration\n");
+	} else {
+		printf(
 "CPU bind options:\n"
 "    --cpu_bind=         Bind tasks to CPUs\n"
 "        q[uiet]         quietly bind before task runs (default)\n"
@@ -399,6 +414,7 @@ void slurm_print_cpu_bind_help(void)
 "        threads         auto-generated masks bind to threads\n"
 "        ldoms           auto-generated masks bind to NUMA locality domains\n"
 "        help            show this help message\n");
+	}
 }
 
 /*
@@ -426,6 +442,8 @@ int slurm_verify_cpu_bind(const char *arg, char **cpu_bind,
 	int bind_to_bits =
 		CPU_BIND_TO_SOCKETS|CPU_BIND_TO_CORES|CPU_BIND_TO_THREADS;
 	uint16_t task_plugin_param = slurm_get_task_plugin_param();
+	bool have_binding = _have_task_affinity();
+	bool log_binding = true;
 
 	bind_bits    |= CPU_BIND_LDRANK|CPU_BIND_LDMAP|CPU_BIND_LDMASK;
 	bind_to_bits |= CPU_BIND_TO_LDOMS;
@@ -471,7 +489,13 @@ int slurm_verify_cpu_bind(const char *arg, char **cpu_bind,
 		if (strcasecmp(tok, "help") == 0) {
 			slurm_print_cpu_bind_help();
 			return 1;
-		} else if ((strcasecmp(tok, "q") == 0) ||
+		}
+		if (!have_binding && log_binding) {
+			info("cluster configuration lacks support for cpu "
+			     "binding");
+			log_binding = false;
+		}
+		if ((strcasecmp(tok, "q") == 0) ||
 			   (strcasecmp(tok, "quiet") == 0)) {
 		        *flags &= ~CPU_BIND_VERBOSE;
 		} else if ((strcasecmp(tok, "v") == 0) ||
