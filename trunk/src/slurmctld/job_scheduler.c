@@ -180,7 +180,7 @@ extern List build_job_queue(void)
 							     part_ptr_list);
 			if (part_iterator == NULL)
 				fatal("list_iterator_create malloc failure");
-			while ((part_ptr = (struct part_record *) 
+			while ((part_ptr = (struct part_record *)
 					list_next(part_iterator))) {
 				_job_queue_append(job_queue, job_ptr, part_ptr);
 			}
@@ -190,7 +190,7 @@ extern List build_job_queue(void)
 				part_ptr = find_part_record(job_ptr->partition);
 				if (part_ptr == NULL) {
 					error("Could not find partition %s "
-					      "for job %u", job_ptr->partition, 
+					      "for job %u", job_ptr->partition,
 					      job_ptr->job_id);
 					continue;
 				}
@@ -516,7 +516,7 @@ extern int schedule(void)
 			xfree(ionodes);
 #else
 			info("sched: Allocate JobId=%u NodeList=%s #CPUs=%u",
-			     job_ptr->job_id, job_ptr->nodes, 
+			     job_ptr->job_id, job_ptr->nodes,
 			     job_ptr->total_cpus);
 #endif
 			if (job_ptr->batch_flag == 0)
@@ -525,7 +525,7 @@ extern int schedule(void)
 				launch_job(job_ptr);
 			rebuild_job_part_list(job_ptr);
 			job_cnt++;
-		} else if ((error_code != 
+		} else if ((error_code !=
 			    ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE) &&
 			   (error_code != ESLURM_NODE_NOT_AVAIL)      &&
 			   (error_code != ESLURM_ACCOUNTING_POLICY)) {
@@ -549,7 +549,7 @@ extern int schedule(void)
 		}
 	}
 	list_iterator_destroy(job_iterator);
-	
+
 	FREE_NULL_BITMAP(avail_node_bitmap);
 	avail_node_bitmap = save_avail_node_bitmap;
 	xfree(failed_parts);
@@ -787,16 +787,16 @@ extern int test_job_dependency(struct job_record *job_ptr)
 	if (!depend_iter)
 		fatal("list_iterator_create memory allocation failure");
 	while ((dep_ptr = list_next(depend_iter))) {
- 	        if ((dep_ptr->depend_type == SLURM_DEPEND_SINGLETON) &&
+ 		if ((dep_ptr->depend_type == SLURM_DEPEND_SINGLETON) &&
  		    job_ptr->name) {
- 		        /* get user jobs with the same user and name */
+ 			/* get user jobs with the same user and name */
  			job_queue = _build_user_job_list(job_ptr->user_id,
 							 job_ptr->name);
  			now = 1;
 			job_iterator = list_iterator_create(job_queue);
 			if (job_iterator == NULL)
 				fatal("list_iterator_create malloc failure");
-			while ((qjob_ptr = (struct job_record *) 
+			while ((qjob_ptr = (struct job_record *)
 					   list_next(job_iterator))) {
 				/* already running/suspended job or previously
 				 * submitted pending job */
@@ -900,8 +900,8 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 	/* validate new dependency string */
 	while (rc == SLURM_SUCCESS) {
 
- 	        /* test singleton dependency flag */
- 	        if ( strncasecmp(tok, "singleton", 9) == 0 ) {
+ 		/* test singleton dependency flag */
+ 		if ( strncasecmp(tok, "singleton", 9) == 0 ) {
 			depend_type = SLURM_DEPEND_SINGLETON;
 			dep_ptr = xmalloc(sizeof(struct depend_spec));
 			dep_ptr->depend_type = depend_type;
@@ -1683,7 +1683,7 @@ static int _valid_node_feature(char *feature)
 	return rc;
 }
 
-/* If a job can run in multiple partitions, make sure that the one 
+/* If a job can run in multiple partitions, make sure that the one
  * actually used is first in the string. Needed for job state save/restore */
 extern void rebuild_job_part_list(struct job_record *job_ptr)
 {
