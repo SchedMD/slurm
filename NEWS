@@ -13,6 +13,8 @@ documents those changes that are of interest to users and admins.
  -- Fix bug when request comes in for consumable resources and the -c option
     is used in conjunction with -O
  -- Fixed squeue -o "%h" output formatting
+ -- Change select/linear message "error: job xxx: best_fit topology failure"
+    to debug type.
 
 * Changes in SLURM 2.1.11-2
 ===========================
