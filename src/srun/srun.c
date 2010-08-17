@@ -257,12 +257,6 @@ int srun(int ac, char **av)
 	/* Set up slurmctld message handler */
 	slurmctld_msg_init();
 
-	/*
-	 *  Become --uid user
-	 */
-	if (_become_user () < 0)
-		info ("Warning: Unable to assume uid=%lu\n", opt.uid);
-
 	/* now global "opt" should be filled in and available,
 	 * create a job from opt
 	 */
@@ -347,6 +341,13 @@ int srun(int ac, char **av)
 			/* use SLURM_JOB_NAME env var */
 			opt.job_name_set_cmd = true;
 		}
+
+		/*
+		 *  Become --uid user
+		 */
+		if (_become_user () < 0)
+			info ("Warning: Unable to assume uid=%lu\n", opt.uid);
+
 		if (!job || create_job_step(job, true) < 0) {
 			slurm_complete_job(resp->job_id, 1);
 			exit(error_exit);
@@ -354,6 +355,12 @@ int srun(int ac, char **av)
 
 		slurm_free_resource_allocation_response_msg(resp);
 	}
+
+	/*
+	 *  Become --uid user
+	 */
+	if (_become_user () < 0)
+		info ("Warning: Unable to assume uid=%lu\n", opt.uid);
 
 	/*
 	 *  Enhance environment for job

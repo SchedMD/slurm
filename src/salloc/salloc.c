@@ -206,12 +206,6 @@ int main(int argc, char *argv[])
 			exit(error_exit);
 		}
 	}
-	if (opt.uid != (uid_t) -1) {
-		if (setuid(opt.uid) < 0) {
-			error("setuid: %m");
-			exit(error_exit);
-		}
-	}
 
 	callbacks.ping = _ping_handler;
 	callbacks.timeout = _timeout_handler;
@@ -243,6 +237,13 @@ int main(int argc, char *argv[])
 		sleep (++retries);
 	}
 
+	/* become the user after the allocation has been requested. */
+	if (opt.uid != (uid_t) -1) {
+		if (setuid(opt.uid) < 0) {
+			error("setuid: %m");
+			exit(error_exit);
+		}
+	}
 	if (alloc == NULL) {
 		if (allocation_interrupted) {
 			/* cancelled by signal */

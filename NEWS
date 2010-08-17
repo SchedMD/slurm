@@ -436,6 +436,11 @@ documents those changes that are of interest to users and admins.
     to debug type.
  -- BLUEGENE - Fix for sinfo -R to group all midplanes together in a single
     line for midplanes in an error state instead of 1 line for each midplane.
+ -- Fix srun to work correctly with --uid when getting an allocation
+    and creating a step, also fix salloc to assume identity at the correct
+    time as well.
+ -- BLUEGENE - Fixed issue with jobs being refused when running dynamic mode
+    and every job on the system happens to be the same size.
 
 * Changes in SLURM 2.1.11-2
 ===========================
