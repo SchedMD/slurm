@@ -181,7 +181,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 			continue;
 		} else if(!end && !strncasecmp(argv[i], "events",
 					  MAX(command_len, 1))) {
-			arch_cond->purge_step |= SLURMDB_PURGE_ARCHIVE;
+			arch_cond->purge_event |= SLURMDB_PURGE_ARCHIVE;
 			set = 1;
 		} else if(!end && !strncasecmp(argv[i], "jobs",
 					  MAX(command_len, 1))) {
@@ -196,8 +196,11 @@ static int _set_cond(int *start, int argc, char *argv[],
 			arch_cond->purge_suspend |= SLURMDB_PURGE_ARCHIVE;
 			set = 1;
 		} else if(!end
-			  || !strncasecmp (argv[i], "Clusters",
-					   MAX(command_len, 1))) {
+			  || !strncasecmp(argv[i], "Clusters",
+					  MAX(command_len, 1))) {
+			if(!job_cond->cluster_list)
+				job_cond->cluster_list =
+					list_create(slurm_destroy_char);
 			slurm_addto_char_list(job_cond->cluster_list,
 					      argv[i]+end);
 			set = 1;

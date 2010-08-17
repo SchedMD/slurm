@@ -12,6 +12,8 @@ documents those changes that are of interest to users and admins.
     after an upgrade.
  -- In srun, log if --cpu_bind options are specified, but not supported by the
     current system configuration.
+ -- Various Patchs from Hongjia Cao dealing with bugs found in sacctmgr and
+    the slurmdbd.
 
 * Changes in SLURM 2.2.0.pre9
 =============================

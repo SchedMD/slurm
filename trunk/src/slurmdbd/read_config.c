@@ -456,6 +456,15 @@ extern int read_slurmdbd_conf(void)
 			      slurmdbd_conf->archive_script);
 	}
 
+	if(!slurmdbd_conf->purge_event)
+		slurmdbd_conf->purge_event = NO_VAL;
+	if(!slurmdbd_conf->purge_job)
+		slurmdbd_conf->purge_job = NO_VAL;
+	if(!slurmdbd_conf->purge_step)
+		slurmdbd_conf->purge_step = NO_VAL;
+	if(!slurmdbd_conf->purge_suspend)
+		slurmdbd_conf->purge_suspend = NO_VAL;
+	
 	slurm_mutex_unlock(&conf_mutex);
 	return SLURM_SUCCESS;
 }
