@@ -1151,16 +1151,27 @@ static int _find_best_block_match(List block_list,
 				 */
 				(*found_bg_record) = list_pop(new_blocks);
 				if(!(*found_bg_record)) {
-					if(bg_conf->slurm_debug_flags
-					   & DEBUG_FLAG_BG_PICK)
-						error("got an empty list back");
 					list_destroy(new_blocks);
-					if(bg_record)
-						continue;
-					else {
+					if(!bg_record) {
+						/* This should never happen */
+						error("got an empty list back");
 						rc = SLURM_ERROR;
 						break;
 					}
+
+					if(bg_conf->slurm_debug_flags
+					   & DEBUG_FLAG_BG_PICK)
+						info("Appears we are trying "
+						     "to place this job on "
+						     "the block we just "
+						     "removed.");
+					/* This means we placed the job on
+					   the block we just popped off.
+					*/
+					bit_and(slurm_block_bitmap,
+						bg_record->bitmap);
+					*found_bg_record = bg_record;
+					break;
 				}
 				bit_and(slurm_block_bitmap,
 					(*found_bg_record)->bitmap);
