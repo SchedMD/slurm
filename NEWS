@@ -14,6 +14,8 @@ documents those changes that are of interest to users and admins.
     current system configuration.
  -- Various Patchs from Hongjia Cao dealing with bugs found in sacctmgr and
     the slurmdbd.
+ -- Fix bug in changing the nodes allocated to a running job and some node
+    names specified are invalid, avoid invalid memory reference.
 
 * Changes in SLURM 2.2.0.pre9
 =============================
