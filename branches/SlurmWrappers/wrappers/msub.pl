@@ -633,7 +633,7 @@ sub process
 		$ttc	  = $r if ($o =~ /ttc/);
 		$tpn	  = $r if ($o =~ /tpn/);
 		$wclim	  = $r if ($o =~ /walltime/);
-		$minwclim = $r if ($o =~ /minwclimit/);
+		$minwclim = $r if ($o =~ /minwclim/);
 		$signal	  = $r if ($o =~ /signal/);
 		$ddisk    = $r if ($o =~ /ddisk/);
 		$maxmem   = $r if ($o =~ /maxmem/);
