@@ -2965,8 +2965,9 @@ static int _valid_job_part(job_desc_msg_t * job_desc,
 #else
 		;
 #endif
-	} else if ((job_desc->max_nodes < min_nodes_orig) &&
-		   slurmctld_conf.enforce_part_limits) {
+	} else if (slurmctld_conf.enforce_part_limits
+		   && (job_desc->max_nodes
+		       && (job_desc->max_nodes < min_nodes_orig))) {
 		info("_job_create: job's max nodes less than partition's "
 		     "min nodes (%u < %u)",
 		     job_desc->max_nodes, min_nodes_orig);

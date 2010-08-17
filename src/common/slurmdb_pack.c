@@ -3604,6 +3604,7 @@ extern void slurmdb_pack_job_cond(void *in, uint16_t rpc_version, Buf buffer)
 			pack32(NO_VAL, buffer);
 			pack32(NO_VAL, buffer);
 			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
 			pack32(0, buffer);
 			pack32(0, buffer);
 			pack_time(0, buffer);

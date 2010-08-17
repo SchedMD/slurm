@@ -186,6 +186,7 @@ proc_req(slurmdbd_conn_t *slurmdbd_conn,
 	in_buffer = create_buf(msg, msg_size); /* puts msg into buffer struct */
 	safe_unpack16(&msg_type, in_buffer);
 
+	errno = 0;		/* clear errno */
 	if (first && (msg_type != DBD_INIT)) {
 		comment = "Initial RPC not DBD_INIT";
 		error("%s type (%d)", comment, msg_type);
@@ -894,10 +895,14 @@ static int _archive_dump(slurmdbd_conn_t *slurmdbd_conn,
 		arch_cond->archive_script =
 			xstrdup(slurmdbd_conf->archive_script);
 
-	arch_cond->purge_event = slurmdbd_conf->purge_event;
-	arch_cond->purge_job = slurmdbd_conf->purge_job;
-	arch_cond->purge_step = slurmdbd_conf->purge_step;
-	arch_cond->purge_suspend = slurmdbd_conf->purge_suspend;
+	if (arch_cond->purge_event == NO_VAL)
+		arch_cond->purge_event = slurmdbd_conf->purge_event;
+	if (arch_cond->purge_job == NO_VAL)
+		arch_cond->purge_job = slurmdbd_conf->purge_job;
+	if (arch_cond->purge_step == NO_VAL)
+		arch_cond->purge_step = slurmdbd_conf->purge_step;
+	if (arch_cond->purge_suspend == NO_VAL)
+		arch_cond->purge_suspend = slurmdbd_conf->purge_suspend;
 
 	rc = jobacct_storage_g_archive(slurmdbd_conn->db_conn, arch_cond);
 	if(rc != SLURM_SUCCESS) {
