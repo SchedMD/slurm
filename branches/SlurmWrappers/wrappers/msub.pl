@@ -45,7 +45,7 @@ my (
 	$jobname,	$mailoptions,	$mailusers,	$nodes,
 	$opath,		$priority,	$rerun, 	$shellpath,
 	$silent, 	$slurm,		$starttime, 	$variable,
-	$wclim
+	$wclim,		$minwclim
 );
 
 #
@@ -417,6 +417,18 @@ if ($wclim) {
 }
 
 #
+# Request  a  minimum time limit for the job.
+#
+if ($minwclim) {
+	if ($sversion >= 2.2) {
+		push @slurmArgs, "--time-min=$minwclim";
+	} else {
+		printf("\n minwclim option not available in this version of SLURM.\n\n");
+		exit(1);
+	}
+}
+
+#
 # Execute sbatch.
 #
 if ($debug == 1) {
@@ -621,6 +633,7 @@ sub process
 		$ttc	  = $r if ($o =~ /ttc/);
 		$tpn	  = $r if ($o =~ /tpn/);
 		$wclim	  = $r if ($o =~ /walltime/);
+		$minwclim = $r if ($o =~ /minwclimit/);
 		$signal	  = $r if ($o =~ /signal/);
 		$ddisk    = $r if ($o =~ /ddisk/);
 		$maxmem   = $r if ($o =~ /maxmem/);
