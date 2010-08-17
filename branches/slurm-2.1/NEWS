@@ -15,6 +15,8 @@ documents those changes that are of interest to users and admins.
  -- Fixed squeue -o "%h" output formatting
  -- Change select/linear message "error: job xxx: best_fit topology failure"
     to debug type.
+ -- BLUEGENE - Fix for sinfo -R to group all midplanes together in a single
+    line for midplanes in an error state instead of 1 line for each midplane.
 
 * Changes in SLURM 2.1.11-2
 ===========================
