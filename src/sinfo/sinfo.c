@@ -699,11 +699,7 @@ static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr,
 				     NODE_STATE_ERROR,
 				     &error_cpus);
 #ifdef HAVE_BG
-	if(error_cpus) {
-		xfree(node_ptr->reason);
-		node_ptr->reason = xstrdup("Block(s) in error state");
-		sinfo_ptr->reason     = node_ptr->reason;
-	}
+
 	if(!params.match_flags.state_flag && (used_cpus || error_cpus)) {
 		/* We only get one shot at this (because all states
 		   are combined together), so we need to make
@@ -778,6 +774,16 @@ static int _insert_node_ptr(List sinfo_list, uint16_t part_num,
 	int rc = SLURM_SUCCESS;
 	sinfo_data_t *sinfo_ptr = NULL;
 	ListIterator itr = NULL;
+
+#ifdef HAVE_BG
+	uint16_t error_cpus = 0;
+	select_g_select_nodeinfo_get(node_ptr->select_nodeinfo,
+				     SELECT_NODEDATA_SUBCNT,
+				     NODE_STATE_ERROR,
+				     &error_cpus);
+	if(error_cpus && !node_ptr->reason)
+		node_ptr->reason = xstrdup("Block(s) in error state");
+#endif
 
 	itr = list_iterator_create(sinfo_list);
 	while ((sinfo_ptr = list_next(itr))) {
