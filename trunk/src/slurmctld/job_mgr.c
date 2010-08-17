@@ -6362,8 +6362,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			info("sched: Invalid node list (%s) for job %u update",
 			     job_specs->req_nodes, job_specs->job_id);
 			error_code = ESLURM_INVALID_NODE_NAME;
-		}
-		if (req_bitmap) {
+		} else if (req_bitmap) {
 			int i, i_first, i_last;
 			struct node_record *node_ptr;
 			info("sched: update_job: setting nodes to %s for "
@@ -6382,11 +6381,11 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			}
 			job_post_resize_acctg(job_ptr);
 			update_accounting = false;
-		} else
+		} else {
 			/* Since job_post_resize_acctg will restart
 			   things don't do it again. */
 			update_accounting = true;
-
+		}
 		FREE_NULL_BITMAP(req_bitmap);
 		xfree(job_specs->req_nodes);
 	}
