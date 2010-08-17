@@ -1583,12 +1583,22 @@ static int _check_all_blocks_error(int node_inx, time_t event_time,
 	if(send_node.cpus) {
 		if(!reason)
 			reason = "update block: setting partial node down.";
+		if(!node_ptr->reason)
+			node_ptr->reason = xstrdup(reason);
+		node_ptr->reason_time = event_time;
+		node_ptr->reason_uid = slurm_get_slurm_user_id();
+
 		send_node.node_state = NODE_STATE_ERROR;
 		rc = clusteracct_storage_g_node_down(acct_db_conn,
 						     &send_node, event_time,
 						     reason,
-						     slurm_get_slurm_user_id());
+						     node_ptr->reason_uid);
 	} else {
+		if(node_ptr->reason)
+			xfree(node_ptr->reason);
+		node_ptr->reason_time = 0;
+		node_ptr->reason_uid = NO_VAL;
+
 		send_node.node_state = NODE_STATE_IDLE;
 		rc = clusteracct_storage_g_node_up(acct_db_conn,
 						   &send_node, event_time);
