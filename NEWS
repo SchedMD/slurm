@@ -16,6 +16,7 @@ documents those changes that are of interest to users and admins.
     the slurmdbd.
  -- Fix bug in changing the nodes allocated to a running job and some node
     names specified are invalid, avoid invalid memory reference.
+ -- Fixed bug in slurmd.c based on patch from Ralph Bean
 
 * Changes in SLURM 2.2.0.pre9
 =============================

@@ -675,20 +675,19 @@ _free_and_set(char **confvar, char *newval)
 	*confvar = newval;
 }
 
-/* Replace first "%h" in path string with actual hostname.
+/*
+ * Replace first "%h" in path string with actual hostname.
  * Replace first "%n" in path string with NodeName.
- *
- * Make sure to call _massage_pathname AFTER conf->node_name has been
- * fully initialized.
  */
 static void
 _massage_pathname(char **path)
 {
-	if (conf->logfile == NULL)
-		return;
-
-	xstrsubstitute(*path, "%h", conf->hostname);
-	xstrsubstitute(*path, "%n", conf->node_name);
+	if (path && *path) {
+		if (conf->hostname)
+			xstrsubstitute(*path, "%h", conf->hostname);
+		if (conf->node_name)
+			xstrsubstitute(*path, "%n", conf->node_name);
+	}
 }
 
 /*
