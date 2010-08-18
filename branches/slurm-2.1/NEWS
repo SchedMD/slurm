@@ -22,6 +22,8 @@ documents those changes that are of interest to users and admins.
     time as well.
  -- BLUEGENE - Fixed issue with jobs being refused when running dynamic mode
     and every job on the system happens to be the same size.
+ -- Removed bad #define _SLURMD_H from slurmd/get_mach_stat.h.  Didn't appear
+    to cause any problems being there, just incorrect syntax.
 
 * Changes in SLURM 2.1.11-2
 ===========================
