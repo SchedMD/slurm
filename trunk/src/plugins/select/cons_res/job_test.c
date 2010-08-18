@@ -888,7 +888,6 @@ static int _get_cpu_cnt(struct job_record *job_ptr, const int node_index,
  * IN: cr_type     - resource type
  * OUT: cpu_cnt    - number of cpus that can be used by this job
  * IN: test_only   - ignore allocated memory check
- * OUT:              returns the length of the 2 arrays
  */
 static void _get_res_usage(struct job_record *job_ptr, bitstr_t *node_map,
 			   bitstr_t *core_map, uint32_t cr_node_cnt,
@@ -2205,7 +2204,7 @@ alloc_job:
 		/* Set a reasonable value for the number of allocated CPUs.
 		 * Without computing task distribution this is only a guess */
 		job_ptr->total_cpus = MAX(job_ptr->details->min_cpus,
-					   job_ptr->details->min_nodes);
+					  job_ptr->details->min_nodes);
 	}
 	if ((error_code != SLURM_SUCCESS) || (mode != SELECT_MODE_RUN_NOW)) {
 		FREE_NULL_BITMAP(free_cores);
