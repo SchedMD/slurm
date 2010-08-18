@@ -1001,8 +1001,12 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 		hostset_destroy(step_hset);
 
 	if (slurm_send_rc_msg(msg, errnum) < 0) {
-
-		error("_rpc_launch_tasks: unable to send return code: %m");
+		char addr_str[32];
+		slurm_print_slurm_addr(&msg->address, addr_str,
+				       sizeof(addr_str));
+		error("_rpc_launch_tasks: unable to send return code to "
+		      "address:port of %s: %m",
+		      addr_str);
 
 		/*
 		 * Rewind credential so that srun may perform retry

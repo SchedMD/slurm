@@ -2685,8 +2685,12 @@ int slurm_send_node_msg(slurm_fd_t fd, slurm_msg_t * msg)
 				get_buf_offset(buffer),
 				SLURM_PROTOCOL_NO_SEND_RECV_FLAGS );
 
-	if (rc < 0)
-		error("slurm_msg_sendto: %m");
+	if (rc < 0) {
+		char addr_str[32];
+		slurm_print_slurm_addr(&msg->address, addr_str,
+				       sizeof(addr_str));
+		error("slurm_msg_sendto: address:port of %s: %m", addr_str);
+	}
 
 	free_buf(buffer);
 	return rc;
