@@ -1822,15 +1822,16 @@ extern int validate_nodes_via_front_end(
 							config_ptr->gres,
 							&node_ptr->gres,
 							&node_ptr->gres_list,
-							slurmctld_conf.fast_schedule,
+							slurmctld_conf.
+							fast_schedule,
 							NULL);
 		gres_plugin_node_state_log(node_ptr->gres_list, node_ptr->name);
 
 		if (reg_msg->up_time) {
 			node_ptr->up_time = reg_msg->up_time;
 			node_ptr->boot_time = now - reg_msg->up_time;
-			node_ptr->slurmd_start_time = reg_msg->slurmd_start_time;
 		}
+		node_ptr->slurmd_start_time = reg_msg->slurmd_start_time;
 
 		if (IS_NODE_NO_RESPOND(node_ptr)) {
 			updated_job = true;
