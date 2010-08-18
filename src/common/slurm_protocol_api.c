@@ -2689,7 +2689,8 @@ int slurm_send_node_msg(slurm_fd_t fd, slurm_msg_t * msg)
 		char addr_str[32];
 		slurm_print_slurm_addr(&msg->address, addr_str,
 				       sizeof(addr_str));
-		error("slurm_msg_sendto: address:port of %s: %m", addr_str);
+		error("slurm_msg_sendto: address:port=%s msg_type=%u: %m",
+		      addr_str, msg->msg_type);
 	}
 
 	free_buf(buffer);

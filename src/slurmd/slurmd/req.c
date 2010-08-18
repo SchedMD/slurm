@@ -1005,8 +1005,8 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 		slurm_print_slurm_addr(&msg->address, addr_str,
 				       sizeof(addr_str));
 		error("_rpc_launch_tasks: unable to send return code to "
-		      "address:port of %s: %m",
-		      addr_str);
+		      "address:port=%s msg_type=%u: %m",
+		      addr_str, msg->msg_type);
 
 		/*
 		 * Rewind credential so that srun may perform retry
