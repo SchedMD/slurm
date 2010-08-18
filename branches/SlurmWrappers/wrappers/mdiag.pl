@@ -40,11 +40,13 @@ BEGIN {
 my (
 	$account,	$class,		$fairshare,	$help,	$jobs,
 	$man,		$nodes,		$part,		$prio,
-	$qos,		$resv,		$user,		$verbose
+	$qos,		$resv,		$user,		$verbose,
+	$host_name
 );
 
 my $tmp = `scontrol show config | grep ClusterName`;
 my ($host) = ($tmp =~ m/ = (\S+)/);
+chomp($host = `nodeattr -v cluster`) if ($host =~ /null/);
 
 #
 # Slurm Version.
@@ -126,8 +128,9 @@ sub do_prio
 #
 sub do_account
 {
-	my $line = "sacctmgr show account witha cluster=$host format=Account,Cluster,User,FairShare";
-	$line .= " account=$account"  if ($account);
+	my $line = "sacctmgr show account witha format=Account,Cluster,User,FairShare";
+	$line .= " account=$account"    if ($account);
+	$line .= " cluster=$host_name"  if ($host_name);
 
 	execute($line);
 }
@@ -175,8 +178,9 @@ sub do_resv
 #
 sub do_user
 {
-	my $line = "sacctmgr  show user withasso cluster=$host";
+	my $line = "sacctmgr  show user witha format=User,DefaultAccount,Cluster,Account,FairShare,MaxJobs,MaxNodes,MaxSubmit,MaxWall,QOS%25s";
 	$line .= " user=$user"  if ($user);
+	$line .= " cluster=$host_name"  if ($host_name);
 
 	execute($line);
 }
@@ -189,6 +193,7 @@ sub do_qos
 {
 	my $line = "sacctmgr show qos ";
 	$line .= " qos=$qos" if ($qos);
+	$line .= " cluster=$host_name"  if ($host_name);
 
 	execute($line);
 }
@@ -213,6 +218,7 @@ sub GetOpts
 		'c:s'		=> \$class,
 		'q:s'		=> \$qos,
 		'r:s'		=> \$resv,
+		't:s'		=> \$host_name,
 		'u:s'		=> \$user,
 	) or pod2usage(2);
 
@@ -261,6 +267,10 @@ sub execute
 	}
 
 	my $result = `$line 2>&1`;
+	if ($result =~ /not running a supported accounting_storage plugin/) {
+		printf("\n Optio not supported on this system.\n\n");
+		exit(1);
+	}
 	my $status = $?;
 
 	printf("\n$result\n");
@@ -277,15 +287,15 @@ B<mdiag> - Display information about aspects of the cluster.
 
 =head1 SYNOPSIS
 
- mdiag -a [accountid]
+ mdiag -a [accountid] [-t host]
  mdiag -c [classid]
  mdiag -f [-v]
  mdiag -j [jobid] [-v]
  mdiag -n [nodeid] [-v]
  mdiag -p [-v] 
- mdiag -q [qosid]
+ mdiag -q [qosid] [-t host]
  mdiag -r [reservationid] 
- mdiag -u [userid]
+ mdiag -u [userid] [-t host]
 
 
 =head1 DESCRIPTION
@@ -327,6 +337,10 @@ Display job priorities.
 =item B<-r> I[<reservationid>]
 
 Requeue a job.
+
+=item B<-t> I[<host name>]
+
+specify a host name (only applies to -a, -q and -u options).
 
 =item B<-u> I[<user>]
 
