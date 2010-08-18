@@ -42,6 +42,7 @@
 
 #include <slurm/slurm.h>
 #include <src/slurmctld/slurmctld.h>
+#include "src/slurmctld/job_scheduler.h"
 
 /*
  * Initialize the preemption plugin.
