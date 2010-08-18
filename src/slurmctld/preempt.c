@@ -45,20 +45,23 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/slurmctld/slurmctld.h"
+#include "src/slurmctld/job_scheduler.h"
 
 
 /* ************************************************************************ */
-/*  TAG(                     slurm_preempt_ops_t                         )  */
+/*  TAG(                     slurm_preempt_ops_t                        )  */
 /* ************************************************************************ */
 typedef struct slurm_preempt_ops {
-	List		(*find_jobs)		( struct job_record *job_ptr );
-	uint16_t	(*job_preempt_mode)	( struct job_record *job_ptr );
-	bool		(*preemption_enabled)	( void );
+	List		(*find_jobs)	      (struct job_record *job_ptr);
+	uint16_t	(*job_preempt_mode)   (struct job_record *job_ptr);
+	bool		(*preemption_enabled) (void);
+	bool		(*job_preempt_check)  (job_queue_rec_t *preemptor,
+					       job_queue_rec_t *preemptee);
 } slurm_preempt_ops_t;
 
 
 /* ************************************************************************ */
-/*  TAG(                     slurm_preempt_contex_t                      )  */
+/*  TAG(                     slurm_preempt_contex_t                     )  */
 /* ************************************************************************ */
 typedef struct slurm_preempt_context {
 	char	       	*preempt_type;
@@ -73,10 +76,10 @@ static pthread_mutex_t	    g_preempt_context_lock = PTHREAD_MUTEX_INITIALIZER;
 
 
 /* ************************************************************************ */
-/*  TAG(                    _slurm_preempt_get_ops                       )  */
+/*  TAG(                    _slurm_preempt_get_ops                      )  */
 /* ************************************************************************ */
 static slurm_preempt_ops_t *
-		_slurm_preempt_get_ops( slurm_preempt_context_t *c )
+_slurm_preempt_get_ops(slurm_preempt_context_t *c)
 {
 	/*
 	 * Must be synchronized with slurm_preempt_ops_t above.
@@ -85,13 +88,14 @@ static slurm_preempt_ops_t *
 		"find_preemptable_jobs",
 		"job_preempt_mode",
 		"preemption_enabled",
+		"job_preempt_check",
 	};
-	int n_syms = sizeof( syms ) / sizeof( char * );
+	int n_syms = sizeof(syms) / sizeof(char *);
 
 	/* Find the correct plugin. */
         c->cur_plugin = plugin_load_and_link(c->preempt_type, n_syms, syms,
 					     (void **) &c->ops);
-        if ( c->cur_plugin != PLUGIN_INVALID_HANDLE )
+        if (c->cur_plugin != PLUGIN_INVALID_HANDLE)
         	return &c->ops;
 
 	if(errno != EPLUGIN_NOTFOUND) {
@@ -105,33 +109,33 @@ static slurm_preempt_ops_t *
 	      c->preempt_type);
 
 	/* Get plugin list. */
-	if ( c->plugin_list == NULL ) {
+	if (c->plugin_list == NULL) {
 		char *plugin_dir;
 		c->plugin_list = plugrack_create();
-		if ( c->plugin_list == NULL ) {
-			error( "cannot create plugin manager" );
+		if (c->plugin_list == NULL) {
+			error("cannot create plugin manager");
 			return NULL;
 		}
-		plugrack_set_major_type( c->plugin_list, "preempt" );
-		plugrack_set_paranoia( c->plugin_list,
-				       PLUGRACK_PARANOIA_NONE, 0 );
+		plugrack_set_major_type(c->plugin_list, "preempt");
+		plugrack_set_paranoia(c->plugin_list,
+				      PLUGRACK_PARANOIA_NONE, 0);
 		plugin_dir = slurm_get_plugin_dir();
-		plugrack_read_dir( c->plugin_list, plugin_dir );
+		plugrack_read_dir(c->plugin_list, plugin_dir);
 		xfree(plugin_dir);
 	}
 
-	c->cur_plugin = plugrack_use_by_type( c->plugin_list, c->preempt_type);
-	if ( c->cur_plugin == PLUGIN_INVALID_HANDLE ) {
-		error( "cannot find preempt plugin for %s", c->preempt_type );
+	c->cur_plugin = plugrack_use_by_type(c->plugin_list, c->preempt_type);
+	if (c->cur_plugin == PLUGIN_INVALID_HANDLE) {
+		error("cannot find preempt plugin for %s", c->preempt_type);
 		return NULL;
 	}
 
 	/* Dereference the API. */
-	if ( plugin_get_syms( c->cur_plugin,
-			      n_syms,
-			      syms,
-			      (void **) &c->ops ) < n_syms ) {
-		error( "incomplete preempt plugin detected" );
+	if (plugin_get_syms(c->cur_plugin,
+			    n_syms,
+			    syms,
+			    (void **) &c->ops) < n_syms) {
+		error("incomplete preempt plugin detected");
 		return NULL;
 	}
 
@@ -140,20 +144,20 @@ static slurm_preempt_ops_t *
 
 
 /* ************************************************************************ */
-/*  TAG(               _slurm_preempt_context_create                     )  */
+/*  TAG(               _slurm_preempt_context_create                    )  */
 /* ************************************************************************ */
 static slurm_preempt_context_t *
-		_slurm_preempt_context_create( const char *preempt_type )
+_slurm_preempt_context_create(const char *preempt_type)
 {
 	slurm_preempt_context_t *c;
 
-	if ( preempt_type == NULL ) {
-		debug3( "slurm_preempt_context:  no preempt type" );
+	if (preempt_type == NULL) {
+		debug3("slurm_preempt_context:  no preempt type");
 		return NULL;
 	}
 
-	c = xmalloc( sizeof( slurm_preempt_context_t ) );
-	c->preempt_type   = xstrdup( preempt_type );
+	c = xmalloc(sizeof(slurm_preempt_context_t));
+	c->preempt_type   = xstrdup(preempt_type);
 	c->plugin_list    = NULL;
 	c->cur_plugin     = PLUGIN_INVALID_HANDLE;
 	c->preempt_errno  = SLURM_SUCCESS;
@@ -163,66 +167,66 @@ static slurm_preempt_context_t *
 
 
 /* ************************************************************************ */
-/*  TAG(               _slurm_preempt_context_destroy                    )  */
+/*  TAG(              _slurm_preempt_context_destroy                   )  */
 /* ************************************************************************ */
-static int _slurm_preempt_context_destroy( slurm_preempt_context_t *c )
+static int _slurm_preempt_context_destroy(slurm_preempt_context_t *c)
 {
 	/*
 	 * Must check return code here because plugins might still
 	 * be loaded and active.
 	 */
-	if ( c->plugin_list ) {
-		if ( plugrack_destroy( c->plugin_list ) != SLURM_SUCCESS ) {
+	if (c->plugin_list) {
+		if (plugrack_destroy(c->plugin_list) != SLURM_SUCCESS) {
 			return SLURM_ERROR;
 		}
 	} else {
 		plugin_unload(c->cur_plugin);
 	}
 
-	xfree( c->preempt_type );
-	xfree( c );
+	xfree(c->preempt_type);
+	xfree(c);
 
 	return SLURM_SUCCESS;
 }
 
 
 /* *********************************************************************** */
-/*  TAG(                     slurm_preempt_init                         )  */
+/*  TAG(                    slurm_preempt_init                        )  */
 /* *********************************************************************** */
 extern int slurm_preempt_init(void)
 {
 	int retval = SLURM_SUCCESS;
 	char *preempt_type = NULL;
 
-	slurm_mutex_lock( &g_preempt_context_lock );
+	slurm_mutex_lock(&g_preempt_context_lock);
 
-	if ( g_preempt_context )
+	if (g_preempt_context)
 		goto done;
 
 	preempt_type = slurm_get_preempt_type();
-	g_preempt_context = _slurm_preempt_context_create( preempt_type );
-	if ( g_preempt_context == NULL ) {
-		error( "cannot create preempt context for %s",
-			 preempt_type );
+	g_preempt_context = _slurm_preempt_context_create(preempt_type);
+	if (g_preempt_context == NULL) {
+		error("cannot create preempt context for %s",
+		      preempt_type);
 		retval = SLURM_ERROR;
 		goto done;
 	}
 
-	if ( _slurm_preempt_get_ops( g_preempt_context ) == NULL ) {
-		error( "cannot resolve preempt plugin operations" );
-		_slurm_preempt_context_destroy( g_preempt_context );
+	if (_slurm_preempt_get_ops(g_preempt_context) == NULL) {
+		error("cannot resolve preempt plugin operations");
+		_slurm_preempt_context_destroy(g_preempt_context);
 		g_preempt_context = NULL;
 		retval = SLURM_ERROR;
 	}
 
- done:
-	slurm_mutex_unlock( &g_preempt_context_lock );
+done:
+	slurm_mutex_unlock(&g_preempt_context_lock);
 	xfree(preempt_type);
 	return retval;
 }
 
 /* *********************************************************************** */
-/*  TAG(                     slurm_preempt_fini                         )  */
+/*  TAG(                    slurm_preempt_fini                        )  */
 /* *********************************************************************** */
 extern int slurm_preempt_fini(void)
 {
@@ -238,11 +242,11 @@ extern int slurm_preempt_fini(void)
 
 
 /* *********************************************************************** */
-/*  TAG(                   slurm_find_preemptable_jobs                  )  */
+/*  TAG(                  slurm_find_preemptable_jobs                 )  */
 /* *********************************************************************** */
 extern List slurm_find_preemptable_jobs(struct job_record *job_ptr)
 {
-	if ( slurm_preempt_init() < 0 )
+	if (slurm_preempt_init() < 0)
 		return NULL;
 
 	return (*(g_preempt_context->ops.find_jobs))(job_ptr);
@@ -253,7 +257,7 @@ extern List slurm_find_preemptable_jobs(struct job_record *job_ptr)
  */
 extern uint16_t slurm_job_preempt_mode(struct job_record *job_ptr)
 {
-	if ( slurm_preempt_init() < 0 )
+	if (slurm_preempt_init() < 0)
 		return (uint16_t) PREEMPT_MODE_OFF;
 
 	return (*(g_preempt_context->ops.job_preempt_mode))(job_ptr);
@@ -264,8 +268,21 @@ extern uint16_t slurm_job_preempt_mode(struct job_record *job_ptr)
  */
 extern bool slurm_preemption_enabled(void)
 {
-	if ( slurm_preempt_init() < 0 )
+	if (slurm_preempt_init() < 0)
 		return false;
 
 	return (*(g_preempt_context->ops.preemption_enabled))();
+}
+
+/*
+ * Return true if the preemptor can preempt the preemptee, otherwise false
+ */
+extern bool slurm_job_preempt_check(job_queue_rec_t *preemptor,
+				    job_queue_rec_t *preemptee)
+{
+	if (slurm_preempt_init() < 0)
+		return false;
+
+	return (*(g_preempt_context->ops.job_preempt_check))
+		(preemptor, preemptee);
 }

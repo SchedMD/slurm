@@ -575,14 +575,10 @@ static int _sort_job_queue(void *x, void *y)
 	job_queue_rec_t *job_rec1 = (job_queue_rec_t *) x;
 	job_queue_rec_t *job_rec2 = (job_queue_rec_t *) y;
 
-	if (job_rec1->part_ptr && job_rec2->part_ptr) {
-		if (job_rec1->part_ptr->priority <
-		    job_rec2->part_ptr->priority)
-			return 1;
-		if (job_rec1->part_ptr->priority >
-		    job_rec2->part_ptr->priority)
-			return -1;
-	}
+	if(slurm_job_preempt_check(job_rec1, job_rec2))
+		return -1;
+	if(slurm_job_preempt_check(job_rec2, job_rec1))
+		return 1;
 
 	if (job_rec1->job_ptr->priority < job_rec2->job_ptr->priority)
 		return 1;

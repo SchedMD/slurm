@@ -17,6 +17,7 @@ documents those changes that are of interest to users and admins.
  -- Fix bug in changing the nodes allocated to a running job and some node
     names specified are invalid, avoid invalid memory reference.
  -- Fixed filename substitution of %h and %n based on patch from Ralph Bean
+ -- Added better job sorting logic when preempting jobs with qos.
 
 * Changes in SLURM 2.2.0.pre9
 =============================

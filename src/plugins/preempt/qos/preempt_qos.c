@@ -47,6 +47,7 @@
 #include "src/common/plugin.h"
 #include "src/common/slurm_accounting_storage.h"
 #include "src/slurmctld/slurmctld.h"
+#include "src/slurmctld/job_scheduler.h"
 
 const char	plugin_name[]	= "Preempt by Quality Of Service (QOS)";
 const char	plugin_type[]	= "preempt/qos";
@@ -199,4 +200,14 @@ extern uint16_t job_preempt_mode(struct job_record *job_ptr)
 extern bool preemption_enabled(void)
 {
 	return (slurm_get_preempt_mode() != PREEMPT_MODE_OFF);
+}
+
+/*
+ * Return true if the preemptor can preempt the preemptee, otherwise false
+ */
+extern bool job_preempt_check(job_queue_rec_t *preemptor,
+			      job_queue_rec_t *preemptee)
+{
+	return _qos_preemptable(preemptee->job_ptr, preemptor->job_ptr);
+;
 }
