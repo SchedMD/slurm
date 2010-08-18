@@ -19,6 +19,8 @@ documents those changes that are of interest to users and admins.
  -- Fixed filename substitution of %h and %n based on patch from Ralph Bean
  -- Added better job sorting logic when preempting jobs with qos.
  -- Log the IP address and port number for some communication errors.
+ -- Fix bug in select/cons_res when --cpus_per_task option is used, could
+    oversubscribe resources.
 
 * Changes in SLURM 2.2.0.pre9
 =============================
@@ -1994,7 +1996,7 @@ documents those changes that are of interest to users and admins.
  -- Propagate --cpus-per-task parameter from salloc or sbatch input line to
     the SLURM_CPUS_PER_TASK environment variable in the spawned shell for 
     srun to use.
- -- Add support for srun --cpus-per-task=0. This can be used to spawn tasks
+ -- Add support for srun --cpus_per_task=0. This can be used to spawn tasks
     without allocating resouces for the job step from the job's allocation
     when running multiple job steps with the --exclusive option.
  -- Remove registration messages from saved messages when bringing down cluster.

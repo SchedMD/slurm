@@ -95,8 +95,11 @@ static int _compute_c_b_task_dist(struct job_record *job_ptr)
 		      "setting to 1");
 		maxtasks = 1;
 	}
-
-	for (tid = 0, i = 0; (tid < maxtasks); i++) { /* cycle counter */
+ 
+	if (job_ptr->details->cpus_per_task == 0)
+		job_ptr->details->cpus_per_task = 1;
+	for (tid = 0, i = job_ptr->details->cpus_per_task ; (tid < maxtasks); 
+	     i += job_ptr->details->cpus_per_task ) { /* cycle counter */
 		bool space_remaining = false;
 		if (over_subscribe) {
 			/* 'over_subscribe' is a relief valve that guards
@@ -107,15 +110,15 @@ static int _compute_c_b_task_dist(struct job_record *job_ptr)
 			error("cons_res: _compute_c_b_task_dist oversubscribe");
 		}
 		for (n = 0; ((n < job_res->nhosts) && (tid < maxtasks)); n++) {
-			if ((i < avail_cpus[n]) || over_subscribe) {
+			if ((i <= avail_cpus[n]) || over_subscribe) {
 				tid++;
 				for (l = 0; l < job_ptr->details->cpus_per_task;
 				     l++) {
 					if (job_res->cpus[n] < avail_cpus[n])
 						job_res->cpus[n]++;
-					if ((i + 1) < avail_cpus[n])
-						space_remaining = true;
 				}
+				if ((i + 1) <= avail_cpus[n])
+					space_remaining = true;
 			}
 		}
 		if (!space_remaining) {
