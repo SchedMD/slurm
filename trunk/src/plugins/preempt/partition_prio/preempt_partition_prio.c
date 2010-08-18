@@ -46,6 +46,7 @@
 #include "src/common/log.h"
 #include "src/common/plugin.h"
 #include "src/slurmctld/slurmctld.h"
+#include "src/slurmctld/job_scheduler.h"
 
 const char	plugin_name[]	= "Preempt by partition priority plugin";
 const char	plugin_type[]	= "preempt/partition_prio";
@@ -182,4 +183,19 @@ extern uint16_t job_preempt_mode(struct job_record *job_ptr)
 extern bool preemption_enabled(void)
 {
 	return (slurm_get_preempt_mode() != PREEMPT_MODE_OFF);
+}
+
+/*
+ * Return true if the preemptor can preempt the preemptee, otherwise false
+ */
+extern bool job_preempt_check(job_queue_rec_t *preemptor,
+			      job_queue_rec_t *preemptee)
+{
+	if (preemptor->part_ptr && preemptee->part_ptr) {
+		if (preemptor->part_ptr->priority >
+		    preemptee->part_ptr->priority)
+			return true;
+	}
+
+	return false;
 }

@@ -82,4 +82,10 @@ extern uint16_t slurm_job_preempt_mode(struct job_record *job_ptr);
  */
 extern bool slurm_preemption_enabled(void);
 
+/*
+ * Return true if the preemptor can preempt the preemptee, otherwise false
+ */
+extern bool slurm_job_preempt_check(job_queue_rec_t *preemptor,
+				    job_queue_rec_t *preemptee);
+
 #endif /*__SLURM_CONTROLLER_PREEMPT_H__*/
