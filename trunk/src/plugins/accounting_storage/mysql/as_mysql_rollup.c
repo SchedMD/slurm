@@ -1023,7 +1023,7 @@ end_it:
 
 	/* go check to see if we archive and purge */
 
-	if( rc == SLURM_SUCCESS)
+	if(rc == SLURM_SUCCESS)
 		rc = _process_purge(mysql_conn, cluster_name, archive_data,
 				    SLURMDB_PURGE_HOURS);
 
