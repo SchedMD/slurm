@@ -1807,11 +1807,8 @@ static bool _opt_verify(void)
 		hl_cnt = hostlist_count(hl);
 		if (opt.nodes_set)
 			opt.min_nodes = MAX(hl_cnt, opt.min_nodes);
-		else {
+		else
 			opt.min_nodes = hl_cnt;
-			opt.nodes_set = true;
-			opt.nodes_set_opt = true;
-		}
 	}
 	if ((opt.nodes_set || opt.extra_set)				&&
 	    ((opt.min_nodes == opt.max_nodes) || (opt.max_nodes == 0))	&&
@@ -1847,14 +1844,9 @@ static bool _opt_verify(void)
 			hl_cnt = hostlist_count(hl);
 			if (opt.nodes_set)
 				opt.min_nodes = MAX(hl_cnt, opt.min_nodes);
-			else {
+			else
 				opt.min_nodes = hl_cnt;
-				opt.nodes_set = true;
-				opt.nodes_set_opt = true;
-			}
-			/* don't destroy hl here since it could be
-			   used later
-			*/
+			/* Don't destroy hl here since it may be used later */
 		}
 	} else if (opt.nodes_set && opt.ntasks_set) {
 
