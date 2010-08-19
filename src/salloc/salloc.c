@@ -262,7 +262,8 @@ int main(int argc, char *argv[])
 		/*
 		 * Allocation granted!
 		 */
-		info("Granted job allocation %d", alloc->job_id);
+		info("Granted job allocation %u", alloc->job_id);
+		pending_job_id = alloc->job_id;
 #ifdef HAVE_BG
 		if (!_wait_bluegene_block_ready(alloc)) {
 			if(!allocation_interrupted)
@@ -335,8 +336,13 @@ int main(int argc, char *argv[])
 	env_array_free(env);
 	pthread_mutex_lock(&allocation_state_lock);
 	if (allocation_state == REVOKED) {
-		error("Allocation was revoked before command could be run");
+		error("Allocation was revoked for job %u before command could "
+		      "be run", alloc->job_id);
 		pthread_mutex_unlock(&allocation_state_lock);
+		if (slurm_complete_job(alloc->job_id, status) != 0) {
+			error("Unable to clean up allocation for job %u: %m",
+			      alloc->job_id);
+		}
 		return 1;
 	} else {
 		allocation_state = GRANTED;
@@ -651,6 +657,12 @@ static void _exit_on_signal(int signo)
 /* This typically signifies the job was cancelled by scancel */
 static void _job_complete_handler(srun_job_complete_msg_t *comp)
 {
+	if (pending_job_id && (pending_job_id != comp->job_id)) {
+		error("Ignoring bogus job_complete call: job %u is not "
+		      "job %u", pending_job_id, comp->job_id);
+		return;
+	}
+
 	if (comp->step_id == NO_VAL) {
 		pthread_mutex_lock(&allocation_state_lock);
 		if (allocation_state != REVOKED) {
