@@ -281,7 +281,7 @@ extern void run_health_check(void)
 
 	for (i=0, node_ptr=node_record_table_ptr;
 	     i<node_record_count; i++, node_ptr++) {
-		if (IS_NODE_DOWN(node_ptr) || IS_NODE_FUTURE(node_ptr))
+		if (IS_NODE_NO_RESPOND(node_ptr) || IS_NODE_FUTURE(node_ptr))
 			continue;
 
 #ifdef HAVE_FRONT_END		/* Operate only on front-end */
