@@ -134,10 +134,16 @@ static void _exit_on_signal(int signo)
 /* This typically signifies the job was cancelled by scancel */
 static void _job_complete_handler(srun_job_complete_msg_t *msg)
 {
-	if((int)msg->step_id >= 0)
-		info("Force Terminated job %u.%u", msg->job_id, msg->step_id);
-	else
+	if (pending_job_id && (pending_job_id != msg->job_id)) {
+		error("Ignoring bogus job_complete call: job %u is not "
+		      "job %u", pending_job_id, msg->job_id);
+		return;
+	}
+
+	if (msg->step_id == NO_VAL)
 		info("Force Terminated job %u", msg->job_id);
+	else
+		info("Force Terminated job %u.%u", msg->job_id, msg->step_id);
 }
 
 /*
