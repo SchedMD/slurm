@@ -23,6 +23,8 @@ documents those changes that are of interest to users and admins.
     oversubscribe resources.
  -- In srun, do not implicitly set the job's maximum node count based upon a
     required hostlist.
+ -- Avoid running the HealthCheckProgram on non-responding nodes rather than
+    DOWN nodes.
 
 * Changes in SLURM 2.2.0.pre9
 =============================

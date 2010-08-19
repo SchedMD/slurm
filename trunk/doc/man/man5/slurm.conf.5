@@ -531,8 +531,8 @@ The default value is zero, which disables execution.
 .TP
 \fBHealthCheckProgram\fR
 Fully qualified pathname of a script to execute as user root periodically
-on all compute nodes that are not in the DOWN state. This may be used to
-verify the node is fully operational and DRAIN the node or send email
+on all compute nodes that are not in the NOT_RESPONDING state. This may be
+used to verify the node is fully operational and DRAIN the node or send email
 if a problem is detected.
 Any action to be taken must be explicitly performed by the program
 (e.g. execute
