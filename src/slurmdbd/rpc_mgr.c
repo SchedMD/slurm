@@ -335,7 +335,8 @@ static bool _fd_readable(slurm_fd_t fd)
 			error("poll: %m");
 			return false;
 		}
-		if (ufds.revents & POLLHUP) {
+		if ((ufds.revents & POLLHUP) &&
+		    ((ufds.revents & POLLIN) == 0)) {
 			debug3("Read connection %d closed", fd);
 			return false;
 		}

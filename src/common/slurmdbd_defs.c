@@ -1767,7 +1767,8 @@ static bool _fd_readable(slurm_fd_t fd, int read_timeout)
 		}
 		if (rc == 0)
 			return false;
-		if (ufds.revents & POLLHUP) {
+		if ((ufds.revents & POLLHUP) &&
+		    ((ufds.revents & POLLIN) == 0)) {
 			debug2("SlurmDBD connection closed");
 			return false;
 		}
