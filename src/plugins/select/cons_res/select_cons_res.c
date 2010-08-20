@@ -901,8 +901,8 @@ static int _add_job_to_res(struct job_record *job_ptr, int action)
 		/* update the node state */
 		for (i = 0; i < select_node_cnt; i++) {
 			if (bit_test(job->node_bitmap, i))
-				select_node_usage[i].node_state +=job->
-								  node_req;
+				select_node_usage[i].node_state +=
+					job->node_req;
 		}
 #if (CR_DEBUG)
 		info("DEBUG: _add_job_to_res (after):");
@@ -1956,6 +1956,7 @@ extern int select_p_select_nodeinfo_set_all(void)
 	uint16_t tmp, tmp_16 = 0;
 	static time_t last_set_all = 0;
 	uint32_t node_threads, node_cpus;
+	select_nodeinfo_t *nodeinfo = NULL;
 
 	/* only set this once when the last_node_update is newer than
 	   the last time we set things up. */
@@ -1969,6 +1970,20 @@ extern int select_p_select_nodeinfo_set_all(void)
 
 	for (n=0; n < select_node_cnt; n++) {
 		node_ptr = &(node_record_table_ptr[n]);
+
+		/* We have to use the '_g_' here to make sure we get
+		   the correct data to work on.  i.e. cray calls this
+		   plugin from within select/cray which has it's own
+		   struct.
+		*/
+		select_g_select_nodeinfo_get(node_ptr->select_nodeinfo,
+					     SELECT_NODEDATA_PTR, 0,
+					     (void *)&nodeinfo);
+		if(!nodeinfo) {
+			error("no nodeinfo returned from structure");
+			continue;
+		}
+
 		if (slurmctld_conf.fast_schedule) {
 			node_cpus    = node_ptr->config_ptr->cpus;
 			node_threads = node_ptr->config_ptr->threads;
@@ -2004,8 +2019,7 @@ extern int select_p_select_nodeinfo_set_all(void)
 		if ((end - start) < node_cpus)
 			tmp_16 *= node_threads;
 
-		((select_nodeinfo_t *)node_ptr->select_nodeinfo->data)->
-			alloc_cpus = tmp_16;
+		nodeinfo->alloc_cpus = tmp_16;
 	}
 
 	return SLURM_SUCCESS;
@@ -2033,6 +2047,7 @@ extern int select_p_select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
 {
 	int rc = SLURM_SUCCESS;
 	uint16_t *uint16 = (uint16_t *) data;
+	select_nodeinfo_t **select_nodeinfo = (select_nodeinfo_t **) data;
 
 	if (nodeinfo == NULL) {
 		error("get_nodeinfo: nodeinfo not set");
@@ -2053,6 +2068,9 @@ extern int select_p_select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
 			*uint16 = nodeinfo->alloc_cpus;
 		else
 			*uint16 = 0;
+		break;
+	case SELECT_NODEDATA_PTR:
+		*select_nodeinfo = nodeinfo;
 		break;
 	default:
 		error("Unsupported option %d for get_nodeinfo.", dinfo);

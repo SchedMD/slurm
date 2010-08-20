@@ -448,6 +448,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/select/bluegene/block_allocator/Makefile
 		 src/plugins/select/bluegene/plugin/Makefile
 		 src/plugins/select/cons_res/Makefile
+		 src/plugins/select/cray/Makefile
 		 src/plugins/select/linear/Makefile
 		 src/plugins/switch/Makefile
 		 src/plugins/switch/elan/Makefile

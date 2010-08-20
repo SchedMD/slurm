@@ -81,6 +81,8 @@ int parse_select_type_param(char *select_type_parameters, uint16_t *param)
 			*param |= CR_CPU;
 			*param |= CR_MEMORY;
 			param_cnt++;
+		} else if (!strcasecmp(str_parameters, "Linear")) {
+			*param |= CR_LINEAR;
 		} else if (!strcasecmp(str_parameters,
 				       "CR_ONE_TASK_PER_CORE")) {
 			*param |= CR_ONE_TASK_PER_CORE;
