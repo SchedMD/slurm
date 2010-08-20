@@ -8,7 +8,7 @@
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
 #          anything else indicates a failure mode that must be investigated.
 ############################################################################
-# Copyright (C) 2009 Lawrence Livermore National Security.
+# Copyright (C) 2009-2010 Lawrence Livermore National Security.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Dave Bremer <dbremer@llnl.gov>
 # CODE-OCEC-09-009. All rights reserved.
@@ -137,16 +137,20 @@ if {$file_cnt != $node_count} {
 if {$exit_code != 0} {
 	exit $exit_code
 }
-
-#
-# Spawn a program that generates "node_id" (%n) in stdout file names
-# and confirm they are created
-#
 for {set node_id 0} {$node_id < $node_count} {incr node_id} {
 	set file_out_n_glob  "test$test_id.n.$node_id.output"
 	exec $bin_rm -f $file_out_n_glob
 }
 
+if {[test_front_end] != 0} {
+	send_user "\nWARNING: Additional tests are incompatible with front-end systems\n"
+	exit $exit_code
+}
+
+#
+# Spawn a program that generates "node_id" (%n) in stdout file names
+# and confirm they are created
+#
 set task_count [expr $node_count * 2]
 set timeout $max_job_delay
 set srun_pid [spawn $srun -l --output=$file_out_n -N $node_count -n $task_count -O -v -t1 $bin_echo hello]
@@ -168,11 +172,10 @@ if {$job_id == 0} {
 	send_user "\nFAILURE: job initiation failed\n"
 	exit 1
 }
-if {[test_front_end] != 0} {
-	send_user "\nWARNING: Additional tests are incompatible with front-end systems\n"
-	exit $exit_code
-}
 
+# We only test that some task ran on every node, we can't check the task ID
+# since task distribution is dependent upon resource allocation which may
+# not be homogeneous across the nodes.
 for {set node_id 0} {$node_id < $node_count} {incr node_id} {
 	set file_out_n_glob  "test$test_id.n.$node_id.output"
 	if {[wait_for_file $file_out_n_glob] != 0} {
@@ -182,26 +185,19 @@ for {set node_id 0} {$node_id < $node_count} {incr node_id} {
 		set exit_code 1
 		break
 	} else {
-		set t0found false
-		set t1found false
+		set task_found false
 
 		spawn $bin_cat $file_out_n_glob
 		expect {
 			-re "($number): *hello" {
-				set test_task_id $expect_out(1,string)
-				if {$test_task_id == $node_id * 2} {
-					set t0found true
-				}
-				if {$test_task_id == $node_id * 2 + 1} {
-					set t1found true
-				}
+				set task_found true
 				exp_continue
 			}
 			eof {
 				wait
 			}
 		}
-		if {!$t0found || !$t1found} {
+		if {!$task_found} {
 			send_user "\nFAILURE: file $file_out_n_glob was not labelled correctly\n"
 			set exit_code 1
 		} else {
