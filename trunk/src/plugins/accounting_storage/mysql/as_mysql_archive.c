@@ -1610,7 +1610,7 @@ static uint32_t _archive_steps(mysql_conn_t *mysql_conn, char *cluster_name,
 
 	error_code = _write_archive_file(buffer, cluster_name,
 					 period_start, period_end,
-					 arch_dir, "event", archive_period);
+					 arch_dir, "step", archive_period);
 	free_buf(buffer);
 
 	if(error_code != SLURM_SUCCESS)
