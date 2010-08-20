@@ -388,7 +388,7 @@ _poll_handle_event(short revents, eio_obj_t *obj, List objList)
 		return;
 	}
 
-	if (revents & POLLHUP) {
+	if ((revents & POLLHUP) && ((revents & POLLIN) == 0)) {
 		if (obj->ops->handle_close) {
 			(*obj->ops->handle_close) (obj, objList);
 		} else if (obj->ops->handle_read) {

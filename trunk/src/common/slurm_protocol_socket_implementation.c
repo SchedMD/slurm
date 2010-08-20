@@ -395,7 +395,9 @@ int _slurm_recv_timeout(slurm_fd_t fd, char *buffer, size_t size,
 			recvlen = SLURM_ERROR;
 			goto done;
 		}
-		if ((ufds.revents & POLLHUP) || (ufds.revents & POLLNVAL)) {
+		if ((ufds.revents & POLLNVAL) ||
+		    ((ufds.revents & POLLHUP) &&
+		     ((ufds.revents & POLLIN) == 0))) {
 			debug2("_slurm_recv_timeout: Socket no longer there");
 			slurm_seterrno(ENOTCONN);
 			recvlen = SLURM_ERROR;

@@ -25,6 +25,8 @@ documents those changes that are of interest to users and admins.
     required hostlist.
  -- Avoid running the HealthCheckProgram on non-responding nodes rather than
     DOWN nodes.
+ -- Fix bug in handling of poll() functions on OS X (SLURM was ignoring POLLIN
+    if POLLHUP flag was set at the same time).
 
 * Changes in SLURM 2.2.0.pre9
 =============================
