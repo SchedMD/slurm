@@ -12,8 +12,11 @@ for this material.</p>
 <h2>Performance Results</h2>
 
 <p>SLURM has been validated to accept 1,000 job creations in under 10 seconds
-and to fully execute those jobs in 25 seconds. Actual performance depends upon
-the jobs to be executed plus the hardware and configuration used.</p>
+and to fully execute those jobs in 25 seconds.
+SLURM has also been validated to process 60,000 jobs and job steps per hour
+on a sustained basis.
+Actual performance depends upon the jobs to be executed plus the hardware and
+configuration used.</p>
 
 <h2>System configuration</h2>
 
@@ -63,8 +66,7 @@ The default value is 10,000</li>
 Controls how long to wait for a response to messages.
 The default value is 10 seconds.
 While the <b>slurmctld</b> daemon is highly threaded, its responsiveness
-is load dependent. This value may need to be increased substantially.
-A value in of 30 or 60 seconds should be sufficient in any case.</li>
+is load dependent. This value might need to be increased somewhat.</li>
 <li><b>MinJobAge</b>:
 Controls how soon the record of a completed job can be purged from the
 <b>slurmctld</b> memory and thus not visible using the <b>squeue</b> command.
@@ -88,6 +90,6 @@ numbers of simultaneous requests are to be supported.</li>
 appropriate for your environment.</li>
 </ul>
 
-<p style="text-align:center;">Last modified 24 June 2010</p>
+<p style="text-align:center;">Last modified 20 Aubust 2010</p>
 
 <!--#include virtual="footer.txt"-->
