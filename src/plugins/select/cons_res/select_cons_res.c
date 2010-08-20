@@ -117,30 +117,30 @@
  * overwritten when linking with the slurmctld.
  */
 #if defined (__APPLE__)
-	slurm_ctl_conf_t slurmctld_conf __attribute__((weak_import));
-	struct node_record *node_record_table_ptr __attribute__((weak_import));
-	List part_list __attribute__((weak_import));
-	List job_list __attribute__((weak_import));
-	int node_record_count __attribute__((weak_import));
-	time_t last_node_update __attribute__((weak_import));
-	struct switch_record *switch_record_table __attribute__((weak_import));
-	int switch_record_cnt __attribute__((weak_import));
-	bitstr_t *avail_node_bitmap __attribute__((weak_import));
-	bitstr_t *idle_node_bitmap __attribute__((weak_import));
-	List slurm_find_preemptable_jobs(struct job_record *job_ptr)
-			__attribute__((weak_import));
+slurm_ctl_conf_t slurmctld_conf __attribute__((weak_import));
+struct node_record *node_record_table_ptr __attribute__((weak_import));
+List part_list __attribute__((weak_import));
+List job_list __attribute__((weak_import));
+int node_record_count __attribute__((weak_import));
+time_t last_node_update __attribute__((weak_import));
+struct switch_record *switch_record_table __attribute__((weak_import));
+int switch_record_cnt __attribute__((weak_import));
+bitstr_t *avail_node_bitmap __attribute__((weak_import));
+bitstr_t *idle_node_bitmap __attribute__((weak_import));
+List slurm_find_preemptable_jobs(struct job_record *job_ptr)
+	__attribute__((weak_import));
 #else
-	slurm_ctl_conf_t slurmctld_conf;
-	struct node_record *node_record_table_ptr;
-	List part_list;
-	List job_list;
-	int node_record_count;
-	time_t last_node_update;
-	struct switch_record *switch_record_table;
-	int switch_record_cnt;
-	bitstr_t *avail_node_bitmap;
-	bitstr_t *idle_node_bitmap;
-	List slurm_find_preemptable_jobs(struct job_record *job_ptr);
+slurm_ctl_conf_t slurmctld_conf;
+struct node_record *node_record_table_ptr;
+List part_list;
+List job_list;
+int node_record_count;
+time_t last_node_update;
+struct switch_record *switch_record_table;
+int switch_record_cnt;
+bitstr_t *avail_node_bitmap;
+bitstr_t *idle_node_bitmap;
+List slurm_find_preemptable_jobs(struct job_record *job_ptr);
 #endif
 
 /*
@@ -209,9 +209,9 @@ static int _test_only(struct job_record *job_ptr, bitstr_t *bitmap,
 		      uint32_t min_nodes, uint32_t max_nodes,
  		      uint32_t req_nodes, uint16_t job_node_req);
 static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
-			uint32_t min_nodes, uint32_t max_nodes,
-			uint32_t req_nodes, uint16_t job_node_req,
-			List preemptee_candidates, List *preemptee_job_list);
+			  uint32_t min_nodes, uint32_t max_nodes,
+			  uint32_t req_nodes, uint16_t job_node_req,
+			  List preemptee_candidates, List *preemptee_job_list);
 
 #if (CR_DEBUG)
 
@@ -234,14 +234,14 @@ static void _dump_nodes(void)
 	for (i=0, node_ptr=; i<select_node_cnt; i++) {
 		node_ptr = select_node_record[i].node_ptr;
 		info("node:%s cpus:%u c:%u s:%u t:%u mem:%u a_mem:%u state:%d",
-			node_ptr->name,
-			select_node_record[i].cpus,
-			select_node_record[i].cores,
-			select_node_record[i].sockets,
-			select_node_record[i].vpus,
-			select_node_record[i].real_memory,
-			select_node_usage[i].alloc_memory,
-			select_node_usage[i].node_state);
+		     node_ptr->name,
+		     select_node_record[i].cpus,
+		     select_node_record[i].cores,
+		     select_node_record[i].sockets,
+		     select_node_record[i].vpus,
+		     select_node_record[i].real_memory,
+		     select_node_usage[i].alloc_memory,
+		     select_node_usage[i].node_state);
 
 		if (select_node_usage[i].gres_list)
 			gres_list = select_node_usage[i].gres_list;
@@ -256,7 +256,7 @@ static void _dump_part(struct part_res_record *p_ptr)
 {
 	uint16_t i;
 	info("part:%s rows:%u pri:%u ", p_ptr->part_ptr->name, p_ptr->num_rows,
-		p_ptr->part_ptr->priority);
+	     p_ptr->part_ptr->priority);
 	if (!p_ptr->row)
 		return;
 
@@ -268,7 +268,7 @@ static void _dump_part(struct part_res_record *p_ptr)
 			sprintf(str, "[no row_bitmap]");
 		}
 		info("  row%u: num_jobs %u: bitmap: %s", i,
-			p_ptr->row[i].num_jobs, str);
+		     p_ptr->row[i].num_jobs, str);
 	}
 }
 
@@ -340,7 +340,7 @@ static struct part_row_data *_dup_row_data(struct part_row_data *orig_row,
 			continue;
 		/* copy the job list */
 		new_row[i].job_list = xmalloc(new_row[i].job_list_size *
-							sizeof(bitstr_t *));
+					      sizeof(bitstr_t *));
 		for (j = 0; j < new_row[i].num_jobs; j++) {
 			new_row[i].job_list[j] = orig_row[i].job_list[j];
 		}
@@ -488,7 +488,7 @@ static int _cr_job_list_sort(void *x, void *y)
 
 /* delete the given select_node_record and select_node_usage arrays */
 static void _destroy_node_data(struct node_use_record *node_usage,
-				struct node_res_record *node_data)
+			       struct node_res_record *node_data)
 {
 	xfree(node_data);
 	if (node_usage) {
@@ -514,7 +514,7 @@ static void _add_job_to_row(struct job_resources *job,
 	if (r_ptr->num_jobs >= r_ptr->job_list_size) {
 		r_ptr->job_list_size += 8;
 		xrealloc(r_ptr->job_list, r_ptr->job_list_size *
-					sizeof(struct job_resources *));
+			 sizeof(struct job_resources *));
 	}
 	r_ptr->job_list[r_ptr->num_jobs++] = job;
 }
@@ -687,8 +687,9 @@ static void _build_row_bitmaps(struct part_res_record *p_ptr)
 	 */
 	for (i = 0; i < num_jobs; i++) {
 		for (j = i+1; j < num_jobs; j++) {
-			if (jstart[j] < jstart[i] || (jstart[j] == jstart[i] &&
-			    tmpjobs[j]->ncpus > tmpjobs[i]->ncpus)) {
+			if (jstart[j] < jstart[i]
+			    || (jstart[j] == jstart[i] &&
+				tmpjobs[j]->ncpus > tmpjobs[i]->ncpus)) {
 				x = jstart[i];
 				jstart[i] = jstart[j];
 				jstart[j] = x;
@@ -713,7 +714,7 @@ static void _build_row_bitmaps(struct part_res_record *p_ptr)
 		} else
 			sprintf(nstr, "[no node_bitmap]");
 		info ("DEBUG:  jstart %d job nb %s cb %s", jstart[i], nstr,
-			cstr);
+		      cstr);
 	}
 #endif
 
@@ -828,7 +829,7 @@ static int _add_job_to_res(struct job_record *job_ptr, int action)
 	}
 
 	debug3("cons_res: _add_job_to_res: job %u act %d ", job_ptr->job_id,
-		action);
+	       action);
 
 #if (CR_DEBUG)
 	_dump_job_res(job);
@@ -853,7 +854,7 @@ static int _add_job_to_res(struct job_record *job_ptr, int action)
 			if (job->memory_allocated[n] == 0)
 				continue;	/* node lost by job resizing */
 			select_node_usage[i].alloc_memory +=
-						job->memory_allocated[n];
+				job->memory_allocated[n];
 			if ((select_node_usage[i].alloc_memory >
 			     select_node_record[i].real_memory)) {
 				error("error: node %s mem is overallocated "
@@ -874,12 +875,12 @@ static int _add_job_to_res(struct job_record *job_ptr, int action)
 		}
 		if (!p_ptr) {
 			error("cons_res: could not find cr partition %s",
-				job_ptr->part_ptr->name);
+			      job_ptr->part_ptr->name);
 			return SLURM_ERROR;
 		}
 		if (!p_ptr->row) {
 			p_ptr->row = xmalloc(p_ptr->num_rows *
-						sizeof(struct part_row_data));
+					     sizeof(struct part_row_data));
 		}
 
 		/* find a row to add this job */
@@ -887,7 +888,7 @@ static int _add_job_to_res(struct job_record *job_ptr, int action)
 			if (!_can_job_fit_in_row(job, &(p_ptr->row[i])))
 				continue;
 			debug3("cons_res: adding job %u to part %s row %u",
-			job_ptr->job_id, p_ptr->part_ptr->name, i);
+			       job_ptr->job_id, p_ptr->part_ptr->name, i);
 			_add_job_to_row(job, &(p_ptr->row[i]));
 			break;
 		}
@@ -939,7 +940,7 @@ static int _rm_job_from_res(struct part_res_record *part_record_ptr,
 	}
 
 	debug3("cons_res: _rm_job_from_res: job %u act %d", job_ptr->job_id,
-		action);
+	       action);
 #if (CR_DEBUG)
 	_dump_job_res(job);
 #endif
@@ -974,7 +975,7 @@ static int _rm_job_from_res(struct part_res_record *part_record_ptr,
 				node_usage[i].alloc_memory = 0;
 			} else {
 				node_usage[i].alloc_memory -=
-						job->memory_allocated[n];
+					job->memory_allocated[n];
 			}
 		}
 	}
@@ -997,7 +998,7 @@ static int _rm_job_from_res(struct part_res_record *part_record_ptr,
 		}
 		if (!p_ptr) {
 			error("error: 'rm' could not find part %s",
-				job_ptr->part_ptr->name);
+			      job_ptr->part_ptr->name);
 			return SLURM_ERROR;
 		}
 
@@ -1045,12 +1046,12 @@ static int _rm_job_from_res(struct part_res_record *part_record_ptr,
 				if (node_usage[i].node_state >=
 				    job->node_req) {
 					node_usage[i].node_state -=
-								job->node_req;
+						job->node_req;
 				} else {
 					error("cons_res:_rm_job_from_res: "
-						"node_state mis-count");
+					      "node_state mis-count");
 					node_usage[i].node_state =
-							NODE_CR_AVAILABLE;
+						NODE_CR_AVAILABLE;
 				}
 			}
 		}
@@ -1075,7 +1076,7 @@ static int _rm_job_from_one_node(struct job_record *job_ptr,
 		return SLURM_ERROR;
 	}
 
-	debug3("cons_res: _rm_job_from_one_node: job %u node %s", 
+	debug3("cons_res: _rm_job_from_one_node: job %u node %s",
 	       job_ptr->job_id, node_ptr->name);
 #if (CR_DEBUG)
 	_dump_job_res(job);
@@ -1169,7 +1170,7 @@ static int _rm_job_from_one_node(struct job_record *job_ptr,
 	/* job was found and removed from core-bitmap, so refresh CR bitmaps */
 	_build_row_bitmaps(p_ptr);
 
-	/* Adjust the node_state of the node removed from this job. 
+	/* Adjust the node_state of the node removed from this job.
 	 * If all cores are now available, set node_state = NODE_CR_AVAILABLE */
 	if (node_usage[node_inx].node_state >= job->node_req) {
 		node_usage[node_inx].node_state -= job->node_req;
@@ -1297,7 +1298,7 @@ static int _run_now(struct job_record *job_ptr, bitstr_t *bitmap,
 		if (job_iterator == NULL)
 			fatal ("memory allocation failure");
 		while ((tmp_job_ptr = (struct job_record *)
-				list_next(job_iterator))) {
+			list_next(job_iterator))) {
 			if (!IS_JOB_RUNNING(tmp_job_ptr) &&
 			    !IS_JOB_SUSPENDED(tmp_job_ptr))
 				continue;
@@ -1334,11 +1335,11 @@ static int _run_now(struct job_record *job_ptr, bitstr_t *bitmap,
 					fatal("list_create malloc failure");
 			}
 			preemptee_iterator = list_iterator_create(
-						preemptee_candidates);
+				preemptee_candidates);
 			if (preemptee_iterator == NULL)
 				fatal ("memory allocation failure");
 			while ((tmp_job_ptr = (struct job_record *)
-					list_next(preemptee_iterator))) {
+				list_next(preemptee_iterator))) {
 				mode = slurm_job_preempt_mode(tmp_job_ptr);
 				if ((mode != PREEMPT_MODE_REQUEUE)    &&
 				    (mode != PREEMPT_MODE_CHECKPOINT) &&
@@ -1475,7 +1476,7 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 					job_ptr->start_time = now + 1;
 				else
 					job_ptr->start_time = tmp_job_ptr->
-							      end_time;
+						end_time;
 				break;
 			}
 		}
@@ -1496,7 +1497,7 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		if (preemptee_iterator == NULL)
 			fatal ("memory allocation failure");
 		while ((tmp_job_ptr = (struct job_record *)
-				list_next(preemptee_iterator))) {
+			list_next(preemptee_iterator))) {
 			if (bit_overlap(bitmap,
 					tmp_job_ptr->node_bitmap) == 0)
 				continue;
@@ -1709,14 +1710,14 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 			select_node_record[i].cores   = config_ptr->cores;
 			select_node_record[i].vpus    = config_ptr->threads;
 			select_node_record[i].real_memory = config_ptr->
-							    real_memory;
+				real_memory;
 		} else {
 			select_node_record[i].cpus    = node_ptr[i].cpus;
 			select_node_record[i].sockets = node_ptr[i].sockets;
 			select_node_record[i].cores   = node_ptr[i].cores;
 			select_node_record[i].vpus    = node_ptr[i].threads;
 			select_node_record[i].real_memory = node_ptr[i].
-							    real_memory;
+				real_memory;
 		}
 		select_node_usage[i].node_state = NODE_CR_AVAILABLE;
 		gres_plugin_node_state_dealloc_all(select_node_record[i].
@@ -1891,14 +1892,16 @@ extern int select_p_job_resume(struct job_record *job_ptr)
 }
 
 
-extern int select_p_pack_select_info(time_t last_query_time, Buf *buffer_ptr)
+extern int select_p_pack_select_info(time_t last_query_time, Buf *buffer_ptr,
+				     uint16_t protocol_version)
 {
 	/* This function is always invalid on normal Linux clusters */
 	return SLURM_ERROR;
 }
 
 extern int select_p_select_nodeinfo_pack(select_nodeinfo_t *nodeinfo,
-					 Buf buffer)
+					 Buf buffer,
+					 uint16_t protocol_version)
 {
 	pack16(nodeinfo->alloc_cpus, buffer);
 
@@ -1906,7 +1909,8 @@ extern int select_p_select_nodeinfo_pack(select_nodeinfo_t *nodeinfo,
 }
 
 extern int select_p_select_nodeinfo_unpack(select_nodeinfo_t **nodeinfo,
-					   Buf buffer)
+					   Buf buffer,
+					   uint16_t protocol_version)
 {
 	select_nodeinfo_t *nodeinfo_ptr = NULL;
 
@@ -2091,30 +2095,34 @@ extern int select_p_select_jobinfo_free(select_jobinfo_t *jobinfo)
 }
 
 extern int select_p_select_jobinfo_set(select_jobinfo_t *jobinfo,
-		enum select_jobdata_type data_type, void *data)
+				       enum select_jobdata_type data_type,
+				       void *data)
 {
 	return SLURM_SUCCESS;
 }
 
 extern int select_p_select_jobinfo_get(select_jobinfo_t *jobinfo,
-		enum select_jobdata_type data_type, void *data)
+				       enum select_jobdata_type data_type,
+				       void *data)
 {
 	return SLURM_ERROR;
 }
 
 extern select_jobinfo_t *select_p_select_jobinfo_copy(
-					select_jobinfo_t *jobinfo)
+	select_jobinfo_t *jobinfo)
 {
 	return NULL;
 }
 
-extern int select_p_select_jobinfo_pack(select_jobinfo_t *jobinfo, Buf buffer)
+extern int select_p_select_jobinfo_pack(select_jobinfo_t *jobinfo, Buf buffer,
+					uint16_t protocol_version)
 {
 	return SLURM_SUCCESS;
 }
 
 extern int select_p_select_jobinfo_unpack(select_jobinfo_t *jobinfo,
-					  Buf buffer)
+					  Buf buffer,
+					  uint16_t protocol_version)
 {
 	return SLURM_SUCCESS;
 }
@@ -2196,7 +2204,7 @@ extern int select_p_update_node_config (int index)
 		return SLURM_SUCCESS;
 
 	select_node_record[index].real_memory = select_node_record[index].
-						node_ptr->real_memory;
+		node_ptr->real_memory;
 	return SLURM_SUCCESS;
 }
 

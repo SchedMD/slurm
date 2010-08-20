@@ -84,23 +84,23 @@
  * overwritten when linking with the slurmctld.
  */
 #if defined (__APPLE__)
-	slurm_ctl_conf_t slurmctld_conf __attribute__((weak_import));
-	struct node_record *node_record_table_ptr __attribute__((weak_import));
-	List part_list __attribute__((weak_import));
-	List job_list __attribute__((weak_import));
-	int node_record_count __attribute__((weak_import));
-	time_t last_node_update __attribute__((weak_import));
-	struct switch_record *switch_record_table __attribute__((weak_import));
-	int switch_record_cnt __attribute__((weak_import));
+slurm_ctl_conf_t slurmctld_conf __attribute__((weak_import));
+struct node_record *node_record_table_ptr __attribute__((weak_import));
+List part_list __attribute__((weak_import));
+List job_list __attribute__((weak_import));
+int node_record_count __attribute__((weak_import));
+time_t last_node_update __attribute__((weak_import));
+struct switch_record *switch_record_table __attribute__((weak_import));
+int switch_record_cnt __attribute__((weak_import));
 #else
-	slurm_ctl_conf_t slurmctld_conf;
-	struct node_record *node_record_table_ptr;
-	List part_list;
-	List job_list;
-	int node_record_count;
-	time_t last_node_update;
-	struct switch_record *switch_record_table;
-	int switch_record_cnt;
+slurm_ctl_conf_t slurmctld_conf;
+struct node_record *node_record_table_ptr;
+List part_list;
+List job_list;
+int node_record_count;
+time_t last_node_update;
+struct switch_record *switch_record_table;
+int switch_record_cnt;
 #endif
 
 struct select_nodeinfo {
@@ -149,8 +149,8 @@ static int _run_now(struct job_record *job_ptr, bitstr_t *bitmap,
 static bool _test_run_job(struct cr_record *cr_ptr, uint32_t job_id);
 static bool _test_tot_job(struct cr_record *cr_ptr, uint32_t job_id);
 static int _test_only(struct job_record *job_ptr, bitstr_t *bitmap,
-			  uint32_t min_nodes, uint32_t max_nodes,
-			  uint32_t req_nodes, int max_share);
+		      uint32_t min_nodes, uint32_t max_nodes,
+		      uint32_t req_nodes, int max_share);
 static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			  uint32_t min_nodes, uint32_t max_nodes,
 			  int max_share, uint32_t req_nodes,
@@ -226,8 +226,8 @@ static void *xcpu_agent(void *args)
 
 			for (i=0; i<select_node_cnt; i++) {
 				snprintf(clone_path, sizeof(clone_path),
-					"%s/%s/xcpu/clone", XCPU_DIR,
-					select_node_ptr[i].name);
+					 "%s/%s/xcpu/clone", XCPU_DIR,
+					 select_node_ptr[i].name);
 				if (stat(clone_path, &buf) == 0)
 					continue;
 				error("stat %s: %m", clone_path);
@@ -237,7 +237,7 @@ static void *xcpu_agent(void *args)
 					if (down_node_list[0] != '\0')
 						strcat(down_node_list,",");
 					strcat(down_node_list,
-						select_node_ptr[i].name);
+					       select_node_ptr[i].name);
 				} else
 					error("down_node_list overflow");
 			}
@@ -353,7 +353,7 @@ static void _add_tot_job(struct cr_record *cr_ptr, uint32_t job_id)
 	cr_ptr->tot_job_ids[i] = job_id;
 }
 
-static bool _ck_run_job(struct cr_record *cr_ptr, uint32_t job_id, 
+static bool _ck_run_job(struct cr_record *cr_ptr, uint32_t job_id,
 			bool clear_it)
 {
 	int i;
@@ -419,7 +419,7 @@ static bool _test_tot_job(struct cr_record *cr_ptr, uint32_t job_id)
 }
 
 static bool _enough_nodes(int avail_nodes, int rem_nodes,
-		uint32_t min_nodes, uint32_t req_nodes)
+			  uint32_t min_nodes, uint32_t req_nodes)
 {
 	int needed_nodes;
 
@@ -489,10 +489,10 @@ static uint16_t _get_avail_cpus(struct job_record *job_ptr, int index)
 #endif
 
 	avail_cpus = slurm_get_avail_procs(
-			min_sockets, min_cores, min_threads, cpus_per_task,
-			ntasks_per_node, ntasks_per_socket, ntasks_per_core,
-	    		&cpus, &sockets, &cores, &threads, NULL,
-			CR_CPU, job_ptr->job_id, node_ptr->name);
+		min_sockets, min_cores, min_threads, cpus_per_task,
+		ntasks_per_node, ntasks_per_socket, ntasks_per_core,
+		&cpus, &sockets, &cores, &threads, NULL,
+		CR_CPU, job_ptr->job_id, node_ptr->name);
 
 #if SELECT_DEBUG
 	debug("avail_cpus index %d = %d (out of %d %d %d %d)",
@@ -531,7 +531,7 @@ static void _build_select_struct(struct job_record *job_ptr, bitstr_t *bitmap)
 	if (job_ptr->details->pn_min_memory  && (cr_type == CR_MEMORY)) {
 		if (job_ptr->details->pn_min_memory & MEM_PER_CPU) {
 			job_memory_cpu = job_ptr->details->pn_min_memory &
-					 (~MEM_PER_CPU);
+				(~MEM_PER_CPU);
 			memory_info = true;
 		} else {
 			job_memory_node = job_ptr->details->pn_min_memory;
@@ -557,7 +557,7 @@ static void _build_select_struct(struct job_record *job_ptr, bitstr_t *bitmap)
 		fatal("bit_copy malloc failure");
 	job_resrcs_ptr->ncpus = job_ptr->total_cpus;
 	if (build_job_resources(job_resrcs_ptr, (void *)select_node_ptr,
-				 select_fast_schedule))
+				select_fast_schedule))
 		error("_build_select_struct: build_job_resources: %m");
 
 	first_bit = bit_ffs(bitmap);
@@ -588,7 +588,7 @@ static void _build_select_struct(struct job_record *job_ptr, bitstr_t *bitmap)
 			job_resrcs_ptr->memory_allocated[j] = job_memory_node;
 		else if (job_memory_cpu) {
 			job_resrcs_ptr->memory_allocated[j] =
-					job_memory_cpu * node_cpus;
+				job_memory_cpu * node_cpus;
 		}
 
 		if (set_job_resources_node(job_resrcs_ptr, j)) {
@@ -630,10 +630,10 @@ static int _job_count_bitmap(struct cr_record *cr_ptr,
 		    (cr_type == CR_MEMORY)) {
 			if (job_ptr->details->pn_min_memory & MEM_PER_CPU) {
 				job_memory_cpu = job_ptr->details->pn_min_memory
-						 & (~MEM_PER_CPU);
+					& (~MEM_PER_CPU);
 			} else {
 				job_memory_node = job_ptr->details->
-						  pn_min_memory;
+					pn_min_memory;
 			}
 		}
 	}
@@ -658,7 +658,7 @@ static int _job_count_bitmap(struct cr_record *cr_ptr,
 			gres_list = cr_ptr->nodes[i].gres_list;
 		else
 			gres_list = node_ptr->gres_list;
-		gres_cpus = gres_plugin_job_test(job_ptr->gres_list, 
+		gres_cpus = gres_plugin_job_test(job_ptr->gres_list,
 						 gres_list, use_total_gres,
 						 NULL, 0, 0, job_ptr->job_id,
 						 node_ptr->name);
@@ -738,7 +738,7 @@ static int _find_job_mate(struct job_record *job_ptr, bitstr_t *bitmap,
 	while ((job_scan_ptr = (struct job_record *) list_next(job_iterator))) {
 		if ((!IS_JOB_RUNNING(job_scan_ptr))			||
 		    (job_scan_ptr->node_cnt   != req_nodes)		||
-		    (job_scan_ptr->total_cpus < 
+		    (job_scan_ptr->total_cpus <
 		     job_ptr->details->min_cpus)			||
 		    (!bit_super_set(job_scan_ptr->node_bitmap, bitmap)))
 			continue;
@@ -901,8 +901,8 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 				continue;	/* no required nodes here */
 
 			sufficient = (consec_cpus[i] >= rem_cpus) &&
-				     _enough_nodes(consec_nodes[i], rem_nodes,
-						   min_nodes, req_nodes);
+				_enough_nodes(consec_nodes[i], rem_nodes,
+					      min_nodes, req_nodes);
 
 			/* if first possibility OR */
 			/* contains required nodes OR */
@@ -1248,9 +1248,9 @@ static int _job_test_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 			if (switches_node_cnt[j] == 0)
 				continue;
 			sufficient = (switches_cpu_cnt[j] >= rem_cpus) &&
-				     _enough_nodes(switches_node_cnt[j],
-						   rem_nodes, min_nodes,
-						   req_nodes);
+				_enough_nodes(switches_node_cnt[j],
+					      rem_nodes, min_nodes,
+					      req_nodes);
 			/* If first possibility OR */
 			/* first set large enough for request OR */
 			/* tightest fit (less resource waste) OR */
@@ -1305,7 +1305,7 @@ static int _job_test_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 	} else
 		rc = EINVAL;
 
- fini:	if (rc == SLURM_SUCCESS) {
+fini:	if (rc == SLURM_SUCCESS) {
 		/* Job's total_cpus is needed for SELECT_MODE_WILL_RUN */
 		job_ptr->total_cpus = total_cpus;
 	}
@@ -1356,7 +1356,7 @@ static int _rm_job_from_nodes(struct cr_record *cr_ptr,
 	    job_ptr->details->pn_min_memory && (cr_type == CR_MEMORY)) {
 		if (job_ptr->details->pn_min_memory & MEM_PER_CPU) {
 			job_memory_cpu = job_ptr->details->pn_min_memory &
-					 (~MEM_PER_CPU);
+				(~MEM_PER_CPU);
 		} else
 			job_memory_node = job_ptr->details->pn_min_memory;
 	}
@@ -1394,7 +1394,7 @@ static int _rm_job_from_nodes(struct cr_record *cr_ptr,
 		else {
 			cr_ptr->nodes[i].alloc_memory = 0;
 			error("%s: memory underflow for node %s",
-				pre_err, node_ptr->name);
+			      pre_err, node_ptr->name);
 		}
 
 		if (cr_ptr->nodes[i].gres_list)
@@ -1496,11 +1496,11 @@ static int _rm_job_from_one_node(struct job_record *job_ptr,
 	    job_ptr->details->pn_min_memory && (cr_type == CR_MEMORY)) {
 		if (job_ptr->details->pn_min_memory & MEM_PER_CPU) {
 			job_memory_cpu = job_ptr->details->pn_min_memory &
-					 (~MEM_PER_CPU);
+				(~MEM_PER_CPU);
 		} else
 			job_memory_node = job_ptr->details->pn_min_memory;
 	}
-	if ((job_ptr->job_resrcs == NULL) || 
+	if ((job_ptr->job_resrcs == NULL) ||
 	    (job_ptr->job_resrcs->cpus == NULL)) {
 		error("job %u lacks a job_resources struct", job_ptr->job_id);
 		return SLURM_ERROR;
@@ -1575,7 +1575,7 @@ static int _rm_job_from_one_node(struct job_record *job_ptr,
 			part_cr_ptr->run_job_cnt--;
 		else {
 			error("%s: run_job_cnt underflow for node %s",
-			       pre_err, node_ptr->name);
+			      pre_err, node_ptr->name);
 		}
 		if (part_cr_ptr->tot_job_cnt > 0)
 			part_cr_ptr->tot_job_cnt--;
@@ -1633,7 +1633,7 @@ static int _add_job_to_nodes(struct cr_record *cr_ptr,
 	    job_ptr->details->pn_min_memory && (cr_type == CR_MEMORY)) {
 		if (job_ptr->details->pn_min_memory & MEM_PER_CPU) {
 			job_memory_cpu = job_ptr->details->pn_min_memory &
-					 (~MEM_PER_CPU);
+				(~MEM_PER_CPU);
 		} else
 			job_memory_node = job_ptr->details->pn_min_memory;
 	}
@@ -1667,8 +1667,8 @@ static int _add_job_to_nodes(struct cr_record *cr_ptr,
 			cpu_cnt = node_ptr->cpus;
 
 		if (job_memory_cpu) {
-			cr_ptr->nodes[i].alloc_memory += job_memory_cpu * 
-							 cpu_cnt;
+			cr_ptr->nodes[i].alloc_memory += job_memory_cpu *
+				cpu_cnt;
 		} else
 			cr_ptr->nodes[i].alloc_memory += job_memory_node;
 
@@ -1800,18 +1800,19 @@ static struct cr_record *_dup_cr(struct cr_record *cr_ptr)
 	for (i = 0; i < select_node_cnt; i++) {
 		node_ptr = node_record_table_ptr + i;
 		new_cr_ptr->nodes[i].alloc_memory = cr_ptr->nodes[i].
-						    alloc_memory;
+			alloc_memory;
 		new_cr_ptr->nodes[i].exclusive_cnt = cr_ptr->nodes[i].
-						     exclusive_cnt;
+			exclusive_cnt;
 
 		part_cr_ptr = cr_ptr->nodes[i].parts;
 		while (part_cr_ptr) {
-			new_part_cr_ptr = xmalloc(sizeof(struct part_cr_record));
+			new_part_cr_ptr =
+				xmalloc(sizeof(struct part_cr_record));
 			new_part_cr_ptr->part_ptr    = part_cr_ptr->part_ptr;
 			new_part_cr_ptr->run_job_cnt = part_cr_ptr->run_job_cnt;
 			new_part_cr_ptr->tot_job_cnt = part_cr_ptr->tot_job_cnt;
 			new_part_cr_ptr->next 	     = new_cr_ptr->nodes[i].
-						       parts;
+				parts;
 			new_cr_ptr->nodes[i].parts   = new_part_cr_ptr;
 			part_cr_ptr = part_cr_ptr->next;
 		}
@@ -1820,8 +1821,8 @@ static struct cr_record *_dup_cr(struct cr_record *cr_ptr)
 			gres_list = cr_ptr->nodes[i].gres_list;
 		else
 			gres_list = node_ptr->gres_list;
-		new_cr_ptr->nodes[i].gres_list = 
-				gres_plugin_node_state_dup(gres_list);
+		new_cr_ptr->nodes[i].gres_list =
+			gres_plugin_node_state_dup(gres_list);
 	}
 	return new_cr_ptr;
 }
@@ -1842,7 +1843,8 @@ static void _init_node_cr(void)
 		return;
 
 	cr_ptr = xmalloc(sizeof(struct cr_record));
-	cr_ptr->nodes = xmalloc(select_node_cnt * sizeof(struct node_cr_record));
+	cr_ptr->nodes = xmalloc(select_node_cnt
+				* sizeof(struct node_cr_record));
 
 	/* build partition records */
 	part_iterator = list_iterator_create(part_list);
@@ -1888,16 +1890,16 @@ static void _init_node_cr(void)
 		    (cr_type == CR_MEMORY)) {
 			if (job_ptr->details->pn_min_memory & MEM_PER_CPU) {
 				job_memory_cpu = job_ptr->details->
-						 pn_min_memory &
-						 (~MEM_PER_CPU);
+					pn_min_memory &
+					(~MEM_PER_CPU);
 			} else {
 				job_memory_node = job_ptr->details->
-						  pn_min_memory;
+					pn_min_memory;
 			}
 		}
 
-		/* Use job_resrcs_ptr->node_bitmap rather than 
-		 * job_ptr->node_bitmap which can have DOWN nodes 
+		/* Use job_resrcs_ptr->node_bitmap rather than
+		 * job_ptr->node_bitmap which can have DOWN nodes
 		 * cleared from the bitmap */
 		if (job_resrcs_ptr->node_bitmap == NULL)
 			continue;
@@ -1916,21 +1918,22 @@ static void _init_node_cr(void)
 			if (exclusive)
 				cr_ptr->nodes[i].exclusive_cnt++;
 			if (job_memory_cpu == 0)
-				cr_ptr->nodes[i].alloc_memory += job_memory_node;
+				cr_ptr->nodes[i].alloc_memory +=
+					job_memory_node;
 			else if (select_fast_schedule) {
 				cr_ptr->nodes[i].alloc_memory +=
-						job_memory_cpu *
-						node_record_table_ptr[i].
-						config_ptr->cpus;
+					job_memory_cpu *
+					node_record_table_ptr[i].
+					config_ptr->cpus;
 			} else {
 				cr_ptr->nodes[i].alloc_memory +=
-						job_memory_cpu *
-						node_record_table_ptr[i].cpus;
+					job_memory_cpu *
+					node_record_table_ptr[i].cpus;
 			}
 
 			if (bit_test(job_ptr->node_bitmap, i)) {
 				gres_plugin_job_alloc(job_ptr->gres_list,
-						      node_ptr->gres_list, 
+						      node_ptr->gres_list,
 						      job_resrcs_ptr->nhosts,
 						      node_offset,
 						      job_resrcs_ptr->
@@ -1953,8 +1956,8 @@ static void _init_node_cr(void)
 			}
 			if (part_cr_ptr == NULL) {
 				error("_init_node_cr: could not find "
-					"partition %s for node %s",
-					job_ptr->partition, node_ptr->name);
+				      "partition %s for node %s",
+				      job_ptr->partition, node_ptr->name);
 			}
 		}
 	}
@@ -1982,8 +1985,8 @@ static bool _is_preemptable(struct job_record *job_ptr,
 
 /* Determine if a job can ever run */
 static int _test_only(struct job_record *job_ptr, bitstr_t *bitmap,
-			  uint32_t min_nodes, uint32_t max_nodes,
-			  uint32_t req_nodes, int max_share)
+		      uint32_t min_nodes, uint32_t max_nodes,
+		      uint32_t req_nodes, int max_share)
 {
 	bitstr_t *orig_map;
 	int i, rc = SLURM_ERROR;
@@ -2000,7 +2003,8 @@ static int _test_only(struct job_record *job_ptr, bitstr_t *bitmap,
 	if (i >= min_nodes) {
 		save_mem = job_ptr->details->pn_min_memory;
 		job_ptr->details->pn_min_memory = 0;
-		rc = _job_test(job_ptr, bitmap, min_nodes, max_nodes, req_nodes);
+		rc = _job_test(job_ptr, bitmap, min_nodes,
+			       max_nodes, req_nodes);
 		job_ptr->details->pn_min_memory = save_mem;
 	}
 	FREE_NULL_BITMAP(orig_map);
@@ -2039,11 +2043,13 @@ static int _run_now(struct job_record *job_ptr, bitstr_t *bitmap,
 					      max_run_job + sus_jobs,
 					      SELECT_MODE_RUN_NOW);
 #if SELECT_DEBUG
-{			char *node_list = bitmap2node_name(bitmap);
-			info("_run_job %u iter:%d cnt:%d nodes:%s",
-			     job_ptr->job_id, max_run_job, j, node_list);
-			xfree(node_list);
-}
+			{
+				char *node_list = bitmap2node_name(bitmap);
+				info("_run_job %u iter:%d cnt:%d nodes:%s",
+				     job_ptr->job_id, max_run_job, j,
+				     node_list);
+				xfree(node_list);
+			}
 #endif
 			if ((j == prev_cnt) || (j < min_nodes))
 				continue;
@@ -2067,7 +2073,7 @@ static int _run_now(struct job_record *job_ptr, bitstr_t *bitmap,
 		/* Remove all preemptable jobs from simulated environment */
 		job_iterator = list_iterator_create(job_list);
 		while ((tmp_job_ptr = (struct job_record *)
-				list_next(job_iterator))) {
+			list_next(job_iterator))) {
 			if (!IS_JOB_RUNNING(tmp_job_ptr) &&
 			    !IS_JOB_SUSPENDED(tmp_job_ptr))
 				continue;
@@ -2109,9 +2115,9 @@ static int _run_now(struct job_record *job_ptr, bitstr_t *bitmap,
 					fatal("list_create malloc failure");
 			}
 			preemptee_iterator = list_iterator_create(
-						preemptee_candidates);
+				preemptee_candidates);
 			while ((tmp_job_ptr = (struct job_record *)
-					list_next(preemptee_iterator))) {
+				list_next(preemptee_iterator))) {
 				if (bit_overlap(bitmap,
 						tmp_job_ptr->node_bitmap) == 0)
 					continue;
@@ -2222,7 +2228,7 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		list_sort(cr_job_list, _cr_job_list_sort);
 		job_iterator = list_iterator_create(cr_job_list);
 		while ((tmp_job_ptr = (struct job_record *)
-				       list_next(job_iterator))) {
+			list_next(job_iterator))) {
 			_rm_job_from_nodes(exp_cr, tmp_job_ptr,
 					   "_will_run_test", true);
 			i = _job_count_bitmap(exp_cr, job_ptr, orig_map,
@@ -2256,7 +2262,7 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		}
 		preemptee_iterator =list_iterator_create(preemptee_candidates);
 		while ((tmp_job_ptr = (struct job_record *)
-				list_next(preemptee_iterator))) {
+			list_next(preemptee_iterator))) {
 			if (bit_overlap(bitmap, tmp_job_ptr->node_bitmap) == 0)
 				continue;
 
@@ -2453,15 +2459,15 @@ extern int select_p_job_begin(struct job_record *job_ptr)
 		if (bit_test(job_ptr->node_bitmap, i) == 0)
 			continue;
 		snprintf(clone_path, sizeof(clone_path),
-			"%s/%s/xcpu/clone", XCPU_DIR,
-			select_node_ptr[i].name);
+			 "%s/%s/xcpu/clone", XCPU_DIR,
+			 select_node_ptr[i].name);
 		if (chown(clone_path, (uid_t)job_ptr->user_id,
-				(gid_t)job_ptr->group_id)) {
+			  (gid_t)job_ptr->group_id)) {
 			error("chown %s: %m", clone_path);
 			rc = SLURM_ERROR;
 		} else {
 			debug("chown %s to %u", clone_path,
-				job_ptr->user_id);
+			      job_ptr->user_id);
 		}
 	}
 #endif
@@ -2571,14 +2577,16 @@ extern int select_p_job_resume(struct job_record *job_ptr)
 	return SLURM_SUCCESS;
 }
 
-extern int select_p_pack_select_info(time_t last_query_time, Buf *buffer_ptr)
+extern int select_p_pack_select_info(time_t last_query_time, Buf *buffer_ptr,
+				     uint16_t protocol_version)
 {
 	/* This function is always invalid on normal Linux clusters */
 	return SLURM_ERROR;
 }
 
 extern int select_p_select_nodeinfo_pack(select_nodeinfo_t *nodeinfo,
-					 Buf buffer)
+					 Buf buffer,
+					 uint16_t protocol_version)
 {
 	pack16(nodeinfo->alloc_cpus, buffer);
 
@@ -2586,7 +2594,8 @@ extern int select_p_select_nodeinfo_pack(select_nodeinfo_t *nodeinfo,
 }
 
 extern int select_p_select_nodeinfo_unpack(select_nodeinfo_t **nodeinfo,
-					   Buf buffer)
+					   Buf buffer,
+					   uint16_t protocol_version)
 {
 	select_nodeinfo_t *nodeinfo_ptr = NULL;
 
@@ -2747,7 +2756,7 @@ extern int select_p_select_jobinfo_get (select_jobinfo_t *jobinfo,
 }
 
 extern select_jobinfo_t *select_p_select_jobinfo_copy(
-				select_jobinfo_t *jobinfo)
+	select_jobinfo_t *jobinfo)
 {
 	return NULL;
 }
@@ -2757,19 +2766,21 @@ extern int select_p_select_jobinfo_free  (select_jobinfo_t *jobinfo)
 	return SLURM_SUCCESS;
 }
 
-extern int  select_p_select_jobinfo_pack(select_jobinfo_t *jobinfo, Buf buffer)
+extern int  select_p_select_jobinfo_pack(select_jobinfo_t *jobinfo, Buf buffer,
+					 uint16_t protocol_version)
 {
 	return SLURM_SUCCESS;
 }
 
 extern int  select_p_select_jobinfo_unpack(select_jobinfo_t **jobinfo,
-					   Buf buffer)
+					   Buf buffer,
+					   uint16_t protocol_version)
 {
 	return SLURM_SUCCESS;
 }
 
 extern char *select_p_select_jobinfo_sprint(select_jobinfo_t *jobinfo,
-				     char *buf, size_t size, int mode)
+					    char *buf, size_t size, int mode)
 {
 	if (buf && size) {
 		buf[0] = '\0';
