@@ -884,7 +884,7 @@ extern int assoc_mgr_get_user_assocs(void *db_conn,
 {
 	ListIterator itr = NULL;
 	acct_association_rec_t *found_assoc = NULL;
-	int set = 1;
+	int set = 0;
 
 	xassert(assoc);
 	xassert(assoc->uid != (uint32_t)NO_VAL);
