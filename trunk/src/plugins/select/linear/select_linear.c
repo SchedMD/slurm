@@ -2645,10 +2645,21 @@ extern int select_p_select_nodeinfo_set_all(time_t last_query_time)
 	last_set_all = last_node_update;
 
 	for (i=0; i<node_record_count; i++) {
-		select_nodeinfo_t *nodeinfo;
+		select_nodeinfo_t *nodeinfo = NULL;
 
 		node_ptr = node_record_table_ptr + i;
-		nodeinfo = node_ptr->select_nodeinfo->data;
+		/* We have to use the '_g_' here to make sure we get
+		   the correct data to work on.  i.e. cray calls this
+		   plugin from within select/cray which has it's own
+		   struct.
+		*/
+		select_g_select_nodeinfo_get(node_ptr->select_nodeinfo,
+					     SELECT_NODEDATA_PTR, 0,
+					     (void *)&nodeinfo);
+		if(!nodeinfo) {
+			error("no nodeinfo returned from structure");
+			continue;
+		}
 
 		if ((node_ptr->node_state & NODE_STATE_COMPLETING) ||
 		    (node_ptr->node_state == NODE_STATE_ALLOCATED)) {
@@ -2683,6 +2694,7 @@ extern int select_p_select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
 {
 	int rc = SLURM_SUCCESS;
 	uint16_t *uint16 = (uint16_t *) data;
+	select_nodeinfo_t **select_nodeinfo = (select_nodeinfo_t **) data;
 
 	if (nodeinfo == NULL) {
 		error("get_nodeinfo: nodeinfo not set");
@@ -2703,6 +2715,9 @@ extern int select_p_select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
 			*uint16 = nodeinfo->alloc_cpus;
 		else
 			*uint16 = 0;
+		break;
+	case SELECT_NODEDATA_PTR:
+		*select_nodeinfo = nodeinfo;
 		break;
 	default:
 		error("Unsupported option %d for get_nodeinfo.", dinfo);
@@ -2728,7 +2743,7 @@ extern int select_p_select_jobinfo_get (select_jobinfo_t *jobinfo,
 					enum select_jobdata_type data_type,
 					void *data)
 {
-	return SLURM_SUCCESS;
+	return SLURM_ERROR;
 }
 
 extern select_jobinfo_t *select_p_select_jobinfo_copy(

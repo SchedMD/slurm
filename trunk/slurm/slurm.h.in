@@ -330,6 +330,7 @@ enum select_jobdata_type {
 	SELECT_JOBDATA_RAMDISK_IMAGE,/* data-> char *ramdiskimage */
 	SELECT_JOBDATA_REBOOT,	/* data-> uint16_t reboot */
 	SELECT_JOBDATA_RESV_ID,	/* data-> char *reservation_id */
+	SELECT_JOBDATA_PTR,/* data-> select_jobinfo_t *jobinfo */
 };
 
 enum select_nodedata_type {
@@ -340,6 +341,7 @@ enum select_nodedata_type {
 				      * freed with FREE_NULL_BITMAP */
 	SELECT_NODEDATA_STR,         /* data-> char *  needs to be
 				      * freed with xfree */
+	SELECT_NODEDATA_PTR,         /* data-> select_nodeinfo_t *nodeinfo */
 };
 
 enum select_print_mode {
@@ -522,6 +524,12 @@ enum ctx_keys {
 				 * core. */
 #define CR_MEMORY	0x0010	/* Memory as consumable resources. Memory is
 				 * not over-commited when selected as a CR. */
+#define CR_LINEAR       0x0020  /* If running with the select/cray
+				 * plugin it can run either cons_res
+				 * or linear as well.  Setting this
+				 * tells it to use linear instead of
+				 * the default cons_res.
+				 */
 #define CR_ONE_TASK_PER_CORE 0x0100
 /* By default, schedule only one task per core.
  * Without this option, tasks would be
