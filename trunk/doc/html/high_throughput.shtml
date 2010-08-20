@@ -11,10 +11,8 @@ for this material.</p>
 
 <h2>Performance Results</h2>
 
-<p>SLURM has been validated to accept 1,000 job creations in under 10 seconds
-and to fully execute those jobs in 25 seconds.
-SLURM has also been validated to process 60,000 jobs and job steps per hour
-on a sustained basis.
+<p>SLURM has also been validated to process 60,000 jobs and job steps per hour
+on a sustained basis with short bursts of activity at a much higher level.
 Actual performance depends upon the jobs to be executed plus the hardware and
 configuration used.</p>
 
