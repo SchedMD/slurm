@@ -6749,6 +6749,11 @@ extern void job_pre_resize_acctg(struct job_record *job_ptr)
 	/* NOTE: job_completion_logger() calls
 	 *	 acct_policy_remove_job_submit() */
 	job_completion_logger(job_ptr, false);
+
+	/* This doesn't happen in job_completion_logger, but gets
+	 * added back in with job_post_resize_acctg so remove it here. */
+	acct_policy_job_fini(job_ptr);
+
 	/* NOTE: The RESIZING FLAG needed to be cleared with
 	   job_post_resize_acctg */
 }
