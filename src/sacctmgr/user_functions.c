@@ -1165,7 +1165,7 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 			slurm_addto_char_list(format_list, "U,DefaultA,Ad");
 		if(user_cond->with_assocs)
 			slurm_addto_char_list(format_list,
-					      "Cl,Ac,Part,Share,"
+					      "Cl,Acc,Part,Share,"
 					      "MaxJ,MaxN,MaxCPUs,MaxS,MaxW,"
 					      "MaxCPUMins,QOS,DefaultQOS");
 		if(user_cond->with_coords)
