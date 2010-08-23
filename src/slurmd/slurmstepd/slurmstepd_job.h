@@ -200,7 +200,7 @@ typedef struct slurmd_job {
 	char          *ckpt_dir;
 	time_t         ckpt_timestamp;
 	char          *restart_dir;	/* restart from context */
-	char          *resv_id;		/* Cray/BASIL reservation ID	*/
+	uint32_t       resv_id;		/* Cray/BASIL reservation ID	*/
 	uint16_t       restart_cnt;	/* batch job restart count	*/
 	char	      *job_alloc_cores;	/* needed by the SPANK cpuset plugin */
 	char	      *step_alloc_cores;/* needed by the SPANK cpuset plugin */

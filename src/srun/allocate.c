@@ -70,6 +70,7 @@
 
 #ifdef HAVE_CRAY_XT
 #include "src/common/node_select.h"
+#include "src/common/basil_resv_conf.h"
 #endif
 
 
@@ -384,15 +385,15 @@ static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc)
 static int _claim_reservation(resource_allocation_response_msg_t *alloc)
 {
 	int rc = 0;
-	char *resv_id = NULL;
+	uint32_t resv_id = 0;
 
 	select_g_select_jobinfo_get(alloc->select_jobinfo,
 				    SELECT_JOBDATA_RESV_ID, &resv_id);
-	if (resv_id == NULL)
+	if (!resv_id)
 		return rc;
 	if (basil_resv_conf(resv_id, alloc->job_id) == SLURM_SUCCESS)
 		rc = 1;
-	xfree(resv_id);
+
 	return rc;
 }
 #endif

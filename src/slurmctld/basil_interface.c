@@ -61,7 +61,7 @@
 
 #ifdef HAVE_CRAY_XT
 #ifndef APBASIL_LOC
-static int last_res_id = 0;
+static uint32_t last_res_id = 0;
 #endif	/* !APBASIL_LOC */
 
 #ifdef APBASIL_LOC
@@ -100,7 +100,8 @@ extern int basil_query(void)
 	struct job_record *job_ptr;
 	ListIterator job_iterator;
 	int i;
-	char *reason, *res_id;
+	char *reason;
+	uint32_t res_id = 0;
 	static bool first_run = true;
 
 	/* Issue the BASIL QUERY request */
@@ -193,9 +194,9 @@ extern int basil_query(void)
 		while ((job_ptr = (struct job_record *)
 				  list_next(job_iterator))) {
 			select_g_select_jobinfo_get(job_ptr->select_jobinfo,
-					     SELECT_JOBDATA_RESV_ID, &res_id);
-			found = !strcmp(res_id, basil_reservation_id);
-			xfree(res_id);
+						    SELECT_JOBDATA_RESV_ID,
+						    &res_id);
+			found = res_id == basil_reservation_id;
 			if (found)
 				break;
 		}
@@ -209,23 +210,15 @@ extern int basil_query(void)
 #else
 	struct job_record *job_ptr;
 	ListIterator job_iterator;
-	char *res_id, *tmp;
-	int job_res_id;
-
+	uint32_t res_id = 0;
 	/* Capture the highest reservation ID recorded to avoid re-use */
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
-		res_id = NULL;
+		res_id = 0;
 		select_g_select_jobinfo_get(job_ptr->select_jobinfo,
-				     SELECT_JOBDATA_RESV_ID, &res_id);
-		if (res_id) {
-			tmp = strchr(res_id, '_');
-			if (tmp) {
-				job_res_id = atoi(tmp+1);
-				last_res_id = MAX(last_res_id, job_res_id);
-			}
-			xfree(res_id);
-		}
+					    SELECT_JOBDATA_RESV_ID, &res_id);
+		if (res_id)
+			last_res_id = MAX(last_res_id, res_id);
 	}
 	list_iterator_destroy(job_iterator);
 	debug("basil_query() executed, last_res_id=%d", last_res_id);
@@ -250,18 +243,16 @@ extern int basil_reserve(struct job_record *job_ptr)
 		error("basil reserve error: %s", "TBD");
 		return SLURM_ERROR;
 	}
-	select_g_set_jobinfo(job_ptr->select_jobinfo,
-			     SELECT_JOBDATA_RESV_ID, reservation_id);
-	debug("basil reservation made job_id=%u resv_id=%s",
+	select_g_select_jobinfo_set(job_ptr->select_jobinfo,
+				    SELECT_JOBDATA_RESV_ID, &reservation_id);
+	debug("basil reservation made job_id=%u resv_id=%u",
 	      job_ptr->job_id, reservation_id);
 #else
-	char reservation_id[32];
-	snprintf(reservation_id, sizeof(reservation_id),
-		"resv_%d", ++last_res_id);
-	select_g_set_jobinfo(job_ptr->select_jobinfo,
-			     SELECT_JOBDATA_RESV_ID, reservation_id);
-	debug("basil reservation made job_id=%u resv_id=%s",
-	      job_ptr->job_id, reservation_id);
+	++last_res_id;
+	select_g_select_jobinfo_set(job_ptr->select_jobinfo,
+				    SELECT_JOBDATA_RESV_ID, &last_res_id);
+	debug("basil reservation made job_id=%u resv_id=%u",
+	      job_ptr->job_id, last_res_id);
 #endif	/* APBASIL_LOC */
 #endif	/* HAVE_CRAY_XT */
 	return error_code;
@@ -276,13 +267,12 @@ extern int basil_release(struct job_record *job_ptr)
 {
 	int error_code = SLURM_SUCCESS;
 #ifdef HAVE_CRAY_XT
-	char *reservation_id = NULL;
+	uint32_t reservation_id = 0;
 	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
-			     SELECT_JOBDATA_RESV_ID, &reservation_id);
-	if (reservation_id) {
+				    SELECT_JOBDATA_RESV_ID, &reservation_id);
+	if (reservation_id)
 		error_code = basil_release_id(reservation_id);
-		xfree(reservation_id);
-	}
+
 #endif	/* HAVE_CRAY_XT */
 	return error_code;
 }
@@ -292,19 +282,19 @@ extern int basil_release(struct job_record *job_ptr)
  * IN reservation_id - ID of reservation to release
  * RET 0 or error code
  */
-extern int basil_release_id(char *reservation_id)
+extern int basil_release_id(uint32_t reservation_id)
 {
 	int error_code = SLURM_SUCCESS;
 #ifdef HAVE_CRAY_XT
 #ifdef APBASIL_LOC
 	/* Issue the BASIL RELEASE request */
 	if (request_failure) {
-		error("basil release of %s error: %s", reservation_id, "TBD");
+		error("basil release of %d error: %s", reservation_id, "TBD");
 		return SLURM_ERROR;
 	}
-	debug("basil release of reservation %s complete", reservation_id);
+	debug("basil release of reservation %d complete", reservation_id);
 #else
-	debug("basil release of reservation %s complete", reservation_id);
+	debug("basil release of reservation %d complete", reservation_id);
 #endif	/* APBASIL_LOC */
 #endif	/* HAVE_CRAY_XT */
 	return error_code;
