@@ -111,14 +111,18 @@ extern char *default_plugstack;
 #define DEFAULT_SCHED_LOG_LEVEL     0
 #define DEFAULT_SCHED_TIME_SLICE    30
 #define DEFAULT_SCHEDTYPE           "sched/builtin"
-#ifdef HAVE_BG		/* Blue Gene specific default configuration parameters */
+#ifdef HAVE_BG	/* Blue Gene specific default configuration parameters */
 #  ifdef HAVE_BGQ
 #     define DEFAULT_SELECT_TYPE       "select/bgq"
 #  else
 #     define DEFAULT_SELECT_TYPE       "select/bluegene"
 #  endif
 #else
-#  define DEFAULT_SELECT_TYPE       "select/linear"
+#  ifdef HAVE_CRAY /* Cray specific default configuration parameters */
+#     define DEFAULT_SELECT_TYPE       "select/cray"
+#  else
+#     define DEFAULT_SELECT_TYPE       "select/linear"
+#  endif
 #endif
 #define DEFAULT_SLURMCTLD_PIDFILE   "/var/run/slurmctld.pid"
 #define DEFAULT_SLURMCTLD_TIMEOUT   120

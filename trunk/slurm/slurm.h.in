@@ -524,12 +524,7 @@ enum ctx_keys {
 				 * core. */
 #define CR_MEMORY	0x0010	/* Memory as consumable resources. Memory is
 				 * not over-commited when selected as a CR. */
-#define CR_LINEAR       0x0020  /* If running with the select/cray
-				 * plugin it can run either cons_res
-				 * or linear as well.  Setting this
-				 * tells it to use linear instead of
-				 * the default cons_res.
-				 */
+
 #define CR_ONE_TASK_PER_CORE 0x0100
 /* By default, schedule only one task per core.
  * Without this option, tasks would be

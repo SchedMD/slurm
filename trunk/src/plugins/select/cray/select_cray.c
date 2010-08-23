@@ -90,7 +90,7 @@ int switch_record_cnt;
 struct select_jobinfo {
 	uint16_t magic;		/* magic number */
 	select_jobinfo_t *other_jobinfo;
-	char *reservation_id;	/* BASIL reservation ID */
+	uint32_t reservation_id;	/* BASIL reservation ID */
 };
 
 struct select_nodeinfo {
@@ -99,6 +99,7 @@ struct select_nodeinfo {
 };
 
 extern int select_p_select_jobinfo_free(select_jobinfo_t *jobinfo);
+extern int select_p_select_nodeinfo_free(select_nodeinfo_t *nodeinfo);
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -140,8 +141,18 @@ const uint32_t plugin_version	= 1;
  */
 extern int init ( void )
 {
-	if(slurmctld_conf.select_type_param & CR_LINEAR)
-		plugin_id = 105;
+      /*
+        * FIXME: At the moment the smallest Cray allocation unit are still
+        * full nodes. Node sharing (even across NUMA sockets of the same
+        * node) is, as of CLE 3.1 (summer 2010) still not supported, i.e.
+        * as per the LIMITATIONS section of the aprun(1) manpage of the
+        * 3.1.27A release).
+        * Hence for the moment we can only use select/linear.  If some
+        * time in the future this is allowable use code such as this
+        * to make things switch to the cons_res plugin.
+  	* if(slurmctld_conf.select_type_param & CR_CONS_RES)
+	*	plugin_id = 105;
+	*/
 
 	return SLURM_SUCCESS;
 }
@@ -267,14 +278,35 @@ extern int select_p_pack_select_info(time_t last_query_time, Buf *buffer_ptr,
 extern int select_p_select_nodeinfo_pack(select_nodeinfo_t *nodeinfo,
 					 Buf buffer, uint16_t protocol_version)
 {
-	return other_select_nodeinfo_pack(nodeinfo, buffer, protocol_version);
+	return other_select_nodeinfo_pack(nodeinfo->other_nodeinfo,
+					  buffer, protocol_version);
 }
 
-extern int select_p_select_nodeinfo_unpack(select_nodeinfo_t **nodeinfo,
+extern int select_p_select_nodeinfo_unpack(select_nodeinfo_t **nodeinfo_pptr,
 					   Buf buffer,
 					   uint16_t protocol_version)
 {
-	return other_select_nodeinfo_unpack(nodeinfo, buffer, protocol_version);
+	int rc = SLURM_ERROR;
+	select_nodeinfo_t *nodeinfo = xmalloc(sizeof(struct select_nodeinfo));
+
+	*nodeinfo_pptr = nodeinfo;
+
+	nodeinfo->magic = NODEINFO_MAGIC;
+	if(protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
+		rc = other_select_nodeinfo_unpack(&nodeinfo->other_nodeinfo,
+						 buffer, protocol_version);
+	}
+
+	if(rc != SLURM_SUCCESS)
+		goto unpack_error;
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	select_p_select_nodeinfo_free(nodeinfo);
+	*nodeinfo_pptr = NULL;
+
+	return SLURM_ERROR;
 }
 
 extern select_nodeinfo_t *select_p_select_nodeinfo_alloc(uint32_t size)
@@ -319,7 +351,7 @@ extern int select_p_select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
 		return SLURM_ERROR;
 	}
 	if (nodeinfo->magic != NODEINFO_MAGIC) {
-		error("set_jobinfo: nodeinfo magic bad");
+		error("set_nodeinfo: nodeinfo magic bad");
 		return SLURM_ERROR;
 	}
 
@@ -352,7 +384,7 @@ extern int select_p_select_jobinfo_set(select_jobinfo_t *jobinfo,
 				       void *data)
 {
 	int rc = SLURM_SUCCESS;
-	char *tmp_char = (char *) data;
+	uint32_t *uint32 = (uint32_t *) data;
 
 	if (jobinfo == NULL) {
 		error("set_jobinfo: jobinfo not set");
@@ -366,15 +398,10 @@ extern int select_p_select_jobinfo_set(select_jobinfo_t *jobinfo,
 	switch (data_type) {
 	case SELECT_JOBDATA_RESV_ID:
 		/* we xfree() any preset value to avoid a memory leak */
-		xfree(jobinfo->reservation_id);
-		if (tmp_char)
-			jobinfo->reservation_id = xstrdup(tmp_char);
+		jobinfo->reservation_id = *uint32;
 		break;
 	default:
 		rc = other_select_jobinfo_set(jobinfo, data_type, data);
-		if(rc != SLURM_SUCCESS)
-			error("Unsupported option %d for set_jobinfo.",
-			      data_type);
 		break;
 	}
 
@@ -386,7 +413,7 @@ extern int select_p_select_jobinfo_get(select_jobinfo_t *jobinfo,
 				       void *data)
 {
 	int rc = SLURM_SUCCESS;
-	char **tmp_char = (char **) data;
+	uint32_t *uint32 = (uint32_t *) data;
 	select_jobinfo_t **select_jobinfo = (select_jobinfo_t **) data;
 
 	if (jobinfo == NULL) {
@@ -403,18 +430,10 @@ extern int select_p_select_jobinfo_get(select_jobinfo_t *jobinfo,
 		*select_jobinfo = jobinfo->other_jobinfo;
 		break;
 	case SELECT_JOBDATA_RESV_ID:
-		if ((jobinfo->reservation_id == NULL)
-		    || (jobinfo->reservation_id[0] == '\0'))
-			*tmp_char = NULL;
-		else
-			*tmp_char = xstrdup(jobinfo->reservation_id);
+		*uint32 = jobinfo->reservation_id;
 		break;
 	default:
 		rc = other_select_jobinfo_get(jobinfo, data_type, data);
-		if(rc != SLURM_SUCCESS)
-			error("Unsupported option %d for get_jobinfo.",
-			      data_type);
-
 		break;
 	}
 
@@ -432,7 +451,7 @@ extern select_jobinfo_t *select_p_select_jobinfo_copy(select_jobinfo_t *jobinfo)
 	else {
 		rc = xmalloc(sizeof(struct select_jobinfo));
 		rc->magic = JOBINFO_MAGIC;
-		rc->reservation_id = xstrdup(jobinfo->reservation_id);
+		rc->reservation_id = jobinfo->reservation_id;
 	}
 	return rc;
 }
@@ -448,7 +467,6 @@ extern int select_p_select_jobinfo_free(select_jobinfo_t *jobinfo)
 		}
 
 		jobinfo->magic = 0;
-		xfree(jobinfo->reservation_id);
 		xfree(jobinfo);
 	}
 
@@ -462,10 +480,10 @@ extern int select_p_select_jobinfo_pack(select_jobinfo_t *jobinfo, Buf buffer,
 
 	if(protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
 		if (!jobinfo) {
-			packnull(buffer);
+			pack32(0, buffer);
 			return SLURM_SUCCESS;
 		}
-		packstr(jobinfo->reservation_id, buffer);
+		pack32(jobinfo->reservation_id, buffer);
 		rc = other_select_jobinfo_pack(jobinfo->other_jobinfo, buffer,
 					       protocol_version);
 	}
@@ -477,14 +495,12 @@ extern int select_p_select_jobinfo_unpack(select_jobinfo_t **jobinfo_pptr,
 {
 	int rc = SLURM_ERROR;
 	select_jobinfo_t *jobinfo = xmalloc(sizeof(struct select_jobinfo));
-	uint32_t uint32_tmp;
 
 	*jobinfo_pptr = jobinfo;
 
 	jobinfo->magic = JOBINFO_MAGIC;
-	if(protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
-		safe_unpackstr_xmalloc(&jobinfo->reservation_id, &uint32_tmp,
-				       buffer);
+	if(protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
+		safe_unpack32(&jobinfo->reservation_id, buffer);
 		rc = other_select_jobinfo_unpack(&jobinfo->other_jobinfo,
 						 buffer, protocol_version);
 	}
@@ -528,13 +544,23 @@ extern char *select_p_select_jobinfo_sprint(select_jobinfo_t *jobinfo,
 		snprintf(buf, size, "RESV_ID");
 		break;
 	case SELECT_PRINT_DATA:
-		snprintf(buf, size, "%7s", jobinfo->reservation_id);
+		if (jobinfo->reservation_id)
+			snprintf(buf, size, "%7u", jobinfo->reservation_id);
+		else
+			snprintf(buf, size, "%7s", "none");
 		break;
 	case SELECT_PRINT_MIXED:
-		snprintf(buf, size, "Resv_ID=%s", jobinfo->reservation_id);
+		if (jobinfo->reservation_id)
+			snprintf(buf, size, "Resv_ID=%u",
+				 jobinfo->reservation_id);
+		else
+			snprintf(buf, size, "Resv_ID=none");
 		break;
 	case SELECT_PRINT_RESV_ID:
-		snprintf(buf, size, "%s", jobinfo->reservation_id);
+		if (jobinfo->reservation_id)
+			snprintf(buf, size, "%u", jobinfo->reservation_id);
+		else
+			snprintf(buf, size, "none");
 		break;
 	default:
 		other_select_jobinfo_sprint(jobinfo->other_jobinfo, buf,
@@ -568,13 +594,22 @@ extern char *select_p_select_jobinfo_xstrdup(select_jobinfo_t *jobinfo,
 		xstrcat(buf, "RESV_ID");
 		break;
 	case SELECT_PRINT_DATA:
-		xstrfmtcat(buf, "%7s", jobinfo->reservation_id);
+		if (jobinfo->reservation_id)
+			xstrfmtcat(buf, "%7u", jobinfo->reservation_id);
+		else
+			xstrfmtcat(buf, "%7s", "none");
 		break;
 	case SELECT_PRINT_MIXED:
-		xstrfmtcat(buf, "Resv_ID=%s", jobinfo->reservation_id);
+		if (jobinfo->reservation_id)
+			xstrfmtcat(buf, "Resv_ID=%u", jobinfo->reservation_id);
+		else
+			xstrcat(buf, "Resv_ID=none");
 		break;
 	case SELECT_PRINT_RESV_ID:
-		xstrfmtcat(buf, "%s", jobinfo->reservation_id);
+		if (jobinfo->reservation_id)
+			xstrfmtcat(buf, "%u", jobinfo->reservation_id);
+		else
+			xstrcat(buf, "none");
 		break;
 	default:
 		xstrcat(buf, other_select_jobinfo_xstrdup(

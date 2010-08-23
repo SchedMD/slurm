@@ -295,10 +295,21 @@ extern int other_select_init()
 	if (other_select_context)
 		goto done;
 
-	if(slurmctld_conf.select_type_param & CR_LINEAR)
-		select_type = "select/linear";
-	else
-		select_type = "select/cons_res";
+     /*
+        * FIXME: At the moment the smallest Cray allocation unit are still
+        * full nodes. Node sharing (even across NUMA sockets of the same
+        * node) is, as of CLE 3.1 (summer 2010) still not supported, i.e.
+        * as per the LIMITATIONS section of the aprun(1) manpage of the
+        * 3.1.27A release).
+        * Hence for the moment we can only use select/linear.  If some
+        * time in the future this is allowable use code such as this
+        * to make things switch to the cons_res plugin.
+  	* if(slurmctld_conf.select_type_param & CR_CONS_RES)
+	*	select_type = "select/cons_res";
+	* else
+	*	select_type = "select/linear";
+	*/
+	select_type = "select/linear";
 
 	other_select_context = xmalloc(sizeof(other_select_context_t));
 	other_select_context->select_type = xstrdup(select_type);

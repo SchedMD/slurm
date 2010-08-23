@@ -9,5 +9,5 @@ SUBDIRS = bgq bluegene cons_res cray linear
 # cons_res  	  = 101
 # linear   	  = 102
 # bgq      	  = 103
-# cray + cons_res = 104
-# cray + linear   = 105
+# cray + linear   = 104
+# cray + cons_res = 105 ==> To be done, currently not possible on Cray.

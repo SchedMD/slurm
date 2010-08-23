@@ -341,6 +341,13 @@ extern int slurm_select_init(bool only_default)
 		}
 #  endif
 #endif
+
+#ifdef HAVE_CRAY
+		if(strcasecmp(select_type, "select/cray")) {
+			error("%s is incompatible with Cray", select_type);
+			fatal("Use SelectType=select/cray");
+		}
+#endif
 	}
 
 	select_context_cnt = 0;

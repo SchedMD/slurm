@@ -68,6 +68,6 @@ extern int basil_release(struct job_record *job_ptr);
  * IN reservation_id - ID of reservation to release
  * RET 0 or error code
  */
-extern int basil_release_id(char *reservation_id);
+extern int basil_release_id(uint32_t reservation_id);
 
 #endif	/* !_HAVE_BASIL_INTERFACE_H */

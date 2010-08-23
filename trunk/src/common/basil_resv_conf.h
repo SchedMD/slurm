@@ -61,6 +61,6 @@
  * IN job_id - SLURM job ID
  * RET 0 or error code
  */
-extern int basil_resv_conf(char *reservation_id, uint32_t job_id);
+extern int basil_resv_conf(uint32_t reservation_id, uint32_t job_id);
 
 #endif	/* !_HAVE_BASIL_RESV_CONF_H */
