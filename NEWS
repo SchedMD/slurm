@@ -30,6 +30,7 @@ documents those changes that are of interest to users and admins.
  -- Pulled Cray logic out of common/node_select.c into it's own
     select/cray plugin cons_res is the default.  To use linear add 'Linear' to
     SelectTypeParameters.
+ -- Fixed bug where resizing jobs didn't correctly set used limits correctly.
 
 * Changes in SLURM 2.2.0.pre9
 =============================
