@@ -812,10 +812,8 @@ void slurm_cred_free_args(slurm_cred_arg_t *arg)
 	FREE_NULL_BITMAP(arg->job_core_bitmap);
 	FREE_NULL_BITMAP(arg->step_core_bitmap);
 	xfree(arg->cores_per_socket);
-	if (arg->job_gres_list)
-		list_destroy(arg->job_gres_list);
-	if (arg->step_gres_list)
-		list_destroy(arg->step_gres_list);
+	FREE_NULL_LIST(arg->job_gres_list);
+	FREE_NULL_LIST(arg->step_gres_list);
 	xfree(arg->step_hostlist);
 	xfree(arg->job_hostlist);
 	xfree(arg->sock_core_rep_count);
@@ -985,10 +983,8 @@ slurm_cred_destroy(slurm_cred_t *cred)
 	xfree(cred->sock_core_rep_count);
 	xfree(cred->sockets_per_node);
 #endif
-	if (cred->job_gres_list)
-		list_destroy(cred->job_gres_list);
-	if (cred->step_gres_list)
-		list_destroy(cred->step_gres_list);
+	FREE_NULL_LIST(cred->job_gres_list);
+	FREE_NULL_LIST(cred->step_gres_list);
 	xfree(cred->step_hostlist);
 	xfree(cred->signature);
 	xassert(cred->magic = ~CRED_MAGIC);
