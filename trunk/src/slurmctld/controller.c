@@ -1217,6 +1217,7 @@ static void *_slurmctld_background(void *no_data)
 	static time_t last_assert_primary_time;
 	static time_t last_trigger;
 	static time_t last_node_acct;
+	static bool ping_msg_sent = false;
 	time_t now;
 	int no_resp_msg_interval, ping_interval, purge_job_interval;
 	int group_time, group_force;
@@ -1306,25 +1307,25 @@ static void *_slurmctld_background(void *no_data)
 			break;
 		}
 
-		if (difftime(now, last_resv_time) >= 2) {
+		if ((difftime(now, last_resv_time) >= 2) &&
+		    (try_lock_slurmctld(node_write_lock) == 0)) {
 			last_resv_time = now;
-			lock_slurmctld(node_write_lock);
 			set_node_maint_mode();
 			unlock_slurmctld(node_write_lock);
 		}
 
-		if (difftime(now, last_no_resp_msg_time) >=
-		    no_resp_msg_interval) {
+		if ((difftime(now, last_no_resp_msg_time) >=
+		     no_resp_msg_interval) &&
+		    (try_lock_slurmctld(node_write_lock2) == 0)) {
 			last_no_resp_msg_time = now;
-			lock_slurmctld(node_write_lock2);
 			node_no_resp_msg();
 			unlock_slurmctld(node_write_lock2);
 		}
 
-		if (difftime(now, last_timelimit_time) >= PERIODIC_TIMEOUT) {
+		if ((difftime(now, last_timelimit_time) >= PERIODIC_TIMEOUT) &&
+		    (try_lock_slurmctld(job_write_lock) == 0)) {
 			last_timelimit_time = now;
 			debug2("Testing job time limits and checkpoints");
-			lock_slurmctld(job_write_lock);
 			job_time_limit();
 			step_checkpoint();
 			unlock_slurmctld(job_write_lock);
@@ -1332,44 +1333,43 @@ static void *_slurmctld_background(void *no_data)
 
 		if (slurmctld_conf.health_check_interval &&
 		    (difftime(now, last_health_check_time) >=
-		     slurmctld_conf.health_check_interval)) {
-			if (is_ping_done()) {
-				last_health_check_time = now;
-				lock_slurmctld(node_write_lock);
-				run_health_check();
+		     slurmctld_conf.health_check_interval) &&
+		    is_ping_done() &&
+		    (try_lock_slurmctld(node_write_lock) == 0)) {
+			last_health_check_time = now;
+			run_health_check();
 #ifdef HAVE_CRAY_XT
-				basil_query();
+			basil_query();
 #endif
-				unlock_slurmctld(node_write_lock);
-			}
+			unlock_slurmctld(node_write_lock);
 		}
-		if ((difftime(now, last_ping_node_time) >= ping_interval) ||
-		    ping_nodes_now) {
-			static bool msg_sent = false;
-			if (is_ping_done()) {
-				msg_sent = false;
-				last_ping_node_time = now;
-				ping_nodes_now = false;
-				lock_slurmctld(node_write_lock);
-				ping_nodes();
-				unlock_slurmctld(node_write_lock);
-			} else if ((!msg_sent) && (!ping_nodes_now)) {
-				/* log failure once per ping_nodes() call,
-				 * no error if node state update request
-				 * processed while the ping is in progress */
-				error("Node ping apparently hung, "
-				      "many nodes may be DOWN or configured "
-				      "SlurmdTimeout should be increased");
-				msg_sent = true;
-			}
+		if (((difftime(now, last_ping_node_time) >= ping_interval) ||
+		     ping_nodes_now) &&
+		    is_ping_done() &&
+		    (try_lock_slurmctld(node_write_lock) == 0)) {
+			ping_msg_sent = false;
+			last_ping_node_time = now;
+			ping_nodes_now = false;
+			ping_nodes();
+			unlock_slurmctld(node_write_lock);
+		} else if ((difftime(now, last_ping_node_time) >=
+			    ping_interval) && !is_ping_done() && 
+			    !ping_msg_sent) {
+			/* log failure once per ping_nodes() call,
+			 * no error if node state update request
+			 * processed while the ping is in progress */
+			error("Node ping apparently hung, "
+			      "many nodes may be DOWN or configured "
+			      "SlurmdTimeout should be increased");
+			ping_msg_sent = true;
 		}
 
 		if (slurmctld_conf.inactive_limit &&
 		    (difftime(now, last_ping_srun_time) >=
-		     (slurmctld_conf.inactive_limit / 3))) {
+		     (slurmctld_conf.inactive_limit / 3)) &&
+		    (try_lock_slurmctld(job_read_lock) == 0)) {
 			last_ping_srun_time = now;
 			debug2("Performing srun ping");
-			lock_slurmctld(job_read_lock);
 			srun_ping();
 			unlock_slurmctld(job_read_lock);
 		}
@@ -1379,21 +1379,21 @@ static void *_slurmctld_background(void *no_data)
 
 		group_time  = slurmctld_conf.group_info & GROUP_TIME_MASK;
 		if (group_time &&
-		    (difftime(now, last_group_time) >= group_time)) {
+		    (difftime(now, last_group_time) >= group_time) &&
+		    (try_lock_slurmctld(part_write_lock) == 0)) {
 			if (slurmctld_conf.group_info & GROUP_FORCE)
 				group_force = 1;
 			else
 				group_force = 0;
 			last_group_time = now;
-			lock_slurmctld(part_write_lock);
 			load_part_uid_allow_list(group_force);
 			unlock_slurmctld(part_write_lock);
 		}
 
-		if (difftime(now, last_purge_job_time) >= purge_job_interval) {
+		if ((difftime(now, last_purge_job_time) >=purge_job_interval)&&
+		    (try_lock_slurmctld(job_write_lock) == 0)) {
 			last_purge_job_time = now;
 			debug2("Performing purge of old job records");
-			lock_slurmctld(job_write_lock);
 			purge_old_job();
 			unlock_slurmctld(job_write_lock);
 		}
