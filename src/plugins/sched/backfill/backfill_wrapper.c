@@ -154,7 +154,7 @@ slurm_sched_plugin_initial_priority( uint32_t last_prio,
 /**************************************************************************/
 void slurm_sched_plugin_job_is_pending( void )
 {
-	run_backfill();
+	/* Empty. */
 }
 
 /**************************************************************************/

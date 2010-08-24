@@ -96,7 +96,6 @@ typedef struct node_space_map {
 int backfilled_jobs = 0;
 
 /*********************** local variables *********************/
-static bool new_work      = false;
 static bool stop_backfill = false;
 static pthread_mutex_t thread_flag_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t term_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -373,7 +372,7 @@ extern void *backfill_agent(void *args)
 	time_t now;
 	double delay;
 	static time_t last_backfill_time = 0;
-	/* Read config, and partitions; Write jobs and nodes */
+	/* Read config and partitions; Write jobs and nodes */
 	slurmctld_lock_t all_locks = {
 		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK };
 
@@ -390,7 +389,7 @@ extern void *backfill_agent(void *args)
 		delay = difftime(now, last_backfill_time);
 		if ((delay < backfill_interval) ||
 		    _job_is_completing() || 
-		    !_more_work(last_backfill_time))	/* _more_work() test must be last */
+		    !_more_work(last_backfill_time))
 			continue;
 
 		gettimeofday(&tv1, NULL);
@@ -575,8 +574,10 @@ static void _attempt_backfill(void)
 			continue;	/* not runable */
 		}
 
-		job_ptr->start_time = MAX(job_ptr->start_time, start_res);
-		last_job_update = now;
+		if (start_res > job_ptr->start_time) {
+			job_ptr->start_time = start_res;
+			last_job_update = now;
+		}
 		if (job_ptr->start_time <= now) {
 			int rc = _start_job(job_ptr, resv_bitmap);
 			if ((rc == SLURM_SUCCESS) && job_ptr->time_min) {
@@ -633,7 +634,7 @@ static void _attempt_backfill(void)
 		if (debug_flags & DEBUG_FLAG_BACKFILL)
 			_dump_node_space_table(node_space);
 		if ((time(NULL) - now) >= sched_timeout) {
-			debug("backfill: loop taking to long breaking out");
+			debug("backfill: loop taking to long, breaking out");
 			break;
 		}
 	}
@@ -735,25 +736,15 @@ static void _reset_job_time_limit(struct job_record *job_ptr, time_t now,
 	}
 }
 
-/* trigger the attempt of a backfill */
-extern void run_backfill (void)
-{
-	pthread_mutex_lock( &thread_flag_mutex );
-	new_work = true;
-	pthread_mutex_unlock( &thread_flag_mutex );
-}
-
 /* Report if any changes occurred to job, node or partition information */
 static bool _more_work (time_t last_backfill_time)
 {
 	bool rc = false;
 
 	pthread_mutex_lock( &thread_flag_mutex );
-	if ( (last_job_update  > last_backfill_time ) ||
-	     (last_node_update > last_backfill_time ) ||
-	     (last_part_update > last_backfill_time ) ||
-	     new_work ) {
-		new_work = false;
+	if ( (last_job_update  >= last_backfill_time ) ||
+	     (last_node_update >= last_backfill_time ) ||
+	     (last_part_update >= last_backfill_time ) ) {
 		rc = true;
 	}
 	pthread_mutex_unlock( &thread_flag_mutex );
