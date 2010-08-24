@@ -380,7 +380,7 @@ extern int schedule(void)
 			continue;
 		}
 		if (job_ptr->part_ptr != job_queue_rec->part_ptr) {
-			/* Cycle through partitions usabe for this job */
+			/* Cycle through partitions usable for this job */
 			job_ptr->part_ptr = job_queue_rec->part_ptr;
 		}
 		if ((job_ptr->resv_name == NULL) &&
