@@ -456,7 +456,7 @@ extern int schedule(void)
 			/* When we use static or overlap partitioning on
 			 * BlueGene, each job can possibly be scheduled
 			 * independently, without impacting other jobs of
-			 * different sizes. Therefor we sort and try to
+			 * different sizes. Therefore we sort and try to
 			 * schedule every pending job unless the backfill
 			 * scheduler is configured. */
 			if (!backfill_sched)
@@ -1241,8 +1241,8 @@ static char **_build_env(struct job_record *job_ptr)
 	}
 
 #ifdef HAVE_CRAY_XT
-	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
-				    SELECT_JOBDATA_RESV_ID, &name);
+	name = select_g_select_jobinfo_xstrdup(job_ptr->select_jobinfo,
+						SELECT_PRINT_RESV_ID);
 	setenvf(&my_env, "BASIL_RESERVATION_ID", "%s", name);
 	xfree(name);
 #endif

@@ -3016,10 +3016,10 @@ fini:	FREE_NULL_LIST(part_ptr_list);
 
 /*
  * _job_create - create a job table record for the supplied specifications.
- *	this performs only basic tests for request validity (access to
+ *	This performs only basic tests for request validity (access to
  *	partition, nodes count in partition, and sufficient processors in
  *	partition).
- * input: job_specs - job specifications
+ * IN job_specs - job specifications
  * IN allocate - resource allocation request if set rather than job submit
  * IN will_run - job is not to be created, test of validity only
  * OUT job_pptr - pointer to the job (NULL on error)
@@ -7464,10 +7464,10 @@ extern void job_completion_logger(struct job_record  *job_ptr, bool requeue)
 }
 
 /*
- * job_independent - determine if this job has a depenendent job pending
+ * job_independent - determine if this job has a dependent job pending
  *	or if the job's scheduled begin time is in the future
  * IN job_ptr - pointer to job being tested
- * RET - true if job no longer must be defered for another job
+ * RET - true if job no longer must be deferred for another job
  */
 extern bool job_independent(struct job_record *job_ptr, int will_run)
 {
@@ -7476,7 +7476,7 @@ extern bool job_independent(struct job_record *job_ptr, int will_run)
 	int depend_rc;
 
 	/* Test dependencies first so we can cancel jobs before dependent
-	 * jobs records get purged (e.g. afterok, afternotok) */
+	 * job records get purged (e.g. afterok, afternotok) */
 	depend_rc = test_job_dependency(job_ptr);
 	if (depend_rc == 1) {
 		job_ptr->state_reason = WAIT_DEPENDENCY;
@@ -7604,7 +7604,7 @@ static void _suspend_job(struct job_record *job_ptr, uint16_t op)
 	agent_args->msg_type = REQUEST_SUSPEND;
 	agent_args->retry = 0;	/* don't resend, gang scheduler
 				 * sched/wiki or sched/wiki2 can
-				 * can quickly induce huge backlog
+				 * quickly induce huge backlog
 				 * of agent.c RPCs */
 	agent_args->hostlist = hostlist_create("");
 	sus_ptr = xmalloc(sizeof(suspend_msg_t));
@@ -7733,7 +7733,7 @@ static int _resume_job_nodes(struct job_record *job_ptr, bool clear_prio)
  * IN clear_prio - if set, then clear the job's priority after
  *		   suspending it, this is used to distinguish
  *		   jobs explicitly suspended by admins/users from
- *		   jobs suspended though automatic preemption
+ *		   jobs suspended through automatic preemption
  *		   (the gang scheduler)
  * IN protocol_version - slurm protocol version of client
  * RET 0 on success, otherwise ESLURM error code
@@ -9177,8 +9177,8 @@ _copy_job_record_to_job_desc(struct job_record *job_ptr)
 /*
  * job_restart - Restart a batch job from checkpointed state
  *
- * Restart a job is similar to submit a new job, except that
- * the job requirements is load from the checkpoint file and
+ * Restarting a job is similar to submitting a new job, except that
+ * the job requirements are loaded from the checkpoint file, and
  * the job id is restored.
  *
  * IN ckpt_ptr - checkpoint request message

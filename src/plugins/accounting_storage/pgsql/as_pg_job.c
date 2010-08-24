@@ -542,7 +542,7 @@ no_rollup_change:
 			"'%s', '%s', '%s', '%s', "
 			"%u, %u, %u, 0, 0, %d, "
 			"'%s', %u, %u, 0, %d, %u, %u, %u, "
-			"'%s', '%s', -1, %d, %d)",
+			"'%s', '%s', -1, %d, %u)",
 			/* id=0, not used */
 			/* deleted=0 */
 			job_ptr->job_id,
@@ -615,7 +615,7 @@ no_rollup_change:
 
 		xstrfmtcat(query, "start=%d, name='%s', state=%u, "
 			   "alloc_cpus=%u, alloc_nodes=%u, associd=%u, "
-			   "wckeyid=%u, resvid=%u, timelimit=%d WHERE id=%d;",
+			   "wckeyid=%u, resvid=%u, timelimit=%d WHERE id=%u;",
 			   start_time, jname, job_state,
 			   job_ptr->total_cpus, node_cnt,
 			   job_ptr->assoc_id, wckeyid, job_ptr->resv_id,

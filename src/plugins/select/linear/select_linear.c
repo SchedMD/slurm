@@ -525,18 +525,14 @@ static void _build_select_struct(struct job_record *job_ptr, bitstr_t *bitmap)
 	uint32_t node_cpus, total_cpus = 0, node_cnt;
 	struct node_record *node_ptr;
 	uint32_t job_memory_cpu = 0, job_memory_node = 0;
-	bool memory_info = false;
 	job_resources_t *job_resrcs_ptr;
 
 	if (job_ptr->details->pn_min_memory  && (cr_type == CR_MEMORY)) {
-		if (job_ptr->details->pn_min_memory & MEM_PER_CPU) {
+		if (job_ptr->details->pn_min_memory & MEM_PER_CPU)
 			job_memory_cpu = job_ptr->details->pn_min_memory &
 				(~MEM_PER_CPU);
-			memory_info = true;
-		} else {
+		else
 			job_memory_node = job_ptr->details->pn_min_memory;
-			memory_info = true;
-		}
 	}
 
 	if (job_ptr->job_resrcs)	/* Old struct due to job requeue */
@@ -582,11 +578,9 @@ static void _build_select_struct(struct job_record *job_ptr, bitstr_t *bitmap)
 			job_resrcs_ptr->cpu_array_reps[k]++;
 		total_cpus += node_cpus;
 
-		if (!memory_info)
-			;
-		else if (job_memory_node)
+		if (job_memory_node) {
 			job_resrcs_ptr->memory_allocated[j] = job_memory_node;
-		else if (job_memory_cpu) {
+		} else if (job_memory_cpu) {
 			job_resrcs_ptr->memory_allocated[j] =
 				job_memory_cpu * node_cpus;
 		}
@@ -2385,7 +2379,7 @@ extern int select_p_block_init(List part_list)
  *		if mode=SELECT_MODE_TEST_ONLY or input pointer is NULL.
  * RET zero on success, EINVAL otherwise
  * globals (passed via select_p_node_init):
- *	node_recurd_count - count of nodes configured
+ *	node_record_count - count of nodes configured
  *	node_record_table_ptr - pointer to global node table
  * NOTE: the job information that is considered for scheduling includes:
  *	req_node_bitmap: bitmap of specific nodes required by the job

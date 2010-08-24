@@ -226,7 +226,7 @@ extern int other_select_jobinfo_set(select_jobinfo_t *jobinfo,
  * IN jobinfo  - updated select job credential
  * IN data_type - type of data to enter into job credential
  * OUT data - the data to get from job credential, caller must xfree
- *	data for data_tyep == SELECT_JOBDATA_PART_ID
+ *	data for data_type == SELECT_JOBDATA_PART_ID
  */
 extern int other_select_jobinfo_get(select_jobinfo_t *jobinfo,
 				    enum select_jobdata_type data_type,

@@ -114,11 +114,11 @@ extern int set_select_jobinfo(select_jobinfo_t *jobinfo,
 	uint32_t new_size;
 
 	if (jobinfo == NULL) {
-		error("select_g_set_jobinfo: jobinfo not set");
+		error("set_select_jobinfo: jobinfo not set");
 		return SLURM_ERROR;
 	}
 	if (jobinfo->magic != JOBINFO_MAGIC) {
-		error("set_jobinfo: jobinfo magic bad");
+		error("set_select_jobinfo: jobinfo magic bad");
 		return SLURM_ERROR;
 	}
 
@@ -191,7 +191,7 @@ extern int set_select_jobinfo(select_jobinfo_t *jobinfo,
 		jobinfo->ramdiskimage = xstrdup(tmp_char);
 		break;
 	default:
-		debug("set_jobinfo data_type %d invalid",
+		debug("set_select_jobinfo: data_type %d invalid",
 		      data_type);
 	}
 
@@ -202,7 +202,7 @@ extern int set_select_jobinfo(select_jobinfo_t *jobinfo,
  * IN jobinfo  - updated select job credential
  * IN data_type - type of data to enter into job credential
  * OUT data - the data to get from job credential, caller must xfree
- *	data for data_tyep == SELECT_JOBDATA_BLOCK_ID
+ *	data for data_type == SELECT_JOBDATA_BLOCK_ID
  */
 extern int get_select_jobinfo(select_jobinfo_t *jobinfo,
 			      enum select_jobdata_type data_type, void *data)

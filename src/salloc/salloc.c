@@ -400,7 +400,7 @@ relinquish:
 
 	/*
 	 * Figure out what return code we should use.  If the user's command
-	 * exitted normally, return the user's return code.
+	 * exited normally, return the user's return code.
 	 */
 	rc = 1;
 	if (rc_pid != -1) {

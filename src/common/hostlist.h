@@ -148,7 +148,7 @@ int set_grid(int start, int end, int count);
  *  o tux0-tux5,tux12,tux20-tux25
  *  o tux0-5,12,20-25
  *
- * If str is NULL, and empty hostlist is created and returned.
+ * If str is NULL, an empty hostlist is created and returned.
  *
  * If the create fails, hostlist_create() returns NULL.
  *
@@ -500,7 +500,7 @@ int hostset_find(hostset_t set, const char *hostname);
 char * hostset_nth(hostset_t set, int n);
 
 /* hostset_ranged_string():
- * hostset equivelent to hostlist_ranged_string();
+ * hostset equivalent to hostlist_ranged_string();
  */
 ssize_t hostset_ranged_string(hostset_t set, size_t n, char *buf);
 

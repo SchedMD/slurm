@@ -146,7 +146,7 @@ struct node_record {
 #endif	/* APBASIL_LOC */
 	dynamic_plugin_data_t *select_nodeinfo; /* opaque data structure,
 						 * use select_g_get_nodeinfo()
-						 * to access conents */
+						 * to access contents */
 
 };
 extern struct node_record *node_record_table_ptr;  /* ptr to node records */

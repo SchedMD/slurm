@@ -1229,13 +1229,8 @@ _rpc_batch_job(slurm_msg_t *msg)
 					    SELECT_JOBDATA_BLOCK_ID, &resv_id);
 #endif
 #ifdef HAVE_CRAY_XT
-		{
-			uint32_t job_resv_id = 0;
-			select_g_select_jobinfo_get(req->select_jobinfo,
-						    SELECT_JOBDATA_RESV_ID,
-						    &job_resv_id);
-			xstrfmtcat(resv_id, "%u", job_resv_id);
-		}
+		resv_id = select_g_select_jobinfo_xstrdup(req->select_jobinfo,
+					    SELECT_PRINT_RESV_ID);
 #endif
 		rc = _run_prolog(req->job_id, req->uid, resv_id,
 				 req->spank_job_env, req->spank_job_env_size);
@@ -3218,13 +3213,8 @@ _rpc_abort_job(slurm_msg_t *msg)
 				    &resv_id);
 #endif
 #ifdef HAVE_CRAY_XT
-	{
-		uint32_t job_resv_id = 0;
-		select_g_select_jobinfo_get(req->select_jobinfo,
-					    SELECT_JOBDATA_RESV_ID,
-					    &job_resv_id);
-		xstrfmtcat(resv_id, "%u", job_resv_id);
-	}
+	resv_id = select_g_select_jobinfo_xstrdup(req->select_jobinfo,
+				    SELECT_PRINT_RESV_ID);
 #endif
 	_run_epilog(req->job_id, req->job_uid, resv_id,
 		    req->spank_job_env, req->spank_job_env_size);
@@ -3411,13 +3401,8 @@ _rpc_terminate_job(slurm_msg_t *msg)
 				    &resv_id);
 #endif
 #ifdef HAVE_CRAY_XT
-	{
-		uint32_t job_resv_id = 0;
-		select_g_select_jobinfo_get(req->select_jobinfo,
-					    SELECT_JOBDATA_RESV_ID,
-					    &job_resv_id);
-		xstrfmtcat(resv_id, "%u", job_resv_id);
-	}
+	resv_id = select_g_select_jobinfo_xstrdup(req->select_jobinfo,
+				    SELECT_PRINT_RESV_ID);
 #endif
 	rc = _run_epilog(req->job_id, req->job_uid, resv_id,
 			 req->spank_job_env, req->spank_job_env_size);
