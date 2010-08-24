@@ -1060,13 +1060,10 @@ extern void trigger_process(void)
 	ListIterator trig_iter;
 	trig_mgr_info_t *trig_in;
 	time_t now = time(NULL);
-	slurmctld_lock_t job_node_read_lock =
-		{ NO_LOCK, READ_LOCK, READ_LOCK, NO_LOCK };
 	bool state_change = false;
 	pid_t rc;
 	int prog_stat;
 
-	lock_slurmctld(job_node_read_lock);
 	slurm_mutex_lock(&trigger_mutex);
 	if (trigger_list == NULL)
 		trigger_list = list_create(_trig_del);
@@ -1142,7 +1139,6 @@ extern void trigger_process(void)
 	list_iterator_destroy(trig_iter);
 	_clear_event_triggers();
 	slurm_mutex_unlock(&trigger_mutex);
-	unlock_slurmctld(job_node_read_lock);
 	if (state_change)
 		schedule_trigger_save();
 }

@@ -329,8 +329,11 @@ extern int schedule(void)
 
 	DEF_TIMERS;
 
-	if (!sched_timeout)
-		sched_timeout = MIN(slurm_get_msg_timeout(), 10);
+	if (sched_timeout == 0) {
+		sched_timeout = slurm_get_msg_timeout() / 2;
+		sched_timeout = MAX(sched_timeout, 1);
+		sched_timeout = MIN(sched_timeout, 10);
+	}
 
 	START_TIMER;
 	if (!sched_test) {
@@ -544,7 +547,7 @@ extern int schedule(void)
 		}
 
 		if ((time(NULL) - now) >= sched_timeout) {
-			debug("sched: loop taking to long breaking out");
+			debug("sched: loop taking too long, breaking out");
 			break;
 		}
 	}
@@ -575,9 +578,9 @@ static int _sort_job_queue(void *x, void *y)
 	job_queue_rec_t *job_rec1 = (job_queue_rec_t *) x;
 	job_queue_rec_t *job_rec2 = (job_queue_rec_t *) y;
 
-	if(slurm_job_preempt_check(job_rec1, job_rec2))
+	if (slurm_job_preempt_check(job_rec1, job_rec2))
 		return -1;
-	if(slurm_job_preempt_check(job_rec2, job_rec1))
+	if (slurm_job_preempt_check(job_rec2, job_rec1))
 		return 1;
 
 	if (job_rec1->job_ptr->priority < job_rec2->job_ptr->priority)
