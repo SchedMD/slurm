@@ -93,7 +93,7 @@
 static void _acct_restore_active_jobs(void);
 static int  _build_bitmaps(void);
 static void _build_bitmaps_pre_select(void);
-static void _gres_reconig(bool reconfig);
+static void _gres_reconfig(bool reconfig);
 static int  _init_all_slurm_conf(void);
 static int  _preserve_select_type_param(slurm_ctl_conf_t * ctl_conf_ptr,
 					uint16_t old_select_type_p);
@@ -414,7 +414,7 @@ static int _build_all_nodeline_info(void)
 		fatal("No node %s configured", node_000);
 	xfree(node_000);
 }
-#endif	/* SYSTEM_SIMENSIONS > 1 */
+#endif	/* SYSTEM_DIMENSIONS > 1 */
 
 #ifndef HAVE_BG
 	slurm_topo_build_config();
@@ -750,7 +750,7 @@ int read_slurm_conf(int recover, bool reconfig)
 		      "Clean start required.");
 	}
 	xfree(state_save_dir);
-	_gres_reconig(reconfig);
+	_gres_reconfig(reconfig);
 	reset_job_bitmaps();		/* must follow select_g_job_init() */
 
 	(void) _sync_nodes_to_jobs();
@@ -828,7 +828,7 @@ int read_slurm_conf(int recover, bool reconfig)
 	return error_code;
 }
 
-static void _gres_reconig(bool reconfig)
+static void _gres_reconfig(bool reconfig)
 {
 	struct node_record *node_ptr;
 	char *gres_name;

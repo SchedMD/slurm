@@ -542,7 +542,7 @@ static void _cyclic_sync_core_bitmap(struct job_record *job_ptr,
  * "node/CPU/Core/thread"-tuplets will be allocated for a given job.
  * In the past we assumed that we only allocated one task per CPU (at
  * that point the lowest level of logical processor) and didn't allow
- * the use of overcommit. We have change this philosophy and are now
+ * the use of overcommit. We have changed this philosophy and are now
  * allowing people to overcommit their resources and expect the system
  * administrator to enable the task/affinity plug-in which will then
  * bind all of a job's tasks to its allocated resources thereby

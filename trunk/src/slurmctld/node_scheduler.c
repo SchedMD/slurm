@@ -415,7 +415,7 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 				continue;
 			tmp_node_set_size = 0;
 			/* _pick_best_nodes() is destructive of the node_set
-			 * data structure, so we need to make a copy then
+			 * data structure, so we need to make a copy and then
 			 * purge it */
 			for (i=0; i<node_set_size; i++) {
 				if (!_match_feature(feat_ptr->name,
@@ -1063,7 +1063,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	if (error_code)
 		return error_code;
 
-	/* insure that selected nodes in these node sets */
+	/* insure that selected nodes are in these node sets */
 	if (job_ptr->details->req_node_bitmap) {
 		error_code = _nodes_in_sets(job_ptr->details->req_node_bitmap,
 					    node_set_ptr, node_set_size);
@@ -1154,7 +1154,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 #endif	/* HAVE_CRAY_XT */
 
 	/* This job may be getting requeued, clear vestigial
-	 * state information before over-writting and leaking
+	 * state information before over-writing and leaking
 	 * memory. */
 	FREE_NULL_BITMAP(job_ptr->node_bitmap);
 	xfree(job_ptr->nodes);
@@ -1619,7 +1619,7 @@ static int _build_node_list(struct job_record *job_ptr,
 	}
 
 	/* If any nodes are powered down, put them into a new node_set
-	 * record with a higher scheduling weight . This means we avoid
+	 * record with a higher scheduling weight. This means we avoid
 	 * scheduling jobs on powered down nodes where possible. */
 	for (i = (node_set_inx-1); i >= 0; i--) {
 		power_cnt = bit_overlap(node_set_ptr[i].my_bitmap,

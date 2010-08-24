@@ -326,7 +326,7 @@ static int _print_text_job(job_info_t * job_ptr)
 				  select_g_select_jobinfo_sprint(
 					  job_ptr->select_jobinfo,
 					  time_buf, sizeof(time_buf),
-					  SELECT_PRINT_RESV_ID));
+					  SELECT_PRINT_DATA));
 			main_xcord += 18;
 		}
 		uname = uid_to_string((uid_t) job_ptr->user_id);
@@ -407,7 +407,7 @@ static int _print_text_job(job_info_t * job_ptr)
 			       select_g_select_jobinfo_sprint(
 				       job_ptr->select_jobinfo,
 				       time_buf, sizeof(time_buf),
-				       SELECT_PRINT_RESV_ID));
+				       SELECT_PRINT_DATA));
 		uname = uid_to_string((uid_t) job_ptr->user_id);
 		printf("%8.8s ", uname);
 		xfree(uname);

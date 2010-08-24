@@ -329,8 +329,8 @@ enum select_jobdata_type {
 	SELECT_JOBDATA_MLOADER_IMAGE,/* data-> char *mloaderimage */
 	SELECT_JOBDATA_RAMDISK_IMAGE,/* data-> char *ramdiskimage */
 	SELECT_JOBDATA_REBOOT,	/* data-> uint16_t reboot */
-	SELECT_JOBDATA_RESV_ID,	/* data-> char *reservation_id */
-	SELECT_JOBDATA_PTR,/* data-> select_jobinfo_t *jobinfo */
+	SELECT_JOBDATA_RESV_ID,	/* data-> uint32_t reservation_id */
+	SELECT_JOBDATA_PTR,	/* data-> select_jobinfo_t *jobinfo */
 };
 
 enum select_nodedata_type {

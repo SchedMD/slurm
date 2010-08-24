@@ -439,7 +439,7 @@ sub print_job_brief
 	}
 	printf("%-19.19s %-16.16s %-15.15s %-8.8s %-1.1s %-15.15s\n",
 	       $job->{'job_id'}, $job->{'name'}, $job->{'user_name'},
-	       ddhhmm($job->{'statPSUtil'}), $job->{'stateCode'},
+	       ddhhmm($job->{'statPSUtl'}), $job->{'stateCode'},
 	       $job->{'partition'});
 }
 
@@ -479,7 +479,7 @@ sub print_job_select
 	       $job->{'num_nodes'} || "--",
 	       $job->{'num_procs'} || "--",
 	       $job->{'job_min_memory'} || "--",
-	       hhmm($job->{'time_limit'}),
+	       hhmm($job->{'time_limit'} * 60),
 	       $job->{'stateCode'},
 	       hhmm($job->{'aWDuration'}));
 

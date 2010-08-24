@@ -1236,7 +1236,7 @@ static void _layout_job_record(GtkTreeView *treeview,
 						   job_ptr->select_jobinfo,
 						   tmp_char,
 						   sizeof(tmp_char),
-						   SELECT_PRINT_RESV_ID));
+						   SELECT_PRINT_DATA));
 	if(job_ptr->batch_flag)
 		sprintf(tmp_char, "yes");
 	else
@@ -1853,7 +1853,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 					   job_ptr->select_jobinfo,
 					   tmp_char,
 					   sizeof(tmp_char),
-					   SELECT_PRINT_RESV_ID), -1);
+					   SELECT_PRINT_DATA), -1);
 
 	gtk_tree_store_set(treestore, iter, SORTID_NAME, job_ptr->name, -1);
 	gtk_tree_store_set(treestore, iter, SORTID_WCKEY, job_ptr->wckey, -1);

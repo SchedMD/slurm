@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  node_select.c - node selection plugin wrapper.
+ *  other_select.c - node selection plugin wrapper for Cray.
  *
  *  NOTE: The node selection plugin itself is intimately tied to slurmctld
  *  functions and data structures. Some related functions (e.g. data structure
@@ -66,11 +66,11 @@
 
 typedef struct other_select_ops {
 	int		(*state_save)	       (char *dir_name);
-	int	       	(*state_restore)       (char *dir_name);
+	int		(*state_restore)       (char *dir_name);
 	int		(*job_init)	       (List job_list);
-	int 		(*node_init)	       (struct node_record *node_ptr,
+	int		(*node_init)	       (struct node_record *node_ptr,
 					        int node_cnt);
-	int 		(*block_init)	       (List block_list);
+	int		(*block_init)	       (List block_list);
 	int		(*job_test)	       (struct job_record *job_ptr,
 						bitstr_t *bitmap,
 						uint32_t min_nodes,
@@ -89,10 +89,10 @@ typedef struct other_select_ops {
 	int		(*pack_select_info)    (time_t last_query_time,
 						Buf *buffer_ptr,
 						uint16_t protocol_version);
-        int	        (*nodeinfo_pack)       (select_nodeinfo_t *nodeinfo,
+	int		(*nodeinfo_pack)       (select_nodeinfo_t *nodeinfo,
 						Buf buffer,
 						uint16_t protocol_version);
-        int	        (*nodeinfo_unpack)     (void **nodeinfo,
+	int		(*nodeinfo_unpack)     (void **nodeinfo,
 						Buf buffer,
 						uint16_t protocol_version);
 	select_nodeinfo_t *(*nodeinfo_alloc)   (uint32_t size);
@@ -126,9 +126,9 @@ typedef struct other_select_ops {
 						int mode);
 	char *          (*jobinfo_xstrdup)     (select_jobinfo_t *jobinfo,
 						int mode);
-        int             (*update_block)        (update_block_msg_t
+	int             (*update_block)        (update_block_msg_t
 						*block_desc_ptr);
-        int             (*update_sub_node)     (update_block_msg_t
+	int             (*update_sub_node)     (update_block_msg_t
 						*block_desc_ptr);
 	int             (*get_info_from_plugin)(enum
 						select_plugindata_info dinfo,
@@ -142,15 +142,15 @@ typedef struct other_select_ops {
 } other_select_ops_t;
 
 typedef struct other_select_context {
-	char	       	*select_type;
-	plugrack_t     	plugin_list;
+	char		*select_type;
+	plugrack_t	plugin_list;
 	plugin_handle_t	cur_plugin;
 	int		select_errno;
 	other_select_ops_t ops;
 } other_select_context_t;
 
 /* If there is a new select plugin, list it here */
-static other_select_context_t * other_select_context = NULL;
+static other_select_context_t *other_select_context = NULL;
 static pthread_mutex_t		other_select_context_lock =
 	PTHREAD_MUTEX_INITIALIZER;
 
@@ -183,21 +183,21 @@ static other_select_ops_t *_other_select_get_ops(other_select_context_t *c)
 		"select_p_pack_select_info",
                 "select_p_select_nodeinfo_pack",
                 "select_p_select_nodeinfo_unpack",
- 		"select_p_select_nodeinfo_alloc",
+		"select_p_select_nodeinfo_alloc",
 		"select_p_select_nodeinfo_free",
-  		"select_p_select_nodeinfo_set_all",
-  		"select_p_select_nodeinfo_set",
+		"select_p_select_nodeinfo_set_all",
+		"select_p_select_nodeinfo_set",
 		"select_p_select_nodeinfo_get",
 		"select_p_select_jobinfo_alloc",
-  		"select_p_select_jobinfo_free",
-   		"select_p_select_jobinfo_set",
-   		"select_p_select_jobinfo_get",
-   		"select_p_select_jobinfo_copy",
-  		"select_p_select_jobinfo_pack",
-  		"select_p_select_jobinfo_unpack",
-  		"select_p_select_jobinfo_sprint",
-  		"select_p_select_jobinfo_xstrdup",
-    		"select_p_update_block",
+		"select_p_select_jobinfo_free",
+		"select_p_select_jobinfo_set",
+		"select_p_select_jobinfo_get",
+		"select_p_select_jobinfo_copy",
+		"select_p_select_jobinfo_pack",
+		"select_p_select_jobinfo_unpack",
+		"select_p_select_jobinfo_sprint",
+		"select_p_select_jobinfo_xstrdup",
+		"select_p_update_block",
 		"select_p_update_sub_node",
 		"select_p_get_info_from_plugin",
 		"select_p_update_node_config",
@@ -208,12 +208,12 @@ static other_select_ops_t *_other_select_get_ops(other_select_context_t *c)
 	int n_syms = sizeof(syms) / sizeof(char *);
 
 	/* Find the correct plugin. */
-        c->cur_plugin = plugin_load_and_link(c->select_type, n_syms, syms,
+	c->cur_plugin = plugin_load_and_link(c->select_type, n_syms, syms,
 					     (void **) &c->ops);
-        if (c->cur_plugin != PLUGIN_INVALID_HANDLE)
-        	return &c->ops;
+	if (c->cur_plugin != PLUGIN_INVALID_HANDLE)
+		return &c->ops;
 
-	if(errno != EPLUGIN_NOTFOUND) {
+	if (errno != EPLUGIN_NOTFOUND) {
 		error("Couldn't load specified plugin name for %s: %s",
 		      c->select_type, plugin_strerror(errno));
 		return NULL;
@@ -257,7 +257,7 @@ static other_select_ops_t *_other_select_get_ops(other_select_context_t *c)
 		return NULL;
 	}
 
-	return &c->ops;;
+	return &c->ops;
 }
 
 /*
@@ -295,20 +295,20 @@ extern int other_select_init()
 	if (other_select_context)
 		goto done;
 
-     /*
-        * FIXME: At the moment the smallest Cray allocation unit are still
-        * full nodes. Node sharing (even across NUMA sockets of the same
-        * node) is, as of CLE 3.1 (summer 2010) still not supported, i.e.
-        * as per the LIMITATIONS section of the aprun(1) manpage of the
-        * 3.1.27A release).
-        * Hence for the moment we can only use select/linear.  If some
-        * time in the future this is allowable use code such as this
-        * to make things switch to the cons_res plugin.
-  	* if(slurmctld_conf.select_type_param & CR_CONS_RES)
-	*	select_type = "select/cons_res";
-	* else
-	*	select_type = "select/linear";
-	*/
+	/*
+	 * FIXME: At the moment the smallest Cray allocation unit are still
+	 * full nodes. Node sharing (even across NUMA sockets of the same
+	 * node) is, as of CLE 3.1 (summer 2010) still not supported, i.e.
+	 * as per the LIMITATIONS section of the aprun(1) manpage of the
+	 * 3.1.27A release).
+	 * Hence for the moment we can only use select/linear.  If some
+	 * time in the future this is allowable use code such as this
+	 * to make things switch to the cons_res plugin.
+	 * if (slurmctld_conf.select_type_param & CR_CONS_RES)
+	 *	select_type = "select/cons_res";
+	 * else
+	 *	select_type = "select/linear";
+	 */
 	select_type = "select/linear";
 
 	other_select_context = xmalloc(sizeof(other_select_context_t));

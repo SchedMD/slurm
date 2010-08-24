@@ -1508,11 +1508,11 @@ hostlist_t _hostlist_create(const char *hostlist, char *sep, char *r_op)
 	if(working_cluster_rec) {
 		if(working_cluster_rec->dimensions > 1)
 			fatal("WANT_RECKLESS_HOSTRANGE_EXPANSION does not "
-			      "work on Mulitdimentional systems!!!!");
+			      "work on Multidimentional systems!!!!");
 	} else {
 #if (SYSTEM_DIMENSIONS > 1)
 		fatal("WANT_RECKLESS_HOSTRANGE_EXPANSION does not work on "
-		      "Mulitdimentional systems!!!!");
+		      "Multidimentional systems!!!!");
 #endif
 	}
 	orig = str = strdup(hostlist);
@@ -2588,7 +2588,7 @@ void hostlist_parse_int_to_array(int in, int *out, int dims, int hostlist_base)
 			my_pow_minus /= hostlist_base;
 		}
 		if(out[a] < 0) {
-			error("Dim %d returned negitive %d from %d %d %d",
+			error("Dim %d returned negative %d from %d %d %d",
 			      a, out[a], in, my_pow, my_pow_minus);
 			xassert(0);
 			out[a] = 0;

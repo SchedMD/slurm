@@ -122,20 +122,20 @@ static int _setup_particulars(uint32_t cluster_flags,
 			error("Can't set MPIRUN_PARTITION "
 			      "environment variable");
 	} else if(cluster_flags & CLUSTER_FLAG_CRAYXT) {
-		char *resv_id = NULL;
+		uint32_t resv_id = 0;
+
 		select_g_select_jobinfo_get(select_jobinfo,
 					    SELECT_JOBDATA_RESV_ID,
 					    &resv_id);
 		if (resv_id) {
 			env_array_overwrite_fmt(dest, "BASIL_RESERVATION_ID",
-						"%s", resv_id);
-		} else
-			rc = SLURM_FAILURE;
-
-		if(rc == SLURM_FAILURE)
+						"%u", resv_id);
+		} else {
 			error("Can't set BASIL_RESERVATION_ID "
 			      "environment variable");
-		xfree(resv_id);
+			rc = SLURM_FAILURE;
+		}
+
 	} else if(cluster_flags & CLUSTER_FLAG_AIX) {
 		env_array_overwrite(dest, "LOADLBATCH", "yes");
 	}
