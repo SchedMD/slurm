@@ -121,7 +121,7 @@ static void _diff_tv_str(struct timeval *tv1,struct timeval *tv2,
 		char *tv_str, int len_tv_str);
 static bool _job_is_completing(void);
 static void _load_config(void);
-static bool _more_work(time_t last_backfill_finish_time);
+static bool _more_work(time_t last_backfill_time);
 static void _my_sleep(int secs);
 static int  _num_feature_count(struct job_record *job_ptr);
 static void _reset_job_time_limit(struct job_record *job_ptr, time_t now,
@@ -372,8 +372,7 @@ extern void *backfill_agent(void *args)
 	char tv_str[20];
 	time_t now;
 	double delay;
-	static time_t last_backfill_start_time  = 0;
-	static time_t last_backfill_finish_time = 0;
+	static time_t last_backfill_time = 0;
 	/* Read config, and partitions; Write jobs and nodes */
 	slurmctld_lock_t all_locks = {
 		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK };
@@ -388,17 +387,16 @@ extern void *backfill_agent(void *args)
 			_load_config();
 		}
 		now = time(NULL);
-		delay = difftime(now, last_backfill_start_time);
+		delay = difftime(now, last_backfill_time);
 		if ((delay < backfill_interval) ||
 		    _job_is_completing() || 
-		    !_more_work(last_backfill_finish_time))	/* _more_work() test must be last */
+		    !_more_work(last_backfill_time))	/* _more_work() test must be last */
 			continue;
-		last_backfill_start_time = now;
 
 		gettimeofday(&tv1, NULL);
 		lock_slurmctld(all_locks);
 		_attempt_backfill();
-		last_backfill_finish_time = time(NULL);
+		last_backfill_time = time(NULL);
 		unlock_slurmctld(all_locks);
 		gettimeofday(&tv2, NULL);
 		_diff_tv_str(&tv1, &tv2, tv_str, 20);
@@ -425,8 +423,11 @@ static void _attempt_backfill(void)
 	node_space_map_t *node_space;
 	static int sched_timeout = 0;
 
-	if (!sched_timeout)
-		sched_timeout = MIN(slurm_get_msg_timeout(), 10);
+	if (sched_timeout == 0) {
+		sched_timeout = slurm_get_msg_timeout() / 2;
+		sched_timeout = MAX(sched_timeout, 1);
+		sched_timeout = MIN(sched_timeout, 10);
+	}
 
 	if (slurm_get_root_filter())
 		filter_root = true;
@@ -743,14 +744,14 @@ extern void run_backfill (void)
 }
 
 /* Report if any changes occurred to job, node or partition information */
-static bool _more_work (time_t last_backfill_finish_time)
+static bool _more_work (time_t last_backfill_time)
 {
 	bool rc = false;
 
 	pthread_mutex_lock( &thread_flag_mutex );
-	if ( (last_job_update  > last_backfill_finish_time ) ||
-	     (last_node_update > last_backfill_finish_time ) ||
-	     (last_part_update > last_backfill_finish_time ) ||
+	if ( (last_job_update  > last_backfill_time ) ||
+	     (last_node_update > last_backfill_time ) ||
+	     (last_part_update > last_backfill_time ) ||
 	     new_work ) {
 		new_work = false;
 		rc = true;
