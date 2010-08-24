@@ -47,9 +47,6 @@ extern void *backfill_agent(void *args);
 /* Terminate backfill_agent */
 extern void stop_backfill_agent(void);
 
-/* trigger the attempt of a backfill */
-extern void run_backfill (void);
-
 /* Note that slurm.conf has changed */
 extern void backfill_reconfig(void);
 
