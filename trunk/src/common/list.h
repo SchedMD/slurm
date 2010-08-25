@@ -233,6 +233,18 @@ void * list_pop (List l);
  *  Returns the data's ptr, or NULL if the stack is empty.
  */
 
+void * list_pop_top (List l, ListCmpF f);
+/*
+ *  Pops the top priority data item from the stack [l].
+ *  Returns the data's ptr, or NULL if the stack is empty.
+ */
+
+void * list_pop_bottom (List l, ListCmpF f);
+/*
+ *  Pops the lowest priority data item from the stack [l].
+ *  Returns the data's ptr, or NULL if the stack is empty.
+ */
+
 void * list_peek (List l);
 /*
  *  Peeks at the data item at the top of the stack (or head of the queue) [l].
