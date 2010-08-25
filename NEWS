@@ -29,6 +29,7 @@ documents those changes that are of interest to users and admins.
     re-used by another command right away.
  -- Fix to node in correct state in accounting when updating it to drain from
     scontrol/sview.
+ -- BLUEGENE - Removed incorrect unlocking on error cases when starting jobs.
 
 * Changes in SLURM 2.1.11-2
 ===========================

@@ -316,7 +316,6 @@ static int _make_sure_block_still_exists(bg_update_t *bg_update_ptr,
 			job_fail(bg_update_ptr->job_ptr->job_id);
 		}
 		unlock_slurmctld(job_write_lock);
-		slurm_mutex_unlock(&job_start_mutex);
 		return 0;
 	}
 	return 1;
@@ -529,7 +528,6 @@ static void _sync_agent(bg_update_t *bg_update_ptr)
 			job_fail(bg_update_ptr->job_ptr->job_id);
 		}
 		unlock_slurmctld(job_write_lock);
-		slurm_mutex_unlock(&job_start_mutex);
 		return;
 	}
 
