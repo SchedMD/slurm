@@ -82,7 +82,6 @@ static void	_job_queue_rec_del(void *x);
 static void *	_run_epilog(void *arg);
 static void *	_run_prolog(void *arg);
 static bool	_scan_depend(List dependency_list, uint32_t job_id);
-static int	_sort_job_queue(void *x, void *y);
 static int	_valid_feature_list(uint32_t job_id, List feature_list);
 static int	_valid_node_feature(char *feature);
 
@@ -568,12 +567,12 @@ extern int schedule(void)
  */
 extern void sort_job_queue(List job_queue)
 {
-	list_sort(job_queue, _sort_job_queue);
+	list_sort(job_queue, sort_job_queue2);
 }
 
 /* Note this differs from the ListCmpF typedef since we want jobs sorted
  *	in order of decreasing priority */
-static int _sort_job_queue(void *x, void *y)
+extern int sort_job_queue2(void *x, void *y)
 {
 	job_queue_rec_t *job_rec1 = (job_queue_rec_t *) x;
 	job_queue_rec_t *job_rec2 = (job_queue_rec_t *) y;
