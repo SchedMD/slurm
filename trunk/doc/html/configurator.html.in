@@ -154,11 +154,11 @@ function displayfile()
    "#FirstJobId=1 <br>" +
    "#GresPlugins= <br>" +
    "#GroupUpdateForce=0 <br>" +
-   "#GroupUpdateTime=600 <br>" 
+   "#GroupUpdateTime=600 <br>" +
    "#JobCheckpointDir=/var/slurm/checkpoint <br>" +
    get_field("JobCredentialPrivateKey", document.config.private_key) + "<br>" +
    get_field("JobCredentialPublicCertificate", document.config.public_key) + "<br>" +
-   "#JobFileAppend=0 <br>" ++
+   "#JobFileAppend=0 <br>" +
    "#JobRequeue=1 <br>" +
    "#JobSubmitPlugins=1 <br>" +
    "#KillOnBadExit=0 <br>" +
@@ -859,6 +859,6 @@ before terminating all remaining tasks. A value of zero indicates unlimited wait
 </FORM>
 <HR>
 <P class="footer">LLNL-WEB-402631<BR>
-Last modified 30 March 2010</P>
+Last modified 25 August 2010</P>
 </BODY>
 
