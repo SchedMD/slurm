@@ -1135,7 +1135,7 @@ extern int assoc_mgr_get_user_assocs(void *db_conn,
 {
 	ListIterator itr = NULL;
 	slurmdb_association_rec_t *found_assoc = NULL;
-	int set = 1;
+	int set = 0;
 	assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK,
 				   NO_LOCK, NO_LOCK, NO_LOCK };
 
