@@ -80,12 +80,9 @@
 #include "backfill.h"
 
 #ifndef BACKFILL_INTERVAL
-#  ifdef HAVE_BG
-#    define BACKFILL_INTERVAL	5
-#  else
-#    define BACKFILL_INTERVAL	10
-#  endif
+#  define BACKFILL_INTERVAL	30	
 #endif
+#define SLURMCTLD_THREAD_LIMIT	5
 
 typedef struct node_space_map {
 	time_t begin_time;
@@ -120,6 +117,7 @@ static void _diff_tv_str(struct timeval *tv1,struct timeval *tv2,
 		char *tv_str, int len_tv_str);
 static bool _job_is_completing(void);
 static void _load_config(void);
+static bool _many_pending_rpcs(void);
 static bool _more_work(time_t last_backfill_time);
 static void _my_sleep(int secs);
 static int  _num_feature_count(struct job_record *job_ptr);
@@ -175,7 +173,7 @@ static void _diff_tv_str(struct timeval *tv1,struct timeval *tv2,
  * _job_is_completing - Determine if jobs are in the process of completing.
  *	This is a variant of job_is_completing in slurmctld/job_scheduler.c.
  *	It always gives completing jobs at least 5 secs to complete.
- * RET - True of any job is in the process of completing
+ * RET - True if any job is in the process of completing
  */
 static bool _job_is_completing(void)
 {
@@ -200,6 +198,19 @@ static bool _job_is_completing(void)
 	list_iterator_destroy(job_iterator);
 
 	return completing;
+}
+
+/*
+ * _many_pending_rpcs - Determine if slurmctld is busy with many active RPCs
+ * RET - True if slurmctld currently has more than SLURMCTLD_THREAD_LIMIT
+ *	 active RPCs
+ */
+static bool _many_pending_rpcs(void)
+{
+	//info("thread_count = %u", slurmctld_config.server_thread_count);
+	if (slurmctld_config.server_thread_count > SLURMCTLD_THREAD_LIMIT)
+		return true;
+	return false;
 }
 
 /* test if job has feature count specification */
@@ -370,7 +381,7 @@ extern void *backfill_agent(void *args)
 	struct timeval tv1, tv2;
 	char tv_str[20];
 	time_t now;
-	double delay;
+	double wait_time;
 	static time_t last_backfill_time = 0;
 	/* Read config and partitions; Write jobs and nodes */
 	slurmctld_lock_t all_locks = {
@@ -386,9 +397,9 @@ extern void *backfill_agent(void *args)
 			_load_config();
 		}
 		now = time(NULL);
-		delay = difftime(now, last_backfill_time);
-		if ((delay < backfill_interval) ||
-		    _job_is_completing() || 
+		wait_time = difftime(now, last_backfill_time);
+		if ((wait_time < backfill_interval) ||
+		    _job_is_completing() || _many_pending_rpcs() ||
 		    !_more_work(last_backfill_time))
 			continue;
 

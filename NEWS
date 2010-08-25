@@ -35,6 +35,8 @@ documents those changes that are of interest to users and admins.
     if required locks are not immediately available. This will improve
     performance when heavy-weight functions such as backfill scheduler are
     running.
+ -- Change sched/backfill default time interval to 30 seconds and defer attempt
+    to backfill schedule if slurmctld has more than 5 active RPCs.
 
 * Changes in SLURM 2.2.0.pre9
 =============================
