@@ -2,7 +2,7 @@
  *  state_save.c - Keep saved slurmctld state current
  *****************************************************************************
  *  Copyright (C) 2004-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -49,6 +49,8 @@
 #include "src/slurmctld/reservation.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/trigger_mgr.h"
+
+#define SAVE_MAX_WAIT	5	/* Maximum time in seconds to wait for save */
 
 static pthread_mutex_t state_save_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  state_save_cond = PTHREAD_COND_INITIALIZER;
@@ -151,22 +153,32 @@ extern void shutdown_state_save(void)
  */
 extern void *slurmctld_state_save(void *no_data)
 {
+	time_t last_save = 0, now;
+	double save_delay;
 	bool run_save;
+	int save_count;
 
 	while (1) {
 		/* wait for work to perform */
 		slurm_mutex_lock(&state_save_lock);
 		while (1) {
-			if (save_jobs + save_nodes + save_parts +
-			    save_resv + save_triggers)
+			save_count = save_jobs + save_nodes + save_parts +
+				     save_resv + save_triggers;
+			now = time(NULL);
+			save_delay = difftime(now, last_save);
+			if (save_count &&
+			    (!run_save_thread ||
+			     (save_delay >= SAVE_MAX_WAIT))) {
+				last_save = now;
 				break;		/* do the work */
-			else if (!run_save_thread) {
+			} else if (!run_save_thread) {
 				run_save_thread = true;
 				slurm_mutex_unlock(&state_save_lock);
 				return NULL;	/* shutdown */
-			} else 			/* wait for more work */
+			} else {		/* wait for more work */
 				pthread_cond_wait(&state_save_cond,
-				                  &state_save_lock);
+				           	  &state_save_lock);
+			}
 		}
 
 		/* save job info if necessary */
