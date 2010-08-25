@@ -77,7 +77,12 @@ individually at job submit time, but defer it until a later time when
 scheduling multiple jobs simultaneously may be possible.
 This option may improve system responsiveness when large numbers of jobs
 (many hundreds) are submitted at the same time, but it will delay the
-initiation time of individual jobs.</li>
+initiation time of individual jobs.<br>
+The <i>sched/backfill</i> plugin has relatively high overhead if used with
+large numbers of job. Configuring <b>max_job_bf</b> to a modest size (say 100
+jobs or less) and <b>interval</b> to 30 seconds or more will limit the
+overhead of backfill scheduling (NOTE: the default values are fine for both
+of these parameters).</li>
 <li><b>SlurmctldPort</b>:
 It is desirable to configure the <b>slurmctld</b> daemon to accept incoming
 messages on more than one port in order to avoid having incoming messages
@@ -88,6 +93,6 @@ numbers of simultaneous requests are to be supported.</li>
 appropriate for your environment.</li>
 </ul>
 
-<p style="text-align:center;">Last modified 20 Aubust 2010</p>
+<p style="text-align:center;">Last modified 25 August 2010</p>
 
 <!--#include virtual="footer.txt"-->
