@@ -982,7 +982,10 @@ static void *_thread_per_group_rpc(void *args)
 			break;
 		default:
 			if (!srun_agent) {
-				errno = ret_data_info->err;
+				if (ret_data_info->err)
+					errno = ret_data_info->err;
+				else
+					errno = rc;
 				rc = _comm_err(ret_data_info->node_name);
 			}
 			if(srun_agent)
