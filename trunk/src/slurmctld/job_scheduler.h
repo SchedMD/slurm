@@ -143,6 +143,10 @@ extern void set_job_elig_time(void);
  */
 extern void sort_job_queue(List job_queue);
 
+/* Note this differs from the ListCmpF typedef since we want jobs sorted
+ *	in order of decreasing priority */
+extern int sort_job_queue2(void *x, void *y);
+
 /*
  * Determine if a job's dependencies are met
  * RET: 0 = no dependencies

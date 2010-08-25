@@ -388,6 +388,7 @@ extern void *backfill_agent(void *args)
 		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK };
 
 	_load_config();
+	last_backfill_time = time(NULL) + 30;
 	while (!stop_backfill) {
 		_my_sleep(backfill_interval);
 		if (stop_backfill)
@@ -421,7 +422,6 @@ static void _attempt_backfill(void)
 	bool filter_root = false;
 	List job_queue;
 	job_queue_rec_t *job_queue_rec;
-	ListIterator job_iterator;
 	int i, j, node_space_recs;
 	struct job_record *job_ptr;
 	struct part_record *part_ptr;
@@ -442,9 +442,6 @@ static void _attempt_backfill(void)
 	if (slurm_get_root_filter())
 		filter_root = true;
 
-	job_queue = build_job_queue();
-	sort_job_queue(job_queue);
-
 	node_space = xmalloc(sizeof(node_space_map_t) *
 			     (max_backfill_job_cnt + 3));
 	node_space[0].begin_time = now;
@@ -455,15 +452,15 @@ static void _attempt_backfill(void)
 	if (debug_flags & DEBUG_FLAG_BACKFILL)
 		_dump_node_space_table(node_space);
 
-	job_iterator = list_iterator_create(job_queue);
-	if (job_iterator == NULL)
-		fatal("list_iterator_create memory allocation failure");
-	while ((job_queue_rec = (job_queue_rec_t *) list_next(job_iterator))) {
+	job_queue = build_job_queue();
+	while ((job_queue_rec = (job_queue_rec_t *) 
+				list_pop_bottom(job_queue, sort_job_queue2))) {
 		job_ptr  = job_queue_rec->job_ptr;
+		part_ptr = job_queue_rec->part_ptr;
+		xfree(job_queue_rec);
 		if (!IS_JOB_PENDING(job_ptr))
 			continue;	/* started in other partition */
-		job_ptr->part_ptr = job_queue_rec->part_ptr;
-		part_ptr = job_ptr->part_ptr;
+		job_ptr->part_ptr = part_ptr;
 
 		if (debug_flags & DEBUG_FLAG_BACKFILL)
 			info("backfill test for job %u", job_ptr->job_id);
@@ -649,7 +646,6 @@ static void _attempt_backfill(void)
 			break;
 		}
 	}
-	list_iterator_destroy(job_iterator);
 	FREE_NULL_BITMAP(avail_bitmap);
 	FREE_NULL_BITMAP(resv_bitmap);
 
