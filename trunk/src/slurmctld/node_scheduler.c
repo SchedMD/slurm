@@ -751,10 +751,10 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 			avail_nodes = bit_set_count(avail_bitmap);
 			tried_sched = false;	/* need to test these nodes */
 
-			if ((shared || preempt_flag)	&&
-			    ((i+1) < node_set_size)	&&
-			    (node_set_ptr[i].weight ==
-			     node_set_ptr[i+1].weight)) {
+			if (((i+1) < node_set_size)	&&
+			    (shared || preempt_flag ||
+			     (node_set_ptr[i].weight ==
+			      node_set_ptr[i+1].weight))) {
 				/* Keep accumulating so we can pick the
 				 * most lightly loaded nodes */
 				continue;
