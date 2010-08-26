@@ -317,6 +317,15 @@ void format_core_allocs(slurm_cred_t *cred, char *node_name,
 			 uint32_t *job_mem_limit, uint32_t *step_mem_limit);
 
 /*
+ * Retrieve the job and step generic resources (gres) allocate to this job
+ * on this node.
+ *
+ * NOTE: Caller must destroy the returned lists
+ */
+extern void get_cred_gres(slurm_cred_t *cred, char *node_name,
+			  List *job_gres_list, List *step_gres_list);
+
+/*
  * Print a slurm job credential using the info() call
  */
 void slurm_cred_print(slurm_cred_t *cred);
