@@ -49,7 +49,7 @@ BATCH.</p>
 
 <p>Four variables must be defined in the <i>config.h</i> file:
 <i>APBASIL_LOC</i> (location of the <i>apbasil</i> command),
-<i>HAVE_FRONT_END</i>, <i>HAVE_CRAY_XT</i> and <i>HAVE_3D</i>.
+<i>HAVE_FRONT_END</i>, <i>HAVE_CRAY</i> and <i>HAVE_3D</i>.
 The <i>apbasil</i> command should automatically be found.
 If that is not the case, please notify us of its location on your system
 and we will add that to the search paths tested at configure time.

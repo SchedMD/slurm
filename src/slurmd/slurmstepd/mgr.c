@@ -1009,7 +1009,7 @@ _fork_all_tasks(slurmd_job_t *job)
 		return SLURM_ERROR;
 	}
 
-#ifdef HAVE_CRAY_XT
+#ifdef HAVE_CRAY
 	if (basil_resv_conf(job->resv_id, job->jobid)) {
 		error("could not confirm reservation");
 		return SLURM_ERROR;

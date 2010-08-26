@@ -170,9 +170,9 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
 		error("select_g_job_fini(%u): %m", job_ptr->job_id);
 	(void) epilog_slurmctld(job_ptr);
 
-#ifdef HAVE_CRAY_XT
+#ifdef HAVE_CRAY
 	basil_release(job_ptr);
-#endif /* HAVE_CRAY_XT */
+#endif /* HAVE_CRAY */
 
 	agent_args = xmalloc(sizeof(agent_arg_t));
 	if (timeout)
@@ -1144,14 +1144,14 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		goto cleanup;
 	}
 
-#ifdef HAVE_CRAY_XT
+#ifdef HAVE_CRAY
 	if (basil_reserve(job_ptr) != SLURM_SUCCESS) {
 		job_ptr->state_reason = WAIT_RESOURCES;
 		xfree(job_ptr->state_desc);
 		error_code = ESLURM_NODES_BUSY;
 		goto cleanup;
 	}
-#endif	/* HAVE_CRAY_XT */
+#endif	/* HAVE_CRAY */
 
 	/* This job may be getting requeued, clear vestigial
 	 * state information before over-writing and leaking

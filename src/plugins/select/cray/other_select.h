@@ -37,18 +37,20 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _NODE_SELECT_H
-#define _NODE_SELECT_H
+#ifndef _CRAY_OTHER_SELECT_H
+#define _CRAY_OTHER_SELECT_H
 
 #include <slurm/slurm.h>
 #include <slurm/slurm_errno.h>
+
+#include "src/common/slurm_xlator.h"	/* Must be first */
 #include "src/common/list.h"
 #include "src/slurmctld/slurmctld.h"
 
 /*
  * Initialize context for node selection plugin
  */
-extern int other_select_init(bool only_default);
+extern int other_select_init(void);
 
 /*
  * Terminate plugin and free all associated memory
@@ -284,12 +286,13 @@ extern char *other_select_jobinfo_xstrdup(select_jobinfo_t *jobinfo,
  * NODE-SPECIFIC SELECT CREDENTIAL MANAGEMENT FUNCIONS *
 \*******************************************************/
 
-extern int other_select_nodeinfo_pack(
-	select_nodeinfo_t *nodeinfo, Buf buffer, uint16_t protocol_version);
+extern int other_select_nodeinfo_pack(select_nodeinfo_t *nodeinfo,
+				      Buf buffer,
+				      uint16_t protocol_version);
 
-extern int other_select_nodeinfo_unpack(
-	select_nodeinfo_t **nodeinfo, Buf buffer,
-	uint16_t protocol_version);
+extern int other_select_nodeinfo_unpack(select_nodeinfo_t **nodeinfo,
+					Buf buffer,
+					uint16_t protocol_version);
 
 extern select_nodeinfo_t *other_select_nodeinfo_alloc(uint32_t size);
 
@@ -322,4 +325,4 @@ extern int other_pack_select_info(time_t last_query_time, Buf *buffer,
 /* Note reconfiguration or change in partition configuration */
 extern int other_reconfigure(void);
 
-#endif /*__SELECT_PLUGIN_API_H__*/
+#endif /* _CRAY_OTHER_SELECT_H */

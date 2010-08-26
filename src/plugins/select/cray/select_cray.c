@@ -51,14 +51,8 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include <slurm/slurm.h>
-#include <slurm/slurm_errno.h>
-
-#include "src/common/slurm_xlator.h"	/* Must be first */
 
 #include "other_select.h"
-
-#include "src/slurmctld/slurmctld.h"
 
 /* These are defined here so when we link with something other than
  * the slurmctld we will have these symbols defined.  They will get

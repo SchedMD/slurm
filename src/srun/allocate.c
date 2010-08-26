@@ -68,7 +68,7 @@
 #include "src/plugins/select/bluegene/wrap_rm_api.h"
 #endif
 
-#ifdef HAVE_CRAY_XT
+#ifdef HAVE_CRAY
 #include "src/common/node_select.h"
 #include "src/common/basil_resv_conf.h"
 #endif
@@ -106,7 +106,7 @@ static int _blocks_dealloc(void);
 static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc);
 #endif
 
-#ifdef HAVE_CRAY_XT
+#ifdef HAVE_CRAY
 static int  _claim_reservation(resource_allocation_response_msg_t *alloc);
 #endif
 
@@ -380,7 +380,7 @@ static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc)
 }
 #endif	/* HAVE_BG */
 
-#ifdef HAVE_CRAY_XT
+#ifdef HAVE_CRAY
 /* returns 1 if job and nodes are ready for job to begin, 0 otherwise */
 static int _claim_reservation(resource_allocation_response_msg_t *alloc)
 {
@@ -479,7 +479,7 @@ allocate_nodes(void)
 			goto relinquish;
 		}
 #endif
-#ifdef HAVE_CRAY_XT
+#ifdef HAVE_CRAY
 		if (!_claim_reservation(resp)) {
 			if(!destroy_job)
 				error("Something is wrong with the ALPS "

@@ -52,12 +52,11 @@
 #include <pthread.h>
 #include <dirent.h>
 
-#include "src/common/list.h"
+#include "other_select.h"
 #include "src/common/plugin.h"
 #include "src/common/plugrack.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xstring.h"
-#include "src/slurmctld/slurmctld.h"
 #include "src/common/node_select.h"
 
 /*
@@ -92,7 +91,7 @@ typedef struct other_select_ops {
 	int		(*nodeinfo_pack)       (select_nodeinfo_t *nodeinfo,
 						Buf buffer,
 						uint16_t protocol_version);
-	int		(*nodeinfo_unpack)     (void **nodeinfo,
+	int		(*nodeinfo_unpack)     (select_nodeinfo_t **nodeinfo,
 						Buf buffer,
 						uint16_t protocol_version);
 	select_nodeinfo_t *(*nodeinfo_alloc)   (uint32_t size);
@@ -118,7 +117,7 @@ typedef struct other_select_ops {
 	int             (*jobinfo_pack)        (select_jobinfo_t *jobinfo,
 						Buf buffer,
 						uint16_t protocol_version);
-	int             (*jobinfo_unpack)      (void **jobinfo_pptr,
+	int             (*jobinfo_unpack)      (select_jobinfo_t **jobinfo_pptr,
 						Buf buffer,
 						uint16_t protocol_version);
 	char *          (*jobinfo_sprint)      (select_jobinfo_t *jobinfo,
@@ -285,7 +284,7 @@ static int _other_select_context_destroy(other_select_context_t *c)
 /*
  * Initialize context for node selection plugin
  */
-extern int other_select_init()
+extern int other_select_init(void)
 {
 	int retval = SLURM_SUCCESS;
 	char *select_type = NULL;
@@ -548,9 +547,9 @@ extern int other_select_nodeinfo_pack(select_nodeinfo_t *nodeinfo,
 		(nodeinfo, buffer, protocol_version);
 }
 
-extern int other_select_nodeinfo_unpack(void **nodeinfo,
-					   Buf buffer,
-					   uint16_t protocol_version)
+extern int other_select_nodeinfo_unpack(select_nodeinfo_t **nodeinfo,
+					Buf buffer,
+					uint16_t protocol_version)
 {
 	if (other_select_init() < 0)
 		return SLURM_ERROR;
@@ -684,8 +683,9 @@ extern int other_select_jobinfo_pack(select_jobinfo_t *jobinfo,
  * RET         - slurm error code
  * NOTE: returned value must be freed using other_free_jobinfo
  */
-extern int other_select_jobinfo_unpack(
-	void **jobinfo, Buf buffer, uint16_t protocol_version)
+extern int other_select_jobinfo_unpack(select_jobinfo_t **jobinfo,
+				       Buf buffer,
+				       uint16_t protocol_version)
 {
 	if (other_select_init() < 0)
 		return SLURM_ERROR;
@@ -821,5 +821,3 @@ extern int other_reconfigure (void)
 
 	return (*(other_select_context->ops.reconfigure))();
 }
-
-

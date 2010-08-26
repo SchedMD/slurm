@@ -816,7 +816,7 @@ int read_slurm_conf(int recover, bool reconfig)
 	if (load_job_ret)
 		_acct_restore_active_jobs();
 
-#ifdef HAVE_CRAY_XT
+#ifdef HAVE_CRAY
 	basil_query();
 #endif
 

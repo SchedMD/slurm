@@ -1242,7 +1242,7 @@ static char **_build_env(struct job_record *job_ptr)
 				(const char **) job_ptr->spank_job_env);
 	}
 
-#ifdef HAVE_CRAY_XT
+#ifdef HAVE_CRAY
 	name = select_g_select_jobinfo_xstrdup(job_ptr->select_jobinfo,
 						SELECT_PRINT_RESV_ID);
 	setenvf(&my_env, "BASIL_RESERVATION_ID", "%s", name);
