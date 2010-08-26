@@ -52,6 +52,7 @@
 
 #include "src/common/eio.h"
 #include "src/common/fd.h"
+#include "src/common/gres.h"
 #include "src/common/log.h"
 #include "src/common/node_select.h"
 #include "src/common/slurm_jobacct_gather.h"
@@ -297,6 +298,9 @@ job_create(launch_tasks_request_msg_t *msg)
 					     job->job_mem);
 	}
 
+	get_cred_gres(msg->cred, conf->node_name,
+		      &job->job_gres_list, &job->step_gres_list);
+
 	list_append(job->sruns, (void *) srun);
 
 	_job_init_task_info(job, msg->global_task_ids[nodeid],
@@ -402,6 +406,9 @@ job_batch_job_create(batch_job_launch_msg_t *msg)
 					     job->step_mem);
 	} else if (job->job_mem)
 		jobacct_common_set_mem_limit(job->jobid, NO_VAL, job->job_mem);
+
+	get_cred_gres(msg->cred, conf->node_name,
+		      &job->job_gres_list, &job->step_gres_list);
 
 	srun = srun_info_create(NULL, NULL, NULL);
 

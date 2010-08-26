@@ -47,20 +47,21 @@
 #include <stdlib.h>
 #include <signal.h>
 
-#include "src/common/xmalloc.h"
-#include "src/common/xsignal.h"
+#include "src/common/gres.h"
 #include "src/common/slurm_jobacct_gather.h"
 #include "src/common/slurm_rlimits_info.h"
-#include "src/common/switch.h"
 #include "src/common/stepd_api.h"
+#include "src/common/switch.h"
+#include "src/common/xmalloc.h"
+#include "src/common/xsignal.h"
 
-#include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/common/slurmstepd_init.h"
 #include "src/slurmd/common/setproctitle.h"
 #include "src/slurmd/common/proctrack.h"
-#include "src/slurmd/slurmstepd/slurmstepd.h"
+#include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/slurmstepd/mgr.h"
 #include "src/slurmd/slurmstepd/req.h"
+#include "src/slurmd/slurmstepd/slurmstepd.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
 static int _init_from_slurmd(int sock, char **argv, slurm_addr_t **_cli,
@@ -371,12 +372,21 @@ _step_setup(slurm_addr_t *cli, slurm_addr_t *self, slurm_msg_t *msg)
 		fatal("handle_launch_message: Unrecognized launch RPC");
 		break;
 	}
-	if(!job) {
+
+	if (!job) {
 		error("_step_setup: no job returned");
 		return NULL;
 	}
+
 	job->jmgr_pid = getpid();
 	job->jobacct = jobacct_gather_g_create(NULL);
+
+	if (conf->debug_flags & DEBUG_FLAG_GRES) {
+		gres_plugin_job_state_log(job->job_gres_list, job->jobid);
+		gres_plugin_step_state_log(job->step_gres_list, job->jobid,
+					   job->stepid);
+	}
+	//gres_plugin_step_set_env(&job->env, job->step_gres_list);
 
 	/*
 	 * Add slurmd node topology informations to job env array
