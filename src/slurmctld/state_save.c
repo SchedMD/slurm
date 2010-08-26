@@ -50,7 +50,7 @@
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/trigger_mgr.h"
 
-#define SAVE_MAX_WAIT	5	/* Maximum time in seconds to wait for save */
+#define SAVE_MAX_WAIT	2	/* Maximum time in seconds to wait for save */
 
 static pthread_mutex_t state_save_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  state_save_cond = PTHREAD_COND_INITIALIZER;
@@ -175,6 +175,11 @@ extern void *slurmctld_state_save(void *no_data)
 				run_save_thread = true;
 				slurm_mutex_unlock(&state_save_lock);
 				return NULL;	/* shutdown */
+			} else if (save_count) { /* wait for a timeout */
+				struct timespec ts = {0, 0};
+				ts.tv_sec = now + 1;
+				pthread_cond_timedwait(&state_save_cond,
+				           	       &state_save_lock, &ts);
 			} else {		/* wait for more work */
 				pthread_cond_wait(&state_save_cond,
 				           	  &state_save_lock);
