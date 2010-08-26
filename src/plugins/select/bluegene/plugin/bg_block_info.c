@@ -217,7 +217,28 @@ extern int block_ready(struct job_record *job_ptr)
 extern void pack_block(bg_record_t *bg_record, Buf buffer,
 		       uint16_t protocol_version)
 {
-	if(protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
+	if(protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
+		packstr(bg_record->bg_block_id, buffer);
+#ifdef HAVE_BGL
+		packstr(bg_record->blrtsimage, buffer);
+#endif
+		pack_bit_fmt(bg_record->bitmap, buffer);
+		pack16((uint16_t)bg_record->conn_type, buffer);
+		packstr(bg_record->ionodes, buffer);
+		pack_bit_fmt(bg_record->ionode_bitmap, buffer);
+		pack32((uint32_t)bg_record->job_running, buffer);
+		packstr(bg_record->linuximage, buffer);
+		packstr(bg_record->mloaderimage, buffer);
+		packstr(bg_record->nodes, buffer);
+		pack32((uint32_t)bg_record->node_cnt, buffer);
+#ifdef HAVE_BGL
+		pack16((uint16_t)bg_record->node_use, buffer);
+#endif
+		packstr(bg_record->user_name, buffer);
+		packstr(bg_record->ramdiskimage, buffer);
+		packstr(bg_record->reason, buffer);
+		pack16((uint16_t)bg_record->state, buffer);
+	} else if(protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
 		packstr(bg_record->bg_block_id, buffer);
 #ifdef HAVE_BGL
 		packstr(bg_record->blrtsimage, buffer);
@@ -581,15 +602,7 @@ extern int update_block_list()
 	/* kill all the jobs from unexpectedly freed blocks */
 	while((freeit = list_pop(kill_job_list))) {
 		debug2("Trying to requeue job %d", freeit->jobid);
-		lock_slurmctld(job_write_lock);
-		if((rc = job_requeue(0, freeit->jobid,
-				     -1, (uint16_t)NO_VAL))) {
-			error("couldn't requeue job %u, failing it: %s",
-			      freeit->jobid,
-			      slurm_strerror(rc));
-			(void) job_fail(freeit->jobid);
-		}
-		unlock_slurmctld(job_write_lock);
+		bg_requeue_job(freeit->job_id, 0);
 		_destroy_kill_struct(freeit);
 	}
 

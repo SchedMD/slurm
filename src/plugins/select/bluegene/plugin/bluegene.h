@@ -136,6 +136,7 @@ extern void fini_bg(void);
 
 extern bool blocks_overlap(bg_record_t *rec_a, bg_record_t *rec_b);
 
+extern void bg_requeue_job(uint32_t job_id, bool wait_for_start);
 
 /* remove all users from a block but what is in user_name */
 /* Note return codes */

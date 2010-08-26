@@ -6428,7 +6428,47 @@ static int _unpack_block_info_members(block_info_t *block_info, Buf buffer,
 	char *bp_inx_str = NULL;
 	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 
-	if(protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
+	if(protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
+		safe_unpackstr_xmalloc(&block_info->bg_block_id,
+				       &uint32_tmp, buffer);
+		if(cluster_flags & CLUSTER_FLAG_BGL)
+			safe_unpackstr_xmalloc(&block_info->blrtsimage,
+					       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&bp_inx_str, &uint32_tmp, buffer);
+		if (bp_inx_str == NULL) {
+			block_info->bp_inx = bitfmt2int("");
+		} else {
+			block_info->bp_inx = bitfmt2int(bp_inx_str);
+			xfree(bp_inx_str);
+		}
+		safe_unpack16(&block_info->conn_type, buffer);
+		safe_unpackstr_xmalloc(&(block_info->ionodes),
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&bp_inx_str, &uint32_tmp, buffer);
+		if (bp_inx_str == NULL) {
+			block_info->ionode_inx = bitfmt2int("");
+		} else {
+			block_info->ionode_inx = bitfmt2int(bp_inx_str);
+			xfree(bp_inx_str);
+		}
+		safe_unpack32(&block_info->job_running, buffer);
+		safe_unpackstr_xmalloc(&block_info->linuximage,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&block_info->mloaderimage,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&(block_info->nodes), &uint32_tmp,
+				       buffer);
+		safe_unpack32(&block_info->node_cnt, buffer);
+		if(cluster_flags & CLUSTER_FLAG_BGL)
+			safe_unpack16(&block_info->node_use, buffer);
+		safe_unpackstr_xmalloc(&block_info->owner_name,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&block_info->ramdiskimage,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&block_info->reason,
+				       &uint32_tmp, buffer);
+		safe_unpack16(&block_info->state, buffer);
+	} else if(protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&block_info->bg_block_id,
 				       &uint32_tmp, buffer);
 		if(cluster_flags & CLUSTER_FLAG_BGL)
@@ -6479,7 +6519,68 @@ static void _pack_block_info_msg(block_info_t *block_info, Buf buffer,
 				 uint16_t protocol_version)
 {
 	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
-	if(protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
+	if(protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
+		if(!block_info) {
+			packnull(buffer);
+			if(cluster_flags & CLUSTER_FLAG_BGL)
+				packnull(buffer);
+			pack16((uint16_t)NO_VAL, buffer);
+			packnull(buffer);
+
+			packnull(buffer);
+			packnull(buffer);
+
+			pack32(NO_VAL, buffer);
+
+			packnull(buffer);
+			packnull(buffer);
+			packnull(buffer);
+			pack32(NO_VAL, buffer);
+			if(cluster_flags & CLUSTER_FLAG_BGL)
+				pack16((uint16_t)NO_VAL, buffer);
+			packnull(buffer);
+			packnull(buffer);
+			packnull(buffer);
+			pack16((uint16_t)NO_VAL, buffer);
+			return;
+		}
+
+		packstr(block_info->bg_block_id, buffer);
+		if(cluster_flags & CLUSTER_FLAG_BGL)
+			packstr(block_info->blrtsimage, buffer);
+
+		if(block_info->bp_inx) {
+			char *bitfmt = inx2bitfmt(block_info->bp_inx);
+			packstr(bitfmt, buffer);
+			xfree(bitfmt);
+		} else
+			packnull(buffer);
+
+		pack16(block_info->conn_type, buffer);
+
+		packstr(block_info->ionodes, buffer);
+
+		if(block_info->ionode_inx) {
+			char *bitfmt =
+				inx2bitfmt(block_info->ionode_inx);
+			packstr(bitfmt, buffer);
+			xfree(bitfmt);
+		} else
+			packnull(buffer);
+
+		pack32(block_info->job_running, buffer);
+
+		packstr(block_info->linuximage, buffer);
+		packstr(block_info->mloaderimage, buffer);
+		packstr(block_info->nodes, buffer);
+		pack32(block_info->node_cnt, buffer);
+		if(cluster_flags & CLUSTER_FLAG_BGL)
+			pack16(block_info->node_use, buffer);
+		packstr(block_info->owner_name, buffer);
+		packstr(block_info->ramdiskimage, buffer);
+		packstr(block_info->reason, buffer);
+		pack16(block_info->state, buffer);
+	} else if(protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
 		if(!block_info) {
 			packnull(buffer);
 			if(cluster_flags & CLUSTER_FLAG_BGL)
@@ -6501,42 +6602,43 @@ static void _pack_block_info_msg(block_info_t *block_info, Buf buffer,
 			packnull(buffer);
 			packnull(buffer);
 			pack16((uint16_t)NO_VAL, buffer);
-		} else {
-			packstr(block_info->bg_block_id, buffer);
-			if(cluster_flags & CLUSTER_FLAG_BGL)
-				packstr(block_info->blrtsimage, buffer);
-
-			if(block_info->bp_inx) {
-				char *bitfmt = inx2bitfmt(block_info->bp_inx);
-				packstr(bitfmt, buffer);
-				xfree(bitfmt);
-			} else
-				packnull(buffer);
-
-			pack16(block_info->conn_type, buffer);
-
-			packstr(block_info->ionodes, buffer);
-
-			if(block_info->ionode_inx) {
-				char *bitfmt =
-					inx2bitfmt(block_info->ionode_inx);
-				packstr(bitfmt, buffer);
-				xfree(bitfmt);
-			} else
-				packnull(buffer);
-
-			pack32(block_info->job_running, buffer);
-
-			packstr(block_info->linuximage, buffer);
-			packstr(block_info->mloaderimage, buffer);
-			packstr(block_info->nodes, buffer);
-			pack32(block_info->node_cnt, buffer);
-			if(cluster_flags & CLUSTER_FLAG_BGL)
-				pack16(block_info->node_use, buffer);
-			packstr(block_info->owner_name, buffer);
-			packstr(block_info->ramdiskimage, buffer);
-			pack16(block_info->state, buffer);
+			return;
 		}
+
+		packstr(block_info->bg_block_id, buffer);
+		if(cluster_flags & CLUSTER_FLAG_BGL)
+			packstr(block_info->blrtsimage, buffer);
+
+		if(block_info->bp_inx) {
+			char *bitfmt = inx2bitfmt(block_info->bp_inx);
+			packstr(bitfmt, buffer);
+			xfree(bitfmt);
+		} else
+			packnull(buffer);
+
+		pack16(block_info->conn_type, buffer);
+
+		packstr(block_info->ionodes, buffer);
+
+		if(block_info->ionode_inx) {
+			char *bitfmt =
+				inx2bitfmt(block_info->ionode_inx);
+			packstr(bitfmt, buffer);
+			xfree(bitfmt);
+		} else
+			packnull(buffer);
+
+		pack32(block_info->job_running, buffer);
+
+		packstr(block_info->linuximage, buffer);
+		packstr(block_info->mloaderimage, buffer);
+		packstr(block_info->nodes, buffer);
+		pack32(block_info->node_cnt, buffer);
+		if(cluster_flags & CLUSTER_FLAG_BGL)
+			pack16(block_info->node_use, buffer);
+		packstr(block_info->owner_name, buffer);
+		packstr(block_info->ramdiskimage, buffer);
+		pack16(block_info->state, buffer);
 	}
 }
 

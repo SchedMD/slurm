@@ -120,18 +120,16 @@ static int _init_status_pthread(void)
 		return SLURM_ERROR;
 	}
 
-	slurm_attr_init( &attr );
+	slurm_attr_init(&attr);
 	/* since we do a join on this later we don't make it detached */
-	if (pthread_create( &block_thread, &attr, block_agent, NULL)
-	    != 0)
+	if (pthread_create(&block_thread, &attr, block_agent, NULL))
 		error("Failed to create block_agent thread");
-	slurm_attr_init( &attr );
+	slurm_attr_init(&attr);
 	/* since we do a join on this later we don't make it detached */
-	if (pthread_create( &state_thread, &attr, state_agent, NULL)
-	    != 0)
+	if (pthread_create(&state_thread, &attr, state_agent, NULL))
 		error("Failed to create state_agent thread");
-	pthread_mutex_unlock( &thread_flag_mutex );
-	slurm_attr_destroy( &attr );
+	pthread_mutex_unlock(&thread_flag_mutex);
+	slurm_attr_destroy(&attr);
 
 	return SLURM_SUCCESS;
 }
@@ -768,7 +766,9 @@ extern int select_p_update_block(update_block_msg_t *block_desc_ptr)
 		return ESLURM_INVALID_BLOCK_NAME;
 	}
 
-	if(block_desc_ptr->state == RM_PARTITION_CONFIGURING)
+	if(block_desc_ptr->reason)
+		snprintf(reason, sizeof(reason), "%s", block_desc_ptr->reason);
+	else if(block_desc_ptr->state == RM_PARTITION_CONFIGURING)
 		snprintf(reason, sizeof(reason),
 			 "update_block: "
 			 "Admin recreated %s.", bg_record->bg_block_id);
@@ -784,13 +784,13 @@ extern int select_p_update_block(update_block_msg_t *block_desc_ptr)
 				 "Removed all blocks on midplane %s",
 				 bg_record->nodes);
 
-	} else {
+	} else
 		snprintf(reason, sizeof(reason),
 			 "update_block: "
 			 "Admin set block %s state to %s",
 			 bg_record->bg_block_id,
 			 bg_block_state_string(block_desc_ptr->state));
-	}
+
 	/* First fail any job running on this block */
 	if(bg_record->job_running > NO_JOB_RUNNING) {
 		slurm_fail_job(bg_record->job_running);
@@ -802,14 +802,17 @@ extern int select_p_update_block(update_block_msg_t *block_desc_ptr)
 		bg_record->job_ptr = NULL;
 	}
 
-	/* Free all overlapping blocks and kill any jobs only
-	 * if we are going into an error state */
-	if (bg_conf->layout_mode != LAYOUT_DYNAMIC
-	    && (block_desc_ptr->state == RM_PARTITION_ERROR)) {
+	if(block_desc_ptr->state == RM_PARTITION_ERROR) {
 		bg_record_t *found_record = NULL;
 		ListIterator itr;
 		List delete_list = list_create(NULL);
 
+		/* This loop shouldn't do much in regular Dynamic mode
+		   since there shouldn't be overlapped blocks.  But if
+		   there is a trouble block that isn't going away and
+		   we need to mark it in an error state there could be
+		   blocks overlapped where we need to requeue the jobs.
+		*/
 		itr = list_iterator_create(bg_lists->main);
 		while ((found_record = list_next(itr))) {
 			if (bg_record == found_record)
@@ -849,9 +852,6 @@ extern int select_p_update_block(update_block_msg_t *block_desc_ptr)
 		list_iterator_destroy(itr);
 		free_block_list(delete_list);
 		list_destroy(delete_list);
-	}
-
-	if(block_desc_ptr->state == RM_PARTITION_ERROR) {
 		slurm_mutex_unlock(&block_state_mutex);
 		put_block_in_error_state(bg_record, BLOCK_ERROR_STATE, reason);
 	} else if(block_desc_ptr->state == RM_PARTITION_FREE) {
