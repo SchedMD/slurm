@@ -2127,6 +2127,14 @@ By default a node has no generic resources.
 Also see \fBFeature\fR.
 
 .TP
+\fBPort\fR
+The port number that the SLURM compute node daemon, \fBslurmd\fR, listens
+to for work on this particular node. By default there is a single port number
+for all \fBslurmd\fR daemons on all compute nodes as defined by the 
+\fBSlurmdPort\fR configuration parameter. Use of this option is not generally
+recommended except for development or testing purposes.
+
+.TP
 \fBProcs\fR
 Number of logical processors on the node (e.g. "2").
 If \fBProcs\fR is omitted, it will set equal to the product of
