@@ -288,6 +288,9 @@ static int _set_assoc_parent_and_user(slurmdb_association_rec_t *assoc,
 		return SLURM_ERROR;
 	}
 
+	if(!assoc->usage)
+		assoc->usage = create_assoc_mgr_association_usage();
+
 	if(assoc->parent_id) {
 		/* To speed things up we are first looking if we have
 		   a parent_id to look for.  If that doesn't work see
@@ -318,6 +321,9 @@ static int _set_assoc_parent_and_user(slurmdb_association_rec_t *assoc,
 			list_iterator_destroy(itr);
 		}
 		if(assoc->usage->parent_assoc_ptr && setup_childern) {
+			if(!assoc->usage->parent_assoc_ptr->usage)
+				assoc->usage->parent_assoc_ptr->usage =
+					create_assoc_mgr_association_usage();
 			if(!assoc->usage->
 			   parent_assoc_ptr->usage->childern_list)
 				assoc->usage->
@@ -403,8 +409,6 @@ static int _post_association_list(List assoc_list)
 
 	//START_TIMER;
 	while((assoc = list_next(itr))) {
-		if(!assoc->usage)
-			assoc->usage = create_assoc_mgr_association_usage();
 		_set_assoc_parent_and_user(assoc, assoc_list, reset);
 		reset = 0;
 	}
