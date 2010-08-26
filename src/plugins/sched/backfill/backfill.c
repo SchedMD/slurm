@@ -80,7 +80,7 @@
 #include "backfill.h"
 
 #ifndef BACKFILL_INTERVAL
-#  define BACKFILL_INTERVAL	30	
+#  define BACKFILL_INTERVAL	30
 #endif
 #define SLURMCTLD_THREAD_LIMIT	5
 
