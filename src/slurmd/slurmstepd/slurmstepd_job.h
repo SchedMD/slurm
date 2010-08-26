@@ -204,6 +204,8 @@ typedef struct slurmd_job {
 	uint16_t       restart_cnt;	/* batch job restart count	*/
 	char	      *job_alloc_cores;	/* needed by the SPANK cpuset plugin */
 	char	      *step_alloc_cores;/* needed by the SPANK cpuset plugin */
+	List           job_gres_list;	/* Needed by GRES plugin */
+	List           step_gres_list;	/* Needed by GRES plugin */
 } slurmd_job_t;
 
 
