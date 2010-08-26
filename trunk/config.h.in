@@ -66,9 +66,6 @@
 /* Define if Cray system */
 #undef HAVE_CRAY
 
-/* Define if Cray XT system */
-#undef HAVE_CRAY_XT
-
 /* Define to 1 if you have the <curses.h> header file. */
 #undef HAVE_CURSES_H
 

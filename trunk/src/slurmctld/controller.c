@@ -1058,7 +1058,7 @@ static bool _wait_for_server_thread(void)
 				print_it = false;
 			}
 			pthread_cond_wait(&server_thread_cond,
-			                  &slurmctld_config.thread_count_lock);
+					  &slurmctld_config.thread_count_lock);
 		}
 	}
 	slurm_mutex_unlock(&slurmctld_config.thread_count_lock);
@@ -1345,7 +1345,7 @@ static void *_slurmctld_background(void *no_data)
 			last_health_check_time = now;
 			lock_slurmctld(node_write_lock);
 			run_health_check();
-#ifdef HAVE_CRAY_XT
+#ifdef HAVE_CRAY
 			basil_query();
 #endif
 			unlock_slurmctld(node_write_lock);
@@ -1360,7 +1360,7 @@ static void *_slurmctld_background(void *no_data)
 			ping_nodes();
 			unlock_slurmctld(node_write_lock);
 		} else if ((difftime(now, last_ping_node_time) >=
-			    ping_interval) && !is_ping_done() && 
+			    ping_interval) && !is_ping_done() &&
 			    !ping_msg_sent) {
 			/* log failure once per ping_nodes() call,
 			 * no error if node state update request
@@ -1832,7 +1832,7 @@ _init_pidfile(void)
 	uid_t uid     = slurmctld_conf.slurm_user_id;
 
 	if (strcmp(slurmctld_conf.slurmctld_pidfile,
-	           slurmctld_conf.slurmd_pidfile) == 0)
+		   slurmctld_conf.slurmd_pidfile) == 0)
 		error("SlurmctldPid == SlurmdPid, use different names");
 
 	if ((fd = create_pidfile(slurmctld_conf.slurmctld_pidfile)) < 0)

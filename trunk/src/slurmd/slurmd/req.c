@@ -1228,7 +1228,7 @@ _rpc_batch_job(slurm_msg_t *msg)
 		select_g_select_jobinfo_get(req->select_jobinfo,
 					    SELECT_JOBDATA_BLOCK_ID, &resv_id);
 #endif
-#ifdef HAVE_CRAY_XT
+#ifdef HAVE_CRAY
 		resv_id = select_g_select_jobinfo_xstrdup(req->select_jobinfo,
 					    SELECT_PRINT_RESV_ID);
 #endif
@@ -3212,7 +3212,7 @@ _rpc_abort_job(slurm_msg_t *msg)
 				    SELECT_JOBDATA_BLOCK_ID,
 				    &resv_id);
 #endif
-#ifdef HAVE_CRAY_XT
+#ifdef HAVE_CRAY
 	resv_id = select_g_select_jobinfo_xstrdup(req->select_jobinfo,
 				    SELECT_PRINT_RESV_ID);
 #endif
@@ -3400,7 +3400,7 @@ _rpc_terminate_job(slurm_msg_t *msg)
 				    SELECT_JOBDATA_BLOCK_ID,
 				    &resv_id);
 #endif
-#ifdef HAVE_CRAY_XT
+#ifdef HAVE_CRAY
 	resv_id = select_g_select_jobinfo_xstrdup(req->select_jobinfo,
 				    SELECT_PRINT_RESV_ID);
 #endif
@@ -3642,7 +3642,7 @@ _build_env(uint32_t jobid, uid_t uid, char *resv_id,
 #ifdef HAVE_BG
 		setenvf(&env, "MPIRUN_PARTITION", "%s", resv_id);
 #endif
-#ifdef HAVE_CRAY_XT
+#ifdef HAVE_CRAY
 		setenvf(&env, "BASIL_RESERVATION_ID", "%s", resv_id);
 #endif
 	}

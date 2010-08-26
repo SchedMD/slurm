@@ -140,10 +140,10 @@ struct node_record {
 	struct node_record *node_next;	/* next entry with same hash index */
 	uint32_t hilbert_integer;	/* Hilbert number based on node name,
 					 * no need to save/restore */
-#ifdef APBASIL_LOC
-	uint32_t basil_node_id;		/* Cray/BASIL node ID,
+#ifdef HAVE_CRAY
+	uint32_t basil_node_id;		/* Cray-XT BASIL node ID,
 					 * no need to save/restore */
-#endif	/* APBASIL_LOC */
+#endif	/* HAVE_CRAY */
 	dynamic_plugin_data_t *select_nodeinfo; /* opaque data structure,
 						 * use select_g_get_nodeinfo()
 						 * to access contents */

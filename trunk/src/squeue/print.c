@@ -618,9 +618,11 @@ int _print_job_reason_list(job_info_t * job, int width, bool right,
 	} else {
 		char *nodes = xstrdup(job->nodes);
 		char *ionodes = NULL;
-		select_g_select_jobinfo_get(job->select_jobinfo,
-					    SELECT_JOBDATA_IONODES,
-					    &ionodes);
+
+		if(params.cluster_flags & CLUSTER_FLAG_BG)
+			select_g_select_jobinfo_get(job->select_jobinfo,
+						    SELECT_JOBDATA_IONODES,
+						    &ionodes);
 		if(ionodes) {
 			xstrfmtcat(nodes, "[%s]", ionodes);
 			xfree(ionodes);
