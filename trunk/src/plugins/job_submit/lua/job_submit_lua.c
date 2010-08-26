@@ -228,7 +228,7 @@ static int _check_lua_script_function(const char *name)
 }
 
 /*
- *   Verify all required fuctions are defined in the proctrack/lua script
+ *   Verify all required functions are defined in the job_submit/lua script
  */
 static int _check_lua_script_functions()
 {
@@ -461,7 +461,7 @@ static int _create_lua_job_desc_table(struct job_descriptor *job_desc)
 /*
  *  NOTE: The init callback should never be called multiple times,
  *   let alone called from multiple threads. Therefore, locking
- *   is unecessary here.
+ *   is unnecessary here.
  */
 int init (void)
 {
@@ -518,10 +518,7 @@ int fini (void)
 }
 
 
-/* This example code will prevent users from setting an accounting frequency
- * of less than 30 seconds in order to insure more precise accounting.
- * Also remove any QOS value set by the user in order to use the default value
- * from the database. */
+/* Lua script hook called for "submit job" event. */
 extern int job_submit(struct job_descriptor *job_desc)
 {
 	int rc = SLURM_ERROR;
@@ -567,10 +564,7 @@ out:
 	return rc;
 }
 
-/* This example code will prevent users from setting an accounting frequency
- * of less than 30 seconds in order to insure more precise accounting.
- * Also remove any QOS value set by the user in order to use the default value
- * from the database. */
+/* Lua script hook called for "modify job" event. */
 extern int job_modify(struct job_descriptor *job_desc,
 		      struct job_record *job_ptr)
 {

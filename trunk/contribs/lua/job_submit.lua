@@ -23,12 +23,11 @@ function slurm_job_submit (job_desc)
    job_desc.min_nodes = min_nodes
    job_desc.account = account
 
-   return rc
+   return job_desc
 end
 
 function slurm_job_modify (job_desc)
-   local rc = slurm.SUCCESS
-   return rc
+   return job_desc
 end
 
 --########################################################################--
