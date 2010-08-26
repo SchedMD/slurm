@@ -2400,8 +2400,7 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 		/* Create new job allocation */
 		error_code = job_allocate(job_desc_msg,
 				job_desc_msg->immediate,
-				false, NULL,
-				false, uid, &job_ptr);
+				false, NULL, 0, uid, &job_ptr);
 		unlock_slurmctld(job_write_lock);
 		END_TIMER2("_slurm_rpc_submit_batch_job");
 	}
@@ -2425,6 +2424,7 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 		response_msg.msg_type = RESPONSE_SUBMIT_BATCH_JOB;
 		response_msg.data = &submit_msg;
 		slurm_send_node_msg(msg->conn_fd, &response_msg);
+		schedule();		/* has own locks */
 		schedule_job_save();	/* has own locks */
 		schedule_node_save();	/* has own locks */
 	}
