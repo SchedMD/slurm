@@ -152,7 +152,7 @@ function displayfile()
    get_field("Epilog",document.config.epilog) + "<br>" +
    "#PrologSlurmctld= <br>" +
    "#FirstJobId=1 <br>" +
-   "#GresPlugins= <br>" +
+   "#GresTypes= <br>" +
    "#GroupUpdateForce=0 <br>" +
    "#GroupUpdateTime=600 <br>" +
    "#JobCheckpointDir=/var/slurm/checkpoint <br>" +
@@ -223,7 +223,6 @@ function displayfile()
    "# <br>" +
    "# SCHEDULING <br>" +
    "#DefMemPerCPU=0 <br>" +
-   "#EnablePreemption=no <br>" +
    "FastSchedule=" + get_radio_value(document.config.fast_schedule) + "<br>" +
    "#MaxMemPerCPU=0 <br>" +
    "#SchedulerRootFilter=1 <br>" +
