@@ -31,10 +31,6 @@ documents those changes that are of interest to users and admins.
     select/cray plugin cons_res is the default.  To use linear add 'Linear' to
     SelectTypeParameters.
  -- Fixed bug where resizing jobs didn't correctly set used limits correctly.
- -- Add "try_lock" logic to slurmctld for background functions to be deferred
-    if required locks are not immediately available. This will improve
-    performance when heavy-weight functions such as backfill scheduler are
-    running.
  -- Change sched/backfill default time interval to 30 seconds and defer attempt
     to backfill schedule if slurmctld has more than 5 active RPCs. General
     improvements in logic scalability.
