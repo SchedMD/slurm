@@ -1178,9 +1178,10 @@ void format_core_allocs(slurm_cred_t *cred, char *node_name,
 			 char **job_alloc_cores, char **step_alloc_cores,
 			 uint32_t *job_mem_limit, uint32_t *step_mem_limit)
 {
+#ifdef HAVE_BG
+	xassert(cred);
 	xassert(job_alloc_cores);
 	xassert(step_alloc_cores);
-#ifdef HAVE_BG
 	*job_alloc_cores  = NULL;
 	*step_alloc_cores = NULL;
 	*job_mem_limit = cred->job_mem_limit & (~MEM_PER_CPU);
@@ -1195,6 +1196,9 @@ void format_core_allocs(slurm_cred_t *cred, char *node_name,
 	uint32_t	i, j, i_first_bit=0, i_last_bit=0;
 	uint32_t	job_core_cnt=0, step_core_cnt=0;
 
+	xassert(cred);
+	xassert(job_alloc_cores);
+	xassert(step_alloc_cores);
 	if (!(hset = hostset_create(cred->job_hostlist))) {
 		error("Unable to create job hostset: `%s'",
 		      cred->job_hostlist);
@@ -1269,6 +1273,48 @@ void format_core_allocs(slurm_cred_t *cred, char *node_name,
 	FREE_NULL_BITMAP(step_core_bitmap);
 	hostset_destroy(hset);
 #endif
+}
+
+/*
+ * Retrieve the job and step generic resources (gres) allocate to this job
+ * on this node.
+ *
+ * NOTE: Caller must destroy the returned lists
+ */
+extern void get_cred_gres(slurm_cred_t *cred, char *node_name,
+			  List *job_gres_list, List *step_gres_list)
+{
+	hostset_t	hset = NULL;
+	int		host_index = -1;
+
+	xassert(cred);
+	xassert(job_gres_list);
+	xassert(step_gres_list);
+
+	*job_gres_list  = NULL;
+	*step_gres_list = NULL;
+	if ((cred->job_gres_list == NULL) && (cred->step_gres_list == NULL))
+		return;
+
+	if (!(hset = hostset_create(cred->job_hostlist))) {
+		error("Unable to create job hostset: `%s'",
+		      cred->job_hostlist);
+		return;
+	}
+
+	host_index = hostset_find(hset, node_name);
+	if ((host_index < 0) || (host_index >= cred->job_nhosts)) {
+		error("Invalid host_index %d for job %u",
+		      host_index, cred->jobid);
+		hostset_destroy(hset);
+		return;
+	}
+
+	*job_gres_list = gres_plugin_job_state_extract(cred->job_gres_list,
+						       host_index);
+	*step_gres_list = gres_plugin_step_state_extract(cred->step_gres_list,
+							 host_index);
+	return;
 }
 
 void
