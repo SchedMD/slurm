@@ -653,7 +653,7 @@ static int _breakup_blocks(List block_list, List new_blocks,
 	int curr_bp_bit = -1;
 
 	if(bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
-		info("cpu_count= %d cnodes=%d o_free=%d o_small=%d",
+		info("cpu_count=%d cnodes=%d o_free=%d o_small=%d",
 		     request->procs, cnodes, only_free, only_small);
 
 	switch(cnodes) {

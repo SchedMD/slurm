@@ -1444,6 +1444,7 @@ typedef struct {
 	uint16_t node_use;
 	char *owner_name;
 	char *ramdiskimage;     /* RamDiskImage for this block */
+	char *reason;
 	uint16_t state;
 } block_info_t;
 

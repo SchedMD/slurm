@@ -110,6 +110,7 @@ extern void destroy_bg_record(void *object)
 		xfree(bg_record->linuximage);
 		xfree(bg_record->mloaderimage);
 		xfree(bg_record->ramdiskimage);
+		xfree(bg_record->reason);
 
 		xfree(bg_record);
 	}
@@ -420,6 +421,8 @@ extern void copy_bg_record(bg_record_t *fir_record, bg_record_t *sec_record)
 	sec_record->mloaderimage = xstrdup(fir_record->mloaderimage);
 	xfree(sec_record->ramdiskimage);
 	sec_record->ramdiskimage = xstrdup(fir_record->ramdiskimage);
+	xfree(sec_record->reason);
+	sec_record->reason = xstrdup(fir_record->reason);
 
 	sec_record->user_uid = fir_record->user_uid;
 	sec_record->state = fir_record->state;
@@ -640,19 +643,7 @@ extern void drain_as_needed(bg_record_t *bg_record, char *reason)
 	char *host = NULL;
 
 	if(bg_record->job_running > NO_JOB_RUNNING) {
-		int rc;
-		slurmctld_lock_t job_write_lock = {
-			NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
-		lock_slurmctld(job_write_lock);
-		debug2("Trying to requeue job %d", bg_record->job_running);
-		if((rc = job_requeue(0, bg_record->job_running,
-				     -1, (uint16_t)NO_VAL))) {
-			error("couldn't requeue job %u, failing it: %s",
-			      bg_record->job_running,
-			      slurm_strerror(rc));
-			job_fail(bg_record->job_running);
-		}
-		unlock_slurmctld(job_write_lock);
+		bg_requeue_job(bg_record->job_running, 0);
 		slurm_mutex_lock(&block_state_mutex);
 		if(remove_from_bg_list(bg_lists->job_running, bg_record)
 		   == SLURM_SUCCESS) {
@@ -1451,7 +1442,7 @@ extern int put_block_in_error_state(bg_record_t *bg_record,
 
 	xassert(bg_record);
 
-	/* only check this if the blocks are created, meaning this
+	/* Only check this if the blocks are created, meaning this
 	   isn't at startup.
 	*/
 	if(blocks_are_created) {
@@ -1489,6 +1480,7 @@ extern int put_block_in_error_state(bg_record_t *bg_record,
 	xfree(bg_record->target_name);
 	bg_record->user_name = xstrdup(bg_conf->slurm_user_name);
 	bg_record->target_name = xstrdup(bg_conf->slurm_user_name);
+	bg_record->reason = xstrdup(reason);
 
 	if (uid_from_string (bg_record->user_name, &pw_uid) < 0)
 		error("No such user: %s", bg_record->user_name);
@@ -1528,6 +1520,8 @@ extern int resume_block(bg_record_t *bg_record)
 #ifndef HAVE_BG_FILES
 	bg_record->state = RM_PARTITION_FREE;
 #endif
+	xfree(bg_record->reason);
+
 	last_bg_update = time(NULL);
 	_set_block_nodes_accounting(bg_record, NULL);
 

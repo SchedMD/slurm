@@ -63,7 +63,6 @@
 #include "src/common/xstring.h"
 #include "src/slurmctld/proc_req.h"
 #include "bluegene.h"
-#include "src/slurmctld/locks.h"
 
 #define MAX_POLL_RETRIES    220
 #define POLL_INTERVAL        3
@@ -91,7 +90,6 @@ typedef struct bg_update {
 static List bg_update_list = NULL;
 
 static pthread_mutex_t agent_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
-static pthread_mutex_t job_start_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t agent_cond = PTHREAD_COND_INITIALIZER;
 static int agent_cnt = 0;
 
@@ -288,17 +286,13 @@ static int _reset_block(bg_record_t *bg_record)
 	return rc;
 }
 
-/* job_start_mutex and block_state_mutex should be locked before
+/* block_state_mutex should be locked before
  * calling this function.  This should only be called in _start_agent.
  * RET 1 if exists 0 if not, and job is requeued.
  */
 static int _make_sure_block_still_exists(bg_update_t *bg_update_ptr,
 					 bg_record_t *bg_record)
 {
-	int rc = SLURM_SUCCESS;
-	slurmctld_lock_t job_write_lock = {
-		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
-
 	/* check to make sure this block still exists since
 	 * something could had happened and the block is no
 	 * longer in existance */
@@ -308,15 +302,7 @@ static int _make_sure_block_still_exists(bg_update_t *bg_update_ptr,
 		      "job %u requeueing if possible.",
 		      bg_update_ptr->bg_block_id,
 		      bg_update_ptr->job_ptr->job_id);
-		lock_slurmctld(job_write_lock);
-		if((rc = job_requeue(0, bg_update_ptr->job_ptr->job_id,
-				     -1, (uint16_t)NO_VAL))) {
-			error("couldn't requeue job %u, failing it: %s",
-			      bg_update_ptr->job_ptr->job_id,
-			      slurm_strerror(rc));
-			job_fail(bg_update_ptr->job_ptr->job_id);
-		}
-		unlock_slurmctld(job_write_lock);
+		bg_requeue_job(bg_update_ptr->job_ptr->job_id, 1);
 		return 0;
 	}
 	return 1;
@@ -508,25 +494,14 @@ static void _reset_block_list(List block_list)
 static void _sync_agent(bg_update_t *bg_update_ptr)
 {
 	bg_record_t * bg_record = NULL;
-	slurmctld_lock_t job_write_lock = {
-		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
 
 	slurm_mutex_lock(&block_state_mutex);
 	bg_record = find_bg_record_in_list(bg_lists->main,
 					   bg_update_ptr->bg_block_id);
 	if(!bg_record) {
-		int rc;
 		slurm_mutex_unlock(&block_state_mutex);
 		error("No block %s", bg_update_ptr->bg_block_id);
-		lock_slurmctld(job_write_lock);
-		if((rc = job_requeue(0, bg_update_ptr->job_ptr->job_id,
-				     -1, (uint16_t)NO_VAL))) {
-			error("couldn't requeue job %u, failing it: %s",
-			      bg_update_ptr->job_ptr->job_id,
-			      slurm_strerror(rc));
-			job_fail(bg_update_ptr->job_ptr->job_id);
-		}
-		unlock_slurmctld(job_write_lock);
+		bg_requeue_job(bg_update_ptr->job_ptr->job_id, 1);
 		return;
 	}
 
@@ -589,8 +564,7 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 	ListIterator itr;
 	List delete_list;
 	int requeue_job = 0;
-	slurmctld_lock_t job_write_lock = {
-		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
+	static pthread_mutex_t job_start_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 	slurm_mutex_lock(&job_start_mutex);
 
@@ -602,21 +576,7 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 		slurm_mutex_unlock(&block_state_mutex);
 		error("block %s not found in bg_lists->main",
 		      bg_update_ptr->bg_block_id);
-		/* wait for the slurmd to begin
-		   the batch script, slurm_fail_job()
-		   is a no-op if issued prior
-		   to the script initiation do clean up just
-		   incase the fail job isn't ran */
-		sleep(2);
-		lock_slurmctld(job_write_lock);
-		if((rc = job_requeue(0, bg_update_ptr->job_ptr->job_id,
-				     -1, (uint16_t)NO_VAL))) {
-			error("1 couldn't requeue job %u, failing it: %s",
-			      bg_update_ptr->job_ptr->job_id,
-			      slurm_strerror(rc));
-			job_fail(bg_update_ptr->job_ptr->job_id);
-		}
-		unlock_slurmctld(job_write_lock);
+		bg_requeue_job(bg_update_ptr->job_ptr->job_id, 1);
 		slurm_mutex_unlock(&job_start_mutex);
 		return;
 	}
@@ -631,8 +591,14 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 		return;
 	}
 	if(bg_record->state == RM_PARTITION_DEALLOCATING) {
+		/* Unlock the job_start_mutex to allow other jobs to
+		   start while we wait for this block to finish
+		   deallocating.
+		*/
+		slurm_mutex_unlock(&job_start_mutex);
 		debug("Block is in Deallocating state, waiting for free.");
 		bg_free_block(bg_record, 1, 1);
+		slurm_mutex_lock(&job_start_mutex);
 		/* no reason to reboot here since we are already
 		   deallocating */
 		bg_update_ptr->reboot = 0;
@@ -686,21 +652,7 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 		_reset_block(bg_record);
 
 		slurm_mutex_unlock(&block_state_mutex);
-		/* wait for the slurmd to begin
-		   the batch script, slurm_fail_job()
-		   is a no-op if issued prior
-		   to the script initiation do clean up just
-		   incase the fail job isn't ran */
-		sleep(2);
-		lock_slurmctld(job_write_lock);
-		if((rc = job_requeue(0, bg_update_ptr->job_ptr->job_id,
-				     -1, (uint16_t)NO_VAL))) {
-			error("2 couldn't requeue job %u, failing it: %s",
-			      bg_update_ptr->job_ptr->job_id,
-			      slurm_strerror(rc));
-			job_fail(bg_update_ptr->job_ptr->job_id);
-		}
-		unlock_slurmctld(job_write_lock);
+		bg_requeue_job(bg_update_ptr->job_ptr->job_id, 1);
 		slurm_mutex_unlock(&job_start_mutex);
 		return;
 	}
@@ -902,24 +854,7 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 			slurm_mutex_lock(&block_state_mutex);
 			_reset_block(bg_record);
 			slurm_mutex_unlock(&block_state_mutex);
-			sleep(2);
-			/* wait for the slurmd to begin
-			   the batch script, slurm_fail_job()
-			   is a no-op if issued prior
-			   to the script initiation do clean up just
-			   incase the fail job isn't ran */
-			lock_slurmctld(job_write_lock);
-			if((rc = job_requeue(
-				    0, bg_update_ptr->job_ptr->job_id,
-				    -1, (uint16_t)NO_VAL))) {
-				error("3 couldn't requeue job %u, "
-				      "failing it: %s",
-				      bg_update_ptr->job_ptr->job_id,
-				      slurm_strerror(rc));
-				job_fail(bg_update_ptr->job_ptr->job_id);
-			}
-			unlock_slurmctld(job_write_lock);
-
+			bg_requeue_job(bg_update_ptr->job_ptr->job_id, 1);
 			slurm_mutex_unlock(&job_start_mutex);
 			return;
 		}

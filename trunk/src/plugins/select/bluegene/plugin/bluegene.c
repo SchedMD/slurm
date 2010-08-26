@@ -39,12 +39,22 @@
 
 #include "bluegene.h"
 #include "defined_block.h"
-#include <stdio.h>
+#include "src/slurmctld/locks.h"
 
 #define MMCS_POLL_TIME 30	/* seconds between poll of MMCS for
 				 * down switches and nodes */
 #define BG_POLL_TIME 1	        /* seconds between poll of state
 				 * change in bg blocks */
+#define MAX_FREE_RETRIES           20 /* max number of
+					* FREE_SLEEP_INTERVALS to wait
+					* before putting a
+					* deallocating block into
+					* error state.
+					*/
+#define FREE_SLEEP_INTERVAL        3 /* When freeing a block wait this
+				      * long before looking at state
+				      * again.
+				      */
 
 #define _DEBUG 0
 
@@ -167,6 +177,28 @@ extern bool blocks_overlap(bg_record_t *rec_a, bg_record_t *rec_b)
 		return false;
 
 	return true;
+}
+
+/* block_state_mutex must be unlocked before calling this. */
+extern void bg_requeue_job(uint32_t job_id, bool wait_for_start)
+{
+	int rc;
+	slurmctld_lock_t job_write_lock = {
+		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
+
+	/* Wait for the slurmd to begin the batch script, slurm_fail_job()
+	   is a no-op if issued prior to the script initiation do
+	   clean up just incase the fail job isn't ran. */
+	if (wait_for_start)
+		sleep(2);
+
+	lock_slurmctld(job_write_lock);
+	if ((rc = job_requeue(0, job_id, -1, (uint16_t)NO_VAL))) {
+		error("Couldn't requeue job %u, failing it: %s",
+		      job_id, slurm_strerror(rc));
+		job_fail(job_id);
+	}
+	unlock_slurmctld(job_write_lock);
 }
 
 extern int remove_all_users(char *bg_block_id, char *user_name)
@@ -450,26 +482,23 @@ extern bg_record_t *find_org_in_bg_list(List my_list, bg_record_t *bg_record)
 
 extern int bg_free_block(bg_record_t *bg_record, bool wait, bool locked)
 {
-	int first=1;
-#ifdef HAVE_BG_FILES
 	int rc;
-#endif
+	int count = 0;
+
 	if(!bg_record) {
 		error("bg_free_block: there was no bg_record");
 		return SLURM_ERROR;
 	}
 
 	if(!locked)
-		first = 0;
+		slurm_mutex_lock(&block_state_mutex);
 
-	while (1) {
+	while (count < MAX_FREE_RETRIES) {
 		/* Here we don't need to check if the block is still
 		 * in exsistance since this function can't be called on
 		 * the same block twice.  It may
 		 * had already been removed at this point also.
 		 */
-		if(!first)
-			slurm_mutex_lock(&block_state_mutex);
 		if (bg_record->state != NO_VAL
 		    && bg_record->state != RM_PARTITION_FREE
 		    && bg_record->state != RM_PARTITION_DEALLOCATING) {
@@ -512,6 +541,7 @@ extern int bg_free_block(bg_record_t *bg_record, bool wait, bool locked)
 			}
 #else
 			bg_record->state = RM_PARTITION_FREE;
+//			bg_record->state = RM_PARTITION_DEALLOCATING;
 #endif
 		}
 
@@ -527,14 +557,51 @@ extern int bg_free_block(bg_record_t *bg_record, bool wait, bool locked)
 		   done.
 		*/
 		slurm_mutex_unlock(&block_state_mutex);
-		sleep(3);
-		first = 0;
+		sleep(FREE_SLEEP_INTERVAL);
+		count++;
+		slurm_mutex_lock(&block_state_mutex);
 	}
-	remove_from_bg_list(bg_lists->booted, bg_record);
+	rc = SLURM_SUCCESS;
+	/* If we have been trying for MAX_FREE_RETRIES we will put
+	   block in an error so the admin knows about it.
+	*/
+	if ((count >= MAX_FREE_RETRIES)
+	    && (bg_record->state != RM_PARTITION_FREE)
+	    && (bg_record->state != RM_PARTITION_ERROR)) {
+		update_block_msg_t block_msg;
+		char reason[200];
+		snprintf(reason, sizeof(reason),
+			 "Block %s not deallocating, putting in error state.",
+			 bg_record->bg_block_id);
+		/* If this block isn't in the main list anymore
+		   because we are trying to destroy it or something,
+		   we need to add it back.
+		*/
+		if(!block_ptr_exist_in_list(bg_lists->main, bg_record))
+			list_append(bg_lists->main, bg_record);
+
+		slurm_init_update_block_msg(&block_msg);
+		block_msg.bg_block_id = bg_record->bg_block_id;
+		block_msg.state = RM_PARTITION_ERROR;
+		block_msg.reason = reason;
+
+		slurm_mutex_unlock(&block_state_mutex);
+		/* FIX ME: If this is a small block we need to know
+		   the other blocks associated with the block so we
+		   don't create holes in a midplane.
+		*/
+		select_g_update_block(&block_msg);
+		slurm_mutex_lock(&block_state_mutex);
+		/* send an error since the block wasn't able to be
+		   freed */
+		rc = SLURM_ERROR;
+	} else if(bg_record->state == RM_PARTITION_FREE)
+		remove_from_bg_list(bg_lists->booted, bg_record);
+
 	if(!locked)
 		slurm_mutex_unlock(&block_state_mutex);
 
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 /* Free multiple blocks in parallel */
@@ -588,10 +655,8 @@ extern void *mult_free_block(void *args)
 extern void *mult_destroy_block(void *args)
 {
 	bg_record_t *bg_record = NULL;
-
-#ifdef HAVE_BG_FILES
 	int rc;
-#endif
+
 	slurm_mutex_lock(&freed_cnt_mutex);
 	if ((bg_lists->freeing == NULL)
 	    && ((bg_lists->freeing = list_create(destroy_bg_record)) == NULL))
@@ -633,15 +698,18 @@ extern void *mult_destroy_block(void *args)
 
 		if(bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
 			info("destroying %s", (char *)bg_record->bg_block_id);
-		if(bg_free_block(bg_record, 1, 0) == SLURM_ERROR) {
-			debug("there was an error");
-			goto already_here;
-		}
-		if(bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
-			info("done destroying");
+		rc = bg_free_block(bg_record, 1, 0);
+
 		slurm_mutex_lock(&block_state_mutex);
 		remove_from_bg_list(bg_lists->freeing, bg_record);
 		slurm_mutex_unlock(&block_state_mutex);
+		if(rc == SLURM_ERROR) {
+			/* If there was an error the bg_record was
+			   added back to the main list */
+			debug("there was an error");
+			goto already_here;
+		} else if(bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
+			info("done destroying");
 
 #ifdef HAVE_BG_FILES
 		if(bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)

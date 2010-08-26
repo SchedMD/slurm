@@ -103,6 +103,7 @@ typedef struct bg_record {
 					   pointer to the original */
 	char *ramdiskimage;             /* RamDiskImage/IoloadImg for
 					 * this block */
+	char *reason;                   /* reason block is in error state */
 	rm_partition_state_t state;     /* Current state of the block */
 	int start[HIGHEST_DIMENSIONS];  /* start node */
 	int switch_count;               /* number of switches used. */
