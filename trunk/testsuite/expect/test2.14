@@ -70,6 +70,7 @@ $scontrol update JobId=\${SLURM_JOBID} NumNodes=1
 . slurm_job_\${SLURM_JOBID}_resize.sh
 $scontrol show job \${SLURM_JOBID} >>${file_out2}
 $srun -l $bin_id
+$bin_rm -f slurm_job_\${SLURM_JOBID}_resize.csh
 $bin_rm -f slurm_job_\${SLURM_JOBID}_resize.sh"
 
 #
