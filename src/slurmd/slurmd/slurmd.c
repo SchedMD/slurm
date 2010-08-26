@@ -815,6 +815,7 @@ _read_config(void)
 	_free_and_set(&conf->task_epilog, xstrdup(cf->task_epilog));
 	_free_and_set(&conf->pubkey,   path_pubkey);
 
+	conf->debug_flags = cf->debug_flags;
 	conf->propagate_prio = cf->propagate_prio_process;
 	conf->job_acct_gather_freq = cf->job_acct_gather_freq;
 
