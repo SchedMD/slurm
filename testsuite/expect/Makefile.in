@@ -346,6 +346,8 @@ EXTRA_DIST = \
 	test1.59			\
 	test1.60			\
 	test1.61			\
+	test1.62			\
+	test1.62.bash			\
 	test1.80			\
 	test1.81			\
 	test1.82			\
