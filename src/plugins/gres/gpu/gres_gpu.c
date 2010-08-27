@@ -73,8 +73,10 @@
 
 #include "src/common/slurm_xlator.h"
 #include "src/common/bitstring.h"
+#include "src/common/env.h"
 #include "src/common/gres.h"
 #include "src/common/list.h"
+#include "src/common/xstring.h"
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -132,4 +134,37 @@ extern int node_config_load(List gres_conf_list)
 	if (rc != SLURM_SUCCESS)
 		fatal("%s failed to load configuration", plugin_name);
 	return rc;
+}
+
+/*
+ * Set environment variables as appropriate for a job (i.e. all tasks) based
+ * upon the job step's GRES state.
+ */
+extern void step_set_env(char ***job_env_ptr, void *gres_ptr)
+{
+	int i, len;
+	char *dev_list = NULL;
+	gres_step_state_t *gres_step_ptr = (gres_step_state_t *) gres_ptr;
+
+	if ((gres_step_ptr->node_cnt == 1) &&
+	    (gres_step_ptr->gres_bit_alloc != NULL) &&
+	    (gres_step_ptr->gres_bit_alloc[0] != NULL)) {
+		len = bit_size(gres_step_ptr->gres_bit_alloc[0]);
+		for (i=0; i<len; i++) {
+			if (!bit_test(gres_step_ptr->gres_bit_alloc[0], i))
+				continue;
+			if (!dev_list)
+				dev_list = xmalloc(128);
+			else
+				xstrcat(dev_list, ",");
+			xstrfmtcat(dev_list, "%d", i);
+		}
+	}
+	if (dev_list) {
+		env_array_overwrite(job_env_ptr,"CUDA_VISIBLE_DEVICES",
+				    dev_list);
+		xfree(dev_list);
+	} else {
+		env_array_overwrite(job_env_ptr,"CUDA_VISIBLE_DEVICES", "");
+	}
 }

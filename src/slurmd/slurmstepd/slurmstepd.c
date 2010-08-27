@@ -386,7 +386,7 @@ _step_setup(slurm_addr_t *cli, slurm_addr_t *self, slurm_msg_t *msg)
 		gres_plugin_step_state_log(job->step_gres_list, job->jobid,
 					   job->stepid);
 	}
-	//gres_plugin_step_set_env(&job->env, job->step_gres_list);
+	gres_plugin_step_set_env(&job->env, job->step_gres_list);
 
 	/*
 	 * Add slurmd node topology informations to job env array
