@@ -46,6 +46,20 @@
  * the slurmctld we will have these symbols defined.  They will get
  * overwritten when linking with the slurmctld.
  */
+#if defined (__APPLE__)
+slurm_ctl_conf_t slurmctld_conf __attribute__((weak_import));
+struct node_record *node_record_table_ptr  __attribute__((weak_import)) = NULL;
+int bg_recover __attribute__((weak_import)) = NOT_FROM_CONTROLLER;
+List part_list  __attribute__((weak_import)) = NULL;
+int node_record_count __attribute__((weak_import));
+time_t last_node_update __attribute__((weak_import));
+time_t last_job_update __attribute__((weak_import));
+char *alpha_num  __attribute__((weak_import)) =
+	"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+void *acct_db_conn  __attribute__((weak_import)) = NULL;
+char *slurmctld_cluster_name  __attribute__((weak_import)) = NULL;
+slurmdb_cluster_rec_t *working_cluster_rec  __attribute__((weak_import)) = NULL;
+#else
 slurm_ctl_conf_t slurmctld_conf;
 struct node_record *node_record_table_ptr = NULL;
 int bg_recover = NOT_FROM_CONTROLLER;
@@ -57,6 +71,7 @@ char *alpha_num = (char *)"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 void *acct_db_conn = NULL;
 char *slurmctld_cluster_name = NULL;
 slurmdb_cluster_rec_t *working_cluster_rec = NULL;
+#endif
 
 /* In C++ const objects have internal linkage by default so we have to
  * do an extra extern here to make them export correctly.
