@@ -758,7 +758,7 @@ static int _reconfigure_slurm(void)
 	trigger_reconfig();
 	slurm_sched_partition_change();	/* notify sched plugin */
 	priority_g_reconfig();          /* notify priority plugin too */
-	schedule();			/* has its own locks */
+	schedule(100);			/* has its own locks */
 	save_all_state();
 
 	return rc;
@@ -1411,7 +1411,7 @@ static void *_slurmctld_background(void *no_data)
 		if (difftime(now, last_sched_time) >= PERIODIC_SCHEDULE) {
 			now = time(NULL);
 			last_sched_time = now;
-			if (schedule())
+			if (schedule(INFINITE))
 				last_checkpoint_time = 0; /* force state save */
 			set_job_elig_time();
 		}

@@ -130,20 +130,23 @@ void slurm_sched_plugin_job_is_pending( void )
 	List job_queue;
 	job_queue_rec_t *job_queue_rec;
 	List preemptee_candidates = NULL;
-	ListIterator job_iterator;
 	struct job_record *job_ptr;
 	struct part_record *part_ptr;
 	bitstr_t *avail_bitmap = NULL;
 	uint32_t max_nodes, min_nodes, req_nodes;
-	time_t now = time(NULL);
+	time_t now = time(NULL), sched_start;
+	static int sched_timeout = 0;
+
+	sched_start = now;
+	if (sched_timeout == 0) {
+		sched_timeout = slurm_get_msg_timeout() / 2;
+		sched_timeout = MAX(sched_timeout, 1);
+		sched_timeout = MIN(sched_timeout, 10);
+	}
 
 	job_queue = build_job_queue();
-	sort_job_queue(job_queue);
-
-	job_iterator = list_iterator_create(job_queue);
-	if (job_iterator == NULL)
-                fatal("list_iterator_create memory allocation failure");
-	while ((job_queue_rec = (job_queue_rec_t *) list_next(job_iterator))) {
+	while ((job_queue_rec = (job_queue_rec_t *) 
+				list_pop_bottom(job_queue, sort_job_queue2))) {
 		job_ptr  = job_queue_rec->job_ptr;
 		if (job_queue_rec->part_ptr != job_ptr->part_ptr)
 			continue;	/* Only test one partition */
@@ -181,8 +184,12 @@ void slurm_sched_plugin_job_is_pending( void )
 				       preemptee_candidates, NULL);
 
 		FREE_NULL_BITMAP(avail_bitmap);
+
+		if ((time(NULL) - sched_start) >= sched_timeout) {
+			debug("backfill: loop taking to long, breaking out");
+			break;
+		}
 	}
-	list_iterator_destroy(job_iterator);
 	list_destroy(job_queue);
 }
 

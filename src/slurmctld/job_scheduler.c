@@ -298,17 +298,19 @@ static bool _failed_partition(struct part_record *part_ptr,
  * schedule - attempt to schedule all pending jobs
  *	pending jobs for each partition will be scheduled in priority
  *	order until a request fails
+ * IN job_limit - maximum number of jobs to test now, avoid testing the full
+ *		  queue on every job submit
  * RET count of jobs scheduled
  * Note: We re-build the queue every time. Jobs can not only be added
  *	or removed from the queue, but have their priority or partition
  *	changed with the update_job RPC. In general nodes will be in priority
  *	order (by submit time), so the sorting should be pretty fast.
  */
-extern int schedule(void)
+extern int schedule(uint32_t job_limit)
 {
 	List job_queue = NULL;
-	ListIterator job_iterator;
 	int error_code, failed_part_cnt = 0, job_cnt = 0;
+	uint32_t job_depth = 0;
 	job_queue_rec_t *job_queue_rec;
 	struct job_record *job_ptr;
 	struct part_record **failed_parts = NULL;
@@ -324,10 +326,11 @@ extern int schedule(void)
 	static bool sched_test = false;
 	static bool wiki_sched = false;
 	static int sched_timeout = 0;
-	time_t now = time(NULL);
+	time_t now = time(NULL), sched_start;
 
 	DEF_TIMERS;
 
+	sched_start = now;
 	if (sched_timeout == 0) {
 		sched_timeout = slurm_get_msg_timeout() / 2;
 		sched_timeout = MAX(sched_timeout, 1);
@@ -356,19 +359,24 @@ extern int schedule(void)
 		       "completing");
 		return SLURM_SUCCESS;
 	}
-	debug("sched: Running job scheduler");
-	job_queue = build_job_queue();
-	sort_job_queue(job_queue);
 
 	failed_parts = xmalloc(sizeof(struct part_record *) *
 			       list_count(part_list));
 	save_avail_node_bitmap = bit_copy(avail_node_bitmap);
 
-	debug3("sched: Processing job queue...");
-	job_iterator = list_iterator_create(job_queue);
-	if (job_iterator == NULL)
-		fatal("list_iterator_create memory allocation failure");
-	while ((job_queue_rec = (job_queue_rec_t *) list_next(job_iterator))) {
+	debug("sched: Running job scheduler");
+	job_queue = build_job_queue();
+	while ((job_queue_rec = (job_queue_rec_t *) 
+				list_pop_bottom(job_queue, sort_job_queue2))) {
+		if ((time(NULL) - sched_start) >= sched_timeout) {
+			debug("sched: loop taking too long, breaking out");
+			break;
+		}
+		if (job_depth++ > job_limit) {
+			debug3("sched: already tested %u jobs, breaking out",
+			       job_depth);
+			break;
+		}
 		job_ptr = job_queue_rec->job_ptr;
 		if (!IS_JOB_PENDING(job_ptr))
 			continue;	/* started in other partition */
@@ -544,13 +552,7 @@ extern int schedule(void)
 				delete_job_details(job_ptr);
 			}
 		}
-
-		if ((time(NULL) - now) >= sched_timeout) {
-			debug("sched: loop taking too long, breaking out");
-			break;
-		}
 	}
-	list_iterator_destroy(job_iterator);
 
 	FREE_NULL_BITMAP(avail_node_bitmap);
 	avail_node_bitmap = save_avail_node_bitmap;
