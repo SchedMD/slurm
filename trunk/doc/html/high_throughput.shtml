@@ -11,7 +11,7 @@ for this material.</p>
 
 <h2>Performance Results</h2>
 
-<p>SLURM has also been validated to process 60,000 jobs and job steps per hour
+<p>SLURM has also been validated to process 100,000 jobs and job steps per hour
 on a sustained basis with short bursts of activity at a much higher level.
 Actual performance depends upon the jobs to be executed plus the hardware and
 configuration used.</p>
@@ -93,6 +93,6 @@ numbers of simultaneous requests are to be supported.</li>
 appropriate for your environment.</li>
 </ul>
 
-<p style="text-align:center;">Last modified 25 August 2010</p>
+<p style="text-align:center;">Last modified 27 August 2010</p>
 
 <!--#include virtual="footer.txt"-->
