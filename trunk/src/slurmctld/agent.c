@@ -740,7 +740,7 @@ finished:	;
 	if (run_scheduler) {
 		run_scheduler = false;
 		/* below functions all have their own locking */
-		if (schedule())	{
+		if (schedule(100))	{
 			schedule_job_save();
 			schedule_node_save();
 		}

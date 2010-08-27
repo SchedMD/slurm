@@ -257,7 +257,7 @@ static int	_start_job(uint32_t jobid, int task_cnt, char *hostlist,
 		return rc;
 
 	/* No errors so far */
-	(void) schedule();	/* provides own locking */
+	(void) schedule(INFINITE);	/* provides own locking */
 
 	/* Check to insure the job was actually started */
 	lock_slurmctld(job_write_lock);

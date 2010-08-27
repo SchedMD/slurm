@@ -123,13 +123,15 @@ extern void rebuild_job_part_list(struct job_record *job_ptr);
  * schedule - attempt to schedule all pending jobs
  *	pending jobs for each partition will be scheduled in priority
  *	order until a request fails
+ * IN job_limit - maximum number of jobs to test now, avoid testing the full
+ *		  queue on every job submit
  * RET count of jobs scheduled
  * Note: We re-build the queue every time. Jobs can not only be added
  *	or removed from the queue, but have their priority or partition
  *	changed with the update_job RPC. In general nodes will be in priority
  *	order (by submit time), so the sorting should be pretty fast.
  */
-extern int schedule(void);
+extern int schedule(uint32_t job_limit);
 
 /*
  * set_job_elig_time - set the eligible time for pending jobs once their
