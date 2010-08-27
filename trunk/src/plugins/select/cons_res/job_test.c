@@ -1153,8 +1153,8 @@ static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 				 * requested nodes here we will still give
 				 * them and then the step layout will sort
 				 * things out. */
-				if ((job_ptr->details->shared != 0)
-				    && (avail_cpus > rem_cpus))
+				if ((job_ptr->details->shared != 0) &&
+				    (avail_cpus > rem_cpus))
 					avail_cpus = rem_cpus;
 
 				total_cpus += avail_cpus;
@@ -1187,8 +1187,8 @@ static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 				 * requested nodes here we will still give
 				 * them and then the step layout will sort
 				 * things out. */
-				if ((job_ptr->details->shared != 0)
-				    && (avail_cpus > rem_cpus))
+				if ((job_ptr->details->shared != 0) &&
+				    (avail_cpus > rem_cpus))
 					avail_cpus = rem_cpus;
 
 				total_cpus += avail_cpus;
@@ -1267,8 +1267,8 @@ static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 				 * requested nodes here we will still give
 				 * them and then the step layout will sort
 				 * things out. */
-				if ((job_ptr->details->shared != 0)
-				    && (avail_cpus > rem_cpus))
+				if ((job_ptr->details->shared != 0) &&
+				    (avail_cpus > rem_cpus))
 					avail_cpus = rem_cpus;
 
 				total_cpus += avail_cpus;
@@ -1694,7 +1694,7 @@ static int _eval_nodes_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 				/* we are looking for additional nodes */
 				/* to fulfill rem_nodes request */
 				if ( bfsize > 0 )
-					cpu_cnt[bfloc] = bfsize ;
+					cpu_cnt[bfloc] = bfsize;
 			}
 
 			/* enforce the max_cpus limit */
