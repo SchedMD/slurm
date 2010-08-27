@@ -381,12 +381,16 @@ _step_setup(slurm_addr_t *cli, slurm_addr_t *self, slurm_msg_t *msg)
 	job->jmgr_pid = getpid();
 	job->jobacct = jobacct_gather_g_create(NULL);
 
+	/* Establish GRES environment variables */
 	if (conf->debug_flags & DEBUG_FLAG_GRES) {
 		gres_plugin_job_state_log(job->job_gres_list, job->jobid);
 		gres_plugin_step_state_log(job->step_gres_list, job->jobid,
 					   job->stepid);
 	}
-	gres_plugin_step_set_env(&job->env, job->step_gres_list);
+	if (msg->msg_type == REQUEST_BATCH_JOB_LAUNCH)
+		gres_plugin_job_set_env(&job->env, job->job_gres_list);
+	else if (msg->msg_type == REQUEST_LAUNCH_TASKS)
+		gres_plugin_step_set_env(&job->env, job->step_gres_list);
 
 	/*
 	 * Add slurmd node topology informations to job env array
