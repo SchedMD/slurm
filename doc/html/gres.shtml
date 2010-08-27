@@ -86,16 +86,15 @@ requested at job submit time using the <I>--gres</I> option supported by
 the <I>salloc</I>, <I>sbatch</I> and <I>srun</I> commands. The option
 requires an argument specifying which generic resources are required and
 how many resources. The resource specification is of the form
-<I>name[:count[</I>*cpu<I>]]</I>. The <I>name</I> is the same name as
+<I>name[:count]</I>. The <I>name</I> is the same name as
 specified by the <I>GresPlugins</I> and <I>Gres</I> configuration parameters.
 <I>count</I> specifies how many resources are required and has a default
-value of 1. <I>*cpu</I> indicates that the resource count specified is per
-allocated CPU, otherwise the count is per allocated node. For example:
-<I>sbatch --gres=gpu:2*cpu,nic:1 ...</I>.</P>
+value of 1. For example:<BR> 
+<I>sbatch --gres=gpu:2 ...</I>.</P>
 
 <P>Jobs will be allocated specific generic resources as needed to satisfy
-the request. If the job is suspended, those resources typically become available
-for use by other jobs (plugin dependent).</P>
+the request. If the job is suspended, those resources do not become available
+for use by other jobs.</P>
 
 <P>Job steps can be allocated generic resources from those allocated to the
 job using the <I>--gres</I> option with the <I>srun</I> command as described
@@ -109,12 +108,41 @@ simple example is shown below.</P>
 #!/bin/bash
 #
 # gres_test.bash
-# Submit as follows: sbatch --gres=gpu:2 -n4 -N1-1 gres_test.bash
+# Submit as follows:
+# sbatch --gres=gpu:4 -n4 -N1-1 gres_test.bash
 #
-srun --gres=gpu:1 -n2 --exclusive job_1 &
-srun --gres=gpu:1 -n2 --exclusive job_2 &
+srun --gres=gpu:2 -n2 --exclusive show_device.sh &
+srun --gres=gpu:1 -n1 --exclusive show_device.sh &
+srun --gres=gpu:1 -n1 --exclusive show_device.sh &
 wait
 </PRE>
+
+<!-------------------------------------------------------------------------->
+<h2>GPU Management</h2>
+
+<P>In the case of SLURM's GRES plugin for GPUs, the environment variable
+CUDA_VISIBLE_DEVICES is set for each job steps to determine which GPUs are
+available for its use. CUDA version 3.1 (or higher) uses this environment
+variable in order to run multiple jobs or job steps on a node with GPUs
+and insure that the resources assigned to each are unique. In the example
+above, the allocated node may have four or more graphics devices. In that
+case, CUDA_VISIBLE_DEVICES will reference unique devices for each file and
+the output might resemble this:</P>
+
+<PRE>
+JobStep=1234.0 CUDA_VISIBLE_DEVICES=0,1
+JobStep=1234.1 CUDA_VISIBLE_DEVICES=2
+JobStep=1234.2 CUDA_VISIBLE_DEVICES=3
+</PRE>
+
+<P>NOTE: Be sure to specify the <I>File</I> parameters in the <I>gres.conf</I>
+file and insure they are in the increasing numeric order.</P>
+<!-------------------------------------------------------------------------->
+<h2>Future</h2>
+
+<P>Our plans for the near future call for integrating SLURM GRES support with
+Linux <I>cgroups</I> in order to remove access to devices not allocated to
+a job or job step.</P>
 <!-------------------------------------------------------------------------->
 
 <p style="text-align: center;">Last modified 29 August 2010</p>
