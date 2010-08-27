@@ -133,3 +133,12 @@ extern int node_config_load(List gres_conf_list)
 		fatal("%s failed to load configuration", plugin_name);
 	return rc;
 }
+
+/*
+ * Set environment variables as appropriate for a job (i.e. all tasks) based
+ * upon the job step's GRES state.
+ */
+extern void step_set_env(char ***job_env_ptr, void *gres_ptr)
+{
+	/* EMPTY */
+}
