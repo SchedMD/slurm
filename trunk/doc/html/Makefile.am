@@ -19,6 +19,7 @@ generated_html = \
 	faq.html \
 	gang_scheduling.html \
 	gres.html \
+	gres_plugins.html \
 	help.html \
 	high_throughput.html \
 	ibm.html \

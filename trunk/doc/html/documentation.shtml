@@ -66,6 +66,7 @@ Also see <a href="publications.html">Publications and Presentations</a>.
 <li><a href="crypto_plugins.html">Cryptographic Plugin Programmer Guide</a></li>
 <li><a href="jobacct_gatherplugins.html">Job Accounting Gather Plugin Programmer Guide</a></li>
 <li><a href="accounting_storageplugins.html">Accounting Storage Plugin Programmer Guide</a></li>
+<li><a href="gres_plugins.html">Generic Resources (GRES) Plugin Programmer Guide</a></li>
 <li><a href="checkpoint_plugins.html">Job Checkpoint Plugin Programmer Guide</a></li>
 <li><a href="jobcompplugins.html">Job Completion Logging Plugin Programmer Guide</a></li>
 <li><a href="job_submit_plugins.html">Job Submission Plugin Programmer Guide</a></li>
@@ -81,6 +82,6 @@ Also see <a href="publications.html">Publications and Presentations</a>.
 </li>
 </ul>
 
-<p style="text-align:center;">Last modified 4 June 2010</p>
+<p style="text-align:center;">Last modified 27 August 2010</p>
 
 <!--#include virtual="footer.txt"-->
