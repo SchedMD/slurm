@@ -5662,6 +5662,8 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 				update_accounting = true;
 		}
 	}
+	if (error_code != SLURM_SUCCESS)
+		goto fini;
 
 	if (job_specs->partition) {
 		List part_ptr_list = NULL;
@@ -5714,6 +5716,9 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			error_code = ESLURM_ACCESS_DENIED;
 		}
 		FREE_NULL_LIST(part_ptr_list);	/* error clean-up */
+
+		if (error_code != SLURM_SUCCESS)
+			goto fini;
 	}
 
 	/* Always do this last just incase the assoc_ptr changed */
@@ -5745,11 +5750,13 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 				job_ptr->qos_ptr = _determine_and_validate_qos(
 					job_ptr->assoc_ptr, &qos_rec,
 					&error_code);
-				job_ptr->qos_id = qos_rec.id;
-				update_accounting = true;
+				if (error_code == SLURM_SUCCESS) {
+					job_ptr->qos_id = qos_rec.id;
+					update_accounting = true;
+				}
 			}
 		}
-	} else if(job_specs->qos) {
+	} else if (job_specs->qos) {
 		slurmdb_qos_rec_t qos_rec;
 		if (!IS_JOB_PENDING(job_ptr))
 			error_code = ESLURM_DISABLED;
@@ -5762,10 +5769,14 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 
 			job_ptr->qos_ptr = _determine_and_validate_qos(
 				job_ptr->assoc_ptr, &qos_rec, &error_code);
-			job_ptr->qos_id = qos_rec.id;
-			update_accounting = true;
+			if (error_code == SLURM_SUCCESS) {
+				job_ptr->qos_id = qos_rec.id;
+				update_accounting = true;
+			}
 		}
 	}
+	if (error_code != SLURM_SUCCESS)
+		goto fini;
 
 	if (!super_user && (accounting_enforce & ACCOUNTING_ENFORCE_LIMITS) &&
 	    (!_validate_acct_policy(job_specs, job_ptr->part_ptr,
@@ -5774,7 +5785,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		info("update_job: exceeded association's node or time limit "
 		     "for user %u", job_specs->user_id);
 		error_code = ESLURM_ACCOUNTING_POLICY;
-		return error_code;
+		goto fini;
 	}
 
 
@@ -5820,6 +5831,9 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			save_max_cpus = NO_VAL;
 		}
 	}
+	if (error_code != SLURM_SUCCESS)
+		goto fini;
+
 	if (save_min_cpus) {
 #ifdef HAVE_BG
 		uint32_t node_cnt = detail_ptr->min_cpus;
@@ -5864,6 +5878,8 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			error_code = ESLURM_ACCESS_DENIED;
 		}
 	}
+	if (error_code != SLURM_SUCCESS)
+		goto fini;
 
 	if (job_specs->num_tasks != NO_VAL) {
 		if (!IS_JOB_PENDING(job_ptr))
@@ -5901,6 +5917,8 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			}
 		}
 	}
+	if (error_code != SLURM_SUCCESS)
+		goto fini;
 
 	/* Reset min and max node counts as needed, insure consistency */
 	if (job_specs->min_nodes != NO_VAL) {
@@ -5935,6 +5953,9 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			save_max_nodes = NO_VAL;
 		}
 	}
+	if (error_code != SLURM_SUCCESS)
+		goto fini;
+
 	if (save_min_nodes) {
 		info("update_job: setting min_nodes from "
 		     "%u to %u for job_id %u",
@@ -5998,6 +6019,8 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			error_code = ESLURM_ACCESS_DENIED;
 		}
 	}
+	if (error_code != SLURM_SUCCESS)
+		goto fini;
 
 	if ((job_specs->time_min != NO_VAL) && IS_JOB_PENDING(job_ptr)) {
 		if (job_specs->time_min > job_ptr->time_limit) {
@@ -6011,6 +6034,8 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			     job_specs->time_min, job_specs->job_id);
 		}
 	}
+	if (error_code != SLURM_SUCCESS)
+		goto fini;
 
 	if (job_specs->end_time) {
 		if (!IS_JOB_RUNNING(job_ptr)) {
@@ -6030,6 +6055,8 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			update_accounting = true;
 		}
 	}
+	if (error_code != SLURM_SUCCESS)
+		goto fini;
 
 	if (job_specs->reservation) {
 		if (!IS_JOB_RUNNING(job_ptr)) {
@@ -6053,6 +6080,8 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			}
 		}
 	}
+	if (error_code != SLURM_SUCCESS)
+		goto fini;
 
 	if (job_specs->requeue != (uint16_t) NO_VAL) {
 		detail_ptr->requeue = job_specs->requeue;
@@ -6104,6 +6133,8 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			error_code = ESLURM_ACCESS_DENIED;
 		}
 	}
+	if (error_code != SLURM_SUCCESS)
+		goto fini;
 
 	if (job_specs->nice != (uint16_t) NO_VAL) {
 		if (IS_JOB_FINISHED(job_ptr))
@@ -6124,6 +6155,8 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			error_code = ESLURM_ACCESS_DENIED;
 		}
 	}
+	if (error_code != SLURM_SUCCESS)
+		goto fini;
 
 	if (job_specs->pn_min_memory != NO_VAL) {
 		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
@@ -6146,6 +6179,8 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			error_code = ESLURM_ACCESS_DENIED;
 		}
 	}
+	if (error_code != SLURM_SUCCESS)
+		goto fini;
 
 	if (job_specs->pn_min_tmp_disk != NO_VAL) {
 		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
@@ -6166,11 +6201,14 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			error_code = ESLURM_ACCESS_DENIED;
 		}
 	}
+	if (error_code != SLURM_SUCCESS)
+		goto fini;
 
 	if (job_specs->sockets_per_node != (uint16_t) NO_VAL) {
-		if ((!IS_JOB_PENDING(job_ptr)) || (mc_ptr == NULL))
+		if ((!IS_JOB_PENDING(job_ptr)) || (mc_ptr == NULL)) {
 			error_code = ESLURM_DISABLED;
-		else {
+			goto fini;
+		} else {
 			mc_ptr->sockets_per_node = job_specs->sockets_per_node;
 			info("sched: update_job: setting sockets_per_node to "
 			     "%u for job_id %u", job_specs->sockets_per_node,
@@ -6179,9 +6217,10 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	}
 
 	if (job_specs->cores_per_socket != (uint16_t) NO_VAL) {
-		if ((!IS_JOB_PENDING(job_ptr)) || (mc_ptr == NULL))
+		if ((!IS_JOB_PENDING(job_ptr)) || (mc_ptr == NULL)) {
 			error_code = ESLURM_DISABLED;
-		else {
+			goto fini;
+		} else {
 			mc_ptr->cores_per_socket = job_specs->cores_per_socket;
 			info("sched: update_job: setting cores_per_socket to "
 			     "%u for job_id %u", job_specs->cores_per_socket,
@@ -6190,9 +6229,10 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	}
 
 	if ((job_specs->threads_per_core != (uint16_t) NO_VAL)) {
-		if ((!IS_JOB_PENDING(job_ptr)) || (mc_ptr == NULL))
+		if ((!IS_JOB_PENDING(job_ptr)) || (mc_ptr == NULL)) {
 			error_code = ESLURM_DISABLED;
-		else {
+			goto fini;
+		} else {
 			mc_ptr->threads_per_core = job_specs->threads_per_core;
 			info("sched: update_job: setting threads_per_core to "
 			     "%u for job_id %u", job_specs->threads_per_core,
@@ -6215,6 +6255,8 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			error_code = ESLURM_ACCESS_DENIED;
 		}
 	}
+	if (error_code != SLURM_SUCCESS)
+		goto fini;
 
 	if (job_specs->contiguous != (uint16_t) NO_VAL) {
 		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
@@ -6231,6 +6273,8 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			error_code = ESLURM_ACCESS_DENIED;
 		}
 	}
+	if (error_code != SLURM_SUCCESS)
+		goto fini;
 
 	if (job_specs->features) {
 		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
@@ -6268,6 +6312,8 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			}
 		}
 	}
+	if (error_code != SLURM_SUCCESS)
+		goto fini;
 
 	if (job_specs->gres) {
 		List tmp_gres_list = NULL;
@@ -6295,11 +6341,14 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			job_ptr->gres_list = tmp_gres_list;
 		}
 	}
+	if (error_code != SLURM_SUCCESS)
+		goto fini;
 
 	if (job_specs->name) {
-		if (!IS_JOB_PENDING(job_ptr))
+		if (!IS_JOB_PENDING(job_ptr)) {
 			error_code = ESLURM_DISABLED;
-		else {
+			goto fini;
+		} else {
 			job_ptr->name = job_specs->name;
 			job_specs->name = NULL;
 
@@ -6322,6 +6371,8 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 				update_accounting = true;
 		}
 	}
+	if (error_code != SLURM_SUCCESS)
+		goto fini;
 
 	if (job_specs->exc_nodes) {
 		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
@@ -6350,6 +6401,8 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			}
 		}
 	}
+	if (error_code != SLURM_SUCCESS)
+		goto fini;
 
 #ifndef HAVE_BG
 	if (job_specs->req_nodes &&
@@ -6362,6 +6415,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			info("sched: Invalid node list (%s) for job %u update",
 			     job_specs->req_nodes, job_specs->job_id);
 			error_code = ESLURM_INVALID_NODE_NAME;
+			goto fini;
 		} else if (req_bitmap) {
 			int i, i_first, i_last;
 			struct node_record *node_ptr;
@@ -6380,10 +6434,10 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 				excise_node_from_job(job_ptr, node_ptr);
 			}
 			job_post_resize_acctg(job_ptr);
-			update_accounting = false;
-		} else {
 			/* Since job_post_resize_acctg will restart
 			   things don't do it again. */
+			update_accounting = false;
+		} else {
 			update_accounting = true;
 		}
 		FREE_NULL_BITMAP(req_bitmap);
@@ -6420,6 +6474,8 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			}
 		}
 	}
+	if (error_code != SLURM_SUCCESS)
+		goto fini;
 
 #ifndef HAVE_BG
 	if ((job_specs->min_nodes != NO_VAL) &&
@@ -6431,6 +6487,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			info("sched: Invalid node count (%u) for job %u update",
 			     job_specs->min_nodes, job_specs->job_id);
 			error_code = ESLURM_INVALID_NODE_COUNT;
+			goto fini;
 		} else if (job_specs->min_nodes > job_ptr->node_cnt) {
 			debug2("No change in node count update for job %u",
 			       job_specs->job_id);
@@ -6478,6 +6535,8 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			error_code = ESLURM_ACCESS_DENIED;
 		}
 	}
+	if (error_code != SLURM_SUCCESS)
+		goto fini;
 
 	if (job_specs->dependency) {
 		if ((!IS_JOB_PENDING(job_ptr)) || (job_ptr->details == NULL))
@@ -6496,6 +6555,8 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			}
 		}
 	}
+	if (error_code != SLURM_SUCCESS)
+		goto fini;
 
 	if (job_specs->begin_time) {
 		if (IS_JOB_PENDING(job_ptr) && detail_ptr) {
@@ -6512,8 +6573,10 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			if ((job_ptr->priority == 1) &&
 			    (detail_ptr->begin_time <= now))
 				_set_job_prio(job_ptr);
-		} else
+		} else {
 			error_code = ESLURM_DISABLED;
+			goto fini;
+		}
 	}
 
 	if (job_specs->licenses) {
@@ -6558,6 +6621,8 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			list_destroy(license_list);
 		}
 	}
+	if (error_code != SLURM_SUCCESS)
+		goto fini;
 
 #ifdef HAVE_BG
 	select_g_select_jobinfo_get(job_specs->select_jobinfo,
@@ -6598,6 +6663,9 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			}
 		}
 	}
+	if (error_code != SLURM_SUCCESS)
+		goto fini;
+
 	/* check to make sure we didn't mess up with the proc count */
 	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
 				    SELECT_JOBDATA_CONN_TYPE, &conn_type);
@@ -6612,127 +6680,137 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		     conn_type_string(conn_type),
 		     job_ptr->job_id);
 		error_code = ESLURM_INVALID_NODE_COUNT;
+		goto fini;
 	}
 
 	select_g_select_jobinfo_get(job_specs->select_jobinfo,
 				    SELECT_JOBDATA_ROTATE, &rotate);
 	if (rotate != (uint16_t) NO_VAL) {
+		if (!IS_JOB_PENDING(job_ptr)) {
+			error_code = ESLURM_DISABLED;
+			goto fini;
+		} else {
+			info("sched: update_job: setting rotate to %u for "
+			     "jobid %u", rotate, job_ptr->job_id);
+			select_g_select_jobinfo_set(
+				job_ptr->select_jobinfo,
+				SELECT_JOBDATA_ROTATE, &rotate);
+		}
+	}
+
+	select_g_select_jobinfo_get(job_specs->select_jobinfo,
+				    SELECT_JOBDATA_REBOOT, &reboot);
+	if (reboot != (uint16_t) NO_VAL) {
+		if (!IS_JOB_PENDING(job_ptr)) {
+			error_code = ESLURM_DISABLED;
+			goto fini;
+		} else {
+			info("sched: update_job: setting reboot to %u for "
+			     "jobid %u", reboot, job_ptr->job_id);
+			select_g_select_jobinfo_set(
+				job_ptr->select_jobinfo,
+				SELECT_JOBDATA_REBOOT, &reboot);
+		}
+	}
+
+	select_g_select_jobinfo_get(job_specs->select_jobinfo,
+				    SELECT_JOBDATA_GEOMETRY, geometry);
+	if (geometry[0] != (uint16_t) NO_VAL) {
 		if (!IS_JOB_PENDING(job_ptr))
 			error_code = ESLURM_DISABLED;
-		else {
-			info("sched: update_job: setting rotate to %u for "
-			      "jobid %u", rotate, job_ptr->job_id);
-			 select_g_select_jobinfo_set(
-				 job_ptr->select_jobinfo,
-				 SELECT_JOBDATA_ROTATE, &rotate);
-		 }
-	 }
+		else if (super_user) {
+			uint32_t i, tot = 1;
+			for (i=0; i<SYSTEM_DIMENSIONS; i++)
+				tot *= geometry[i];
+			info("sched: update_job: setting geometry to %ux%ux%u"
+			     " min_nodes=%u for jobid %u",
+			     geometry[0], geometry[1],
+			     geometry[2], tot, job_ptr->job_id);
+			select_g_select_jobinfo_set(job_ptr->select_jobinfo,
+						    SELECT_JOBDATA_GEOMETRY,
+						    geometry);
+			detail_ptr->min_nodes = tot;
+		} else {
+			error("sched: Attempt to change geometry for job %u",
+			      job_specs->job_id);
+			error_code = ESLURM_ACCESS_DENIED;
+		}
+	}
+	if (error_code != SLURM_SUCCESS)
+		goto fini;
 
-	 select_g_select_jobinfo_get(job_specs->select_jobinfo,
-				     SELECT_JOBDATA_REBOOT, &reboot);
-	 if (reboot != (uint16_t) NO_VAL) {
-		 if (!IS_JOB_PENDING(job_ptr))
-			 error_code = ESLURM_DISABLED;
-		 else {
-			 info("sched: update_job: setting reboot to %u for "
-			      "jobid %u", reboot, job_ptr->job_id);
-			 select_g_select_jobinfo_set(
-				 job_ptr->select_jobinfo,
-				 SELECT_JOBDATA_REBOOT, &reboot);
-		 }
-	 }
-
-	 select_g_select_jobinfo_get(job_specs->select_jobinfo,
-				     SELECT_JOBDATA_GEOMETRY, geometry);
-	 if (geometry[0] != (uint16_t) NO_VAL) {
-		 if (!IS_JOB_PENDING(job_ptr))
-			 error_code = ESLURM_DISABLED;
-		 else if (super_user) {
-			 uint32_t i, tot = 1;
-			 for (i=0; i<SYSTEM_DIMENSIONS; i++)
-				 tot *= geometry[i];
-			 info("sched: update_job: setting geometry to %ux%ux%u"
-			      " min_nodes=%u for jobid %u",
-			      geometry[0], geometry[1],
-			      geometry[2], tot, job_ptr->job_id);
-			 select_g_select_jobinfo_set(job_ptr->select_jobinfo,
-						     SELECT_JOBDATA_GEOMETRY,
-						     geometry);
-			 detail_ptr->min_nodes = tot;
-		 } else {
-			 error("sched: Attempt to change geometry for job %u",
-			       job_specs->job_id);
-			 error_code = ESLURM_ACCESS_DENIED;
-		 }
-	 }
-
-	 select_g_select_jobinfo_get(job_specs->select_jobinfo,
-				     SELECT_JOBDATA_BLRTS_IMAGE, &image);
-	 if (image) {
-		 if (!IS_JOB_PENDING(job_ptr))
-			 error_code = ESLURM_DISABLED;
-		 else {
-			 info("sched: update_job: setting BlrtsImage to %s "
-			      "for jobid %u", image, job_ptr->job_id);
-			 select_g_select_jobinfo_set(
-				 job_ptr->select_jobinfo,
-				 SELECT_JOBDATA_BLRTS_IMAGE,
-				 image);
-		 }
-	 }
-	 select_g_select_jobinfo_get(job_specs->select_jobinfo,
-				     SELECT_JOBDATA_LINUX_IMAGE, &image);
-	 if (image) {
-		 if (!IS_JOB_PENDING(job_ptr))
-			 error_code = ESLURM_DISABLED;
-		 else {
-			 info("sched: update_job: setting LinuxImage to %s "
-			      "for jobid %u", image, job_ptr->job_id);
-			 select_g_select_jobinfo_set(
-					job_ptr->select_jobinfo,
-					SELECT_JOBDATA_LINUX_IMAGE, image);
-		 }
-	 }
-	 select_g_select_jobinfo_get(job_specs->select_jobinfo,
-				     SELECT_JOBDATA_MLOADER_IMAGE, &image);
-	 if (image) {
-		 if (!IS_JOB_PENDING(job_ptr))
-			 error_code = ESLURM_DISABLED;
-		 else {
-			 info("sched: update_job: setting MloaderImage to %s "
-			      "for jobid %u", image, job_ptr->job_id);
-			 select_g_select_jobinfo_set(
-				 job_ptr->select_jobinfo,
-				 SELECT_JOBDATA_MLOADER_IMAGE,
-				 image);
-		 }
-	 }
-	 select_g_select_jobinfo_get(job_specs->select_jobinfo,
-				     SELECT_JOBDATA_RAMDISK_IMAGE, &image);
-	 if (image) {
-		 if (!IS_JOB_PENDING(job_ptr))
-			 error_code = ESLURM_DISABLED;
-		 else {
-			 info("sched: update_job: setting RamdiskImage to %s "
-			      "for jobid %u", image, job_ptr->job_id);
-			 select_g_select_jobinfo_set(
-				 job_ptr->select_jobinfo,
-				 SELECT_JOBDATA_RAMDISK_IMAGE,
-				 image);
-		 }
-	 }
-
+	select_g_select_jobinfo_get(job_specs->select_jobinfo,
+				    SELECT_JOBDATA_BLRTS_IMAGE, &image);
+	if (image) {
+		if (!IS_JOB_PENDING(job_ptr)) {
+			error_code = ESLURM_DISABLED;
+			goto fini;
+		} else {
+			info("sched: update_job: setting BlrtsImage to %s "
+			     "for jobid %u", image, job_ptr->job_id);
+			select_g_select_jobinfo_set(
+				job_ptr->select_jobinfo,
+				SELECT_JOBDATA_BLRTS_IMAGE,
+				image);
+		}
+	}
+	select_g_select_jobinfo_get(job_specs->select_jobinfo,
+				    SELECT_JOBDATA_LINUX_IMAGE, &image);
+	if (image) {
+		if (!IS_JOB_PENDING(job_ptr)) {
+			error_code = ESLURM_DISABLED;
+			goto fini;
+		} else {
+			info("sched: update_job: setting LinuxImage to %s "
+			     "for jobid %u", image, job_ptr->job_id);
+			select_g_select_jobinfo_set(
+				job_ptr->select_jobinfo,
+				SELECT_JOBDATA_LINUX_IMAGE, image);
+		}
+	}
+	select_g_select_jobinfo_get(job_specs->select_jobinfo,
+				    SELECT_JOBDATA_MLOADER_IMAGE, &image);
+	if (image) {
+		if (!IS_JOB_PENDING(job_ptr)) {
+			error_code = ESLURM_DISABLED;
+			goto fini;
+		} else {
+			info("sched: update_job: setting MloaderImage to %s "
+			     "for jobid %u", image, job_ptr->job_id);
+			select_g_select_jobinfo_set(
+				job_ptr->select_jobinfo,
+				SELECT_JOBDATA_MLOADER_IMAGE,
+				image);
+		}
+	}
+	select_g_select_jobinfo_get(job_specs->select_jobinfo,
+				    SELECT_JOBDATA_RAMDISK_IMAGE, &image);
+	if (image) {
+		if (!IS_JOB_PENDING(job_ptr)) {
+			error_code = ESLURM_DISABLED;
+			goto fini;
+		} else {
+			info("sched: update_job: setting RamdiskImage to %s "
+			     "for jobid %u", image, job_ptr->job_id);
+			select_g_select_jobinfo_set(
+				job_ptr->select_jobinfo,
+				SELECT_JOBDATA_RAMDISK_IMAGE,
+				image);
+		}
+	}
 #endif
-	 if(update_accounting) {
-		 info("updating accounting");
-		 if (job_ptr->details && job_ptr->details->begin_time) {
+
+fini:
+	if (update_accounting) {
+		info("updating accounting");
+		if (job_ptr->details && job_ptr->details->begin_time) {
 			/* Update job record in accounting to reflect
 			 * changes */
 			jobacct_storage_g_job_start(acct_db_conn,
 						    job_ptr);
-		 }
-	 }
-	 return error_code;
+		}
+	}
+	return error_code;
 }
 
 /* Record accounting information for a job immediately before changing size */
