@@ -34,6 +34,9 @@ documents those changes that are of interest to users and admins.
  -- Change sched/backfill default time interval to 30 seconds and defer attempt
     to backfill schedule if slurmctld has more than 5 active RPCs. General
     improvements in logic scalability.
+ -- Gres/gpu now sets the CUDA_VISIBLE_DEVICES environment to control which
+    GPU devices should be used for each job or job step and CUDA version 3.1+
+    is used. NOTE: SLURM's generic resource support is still under development.
 
 * Changes in SLURM 2.2.0.pre9
 =============================
