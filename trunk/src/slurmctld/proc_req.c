@@ -1166,7 +1166,7 @@ static void  _slurm_rpc_epilog_complete(slurm_msg_t * msg)
 
 	/* Functions below provide their own locking */
 	if (run_scheduler) {
-		(void) schedule(100);
+		(void) schedule(0);
 		schedule_node_save();
 		schedule_job_save();
 	}
@@ -1998,7 +1998,7 @@ static void _slurm_rpc_reconfigure_controller(slurm_msg_t * msg)
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 		slurm_sched_partition_change();	/* notify sched plugin */
 		priority_g_reconfig();          /* notify priority plugin too */
-		schedule(100);			/* has its own locks */
+		schedule(0);			/* has its own locks */
 		save_all_state();
 	}
 }
@@ -2424,7 +2424,7 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 		response_msg.msg_type = RESPONSE_SUBMIT_BATCH_JOB;
 		response_msg.data = &submit_msg;
 		slurm_send_node_msg(msg->conn_fd, &response_msg);
-		schedule(100);		/* has own locks */
+		schedule(0);		/* has own locks */
 		schedule_job_save();	/* has own locks */
 		schedule_node_save();	/* has own locks */
 	}
@@ -2463,7 +2463,7 @@ static void _slurm_rpc_update_job(slurm_msg_t * msg)
 			job_desc_msg->job_id, TIME_STR);
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 		/* Below functions provide their own locking */
-		schedule(100);
+		schedule(0);
 		schedule_job_save();
 		schedule_node_save();
 	}
@@ -2564,7 +2564,7 @@ static void _slurm_rpc_update_node(slurm_msg_t * msg)
 	}
 
 	/* Below functions provide their own locks */
-	if (schedule(100))
+	if (schedule(0))
 		schedule_job_save();
 	schedule_node_save();
 	trigger_reconfig();
@@ -2617,7 +2617,7 @@ static void _slurm_rpc_update_partition(slurm_msg_t * msg)
 
 		/* NOTE: These functions provide their own locks */
 		schedule_part_save();
-		if (schedule(100)) {
+		if (schedule(0)) {
 			schedule_job_save();
 			schedule_node_save();
 		}
@@ -2665,7 +2665,7 @@ static void _slurm_rpc_delete_partition(slurm_msg_t * msg)
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 
 		/* NOTE: These functions provide their own locks */
-		schedule(100);
+		schedule(0);
 		save_all_state();
 
 	}
@@ -2727,7 +2727,7 @@ static void _slurm_rpc_resv_create(slurm_msg_t * msg)
 		slurm_send_node_msg(msg->conn_fd, &response_msg);
 
 		/* NOTE: These functions provide their own locks */
-		if (schedule(100)) {
+		if (schedule(0)) {
 			schedule_job_save();
 			schedule_node_save();
 		}
@@ -2775,7 +2775,7 @@ static void _slurm_rpc_resv_update(slurm_msg_t * msg)
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 
 		/* NOTE: These functions provide their own locks */
-		if (schedule(100)) {
+		if (schedule(0)) {
 			schedule_job_save();
 			schedule_node_save();
 		}
@@ -2824,7 +2824,7 @@ static void _slurm_rpc_resv_delete(slurm_msg_t * msg)
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 
 		/* NOTE: These functions provide their own locks */
-		if (schedule(100)) {
+		if (schedule(0)) {
 			schedule_job_save();
 			schedule_node_save();
 		}
@@ -3063,7 +3063,7 @@ inline static void _slurm_rpc_suspend(slurm_msg_t * msg)
 			sus_ptr->job_id, TIME_STR);
 		/* Functions below provide their own locking */
 		if (sus_ptr->op == SUSPEND_JOB)
-			(void) schedule(100);
+			(void) schedule(0);
 		schedule_job_save();
 	}
 }

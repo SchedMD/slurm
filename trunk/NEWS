@@ -34,6 +34,11 @@ documents those changes that are of interest to users and admins.
  -- Change sched/backfill default time interval to 30 seconds and defer attempt
     to backfill schedule if slurmctld has more than 5 active RPCs. General
     improvements in logic scalability.
+ -- Add SchedulerParameters option of default_sched_depth=# to control how
+    many jobs on queue should be tested for attempted scheduling when a job
+    completes or other routine events. Default value is 100 jobs. The full job
+    queue is tested on a less frequent basis. This option can dramatically
+    improve performance on systems with thousands of queued jobs.
  -- Gres/gpu now sets the CUDA_VISIBLE_DEVICES environment to control which
     GPU devices should be used for each job or job step and CUDA version 3.1+
     is used. NOTE: SLURM's generic resource support is still under development.
@@ -42,8 +47,8 @@ documents those changes that are of interest to users and admins.
     job needing 10 CPUs will now ideally be allocated 8 CPUs on one node and
     2 CPUs on another node. Previously the job would have ideally been
     allocated 5 CPUs on each node, fragmenting the unused resources more.
- -- Modified the behavior of update_job() in job_mgr.c to return when the first error
-    is encountered instead of continuing with more job updates.
+ -- Modified the behavior of update_job() in job_mgr.c to return when the first
+    error is encountered instead of continuing with more job updates.
 
 * Changes in SLURM 2.2.0.pre9
 =============================
