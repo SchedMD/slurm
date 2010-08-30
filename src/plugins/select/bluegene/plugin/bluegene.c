@@ -137,8 +137,6 @@ extern void fini_bg(void)
 		error("The agent hasn't been finied yet!");
 		agent_fini = true;
 	}
-	/* wait for the agent threads to finish up */
-	waitfor_block_agents();
 
 	_destroy_bg_config(bg_conf);
 	_destroy_bg_lists(bg_lists);

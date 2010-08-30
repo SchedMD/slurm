@@ -60,6 +60,8 @@ documents those changes that are of interest to users and admins.
     memory leak we were concerned about for creating and destroying threads
     in a plugin doesn't exist anymore.  This increases throughput dramatically,
     allowing multiple jobs to start at the same time.
+ -- BLUEGENE - Removed thread pool for starting and stopping jobs.  For similar
+    reasons as noted above.
 
 * Changes in SLURM 2.2.0.pre9
 =============================
