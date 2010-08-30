@@ -177,16 +177,11 @@ s_p_options_t slurm_conf_options[] = {
 	{"GresTypes", S_P_STRING},
 	{"GroupUpdateForce", S_P_UINT16},
 	{"GroupUpdateTime", S_P_UINT16},
-	{"HashBase", S_P_LONG, _defunct_option},
-	{"HeartbeatInterval", S_P_LONG, _defunct_option},
 	{"HealthCheckInterval", S_P_UINT16},
 	{"HealthCheckProgram", S_P_STRING},
 	{"InactiveLimit", S_P_UINT16},
 	{"JobAcctGatherType", S_P_STRING},
-	{"JobAcctFrequency", S_P_UINT16, _defunct_option},
 	{"JobAcctGatherFrequency", S_P_UINT16},
-	{"JobAcctLogFile", S_P_STRING},
-	{"JobAcctType", S_P_STRING},
 	{"JobCheckpointDir", S_P_STRING},
 	{"JobCompHost", S_P_STRING},
 	{"JobCompLoc", S_P_STRING},
@@ -199,7 +194,6 @@ s_p_options_t slurm_conf_options[] = {
 	{"JobFileAppend", S_P_UINT16},
 	{"JobRequeue", S_P_UINT16},
 	{"JobSubmitPlugins", S_P_STRING},
-	{"KillTree", S_P_UINT16, _defunct_option},
 	{"KillOnBadExit", S_P_UINT16},
 	{"KillWait", S_P_UINT16},
 	{"Licenses", S_P_STRING},
@@ -207,11 +201,9 @@ s_p_options_t slurm_conf_options[] = {
 	{"MaxJobCount", S_P_UINT32},
 	{"MaxMemPerCPU", S_P_UINT32},
 	{"MaxMemPerNode", S_P_UINT32},
-	{"MaxMemPerTask", S_P_UINT32},	/* defunct */
 	{"MaxTasksPerNode", S_P_UINT16},
 	{"MessageTimeout", S_P_UINT16},
 	{"MinJobAge", S_P_UINT16},
-	{"MpichGmDirectSupport", S_P_LONG, _defunct_option},
 	{"MpiDefault", S_P_STRING},
 	{"MpiParams", S_P_STRING},
 	{"OverTimeLimit", S_P_UINT16},
@@ -2013,21 +2005,6 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 			    "JobAcctGatherFrequency", hashtbl))
 		conf->job_acct_gather_freq = DEFAULT_JOB_ACCT_GATHER_FREQ;
 
-	if (s_p_get_string(&conf->job_acct_gather_type,
-			    "JobAcctType", hashtbl)) {
-		fatal("JobAcctType is no longer a valid parameter.\n"
-		      "The job accounting plugin has changed to 2 different "
-		      "plugins one for gathering and one for storing the "
-		      "gathered information.\n"
-		      "Please change this to JobAcctGatherType to "
-		      "correctly work.\n"
-		      "The major 'jobacct' is now 'jobacct_gather' and "
-		      "'jobacct_storage' your declarations will also need "
-		      "to change in your slurm.conf file.\n"
-		      "Refer to the slurm.conf man page or the web "
-		      "documentation for further explanation.");
-	}
-
 	if(!s_p_get_string(&conf->job_acct_gather_type,
 			   "JobAcctGatherType", hashtbl))
 		conf->job_acct_gather_type =
@@ -2220,21 +2197,15 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 				xstrdup(DEFAULT_STORAGE_HOST);
 	}
 
-	/* AccountingStorageLoc replaces JobAcctLogFile since it now represents
-	 * the database name also depending on the storage type you
-	 * use so we still check JobAcctLogFile for the same thing
-	 */
 	if (!s_p_get_string(&conf->accounting_storage_loc,
-			    "AccountingStorageLoc", hashtbl)
-		&& !s_p_get_string(&conf->accounting_storage_loc,
-			       "JobAcctLogFile", hashtbl)) {
-		if(default_storage_loc)
+			    "AccountingStorageLoc", hashtbl)) {
+		if (default_storage_loc)
 			conf->accounting_storage_loc =
 				xstrdup(default_storage_loc);
-		else if(!strcmp(conf->accounting_storage_type,
-				"accounting_storage/mysql")
-			|| !strcmp(conf->accounting_storage_type,
-				"accounting_storage/pgsql"))
+		else if (!strcmp(conf->accounting_storage_type,
+				 "accounting_storage/mysql") ||
+			 !strcmp(conf->accounting_storage_type,
+				 "accounting_storage/pgsql"))
 			conf->accounting_storage_loc =
 				xstrdup(DEFAULT_ACCOUNTING_DB);
 		else

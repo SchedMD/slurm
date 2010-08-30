@@ -49,6 +49,11 @@ documents those changes that are of interest to users and admins.
     allocated 5 CPUs on each node, fragmenting the unused resources more.
  -- Modified the behavior of update_job() in job_mgr.c to return when the first
     error is encountered instead of continuing with more job updates.
+ -- Removed all references to the following slurm.conf parameters, all of which
+    have been removed or replaced since version 2.0 or earlier: HashBase,
+    HeartbeatInterval, JobAcctFrequency, JobAcctLogFile (instead use
+    AccountingStorageLoc), JobAcctType, KillTree, MaxMemPerTask, and
+    MpichGmDirectSupport.
 
 * Changes in SLURM 2.2.0.pre9
 =============================
