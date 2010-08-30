@@ -377,6 +377,10 @@ extern List copy_bg_list(List in_list)
 	ListIterator itr = list_iterator_create(in_list);
 
 	while ((bg_record = (bg_record_t *) list_next(itr))) {
+		if(bg_record->magic != BLOCK_MAGIC) {
+			error("trying to copy a bad record");
+			continue;
+		}
 		new_record = xmalloc(sizeof(bg_record_t));
 		new_record->original = bg_record;
 		copy_bg_record(bg_record, new_record);
@@ -435,6 +439,8 @@ extern void copy_bg_record(bg_record_t *fir_record, bg_record_t *sec_record)
 	sec_record->boot_state = fir_record->boot_state;
 	sec_record->boot_count = fir_record->boot_count;
 	sec_record->full_block = fir_record->full_block;
+
+	sec_record->magic = fir_record->magic;
 
 	for(i=0;i<SYSTEM_DIMENSIONS;i++) {
 		sec_record->geo[i] = fir_record->geo[i];
@@ -721,6 +727,8 @@ extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq,
 		fatal("add_bg_record: no records list given");
 	}
 	bg_record = (bg_record_t*) xmalloc(sizeof(bg_record_t));
+
+	bg_record->magic = BLOCK_MAGIC;
 
 	bg_record->user_name = xstrdup(bg_conf->slurm_user_name);
 	bg_record->target_name = xstrdup(bg_conf->slurm_user_name);
@@ -1052,6 +1060,7 @@ extern int down_nodecard(char *bp_name, bitoff_t io_start,
 {
 	List requests = NULL;
 	List delete_list = NULL;
+	List track_list = NULL;
 	ListIterator itr = NULL;
 	bg_record_t *bg_record = NULL, *found_record = NULL, tmp_record;
 	bg_record_t *smallest_bg_record = NULL;
@@ -1332,9 +1341,9 @@ extern int down_nodecard(char *bp_name, bitoff_t io_start,
 	requests = list_create(destroy_bg_record);
 	add_bg_record(requests, NULL, &blockreq, 1, io_start);
 
+	slurm_mutex_lock(&block_state_mutex);
 	delete_list = list_create(NULL);
 	while((bg_record = list_pop(requests))) {
-		slurm_mutex_lock(&block_state_mutex);
 		itr = list_iterator_create(bg_lists->main);
 		while((found_record = list_next(itr))) {
 			if(!blocks_overlap(bg_record, found_record))
@@ -1343,7 +1352,6 @@ extern int down_nodecard(char *bp_name, bitoff_t io_start,
 			list_remove(itr);
 		}
 		list_iterator_destroy(itr);
-		slurm_mutex_unlock(&block_state_mutex);
 
 		/* we need to add this record since it doesn't exist */
 		if(configure_block(bg_record) == SLURM_ERROR) {
@@ -1357,22 +1365,27 @@ extern int down_nodecard(char *bp_name, bitoff_t io_start,
 		      "around bad nodecards",
 		      bg_record->bg_block_id);
 		print_bg_record(bg_record);
-		slurm_mutex_lock(&block_state_mutex);
 		list_append(bg_lists->main, bg_record);
-		slurm_mutex_unlock(&block_state_mutex);
 		if(bit_overlap(bg_record->ionode_bitmap,
 			       tmp_record.ionode_bitmap)) {
 			/* here we know the error block doesn't exist
 			   so just set the state here */
+			slurm_mutex_unlock(&block_state_mutex);
 			rc = put_block_in_error_state(
 				bg_record, BLOCK_ERROR_STATE, reason);
+			slurm_mutex_lock(&block_state_mutex);
 		}
 	}
 	list_destroy(requests);
 
-	slurm_mutex_lock(&block_state_mutex);
-	free_block_list(delete_list);
+	track_list = transfer_main_to_freeing(delete_list);
 	list_destroy(delete_list);
+	slurm_mutex_unlock(&block_state_mutex);
+	if (track_list) {
+		free_block_list(track_list, 0, 0);
+		list_destroy(track_list);
+	}
+	slurm_mutex_lock(&block_state_mutex);
 	sort_bg_record_inc_size(bg_lists->main);
 	slurm_mutex_unlock(&block_state_mutex);
 	last_bg_update = time(NULL);

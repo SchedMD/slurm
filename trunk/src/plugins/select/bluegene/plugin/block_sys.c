@@ -475,6 +475,7 @@ int read_bg_blocks(List curr_block_list)
 		/* New BG Block record */
 
 		bg_record = xmalloc(sizeof(bg_record_t));
+		bg_record->magic = BLOCK_MAGIC;
 		list_push(curr_block_list, bg_record);
 
 		bg_record->bg_block_id = xstrdup(tmp_char);
@@ -1130,6 +1131,7 @@ extern int load_state_file(List curr_block_list, char *dir_name)
 		}
 
 		bg_record = xmalloc(sizeof(bg_record_t));
+		bg_record->magic = BLOCK_MAGIC;
 		bg_record->bg_block_id =
 			xstrdup(block_info->bg_block_id);
 		bg_record->nodes =

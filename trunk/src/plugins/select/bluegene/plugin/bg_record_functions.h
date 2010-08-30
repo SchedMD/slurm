@@ -58,6 +58,8 @@
 
 #include "../block_allocator/block_allocator.h"
 
+#define BLOCK_MAGIC 0x3afd
+
 typedef struct bg_record {
 	rm_partition_t *bg_block;       /* structure to hold info from db2 */
 	pm_partition_id_t bg_block_id;	/* ID returned from MMCS	*/
@@ -90,6 +92,7 @@ typedef struct bg_record {
 					   are on.  NULL if not a small block*/
 	char *linuximage;               /* LinuxImage/CnloadImage for
 					 * this block */
+	uint16_t magic;	        	/* magic number */
 	char *mloaderimage;             /* mloaderImage for this block */
 	int modifying;                  /* flag to say the block is
 					   being modified or not at

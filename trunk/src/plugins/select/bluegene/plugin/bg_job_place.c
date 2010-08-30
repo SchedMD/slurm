@@ -621,7 +621,10 @@ static int _check_for_booted_overlapping_blocks(
 					if(bg_record->original) {
 						if(bg_conf->slurm_debug_flags
 						   & DEBUG_FLAG_BG_PICK)
-							info("This was a copy");
+							info("This was a "
+							     "copy %s",
+							     bg_record->
+							     bg_block_id);
 						found_record =
 							bg_record->original;
 						remove_from_bg_list(
@@ -661,10 +664,10 @@ static int _check_for_booted_overlapping_blocks(
 						destroy_bg_record(bg_record);
 
 					list_push(temp_list, found_record);
-					free_block_list(temp_list);
-					list_destroy(temp_list);
-
 					slurm_mutex_unlock(&block_state_mutex);
+
+					free_block_list(temp_list, 0, 0);
+					list_destroy(temp_list);
 				}
 				rc = 1;
 

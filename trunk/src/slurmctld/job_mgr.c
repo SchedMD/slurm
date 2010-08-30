@@ -6742,6 +6742,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 				    SELECT_JOBDATA_BLRTS_IMAGE, &image);
 	if (image) {
 		if (!IS_JOB_PENDING(job_ptr)) {
+			xfree(image);
 			error_code = ESLURM_DISABLED;
 			goto fini;
 		} else {
@@ -6752,12 +6753,14 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 				SELECT_JOBDATA_BLRTS_IMAGE,
 				image);
 		}
+		xfree(image);
 	}
 	select_g_select_jobinfo_get(job_specs->select_jobinfo,
 				    SELECT_JOBDATA_LINUX_IMAGE, &image);
 	if (image) {
 		if (!IS_JOB_PENDING(job_ptr)) {
 			error_code = ESLURM_DISABLED;
+			xfree(image);
 			goto fini;
 		} else {
 			info("sched: update_job: setting LinuxImage to %s "
@@ -6766,12 +6769,14 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 				job_ptr->select_jobinfo,
 				SELECT_JOBDATA_LINUX_IMAGE, image);
 		}
+		xfree(image);
 	}
 	select_g_select_jobinfo_get(job_specs->select_jobinfo,
 				    SELECT_JOBDATA_MLOADER_IMAGE, &image);
 	if (image) {
 		if (!IS_JOB_PENDING(job_ptr)) {
 			error_code = ESLURM_DISABLED;
+			xfree(image);
 			goto fini;
 		} else {
 			info("sched: update_job: setting MloaderImage to %s "
@@ -6781,12 +6786,14 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 				SELECT_JOBDATA_MLOADER_IMAGE,
 				image);
 		}
+		xfree(image);
 	}
 	select_g_select_jobinfo_get(job_specs->select_jobinfo,
 				    SELECT_JOBDATA_RAMDISK_IMAGE, &image);
 	if (image) {
 		if (!IS_JOB_PENDING(job_ptr)) {
 			error_code = ESLURM_DISABLED;
+			xfree(image);
 			goto fini;
 		} else {
 			info("sched: update_job: setting RamdiskImage to %s "
@@ -6796,6 +6803,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 				SELECT_JOBDATA_RAMDISK_IMAGE,
 				image);
 		}
+		xfree(image);
 	}
 #endif
 
@@ -7432,6 +7440,7 @@ extern bool job_epilog_complete(uint32_t job_id, char *node_name,
 			*/
 
 			//job_ptr->next_step_id = 0;
+			job_ptr->node_cnt = 0;
 #ifdef HAVE_BG
 			select_g_select_jobinfo_set(
 				job_ptr->select_jobinfo,
@@ -7440,9 +7449,8 @@ extern bool job_epilog_complete(uint32_t job_id, char *node_name,
 			select_g_select_jobinfo_set(
 				job_ptr->select_jobinfo,
 				SELECT_JOBDATA_NODE_CNT,
-				0);
+				&job_ptr->node_cnt);
 #endif
-			job_ptr->node_cnt = 0;
 			xfree(job_ptr->nodes);
 			xfree(job_ptr->nodes_completing);
 			FREE_NULL_BITMAP(job_ptr->node_bitmap);
