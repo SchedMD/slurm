@@ -17,14 +17,15 @@ Optional plugins can be used for
 <a href="reservations.html">advanced reservation</a>,
 <a href="gang_scheduling.html">gang scheduling</a> (time sharing for
 parallel jobs), backfill scheduling,
+<a href="topology.html">topology optimized resource selection</a>,
 <a href="resource_limits.html">resource limits</a> by user or bank account,
 and sophisticated <a href="priority_multifactor.html"> multifactor job
-  prioritization</a> algorithms.
-
+prioritization</a> algorithms.
 
 <p>SLURM has been developed through the collaborative efforts of
 <a href="https://www.llnl.gov/">Lawrence Livermore National Laboratory (LLNL)</a>,
 <a href="http://www.hp.com/">Hewlett-Packard</a>,
+<a href="http://www.schedmd.com/">SchedMD</a>,
 <a href="http://www.bull.com/">Bull</a>,
 Linux NetworX and many other contributors.</p>
 
