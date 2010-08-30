@@ -128,9 +128,8 @@ uid_to_string (uid_t uid)
 	if (uid == 0)
 		return xstrdup("root");
 
-	rc = getpwuid_r (uid, &pwd, buffer, PW_BUF_SIZE, &result);
-
-	if (result)
+	rc = _getpwuid_r (uid, &pwd, buffer, PW_BUF_SIZE, &result);
+	if (result && (rc == 0))
 		ustring = xstrdup(result->pw_name);
 	else
 		ustring = xstrdup("nobody");
@@ -145,12 +144,11 @@ gid_from_uid (uid_t uid)
 	gid_t gid;
 	int rc;
 
-	rc = getpwuid_r(uid, &pwd, buffer, PW_BUF_SIZE, &result);
-	if (result == NULL) {
-		gid = (gid_t) -1;
-	} else {
+	rc = _getpwuid_r(uid, &pwd, buffer, PW_BUF_SIZE, &result);
+	if (result && (rc == 0))
 		gid = result->pw_gid;
-	}
+	else
+		gid = (gid_t) -1;
 
 	return gid;
 }
