@@ -37,13 +37,15 @@ respects:
 <a href="http://www.gnu.org/licenses/gpl.html">GNU General Public License</a>.</li>
 <li>It is designed to operate in a heterogeneous cluster with up to 65,536 nodes
 and hundreds of thousands of processors.</li>
+<li>It can sustain a throughput rate of over 120,000 jobs per hour.</li>
 <li>It is portable; written in C with a GNU autoconf configuration engine.
 While initially written for Linux, other UNIX-like operating systems should
 be easy porting targets.</li>
 <li>SLURM is highly tolerant of system failures, including failure of the node
 executing its control functions.</li>
 <li>A plugin mechanism exists to support various interconnects, authentication
-mechanisms, schedulers, etc. These plugins are documented and  simple enough for the motivated end user to understand the source and add functionality.</li>
+mechanisms, schedulers, etc. These plugins are documented and  simple enough
+for the motivated end user to understand the source and add functionality.</li>
 </ul></p>
 
 <p>SLURM provides resource management on about 1000 computers worldwide,
@@ -84,6 +86,6 @@ It is also distributed and supported by
 <a href="http://www.ibm.com">IBM</a> and
 <a href="http://www.sun.com">Sun Microsystems</a>.</p>
 
-<p style="text-align:center;">Last modified 7 June 2010</p>
+<p style="text-align:center;">Last modified 30 August 2010</p>
 
 <!--#include virtual="footer.txt"-->

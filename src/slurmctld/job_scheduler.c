@@ -299,7 +299,8 @@ static bool _failed_partition(struct part_record *part_ptr,
  *	pending jobs for each partition will be scheduled in priority
  *	order until a request fails
  * IN job_limit - maximum number of jobs to test now, avoid testing the full
- *		  queue on every job submit
+ *		  queue on every job submit (0 means to use the system default,
+ *		  SchedulerParameters for default_queue_depth)
  * RET count of jobs scheduled
  * Note: We re-build the queue every time. Jobs can not only be added
  *	or removed from the queue, but have their priority or partition
@@ -309,7 +310,7 @@ static bool _failed_partition(struct part_record *part_ptr,
 extern int schedule(uint32_t job_limit)
 {
 	List job_queue = NULL;
-	int error_code, failed_part_cnt = 0, job_cnt = 0;
+	int error_code, failed_part_cnt = 0, job_cnt = 0, i;
 	uint32_t job_depth = 0;
 	job_queue_rec_t *job_queue_rec;
 	struct job_record *job_ptr;
@@ -323,9 +324,10 @@ extern int schedule(uint32_t job_limit)
 	char tmp_char[256];
 #endif
 	static bool backfill_sched = false;
-	static bool sched_test = false;
+	static time_t sched_update = 0;
 	static bool wiki_sched = false;
 	static int sched_timeout = 0;
+	static int def_job_limit = 100;
 	time_t now = time(NULL), sched_start;
 
 	DEF_TIMERS;
@@ -338,7 +340,8 @@ extern int schedule(uint32_t job_limit)
 	}
 
 	START_TIMER;
-	if (!sched_test) {
+	if (sched_update != slurmctld_conf.last_update) {
+		char *sched_params, *tmp_ptr;
 		char *sched_type = slurm_get_sched_type();
 		/* On BlueGene, do FIFO only with sched/backfill */
 		if (strcmp(sched_type, "sched/backfill") == 0)
@@ -348,8 +351,23 @@ extern int schedule(uint32_t job_limit)
 		    (strcmp(sched_type, "sched/wiki2") == 0))
 			wiki_sched = true;
 		xfree(sched_type);
-		sched_test = true;
+
+		sched_params = slurm_get_sched_params();
+		if (sched_params &&
+		    (tmp_ptr=strstr(sched_params, "default_queue_depth="))) {
+		/*                                 01234567890123456789 */
+			i = atoi(tmp_ptr + 20);
+			if (i < 0) {
+				error("ignoring SchedulerParameters: "
+				      "default_queue_depth value of %d", i);
+			} else {
+				      def_job_limit = i;
+			}
+		}
+		sched_update = slurmctld_conf.last_update;
 	}
+	if (job_limit == 0)
+		job_limit = def_job_limit;
 
 	lock_slurmctld(job_write_lock);
 	/* Avoid resource fragmentation if important */

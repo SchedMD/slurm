@@ -758,7 +758,7 @@ static int _reconfigure_slurm(void)
 	trigger_reconfig();
 	slurm_sched_partition_change();	/* notify sched plugin */
 	priority_g_reconfig();          /* notify priority plugin too */
-	schedule(100);			/* has its own locks */
+	schedule(0);			/* has its own locks */
 	save_all_state();
 
 	return rc;

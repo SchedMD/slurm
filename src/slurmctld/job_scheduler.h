@@ -124,7 +124,8 @@ extern void rebuild_job_part_list(struct job_record *job_ptr);
  *	pending jobs for each partition will be scheduled in priority
  *	order until a request fails
  * IN job_limit - maximum number of jobs to test now, avoid testing the full
- *		  queue on every job submit
+ *		  queue on every job submit (0 means to use the system default,
+ *		  SchedulerParameters for default_queue_depth)
  * RET count of jobs scheduled
  * Note: We re-build the queue every time. Jobs can not only be added
  *	or removed from the queue, but have their priority or partition
