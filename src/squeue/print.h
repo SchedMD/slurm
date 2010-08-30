@@ -174,6 +174,8 @@ int job_format_add_function(List list, int width, bool right_justify,
 	job_format_add_function(list,wid,right,suffix,_print_job_comment)
 #define job_format_add_reservation(list,wid,right,suffix) \
 	job_format_add_function(list,wid,right,suffix,_print_job_reservation)
+#define job_format_add_invalid(list,wid,right,suffix) \
+	job_format_add_function(list,wid,right,suffix,(void*)_print_com_invalid)
 
 /*****************************************************************************
  * Job Line Print Functions
@@ -301,6 +303,9 @@ int step_format_add_function(List list, int width, bool right_justify,
 	step_format_add_function(list,wid,right,suffix,_print_step_num_tasks)
 #define step_format_add_gres(list,wid,right,suffix) \
 	step_format_add_function(list,wid,right,suffix,_print_step_gres)
+#define step_format_add_invalid(list,wid,right,suffix) \
+	step_format_add_function(list,wid,right,suffix,	\
+					(void*)_print_com_invalid)
 
 /*****************************************************************************
  * Step Line Print Functions
@@ -329,5 +334,10 @@ int _print_step_num_tasks(job_step_info_t * step, int width,
 			bool right_justify, char *suffix);
 int _print_step_gres(job_step_info_t * step, int width,
 			bool right_justify, char *suffix);
+
+/*****************************************************************************
+ * Common Line Print Functions
+ *****************************************************************************/
+int _print_com_invalid(void * p, int width, bool right_justify, char * suffix);
 
 #endif

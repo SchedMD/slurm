@@ -975,3 +975,11 @@ int _print_weight(sinfo_data_t * sinfo_data, int width,
 		printf("%s", suffix);
 	return SLURM_SUCCESS;
 }
+
+int _print_com_invalid(sinfo_data_t * sinfo_data, int width,
+		       bool right_justify, char *suffix)
+{
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
