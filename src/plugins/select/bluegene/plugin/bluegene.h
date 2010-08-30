@@ -103,8 +103,6 @@ extern time_t last_bg_update;
 extern bool agent_fini;
 extern pthread_mutex_t block_state_mutex;
 extern pthread_mutex_t request_list_mutex;
-extern int num_block_to_free;
-extern int num_block_freed;
 extern int blocks_are_created;
 extern int num_unused_cpus;
 
@@ -112,12 +110,11 @@ extern int num_unused_cpus;
 #define BLOCK_ERROR_STATE    -3
 #define ADMIN_ERROR_STATE    -4
 #define NO_JOB_RUNNING       -1
-#define MAX_AGENT_COUNT      30
 #define BUFSIZE 4096
 #define BITSIZE 128
 /* Change BLOCK_STATE_VERSION value when changing the state save
  * format i.e. pack_block() */
-#define BLOCK_STATE_VERSION      "VER003"
+#define BLOCK_STATE_VERSION      "VER004"
 #define BLOCK_2_1_STATE_VERSION  "VER003" /*Slurm 2.1's version*/
 
 #include "bg_block_info.h"
@@ -165,7 +162,8 @@ extern bg_record_t *find_and_remove_org_from_bg_list(List my_list,
 extern bg_record_t *find_org_in_bg_list(List my_list, bg_record_t *bg_record);
 extern void *mult_free_block(void *args);
 extern void *mult_destroy_block(void *args);
-extern int free_block_list(List delete_list);
+extern List transfer_main_to_freeing(List delete_list);
+extern int free_block_list(List track_list, bool destroy, bool wait);
 extern int read_bg_conf();
 extern int validate_current_blocks(char *dir);
 

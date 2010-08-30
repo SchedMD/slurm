@@ -56,6 +56,10 @@ documents those changes that are of interest to users and admins.
     MpichGmDirectSupport.
  -- Fix bug in slurmctld restart logic that improperly reported jobs had
     invalid features: "Job 65537 has invalid feature list: fat".
+ -- BLUEGENE - Removed thread pool for destroying blocks.  It turns out the
+    memory leak we were concerned about for creating and destroying threads
+    in a plugin doesn't exist anymore.  This increases throughput dramatically,
+    allowing multiple jobs to start at the same time.
 
 * Changes in SLURM 2.2.0.pre9
 =============================

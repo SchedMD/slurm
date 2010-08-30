@@ -127,11 +127,11 @@ static int _init_status_pthread(void)
 {
 	pthread_attr_t attr;
 
-	pthread_mutex_lock( &thread_flag_mutex );
-	if ( block_thread ) {
+	pthread_mutex_lock(&thread_flag_mutex);
+	if (block_thread) {
 		debug2("Bluegene threads already running, not starting "
 		       "another");
-		pthread_mutex_unlock( &thread_flag_mutex );
+		pthread_mutex_unlock(&thread_flag_mutex);
 		return SLURM_ERROR;
 	}
 
@@ -307,7 +307,7 @@ extern int fini ( void )
 
 #ifdef HAVE_BG_L_P
 	agent_fini = true;
-	pthread_mutex_lock( &thread_flag_mutex );
+	pthread_mutex_lock(&thread_flag_mutex);
 	if ( block_thread ) {
 		verbose("Bluegene select plugin shutting down");
 		pthread_join(block_thread, NULL);
@@ -317,7 +317,7 @@ extern int fini ( void )
 		pthread_join(state_thread, NULL);
 		state_thread = 0;
 	}
-	pthread_mutex_unlock( &thread_flag_mutex );
+	pthread_mutex_unlock(&thread_flag_mutex);
 	fini_bg();
 #endif
 	return rc;
@@ -821,7 +821,7 @@ extern int select_p_update_block(update_block_msg_t *block_desc_ptr)
 		bg_record_t *found_record = NULL;
 		ListIterator itr;
 		List delete_list = list_create(NULL);
-
+		List track_list = NULL;
 		/* This loop shouldn't do much in regular Dynamic mode
 		   since there shouldn't be overlapped blocks.  But if
 		   there is a trouble block that isn't going away and
@@ -865,9 +865,13 @@ extern int select_p_update_block(update_block_msg_t *block_desc_ptr)
 			list_push(delete_list, found_record);
 		}
 		list_iterator_destroy(itr);
-		free_block_list(delete_list);
+		track_list = transfer_main_to_freeing(delete_list);
 		list_destroy(delete_list);
 		slurm_mutex_unlock(&block_state_mutex);
+		if(track_list) {
+			free_block_list(track_list, 0, 0);
+			list_destroy(track_list);
+		}
 		put_block_in_error_state(bg_record, BLOCK_ERROR_STATE, reason);
 	} else if(block_desc_ptr->state == RM_PARTITION_FREE) {
 		bg_free_block(bg_record, 0, 1);
@@ -889,6 +893,7 @@ extern int select_p_update_block(update_block_msg_t *block_desc_ptr)
 		bg_record_t *found_record = NULL;
 		ListIterator itr;
 		List delete_list = list_create(NULL);
+		List track_list = NULL;
 
 		list_push(delete_list, bg_record);
 		/* only do the while loop if we are dealing with a
@@ -945,9 +950,13 @@ extern int select_p_update_block(update_block_msg_t *block_desc_ptr)
 		}
 		list_iterator_destroy(itr);
 
-		free_block_list(delete_list);
+		track_list = transfer_main_to_freeing(delete_list);
 		list_destroy(delete_list);
 		slurm_mutex_unlock(&block_state_mutex);
+		if(track_list) {
+			free_block_list(track_list, 0, 0);
+			list_destroy(track_list);
+		}
 	} else if (block_desc_ptr->state == RM_PARTITION_CONFIGURING) {
 		/* This means recreate the block, remove it and then
 		   recreate it.

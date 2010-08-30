@@ -384,7 +384,7 @@ extern int schedule(uint32_t job_limit)
 
 	debug("sched: Running job scheduler");
 	job_queue = build_job_queue();
-	while ((job_queue_rec = (job_queue_rec_t *) 
+	while ((job_queue_rec = (job_queue_rec_t *)
 				list_pop_bottom(job_queue, sort_job_queue2))) {
 		job_ptr  = job_queue_rec->job_ptr;
 		part_ptr = job_queue_rec->part_ptr;

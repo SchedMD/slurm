@@ -117,6 +117,7 @@ extern int set_select_jobinfo(select_jobinfo_t *jobinfo,
 		error("set_select_jobinfo: jobinfo not set");
 		return SLURM_ERROR;
 	}
+
 	if (jobinfo->magic != JOBINFO_MAGIC) {
 		error("set_select_jobinfo: jobinfo magic bad");
 		return SLURM_ERROR;

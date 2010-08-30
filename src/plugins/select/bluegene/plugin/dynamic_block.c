@@ -371,6 +371,7 @@ extern bg_record_t *create_small_record(bg_record_t *bg_record,
 	char bitstring[BITSIZE];
 
 	found_record = (bg_record_t*) xmalloc(sizeof(bg_record_t));
+	found_record->magic = BLOCK_MAGIC;
 
 	found_record->job_running = NO_JOB_RUNNING;
 	found_record->user_name = xstrdup(bg_record->user_name);
@@ -814,23 +815,36 @@ static int _breakup_blocks(List block_list, List new_blocks,
 	}
 
 	if(bg_record) {
-		bg_record_t *found_record = NULL;
+		/* It appears we don't need this original record
+		 * anymore, just work off the copy if indeed it is a copy. */
 
-		if(bg_record->original) {
-			if(bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
-				info("This was a copy");
-			found_record = bg_record->original;
-		} else {
-			if(bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
-				info("looking for original");
-			found_record = find_org_in_bg_list(
-				bg_lists->main, bg_record);
+		/* bg_record_t *found_record = NULL; */
+
+		/* if(bg_record->original) { */
+		/* 	if(bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK) */
+		/* 		info("1 This was a copy %s", */
+		/* 		     bg_record->bg_block_id); */
+		/* 	found_record = bg_record->original; */
+		/* } else { */
+		/* 	if(bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK) */
+		/* 		info("looking for original"); */
+		/* 	found_record = find_org_in_bg_list( */
+		/* 		bg_lists->main, bg_record); */
+		/* } */
+		if ((bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
+		    && bg_record->original
+		    && (bg_record->original->magic != BLOCK_MAGIC)) {
+			info("This record %s has bad magic, it must be "
+			     "getting freed.  No worries it will all be "
+			     "figured out later.",
+			      bg_record->bg_block_id);
 		}
-		if(!found_record) {
-			error("this record wasn't found in the list!");
-			rc = SLURM_ERROR;
-			goto finished;
-		}
+
+		/* if(!found_record || found_record->magic != BLOCK_MAGIC) { */
+		/* 	error("this record wasn't found in the list!"); */
+		/* 	rc = SLURM_ERROR; */
+		/* 	goto finished; */
+		/* } */
 
 		if(bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK) {
 			format_node_name(bg_record, tmp_char,
@@ -841,14 +855,14 @@ static int _breakup_blocks(List block_list, List new_blocks,
 		}
 		request->save_name = xstrdup_printf(
 			"%c%c%c",
-			alpha_num[found_record->start[X]],
-			alpha_num[found_record->start[Y]],
-			alpha_num[found_record->start[Z]]);
+			alpha_num[bg_record->start[X]],
+			alpha_num[bg_record->start[Y]],
+			alpha_num[bg_record->start[Z]]);
 		if(!my_block_list) {
 			rc = SLURM_SUCCESS;
 			goto finished;
 		}
-		_split_block(block_list, new_blocks, found_record, cnodes);
+		_split_block(block_list, new_blocks, bg_record, cnodes);
 		rc = SLURM_SUCCESS;
 		goto finished;
 	}
