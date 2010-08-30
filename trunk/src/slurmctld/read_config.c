@@ -768,6 +768,8 @@ int read_slurm_conf(int recover, bool reconfig)
 	if (license_init(slurmctld_conf.licenses) != SLURM_SUCCESS)
 		fatal("Invalid Licenses value: %s", slurmctld_conf.licenses);
 
+	/* NOTE: Run restore_node_features before _restore_job_dependencies */
+	restore_node_features(recover);
 	_restore_job_dependencies();
 #ifdef 	HAVE_ELAN
 	_validate_node_proc_count();
@@ -782,7 +784,6 @@ int read_slurm_conf(int recover, bool reconfig)
 		if (recover >= 1)
 			(void) trigger_state_restore();
 	}
-	restore_node_features(recover);
 
 	/* sort config_list by weight for scheduling */
 	list_sort(config_list, &list_compare_config);
@@ -1445,6 +1446,8 @@ static int _restore_job_dependencies(void)
 	assoc_mgr_clear_used_info();
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+		(void) build_feature_list(job_ptr);
+
 		if (accounting_enforce & ACCOUNTING_ENFORCE_LIMITS) {
 			if (!IS_JOB_FINISHED(job_ptr))
 				acct_policy_add_job_submit(job_ptr);
