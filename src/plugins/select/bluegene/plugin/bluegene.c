@@ -84,7 +84,7 @@ static int  _validate_config_nodes(List curr_block_list,
 				   List found_block_list, char *dir);
 static int _delete_old_blocks(List curr_block_list,
 			      List found_block_list);
-static void *_mult_free_block(void *args);
+static void *_clear_block(void *args);
 static char *_get_bg_conf(void);
 static int  _reopen_bridge_log(void);
 static void _destroy_bitmap(void *object);
@@ -627,19 +627,21 @@ extern int free_block_list(List track_list, bool destroy, bool wait)
 	while ((bg_record = list_next(itr))) {
 		bg_free_t *bg_free = xmalloc(sizeof(bg_free_t));
 
+		/* just incase it wasn't already done. */
+		bg_record->magic = 0;
+
 		bg_free->free_cond = &free_cond;
 		bg_free->free_cnt = &free_cnt;
 		bg_free->free_mutex = &free_mutex;
 		bg_free->bg_record = bg_record;
 		bg_free->wait = wait;
-		info("going to free %s", bg_record->bg_block_id);
 		slurm_attr_init(&attr_agent);
 		if (pthread_attr_setdetachstate(
 			    &attr_agent, PTHREAD_CREATE_DETACHED))
 			error("pthread_attr_setdetachstate error %m");
 		retries = 0;
 		while (pthread_create(&thread_agent, &attr_agent,
-				      _mult_free_block, bg_free)) {
+				      _clear_block, bg_free)) {
 			error("pthread_create error %m");
 			if (++retries > MAX_PTHREAD_RETRIES)
 				fatal("Can't create "
@@ -649,7 +651,7 @@ extern int free_block_list(List track_list, bool destroy, bool wait)
 		}
 	}
 
-	/* _mult_free_block should handle cleanup so just return */
+	/* _clear_block should handle cleanup so just return */
 	if (!wait) {
 		list_iterator_destroy(itr);
 		return SLURM_SUCCESS;
@@ -1567,7 +1569,7 @@ static int _delete_old_blocks(List curr_block_list, List found_block_list)
 
 /* Free multiple blocks in parallel no locks should be needed here
  * except for destroying */
-static void *_mult_free_block(void *args)
+static void *_clear_block(void *args)
 {
 	bg_free_t *bg_free = (bg_free_t *)args;
 	bg_record_t *bg_record = bg_free->bg_record;
@@ -1576,22 +1578,20 @@ static void *_mult_free_block(void *args)
 		goto end_it;
 
 	if (bg_record->job_ptr) {
-		info("_mult_free_block: We are freeing a block (%s) that "
-		     "has job %u(%u), This should never happen.",
+		info("_clear_block: We are freeing a block (%s) that "
+		     "has job %u(%u).",
 		     bg_record->bg_block_id,
 		     bg_record->job_ptr->job_id,
 		     bg_record->job_running);
 		bg_requeue_job(bg_record->job_ptr->job_id, 0);
-		bg_record->job_ptr = NULL;
-		bg_record->job_running = NO_JOB_RUNNING;
 	}
 
 	if(bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
-		info("_mult_free_block: freeing the block %s.",
+		info("_clear_block: freeing the block %s.",
 		     bg_record->bg_block_id);
 	bg_free_block(bg_record, 1, 0);
 	if (bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
-		info("_mult_free_block: done %s", bg_record->bg_block_id);
+		info("_clear_block: done %s", bg_record->bg_block_id);
 
 	if (!bg_free->wait) {
 		slurm_mutex_lock(&block_state_mutex);
@@ -1608,28 +1608,28 @@ static void *_mult_free_block(void *args)
 
 #ifdef HAVE_BG_FILES
 		if(bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
-			info("_mult_free_block: removing %s from database",
+			info("_clear_block: removing %s from database",
 			     bg_record->bg_block_id);
 
 		rc = bridge_remove_block(bg_record->bg_block_id);
 		if (rc != STATUS_OK) {
 			if(rc == PARTITION_NOT_FOUND) {
-				debug("_mult_free_block: block %s is not found",
+				debug("_clear_block: block %s is not found",
 				      bg_record->bg_block_id);
 			} else {
-				error("_mult_free_block: "
+				error("_clear_block: "
 				      "rm_remove_partition(%s): %s",
 				      bg_record->bg_block_id,
 				      bg_err_str(rc));
 			}
 		} else
 			if(bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
-				info("_mult_free_block: done %s",
+				info("_clear_block: done %s",
 				     bg_record->bg_block_id);
 #endif
 		destroy_bg_record(bg_record);
 		if(bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
-			info("_mult_free_block: destroyed");
+			info("_clear_block: destroyed");
 
 		slurm_mutex_unlock(&block_state_mutex);
 	}

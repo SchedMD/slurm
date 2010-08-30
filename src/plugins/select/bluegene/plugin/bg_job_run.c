@@ -830,6 +830,11 @@ static void _start_agent(bg_action_t *bg_action_ptr)
 		slurm_mutex_unlock(&block_state_mutex);
 		if((rc = boot_block(bg_record)) != SLURM_SUCCESS) {
 			slurm_mutex_lock(&block_state_mutex);
+			if(!_make_sure_block_still_exists(bg_action_ptr,
+							  bg_record)) {
+				slurm_mutex_unlock(&block_state_mutex);
+				return;
+			}
 			_reset_block(bg_record);
 			slurm_mutex_unlock(&block_state_mutex);
 			bg_requeue_job(bg_action_ptr->job_ptr->job_id, 1);

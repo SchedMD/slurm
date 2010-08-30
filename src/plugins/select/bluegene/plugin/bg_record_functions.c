@@ -638,79 +638,50 @@ extern int update_block_user(bg_record_t *bg_record, int set)
 }
 
 /* If any nodes in node_list are drained, draining, or down,
- *   then just return
- *   else drain all of the nodes
- * This function lets us drain an entire bgblock only if
- * we have not already identified a specific node as bad. */
+ * put block in an error state and drain the nodes which aren't
+ * already in the bad state.
+ * block_state_mutex must be unlocked before calling this.
+ */
 extern void drain_as_needed(bg_record_t *bg_record, char *reason)
 {
-	bool needed = true;
-	hostlist_t hl;
-	char *host = NULL;
-
-	if(bg_record->job_running > NO_JOB_RUNNING) {
-		bg_requeue_job(bg_record->job_running, 0);
-		slurm_mutex_lock(&block_state_mutex);
-		if(remove_from_bg_list(bg_lists->job_running, bg_record)
-		   == SLURM_SUCCESS) {
-			num_unused_cpus += bg_record->cpu_cnt;
-		}
+	slurm_mutex_lock(&block_state_mutex);
+	if(!block_ptr_exist_in_list(bg_lists->main, bg_record)) {
 		slurm_mutex_unlock(&block_state_mutex);
-	}
-
-	/* small blocks */
-	if(bg_record->cpu_cnt < bg_conf->cpus_per_bp) {
-		debug2("small block");
-		goto end_it;
-	}
-
-	/* at least one base partition */
-	hl = hostlist_create(bg_record->nodes);
-	if (!hl) {
-		slurm_drain_nodes(bg_record->nodes, reason,
-				  slurm_get_slurm_user_id());
+		error("drain_as_needed: block disappeared");
 		return;
 	}
-	while ((host = hostlist_shift(hl))) {
-		if (node_already_down(host)) {
-			needed = false;
-			free(host);
-			break;
-		}
-		free(host);
-	}
-	hostlist_destroy(hl);
 
-	if (needed) {
+	if(bg_record->job_running > NO_JOB_RUNNING)
+		bg_requeue_job(bg_record->job_running, 0);
+
+ 	if(bg_record->cpu_cnt >= bg_conf->cpus_per_bp) {
+		/* at least one base partition */
+		hostlist_t hl = hostlist_create(bg_record->nodes);
+		char *host = NULL;
+
+		if (!hl) {
+			slurm_drain_nodes(bg_record->nodes, reason,
+					  slurm_get_slurm_user_id());
+			return;
+		}
+		while ((host = hostlist_shift(hl))) {
+			if (!node_already_down(host))
+				slurm_drain_nodes(host, reason,
+						  slurm_get_slurm_user_id());
+			free(host);
+		}
+		hostlist_destroy(hl);
+	} else
 		slurm_drain_nodes(bg_record->nodes, reason,
 				  slurm_get_slurm_user_id());
-	}
-end_it:
-	while(bg_record->job_running > NO_JOB_RUNNING) {
-		debug2("block %s is still running job %d",
-		       bg_record->bg_block_id, bg_record->job_running);
-		sleep(1);
-	}
+
+	slurm_mutex_unlock(&block_state_mutex);
 
 	put_block_in_error_state(bg_record, BLOCK_ERROR_STATE, reason);
 	return;
 }
 
-extern int set_ionodes(bg_record_t *bg_record, int io_start, int io_nodes)
-{
-	char bitstring[BITSIZE];
-
-	if(!bg_record)
-		return SLURM_ERROR;
-
-	bg_record->ionode_bitmap = bit_alloc(bg_conf->numpsets);
-	/* Set the correct ionodes being used in this block */
-	bit_nset(bg_record->ionode_bitmap, io_start, io_start+io_nodes);
-	bit_fmt(bitstring, BITSIZE, bg_record->ionode_bitmap);
-	bg_record->ionodes = xstrdup(bitstring);
-	return SLURM_SUCCESS;
-}
-
+/* block_state_mutex must be locked before calling this. */
 extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq,
 			 bool no_check, bitoff_t io_start)
 {
@@ -1448,6 +1419,7 @@ extern int up_nodecard(char *bp_name, bitstr_t *ionode_bitmap)
 	return SLURM_SUCCESS;
 }
 
+/* block_state_mutex must be unlocked before calling this. */
 extern int put_block_in_error_state(bg_record_t *bg_record,
 				    int state, char *reason)
 {
@@ -1463,8 +1435,17 @@ extern int put_block_in_error_state(bg_record_t *bg_record,
 		   to wait for the job to be removed.  We don't really
 		   need to free the block though since we may just
 		   want it to be in an error state for some reason. */
-		while(bg_record->job_running > NO_JOB_RUNNING)
+		while(bg_record->job_running > NO_JOB_RUNNING) {
+			if(bg_record->magic != BLOCK_MAGIC) {
+				error("While putting block %s in a error "
+				      "state it was destroyed",
+				      bg_record->bg_block_id);
+				return SLURM_ERROR;
+			}
+			debug2("block %s is still running job %d",
+			       bg_record->bg_block_id, bg_record->job_running);
 			sleep(1);
+		}
 	}
 
 	slurm_mutex_lock(&block_state_mutex);

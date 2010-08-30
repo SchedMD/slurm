@@ -266,6 +266,23 @@ static int _post_allocate(bg_record_t *bg_record)
 }
 
 #ifdef HAVE_BG_FILES
+
+static int _set_ionodes(bg_record_t *bg_record, int io_start, int io_nodes)
+{
+	char bitstring[BITSIZE];
+
+	if(!bg_record)
+		return SLURM_ERROR;
+
+	bg_record->ionode_bitmap = bit_alloc(bg_conf->numpsets);
+	/* Set the correct ionodes being used in this block */
+	bit_nset(bg_record->ionode_bitmap, io_start, io_start+io_nodes);
+	bit_fmt(bitstring, BITSIZE, bg_record->ionode_bitmap);
+	bg_record->ionodes = xstrdup(bitstring);
+	return SLURM_SUCCESS;
+}
+
+
 #ifdef HAVE_BGL
 extern int find_nodecard_num(rm_partition_t *block_ptr, rm_nodecard_t *ncard,
 			     int *nc_id)
@@ -659,7 +676,7 @@ int read_bg_blocks(List curr_block_list)
 				io_cnt = 0;
 			}
 #endif
-			if(set_ionodes(bg_record, io_start, io_cnt)
+			if(_set_ionodes(bg_record, io_start, io_cnt)
 			   == SLURM_ERROR)
 				error("couldn't create ionode_bitmap "
 				      "for ionodes %d to %d",
