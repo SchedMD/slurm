@@ -447,6 +447,10 @@ documents those changes that are of interest to users and admins.
     like postgres over mysql for some reason here you go. (Work done
     primarily by Hongjia Cao, NUDT.)
 
+* Changes in SLURM 2.1.13
+=========================
+ -- Improve logging of invalid sinfo and squeue print options.
+
 * Changes in SLURM 2.1.12
 =========================
  -- Fixes for building on OS X 10.5.
