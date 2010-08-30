@@ -37,7 +37,7 @@ See our <a href="accounting.html">Accounting</a> web page for more information.<
 <li><b>Debuggers</b> and debugging tools</li>
 <ul>
 <li><a href="http://www.totalviewtech.com/"><b>TotalView</b></a>
-is a GUI-based source code debugger well suited for parallel applications.<li>
+is a GUI-based source code debugger well suited for parallel applications.</li>
 <li><a href="http://padb.pittman.org.uk/"><b>Padb</b></a>
 is a job inspection tool for examining and debugging parallel programs, primarily it simplifies the process of gathering stack traces but also supports a wide range of other functions.
 It's an open source, non-interactive, command line, scriptable tool intended for use by programmers and system administrators alike.</li>
