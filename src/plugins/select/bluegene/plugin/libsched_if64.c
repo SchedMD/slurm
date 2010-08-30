@@ -40,13 +40,21 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+#include <sys/types.h>
 
 int get_parameters(void *params)
 {
-	char *partition = getenv("MPIRUN_PARTITION"); /* get MPIRUN env
-						   * var to see if we
-						   * are inside slurm
-						   * or not */
+	char *partition;
+
+	/* Always allow root to run no matter what.  This is needed
+	   for HTC mode where it is common to run outside of SLURM.
+	*/
+	if (getuid() == 0)
+		return 0;
+
+	/* get MPIRUN env var to see if we are inside slurm or not */
+	partition = getenv("MPIRUN_PARTITION");
 	if (!partition || (strlen(partition) < 3)) {
 		printf("YOU ARE OUTSIDE OF SLURM!!!! NOT RUNNING MPIRUN!\n");
 		return 1;
