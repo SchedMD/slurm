@@ -38,7 +38,10 @@ documents those changes that are of interest to users and admins.
     GPU devices should be used for each job or job step and CUDA version 3.1+
     is used. NOTE: SLURM's generic resource support is still under development.
  -- Modify select/cons_res to pack jobs onto allocated nodes differently and
-    minimize system fragmentation.
+    minimize system fragmentation. For example on nodes with 8 CPUs each, a
+    job needing 10 CPUs will now ideally be allocated 8 CPUs on one node and
+    2 CPUs on another node. Previously the job would have ideally been
+    allocated 5 CPUs on each node, fragmenting the unused resources more.
  -- Modified the behavior of update_job() in job_mgr.c to return when the first error
     is encountered instead of continuing with more job updates.
 

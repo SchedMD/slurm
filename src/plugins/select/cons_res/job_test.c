@@ -1154,8 +1154,10 @@ static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 				 * them and then the step layout will sort
 				 * things out. */
 				if ((job_ptr->details->shared != 0) &&
-				    (avail_cpus > rem_cpus))
+				    (avail_cpus > rem_cpus)) {
 					avail_cpus = rem_cpus;
+					cpu_cnt[i] = MAX(rem_cpus, 1);
+				}
 
 				total_cpus += avail_cpus;
 				/* enforce the max_cpus limit */
@@ -1188,8 +1190,10 @@ static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 				 * them and then the step layout will sort
 				 * things out. */
 				if ((job_ptr->details->shared != 0) &&
-				    (avail_cpus > rem_cpus))
+				    (avail_cpus > rem_cpus)) {
 					avail_cpus = rem_cpus;
+					cpu_cnt[i] = MAX(rem_cpus, 1);
+				}
 
 				total_cpus += avail_cpus;
 				/* enforce the max_cpus limit */
@@ -1268,8 +1272,10 @@ static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 				 * them and then the step layout will sort
 				 * things out. */
 				if ((job_ptr->details->shared != 0) &&
-				    (avail_cpus > rem_cpus))
+				    (avail_cpus > rem_cpus)) {
 					avail_cpus = rem_cpus;
+					cpu_cnt[i] = MAX(rem_cpus, 1);
+				}
 
 				total_cpus += avail_cpus;
 				/* enforce the max_cpus limit */
