@@ -684,6 +684,9 @@ extern int free_block_list(List track_list, bool destroy, bool wait)
 	debug("Freed them all");
 	slurm_mutex_unlock(&free_mutex);
 
+	slurm_mutex_destroy(&free_mutex);
+	pthread_cond_destroy(&free_cond);
+
 	if ((bg_conf->layout_mode == LAYOUT_DYNAMIC) || destroy) {
 		/* If no block is in error state remove and destroy them. */
 		list_iterator_reset(itr);
