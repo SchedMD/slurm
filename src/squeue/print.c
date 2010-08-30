@@ -1449,3 +1449,10 @@ static int _filter_step(job_step_info_t * step)
 
 	return 0;
 }
+
+int _print_com_invalid(void * p, int width, bool right, char* suffix)
+{
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}

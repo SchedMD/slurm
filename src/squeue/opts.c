@@ -504,10 +504,20 @@ extern int parse_format( char* format )
 							   field_size,
 							   right_justify,
 							   suffix );
-			else
+			else {
+				prefix = xstrdup("%");
+				xstrcat(prefix, token);
+				xfree(suffix);
+				suffix = prefix;
+				
+				step_format_add_invalid( params.format_list,
+							   field_size,
+							   right_justify,
+							   suffix );
 				error ( "Invalid job step format "
 					"specification: %c",
 					field[0] );
+			}
 		} else {
 			if (field[0] == 'a')
 				job_format_add_account( params.format_list,
@@ -711,9 +721,19 @@ extern int parse_format( char* format )
 							   field_size,
 							   right_justify,
 							   suffix );
-			else
+			else {
+				prefix = xstrdup("%");
+				xstrcat(prefix, token);
+				xfree(suffix);
+				suffix = prefix;
+				
+				job_format_add_invalid( params.format_list,
+							   field_size,
+							   right_justify,
+							   suffix );
 				error( "Invalid job format specification: %c",
 				       field[0] );
+			}
 		}
 		token = strtok_r( NULL, "%", &tmp_char);
 	}
@@ -752,7 +772,7 @@ _get_prefix( char *token )
  * OUT field - the letter code for the data type
  * OUT field_size - byte count
  * OUT right_justify - true of field to be right justified
- * OUT suffix - tring containing everthing after the field specification
+ * OUT suffix - string containing everthing after the field specification
  */
 static void
 _parse_token( char *token, char *field, int *field_size, bool *right_justify,
