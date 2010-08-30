@@ -1,0 +1,10 @@
+##
+# Metadata for RPM/TAR makefile targets
+##
+  Meta:         1
+  Name:         slurm_wrappers
+  Major:        1
+  Minor:        1
+  Micro:        1
+  Version:      1.1.1
+  Release:      2
