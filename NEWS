@@ -54,6 +54,8 @@ documents those changes that are of interest to users and admins.
     HeartbeatInterval, JobAcctFrequency, JobAcctLogFile (instead use
     AccountingStorageLoc), JobAcctType, KillTree, MaxMemPerTask, and
     MpichGmDirectSupport.
+ -- Fix bug in slurmctld restart logic that improperly reported jobs had
+    invalid features: "Job 65537 has invalid feature list: fat".
 
 * Changes in SLURM 2.2.0.pre9
 =============================
