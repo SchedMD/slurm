@@ -626,9 +626,18 @@ _parse_format( char* format )
 					field_size,
 					right_justify,
 					suffix );
-		} else
+		} else {
+			prefix = xstrdup("%");
+			xstrcat(prefix, token);
+			xfree(suffix);
+			suffix = prefix;			
+			format_add_invalid( params.format_list,
+					    field_size,
+					    right_justify,
+					    suffix );
 			fprintf(stderr, "Invalid node format specification: %c\n",
 			        field[0] );
+		}
 		token = strtok_r( NULL, "%", &tmp_char);
 	}
 
