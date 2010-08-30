@@ -314,7 +314,7 @@ extern int schedule(uint32_t job_limit)
 	uint32_t job_depth = 0;
 	job_queue_rec_t *job_queue_rec;
 	struct job_record *job_ptr;
-	struct part_record **failed_parts = NULL;
+	struct part_record *part_ptr, **failed_parts = NULL;
 	bitstr_t *save_avail_node_bitmap;
 	/* Locks: Read config, write job, write node, read partition */
 	slurmctld_lock_t job_write_lock =
@@ -386,6 +386,9 @@ extern int schedule(uint32_t job_limit)
 	job_queue = build_job_queue();
 	while ((job_queue_rec = (job_queue_rec_t *) 
 				list_pop_bottom(job_queue, sort_job_queue2))) {
+		job_ptr  = job_queue_rec->job_ptr;
+		part_ptr = job_queue_rec->part_ptr;
+		xfree(job_queue_rec);
 		if ((time(NULL) - sched_start) >= sched_timeout) {
 			debug("sched: loop taking too long, breaking out");
 			break;
@@ -395,7 +398,6 @@ extern int schedule(uint32_t job_limit)
 			       job_depth);
 			break;
 		}
-		job_ptr = job_queue_rec->job_ptr;
 		if (!IS_JOB_PENDING(job_ptr))
 			continue;	/* started in other partition */
 		if (job_ptr->priority == 0)	{ /* held */
@@ -407,9 +409,9 @@ extern int schedule(uint32_t job_limit)
 			       job_ptr->priority);
 			continue;
 		}
-		if (job_ptr->part_ptr != job_queue_rec->part_ptr) {
+		if (job_ptr->part_ptr != part_ptr) {
 			/* Cycle through partitions usable for this job */
-			job_ptr->part_ptr = job_queue_rec->part_ptr;
+			job_ptr->part_ptr = part_ptr;
 		}
 		if ((job_ptr->resv_name == NULL) &&
 		    _failed_partition(job_ptr->part_ptr, failed_parts,

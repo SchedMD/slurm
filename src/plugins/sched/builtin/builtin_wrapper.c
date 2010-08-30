@@ -148,9 +148,10 @@ void slurm_sched_plugin_job_is_pending( void )
 	while ((job_queue_rec = (job_queue_rec_t *) 
 				list_pop_bottom(job_queue, sort_job_queue2))) {
 		job_ptr  = job_queue_rec->job_ptr;
-		if (job_queue_rec->part_ptr != job_ptr->part_ptr)
+		part_ptr = job_queue_rec->part_ptr;
+		xfree(job_queue_rec);
+		if (part_ptr != job_ptr->part_ptr)
 			continue;	/* Only test one partition */
-		part_ptr = job_ptr->part_ptr;
 
 		/* Determine minimum and maximum node counts */
 		min_nodes = MAX(job_ptr->details->min_nodes,
