@@ -137,8 +137,6 @@ extern bg_record_t *find_bg_record_in_list(List my_list, char *bg_block_id);
 extern int update_block_user(bg_record_t *bg_block_id, int set);
 extern void drain_as_needed(bg_record_t *bg_record, char *reason);
 
-extern int set_ionodes(bg_record_t *bg_record, int io_start, int io_nodes);
-
 extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq,
 			 bool no_check, bitoff_t io_start);
 extern int handle_small_record_request(List records, blockreq_t *blockreq,

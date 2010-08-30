@@ -808,7 +808,15 @@ extern int select_p_update_block(update_block_msg_t *block_desc_ptr)
 
 	/* First fail any job running on this block */
 	if(bg_record->job_running > NO_JOB_RUNNING) {
-		slurm_fail_job(bg_record->job_running);
+		slurm_mutex_unlock(&block_state_mutex);
+		bg_requeue_job(bg_record->job_running, 0);
+		slurm_mutex_lock(&block_state_mutex);
+		if(!block_ptr_exist_in_list(bg_lists->main, bg_record)) {
+			slurm_mutex_unlock(&block_state_mutex);
+			error("while trying to put block in "
+			      "error state it disappeared");
+			return SLURM_ERROR;
+		}
 		/* need to set the job_ptr to NULL
 		   here or we will get error message
 		   about us trying to free this block
@@ -846,16 +854,10 @@ extern int select_p_update_block(update_block_msg_t *block_desc_ptr)
 				     found_record->job_running,
 				     found_record->bg_block_id,
 				     bg_record->bg_block_id);
-				/* We need to fail this job first to
-				   get the correct result even though
-				   we are freeing the block later */
-				slurm_fail_job(found_record->job_running);
-				/* need to set the job_ptr to NULL
-				   here or we will get error message
-				   about us trying to free this block
-				   with a job in it.
+				/* This job will be requeued in the
+				   free_block_list code below, just
+				   make note of it here.
 				*/
-				found_record->job_ptr = NULL;
 			} else {
 				debug2("block %s is part of errored %s "
 				       "but no running job",
@@ -920,16 +922,10 @@ extern int select_p_update_block(update_block_msg_t *block_desc_ptr)
 				     found_record->job_running,
 				     found_record->bg_block_id,
 				     bg_record->bg_block_id);
-				/* We need to fail this job first to
-				   get the correct result even though
-				   we are freeing the block later */
-				slurm_fail_job(found_record->job_running);
-				/* need to set the job_ptr to NULL
-				   here or we will get error message
-				   about us trying to free this block
-				   with a job in it.
+				/* This job will be requeued in the
+				   free_block_list code below, just
+				   make note of it here.
 				*/
-				found_record->job_ptr = NULL;
 			} else {
 				debug2("block %s is part of to be freed %s "
 				       "but no running job",
