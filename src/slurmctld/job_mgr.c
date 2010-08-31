@@ -8113,7 +8113,7 @@ static bool _validate_acct_policy(job_desc_msg_t *job_desc,
 	slurmdb_association_rec_t *assoc_ptr = assoc_in;
 	int parent = 0;
 	int timelimit_set = 0;
-	char *user_name = assoc_ptr->user;
+	char *user_name = NULL;
 	bool rc = true;
 	bool limit_set_max_cpus = 0;
 	assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK,
@@ -8121,6 +8121,13 @@ static bool _validate_acct_policy(job_desc_msg_t *job_desc,
 
 	xassert(limit_set_max_nodes);
 	//(*limit_set_max_nodes) = 0;
+
+	if(!assoc_ptr) {
+		error("_validate_acct_policy: no assoc_ptr given for job.");
+		return false;
+	}
+
+	user_name = assoc_ptr->user;
 
 	assoc_mgr_lock(&locks);
 	if(qos_ptr) {
