@@ -364,6 +364,7 @@ extern int schedule(uint32_t job_limit)
 				      def_job_limit = i;
 			}
 		}
+		xfree(sched_params);
 		sched_update = slurmctld_conf.last_update;
 	}
 	if (job_limit == 0)
