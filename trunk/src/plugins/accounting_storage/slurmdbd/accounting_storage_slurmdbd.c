@@ -113,10 +113,18 @@ static bool running_db_inx = 0;
 extern int jobacct_storage_p_job_start(void *db_conn,
 				       struct job_record *job_ptr);
 
+static void _partial_destroy_dbd_job_start(void *object)
+{
+	dbd_job_start_msg_t *req = (dbd_job_start_msg_t *)object;
+	if(req) {
+		xfree(req->block_id);
+		xfree(req);
+	}
+}
+
 static int _setup_job_start_msg(dbd_job_start_msg_t *req,
 				struct job_record *job_ptr)
 {
-	char *block_id = NULL;
 	char temp_bit[BUF_SIZE];
 
 	if (!job_ptr->details || !job_ptr->details->submit_time) {
@@ -132,14 +140,14 @@ static int _setup_job_start_msg(dbd_job_start_msg_t *req,
 #ifdef HAVE_BG
 	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
 				    SELECT_JOBDATA_BLOCK_ID,
-				    &block_id);
+				    &req->block_id);
 	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
 				    SELECT_JOBDATA_NODE_CNT,
 				    &req->alloc_nodes);
 #else
 	req->alloc_nodes   = job_ptr->total_nodes;
 #endif
-	req->block_id      = block_id;
+
 	if (job_ptr->resize_time) {
 		req->eligible_time = job_ptr->resize_time;
 		req->submit_time   = job_ptr->resize_time;
@@ -158,16 +166,6 @@ static int _setup_job_start_msg(dbd_job_start_msg_t *req,
 	req->name          = job_ptr->name;
 	req->nodes         = job_ptr->nodes;
 
-#ifdef HAVE_BG
-	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
-				    SELECT_JOBDATA_BLOCK_ID,
-				    &block_id);
-	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
-				    SELECT_JOBDATA_NODE_CNT,
-				    &req->alloc_nodes);
-#else
-	req->alloc_nodes   = job_ptr->total_nodes;
-#endif
 	if(job_ptr->node_bitmap)
 		req->node_inx = bit_fmt(temp_bit, sizeof(temp_bit),
 					job_ptr->node_bitmap);
@@ -227,16 +225,17 @@ static void *_set_db_inx_thread(void *no_data)
 					xmalloc(sizeof(dbd_job_start_msg_t));
 				if(_setup_job_start_msg(req, job_ptr)
 				   != SLURM_SUCCESS) {
-					xfree(req);
+					_partial_destroy_dbd_job_start(req);
 					continue;
 				}
 				/* we only want to destory the pointer
-				   here not the contents so just do an
-				   xfree on it.
+				   here not the contents (except
+				   block_id) so call special function
+				   _partial_destroy_dbd_job_start.
 				*/
 				if(!local_job_list)
 					local_job_list = list_create(
-						slurm_destroy_char);
+						_partial_destroy_dbd_job_start);
 				list_append(local_job_list, req);
 			}
 		}
