@@ -4,41 +4,10 @@
 
 <h2>Index</h2>
 <ul>
-<li><a href="#20">SLURM Version 2.0, May 2009</a></li>
 <li><a href="#21">SLURM Version 2.1, January 2010</a></li>
 <li><a href="#22">SLURM Version 2.2, available in late 2010</a></li>
-<li><a href="#23">SLURM Version 2.3 and beyond</a></li>
-</ul>
-
-<h2><a name="20">Major Updates in SLURM Version 2.0</a></h2>
-<p>SLURM Version 2.0 was released in May 2009.
-Major enhancements include:
-<ul>
-<li>Sophisticated <a href="priority_multifactor.html">job prioritization
-plugin</a> is now available.
-Jobs can be prioritized based upon their age, size and/or fair-share resource
-allocation using hierarchical bank accounts.</li>
-<li>An assortment of <a href="resource_limits.html">resource limits</a>
-can be imposed upon individual users and/or hierarchical bank accounts
-such as maximum job time limit, maximum job size, and maximum number of
-running jobs.</li>
-<li><a href="reservations.html">Advanced reservations</a> can be made to
-insure resources will be available when needed.</li>
-<li>Idle nodes can now be completely <a href="power_save.html">powered
-down</a> when idle and automatically restarted when their is work
-available.</li>
-<li>Jobs in higher priority partitions (queues) can automatically
-<a href="preempt.html">preempt</a> jobs in lower priority queues.
-The preempted jobs will automatically resume execution upon completion
-of the higher priority job.</li>
-<li>Specific cores are allocated to jobs and jobs steps in order to effective
-preempt or gang schedule jobs.</li>
-<li>A new configuration parameter, <i>PrologSlurmctld</i>, can be used to
-support the booting of different operating systems for each job.</li>
-<li>Added switch topology configuration options to optimize job resource
-allocation with respect to communication performance.</li>
-<li>Automatic <a href="checkpoint_blcr.html">Checkpoint/Restart using BLCR</a>
-is now available.</li>
+<li><a href="#23">SLURM Version 2.3, available in 2011</a></li>
+<li><a href="#24">SLURM Version 2.4 and beyond</a></li>
 </ul>
 
 <h2><a name="21">Major Updates in SLURM Version 2.1</a></h2>
@@ -79,21 +48,31 @@ different versions of the commands and deamons to interoperate.</li>
 <li>Permit SLURM commands to operate between clusters (e.g. status jobs on a
 different cluster or submit a job on one cluster to run on another).</li>
 <li>Major enhancements for high-throughput computing. Job throughput
-rates now exceed 120,000 jobs per hour.</li>
+rates now exceed 120,000 jobs per hour with bursts of job submissions at
+several times that rate.</li>
 </ul>
 
-<h2><a name="23">Major Updates in SLURM Version 2.3 and beyond</a></h2>
-<p> Detailed plans for release dates and contents of future SLURM releases have
-not been finalized. Anyone desiring to perform SLURM development should notify
-<a href="mailto:slurm-dev@lists.llnl.gov">slurm-dev@lists.llnl.gov</a>
+<h2><a name="23">Major Updates in SLURM Version 2.3</a></h2>
+<p>SLURM Version 2.3 release is planned in 2011.
+Major enhancements currently planned include:
+<ul>
+<li>Support for Cray computers (integration with ALPS/BASIL).</li>
+<li>Support for BlueGene/Q computers.</li>
+<li>Integration with FlexLM license management.</li>
+<li>Numerous enhancements to advanced resource reservations.</li>
+</ul>
+
+<h2><a name="23">Major Updates in SLURM Version 2.4 and beyond</a></h2>
+<p> Detailed plans for release dates and contents of additional SLURM releases
+have not been finalized. Anyone desiring to perform SLURM development should
+notify <a href="mailto:slurm-dev@lists.llnl.gov">slurm-dev@lists.llnl.gov</a>
 to coordinate activities. Future development plans includes:
 <ul>
-<li>Support for BlueGene/Q systems.</li>
 <li>Add Kerberos credential support including credential forwarding
 and refresh.</li>
 <li>Provide a web-based SLURM administration tool.</li>
 </ul>
 
-<p style="text-align:center;">Last modified 30 August 2010</p>
+<p style="text-align:center;">Last modified 31 August 2010</p>
 
 <!--#include virtual="footer.txt"-->
