@@ -59,6 +59,7 @@
 #include "../block_allocator/block_allocator.h"
 
 #define BLOCK_MAGIC 0x3afd
+#define BLOCK_DELETE_MAGIC 0x3afe
 
 typedef struct bg_record {
 	rm_partition_t *bg_block;       /* structure to hold info from db2 */

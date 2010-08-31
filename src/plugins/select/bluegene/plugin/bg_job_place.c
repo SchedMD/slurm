@@ -213,8 +213,8 @@ static int _check_images(struct job_record* job_ptr,
 	int allow = 0;
 
 #ifdef HAVE_BGL
-	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
-				    SELECT_JOBDATA_BLRTS_IMAGE, blrtsimage);
+	get_select_jobinfo(job_ptr->select_jobinfo->data,
+			   SELECT_JOBDATA_BLRTS_IMAGE, blrtsimage);
 
 	if (*blrtsimage) {
 		allow = _test_image_perms(*blrtsimage, bg_conf->blrts_list,
@@ -228,8 +228,8 @@ static int _check_images(struct job_record* job_ptr,
 		}
 	}
 #endif
-	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
-				    SELECT_JOBDATA_LINUX_IMAGE, linuximage);
+	get_select_jobinfo(job_ptr->select_jobinfo->data,
+			   SELECT_JOBDATA_LINUX_IMAGE, linuximage);
 	if (*linuximage) {
 		allow = _test_image_perms(*linuximage, bg_conf->linux_list,
 					  job_ptr);
@@ -240,8 +240,8 @@ static int _check_images(struct job_record* job_ptr,
 		}
 	}
 
-	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
-				    SELECT_JOBDATA_MLOADER_IMAGE, mloaderimage);
+	get_select_jobinfo(job_ptr->select_jobinfo->data,
+			   SELECT_JOBDATA_MLOADER_IMAGE, mloaderimage);
 	if (*mloaderimage) {
 		allow = _test_image_perms(*mloaderimage,
 					  bg_conf->mloader_list,
@@ -255,8 +255,8 @@ static int _check_images(struct job_record* job_ptr,
 		}
 	}
 
-	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
-				    SELECT_JOBDATA_RAMDISK_IMAGE, ramdiskimage);
+	get_select_jobinfo(job_ptr->select_jobinfo->data,
+			   SELECT_JOBDATA_RAMDISK_IMAGE, ramdiskimage);
 	if (*ramdiskimage) {
 		allow = _test_image_perms(*ramdiskimage,
 					  bg_conf->ramdisk_list,
@@ -610,7 +610,7 @@ static int _check_for_booted_overlapping_blocks(
 						     found_record->bg_block_id);
 
 				if(bg_conf->layout_mode == LAYOUT_DYNAMIC) {
-					List temp_list = list_create(NULL);
+					List tmp_list = list_create(NULL);
 					/* this will remove and
 					 * destroy the memory for
 					 * bg_record
@@ -663,11 +663,11 @@ static int _check_for_booted_overlapping_blocks(
 					} else
 						destroy_bg_record(bg_record);
 
-					list_push(temp_list, found_record);
+					list_push(tmp_list, found_record);
 					slurm_mutex_unlock(&block_state_mutex);
 
-					free_block_list(temp_list, 0, 0);
-					list_destroy(temp_list);
+					free_block_list(NO_VAL, tmp_list, 0, 0);
+					list_destroy(tmp_list);
 				}
 				rc = 1;
 
@@ -857,12 +857,12 @@ static int _find_best_block_match(List block_list,
 		return SLURM_ERROR;
 	}
 
-	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
-				    SELECT_JOBDATA_CONN_TYPE, &conn_type);
-	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
-				    SELECT_JOBDATA_GEOMETRY, &req_geometry);
-	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
-				    SELECT_JOBDATA_ROTATE, &rotate);
+	get_select_jobinfo(job_ptr->select_jobinfo->data,
+			   SELECT_JOBDATA_CONN_TYPE, &conn_type);
+	get_select_jobinfo(job_ptr->select_jobinfo->data,
+			   SELECT_JOBDATA_GEOMETRY, &req_geometry);
+	get_select_jobinfo(job_ptr->select_jobinfo->data,
+			   SELECT_JOBDATA_ROTATE, &rotate);
 
 #ifdef HAVE_BGL
 	if((rc = _check_images(job_ptr, &blrtsimage, &linuximage,
@@ -1112,7 +1112,7 @@ static int _find_best_block_match(List block_list,
 						bg_record->job_running =
 							NO_JOB_RUNNING;
 					} else if((bg_record->job_running
-						  == BLOCK_ERROR_STATE)
+						   == BLOCK_ERROR_STATE)
 						  && (bg_conf->slurm_debug_flags
 						      & DEBUG_FLAG_BG_PICK))
 						info("taking off (%s) "
@@ -1499,8 +1499,8 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 	block_list = copy_bg_list(bg_lists->main);
 	slurm_mutex_unlock(&block_state_mutex);
 
-	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
-				    SELECT_JOBDATA_CONN_TYPE, &conn_type);
+	get_select_jobinfo(job_ptr->select_jobinfo->data,
+			   SELECT_JOBDATA_CONN_TYPE, &conn_type);
 	if(conn_type == SELECT_NAV) {
 		if(bg_conf->bp_node_cnt == bg_conf->nodecard_node_cnt)
 			conn_type = SELECT_SMALL;
@@ -1509,9 +1509,9 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 		else if(job_ptr->details->min_cpus < bg_conf->cpus_per_bp)
 			conn_type = SELECT_SMALL;
 
-		select_g_select_jobinfo_set(job_ptr->select_jobinfo,
-					    SELECT_JOBDATA_CONN_TYPE,
-					    &conn_type);
+		set_select_jobinfo(job_ptr->select_jobinfo->data,
+				   SELECT_JOBDATA_CONN_TYPE,
+				   &conn_type);
 	}
 
 	if(slurm_block_bitmap && !bit_set_count(slurm_block_bitmap)) {
@@ -1523,20 +1523,20 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 		return SLURM_ERROR;
 	}
 
-	select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,
-				       buf, sizeof(buf),
-				       SELECT_PRINT_MIXED);
+	sprint_select_jobinfo(job_ptr->select_jobinfo->data,
+			      buf, sizeof(buf),
+			      SELECT_PRINT_MIXED);
 	debug("bluegene:submit_job: %u mode=%d %s nodes=%u-%u-%u",
 	      job_ptr->job_id, local_mode, buf,
 	      min_nodes, req_nodes, max_nodes);
-	select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,
-				       buf, sizeof(buf),
-				       SELECT_PRINT_BLRTS_IMAGE);
+	sprint_select_jobinfo(job_ptr->select_jobinfo->data,
+			      buf, sizeof(buf),
+			      SELECT_PRINT_BLRTS_IMAGE);
 #ifdef HAVE_BGL
 	debug3("BlrtsImage=%s", buf);
-	select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,
-				       buf, sizeof(buf),
-				       SELECT_PRINT_LINUX_IMAGE);
+	sprint_select_jobinfo(job_ptr->select_jobinfo->data,
+			      buf, sizeof(buf),
+			      SELECT_PRINT_LINUX_IMAGE);
 #endif
 #ifdef HAVE_BGL
 	debug3("LinuxImage=%s", buf);
@@ -1544,13 +1544,13 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 	debug3("ComputNodeImage=%s", buf);
 #endif
 
-	select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,
-				       buf, sizeof(buf),
-				       SELECT_PRINT_MLOADER_IMAGE);
+	sprint_select_jobinfo(job_ptr->select_jobinfo->data,
+			      buf, sizeof(buf),
+			      SELECT_PRINT_MLOADER_IMAGE);
 	debug3("MloaderImage=%s", buf);
-	select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,
-				       buf, sizeof(buf),
-				       SELECT_PRINT_RAMDISK_IMAGE);
+	sprint_select_jobinfo(job_ptr->select_jobinfo->data,
+			      buf, sizeof(buf),
+			      SELECT_PRINT_RAMDISK_IMAGE);
 #ifdef HAVE_BGL
 	debug3("RamDiskImage=%s", buf);
 #else
@@ -1592,24 +1592,24 @@ preempt:
 
 			job_ptr->start_time = starttime;
 
-			select_g_select_jobinfo_set(job_ptr->select_jobinfo,
-						    SELECT_JOBDATA_NODES,
-						    bg_record->nodes);
-			select_g_select_jobinfo_set(job_ptr->select_jobinfo,
-						    SELECT_JOBDATA_IONODES,
-						    bg_record->ionodes);
+			set_select_jobinfo(job_ptr->select_jobinfo->data,
+					   SELECT_JOBDATA_NODES,
+					   bg_record->nodes);
+			set_select_jobinfo(job_ptr->select_jobinfo->data,
+					   SELECT_JOBDATA_IONODES,
+					   bg_record->ionodes);
 			if(!bg_record->bg_block_id) {
 				debug("%d can start unassigned job %u "
 				      "at %u on %s",
 				      local_mode, job_ptr->job_id,
 				      starttime, bg_record->nodes);
 
-				select_g_select_jobinfo_set(
-					job_ptr->select_jobinfo,
+				set_select_jobinfo(
+					job_ptr->select_jobinfo->data,
 					SELECT_JOBDATA_BLOCK_ID,
 					"unassigned");
-				select_g_select_jobinfo_set(
-					job_ptr->select_jobinfo,
+				set_select_jobinfo(
+					job_ptr->select_jobinfo->data,
 					SELECT_JOBDATA_NODE_CNT,
 					&bg_record->node_cnt);
 			} else {
@@ -1624,15 +1624,10 @@ preempt:
 				      bg_record->nodes);
 
 				if (SELECT_IS_MODE_RUN_NOW(local_mode)) {
-					select_g_select_jobinfo_set(
-						job_ptr->select_jobinfo,
+					set_select_jobinfo(
+						job_ptr->select_jobinfo->data,
 						SELECT_JOBDATA_BLOCK_ID,
 						bg_record->bg_block_id);
-					/* conn_type = bg_record->conn_type; */
-					/* select_g_select_jobinfo_set( */
-					/* 	job_ptr->select_jobinfo, */
-					/* 	SELECT_JOBDATA_CONN_TYPE, */
-					/* 	&conn_type); */
 					if(job_ptr) {
 						bg_record->job_running =
 							job_ptr->job_id;
@@ -1643,13 +1638,13 @@ preempt:
 						last_job_update = time(NULL);
 					}
 				} else
-					select_g_select_jobinfo_set(
-						job_ptr->select_jobinfo,
+					set_select_jobinfo(
+						job_ptr->select_jobinfo->data,
 						SELECT_JOBDATA_BLOCK_ID,
 						"unassigned");
 
-				select_g_select_jobinfo_set(
-					job_ptr->select_jobinfo,
+				set_select_jobinfo(
+					job_ptr->select_jobinfo->data,
 					SELECT_JOBDATA_NODE_CNT,
 					&bg_record->node_cnt);
 			}
