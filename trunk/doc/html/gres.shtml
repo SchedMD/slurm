@@ -17,7 +17,7 @@ interest are:</P>
 
 <UL>
 <LI><B>GresTypes</B> a comma delimited list of generic resources to be
-managed (e.g. <I>GresPlugins=gpus,nic</I>). This name may be that of an
+managed (e.g. <I>GresTypes=gpu,nic</I>). This name may be that of an
 optional plugin providing additional control over the resources.</LI>
 <LI><B>Gres</B> the specific generic resource and their count associated with
 each node (e.g. <I>NodeName=linux[0-999] Gres=gpu:8,nic:2</I>).</LI>
@@ -87,7 +87,7 @@ the <I>salloc</I>, <I>sbatch</I> and <I>srun</I> commands. The option
 requires an argument specifying which generic resources are required and
 how many resources. The resource specification is of the form
 <I>name[:count]</I>. The <I>name</I> is the same name as
-specified by the <I>GresPlugins</I> and <I>Gres</I> configuration parameters.
+specified by the <I>GresTypes</I> and <I>Gres</I> configuration parameters.
 <I>count</I> specifies how many resources are required and has a default
 value of 1. For example:<BR> 
 <I>sbatch --gres=gpu:2 ...</I>.</P>
@@ -145,6 +145,6 @@ Linux <I>cgroups</I> in order to remove access to devices not allocated to
 a job or job step.</P>
 <!-------------------------------------------------------------------------->
 
-<p style="text-align: center;">Last modified 29 August 2010</p>
+<p style="text-align: center;">Last modified 31 August 2010</p>
 
 </body></html>
