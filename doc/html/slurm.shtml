@@ -17,31 +17,27 @@ In its simplest configuration, it can be installed and configured in a
 couple of minutes (see <a href="http://www.linux-mag.com/id/7239/1/">
 Caos NSA and Perceus: All-in-one Cluster Software Stack</a>
 by Jeffrey B. Layton).
-More complex configurations rely upon a
+More complex configurations can satisfy the job scheduling needs of 
+world-class computer centers and rely upon a
 <a href="http://www.mysql.com/">MySQL</a> database for archiving
 <a href="accounting.html">accounting</a> records, managing
 <a href="resource_limits.html">resource limits</a> by user or bank account,
 or supporting sophisticated
-<a href="priority_multifactor.html">job prioritization</a> algorithms.
-SLURM also provides an Applications Programming Interface (API) for
-integration with external schedulers such as
-<a href="http://www.clusterresources.com/pages/products/maui-cluster-scheduler.php">
-The Maui Scheduler</a> or
-<a href="http://www.clusterresources.com/pages/products/moab-cluster-suite.php">
-Moab Cluster Suite</a>.</p>
+<a href="priority_multifactor.html">job prioritization</a> algorithms.</p>
 
 <p>While other resource managers do exist, SLURM is unique in several
 respects:
 <ul>
-<li>Its source code is freely available under the
-<a href="http://www.gnu.org/licenses/gpl.html">GNU General Public License</a>.</li>
 <li>It is designed to operate in a heterogeneous cluster with up to 65,536 nodes
 and hundreds of thousands of processors.</li>
-<li>It can sustain a throughput rate of over 120,000 jobs per hour.</li>
+<li>It can sustain a throughput rate of over 120,000 jobs per hour with
+bursts of job submissions at several times that rate.</li>
+<li>Its source code is freely available under the
+<a href="http://www.gnu.org/licenses/gpl.html">GNU General Public License</a>.</li>
 <li>It is portable; written in C with a GNU autoconf configuration engine.
 While initially written for Linux, other UNIX-like operating systems should
 be easy porting targets.</li>
-<li>SLURM is highly tolerant of system failures, including failure of the node
+<li>It is highly tolerant of system failures, including failure of the node
 executing its control functions.</li>
 <li>A plugin mechanism exists to support various interconnects, authentication
 mechanisms, schedulers, etc. These plugins are documented and  simple enough
@@ -82,10 +78,9 @@ and a three-dimensional torus interconnect.</li>
 <a href="http://www.bull.com">Bull</a>.
 It is also distributed and supported by
 <a href="http://www.adaptivecomputing.com">Adaptive Computing</a>,
-<a href="http://www.infiscale.com">Infiscale</a>,
-<a href="http://www.ibm.com">IBM</a> and
-<a href="http://www.sun.com">Sun Microsystems</a>.</p>
+<a href="http://www.infiscale.com">Infiscale</a> and
+<a href="http://www.ibm.com">IBM</a>.</p>
 
-<p style="text-align:center;">Last modified 30 August 2010</p>
+<p style="text-align:center;">Last modified 31 August 2010</p>
 
 <!--#include virtual="footer.txt"-->
