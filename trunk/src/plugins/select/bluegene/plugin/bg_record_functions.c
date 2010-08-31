@@ -92,6 +92,7 @@ extern void destroy_bg_record(void *object)
 	bg_record_t* bg_record = (bg_record_t*) object;
 
 	if (bg_record) {
+		bg_record->magic = 0;
 		xfree(bg_record->bg_block_id);
 		xfree(bg_record->nodes);
 		xfree(bg_record->ionodes);
@@ -1031,7 +1032,6 @@ extern int down_nodecard(char *bp_name, bitoff_t io_start,
 {
 	List requests = NULL;
 	List delete_list = NULL;
-	List track_list = NULL;
 	ListIterator itr = NULL;
 	bg_record_t *bg_record = NULL, *found_record = NULL, tmp_record;
 	bg_record_t *smallest_bg_record = NULL;
@@ -1349,12 +1349,11 @@ extern int down_nodecard(char *bp_name, bitoff_t io_start,
 	}
 	list_destroy(requests);
 
-	track_list = transfer_main_to_freeing(delete_list);
-	list_destroy(delete_list);
-	slurm_mutex_unlock(&block_state_mutex);
-	if (track_list) {
-		free_block_list(track_list, 0, 0);
-		list_destroy(track_list);
+	if (delete_list) {
+		transfer_main_to_freeing(delete_list);
+		slurm_mutex_unlock(&block_state_mutex);
+		free_block_list(NO_VAL, delete_list, 0, 0);
+		list_destroy(delete_list);
 	}
 	slurm_mutex_lock(&block_state_mutex);
 	sort_bg_record_inc_size(bg_lists->main);

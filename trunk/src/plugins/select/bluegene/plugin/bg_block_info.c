@@ -172,7 +172,7 @@ extern int block_ready(struct job_record *job_ptr)
 	char *block_id = NULL;
 	bg_record_t *bg_record = NULL;
 
-	rc = select_g_select_jobinfo_get(job_ptr->select_jobinfo,
+	rc = get_select_jobinfo(job_ptr->select_jobinfo->data,
 					 SELECT_JOBDATA_BLOCK_ID, &block_id);
 	if (rc == SLURM_SUCCESS) {
 		slurm_mutex_lock(&block_state_mutex);

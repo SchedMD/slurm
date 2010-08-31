@@ -121,6 +121,8 @@ extern int num_unused_cpus;
 #include "bg_job_place.h"
 #include "bg_job_run.h"
 #include "state_test.h"
+#include "jobinfo.h"
+#include "nodeinfo.h"
 
 /* bluegene.c */
 /**********************************************/
@@ -162,8 +164,9 @@ extern bg_record_t *find_and_remove_org_from_bg_list(List my_list,
 extern bg_record_t *find_org_in_bg_list(List my_list, bg_record_t *bg_record);
 extern void *mult_free_block(void *args);
 extern void *mult_destroy_block(void *args);
-extern List transfer_main_to_freeing(List delete_list);
-extern int free_block_list(List track_list, bool destroy, bool wait);
+extern int transfer_main_to_freeing(List delete_list);
+extern int free_block_list(uint32_t job_id, List track_list,
+			   bool destroy, bool wait);
 extern int read_bg_conf();
 extern int validate_current_blocks(char *dir);
 

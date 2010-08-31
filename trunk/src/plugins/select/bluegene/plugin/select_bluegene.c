@@ -829,7 +829,6 @@ extern int select_p_update_block(update_block_msg_t *block_desc_ptr)
 		bg_record_t *found_record = NULL;
 		ListIterator itr;
 		List delete_list = list_create(NULL);
-		List track_list = NULL;
 		/* This loop shouldn't do much in regular Dynamic mode
 		   since there shouldn't be overlapped blocks.  But if
 		   there is a trouble block that isn't going away and
@@ -867,13 +866,10 @@ extern int select_p_update_block(update_block_msg_t *block_desc_ptr)
 			list_push(delete_list, found_record);
 		}
 		list_iterator_destroy(itr);
-		track_list = transfer_main_to_freeing(delete_list);
-		list_destroy(delete_list);
+		transfer_main_to_freeing(delete_list);
 		slurm_mutex_unlock(&block_state_mutex);
-		if(track_list) {
-			free_block_list(track_list, 0, 0);
-			list_destroy(track_list);
-		}
+		free_block_list(NO_VAL, delete_list, 0, 0);
+		list_destroy(delete_list);
 		put_block_in_error_state(bg_record, BLOCK_ERROR_STATE, reason);
 	} else if(block_desc_ptr->state == RM_PARTITION_FREE) {
 		bg_free_block(bg_record, 0, 1);
@@ -895,7 +891,6 @@ extern int select_p_update_block(update_block_msg_t *block_desc_ptr)
 		bg_record_t *found_record = NULL;
 		ListIterator itr;
 		List delete_list = list_create(NULL);
-		List track_list = NULL;
 
 		list_push(delete_list, bg_record);
 		/* only do the while loop if we are dealing with a
@@ -946,13 +941,10 @@ extern int select_p_update_block(update_block_msg_t *block_desc_ptr)
 		}
 		list_iterator_destroy(itr);
 
-		track_list = transfer_main_to_freeing(delete_list);
-		list_destroy(delete_list);
+		transfer_main_to_freeing(delete_list);
 		slurm_mutex_unlock(&block_state_mutex);
-		if(track_list) {
-			free_block_list(track_list, 0, 0);
-			list_destroy(track_list);
-		}
+		free_block_list(NO_VAL, delete_list, 0, 0);
+		list_destroy(delete_list);
 	} else if (block_desc_ptr->state == RM_PARTITION_CONFIGURING) {
 		/* This means recreate the block, remove it and then
 		   recreate it.
@@ -1355,7 +1347,7 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 				job_desc->min_nodes =
 					bg_conf->bp_node_cnt;
 
-			set_select_jobinfo(job_desc->select_jobinfo->data,
+			set_select_jobinfo(job_desc->select_jobinfo,
 					   SELECT_JOBDATA_NODE_CNT,
 					   &job_desc->min_nodes);
 

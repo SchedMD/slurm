@@ -203,7 +203,7 @@ static int _remove_job(db_job_id_t job_id, char *block_id)
 		 */
 
 //		 rc = bridge_cancel_job(job_id);
-		 rc = bridge_signal_job(job_id, SIGTERM);
+		rc = bridge_signal_job(job_id, SIGTERM);
 
 		if (rc != STATUS_OK) {
 			if (rc == JOB_NOT_FOUND) {
@@ -556,7 +556,7 @@ static void _start_agent(bg_action_t *bg_action_ptr)
 	bg_record_t *bg_record = NULL;
 	bg_record_t *found_record = NULL;
 	ListIterator itr;
-	List delete_list = NULL, track_list = NULL;
+	List delete_list = NULL;
 	int requeue_job = 0;
 
 	slurm_mutex_lock(&block_state_mutex);
@@ -639,19 +639,17 @@ static void _start_agent(bg_action_t *bg_action_ptr)
 		return;
 	}
 
-	track_list = transfer_main_to_freeing(delete_list);
-	list_destroy(delete_list);
+	transfer_main_to_freeing(delete_list);
 	slurm_mutex_unlock(&block_state_mutex);
-	if (track_list) {
-		rc = free_block_list(track_list, 0, 1);
-		list_destroy(track_list);
-		if (rc != SLURM_SUCCESS) {
-			error("Problem with deallocating blocks to run job %u "
-			      "on block %s", bg_action_ptr->job_ptr->job_id,
-			      bg_action_ptr->bg_block_id);
-			bg_requeue_job(bg_action_ptr->job_ptr->job_id, 1);
-			return;
-		}
+
+	rc = free_block_list(bg_action_ptr->job_ptr->job_id, delete_list, 0, 1);
+	list_destroy(delete_list);
+	if (rc != SLURM_SUCCESS) {
+		error("Problem with deallocating blocks to run job %u "
+		      "on block %s", bg_action_ptr->job_ptr->job_id,
+		      bg_action_ptr->bg_block_id);
+		bg_requeue_job(bg_action_ptr->job_ptr->job_id, 1);
+		return;
 	}
 
 	slurm_mutex_lock(&block_state_mutex);
@@ -680,7 +678,7 @@ static void _start_agent(bg_action_t *bg_action_ptr)
 	}
 #else
 	if((bg_action_ptr->conn_type >= SELECT_SMALL)
-		&& (bg_action_ptr->conn_type != bg_record->conn_type)) {
+	   && (bg_action_ptr->conn_type != bg_record->conn_type)) {
 		debug3("changing small block mode from %s to %s",
 		       conn_type_string(bg_record->conn_type),
 		       conn_type_string(bg_action_ptr->conn_type));
@@ -1082,64 +1080,63 @@ extern int start_job(struct job_record *job_ptr)
 	bg_action_ptr->op = START_OP;
 	bg_action_ptr->job_ptr = job_ptr;
 
-	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
-				    SELECT_JOBDATA_BLOCK_ID,
-				    &(bg_action_ptr->bg_block_id));
-	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
-				    SELECT_JOBDATA_REBOOT,
-				    &(bg_action_ptr->reboot));
+	get_select_jobinfo(job_ptr->select_jobinfo->data,
+			   SELECT_JOBDATA_BLOCK_ID,
+			   &(bg_action_ptr->bg_block_id));
+	get_select_jobinfo(job_ptr->select_jobinfo->data,
+			   SELECT_JOBDATA_REBOOT,
+			   &(bg_action_ptr->reboot));
 #ifdef HAVE_BGL
-	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
-				    SELECT_JOBDATA_BLRTS_IMAGE,
-				    &(bg_action_ptr->blrtsimage));
+	get_select_jobinfo(job_ptr->select_jobinfo->data,
+			   SELECT_JOBDATA_BLRTS_IMAGE,
+			   &(bg_action_ptr->blrtsimage));
 	if(!bg_action_ptr->blrtsimage) {
 		bg_action_ptr->blrtsimage =
 			xstrdup(bg_conf->default_blrtsimage);
-		select_g_select_jobinfo_set(job_ptr->select_jobinfo,
+		set_select_jobinfo(job_ptr->select_jobinfo->data,
 					    SELECT_JOBDATA_BLRTS_IMAGE,
 					    bg_action_ptr->blrtsimage);
 	}
 #else
-	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
-			     SELECT_JOBDATA_CONN_TYPE,
-			     &(bg_action_ptr->conn_type));
+	get_select_jobinfo(job_ptr->select_jobinfo->data,
+			   SELECT_JOBDATA_CONN_TYPE,
+			   &(bg_action_ptr->conn_type));
 #endif
 
-	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
-			     SELECT_JOBDATA_LINUX_IMAGE,
-			     &(bg_action_ptr->linuximage));
+	get_select_jobinfo(job_ptr->select_jobinfo->data,
+			   SELECT_JOBDATA_LINUX_IMAGE,
+			   &(bg_action_ptr->linuximage));
 	if(!bg_action_ptr->linuximage) {
 		bg_action_ptr->linuximage =
 			xstrdup(bg_conf->default_linuximage);
-		select_g_select_jobinfo_set(job_ptr->select_jobinfo,
-				     SELECT_JOBDATA_LINUX_IMAGE,
-				     bg_action_ptr->linuximage);
+		set_select_jobinfo(job_ptr->select_jobinfo->data,
+					    SELECT_JOBDATA_LINUX_IMAGE,
+					    bg_action_ptr->linuximage);
 	}
-	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
-			     SELECT_JOBDATA_MLOADER_IMAGE,
-			     &(bg_action_ptr->mloaderimage));
+	get_select_jobinfo(job_ptr->select_jobinfo->data,
+			   SELECT_JOBDATA_MLOADER_IMAGE,
+			   &(bg_action_ptr->mloaderimage));
 	if(!bg_action_ptr->mloaderimage) {
 		bg_action_ptr->mloaderimage =
 			xstrdup(bg_conf->default_mloaderimage);
-		select_g_select_jobinfo_set(job_ptr->select_jobinfo,
-				     SELECT_JOBDATA_MLOADER_IMAGE,
-				     bg_action_ptr->mloaderimage);
+		set_select_jobinfo(job_ptr->select_jobinfo->data,
+					    SELECT_JOBDATA_MLOADER_IMAGE,
+					    bg_action_ptr->mloaderimage);
 	}
-	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
-			     SELECT_JOBDATA_RAMDISK_IMAGE,
-			     &(bg_action_ptr->ramdiskimage));
+	get_select_jobinfo(job_ptr->select_jobinfo->data,
+			   SELECT_JOBDATA_RAMDISK_IMAGE,
+			   &(bg_action_ptr->ramdiskimage));
 	if(!bg_action_ptr->ramdiskimage) {
 		bg_action_ptr->ramdiskimage =
 			xstrdup(bg_conf->default_ramdiskimage);
-		select_g_select_jobinfo_set(job_ptr->select_jobinfo,
-				     SELECT_JOBDATA_RAMDISK_IMAGE,
-				     bg_action_ptr->ramdiskimage);
+		set_select_jobinfo(job_ptr->select_jobinfo->data,
+					    SELECT_JOBDATA_RAMDISK_IMAGE,
+					    bg_action_ptr->ramdiskimage);
 	}
 
 	slurm_mutex_lock(&block_state_mutex);
-	bg_record =
-		find_bg_record_in_list(bg_lists->main,
-				       bg_action_ptr->bg_block_id);
+	bg_record = find_bg_record_in_list(bg_lists->main,
+					   bg_action_ptr->bg_block_id);
 	if (!bg_record) {
 		slurm_mutex_unlock(&block_state_mutex);
 		error("bg_record %s doesn't exist, requested for job (%d)",
@@ -1185,9 +1182,9 @@ int term_job(struct job_record *job_ptr)
 	bg_action_ptr = xmalloc(sizeof(bg_action_t));
 	bg_action_ptr->op = TERM_OP;
 	bg_action_ptr->job_ptr = job_ptr;
-	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
-				    SELECT_JOBDATA_BLOCK_ID,
-				    &(bg_action_ptr->bg_block_id));
+	get_select_jobinfo(job_ptr->select_jobinfo->data,
+			   SELECT_JOBDATA_BLOCK_ID,
+			   &(bg_action_ptr->bg_block_id));
 	info("Queue termination of job %u in BG block %s",
 	     job_ptr->job_id, bg_action_ptr->bg_block_id);
 	_block_op(bg_action_ptr);
@@ -1228,33 +1225,27 @@ extern int sync_jobs(List job_list)
 			bg_action_ptr->op = SYNC_OP;
 			bg_action_ptr->job_ptr = job_ptr;
 
-			select_g_select_jobinfo_get(
-				job_ptr->select_jobinfo,
-				SELECT_JOBDATA_BLOCK_ID,
-				&(bg_action_ptr->bg_block_id));
+			get_select_jobinfo(job_ptr->select_jobinfo->data,
+					   SELECT_JOBDATA_BLOCK_ID,
+					   &(bg_action_ptr->bg_block_id));
 #ifdef HAVE_BGL
-			select_g_select_jobinfo_get(
-				job_ptr->select_jobinfo,
-				SELECT_JOBDATA_BLRTS_IMAGE,
-				&(bg_action_ptr->blrtsimage));
+			get_select_jobinfo(job_ptr->select_jobinfo->data,
+					   SELECT_JOBDATA_BLRTS_IMAGE,
+					   &(bg_action_ptr->blrtsimage));
 #else
-			select_g_select_jobinfo_get(
-				job_ptr->select_jobinfo,
-				SELECT_JOBDATA_CONN_TYPE,
-				&(bg_action_ptr->conn_type));
+			get_select_jobinfo(job_ptr->select_jobinfo->data,
+					   SELECT_JOBDATA_CONN_TYPE,
+					   &(bg_action_ptr->conn_type));
 #endif
-			select_g_select_jobinfo_get(
-				job_ptr->select_jobinfo,
-				SELECT_JOBDATA_LINUX_IMAGE,
-				&(bg_action_ptr->linuximage));
-			select_g_select_jobinfo_get(
-				job_ptr->select_jobinfo,
-				SELECT_JOBDATA_MLOADER_IMAGE,
-				&(bg_action_ptr->mloaderimage));
-			select_g_select_jobinfo_get(
-				job_ptr->select_jobinfo,
-				SELECT_JOBDATA_RAMDISK_IMAGE,
-				&(bg_action_ptr->ramdiskimage));
+			get_select_jobinfo(job_ptr->select_jobinfo->data,
+					   SELECT_JOBDATA_LINUX_IMAGE,
+					   &(bg_action_ptr->linuximage));
+			get_select_jobinfo(job_ptr->select_jobinfo->data,
+					   SELECT_JOBDATA_MLOADER_IMAGE,
+					   &(bg_action_ptr->mloaderimage));
+			get_select_jobinfo(job_ptr->select_jobinfo->data,
+					   SELECT_JOBDATA_RAMDISK_IMAGE,
+					   &(bg_action_ptr->ramdiskimage));
 
 			if (bg_action_ptr->bg_block_id == NULL) {
 				error("Running job %u has bgblock==NULL",

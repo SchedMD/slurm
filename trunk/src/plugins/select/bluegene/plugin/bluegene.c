@@ -482,6 +482,14 @@ extern int bg_free_block(bg_record_t *bg_record, bool wait, bool locked)
 		slurm_mutex_lock(&block_state_mutex);
 
 	while (count < MAX_FREE_RETRIES) {
+		/* block was removed */
+		if(bg_record->magic == 0) {
+			error("block was removed while freeing it here");
+			if(!locked)
+				slurm_mutex_unlock(&block_state_mutex);
+			return SLURM_ERROR;
+		}
+
 		/* Here we don't need to check if the block is still
 		 * in exsistance since this function can't be called on
 		 * the same block twice.  It may
@@ -560,34 +568,26 @@ extern int bg_free_block(bg_record_t *bg_record, bool wait, bool locked)
 }
 
 /* block_state_mutex should be locked before calling this */
-extern List transfer_main_to_freeing(List delete_list)
+extern int transfer_main_to_freeing(List delete_list)
 {
 	bg_record_t *bg_record = NULL;
-	List track_list = NULL;
 	ListIterator itr = NULL;
+	int count = 0;
 
 	if(!delete_list || !list_count(delete_list))
-		return NULL;
+		return SLURM_SUCCESS;
 
 	itr = list_iterator_create(delete_list);
-	while ((bg_record = list_pop(delete_list))) {
+	while ((bg_record = list_next(itr))) {
 		remove_from_bg_list(bg_lists->main, bg_record);
 		if (block_ptr_exist_in_list(bg_lists->freeing, bg_record)) {
 			error("we had block %s already on the freeing list",
 			      bg_record->bg_block_id);
 			continue;
 		}
-		bg_record->magic = 0;
+		count++;
+		bg_record->magic = BLOCK_DELETE_MAGIC;
 		if (!list_push(bg_lists->freeing, bg_record))
-			fatal("malloc failure in _block_op/list_push");
-
-		/* bg_lists->freeing will destroy this record if needed
-		   outside of normal operations so have this list destroy with
-		   NULL.
-		*/
- 		if (!track_list)
-			track_list = list_create(NULL);
-		if (!list_push(track_list, bg_record))
 			fatal("malloc failure in _block_op/list_push");
 
 		if(remove_from_bg_list(bg_lists->job_running, bg_record)
@@ -596,18 +596,19 @@ extern List transfer_main_to_freeing(List delete_list)
 	}
  	list_iterator_destroy(itr);
 
-	if(track_list) {
+	if(count) {
 		/* we only are sorting this so when we send it to a
 		 * tool such as smap it will be in a nice order
 		 */
 		sort_bg_record_inc_size(bg_lists->freeing);
 	}
 
-	return track_list;
+	return SLURM_SUCCESS;
 }
 
 /* block_state_mutex should be unlocked before calling this */
-extern int free_block_list(List track_list, bool destroy, bool wait)
+extern int free_block_list(uint32_t job_id, List track_list,
+			   bool destroy, bool wait)
 {
 	bg_record_t *bg_record = NULL;
 	int retries;
@@ -625,16 +626,26 @@ extern int free_block_list(List track_list, bool destroy, bool wait)
 	/* now we are transfered we don't have to be locked anymore */
 	itr = list_iterator_create(track_list);
 	while ((bg_record = list_next(itr))) {
-		bg_free_t *bg_free = xmalloc(sizeof(bg_free_t));
+		bg_free_t *bg_free;
 
 		/* just incase it wasn't already done. */
-		bg_record->magic = 0;
+		if(bg_record->magic == BLOCK_MAGIC)
+			bg_record->magic = BLOCK_DELETE_MAGIC;
+		else if(bg_record->magic == 0) {
+			error("block was already destroyed");
+			slurm_mutex_lock(&free_mutex);
+			free_cnt++;
+			slurm_mutex_unlock(&free_mutex);
+			continue;
+		}
 
+		bg_free = xmalloc(sizeof(bg_free_t));
 		bg_free->free_cond = &free_cond;
 		bg_free->free_cnt = &free_cnt;
 		bg_free->free_mutex = &free_mutex;
 		bg_free->bg_record = bg_record;
 		bg_free->wait = wait;
+
 		slurm_attr_init(&attr_agent);
 		if (pthread_attr_setdetachstate(
 			    &attr_agent, PTHREAD_CREATE_DETACHED))
@@ -659,7 +670,7 @@ extern int free_block_list(List track_list, bool destroy, bool wait)
 
 	slurm_mutex_lock(&free_mutex);
 	cnt = list_count(track_list);
-	debug("Going to free %d", cnt);
+	debug("Going to free %d for job %u", cnt, job_id);
 	retries=0;
 	while (cnt > free_cnt) {
 		/* If blocks haven't been created yet we need to poll
@@ -678,10 +689,11 @@ extern int free_block_list(List track_list, bool destroy, bool wait)
 			sleep(1);
 		} else {
 			pthread_cond_wait(&free_cond, &free_mutex);
-			debug("freed %d of %d", free_cnt, cnt);
+			debug("freed %d of %d for job %u",
+			      free_cnt, cnt, job_id);
 		}
 	}
-	debug("Freed them all");
+	debug("Freed them all for job %u", job_id);
 	slurm_mutex_unlock(&free_mutex);
 
 	slurm_mutex_destroy(&free_mutex);
@@ -691,6 +703,9 @@ extern int free_block_list(List track_list, bool destroy, bool wait)
 		/* If no block is in error state remove and destroy them. */
 		list_iterator_reset(itr);
 		while ((bg_record = list_next(itr))) {
+			/* block no longer exists */
+			if (bg_record->magic == 0)
+				continue;
 			if (bg_record->state != RM_PARTITION_FREE) {
 				restore = true;
 				rc = SLURM_ERROR;
@@ -704,7 +719,12 @@ extern int free_block_list(List track_list, bool destroy, bool wait)
 	list_iterator_reset(itr);
 	slurm_mutex_lock(&block_state_mutex);
 	while ((bg_record = list_next(itr))) {
-		remove_from_bg_list(bg_lists->freeing, bg_record);
+		/* another thread could have gotten this record */
+		if(remove_from_bg_list(bg_lists->freeing, bg_record)
+		   != SLURM_SUCCESS) {
+			info("waiting: block already deleted skipping");
+			continue;
+		}
 		if (restore) {
 			if (!block_ptr_exist_in_list(bg_lists->main,
 						     bg_record)) {
@@ -1562,7 +1582,7 @@ static int _delete_old_blocks(List curr_block_list, List found_block_list)
 		list_iterator_destroy(itr_curr);
 	}
 
-	free_block_list(destroy_list, 1, 1);
+	free_block_list(NO_VAL, destroy_list, 1, 1);
 	list_destroy(destroy_list);
 
 	info("I am done deleting");
@@ -1598,7 +1618,17 @@ static void *_clear_block(void *args)
 
 	if (!bg_free->wait) {
 		slurm_mutex_lock(&block_state_mutex);
-		remove_from_bg_list(bg_lists->freeing, bg_record);
+
+		/* another thread could have gotten this record */
+		if(remove_from_bg_list(bg_lists->freeing, bg_record)
+		   != SLURM_SUCCESS) {
+			if(bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
+				info("_clear_block: block already "
+				     "deleted skipping");
+			slurm_mutex_unlock(&block_state_mutex);
+			goto end_it;
+		}
+
 		if (bg_conf->layout_mode != LAYOUT_DYNAMIC) {
 			if (!block_ptr_exist_in_list(bg_lists->main,
 						     bg_record)) {
