@@ -814,6 +814,9 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 					assoc->cluster = xstrdup(cluster);
 					assoc->partition = xstrdup(partition);
 
+					assoc->def_qos_id =
+						start_assoc.def_qos_id;
+
 					assoc->shares_raw =
 						start_assoc.shares_raw;
 
@@ -872,6 +875,8 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 				assoc->user = xstrdup(name);
 				assoc->acct = xstrdup(account);
 				assoc->cluster = xstrdup(cluster);
+
+				assoc->def_qos_id = start_assoc.def_qos_id;
 
 				assoc->shares_raw = start_assoc.shares_raw;
 

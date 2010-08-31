@@ -536,6 +536,7 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 			slurmdb_init_association_rec(assoc);
 			assoc->acct = xstrdup(name);
 			assoc->cluster = xstrdup(cluster);
+			assoc->def_qos_id = start_assoc->def_qos_id;
 			assoc->parent_acct = xstrdup(start_assoc->parent_acct);
 			assoc->shares_raw = start_assoc->shares_raw;
 
