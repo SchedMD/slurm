@@ -318,6 +318,7 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 			printf("  Classification= %s\n",
 			       get_classification_str(cluster->classification));
 
+		cluster->root_assoc->def_qos_id = start_assoc.def_qos_id;
 		cluster->root_assoc->shares_raw = start_assoc.shares_raw;
 
 		cluster->root_assoc->grp_cpus = start_assoc.grp_cpus;
