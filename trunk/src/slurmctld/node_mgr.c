@@ -1684,6 +1684,14 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 			   (reg_msg->job_count == 0)) {	/* job already done */
 			last_node_update = now;
 			node_ptr->node_state &= (~NODE_STATE_COMPLETING);
+		} else if (IS_NODE_IDLE(node_ptr) &&
+			   (reg_msg->job_count != 0)) {
+			last_node_update = now;
+			node_ptr->node_state = NODE_STATE_ALLOCATED |
+					       node_flags;
+			error("Invalid state for node %s, was IDLE with %u "
+			      "running jobs",
+			      node_ptr->name, reg_msg->job_count);
 		}
 
 		select_g_update_node_config((node_ptr-node_record_table_ptr));
@@ -1928,6 +1936,14 @@ extern int validate_nodes_via_front_end(
 				updated_job = true;
 				node_ptr->node_state &=
 					(~NODE_STATE_COMPLETING);
+			} else if (IS_NODE_IDLE(node_ptr) &&
+				   (jobs_on_node != 0)) {
+				updated_job = true;
+				node_ptr->node_state = NODE_STATE_ALLOCATED |
+						       node_flags;
+				error("Invalid state for node %s, was IDLE "
+				      "with %u running jobs",
+				      node_ptr->name, reg_msg->job_count);
 			}
 
 			select_g_update_node_config(
@@ -2035,7 +2051,11 @@ static void _node_did_resp(struct node_record *node_ptr)
 	if (IS_NODE_UNKNOWN(node_ptr)) {
 		last_node_update = now;
 		node_ptr->last_idle = now;
-		node_ptr->node_state = NODE_STATE_IDLE | node_flags;
+		if (node_ptr->run_job_cnt) {
+			node_ptr->node_state = NODE_STATE_ALLOCATED |
+					       node_flags;
+		} else
+			node_ptr->node_state = NODE_STATE_IDLE | node_flags;
 		if (!IS_NODE_DRAIN(node_ptr) && !IS_NODE_FAIL(node_ptr)) {
 			clusteracct_storage_g_node_up(acct_db_conn,
 						      node_ptr, now);
