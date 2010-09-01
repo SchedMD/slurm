@@ -1,5 +1,5 @@
 RELEASE NOTES FOR SLURM VERSION 2.2
-10 June 2010 (through SLURM 2.2.0-pre7)
+1 September 2010 (through SLURM 2.2.0-pre10)
 
 
 IMPORTANT NOTE:
@@ -19,7 +19,7 @@ under the [mysqld] reference and restarting the mysqld.  This is needed when
 converting large tables over to the new database schema.
 
 SLURM can be upgraded from version 2.1 to version 2.2 without loss of jobs or
-other state.
+other state information.
 
 
 HIGHLIGHTS
@@ -46,24 +46,17 @@ HIGHLIGHTS
   "scontrol reconfig" rather than recreating it from slurm.conf. Node Weight
   was formerly always recreated from slurm.conf.
 
-* Support has been added for TotalView to attach to a subset of launched tasks
-  instead of requiring that all tasks be attached to.
+* SLURM commands (squeue, sinfo, sview, etc...) can now operate between
+  clusters. Jobs can also be submitted with sbatch to other cluster(s) with the
+  job routed to the one cluster expected to initiated the job first.
 
-* A web application (chart_stats.cgi) has been added that invokes sreport to
-  retrieve from the accounting storage db a user's request for job usage or
-  machine utilization statistics and charts the results to a browser.
-
+CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
+=============================================================
 * A hash of the slurm.conf running on each node in the cluster is sent when
   registering with the slurmctld so it can verify the slurm.conf is the same
   as the one it is running.  If not an error message is displayed.  To
   silence this message add NO_CONF_HASH to DebugFlags in your slurm.conf.
 
-* SLURM commands (squeue, sinfo, sview, etc...) can now go cross-cluster. Jobs
-  can also be submitted with sbatch to other cluster(s) with the job routed to
-  the one cluster expected to initiated the job first.
-
-CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
-=============================================================
 * Added VSizeFactor to enforce virtual memory limits for jobs and job steps as
   a percentage of their real memory allocation.
 
@@ -96,13 +89,18 @@ CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
 
 * Added new configuration parameter GresPlugins which manages generic resources.
 
-* Added "--enable-partial-attach" option to configure (build) script.
+* Added support for new partition states of DRAIN (run queued jobs, but accept
+  no new jobs) and INACTIVE (do not accept or run any more jobs) and new
+  partition option of "Alternate" (alternate partition to use for jobs
+  submitted to partitions that are currently in a state of DRAIN or INACTIVE).
 
-* Added support for new partition states of DRAIN and INACTIVE and new partition
-  option of "Alternate" (alternate partition to use for jobs submitted to
-  partitions that are currently in a state of DRAIN or INACTIVE).
+* Added the ability to configure PreemptMode on a per-partition or per-QOS
+  basis.
 
-* Added the ability to configure PreemptMode on a per-partition basis.
+* Modified the meaning of InactiveLimit slightly. It will now cancel the job
+  allocation created using the salloc or srun command if those commands cease
+  responding for the InactiveLimit regardless of any running job steps. This
+  parameter will no longer effect jobs spawned using sbatch.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
@@ -120,6 +118,11 @@ COMMAND CHANGES (see man pages for details)
   "scontrol update JobId=# NodeList=<names>". This command generates a script
   to be executed in order to reset SLURM environment variables for proper
   execution of subsequent job steps.
+
+* Users can hold and release their own jobs. Submit in held state using srun
+  or sbatch --hold or -H options. Hold after submission using the command
+  "scontrol hold <jobid>". Release with "scontrol release <jobid>". Users can
+  not release jobs held by system administrator.
 
 * Add support for slurmctld and slurmd option of "-n <value>" to reset the
   daemon's nice value.
@@ -147,6 +150,14 @@ BLUEGENE SPECIFIC CHANGES
 
 OTHER CHANGES
 =============
+* Support has been added for TotalView to attach to a subset of launched tasks
+  instead of requiring that all tasks be attached to. This requires that an
+  option of "--enable-partial-attach" be passed to the configure (build) script.
+
+* A web application (chart_stats.cgi) has been added that invokes sreport to
+  retrieve from the accounting storage db a user's request for job usage or
+  machine utilization statistics and charts the results to a browser.
+
 * Much functionality has been added to account_storage/pgsql.  The plugin
    is still in a very beta state.
 
@@ -164,9 +175,6 @@ OTHER CHANGES
   to "Requested time limit is invalid (exceeds some limit)". The error can be
   triggered by a time limit exceeding the user/bank limit or the time-min
   exceeding the job or partition's time limit.
-
-* Added support for debugger partial task attach if the option
-  "--enable-partial-attach" is passed to the configure (build) script.
 
 * Added proctrack/cgroup plugin which uses Linux control groups (aka cgroup) to
   track processes on Linux systems with this feature (kernel >= 2.6.24).
