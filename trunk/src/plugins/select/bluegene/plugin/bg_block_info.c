@@ -173,7 +173,7 @@ extern int block_ready(struct job_record *job_ptr)
 	bg_record_t *bg_record = NULL;
 
 	rc = get_select_jobinfo(job_ptr->select_jobinfo->data,
-					 SELECT_JOBDATA_BLOCK_ID, &block_id);
+				SELECT_JOBDATA_BLOCK_ID, &block_id);
 	if (rc == SLURM_SUCCESS) {
 		slurm_mutex_lock(&block_state_mutex);
 		bg_record = find_bg_record_in_list(bg_lists->main, block_id);
@@ -201,7 +201,7 @@ extern int block_ready(struct job_record *job_ptr)
 			   often during an epilog on a busy system.
 			*/
 			debug2("block_ready: block %s not in bg_lists->main.",
-			      block_id);
+			       block_id);
 			rc = READY_JOB_FATAL;	/* fatal error */
 		}
 		slurm_mutex_unlock(&block_state_mutex);
@@ -405,8 +405,8 @@ extern int update_block_list()
 			      bg_record->state,
 			      state);
 			/*
-			   check to make sure block went
-			   through freeing correctly
+			  check to make sure block went
+			  through freeing correctly
 			*/
 			if((bg_record->state != RM_PARTITION_DEALLOCATING
 			    && bg_record->state != RM_PARTITION_ERROR)
@@ -610,7 +610,8 @@ extern int update_block_list()
 	return updated;
 }
 
-extern int update_freeing_block_list()
+/* This needs to have block_state_mutex locked before hand. */
+extern int update_block_list_state(List block_list)
 {
 	int updated = 0;
 #ifdef HAVE_BG_FILES
@@ -621,11 +622,7 @@ extern int update_freeing_block_list()
 	bg_record_t *bg_record = NULL;
 	ListIterator itr = NULL;
 
-	if(!bg_lists->freeing)
-		return updated;
-
-	slurm_mutex_lock(&block_state_mutex);
-	itr = list_iterator_create(bg_lists->freeing);
+	itr = list_iterator_create(block_list);
 	while ((bg_record = (bg_record_t *) list_next(itr)) != NULL) {
 		if(!bg_record->bg_block_id)
 			continue;
@@ -690,8 +687,6 @@ extern int update_freeing_block_list()
 		}
 	}
 	list_iterator_destroy(itr);
-	slurm_mutex_unlock(&block_state_mutex);
-
 #endif
 	return updated;
 }

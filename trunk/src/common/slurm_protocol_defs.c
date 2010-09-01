@@ -1904,6 +1904,7 @@ extern void slurm_free_block_info_members(block_info_t *block_info)
 		xfree(block_info->nodes);
 		xfree(block_info->owner_name);
 		xfree(block_info->ramdiskimage);
+		xfree(block_info->reason);
 	}
 }
 

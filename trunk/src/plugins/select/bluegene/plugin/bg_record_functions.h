@@ -59,7 +59,6 @@
 #include "../block_allocator/block_allocator.h"
 
 #define BLOCK_MAGIC 0x3afd
-#define BLOCK_DELETE_MAGIC 0x3afe
 
 typedef struct bg_record {
 	rm_partition_t *bg_block;       /* structure to hold info from db2 */
@@ -76,9 +75,12 @@ typedef struct bg_record {
 					   0 = not booting,
 					   1 = booting */
 	int bp_count;                   /* size */
-	rm_connection_type_t conn_type;  /* MESH or Torus or NAV */
+	rm_connection_type_t conn_type; /* MESH or Torus or NAV */
 	uint32_t cpu_cnt;               /* count of cpus per block */
-	int full_block;                 /* whether or not block is the full
+	int free_cnt;                   /* How many are trying
+					   to free this block at the
+					   same time */
+	bool full_block;                /* whether or not block is the full
 					   block */
 	uint16_t geo[HIGHEST_DIMENSIONS];  /* geometry */
 	char *ionodes; 		        /* String of ionodes in block

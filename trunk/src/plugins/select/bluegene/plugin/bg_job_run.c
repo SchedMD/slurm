@@ -635,11 +635,10 @@ static void _start_agent(bg_action_t *bg_action_ptr)
 		_reset_block(bg_record);
 
 		slurm_mutex_unlock(&block_state_mutex);
-		bg_requeue_job(bg_action_ptr->job_ptr->job_id, 1);
+		bg_requeue_job(bg_action_ptr->job_ptr->job_id, 0);
 		return;
 	}
 
-	transfer_main_to_freeing(delete_list);
 	slurm_mutex_unlock(&block_state_mutex);
 
 	rc = free_block_list(bg_action_ptr->job_ptr->job_id, delete_list, 0, 1);
@@ -648,7 +647,8 @@ static void _start_agent(bg_action_t *bg_action_ptr)
 		error("Problem with deallocating blocks to run job %u "
 		      "on block %s", bg_action_ptr->job_ptr->job_id,
 		      bg_action_ptr->bg_block_id);
-		bg_requeue_job(bg_action_ptr->job_ptr->job_id, 1);
+		if (IS_JOB_CONFIGURING(bg_action_ptr->job_ptr))
+			bg_requeue_job(bg_action_ptr->job_ptr->job_id, 0);
 		return;
 	}
 
