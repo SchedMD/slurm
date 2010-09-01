@@ -632,22 +632,6 @@ extern int select_p_pack_select_info(time_t last_query_time, Buf *buffer_ptr,
 				      "no bg_lists->main");
 				return SLURM_ERROR;
 			}
-			/*
-			 * get all the blocks we are freeing since they have
-			 * been moved here
-			 */
-			if(bg_lists->freeing) {
-				slurm_mutex_lock(&block_state_mutex);
-				itr = list_iterator_create(bg_lists->freeing);
-				while ((bg_record = list_next(itr))) {
-					xassert(bg_record->bg_block_id != NULL);
-					pack_block(bg_record, buffer,
-						   protocol_version);
-					blocks_packed++;
-				}
-				list_iterator_destroy(itr);
-				slurm_mutex_unlock(&block_state_mutex);
-			}
 		}
 		tmp_offset = get_buf_offset(buffer);
 		set_buf_offset(buffer, 0);
@@ -847,12 +831,23 @@ extern int select_p_update_block(update_block_msg_t *block_desc_ptr)
 				continue;
 			}
 			if(found_record->job_running > NO_JOB_RUNNING) {
-				info("Failing job %u block %s "
-				     "failed because overlapping block %s "
-				     "is in an error state.",
-				     found_record->job_running,
-				     found_record->bg_block_id,
-				     bg_record->bg_block_id);
+				if(found_record->job_ptr
+				   && IS_JOB_CONFIGURING(found_record->job_ptr))
+					info("Pending job %u on block %s "
+					     "will try to be requeued "
+					     "because overlapping block %s "
+					     "is in an error state.",
+					     found_record->job_running,
+					     found_record->bg_block_id,
+					     bg_record->bg_block_id);
+				else
+					info("Failing job %u on block %s "
+					     "because overlapping block %s "
+					     "is in an error state.",
+					     found_record->job_running,
+					     found_record->bg_block_id,
+					     bg_record->bg_block_id);
+
 				/* This job will be requeued in the
 				   free_block_list code below, just
 				   make note of it here.
@@ -866,7 +861,6 @@ extern int select_p_update_block(update_block_msg_t *block_desc_ptr)
 			list_push(delete_list, found_record);
 		}
 		list_iterator_destroy(itr);
-		transfer_main_to_freeing(delete_list);
 		slurm_mutex_unlock(&block_state_mutex);
 		free_block_list(NO_VAL, delete_list, 0, 0);
 		list_destroy(delete_list);
@@ -911,12 +905,22 @@ extern int select_p_update_block(update_block_msg_t *block_desc_ptr)
 				continue;
 			}
 			if(found_record->job_running > NO_JOB_RUNNING) {
-				info("Failing job %u block %s "
-				     "failed because overlapping block %s "
-				     "is in an error state.",
-				     found_record->job_running,
-				     found_record->bg_block_id,
-				     bg_record->bg_block_id);
+				if(found_record->job_ptr
+				   && IS_JOB_CONFIGURING(found_record->job_ptr))
+					info("Pending job %u on block %s "
+					     "will try to be requeued "
+					     "because overlapping block %s "
+					     "is in an error state.",
+					     found_record->job_running,
+					     found_record->bg_block_id,
+					     bg_record->bg_block_id);
+				else
+					info("Failing job %u on block %s "
+					     "because overlapping block %s "
+					     "is in an error state.",
+					     found_record->job_running,
+					     found_record->bg_block_id,
+					     bg_record->bg_block_id);
 				/* This job will be requeued in the
 				   free_block_list code below, just
 				   make note of it here.
@@ -941,7 +945,6 @@ extern int select_p_update_block(update_block_msg_t *block_desc_ptr)
 		}
 		list_iterator_destroy(itr);
 
-		transfer_main_to_freeing(delete_list);
 		slurm_mutex_unlock(&block_state_mutex);
 		free_block_list(NO_VAL, delete_list, 0, 0);
 		list_destroy(delete_list);

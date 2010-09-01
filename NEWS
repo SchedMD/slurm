@@ -62,6 +62,7 @@ documents those changes that are of interest to users and admins.
     allowing multiple jobs to start at the same time.
  -- BLUEGENE - Removed thread pool for starting and stopping jobs.  For similar
     reasons as noted above.
+ -- BLUEGENE - Handle blocks that never deallocate.
 
 * Changes in SLURM 2.2.0.pre9
 =============================

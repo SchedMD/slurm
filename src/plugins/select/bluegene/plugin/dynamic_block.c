@@ -709,7 +709,6 @@ static int _breakup_blocks(List block_list, List new_blocks,
 		}
 
 		if(bg_record->node_cnt == cnodes) {
-			bg_record_t *new_record = xmalloc(sizeof(bg_record_t));
 			if(bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
 				info("found it here %s, %s",
 				     bg_record->bg_block_id,
@@ -719,13 +718,7 @@ static int _breakup_blocks(List block_list, List new_blocks,
 				alpha_num[bg_record->start[X]],
 				alpha_num[bg_record->start[Y]],
 				alpha_num[bg_record->start[Z]]);
-			/* we will expect this to already be there,
-			   but is will need to be added again or we will
-			   skip over it.
-			*/
-			copy_bg_record(bg_record, new_record);
 
-			list_append(new_blocks, new_record);
 			rc = SLURM_SUCCESS;
 			goto finished;
 		}

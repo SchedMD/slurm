@@ -87,7 +87,6 @@ typedef struct {
 typedef struct {
 	List booted;         /* blocks that are booted */
 	List job_running;    /* jobs running in these blocks */
-	List freeing;        /* blocks that being freed */
 	List main;	    /* List of configured BG blocks */
 	List valid_small32;
 	List valid_small64;
@@ -164,7 +163,6 @@ extern bg_record_t *find_and_remove_org_from_bg_list(List my_list,
 extern bg_record_t *find_org_in_bg_list(List my_list, bg_record_t *bg_record);
 extern void *mult_free_block(void *args);
 extern void *mult_destroy_block(void *args);
-extern int transfer_main_to_freeing(List delete_list);
 extern int free_block_list(uint32_t job_id, List track_list,
 			   bool destroy, bool wait);
 extern int read_bg_conf();
@@ -186,6 +184,12 @@ extern int load_state_file(List curr_block_list, char *dir_name);
 /*****************************************************/
 extern int configure_small_block(bg_record_t *bg_record);
 extern int configure_block_switches(bg_record_t * bg_conf_record);
+
+
+/* select_bluegene.c */
+/*****************************************************/
+extern int select_p_update_block(update_block_msg_t *block_desc_ptr);
+
 
 #endif /* _BLUEGENE_H_ */
 

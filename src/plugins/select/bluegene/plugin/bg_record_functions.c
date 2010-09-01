@@ -1350,7 +1350,6 @@ extern int down_nodecard(char *bp_name, bitoff_t io_start,
 	list_destroy(requests);
 
 	if (delete_list) {
-		transfer_main_to_freeing(delete_list);
 		slurm_mutex_unlock(&block_state_mutex);
 		free_block_list(NO_VAL, delete_list, 0, 0);
 		list_destroy(delete_list);
