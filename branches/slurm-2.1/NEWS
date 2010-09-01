@@ -3,6 +3,8 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 2.1.13
 =========================
+ -- Fix race condition which can set a node state to IDLE on slurmctld startup
+    even if it has running jobs.
 
 * Changes in SLURM 2.1.12
 =========================
