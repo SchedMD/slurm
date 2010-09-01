@@ -88,56 +88,51 @@ static int _setup_particulars(uint32_t cluster_flags,
 			       dynamic_plugin_data_t *select_jobinfo)
 {
 	int rc = SLURM_SUCCESS;
-	if(cluster_flags & CLUSTER_FLAG_BG) {
+	if (cluster_flags & CLUSTER_FLAG_BG) {
 		char *bg_part_id = NULL;
 		select_g_select_jobinfo_get(select_jobinfo,
 					    SELECT_JOBDATA_BLOCK_ID,
 					    &bg_part_id);
 		if (bg_part_id) {
-			if(cluster_flags & CLUSTER_FLAG_BGL) {
+			if (cluster_flags & CLUSTER_FLAG_BGL) {
 				uint16_t conn_type =
 					(uint16_t)NO_VAL;
 				select_g_select_jobinfo_get(
 					select_jobinfo,
 					SELECT_JOBDATA_CONN_TYPE,
 					&conn_type);
-				if(conn_type > SELECT_SMALL) {
-					env_array_overwrite_fmt(dest,
-								"SUBMIT_POOL",
-								"%s",
-								bg_part_id);
+				if (conn_type > SELECT_SMALL) {
+					setenvf(dest, "SUBMIT_POOL", "%s",
+						bg_part_id);
 				}
 			}
-			env_array_overwrite_fmt(dest, "MPIRUN_PARTITION", "%s",
-						bg_part_id);
-			env_array_overwrite_fmt(dest, "MPIRUN_NOFREE",
-						"%d", 1);
-			env_array_overwrite_fmt(dest, "MPIRUN_NOALLOCATE",
-						"%d", 1);
+			setenvf(dest, "MPIRUN_PARTITION", "%s", bg_part_id);
+			setenvf(dest, "MPIRUN_NOFREE", "%d", 1);
+			setenvf(dest, "MPIRUN_NOALLOCATE", "%d", 1);
 			xfree(bg_part_id);
 		} else
 			rc = SLURM_FAILURE;
 
-		if(rc == SLURM_FAILURE)
+		if (rc == SLURM_FAILURE) {
 			error("Can't set MPIRUN_PARTITION "
 			      "environment variable");
-	} else if(cluster_flags & CLUSTER_FLAG_CRAYXT) {
+		}
+	} else if (cluster_flags & CLUSTER_FLAG_CRAYXT) {
 		uint32_t resv_id = 0;
 
 		select_g_select_jobinfo_get(select_jobinfo,
 					    SELECT_JOBDATA_RESV_ID,
 					    &resv_id);
 		if (resv_id) {
-			env_array_overwrite_fmt(dest, "BASIL_RESERVATION_ID",
-						"%u", resv_id);
+			setenvf(dest, "BASIL_RESERVATION_ID", "%u", resv_id);
 		} else {
 			error("Can't set BASIL_RESERVATION_ID "
 			      "environment variable");
 			rc = SLURM_FAILURE;
 		}
 
-	} else if(cluster_flags & CLUSTER_FLAG_AIX) {
-		env_array_overwrite(dest, "LOADLBATCH", "yes");
+	} else if (cluster_flags & CLUSTER_FLAG_AIX) {
+		setenvf(dest, "LOADLBATCH", "%s", "yes");
 	}
 
 	return rc;
@@ -305,7 +300,7 @@ setenvf(char ***envp, const char *name, const char *fmt, ...)
 
 	xstrfmtcat (str, "%s=%s", name, bufcpy);
 	xfree(bufcpy);
-	if(envp && *envp) {
+	if (envp && *envp) {
 		ep = _find_name_in_env (*envp, name);
 
 		if (*ep != NULL)
@@ -667,7 +662,7 @@ int setup_env(env_t *env, bool preserve_env)
 		rc = SLURM_FAILURE;
 	}
 
-	if(env->select_jobinfo) {
+	if (env->select_jobinfo) {
 		_setup_particulars(cluster_flags, &env->env,
 				   env->select_jobinfo);
 	}
@@ -925,11 +920,11 @@ env_array_for_job(char ***dest, const resource_allocation_response_msg_t *alloc,
 
 	_setup_particulars(cluster_flags, dest, alloc->select_jobinfo);
 
-	if(cluster_flags & CLUSTER_FLAG_BG) {
+	if (cluster_flags & CLUSTER_FLAG_BG) {
 		select_g_select_jobinfo_get(alloc->select_jobinfo,
 					    SELECT_JOBDATA_NODE_CNT,
 					    &node_cnt);
-		if(!node_cnt)
+		if (!node_cnt)
 			node_cnt = alloc->node_cnt;
 
 		env_array_overwrite_fmt(dest, "SLURM_BG_NUM_NODES",
