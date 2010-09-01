@@ -1717,7 +1717,7 @@ extern int validate_nodes_via_front_end(
 		slurm_node_registration_status_msg_t *reg_msg)
 {
 	int error_code = 0, i, jobs_on_node;
-	bool updated_job = false;
+	bool update_node_state = false;
 #ifdef HAVE_BG
 	bool failure_logged = false;
 #endif
@@ -1842,7 +1842,7 @@ extern int validate_nodes_via_front_end(
 		node_ptr->slurmd_start_time = reg_msg->slurmd_start_time;
 
 		if (IS_NODE_NO_RESPOND(node_ptr)) {
-			updated_job = true;
+			update_node_state = true;
 			node_ptr->node_state &= (~NODE_STATE_NO_RESPOND);
 			node_ptr->node_state &= (~NODE_STATE_POWER_UP);
 		}
@@ -1856,7 +1856,7 @@ extern int validate_nodes_via_front_end(
 					failure_logged = true;
 				}
 #else
-				updated_job = true;
+				update_node_state = true;
 				if (prolog_hostlist)
 					(void) hostlist_push_host(
 						prolog_hostlist,
@@ -1869,14 +1869,14 @@ extern int validate_nodes_via_front_end(
 			}
 		} else {
 			if (reg_hostlist)
-				(void) hostlist_push_host(
-					reg_hostlist, node_ptr->name);
+				(void) hostlist_push_host(reg_hostlist,
+							  node_ptr->name);
 			else
 				reg_hostlist = hostlist_create(node_ptr->name);
 
 			node_flags = node_ptr->node_state & NODE_STATE_FLAGS;
 			if (IS_NODE_UNKNOWN(node_ptr)) {
-				updated_job = true;
+				update_node_state = true;
 				if (jobs_on_node) {
 					node_ptr->node_state =
 						NODE_STATE_ALLOCATED |
@@ -1902,7 +1902,7 @@ extern int validate_nodes_via_front_end(
 				     (node_ptr->reason != NULL) &&
 				     (strncmp(node_ptr->reason,
 					      "Not responding", 14) == 0)))) {
-				updated_job = true;
+				update_node_state = true;
 				if (jobs_on_node) {
 					node_ptr->node_state =
 						NODE_STATE_ALLOCATED |
@@ -1926,19 +1926,19 @@ extern int validate_nodes_via_front_end(
 			} else if (IS_NODE_ALLOCATED(node_ptr) &&
 				   (jobs_on_node == 0)) {
 				/* job vanished */
-				updated_job = true;
+				update_node_state = true;
 				node_ptr->node_state = NODE_STATE_IDLE |
 					node_flags;
 				node_ptr->last_idle = now;
 			} else if (IS_NODE_COMPLETING(node_ptr) &&
 				   (jobs_on_node == 0)) {
 				/* job already done */
-				updated_job = true;
+				update_node_state = true;
 				node_ptr->node_state &=
 					(~NODE_STATE_COMPLETING);
 			} else if (IS_NODE_IDLE(node_ptr) &&
 				   (jobs_on_node != 0)) {
-				updated_job = true;
+				update_node_state = true;
 				node_ptr->node_state = NODE_STATE_ALLOCATED |
 						       node_flags;
 				error("Invalid state for node %s, was IDLE "
@@ -1977,7 +1977,7 @@ extern int validate_nodes_via_front_end(
 		hostlist_destroy(return_hostlist);
 	}
 
-	if (updated_job) {
+	if (update_node_state) {
 		last_node_update = time (NULL);
 		reset_job_priority();
 	}
