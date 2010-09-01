@@ -467,7 +467,8 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 2.1.13
 =========================
- -- Improve logging of invalid sinfo and squeue print options.
+ -- Fix race condition which can set a node state to IDLE on slurmctld startup
+    even if it has running jobs.
 
 * Changes in SLURM 2.1.12
 =========================
@@ -498,6 +499,10 @@ documents those changes that are of interest to users and admins.
  -- Fix to node in correct state in accounting when updating it to drain from
     scontrol/sview.
  -- BLUEGENE - Removed incorrect unlocking on error cases when starting jobs.
+ -- Improve logging of invalid sinfo and squeue print options.
+ -- BLUEGENE - Added check to libsched_if to allow root to run even outside of
+    SLURM.  This is needed when running certain blocks outside of SLURM in HTC
+    mode.
 
 * Changes in SLURM 2.1.11-2
 ===========================
