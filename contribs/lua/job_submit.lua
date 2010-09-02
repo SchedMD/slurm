@@ -15,13 +15,19 @@ require "posix"
 
 function slurm_job_submit (job_desc)
    local rc = slurm.SUCCESS
-   local min_nodes = 10
    local account = "none"
+   local partition = "tbd"
 
-   log_info ("slurm_job_submit: changing min_nodes from %d to %d, and setting account to %s",
-   	     job_desc.min_nodes, min_nodes, account)
-   job_desc.min_nodes = min_nodes
-   job_desc.account = account
+   if job_desc.account == nil then
+      log_info("slurm_job_submit: account is not set, setting default value of %s",
+               account)
+      job_desc.account = account
+   end
+
+   if job_desc.partition == nil then
+      log_info("slurm_job_submit: partition is not set, setting default value of %s",
+               partition)
+   end
 
    return job_desc
 end
