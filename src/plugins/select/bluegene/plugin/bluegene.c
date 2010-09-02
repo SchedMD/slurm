@@ -45,7 +45,7 @@
 				 * down switches and nodes */
 #define BG_POLL_TIME 1	        /* seconds between poll of state
 				 * change in bg blocks */
-#define MAX_FREE_RETRIES           10 /* max number of
+#define MAX_FREE_RETRIES           200 /* max number of
 					* FREE_SLEEP_INTERVALS to wait
 					* before putting a
 					* deallocating block into
