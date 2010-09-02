@@ -117,7 +117,6 @@ documents those changes that are of interest to users and admins.
  -- BLUEGENE - Added option to scontrol & sview to resume blocks in an error
     state instead of just freeing them.
  -- sview patched to allow multiple row selection of jobs, patch from Dan Rusak
-    (rosemontelabs@cox.net)
  -- Lower default slurmctld server thread count from 1024 to 256. Some systems
     process threads on a last-in first-out basis and the high thread count was
     causing unexpectedly high delays for some RPCs.
