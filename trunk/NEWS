@@ -465,8 +465,8 @@ documents those changes that are of interest to users and admins.
     like postgres over mysql for some reason here you go. (Work done
     primarily by Hongjia Cao, NUDT.)
 
-* Changes in SLURM 2.1.13
-=========================
+* Changes in SLURM 2.1.12-2
+===========================
  -- Fix race condition which can set a node state to IDLE on slurmctld startup
     even if it has running jobs.
 
