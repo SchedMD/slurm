@@ -184,7 +184,7 @@ static void _block_list_del(void *object)
 		xfree(block_ptr->imageramdisk);
 		/* don't xfree(block_ptr->bp_inx);
 		   it isn't copied like the chars and is freed in the api
-		 */
+		*/
 		xfree(block_ptr);
 
 	}
@@ -274,7 +274,7 @@ static void _layout_block_record(GtkTreeView *treeview,
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_block,
 						 SORTID_JOB),
-				  tmp_cnt);
+				   tmp_cnt);
 	if(cluster_flags & CLUSTER_FLAG_BGL) {
 		add_display_treestore_line(update, treestore, &iter,
 					   find_col_name(display_data_block,
@@ -692,9 +692,9 @@ finished:
 extern void refresh_block(GtkAction *action, gpointer user_data)
 {
 	popup_info_t *popup_win = (popup_info_t *)user_data;
-	xassert(popup_win != NULL);
-	xassert(popup_win->spec_info != NULL);
-	xassert(popup_win->spec_info->title != NULL);
+	xassert(popup_win);
+	xassert(popup_win->spec_info);
+	xassert(popup_win->spec_info->title);
 	popup_win->force_refresh = 1;
 	specific_info_block(popup_win);
 }
@@ -716,8 +716,8 @@ extern int get_new_info_block(block_info_msg_t **block_ptr, int force)
 			error_code = SLURM_SUCCESS;
 		*block_ptr = g_block_info_ptr;
 		if(changed)
-			return SLURM_SUCCESS;
-		return error_code;
+			error_code = SLURM_SUCCESS;
+		goto end_it;
 	}
 	last = now;
 	if (g_block_info_ptr) {
@@ -732,8 +732,8 @@ extern int get_new_info_block(block_info_msg_t **block_ptr, int force)
 			changed = 0;
 		}
 	} else {
-		error_code = slurm_load_block_info((time_t) NULL,
-						   &new_bg_ptr);
+		new_bg_ptr = NULL;
+		error_code = slurm_load_block_info((time_t) NULL, &new_bg_ptr);
 		changed = 1;
 	}
 
@@ -744,6 +744,7 @@ extern int get_new_info_block(block_info_msg_t **block_ptr, int force)
 
 		*block_ptr = g_block_info_ptr;
 	}
+end_it:
 	return error_code;
 }
 
@@ -817,7 +818,7 @@ extern int update_state_block(GtkDialog *dialog,
 		   == SLURM_SUCCESS) {
 			snprintf(tmp_char, sizeof(tmp_char),
 				 "Block %s updated successfully",
-				blockid);
+				 blockid);
 		} else {
 			snprintf(tmp_char, sizeof(tmp_char),
 				 "Problem updating block %s.",
@@ -918,14 +919,14 @@ extern void get_info_block(GtkTable *table, display_data_t *display_data)
 		display_widget = NULL;
 		part_info_ptr = NULL;
 		block_ptr = NULL;
-		return;
+		goto reset_curs;
 	}
 
 	if(display_data)
 		local_display_data = display_data;
 	if(!table) {
 		display_data_block->set_menu = local_display_data->set_menu;
-		return;
+		goto reset_curs;
 	}
 
 	if(display_widget && toggled) {
@@ -981,12 +982,12 @@ extern void get_info_block(GtkTable *table, display_data_t *display_data)
 display_it:
 
 	if(!part_info_ptr || !block_ptr)
-		return;
+		goto reset_curs;
 
 	block_list = _create_block_list(part_info_ptr, block_ptr,
 					changed);
 	if(!block_list)
-		return;
+		goto reset_curs;
 
 	/* set up the grid */
 	if(display_widget && GTK_IS_TREE_VIEW(display_widget)
@@ -1013,6 +1014,16 @@ display_it:
 			}
 		}
 		list_iterator_destroy(itr);
+		change_grid_color(grid_button_list, -1, -1,
+				  MAKE_WHITE, true, 0);
+	} else
+		highlight_grid(GTK_TREE_VIEW(display_widget),
+			       SORTID_NODE_INX, SORTID_COLOR_INX,
+			       grid_button_list);
+
+	if(working_sview_config.grid_speedup) {
+		gtk_widget_set_sensitive(GTK_WIDGET(main_grid_table), 0);
+		gtk_widget_set_sensitive(GTK_WIDGET(main_grid_table), 1);
 	}
 
 	if(view == ERROR_VIEW && display_widget) {
@@ -1033,24 +1044,15 @@ display_it:
 				 SORTID_CNT, SORTID_NODELIST, SORTID_COLOR);
 	}
 
-	if(path)
-		highlight_grid(GTK_TREE_VIEW(display_widget),
-			       SORTID_NODE_INX, SORTID_COLOR_INX,
-			       grid_button_list);
-	else
-		change_grid_color(grid_button_list, -1, -1,
-				  MAKE_WHITE, true, 0);
-	if(working_sview_config.grid_speedup) {
-		gtk_widget_set_sensitive(GTK_WIDGET(main_grid_table), 0);
-		gtk_widget_set_sensitive(GTK_WIDGET(main_grid_table), 1);
-	}
-
 	view = INFO_VIEW;
 	_update_info_block(block_list, GTK_TREE_VIEW(display_widget));
 end_it:
 	toggled = FALSE;
 	force_refresh = FALSE;
 
+reset_curs:
+	if (main_window && main_window->window)
+		gdk_window_set_cursor(main_window->window, NULL);
 	return;
 }
 

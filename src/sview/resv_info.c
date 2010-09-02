@@ -523,7 +523,7 @@ static void _update_resv_record(sview_resv_info_t *sview_resv_info_ptr,
 			   SORTID_ACCOUNTS, resv_ptr->accounts, -1);
 
 	secs2time_str((uint32_t)difftime(resv_ptr->end_time,
-					  resv_ptr->start_time),
+					 resv_ptr->start_time),
 		      tmp_char, sizeof(tmp_char));
 	gtk_tree_store_set(treestore, iter, SORTID_DURATION, tmp_char, -1);
 
@@ -782,9 +782,9 @@ finished:
 extern void refresh_resv(GtkAction *action, gpointer user_data)
 {
 	popup_info_t *popup_win = (popup_info_t *)user_data;
-	xassert(popup_win != NULL);
-	xassert(popup_win->spec_info != NULL);
-	xassert(popup_win->spec_info->title != NULL);
+	xassert(popup_win);
+	xassert(popup_win->spec_info);
+	xassert(popup_win->spec_info->title);
 	popup_win->force_refresh = 1;
 	specific_info_resv(popup_win);
 }
@@ -804,8 +804,8 @@ extern int get_new_info_resv(reserve_info_msg_t **info_ptr,
 			error_code = SLURM_SUCCESS;
 		*info_ptr = g_resv_info_ptr;
 		if(changed)
-			return SLURM_SUCCESS;
-		return error_code;
+			error_code = SLURM_SUCCESS;
+		goto end_it;
 	}
 	last = now;
 	if (g_resv_info_ptr) {
@@ -820,6 +820,7 @@ extern int get_new_info_resv(reserve_info_msg_t **info_ptr,
 			changed = 0;
 		}
 	} else {
+		new_resv_ptr = NULL;
 		error_code = slurm_load_reservations((time_t) NULL,
 						     &new_resv_ptr);
 		changed = 1;
@@ -831,6 +832,7 @@ extern int get_new_info_resv(reserve_info_msg_t **info_ptr,
 		error_code = SLURM_SUCCESS;
 
 	*info_ptr = g_resv_info_ptr;
+end_it:
 	return error_code;
 }
 
@@ -958,14 +960,14 @@ extern void get_info_resv(GtkTable *table, display_data_t *display_data)
 			gtk_widget_destroy(display_widget);
 		display_widget = NULL;
 		resv_info_ptr = NULL;
-		return;
+		goto reset_curs;
 	}
 
 	if(display_data)
 		local_display_data = display_data;
 	if(!table) {
 		display_data_resv->set_menu = local_display_data->set_menu;
-		return;
+		goto reset_curs;
 	}
 	if(display_widget && toggled) {
 		gtk_widget_destroy(display_widget);
@@ -994,7 +996,7 @@ extern void get_info_resv(GtkTable *table, display_data_t *display_data)
 display_it:
 	info_list = _create_resv_info_list(resv_info_ptr, changed);
 	if(!info_list)
-		return;
+		goto reset_curs;
 	/* set up the grid */
 	if(display_widget && GTK_IS_TREE_VIEW(display_widget)
 	   && gtk_tree_selection_count_selected_rows(
@@ -1024,6 +1026,16 @@ display_it:
 			}
 		}
 		list_iterator_destroy(itr);
+		change_grid_color(grid_button_list, -1, -1,
+				  MAKE_WHITE, true, 0);
+	} else
+		highlight_grid(GTK_TREE_VIEW(display_widget),
+			       SORTID_NODE_INX, SORTID_COLOR_INX,
+			       grid_button_list);
+
+	if(working_sview_config.grid_speedup) {
+		gtk_widget_set_sensitive(GTK_WIDGET(main_grid_table), 0);
+		gtk_widget_set_sensitive(GTK_WIDGET(main_grid_table), 1);
 	}
 
 	if(view == ERROR_VIEW && display_widget) {
@@ -1045,24 +1057,14 @@ display_it:
 				 SORTID_CNT, SORTID_TIME_START, SORTID_COLOR);
 	}
 
-	if(path)
-		highlight_grid(GTK_TREE_VIEW(display_widget),
-			       SORTID_NODE_INX, SORTID_COLOR_INX,
-			       grid_button_list);
-	else
-		change_grid_color(grid_button_list, -1, -1,
-				  MAKE_WHITE, true, 0);
-	if(working_sview_config.grid_speedup) {
-		gtk_widget_set_sensitive(GTK_WIDGET(main_grid_table), 0);
-		gtk_widget_set_sensitive(GTK_WIDGET(main_grid_table), 1);
-	}
-
 	view = INFO_VIEW;
 	_update_info_resv(info_list, GTK_TREE_VIEW(display_widget));
 end_it:
 	toggled = FALSE;
 	force_refresh = FALSE;
-
+reset_curs:
+	if (main_window && main_window->window)
+		gdk_window_set_cursor(main_window->window, NULL);
 	return;
 }
 
@@ -1200,12 +1202,12 @@ display_it:
 		list_push(send_resv_list, sview_resv_info_ptr);
 		j=0;
 		while(resv_ptr->node_inx[j] >= 0) {
-				change_grid_color(
-					popup_win->grid_button_list,
-					resv_ptr->node_inx[j],
-					resv_ptr->node_inx[j+1],
-					sview_resv_info_ptr->color_inx,
-					true, 0);
+			change_grid_color(
+				popup_win->grid_button_list,
+				resv_ptr->node_inx[j],
+				resv_ptr->node_inx[j+1],
+				sview_resv_info_ptr->color_inx,
+				true, 0);
 			j += 2;
 		}
 	}
@@ -1391,10 +1393,10 @@ extern void admin_resv(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 		gtk_dialog_add_button(GTK_DIALOG(popup),
 				      GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL);
 
-			snprintf(tmp_char, sizeof(tmp_char),
-				 "Are you sure you want to remove "
-				 "reservation %s?",
-				 resvid);
+		snprintf(tmp_char, sizeof(tmp_char),
+			 "Are you sure you want to remove "
+			 "reservation %s?",
+			 resvid);
 		label = gtk_label_new(tmp_char);
 		edit_type = EDIT_REMOVE;
 	} else {

@@ -97,6 +97,10 @@
 #define MAKE_BLACK -2
 #define MAKE_WHITE -1
 
+#define EXTRA_BASE  0x0000ffff
+#define EXTRA_FLAGS 0xffff0000
+#define EXTRA_NODES 0x00010000
+
 enum { JOB_PAGE,
        PART_PAGE,
        RESV_PAGE,
@@ -150,6 +154,10 @@ typedef enum { SEARCH_JOB_ID = 1,
 	       SEARCH_RESERVATION_NAME,
 } sview_search_type_t;
 
+typedef struct  {
+	char *nodes;
+	bitstr_t *node_bitmap;
+} switch_record_bitmaps_t;
 
 /* Input parameters */
 typedef struct {
@@ -159,10 +167,15 @@ typedef struct {
 	bool grid_speedup;
 	uint32_t grid_vert;
 	uint32_t grid_x_width;
+	uint32_t main_width;
+	uint32_t main_height;
+	uint32_t fi_popup_width;
+	uint32_t fi_popup_height;
 	GtkWidget *page_check_widget[PAGE_CNT];
 	bool page_visible[PAGE_CNT];
 	uint16_t refresh_delay;
 	bool show_grid;
+	bool grid_topological;
 	bool show_hidden;
 	bool ruled_treeview;
 	GtkToggleAction *action_admin;
@@ -182,7 +195,7 @@ struct display_data {
 	int id;
 	char *name;
 	bool show;
-	int extra;
+	uint32_t extra;
 	void (*refresh)     (GtkAction *action, gpointer user_data);
 	GtkListStore *(*create_model)(int type);
 	void (*admin_edit)  (GtkCellRendererText *cell,
@@ -284,6 +297,7 @@ extern List signal_params_list;
 extern bool global_entry_changed;
 extern bool global_send_update_msg;
 extern bool global_edit_error;
+extern bool global_multi_error;
 extern int global_error_code;
 extern gchar *global_edit_error_msg;
 extern GtkWidget *main_notebook;
@@ -291,11 +305,10 @@ extern GtkWidget *main_statusbar;
 extern GtkWidget *main_window;
 extern GtkTable *main_grid_table;
 extern GStaticMutex sview_mutex;
-extern int global_multi_count;
+extern int global_row_count;
 extern gint last_event_x;
 extern gint last_event_y;
 extern GdkCursor* in_process_cursor;
-extern GdkCursor* standard_cursor;
 extern int cpus_per_node;
 extern int g_node_scaling;
 extern char *sview_colors[];
@@ -303,7 +316,6 @@ extern int sview_colors_cnt;
 extern uint32_t cluster_flags;
 extern int cluster_dims;
 extern List cluster_list;
-
 extern block_info_msg_t *g_block_info_ptr;
 extern job_info_msg_t *g_job_info_ptr;
 extern node_info_msg_t *g_node_info_ptr;
@@ -311,6 +323,9 @@ extern partition_info_msg_t *g_part_info_ptr;
 extern reserve_info_msg_t *g_resv_info_ptr;
 extern slurm_ctl_conf_info_msg_t *g_ctl_info_ptr;
 extern job_step_info_response_msg_t *g_step_info_ptr;
+extern topo_info_response_msg_t *g_topo_info_msg_ptr;
+extern switch_record_bitmaps_t *g_switch_nodes_maps;
+
 
 extern void init_grid(node_info_msg_t *node_info_ptr);
 extern int set_grid(int start, int end, int count);
@@ -366,6 +381,8 @@ extern void setup_popup_grid_list(popup_info_t *popup_win);
 extern void post_setup_popup_grid_list(popup_info_t *popup_win);
 
 // part_info.c
+extern bool check_part_includes_node(partition_info_msg_t *part_info_ptr,
+				     int node_dx);
 extern void refresh_part(GtkAction *action, gpointer user_data);
 extern GtkListStore *create_model_part(int type);
 extern void admin_edit_part(GtkCellRendererText *cell,
@@ -377,8 +394,12 @@ extern void get_info_part(GtkTable *table, display_data_t *display_data);
 extern void specific_info_part(popup_info_t *popup_win);
 extern void set_menus_part(void *arg, void *arg2, GtkTreePath *path, int type);
 extern void popup_all_part(GtkTreeModel *model, GtkTreeIter *iter, int id);
+extern void select_admin_partitions(GtkTreeModel *model, GtkTreeIter *iter,
+				    display_data_t *display_data,
+				    GtkTreeView *treeview);
 extern void admin_part(GtkTreeModel *model, GtkTreeIter *iter, char *type);
 extern void cluster_change_part();
+extern char *excluded_partitions;
 
 // block_info.c
 extern void refresh_block(GtkAction *action, gpointer user_data);
@@ -411,18 +432,23 @@ extern void get_info_job(GtkTable *table, display_data_t *display_data);
 extern void specific_info_job(popup_info_t *popup_win);
 extern void set_menus_job(void *arg, void *arg2, GtkTreePath *path, int type);
 extern void popup_all_job(GtkTreeModel *model, GtkTreeIter *iter, int id);
-extern void admin_job(GtkTreeModel *model, GtkTreeIter *iter, char *type,GtkTreeView *treeview);
+extern void admin_job(GtkTreeModel *model, GtkTreeIter *iter, char *type,
+		      GtkTreeView *treeview);
 extern void cluster_change_job();
 
 // node_info.c
 extern void refresh_node(GtkAction *action, gpointer user_data);
 /* don't destroy the list from this function */
-extern List create_node_info_list(node_info_msg_t *node_info_ptr, int changed);
+extern List create_node_info_list(node_info_msg_t *node_info_ptr,
+				  int changed, bool by_partition);
 extern int update_features_node(GtkDialog *dialog, const char *nodelist,
 				const char *old_features);
 extern int update_state_node(GtkDialog *dialog,
 			     const char *nodelist, const char *type);
 extern GtkListStore *create_model_node(int type);
+extern void select_admin_nodes(GtkTreeModel *model, GtkTreeIter *iter,
+			       display_data_t *display_data, uint32_t node_col,
+			       GtkTreeView *treeview);
 extern void admin_edit_node(GtkCellRendererText *cell,
 			    const char *path_string,
 			    const char *new_text,
@@ -463,6 +489,9 @@ extern void set_menus_submit(void *arg, void *arg2,
 extern int get_new_info_config(slurm_ctl_conf_info_msg_t **info_ptr);
 
 // common.c
+extern void slurm_free_switch_nodes_maps(switch_record_bitmaps_t
+					 * g_switch_nodes_maps);
+extern int get_topo_conf(void);
 extern int get_row_number(GtkTreeView *tree_view, GtkTreePath *path);
 extern int find_col(display_data_t *display_data, int type);
 extern const char *find_col_name(display_data_t *display_data, int type);
@@ -487,18 +516,19 @@ extern gboolean right_button_pressed(GtkTreeView *tree_view, GtkTreePath *path,
 				     int type);
 extern gboolean left_button_pressed(GtkTreeView *tree_view,
 				    GtkTreePath *path,
-				    const signal_params_t *signal_params,GdkEventButton *event);
+				    const signal_params_t *signal_params,
+				    GdkEventButton *event);
 extern gboolean row_activated(GtkTreeView *tree_view, GtkTreePath *path,
 			      GtkTreeViewColumn *column,
 			      const signal_params_t *signal_params);
 extern gboolean row_clicked(GtkTreeView *tree_view, GdkEventButton *event,
 			    const signal_params_t *signal_params);
-extern gboolean key_pressed(GtkTreeView *tree_view, GdkEventButton *event,
+extern gboolean key_pressed(GtkTreeView *tree_view, GdkEventKey *event,
 			    const signal_params_t *signal_params);
 extern gboolean focus_in(GtkTreeView *tree_view, GdkEventButton *event,
-			    const signal_params_t *signal_params);
-extern gboolean key_released(GtkTreeView *tree_view, GdkEventButton *event,
-			    const signal_params_t *signal_params);
+			 const signal_params_t *signal_params);
+extern gboolean key_released(GtkTreeView *tree_view, GdkEventKey *event,
+			     const signal_params_t *signal_params);
 extern popup_info_t *create_popup_info(int type, int dest_type, char *title);
 extern void setup_popup_info(popup_info_t *popup_win,
 			     display_data_t *display_data,
@@ -512,6 +542,7 @@ extern void destroy_popup_info(void *arg);
 extern void destroy_signal_params(void *arg);
 
 extern gboolean delete_popup(GtkWidget *widget, GtkWidget *event, char *title);
+extern gboolean delete_popups();
 extern void *popup_thr(popup_info_t *popup_win);
 extern void remove_old(GtkTreeModel *model, int updated);
 extern GtkWidget *create_pulldown_combo(display_data_t *display_data,

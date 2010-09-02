@@ -182,20 +182,27 @@ static display_data_t options_data_part[] = {
 	{G_TYPE_INT, SORTID_POS, NULL, FALSE, EDIT_NONE},
 	{G_TYPE_STRING, INFO_PAGE, "Full Info", TRUE, PART_PAGE},
 #ifdef HAVE_BG
-	{G_TYPE_STRING, PART_PAGE, "Drain Base Partitions", TRUE, ADMIN_PAGE},
-	{G_TYPE_STRING, PART_PAGE, "Resume Base Partitions", TRUE, ADMIN_PAGE},
+	{G_TYPE_STRING, PART_PAGE, "Drain Base Partitions",
+	 TRUE, ADMIN_PAGE | EXTRA_NODES},
+	{G_TYPE_STRING, PART_PAGE, "Resume Base Partitions",
+	 TRUE, ADMIN_PAGE | EXTRA_NODES},
 	{G_TYPE_STRING, PART_PAGE, "Put Base Partitions Down",
-	 TRUE, ADMIN_PAGE},
+	 TRUE, ADMIN_PAGE | EXTRA_NODES},
 	{G_TYPE_STRING, PART_PAGE, "Make Base Partitions Idle",
-	 TRUE, ADMIN_PAGE},
+	 TRUE, ADMIN_PAGE | EXTRA_NODES},
 	{G_TYPE_STRING, PART_PAGE, "Update Base Partition Features",
-	 TRUE, ADMIN_PAGE},
+	 TRUE, ADMIN_PAGE | EXTRA_NODES},
 #else
-	{G_TYPE_STRING, PART_PAGE, "Drain Nodes", TRUE, ADMIN_PAGE},
-	{G_TYPE_STRING, PART_PAGE, "Resume Nodes", TRUE, ADMIN_PAGE},
-	{G_TYPE_STRING, PART_PAGE, "Put Nodes Down", TRUE, ADMIN_PAGE},
-	{G_TYPE_STRING, PART_PAGE, "Make Nodes Idle", TRUE, ADMIN_PAGE},
-	{G_TYPE_STRING, PART_PAGE, "Update Node Features", TRUE, ADMIN_PAGE},
+	{G_TYPE_STRING, PART_PAGE, "Drain Nodes",
+	 TRUE, ADMIN_PAGE | EXTRA_NODES},
+	{G_TYPE_STRING, PART_PAGE, "Resume Nodes",
+	 TRUE, ADMIN_PAGE | EXTRA_NODES},
+	{G_TYPE_STRING, PART_PAGE, "Put Nodes Down",
+	 TRUE, ADMIN_PAGE | EXTRA_NODES},
+	{G_TYPE_STRING, PART_PAGE, "Make Nodes Idle",
+	 TRUE, ADMIN_PAGE | EXTRA_NODES},
+	{G_TYPE_STRING, PART_PAGE, "Update Node Features",
+	 TRUE, ADMIN_PAGE | EXTRA_NODES},
 #endif
 	{G_TYPE_STRING, PART_PAGE, "Change Part State",
 	 TRUE, ADMIN_PAGE},
@@ -855,8 +862,8 @@ static void _layout_part_record(GtkTreeView *treeview,
 			break;
 		case SORTID_JOB_SIZE:
 			_build_min_max_32_string(time_buf, sizeof(time_buf),
-			      part_ptr->min_nodes,
-			      part_ptr->max_nodes, true);
+						 part_ptr->min_nodes,
+						 part_ptr->max_nodes, true);
 			temp_char = time_buf;
 			break;
 		case SORTID_MEM:
@@ -1039,8 +1046,8 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 	gtk_tree_store_set(treestore, iter, SORTID_TIMELIMIT, time_buf, -1);
 
 	_build_min_max_32_string(time_buf, sizeof(time_buf),
-			      part_ptr->min_nodes,
-			      part_ptr->max_nodes, true);
+				 part_ptr->min_nodes,
+				 part_ptr->max_nodes, true);
 	gtk_tree_store_set(treestore, iter, SORTID_JOB_SIZE, time_buf, -1);
 
 	tmp_uint16 = part_ptr->preempt_mode;
@@ -1477,7 +1484,7 @@ static int _insert_sview_part_sub(sview_part_info_t *sview_part_info,
 
 	if(!sview_part_sub) {
 		if((sview_part_sub = _create_sview_part_sub(
-			   part_ptr, node_ptr, node_scaling)))
+			    part_ptr, node_ptr, node_scaling)))
 			list_push(sview_part_info->sub_list,
 				  sview_part_sub);
 	}
@@ -1560,7 +1567,10 @@ static List _create_part_info_list(partition_info_msg_t *part_info_ptr,
 
 	for (i=0; i<part_info_ptr->record_count; i++) {
 		part_ptr = &(part_info_ptr->partition_array[i]);
-
+		/*dont include configured excludes*/
+		if (strstr(excluded_partitions,
+			   part_info_ptr->partition_array[i].name))
+			continue;
 		sview_part_info = _create_sview_part_info(part_ptr);
 		list_append(info_list, sview_part_info);
 		sview_part_info->color_inx = i % sview_colors_cnt;
@@ -1588,7 +1598,7 @@ static List _create_part_info_list(partition_info_msg_t *part_info_ptr,
 	return info_list;
 }
 
-void _display_info_part(List info_list,	popup_info_t *popup_win)
+static void _display_info_part(List info_list,	popup_info_t *popup_win)
 {
 	specific_info_t *spec_info = popup_win->spec_info;
 	char *name = (char *)spec_info->search_info->gchar_data;
@@ -1670,12 +1680,66 @@ finished:
 	return;
 }
 
+static void _process_each_partition(GtkTreeModel  *model,
+				    GtkTreePath   *path,
+				    GtkTreeIter   *iter,
+				    gpointer       userdata)
+{
+	char *type = userdata;
+	if (_DEBUG)
+		g_print("process_each_partition: global_multi_error = %d\n",
+			global_multi_error);
+
+	if (!global_multi_error) {
+		admin_part(model, iter, type);
+	}
+}
+/*process_each_partition ^^^*/
+
+extern bool check_part_includes_node(partition_info_msg_t *part_info_ptr,
+				     int node_dx)
+{
+	partition_info_t *part_ptr = NULL;
+	bool rc = FALSE;
+	int i, j2;
+
+	for (i=0; i<part_info_ptr->record_count; i++) {
+		/*dont include configured excludes*/
+		if (strstr(excluded_partitions,
+			   part_info_ptr->partition_array[i].name))
+			continue;
+		part_ptr = &(part_info_ptr->partition_array[i]);
+		j2 = 0;
+		while(part_ptr->node_inx[j2] >= 0) {
+			if (_DEBUG) {
+				g_print("node_dx = %d ", node_dx);
+				g_print("part_node_inx[j2] = %d ",
+					part_ptr->node_inx[j2]);
+				g_print("part_node_inx[j2+1] = %d \n",
+					part_ptr->node_inx[j2+1]);
+			}
+			if (node_dx >= part_ptr->node_inx[j2] &&
+			    node_dx <= part_ptr->node_inx[j2+1]) {
+				rc = TRUE;
+				if (_DEBUG)
+					g_print("hit!!\n");
+			}
+			break;
+			j2 += 2;
+		}
+		if (rc)
+			break;
+	}
+	return rc;
+}
+
+
 extern void refresh_part(GtkAction *action, gpointer user_data)
 {
 	popup_info_t *popup_win = (popup_info_t *)user_data;
-	xassert(popup_win != NULL);
-	xassert(popup_win->spec_info != NULL);
-	xassert(popup_win->spec_info->title != NULL);
+	xassert(popup_win);
+	xassert(popup_win->spec_info);
+	xassert(popup_win->spec_info->title);
 	popup_win->force_refresh = 1;
 	specific_info_part(popup_win);
 }
@@ -1696,8 +1760,8 @@ extern int get_new_info_part(partition_info_msg_t **part_ptr, int force)
 			error_code = SLURM_SUCCESS;
 		*part_ptr = g_part_info_ptr;
 		if(changed)
-			return SLURM_SUCCESS;
-		return error_code;
+			error_code = SLURM_SUCCESS;
+		goto end_it;
 	}
 	last = now;
 
@@ -1715,9 +1779,10 @@ extern int get_new_info_part(partition_info_msg_t **part_ptr, int force)
 		} else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
 			error_code = SLURM_NO_CHANGE_IN_DATA;
 			new_part_ptr = g_part_info_ptr;
-				changed = 0;
+			changed = 0;
 		}
 	} else {
+		new_part_ptr = NULL;
 		error_code = slurm_load_partitions((time_t) NULL, &new_part_ptr,
 						   show_flags);
 		changed = 1;
@@ -1730,6 +1795,7 @@ extern int get_new_info_part(partition_info_msg_t **part_ptr, int force)
 		error_code = SLURM_SUCCESS;
 
 	*part_ptr = new_part_ptr;
+end_it:
 	return error_code;
 }
 
@@ -1971,14 +2037,14 @@ extern void get_info_part(GtkTable *table, display_data_t *display_data)
 		display_widget = NULL;
 		part_info_ptr = NULL;
 		node_info_ptr = NULL;
-		return;
+		goto reset_curs;
 	}
 
 	if(display_data)
 		local_display_data = display_data;
 	if(!table) {
 		display_data_part->set_menu = local_display_data->set_menu;
-		return;
+		goto reset_curs;
 	}
 	if(display_widget && toggled) {
 		gtk_widget_destroy(display_widget);
@@ -1996,7 +2062,7 @@ extern void get_info_part(GtkTable *table, display_data_t *display_data)
 			gtk_widget_destroy(display_widget);
 		view = ERROR_VIEW;
 		snprintf(error_char, 100, "slurm_load_partitions: %s",
-			slurm_strerror(slurm_get_errno()));
+			 slurm_strerror(slurm_get_errno()));
 		label = gtk_label_new(error_char);
 		display_widget = gtk_widget_ref(GTK_WIDGET(label));
 		gtk_table_attach_defaults(table, label, 0, 1, 0, 1);
@@ -2017,7 +2083,7 @@ extern void get_info_part(GtkTable *table, display_data_t *display_data)
 			gtk_widget_destroy(display_widget);
 		view = ERROR_VIEW;
 		snprintf(error_char, 100, "slurm_load_node: %s",
-			slurm_strerror(slurm_get_errno()));
+			 slurm_strerror(slurm_get_errno()));
 		label = gtk_label_new(error_char);
 		display_widget = gtk_widget_ref(GTK_WIDGET(label));
 		gtk_table_attach_defaults(table, label, 0, 1, 0, 1);
@@ -2031,7 +2097,7 @@ display_it:
 					   node_info_ptr,
 					   changed);
 	if(!info_list)
-		return;
+		goto reset_curs;
 
 	/* set up the grid */
 	if(display_widget && GTK_IS_TREE_VIEW(display_widget)
@@ -2058,7 +2124,18 @@ display_it:
 			}
 		}
 		list_iterator_destroy(itr);
+		change_grid_color(grid_button_list, -1, -1,
+				  MAKE_WHITE, true, 0);
+	} else
+		highlight_grid(GTK_TREE_VIEW(display_widget),
+			       SORTID_NODE_INX, SORTID_COLOR_INX,
+			       grid_button_list);
+
+	if(working_sview_config.grid_speedup) {
+		gtk_widget_set_sensitive(GTK_WIDGET(main_grid_table), 0);
+		gtk_widget_set_sensitive(GTK_WIDGET(main_grid_table), 1);
 	}
+
 
 	if(view == ERROR_VIEW && display_widget) {
 		gtk_widget_destroy(display_widget);
@@ -2067,7 +2144,10 @@ display_it:
 	if(!display_widget) {
 		tree_view = create_treeview(local_display_data,
 					    &grid_button_list);
-
+		/*set multiple capability here*/
+		gtk_tree_selection_set_mode(
+			gtk_tree_view_get_selection(tree_view),
+			GTK_SELECTION_MULTIPLE);
 		display_widget = gtk_widget_ref(GTK_WIDGET(tree_view));
 		gtk_table_attach_defaults(table,
 					  GTK_WIDGET(tree_view),
@@ -2079,25 +2159,15 @@ display_it:
 				 SORTID_CNT, SORTID_NAME, SORTID_COLOR);
 	}
 
-	if(path)
-		highlight_grid(GTK_TREE_VIEW(display_widget),
-			       SORTID_NODE_INX, SORTID_COLOR_INX,
-			       grid_button_list);
-	else
-		change_grid_color(grid_button_list, -1, -1,
-				  MAKE_WHITE, true, 0);
-	if(working_sview_config.grid_speedup) {
-		gtk_widget_set_sensitive(GTK_WIDGET(main_grid_table), 0);
-		gtk_widget_set_sensitive(GTK_WIDGET(main_grid_table), 1);
-	}
-
 	view = INFO_VIEW;
 	_update_info_part(info_list, GTK_TREE_VIEW(display_widget));
 end_it:
 	toggled = FALSE;
 	force_refresh = FALSE;
-
-	return;
+reset_curs:
+	if (main_window && main_window->window)
+		gdk_window_set_cursor(main_window->window, NULL);
+        return;
 }
 
 extern void specific_info_part(popup_info_t *popup_win)
@@ -2164,7 +2234,7 @@ extern void specific_info_part(popup_info_t *popup_win)
 			gtk_widget_destroy(spec_info->display_widget);
 		spec_info->view = ERROR_VIEW;
 		snprintf(error_char, 100, "slurm_load_node: %s",
-			slurm_strerror(slurm_get_errno()));
+			 slurm_strerror(slurm_get_errno()));
 		label = gtk_label_new(error_char);
 		spec_info->display_widget = gtk_widget_ref(GTK_WIDGET(label));
 		gtk_table_attach_defaults(popup_win->table, label, 0, 1, 0, 1);
@@ -2188,6 +2258,10 @@ display_it:
 	if(spec_info->type != INFO_PAGE && !spec_info->display_widget) {
 		tree_view = create_treeview(local_display_data,
 					    &popup_win->grid_button_list);
+		/*set multiple capability here*/
+		gtk_tree_selection_set_mode(
+			gtk_tree_view_get_selection(tree_view),
+			GTK_SELECTION_MULTIPLE);
 
 		spec_info->display_widget =
 			gtk_widget_ref(GTK_WIDGET(tree_view));
@@ -2469,15 +2543,34 @@ extern void popup_all_part(GtkTreeModel *model, GtkTreeIter *iter, int id)
 	}
 }
 
+extern void select_admin_partitions(GtkTreeModel *model,
+				    GtkTreeIter *iter,
+				    display_data_t *display_data,
+				    GtkTreeView *treeview)
+{
+	if(treeview) {
+		if(display_data->extra & EXTRA_NODES) {
+			select_admin_nodes(model, iter, display_data,
+					   SORTID_NODELIST, treeview);
+			return;
+		}
+		global_multi_error = FALSE;
+		gtk_tree_selection_selected_foreach(
+			gtk_tree_view_get_selection(treeview),
+			_process_each_partition, display_data->name);
+	}
+} /*select_admin_partitions ^^^*/
+
+
 extern void admin_part(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 {
-	update_part_msg_t *part_msg = xmalloc(sizeof(update_part_msg_t));
-	char *partid = NULL;
 	char *nodelist = NULL;
-	char tmp_char[100];
-	char *temp = NULL;
+	char *partid = NULL;
+	update_part_msg_t *part_msg = xmalloc(sizeof(update_part_msg_t));
 	int edit_type = 0;
 	int response = 0;
+	char tmp_char[100];
+	char *temp = NULL;
 	GtkWidget *label = NULL;
 	GtkWidget *entry = NULL;
 	GtkWidget *popup = gtk_dialog_new_with_buttons(
@@ -2573,19 +2666,21 @@ extern void admin_part(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 	response = gtk_dialog_run (GTK_DIALOG(popup));
 
 	if (response == GTK_RESPONSE_OK) {
+		int rc;
 		if(global_edit_error)
 			temp = global_edit_error_msg;
 		else if(!global_send_update_msg) {
 			temp = g_strdup_printf("No change detected.");
-		} else if(slurm_update_partition(part_msg)
+		} else if((rc = slurm_update_partition(part_msg))
 			  == SLURM_SUCCESS) {
 			temp = g_strdup_printf(
 				"Partition %s updated successfully",
 				partid);
 		} else {
 			temp = g_strdup_printf(
-				"Problem updating partition %s.",
-				partid);
+				"Problem updating partition %s: %s",
+				partid, slurm_strerror(rc));
+			global_multi_error = TRUE;
 		}
 		display_edit_note(temp);
 		g_free(temp);
