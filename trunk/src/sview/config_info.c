@@ -53,14 +53,17 @@ extern int get_new_info_config(slurm_ctl_conf_info_msg_t **info_ptr)
 			error_code = SLURM_NO_CHANGE_IN_DATA;
 			new_ctl_ptr = g_ctl_info_ptr;
 		}
-	} else
+	} else {
+		new_ctl_ptr = NULL;
 		error_code = slurm_load_ctl_conf((time_t) NULL, &new_ctl_ptr);
+	}
 	g_ctl_info_ptr = new_ctl_ptr;
 
 	if(g_ctl_info_ptr && (*info_ptr != g_ctl_info_ptr))
 		error_code = SLURM_SUCCESS;
 
 	*info_ptr = new_ctl_ptr;
+
 	return error_code;
 
 }

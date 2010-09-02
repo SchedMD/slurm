@@ -63,10 +63,10 @@ bool global_entry_changed = 0;
 bool global_send_update_msg = 0;
 bool global_edit_error = 0;
 int global_error_code = 0;
-int global_multi_count = 0;
+int global_row_count = 0;
+bool global_multi_error = 0;
 gint last_event_x = 0;
 gint last_event_y = 0;
-GdkCursor* standard_cursor;
 GdkCursor* in_process_cursor;
 gchar *global_edit_error_msg = NULL;
 GtkWidget *main_notebook = NULL;
@@ -80,6 +80,8 @@ GCond *grid_cond = NULL;
 uint32_t cluster_flags;
 int cluster_dims;
 List cluster_list = NULL;
+switch_record_bitmaps_t *g_switch_nodes_maps = NULL;
+char *excluded_partitions = NULL;
 
 block_info_msg_t *g_block_info_ptr = NULL;
 job_info_msg_t *g_job_info_ptr = NULL;
@@ -88,6 +90,7 @@ partition_info_msg_t *g_part_info_ptr = NULL;
 reserve_info_msg_t *g_resv_info_ptr = NULL;
 slurm_ctl_conf_info_msg_t *g_ctl_info_ptr = NULL;
 job_step_info_response_msg_t *g_step_info_ptr = NULL;
+topo_info_response_msg_t *g_topo_info_msg_ptr = NULL;
 
 static GtkActionGroup *admin_action_group = NULL;
 static GtkActionGroup *menu_action_group = NULL;
@@ -259,6 +262,11 @@ static void _page_switched(GtkNotebook     *notebook,
 	page_thr_t *page_thr = NULL;
 	GError *error = NULL;
 	static int started_grid_init = 0;
+
+
+	/*set spinning cursor while loading*/
+	if (main_window->window && (page_num != TAB_PAGE))
+		gdk_window_set_cursor(main_window->window, in_process_cursor);
 
 	/* make sure we aren't adding the page, and really asking for info */
 	if(adding)
@@ -460,10 +468,25 @@ static void _init_pages()
 	}
 }
 
+static void _persist_dynamics()
+{
+
+	gint g_x;
+	gint g_y;
+
+	gtk_window_get_size(GTK_WINDOW(main_window), &g_x, &g_y);
+
+	default_sview_config.main_width = g_x;
+	default_sview_config.main_height = g_y;
+
+	save_defaults();
+}
+
 static gboolean _delete(GtkWidget *widget,
 			GtkWidget *event,
 			gpointer data)
 {
+	_persist_dynamics();
 	fini = 1;
 	gtk_main_quit();
 	ba_fini();
@@ -719,12 +742,12 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 				     G_N_ELEMENTS(entries), window);
 
 	//if(cluster_flags & CLUSTER_FLAG_BG)
-		gtk_action_group_add_actions(menu_action_group, bg_entries,
-					     G_N_ELEMENTS(bg_entries), window);
-		//else
-		gtk_action_group_add_actions(menu_action_group, nonbg_entries,
-					     G_N_ELEMENTS(nonbg_entries),
-					     window);
+	gtk_action_group_add_actions(menu_action_group, bg_entries,
+				     G_N_ELEMENTS(bg_entries), window);
+	//else
+	gtk_action_group_add_actions(menu_action_group, nonbg_entries,
+				     G_N_ELEMENTS(nonbg_entries),
+				     window);
 
 	gtk_action_group_add_radio_actions(menu_action_group, radio_entries,
 					   G_N_ELEMENTS(radio_entries),
@@ -891,6 +914,8 @@ extern void _change_cluster_main(GtkComboBox *combo, gpointer extra)
 	g_ctl_info_ptr = NULL;
 	slurm_free_job_step_info_response_msg(g_step_info_ptr);
 	g_step_info_ptr = NULL;
+	slurm_free_topo_info_msg(g_topo_info_msg_ptr);
+	g_topo_info_msg_ptr = NULL;
 
 	/* set up working_cluster_rec */
 	if(cluster_dims > 1) {
@@ -971,7 +996,10 @@ extern void _change_cluster_main(GtkComboBox *combo, gpointer extra)
 		list_flush(popup_list);
 	if(signal_params_list)
 		list_flush(signal_params_list);
-
+	if(signal_params_list)
+		list_flush(signal_params_list);
+	if (g_switch_nodes_maps)
+		slurm_free_switch_nodes_maps(g_switch_nodes_maps);
 	/* change the node tab name if needed */
 #ifdef GTK2_USE_GET_FOCUS
 	node_tab = gtk_notebook_get_nth_page(
@@ -1203,7 +1231,9 @@ int main(int argc, char *argv[])
 			 G_CALLBACK(_delete), NULL);
 
 	gtk_window_set_title(GTK_WINDOW(main_window), "Sview");
-	gtk_window_set_default_size(GTK_WINDOW(main_window), 1000, 450);
+	gtk_window_set_default_size(GTK_WINDOW(main_window),
+				    working_sview_config.main_width,
+				    working_sview_config.main_height);
 	gtk_container_set_border_width(
 		GTK_CONTAINER(GTK_DIALOG(main_window)->vbox), 1);
 	/* Create the main notebook, place the position of the tabs */
@@ -1244,12 +1274,11 @@ int main(int argc, char *argv[])
 	gtk_table_attach_defaults(GTK_TABLE(table), main_notebook, 1, 2, 0, 1);
 
 	gtk_box_pack_start(GTK_BOX(GTK_DIALOG(main_window)->vbox),
-		   table, TRUE, TRUE, 0);
+			   table, TRUE, TRUE, 0);
 	gtk_box_pack_start(GTK_BOX(GTK_DIALOG(main_window)->vbox),
-		   main_statusbar, FALSE, FALSE, 0);
+			   main_statusbar, FALSE, FALSE, 0);
 
 	in_process_cursor = gdk_cursor_new(GDK_WATCH);
-	standard_cursor = gdk_cursor_new(GDK_TOP_LEFT_ARROW);
 
 	for(i=0; i<PAGE_CNT; i++) {
 		if(main_display_data[i].id == -1)

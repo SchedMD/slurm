@@ -260,7 +260,7 @@ static void _layout_conf_ctl(GtkTreeStore *treestore,
 	add_display_treestore_line(update, treestore, &iter,
 				   "", NULL);
 	add_display_treestore_line_with_font(update, treestore, &iter,
-				   select_title, NULL, "bold");
+					     select_title, NULL, "bold");
 	itr = list_iterator_create(
 		(List)slurm_ctl_conf_ptr->select_conf_key_pairs);
 	while((key_pair = list_next(itr))) {

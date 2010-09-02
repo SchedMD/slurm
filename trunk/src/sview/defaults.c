@@ -420,7 +420,7 @@ static void _local_display_admin_edit(GtkTable *table,
 		default:
 			break;
 		}
-			return;
+		return;
 	} else /* others can't be altered by the user */
 		return;
 	label = gtk_label_new(display_data->name);
@@ -466,6 +466,7 @@ static void _init_sview_conf()
 	default_sview_config.show_hidden = 0;
 	default_sview_config.admin_mode = FALSE;
 	default_sview_config.grid_speedup = 0;
+	default_sview_config.grid_topological = FALSE;
 	default_sview_config.ruled_treeview = FALSE;
 	default_sview_config.show_grid = TRUE;
 	default_sview_config.default_page = JOB_PAGE;
@@ -489,6 +490,7 @@ extern int load_defaults()
 		{"DefaultPage", S_P_STRING},
 		{"GridHorizontal", S_P_UINT32},
 		{"GridSpeedUp", S_P_BOOLEAN},
+		{"GridTopo", S_P_BOOLEAN},
 		{"GridVertical", S_P_UINT32},
 		{"GridXWidth", S_P_UINT32},
 		{"RefreshDelay", S_P_UINT16},
@@ -497,6 +499,11 @@ extern int load_defaults()
 		{"ShowHidden", S_P_BOOLEAN},
 		{"TabPosition", S_P_STRING},
 		{"VisiblePages", S_P_STRING},
+		{"MainWidth", S_P_UINT32},
+		{"MainHeight", S_P_UINT32},
+		{"FullInfoPopupWidth", S_P_UINT32},
+		{"FullInfoPopupHeight", S_P_UINT32},
+		{"ExcludedPartitions", S_P_STRING},
 		{NULL}
 	};
 	char *pathname = NULL;
@@ -526,7 +533,7 @@ extern int load_defaults()
 	hashtbl = s_p_hashtbl_create(sview_conf_options);
 
 	if(s_p_parse_file(hashtbl, &hash_val, pathname) == SLURM_ERROR)
-		fatal("something wrong with opening/reading conf file");
+		error("something wrong with opening/reading conf file");
 
 	s_p_get_boolean(&default_sview_config.admin_mode, "AdminMode", hashtbl);
 	if (s_p_get_string(&tmp_str, "DefaultPage", hashtbl)) {
@@ -546,6 +553,10 @@ extern int load_defaults()
 		       "GridHorizontal", hashtbl);
 	s_p_get_boolean(&default_sview_config.grid_speedup,
 			"GridSpeedup", hashtbl);
+	s_p_get_boolean(&default_sview_config.grid_topological,
+			"GridTopo", hashtbl);
+	if (default_sview_config.grid_topological == 0)
+		default_sview_config.grid_topological = FALSE;
 	s_p_get_uint32(&default_sview_config.grid_vert,
 		       "GridVertical", hashtbl);
 	s_p_get_uint32(&default_sview_config.grid_x_width,
@@ -558,6 +569,22 @@ extern int load_defaults()
 			"ShowGrid", hashtbl);
 	s_p_get_boolean(&default_sview_config.show_hidden,
 			"ShowHidden", hashtbl);
+	s_p_get_uint32(&default_sview_config.main_width,
+		       "MainWidth", hashtbl);
+	s_p_get_uint32(&default_sview_config.main_height,
+		       "MainHeight", hashtbl);
+	s_p_get_uint32(&default_sview_config.fi_popup_width,
+		       "FullInfoPopupWidth", hashtbl);
+	s_p_get_uint32(&default_sview_config.fi_popup_height,
+		       "FullInfoPopupHeight", hashtbl);
+	s_p_get_string(&excluded_partitions,
+		       "ExcludedPartitions", hashtbl);
+	if (default_sview_config.main_width == 0) {
+		default_sview_config.main_width=1000;
+		default_sview_config.main_height=450;
+		default_sview_config.fi_popup_width=600;
+		default_sview_config.fi_popup_height=400;
+	}
 	if (s_p_get_string(&tmp_str, "TabPosition", hashtbl)) {
 		if (slurm_strcasestr(tmp_str, "top"))
 			default_sview_config.tab_pos = GTK_POS_TOP;
@@ -586,6 +613,10 @@ extern int load_defaults()
 			default_sview_config.page_visible[NODE_PAGE] = 1;
 		xfree(tmp_str);
 	}
+	if (!s_p_get_string(&excluded_partitions, "ExcludedPartitions",
+			    hashtbl))
+		excluded_partitions = xstrdup("-");
+
 	s_p_hashtbl_destroy(hashtbl);
 
 end_it:
@@ -651,6 +682,13 @@ extern int save_defaults()
 	xfree(tmp_str);
 	if(rc != SLURM_SUCCESS)
 		goto end_it;
+	tmp_str = xstrdup_printf("GridTopo=%s\n",
+				 default_sview_config.grid_topological ?
+				 "YES" : "NO");
+	rc = _write_to_file(fd, tmp_str);
+	xfree(tmp_str);
+	if(rc != SLURM_SUCCESS)
+		goto end_it;
 	tmp_str = xstrdup_printf("GridVertical=%u\n",
 				 default_sview_config.grid_vert);
 	rc = _write_to_file(fd, tmp_str);
@@ -665,6 +703,36 @@ extern int save_defaults()
 		goto end_it;
 	tmp_str = xstrdup_printf("RefreshDelay=%u\n",
 				 default_sview_config.refresh_delay);
+	rc = _write_to_file(fd, tmp_str);
+	xfree(tmp_str);
+	if(rc != SLURM_SUCCESS)
+		goto end_it;
+	tmp_str = xstrdup_printf("MainWidth=%u\n",
+				 default_sview_config.main_width);
+	rc = _write_to_file(fd, tmp_str);
+	xfree(tmp_str);
+	if(rc != SLURM_SUCCESS)
+		goto end_it;
+	tmp_str = xstrdup_printf("MainHeight=%u\n",
+				 default_sview_config.main_height);
+	rc = _write_to_file(fd, tmp_str);
+	xfree(tmp_str);
+	if(rc != SLURM_SUCCESS)
+		goto end_it;
+	tmp_str = xstrdup_printf("FullInfoPopupWidth=%u\n",
+				 default_sview_config.fi_popup_width);
+	rc = _write_to_file(fd, tmp_str);
+	xfree(tmp_str);
+	if(rc != SLURM_SUCCESS)
+		goto end_it;
+	tmp_str = xstrdup_printf("FullInfoPopupHeight=%u\n",
+				 default_sview_config.fi_popup_height);
+	rc = _write_to_file(fd, tmp_str);
+	xfree(tmp_str);
+	if(rc != SLURM_SUCCESS)
+		goto end_it;
+	tmp_str = xstrdup_printf("ExcludedPartitions=%s\n",
+				 excluded_partitions);
 	rc = _write_to_file(fd, tmp_str);
 	xfree(tmp_str);
 	if(rc != SLURM_SUCCESS)
