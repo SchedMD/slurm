@@ -294,7 +294,10 @@ int setenvf(char ***envp, const char *name, const char *fmt, ...)
 	va_end(ap);
 
 	if (envp && *envp) {
-		rc = env_array_overwrite(envp, name, value);
+		if (env_array_overwrite(envp, name, value) == 1)
+			rc = 0;
+		else
+			rc = 1;
 	} else {
 		xstrfmtcat(str, "%s=%s", name, value);
 		rc = putenv(str);
