@@ -45,7 +45,7 @@ my (
 	$jobname,	$mailoptions,	$mailusers,	$nodes,
 	$opath,		$priority,	$rerun, 	$shellpath,
 	$silent, 	$slurm,		$starttime, 	$variable,
-	$wclim,		$minwclim
+	$vlist,		$wclim,		$minwclim
 );
 
 #
@@ -255,9 +255,14 @@ if ($feature) {
 # The host to run the job on, currently it can only
 # be the local host, in the future one or more hsts
 # can be specified.
+#
+# (Note: I commented this out, we will be in cluster
+# mode only for the forseeable future, lets not worry
+# about it now. -- Also, need to have the slurmacctd
+# active for this to function.)
 # 
 if ($host) {
-	push @slurmArgs, "--partition=$host";
+#	push @slurmArgs, "--clusters=$host";
 }
 
 #
@@ -488,6 +493,7 @@ sub GetOpts
 		'r:s'	=> \$rerun,
 		'd=s' 	=> \$dpath,		# execution directory.
 		'W=s' 	=> \@lreslist,
+		'v=s'	=> \$vlist,
 		'V'	=> \$variable,
 		'z'	=> \$silent,
 	);
@@ -502,7 +508,7 @@ sub GetOpts
 #		'I'	=> \$nope,		# N/A
 #		'k=s' 	=> \$nope,		# N/A
 #		'K'	=> \$nope,		# N/A
-#		'v=s' 	=> \$nope,		# N/A
+#		'v=s' 	=> \$nope,		# N/A (but accept it anyway)
 
 	return;
 }
