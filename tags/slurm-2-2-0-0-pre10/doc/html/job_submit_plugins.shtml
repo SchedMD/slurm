@@ -1,0 +1,79 @@
+<!--#include virtual="header.txt"-->
+
+<h1><a name="top">SLURM Job Submit Plugin API</a></h1>
+
+<h2> Overview</h2>
+<p> This document describes SLURM job submit plugins and the API that
+defines them. It is intended as a resource to programmers wishing to write
+their own SLURM job submit plugins. This is version 100 of the API.
+
+<p>SLURM job submit plugins must conform to the
+SLURM Plugin API with the following specifications:
+
+<p><span class="commandline">const char
+plugin_name[]="<i>full&nbsp;text&nbsp;name</i>"</span>
+<p style="margin-left:.2in">
+A free-formatted ASCII text string that identifies the plugin.
+
+<p><span class="commandline">const char
+plugin_type[]="<i>major/minor</i>"</span><br>
+<p style="margin-left:.2in">
+The major type must be &quot;job_submit.&quot;
+The minor type can be any suitable name
+for the type of accounting package.
+We include samples in the SLURM distribution for
+<ul>
+<li><b>defaults</b>&#151;Set default values for job submission or modify requests.
+<li><b>logging</b>&#151;Log select job submission and modification parameters.
+<li><b>partition</b>&#151;Sets a job's default partition based upon job
+submission parameters and available partitions.
+</ul>
+<p>SLURM can be configured to use multiple job_submit plugins if desired.
+
+<p class="footer"><a href="#top">top</a>
+
+<h2>API Functions</h2>
+<p>All of the following functions are required. Functions which are not
+implemented must be stubbed.
+
+<p class="commandline">
+int job_submit(struct job_descriptor *job_desc)
+<p style="margin-left:.2in"><b>Description</b>:<br>
+This function is called by the slurmctld daemon with job submission parameters
+supplied by the salloc, sbatch or srun command. It can be used to log and/or
+modify the job parameters supplied by the user as desired. Note that this
+function has access to the slurmctld's global data structures, for example
+to examine the available partitions, reservations, etc.
+<p style="margin-left:.2in"><b>Arguments</b>: <br>
+<span class="commandline">job_desc</span>
+(input/output) the job allocation request specifications.<br>
+<p style="margin-left:.2in"><b>Returns</b>: <br>
+<span class="commandline">SLURM_SUCCESS</span> on success, or<br>
+<span class="commandline">SLURM_ERROR</span> on failure.
+
+<p class="commandline">
+int job_modify(struct job_descriptor *job_desc, struct job_record *job_ptr)
+<p style="margin-left:.2in"><b>Description</b>:<br>
+This function is called by the slurmctld daemon with job modification parameters
+supplied by the scontrol or sview command. It can be used to log and/or
+modify the job parameters supplied by the user as desired. Note that this
+function has access to the slurmctld's global data structures, for example to
+examine the available partitions, reservations, etc.
+<p style="margin-left:.2in"><b>Arguments</b>: <br>
+<span class="commandline">job_desc</span>
+(input/output) the job allocation request specifications.<br>
+<span class="commandline">job_ptr</span>
+(input/output) slurmctld daemon's current data structure for the job to
+be modified.<br>
+<p style="margin-left:.2in"><b>Returns</b>: <br>
+<span class="commandline">SLURM_SUCCESS</span> on success, or<br>
+<span class="commandline">SLURM_ERROR</span> on failure.
+
+<h2>Versioning</h2>
+<p> This document describes version 100 of the SLURM Job Submission API. Future
+releases of SLURM may revise this API.
+<p class="footer"><a href="#top">top</a>
+
+<p style="text-align:center;">Last modified 13 April 2010</p>
+
+<!--#include virtual="footer.txt"-->
