@@ -1224,6 +1224,33 @@ char **env_array_create(void)
 	return env_array;
 }
 
+static int _env_array_update(char ***array_ptr, const char *name,
+			     const char *value, bool over_write)
+{
+	char **ep = NULL;
+	char *str = NULL;
+
+	if (array_ptr == NULL)
+		return 0;
+
+	if (*array_ptr == NULL)
+		*array_ptr = env_array_create();
+
+	ep = _find_name_in_env(*array_ptr, name);
+	if (*ep != NULL) {
+		if (!over_write)
+			return 0;
+		xfree (*ep);
+	} else {
+		ep = _extend_env(array_ptr);
+	}
+
+	xstrfmtcat(str, "%s=%s", name, value);
+	*ep = str;
+
+	return 1;
+}
+
 /*
  * Append a single environment variable to an environment variable array,
  * if and only if a variable by that name does not already exist in the
@@ -1236,32 +1263,18 @@ char **env_array_create(void)
 int env_array_append_fmt(char ***array_ptr, const char *name,
 			 const char *value_fmt, ...)
 {
-	char *buf;
-	char **ep = NULL;
-	char *str = NULL;
+	int rc;
+	char *value;
 	va_list ap;
 
-	if (array_ptr == NULL)
-		return 0;
-
-	if (*array_ptr == NULL)
-		*array_ptr = env_array_create();
-
-	ep = _find_name_in_env(*array_ptr, name);
-	if (*ep != NULL)
-		return 0;
-
-	buf = xmalloc(ENV_BUFSIZE);
+	value = xmalloc(ENV_BUFSIZE);
 	va_start(ap, value_fmt);
-	vsnprintf (buf, ENV_BUFSIZE, value_fmt, ap);
+	vsnprintf (value, ENV_BUFSIZE, value_fmt, ap);
 	va_end(ap);
+	rc = env_array_append(array_ptr, name, value);
+	xfree(value);
 
-	xstrfmtcat (str, "%s=%s", name, buf);
-	xfree(buf);
-	ep = _extend_env(array_ptr);
-	*ep = str;
-
-	return 1;
+	return rc;
 }
 
 /*
@@ -1274,24 +1287,7 @@ int env_array_append_fmt(char ***array_ptr, const char *name,
 int env_array_append(char ***array_ptr, const char *name,
 		     const char *value)
 {
-	char **ep = NULL;
-	char *str = NULL;
-
-	if (array_ptr == NULL)
-		return 0;
-
-	if (*array_ptr == NULL)
-		*array_ptr = env_array_create();
-
-	ep = _find_name_in_env(*array_ptr, name);
-	if (*ep != NULL)
-		return 0;
-
-	xstrfmtcat (str, "%s=%s", name, value);
-	ep = _extend_env(array_ptr);
-	*ep = str;
-
-	return 1;
+	return _env_array_update(array_ptr, name, value, false);
 }
 
 /*
@@ -1307,34 +1303,18 @@ int env_array_append(char ***array_ptr, const char *name,
 int env_array_overwrite_fmt(char ***array_ptr, const char *name,
 			    const char *value_fmt, ...)
 {
-	char *buf;
-	char **ep = NULL;
-	char *str = NULL;
+	int rc;
+	char *value;
 	va_list ap;
 
-	if (array_ptr == NULL)
-		return 0;
-
-	if (*array_ptr == NULL)
-		*array_ptr = env_array_create();
-
-	buf = xmalloc(ENV_BUFSIZE);
+	value = xmalloc(ENV_BUFSIZE);
 	va_start(ap, value_fmt);
-	vsnprintf (buf, ENV_BUFSIZE, value_fmt, ap);
+	vsnprintf (value, ENV_BUFSIZE, value_fmt, ap);
 	va_end(ap);
+	rc = env_array_overwrite(array_ptr, name, value);
+	xfree(value);
 
-	xstrfmtcat (str, "%s=%s", name, buf);
-	xfree(buf);
-	ep = _find_name_in_env(*array_ptr, name);
-	if (*ep != NULL) {
-		xfree (*ep);
-	} else {
-		ep = _extend_env(array_ptr);
-	}
-
-	*ep = str;
-
-	return 1;
+	return rc;
 }
 
 /*
@@ -1348,28 +1328,7 @@ int env_array_overwrite_fmt(char ***array_ptr, const char *name,
 int env_array_overwrite(char ***array_ptr, const char *name,
 			const char *value)
 {
-	char **ep = NULL;
-	char *str = NULL;
-
-	if (array_ptr == NULL) {
-		return 0;
-	}
-
-	if (*array_ptr == NULL) {
-		*array_ptr = env_array_create();
-	}
-
-	xstrfmtcat (str, "%s=%s", name, value);
-	ep = _find_name_in_env(*array_ptr, name);
-	if (*ep != NULL) {
-		xfree (*ep);
-	} else {
-		ep = _extend_env(array_ptr);
-	}
-
-	*ep = str;
-
-	return 1;
+	return _env_array_update(array_ptr, name, value, true);
 }
 
 /*
