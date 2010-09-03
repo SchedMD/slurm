@@ -282,39 +282,25 @@ setenvfs(const char *fmt, ...)
 	return rc;
 }
 
-int
-setenvf(char ***envp, const char *name, const char *fmt, ...)
+int setenvf(char ***envp, const char *name, const char *fmt, ...)
 {
-	char **ep = NULL;
-	char *str = NULL;
+	char *str = NULL, *value;
 	va_list ap;
 	int rc;
-	char *buf, *bufcpy;
 
-	buf = xmalloc(ENV_BUFSIZE);
+	value = xmalloc(ENV_BUFSIZE);
 	va_start(ap, fmt);
-	vsnprintf (buf, ENV_BUFSIZE, fmt, ap);
+	vsnprintf (value, ENV_BUFSIZE, fmt, ap);
 	va_end(ap);
-	bufcpy = xstrdup(buf);
-	xfree(buf);
 
-	xstrfmtcat (str, "%s=%s", name, bufcpy);
-	xfree(bufcpy);
 	if (envp && *envp) {
-		ep = _find_name_in_env (*envp, name);
-
-		if (*ep != NULL)
-			xfree (*ep);
-		else
-			ep = _extend_env (envp);
-
-		*ep = str;
-
-		return (0);
+		rc = env_array_overwrite(envp, name, value);
 	} else {
+		xstrfmtcat(str, "%s=%s", name, value);
 		rc = putenv(str);
-		return rc;
 	}
+	xfree(value);
+	return rc;
 }
 
 /*
