@@ -404,7 +404,7 @@ if ($mailusers) {
 # Specify  a name for the job allocation.
 #
 if ($jobname) {
-	push @slurmArgs, "--job-name=jobname";
+	push @slurmArgs, "--job-name=$jobname";
 }
 
 #
