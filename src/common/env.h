@@ -79,11 +79,14 @@ typedef struct env_options {
 } env_t;
 
 
-int     envcount (char **env);
-int     setenvfs(const char *fmt, ...);
-int     setenvf(char ***envp, const char *name, const char *fmt, ...);
-void	unsetenvp(char **env, const char *name);
+/* NOTE: These functions operate on the job's current environment
+ * if env is NULL, otherwise they operate on the argument array */
+int	envcount (char **env);
 char *	getenvp(char **env, const char *name);
+int	setenvf(char ***envp, const char *name, const char *fmt, ...);
+int	setenvfs(const char *fmt, ...);
+void	unsetenvp(char **env, const char *name);
+
 int	setup_env(env_t *env, bool preserve_env);
 
 /**********************************************************************
