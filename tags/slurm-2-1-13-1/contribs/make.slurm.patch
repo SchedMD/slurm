@@ -1,0 +1,51 @@
+Index: README
+===================================================================
+--- README (revision 321)
++++ README (working copy)
+@@ -145,6 +145,18 @@
+ force make to treat them properly.  See the manual for details.
+
+
++SLURM
++-----
++
++This patch will use SLURM to launch tasks across a job's current resource
++allocation. Depending upon the size of modules to be compiled, this may
++or may not improve performance. If most modules are thousands of lines
++long, the use of additional resources should more than compensate for the
++overhead of SLURM's task launch. Use with make's "-j" option within an
++existing SLURM allocation. Outside of a SLURM allocation, make's behavior
++will be unchanged. Designed for GNU make-3.81.
++
++
+ Ports
+ -----
+
+Index: job.c
+===================================================================
+--- job.c (revision 321)
++++ job.c (working copy)
+@@ -1959,6 +1959,22 @@
+ void
+ child_execute_job (int stdin_fd, int stdout_fd, char **argv, char **envp)
+ {
++/* PARALLEL JOB LAUNCH VIA SLURM */
++  if (getenv("SLURM_JOB_ID")) {
++    int i;
++    static char *argx[128];
++    argx[0] = "srun";
++    argx[1] = "-N1";
++    argx[2] = "-n1";
++    for (i=0; ((i<124)&&(argv[i])); i++) {
++      argx[i+3] = argv[i];
++    }
++    if (i<124) {
++      argx[i+3] = NULL;
++      argv = argx;
++    }
++  }
++/* END OF SLURM PATCH */
+   if (stdin_fd != 0)
+     (void) dup2 (stdin_fd, 0);
+   if (stdout_fd != 1)
+
