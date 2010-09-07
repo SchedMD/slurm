@@ -1734,6 +1734,8 @@ static int _addto_update_list(List update_list, acct_update_type_t type,
 			      void *object)
 {
 	acct_update_object_t *update_object = NULL;
+	acct_association_rec_t *assoc = object;
+	acct_qos_rec_t *qos = object;
 	ListIterator itr = NULL;
 	if(!update_list) {
 		error("no update list given");
@@ -1771,12 +1773,68 @@ static int _addto_update_list(List update_list, acct_update_type_t type,
 		update_object->objects = list_create(destroy_acct_user_rec);
 		break;
 	case ACCT_ADD_ASSOC:
+		/* We are going to send these to the slurmctld's so
+		   lets set up the correct limits to INIFINITE instead
+		   of NO_VAL */
+		if(assoc->grp_cpu_mins == NO_VAL)
+			assoc->grp_cpu_mins = INFINITE;
+		if(assoc->grp_cpus == NO_VAL)
+			assoc->grp_cpus = INFINITE;
+		if(assoc->grp_jobs == NO_VAL)
+			assoc->grp_jobs = INFINITE;
+		if(assoc->grp_nodes == NO_VAL)
+			assoc->grp_nodes = INFINITE;
+		if(assoc->grp_submit_jobs == NO_VAL)
+			assoc->grp_submit_jobs = INFINITE;
+		if(assoc->grp_wall == NO_VAL)
+			assoc->grp_wall = INFINITE;
+
+		if(assoc->max_jobs == NO_VAL)
+			assoc->max_jobs = INFINITE;
+		if(assoc->max_submit_jobs == NO_VAL)
+			assoc->max_submit_jobs = INFINITE;
+		if(assoc->max_cpus_pj == NO_VAL)
+			assoc->max_cpus_pj = INFINITE;
+		if(assoc->max_nodes_pj == NO_VAL)
+			assoc->max_nodes_pj = INFINITE;
+		if(assoc->max_wall_pj == NO_VAL)
+			assoc->max_wall_pj = INFINITE;
+		if(assoc->max_cpu_mins_pj == NO_VAL)
+			assoc->max_cpu_mins_pj = INFINITE;
 	case ACCT_MODIFY_ASSOC:
 	case ACCT_REMOVE_ASSOC:
 		update_object->objects = list_create(
 			destroy_acct_association_rec);
 		break;
 	case ACCT_ADD_QOS:
+		/* We are going to send these to the slurmctld's so
+		   lets set up the correct limits to INIFINITE instead
+		   of NO_VAL */
+		if(qos->grp_cpu_mins == NO_VAL)
+			qos->grp_cpu_mins = INFINITE;
+		if(qos->grp_cpus == NO_VAL)
+			qos->grp_cpus = INFINITE;
+		if(qos->grp_jobs == NO_VAL)
+			qos->grp_jobs = INFINITE;
+		if(qos->grp_nodes == NO_VAL)
+			qos->grp_nodes = INFINITE;
+		if(qos->grp_submit_jobs == NO_VAL)
+			qos->grp_submit_jobs = INFINITE;
+		if(qos->grp_wall == NO_VAL)
+			qos->grp_wall = INFINITE;
+
+		if(qos->max_jobs_pu == NO_VAL)
+			qos->max_jobs_pu = INFINITE;
+		if(qos->max_submit_jobs_pu == NO_VAL)
+			qos->max_submit_jobs_pu = INFINITE;
+		if(qos->max_cpus_pj == NO_VAL)
+			qos->max_cpus_pj = INFINITE;
+		if(qos->max_nodes_pj == NO_VAL)
+			qos->max_nodes_pj = INFINITE;
+		if(qos->max_wall_pj == NO_VAL)
+			qos->max_wall_pj = INFINITE;
+		if(qos->max_cpu_mins_pj == NO_VAL)
+			qos->max_cpu_mins_pj = INFINITE;
 	case ACCT_MODIFY_QOS:
 	case ACCT_REMOVE_QOS:
 		update_object->objects = list_create(
