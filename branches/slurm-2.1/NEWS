@@ -5,6 +5,8 @@ documents those changes that are of interest to users and admins.
 =========================
  -- Fixed coding mistakes in _slurm_rpc_resv_show() and job_alloc_info() found
     while reviewing the code.
+ -- Fix select/cons_res logic to prevent allocating resources while jobs
+    previously allocated resources on the node are still completing.
 
 * Changes in SLURM 2.1.13
 =========================
