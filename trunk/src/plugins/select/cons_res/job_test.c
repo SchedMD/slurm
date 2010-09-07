@@ -638,8 +638,14 @@ uint16_t _can_job_run_on_node(struct job_record *job_ptr, bitstr_t *core_map,
 	uint16_t cpus;
 	uint32_t avail_mem, req_mem, gres_cpus;
 	int core_start_bit, core_end_bit;
-	struct node_record *node_ptr;
+	struct node_record *node_ptr = node_record_table_ptr + node_i;
 	List gres_list;
+
+	if (!test_only && IS_NODE_COMPLETING(node_ptr)) {
+		/* Do not allocate more jobs to nodes with completing jobs */
+		cpus = 0;
+		return cpus;
+	}
 
 	if (cr_type & CR_CORE)
 		cpus = _allocate_cores(job_ptr, core_map, node_i, 0);
