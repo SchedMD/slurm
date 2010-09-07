@@ -904,7 +904,7 @@ extern int good_nodes_from_inx(List local_cluster_list,
 				if((submit >= local_cluster->start)
 				   && (submit <= local_cluster->end)) {
 					*curr_cluster = local_cluster;
-						break;
+					break;
 				}
 			}
 			list_iterator_destroy(itr);
@@ -966,7 +966,7 @@ extern char *setup_job_cluster_cond_limits(mysql_conn_t *mysql_conn,
 		}
 		mysql_free_result(result);
 	}
-	no_resv:
+no_resv:
 
 	if(job_cond->resvid_list && list_count(job_cond->resvid_list)) {
 		set = 0;
@@ -1286,7 +1286,8 @@ extern List as_mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn,
 			return NULL;
 	}
 
-	if(job_cond->state_list && (list_count(job_cond->state_list) == 1)
+	if(job_cond
+	   && job_cond->state_list && (list_count(job_cond->state_list) == 1)
 	   && (atoi(list_peek(job_cond->state_list)) == JOB_PENDING))
 		only_pending = 1;
 
@@ -1304,7 +1305,8 @@ extern List as_mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn,
 		xstrfmtcat(tmp2, ", %s", step_req_inx[i]);
 	}
 
-	if(job_cond->cluster_list && list_count(job_cond->cluster_list))
+	if(job_cond
+	   && job_cond->cluster_list && list_count(job_cond->cluster_list))
 		use_cluster_list = job_cond->cluster_list;
 	else
 		slurm_mutex_lock(&as_mysql_cluster_list_lock);
