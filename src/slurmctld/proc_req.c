@@ -2722,7 +2722,7 @@ static void _slurm_rpc_resv_show(slurm_msg_t * msg)
 	START_TIMER;
 	debug2("Processing RPC: REQUEST_RESERVATION_INFO from uid=%u",
 		(unsigned int) uid);
-	if ((slurmctld_conf.private_data & PRIVATE_DATA_PARTITIONS) &&
+	if ((slurmctld_conf.private_data & PRIVATE_DATA_RESERVATIONS) &&
 	    (!validate_super_user(uid))) {
 		debug2("Security violation, REQUEST_RESERVATION_INFO "
 		       "RPC from uid=%d", uid);
