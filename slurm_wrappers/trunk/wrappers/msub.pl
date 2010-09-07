@@ -209,10 +209,31 @@ if (@lreslist) {
 }
 
 #
+# Charge resources used by this job to specified account.
+#
+if ($account) {
+	push @slurmArgs, "--account=$account";
+}
+
+#
+# Request a specific  partition (class, queue) for the resource allocation.
+#
+if ($class) {
+	push @slurmArgs, "--partition=$class";
+}
+
+#
 # Mimimum memory required per allocated CPU in MegaBytes.
 #
 if ($dmem) {
 	push @slurmArgs, "--mem-per-cpu=$dmem";
+}
+
+#
+# Equate ddisk option to tmp disk space.
+#
+if ($ddisk) {
+	push @slurmArgs, "--tmp=$ddisk";
 }
 
 #
@@ -230,13 +251,6 @@ if ($depend) {
 }
 
 #
-# Equate ddisk option to tmp disk space.
-#
-if ($ddisk) {
-	push @slurmArgs, "--tmp=$ddisk";
-}
-
-#
 # The constraints are features that have been assigned to the
 # nodes  by  the  slurm  administrator.
 #
@@ -244,6 +258,10 @@ if ($feature) {
 	push @slurmArgs, "--constraint=$feature";
 }
 
+#
+# No real solution for going gres at this point.
+# (waiting for 2.2 and lua)
+#
 #if ($gres) {
 #        push @slurmArgs, "--licenses=$gres";
 #} else {
@@ -263,6 +281,13 @@ if ($feature) {
 # 
 if ($host) {
 #	push @slurmArgs, "--clusters=$host";
+}
+
+#
+# Specify  a name for the job allocation.
+#
+if ($jobname) {
+	push @slurmArgs, "--job-name=$jobname";
 }
 
 #
@@ -319,20 +344,6 @@ if ($signal) {
 }
 
 #
-# Specify a minimum number of logical cpus/processors per node.
-#
-if ($tpn) {
-	push @slurmArgs, " --mincpus=$tpn";
-}
-
-#
-# Guarantees that SLURM will allocate enough resources for this number of tasks.
-#
-if ($ttc) {
-	push @slurmArgs, "--ntasks=$ttc";
-}
-
-#
 # Submit the batch script to the SLURM controller immediately, like normal, but
 # tell the  controller to defer the allocation of the job until the specified time.
 #
@@ -347,10 +358,17 @@ if ($starttime) {
 }
 
 #
-# Charge resources used by this job to specified account.
+# Specify a minimum number of logical cpus/processors per node.
 #
-if ($account) {
-	push @slurmArgs, "--account=$account";
+if ($tpn) {
+	push @slurmArgs, " --mincpus=$tpn";
+}
+
+#
+# Guarantees that SLURM will allocate enough resources for this number of tasks.
+#
+if ($ttc) {
+	push @slurmArgs, "--ntasks=$ttc";
 }
 
 #
@@ -401,28 +419,23 @@ if ($mailusers) {
 }
 
 #
-# Specify  a name for the job allocation.
+# Request a minimum time limit for the job.
 #
-if ($jobname) {
-	push @slurmArgs, "--job-name=$jobname";
+if ($vlist) {
+	if ($sversion >= 2.2) {
+		push @slurmArgs, "--export=$vlist";
+	}
 }
 
 #
-# Request  a  specific  partition (class, queue) for the resource allocation.
-#
-if ($class) {
-	push @slurmArgs, "--partition=$class";
-}
-
-#
-# Request  a  time limit for the job.
+# Request a time limit for the job.
 #
 if ($wclim) {
 	push @slurmArgs, "--time=$wclim";
 }
 
 #
-# Request  a  minimum time limit for the job.
+# Request a minimum time limit for the job.
 #
 if ($minwclim) {
 	if ($sversion >= 2.2) {
@@ -432,6 +445,8 @@ if ($minwclim) {
 		exit(1);
 	}
 }
+
+
 
 #
 # Execute sbatch.
@@ -445,7 +460,12 @@ if ($debug == 1) {
 	} else {
 		$rval = `sbatch @slurmArgs $scriptFile 2>&1`;
 	}
-	printf("$rval") if (!$silent);
+
+	if (!$silent) {
+		chomp $rval;
+		my ($jobid) = ($rval =~ m/Submitted batch job (\S+)/);
+		printf("\n$jobid\n");
+	}
 }
 
 exit;
@@ -627,13 +647,12 @@ sub process
 		}
 		my ($ot,$r) = split(/=/, $opt);
 		my $o = lc($ot);
-
 		$host	  = $r if ($o =~ /partition/);
 		$feature  = $r if ($o =~ /feature/);
 		$depend   = $r if ($o =~ /depend/);
 		$gres     = $r if ($o =~ /gres/);
 		$qos	  = $r if ($o =~ /qos/);
-		$nodes	  = $opt if ($o =~ /nodes/);
+		$nodes	  = $r if ($o =~ /nodes/);
 		$dmem	  = $r if ($o =~ /dmem/);
 		$resfail  = $r if ($o =~ /resfail/);
 		$ttc	  = $r if ($o =~ /ttc/);
@@ -654,7 +673,7 @@ sub process
 #	See if nodes is in "nn:ppn=pp" format,
 #	if so, adjust.
 #
-	if ($nodes) {
+	if ($nodes && $nodes =~ /ppn/) {
 		my ($o,$r,$s,$t) = split(/=|:/, $nodes);
 		$nodes = $r;
 		$tpn = $t if ($t);

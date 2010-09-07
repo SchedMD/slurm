@@ -41,7 +41,8 @@ BEGIN {
 my (
 	$cancel, $help,    $hold,   $jobid,
 	$man, 	 $modify,  $unhold, $query,
-	$resume, $requeue, $signal, $suspend
+	$resume, $requeue, $signal, $suspend,
+	$type,	 $value
 );
 
 #
@@ -63,7 +64,7 @@ if ($sversion < 2.2 && ($hold || $unhold)) {
 	exit(1);
 }
 
-executei("scontrol update job=$jobid prio=0")	if ($hold);
+execute("scontrol update job=$jobid prio=0")	if ($hold);
 execute("scontrol update job=$jobid prio=1")	if ($unhold);
 execute("scontrol requeue $jobid")		if ($requeue);
 execute("scontrol resume $jobid")		if ($resume);
@@ -98,7 +99,7 @@ sub do_modify
 #
 #	Now split the args into type, value
 #
-	my ($type,$value)  = split(/=/, $modify);
+	($type,$value)  = split(/=/, $modify);
 
 #
 #	Do some remapping of types for SLURM.
@@ -164,8 +165,8 @@ sub GetOpts
 #	Display a simple help package.
 #
 	usage() if ($help);
-#
 
+#
 #	The oly thing left, should be the job id. Make sure it is numberic.
 #
 	if (!($jobid = shift(@ARGV)) || !isnumber($jobid)) {
@@ -251,7 +252,38 @@ sub execute
 	my $status = $?;
 
 	$status = 1 if ($status != 0);
-	printf("$result\n");
+
+	if ($status == 0) {
+#
+#		Handle success of job signal.
+#
+		if ($line =~ /scancel -s $jobid/) {
+			printf("\nsignal successfully sent to job $jobid\n\n");
+#
+#		Handle success of job cancel.
+#
+		} elsif ($line =~ /scancel $jobid/) {
+			printf("\njob '$jobid' cancelled\n\n");
+#
+#		Handle successful modifications.
+#
+		} elsif ($line =~ /depend=/) {
+			printf("\nINFO:   Depend for job $jobid set to $value\n\n");
+		} elsif ($line =~ /class=|queue=/) {
+			printf("\nclass/queue set to pdebug for job $jobid\n\n");
+		} elsif ($line =~ /timelimit=/) {
+			printf("\nset walltime attribute for job $jobid to '$value'\n\n");
+		} elsif ($line =~ /name=/) {
+			printf("\nuser-specified jobname modified for job $jobid\n\n");
+		} elsif ($line =~ /priority=/) {
+			printf("\n$jobid system priority modified\n\n");
+		} else {
+			printf("\nSuccess\n\n");
+		}
+	} else {
+		printf("$result\n");
+	}
+
 
 	exit($status);
 }
