@@ -7183,11 +7183,8 @@ job_alloc_info(uint32_t uid, uint32_t job_id, struct job_record **job_pptr)
 	job_ptr = find_job_record(job_id);
 	if (job_ptr == NULL)
 		return ESLURM_INVALID_JOB_ID;
-	if ((job_ptr->user_id != uid) &&
-	    (uid != 0) && (uid != slurmctld_conf.slurm_user_id))
-		return ESLURM_ACCESS_DENIED;
-	if ((slurmctld_conf.private_data & PRIVATE_DATA_JOBS)
-	&&  (job_ptr->user_id != uid) && !validate_super_user(uid))
+	if ((slurmctld_conf.private_data & PRIVATE_DATA_JOBS) &&
+	    (job_ptr->user_id != uid) && !validate_super_user(uid))
 		return ESLURM_ACCESS_DENIED;
 	if (IS_JOB_PENDING(job_ptr))
 		return ESLURM_JOB_PENDING;
