@@ -8,6 +8,7 @@ documents those changes that are of interest to users and admins.
  -- Fix select/cons_res logic to prevent allocating resources while jobs
     previously allocated resources on the node are still completing.
  -- Fixed typo in job_mgr.c dealing with qos instead of associations.
+ -- Make sure associations and qos' are initiated when added.
 
 * Changes in SLURM 2.1.13
 =========================
