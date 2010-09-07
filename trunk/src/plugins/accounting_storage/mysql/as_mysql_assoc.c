@@ -2963,6 +2963,8 @@ extern List as_mysql_get_assocs(mysql_conn_t *mysql_conn, uid_t uid,
 
 	set = _setup_association_cond_limits(assoc_cond, prefix, &extra);
 
+	if(assoc_cond->cluster_list && list_count(assoc_cond->cluster_list))
+		use_cluster_list = assoc_cond->cluster_list;
 empty:
 	xfree(tmp);
 	xstrfmtcat(tmp, "t1.%s", assoc_req_inx[i]);
@@ -2971,11 +2973,8 @@ empty:
 	}
 	assoc_list = list_create(slurmdb_destroy_association_rec);
 
-	if(assoc_cond->cluster_list && list_count(assoc_cond->cluster_list))
-		use_cluster_list = assoc_cond->cluster_list;
-	else
+	if(use_cluster_list == as_mysql_cluster_list)
 		slurm_mutex_lock(&as_mysql_cluster_list_lock);
-
 	itr = list_iterator_create(use_cluster_list);
 	while((cluster_name = list_next(itr))) {
 		int rc;

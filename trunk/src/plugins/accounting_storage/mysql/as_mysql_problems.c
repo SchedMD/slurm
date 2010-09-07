@@ -41,8 +41,9 @@
 #include "as_mysql_problems.h"
 #include "src/common/uid.h"
 
-static int _setup_association_cond_limits(slurmdb_association_cond_t *assoc_cond,
-					  char **extra, bool user_query)
+static int _setup_association_cond_limits(
+	slurmdb_association_cond_t *assoc_cond,
+	char **extra, bool user_query)
 {
 	int set = 0;
 	ListIterator itr = NULL;
@@ -198,8 +199,8 @@ extern int as_mysql_acct_no_assocs(mysql_conn_t *mysql_conn,
 }
 
 extern int as_mysql_acct_no_users(mysql_conn_t *mysql_conn,
-				slurmdb_association_cond_t *assoc_cond,
-				List ret_list)
+				  slurmdb_association_cond_t *assoc_cond,
+				  List ret_list)
 {
 	int rc = SLURM_SUCCESS;
 	char *query = NULL, *tmp = NULL;
@@ -238,7 +239,8 @@ extern int as_mysql_acct_no_users(mysql_conn_t *mysql_conn,
 		xstrfmtcat(tmp, ", %s", assoc_req_inx[i]);
 	}
 
-	if(assoc_cond->cluster_list && list_count(assoc_cond->cluster_list))
+	if(assoc_cond &&
+	   assoc_cond->cluster_list && list_count(assoc_cond->cluster_list))
 		use_cluster_list = assoc_cond->cluster_list;
 	else
 		slurm_mutex_lock(&as_mysql_cluster_list_lock);

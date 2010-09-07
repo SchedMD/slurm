@@ -552,6 +552,8 @@ extern List as_mysql_get_resvs(mysql_conn_t *mysql_conn, uid_t uid,
 
 	with_usage = resv_cond->with_usage;
 
+	if(resv_cond->cluster_list && list_count(resv_cond->cluster_list))
+		use_cluster_list = resv_cond->cluster_list;
 empty:
 	xfree(tmp);
 	xstrfmtcat(tmp, "t1.%s", resv_req_inx[i]);
@@ -559,11 +561,8 @@ empty:
 		xstrfmtcat(tmp, ", t1.%s", resv_req_inx[i]);
 	}
 
-	if(resv_cond->cluster_list && list_count(resv_cond->cluster_list))
-		use_cluster_list = resv_cond->cluster_list;
-	else
+	if(use_cluster_list == as_mysql_cluster_list)
 		slurm_mutex_lock(&as_mysql_cluster_list_lock);
-
 	itr = list_iterator_create(use_cluster_list);
 	while((cluster_name = list_next(itr))) {
 		if(query)

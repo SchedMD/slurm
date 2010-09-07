@@ -388,6 +388,8 @@ extern List as_mysql_remove_wckeys(mysql_conn_t *mysql_conn,
 
 	set = _setup_wckey_cond_limits(wckey_cond, &extra);
 
+	if(wckey_cond->cluster_list && list_count(wckey_cond->cluster_list))
+		use_cluster_list = wckey_cond->cluster_list;
 empty:
 	if(!extra) {
 		error("Nothing to remove");
@@ -396,11 +398,8 @@ empty:
 
 	user_name = uid_to_string((uid_t) uid);
 
-	if(wckey_cond->cluster_list && list_count(wckey_cond->cluster_list))
-		use_cluster_list = wckey_cond->cluster_list;
-	else
+	if(use_cluster_list == as_mysql_cluster_list)
 		slurm_mutex_lock(&as_mysql_cluster_list_lock);
-
 	ret_list = list_create(slurm_destroy_char);
 	itr = list_iterator_create(use_cluster_list);
 	while((object = list_next(itr))) {
@@ -459,6 +458,8 @@ extern List as_mysql_get_wckeys(mysql_conn_t *mysql_conn, uid_t uid,
 
 	set = _setup_wckey_cond_limits(wckey_cond, &extra);
 
+	if(wckey_cond->cluster_list && list_count(wckey_cond->cluster_list))
+		use_cluster_list = wckey_cond->cluster_list;
 empty:
 	xfree(tmp);
 	xstrfmtcat(tmp, "t1.%s", wckey_req_inx[i]);
@@ -475,11 +476,8 @@ empty:
 
 	wckey_list = list_create(slurmdb_destroy_wckey_rec);
 
-	if(wckey_cond->cluster_list && list_count(wckey_cond->cluster_list))
-		use_cluster_list = wckey_cond->cluster_list;
-	else
+	if(use_cluster_list == as_mysql_cluster_list)
 		slurm_mutex_lock(&as_mysql_cluster_list_lock);
-
 	//START_TIMER;
 	itr = list_iterator_create(use_cluster_list);
 	while((cluster_name = list_next(itr))) {
