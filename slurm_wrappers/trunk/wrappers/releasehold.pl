@@ -16,6 +16,7 @@
 my $debug=0;
 
 use Getopt::Long 2.24 qw(:config no_ignore_case);
+use autouse 'Pod::Usage' => qw(pod2usage);
 use strict;
 
 #

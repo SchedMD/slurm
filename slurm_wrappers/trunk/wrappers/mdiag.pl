@@ -206,6 +206,8 @@ sub do_qos
 sub GetOpts
 {
 
+	pod2usage(2) if ($#ARGV <= 0);
+
 	GetOptions (
 		'h|help'	=> \$help,
 		'man'		=> \$man,
