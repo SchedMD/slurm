@@ -2781,27 +2781,28 @@ static int _part_access_check(struct part_record *part_ptr,
 	uint32_t total_nodes;
 
 	if ((part_ptr->flags & PART_FLAG_ROOT_ONLY) && (submit_uid != 0)) {
-		info("_job_create: uid %u access to partition %s denied, "
-		     "not root",
+		info("_part_access_check: uid %u access to partition %s "
+		     "denied, not root",
 		     (unsigned int) submit_uid, part_ptr->name);
 		return ESLURM_ACCESS_DENIED;
 	}
 
 	if ((job_desc->user_id == 0) && (part_ptr->flags & PART_FLAG_NO_ROOT)) {
-		error("Security violation, SUBMIT_JOB for user root disabled");
+		error("_part_access_check: Security violation, SUBMIT_JOB for "
+		      "user root disabled");
 		return ESLURM_USER_ID_MISSING;
 	}
 
 	if (validate_group(part_ptr, job_desc->user_id) == 0) {
-		info("_job_create: uid %u access to partition %s denied, "
-		     "bad group",
+		info("_part_access_check: uid %u access to partition %s "
+		     "denied, bad group",
 		     (unsigned int) job_desc->user_id, part_ptr->name);
 		return ESLURM_JOB_MISSING_REQUIRED_PARTITION_GROUP;
 	}
 
 	if (validate_alloc_node(part_ptr, job_desc->alloc_node) == 0) {
-		info("_job_create: uid %u access to partition %s denied, "
-		     "bad allocating node: %s",
+		info("_part_access_check: uid %u access to partition %s "
+		     "denied, bad allocating node: %s",
 		     (unsigned int) job_desc->user_id, part_ptr->name,
 		     job_desc->alloc_node);
 		return ESLURM_ACCESS_DENIED;
@@ -2810,7 +2811,7 @@ static int _part_access_check(struct part_record *part_ptr,
 	if ((part_ptr->state_up & PARTITION_SCHED) &&
 	    (job_desc->min_cpus != NO_VAL) &&
 	    (job_desc->min_cpus >  part_ptr->total_cpus)) {
-		info("_job_create: Job requested too many cpus (%u) of "
+		info("_part_access_check: Job requested too many cpus (%u) of "
 		     "partition %s(%u)",
 		     job_desc->min_cpus, part_ptr->name,
 		     part_ptr->total_cpus);
@@ -2818,19 +2819,19 @@ static int _part_access_check(struct part_record *part_ptr,
 	}
 
 	total_nodes = part_ptr->total_nodes;
-	select_g_alter_node_cnt(SELECT_APPLY_NODE_MIN_OFFSET,
-				&total_nodes);
+	select_g_alter_node_cnt(SELECT_APPLY_NODE_MIN_OFFSET, &total_nodes);
 	if ((part_ptr->state_up & PARTITION_SCHED) &&
+	    (job_desc->min_nodes != NO_VAL) &&
 	    (job_desc->min_nodes > total_nodes)) {
-		info("_job_create: Job requested too many nodes (%u) of "
-		     "partition %s(%u)",
+		info("_part_access_check: Job requested too many nodes (%u) "
+		     "of partition %s(%u)",
 		     job_desc->min_nodes, part_ptr->name, total_nodes);
 		return ESLURM_INVALID_NODE_COUNT;
 	}
 
 	if (req_bitmap && !bit_super_set(req_bitmap, part_ptr->node_bitmap)) {
-		info("_job_create: requested nodes %s not in partition %s",
-		     job_desc->req_nodes, part_ptr->name);
+		info("_part_access_check: requested nodes %s not in "
+		     "partition %s", job_desc->req_nodes, part_ptr->name);
 		return ESLURM_REQUESTED_NODES_NOT_IN_PARTITION;
 	}
 
@@ -2947,8 +2948,8 @@ static int _valid_job_part(job_desc_msg_t * job_desc,
 		job_desc->min_nodes = min_nodes_orig;
 	} else if ((job_desc->min_nodes > max_nodes_orig) &&
 		   slurmctld_conf.enforce_part_limits) {
-		info("_job_create: job's min nodes greater than partition's "
-		     "max nodes (%u > %u)",
+		info("_valid_job_part: job's min nodes greater than "
+		     "partition's max nodes (%u > %u)",
 		     job_desc->min_nodes, max_nodes_orig);
 		rc = ESLURM_INVALID_NODE_COUNT;
 		goto fini;
@@ -2964,10 +2965,10 @@ static int _valid_job_part(job_desc_msg_t * job_desc,
 #else
 		;
 #endif
-	} else if (slurmctld_conf.enforce_part_limits
-		   && (job_desc->max_nodes
-		       && (job_desc->max_nodes < min_nodes_orig))) {
-		info("_job_create: job's max nodes less than partition's "
+	} else if (slurmctld_conf.enforce_part_limits &&
+		   job_desc->max_nodes &&
+		   (job_desc->max_nodes < min_nodes_orig)) {
+		info("_valid_job_part: job's max nodes less than partition's "
 		     "min nodes (%u < %u)",
 		     job_desc->max_nodes, min_nodes_orig);
 		rc = ESLURM_INVALID_NODE_COUNT;
@@ -2980,8 +2981,8 @@ static int _valid_job_part(job_desc_msg_t * job_desc,
 
 	if ((job_desc->time_min != NO_VAL) &&
 	    (job_desc->time_min >  max_time)) {
-		info("_job_create: job's min time greater than partition's "
-		     "(%u > %u)",
+		info("_valid_job_part: job's min time greater than "
+		     "partition's (%u > %u)",
 		     job_desc->time_min, max_time);
 		rc = ESLURM_INVALID_TIME_LIMIT;
 		goto fini;
@@ -2990,15 +2991,15 @@ static int _valid_job_part(job_desc_msg_t * job_desc,
 	    (job_desc->time_limit >  max_time) &&
 	    (job_desc->time_min   == NO_VAL) &&
 	    slurmctld_conf.enforce_part_limits) {
-		info("_job_create: job's time limit greater than partition's "
-		     "(%u > %u)",
+		info("_valid_job_part: job's time limit greater than "
+		     "partition's (%u > %u)",
 		     job_desc->time_limit, max_time);
 		rc = ESLURM_INVALID_TIME_LIMIT;
 		goto fini;
 	}
 	if ((job_desc->time_min != NO_VAL) &&
 	    (job_desc->time_min >  job_desc->time_limit)) {
-		info("_job_create: job's min_time greater time limit "
+		info("_valid_job_part: job's min_time greater time limit "
 		     "(%u > %u)",
 		     job_desc->time_min, job_desc->time_limit);
 		rc = ESLURM_INVALID_TIME_LIMIT;
@@ -3108,17 +3109,16 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		     job_desc->user_id, assoc_rec.acct, assoc_rec.partition);
 		error_code = ESLURM_INVALID_ACCOUNT;
 		goto cleanup_fail;
-	} else if(association_based_accounting
-		  && !assoc_ptr
-		  && !(accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS)) {
-		/* if not enforcing associations we want to look for
-		   the default account and use it to avoid getting
-		   trash in the accounting records.
-		*/
+	} else if (association_based_accounting &&
+		   !assoc_ptr &&
+		   !(accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS)) {
+		/* If not enforcing associations we want to look for the
+		 * default account and use it to avoid getting trash in the
+		 * accounting records. */
 		assoc_rec.acct = NULL;
 		assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
 					accounting_enforce, &assoc_ptr);
-		if(assoc_ptr) {
+		if (assoc_ptr) {
 			info("_job_create: account '%s' has no association "
 			     "for user %u using default account '%s'",
 			     job_desc->account, job_desc->user_id,
@@ -3831,8 +3831,8 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	struct job_details *detail_ptr;
 	struct job_record *job_ptr;
 
-	if(slurm_get_track_wckey()) {
-		if(!job_desc->wckey) {
+	if (slurm_get_track_wckey()) {
+		if (!job_desc->wckey) {
 			/* get the default wckey for this user since none was
 			 * given */
 			slurmdb_user_rec_t user_rec;
@@ -3840,18 +3840,18 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 			user_rec.uid = job_desc->user_id;
 			assoc_mgr_fill_in_user(acct_db_conn, &user_rec,
 					       accounting_enforce, NULL);
-			if(user_rec.default_wckey)
+			if (user_rec.default_wckey)
 				job_desc->wckey = xstrdup_printf(
 					"*%s", user_rec.default_wckey);
-			else if(!(accounting_enforce
-				  & ACCOUNTING_ENFORCE_WCKEYS))
+			else if (!(accounting_enforce &
+				   ACCOUNTING_ENFORCE_WCKEYS))
 				job_desc->wckey = xstrdup("*");
 			else {
 				error("Job didn't specify wckey and user "
 				      "%d has no default.", job_desc->user_id);
 				return ESLURM_INVALID_WCKEY;
 			}
-		} else if(job_desc->wckey) {
+		} else if (job_desc->wckey) {
 			slurmdb_wckey_rec_t wckey_rec, *wckey_ptr = NULL;
 
 			memset(&wckey_rec, 0, sizeof(slurmdb_wckey_rec_t));
@@ -3861,8 +3861,8 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 			if (assoc_mgr_fill_in_wckey(acct_db_conn, &wckey_rec,
 						    accounting_enforce,
 						    &wckey_ptr)) {
-				if(accounting_enforce
-				   & ACCOUNTING_ENFORCE_WCKEYS) {
+				if (accounting_enforce &
+				    ACCOUNTING_ENFORCE_WCKEYS) {
 					error("_job_create: invalid wckey '%s' "
 					      "for user %u.",
 					      wckey_rec.name,
@@ -5602,9 +5602,9 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	static uint32_t cpus_per_bp = 0;
 	static uint16_t cpus_per_node = 0;
 
-	if(!cpus_per_bp)
+	if (!cpus_per_bp)
 		select_g_alter_node_cnt(SELECT_GET_BP_CPU_CNT, &cpus_per_bp);
-	if(!cpus_per_node)
+	if (!cpus_per_node)
 		select_g_alter_node_cnt(SELECT_GET_NODE_CPU_CNT,
 					&cpus_per_node);
 #endif
@@ -5666,19 +5666,30 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 
 	if (job_specs->partition) {
 		List part_ptr_list = NULL;
-		tmp_part_ptr = find_part_record(job_specs->partition);
-		if (tmp_part_ptr == NULL) {
-			part_ptr_list = get_part_list(job_specs->partition);
-			if (part_ptr_list)
-				tmp_part_ptr = list_peek(part_ptr_list);
-		}
-		if (!IS_JOB_PENDING(job_ptr))
+
+		if (!IS_JOB_PENDING(job_ptr)) {
 			error_code = ESLURM_DISABLED;
-		else if (tmp_part_ptr == NULL)
-			error_code = ESLURM_INVALID_PARTITION_NAME;
+			goto fini;
+		}
+
+		if (job_specs->min_nodes == NO_VAL)
+			job_specs->min_nodes = detail_ptr->min_nodes;
+		if ((job_specs->max_nodes == NO_VAL) &&
+		    (detail_ptr->max_nodes != 0))
+			job_specs->max_nodes = detail_ptr->max_nodes;
+		if ((job_specs->time_min == NO_VAL) &&
+		    (job_ptr->time_min != 0))
+			job_specs->time_min = job_ptr->time_min;
+		if (job_specs->time_limit == NO_VAL)
+			job_specs->time_limit = job_ptr->time_limit;
+		error_code = _valid_job_part(job_specs, uid,
+					     job_ptr->details->req_node_bitmap,
+					     &tmp_part_ptr, &part_ptr_list);
+		if (error_code != SLURM_SUCCESS)
+			;
 		else if ((tmp_part_ptr->state_up & PARTITION_SUBMIT) == 0)
 			error_code = ESLURM_PARTITION_NOT_AVAIL;
-		else if (super_user) {
+		else {
 			slurmdb_association_rec_t assoc_rec;
 			memset(&assoc_rec, 0,
 			       sizeof(slurmdb_association_rec_t));
@@ -5709,10 +5720,6 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			     "job_id %u", job_specs->partition,
 			     job_specs->job_id);
 			update_accounting = true;
-		} else {
-			error("Attempt to change partition for job %u",
-			      job_specs->job_id);
-			error_code = ESLURM_ACCESS_DENIED;
 		}
 		FREE_NULL_LIST(part_ptr_list);	/* error clean-up */
 
@@ -5836,15 +5843,14 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	if (save_min_cpus) {
 #ifdef HAVE_BG
 		uint32_t node_cnt = detail_ptr->min_cpus;
-		if(cpus_per_node)
+		if (cpus_per_node)
 			node_cnt /= cpus_per_node;
-		/* This is only set up so accounting is set up
-		   correctly */
+		/* Ensure that accounting is set up correctly */
 		select_g_select_jobinfo_set(job_ptr->select_jobinfo,
 					    SELECT_JOBDATA_NODE_CNT,
 					    &node_cnt);
-		/* reset geo since changing this makes any geo
-		   potentially invalid */
+		/* Reset geo since changing this makes any geo
+		 * potentially invalid */
 		select_g_select_jobinfo_set(job_ptr->select_jobinfo,
 					    SELECT_JOBDATA_GEOMETRY,
 					    geometry);
@@ -5888,7 +5894,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		else {
 #ifdef HAVE_BG
 			uint32_t node_cnt = job_specs->num_tasks;
-			if(cpus_per_node)
+			if (cpus_per_node)
 				node_cnt /= cpus_per_node;
 			/* This is only set up so accounting is set up
 			   correctly */
@@ -5900,12 +5906,12 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			info("update_job: setting num_tasks to %u for "
 			     "job_id %u", job_specs->num_tasks,
 			     job_specs->job_id);
-			if(detail_ptr->cpus_per_task) {
+			if (detail_ptr->cpus_per_task) {
 				uint32_t new_cpus = detail_ptr->num_tasks
 					/ detail_ptr->cpus_per_task;
-				if((new_cpus < detail_ptr->min_cpus)
-				   || (!detail_ptr->overcommit
-				       && (new_cpus > detail_ptr->min_cpus))) {
+				if ((new_cpus < detail_ptr->min_cpus) ||
+				    (!detail_ptr->overcommit &&
+				     (new_cpus > detail_ptr->min_cpus))) {
 					detail_ptr->min_cpus = new_cpus;
 					detail_ptr->max_cpus = new_cpus;
 					info("update_job: setting "
@@ -5925,9 +5931,11 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			;	/* shrink running job, handle later */
 		else if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
 			error_code = ESLURM_DISABLED;
-		else if (job_specs->min_nodes < 1)
+		else if (job_specs->min_nodes < 1) {
+			info("update_job: min_nodes < 1 for job %u",
+			     job_specs->job_id);
 			error_code = ESLURM_INVALID_NODE_COUNT;
-		else {
+		} else {
 			save_min_nodes = detail_ptr->min_nodes;
 			detail_ptr->min_nodes = job_specs->min_nodes;
 		}
@@ -5942,6 +5950,9 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	}
 	if ((save_min_nodes || save_max_nodes) && detail_ptr->max_nodes &&
 	    (detail_ptr->max_nodes < detail_ptr->min_nodes)) {
+		info("update_job: max_nodes < min_nodes (%u < %u) for job %u",
+		     detail_ptr->max_nodes, detail_ptr->min_nodes,
+		     job_specs->job_id);
 		error_code = ESLURM_INVALID_NODE_COUNT;
 		if (save_min_nodes) {
 			detail_ptr->min_nodes = save_min_nodes;
@@ -5955,13 +5966,13 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	if (error_code != SLURM_SUCCESS)
 		goto fini;
 
-	if (save_min_nodes) {
+	if (save_min_nodes && (save_min_nodes!= detail_ptr->min_nodes)) {
 		info("update_job: setting min_nodes from "
 		     "%u to %u for job_id %u",
 		     save_min_nodes, detail_ptr->min_nodes, job_specs->job_id);
 		update_accounting = true;
 	}
-	if (save_max_nodes) {
+	if (save_max_nodes && (save_max_nodes != detail_ptr->max_nodes)) {
 		info("update_job: setting max_nodes from "
 		     "%u to %u for job_id %u",
 		     save_max_nodes, detail_ptr->max_nodes, job_specs->job_id);
@@ -6027,7 +6038,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			     "(%u > %u)",
 			     job_specs->time_min, job_ptr->time_limit);
 			error_code = ESLURM_INVALID_TIME_LIMIT;
-		} else {
+		} else if (job_ptr->time_min != job_specs->time_min) {
 			job_ptr->time_min = job_specs->time_min;
 			info("update_job: setting TimeMin to %u for job_id %u",
 			     job_specs->time_min, job_specs->job_id);
