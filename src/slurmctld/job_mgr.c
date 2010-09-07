@@ -8310,7 +8310,7 @@ static bool _validate_acct_policy(job_desc_msg_t *job_desc,
 			if(used_limits && (used_limits->submit_jobs
 					   >= qos_ptr->max_submit_jobs_pu)) {
 				info("job submit for user %s(%u): "
-				     "account max submit job limit exceeded %u",
+				     "qos max submit job limit exceeded %u",
 				     user_name,
 				     job_desc->user_id,
 				     qos_ptr->max_submit_jobs_pu);
@@ -8334,7 +8334,7 @@ static bool _validate_acct_policy(job_desc_msg_t *job_desc,
 				job_desc->time_limit = time_limit;
 			} else if (job_desc->time_limit > time_limit) {
 				info("job submit for user %s(%u): "
-				     "time limit %u exceeds account max %u",
+				     "time limit %u exceeds qos max %u",
 				     user_name,
 				     job_desc->user_id,
 				     job_desc->time_limit, time_limit);
