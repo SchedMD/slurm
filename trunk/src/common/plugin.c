@@ -68,6 +68,11 @@
 #    include <stdlib.h>
 #  endif
 
+strong_alias(plugin_get_syms,         slurm_plugin_get_syms);
+strong_alias(plugin_load_and_link,    slurm_plugin_load_and_link);
+strong_alias(plugin_strerror,         slurm_plugin_strerror);
+strong_alias(plugin_unload,           slurm_plugin_unload);
+
 /* dlerror() on AIX sometimes fails, revert to strerror() as needed */
 static char *_dlerror(void)
 {

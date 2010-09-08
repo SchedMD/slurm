@@ -88,6 +88,13 @@ char *strchr(), *strrchr();
 #include "src/common/xstring.h"
 #include "src/common/plugrack.h"
 
+strong_alias(plugrack_create,         slurm_plugrack_create);
+strong_alias(plugrack_destroy,        slurm_plugrack_destroy);
+strong_alias(plugrack_read_dir,       slurm_plugrack_read_dir);
+strong_alias(plugrack_set_major_type, slurm_plugrack_set_major_type);
+strong_alias(plugrack_set_paranoia,   slurm_plugrack_set_paranoia);
+strong_alias(plugrack_use_by_type,    slurm_plugrack_use_by_type);
+
 /*
  * Represents a plugin in the rack.
  *
