@@ -13,28 +13,39 @@ require "posix"
 --########################################################################--
 
 
-function slurm_job_submit (job_desc)
+function slurm_job_submit ( )
 	local account = "none"
-	local partition = "tbd"
-	setmetatable (job_desc, job_mt)
+	local comment = "Set by job_submit/lua"
+	local job_desc = {}
+	setmetatable (job_desc, job_req_meta)
 
 	if job_desc.account == nil then
-		log_info("slurm_job_submit: setting default account value of %s",
+		log_info("slurm_job_submit: setting default account value to %s",
 			 account)
 		job_desc.account = account
 	end
 
-	if job_desc.partition == nil then
-		log_info("slurm_job_submit: setting default partition value of %s",
-			 partition)
-		job_desc.partition = partition
+	if job_desc.comment == nil then
+		log_info("slurm_job_submit: setting default comment value to %s",
+			 comment)
+		job_desc.comment = comment
 	end
 
-	return job_desc
+	return
 end
 
-function slurm_job_modify (job_desc)
-	return job_desc
+function slurm_job_modify ( )
+	local comment = "Set by job_submit/lua, modify"
+	local job_desc = {}
+	setmetatable (job_desc, job_req_meta)
+
+	if job_desc.comment == nil then
+		log_info("slurm_job_submit: setting default comment value to %s",
+			 comment)
+		job_desc.comment = comment
+	end
+
+	return
 end
 
 --########################################################################--
@@ -49,12 +60,12 @@ log_verbose = slurm.log_verbose
 log_debug = slurm.log_debug
 log_err = slurm.error
 
-job_mt = {
+job_req_meta = {
 	__index = function (table, key)
-		return _get_job_field(key)
+		return _get_job_req_field(key)
 	end,
 	__newindex = function (table, key, value)
-		return _set_job_field(key, value)
+		return _set_job_req_field(key, value)
 	end
 }
 
