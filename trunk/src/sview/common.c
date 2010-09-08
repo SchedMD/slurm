@@ -1748,13 +1748,13 @@ extern void *popup_thr(popup_info_t *popup_win)
 	popup_win->running = &running;
 	/* when popup is killed toggled will be set to -1 */
 	while(running) {
-		g_static_mutex_lock(&sview_mutex);
 		//g_print("locked popup_thr\n");
 		gdk_threads_enter();
+		if(!running)
+			break;
 		(specifc_info)(popup_win);
 		//gdk_flush();
 		gdk_threads_leave();
-		g_static_mutex_unlock(&sview_mutex);
 		//g_print("done popup_thr\n");
 		sleep(working_sview_config.refresh_delay);
 	}
