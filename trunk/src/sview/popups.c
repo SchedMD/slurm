@@ -803,6 +803,20 @@ extern void change_grid_popup(GtkAction *action, gpointer user_data)
 	gtk_table_attach_defaults(GTK_TABLE(table), label, 0, 1, 2, 3);
 	gtk_table_attach_defaults(GTK_TABLE(table), vert_sb, 1, 2, 2, 3);
 
+	/*TODO
+	 * do we care about this?
+
+	label = gtk_label_new("Topology ordered ");
+	adjustment = gtk_adjustment_new(working_sview_config.grid_topological,
+					1, 1000, 1, 60, 0);
+	GtkWidget *gtbtton =  gtk_check_button_new ();
+	gtk_container_set_border_width(GTK_CONTAINER(table), 10);
+	gtk_table_attach_defaults(GTK_TABLE(table), label, 0, 1, 3, 4);
+	gtk_table_attach_defaults(GTK_TABLE(table), gtbtton, 1, 2, 3, 4);
+
+	gtk_toggle_button_set_active (&gtbtton,working_sview_config.grid_topological);
+	*/
+
 	gtk_widget_show_all(popup);
 	response = gtk_dialog_run (GTK_DIALOG(popup));
 

@@ -1568,7 +1568,7 @@ static List _create_part_info_list(partition_info_msg_t *part_info_ptr,
 	for (i=0; i<part_info_ptr->record_count; i++) {
 		part_ptr = &(part_info_ptr->partition_array[i]);
 		/*dont include configured excludes*/
-		if (strstr(excluded_partitions,
+		if (strstr(working_sview_config.excluded_partitions,
 			   part_info_ptr->partition_array[i].name))
 			continue;
 		sview_part_info = _create_sview_part_info(part_ptr);
@@ -1703,14 +1703,17 @@ extern bool check_part_includes_node(partition_info_msg_t *part_info_ptr,
 	bool rc = FALSE;
 	int i, j2;
 
+	if (!part_info_ptr)
+		return rc;
+
 	for (i=0; i<part_info_ptr->record_count; i++) {
 		/*dont include configured excludes*/
-		if (strstr(excluded_partitions,
+		if (strstr(working_sview_config.excluded_partitions,
 			   part_info_ptr->partition_array[i].name))
 			continue;
 		part_ptr = &(part_info_ptr->partition_array[i]);
 		j2 = 0;
-		while(part_ptr->node_inx[j2] >= 0) {
+		while (part_ptr->node_inx[j2] >= 0) {
 			if (_DEBUG) {
 				g_print("node_dx = %d ", node_dx);
 				g_print("part_node_inx[j2] = %d ",

@@ -700,12 +700,17 @@ extern int get_topo_conf(void)
 	if (TOPO_DEBUG)
 		g_print("get_topo_conf\n");
 
-
 	if ((g_topo_info_msg_ptr == NULL) &&
 	    slurm_load_topo(&g_topo_info_msg_ptr)) {
 		slurm_perror ("slurm_load_topo error");
 		if (TOPO_DEBUG)
 			g_print("get_topo_conf error !!\n");
+		return SLURM_ERROR;
+	}
+
+	if (g_topo_info_msg_ptr->record_count == 0) {
+		slurm_free_topo_info_msg(g_topo_info_msg_ptr);
+		g_topo_info_msg_ptr = NULL;
 		return SLURM_ERROR;
 	}
 
@@ -1464,6 +1469,7 @@ extern popup_info_t *create_popup_info(int type, int dest_type, char *title)
 	GtkWidget *table = NULL;
 	GtkWidget *close_btn = NULL;
 	popup_info_t *popup_win = xmalloc(sizeof(popup_info_t));
+//	int i=0;
 
 	list_push(popup_list, popup_win);
 
@@ -1496,6 +1502,17 @@ extern popup_info_t *create_popup_info(int type, int dest_type, char *title)
 	popup_win->force_refresh = 0;
 	popup_win->type = dest_type;
 	popup_win->not_found = false;
+	/*
+	  for(i=0;; i++) {
+	  if(main_popup_positioner[i].width == -1)
+	  break;
+	  if(strstr(title,main_popup_positioner[i].name)) {
+	  width = main_popup_positioner[i].width;
+	  height = main_popup_positioner[i].height;
+	  break;
+	  }
+	  }
+	*/
 	gtk_window_set_default_size(GTK_WINDOW(popup_win->popup),
 				    working_sview_config.fi_popup_width,
 				    working_sview_config.fi_popup_height);
@@ -1960,16 +1977,19 @@ extern void display_edit_note(char *edit_note)
 {
 	GError *error = NULL;
 	int msg_id = 0;
+
+	if(!edit_note)
+		return;
+
 	gtk_statusbar_pop(GTK_STATUSBAR(main_statusbar), STATUS_ADMIN_EDIT);
 	msg_id = gtk_statusbar_push(GTK_STATUSBAR(main_statusbar),
 				    STATUS_ADMIN_EDIT,
 				    edit_note);
 	if (!g_thread_create(_editing_thr, GINT_TO_POINTER(msg_id),
 			     FALSE, &error))
-	{
-		g_printerr ("Failed to create edit thread: %s\n",
-			    error->message);
-	}
+		g_printerr("Failed to create edit thread: %s\n",
+			   error->message);
+
 	return;
 }
 

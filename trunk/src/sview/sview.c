@@ -81,7 +81,6 @@ uint32_t cluster_flags;
 int cluster_dims;
 List cluster_list = NULL;
 switch_record_bitmaps_t *g_switch_nodes_maps = NULL;
-char *excluded_partitions = NULL;
 
 block_info_msg_t *g_block_info_ptr = NULL;
 job_info_msg_t *g_job_info_ptr = NULL;
@@ -98,6 +97,15 @@ static bool debug_inited = 0;
 static char *orig_cluster_name = NULL;
 static int g_menu_id = 0;
 static GtkUIManager *g_ui_manager = NULL;
+
+/*
+popup_positioner_t main_popup_positioner[] = {
+	{0,"Sview Defaults", 150, 700 },
+	{0,"Full info for job", 450, 650 },
+	{0,"Title_2", 100, 100 },
+	{-1,"FENCE", -1, -1 }
+};
+*/
 
 display_data_t main_display_data[] = {
 	{G_TYPE_NONE, JOB_PAGE, "Jobs", TRUE, -1,
@@ -1031,17 +1039,22 @@ extern void _change_cluster_main(GtkComboBox *combo, gpointer extra)
 						page_check_widget[NODE_PAGE]),
 				     main_display_data[NODE_PAGE].name);
 	}
+
 	/* reinit */
 	rc = get_system_stats(main_grid_table);
 
 	if(rc == SLURM_SUCCESS) {
-		/* It turns out if we didn't have the grid before the
+		/* It turns out if we didn't have the grid (cluster
+		   not responding) before the
 		   new grid doesn't get set up correctly.  Redoing the
 		   system_stats fixes it.  There is probably a better
 		   way of doing this, but it doesn't happen very often
 		   and isn't that bad to handle every once in a while.
 		*/
 		if(!got_grid) {
+			/* I know we just did this before, but it
+			   needs to be done again here.
+			*/
 			if(grid_button_list) {
 				list_destroy(grid_button_list);
 				grid_button_list = NULL;
@@ -1196,7 +1209,6 @@ int main(int argc, char *argv[])
 	GtkWidget *menubar = NULL;
 	GtkWidget *table = NULL;
 	GtkWidget *combo = NULL;
-/* 	GtkWidget *button = NULL; */
 	GtkBin *bin = NULL;
 	GtkViewport *view = NULL;
 	int i=0;

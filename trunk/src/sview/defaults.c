@@ -51,11 +51,13 @@ enum {
 	SORTID_GRID_HORI,
 	SORTID_GRID_VERT,
 	SORTID_GRID_X_WIDTH,
+	SORTID_GRID_TOPO_ORDER,
 	SORTID_PAGE_VISIBLE,
 	SORTID_REFRESH_DELAY,
 	SORTID_RULED_TV,
 	SORTID_SHOW_GRID,
 	SORTID_SHOW_HIDDEN,
+	SORTID_EXCLUDED_PARTITIONS,
 	SORTID_TAB_POS,
 	SORTID_CNT
 };
@@ -77,6 +79,10 @@ static display_data_t display_data_defaults[] = {
 	 TRUE, EDIT_TEXTBOX, NULL, create_model_defaults, NULL},
 	{G_TYPE_STRING, SORTID_GRID_X_WIDTH, "Grid: Nodes in Row",
 	 TRUE, EDIT_TEXTBOX, NULL, create_model_defaults, NULL},
+	{G_TYPE_STRING, SORTID_GRID_TOPO_ORDER, "Grid: Topology Order",
+	 TRUE, EDIT_MODEL, NULL, create_model_defaults, NULL},
+	{G_TYPE_STRING, SORTID_EXCLUDED_PARTITIONS, "Excluded Partitions: ",
+	 TRUE, EDIT_TEXTBOX, NULL, create_model_defaults, NULL},
 	{G_TYPE_STRING, SORTID_PAGE_VISIBLE, "Visible Pages",
 	 TRUE, EDIT_ARRAY, NULL, create_model_defaults, NULL},
 	{G_TYPE_STRING, SORTID_REFRESH_DELAY, "Refresh Delay in Secs",
@@ -95,6 +101,25 @@ static display_data_t display_data_defaults[] = {
 
 extern display_data_t main_display_data[];
 
+static char *_excluded_partitions;
+static char *_pending_excluded_partitions = "";
+
+char *_replace_str(char *str, char *orig, char *rep)
+{
+  static char buffer[50];
+  char *p;
+
+  if(!(p = strstr(str, orig)))
+    return NULL;
+
+  strncpy(buffer, str, p-str);
+  buffer[p-str] = '\0';
+  sprintf(buffer+(p-str), "%s%s", rep, p+strlen(orig));
+
+  return buffer;
+}
+
+
 static void _set_active_combo_defaults(GtkComboBox *combo,
 				       sview_config_t *sview_config,
 				       int type)
@@ -104,6 +129,9 @@ static void _set_active_combo_defaults(GtkComboBox *combo,
 	switch(type) {
 	case SORTID_ADMIN:
 		action = sview_config->admin_mode;
+		break;
+	case SORTID_GRID_TOPO_ORDER:
+		action = sview_config->grid_topological;
 		break;
 	case SORTID_RULED_TV:
 		action = sview_config->ruled_treeview;
@@ -209,6 +237,17 @@ static const char *_set_sview_config(sview_config_t *sview_config,
 		else
 			sview_config->show_grid = 0;
 		break;
+	case SORTID_GRID_TOPO_ORDER:
+		type = "Topology order";
+		if (!strcasecmp(new_text, "yes"))
+			sview_config->grid_topological = 1;
+		else
+			sview_config->grid_topological =  0;
+		break;
+	case SORTID_EXCLUDED_PARTITIONS:
+		type = "Excluded Partitions";
+		_excluded_partitions = xstrdup_printf(new_text);
+		break;
 	case SORTID_SHOW_HIDDEN:
 		type = "Show Hidden";
 		if (!strcasecmp(new_text, "yes"))
@@ -233,8 +272,10 @@ static const char *_set_sview_config(sview_config_t *sview_config,
 		type = "unknown";
 		break;
 	}
-	if(strcmp(type, "unknown"))
+	if(strcmp(type, "unknown")) {
 		global_send_update_msg = 1;
+
+	}
 	return type;
 
 return_error:
@@ -247,6 +288,7 @@ static void _admin_focus_toggle(GtkToggleButton *toggle_button,
 {
 	if(visible) {
 		(*visible) = gtk_toggle_button_get_active(toggle_button);
+		g_print("_admin_focus_toggle\n");
 		global_send_update_msg = 1;
 	}
 }
@@ -261,7 +303,6 @@ static void _admin_edit_combo_box_defaults(GtkComboBox *combo,
 
 	if(!sview_config)
 		return;
-
 	if(!gtk_combo_box_get_active_iter(combo, &iter)) {
 		g_print("nothing selected\n");
 		return;
@@ -271,12 +312,10 @@ static void _admin_edit_combo_box_defaults(GtkComboBox *combo,
 		g_print("nothing selected\n");
 		return;
 	}
-
 	gtk_tree_model_get(model, &iter, 0, &name, -1);
 	gtk_tree_model_get(model, &iter, 1, &column, -1);
 
 	_set_sview_config(sview_config, name, column);
-
 	g_free(name);
 }
 
@@ -358,6 +397,12 @@ static void _local_display_admin_edit(GtkTable *table,
 		case SORTID_REFRESH_DELAY:
 			temp_char = xstrdup_printf("%u",
 						   sview_config->refresh_delay);
+			break;
+
+
+		case SORTID_EXCLUDED_PARTITIONS:
+			temp_char = xstrdup_printf(_pending_excluded_partitions);
+			xstrcat(temp_char,_excluded_partitions);
 			break;
 		default:
 			break;
@@ -485,6 +530,7 @@ static void _init_sview_conf()
 extern int load_defaults()
 {
 	s_p_hashtbl_t *hashtbl = NULL;
+//	s_p_options_t sview_conf_resize_options[20];
 	s_p_options_t sview_conf_options[] = {
 		{"AdminMode", S_P_BOOLEAN},
 		{"DefaultPage", S_P_STRING},
@@ -511,6 +557,8 @@ extern int load_defaults()
 	uint32_t hash_val = NO_VAL;
 	int rc = SLURM_SUCCESS;
 	char *tmp_str;
+//	char *tmp_str2;
+//	int i=0;
 
 	_init_sview_conf();
 
@@ -577,8 +625,11 @@ extern int load_defaults()
 		       "FullInfoPopupWidth", hashtbl);
 	s_p_get_uint32(&default_sview_config.fi_popup_height,
 		       "FullInfoPopupHeight", hashtbl);
-	s_p_get_string(&excluded_partitions,
-		       "ExcludedPartitions", hashtbl);
+	if (s_p_get_string(&default_sview_config.excluded_partitions,
+			"ExcludedPartitions", hashtbl) == 0)
+		default_sview_config.excluded_partitions =xstrdup_printf("-");
+	_excluded_partitions =
+			xstrdup_printf(default_sview_config.excluded_partitions);
 	if (default_sview_config.main_width == 0) {
 		default_sview_config.main_width=1000;
 		default_sview_config.main_height=450;
@@ -613,11 +664,50 @@ extern int load_defaults()
 			default_sview_config.page_visible[NODE_PAGE] = 1;
 		xfree(tmp_str);
 	}
-	if (!s_p_get_string(&excluded_partitions, "ExcludedPartitions",
-			    hashtbl))
-		excluded_partitions = xstrdup("-");
-
 	s_p_hashtbl_destroy(hashtbl);
+	/*cant use this yet since s_p_parse_file kicks out
+	 * errors on static table above. The errors are ignored
+	 * but better to not even see them. Probably llnl would know
+	 * how to suppress those errors
+
+	//create dynamic hashtable
+	for(i=0;; i++) {
+		if(main_popup_positioner[i].width == -1)
+			break;
+		//replace ' ' in name with '|'
+		tmp_str = xstrdup(main_popup_positioner[i].name);
+		while (1) {
+			tmp_str2 = _replace_str(tmp_str,
+				" ", "|");
+			if(tmp_str2 != NULL) {
+					tmp_str = xstrdup(tmp_str2);
+			}
+			else
+					break;
+		}
+		if(tmp_str) {
+			tmp_str2 = xstrdup_printf("%s_w", tmp_str);
+			sview_conf_resize_options[i].key = xstrdup(tmp_str2);
+			g_print("key: %s built\n",
+					sview_conf_resize_options[i].key);
+			sview_conf_resize_options[i].type = S_P_UINT32;
+		}
+		xfree(tmp_str);
+		xfree(tmp_str2);
+	}
+	sview_conf_resize_options[i].key = NULL;
+	hashtbl = s_p_hashtbl_create(sview_conf_resize_options);
+	for(i=0;; i++) {
+		if(main_popup_positioner[i].width == -1)
+			break;
+		s_p_get_uint32(&main_popup_positioner[i].width,
+				sview_conf_resize_options[i].key, hashtbl);
+		g_print("key: %s : width: %d\n",
+				sview_conf_resize_options[i].key,
+				main_popup_positioner[i].width);
+	}
+	s_p_hashtbl_destroy(hashtbl);
+	 */
 
 end_it:
 	/* copy it all into the working struct */
@@ -731,8 +821,39 @@ extern int save_defaults()
 	xfree(tmp_str);
 	if(rc != SLURM_SUCCESS)
 		goto end_it;
+	/* TODO .. suppress sp parse errors on the read-in
+	for(i=0;; i++) {
+		if(main_popup_positioner[i].width == -1)
+			break;
+		//replace spaces in name
+		tmp_str = xstrdup(main_popup_positioner[i].name);
+		while (1) {
+			tmp_str2 = _replace_str(tmp_str,
+				" ", "|");
+			if(tmp_str2 != NULL) {
+					tmp_str = xstrdup(tmp_str2);
+			}
+			else
+					break;
+		}
+		if(tmp_str) {
+			tmp_str2 = xstrdup_printf("%s_w=%u\n",
+					tmp_str,
+					main_popup_positioner[i].width);
+			rc = _write_to_file(fd, tmp_str2);
+			tmp_str2 = xstrdup_printf("%s_h=%u\n",
+					tmp_str,
+					main_popup_positioner[i].height);
+			rc = _write_to_file(fd, tmp_str2);
+		}
+		xfree(tmp_str);
+		xfree(tmp_str2);
+		if(rc != SLURM_SUCCESS)
+			goto end_it;
+	}
+	*/
 	tmp_str = xstrdup_printf("ExcludedPartitions=%s\n",
-				 excluded_partitions);
+		_excluded_partitions);
 	rc = _write_to_file(fd, tmp_str);
 	xfree(tmp_str);
 	if(rc != SLURM_SUCCESS)
@@ -800,6 +921,7 @@ extern GtkListStore *create_model_defaults(int type)
 
 	switch(type) {
 	case SORTID_ADMIN:
+	case SORTID_GRID_TOPO_ORDER:
 	case SORTID_RULED_TV:
 	case SORTID_SHOW_GRID:
 	case SORTID_SHOW_HIDDEN:
@@ -892,13 +1014,27 @@ extern int configure_defaults()
 	sview_config_t tmp_config;
 	int response = 0;
 	int rc = SLURM_SUCCESS;
+	uint32_t width = 150;
+	uint32_t height = 700;
 
 	memcpy(&tmp_config, &default_sview_config, sizeof(sview_config_t));
 	gtk_window_set_default(GTK_WINDOW(popup), label);
 	gtk_dialog_add_button(GTK_DIALOG(popup),
 			      GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL);
 
-	gtk_window_set_default_size(GTK_WINDOW(popup), 150, 600);
+	/*
+	for(i=0;; i++) {
+		if(main_popup_positioner[i].width == -1)
+			break;
+		if(strstr("Sview Defaults", main_popup_positioner[i].name)) {
+			pos_x = main_popup_positioner[i].width;
+			pos_y = main_popup_positioner[i].height;
+			break;
+		}
+	}
+	*/
+
+	gtk_window_set_default_size(GTK_WINDOW(popup), width, height);
 	snprintf(tmp_char, sizeof(tmp_char),
 		 "Default Settings for Sview");
 	label = gtk_label_new(tmp_char);
@@ -940,6 +1076,8 @@ extern int configure_defaults()
 	gtk_widget_show_all(popup);
 	response = gtk_dialog_run (GTK_DIALOG(popup));
 	if (response == GTK_RESPONSE_OK) {
+		tmp_char_ptr = g_strdup_printf(
+				"Defaults updated successfully");
 		if(global_edit_error)
 			tmp_char_ptr = global_edit_error_msg;
 		else if(!global_send_update_msg)
@@ -954,6 +1092,35 @@ extern int configure_defaults()
 				cluster_change_part();
 				cluster_change_job();
 				cluster_change_node();
+			}
+			if(tmp_config.grid_topological
+					   != working_sview_config.grid_topological) {
+				if (tmp_config.grid_topological) {
+					if(grid_button_list) {
+						list_destroy(grid_button_list);
+						grid_button_list = NULL;
+					}
+					default_sview_config.grid_topological =
+							tmp_config.grid_topological;
+					if(!g_switch_nodes_maps)
+						rc = get_topo_conf();
+					if(rc != SLURM_SUCCESS) {
+						/*denied*/
+						tmp_char_ptr = g_strdup_printf(
+							"Valid topology not detected");
+						tmp_config.grid_topological = FALSE;
+					}
+				}
+			}
+			else if(strcmp(_excluded_partitions,
+					   working_sview_config.excluded_partitions)) {
+				_pending_excluded_partitions = "(pending)";
+				if ((strlen(_excluded_partitions) == 0)) {
+					_excluded_partitions = xstrdup_printf("-");
+				}
+				tmp_char_ptr = g_strdup_printf(
+						"Defaults updated: "
+						"Sview restart required to process this change!!");
 			}
 
 			memcpy(&default_sview_config, &tmp_config,
@@ -991,8 +1158,6 @@ extern int configure_defaults()
 			get_system_stats(main_grid_table);
 			/******************************************/
 
-			tmp_char_ptr = g_strdup_printf(
-				"Defaults updated successfully");
 			save_defaults();
 		}
 		display_edit_note(tmp_char_ptr);
