@@ -1746,12 +1746,14 @@ extern void *popup_thr(popup_info_t *popup_win)
 	}
 	/* this will switch to 0 when popup is closed. */
 	popup_win->running = &running;
-	/* when popup is killed toggled will be set to -1 */
+	/* when popup is killed running will be set to 0 */
 	while(running) {
 		//g_print("locked popup_thr\n");
 		gdk_threads_enter();
-		if(!running)
+		if(!running) {
+			gdk_threads_leave();
 			break;
+		}
 		(specifc_info)(popup_win);
 		//gdk_flush();
 		gdk_threads_leave();
