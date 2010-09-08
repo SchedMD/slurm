@@ -596,7 +596,7 @@ extern List create_node_info_list(node_info_msg_t *node_info_ptr,
 			continue;
 		if (by_partition) {
 			/*constrain list to included partitions' nodes*/
-			if (strcmp(excluded_partitions, "-")) {
+			if (strcmp(working_sview_config.excluded_partitions, "-")) {
 				int rc = get_new_info_part(
 					&part_info_ptr, force_refresh);
 				if(rc == SLURM_NO_CHANGE_IN_DATA ||
@@ -768,6 +768,7 @@ extern int get_new_info_node(node_info_msg_t **info_ptr, int force)
 	}
 
 	*info_ptr = g_node_info_ptr;
+
 	if (!g_topo_info_msg_ptr &&
 	    default_sview_config.grid_topological) {
 		get_topo_conf(); /*pull in topology NOW*/

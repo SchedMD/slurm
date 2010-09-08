@@ -2442,7 +2442,7 @@ static List _create_job_info_list(job_info_msg_t *job_info_ptr,
 
 	for(i=0; i<job_info_ptr->record_count; i++) {
 		job_ptr = &(job_info_ptr->job_array[i]);
-		if (strstr(excluded_partitions, job_ptr->partition))
+		if (strstr(working_sview_config.excluded_partitions, job_ptr->partition))
 			continue;
 		sview_job_info_ptr = xmalloc(sizeof(sview_job_info_t));
 		sview_job_info_ptr->job_ptr = job_ptr;

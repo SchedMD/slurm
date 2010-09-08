@@ -184,11 +184,13 @@ typedef struct {
 	GtkToggleAction *action_ruled;
 	GtkRadioAction *action_tab;
 	uint16_t tab_pos;
+	char *excluded_partitions;
 } sview_config_t;
 
 typedef struct display_data display_data_t;
 typedef struct specific_info specific_info_t;
 typedef struct popup_info popup_info_t;
+typedef struct popup_positioner popup_positioner_t;
 
 struct display_data {
 	GType type;
@@ -208,6 +210,13 @@ struct display_data {
 			     GtkTreePath *path, int type);
 	gpointer user_data;
 	gpointer button_list;
+};
+
+struct popup_positioner {
+	int id;
+	char *name;
+	uint32_t width;
+	uint32_t height;
 };
 
 typedef struct {
@@ -325,7 +334,7 @@ extern slurm_ctl_conf_info_msg_t *g_ctl_info_ptr;
 extern job_step_info_response_msg_t *g_step_info_ptr;
 extern topo_info_response_msg_t *g_topo_info_msg_ptr;
 extern switch_record_bitmaps_t *g_switch_nodes_maps;
-
+extern popup_positioner_t main_popup_positioner[];
 
 extern void init_grid(node_info_msg_t *node_info_ptr);
 extern int set_grid(int start, int end, int count);
@@ -399,7 +408,6 @@ extern void select_admin_partitions(GtkTreeModel *model, GtkTreeIter *iter,
 				    GtkTreeView *treeview);
 extern void admin_part(GtkTreeModel *model, GtkTreeIter *iter, char *type);
 extern void cluster_change_part();
-extern char *excluded_partitions;
 
 // block_info.c
 extern void refresh_block(GtkAction *action, gpointer user_data);
