@@ -103,6 +103,7 @@ const uint32_t min_plug_version = 100;
 static const char lua_script_path[] = DEFAULT_SCRIPT_DIR "/job_submit.lua";
 static lua_State *L = NULL;
 static struct job_descriptor *job_Desc = NULL;
+static struct job_record *job_Ptr = NULL;
 
 /*
  *  Mutex for protecting multi-threaded access to this plugin.
@@ -214,14 +215,71 @@ static void _register_lua_slurm_output_functions (void)
 	lua_setglobal (L, "slurm");
 }
 
+/* Get fields in an existing job record
+ * NOTE: This is an incomplete list of job record fields, add more as needed */
+static int _get_job_rec_field (lua_State *L)
+{
+//	const struct job_record *job_Ptr = NULL
+	const char *name = luaL_checkstring(L, 1);
+
+	if (job_Ptr == NULL) {
+		error("_get_job_field: job_Desc is NULL");
+		lua_pushnil (L);
+	} else if (!strcmp(name, "account")) {
+		lua_pushstring (L, job_Ptr->account);
+	} else if (!strcmp(name, "comment")) {
+		lua_pushstring (L, job_Ptr->comment);
+	} else if (!strcmp(name, "gres")) {
+		lua_pushstring (L, job_Ptr->gres);
+	} else if (!strcmp(name, "job_id")) {
+		lua_pushnumber (L, job_Ptr->job_id);
+	} else if (!strcmp(name, "job_state")) {
+		lua_pushnumber (L, job_Ptr->job_state);
+	} else if (!strcmp(name, "licenses")) {
+		lua_pushstring (L, job_Ptr->licenses);
+	} else if (!strcmp(name, "max_cpus")) {
+		if (job_Ptr->details)
+			lua_pushnumber (L, job_Ptr->details->max_cpus);
+		else
+			lua_pushnumber (L, 0);
+	} else if (!strcmp(name, "max_nodes")) {
+		if (job_Ptr->details)
+			lua_pushnumber (L, job_Ptr->details->max_nodes);
+		else
+			lua_pushnumber (L, 0);
+	} else if (!strcmp(name, "min_cpus")) {
+		if (job_Ptr->details)
+			lua_pushnumber (L, job_Ptr->details->min_cpus);
+		else
+			lua_pushnumber (L, 0);
+	} else if (!strcmp(name, "min_nodes")) {
+		if (job_Ptr->details)
+			lua_pushnumber (L, job_Ptr->details->min_nodes);
+		else
+			lua_pushnumber (L, 0);
+	} else if (!strcmp(name, "partition")) {
+		lua_pushstring (L, job_Ptr->partition);
+	} else if (!strcmp(name, "time_limit")) {
+		lua_pushnumber (L, job_Ptr->time_limit);
+	} else if (!strcmp(name, "time_min")) {
+		lua_pushnumber (L, job_Ptr->time_min);
+	} else if (!strcmp(name, "wckey")) {
+		lua_pushstring (L, job_Ptr->wckey);
+	} else {
+		lua_pushnil (L);
+	}
+
+	return 1;
+}
+
 /* Get fields in the job request record on job submit or modify */
 static int _get_job_req_field (lua_State *L)
 {
-//	const struct job_descriptor *job_ptr = lua_touserdata(L, 1);
+//	const struct job_descriptor *job_Desc = lua_touserdata(L, 1);
 	const char *name = luaL_checkstring(L, 1);
 
 	if (job_Desc == NULL) {
-		error("_get_job_field: job_Desc is NULL");
+		error("_get_job_req_field: job_Desc is NULL");
 		lua_pushnil (L);
 	} else if (!strcmp(name, "account")) {
 		lua_pushstring (L, job_Desc->account);
@@ -245,6 +303,8 @@ static int _get_job_req_field (lua_State *L)
 		lua_pushstring (L, job_Desc->features);
 	} else if (!strcmp(name, "gres")) {
 		lua_pushstring (L, job_Desc->gres);
+	} else if (!strcmp(name, "group_id")) {
+		lua_pushnumber (L, job_Desc->group_id);
 	} else if (!strcmp(name, "licenses")) {
 		lua_pushstring (L, job_Desc->licenses);
 	} else if (!strcmp(name, "max_cpus")) {
@@ -291,6 +351,8 @@ static int _get_job_req_field (lua_State *L)
 		lua_pushnumber (L, job_Desc->time_limit);
 	} else if (!strcmp(name, "time_min")) {
 		lua_pushnumber (L, job_Desc->time_min);
+	} else if (!strcmp(name, "user_id")) {
+		lua_pushnumber (L, job_Desc->user_id);
 	} else if (!strcmp(name, "wckey")) {
 		lua_pushstring (L, job_Desc->wckey);
 	} else {
@@ -303,12 +365,12 @@ static int _get_job_req_field (lua_State *L)
 /* Set fields in the job request record on job submit or modify */
 static int _set_job_req_field (lua_State *L)
 {
-//	const struct job_descriptor *job_ptr = lua_touserdata(L, 1);
+//	const struct job_descriptor *job_Desc = lua_touserdata(L, 1);
 	const char *name, *value_str;
 
 	name = luaL_checkstring(L, 1);
 	if (job_Desc == NULL) {
-		error("_set_job_field: job_Desc is NULL");
+		error("_set_job_req_field: job_Desc is NULL");
 	} else if (!strcmp(name, "account")) {
 		value_str = luaL_checkstring(L, 2);
 		xfree(job_Desc->account);
@@ -427,6 +489,8 @@ static int _set_job_req_field (lua_State *L)
 
 static void _register_lua_slurm_job_functions (void)
 {
+	lua_pushcfunction(L, _get_job_rec_field);
+	lua_setglobal(L, "_get_job_rec_field");
 	lua_pushcfunction(L, _get_job_req_field);
 	lua_setglobal(L, "_get_job_req_field");
 	lua_pushcfunction(L, _set_job_req_field);
@@ -556,6 +620,7 @@ extern int job_submit(struct job_descriptor *job_desc)
 	//lua_newtable (L);
 	//lua_pushlightuserdata (L, job_desc);
 job_Desc = job_desc;
+job_Ptr = NULL;
 	if (lua_pcall (L, 0, 0, 0) != 0) {
 		error("%s/lua: %s: %s",
 		      __func__, lua_script_path, lua_tostring (L, -1));
@@ -583,7 +648,9 @@ extern int job_modify(struct job_descriptor *job_desc,
 
 	//lua_newtable (L);
 	//lua_pushlightuserdata (L, job_desc);
+	//lua_pushlightuserdata (L, job_ptr);
 job_Desc = job_desc;
+job_Ptr = job_ptr;
 	if (lua_pcall (L, 0, 0, 0) != 0) {
 		error("%s/lua: %s: %s",
 		      __func__, lua_script_path, lua_tostring (L, -1));
