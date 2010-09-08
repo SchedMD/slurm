@@ -102,6 +102,7 @@ const uint32_t min_plug_version = 100;
 
 static const char lua_script_path[] = DEFAULT_SCRIPT_DIR "/job_submit.lua";
 static lua_State *L = NULL;
+static struct job_descriptor *job_ptr = NULL;
 
 /*
  *  Mutex for protecting multi-threaded access to this plugin.
@@ -174,7 +175,7 @@ static const struct luaL_Reg slurm_functions [] = {
 	{ NULL,    NULL        }
 };
 
-static int _register_lua_slurm_output_functions ()
+static void _register_lua_slurm_output_functions (void)
 {
 	/*
 	 *  Register slurm output functions in a global "slurm" table
@@ -211,7 +212,59 @@ static int _register_lua_slurm_output_functions ()
 	lua_setfield (L, -2, "SUCCESS");
 
 	lua_setglobal (L, "slurm");
+}
+
+static int _get_job_field (lua_State *L)
+{
+//	const struct job_descriptor *job_ptr = lua_touserdata(L, 1);
+	const char *name = luaL_checkstring(L, 1);
+
+	if (job_ptr == NULL) {
+		error("_get_job_field: job_ptr is NULL");
+		lua_pushnil (L);
+	} else if (!strcmp(name, "account")) {
+		lua_pushstring (L, job_ptr->account);
+	} else if (!strcmp(name, "partition")) {
+		lua_pushstring (L, job_ptr->partition);
+	} else {
+		lua_pushnil (L);
+	}
+
+	return 1;
+}
+
+static int _set_job_field (lua_State *L)
+{
+//	const struct job_descriptor *job_ptr = lua_touserdata(L, 1);
+	const char *name = luaL_checkstring(L, 1);
+	const char *value_str;
+
+	if (job_ptr == NULL) {
+		error("_set_job_field: job_ptr is NULL");
+		lua_pushnil (L);
+	} else if (!strcmp(name, "account")) {
+		value_str = luaL_checkstring(L, 1);
+		xfree(job_ptr->account);
+		if (strlen(value_str))
+			job_ptr->account = xstrdup(value_str);
+	} else if (!strcmp(name, "partition")) {
+		value_str = luaL_checkstring(L, 1);
+		xfree(job_ptr->partition);
+		if (strlen(value_str))
+			job_ptr->partition = xstrdup(value_str);
+	} else {
+		error("_set_job_field: unrecognized field: %s", name);
+	}
+
 	return 0;
+}
+
+static void _register_lua_slurm_job_functions (void)
+{
+	lua_pushcfunction(L, _get_job_field);
+	lua_setglobal(L, "_get_job_field");
+	lua_pushcfunction(L, _set_job_field);
+	lua_setglobal(L, "_set_job_field");
 }
 
 /*
@@ -255,10 +308,6 @@ static int _check_lua_script_functions()
 
 static int _fill_job_desc_from_lua(struct job_descriptor *job_desc)
 {
-	lua_getfield(L, -1, "account");
-	xfree(job_desc->account);
-	job_desc->account = xstrdup(lua_tostring(L, -1));
-	lua_pop(L, 1);
 	lua_getfield(L, -1, "acctg_freq");
 	job_desc->acctg_freq = lua_tonumber(L, -1);
 	lua_pop(L, 1);
@@ -323,10 +372,6 @@ static int _fill_job_desc_from_lua(struct job_descriptor *job_desc)
 	lua_getfield(L, -1, "num_tasks");
 	job_desc->num_tasks = lua_tonumber(L, -1);
 	lua_pop(L, 1);
-	lua_getfield(L, -1, "partition");
-	xfree(job_desc->partition);
-	job_desc->partition = xstrdup(lua_tostring(L, -1));
-	lua_pop(L, 1);
 	lua_getfield(L, -1, "pn_min_cpus");
 	job_desc->pn_min_cpus = lua_tonumber(L, -1);
 	lua_pop(L, 1);
@@ -384,8 +429,6 @@ static int _create_lua_job_desc_table(struct job_descriptor *job_desc)
 {
 	lua_newtable(L);
 
-	lua_pushstring(L, job_desc->account);
-	lua_setfield(L, -2, "account");
 	lua_pushnumber(L, job_desc->acctg_freq);
 	lua_setfield(L, -2, "acctg_freq");
 	lua_pushnumber(L, job_desc->begin_time);
@@ -472,37 +515,44 @@ int init (void)
 	 *   ensure symbols from liblua are available to libs opened
 	 *   by any lua scripts.
 	 */
-	if (!dlopen("liblua.so", RTLD_NOW | RTLD_GLOBAL))
-		if (!dlopen ("liblua5.1.so", RTLD_NOW | RTLD_GLOBAL))
+	if (!dlopen("liblua.so", RTLD_NOW | RTLD_GLOBAL)) {
+		if (!dlopen ("liblua5.1.so", RTLD_NOW | RTLD_GLOBAL)) {
 			return (error("Failed to open liblua.so: %s",
 				      dlerror()));
+		}
+	}
+
 	/*
 	 *  Initilize lua
 	 */
 	L = luaL_newstate();
 	luaL_openlibs(L);
-	if (luaL_loadfile(L, lua_script_path))
+	if (luaL_loadfile(L, lua_script_path)) {
 		return error("lua: %s: %s", lua_script_path,
 			     lua_tostring(L, -1));
+	}
 
 	/*
-	 *  Register slurm.log and slurm.error functions in lua state:
+	 *  Register SLURM functions in lua state:
+	 *  logging and job state read/write
 	 */
 	_register_lua_slurm_output_functions();
+	_register_lua_slurm_job_functions();
 
 	/*
 	 *  Run the user script:
 	 */
-	if (lua_pcall(L, 0, 1, 0) != 0)
+	if (lua_pcall(L, 0, 1, 0) != 0) {
 		return error("job_submit/lua: %s: %s",
 			     lua_script_path, lua_tostring (L, -1));
+	}
 
 	/*
 	 *  Get any return code from the lua script
 	 */
 	rc = (int) lua_tonumber(L, -1);
 	lua_pop (L, 1);
-	if(rc != SLURM_SUCCESS)
+	if (rc != SLURM_SUCCESS)
 		return rc;
 
 	/*
@@ -533,6 +583,9 @@ extern int job_submit(struct job_descriptor *job_desc)
 		goto out;
 
 	_create_lua_job_desc_table(job_desc);
+	//lua_newtable (L);
+	//lua_pushlightuserdata (L, job_desc);
+job_ptr = job_desc;
 	if (lua_pcall (L, 1, 1, 0) != 0) {
 		error("%s/lua: %s: %s",
 		      __func__, lua_script_path, lua_tostring (L, -1));
