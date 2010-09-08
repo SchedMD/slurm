@@ -29,7 +29,8 @@
  *****************************************************************************
  *  Copyright (C) 2004 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Mark Grondona <grondona1@llnl.gov>, Morris Jette <jette1@llnl.gov>
+ *  Written by Mark Grondona <grondona1@llnl.gov>,
+ *             Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
@@ -300,6 +301,20 @@
 #define slurmdbd_free_rc_msg    slurmdb_slurmdbd_free_rc_msg
 #define slurmdbd_free_usage_msg slurmdb_slurmdbd_free_usage_msg
 #define slurmdbd_free_id_rc_msg slurmdb_slurmdbd_free_id_rc_msg
+
+/* plugin.[ch] functions */
+#define plugin_get_syms         slurm_plugin_get_syms
+#define plugin_load_and_link    slurm_plugin_load_and_link
+#define plugin_strerror         slurm_plugin_strerror
+#define plugin_unload           slurm_plugin_unload
+
+/* plugrack.[ch] functions */
+#define plugrack_create         slurm_plugrack_create
+#define plugrack_destroy        slurm_plugrack_destroy
+#define plugrack_read_dir       slurm_plugrack_read_dir
+#define plugrack_set_major_type slurm_plugrack_set_major_type
+#define plugrack_set_paranoia   slurm_plugrack_set_paranoia
+#define plugrack_use_by_type    slurm_plugrack_use_by_type
 
 #endif /* USE_ALIAS */
 
