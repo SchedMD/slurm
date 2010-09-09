@@ -3057,7 +3057,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 
 	*job_pptr = (struct job_record *) NULL;
 
-	error_code = job_submit_plugin_submit(job_desc);
+	error_code = job_submit_plugin_submit(job_desc, (uint32_t) submit_uid);
 	if (error_code != SLURM_SUCCESS)
 		return error_code;
 
@@ -5621,7 +5621,8 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		return ESLURM_INVALID_JOB_ID;
 	}
 
-	error_code = job_submit_plugin_modify(job_specs, job_ptr);
+	error_code = job_submit_plugin_modify(job_specs, job_ptr,
+					      (uint32_t) uid);
 	if (error_code != SLURM_SUCCESS)
 		return error_code;
 

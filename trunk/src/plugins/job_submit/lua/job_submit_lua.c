@@ -497,6 +497,13 @@ static int _get_part_rec_field (lua_State *L)
 	if (part_ptr == NULL) {
 		error("_get_part_field: part_ptr is NULL");
 		lua_pushnil (L);
+	} else if (!strcmp(name, "flag_default")) {
+		int is_default = 0;
+		if (part_ptr->flags & PART_FLAG_DEFAULT)
+			is_default = 1;
+		lua_pushnumber (L, is_default);
+	} else if (!strcmp(name, "flags")) {
+		lua_pushnumber (L, part_ptr->flags);
 	} else if (!strcmp(name, "max_nodes")) {
 		lua_pushnumber (L, part_ptr->max_nodes);
 	} else if (!strcmp(name, "max_nodes_orig")) {
@@ -578,7 +585,31 @@ static int _check_lua_script_functions()
 	return (rc);
 }
 
-static void _push_partition_list(void)
+static bool _user_can_use_part(uint32_t user_id, uint32_t submit_uid,
+			       struct part_record *part_ptr)
+{
+	int i;
+
+	if (user_id == 0) {
+		if (part_ptr->flags & PART_FLAG_NO_ROOT)
+			return false;
+		return true;
+	}
+
+	if ((part_ptr->flags & PART_FLAG_ROOT_ONLY) && (submit_uid != 0))
+		return false;
+
+	if (part_ptr->allow_uids == NULL)
+		return true;	/* No user ID filters */
+
+	for (i=0; part_ptr->allow_uids[i]; i++) {
+		if (user_id == part_ptr->allow_uids[i])
+			return true;
+	}
+	return false;
+}
+
+static void _push_partition_list(uint32_t user_id, uint32_t submit_uid)
 {
 	int i = 1;
 	ListIterator part_iterator;
@@ -589,6 +620,8 @@ static void _push_partition_list(void)
 	if (!part_iterator)
 		fatal("list_iterator_create malloc");
 	while ((part_ptr = (struct part_record *) list_next(part_iterator))) {
+		if (!_user_can_use_part(user_id, submit_uid, part_ptr))
+			continue;
 		lua_pushlightuserdata (L, part_ptr);
 		lua_rawseti(L, -2, i++);
 	}
@@ -663,7 +696,7 @@ int fini (void)
 
 
 /* Lua script hook called for "submit job" event. */
-extern int job_submit(struct job_descriptor *job_desc)
+extern int job_submit(struct job_descriptor *job_desc, uint32_t submit_uid)
 {
 	int rc = SLURM_ERROR;
 	slurm_mutex_lock (&lua_lock);
@@ -677,7 +710,7 @@ extern int job_submit(struct job_descriptor *job_desc)
 		goto out;
 
 	lua_pushlightuserdata (L, job_desc);
-	_push_partition_list();
+	_push_partition_list(job_desc->user_id, submit_uid);
 	if (lua_pcall (L, 2, 0, 0) != 0) {
 		error("%s/lua: %s: %s",
 		      __func__, lua_script_path, lua_tostring (L, -1));
@@ -690,7 +723,7 @@ out:	slurm_mutex_unlock (&lua_lock);
 
 /* Lua script hook called for "modify job" event. */
 extern int job_modify(struct job_descriptor *job_desc,
-		      struct job_record *job_ptr)
+		      struct job_record *job_ptr, uint32_t submit_uid)
 {
 	int rc = SLURM_ERROR;
 	slurm_mutex_lock (&lua_lock);
@@ -705,7 +738,7 @@ extern int job_modify(struct job_descriptor *job_desc,
 
 	lua_pushlightuserdata (L, job_desc);
 	lua_pushlightuserdata (L, job_ptr);
-	_push_partition_list();
+	_push_partition_list(job_ptr->user_id, submit_uid);
 	if (lua_pcall (L, 3, 0, 0) != 0) {
 		error("%s/lua: %s: %s",
 		      __func__, lua_script_path, lua_tostring (L, -1));

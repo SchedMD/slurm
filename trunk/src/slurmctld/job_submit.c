@@ -74,9 +74,11 @@
 #include "src/slurmctld/slurmctld.h"
 
 typedef struct slurm_submit_ops {
-	int		(*submit)	( struct job_descriptor *job_desc );
+	int		(*submit)	( struct job_descriptor *job_desc,
+					  uint32_t submit_uid );
 	int		(*modify)	( struct job_descriptor *job_desc,
-					  struct job_record *job_ptr);
+					  struct job_record *job_ptr,
+					  uint32_t submit_uid );
 } slurm_submit_ops_t;
 
 typedef struct slurm_submit_context {
@@ -290,14 +292,15 @@ extern int job_submit_plugin_reconfig(void)
  * If any plugin function returns anything other than SLURM_SUCCESS
  * then stop and forward it's return value.
  */
-extern int job_submit_plugin_submit(struct job_descriptor *job_desc)
+extern int job_submit_plugin_submit(struct job_descriptor *job_desc,
+				    uint32_t submit_uid)
 {
 	int i, rc;
 
 	rc = job_submit_plugin_init();
 	slurm_mutex_lock(&submit_context_lock);
 	for (i=0; ((i < submit_context_cnt) && (rc == SLURM_SUCCESS)); i++)
-		rc = (*(submit_context[i].ops.submit))(job_desc);
+		rc = (*(submit_context[i].ops.submit))(job_desc, submit_uid);
 	slurm_mutex_unlock(&submit_context_lock);
 	return rc;
 }
@@ -308,14 +311,16 @@ extern int job_submit_plugin_submit(struct job_descriptor *job_desc)
  * then stop and forward it's return value.
  */
 extern int job_submit_plugin_modify(struct job_descriptor *job_desc,
-				    struct job_record *job_ptr)
+				    struct job_record *job_ptr,
+				    uint32_t submit_uid)
 {
 	int i, rc;
 
 	rc = job_submit_plugin_init();
 	slurm_mutex_lock(&submit_context_lock);
 	for (i=0; ((i < submit_context_cnt) && (rc == SLURM_SUCCESS)); i++)
-		rc = (*(submit_context[i].ops.modify))(job_desc, job_ptr);
+		rc = (*(submit_context[i].ops.modify))(job_desc, job_ptr,
+						       submit_uid);
 	slurm_mutex_unlock(&submit_context_lock);
 	return rc;
 }

@@ -107,14 +107,21 @@ const uint32_t min_plug_version = 100;
 
 /* Test if this user can run jobs in the selected partition based upon
  * the partition's AllowGroups parameter. */
-static bool _user_access(uid_t run_uid, struct part_record *part_ptr)
+static bool _user_access(uid_t run_uid, uint32_t submit_uid,
+			 struct part_record *part_ptr)
 {
 	int i;
 
-	if ((run_uid == 0) || (run_uid == getuid()))
-		return true;	/* Superuser can run anywhere */
+	if (run_uid == 0) {
+		if (part_ptr->flags & PART_FLAG_NO_ROOT)
+			return false;
+		return true;
+	}
 
-	if (!part_ptr->allow_uids)
+	if ((part_ptr->flags & PART_FLAG_ROOT_ONLY) && (submit_uid != 0))
+		return false;
+
+	if (part_ptr->allow_uids == NULL)
 		return true;	/* AllowGroups=ALL */
 
 	for (i=0; part_ptr->allow_uids[i]; i++) {
@@ -127,7 +134,7 @@ static bool _user_access(uid_t run_uid, struct part_record *part_ptr)
 /* This exampe code will set a job's default partition to the highest
  * priority partition that is available to this user. This is only an
  * example and tremendous flexibility is available. */
-extern int job_submit(struct job_descriptor *job_desc)
+extern int job_submit(struct job_descriptor *job_desc, uint32_t submit_uid)
 {
 	ListIterator part_iterator;
 	struct part_record *part_ptr;
@@ -142,7 +149,7 @@ extern int job_submit(struct job_descriptor *job_desc)
 	while ((part_ptr = (struct part_record *) list_next(part_iterator))) {
 		if (!(part_ptr->state_up & PARTITION_SUBMIT))
 			continue;	/* nobody can submit jobs here */
-		if (!_user_access(job_desc->user_id, part_ptr))
+		if (!_user_access(job_desc->user_id, submit_uid, part_ptr))
 			continue;	/* AllowGroups prevents use */
 		if (!top_prio_part ||
 		    (top_prio_part->priority < part_ptr->priority)) {
@@ -162,7 +169,7 @@ extern int job_submit(struct job_descriptor *job_desc)
 }
 
 extern int job_modify(struct job_descriptor *job_desc,
-		      struct job_record *job_ptr)
+		      struct job_record *job_ptr, uint32_t submit_uid)
 {
 	return SLURM_SUCCESS;
 }
