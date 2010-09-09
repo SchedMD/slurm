@@ -213,8 +213,9 @@ static void _register_lua_slurm_output_functions (void)
 	lua_setglobal (L, "slurm");
 }
 
-/* Get fields in an existing job record
- * NOTE: This is an incomplete list of job record fields, add more as needed */
+/* Get fields in an existing slurmctld job record
+ * NOTE: This is an incomplete list of job record fields.
+ * Add more as needed and send patches to slurm-dev@llnl.gov */
 static int _get_job_rec_field (lua_State *L)
 {
 	const struct job_record *job_ptr = lua_touserdata(L, 1);
@@ -360,7 +361,7 @@ static int _get_job_req_field (lua_State *L)
 	return 1;
 }
 
-/* Set fields in the job request record on job submit or modify */
+/* Set fields in the job request structure on job submit or modify */
 static int _set_job_req_field (lua_State *L)
 {
 	struct job_descriptor *job_desc = lua_touserdata(L, 1);
@@ -485,7 +486,48 @@ static int _set_job_req_field (lua_State *L)
 	return 0;
 }
 
-static void _register_lua_slurm_job_functions (void)
+/* Get fields in an existing slurmctld partition record
+ * NOTE: This is an incomplete list of partition record fields.
+ * Add more as needed and send patches to slurm-dev@llnl.gov */
+static int _get_part_rec_field (lua_State *L)
+{
+	const struct part_record *part_ptr = lua_touserdata(L, 1);
+	const char *name = luaL_checkstring(L, 2);
+
+	if (part_ptr == NULL) {
+		error("_get_part_field: part_ptr is NULL");
+		lua_pushnil (L);
+	} else if (!strcmp(name, "max_nodes")) {
+		lua_pushnumber (L, part_ptr->max_nodes);
+	} else if (!strcmp(name, "max_nodes_orig")) {
+		lua_pushnumber (L, part_ptr->max_nodes_orig);
+	} else if (!strcmp(name, "max_time")) {
+		lua_pushnumber (L, part_ptr->max_time);
+	} else if (!strcmp(name, "min_nodes")) {
+		lua_pushnumber (L, part_ptr->min_nodes);
+	} else if (!strcmp(name, "min_nodes_orig")) {
+		lua_pushnumber (L, part_ptr->min_nodes_orig);
+	} else if (!strcmp(name, "name")) {
+		lua_pushstring (L, part_ptr->name);
+	} else if (!strcmp(name, "nodes")) {
+		lua_pushstring (L, part_ptr->nodes);
+	} else if (!strcmp(name, "priority")) {
+		lua_pushnumber (L, part_ptr->priority);
+	} else if (!strcmp(name, "state_up")) {
+		lua_pushnumber (L, part_ptr->state_up);
+	} else {
+		lua_pushnil (L);
+	}
+
+	return 1;
+}
+#if 0
+/* Filter before packing list of partitions */
+	char *allow_groups;	/* comma delimited list of groups */
+	uid_t *allow_uids;	/* zero terminated list of allowed users */
+#endif
+
+static void _register_lua_slurm_struct_functions (void)
 {
 	lua_pushcfunction(L, _get_job_rec_field);
 	lua_setglobal(L, "_get_job_rec_field");
@@ -493,6 +535,8 @@ static void _register_lua_slurm_job_functions (void)
 	lua_setglobal(L, "_get_job_req_field");
 	lua_pushcfunction(L, _set_job_req_field);
 	lua_setglobal(L, "_set_job_req_field");
+	lua_pushcfunction(L, _get_part_rec_field);
+	lua_setglobal(L, "_get_part_rec_field");
 }
 
 /*
@@ -567,10 +611,10 @@ int init (void)
 
 	/*
 	 *  Register SLURM functions in lua state:
-	 *  logging and job state read/write
+	 *  logging and slurm structure read/write functions
 	 */
 	_register_lua_slurm_output_functions();
-	_register_lua_slurm_job_functions();
+	_register_lua_slurm_struct_functions();
 
 	/*
 	 *  Run the user script:
@@ -616,7 +660,8 @@ extern int job_submit(struct job_descriptor *job_desc)
 		goto out;
 
 	lua_pushlightuserdata (L, job_desc);
-	if (lua_pcall (L, 1, 0, 0) != 0) {
+	lua_pushlightuserdata (L, default_part_loc);
+	if (lua_pcall (L, 2, 0, 0) != 0) {
 		error("%s/lua: %s: %s",
 		      __func__, lua_script_path, lua_tostring (L, -1));
 	} else
@@ -643,7 +688,8 @@ extern int job_modify(struct job_descriptor *job_desc,
 
 	lua_pushlightuserdata (L, job_desc);
 	lua_pushlightuserdata (L, job_ptr);
-	if (lua_pcall (L, 2, 0, 0) != 0) {
+	lua_pushlightuserdata (L, default_part_loc);
+	if (lua_pcall (L, 3, 0, 0) != 0) {
 		error("%s/lua: %s: %s",
 		      __func__, lua_script_path, lua_tostring (L, -1));
 	} else
