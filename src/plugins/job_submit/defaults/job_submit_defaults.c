@@ -110,7 +110,7 @@ const uint32_t min_plug_version = 100;
  * of less than 30 seconds in order to insure more precise accounting.
  * Also remove any QOS value set by the user in order to use the default value
  * from the database. */
-extern int job_submit(struct job_descriptor *job_desc)
+extern int job_submit(struct job_descriptor *job_desc, uint32_t submit_uid)
 {
 	if (job_desc->acctg_freq < MIN_ACCTG_FREQUENCY) {
 		info("Changing accounting frequency of submitted job "
@@ -132,7 +132,7 @@ extern int job_submit(struct job_descriptor *job_desc)
  * Also remove any QOS value set by the user in order to use the default value
  * from the database. */
 extern int job_modify(struct job_descriptor *job_desc,
-		      struct job_record *job_ptr)
+		      struct job_record *job_ptr, uint32_t submit_uid)
 {
 	if (job_desc->acctg_freq < MIN_ACCTG_FREQUENCY) {
 		info("Changing accounting frequency of modify job %u "

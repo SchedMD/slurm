@@ -71,7 +71,8 @@ extern int job_submit_plugin_reconfig(void);
  * If any plugin function returns anything other than SLURM_SUCCESS
  * then stop and forward it's return value.
  */
-extern int job_submit_plugin_submit(struct job_descriptor *job_desc);
+extern int job_submit_plugin_submit(struct job_descriptor *job_desc,
+				    uint32_t submit_uid);
 
 /*
  * Execute the job_modify() function in each job submit plugin.
@@ -80,6 +81,7 @@ extern int job_submit_plugin_submit(struct job_descriptor *job_desc);
  * then stop and forward it's return value.
  */
 extern int job_submit_plugin_modify(struct job_descriptor *job_desc,
-				    struct job_record *job_ptr);
+				    struct job_record *job_ptr,
+				    uint32_t submit_uid);
 
 #endif /* !_JOB_SUBMIT_H */

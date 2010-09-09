@@ -34,12 +34,19 @@ function slurm_job_submit ( job_desc_addr, part_list )
 			 job_desc.user_id, account)
 		job_desc.account = account
 	end
+--	If no default partition, the set the partition to the highest
+--	priority partition this user has access to
 	if job_desc.partition == nil then
 		local new_partition = nil
-		local top_priority = -1
+		local top_priority  = -1
 		local last_priority = -1
 		i = 1
 		while part_rec[i] do
+--			log_info("part name[%d]:%s", i, part_rec[i].name)
+			if part_rec[i].flag_default ~= 0 then
+				top_priority = -1
+				break
+			end
 			last_priority = part_rec[i].priority
 			if last_priority > top_priority then
 				top_priority = last_priority
