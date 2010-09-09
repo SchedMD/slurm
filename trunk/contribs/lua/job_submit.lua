@@ -3,7 +3,8 @@
  Example lua script demonstrating the SLURM job_submit/lua interface.
  This is only an example, not meant for use in its current form.
  Leave the function names, arguments, local varialbes and setmetatable
- logic in each function unchanged.
+ set up logic  in each function unchanged. Change only the logic after
+ the "*** YOUR LOGIC GOES BELOW ***".
 
 --]]
 
@@ -15,33 +16,61 @@ require "posix"
 --
 --########################################################################--
 
-
-function slurm_job_submit ( job_desc_addr, part_rec_addr )
+function slurm_job_submit ( job_desc_addr, part_list )
 	local job_desc = { job_desc_ptr=job_desc_addr }
-	local part_rec = { part_rec_ptr=part_rec_addr }
 	setmetatable (job_desc, job_req_meta)
-	setmetatable (part_rec, part_rec_meta)
+	local part_rec = {}
+	local i = 1
+	while part_list[i] do
+		part_rec[i] = { part_rec_ptr=part_list[i] }
+		setmetatable (part_rec[i], part_rec_meta)
+		i = i + 1
+	end
 
-log_info("part name:%s, nodes:%s", part_rec.name, part_rec.nodes)
+--      *** YOUR LOGIC GOES BELOW ***
 	if job_desc.account == nil then
 		local account = "***TEST_ACCOUNT***"
 		log_info("slurm_job_submit: job from uid %d, setting default account value: %s",
 			 job_desc.user_id, account)
 		job_desc.account = account
 	end
+	if job_desc.partition == nil then
+		local new_partition = nil
+		local top_priority = -1
+		local last_priority = -1
+		i = 1
+		while part_rec[i] do
+			last_priority = part_rec[i].priority
+			if last_priority > top_priority then
+				top_priority = last_priority
+				new_partition = part_rec[i].name
+			end
+			i = i + 1
+		end
+		if top_priority >= 0 then
+			log_info("slurm_job_submit: job from uid %d, setting default partition value: %s",
+				 job_desc.user_id, new_partition)
+			job_desc.partition = new_partition
+		end
+	end
 
 	return
 end
 
-function slurm_job_modify ( job_desc_addr, job_rec_addr, part_rec_addr )
+function slurm_job_modify ( job_desc_addr, job_rec_addr, part_list )
 	local job_desc = { job_desc_ptr=job_desc_addr }
-	local job_rec  = { job_rec_ptr=job_rec_addr }
-	local part_rec = { part_rec_ptr=part_rec_addr }
 	setmetatable (job_desc, job_req_meta)
+	local job_rec  = { job_rec_ptr=job_rec_addr }
 	setmetatable (job_rec,  job_rec_meta)
-	setmetatable (part_rec, part_rec_meta)
+	local part_rec = {}
+	local i = 1
+	while part_list[i] do
+		part_rec[i] = { part_rec_ptr=part_list[i] }
+		setmetatable (part_rec[i], part_rec_meta)
+		i = i + 1
+	end
 
-log_info("part name:%s, nodes:%s", part_rec.name, part_rec.nodes)
+--      *** YOUR LOGIC GOES BELOW ***
 	if job_desc.comment == nil then
 		local comment = "***TEST_COMMENT***"
 		log_info("slurm_job_modify: for job %u, setting default comment value: %s",
