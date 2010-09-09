@@ -578,6 +578,23 @@ static int _check_lua_script_functions()
 	return (rc);
 }
 
+static void _push_partition_list(void)
+{
+	int i = 1;
+	ListIterator part_iterator;
+	struct part_record *part_ptr;
+
+	lua_newtable(L);
+	part_iterator = list_iterator_create(part_list);
+	if (!part_iterator)
+		fatal("list_iterator_create malloc");
+	while ((part_ptr = (struct part_record *) list_next(part_iterator))) {
+		lua_pushlightuserdata (L, part_ptr);
+		lua_rawseti(L, -2, i++);
+	}
+	list_iterator_destroy(part_iterator);
+}
+
 /*
  *  NOTE: The init callback should never be called multiple times,
  *   let alone called from multiple threads. Therefore, locking
@@ -660,7 +677,7 @@ extern int job_submit(struct job_descriptor *job_desc)
 		goto out;
 
 	lua_pushlightuserdata (L, job_desc);
-	lua_pushlightuserdata (L, default_part_loc);
+	_push_partition_list();
 	if (lua_pcall (L, 2, 0, 0) != 0) {
 		error("%s/lua: %s: %s",
 		      __func__, lua_script_path, lua_tostring (L, -1));
@@ -688,7 +705,7 @@ extern int job_modify(struct job_descriptor *job_desc,
 
 	lua_pushlightuserdata (L, job_desc);
 	lua_pushlightuserdata (L, job_ptr);
-	lua_pushlightuserdata (L, default_part_loc);
+	_push_partition_list();
 	if (lua_pcall (L, 3, 0, 0) != 0) {
 		error("%s/lua: %s: %s",
 		      __func__, lua_script_path, lua_tostring (L, -1));
