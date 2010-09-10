@@ -98,6 +98,7 @@ extern char	e_host_bu[E_HOST_SIZE];
 extern uint16_t	e_port;
 extern struct	part_record *exclude_part_ptr[EXC_PART_CNT];
 extern struct	part_record *hide_part_ptr[HIDE_PART_CNT];
+extern struct	part_record *hide_part_nodes_ptr[HIDE_PART_CNT];
 extern uint32_t first_job_id;
 extern uint16_t	job_aggregation_time;
 extern uint16_t kill_wait;
