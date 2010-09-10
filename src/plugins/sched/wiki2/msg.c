@@ -421,9 +421,13 @@ extern int parse_wiki_config(void)
 extern char *	get_wiki_conf(void)
 {
 	int i, first;
-	char buf[20], *conf = NULL;
+	char buf[32], *conf = NULL;
 
 	snprintf(buf, sizeof(buf), "HostFormat=%u", use_host_exp);
+	xstrcat(conf, buf);
+
+	snprintf(buf, sizeof(buf), ";JobAggregationTime=%u",
+		 job_aggregation_time);
 	xstrcat(conf, buf);
 
 	first = 1;

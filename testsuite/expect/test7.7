@@ -47,6 +47,7 @@ print_header $test_id
 # Check if we have sched/wiki2 configured
 #
 log_user 0
+set agg_time     -1
 set conf_dir     ""
 set control_addr ""
 set sched_port   0
@@ -56,6 +57,10 @@ spawn $scontrol show config
 expect {
 	-re "ControlAddr *= ($alpha_numeric_under)" {
 		set control_addr $expect_out(1,string)
+		exp_continue
+	}
+	-re "SchedulerParameters.*JobAggregationTime=($number)" {
+		set agg_time $expect_out(1,string)
 		exp_continue
 	}
 	-re "SchedulerPort *= ($number)" {
@@ -91,13 +96,16 @@ if {$sched_port == 0} {
 	send_user "\nFAILURE: SchedulerPort = 0\n"
 	exit 1
 }
+if {$agg_time != 0} {
+	send_user "\nWARNING: JobAggregationTime != 0\n"
+	exit 1
+}
 
 #
 # Try to get the AuthKey from wiki.conf
 #
 set auth_key  0
 set e_port    0
-set agg_time  999
 set wiki_file "$conf_dir/wiki.conf"
 if {[file readable $wiki_file] == 0}  {
 	send_user "\nWARNING: Unable to read $wiki_file\n"
@@ -114,10 +122,6 @@ expect {
 		set e_port $expect_out(1,string)
 		exp_continue
 	}
-	-re "JobAggregationTime=($number)" {
-		set agg_time $expect_out(1,string)
-		exp_continue
-	}
 	-re
 	eof {
 		wait
@@ -132,10 +136,7 @@ if {$e_port == 0} {
 	send_user "\nWARNING: EPort not found in $wiki_file\n"
 	exit 1
 }
-if {$agg_time != 0} {
-	send_user "\nWARNING: JobAggregationTime != 0 in $wiki_file\n"
-	exit 1
-}
+
 #send_user "\nAuthKey=$auth_key\nEPort=$e_port\n"
 
 if { [test_bluegene] } {
