@@ -67,7 +67,7 @@
 #include "src/common/slurm_xlator.h"
 #include "src/slurmctld/slurmctld.h"
 
-#define _DEBUG 1
+#define _DEBUG 0
 #define MIN_ACCTG_FREQUENCY 30
 
 /*
