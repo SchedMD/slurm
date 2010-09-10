@@ -10,6 +10,17 @@
 
 require "posix"
 
+function _build_part_table ( part_list )
+	local part_rec = {}
+	local i = 1
+	while part_list[i] do
+		part_rec[i] = { part_rec_ptr=part_list[i] }
+		setmetatable (part_rec[i], part_rec_meta)
+		i = i + 1
+	end
+	return part_rec
+end
+
 --########################################################################--
 --
 --  SLURM job_submit/lua interface:
@@ -18,13 +29,7 @@ require "posix"
 
 function slurm_job_submit ( job_desc, part_list )
 	setmetatable (job_desc, job_req_meta)
-	local part_rec = {}
-	local i = 1
-	while part_list[i] do
-		part_rec[i] = { part_rec_ptr=part_list[i] }
-		setmetatable (part_rec[i], part_rec_meta)
-		i = i + 1
-	end
+	local part_rec = _build_part_table (part_list)
 
 --      *** YOUR LOGIC GOES BELOW ***
 	if job_desc.account == nil then
@@ -39,9 +44,9 @@ function slurm_job_submit ( job_desc, part_list )
 		local new_partition = nil
 		local top_priority  = -1
 		local last_priority = -1
-		i = 1
+		local i = 1
 		while part_rec[i] do
-			log_info("part name[%d]:%s", i, part_rec[i].name)
+--			log_info("part name[%d]:%s", i, part_rec[i].name)
 			if part_rec[i].flag_default ~= 0 then
 				top_priority = -1
 				break
@@ -66,13 +71,7 @@ end
 function slurm_job_modify ( job_desc, job_rec, part_list )
 	setmetatable (job_desc, job_req_meta)
 	setmetatable (job_rec,  job_rec_meta)
-	local part_rec = {}
-	local i = 1
-	while part_list[i] do
-		part_rec[i] = { part_rec_ptr=part_list[i] }
-		setmetatable (part_rec[i], part_rec_meta)
-		i = i + 1
-	end
+	local part_rec = _build_part_table (part_list)
 
 --      *** YOUR LOGIC GOES BELOW ***
 	if job_desc.comment == nil then
