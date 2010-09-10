@@ -3,8 +3,8 @@
  Example lua script demonstrating the SLURM job_submit/lua interface.
  This is only an example, not meant for use in its current form.
  Leave the function names, arguments, local varialbes and setmetatable
- set up logic  in each function unchanged. Change only the logic after
- the "*** YOUR LOGIC GOES BELOW ***".
+ set up logic in each function unchanged. Change only the logic after
+ the line containing "*** YOUR LOGIC GOES BELOW ***".
 
 --]]
 
@@ -16,8 +16,7 @@ require "posix"
 --
 --########################################################################--
 
-function slurm_job_submit ( job_desc_addr, part_list )
-	local job_desc = { job_desc_ptr=job_desc_addr }
+function slurm_job_submit ( job_desc, part_list )
 	setmetatable (job_desc, job_req_meta)
 	local part_rec = {}
 	local i = 1
@@ -42,7 +41,7 @@ function slurm_job_submit ( job_desc_addr, part_list )
 		local last_priority = -1
 		i = 1
 		while part_rec[i] do
---			log_info("part name[%d]:%s", i, part_rec[i].name)
+			log_info("part name[%d]:%s", i, part_rec[i].name)
 			if part_rec[i].flag_default ~= 0 then
 				top_priority = -1
 				break
@@ -64,10 +63,8 @@ function slurm_job_submit ( job_desc_addr, part_list )
 	return
 end
 
-function slurm_job_modify ( job_desc_addr, job_rec_addr, part_list )
-	local job_desc = { job_desc_ptr=job_desc_addr }
+function slurm_job_modify ( job_desc, job_rec, part_list )
 	setmetatable (job_desc, job_req_meta)
-	local job_rec  = { job_rec_ptr=job_rec_addr }
 	setmetatable (job_rec,  job_rec_meta)
 	local part_rec = {}
 	local i = 1
