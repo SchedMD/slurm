@@ -46,6 +46,7 @@ print_header $test_id
 # Check if we have sched/wiki configured
 #
 log_user 0
+set agg_time     -1
 set conf_dir     ""
 set control_addr ""
 set sched_port   0
@@ -55,6 +56,10 @@ spawn $scontrol show config
 expect {
 	-re "ControlAddr *= ($alpha_numeric_under)" {
 		set control_addr $expect_out(1,string)
+		exp_continue
+	}
+	-re "SchedulerParameters.*JobAggregationTime=($number)" {
+		set agg_time $expect_out(1,string)
 		exp_continue
 	}
 	-re "SchedulerPort *= ($number)" {
@@ -92,6 +97,10 @@ if {[string compare $control_addr ""] == 0} {
 }
 if {$sched_port == 0} {
 	send_user "\nFAILURE: SchedulerPort = 0\n"
+	exit 1
+}
+if {$agg_time != 0} {
+	send_user "\nWARNING: JobAggregationTime != 0\n"
 	exit 1
 }
 

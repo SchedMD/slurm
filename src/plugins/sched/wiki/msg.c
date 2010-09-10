@@ -60,6 +60,7 @@ char     e_host_bu[E_HOST_SIZE] = "";
 uint16_t e_port = 0;
 struct   part_record *exclude_part_ptr[EXC_PART_CNT];
 struct   part_record *hide_part_ptr[HIDE_PART_CNT];
+struct   part_record *hide_part_nodes_ptr[HIDE_PART_CNT];
 uint16_t job_aggregation_time = 10;	/* Default value is 10 seconds */
 uint16_t host_format;
 int      init_prio_mode = PRIO_HOLD;
@@ -247,12 +248,13 @@ extern int parse_wiki_config(void)
 		{"EPort", S_P_UINT16},
 		{"ExcludePartitions", S_P_STRING},
 		{"HidePartitionJobs", S_P_STRING},
+		{"HidePartitionNodes", S_P_STRING},
 		{"HostFormat", S_P_UINT16},
 		{"JobAggregationTime", S_P_UINT16},
 		{"JobPriority", S_P_STRING},
 		{NULL} };
 	s_p_hashtbl_t *tbl;
-	char *exclude_partitions, *hide_partitions;
+	char *exclude_partitions, *hide_partitions, *hide_part_nodes;
 	char *key = NULL, *priority_mode = NULL, *wiki_conf;
 	struct stat buf;
 	slurm_ctl_conf_t *conf;
@@ -263,6 +265,8 @@ extern int parse_wiki_config(void)
 		exclude_part_ptr[i] = NULL;
 	for (i=0; i<HIDE_PART_CNT; i++)
 		hide_part_ptr[i] = NULL;
+	for (i=0; i<HIDE_PART_CNT; i++)
+		hide_part_nodes_ptr[i] = NULL;
 	conf = slurm_conf_lock();
 	strncpy(e_host, conf->control_addr, sizeof(e_host));
 	if (conf->backup_addr) {
@@ -331,7 +335,7 @@ extern int parse_wiki_config(void)
 		while (tok) {
 			if (i >= HIDE_PART_CNT) {
 				error("HidePartitionJobs has too many entries "
-				      "skipping %s and later entries");
+				      "skipping %s and later entries", tok);
 				break;
 			}
 			hide_part_ptr[i] = find_part_record(tok);
@@ -339,6 +343,25 @@ extern int parse_wiki_config(void)
 				i++;
 			else
 				error("HidePartitionJobs %s not found", tok);
+			tok = strtok_r(NULL, ",", &tok_p);
+		}
+	}
+
+	if (s_p_get_string(&hide_part_nodes, "HidePartitionNodes", tbl)) {
+		char *tok = NULL, *tok_p = NULL;
+		tok = strtok_r(hide_part_nodes, ",", &tok_p);
+		i = 0;
+		while (tok) {
+			if (i >= HIDE_PART_CNT) {
+				error("HidePartitionNodes has too many entries "
+				      "skipping %s and later entries", tok);
+				break;
+			}
+			hide_part_nodes_ptr[i] = find_part_record(tok);
+			if (hide_part_nodes_ptr[i])
+				i++;
+			else
+				error("HidePartitionNodes %s not found", tok);
 			tok = strtok_r(NULL, ",", &tok_p);
 		}
 	}
@@ -371,7 +394,12 @@ extern int parse_wiki_config(void)
 	for (i=0; i<HIDE_PART_CNT; i++) {
 		if (!hide_part_ptr[i])
 			continue;
-		info("HidePartitionJobs  = %s", hide_ptr_ptr[i]->name);
+		info("HidePartitionJobs  = %s", hide_part_ptr[i]->name);
+	}
+	for (i=0; i<HIDE_PART_CNT; i++) {
+		if (!hide_part_nodes_ptr[i])
+			continue;
+		info("HidePartitionNodes = %s", hide_part_nodes_ptr[i]->name);
 	}
 #endif
 	return SLURM_SUCCESS;
@@ -380,9 +408,13 @@ extern int parse_wiki_config(void)
 extern char *	get_wiki_conf(void)
 {
 	int i, first;
-	char buf[20], *conf = NULL;
+	char buf[32], *conf = NULL;
 
 	snprintf(buf, sizeof(buf), "HostFormat=%u", use_host_exp);
+	xstrcat(conf, buf);
+
+	snprintf(buf, sizeof(buf), ";JobAggregationTime=%u",
+		 job_aggregation_time);
 	xstrcat(conf, buf);
 
 	first = 1;
@@ -407,6 +439,18 @@ extern char *	get_wiki_conf(void)
 		} else
 			xstrcat(conf, ",");
 		xstrcat(conf, hide_part_ptr[i]->name);
+	}
+
+	first = 1;
+	for (i=0; i<HIDE_PART_CNT; i++) {
+		if (!hide_part_nodes_ptr[i])
+			continue;
+		if (first) {
+			xstrcat(conf, ";HidePartitionNodes=");
+			first = 0;
+		} else
+			xstrcat(conf, ",");
+		xstrcat(conf, hide_part_nodes_ptr[i]->name);
 	}
 
 	return conf;

@@ -865,7 +865,7 @@ static int _refresh_assoc_wckey_list(void *db_conn, int enforce)
 		return SLURM_ERROR;
 	}
 
-	_post_user_list(current_wckeys);
+	_post_wckey_list(current_wckeys);
 
 	assoc_mgr_lock(&locks);
 	if(assoc_mgr_wckey_list)

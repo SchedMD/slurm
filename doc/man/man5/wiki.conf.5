@@ -84,6 +84,16 @@ If more than one partition is to have its jobs hidden, use a comma
 separator between their names.
 
 .TP
+\fBHidePartitionNodes\fR
+Identifies partitions whose nodes are not to be reported to Moab/Maui.
+Nodes which are configured only in hidden partitions will not be accounted
+for or otherwise visible to Moab/Maui.
+Any partitions included here will normally also be included in the
+\fBExcludePartitions\fR and \fBHidePartitionJobs\fR parameters.
+If more than one partition is to have its jobs hidden, use a comma
+separator between their names.
+
+.TP
 \fBHostFormat\fR
 Controls the format of host lists exchanged between SLURM and Moab.
 The default value is "0".
