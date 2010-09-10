@@ -10,6 +10,8 @@ documents those changes that are of interest to users and admins.
  -- Fixed typo in job_mgr.c dealing with qos instead of associations.
  -- Make sure associations and qos' are initiated when added.
  -- Fixed wrong initialization for wckeys in the association manager.
+ -- Added wiki.conf configuration parameter of HidePartitionNodes. See 
+    "man wiki.conf" for more information.
 
 * Changes in SLURM 2.1.13
 =========================

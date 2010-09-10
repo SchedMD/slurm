@@ -44,6 +44,7 @@
 static char *	_dump_all_nodes(int *node_cnt, time_t update_time);
 static char *	_dump_node(struct node_record *node_ptr, time_t update_time);
 static char *	_get_node_state(struct node_record *node_ptr);
+static bool	_hidden_node(struct node_record *node_ptr);
 
 /*
  * get_nodes - get information on specific node(s) changed since some time
@@ -103,6 +104,8 @@ extern int	get_nodes(char *cmd_ptr, int *err_code, char **err_msg)
 				      node_name);
 				continue;
 			}
+			if (_hidden_node(node_ptr))
+				continue;
 			tmp_buf = _dump_node(node_ptr, update_time);
 			if (node_rec_cnt > 0)
 				xstrcat(buf, "#");
@@ -138,6 +141,8 @@ static char *	_dump_all_nodes(int *node_cnt, time_t update_time)
 		if (node_ptr->name == NULL)
 			continue;
 		if (IS_NODE_FUTURE(node_ptr))
+			continue;
+		if (_hidden_node(node_ptr))
 			continue;
 		tmp_buf = _dump_node(node_ptr, update_time);
 		if (cnt > 0)
@@ -240,4 +245,33 @@ static char *	_get_node_state(struct node_record *node_ptr)
 		return "Idle";
 
 	return "Unknown";
+}
+
+/* Return true if the node exists in a hidden partition and not in any
+ * non-hidden partitions. */
+static bool	_hidden_node(struct node_record *node_ptr)
+{
+	int i, n;
+	int hidden = -1;	/* node is hidden for some partition */
+	int shown = -1;		/* node is *not* hidden for some partition */
+
+	for (n = 0; n < node_ptr->part_cnt; n++) {
+		bool hide_found = false;
+		for (i=0; i<HIDE_PART_CNT; i++) {
+			if (hide_part_nodes_ptr[i] == NULL)
+				break;
+			if (hide_part_nodes_ptr[i] == node_ptr->part_pptr[n]) {
+				hide_found = true;
+				break;
+			}
+		}
+		if (hide_found)
+			hidden = 1;
+		else
+			shown = 1;
+	}
+
+	if ((hidden == 1) && (shown != 1))
+		return true;
+	return false;
 }
