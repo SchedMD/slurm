@@ -12,6 +12,8 @@ documents those changes that are of interest to users and admins.
  -- Fixed wrong initialization for wckeys in the association manager.
  -- Added wiki.conf configuration parameter of HidePartitionNodes. See 
     "man wiki.conf" for more information.
+ -- Add "JobAggregationTime=#" field SchedulerParameter configuration parameter
+    output.
 
 * Changes in SLURM 2.1.13
 =========================
