@@ -67,6 +67,7 @@
 #include "src/common/slurm_xlator.h"
 #include "src/slurmctld/slurmctld.h"
 
+#define _DEBUG 1
 #define MIN_ACCTG_FREQUENCY 30
 
 /*
@@ -116,6 +117,36 @@ static pthread_mutex_t lua_lock = PTHREAD_MUTEX_INITIALIZER;
  * plugin. If you develop another plugin that may be of interest to others
  * please post it to slurm-dev@lists.llnl.gov  Thanks!
 \*****************************************************************************/
+
+/* Generic stack dump function for debugging purposes */
+static void _stack_dump (char *header, lua_State *L)
+{
+#if _DEBUG
+	int i;
+	int top = lua_gettop(L);
+
+	info("%s: dumping job_submit/lua stack, %d elements", header, top);
+	for (i = 1; i <= top; i++) {  /* repeat for each level */
+		int type = lua_type(L, i);
+		switch (type) {
+			case LUA_TSTRING:
+				info("string[%d]:%s", i, lua_tostring(L, i));
+				break;
+			case LUA_TBOOLEAN:
+				info("boolean[%d]:%s", i,
+				     lua_toboolean(L, i) ? "true" : "false");
+				break;
+			case LUA_TNUMBER:
+				info("number[%d]:%d", i,
+				     (int) lua_tonumber(L, i));
+				break;
+			default:
+				info("other[%d]:%s", i, lua_typename(L, type));
+				break;
+		}
+	}
+#endif
+}
 
 /*
  *  Lua interface to SLURM log facility:
@@ -628,6 +659,20 @@ static void _push_partition_list(uint32_t user_id, uint32_t submit_uid)
 	list_iterator_destroy(part_iterator);
 }
 
+static void _push_job_desc(struct job_descriptor *job_desc)
+{
+	lua_newtable(L);
+	lua_pushlightuserdata(L, job_desc);
+	lua_setfield(L, -2, "job_desc_ptr");
+}
+
+static void _push_job_rec(struct job_record *job_ptr)
+{
+	lua_newtable(L);
+	lua_pushlightuserdata (L, job_ptr);
+	lua_setfield(L, -2, "job_rec_ptr");
+}
+
 /*
  *  NOTE: The init callback should never be called multiple times,
  *   let alone called from multiple threads. Therefore, locking
@@ -709,13 +754,15 @@ extern int job_submit(struct job_descriptor *job_desc, uint32_t submit_uid)
 	if (lua_isnil(L, -1))
 		goto out;
 
-	lua_pushlightuserdata (L, job_desc);
+	_push_job_desc(job_desc);
 	_push_partition_list(job_desc->user_id, submit_uid);
+	_stack_dump("job_submit, before lua_pcall", L);
 	if (lua_pcall (L, 2, 0, 0) != 0) {
 		error("%s/lua: %s: %s",
 		      __func__, lua_script_path, lua_tostring (L, -1));
 	} else
 		rc = SLURM_SUCCESS;
+	_stack_dump("job_submit, after lua_pcall", L);
 
 out:	slurm_mutex_unlock (&lua_lock);
 	return rc;
@@ -736,14 +783,16 @@ extern int job_modify(struct job_descriptor *job_desc,
 	if (lua_isnil(L, -1))
 		goto out;
 
-	lua_pushlightuserdata (L, job_desc);
-	lua_pushlightuserdata (L, job_ptr);
+	_push_job_desc(job_desc);
+	_push_job_rec(job_ptr);
 	_push_partition_list(job_ptr->user_id, submit_uid);
+	_stack_dump("job_modify, before lua_pcall", L);
 	if (lua_pcall (L, 3, 0, 0) != 0) {
 		error("%s/lua: %s: %s",
 		      __func__, lua_script_path, lua_tostring (L, -1));
 	} else
 		rc = SLURM_SUCCESS;
+	_stack_dump("job_modify, after lua_pcall", L);
 
 out:	slurm_mutex_unlock (&lua_lock);
 	return rc;
