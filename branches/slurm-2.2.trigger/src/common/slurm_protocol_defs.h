@@ -1079,6 +1079,9 @@ extern char *bg_block_state_string(uint16_t state);
 extern bool valid_spank_job_env(char **spank_job_env,
 			        uint32_t spank_job_env_size, uid_t uid);
 
+char *trigger_res_type(uint16_t res_type);
+char *trigger_type(uint32_t trig_type);
+
 /* user needs to xfree after */
 extern char *reservation_flags_string(uint16_t flags);
 

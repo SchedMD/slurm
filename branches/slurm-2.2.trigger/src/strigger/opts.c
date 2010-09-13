@@ -2,7 +2,7 @@
  *  opts.c - strigger command line option processing functions
  *****************************************************************************
  *  Copyright (C) 2006-2007 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -135,7 +135,7 @@ extern void parse_command_line(int argc, char *argv[])
 
 	optind = 0;
 	while ((opt_char = getopt_long(argc, argv,
-				       "aAbBcCdDeFfgGhHi:Ij:M:no:p:QrtuvV",
+				       "aAbBcCdDeFfgGhHi:Ij:M:n::o:p:QrtuvV",
 				       long_options, &option_index)) != -1) {
 		switch (opt_char) {
 		case (int)'?':
@@ -347,29 +347,29 @@ static void _print_options( void )
 	verbose("time_limit   = %s", params.time_limit ? "true" : "false");
 	verbose("trigger_id   = %u", params.trigger_id);
 	verbose("user_id      = %u", params.user_id);
-	verbose("primary_slurmctld_failure  = %s", \
-		params.pri_ctld_fail ? "true" : "false");
-	verbose("primary_slurmctld_resumed_operation  = %s", \
-		params.pri_ctld_res_op ? "true" : "false");
-	verbose("primary_slurmctld_resumed_control  = %s", \
-		params.pri_ctld_res_ctrl ? "true" : "false");
-	verbose("primary_slurmctld_acct_buffer_full  = %s", \
-		params.pri_ctld_acct_buffer_full ? "true" : "false");
-	verbose("backup_slurmctld_failure  = %s", \
-		params.bu_ctld_fail ? "true" : "false");
-	verbose("backup_slurmctld_resumed_operation  = %s", \
-		params.bu_ctld_res_op ? "true" : "false");
-	verbose("backup_slurmctld_as_ctrl = %s", \
-		params.bu_ctld_as_ctrl ? "true" : "false");
-	verbose("primary_slurmdbd_failure  = %s", \
-		params.pri_dbd_fail ? "true" : "false");
-	verbose("primary_slurmdbd_resumed_operation  = %s", \
-		params.pri_dbd_res_op ? "true" : "false");
-	verbose("primary_database_failure  = %s", \
-		params.pri_db_fail ? "true" : "false");
-	verbose("primary_database_resumed_operation  = %s", \
-		params.pri_db_res_op ? "true" : "false");
 	verbose("verbose      = %d", params.verbose);
+	verbose("primary_slurmctld_failure            = %s",
+		params.pri_ctld_fail ? "true" : "false");
+	verbose("primary_slurmctld_resumed_operation  = %s",
+		params.pri_ctld_res_op ? "true" : "false");
+	verbose("primary_slurmctld_resumed_control    = %s",
+		params.pri_ctld_res_ctrl ? "true" : "false");
+	verbose("primary_slurmctld_acct_buffer_full   = %s",
+		params.pri_ctld_acct_buffer_full ? "true" : "false");
+	verbose("backup_slurmctld_failure             = %s",
+		params.bu_ctld_fail ? "true" : "false");
+	verbose("backup_slurmctld_resumed_operation   = %s",
+		params.bu_ctld_res_op ? "true" : "false");
+	verbose("backup_slurmctld_as_ctrl             = %s",
+		params.bu_ctld_as_ctrl ? "true" : "false");
+	verbose("primary_slurmdbd_failure             = %s",
+		params.pri_dbd_fail ? "true" : "false");
+	verbose("primary_slurmdbd_resumed_operation   = %s",
+		params.pri_dbd_res_op ? "true" : "false");
+	verbose("primary_database_failure             = %s",
+		params.pri_db_fail ? "true" : "false");
+	verbose("primary_database_resumed_operation   = %s",
+		params.pri_db_res_op ? "true" : "false");
 	verbose("-----------------------------");
 }
 
@@ -387,20 +387,15 @@ static void _validate_options( void )
 		exit(1);
 	}
 
-	if (params.mode_set
-	&&  ((params.node_down + params.node_drained + params.node_fail +
+	if (params.mode_set &&
+	    ((params.node_down + params.node_drained + params.node_fail +
 	      params.node_idle + params.node_up + params.reconfig +
 	      params.job_fini  + params.time_limit + params.block_err +
-     	      params.pri_ctld_fail  +
-	      params.pri_ctld_res_op  +
-	      params.pri_ctld_res_ctrl  +
-	      params.pri_ctld_acct_buffer_full  +
- 	      params.bu_ctld_fail +
-	      params.bu_ctld_res_op  +
-	      params.bu_ctld_as_ctrl  +
-	      params.pri_dbd_fail  +
-	      params.pri_dbd_res_op  +
-	      params.pri_db_fail  +
+     	      params.pri_ctld_fail  + params.pri_ctld_res_op  +
+	      params.pri_ctld_res_ctrl  + params.pri_ctld_acct_buffer_full  +
+ 	      params.bu_ctld_fail + params.bu_ctld_res_op  +
+	      params.bu_ctld_as_ctrl  + params.pri_dbd_fail  +
+	      params.pri_dbd_res_op  + params.pri_db_fail  +
 	      params.pri_db_res_op) == 0)) {
 		error("You must specify a trigger (--block_err, --down, --up, "
 			"--reconfig, --time, --fini,)\n"

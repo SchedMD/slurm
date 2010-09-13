@@ -161,7 +161,6 @@ int      cluster_cpus = 0;
 int   with_slurmdbd = 0;
 
 /* Local variables */
-static bool     bu_ctld_running = true;
 static int	daemonize = DEFAULT_DAEMONIZE;
 static int	debug_level = 0;
 static char	*debug_logfile = NULL;
