@@ -1926,8 +1926,9 @@ extern int fini ( void )
 	return SLURM_SUCCESS;
 }
 
-extern void *acct_storage_p_get_connection(bool make_agent, int conn_num,
-					   bool rollback, char *cluster_name)
+extern void *acct_storage_p_get_connection(const slurm_trigger_callbacks_t *cb,
+                                           int conn_num,bool rollback, 
+                                           char *cluster_name)
 {
 	mysql_conn_t *mysql_conn = xmalloc(sizeof(mysql_conn_t));
 

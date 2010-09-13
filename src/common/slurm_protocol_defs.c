@@ -1070,6 +1070,68 @@ int job_state_num(const char *state_name)
 	return -1;
 }
 
+char *trigger_res_type(uint16_t res_type)
+{
+	if      (res_type == TRIGGER_RES_TYPE_JOB)
+		return "job";
+	else if (res_type == TRIGGER_RES_TYPE_NODE)
+		return "node";
+	else if (res_type == TRIGGER_RES_TYPE_SLURMCTLD)
+		return "slurmctld";
+	else if (res_type == TRIGGER_RES_TYPE_SLURMDBD)
+		return "slurmdbd";
+	else if (res_type == TRIGGER_RES_TYPE_DATABASE)
+		return "database";
+	else
+		return "unknown";
+}
+
+char *trigger_type(uint32_t trig_type)
+{
+	if      (trig_type == TRIGGER_TYPE_UP)
+		return "up";
+	else if (trig_type == TRIGGER_TYPE_DOWN)
+		return "down";
+	else if (trig_type == TRIGGER_TYPE_DRAINED)
+		return "drained";
+	else if (trig_type == TRIGGER_TYPE_FAIL)
+		return "fail";
+	else if (trig_type == TRIGGER_TYPE_IDLE)
+		return "idle";
+	else if (trig_type == TRIGGER_TYPE_TIME)
+		return "time";
+	else if (trig_type == TRIGGER_TYPE_FINI)
+		return "fini";
+	else if (trig_type == TRIGGER_TYPE_RECONFIG)
+		return "reconfig";
+	else if (trig_type == TRIGGER_TYPE_PRI_CTLD_FAIL)
+		return "primary_slurmctld_failure";
+	else if (trig_type == TRIGGER_TYPE_PRI_CTLD_RES_OP)
+		return "primary_slurmctld_resumed_operation";
+	else if (trig_type == TRIGGER_TYPE_PRI_CTLD_RES_CTRL)
+		return "primary_slurmctld_resumed_control";
+	else if (trig_type == TRIGGER_TYPE_PRI_CTLD_ACCT_FULL)
+		return "primary_slurmctld_acct_buffer_full";
+	else if (trig_type == TRIGGER_TYPE_BU_CTLD_FAIL)
+		return "backup_ctld_failure";
+	else if (trig_type == TRIGGER_TYPE_BU_CTLD_RES_OP)
+		return "backup_ctld_resumed_operation";
+	else if (trig_type == TRIGGER_TYPE_BU_CTLD_AS_CTRL)
+		return "backup_ctld_assumed_control";
+	else if (trig_type == TRIGGER_TYPE_PRI_DBD_FAIL)
+		return "primary_slurmdbd_failure";
+	else if (trig_type == TRIGGER_TYPE_PRI_DBD_RES_OP)
+		return "primary_slurmdbd_resumed_operation";
+	else if (trig_type == TRIGGER_TYPE_PRI_DB_FAIL)
+		return "primary_database_failure";
+	else if (trig_type == TRIGGER_TYPE_PRI_DB_RES_OP)
+		return "primary_database_resumed_operation";
+	else if (trig_type == TRIGGER_TYPE_BLOCK_ERR)
+		return "block_err";
+	else
+		return "unknown";
+}
+
 extern char *reservation_flags_string(uint16_t flags)
 {
 	char *flag_str = xstrdup("");

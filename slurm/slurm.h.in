@@ -1235,6 +1235,14 @@ typedef struct {
 } slurm_allocation_callbacks_t;
 
 typedef struct {
+	void (*acct_full)();
+	void (*dbd_fail)();
+	void (*dbd_resumed)();
+	void (*db_fail)();
+	void (*db_resumed)();
+} slurm_trigger_callbacks_t;
+
+typedef struct {
 	char *ckpt_dir;		/* path to store checkpoint image files */
 	uint16_t ckpt_interval;	/* checkpoint interval in minutes */
 	char *gres;		/* generic resources required */
@@ -1849,23 +1857,38 @@ typedef struct job_sbcast_cred_msg {
 /* Opaque data type for slurm_step_ctx_* functions */
 typedef struct slurm_step_ctx_struct slurm_step_ctx_t;
 
-#define TRIGGER_RES_TYPE_JOB   1
-#define TRIGGER_RES_TYPE_NODE  2
-#define TRIGGER_TYPE_UP        0x0001
-#define TRIGGER_TYPE_DOWN      0x0002
-#define TRIGGER_TYPE_FAIL      0x0004
-#define TRIGGER_TYPE_TIME      0x0008
-#define TRIGGER_TYPE_FINI      0x0010
-#define TRIGGER_TYPE_RECONFIG  0x0020
-#define TRIGGER_TYPE_BLOCK_ERR 0x0040
-#define TRIGGER_TYPE_IDLE      0x0080
-#define TRIGGER_TYPE_DRAINED   0x0100
+#define TRIGGER_RES_TYPE_JOB            0x0001
+#define TRIGGER_RES_TYPE_NODE           0x0002
+#define TRIGGER_RES_TYPE_SLURMCTLD      0x0003
+#define TRIGGER_RES_TYPE_SLURMDBD       0x0004
+#define TRIGGER_RES_TYPE_DATABASE       0x0005
+#define TRIGGER_TYPE_UP                 0x00000001
+#define TRIGGER_TYPE_DOWN               0x00000002
+#define TRIGGER_TYPE_FAIL               0x00000004
+#define TRIGGER_TYPE_TIME               0x00000008
+#define TRIGGER_TYPE_FINI               0x00000010
+#define TRIGGER_TYPE_RECONFIG           0x00000020
+#define TRIGGER_TYPE_BLOCK_ERR          0x00000040
+#define TRIGGER_TYPE_IDLE               0x00000080
+#define TRIGGER_TYPE_DRAINED            0x00000100
+#define TRIGGER_TYPE_PRI_CTLD_FAIL      0x00000200
+#define TRIGGER_TYPE_PRI_CTLD_RES_OP    0x00000400
+#define TRIGGER_TYPE_PRI_CTLD_RES_CTRL  0x00000800
+#define TRIGGER_TYPE_PRI_CTLD_ACCT_FULL 0x00001000
+#define TRIGGER_TYPE_BU_CTLD_FAIL       0x00002000
+#define TRIGGER_TYPE_BU_CTLD_RES_OP     0x00004000
+#define TRIGGER_TYPE_BU_CTLD_AS_CTRL    0x00008000
+#define TRIGGER_TYPE_PRI_DBD_FAIL       0x00010000
+#define TRIGGER_TYPE_PRI_DBD_RES_OP     0x00020000
+#define TRIGGER_TYPE_PRI_DB_FAIL        0x00040000
+#define TRIGGER_TYPE_PRI_DB_RES_OP      0x00080000
+
 
 typedef struct trigger_info {
 	uint32_t trig_id;	/* trigger ID */
 	uint16_t res_type;	/* TRIGGER_RES_TYPE_* */
 	char *   res_id;	/* resource ID */
-	uint16_t trig_type;	/* TRIGGER_TYPE_* */
+	uint32_t trig_type;	/* TRIGGER_TYPE_* */
 	uint16_t offset;	/* seconds from trigger, 0x8000 origin */
 	uint32_t user_id;	/* user requesting trigger */
 	char *   program;	/* program to execute */
@@ -3162,7 +3185,14 @@ extern int slurm_clear_trigger PARAMS((trigger_info_t * trigger_clear));
 extern int slurm_get_triggers PARAMS((trigger_info_msg_t ** trigger_get));
 
 /*
- * slurm_free_trigger_msg - Free data structure returned by slurm_get_triggers()
+ * slurm_pull_trigger - Pull an event trigger
+ * RET 0 or a slurm error code
+ */
+extern int slurm_pull_trigger PARAMS((trigger_info_t * trigger_pull));
+
+/*
+ * slurm_free_trigger_msg - Free data structure returned by
+ * slurm_get_triggers()
  */
 extern void slurm_free_trigger_msg PARAMS((trigger_info_msg_t * trigger_free));
 END_C_DECLS

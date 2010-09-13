@@ -1,7 +1,7 @@
 /****************************************************************************\
  *  slurmdbd_defs.h - definitions used for Slurm DBD RPCs
  *****************************************************************************
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -389,8 +389,9 @@ extern pthread_cond_t assoc_cache_cond; /* assoc cache condition */
  * make_agent IN - make agent to process RPCs if set
  * rollback IN - keep journal and permit rollback if set
  * Returns SLURM_SUCCESS or an error code */
-extern int slurm_open_slurmdbd_conn(char *auth_info, bool make_agent,
-				    bool rollback);
+extern int slurm_open_slurmdbd_conn(char *auth_info,
+                                    const slurm_trigger_callbacks_t *callbacks,
+                                    bool rollback);
 
 /* Close the SlurmDBD socket connection */
 extern int slurm_close_slurmdbd_conn();

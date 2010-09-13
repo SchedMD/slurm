@@ -54,7 +54,7 @@
 extern void *slurmdb_connection_get()
 {
 	char *cluster_name = slurm_get_cluster_name();
-	void *db_conn = acct_storage_g_get_connection(false, 0,
+	void *db_conn = acct_storage_g_get_connection(NULL, 0,
 						      1, cluster_name);
 	xfree(cluster_name);
 	return db_conn;

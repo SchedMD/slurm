@@ -358,13 +358,15 @@ int dump_all_part_state(void)
 		(void) unlink(new_file);
 	else {			/* file shuffle */
 		(void) unlink(old_file);
-		if(link(reg_file, old_file))
+		if (link(reg_file, old_file)) {
 			debug4("unable to create link for %s -> %s: %m",
 			       reg_file, old_file);
+		}
 		(void) unlink(reg_file);
-		if(link(new_file, reg_file))
+		if (link(new_file, reg_file)) {
 			debug4("unable to create link for %s -> %s: %m",
 			       new_file, reg_file);
+		}
 		(void) unlink(new_file);
 	}
 	xfree(old_file);
@@ -476,7 +478,7 @@ int load_all_part_state(void)
 		data = xmalloc(data_allocated);
 		while (1) {
 			data_read = read(state_fd, &data[data_size],
-					BUF_SIZE);
+					 BUF_SIZE);
 			if (data_read < 0) {
 				if  (errno == EINTR)
 					continue;
@@ -501,7 +503,7 @@ int load_all_part_state(void)
 	safe_unpackstr_xmalloc( &ver_str, &name_len, buffer);
 	debug3("Version string in part_state header is %s", ver_str);
 	if(ver_str) {
-		if(!strcmp(ver_str, PART_STATE_VERSION)) {
+		if (!strcmp(ver_str, PART_STATE_VERSION)) {
 			protocol_version = SLURM_PROTOCOL_VERSION;
 		} else if(!strcmp(ver_str, PART_2_1_STATE_VERSION)) {
 			protocol_version = SLURM_2_1_PROTOCOL_VERSION;
@@ -520,7 +522,7 @@ int load_all_part_state(void)
 	safe_unpack_time(&time, buffer);
 
 	while (remaining_buf(buffer) > 0) {
-		if(protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
+		if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
 			safe_unpackstr_xmalloc(&part_name, &name_len, buffer);
 			safe_unpack32(&max_time, buffer);
 			safe_unpack32(&default_time, buffer);

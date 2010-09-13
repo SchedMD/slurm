@@ -194,7 +194,7 @@ main (int argc, char *argv[])
 	 * error you can not rollback ;)
 	 */
 	errno = 0;
-	db_conn = acct_storage_g_get_connection(false, 0, 1, NULL);
+	db_conn = acct_storage_g_get_connection(NULL, 0, 1, NULL);
 	if(errno != SLURM_SUCCESS) {
 		int tmp_errno = errno;
 		if((input_field_count == 2) &&

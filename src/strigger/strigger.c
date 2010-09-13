@@ -2,7 +2,7 @@
  *  strigger.c - Manage slurm event triggers
  *****************************************************************************
  *  Copyright (C) 2007 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -62,10 +62,8 @@
 
 static int   _clear_trigger(void);
 static int   _get_trigger(void);
-static char *_res_type(uint8_t  res_type);
 static int   _set_trigger(void);
 static int   _trig_offset(uint16_t offset);
-static char *_trig_type(uint16_t trig_type);
 static char *_trig_user(uint32_t user_id);
 
 int main(int argc, char *argv[])
@@ -159,6 +157,50 @@ static int _set_trigger(void)
 		ti.trig_type |= TRIGGER_TYPE_UP;
 	if (params.reconfig)
 		ti.trig_type |= TRIGGER_TYPE_RECONFIG;
+	if (params.pri_ctld_fail) {
+		ti.trig_type |= TRIGGER_TYPE_PRI_CTLD_FAIL;
+		ti.res_type = TRIGGER_RES_TYPE_SLURMCTLD;
+	}
+	if (params.pri_ctld_res_op) {
+		ti.trig_type |= TRIGGER_TYPE_PRI_CTLD_RES_OP;
+		ti.res_type = TRIGGER_RES_TYPE_SLURMCTLD;
+	}
+	if (params.pri_ctld_res_ctrl) {
+		ti.trig_type |=  TRIGGER_TYPE_PRI_CTLD_RES_CTRL;
+		ti.res_type = TRIGGER_RES_TYPE_SLURMCTLD;
+	}
+	if (params.pri_ctld_acct_buffer_full) {
+		ti.trig_type |= TRIGGER_TYPE_PRI_CTLD_ACCT_FULL;
+		ti.res_type = TRIGGER_RES_TYPE_SLURMCTLD;
+	}
+	if (params.bu_ctld_fail) {
+		ti.trig_type |= TRIGGER_TYPE_BU_CTLD_FAIL;
+		ti.res_type = TRIGGER_RES_TYPE_SLURMCTLD;
+	}
+	if (params.bu_ctld_res_op) {
+		ti.trig_type |= TRIGGER_TYPE_BU_CTLD_RES_OP;
+		ti.res_type = TRIGGER_RES_TYPE_SLURMCTLD;
+	}
+	if (params.bu_ctld_as_ctrl) {
+		ti.trig_type |= TRIGGER_TYPE_BU_CTLD_AS_CTRL;
+		ti.res_type = TRIGGER_RES_TYPE_SLURMCTLD;
+	}
+	if (params.pri_dbd_fail) {
+		ti.trig_type |= TRIGGER_TYPE_PRI_DBD_FAIL;
+		ti.res_type = TRIGGER_RES_TYPE_SLURMDBD;
+	}
+	if (params.pri_dbd_res_op) {
+		ti.trig_type |= TRIGGER_TYPE_PRI_DBD_RES_OP;
+		ti.res_type = TRIGGER_RES_TYPE_SLURMDBD;
+	}
+	if (params.pri_db_fail) {
+		ti.trig_type |= TRIGGER_TYPE_PRI_DB_FAIL;
+		ti.res_type = TRIGGER_RES_TYPE_DATABASE;
+	}
+	if (params.pri_db_res_op) {
+		ti.trig_type |= TRIGGER_TYPE_PRI_DB_RES_OP;
+		ti.res_type = TRIGGER_RES_TYPE_DATABASE;
+	}
 
 	ti.offset = params.offset + 0x8000;
 	ti.program = params.program;
@@ -209,22 +251,22 @@ static int _get_trigger(void)
 		}
 		if (params.node_down) {
 			if ((trig_msg->trigger_array[i].res_type
-					!= TRIGGER_RES_TYPE_NODE)
-			||  (trig_msg->trigger_array[i].trig_type
+					!= TRIGGER_RES_TYPE_NODE) ||
+			    (trig_msg->trigger_array[i].trig_type
 					!= TRIGGER_TYPE_DOWN))
 				continue;
 		}
 		if (params.node_drained) {
 			if ((trig_msg->trigger_array[i].res_type
-					!= TRIGGER_RES_TYPE_NODE)
-			||  (trig_msg->trigger_array[i].trig_type
+					!= TRIGGER_RES_TYPE_NODE) ||
+			    (trig_msg->trigger_array[i].trig_type
 					!= TRIGGER_TYPE_DRAINED))
 				continue;
 		}
 		if (params.node_fail) {
 			if ((trig_msg->trigger_array[i].res_type
-					!= TRIGGER_RES_TYPE_NODE)
-			||  (trig_msg->trigger_array[i].trig_type
+					!= TRIGGER_RES_TYPE_NODE) ||
+			    (trig_msg->trigger_array[i].trig_type
 					!= TRIGGER_TYPE_FAIL))
 				continue;
 		}
@@ -235,22 +277,22 @@ static int _get_trigger(void)
 		}
 		if (params.node_idle) {
 			if ((trig_msg->trigger_array[i].res_type
-					!= TRIGGER_RES_TYPE_NODE)
-			||  (trig_msg->trigger_array[i].trig_type
+					!= TRIGGER_RES_TYPE_NODE) ||
+			    (trig_msg->trigger_array[i].trig_type
 					!= TRIGGER_TYPE_IDLE))
 				continue;
 		}
 		if (params.node_up) {
 			if ((trig_msg->trigger_array[i].res_type
-					!= TRIGGER_RES_TYPE_NODE)
-			||  (trig_msg->trigger_array[i].trig_type
+					!= TRIGGER_RES_TYPE_NODE) ||
+			    (trig_msg->trigger_array[i].trig_type
 					!= TRIGGER_TYPE_UP))
 				continue;
 		}
 		if (params.time_limit) {
 			if ((trig_msg->trigger_array[i].res_type
-					!= TRIGGER_RES_TYPE_JOB)
-			||  (trig_msg->trigger_array[i].trig_type
+					!= TRIGGER_RES_TYPE_JOB) ||
+			    (trig_msg->trigger_array[i].trig_type
 					!= TRIGGER_TYPE_TIME))
 				continue;
 		}
@@ -264,18 +306,101 @@ static int _get_trigger(void)
 			    trig_msg->trigger_array[i].user_id)
 				continue;
 		}
+		if (params.pri_ctld_fail) {
+			if ((trig_msg->trigger_array[i].res_type !=
+			     TRIGGER_RES_TYPE_SLURMCTLD) ||
+			    (trig_msg->trigger_array[i].trig_type !=
+			     TRIGGER_TYPE_PRI_CTLD_FAIL))
+				continue;
+		}
+		if (params.pri_ctld_res_op) {
+			if ((trig_msg->trigger_array[i].res_type !=
+			     TRIGGER_RES_TYPE_SLURMCTLD) ||
+			    (trig_msg->trigger_array[i].trig_type !=
+			     TRIGGER_TYPE_PRI_CTLD_RES_OP))
+				continue;
+		}
+		if (params.pri_ctld_res_ctrl) {
+			if ((trig_msg->trigger_array[i].res_type !=
+			     TRIGGER_RES_TYPE_SLURMCTLD) ||
+			    (trig_msg->trigger_array[i].trig_type !=
+			     TRIGGER_TYPE_PRI_CTLD_RES_CTRL))
+				continue;
+		}
+		if (params.pri_ctld_acct_buffer_full) {
+			if ((trig_msg->trigger_array[i].res_type !=
+			     TRIGGER_RES_TYPE_SLURMCTLD) ||
+			    (trig_msg->trigger_array[i].trig_type !=
+			     TRIGGER_TYPE_PRI_CTLD_ACCT_FULL))
+				continue;
+		}
+		if (params.bu_ctld_fail) {
+			if ((trig_msg->trigger_array[i].res_type !=
+			     TRIGGER_RES_TYPE_SLURMCTLD) ||
+			    (trig_msg->trigger_array[i].trig_type !=
+			     TRIGGER_TYPE_BU_CTLD_FAIL))
+				continue;
+		}
+		if (params.bu_ctld_res_op) {
+			if ((trig_msg->trigger_array[i].res_type !=
+			     TRIGGER_RES_TYPE_SLURMCTLD) ||
+			    (trig_msg->trigger_array[i].trig_type !=
+			     TRIGGER_TYPE_BU_CTLD_RES_OP))
+				continue;
+		}
+		if (params.bu_ctld_as_ctrl) {
+			if ((trig_msg->trigger_array[i].res_type !=
+			     TRIGGER_RES_TYPE_SLURMCTLD) ||
+			    (trig_msg->trigger_array[i].trig_type !=
+			     TRIGGER_TYPE_BU_CTLD_AS_CTRL))
+				continue;
+		}
+		if (params.pri_dbd_fail) {
+			if ((trig_msg->trigger_array[i].res_type !=
+			     TRIGGER_RES_TYPE_SLURMDBD) ||
+			    (trig_msg->trigger_array[i].trig_type !=
+			     TRIGGER_TYPE_PRI_DBD_FAIL))
+				continue;
+		}
+		if (params.pri_dbd_res_op) {
+			if ((trig_msg->trigger_array[i].res_type !=
+			     TRIGGER_RES_TYPE_SLURMDBD) ||
+			    (trig_msg->trigger_array[i].trig_type !=
+			     TRIGGER_TYPE_PRI_DBD_RES_OP))
+				continue;
+		}
+		if (params.pri_db_fail) {
+			if ((trig_msg->trigger_array[i].res_type !=
+			     TRIGGER_RES_TYPE_DATABASE) ||
+			    (trig_msg->trigger_array[i].trig_type !=
+			     TRIGGER_TYPE_PRI_DB_FAIL))
+				continue;
+		}
+		if (params.pri_db_res_op) {
+			if ((trig_msg->trigger_array[i].res_type !=
+			     TRIGGER_RES_TYPE_DATABASE) ||
+			    (trig_msg->trigger_array[i].trig_type !=
+			     TRIGGER_TYPE_PRI_DB_RES_OP))
+				continue;
+		}
 
 		if (line_no == 0) {
-			/*      7777777 88888888 7777777 999999999 666666 88888888 xxxxxxx */
-			printf("TRIG_ID RES_TYPE  RES_ID TYPE      OFFSET USER     PROGRAM\n");
+			/*      7777777 999999999 7777777 */
+			printf("TRIG_ID RES_TYPE   RES_ID "
+
+			/*      35353535353535353535353535353535353 */
+			       "TYPE                                "
+
+			/*      666666 88888888 xxxxxxx */
+			       "OFFSET USER     PROGRAM\n");
 		}
 		line_no++;
 
-		printf("%7u %-8s %7s %-9s %6d %-8s %s\n",
+		printf("%7u %-9s %7s %-35s %6d %-8s %s\n",
 			trig_msg->trigger_array[i].trig_id,
-			_res_type(trig_msg->trigger_array[i].res_type),
+			trigger_res_type(trig_msg->trigger_array[i].res_type),
 			trig_msg->trigger_array[i].res_id,
-			_trig_type(trig_msg->trigger_array[i].trig_type),
+			trigger_type(trig_msg->trigger_array[i].trig_type),
 			_trig_offset(trig_msg->trigger_array[i].offset),
 			_trig_user(trig_msg->trigger_array[i].user_id),
 			trig_msg->trigger_array[i].program);
@@ -283,40 +408,6 @@ static int _get_trigger(void)
 
 	slurm_free_trigger_msg(trig_msg);
 	return 0;
-}
-
-static char *_res_type(uint8_t res_type)
-{
-	if      (res_type == TRIGGER_RES_TYPE_JOB)
-		return "job";
-	else if (res_type == TRIGGER_RES_TYPE_NODE)
-		return "node";
-	else
-		return "unknown";
-}
-
-static char *_trig_type(uint16_t trig_type)
-{
-	if      (trig_type == TRIGGER_TYPE_UP)
-		return "up";
-	else if (trig_type == TRIGGER_TYPE_DOWN)
-		return "down";
-	else if (trig_type == TRIGGER_TYPE_DRAINED)
-		return "drained";
-	else if (trig_type == TRIGGER_TYPE_FAIL)
-		return "fail";
-	else if (trig_type == TRIGGER_TYPE_IDLE)
-		return "idle";
-	else if (trig_type == TRIGGER_TYPE_TIME)
-		return "time";
-	else if (trig_type == TRIGGER_TYPE_FINI)
-		return "fini";
-	else if (trig_type == TRIGGER_TYPE_RECONFIG)
-		return "reconfig";
-	else if (trig_type == TRIGGER_TYPE_BLOCK_ERR)
-		return "block_err";
-	else
-		return "unknown";
 }
 
 static int _trig_offset(uint16_t offset)
