@@ -2,7 +2,7 @@
  *  slurm_accounting_storage.h - Define accounting storage plugin functions.
  *****************************************************************************
  *  Copyright (C) 2004-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -55,14 +55,16 @@ extern int slurm_acct_storage_fini(void); /* unload the plugin */
 
 /*
  * get a new connection to the storage unit
- * IN: make_agent - Make an agent to manage queued requests
+ * IN: callbacks - Make an agent to manage queued requests, contains
+ *                 trigger callbacks
  * IN: conn_num - If running more than one connection to the database
  *     this can be used to tell which connection is doing what
  * IN: rollback - maintain journal of changes to permit rollback
  * RET: pointer used to access db
- */
-extern void *acct_storage_g_get_connection(bool make_agent, int conn_num,
-					   bool rollback, char *cluster_name);
+*/
+extern void *acct_storage_g_get_connection(
+             const slurm_trigger_callbacks_t *callbacks,
+             int conn_num, bool rollback,char *cluster_name);
 
 /*
  * release connection to the storage unit

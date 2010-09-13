@@ -57,6 +57,17 @@ struct strigger_parameters {
 	bool     mode_set;
 	bool     mode_get;
 	bool     mode_clear;
+	bool	 pri_ctld_fail;
+	bool	 pri_ctld_res_op;
+	bool	 pri_ctld_res_ctrl;
+	bool	 pri_ctld_acct_buffer_full;
+	bool	 bu_ctld_fail;
+	bool	 bu_ctld_res_op;
+	bool	 bu_ctld_as_ctrl;
+	bool	 pri_dbd_fail;
+	bool	 pri_dbd_res_op;
+	bool	 pri_db_fail;
+	bool	 pri_db_res_op;
 	bool     node_down;
 	bool     node_drained;
 	char *   node_id;

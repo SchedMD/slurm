@@ -157,7 +157,13 @@ enum suspend_opts {
 	RESUME_JOB		/* Resume a job now */
 };
 
-/* SLURM Message types */
+/*
+ * SLURM Message types
+ *
+ * IMPORTANT: ADD NEW MESSAGE TYPES TO THE *END* OF ONE OF THESE NUMBERED
+ * SECTIONS. ADDING ONE ELSEWHERE WOULD SHIFT THE VALUES OF EXISTING MESSAGE
+ * TYPES IN CURRENT PROGRAMS AND PREVENT BACKWARD COMPATABILITY.
+ */
 typedef enum {
 	REQUEST_NODE_REGISTRATION_STATUS = 1001,
 	MESSAGE_NODE_REGISTRATION_STATUS,
@@ -202,6 +208,7 @@ typedef enum {
 	RESPONSE_PRIORITY_FACTORS,
 	REQUEST_TOPO_INFO,
 	RESPONSE_TOPO_INFO,
+	REQUEST_TRIGGER_PULL,
 
 	REQUEST_UPDATE_JOB = 3001,
 	REQUEST_UPDATE_NODE,
@@ -1071,6 +1078,9 @@ extern char *bg_block_state_string(uint16_t state);
  * names. Log failures using info() */
 extern bool valid_spank_job_env(char **spank_job_env,
 			        uint32_t spank_job_env_size, uid_t uid);
+
+char *trigger_res_type(uint16_t res_type);
+char *trigger_type(uint32_t trig_type);
 
 /* user needs to xfree after */
 extern char *reservation_flags_string(uint16_t flags);

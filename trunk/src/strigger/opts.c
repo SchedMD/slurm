@@ -2,7 +2,7 @@
  *  opts.c - strigger command line option processing functions
  *****************************************************************************
  *  Copyright (C) 2006-2007 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -93,38 +93,50 @@ extern void parse_command_line(int argc, char *argv[])
 	int option_index;
 	long tmp_l;
 	static struct option long_options[] = {
+		{"primary_slurmctld_failure",           no_argument, 0, 'a'},
+		{"primary_slurmctld_resumed_operation", no_argument, 0, 'A'},
+		{"primary_slurmctld_resumed_control",   no_argument, 0, 'b'},
+		{"backup_slurmctld_failure",            no_argument, 0, 'B'},
+		{"backup_slurmctld_resumed_operation",  no_argument, 0, 'c'},
+		{"backup_slurmctld_assumed_control",    no_argument, 0, 'C'},
+		{"down",                                no_argument, 0, 'd'},
+		{"drained",                             no_argument, 0, 'D'},
+		{"primary_slurmctld_acct_buffer_full",  no_argument, 0, 'e'},
+		{"fini",                                no_argument, 0, 'f'},
+		{"fail",                                no_argument, 0, 'F'},
+		{"primary_slurmdbd_failure",            no_argument, 0, 'g'},
+		{"primary_slurmdbd_resumed_operation",  no_argument, 0, 'G'},
+		{"primary_database_failure",            no_argument, 0, 'h'},
+		{"primary_database_resumed_operation",  no_argument, 0, 'H'},
+		{"id",                            required_argument, 0, 'i'},
+		{"idle",                                no_argument, 0, 'I'},
+		{"jobid",                         required_argument, 0, 'j'},
+		{"cluster",                       required_argument, 0, 'M'},
+		{"node",                          optional_argument, 0, 'n'},
+		{"offset",                        required_argument, 0, 'o'},
+		{"program",                       required_argument, 0, 'p'},
+		{"quiet",                               no_argument, 0, 'Q'},
+		{"reconfig",                            no_argument, 0, 'r'},
+		{"time",                                no_argument, 0, 't'},
+		{"up",                                  no_argument, 0, 'u'},
+		{"verbose",                             no_argument, 0, 'v'},
+		{"version",                             no_argument, 0, 'V'},
 		{"block_err", no_argument,       0, OPT_LONG_BLOCK_ERR},
-		{"cluster",   required_argument, 0, 'M'},
-		{"down",      no_argument,       0, 'd'},
-		{"drained",   no_argument,       0, 'D'},
-		{"fail",      no_argument,       0, 'F'},
-		{"fini",      no_argument,       0, 'f'},
-		{"id",        required_argument, 0, 'i'},
-		{"idle",      no_argument,       0, 'I'},
-		{"jobid",     required_argument, 0, 'j'},
-		{"node",      optional_argument, 0, 'n'},
-		{"offset",    required_argument, 0, 'o'},
-		{"program",   required_argument, 0, 'p'},
-		{"quiet",     no_argument,       0, 'Q'},
-		{"reconfig",  no_argument,       0, 'r'},
-		{"time",      no_argument,       0, 't'},
-		{"up",        no_argument,       0, 'u'},
-		{"verbose",   no_argument,       0, 'v'},
-		{"version",   no_argument,       0, 'V'},
+		{"clear",     no_argument,       0, OPT_LONG_CLEAR},
+		{"get",       no_argument,       0, OPT_LONG_GET},
 		{"help",      no_argument,       0, OPT_LONG_HELP},
+		{"set",       no_argument,       0, OPT_LONG_SET},
 		{"usage",     no_argument,       0, OPT_LONG_USAGE},
 		{"user",      required_argument, 0, OPT_LONG_USER},
-		{"set",       no_argument,       0, OPT_LONG_SET},
-		{"get",       no_argument,       0, OPT_LONG_GET},
-		{"clear",     no_argument,       0, OPT_LONG_CLEAR},
 		{NULL,        0,                 0, 0}
 	};
 
 	_init_options();
 
 	optind = 0;
-	while((opt_char = getopt_long(argc, argv, "dDFfi:Ij:M:no:p:QrtuvV",
-			long_options, &option_index)) != -1) {
+	while ((opt_char = getopt_long(argc, argv,
+				       "aAbBcCdDeFfgGhHi:Ij:M:n::o:p:QrtuvV",
+				       long_options, &option_index)) != -1) {
 		switch (opt_char) {
 		case (int)'?':
 			if (first) {
@@ -134,17 +146,50 @@ extern void parse_command_line(int argc, char *argv[])
 			}
 			exit(1);
 			break;
+		case (int)'a':
+			params.pri_ctld_fail = true;
+			break;
+		case (int)'A':
+			params.pri_ctld_res_op = true;
+			break;
+		case (int)'b':
+			params.pri_ctld_res_ctrl = true;
+			break;
+		case (int)'B':
+			params.bu_ctld_fail = true;
+			break;
+		case (int)'c':
+			params.bu_ctld_res_op = true;
+			break;
+		case (int)'C':
+			params.bu_ctld_as_ctrl = true;
+			break;
 		case (int)'d':
 			params.node_down = true;
 			break;
 		case (int)'D':
 			params.node_drained = true;
 			break;
-		case (int)'F':
-			params.node_fail = true;
+		case (int)'e':
+			params.pri_ctld_acct_buffer_full = true;
 			break;
 		case (int)'f':
 			params.job_fini = true;
+			break;
+		case (int)'F':
+			params.node_fail = true;
+			break;
+		case (int)'g':
+			params.pri_dbd_fail = true;
+			break;
+		case (int)'G':
+			params.pri_dbd_res_op = true;
+			break;
+		case (int)'h':
+			params.pri_db_fail = true;
+			break;
+		case (int)'H':
+			params.pri_db_res_op = true;
 			break;
 		case (int)'i':
 			params.trigger_id = atoi(optarg);
@@ -161,10 +206,10 @@ extern void parse_command_line(int argc, char *argv[])
 			params.job_id = tmp_l;
 			break;
 		case (int) 'M':
-			if(params.clusters)
+			if (params.clusters)
 				list_destroy(params.clusters);
-			if(!(params.clusters =
-			     slurmdb_get_info_cluster(optarg))) {
+			if (!(params.clusters =
+			      slurmdb_get_info_cluster(optarg))) {
 				error("'%s' invalid entry for --cluster",
 				      optarg);
 				exit(1);
@@ -187,6 +232,7 @@ extern void parse_command_line(int argc, char *argv[])
 			break;
 		case (int)'Q':
 			params.quiet = true;
+			break;
 		case (int)'r':
 			params.reconfig = true;
 			break;
@@ -195,6 +241,30 @@ extern void parse_command_line(int argc, char *argv[])
 			break;
 		case (int)'u':
 			params.node_up = true;
+			break;
+		case (int) 'v':
+			params.verbose++;
+			break;
+		case (int) 'V':
+			print_slurm_version();
+			exit(0);
+		case (int) OPT_LONG_BLOCK_ERR:
+			params.block_err = true;
+			break;
+		case (int) OPT_LONG_HELP:
+			_help();
+			exit(0);
+		case (int) OPT_LONG_USAGE:
+			_usage();
+			exit(0);
+		case (int) OPT_LONG_CLEAR:
+			params.mode_clear = true;
+			break;
+		case (int) OPT_LONG_GET:
+			params.mode_get = true;
+			break;
+		case (int) OPT_LONG_SET:
+			params.mode_set = true;
 			break;
 		case (int) OPT_LONG_USER:
 			if ((optarg[0] >= '0') && (optarg[0] <= '9'))
@@ -208,30 +278,6 @@ extern void parse_command_line(int argc, char *argv[])
 				}
 				params.user_id = pw->pw_uid;
 			}
-			break;
-		case (int) 'v':
-			params.verbose++;
-			break;
-		case (int) 'V':
-			print_slurm_version();
-			exit(0);
-		case (int) OPT_LONG_HELP:
-			_help();
-			exit(0);
-		case (int) OPT_LONG_USAGE:
-			_usage();
-			exit(0);
-		case (int) OPT_LONG_SET:
-			params.mode_set = true;
-			break;
-		case (int) OPT_LONG_GET:
-			params.mode_get = true;
-			break;
-		case (int) OPT_LONG_CLEAR:
-			params.mode_clear = true;
-			break;
-		case (int) OPT_LONG_BLOCK_ERR:
-			params.block_err = true;
 			break;
 		}
 	}
@@ -249,12 +295,23 @@ static void _init_options( void )
 	params.mode_clear   = false;
 
 	params.block_err    = false;
+	params.pri_ctld_fail = false;
+	params.pri_ctld_res_op = false;
+	params.pri_ctld_res_ctrl = false;
+	params.pri_ctld_acct_buffer_full = false;
+	params.bu_ctld_fail = false;
+	params.bu_ctld_res_op = false;
+	params.bu_ctld_as_ctrl = false;
 	params.node_down    = false;
 	params.node_drained = false;
 	params.node_fail    = false;
 	params.node_idle    = false;
 	params.trigger_id   = 0;
 	params.job_fini     = false;
+	params.pri_dbd_fail = false;
+	params.pri_dbd_res_op = false;
+	params.pri_db_fail = false;
+	params.pri_db_res_op = false;
 	params.job_id       = 0;
 	params.node_id      = NULL;
 	params.offset       = 0;
@@ -291,6 +348,28 @@ static void _print_options( void )
 	verbose("trigger_id   = %u", params.trigger_id);
 	verbose("user_id      = %u", params.user_id);
 	verbose("verbose      = %d", params.verbose);
+	verbose("primary_slurmctld_failure            = %s",
+		params.pri_ctld_fail ? "true" : "false");
+	verbose("primary_slurmctld_resumed_operation  = %s",
+		params.pri_ctld_res_op ? "true" : "false");
+	verbose("primary_slurmctld_resumed_control    = %s",
+		params.pri_ctld_res_ctrl ? "true" : "false");
+	verbose("primary_slurmctld_acct_buffer_full   = %s",
+		params.pri_ctld_acct_buffer_full ? "true" : "false");
+	verbose("backup_slurmctld_failure             = %s",
+		params.bu_ctld_fail ? "true" : "false");
+	verbose("backup_slurmctld_resumed_operation   = %s",
+		params.bu_ctld_res_op ? "true" : "false");
+	verbose("backup_slurmctld_as_ctrl             = %s",
+		params.bu_ctld_as_ctrl ? "true" : "false");
+	verbose("primary_slurmdbd_failure             = %s",
+		params.pri_dbd_fail ? "true" : "false");
+	verbose("primary_slurmdbd_resumed_operation   = %s",
+		params.pri_dbd_res_op ? "true" : "false");
+	verbose("primary_database_failure             = %s",
+		params.pri_db_fail ? "true" : "false");
+	verbose("primary_database_resumed_operation   = %s",
+		params.pri_db_res_op ? "true" : "false");
 	verbose("-----------------------------");
 }
 
@@ -308,12 +387,29 @@ static void _validate_options( void )
 		exit(1);
 	}
 
-	if (params.mode_set
-	&&  ((params.node_down + params.node_drained + params.node_fail +
+	if (params.mode_set &&
+	    ((params.node_down + params.node_drained + params.node_fail +
 	      params.node_idle + params.node_up + params.reconfig +
-	      params.job_fini  + params.time_limit + params.block_err) == 0)) {
+	      params.job_fini  + params.time_limit + params.block_err +
+     	      params.pri_ctld_fail  + params.pri_ctld_res_op  +
+	      params.pri_ctld_res_ctrl  + params.pri_ctld_acct_buffer_full  +
+ 	      params.bu_ctld_fail + params.bu_ctld_res_op  +
+	      params.bu_ctld_as_ctrl  + params.pri_dbd_fail  +
+	      params.pri_dbd_res_op  + params.pri_db_fail  +
+	      params.pri_db_res_op) == 0)) {
 		error("You must specify a trigger (--block_err, --down, --up, "
-			"--reconfig, --time or --fini)");
+			"--reconfig, --time, --fini,)\n"
+			"--primary_slurmctld_failure,\n"
+			"--primary_slurmctld_resumed_operation,\n"
+			"--primary_slurmctld_resumed_control,\n"
+	  		"--primary_slurmctld_acct_buffer_full,\n"
+			"--backup_slurmctld_failure,\n"
+			"--backup_slurmctld_resumed_operation,\n"
+			"--backup_slurmctld_as_ctrl,\n"
+			"--primary_slurmdbd_failure,\n"
+			"--primary_slurmdbd_resumed_operation,\n"
+			"--primary_database_failure, or \n"
+			"--primary_database_resumed_operation)\n");
 		exit(1);
 	}
 
@@ -353,7 +449,8 @@ static void _validate_options( void )
 
 static void _usage( void )
 {
-	printf("Usage: strigger [--set | --get | --clear | --version] [-dDfiIjnoptuv]\n");
+	printf("Usage: strigger [--set | --get | --clear | --version] "
+	       "[-aAbBcCdDefFgGhHiIjnopQrtuv]\n");
 }
 
 static void _help( void )
@@ -364,10 +461,36 @@ Usage: strigger [--set | --get | --clear] [OPTIONS]\n\
       --get           get trigger information\n\
       --clear         delete a trigger\n\n\
       --block_err     trigger event on BlueGene block error\n\
+  -a, --primary_slurmctld_failure\n\
+                      trigger event when primary slurmctld fails\n\
+  -A, --primary_slurmctld_resumed_operation\n\
+                      trigger event on primary slurmctld resumed operation\n\
+                      after failure\n\
+  -b, --primary_slurmctld_resumed_control\n\
+                      trigger event on primary slurmctld resumed control\n\
+  -B, --backup_slurmctld_failure\n\
+                      trigger event when backup slurmctld fails\n\
+  -c, --backup_slurmctld_resumed_operation\n\
+                      trigger event when backup slurmctld resumed operation\n\
+                      after failure\n\
+  -C, --backup_slurmctld_assumed_control\n\
+                      trigger event when backup slurmctld assumed control\n\
   -d, --down          trigger event when node goes DOWN\n\
   -D, --drained       trigger event when node becomes DRAINED\n\
+  -e, --primary_slurmctld_acct_buffer_full\n\
+                      trigger event when primary slurmctld acct buffer full\n\
   -F, --fail          trigger event when node is expected to FAIL\n\
   -f, --fini          trigger event when job finishes\n\
+  -g, --primary_slurmdbd_failure\n\
+                      trigger when primary slurmdbd fails\n\
+  -G, --primary_slurmdbd_resumed_operation\n\
+                      trigger when primary slurmdbd resumed operation after\n\
+                      failure\n\
+  -h, --primary_database_failure\n\
+                      trigger when primary database fails\n\
+  -H, --primary_database_resumed_operation\n\
+                      trigger when primary database resumed operation after\n\
+                      failure\n\
   -i, --id=#          a trigger's ID number\n\
   -I, --idle          trigger event when node remains IDLE\n\
   -j, --jobid=#       trigger related to specific jobid\n\

@@ -1024,7 +1024,7 @@ extern List slurmdb_get_info_cluster(char *cluster_names)
 		all_clusters = 1;
 
 	cluster_name = slurm_get_cluster_name();
-	db_conn = acct_storage_g_get_connection(false, 0, 1, cluster_name);
+	db_conn = acct_storage_g_get_connection(NULL, 0, 1, cluster_name);
 	xfree(cluster_name);
 
 	slurmdb_init_cluster_cond(&cluster_cond);
