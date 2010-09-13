@@ -147,3 +147,30 @@ extern int slurm_get_triggers (trigger_info_msg_t ** trigger_get)
 
 	return SLURM_PROTOCOL_SUCCESS ;
 }
+
+/*
+ * slurm_pull_trigger - Pull (fire) an event trigger
+ * RET 0 or a slurm error code
+ */
+extern int slurm_pull_trigger (trigger_info_t *trigger_pull)
+{
+	int rc;
+	slurm_msg_t msg;
+	trigger_info_msg_t req;
+	slurm_msg_t_init(&msg);
+	/*
+	 * Request message:
+	 */
+	memset(&req, 0, sizeof(trigger_info_msg_t));
+	req.record_count  = 1;
+	req.trigger_array = trigger_pull;
+	msg.msg_type      = REQUEST_TRIGGER_PULL;
+	msg.data	  = &req;
+
+	if (slurm_send_recv_controller_rc_msg(&msg, &rc) < 0)
+		return SLURM_FAILURE;
+	if (rc)
+		slurm_seterrno_ret(rc);
+
+	return SLURM_SUCCESS;
+}

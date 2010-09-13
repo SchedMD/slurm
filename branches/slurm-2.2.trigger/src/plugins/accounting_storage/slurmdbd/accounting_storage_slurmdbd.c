@@ -380,14 +380,15 @@ extern int fini ( void )
 	return SLURM_SUCCESS;
 }
 
-extern void *acct_storage_p_get_connection(bool make_agent, int conn_num,
-					   bool rollback, char *cluster_name)
+extern void *acct_storage_p_get_connection(
+             const slurm_trigger_callbacks_t *callbacks,
+             int conn_num,bool rollback, char *cluster_name)
 {
 	if(!slurmdbd_auth_info)
 		init();
 
 	if(slurm_open_slurmdbd_conn(slurmdbd_auth_info,
-				    make_agent, rollback) == SLURM_SUCCESS)
+				    callbacks, rollback) == SLURM_SUCCESS)
 		errno = SLURM_SUCCESS;
 	/* send something back to make sure we don't run this again */
 	return (void *)1;

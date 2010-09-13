@@ -66,8 +66,9 @@
  */
 
 typedef struct slurm_acct_storage_ops {
-	void *(*get_conn)          (bool make_agent, int conn_num,
-				    bool rollback, char *cluster_name);
+	void *(*get_conn)          (const slurm_trigger_callbacks_t *callbacks,
+				    int conn_num, bool rollback,
+				    char *cluster_name);
 	int  (*close_conn)         (void **db_conn);
 	int  (*commit)             (void *db_conn, bool commit);
 	int  (*add_users)          (void *db_conn, uint32_t uid,
@@ -422,13 +423,19 @@ extern int slurm_acct_storage_fini(void)
 	return rc;
 }
 
-extern void *acct_storage_g_get_connection(bool make_agent, int conn_num,
-					   bool rollback, char *cluster_name)
+extern void *acct_storage_g_get_connection(
+             const slurm_trigger_callbacks_t *callbacks,
+             int conn_num, bool rollback,char *cluster_name)
 {
-	if (slurm_acct_storage_init(NULL) < 0)
+	if (slurm_acct_storage_init(NULL) < 0) 
 		return NULL;
-	return (*(g_acct_storage_context->ops.get_conn))(
-		make_agent, conn_num, rollback, cluster_name);
+	if (callbacks != NULL) {
+		return (*(g_acct_storage_context->ops.get_conn))(
+	         	callbacks, conn_num, rollback, cluster_name);
+	} else {
+		return (*(g_acct_storage_context->ops.get_conn))(
+		NULL, conn_num, rollback, cluster_name);
+	}
 }
 
 extern int acct_storage_g_close_connection(void **db_conn)

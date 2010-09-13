@@ -45,8 +45,9 @@
 extern slurm_dbd_conf_t *slurmdbd_conf;
 
 /* API functions */
-extern void *acct_storage_p_get_connection(bool make_agent, int conn_num,
-					   bool rollback, char *cluster_name);
+extern void *acct_storage_p_get_connection(const slurm_trigger_callbacks_t *cb,
+                                           int conn_num, bool rollback,
+                                           char *cluster_name);
 extern int acct_storage_p_close_connection(pgsql_conn_t **pg_conn);
 extern int acct_storage_p_commit(pgsql_conn_t *pg_conn, bool commit);
 

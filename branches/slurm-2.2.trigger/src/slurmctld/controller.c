@@ -161,6 +161,7 @@ int      cluster_cpus = 0;
 int   with_slurmdbd = 0;
 
 /* Local variables */
+static bool     bu_ctld_running = true;
 static int	daemonize = DEFAULT_DAEMONIZE;
 static int	debug_level = 0;
 static char	*debug_logfile = NULL;
@@ -193,6 +194,7 @@ static void         _init_config(void);
 static void         _init_pidfile(void);
 static void         _kill_old_slurmctld(void);
 static void         _parse_commandline(int argc, char *argv[]);
+inline static int   _ping_backup_controller(void);
 static void         _remove_assoc(slurmdb_association_rec_t *rec);
 static void         _remove_qos(slurmdb_qos_rec_t *rec);
 inline static int   _report_locks_set(void);
@@ -207,6 +209,7 @@ static void         _update_nice(void);
 inline static void  _usage(char *prog_name);
 static bool         _valid_controller(void);
 static bool         _wait_for_server_thread(void);
+slurm_trigger_callbacks_t callbacks;
 
 typedef struct connection_arg {
 	int newsockfd;
@@ -344,10 +347,13 @@ int main(int argc, char *argv[])
 		      "set for AccountingStorageType='%s'",
 		      slurmctld_conf.accounting_storage_type);
 	}
-
+	callbacks.acct_full = trigger_primary_ctld_acct_full;
+	callbacks.dbd_fail = trigger_primary_dbd_fail;
+	callbacks.dbd_resumed = trigger_primary_dbd_res_op;
+	callbacks.db_fail = trigger_primary_db_fail;
+	callbacks.db_resumed = trigger_primary_db_res_op;
 	acct_db_conn = acct_storage_g_get_connection(
-		true, 0, false, slurmctld_cluster_name);
-
+		&callbacks, 0, false, slurmctld_cluster_name);
 	memset(&assoc_init_arg, 0, sizeof(assoc_init_args_t));
 	assoc_init_arg.enforce = accounting_enforce;
 	assoc_init_arg.remove_assoc_notify = _remove_assoc;
@@ -446,6 +452,9 @@ int main(int argc, char *argv[])
 			run_backup();
 		} else if (_valid_controller()) {
 			(void) _shutdown_backup_controller(SHUTDOWN_WAIT);
+			trigger_primary_ctld_res_ctrl();
+			debug3("main in controller.c called "
+			       "trigger_pri_ctld_res_ctrl");
 			/* Now recover the remaining state information */
 			lock_slurmctld(config_write_lock);
 			if (switch_restore(slurmctld_conf.state_save_location,
@@ -474,7 +483,7 @@ int main(int argc, char *argv[])
 		if (!acct_db_conn) {
 			acct_db_conn =
 				acct_storage_g_get_connection(
-					true, 0, false, slurmctld_cluster_name);
+					&callbacks, 0, false, slurmctld_cluster_name);
 			/* We only send in a variable the first time
 			   we call this since we are setting up static
 			   variables inside the function sending a
@@ -483,6 +492,7 @@ int main(int argc, char *argv[])
 			if (assoc_mgr_init(acct_db_conn, NULL) &&
 			    (accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS)
 			    && !running_cache) {
+				trigger_primary_dbd_fail();
 				error("assoc_mgr_init failure");
 				fatal("slurmdbd and/or database must be up at "
 				      "slurmctld start time");
@@ -490,6 +500,12 @@ int main(int argc, char *argv[])
 		}
 
 		info("Running as primary controller");
+		if ((slurmctld_config.resume_backup == false) &&
+		    (primary == 1)) {
+			trigger_primary_ctld_res_op();
+			debug3("main in controller.c called "
+			       "trigger_pri_ctld_res_op");
+		}
 
 		clusteracct_storage_g_register_ctld(
 			acct_db_conn,
@@ -545,7 +561,7 @@ int main(int argc, char *argv[])
 
 		/*
 		 * create attached thread for node power management
-		 */
+  		 */
 		start_power_mgr(&slurmctld_config.thread_id_power);
 
 		/*
@@ -1217,10 +1233,11 @@ static void *_slurmctld_background(void *no_data)
 	static time_t last_assert_primary_time;
 	static time_t last_trigger;
 	static time_t last_node_acct;
+	static time_t last_ctld_bu_ping;
 	static bool ping_msg_sent = false;
 	time_t now;
 	int no_resp_msg_interval, ping_interval, purge_job_interval;
-	int group_time, group_force;
+	int group_time, group_force, rc;
 	DEF_TIMERS;
 
 	/* Locks: Read config */
@@ -1251,7 +1268,7 @@ static void *_slurmctld_background(void *no_data)
 	last_sched_time = last_checkpoint_time = last_group_time = now;
 	last_purge_job_time = last_trigger = last_health_check_time = now;
 	last_timelimit_time = last_assert_primary_time = now;
-	last_no_resp_msg_time = last_resv_time = now;
+	last_no_resp_msg_time = last_resv_time = last_ctld_bu_ping = now;
 
 	if ((slurmctld_conf.min_job_age > 0) &&
 	    (slurmctld_conf.min_job_age < PURGE_JOB_INTERVAL)) {
@@ -1414,6 +1431,18 @@ static void *_slurmctld_background(void *no_data)
 			if (schedule(INFINITE))
 				last_checkpoint_time = 0; /* force state save */
 			set_job_elig_time();
+		}
+
+		if (slurmctld_conf.slurmctld_timeout &&
+		    (difftime(now, last_ctld_bu_ping) >
+		     slurmctld_conf.slurmctld_timeout)) {
+			rc = _ping_backup_controller();
+			if (rc != SLURM_PROTOCOL_SUCCESS) {
+				debug3("controller.c calling "
+				       "trigger_backup_slurmctld_failure");
+				trigger_backup_ctld_fail();
+			}
+			last_ctld_bu_ping = now;
 		}
 
 		if (difftime(now, last_trigger) > TRIGGER_INTERVAL) {
@@ -2041,4 +2070,39 @@ static void _test_thread_limit(void)
 }
 #endif
 	return;
+}
+
+/* Ping primary ControlMachine
+ * RET 0 if no error */
+static int _ping_backup_controller(void)
+{
+	int rc;
+	slurm_msg_t req;
+	/* Locks: Read configuration */
+	slurmctld_lock_t config_read_lock = {
+		READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
+
+	/*
+	 *  Set address of controller to ping
+	 */
+	slurm_msg_t_init(&req);
+	lock_slurmctld(config_read_lock);
+	debug3("pinging backup slurmctld at %s", slurmctld_conf.backup_addr);
+	slurm_set_addr(&req.address, slurmctld_conf.slurmctld_port,
+		       slurmctld_conf.backup_addr);
+	unlock_slurmctld(config_read_lock);
+
+	req.msg_type = REQUEST_PING;
+
+	if (slurm_send_recv_rc_msg_only_one(&req, &rc, 0) < 0) {
+		debug2("_ping_backup_controller/slurm_send_node_msg error: %m");
+		return SLURM_ERROR;
+	}
+
+	if (rc) {
+		debug2("_ping_backup_controller/response error %d", rc);
+		return SLURM_PROTOCOL_ERROR;
+	}
+
+	return SLURM_PROTOCOL_SUCCESS;
 }
