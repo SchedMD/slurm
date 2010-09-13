@@ -208,7 +208,6 @@ static void         _update_nice(void);
 inline static void  _usage(char *prog_name);
 static bool         _valid_controller(void);
 static bool         _wait_for_server_thread(void);
-slurm_trigger_callbacks_t callbacks;
 
 typedef struct connection_arg {
 	int newsockfd;
@@ -225,6 +224,7 @@ int main(int argc, char *argv[])
 		WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, WRITE_LOCK };
 	assoc_init_args_t assoc_init_arg;
 	pthread_t assoc_cache_thread;
+	slurm_trigger_callbacks_t callbacks;
 
 	/*
 	 * Establish initial configuration
@@ -346,13 +346,15 @@ int main(int argc, char *argv[])
 		      "set for AccountingStorageType='%s'",
 		      slurmctld_conf.accounting_storage_type);
 	}
-	callbacks.acct_full = trigger_primary_ctld_acct_full;
-	callbacks.dbd_fail = trigger_primary_dbd_fail;
+
+	callbacks.acct_full   = trigger_primary_ctld_acct_full;
+	callbacks.dbd_fail    = trigger_primary_dbd_fail;
 	callbacks.dbd_resumed = trigger_primary_dbd_res_op;
-	callbacks.db_fail = trigger_primary_db_fail;
-	callbacks.db_resumed = trigger_primary_db_res_op;
-	acct_db_conn = acct_storage_g_get_connection(
-		&callbacks, 0, false, slurmctld_cluster_name);
+	callbacks.db_fail     = trigger_primary_db_fail;
+	callbacks.db_resumed  = trigger_primary_db_res_op;
+	acct_db_conn = acct_storage_g_get_connection(&callbacks, 0, false,
+						     slurmctld_cluster_name);
+
 	memset(&assoc_init_arg, 0, sizeof(assoc_init_args_t));
 	assoc_init_arg.enforce = accounting_enforce;
 	assoc_init_arg.remove_assoc_notify = _remove_assoc;
@@ -452,8 +454,6 @@ int main(int argc, char *argv[])
 		} else if (_valid_controller()) {
 			(void) _shutdown_backup_controller(SHUTDOWN_WAIT);
 			trigger_primary_ctld_res_ctrl();
-			debug3("main in controller.c called "
-			       "trigger_pri_ctld_res_ctrl");
 			/* Now recover the remaining state information */
 			lock_slurmctld(config_write_lock);
 			if (switch_restore(slurmctld_conf.state_save_location,
@@ -480,17 +480,16 @@ int main(int argc, char *argv[])
 		}
 
 		if (!acct_db_conn) {
-			acct_db_conn =
-				acct_storage_g_get_connection(
-					&callbacks, 0, false, slurmctld_cluster_name);
+			acct_db_conn = acct_storage_g_get_connection(
+						&callbacks, 0, false,
+						slurmctld_cluster_name);
 			/* We only send in a variable the first time
-			   we call this since we are setting up static
-			   variables inside the function sending a
-			   NULL will just use those set before.
-			*/
+			 * we call this since we are setting up static
+			 * variables inside the function sending a
+			 * NULL will just use those set before. */
 			if (assoc_mgr_init(acct_db_conn, NULL) &&
-			    (accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS)
-			    && !running_cache) {
+			    (accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS) &&
+			    !running_cache) {
 				trigger_primary_dbd_fail();
 				error("assoc_mgr_init failure");
 				fatal("slurmdbd and/or database must be up at "
@@ -502,8 +501,6 @@ int main(int argc, char *argv[])
 		if ((slurmctld_config.resume_backup == false) &&
 		    (primary == 1)) {
 			trigger_primary_ctld_res_op();
-			debug3("main in controller.c called "
-			       "trigger_pri_ctld_res_op");
 		}
 
 		clusteracct_storage_g_register_ctld(
@@ -1236,7 +1233,7 @@ static void *_slurmctld_background(void *no_data)
 	static bool ping_msg_sent = false;
 	time_t now;
 	int no_resp_msg_interval, ping_interval, purge_job_interval;
-	int group_time, group_force, rc;
+	int group_time, group_force;
 	DEF_TIMERS;
 
 	/* Locks: Read config */
@@ -1435,12 +1432,8 @@ static void *_slurmctld_background(void *no_data)
 		if (slurmctld_conf.slurmctld_timeout &&
 		    (difftime(now, last_ctld_bu_ping) >
 		     slurmctld_conf.slurmctld_timeout)) {
-			rc = _ping_backup_controller();
-			if (rc != SLURM_PROTOCOL_SUCCESS) {
-				debug3("controller.c calling "
-				       "trigger_backup_slurmctld_failure");
+			if (_ping_backup_controller() != SLURM_SUCCESS)
 				trigger_backup_ctld_fail();
-			}
 			last_ctld_bu_ping = now;
 		}
 
@@ -2071,11 +2064,11 @@ static void _test_thread_limit(void)
 	return;
 }
 
-/* Ping primary ControlMachine
- * RET 0 if no error */
+/* Ping BackupController
+ * RET SLURM_SUCCESS or error code */
 static int _ping_backup_controller(void)
 {
-	int rc;
+	int rc = SLURM_SUCCESS;
 	slurm_msg_t req;
 	/* Locks: Read configuration */
 	slurmctld_lock_t config_read_lock = {
@@ -2098,10 +2091,8 @@ static int _ping_backup_controller(void)
 		return SLURM_ERROR;
 	}
 
-	if (rc) {
+	if (rc)
 		debug2("_ping_backup_controller/response error %d", rc);
-		return SLURM_PROTOCOL_ERROR;
-	}
 
-	return SLURM_PROTOCOL_SUCCESS;
+	return rc;
 }

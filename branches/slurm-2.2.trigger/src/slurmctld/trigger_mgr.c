@@ -93,15 +93,11 @@ static bool trigger_pri_dbd_res_op = false;
 static bool trigger_pri_db_fail = false;
 static bool trigger_pri_db_res_op = false;
 
-/*typedef struct trig_pull_states { */
+/* Current trigger pull states (saved and restored) */
 uint8_t ctld_failure = 0;
 uint8_t bu_ctld_failure = 0;
 uint8_t db_failure = 0;
 uint8_t dbd_failure = 0;
-/*} trig_pull_states_t;
- * trig_pull_states_t *pull_state = NULL;
- */
-
 
 typedef struct trig_mgr_info {
 	uint32_t trig_id;	/* trigger ID */

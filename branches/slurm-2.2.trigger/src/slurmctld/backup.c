@@ -107,7 +107,6 @@ static int backup_sigarray[] = {
 void run_backup(void)
 {
 	uint32_t trigger_type;
-
 	time_t last_ping = 0;
 	pthread_attr_t thread_attr_sig, thread_attr_rpc;
 	slurmctld_lock_t config_read_lock = {
@@ -203,8 +202,8 @@ void run_backup(void)
 		"BackupController %s taking over",
 		slurmctld_conf.control_machine,
 		slurmctld_conf.backup_controller);
-
 	unlock_slurmctld(config_read_lock);
+
 	trigger_primary_ctld_fail();
 	trigger_backup_ctld_as_ctrl();
 
