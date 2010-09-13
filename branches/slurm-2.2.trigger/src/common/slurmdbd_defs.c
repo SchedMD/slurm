@@ -1,7 +1,7 @@
 /****************************************************************************\
  *  slurmdbd_defs.c - functions for use with Slurm DBD RPCs
  *****************************************************************************
- *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -134,7 +134,6 @@ static void   _trigger_slurmctld_event(uint32_t trig_type);
 static void   _trigger_slurmdbd_event(uint32_t trig_type);
 static void   _trigger_database_event(uint32_t trig_type);
 
-
 /****************************************************************************
  * Socket open/close/read/write functions
  ****************************************************************************/
@@ -144,14 +143,13 @@ static void   _trigger_database_event(uint32_t trig_type);
  * callbacks IN - make agent to process RPCs and contains callback pointers
  * rollback IN - keep journal and permit rollback if set
  * Returns SLURM_SUCCESS or an error code */
-extern int slurm_open_slurmdbd_conn(
-            char *auth_info, const slurm_trigger_callbacks_t *callbacks,
-	    bool rollback)
+extern int slurm_open_slurmdbd_conn(char *auth_info,
+                                    const slurm_trigger_callbacks_t *callbacks,
+                                    bool rollback)
 {
 	int tmp_errno = SLURM_SUCCESS;
 	/* we need to set this up before we make the agent or we will
-	   get a threading issue.
-	*/
+	 * get a threading issue. */
 	slurm_mutex_lock(&slurmdbd_lock);
 	xfree(slurmdbd_auth_info);
 	if (auth_info)
@@ -175,7 +173,6 @@ extern int slurm_open_slurmdbd_conn(
 		memcpy(&(callback), callbacks,
 		       sizeof(slurm_trigger_callbacks_t));
 		callbacks_requested = true;
-
 	} else {
 		callbacks_requested = false;
 	}
@@ -353,7 +350,6 @@ extern int slurm_send_slurmdbd_msg(uint16_t rpc_version, slurmdbd_msg_t *req)
 	Buf buffer;
 	int cnt, rc = SLURM_SUCCESS;
 	static time_t syslog_time = 0;
-	uint32_t trigger_type;
 
 	buffer = pack_slurmdbd_msg(req, rpc_version);
 
@@ -373,11 +369,10 @@ extern int slurm_send_slurmdbd_msg(uint16_t rpc_version, slurmdbd_msg_t *req)
 		syslog_time = time(NULL);
 		error("slurmdbd: agent queue filling, RESTART SLURMDBD NOW");
 		syslog(LOG_CRIT, "*** RESTART SLURMDBD NOW ***");
-		if (callbacks_requested){
+		if (callbacks_requested) {
 			(callback.dbd_fail)();
 		} else {
-			trigger_type = TRIGGER_TYPE_PRI_DBD_FAIL;
-			_trigger_slurmdbd_event(trigger_type);
+			_trigger_slurmdbd_event(TRIGGER_TYPE_PRI_DBD_FAIL);
 		}
 	}
 	if (cnt == (MAX_AGENT_QUEUE - 1))
@@ -388,11 +383,11 @@ extern int slurm_send_slurmdbd_msg(uint16_t rpc_version, slurmdbd_msg_t *req)
 	} else {
 	
 		error("slurmdbd: agent queue is full, discarding request");
-		if (callbacks_requested){
+		if (callbacks_requested) {
 			(callback.acct_full)();
 		} else {
-			trigger_type = TRIGGER_TYPE_PRI_CTLD_ACCT_FULL;
-			_trigger_slurmctld_event(trigger_type);
+			_trigger_slurmctld_event(
+				TRIGGER_TYPE_PRI_CTLD_ACCT_FULL);
 		}
 		rc = SLURM_ERROR;
 	}
@@ -409,7 +404,6 @@ static void _open_slurmdbd_fd(bool need_db)
 	uint16_t slurmdbd_port;
 	char *   slurmdbd_host;
 	bool try_backup = true;
-	uint32_t trigger_type;
 
 	if (slurmdbd_fd >= 0) {
 		debug("Attempt to re-open slurmdbd socket");
@@ -440,7 +434,7 @@ again:
 		if (slurmdbd_fd < 0) {
 			debug("slurmdbd: slurm_open_msg_conn to %s:%u: %m",
 			      slurmdbd_host, slurmdbd_port);
-			if(try_backup) {
+			if (try_backup) {
 				try_backup = false;
 				xfree(slurmdbd_host);
 				if((slurmdbd_host =
@@ -452,20 +446,18 @@ again:
 			fd_set_nonblocking(slurmdbd_fd);
 			rc = _send_init_msg();
 			if (rc == SLURM_SUCCESS) {
-				if ( callbacks_requested){
+				if (callbacks_requested) {
 					(callback.dbd_resumed)();
 					(callback.db_resumed)();
 				} else {
-                            	  	trigger_type = 
-                                          TRIGGER_TYPE_PRI_DBD_RES_OP;
-					_trigger_slurmdbd_event(trigger_type);
-					trigger_type = 
-					  TRIGGER_TYPE_PRI_DB_RES_OP;
-					_trigger_database_event(trigger_type);
+					_trigger_slurmdbd_event(
+						TRIGGER_TYPE_PRI_DBD_RES_OP);
+					_trigger_database_event(
+						TRIGGER_TYPE_PRI_DB_RES_OP);
 				}
 			}
-			if ((!need_db && (rc == ESLURM_DB_CONNECTION))
-			    || (rc == SLURM_SUCCESS)) {
+			if ((!need_db && (rc == ESLURM_DB_CONNECTION)) ||
+			    (rc == SLURM_SUCCESS)) {
 				debug("slurmdbd: Sent DbdInit msg");
 				/* clear errno (checked after this for
 				   errors)
@@ -473,12 +465,11 @@ again:
 				errno = 0;
 			} else {
 				if (rc == ESLURM_DB_CONNECTION) {
-					if (callbacks_requested){
+					if (callbacks_requested) {
 						(callback.db_fail)();
 					} else {
-						trigger_type = 
-						 TRIGGER_TYPE_PRI_DB_FAIL;
-					        _trigger_database_event(trigger_type);
+					        _trigger_database_event(
+							TRIGGER_TYPE_PRI_DB_FAIL);
 					}
 				}
 
@@ -1857,7 +1848,6 @@ static int _fd_writeable(slurm_fd_t fd)
 	int rc, time_left;
 	struct timeval tstart;
 	char temp[2];
-	uint32_t trigger_type;
 
 	ufds.fd     = fd;
 	ufds.events = POLLOUT;
@@ -1882,11 +1872,11 @@ static int _fd_writeable(slurm_fd_t fd)
 		 */
 		if (ufds.revents & POLLHUP || (recv(fd, &temp, 1, 0) == 0)) {
 			debug2("SlurmDBD connection is closed");
-			if (callbacks_requested){
+			if (callbacks_requested) {
 				(callback.dbd_fail)();
 			} else {
-				trigger_type = TRIGGER_TYPE_PRI_DBD_FAIL;
-				_trigger_slurmdbd_event(trigger_type);
+				_trigger_slurmdbd_event(
+					TRIGGER_TYPE_PRI_DBD_FAIL);
 			}
 			return -1;
 		}

@@ -4,7 +4,7 @@
  *  $Id: slurm_accounting_storage.c 10744 2007-01-11 20:09:18Z da $
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -429,13 +429,9 @@ extern void *acct_storage_g_get_connection(
 {
 	if (slurm_acct_storage_init(NULL) < 0) 
 		return NULL;
-	if (callbacks != NULL) {
-		return (*(g_acct_storage_context->ops.get_conn))(
-	         	callbacks, conn_num, rollback, cluster_name);
-	} else {
-		return (*(g_acct_storage_context->ops.get_conn))(
-		NULL, conn_num, rollback, cluster_name);
-	}
+	return (*(g_acct_storage_context->ops.get_conn))(callbacks, conn_num,
+							 rollback,
+							 cluster_name);
 }
 
 extern int acct_storage_g_close_connection(void **db_conn)
