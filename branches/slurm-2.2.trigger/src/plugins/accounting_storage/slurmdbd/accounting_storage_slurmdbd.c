@@ -2,7 +2,7 @@
  *  accounting_storage_slurmdbd.c - accounting interface to slurmdbd.
  *****************************************************************************
  *  Copyright (C) 2004-2007 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *
@@ -384,11 +384,11 @@ extern void *acct_storage_p_get_connection(
              const slurm_trigger_callbacks_t *callbacks,
              int conn_num,bool rollback, char *cluster_name)
 {
-	if(!slurmdbd_auth_info)
+	if (!slurmdbd_auth_info)
 		init();
 
-	if(slurm_open_slurmdbd_conn(slurmdbd_auth_info,
-				    callbacks, rollback) == SLURM_SUCCESS)
+	if (slurm_open_slurmdbd_conn(slurmdbd_auth_info,
+				     callbacks, rollback) == SLURM_SUCCESS)
 		errno = SLURM_SUCCESS;
 	/* send something back to make sure we don't run this again */
 	return (void *)1;
