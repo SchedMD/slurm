@@ -360,10 +360,11 @@ int main(int argc, char *argv[])
 	assoc_init_arg.remove_assoc_notify = _remove_assoc;
 	assoc_init_arg.remove_qos_notify = _remove_qos;
 	assoc_init_arg.cache_level = ASSOC_MGR_CACHE_ASSOC |
-		ASSOC_MGR_CACHE_USER | ASSOC_MGR_CACHE_QOS;
+				     ASSOC_MGR_CACHE_USER  |
+				     ASSOC_MGR_CACHE_QOS;
 
 	if (assoc_mgr_init(acct_db_conn, &assoc_init_arg)) {
-		if(accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS)
+		if (accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS)
 			error("Association database appears down, "
 			      "reading from state file.");
 		else
