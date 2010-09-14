@@ -52,11 +52,12 @@ my (
 # -l extension options.
 #
 my (
-	$dmem,		$ddisk,		$depend,
-	$feature,	$gres,		$flags,
-	$maxmem, 	$jobname, 	$host,
-	$procs,		$qos,		$resfail,
-	$signal,	$tpn,		$ttc
+	$advres, 	$dmem,		$ddisk,
+	$depend, 	$feature,	$gres,
+	$flags, 	$maxmem, 	$jobname, 
+	$host, 		$procs,		$qos,
+	$resfail, 	$signal,	$tpn,
+	$ttc
 );
 
 my (@lreslist, @slurmArgs, @xslurmArgs, @nargv);
@@ -213,6 +214,13 @@ if (@lreslist) {
 #
 if ($account) {
 	push @slurmArgs, "--account=$account";
+}
+
+#
+# Charge resources used by this job to specified account.
+#
+if ($advres) {
+	push @slurmArgs, "--reservation=$advres";
 }
 
 #
@@ -461,7 +469,10 @@ if ($debug == 1) {
 		$rval = `sbatch @slurmArgs $scriptFile 2>&1`;
 	}
 
-	if (!$silent) {
+        my $rc = $?;
+        printf("\n$rval\n") if ($rc);
+
+	if (!$silent && !$rc) {
 		chomp $rval;
 		my ($jobid) = ($rval =~ m/Submitted batch job (\S+)/);
 		printf("\n$jobid\n");
@@ -661,6 +672,7 @@ sub process
 		$minwclim = $r if ($o =~ /minwclim/);
 		$signal	  = $r if ($o =~ /signal/);
 		$ddisk    = $r if ($o =~ /ddisk/);
+		$advres   = $r if ($o =~ /advres/);
 		$maxmem   = $r if ($o =~ /maxmem/);
 
 		invalidopt("flags")   if ($o =~ /flags/);
