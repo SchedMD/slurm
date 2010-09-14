@@ -148,8 +148,8 @@ int main(int argc, char *argv[])
 	desc.script = (char *)script_body;
 
 	/* If can run on multiple clusters find the earliest run time
-	   and run it there */
-	if(sbatch_set_first_avail_cluster(&desc) != SLURM_SUCCESS)
+	 * and run it there */
+	if (sbatch_set_first_avail_cluster(&desc) != SLURM_SUCCESS)
 		exit(error_exit);
 
 	while (slurm_submit_batch_job(&desc, &resp) < 0) {
@@ -180,7 +180,7 @@ int main(int argc, char *argv[])
         }
 
 	printf("Submitted batch job %u", resp->job_id);
-	if(working_cluster_rec)
+	if (working_cluster_rec)
 		printf(" on cluster %s", working_cluster_rec->name);
 	printf("\n");
 

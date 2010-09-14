@@ -1,4 +1,4 @@
-.TH "sbatch" "1" "SLURM 2.2" "April 2010" "SLURM Commands"
+.TH "sbatch" "1" "SLURM 2.2" "September 2010" "SLURM Commands"
 
 .SH "NAME"
 sbatch \- Submit a batch script to SLURM.
@@ -125,15 +125,6 @@ be written (used by the checkpoint/blcrm and checkpoint/xlch plugins only).
 The default value is the current working directory.
 Checkpoint files will be of the form "<job_id>.ckpt" for jobs
 and "<job_id>.<step_id>.ckpt" for job steps.
-
-.TP
-\fB\-\-clusters\fR=<\fIstring\fR>
-Clusters to issue commands to.  Multiple cluster names may be comma separated.
-The job will be submitted to the one cluster providing the earliest expected
-job initiation time. The default value is the current cluster.  A value of
-of '\fIall\fR' will query to run on all clusters.  Note the
-\fB\-\-export\fR option to control environment variables exported
-between clusters.
 
 .TP
 \fB\-\-comment\fR=<\fIstring\fR>
@@ -501,6 +492,15 @@ License names can be followed by an asterisk and count
 (the default count is one).
 Multiple license names should be comma separated (e.g.
 "\-\-licenses=foo*4,bar").
+
+.TP
+\fB\-M\fR, \fB\-\-clusters\fR=<\fIstring\fR>
+Clusters to issue commands to.  Multiple cluster names may be comma separated.
+The job will be submitted to the one cluster providing the earliest expected
+job initiation time. The default value is the current cluster.  A value of
+of '\fIall\fR' will query to run on all clusters.  Note the
+\fB\-\-export\fR option to control environment variables exported
+between clusters.
 
 .TP
 \fB\-m\fR, \fB\-\-distribution\fR=
@@ -1069,6 +1069,9 @@ Same as \fB\-\-checkpoint\fR
 .TP
 \fBSLURM_CHECKPOINT_DIR\fR
 Same as \fB\-\-checkpoint\-dir\fR
+.TP
+\fBSBATCH_CLUSTERS\fR or \fBSLURM_CLUSTERS\fR
+Same as \fB\-\-clusters\fR
 .TP
 \fBSBATCH_CONN_TYPE\fR
 Same as \fB\-\-conn\-type\fR

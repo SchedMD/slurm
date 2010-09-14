@@ -438,6 +438,8 @@ env_vars_t env_vars[] = {
   {"SBATCH_BLRTS_IMAGE",   OPT_STRING,     &opt.blrtsimage,    NULL          },
   {"SBATCH_CHECKPOINT",    OPT_STRING,     &opt.ckpt_interval_str, NULL      },
   {"SBATCH_CHECKPOINT_DIR",OPT_STRING,     &opt.ckpt_dir,      NULL          },
+  {"SBATCH_CLUSTERS",      OPT_STRING,     &opt.clusters,      NULL          },
+  {"SLURM_CLUSTERS",       OPT_STRING,     &opt.clusters,      NULL          },
   {"SBATCH_CNLOAD_IMAGE",  OPT_STRING,     &opt.linuximage,    NULL          },
   {"SBATCH_CONN_TYPE",     OPT_CONN_TYPE,  NULL,               NULL          },
   {"SBATCH_CPU_BIND",      OPT_CPU_BIND,   NULL,               NULL          },
@@ -1210,10 +1212,10 @@ static void _set_options(int argc, char **argv)
 			}
 			break;
 		case 'M':
-			if(opt.clusters)
+			if (opt.clusters)
 				list_destroy(opt.clusters);
-			if(!(opt.clusters =
-			     slurmdb_get_info_cluster(optarg))) {
+			if (!(opt.clusters =
+			      slurmdb_get_info_cluster(optarg))) {
 				error("'%s' invalid entry for --clusters",
 				      optarg);
 				exit(1);

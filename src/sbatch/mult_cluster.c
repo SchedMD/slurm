@@ -108,7 +108,7 @@ local_cluster_rec_t *_job_will_run (job_desc_msg_t *req)
 			slurm_seterrno(rc);
 		break;
 	case RESPONSE_JOB_WILL_RUN:
-		if(working_cluster_rec->flags & CLUSTER_FLAG_BG)
+		if (working_cluster_rec->flags & CLUSTER_FLAG_BG)
 			type = "cnodes";
 		will_run_resp = (will_run_response_msg_t *) resp_msg.data;
 		slurm_make_time_str(&will_run_resp->start_time,
@@ -123,7 +123,7 @@ local_cluster_rec_t *_job_will_run (job_desc_msg_t *req)
 		if (will_run_resp->preemptee_job_id) {
 			local_cluster->preempt_cnt =
 				list_count(will_run_resp->preemptee_job_id);
-			if(opt.verbose >= LOG_LEVEL_DEBUG) {
+			if (opt.verbose >= LOG_LEVEL_DEBUG) {
 				ListIterator itr;
 				uint32_t *job_id_ptr;
 				char *job_list = NULL, *sep = "";
@@ -160,9 +160,9 @@ extern int sbatch_set_first_avail_cluster(job_desc_msg_t *req)
 	List ret_list = NULL;
 
 	/* return if we only have 1 or less clusters here */
-	if(!opt.clusters || !list_count(opt.clusters)) {
+	if (!opt.clusters || !list_count(opt.clusters)) {
 		return rc;
-	} else if(list_count(opt.clusters) == 1) {
+	} else if (list_count(opt.clusters) == 1) {
 		working_cluster_rec = list_peek(opt.clusters);
 		return rc;
 	}
@@ -174,12 +174,14 @@ extern int sbatch_set_first_avail_cluster(job_desc_msg_t *req)
 	}
 
 	ret_list = list_create(_destroy_local_cluster_rec);
+	if (ret_list == NULL)
+		fatal("list_create malloc failure");
 	itr = list_iterator_create(opt.clusters);
-	while((working_cluster_rec = list_next(itr))) {
-		if((local_cluster = _job_will_run(req))) {
-			if(!ret_list)
+	while ((working_cluster_rec = list_next(itr))) {
+		if ((local_cluster = _job_will_run(req))) {
+			if (!ret_list)
 				ret_list = list_create(
-					_destroy_local_cluster_rec);
+					   _destroy_local_cluster_rec);
 			list_append(ret_list, local_cluster);
 		} else
 			error("Problem with submit to cluster %s: %m",
@@ -190,7 +192,7 @@ extern int sbatch_set_first_avail_cluster(job_desc_msg_t *req)
 	if (host_set)
 		req->alloc_node = NULL;
 
-	if(!ret_list) {
+	if (!ret_list) {
 		error("Can't run on any of the clusters given");
 		return SLURM_ERROR;
 	}
