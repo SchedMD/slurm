@@ -362,7 +362,7 @@ extern int configure_small_block(bg_record_t *bg_record)
 	if ((rc = bridge_set_data(bg_record->bg_block, RM_PartitionSmall,
 				  &small)) != STATUS_OK) {
 
-		fatal("bridge_set_data(RM_PartitionPsetsPerBP)",
+		fatal("bridge_set_data(RM_PartitionPsetsPerBP): %s",
 		      bg_err_str(rc));
 	}
 
@@ -471,7 +471,7 @@ extern int configure_small_block(bg_record_t *bg_record)
 						  &ncard)) != STATUS_OK) {
 				error("bridge_get_data"
 				      "(RM_NodeCardListNext): %s",
-				      rc);
+				      bg_err_str(rc));
 				rc = SLURM_ERROR;
 				goto cleanup;
 			}
@@ -481,7 +481,7 @@ extern int configure_small_block(bg_record_t *bg_record)
 						  &ncard)) != STATUS_OK) {
 				error("bridge_get_data"
 				      "(RM_NodeCardListFirst): %s",
-				      rc);
+				      bg_err_str(rc));
 				rc = SLURM_ERROR;
 				goto cleanup;
 			}
@@ -499,7 +499,8 @@ extern int configure_small_block(bg_record_t *bg_record)
 		if ((rc = bridge_get_data(ncard,
 					  RM_NodeCardID,
 					  &nc_char)) != STATUS_OK) {
-			error("bridge_get_data(RM_NodeCardID): %d",rc);
+			error("bridge_get_data(RM_NodeCardID): %s",
+			      bg_err_str(rc));
 			rc = SLURM_ERROR;
 			goto cleanup;
 		}

@@ -275,8 +275,6 @@ extern int update_block_list()
 	bg_record_t *bg_record = NULL;
 	kill_job_struct_t *freeit = NULL;
 	ListIterator itr = NULL;
-	slurmctld_lock_t job_write_lock = {
-		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
 
 	if(!kill_job_list)
 		kill_job_list = list_create(_destroy_kill_struct);
@@ -601,8 +599,8 @@ extern int update_block_list()
 
 	/* kill all the jobs from unexpectedly freed blocks */
 	while((freeit = list_pop(kill_job_list))) {
-		debug2("Trying to requeue job %d", freeit->jobid);
-		bg_requeue_job(freeit->job_id, 0);
+		debug2("Trying to requeue job %u", freeit->jobid);
+		bg_requeue_job(freeit->jobid, 0);
 		_destroy_kill_struct(freeit);
 	}
 

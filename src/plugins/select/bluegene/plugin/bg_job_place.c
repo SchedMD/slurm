@@ -1087,7 +1087,8 @@ static int _find_best_block_match(List block_list,
 						   & DEBUG_FLAG_BG_PICK)
 							info("taking off "
 							     "%d(%s) started "
-							     "at %d ends at %d",
+							     "at %ld ends "
+							     "at %ld",
 							     bg_record->
 							     job_running,
 							     bg_record->
@@ -1239,8 +1240,9 @@ static int _sync_block_lists(List full_list, List incomp_list)
 		if(!bg_record) {
 			list_remove(itr);
 			if(bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
-				info("sync: adding %s %x",
-				     new_record->bg_block_id, new_record);
+				info("sync: adding %s %zx",
+				     new_record->bg_block_id,
+				     (size_t)new_record);
 			list_append(incomp_list, new_record);
 			count++;
 		}
@@ -1600,7 +1602,7 @@ preempt:
 					   bg_record->ionodes);
 			if(!bg_record->bg_block_id) {
 				debug("%d can start unassigned job %u "
-				      "at %u on %s",
+				      "at %ld on %s",
 				      local_mode, job_ptr->job_id,
 				      starttime, bg_record->nodes);
 
@@ -1618,7 +1620,7 @@ preempt:
 					error("Small block used in "
 					      "non-shared partition");
 
-				debug("%d can start job %u at %u on %s(%s)",
+				debug("%d can start job %u at %ld on %s(%s)",
 				      local_mode, job_ptr->job_id,
 				      starttime, bg_record->bg_block_id,
 				      bg_record->nodes);

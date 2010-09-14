@@ -611,7 +611,7 @@ static void _start_agent(bg_action_t *bg_action_ptr)
 		if(found_record->job_ptr) {
 			error("Trying to start job %u on block %s, "
 			      "but there is a job %u running on an overlapping "
-			      "block %s it will not end until %u.  "
+			      "block %s it will not end until %ld.  "
 			      "This should never happen.",
 			      bg_action_ptr->job_ptr->job_id,
 			      bg_record->bg_block_id,
@@ -743,21 +743,21 @@ static void _start_agent(bg_action_t *bg_action_ptr)
 					      RM_MODIFY_BlrtsImg,
 					      bg_record->blrtsimage))
 		    != STATUS_OK)
-			error("bridge_modify_block(RM_MODIFY_BlrtsImg)",
+			error("bridge_modify_block(RM_MODIFY_BlrtsImg): %s",
 			      bg_err_str(rc));
 
 		if ((rc = bridge_modify_block(bg_record->bg_block_id,
 					      RM_MODIFY_LinuxImg,
 					      bg_record->linuximage))
 		    != STATUS_OK)
-			error("bridge_modify_block(RM_MODIFY_LinuxImg)",
+			error("bridge_modify_block(RM_MODIFY_LinuxImg): %s",
 			      bg_err_str(rc));
 
 		if ((rc = bridge_modify_block(bg_record->bg_block_id,
 					      RM_MODIFY_RamdiskImg,
 					      bg_record->ramdiskimage))
 		    != STATUS_OK)
-			error("bridge_modify_block(RM_MODIFY_RamdiskImg)",
+			error("bridge_modify_block(RM_MODIFY_RamdiskImg): %s",
 			      bg_err_str(rc));
 
 #else
@@ -765,14 +765,14 @@ static void _start_agent(bg_action_t *bg_action_ptr)
 					      RM_MODIFY_CnloadImg,
 					      bg_record->linuximage))
 		    != STATUS_OK)
-			error("bridge_modify_block(RM_MODIFY_CnloadImg)",
+			error("bridge_modify_block(RM_MODIFY_CnloadImg): %s",
 			      bg_err_str(rc));
 
 		if ((rc = bridge_modify_block(bg_record->bg_block_id,
 					      RM_MODIFY_IoloadImg,
 					      bg_record->ramdiskimage))
 		    != STATUS_OK)
-			error("bridge_modify_block(RM_MODIFY_IoloadImg)",
+			error("bridge_modify_block(RM_MODIFY_IoloadImg): %s",
 			      bg_err_str(rc));
 
 		if(bg_action_ptr->conn_type > SELECT_SMALL) {
@@ -799,7 +799,7 @@ static void _start_agent(bg_action_t *bg_action_ptr)
 				     bg_record->bg_block_id,
 				     RM_MODIFY_Options,
 				     conn_type)) != STATUS_OK)
-				error("bridge_set_data(RM_MODIFY_Options)",
+				error("bridge_set_data(RM_MODIFY_Options): %s",
 				      bg_err_str(rc));
 		}
 #endif
@@ -807,7 +807,7 @@ static void _start_agent(bg_action_t *bg_action_ptr)
 					      RM_MODIFY_MloaderImg,
 					      bg_record->mloaderimage))
 		    != STATUS_OK)
-			error("bridge_modify_block(RM_MODIFY_MloaderImg)",
+			error("bridge_modify_block(RM_MODIFY_MloaderImg): %s",
 			      bg_err_str(rc));
 
 #endif
@@ -1275,7 +1275,7 @@ extern int sync_jobs(List job_list)
 			}
 
 			debug3("Queue sync of job %u in BG block %s "
-			       "ending at %d",
+			       "ending at %ld",
 			       job_ptr->job_id,
 			       bg_action_ptr->bg_block_id,
 			       job_ptr->end_time);
