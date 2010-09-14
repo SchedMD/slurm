@@ -14,7 +14,7 @@ documents those changes that are of interest to users and admins.
     if the --clusters option is used.
  -- Added printf __attribute__ qualifiers to info, debug, ... to help prevent
     bad/incorrect parameters being sent to them.  Original patch from
-    Eygene Ryabinkin <rea+slurm@grid.kiae.ru>
+    Eygene Ryabinkin (Russian Research Centre).
 
 * Changes in SLURM 2.2.0.pre10
 ==============================
