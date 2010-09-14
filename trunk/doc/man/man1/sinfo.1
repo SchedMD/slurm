@@ -59,6 +59,11 @@ Print more detailed information.
 This is ignored if the \fB\-\-format\fR option is specified.
 
 .TP
+\fB\-M\fR, \fB\-\-clusters\fR=<\fIstring\fR>
+Clusters to issue commands to.  Multiple cluster names may be comma separated.
+A value of of '\fIall\fR' will query to run on all clusters.
+
+.TP
 \fB\-n <nodes>\fR, \fB\-\-nodes=<nodes>\fR
 Print information only about the specified node(s).
 Multiple nodes may be comma separated or expressed using a
@@ -472,6 +477,9 @@ Commandline options will always override these settings.)
 .TP
 \fBSLURM_CONF\fR
 The location of the SLURM configuration file.
+.TP
+\fBSLURM_CLUSTERS\fR
+Same as \fB\-\-clusters\fR
 
 .SH "EXAMPLES"
 .eo
