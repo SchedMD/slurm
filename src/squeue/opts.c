@@ -1,7 +1,5 @@
 /****************************************************************************\
- *  opts.c - srun command line option parsing
- *
- *  $Id$
+ *  opts.c - squeue command line option parsing
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
@@ -105,7 +103,7 @@ parse_command_line( int argc, char* argv[] )
 		{"iterate",    required_argument, 0, 'i'},
 		{"jobs",       optional_argument, 0, 'j'},
 		{"long",       no_argument,       0, 'l'},
-		{"cluster",    required_argument, 0, 'M'},
+		{"clusters",   required_argument, 0, 'M'},
 		{"node",       required_argument, 0, 'n'},
 		{"nodes",      required_argument, 0, 'n'},
 		{"noheader",   no_argument,       0, 'h'},
@@ -129,10 +127,18 @@ parse_command_line( int argc, char* argv[] )
 		params.format = xstrdup(env_val);
 	if ( ( env_val = getenv("SQUEUE_SORT") ) )
 		params.sort = xstrdup(env_val);
+	if ( ( env_val = getenv("SLURM_CLUSTERS") ) ) {
+		if (!(params.clusters = slurmdb_get_info_cluster(env_val))) {
+			error("'%s' invalid entry for SLURM_CLUSTERS",
+			      env_val);
+			exit(1);
+		}
+		working_cluster_rec = list_peek(params.clusters);
+	}
 
-	while((opt_char = getopt_long(argc, argv,
-				      "A:ahi:j::ln:M:o:p:q:s::S:t:u:U:vV",
-				      long_options, &option_index)) != -1) {
+	while ((opt_char = getopt_long(argc, argv,
+				       "A:ahi:j::ln:M:o:p:q:s::S:t:u:U:vV",
+				       long_options, &option_index)) != -1) {
 		switch (opt_char) {
 		case (int)'?':
 			fprintf(stderr, "Try \"squeue --help\" "
@@ -170,10 +176,10 @@ parse_command_line( int argc, char* argv[] )
 			params.long_list = true;
 			break;
 		case (int) 'M':
-			if(params.clusters)
+			if (params.clusters)
 				list_destroy(params.clusters);
-			if(!(params.clusters =
-			     slurmdb_get_info_cluster(optarg))) {
+			if (!(params.clusters =
+			    slurmdb_get_info_cluster(optarg))) {
 				error("'%s' invalid entry for --cluster",
 				      optarg);
 				exit(1);
@@ -1109,7 +1115,7 @@ Usage: squeue [OPTIONS]\n\
   -j, --job=job(s)                comma separated list of jobs IDs\n\
 				  to view, default is all\n\
   -l, --long                      long report\n\
-  -M, --cluster=cluster_name      cluster to issue commands to.  Default is\n\
+  -M, --clusters=cluster_name     cluster to issue commands to.  Default is\n\
                                   current cluster.  cluster with no name will\n\
                                   reset to default.\n\
   -n, --nodes=hostlist            list of nodes to view, default is \n\
