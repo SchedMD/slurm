@@ -330,10 +330,9 @@ extern int init ( void )
 		verbose("%s loaded with AuthInfo=%s",
 			plugin_name, slurmdbd_auth_info);
 
-		if(job_list) {
+		if (job_list) {
 			/* only do this when job_list is defined
-			   (in the slurmctld)
-			*/
+			 * (in the slurmctld) */
 			pthread_attr_t thread_attr;
 			slurm_attr_init(&thread_attr);
 			if (pthread_create(&db_inx_handler_thread, &thread_attr,
@@ -362,15 +361,15 @@ extern int init ( void )
 
 extern int fini ( void )
 {
-	if(running_db_inx)
+	if (running_db_inx)
 		debug("Waiting for db_inx thread to finish.");
 
 	slurm_mutex_lock(&db_inx_lock);
 
 	/* cancel the db_inx thread and then join the cleanup thread */
-	if(db_inx_handler_thread)
+	if (db_inx_handler_thread)
 		pthread_cancel(db_inx_handler_thread);
-	if(cleanup_handler_thread)
+	if (cleanup_handler_thread)
 		pthread_join(cleanup_handler_thread, NULL);
 
 	slurm_mutex_unlock(&db_inx_lock);
@@ -382,7 +381,7 @@ extern int fini ( void )
 
 extern void *acct_storage_p_get_connection(
              const slurm_trigger_callbacks_t *callbacks,
-             int conn_num,bool rollback, char *cluster_name)
+             int conn_num, bool rollback, char *cluster_name)
 {
 	if (!slurmdbd_auth_info)
 		init();
