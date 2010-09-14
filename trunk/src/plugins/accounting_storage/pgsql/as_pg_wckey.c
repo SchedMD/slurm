@@ -159,7 +159,7 @@ as_pg_add_wckeys(pgsql_conn_t *pg_conn, uint32_t uid, List wckey_list)
 		 * order of fields: creation_time, mod_time, deleted, id,
 		 * name, cluster, user
 		 */
-		rec = xstrdup_printf("(%d, %d, 0, 0, '%s', '%s', '%s')",
+		rec = xstrdup_printf("(%ld, %ld, 0, 0, '%s', '%s', '%s')",
 				     now, now, object->name,
 				     object->cluster, object->user ?: "");
 		query = xstrdup_printf("SELECT add_wckey(%s);", rec);

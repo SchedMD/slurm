@@ -346,7 +346,7 @@ int srun(int ac, char **av)
 		 *  Become --uid user
 		 */
 		if (_become_user () < 0)
-			info("Warning: Unable to assume uid=%lu", opt.uid);
+			info("Warning: Unable to assume uid=%u", opt.uid);
 
 		if (!job || create_job_step(job, true) < 0) {
 			slurm_complete_job(resp->job_id, 1);
@@ -360,7 +360,7 @@ int srun(int ac, char **av)
 	 *  Become --uid user
 	 */
 	if (_become_user () < 0)
-		info("Warning: Unable to assume uid=%lu", opt.uid);
+		info("Warning: Unable to assume uid=%u", opt.uid);
 
 	/*
 	 *  Enhance environment for job

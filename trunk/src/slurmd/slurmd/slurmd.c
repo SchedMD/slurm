@@ -172,6 +172,7 @@ main (int argc, char *argv[])
 	char *oom_value;
 	uint32_t slurmd_uid = 0;
 	uint32_t curr_uid = 0;
+	char time_stamp[256];
 
 	/*
 	 * Make sure we have no extra open files which
@@ -302,7 +303,8 @@ main (int argc, char *argv[])
 	if (pidfd >= 0)
 		fd_set_close_on_exec(pidfd);
 
-	info("%s started on %T", xbasename(argv[0]));
+	RFC822_TIMESTAMP(time_stamp);
+	info("%s started on %s", xbasename(argv[0]), time_stamp);
 
 	_install_fork_handlers();
 	list_install_fork_handlers();

@@ -150,7 +150,7 @@ extern int as_mysql_add_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 		}
 		xstrcat(cols, "creation_time, mod_time, name, "
 			"description, organization");
-		xstrfmtcat(vals, "%d, %d, '%s', '%s', '%s'",
+		xstrfmtcat(vals, "%ld, %ld, '%s', '%s', '%s'",
 			   now, now, object->name,
 			   object->description, object->organization);
 		xstrfmtcat(extra, ", description='%s', organization='%s'",
@@ -158,7 +158,7 @@ extern int as_mysql_add_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 
 		query = xstrdup_printf(
 			"insert into %s (%s) values (%s) "
-			"on duplicate key update deleted=0, mod_time=%d %s;",
+			"on duplicate key update deleted=0, mod_time=%ld %s;",
 			acct_table, cols, vals,
 			now, extra);
 		debug3("%d(%s:%d) query\n%s",
@@ -186,14 +186,14 @@ extern int as_mysql_add_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 
 		if(txn_query)
 			xstrfmtcat(txn_query,
-				   ", (%d, %u, '%s', '%s', '%s')",
+				   ", (%ld, %u, '%s', '%s', '%s')",
 				   now, DBD_ADD_ACCOUNTS, object->name,
 				   user_name, tmp_extra);
 		else
 			xstrfmtcat(txn_query,
 				   "insert into %s "
 				   "(timestamp, action, name, actor, info) "
-				   "values (%d, %u, '%s', '%s', '%s')",
+				   "values (%ld, %u, '%s', '%s', '%s')",
 				   txn_table,
 				   now, DBD_ADD_ACCOUNTS, object->name,
 				   user_name, tmp_extra);

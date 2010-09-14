@@ -66,13 +66,14 @@ pdebug_trace_process(slurmd_job_t *job, pid_t pid)
 		if (!WIFSTOPPED(status)) {
 			int i;
 			error("pdebug_trace_process WIFSTOPPED false"
-			      " for pid %lu", pid);
+			      " for pid %d", pid);
 			if (WIFEXITED(status)) {
-				error("Process %lu exited \"normally\""
+				error("Process %d exited \"normally\""
 				      " with return code %d",
-				      pid, WEXITSTATUS(status));
+				      pid,
+				      WEXITSTATUS(status));
 			} else if (WIFSIGNALED(status)) {
-				error("Process %lu killed by signal %d",
+				error("Process %d killed by signal %d",
 				      pid, WTERMSIG(status));
 			}
 

@@ -30,6 +30,8 @@ bool pack_jobinfo = false;
  * Example: setenvf("RMS_RANK=%d", rank);
  */
 static int
+setenvf(const char *fmt, ...) __attribute__ ((format (printf, 1, 2)));
+static int
 setenvf(const char *fmt, ...) 
 {
 	va_list ap;

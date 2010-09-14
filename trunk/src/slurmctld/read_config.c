@@ -474,7 +474,7 @@ static int _build_single_partitionline_info(slurm_conf_partition_t *part)
 	if ((part->default_time != NO_VAL) &&
 	    (part->default_time > part->max_time)) {
 		info("partition %s DefaultTime exceeds MaxTime (%u > %u)",
-		     part->default_time, part->max_time);
+		     part->name, part->default_time, part->max_time);
 		part->default_time = NO_VAL;
 	}
 

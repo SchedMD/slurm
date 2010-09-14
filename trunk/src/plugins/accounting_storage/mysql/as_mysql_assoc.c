@@ -236,15 +236,15 @@ static int _move_account(mysql_conn_t *mysql_conn, uint32_t *lft, uint32_t *rgt,
 	/* every thing below needs to be a %d not a %u because we are
 	   looking for -1 */
 	xstrfmtcat(query,
-		   "update \"%s_%s\" set mod_time=%d, deleted = deleted + 2, "
+		   "update \"%s_%s\" set mod_time=%ld, deleted = deleted + 2, "
 		   "lft = lft + %d, rgt = rgt + %d "
 		   "WHERE lft BETWEEN %d AND %d;",
 		   cluster, assoc_table, now, diff, diff, *lft, *rgt);
 
 	xstrfmtcat(query,
-		   "UPDATE \"%s_%s\" SET mod_time=%d, rgt = rgt + %d WHERE "
+		   "UPDATE \"%s_%s\" SET mod_time=%ld, rgt = rgt + %d WHERE "
 		   "rgt > %d && deleted < 2;"
-		   "UPDATE \"%s_%s\" SET mod_time=%d, lft = lft + %d WHERE "
+		   "UPDATE \"%s_%s\" SET mod_time=%ld, lft = lft + %d WHERE "
 		   "lft > %d && deleted < 2;",
 		   cluster, assoc_table, now, width,
 		   par_left,
@@ -252,10 +252,10 @@ static int _move_account(mysql_conn_t *mysql_conn, uint32_t *lft, uint32_t *rgt,
 		   par_left);
 
 	xstrfmtcat(query,
-		   "UPDATE \"%s_%s\" SET mod_time=%d, rgt = rgt - %d WHERE "
+		   "UPDATE \"%s_%s\" SET mod_time=%ld, rgt = rgt - %d WHERE "
 		   "(%d < 0 && rgt > %d && deleted < 2) "
 		   "|| (%d > 0 && rgt > %d);"
-		   "UPDATE \"%s_%s\" SET mod_time=%d, lft = lft - %d WHERE "
+		   "UPDATE \"%s_%s\" SET mod_time=%ld, lft = lft - %d WHERE "
 		   "(%d < 0 && lft > %d && deleted < 2) "
 		   "|| (%d > 0 && lft > %d);",
 		   cluster, assoc_table, now, width,
@@ -266,11 +266,11 @@ static int _move_account(mysql_conn_t *mysql_conn, uint32_t *lft, uint32_t *rgt,
 		   diff, *lft);
 
 	xstrfmtcat(query,
-		   "update \"%s_%s\" set mod_time=%d, "
+		   "update \"%s_%s\" set mod_time=%ld, "
 		   "deleted = deleted - 2 WHERE deleted > 1;",
 		   cluster, assoc_table, now);
 	xstrfmtcat(query,
-		   "update \"%s_%s\" set mod_time=%d, "
+		   "update \"%s_%s\" set mod_time=%ld, "
 		   "parent_acct='%s' where id_assoc = %s;",
 		   cluster, assoc_table, now, parent, id);
 	/* get the new lft and rgt if changed */
@@ -2206,11 +2206,11 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 		}
 
 		xstrcat(cols, "creation_time, mod_time, acct");
-		xstrfmtcat(vals, "%d, %d, '%s'",
+		xstrfmtcat(vals, "%ld, %ld, '%s'",
 			   now, now, object->acct);
 		xstrfmtcat(update, "where acct='%s'", object->acct);
 
-		xstrfmtcat(extra, ", mod_time=%d, acct='%s'",
+		xstrfmtcat(extra, ", mod_time=%ld, acct='%s'",
 			   now, object->acct);
 		if(!object->user) {
 			xstrcat(cols, ", parent_acct");
@@ -2336,7 +2336,8 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 				}
 
 				if(!(row = mysql_fetch_row(sel_result))) {
-					error("Couldn't get left from query\n",
+					error("Couldn't get left from "
+					      "query\n%s",
 					      sel_query);
 					mysql_free_result(sel_result);
 					xfree(cols);
@@ -2489,7 +2490,7 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 
 		if(txn_query)
 			xstrfmtcat(txn_query,
-				   ", (%d, %d, 'id_assoc=%d', "
+				   ", (%ld, %d, 'id_assoc=%d', "
 				   "'%s', '%s', '%s')",
 				   now, DBD_ADD_ASSOCS, assoc_id, user_name,
 				   tmp_extra, object->cluster);
@@ -2497,7 +2498,7 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 			xstrfmtcat(txn_query,
 				   "insert into %s "
 				   "(timestamp, action, name, actor, "
-				   "info, cluster) values (%d, %d, "
+				   "info, cluster) values (%ld, %d, "
 				   "'id_assoc=%d', '%s', '%s', '%s')",
 				   txn_table,
 				   now, DBD_ADD_ASSOCS, assoc_id, user_name,

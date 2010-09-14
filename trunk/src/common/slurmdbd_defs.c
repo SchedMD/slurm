@@ -798,8 +798,7 @@ extern int unpack_slurmdbd_msg(slurmdbd_msg_t *resp,
 	default:
 		error("slurmdbd: Invalid message type unpack %u(%s)",
 		      resp->msg_type,
-		      slurmdbd_msg_type_2_str(resp->msg_type, 1),
-		      resp->msg_type);
+		      slurmdbd_msg_type_2_str(resp->msg_type, 1));
 		return SLURM_ERROR;
 	}
 	return rc;
@@ -1744,7 +1743,7 @@ static Buf _recv_msg(int read_timeout)
 	}
 	if (msg_size != offset) {
 		if (agent_shutdown == 0) {
-			error("slurmdbd: only read %d of %d bytes",
+			error("slurmdbd: only read %zd of %d bytes",
 			      offset, msg_size);
 		}	/* else in shutdown mode */
 		xfree(msg);

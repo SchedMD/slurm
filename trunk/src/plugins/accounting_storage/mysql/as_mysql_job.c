@@ -282,8 +282,8 @@ extern int as_mysql_job_start(mysql_conn_t *mysql_conn,
 		 */
 		query = xstrdup_printf("select job_db_inx "
 				       "from \"%s_%s\" where id_job=%u and "
-				       "time_submit=%d and time_eligible=%d "
-				       "and time_start=%d;",
+				       "time_submit=%ld and time_eligible=%ld "
+				       "and time_start=%ld;",
 				       mysql_conn->cluster_name,
 				       job_table, job_ptr->job_id,
 				       submit_time, begin_time, start_time);
@@ -333,8 +333,9 @@ extern int as_mysql_job_start(mysql_conn_t *mysql_conn,
 		   are always shrunk down to the beginning of each
 		   time period.
 		*/
-		query = xstrdup_printf("update \"%s_%s\" set hourly_rollup=%d, "
-				       "daily_rollup=%d, monthly_rollup=%d",
+		query = xstrdup_printf("update \"%s_%s\" set "
+				       "hourly_rollup=%ld, "
+				       "daily_rollup=%ld, monthly_rollup=%ld",
 				       mysql_conn->cluster_name,
 				       last_ran_table, check_time,
 				       check_time, check_time);
@@ -419,7 +420,7 @@ no_rollup_change:
 
 		xstrfmtcat(query,
 			   ") values (%u, %u, %u, %u, %u, %u, '%s', %u, %u, "
-			   "%d, %d, %d, '%s', %u, %u, %u, %u, %u, %u",
+			   "%ld, %ld, %ld, '%s', %u, %u, %u, %u, %u, %u",
 			   job_ptr->job_id, job_ptr->assoc_id,
 			   job_ptr->qos_id, wckeyid,
 			   job_ptr->user_id, job_ptr->group_id, nodes,
@@ -445,7 +446,7 @@ no_rollup_change:
 			   "job_db_inx=LAST_INSERT_ID(job_db_inx), "
 			   "id_wckey=%u, id_user=%u, id_group=%u, "
 			   "nodelist='%s', id_resv=%u, timelimit=%u, "
-			   "time_submit=%d, time_start=%d, "
+			   "time_submit=%ld, time_start=%ld, "
 			   "job_name='%s', track_steps=%u, id_qos=%u, "
 			   "state=greatest(state, %u), priority=%u, "
 			   "cpus_req=%u, cpus_alloc=%u, nodes_alloc=%u",
@@ -502,7 +503,7 @@ no_rollup_change:
 		if(node_inx)
 			xstrfmtcat(query, "node_inx='%s', ", node_inx);
 
-		xstrfmtcat(query, "time_start=%d, job_name='%s', state=%u, "
+		xstrfmtcat(query, "time_start=%ld, job_name='%s', state=%u, "
 			   "cpus_alloc=%u, nodes_alloc=%u, id_qos=%u, "
 			   "id_assoc=%u, id_wckey=%u, id_resv=%u, timelimit=%u "
 			   "where job_db_inx=%d",
@@ -588,8 +589,9 @@ extern int as_mysql_job_complete(mysql_conn_t *mysql_conn,
 		global_last_rollup = job_ptr->end_time;
 		slurm_mutex_unlock(&rollup_lock);
 
-		query = xstrdup_printf("update \"%s_%s\" set hourly_rollup=%d, "
-				       "daily_rollup=%d, monthly_rollup=%d",
+		query = xstrdup_printf("update \"%s_%s\" set "
+				       "hourly_rollup=%ld, "
+				       "daily_rollup=%ld, monthly_rollup=%ld",
 				       mysql_conn->cluster_name,
 				       last_ran_table, end_time,
 				       end_time, end_time);
@@ -623,7 +625,7 @@ extern int as_mysql_job_complete(mysql_conn_t *mysql_conn,
 		}
 	}
 
-	query = xstrdup_printf("update \"%s_%s\" set time_end=%d, "
+	query = xstrdup_printf("update \"%s_%s\" set time_end=%ld, "
 			       "state=%d, nodelist='%s', exit_code=%d, "
 			       "kill_requid=%d where job_db_inx=%d;",
 			       mysql_conn->cluster_name, job_table,
@@ -1073,18 +1075,18 @@ extern int as_mysql_flush_jobs_on_cluster(
 	if(suspended_char) {
 		xstrfmtcat(query,
 			   "update \"%s_%s\" set "
-			   "time_suspended=%d-time_suspended "
+			   "time_suspended=%ld-time_suspended "
 			   "where %s;",
 			   mysql_conn->cluster_name, job_table,
 			   event_time, suspended_char);
 		xstrfmtcat(query,
 			   "update \"%s_%s\" set "
-			   "time_suspended=%d-time_suspended "
+			   "time_suspended=%ld-time_suspended "
 			   "where %s;",
 			   mysql_conn->cluster_name, step_table,
 			   event_time, suspended_char);
 		xstrfmtcat(query,
-			   "update \"%s_%s\" set time_end=%d where (%s) "
+			   "update \"%s_%s\" set time_end=%ld where (%s) "
 			   "&& time_end=0;",
 			   mysql_conn->cluster_name, suspend_table,
 			   event_time, suspended_char);
@@ -1093,12 +1095,12 @@ extern int as_mysql_flush_jobs_on_cluster(
 	if(id_char) {
 		xstrfmtcat(query,
 			   "update \"%s_%s\" set state=%d, "
-			   "time_end=%u where %s;",
+			   "time_end=%ld where %s;",
 			   mysql_conn->cluster_name, job_table,
 			   JOB_CANCELLED, event_time, id_char);
 		xstrfmtcat(query,
 			   "update \"%s_%s\" set state=%d, "
-			   "time_end=%u where %s;",
+			   "time_end=%ld where %s;",
 			   mysql_conn->cluster_name, step_table,
 			   JOB_CANCELLED, event_time, id_char);
 		xfree(id_char);

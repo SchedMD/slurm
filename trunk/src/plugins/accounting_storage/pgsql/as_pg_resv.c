@@ -134,7 +134,7 @@ _make_resv_record(slurmdb_reservation_rec_t *resv)
 		assoc_list ++;
 
 	rec = xstrdup_printf("(%d, '%s', '%s', 0, %d, '%s', '%s', "
-			     "'%s', %d, %d, %d)",
+			     "'%s', %ld, %ld, %d)",
 			     resv->id,
 			     resv->name ? : "",
 			     resv->cluster,
@@ -166,12 +166,12 @@ _make_resv_cond(slurmdb_reservation_cond_t *resv_cond, char **cond)
 		if(!resv_cond->time_end)
 			resv_cond->time_end = now;
 
-		xstrfmtcat(*cond, "AND (start < %d "
-			   "AND (endtime >= %d OR endtime = 0))",
+		xstrfmtcat(*cond, "AND (start < %ld "
+			   "AND (endtime >= %ld OR endtime = 0))",
 			   resv_cond->time_end, resv_cond->time_start);
 	} else if(resv_cond->time_end) {
 		xstrfmtcat(*cond,
-			   "AND (start < %d)", resv_cond->time_end);
+			   "AND (start < %ld)", resv_cond->time_end);
 	}
 }
 
@@ -291,7 +291,7 @@ as_pg_modify_reservation(pgsql_conn_t *pg_conn,
 	   may have since the last time we did an update to the
 	   reservation. */
 	query = xstrdup_printf("SELECT %s FROM %s WHERE id=%u "
-			       "AND (start=%d OR start=%d) AND cluster='%s' "
+			       "AND (start=%ld OR start=%ld) AND cluster='%s' "
 			       "AND deleted=0 ORDER BY start DESC "
 			       "LIMIT 1 FOR UPDATE;",
 			       mr_fields, resv_table, resv->id,
@@ -308,7 +308,7 @@ try_again:
 		rc = SLURM_ERROR;
 		PQclear(result);
 		error("as/pg: modify_reservation: There is no reservation"
-		      " by id %u, start %d, and cluster '%s'", resv->id,
+		      " by id %u, start %ld, and cluster '%s'", resv->id,
 		      resv->time_start_prev, resv->cluster);
 		if(!set && resv->time_end) {
 			/* This should never really happen,
@@ -319,7 +319,7 @@ try_again:
 			xfree(query);
 			query = xstrdup_printf(
 				"SELECT %s FROM %s WHERE id=%u "
-				"AND start <= %d AND cluster='%s' "
+				"AND start <= %ld AND cluster='%s' "
 				"AND deleted=0 ORDER BY start DESC "
 				"LIMIT 1;",
 				mr_fields, resv_table, resv->id,
@@ -383,9 +383,9 @@ try_again:
 		/* time_start is already done above and we
 		 * changed something that is in need on a new
 		 * entry. */
-		query = xstrdup_printf("UPDATE %s SET endtime=%d "
+		query = xstrdup_printf("UPDATE %s SET endtime=%ld "
 				       "WHERE deleted=0 AND id=%u "
-				       "AND start=%d AND cluster='%s';",
+				       "AND start=%ld AND cluster='%s';",
 				       resv_table, resv->time_start-1,
 				       resv->id, start,
 				       resv->cluster);
@@ -423,8 +423,8 @@ as_pg_remove_reservation(pgsql_conn_t *pg_conn,
 	}
 
 	/* first delete the resv that hasn't happened yet. */
-	query = xstrdup_printf("DELETE FROM %s WHERE start > %d "
-			       "AND id=%u AND start=%d "
+	query = xstrdup_printf("DELETE FROM %s WHERE start > %ld "
+			       "AND id=%u AND start=%ld "
 			       "AND cluster='%s';",
 			       resv_table, resv->time_start_prev,
 			       resv->id,
@@ -433,8 +433,8 @@ as_pg_remove_reservation(pgsql_conn_t *pg_conn,
 	 * time of the time_start_prev which is set to when the
 	 * command was issued */
 	xstrfmtcat(query,
-		   "UPDATE %s SET endtime=%d, deleted=1 WHERE deleted=0 AND "
-		   "id=%u AND start=%d AND cluster='%s;'",
+		   "UPDATE %s SET endtime=%ld, deleted=1 WHERE deleted=0 AND "
+		   "id=%u AND start=%ld AND cluster='%s;'",
 		   resv_table, resv->time_start_prev,
 		   resv->id, resv->time_start,
 		   resv->cluster);

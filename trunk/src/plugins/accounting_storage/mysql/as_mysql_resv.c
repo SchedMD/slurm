@@ -93,14 +93,14 @@ static int _setup_resv_limits(slurmdb_reservation_rec_t *resv,
 
 	if(resv->time_end) {
 		xstrcat(*cols, ", time_end");
-		xstrfmtcat(*vals, ", %u", resv->time_end);
-		xstrfmtcat(*extra, ", time_end=%u", resv->time_end);
+		xstrfmtcat(*vals, ", %ld", resv->time_end);
+		xstrfmtcat(*extra, ", time_end=%ld", resv->time_end);
 	}
 
 	if(resv->time_start) {
 		xstrcat(*cols, ", time_start");
-		xstrfmtcat(*vals, ", %u", resv->time_start);
-		xstrfmtcat(*extra, ", time_start=%u", resv->time_start);
+		xstrfmtcat(*vals, ", %ld", resv->time_start);
+		xstrfmtcat(*extra, ", time_start=%ld", resv->time_start);
 	}
 
 
@@ -162,8 +162,8 @@ static int _setup_resv_cond_limits(slurmdb_reservation_cond_t *resv_cond,
 		else
 			xstrcat(*extra, " where (");
 		xstrfmtcat(*extra,
-			   "(t1.time_start < %d "
-			   "&& (t1.time_end >= %d || t1.time_end = 0)))",
+			   "(t1.time_start < %ld "
+			   "&& (t1.time_end >= %ld || t1.time_end = 0)))",
 			   resv_cond->time_end, resv_cond->time_start);
 	} else if(resv_cond->time_end) {
 		if(*extra)
@@ -171,7 +171,7 @@ static int _setup_resv_cond_limits(slurmdb_reservation_cond_t *resv_cond,
 		else
 			xstrcat(*extra, " where (");
 		xstrfmtcat(*extra,
-			   "(t1.time_start < %d))", resv_cond->time_end);
+			   "(t1.time_start < %ld))", resv_cond->time_end);
 	}
 
 
@@ -291,7 +291,7 @@ extern int as_mysql_modify_resv(mysql_conn_t *mysql_conn,
 	   may have since the last time we did an update to the
 	   reservation. */
 	query = xstrdup_printf("select %s from \"%s_%s\" where id_resv=%u "
-			       "and (time_start=%d || time_start=%d) "
+			       "and (time_start=%ld || time_start=%ld) "
 			       "and deleted=0 order by time_start desc "
 			       "limit 1 FOR UPDATE;",
 			       cols, resv->cluster, resv_table, resv->id,
@@ -308,7 +308,7 @@ try_again:
 		rc = SLURM_ERROR;
 		mysql_free_result(result);
 		error("There is no reservation by id %u, "
-		      "time_start %d, and cluster '%s'", resv->id,
+		      "time_start %ld, and cluster '%s'", resv->id,
 		      resv->time_start_prev, resv->cluster);
 		if(!set && resv->time_end) {
 			/* This should never really happen,
@@ -319,7 +319,7 @@ try_again:
 			xfree(query);
 			query = xstrdup_printf(
 				"select %s from \"%s_%s\" where id_resv=%u "
-				"and time_start <= %d and deleted=0 "
+				"and time_start <= %ld and deleted=0 "
 				"order by time_start desc "
 				"limit 1;",
 				cols, resv->cluster, resv_table, resv->id,
@@ -385,16 +385,16 @@ try_again:
 		   time which we can just update it */
 		query = xstrdup_printf("update \"%s_%s\" set deleted=0%s "
 				       "where deleted=0 and id_resv=%u "
-				       "and time_start=%d;",
+				       "and time_start=%ld;",
 				       resv->cluster, resv_table,
 				       extra, resv->id, start);
 	} else {
 		/* time_start is already done above and we
 		 * changed something that is in need on a new
 		 * entry. */
-		query = xstrdup_printf("update \"%s_%s\" set time_end=%d "
+		query = xstrdup_printf("update \"%s_%s\" set time_end=%ld "
 				       "where deleted=0 && id_resv=%u "
-				       "&& time_start=%d;",
+				       "&& time_start=%ld;",
 				       resv->cluster, resv_table,
 				       resv->time_start-1,
 				       resv->id, start);
@@ -442,8 +442,8 @@ extern int as_mysql_remove_resv(mysql_conn_t *mysql_conn,
 
 
 	/* first delete the resv that hasn't happened yet. */
-	query = xstrdup_printf("delete from \"%s_%s\" where time_start > %d "
-			       "and id_resv=%u and time_start=%d;",
+	query = xstrdup_printf("delete from \"%s_%s\" where time_start > %ld "
+			       "and id_resv=%u and time_start=%ld;",
 			       resv->cluster, resv_table, resv->time_start_prev,
 			       resv->id,
 			       resv->time_start);
@@ -451,9 +451,9 @@ extern int as_mysql_remove_resv(mysql_conn_t *mysql_conn,
 	 * time of the time_start_prev which is set to when the
 	 * command was issued */
 	xstrfmtcat(query,
-		   "update \"%s_%s\" set time_end=%d, "
+		   "update \"%s_%s\" set time_end=%ld, "
 		   "deleted=1 where deleted=0 and "
-		   "id_resv=%u and time_start=%d;",
+		   "id_resv=%u and time_start=%ld;",
 		   resv->cluster, resv_table, resv->time_start_prev,
 		   resv->id, resv->time_start);
 

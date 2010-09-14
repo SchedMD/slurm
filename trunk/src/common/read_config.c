@@ -329,7 +329,7 @@ static bool _is_valid_path (char *path, char *msg)
 			goto out_false;
 		}
 		else if (!S_ISDIR (st.st_mode)) {
-			error ("%s: %s: Not a directory");
+			error ("%s: %s: Not a directory", msg, entry);
 			goto out_false;
 		}
 		/*

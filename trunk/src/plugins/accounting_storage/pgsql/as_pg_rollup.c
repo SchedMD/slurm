@@ -146,7 +146,7 @@ _process_event_usage(pgsql_conn_t *pg_conn, time_t start,
 	/* events with maintainance flag is processed with the reservations */
 	query = xstrdup_printf(
 		"SELECT %s FROM %s WHERE (state & %d)=0 AND "
-		"  (period_start<%d AND (period_end>=%d OR period_end=0))"
+		"  (period_start<%ld AND (period_end>=%ld OR period_end=0))"
 		"  ORDER BY node_name, period_start",
 	       	ge_fields, event_table, NODE_STATE_MAINT, end, start);
 	result = DEF_QUERY_RET;
@@ -257,7 +257,7 @@ _process_resv_usage(pgsql_conn_t *pg_conn, time_t start,
 
 	// now get the reservations during this time
 	query = xstrdup_printf("SELECT %s FROM %s WHERE "
-			       "(start < %d AND endtime >= %d) "
+			       "(start < %ld AND endtime >= %ld) "
 			       "ORDER BY cluster, start",
 			       gr_fields, resv_table, end, start);
 	result = DEF_QUERY_RET;
@@ -375,8 +375,8 @@ _process_job_usage(pgsql_conn_t *pg_conn, time_t start, time_t end,
 	};
 
 	query = xstrdup_printf(
-		"SELECT %s FROM %s WHERE (eligible < %d AND "
-		"  (endtime >= %d OR endtime = 0)) ORDER BY associd, eligible",
+		"SELECT %s FROM %s WHERE (eligible < %ld AND "
+		"  (endtime >= %ld OR endtime = 0)) ORDER BY associd, eligible",
 		gj_fields, job_table, end, start);
 	result = DEF_QUERY_RET;
 	if(!result) {
@@ -413,7 +413,7 @@ _process_job_usage(pgsql_conn_t *pg_conn, time_t start, time_t end,
 		if(! ISNULL(GJ_SUSPENDED)) {
 			/* function created in jobacct.c */
 			query = xstrdup_printf(
-				"SELECT get_job_suspend_time(%s, %d, %d);",
+				"SELECT get_job_suspend_time(%s, %ld, %ld);",
 				ROW(GJ_DB_INX), start, end);
 			result2 = DEF_QUERY_RET;
 			if(!result2)
@@ -642,7 +642,7 @@ _cluster_usage_sanity_check(local_cluster_usage_t *c_usage,
 		char *start_char = xstrdup(ctime(&curr_start));
 		char *end_char = xstrdup(ctime(&curr_end));
 		error("We have more allocated time than is "
-		      "possible (%llu > %llu) for "
+		      "possible (%"PRIu64" > %"PRIu64") for "
 		      "cluster %s(%d) from %s - %s",
 		      c_usage->a_cpu, c_usage->total_time,
 		      c_usage->name, c_usage->cpu_count,
@@ -664,8 +664,8 @@ _cluster_usage_sanity_check(local_cluster_usage_t *c_usage,
 
 		start_char[strlen(start_char)-1] = '\0';
 		error("We have more time than is "
-		      "possible (%llu+%llu+%llu)(%llu) "
-		      "> %llu) for "
+		      "possible (%"PRIu64"+%"PRIu64"+%"PRIu64")(%"PRIu64") "
+		      "> %"PRIu64") for "
 		      "cluster %s(%d) from %s - %s",
 		      c_usage->a_cpu, c_usage->d_cpu,
 		      c_usage->pd_cpu, total_used,
@@ -692,8 +692,8 @@ _cluster_usage_sanity_check(local_cluster_usage_t *c_usage,
 
 		total_used = c_usage->a_cpu +
 			c_usage->d_cpu + c_usage->pd_cpu;
-		/* info("We now have (%llu+%llu+%llu)(%llu) " */
-		/*       "?= %llu", */
+		/* info("We now have (%"PRIu64"+%"PRIu64"+%"PRIu64")(%"PRIu64") " */
+		/*       "?= %"PRIu64"", */
 		/*       c_usage->a_cpu, c_usage->d_cpu, */
 		/*       c_usage->pd_cpu, total_used, */
 		/*       c_usage->total_time); */
@@ -753,7 +753,7 @@ pgsql_hourly_rollup(pgsql_conn_t *pg_conn, time_t start, time_t end)
 		local_id_usage_t *a_usage = NULL;
 		local_id_usage_t *w_usage = NULL;
 
-		debug3("curr hour is now %d-%d", curr_start, curr_end);
+		debug3("curr hour is now %ld-%ld", curr_start, curr_end);
 /* 		info("start %s", ctime(&curr_start)); */
 /* 		info("end %s", ctime(&curr_end)); */
 
@@ -800,8 +800,9 @@ pgsql_hourly_rollup(pgsql_conn_t *pg_conn, time_t start, time_t end)
 			if (usage_recs)
 				xstrcat(usage_recs, ", ");
 			xstrfmtcat(usage_recs,
-				   "CAST((%d, %d, 0, '%s', %d, %d, "
-				   "%llu, %llu, %llu, %llu, %llu, %llu) AS %s)",
+				   "CAST((%ld, %ld, 0, '%s', %ld, %d, "
+				   "%"PRIu64", %"PRIu64", %"PRIu64", "
+				   "%"PRIu64", %"PRIu64", %"PRIu64") AS %s)",
 				   now, now, c_usage->name, curr_start,
 				   c_usage->cpu_count, c_usage->a_cpu,
 				   c_usage->d_cpu, c_usage->pd_cpu,
@@ -828,7 +829,8 @@ pgsql_hourly_rollup(pgsql_conn_t *pg_conn, time_t start, time_t end)
 			if(usage_recs)
 				xstrcat(usage_recs, ", ");
 			xstrfmtcat(usage_recs,
-				   "CAST((%d, %d, 0, %d, %d, %llu) AS %s)",
+				   "CAST((%ld, %ld, 0, %d, %ld, "
+				   "%"PRIu64") AS %s)",
 				   now, now, a_usage->id, curr_start,
 				   a_usage->a_cpu, assoc_hour_table);
 		}
@@ -855,7 +857,8 @@ pgsql_hourly_rollup(pgsql_conn_t *pg_conn, time_t start, time_t end)
 			if(usage_recs)
 				xstrcat(usage_recs, ", ");
 			xstrfmtcat(usage_recs,
-				   "CAST((%d, %d, 0, %d, %d, %llu, 0, 0) AS %s)",
+				   "CAST((%ld, %ld, 0, %d, %ld, "
+				   "%"PRIu64", 0, 0) AS %s)",
 				   now, now, w_usage->id, curr_start,
 				   w_usage->a_cpu, wckey_hour_table);
 		}
@@ -921,7 +924,7 @@ pgsql_daily_rollup(pgsql_conn_t *pg_conn, time_t start, time_t end,
 	uint16_t track_wckey = slurm_get_track_wckey();
 
 	if(!localtime_r(&curr_start, &start_tm)) {
-		error("Couldn't get localtime from day start %d", curr_start);
+		error("Couldn't get localtime from day start %ld", curr_start);
 		return SLURM_ERROR;
 	}
 	start_tm.tm_sec = 0;
@@ -932,16 +935,17 @@ pgsql_daily_rollup(pgsql_conn_t *pg_conn, time_t start, time_t end,
 	curr_end = mktime(&start_tm);
 
 	while(curr_start < end) {
-		debug3("curr day is now %d-%d", curr_start, curr_end);
+		debug3("curr day is now %ld-%ld", curr_start, curr_end);
 /* 		info("start %s", ctime(&curr_start)); */
 /* 		info("end %s", ctime(&curr_end)); */
-		query = xstrdup_printf("SELECT assoc_daily_rollup(%d, %d, %d);",
-				       now, curr_start, curr_end);
-		xstrfmtcat(query, "SELECT cluster_daily_rollup(%d, %d, %d);",
+		query = xstrdup_printf(
+			"SELECT assoc_daily_rollup(%ld, %ld, %ld);",
+			now, curr_start, curr_end);
+		xstrfmtcat(query, "SELECT cluster_daily_rollup(%ld, %ld, %ld);",
 			   now, curr_start, curr_end);
 		if (track_wckey) {
 			xstrfmtcat(query,
-				   "SELECT wckey_daily_rollup(%d, %d, %d);",
+				   "SELECT wckey_daily_rollup(%ld, %ld, %ld);",
 				   now, curr_start, curr_end);
 		}
 		rc = DEF_QUERY_RET_RC;
@@ -952,7 +956,7 @@ pgsql_daily_rollup(pgsql_conn_t *pg_conn, time_t start, time_t end,
 
 		curr_start = curr_end;
 		if(!localtime_r(&curr_start, &start_tm)) {
-			error("Couldn't get localtime from day start %d",
+			error("Couldn't get localtime from day start %ld",
 			      curr_start);
 			return SLURM_ERROR;
 		}
@@ -994,7 +998,8 @@ pgsql_monthly_rollup(pgsql_conn_t *pg_conn,
 	uint16_t track_wckey = slurm_get_track_wckey();
 
 	if(!localtime_r(&curr_start, &start_tm)) {
-		error("Couldn't get localtime from month start %d", curr_start);
+		error("Couldn't get localtime from month start %ld",
+		      curr_start);
 		return SLURM_ERROR;
 	}
 
@@ -1007,17 +1012,20 @@ pgsql_monthly_rollup(pgsql_conn_t *pg_conn,
 	curr_end = mktime(&start_tm);
 
 	while(curr_start < end) {
-		debug3("curr month is now %d-%d", curr_start, curr_end);
+		debug3("curr month is now %ld-%ld", curr_start, curr_end);
 /* 		info("start %s", ctime(&curr_start)); */
 /* 		info("end %s", ctime(&curr_end)); */
 		/* PL/pgSQL functions created in usage.c */
-		query = xstrdup_printf("SELECT assoc_monthly_rollup(%d, %d, %d);",
-				       now, curr_start, curr_end);
-		xstrfmtcat(query, "SELECT cluster_monthly_rollup(%d, %d, %d);",
+		query = xstrdup_printf(
+			"SELECT assoc_monthly_rollup(%ld, %ld, %ld);",
+			now, curr_start, curr_end);
+		xstrfmtcat(query,
+			   "SELECT cluster_monthly_rollup(%ld, %ld, %ld);",
 			   now, curr_start, curr_end);
 		if (track_wckey) {
 			xstrfmtcat(query,
-				   "SELECT wckey_monthly_rollup(%d, %d, %d);",
+				   "SELECT "
+				   "wckey_monthly_rollup(%ld, %ld, %ld);",
 				   now, curr_start, curr_end);
 		}
 		rc = DEF_QUERY_RET_RC;
@@ -1027,7 +1035,7 @@ pgsql_monthly_rollup(pgsql_conn_t *pg_conn,
 		}
 		curr_start = curr_end;
 		if(!localtime_r(&curr_start, &start_tm)) {
-			error("Couldn't get localtime from month start %d",
+			error("Couldn't get localtime from month start %ld",
 			      curr_start);
 		}
 		start_tm.tm_sec = 0;

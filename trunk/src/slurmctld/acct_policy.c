@@ -344,9 +344,11 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 			xfree(job_ptr->state_desc);
 			debug2("Job %u being held, "
 			       "the job is at or exceeds QOS %s's "
-			       "group max cpu minutes of %llu with %llu",
+			       "group max cpu minutes of %"PRIu64" "
+			       "with %"PRIu64"",
 			       job_ptr->job_id,
-			       qos_ptr->name, qos_ptr->grp_cpu_mins,
+			       qos_ptr->name,
+			       qos_ptr->grp_cpu_mins,
 			       usage_mins);
 			rc = false;
 			goto end_it;
@@ -390,7 +392,7 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 			job_ptr->state_reason = WAIT_ASSOC_JOB_LIMIT;
 			xfree(job_ptr->state_desc);
 			debug2("job %u being held, "
-			       "the job is at or exceeds QOS %s's "
+			       "the job is at or exceeds "
 			       "group max jobs limit %u with %u for qos %s",
 			       job_ptr->job_id,
 			       qos_ptr->grp_jobs,
@@ -456,9 +458,10 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 			if ((job_ptr->time_limit != NO_VAL) &&
 			    (job_cpu_time_limit > cpu_time_limit)) {
 				info("job %u being cancelled, "
-				     "cpu time limit %u exceeds "
-				     "qos max per job %u",
-				     job_ptr->job_id, job_cpu_time_limit,
+				     "cpu time limit %"PRIu64" exceeds "
+				     "qos max per job %"PRIu64"",
+				     job_ptr->job_id,
+				     job_cpu_time_limit,
 				     cpu_time_limit);
 				cancel_job = 1;
 				rc = false;
@@ -555,7 +558,7 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 			xfree(job_ptr->state_desc);
 			debug2("job %u being held, "
 			       "assoc %u is at or exceeds "
-			       "group max cpu minutes limit %llu "
+			       "group max cpu minutes limit %"PRIu64" "
 			       "with %Lf for account %s",
 			       job_ptr->job_id, assoc_ptr->id,
 			       assoc_ptr->grp_cpu_mins,
@@ -689,9 +692,10 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 			if ((job_ptr->time_limit != NO_VAL) &&
 			    (job_cpu_time_limit > cpu_time_limit)) {
 				info("job %u being cancelled, "
-				     "cpu time limit %u exceeds "
-				     "assoc max per job %u",
-				     job_ptr->job_id, job_cpu_time_limit,
+				     "cpu time limit %"PRIu64" exceeds "
+				     "assoc max per job %"PRIu64"",
+				     job_ptr->job_id,
+				     job_cpu_time_limit,
 				     cpu_time_limit);
 				cancel_job = 1;
 				rc = false;

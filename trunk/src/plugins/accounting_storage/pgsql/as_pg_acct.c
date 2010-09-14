@@ -200,7 +200,7 @@ as_pg_add_accts(pgsql_conn_t *pg_conn, uint32_t uid, List acct_list)
 			continue;
 		}
 		/* order of vals must match structure of acct_table */
-		rec = xstrdup_printf("(%d, %d, 0, '%s', '%s', '%s')", now,
+		rec = xstrdup_printf("(%ld, %ld, 0, '%s', '%s', '%s')", now,
 				     now, object->name, object->description,
 				     object->organization);
 		query = xstrdup_printf("SELECT add_acct(%s);", rec);
@@ -216,14 +216,14 @@ as_pg_add_accts(pgsql_conn_t *pg_conn, uint32_t uid, List acct_list)
 				      object->organization);
 		if(txn_query)
 			xstrfmtcat(txn_query,
-				   ", (%d, %u, '%s', '%s', $$%s$$)",
+				   ", (%ld, %u, '%s', '%s', $$%s$$)",
 				   now, DBD_ADD_ACCOUNTS, object->name,
 				   user_name, info);
 		else
 			xstrfmtcat(txn_query,
 				   "INSERT INTO %s "
 				   "(timestamp, action, name, actor, info) "
-				   "VALUES (%d, %u, '%s', '%s', $$%s$$)",
+				   "VALUES (%ld, %u, '%s', '%s', $$%s$$)",
 				   txn_table,
 				   now, DBD_ADD_ACCOUNTS, object->name,
 				   user_name, info);

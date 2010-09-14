@@ -194,10 +194,12 @@ extern List as_mysql_get_txn(mysql_conn_t *mysql_conn, uid_t uid,
 			if(mysql_num_rows(result)) {
 				if(extra)
 					xstrfmtcat(extra,
-						   " || (cluster='%s' && (");
+						   " || (cluster='%s' && (",
+						   object);
 				else
 					xstrfmtcat(extra,
-						   " where (cluster='%s' && (");
+						   " where (cluster='%s' && (",
+						   object);
 
 				set = 0;
 
@@ -331,21 +333,21 @@ extern List as_mysql_get_txn(mysql_conn_t *mysql_conn, uid_t uid,
 			xstrcat(extra, " && (");
 		else
 			xstrcat(extra, " where (");
-		xstrfmtcat(extra, "timestamp < %d && timestamp >= %d)",
+		xstrfmtcat(extra, "timestamp < %ld && timestamp >= %ld)",
 			   txn_cond->time_end, txn_cond->time_start);
 	} else if(txn_cond->time_start) {
 		if(extra)
 			xstrcat(extra, " && (");
 		else
 			xstrcat(extra, " where (");
-		xstrfmtcat(extra, "timestamp >= %d)", txn_cond->time_start);
+		xstrfmtcat(extra, "timestamp >= %ld)", txn_cond->time_start);
 
 	} else if(txn_cond->time_end) {
 		if(extra)
 			xstrcat(extra, " && (");
 		else
 			xstrcat(extra, " where (");
-		xstrfmtcat(extra, "timestamp < %d)", txn_cond->time_end);
+		xstrfmtcat(extra, "timestamp < %ld)", txn_cond->time_end);
 	}
 
 	/* make sure we can get the max length out of the database

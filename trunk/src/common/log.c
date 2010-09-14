@@ -194,7 +194,7 @@ _log_init(char *prog, log_options_t opt, log_facility_t fac, char *logfile )
 			xfree(log->argv0);
 		log->argv0 = xstrdup(xbasename(prog));
 	} else if (!log->argv0) {
-		char *short_name = strrchr(default_name, '/');
+		const char *short_name = strrchr(default_name, '/');
 		if (short_name)
 			short_name++;
 		else
@@ -1089,7 +1089,7 @@ fatal_cleanup(void)
 			cup = &cu->next;
 			continue;
 		}
-		debug("Calling cleanup 0x%x(0x%x)",
+		debug("Calling cleanup 0x%lx(0x%lx)",
 		      (u_long) cu->proc, (u_long) cu->context);
 		(*cu->proc) (cu->context);
 		*cup = cu->next;
@@ -1099,7 +1099,7 @@ fatal_cleanup(void)
 		cu = *cup;
 		if (cu->thread_id != 0)
 			continue;
-		debug("Calling cleanup 0x%x(0x%x)",
+		debug("Calling cleanup 0x%lx(0x%lx)",
 		      (u_long) cu->proc, (u_long) cu->context);
 		(*cu->proc) (cu->context);
 	}

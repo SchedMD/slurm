@@ -277,6 +277,8 @@ static bool _valid_node_list(char **node_list_pptr)
 #undef USE_ARGERROR
 #if USE_ARGERROR
 static void argerror(const char *msg, ...)
+  __attribute__ ((format (printf, 1, 2)));
+static void argerror(const char *msg, ...)
 {
 	va_list ap;
 	char buf[256];

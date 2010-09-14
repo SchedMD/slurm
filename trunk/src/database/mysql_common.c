@@ -179,7 +179,6 @@ static int _mysql_make_table_current(MYSQL *mysql_db, char *table_name,
 				info("adding column %s at the beginning "
 				     "of table %s",
 				     fields[i].name,
-				     fields[i-1].name,
 				     table_name);
 				xstrfmtcat(query, " add %s %s first,",
 					   fields[i].name,
@@ -312,9 +311,9 @@ static int _mysql_make_table_current(MYSQL *mysql_db, char *table_name,
 		quoted = slurm_add_slash_to_quotes(correct_query);
 		query2 = xstrdup_printf("insert into %s (creation_time, "
 					"mod_time, table_name, definition) "
-					"values (%d, %d, '%s', '%s') "
+					"values (%ld, %ld, '%s', '%s') "
 					"on duplicate key update "
-					"definition='%s', mod_time=%d;",
+					"definition='%s', mod_time=%ld;",
 					table_defs_table, now, now,
 					table_name, quoted,
 					quoted, now);

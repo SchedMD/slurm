@@ -360,7 +360,8 @@ void *_fwd_tree_thread(void *arg)
 			   written slurm_send_addr_recv_msgs always
 			   returned a list */
 			error("fwd_tree_thread: no return list given from "
-			      "slurm_send_addr_recv_msgs", name);
+			      "slurm_send_addr_recv_msgs spawned for %s",
+			      name);
 			slurm_mutex_lock(fwd_tree->tree_mutex);
 			mark_as_failed_forward(
 				&fwd_tree->ret_list, name,

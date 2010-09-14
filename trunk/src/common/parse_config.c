@@ -1224,7 +1224,7 @@ void s_p_dump_values(const s_p_hashtbl_t *hashtbl,
 			break;
 		case S_P_POINTER:
 			if (s_p_get_pointer(&ptr, op->key, hashtbl))
-				verbose("%s = %x", op->key, ptr);
+				verbose("%s = %zx", op->key, (size_t)ptr);
 			else
 				verbose("%s", op->key);
 			break;

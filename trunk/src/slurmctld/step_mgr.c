@@ -234,7 +234,7 @@ dump_step_desc(job_step_create_request_msg_t *step_spec)
 {
 	debug3("StepDesc: user_id=%u job_id=%u node_count=%u-%u cpu_count=%u",
 	       step_spec->user_id, step_spec->job_id,
-	       step_spec->min_nodes, step_spec->max_nodes, 
+	       step_spec->min_nodes, step_spec->max_nodes,
 	       step_spec->cpu_count);
 	debug3("   num_tasks=%u relative=%u task_dist=%u node_list=%s",
 	       step_spec->num_tasks, step_spec->relative,
@@ -541,13 +541,14 @@ _pick_step_nodes (struct job_record  *job_ptr,
 			if (!bit_super_set(selected_nodes,
 					   job_ptr->node_bitmap)) {
 				info("_pick_step_nodes: selected nodes (%s) "
-				     "not in job %u", 
+				     "not in job %u",
 				     step_spec->node_list, job_ptr->job_id);
 				FREE_NULL_BITMAP(selected_nodes);
 				goto cleanup;
 			}
 			if (!bit_super_set(selected_nodes, up_node_bitmap)) {
-				info("_pick_step_nodes: selected node is DOWN",
+				info("_pick_step_nodes: selected nodes (%s) "
+				     "are DOWN",
 				     step_spec->node_list);
 				FREE_NULL_BITMAP(selected_nodes);
 				goto cleanup;
@@ -575,8 +576,8 @@ _pick_step_nodes (struct job_record  *job_ptr,
 			}
 			if (step_spec->mem_per_cpu) {
 				avail_mem = job_resrcs_ptr->
-					    memory_allocated[node_inx] -
-					    job_resrcs_ptr->memory_used[node_inx];
+					memory_allocated[node_inx] -
+					job_resrcs_ptr->memory_used[node_inx];
 				task_cnt = avail_mem / step_spec->mem_per_cpu;
 				if (cpus_per_task > 0)
 					task_cnt /= cpus_per_task;
@@ -821,7 +822,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 		/* Remove first (step_spec->relative) nodes from
 		 * available list */
 		bitstr_t *relative_nodes = NULL;
-		relative_nodes = bit_pick_cnt(nodes_avail, 
+		relative_nodes = bit_pick_cnt(nodes_avail,
 					      step_spec->relative);
 		if (relative_nodes == NULL) {
 			info ("_pick_step_nodes: "
@@ -916,7 +917,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 				    (bit_set_count(nodes_avail) +
 				     nodes_picked_cnt + mem_blocked_nodes)) {
 					*return_code = ESLURM_NODES_BUSY;
-				} else if (!bit_super_set(job_ptr->node_bitmap, 
+				} else if (!bit_super_set(job_ptr->node_bitmap,
 							  up_node_bitmap)) {
 					*return_code = ESLURM_NODE_NOT_AVAIL;
 				}
@@ -952,7 +953,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 				nodes_picked_cnt += 1;
 				if (step_spec->min_nodes)
 					step_spec->min_nodes = nodes_picked_cnt;
-				cpus_picked_cnt = _count_cpus(job_ptr, 
+				cpus_picked_cnt = _count_cpus(job_ptr,
 							      nodes_picked,
 							      usable_cpu_cnt);
 				if (step_spec->max_nodes &&
@@ -968,7 +969,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 			    (step_spec->cpu_count <=
 			     (cpus_picked_cnt + mem_blocked_cpus))) {
 				*return_code = ESLURM_NODES_BUSY;
-			} else if (!bit_super_set(job_ptr->node_bitmap, 
+			} else if (!bit_super_set(job_ptr->node_bitmap,
 						  up_node_bitmap)) {
 				*return_code = ESLURM_NODE_NOT_AVAIL;
 			}
@@ -997,7 +998,7 @@ cleanup:
 }
 
 /*
- * _count_cpus - report how many cpus are allocated to this job for the 
+ * _count_cpus - report how many cpus are allocated to this job for the
  *		 identified nodes
  * IN job_ptr - point to job
  * IN bitmap - map of nodes to tally
@@ -1013,7 +1014,7 @@ static int _count_cpus(struct job_record *job_ptr, bitstr_t *bitmap,
 
 	if (job_ptr->job_resrcs && job_ptr->job_resrcs->cpus) {
 		int node_inx = 0;
-		for (i = 0, node_ptr = node_record_table_ptr; 
+		for (i = 0, node_ptr = node_record_table_ptr;
 		     i < node_record_count; i++, node_ptr++) {
 			if (!bit_test(job_ptr->node_bitmap, i))
 				continue;
@@ -1027,7 +1028,7 @@ static int _count_cpus(struct job_record *job_ptr, bitstr_t *bitmap,
 		}
 	} else {
 		error("job %u lacks cpus array", job_ptr->job_id);
-		for (i = 0, node_ptr = node_record_table_ptr; 
+		for (i = 0, node_ptr = node_record_table_ptr;
 		     i < node_record_count; i++, node_ptr++) {
 			if (!bit_test(bitmap, i))
 				continue;
@@ -1080,7 +1081,7 @@ static void _pick_step_cores(struct step_record *step_ptr,
 			if (!bit_test(job_resrcs_ptr->core_bitmap, bit_offset))
 				continue;
 			if ((use_all_cores == false) &&
-			    bit_test(job_resrcs_ptr->core_bitmap_used, 
+			    bit_test(job_resrcs_ptr->core_bitmap_used,
 				     bit_offset)) {
 				continue;
 			}

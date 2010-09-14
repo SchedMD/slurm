@@ -316,7 +316,7 @@ extern int parse_wiki_config(void)
 		while (tok) {
 			if (i >= EXC_PART_CNT) {
 				error("ExcludePartitions has too many entries "
-				      "skipping %s and later entries");
+				      "skipping %s and later entries", tok);
 				break;
 			}
 			exclude_part_ptr[i] = find_part_record(tok);

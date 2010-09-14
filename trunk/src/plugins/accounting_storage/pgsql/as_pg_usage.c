@@ -492,7 +492,6 @@ _create_function_add_wckey_hour_usages(PGconn *db_conn)
 		"  EXIT WHEN rec IS NULL; "
 		"  PERFORM add_wckey_hour_usage(rec);"
 		"END LOOP; END; $$ LANGUAGE PLPGSQL;",
-		wckey_hour_table, wckey_hour_table,
 		wckey_hour_table, wckey_hour_table);
 	return create_function_xfree(db_conn, create_line);
 }
@@ -656,11 +655,14 @@ check_usage_tables(PGconn *db_conn, char *user)
 	rc |= check_table(db_conn, assoc_month_table, assoc_usage_table_fields,
 			  assoc_usage_table_constraint, user);
 
-	rc |= check_table(db_conn, cluster_day_table, cluster_usage_table_fields,
+	rc |= check_table(db_conn, cluster_day_table,
+			  cluster_usage_table_fields,
 			  cluster_usage_table_constraint, user);
-	rc |= check_table(db_conn, cluster_hour_table, cluster_usage_table_fields,
+	rc |= check_table(db_conn, cluster_hour_table,
+			  cluster_usage_table_fields,
 			  cluster_usage_table_constraint, user);
-	rc |= check_table(db_conn, cluster_month_table, cluster_usage_table_fields,
+	rc |= check_table(db_conn, cluster_month_table,
+			  cluster_usage_table_fields,
 			  cluster_usage_table_constraint, user);
 
 	rc |= check_table(db_conn, wckey_day_table, wckey_usage_table_fields,
@@ -712,9 +714,9 @@ delete_assoc_usage(pgsql_conn_t *pg_conn, time_t now, char *assoc_cond)
 {
 	int rc;
 	char *query = xstrdup_printf(
-		"UPDATE %s AS t1 SET mod_time=%d, deleted=1 WHERE (%s);"
-		"UPDATE %s AS t1 SET mod_time=%d, deleted=1 WHERE (%s);"
-		"UPDATE %s AS t1 SET mod_time=%d, deleted=1 WHERE (%s);",
+		"UPDATE %s AS t1 SET mod_time=%ld, deleted=1 WHERE (%s);"
+		"UPDATE %s AS t1 SET mod_time=%ld, deleted=1 WHERE (%s);"
+		"UPDATE %s AS t1 SET mod_time=%ld, deleted=1 WHERE (%s);",
 		assoc_day_table, now, assoc_cond,
 		assoc_hour_table, now, assoc_cond,
 		assoc_month_table, now, assoc_cond);
@@ -805,7 +807,7 @@ is_user:
 	query = xstrdup_printf(
 		"SELECT t3.id, t1.period_start, t1.alloc_cpu_secs "
 		"FROM %s AS t1, %s AS t2, %s AS t3 "
-		"WHERE (t1.period_start < %d AND t1.period_start >= %d) "
+		"WHERE (t1.period_start < %ld AND t1.period_start >= %ld) "
 		"AND t1.id=t2.id AND t3.id=%d AND "
 		"(t2.lft BETWEEN t3.lft AND t3.rgt) "
 		"ORDER BY t3.id, t1.period_start;",
@@ -889,7 +891,7 @@ _get_wckey_usage(pgsql_conn_t *pg_conn, uid_t uid,
 
 	query = xstrdup_printf(
 		"SELECT id, period_start, alloc_cpu_secs FROM %s "
-		"WHERE (period_start < %d AND period_start >= %d) "
+		"WHERE (period_start < %ld AND period_start >= %ld) "
 		"AND id=%d ORDER BY id, period_start;",
 		usage_table, end, start, slurmdb_wckey->id);
 	result = DEF_QUERY_RET;
@@ -998,7 +1000,8 @@ as_pg_roll_usage(pgsql_conn_t *pg_conn,  time_t sent_start,
 		} else {
 			time_t now = time(NULL);
 			PQclear(result);
-			query = xstrdup_printf("SELECT init_last_ran(%d);", now);
+			query = xstrdup_printf("SELECT init_last_ran(%ld);",
+					       now);
 			result = DEF_QUERY_RET;
 			if(!result)
 				return SLURM_ERROR;
@@ -1033,11 +1036,11 @@ as_pg_roll_usage(pgsql_conn_t *pg_conn,  time_t sent_start,
 //	last_month = 1204358399;
 
 	if(!localtime_r(&last_hour, &start_tm)) {
-		error("Couldn't get localtime from hour start %d", last_hour);
+		error("Couldn't get localtime from hour start %ld", last_hour);
 		return SLURM_ERROR;
 	}
 	if(!localtime_r(&my_time, &end_tm)) {
-		error("Couldn't get localtime from hour end %d", my_time);
+		error("Couldn't get localtime from hour end %ld", my_time);
 		return SLURM_ERROR;
 	}
 
@@ -1073,16 +1076,17 @@ as_pg_roll_usage(pgsql_conn_t *pg_conn,  time_t sent_start,
 		END_TIMER3("hourly_rollup", 5000000);
 		/* If we have a sent_end do not update the last_run_table */
 		if(!sent_end)
-			query = xstrdup_printf("UPDATE %s SET hourly_rollup=%d",
-					       last_ran_table, end_time);
+			query = xstrdup_printf(
+				"UPDATE %s SET hourly_rollup=%ld",
+				last_ran_table, end_time);
 	} else {
-		debug2("no need to run this hour %d <= %d",
+		debug2("no need to run this hour %ld <= %ld",
 		       end_time, start_time);
 	}
 
 
 	if(!localtime_r(&last_day, &start_tm)) {
-		error("Couldn't get localtime from day %d", last_day);
+		error("Couldn't get localtime from day %ld", last_day);
 		return SLURM_ERROR;
 	}
 	/* align to day boundary */
@@ -1107,17 +1111,17 @@ as_pg_roll_usage(pgsql_conn_t *pg_conn,  time_t sent_start,
 			return rc;
 		END_TIMER2("daily_rollup");
 		if(query && !sent_end)
-			xstrfmtcat(query, ", daily_rollup=%d", end_time);
+			xstrfmtcat(query, ", daily_rollup=%ld", end_time);
 		else if(!sent_end)
-			query = xstrdup_printf("UPDATE %s SET daily_rollup=%d",
+			query = xstrdup_printf("UPDATE %s SET daily_rollup=%ld",
 					       last_ran_table, end_time);
 	} else {
-		debug2("no need to run this day %d <= %d",
+		debug2("no need to run this day %ld <= %ld",
 		       end_time, start_time);
 	}
 
 	if(!localtime_r(&last_month, &start_tm)) {
-		error("Couldn't get localtime from month %d", last_month);
+		error("Couldn't get localtime from month %ld", last_month);
 		return SLURM_ERROR;
 	}
 
@@ -1150,13 +1154,13 @@ as_pg_roll_usage(pgsql_conn_t *pg_conn,  time_t sent_start,
 		END_TIMER2("monthly_rollup");
 
 		if(query && !sent_end)
-			xstrfmtcat(query, ", monthly_rollup=%d", end_time);
+			xstrfmtcat(query, ", monthly_rollup=%ld", end_time);
 		else if(!sent_end)
 			query = xstrdup_printf(
-				"UPDATE %s SET monthly_rollup=%d",
+				"UPDATE %s SET monthly_rollup=%ld",
 				last_ran_table, end_time);
 	} else {
-		debug2("no need to run this month %d <= %d",
+		debug2("no need to run this month %ld <= %ld",
 		       end_time, start_time);
 	}
 
@@ -1215,7 +1219,7 @@ get_usage_for_assoc_list(pgsql_conn_t *pg_conn, List assoc_list,
 	query = xstrdup_printf(
 		"SELECT t3.id, t1.period_start, t1.alloc_cpu_secs "
 		"FROM %s AS t1, %s AS t2, %s AS t3 "
-		"WHERE (t1.period_start < %d AND t1.period_start >= %d) "
+		"WHERE (t1.period_start < %ld AND t1.period_start >= %ld) "
 		"AND t1.id=t2.id AND (%s) AND "
 		"(t2.lft between t3.lft and t3.rgt) "
 		"ORDER BY t3.id, period_start;",
@@ -1326,7 +1330,7 @@ get_usage_for_wckey_list(pgsql_conn_t *pg_conn, List wckey_list,
 
 	query = xstrdup_printf(
 		"SELECT id, period_start, alloc_cpu_secs FROM %s "
-		"WHERE (period_start < %d AND period_start >= %d) "
+		"WHERE (period_start < %ld AND period_start >= %ld) "
 		"AND (%s) ORDER BY id, period_start;",
 		usage_table, end, start, id_str);
 	xfree(id_str);

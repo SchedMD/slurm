@@ -1371,8 +1371,8 @@ extern void sacctmgr_print_assoc_limits(slurmdb_association_rec_t *assoc)
 	if (assoc->grp_cpu_mins == INFINITE)
 		printf("  GrpCPUMins    = NONE\n");
 	else if (assoc->grp_cpu_mins != NO_VAL)
-		printf("  GrpCPUMins    = %llu\n",
-		       (long long unsigned)assoc->grp_cpu_mins);
+		printf("  GrpCPUMins    = %"PRIu64"\n",
+		       assoc->grp_cpu_mins);
 
 	if (assoc->grp_cpus == INFINITE)
 		printf("  GrpCPUs       = NONE\n");
@@ -1407,8 +1407,8 @@ extern void sacctmgr_print_assoc_limits(slurmdb_association_rec_t *assoc)
 	if (assoc->max_cpu_mins_pj == (uint64_t)INFINITE)
 		printf("  MaxCPUMins    = NONE\n");
 	else if (assoc->max_cpu_mins_pj != (uint64_t)NO_VAL)
-		printf("  MaxCPUMins    = %llu\n",
-		       (long long unsigned)assoc->max_cpu_mins_pj);
+		printf("  MaxCPUMins    = %"PRIu64"\n",
+		       assoc->max_cpu_mins_pj);
 
 	if (assoc->max_cpus_pj == INFINITE)
 		printf("  MaxCPUs       = NONE\n");
@@ -1464,8 +1464,8 @@ extern void sacctmgr_print_qos_limits(slurmdb_qos_rec_t *qos)
 	if (qos->grp_cpu_mins == INFINITE)
 		printf("  GrpCPUMins     = NONE\n");
 	else if (qos->grp_cpu_mins != NO_VAL)
-		printf("  GrpCPUMins     = %llu\n",
-		       (long long unsigned)qos->grp_cpu_mins);
+		printf("  GrpCPUMins     = %"PRIu64"\n",
+		       qos->grp_cpu_mins);
 
 	if (qos->grp_cpus == INFINITE)
 		printf("  GrpCPUs        = NONE\n");
@@ -1500,8 +1500,8 @@ extern void sacctmgr_print_qos_limits(slurmdb_qos_rec_t *qos)
 	if (qos->max_cpu_mins_pj == (uint64_t)INFINITE)
 		printf("  MaxCPUMins     = NONE\n");
 	else if (qos->max_cpu_mins_pj != (uint64_t)NO_VAL)
-		printf("  MaxCPUMins     = %llu\n",
-		       (long long unsigned)qos->max_cpu_mins_pj);
+		printf("  MaxCPUMins     = %"PRIu64"\n",
+		       qos->max_cpu_mins_pj);
 
 	if (qos->max_cpus_pj == INFINITE)
 		printf("  MaxCPUs        = NONE\n");

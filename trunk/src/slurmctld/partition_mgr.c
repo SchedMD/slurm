@@ -598,7 +598,7 @@ int load_all_part_state(void)
 		/* validity test as possible */
 		if (state_up > PARTITION_UP) {
 			error("Invalid data for partition %s: state_up=%u",
-			      state_up);
+			      part_name, state_up);
 			error_code = EINVAL;
 		}
 		if (error_code) {

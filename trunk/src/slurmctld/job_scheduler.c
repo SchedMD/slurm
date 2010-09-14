@@ -1462,11 +1462,12 @@ static void *_run_prolog(void *arg)
 		      job_id, WEXITSTATUS(status), WTERMSIG(status));
 		lock_slurmctld(job_write_lock);
 		if (last_job_requeue == job_id) {
-			info("prolog_slurmctld failed again for job %u");
+			info("prolog_slurmctld failed again for job %u",
+			     job_id);
 			kill_job = true;
 		} else if ((rc = job_requeue(0, job_id, -1,
 					     (uint16_t)NO_VAL))) {
-			info("unable to requeue job %u: %m");
+			info("unable to requeue job %u: %m", job_id);
 			kill_job = true;
 		} else
 			last_job_requeue = job_id;

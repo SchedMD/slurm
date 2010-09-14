@@ -171,10 +171,10 @@ _get_db_index(pgsql_conn_t *pg_conn, time_t submit, uint32_t jobid,
 
 	if(!PQntuples(result)) {
 		debug4("We can't get a db_index for this combo, "
-		       "time_submit=%d and id_job=%u and id_assoc=%u.  "
+		       "time_submit=%ld and id_job=%u and id_assoc=%u.  "
 		       "We must not have heard about the start yet, "
 		       "no big deal, we will get one right after this.",
-		       (int)submit, jobid, associd);
+		       submit, jobid, associd);
 	} else {
 		db_index = atoi(PG_VAL(0));
 	}
@@ -437,8 +437,8 @@ js_pg_job_start(pgsql_conn_t *pg_conn,
 		 * first time.
 		 */
 		query = xstrdup_printf("SELECT id FROM %s WHERE jobid=%u AND "
-				       "submit=%d AND eligible=%d "
-				       "AND start=%d;",
+				       "submit=%ld AND eligible=%ld "
+				       "AND start=%ld;",
 				       job_table, job_ptr->job_id,
 				       submit_time, begin_time, start_time);
 		result = DEF_QUERY_RET;
@@ -478,8 +478,8 @@ js_pg_job_start(pgsql_conn_t *pg_conn,
 		global_last_rollup = check_time;
 		slurm_mutex_unlock(&rollup_lock);
 
-		query = xstrdup_printf("UPDATE %s SET hourly_rollup=%d, "
-				       "daily_rollup=%d, monthly_rollup=%d",
+		query = xstrdup_printf("UPDATE %s SET hourly_rollup=%ld, "
+				       "daily_rollup=%ld, monthly_rollup=%ld",
 				       last_ran_table, check_time,
 				       check_time, check_time);
 		rc = DEF_QUERY_RET_RC;
@@ -540,7 +540,7 @@ no_rollup_change:
 		rec = xstrdup_printf(
 			"(0, 0, %u, %u, '%s', %u, %u, %u, "
 			"'%s', '%s', '%s', '%s', "
-			"%u, %u, %u, 0, 0, %d, "
+			"%ld, %ld, %ld, 0, 0, %d, "
 			"'%s', %u, %u, 0, %d, %u, %u, %u, "
 			"'%s', '%s', -1, %d, %u)",
 			/* id=0, not used */
@@ -613,7 +613,7 @@ no_rollup_change:
 		if(node_inx)
 			xstrfmtcat(query, "node_inx='%s', ", node_inx);
 
-		xstrfmtcat(query, "start=%d, name='%s', state=%u, "
+		xstrfmtcat(query, "start=%ld, name='%s', state=%u, "
 			   "alloc_cpus=%u, alloc_nodes=%u, associd=%u, "
 			   "wckeyid=%u, resvid=%u, timelimit=%d WHERE id=%u;",
 			   start_time, jname, job_state,
@@ -676,8 +676,8 @@ js_pg_job_complete(pgsql_conn_t *pg_conn,
 		global_last_rollup = job_ptr->end_time;
 		slurm_mutex_unlock(&rollup_lock);
 
-		query = xstrdup_printf("UPDATE %s SET hourly_rollup=%d, "
-				       "daily_rollup=%d, monthly_rollup=%d",
+		query = xstrdup_printf("UPDATE %s SET hourly_rollup=%ld, "
+				       "daily_rollup=%ld, monthly_rollup=%ld",
 				       last_ran_table, end_time,
 				       end_time, end_time);
 		rc = DEF_QUERY_RET_RC;
@@ -695,7 +695,7 @@ js_pg_job_complete(pgsql_conn_t *pg_conn,
 	if (_check_job_db_index(pg_conn, job_ptr) != SLURM_SUCCESS)
 		return SLURM_SUCCESS;
 
-	query = xstrdup_printf("UPDATE %s SET endtime=%d, state=%d, "
+	query = xstrdup_printf("UPDATE %s SET endtime=%ld, state=%d, "
 			       "nodelist='%s', comp_code=%d, "
 			       "kill_requid=%d WHERE id=%d",
 			       job_table, end_time, job_state,
@@ -795,7 +795,7 @@ js_pg_step_start(pgsql_conn_t *pg_conn,
 	    != SLURM_SUCCESS)
 		return SLURM_SUCCESS;
 
-	rec = xstrdup_printf("(%u, 0, %u, %u, 0, 0,'%s', '%s', '%s',"
+	rec = xstrdup_printf("(%u, 0, %u, %ld, 0, 0,'%s', '%s', '%s',"
 			     "%u, -1, 0, %u, %u, %u, %u,"
 			     "0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0)",
 			     step_ptr->job_ptr->db_index,
@@ -993,7 +993,7 @@ js_pg_suspend(pgsql_conn_t *pg_conn, struct job_record *job_ptr)
 		suspended = true;
 
 	query = xstrdup_printf(
-		"UPDATE %s SET suspended=%u-suspended, state=%d "
+		"UPDATE %s SET suspended=%d-suspended, state=%d "
 		"WHERE id=%u",
 		job_table, (int)job_ptr->suspend_time,
 		job_ptr->job_state & JOB_STATE_BASE,
@@ -1015,7 +1015,7 @@ js_pg_suspend(pgsql_conn_t *pg_conn, struct job_record *job_ptr)
 	rc = DEF_QUERY_RET_RC;
 	if(rc != SLURM_ERROR) {
 		query = xstrdup_printf(
-			"UPDATE %s SET suspended=%u-suspended, "
+			"UPDATE %s SET suspended=%d-suspended, "
 			"state=%d WHERE id=%u and endtime=0",
 			step_table, (int)job_ptr->suspend_time,
 			job_ptr->job_state, job_ptr->db_index);
@@ -1211,18 +1211,20 @@ no_resv:
 
 			if(!job_cond->usage_end)
 				xstrfmtcat(*cond,
-					   "(t1.endtime >= %d OR t1.endtime = 0))",
+					   "(t1.endtime >= %ld "
+					   "OR t1.endtime = 0))",
 					   job_cond->usage_start);
 			else
 				xstrfmtcat(*cond,
-					   "(t1.eligible < %d "
-					   "AND (t1.endtime >= %d OR t1.endtime = 0)))",
+					   "(t1.eligible < %ld "
+					   "AND (t1.endtime >= %ld "
+					   "OR t1.endtime = 0)))",
 					   job_cond->usage_end,
 					   job_cond->usage_start);
 		} else if(job_cond->usage_end) {
 			xstrcat(*cond, " AND (");
 			xstrfmtcat(*cond,
-				   "(t1.eligible < %d))", job_cond->usage_end);
+				   "(t1.eligible < %ld))", job_cond->usage_end);
 		}
 	}
 
@@ -1668,7 +1670,7 @@ js_pg_get_jobs_cond(pgsql_conn_t *pg_conn, uid_t uid,
 				/* get the suspended time for this job */
 				query = xstrdup_printf(
 					"SELECT start, endtime FROM %s WHERE "
-					"(start < %d AND (endtime >= %d OR "
+					"(start < %ld AND (endtime >= %ld OR "
 					"endtime = 0)) AND id=%s "
 					"ORDER BY start",
 					suspend_table, job_cond->usage_end,

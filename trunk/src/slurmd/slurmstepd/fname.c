@@ -64,7 +64,7 @@
 char *
 fname_create(slurmd_job_t *job, const char *format, int taskid)
 {
-	unsigned long int wid   = 0;
+	unsigned int wid   = 0;
 	char *name = NULL;
 	char *orig = xstrdup(format);
 	char *p, *q;
@@ -86,9 +86,12 @@ fname_create(slurmd_job_t *job, const char *format, int taskid)
 	while(*p != '\0') {
 		if (*p == '%') {
 			if (isdigit(*(++p))) {
+				unsigned long in_width = 0;
 				xmemcat(name, q, p - 1);
-				if ((wid = strtoul(p, &p, 10)) > MAX_WIDTH)
+				if ((in_width = strtoul(p, &p, 10)) > MAX_WIDTH)
 					wid = MAX_WIDTH;
+				else
+					wid = (unsigned int)in_width;
 				q = p - 1;
 				if (*p == '\0')
 					break;

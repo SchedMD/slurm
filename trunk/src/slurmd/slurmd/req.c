@@ -1179,15 +1179,15 @@ _rpc_batch_job(slurm_msg_t *msg)
 	slurm_addr_t *cli = &msg->orig_addr;
 
 	if (!_slurm_authorized_user(req_uid)) {
-		error("Security violation, batch launch RPC from uid %u",
-		      (unsigned int) req_uid);
+		error("Security violation, batch launch RPC from uid %d",
+		      req_uid);
 		rc = ESLURM_USER_ID_MISSING;	/* or bad in this case */
 		goto done;
 	}
 	slurm_cred_handle_reissue(conf->vctx, req->cred);
 	if (slurm_cred_revoked(conf->vctx, req->cred)) {
 		error("Job %u already killed, do not launch batch job",
-			req->job_id);
+		      req->job_id);
 		rc = ESLURMD_CREDENTIAL_REVOKED;	/* job already ran */
 		goto done;
 	}
@@ -1349,8 +1349,8 @@ _rpc_job_notify(slurm_msg_t *msg)
 	 * check that requesting user ID is the SLURM UID or root
 	 */
 	if ((req_uid != job_uid) && (!_slurm_authorized_user(req_uid))) {
-		error("Security violation: job_notify(%ld) from uid %ld",
-		      req->job_id, (long) req_uid);
+		error("Security violation: job_notify(%u) from uid %d",
+		      req->job_id, req_uid);
 		return;
 	}
 
@@ -1433,8 +1433,8 @@ _rpc_reconfig(slurm_msg_t *msg)
 	uid_t req_uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
 
 	if (!_slurm_authorized_user(req_uid))
-		error("Security violation, reconfig RPC from uid %u",
-		      (unsigned int) req_uid);
+		error("Security violation, reconfig RPC from uid %d",
+		      req_uid);
 	else
 		kill(conf->pid, SIGHUP);
 	forward_wait(msg);
@@ -1448,8 +1448,8 @@ _rpc_shutdown(slurm_msg_t *msg)
 
 	forward_wait(msg);
 	if (!_slurm_authorized_user(req_uid))
-		error("Security violation, shutdown RPC from uid %u",
-		      (unsigned int) req_uid);
+		error("Security violation, shutdown RPC from uid %d",
+		      req_uid);
 	else {
 		if (kill(conf->pid, SIGTERM) != 0)
 			error("kill(%u,SIGTERM): %m", conf->pid);
@@ -1714,11 +1714,11 @@ _rpc_ping(slurm_msg_t *msg)
 	static bool first_msg = true;
 
 	if (!_slurm_authorized_user(req_uid)) {
-		error("Security violation, ping RPC from uid %u",
-		      (unsigned int) req_uid);
+		error("Security violation, ping RPC from uid %d",
+		      req_uid);
 		if (first_msg) {
-			error("Do you have SlurmUser configured as uid %u?",
-			      (unsigned int) req_uid);
+			error("Do you have SlurmUser configured as uid %d?",
+			      req_uid);
 		}
 		rc = ESLURM_USER_ID_MISSING;	/* or bad in this case */
 	}
@@ -1748,8 +1748,8 @@ _rpc_health_check(slurm_msg_t *msg)
 	uid_t req_uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
 
 	if (!_slurm_authorized_user(req_uid)) {
-		error("Security violation, health check RPC from uid %u",
-		      (unsigned int) req_uid);
+		error("Security violation, health check RPC from uid %d",
+		      req_uid);
 		rc = ESLURM_USER_ID_MISSING;	/* or bad in this case */
 	}
 
@@ -2216,8 +2216,8 @@ _rpc_timelimit(slurm_msg_t *msg)
 	int             nsteps, rc;
 
 	if (!_slurm_authorized_user(uid)) {
-		error ("Security violation: rpc_timelimit req from uid %ld",
-		       (long) uid);
+		error ("Security violation: rpc_timelimit req from uid %d",
+		       uid);
 		slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
 		return;
 	}
@@ -2350,8 +2350,8 @@ _valid_sbcast_cred(file_bcast_msg_t *req, uid_t req_uid, uint16_t block_no)
 	rc = extract_sbcast_cred(conf->vctx, req->cred, block_no,
 				 &job_id, &nodes);
 	if (rc != 0) {
-		error("Security violation: Invalid sbcast_cred from uid %u",
-		      (uint32_t) req_uid);
+		error("Security violation: Invalid sbcast_cred from uid %d",
+		      req_uid);
 		return ESLURMD_INVALID_JOB_CREDENTIAL;
 	}
 
@@ -2359,7 +2359,7 @@ _valid_sbcast_cred(file_bcast_msg_t *req, uid_t req_uid, uint16_t block_no)
 		error("Unable to parse sbcast_cred hostlist %s", nodes);
 		rc = ESLURMD_INVALID_JOB_CREDENTIAL;
 	} else if (!hostset_within(hset, conf->node_name)) {
-		error("Security violation: sbcast_cred from %u has "
+		error("Security violation: sbcast_cred from %d has "
 		      "bad hostset %s", req_uid, nodes);
 		rc = ESLURMD_INVALID_JOB_CREDENTIAL;
 	}
@@ -2891,8 +2891,8 @@ _rpc_signal_job(slurm_msg_t *msg)
 	 * check that requesting user ID is the SLURM UID or root
 	 */
 	if ((req_uid != job_uid) && (!_slurm_authorized_user(req_uid))) {
-		error("Security violation: kill_job(%ld) from uid %ld",
-		      req->job_id, (long) req_uid);
+		error("Security violation: kill_job(%u) from uid %d",
+		      req->job_id, req_uid);
 		if (msg->conn_fd >= 0) {
 			slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
 			if (slurm_close_accepted_conn(msg->conn_fd) < 0)
@@ -3028,8 +3028,8 @@ _rpc_suspend_job(slurm_msg_t *msg)
 	 * check that requesting user ID is the SLURM UID or root
 	 */
 	if (!_slurm_authorized_user(req_uid)) {
-		error("Security violation: suspend_job(%u) from uid %ld",
-		      req->job_id, (long) req_uid);
+		error("Security violation: suspend_job(%u) from uid %d",
+		      req->job_id, req_uid);
 		rc =  ESLURM_USER_ID_MISSING;
 	}
 
@@ -3157,8 +3157,8 @@ _rpc_abort_job(slurm_msg_t *msg)
 	 * check that requesting user ID is the SLURM UID
 	 */
 	if (!_slurm_authorized_user(uid)) {
-		error("Security violation: abort_job(%ld) from uid %ld",
-		      req->job_id, (long) uid);
+		error("Security violation: abort_job(%u) from uid %d",
+		      req->job_id, uid);
 		if (msg->conn_fd >= 0)
 			slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
 		return;
@@ -3237,8 +3237,8 @@ _rpc_terminate_job(slurm_msg_t *msg)
 	 * check that requesting user ID is the SLURM UID
 	 */
 	if (!_slurm_authorized_user(uid)) {
-		error("Security violation: kill_job(%ld) from uid %ld",
-		      req->job_id, (long) uid);
+		error("Security violation: kill_job(%u) from uid %d",
+		      req->job_id, uid);
 		if (msg->conn_fd >= 0)
 			slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
 		return;
@@ -3599,8 +3599,8 @@ _rpc_update_time(slurm_msg_t *msg)
 
 	if ((req_uid != conf->slurm_user_id) && (req_uid != 0)) {
 		rc = ESLURM_USER_ID_MISSING;
-		error("Security violation, uid %u can't update time limit",
-		      (unsigned int) req_uid);
+		error("Security violation, uid %d can't update time limit",
+		      req_uid);
 		goto done;
 	}
 
@@ -3766,8 +3766,8 @@ _run_prolog(uint32_t jobid, uid_t uid, char *resv_id,
 
 	diff_time = difftime(time(NULL), start_time);
 	if (diff_time >= msg_timeout) {
-		error("prolog for job %u ran for %d seconds",
-		      jobid, diff_time);
+		error("prolog for job %u ran for %ld seconds",
+		      jobid, (long) diff_time);
 	}
 
 	pthread_join(timer_id, NULL);

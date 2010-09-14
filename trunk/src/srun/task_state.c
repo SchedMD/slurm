@@ -122,7 +122,8 @@ void task_state_update (task_state_t ts, int taskid, task_state_type_t t)
 	case TS_NORMAL_EXIT:
 		bit_clear (ts->running, taskid);
 		if (bit_test(ts->normal_exit, taskid)) {
-			error("Task %d reported exit for a second time.");
+			error("Task %d reported exit for a second time.",
+			       taskid);
 		} else {
 			bit_set (ts->normal_exit, taskid);
 			ts->n_exited++;
@@ -131,7 +132,8 @@ void task_state_update (task_state_t ts, int taskid, task_state_type_t t)
 	case TS_ABNORMAL_EXIT:
 		bit_clear (ts->running, taskid);
 		if (bit_test(ts->abnormal_exit, taskid)) {
-			error("Task %d reported exit for a second time.");
+			error("Task %d reported exit for a second time.",
+			      taskid);
 		} else {
 			bit_set (ts->abnormal_exit, taskid);
 			ts->n_exited++;

@@ -217,7 +217,8 @@ int env_array_append(char ***array_ptr, const char *name,
  * Return 1 on success, and 0 on error.
  */
 int env_array_append_fmt(char ***array_ptr, const char *name,
-			 const char *value_fmt, ...);
+			 const char *value_fmt, ...)
+  __attribute__ ((format (printf, 3, 4)));
 
 /*
  * Append a single environment variable to an environment variable array
@@ -241,7 +242,8 @@ int env_array_overwrite(char ***array_ptr, const char *name,
  * Return 1 on success, and 0 on error.
  */
 int env_array_overwrite_fmt(char ***array_ptr, const char *name,
-			    const char *value_fmt, ...);
+			    const char *value_fmt, ...)
+  __attribute__ ((format (printf, 3, 4)));
 
 /*
  * Set in the running process's environment all of the environment

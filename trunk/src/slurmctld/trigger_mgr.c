@@ -138,7 +138,7 @@ static void _dump_trigger_msg(char *header, trigger_info_msg_t *msg)
 	if ((slurm_get_debug_flags() & DEBUG_FLAG_TRIGGERS) == 0)
 		return;
 
-	info(header);
+	info("%s", header);
 	if ((msg == NULL) || (msg->record_count == 0)) {
 		info("Trigger has no entries");
 		return;

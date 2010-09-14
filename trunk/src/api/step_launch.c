@@ -1611,8 +1611,8 @@ _check_io_timeout(void *_sls)
 			      "sleeping indefinitely");
 			pthread_cond_wait(&sls->cond, &sls->lock);
 		} else {
-			debug("io timeout thread: sleeping %ds until deadline",
-			       next_deadline - time(NULL));
+			debug("io timeout thread: sleeping %lds until deadline",
+			       (long)(next_deadline - time(NULL)));
 			ts.tv_sec = next_deadline;
 			pthread_cond_timedwait(&sls->cond, &sls->lock, &ts);
 		}

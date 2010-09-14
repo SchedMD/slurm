@@ -246,7 +246,7 @@ static const char *_set_sview_config(sview_config_t *sview_config,
 		break;
 	case SORTID_EXCLUDED_PARTITIONS:
 		type = "Excluded Partitions";
-		_excluded_partitions = xstrdup_printf(new_text);
+		_excluded_partitions = xstrdup(new_text);
 		break;
 	case SORTID_SHOW_HIDDEN:
 		type = "Show Hidden";
@@ -401,7 +401,7 @@ static void _local_display_admin_edit(GtkTable *table,
 
 
 		case SORTID_EXCLUDED_PARTITIONS:
-			temp_char = xstrdup_printf(_pending_excluded_partitions);
+			temp_char = xstrdup(_pending_excluded_partitions);
 			xstrcat(temp_char,_excluded_partitions);
 			break;
 		default:
@@ -627,9 +627,9 @@ extern int load_defaults()
 		       "FullInfoPopupHeight", hashtbl);
 	if (s_p_get_string(&default_sview_config.excluded_partitions,
 			"ExcludedPartitions", hashtbl) == 0)
-		default_sview_config.excluded_partitions =xstrdup_printf("-");
+		default_sview_config.excluded_partitions = xstrdup("-");
 	_excluded_partitions =
-			xstrdup_printf(default_sview_config.excluded_partitions);
+		xstrdup(default_sview_config.excluded_partitions);
 	if (default_sview_config.main_width == 0) {
 		default_sview_config.main_width=1000;
 		default_sview_config.main_height=450;
@@ -1101,26 +1101,30 @@ extern int configure_defaults()
 						grid_button_list = NULL;
 					}
 					default_sview_config.grid_topological =
-							tmp_config.grid_topological;
+						tmp_config.grid_topological;
 					if(!g_switch_nodes_maps)
 						rc = get_topo_conf();
 					if(rc != SLURM_SUCCESS) {
 						/*denied*/
 						tmp_char_ptr = g_strdup_printf(
-							"Valid topology not detected");
-						tmp_config.grid_topological = FALSE;
+							"Valid topology not "
+							"detected");
+						tmp_config.grid_topological =
+							FALSE;
 					}
 				}
 			}
 			else if(strcmp(_excluded_partitions,
-					   working_sview_config.excluded_partitions)) {
+				       working_sview_config.
+				       excluded_partitions)) {
 				_pending_excluded_partitions = "(pending)";
 				if ((strlen(_excluded_partitions) == 0)) {
-					_excluded_partitions = xstrdup_printf("-");
+					_excluded_partitions = xstrdup("-");
 				}
 				tmp_char_ptr = g_strdup_printf(
 						"Defaults updated: "
-						"Sview restart required to process this change!!");
+						"Sview restart required to "
+						"process this change!!");
 			}
 
 			memcpy(&default_sview_config, &tmp_config,

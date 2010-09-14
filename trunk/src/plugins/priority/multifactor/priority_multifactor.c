@@ -261,7 +261,7 @@ static void _read_last_decay_ran(time_t *last_ran, time_t *last_reset)
 	safe_unpack_time(last_reset, buffer);
 	free_buf(buffer);
 	if(priority_debug)
-		info("Last ran decay on jobs at %d", last_ran);
+		info("Last ran decay on jobs at %ld", *last_ran);
 
 	return;
 
@@ -341,7 +341,7 @@ static int _write_last_decay_ran(time_t last_ran, time_t last_reset)
 	xfree(new_file);
 
 	unlock_state_files();
-	debug4("done writing time %d", last_ran);
+	debug4("done writing time %ld", last_ran);
 	free_buf(buffer);
 
 	return error_code;
@@ -393,7 +393,7 @@ static double _get_fairshare_priority( struct job_record *job_ptr)
 
 	if(!assoc) {
 		error("Job %u has no association.  Unable to "
-		      "compute fairshare.");
+		      "compute fairshare.", job_ptr->job_id);
 		return 0;
 	}
 
@@ -520,7 +520,8 @@ static uint32_t _get_priority_internal(time_t start_time,
 
 	if(!job_ptr->details) {
 		error("_get_priority_internal: job %u does not have a "
-		      "details symbol set, can't set priority");
+		      "details symbol set, can't set priority",
+		      job_ptr->job_id);
 		return 0;
 	}
 	/*
@@ -659,7 +660,7 @@ static void *_decay_thread(void *no_data)
 
 	if(!localtime_r(&start_time, &tm)) {
 		fatal("_decay_thread: "
-		      "Couldn't get localtime for rollup handler %d",
+		      "Couldn't get localtime for rollup handler %ld",
 		      start_time);
 		return NULL;
 	}

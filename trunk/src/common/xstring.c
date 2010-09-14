@@ -68,6 +68,9 @@
 
 #define XFGETS_CHUNKSIZE 64
 
+/* Static functions. */
+static char *_xstrdup_vprintf(const char *_fmt, va_list _ap);
+
 /*
  * Define slurm-specific aliases for use by plugins, see slurm_xlator.h
  * for details.
@@ -215,35 +218,19 @@ void _xstrftimecat(char **buf, const char *fmt)
  */
 int _xstrfmtcat(char **str, const char *fmt, ...)
 {
-	/* This code is the same as xstrdup_printf, but couldn't
-	 * figure out how to pass the ... so just copied the code
-	 */
-	/* Start out with a size of 100 bytes. */
-	int n, size = 100;
+	int n;
 	char *p = NULL;
 	va_list ap;
 
-	if((p = xmalloc(size)) == NULL)
+	va_start(ap, fmt);
+	p = _xstrdup_vprintf(fmt, ap);
+	va_end(ap);
+
+	if (p == NULL)
 		return 0;
-	while(1) {
-		/* Try to print in the allocated space. */
-		va_start(ap, fmt);
-		n = vsnprintf(p, size, fmt, ap);
-		va_end (ap);
-		/* If that worked, return the string. */
-		if (n > -1 && n < size)
-			break;
-		/* Else try again with more space. */
-		if (n > -1)               /* glibc 2.1 */
-			size = n + 1;           /* precisely what is needed */
-		else                      /* glibc 2.0 */
-			size *= 2;              /* twice the old size */
-		if ((p = xrealloc(p, size)) == NULL)
-			return 0;
-	}
 
+	n = strlen(p);
 	xstrcat(*str, p);
-
 	xfree(p);
 
 	return n;
@@ -317,29 +304,14 @@ char * xstrdup(const char *str)
  */
 char *xstrdup_printf(const char *fmt, ...)
 {
-	/* Start out with a size of 100 bytes. */
-	int n, size = 100;
-	char *p = NULL;
+	char *result;
 	va_list ap;
 
-	if((p = xmalloc(size)) == NULL)
-		return NULL;
-	while(1) {
-		/* Try to print in the allocated space. */
-		va_start(ap, fmt);
-		n = vsnprintf(p, size, fmt, ap);
-		va_end (ap);
-		/* If that worked, return the string. */
-		if (n > -1 && n < size)
-			return p;
-		/* Else try again with more space. */
-		if (n > -1)               /* glibc 2.1 */
-			size = n + 1;           /* precisely what is needed */
-		else                      /* glibc 2.0 */
-			size *= 2;              /* twice the old size */
-		if ((p = xrealloc(p, size)) == NULL)
-			return NULL;
-	}
+	va_start(ap, fmt);
+	result = _xstrdup_vprintf(fmt, ap);
+	va_end(ap);
+
+	return result;
 }
 
 /*
@@ -515,4 +487,40 @@ char *xstrtolower(char *str)
 		}
 	}
 	return str;
+}
+
+/*
+ * Give me a copy of the string as if it were printf.
+ * This is stdarg-compatible routine, so vararg-compatible
+ * functions can do va_start() and invoke this function.
+ *
+ *   fmt (IN)		format of string and args if any
+ *   RETURN		copy of formated string
+ */
+static char *_xstrdup_vprintf(const char *fmt, va_list ap)
+{
+	/* Start out with a size of 100 bytes. */
+	int n, size = 100;
+	char *p = NULL;
+	va_list our_ap;
+
+	if((p = xmalloc(size)) == NULL)
+		return NULL;
+	while(1) {
+		/* Try to print in the allocated space. */
+		va_copy(our_ap, ap);
+		n = vsnprintf(p, size, fmt, our_ap);
+		va_end(our_ap);
+		/* If that worked, return the string. */
+		if (n > -1 && n < size)
+			return p;
+		/* Else try again with more space. */
+		if (n > -1)               /* glibc 2.1 */
+			size = n + 1;           /* precisely what is needed */
+		else                      /* glibc 2.0 */
+			size *= 2;              /* twice the old size */
+		if ((p = xrealloc(p, size)) == NULL)
+			return NULL;
+	}
+	/* NOTREACHED */
 }

@@ -504,7 +504,7 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 				query = xstrdup_printf(
 					"select time_start, time_end from "
 					"\"%s_%s\" where "
-					"(time_start < %d && (time_end >= %d "
+					"(time_start < %ld && (time_end >= %ld "
 					"|| time_end = 0)) && job_db_inx=%s "
 					"order by time_start",
 					cluster_name, suspend_table,
@@ -820,15 +820,16 @@ extern List setup_cluster_list_with_inx(mysql_conn_t *mysql_conn,
 	query = xstrdup_printf("select cluster_nodes, time_start, "
 			       "time_end from \"%s_%s\" where node_name='' "
 			       "&& cluster_nodes !=''",
-			       list_peek(job_cond->cluster_list), event_table);
+			       (char *)list_peek(job_cond->cluster_list),
+			       event_table);
 
 	if(job_cond->usage_start) {
 		if(!job_cond->usage_end)
 			job_cond->usage_end = now;
 
 		xstrfmtcat(query,
-			   " && ((time_start < %d) "
-			   "&& (time_end >= %d || time_end = 0))",
+			   " && ((time_start < %ld) "
+			   "&& (time_end >= %ld || time_end = 0))",
 			   job_cond->usage_end, job_cond->usage_start);
 	}
 
@@ -1203,13 +1204,13 @@ extern int setup_job_cond_limits(mysql_conn_t *mysql_conn,
 
 			if(!job_cond->usage_end)
 				xstrfmtcat(*extra,
-					   "(t1.time_end >= %d "
+					   "(t1.time_end >= %ld "
 					   "|| t1.time_end = 0))",
 					   job_cond->usage_start);
 			else
 				xstrfmtcat(*extra,
-					   "(t1.time_eligible < %d "
-					   "&& (t1.time_end >= %d "
+					   "(t1.time_eligible < %ld "
+					   "&& (t1.time_end >= %ld "
 					   "|| t1.time_end = 0)))",
 					   job_cond->usage_end,
 					   job_cond->usage_start);
@@ -1219,7 +1220,7 @@ extern int setup_job_cond_limits(mysql_conn_t *mysql_conn,
 			else
 				xstrcat(*extra, " where (");
 			xstrfmtcat(*extra,
-				   "(t1.time_eligible < %d))",
+				   "(t1.time_eligible < %ld))",
 				   job_cond->usage_end);
 		}
 	}

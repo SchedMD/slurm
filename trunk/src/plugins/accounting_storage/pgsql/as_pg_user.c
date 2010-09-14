@@ -159,7 +159,7 @@ _make_user_record(slurmdb_user_rec_t *object, time_t now, char **rec, char **txn
 {
 	xfree(*rec);
 	/* XXX: order of vals must match structure of USER_TABLE */
-	*rec = xstrdup_printf("(%d, %d, 0, '%s', '%s'",
+	*rec = xstrdup_printf("(%ld, %ld, 0, '%s', '%s'",
 			      now, now, object->name, object->default_acct);
 	xstrfmtcat(*txn, "default_acct='%s'", object->default_acct);
 
@@ -354,14 +354,14 @@ as_pg_add_users(pgsql_conn_t *pg_conn, uint32_t uid, List user_list)
 
 		if(txn_query)
 			xstrfmtcat(txn_query,
-				   ", (%d, %u, '%s', '%s', $$%s$$)",
+				   ", (%ld, %u, '%s', '%s', $$%s$$)",
 				   now, DBD_ADD_USERS, object->name,
 				   user_name, info);
 		else
 			xstrfmtcat(txn_query,
 				   "INSERT INTO %s "
 				   "(timestamp, action, name, actor, info) "
-				   "VALUES (%d, %u, '%s', '%s', $$%s$$)",
+				   "VALUES (%ld, %u, '%s', '%s', $$%s$$)",
 				   txn_table,
 				   now, DBD_ADD_USERS, object->name,
 				   user_name, info);
@@ -621,7 +621,7 @@ as_pg_remove_users(pgsql_conn_t *pg_conn, uint32_t uid,
 	}
 
 	/* TODO: why execute this query after remove_coords */
-/* 	query = xstrdup_printf("UPDATE %s AS t2 SET deleted=1, mod_time=%d " */
+/* 	query = xstrdup_printf("UPDATE %s AS t2 SET deleted=1, mod_time=%ld " */
 /* 			       "WHERE %s", acct_coord_table, */
 /* 			       now, assoc_char); */
 /* 	xfree(assoc_char); */
@@ -858,12 +858,13 @@ as_pg_add_coord(pgsql_conn_t *pg_conn, uint32_t uid,
 			 */
 			if(vals)
 				xstrcat(vals, ", ");
-			xstrfmtcat(vals, "CAST((%d, %d, 0, '%s', '%s') AS %s)",
+			xstrfmtcat(vals,
+				   "CAST((%ld, %ld, 0, '%s', '%s') AS %s)",
 				   now, now, acct, user, acct_coord_table);
 
 			if(txn_query)
 				xstrfmtcat(txn_query,
-					   ", (%d, %u, '%s', '%s', '%s')",
+					   ", (%ld, %u, '%s', '%s', '%s')",
 					   now, DBD_ADD_ACCOUNT_COORDS, user,
 					   user_name, acct);
 			else
@@ -871,7 +872,7 @@ as_pg_add_coord(pgsql_conn_t *pg_conn, uint32_t uid,
 					   "INSERT INTO %s "
 					   "(timestamp, action, name, "
 					   "actor, info) "
-					   "VALUES (%d, %u, '%s', "
+					   "VALUES (%ld, %u, '%s', "
 					   "'%s', '%s')",
 					   txn_table,
 					   now, DBD_ADD_ACCOUNT_COORDS, user,

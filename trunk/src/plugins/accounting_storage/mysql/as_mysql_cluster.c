@@ -117,7 +117,7 @@ static int _setup_cluster_cond_limits(slurmdb_cluster_cond_t *cluster_cond,
 }
 
 extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
-			      List cluster_list)
+				 List cluster_list)
 {
 	ListIterator itr = NULL;
 	int rc = SLURM_SUCCESS;
@@ -146,9 +146,8 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		}
 
 		xstrcat(cols, "creation_time, mod_time, acct");
-		xstrfmtcat(vals, "%d, %d, 'root'",
-			   now, now, object->name);
-		xstrfmtcat(extra, ", mod_time=%d", now);
+		xstrfmtcat(vals, "%ld, %ld, 'root'", now, now);
+		xstrfmtcat(extra, ", mod_time=%ld", now);
 		if(object->root_assoc)
 			setup_association_limits(object->root_assoc, &cols,
 						 &vals, &extra,
@@ -156,8 +155,8 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		xstrfmtcat(query,
 			   "insert into %s (creation_time, mod_time, "
 			   "name, classification) "
-			   "values (%d, %d, '%s', %u) "
-			   "on duplicate key update deleted=0, mod_time=%d, "
+			   "values (%ld, %ld, '%s', %u) "
+			   "on duplicate key update deleted=0, mod_time=%ld, "
 			   "control_host='', control_port=0, "
 			   "classification=%u, flags=0",
 			   cluster_table,
@@ -225,7 +224,7 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		xstrfmtcat(query,
 			   "insert into %s "
 			   "(timestamp, action, name, actor, info) "
-			   "values (%d, %u, '%s', '%s', '%s');",
+			   "values (%ld, %u, '%s', '%s', '%s');",
 			   txn_table, now, DBD_ADD_CLUSTERS,
 			   object->name, user_name, tmp_extra);
 		xfree(tmp_extra);
@@ -501,10 +500,10 @@ extern List as_mysql_remove_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		/* We should not need to delete any cluster usage just set it
 		 * to deleted */
 		xstrfmtcat(query,
-			   "update \"%s_%s\" set time_end=%d where time_end=0;"
-			   "update \"%s_%s\" set mod_time=%d, deleted=1;"
-			   "update \"%s_%s\" set mod_time=%d, deleted=1;"
-			   "update \"%s_%s\" set mod_time=%d, deleted=1;",
+			   "update \"%s_%s\" set time_end=%ld where time_end=0;"
+			   "update \"%s_%s\" set mod_time=%ld, deleted=1;"
+			   "update \"%s_%s\" set mod_time=%ld, deleted=1;"
+			   "update \"%s_%s\" set mod_time=%ld, deleted=1;",
 			   object, event_table, now,
 			   object, cluster_day_table, now,
 			   object, cluster_hour_table, now,
@@ -732,7 +731,7 @@ empty:
 
 			if(cluster->root_assoc) {
 				debug("This cluster %s already has "
-				      "an association.");
+				      "an association.", cluster->name);
 				continue;
 			}
 			cluster->root_assoc = assoc;
@@ -865,8 +864,8 @@ extern List as_mysql_get_cluster_events(mysql_conn_t *mysql_conn, uint32_t uid,
 			xstrcat(extra, " where (");
 
 		xstrfmtcat(extra,
-			   "(time_start < %d) "
-			   "&& (time_end >= %d || time_end = 0))",
+			   "(time_start < %ld) "
+			   "&& (time_end >= %ld || time_end = 0))",
 			   event_cond->period_end, event_cond->period_start);
 	}
 
@@ -1030,7 +1029,7 @@ extern int as_mysql_node_down(mysql_conn_t *mysql_conn,
 	       node_ptr->name, mysql_conn->cluster_name, cpus);
 
 	query = xstrdup_printf(
-		"update \"%s_%s\" set time_end=%d where "
+		"update \"%s_%s\" set time_end=%ld where "
 		"time_end=0 and node_name='%s';",
 		mysql_conn->cluster_name, event_table,
 		event_time, node_ptr->name);
@@ -1046,7 +1045,7 @@ extern int as_mysql_node_down(mysql_conn_t *mysql_conn,
 		   "insert into \"%s_%s\" "
 		   "(node_name, state, cpu_count, time_start, "
 		   "reason, reason_uid) "
-		   "values ('%s', %u, %u, %d, '%s', %u) "
+		   "values ('%s', %u, %u, %ld, '%s', %u) "
 		   "on duplicate key update time_end=0;",
 		   mysql_conn->cluster_name, event_table,
 		   node_ptr->name, node_ptr->node_state,
@@ -1070,7 +1069,7 @@ extern int as_mysql_node_up(mysql_conn_t *mysql_conn,
 		return ESLURM_DB_CONNECTION;
 
 	query = xstrdup_printf(
-		"update \"%s_%s\" set time_end=%d where "
+		"update \"%s_%s\" set time_end=%ld where "
 		"time_end=0 and node_name='%s';",
 		mysql_conn->cluster_name, event_table,
 		event_time, node_ptr->name);
@@ -1112,7 +1111,7 @@ extern int as_mysql_register_ctld(mysql_conn_t *mysql_conn,
 		address = slurmctld_conf.control_addr;
 
 	query = xstrdup_printf(
-		"update %s set deleted=0, mod_time=%d, "
+		"update %s set deleted=0, mod_time=%ld, "
 		"control_host='%s', control_port=%u, rpc_version=%d, "
 		"dimensions=%d, flags=%u, plugin_id_select=%d where name='%s';",
 		cluster_table, now, address, port, SLURMDBD_VERSION,
@@ -1120,7 +1119,7 @@ extern int as_mysql_register_ctld(mysql_conn_t *mysql_conn,
 	xstrfmtcat(query,
 		   "insert into %s "
 		   "(timestamp, action, name, actor, info) "
-		   "values (%d, %d, '%s', '%s', '%s %u %u %u %u');",
+		   "values (%ld, %d, '%s', '%s', '%s %u %u %u %u');",
 		   txn_table,
 		   now, DBD_MODIFY_CLUSTERS, cluster,
 		   slurmctld_conf.slurm_user_name, address, port,
@@ -1212,7 +1211,7 @@ extern int as_mysql_cluster_cpus(mysql_conn_t *mysql_conn,
 	   changed some of the downed nodes may have gone away.
 	   Request them again with ACCOUNTING_FIRST_REG */
 	query = xstrdup_printf(
-		"update \"%s_%s\" set time_end=%d where time_end=0",
+		"update \"%s_%s\" set time_end=%ld where time_end=0",
 		mysql_conn->cluster_name, event_table, event_time);
 	rc = mysql_db_query(mysql_conn->db_conn, query);
 	xfree(query);
@@ -1223,7 +1222,7 @@ add_it:
 	query = xstrdup_printf(
 		"insert into \"%s_%s\" (cluster_nodes, cpu_count, "
 		"time_start, reason) "
-		"values ('%s', %u, %d, 'Cluster processor count')",
+		"values ('%s', %u, %ld, 'Cluster processor count')",
 		mysql_conn->cluster_name, event_table,
 		cluster_nodes, cpus, event_time);
 	rc = mysql_db_query(mysql_conn->db_conn, query);

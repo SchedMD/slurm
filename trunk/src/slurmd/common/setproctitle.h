@@ -45,7 +45,8 @@
 #endif
 
 #ifndef HAVE_SETPROCTITLE
-void setproctitle(const char *fmt, ...);
+void setproctitle(const char *fmt, ...)
+  __attribute__ ((format (printf, 1, 2)));
 void init_setproctitle(int argc, char *argv[]);
 void fini_setproctitle(void);
 #endif

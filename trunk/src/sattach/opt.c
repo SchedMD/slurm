@@ -142,6 +142,8 @@ int initialize_and_process_args(int argc, char *argv[])
 #undef USE_ARGERROR
 #if USE_ARGERROR
 static void argerror(const char *msg, ...)
+  __attribute__ ((format (printf, 1, 2)));
+static void argerror(const char *msg, ...)
 {
 	va_list ap;
 	char buf[256];

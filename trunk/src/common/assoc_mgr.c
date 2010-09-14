@@ -337,7 +337,8 @@ static int _set_assoc_parent_and_user(slurmdb_association_rec_t *assoc,
 		if(assoc == assoc->usage->parent_assoc_ptr) {
 			assoc->usage->parent_assoc_ptr = NULL;
 			error("association %u was pointing to "
-			      "itself as it's parent");
+			      "itself as it's parent",
+			      assoc->id);
 		}
 	} else {
 		slurmdb_association_rec_t *last_root = assoc_mgr_root_assoc;

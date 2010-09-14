@@ -173,7 +173,7 @@ void slurm_print_launch_task_msg(launch_tasks_request_msg_t *msg, char *name)
 	debug3("job_step_id: %u", msg->job_step_id);
 	debug3("uid: %u", msg->uid);
 	debug3("gid: %u", msg->gid);
-	debug3("tasks_to_launch: %u", msg->tasks_to_launch);
+	debug3("tasks_to_launch: %u", *(msg->tasks_to_launch));
 	debug3("envc: %u", msg->envc);
 	for (i = 0; i < msg->envc; i++) {
 		debug3("env[%d]: %s", i, msg->env[i]);
@@ -183,8 +183,8 @@ void slurm_print_launch_task_msg(launch_tasks_request_msg_t *msg, char *name)
 	for (i = 0; i < msg->argc; i++) {
 		debug3("argv[%d]: %s", i, msg->argv[i]);
 	}
-	debug3("msg -> resp_port  = %u", msg->resp_port);
-	debug3("msg -> io_port    = %u", msg->io_port);
+	debug3("msg -> resp_port  = %u", *(msg->resp_port));
+	debug3("msg -> io_port    = %u", *(msg->io_port));
 	debug3("msg -> task_flags = %x", msg->task_flags);
 
 	for (i = 0; i < msg->tasks_to_launch[node_id]; i++) {

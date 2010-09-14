@@ -192,9 +192,9 @@ static bool _retry(void)
 
 	if (errno == ESLURM_ERROR_ON_DESC_TO_RECORD_COPY) {
 		if (retries == 0)
-			error (msg);
+			error("%s", msg);
 		else if (retries < MAX_RETRIES)
-			debug (msg);
+			debug("%s", msg);
 		else
 			return false;
 		sleep (++retries);
