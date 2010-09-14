@@ -113,6 +113,7 @@
 #define OPT_SIGNAL      0x15
 #define OPT_GET_USER_ENV  0x16
 #define OPT_EXPORT        0x17
+#define OPT_CLUSTERS      0x18
 
 /* generic getopt_long flags, integers and *not* valid characters */
 #define LONG_OPT_PROPAGATE   0x100
@@ -440,8 +441,8 @@ env_vars_t env_vars[] = {
   {"SBATCH_BLRTS_IMAGE",   OPT_STRING,     &opt.blrtsimage,    NULL          },
   {"SBATCH_CHECKPOINT",    OPT_STRING,     &opt.ckpt_interval_str, NULL      },
   {"SBATCH_CHECKPOINT_DIR",OPT_STRING,     &opt.ckpt_dir,      NULL          },
-  {"SBATCH_CLUSTERS",      OPT_STRING,     &opt.clusters,      NULL          },
-  {"SLURM_CLUSTERS",       OPT_STRING,     &opt.clusters,      NULL          },
+  {"SBATCH_CLUSTERS",      OPT_CLUSTERS,   &opt.clusters,      NULL          },
+  {"SLURM_CLUSTERS",       OPT_CLUSTERS,   &opt.clusters,      NULL          },
   {"SBATCH_CNLOAD_IMAGE",  OPT_STRING,     &opt.linuximage,    NULL          },
   {"SBATCH_CONN_TYPE",     OPT_CONN_TYPE,  NULL,               NULL          },
   {"SBATCH_CPU_BIND",      OPT_CPU_BIND,   NULL,               NULL          },
@@ -628,6 +629,12 @@ _process_env_var(env_vars_t *e, const char *val)
 			_proc_get_user_env(optarg);
 		else
 			opt.get_user_env_time = 0;
+		break;
+	case OPT_CLUSTERS:
+		if (!(opt.clusters = slurmdb_get_info_cluster(optarg))) {
+			error("'%s' invalid entry for --clusters", optarg);
+			exit(1);
+		}
 		break;
 	default:
 		/* do nothing */
