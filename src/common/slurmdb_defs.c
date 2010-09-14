@@ -161,27 +161,26 @@ static int _setup_cluster_rec(slurmdb_cluster_rec_t *cluster_rec)
 
 	xassert(cluster_rec);
 
-	if(!cluster_rec->control_port) {
+	if (!cluster_rec->control_port) {
 		debug("Slurmctld on '%s' hasn't registered yet.",
 		      cluster_rec->name);
 		return SLURM_ERROR;
 	}
 
-	if(cluster_rec->rpc_version < 8) {
+	if (cluster_rec->rpc_version < 8) {
 		debug("Slurmctld on '%s' must be running at least "
 		      "SLURM 2.2 for cross-cluster communication.",
 		      cluster_rec->name);
 		return SLURM_ERROR;
 	}
 
-	if((plugin_id_select = select_get_plugin_id_pos(
-		    cluster_rec->plugin_id_select)) == SLURM_ERROR) {
+	if ((plugin_id_select = select_get_plugin_id_pos(
+			cluster_rec->plugin_id_select)) == SLURM_ERROR) {
 		error("Cluster '%s' has an unknown select plugin_id %u",
 		      cluster_rec->name,
 		      cluster_rec->plugin_id_select);
 		return SLURM_ERROR;
 	}
-
 	cluster_rec->plugin_id_select = plugin_id_select;
 
 	slurm_set_addr(&cluster_rec->control_addr,
@@ -196,31 +195,31 @@ static int _setup_cluster_rec(slurmdb_cluster_rec_t *cluster_rec)
 		return SLURM_ERROR;
 	}
 
-	if(cluster_rec->flags & CLUSTER_FLAG_BG) {
+	if (cluster_rec->flags & CLUSTER_FLAG_BG) {
 		int number, i, len;
 		char *nodes = cluster_rec->nodes;
 
-		cluster_rec->dim_size = xmalloc(
-			sizeof(int) * cluster_rec->dimensions);
+		cluster_rec->dim_size = xmalloc(sizeof(int) *
+						cluster_rec->dimensions);
 		len = strlen(nodes);
 		i = len - cluster_rec->dimensions;
-		if(nodes[len-1] == ']')
+		if (nodes[len-1] == ']')
 			i--;
-		if(i > cluster_rec->dimensions) {
+		if (i > cluster_rec->dimensions) {
 			char *p = '\0';
 			number = xstrntol(nodes + i, &p,
-					  cluster_rec->dimensions,
-					  36);
+					  cluster_rec->dimensions, 36);
 			hostlist_parse_int_to_array(
 				number, cluster_rec->dim_size,
 				cluster_rec->dimensions, 36);
 			/* all calculations this is for should
-			   be expecting 0 not to count as a
-			   number so add 1 to it. */
-			for(i=0; i<cluster_rec->dimensions; i++)
+			 * be expecting 0 not to count as a
+			 * number so add 1 to it. */
+			for (i=0; i<cluster_rec->dimensions; i++)
 				cluster_rec->dim_size[i]++;
 		}
 	}
+
 	return SLURM_SUCCESS;
 }
 
@@ -1020,7 +1019,7 @@ extern List slurmdb_get_info_cluster(char *cluster_names)
 	int err = 0;
 	bool all_clusters = 0;
 
-	if(cluster_names && !strcmp(cluster_names, "all"))
+	if (cluster_names && !strcmp(cluster_names, "all"))
 		all_clusters = 1;
 
 	cluster_name = slurm_get_cluster_name();
@@ -1028,38 +1027,41 @@ extern List slurmdb_get_info_cluster(char *cluster_names)
 	xfree(cluster_name);
 
 	slurmdb_init_cluster_cond(&cluster_cond);
-	if(cluster_names && !all_clusters) {
+	if (cluster_names && !all_clusters) {
 		cluster_cond.cluster_list = list_create(slurm_destroy_char);
 		slurm_addto_char_list(cluster_cond.cluster_list, cluster_names);
 	}
 
-	if(!(temp_list = acct_storage_g_get_clusters(
-		    db_conn, getuid(), &cluster_cond))) {
+	if (!(temp_list = acct_storage_g_get_clusters(db_conn, getuid(),
+						      &cluster_cond))) {
 		error("Problem talking to database");
 		goto end_it;
 	}
 	itr = list_iterator_create(temp_list);
-	if(!cluster_names || all_clusters) {
-		while((cluster_rec = list_next(itr))) {
-			if(_setup_cluster_rec(cluster_rec) != SLURM_SUCCESS) {
+	if (!cluster_names || all_clusters) {
+		while ((cluster_rec = list_next(itr))) {
+			if (_setup_cluster_rec(cluster_rec) != SLURM_SUCCESS) {
 				err = 1;
 				list_delete_item(itr);
 			}
 		}
 	} else {
 		itr2 = list_iterator_create(cluster_cond.cluster_list);
-		while((cluster_name = list_next(itr2))) {
-			while((cluster_rec = list_next(itr)))
-				if(!strcmp(cluster_name, cluster_rec->name))
+		if (itr2 == NULL)
+			fatal("list_iterator_create: malloc failure");
+		while ((cluster_name = list_next(itr2))) {
+			while ((cluster_rec = list_next(itr))) {
+				if (!strcmp(cluster_name, cluster_rec->name))
 					break;
-			if(!cluster_rec) {
+			}
+			if (!cluster_rec) {
 				error("No cluster '%s' known by database.",
 				      cluster_name);
 				err = 1;
 				goto next;
 			}
 
-			if(_setup_cluster_rec(cluster_rec) != SLURM_SUCCESS) {
+			if (_setup_cluster_rec(cluster_rec) != SLURM_SUCCESS) {
 				err = 1;
 				list_delete_item(itr);
 			}
@@ -1071,11 +1073,11 @@ extern List slurmdb_get_info_cluster(char *cluster_names)
 	list_iterator_destroy(itr);
 
 end_it:
-	if(cluster_cond.cluster_list)
+	if (cluster_cond.cluster_list)
 		list_destroy(cluster_cond.cluster_list);
 	acct_storage_g_close_connection(&db_conn);
 
-	if(temp_list && !list_count(temp_list)) {
+	if (temp_list && !list_count(temp_list)) {
 		list_destroy(temp_list);
 		temp_list = NULL;
 	}

@@ -172,40 +172,40 @@ extern int slurm_addto_char_list(List char_list, char *names)
 	int quote = 0;
 	int count = 0;
 
-	if(!char_list) {
+	if (!char_list) {
 		error("No list was given to fill in");
 		return 0;
 	}
 
 	itr = list_iterator_create(char_list);
-	if(names) {
+	if (names) {
 		if (names[i] == '\"' || names[i] == '\'') {
 			quote_c = names[i];
 			quote = 1;
 			i++;
 		}
 		start = i;
-		while(names[i]) {
+		while (names[i]) {
 			//info("got %d - %d = %d", i, start, i-start);
-			if(quote && names[i] == quote_c)
+			if (quote && (names[i] == quote_c))
 				break;
-			else if (names[i] == '\"' || names[i] == '\'')
+			else if ((names[i] == '\"') || (names[i] == '\''))
 				names[i] = '`';
-			else if(names[i] == ',') {
+			else if (names[i] == ',') {
 				name = xmalloc((i-start+1));
 				memcpy(name, names+start, (i-start));
 				//info("got %s %d", name, i-start);
 
-				while((tmp_char = list_next(itr))) {
-					if(!strcasecmp(tmp_char, name))
+				while ((tmp_char = list_next(itr))) {
+					if (!strcasecmp(tmp_char, name))
 						break;
 				}
 				/* If we get a duplicate remove the
-				   first one and tack this on the end.
-				   This is needed for get associations
-				   with qos.
-				*/
-				if(tmp_char)
+				 * first one and tack this on the end.
+				 * This is needed for get associations
+				 * with qos.
+				 */
+				if (tmp_char)
 					list_delete_item(itr);
 				else
 					count++;
@@ -217,7 +217,7 @@ extern int slurm_addto_char_list(List char_list, char *names)
 
 				i++;
 				start = i;
-				if(!names[i]) {
+				if (!names[i]) {
 					info("There is a problem with "
 					     "your request.  It appears you "
 					     "have spaces inside your list.");
@@ -230,17 +230,17 @@ extern int slurm_addto_char_list(List char_list, char *names)
 
 		name = xmalloc((i-start)+1);
 		memcpy(name, names+start, (i-start));
-		while((tmp_char = list_next(itr))) {
-			if(!strcasecmp(tmp_char, name))
-				break;
+		while ((tmp_char = list_next(itr))) {
+			if (!strcasecmp(tmp_char, name))
+			break;
 		}
 
 		/* If we get a duplicate remove the
-		   first one and tack this on the end.
-		   This is needed for get associations
-		   with qos.
-		*/
-		if(tmp_char)
+		 * first one and tack this on the end.
+		 * This is needed for get associations
+		 * with qos.
+		 */
+		if (tmp_char)
 			list_delete_item(itr);
 		else
 			count++;
@@ -250,6 +250,7 @@ extern int slurm_addto_char_list(List char_list, char *names)
 	}
 endit:
 	list_iterator_destroy(itr);
+
 	return count;
 }
 

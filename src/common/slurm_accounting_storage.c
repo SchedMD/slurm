@@ -383,13 +383,13 @@ extern int slurm_acct_storage_init(char *loc)
 
 	if ( g_acct_storage_context )
 		goto done;
-	if(loc)
+	if (loc)
 		slurm_set_accounting_storage_loc(loc);
 
 	acct_storage_type = slurm_get_accounting_storage_type();
 
 	g_acct_storage_context = _acct_storage_context_create(
-		acct_storage_type);
+				 acct_storage_type);
 	if ( g_acct_storage_context == NULL ) {
 		error( "cannot create acct_storage context for %s",
 		       acct_storage_type );
