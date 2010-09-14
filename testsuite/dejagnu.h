@@ -35,6 +35,8 @@ static char buffer[ _BUFFER_SIZE_ ];
 
 
 inline void
+pass (const char* fmt, ... ) __attribute__ ((format (printf, 1, 2)));
+inline void
 pass (const char* fmt, ... ) {
 	va_list ap;
 
@@ -47,6 +49,8 @@ pass (const char* fmt, ... ) {
 	fflush( stdout );
 }
 
+inline void
+fail (const char* fmt, ... ) __attribute__ ((format (printf, 1, 2)));
 inline void
 fail (const char* fmt, ... ) {
 	va_list ap;
@@ -61,6 +65,8 @@ fail (const char* fmt, ... ) {
 }
 
 inline void
+untested (const char* fmt, ... ) __attribute__ ((format (printf, 1, 2)));
+inline void
 untested (const char* fmt, ... ) {
 	va_list ap;
 
@@ -74,6 +80,8 @@ untested (const char* fmt, ... ) {
 }
 
 inline void
+unresolved (const char* fmt, ... ) __attribute__ ((format (printf, 1, 2)));
+inline void
 unresolved (const char* fmt, ... ) {
 	va_list ap;
 
@@ -86,6 +94,8 @@ unresolved (const char* fmt, ... ) {
 	fflush( stdout );
 }
 
+inline void
+note (const char* fmt, ... ) __attribute__ ((format (printf, 1, 2)));
 inline void
 note (const char* fmt, ... ) {
 	va_list ap;

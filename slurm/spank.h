@@ -374,12 +374,18 @@ spank_err_t spank_job_control_unsetenv (spank_t sp, const char *name);
 /*
  *  SLURM logging functions which are exported to plugins.
  */
-extern void slurm_info (const char *format, ...);
-extern void slurm_error (const char *format, ...);
-extern void slurm_verbose (const char *format, ...);
-extern void slurm_debug (const char *format, ...);
-extern void slurm_debug2 (const char *format, ...);
-extern void slurm_debug3 (const char *format, ...);
+extern void slurm_info (const char *format, ...)
+  __attribute__ ((format (printf, 1, 2)));
+extern void slurm_error (const char *format, ...)
+  __attribute__ ((format (printf, 1, 2)));
+extern void slurm_verbose (const char *format, ...)
+  __attribute__ ((format (printf, 1, 2)));
+extern void slurm_debug (const char *format, ...)
+  __attribute__ ((format (printf, 1, 2)));
+extern void slurm_debug2 (const char *format, ...)
+  __attribute__ ((format (printf, 1, 2)));
+extern void slurm_debug3 (const char *format, ...)
+  __attribute__ ((format (printf, 1, 2)));
 
 END_C_DECLS
 

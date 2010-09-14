@@ -1934,8 +1934,8 @@ static void *_assoc_cache_mgr(void *no_data)
 			memset(&assoc_rec, 0, sizeof(slurmdb_association_rec_t));
 			assoc_rec.id = job_ptr->assoc_id;
 
-			debug("assoc is %x (%d) for job %u",
-			      job_ptr->assoc_ptr, job_ptr->assoc_id,
+			debug("assoc is %zx (%d) for job %u",
+			      (size_t)job_ptr->assoc_ptr, job_ptr->assoc_id,
 			      job_ptr->job_id);
 
 			if (assoc_mgr_fill_in_assoc(
@@ -1950,8 +1950,8 @@ static void *_assoc_cache_mgr(void *no_data)
 				 * been removed */
 			}
 
-			debug("now assoc is %x (%d) for job %u",
-			      job_ptr->assoc_ptr, job_ptr->assoc_id,
+			debug("now assoc is %zx (%d) for job %u",
+			      (size_t)job_ptr->assoc_ptr, job_ptr->assoc_id,
 			      job_ptr->job_id);
 		}
 		if(job_ptr->qos_id) {

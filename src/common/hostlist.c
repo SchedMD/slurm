@@ -327,7 +327,8 @@ static bool _test_box(int *start, int *end);
 
 /* ------[ static function prototypes ]------ */
 
-static void _error(char *file, int line, char *mesg, ...);
+static void _error(char *file, int line, char *mesg, ...)
+  __attribute__ ((format (printf, 3, 4)));
 static char * _next_tok(char *, char **);
 static int    _zero_padded(unsigned long, int);
 static int    _width_equiv(unsigned long, int *, unsigned long, int *);

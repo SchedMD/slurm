@@ -12,6 +12,9 @@ documents those changes that are of interest to users and admins.
     squeue commands.
  -- Modify the sinfo and squeue commands to report state of multiple clusters
     if the --clusters option is used.
+ -- Added printf __attribute__ qualifiers to info, debug, ... to help prevent
+    bad/incorrect parameters being sent to them.  Original patch from
+    Eygene Ryabinkin <rea+slurm@grid.kiae.ru>
 
 * Changes in SLURM 2.2.0.pre10
 ==============================

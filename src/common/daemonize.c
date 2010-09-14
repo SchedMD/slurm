@@ -210,7 +210,7 @@ test_core_limit(void)
 	else if (rlim->rlim_cur != RLIM_INFINITY) {
 		rlim->rlim_cur /= 1024;	/* bytes to KB */
 		if (rlim->rlim_cur < 2048) {
-			verbose("Warning: Core limit is only %u KB",
+			verbose("Warning: Core limit is only %ld KB",
 				rlim->rlim_cur);
 		}
 	}

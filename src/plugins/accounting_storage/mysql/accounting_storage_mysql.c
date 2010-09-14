@@ -657,7 +657,7 @@ static int _as_mysql_acct_check_tables(MYSQL *db_conn)
 					"insert into %s "
 					"(creation_time, mod_time, name, "
 					"description) "
-					"values (%d, %d, '%s', "
+					"values (%ld, %ld, '%s', "
 					"'Added as default') "
 					"on duplicate key update "
 					"id=LAST_INSERT_ID(id), deleted=0;",
@@ -674,7 +674,7 @@ static int _as_mysql_acct_check_tables(MYSQL *db_conn)
 			query = xstrdup_printf(
 				"insert into %s "
 				"(creation_time, mod_time, name, description) "
-				"values (%d, %d, 'normal', "
+				"values (%ld, %ld, 'normal', "
 				"'Normal QOS default') "
 				"on duplicate key update "
 				"id=LAST_INSERT_ID(id), deleted=0;",
@@ -706,12 +706,12 @@ static int _as_mysql_acct_check_tables(MYSQL *db_conn)
 	 */
 	query = xstrdup_printf(
 		"insert into %s (creation_time, mod_time, name, default_acct, "
-		"admin_level) values (0, %d, 'root', 'root', %u) "
+		"admin_level) values (0, %ld, 'root', 'root', %d) "
 		"on duplicate key update name='root';",
-		user_table, now, SLURMDB_ADMIN_SUPER_USER, now);
+		user_table, now, SLURMDB_ADMIN_SUPER_USER);
 	xstrfmtcat(query,
 		   "insert into %s (creation_time, mod_time, name, "
-		   "description, organization) values (0, %d, 'root', "
+		   "description, organization) values (0, %ld, 'root', "
 		   "'default root account', 'root') on duplicate key "
 		   "update name='root';",
 		   acct_table, now);
@@ -1231,8 +1231,9 @@ extern int setup_association_limits(slurmdb_association_rec_t *assoc,
 	} else if((assoc->grp_cpu_mins != (uint64_t)NO_VAL)
 		  && ((int64_t)assoc->grp_cpu_mins >= 0)) {
 		xstrcat(*cols, ", grp_cpu_mins");
-		xstrfmtcat(*vals, ", %llu", assoc->grp_cpu_mins);
-		xstrfmtcat(*extra, ", grp_cpu_mins=%llu",
+		xstrfmtcat(*vals, ", %"PRIu64"",
+			   assoc->grp_cpu_mins);
+		xstrfmtcat(*extra, ", grp_cpu_mins=%"PRIu64"",
 			   assoc->grp_cpu_mins);
 	}
 
@@ -1299,8 +1300,9 @@ extern int setup_association_limits(slurmdb_association_rec_t *assoc,
 	} else if((assoc->max_cpu_mins_pj != (uint64_t)NO_VAL)
 		  && ((int64_t)assoc->max_cpu_mins_pj >= 0)) {
 		xstrcat(*cols, ", max_cpu_mins_pj");
-		xstrfmtcat(*vals, ", %llu", assoc->max_cpu_mins_pj);
-		xstrfmtcat(*extra, ", max_cpu_mins_pj=%u",
+		xstrfmtcat(*vals, ", %"PRIu64"",
+			   assoc->max_cpu_mins_pj);
+		xstrfmtcat(*extra, ", max_cpu_mins_pj=%"PRIu64"",
 			   assoc->max_cpu_mins_pj);
 	}
 
@@ -1455,25 +1457,25 @@ extern int modify_common(mysql_conn_t *mysql_conn,
 	if(cluster_centric) {
 		xassert(cluster_name);
 		xstrfmtcat(query,
-			   "update \"%s_%s\" set mod_time=%d%s "
+			   "update \"%s_%s\" set mod_time=%ld%s "
 			   "where deleted=0 && %s;",
 			   cluster_name, table, now, vals, cond_char);
 		xstrfmtcat(query,
 			   "insert into %s "
 			   "(timestamp, action, name, cluster, actor, info) "
-			   "values (%d, %d, '%s', '%s', '%s', '%s');",
+			   "values (%ld, %d, '%s', '%s', '%s', '%s');",
 			   txn_table,
 			   now, type, tmp_cond_char, cluster_name,
 			   user_name, tmp_vals);
 	} else {
 		xstrfmtcat(query,
-			   "update %s set mod_time=%d%s "
+			   "update %s set mod_time=%ld%s "
 			   "where deleted=0 && %s;",
 			   table, now, vals, cond_char);
 		xstrfmtcat(query,
 			   "insert into %s "
 			   "(timestamp, action, name, actor, info) "
-			   "values (%d, %d, '%s', '%s', '%s');",
+			   "values (%ld, %d, '%s', '%s', '%s');",
 			   txn_table,
 			   now, type, tmp_cond_char, user_name, tmp_vals);
 	}
@@ -1557,7 +1559,7 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 	if(!has_jobs && table != assoc_table) {
 		if(cluster_centric) {
 			query = xstrdup_printf("delete from \"%s_%s\" where "
-					       "creation_time>%d && (%s);",
+					       "creation_time>%ld && (%s);",
 					       cluster_name, table, day_old,
 					       name_char);
 			/* Make sure the next id we get doesn't create holes
@@ -1567,7 +1569,7 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 				   cluster_name, table);
 		} else {
 			query = xstrdup_printf("delete from %s where "
-					       "creation_time>%d && (%s);",
+					       "creation_time>%ld && (%s);",
 					       table, day_old, name_char);
 			/* Make sure the next id we get doesn't create holes
 			 * in the ids. */
@@ -1580,12 +1582,12 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 	if(table != assoc_table) {
 		if(cluster_centric)
 			xstrfmtcat(query,
-				   "update \"%s_%s\" set mod_time=%d, "
+				   "update \"%s_%s\" set mod_time=%ld, "
 				   "deleted=1 where deleted=0 && (%s);",
 				   cluster_name, table, now, name_char);
 		else
 			xstrfmtcat(query,
-				   "update %s set mod_time=%d, deleted=1 "
+				   "update %s set mod_time=%ld, deleted=1 "
 				   "where deleted=0 && (%s);",
 				   table, now, name_char);
 	}
@@ -1603,13 +1605,14 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 	if(cluster_centric)
 		xstrfmtcat(query,
 			   "insert into %s (timestamp, action, name, "
-			   "actor, cluster) values (%d, %d, '%s', '%s', '%s');",
+			   "actor, cluster) values "
+			   "(%ld, %d, '%s', '%s', '%s');",
 			   txn_table,
 			   now, type, tmp_name_char, user_name, cluster_name);
 	else
 		xstrfmtcat(query,
 			   "insert into %s (timestamp, action, name, actor) "
-			   "values (%d, %d, '%s', '%s');",
+			   "values (%ld, %d, '%s', '%s');",
 			   txn_table,
 			   now, type, tmp_name_char, user_name);
 
@@ -1691,14 +1694,14 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 	 * only delete things that are typos.
 	 */
 	xstrfmtcat(query,
-		   "update \"%s_%s\" set mod_time=%d, deleted=1 where (%s);"
-		   "update \"%s_%s\" set mod_time=%d, deleted=1 where (%s);"
-		   "update \"%s_%s\" set mod_time=%d, deleted=1 where (%s);",
+		   "update \"%s_%s\" set mod_time=%ld, deleted=1 where (%s);"
+		   "update \"%s_%s\" set mod_time=%ld, deleted=1 where (%s);"
+		   "update \"%s_%s\" set mod_time=%ld, deleted=1 where (%s);",
 		   cluster_name, assoc_day_table, now, loc_assoc_char,
 		   cluster_name, assoc_hour_table, now, loc_assoc_char,
 		   cluster_name, assoc_month_table, now, loc_assoc_char);
 
-	debug3("%d(%s:%d) query\n%s %d",
+	debug3("%d(%s:%d) query\n%s %zd",
 	       mysql_conn->conn, THIS_FILE, __LINE__, query, strlen(query));
 	rc = mysql_db_query(mysql_conn->db_conn, query);
 	xfree(query);
@@ -1719,7 +1722,7 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 	 * the first place.
 	 */
 	query = xstrdup_printf("select id_assoc from \"%s_%s\" as t1 where "
-			       "creation_time>%d && (%s);",
+			       "creation_time>%ld && (%s);",
 			       cluster_name, assoc_table,
 			       day_old, loc_assoc_char);
 
@@ -1805,7 +1808,7 @@ just_update:
 	 * around.
 	 */
 	query = xstrdup_printf("update \"%s_%s\" as t1 set "
-			       "mod_time=%d, deleted=1, def_qos_id=NULL, "
+			       "mod_time=%ld, deleted=1, def_qos_id=NULL, "
 			       "shares=1, max_jobs=NULL, "
 			       "max_nodes_pj=NULL, "
 			       "max_wall_pj=NULL, "

@@ -377,7 +377,7 @@ extern int slurm_select_init(bool only_default)
 
 		/* Open the directory. */
 		if(!(dirp = opendir(head))) {
-			error("cannot open plugin directory %s", dir_array[i]);
+			error("cannot open plugin directory %s", head);
 			goto done;
 		}
 

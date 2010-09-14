@@ -903,7 +903,7 @@ void parse_command_line(int argc, char **argv)
 			struct tm start_tm;
 
 			if(!localtime_r(&job_cond->usage_start, &start_tm)) {
-				error("Couldn't get localtime from %d",
+				error("Couldn't get localtime from %ld",
 				      job_cond->usage_start);
 				return;
 			}

@@ -453,7 +453,7 @@ static int _is_a_lwp(uint32_t pid) {
 	/* if tgid differs from pid, this is a LWP (Thread POSIX) */
 	if ( (uint32_t) tgid != (uint32_t) pid ) {
 	        debug3("jobacct_gather_linux: pid=%d is a lightweight process",
-		       tgid,pid);
+		       tgid);
 		return 1;
 	} else
 	        return 0;

@@ -3,32 +3,32 @@
  *****************************************************************************
  *  Copyright (C) 2009 CEA/DAM/DIF
  *  Written by Matthieu Hautreux <matthieu.hautreux@cea.fr>
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  In addition, as a special exception, the copyright holders give permission
+ *  to link the code of portions of this program with the OpenSSL library under
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -164,7 +164,7 @@ int xcgroup_create(char* file_path,xcgroup_opts_t* opts)
 	gid_t gid;
 	int create_only;
 	int notify;
-	
+
 	mode_t cmask;
 	mode_t omask;
 
@@ -172,7 +172,7 @@ int xcgroup_create(char* file_path,xcgroup_opts_t* opts)
 	gid=opts->gid;
 	create_only=opts->create_only;
 	notify=opts->notify;
-	
+
 	fstatus = XCGROUP_ERROR;
 
 	/* save current mask and apply working one */
@@ -196,7 +196,7 @@ int xcgroup_create(char* file_path,xcgroup_opts_t* opts)
 		rmdir(file_path);
 		return fstatus;
 	}
-	
+
 	/* change cgroup ownership as requested */
 	if ( chown(file_path,uid,gid) ) {
 		debug2("unable to chown %d:%d cgroup '%s' : %m",
@@ -220,7 +220,7 @@ int xcgroup_create(char* file_path,xcgroup_opts_t* opts)
 int xcgroup_destroy(char* file_path)
 {
 
-	/* 
+	/*
 	 * nothing to be done here, notify_on_release was set
 	 * so hope that all will works perfectly...
 	 *
@@ -228,8 +228,8 @@ int xcgroup_destroy(char* file_path)
 	 * to the cgroup but no more processes are present, this results
 	 * in a directory not being removed until the pages are accounted
 	 * to an other cgroup...
-	 * echoing 1 into memory.force_empty can purge this memory but 
-	 * as slurmstepd is still present in the cgroup and use pages, 
+	 * echoing 1 into memory.force_empty can purge this memory but
+	 * as slurmstepd is still present in the cgroup and use pages,
 	 * this is not sufficient as it could leave some other pages too..
 	 * we should have a way to ask the cgroup to force_empty
 	 * on last process exit but I did not find any for now
@@ -243,7 +243,7 @@ int xcgroup_add_pids(char* cpath,pid_t* pids,int npids)
 {
 	int fstatus;
 	char file_path[PATH_MAX];
-	
+
 	fstatus = XCGROUP_ERROR;
 
 	if ( snprintf(file_path,PATH_MAX,"%s/tasks",
@@ -274,7 +274,7 @@ xcgroup_get_pids(char* cpath, pid_t **pids, int *npids)
 		debug2("unable to get pids of '%s' : %m",cpath);
 		return fstatus;
 	}
-	
+
 	fstatus = _file_read_uint32s(file_path,(uint32_t**)pids,npids);
 	if ( fstatus != XCGROUP_SUCCESS )
 		debug2("unable to get pids of '%s'",cpath);
@@ -298,7 +298,7 @@ xcgroup_find_by_pid(char* cpath, pid_t pid)
 		debug2("unable to build cgroup meta filepath for pid=%u : %m",
 		       pid);
 		return XCGROUP_ERROR;
-	}	
+	}
 
 	/* read file content */
 	fstatus = _file_read_content(file_path,&buf,&fsize);
@@ -327,15 +327,15 @@ int xcgroup_set_memlimit(char* cpath,uint32_t memlimit)
 	int fstatus;
 	char file_path[PATH_MAX];
 	uint64_t ml;
-	
+
 	fstatus = XCGROUP_ERROR;
-	
+
 	if ( snprintf(file_path,PATH_MAX,"%s/memory.limit_in_bytes",
 		      cpath) >= PATH_MAX ) {
 		debug2("unable to set memory limit of '%s' : %m",cpath);
 		return fstatus;
 	}
-	
+
 	ml = (uint64_t) memlimit * 1024 * 1024;
 	fstatus = _file_write_uint64s(file_path,&ml,1);
 	if ( fstatus != XCGROUP_SUCCESS )
@@ -352,22 +352,22 @@ int xcgroup_get_memlimit(char* cpath,uint32_t* memlimit)
 	char file_path[PATH_MAX];
 	uint64_t* ml;
 	int i;
-	
+
 	fstatus = XCGROUP_ERROR;
-	
+
 	if ( snprintf(file_path,PATH_MAX,"%s/memory.limit_in_bytes",
 		      cpath) >= PATH_MAX ) {
 		debug2("unable to get memory limit of '%s' : %m",cpath);
 		return fstatus;
 	}
-	
+
 	fstatus = _file_read_uint64s(file_path,&ml,&i);
-	if ( fstatus != XCGROUP_SUCCESS || 
+	if ( fstatus != XCGROUP_SUCCESS ||
 	     i == 0 )
 		debug2("unable to get memory limit of '%s' : %m",cpath);
 	else {
 		if ( *ml == 0 ) {
-			*memlimit = 0;	
+			*memlimit = 0;
 		}
 		else {
 			/* convert into MB */
@@ -392,7 +392,7 @@ int xcgroup_set_memswlimit(char* cpath,uint32_t memlimit)
 	int fstatus;
 	char file_path[PATH_MAX];
 	uint64_t ml;
-	
+
 	fstatus = XCGROUP_ERROR;
 
 	if ( snprintf(file_path,PATH_MAX,"%s/memory.memsw.limit_in_bytes",
@@ -417,7 +417,7 @@ int xcgroup_get_memswlimit(char* cpath,uint32_t* memlimit)
 	char file_path[PATH_MAX];
 	uint64_t *ml;
 	int i;
-	
+
 	fstatus = XCGROUP_ERROR;
 
 	if ( snprintf(file_path,PATH_MAX,"%s/memory.memsw.limit_in_bytes",
@@ -427,12 +427,12 @@ int xcgroup_get_memswlimit(char* cpath,uint32_t* memlimit)
 	}
 
 	fstatus = _file_read_uint64s(file_path,&ml,&i);
-	if ( fstatus != XCGROUP_SUCCESS || 
+	if ( fstatus != XCGROUP_SUCCESS ||
 	     i ==0 )
 		debug2("unable to get memsw limit of '%s' : %m",cpath);
 	else {
 		if ( *ml == 0 ) {
-			*memlimit = 0;	
+			*memlimit = 0;
 		}
 		else {
 			/* convert into MB */
@@ -464,23 +464,23 @@ int xcgroup_set_cpuset_cpus(char* cpath,char* range)
 {
 	int fstatus;
 	char file_path[PATH_MAX];
-	
+
 	fstatus = XCGROUP_ERROR;
-	
+
 	if ( snprintf(file_path,PATH_MAX,"%s/cpuset.cpus",
 		      cpath) >= PATH_MAX ) {
 		debug2("unable to set cpuset.cpus to '%s' for '%s' : %m",
 		       range,cpath);
 		return fstatus;
 	}
-	
+
 	fstatus = _file_write_content(file_path,range,strlen(range));
 	if ( fstatus != XCGROUP_SUCCESS )
 		debug2("unable to set cpuset.cpus to '%s' for '%s' : %m",
 		       range,cpath);
 	else
 		debug3("cpuset.cpus set to '%s' for '%s'",range,cpath);
-	
+
 	return fstatus;
 }
 
@@ -510,7 +510,7 @@ int xcgroup_set_params(char* cpath,char* parameters)
 		if ( value != NULL ) {
 			*value='\0';
 			value++;
-			if ( snprintf(file_path,PATH_MAX,"%s/%s",cpath,p) 
+			if ( snprintf(file_path,PATH_MAX,"%s/%s",cpath,p)
 			     >= PATH_MAX ) {
 				debug2("unable to build filepath for '%s' and"
 				       " parameter '%s' : %m",cpath,p);
@@ -543,7 +543,7 @@ int xcgroup_get_param(char* cpath,char* parameter,char **content,size_t *csize)
 
 	fstatus = XCGROUP_ERROR;
 
-	if ( snprintf(file_path,PATH_MAX,"%s/%s",cpath,parameter) 
+	if ( snprintf(file_path,PATH_MAX,"%s/%s",cpath,parameter)
 	     >= PATH_MAX ) {
 		debug2("unable to build filepath for '%s' and"
 		       " parameter '%s' : %m",cpath,parameter);
@@ -551,7 +551,7 @@ int xcgroup_get_param(char* cpath,char* parameter,char **content,size_t *csize)
 	else {
 		fstatus = _file_read_content(file_path,content,csize);
 		if ( fstatus != XCGROUP_SUCCESS )
-			debug2("unable to get parameter '%s'");
+			debug2("unable to get parameter '%s'", parameter);
 	}
 
 	return fstatus;
@@ -598,7 +598,7 @@ _file_write_uint64s(char* file_path,uint64_t* values,int nb)
 	char tstr[256];
 	uint64_t value;
 	int i;
-	
+
 	/* open file for writing */
 	fd = open(file_path, O_WRONLY, 0700);
 	if (fd < 0) {
@@ -610,14 +610,13 @@ _file_write_uint64s(char* file_path,uint64_t* values,int nb)
 	/* add one value per line */
 	fstatus = XCGROUP_SUCCESS;
 	for ( i=0 ; i < nb ; i++ ) {
-		
+
 		value = values[i];
-		
-		rc = snprintf(tstr, sizeof(tstr), "%llu",
-			      (long long unsigned int)value);
+
+		rc = snprintf(tstr, sizeof(tstr), "%"PRIu64"", value);
 		if ( rc < 0 ) {
-			debug2("unable to build %llu string value, skipping",
-			       value);
+			debug2("unable to build %"PRIu64" string value, "
+			       "skipping", value);
 			fstatus = XCGROUP_ERROR;
 			continue;
 		}
@@ -625,7 +624,7 @@ _file_write_uint64s(char* file_path,uint64_t* values,int nb)
 		do {
 			rc = write(fd, tstr, strlen(tstr)+1);
 		}
-		while ( rc != 0 && errno == EINTR); 
+		while ( rc != 0 && errno == EINTR);
 		if (rc < 1) {
 			debug2("unable to add value '%s' to file '%s' : %m",
 			       tstr,file_path);
@@ -653,11 +652,11 @@ _file_read_uint64s(char* file_path,uint64_t** pvalues,int* pnb)
 
 	uint64_t* pa=NULL;
 	int i;
-	
+
 	/* check input pointers */
 	if ( pvalues == NULL || pnb == NULL )
 		return XCGROUP_ERROR;
-	
+
 	/* open file for reading */
 	fd = open(file_path, O_RDONLY, 0700);
 	if (fd < 0) {
@@ -699,12 +698,12 @@ _file_read_uint64s(char* file_path,uint64_t** pvalues,int* pnb)
 		i = 0;
 		while ( index(p,'\n') != NULL ) {
 			long long unsigned int ll_tmp;
-			sscanf(p,"%llu",&ll_tmp);
+			sscanf(p,"%llu", &ll_tmp);
 			pa[i++] = ll_tmp;
 			p = index(p,'\n') + 1;
 		}
 	}
-	
+
 	/* free buffer */
 	xfree(buf);
 
@@ -724,7 +723,7 @@ _file_write_uint32s(char* file_path,uint32_t* values,int nb)
 	char tstr[256];
 	uint32_t value;
 	int i;
-	
+
 	/* open file for writing */
 	fd = open(file_path, O_WRONLY, 0700);
 	if (fd < 0) {
@@ -736,9 +735,9 @@ _file_write_uint32s(char* file_path,uint32_t* values,int nb)
 	/* add one value per line */
 	fstatus = XCGROUP_SUCCESS;
 	for ( i=0 ; i < nb ; i++ ) {
-		
+
 		value = values[i];
-		
+
 		rc = snprintf(tstr, sizeof(tstr), "%u",value);
 		if ( rc < 0 ) {
 			debug2("unable to build %u string value, skipping",
@@ -750,7 +749,7 @@ _file_write_uint32s(char* file_path,uint32_t* values,int nb)
 		do {
 			rc = write(fd, tstr, strlen(tstr)+1);
 		}
-		while ( rc != 0 && errno == EINTR); 
+		while ( rc != 0 && errno == EINTR);
 		if (rc < 1) {
 			debug2("unable to add value '%s' to file '%s' : %m",
 			       tstr,file_path);
@@ -778,11 +777,11 @@ _file_read_uint32s(char* file_path,uint32_t** pvalues,int* pnb)
 
 	uint32_t* pa=NULL;
 	int i;
-	
+
 	/* check input pointers */
 	if ( pvalues == NULL || pnb == NULL )
 		return XCGROUP_ERROR;
-	
+
 	/* open file for reading */
 	fd = open(file_path, O_RDONLY, 0700);
 	if (fd < 0) {
@@ -828,7 +827,7 @@ _file_read_uint32s(char* file_path,uint32_t** pvalues,int* pnb)
 			i++;
 		}
 	}
-	
+
 	/* free buffer */
 	xfree(buf);
 
@@ -840,12 +839,12 @@ _file_read_uint32s(char* file_path,uint32_t** pvalues,int* pnb)
 }
 
 int
-_file_write_content(char* file_path,char* content,size_t csize)
+_file_write_content(char* file_path, char* content,size_t csize)
 {
 	int fstatus;
 	int rc;
 	int fd;
-	
+
 	/* open file for writing */
 	fd = open(file_path, O_WRONLY, 0700);
 	if (fd < 0) {
@@ -858,12 +857,12 @@ _file_write_content(char* file_path,char* content,size_t csize)
 	do {
 		rc = write(fd,content,csize);
 	}
-	while ( rc != 0 && errno == EINTR); 
+	while ( rc != 0 && errno == EINTR);
 
 	/* check read size */
 	if (rc < csize) {
-		debug2("unable to write %u bytes to file '%s' : %m",
-		       csize,file_path);
+		debug2("unable to write %zd bytes to file '%s' : %m",
+		       csize, file_path);
 		fstatus = XCGROUP_ERROR;
 	}
 	else
@@ -871,7 +870,7 @@ _file_write_content(char* file_path,char* content,size_t csize)
 
 	/* close file */
 	close(fd);
-	
+
 	return fstatus;
 }
 
@@ -890,7 +889,7 @@ _file_read_content(char* file_path,char** content,size_t *csize)
 	/* check input pointers */
 	if ( content == NULL || csize == NULL )
 		return fstatus;
-	
+
 	/* open file for reading */
 	fd = open(file_path, O_RDONLY, 0700);
 	if (fd < 0) {
@@ -933,7 +932,7 @@ int _xcgroup_cpuset_init(char* file_path)
 	int fstatus;
 	char path[PATH_MAX];
 
-	char* cpuset_metafiles[] = { 
+	char* cpuset_metafiles[] = {
 		"cpuset.cpus",
 		"cpuset.mems"
 	};
@@ -945,11 +944,11 @@ int _xcgroup_cpuset_init(char* file_path)
 
 	fstatus = XCGROUP_ERROR;
 
-	/* when cgroups are configured with cpuset, at least 
-	 * cpuset.cpus and cpuset.mems must be set or the cgroup 
+	/* when cgroups are configured with cpuset, at least
+	 * cpuset.cpus and cpuset.mems must be set or the cgroup
 	 * will not be available at all.
 	 * we duplicate the ancestor configuration in the init step */
-	for ( i = 0 ; i < 2 ; i++ ) { 
+	for ( i = 0 ; i < 2 ; i++ ) {
 
 		cpuset_meta = cpuset_metafiles[i];
 
@@ -965,7 +964,7 @@ int _xcgroup_cpuset_init(char* file_path)
 			debug3("assuming no cpuset support for '%s'",path);
 			return XCGROUP_SUCCESS;
 		}
-		
+
 		/* duplicate ancestor conf in current cgroup */
 		if ( snprintf(path,PATH_MAX,"%s/%s",
 			      file_path,cpuset_meta) >= PATH_MAX ) {

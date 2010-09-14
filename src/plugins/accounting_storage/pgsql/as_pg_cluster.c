@@ -136,7 +136,7 @@ as_pg_add_clusters(pgsql_conn_t *pg_conn, uint32_t uid,
 		}
 
 		query = xstrdup_printf(
-			"SELECT add_cluster((%d, %d, 0, '%s', '', 0, 0, %u));",
+			"SELECT add_cluster((%ld, %ld, 0, '%s', '', 0, 0, %u));",
 			now, now, object->name,
 			object->classification);
 		rc = DEF_QUERY_RET_RC;
@@ -407,10 +407,10 @@ as_pg_remove_clusters(pgsql_conn_t *pg_conn, uint32_t uid,
 	/* We should not need to delete any cluster usage just set it
 	 * to deleted */
 	xstrfmtcat(query,
-		   "UPDATE %s SET period_end=%d WHERE period_end=0 AND (%s);"
-		   "UPDATE %s SET mod_time=%d, deleted=1 WHERE (%s);"
-		   "UPDATE %s SET mod_time=%d, deleted=1 WHERE (%s);"
-		   "UPDATE %s SET mod_time=%d, deleted=1 WHERE (%s);",
+		   "UPDATE %s SET period_end=%ld WHERE period_end=0 AND (%s);"
+		   "UPDATE %s SET mod_time=%ld, deleted=1 WHERE (%s);"
+		   "UPDATE %s SET mod_time=%ld, deleted=1 WHERE (%s);"
+		   "UPDATE %s SET mod_time=%ld, deleted=1 WHERE (%s);",
 		   event_table, now, cond,
 		   cluster_day_table, now, cond,
 		   cluster_hour_table, now, cond,
@@ -563,7 +563,7 @@ empty:
 
 			if(cluster->root_assoc) {
 				debug("This cluster %s already has "
-				      "an association.");
+				      "an association.", cluster->name);
 				continue;
 			}
 			cluster->root_assoc = assoc;

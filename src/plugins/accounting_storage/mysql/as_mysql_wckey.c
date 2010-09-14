@@ -279,9 +279,9 @@ extern int as_mysql_add_wckeys(mysql_conn_t *mysql_conn, uint32_t uid,
 			continue;
 		}
 		xstrcat(cols, "creation_time, mod_time, user");
-		xstrfmtcat(vals, "%d, %d, '%s'",
+		xstrfmtcat(vals, "%ld, %ld, '%s'",
 			   now, now, object->user);
-		xstrfmtcat(extra, ", mod_time=%d, user='%s'",
+		xstrfmtcat(extra, ", mod_time=%ld, user='%s'",
 			   now, object->user);
 
 		if(object->name) {
@@ -325,7 +325,7 @@ extern int as_mysql_add_wckeys(mysql_conn_t *mysql_conn, uint32_t uid,
 		xstrfmtcat(query,
 			   "insert into %s "
 			   "(timestamp, action, name, actor, info, cluster) "
-			   "values (%d, %u, 'id_wckey=%d', '%s', '%s', '%s');",
+			   "values (%ld, %u, 'id_wckey=%d', '%s', '%s', '%s');",
 			   txn_table,
 			   now, DBD_ADD_WCKEYS, object->id, user_name,
 			   tmp_extra, object->cluster);

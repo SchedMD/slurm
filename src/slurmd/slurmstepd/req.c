@@ -1038,7 +1038,7 @@ _handle_attach(int fd, slurmd_job_t *job, uid_t uid)
 	srun       = xmalloc(sizeof(srun_info_t));
 	srun->key  = (srun_key_t *)xmalloc(SLURM_IO_KEY_SIZE);
 
-	debug("sizeof(srun_info_t) = %d, sizeof(slurm_addr_t) = %d",
+	debug("sizeof(srun_info_t) = %ld, sizeof(slurm_addr_t) = %ld",
 	      sizeof(srun_info_t), sizeof(slurm_addr_t));
 	safe_read(fd, &srun->ioaddr, sizeof(slurm_addr_t));
 	safe_read(fd, &srun->resp_addr, sizeof(slurm_addr_t));

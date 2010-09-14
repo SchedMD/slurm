@@ -520,8 +520,8 @@ static void _wait_for_thread_fini(void)
 		for (j=0; j<MAX_THREAD_COUNT; j++) {
 			if (slave_thread_id[j] == 0)
 				continue;
-			info("rpc_mgr sending SIGKILL to thread %u",
-			     slave_thread_id[j]);
+			info("rpc_mgr sending SIGKILL to thread %lu",
+			     (unsigned long) slave_thread_id[j]);
 			if (pthread_kill(slave_thread_id[j], SIGKILL)) {
 				slave_thread_id[j] = 0;
 				if (thread_count > 0)

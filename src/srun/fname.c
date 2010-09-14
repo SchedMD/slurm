@@ -68,7 +68,7 @@
 fname_t *
 fname_create(srun_job_t *job, char *format)
 {
-	unsigned long int wid     = 0;
+	unsigned int wid     = 0;
 	unsigned long int taskid  = 0;
 	fname_t *fname = NULL;
 	char *p, *q, *name;
@@ -115,9 +115,12 @@ fname_create(srun_job_t *job, char *format)
 	while (*p != '\0') {
 		if (*p == '%') {
 			if (isdigit(*(++p))) {
+				unsigned long in_width = 0;
 				xmemcat(name, q, p - 1);
-				if ((wid = strtoul(p, &p, 10)) > MAX_WIDTH)
+				if ((in_width = strtoul(p, &p, 10)) > MAX_WIDTH)
 					wid = MAX_WIDTH;
+				else
+					wid = in_width;
 				q = p - 1;
 				if (*p == '\0')
 					break;

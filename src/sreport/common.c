@@ -65,7 +65,7 @@ extern void slurmdb_report_print_time(print_field_t *field,
 
 		switch(time_format) {
 		case SLURMDB_REPORT_TIME_SECS:
-			output = xstrdup_printf("%llu", value);
+			output = xstrdup_printf("%"PRIu64"", value);
 			break;
 		case SLURMDB_REPORT_TIME_MINS:
 			temp_d /= 60;
@@ -83,7 +83,7 @@ extern void slurmdb_report_print_time(print_field_t *field,
 		case SLURMDB_REPORT_TIME_SECS_PER:
 			percent /= total_time;
 			percent *= 100;
-			output = xstrdup_printf("%llu(%.2lf%%)",
+			output = xstrdup_printf("%"PRIu64"(%.2lf%%)",
 						value, percent);
 			break;
 		case SLURMDB_REPORT_TIME_MINS_PER:

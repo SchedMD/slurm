@@ -726,7 +726,8 @@ static int _mod_assoc(sacctmgr_file_opts_t *file_opts,
 		mod_assoc.grp_cpu_mins = file_opts->grp_cpu_mins;
 		changed = 1;
 		xstrfmtcat(my_info,
-			   "%-30.30s for %-7.7s %-10.10s %8llu -> %llu\n",
+			   "%-30.30s for %-7.7s %-10.10s "
+			   "%8"PRIu64" -> %"PRIu64"\n",
 			   " Changed GrpCPUMins",
 			   type, name,
 			   assoc->grp_cpu_mins,
@@ -799,7 +800,8 @@ static int _mod_assoc(sacctmgr_file_opts_t *file_opts,
 			file_opts->max_cpu_mins_pj;
 		changed = 1;
 		xstrfmtcat(my_info,
-			   "%-30.30s for %-7.7s %-10.10s %8llu -> %llu\n",
+			   "%-30.30s for %-7.7s %-10.10s "
+			   "%8"PRIu64" -> %"PRIu64"\n",
 			   " Changed MaxCPUMinsPerJob",
 			   type, name,
 			   assoc->max_cpu_mins_pj,
@@ -1696,7 +1698,7 @@ extern int print_file_add_limits_to_line(char **line,
 		xstrfmtcat(*line, ":Fairshare=%u", assoc->shares_raw);
 
 	if(assoc->grp_cpu_mins != (uint64_t)INFINITE)
-		xstrfmtcat(*line, ":GrpCPUMins=%llu", assoc->grp_cpu_mins);
+		xstrfmtcat(*line, ":GrpCPUMins=%"PRIu64, assoc->grp_cpu_mins);
 
 	if(assoc->grp_cpus != INFINITE)
 		xstrfmtcat(*line, ":GrpCPUs=%u", assoc->grp_cpus);
@@ -1714,7 +1716,7 @@ extern int print_file_add_limits_to_line(char **line,
 		xstrfmtcat(*line, ":GrpWall=%u", assoc->grp_wall);
 
 	if(assoc->max_cpu_mins_pj != (uint64_t)INFINITE)
-		xstrfmtcat(*line, ":MaxCPUMinsPerJob=%llu",
+		xstrfmtcat(*line, ":MaxCPUMinsPerJob=%"PRIu64,
 			   assoc->max_cpu_mins_pj);
 
 	if(assoc->max_cpus_pj != INFINITE)

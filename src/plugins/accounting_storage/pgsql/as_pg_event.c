@@ -176,10 +176,10 @@ cs_pg_node_down(pgsql_conn_t *pg_conn,
 	       node_ptr->name, pg_conn->cluster_name, cpus);
 
 	query = xstrdup_printf(
-		"SELECT record_node_down('%s', '%s', %d, '%s', %d, %d, %d);",
+		"SELECT record_node_down('%s', '%s', %d, '%s', %d, %d, %ld);",
 		pg_conn->cluster_name, node_ptr->name,
 		(int)node_ptr->node_state, my_reason, (int)reason_uid,
-		(int)cpus, (int)event_time);
+		(int)cpus, event_time);
 
 	rc = DEF_QUERY_RET_RC;
 	return rc;
@@ -202,7 +202,7 @@ cs_pg_node_up(pgsql_conn_t *pg_conn,
 		return ESLURM_DB_CONNECTION;
 
 	query = xstrdup_printf(
-		"UPDATE %s SET period_end=%d WHERE cluster='%s' "
+		"UPDATE %s SET period_end=%ld WHERE cluster='%s' "
 		"AND period_end=0 AND node_name='%s'",
 		event_table, (event_time-1), pg_conn->cluster_name,
 		node_ptr->name);
@@ -246,14 +246,14 @@ cs_pg_register_ctld(pgsql_conn_t *pg_conn, char *cluster, uint16_t port)
 		address = slurmctld_conf.control_addr;
 
 	query = xstrdup_printf(
-		"UPDATE %s SET deleted=0, mod_time=%d, "
+		"UPDATE %s SET deleted=0, mod_time=%ld, "
 		"control_host='%s', control_port=%u, rpc_version=%d "
 		"WHERE name='%s';",
 		cluster_table, now, address, port,
 		SLURMDBD_VERSION, cluster);
 	xstrfmtcat(query, "INSERT INTO %s "
 		   "(timestamp, action, name, actor, info) "
-		   "VALUES (%d, %d, '%s', '%s', '%s %u');",
+		   "VALUES (%ld, %d, '%s', '%s', '%s %u');",
 		   txn_table, now, DBD_MODIFY_CLUSTERS, cluster,
 		   slurmctld_conf.slurm_user_name, address, port);
 	rc = DEF_QUERY_RET_RC;
@@ -340,7 +340,7 @@ cs_pg_cluster_cpus(pgsql_conn_t *pg_conn, char *cluster_nodes,
 	/* reset all the entries for this cluster since the cpus
 	   changed some of the downed nodes may have gone away.
 	   Request them again with ACCOUNTING_FIRST_REG */
-	query = xstrdup_printf("UPDATE %s SET period_end=%u "
+	query = xstrdup_printf("UPDATE %s SET period_end=%ld "
 			       "WHERE cluster='%s' AND period_end=0;",
 			       event_table, (event_time-1),
 			       pg_conn->cluster_name);
@@ -351,7 +351,7 @@ cs_pg_cluster_cpus(pgsql_conn_t *pg_conn, char *cluster_nodes,
 add_it:
 	query = xstrdup_printf(
 		"INSERT INTO %s (cluster, cpu_count, period_start, reason) "
-		"VALUES ('%s', %u, %d, 'Cluster processor count')",
+		"VALUES ('%s', %u, %ld, 'Cluster processor count')",
 		event_table, pg_conn->cluster_name, cpus, event_time);
 	rc = DEF_QUERY_RET_RC;
 
@@ -405,8 +405,8 @@ cs_pg_get_usage(pgsql_conn_t *pg_conn, uid_t uid,
 		return SLURM_ERROR;
 
 	query = xstrdup_printf(
-		"SELECT %s FROM %s WHERE (period_start < %d "
-		"AND period_start >= %d) AND cluster='%s'",
+		"SELECT %s FROM %s WHERE (period_start < %ld "
+		"AND period_start >= %ld) AND cluster='%s'",
 		cu_fields, usage_table, end, start, cluster_rec->name);
 	result = DEF_QUERY_RET;
 	if(!result)
@@ -506,13 +506,14 @@ as_pg_get_events(pgsql_conn_t *pg_conn, uid_t uid,
                 if(!event_cond->period_end)
                         event_cond->period_end = now;
                 xstrfmtcat(cond,
-                           " AND (time_start < %d) "
-                           " AND (time_end >= %d OR time_end = 0)",
+                           " AND (time_start < %ld) "
+                           " AND (time_end >= %ld OR time_end = 0)",
                            event_cond->period_end, event_cond->period_start);
         }
 
 	concat_like_cond_list(event_cond->reason_list, NULL, "reason", &cond);
-	concat_cond_list(event_cond->reason_uid_list, NULL, "reason_uid", &cond);
+	concat_cond_list(event_cond->reason_uid_list, NULL,
+			 "reason_uid", &cond);
 	concat_cond_list(event_cond->state_list, NULL, "state", &cond);
 	concat_cond_list(event_cond->cluster_list, NULL, "cluster", &cond);
 

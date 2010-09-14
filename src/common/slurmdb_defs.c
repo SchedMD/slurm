@@ -1658,12 +1658,13 @@ extern void log_assoc_rec(slurmdb_association_rec_t *assoc_ptr,
 	if(assoc_ptr->grp_cpu_mins == INFINITE)
 		debug2("  GrpCPUMins       : NONE");
 	else if(assoc_ptr->grp_cpu_mins != NO_VAL)
-		debug2("  GrpCPUMins       : %llu", assoc_ptr->grp_cpu_mins);
+		debug2("  GrpCPUMins       : %"PRIu64"",
+		       assoc_ptr->grp_cpu_mins);
 
 	if(assoc_ptr->grp_cpu_run_mins == INFINITE)
 		debug2("  GrpCPURunMins    : NONE");
 	else if(assoc_ptr->grp_cpu_mins != NO_VAL)
-		debug2("  GrpCPURunMins    : %llu",
+		debug2("  GrpCPURunMins    : %"PRIu64"",
 		       assoc_ptr->grp_cpu_run_mins);
 
 	if(assoc_ptr->grp_cpus == INFINITE)
@@ -1698,12 +1699,13 @@ extern void log_assoc_rec(slurmdb_association_rec_t *assoc_ptr,
 	if(assoc_ptr->max_cpu_mins_pj == INFINITE)
 		debug2("  MaxCPUMins       : NONE");
 	else if(assoc_ptr->max_cpu_mins_pj != NO_VAL)
-		debug2("  MaxCPUMins       : %llu", assoc_ptr->max_cpu_mins_pj);
+		debug2("  MaxCPUMins       : %"PRIu64"",
+		       assoc_ptr->max_cpu_mins_pj);
 
 	if(assoc_ptr->max_cpu_run_mins == INFINITE)
 		debug2("  MaxCPURunMins    : NONE");
 	else if(assoc_ptr->max_cpu_run_mins != NO_VAL)
-		debug2("  MaxCPURunMins    : %llu",
+		debug2("  MaxCPURunMins    : %"PRIu64"",
 		       assoc_ptr->max_cpu_run_mins);
 
 	if(assoc_ptr->max_cpus_pj == INFINITE)
@@ -1787,7 +1789,7 @@ extern int slurmdb_report_set_start_end_time(time_t *start, time_t *end)
 	/* Default is going to be the last day */
 	if(!sent_end) {
 		if(!localtime_r(&my_time, &end_tm)) {
-			error("Couldn't get localtime from end %d",
+			error("Couldn't get localtime from end %ld",
 			      my_time);
 			return SLURM_ERROR;
 		}
@@ -1796,7 +1798,7 @@ extern int slurmdb_report_set_start_end_time(time_t *start, time_t *end)
 	} else {
 		temp_time = sent_end;
 		if(!localtime_r(&temp_time, &end_tm)) {
-			error("Couldn't get localtime from user end %d",
+			error("Couldn't get localtime from user end %ld",
 			      my_time);
 			return SLURM_ERROR;
 		}
@@ -1813,7 +1815,7 @@ extern int slurmdb_report_set_start_end_time(time_t *start, time_t *end)
 
 	if(!sent_start) {
 		if(!localtime_r(&my_time, &start_tm)) {
-			error("Couldn't get localtime from start %d",
+			error("Couldn't get localtime from start %ld",
 			      my_time);
 			return SLURM_ERROR;
 		}
@@ -1823,7 +1825,7 @@ extern int slurmdb_report_set_start_end_time(time_t *start, time_t *end)
 	} else {
 		temp_time = sent_start;
 		if(!localtime_r(&temp_time, &start_tm)) {
-			error("Couldn't get localtime from user start %d",
+			error("Couldn't get localtime from user start %ld",
 			      my_time);
 			return SLURM_ERROR;
 		}

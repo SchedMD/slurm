@@ -123,6 +123,27 @@ typedef struct {
 #define SCHEDLOG_OPTS_INITIALIZER	\
 	{ LOG_LEVEL_QUIET, LOG_LEVEL_QUIET, LOG_LEVEL_QUIET, 0, 1 }
 
+#define MAKE_TIMESTAMP(timestamp_buf, timestamp_fmt) {	\
+	time_t timestamp_t = time(NULL);           \
+	struct tm timestamp_tm;	                \
+	if (!localtime_r(&timestamp_t, &timestamp_tm))\
+		fprintf(stderr, "localtime_r() failed\n"); \
+	strftime(timestamp_buf, sizeof(timestamp_buf), \
+		 timestamp_fmt, &timestamp_tm); \
+}
+
+
+#define RFC822_TIMESTAMP(timestamp_buf) \
+	MAKE_TIMESTAMP(timestamp_buf, "%a %d %b %Y %H:%M:%S %z");
+
+#ifdef USE_ISO_8601
+#define LOG_TIMESTAMP(timestamp_buf)			\
+	MAKE_TIMESTAMP(timestamp_buf, "%Y-%m-%dT%T");
+#else
+#define LOG_TIMESTAMP(timestamp_buf)		\
+	MAKE_TIMESTAMP(timestamp_buf, "%b %d %T");
+#endif
+
 /*
  * initialize log module (called only once)
  *
@@ -140,12 +161,12 @@ typedef struct {
  * log function automatically takes the basename() of argv0.
  */
 int log_init(char *argv0, log_options_t opts,
-              log_facility_t fac, char *logfile);
+	      log_facility_t fac, char *logfile);
 
 /*
  * initialize scheduler log module (called only once)
  */
-int sched_log_init(char *argv0, log_options_t opts, log_facility_t fac, 
+int sched_log_init(char *argv0, log_options_t opts, log_facility_t fac,
 		   char *logfile);
 
 /* Write to scheduler log */
@@ -175,7 +196,7 @@ void sched_log_fini(void);
  */
 int log_alter(log_options_t opts, log_facility_t fac, char *logfile);
 
-/* Sched alter log facility, options are like sched_log_init() above, 
+/* Sched alter log facility, options are like sched_log_init() above,
  * except that an argv0 argument is not passed.
  *
  * This function may be called multiple times.
@@ -228,19 +249,19 @@ void log_flush(void);
 /* fatal() aborts program unless NDEBUG defined
  * error() returns SLURM_ERROR
  */
-void	fatal(const char *, ...);
-int	error(const char *, ...);
-void	info(const char *, ...);
-void	verbose(const char *, ...);
-void	debug(const char *, ...);
-void	debug2(const char *, ...);
-void	debug3(const char *, ...);
+void	fatal(const char *, ...) __attribute__ ((format (printf, 1, 2)));
+int	error(const char *, ...) __attribute__ ((format (printf, 1, 2)));
+void	info(const char *, ...) __attribute__ ((format (printf, 1, 2)));
+void	verbose(const char *, ...) __attribute__ ((format (printf, 1, 2)));
+void	debug(const char *, ...) __attribute__ ((format (printf, 1, 2)));
+void	debug2(const char *, ...) __attribute__ ((format (printf, 1, 2)));
+void	debug3(const char *, ...) __attribute__ ((format (printf, 1, 2)));
 /*
  * Debug levels higher than debug3 are not written to stderr in the
  * slurmstepd process after stderr is connected back to the client (srun).
  */
-void	debug4(const char *, ...);
-void	debug5(const char *, ...);
+void	debug4(const char *, ...) __attribute__ ((format (printf, 1, 2)));
+void	debug5(const char *, ...) __attribute__ ((format (printf, 1, 2)));
 
 void	dump_cleanup_list(void);
 void	fatal_add_cleanup(void (*proc) (void *), void *context);
@@ -250,4 +271,3 @@ void	fatal_remove_cleanup_job(void (*proc) (void *context), void *context);
 void	fatal_cleanup(void);
 
 #endif /* !_LOG_H */
-

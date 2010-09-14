@@ -284,7 +284,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 		local_id_usage_t *a_usage = NULL;
 		local_id_usage_t *w_usage = NULL;
 
-		debug3("%s curr hour is now %d-%d",
+		debug3("%s curr hour is now %ld-%ld",
 		       cluster_name, curr_start, curr_end);
 /* 		info("start %s", ctime(&curr_start)); */
 /* 		info("end %s", ctime(&curr_end)); */
@@ -294,8 +294,8 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 		 * state.  We handle those later with the reservations.
 		 */
 		query = xstrdup_printf("select %s from \"%s_%s\" where "
-				       "!(state & %d) && (time_start < %d "
-				       "&& (time_end >= %d "
+				       "!(state & %d) && (time_start < %ld "
+				       "&& (time_end >= %ld "
 				       "|| time_end = 0)) "
 				       "order by node_name, time_start",
 				       event_str, cluster_name, event_table,
@@ -388,7 +388,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 
 		// now get the reservations during this time
 		query = xstrdup_printf("select %s from \"%s_%s\" where "
-				       "(time_start < %d && time_end >= %d) "
+				       "(time_start < %ld && time_end >= %ld) "
 				       "order by time_start",
 				       resv_str, cluster_name, resv_table,
 				       curr_end, curr_start);
@@ -482,8 +482,8 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 
 		/* now get the jobs during this time only  */
 		query = xstrdup_printf("select %s from \"%s_%s\" where "
-				       "(time_eligible < %d && (time_end >= %d "
-				       "|| time_end = 0)) "
+				       "(time_eligible < %ld && "
+				       "(time_end >= %ld || time_end = 0)) "
 				       "order by id_assoc, time_eligible",
 				       job_str, cluster_name, job_table,
 				       curr_end, curr_start);
@@ -529,7 +529,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 				/* get the suspended time for this job */
 				query = xstrdup_printf(
 					"select %s from \"%s_%s\" where "
-					"(time_start < %d && (time_end >= %d "
+					"(time_start < %ld && (time_end >= %ld "
 					"|| time_end = 0)) && job_db_inx=%s "
 					"order by time_start",
 					suspend_str, cluster_name,
@@ -763,7 +763,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 				char *end_char = xstrdup(ctime(&curr_end));
 				start_char[strlen(start_char)-1] = '\0';
 				error("We have more allocated time than is "
-				      "possible (%llu > %llu) for "
+				      "possible (%"PRIu64" > %"PRIu64") for "
 				      "cluster %s(%d) from %s - %s",
 				      c_usage->a_cpu, c_usage->total_time,
 				      cluster_name, c_usage->cpu_count,
@@ -785,8 +785,8 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 
 				start_char[strlen(start_char)-1] = '\0';
 				error("We have more time than is "
-				      "possible (%llu+%llu+%llu)(%llu) "
-				      "> %llu for "
+				      "possible (%"PRIu64"+%"PRIu64"+%"
+				      PRIu64")(%"PRIu64") > %"PRIu64" for "
 				      "cluster %s(%d) from %s - %s",
 				      c_usage->a_cpu, c_usage->d_cpu,
 				      c_usage->pd_cpu, total_used,
@@ -814,8 +814,9 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 
 				total_used = c_usage->a_cpu +
 					c_usage->d_cpu + c_usage->pd_cpu;
-				/* info("We now have (%llu+%llu+%llu)(%llu) " */
-				/*       "?= %llu", */
+				/* info("We now have (%"PRIu64"+%"PRIu64"+" */
+				/*      "%"PRIu64")(%"PRIu64") " */
+				/*       "?= %"PRIu64"", */
 				/*       c_usage->a_cpu, c_usage->d_cpu, */
 				/*       c_usage->pd_cpu, total_used, */
 				/*       c_usage->total_time); */
@@ -854,9 +855,9 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 /* 			info("to %s", ctime(&c_usage->end)); */
 			if(query) {
 				xstrfmtcat(query,
-					   ", (%d, %d, %d, %d, "
-					   "%llu, %llu, %llu, "
-					   "%llu, %llu, %llu)",
+					   ", (%ld, %ld, %ld, %d, "
+					   "%"PRIu64", %"PRIu64", %"PRIu64", "
+					   "%"PRIu64", %"PRIu64", %"PRIu64")",
 					   now, now,
 					   c_usage->start,
 					   c_usage->cpu_count, c_usage->a_cpu,
@@ -872,9 +873,9 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 					   "down_cpu_secs, pdown_cpu_secs, "
 					   "idle_cpu_secs, over_cpu_secs, "
 					   "resv_cpu_secs) "
-					   "values (%d, %d, %d, %d, "
-					   "%llu, %llu, %llu, "
-					   "%llu, %llu, %llu)",
+					   "values (%ld, %ld, %ld, %d, "
+					   "%"PRIu64", %"PRIu64", %"PRIu64", "
+					   "%"PRIu64", %"PRIu64", %"PRIu64")",
 					   cluster_name, cluster_hour_table,
 					   now, now,
 					   c_usage->start,
@@ -892,7 +893,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 		if(query) {
 			xstrfmtcat(query,
 				   " on duplicate key update "
-				   "mod_time=%d, cpu_count=VALUES(cpu_count), "
+				   "mod_time=%ld, cpu_count=VALUES(cpu_count), "
 				   "alloc_cpu_secs=VALUES(alloc_cpu_secs), "
 				   "down_cpu_secs=VALUES(down_cpu_secs), "
 				   "pdown_cpu_secs=VALUES(pdown_cpu_secs), "
@@ -917,7 +918,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 /* 			     a_usage->a_cpu); */
 			if(query) {
 				xstrfmtcat(query,
-					   ", (%d, %d, %d, %d, %llu)",
+					   ", (%ld, %ld, %d, %ld, %"PRIu64")",
 					   now, now,
 					   a_usage->id, curr_start,
 					   a_usage->a_cpu);
@@ -927,7 +928,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 					   "(creation_time, "
 					   "mod_time, id_assoc, time_start, "
 					   "alloc_cpu_secs) values "
-					   "(%d, %d, %d, %d, %llu)",
+					   "(%ld, %ld, %d, %ld, %"PRIu64")",
 					   cluster_name, assoc_hour_table,
 					   now, now,
 					   a_usage->id, curr_start,
@@ -937,7 +938,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 		if(query) {
 			xstrfmtcat(query,
 				   " on duplicate key update "
-				   "mod_time=%d, "
+				   "mod_time=%ld, "
 				   "alloc_cpu_secs=VALUES(alloc_cpu_secs);",
 				   now);
 
@@ -961,7 +962,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 /* 			     w_usage->a_cpu); */
 			if(query) {
 				xstrfmtcat(query,
-					   ", (%d, %d, %d, %d, %llu)",
+					   ", (%ld, %ld, %d, %ld, %"PRIu64")",
 					   now, now,
 					   w_usage->id, curr_start,
 					   w_usage->a_cpu);
@@ -971,7 +972,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 					   "(creation_time, "
 					   "mod_time, id_wckey, time_start, "
 					   "alloc_cpu_secs) values "
-					   "(%d, %d, %d, %d, %llu)",
+					   "(%ld, %ld, %d, %ld, %"PRIu64")",
 					   cluster_name, wckey_hour_table,
 					   now, now,
 					   w_usage->id, curr_start,
@@ -981,7 +982,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 		if(query) {
 			xstrfmtcat(query,
 				   " on duplicate key update "
-				   "mod_time=%d, "
+				   "mod_time=%ld, "
 				   "alloc_cpu_secs=VALUES(alloc_cpu_secs);",
 				   now);
 
@@ -1046,7 +1047,7 @@ extern int as_mysql_daily_rollup(mysql_conn_t *mysql_conn,
 	uint16_t track_wckey = slurm_get_track_wckey();
 
 	if(!localtime_r(&curr_start, &start_tm)) {
-		error("Couldn't get localtime from day start %d", curr_start);
+		error("Couldn't get localtime from day start %ld", curr_start);
 		return SLURM_ERROR;
 	}
 	start_tm.tm_sec = 0;
@@ -1057,18 +1058,18 @@ extern int as_mysql_daily_rollup(mysql_conn_t *mysql_conn,
 	curr_end = mktime(&start_tm);
 
 	while(curr_start < end) {
-		debug3("curr day is now %d-%d", curr_start, curr_end);
+		debug3("curr day is now %ld-%ld", curr_start, curr_end);
 /* 		info("start %s", ctime(&curr_start)); */
 /* 		info("end %s", ctime(&curr_end)); */
 		query = xstrdup_printf(
 			"insert into \"%s_%s\" (creation_time, mod_time, "
 			"id_assoc, "
-			"time_start, alloc_cpu_secs) select %d, %d, "
+			"time_start, alloc_cpu_secs) select %ld, %ld, "
 			"id_assoc, "
-			"%d, @ASUM:=SUM(alloc_cpu_secs) from \"%s_%s\" where "
-			"(time_start < %d && time_start >= %d) "
+			"%ld, @ASUM:=SUM(alloc_cpu_secs) from \"%s_%s\" where "
+			"(time_start < %ld && time_start >= %ld) "
 			"group by id_assoc on duplicate key update "
-			"mod_time=%d, alloc_cpu_secs=@ASUM;",
+			"mod_time=%ld, alloc_cpu_secs=@ASUM;",
 			cluster_name, assoc_day_table, now, now, curr_start,
 			cluster_name, assoc_hour_table,
 			curr_end, curr_start, now);
@@ -1081,18 +1082,18 @@ extern int as_mysql_daily_rollup(mysql_conn_t *mysql_conn,
 			   "mod_time, time_start, cpu_count, "
 			   "alloc_cpu_secs, down_cpu_secs, pdown_cpu_secs, "
 			   "idle_cpu_secs, over_cpu_secs, resv_cpu_secs) "
-			   "select %d, %d, "
-			   "%d, @CPU:=MAX(cpu_count), "
+			   "select %ld, %ld, "
+			   "%ld, @CPU:=MAX(cpu_count), "
 			   "@ASUM:=SUM(alloc_cpu_secs), "
 			   "@DSUM:=SUM(down_cpu_secs), "
 			   "@PDSUM:=SUM(pdown_cpu_secs), "
 			   "@ISUM:=SUM(idle_cpu_secs), "
 			   "@OSUM:=SUM(over_cpu_secs), "
 			   "@RSUM:=SUM(resv_cpu_secs) from \"%s_%s\" where "
-			   "(time_start < %d && time_start >= %d) "
+			   "(time_start < %ld && time_start >= %ld) "
 			   "group by deleted "
 			   "on duplicate key update "
-			   "mod_time=%d, cpu_count=@CPU, "
+			   "mod_time=%ld, cpu_count=@CPU, "
 			   "alloc_cpu_secs=@ASUM, down_cpu_secs=@DSUM, "
 			   "pdown_cpu_secs=@PDSUM, idle_cpu_secs=@ISUM, "
 			   "over_cpu_secs=@OSUM, resv_cpu_secs=@RSUM;",
@@ -1104,12 +1105,12 @@ extern int as_mysql_daily_rollup(mysql_conn_t *mysql_conn,
 			xstrfmtcat(query,
 				   "insert into \"%s_%s\" (creation_time, "
 				   "mod_time, id_wckey, time_start, "
-				   "alloc_cpu_secs) select %d, %d, "
-				   "id_wckey, %d, @ASUM:=SUM(alloc_cpu_secs) "
-				   "from \"%s_%s\" where (time_start < %d && "
-				   "time_start >= %d) "
+				   "alloc_cpu_secs) select %ld, %ld, "
+				   "id_wckey, %ld, @ASUM:=SUM(alloc_cpu_secs) "
+				   "from \"%s_%s\" where (time_start < %ld && "
+				   "time_start >= %ld) "
 				   "group by id_wckey on duplicate key update "
-				   "mod_time=%d, alloc_cpu_secs=@ASUM;",
+				   "mod_time=%ld, alloc_cpu_secs=@ASUM;",
 				   cluster_name, wckey_day_table,
 				   now, now, curr_start,
 				   cluster_name, wckey_hour_table,
@@ -1126,7 +1127,7 @@ extern int as_mysql_daily_rollup(mysql_conn_t *mysql_conn,
 
 		curr_start = curr_end;
 		if(!localtime_r(&curr_start, &start_tm)) {
-			error("Couldn't get localtime from day start %d",
+			error("Couldn't get localtime from day start %ld",
 			      curr_start);
 			return SLURM_ERROR;
 		}
@@ -1160,7 +1161,8 @@ extern int as_mysql_monthly_rollup(mysql_conn_t *mysql_conn,
 	uint16_t track_wckey = slurm_get_track_wckey();
 
 	if(!localtime_r(&curr_start, &start_tm)) {
-		error("Couldn't get localtime from month start %d", curr_start);
+		error("Couldn't get localtime from month start %ld",
+		      curr_start);
 		return SLURM_ERROR;
 	}
 	start_tm.tm_sec = 0;
@@ -1172,17 +1174,18 @@ extern int as_mysql_monthly_rollup(mysql_conn_t *mysql_conn,
 	curr_end = mktime(&start_tm);
 
 	while(curr_start < end) {
-		debug3("curr month is now %d-%d", curr_start, curr_end);
+		debug3("curr month is now %ld-%ld", curr_start, curr_end);
 /* 		info("start %s", ctime(&curr_start)); */
 /* 		info("end %s", ctime(&curr_end)); */
 		query = xstrdup_printf(
 			"insert into \"%s_%s\" (creation_time, "
 			"mod_time, id_assoc, "
-			"time_start, alloc_cpu_secs) select %d, %d, id_assoc, "
-			"%d, @ASUM:=SUM(alloc_cpu_secs) from \"%s_%s\" where "
-			"(time_start < %d && time_start >= %d) "
+			"time_start, alloc_cpu_secs) select "
+			"%ld, %ld, id_assoc, "
+			"%ld, @ASUM:=SUM(alloc_cpu_secs) from \"%s_%s\" where "
+			"(time_start < %ld && time_start >= %ld) "
 			"group by id_assoc on duplicate key update "
-			"mod_time=%d, alloc_cpu_secs=@ASUM;",
+			"mod_time=%ld, alloc_cpu_secs=@ASUM;",
 			cluster_name, assoc_month_table, now, now, curr_start,
 			cluster_name, assoc_day_table,
 			curr_end, curr_start, now);
@@ -1195,18 +1198,18 @@ extern int as_mysql_monthly_rollup(mysql_conn_t *mysql_conn,
 			   "mod_time, time_start, cpu_count, "
 			   "alloc_cpu_secs, down_cpu_secs, pdown_cpu_secs, "
 			   "idle_cpu_secs, over_cpu_secs, resv_cpu_secs) "
-			   "select %d, %d, "
-			   "%d, @CPU:=MAX(cpu_count), "
+			   "select %ld, %ld, "
+			   "%ld, @CPU:=MAX(cpu_count), "
 			   "@ASUM:=SUM(alloc_cpu_secs), "
 			   "@DSUM:=SUM(down_cpu_secs), "
 			   "@PDSUM:=SUM(pdown_cpu_secs), "
 			   "@ISUM:=SUM(idle_cpu_secs), "
 			   "@OSUM:=SUM(over_cpu_secs), "
 			   "@RSUM:=SUM(resv_cpu_secs) from \"%s_%s\" where "
-			   "(time_start < %d && time_start >= %d) "
+			   "(time_start < %ld && time_start >= %ld) "
 			   "group by deleted "
 			   "on duplicate key update "
-			   "mod_time=%d, cpu_count=@CPU, "
+			   "mod_time=%ld, cpu_count=@CPU, "
 			   "alloc_cpu_secs=@ASUM, down_cpu_secs=@DSUM, "
 			   "pdown_cpu_secs=@PDSUM, idle_cpu_secs=@ISUM, "
 			   "over_cpu_secs=@OSUM, resv_cpu_secs=@RSUM;",
@@ -1219,12 +1222,12 @@ extern int as_mysql_monthly_rollup(mysql_conn_t *mysql_conn,
 				   "insert into \"%s_%s\" "
 				   "(creation_time, mod_time, "
 				   "id_wckey, time_start, alloc_cpu_secs) "
-				   "select %d, %d, id_wckey, %d, "
+				   "select %ld, %ld, id_wckey, %ld, "
 				   "@ASUM:=SUM(alloc_cpu_secs) "
-				   "from \"%s_%s\" where (time_start < %d && "
-				   "time_start >= %d) "
+				   "from \"%s_%s\" where (time_start < %ld && "
+				   "time_start >= %ld) "
 				   "group by id_wckey on duplicate key update "
-				   "mod_time=%d, alloc_cpu_secs=@ASUM;",
+				   "mod_time=%ld, alloc_cpu_secs=@ASUM;",
 				   cluster_name, wckey_month_table,
 				   now, now, curr_start,
 				   cluster_name, wckey_day_table,
@@ -1241,7 +1244,7 @@ extern int as_mysql_monthly_rollup(mysql_conn_t *mysql_conn,
 
 		curr_start = curr_end;
 		if(!localtime_r(&curr_start, &start_tm)) {
-			error("Couldn't get localtime from month start %d",
+			error("Couldn't get localtime from month start %ld",
 			      curr_start);
 		}
 		start_tm.tm_sec = 0;

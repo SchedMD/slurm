@@ -231,9 +231,9 @@ int main(int argc, char *argv[])
 		    (retries >= MAX_RETRIES))
 			break;
 		if (retries == 0)
-			error(msg);
+			error("%s", msg);
 		else
-			debug(msg);
+			debug("%s", msg);
 		sleep (++retries);
 	}
 

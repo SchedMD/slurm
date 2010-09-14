@@ -135,10 +135,10 @@ _make_txn_cond(pgsql_conn_t *pg_conn, slurmdb_txn_cond_t *txn_cond)
 	concat_like_cond_list(txn_cond->name_list, NULL, "name", &cond);
 
 	if(txn_cond->time_start)
-		xstrfmtcat(cond, " AND (timestamp >= %d) ",
+		xstrfmtcat(cond, " AND (timestamp >= %ld) ",
 			   txn_cond->time_start);
 	if (txn_cond->time_end)
-		xstrfmtcat(cond, " AND (timestamp < %d)",
+		xstrfmtcat(cond, " AND (timestamp < %ld)",
 			   txn_cond->time_end);
 	return cond;
 }
@@ -245,7 +245,7 @@ add_txn(pgsql_conn_t *pg_conn, time_t now,  slurmdbd_msg_type_t action,
 	int rc;
 	char *query = xstrdup_printf(
 		"INSERT INTO %s (timestamp, action, name, actor, info) "
-		"VALUES (%d, %u, $$%s$$, '%s', $$%s$$);",
+		"VALUES (%ld, %u, $$%s$$, '%s', $$%s$$);",
 		txn_table, now, action, object, actor, info ?: "");
 	rc = DEF_QUERY_RET_RC;
 	return rc;

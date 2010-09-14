@@ -2480,7 +2480,7 @@ static int _node_state(slurmdbd_conn_t *slurmdbd_conn,
 		node_state_msg->new_state = DBD_NODE_STATE_UP;
 
 	if(node_state_msg->new_state == DBD_NODE_STATE_UP) {
-		debug3("DBD_NODE_STATE: NODE:%s STATE:%s REASON:%s TIME:%u",
+		debug3("DBD_NODE_STATE: NODE:%s STATE:%s REASON:%s TIME:%ld",
 		       node_state_msg->hostlist,
 		       _node_state_string(node_state_msg->new_state),
 		       node_state_msg->reason,
@@ -2491,7 +2491,7 @@ static int _node_state(slurmdbd_conn_t *slurmdbd_conn,
 			node_state_msg->event_time);
 	} else {
 		debug2("DBD_NODE_STATE: NODE:%s STATE:%s "
-		       "REASON:%s UID:%u TIME:%u",
+		       "REASON:%s UID:%u TIME:%ld",
 		       node_state_msg->hostlist,
 		       _node_state_string(node_state_msg->new_state),
 		       node_state_msg->reason,
@@ -3372,9 +3372,9 @@ static int  _step_complete(slurmdbd_conn_t *slurmdbd_conn,
 		goto end_it;
 	}
 
-	debug2("DBD_STEP_COMPLETE: ID:%u.%u SUBMIT:%u",
+	debug2("DBD_STEP_COMPLETE: ID:%u.%u SUBMIT:%lu",
 	       step_comp_msg->job_id, step_comp_msg->step_id,
-	       step_comp_msg->job_submit_time);
+	       (unsigned long) step_comp_msg->job_submit_time);
 
 	memset(&step, 0, sizeof(struct step_record));
 	memset(&job, 0, sizeof(struct job_record));
@@ -3435,9 +3435,10 @@ static int  _step_start(slurmdbd_conn_t *slurmdbd_conn,
 		goto end_it;
 	}
 
-	debug2("DBD_STEP_START: ID:%u.%u NAME:%s SUBMIT:%d",
+	debug2("DBD_STEP_START: ID:%u.%u NAME:%s SUBMIT:%lu",
 	       step_start_msg->job_id, step_start_msg->step_id,
-	       step_start_msg->name, step_start_msg->job_submit_time);
+	       step_start_msg->name,
+	       (unsigned long) step_start_msg->job_submit_time);
 
 	memset(&step, 0, sizeof(struct step_record));
 	memset(&job, 0, sizeof(struct job_record));

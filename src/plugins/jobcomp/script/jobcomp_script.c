@@ -336,6 +336,9 @@ static int _env_append (char ***envp, const char *name, const char *val)
 
 static int _env_append_fmt (char ***envp, const char *name,
 		const char *fmt, ...)
+  __attribute__ ((format (printf, 3, 4)));
+static int _env_append_fmt (char ***envp, const char *name,
+		const char *fmt, ...)
 {
 	char val[1024];
 	va_list ap;
@@ -381,7 +384,8 @@ static char ** _create_environment (struct jobcomp_info *job)
 	if (job->limit == INFINITE)
 		_env_append (&env, "LIMIT", "UNLIMITED");
 	else
-		_env_append_fmt (&env, "LIMIT", "%lu", job->limit);
+		_env_append_fmt (&env, "LIMIT", "%lu",
+		                 (unsigned long) job->limit);
 
 	if ((tz = getenv ("TZ")))
 		_env_append_fmt (&env, "TZ", "%s", tz);

@@ -95,10 +95,10 @@ static int _compute_c_b_task_dist(struct job_record *job_ptr)
 		      "setting to 1");
 		maxtasks = 1;
 	}
- 
+
 	if (job_ptr->details->cpus_per_task == 0)
 		job_ptr->details->cpus_per_task = 1;
-	for (tid = 0, i = job_ptr->details->cpus_per_task ; (tid < maxtasks); 
+	for (tid = 0, i = job_ptr->details->cpus_per_task ; (tid < maxtasks);
 	     i += job_ptr->details->cpus_per_task ) { /* cycle counter */
 		bool space_remaining = false;
 		if (over_subscribe) {
@@ -145,8 +145,8 @@ static int _compute_plane_dist(struct job_record *job_ptr)
 	maxtasks = job_res->ncpus;
 	avail_cpus = job_res->cpus;
 
-        if (job_ptr->details->cpus_per_task > 1)
-                 maxtasks = maxtasks / job_ptr->details->cpus_per_task;	
+	if (job_ptr->details->cpus_per_task > 1)
+		 maxtasks = maxtasks / job_ptr->details->cpus_per_task;
 
 	if (job_ptr->details && job_ptr->details->mc_ptr)
 		plane_size = job_ptr->details->mc_ptr->plane_size;
@@ -173,10 +173,10 @@ static int _compute_plane_dist(struct job_record *job_ptr)
 				if ((job_res->cpus[n] < avail_cpus[n]) ||
 				    over_subscribe) {
 					tid++;
-					for (l=0; 
+					for (l=0;
 					     l<job_ptr->details->cpus_per_task;
 					     l++) {
-						if (job_res->cpus[n] < 
+						if (job_res->cpus[n] <
 						    avail_cpus[n])
 							job_res->cpus[n]++;
 					}
@@ -244,7 +244,7 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 	csize = bit_size(job_res->core_bitmap);
 
 	sockets_nb  = select_node_record[0].sockets;
-	sockets_cpu_cnt = xmalloc(sockets_nb * sizeof(int));	
+	sockets_cpu_cnt = xmalloc(sockets_nb * sizeof(int));
 	sockets_used = xmalloc(sockets_nb * sizeof(bool));
 
 	for (c = 0, i = 0, n = 0; n < size; n++) {
@@ -256,7 +256,7 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 		ncores_nb = select_node_record[n].cores;
 		nsockets_nb = select_node_record[n].sockets;
 		num_bits =  nsockets_nb * ncores_nb;
-				
+
 		if ((c + num_bits) > csize)
 			fatal ("cons_res: _block_sync_core_bitmap index error");
 
@@ -273,8 +273,8 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 		for (s = 0; s < nsockets_nb; s++) {
 			sockets_cpu_cnt[s]=0;
 			sockets_used[s]=false;
-			for ( j = c + (s * ncores_nb) ; 
-			      j < c + ((s+1) * ncores_nb) ; 
+			for ( j = c + (s * ncores_nb) ;
+			      j < c + ((s+1) * ncores_nb) ;
 			      j++ ) {
 				if ( bit_test(job_res->core_bitmap,j) )
 					sockets_cpu_cnt[s]++;
@@ -283,7 +283,7 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 
 		/* select cores in the sockets using a best-fit approach */
 		while( cpus > 0 ) {
-			
+
 			best_fit_cpus = 0;
 			best_fit_sufficient = false;
 
@@ -291,7 +291,7 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 			req_cpus = cpus / vpus;
 			if ( cpus % vpus )
 				req_cpus++;
-			
+
 			/* search for the best socket, */
 			/* starting from the last one to let more room */
 			/* in the first one for system usage */
@@ -299,7 +299,7 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 				sufficient = sockets_cpu_cnt[s] >= req_cpus ;
 				if ( (best_fit_cpus == 0) ||
 				     (sufficient && !best_fit_sufficient ) ||
-				     (sufficient && (sockets_cpu_cnt[s] < 
+				     (sufficient && (sockets_cpu_cnt[s] <
 						     best_fit_cpus)) ||
 				     (!sufficient && (sockets_cpu_cnt[s] >
 						      best_fit_cpus)) ) {
@@ -313,18 +313,18 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 			if ( best_fit_cpus == 0 )
 				break;
 
-			debug3("dist_task: best_fit : using node[%lu]:"
-			       "socket[%lu] : %u cores available",
-			       n,best_fit_location,
+			debug3("dist_task: best_fit : using node[%u]:"
+			       "socket[%u] : %u cores available",
+			       n, best_fit_location,
 			       sockets_cpu_cnt[best_fit_location]);
-			
+
 			/* select socket cores from last to first */
 			/* socket[0]:Core[0] would be the last one */
 			sockets_used[best_fit_location] = true;
-			
-			for ( j = c + ((best_fit_location+1) * ncores_nb) 
+
+			for ( j = c + ((best_fit_location+1) * ncores_nb)
 				      - 1 ;
-			      (int) j >= (int) (c + (best_fit_location * 
+			      (int) j >= (int) (c + (best_fit_location *
 						     ncores_nb)) ;
 			      j-- ) {
 
@@ -342,9 +342,9 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 					bit_clear(job_res->core_bitmap,j);
 					continue;
 				}
-				
+
 				/*
-				 * remove cores from socket count and 
+				 * remove cores from socket count and
 				 * cpus count using hyperthreading requirement
 				 */
 				if ( bit_test(job_res->core_bitmap,j) ) {
@@ -357,20 +357,20 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 				}
 
 			}
-			
+
 			/* loop again if more cpus required */
 			if ( cpus > 0 )
 				continue;
 
 			/* release remaining cores of the unused sockets */
 			for (s = 0; s < nsockets_nb; s++) {
-				if ( sockets_used[s] ) 
+				if ( sockets_used[s] )
 					continue;
 				bit_nclear(job_res->core_bitmap,
 					   c+(s*ncores_nb),
 					   c+((s+1)*ncores_nb)-1);
 			}
-			
+
 		}
 
 		if (cpus > 0)
@@ -385,7 +385,7 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 				select_node_record[n].vpus;
 		}
 		i++;
-		
+
 		/* move c to the next node in core_bitmap */
 		c += num_bits;
 
@@ -600,7 +600,7 @@ extern int cr_dist(struct job_record *job_ptr, const uint16_t cr_type)
 	}
 
 	/*
-	 * If SelectTypeParameters mentions to use a block distribution for 
+	 * If SelectTypeParameters mentions to use a block distribution for
 	 * cores by default, use that kind of distribution if no particular
 	 * cores distribution specified.
 	 * Note : cyclic cores distribution, which is the default, is treated

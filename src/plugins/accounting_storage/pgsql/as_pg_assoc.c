@@ -322,7 +322,7 @@ _create_function_add_root_assoc(PGconn *db_conn)
 		"  ra.rgt := mrgt;"
 		"  PERFORM add_assoc(ra);"
 		"END; $$ LANGUAGE PLPGSQL;",
-		assoc_table, max_rgt_table, assoc_table, assoc_table, assoc_table);
+		assoc_table, max_rgt_table);
 	return create_function_xfree(db_conn, create_line);
 }
 
@@ -471,7 +471,7 @@ static void
 _make_assoc_rec(slurmdb_association_rec_t *assoc, time_t now, int deleted,
 		char **rec, char **txn)
 {
-	*rec = xstrdup_printf("(%d, %d, %d, %d, '%s', '%s', ",
+	*rec = xstrdup_printf("(%ld, %ld, %d, %d, '%s', '%s', ",
 			      now,		/* creation_time */
 			      now,		/* mod_time */
 			      deleted,	/* deleted */
@@ -565,7 +565,7 @@ _make_cluster_root_assoc_rec(time_t now, slurmdb_cluster_rec_t *cluster,
 			     char **rec, char **txn)
 {
 	*rec = xstrdup_printf(
-		"(%d, %d, 0, 0, '%s', 'root', '', '', '', 0, 0, ",
+		"(%ld, %ld, 0, 0, '%s', 'root', '', '', '', 0, 0, ",
 		now, /* creation_time */
 		now, /* mod_time */
 		/* deleted = 0 */
@@ -791,7 +791,7 @@ _move_account(pgsql_conn_t *pg_conn, uint32_t *lft, uint32_t *rgt,
 		return ESLURM_SAME_PARENT_ACCOUNT;
 
 	query = xstrdup_printf(
-		"SELECT * FROM move_account(%d, %d, %d, '%s', %s, '%s', %d);",
+		"SELECT * FROM move_account(%d, %d, %d, '%s', %s, '%s', %ld);",
 		plft, *lft, *rgt, cluster, id, parent, now);
 	result = DEF_QUERY_RET;
 	if (result) {
@@ -1315,7 +1315,7 @@ _get_parent_limits(pgsql_conn_t *pg_conn, char *cluster,
 
 	debug3("got parent account limits of <%s, %s>:\n"
 	       "\tmax_jobs:%d, max_submit_jobs:%d, max_cpus_pj:%d,\n"
-	       "\tmax_nodes_pj:%d, max_wall_pj:%d, max_cpu_mins_pj:%d\n"
+	       "\tmax_nodes_pj:%d, max_wall_pj:%d, max_cpu_mins_pj:%"PRIu64"\n"
 	       "\tqos:%s, delta_qos:%s",
 	       cluster, pacct, passoc->max_jobs, passoc->max_submit_jobs,
 	       passoc->max_cpus_pj, passoc->max_nodes_pj, passoc->max_wall_pj,
@@ -1541,14 +1541,14 @@ as_pg_add_associations(pgsql_conn_t *pg_conn, uint32_t uid,
 		/* add to txn query string */
 		if(txn_query)
 			xstrfmtcat(txn_query,
-				   ", (%d, %d, '%d', '%s', $$%s$$)",
+				   ", (%ld, %d, '%d', '%s', $$%s$$)",
 				   now, DBD_ADD_ASSOCS, object->id, user_name,
 				   txn);
 		else
 			xstrfmtcat(txn_query,
 				   "INSERT INTO %s "
 				   "(timestamp, action, name, actor, info) "
-				   "VALUES (%d, %d, '%d', '%s', $$%s$$)",
+				   "VALUES (%ld, %d, '%d', '%s', $$%s$$)",
 				   txn_table, now, DBD_ADD_ASSOCS, object->id,
 				   user_name, txn);
 		xfree(txn);
@@ -1875,7 +1875,7 @@ as_pg_modify_associations(pgsql_conn_t *pg_conn, uint32_t uid,
 					} else if (new_qos[0] == '-') {
 						tmp_qos = xstrdup_printf(
 							"replace(%s, ',%s', '')",
-							tmp_qos, new_qos+1, new_qos+1);
+							tmp_qos, new_qos+1);
 						tmp_delta = xstrdup_printf(
 							"(replace(replace(%s, ',+%s', ''), "
 							"',-%s', '') || ',%s')",
@@ -2530,7 +2530,7 @@ remove_young_assoc(pgsql_conn_t *pg_conn, time_t now, char *cond)
 	time_t day_old = now - SECS_PER_DAY;
 
 	query = xstrdup_printf("SELECT id FROM %s AS t1 WHERE "
-			       "creation_time>%d AND (%s);",
+			       "creation_time>%ld AND (%s);",
 			       assoc_table, day_old, cond);
 
 	result = DEF_QUERY_RET;

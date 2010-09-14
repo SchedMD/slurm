@@ -109,9 +109,9 @@ typedef enum {
 
 typedef struct thd_complete {
 	bool work_done; 	/* assume all threads complete */
-	int fail_cnt;   	/* assume no threads failures */
+	int fail_cnt;		/* assume no threads failures */
 	int no_resp_cnt;	/* assume all threads respond */
-	int retry_cnt;  	/* assume no required retries */
+	int retry_cnt;		/* assume no required retries */
 	int max_delay;
 	time_t now;
 } thd_complete_t;
@@ -123,9 +123,9 @@ typedef struct thd {
 	time_t start_time;		/* start time */
 	time_t end_time;		/* end time or delta time
 					 * upon termination */
-	slurm_addr_t *addr;	        /* specific addr to send to
+	slurm_addr_t *addr;		/* specific addr to send to
 					 * will not do nodelist if set */
-	char *nodelist;	                /* list of nodes to send to */
+	char *nodelist;			/* list of nodes to send to */
 	List ret_list;
 } thd_t;
 
@@ -572,7 +572,7 @@ static void *_wdog(void *args)
 	}
 
 	if (srun_agent) {
-	        _notify_slurmctld_jobs(agent_ptr);
+		_notify_slurmctld_jobs(agent_ptr);
 	} else {
 		_notify_slurmctld_nodes(agent_ptr,
 					thd_comp.no_resp_cnt,
@@ -616,8 +616,8 @@ static void _notify_slurmctld_jobs(agent_info_t *agent_ptr)
 		step_id = NO_VAL;
 	} else if ((agent_ptr->msg_type == SRUN_JOB_COMPLETE)		||
 		   (agent_ptr->msg_type == SRUN_STEP_MISSING)		||
-	           (agent_ptr->msg_type == SRUN_EXEC)			||
-	           (agent_ptr->msg_type == SRUN_USER_MSG)) {
+		   (agent_ptr->msg_type == SRUN_EXEC)			||
+		   (agent_ptr->msg_type == SRUN_USER_MSG)) {
 		return;		/* no need to note srun response */
 	} else if (agent_ptr->msg_type == SRUN_NODE_FAIL) {
 		return;		/* no need to note srun response */
@@ -1572,10 +1572,10 @@ static int _batch_launch_defer(queued_request_t *queued_req_ptr)
 		if (node_ptr == NULL) {
 			error("agent(batch_launch) removed pending request for "
 			      "job %u, missing node %s",
-			      launch_msg_ptr->job_id, agent_arg_ptr->hostlist);
+			      launch_msg_ptr->job_id, hostname);
 			return -1;	/* invalid request?? */
 		}
-		if (!IS_NODE_POWER_SAVE(node_ptr) && 
+		if (!IS_NODE_POWER_SAVE(node_ptr) &&
 		    !IS_NODE_NO_RESPOND(node_ptr)) {
 			nodes_ready = 1;
 		}
@@ -1584,10 +1584,10 @@ static int _batch_launch_defer(queued_request_t *queued_req_ptr)
 	delay_time = difftime(now, job_ptr->start_time);
 	if (nodes_ready) {
 		/* ready to launch, adjust time limit for boot time */
-		if (delay_time && (job_ptr->time_limit != INFINITE) && 
+		if (delay_time && (job_ptr->time_limit != INFINITE) &&
 		    (!wiki2_sched)) {
 			info("Job %u launch delayed by %d secs, "
-			     "updating end_time", 
+			     "updating end_time",
 			     launch_msg_ptr->job_id, delay_time);
 			job_ptr->end_time += delay_time;
 		}
@@ -1602,10 +1602,10 @@ static int _batch_launch_defer(queued_request_t *queued_req_ptr)
 				 slurm_get_resume_timeout()) {
 		error("agent waited too long for nodes to respond, "
 		      "sending batch request anyway...");
-		if (delay_time && (job_ptr->time_limit != INFINITE) && 
+		if (delay_time && (job_ptr->time_limit != INFINITE) &&
 		    (!wiki2_sched)) {
 			info("Job %u launch delayed by %d secs, "
-			     "updating end_time", 
+			     "updating end_time",
 			     launch_msg_ptr->job_id, delay_time);
 			job_ptr->end_time += delay_time;
 		}

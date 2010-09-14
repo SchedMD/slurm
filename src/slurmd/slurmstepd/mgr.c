@@ -535,7 +535,7 @@ _random_sleep(slurmd_job_t *job)
 	srand48((long int) (job->jobid + job->nodeid));
 
 	delay = lrand48() % ( max + 1 );
-	debug3("delaying %dms", delay);
+	debug3("delaying %ldms", delay);
 	if (poll(NULL, 0, delay) == -1)
 		return;
 }
@@ -813,8 +813,8 @@ job_manager(slurmd_job_t *job)
 	bool io_initialized = false;
 	char *ckpt_type = slurm_get_checkpoint_type();
 
-	debug3("Entered job_manager for %u.%u pid=%lu",
-	       job->jobid, job->stepid, (unsigned long) job->jmgr_pid);
+	debug3("Entered job_manager for %u.%u pid=%d",
+	       job->jobid, job->stepid, job->jmgr_pid);
 	/*
 	 * Preload plugins.
 	 */
@@ -1094,6 +1094,7 @@ _fork_all_tasks(slurmd_job_t *job)
 	 * Fork all of the task processes.
 	 */
 	for (i = 0; i < job->node_tasks; i++) {
+		char time_stamp[256];
 		pid_t pid;
 		if ((pid = fork ()) < 0) {
 			error("child fork: %m");
@@ -1141,9 +1142,10 @@ _fork_all_tasks(slurmd_job_t *job)
 		 */
 
 		close(readfds[i]);
-		verbose ("task %lu (%lu) started %M",
+		LOG_TIMESTAMP(time_stamp);
+		verbose ("task %lu (%lu) started %s",
 			(unsigned long) job->task[i]->gtid,
-			(unsigned long) pid);
+			 (unsigned long) pid, time_stamp);
 
 		job->task[i]->pid = pid;
 		if (i == 0)
@@ -1182,9 +1184,11 @@ _fork_all_tasks(slurmd_job_t *job)
 		 */
 		if ((job->pty == 0)
 		&&  (setpgid (job->task[i]->pid, job->pgid) < 0)) {
-			error("Unable to put task %d (pid %ld) into "
-				"pgrp %ld: %m",
-				i, job->task[i]->pid, job->pgid);
+			error("Unable to put task %d (pid %d) into "
+			      "pgrp %d: %m",
+				i,
+				job->task[i]->pid,
+				job->pgid);
 		}
 
 		if (slurm_container_add(job, job->task[i]->pid)
@@ -1522,7 +1526,7 @@ _make_batch_dir(slurmd_job_t *job)
 	}
 
 	if (chmod(path, 0750) < 0) {
-		error("chmod(%s, 750): %m");
+		error("chmod(%s, 750): %m", path);
 		goto error;
 	}
 

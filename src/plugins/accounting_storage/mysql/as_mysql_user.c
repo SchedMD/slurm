@@ -216,7 +216,7 @@ extern int as_mysql_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 			continue;
 		}
 		xstrcat(cols, "creation_time, mod_time, name, default_acct");
-		xstrfmtcat(vals, "%d, %d, '%s', '%s'",
+		xstrfmtcat(vals, "%ld, %ld, '%s', '%s'",
 			   now, now, object->name, object->default_acct);
 		xstrfmtcat(extra, ", default_acct='%s'",
 			   object->default_acct);
@@ -241,7 +241,7 @@ extern int as_mysql_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 
 		query = xstrdup_printf(
 			"insert into %s (%s) values (%s) "
-			"on duplicate key update deleted=0, mod_time=%d %s;",
+			"on duplicate key update deleted=0, mod_time=%ld %s;",
 			user_table, cols, vals,
 			now, extra);
 
@@ -271,14 +271,14 @@ extern int as_mysql_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 
 		if(txn_query)
 			xstrfmtcat(txn_query,
-				   ", (%d, %u, '%s', '%s', '%s')",
+				   ", (%ld, %u, '%s', '%s', '%s')",
 				   now, DBD_ADD_USERS, object->name,
 				   user_name, tmp_extra);
 		else
 			xstrfmtcat(txn_query,
 				   "insert into %s "
 				   "(timestamp, action, name, actor, info) "
-				   "values (%d, %u, '%s', '%s', '%s')",
+				   "values (%ld, %u, '%s', '%s', '%s')",
 				   txn_table,
 				   now, DBD_ADD_USERS, object->name,
 				   user_name, tmp_extra);
@@ -360,19 +360,19 @@ extern int as_mysql_add_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 			if(!acct[0])
 				continue;
 			if(query)
-				xstrfmtcat(query, ", (%d, %d, '%s', '%s')",
+				xstrfmtcat(query, ", (%ld, %ld, '%s', '%s')",
 					   now, now, acct, user);
 			else
 				query = xstrdup_printf(
 					"insert into %s (creation_time, "
 					"mod_time, acct, user) values "
-					"(%d, %d, '%s', '%s')",
+					"(%ld, %ld, '%s', '%s')",
 					acct_coord_table,
 					now, now, acct, user);
 
 			if(txn_query)
 				xstrfmtcat(txn_query,
-					   ", (%d, %u, '%s', '%s', '%s')",
+					   ", (%ld, %u, '%s', '%s', '%s')",
 					   now, DBD_ADD_ACCOUNT_COORDS, user,
 					   user_name, acct);
 			else
@@ -380,7 +380,7 @@ extern int as_mysql_add_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 					   "insert into %s "
 					   "(timestamp, action, name, "
 					   "actor, info) "
-					   "values (%d, %u, '%s', "
+					   "values (%ld, %u, '%s', "
 					   "'%s', '%s')",
 					   txn_table,
 					   now, DBD_ADD_ACCOUNT_COORDS, user,
@@ -394,7 +394,8 @@ extern int as_mysql_add_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	if(query) {
 		xstrfmtcat(query,
-			   " on duplicate key update mod_time=%d, deleted=0;%s",
+			   " on duplicate key update mod_time=%ld, "
+			   "deleted=0;%s",
 			   now, txn_query);
 		debug3("%d(%s:%d) query\n%s",
 		       mysql_conn->conn, THIS_FILE, __LINE__, query);
@@ -759,7 +760,7 @@ extern List as_mysql_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	}
 
 	query = xstrdup_printf(
-		"update %s as t2 set deleted=1, mod_time=%d where %s",
+		"update %s as t2 set deleted=1, mod_time=%ld where %s",
 		acct_coord_table, now, assoc_char);
 	xfree(assoc_char);
 

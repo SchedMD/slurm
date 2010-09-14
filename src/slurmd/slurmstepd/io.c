@@ -771,7 +771,7 @@ _task_read(eio_obj_t *obj, List objs)
 
 	xassert(out->magic == TASK_OUT_MAGIC);
 
-	debug4("Entering _task_read for obj %x", obj);
+	debug4("Entering _task_read for obj %zx", (size_t)obj);
 	len = cbuf_free(out->buf);
 	if (len > 0 && !out->eof) {
 again:
@@ -851,7 +851,7 @@ static void *_window_manager(void *arg)
 		ws.ws_row = ntohs(winsz.rows);
 		debug("new pty size %u:%u", ws.ws_row, ws.ws_col);
 		if (ioctl(win_info->task->to_stdin, TIOCSWINSZ, &ws))
-			error("ioctl(TIOCSWINSZ): %s");
+			error("ioctl(TIOCSWINSZ): %s", strerror(errno));
 		if (kill(win_info->task->pid, SIGWINCH)) {
 			if (errno == ESRCH)
 				break;
@@ -899,7 +899,7 @@ _spawn_window_manager(slurmd_task_info_t *task, slurmd_job_t *job)
 		ws.ws_row = atoi(rows);
 		debug("init pty size %u:%u", ws.ws_row, ws.ws_col);
 		if (ioctl(task->to_stdin, TIOCSWINSZ, &ws))
-			error("ioctl(TIOCSWINSZ): %s");
+			error("ioctl(TIOCSWINSZ): %s", strerror(errno));
 	}
 
 	port_u = atoi(port);

@@ -339,7 +339,7 @@ extern int parse_wiki_config(void)
 		while (tok) {
 			if (i >= HIDE_PART_CNT) {
 				error("HidePartitionJobs has too many entries "
-				      "skipping %s and later entries");
+				      "skipping %s and later entries", tok);
 				break;
 			}
 			hide_part_ptr[i] = find_part_record(tok);

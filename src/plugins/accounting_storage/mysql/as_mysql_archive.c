@@ -561,7 +561,7 @@ static time_t _setup_end_time(time_t last_submit, uint32_t purge)
 	/* use localtime to avoid any daylight savings issues */
 	if(!localtime_r(&last_submit, &time_tm)) {
 		error("Couldn't get localtime from first "
-		      "suspend start %d",
+		      "suspend start %ld",
 		      last_submit);
 		return 0;
 	}
@@ -1235,7 +1235,7 @@ static uint32_t _archive_events(mysql_conn_t *mysql_conn, char *cluster_name,
 
 	/* get all the events started before this time listed */
 	query = xstrdup_printf("select %s from \"%s_%s\" where "
-			       "time_start <= %d "
+			       "time_start <= %ld "
 			       "&& time_end != 0 order by time_start asc",
 			       tmp, cluster_name, event_table, period_end);
 	xfree(tmp);
@@ -1363,7 +1363,7 @@ static uint32_t _archive_jobs(mysql_conn_t *mysql_conn, char *cluster_name,
 
 	/* get all the events started before this time listed */
 	query = xstrdup_printf("select %s from \"%s_%s\" where "
-			       "time_submit < %d && time_end != 0 && !deleted "
+			       "time_submit < %ld && time_end != 0 && !deleted "
 			       "order by time_submit asc",
 			       tmp, cluster_name, job_table, period_end);
 	xfree(tmp);
@@ -1533,7 +1533,7 @@ static uint32_t _archive_steps(mysql_conn_t *mysql_conn, char *cluster_name,
 
 	/* get all the events started before this time listed */
 	query = xstrdup_printf("select %s from \"%s_%s\" where "
-			       "time_start <= %d && time_end != 0 "
+			       "time_start <= %ld && time_end != 0 "
 			       "&& !deleted order by time_start asc",
 			       tmp, cluster_name, step_table, period_end);
 	xfree(tmp);
@@ -1715,7 +1715,7 @@ static uint32_t _archive_suspend(mysql_conn_t *mysql_conn, char *cluster_name,
 
 	/* get all the events started before this time listed */
 	query = xstrdup_printf("select %s from \"%s_%s\" where "
-			       "time_start <= %d && time_end != 0 "
+			       "time_start <= %ld && time_end != 0 "
 			       "order by time_start asc",
 			       tmp, cluster_name, suspend_table, period_end);
 	xfree(tmp);
@@ -1864,7 +1864,7 @@ static int _archive_script(slurmdb_archive_cond_t *arch_cond,
 		env_array_append_fmt(&env, "SLURM_ARCHIVE_EVENTS", "%u",
 				     SLURMDB_PURGE_ARCHIVE_SET(
 					     arch_cond->purge_event));
-		env_array_append_fmt(&env, "SLURM_ARCHIVE_LAST_EVENT", "%d",
+		env_array_append_fmt(&env, "SLURM_ARCHIVE_LAST_EVENT", "%ld",
 				     curr_end);
 	}
 
@@ -1878,7 +1878,7 @@ static int _archive_script(slurmdb_archive_cond_t *arch_cond,
 		env_array_append_fmt(&env, "SLURM_ARCHIVE_JOBS", "%u",
 				     SLURMDB_PURGE_ARCHIVE_SET(
 					     arch_cond->purge_job));
-		env_array_append_fmt (&env, "SLURM_ARCHIVE_LAST_JOB", "%d",
+		env_array_append_fmt (&env, "SLURM_ARCHIVE_LAST_JOB", "%ld",
 				      curr_end);
 	}
 
@@ -1892,7 +1892,7 @@ static int _archive_script(slurmdb_archive_cond_t *arch_cond,
 		env_array_append_fmt(&env, "SLURM_ARCHIVE_STEPS", "%u",
 				     SLURMDB_PURGE_ARCHIVE_SET(
 					     arch_cond->purge_step));
-		env_array_append_fmt(&env, "SLURM_ARCHIVE_LAST_STEP", "%d",
+		env_array_append_fmt(&env, "SLURM_ARCHIVE_LAST_STEP", "%ld",
 				     curr_end);
 	}
 
@@ -1906,7 +1906,7 @@ static int _archive_script(slurmdb_archive_cond_t *arch_cond,
 		env_array_append_fmt(&env, "SLURM_ARCHIVE_SUSPEND", "%u",
 				     SLURMDB_PURGE_ARCHIVE_SET(
 					     arch_cond->purge_suspend));
-		env_array_append_fmt(&env, "SLURM_ARCHIVE_LAST_SUSPEND", "%d",
+		env_array_append_fmt(&env, "SLURM_ARCHIVE_LAST_SUSPEND", "%ld",
 				     curr_end);
 	}
 
@@ -1948,7 +1948,7 @@ static int _execute_archive(mysql_conn_t *mysql_conn,
 			return SLURM_ERROR;
 		}
 
-		debug4("Purging event entries before %d for %s",
+		debug4("Purging event entries before %ld for %s",
 		       curr_end, cluster_name);
 
 		if(SLURMDB_PURGE_ARCHIVE_SET(arch_cond->purge_event)) {
@@ -1961,7 +1961,7 @@ static int _execute_archive(mysql_conn_t *mysql_conn,
 				return rc;
 		}
 		query = xstrdup_printf("delete from \"%s_%s\" where "
-				       "time_start <= %d && time_end != 0",
+				       "time_start <= %ld && time_end != 0",
 				       cluster_name, event_table, curr_end);
 		debug3("%d(%s:%d) query\n%s",
 		       mysql_conn->conn, THIS_FILE, __LINE__, query);
@@ -1985,7 +1985,7 @@ exit_events:
 			return SLURM_ERROR;
 		}
 
-		debug4("Purging suspend entries before %d for %s",
+		debug4("Purging suspend entries before %ld for %s",
 		       curr_end, cluster_name);
 
 		if(SLURMDB_PURGE_ARCHIVE_SET(arch_cond->purge_suspend)) {
@@ -1998,7 +1998,7 @@ exit_events:
 				return rc;
 		}
 		query = xstrdup_printf("delete from \"%s_%s\" where "
-				       "time_start <= %d && time_end != 0",
+				       "time_start <= %ld && time_end != 0",
 				       cluster_name, suspend_table, curr_end);
 		debug3("%d(%s:%d) query\n%s",
 		       mysql_conn->conn, THIS_FILE, __LINE__, query);
@@ -2022,7 +2022,7 @@ exit_suspend:
 			return SLURM_ERROR;
 		}
 
-		debug4("Purging step entries before %d for %s",
+		debug4("Purging step entries before %ld for %s",
 		       curr_end, cluster_name);
 
 		if(SLURMDB_PURGE_ARCHIVE_SET(arch_cond->purge_step)) {
@@ -2036,7 +2036,7 @@ exit_suspend:
 		}
 
 		query = xstrdup_printf("delete from \"%s_%s\" where "
-				       "time_start <= %d && time_end != 0",
+				       "time_start <= %ld && time_end != 0",
 				       cluster_name, step_table, curr_end);
 		debug3("%d(%s:%d) query\n%s",
 		       mysql_conn->conn, THIS_FILE, __LINE__, query);
@@ -2059,7 +2059,7 @@ exit_steps:
 			return SLURM_ERROR;
 		}
 
-		debug4("Purging job entires before %d for %s",
+		debug4("Purging job entires before %ld for %s",
 		       curr_end, cluster_name);
 
 		if(SLURMDB_PURGE_ARCHIVE_SET(arch_cond->purge_job)) {
@@ -2073,7 +2073,7 @@ exit_steps:
 		}
 
 		query = xstrdup_printf("delete from \"%s_%s\" "
-				       "where time_submit <= %d "
+				       "where time_submit <= %ld "
 				       "&& time_end != 0",
 				       cluster_name, job_table, curr_end);
 		debug3("%d(%s:%d) query\n%s",

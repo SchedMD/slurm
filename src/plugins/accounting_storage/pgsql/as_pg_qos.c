@@ -143,7 +143,7 @@ static int
 _make_qos_record_for_add(slurmdb_qos_rec_t *object, time_t now,
 			 char **rec, char **txn)
 {
-	*rec = xstrdup_printf("(%d, %d, 0, %d, '%s', '%s', ",
+	*rec = xstrdup_printf("(%ld, %ld, 0, %d, '%s', '%s', ",
 			      now, /* creation_time */
 			      now, /* mod_time */
 			      /* deleted is 0 */
@@ -207,8 +207,8 @@ _make_qos_record_for_add(slurmdb_qos_rec_t *object, time_t now,
 
 	/* usage_factor, default 1.0 */
 	if (object->usage_factor >= 0) {
-		xstrfmtcat(*rec, "%d)", object->usage_factor);
-		xstrfmtcat(*txn, "usage_factor=%d", object->usage_factor);
+		xstrfmtcat(*rec, "%f)", object->usage_factor);
+		xstrfmtcat(*txn, "usage_factor=%f", object->usage_factor);
 	} else {
 		xstrcat(*rec, "1.0");
 		xstrcat(*txn, "usage_factor=1.0");
@@ -247,7 +247,7 @@ _make_qos_vals_for_modify(slurmdb_qos_rec_t *qos, char **vals,
 			  char **added_preempt)
 {
 	if (qos->description)
-		xstrfmtcat(*vals, ", description=''", qos->description);
+		xstrfmtcat(*vals, ", description='%s'", qos->description);
 	concat_limit("max_jobs_per_user", qos->max_jobs_pu, NULL, vals);
 	concat_limit("max_submit_jobs_per_user", qos->max_submit_jobs_pu,
 		     NULL, vals);
@@ -424,7 +424,7 @@ check_qos_tables(PGconn *db_conn, char *user)
 		while((qos = list_next(itr))) {
 			query = xstrdup_printf(
 				"SELECT add_qos("
-				"(%d, %d, 0, 0, $$%s$$, $$%s$$, "
+				"(%ld, %ld, 0, 0, $$%s$$, $$%s$$, "
 				"NULL, NULL, NULL, NULL, NULL, NULL, "
 				"NULL, NULL, NULL, NULL, NULL, NULL,"
 				"'', 0, 1.0)"
@@ -764,7 +764,7 @@ as_pg_remove_qos(pgsql_conn_t *pg_conn, uint32_t uid,
 	}
 
 	/* remove this qos from all the users/accts that have it */
-	query = xstrdup_printf("UPDATE %s SET mod_time=%d,qos=%s,delta_qos=%s "
+	query = xstrdup_printf("UPDATE %s SET mod_time=%ld,qos=%s,delta_qos=%s "
 			       "WHERE deleted=0;",
 			       assoc_table, now, qos, delta_qos);
 	xfree(qos);

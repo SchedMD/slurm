@@ -216,7 +216,8 @@ struct mvapich_poll
 	} while (0);
 
 
-static void do_timings (mvapich_state_t *st, const char *fmt, ...);
+static void do_timings (mvapich_state_t *st, const char *fmt, ...)
+  __attribute__ ((format (printf, 2, 3)));
 void mvapich_thr_exit(mvapich_state_t *st);
 
 static int mvapich_requires_pids (mvapich_state_t *st)
@@ -561,7 +562,7 @@ static int mvapich_write (struct mvapich_info *mvi, void * buf, size_t len)
 	n = write (mvi->fd, p, nleft);
 
 	if ((n < 0) && (errno != EAGAIN)) {
-		error ("mvapich: rank %d: write (%d/%ld): %m", 
+		error ("mvapich: rank %d: write (%zd/%zd): %m",
 		       mvi->rank, nleft, len);
 		return (-1);
 	}
@@ -589,7 +590,7 @@ static int mvapich_read (struct mvapich_info *mvi, void * buf, size_t len)
 	n = read (mvi->fd, p, nleft);
 
 	if ((n < 0) && (errno != EAGAIN)) {
-		error ("mvapich: rank %d: read (%d/%ld): %m", 
+		error ("mvapich: rank %d: read (%zd/%zd): %m",
 		       mvi->rank, nleft, len);
 		return (-1);
 	}
@@ -1224,6 +1225,7 @@ mvapich_print_abort_message (mvapich_state_t *st, int rank,
 	slurm_step_layout_t *sl = st->job->step_layout;
 	char *host;
 	char *msgstr;
+	char time_stamp[256];
 
 	if (!mvapich_abort_sends_rank (st)) {
 		info ("mvapich: Received ABORT message from an MPI process.");
@@ -1232,7 +1234,8 @@ mvapich_print_abort_message (mvapich_state_t *st, int rank,
 
 	if (msg && (msglen > 0)) {
 		/*
-		 *  Remove trailing newline if it exists (syslog will add newline)
+		 *  Remove trailing newline if it exists (syslog will
+		 *  add newline)
 		 */
 		if (msg [msglen - 1] == '\n')
 			msg [msglen - 1] = '\0';
@@ -1246,34 +1249,36 @@ mvapich_print_abort_message (mvapich_state_t *st, int rank,
 
 	host = slurm_step_layout_host_name (sl, rank);
 
+	LOG_TIMESTAMP(time_stamp);
 	if (dest >= 0) {
 		const char *dsthost = slurm_step_layout_host_name (sl, dest);
-
-		info ("mvapich: %M: ABORT from MPI rank %d [on %s] dest rank %d [on %s]",
-		      rank, host, dest, dsthost);
+		info ("mvapich: %s: ABORT from MPI rank %d "
+		      "[on %s] dest rank %d [on %s]",
+		      time_stamp, rank, host, dest, dsthost);
 
 		/*
 		 *  Log the abort event to syslog
-		 *   so that system administrators know about possible HW events.
+		 *  so that system administrators know about possible HW events.
 		 */
 		openlog ("srun", 0, LOG_USER);
 		syslog (LOG_WARNING,
-				"MVAPICH ABORT [jobid=%u.%u src=%d(%s) dst=%d(%s)]: %s",
-				st->job->jobid, st->job->stepid,
-				rank, host, dest, dsthost, msgstr);
+			"MVAPICH ABORT [jobid=%u.%u src=%d(%s) "
+			"dst=%d(%s)]: %s",
+			st->job->jobid, st->job->stepid,
+			rank, host, dest, dsthost, msgstr);
 		closelog();
 	} else {
-		info ("mvapich: %M: ABORT from MPI rank %d [on %s]",
-		      rank, host);
+		info ("mvapich: %s: ABORT from MPI rank %d [on %s]",
+		      time_stamp, rank, host);
 		/*
 		 *  Log the abort event to syslog
-		 *   so that system administrators know about possible HW events.
+		 *  so that system administrators know about possible HW events.
 		 */
 		openlog ("srun", 0, LOG_USER);
 		syslog (LOG_WARNING,
-				"MVAPICH ABORT [jobid=%u.%u src=%d(%s) dst=-1()]: %s",
-				st->job->jobid, st->job->stepid,
-				rank, host, msgstr);
+			"MVAPICH ABORT [jobid=%u.%u src=%d(%s) dst=-1()]: %s",
+			st->job->jobid, st->job->stepid,
+			rank, host, msgstr);
 		closelog();
 
 	}
@@ -1452,8 +1457,8 @@ static void do_timings (mvapich_state_t *st, const char *fmt, ...)
 	msg = vmsg (fmt, ap);
 	va_end (ap);
 
-	info ("mvapich: %s took %d.%03d seconds", msg, result.tv_sec,
-			result.tv_usec/1000);
+	info ("mvapich: %s took %ld.%03ld seconds", msg,
+	      result.tv_sec, result.tv_usec/1000);
 
 	xfree (msg);
 
@@ -1473,8 +1478,10 @@ static int mvapich_read_item (struct mvapich_info *mvi, void *buf, size_t size)
 		if (errno == EAGAIN)
 			return (EAGAIN);
 		else {
-			error ("mvapich: %d: nread=%d, read (%d, %lx, size=%d, nleft=%d): %m",
-					mvi->rank, mvi->nread, mvi->fd, buf, size, nleft);
+			error ("mvapich: %d: nread=%d, read (%d, %zx, "
+			       "size=%zd, nleft=%zd): %m",
+			       mvi->rank, mvi->nread,
+			       mvi->fd, (size_t) buf, size, nleft);
 			return (-1);
 		}
 	}

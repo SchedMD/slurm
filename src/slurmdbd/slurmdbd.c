@@ -471,7 +471,7 @@ static void *_rollup_handler(void *db_conn)
 	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 
 	if(!localtime_r(&start_time, &tm)) {
-		fatal("Couldn't get localtime for rollup handler %d",
+		fatal("Couldn't get localtime for rollup handler %ld",
 		      start_time);
 		return NULL;
 	}
@@ -501,7 +501,7 @@ static void *_rollup_handler(void *db_conn)
 
 		start_time = time(NULL);
 		if(!localtime_r(&start_time, &tm)) {
-			fatal("Couldn't get localtime for rollup handler %d",
+			fatal("Couldn't get localtime for rollup handler %ld",
 			      start_time);
 			return NULL;
 		}

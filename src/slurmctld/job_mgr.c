@@ -1526,7 +1526,7 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer,
 	}
 	if ((requeue > 1) || (overcommit > 1)) {
 		error("Invalid data for job %u: requeue=%u overcommit=%u",
-		      requeue, overcommit);
+		      job_ptr->job_id, requeue, overcommit);
 		goto unpack_error;
 	}
 	if (prolog_running > 1) {
@@ -2130,8 +2130,8 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 		(long) job_specs->overcommit : -1L;
 	acctg_freq = (job_specs->acctg_freq  != (uint16_t) NO_VAL) ?
 		(long) job_specs->acctg_freq : -1L;
-	debug3("   mail_type=%u mail_user=%s nice=%d num_tasks=%d "
-	       "open_mode=%u overcommit=%d acctg_freq=%d",
+	debug3("   mail_type=%u mail_user=%s nice=%d num_tasks=%ld "
+	       "open_mode=%u overcommit=%ld acctg_freq=%ld",
 	       job_specs->mail_type, job_specs->mail_user,
 	       (int)job_specs->nice - NICE_OFFSET, num_tasks,
 	       job_specs->open_mode, overcommit, acctg_freq);
@@ -2149,7 +2149,7 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 	slurm_make_time_str(&job_specs->end_time, buf, sizeof(buf));
 	wait_all_nodes = (job_specs->wait_all_nodes != (uint16_t) NO_VAL) ?
 			 (long) job_specs->wait_all_nodes : -1L;
-	debug3("   end_time=%s signal=%u@%u wait_all_nodes=%d",
+	debug3("   end_time=%s signal=%u@%u wait_all_nodes=%ld",
 	       buf, job_specs->warn_signal, job_specs->warn_time,
 	       wait_all_nodes);
 
@@ -2582,7 +2582,8 @@ _signal_batch_job(struct job_record *job_ptr, uint16_t signal)
 	xassert(job_ptr);
 	i = bit_ffs(job_ptr->node_bitmap);
 	if (i < 0) {
-		error("_signal_batch_job JobId=%u lacks assigned nodes");
+		error("_signal_batch_job JobId=%u lacks assigned nodes",
+		  job_ptr->job_id);
 		return;
 	}
 
@@ -4241,9 +4242,11 @@ void job_time_limit(void)
 				last_job_update = now;
 				info("Job %u timed out, "
 				     "the job is at or exceeds QOS %s's "
-				     "group max cpu minutes of %llu with %llu",
+				     "group max cpu minutes of %"PRIu64" "
+				     "with %"PRIu64"",
 				     job_ptr->job_id,
-				     qos->name, qos->grp_cpu_mins,
+				     qos->name,
+				     qos->grp_cpu_mins,
 				     usage_mins);
 				job_ptr->state_reason = FAIL_TIMEOUT;
 				goto job_failed;
@@ -4267,9 +4270,11 @@ void job_time_limit(void)
 				last_job_update = now;
 				info("Job %u timed out, "
 				     "the job is at or exceeds QOS %s's "
-				     "max cpu minutes of %llu with %llu",
+				     "max cpu minutes of %"PRIu64" "
+				     "with %"PRIu64"",
 				     job_ptr->job_id,
-				     qos->name, qos->max_cpu_mins_pj,
+				     qos->name,
+				     qos->max_cpu_mins_pj,
 				     job_cpu_usage_mins);
 				job_ptr->state_reason = FAIL_TIMEOUT;
 				goto job_failed;
@@ -4286,11 +4291,12 @@ void job_time_limit(void)
 			    && (usage_mins >= assoc->grp_cpu_mins)) {
 				info("Job %u timed out, "
 				     "assoc %u is at or exceeds "
-				     "group max cpu minutes limit %llu "
-				     "with %llu for account %s",
+				     "group max cpu minutes limit %"PRIu64" "
+				     "with %"PRIu64" for account %s",
 				     job_ptr->job_id, assoc->id,
 				     assoc->grp_cpu_mins,
-				     usage_mins, assoc->acct);
+				     usage_mins,
+				     assoc->acct);
 				job_ptr->state_reason = FAIL_TIMEOUT;
 				break;
 			}
@@ -4314,11 +4320,12 @@ void job_time_limit(void)
 			    && (job_cpu_usage_mins >= assoc->max_cpu_mins_pj)) {
 				info("Job %u timed out, "
 				     "assoc %u is at or exceeds "
-				     "max cpu minutes limit %llu "
-				     "with %llu for account %s",
+				     "max cpu minutes limit %"PRIu64" "
+				     "with %"PRIu64" for account %s",
 				     job_ptr->job_id, assoc->id,
 				     assoc->max_cpu_mins_pj,
-				     job_cpu_usage_mins, assoc->acct);
+				     job_cpu_usage_mins,
+				     assoc->acct);
 				job_ptr->state_reason = FAIL_TIMEOUT;
 				break;
 			}
@@ -8821,7 +8828,7 @@ extern int update_job_wckey(char *module, struct job_record *job_ptr,
 			      "If this is not what you desire please put "
 			      "AccountStorageEnforce=wckeys in your slurm.conf "
 			      "file.", module, new_wckey,
-			      job_ptr->user_id, new_wckey);
+			      job_ptr->user_id);
 			wckey_rec.name = new_wckey;
 		}
 	}

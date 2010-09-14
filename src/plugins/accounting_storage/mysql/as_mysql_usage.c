@@ -168,7 +168,7 @@ static void *_cluster_rollup_usage(void *arg)
 			query = xstrdup_printf(
 				"insert into \"%s_%s\" "
 				"(hourly_rollup, daily_rollup, monthly_rollup) "
-				"values (%d, %d, %d);",
+				"values (%ld, %ld, %ld);",
 				local_rollup->cluster_name, last_ran_table,
 				lowest, lowest, lowest);
 
@@ -213,13 +213,13 @@ static void *_cluster_rollup_usage(void *arg)
 //	last_month = 1204358399;
 
 	if(!localtime_r(&last_hour, &start_tm)) {
-		error("Couldn't get localtime from hour start %d", last_hour);
+		error("Couldn't get localtime from hour start %ld", last_hour);
 		rc = SLURM_ERROR;
 		goto end_it;
 	}
 
 	if(!localtime_r(&my_time, &end_tm)) {
-		error("Couldn't get localtime from hour end %d", my_time);
+		error("Couldn't get localtime from hour end %ld", my_time);
 		rc = SLURM_ERROR;
 		goto end_it;
 	}
@@ -250,7 +250,7 @@ static void *_cluster_rollup_usage(void *arg)
 
 	/* set up the day period */
 	if(!localtime_r(&last_day, &start_tm)) {
-		error("Couldn't get localtime from day %d", last_day);
+		error("Couldn't get localtime from day %ld", last_day);
 		rc = SLURM_ERROR;
 		goto end_it;
 	}
@@ -271,7 +271,7 @@ static void *_cluster_rollup_usage(void *arg)
 
 	/* set up the month period */
 	if(!localtime_r(&last_month, &start_tm)) {
-		error("Couldn't get localtime from month %d", last_month);
+		error("Couldn't get localtime from month %ld", last_month);
 		rc = SLURM_ERROR;
 		goto end_it;
 	}
@@ -340,35 +340,35 @@ static void *_cluster_rollup_usage(void *arg)
 		/* If we have a sent_end do not update the last_run_table */
 		if(!local_rollup->sent_end)
 			query = xstrdup_printf(
-				"update \"%s_%s\" set hourly_rollup=%d",
+				"update \"%s_%s\" set hourly_rollup=%ld",
 				local_rollup->cluster_name,
 				last_ran_table, hour_end);
 	} else
-		debug2("No need to roll cluster %s this hour %d <= %d",
+		debug2("No need to roll cluster %s this hour %ld <= %ld",
 		       local_rollup->cluster_name, hour_end, hour_start);
 
 	if((day_end - day_start) > 0) {
 		if(query && !local_rollup->sent_end)
-			xstrfmtcat(query, ", daily_rollup=%d", day_end);
+			xstrfmtcat(query, ", daily_rollup=%ld", day_end);
 		else if(!local_rollup->sent_end)
 			query = xstrdup_printf(
-				"update \"%s_%s\" set daily_rollup=%d",
+				"update \"%s_%s\" set daily_rollup=%ld",
 				local_rollup->cluster_name,
 				last_ran_table, day_end);
 	} else
-		debug2("No need to roll cluster %s this day %d <= %d",
+		debug2("No need to roll cluster %s this day %ld <= %ld",
 		       local_rollup->cluster_name, day_end, day_start);
 
 	if((month_end - month_start) > 0) {
 		if(query && !local_rollup->sent_end)
-			xstrfmtcat(query, ", monthly_rollup=%d", month_end);
+			xstrfmtcat(query, ", monthly_rollup=%ld", month_end);
 		else if(!local_rollup->sent_end)
 			query = xstrdup_printf(
-				"update \"%s_%s\" set monthly_rollup=%d",
+				"update \"%s_%s\" set monthly_rollup=%ld",
 				local_rollup->cluster_name,
 				last_ran_table, month_end);
 	} else
-		debug2("No need to roll cluster %s this month %d <= %d",
+		debug2("No need to roll cluster %s this month %ld <= %ld",
 		       local_rollup->cluster_name, month_end, month_start);
 
 	if(query) {
@@ -457,8 +457,8 @@ static int _get_cluster_usage(mysql_conn_t *mysql_conn, uid_t uid,
 	}
 
 	query = xstrdup_printf(
-		"select %s from \"%s_%s\" where (time_start < %d "
-		"&& time_start >= %d)",
+		"select %s from \"%s_%s\" where (time_start < %ld "
+		"&& time_start >= %ld)",
 		tmp, cluster_rec->name, my_usage_table, end, start);
 
 	xfree(tmp);
@@ -605,7 +605,7 @@ extern int get_usage_for_list(mysql_conn_t *mysql_conn,
 		query = xstrdup_printf(
 			"select %s from \"%s_%s\" as t1, "
 			"\"%s_%s\" as t2, \"%s_%s\" as t3 "
-			"where (t1.time_start < %d && t1.time_start >= %d) "
+			"where (t1.time_start < %ld && t1.time_start >= %ld) "
 			"&& t1.id_assoc=t2.id_assoc && (%s) && "
 			"t2.lft between t3.lft and t3.rgt "
 			"order by t3.id_assoc, time_start;",
@@ -616,7 +616,7 @@ extern int get_usage_for_list(mysql_conn_t *mysql_conn,
 	case DBD_GET_WCKEY_USAGE:
 		query = xstrdup_printf(
 			"select %s from \"%s_%s\" "
-			"where (time_start < %d && time_start >= %d) "
+			"where (time_start < %ld && time_start >= %ld) "
 			"&& (%s) order by id_wckey, time_start;",
 			tmp, cluster_name, my_usage_table, end, start, id_str);
 		break;
@@ -858,7 +858,7 @@ is_user:
 		query = xstrdup_printf(
 			"select %s from \"%s_%s\" as t1, "
 			"\"%s_%s\" as t2, \"%s_%s\" as t3 "
-			"where (t1.time_start < %d && t1.time_start >= %d) "
+			"where (t1.time_start < %ld && t1.time_start >= %ld) "
 			"&& t1.id_assoc=t2.id_assoc && t3.id_assoc=%d && "
 			"t2.lft between t3.lft and t3.rgt "
 			"order by t3.id_assoc, time_start;",
@@ -869,7 +869,7 @@ is_user:
 	case DBD_GET_WCKEY_USAGE:
 		query = xstrdup_printf(
 			"select %s from \"%s_%s\" "
-			"where (time_start < %d && time_start >= %d) "
+			"where (time_start < %ld && time_start >= %ld) "
 			"&& id_wckey=%d order by id_wckey, time_start;",
 			tmp, cluster_name, my_usage_table, end, start, id);
 		break;

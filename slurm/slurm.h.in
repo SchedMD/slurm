@@ -138,6 +138,13 @@ typedef struct sockaddr_in slurm_addr_t;
 #  endif
 #endif
 
+/* Just incase we don't have a c99 compatible system.  This should be
+ * defined in inttypes.h.
+ */
+#ifndef PRIu64
+#  define PRIu64 "llu"
+#endif
+
 #ifndef __slurm_cred_t_defined
 #  define __slurm_cred_t_defined
 typedef struct slurm_job_credential slurm_cred_t;

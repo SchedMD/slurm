@@ -176,7 +176,7 @@ pgsql_modify_common(pgsql_conn_t *pg_conn, uint16_t type, time_t now,
 	char *query = NULL;
 	int rc = SLURM_SUCCESS;
 
-	xstrfmtcat(query, "UPDATE %s SET mod_time=%d %s "
+	xstrfmtcat(query, "UPDATE %s SET mod_time=%ld %s "
 		   "WHERE deleted=0 AND %s;",
 		   table, now, vals, name_char);
 	rc = DEF_QUERY_RET_RC;
@@ -336,12 +336,12 @@ pgsql_remove_common(pgsql_conn_t *pg_conn, uint16_t type, time_t now,
 	/* remove completely all that is less than a day old */
 	if(!has_jobs && (table != assoc_table)) {
 		query = xstrdup_printf(
-			"DELETE FROM %s WHERE creation_time>%d AND (%s);",
+			"DELETE FROM %s WHERE creation_time>%ld AND (%s);",
 			table, day_old, name_char);
 	}
 	if(table != assoc_table) {
 		xstrfmtcat(query,
-			   "UPDATE %s SET mod_time=%d, deleted=1 "
+			   "UPDATE %s SET mod_time=%ld, deleted=1 "
 			   "WHERE deleted=0 AND (%s);",
 			   table, now, name_char);
 	}
@@ -441,7 +441,7 @@ just_update:
 	 * we don't want any residue from past associations lingering
 	 * around.
 	 */
-	query = xstrdup_printf("UPDATE %s AS t1 SET mod_time=%d, deleted=1, "
+	query = xstrdup_printf("UPDATE %s AS t1 SET mod_time=%ld, deleted=1, "
 			       "fairshare=1, max_jobs=NULL, "
 			       "max_nodes_per_job=NULL, "
 			       "max_wall_duration_per_job=NULL, "
@@ -608,8 +608,8 @@ setup_cluster_list_with_inx(pgsql_conn_t *pg_conn, slurmdb_job_cond_t *job_cond,
 		if(!job_cond->usage_end)
 			job_cond->usage_end = now;
 
-		xstrfmtcat(query, " AND ((period_start < %d) "
-			   "AND (period_end >= %d || period_end = 0))",
+		xstrfmtcat(query, " AND ((period_start < %ld) "
+			   "AND (period_end >= %ld || period_end = 0))",
 			   job_cond->usage_end, job_cond->usage_start);
 	}
 

@@ -172,7 +172,7 @@ static xppid_t **_build_hashtbl(void)
 		ret_l = strtol(num, &endptr, 10);
 		if ((ret_l == LONG_MIN) || (ret_l == LONG_MAX) ||
 		    (errno == ERANGE)) {
-			error("couldn't do a strtol on str %s(%d): %m",
+			error("couldn't do a strtol on str %s(%ld): %m",
 			      num, ret_l);
 		}
 		if (endptr == NULL || *endptr != 0)

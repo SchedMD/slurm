@@ -97,8 +97,9 @@ static int _setup_qos_limits(slurmdb_qos_rec_t *qos,
 	} else if((qos->grp_cpu_mins != (uint64_t)NO_VAL)
 		  && ((int64_t)qos->grp_cpu_mins >= 0)) {
 		xstrcat(*cols, ", grp_cpu_mins");
-		xstrfmtcat(*vals, ", %llu", qos->grp_cpu_mins);
-		xstrfmtcat(*extra, ", grp_cpu_mins=%llu",
+		xstrfmtcat(*vals, ", %"PRIu64"",
+			   qos->grp_cpu_mins);
+		xstrfmtcat(*extra, ", grp_cpu_mins=%"PRIu64"",
 			   qos->grp_cpu_mins);
 	}
 
@@ -109,8 +110,9 @@ static int _setup_qos_limits(slurmdb_qos_rec_t *qos,
 	} else if((qos->grp_cpu_run_mins != (uint64_t)NO_VAL)
 		  && (int64_t)qos->grp_cpu_run_mins >= 0) {
 		xstrcat(*cols, ", grp_cpu_run_mins");
-		xstrfmtcat(*vals, ", %llu", qos->grp_cpu_run_mins);
-		xstrfmtcat(*extra, ", grp_cpu_run_mins=%llu",
+		xstrfmtcat(*vals, ", %"PRIu64"",
+			   qos->grp_cpu_run_mins);
+		xstrfmtcat(*extra, ", grp_cpu_run_mins=%"PRIu64"",
 			   qos->grp_cpu_run_mins);
 	}
 
@@ -177,8 +179,9 @@ static int _setup_qos_limits(slurmdb_qos_rec_t *qos,
 	} else if((qos->max_cpu_mins_pj != (uint64_t)NO_VAL)
 		  && ((int64_t)qos->max_cpu_mins_pj >= 0)) {
 		xstrcat(*cols, ", max_cpu_mins_per_job");
-		xstrfmtcat(*vals, ", %llu", qos->max_cpu_mins_pj);
-		xstrfmtcat(*extra, ", max_cpu_mins_per_job=%u",
+		xstrfmtcat(*vals, ", %"PRIu64"",
+			   qos->max_cpu_mins_pj);
+		xstrfmtcat(*extra, ", max_cpu_mins_per_job=%"PRIu64"",
 			   qos->max_cpu_mins_pj);
 	}
 
@@ -189,8 +192,9 @@ static int _setup_qos_limits(slurmdb_qos_rec_t *qos,
 	} else if((qos->max_cpu_run_mins_pu != (uint64_t)NO_VAL)
 		  && ((int64_t)qos->max_cpu_run_mins_pu >= 0)) {
 		xstrcat(*cols, ", max_cpu_run_mins_per_user");
-		xstrfmtcat(*vals, ", %llu", qos->max_cpu_run_mins_pu);
-		xstrfmtcat(*extra, ", max_cpu_run_mins_per_user=%u",
+		xstrfmtcat(*vals, ", %"PRIu64"",
+			   qos->max_cpu_run_mins_pu);
+		xstrfmtcat(*extra, ", max_cpu_run_mins_per_user=%"PRIu64"",
 			   qos->max_cpu_run_mins_pu);
 	}
 
@@ -355,9 +359,9 @@ extern int as_mysql_add_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 			continue;
 		}
 		xstrcat(cols, "creation_time, mod_time, name");
-		xstrfmtcat(vals, "%d, %d, '%s'",
+		xstrfmtcat(vals, "%ld, %ld, '%s'",
 			   now, now, object->name);
-		xstrfmtcat(extra, ", mod_time=%d", now);
+		xstrfmtcat(extra, ", mod_time=%ld", now);
 
 		_setup_qos_limits(object, &cols, &vals, &extra, &added_preempt);
 		if(added_preempt) {
@@ -402,7 +406,7 @@ extern int as_mysql_add_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 		xstrfmtcat(query,
 			   "insert into %s "
 			   "(timestamp, action, name, actor, info) "
-			   "values (%d, %u, '%s', '%s', '%s');",
+			   "values (%ld, %u, '%s', '%s', '%s');",
 			   txn_table,
 			   now, DBD_ADD_QOS, object->name, user_name,
 			   tmp_extra);
@@ -770,7 +774,7 @@ extern List as_mysql_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 	xfree(query);
 
 	/* remove this qos from all the users/accts that have it */
-	query = xstrdup_printf("update %s set mod_time=%d %s where deleted=0;",
+	query = xstrdup_printf("update %s set mod_time=%ld %s where deleted=0;",
 			       assoc_table, now, extra);
 	xfree(extra);
 	debug3("%d(%s:%d) query\n%s",

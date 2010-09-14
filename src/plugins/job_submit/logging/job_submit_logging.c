@@ -110,7 +110,7 @@ extern int job_submit(struct job_descriptor *job_desc, uint32_t submit_uid)
 	/* Log select fields from a job submit request. See slurm/slurm.h
 	 * for information about additional fields in struct job_descriptor.
 	 * Note that default values for most numbers is NO_VAL */
-	info("Job submit request: account:%s begin_time:%u dependency:%s "
+	info("Job submit request: account:%s begin_time:%ld dependency:%s "
 	     "name:%s partition:%s qos:%s submit_uid:%u time_limit:%u "
 	     "user_id:%u",
 	     job_desc->account, job_desc->begin_time, job_desc->dependency,
@@ -126,7 +126,7 @@ extern int job_modify(struct job_descriptor *job_desc,
 	/* Log select fields from a job modify request. See slurm/slurm.h
 	 * for information about additional fields in struct job_descriptor.
 	 * Note that default values for most numbers is NO_VAL */
-	info("Job modify request: account:%s begin_time:%u dependency:%s "
+	info("Job modify request: account:%s begin_time:%ld dependency:%s "
 	     "job_id:%u name:%s partition:%s qos:%s submit_uid:%u "
 	     "time_limit:%u",
 	     job_desc->account, job_desc->begin_time, job_desc->dependency,

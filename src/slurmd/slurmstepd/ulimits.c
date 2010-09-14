@@ -181,8 +181,9 @@ _set_limit(char **env, slurm_rlimits_info_t *rli)
 	 * Nothing to do if the rlimit won't change
 	 */
 	if (r.rlim_cur == (rlim_t) env_value) {
-		debug2( "_set_limit: %s setrlimit %s no change in value: %u",
-			u_req_propagate?"user":"conf", rlimit_name, r.rlim_cur);
+		debug2( "_set_limit: %s setrlimit %s no change in value: %lu",
+			u_req_propagate?"user":"conf", rlimit_name,
+			(unsigned long) r.rlim_cur);
 		return SLURM_SUCCESS;
 	}
 
