@@ -1,4 +1,4 @@
-.TH SQUEUE "1" "September 2009" "squeue 2.1" "Slurm components"
+.TH SQUEUE "1" "September 2010" "squeue 2.2" "Slurm components"
 
 .SH "NAME"
 squeue \- view information about jobs located in the SLURM scheduling queue.
@@ -55,6 +55,11 @@ they are on hidden partitions.
 \fB\-l\fR, \fB\-\-long\fR
 Report more of the available information for the selected jobs or job steps,
 subject to any constraints specified.
+
+.TP
+\fB\-M\fR, \fB\-\-clusters\fR=<\fIstring\fR>
+Clusters to issue commands to.  Multiple cluster names may be comma separated.
+A value of of '\fIall\fR' will query to run on all clusters.
 
 .TP
 \fB\-n <hostlist>\fR, \fB\-\-nodes=<hostlist>\fR
@@ -479,6 +484,9 @@ Some \fBsqueue\fR options may be set via environment variables. These
 environment variables, along with their corresponding options, are listed
 below. (Note: Commandline options will always override these settings.)
 .TP 20
+\fBSLURM_CLUSTERS\fR
+Same as \fB\-\-clusters\fR
+.TP
 \fBSLURM_CONF\fR
 The location of the SLURM configuration file.
 .TP
@@ -563,7 +571,7 @@ Print information only about job step 65552.1:
 
 .SH "COPYING"
 Copyright (C) 2002\-2007 The Regents of the University of California.
-Copyright (C) 2008\-2009 Lawrence Livermore National Security.
+Copyright (C) 2008\-2010 Lawrence Livermore National Security.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 CODE\-OCEC\-09\-009. All rights reserved.
 .LP
