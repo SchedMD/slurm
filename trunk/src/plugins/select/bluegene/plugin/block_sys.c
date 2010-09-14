@@ -109,15 +109,17 @@ static void _pre_allocate(bg_record_t *bg_record)
 #ifdef HAVE_BGL
 	if ((rc = bridge_set_data(bg_record->bg_block, RM_PartitionBlrtsImg,
 				  bg_record->blrtsimage)) != STATUS_OK)
-		error("bridge_set_data(RM_PartitionBlrtsImg)", bg_err_str(rc));
+		error("bridge_set_data(RM_PartitionBlrtsImg): %s",
+		      bg_err_str(rc));
 
 	if ((rc = bridge_set_data(bg_record->bg_block, RM_PartitionLinuxImg,
 				  bg_record->linuximage)) != STATUS_OK)
-		error("bridge_set_data(RM_PartitionLinuxImg)", bg_err_str(rc));
+		error("bridge_set_data(RM_PartitionLinuxImg): %s",
+		      bg_err_str(rc));
 
 	if ((rc = bridge_set_data(bg_record->bg_block, RM_PartitionRamdiskImg,
 				  bg_record->ramdiskimage)) != STATUS_OK)
-		error("bridge_set_data(RM_PartitionRamdiskImg)",
+		error("bridge_set_data(RM_PartitionRamdiskImg): %s",
 		      bg_err_str(rc));
 #else
 	struct tm my_tm;
@@ -126,32 +128,32 @@ static void _pre_allocate(bg_record_t *bg_record)
 	if ((rc = bridge_set_data(bg_record->bg_block,
 				  RM_PartitionCnloadImg,
 				  bg_record->linuximage)) != STATUS_OK)
-		error("bridge_set_data(RM_PartitionLinuxCnloadImg)",
+		error("bridge_set_data(RM_PartitionLinuxCnloadImg): %s",
 		      bg_err_str(rc));
 
 	if ((rc = bridge_set_data(bg_record->bg_block, RM_PartitionIoloadImg,
 				  bg_record->ramdiskimage)) != STATUS_OK)
-		error("bridge_set_data(RM_PartitionIoloadImg)",
+		error("bridge_set_data(RM_PartitionIoloadImg): %s",
 		      bg_err_str(rc));
 
 	gettimeofday(&my_tv, NULL);
 	localtime_r(&my_tv.tv_sec, &my_tm);
 	bg_record->bg_block_id = xstrdup_printf(
-		"RMP%2.2d%2.2s%2.2d%2.2d%2.2d%3.3d",
+		"RMP%2.2d%2.2s%2.2d%2.2d%2.2d%3.3ld",
 		my_tm.tm_mday, mon_abbr(my_tm.tm_mon),
 		my_tm.tm_hour, my_tm.tm_min, my_tm.tm_sec, my_tv.tv_usec/1000);
 	if ((rc = bridge_set_data(bg_record->bg_block, RM_PartitionID,
 				  bg_record->bg_block_id)) != STATUS_OK)
-		error("bridge_set_data(RM_PartitionID)", bg_err_str(rc));
+		error("bridge_set_data(RM_PartitionID): %s", bg_err_str(rc));
 #endif
 	if ((rc = bridge_set_data(bg_record->bg_block, RM_PartitionMloaderImg,
 				  bg_record->mloaderimage)) != STATUS_OK)
-		error("bridge_set_data(RM_PartitionMloaderImg)",
+		error("bridge_set_data(RM_PartitionMloaderImg): %s",
 		      bg_err_str(rc));
 
 	if ((rc = bridge_set_data(bg_record->bg_block, RM_PartitionConnection,
 				  &bg_record->conn_type)) != STATUS_OK)
-		error("bridge_set_data(RM_PartitionConnection)",
+		error("bridge_set_data(RM_PartitionConnection): %s",
 		      bg_err_str(rc));
 
 	/* rc = bg_conf->bp_node_cnt/bg_record->node_cnt; */
@@ -160,13 +162,14 @@ static void _pre_allocate(bg_record_t *bg_record)
 
 	if ((rc = bridge_set_data(bg_record->bg_block, RM_PartitionPsetsPerBP,
 				  &send_psets)) != STATUS_OK)
-		error("bridge_set_data(RM_PartitionPsetsPerBP)",
+		error("bridge_set_data(RM_PartitionPsetsPerBP): %s",
 		      bg_err_str(rc));
 
 	if ((rc = bridge_set_data(bg_record->bg_block, RM_PartitionUserName,
 				  bg_conf->slurm_user_name))
 	    != STATUS_OK)
-		error("bridge_set_data(RM_PartitionUserName)", bg_err_str(rc));
+		error("bridge_set_data(RM_PartitionUserName): %s",
+		      bg_err_str(rc));
 
 #endif
 }
@@ -344,7 +347,7 @@ extern int find_nodecard_num(rm_partition_t *block_ptr, rm_nodecard_t *ncard,
 					     &ncard2)) != STATUS_OK) {
 				error("bridge_get_data"
 				      "(RM_NodeCardListNext): %s",
-				      rc);
+				      bg_err_str(rc));
 				rc = SLURM_ERROR;
 				goto cleanup;
 			}
@@ -354,7 +357,7 @@ extern int find_nodecard_num(rm_partition_t *block_ptr, rm_nodecard_t *ncard,
 						  &ncard2)) != STATUS_OK) {
 				error("bridge_get_data"
 				      "(RM_NodeCardListFirst: %s",
-				      rc);
+				      bg_err_str(rc));
 				rc = SLURM_ERROR;
 				goto cleanup;
 			}
@@ -363,7 +366,7 @@ extern int find_nodecard_num(rm_partition_t *block_ptr, rm_nodecard_t *ncard,
 					  RM_NodeCardID,
 					  &card_name)) != STATUS_OK) {
 			error("bridge_get_data(RM_NodeCardID: %s",
-			      rc);
+			      bg_err_str(rc));
 			rc = SLURM_ERROR;
 			goto cleanup;
 		}

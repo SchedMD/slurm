@@ -607,7 +607,7 @@ extern int select_p_pack_select_info(time_t last_query_time, Buf *buffer_ptr,
 
 	/* check to see if data has changed */
 	if (last_query_time >= last_bg_update) {
-		debug2("Node select info hasn't changed since %d",
+		debug2("Node select info hasn't changed since %ld",
 			last_bg_update);
 		return SLURM_NO_CHANGE_IN_DATA;
 	} else if(blocks_are_created) {
@@ -1350,7 +1350,7 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 				job_desc->min_nodes =
 					bg_conf->bp_node_cnt;
 
-			set_select_jobinfo(job_desc->select_jobinfo,
+			set_select_jobinfo(job_desc->select_jobinfo->data,
 					   SELECT_JOBDATA_NODE_CNT,
 					   &job_desc->min_nodes);
 
@@ -1427,7 +1427,7 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 
 		break;
 	default:
-		error("unknown option %d for alter_node_cnt",type);
+		error("unknown option %d for alter_node_cnt", type);
 	}
 
 	return SLURM_SUCCESS;

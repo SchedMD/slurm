@@ -1045,8 +1045,9 @@ extern int read_bg_conf(void)
 			bg_conf->smallest_block=256;
 		else {
 			error("unknown ioratio %f.  Can't figure out "
-			      "smallest block size, setting it to midplane");
-			bg_conf->smallest_block=512;
+			      "smallest block size, setting it to midplane",
+			      bg_conf->io_ratio);
+			bg_conf->smallest_block = 512;
 		}
 #endif
 		if(bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
@@ -1526,6 +1527,9 @@ static int _delete_old_blocks(List curr_block_list, List found_block_list)
 /* block_state_mutex should be locked before calling this */
 static int _post_block_free(bg_record_t *bg_record, bool restore)
 {
+#ifdef HAVE_BG_FILES
+	int rc = SLURM_SUCCESS;
+#endif
 	if (bg_record->magic == 0) {
 		error("block already destroyed");
 		return SLURM_ERROR;

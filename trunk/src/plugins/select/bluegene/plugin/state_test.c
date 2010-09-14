@@ -196,8 +196,8 @@ static int _test_nodecard_state(rm_nodecard_t *ncard, int nc_id,
 	if ((rc = bridge_get_data(ncard,
 				  RM_NodeCardState,
 				  &state)) != STATUS_OK) {
-		error("bridge_get_data(RM_NodeCardState: %s",
-		      rc);
+		error("bridge_get_data(RM_NodeCardState): %s",
+		      bg_err_str(rc));
 		return SLURM_ERROR;
 	}
 
@@ -207,7 +207,7 @@ static int _test_nodecard_state(rm_nodecard_t *ncard, int nc_id,
 	if ((rc = bridge_get_data(ncard,
 				  RM_NodeCardID,
 				  &nc_name)) != STATUS_OK) {
-		error("bridge_get_data(RM_NodeCardID): %d", rc);
+		error("bridge_get_data(RM_NodeCardID): %s", bg_err_str(rc));
 		return SLURM_ERROR;
 	}
 
@@ -220,7 +220,7 @@ static int _test_nodecard_state(rm_nodecard_t *ncard, int nc_id,
 	if ((rc = bridge_get_data(ncard,
 				  RM_NodeCardQuarter,
 				  &io_start)) != STATUS_OK) {
-		error("bridge_get_data(CardQuarter): %d", rc);
+		error("bridge_get_data(CardQuarter): %s", bg_err_str(rc));
 		rc = SLURM_ERROR;
 		goto clean_up;
 	}
@@ -341,7 +341,7 @@ static int _test_down_nodecards(rm_BP_t *bp_ptr, bool slurmctld_locked)
 						  &ncard)) != STATUS_OK) {
 				error("bridge_get_data"
 				      "(RM_NodeCardListNext): %s",
-				      rc);
+				      bg_err_str(rc));
 				rc = SLURM_ERROR;
 				goto clean_up;
 			}
@@ -351,7 +351,7 @@ static int _test_down_nodecards(rm_BP_t *bp_ptr, bool slurmctld_locked)
 						  &ncard)) != STATUS_OK) {
 				error("bridge_get_data"
 				      "(RM_NodeCardListFirst: %s",
-				      rc);
+				      bg_err_str(rc));
 				rc = SLURM_ERROR;
 				goto clean_up;
 			}
