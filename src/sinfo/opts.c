@@ -123,7 +123,14 @@ extern void parse_command_line(int argc, char *argv[])
 	}
 	if ( ( env_val = getenv("SINFO_SORT") ) )
 		params.sort = xstrdup(env_val);
-
+	if ( ( env_val = getenv("SLURM_CLUSTERS") ) ) {
+		if (!(params.clusters = slurmdb_get_info_cluster(env_val))) {
+			error("'%s' invalid entry for SLURM_CLUSTERS",
+			      env_val);
+			exit(1);
+		}
+		working_cluster_rec = list_peek(params.clusters);
+	}
 
 	while((opt_char = getopt_long(argc, argv, "abdehi:lM:n:No:p:rRsS:t:vV",
 			long_options, &option_index)) != -1) {
@@ -138,7 +145,7 @@ extern void parse_command_line(int argc, char *argv[])
 			break;
 		case (int)'b':
 			params.cluster_flags = slurmdb_setup_cluster_flags();
-			if(params.cluster_flags & CLUSTER_FLAG_BG)
+			if (params.cluster_flags & CLUSTER_FLAG_BG)
 				params.bg_flag = true;
 			else {
 				error("Must be on a BG system to use --bg "
@@ -169,10 +176,10 @@ extern void parse_command_line(int argc, char *argv[])
 			params.long_output = true;
 			break;
 		case (int) 'M':
-			if(params.clusters)
+			if (params.clusters)
 				list_destroy(params.clusters);
-			if(!(params.clusters =
-			     slurmdb_get_info_cluster(optarg))) {
+			if (!(params.clusters =
+			      slurmdb_get_info_cluster(optarg))) {
 				error("'%s' invalid entry for --cluster",
 				      optarg);
 				exit(1);

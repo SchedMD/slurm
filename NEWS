@@ -8,7 +8,10 @@ documents those changes that are of interest to users and admins.
     partitions and use lua metatables to reference the job and partition fields.
  -- Add support for serveral new trigger types: SlurmDBD failure/restart,
     Database failure/restart, Slurmctld failure/restart.
- -- Add support for SLURM_CLUSTERS environment variable in the sbatch command.
+ -- Add support for SLURM_CLUSTERS environment variable in the sbatch and sinfo
+    commands.
+ -- Modify the sinfo command to report state of multiple clusters if the
+    --clusters option is used.
 
 * Changes in SLURM 2.2.0.pre10
 ==============================
