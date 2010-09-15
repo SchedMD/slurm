@@ -77,7 +77,7 @@ AC_DEFUN([X_AC_DEBUG], [
   AC_MSG_CHECKING([whether debugger partial attach enabled])
   AC_ARG_ENABLE(
     [partial-attach],
-    AS_HELP_STRING(--enable-partial-attach,enable debugger partial task attach support),
+    AS_HELP_STRING(--disable-partial-attach,disable debugger partial task attach support),
     [ case "$enableval" in
         yes) x_ac_partial_attach=yes ;;
          no) x_ac_partial_attach=no ;;
@@ -86,7 +86,7 @@ AC_DEFUN([X_AC_DEBUG], [
       esac
     ]
   )
-  if test "$x_ac_partial_attach" = yes; then
+  if test "$x_ac_partial_attach" != "no"; then
     AC_DEFINE(DEBUGGER_PARTIAL_ATTACH, 1, [Define to 1 for debugger partial task attach support.])
   fi
   AC_MSG_RESULT([${x_ac_partial_attach=no}])

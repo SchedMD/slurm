@@ -151,8 +151,9 @@ BLUEGENE SPECIFIC CHANGES
 OTHER CHANGES
 =============
 * Support has been added for TotalView to attach to a subset of launched tasks
-  instead of requiring that all tasks be attached to. This requires that an
-  option of "--enable-partial-attach" be passed to the configure (build) script.
+  instead of requiring that all tasks be attached to. This is the default
+  behavior unless an option of "--enable-partial-attach=no" be passed to the
+  configure (build) script.
 
 * A web application (chart_stats.cgi) has been added that invokes sreport to
   retrieve from the accounting storage db a user's request for job usage or
