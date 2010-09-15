@@ -1420,7 +1420,7 @@ static int _eval_nodes_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 			best_fit_inx = j;
 	}
 	if (best_fit_inx == -1) {
-		error("job %u: best_fit topology failure", job_ptr->job_id);
+		debug("job %u: best_fit topology failure", job_ptr->job_id);
 		rc = SLURM_ERROR;
 		goto fini;
 	}
