@@ -1967,7 +1967,7 @@ extern int select_p_select_nodeinfo_set_all(void)
 	if(last_set_all && (last_node_update < last_set_all)) {
 		debug2("Node select info for set all hasn't "
 		       "changed since %ld",
-		       last_set_all);
+		       (long)last_set_all);
 		return SLURM_NO_CHANGE_IN_DATA;
 	}
 	last_set_all = last_node_update;
