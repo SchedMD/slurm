@@ -261,7 +261,7 @@ static void _read_last_decay_ran(time_t *last_ran, time_t *last_reset)
 	safe_unpack_time(last_reset, buffer);
 	free_buf(buffer);
 	if(priority_debug)
-		info("Last ran decay on jobs at %ld", *last_ran);
+		info("Last ran decay on jobs at %ld", (long)*last_ran);
 
 	return;
 
@@ -341,7 +341,7 @@ static int _write_last_decay_ran(time_t last_ran, time_t last_reset)
 	xfree(new_file);
 
 	unlock_state_files();
-	debug4("done writing time %ld", last_ran);
+	debug4("done writing time %ld", (long)last_ran);
 	free_buf(buffer);
 
 	return error_code;
@@ -661,7 +661,7 @@ static void *_decay_thread(void *no_data)
 	if(!localtime_r(&start_time, &tm)) {
 		fatal("_decay_thread: "
 		      "Couldn't get localtime for rollup handler %ld",
-		      start_time);
+		      (long)start_time);
 		return NULL;
 	}
 
