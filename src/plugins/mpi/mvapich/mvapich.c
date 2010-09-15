@@ -284,7 +284,7 @@ char * vmsg (const char *msg, va_list ap)
 /*
  *  Forcibly kill job (with optional error message).
  */
-static int mvapich_terminate_job (mvapich_state_t *st, const char *msg, ...)
+static void mvapich_terminate_job (mvapich_state_t *st, const char *msg, ...)
 {
 	if (msg) {
 		va_list ap;

@@ -257,7 +257,7 @@ slurm_container_wait(uint32_t cont_id)
 			if (npids > 0) {
 				for (i = 0; i < npids; i++) {
 					verbose("  Container %u has pid %d",
-						pids[i]);
+						cont_id, pids[i]);
 				}
 				xfree(pids);
 			}
