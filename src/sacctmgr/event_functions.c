@@ -436,7 +436,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 			if(!localtime_r(&event_cond->period_start, &start_tm)) {
 				fprintf(stderr,
 					" Couldn't get localtime from %ld",
-					event_cond->period_start);
+					(long)event_cond->period_start);
 				exit_code=1;
 				return 0;
 			}
@@ -481,7 +481,7 @@ extern int sacctmgr_list_event(int argc, char *argv[])
                 if(!localtime_r(&event_cond->period_start, &start_tm)) {
                         fprintf(stderr,
                                 " Couldn't get localtime from %ld",
-                                event_cond->period_start);
+                                (long)event_cond->period_start);
                         exit_code=1;
                         return 0;
                 }

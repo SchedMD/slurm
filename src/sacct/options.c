@@ -904,7 +904,7 @@ void parse_command_line(int argc, char **argv)
 
 			if(!localtime_r(&job_cond->usage_start, &start_tm)) {
 				error("Couldn't get localtime from %ld",
-				      job_cond->usage_start);
+				      (long)job_cond->usage_start);
 				return;
 			}
 			start_tm.tm_sec = 0;
