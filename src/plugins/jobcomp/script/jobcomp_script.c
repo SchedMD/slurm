@@ -361,9 +361,9 @@ static char ** _create_environment (struct jobcomp_info *job)
 	_env_append_fmt (&env, "JOBID", "%u",  job->jobid);
 	_env_append_fmt (&env, "UID",   "%u",  job->uid);
 	_env_append_fmt (&env, "GID",   "%u",  job->gid);
-	_env_append_fmt (&env, "START", "%lu", job->start);
-	_env_append_fmt (&env, "END",   "%lu", job->end);
-	_env_append_fmt (&env, "SUBMIT","%lu", job->submit);
+	_env_append_fmt (&env, "START", "%ld", (long)job->start);
+	_env_append_fmt (&env, "END",   "%ld", (long)job->end);
+	_env_append_fmt (&env, "SUBMIT","%ld", (long)job->submit);
 	_env_append_fmt (&env, "PROCS", "%u",  job->nprocs);
 	_env_append_fmt (&env, "NODECNT", "%u", job->nnodes);
 

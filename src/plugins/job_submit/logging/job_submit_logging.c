@@ -113,7 +113,8 @@ extern int job_submit(struct job_descriptor *job_desc, uint32_t submit_uid)
 	info("Job submit request: account:%s begin_time:%ld dependency:%s "
 	     "name:%s partition:%s qos:%s submit_uid:%u time_limit:%u "
 	     "user_id:%u",
-	     job_desc->account, job_desc->begin_time, job_desc->dependency,
+	     job_desc->account, (long)job_desc->begin_time,
+	     job_desc->dependency,
 	     job_desc->name, job_desc->partition, job_desc->qos,
 	     submit_uid, job_desc->time_limit, job_desc->user_id);
 
@@ -129,7 +130,8 @@ extern int job_modify(struct job_descriptor *job_desc,
 	info("Job modify request: account:%s begin_time:%ld dependency:%s "
 	     "job_id:%u name:%s partition:%s qos:%s submit_uid:%u "
 	     "time_limit:%u",
-	     job_desc->account, job_desc->begin_time, job_desc->dependency,
+	     job_desc->account, (long)job_desc->begin_time,
+	     job_desc->dependency,
 	     job_desc->job_id, job_desc->name, job_desc->partition,
 	     job_desc->qos, submit_uid, job_desc->time_limit);
 

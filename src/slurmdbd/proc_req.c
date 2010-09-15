@@ -2484,7 +2484,7 @@ static int _node_state(slurmdbd_conn_t *slurmdbd_conn,
 		       node_state_msg->hostlist,
 		       _node_state_string(node_state_msg->new_state),
 		       node_state_msg->reason,
-		       node_state_msg->event_time);
+		       (long)node_state_msg->event_time);
 		rc = clusteracct_storage_g_node_up(
 			slurmdbd_conn->db_conn,
 			&node_ptr,
@@ -2496,7 +2496,7 @@ static int _node_state(slurmdbd_conn_t *slurmdbd_conn,
 		       _node_state_string(node_state_msg->new_state),
 		       node_state_msg->reason,
 		       node_ptr.reason_uid,
-		       node_state_msg->event_time);
+		       (long)node_state_msg->event_time);
 		rc = clusteracct_storage_g_node_down(
 			slurmdbd_conn->db_conn,
 			&node_ptr,

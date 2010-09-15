@@ -472,7 +472,7 @@ static void *_rollup_handler(void *db_conn)
 
 	if(!localtime_r(&start_time, &tm)) {
 		fatal("Couldn't get localtime for rollup handler %ld",
-		      start_time);
+		      (long)start_time);
 		return NULL;
 	}
 
@@ -502,7 +502,7 @@ static void *_rollup_handler(void *db_conn)
 		start_time = time(NULL);
 		if(!localtime_r(&start_time, &tm)) {
 			fatal("Couldn't get localtime for rollup handler %ld",
-			      start_time);
+			      (long)start_time);
 			return NULL;
 		}
 		/* Just in case some new uids were added to the system
