@@ -1458,7 +1458,7 @@ static void do_timings (mvapich_state_t *st, const char *fmt, ...)
 	va_end (ap);
 
 	info ("mvapich: %s took %ld.%03ld seconds", msg,
-	      result.tv_sec, result.tv_usec/1000);
+	      (long)result.tv_sec, (long)result.tv_usec/1000);
 
 	xfree (msg);
 
