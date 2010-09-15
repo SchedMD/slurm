@@ -86,14 +86,17 @@ struct group_cache_rec {
 extern uid_t *get_group_members(char *group_name)
 {
 	char grp_buffer[PW_BUF_SIZE];
-	char pw_buffer[PW_BUF_SIZE];
   	struct group grp,  *grp_result = NULL;
-	struct passwd pw, *pwd_result = NULL;
+	struct passwd *pwd_result = NULL;
 	uid_t *group_uids = NULL, my_uid;
 	gid_t my_gid;
 	int i, j, uid_cnt;
 #ifdef HAVE_AIX
 	FILE *fp = NULL;
+#elif defined (__APPLE__)
+#else
+	char pw_buffer[PW_BUF_SIZE];
+	struct passwd pw;
 #endif
 
 	group_uids = _get_group_cache(group_name);

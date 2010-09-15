@@ -277,7 +277,8 @@ _sched_log_init(char *prog, log_options_t opt, log_facility_t fac,
 		xfree(sched_log->argv0);
 		sched_log->argv0 = xstrdup(xbasename(prog));
 	} else if (!sched_log->argv0) {
-		char *short_name = strrchr(default_name, '/');
+		const char *short_name;
+		short_name = strrchr((const char *) default_name, '/');
 		if (short_name) 
 			short_name++;
 		else

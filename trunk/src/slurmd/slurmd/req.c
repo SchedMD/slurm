@@ -3942,13 +3942,16 @@ destroy_starting_step(void *x)
 extern void
 init_gids_cache(int cache)
 {
-	struct passwd pw, *pwd;
+	struct passwd *pwd;
 	int ngids;
 	gid_t *orig_gids;
 	gids_t *gids;
-	char buf[BUF_SIZE];
 #ifdef HAVE_AIX
 	FILE *fp = NULL;
+#elif defined (__APPLE__)
+#else
+	struct passwd pw;
+	char buf[BUF_SIZE];
 #endif
 
 	if (!cache) {

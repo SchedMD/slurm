@@ -9301,7 +9301,7 @@ extern int job_restart(checkpoint_msg_t *ckpt_ptr, uid_t uid, slurm_fd_t conn_fd
 	struct job_record *job_ptr;
 	char *image_dir, *ckpt_file, *data, *ver_str = NULL;
 	char *alloc_nodes = NULL;
-	int data_size;
+	int data_size = 0;
 	Buf buffer;
 	uint32_t tmp_uint32;
 	slurm_msg_t msg, resp_msg;
