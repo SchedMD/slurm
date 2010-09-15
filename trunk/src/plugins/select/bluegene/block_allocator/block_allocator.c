@@ -748,16 +748,21 @@ extern int new_ba_request(ba_request_t* ba_request)
 			      __LINE__, geo[X], geo[Y], geo[Z],
 			      ba_request->size);
 
+/* Having the functions pow and powf on an aix system doesn't seem to
+ * link well, so since this is only for aix and this doesn't really
+ * need to be there just don't allow this extra calculation.
+ */
+#ifndef HAVE_AIX
 		/* see if We can find a cube or square root of the
 		   size to make an easy cube */
-		for(i=0;i<cluster_dims-1;i++) {
+		for(i=0; i<cluster_dims-1; i++) {
 			sz = powf((float)ba_request->size,
 				  (float)1/(cluster_dims-i));
-			if(pow(sz,(cluster_dims-i))==ba_request->size)
+			if(pow(sz,(cluster_dims-i)) == ba_request->size)
 				break;
 		}
 
-		if(i<cluster_dims-1) {
+		if(i < (cluster_dims-1)) {
 			/* we found something that looks like a cube! */
 			i3=i;
 			for (i=0; i<i3; i++)
@@ -781,6 +786,7 @@ extern int new_ba_request(ba_request_t* ba_request)
 				      __LINE__, geo[X], geo[Y], geo[Z],
 				      ba_request->size);
 		}
+#endif //HAVE_AIX
 	}
 
 endit:
@@ -868,7 +874,7 @@ extern void ba_init(node_info_msg_t *node_info_ptr, bool sanity_check)
 	char *numeric = NULL;
 	int i, j, k;
 	slurm_conf_node_t *node = NULL, **ptr_array;
-	int coords[cluster_dims];
+	int coords[HIGHEST_DIMENSIONS];
 
 #ifdef HAVE_BG_FILES
 	rm_size3D_t bp_size;
@@ -929,12 +935,10 @@ extern void ba_init(node_info_msg_t *node_info_ptr, bool sanity_check)
 			REAL_DIM_SIZE[Z] = DIM_SIZE[Z] = 1;
 		}
 		goto setup_done;
-	} else if(working_cluster_rec) {
-		if(working_cluster_rec->dim_size) {
-			for(i=0; i<working_cluster_rec->dimensions; i++) {
-				DIM_SIZE[i] = working_cluster_rec->dim_size[i];
-				REAL_DIM_SIZE[i] = DIM_SIZE[i];
-			}
+	} else if(working_cluster_rec && working_cluster_rec->dim_size) {
+		for(i=0; i<working_cluster_rec->dimensions; i++) {
+			DIM_SIZE[i] = working_cluster_rec->dim_size[i];
+			REAL_DIM_SIZE[i] = DIM_SIZE[i];
 		}
 		goto setup_done;
 	}
