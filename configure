@@ -18139,9 +18139,6 @@ $as_echo "#define SYSTEM_DIMENSIONS 3" >>confdefs.h
 $as_echo "#define HAVE_CRAY 1" >>confdefs.h
 
 
-$as_echo "#define HAVE_CRAY_XT 1" >>confdefs.h
-
-
 $as_echo "#define HAVE_FRONT_END 1" >>confdefs.h
 
   else
@@ -18937,8 +18934,8 @@ fi
 	fi
 
 	if test x$HAVEMYSQLCONFIG = xno; then
-        	{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: *** mysql_config not found. Evidently no MySQL install on system." >&5
-$as_echo "$as_me: WARNING: *** mysql_config not found. Evidently no MySQL install on system." >&2;}
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: *** mysql_config not found. Evidently no MySQL development libs installed on system." >&5
+$as_echo "$as_me: WARNING: *** mysql_config not found. Evidently no MySQL development libs installed on system." >&2;}
 	else
 		# check for mysql-5.0.0+
 		mysql_config_major_version=`$HAVEMYSQLCONFIG --version | \
@@ -18951,7 +18948,7 @@ $as_echo "$as_me: WARNING: *** mysql_config not found. Evidently no MySQL instal
 		if test $mysql_config_major_version -lt 5; then
 	   		{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: *** mysql-$mysql_config_major_version.$mysql_config_minor_version.$mysql_config_micro_version available, we need >= mysql-5.0.0 installed for the mysql interface." >&5
 $as_echo "$as_me: WARNING: *** mysql-$mysql_config_major_version.$mysql_config_minor_version.$mysql_config_micro_version available, we need >= mysql-5.0.0 installed for the mysql interface." >&2;}
-            		ac_have_mysql="no"
+			ac_have_mysql="no"
 		else
 		# mysql_config puts -I on the front of the dir.  We don't
 		# want that so we remove it.
@@ -18968,12 +18965,12 @@ int
 main ()
 {
 
-          				int main()
-          				{
+					int main()
+					{
 						MYSQL mysql;
-            					(void) mysql_init(&mysql);
+						(void) mysql_init(&mysql);
 						(void) mysql_close(&mysql);
-            				}
+					}
 
   ;
   return 0;
@@ -18989,7 +18986,7 @@ rm -f core conftest.err conftest.$ac_objext \
 			CFLAGS="$save_CFLAGS"
 			LIBS="$save_LIBS"
        			if test "$ac_have_mysql" == "yes"; then
-            			{ $as_echo "$as_me:${as_lineno-$LINENO}: result: MySQL test program built properly." >&5
+				{ $as_echo "$as_me:${as_lineno-$LINENO}: result: MySQL test program built properly." >&5
 $as_echo "MySQL test program built properly." >&6; }
 
 
@@ -19010,12 +19007,12 @@ int
 main ()
 {
 
-          					int main()
-          					{
+						int main()
+						{
 							MYSQL mysql;
-            						(void) mysql_init(&mysql);
+							(void) mysql_init(&mysql);
 							(void) mysql_close(&mysql);
-            					}
+						}
 
   ;
   return 0;
@@ -19032,7 +19029,7 @@ rm -f core conftest.err conftest.$ac_objext \
 				LIBS="$save_LIBS"
 
     				if test "$ac_have_mysql" == "yes"; then
-            				{ $as_echo "$as_me:${as_lineno-$LINENO}: result: MySQL (non-threaded) test program built properly." >&5
+					{ $as_echo "$as_me:${as_lineno-$LINENO}: result: MySQL (non-threaded) test program built properly." >&5
 $as_echo "MySQL (non-threaded) test program built properly." >&6; }
 
 
@@ -19045,7 +19042,7 @@ $as_echo "#define HAVE_MYSQL 1" >>confdefs.h
 				else
 					MYSQL_CFLAGS=""
 					MYSQL_LIBS=""
-          				{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: *** MySQL test program execution failed." >&5
+					{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: *** MySQL test program execution failed." >&5
 $as_echo "$as_me: WARNING: *** MySQL test program execution failed." >&2;}
 				fi
 			fi
@@ -19158,18 +19155,18 @@ fi
 	fi
 
 	if test x$HAVEPGCONFIG = xno; then
-        	{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: *** pg_config not found. Evidently no PostgreSQL install on system." >&5
-$as_echo "$as_me: WARNING: *** pg_config not found. Evidently no PostgreSQL install on system." >&2;}
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: *** pg_config not found. Evidently no PostgreSQL development libs installed on system." >&5
+$as_echo "$as_me: WARNING: *** pg_config not found. Evidently no PostgreSQL development libs installed on system." >&2;}
 	else
 		PGSQL_INCLUDEDIR=`$HAVEPGCONFIG --includedir`
 		PGSQL_LIBDIR=`$HAVEPGCONFIG --libdir`
 		PGSQL_CFLAGS="-I$PGSQL_INCLUDEDIR -L$PGSQL_LIBDIR"
 		save_CFLAGS="$CFLAGS"
-        	CFLAGS="$PGSQL_CFLAGS $save_CFLAGS"
+		CFLAGS="$PGSQL_CFLAGS $save_CFLAGS"
 
 		PGSQL_LIBS=" -lpq"
 	       	save_LIBS="$LIBS"
-        	LIBS="$PGSQL_LIBS $save_LIBS"
+		LIBS="$PGSQL_LIBS $save_LIBS"
        		cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 #include <libpq-fe.h>
@@ -19177,12 +19174,12 @@ int
 main ()
 {
 
-          			int main()
+				int main()
        	  			{
 					PGconn     *conn;
 					conn = PQconnectdb("dbname = postgres");
        					(void) PQfinish(conn);
-            			}
+				}
 
   ;
   return 0;
