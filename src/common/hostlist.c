@@ -67,7 +67,6 @@
 #include <ctype.h>
 #include <sys/param.h>
 #include <unistd.h>
-#include <slurm/slurmdb.h>
 
 #include "src/common/hostlist.h"
 #include "src/common/log.h"
@@ -75,7 +74,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/timers.h"
 #include "src/common/xassert.h"
-#include "src/common/slurmdb_defs.h"
+#include "src/common/working_cluster.h"
 
 /*
  * Define slurm-specific aliases for use by plugins, see slurm_xlator.h
@@ -1506,16 +1505,11 @@ hostlist_t _hostlist_create(const char *hostlist, char *sep, char *r_op)
 
 	if (hostlist == NULL)
 		return new;
-	if(working_cluster_rec) {
-		if(working_cluster_rec->dimensions > 1)
-			fatal("WANT_RECKLESS_HOSTRANGE_EXPANSION does not "
-			      "work on Multidimentional systems!!!!");
-	} else {
-#if (SYSTEM_DIMENSIONS > 1)
-		fatal("WANT_RECKLESS_HOSTRANGE_EXPANSION does not work on "
-		      "Multidimentional systems!!!!");
-#endif
-	}
+
+	if(slurmdb_setup_cluster_dims() > 1)
+		fatal("WANT_RECKLESS_HOSTRANGE_EXPANSION does not "
+		      "work on Multidimentional systems!!!!");
+
 	orig = str = strdup(hostlist);
 
 	/* return an empty list if an empty string was passed in */
@@ -2537,13 +2531,11 @@ ssize_t hostlist_deranged_string(hostlist_t hl, size_t n, char *buf)
 int hostlist_get_base()
 {
 	int hostlist_base;
-	if(working_cluster_rec) {
-		if(working_cluster_rec->dimensions > 1)
-			hostlist_base = 36;
-		else
-			hostlist_base = 10;
-	} else
-		hostlist_base = HOSTLIST_BASE;
+
+	if(slurmdb_setup_cluster_dims() > 1)
+		hostlist_base = 36;
+	else
+		hostlist_base = 10;
 
 	return hostlist_base;
 }
