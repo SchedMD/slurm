@@ -1904,7 +1904,7 @@ static int _job_config_validate(char *config, uint32_t *gres_cnt,
 			cnt *= (1024 * 1024);
 		else
 			return SLURM_ERROR;
-		if (cnt <= 0)
+		if (cnt < 0)
 			return SLURM_ERROR;
 	} else
 		return SLURM_ERROR;
@@ -1920,12 +1920,13 @@ static int _job_state_validate(char *config, void **gres_data,
 	uint32_t gres_cnt;
 
 	rc = _job_config_validate(config, &gres_cnt, context_ptr);
-	if (rc == SLURM_SUCCESS) {
+	if ((rc == SLURM_SUCCESS) && (gres_cnt > 0)) {
 		gres_job_state_t *gres_ptr;
 		gres_ptr = xmalloc(sizeof(gres_job_state_t));
 		gres_ptr->gres_cnt_alloc = gres_cnt;
 		*gres_data = gres_ptr;
-	}
+	} else
+		*gres_data = NULL;
 
 	return rc;
 }
@@ -1941,7 +1942,7 @@ extern int gres_plugin_job_state_validate(char *req_config, List *gres_list)
 	char *tmp_str, *tok, *last = NULL;
 	int i, rc, rc2;
 	gres_state_t *gres_ptr;
-	void *gres_data;
+	void *job_gres_data;
 
 	if ((req_config == NULL) || (req_config[0] == '\0')) {
 		*gres_list = NULL;
@@ -1953,23 +1954,22 @@ extern int gres_plugin_job_state_validate(char *req_config, List *gres_list)
 
 	slurm_mutex_lock(&gres_context_lock);
 	tmp_str = xstrdup(req_config);
-	if ((gres_context_cnt > 0) && (*gres_list == NULL)) {
-		*gres_list = list_create(_gres_job_list_delete);
-		if (*gres_list == NULL)
-			fatal("list_create malloc failure");
-	}
-
 	tok = strtok_r(tmp_str, ",", &last);
 	while (tok && (rc == SLURM_SUCCESS)) {
 		rc2 = SLURM_ERROR;
 		for (i=0; i<gres_context_cnt; i++) {
-			rc2 = _job_state_validate(tok, &gres_data,
+			rc2 = _job_state_validate(tok, &job_gres_data,
 						  &gres_context[i]);
-			if (rc2 != SLURM_SUCCESS)
+			if ((rc2 != SLURM_SUCCESS) || (job_gres_data == NULL))
 				continue;
+			if (*gres_list == NULL) {
+				*gres_list = list_create(_gres_job_list_delete);
+				if (*gres_list == NULL)
+					fatal("list_create malloc failure");
+			}
 			gres_ptr = xmalloc(sizeof(gres_state_t));
 			gres_ptr->plugin_id = gres_context[i].plugin_id;
-			gres_ptr->gres_data = gres_data;
+			gres_ptr->gres_data = job_gres_data;
 			list_append(*gres_list, gres_ptr);
 			break;		/* processed it */
 		}
@@ -2001,8 +2001,8 @@ static void *_job_state_dup(void *gres_data)
 	new_gres_ptr->node_cnt		= gres_ptr->node_cnt;
 
 	if (gres_ptr->gres_bit_alloc) {
-		new_gres_ptr->gres_bit_alloc	= xmalloc(sizeof(bitstr_t *) *
-							  gres_ptr->node_cnt);
+		new_gres_ptr->gres_bit_alloc = xmalloc(sizeof(bitstr_t *) *
+						       gres_ptr->node_cnt);
 		for (i=0; i<gres_ptr->node_cnt; i++) {
 			if (gres_ptr->gres_bit_alloc[i] == NULL)
 				continue;
@@ -2066,6 +2066,8 @@ List gres_plugin_job_state_extract(List gres_list, int node_index)
 
 	slurm_mutex_lock(&gres_context_lock);
 	gres_iter = list_iterator_create(gres_list);
+	if (gres_iter == NULL)
+		fatal("list_iterator_create: malloc failure");
 	while ((gres_ptr = (gres_state_t *) list_next(gres_iter))) {
 		if (node_index == -1)
 			new_gres_data = _job_state_dup(gres_ptr->gres_data);
@@ -2999,12 +3001,13 @@ static int _step_state_validate(char *config, void **gres_data,
 	uint32_t gres_cnt;
 
 	rc = _job_config_validate(config, &gres_cnt, context_ptr);
-	if (rc == SLURM_SUCCESS) {
+	if ((rc == SLURM_SUCCESS) && (gres_cnt > 0)) {
 		gres_step_state_t *gres_ptr;
 		gres_ptr = xmalloc(sizeof(gres_step_state_t));
 		gres_ptr->gres_cnt_alloc = gres_cnt;
 		*gres_data = gres_ptr;
-	}
+	} else
+		*gres_data = NULL;
 
 	return rc;
 }
@@ -3100,34 +3103,31 @@ extern int gres_plugin_step_state_validate(char *req_config,
 	*step_gres_list = NULL;
 	if ((req_config == NULL) || (req_config[0] == '\0'))
 		return SLURM_SUCCESS;
-	if (job_gres_list == NULL) {
-		info("step %u.%u has gres spec, while job has none",
-		     job_id, step_id);
-		return ESLURM_INVALID_GRES;
-	}
 
 	if ((rc = gres_plugin_init()) != SLURM_SUCCESS)
 		return rc;
 
 	slurm_mutex_lock(&gres_context_lock);
 	tmp_str = xstrdup(req_config);
-	if ((gres_context_cnt > 0) && (*step_gres_list == NULL)) {
-		*step_gres_list = list_create(_gres_step_list_delete);
-		if (*step_gres_list == NULL)
-			fatal("list_create malloc failure");
-	}
-
 	tok = strtok_r(tmp_str, ",", &last);
 	while (tok && (rc == SLURM_SUCCESS)) {
 		rc2 = SLURM_ERROR;
 		for (i=0; i<gres_context_cnt; i++) {
 			rc2 = _step_state_validate(tok, &step_gres_data,
 						   &gres_context[i]);
-			if (rc2 != SLURM_SUCCESS)
+			if ((rc2 != SLURM_SUCCESS) || (step_gres_data == NULL))
 				continue;
+			if (job_gres_list == NULL) {
+				info("step %u.%u has gres spec, job has none",
+				     job_id, step_id);
+				rc2 = ESLURM_INVALID_GRES;
+				continue;
+			}
 			/* Now make sure the step's request isn't too big for
 			 * the job's gres allocation */
 			job_gres_iter = list_iterator_create(job_gres_list);
+			if (job_gres_iter == NULL)
+				fatal("list_iterator_create: malloc failure");
 			while ((job_gres_ptr = (gres_state_t *)
 					list_next(job_gres_iter))) {
 				if (job_gres_ptr->plugin_id ==
@@ -3154,6 +3154,12 @@ extern int gres_plugin_step_state_validate(char *req_config,
 				break;
 			}
 
+			if (*step_gres_list == NULL) {
+				*step_gres_list = list_create(
+						  _gres_step_list_delete);
+				if (*step_gres_list == NULL)
+					fatal("list_create malloc failure");
+			}
 			step_gres_ptr = xmalloc(sizeof(gres_state_t));
 			step_gres_ptr->plugin_id = gres_context[i].plugin_id;
 			step_gres_ptr->gres_data = step_gres_data;
