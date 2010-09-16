@@ -471,7 +471,7 @@ extern int new_ba_request(ba_request_t* ba_request)
 {
 	int i=0;
 	float sz=1;
-	int i2, i3, picked, total_sz=1, size2=0;
+	int i2, picked, total_sz=1, size2=0;
 	int *geo_ptr;
 	int messed_with = 0;
 	int checked[DIM_SIZE[X]];
@@ -764,7 +764,8 @@ extern int new_ba_request(ba_request_t* ba_request)
 
 		if(i < (cluster_dims-1)) {
 			/* we found something that looks like a cube! */
-			i3=i;
+			int i3 = i;
+
 			for (i=0; i<i3; i++)
 				geo[i] = 1;
 
