@@ -4681,7 +4681,7 @@ extern void pack_all_jobs(char **buffer_ptr, int *buffer_size,
 			continue;
 
 		if ((min_age > 0) && (job_ptr->end_time < min_age) &&
-		    IS_JOB_FINISHED(job_ptr))
+		    (! IS_JOB_COMPLETING(job_ptr)) && IS_JOB_FINISHED(job_ptr))
 			continue;	/* job ready for purging, don't dump */
 
 		pack_job(job_ptr, show_flags, buffer, protocol_version);
