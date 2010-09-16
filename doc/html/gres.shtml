@@ -41,7 +41,9 @@ values in <I>slurm.conf</I> ).</LI>
 
 <LI><B>Count</B> Number of resources of this type available on this node.
 The default value is set to the number of <B>File</B> values specified (if any),
-otherwise the default value is one.</LI>
+otherwise the default value is one. A suffix of "K", "M" or "G" may be used
+to mulitply the number by 1024, 1048576 or 1073741824 respectively
+(e.g. "Count=10G").</LI>
 
 <LI><B>CPUs</B> Specify the CPU index numbers for the specific CPUs which can
 use this resources. For example, it may be strongly preferable to use specific
@@ -145,6 +147,6 @@ Linux <I>cgroups</I> in order to remove access to devices not allocated to
 a job or job step.</P>
 <!-------------------------------------------------------------------------->
 
-<p style="text-align: center;">Last modified 31 August 2010</p>
+<p style="text-align: center;">Last modified 16 September 2010</p>
 
 </body></html>
