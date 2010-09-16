@@ -674,6 +674,8 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 			tmp_long *= 1024;
 		else if ((last[0] == 'm') || (last[0] == 'M'))
 			tmp_long *= (1024 * 1024);
+		else if ((last[0] == 'g') || (last[0] == 'G'))
+			tmp_long *= (1024 * 1024 * 1024);
 		else if (last[0] != '\0') {
 			fatal("Invalid gres data for %s, Count=%s", p->name,
 			      tmp_str);
@@ -979,6 +981,8 @@ static uint32_t _get_gres_cnt(char *orig_config, char *gres_name,
 				gres_config_cnt *= 1024;
 			else if ((last_num[0] == 'm') || (last_num[0] == 'M'))
 				gres_config_cnt *= (1024 * 1024);
+			else if ((last_num[0] == 'g') || (last_num[0] == 'G'))
+				gres_config_cnt *= (1024 * 1024 * 1024);
 			break;
 		}
 		tok = strtok_r(NULL, ",", &last_tok);
@@ -1009,6 +1013,10 @@ static void _set_gres_cnt(char *orig_config, char **new_config,
 		if (strcmp(tok, gres_name) &&
 		    strncmp(tok, gres_name_colon, gres_name_colon_len)) {
 			xstrcat(new_configured_res, tok);
+		} else if ((new_cnt % (1024 * 1024 * 1024)) == 0) {
+			new_cnt /= (1024 * 1024 * 1024);
+			xstrfmtcat(new_configured_res, "%s:%uG",
+				   gres_name, new_cnt);
 		} else if ((new_cnt % (1024 * 1024)) == 0) {
 			new_cnt /= (1024 * 1024);
 			xstrfmtcat(new_configured_res, "%s:%uM",
@@ -1902,6 +1910,8 @@ static int _job_config_validate(char *config, uint32_t *gres_cnt,
 			cnt *= 1024;
 		else if ((last_num[0] == 'm') || (last_num[0] == 'M'))
 			cnt *= (1024 * 1024);
+		else if ((last_num[0] == 'g') || (last_num[0] == 'G'))
+			cnt *= (1024 * 1024 * 1024);
 		else
 			return SLURM_ERROR;
 		if (cnt < 0)

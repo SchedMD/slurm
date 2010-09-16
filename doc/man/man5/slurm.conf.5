@@ -2129,7 +2129,9 @@ Also see \fBGres\fR.
 A comma delimited list of generic resources specifications for a node.
 Each resource specification consists of a name followed by an optional
 colon with a numeric value (default value is one)
-(e.g. "Gres=bandwidth:10000,gpus").
+(e.g. "Gres=bandwidth:10000,gpus:2").
+A suffix of "K", "M" or "G" may be used to mulitply the number by 1024,
+1048576 or 1073741824 respectively (e.g. "Gres=bandwidth:4G,gpus:4")..
 By default a node has no generic resources.
 Also see \fBFeature\fR.
 

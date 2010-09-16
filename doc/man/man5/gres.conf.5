@@ -1,4 +1,4 @@
-.TH "gres.conf" "5" "July 2010" "gres.conf 2.2" "Slurm configuration file"
+.TH "gres.conf" "5" "September 2010" "gres.conf 2.2" "Slurm configuration file"
 .SH "NAME"
 gres.conf \- Slurm configuration file for generic resource management.
 
@@ -24,7 +24,8 @@ The overall configuration parameters available include:
 \fBCount\fR
 Number of resources of this type available on this node.
 The default value is set to the number of \fBFile\fR values specified (if any),
-otherwise the default value is one.
+otherwise the default value is one. A suffix of "K", "M" or "G" may be used
+to mulitply the number by 1024, 1048576 or 1073741824 respectively.
 
 .TP
 \fBCPUs\fR
