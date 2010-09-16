@@ -1204,11 +1204,16 @@ void format_core_allocs(slurm_cred_t *cred, char *node_name,
 		      cred->job_hostlist);
 		return;
 	}
-
+#ifdef HAVE_FRONT_END
+	host_index = 0;
+#else
 	host_index = hostset_find(hset, node_name);
+#endif
 	if ((host_index < 0) || (host_index >= cred->job_nhosts)) {
 		error("Invalid host_index %d for job %u",
 		      host_index, cred->jobid);
+		error("Host %s not in hostlist %s",
+		      node_name, cred->job_hostlist);
 		hostset_destroy(hset);
 		return;
 	}
@@ -1301,11 +1306,16 @@ extern void get_cred_gres(slurm_cred_t *cred, char *node_name,
 		      cred->job_hostlist);
 		return;
 	}
-
+#ifdef HAVE_FRONT_END
+	host_index = 0;
+#else
 	host_index = hostset_find(hset, node_name);
+#endif
 	if ((host_index < 0) || (host_index >= cred->job_nhosts)) {
 		error("Invalid host_index %d for job %u",
 		      host_index, cred->jobid);
+		error("Host %s not in hostlist %s",
+		      node_name, cred->job_hostlist);
 		hostset_destroy(hset);
 		return;
 	}
