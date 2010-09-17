@@ -1883,16 +1883,27 @@ The default value is "/tmp".
 \fBTopologyPlugin\fR
 Identifies the plugin to be used for determining the network topology
 and optimizing job allocations to minimize network contention.
-Acceptable values include
-"topology/3d_torus" (default for Cray XT, IBM BlueGene and Sun Constellation
-systems, best\-fit logic over three\-dimensional topology)
-"topology/none" (default for other systems, best\-fit
-logic over one\-dimensional topology) and
-"topology/tree" (determine the network topology based
-upon information contained in a topology.conf file).
 See \fBNETWORK TOPOLOGY\fR below for details.
 Additional plugins may be provided in the future which gather topology
 information directly from the network.
+Acceptable values include:
+.RS
+.TP 21
+\fBtopology/3d_torus\fR
+default for Sun Constellation
+systems, best\-fit logic over three\-dimensional topology
+.TP
+\fBtopology/node_rank\fR
+default for Cray computers, orders nodes based upon information in the
+ALPS database and then performs a best\-fit algorithm over over those
+ordered nodes
+.TP
+\fBtopology/none\fR
+default for other systems, best\-fit logic over one\-dimensional topology
+.TP
+\fBtopology/tree\fR
+used for a hierarchical network as described in a \fItopology.conf\fR file
+.RE
 
 .TP
 \fBTrackWCKey\fR

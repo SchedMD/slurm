@@ -107,7 +107,15 @@ extern int fini(void)
  *	after a system startup or reconfiguration.
  */
 extern int topo_build_config(void)
-{
+{	static bool first_run = true;
+
+	/* We can only re-order the nodes once at slurmctld startup.
+	 * After that time, many bitmaps are created based upon the
+	 * index of each node name in the array. */
+	if (!first_run)
+		return SLURM_SUCCESS;
+	first_run = false;
+
 #ifndef HAVE_BG
 	nodes_to_hilbert_curve();
 #endif

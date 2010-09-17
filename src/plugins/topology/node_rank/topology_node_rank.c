@@ -1,11 +1,11 @@
 /*****************************************************************************\
- *  hilbert_slurm.c - Reorder the node records to place them into order
- *	on a Hilbert curve so that the resource allocation problem in
- *	N-dimensions can be reduced to a 1-dimension problem
+ *  topology_node_rank.c - Re-order the nodes in a cluster based upon
+ *	the node's "node_rank" field as set by some other module (probably
+ *	the select plugin)
  *****************************************************************************
- *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
+ *  Copyright (C) 2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Morris Jette <jette1@llnl.gov>, et. al.
+ *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
@@ -38,95 +38,90 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifdef HAVE_CONFIG_H
+#if HAVE_CONFIG_H
 #  include "config.h"
 #endif
 
-#include "src/plugins/topology/3d_torus/hilbert.h"
+#include <signal.h>
+#include <stdlib.h>
+#include <sys/types.h>
+
+#include <slurm/slurm_errno.h>
+#include "src/common/bitstring.h"
+#include "src/common/log.h"
+#include "src/common/slurm_topology.h"
+#include "src/common/xstring.h"
 #include "src/slurmctld/slurmctld.h"
 
 #define _DEBUG 0
 
-static int _coord(char coord)
+/*
+ * These variables are required by the generic plugin interface.  If they
+ * are not found in the plugin, the plugin loader will ignore it.
+ *
+ * plugin_name - a string giving a human-readable description of the
+ * plugin.  There is no maximum length, but the symbol must refer to
+ * a valid string.
+ *
+ * plugin_type - a string suggesting the type of the plugin or its
+ * applicability to a particular form of data or method of data handling.
+ * If the low-level plugin API is used, the contents of this string are
+ * unimportant and may be anything.  SLURM uses the higher-level plugin
+ * interface which requires this string to be of the form
+ *
+ *      <application>/<method>
+ *
+ * where <application> is a description of the intended application of
+ * the plugin (e.g., "task" for task control) and <method> is a description
+ * of how this plugin satisfies that application.  SLURM will only load
+ * a task plugin if the plugin_type string has a prefix of "task/".
+ *
+ * plugin_version - an unsigned 32-bit integer giving the version number
+ * of the plugin.  If major and minor revisions are desired, the major
+ * version number may be multiplied by a suitable magnitude constant such
+ * as 100 or 1000.  Various SLURM versions will likely require a certain
+ * minimum versions for their plugins as this API matures.
+ */
+const char plugin_name[]        = "topology node_rank plugin";
+const char plugin_type[]        = "topology/node_rank";
+const uint32_t plugin_version   = 100;
+
+/*
+ * init() is called when the plugin is loaded, before any other functions
+ *	are called.  Put global initialization here.
+ */
+extern int init(void)
 {
-	if ((coord >= '0') && (coord <= '9'))
-		return (coord - '0');
-	if ((coord >= 'A') && (coord <= 'Z'))
-		return (coord - 'A' + 10);
-	return -1;
+	verbose("%s loaded", plugin_name);
+	return SLURM_SUCCESS;
 }
 
-/* Using the node record table, generate a Hilbert integer for each node
- * based upon its coordinates and sort the records in that order. This must
- * be called once, immediately after reading the slurm.conf file. */
-extern void nodes_to_hilbert_curve(void)
+/*
+ * fini() is called when the plugin is removed. Clear any allocated
+ *	storage here.
+ */
+extern int fini(void)
 {
-	int coord_inx, i, j, k, max_coord = 0, min_inx;
-	uint32_t min_val;
-	int *coords;
+	return SLURM_SUCCESS;
+}
+
+/*
+ * topo_build_config - build or rebuild system topology information
+ *	after a system startup or reconfiguration.
+ */
+extern int topo_build_config(void)
+{
+	static bool first_run = true;
 	struct node_record *node_ptr, *node_ptr2;
-	coord_t hilbert[3];
-	int dims = 3;
-#ifdef HAVE_SUN_CONST
-	int offset = 1;
-#else	/* !HAVE_SUN_CONST */
-	int offset = 0;
-#if 	(SYSTEM_DIMENSIONS != 3)
-		fatal("current logic only supports 3-dimensions");
-#endif	/* SYSTEM_DIMENSIONS != 3) */
-#endif	/* !HAVE_SUN_CONST */
+	int i, j, min_inx;
+	uint32_t min_val;
 
-	/* Get the coordinates for each node based upon its numeric suffix */
-	coords = xmalloc(sizeof(int) * node_record_count * dims);
-	for (i=0, coord_inx=0, node_ptr=node_record_table_ptr;
-	     i<node_record_count; i++, node_ptr++) {
-		j = strlen(node_ptr->name);
-		if (j < (dims + offset)) {
-			fatal("hostname %s lacks numeric %d dimension suffix",
-			      node_ptr->name, dims);
-		}
-		j -= offset;
-		for (k=dims; k; k--) {
-			coords[coord_inx] = _coord(node_ptr->name[j-k]);
-			if (coords[coord_inx] < 0) {
-				fatal("hostname %s lacks valid numeric suffix",
-				      node_ptr->name);
-			}
-			max_coord = MAX(max_coord, coords[coord_inx]);
-			coord_inx++;	/* Don't put into MAX macro */
-		}
-	}
-	if (max_coord > 31) {
-		fatal("maximum node coordinate exceeds system limit (%d>32)",
-		      max_coord);
-	}
-
-	/* Generate each node's Hilbert integer */
-	for (i=0, coord_inx=0, node_ptr=node_record_table_ptr;
-	     i<node_record_count; i++, node_ptr++) {
-		for (j=0; j<dims; j++)
-			hilbert[j] = coords[coord_inx++];
-		AxestoTranspose(hilbert, 5, dims);
-
-		/* A variation on the below calculation would be required here
-		 * for other dimension counts */
-		node_ptr->node_rank =
-			((hilbert[0]>>4 & 1) << 14) +
-			((hilbert[1]>>4 & 1) << 13) +
-			((hilbert[2]>>4 & 1) << 12) +
-			((hilbert[0]>>3 & 1) << 11) +
-			((hilbert[1]>>3 & 1) << 10) +
-			((hilbert[2]>>3 & 1) <<  9) +
-			((hilbert[0]>>2 & 1) <<  8) +
-			((hilbert[1]>>2 & 1) <<  7) +
-			((hilbert[2]>>2 & 1) <<  6) +
-			((hilbert[0]>>1 & 1) <<  5) +
-			((hilbert[1]>>1 & 1) <<  4) +
-			((hilbert[2]>>1 & 1) <<  3) +
-			((hilbert[0]>>0 & 1) <<  2) +
-			((hilbert[1]>>0 & 1) <<  1) +
-			((hilbert[2]>>0 & 1) <<  0);
-	}
+	/* We can only re-order the nodes once at slurmctld startup.
+	 * After that time, many bitmaps are created based upon the
+	 * index of each node name in the array. */
+	if (!first_run)
+		return SLURM_SUCCESS;
+	first_run = false;
 
 	/* Now we need to sort the node records. We only need to move a few
 	 * fields since the others were all initialized to identical values.
@@ -186,5 +181,24 @@ extern void nodes_to_hilbert_curve(void)
 		info("%s: %u", node_ptr->name, node_ptr->node_rank);
 	}
 #endif
+
+	return SLURM_SUCCESS;
 }
 
+/*
+ * topo_get_node_addr - build node address and the associated pattern
+ *      based on the topology information
+ *
+ * example of output :
+ *      address : s0.s4.s8.tux1
+ *      pattern : switch.switch.switch.node
+ */
+extern int topo_get_node_addr(char* node_name, char** paddr, char** ppattern)
+{
+	if (find_node_record(node_name) == NULL)
+		return SLURM_ERROR;
+
+	*paddr = xstrdup(node_name);
+	*ppattern = xstrdup("node");
+	return SLURM_SUCCESS;
+}
