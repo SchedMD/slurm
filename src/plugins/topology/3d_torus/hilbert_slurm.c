@@ -3,7 +3,7 @@
  *	on a Hilbert curve so that the resource allocation problem in
  *	N-dimensions can be reduced to a 1-dimension problem
  *****************************************************************************
- *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>, et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -110,7 +110,7 @@ extern void nodes_to_hilbert_curve(void)
 
 		/* A variation on the below calculation would be required here
 		 * for other dimension counts */
-		node_ptr->hilbert_integer =
+		node_ptr->node_rank =
 			((hilbert[0]>>4 & 1) << 14) +
 			((hilbert[1]>>4 & 1) << 13) +
 			((hilbert[2]>>4 & 1) << 12) +
@@ -131,13 +131,11 @@ extern void nodes_to_hilbert_curve(void)
 	/* Now we need to sort the node records. We only need to move a few
 	 * fields since the others were all initialized to identical values */
 	for (i=0; i<node_record_count; i++) {
-		min_val = node_record_table_ptr[i].hilbert_integer;
+		min_val = node_record_table_ptr[i].node_rank;
 		min_inx = i;
 		for (j=(i+1); j<node_record_count; j++) {
-			if (node_record_table_ptr[j].hilbert_integer <
-			    min_val) {
-				min_val = node_record_table_ptr[j].
-					  hilbert_integer;
+			if (node_record_table_ptr[j].node_rank < min_val) {
+				min_val = node_record_table_ptr[j].node_rank;
 				min_inx = j;
 			}
 		}
@@ -155,10 +153,9 @@ extern void nodes_to_hilbert_curve(void)
 			node_ptr->comm_name  = node_ptr2->comm_name;
 			node_ptr2->comm_name = tmp_name;
 
-			tmp_val = node_ptr->hilbert_integer;
-			node_ptr->hilbert_integer  = node_ptr2->
-						     hilbert_integer;
-			node_ptr2->hilbert_integer = tmp_val;
+			tmp_val = node_ptr->node_rank;
+			node_ptr->node_rank  = node_ptr2->node_rank;
+			node_ptr2->node_rank = tmp_val;
 		}
 	}
 
@@ -166,7 +163,7 @@ extern void nodes_to_hilbert_curve(void)
 	/* Log the results */
 	for (i=0, node_ptr=node_record_table_ptr; i<node_record_count;
 	     i++, node_ptr++) {
-		info("%s: %u", node_ptr->name, node_ptr->hilbert_integer);
+		info("%s: %u", node_ptr->name, node_ptr->node_rank);
 	}
 #endif
 }

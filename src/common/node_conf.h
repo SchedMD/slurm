@@ -138,7 +138,9 @@ struct node_record {
 	char *arch;			/* computer architecture */
 	char *os;			/* operating system now running */
 	struct node_record *node_next;	/* next entry with same hash index */
-	uint32_t hilbert_integer;	/* Hilbert number based on node name,
+	uint32_t node_rank;		/* Hilbert number based on node name,
+					 * or other sequence number used to
+					 * order nodes by location,
 					 * no need to save/restore */
 #ifdef HAVE_CRAY
 	uint32_t basil_node_id;		/* Cray-XT BASIL node ID,
