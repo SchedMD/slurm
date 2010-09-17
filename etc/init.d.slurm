@@ -81,9 +81,6 @@ if [ ! -f $CONFDIR/slurm.conf ]; then
    exit 1
 fi
 
-# setup library paths for slurm and munge support
-export LD_LIBRARY_PATH="$LIBDIR:$LD_LIBRARY_PATH"
-
 start() {
     prog=$1
     shift
