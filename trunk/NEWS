@@ -17,6 +17,8 @@ documents those changes that are of interest to users and admins.
     Eygene Ryabinkin (Russian Research Centre).
  -- Fix bug in slurmctld job completion logic when nodes allocated to a
     completing job are re-booted. Patch from Hongjia Cao (NUDT).
+ -- In slurmctld's node record data structure, rename "hilbert_integer" to
+    "node_rank".
 
 * Changes in SLURM 2.2.0.pre10
 ==============================
