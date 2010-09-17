@@ -751,12 +751,13 @@ extern int gres_plugin_node_config_load(uint32_t cpu_cnt)
 	struct stat config_stat;
 	s_p_hashtbl_t *tbl;
 	gres_slurmd_conf_t **gres_array;
-	char *gres_conf_file = _get_gres_conf();
+	char *gres_conf_file;
 
 	rc = gres_plugin_init();
 	if (gres_context_cnt == 0)
 		return SLURM_SUCCESS;
 
+	gres_conf_file = _get_gres_conf();
 	slurm_mutex_lock(&gres_context_lock);
 	gres_cpu_cnt = cpu_cnt;
 	if (stat(gres_conf_file, &config_stat) < 0)
