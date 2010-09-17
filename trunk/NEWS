@@ -19,6 +19,8 @@ documents those changes that are of interest to users and admins.
     completing job are re-booted. Patch from Hongjia Cao (NUDT).
  -- In slurmctld's node record data structure, rename "hilbert_integer" to
     "node_rank".
+ -- Add topology/node_rank plugin to sort nodes based upon rank loaded from
+    BASIL on Cray computers.
 
 * Changes in SLURM 2.2.0.pre10
 ==============================
