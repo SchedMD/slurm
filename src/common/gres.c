@@ -150,7 +150,7 @@ static int	_job_state_validate(char *config, void **gres_data,
 extern uint32_t	_job_test(void *job_gres_data, void *node_gres_data,
 			  bool use_total_gres, bitstr_t *cpu_bitmap,
 			  int cpu_start_bit, int cpu_end_bit, bool *topo_set,
-			  uint32_t job_id, char *node_name);
+			  uint32_t job_id, char *node_name, char *gres_name);
 static int	_load_gres_plugin(char *plugin_name,
 				  slurm_gres_context_t *plugin_context);
 static int	_log_gres_slurmd_conf(void *x, void *arg);
@@ -2365,7 +2365,7 @@ static void _validate_gres_node_cpus(gres_node_state_t *node_gres_ptr,
 extern uint32_t _job_test(void *job_gres_data, void *node_gres_data,
 			  bool use_total_gres, bitstr_t *cpu_bitmap,
 			  int cpu_start_bit, int cpu_end_bit, bool *topo_set,
-			  uint32_t job_id, char *node_name)
+			  uint32_t job_id, char *node_name, char *gres_name)
 {
 	int i, j, cpus_ctld, gres_avail = 0, top_inx;
 	gres_job_state_t  *job_gres_ptr  = (gres_job_state_t *)  job_gres_data;
@@ -2380,8 +2380,8 @@ extern uint32_t _job_test(void *job_gres_data, void *node_gres_data,
 		if (cpu_bitmap) {
 			cpus_ctld = cpu_end_bit - cpu_start_bit + 1;
 			if (cpus_ctld < 1) {
-				error("gres_plugin_job_test: job %u cpus on "
-				      "node %s < 1", job_id, node_name);
+				error("gres/%s: job %u cpus on node %s < 1",
+				      gres_name, job_id, node_name);
 				return (uint32_t) 0;
 			}
 			_validate_gres_node_cpus(node_gres_ptr, cpus_ctld,
@@ -2415,8 +2415,8 @@ extern uint32_t _job_test(void *job_gres_data, void *node_gres_data,
 		if (cpu_bitmap) {
 			cpus_ctld = cpu_end_bit - cpu_start_bit + 1;
 			if (cpus_ctld < 1) {
-				error("gres_plugin_job_test: job %u cpus on "
-				      "node %s < 1", job_id, node_name);
+				error("gres/%s: job %u cpus on node %s < 1",
+				      gres_name, job_id, node_name);
 				return (uint32_t) 0;
 			}
 			_validate_gres_node_cpus(node_gres_ptr, cpus_ctld,
@@ -2426,9 +2426,6 @@ extern uint32_t _job_test(void *job_gres_data, void *node_gres_data,
 					     topo_cpus_bitmap[0]);
 		}
 		cpus_avail = xmalloc(sizeof(uint32_t)*node_gres_ptr->topo_cnt);
-		alloc_cpu_bitmap = bit_alloc(cpus_ctld);
-		if (alloc_cpu_bitmap == NULL)
-			fatal("bit_alloc: malloc failure");
 		for (i=0; i<node_gres_ptr->topo_cnt; i++) {
 			if (node_gres_ptr->topo_gres_cnt_avail[i] == 0)
 				continue;
@@ -2441,17 +2438,18 @@ extern uint32_t _job_test(void *job_gres_data, void *node_gres_data,
 				    !bit_test(cpu_bitmap, cpu_start_bit+j))
 					continue;
 				if (bit_test(node_gres_ptr->
-					     topo_cpus_bitmap[i], j) &&
-				    !bit_test(alloc_cpu_bitmap, j)) {
-					bit_set(alloc_cpu_bitmap, j);
+					     topo_cpus_bitmap[i], j)) {
 					cpus_avail[i]++;
 				}
 			}
 		}
 
 		/* Pick the topology entries with the most CPUs available */
-		bit_nclear(alloc_cpu_bitmap, 0, (cpus_ctld - 1));
-		for (i=0; i<job_gres_ptr->gres_cnt_alloc; i++) {
+		alloc_cpu_bitmap = bit_alloc(cpus_ctld);
+		if (alloc_cpu_bitmap == NULL)
+			fatal("bit_alloc: malloc failure");
+		gres_avail = 0;
+		while (gres_avail < job_gres_ptr->gres_cnt_alloc) {
 			top_inx = -1;
 			for (j=0; j<node_gres_ptr->topo_cnt; j++) {
 				if (top_inx == -1) {
@@ -2464,10 +2462,19 @@ extern uint32_t _job_test(void *job_gres_data, void *node_gres_data,
 				cpu_cnt = 0;
 				break;
 			}
-			cpu_cnt += cpus_avail[top_inx];
 			cpus_avail[top_inx] = 0;
+			i = node_gres_ptr->topo_gres_cnt_avail[top_inx] -
+			    node_gres_ptr->topo_gres_cnt_alloc[top_inx];
+			if (i <= 0) {
+				error("gres/%s: topology allocation error on "
+				      "node %s", gres_name, node_name);
+				continue;
+			}
+			/* update counts of allocated CPUs and GRES */
+			gres_avail += i;
 			bit_or(alloc_cpu_bitmap,
 			       node_gres_ptr->topo_cpus_bitmap[top_inx]);
+			cpu_cnt = bit_set_count(alloc_cpu_bitmap);
 		}
 		if (cpu_bitmap && (cpu_cnt > 0)) {
 			*topo_set = true;
@@ -2546,7 +2553,8 @@ extern uint32_t gres_plugin_job_test(List job_gres_list, List node_gres_list,
 					    node_gres_ptr->gres_data,
 					    use_total_gres, cpu_bitmap,
 					    cpu_start_bit, cpu_end_bit,
-					    &topo_set, job_id, node_name);
+					    &topo_set, job_id, node_name,
+					    gres_context[i].gres_name);
 			cpu_cnt = MIN(tmp_cnt, cpu_cnt);
 			break;
 		}
