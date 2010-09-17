@@ -216,7 +216,7 @@ crypto_verify_sign(void * key, char *buffer, unsigned int buf_size,
 {
 	uid_t uid;
 	gid_t gid;
-	void *buf_out;
+	void *buf_out = NULL;
 	int   buf_out_size;
 	int   rc = 0;
 	munge_err_t err;
@@ -226,6 +226,8 @@ crypto_verify_sign(void * key, char *buffer, unsigned int buf_size,
 			   &uid, &gid);
 
 	if (err != EMUNGE_SUCCESS) {
+		if (buf_out)
+			free(buf_out);
 #ifdef MULTIPLE_SLURMD
 		/* In multple slurmd mode this will happen all the
 		 * time since we are authenticating with the same

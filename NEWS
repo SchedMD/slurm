@@ -21,6 +21,8 @@ documents those changes that are of interest to users and admins.
     "node_rank".
  -- Add topology/node_rank plugin to sort nodes based upon rank loaded from
     BASIL on Cray computers.
+ -- Fix memory leak in the auth/munge and crypto/munge plugins in the case of
+    some failure modes.
 
 * Changes in SLURM 2.2.0.pre10
 ==============================
