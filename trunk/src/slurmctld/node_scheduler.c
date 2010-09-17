@@ -1895,7 +1895,7 @@ extern void re_kill_job(struct job_record *job_ptr)
 	kill_job->job_state = job_ptr->job_state;
 	kill_job->time      = time(NULL);
 	kill_job->select_jobinfo = select_g_select_jobinfo_copy(
-			job_ptr->select_jobinfo);
+				   job_ptr->select_jobinfo);
 	kill_job->spank_job_env = xduparray(job_ptr->spank_job_env_size,
 					    job_ptr->spank_job_env);
 	kill_job->spank_job_env_size = job_ptr->spank_job_env_size;
@@ -1905,7 +1905,8 @@ extern void re_kill_job(struct job_record *job_ptr)
 		if ((job_ptr->node_bitmap == NULL) ||
 		    (bit_test(job_ptr->node_bitmap, i) == 0))
 			continue;
-		if (IS_NODE_DOWN(node_ptr)) {
+		if (IS_NODE_DOWN(node_ptr) &&
+		    bit_test(job_ptr->node_bitmap_cg, i)) {
 			/* Consider job already completed */
 			bit_clear(job_ptr->node_bitmap_cg, i);
 			job_update_cpu_cnt(job_ptr, i);
@@ -1919,7 +1920,7 @@ extern void re_kill_job(struct job_record *job_ptr)
 			}
 			continue;
 		}
-		if (IS_NODE_NO_RESPOND(node_ptr))
+		if (IS_NODE_DOWN(node_ptr) || IS_NODE_NO_RESPOND(node_ptr))
 			continue;
 		(void) hostlist_push_host(kill_hostlist, node_ptr->name);
 #ifdef HAVE_FRONT_END		/* Operate only on front-end */
