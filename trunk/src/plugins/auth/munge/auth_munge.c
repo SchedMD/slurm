@@ -507,8 +507,13 @@ _decode_cred(slurm_auth_credential_t *c, char *socket)
 	}
 
     again:
+	c->buf = NULL;
 	if ((e = munge_decode(c->m_str, ctx, &c->buf, &c->len, &c->uid,
 			      &c->gid))) {
+		if (c->buf) {
+			free(c->buf);
+			c->buf = NULL;
+		}
 		if ((e == EMUNGE_SOCKET) && retry--) {
 			error ("Munge decode failed: %s (retrying ...)",
 				munge_ctx_strerror(ctx));
