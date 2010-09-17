@@ -1832,6 +1832,8 @@ extern int kill_running_job_by_node_name(char *node_name)
 		}
 
 		if (IS_JOB_COMPLETING(job_ptr)) {
+			if (!bit_test(job_ptr->node_bitmap_cg, bit_position))
+				continue;
 			job_count++;
 			bit_clear(job_ptr->node_bitmap_cg, bit_position);
 			job_update_cpu_cnt(job_ptr, bit_position);
