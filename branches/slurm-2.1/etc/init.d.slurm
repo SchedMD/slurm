@@ -80,11 +80,7 @@ if [ ! -f $CONFDIR/slurm.conf ]; then
 fi
 
 # setup library paths for slurm and munge support
-if [ "$LD_LIBRARY_PATH" = "" ]; then
-    export LD_LIBRARY_PATH="$LIBDIR"
-else
-    export LD_LIBRARY_PATH="$LIBDIR:$LD_LIBRARY_PATH"
-fi
+export LD_LIBRARY_PATH=$LIBDIR${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}
 
 start() {
     prog=$1
