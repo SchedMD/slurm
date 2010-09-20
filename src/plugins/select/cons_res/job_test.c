@@ -543,7 +543,7 @@ uint16_t _allocate_cores(struct job_record *job_ptr, bitstr_t *core_map,
 		threads_per_core = MIN(threads_per_core, max_threads);
 	num_tasks = avail_cpus = threads_per_core;
 	i = job_ptr->details->mc_ptr->ntasks_per_core;
-	if (!cpu_type && i > 0)
+	if (!cpu_type && (i > 0))
 		num_tasks = MIN(num_tasks, i);
 
 	/* convert from PER_CORE to TOTAL_FOR_NODE */
@@ -564,7 +564,8 @@ uint16_t _allocate_cores(struct job_record *job_ptr, bitstr_t *core_map,
 		avail_cpus = num_tasks * cpus_per_task;
 	}
 	if (job_ptr->details->ntasks_per_node &&
-	    (num_tasks < job_ptr->details->ntasks_per_node)) {
+	    (num_tasks < job_ptr->details->ntasks_per_node) &&
+	    (job_ptr->details->overcommit == 0)) {
 		/* insufficient resources on this node */
 		num_tasks = 0;
 		goto fini;
