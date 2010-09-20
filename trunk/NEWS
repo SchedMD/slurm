@@ -3,6 +3,7 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 2.2.0.pre12
 ==============================
+ -- Log if Prolog or Epilog run for longer than MessageTimeout / 2.
 
 * Changes in SLURM 2.2.0.pre11
 ==============================

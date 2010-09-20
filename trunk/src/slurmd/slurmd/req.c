@@ -3727,11 +3727,11 @@ static int
 _run_prolog(uint32_t jobid, uid_t uid, char *resv_id,
 	    char **spank_job_env, uint32_t spank_job_env_size)
 {
-	int rc;
+	int rc, diff_time;
 	char *my_prolog;
 	char **my_env = _build_env(jobid, uid, resv_id, spank_job_env,
 				   spank_job_env_size);
-	time_t start_time = time(NULL), diff_time;
+	time_t start_time = time(NULL);
 	static uint16_t msg_timeout = 0;
 	pthread_t       timer_id;
 	pthread_attr_t  timer_attr;
@@ -3765,9 +3765,9 @@ _run_prolog(uint32_t jobid, uid_t uid, char *resv_id,
 	_destroy_env(my_env);
 
 	diff_time = difftime(time(NULL), start_time);
-	if (diff_time >= msg_timeout) {
-		error("prolog for job %u ran for %ld seconds",
-		      jobid, (long) diff_time);
+	if (diff_time >= (msg_timeout / 2)) {
+		info("prolog for job %u ran for %d seconds",
+		     jobid, diff_time);
 	}
 
 	pthread_join(timer_id, NULL);
@@ -3779,10 +3779,15 @@ static int
 _run_epilog(uint32_t jobid, uid_t uid, char *resv_id,
 	    char **spank_job_env, uint32_t spank_job_env_size)
 {
-	int error_code;
+	time_t start_time = time(NULL);
+	static uint16_t msg_timeout = 0;
+	int error_code, diff_time;
 	char *my_epilog;
 	char **my_env = _build_env(jobid, uid, resv_id, spank_job_env,
 				   spank_job_env_size);
+
+	if (msg_timeout == 0)
+		msg_timeout = slurm_get_msg_timeout();
 
 	slurm_mutex_lock(&conf->config_mutex);
 	my_epilog = xstrdup(conf->epilog);
@@ -3792,6 +3797,12 @@ _run_epilog(uint32_t jobid, uid_t uid, char *resv_id,
 	error_code = run_script("epilog", my_epilog, jobid, -1, my_env);
 	xfree(my_epilog);
 	_destroy_env(my_env);
+
+	diff_time = difftime(time(NULL), start_time);
+	if (diff_time >= (msg_timeout / 2)) {
+		info("epilog for job %u ran for %d seconds",
+		     jobid, diff_time);
+	}
 
 	return error_code;
 }
