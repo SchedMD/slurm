@@ -1,0 +1,233 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          Verify that user user limits are propagated to the job.
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+#
+# Note:    AIX does not support the NPROC limit, but this test should
+#          otherwise succeed
+############################################################################
+# Copyright (C) 2002 The Regents of the University of California.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Morris Jette <jette1@llnl.gov>
+# CODE-OCEC-09-009. All rights reserved.
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <https://computing.llnl.gov/linux/slurm/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id          "1.29"
+set exit_code        0
+set file_err         "test$test_id.error"
+set file_in          "test$test_id.input"
+set file_out         "test$test_id.output"
+set file_prog_get    "test$test_id.prog"
+set job_id           0
+set limit_core       943
+set limit_fsize      674515
+set limit_nofile     1016
+set limit_nproc      34500
+set limit_stack      2021
+set matches          0
+
+print_header $test_id
+
+if {[test_front_end] != 0 && [test_super_user] == 0} {
+	send_user "\nWARNING: This test is incompatible with front-end systems\n"
+	exit $exit_code
+}
+
+#
+# Delete left-over programs and rebuild them.
+# We use our own program to get ulimit values since the output
+# of the ulimit program is inconsistent across systems.
+#
+exec $bin_rm -f $file_prog_get $file_err $file_in $file_out
+exec $bin_cc -O ${file_prog_get}.c -o $file_prog_get
+exec $bin_chmod 700 $file_prog_get
+
+#
+# Get our current limits and adjust targets accordingly
+#
+set cur_core   -1
+set cur_fsize  -1
+set cur_nofile -1
+set cur_nproc  -1
+set cur_stack  -1
+spawn ./$file_prog_get
+expect {
+	-re "USER_CORE=($number)" {
+		set cur_core $expect_out(1,string)
+		exp_continue
+	}
+	-re "USER_FSIZE=($number)" {
+		set cur_fsize $expect_out(1,string)
+		exp_continue
+	}
+	-re "USER_NOFILE=($number)" {
+		set cur_nofile $expect_out(1,string)
+		exp_continue
+	}
+	-re "USER_NPROC=($number)" {
+		set cur_nproc $expect_out(1,string)
+		exp_continue
+	}
+	-re "USER_STACK=($number)" {
+		set cur_stack $expect_out(1,string)
+		exp_continue
+	}
+}
+if {$cur_core != -1} {
+	if {$cur_core == 0} {
+		set limit_core 0
+	} else {
+		set limit_core [expr ($cur_core / 1024) - 2]
+	}
+}
+if {$cur_fsize != -1} {
+	if {$cur_fsize == 0} {
+		set limit_fsize 0
+	} else {
+		set limit_fsize [expr ($cur_fsize / 1024) - 2]
+	}
+}
+if {$cur_nofile != -1} {
+	set limit_nofile [expr $cur_nofile - 2]
+}
+if {$cur_nproc != -1} {
+	set limit_nproc [expr $cur_nproc - 2]
+}
+if {$cur_stack != -1} {
+	set limit_stack [expr ($cur_stack / 1024) - 2]
+}
+
+#
+# Spawn a job via srun to print environment variables and user limits
+#
+make_bash_script $file_in "
+  ulimit -c $limit_core
+  ulimit -f $limit_fsize
+  ulimit -n $limit_nofile
+  ulimit -u $limit_nproc
+  ulimit -s $limit_stack
+  $srun -N1 ./$file_prog_get
+"
+
+
+set timeout $max_job_delay
+set srun_pid [spawn $sbatch -n1 --output=$file_out --error=$file_err -t1 ./$file_in]
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		slow_kill $srun_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$job_id == 0} {
+	send_user "\nFAILURE: batch submit failure\n"
+	exit 1
+}
+
+#
+# Wait for job to complete
+#
+if {[wait_for_job $job_id "DONE"] != 0} {
+	send_user "\nFAILURE: waiting for job to complete\n"
+	exit 1
+}
+
+#
+# Inspect the job's output file
+#
+if {[wait_for_file $file_out] != 0} {
+	exit 1
+}
+spawn $bin_sort $file_out
+expect {
+	-re "USER_CORE=($number)" {
+		if {$expect_out(1,string) == [expr $limit_core * 1024]} {
+			incr matches
+		}
+		exp_continue
+	}
+	-re "USER_FSIZE=($number)" {
+		if {$expect_out(1,string) == [expr $limit_fsize * 1024]} {
+			incr matches
+		}
+		exp_continue
+	}
+	-re "USER_NOFILE=($number)" {
+		if {$expect_out(1,string) == $limit_nofile} {
+			incr matches
+		}
+		exp_continue
+	}
+	-re "USER_NPROC=($number)" {
+		if {$expect_out(1,string) == $limit_nproc} {
+			incr matches
+		}
+		exp_continue
+	}
+	-re "USER_NPROC unsupported" {
+		incr matches
+		exp_continue
+	}
+	-re "USER_STACK=($number)" {
+		if {$expect_out(1,string) == [expr $limit_stack * 1024]} {
+			incr matches
+		}
+		exp_continue
+	}
+	-re "USER_STACK unsupported" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sort not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$matches != 5} {
+	send_user "\nFAILURE: User limits not propagated got $matches matches\n"
+	send_user "Check $file_err for errors\n"
+	send_user "A long running slurmd could cause a file size limit error\n"
+	set exit_code 1
+}
+
+if {$exit_code == 0} {
+	send_user "\nSUCCESS\n"
+        exec $bin_rm -f $file_err $file_in $file_prog_get $file_out
+
+}
+exit $exit_code
