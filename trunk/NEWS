@@ -1,6 +1,9 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in SLURM 2.2.0.pre12
+==============================
+
 * Changes in SLURM 2.2.0.pre11
 ==============================
  -- Permit a regular user to change the partition of a pending job.
