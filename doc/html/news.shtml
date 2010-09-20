@@ -4,10 +4,35 @@
 
 <h2>Index</h2>
 <ul>
+<li><a href="#security">Security Patches</a></li>
 <li><a href="#21">SLURM Version 2.1, January 2010</a></li>
 <li><a href="#22">SLURM Version 2.2, available in late 2010</a></li>
 <li><a href="#23">SLURM Version 2.3, available in 2011</a></li>
 <li><a href="#24">SLURM Version 2.4 and beyond</a></li>
+</ul>
+
+<h2><a name="security">Security Patches</a></h2>
+<p>Common Vulnerabilities and Exposure (CVE)</a> information is available at<br>
+<a href="http://cve.mitre.org/">http://cve.mitre.org/</a>.</p>
+<ul>
+<li>CVE-2009-0128<br>
+There is a potential security vulnerability in SLURM where a user could
+build an invalid job credential in order to execute a job (under his
+correct UID and GID) on resources not allocated to that user. This
+vulnerability exists only when the crypto/openssl plugin is used and was
+fixed in SLURM version 1.3.0.</li>
+<li>CVE-2009-2084<br>
+SLURM failed to properly set supplementary groups before invoking (1) sbcast
+from the slurmd daemon or (2) strigger from the slurmctld daemon, which might
+allow local SLURM users to modify files and gain privileges. This was fixed
+in SLURM version 1.3.14.</li>
+<li>CVE-2010-3308<br>
+There is a potential security vulnerability where if the init.d scripts are
+executed by user root or SlurmUser to initiate the SLURM daemons and the
+LD_LIBRARY_PATH is not set and the operating system interprets a blank entry
+in the path as "." (current working directory) and that directory contains a
+trojan library, then that library will be used by the SLURM daemon with
+unpredictable results. This was fixed in SLURM versions 2.1.14.</li>
 </ul>
 
 <h2><a name="21">Major Updates in SLURM Version 2.1</a></h2>
@@ -73,6 +98,6 @@ and refresh.</li>
 <li>Provide a web-based SLURM administration tool.</li>
 </ul>
 
-<p style="text-align:center;">Last modified 31 August 2010</p>
+<p style="text-align:center;">Last modified 20 September 2010</p>
 
 <!--#include virtual="footer.txt"-->
