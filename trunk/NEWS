@@ -5,6 +5,9 @@ documents those changes that are of interest to users and admins.
 ==============================
  -- Log if Prolog or Epilog run for longer than MessageTimeout / 2.
  -- Log the RPC number associated with messages from slurmctld that timeout.
+ -- Fix bug in select/cons_res logic when job allocation includes --overcommit
+    and --ntasks-per-node options and the node has fewer CPUs than the count
+    specified by --ntasks-per-node.
 
 * Changes in SLURM 2.2.0.pre11
 ==============================
