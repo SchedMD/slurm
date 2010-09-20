@@ -1,8 +1,13 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
-* Changes in SLURM 2.1.13
-=========================
+* Changes in SLURM 2.1.12-2
+===========================
+ -- Modify init.d/slurm and slurmdbd scripts to prevent the possible
+    inadvertent inclusion of "." in LD_LIBRARY_PATH environment variable.
+    To fail, the script would need to be executed by user root or SlurmUser
+    without the LD_LIBRARY_PATH environment variable set and there would
+    have to be a maliciously altered library in the working directory.
 
 * Changes in SLURM 2.1.12
 =========================
