@@ -167,7 +167,7 @@ typedef struct mail_info {
 
 static void _sig_handler(int dummy);
 static int  _batch_launch_defer(queued_request_t *queued_req_ptr);
-static inline int _comm_err(char *node_name);
+static inline int _comm_err(char *node_name, slurm_msg_type_t msg_type);
 static void _list_delete_retry(void *retry_entry);
 static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr);
 static task_info_t *_make_task_data(agent_info_t *agent_info_ptr, int inx);
@@ -756,13 +756,14 @@ finished:	;
 
 /* Report a communications error for specified node
  * This also gets logged as a non-responsive node */
-static inline int _comm_err(char *node_name)
+static inline int _comm_err(char *node_name, slurm_msg_type_t msg_type)
 {
 	int rc = 1;
 #if AGENT_IS_THREAD
 	if ((rc = is_node_resp (node_name)))
 #endif
-		verbose("agent/is_node_resp: %s: %m", node_name);
+		verbose("agent/is_node_resp: node:%s rpc:%d : %m",
+			node_name, msg_type);
 	return rc;
 }
 
@@ -889,7 +890,7 @@ static void *_thread_per_group_rpc(void *args)
 			thread_state = DSH_DONE;
 		} else {
 			if (!srun_agent)
-				_comm_err(thread_ptr->nodelist);
+				_comm_err(thread_ptr->nodelist, msg_type);
 		}
 		goto cleanup;
 	}
@@ -897,7 +898,7 @@ static void *_thread_per_group_rpc(void *args)
 	//info("got %d messages back", list_count(ret_list));
 	found = 0;
 	itr = list_iterator_create(ret_list);
-	while((ret_data_info = list_next(itr)) != NULL) {
+	while ((ret_data_info = list_next(itr)) != NULL) {
 		rc = slurm_get_return_code(ret_data_info->type,
 					   ret_data_info->data);
 #if AGENT_IS_THREAD
@@ -986,9 +987,10 @@ static void *_thread_per_group_rpc(void *args)
 					errno = ret_data_info->err;
 				else
 					errno = rc;
-				rc = _comm_err(ret_data_info->node_name);
+				rc = _comm_err(ret_data_info->node_name,
+					       msg_type);
 			}
-			if(srun_agent)
+			if (srun_agent)
 				thread_state = DSH_FAILED;
 			else if(ret_data_info->type == RESPONSE_FORWARD_FAILED)
 				/* check if a forward failed */
