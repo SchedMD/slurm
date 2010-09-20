@@ -1,6 +1,9 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in SLURM 2.1.15
+=========================
+
 * Changes in SLURM 2.1.14
 =========================
  -- Fixed coding mistakes in _slurm_rpc_resv_show() and job_alloc_info() found
