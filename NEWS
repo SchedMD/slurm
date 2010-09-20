@@ -19,6 +19,7 @@ documents those changes that are of interest to users and admins.
     To fail, the script would need to be executed by user root or SlurmUser
     without the LD_LIBRARY_PATH environment variable set and there would
     have to be a maliciously altered library in the working directory.
+    Thanks to Raphael Geissert for identifying the problem.
 
 * Changes in SLURM 2.1.13
 =========================
