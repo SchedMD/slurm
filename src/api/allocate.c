@@ -81,7 +81,7 @@ typedef struct {
 } listen_t;
 
 static int _handle_rc_msg(slurm_msg_t *msg);
-static listen_t *_create_allocation_response_socket();
+static listen_t *_create_allocation_response_socket(char *interface_hostname);
 static void _destroy_allocation_response_socket(listen_t *listen);
 static resource_allocation_response_msg_t *_wait_for_allocation_response(
 	uint32_t job_id, const listen_t *listen, int timeout);

@@ -1522,7 +1522,7 @@ extern int filetxt_jobacct_process_archive(slurmdb_archive_cond_t *arch_cond)
 	fflush(new_logfile);	/* Flush the buffers before forking */
 	fflush(fd);
 
-	file_err = slurm_reconfigure(NULL);
+	file_err = slurm_reconfigure();
 	if (file_err) {
 		file_err = 1;
 		error("Error: Attempt to reconfigure SLURM failed.");

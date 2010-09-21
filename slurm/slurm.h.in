@@ -2966,7 +2966,7 @@ extern int slurm_ping PARAMS((int primary));
  *	reload its configuration file
  * RET 0 or a slurm error code
  */
-extern int slurm_reconfigure PARAMS(());
+extern int slurm_reconfigure PARAMS((void));
 
 /*
  * slurm_shutdown - issue RPC to have Slurm controller (slurmctld)
