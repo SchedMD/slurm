@@ -1739,7 +1739,7 @@ extern int validate_nodes_via_front_end(
 
 	/* First validate the job info */
 	node_ptr = node_record_table_ptr;	/* All msg send to node zero,
-				 * the front-end for the wholel cluster */
+				 * the front-end for the whole cluster */
 	for (i = 0; i < reg_msg->job_count; i++) {
 		if ( (reg_msg->job_id[i] >= MIN_NOALLOC_JOBID) &&
 		     (reg_msg->job_id[i] <= MAX_NOALLOC_JOBID) ) {

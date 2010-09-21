@@ -60,9 +60,9 @@ typedef struct {
 	uint32_t req_nodes;         /* requested (or desired) count of nodes */
 } select_will_run_t;
 
-/*****************************************\
- * GLOBAL SELECT STATE MANGEMENT FUNCIONS *
-\*****************************************/
+/*******************************************\
+ * GLOBAL SELECT STATE MANAGEMENT FUNCIONS *
+\*******************************************/
 
 extern int node_select_free_block_info(block_info_t *block_info);
 

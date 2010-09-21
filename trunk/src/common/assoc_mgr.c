@@ -58,7 +58,7 @@ List assoc_mgr_user_list = NULL;
 List assoc_mgr_wckey_list = NULL;
 
 static char *assoc_mgr_cluster_name = NULL;
-static int setup_childern = 0;
+static int setup_children = 0;
 static assoc_mgr_lock_flags_t assoc_mgr_locks;
 
 void (*remove_assoc_notify) (slurmdb_association_rec_t *rec) = NULL;
@@ -320,8 +320,8 @@ static int _set_assoc_parent_and_user(slurmdb_association_rec_t *assoc,
 			}
 			list_iterator_destroy(itr);
 		}
-		if(assoc->usage->parent_assoc_ptr && setup_childern) {
-			if(!assoc->usage->parent_assoc_ptr->usage)
+		if (assoc->usage->parent_assoc_ptr && setup_children) {
+			if (!assoc->usage->parent_assoc_ptr->usage)
 				assoc->usage->parent_assoc_ptr->usage =
 					create_assoc_mgr_association_usage();
 			if(!assoc->usage->
@@ -414,7 +414,7 @@ static int _post_association_list(List assoc_list)
 		reset = 0;
 	}
 
-	if(setup_childern) {
+	if (setup_children) {
 		slurmdb_association_rec_t *assoc2 = NULL;
 		ListIterator itr2 = NULL;
 		/* Now set the shares on each level */
@@ -948,10 +948,10 @@ extern int assoc_mgr_init(void *db_conn, assoc_init_args_t *args)
 	static uint16_t cache_level = ASSOC_MGR_CACHE_ALL;
 	static uint16_t checked_prio = 0;
 
-	if(!checked_prio) {
+	if (!checked_prio) {
 		char *prio = slurm_get_priority_type();
 		if(prio && !strcmp(prio, "priority/multifactor"))
-			setup_childern = 1;
+			setup_children = 1;
 
 		xfree(prio);
 		checked_prio = 1;
@@ -995,10 +995,10 @@ extern int assoc_mgr_init(void *db_conn, assoc_init_args_t *args)
 		   == SLURM_ERROR)
 			return SLURM_ERROR;
 
-	if((!assoc_mgr_user_list) && (cache_level & ASSOC_MGR_CACHE_USER))
-		if(_get_assoc_mgr_user_list(db_conn, enforce) == SLURM_ERROR)
+	if ((!assoc_mgr_user_list) && (cache_level & ASSOC_MGR_CACHE_USER))
+		if (_get_assoc_mgr_user_list(db_conn, enforce) == SLURM_ERROR)
 			return SLURM_ERROR;
-	if(assoc_mgr_association_list && !setup_childern) {
+	if (assoc_mgr_association_list && !setup_children) {
 		slurmdb_association_rec_t *assoc = NULL;
 		ListIterator itr =
 			list_iterator_create(assoc_mgr_association_list);
@@ -2109,7 +2109,7 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update)
 
 			if(object->shares_raw != NO_VAL) {
 				rec->shares_raw = object->shares_raw;
-				if(setup_childern) {
+				if (setup_children) {
 					/* we need to update the shares on
 					   each sibling and child
 					   association now
@@ -2236,7 +2236,7 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update)
 				break;
 			}
 
-			if(setup_childern)
+			if (setup_children)
 				parents_changed = 1; /* set since we need to
 							set the shares
 							of surrounding childern
@@ -2278,7 +2278,7 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update)
 
 		list_iterator_reset(itr);
 		/* flush the childern lists */
-		if(setup_childern) {
+		if (setup_children) {
 			while((object = list_next(itr))) {
 				if(object->usage->childern_list)
 					list_flush(object->usage->
@@ -2308,8 +2308,8 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update)
 		   can update the used limits
 		*/
 		list_iterator_reset(itr);
-		while((object = list_next(itr))) {
-			if(setup_childern) {
+		while ((object = list_next(itr))) {
+			if (setup_children) {
 				int count = 0;
 				ListIterator itr2 = NULL;
 				if(!object->usage->childern_list
@@ -2341,7 +2341,7 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update)
 				_addto_used_info(object, rec);
 			}
 		}
-		if(setup_childern) {
+		if (setup_children) {
 			/* Now normalize the static shares */
 			list_iterator_reset(itr);
 			while((object = list_next(itr))) {

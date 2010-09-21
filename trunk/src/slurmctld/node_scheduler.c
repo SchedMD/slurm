@@ -1212,7 +1212,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	    || bit_overlap(job_ptr->node_bitmap, power_node_bitmap))
 		job_ptr->job_state |= JOB_CONFIGURING;
 	if (select_g_select_nodeinfo_set(job_ptr) != SLURM_SUCCESS) {
-		error("select_g_update_nodeinfo(%u): %m", job_ptr->job_id);
+		error("select_g_select_nodeinfo_set(%u): %m", job_ptr->job_id);
 		/* not critical ... by now */
 	}
 	if (job_ptr->mail_type & MAIL_JOB_BEGIN)

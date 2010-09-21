@@ -44,7 +44,7 @@
  * read_slurm_conf - load the slurm configuration from the configured file.
  * read_slurm_conf can be called more than once if so desired.
  * IN recover - replace job, node and/or partition data with latest
- *              availble information depending upon value
+ *              available information depending upon value
  *              0 = use no saved state information, rebuild everything from
  *		    slurm.conf contents
  *              1 = recover saved job and trigger state,

@@ -96,7 +96,7 @@ static int _ckpt_step(struct step_record * step_ptr, uint16_t wait, int vacate);
  * of the plugin.  If major and minor revisions are desired, the major
  * version number may be multiplied by a suitable magnitude constant such
  * as 100 or 1000.  Various SLURM versions will likely require a certain
- * minimum versions for their plugins as the checkpoint API matures.
+ * minimum version for their plugins as the checkpoint API matures.
  */
 const char plugin_name[]       	= "OpenMPI checkpoint plugin";
 const char plugin_type[]       	= "checkpoint/ompi";

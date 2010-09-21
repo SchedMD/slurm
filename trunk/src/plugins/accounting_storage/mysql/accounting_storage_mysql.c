@@ -92,7 +92,7 @@ pthread_mutex_t as_mysql_cluster_list_lock = PTHREAD_MUTEX_INITIALIZER;
  * of the plugin.  If major and minor revisions are desired, the major
  * version number may be multiplied by a suitable magnitude constant such
  * as 100 or 1000.  Various SLURM versions will likely require a certain
- * minimum versions for their plugins as the job accounting API
+ * minimum version for their plugins as the job accounting API
  * matures.
  */
 const char plugin_name[] = "Accounting storage MYSQL plugin";
@@ -701,7 +701,7 @@ static int _as_mysql_acct_check_tables(MYSQL *db_conn)
 	/* Add user root to be a user by default and have this default
 	 * account be root.  If already there just update
 	 * name='root'.  That way if the admins delete it it will
-	 * remained deleted. Creation time will be 0 so it will never
+	 * remain deleted. Creation time will be 0 so it will never
 	 * really be deleted.
 	 */
 	query = xstrdup_printf(

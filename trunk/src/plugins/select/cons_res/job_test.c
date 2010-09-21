@@ -884,7 +884,7 @@ bitstr_t *_make_core_bitmap(bitstr_t *node_map)
  * Determine the number of CPUs that a given job can use on a specific node
  * IN: job_ptr - pointer to job we are attempting to start
  * IN: node_index - zero origin node being considered for use
- * IN: cpu_cnt - array with count of CPU's availble to job on each node
+ * IN: cpu_cnt - array with count of CPU's available to job on each node
  * RET: number of usable CPUs on the identified node
  */
 static int _get_cpu_cnt(struct job_record *job_ptr, const int node_index,

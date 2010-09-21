@@ -2185,7 +2185,7 @@ end_it:
 }
 
 /*
- * as_pg_get_associaitons - get associations
+ * as_pg_get_associations - get associations
  *
  * IN pg_conn: database connection
  * IN uid: user performing the get operation
