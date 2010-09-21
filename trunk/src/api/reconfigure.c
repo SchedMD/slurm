@@ -63,7 +63,7 @@ static int _send_message_controller (	enum controller_id dest,
  * RET 0 or a slurm error code
  */
 int
-slurm_reconfigure ()
+slurm_reconfigure (void)
 {
 	int rc;
 	slurm_msg_t req;
