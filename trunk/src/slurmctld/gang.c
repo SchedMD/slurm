@@ -1027,11 +1027,15 @@ static void _scan_slurm_job_list(void)
 	ListIterator job_iterator;
 
 	if (!job_list) {	/* no jobs */
+		if (gs_debug_flags & DEBUG_FLAG_GANG)
+			info("gang: _scan_slurm_job_list: job_list NULL");
 		return;
 	}
 	if (gs_debug_flags & DEBUG_FLAG_GANG)
 		info("gang: _scan_slurm_job_list: job_list exists...");
 	job_iterator = list_iterator_create(job_list);
+	if (job_iterator == NULL)
+		fatal("list_iterator_create: malloc failure");
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		if (gs_debug_flags & DEBUG_FLAG_GANG) {
 			info("gang: _scan_slurm_job_list: checking job %u",
@@ -1049,8 +1053,7 @@ static void _scan_slurm_job_list(void)
 			if (!p_ptr) /* no partition */
 				continue;
 			i = _find_job_index(p_ptr, job_ptr->job_id);
-			if (i >= 0)
-				/* we're tracking it, so continue */
+			if (i >= 0) /* we're tracking it, so continue */
 				continue;
 
 			/* We're not tracking this job. Resume it if it's
