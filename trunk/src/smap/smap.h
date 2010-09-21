@@ -144,7 +144,6 @@ extern int quiet_flag;
 
 extern void init_grid(node_info_msg_t *node_info_ptr);
 extern int set_grid_inx(int start, int end, int count);
-extern int set_grid_name(char *nodes, int count);
 extern int set_grid_bg(int *start, int *end, int count, int set);
 extern void print_grid(int dir);
 bitstr_t *get_requested_node_bitmap();
