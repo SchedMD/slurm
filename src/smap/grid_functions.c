@@ -40,64 +40,6 @@
 
 #include "src/smap/smap.h"
 
-static int _coord(char coord)
-{
-	if ((coord >= '0') && (coord <= '9'))
-		return (coord - '0');
-	if ((coord >= 'A') && (coord <= 'Z'))
-		return (coord - 'A');
-	return -1;
-}
-
-/* Set grid color based upon node names containing X-, Y- and Z-
- * coordinates in last three positions. It is not based upon the
- * nodes in the node table being numerically ordered. */
-extern int set_grid_name(char *nodes, int count)
-{
-	hostlist_t hl;
-	char *node;
-	int i, x = 0, y = 0, z = 0;
-	int *use_dims = working_cluster_rec ?
-		working_cluster_rec->dim_size : DIM_SIZE;
-
-	if (!nodes)
-		return 1;
-
-	if(params.cluster_dims == 4) {
-		/* FIX ME: smap doesn't do anything correctly with
-		   more than 3 dims yet.
-		*/
-	} else if(params.cluster_dims == 3) {
-		hl = hostlist_create(nodes);
-		while ((node = hostlist_shift(hl))) {
-			i = strlen(node);
-			if (i < 4)
-				x = -1;
-			else {
-				x = _coord(node[i-3]);
-				y = _coord(node[i-2]);
-				z = _coord(node[i-1]);
-			}
-			if ((ba_system_ptr->grid[x][y][z].state
-			     != NODE_STATE_DOWN) &&
-			    (!(ba_system_ptr->grid[x][y][z].state
-			       & NODE_STATE_DRAIN)) &&
-			    (x >= 0) && (x < use_dims[X]) &&
-			    (y >= 0) && (y < use_dims[Y]) &&
-			    (z >= 0) && (z < use_dims[Z])) {
-				ba_system_ptr->grid[x][y][z].letter =
-					letters[count%62];
-				ba_system_ptr->grid[x][y][z].color =
-					colors[count%6];
-			}
-			free(node);
-		}
-		hostlist_destroy(hl);
-	}
-
-	return 1;
-}
-
 extern int set_grid_inx(int start, int end, int count)
 {
 	int x, y, z;
