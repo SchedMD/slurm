@@ -86,7 +86,8 @@ GetOptions('a=s'      => \$start_time,
 	   'e=s'      => \$err_path,
 	   'h'        => \$hold,
 	   'I'        => \$interactive,
-#	   'j:s'      => \$join,
+	   'j:s'      => sub { warn "option -j is the default, " .
+				    "stdout/stderr go into the same file\n" },
 #	   'k=s'      => \$keep,
 	   'l=s'      => \$resource_list,
 	   'm=s'      => \$mail_options,
@@ -98,8 +99,12 @@ GetOptions('a=s'      => \$start_time,
 #	   'r=s'      => \$rerunable,
 #	   'S=s'      => \$script_path,
 #	   'u=s'      => \$running_user_list,
-#	   'v=s'      => \$variable_list,
-#	   'V'        => \$all_env,
+	   'v=s'      => sub { warn "option -v is not supported, " .
+				    "since the current environment " .
+				    "is exported by default\n" },
+	   'V'        => sub { warn "option -V is not necessary, " .
+				    "since the current environment " .
+				    "is exported by default\n" },
 	   'W'        => \$additional_attributes,
 #	   'z'        => \$no_std,
 	   'help|?'   => \$help,
@@ -349,16 +354,25 @@ B<qsub> - submit a batch job in a familiar pbs format
 
 =head1 SYNOPSIS
 
-qsub  [-a date_time] [-A account_string] [-b secs] [-c interval]
-      [-C directive_prefix] [-e path] [-h] [-I]
-      [-j join] [-k keep] [-l resource_list] [-m mail_options]
-      [-M  user_list] [-N name] [-o path] [-p priority] [-q destination]
-      [-r c] [-S path_list] [-u user_list] [-v variable_list] [-V]
-      [-W additional_attributes] [-z] [script]
+qsub  [-a date_time]
+      [-A account_string]
+      [-b secs]
+      [-C directive_prefix]
+      [-e path]
+      [-I]
+      [-l resource_list]
+      [-m mail_options] [-M  user_list]
+      [-N name]
+      [-o path]
+      [-p priority]
+      [-q destination]
+      [-W additional_attributes]
+      [-h]
+      [script]
 
 =head1 DESCRIPTION
 
-The B<qsub> command displays information about nodes.
+The B<qsub> command displays information about nodes. It is aimed to be feature-compatible with PBS' qsub.
 
 =head1 OPTIONS
 
@@ -368,7 +382,24 @@ The B<qsub> command displays information about nodes.
 
 Display information for all nodes. This is the default if no node name is specified.
 
-=item B<-? | --help>
+=item B<-I>
+
+Interactive execution.
+
+=item B<-j> join
+
+It is not necessary (currently also not possible) since stderr/stdout are always joined.
+
+=item B<-v> [variable_list]
+
+Exporting single variables via -v is not supported, since the entire login environment
+is exported by the default.
+
+=item B<-V>
+
+The -V option to export the current environment is not required since it is done by default.
+
+=item B<-?> | B<--help>
 
 brief help message
 
