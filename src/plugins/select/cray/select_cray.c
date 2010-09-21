@@ -121,7 +121,7 @@ extern int select_p_select_nodeinfo_free(select_nodeinfo_t *nodeinfo);
  * of the plugin.  If major and minor revisions are desired, the major
  * version number may be multiplied by a suitable magnitude constant such
  * as 100 or 1000.  Various SLURM versions will likely require a certain
- * minimum versions for their plugins as the node selection API matures.
+ * minimum version for their plugins as the node selection API matures.
  */
 const char plugin_name[]	= "Cray node selection plugin";
 const char plugin_type[]	= "select/cray";
@@ -208,7 +208,7 @@ extern int select_p_block_init(List part_list)
  *		if mode=SELECT_MODE_TEST_ONLY or input pointer is NULL.
  * RET zero on success, EINVAL otherwise
  * globals (passed via select_p_node_init):
- *	node_recurd_count - count of nodes configured
+ *	node_record_count - count of nodes configured
  *	node_record_table_ptr - pointer to global node table
  * NOTE: the job information that is considered for scheduling includes:
  *	req_node_bitmap: bitmap of specific nodes required by the job

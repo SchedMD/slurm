@@ -609,7 +609,7 @@ static void _sync_part_prio(void)
  * read_slurm_conf - load the slurm configuration from the configured file.
  * read_slurm_conf can be called more than once if so desired.
  * IN recover - replace job, node and/or partition data with latest
- *              availble information depending upon value
+ *              available information depending upon value
  *              0 = use no saved state information, rebuild everything from
  *		    slurm.conf contents
  *              1 = recover saved job and trigger state,
@@ -658,7 +658,7 @@ int read_slurm_conf(int recover, bool reconfig)
 			xfree(node_ptr->os);
 			node_ptr->features = xstrdup(
 				node_ptr->config_ptr->feature);
-			/* Store the original configured CPU count somwhere
+			/* Store the original configured CPU count somewhere
 			 * (port is reused here for that purpose) so we can
 			 * report changes in its configuration. */
 			node_ptr->port   = node_ptr->config_ptr->cpus;

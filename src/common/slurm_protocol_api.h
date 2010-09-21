@@ -500,7 +500,7 @@ int slurm_set_jobcomp_port(uint32_t port);
 
 /* slurm_get_preempt_type
  * get PreemptType from slurmctld_conf object
- * RET char *   - select_type, MUST be xfreed by caller
+ * RET char *   - preempt type, MUST be xfreed by caller
  */
 char *slurm_get_preempt_type(void);
 

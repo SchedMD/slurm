@@ -87,7 +87,7 @@
  * of the plugin.  If major and minor revisions are desired, the major
  * version number may be multiplied by a suitable magnitude constant such
  * as 100 or 1000.  Various SLURM versions will likely require a certain
- * minimum versions for their plugins as the job completion logging API 
+ * minimum version for their plugins as the job completion logging API
  * matures.
  */
 const char plugin_name[]      = "Process tracking via linux cgroup";
@@ -187,7 +187,7 @@ int _slurm_cgroup_create(slurmd_job_t *job,uint32_t id,uid_t uid,gid_t gid)
 		}
 	}
 
-	/* create user cgroup (it could already exists) */
+	/* create user cgroup (it could already exist) */
 	opts.uid=getuid();
 	opts.gid=getgid();
 	opts.create_only=0;
@@ -206,7 +206,7 @@ int _slurm_cgroup_create(slurmd_job_t *job,uint32_t id,uid_t uid,gid_t gid)
 	 * differently, so skip this stage for now
 	 */
 
-	/* create job cgroup (it could already exists) */
+	/* create job cgroup (it could already exist) */
 	opts.uid=getuid();
 	opts.gid=getgid();
 	opts.create_only=0;

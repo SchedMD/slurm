@@ -62,9 +62,9 @@
 #endif
 typedef struct slurm_switch_context slurm_switch_context_t;
 
-/*****************************************\
- * GLOBAL SWITCH STATE MANGEMENT FUNCIONS *
-\*****************************************/
+/*******************************************\
+ * GLOBAL SWITCH STATE MANAGEMENT FUNCIONS *
+\*******************************************/
 
 /* initialize the switch plugin */
 extern int  switch_init   (void);

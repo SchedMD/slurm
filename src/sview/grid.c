@@ -563,7 +563,7 @@ static int _add_button_to_list(node_info_t *node_ptr,
 	if(cluster_dims < 3) {
 		/* On linear systems we just up the
 		   x_coord until we hit the side of
-		   the table and then incrememnt the
+		   the table and then increment the
 		   coord_y.  We add space inbetween
 		   each 10th row.
 		*/

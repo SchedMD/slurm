@@ -5320,7 +5320,7 @@ void reset_job_bitmaps(void)
 	 * (i.e. it needs to be in this second loop) */
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		if (select_g_select_nodeinfo_set(job_ptr) != SLURM_SUCCESS) {
-			error("select_g_update_nodeinfo(%u): %m",
+			error("select_g_select_nodeinfo_set(%u): %m",
 			      job_ptr->job_id);
 		}
 	}

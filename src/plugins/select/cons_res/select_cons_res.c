@@ -169,7 +169,7 @@ List slurm_find_preemptable_jobs(struct job_record *job_ptr);
  * of the plugin.  If major and minor revisions are desired, the major
  * version number may be multiplied by a suitable magnitude constant such
  * as 100 or 1000.  Various SLURM versions will likely require a certain
- * minimum versions for their plugins as the node selection API matures.
+ * minimum version for their plugins as the node selection API matures.
  */
 const char plugin_name[] = "Consumable Resources (CR) Node Selection plugin";
 const char plugin_type[] = "select/cons_res";
@@ -1666,14 +1666,14 @@ extern int select_p_job_init(List job_list)
 /* This is Part 1 of a 4-part procedure which can be found in
  * src/slurmctld/read_config.c. The whole story goes like this:
  *
- * Step 1: select_g_node_init       : initializes the global node arrays
- * Step 2: select_g_state_restore   : NO-OP - nothing to restore
- * Step 3: select_g_job_init        : NO-OP - nothing to initialize
- * Step 4: select_g_update_nodeinfo : called from reset_job_bitmaps() with
- *                                    each valid recovered job_ptr AND from
- *                                    select_nodes(), this procedure adds job
- *                                    data to the 'select_part_record' global
- *                                    array
+ * Step 1: select_g_node_init          : initializes the global node arrays
+ * Step 2: select_g_state_restore      : NO-OP - nothing to restore
+ * Step 3: select_g_job_init           : NO-OP - nothing to initialize
+ * Step 4: select_g_select_nodeinfo_set: called from reset_job_bitmaps() with
+ *                                       each valid recovered job_ptr AND from
+ *                                       select_nodes(), this procedure adds
+ *                                       job data to the 'select_part_record'
+ *                                       global array
  */
 extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 {
