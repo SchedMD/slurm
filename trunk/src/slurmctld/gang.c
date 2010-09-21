@@ -447,7 +447,7 @@ static void _fill_sockets(bitstr_t *job_nodemap, struct gs_part *p_ptr)
 	size      = bit_size(job_nodemap);
 	first_bit = bit_ffs(job_nodemap);
 	last_bit  = bit_fls(job_nodemap);
-	if (first_bit < 0 || last_bit < 0)
+	if ((first_bit < 0) || (last_bit < 0))
 		fatal("gang: _afill_sockets: nodeless job?");
 
 	for (c = 0, n = 0; n < first_bit; n++) {
