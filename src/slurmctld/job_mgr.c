@@ -7811,16 +7811,15 @@ static int _resume_job_nodes(struct job_record *job_ptr, bool clear_prio)
 			continue;
 
 		node_ptr->run_job_cnt++;
-		if (job_ptr->details
-		&&  (job_ptr->details->shared == 0)) {
+		if (job_ptr->details &&
+		    (job_ptr->details->shared == 0)) {
 			node_ptr->no_share_job_cnt++;
 			if (node_ptr->no_share_job_cnt)
 				bit_clear(share_node_bitmap, i);
 		}
 		bit_clear(idle_node_bitmap, i);
 		node_flags = node_ptr->node_state & NODE_STATE_FLAGS;
-		node_ptr->node_state = NODE_STATE_ALLOCATED |
-				node_flags;
+		node_ptr->node_state = NODE_STATE_ALLOCATED | node_flags;
 	}
 	last_job_update = last_node_update = time(NULL);
 	return rc;
