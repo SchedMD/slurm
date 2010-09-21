@@ -581,7 +581,7 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 		desc->num_tasks = opt.ntasks;
 	if (opt.cpus_set)
 		desc->cpus_per_task = opt.cpus_per_task;
-	if (opt.ntasks_per_node > -1)
+	if (opt.ntasks_per_node)
 		desc->ntasks_per_node = opt.ntasks_per_node;
 	if (opt.ntasks_per_socket > -1)
 		desc->ntasks_per_socket = opt.ntasks_per_socket;

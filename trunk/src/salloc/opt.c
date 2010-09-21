@@ -289,7 +289,7 @@ static void _opt_default()
 	opt.sockets_per_node = NO_VAL; /* requested sockets */
 	opt.cores_per_socket = NO_VAL; /* requested cores */
 	opt.threads_per_core = NO_VAL; /* requested threads */
-	opt.ntasks_per_node      = NO_VAL; /* ntask max limits */
+	opt.ntasks_per_node      = 0;  /* ntask max limits */
 	opt.ntasks_per_socket    = NO_VAL;
 	opt.ntasks_per_core      = NO_VAL;
 	opt.cpu_bind_type = 0;
@@ -1226,7 +1226,7 @@ static bool _opt_verify(void)
 		verified = false;
 	}
 
-	if ((opt.ntasks_per_node > -1) && (!opt.ntasks_set)) {
+	if ((opt.ntasks_per_node > 0) && (!opt.ntasks_set)) {
 		opt.ntasks = opt.min_nodes * opt.ntasks_per_node;
 		opt.ntasks_set = 1;
 	}
@@ -1482,7 +1482,7 @@ static bool _opt_verify(void)
 			setenvf(NULL, "SLURM_MEM_BIND", "%s", tmp);
 		}
 	}
-	if ((opt.ntasks_per_node != NO_VAL) &&
+	if ((opt.ntasks_per_node > 0) &&
 	    (getenv("SLURM_NTASKS_PER_NODE") == NULL)) {
 		setenvf(NULL, "SLURM_NTASKS_PER_NODE", "%d",
 			opt.ntasks_per_node);
