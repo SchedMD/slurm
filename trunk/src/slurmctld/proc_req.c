@@ -1962,10 +1962,8 @@ static void _slurm_rpc_reconfigure_controller(slurm_msg_t * msg)
 			msg_to_slurmd(REQUEST_RECONFIGURE);
 		}
 		in_progress = false;
-		select_g_reconfigure();		/* notify select
-						 * plugin too.  This
-						 * needs to happen
-						 * inside the lock. */
+		select_g_reconfigure();		/* notify select plugin */
+		slurm_sched_partition_change();	/* notify sched plugin */
 		unlock_slurmctld(config_write_lock);
 		assoc_mgr_set_missing_uids();
 		start_power_mgr(&slurmctld_config.thread_id_power);
@@ -1982,7 +1980,6 @@ static void _slurm_rpc_reconfigure_controller(slurm_msg_t * msg)
 		info("_slurm_rpc_reconfigure_controller: completed %s",
 		     TIME_STR);
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
-		slurm_sched_partition_change();	/* notify sched plugin */
 		priority_g_reconfig();          /* notify priority plugin too */
 		schedule(0);			/* has its own locks */
 		save_all_state();
@@ -2552,9 +2549,10 @@ static void _slurm_rpc_update_partition(slurm_msg_t * msg)
 	int error_code = SLURM_SUCCESS;
 	DEF_TIMERS;
 	update_part_msg_t *part_desc_ptr = (update_part_msg_t *) msg->data;
-	/* Locks: Read config, read node, write partition */
+	/* Locks: Read config, write job, read node, write partition
+	 * NOTE: job write lock due to gang scheduler support */
 	slurmctld_lock_t part_write_lock = {
-		READ_LOCK, NO_LOCK, READ_LOCK, WRITE_LOCK };
+		READ_LOCK, WRITE_LOCK, READ_LOCK, WRITE_LOCK };
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
 
 	START_TIMER;

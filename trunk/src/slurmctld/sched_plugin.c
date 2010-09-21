@@ -386,12 +386,9 @@ slurm_sched_partition_change( void )
 	if ( slurm_sched_init() < 0 )
 		return;
 
-#if 0
-	/* Must have job write lock and node read lock set here */
 	if ( (slurm_get_preempt_mode() & PREEMPT_MODE_GANG) &&
-	     (gs_job_scan() != SLURM_SUCCESS))
-		error( "gang scheduler could not rescan jobs" );
-#endif
+	     (gs_reconfig() != SLURM_SUCCESS))
+		error( "cannot reconfigure gang scheduler" );
 
 	(*(g_sched_context->ops.partition_change))();
 }

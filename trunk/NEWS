@@ -12,6 +12,8 @@ documents those changes that are of interest to users and admins.
     get resumed properly after a slurmctld hot-start.
  -- Fix bug in select/linear handling of gang scheduled jobs that could result
     in run_job_cnt underflow error message.
+ -- Fix bug in gang scheduling logic to properly support partitions added
+    using the scontrol command.
 
 * Changes in SLURM 2.2.0.pre11
 ==============================
