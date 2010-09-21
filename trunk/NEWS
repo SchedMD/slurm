@@ -8,6 +8,8 @@ documents those changes that are of interest to users and admins.
  -- Fix bug in select/cons_res logic when job allocation includes --overcommit
     and --ntasks-per-node options and the node has fewer CPUs than the count
     specified by --ntasks-per-node.
+ -- Fix bug in gang scheduling and job preemption logic so that preempted jobs
+    get resumed properly after a slurmctld hot-start.
 
 * Changes in SLURM 2.2.0.pre11
 ==============================
