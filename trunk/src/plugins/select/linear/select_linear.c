@@ -1434,7 +1434,7 @@ static int _rm_job_from_nodes(struct cr_record *cr_ptr,
 				if ((part_cr_ptr->tot_job_cnt == 0) &&
 				    (part_cr_ptr->run_job_cnt)) {
 					part_cr_ptr->run_job_cnt = 0;
-					error("%s: run_job_count out of sync "
+					error("%s: run_job_cnt out of sync "
 					      "for node %s",
 					      pre_err, node_ptr->name);
 				}
@@ -1580,7 +1580,7 @@ static int _rm_job_from_one_node(struct job_record *job_ptr,
 		if ((part_cr_ptr->tot_job_cnt == 0) &&
 		    (part_cr_ptr->run_job_cnt)) {
 			part_cr_ptr->run_job_cnt = 0;
-			error("%s: run_job_count out of sync for node %s",
+			error("%s: run_job_cnt out of sync for node %s",
 			      pre_err, node_ptr->name);
 		}
 		break;
@@ -1943,8 +1943,12 @@ static void _init_node_cr(void)
 					part_cr_ptr = part_cr_ptr->next;
 					continue;
 				}
-				if (IS_JOB_RUNNING(job_ptr))
+				if (IS_JOB_RUNNING(job_ptr) ||
+				    (IS_JOB_SUSPENDED(job_ptr) &&
+				     (job_ptr->priority != 0))) {
+					/* Running or being gang scheduled */
 					part_cr_ptr->run_job_cnt++;
+				}
 				part_cr_ptr->tot_job_cnt++;
 				break;
 			}
