@@ -10,6 +10,8 @@ documents those changes that are of interest to users and admins.
     specified by --ntasks-per-node.
  -- Fix bug in gang scheduling and job preemption logic so that preempted jobs
     get resumed properly after a slurmctld hot-start.
+ -- Fix bug in select/linear handling of gang scheduled jobs that could result
+    in run_job_cnt underflow error message.
 
 * Changes in SLURM 2.2.0.pre11
 ==============================
