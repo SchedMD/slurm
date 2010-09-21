@@ -299,7 +299,7 @@ static void _opt_default()
 	opt.sockets_per_node = NO_VAL; /* requested sockets */
 	opt.cores_per_socket = NO_VAL; /* requested cores */
 	opt.threads_per_core = NO_VAL; /* requested threads */
-	opt.ntasks_per_node      = 0;      /* ntask max limits */
+	opt.ntasks_per_node      = 0;  /* ntask max limits */
 	opt.ntasks_per_socket    = NO_VAL;
 	opt.ntasks_per_core      = NO_VAL;
 	opt.cpu_bind_type = 0;
