@@ -2,7 +2,7 @@
  *  defaults.c - put default configuration information here
  *****************************************************************************
  *  Copyright (C) 2004-2007 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>, et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -626,10 +626,10 @@ extern int load_defaults()
 	s_p_get_uint32(&default_sview_config.fi_popup_height,
 		       "FullInfoPopupHeight", hashtbl);
 	if (s_p_get_string(&default_sview_config.excluded_partitions,
-			"ExcludedPartitions", hashtbl) == 0)
-		default_sview_config.excluded_partitions = xstrdup("-");
-	_excluded_partitions =
-		xstrdup(default_sview_config.excluded_partitions);
+			   "ExcludedPartitions", hashtbl) == 0) {
+		xfree(default_sview_config.excluded_partitions);
+	}
+
 	if (default_sview_config.main_width == 0) {
 		default_sview_config.main_width=1000;
 		default_sview_config.main_height=450;
@@ -710,6 +710,11 @@ extern int load_defaults()
 	 */
 
 end_it:
+	if (default_sview_config.excluded_partitions == NULL)
+		default_sview_config.excluded_partitions = xstrdup("-");
+	_excluded_partitions = xstrdup(default_sview_config.
+				       excluded_partitions);
+
 	/* copy it all into the working struct */
 	memcpy(&working_sview_config,
 	       &default_sview_config, sizeof(sview_config_t));

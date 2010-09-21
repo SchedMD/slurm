@@ -14,6 +14,8 @@ documents those changes that are of interest to users and admins.
     in run_job_cnt underflow error message.
  -- Fix bug in gang scheduling logic to properly support partitions added
     using the scontrol command.
+ -- Fix a segmentation fault in sview where the 'excluded_partitions' field
+    was set to NULL, caused by the absence of ~/.slurm/sviewrc.
 
 * Changes in SLURM 2.2.0.pre11
 ==============================
