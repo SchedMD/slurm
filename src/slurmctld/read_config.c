@@ -781,8 +781,10 @@ int read_slurm_conf(int recover, bool reconfig)
 		load_all_resv_state(0);
 	} else {
 		load_all_resv_state(recover);
-		if (recover >= 1)
+		if (recover >= 1) {
 			(void) trigger_state_restore();
+			(void) slurm_sched_reconfig();
+		}
 	}
 
 	/* sort config_list by weight for scheduling */
