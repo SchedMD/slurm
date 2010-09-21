@@ -1279,10 +1279,6 @@ extern int update_part (update_part_msg_t * part_desc, bool create_flag)
 		slurm_sched_partition_change();	/* notify sched plugin */
 		select_g_reconfigure();		/* notify select plugin too */
 		reset_job_priority();		/* free jobs */
-
-		/* I am not sure why this was ever there (da) */
-/* 		if (select_g_block_init(part_list) != SLURM_SUCCESS ) */
-/* 			error("failed to update node selection plugin state"); */
 	}
 
 	return error_code;
