@@ -395,7 +395,7 @@ static int _build_all_nodeline_info(void)
 	rc = build_all_nodeline_info(false);
 
 	/* Now perform operations on the node table as needed by slurmctld */
-#if (SYSTEM_DIMENSIONS > 1)
+#ifdef HAVE_BG
 {
 	slurm_ctl_conf_t *conf = slurm_conf_lock();
 	char *node_000 = NULL;
@@ -409,16 +409,17 @@ static int _build_all_nodeline_info(void)
 #if (SYSTEM_DIMENSIONS == 4)
 	xstrcat(node_000, "0000");
 #endif
+#if (SYSTEM_DIMENSIONS == 5)
+	xstrcat(node_000, "00000");
+#endif
 	node_rec = find_node_record(node_000);
 	if (node_rec == NULL)
-		fatal("No node %s configured", node_000);
+		info("WARNING: No node %s configured", node_000);
 	xfree(node_000);
 }
-#endif	/* SYSTEM_DIMENSIONS > 1 */
-
-#ifndef HAVE_BG
+#else	/* HAVE_BG */
 	slurm_topo_build_config();
-#endif	/* ! HAVE_BG */
+#endif	/* HAVE_BG */
 
 	return rc;
 }
