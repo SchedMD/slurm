@@ -185,9 +185,9 @@ extern bool preemption_enabled(void)
 	return (slurm_get_preempt_mode() != PREEMPT_MODE_OFF);
 }
 
-/*
- * Return true if the preemptor can preempt the preemptee, otherwise false
- */
+/***************************************************************************/
+/* Return true if the preemptor can preempt the preemptee, otherwise false */
+/***************************************************************************/
 extern bool job_preempt_check(job_queue_rec_t *preemptor,
 			      job_queue_rec_t *preemptee)
 {
