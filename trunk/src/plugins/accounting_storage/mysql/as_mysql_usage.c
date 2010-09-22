@@ -807,7 +807,10 @@ extern int as_mysql_get_usage(mysql_conn_t *mysql_conn, uid_t uid,
 			     mysql_conn, uid, SLURMDB_ADMIN_OPERATOR))) {
 			ListIterator itr = NULL;
 			slurmdb_coord_rec_t *coord = NULL;
-			is_user_any_coord(mysql_conn, &user);
+
+			if (!is_user_any_coord(mysql_conn, &user))
+				debug4("This user is not a coordinator.");
+				goto bad_user;
 
 			if(username && !strcmp(slurmdb_assoc->user, user.name))
 				goto is_user;
