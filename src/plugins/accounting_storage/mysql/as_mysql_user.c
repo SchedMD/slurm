@@ -998,8 +998,14 @@ extern List as_mysql_get_users(mysql_conn_t *mysql_conn, uid_t uid,
 	private_data = slurm_get_private_data();
 	if (private_data & PRIVATE_DATA_USERS) {
 		if(!(is_admin = is_user_min_admin_level(
-			     mysql_conn, uid, SLURMDB_ADMIN_OPERATOR)))
-			is_user_any_coord(mysql_conn, &user);
+			     mysql_conn, uid, SLURMDB_ADMIN_OPERATOR))) {
+			if (!is_user_any_coord(mysql_conn, &user)) {
+				error("Only admins/coordinators can "
+				      "access user data");
+				errno = ESLURM_ACCESS_DENIED;
+				return NULL;
+			}
+		}
 	}
 
 	if(!user_cond) {

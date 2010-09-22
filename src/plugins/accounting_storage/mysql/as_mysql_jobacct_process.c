@@ -1269,8 +1269,14 @@ extern List as_mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn,
 	private_data = slurm_get_private_data();
 	if (private_data & PRIVATE_DATA_JOBS) {
 		if(!(is_admin = is_user_min_admin_level(
-			     mysql_conn, uid, SLURMDB_ADMIN_OPERATOR)))
-			is_user_any_coord(mysql_conn, &user);
+			     mysql_conn, uid, SLURMDB_ADMIN_OPERATOR))) {
+			if (!is_user_any_coord(mysql_conn, &user)) {
+				error("Only admins/coordinators can "
+				      "access job data");
+				errno = ESLURM_ACCESS_DENIED;
+				return NULL;
+			}
+		}
 	}
 
 
