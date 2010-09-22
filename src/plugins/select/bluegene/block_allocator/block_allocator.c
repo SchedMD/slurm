@@ -1106,7 +1106,9 @@ setup_done:
 
 
 #ifndef HAVE_BG_FILES
-	_emulate_ext_wiring(ba_system_ptr->grid);
+	if ((cluster_flags & CLUSTER_FLAG_BGL) ||
+	    (cluster_flags & CLUSTER_FLAG_BGP))
+		_emulate_ext_wiring(ba_system_ptr->grid);
 #endif
 
 	path = list_create(_delete_path_list);
