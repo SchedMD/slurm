@@ -2960,7 +2960,7 @@ extern List as_mysql_get_assocs(mysql_conn_t *mysql_conn, uid_t uid,
 			   _cluster_get_assocs.
 			*/
 			assoc_mgr_fill_in_user(
-				mysql_conn->db_conn, user, 1, NULL);
+				mysql_conn->db_conn, &user, 1, NULL);
 		}
 	}
 
