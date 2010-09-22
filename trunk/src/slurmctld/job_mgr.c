@@ -411,7 +411,7 @@ int dump_all_job_state(void)
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		xassert (job_ptr->magic == JOB_MAGIC);
 		if ((min_age > 0) && (job_ptr->end_time < min_age) &&
-		    IS_JOB_FINISHED(job_ptr))
+		    (! IS_JOB_COMPLETING(job_ptr)) && IS_JOB_FINISHED(job_ptr))
 			continue;	/* job ready for purging, don't dump */
 
 		_dump_job_state(job_ptr, buffer);
