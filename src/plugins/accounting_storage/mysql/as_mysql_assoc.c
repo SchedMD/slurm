@@ -2955,12 +2955,12 @@ extern List as_mysql_get_assocs(mysql_conn_t *mysql_conn, uid_t uid,
 	if (private_data & PRIVATE_DATA_USERS) {
 		if(!(is_admin = is_user_min_admin_level(
 			     mysql_conn, uid, SLURMDB_ADMIN_OPERATOR))) {
-			if (!is_user_any_coord(mysql_conn, &user)) {
-				error("Only admins/coordinators can "
-				      "access association data");
-				errno = ESLURM_ACCESS_DENIED;
-				return NULL;
-			}
+			/* Fill in the user with any accounts they may
+			   be coordinator of, which is checked inside
+			   _cluster_get_assocs.
+			*/
+			assoc_mgr_fill_in_user(
+				mysql_conn->db_conn, user, 1, NULL);
 		}
 	}
 
