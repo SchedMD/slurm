@@ -40,9 +40,19 @@
 
 #include "src/smap/smap.h"
 
+static int _coord(char coord)
+{
+	if ((coord >= '0') && (coord <= '9'))
+		return (coord - '0');
+	if ((coord >= 'A') && (coord <= 'Z'))
+		return (coord - 'A');
+	return -1;
+}
+
 extern int set_grid_inx(int start, int end, int count)
 {
 	int x, y, z;
+
 	for (y = DIM_SIZE[Y] - 1; y >= 0; y--) {
 		for (z = 0; z < DIM_SIZE[Z]; z++) {
 			for (x = 0; x < DIM_SIZE[X]; x++) {
@@ -64,6 +74,28 @@ extern int set_grid_inx(int start, int end, int count)
 			}
 		}
 	}
+	return 1;
+}
+
+extern int set_grid_inx2(char *node_names, int count)
+{
+	hostlist_t hl;
+	hostlist_iterator_t hl_iter;
+	char *host;
+	int i, x, y, z;
+
+	hl = hostlist_create(node_names);
+	hl_iter = hostlist_iterator_create(hl);
+	while ((host = hostlist_next(hl_iter))) {
+		i = strlen(host);
+		x = _coord(host[i-3]);
+		y = _coord(host[i-2]);
+		z = _coord(host[i-1]);
+		ba_system_ptr->grid[x][y][z].letter = letters[count%62];
+		ba_system_ptr->grid[x][y][z].color  = colors[count%6];
+		free(host);
+	}
+	hostlist_iterator_destroy(hl_iter);
 	return 1;
 }
 

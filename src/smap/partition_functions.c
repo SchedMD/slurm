@@ -3,7 +3,7 @@
  *  mode of smap.
  *****************************************************************************
  *  Copyright (C) 2004-2007 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *
@@ -78,7 +78,7 @@ static int _make_nodelist(char *nodes, List nodelist);
 
 extern void get_slurm_part()
 {
-	int error_code, i, j, recs, count = 0;
+	int error_code, i, recs, count = 0;
 	static partition_info_msg_t *part_info_ptr = NULL;
 	static partition_info_msg_t *new_part_ptr = NULL;
 	partition_info_t part;
@@ -135,7 +135,6 @@ extern void get_slurm_part()
 	if(params.hl)
 		nodes_req = get_requested_node_bitmap();
 	for (i = 0; i < recs; i++) {
-		j = 0;
 		part = new_part_ptr->partition_array[i];
 
 		if(nodes_req) {
@@ -147,11 +146,18 @@ extern void get_slurm_part()
 			if(!overlap)
 				continue;
 		}
-		while (part.node_inx[j] >= 0) {
-			set_grid_inx(part.node_inx[j],
-				     part.node_inx[j + 1], count);
-			j += 2;
+		if (((params.cluster_flags & CLUSTER_FLAG_BG) == 0) &&
+		    (params.cluster_dims == 3)) {
+			set_grid_inx2(part.nodes, count);
+		} else {
+			int j = 0;
+			while (part.node_inx[j] >= 0) {
+				set_grid_inx(part.node_inx[j],
+					     part.node_inx[j + 1], count);
+				j += 2;
+			}
 		}
+
 		if(!params.commandline) {
 			if(i>=text_line_cnt) {
 				part.flags = (int) letters[count%62];
