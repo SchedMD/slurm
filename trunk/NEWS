@@ -18,6 +18,7 @@ documents those changes that are of interest to users and admins.
     was set to NULL, caused by the absence of ~/.slurm/sviewrc.
  -- Rewrote some calls to is_user_any_coord() in src/plugins/accounting_storage
     modules to make use of is_user_any_coord()'s return value.
+ -- Add configure option of --with=dimensions=#.
 
 * Changes in SLURM 2.2.0.pre11
 ==============================
