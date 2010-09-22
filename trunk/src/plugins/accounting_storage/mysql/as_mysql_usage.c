@@ -715,8 +715,8 @@ extern int get_usage_for_list(mysql_conn_t *mysql_conn,
 }
 
 extern int as_mysql_get_usage(mysql_conn_t *mysql_conn, uid_t uid,
-			   void *in, slurmdbd_msg_type_t type,
-			   time_t start, time_t end)
+			      void *in, slurmdbd_msg_type_t type,
+			      time_t start, time_t end)
 {
 	int rc = SLURM_SUCCESS;
 	int i=0, is_admin=1;
@@ -808,20 +808,11 @@ extern int as_mysql_get_usage(mysql_conn_t *mysql_conn, uid_t uid,
 			ListIterator itr = NULL;
 			slurmdb_coord_rec_t *coord = NULL;
 
-			if (!is_user_any_coord(mysql_conn, &user))
-				debug4("This user is not a coordinator.");
-				goto bad_user;
-
 			if(username && !strcmp(slurmdb_assoc->user, user.name))
 				goto is_user;
 
 			if(type != DBD_GET_ASSOC_USAGE)
 				goto bad_user;
-
-			if(!user.coord_accts) {
-				debug4("This user isn't a coord.");
-				goto bad_user;
-			}
 
 			if(!slurmdb_assoc->acct) {
 				debug("No account name given "
@@ -829,9 +820,18 @@ extern int as_mysql_get_usage(mysql_conn_t *mysql_conn, uid_t uid,
 				goto bad_user;
 			}
 
+			if (!is_user_any_coord(mysql_conn, &user)) {
+				debug4("This user is not a coordinator.");
+				goto bad_user;
+			}
+
+			/* Existance of user.coord_accts is checked in
+			   is_user_any_coord.
+			*/
 			itr = list_iterator_create(user.coord_accts);
 			while((coord = list_next(itr)))
-				if(!strcasecmp(coord->name, slurmdb_assoc->acct))
+				if(!strcasecmp(coord->name,
+					       slurmdb_assoc->acct))
 					break;
 			list_iterator_destroy(itr);
 
