@@ -353,9 +353,13 @@ static bool _change_button_color(grid_button_t *grid_button,
 
 	if (node_base_state == NODE_STATE_DOWN) {
 		_put_button_as_down(grid_button, NODE_STATE_DOWN);
-	} else if ((state & NODE_STATE_DRAIN)
-		   || (node_base_state == NODE_STATE_ERROR)) {
+	} else if ((state & NODE_STATE_DRAIN) ||
+		   (node_base_state == NODE_STATE_ERROR)) {
 		_put_button_as_down(grid_button, NODE_STATE_DRAIN);
+	} else if (grid_button->node_name &&
+		   !strcmp(grid_button->node_name, "EMPTY")) {
+		grid_button->color_inx = MAKE_BLACK;
+//		_put_button_as_up(grid_button);
 	} else if (grid_button->color_inx != color_inx) {
 		_put_button_as_up(grid_button);
 		grid_button->color = new_col;
@@ -511,6 +515,7 @@ static void _build_empty_node(int x, int y, int z,
 	grid_button->table_x = (*button_processor->coord_x);
 	grid_button->table_y = (*button_processor->coord_y);
 	grid_button->button = gtk_button_new();
+	grid_button->node_name = xstrdup("EMPTY");	/* Needed by popups */
 
 	gtk_widget_set_state(grid_button->button, GTK_STATE_ACTIVE);
 	list_append(button_processor->button_list, grid_button);
