@@ -2,7 +2,7 @@
  *  grid.c - put display grid info here
  *****************************************************************************
  *  Copyright (C) 2004-2007 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>, et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -356,7 +356,7 @@ static bool _change_button_color(grid_button_t *grid_button,
 	} else if ((state & NODE_STATE_DRAIN)
 		   || (node_base_state == NODE_STATE_ERROR)) {
 		_put_button_as_down(grid_button, NODE_STATE_DRAIN);
-	} else if(grid_button->color_inx != color_inx) {
+	} else if (grid_button->color_inx != color_inx) {
 		_put_button_as_up(grid_button);
 		grid_button->color = new_col;
 		grid_button->color_inx = color_inx;
@@ -489,17 +489,54 @@ static int _block_in_node(int *bp_inx, int inx)
 	return 0;
 }
 
+/*
+ * This is used to add an entry to the grid for a node which is not configured
+ * in the system (e.g. there is a gap in the 3-D torus for a service or login
+ * node.
+ */
+static void _build_empty_node(int x, int y, int z,
+			      button_processor_t *button_processor)
+{
+	grid_button_t *grid_button = button_processor->grid_button;
+	int y_offset;
+
+	(*button_processor->coord_x) = (x + (DIM_SIZE[Z] - 1)) - z;
+	y_offset = button_processor->default_y_offset - (DIM_SIZE[Z] * y);
+	(*button_processor->coord_y) = (y_offset - y) + z;
+	grid_button = xmalloc(sizeof(grid_button_t));
+	grid_button->color_inx = MAKE_BLACK;
+	grid_button->inx = (*button_processor->inx);
+	grid_button->state = NODE_STATE_FUTURE;
+	grid_button->table = button_processor->table;
+	grid_button->table_x = (*button_processor->coord_x);
+	grid_button->table_y = (*button_processor->coord_y);
+	grid_button->button = gtk_button_new();
+
+	gtk_widget_set_state(grid_button->button, GTK_STATE_ACTIVE);
+	list_append(button_processor->button_list, grid_button);
+
+	gtk_table_attach(button_processor->table, grid_button->button,
+			 (*button_processor->coord_x),
+			 ((*button_processor->coord_x) + 1),
+			 (*button_processor->coord_y),
+			 ((*button_processor->coord_y) + 1),
+			 GTK_SHRINK, GTK_SHRINK, 1, 1);
+}
+
+/* Add a button for a given node. If node_ptr == NULL then fill in any gaps
+ * in the grid just for a clean look. Always call with node_ptr == NULL for
+ * the last call in the sequence. */
 static int _add_button_to_list(node_info_t *node_ptr,
 			       button_processor_t *button_processor)
 {
 	grid_button_t *grid_button = button_processor->grid_button;
 
-	if(cluster_dims == 4) {
+	if (cluster_dims == 4) {
 		/* FIXME: */
 		return SLURM_ERROR;
-	} else if(cluster_dims == 3) {
-		int i = strlen(node_ptr->name);
-		int x=0, y=0, z=0, y_offset=0;
+	} else if (cluster_dims == 3) {
+		static bool *node_exists = NULL;
+		int i, x=0, y=0, z=0, y_offset=0;
 		/* On 3D system we need to translate a
 		   3D space to a 2D space and make it
 		   appear 3D.  So we get the coords of
@@ -509,19 +546,47 @@ static int _add_button_to_list(node_info_t *node_ptr,
 		   for linear systems since they can
 		   be laid out in any fashion
 		*/
-		if (i < 4) {
-			g_error("bad node name %s\n", node_ptr->name);
-			return SLURM_ERROR;
-		} else {
-			x = _coord(node_ptr->name[i-3]);
-			y = _coord(node_ptr->name[i-2]);
-			z = _coord(node_ptr->name[i-1]);
+
+		if (node_exists == NULL) {
+			node_exists = xmalloc(sizeof(bool) * DIM_SIZE[X] *
+					      DIM_SIZE[Y] * DIM_SIZE[Z]);
 		}
-		(*button_processor->coord_x) = (x + (DIM_SIZE[Z] - 1)) - z;
-		y_offset = button_processor->default_y_offset
-			- (DIM_SIZE[Z] * y);
-		(*button_processor->coord_y) = (y_offset - y) + z;
+		if (node_ptr) {
+			i = strlen(node_ptr->name);
+			if (i < 4) {
+				g_error("bad node name %s\n", node_ptr->name);
+				return SLURM_ERROR;
+			} else {
+				x = _coord(node_ptr->name[i-3]);
+				y = _coord(node_ptr->name[i-2]);
+				z = _coord(node_ptr->name[i-1]);
+				i = (x * DIM_SIZE[Y] + y) * DIM_SIZE[Z] + z;
+				node_exists[i] = true;
+			}
+			(*button_processor->coord_x) = (x + (DIM_SIZE[Z] - 1))
+							- z;
+			y_offset = button_processor->default_y_offset
+				- (DIM_SIZE[Z] * y);
+			(*button_processor->coord_y) = (y_offset - y) + z;
+		} else {
+			for (x = 0; x < DIM_SIZE[X]; x++) {
+				for (y = 0; y < DIM_SIZE[Y]; y++) {
+					for (z = 0; z < DIM_SIZE[Z]; z++) {
+						i = (x * DIM_SIZE[Y] + y) *
+						    DIM_SIZE[Z] + z;
+						if (node_exists[i])
+							continue;
+						_build_empty_node(x, y, z,
+							button_processor);
+					}
+				}
+			}
+			xfree(node_exists);
+			return SLURM_SUCCESS;
+		}
 	}
+	if (node_ptr == NULL)
+		return SLURM_SUCCESS;
 
 	if(!grid_button) {
 		grid_button = xmalloc(sizeof(grid_button_t));
@@ -619,6 +684,7 @@ static int _grid_table_by_switch(button_processor_t *button_processor)
 			   != SLURM_SUCCESS)
 				break;
 		}
+		rc = _add_button_to_list(NULL, button_processor);
 	}
 	/* This is needed to get the correct width of the grid
 	   window.  If it is not given then we get a really narrow
@@ -657,6 +723,7 @@ static int _grid_table_by_list(button_processor_t *button_processor,
 		inx++;
 	}
 	list_iterator_destroy(itr);
+	rc = _add_button_to_list(NULL, button_processor);
 
 	/* This is needed to get the correct width of the grid
 	   window.  If it is not given then we get a really narrow
@@ -1275,6 +1342,7 @@ extern int update_grid_table(GtkTable *table, List button_list, List node_list)
 		}
 		inx++;
 	}
+	rc = _add_button_to_list(NULL, &button_processor);
 
 	/* This is needed to get the correct width of the grid
 	   window.  If it is not given then we get a really narrow
