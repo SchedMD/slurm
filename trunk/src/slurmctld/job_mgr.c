@@ -4119,7 +4119,7 @@ void job_time_limit(void)
 	ListIterator job_iterator;
 	struct job_record *job_ptr;
 	time_t now = time(NULL);
-	time_t old = now - slurmctld_conf.inactive_limit;
+	time_t old = now - (slurmctld_conf.inactive_limit * 4 / 3) + slurmctld_conf.msg_timeout + 1;
 	time_t over_run;
 	int resv_status = 0;
 	uint64_t job_cpu_usage_mins = 0;

@@ -19,6 +19,8 @@ documents those changes that are of interest to users and admins.
  -- Rewrote some calls to is_user_any_coord() in src/plugins/accounting_storage
     modules to make use of is_user_any_coord()'s return value.
  -- Add configure option of --with=dimensions=#.
+ -- Modify srun ping logic so that srun would only be considered not responsive
+    if three ping messages were not responded to. Patch from Hongjia Cao (NUDT).
 
 * Changes in SLURM 2.2.0.pre11
 ==============================

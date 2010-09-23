@@ -198,7 +198,8 @@ extern void srun_ping (void)
 	struct job_record *job_ptr;
 	slurm_addr_t * addr;
 	time_t now = time(NULL);
-	time_t old = now - (slurmctld_conf.inactive_limit / 2);
+	time_t old = now - (slurmctld_conf.inactive_limit / 3) +
+			   slurmctld_conf.msg_timeout + 1;
 	srun_ping_msg_t *msg_arg;
 
 	if (slurmctld_conf.inactive_limit == 0)
