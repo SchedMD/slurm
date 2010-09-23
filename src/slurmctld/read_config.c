@@ -924,6 +924,7 @@ static int _restore_node_state(int recover,
 		if (node_ptr->reason == NULL) {
 			/* Recover only if not explicitly set in slurm.conf */
 			node_ptr->reason = old_node_ptr->reason;
+			node_ptr->reason_time = old_node_ptr->reason_time;
 			old_node_ptr->reason = NULL;
 		}
 		if (recover == 2) {
