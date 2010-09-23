@@ -82,6 +82,12 @@ these settings.)
 \fBSBCAST_TIMEOUT\fR
 \fB\-t\fB \fIseconds\fR, fB\-\-timeout\fR=\fIseconds\fR
 
+.SH "AUTHORIZATION"
+
+When using the SLURM db, users who have AdminLevel's defined (Operator
+or Admin) and users who are account coordinators are given the
+authority to invoke sbcast on other user's jobs.
+
 .SH "EXAMPLE"
 
 Using a batch script, transmit local file \fBmy.prog\fR to

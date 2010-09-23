@@ -182,6 +182,12 @@ bypass the SIGTERM.
 Cancelling a job step will not result in a job being terminated.
 The job must be cancelled to release a resource allocation.
 
+.SH "AUTHORIZATION"
+
+When using the SLURM db, users who have AdminLevel's defined (Operator
+or Admin) and users who are account coordinators are given the
+authority to invoke scancel on other user's jobs.
+
 .SH "EXAMPLES"
 .TP
 Send SIGTERM to steps 1 and 3 of job 1234:

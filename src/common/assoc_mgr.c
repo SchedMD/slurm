@@ -1759,7 +1759,7 @@ extern slurmdb_admin_level_t assoc_mgr_get_admin_level(void *db_conn,
 	return SLURMDB_ADMIN_NOTSET;
 }
 
-extern int assoc_mgr_is_user_acct_coord(void *db_conn,
+extern bool assoc_mgr_is_user_acct_coord(void *db_conn,
 					uint32_t uid,
 					char *acct_name)
 {
@@ -1771,10 +1771,10 @@ extern int assoc_mgr_is_user_acct_coord(void *db_conn,
 
 	if(!assoc_mgr_user_list)
 		if(_get_assoc_mgr_user_list(db_conn, 0) == SLURM_ERROR)
-			return SLURMDB_ADMIN_NOTSET;
+			return false;
 
 	if(!assoc_mgr_user_list)
-		return SLURMDB_ADMIN_NOTSET;
+		return false;
 
 	assoc_mgr_lock(&locks);
 	itr = list_iterator_create(assoc_mgr_user_list);
@@ -1786,7 +1786,7 @@ extern int assoc_mgr_is_user_acct_coord(void *db_conn,
 
 	if(!found_user || !found_user->coord_accts) {
 		assoc_mgr_unlock(&locks);
-		return 0;
+		return false;
 	}
 	itr = list_iterator_create(found_user->coord_accts);
 	while((acct = list_next(itr))) {
@@ -1797,11 +1797,11 @@ extern int assoc_mgr_is_user_acct_coord(void *db_conn,
 
 	if(acct) {
 		assoc_mgr_unlock(&locks);
-		return 1;
+		return true;
 	}
 	assoc_mgr_unlock(&locks);
 
-	return 0;
+	return false;
 }
 
 extern List assoc_mgr_get_shares(void *db_conn,

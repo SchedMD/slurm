@@ -2472,7 +2472,6 @@ extern int job_signal(uint32_t job_id, uint16_t signal, uint16_t batch_flag,
 {
 	struct job_record *job_ptr;
 	time_t now = time(NULL);
-	bool super_user;
 
 	/* Jobs submitted using Moab command should be cancelled using
 	 * Moab command for accurate job records */
@@ -2494,13 +2493,15 @@ extern int job_signal(uint32_t job_id, uint16_t signal, uint16_t batch_flag,
 		return ESLURM_INVALID_JOB_ID;
 	}
 
-	super_user = ((uid == 0) || (uid == getuid()));
-	if ((job_ptr->user_id != uid) && (!super_user)) {
+	if ((job_ptr->user_id != uid) && !validate_operator(uid) &&
+	    !assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
+					  job_ptr->account)) {
 		error("Security violation, JOB_CANCEL RPC from uid %d",
 		      uid);
 		return ESLURM_ACCESS_DENIED;
 	}
-	if ((!super_user) && (signal == SIGKILL) && job_ptr->part_ptr &&
+	if (!validate_slurm_user(uid) && (signal == SIGKILL) &&
+	    job_ptr->part_ptr &&
 	    (job_ptr->part_ptr->flags & PART_FLAG_ROOT_ONLY) && wiki2_sched) {
 		info("Attempt to cancel Moab job using Slurm command from "
 		     "uid %d", uid);
@@ -2634,7 +2635,7 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 	if (IS_JOB_FINISHED(job_ptr))
 		return ESLURM_ALREADY_DONE;
 
-	if ((job_ptr->user_id != uid) && !validate_super_user(uid)) {
+	if ((job_ptr->user_id != uid) && !validate_slurm_user(uid)) {
 		error("Security violation, JOB_COMPLETE RPC for job %u "
 		      "from uid %u",
 		      job_ptr->job_id, (unsigned int) uid);
@@ -4679,7 +4680,9 @@ extern void pack_all_jobs(char **buffer_ptr, int *buffer_size,
 			continue;
 
 		if ((slurmctld_conf.private_data & PRIVATE_DATA_JOBS) &&
-		    (job_ptr->user_id != uid) && !validate_super_user(uid))
+		    (job_ptr->user_id != uid) && !validate_operator(uid) &&
+		    !assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
+						  job_ptr->account))
 			continue;
 
 		if ((min_age > 0) && (job_ptr->end_time < min_age) &&
@@ -4731,8 +4734,10 @@ extern int pack_one_job(char **buffer_ptr, int *buffer_size,
 		if (job_ptr->job_id != job_id)
 			continue;
 
-		if ((slurmctld_conf.private_data & PRIVATE_DATA_JOBS)
-		    &&  (job_ptr->user_id != uid) && !validate_super_user(uid))
+		if ((slurmctld_conf.private_data & PRIVATE_DATA_JOBS) &&
+		    (job_ptr->user_id != uid) && !validate_operator(uid) &&
+		    !assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
+						  job_ptr->account))
 			break;
 
 		jobs_packed++;
@@ -5592,7 +5597,7 @@ static bool _top_priority(struct job_record *job_ptr)
 int update_job(job_desc_msg_t * job_specs, uid_t uid)
 {
 	int error_code = SLURM_SUCCESS;
-	int super_user = 0;
+	bool authorized = false;
 	uint32_t save_min_nodes = 0, save_max_nodes = 0;
 	uint32_t save_min_cpus = 0, save_max_cpus = 0;
 	struct job_record *job_ptr;
@@ -5635,9 +5640,9 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	if (error_code != SLURM_SUCCESS)
 		return error_code;
 
-	if ((uid == 0) || (uid == slurmctld_conf.slurm_user_id))
-		super_user = 1;
-	if ((job_ptr->user_id != uid) && (super_user == 0)) {
+	authorized = validate_operator(uid) || assoc_mgr_is_user_acct_coord(
+		acct_db_conn, uid, job_ptr->account);
+	if ((job_ptr->user_id != uid) && !authorized) {
 		error("Security violation, JOB_UPDATE RPC from uid %d",
 		      uid);
 		return ESLURM_USER_ID_MISSING;
@@ -5738,7 +5743,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	}
 
 	/* Always do this last just incase the assoc_ptr changed */
-	if (job_specs->comment && wiki_sched && (!super_user)) {
+	if (job_specs->comment && wiki_sched && !validate_slurm_user(uid)) {
 		/* User must use Moab command to change job comment */
 		error("Attempt to change comment for job %u",
 		      job_specs->job_id);
@@ -5794,7 +5799,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	if (error_code != SLURM_SUCCESS)
 		goto fini;
 
-	if (!super_user && (accounting_enforce & ACCOUNTING_ENFORCE_LIMITS) &&
+	if (!authorized && (accounting_enforce & ACCOUNTING_ENFORCE_LIMITS) &&
 	    (!_validate_acct_policy(job_specs, job_ptr->part_ptr,
 				    job_ptr->assoc_ptr, job_ptr->qos_ptr,
 				    &job_ptr->limit_set_max_nodes))) {
@@ -5880,7 +5885,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	if (job_specs->pn_min_cpus != (uint16_t) NO_VAL) {
 		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
 			error_code = ESLURM_DISABLED;
-		else if (super_user
+		else if (authorized
 			 || (detail_ptr->pn_min_cpus
 			     > job_specs->pn_min_cpus)) {
 			detail_ptr->pn_min_cpus = job_specs->pn_min_cpus;
@@ -5995,7 +6000,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		else if (job_ptr->time_limit == job_specs->time_limit) {
 			debug("sched: update_job: new time limit identical to "
 			      "old time limit %u", job_specs->job_id);
-		} else if (super_user ||
+		} else if (authorized ||
 			   (job_ptr->time_limit > job_specs->time_limit)) {
 			time_t old_time =  job_ptr->time_limit;
 			if (old_time == INFINITE)	/* one year in mins */
@@ -6118,7 +6123,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			error_code = ESLURM_DISABLED;
 		else if (job_ptr->priority == job_specs->priority)
 			debug("update_job: setting priority to current value");
-		else if (super_user ||
+		else if (authorized ||
 			 (job_ptr->priority > job_specs->priority)) {
 			job_ptr->details->nice = NICE_OFFSET;
 			if (job_specs->priority == INFINITE) {
@@ -6133,7 +6138,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			     job_specs->job_id);
 			update_accounting = true;
 			if (job_ptr->priority == 0) {
-				if (super_user)
+				if (authorized)
 					job_ptr->state_reason = WAIT_HELD;
 				else
 					job_ptr->state_reason = WAIT_HELD_USER;
@@ -6159,7 +6164,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	if (job_specs->nice != (uint16_t) NO_VAL) {
 		if (IS_JOB_FINISHED(job_ptr))
 			error_code = ESLURM_DISABLED;
-		else if (super_user || (job_specs->nice < NICE_OFFSET)) {
+		else if (authorized || (job_specs->nice < NICE_OFFSET)) {
 			int64_t new_prio = job_ptr->priority;
 			new_prio += job_ptr->details->nice;
 			new_prio -= job_specs->nice;
@@ -6181,7 +6186,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	if (job_specs->pn_min_memory != NO_VAL) {
 		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
 			error_code = ESLURM_DISABLED;
-		else if (super_user) {
+		else if (authorized) {
 			char *entity;
 			if (job_specs->pn_min_memory & MEM_PER_CPU)
 				entity = "cpu";
@@ -6205,7 +6210,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	if (job_specs->pn_min_tmp_disk != NO_VAL) {
 		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
 			error_code = ESLURM_DISABLED;
-		else if (super_user
+		else if (authorized
 			 || (detail_ptr->pn_min_tmp_disk
 			     > job_specs->pn_min_tmp_disk)) {
 			detail_ptr->pn_min_tmp_disk =
@@ -6263,7 +6268,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	if (job_specs->shared != (uint16_t) NO_VAL) {
 		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
 			error_code = ESLURM_DISABLED;
-		else if (super_user
+		else if (authorized
 			 ||       (detail_ptr->shared > job_specs->shared)) {
 			detail_ptr->shared = job_specs->shared;
 			info("sched: update_job: setting shared to %u for "
@@ -6281,7 +6286,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	if (job_specs->contiguous != (uint16_t) NO_VAL) {
 		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
 			error_code = ESLURM_DISABLED;
-		else if (super_user
+		else if (authorized
 			 || (detail_ptr->contiguous > job_specs->contiguous)) {
 			detail_ptr->contiguous = job_specs->contiguous;
 			info("sched: update_job: setting contiguous to %u "
@@ -6543,7 +6548,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	if (job_specs->ntasks_per_node != (uint16_t) NO_VAL) {
 		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
 			error_code = ESLURM_DISABLED;
-		else if (super_user) {
+		else if (authorized) {
 			detail_ptr->ntasks_per_node =
 				job_specs->ntasks_per_node;
 			info("sched: update_job: setting ntasks_per_node to %u"
@@ -6617,7 +6622,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			job_specs->licenses = NULL; /* nothing to free */
 			info("sched: update_job: setting licenses to %s for "
 			     "job %u", job_ptr->licenses, job_ptr->job_id);
-		} else if (IS_JOB_RUNNING(job_ptr) && super_user) {
+		} else if (IS_JOB_RUNNING(job_ptr) && authorized) {
 			/* NOTE: This can result in oversubscription of
 			 * licenses */
 			license_job_return(job_ptr);
@@ -6738,7 +6743,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	if (geometry[0] != (uint16_t) NO_VAL) {
 		if (!IS_JOB_PENDING(job_ptr))
 			error_code = ESLURM_DISABLED;
-		else if (super_user) {
+		else if (authorized) {
 			uint32_t i, tot = 1;
 			for (i=0; i<SYSTEM_DIMENSIONS; i++)
 				tot *= geometry[i];
@@ -7205,7 +7210,8 @@ job_alloc_info(uint32_t uid, uint32_t job_id, struct job_record **job_pptr)
 	if (job_ptr == NULL)
 		return ESLURM_INVALID_JOB_ID;
 	if ((slurmctld_conf.private_data & PRIVATE_DATA_JOBS) &&
-	    (job_ptr->user_id != uid) && !validate_super_user(uid))
+	    (job_ptr->user_id != uid) && !validate_operator(uid) &&
+	    !assoc_mgr_is_user_acct_coord(acct_db_conn, uid, job_ptr->account))
 		return ESLURM_ACCESS_DENIED;
 	if (IS_JOB_PENDING(job_ptr))
 		return ESLURM_JOB_PENDING;
@@ -7972,7 +7978,7 @@ extern int job_requeue (uid_t uid, uint32_t job_id, slurm_fd_t conn_fd,
 {
 	int rc = SLURM_SUCCESS;
 	struct job_record *job_ptr = NULL;
-	bool super_user = false, suspended = false;
+	bool suspended = false;
 	slurm_msg_t resp_msg;
 	return_code_msg_t rc_msg;
 	time_t now = time(NULL);
@@ -7985,9 +7991,9 @@ extern int job_requeue (uid_t uid, uint32_t job_id, slurm_fd_t conn_fd,
 	}
 
 	/* validate the request */
-	if ((uid == 0) || (uid == slurmctld_conf.slurm_user_id))
-		super_user = 1;
-	if ((uid != job_ptr->user_id) && (!super_user)) {
+	if ((uid != job_ptr->user_id) && !validate_operator(uid) &&
+	    !assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
+					  job_ptr->account)) {
 		rc = ESLURM_ACCESS_DENIED;
 		goto reply;
 	}
@@ -8926,7 +8932,7 @@ extern int job_checkpoint(checkpoint_msg_t *ckpt_ptr, uid_t uid,
 		rc = ESLURM_INVALID_JOB_ID;
 		goto reply;
 	}
-	if ((uid != job_ptr->user_id) && ! validate_super_user(uid)) {
+	if ((uid != job_ptr->user_id) && !validate_slurm_user(uid)) {
 		rc = ESLURM_ACCESS_DENIED ;
 		goto reply;
 	}
@@ -9375,7 +9381,7 @@ extern int job_restart(checkpoint_msg_t *ckpt_ptr, uid_t uid, slurm_fd_t conn_fd
 		rc = EINVAL;
 		goto unpack_error;
 	}
-	if (! validate_super_user(uid) && (job_desc->user_id != uid)) {
+	if (!validate_slurm_user(uid) && (job_desc->user_id != uid)) {
 		error("Security violation, user %u not allowed to restart "
 		      "job %u of user %u",
 		      uid, ckpt_ptr->job_id, job_desc->user_id);
