@@ -257,9 +257,9 @@ extern slurmdb_admin_level_t assoc_mgr_get_admin_level(void *db_conn,
  * see if user is coordinator of given acct
  * IN: uid - uid of user to check.
  * IN: acct - name of account
- * RET: 0 for no, 1 for yes
+ * RET: true or false
  */
-extern int assoc_mgr_is_user_acct_coord(void *db_conn, uint32_t uid,
+extern bool assoc_mgr_is_user_acct_coord(void *db_conn, uint32_t uid,
 					char *acct);
 
 /*

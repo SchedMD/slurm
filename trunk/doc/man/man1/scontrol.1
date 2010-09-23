@@ -1014,6 +1014,61 @@ Commandline options will always override these settings.)
 \fBSLURM_CONF\fR
 The location of the SLURM configuration file.
 
+.SH "AUTHORIZATION"
+
+When using the SLURM db, users who have AdminLevel's defined (Operator
+or Admin) and users who are account coordinators are given the
+authority to view and modify jobs, reservations, nodes, etc., as
+defined in the following table \- regardless of whether a PrivateData
+restriction has been defined in the slurm.conf file.
+
+.br
+\fBscontrol show job(s):       \fR Admin, Operator, Coordinator
+.br
+\fBscontrol update job:        \fR Admin, Operator, Coordinator
+.br
+\fBscontrol requeue:           \fR Admin, Operator, Coordinator
+.br
+\fBscontrol show step(s):      \fR Admin, Operator, Coordinator
+.br
+\fBscontrol update step:       \fR Admin, Operator, Coordinator
+.br
+.sp
+\fBscontrol show block:        \fR Admin, Operator
+.br
+\fBscontrol update block:      \fR Admin
+.br
+.sp
+\fBscontrol show node:         \fR Admin, Operator
+.br
+\fBscontrol update node:       \fR Admin
+.br
+.sp
+\fBscontrol create partition:  \fR Admin
+.br
+\fBscontrol show partition:    \fR Admin, Operator
+.br
+\fBscontrol update partition:  \fR Admin
+.br
+\fBscontrol delete partition:  \fR Admin
+.br
+.sp
+\fBscontrol create reservation:\fR Admin, Operator
+.br
+\fBscontrol show reservation:  \fR Admin, Operator
+.br
+\fBscontrol update reservation:\fR Admin, Operator
+.br
+\fBscontrol delete reservation:\fR Admin, Operator
+.br
+.sp
+\fBscontrol reconfig:          \fR Admin
+.br
+\fBscontrol shutdown:          \fR Admin
+.br
+\fBscontrol takeover:          \fR Admin
+.br
+
 .SH "EXAMPLES"
 .eo
 .br

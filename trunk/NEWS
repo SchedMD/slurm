@@ -23,6 +23,9 @@ documents those changes that are of interest to users and admins.
     if three ping messages were not responded to. Patch from Hongjia Cao (NUDT).
  -- Preserve a node's ReasonTime field after scontrol reconfig command. Patch
     from Hongjia Cao (NUDT).
+ -- Added the authority for users with AdminLevel's defined in the SLURM db
+    (Operators and Admins) and account coordinators to invoke commands that
+    affect jobs, reservations, nodes, etc.
 
 * Changes in SLURM 2.2.0.pre11
 ==============================

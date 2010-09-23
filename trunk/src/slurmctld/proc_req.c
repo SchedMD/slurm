@@ -601,14 +601,46 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 }
 
 /*
- * validate_super_user - validate that the uid is authorized to see
+ * validate_slurm_user - validate that the uid is authorized to see
  *      privileged data (either user root or SlurmUser)
+ * IN uid - user to validate
+ * RET true if permitted to run, false otherwise
+ */
+extern bool validate_slurm_user(uid_t uid)
+{
+	if ((uid == 0) || (uid == getuid()))
+		return true;
+	else
+		return false;
+}
+
+/*
+ * validate_super_user - validate that the uid is authorized at the
+ *      root, SlurmUser, or SLURMDB_ADMIN_SUPER_USER level
  * IN uid - user to validate
  * RET true if permitted to run, false otherwise
  */
 extern bool validate_super_user(uid_t uid)
 {
-	if ((uid == 0) || (uid == getuid()))
+	if ((uid == 0) || (uid == getuid()) ||
+	    assoc_mgr_get_admin_level(acct_db_conn, uid) >=
+	    SLURMDB_ADMIN_SUPER_USER)
+		return true;
+	else
+		return false;
+}
+
+/*
+ * validate_operator - validate that the uid is authorized at the
+ *      root, SlurmUser, or SLURMDB_ADMIN_OPERATOR level
+ * IN uid - user to validate
+ * RET true if permitted to run, false otherwise
+ */
+extern bool validate_operator(uid_t uid)
+{
+	if ((uid == 0) || (uid == getuid()) ||
+	    assoc_mgr_get_admin_level(acct_db_conn, uid) >=
+	    SLURMDB_ADMIN_OPERATOR)
 		return true;
 	else
 		return false;
@@ -697,7 +729,7 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 	slurm_addr_t resp_addr;
 
 	START_TIMER;
-	if ((uid != job_desc_msg->user_id) && (!validate_super_user(uid))) {
+	if ((uid != job_desc_msg->user_id) && (!validate_slurm_user(uid))) {
 		error_code = ESLURM_USER_ID_MISSING;
 		error("Security violation, RESOURCE_ALLOCATE from uid=%d",
 		      uid);
@@ -1033,7 +1065,7 @@ static void _slurm_rpc_dump_nodes(slurm_msg_t * msg)
 	lock_slurmctld(node_read_lock);
 
 	if ((slurmctld_conf.private_data & PRIVATE_DATA_NODES)
-	    &&  (!validate_super_user(uid))) {
+	    &&  (!validate_operator(uid))) {
 		unlock_slurmctld(node_read_lock);
 		error("Security violation, REQUEST_NODE_INFO RPC from uid=%d",
 		      uid);
@@ -1090,8 +1122,8 @@ static void _slurm_rpc_dump_partitions(slurm_msg_t * msg)
 	part_req_msg = (part_info_request_msg_t  *) msg->data;
 	lock_slurmctld(part_read_lock);
 
-	if ((slurmctld_conf.private_data & PRIVATE_DATA_PARTITIONS)
-	    &&  (!validate_super_user(uid))) {
+	if ((slurmctld_conf.private_data & PRIVATE_DATA_PARTITIONS) &&
+	    !validate_operator(uid)) {
 		unlock_slurmctld(part_read_lock);
 		debug2("Security violation, PARTITION_INFO RPC from uid=%d",
 		       uid);
@@ -1139,7 +1171,7 @@ static void  _slurm_rpc_epilog_complete(slurm_msg_t * msg)
 	START_TIMER;
 	debug2("Processing RPC: MESSAGE_EPILOG_COMPLETE uid=%d", uid);
 	lock_slurmctld(job_write_lock);
-	if (!validate_super_user(uid)) {
+	if (!validate_slurm_user(uid)) {
 		unlock_slurmctld(job_write_lock);
 		error("Security violation, EPILOG_COMPLETE RPC from uid=%d",
 		      uid);
@@ -1324,7 +1356,7 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t * msg)
 	       "uid=%u JobId=%u",
 	       uid, comp_msg->job_id);
 
-	if (!validate_super_user(uid)) {
+	if (!validate_slurm_user(uid)) {
 		error("A non superuser %u tried to complete batch job %u",
 		      uid, comp_msg->job_id);
 		/* Only the slurmstepd can complete a batch script */
@@ -1422,7 +1454,7 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 #ifdef HAVE_FRONT_END	/* Limited job step support */
 	/* Non-super users not permitted to run job steps on front-end.
 	 * A single slurmd can not handle a heavy load. */
-	if (!validate_super_user(uid)) {
+	if (!validate_slurm_user(uid)) {
 		info("Attempt to execute job step by uid=%d", uid);
 		slurm_send_rc_msg(msg, ESLURM_NO_STEPS);
 		return;
@@ -1557,7 +1589,9 @@ static void _slurm_rpc_job_will_run(slurm_msg_t * msg)
 	debug2("Processing RPC: REQUEST_JOB_WILL_RUN from uid=%d", uid);
 
 	/* do RPC call */
-	if ( (uid != job_desc_msg->user_id) && (!validate_super_user(uid)) ) {
+	if ( (uid != job_desc_msg->user_id) && (!validate_operator(uid)) &&
+	     !assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
+					   job_ptr->account) ) {
 		error_code = ESLURM_USER_ID_MISSING;
 		error("Security violation, JOB_WILL_RUN RPC from uid=%d", uid);
 	}
@@ -1624,7 +1658,7 @@ static void _slurm_rpc_node_registration(slurm_msg_t * msg)
 	START_TIMER;
 	debug2("Processing RPC: MESSAGE_NODE_REGISTRATION_STATUS from uid=%d",
 	       uid);
-	if (!validate_super_user(uid)) {
+	if (!validate_slurm_user(uid)) {
 		error_code = ESLURM_USER_ID_MISSING;
 		error("Security violation, NODE_REGISTER RPC from uid=%d", uid);
 	}
@@ -2284,7 +2318,7 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 	response_msg.protocol_version = msg->protocol_version;
 
 	/* do RPC call */
-	if ( (uid != job_desc_msg->user_id) && (!validate_super_user(uid)) ) {
+	if ( (uid != job_desc_msg->user_id) && (!validate_slurm_user(uid)) ) {
 		/* NOTE: User root can submit a batch job for any other user */
 		error_code = ESLURM_USER_ID_MISSING;
 		error("Security violation, SUBMIT_JOB from uid=%d", uid);
@@ -2319,7 +2353,7 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 			/* Non-super users not permitted to run job steps on
 			 * front-end. A single slurmd can not handle a heavy
 			 * load. */
-			if (!validate_super_user(uid)) {
+			if (!validate_slurm_user(uid)) {
 				info("Attempt to execute batch job step by "
 				     "uid=%d", uid);
 				slurm_send_rc_msg(msg, ESLURM_NO_STEPS);
@@ -2655,7 +2689,7 @@ static void _slurm_rpc_resv_create(slurm_msg_t * msg)
 
 	START_TIMER;
 	debug2("Processing RPC: REQUEST_CREATE_RESERVATION from uid=%d", uid);
-	if (!validate_super_user(uid)) {
+	if (!validate_operator(uid)) {
 		error_code = ESLURM_USER_ID_MISSING;
 		error("Security violation, CREATE_RESERVATION RPC from uid=%d",
 		      uid);
@@ -2716,7 +2750,7 @@ static void _slurm_rpc_resv_update(slurm_msg_t * msg)
 
 	START_TIMER;
 	debug2("Processing RPC: REQUEST_UPDATE_RESERVATION from uid=%d", uid);
-	if (!validate_super_user(uid)) {
+	if (!validate_operator(uid)) {
 		error_code = ESLURM_USER_ID_MISSING;
 		error("Security violation, UPDATE_RESERVATION RPC from uid=%d",
 		      uid);
@@ -2763,7 +2797,7 @@ static void _slurm_rpc_resv_delete(slurm_msg_t * msg)
 
 	START_TIMER;
 	debug2("Processing RPC: REQUEST_DELETE_RESERVTION from uid=%d", uid);
-	if (!validate_super_user(uid)) {
+	if (!validate_operator(uid)) {
 		error_code = ESLURM_USER_ID_MISSING;
 		error("Security violation, DELETE_RESERVTION RPC from uid=%d",
 		      uid);
@@ -2813,7 +2847,7 @@ static void _slurm_rpc_resv_show(slurm_msg_t * msg)
 	START_TIMER;
 	debug2("Processing RPC: REQUEST_RESERVATION_INFO from uid=%d", uid);
 	if ((slurmctld_conf.private_data & PRIVATE_DATA_RESERVATIONS) &&
-	    (!validate_super_user(uid))) {
+	    (!validate_operator(uid))) {
 		debug2("Security violation, REQUEST_RESERVATION_INFO "
 		       "RPC from uid=%d", uid);
 		slurm_send_rc_msg(msg, ESLURM_ACCESS_DENIED);
@@ -2941,8 +2975,8 @@ static void  _slurm_rpc_block_info(slurm_msg_t * msg)
 	START_TIMER;
 	debug2("Processing RPC: REQUEST_BLOCK_INFO from uid=%d", uid);
 	lock_slurmctld(config_read_lock);
-	if ((slurmctld_conf.private_data & PRIVATE_DATA_NODES)
-	    &&  (!validate_super_user(uid))) {
+	if ((slurmctld_conf.private_data & PRIVATE_DATA_NODES) &&
+	    !validate_operator(uid)) {
 		error_code = ESLURM_ACCESS_DENIED;
 		error("Security violation, REQUEST_BLOCK_INFO RPC from uid=%d",
 		      uid);
@@ -3484,7 +3518,7 @@ inline static void  _slurm_rpc_trigger_pull(slurm_msg_t * msg)
 	 * it's own internal trigger structure */
 	debug("Processing RPC: REQUEST_TRIGGER_PULL from uid=%u",
 	      (unsigned int) uid);
-	if (!validate_super_user(uid)) {
+	if (!validate_slurm_user(uid)) {
 		rc = ESLURM_USER_ID_MISSING;
 		error("Security violation, REQUEST_JOB_NOTIFY RPC from uid=%d",
 		      uid);
@@ -3548,7 +3582,7 @@ inline static void  _slurm_rpc_job_notify(slurm_msg_t * msg)
 
 	START_TIMER;
 	debug("Processing RPC: REQUEST_JOB_NOTIFY from uid=%d", uid);
-	if (!validate_super_user(uid)) {
+	if (!validate_slurm_user(uid)) {
 		error_code = ESLURM_USER_ID_MISSING;
 		error("Security violation, REQUEST_JOB_NOTIFY RPC from uid=%d",
 		      uid);
@@ -3584,7 +3618,7 @@ inline static void  _slurm_rpc_set_debug_level(slurm_msg_t *msg)
 	slurm_ctl_conf_t *conf;
 
 	debug2("Processing RPC: REQUEST_SET_DEBUG_LEVEL from uid=%d", uid);
-	if (!validate_super_user(uid)) {
+	if (!validate_slurm_user(uid)) {
 		error("set debug level request from non-super user uid=%d",
 		      uid);
 		slurm_send_rc_msg(msg, EACCES);
@@ -3640,7 +3674,7 @@ inline static void  _slurm_rpc_set_schedlog_level(slurm_msg_t *msg)
 	slurm_ctl_conf_t *conf;
 
 	debug2("Processing RPC: REQUEST_SET_SCHEDLOG_LEVEL from uid=%d", uid);
-	if (!validate_super_user(uid)) {
+	if (!validate_slurm_user(uid)) {
 		error("set scheduler log level request from non-super user "
 		      "uid=%d", uid);
 		slurm_send_rc_msg(msg, EACCES);
@@ -3677,7 +3711,7 @@ inline static void  _slurm_rpc_accounting_update_msg(slurm_msg_t *msg)
 	START_TIMER;
 	debug2("Processing RPC: ACCOUNTING_UPDATE_MSG from uid=%d", uid);
 
-	if (!validate_super_user(uid)
+	if (!validate_slurm_user(uid)
 	    && (assoc_mgr_get_admin_level(acct_db_conn, uid)
 		< SLURMDB_ADMIN_SUPER_USER)) {
 		error("Update Association request from non-super user uid=%d",
@@ -3702,7 +3736,7 @@ inline static void  _slurm_rpc_accounting_first_reg(slurm_msg_t *msg)
 
 	START_TIMER;
 	debug2("Processing RPC: ACCOUNTING_FIRST_REG from uid=%d", uid);
-	if (!validate_super_user(uid)
+	if (!validate_slurm_user(uid)
 	    && (assoc_mgr_get_admin_level(acct_db_conn, uid)
 		< SLURMDB_ADMIN_SUPER_USER)) {
 		error("First Registration request from non-super user uid=%d",

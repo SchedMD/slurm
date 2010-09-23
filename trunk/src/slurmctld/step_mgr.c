@@ -54,6 +54,7 @@
 
 #include <slurm/slurm_errno.h>
 
+#include "src/common/assoc_mgr.h"
 #include "src/common/bitstring.h"
 #include "src/common/checkpoint.h"
 #include "src/common/forward.h"
@@ -1884,9 +1885,10 @@ extern int pack_ctld_job_step_info_response_msg(
 		    && (job_ptr->part_ptr->flags & PART_FLAG_HIDDEN))
 			continue;
 
-		if ((slurmctld_conf.private_data & PRIVATE_DATA_JOBS)
-		    && (job_ptr->user_id != uid)
-		    && !validate_super_user(uid))
+		if ((slurmctld_conf.private_data & PRIVATE_DATA_JOBS) &&
+		    (job_ptr->user_id != uid) && !validate_operator(uid) &&
+		    !assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
+						  job_ptr->account))
 			continue;
 
 		valid_job = 1;
@@ -2177,7 +2179,7 @@ extern int step_partial_comp(step_complete_msg_t *req, uid_t uid,
 		return ESLURM_JOB_PENDING;
 	}
 
-	if ((!validate_super_user(uid)) && (uid != job_ptr->user_id)) {
+	if ((!validate_slurm_user(uid)) && (uid != job_ptr->user_id)) {
 		/* Normally from slurmstepd, from srun on some failures */
 		error("Security violation: "
 		      "REQUEST_STEP_COMPLETE RPC for job %u from uid=%u",
@@ -2928,9 +2930,10 @@ extern int update_step(step_update_request_msg_t *req, uid_t uid)
 		return ESLURM_INVALID_JOB_ID;
 	}
 
-	if ((job_ptr->user_id != uid) && (uid != 0) && (uid != getuid())) {
-		error("Security violation, STEP_UPDATE RPC from uid %d",
-		      uid);
+	if ((job_ptr->user_id != uid) && !validate_operator(uid) &&
+	    !assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
+					  job_ptr->account)) {
+		error("Security violation, STEP_UPDATE RPC from uid %d", uid);
 		return ESLURM_USER_ID_MISSING;
 	}
 

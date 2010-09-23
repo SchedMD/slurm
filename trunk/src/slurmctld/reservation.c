@@ -1721,7 +1721,7 @@ extern void show_resv(char **buffer_ptr, int *buffer_size, uid_t uid)
 		fatal("malloc: list_iterator_create");
 	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
 		if ((slurmctld_conf.private_data & PRIVATE_DATA_RESERVATIONS)
-		    && !validate_super_user(uid)) {
+		    && !validate_slurm_user(uid)) {
 			int i = 0;
 			for(i=0; i<resv_ptr->user_cnt; i++) {
 				if(resv_ptr->user_list[i] == uid)
