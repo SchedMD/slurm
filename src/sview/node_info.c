@@ -592,21 +592,18 @@ extern List create_node_info_list(node_info_msg_t *node_info_ptr,
 
 	for (i=0; i<node_info_ptr->record_count; i++) {
 		node_ptr = &(node_info_ptr->node_array[i]);
-//		if (!node_ptr->name || (node_ptr->name[0] == '\0'))
-//			continue;
+		if (!node_ptr->name || (node_ptr->name[0] == '\0'))
+			continue;
 		if (by_partition) {
-			/* constrain list to included partitions' nodes */
-			if (strcmp(working_sview_config.excluded_partitions,
-				   "-")) {
-				int rc = get_new_info_part(&part_info_ptr, 
-							   force_refresh);
-				if ((rc == SLURM_SUCCESS) &&
-				    (!check_part_includes_node(part_info_ptr,
-							       i))) {
-					/* Node still exists, but hide it */
-					xfree(node_ptr->name);
-//					continue;
-				}
+			/*constrain list to included partitions' nodes*/
+			if (strcmp(working_sview_config.excluded_partitions, "-")) {
+				int rc = get_new_info_part(
+					&part_info_ptr, force_refresh);
+				if(rc == SLURM_NO_CHANGE_IN_DATA ||
+				   rc == SLURM_SUCCESS)
+					if(!check_part_includes_node(
+						   part_info_ptr, i))
+						continue;
 			}
 		}
 		sview_node_info_ptr = xmalloc(sizeof(sview_node_info_t));
