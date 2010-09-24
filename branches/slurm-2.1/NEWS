@@ -3,6 +3,9 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 2.1.15
 =========================
+ -- Fix bug in which backup slurmctld can purge job scripts (and kill batch
+    jobs) when it assumes primary control, particularly when this happens
+    multiple times in a short time interval.
 
 * Changes in SLURM 2.1.14
 =========================
