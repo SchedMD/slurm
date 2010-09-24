@@ -1,6 +1,6 @@
 AUTOMAKE_OPTIONS = foreign
 
-noinst_DATA = SecurityTests
+NoDistDATA = SecurityTests
 
 SUBDIRS = api common slurmctld slurmd slurmdbd
 
