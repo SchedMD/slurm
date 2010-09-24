@@ -271,7 +271,7 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
-NoDistSCRIPTS = security_4_1a.bash  security_4_1b.bash
+EXTRA_NODIST = security_4_1a.bash  security_4_1b.bash
 all: all-am
 
 .SUFFIXES:

@@ -1,6 +1,6 @@
 AUTOMAKE_OPTIONS = foreign
 
-NoDistSCRIPTS = \
+EXTRA_NODIST = \
 	security_1_1.py		\
 	security_1_2.bash	\
 	security_2_1.bash	\
