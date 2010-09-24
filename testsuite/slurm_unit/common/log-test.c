@@ -44,7 +44,7 @@ int main(int ac, char **av)
 
 	switch (fork()) {
           case 0:
-		  info("in child %ld", getpid());
+		  info("in child %ld", (long int) getpid());
 		  log_reinit();
 		  info("in child after log reinit");
 		  exit(0);
@@ -53,7 +53,7 @@ int main(int ac, char **av)
 		  error("fork: %m");
 		  break;
 	  default:
-		  info("in parent %ld", getpid());
+		  info("in parent %ld", (long int) getpid());
 		  break;
 	}
 	/* for now, this test passes if we make it through without 
