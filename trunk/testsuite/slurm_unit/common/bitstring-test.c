@@ -7,11 +7,11 @@
 
 /* Test for failure: 
 */
-#define TEST(_tst, _msg) do {			\
-	if (! (_tst))				\
-		fail( _msg );       \
-	else					\
-		pass( _msg );       \
+#define TEST(_tst, _msg) do {		\
+	if (! (_tst))			\
+		fail( _msg );		\
+	else				\
+		pass( _msg );		\
 } while (0)
 
 
@@ -150,10 +150,10 @@ main(int argc, char *argv[])
 		bit_set(bs,42);
 		TEST(!strcmp(bit_fmt(tmpstr,sizeof(tmpstr),bs), "42"), "bitstring");
 		bit_set(bs,102);
-		TEST(!strcmp(bit_fmt(tmpstr,sizeof(tmpstr),bs), "[42,102]"), "bitstring");
+		TEST(!strcmp(bit_fmt(tmpstr,sizeof(tmpstr),bs), "42,102"), "bitstring");
 		bit_nset(bs,9,14);
 		TEST(!strcmp(bit_fmt(tmpstr,sizeof(tmpstr), bs), 
-					"[9-14,42,102]"), "bitstring");
+					"9-14,42,102"), "bitstring");
 	}
 
 	note("Testing bit_nffc/bit_nffs");
@@ -196,6 +196,6 @@ main(int argc, char *argv[])
 		TEST(bit_equal(bs, bs2), "bitstring");
 	}
 
-	note("Testing complete!");
-	exit(0);
+	totals();
+	return failed;
 }
