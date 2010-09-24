@@ -202,9 +202,9 @@ scontrol_update_node (int argc, char *argv[])
 		}
 	}
 
-	if (((node_msg.node_state == NODE_STATE_DRAIN)
-	||   (node_msg.node_state == NODE_STATE_FAIL))
-	&&  (node_msg.reason == NULL)) {
+	if (((node_msg.node_state == NODE_STATE_DRAIN) ||
+	     (node_msg.node_state == NODE_STATE_FAIL)) &&
+	    (node_msg.reason == NULL) || strlen(node_msg.reason) == 0) {
 		fprintf (stderr, "You must specify a reason when DRAINING a "
 			"node\nRequest aborted\n");
 		goto done;
