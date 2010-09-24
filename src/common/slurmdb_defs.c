@@ -195,7 +195,7 @@ static int _setup_cluster_rec(slurmdb_cluster_rec_t *cluster_rec)
 		return SLURM_ERROR;
 	}
 
-	if (cluster_rec->flags & CLUSTER_FLAG_BG) {
+	if (cluster_rec->dimensions > 1) {
 		int number, i, len;
 		char *nodes = cluster_rec->nodes;
 
