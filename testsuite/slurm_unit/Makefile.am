@@ -1,4 +1,4 @@
 AUTOMAKE_OPTIONS = foreign
 
-SUBDIRS = api common slurmctld slurmd slurmdbd
+SUBDIRS = api common
 
