@@ -271,7 +271,7 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
-NoDistSCRIPTS = \
+EXTRA_NODIST = \
 	security_1_1.py		\
 	security_1_2.bash	\
 	security_2_1.bash	\
