@@ -1,6 +1,6 @@
 AUTOMAKE_OPTIONS = foreign
 
-#noinst_PROGRAMS = $(elan_testprogs) pack-test log-test
+noinst_DATA = SecurityTests
 
-SUBDIRS = api common
+SUBDIRS = api common slurmctld slurmd slurmdbd
 
