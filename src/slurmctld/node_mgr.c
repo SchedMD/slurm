@@ -1687,11 +1687,21 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 		} else if (IS_NODE_IDLE(node_ptr) &&
 			   (reg_msg->job_count != 0)) {
 			last_node_update = now;
-			node_ptr->node_state = NODE_STATE_ALLOCATED |
-					       node_flags;
-			error("Invalid state for node %s, was IDLE with %u "
-			      "running jobs",
-			      node_ptr->name, reg_msg->job_count);
+			if (node_ptr->run_job_cnt != 0) {
+				node_ptr->node_state = NODE_STATE_ALLOCATED |
+						       node_flags;
+				error("Invalid state for node %s, was IDLE "
+			      	      "with %u running jobs",
+			      	      node_ptr->name, reg_msg->job_count);
+			}
+			/* 
+			 * there must be completing job(s) on this node since
+			 * reg_msg->job_count was set (run_job_cnt +
+			 * comp_job_cnt) in validate_jobs_on_node()
+			 */
+			if (node_ptr->comp_job_cnt != 0) { 
+				node_ptr->node_state |= NODE_STATE_COMPLETING;
+			}
 		}
 
 		select_g_update_node_config((node_ptr-node_record_table_ptr));

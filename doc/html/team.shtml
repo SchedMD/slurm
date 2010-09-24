@@ -3,6 +3,7 @@
 <h1>SLURM Team</h1>
 <p>SLURM development has been a joint effort of
 <a href="https://www.llnl.gov/">Lawrence Livermore National Laboratory</a> (LLNL),
+<a href="http://www.schedmd.com/">SchedMD</a>,
 <a href="http://www.hp.com/">HP</a>,
 <a href="http://www.bull.com/">Bull</a>,
 Linux NetworX and many other contributors.
@@ -88,6 +89,6 @@ Linux NetworX and many other contributors.
 <li>Anne-Marie Wunderlin (Bull)</li>
 </ul>
 
-<p style="text-align:center;">Last modified 13 September 2010</p>
+<p style="text-align:center;">Last modified 23 September 2010</p>
 
 <!--#include virtual="footer.txt"-->
