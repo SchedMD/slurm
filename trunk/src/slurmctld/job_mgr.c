@@ -4539,7 +4539,8 @@ static void _list_delete_job(void *job_entry)
 		fatal("job hash error");
 	*job_pptr = job_ptr->job_next;
 
-	delete_job_details(job_ptr);
+	if (IS_JOB_FINISHED(job_ptr))
+		delete_job_details(job_ptr);
 	xfree(job_ptr->account);
 	xfree(job_ptr->alloc_node);
 	xfree(job_ptr->comment);
@@ -7266,7 +7267,7 @@ static void _get_batch_job_dir_ids(List batch_dirs)
 		long_job_id = strtol(&dir_ent->d_name[4], &endptr, 10);
 		if ((long_job_id == 0) || (endptr[0] != '\0'))
 			continue;
-		debug3("found batch directory for job_id %ld",long_job_id);
+		debug3("found batch directory for job_id %ld", long_job_id);
 		job_id_ptr = xmalloc(sizeof(uint32_t));
 		*job_id_ptr = long_job_id;
 		list_append (batch_dirs, job_id_ptr);
