@@ -1,4 +1,0 @@
-DO NOT CREATE MAKEFILE.AM
-
-There does not appear to be a mechanism for 
-NOT packaging any files in the Makefile
