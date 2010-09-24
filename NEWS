@@ -27,7 +27,8 @@ documents those changes that are of interest to users and admins.
     (Operators and Admins) and account coordinators to invoke commands that
     affect jobs, reservations, nodes, etc.
  -- Fix for slurmd restart on completing node with no tasks to get the correct
-    state, completing, Patch from Hongjia Cao (NUDT).
+    state, completing. Patch from Hongjia Cao (NUDT).
+ -- Prevent scontrol setting a node's Reason="". Patch from Hongjia Cao (NUDT).
 
 * Changes in SLURM 2.2.0.pre11
 ==============================
