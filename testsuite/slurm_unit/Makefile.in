@@ -311,7 +311,6 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
-EXTRA_NODIST = SecurityTests
 SUBDIRS = api common slurmctld slurmd slurmdbd
 all: all-recursive
 

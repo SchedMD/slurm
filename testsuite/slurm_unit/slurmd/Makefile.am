@@ -1,3 +1,1 @@
-AUTOMAKE_OPTIONS = foreign
-
-EXTRA_NODIST = security_3_2.csh
+AUTOMAKE_OPTIONS = foreign no-dist
