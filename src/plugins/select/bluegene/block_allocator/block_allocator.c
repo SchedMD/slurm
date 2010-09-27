@@ -1939,6 +1939,8 @@ extern void init_grid(node_info_msg_t * node_info_ptr)
 		x = _coord(host[i-3]);
 		y = _coord(host[i-2]);
 		z = _coord(host[i-1]);
+		if ((x < 0) || (y < 0) || (z < 0))
+			continue;
 		ba_system_ptr->grid[x][y][z].color = 7;
 		if (IS_NODE_DOWN(node_ptr) || IS_NODE_DRAIN(node_ptr)) {
 			/* default values set above */
