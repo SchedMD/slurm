@@ -205,10 +205,10 @@ extern void
 scontrol_print_completing_job(job_info_t *job_ptr,
 			      node_info_msg_t *node_info_msg)
 {
-	int i, buf_size;
+	int i;
 	node_info_t *node_info;
 	hostlist_t all_nodes, comp_nodes, down_nodes;
-	char *node_buf;
+	char node_buf[MAXHOSTRANGELEN];
 
 	all_nodes  = hostlist_create(job_ptr->nodes);
 	comp_nodes = hostlist_create("");
@@ -225,25 +225,13 @@ scontrol_print_completing_job(job_info_t *job_ptr,
 	}
 
 	fprintf(stdout, "JobId=%u ", job_ptr->job_id);
-	buf_size = 8192;
-	node_buf = xmalloc(buf_size);
-	while ((i = hostlist_ranged_string(comp_nodes, buf_size, node_buf))
-	       < 0) {
-		buf_size *= 2;
-		xrealloc(node_buf, buf_size);
-	}
+	i = hostlist_ranged_string(comp_nodes, sizeof(node_buf), node_buf);
 	if (i > 0)
 		fprintf(stdout, "Nodes(COMPLETING)=%s ", node_buf);
-
-	while ((i = hostlist_ranged_string(down_nodes, buf_size, node_buf))
-	       < 0) {
-		buf_size *= 2;
-		xrealloc(node_buf, buf_size);
-	}
+	i = hostlist_ranged_string(down_nodes, sizeof(node_buf), node_buf);
 	if (i > 0)
 		fprintf(stdout, "Nodes(DOWN)=%s ", node_buf);
 	fprintf(stdout, "\n");
-	xfree(node_buf);
 
 	hostlist_destroy(all_nodes);
 	hostlist_destroy(comp_nodes);

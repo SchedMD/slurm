@@ -247,21 +247,14 @@ format_add_function(List list, int width, bool right, char *suffix,
 
 static void _set_node_field_size(List sinfo_list)
 {
-	int buf_size;
-	char *buf;
+	char tmp[MAXHOSTRANGELEN];
 	ListIterator i = list_iterator_create(sinfo_list);
 	sinfo_data_t *current;
 	int max_width = MIN_NODE_FIELD_SIZE, this_width = 0;
 
 	while ((current = (sinfo_data_t *) list_next(i)) != NULL) {
-		buf_size = 8192;
-		buf = xmalloc(buf_size);
-		while ((this_width = hostlist_ranged_string(current->nodes,
-					buf_size, buf)) < 0) {
-			buf_size *= 2;
-			xrealloc(buf, buf_size);
-		}
-		xfree(buf);
+		this_width = hostlist_ranged_string(current->nodes,
+					sizeof(tmp), tmp);
 		max_width = MAX(max_width, this_width);
 	}
 	list_iterator_destroy(i);
@@ -563,15 +556,10 @@ int _print_node_list(sinfo_data_t * sinfo_data, int width,
 		width = params.node_field_size;
 
 	if (sinfo_data) {
-		int buf_size = 8192;
-		char *buf = xmalloc(buf_size);
-		if (hostlist_ranged_string(sinfo_data->nodes, buf_size, buf)
-		    < 0) {
-			buf_size *= 2;
-			xrealloc(buf, buf_size);
-		}
-		_print_str(buf, width, right_justify, true);
-		xfree(buf);
+		char tmp[MAXHOSTRANGELEN];
+		hostlist_ranged_string(sinfo_data->nodes,
+					sizeof(tmp), tmp);
+		_print_str(tmp, width, right_justify, true);
 	} else {
 		char *title = "NODELIST";
 		if(params.cluster_flags & CLUSTER_FLAG_BG)

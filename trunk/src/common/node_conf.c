@@ -416,9 +416,9 @@ static int _list_find_config (void *config_entry, void *key)
  */
 char * bitmap2node_name (bitstr_t *bitmap)
 {
-	int i, first, last, buf_size;
+	int i, first, last;
 	hostlist_t hl;
-	char *buf;
+	char buf[8192];
 
 	if (bitmap == NULL)
 		return xstrdup("");
@@ -437,15 +437,10 @@ char * bitmap2node_name (bitstr_t *bitmap)
 		hostlist_push(hl, node_record_table_ptr[i].name);
 	}
 	hostlist_uniq(hl);
-	buf_size = 8192;
-	buf = xmalloc(buf_size);
-	while (hostlist_ranged_string(hl, buf_size, buf) < 0) {
-		buf_size *= 2;
-		xrealloc(buf, buf_size);
-	}
+	hostlist_ranged_string(hl, sizeof(buf), buf);
 	hostlist_destroy(hl);
 
-	return buf;
+	return xstrdup(buf);
 }
 
 /*
