@@ -226,12 +226,12 @@ scontrol_print_completing_job(job_info_t *job_ptr,
 
 	fprintf(stdout, "JobId=%u ", job_ptr->job_id);
 
-	node_buf = hostlist_ranged_string(comp_nodes);
+	node_buf = hostlist_ranged_string_malloc(comp_nodes);
 	if (node_buf && node_buf[0])
 		fprintf(stdout, "Nodes(COMPLETING)=%s ", node_buf);
 	free(node_buf);
 
-	node_buf = hostlist_ranged_string(down_nodes);
+	node_buf = hostlist_ranged_string_malloc(down_nodes);
 	if (node_buf && node_buf[0])
 		fprintf(stdout, "Nodes(DOWN)=%s ", node_buf);
 	free(node_buf);
