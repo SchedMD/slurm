@@ -80,6 +80,7 @@ static char *	_task_list(struct job_record *job_ptr);
  *	[RFEATURES=<features>;]		required features, if any,
  *					NOTE: OR operator not supported
  *	[REJMESSAGE=<str>;]		reason job is not running, if any
+ *	[IWD=<directory>;]		Initial Working Directory
  *	UPDATETIME=<uts>;		time last active
  *	WCLIMIT=<secs>;			wall clock time limit, seconds
  *	TASKS=<cpus>;			CPUs required
@@ -259,6 +260,13 @@ static char *	_dump_job(struct job_record *job_ptr, time_t update_time)
 		snprintf(tmp, sizeof(tmp),
 			"REJMESSAGE=\"%s\";",
 			job_reason_string(job_ptr->state_reason));
+		xstrcat(buf, tmp);
+	}
+
+	if (!IS_JOB_FINISHED(job_ptr) && job_ptr->details &&
+	    job_ptr->details->work_dir) {
+		snprintf(tmp, sizeof(tmp), "IWD=%s;",
+			 job_ptr->details->work_dir);
 		xstrcat(buf, tmp);
 	}
 
