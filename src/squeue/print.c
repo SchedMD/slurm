@@ -179,17 +179,10 @@ static int _print_str(char *str, int width, bool right, bool cut_output)
 int _print_nodes(char *nodes, int width, bool right, bool cut)
 {
 	hostlist_t hl = hostlist_create(nodes);
-	char *buf;
-	int buf_size, retval;
-
-	buf_size = 8192;
-	buf = xmalloc(buf_size);
-	while (hostlist_ranged_string(hl, buf_size, buf) < 0) {
-		buf_size *= 2;
-		xrealloc(buf, buf_size);
-	}
+	char buf[MAXHOSTRANGELEN];
+	int retval;
+	hostlist_ranged_string(hl, MAXHOSTRANGELEN, buf);
 	retval = _print_str(buf, width, right, false);
-	xfree(buf);
 	hostlist_destroy(hl);
 	return retval;
 }
