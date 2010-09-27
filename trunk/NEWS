@@ -29,6 +29,9 @@ documents those changes that are of interest to users and admins.
  -- Fix for slurmd restart on completing node with no tasks to get the correct
     state, completing. Patch from Hongjia Cao (NUDT).
  -- Prevent scontrol setting a node's Reason="". Patch from Hongjia Cao (NUDT).
+ -- Add new functions hostlist_ranged_string_malloc, 
+    hostlist_ranged_string_xmalloc, hostlist_deranged_string_malloc, and
+    hostlist_deranged_string_xmalloc which will allocate memory as needed.
 
 * Changes in SLURM 2.2.0.pre11
 ==============================

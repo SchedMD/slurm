@@ -4050,16 +4050,16 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
  */
 static char *_copy_nodelist_no_dup(char *node_list)
 {
-	char buf[8192];
+	char *buf;
 
 	hostlist_t hl = hostlist_create(node_list);
 	if (hl == NULL)
 		return NULL;
 	hostlist_uniq(hl);
-	hostlist_ranged_string(hl, 8192, buf);
+	buf = hostlist_ranged_string_xmalloc(hl);
 	hostlist_destroy(hl);
 
-	return xstrdup(buf);
+	return buf;
 }
 
 static bool _valid_pn_min_mem(job_desc_msg_t * job_desc_msg)

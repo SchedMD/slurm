@@ -418,7 +418,7 @@ char * bitmap2node_name (bitstr_t *bitmap)
 {
 	int i, first, last;
 	hostlist_t hl;
-	char buf[8192];
+	char *buf;
 
 	if (bitmap == NULL)
 		return xstrdup("");
@@ -437,10 +437,10 @@ char * bitmap2node_name (bitstr_t *bitmap)
 		hostlist_push(hl, node_record_table_ptr[i].name);
 	}
 	hostlist_uniq(hl);
-	hostlist_ranged_string(hl, sizeof(buf), buf);
+	buf = hostlist_ranged_string_xmalloc(hl);
 	hostlist_destroy(hl);
 
-	return xstrdup(buf);
+	return buf;
 }
 
 /*
