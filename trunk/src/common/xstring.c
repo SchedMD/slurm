@@ -98,20 +98,23 @@ strong_alias(xstrtolower, slurm_xstrtolower);
  */
 static void makespace(char **str, int needed)
 {
-	int used;
-
 	if (*str == NULL)
 		*str = xmalloc(needed + 1);
 	else {
-		used = strlen(*str) + 1;
-		while (used + needed > xsize(*str)) {
-			int newsize = xsize(*str) + XFGETS_CHUNKSIZE;
-			int actualsize;
+		int actual_size;
+		int used = strlen(*str) + 1;
+		int min_new_size = used + needed;
+		int cur_size = xsize(*str);
+		if (min_new_size > cur_size) {
+			int new_size = min_new_size;
+			if (new_size < (cur_size + XFGETS_CHUNKSIZE))
+				new_size = cur_size + XFGETS_CHUNKSIZE;
+			if (new_size < (cur_size * 2))
+				new_size = cur_size * 2;
 
-			xrealloc(*str, newsize);
-			actualsize = xsize(*str);
-
-			xassert(actualsize == newsize);
+			xrealloc(*str, new_size);
+			actual_size = xsize(*str);
+			xassert(actual_size == new_size);
 		}
 	}
 }
