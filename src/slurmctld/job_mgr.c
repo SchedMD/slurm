@@ -4050,16 +4050,23 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
  */
 static char *_copy_nodelist_no_dup(char *node_list)
 {
-	char buf[8192];
+	int buf_size;
+	char *buf;
 
 	hostlist_t hl = hostlist_create(node_list);
 	if (hl == NULL)
 		return NULL;
 	hostlist_uniq(hl);
-	hostlist_ranged_string(hl, 8192, buf);
+
+	buf_size = 8192;
+	buf = xmalloc(buf_size);
+	while (hostlist_ranged_string(hl, buf_size, buf) < 0) {
+		buf_size *= 2;
+		xrealloc(buf, buf_size);
+	}
 	hostlist_destroy(hl);
 
-	return xstrdup(buf);
+	return buf;
 }
 
 static bool _valid_pn_min_mem(job_desc_msg_t * job_desc_msg)
@@ -4120,7 +4127,8 @@ void job_time_limit(void)
 	ListIterator job_iterator;
 	struct job_record *job_ptr;
 	time_t now = time(NULL);
-	time_t old = now - (slurmctld_conf.inactive_limit * 4 / 3) + slurmctld_conf.msg_timeout + 1;
+	time_t old = now - (slurmctld_conf.inactive_limit * 4 / 3) + 
+			   slurmctld_conf.msg_timeout + 1;
 	time_t over_run;
 	int resv_status = 0;
 	uint64_t job_cpu_usage_mins = 0;

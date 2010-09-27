@@ -29,6 +29,9 @@ documents those changes that are of interest to users and admins.
  -- Fix for slurmd restart on completing node with no tasks to get the correct
     state, completing. Patch from Hongjia Cao (NUDT).
  -- Prevent scontrol setting a node's Reason="". Patch from Hongjia Cao (NUDT).
+ -- Modify hostlist functions to allocate memory as needed rather than using
+    fixed size buffers (typically 8192 bytes). This patch fixes many, but not
+    all possible problems.
 
 * Changes in SLURM 2.2.0.pre11
 ==============================
