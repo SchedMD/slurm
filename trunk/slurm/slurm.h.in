@@ -672,11 +672,11 @@ extern ssize_t slurm_hostlist_ranged_string PARAMS((hostlist_t hl,
 
 /* slurm_hostlist_ranged_string_malloc():
  *
- * Returne the string representation of the hostlist hl.
+ * Return the string representation of the hostlist hl.
  *
  * The result must be released using free();
  */
-extern ssize_t slurm_hostlist_ranged_string_malloc PARAMS((hostlist_t hl));
+extern char *slurm_hostlist_ranged_string_malloc PARAMS((hostlist_t hl));
 
 /*
  * slurm_hostlist_shift():
