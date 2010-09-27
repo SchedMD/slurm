@@ -2121,7 +2121,7 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 		slurm_free_job_step_info_request_msg(data);
 		break;
 	case RESPONSE_JOB_STEP_PIDS:
-		slurm_job_step_pids_free(data);
+		slurm_free_job_step_pids(data);
 		break;
 	case REQUEST_RESOURCE_ALLOCATION:
 	case REQUEST_JOB_WILL_RUN:
