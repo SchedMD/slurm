@@ -6320,7 +6320,7 @@ _unpack_job_step_pids(job_step_pids_t **msg_ptr, Buf buffer,
 	return SLURM_SUCCESS;
 
 unpack_error:
-	slurm_job_step_pids_free(msg);
+	slurm_free_job_step_pids(msg);
 	*msg_ptr = NULL;
 	return SLURM_ERROR;
 }
