@@ -344,6 +344,16 @@ void hostlist_parse_int_to_array(int in, int *out, int dims, int hostlist_base);
  */
 ssize_t hostlist_ranged_string(hostlist_t hl, size_t n, char *buf);
 
+/* Variant of hostlist_ranged_string().
+ * Returns the buffer which must be released using free().
+ */
+char *hostlist_ranged_string_malloc(hostlist_t hl);
+
+/* Variant of hostlist_ranged_string().
+ * Returns the buffer which must be released using xfree().
+ */
+char *hostlist_ranged_string_xmalloc(hostlist_t hl);
+
 /* hostlist_deranged_string():
  *
  * Writes the string representation of the hostlist hl into buf,
@@ -355,6 +365,15 @@ ssize_t hostlist_ranged_string(hostlist_t hl, size_t n, char *buf);
  */
 ssize_t hostlist_deranged_string(hostlist_t hl, size_t n, char *buf);
 
+/* Variant of hostlist_deranged_string().
+ * Returns the buffer which must be released using free().
+ */
+char *hostlist_deranged_string_malloc(hostlist_t hl);
+
+/* Variant of hostlist_deranged_string().
+ * Returns the buffer which must be released using xfree().
+ */
+char *hostlist_deranged_string_xmalloc(hostlist_t hl);
 
 /* ----[ hostlist utility functions ]---- */
 

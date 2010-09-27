@@ -536,7 +536,6 @@ void slurm_step_launch_fwd_signal(slurm_step_ctx_t *ctx, int signo)
 	kill_tasks_msg_t msg;
 	hostlist_t hl;
 	char *name = NULL;
-	char buf[8192];
 	List ret_list = NULL;
 	ListIterator itr;
 	ret_data_info_t *ret_data_info = NULL;
@@ -583,9 +582,8 @@ void slurm_step_launch_fwd_signal(slurm_step_ctx_t *ctx, int signo)
 		hostlist_destroy(hl);
 		goto nothing_left;
 	}
-	hostlist_ranged_string(hl, sizeof(buf), buf);
+	name = hostlist_ranged_string_xmalloc(hl);
 	hostlist_destroy(hl);
-	name = xstrdup(buf);
 
 	slurm_msg_t_init(&req);
 	req.msg_type = REQUEST_SIGNAL_TASKS;
