@@ -99,6 +99,7 @@ reject_msg_t reject_msgs[REJECT_MSG_MAX];
  *	[MAXNODES=<nodes>;]		maximum number of nodes, 0 if no limit
  *	[TASKLIST=<node1:node2>;]	nodes in use, if running or completing
  *	[REJMESSAGE=<str>;]		reason job is not running, if any
+ *	[IWD=<directory>;]		Initial Working Directory
  *	[FLAGS=INTERACTIVE;]		set if interactive (not batch) job
  *	[GRES=<name>[:<count>[*cpus]],...;] generic resources required by the
  *					job on a per node basis
@@ -320,6 +321,13 @@ static char *	_dump_job(struct job_record *job_ptr, time_t update_time)
 		snprintf(tmp, sizeof(tmp),
 			"REJMESSAGE=\"%s\";",
 			job_reason_string(job_ptr->state_reason));
+		xstrcat(buf, tmp);
+	}
+
+	if (!IS_JOB_FINISHED(job_ptr) && job_ptr->details &&
+	    job_ptr->details->work_dir) {
+		snprintf(tmp, sizeof(tmp), "IWD=%s;",
+			 job_ptr->details->work_dir);
 		xstrcat(buf, tmp);
 	}
 

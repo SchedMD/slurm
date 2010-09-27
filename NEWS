@@ -522,6 +522,8 @@ documents those changes that are of interest to users and admins.
  -- Fix bug in which backup slurmctld can purge job scripts (and kill batch
     jobs) when it assumes primary control, particularly when this happens
     multiple times in a short time interval.
+ -- In sched/wiki and sched/wiki2 add IWD (Initial Working Directory) to the
+    information reported about jobs.
 
 * Changes in SLURM 2.1.14
 =========================
