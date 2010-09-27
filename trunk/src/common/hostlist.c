@@ -2099,8 +2099,8 @@ char *hostlist_shift(hostlist_t hl)
 
 char *hostlist_pop_range(hostlist_t hl)
 {
-	int i;
-	char buf[MAXHOSTRANGELEN + 1];
+	int i, buf_size;
+	char *buf;
 	hostlist_t hltmp;
 	hostrange_t tail;
 
@@ -2126,16 +2126,21 @@ char *hostlist_pop_range(hostlist_t hl)
 	hl->nranges -= hltmp->nranges;
 
 	UNLOCK_HOSTLIST(hl);
-	hostlist_ranged_string(hltmp, MAXHOSTRANGELEN, buf);
+	buf_size = 8192;
+	buf = malloc(buf_size);
+	if (buf && (hostlist_ranged_string(hltmp, buf_size, buf) < 0)) {
+		buf_size *= 2;
+		buf = realloc(buf, buf_size);
+	}
 	hostlist_destroy(hltmp);
-	return strdup(buf);
+	return buf;
 }
 
 
 char *hostlist_shift_range(hostlist_t hl)
 {
-	int i;
-	char buf[MAXHOSTRANGELEN+1];
+	int i, buf_size;
+	char *buf;
 	hostlist_t hltmp = hostlist_new();
 	if (!hltmp || !hl)
 		return NULL;
@@ -2167,10 +2172,15 @@ char *hostlist_shift_range(hostlist_t hl)
 
 	UNLOCK_HOSTLIST(hl);
 
-	hostlist_ranged_string(hltmp, MAXHOSTRANGELEN, buf);
+	buf_size = 8192;
+	buf = malloc(buf_size);
+	if (buf && (hostlist_ranged_string(hltmp, buf_size, buf) < 0)) {
+		buf_size *= 2;
+		buf = realloc(buf, buf_size);
+	}
 	hostlist_destroy(hltmp);
 
-	return strdup(buf);
+	return buf;
 }
 
 /* XXX: Note: efficiency improvements needed */
@@ -3305,8 +3315,8 @@ char *hostlist_next(hostlist_iterator_t i)
 
 char *hostlist_next_range(hostlist_iterator_t i)
 {
-	char buf[MAXHOSTRANGELEN + 1];
-	int j;
+	int j, buf_size;
+	char *buf;
 
 	assert(i != NULL);
 	assert(i->magic == HOSTLIST_MAGIC);
@@ -3320,11 +3330,16 @@ char *hostlist_next_range(hostlist_iterator_t i)
 	}
 
 	j = i->idx;
-	_get_bracketed_list(i->hl, &j, MAXHOSTRANGELEN, buf);
-
+	buf_size = 8192;
+	buf = malloc(buf_size);
+	if (buf &&
+	    (_get_bracketed_list(i->hl, &j, buf_size, buf) == buf_size)) {
+		buf_size *= 2;
+		buf = realloc(buf, buf_size);
+	}
 	UNLOCK_HOSTLIST(i->hl);
 
-	return strdup(buf);
+	return buf;
 }
 
 int hostlist_remove(hostlist_iterator_t i)
@@ -3610,8 +3625,8 @@ int hostset_nranges(hostset_t set)
  */
 int iterator_test(char *list)
 {
-	int j;
-	char buf[MAXHOSTRANGELEN+1];
+	int j, buf_size;
+	char *buf;
 	hostlist_t hl = hostlist_create(list);
 	hostset_t set = hostset_create(list);
 
@@ -3620,8 +3635,15 @@ int iterator_test(char *list)
 	hostlist_iterator_t i2 = hostlist_iterator_create(hl);
 	char *host;
 
-	hostlist_ranged_string(hl, MAXHOSTRANGELEN, buf);
+	buf_size = 8192;
+	buf = malloc(buf_size);
+	while (hostlist_ranged_string(hl, buf_size, buf) < 0) {
+		buf_size *= 2;
+		buf = realloc(buf, buf_siz);
+	}
 	printf("iterator_test: hl = `%s' passed in `%s'\n", buf, list);
+	free(buf);
+
 	host = hostlist_next(i);
 	printf("first host in list hl = `%s'\n", host);
 	free(host);
