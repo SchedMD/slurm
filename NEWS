@@ -8,6 +8,9 @@ documents those changes that are of interest to users and admins.
     multiple times in a short time interval.
  -- In sched/wiki and sched/wiki2 add IWD (Initial Working Directory) to the
     information reported about jobs.
+ -- Fix bug in calculating a daily or weekly reservation start time when the
+    reservation is updated. Patch from Per Lundqvist (National Supercomputer
+    Centre, Linköping University, Sweden).
 
 * Changes in SLURM 2.1.14
 =========================

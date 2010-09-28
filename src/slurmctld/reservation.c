@@ -2865,7 +2865,8 @@ extern void fini_job_resv_check(void)
 		    (resv_ptr->flags & RESERVE_FLAG_DAILY)) {
 			verbose("Advance reservation %s one day",
 			resv_ptr->name);
-			resv_ptr->start_time += 24 * 60 * 60;
+			resv_ptr->start_time = resv_ptr->start_time_first +
+					       24 * 60 * 60;
 			resv_ptr->start_time_prev = resv_ptr->start_time;
 			resv_ptr->start_time_first = resv_ptr->start_time;
 			resv_ptr->end_time   += 24 * 60 * 60;
@@ -2878,7 +2879,8 @@ extern void fini_job_resv_check(void)
 		    (resv_ptr->flags & RESERVE_FLAG_WEEKLY)) {
 			verbose("Advance reservation %s one week",
 				resv_ptr->name);
-			resv_ptr->start_time += 7 * 24 * 60 * 60;
+			resv_ptr->start_time = resv_ptr->start_time_first +
+					       7 * 24 * 60 * 60;
 			resv_ptr->start_time_prev = resv_ptr->start_time;
 			resv_ptr->start_time_first = resv_ptr->start_time;
 			resv_ptr->end_time   += 7 * 24 * 60 * 60;
