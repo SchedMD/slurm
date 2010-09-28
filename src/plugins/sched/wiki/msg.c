@@ -554,7 +554,7 @@ static size_t	_send_msg(slurm_fd_t new_fd, char *buf, size_t size)
 	data_sent = _write_bytes((int) new_fd, buf, size);
 	if (data_sent != size) {
 		error("wiki: unable to write data message (%lu of %lu) %m",
-			data_sent, size);
+			(long unsigned) data_sent, (long unsigned) size);
 	}
 
 	return data_sent;
