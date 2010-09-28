@@ -180,6 +180,21 @@ extern int slurm_checkpoint_create (uint32_t job_id, uint32_t step_id,
 }
 
 /*
+ * slurm_checkpoint_requeue - initiate a checkpoint requests for some job.
+ *	the job will be requeued after the checkpoint operation completes
+ * IN job_id  - job on which to perform operation
+ * IN max_wait - maximum wait for operation to complete, in seconds
+ * IN image_dir - directory used to get/put checkpoint images
+ * RET 0 or a slurm error code
+ */
+extern int slurm_checkpoint_requeue (uint32_t job_id, uint16_t max_wait,
+				     char *image_dir)
+{
+	return _checkpoint_op (CHECK_REQUEUE, max_wait, job_id,
+			       (uint32_t) SLURM_BATCH_SCRIPT, image_dir);
+}
+
+/*
  * slurm_checkpoint_vacate - initiate a checkpoint requests for some job step.
  *	the job will terminate after the checkpoint operation completes
  * IN job_id  - job on which to perform operation

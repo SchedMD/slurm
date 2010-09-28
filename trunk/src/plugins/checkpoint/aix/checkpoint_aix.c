@@ -245,6 +245,7 @@ extern int slurm_ckpt_op (uint32_t job_id, uint32_t step_id,
 #endif
 			break;
 		case CHECK_RESTART:
+		case CHECK_REQUEUE:
 			rc = ESLURM_NOT_SUPPORTED;
 			break;
 		case CHECK_ERROR:

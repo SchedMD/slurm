@@ -56,7 +56,8 @@ enum check_opts {
 	CHECK_VACATE,		/* create a checkpoint for this job,
 				 * job terminates afterwards */
 	CHECK_RESTART,		/* restart a previously checkpointed job */
-	CHECK_ERROR		/* get error info */
+	CHECK_ERROR,		/* get error info */
+	CHECK_REQUEUE		/* CHECK_VACATTE + CHECK_RESTART */
 };
 
 /* opaque data structures - no peeking! */
