@@ -169,6 +169,7 @@ extern int slurm_ckpt_op (uint32_t job_id, uint32_t step_id,
 			rc = _ckpt_step(step_ptr, data, 1);
 			break;
 		case CHECK_RESTART:
+		case CHECK_REQUEUE:
 			/* Lots of work is required in Slurm to restart a
 			 * checkpointed job. For now the user can submit a
 			 * new job and execute "ompi_restart <snapshot>" */

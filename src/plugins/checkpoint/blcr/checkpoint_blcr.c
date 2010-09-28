@@ -68,9 +68,21 @@
 #include "src/common/xstring.h"
 #include "src/common/xmalloc.h"
 #include "src/slurmctld/agent.h"
+#include "src/slurmctld/acct_policy.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
+
+/* These are defined here so when we link with something other than
+ * the slurmctld we will have these symbols defined.  They will get
+ * overwritten when linking with the slurmctld.
+ */
+#if defined (__APPLE__)
+void acct_policy_add_job_submit(struct job_record *job_ptr)
+	__attribute__((weak_import));
+#else
+void acct_policy_add_job_submit(struct job_record *job_ptr);
+#endif
 
 #define MAX_PATH_LEN 1024
 
@@ -90,6 +102,7 @@ struct ckpt_req {
 	uint16_t wait;
 	char *image_dir;
 	char *nodelist;
+	uint32_t op;
 	uint16_t sig_done;
 };
 
@@ -213,6 +226,12 @@ extern int slurm_ckpt_op (uint32_t job_id, uint32_t step_id,
 	case CHECK_ENABLE:
 		check_ptr->disabled--;
 		break;
+	case CHECK_REQUEUE:
+		if (step_id != SLURM_BATCH_SCRIPT) {
+			rc = ESLURM_NOT_SUPPORTED;
+			break;
+		}
+		/* no break */
 	case CHECK_VACATE:
 		done_sig = SIGTERM;
 		/* no break */
@@ -244,6 +263,7 @@ extern int slurm_ckpt_op (uint32_t job_id, uint32_t step_id,
 		req_ptr->image_dir = xstrdup(image_dir);
 		req_ptr->nodelist = xstrdup(nodelist);
 		req_ptr->sig_done = done_sig;
+		req_ptr->op = op;
 
 		slurm_attr_init(&attr);
 		if (pthread_attr_setdetachstate(&attr,
@@ -552,6 +572,31 @@ static void _send_sig(uint32_t job_id, uint32_t step_id, uint16_t signal,
 	agent_queue_request(agent_args);
 }
 
+static void _requeue_when_finished(uint32_t job_id)
+{
+	/* Locks: read job */
+	slurmctld_lock_t job_write_lock = {
+		NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
+	struct job_record *job_ptr;
+
+	while (1) {
+		lock_slurmctld(job_write_lock);
+		job_ptr = find_job_record(job_id);
+		if (IS_JOB_FINISHED(job_ptr)) {
+			job_ptr->job_state = JOB_PENDING;
+			job_ptr->details->submit_time = time(NULL);
+			job_ptr->restart_cnt++;
+			/* Since the job completion logger
+			 * removes the submit we need to add it again. */
+			acct_policy_add_job_submit(job_ptr);
+			unlock_slurmctld(job_write_lock);
+			break;
+		} else {
+			unlock_slurmctld(job_write_lock);
+			sleep(1);
+		}
+	}
+}
 
 /* Checkpoint processing pthread
  * Never returns, but is cancelled on plugin termiantion */
@@ -575,14 +620,20 @@ static void *_ckpt_agent_thr(void *arg)
 	ckpt_agent_count ++;
 	slurm_mutex_unlock(&ckpt_agent_mutex);
 
-	debug3("checkpoint/blcr: sending checkpoint tasks request to %u.%u",
-	       req->job_id, req->step_id);
+	debug3("checkpoint/blcr: sending checkpoint tasks request %u to %u.%u",
+	       req->op, req->job_id, req->step_id);
 
 	rc = checkpoint_tasks(req->job_id, req->step_id, req->begin_time,
 			      req->image_dir, req->wait, req->nodelist);
+	if (rc != SLURM_SUCCESS) {
+		error("checkpoint/blcr: error on checkpoint request %u to "
+		      "%u.%u: %s", req->op, req->job_id, req->step_id,
+		      slurm_strerror(rc));
+	}
+	if (req->op == CHECK_REQUEUE)
+		_requeue_when_finished(req->job_id);
 
 	lock_slurmctld(job_write_lock);
-
 	job_ptr = find_job_record(req->job_id);
 	if (!job_ptr) {
 		error("_ckpt_agent_thr: job finished");

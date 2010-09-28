@@ -1615,7 +1615,7 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
   (Bluegene systems only)                                                  \n\
                                                                            \n\
   <CH_OP> identify checkpoint operations and may be \"able\", \"disable\", \n\
-  \"enable\", \"create\", \"vacate\", \"restart\", or \"error\".           \n\
+  \"enable\", \"create\", \"vacate\", \"requeue\", \"restart\", or \"error\"\n\
   Additional options include \"ImageDir=<dir>\", \"MaxWait=<seconds>\" and \n\
   \"StickToNodes\"   \n\
                                                                            \n\

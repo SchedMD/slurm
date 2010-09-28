@@ -121,6 +121,12 @@ scontrol_checkpoint(char *op, char *job_step_id_str, int argc, char *argv[])
 		rc = slurm_checkpoint_create (job_id, step_id, max_wait,
 					      image_dir);
 
+	} else if (strncasecmp(op, "requeue", MAX(oplen, 2)) == 0) {
+		if (_parse_checkpoint_args(argc, argv, &max_wait, &image_dir)){
+			return 0;
+		}
+		rc = slurm_checkpoint_requeue (job_id, max_wait, image_dir);
+
 	} else if (strncasecmp(op, "vacate", MAX(oplen, 2)) == 0) {
 		if (_parse_checkpoint_args(argc, argv, &max_wait, &image_dir)){
 			return 0;

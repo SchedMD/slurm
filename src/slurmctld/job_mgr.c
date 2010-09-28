@@ -8953,7 +8953,8 @@ extern int job_checkpoint(checkpoint_msg_t *ckpt_ptr, uid_t uid,
 	memset((void *)&resp_data, 0, sizeof(checkpoint_resp_msg_t));
 
 	if (job_ptr->batch_flag) { /* operate on batch job */
-		if ((ckpt_ptr->op == CHECK_CREATE) ||
+		if ((ckpt_ptr->op == CHECK_CREATE)  ||
+		    (ckpt_ptr->op == CHECK_REQUEUE) ||
 		    (ckpt_ptr->op == CHECK_VACATE)) {
 			if (job_ptr->details == NULL) {
 				rc = ESLURM_DISABLED;

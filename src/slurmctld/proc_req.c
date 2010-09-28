@@ -3121,6 +3121,9 @@ inline static void  _slurm_rpc_checkpoint(slurm_msg_t * msg)
 	case CHECK_ERROR:
 		op = "error";
 		break;
+	case CHECK_REQUEUE:
+		op = "requeue";
+		break;
 	case CHECK_RESTART:
 		op = "restart";
 		break;

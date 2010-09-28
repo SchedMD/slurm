@@ -471,10 +471,10 @@ extern int checkpoint_tasks (uint32_t job_id, uint32_t step_id,
 
 	if ((ret_list = slurm_send_recv_msgs(nodelist, &req_msg, (wait*1000),
 					     false))) {
-		while((ret_data_info = list_pop(ret_list))) {
+		while ((ret_data_info = list_pop(ret_list))) {
                         temp_rc = slurm_get_return_code(ret_data_info->type,
                                                         ret_data_info->data);
-                        if(temp_rc)
+                        if (temp_rc)
                                 rc = temp_rc;
                 }
 	} else {
