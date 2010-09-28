@@ -1,14 +1,18 @@
 LLNL Security Tests
-11 December 2008
+27 September 2010
 
-Unless otherwise noted. Run all tests as a normal user (not user root or
-SlurmUser).
+Starting with SLURM v2.2, users who are assigned Operator,
+Administrator or account Coordinator privileges in the SLURM db are
+allowed to modify jobs belonging to other users.  Unless otherwise
+noted, when system administrators run the following tests, they will
+need to su to a normal user (one who is not an Operator,
+Administrator, or account Coordinator).
 
 For computers running the slurmdbd daemon, run tests 1.x and 4.x only.
-For computers running the slurmctld or slurmd daemon, run tests 1.x, 2.x, 
+For computers running the slurmctld or slurmd daemon, run tests 1.x, 2.x,
 and 3.x only.
 
-NOTE: If SLURM has no pdebug partition (e.g. it can not run jobs without 
+NOTE: If SLURM has no pdebug partition (e.g. it cannot run jobs without
 Moab), then you will need to enable normal user jobs to run in the pbatch
 partition and explicitly start them by setting their priority to a non-zero
 value. For example (as user root):
@@ -22,9 +26,9 @@ Test 1.1     Verify file permissions
 ====================================
 Execute "security_1_1.py" and check for errors. If the installation
 directory is not "/usr" and the configuration directory not "/etc/slurm" then
-specify the appropriate locations using the "--prefix" and "--sysconfdir" 
-options. It's last line will be "SUCCESS" if there were no errors and 
-"FAILURE" otherwise. File which do not exist or their directories can not
+specify the appropriate locations using the "--prefix" and "--sysconfdir"
+options. Its last line will be "SUCCESS" if there were no errors and
+"FAILURE" otherwise. File which do not exist or their directories cannot
 be read are noted as "WARNING:". Some warnings are expected unless a complete
 SLURM installation (all RPMs) is performed and the test is executed as user
 root. The output near the top with a prefix of "NOTE:" describes these cases.
@@ -54,9 +58,9 @@ Test 1.2     Verify that SlurmUser is unique
 ============================================
 Execute "security_1_2.bash" and check for errors. Make sure that the
 "scontrol" program is in your default search path or modify the script.
-The last line of output will be "SUCCESS" if there were no errors and 
-"FAILURE" otherwise. 
-NOTE: On systems without a full slurm instalation (e.g. the slurmdbd server),
+The last line of output will be "SUCCESS" if there were no errors and
+"FAILURE" otherwise.
+NOTE: On systems without a full slurm installation (e.g. the slurmdbd server),
 use the second example below.
 
 Example for systems running slurmctld:
@@ -75,10 +79,10 @@ Test 2.1     Verify that unauthenticated requests are rejected
 ==============================================================
 Execute "security_2_1.bash" and check for errors. Make sure that the
 "scontrol" and "srun" programs are in your default search path or modify
-the script. It's last line of output will be "SUCCESS" if there were no
+the script. Its last line of output will be "SUCCESS" if there were no
 errors and "FAILURE" otherwise. Note that srun errors are expected due
 to authentication failure.
-NOTE: Insure the event is logged in SlurmctldLogFile for test 2.4 verification.
+NOTE: Insure the event is logged in SlurmctldLogFile for test 2.5 verification.
 
 Example:
 For AIX only:
@@ -97,7 +101,7 @@ SUCCESS
 Test 2.2.1   Verify that normal user can't reconfigure the system
 =================================================================
 Execute "scontrol reconfig".
-NOTE: Insure the event is logged in SlurmctldLogFile for test 2.4 verification.
+NOTE: Insure the event is logged in SlurmctldLogFile for test 2.5 verification.
 
 Example:
 $ scontrol reconfig
@@ -106,14 +110,14 @@ slurm_reconfigure error: Invalid user id        < ERROR IS EXPECTED
 
 Test 2.2.2   Verify that jobs can't be run as another user
 ==========================================================
-First run a job as ourself and they try to do so as another user. On some
-systems the pdebug partition should be specified. On BlueGene systems a 
+First run a job as yourself and they try to do so as another user. On some
+systems the pdebug partition should be specified. On BlueGene systems a
 batch script must be submitted (use "sbatch --partition=pdebug security_2_2_2.sh").
 If there is no pdebug partition and the pbatch partition can only be used by
 user ROOT, you will need to change that before and after the test. See
-example below for BlueGene.  The script security_2_2_2.sh just invokes 
+example below for BlueGene.  The script security_2_2_2.sh just invokes
 "/usr/bin/id".
-NOTE: Insure the event is logged in SlurmctldLogFile for test 2.4 verification.
+NOTE: Insure the event is logged in SlurmctldLogFile for test 2.5 verification.
 
 Linux/AIX example:
 $ srun --partition=pdebug security_2_2_2.sh
@@ -134,32 +138,13 @@ $ diff out.2.2.2 slurm.out.1784597                            < AFTER JOB COMPLE
 # scontrol update PartitionName=pbatch RootOnly=YES           < AS USER ROOT
 
 
-Test 2.2.3   Verify that one user can't modify another user's job
-=================================================================
-Submit a job as one user then try to cancel or modify it as another user.
-See note above if there is no pdebug or pbatch is root accessible only.
-NOTE: Insure the event is logged in SlurmctldLogFile for test 2.4 verification.
-
-Example:
-# scontrol update PartitionName=pbatch RootOnly=NO            < AS USER ROOT
-$ sbatch --partition=pdebug security_2_2_3.sh                 < AS REGULAR USER
-sbatch: Submitted batch job 1784601
-
-FROM A DIFFERENT USER (NOT root or SlurmUser):
-$ scancel 1784601                            < THE JOB ID FROM ABOVE
-scancel: error: Kill job error on job id 1784601: Access denied
-$ scontrol update timelimit=4 jobid=1784601  < THE JOB ID FROM ABOVE
-slurm_update error: Invalid user id
-# scontrol update PartitionName=pbatch RootOnly=YES           < AS USER ROOT
-
-
-Test 2.2.4   Verify SLURM's wiki interface is secure
+Test 2.2.3   Verify SLURM's wiki interface is secure
 ====================================================
-SLURM's wiki interface is used by Moab to start and modify user jobs and is 
-protected by a digital signature. This test confirms that attempts to use the 
+SLURM's wiki interface is used by Moab to start and modify user jobs and is
+protected by a digital signature. This test confirms that attempts to use the
 wiki interface without the proper signature will fail. First we need to build
 the test then execute it. The build lines vary by architecture.
-NOTE: Insure the event is logged in SlurmctldLogFile for test 2.4 verification.
+NOTE: Insure the event is logged in SlurmctldLogFile for test 2.5 verification.
 
 For BlueGene:
 $ gcc -m64 -L/usr/lib64 -lslurm -osecurity_2_2_4 security_2_2_4.c
@@ -187,7 +172,7 @@ SUCCESS
 
 Test 2.3     Verify that trigger program runs a the proper user
 ===============================================================
-Since SlurmUser is not root at LLNL, this is a no-op for now. Test by 
+Since SlurmUser is not root at LLNL, this is a no-op for now. Test by
 executing "security_2_3.sh".
 
 Example:
@@ -198,7 +183,27 @@ slurm_set_trigger: Operation not permitted    < ERROR IS EXPECTED
 If this failure is a security violation, that's fine
 
 
-Test 2.4     Verify security violations are logged
+Test 2.4   Verify that one user can't modify another user's job
+=================================================================
+Submit a job as one user then try to cancel or modify it as another user.
+See note above if there is no pdebug or pbatch is root accessible only.
+NOTE: Insure the event is logged in SlurmctldLogFile for test 2.5 verification.
+
+Example:
+# scontrol update PartitionName=pbatch RootOnly=NO            < AS USER ROOT
+$ sbatch --partition=pdebug security_2_2_3.sh                 < AS REGULAR USER
+sbatch: Submitted batch job 1784601
+
+FROM A DIFFERENT USER (NOT root, SlurmUser, an Admin, Operator, or
+account Coordinator):
+$ scancel 1784601                            < THE JOB ID FROM ABOVE
+scancel: error: Kill job error on job id 1784601: Access denied
+$ scontrol update timelimit=4 jobid=1784601  < THE JOB ID FROM ABOVE
+slurm_update error: Invalid user id
+# scontrol update PartitionName=pbatch RootOnly=YES           < AS USER ROOT
+
+
+Test 2.5     Verify security violations are logged
 ==================================================
 NOTE: You will need to view the log file as user root.
 
@@ -215,18 +220,18 @@ From test 2.2.2 in SlurmctldLogFile (/var/log/slurm/slurmctld.log):
 [Dec 01 11:47:06] error: Security violation, RESOURCE_ALLOCATE from uid=5136
 
 From test 2.2.3 in SlurmctldLogFile (/var/log/slurm/slurmctld.log):
+[Dec 01 12:24:55] error: wiki: message checksum error
+
+From test 2.4 in SlurmctldLogFile (/var/log/slurm/slurmctld.log):
 [Dec 01 11:56:21] error: Security violation, JOB_CANCEL RPC from uid 7558
 [Dec 01 11:57:35] error: Security violation, JOB_UPDATE RPC from uid 7558
-
-From test 2.2.4 in SlurmctldLogFile (/var/log/slurm/slurmctld.log):
-[Dec 01 12:24:55] error: wiki: message checksum error
 
 
 Test 3.1     Verify slurm only accepts requests with valid credential
 =====================================================================
-Submit a job with a fabricated credential (lacking a proper digital 
-signature). 
-NOTE: This test is not compatible with BlueGene systems since srun is 
+Submit a job with a fabricated credential (lacking a proper digital
+signature).
+NOTE: This test is not compatible with BlueGene systems since srun is
       not available for task launch.
 NOTE: Insure the event is logged in SlurmdLogFile for test 3.3 verification.
 
@@ -277,7 +282,7 @@ Test 4.1     Verify that valid credential is required for SlurmDBD access
 The basic idea here is to try using a private munge program without the secure
 munge key (we use our own key). This validates that munge authenitication
 is being used as desired. You'll need two windows for this, both running as
-a regular user. 
+a regular user.
 NOTE: Insure the event is logged in SlurmdbdLogFile for test 4.3 verification.
 
 Example, window 1, start munged:
