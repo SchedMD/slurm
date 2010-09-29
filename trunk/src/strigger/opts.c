@@ -112,6 +112,7 @@ extern void parse_command_line(int argc, char *argv[])
 		{"idle",                                no_argument, 0, 'I'},
 		{"jobid",                         required_argument, 0, 'j'},
 		{"cluster",                       required_argument, 0, 'M'},
+		{"clusters",                      required_argument, 0, 'M'},
 		{"node",                          optional_argument, 0, 'n'},
 		{"offset",                        required_argument, 0, 'o'},
 		{"program",                       required_argument, 0, 'p'},

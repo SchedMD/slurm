@@ -60,6 +60,7 @@ extern void parse_command_line(int argc, char *argv[])
 		{"iterate", required_argument, 0, 'i'},
 		{"ionodes", required_argument, 0, 'I'},
 		{"cluster", required_argument, 0, 'M'},
+		{"clusters",required_argument, 0, 'M'},
 		{"nodes", required_argument, 0, 'n'},
 		{"quiet", no_argument, 0, 'Q'},
 		{"resolve", required_argument, 0, 'R'},

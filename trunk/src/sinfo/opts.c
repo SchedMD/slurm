@@ -98,6 +98,7 @@ extern void parse_command_line(int argc, char *argv[])
 		{"iterate",   required_argument, 0, 'i'},
 		{"long",      no_argument,       0, 'l'},
 		{"cluster",   required_argument, 0, 'M'},
+		{"clusters",  required_argument, 0, 'M'},
 		{"nodes",     required_argument, 0, 'n'},
 		{"Node",      no_argument,       0, 'N'},
 		{"format",    required_argument, 0, 'o'},

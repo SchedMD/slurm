@@ -32,6 +32,8 @@ documents those changes that are of interest to users and admins.
  -- Add new functions hostlist_ranged_string_malloc, 
     hostlist_ranged_string_xmalloc, hostlist_deranged_string_malloc, and
     hostlist_deranged_string_xmalloc which will allocate memory as needed.
+ -- Make the slurm commands support both the --cluster and --clusters option.
+    Previously, some commands support one of those options, but not the other.
 
 * Changes in SLURM 2.2.0.pre11
 ==============================

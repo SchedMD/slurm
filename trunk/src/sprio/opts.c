@@ -89,6 +89,7 @@ parse_command_line( int argc, char* argv[] )
 		{"jobs",       optional_argument, 0, 'j'},
 		{"long",       no_argument,       0, 'l'},
 		{"cluster",    required_argument, 0, 'M'},
+		{"clusters",   required_argument, 0, 'M'},
 		{"norm",       no_argument,       0, 'n'},
 		{"format",     required_argument, 0, 'o'},
 		{"user",       required_argument, 0, 'u'},

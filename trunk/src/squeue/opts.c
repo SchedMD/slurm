@@ -103,6 +103,7 @@ parse_command_line( int argc, char* argv[] )
 		{"iterate",    required_argument, 0, 'i'},
 		{"jobs",       optional_argument, 0, 'j'},
 		{"long",       no_argument,       0, 'l'},
+		{"cluster",    required_argument, 0, 'M'},
 		{"clusters",   required_argument, 0, 'M'},
 		{"node",       required_argument, 0, 'n'},
 		{"nodes",      required_argument, 0, 'n'},
