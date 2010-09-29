@@ -692,7 +692,7 @@ _check_job_credential(launch_tasks_request_msg_t *req, uid_t uid,
 		      int node_id, hostset_t *step_hset)
 {
 	slurm_cred_arg_t arg;
-	hostset_t        hset    = NULL;
+	hostset_t        j_hset = NULL, s_hset = NULL;
 	bool             user_ok = _slurm_authorized_user(uid);
 	bool             verified = true;
 	int              host_index = -1;
@@ -722,8 +722,8 @@ _check_job_credential(launch_tasks_request_msg_t *req, uid_t uid,
 	if (!verified) {
 		*step_hset = NULL;
 		if (rc >= 0) {
-			if ((hset = hostset_create(arg.step_hostlist)))
-				*step_hset = hset;
+			if ((s_hset = hostset_create(arg.step_hostlist)))
+				*step_hset = s_hset;
 			slurm_cred_free_args(&arg);
 		}
 		return SLURM_SUCCESS;
@@ -744,13 +744,13 @@ _check_job_credential(launch_tasks_request_msg_t *req, uid_t uid,
 	/*
 	 * Check that credential is valid for this host
 	 */
-	if (!(hset = hostset_create(arg.step_hostlist))) {
+	if (!(s_hset = hostset_create(arg.step_hostlist))) {
 		error("Unable to parse credential hostlist: `%s'",
 		      arg.step_hostlist);
 		goto fail;
 	}
 
-	if (!hostset_within(hset, conf->node_name)) {
+	if (!hostset_within(s_hset, conf->node_name)) {
 		error("Invalid job %u.%u credential for user %u: "
 		      "host %s not in hostset %s",
 		      arg.jobid, arg.stepid, arg.uid,
@@ -764,19 +764,20 @@ _check_job_credential(launch_tasks_request_msg_t *req, uid_t uid,
 
 		/* Determine the CPU count based upon this node's index into
 		 * the _job's_ allocation (job's hostlist and core_bitmap) */
-		hostset_destroy(hset);
-		if (!(hset = hostset_create(arg.job_hostlist))) {
+		if (!(j_hset = hostset_create(arg.job_hostlist))) {
 			error("Unable to parse credential hostlist: `%s'",
 			      arg.job_hostlist);
 			goto fail;
 		}
 
-		host_index = hostset_find(hset, conf->node_name);
+		host_index = hostset_find(j_hset, conf->node_name);
 		if ((host_index < 0) || (host_index >= arg.job_nhosts)) {
 			error("job cr credential invalid host_index %d for "
 			      "job %u", host_index, arg.jobid);
 			goto fail;
 		}
+		hostset_destroy(j_hset);
+		j_hset = NULL;
 
 		if (cpu_log) {
 			char *per_job = "", *per_step = "";
@@ -884,17 +885,20 @@ _check_job_credential(launch_tasks_request_msg_t *req, uid_t uid,
 		req->job_mem_lim  = arg.job_mem_limit;
 	req->cpus_allocated[node_id] = step_cores;
 #if 0
-	info("%u.%u mem orig:%u cpus:%u limit:%u",
-	     jobid, stepid, arg.job_mem, step_cores, req->job_mem);
+	info("%u.%u node_id:%d mem orig:%u cpus:%u limit:%u",
+	     jobid, stepid, node_id, arg.job_mem_limit,
+	     step_cores, req->job_mem_lim);
 #endif
 
-	*step_hset = hset;
+	*step_hset = s_hset;
 	slurm_cred_free_args(&arg);
 	return SLURM_SUCCESS;
 
     fail:
-	if (hset)
-		hostset_destroy(hset);
+	if (j_hset)
+		hostset_destroy(j_hset);
+	if (s_hset)
+		hostset_destroy(s_hset);
 	*step_hset = NULL;
 	slurm_cred_free_args(&arg);
 	slurm_seterrno_ret(ESLURMD_INVALID_JOB_CREDENTIAL);
