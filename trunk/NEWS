@@ -34,6 +34,9 @@ documents those changes that are of interest to users and admins.
     hostlist_deranged_string_xmalloc which will allocate memory as needed.
  -- Make the slurm commands support both the --cluster and --clusters option.
     Previously, some commands support one of those options, but not the other.
+ -- Fix bug when resizing a job that has steps running on some of those nodes.
+    Avoid killing the job step on remaining nodes. Patch from Rod Schultz
+    (BULL).
 
 * Changes in SLURM 2.2.0.pre11
 ==============================
