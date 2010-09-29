@@ -36,7 +36,8 @@ documents those changes that are of interest to users and admins.
     Previously, some commands support one of those options, but not the other.
  -- Fix bug when resizing a job that has steps running on some of those nodes.
     Avoid killing the job step on remaining nodes. Patch from Rod Schultz
-    (BULL).
+    (BULL). Also fix bug related to tracking the CPUs allocated to job steps
+    on each node after releasing some nodes from the job's allocation.
 
 * Changes in SLURM 2.2.0.pre11
 ==============================

@@ -679,7 +679,7 @@ static int _make_step_cred(struct step_record *step_ptr,
 	cred_arg.uid      = job_ptr->user_id;
 
 	cred_arg.job_core_bitmap = job_resrcs_ptr->core_bitmap;
-	cred_arg.job_hostlist    = job_ptr->nodes;
+	cred_arg.job_hostlist    = job_resrcs_ptr->nodes;
 	cred_arg.job_mem_limit   = job_ptr->details->pn_min_memory;
 	cred_arg.job_nhosts      = job_resrcs_ptr->nhosts;
 	cred_arg.job_gres_list   = job_ptr->gres_list;
