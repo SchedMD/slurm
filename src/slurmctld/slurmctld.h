@@ -1453,6 +1453,17 @@ void signal_step_tasks(struct step_record *step_ptr, uint16_t signal,
 		       slurm_msg_type_t msg_type);
 
 /*
+ * signal_step_tasks_on_node - send specific signal to specific job step
+ *                             on a specific node.
+ * IN node_name - name of node on which to signal tasks
+ * IN step_ptr - step record pointer
+ * IN signal - signal to send
+ * IN msg_type - message type to send
+ */
+void signal_step_tasks_on_node(char* node_name, struct step_record *step_ptr,
+			       uint16_t signal, slurm_msg_type_t msg_type);
+
+/*
  * slurmctld_shutdown - wake up slurm_rpc_mgr thread via signal
  * RET 0 or error code
  */

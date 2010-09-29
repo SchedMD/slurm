@@ -352,6 +352,8 @@ void signal_step_tasks(struct step_record *step_ptr, uint16_t signal,
 	agent_args->msg_type = msg_type;
 	agent_args->retry    = 1;
 	agent_args->hostlist = hostlist_create("");
+	if (agent_args->hostlist == NULL)
+		fatal("hostlist_create: malloc failure");
 	kill_tasks_msg = xmalloc(sizeof(kill_tasks_msg_t));
 	kill_tasks_msg->job_id      = step_ptr->job_ptr->job_id;
 	kill_tasks_msg->job_step_id = step_ptr->step_id;
@@ -361,7 +363,7 @@ void signal_step_tasks(struct step_record *step_ptr, uint16_t signal,
 		if (bit_test(step_ptr->step_node_bitmap, i) == 0)
 			continue;
 		hostlist_push(agent_args->hostlist,
-			node_record_table_ptr[i].name);
+			      node_record_table_ptr[i].name);
 		agent_args->node_count++;
 #ifdef HAVE_FRONT_END		/* Operate only on front-end */
 		break;
@@ -380,6 +382,36 @@ void signal_step_tasks(struct step_record *step_ptr, uint16_t signal,
 	return;
 }
 
+/*
+ * signal_step_tasks_on_node - send specific signal to specific job step
+ *                             on a specific node.
+ * IN node_name - name of node on which to signal tasks
+ * IN step_ptr - step record pointer
+ * IN signal - signal to send
+ * IN msg_type - message type to send
+ */
+void signal_step_tasks_on_node(char* node_name, struct step_record *step_ptr,
+			       uint16_t signal, slurm_msg_type_t msg_type)
+{
+	kill_tasks_msg_t *kill_tasks_msg;
+	agent_arg_t *agent_args = NULL;
+
+	xassert(step_ptr);
+	agent_args = xmalloc(sizeof(agent_arg_t));
+	agent_args->msg_type = msg_type;
+	agent_args->retry    = 1;
+	agent_args->node_count++;
+	agent_args->hostlist = hostlist_create(node_name);
+	if (agent_args->hostlist == NULL)
+		fatal("hostlist_create: malloc failure");
+	kill_tasks_msg = xmalloc(sizeof(kill_tasks_msg_t));
+	kill_tasks_msg->job_id      = step_ptr->job_ptr->job_id;
+	kill_tasks_msg->job_step_id = step_ptr->step_id;
+	kill_tasks_msg->signal      = signal;
+	agent_args->msg_args = kill_tasks_msg;
+	agent_queue_request(agent_args);
+	return;
+}
 
 /*
  * job_step_complete - note normal completion the specified job step
@@ -1945,10 +1977,11 @@ extern int kill_step_on_node(struct job_record  *job_ptr,
 		if (step_ptr->no_kill ||
 		    (bit_test(step_ptr->step_node_bitmap, bit_position) == 0))
 			continue;
-		info("killing step %u.%u on down node %s",
+		info("killing step %u.%u on node %s",
 		     job_ptr->job_id, step_ptr->step_id, node_ptr->name);
 		srun_step_complete(step_ptr);
-		signal_step_tasks(step_ptr, SIGKILL, REQUEST_TERMINATE_TASKS);
+		signal_step_tasks_on_node(node_ptr->name, step_ptr, SIGKILL,
+					  REQUEST_TERMINATE_TASKS);
 		found++;
 	}
 
