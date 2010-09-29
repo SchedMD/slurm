@@ -119,6 +119,14 @@ COMMAND CHANGES (see man pages for details)
   to be executed in order to reset SLURM environment variables for proper
   execution of subsequent job steps.
 
+* When using the SLURM db, users who have AdminLevel's defined
+  (Operator or Admin) and users who are account coordinators are given
+  the authority to view and modify jobs, reservations, nodes, etc.  In
+  addition, Administrators have the ability to view/modify node and
+  partition info without having to become root.  For more details, see
+  AUTHORIZATION section of the man pages for the following commands:
+  scontrol, scancel, and sbcast.
+
 * Users can hold and release their own jobs. Submit in held state using srun
   or sbatch --hold or -H options. Hold after submission using the command
   "scontrol hold <jobid>". Release with "scontrol release <jobid>". Users can

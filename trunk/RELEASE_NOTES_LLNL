@@ -15,3 +15,13 @@ jobs or other state information. While SLURM version 2.1 is still running,
 cancel all pending and running jobs (e.g.
 "scancel --state=pending; scancel --state=running"). Then stop and restart
 daemons with the "-c" option or use "/etc/init.d/slurm startclean".
+
+We have given Operators, Administrators, and bank account Coordinators
+(as defined in the SLURM db) the ability to invoke commands that
+view/modify user jobs and reservations.  Previously, one had to be
+root to invoke "scontrol update JobId" for example.  In addition,
+Administrators have the ability to view/modify node and partition info
+without having to become root.  For more details, see AUTHORIZATION
+section of the man pages for the following commands: scontrol,
+scancel, and sbcast.
+
