@@ -319,6 +319,7 @@ static void _opt_args(int argc, char **argv)
 		{"help",        no_argument,       0, OPT_LONG_HELP},
 		{"interactive", no_argument,       0, 'i'},
 		{"cluster",     required_argument, 0, 'M'},
+		{"clusters",    required_argument, 0, 'M'},
 		{"name",        required_argument, 0, 'n'},
 		{"nodelist",    required_argument, 0, 'w'},
 		{"partition",   required_argument, 0, 'p'},

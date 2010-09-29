@@ -667,6 +667,7 @@ static struct option long_options[] = {
 	{"no-kill",       no_argument,       0, 'k'},
 	{"licenses",      required_argument, 0, 'L'},
 	{"distribution",  required_argument, 0, 'm'},
+	{"cluster",       required_argument, 0, 'M'},
 	{"clusters",      required_argument, 0, 'M'},
 	{"tasks",         required_argument, 0, 'n'},
 	{"ntasks",        required_argument, 0, 'n'},
