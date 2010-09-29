@@ -978,6 +978,12 @@ _pick_step_nodes (struct job_record  *job_ptr,
 				node_tmp = bit_pick_cnt(nodes_avail, 1);
 				if (node_tmp == NULL)
 					break;
+				cpus_picked_cnt = _count_cpus(job_ptr,
+							      nodes_picked,
+							      usable_cpu_cnt);
+				if (cpus_picked_cnt == 0)
+					continue;
+
 				bit_or  (nodes_picked, node_tmp);
 				bit_not (node_tmp);
 				bit_and (nodes_avail, node_tmp);
@@ -986,9 +992,6 @@ _pick_step_nodes (struct job_record  *job_ptr,
 				nodes_picked_cnt += 1;
 				if (step_spec->min_nodes)
 					step_spec->min_nodes = nodes_picked_cnt;
-				cpus_picked_cnt = _count_cpus(job_ptr,
-							      nodes_picked,
-							      usable_cpu_cnt);
 				if (step_spec->max_nodes &&
 				    (nodes_picked_cnt >= step_spec->max_nodes))
 					break;
@@ -1045,15 +1048,19 @@ static int _count_cpus(struct job_record *job_ptr, bitstr_t *bitmap,
 	int i, sum = 0;
 	struct node_record *node_ptr;
 
-	if (job_ptr->job_resrcs && job_ptr->job_resrcs->cpus) {
+	if (job_ptr->job_resrcs && job_ptr->job_resrcs->cpus &&
+	    job_ptr->job_resrcs->node_bitmap) {
 		int node_inx = 0;
 		for (i = 0, node_ptr = node_record_table_ptr;
 		     i < node_record_count; i++, node_ptr++) {
-			if (!bit_test(job_ptr->node_bitmap, i))
+			if (!bit_test(job_ptr->job_resrcs->node_bitmap, i))
 				continue;
 			node_inx++;
-			if (!bit_test(bitmap, i))	/* step bitmap */
+			if (!bit_test(job_ptr->node_bitmap, i) ||
+			    !bit_test(bitmap, i)) {
+				/* absent from current job or step bitmap */
 				continue;
+			}
 			if (usable_cpu_cnt)
 				sum += usable_cpu_cnt[i];
 			else

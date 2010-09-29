@@ -132,7 +132,7 @@ extern int build_job_resources(job_resources_t *job_resrcs,
 extern int build_job_resources_cpu_array(job_resources_t *job_resrcs_ptr)
 {
 	int cpu_count = 0, i;
-	uint32_t last_cpu_cnt = 0;
+	uint32_t last_cpu_cnt = NO_VAL;
 
 	if (job_resrcs_ptr->nhosts == 0)
 		return cpu_count;	/* no work to do */
