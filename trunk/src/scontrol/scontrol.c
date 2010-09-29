@@ -92,6 +92,7 @@ main (int argc, char *argv[])
 	static struct option long_options[] = {
 		{"all",      0, 0, 'a'},
 		{"cluster",  0, 0, 'M'},
+		{"clusters", 0, 0, 'M'},
 		{"details",  0, 0, 'd'},
 		{"help",     0, 0, 'h'},
 		{"hide",     0, 0, OPT_LONG_HIDE},

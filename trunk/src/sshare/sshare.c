@@ -76,6 +76,7 @@ main (int argc, char *argv[])
 		{"all",      0, 0, 'a'},
 		{"long",     0, 0, 'l'},
 		{"cluster",  1, 0, 'M'},
+		{"clusters", 1, 0, 'M'},
 		{"noheader", 0, 0, 'h'},
 		{"parsable", 0, 0, 'p'},
 		{"parsable2",0, 0, 'P'},

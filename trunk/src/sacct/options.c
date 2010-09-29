@@ -622,6 +622,7 @@ void parse_command_line(int argc, char **argv)
 		{"timelimit-max", 1, 0, 'K'},
 		{"long", 0, 0, 'l'},
 		{"allclusters", 0,0, 'L'},
+		{"cluster", 1, 0, 'M'},
 		{"clusters", 1, 0, 'M'},
 		{"nodelist", 1, 0, 'N'},
 		{"noheader", 0, 0, 'n'},
