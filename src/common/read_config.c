@@ -1334,6 +1334,11 @@ extern int slurm_conf_get_addr(const char *node_name, slurm_addr_t *address)
 				p->port = (uint16_t) conf_ptr->slurmd_port;
 			if (!p->addr_initialized) {
 				slurm_set_addr(&p->addr, p->port, p->address);
+				if (p->addr.sin_family == 0 &&
+				    p->addr.sin_port == 0) {
+					slurm_conf_unlock();
+					return SLURM_FAILURE;
+				}
 				p->addr_initialized = true;
 			}
 			*address = p->addr;
