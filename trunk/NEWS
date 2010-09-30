@@ -38,6 +38,8 @@ documents those changes that are of interest to users and admins.
     Avoid killing the job step on remaining nodes. Patch from Rod Schultz
     (BULL). Also fix bug related to tracking the CPUs allocated to job steps
     on each node after releasing some nodes from the job's allocation.
+ -- Applied patch from Rod Schultz / Matthieu Hautreux to keep the Node-to-Host
+    cache from becoming corrupted when a hostname cannot be resolved.
 
 * Changes in SLURM 2.2.0.pre11
 ==============================
