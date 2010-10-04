@@ -188,6 +188,11 @@ OTHER CHANGES
 * Added proctrack/cgroup plugin which uses Linux control groups (aka cgroup) to
   track processes on Linux systems with this feature (kernel >= 2.6.24).
 
+* Added the derived_exit_code member to job_info_t.  exit_code captures the
+  exit code of the job script (or salloc) while derived_exit_code contains the
+  highest exit code of all the job steps.
+
+
 API CHANGES
 ===========
 * Changed members of the following structs:
@@ -218,6 +223,7 @@ slurm_step_ctx_params_t
 
 * Added the following struct definitions:
 job_info_t
+	derived_exit_code
 	gres
 	resize_time
 	time_min

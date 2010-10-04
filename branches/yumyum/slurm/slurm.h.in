@@ -997,6 +997,7 @@ typedef struct job_info {
 	uint16_t cpus_per_task;	/* number of processors required for
 				 * each task */
 	char *dependency;	/* syncrhonize job execution with other jobs */
+	uint32_t derived_exit_code;/* highest exit code of all job steps */
 	time_t eligible_time;	/* time job is eligible for running */
 	time_t end_time;	/* time of termination, actual or expected */
 	char *exc_nodes;	/* comma separated list of excluded nodes */
@@ -1050,6 +1051,7 @@ typedef struct job_info {
 						*/
 	job_resources_t *job_resrcs; /* opaque data type, job resources */
 	uint16_t shared;	/* 1 if job can share nodes with other jobs */
+	uint16_t show_flags;	/* conveys level of details requested */
 	time_t start_time;	/* time execution begins, actual or expected */
 	char *state_desc;	/* optional details for state_reason */
 	uint16_t state_reason;	/* reason job still pending or failed, see

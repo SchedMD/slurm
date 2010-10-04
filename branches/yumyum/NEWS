@@ -40,6 +40,9 @@ documents those changes that are of interest to users and admins.
     on each node after releasing some nodes from the job's allocation.
  -- Applied patch from Rod Schultz / Matthieu Hautreux to keep the Node-to-Host
     cache from becoming corrupted when a hostname cannot be resolved.
+ -- Added the derived_exit_code member to job_info_t.  exit_code captures the
+    exit code of the job script (or salloc) while derived_exit_code contains
+    the highest exit code of all the job steps.
 
 * Changes in SLURM 2.2.0.pre11
 ==============================

@@ -405,6 +405,7 @@ struct job_record {
                                          * 1 if cr is enabled */
 	uint32_t db_index;              /* used only for database
 					 * plugins */
+	uint32_t derived_exit_code;	/* highest exit code of all job steps */
 	struct job_details *details;	/* job details */
 	uint16_t direct_set_prio;	/* Priority set directly if
 					 * set the system will not
