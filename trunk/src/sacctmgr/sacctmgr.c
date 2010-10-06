@@ -814,7 +814,7 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                                                                            \n\
   <SPECS> are different for each command entity pair.                      \n\
        list account       - Clusters=, Descriptions=, Format=,             \n\
-                            Names=, Organizations=, Parents=, WithAssocs,  \n\
+                            Names=, Organizations=, Parents=, WithAssoc,   \n\
                             WithDeleted, WithCoordinators, WithRawQOS,     \n\
                             and WOPLimits                                  \n\
        add account        - Clusters=, DefaultQOS=, Description=, Fairshare=,\n\
@@ -835,7 +835,7 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
        delete account     - Clusters=, DefaultQOS=, Descriptions=, Names=, \n\
                             Organizations=, and Parents=                   \n\
                                                                            \n\
-       list associations  - Accounts=, Clusters=, Format=, IDs=,           \n\
+       list associations  - Accounts=, Clusters=, Format=, ID=,            \n\
                             Partitions=, Parent=, Tree, Users=,            \n\
                             WithSubAccounts, WithDeleted, WOLimits,        \n\
                             WOPInfo, and WOPLimits                         \n\
@@ -861,21 +861,21 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                             Format=, MaxCpus=, MinCpus=, Nodes=, Reason=,  \n\
                             Start=, States=, and User=                     \n\
                                                                            \n\
-       list qos           - Descriptions=, Format=, Ids=, Names=,          \n\
+       list qos           - Descriptions=, Format=, Id=, Names=,           \n\
                             PreemptMode=, and WithDeleted                  \n\
        add qos            - Description=, GrpCPUMins=, GrpCPUs=, GrpJobs=, \n\
                             GrpNodes=, GrpSubmitJob=, GrpWall=,            \n\
                             MaxCPUMins=, MaxJobs=, MaxNodes=, MaxSubmitJobs=,\n\
                             MaxWall=, Preempt=, PreemptMode=, Priority=,   \n\
                             and Names=                                     \n\
-       delete qos         - Descriptions=, IDs=, and Names=                \n\
+       delete qos         - Descriptions=, ID=, and Names=                 \n\
                                                                            \n\
        list transactions  - Accounts=, Action=, Actor=, Clusters=, End=,   \n\
-                            Format=, IDs=, Start=, User=, and WithAssoc    \n\
+                            Format=, ID=, Start=, User=, and WithAssoc     \n\
                                                                            \n\
-       list user          - AdminLevel=, DefaultAccounts=,                 \n\
-                            DefaultWCKeys=, Format=, Names=,               \n\
-                            QosLevel=, WithAssocs, WithCoordinators,       \n\
+       list user          - AdminLevel=, DefaultAccount=,                  \n\
+                            DefaultWCKey=, Format=, Names=,                \n\
+                            QosLevel=, WithAssoc, WithCoordinators,        \n\
                             WithDeleted, WithRawQOS, and WOPLimits         \n\
        add user           - Accounts=, AdminLevel=, Clusters=,             \n\
                             DefaultAccount=, DefaultQOS=, DefaultWCKey=,   \n\
@@ -888,12 +888,12 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                             MaxSubmitJobs=, MaxWall=, and QosLevel=        \n\
                             RawUsage= (with admin privileges only)         \n\
                             (where options) Accounts=, AdminLevel=,        \n\
-                            Clusters=, DefaultAccounts=, Names=,           \n\
+                            Clusters=, DefaultAccount=, Names=,            \n\
                             Partitions=, and QosLevel=                     \n\
        delete user        - Accounts=, AdminLevel=, Clusters=,             \n\
-                            DefaultAccounts=, DefaultWCKeys=, and Names=   \n\
+                            DefaultAccount=, DefaultWCKey=, and Names=     \n\
                                                                            \n\
-       list wckey         - Clusters=, End=, Format=, IDs=, Names=,        \n\
+       list wckey         - Clusters=, End=, Format=, ID=, Names=,         \n\
                             Start=, User=, and WithDeleted                 \n\
                                                                            \n\
        archive dump       - Directory=, Events, Jobs,                      \n\
