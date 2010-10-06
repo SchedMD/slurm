@@ -67,7 +67,7 @@ exit($worststatus);
 sub GetOpts
 {
 
-	pod2usage(2) if ($#ARGV <= 0);
+	pod2usage(2) if ($#ARGV < 0);
 
 	GetOptions (
 		'h|help'	=> \$help,
