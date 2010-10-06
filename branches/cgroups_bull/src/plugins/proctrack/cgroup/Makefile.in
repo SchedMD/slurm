@@ -105,8 +105,7 @@ am__base_list = \
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 proctrack_cgroup_la_LIBADD =
-am_proctrack_cgroup_la_OBJECTS = proctrack_cgroup.lo xcgroup.lo \
-	xcpuinfo.lo read_config.lo get_mach_stat.lo
+am_proctrack_cgroup_la_OBJECTS = proctrack_cgroup.lo get_mach_stat.lo
 proctrack_cgroup_la_OBJECTS = $(am_proctrack_cgroup_la_OBJECTS)
 proctrack_cgroup_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
@@ -326,9 +325,6 @@ pkglib_LTLIBRARIES = proctrack_cgroup.la
 # Process group ID process tracking plugin.
 proctrack_cgroup_la_SOURCES = \
 	proctrack_cgroup.c \
-	xcgroup.c xcgroup.h \
-	xcpuinfo.c xcpuinfo.h \
-	read_config.c read_config.h \
 	$(top_builddir)/src/slurmd/slurmd/get_mach_stat.c \
 	$(top_builddir)/src/slurmd/slurmd/get_mach_stat.h
 
@@ -409,9 +405,6 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/get_mach_stat.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/proctrack_cgroup.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/read_config.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xcgroup.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xcpuinfo.Plo@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<

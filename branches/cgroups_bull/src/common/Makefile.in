@@ -94,18 +94,19 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 libcommon_la_DEPENDENCIES =
-am__libcommon_la_SOURCES_DIST = assoc_mgr.c assoc_mgr.h \
-	basil_resv_conf.c basil_resv_conf.h xmalloc.c xmalloc.h \
-	xassert.c xassert.h xstring.c xstring.h xsignal.c xsignal.h \
-	forward.c forward.h strlcpy.c strlcpy.h list.c list.h net.c \
-	net.h fd.c fd.h log.c log.h cbuf.c cbuf.h safeopen.c \
-	safeopen.h bitstring.c bitstring.h mpi.c mpi.h pack.c pack.h \
-	parse_config.c parse_config.h parse_spec.c parse_spec.h \
-	plugin.c plugin.h plugrack.c plugrack.h print_fields.c \
-	print_fields.h read_config.c read_config.h node_select.c \
-	node_select.h env.c env.h slurm_cred.h slurm_cred.c \
-	slurm_errno.c slurm_priority.c slurm_priority.h \
-	slurm_protocol_api.c slurm_protocol_api.h \
+am__libcommon_la_SOURCES_DIST = xcgroup_read_config.c \
+	xcgroup_read_config.h xcgroup.c xcgroup.h xcpuinfo.c \
+	xcpuinfo.h assoc_mgr.c assoc_mgr.h basil_resv_conf.c \
+	basil_resv_conf.h xmalloc.c xmalloc.h xassert.c xassert.h \
+	xstring.c xstring.h xsignal.c xsignal.h forward.c forward.h \
+	strlcpy.c strlcpy.h list.c list.h net.c net.h fd.c fd.h log.c \
+	log.h cbuf.c cbuf.h safeopen.c safeopen.h bitstring.c \
+	bitstring.h mpi.c mpi.h pack.c pack.h parse_config.c \
+	parse_config.h parse_spec.c parse_spec.h plugin.c plugin.h \
+	plugrack.c plugrack.h print_fields.c print_fields.h \
+	read_config.c read_config.h node_select.c node_select.h env.c \
+	env.h slurm_cred.h slurm_cred.c slurm_errno.c slurm_priority.c \
+	slurm_priority.h slurm_protocol_api.c slurm_protocol_api.h \
 	slurm_protocol_pack.c slurm_protocol_pack.h \
 	slurm_protocol_util.c slurm_protocol_util.h \
 	slurm_protocol_socket_implementation.c \
@@ -131,7 +132,8 @@ am__libcommon_la_SOURCES_DIST = assoc_mgr.c assoc_mgr.h \
 	proc_args.c proc_args.h slurm_strcasestr.c slurm_strcasestr.h \
 	node_conf.h node_conf.c gres.h gres.c
 @HAVE_UNSETENV_FALSE@am__objects_1 = unsetenv.lo
-am_libcommon_la_OBJECTS = assoc_mgr.lo basil_resv_conf.lo xmalloc.lo \
+am_libcommon_la_OBJECTS = xcgroup_read_config.lo xcgroup.lo \
+	xcpuinfo.lo assoc_mgr.lo basil_resv_conf.lo xmalloc.lo \
 	xassert.lo xstring.lo xsignal.lo forward.lo strlcpy.lo list.lo \
 	net.lo fd.lo log.lo cbuf.lo safeopen.lo bitstring.lo mpi.lo \
 	pack.lo parse_config.lo parse_spec.lo plugin.lo plugrack.lo \
@@ -401,6 +403,9 @@ noinst_LTLIBRARIES = \
 	libspank.la
 
 libcommon_la_SOURCES = \
+ 	xcgroup_read_config.c xcgroup_read_config.h		\
+ 	xcgroup.c xcgroup.h 					\
+ 	xcpuinfo.c xcpuinfo.h 					\
 	assoc_mgr.c assoc_mgr.h 	\
 	basil_resv_conf.c basil_resv_conf.h \
 	xmalloc.c xmalloc.h 		\
@@ -650,6 +655,9 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/working_cluster.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/write_labelled_message.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xassert.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xcgroup.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xcgroup_read_config.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xcpuinfo.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xmalloc.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xsignal.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xstring.Plo@am__quote@

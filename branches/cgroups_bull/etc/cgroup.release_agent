@@ -1,2 +1,12 @@
 #!/bin/bash
-rmdir /dev/cgroup/$@
+
+base_path=/dev/cgroup/slurm
+progname=$(basename $0)
+subsystem=${progname##*_}
+
+echo ${base_path}/${subsystem}$@ >> /app/slurm/mnp/flag
+
+if [[ -d ${base_path}/${subsystem} ]]
+then
+     rmdir ${base_path}/${subsystem}$@
+fi

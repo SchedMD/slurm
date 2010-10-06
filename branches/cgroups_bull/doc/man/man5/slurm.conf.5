@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "August 2010" "slurm.conf 2.2" "Slurm configuration file"
+.TH "slurm.conf" "5" "September 2010" "slurm.conf 2.2" "Slurm configuration file"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -1522,6 +1522,40 @@ of communications between SLURM components.
 The default value is "root".
 
 .TP
+\fBSlurmHome\fR
+The requested 'home' directory for the SlurmUser. The default is
+/home/slurmuser, or whatever the system default is for home
+directories. This parameter is ignored by SLURM software. It is
+used by the 'slurm_setup.sh' script.  (See slurm_setup.sh.8).
+
+.TP
+\fBSlurmGroup\fR
+The requested Group name to be associated with the SlurmUser. The
+default is to use 'SlurmUser' as the group name.
+This parameter is ignored by SLURM software. It is
+used by the 'slurm_setup.sh' script.  (See slurm_setup.sh.8).
+
+.TP
+\fBSlurmUID\fR
+A specific numeric User ID to be used when creating the SlurmUser. The
+default is to use the UID assigned by the "useradd" command when the
+SlurmUser is created. The UID value, whether specific or default, is
+copied to the remote nodes, so that the SlurmUser will have the same
+UID on all nodes.
+This parameter is ignored by SLURM software. It is
+used by the 'slurm_setup.sh' script.  (See slurm_setup.sh.8).
+
+.TP
+\fBSlurmGID\fR
+A specific numeric Group ID to be used when creating the SlurmUser. The
+default is to use the GID assigned by the "groupadd" command when the
+SlurmUser's group is created. The GID value, whether specific or default, is
+copied to the remote nodes, so that the SlurmUser will have the same
+GID on all nodes.
+This parameter is ignored by SLURM software. It is
+used by the 'slurm_setup.sh' script.  (See slurm_setup.sh.8).
+
+.TP
 \fBSlurmctldDebug\fR
 The level of detail to provide \fBslurmctld\fR daemon's logs.
 Values from 0 to 9 are legal, with `0' being "quiet" operation and `9'
@@ -1768,7 +1802,11 @@ processors).
 Acceptable values include
 "task/none" for systems requiring no special handling and
 "task/affinity" to enable the \-\-cpu_bind and/or \-\-mem_bind
-srun options.
+srun options using the task affinity plugin.
+"task/cgroup" to enable the \-\-cpu_bind and/or \-\-mem_bind
+srun options using the task cgroup plugin.  See the man page for
+cgroup.conf for additional parameters related to the task cgroup
+plugin.
 The default value is "task/none".
 If you "task/affinity" and encounter problems, it may be due to
 the variety of system calls used to implement task affinity on
@@ -1779,7 +1817,7 @@ which is supported by SLURM.
 
 .TP
 \fBTaskPluginParam\fR
-Optional parameters for the task plugin.
+Optional parameters for the task affinity plugin.
 Multiple options should be comma separated
 If \fBNone\fR, \fBSockets\fR, \fBCores\fR, \fBThreads\fR,
 and/or \fBVerbose\fR are specified, they will override

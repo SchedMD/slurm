@@ -47,6 +47,7 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <unistd.h>
 #include <fcntl.h>
 #include <stdlib.h>
 #include <string.h>
@@ -65,6 +66,8 @@
 #define PATH_MAX 256
 #endif
 
+#define CGROUP_SLURMDIR CGROUP_BASEDIR "/slurm"
+
 /* internal functions */
 size_t _file_getsize(int fd);
 int _file_read_uint32s(char* file_path,uint32_t** pvalues,int* pnb);
@@ -73,53 +76,68 @@ int _file_read_uint64s(char* file_path,uint64_t** pvalues,int* pnb);
 int _file_write_uint64s(char* file_path,uint64_t* values,int nb);
 int _file_read_content(char* file_path,char** content,size_t *csize);
 int _file_write_content(char* file_path,char* content,size_t csize);
-int _xcgroup_cpuset_init(char* file_path);
+int _xcgroup_cpuset_init(xcgroup_t* cg);
 
-/* xcgroup primitives */
-int xcgroup_is_available(void)
-{
-	char* value;
-	size_t s;
 
-	if ( xcgroup_get_param(CGROUP_BASEDIR,"release_agent",
-			       &value,&s) != XCGROUP_SUCCESS )
-		return 0;
-	else {
-		xfree(value);
-		return 1;
-	}
+/*
+ * -----------------------------------------------------------------------------
+ * xcgroup_ns primitives xcgroup_ns primitives xcgroup_ns primitives
+ * xcgroup_ns primitives xcgroup_ns primitives xcgroup_ns primitives
+ * xcgroup_ns primitives xcgroup_ns primitives xcgroup_ns primitives
+ * -----------------------------------------------------------------------------
+ */
 
+/*
+ * create a cgroup namespace for tasks containment
+ *
+ * returned values:
+ *  - XCGROUP_ERROR
+ *  - XCGROUP_SUCCESS
+ */
+int xcgroup_ns_create(xcgroup_ns_t* cgns,char* mnt_point,char* mnt_args,
+		      char* subsys,char* notify_prog) {
+
+	cgns->mnt_point = xstrdup(mnt_point);
+	cgns->mnt_args = xstrdup(mnt_args);
+	cgns->subsystems = xstrdup(subsys);
+	cgns->notify_prog = xstrdup(notify_prog);
+	return XCGROUP_SUCCESS;
 }
 
-int xcgroup_set_release_agent(char* agent)
+/*
+ * destroy a cgroup namespace
+ *
+ * returned values:
+ *  - XCGROUP_ERROR
+ *  - XCGROUP_SUCCESS
+ */
+int xcgroup_ns_destroy(xcgroup_ns_t* cgns) {
+
+	xfree(cgns->mnt_point);
+	xfree(cgns->mnt_args);
+	xfree(cgns->subsystems);
+	xfree(cgns->notify_prog);
+
+	return XCGROUP_SUCCESS;
+}
+
+/*
+ * mount a cgroup namespace
+ *
+ * returned values:
+ *  - XCGROUP_ERROR
+ *  - XCGROUP_SUCCESS
+ */
+int xcgroup_ns_mount(xcgroup_ns_t* cgns)
 {
 	int fstatus;
-	char* rag;
-	char* value;
-	size_t s;
-
-	if ( agent == NULL )
-		return XCGROUP_ERROR;
-
-	rag = (char*) xstrdup("release_agent=");
-	fstatus = xcgroup_get_param(CGROUP_BASEDIR,"release_agent",
-				    &value,&s);
-	if (  fstatus == XCGROUP_SUCCESS ) {
-		if ( strcmp(value,agent) != 0 ) {
-			xstrcat(rag,agent);
-			fstatus = xcgroup_set_params(CGROUP_BASEDIR,rag);
-		}
-		xfree(value);
-	}
-
-	xfree(rag);
-	return fstatus;
-}
-
-int xcgroup_mount(char* mount_opts)
-{
 	char* mount_cmd_fmt;
 	char mount_cmd[1024];
+
+	char* mnt_point;
+	char* p;
+
+	xcgroup_t cg;
 
 	mode_t cmask;
 	mode_t omask;
@@ -127,24 +145,50 @@ int xcgroup_mount(char* mount_opts)
 	cmask = S_IWGRP | S_IWOTH;
 	omask = umask(cmask);
 
-	if ( mkdir(CGROUP_BASEDIR,0755) && errno != EEXIST) {
-		debug("unable to create cgroup directory '%s'"
-		      " : %m",CGROUP_BASEDIR);
+	fstatus = mkdir(cgns->mnt_point,0755);
+	if ( fstatus && errno != EEXIST ) {
+		if ( cgns->mnt_point[0] != '/' ) {
+			debug("unable to create cgroup ns directory '%s'"
+			      " : do not start with '/'",cgns->mnt_point);
+			umask(omask);
+			return XCGROUP_ERROR;
+		}
+		mnt_point = xstrdup(cgns->mnt_point);
+		p = mnt_point;
+		while ( (p = index(p+1,'/')) != NULL ) {
+			*p = '\0';
+			mkdir(mnt_point,0755);
+			if ( errno != EEXIST) {
+				debug("unable to create cgroup ns required "
+				      "directory '%s'",mnt_point);
+				xfree(mnt_point);
+				umask(omask);
+				return XCGROUP_ERROR;
+			}
+			*p='/';
+		}
+		xfree(mnt_point);
+		fstatus = mkdir(cgns->mnt_point,0755);
+	}
+
+	if ( fstatus && errno != EEXIST) {
+		debug("unable to create cgroup ns directory '%s'"
+		      " : %m",cgns->mnt_point);
 		umask(omask);
 		return XCGROUP_ERROR;
 	}
 	umask(omask);
 
-	if ( mount_opts == NULL ||
-	     strlen(mount_opts) == 0 ) {
-		mount_cmd_fmt="/bin/mount -t cgroup none " CGROUP_BASEDIR;
+	if ( cgns->mnt_args == NULL ||
+	     strlen(cgns->mnt_args) == 0 ) {
+		mount_cmd_fmt = "/bin/mount -o %s%s -t cgroup none %s";
 	}
 	else
-		mount_cmd_fmt="/bin/mount -o %s -t cgroup none " CGROUP_BASEDIR;
+		mount_cmd_fmt = "/bin/mount -o %s,%s -t cgroup none %s";
 
-	if ( snprintf(mount_cmd,1024,mount_cmd_fmt,
-		      mount_opts) >= 1024 ) {
-		debug2("unable to build mount cmd line");
+	if ( snprintf(mount_cmd,1024,mount_cmd_fmt,cgns->subsystems,
+		      cgns->mnt_args,cgns->mnt_point) >= 1024 ) {
+		debug2("unable to build cgroup ns mount cmd line");
 		return XCGROUP_ERROR;
 	}
 	else
@@ -152,35 +196,218 @@ int xcgroup_mount(char* mount_opts)
 
 	if ( system(mount_cmd) )
 		return XCGROUP_ERROR;
-	else
+	else {
+		/* we then set the release_agent if necessary */
+		if ( cgns->notify_prog ) {
+			if ( xcgroup_create(cgns,&cg,"/",0,0) ==
+			     XCGROUP_ERROR )
+				return XCGROUP_SUCCESS;
+			xcgroup_set_param(&cg,"release_agent",
+					  cgns->notify_prog);
+		}
 		return XCGROUP_SUCCESS;
-
+	}
 }
 
-int xcgroup_create(char* file_path,xcgroup_opts_t* opts)
+/*
+ * umount a cgroup namespace
+ *
+ * returned values:
+ *  - XCGROUP_ERROR
+ *  - XCGROUP_SUCCESS
+ */
+int xcgroup_ns_umount(xcgroup_ns_t* cgns)
+{
+	char* umount_cmd_fmt;
+	char umount_cmd[1024];
+
+	umount_cmd_fmt = "/bin/umount %s";
+
+	if ( snprintf(umount_cmd,1024,umount_cmd_fmt,
+		      cgns->mnt_point) >= 1024 ) {
+		debug2("unable to build cgroup ns umount cmd line");
+		return XCGROUP_ERROR;
+	}
+	else
+		debug3("cgroup ns umount cmd line is '%s'",umount_cmd);
+
+	if ( system(umount_cmd) )
+		return XCGROUP_ERROR;
+	else
+		return XCGROUP_SUCCESS;
+}
+
+/*
+ * check that a cgroup namespace is ready to be used
+ *
+ * returned values:
+ *  - XCGROUP_ERROR : not available
+ *  - XCGROUP_SUCCESS : ready to be used
+ */
+int xcgroup_ns_is_available(xcgroup_ns_t* cgns)
 {
 	int fstatus;
+	char* value;
+	size_t s;
+	xcgroup_t cg;
+
+	if ( xcgroup_create(cgns,&cg,"/",0,0) == XCGROUP_ERROR )
+		return 0;
+
+	if ( xcgroup_get_param(&cg,"release_agent",
+			       &value,&s) != XCGROUP_SUCCESS )
+		fstatus = 0;
+	else {
+		xfree(value);
+		fstatus = 1;
+	}
+
+	xcgroup_destroy(&cg);
+
+	return fstatus;
+}
+
+/*
+ * Look for the cgroup in a specific cgroup namespace that owns
+ * a particular pid
+ *
+ * returned values:
+ *  - XCGROUP_ERROR
+ *  - XCGROUP_SUCCESS
+ */
+int xcgroup_ns_find_by_pid(xcgroup_ns_t* cgns,xcgroup_t* cg,pid_t pid)
+{
+	int fstatus = SLURM_ERROR;
+	char file_path[PATH_MAX];
+	char* buf;
+	size_t fsize;
+	char* p;
+	char* e;
+	char* entry;
+	char* subsys;
+	int found=0;
+
+	/* build pid cgroup meta filepath */
+	if ( snprintf(file_path,PATH_MAX,"/proc/%u/cgroup",
+		      pid) >= PATH_MAX ) {
+		debug2("unable to build cgroup meta filepath for pid=%u : %m",
+		       pid);
+		return XCGROUP_ERROR;
+	}
+
+	/*
+	 * read file content
+	 * multiple lines of the form :
+	 * num_mask:subsystems:relative_path
+	 */
+	fstatus = _file_read_content(file_path,&buf,&fsize);
+	if ( fstatus == XCGROUP_SUCCESS ) {
+		fstatus = XCGROUP_ERROR;
+		p = buf;
+		while ( found==0 && (e = index(p,'\n')) != NULL ) {
+			*e='\0';
+			/* get subsystems entry */
+			subsys = index(p,':');
+			p=e;
+			if ( subsys == NULL )
+				continue;
+			subsys++;
+			/* get relative path entry */
+			entry = index(subsys,':');
+			if ( entry == NULL )
+				continue;
+			*entry='\0';
+			/* check subsystem versus ns one */
+			if ( strcmp(cgns->subsystems,subsys) != 0 ) {
+				debug("skipping cgroup subsys %s(%s)",
+				      subsys,cgns->subsystems);
+				continue;
+			}
+			else
+				found=1;
+			entry++;
+			fstatus = xcgroup_load(cgns,cg,entry);
+			break;
+		}
+		xfree(buf);
+	}
+
+	return fstatus;
+}
+
+
+/*
+ * -----------------------------------------------------------------------------
+ * xcgroup primitives xcgroup primitives xcgroup primitives xcgroup primitives
+ * xcgroup primitives xcgroup primitives xcgroup primitives xcgroup primitives
+ * xcgroup primitives xcgroup primitives xcgroup primitives xcgroup primitives
+ * -----------------------------------------------------------------------------
+ */
+
+int xcgroup_create(xcgroup_ns_t* cgns,xcgroup_t* cg,
+		   char* uri,uid_t uid, gid_t gid)
+{
+	int fstatus = XCGROUP_ERROR;
+	char file_path[PATH_MAX];
+
+	/* build cgroup absolute path*/
+	if ( snprintf(file_path,PATH_MAX,"%s%s",cgns->mnt_point,
+		      uri) >= PATH_MAX ) {
+		debug2("unable to build cgroup '%s' absolute path in ns '%s' "
+		       ": %m",uri,cgns->subsystems);
+		return fstatus;
+	}
+
+	/* fill xcgroup structure */
+	cg->ns = cgns;
+	cg->name = xstrdup(uri);
+	cg->path = xstrdup(file_path);
+	cg->uid = uid;
+	cg->gid = gid;
+
+	return XCGROUP_SUCCESS;
+}
+
+int xcgroup_destroy(xcgroup_t* cg)
+{
+	cg->ns = NULL;
+	xfree(cg->name);
+	xfree(cg->path);
+	cg->uid = -1;
+	cg->gid = -1;
+	return XCGROUP_SUCCESS;
+}
+
+int xcgroup_instanciate(xcgroup_t* cg)
+{
+	int fstatus = XCGROUP_ERROR;
+	mode_t cmask;
+	mode_t omask;
+
+	xcgroup_ns_t* cgns;
+	char* uri;
+	char* file_path;
 	uid_t uid;
 	gid_t gid;
 	int create_only;
 	int notify;
 
-	mode_t cmask;
-	mode_t omask;
-
-	uid=opts->uid;
-	gid=opts->gid;
-	create_only=opts->create_only;
-	notify=opts->notify;
-
-	fstatus = XCGROUP_ERROR;
+	/* init variables based on input cgroup */
+	cgns = cg->ns;
+	uri = cg->name;
+	file_path = cg->path;
+	uid = cg->uid;
+	gid = cg->gid;
+	create_only=0;
+	notify=1;
 
 	/* save current mask and apply working one */
 	cmask = S_IWGRP | S_IWOTH;
 	omask = umask(cmask);
+    umask(0); // mnp temp change
 
 	/* build cgroup */
-	if ( mkdir(file_path,0755) ) {
+ 	if ( mkdir(file_path,0777) ) {   // mnp temp change 755 to 777
 		if ( create_only || errno != EEXIST ) {
 			debug2("unable to create cgroup '%s' : %m",
 			       file_path);
@@ -191,10 +418,12 @@ int xcgroup_create(char* file_path,xcgroup_opts_t* opts)
 	umask(omask);
 
 	/* initialize cpuset support (if enabled in cgroup ) */
-	if ( _xcgroup_cpuset_init(file_path) != XCGROUP_SUCCESS ) {
-		debug2("unable to initialize cpuset cgroup component");
-		rmdir(file_path);
-		return fstatus;
+	if ( strcmp(cg->ns->mnt_point, CGROUP_SLURMDIR "/cpuset") == 0) {
+	    if ( _xcgroup_cpuset_init(cg) != XCGROUP_SUCCESS ) {
+		    debug2("unable to initialize cpuset cgroup component");
+		    rmdir(file_path);
+		    return fstatus;
+	    }
 	}
 
 	/* change cgroup ownership as requested */
@@ -209,17 +438,46 @@ int xcgroup_create(char* file_path,xcgroup_opts_t* opts)
 	fstatus = XCGROUP_SUCCESS;
 
 	/* set notify on release flag */
-	if ( notify == 1 )
-		xcgroup_set_params(file_path,"notify_on_release=1");
-	else if ( notify == 0 )
-		xcgroup_set_params(file_path,"notify_on_release=0");
-
+	if ( notify && cgns->notify_prog )
+		xcgroup_set_params(cg,"notify_on_release=1");
+	else
+		xcgroup_set_params(cg,"notify_on_release=0");
 	return fstatus;
 }
 
-int xcgroup_destroy(char* file_path)
+int xcgroup_load(xcgroup_ns_t* cgns,xcgroup_t* cg,char* uri)
 {
+	int fstatus = XCGROUP_ERROR;
+	char file_path[PATH_MAX];
 
+	struct stat buf;
+
+	/* build cgroup absolute path*/
+	if ( snprintf(file_path,PATH_MAX,"%s%s",cgns->mnt_point,
+		      uri) >= PATH_MAX ) {
+		debug2("unable to build cgroup '%s' absolute path in ns '%s' "
+		       ": %m",uri,cgns->subsystems);
+		return fstatus;
+	}
+
+	if ( stat((const char*)file_path,&buf) ) {
+		debug2("unable to get cgroup '%s' entry '%s' properties"
+		       ": %m",cgns->mnt_point,file_path);
+		return fstatus;
+	}
+
+	/* fill xcgroup structure */
+	cg->ns = cgns;
+	cg->name = xstrdup(uri);
+	cg->path = xstrdup(file_path);
+	cg->uid = buf.st_uid;
+	cg->gid = buf.st_gid;
+
+	return XCGROUP_SUCCESS;
+}
+
+int xcgroup_delete(xcgroup_t* cg)
+{
 	/*
 	 * nothing to be done here, notify_on_release was set
 	 * so hope that all will works perfectly...
@@ -234,17 +492,16 @@ int xcgroup_destroy(char* file_path)
 	 * we should have a way to ask the cgroup to force_empty
 	 * on last process exit but I did not find any for now
 	 */
-	//xcgroup_set_params(file_path,"memory.force_empty=1");
+	//xcgroup_set_params(cg,"memory.force_empty=1");
 
 	return XCGROUP_SUCCESS;
 }
 
-int xcgroup_add_pids(char* cpath,pid_t* pids,int npids)
+int xcgroup_add_pids(xcgroup_t* cg,pid_t* pids,int npids)
 {
-	int fstatus;
+	int fstatus = XCGROUP_ERROR;
+	char* cpath = cg->path;
 	char file_path[PATH_MAX];
-
-	fstatus = XCGROUP_ERROR;
 
 	if ( snprintf(file_path,PATH_MAX,"%s/tasks",
 		      cpath) >= PATH_MAX ) {
@@ -259,12 +516,11 @@ int xcgroup_add_pids(char* cpath,pid_t* pids,int npids)
 }
 
 int
-xcgroup_get_pids(char* cpath, pid_t **pids, int *npids)
+xcgroup_get_pids(xcgroup_t* cg, pid_t **pids, int *npids)
 {
-	int fstatus;
+	int fstatus = XCGROUP_ERROR;
+	char* cpath = cg->path;
 	char file_path[PATH_MAX];
-
-	fstatus = XCGROUP_ERROR;
 
 	if ( pids == NULL || npids == NULL )
 		return SLURM_ERROR;
@@ -281,188 +537,34 @@ xcgroup_get_pids(char* cpath, pid_t **pids, int *npids)
 	return fstatus;
 }
 
-int
-xcgroup_find_by_pid(char* cpath, pid_t pid)
-{
-	int fstatus = SLURM_ERROR;
-	char file_path[PATH_MAX];
-	char* buf;
-	size_t fsize;
-	char* p;
-	char* e;
-	char* entry;
-
-	/* build pid cgroup meta filepath */
-	if ( snprintf(file_path,PATH_MAX,"/proc/%u/cgroup",
-		      pid) >= PATH_MAX ) {
-		debug2("unable to build cgroup meta filepath for pid=%u : %m",
-		       pid);
-		return XCGROUP_ERROR;
-	}
-
-	/* read file content */
-	fstatus = _file_read_content(file_path,&buf,&fsize);
-	if ( fstatus == XCGROUP_SUCCESS ) {
-		fstatus = XCGROUP_ERROR;
-		p = buf;
-		if ( index(p,'\n') != NULL ) {
-			e = index(p,'\n');
-			*e='\0';
-			entry = rindex(p,':');
-			if ( entry != NULL ) {
-				entry++;
-				snprintf(cpath,PATH_MAX,"%s%s",
-					 CGROUP_BASEDIR,entry);
-				fstatus = XCGROUP_SUCCESS;
-			}
-		}
-		xfree(buf);
-	}
-
-	return fstatus;
-}
-
-int xcgroup_set_memlimit(char* cpath,uint32_t memlimit)
+int xcgroup_get_cpuset_cpus(xcgroup_t* cg,char* range)
 {
 	int fstatus;
+	char* cpath = cg->path;
 	char file_path[PATH_MAX];
-	uint64_t ml;
+	size_t csize;
 
 	fstatus = XCGROUP_ERROR;
-
-	if ( snprintf(file_path,PATH_MAX,"%s/memory.limit_in_bytes",
+	if ( snprintf(file_path,PATH_MAX,"%s/cpuset.cpus",
 		      cpath) >= PATH_MAX ) {
-		debug2("unable to set memory limit of '%s' : %m",cpath);
+		debug2("unable to set cpuset.cpus to '%s' for '%s' : %m",
+		       range,cpath);
 		return fstatus;
 	}
 
-	ml = (uint64_t) memlimit * 1024 * 1024;
-	fstatus = _file_write_uint64s(file_path,&ml,1);
+	fstatus = _file_read_content(file_path,&range,&csize);
 	if ( fstatus != XCGROUP_SUCCESS )
-		debug2("unable to set memory limit of '%s' : %m",cpath);
+		debug2("unable to get cpuset.cpus for '%s' : %m",
+		       cpath);
 	else
-		debug3("memory limit set to %uMB for '%s'",memlimit,cpath);
-
+		debug3("cpuset.cpus for '%s' is '%s'",cpath, range);
 	return fstatus;
 }
 
-int xcgroup_get_memlimit(char* cpath,uint32_t* memlimit)
+int xcgroup_set_cpuset_cpus(xcgroup_t* cg,char* range)
 {
 	int fstatus;
-	char file_path[PATH_MAX];
-	uint64_t* ml;
-	int i;
-
-	fstatus = XCGROUP_ERROR;
-
-	if ( snprintf(file_path,PATH_MAX,"%s/memory.limit_in_bytes",
-		      cpath) >= PATH_MAX ) {
-		debug2("unable to get memory limit of '%s' : %m",cpath);
-		return fstatus;
-	}
-
-	fstatus = _file_read_uint64s(file_path,&ml,&i);
-	if ( fstatus != XCGROUP_SUCCESS ||
-	     i == 0 )
-		debug2("unable to get memory limit of '%s' : %m",cpath);
-	else {
-		if ( *ml == 0 ) {
-			*memlimit = 0;
-		}
-		else {
-			/* convert into MB */
-			*ml /= 1024 * 1024;
-			/* memlimit is stored into a uint32_t */
-			/* so cap the memlimit value to the max value */
-			/* of an uint32_t */
-			*memlimit = -1 ;
-			if ( *ml < *memlimit ) {
-				*memlimit = *ml;
-			}
-		}
-		debug3("memory limit of '%s' is %uMB",cpath,*memlimit);
-		xfree(ml);
-	}
-
-	return fstatus;
-}
-
-int xcgroup_set_memswlimit(char* cpath,uint32_t memlimit)
-{
-	int fstatus;
-	char file_path[PATH_MAX];
-	uint64_t ml;
-
-	fstatus = XCGROUP_ERROR;
-
-	if ( snprintf(file_path,PATH_MAX,"%s/memory.memsw.limit_in_bytes",
-		      cpath) >= PATH_MAX ) {
-		debug2("unable to set memsw limit of '%s' : %m",cpath);
-		return fstatus;
-	}
-
-	ml = (uint64_t) memlimit * 1024 * 1024;
-	fstatus = _file_write_uint64s(file_path,&ml,1);
-	if ( fstatus != XCGROUP_SUCCESS )
-		debug2("unable to set memsw limit of '%s' : %m",cpath);
-	else
-		debug3("mem+swap limit set to %uMB for '%s'",memlimit,cpath);
-
-	return fstatus;
-}
-
-int xcgroup_get_memswlimit(char* cpath,uint32_t* memlimit)
-{
-	int fstatus;
-	char file_path[PATH_MAX];
-	uint64_t *ml;
-	int i;
-
-	fstatus = XCGROUP_ERROR;
-
-	if ( snprintf(file_path,PATH_MAX,"%s/memory.memsw.limit_in_bytes",
-		      cpath) >= PATH_MAX ) {
-		debug2("unable to get memsw limit of '%s' : %m",cpath);
-		return fstatus;
-	}
-
-	fstatus = _file_read_uint64s(file_path,&ml,&i);
-	if ( fstatus != XCGROUP_SUCCESS ||
-	     i ==0 )
-		debug2("unable to get memsw limit of '%s' : %m",cpath);
-	else {
-		if ( *ml == 0 ) {
-			*memlimit = 0;
-		}
-		else {
-			/* convert into MB */
-			*ml /= 1024 * 1024;
-			/* memlimit is stored into a uint32_t */
-			/* so cap the memlimit value to the max value */
-			/* of an uint32_t */
-			*memlimit = -1 ;
-			if ( *ml < *memlimit ) {
-				*memlimit = *ml;
-			}
-		}
-		debug3("mem+swap limit of '%s' is %uMB",cpath,*memlimit);
-		xfree(ml);
-	}
-
-	return fstatus;
-}
-
-int xcgroup_set_mem_use_hierarchy(char* cpath,int flag)
-{
-	if ( flag )
-		return xcgroup_set_params(cpath,"memory.use_hierarchy=1");
-	else
-		return xcgroup_set_params(cpath,"memory.use_hierarchy=0");
-}
-
-int xcgroup_set_cpuset_cpus(char* cpath,char* range)
-{
-	int fstatus;
+	char* cpath = cg->path;
 	char file_path[PATH_MAX];
 
 	fstatus = XCGROUP_ERROR;
@@ -484,16 +586,15 @@ int xcgroup_set_cpuset_cpus(char* cpath,char* range)
 	return fstatus;
 }
 
-int xcgroup_set_params(char* cpath,char* parameters)
+int xcgroup_set_params(xcgroup_t* cg,char* parameters)
 {
-	int fstatus;
+	int fstatus = XCGROUP_ERROR;
 	char file_path[PATH_MAX];
+	char* cpath = cg->path;
 	char* params;
 	char* value;
 	char* p;
 	char* next;
-
-	fstatus = XCGROUP_ERROR;
 
 	params = (char*) xstrdup(parameters);
 
@@ -532,18 +633,41 @@ int xcgroup_set_params(char* cpath,char* parameters)
 	}
 
 	xfree(params);
+	return fstatus;
+}
+
+int xcgroup_set_param(xcgroup_t* cg,char* parameter,char* content)
+{
+	int fstatus = XCGROUP_ERROR;
+	char file_path[PATH_MAX];
+	char* cpath = cg->path;
+
+	if ( snprintf(file_path,PATH_MAX,"%s/%s",cpath,parameter)
+	     >= PATH_MAX ) {
+		debug2("unable to build filepath for '%s' and"
+		       " parameter '%s' : %m",cpath,parameter);
+		return fstatus;
+	}
+
+	fstatus = _file_write_content(file_path,content,
+				      strlen(content));
+	if ( fstatus != XCGROUP_SUCCESS )
+		debug2("unable to set parameter '%s' to "
+		       "'%s' for '%s'",parameter,content,cpath);
+	else
+		debug3("parameter '%s' set to '%s' for '%s'",
+		       parameter,content,cpath);
 
 	return fstatus;
 }
 
-int xcgroup_get_param(char* cpath,char* parameter,char **content,size_t *csize)
+int xcgroup_get_param(xcgroup_t* cg,char* parameter,char **content,size_t *csize)
 {
-	int fstatus;
+	int fstatus = XCGROUP_ERROR;
 	char file_path[PATH_MAX];
+	char* cpath = cg->path;
 
-	fstatus = XCGROUP_ERROR;
-
-	if ( snprintf(file_path,PATH_MAX,"%s/%s",cpath,parameter)
+	if ( snprintf(file_path,PATH_MAX,"%s%s",cpath,parameter)
 	     >= PATH_MAX ) {
 		debug2("unable to build filepath for '%s' and"
 		       " parameter '%s' : %m",cpath,parameter);
@@ -553,10 +677,75 @@ int xcgroup_get_param(char* cpath,char* parameter,char **content,size_t *csize)
 		if ( fstatus != XCGROUP_SUCCESS )
 			debug2("unable to get parameter '%s'", parameter);
 	}
-
 	return fstatus;
 }
 
+
+/*
+ * -----------------------------------------------------------------------------
+ * internal primitives internal primitives internal primitives
+ * internal primitives internal primitives internal primitives
+ * internal primitives internal primitives internal primitives
+ * -----------------------------------------------------------------------------
+ */
+
+int _xcgroup_cpuset_init(xcgroup_t* cg)
+{
+	int fstatus;
+	char path[PATH_MAX];
+	char* cpath = cg->path;
+
+	char* cpuset_metafiles[] = {
+		"cpuset.cpus",
+		"cpuset.mems"
+	};
+	char* cpuset_meta;
+	char* cpuset_conf;
+	size_t csize;
+
+	int i;
+
+	fstatus = XCGROUP_ERROR;
+
+	/* when cgroups are configured with cpuset, at least
+	 * cpuset.cpus and cpuset.mems must be set or the cgroup
+	 * will not be available at all.
+	 * we duplicate the ancestor configuration in the init step */
+	for ( i = 0 ; i < 2 ; i++ ) {
+
+		cpuset_meta = cpuset_metafiles[i];
+
+		/* try to read ancestor configuration */
+		if ( snprintf(path,PATH_MAX,"%s/../%s",
+			      cpath,cpuset_meta) >= PATH_MAX ) {
+			debug2("unable to get ancestor %s for cgroup '%s' : %m",
+			       cpuset_meta,cpath);
+			return fstatus;
+		}
+		if ( _file_read_content(path,&cpuset_conf,&csize) !=
+		     XCGROUP_SUCCESS ) {
+			debug3("assuming no cpuset support for '%s'",path);
+			return XCGROUP_SUCCESS;
+		}
+
+		/* duplicate ancestor conf in current cgroup */
+		if ( snprintf(path,PATH_MAX,"%s/%s",
+			      cpath,cpuset_meta) >= PATH_MAX ) {
+			debug2("unable to set %s for cgroup '%s' : %m",
+			       cpuset_meta,cpath);
+			return fstatus;
+		}
+		if ( _file_write_content(path,cpuset_conf,csize) !=
+		     XCGROUP_SUCCESS ) {
+			debug2("unable to write %s configuration (%s) of '%s'",
+			       cpuset_meta,cpuset_conf,cpath);
+			return fstatus;
+		}
+
+	}
+
+	return XCGROUP_SUCCESS;
+}
 
 size_t _file_getsize(int fd)
 {
@@ -589,8 +778,7 @@ size_t _file_getsize(int fd)
 		return fsize;
 }
 
-int
-_file_write_uint64s(char* file_path,uint64_t* values,int nb)
+int _file_write_uint64s(char* file_path,uint64_t* values,int nb)
 {
 	int fstatus;
 	int rc;
@@ -613,10 +801,11 @@ _file_write_uint64s(char* file_path,uint64_t* values,int nb)
 
 		value = values[i];
 
-		rc = snprintf(tstr, sizeof(tstr), "%"PRIu64"", value);
+		rc = snprintf(tstr, sizeof(tstr), "%llu",
+			      (long long unsigned int)value);
 		if ( rc < 0 ) {
-			debug2("unable to build %"PRIu64" string value, "
-			       "skipping", value);
+			debug2("unable to build %lu string value, skipping",
+			       value);
 			fstatus = XCGROUP_ERROR;
 			continue;
 		}
@@ -639,9 +828,7 @@ _file_write_uint64s(char* file_path,uint64_t* values,int nb)
 	return fstatus;
 }
 
-
-int
-_file_read_uint64s(char* file_path,uint64_t** pvalues,int* pnb)
+int _file_read_uint64s(char* file_path,uint64_t** pvalues,int* pnb)
 {
 	int rc;
 	int fd;
@@ -698,7 +885,7 @@ _file_read_uint64s(char* file_path,uint64_t** pvalues,int* pnb)
 		i = 0;
 		while ( index(p,'\n') != NULL ) {
 			long long unsigned int ll_tmp;
-			sscanf(p,"%llu", &ll_tmp);
+			sscanf(p,"%llu",&ll_tmp);
 			pa[i++] = ll_tmp;
 			p = index(p,'\n') + 1;
 		}
@@ -714,8 +901,7 @@ _file_read_uint64s(char* file_path,uint64_t** pvalues,int* pnb)
 	return XCGROUP_SUCCESS;
 }
 
-int
-_file_write_uint32s(char* file_path,uint32_t* values,int nb)
+int _file_write_uint32s(char* file_path,uint32_t* values,int nb)
 {
 	int fstatus;
 	int rc;
@@ -749,7 +935,7 @@ _file_write_uint32s(char* file_path,uint32_t* values,int nb)
 		do {
 			rc = write(fd, tstr, strlen(tstr)+1);
 		}
-		while ( rc != 0 && errno == EINTR);
+		while ( rc < 0 && errno == EINTR);
 		if (rc < 1) {
 			debug2("unable to add value '%s' to file '%s' : %m",
 			       tstr,file_path);
@@ -765,8 +951,7 @@ _file_write_uint32s(char* file_path,uint32_t* values,int nb)
 }
 
 
-int
-_file_read_uint32s(char* file_path,uint32_t** pvalues,int* pnb)
+int _file_read_uint32s(char* file_path,uint32_t** pvalues,int* pnb)
 {
 	int rc;
 	int fd;
@@ -838,8 +1023,7 @@ _file_read_uint32s(char* file_path,uint32_t** pvalues,int* pnb)
 	return XCGROUP_SUCCESS;
 }
 
-int
-_file_write_content(char* file_path, char* content,size_t csize)
+int _file_write_content(char* file_path,char* content,size_t csize)
 {
 	int fstatus;
 	int rc;
@@ -861,8 +1045,8 @@ _file_write_content(char* file_path, char* content,size_t csize)
 
 	/* check read size */
 	if (rc < csize) {
-		debug2("unable to write %zd bytes to file '%s' : %m",
-		       csize, file_path);
+		debug2("unable to write %ld bytes to file '%s' : %m",
+		       csize,file_path);
 		fstatus = XCGROUP_ERROR;
 	}
 	else
@@ -874,8 +1058,7 @@ _file_write_content(char* file_path, char* content,size_t csize)
 	return fstatus;
 }
 
-int
-_file_read_content(char* file_path,char** content,size_t *csize)
+int _file_read_content(char* file_path,char** content,size_t *csize)
 {
 	int fstatus;
 	int rc;
@@ -924,62 +1107,4 @@ _file_read_content(char* file_path,char** content,size_t *csize)
 	close(fd);
 
 	return fstatus;
-}
-
-
-int _xcgroup_cpuset_init(char* file_path)
-{
-	int fstatus;
-	char path[PATH_MAX];
-
-	char* cpuset_metafiles[] = {
-		"cpuset.cpus",
-		"cpuset.mems"
-	};
-	char* cpuset_meta;
-	char* cpuset_conf;
-	size_t csize;
-
-	int i;
-
-	fstatus = XCGROUP_ERROR;
-
-	/* when cgroups are configured with cpuset, at least
-	 * cpuset.cpus and cpuset.mems must be set or the cgroup
-	 * will not be available at all.
-	 * we duplicate the ancestor configuration in the init step */
-	for ( i = 0 ; i < 2 ; i++ ) {
-
-		cpuset_meta = cpuset_metafiles[i];
-
-		/* try to read ancestor configuration */
-		if ( snprintf(path,PATH_MAX,"%s/../%s",
-			      file_path,cpuset_meta) >= PATH_MAX ) {
-			debug2("unable to get ancestor %s for cgroup '%s' : %m",
-			       cpuset_meta,file_path);
-			return fstatus;
-		}
-		if ( _file_read_content(path,&cpuset_conf,&csize) !=
-		     XCGROUP_SUCCESS ) {
-			debug3("assuming no cpuset support for '%s'",path);
-			return XCGROUP_SUCCESS;
-		}
-
-		/* duplicate ancestor conf in current cgroup */
-		if ( snprintf(path,PATH_MAX,"%s/%s",
-			      file_path,cpuset_meta) >= PATH_MAX ) {
-			debug2("unable to set %s for cgroup '%s' : %m",
-			       cpuset_meta,file_path);
-			return fstatus;
-		}
-		if ( _file_write_content(path,cpuset_conf,csize) !=
-		     XCGROUP_SUCCESS ) {
-			debug2("unable to write %s configuration (%s) of '%s'",
-			       cpuset_meta,cpuset_conf,file_path);
-			return fstatus;
-		}
-
-	}
-
-	return XCGROUP_SUCCESS;
 }

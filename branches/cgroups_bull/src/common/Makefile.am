@@ -30,6 +30,9 @@ noinst_LTLIBRARIES = 			\
 	libspank.la
 
 libcommon_la_SOURCES = 			\
+ 	xcgroup_read_config.c xcgroup_read_config.h		\
+ 	xcgroup.c xcgroup.h 					\
+ 	xcpuinfo.c xcpuinfo.h 					\
 	assoc_mgr.c assoc_mgr.h 	\
 	basil_resv_conf.c basil_resv_conf.h \
 	xmalloc.c xmalloc.h 		\

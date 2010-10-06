@@ -185,6 +185,10 @@ function displayfile()
    "SlurmdPort=" + document.config.slurmd_port.value + "<br>" +
    "SlurmdSpoolDir=" + document.config.slurmd_spool_dir.value + "<br>" +
    "SlurmUser=" + document.config.slurm_user.value + "<br>" +
+   get_field("SlurmUID",document.config.slurm_uid) + "<br>" +
+   get_field("SlurmGroup",document.config.slurm_group) + "<br>" +
+   get_field("SlurmGID",document.config.slurm_gid) + "<br>" +
+   get_field("SlurmHome",document.config.slurm_home) + "<br>" +
    get_field("SrunEpilog",document.config.srun_epilog) + "<br>" +
    get_field("SrunProlog",document.config.srun_prolog) + "<br>" +
    "StateSaveLocation=" + document.config.state_save_location.value + "<br>" +
@@ -440,6 +444,27 @@ so it is recommended that a user "slurm" be created for it. For testing
 purposes any user name can be used.
 <P>
 <input type="text" name="slurm_user" value="slurm"> <B>SlurmUser</B>
+<P>
+<input type="text" name="slurm_uid" value=""> <B>SlurmUID</B>: Numerical 
+UID to use when creating the SlurmUser. Default is to accept the UID returned
+from the "useradd" command. Not directly used by SLURM code, but is processed
+and used by the "slurm_setup.sh" script. 
+<P>
+<input type="text" name="slurm_group" value=""> <B>SlurmGroup</B>: Group 
+name to use when creating the SlurmUser. Default is to use "SlurmUser"
+Not directly used by SLURM code, but is processed
+and used by the "slurm_setup.sh" script. 
+<P>
+<input type="text" name="slurm_gid" value=""> <B>SlurmGID</B>: Numerical 
+GID to use when creating the SlurmUser. Default is to accept the GID returned
+from the "groupadd" command. Not directly used by SLURM code, but is processed
+and used by the "slurm_setup.sh" script. 
+<P>
+<input type="text" name="slurm_home" value=""> <B>SlurmHome</B>: Requested
+"home" directory for the SlurmUser. Default is the system defined base
+directory concatenated with SlurmUser.
+Not directly used by SLURM code, but is processed
+and used by the "slurm_setup.sh" script. 
 <P>
 
 <H2>Group ID Caching</H2>

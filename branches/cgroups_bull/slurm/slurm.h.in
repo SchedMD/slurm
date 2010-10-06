@@ -447,7 +447,7 @@ typedef enum cpu_bind_type {	/* cpu binding type from --cpu_bind=... */
 
 	/* the following is used only as a flag for expressing
 	 * the contents of TaskPluginParams */
-	CPU_BIND_CPUSETS   = 0x8000
+	CPU_BIND_CPUSETS         = 0x8000   /* CPUSETS */
 } cpu_bind_type_t;
 
 typedef enum mem_bind_type {    /* memory binding type from --mem_bind=... */

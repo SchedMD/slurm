@@ -290,15 +290,17 @@ extern int task_pre_setuid (slurmd_job_t *job)
 {
 	char path[PATH_MAX];
 
-	if (!(conf->task_plugin_param & CPU_BIND_CPUSETS))
-		return SLURM_SUCCESS;
-
+	if (conf->task_plugin_param & CPU_BIND_CPUSETS) {
 	if (snprintf(path, PATH_MAX, "%s/slurm%u",
 			CPUSET_DIR, job->jobid) > PATH_MAX) {
 		error("cpuset path too long");
 		return SLURM_ERROR;
 	}
 	return slurm_build_cpuset(CPUSET_DIR, path, job->uid, job->gid);
+	}
+
+	return SLURM_SUCCESS;
+
 }
 
 /*

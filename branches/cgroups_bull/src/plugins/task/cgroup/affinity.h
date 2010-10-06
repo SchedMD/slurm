@@ -1,7 +1,4 @@
 /*****************************************************************************\
- *  src/plugins/task/affinity/affinity.h - task affinity plugin
- *  $Id: affinity.h,v 1.2 2005/11/04 02:46:51 palermo Exp $
- *****************************************************************************
  *  Copyright (C) 2005 Hewlett-Packard Development Company, L.P.
  *
  *  This file is part of SLURM, a resource management program.
@@ -93,6 +90,19 @@
 #include "src/common/util-net.h"
 #include "src/common/slurm_resource_info.h"
 
+#ifndef CGROUP_DIR
+#define CGROUP_DIR "/dev/cgroup"
+#endif
+#ifndef CGROUP_CPUSET
+#define CGROUP_CPUSET "/cpuset.cpus"
+#endif
+#ifndef SELF_CGROUP
+#define SELF_CGROUP "/proc/self/cgroup"
+#endif
+#ifndef CGROUP_CPUSET_TAG
+#define CGROUP_CPUSET_TAG "cpuset:"
+#endif
+
 #ifndef CPUSET_DIR
 #define CPUSET_DIR "/dev/cpuset"
 #endif
@@ -109,14 +119,14 @@ int	get_cpuset(cpu_set_t *mask, slurmd_job_t *job);
 int	slurm_setaffinity(pid_t pid, size_t size, const cpu_set_t *mask);
 int	slurm_getaffinity(pid_t pid, size_t size, cpu_set_t *mask);
 
-/*** from cpuset.c ***/
+/*** from cgroup_cpuset.c ***/
 #ifdef HAVE_NUMA
-int	slurm_set_memset(char *path, nodemask_t *new_mask);
-int	slurm_memset_available(void);
+int	slurm_set_memset_cgroup(char *path, nodemask_t *new_mask);
+int	slurm_memset_available_cgroup(void);
 #endif
-int	slurm_build_cpuset(char *base, char *path, uid_t uid, gid_t gid);
-int	slurm_get_cpuset(char *path, pid_t pid, size_t size, cpu_set_t *mask);
-int	slurm_set_cpuset(char *base, char *path, pid_t pid, size_t size,
+int	slurm_build_cgroup_cpuset(slurmd_job_t *job, uid_t uid, gid_t gid);
+int	slurm_get_cgroup_cpuset(pid_t pid, size_t size, cpu_set_t *mask);
+int	slurm_set_cgroup_cpuset(int task, pid_t pid, size_t size,
 		const cpu_set_t *mask);
 
 /*** from numa.c ***/
