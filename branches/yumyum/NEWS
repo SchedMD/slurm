@@ -43,6 +43,8 @@ documents those changes that are of interest to users and admins.
  -- Added the derived_exit_code member to job_info_t.  exit_code captures the
     exit code of the job script (or salloc) while derived_exit_code contains
     the highest exit code of all the job steps.
+ -- Added SLURM_JOB_EXIT_CODE and SLURM_JOB_DERIVED_EXIT_CODE variables to the
+    EpilogSlurmctld environment
 
 * Changes in SLURM 2.2.0.pre11
 ==============================
