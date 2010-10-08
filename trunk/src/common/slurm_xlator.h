@@ -315,6 +315,7 @@
 #define conn_type_string	slurm_conn_type_string
 #define node_use_string		slurm_node_use_string
 #define bg_block_state_string	slurm_bg_block_state_string
+#define reservation_flags_string slurm_reservation_flags_string
 
 /* slurmdbd_defs.[ch] functions */
 #define slurmdbd_free_list_msg	slurmdb_slurmdbd_free_list_msg
