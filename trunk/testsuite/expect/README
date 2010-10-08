@@ -165,6 +165,7 @@ test1.59   Test of hostfile logic for job steps
 test1.60   Test of labelling output when writing a file per task or per node
 test1.61   Test of srun job step time limit
 test1.62   Test of gres/gpu plugin (if configured).
+test1.63   Test of srun --disbale-status/-X option, SIGINT to be sent to tasks.
 
 **NOTE**   The following tests attempt to utilize multiple CPUs or partitions,
            The test will print "WARNING" and terminate with an exit code of
