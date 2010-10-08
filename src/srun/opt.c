@@ -1877,9 +1877,9 @@ static bool _opt_verify(void)
 					host = hostlist_pop(hl);
 					free(host);
 				}
-				hostlist_ranged_string(hl,
-						       strlen(opt.nodelist)+1,
-						       opt.nodelist);
+				xfree(opt.nodelist);
+				opt.nodelist =
+					hostlist_ranged_string_xmalloc(hl);
 			}
 		}
 

@@ -58,7 +58,7 @@ extern int	start_job(char *cmd_ptr, int *err_code, char **err_msg)
 	int i, rc, task_cnt;
 	uint32_t jobid;
 	hostlist_t hl = (hostlist_t) NULL;
-	char host_string[MAXHOSTRANGELEN];
+	char *host_string;
 	static char reply_msg[128];
 
 	arg_ptr = strstr(cmd_ptr, "ARG=");
@@ -119,7 +119,7 @@ extern int	start_job(char *cmd_ptr, int *err_code, char **err_msg)
 	task_ptr += 9;	/* skip over "TASKLIST=" */
 	if ((task_ptr[0] == '\0') || isspace(task_ptr[0])) {
 		/* No TASKLIST specification, useful for testing */
-		host_string[0] = '0';
+		host_string = xstrdup("");
 		task_cnt = 0;
 		tasklist = NULL;
 	} else {
@@ -137,13 +137,13 @@ extern int	start_job(char *cmd_ptr, int *err_code, char **err_msg)
 		}
 		hostlist_uniq(hl);
 		hostlist_sort(hl);
-		i = hostlist_ranged_string(hl, sizeof(host_string), host_string);
+		host_string = hostlist_ranged_string_xmalloc(hl);
 		hostlist_destroy(hl);
-		if (i < 0) {
+		if (host_string == NULL) {
 			*err_code = -300;
 			*err_msg = "STARTJOB has invalid TASKLIST";
 			error("wiki: STARTJOB has invalid TASKLIST: %s",
-			      host_string);
+			      tasklist);
 			xfree(tasklist);
 			return -1;
 		}
@@ -151,6 +151,7 @@ extern int	start_job(char *cmd_ptr, int *err_code, char **err_msg)
 
 	rc = _start_job(jobid, task_cnt, host_string, tasklist, comment_ptr,
 			err_code, err_msg);
+	xfree(host_string);
 	xfree(tasklist);
 	if (rc == 0) {
 		snprintf(reply_msg, sizeof(reply_msg),

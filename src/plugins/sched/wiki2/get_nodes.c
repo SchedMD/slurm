@@ -289,10 +289,12 @@ static char *	_dump_node(struct node_record *node_ptr, hostlist_t hl,
 		return NULL;
 
 	if (hl) {
+		char *node_list;
 		hostlist_sort(hl);
 		hostlist_uniq(hl);
-		hostlist_ranged_string(hl, sizeof(tmp), tmp);
-		 xstrcat(buf, tmp);
+		node_list = hostlist_ranged_string_xmalloc(hl);
+		xstrcat(buf, node_list);
+		xfree(node_list);
 	} else {
 		snprintf(tmp, sizeof(tmp), "%s", node_ptr->name);
 		xstrcat(buf, tmp);

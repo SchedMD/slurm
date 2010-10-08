@@ -1156,7 +1156,7 @@ static void _update_part_sub_record(sview_part_sub_t *sview_part_sub,
 	char *node_tmp = NULL;
 	partition_info_t *part_ptr = sview_part_sub->part_ptr;
 	char *upper = NULL, *lower = NULL;
-	char tmp[MAXHOSTRANGELEN];
+	char *tmp;
 
 	gtk_tree_store_set(treestore, iter, SORTID_NAME, part_ptr->name, -1);
 
@@ -1244,9 +1244,9 @@ static void _update_part_sub_record(sview_part_sub_t *sview_part_sub,
 	gtk_tree_store_set(treestore, iter, SORTID_NODES, node_tmp, -1);
 	xfree(node_tmp);
 
-	hostlist_ranged_string(sview_part_sub->hl, sizeof(tmp), tmp);
-	gtk_tree_store_set(treestore, iter, SORTID_NODELIST,
-			   tmp, -1);
+	tmp = hostlist_ranged_string_xmalloc(sview_part_sub->hl);
+	gtk_tree_store_set(treestore, iter, SORTID_NODELIST, tmp, -1);
+	xfree(tmp);
 	gtk_tree_store_set(treestore, iter, SORTID_UPDATED, 1, -1);
 
 	gtk_tree_store_set(treestore, iter, SORTID_FEATURES,

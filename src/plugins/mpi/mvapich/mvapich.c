@@ -340,8 +340,8 @@ static void report_absent_tasks (mvapich_state_t *st, int check_do_poll)
 		hostlist_uniq (hosts);
 		int nranks = hostlist_count (tasks);
 		int nhosts = hostlist_count (hosts);
-		hostlist_ranged_string (tasks, 4096, r);
-		hostlist_ranged_string (hosts, 4096, h);
+		hostlist_ranged_string (tasks, sizeof(r), r);
+		hostlist_ranged_string (hosts, sizeof(h), h);
 		error ("mvapich: timeout: waiting on rank%s %s on host%s %s.",
 			nranks > 1 ? "s" : "", r,
 			nhosts > 1 ? "s" : "", h);

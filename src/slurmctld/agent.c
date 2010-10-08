@@ -1537,7 +1537,7 @@ extern void mail_job_info (struct job_record *job_ptr, uint16_t mail_type)
  */
 static int _batch_launch_defer(queued_request_t *queued_req_ptr)
 {
-	char hostname[512];
+	char *hostname;
 	agent_arg_t *agent_arg_ptr;
 	batch_job_launch_msg_t *launch_msg_ptr;
 	struct node_record *node_ptr;
@@ -1567,15 +1567,17 @@ static int _batch_launch_defer(queued_request_t *queued_req_ptr)
 	if (job_ptr->wait_all_nodes) {
 		(void) job_node_ready(launch_msg_ptr->job_id, &nodes_ready);
 	} else {
-		hostlist_deranged_string(agent_arg_ptr->hostlist,
-					 sizeof(hostname), hostname);
+		hostname = hostlist_deranged_string_malloc(
+					agent_arg_ptr->hostlist);
 		node_ptr = find_node_record(hostname);
 		if (node_ptr == NULL) {
 			error("agent(batch_launch) removed pending request for "
 			      "job %u, missing node %s",
 			      launch_msg_ptr->job_id, hostname);
+			xfree(hostname);
 			return -1;	/* invalid request?? */
 		}
+		xfree(hostname);
 		if (!IS_NODE_POWER_SAVE(node_ptr) &&
 		    !IS_NODE_NO_RESPOND(node_ptr)) {
 			nodes_ready = 1;

@@ -4187,23 +4187,22 @@ static char *_set_internal_wires(List nodes, int size, int conn_type)
 	int count=0, i, set=0;
 	int *start = NULL;
 	int *end = NULL;
-	char *name;
+	char *name = NULL;
 	ListIterator itr;
 	hostlist_t hostlist;
 	char temp_name[4];
 
-	if(!nodes)
+	if (!nodes)
 		return NULL;
 
-	name = xmalloc(BUFSIZE);
 	hostlist = hostlist_create(NULL);
 	itr = list_iterator_create(nodes);
-	while((ba_node[count] = list_next(itr))) {
+	while ((ba_node[count] = list_next(itr))) {
 		snprintf(temp_name, sizeof(temp_name), "%c%c%c",
 			 alpha_num[ba_node[count]->coord[X]],
 			 alpha_num[ba_node[count]->coord[Y]],
 			 alpha_num[ba_node[count]->coord[Z]]);
-		if(ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
+		if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
 			info("name = %s", temp_name);
 		count++;
 		hostlist_push(hostlist, temp_name);
@@ -4212,13 +4211,13 @@ static char *_set_internal_wires(List nodes, int size, int conn_type)
 
 	start = ba_node[0]->coord;
 	end = ba_node[count-1]->coord;
-	hostlist_ranged_string(hostlist, BUFSIZE, name);
+	name = hostlist_ranged_string_xmalloc(hostlist);
 	hostlist_destroy(hostlist);
 
-	for(i=0;i<count;i++) {
-		if(!ba_node[i]->used) {
+	for (i=0;i<count;i++) {
+		if (!ba_node[i]->used) {
 			ba_node[i]->used=1;
-			if(ba_node[i]->letter == '.') {
+			if (ba_node[i]->letter == '.') {
 				ba_node[i]->letter = letters[color_count%62];
 				ba_node[i]->color = colors[color_count%6];
 				if(ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
@@ -4239,12 +4238,12 @@ static char *_set_internal_wires(List nodes, int size, int conn_type)
 		}
 	}
 
-	if(conn_type == SELECT_TORUS)
-		for(i=0;i<count;i++) {
+	if (conn_type == SELECT_TORUS)
+		for (i=0;i<count;i++) {
 			_set_one_dim(start, end, ba_node[i]->coord);
 		}
 
-	if(set)
+	if (set)
 		color_count++;
 
 	return name;
