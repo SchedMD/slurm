@@ -40,6 +40,8 @@ documents those changes that are of interest to users and admins.
     on each node after releasing some nodes from the job's allocation.
  -- Applied patch from Rod Schultz / Matthieu Hautreux to keep the Node-to-Host
     cache from becoming corrupted when a hostname cannot be resolved.
+ -- Export more symbols in libslurm for job and node state information
+    translation (numbers to strings). Patch from Hongia Cao, NUDT.
 
 * Changes in SLURM 2.2.0.pre11
 ==============================

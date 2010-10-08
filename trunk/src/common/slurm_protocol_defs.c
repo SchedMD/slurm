@@ -66,7 +66,19 @@
 ** Define slurm-specific aliases for use by plugins, see slurm_xlator.h
 ** for details.
  */
+strong_alias(preempt_mode_string, slurm_preempt_mode_string);
+strong_alias(preempt_mode_num, slurm_preempt_mode_num);
+strong_alias(job_reason_string, slurm_job_reason_string);
+strong_alias(job_state_string, slurm_job_state_string);
+strong_alias(job_state_string_compact, slurm_job_state_string_compact);
+strong_alias(job_state_num, slurm_job_state_num);
+strong_alias(node_state_string, slurm_node_state_string);
+strong_alias(node_state_string_compact, slurm_node_state_string_compact);
+strong_alias(private_data_string, slurm_private_data_string);
+strong_alias(accounting_enforce_string, slurm_accounting_enforce_string);
 strong_alias(conn_type_string,	slurm_conn_type_string);
+strong_alias(node_use_string, slurm_node_use_string);
+strong_alias(bg_block_state_string, slurm_bg_block_state_string);
 
 
 static void _free_all_job_info (job_info_msg_t *msg);
