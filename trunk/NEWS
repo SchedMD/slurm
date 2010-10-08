@@ -542,6 +542,8 @@ documents those changes that are of interest to users and admins.
     Centre, Linköping University, Sweden).
  -- Fix bug in how job step memory limits are calculated when the --relative
     option is used.
+ -- Restore operation of srun -X option to forward SIGINT to spawned tasks
+    without killing them.
 
 * Changes in SLURM 2.1.14
 =========================

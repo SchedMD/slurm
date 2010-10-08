@@ -1340,13 +1340,18 @@ static void _handle_intr(void)
 	static time_t last_intr      = 0;
 	static time_t last_intr_sent = 0;
 
-	if (!opt.quit_on_intr &&
-	    (((time(NULL) - last_intr) > 1) && !opt.disable_status)) {
-		if (job->state < SRUN_JOB_FORCETERM)
+	if (!opt.quit_on_intr && ((time(NULL) - last_intr) > 1)) {
+		if  (opt.disable_status) {
+			info("sending Ctrl-C to job %u.%u",
+			     job->jobid, job->stepid);
+			slurm_step_launch_fwd_signal(job->step_ctx, SIGINT);
+		} else if (job->state < SRUN_JOB_FORCETERM) {
 			info("interrupt (one more within 1 sec to abort)");
-		else
+			task_state_print(task_state, (log_f) info);
+		} else {
 			info("interrupt (abort already in progress)");
-		task_state_print(task_state, (log_f) info);
+			task_state_print(task_state, (log_f) info);
+		}
 		last_intr = time(NULL);
 	} else  { /* second Ctrl-C in half as many seconds */
 		update_job_state(job, SRUN_JOB_CANCELLED);
