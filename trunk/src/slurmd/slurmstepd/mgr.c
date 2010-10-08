@@ -1603,6 +1603,28 @@ static int _drain_node(char *reason)
 	return SLURM_SUCCESS;
 }
 
+inline static int
+_send_launch_resp_msg(slurm_msg_t *resp_msg, uint32_t nnodes)
+{
+	int rc, retry = 0, max_retry;
+	unsigned long delay = 100000;
+
+	max_retry = (nnodes / 1024) + 1;
+	while (1) {
+		rc = slurm_send_only_node_msg(resp_msg);
+		if ((rc == SLURM_SUCCESS) ||
+		    (errno != ETIMEDOUT) ||
+		    (retry > max_retry))
+			break;
+		debug3("_send_launch_resp_msg: failed to send msg: %m");
+		usleep(delay);
+		if (delay < 800000)
+			delay *= 2;
+		retry ++;
+	}
+	return rc;
+}
+
 static void
 _send_launch_failure (launch_tasks_request_msg_t *msg, slurm_addr_t *cli, int rc)
 {
@@ -1631,7 +1653,7 @@ _send_launch_failure (launch_tasks_request_msg_t *msg, slurm_addr_t *cli, int rc
 	resp.return_code   = rc ? rc : -1;
 	resp.count_of_pids = 0;
 
-	if (slurm_send_only_node_msg(&resp_msg) != SLURM_SUCCESS)
+	if (_send_launch_resp_msg(&resp_msg, msg->nnodes) != SLURM_SUCCESS)
 		error("Failed to send RESPONSE_LAUNCH_TASKS: %m");
 	xfree(name);
 	return;
@@ -1666,7 +1688,7 @@ _send_launch_resp(slurmd_job_t *job, int rc)
 		resp.task_ids[i] = job->task[i]->gtid;
 	}
 
-	if (slurm_send_only_node_msg(&resp_msg) != SLURM_SUCCESS)
+	if (_send_launch_resp_msg(&resp_msg, job->nnodes) != SLURM_SUCCESS)
 		error("failed to send RESPONSE_LAUNCH_TASKS: %m");
 
 	xfree(resp.local_pids);

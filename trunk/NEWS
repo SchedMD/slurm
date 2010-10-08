@@ -42,6 +42,8 @@ documents those changes that are of interest to users and admins.
     cache from becoming corrupted when a hostname cannot be resolved.
  -- Export more symbols in libslurm for job and node state information
     translation (numbers to strings). Patch from Hongia Cao, NUDT.
+ -- Add logic to retry sending RESPONSE_LAUNCH_TASKS messages from slurmd to
+    srun. Patch from Hongia Cao, NUDT.
 
 * Changes in SLURM 2.2.0.pre11
 ==============================

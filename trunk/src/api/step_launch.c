@@ -835,6 +835,13 @@ _launch_handler(struct step_launch_state *sls, slurm_msg_t *resp)
 	int i;
 
 	pthread_mutex_lock(&sls->lock);
+	if ((msg->count_of_pids > 0) &&
+	    bit_test(sls->tasks_started, msg->task_ids[0])) {
+		debug3("duplicate launch response received from node %s. "
+		       "this is not an error", msg->node_name);
+		pthread_mutex_unlock(&sls->lock);
+		return;
+	}
 
 	if (msg->return_code) {
 		for (i = 0; i < msg->count_of_pids; i++) {
