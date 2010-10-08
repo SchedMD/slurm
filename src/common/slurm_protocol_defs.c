@@ -79,6 +79,7 @@ strong_alias(accounting_enforce_string, slurm_accounting_enforce_string);
 strong_alias(conn_type_string,	slurm_conn_type_string);
 strong_alias(node_use_string, slurm_node_use_string);
 strong_alias(bg_block_state_string, slurm_bg_block_state_string);
+strong_alias(reservation_flags_string, slurm_reservation_flags_string);
 
 
 static void _free_all_job_info (job_info_msg_t *msg);
