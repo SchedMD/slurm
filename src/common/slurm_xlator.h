@@ -302,7 +302,19 @@
 #define	xbasename		slurm_xbasename
 
 /* slurm_protocol_defs.[ch] functions */
+#define preempt_mode_string	slurm_preempt_mode_string
+#define preempt_mode_num	slurm_preempt_mode_num
+#define job_reason_string	slurm_job_reason_string
+#define job_state_string	slurm_job_state_string
+#define job_state_string_compact slurm_job_state_string_compact
+#define job_state_num		slurm_job_state_num
+#define node_state_string	slurm_node_state_string
+#define node_state_string_compact slurm_node_state_string_compact
+#define private_data_string	slurm_private_data_string
+#define accounting_enforce_string slurm_accounting_enforce_string
 #define conn_type_string	slurm_conn_type_string
+#define node_use_string		slurm_node_use_string
+#define bg_block_state_string	slurm_bg_block_state_string
 
 /* slurmdbd_defs.[ch] functions */
 #define slurmdbd_free_list_msg	slurmdb_slurmdbd_free_list_msg
