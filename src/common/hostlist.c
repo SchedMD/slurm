@@ -3207,6 +3207,7 @@ notbox:
 //	info("time was %s", TIME_STR);
 	return truncated ? -1 : len;
 }
+
 /* ----[ hostlist iterator functions ]---- */
 
 static hostlist_iterator_t hostlist_iterator_new(void)

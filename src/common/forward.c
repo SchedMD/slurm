@@ -91,7 +91,7 @@ void *_forward_thread(void *arg)
 	char *name = NULL;
 	hostlist_t hl = hostlist_create(fwd_msg->header.forward.nodelist);
 	slurm_addr_t addr;
-	char buf[8196];
+	char *buf = NULL;
 	int steps = 0;
 	int start_timeout = fwd_msg->timeout;
 
@@ -124,10 +124,10 @@ void *_forward_thread(void *arg)
 			}
 			goto cleanup;
 		}
-		hostlist_ranged_string(hl, sizeof(buf), buf);
+		buf = hostlist_ranged_string_xmalloc(hl);
 
 		xfree(fwd_msg->header.forward.nodelist);
-		fwd_msg->header.forward.nodelist = xstrdup(buf);
+		fwd_msg->header.forward.nodelist = buf;
 		fwd_msg->header.forward.cnt = hostlist_count(hl);
 		/* info("sending %d forwards (%s) to %s", */
 /* 		     fwd_msg->header.forward.cnt, */
@@ -307,7 +307,7 @@ void *_fwd_tree_thread(void *arg)
 	fwd_tree_t *fwd_tree = (fwd_tree_t *)arg;
 	List ret_list = NULL;
 	char *name = NULL;
-	char buf[8196];
+	char *buf = NULL;
 	slurm_msg_t send_msg;
 
 	slurm_msg_t_init(&send_msg);
@@ -332,9 +332,9 @@ void *_fwd_tree_thread(void *arg)
 
 		send_msg.forward.timeout = fwd_tree->timeout;
 		if((send_msg.forward.cnt = hostlist_count(fwd_tree->tree_hl))) {
-			hostlist_ranged_string(fwd_tree->tree_hl,
-					       sizeof(buf), buf);
-			send_msg.forward.nodelist = xstrdup(buf);
+			buf = hostlist_ranged_string_xmalloc(
+					fwd_tree->tree_hl);
+			send_msg.forward.nodelist = buf;
 		} else
 			send_msg.forward.nodelist = NULL;
 
@@ -444,7 +444,7 @@ extern int forward_msg(forward_struct_t *forward_struct,
 	while((name = hostlist_shift(hl))) {
 		pthread_attr_t attr_agent;
 		pthread_t thread_agent;
-		char buf[8192];
+		char *buf = NULL;
 
 		slurm_attr_init(&attr_agent);
 		if (pthread_attr_setdetachstate
@@ -487,10 +487,10 @@ extern int forward_msg(forward_struct_t *forward_struct,
 			free(name);
 		}
 
-		hostlist_ranged_string(forward_hl, sizeof(buf), buf);
+		buf = hostlist_ranged_string_xmalloc(forward_hl);
 		hostlist_destroy(forward_hl);
 		forward_init(&forward_msg->header.forward, NULL);
-		forward_msg->header.forward.nodelist = xstrdup(buf);
+		forward_msg->header.forward.nodelist = buf;
 		while(pthread_create(&thread_agent, &attr_agent,
 				     _forward_thread,
 				     (void *)forward_msg)) {

@@ -1878,7 +1878,7 @@ extern void re_kill_job(struct job_record *job_ptr)
 	kill_job_msg_t *kill_job;
 	agent_arg_t *agent_args;
 	hostlist_t kill_hostlist = hostlist_create("");
-	char host_str[64];
+	char *host_str = NULL;
 	static uint32_t last_job_id = 0;
 
 	xassert(job_ptr);
@@ -1940,8 +1940,7 @@ extern void re_kill_job(struct job_record *job_ptr)
 		return;
 	}
 	hostlist_uniq(kill_hostlist);
-	hostlist_ranged_string(kill_hostlist,
-			sizeof(host_str), host_str);
+	host_str = hostlist_ranged_string_xmalloc(kill_hostlist);
 #ifdef HAVE_BG
 	if (job_ptr->job_id != last_job_id) {
 		info("Resending TERMINATE_JOB request JobId=%u BPlist=%s",
@@ -1959,6 +1958,7 @@ extern void re_kill_job(struct job_record *job_ptr)
 			job_ptr->job_id, host_str);
 	}
 #endif
+	xfree(host_str);
 	last_job_id = job_ptr->job_id;
 	hostlist_destroy(kill_hostlist);
 	agent_args->msg_args = kill_job;

@@ -592,7 +592,6 @@ job_desc_msg_t *
 job_desc_msg_create_from_opts (void)
 {
 	job_desc_msg_t *j = xmalloc(sizeof(*j));
-	char buf[8192];
 	hostlist_t hl = NULL;
 
 	slurm_init_job_desc_msg(j);
@@ -617,15 +616,13 @@ job_desc_msg_create_from_opts (void)
 	 * not laying out tasks until step */
 	if(j->req_nodes) {
 		hl = hostlist_create(j->req_nodes);
-		hostlist_ranged_string(hl, sizeof(buf), buf);
 		xfree(opt.nodelist);
-		opt.nodelist = xstrdup(buf);
+		opt.nodelist = hostlist_ranged_string_xmalloc(hl);
 		hostlist_uniq(hl);
-		hostlist_ranged_string(hl, sizeof(buf), buf);
+		xfree(j->req_nodes);
+		j->req_nodes = hostlist_ranged_string_xmalloc(hl);
 		hostlist_destroy(hl);
 
-		xfree(j->req_nodes);
-		j->req_nodes = xstrdup(buf);
 	}
 
 	if(opt.distribution == SLURM_DIST_ARBITRARY

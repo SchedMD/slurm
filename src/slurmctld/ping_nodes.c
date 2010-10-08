@@ -127,7 +127,7 @@ void ping_nodes (void)
 	static time_t last_ping_time = (time_t) 0;
 	bool restart_flag;
 	hostlist_t down_hostlist = NULL;
-	char host_str[MAX_SLURM_NAME];
+	char *host_str = NULL;
 	agent_arg_t *ping_agent_args = NULL;
 	agent_arg_t *reg_agent_args = NULL;
 	struct node_record *node_ptr;
@@ -237,9 +237,10 @@ void ping_nodes (void)
 		xfree (ping_agent_args);
 	} else {
 		hostlist_uniq(ping_agent_args->hostlist);
-		hostlist_ranged_string(ping_agent_args->hostlist,
-				       sizeof(host_str), host_str);
+		host_str = hostlist_ranged_string_xmalloc(
+				ping_agent_args->hostlist);
 		debug("Spawning ping agent for %s", host_str);
+		xfree(host_str);
 		ping_begin();
 		agent_queue_request(ping_agent_args);
 	}
@@ -249,19 +250,20 @@ void ping_nodes (void)
 		xfree (reg_agent_args);
 	} else {
 		hostlist_uniq(reg_agent_args->hostlist);
-		hostlist_ranged_string(reg_agent_args->hostlist,
-				       sizeof(host_str), host_str);
+		host_str = hostlist_ranged_string_xmalloc(
+				reg_agent_args->hostlist);
 		debug("Spawning registration agent for %s %d hosts",
 		      host_str, reg_agent_args->node_count);
+		xfree(host_str);
 		ping_begin();
 		agent_queue_request(reg_agent_args);
 	}
 
 	if (down_hostlist) {
 		hostlist_uniq(down_hostlist);
-		hostlist_ranged_string(down_hostlist,
-				       sizeof(host_str), host_str);
+		host_str = hostlist_ranged_string_xmalloc(down_hostlist);
 		error("Nodes %s not responding, setting DOWN", host_str);
+		xfree(host_str);
 		hostlist_destroy(down_hostlist);
 	}
 }
@@ -270,7 +272,7 @@ void ping_nodes (void)
 extern void run_health_check(void)
 {
 	int i;
-	char host_str[MAX_SLURM_NAME];
+	char *host_str = NULL;
 	agent_arg_t *check_agent_args = NULL;
 	struct node_record *node_ptr;
 
@@ -298,9 +300,10 @@ extern void run_health_check(void)
 		xfree (check_agent_args);
 	} else {
 		hostlist_uniq(check_agent_args->hostlist);
-		hostlist_ranged_string(check_agent_args->hostlist,
-			sizeof(host_str), host_str);
+		host_str = hostlist_ranged_string_xmalloc(
+				check_agent_args->hostlist);
 		debug("Spawning health check agent for %s", host_str);
+		xfree(host_str);
 		ping_begin();
 		agent_queue_request(check_agent_args);
 	}

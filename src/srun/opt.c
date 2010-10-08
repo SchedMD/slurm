@@ -1698,7 +1698,6 @@ static bool _opt_verify(void)
 		int count = hostlist_count(hl);
 		if(count > opt.max_nodes) {
 			int i = 0;
-			char buf[8192];
 			error("Required nodelist includes more nodes than "
 			      "permitted by max-node count (%d > %d). "
 			      "Eliminating nodes from the nodelist.",
@@ -1712,9 +1711,8 @@ static bool _opt_verify(void)
 					break;
 				i++;
 			}
-			hostlist_ranged_string(hl, sizeof(buf), buf);
 			xfree(opt.nodelist);
-			opt.nodelist = xstrdup(buf);
+			opt.nodelist = hostlist_ranged_string_xmalloc(hl);
 		}
 		hostlist_destroy(hl);
 	}

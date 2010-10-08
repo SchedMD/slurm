@@ -103,16 +103,16 @@ slurm_step_layout_t *slurm_step_layout_create(
 	step_layout->task_dist = task_dist;
 	if(task_dist == SLURM_DIST_ARBITRARY) {
 		hostlist_t hl = NULL;
-		char buf[65536];
+		char *buf = NULL;
 		/* set the node list for the task layout later if user
 		   supplied could be different that the job allocation */
 		arbitrary_nodes = xstrdup(tlist);
 		hl = hostlist_create(tlist);
 		hostlist_uniq(hl);
-		hostlist_ranged_string(hl, sizeof(buf), buf);
+		buf = hostlist_ranged_string_xmalloc(hl);
 		num_hosts = hostlist_count(hl);
 		hostlist_destroy(hl);
-		step_layout->node_list = xstrdup(buf);
+		step_layout->node_list = buf;
 	} else {
 		step_layout->node_list = xstrdup(tlist);
 	}

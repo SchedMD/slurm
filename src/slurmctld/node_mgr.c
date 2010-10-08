@@ -1738,7 +1738,7 @@ extern int validate_nodes_via_front_end(
 	ListIterator job_iterator;
 	hostlist_t return_hostlist = NULL, reg_hostlist = NULL;
 	hostlist_t prolog_hostlist = NULL;
-	char host_str[64];
+	char *host_str = NULL;
 	uint16_t node_flags;
 
 	if (reg_msg->up_time > now) {
@@ -1967,23 +1967,23 @@ extern int validate_nodes_via_front_end(
 
 	if (prolog_hostlist) {
 		hostlist_uniq(prolog_hostlist);
-		hostlist_ranged_string(prolog_hostlist, sizeof(host_str),
-			host_str);
+		host_str = hostlist_ranged_string_xmalloc(prolog_hostlist);
 		error("Prolog failure on nodes %s, set to DOWN", host_str);
+		xfree(host_str);
 		hostlist_destroy(prolog_hostlist);
 	}
 	if (reg_hostlist) {
 		hostlist_uniq(reg_hostlist);
-		hostlist_ranged_string(reg_hostlist, sizeof(host_str),
-				       host_str);
+		host_str = hostlist_ranged_string_xmalloc(reg_hostlist);
 		debug("Nodes %s have registered", host_str);
+		xfree(host_str);
 		hostlist_destroy(reg_hostlist);
 	}
 	if (return_hostlist) {
 		hostlist_uniq(return_hostlist);
-		hostlist_ranged_string(return_hostlist, sizeof(host_str),
-			host_str);
+		host_str = hostlist_ranged_string_xmalloc(return_hostlist);
 		info("Nodes %s returned to service", host_str);
+		xfree(host_str);
 		hostlist_destroy(return_hostlist);
 	}
 
@@ -2146,7 +2146,7 @@ extern void node_no_resp_msg(void)
 {
 	int i;
 	struct node_record *node_ptr;
-	char host_str[1024];
+	char *host_str = NULL;
 	hostlist_t no_resp_hostlist = NULL;
 
 	for (i=0; i<node_record_count; i++) {
@@ -2162,9 +2162,9 @@ extern void node_no_resp_msg(void)
  	}
 	if (no_resp_hostlist) {
 		hostlist_uniq(no_resp_hostlist);
-		hostlist_ranged_string(no_resp_hostlist,
-				       sizeof(host_str), host_str);
+		host_str = hostlist_ranged_string_xmalloc(no_resp_hostlist);
 		error("Nodes %s not responding", host_str);
+		xfree(host_str);
 		hostlist_destroy(no_resp_hostlist);
 	}
 }

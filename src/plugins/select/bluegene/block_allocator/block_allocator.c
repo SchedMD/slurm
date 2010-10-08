@@ -273,7 +273,6 @@ extern int parse_blockreq(void **dest, slurm_parser_enum_t type,
 	char *tmp = NULL;
 	blockreq_t *n = NULL;
 	hostlist_t hl = NULL;
-	char temp[BUFSIZE];
 
 	tbl = s_p_hashtbl_create(block_options);
 	s_p_parse_line(tbl, *leftover, leftover);
@@ -282,10 +281,8 @@ extern int parse_blockreq(void **dest, slurm_parser_enum_t type,
 	}
 	n = xmalloc(sizeof(blockreq_t));
 	hl = hostlist_create(value);
-	hostlist_ranged_string(hl, BUFSIZE, temp);
+	n->block = hostlist_ranged_string_xmalloc(hl);
 	hostlist_destroy(hl);
-
-	n->block = xstrdup(temp);
 #ifdef HAVE_BGL
 	s_p_get_string(&n->blrtsimage, "BlrtsImage", tbl);
 	s_p_get_string(&n->linuximage, "LinuxImage", tbl);
