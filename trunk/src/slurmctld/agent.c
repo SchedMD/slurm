@@ -1567,7 +1567,7 @@ static int _batch_launch_defer(queued_request_t *queued_req_ptr)
 	if (job_ptr->wait_all_nodes) {
 		(void) job_node_ready(launch_msg_ptr->job_id, &nodes_ready);
 	} else {
-		hostname = hostlist_deranged_string_malloc(
+		hostname = hostlist_deranged_string_xmalloc(
 					agent_arg_ptr->hostlist);
 		node_ptr = find_node_record(hostname);
 		if (node_ptr == NULL) {
