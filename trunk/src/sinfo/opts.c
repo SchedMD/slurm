@@ -833,7 +833,7 @@ Usage: sinfo [OPTIONS]\n\
   -d, --dead                 show only non-responding nodes\n\
   -e, --exact                group nodes only on exact match of configuration\n\
   -h, --noheader             no headers on output\n\
-  -hide                      do not show hidden or non-accessible partitions\n\
+  --hide                     do not show hidden or non-accessible partitions\n\
   -i, --iterate=seconds      specify an iteration period\n\
   -l, --long                 long output - displays more information\n\
   -n, --nodes=NODES          report on specific node(s)\n\

@@ -383,7 +383,6 @@ static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr)
 	int *span = NULL;
 	int thr_count = 0;
 	hostlist_t hl = NULL;
-	char buf[8192];
 	char *name = NULL;
 
 	agent_info_ptr = xmalloc(sizeof(agent_info_t));
@@ -446,9 +445,9 @@ static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr)
 			i++;
 		}
 		hostlist_uniq(hl);
-		hostlist_ranged_string(hl, sizeof(buf), buf);
+		thread_ptr[thr_count].nodelist = 
+			hostlist_ranged_string_xmalloc(hl);
 		hostlist_destroy(hl);
-		thread_ptr[thr_count].nodelist = xstrdup(buf);
 #if 0
 		info("sending to nodes %s", thread_ptr[thr_count].nodelist);
 #endif

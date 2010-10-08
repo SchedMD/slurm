@@ -154,7 +154,6 @@ extern int topo_get_node_addr(char* node_name, char** paddr, char** ppattern)
 	int node_inx;
 	hostlist_t sl = NULL;
 
-	char buf[8192];
 	int s_max_level = 0;
 	int i, j;
 
@@ -199,8 +198,9 @@ extern int topo_get_node_addr(char* node_name, char** paddr, char** ppattern)
 			}
 		}
 		if ( sl ) {
-			hostlist_ranged_string(sl, sizeof(buf), buf);
+			char *buf = hostlist_ranged_string_xmalloc(sl);
 			xstrcat(*paddr,buf);
+			xfree(buf);
 			hostlist_destroy(sl);
 			sl = NULL;
 		}

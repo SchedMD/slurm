@@ -2300,16 +2300,10 @@ extern int step_partial_comp(step_complete_msg_t *req, uid_t uid,
 		 * must translate range numbers to nodelist */
 		hostlist_t hl;
 		char *node_list;
-		int new_size = 8096;
 
 		hl = _step_range_to_hostlist(step_ptr,
 			req->range_first, req->range_last);
-		node_list = (char *) xmalloc(new_size);
-		while (hostlist_ranged_string(hl, new_size,
-				node_list) == -1) {
-			new_size *= 2;
-			xrealloc(node_list, new_size );
-		}
+		node_list = hostlist_ranged_string_xmalloc(hl);
 		debug2("partitial switch release for step %u.%u, "
 			"nodes %s", req->job_id,
 			req->job_step_id, node_list);

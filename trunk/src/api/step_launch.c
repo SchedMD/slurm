@@ -1384,19 +1384,20 @@ static void _print_launch_msg(launch_tasks_request_msg_t *msg,
 			      char *hostname, int nodeid)
 {
 	int i;
-	char tmp_str[10], task_list[4096];
+	char tmp_str[10], *task_list = NULL;
 	hostlist_t hl = hostlist_create("");
 
 	for (i=0; i<msg->tasks_to_launch[nodeid]; i++) {
 		sprintf(tmp_str, "%u", msg->global_task_ids[nodeid][i]);
 		hostlist_push(hl, tmp_str);
 	}
-	hostlist_ranged_string(hl, 4096, task_list);
+	task_list = hostlist_ranged_string_xmalloc(hl);
 	hostlist_destroy(hl);
 
 	info("launching %u.%u on host %s, %u tasks: %s",
 	     msg->job_id, msg->job_step_id, hostname,
 	     msg->tasks_to_launch[nodeid], task_list);
+	xfree(task_list);
 
 	debug3("uid:%ld gid:%ld cwd:%s %d", (long) msg->uid,
 		(long) msg->gid, msg->cwd, nodeid);

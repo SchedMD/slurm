@@ -133,7 +133,6 @@ extern void send_rpc(file_bcast_msg_t *bcast_msg,
 		hostlist_t hl;
 		hostlist_t new_hl;
 		int *span = NULL;
-		char buf[8192];
 		char *name = NULL;
 
 		if (params.fanout)
@@ -164,9 +163,9 @@ extern void send_rpc(file_bcast_msg_t *bcast_msg,
 				free(name);
 				i++;
 			}
-			hostlist_ranged_string(new_hl, sizeof(buf), buf);
+			thread_info[threads_used].nodelist = 
+				hostlist_ranged_string_xmalloc(new_hl);
 			hostlist_destroy(new_hl);
-			thread_info[threads_used].nodelist = xstrdup(buf);
 			slurm_msg_t_init(&thread_info[threads_used].msg);
 			thread_info[threads_used].msg.msg_type =
 				REQUEST_FILE_BCAST;

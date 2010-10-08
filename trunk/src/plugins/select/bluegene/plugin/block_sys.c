@@ -773,13 +773,7 @@ int read_bg_blocks(List curr_block_list)
 
 			hostlist_push(hostlist, node_name_tmp);
 		}
-		i = 1024;
-		bg_record->nodes = xmalloc(i);
-		while (hostlist_ranged_string(hostlist, i,
-					      bg_record->nodes) < 0) {
-			i *= 2;
-			xrealloc(bg_record->nodes, i);
-		}
+		bg_record->nodes = hostlist_ranged_string_xmalloc(hostlist);
 		hostlist_destroy(hostlist);
 		debug3("got nodes of %s", bg_record->nodes);
 		// need to get the 000x000 range for nodes

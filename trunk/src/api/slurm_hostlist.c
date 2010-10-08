@@ -82,6 +82,16 @@ extern ssize_t slurm_hostlist_ranged_string(hostlist_t hl, size_t n, char *buf)
 	return hostlist_ranged_string(hl, n, buf);
 }
 
+extern char * slurm_hostlist_ranged_string_malloc(hostlist_t hl)
+{
+	return hostlist_ranged_string_malloc(hl);
+}
+
+extern char * slurm_hostlist_ranged_string_xmalloc(hostlist_t hl)
+{
+	return hostlist_ranged_string_xmalloc(hl);
+}
+
 extern char *slurm_hostlist_shift(hostlist_t hl)
 {
 	return hostlist_shift(hl);

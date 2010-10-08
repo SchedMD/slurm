@@ -247,14 +247,15 @@ format_add_function(List list, int width, bool right, char *suffix,
 
 static void _set_node_field_size(List sinfo_list)
 {
-	char tmp[MAXHOSTRANGELEN];
+	char *tmp = NULL;
 	ListIterator i = list_iterator_create(sinfo_list);
 	sinfo_data_t *current;
 	int max_width = MIN_NODE_FIELD_SIZE, this_width = 0;
 
 	while ((current = (sinfo_data_t *) list_next(i)) != NULL) {
-		this_width = hostlist_ranged_string(current->nodes,
-					sizeof(tmp), tmp);
+		tmp = hostlist_ranged_string_xmalloc(current->nodes);
+		this_width = strlen(tmp);
+		xfree(tmp);
 		max_width = MAX(max_width, this_width);
 	}
 	list_iterator_destroy(i);
@@ -556,10 +557,11 @@ int _print_node_list(sinfo_data_t * sinfo_data, int width,
 		width = params.node_field_size;
 
 	if (sinfo_data) {
-		char tmp[MAXHOSTRANGELEN];
-		hostlist_ranged_string(sinfo_data->nodes,
-					sizeof(tmp), tmp);
+		char *tmp = NULL;
+		tmp = hostlist_ranged_string_xmalloc(
+				sinfo_data->nodes);
 		_print_str(tmp, width, right_justify, true);
+		xfree(tmp);
 	} else {
 		char *title = "NODELIST";
 		if(params.cluster_flags & CLUSTER_FLAG_BG)

@@ -147,7 +147,7 @@ job_step_create_allocation(resource_allocation_response_msg_t *resp)
 	srun_job_t *job = NULL;
 	allocation_info_t *ai = xmalloc(sizeof(*ai));
 	hostlist_t hl = NULL;
-	char buf[8192];
+	char *buf = NULL;
 	int count = 0;
 	uint32_t alloc_count = 0;
 
@@ -230,31 +230,30 @@ job_step_create_allocation(resource_allocation_response_msg_t *resp)
 				hostlist_t tmp_hl = hostlist_copy(hl);
 				int i=0;
 				int diff = ai->nnodes - count;
-				hostlist_ranged_string(inc_hl,
-						       sizeof(buf), buf);
+				buf = hostlist_ranged_string_xmalloc(inc_hl);
 				hostlist_delete(tmp_hl, buf);
-				while((node_name = hostlist_shift(tmp_hl))
-				      && (i < diff)) {
+				xfree(buf);
+				while ((node_name = hostlist_shift(tmp_hl)) &&
+				       (i < diff)) {
 					hostlist_push(inc_hl, node_name);
 					i++;
 				}
 				hostlist_destroy(tmp_hl);
 			}
-			hostlist_ranged_string(inc_hl, sizeof(buf), buf);
+			buf = hostlist_ranged_string_xmalloc(inc_hl);
 			hostlist_destroy(inc_hl);
 			xfree(opt.nodelist);
-			opt.nodelist = xstrdup(buf);
+			opt.nodelist = buf;
 		} else {
-			if(count > ai->nnodes) {
+			if (count > ai->nnodes) {
 				/* remove more nodes than needed for
 				   allocation */
 				int i=0;
-				for(i=count; i>ai->nnodes; i--)
+				for (i=count; i>ai->nnodes; i--)
 					hostlist_delete_nth(hl, i);
 			}
-			hostlist_ranged_string(hl, sizeof(buf), buf);
 			xfree(opt.nodelist);
-			opt.nodelist = xstrdup(buf);
+			opt.nodelist = hostlist_ranged_string_xmalloc(hl);
 		}
 
 		hostlist_destroy(hl);
@@ -280,21 +279,21 @@ job_step_create_allocation(resource_allocation_response_msg_t *resp)
 		 * opt.nodelist is what is used for the allocation.
 		 */
 		/* xfree(ai->nodelist); */
-/* 		ai->nodelist = xstrdup(buf); */
+		/* ai->nodelist = xstrdup(buf); */
 	}
 
 	/* get the correct number of hosts to run tasks on */
-	if(opt.nodelist) {
+	if (opt.nodelist) {
 		hl = hostlist_create(opt.nodelist);
-		if(opt.distribution != SLURM_DIST_ARBITRARY)
+		if (opt.distribution != SLURM_DIST_ARBITRARY)
 			hostlist_uniq(hl);
-		if(!hostlist_count(hl)) {
+		if (!hostlist_count(hl)) {
 			error("Hostlist is now nothing!  Can not run job.");
 			hostlist_destroy(hl);
 			goto error;
 		}
 
-		hostlist_ranged_string(hl, sizeof(buf), buf);
+		buf = hostlist_ranged_string_xmalloc(hl);
 		count = hostlist_count(hl);
 		hostlist_destroy(hl);
 		/* Don't reset the ai->nodelist because that is the
@@ -302,13 +301,13 @@ job_step_create_allocation(resource_allocation_response_msg_t *resp)
 		 * opt.nodelist is what is used for the allocation.
 		 */
 		/* xfree(ai->nodelist); */
-/* 		ai->nodelist = xstrdup(buf); */
+		/* ai->nodelist = xstrdup(buf); */
 		xfree(opt.nodelist);
-		opt.nodelist = xstrdup(buf);
+		opt.nodelist = buf;
 	}
 
-	if(opt.distribution == SLURM_DIST_ARBITRARY) {
-		if(count != opt.ntasks) {
+	if (opt.distribution == SLURM_DIST_ARBITRARY) {
+		if (count != opt.ntasks) {
 			error("You asked for %d tasks but specified %d nodes",
 			      opt.ntasks, count);
 			goto error;
@@ -512,12 +511,14 @@ job_update_io_fnames(srun_job_t *job)
 static char *
 _normalize_hostlist(const char *hostlist)
 {
+	char *buf = NULL; 
 	hostlist_t hl = hostlist_create(hostlist);
-	char buf[4096];
 
-	if (!hl ||  (hostlist_ranged_string(hl, 4096, buf) < 0))
+	if (hl)	
+		buf = hostlist_ranged_string_xmalloc(hl);
+	if (!hl || !buf)
 		return xstrdup(hostlist);
 
-	return xstrdup(buf);
+	return buf;
 }
 

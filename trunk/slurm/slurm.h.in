@@ -678,6 +678,16 @@ extern ssize_t slurm_hostlist_ranged_string PARAMS((hostlist_t hl,
  */
 extern char *slurm_hostlist_ranged_string_malloc PARAMS((hostlist_t hl));
 
+/* hostlist_ranged_string_xmalloc():
+ *
+ * Wrapper of hostlist_ranged_string(), with result buffer dynamically
+ * allocated using xmalloc().
+ * The result will be NULL on failure (out of memory).
+ *
+ * Caller should free the result string using xfree().
+ */
+extern char *slurm_hostlist_ranged_string_xmalloc PARAMS((hostlist_t hl));
+
 /*
  * slurm_hostlist_shift():
  *

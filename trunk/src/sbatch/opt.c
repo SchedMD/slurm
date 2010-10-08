@@ -1823,7 +1823,6 @@ static void _parse_pbs_nodes_opts(char *node_opts)
 {
 	int i = 0;
 	char *temp = NULL;
-	char buf[255];
 	int ppn = 0;
 	int node_cnt = 0;
 	hostlist_t hl = hostlist_create(NULL);
@@ -1859,9 +1858,8 @@ static void _parse_pbs_nodes_opts(char *node_opts)
 	}
 
 	if(hostlist_count(hl) > 0) {
-		hostlist_ranged_string(hl, sizeof(buf), buf);
 		xfree(opt.nodelist);
-		opt.nodelist = xstrdup(buf);
+		opt.nodelist = hostlist_ranged_string_xmalloc(hl);
 #ifdef HAVE_BG
 		info("\tThe nodelist option should only be used if\n"
 		     "\tthe block you are asking for can be created.\n"
