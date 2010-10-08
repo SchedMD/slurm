@@ -108,7 +108,7 @@ static int	_job_modify(uint32_t jobid, char *bank_ptr,
 	}
 
 	if (new_hostlist) {
-		int i, rc = 0, task_cnt;
+		int rc = 0, task_cnt;
 		hostlist_t hl;
 		char *tasklist;
 
