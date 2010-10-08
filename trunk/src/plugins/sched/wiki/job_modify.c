@@ -138,11 +138,10 @@ static int	_job_modify(uint32_t jobid, char *bank_ptr,
 		}
 		hostlist_uniq(hl);
 		hostlist_sort(hl);
-		i = strlen(new_hostlist) + 16;
-		job_ptr->details->req_nodes = xmalloc(i);
-		i = hostlist_ranged_string(hl, i, job_ptr->details->req_nodes);
+		job_ptr->details->req_nodes =
+			hostlist_ranged_string_xmalloc(hl);
 		hostlist_destroy(hl);
-		if (i < 0) {
+		if (job_ptr->details->req_nodes == NULL) {
 			rc = 1;
 			goto host_fini;
 		}

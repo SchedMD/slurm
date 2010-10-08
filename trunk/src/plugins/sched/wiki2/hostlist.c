@@ -217,17 +217,12 @@ static char * _task_list(struct job_record *job_ptr)
  * Prepend ":" to expression as needed */
 static void _append_hl_buf(char **buf, hostlist_t *hl_tmp, int *reps)
 {
-	int host_str_len = 4096;
 	char *host_str;
 	char *tok, *sep;
 	int i, in_bracket = 0, fini = 0;
 
-	host_str = xmalloc(host_str_len);
 	hostlist_uniq(*hl_tmp);
-	while (hostlist_ranged_string(*hl_tmp, host_str_len, host_str) < 0) {
-		host_str_len *= 2;
-		xrealloc(*host_str, host_str_len);
-	}
+	host_str = hostlist_ranged_string_xmalloc(*hl_tmp);
 
 	/* Note that host_str may be of this form "alpha,beta". We want
 	 * to record this as "alpha*#:beta*#" and NOT "alpha,beta*#".

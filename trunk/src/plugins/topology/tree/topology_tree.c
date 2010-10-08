@@ -340,10 +340,11 @@ static void _validate_switches(void)
 		fatal("switches contain no nodes");
 
 	if (invalid_hl) {
-		char buf[128];
-		hostlist_ranged_string(invalid_hl, sizeof(buf), buf);
+		char *buf;
+		buf = hostlist_ranged_string_xmalloc(invalid_hl);
 		error("WARNING: Invalid hostnames in switch configuration: %s",
 		      buf);
+		xfree(buf);
 		hostlist_destroy(invalid_hl);
 	}
 

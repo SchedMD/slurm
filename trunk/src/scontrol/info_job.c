@@ -717,8 +717,7 @@ scontrol_encode_hostlist(char *hostlist)
 		fprintf(stderr, "Invalid hostlist: %s\n", tmp_list);
 		return SLURM_ERROR;
 	}
-	ranged_string = xmalloc(buf_size);
-	hostlist_ranged_string(hl, buf_size, ranged_string);
+	ranged_string = hostlist_ranged_string_xmalloc(hl);
 	printf("%s\n", ranged_string);
 	hostlist_destroy(hl);
 	xfree(ranged_string);

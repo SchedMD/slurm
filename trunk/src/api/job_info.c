@@ -155,7 +155,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	int bit_inx, bit_reps;
 	uint32_t *last_mem_alloc_ptr = NULL;
 	uint32_t last_mem_alloc = NO_VAL;
-	char last_hosts[128];
+	char *last_hosts;
 	hostlist_t hl, hl_last;
 	char select_buf[122];
 	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
@@ -532,13 +532,15 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 			     (last_mem_alloc !=
 			      job_resrcs->memory_allocated[rel_node_inx]))) {
 				if (hostlist_count(hl_last)) {
-					hostlist_ranged_string(hl_last,
-							       sizeof(last_hosts),
-							       last_hosts);
+					last_hosts = 
+						hostlist_ranged_string_xmalloc(
+						hl_last);
 					snprintf(tmp_line, sizeof(tmp_line),
 						 "  Nodes=%s CPU_IDs=%s Mem=%u",
-						 last_hosts, tmp2, last_mem_alloc_ptr ?
+						 last_hosts, tmp2,
+						 last_mem_alloc_ptr ?
 						 last_mem_alloc : 0);
+					xfree(last_hosts);
 					xstrcat(out, tmp_line);
 					if (one_liner)
 						xstrcat(out, " ");
@@ -571,10 +573,12 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 		}
 
 		if (hostlist_count(hl_last)) {
-			hostlist_ranged_string(hl_last, sizeof(last_hosts), last_hosts);
+			last_hosts = hostlist_ranged_string_xmalloc(hl_last);
 			snprintf(tmp_line, sizeof(tmp_line),
-				 "  Nodes=%s CPU_IDs=%s Mem=%u", last_hosts, tmp2,
+				 "  Nodes=%s CPU_IDs=%s Mem=%u",
+				 last_hosts, tmp2,
 				 last_mem_alloc_ptr ? last_mem_alloc : 0);
+			xfree(last_hosts);
 			xstrcat(out, tmp_line);
 			if (one_liner)
 				xstrcat(out, " ");
