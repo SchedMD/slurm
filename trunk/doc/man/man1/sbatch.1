@@ -17,9 +17,14 @@ SLURM controller and assigned a SLURM job ID.  The batch script is not
 necessarily granted resources immediately, it may sit in the queue of pending
 jobs for some time before its required resources become available.
 
+By default both standard output and standard error are directed to a file of
+the name "slurm\-%j.out", where the "%j" is replaced with the job allocation
+number.
+
 When the job allocation is finally granted for the batch script, SLURM
 runs a single copy of the batch script on the first node in the set of
 allocated nodes.
+
 .SH "OPTIONS"
 .LP
 
@@ -323,6 +328,9 @@ it it executed.
 \fB\-e\fR, \fB\-\-error\fR=<\fIfilename pattern\fR>
 Instruct SLURM to connect the batch script's standard error directly to the
 file name specified in the "\fIfilename pattern\fR".
+By default both standard output and standard error are directed to a file of
+the name "slurm\-%j.out", where the "%j" is replaced with the job allocation
+number.
 See the \fB\-\-input\fR option for filename specification options.
 
 .TP
@@ -786,6 +794,9 @@ allowing more than one task per processor.  However no more than
 \fB\-o\fR, \fB\-\-output\fR=<\fIfilename pattern\fR>
 Instruct SLURM to connect the batch script's standard output directly to the
 file name specified in the "\fIfilename pattern\fR".
+By default both standard output and standard error are directed to a file of
+the name "slurm\-%j.out", where the "%j" is replaced with the job allocation
+number.
 See the \fB\-\-input\fR option for filename specification options.
 
 .TP
