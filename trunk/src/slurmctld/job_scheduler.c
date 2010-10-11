@@ -1471,8 +1471,11 @@ static void *_run_prolog(void *arg)
 			kill_job = true;
 		} else
 			last_job_requeue = job_id;
-		if (kill_job)
+		if (kill_job) {
+			srun_user_message(job_ptr,
+					  "PrologSlurmctld failed, job killed");
 			(void) job_signal(job_id, SIGKILL, 0, 0);
+		}
 
 		unlock_slurmctld(job_write_lock);
 	} else
