@@ -1316,17 +1316,18 @@ static int _sync_nodes_to_comp_job(void)
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		if ((job_ptr->node_bitmap) && IS_JOB_COMPLETING(job_ptr)) {
 			update_cnt++;
-			info("Killing job_id %u", job_ptr->job_id);
+			info("Job %u in completing state", job_ptr->job_id);
 			if (!job_ptr->node_bitmap_cg)
 				build_cg_bitmap(job_ptr);
 			deallocate_nodes(job_ptr, false, false);
-			job_completion_logger(job_ptr, false);
+			/* The job in completing state at slurmctld restart or
+			 * reconfiguration, do not log completion again.
+			 * job_completion_logger(job_ptr, false); */
 		}
 	}
 	list_iterator_destroy(job_iterator);
 	if (update_cnt)
-		info("_sync_nodes_to_comp_job completing %d jobs",
-			update_cnt);
+		info("_sync_nodes_to_comp_job completing %d jobs", update_cnt);
 	return update_cnt;
 }
 
