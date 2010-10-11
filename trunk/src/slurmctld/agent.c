@@ -1516,7 +1516,7 @@ extern void mail_job_info (struct job_record *job_ptr, uint16_t mail_type)
 		job_ptr->job_id, job_ptr->name,
 		_mail_type_str(mail_type), job_time);
 
-	info ("msg to %s: %s", mi->user_name, mi->message);
+	debug("email msg to %s: %s", mi->user_name, mi->message);
 
 	slurm_mutex_lock(&mail_mutex);
 	if (!mail_list) {
