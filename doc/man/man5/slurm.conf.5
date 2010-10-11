@@ -1326,10 +1326,16 @@ This option may improve system responsiveness when large numbers of jobs
 (many hundreds) are submitted at the same time, but it will delay the
 initiation time of individual jobs. Also see \fBdefault_queue_depth\fR above.
 .TP
-\fBinterval=#\fR
+\fBbf_interval=#\fR
 The number of seconds between iterations.
-Higher values result in less overhead and responsiveness.
+Higher values result in less overhead and better responsiveness.
 The default value is 30 seconds.
+This option applies only to \fBSchedulerType=sched/backfill\fR.
+.TP
+\fBbf_window=#\fR
+The number of minutes into the future to look when considering jobs to schedule.
+Higher values result in more overhead and less responsiveness.
+The default value is 1440 minutes (one day).
 This option applies only to \fBSchedulerType=sched/backfill\fR.
 .TP
 \fBmax_job_bf=#\fR
