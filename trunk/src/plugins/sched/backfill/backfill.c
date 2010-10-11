@@ -82,6 +82,13 @@
 #ifndef BACKFILL_INTERVAL
 #  define BACKFILL_INTERVAL	30
 #endif
+
+/* Do not build job/resource/time record for more than this
+ * far in the future, in seconds, currently one day */
+#ifndef BACKFILL_WINDOW
+#define   BACKFILL_WINDOW		(24 * 60 * 60)
+#endif
+
 #define SLURMCTLD_THREAD_LIMIT	5
 
 typedef struct node_space_map {
@@ -100,12 +107,8 @@ static pthread_cond_t  term_cond = PTHREAD_COND_INITIALIZER;
 static bool config_flag = false;
 static uint32_t debug_flags = 0;
 static int backfill_interval = BACKFILL_INTERVAL;
-
+static int backfill_window = BACKFILL_WINDOW;
 static int max_backfill_job_cnt = 50;
-
-/* Do not build job/resource/time record for more than this
- * far in the future, in seconds, currently one day */
-#define BACKFILL_WINDOW		(24 * 60 * 60)
 
 /*********************** local functions *********************/
 static void _add_reservation(uint32_t start_time, uint32_t end_reserve,
@@ -354,11 +357,19 @@ static void _load_config(void)
 
 	sched_params = slurm_get_sched_params();
 	debug_flags  = slurm_get_debug_flags();
+
 	if (sched_params && (tmp_ptr=strstr(sched_params, "interval=")))
 		backfill_interval = atoi(tmp_ptr + 9);
 	if (backfill_interval < 1) {
 		fatal("Invalid backfill scheduler interval: %d",
 		      backfill_interval);
+	}
+
+	if (sched_params && (tmp_ptr=strstr(sched_params, "bf_window=")))
+		backfill_window = atoi(tmp_ptr + 10) * 60;  /* mins to secs */
+	if (backfill_window < 1) {
+		fatal("Invalid backfill scheduler window: %d",
+		      backfill_window);
 	}
 	if (sched_params && (tmp_ptr=strstr(sched_params, "max_job_bf=")))
 		max_backfill_job_cnt = atoi(tmp_ptr + 11);
@@ -446,7 +457,7 @@ static void _attempt_backfill(void)
 	node_space = xmalloc(sizeof(node_space_map_t) *
 			     (max_backfill_job_cnt + 3));
 	node_space[0].begin_time = now;
-	node_space[0].end_time = now + BACKFILL_WINDOW;
+	node_space[0].end_time = now + backfill_window;
 	node_space[0].avail_bitmap = bit_copy(avail_node_bitmap);
 	node_space[0].next = 0;
 	node_space_recs = 1;
@@ -614,7 +625,7 @@ static void _attempt_backfill(void)
 		} else
 			job_ptr->time_limit = orig_time_limit;
 
-		if (job_ptr->start_time > (now + BACKFILL_WINDOW)) {
+		if (job_ptr->start_time > (now + backfill_window)) {
 			/* Starts too far in the future to worry about */
 			continue;
 		}
