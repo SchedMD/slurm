@@ -8017,6 +8017,7 @@ extern int job_requeue (uid_t uid, uint32_t job_id, slurm_fd_t conn_fd,
 		goto reply;
 
 	if (job_ptr->batch_flag == 0) {
+		debug("Job-requeue can only be done for batch jobs");
 		rc = ESLURM_BATCH_ONLY;
 		goto reply;
 	}
