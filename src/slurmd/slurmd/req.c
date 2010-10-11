@@ -1047,8 +1047,10 @@ _prolog_error(batch_job_launch_msg_t *req, int rc)
 
 	if (req->std_err)
 		err_name_ptr = req->std_err;
+	else if (req->std_out)
+		err_name_ptr = req->std_out;
 	else {
-		snprintf(err_name, sizeof(err_name), "slurm-%u.err",
+		snprintf(err_name, sizeof(err_name), "slurm-%u.out",
 			 req->job_id);
 		err_name_ptr = err_name;
 	}
@@ -1065,11 +1067,11 @@ _prolog_error(batch_job_launch_msg_t *req, int rc)
 		      slurm_strerror(errno));
 		return;
 	}
-	snprintf(err_name, 128, "Error running slurm prolog: %d\n",
-		 WEXITSTATUS(rc));
+	snprintf(err_name, sizeof(err_name),
+		 "Error running slurm prolog: %d\n", WEXITSTATUS(rc));
 	safe_write(fd, err_name, strlen(err_name));
 	if (fchown(fd, (uid_t) req->uid, (gid_t) req->gid) == -1) {
-		snprintf(err_name, 128,
+		snprintf(err_name, sizeof(err_name),
 			 "Couldn't change fd owner to %u:%u: %m\n",
 			 req->uid, req->gid);
 	}
