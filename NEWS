@@ -44,6 +44,8 @@ documents those changes that are of interest to users and admins.
     translation (numbers to strings). Patch from Hongia Cao, NUDT.
  -- Add logic to retry sending RESPONSE_LAUNCH_TASKS messages from slurmd to
     srun. Patch from Hongia Cao, NUDT.
+ -- Modify bit_unfmt_hexmask() and bit_unfmt_binmask() functions to clear the
+    bitmap input before setting the bits indicated in the input string.
 
 * Changes in SLURM 2.2.0.pre11
 ==============================
