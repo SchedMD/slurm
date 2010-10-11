@@ -49,6 +49,8 @@ documents those changes that are of interest to users and admins.
  -- Add SchedulerParameters option of bf_window to control how far into the
     future that the backfill scheduler will look when considering jobs to start.
     The default value is one day. See "man slurm.conf" for details.
+ -- Fix bug that can result in duplicate job termination records in accounting
+    for job termination when slurmctld restarts or reconfigures.
 
 * Changes in SLURM 2.2.0.pre11
 ==============================

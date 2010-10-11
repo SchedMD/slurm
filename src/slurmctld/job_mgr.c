@@ -2516,7 +2516,10 @@ extern int job_signal(uint32_t job_id, uint16_t signal, uint16_t batch_flag,
 		job_ptr->requid = uid;
 	if (IS_JOB_PENDING(job_ptr) && IS_JOB_COMPLETING(job_ptr) &&
 	    (signal == SIGKILL)) {
-		job_ptr->job_state = JOB_CANCELLED | JOB_COMPLETING;
+		if ((job_ptr->job_state & JOB_STATE_BASE) == JOB_PENDING) {
+			/* Prevent job requeue, otherwise preserve state */
+			job_ptr->job_state = JOB_CANCELLED | JOB_COMPLETING;
+		}
 		/* build_cg_bitmap() not needed, job already completing */
 		verbose("job_signal of requeuing job %u successful", job_id);
 		return SLURM_SUCCESS;
