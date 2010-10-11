@@ -23,8 +23,17 @@ you will need to build and install MUNGE, available from
 <a href="http://munge.googlecode.com/">http://munge.googlecode.com/</a> and
 <a href="http://packages.debian.org/src:munge">Debian</a> and
 <a href="http://fedoraproject.org/">Fedora</a> and
-<a href="http://packages.ubuntu.com/src:munge">Ubuntu</a>.
-</li>
+<a href="http://packages.ubuntu.com/src:munge">Ubuntu</a>.</li>
+</ul><br>
+
+<li><b>Authentication</b> tools for users that work with SLURM.</li>
+<ul>
+<li><a href="http://sourceforge.net/projects/auks/">AUKS</a><br>
+AUKS is an utility designed to ease Kerberos V credential support addition 
+to non-interactive applications, like batch systems (SLURM, LSF, Torque, etc.).
+It includes a plugin for the SLURM resource manager. AUKS is not used as
+an authentication plugin by the SLURM code itself, but provides a mechanism
+for the application to manage Kerberos V credentials.</li>
 </ul><br>
 
 <li><b>Databases</b> can be used to store accounting information.
@@ -185,6 +194,6 @@ Portable Linux Processor Affinity (PLPA)</a></li>
 
 </ul>
 
-<p style="text-align:center;">Last modified 19 February 2010</p>
+<p style="text-align:center;">Last modified 11 October 2010</p>
 
 <!--#include virtual="footer.txt"-->
