@@ -51,6 +51,8 @@ documents those changes that are of interest to users and admins.
     The default value is one day. See "man slurm.conf" for details.
  -- Fix bug that can result in duplicate job termination records in accounting
     for job termination when slurmctld restarts or reconfigures.
+ -- Modify plugin and library logic as needed to support use of the function
+    slurm_job_step_stat() from user commands.
 
 * Changes in SLURM 2.2.0.pre11
 ==============================

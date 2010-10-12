@@ -49,6 +49,24 @@
 
 #define _DEBUG 0
 
+/* These are defined here so when we link with something other than
+ * the slurmd we will have these symbols defined.  They will get
+ * overwritten when linking with the slurmd.
+ */
+#if defined (__APPLE__)
+uint32_t jobacct_job_id __attribute__((weak_import));
+pthread_mutex_t jobacct_lock __attribute__((weak_import));
+uint32_t jobacct_mem_limit __attribute__((weak_import));
+uint32_t jobacct_step_id __attribute__((weak_import));
+uint32_t jobacct_vmem_limit __attribute__((weak_import));
+#else
+uint32_t jobacct_job_id;
+pthread_mutex_t jobacct_lock;
+uint32_t jobacct_mem_limit;
+uint32_t jobacct_step_id;
+uint32_t jobacct_vmem_limit;
+#endif
+
 /*
  * These variables are required by the generic plugin interface.  If they
  * are not found in the plugin, the plugin loader will ignore it.
