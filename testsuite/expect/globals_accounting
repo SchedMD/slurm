@@ -883,8 +883,7 @@ proc remove_user { cluster acct user } {
 	}
 
 	if {$matches != 1} {
-		send_user "\nFAILURE:  sacctmgr had a problem deleting user.
-	got $matches\n"
+		send_user "\nFAILURE:  sacctmgr had a problem deleting user.  Got $matches\n"
 		incr exit_code 1
 	}
 
