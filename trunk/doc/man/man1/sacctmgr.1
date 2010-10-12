@@ -39,11 +39,6 @@ commit changes immediately.
 No header will be added to the beginning of the output.
 
 .TP
-\fB\-o\fR, \fB\-\-oneliner\fR
-Report output one record per line.
-This is equivalent to the \fBoneliner\fR command.
-
-.TP
 \fB\-p\fR, \fB\-\-parsable\fR
 Output will be '|' delimited with a '|' at the end.
 
@@ -59,7 +54,7 @@ This is equivalent to the \fBquiet\fR command.
 .TP
 \fB\-r\fR, \fB\-\-readonly\fR
 Makes it so the running sacctmgr can not modify accounting information.
-This is equivalent to the \fBreadonly\fR command.
+The \fBreadonly\fR option is for use within interactive mode.
 
 .TP
 \fB\-s\fR, \fB\-\-associations\fR
@@ -102,7 +97,7 @@ Dump cluster data to the specified file.
 
 .TP
 \fBexit\fP
-Terminate sacctmgr.
+Terminate sacctmgr interactive mode.
 Identical to the \fBquit\fR command.
 
 .TP
@@ -125,8 +120,8 @@ Load cluster data to the specified file.
 Modify an entity.
 
 .TP
-\fBoneliner\fP
-Output one record per line.
+\fBproblem\fP
+Use with show or list to display entity problems.
 
 .TP
 \fBquiet\fP
@@ -134,7 +129,7 @@ Print no messages other than error messages.
 
 .TP
 \fBquit\fP
-Terminate the execution of sacctmgr.
+Terminate the execution of sacctmgr interactive mode.
 Identical to the \fBexit\fR command.
 
 .TP
