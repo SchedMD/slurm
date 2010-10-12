@@ -307,6 +307,7 @@ test7.9    Test that no files are open in spawned tasks (except stdin,
 test7.10   Test if we can trick SLURM into using the wrong user ID
            through an LD_PRELOAD option.
 test7.11   Test of SPANK plugin.
+test7.12   Test of slurm_job_step_stat() API call.
 
 
 test8.#    Test of Blue Gene specific functionality.
