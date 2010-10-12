@@ -127,8 +127,6 @@ struct switch_record *switch_record_table __attribute__((weak_import));
 int switch_record_cnt __attribute__((weak_import));
 bitstr_t *avail_node_bitmap __attribute__((weak_import));
 bitstr_t *idle_node_bitmap __attribute__((weak_import));
-List slurm_find_preemptable_jobs(struct job_record *job_ptr)
-	__attribute__((weak_import));
 #else
 slurm_ctl_conf_t slurmctld_conf;
 struct node_record *node_record_table_ptr;
@@ -140,7 +138,6 @@ struct switch_record *switch_record_table;
 int switch_record_cnt;
 bitstr_t *avail_node_bitmap;
 bitstr_t *idle_node_bitmap;
-List slurm_find_preemptable_jobs(struct job_record *job_ptr);
 #endif
 
 /*
