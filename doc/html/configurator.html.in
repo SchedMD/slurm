@@ -269,8 +269,8 @@ function displayfile()
    get_field("SlurmctldLogFile",document.config.slurmctld_logfile) + "<br>" +
    "SlurmdDebug=" + document.config.slurmd_debug.value + "<br>" +
    get_field("SlurmdLogFile",document.config.slurmd_logfile) + "<br>" +
-   "SlurmSchedLogFile= <br>" +
-   "SlurmSchedLogLevel= <br>" +
+   "#SlurmSchedLogFile= <br>" +
+   "#SlurmSchedLogLevel= <br>" +
    "# <br>" +
    "# <br>" +
    "# POWER SAVE SUPPORT FOR IDLE NODES (optional) <br>" +
