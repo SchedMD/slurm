@@ -1498,6 +1498,8 @@ static void *_run_prolog(void *arg)
 		if (job_ptr->batch_flag &&
 		    (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr)))
 			launch_job(job_ptr);
+	}
+	if (job_ptr && job_ptr->node_bitmap) {
 		for (i=0; i<node_record_count; i++) {
 			if (bit_test(job_ptr->node_bitmap, i) == 0)
 				continue;
