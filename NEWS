@@ -15,8 +15,10 @@ documents those changes that are of interest to users and admins.
     option is used.
  -- Restore operation of srun -X option to forward SIGINT to spawned tasks
     without killing them.
- -- Fixed a bug in calculating the root account's raw usage reported by Pär
+ -- Fixed a bug in calculating the root account's raw usage reported by Par
     Andersson
+ -- Fixed a bug in sshare displaying account hierarchy reported by Per
+    Lundqvist
 
 * Changes in SLURM 2.1.14
 =========================

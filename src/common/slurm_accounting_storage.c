@@ -917,6 +917,8 @@ extern void init_acct_association_rec(acct_association_rec_t *assoc)
 	assoc->max_submit_jobs = NO_VAL;
 	assoc->max_wall_pj = NO_VAL;
 
+	assoc->lft = NO_VAL;
+	assoc->rgt = NO_VAL;
 	assoc->shares_norm = (double)NO_VAL;
 	assoc->shares_raw = NO_VAL;
 
