@@ -1488,10 +1488,6 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 			set_qos_vals=1;
 		}
 
-		if(addto_update_list(mysql_conn->update_list,
-				     SLURMDB_MODIFY_ASSOC,
-				     mod_assoc) != SLURM_SUCCESS)
-			error("couldn't add to the update list");
 		if(account_type)
 			_modify_unset_users(mysql_conn,
 					    mod_assoc,
@@ -1499,6 +1495,12 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 					    lft, rgt,
 					    ret_list,
 					    moved_parent);
+		if (moved_parent)
+			slurmdb_destroy_association_rec(mod_assoc);
+		else if (addto_update_list(mysql_conn->update_list,
+					   SLURMDB_MODIFY_ASSOC,
+					   mod_assoc) != SLURM_SUCCESS)
+			error("couldn't add to the update list");
 	}
 
 	xstrcat(name_char, ")");
