@@ -396,7 +396,7 @@ pgsql_remove_common(pgsql_conn_t *pg_conn, uint16_t type, time_t now,
 				xstrfmtcat(loc_assoc_char, " OR t1.id=%s", id);
 			}
 			rem_assoc = xmalloc(sizeof(slurmdb_association_rec_t));
-			slurmdb_init_association_rec(rem_assoc);
+			slurmdb_init_association_rec(rem_assoc, 0);
 
 			rem_assoc->id = atoi(id);
 			if(addto_update_list(pg_conn->update_list,

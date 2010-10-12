@@ -49,6 +49,67 @@
 
 slurmdb_cluster_rec_t *working_cluster_rec = NULL;
 
+static void _free_assoc_rec_members(slurmdb_association_rec_t *assoc)
+{
+	if (assoc) {
+		if(assoc->accounting_list)
+			list_destroy(assoc->accounting_list);
+		xfree(assoc->acct);
+		xfree(assoc->cluster);
+		xfree(assoc->parent_acct);
+		xfree(assoc->partition);
+		if(assoc->qos_list)
+			list_destroy(assoc->qos_list);
+		xfree(assoc->user);
+
+		destroy_assoc_mgr_association_usage(assoc->usage);
+	}
+}
+
+static void _free_cluster_rec_members(slurmdb_cluster_rec_t *cluster)
+{
+	if (cluster) {
+		if(cluster->accounting_list)
+			list_destroy(cluster->accounting_list);
+		xfree(cluster->control_host);
+		xfree(cluster->dim_size);
+		xfree(cluster->name);
+		xfree(cluster->nodes);
+		slurmdb_destroy_association_rec(cluster->root_assoc);
+	}
+}
+
+static void _free_qos_rec_members(slurmdb_qos_rec_t *qos)
+{
+	if (qos) {
+		xfree(qos->description);
+		xfree(qos->name);
+		FREE_NULL_BITMAP(qos->preempt_bitstr);
+		if(qos->preempt_list)
+			list_destroy(qos->preempt_list);
+		destroy_assoc_mgr_qos_usage(qos->usage);
+	}
+}
+
+static void _free_wckey_rec_members(slurmdb_wckey_rec_t *wckey)
+{
+	if (wckey) {
+		if(wckey->accounting_list)
+			list_destroy(wckey->accounting_list);
+		xfree(wckey->cluster);
+		xfree(wckey->name);
+		xfree(wckey->user);
+	}
+}
+
+static void _free_cluster_cond_members(slurmdb_cluster_cond_t *cluster_cond)
+{
+	if (cluster_cond) {
+		if (cluster_cond->cluster_list)
+			list_destroy(cluster_cond->cluster_list);
+	}
+}
+
 /*
  * Comparator used for sorting immediate childern of acct_hierarchical_recs
  *
@@ -316,13 +377,7 @@ extern void slurmdb_destroy_cluster_rec(void *object)
 		(slurmdb_cluster_rec_t *)object;
 
 	if(slurmdb_cluster) {
-		if(slurmdb_cluster->accounting_list)
-			list_destroy(slurmdb_cluster->accounting_list);
-		xfree(slurmdb_cluster->control_host);
-		xfree(slurmdb_cluster->dim_size);
-		xfree(slurmdb_cluster->name);
-		xfree(slurmdb_cluster->nodes);
-		slurmdb_destroy_association_rec(slurmdb_cluster->root_assoc);
+		_free_cluster_rec_members(slurmdb_cluster);
 		xfree(slurmdb_cluster);
 	}
 }
@@ -343,18 +398,7 @@ extern void slurmdb_destroy_association_rec(void *object)
 		(slurmdb_association_rec_t *)object;
 
 	if(slurmdb_association) {
-		if(slurmdb_association->accounting_list)
-			list_destroy(slurmdb_association->accounting_list);
-		xfree(slurmdb_association->acct);
-		xfree(slurmdb_association->cluster);
-		xfree(slurmdb_association->parent_acct);
-		xfree(slurmdb_association->partition);
-		if(slurmdb_association->qos_list)
-			list_destroy(slurmdb_association->qos_list);
-		xfree(slurmdb_association->user);
-
-		destroy_assoc_mgr_association_usage(slurmdb_association->usage);
-
+		_free_assoc_rec_members(slurmdb_association);
 		xfree(slurmdb_association);
 	}
 }
@@ -398,12 +442,7 @@ extern void slurmdb_destroy_qos_rec(void *object)
 {
 	slurmdb_qos_rec_t *slurmdb_qos = (slurmdb_qos_rec_t *)object;
 	if(slurmdb_qos) {
-		xfree(slurmdb_qos->description);
-		xfree(slurmdb_qos->name);
-		FREE_NULL_BITMAP(slurmdb_qos->preempt_bitstr);
-		if(slurmdb_qos->preempt_list)
-			list_destroy(slurmdb_qos->preempt_list);
-		destroy_assoc_mgr_qos_usage(slurmdb_qos->usage);
+		_free_qos_rec_members(slurmdb_qos);
 		xfree(slurmdb_qos);
 	}
 }
@@ -452,11 +491,7 @@ extern void slurmdb_destroy_wckey_rec(void *object)
 	slurmdb_wckey_rec_t *wckey = (slurmdb_wckey_rec_t *)object;
 
 	if(wckey) {
-		if(wckey->accounting_list)
-			list_destroy(wckey->accounting_list);
-		xfree(wckey->cluster);
-		xfree(wckey->name);
-		xfree(wckey->user);
+		_free_wckey_rec_members(wckey);
 		xfree(wckey);
 	}
 }
@@ -549,8 +584,7 @@ extern void slurmdb_destroy_cluster_cond(void *object)
 		(slurmdb_cluster_cond_t *)object;
 
 	if(slurmdb_cluster) {
-		if(slurmdb_cluster->cluster_list)
-			list_destroy(slurmdb_cluster->cluster_list);
+		_free_cluster_cond_members(slurmdb_cluster);
 		xfree(slurmdb_cluster);
 	}
 }
@@ -874,7 +908,7 @@ extern List slurmdb_get_info_cluster(char *cluster_names)
 	db_conn = acct_storage_g_get_connection(NULL, 0, 1, cluster_name);
 	xfree(cluster_name);
 
-	slurmdb_init_cluster_cond(&cluster_cond);
+	slurmdb_init_cluster_cond(&cluster_cond, 0);
 	if (cluster_names && !all_clusters) {
 		cluster_cond.cluster_list = list_create(slurm_destroy_char);
 		slurm_addto_char_list(cluster_cond.cluster_list, cluster_names);
@@ -933,14 +967,18 @@ end_it:
 	return temp_list;
 }
 
-extern void slurmdb_init_association_rec(slurmdb_association_rec_t *assoc)
+extern void slurmdb_init_association_rec(slurmdb_association_rec_t *assoc,
+					 bool free_it)
 {
-	if(!assoc)
+	if (!assoc)
 		return;
 
+	if (free_it)
+		_free_assoc_rec_members(assoc);
 	memset(assoc, 0, sizeof(slurmdb_association_rec_t));
 
 	assoc->def_qos_id = NO_VAL;
+	assoc->is_def = (uint16_t)NO_VAL;
 
 	assoc->grp_cpu_mins = (uint64_t)NO_VAL;
 	assoc->grp_cpu_run_mins = (uint64_t)NO_VAL;
@@ -970,20 +1008,25 @@ extern void slurmdb_init_association_rec(slurmdb_association_rec_t *assoc)
 	/* assoc->usage_raw = 0; */
 }
 
-extern void slurmdb_init_cluster_rec(slurmdb_cluster_rec_t *cluster)
+extern void slurmdb_init_cluster_rec(slurmdb_cluster_rec_t *cluster,
+				     bool free_it)
 {
 	if(!cluster)
 		return;
 
+	if (free_it)
+		_free_cluster_rec_members(cluster);
 	memset(cluster, 0, sizeof(slurmdb_cluster_rec_t));
 	cluster->flags = NO_VAL;
 }
 
-extern void slurmdb_init_qos_rec(slurmdb_qos_rec_t *qos)
+extern void slurmdb_init_qos_rec(slurmdb_qos_rec_t *qos, bool free_it)
 {
 	if(!qos)
 		return;
 
+	if (free_it)
+		_free_qos_rec_members(qos);
 	memset(qos, 0, sizeof(slurmdb_qos_rec_t));
 
 	qos->preempt_mode = (uint16_t)NO_VAL;
@@ -1008,11 +1051,26 @@ extern void slurmdb_init_qos_rec(slurmdb_qos_rec_t *qos)
 	qos->usage_factor = NO_VAL;
 }
 
-extern void slurmdb_init_cluster_cond(slurmdb_cluster_cond_t *cluster)
+extern void slurmdb_init_wckey_rec(slurmdb_wckey_rec_t *wckey, bool free_it)
+{
+	if(!wckey)
+		return;
+
+	if (free_it)
+		_free_wckey_rec_members(wckey);
+	memset(wckey, 0, sizeof(slurmdb_wckey_rec_t));
+	wckey->is_def = (uint16_t)NO_VAL;
+}
+
+
+extern void slurmdb_init_cluster_cond(slurmdb_cluster_cond_t *cluster,
+				      bool free_it)
 {
 	if(!cluster)
 		return;
 
+	if (free_it)
+		_free_cluster_cond_members(cluster);
 	memset(cluster, 0, sizeof(slurmdb_cluster_cond_t));
 	cluster->flags = NO_VAL;
 }

@@ -538,7 +538,7 @@ static List _get_cluster_list(int argc, char *argv[], uint32_t *total_time,
 	int i=0;
 	List cluster_list = NULL;
 
-	slurmdb_init_cluster_cond(cluster_cond);
+	slurmdb_init_cluster_cond(cluster_cond, 0);
 	cluster_cond->with_deleted = 1;
 	cluster_cond->with_usage = 1;
 
@@ -606,7 +606,7 @@ extern int cluster_account_by_user(int argc, char *argv[])
 
 	print_fields_list = list_create(destroy_print_field);
 
-	slurmdb_init_cluster_cond(&cluster_cond);
+	slurmdb_init_cluster_cond(&cluster_cond, 0);
 
 	assoc_cond->with_sub_accts = 1;
 
@@ -794,7 +794,7 @@ extern int cluster_user_by_account(int argc, char *argv[])
 
 	print_fields_list = list_create(destroy_print_field);
 
-	slurmdb_init_cluster_cond(&cluster_cond);
+	slurmdb_init_cluster_cond(&cluster_cond, 0);
 
 	_set_assoc_cond(&i, argc, argv, assoc_cond, format_list);
 
@@ -948,7 +948,7 @@ extern int cluster_user_by_wckey(int argc, char *argv[])
 
 	print_fields_list = list_create(destroy_print_field);
 
-	slurmdb_init_cluster_cond(&cluster_cond);
+	slurmdb_init_cluster_cond(&cluster_cond, 0);
 
 	_set_wckey_cond(&i, argc, argv, wckey_cond, format_list);
 
@@ -1266,7 +1266,7 @@ extern int cluster_wckey_by_user(int argc, char *argv[])
 
 	print_fields_list = list_create(destroy_print_field);
 
-	slurmdb_init_cluster_cond(&cluster_cond);
+	slurmdb_init_cluster_cond(&cluster_cond, 0);
 
 	_set_wckey_cond(&i, argc, argv, wckey_cond, format_list);
 

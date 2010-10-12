@@ -1383,3 +1383,65 @@ end_it:
 	return rc;
 }
 
+/* as_mysql_cluster_list_lock needs to be locked before calling this. */
+extern int as_mysql_convert_user_defs(MYSQL *db_conn, char *cluster_name)
+{
+	char *query = NULL;
+	MYSQL_RES *result = NULL;
+	MYSQL_ROW row;
+	time_t now = time(NULL);
+	int i = 0, rc = SLURM_SUCCESS;
+	char *user_req_inx[] = {
+		"name",
+		"default_acct",
+		"default_wckey",
+	};
+	enum {
+		USER_REQ_NAME,
+		USER_REQ_DA,
+		USER_REQ_DW,
+		USER_REQ_COUNT
+	};
+
+	xassert(cluster_name);
+
+	info("Updating user/assoc tables for cluster %s defaults.",
+	     cluster_name);
+
+	xstrfmtcat(query, "select %s", user_req_inx[0]);
+	for (i=1; i<USER_REQ_COUNT; i++) {
+		xstrfmtcat(query, ", %s", user_req_inx[i]);
+	}
+
+	xstrfmtcat(query, " from %s", user_table);
+
+	debug3("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
+	if (!(result = mysql_db_query_ret(db_conn, query, 0))) {
+		xfree(query);
+		return SLURM_ERROR;
+	}
+	xfree(query);
+
+	while((row = mysql_fetch_row(result))) {
+		/* now convert to new form */
+		xstrfmtcat(query,
+			   "update \"%s_%s\" set mod_time=%ld, is_def=1 "
+			   "where user='%s' && acct='%s';"
+			   "insert into \"%s_%s\" (creation_time, mod_time, "
+			   "wckey_name, user, is_def) values (%ld, %ld, '%s', "
+			   "'%s', 1) on duplicate key "
+			   "update deleted=0, is_def=1, mod_time=%ld;",
+			   cluster_name, assoc_table, (long)now,
+			   row[USER_REQ_NAME], row[USER_REQ_DA],
+			   cluster_name, wckey_table, (long)now, (long)now,
+			   row[USER_REQ_DW], row[USER_REQ_NAME], (long)now);
+	}
+	mysql_free_result(result);
+	if (query) {
+		info("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
+		rc = mysql_db_query(db_conn, query);
+		xfree(query);
+	}
+
+	return rc;
+}

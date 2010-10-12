@@ -150,7 +150,8 @@ static int _set_cond(int *start, int argc, char *argv[],
 extern int sacctmgr_list_wckey(int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
-	slurmdb_wckey_cond_t *wckey_cond = xmalloc(sizeof(slurmdb_wckey_cond_t));
+	slurmdb_wckey_cond_t *wckey_cond =
+		xmalloc(sizeof(slurmdb_wckey_cond_t));
 	List wckey_list = NULL;
 	int i=0;
 	ListIterator itr = NULL;

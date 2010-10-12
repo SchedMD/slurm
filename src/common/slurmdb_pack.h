@@ -43,6 +43,10 @@
 #include "pack.h"
 #include "xmalloc.h"
 
+extern void slurmdb_pack_user_defs(void *in,
+				   uint16_t rpc_version, Buf buffer);
+extern int slurmdb_unpack_user_defs(void **object,
+				    uint16_t rpc_version, Buf buffer);
 extern void slurmdb_pack_user_rec(void *in,
 				  uint16_t rpc_version, Buf buffer);
 extern int slurmdb_unpack_user_rec(void **object,

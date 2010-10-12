@@ -67,6 +67,7 @@ char *assoc_req_inx[] = {
 	"def_qos_id",
 	"qos",
 	"delta_qos",
+	"is_def",
 };
 enum {
 	ASSOC_REQ_ID,
@@ -94,6 +95,7 @@ enum {
 	ASSOC_REQ_DEF_QOS,
 	ASSOC_REQ_QOS,
 	ASSOC_REQ_DELTA_QOS,
+	ASSOC_REQ_DEFAULT,
 	ASSOC_REQ_COUNT
 };
 
@@ -190,7 +192,73 @@ static int _assoc_sort_cluster(slurmdb_association_rec_t *rec_a,
 	return 0;
 }
 
+/* Caller responsible for freeing query being sent in as it could be
+ * changed while running the function.
+ */
+static int _reset_default_assoc(mysql_conn_t *mysql_conn,
+				slurmdb_association_rec_t *assoc,
+				char **query,
+				bool add_to_update)
+{
+	time_t now = time(NULL);
+	int rc = SLURM_SUCCESS;
 
+	xassert(query);
+
+	if (!assoc->is_def || !assoc->cluster
+	    || !assoc->acct || !assoc->user)
+		return SLURM_ERROR;
+
+	xstrfmtcat(*query, "update \"%s_%s\" set is_def=0, mod_time=%ld "
+		   "where (user='%s' && acct!='%s' && is_def=1);",
+		   assoc->cluster, assoc_table, (long)now,
+		   assoc->user, assoc->acct);
+
+	if (add_to_update) {
+		MYSQL_RES *result = NULL;
+		MYSQL_ROW row;
+		/* If moved parent all the associations will be sent
+		   so no need to do this extra step.  Else, this has
+		   to be done one at a time so we can send
+		   the updated assocs back to the slurmctlds
+		*/
+		xstrfmtcat(*query, "select id_assoc from \"%s_%s\" "
+			   "where (user='%s' && acct!='%s' && is_def=1);",
+			   assoc->cluster, assoc_table,
+			   assoc->user, assoc->acct);
+		debug3("%d(%s:%d) query\n%s",
+		       mysql_conn->conn, THIS_FILE, __LINE__, *query);
+		if(!(result = mysql_db_query_ret(
+			     mysql_conn->db_conn, *query, 1))) {
+			xfree(*query);
+			rc = SLURM_ERROR;
+			goto end_it;
+		}
+		xfree(*query);
+
+		while((row = mysql_fetch_row(result))) {
+			slurmdb_association_rec_t *mod_assoc = xmalloc(
+				sizeof(slurmdb_association_rec_t));
+			slurmdb_init_association_rec(mod_assoc, 0);
+
+			mod_assoc->id = atoi(row[0]);
+			mod_assoc->is_def = 0;
+
+			if (addto_update_list(mysql_conn->update_list,
+					      SLURMDB_MODIFY_ASSOC,
+					      mod_assoc)
+			    != SLURM_SUCCESS) {
+				slurmdb_destroy_association_rec(mod_assoc);
+				error("couldn't add to the update list");
+				rc = SLURM_ERROR;
+				break;
+			}
+		}
+		mysql_free_result(result);
+	}
+end_it:
+	return rc;
+}
 
 /* This should take care of all the lft and rgts when you move an
  * account.  This handles deleted associations also.
@@ -569,7 +637,7 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 	char *query = NULL, *object = NULL;
 	int i;
 
-	char *assoc_req_inx[] = {
+	char *assoc_inx[] = {
 		"id_assoc",
 		"user",
 		"acct",
@@ -614,9 +682,9 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 	if(!ret_list || !acct)
 		return SLURM_ERROR;
 
-	xstrcat(object, assoc_req_inx[0]);
+	xstrcat(object, assoc_inx[0]);
 	for(i=1; i<ASSOC_COUNT; i++)
-		xstrfmtcat(object, ", %s", assoc_req_inx[i]);
+		xstrfmtcat(object, ", %s", assoc_inx[i]);
 
 	/* We want all the sub accounts and user accounts */
 	query = xstrdup_printf("select distinct %s from \"%s_%s\" "
@@ -642,7 +710,7 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 		int modified = 0;
 
 		mod_assoc = xmalloc(sizeof(slurmdb_association_rec_t));
-		slurmdb_init_association_rec(mod_assoc);
+		slurmdb_init_association_rec(mod_assoc, 0);
 		mod_assoc->id = atoi(row[ASSOC_ID]);
 		mod_assoc->cluster = xstrdup(assoc->cluster);
 
@@ -780,9 +848,12 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 				if(addto_update_list(mysql_conn->update_list,
 						     SLURMDB_MODIFY_ASSOC,
 						     mod_assoc)
-				   != SLURM_SUCCESS)
+				   != SLURM_SUCCESS) {
+					slurmdb_destroy_association_rec(
+						mod_assoc);
 					error("couldn't add to "
 					      "the update list");
+				}
 		} else
 			slurmdb_destroy_association_rec(mod_assoc);
 
@@ -862,6 +933,11 @@ static int _setup_association_cond_limits(
 			   prefix, prefix);
 	else
 		xstrfmtcat(*extra, " %s.deleted=0", prefix);
+
+	if (assoc_cond->only_defs) {
+		set = 1;
+		xstrfmtcat(*extra, " && (%s.is_def=1)", prefix);
+	}
 
 	if(assoc_cond->acct_list && list_count(assoc_cond->acct_list)) {
 		set = 0;
@@ -1215,6 +1291,7 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 	int set_qos_vals = 0;
 	int moved_parent = 0;
 	char *query = NULL, *vals = NULL, *object = NULL, *name_char = NULL;
+	char *reset_query = NULL;
 	time_t now = time(NULL);
 
 	xassert(result);
@@ -1248,8 +1325,6 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 		 */
 		if(row[MASSOC_PACCT][0])
 			account = row[MASSOC_PACCT];
-		else
-			account = row[MASSOC_ACCT];
 
 		if(!is_admin) {
 			slurmdb_coord_rec_t *coord = NULL;
@@ -1315,6 +1390,7 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 						  row[MASSOC_PACCT],
 						  assoc->parent_acct,
 						  now);
+
 				if((rc == ESLURM_INVALID_PARENT_ACCOUNT)
 				   || (rc == ESLURM_SAME_PARENT_ACCOUNT)) {
 					continue;
@@ -1396,11 +1472,13 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 		mysql_free_result(result2);
 
 		mod_assoc = xmalloc(sizeof(slurmdb_association_rec_t));
-		slurmdb_init_association_rec(mod_assoc);
+		slurmdb_init_association_rec(mod_assoc, 0);
 		mod_assoc->id = atoi(row[MASSOC_ID]);
 		mod_assoc->cluster = xstrdup(cluster_name);
 
 		mod_assoc->def_qos_id = assoc->def_qos_id;
+
+		mod_assoc->is_def = assoc->is_def;
 
 		mod_assoc->shares_raw = assoc->shares_raw;
 
@@ -1488,6 +1566,7 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 			set_qos_vals=1;
 		}
 
+
 		if(account_type)
 			_modify_unset_users(mysql_conn,
 					    mod_assoc,
@@ -1495,12 +1574,26 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 					    lft, rgt,
 					    ret_list,
 					    moved_parent);
-		if (moved_parent)
-			slurmdb_destroy_association_rec(mod_assoc);
-		else if (addto_update_list(mysql_conn->update_list,
-					   SLURMDB_MODIFY_ASSOC,
-					   mod_assoc) != SLURM_SUCCESS)
-			error("couldn't add to the update list");
+		else if (assoc->is_def && row[MASSOC_USER][0]) {
+			/* Use fresh one here so we don't have to
+			   worry about dealing with bad values.
+			*/
+			slurmdb_association_rec_t tmp_assoc;
+			slurmdb_init_association_rec(&tmp_assoc, 0);
+			tmp_assoc.is_def = 1;
+			tmp_assoc.cluster = cluster_name;
+			tmp_assoc.acct = row[MASSOC_ACCT];
+			tmp_assoc.user = row[MASSOC_USER];
+			if ((rc = _reset_default_assoc(
+				     mysql_conn, &tmp_assoc, &reset_query,
+				     moved_parent ? 0 : 1))
+			    != SLURM_SUCCESS) {
+				xfree(reset_query);
+				goto end_it;
+			}
+		}
+
+		slurmdb_destroy_association_rec(mod_assoc);
 	}
 
 	xstrcat(name_char, ")");
@@ -1571,7 +1664,15 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 		list_destroy(local_assoc_list);
 	}
 
+	if(reset_query) {
+		debug3("%d(%s:%d) query\n%s",
+		       mysql_conn->conn, THIS_FILE, __LINE__, reset_query);
+		if ((rc = mysql_db_query(mysql_conn->db_conn, reset_query))
+		    != SLURM_SUCCESS)
+			error("Couldn't update defaults");
+	}
 end_it:
+	xfree(reset_query);
 	xfree(name_char);
 	xfree(vals);
 
@@ -1664,13 +1765,15 @@ static int _process_remove_assoc_results(mysql_conn_t *mysql_conn,
 			smallest_lft = lft;
 
 		rem_assoc = xmalloc(sizeof(slurmdb_association_rec_t));
-		slurmdb_init_association_rec(rem_assoc);
+		slurmdb_init_association_rec(rem_assoc, 0);
 		rem_assoc->id = atoi(row[RASSOC_ID]);
 		rem_assoc->cluster = xstrdup(cluster_name);
 		if(addto_update_list(mysql_conn->update_list,
 				     SLURMDB_REMOVE_ASSOC,
-				     rem_assoc) != SLURM_SUCCESS)
+				     rem_assoc) != SLURM_SUCCESS) {
+			slurmdb_destroy_association_rec(rem_assoc);
 			error("couldn't add to the update list");
+		}
 
 	}
 
@@ -1816,8 +1919,8 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 		MYSQL_ROW row2;
 
 		list_append(assoc_list, assoc);
-
 		assoc->id = atoi(row[ASSOC_REQ_ID]);
+		assoc->is_def = atoi(row[ASSOC_REQ_DEFAULT]);
 		assoc->lft = atoi(row[ASSOC_REQ_LFT]);
 		assoc->rgt = atoi(row[ASSOC_REQ_RGT]);
 
@@ -2137,7 +2240,7 @@ extern int as_mysql_get_modified_lfts(mysql_conn_t *mysql_conn,
 	while((row = mysql_fetch_row(result))) {
 		slurmdb_association_rec_t *assoc =
 			xmalloc(sizeof(slurmdb_association_rec_t));
-		slurmdb_init_association_rec(assoc);
+		slurmdb_init_association_rec(assoc, 0);
 		assoc->id = atoi(row[0]);
 		assoc->lft = atoi(row[1]);
 		assoc->cluster = xstrdup(cluster_name);
@@ -2580,6 +2683,82 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 			list_iterator_destroy(itr2);
 		}
 	}
+
+	/* now reset all the other defaults accordingly. (if needed) */
+	itr = list_iterator_create(association_list);
+	while ((object = list_next(itr))) {
+		if (!object->is_def || !object->cluster
+		    || !object->acct || !object->user)
+			continue;
+
+		if ((rc = _reset_default_assoc(
+			     mysql_conn, object, &query, moved_parent ? 0 : 1))
+		    != SLURM_SUCCESS) {
+			xfree(query);
+			goto end_it;
+		}
+
+		/* xstrfmtcat(query, "update \"%s_%s\" set is_def=0, mod_time=%ld " */
+		/* 	   "where (user='%s' && acct!='%s' && is_def=1);", */
+		/* 	   object->cluster, assoc_table, (long)now, */
+		/* 	   object->user, object->acct); */
+
+		/* if (!moved_parent) { */
+		/* 	MYSQL_RES *result = NULL; */
+		/* 	MYSQL_ROW row; */
+		/* 	/\* If moved parent all the associations will be sent */
+		/* 	   so no need to do this extra step.  Else, this has */
+		/* 	   to be done one at a time so we can send */
+		/* 	   the updated assocs back to the slurmctlds */
+		/* 	*\/ */
+		/* 	xstrfmtcat(query, "select id_assoc from \"%s_%s\" " */
+		/* 		   "where (user='%s' && acct!='%s' " */
+		/* 		   "&& is_def=1);", */
+		/* 		   object->cluster, assoc_table, */
+		/* 		   object->user, object->acct); */
+		/* 	debug("%d(%s:%d) query\n%s", */
+		/* 	       mysql_conn->conn, THIS_FILE, */
+		/* 	       __LINE__, query); */
+		/* 	if(!(result = mysql_db_query_ret( */
+		/* 		     mysql_conn->db_conn, query, 1))) { */
+		/* 		xfree(query); */
+		/* 		rc = SLURM_ERROR; */
+		/* 		goto end_it; */
+		/* 	} */
+		/* 	xfree(query); */
+
+		/* 	while((row = mysql_fetch_row(result))) { */
+		/* 		slurmdb_association_rec_t *mod_assoc = xmalloc( */
+		/* 			sizeof(slurmdb_association_rec_t)); */
+		/* 		slurmdb_init_association_rec(mod_assoc, 0); */
+
+		/* 		mod_assoc->id = atoi(row[0]); */
+		/* 		mod_assoc->is_def = 0; */
+
+		/* 		if (addto_update_list(mysql_conn->update_list, */
+		/* 				      SLURMDB_MODIFY_ASSOC, */
+		/* 				      mod_assoc) */
+		/* 		    != SLURM_SUCCESS) { */
+		/* 			slurmdb_destroy_association_rec( */
+		/* 				mod_assoc); */
+		/* 			error("couldn't add to " */
+		/* 			      "the update list"); */
+		/* 			rc = SLURM_ERROR; */
+		/* 			break; */
+		/* 		} */
+		/* 	} */
+		/* 	mysql_free_result(result); */
+		/* } */
+	}
+	list_iterator_destroy(itr);
+	if(query) {
+		debug3("%d(%s:%d) query\n%s",
+		       mysql_conn->conn, THIS_FILE, __LINE__, query);
+		rc = mysql_db_query(mysql_conn->db_conn, query);
+		xfree(query);
+		if(rc != SLURM_SUCCESS)
+			error("Couldn't update defaults");
+	}
 end_it:
 
 	if(rc != SLURM_ERROR) {
@@ -2675,6 +2854,23 @@ extern List as_mysql_modify_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	if(!(is_admin = is_user_min_admin_level(
 		     mysql_conn, uid, SLURMDB_ADMIN_OPERATOR))) {
+		if(assoc_cond->user_list
+		   && (list_count(assoc_cond->user_list) == 1)) {
+			uid_t pw_uid;
+			char *name;
+			name = list_peek(assoc_cond->user_list);
+		        if ((uid_from_string (name, &pw_uid) >= 0)
+			    && (pw_uid == uid)) {
+				/* Make sure they aren't trying to
+				   change something else and then set
+				   this association as a default.
+				*/
+				slurmdb_init_association_rec(assoc, 1);
+				assoc->is_def = 1;
+				goto is_same_user;
+			}
+		}
+
 		if(!is_user_any_coord(mysql_conn, &user)) {
 			error("Only admins/coordinators can "
 			      "modify associations");
@@ -2682,6 +2878,7 @@ extern List as_mysql_modify_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 			return NULL;
 		}
 	}
+is_same_user:
 
 	if((assoc_cond->qos_list && list_count(assoc_cond->qos_list))
 	   || assoc_cond->with_sub_accts)
@@ -2753,7 +2950,10 @@ extern List as_mysql_modify_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 						   is_admin, ret_list);
 		mysql_free_result(result);
 
-		if(rc != SLURM_SUCCESS) {
+		if((rc == ESLURM_INVALID_PARENT_ACCOUNT)
+		   || (rc == ESLURM_SAME_PARENT_ACCOUNT)) {
+			continue;
+		} else if(rc != SLURM_SUCCESS) {
 			list_destroy(ret_list);
 			ret_list = NULL;
 			break;

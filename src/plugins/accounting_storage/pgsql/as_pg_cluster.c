@@ -167,7 +167,7 @@ as_pg_add_clusters(pgsql_conn_t *pg_conn, uint32_t uid,
 		 * read it every time here.
 		 */
 		assoc = xmalloc(sizeof(slurmdb_association_rec_t));
-		slurmdb_init_association_rec(assoc);
+		slurmdb_init_association_rec(assoc, 0);
 		list_append(assoc_list, assoc);
 
 		assoc->cluster = xstrdup(object->name);

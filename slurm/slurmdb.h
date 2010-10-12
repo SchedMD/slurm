@@ -207,6 +207,8 @@ typedef struct {
 	List max_submit_jobs_list; /* list of char * */
 	List max_wall_pj_list; /* list of char * */
 
+	uint16_t only_defs;  /* only send back defaults */
+
 	List parent_acct_list;	/* name of parent account */
 	List partition_list;	/* list of char * */
 
@@ -347,7 +349,8 @@ typedef struct {
 				    * association */
 	char *cluster;		   /* cluster associated to association */
 
-	uint32_t def_qos_id;   /* list of char * */
+	uint32_t def_qos_id;       /* Which QOS id is this
+				    * associations default */
 
 	uint64_t grp_cpu_mins;     /* max number of cpu minutes the
 				    * underlying group of
@@ -375,6 +378,8 @@ typedef struct {
 
 	uint32_t id;		   /* id identifing a combination of
 				    * user-account-cluster(-partition) */
+
+	uint16_t is_def;           /* Is this the users default assoc/acct */
 
 	uint32_t lft;		   /* lft used for grouping sub
 				    * associations and jobs as a left
@@ -698,20 +703,22 @@ typedef struct {
 	uint16_t admin_level; /* really slurmdb_admin_level_t but for
 				 packing purposes needs to be uint16_t */
 	slurmdb_association_cond_t *assoc_cond; /* use user_list here for
-						   names */
-	List def_acct_list; /* list of char * */
+						   names and acct_list for
+						   default accounts */
+	List def_acct_list; /* list of char * (We can't readly use
+			     * the assoc_cond->acct_list for this
+			     * because then it is impossible for us
+			     * to tell which accounts are defaults
+			     * and which ones aren't, especially when
+			     * dealing with other versions.)*/
 	List def_wckey_list; /* list of char * */
 	uint16_t with_assocs;
 	uint16_t with_coords;
 	uint16_t with_deleted;
 	uint16_t with_wckeys;
+	uint16_t without_defaults;
 } slurmdb_user_cond_t;
 
-/* If there is something else that can be altered here a check will need to
- * added when modifying a user since a user
- * can modify their default account, and default wckey but nothing else in
- * src/slurmdbd/proc_req.c.
- */
 typedef struct {
 	uint16_t admin_level; /* really slurmdb_admin_level_t but for
 				 packing purposes needs to be uint16_t */
@@ -736,15 +743,15 @@ typedef struct {
 	List cluster_list;	/* list of char * */
 	List id_list;		/* list of char * */
 
-	List name_list;        /* list of char * */
+	List name_list;         /* list of char * */
 
 	time_t usage_end;
 	time_t usage_start;
 
 	List user_list;		/* list of char * */
 
-	uint16_t with_usage;  /* fill in usage */
-	uint16_t with_deleted; /* return deleted associations */
+	uint16_t with_usage;    /* fill in usage */
+	uint16_t with_deleted;  /* return deleted associations */
 } slurmdb_wckey_cond_t;
 
 typedef struct {
@@ -754,6 +761,8 @@ typedef struct {
 
 	uint32_t id;		/* id identifing a combination of
 				 * user-wckey-cluster */
+	uint16_t is_def;        /* Is this the users default wckey */
+
 	char *name;		/* wckey name */
 	uint32_t uid;		/* user ID */
 
@@ -1108,9 +1117,16 @@ extern List slurmdb_txn_get(void *db_conn, slurmdb_txn_cond_t *txn_cond);
 
 /************** helper functions **************/
 
-extern void slurmdb_init_association_rec(slurmdb_association_rec_t *assoc);
-extern void slurmdb_init_qos_rec(slurmdb_qos_rec_t *qos);
-
+extern void slurmdb_init_association_rec(slurmdb_association_rec_t *assoc,
+					 bool free_it);
+extern void slurmdb_init_cluster_rec(slurmdb_cluster_rec_t *cluster,
+				     bool free_it);
+extern void slurmdb_init_qos_rec(slurmdb_qos_rec_t *qos,
+				 bool free_it);
+extern void slurmdb_init_wckey_rec(slurmdb_wckey_rec_t *wckey,
+				   bool free_it);
+extern void slurmdb_init_cluster_cond(slurmdb_cluster_cond_t *cluster,
+				      bool free_it);
 /* The next two functions have pointers to assoc_list so do not
  * destroy assoc_list before using the list returned from this function.
  */

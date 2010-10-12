@@ -45,5 +45,7 @@
 
 extern int as_mysql_convert_tables(MYSQL *db_conn);
 
+extern int as_mysql_convert_user_defs(MYSQL *db_conn, char *cluster_name);
+
 
 #endif

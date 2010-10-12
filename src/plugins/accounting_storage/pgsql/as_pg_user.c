@@ -274,11 +274,14 @@ _make_user_cond(slurmdb_user_cond_t *user_cond, char **cond)
 	if(user_cond->assoc_cond) {
 		concat_cond_list(user_cond->assoc_cond->user_list,
 				 NULL, "name", cond);
+		concat_cond_list(user_cond->assoc_cond->acct_list,
+				 NULL, "default_acct", cond);
 	}
-	concat_cond_list(user_cond->def_acct_list, NULL, "default_acct", cond);
-	concat_cond_list(user_cond->def_wckey_list, NULL, "default_wckey", cond);
+	concat_cond_list(user_cond->def_wckey_list,
+			 NULL, "default_wckey", cond);
 	if(user_cond->admin_level != SLURMDB_ADMIN_NOTSET) {
-		xstrfmtcat(*cond, " AND admin_level=%u", user_cond->admin_level);
+		xstrfmtcat(*cond, " AND admin_level=%u",
+			   user_cond->admin_level);
 	}
 }
 

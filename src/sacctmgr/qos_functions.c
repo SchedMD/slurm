@@ -431,7 +431,7 @@ extern int sacctmgr_add_qos(int argc, char *argv[])
 	List qos_list = NULL;
 	char *qos_str = NULL;
 
-	slurmdb_init_qos_rec(start_qos);
+	slurmdb_init_qos_rec(start_qos, 0);
 
 	for (i=0; i<argc; i++) {
 		int command_len = strlen(argv[i]);
@@ -755,7 +755,7 @@ extern int sacctmgr_modify_qos(int argc, char *argv[])
 	int cond_set = 0, rec_set = 0, set = 0;
 	List ret_list = NULL;
 
-	slurmdb_init_qos_rec(qos);
+	slurmdb_init_qos_rec(qos, 0);
 
 	for (i=0; i<argc; i++) {
 		int command_len = strlen(argv[i]);

@@ -271,12 +271,70 @@ static int _local_update_assoc_qos_list(slurmdb_association_rec_t *assoc,
 	return SLURM_SUCCESS;
 }
 
-/* locks should be put in place before calling this function */
+/* locks should be put in place before calling this function USER_WRITE */
+static void _set_user_default_acct(slurmdb_association_rec_t *assoc)
+{
+	xassert(assoc);
+	xassert(assoc->acct);
+	xassert(assoc_mgr_user_list);
+
+	/* set up the default if this is it */
+	if (assoc->is_def && (assoc->uid != NO_VAL)) {
+		slurmdb_user_rec_t *user = NULL;
+		ListIterator user_itr =
+			list_iterator_create(assoc_mgr_user_list);
+		while ((user = list_next(user_itr))) {
+			if (user->uid != assoc->uid)
+				continue;
+			if (!user->default_acct
+			    || strcmp(user->default_acct, assoc->acct)) {
+				xfree(user->default_acct);
+				user->default_acct = xstrdup(assoc->acct);
+				debug2("user %s default acct is %s",
+				       user->name, user->default_acct);
+			}
+			break;
+		}
+		list_iterator_destroy(user_itr);
+	}
+}
+
+/* locks should be put in place before calling this function USER_WRITE */
+static void _set_user_default_wckey(slurmdb_wckey_rec_t *wckey)
+{
+	xassert(wckey);
+	xassert(wckey->name);
+	xassert(assoc_mgr_user_list);
+
+	/* set up the default if this is it */
+	if (wckey->is_def && (wckey->uid != NO_VAL)) {
+		slurmdb_user_rec_t *user = NULL;
+		ListIterator user_itr =
+			list_iterator_create(assoc_mgr_user_list);
+		while ((user = list_next(user_itr))) {
+			if (user->uid != wckey->uid)
+				continue;
+			if (!user->default_wckey
+			    || strcmp(user->default_wckey, wckey->name)) {
+				xfree(user->default_wckey);
+				user->default_wckey = xstrdup(wckey->name);
+				debug2("user %s default wckey is %s",
+				       user->name, user->default_wckey);
+			}
+			break;
+		}
+		list_iterator_destroy(user_itr);
+	}
+}
+
+/* locks should be put in place before calling this function ASSOC_WRITE */
 static int _set_assoc_parent_and_user(slurmdb_association_rec_t *assoc,
 				      List assoc_list, int reset)
 {
 	static slurmdb_association_rec_t *last_acct_parent = NULL;
 	static slurmdb_association_rec_t *last_parent = NULL;
+
+	xassert(assoc_mgr_user_list);
 
 	if(reset) {
 		last_acct_parent = NULL;
@@ -356,10 +414,13 @@ static int _set_assoc_parent_and_user(slurmdb_association_rec_t *assoc,
 
 	if(assoc->user) {
 		uid_t pw_uid;
-		if (uid_from_string (assoc->user, &pw_uid) < 0)
-			assoc->uid = (uint32_t)NO_VAL;
+
+		if (uid_from_string(assoc->user, &pw_uid) < 0)
+			assoc->uid = NO_VAL;
 		else
 			assoc->uid = pw_uid;
+
+		_set_user_default_acct(assoc);
 
 		/* get the qos bitmap here */
 		if(g_qos_count > 0) {
@@ -388,7 +449,7 @@ static int _set_assoc_parent_and_user(slurmdb_association_rec_t *assoc,
 		} else
 			assoc->def_qos_id = 0;
 	} else {
-		assoc->uid = (uint32_t)NO_VAL;
+		assoc->uid = NO_VAL;
 	}
 	//log_assoc_rec(assoc);
 
@@ -403,7 +464,7 @@ static int _post_association_list(List assoc_list)
 	int reset = 1;
 	//DEF_TIMERS;
 
-	if(!assoc_list)
+	if (!assoc_list)
 		return SLURM_ERROR;
 
 	itr = list_iterator_create(assoc_list);
@@ -450,12 +511,17 @@ static int _post_user_list(List user_list)
 	//START_TIMER;
 	while((user = list_next(itr))) {
 		uid_t pw_uid;
+		/* Just to make sure we have a default_wckey since it
+		   might not be set up yet.
+		*/
+		if (!user->default_wckey)
+			user->default_wckey = xstrdup("");
 		if (uid_from_string (user->name, &pw_uid) < 0) {
 			if(slurmdbd_conf)
 				debug("post user: couldn't get a "
 				      "uid for user %s",
 				      user->name);
-			user->uid = (uint32_t)NO_VAL;
+			user->uid = NO_VAL;
 		} else
 			user->uid = pw_uid;
 	}
@@ -468,6 +534,9 @@ static int _post_wckey_list(List wckey_list)
 	slurmdb_wckey_rec_t *wckey = NULL;
 	ListIterator itr = list_iterator_create(wckey_list);
 	//START_TIMER;
+
+	xassert(assoc_mgr_user_list);
+
 	while((wckey = list_next(itr))) {
 		uid_t pw_uid;
 		if (uid_from_string (wckey->user, &pw_uid) < 0) {
@@ -475,9 +544,10 @@ static int _post_wckey_list(List wckey_list)
 				debug("post wckey: couldn't get a uid "
 				      "for user %s",
 				      wckey->user);
-			wckey->uid = (uint32_t)NO_VAL;
+			wckey->uid = NO_VAL;
 		} else
 			wckey->uid = pw_uid;
+		_set_user_default_wckey(wckey);
 	}
 	list_iterator_destroy(itr);
 	return SLURM_SUCCESS;
@@ -521,12 +591,13 @@ static int _post_qos_list(List qos_list)
 
 	return SLURM_SUCCESS;
 }
+
 static int _get_assoc_mgr_association_list(void *db_conn, int enforce)
 {
 	slurmdb_association_cond_t assoc_q;
 	uid_t uid = getuid();
 	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK,
-				   READ_LOCK, NO_LOCK, NO_LOCK };
+				   READ_LOCK, WRITE_LOCK, NO_LOCK };
 
 //	DEF_TIMERS;
 	assoc_mgr_lock(&locks);
@@ -635,12 +706,12 @@ static int _get_assoc_mgr_user_list(void *db_conn, int enforce)
 }
 
 
-static int _get_local_wckey_list(void *db_conn, int enforce)
+static int _get_assoc_mgr_wckey_list(void *db_conn, int enforce)
 {
 	slurmdb_wckey_cond_t wckey_q;
 	uid_t uid = getuid();
 	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK,
-				   NO_LOCK, NO_LOCK, WRITE_LOCK };
+				   NO_LOCK, WRITE_LOCK, WRITE_LOCK };
 
 //	DEF_TIMERS;
 	assoc_mgr_lock(&locks);
@@ -652,7 +723,7 @@ static int _get_local_wckey_list(void *db_conn, int enforce)
 		wckey_q.cluster_list = list_create(NULL);
 		list_append(wckey_q.cluster_list, assoc_mgr_cluster_name);
 	} else if((enforce & ACCOUNTING_ENFORCE_WCKEYS) && !slurmdbd_conf) {
-		error("_get_local_wckey_list: "
+		error("_get_assoc_mgr_wckey_list: "
 		      "no cluster name here going to get "
 		      "all wckeys.");
 	}
@@ -671,7 +742,7 @@ static int _get_local_wckey_list(void *db_conn, int enforce)
 		assoc_mgr_wckey_list = list_create(slurmdb_destroy_wckey_rec);
 		assoc_mgr_unlock(&locks);
 		if(enforce & ACCOUNTING_ENFORCE_WCKEYS) {
-			error("_get_local_wckey_list: "
+			error("_get_assoc_mgr_wckey_list: "
 			      "no list was made.");
 			return SLURM_ERROR;
 		} else {
@@ -955,7 +1026,7 @@ extern int assoc_mgr_init(void *db_conn, assoc_init_args_t *args)
 
 		xfree(prio);
 		checked_prio = 1;
-		memset((void *) &assoc_mgr_locks, 0, sizeof(assoc_mgr_locks));
+		memset(&assoc_mgr_locks, 0, sizeof(assoc_mgr_locks));
 	}
 
 	if(args) {
@@ -989,15 +1060,17 @@ extern int assoc_mgr_init(void *db_conn, assoc_init_args_t *args)
 		if(_get_assoc_mgr_qos_list(db_conn, enforce) == SLURM_ERROR)
 			return SLURM_ERROR;
 
+	/* get user before association/wckey since it is used there */
+	if ((!assoc_mgr_user_list) && (cache_level & ASSOC_MGR_CACHE_USER))
+		if (_get_assoc_mgr_user_list(db_conn, enforce) == SLURM_ERROR)
+			return SLURM_ERROR;
+
 	if((!assoc_mgr_association_list)
 	   && (cache_level & ASSOC_MGR_CACHE_ASSOC))
 		if(_get_assoc_mgr_association_list(db_conn, enforce)
 		   == SLURM_ERROR)
 			return SLURM_ERROR;
 
-	if ((!assoc_mgr_user_list) && (cache_level & ASSOC_MGR_CACHE_USER))
-		if (_get_assoc_mgr_user_list(db_conn, enforce) == SLURM_ERROR)
-			return SLURM_ERROR;
 	if (assoc_mgr_association_list && !setup_children) {
 		slurmdb_association_rec_t *assoc = NULL;
 		ListIterator itr =
@@ -1007,8 +1080,9 @@ extern int assoc_mgr_init(void *db_conn, assoc_init_args_t *args)
 		}
 		list_iterator_destroy(itr);
 	}
+
 	if((!assoc_mgr_wckey_list) && (cache_level & ASSOC_MGR_CACHE_WCKEY))
-		if(_get_local_wckey_list(db_conn, enforce) == SLURM_ERROR)
+		if(_get_assoc_mgr_wckey_list(db_conn, enforce) == SLURM_ERROR)
 			return SLURM_ERROR;
 
 	return SLURM_SUCCESS;
@@ -1145,7 +1219,7 @@ extern int assoc_mgr_get_user_assocs(void *db_conn,
 				   NO_LOCK, NO_LOCK, NO_LOCK };
 
 	xassert(assoc);
-	xassert(assoc->uid != (uint32_t)NO_VAL);
+	xassert(assoc->uid != NO_VAL);
 	xassert(assoc_list);
 
 	if(!assoc_mgr_association_list) {
@@ -1209,7 +1283,7 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn,
 		if(!assoc->acct) {
 			slurmdb_user_rec_t user;
 
-			if(assoc->uid == (uint32_t)NO_VAL) {
+			if(assoc->uid == NO_VAL) {
 				if(enforce & ACCOUNTING_ENFORCE_ASSOCS) {
 					error("get_assoc_id: "
 					      "Not enough info to "
@@ -1267,8 +1341,8 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn,
 			}
 			continue;
 		} else {
-			if(assoc->uid == (uint32_t)NO_VAL
-			   && found_assoc->uid != (uint32_t)NO_VAL) {
+			if(assoc->uid == NO_VAL
+			   && found_assoc->uid != NO_VAL) {
 				debug3("we are looking for a "
 				       "nonuser association");
 				continue;
@@ -1333,6 +1407,8 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn,
 	assoc->grp_nodes       = ret_assoc->grp_nodes;
 	assoc->grp_submit_jobs = ret_assoc->grp_submit_jobs;
 	assoc->grp_wall        = ret_assoc->grp_wall;
+
+	assoc->is_def          = ret_assoc->is_def;
 
 	assoc->lft             = ret_assoc->lft;
 
@@ -1579,7 +1655,7 @@ extern int assoc_mgr_fill_in_wckey(void *db_conn, slurmdb_wckey_rec_t *wckey,
 	if (wckey_pptr)
 		*wckey_pptr = NULL;
 	if(!assoc_mgr_wckey_list) {
-		if(_get_local_wckey_list(db_conn, enforce) == SLURM_ERROR)
+		if(_get_assoc_mgr_wckey_list(db_conn, enforce) == SLURM_ERROR)
 			return SLURM_ERROR;
 	}
 	if((!assoc_mgr_wckey_list || !list_count(assoc_mgr_wckey_list))
@@ -1590,7 +1666,7 @@ extern int assoc_mgr_fill_in_wckey(void *db_conn, slurmdb_wckey_rec_t *wckey,
 		if(!wckey->name) {
 			slurmdb_user_rec_t user;
 
-			if(wckey->uid == (uint32_t)NO_VAL && !wckey->user) {
+			if(wckey->uid == NO_VAL && !wckey->user) {
 				if(enforce & ACCOUNTING_ENFORCE_WCKEYS) {
 					error("get_wckey_id: "
 					      "Not enough info to "
@@ -1632,7 +1708,7 @@ extern int assoc_mgr_fill_in_wckey(void *db_conn, slurmdb_wckey_rec_t *wckey,
 				}
 			}
 
-		} else if(wckey->uid == (uint32_t)NO_VAL && !wckey->user) {
+		} else if(wckey->uid == NO_VAL && !wckey->user) {
 			if(enforce & ACCOUNTING_ENFORCE_WCKEYS) {
 				error("get_wckey_id: "
 				      "Not enough info 2 to "
@@ -1723,6 +1799,8 @@ extern int assoc_mgr_fill_in_wckey(void *db_conn, slurmdb_wckey_rec_t *wckey,
 	wckey->uid = ret_wckey->uid;
 	if(!wckey->user)
 		wckey->user = ret_wckey->user;
+
+	wckey->is_def = ret_wckey->is_def;
 
 	assoc_mgr_unlock(&locks);
 
@@ -2034,7 +2112,7 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update)
 	int resort = 0;
 	List remove_list = NULL;
 	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK,
-				   WRITE_LOCK, NO_LOCK, NO_LOCK };
+				   WRITE_LOCK, WRITE_LOCK, NO_LOCK };
 
 	if(!assoc_mgr_association_list)
 		return SLURM_SUCCESS;
@@ -2210,6 +2288,16 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update)
 				      rec->id, rec->def_qos_id);
 				rec->def_qos_id = 0;
 			}
+
+			if(object->is_def != (uint16_t)NO_VAL) {
+				rec->is_def = object->is_def;
+				/* parents_changed will set this later
+				   so try to avoid doing it twice.
+				*/
+				if (rec->is_def && !parents_changed)
+					_set_user_default_acct(rec);
+			}
+
 			/* info("now rec has def of %d", rec->def_qos_id); */
 
 			if(!slurmdbd_conf && !parents_changed) {
@@ -2374,7 +2462,7 @@ extern int assoc_mgr_update_wckeys(slurmdb_update_object_t *update)
 	int rc = SLURM_SUCCESS;
 	uid_t pw_uid;
 	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK,
-				   NO_LOCK, NO_LOCK, WRITE_LOCK };
+				   NO_LOCK, WRITE_LOCK, WRITE_LOCK };
 
 	if(!assoc_mgr_wckey_list)
 		return SLURM_SUCCESS;
@@ -2434,7 +2522,13 @@ extern int assoc_mgr_update_wckeys(slurmdb_update_object_t *update)
 				rc = SLURM_ERROR;
 				break;
 			}
-			/* nothing yet */
+
+			if (object->is_def != (uint16_t)NO_VAL) {
+				rec->is_def = object->is_def;
+				if (rec->is_def)
+					_set_user_default_wckey(rec);
+			}
+
 			break;
 		case SLURMDB_ADD_WCKEY:
 			if(rec) {
@@ -2448,6 +2542,9 @@ extern int assoc_mgr_update_wckeys(slurmdb_update_object_t *update)
 				object->uid = NO_VAL;
 			} else
 				object->uid = pw_uid;
+
+			if (object->is_def)
+				_set_user_default_wckey(object);
 			list_append(assoc_mgr_wckey_list, object);
 			object = NULL;
 			break;
@@ -2520,13 +2617,13 @@ extern int assoc_mgr_update_users(slurmdb_update_object_t *update)
 				rc = _change_user_name(rec);
 			}
 
-			if(object->default_acct) {
+			if (object->default_acct) {
 				xfree(rec->default_acct);
 				rec->default_acct = object->default_acct;
 				object->default_acct = NULL;
 			}
 
-			if(object->default_wckey) {
+			if (object->default_wckey) {
 				xfree(rec->default_wckey);
 				rec->default_wckey = object->default_wckey;
 				object->default_wckey = NULL;
@@ -3534,8 +3631,15 @@ extern int assoc_mgr_refresh_lists(void *db_conn, assoc_init_args_t *args)
 		return SLURM_SUCCESS;
 	}
 
+	/* get qos before association since it is used there */
 	if(cache_level & ASSOC_MGR_CACHE_QOS)
 		if(_refresh_assoc_mgr_qos_list(db_conn, enforce) == SLURM_ERROR)
+			return SLURM_ERROR;
+
+	/* get user before association/wckey since it is used there */
+	if(cache_level & ASSOC_MGR_CACHE_USER)
+		if(_refresh_assoc_mgr_user_list(db_conn, enforce)
+		   == SLURM_ERROR)
 			return SLURM_ERROR;
 
 	if(cache_level & ASSOC_MGR_CACHE_ASSOC) {
@@ -3543,11 +3647,6 @@ extern int assoc_mgr_refresh_lists(void *db_conn, assoc_init_args_t *args)
 		   == SLURM_ERROR)
 			return SLURM_ERROR;
 	}
-	if(cache_level & ASSOC_MGR_CACHE_USER)
-		if(_refresh_assoc_mgr_user_list(db_conn, enforce)
-		   == SLURM_ERROR)
-			return SLURM_ERROR;
-
 	if(cache_level & ASSOC_MGR_CACHE_WCKEY)
 		if(_refresh_assoc_wckey_list(db_conn, enforce) == SLURM_ERROR)
 			return SLURM_ERROR;
@@ -3569,7 +3668,7 @@ extern int assoc_mgr_set_missing_uids()
 		slurmdb_association_rec_t *object = NULL;
 		itr = list_iterator_create(assoc_mgr_association_list);
 		while((object = list_next(itr))) {
-			if(object->user && object->uid == (uint32_t)NO_VAL) {
+			if(object->user && (object->uid == NO_VAL)) {
 				if (uid_from_string(
 					    object->user, &pw_uid) < 0) {
 					debug2("refresh association "
@@ -3586,7 +3685,7 @@ extern int assoc_mgr_set_missing_uids()
 		slurmdb_wckey_rec_t *object = NULL;
 		itr = list_iterator_create(assoc_mgr_wckey_list);
 		while((object = list_next(itr))) {
-			if(object->user && object->uid == (uint32_t)NO_VAL) {
+			if(object->user && (object->uid == NO_VAL)) {
 				if (uid_from_string(
 					    object->user, &pw_uid) < 0) {
 					debug2("refresh wckey "
@@ -3603,7 +3702,7 @@ extern int assoc_mgr_set_missing_uids()
 		slurmdb_user_rec_t *object = NULL;
 		itr = list_iterator_create(assoc_mgr_user_list);
 		while((object = list_next(itr))) {
-			if(object->name && object->uid == (uint32_t)NO_VAL) {
+			if(object->name && (object->uid == NO_VAL)) {
 				if (uid_from_string(
 					    object->name, &pw_uid) < 0) {
 					debug3("refresh user couldn't get "

@@ -706,7 +706,7 @@ static int _mod_assoc(sacctmgr_file_opts_t *file_opts,
 		return 0;
 		break;
 	}
-	slurmdb_init_association_rec(&mod_assoc);
+	slurmdb_init_association_rec(&mod_assoc, 0);
 	memset(&assoc_cond, 0, sizeof(slurmdb_association_cond_t));
 
 	if((file_opts->fairshare != NO_VAL)
@@ -996,8 +996,8 @@ static int _mod_cluster(sacctmgr_file_opts_t *file_opts,
 	slurmdb_cluster_rec_t mod_cluster;
 	slurmdb_cluster_cond_t cluster_cond;
 
-	slurmdb_init_cluster_rec(&mod_cluster);
-	slurmdb_init_cluster_cond(&cluster_cond);
+	slurmdb_init_cluster_rec(&mod_cluster, 0);
+	slurmdb_init_cluster_cond(&cluster_cond, 0);
 
 	if(file_opts->classification
 	   && (file_opts->classification != cluster->classification)) {
@@ -1326,6 +1326,8 @@ static int _mod_user(sacctmgr_file_opts_t *file_opts,
 			wckey->name = xstrdup(temp_char);
 			wckey->cluster = xstrdup(cluster);
 			wckey->user = xstrdup(user->name);
+			if (!strcmp(wckey->name, user->default_wckey))
+				wckey->is_def = 1;
 			list_push(user->wckey_list, wckey);
 
 			if(first) {
@@ -1365,6 +1367,8 @@ static int _mod_user(sacctmgr_file_opts_t *file_opts,
 				wckey->name = xstrdup(temp_char);
 				wckey->cluster = xstrdup(cluster);
 				wckey->user = xstrdup(user->name);
+				if (!strcmp(wckey->name, user->default_wckey))
+					wckey->is_def = 1;
 
 				list_append(add_list, wckey);
 			}
@@ -1452,6 +1456,8 @@ static slurmdb_user_rec_t *_set_user_up(sacctmgr_file_opts_t *file_opts,
 			wckey->name = xstrdup(temp_char);
 			wckey->user = xstrdup(user->name);
 			wckey->cluster = xstrdup(cluster);
+			if (!strcmp(wckey->name, user->default_wckey))
+				wckey->is_def = 1;
 			list_push(user->wckey_list, wckey);
 		}
 		list_iterator_destroy(wckey_itr);
@@ -1487,8 +1493,8 @@ static slurmdb_account_rec_t *_set_acct_up(sacctmgr_file_opts_t *file_opts,
 }
 
 static slurmdb_association_rec_t *_set_assoc_up(sacctmgr_file_opts_t *file_opts,
-					     sacctmgr_mod_type_t mod_type,
-					     char *cluster, char *parent)
+						sacctmgr_mod_type_t mod_type,
+						char *cluster, char *parent)
 {
 	slurmdb_association_rec_t *assoc = NULL;
 
@@ -1503,7 +1509,7 @@ static slurmdb_association_rec_t *_set_assoc_up(sacctmgr_file_opts_t *file_opts,
 	}
 
 	assoc = xmalloc(sizeof(slurmdb_association_rec_t));
-	slurmdb_init_association_rec(assoc);
+	slurmdb_init_association_rec(assoc, 0);
 
 	switch(mod_type) {
 	case MOD_CLUSTER:
@@ -1520,6 +1526,8 @@ static slurmdb_association_rec_t *_set_assoc_up(sacctmgr_file_opts_t *file_opts,
 		assoc->cluster = xstrdup(cluster);
 		assoc->partition = xstrdup(file_opts->part);
 		assoc->user = xstrdup(file_opts->name);
+		if (!strcmp(assoc->acct, file_opts->def_acct))
+			assoc->is_def = 1;
 		break;
 	default:
 		error("Unknown mod type for _set_assoc_up %d", mod_type);
@@ -1982,18 +1990,21 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 			*/
 			memset(&user_cond, 0, sizeof(slurmdb_user_cond_t));
 			user_cond.with_coords = 1;
+			user_cond.with_assocs = 1;
 			user_cond.with_wckeys = 1;
 
-			memset(&assoc_cond, 0, sizeof(slurmdb_association_cond_t));
+			memset(&assoc_cond, 0,
+			       sizeof(slurmdb_association_cond_t));
 			assoc_cond.cluster_list = list_create(NULL);
 			assoc_cond.with_raw_qos = 1;
 			assoc_cond.without_parent_limits = 1;
 			list_append(assoc_cond.cluster_list, cluster_name);
 			user_cond.assoc_cond = &assoc_cond;
-
 			curr_user_list = acct_storage_g_get_users(
 				db_conn, my_uid, &user_cond);
+
 			user_cond.assoc_cond = NULL;
+			assoc_cond.only_defs = 0;
 
 			/* make sure this person running is an admin */
 			user_name = uid_to_string(my_uid);
@@ -2039,7 +2050,7 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 					break;
 				}
 
-				slurmdb_init_cluster_cond(&cluster_cond);
+				slurmdb_init_cluster_cond(&cluster_cond, 0);
 				cluster_cond.cluster_list = list_create(NULL);
 				list_append(cluster_cond.cluster_list,
 					    cluster_name);
@@ -2075,7 +2086,7 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 
 				cluster = xmalloc(
 					sizeof(slurmdb_cluster_rec_t));
-				slurmdb_init_cluster_rec(cluster);
+				slurmdb_init_cluster_rec(cluster, 0);
 				list_append(cluster_list, cluster);
 				cluster->name = xstrdup(cluster_name);
 				if(file_opts->classification) {
@@ -2111,6 +2122,9 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 					_destroy_sacctmgr_file_opts(file_opts);
 					break;
 				}
+				/* This needs to be commited or
+				   problems may arise */
+				acct_storage_g_commit(db_conn, 1);
 				set = 1;
 			} else {
 				set = _mod_cluster(file_opts,
@@ -2254,7 +2268,7 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 				if(!assoc2) {
 					assoc2 = xmalloc(
 						sizeof(slurmdb_association_rec_t));
-					slurmdb_init_association_rec(assoc2);
+					slurmdb_init_association_rec(assoc2, 0);
 					list_append(mod_assoc_list, assoc2);
 					assoc2->cluster = xstrdup(cluster_name);
 					assoc2->acct = xstrdup(file_opts->name);
@@ -2360,7 +2374,7 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 				if(!assoc2) {
 					assoc2 = xmalloc(
 						sizeof(slurmdb_association_rec_t));
-					slurmdb_init_association_rec(assoc2);
+					slurmdb_init_association_rec(assoc2, 0);
 					list_append(mod_assoc_list, assoc2);
 					assoc2->cluster = xstrdup(cluster_name);
 					assoc2->acct = xstrdup(parent);

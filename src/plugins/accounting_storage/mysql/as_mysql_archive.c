@@ -609,9 +609,11 @@ static int _process_old_sql_line(const char *data_in, char **data_full_out)
 	while(data_in[i]) {
 		if(!strncmp("insert into ", data_in+i, 12)) {
 			beginning = xstrndup(data_in+i, 11);
+			i+=12;
 			break;
 		} else if(!strncmp("delete from ", data_in+i, 12)) {
 			beginning = xstrndup(data_in+i, 11);
+			i+=12;
 			delete = 1;
 			break;
 		} else if(!strncmp("drop table ", data_in+i, 11)) {
@@ -634,9 +636,6 @@ static int _process_old_sql_line(const char *data_in, char **data_full_out)
 
 	if(!data_in[i])
 		goto end_it;
-
-	beginning = xstrndup(data_in+i, 11);
-	i+=12;
 
 	//info("processing %s", data_in);
 	/* get table name */
