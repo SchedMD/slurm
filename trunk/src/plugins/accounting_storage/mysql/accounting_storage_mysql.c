@@ -1017,9 +1017,11 @@ extern int create_cluster_tables(MYSQL *db_conn, char *cluster_name)
 		 cluster_name, assoc_table);
 
 	/* See if the tables exist (if not new cluster, so no altering
-	   has to take place.
+	   has to take place.)  table_name can't be used here since it
+	   has the "'s in it which don't work in this query.
 	*/
-	query = xstrdup_printf("show tables like '%s';", table_name);
+	query = xstrdup_printf("show tables like '%s_%s';",
+			       cluster_name, assoc_table);
 
 	debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
 	if(!(result = mysql_db_query_ret(db_conn, query, 0))) {
