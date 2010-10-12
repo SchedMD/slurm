@@ -136,9 +136,7 @@ extern uid_t *get_group_members(char *group_name)
 				      " '%s'",grp_result->gr_name,group_name);
 			}
 
-		        for (i=0; j < uid_cnt; i++) {
-			        if (grp_result->gr_mem[i] == NULL)
-			                break;
+		        for (i=0; grp_result->gr_mem[i]; i++) {
 				if (uid_from_string(grp_result->gr_mem[i],
 						    &my_uid) < 0) {
 				        error("Could not find user %s in "

@@ -55,6 +55,8 @@ documents those changes that are of interest to users and admins.
     slurm_job_step_stat() from user commands.
  -- Fix race condition in which PrologSlurmctld failure could cause slurmctld
     to abort.
+ -- Fix bug preventing users in secondary user groups from being granted access
+    to partitions configured with AllowGroups.
 
 * Changes in SLURM 2.2.0.pre11
 ==============================
