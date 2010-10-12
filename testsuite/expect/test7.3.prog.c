@@ -121,6 +121,13 @@ int main (int argc, char *argv[])
 	step_params->task_count = tasks;
 
 	ctx = slurm_step_ctx_create(step_params);
+	if ((ctx == NULL) &&
+	    (slurm_get_errno() == ESLURM_PROLOG_RUNNING)) {
+		printf("SlurmctldProlog is still running, "
+		       "sleep and try again\n");
+		sleep(10);
+		ctx = slurm_step_ctx_create(step_params);
+	}
 	if (ctx == NULL) {
 		slurm_perror("slurm_step_ctx_create");
 		rc = 1;
