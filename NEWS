@@ -53,6 +53,8 @@ documents those changes that are of interest to users and admins.
     for job termination when slurmctld restarts or reconfigures.
  -- Modify plugin and library logic as needed to support use of the function
     slurm_job_step_stat() from user commands.
+ -- Fix race condition in which PrologSlurmctld failure could cause slurmctld
+    to abort.
 
 * Changes in SLURM 2.2.0.pre11
 ==============================
