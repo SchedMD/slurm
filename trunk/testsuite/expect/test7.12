@@ -101,6 +101,15 @@ if {[wait_for_job $job_id "RUNNING"] != 0} {
 }
 # wait for job step to start
 sleep 2
+set debug 0
+if {$debug} {
+	spawn $sstat -j $job_id
+	expect {
+		eof {
+			wait
+		}
+	}
+}
 
 set matches 0
 spawn ./$test_prog $job_id
@@ -123,9 +132,12 @@ expect {
 	}
 }
 
-if {$matches != 2} {
+if {$matches < 1} {
 	send_user "\nFAILURE: error running slurm_job_step_stat() program\n"
 	set exit_code 1
+} elseif {$matches != 2} {
+	send_user "\nWARNING: Failed to load PIDs associated with job step.\n"
+	send_user "         This is dependent upon the ProctrackType configured.\n"
 }
 
 cancel_job $job_id
