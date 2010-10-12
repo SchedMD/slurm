@@ -262,20 +262,9 @@ static int _cluster_modify_wckeys(mysql_conn_t *mysql_conn,
 		return SLURM_ERROR;
 	}
 
-	/* FIXME: This probably needs to do something */
-	/* we need to create it (no enforcing is done with wckeys) */
-	if (!mysql_num_rows(result)) {
-		/* Use fresh one here so we don't have to
-		   worry about dealing with bad values.
-		*/
-		/* slurmdb_wckey_rec_t tmp_wckey; */
-		/* slurmdb_init_wckey_rec(&tmp_wckey, 0); */
-		/* tmp_wckey.is_def = 1; */
-		/* tmp_wckey.cluster = cluster_name; */
-		/* tmp_wckey.name = row[1]; */
-		/* tmp_wckey.user = row[2]; */
+	/* This key doesn't exist on this cluster, that is ok. */
+	if (!mysql_num_rows(result))
 		return SLURM_SUCCESS;
-	}
 
 	while((row = mysql_fetch_row(result))) {
 		slurmdb_wckey_rec_t *wckey_rec = NULL;
