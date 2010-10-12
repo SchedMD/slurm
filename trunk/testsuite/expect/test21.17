@@ -147,7 +147,7 @@ if { $exit_code } {
 # First test change the AdminLevel and DefaultAccount of a user
 # cluster account name part wadmin wdacct wdwckey qos fairshare grpcpumin grpcpu grpjob grpnode grpsubmit grpwall maxcpumin maxcpu maxjob maxnode maxsubmit maxwall admin dacct dwckey
 
-incr exit_code [mod_user "" "" $us1 "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" $alo $nm2 ""]
+incr exit_code [mod_user $tc1,$tc2,$tc3 "" $us1 "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" $alo $nm2 ""]
 if { $exit_code } {
 	remove_user "" "" "$us1,$us2,$us3"
 	remove_acct "" "$nm1,$nm2,$nm3"
@@ -159,7 +159,7 @@ if { $exit_code } {
 # Use sacctmgr to list the test user modification
 #
 set matches 0
-set my_pid [spawn $sacctmgr -n -p list user names=$us1,$us2,$us3 format="User,DefaultA,Admin"]
+set my_pid [spawn $sacctmgr -n -p list user names=$us1,$us2,$us3 format="User,DefaultA,Admin" cluster=tcluster1]
 expect {
 	-re "There was a problem" {
 	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
@@ -180,8 +180,9 @@ expect {
 }
 
 if {$matches != 3} {
-	send_user "\nFAILURE:  Account modification 1 incorrect with only $matches.\n"
+	send_user "\nFAILURE:  User modification 1 incorrect with only $matches.\n"
 	incr exit_code 1
+	exit $exit_code
 }
 
 # Next, test change the limits of one user

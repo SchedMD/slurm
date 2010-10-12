@@ -104,7 +104,16 @@ if {$access_err != 0} {
 }
 
 #add qos
-exec $sacctmgr -i add qos $nm=$qs1 $dsc=$ds1 $gc=$gc1 $gcm=$gcm1 $gj=$gj1 $gn=$gn1 $gs=$gs1 $gw=$gw1 $mc=$mc1 $mcm=$mcm1 $mj=$mj1 $mn=$mn1 $ms=$ms1 $msj=$msj1 $mw=$mw1 $pre=$pe1 $pm=$pm1 $pri=$pi1 $uf=$uf1
+spawn $sacctmgr -i add qos $nm=$qs1 $dsc=$ds1 $gc=$gc1 $gcm=$gcm1 $gj=$gj1 $gn=$gn1 $gs=$gs1 $gw=$gw1 $mc=$mc1 $mcm=$mcm1 $mj=$mj1 $mn=$mn1 $ms=$ms1 $msj=$msj1 $mw=$mw1 $pre=$pe1 $pm=$pm1 $pri=$pi1 $uf=$uf1
+expect {
+	 timeout {
+		send_user "\nFAILURE: sacctmgr add not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
 
 # Use sacctmgr list to verify the test qos fields
 #

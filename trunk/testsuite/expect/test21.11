@@ -152,7 +152,7 @@ if {$aamatches != 1} {
 #
 # Use sacctmgr to list the test associations
 #
-set as_list_pid [spawn $sacctmgr list $ass]
+set as_list_pid [spawn $sacctmgr list $ass $clu=$tc1,$tc2]
 expect {
 	-re "$tc1 *$nm1" {
 		incr almatches

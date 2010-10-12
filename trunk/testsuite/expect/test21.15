@@ -74,8 +74,6 @@ set qs1		normal
 set par		parent
 set usr		user
 set us1		tuser1
-set us2		tuser2
-set us3		tuser3
 set al		AdminLevel
 set aln		None
 set ala		Administrator
@@ -109,7 +107,7 @@ if { [string compare [check_accounting_admin_level] "Administrator"] } {
 }
 
 #make sure we have a clean system and permission to do this work
-remove_user "" "" "$us1,$us2,$us3"
+remove_user "" "" "$us1"
 remove_acct "" "$nm1,$nm2,$nm3"
 remove_cluster "$tc1,$tc2,$tc3"
 if {$access_err != 0} {
@@ -120,7 +118,7 @@ if {$access_err != 0} {
 #add cluster
 incr exit_code [add_cluster "$tc1,$tc2,$tc3" "" "" "" "" "" "" "" "" "" "" "" ""]
 if { $exit_code } {
-	remove_user "" "" "$us1,$us2,$us3"
+	remove_user "" "" "$us1"
 	remove_acct "" "$nm1,$nm2,$nm3"
 	remove_cluster "$tc1,$tc2,$tc3"
 	exit $exit_code
@@ -129,7 +127,7 @@ if { $exit_code } {
 #add accounts
 incr exit_code [add_acct "$tc1,$tc2,$tc3" "" "$nm1,$nm2,$nm3" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
 if { $exit_code } {
-	remove_user "" "" "$us1,$us2,$us3"
+	remove_user "" "" "$us1"
 	remove_acct "" "$nm1,$nm2,$nm3"
 	remove_cluster "$tc1,$tc2,$tc3"
 	exit $exit_code
@@ -139,7 +137,7 @@ if { $exit_code } {
 # account adminlevel cluster defaultaccount fs maxcpu maxjob maxnodes maxwall name
 incr exit_code [add_user "$tc1,$tc2,$tc3" "$nm1,$nm2,$nm3" "$us1" "" "$alo" "$nm2" "" "" "" "$fs1" "" "" "" "" "" "" "$mc1" "" "$mj1" "$mn1" "" "$mw1" ]
 if { $exit_code } {
-	remove_user "" "" "$us1,$us2,$us3"
+	remove_user "" "" "$us1"
 	remove_acct "" "$nm1,$nm2,$nm3"
 	remove_cluster "$tc1,$tc2,$tc3"
 	exit $exit_code
@@ -176,9 +174,9 @@ if {$matches != 9} {
 
 # This is the end below here
 
-incr exit_code [remove_user "$tc1" "" "$us1,$us2,$us3"]
-incr exit_code [remove_user "" "$nm1,$nm2,$nm3" "$us1,$us2,$us3"]
-incr exit_code [remove_user "" "" "$us1,$us2,$us3"]
+incr exit_code [remove_user "$tc1" "" "$us1"]
+incr exit_code [remove_user "" "$nm1,$nm2,$nm3" "$us1"]
+incr exit_code [remove_user "" "" "$us1"]
 incr exit_code [remove_acct "" "$nm1,$nm2,$nm3"]
 incr exit_code [remove_cluster "$tc1,$tc2,$tc3"]
 

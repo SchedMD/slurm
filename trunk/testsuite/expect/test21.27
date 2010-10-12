@@ -35,19 +35,11 @@ source ./globals
 
 set test_id     "21.27"
 
-set sho		show
-set add		create
-set del		delete
-set pro		problem
-set par		parent
-set clu		Cluster
 set cl1		pc1
 set cl2		pc2
-set acc		Account
 set ac1		pa1
 set ac2		pa2
 set ac3		pa3
-set usr		user
 set us1		usr1
 set us2		usr2
 set us3		mysql
@@ -71,25 +63,155 @@ if { [string compare [check_accounting_admin_level] "Administrator"] } {
 }
 
 #
-# Delete 
+# Delete
 #
-exec $sacctmgr -i $del $usr $us1,$us2,$us3
-exec $sacctmgr -i $del $acc $ac1,$ac2,$ac3
-exec $sacctmgr -i $del $clu $cl1,$cl2
+spawn $sacctmgr -i delete user $us1,$us2,$us3
+expect {
+	 timeout {
+		send_user "\nFAILURE: sacctmgr add not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+spawn $sacctmgr -i delete account $ac1,$ac2,$ac3
+expect {
+	 timeout {
+		send_user "\nFAILURE: sacctmgr add not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+spawn $sacctmgr -i delete cluster $cl1,$cl2
+expect {
+	 timeout {
+		send_user "\nFAILURE: sacctmgr add not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
 
 #
 # Build test associations
 #
-exec $sacctmgr -i $add $clu $cl1
-exec $sacctmgr -i $add $acc $ac1 $clu=$cl1
-exec $sacctmgr -i $add $acc $ac2 $par=$ac1 $clu=$cl1
-exec $sacctmgr -i $add $usr $us1 $acc=$ac1 $clu=$cl1
-exec $sacctmgr -i $add $usr $us2 $acc=$ac1 $clu=$cl1
-exec $sacctmgr -i $add $usr $us3 $acc=$ac2 $clu=$cl1
-exec $sacctmgr -i $del $clu $cl1
-exec $sacctmgr -i $add $clu $cl2
-exec $sacctmgr -i $add $acc $ac3 $clu=$cl2
-exec $sacctmgr $sho $pro
+spawn $sacctmgr -i add cluster $cl1
+expect {
+	 timeout {
+		send_user "\nFAILURE: sacctmgr add not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+spawn $sacctmgr -i add account $ac1 cluster=$cl1
+expect {
+	 timeout {
+		send_user "\nFAILURE: sacctmgr add not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+spawn $sacctmgr -i add account $ac2 parent=$ac1 cluster=$cl1
+expect {
+	 timeout {
+		send_user "\nFAILURE: sacctmgr add not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+spawn $sacctmgr -i add user $us1 account=$ac1 cluster=$cl1
+expect {
+	 timeout {
+		send_user "\nFAILURE: sacctmgr add not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+spawn $sacctmgr -i add user $us2 account=$ac1 cluster=$cl1
+expect {
+	 timeout {
+		send_user "\nFAILURE: sacctmgr add not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+spawn $sacctmgr -i add user $us3 account=$ac2 cluster=$cl1
+expect {
+	 timeout {
+		send_user "\nFAILURE: sacctmgr add not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+spawn $sacctmgr -i delete cluster $cl1
+expect {
+	 timeout {
+		send_user "\nFAILURE: sacctmgr add not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+spawn $sacctmgr -i add cluster $cl2
+expect {
+	 timeout {
+		send_user "\nFAILURE: sacctmgr add not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+spawn $sacctmgr -i add account $ac3 cluster=$cl2
+expect {
+	 timeout {
+		send_user "\nFAILURE: sacctmgr add not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+spawn $sacctmgr show problem
+expect {
+	 timeout {
+		send_user "\nFAILURE: sacctmgr add not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
 
 #
 # Test for problems
@@ -98,7 +220,7 @@ exec $sacctmgr $sho $pro
 	set matches 0
 	set nothing 0
 
-	set my_pid [spawn $sacctmgr -p $sho $pro]
+	set my_pid [spawn $sacctmgr -p show problem]
 	expect {
 		-re "$ac1..Account has no Associations" {
 			incr matches
@@ -142,11 +264,38 @@ exec $sacctmgr $sho $pro
 
 
 #
-# Delete 
+# Delete
 #
-exec $sacctmgr -i $del $usr $us1,$us2,$us3
-exec $sacctmgr -i $del $acc $ac1,$ac2,$ac3
-exec $sacctmgr -i $del $clu $cl1,$cl2
+spawn $sacctmgr -i delete user $us1,$us2,$us3
+expect {
+	 timeout {
+		send_user "\nFAILURE: sacctmgr add not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+spawn $sacctmgr -i delete account $ac1,$ac2,$ac3
+expect {
+	 timeout {
+		send_user "\nFAILURE: sacctmgr add not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+spawn $sacctmgr -i delete cluster $cl1,$cl2
+expect {
+	 timeout {
+		send_user "\nFAILURE: sacctmgr add not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
 
 if {$exit_code == 0} {
 	send_user "\nSUCCESS\n"
@@ -154,4 +303,3 @@ if {$exit_code == 0} {
 	send_user "\nFAILURE\n"
 }
 exit $exit_code
-

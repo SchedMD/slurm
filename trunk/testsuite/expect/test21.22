@@ -229,9 +229,9 @@ exec echo "$acc - $nm2:$dsc=$ds2:$org=$or2:$fs=$fs4:$gm=$gm4:$gc=$gc4:$gj=$gj4:$
 exec echo "$par - $nm1"     >>$file_in
 exec echo "$acc - $nm3:$dsc=$ds3:$org=$or3:$fs=$fs3:$gm=$gm3:$gc=$gc3:$gj=$gj3:$gn=$gn3:$gs=$gs3:$gw=$gw3:$mm=$mm3:$mc=$mc3:$mj=$mj3:$mn=$mn3:$ms=$ms3:$mw=$mw3:$qs=$qs1"     >>$file_in
 exec echo "$par - $nm2"     >>$file_in
-exec echo "$usr - $us1:$coo=$nm2:$dac=$nm1:$fs=$fs1:$mm=$mm2:$mc=$mc2:$mj=$mj2:$mn=$mn2:$ms=$ms2:$mw=$mw2:$qs=$qs1:$al=$alo"     >>$file_in
+exec echo "$usr - $us1:$coo=$nm2:$dac=$nm2:$fs=$fs1:$mm=$mm2:$mc=$mc2:$mj=$mj2:$mn=$mn2:$ms=$ms2:$mw=$mw2:$qs=$qs1:$al=$alo"     >>$file_in
 exec echo "$par - $nm3"     >>$file_in
-exec echo "$usr - $us2:$coo=$nm3:$dac=$nm2:$fs=$fs2:$mm=$mm1:$mc=$mc1:$mj=$mj1:$mn=$mn1:$ms=$ms1:$mw=$mw1:$qs=$qs1:$al=$ala"     >>$file_in
+exec echo "$usr - $us2:$coo=$nm3:$dac=$nm3:$fs=$fs2:$mm=$mm1:$mc=$mc1:$mj=$mj1:$mn=$mn1:$ms=$ms1:$mw=$mw1:$qs=$qs1:$al=$ala"     >>$file_in
 
 #
 # Second input file - to modify and add associations to the original
@@ -243,12 +243,12 @@ exec echo "$acc - $nm3:$dsc=$ds1:$org=$or1:$fs=$fs5:$gm=$gm5:$gc=$gc5:$gj=$gj5:$
 exec echo "$par - $nm1"     >>$file_in2
 exec echo "$acc - $nm2"     >>$file_in2
 exec echo "$par - $nm2"     >>$file_in2
-exec echo "$usr - $us3:$coo=$nm1,$nm2,$nm3:$dac=$nm1:$fs=$fs2:$mm=$mm2:$mc=$mc2:$mj=$mj2:$mn=$mn2:$ms=$ms2:$mw=$mw2:$qs=$qs1:$al=$ala"     >>$file_in2
+exec echo "$usr - $us3:$coo=$nm1,$nm2,$nm3:$dac=$nm2:$fs=$fs2:$mm=$mm2:$mc=$mc2:$mj=$mj2:$mn=$mn2:$ms=$ms2:$mw=$mw2:$qs=$qs1:$al=$ala"     >>$file_in2
 exec echo "$par - $nm3"     >>$file_in2
-exec echo "$usr - $us2:$dac=$nm1:$fs=$fs3:$mm=$mm3:$mc=$mc3:$mj=$mj3:$mn=$mn3:$ms=$ms3:$mw=$mw3:$qs=$qs1:$al=$alo"     >>$file_in2
-exec echo "$usr - $us3:$dac=$nm1:$fs=$fs3:$mm=$mm3:$mc=$mc3:$mj=$mj3:$mn=$mn3:$ms=$ms3:$mw=$mw3:$qs=$qs1"     >>$file_in2
+exec echo "$usr - $us2:$dac=$nm3:$fs=$fs3:$mm=$mm3:$mc=$mc3:$mj=$mj3:$mn=$mn3:$ms=$ms3:$mw=$mw3:$qs=$qs1:$al=$alo"     >>$file_in2
+exec echo "$usr - $us3:$dac=$nm3:$fs=$fs3:$mm=$mm3:$mc=$mc3:$mj=$mj3:$mn=$mn3:$ms=$ms3:$mw=$mw3:$qs=$qs1"     >>$file_in2
 exec echo "$par - $nm1"     >>$file_in2
-exec echo "$usr - $us3:$dac=$nm2:$fs=$fs2:$mm=$mm1:$mc=$mc1:$mj=$mj1:$mn=$mn1:$ms=$ms1:$mw=$mw1:$qs=$qs1"     >>$file_in2
+exec echo "$usr - $us3:$dac=$nm1:$fs=$fs2:$mm=$mm1:$mc=$mc1:$mj=$mj1:$mn=$mn1:$ms=$ms1:$mw=$mw1:$qs=$qs1"     >>$file_in2
 
 #
 # Third input file - to replace all previous
@@ -260,13 +260,13 @@ exec echo "$acc - $nm3:$dsc=$ds3:$org=$or3:$fs=$fs5:$gm=$gm5:$gc=$gc5:$gj=$gj5:$
 exec echo "$par - $nm1"    >>$file_in3
 exec echo "$acc - $nm3:$dsc=$ds1:$org=$or1:$fs=$fs5:$gm=$gm5:$gc=$gc5:$gj=$gj5:$gn=$gn5:$gs=$gs5:$gw=$gw5:$mm=$mm5:$mc=$mc5:$mj=$mj5:$mn=$mn5:$ms=$ms5:$mw=$mw5:$qs=$qs1"    >>$file_in3
 exec echo "$acc - $nm2:$dsc=$ds2:$org=$or2:$fs=$fs4:$gm=$gm4:$gc=$gc4:$gj=$gj4:$gn=$gn4:$gs=$gs4:$gw=$gw4:$mm=$mm4:$mc=$mc4:$mj=$mj4:$mn=$mn4:$ms=$ms4:$mw=$mw4:$qs=$qs1:$al=$alo"    >>$file_in3
-exec echo "$usr - $us3:$coo=$nm1,$nm2,$nm3:$dac=$nm2:$fs=$fs2:$mm=$mm1:$mc=$mc1:$mj=$mj1:$mn=$mn1:$ms=$ms1:$mw=$mw1:$qs=$qs1:$al=$ala"     >>$file_in3
+exec echo "$usr - $us3:$coo=$nm1,$nm2,$nm3:$dac=$nm1:$fs=$fs2:$mm=$mm1:$mc=$mc1:$mj=$mj1:$mn=$mn1:$ms=$ms1:$mw=$mw1:$qs=$qs1:$al=$ala"     >>$file_in3
 exec echo "$par - $nm2"    >>$file_in3
-exec echo "$usr - $us1:$coo=$nm2:$dac=$nm1:$fs=$fs1:$mm=$mm2:$mc=$mc2:$mj=$mj2:$mn=$mn2:$ms=$ms2:$mw=$mw2:$qs=$qs1:$al=$alo"    >>$file_in3
-exec echo "$usr - $us3:$dac=$nm1:$fs=$fs2:$mm=$mm2:$mc=$mc2:$mj=$mj2:$mn=$mn2:$ms=$ms2:$mw=$mw2:$qs=$qs1"    >>$file_in3
+exec echo "$usr - $us1:$coo=$nm2:$dac=$nm2:$fs=$fs1:$mm=$mm2:$mc=$mc2:$mj=$mj2:$mn=$mn2:$ms=$ms2:$mw=$mw2:$qs=$qs1:$al=$alo"    >>$file_in3
+exec echo "$usr - $us3:$dac=$nm2:$fs=$fs2:$mm=$mm2:$mc=$mc2:$mj=$mj2:$mn=$mn2:$ms=$ms2:$mw=$mw2:$qs=$qs1"    >>$file_in3
 exec echo "$par - $nm3"    >>$file_in3
-exec echo "$usr - $us2:$coo=$nm3:$dac=$nm1:$fs=$fs3:$mm=$mm3:$mc=$mc3:$mj=$mj3:$mn=$mn3:$ms=$ms3:$mw=$mw3:$qs=$qs1"    >>$file_in3
-exec echo "$usr - $us3:$dac=$nm1:$fs=$fs3:$mm=$mm3:$mc=$mc3:$mj=$mj3:$mn=$mn3:$ms=$ms3:$mw=$mw3:$qs=$qs1"    >>$file_in3
+exec echo "$usr - $us2:$coo=$nm3:$dac=$nm3:$fs=$fs3:$mm=$mm3:$mc=$mc3:$mj=$mj3:$mn=$mn3:$ms=$ms3:$mw=$mw3:$qs=$qs1"    >>$file_in3
+exec echo "$usr - $us3:$dac=$nm3:$fs=$fs3:$mm=$mm3:$mc=$mc3:$mj=$mj3:$mn=$mn3:$ms=$ms3:$mw=$mw3:$qs=$qs1"    >>$file_in3
 
 #
 # Use sacctmgr to remove the test cluster
@@ -538,7 +538,11 @@ if {$matches != 2} {
 	send_user "\nFAILURE:  File load 1 incorrect with only $matches.\n"
 	incr exit_code 1
 }
+#incr exit_code [_remove_user "" "$us1,$us2,$us3,$us4"]
+#incr exit_code [_remove_acct "" "$nm1,$nm2,$nm3,$nm4"]
+#incr exit_code [_remove_cluster "$cl1"]
 
+#exit 1
 #
 # Use sacctmgr to list the test original association additions
 #
@@ -668,50 +672,60 @@ if {$matches != 2} {
 # Use sacctmgr to list the test modifications to the original association
 #
 set matches 0
-set my_pid [spawn $sacctmgr -n -p $lis $as $clu=$cl1 $fmt=$clu,$acc,$usr,$pts,$fs,$gm,$gc,$gj,$gn,$gs,$gw,$mc,$mm,$mj,$mn,$ms,$mw,$qs]
+
+set my_pid [spawn $sacctmgr -n -P $lis $as $clu=$cl1 $fmt=$clu,$acc,$usr,$fs,$gm,$gc,$gj,$gn,$gs,$gw,$mc,$mm,$mj,$mn,$ms,$mw,$qs]
 expect {
 	-re "There was a problem" {
 	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
 	    	incr exit_code 1
 	}
-	-re "($cl1.$roo...$fs6.$gm6.$gc6.$gj6.$gn6.$gs6.$gt6.$mc6.$mm6.$mj6.$mn6.$ms6.$mt6.$qs1)" {
+	-re "($cl1.$roo..$fs6.$gm6.$gc6.$gj6.$gn6.$gs6.$gt6.$mc6.$mm6.$mj6.$mn6.$ms6.$mt6.$qs1)" {
 		incr matches
 		exp_continue
 	}
-	-re "($cl1.$roo.$roo..1.......$mc6.$mm6.$mj6.$mn6.$ms6.$mt6.$qs1)" {
+	-re "($cl1.$roo.$roo.1.......$mc6.$mm6.$mj6.$mn6.$ms6.$mt6.$qs1)" {
 		incr matches
+		send_user "2\n"
 		exp_continue
 	}
-	-re "($cl1.$nm1...$fs5.$gm5.$gc5.$gj5.$gn5.$gs5.$gt5.$mc5.$mm5.$mj5.$mn5.$ms5.$mt5.$qs1)" {
+	-re "($cl1.$nm1..$fs5.$gm5.$gc5.$gj5.$gn5.$gs5.$gt5.$mc5.$mm5.$mj5.$mn5.$ms5.$mt5.$qs1)" {
 		incr matches
+		send_user "3\n"
 		exp_continue
 	}
-	-re "($cl1.$nm1.$us3..$fs2.......$mc1.$mm1.$mj1.$mn1.$ms1.$mt1.$qs1)" {
+	-re "($cl1.$nm1.$us3.$fs2.......$mc1.$mm1.$mj1.$mn1.$ms1.$mt1.$qs1)" {
 		incr matches
+		send_user "4\n"
 		exp_continue
 	}
-	-re "($cl1.$nm2...$fs4.$gm4.$gc4.$gj4.$gn4.$gs4.$gt4.$mc4.$mm4.$mj4.$mn4.$ms4.$mt4.$qs1)" {
+	-re "($cl1.$nm2..$fs4.$gm4.$gc4.$gj4.$gn4.$gs4.$gt4.$mc4.$mm4.$mj4.$mn4.$ms4.$mt4.$qs1)" {
 		incr matches
+		send_user "5\n"
 		exp_continue
 	}
-	-re "($cl1.$nm2.$us1..$fs1.......$mc2.$mm2.$mj2.$mn2.$ms2.$mt2.$qs1)" {
+	-re "($cl1.$nm2.$us1.$fs1.......$mc2.$mm2.$mj2.$mn2.$ms2.$mt2.$qs1)" {
 		incr matches
+		send_user "6\n"
 		exp_continue
 	}
-	-re "($cl1.$nm2.$us3..$fs2.......$mc2.$mm2.$mj2.$mn2.$ms2.$mt2.$qs1)" {
+	-re "($cl1.$nm2.$us3.$fs2.......$mc2.$mm2.$mj2.$mn2.$ms2.$mt2.$qs1)" {
 		incr matches
+		send_user "7\n"
 		exp_continue
 	}
-	-re "($cl1.$nm3...$fs5.$gm5.$gc5.$gj5.$gn5.$gs5.$gt5.$mc5.$mm5.$mj5.$mn5.$ms5.$mt5.$qs1)" {
+	-re "($cl1.$nm3..$fs5.$gm5.$gc5.$gj5.$gn5.$gs5.$gt5.$mc5.$mm5.$mj5.$mn5.$ms5.$mt5.$qs1)" {
 		incr matches
+		send_user "8\n"
 		exp_continue
 	}
-	-re "($cl1.$nm3.$us2..$fs3.......$mc3.$mm3.$mj3.$mn3.$ms3.$mt3.$qs1)" {
+	-re "($cl1.$nm3.$us2.$fs3.......$mc3.$mm3.$mj3.$mn3.$ms3.$mt3.$qs1)" {
 		incr matches
+		send_user "9\n"
 		exp_continue
 	}
-	-re "($cl1.$nm3.$us3..$fs3.......$mc3.$mm3.$mj3.$mn3.$ms3.$mt3.$qs1)" {
+	-re "($cl1.$nm3.$us3.$fs3.......$mc3.$mm3.$mj3.$mn3.$ms3.$mt3.$qs1)" {
 		incr matches
+		send_user "10\n"
 		exp_continue
 	}
 	timeout {

@@ -163,25 +163,25 @@ proc list_test_users { } {
 	global sacctmgr
 	global us1 us2 us3 nm1 nm2 nm3 tc1 tc2 tc3 fs1 mc1 mj1 mn1 mw1 alo
 	set matches 0
-		set my_pid [spawn $sacctmgr -n -p list user format="User,DefaultA,Admin,clus,acc,fair,maxcpum,maxj,maxn,maxw"  names=$us1,$us2,$us3 withassoc]
-		expect {
+	set my_pid [spawn $sacctmgr -n -p list user format="User,DefaultA,Admin,clus,acc,fair,maxcpum,maxj,maxn,maxw"  names=$us1,$us2,$us3 withassoc]
+	expect {
 		-re "There was a problem" {
 			send_user "FAILURE: there was a problem with the sacctmgr command\n"
-				}
+		}
 		-re "(($us1|$us2|$us3).$nm2.$alo.($tc1|$tc2|$tc3).($nm1|$nm2|$nm3).$fs1.$mc1.$mj1.$mn1.$mw1.)" {
 			incr matches
-				exp_continue
-				}
+			exp_continue
+		}
 		timeout {
 			send_user "\nFAILURE: sacctmgr list associations not responding\n"
-				slow_kill $my_pid
-				}
+			slow_kill $my_pid
+		}
 		eof {
 			wait
-				}
+		}
 	}
 
-			return $matches
+	return $matches
 }
 ################################################################
 ################################################################
@@ -198,91 +198,93 @@ proc list_test_users { } {
 proc list_test_object { to1 to2 to3 tname} {
 	global sacctmgr
 	set tmatches 0
-		set my_pid [spawn $sacctmgr -n -p list $tname $to1,$to2,$to3]
-		expect {
+	set my_pid [spawn $sacctmgr -n -p list $tname $to1,$to2,$to3]
+	expect {
 		-re "There was a problem" {
 			send_user "FAILURE: there was a problem with the sacctmgr command\n"
-				}
+		}
 		-re "($to1|$to2|$to3)" {
 			incr tmatches
-				exp_continue
-				}
+			exp_continue
+		}
 		timeout {
 			send_user "\nFAILURE: sacctmgr list associations not responding\n"
-				slow_kill $my_pid
-				}
+			slow_kill $my_pid
+		}
 		eof {
 			wait
-				}
+		}
 	}
 
-			return $tmatches
+	return $tmatches
 }
 ################################################################
 #
 # Begin here with abort delete test
 #
 foreach atest $lista {
-set my_pid [spawn $sacctmgr del $acc $atest]
+	set my_pid [spawn $sacctmgr del $acc $atest]
 	expect {
-	 "(N/y):" {
-		send "N"
+		"(N/y):" {
+			send "N"
 			exp_continue
-	timeout {
-		send_user "\nFAILURE: sacctmgr list $acc timing out.\n"
-			slow_kill $my_pid
-				}
+			timeout {
+				send_user "\nFAILURE: sacctmgr list $acc timing out.\n"
+				slow_kill $my_pid
+			}
 		}
 	}
 }
 
 
-if { [list_test_users] != 27 } {
-	send_user "\nFAILURE: This test$test_id concludes that sacctmgr did not abort delete of accounts.\n"
-		exit 1
-		}
+set count [list_test_users]
+if { $count != 27 } {
+	send_user "\nFAILURE 1: This test$test_id concludes that sacctmgr did not abort delete of accounts $count.\n"
+	exit 1
+}
 
 #
 foreach ctest $listc {
-set my_pid [spawn $sacctmgr del $clu $ctest]
+	set my_pid [spawn $sacctmgr del $clu $ctest]
 	expect {
-	 "(N/y):" {
-		send "N"
+		"(N/y):" {
+			send "N"
 			exp_continue
-	timeout {
-		send_user "\nFAILURE: sacctmgr list cluster timing out.\n"
-			slow_kill $my_pid
-				}
+			timeout {
+				send_user "\nFAILURE: sacctmgr list cluster timing out.\n"
+				slow_kill $my_pid
+			}
 		}
 	}
 }
 
 
-if { [list_test_users] != 27 } {
-	send_user "\nFAILURE: This test$test_id concludes that sacctmgr did not abort delete of $clu\n"
-		exit 1
-		}
+set count [list_test_users]
+if { $count != 27 } {
+	send_user "\nFAILURE 2: This test$test_id concludes that sacctmgr did not abort delete of $clu $count\n"
+	exit 1
+}
 
 #
 foreach utest $listu {
-set my_pid [spawn $sacctmgr del $usr $atest]
+	set my_pid [spawn $sacctmgr del $usr $atest]
 	expect {
-	 "(N/y):" {
-		send "N"
+		"(N/y):" {
+			send "N"
 			exp_continue
-	timeout {
-		send_user "\nFAILURE: sacctmgr list $usr timing out.\n"
-			slow_kill $my_pid
-				}
+			timeout {
+				send_user "\nFAILURE: sacctmgr list $usr timing out.\n"
+				slow_kill $my_pid
+			}
 		}
 	}
 }
 
-
-if { [list_test_users] != 27 } {
-	send_user "\nFAILURE: This test$test_id concludes that sacctmgr did not abort delete of users.\n"
-		exit 1
-		}
+set count [list_test_users]
+if { $count != 27 } {
+	send_user "\nFAILURE 3: This test$test_id concludes that sacctmgr did not abort delete of users $count.\n"
+	exit 1
+}
 
 ################################################################
 #
@@ -290,66 +292,66 @@ if { [list_test_users] != 27 } {
 #
 #
 foreach udtest $listu {
-set my_pid [spawn $sacctmgr del $usr $udtest]
+	set my_pid [spawn $sacctmgr del $usr $udtest]
 	expect {
-	 "(N/y):" {
-		send "y"
+		"(N/y):" {
+			send "y"
 			exp_continue
-	timeout {
-		send_user "\nFAILURE: sacctmgr list $usr timing out.\n"
-			slow_kill $my_pid
-				}
+			timeout {
+				send_user "\nFAILURE: sacctmgr list $usr timing out.\n"
+				slow_kill $my_pid
+			}
 		}
 	}
 }
 
 if { [list_test_object $us1 $us2 $us3 user] != 0 } {
-	send_user "\nFAILURE: This test$test_id concludes that sacctmgr did not delete users.\n"
-		exit 1
-		}
+	send_user "\nFAILURE 4: This test$test_id concludes that sacctmgr did not delete users.\n"
+	exit 1
+}
 
 #
 
 foreach adtest $lista {
-set my_pid [spawn $sacctmgr del $acc $adtest]
+	set my_pid [spawn $sacctmgr del $acc $adtest]
 	expect {
-	 "(N/y):" {
-		send "y"
+		"(N/y):" {
+			send "y"
 			exp_continue
-	timeout {
-		send_user "\nFAILURE: sacctmgr list $acc timing out.\n"
-			slow_kill $my_pid
-				}
+			timeout {
+				send_user "\nFAILURE: sacctmgr list $acc timing out.\n"
+				slow_kill $my_pid
+			}
 		}
 	}
 }
 
 
 if { [list_test_object $nm1 $nm2 $nm3 account] != 0 } {
-	send_user "\nFAILURE: This test$test_id concludes that sacctmgr did not delete accounts.\n"
-		exit 1
-		}
+	send_user "\nFAILURE 5: This test$test_id concludes that sacctmgr did not delete accounts.\n"
+	exit 1
+}
 
 #
 foreach cdtest $listc {
-set my_pid [spawn $sacctmgr del $clu $cdtest]
+	set my_pid [spawn $sacctmgr del $clu $cdtest]
 	expect {
-	 "(N/y):" {
-		send "y"
-		exp_continue
-	timeout {
-		send_user "\nFAILURE: sacctmgr list cluster timing out.\n"
-			slow_kill $my_pid
-				}
+		"(N/y):" {
+			send "y"
+			exp_continue
+			timeout {
+				send_user "\nFAILURE: sacctmgr list cluster timing out.\n"
+				slow_kill $my_pid
+			}
 		}
 	}
 }
 
 
 if { [list_test_object $tc1 $tc2 $tc3 cluster] != 0 } {
-	send_user "\nFAILURE: This test$test_id concludes that sacctmgr did not delete $clu\n"
-		exit 1
-		}
+	send_user "\nFAILURE 6: This test$test_id concludes that sacctmgr did not delete $clu\n"
+	exit 1
+}
 
 # This is the end below here
 

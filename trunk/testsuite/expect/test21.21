@@ -37,7 +37,7 @@ source ./globals_accounting
 set test_id     "21.21"
 set exit_code   0
 set file_in     "test.$test_id.input"
-set test_acct   "test_acct"
+set test_acct   "test21.21acct"
 set timeout 60
 print_header $test_id
 
