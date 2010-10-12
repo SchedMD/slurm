@@ -2200,7 +2200,7 @@ _rpc_list_pids(slurm_msg_t *msg)
                 error("stepd_connect to %u.%u failed: %m",
                       req->job_id, req->step_id);
                 slurm_send_rc_msg(msg, ESLURM_INVALID_JOB_ID);
-                slurm_job_step_pids_response_msg_free(resp);
+                slurm_free_job_step_pids(resp);
                 return  ESLURM_INVALID_JOB_ID;
 
         }
@@ -2216,7 +2216,7 @@ _rpc_list_pids(slurm_msg_t *msg)
         resp_msg.data     = resp;
 
         slurm_send_node_msg(msg->conn_fd, &resp_msg);
-        slurm_job_step_pids_response_msg_free(resp);
+        slurm_free_job_step_pids(resp);
         return SLURM_SUCCESS;
 }
 
