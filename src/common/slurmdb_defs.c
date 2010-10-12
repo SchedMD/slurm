@@ -950,6 +950,8 @@ extern void slurmdb_init_association_rec(slurmdb_association_rec_t *assoc)
 	assoc->grp_submit_jobs = NO_VAL;
 	assoc->grp_wall = NO_VAL;
 
+	assoc->lft = NO_VAL;
+	assoc->rgt = NO_VAL;
 	/* assoc->level_shares = NO_VAL; */
 
 	assoc->max_cpu_mins_pj = (uint64_t)NO_VAL;
