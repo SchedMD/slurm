@@ -53,6 +53,15 @@
 #define NPROCS 5000
 #endif
 
+/* These are defined here so when we link with something other than
+ * the slurmd we will have these symbols defined.  They will get
+ * overwritten when linking with the slurmd.
+ */
+uint32_t jobacct_job_id;
+pthread_mutex_t jobacct_lock;
+uint32_t jobacct_mem_limit;
+uint32_t jobacct_step_id;
+uint32_t jobacct_vmem_limit;
 
 /*
  * These variables are required by the generic plugin interface.  If they
