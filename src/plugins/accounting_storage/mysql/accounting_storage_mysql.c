@@ -6077,11 +6077,6 @@ extern List acct_storage_p_modify_associations(
 			set_qos_vals=1;
 		}
 
-		if (moved_parent)
-			if(_addto_update_list(mysql_conn->update_list,
-					      ACCT_MODIFY_ASSOC,
-					      mod_assoc) != SLURM_SUCCESS)
-				error("couldn't add to the update list");
 		if(account_type) {
 			_modify_unset_users(mysql_conn,
 					    mod_assoc,
@@ -6090,6 +6085,13 @@ extern List acct_storage_p_modify_associations(
 					    ret_list,
 					    moved_parent);
 		}
+
+		if (moved_parent)
+			destroy_acct_association_rec(mod_assoc);
+		else if (_addto_update_list(mysql_conn->update_list,
+					    ACCT_MODIFY_ASSOC,
+					    mod_assoc) != SLURM_SUCCESS)
+			error("couldn't add to the update list");
 	}
 	mysql_free_result(result);
 
