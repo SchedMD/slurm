@@ -262,35 +262,37 @@ static int _set_rec(int *start, int argc, char *argv[],
 	return 0;
 }
 
-static int _isdefault(List acct_list)
+static int _isdefault(List acct_list, List assoc_list)
 {
 	int rc = 0;
-	slurmdb_user_cond_t user_cond;
-	List ret_list = NULL;
-
-	if(!acct_list || !list_count(acct_list))
+	ListIterator itr = NULL;
+	ListIterator itr2 = NULL;
+	char *acct;
+	char *output = NULL;
+	if (!acct_list || !list_count(acct_list)
+	    || !assoc_list || !list_count(assoc_list))
 		return rc;
 
-	memset(&user_cond, 0, sizeof(slurmdb_user_cond_t));
-	user_cond.def_acct_list = acct_list;
-
-	ret_list = acct_storage_g_get_users(db_conn, my_uid, &user_cond);
-	if(ret_list && list_count(ret_list)) {
-		ListIterator itr = list_iterator_create(ret_list);
-		slurmdb_user_rec_t *user = NULL;
-		fprintf(stderr," Users listed below have these "
-			"as their Default Accounts.\n");
-		while((user = list_next(itr))) {
-			fprintf(stderr, " User - %-10.10s Account - %s\n",
-				user->name, user->default_acct);
+	itr = list_iterator_create(acct_list);
+	itr2 = list_iterator_create(assoc_list);
+	while ((acct = list_next(itr))) {
+		slurmdb_association_rec_t *assoc = NULL;
+		while ((assoc = list_next(itr2))) {
+			if (strcasecmp(acct, assoc->acct))
+				continue;
+			xstrfmtcat(output, "C = %-10s A = %-20s U = %-9s\n",
+				   assoc->cluster, assoc->acct, assoc->user);
+			rc = 1;
 		}
-		list_iterator_destroy(itr);
-		rc = 1;
+		list_iterator_reset(itr2);
 	}
-
-	if(ret_list)
-		list_destroy(ret_list);
-
+	list_iterator_destroy(itr);
+	list_iterator_destroy(itr2);
+	if (output) {
+		fprintf(stderr," Users listed below have these "
+			"as their Default Accounts.\n%s", output);
+		xfree(output);
+	}
 	return rc;
 }
 
@@ -318,7 +320,7 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 	slurmdb_association_rec_t *start_assoc =
 		xmalloc(sizeof(slurmdb_association_rec_t));
 
-	slurmdb_init_association_rec(start_assoc);
+	slurmdb_init_association_rec(start_assoc, 0);
 
 	for (i=0; i<argc; i++) {
 		int command_len = strlen(argv[i]);
@@ -410,7 +412,7 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 		List temp_list = NULL;
 		slurmdb_cluster_cond_t cluster_cond;
 
-		slurmdb_init_cluster_cond(&cluster_cond);
+		slurmdb_init_cluster_cond(&cluster_cond, 0);
 		cluster_cond.cluster_list = cluster_list;
 
 		temp_list = acct_storage_g_get_clusters(db_conn, my_uid,
@@ -533,7 +535,7 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 			}
 
 			assoc = xmalloc(sizeof(slurmdb_association_rec_t));
-			slurmdb_init_association_rec(assoc);
+			slurmdb_init_association_rec(assoc, 0);
 			assoc->acct = xstrdup(name);
 			assoc->cluster = xstrdup(cluster);
 			assoc->def_qos_id = start_assoc->def_qos_id;
@@ -858,7 +860,7 @@ extern int sacctmgr_modify_account(int argc, char *argv[])
 	int cond_set = 0, prev_set = 0, rec_set = 0, set = 0;
 	List ret_list = NULL;
 
-	slurmdb_init_association_rec(assoc);
+	slurmdb_init_association_rec(assoc, 0);
 
 	for (i=0; i<argc; i++) {
 		int command_len = strlen(argv[i]);
@@ -1024,7 +1026,7 @@ extern int sacctmgr_delete_account(int argc, char *argv[])
 	slurmdb_account_cond_t *acct_cond =
 		xmalloc(sizeof(slurmdb_account_cond_t));
 	int i=0;
-	List ret_list = NULL;
+	List ret_list = NULL, local_assoc_list = NULL;
 	ListIterator itr = NULL;
 	int cond_set = 0, prev_set = 0;
 
@@ -1072,6 +1074,11 @@ extern int sacctmgr_delete_account(int argc, char *argv[])
 		}
 	}
 
+	acct_cond->assoc_cond->only_defs = 1;
+	local_assoc_list = acct_storage_g_get_associations(
+		db_conn, my_uid, acct_cond->assoc_cond);
+	acct_cond->assoc_cond->only_defs = 0;
+
 	notice_thread_init();
 	if(cond_set == 1) {
 		ret_list = acct_storage_g_remove_accounts(
@@ -1090,18 +1097,18 @@ extern int sacctmgr_delete_account(int argc, char *argv[])
 
 		/* Check to see if person is trying to remove a default
 		 * account of a user.  _isdefault only works with the
-		 * output from acct_storage_g_remove_accounts btw.
+		 * output from acct_storage_g_remove_accounts, and
+		 * with a previously got assoc_list.
 		 */
-		if((cond_set == 1) && _isdefault(ret_list)) {
+		if((cond_set == 1) && _isdefault(ret_list, local_assoc_list)) {
 			exit_code=1;
 			fprintf(stderr, " Please either remove accounts listed "
 				"above from list and resubmit,\n"
 				" or change these users default account to "
 				"remove the account(s).\n"
 				" Changes Discarded\n");
-			list_destroy(ret_list);
 			acct_storage_g_commit(db_conn, 0);
-			return SLURM_ERROR;
+			goto end_it;
 		}
 		itr = list_iterator_create(ret_list);
 		/* If there were jobs running with an association to
@@ -1113,9 +1120,8 @@ extern int sacctmgr_delete_account(int argc, char *argv[])
 			while((object = list_next(itr))) {
 				fprintf(stderr,"  %s\n", object);
 			}
-			list_destroy(ret_list);
 			acct_storage_g_commit(db_conn, 0);
-			return rc;
+			goto end_it;
 		}
 
 		if(cond_set == 1) {
@@ -1143,8 +1149,12 @@ extern int sacctmgr_delete_account(int argc, char *argv[])
 		rc = SLURM_ERROR;
 	}
 
+end_it:
+
 	if(ret_list)
 		list_destroy(ret_list);
+	if (local_assoc_list)
+		list_destroy(local_assoc_list);
 
 	return rc;
 }

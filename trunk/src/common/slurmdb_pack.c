@@ -736,7 +736,7 @@ extern int slurmdb_unpack_cluster_rec(void **object, uint16_t rpc_version,
 
 	*object = object_ptr;
 
-	slurmdb_init_cluster_rec(object_ptr);
+	slurmdb_init_cluster_rec(object_ptr, 0);
 	if(rpc_version >= 8) {
 		safe_unpack32(&count, buffer);
 		if(count != NO_VAL) {
@@ -876,6 +876,7 @@ extern void slurmdb_pack_association_rec(void *in, uint16_t rpc_version,
 			pack32(NO_VAL, buffer);
 
 			pack32(0, buffer);
+			pack16(0, buffer);
 			pack32(0, buffer);
 
 			pack64(NO_VAL, buffer);
@@ -934,6 +935,7 @@ extern void slurmdb_pack_association_rec(void *in, uint16_t rpc_version,
 		pack32(object->grp_wall, buffer);
 
 		pack32(object->id, buffer);
+		pack16(object->is_def, buffer);
 		pack32(object->lft, buffer);
 
 		pack64(object->max_cpu_mins_pj, buffer);
@@ -1083,7 +1085,7 @@ extern int slurmdb_unpack_association_rec(void **object, uint16_t rpc_version,
 
 	*object = object_ptr;
 
-	slurmdb_init_association_rec(object_ptr);
+	slurmdb_init_association_rec(object_ptr, 0);
 
 	if (rpc_version >= 8) {
 		safe_unpack32(&count, buffer);
@@ -1118,6 +1120,7 @@ extern int slurmdb_unpack_association_rec(void **object, uint16_t rpc_version,
 		safe_unpack32(&object_ptr->grp_wall, buffer);
 
 		safe_unpack32(&object_ptr->id, buffer);
+		safe_unpack16(&object_ptr->is_def, buffer);
 		safe_unpack32(&object_ptr->lft, buffer);
 
 		safe_unpack64(&object_ptr->max_cpu_mins_pj, buffer);
@@ -1441,7 +1444,7 @@ extern int slurmdb_unpack_qos_rec(void **object, uint16_t rpc_version,
 
 	*object = object_ptr;
 
-	slurmdb_init_qos_rec(object_ptr);
+	slurmdb_init_qos_rec(object_ptr, 0);
 
 	if(rpc_version >= 8) {
 		safe_unpackstr_xmalloc(&object_ptr->description,
@@ -1669,45 +1672,89 @@ extern void slurmdb_pack_wckey_rec(void *in, uint16_t rpc_version, Buf buffer)
 	uint32_t count = NO_VAL;
 	slurmdb_wckey_rec_t *object = (slurmdb_wckey_rec_t *)in;
 
-	if(!object) {
-		pack32(NO_VAL, buffer);
+	if(rpc_version >= 8) {
+		if(!object) {
+			pack32(NO_VAL, buffer);
 
-		packnull(buffer);
+			packnull(buffer);
 
-		pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
 
-		packnull(buffer);
+			packnull(buffer);
 
-		pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
 
-		packnull(buffer);
-		return;
-	}
-
-	if(object->accounting_list)
-		count = list_count(object->accounting_list);
-
-	pack32(count, buffer);
-
-	if(count && count != NO_VAL) {
-		itr = list_iterator_create(object->accounting_list);
-		while((slurmdb_info = list_next(itr))) {
-			slurmdb_pack_accounting_rec(slurmdb_info,
-						    rpc_version, buffer);
+			packnull(buffer);
+			return;
 		}
-		list_iterator_destroy(itr);
+
+		if(object->accounting_list)
+			count = list_count(object->accounting_list);
+
+		pack32(count, buffer);
+
+		if(count && count != NO_VAL) {
+			itr = list_iterator_create(object->accounting_list);
+			while((slurmdb_info = list_next(itr))) {
+				slurmdb_pack_accounting_rec(
+					slurmdb_info, rpc_version, buffer);
+			}
+			list_iterator_destroy(itr);
+		}
+		count = NO_VAL;
+
+		packstr(object->cluster, buffer);
+
+		pack32(object->id, buffer);
+
+		pack16(object->is_def, buffer);
+
+		packstr(object->name, buffer);
+
+		pack32(object->uid, buffer);
+
+		packstr(object->user, buffer);
+	} else {
+		if(!object) {
+			pack32(NO_VAL, buffer);
+
+			packnull(buffer);
+
+			pack32(NO_VAL, buffer);
+
+			packnull(buffer);
+
+			pack32(NO_VAL, buffer);
+
+			packnull(buffer);
+			return;
+		}
+
+		if(object->accounting_list)
+			count = list_count(object->accounting_list);
+
+		pack32(count, buffer);
+
+		if(count && count != NO_VAL) {
+			itr = list_iterator_create(object->accounting_list);
+			while((slurmdb_info = list_next(itr))) {
+				slurmdb_pack_accounting_rec(
+					slurmdb_info, rpc_version, buffer);
+			}
+			list_iterator_destroy(itr);
+		}
+		count = NO_VAL;
+
+		packstr(object->cluster, buffer);
+
+		pack32(object->id, buffer);
+
+		packstr(object->name, buffer);
+
+		pack32(object->uid, buffer);
+
+		packstr(object->user, buffer);
 	}
-	count = NO_VAL;
-
-	packstr(object->cluster, buffer);
-
-	pack32(object->id, buffer);
-
-	packstr(object->name, buffer);
-
-	pack32(object->uid, buffer);
-
-	packstr(object->user, buffer);
 }
 
 extern int slurmdb_unpack_wckey_rec(void **object, uint16_t rpc_version,
@@ -1722,32 +1769,61 @@ extern int slurmdb_unpack_wckey_rec(void **object, uint16_t rpc_version,
 
 	*object = object_ptr;
 
-	safe_unpack32(&count, buffer);
-	if(count != NO_VAL) {
-		object_ptr->accounting_list =
-			list_create(slurmdb_destroy_accounting_rec);
-		for(i=0; i<count; i++) {
-			if(slurmdb_unpack_accounting_rec(
-				   (void **)&slurmdb_info,
-				   rpc_version,
-				   buffer) == SLURM_ERROR)
-				goto unpack_error;
-			list_append(object_ptr->accounting_list,
-				    slurmdb_info);
+	if(rpc_version >= 8) {
+		safe_unpack32(&count, buffer);
+		if(count != NO_VAL) {
+			object_ptr->accounting_list =
+				list_create(slurmdb_destroy_accounting_rec);
+			for(i=0; i<count; i++) {
+				if(slurmdb_unpack_accounting_rec(
+					   (void **)&slurmdb_info,
+					   rpc_version,
+					   buffer) == SLURM_ERROR)
+					goto unpack_error;
+				list_append(object_ptr->accounting_list,
+					    slurmdb_info);
+			}
 		}
+
+		safe_unpackstr_xmalloc(&object_ptr->cluster, &uint32_tmp,
+				       buffer);
+
+		safe_unpack32(&object_ptr->id, buffer);
+
+		safe_unpack16(&object_ptr->is_def, buffer);
+
+		safe_unpackstr_xmalloc(&object_ptr->name, &uint32_tmp, buffer);
+
+		safe_unpack32(&object_ptr->uid, buffer);
+
+		safe_unpackstr_xmalloc(&object_ptr->user, &uint32_tmp, buffer);
+	} else {
+		safe_unpack32(&count, buffer);
+		if(count != NO_VAL) {
+			object_ptr->accounting_list =
+				list_create(slurmdb_destroy_accounting_rec);
+			for(i=0; i<count; i++) {
+				if(slurmdb_unpack_accounting_rec(
+					   (void **)&slurmdb_info,
+					   rpc_version,
+					   buffer) == SLURM_ERROR)
+					goto unpack_error;
+				list_append(object_ptr->accounting_list,
+					    slurmdb_info);
+			}
+		}
+
+		safe_unpackstr_xmalloc(&object_ptr->cluster, &uint32_tmp,
+				       buffer);
+
+		safe_unpack32(&object_ptr->id, buffer);
+
+		safe_unpackstr_xmalloc(&object_ptr->name, &uint32_tmp, buffer);
+
+		safe_unpack32(&object_ptr->uid, buffer);
+
+		safe_unpackstr_xmalloc(&object_ptr->user, &uint32_tmp, buffer);
 	}
-
-	safe_unpackstr_xmalloc(&object_ptr->cluster, &uint32_tmp,
-			       buffer);
-
-	safe_unpack32(&object_ptr->id, buffer);
-
-	safe_unpackstr_xmalloc(&object_ptr->name, &uint32_tmp, buffer);
-
-	safe_unpack32(&object_ptr->uid, buffer);
-
-	safe_unpackstr_xmalloc(&object_ptr->user, &uint32_tmp, buffer);
-
 	return SLURM_SUCCESS;
 
 unpack_error:
@@ -1798,11 +1874,11 @@ extern void slurmdb_pack_user_cond(void *in, uint16_t rpc_version, Buf buffer)
 	slurmdb_user_cond_t *object = (slurmdb_user_cond_t *)in;
 	uint32_t count = NO_VAL;
 
-	if(rpc_version >= 4) {
-		if(!object) {
+	if (rpc_version >= 4) {
+		if (!object) {
 			pack16(0, buffer);
-			slurmdb_pack_association_cond(NULL,
-						      rpc_version, buffer);
+			slurmdb_pack_association_cond(
+				NULL, rpc_version, buffer);
 			pack32(NO_VAL, buffer);
 			pack32(NO_VAL, buffer);
 			pack16(0, buffer);
@@ -1817,14 +1893,14 @@ extern void slurmdb_pack_user_cond(void *in, uint16_t rpc_version, Buf buffer)
 		slurmdb_pack_association_cond(object->assoc_cond,
 					      rpc_version, buffer);
 
-		if(object->def_acct_list)
+		if (object->assoc_cond && object->def_acct_list)
 			count = list_count(object->def_acct_list);
 
 		pack32(count, buffer);
 
-		if(count && count != NO_VAL) {
+		if (count && count != NO_VAL) {
 			itr = list_iterator_create(object->def_acct_list);
-			while((tmp_info = list_next(itr))) {
+			while ((tmp_info = list_next(itr))) {
 				packstr(tmp_info, buffer);
 			}
 			list_iterator_destroy(itr);
@@ -1836,9 +1912,9 @@ extern void slurmdb_pack_user_cond(void *in, uint16_t rpc_version, Buf buffer)
 
 		pack32(count, buffer);
 
-		if(count && count != NO_VAL) {
+		if (count && count != NO_VAL) {
 			itr = list_iterator_create(object->def_wckey_list);
-			while((tmp_info = list_next(itr))) {
+			while ((tmp_info = list_next(itr))) {
 				packstr(tmp_info, buffer);
 			}
 			list_iterator_destroy(itr);
@@ -1863,31 +1939,32 @@ extern int slurmdb_unpack_user_cond(void **object, uint16_t rpc_version,
 
 	*object = object_ptr;
 
-	if(rpc_version >= 4) {
+	if (rpc_version >= 4) {
 		safe_unpack16(&object_ptr->admin_level, buffer);
 
-		if(slurmdb_unpack_association_cond(
+		if (slurmdb_unpack_association_cond(
 			   (void **)&object_ptr->assoc_cond,
 			   rpc_version, buffer) == SLURM_ERROR)
 			goto unpack_error;
 
 		safe_unpack32(&count, buffer);
-		if(count != NO_VAL) {
-			object_ptr->def_acct_list =
-				list_create(slurm_destroy_char);
-			for(i=0; i<count; i++) {
-				safe_unpackstr_xmalloc(&tmp_info,
-						       &uint32_tmp, buffer);
+		if (count != NO_VAL) {
+			if (!object_ptr->def_acct_list)
+				object_ptr->def_acct_list =
+					list_create(slurm_destroy_char);
+			for (i=0; i<count; i++) {
+				safe_unpackstr_xmalloc(
+					&tmp_info, &uint32_tmp, buffer);
 				list_append(object_ptr->def_acct_list,
 					    tmp_info);
 			}
 		}
 
 		safe_unpack32(&count, buffer);
-		if(count != NO_VAL) {
+		if (count != NO_VAL) {
 			object_ptr->def_wckey_list =
 				list_create(slurm_destroy_char);
-			for(i=0; i<count; i++) {
+			for (i=0; i<count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info,
 						       &uint32_tmp, buffer);
 				list_append(object_ptr->def_wckey_list,
@@ -1898,6 +1975,11 @@ extern int slurmdb_unpack_user_cond(void **object, uint16_t rpc_version,
 		safe_unpack16(&object_ptr->with_coords, buffer);
 		safe_unpack16(&object_ptr->with_deleted, buffer);
 		safe_unpack16(&object_ptr->with_wckeys, buffer);
+
+		/* If we get the call from an older version of SLURM
+		   just automatically set this to get the defaults */
+		if (!object_ptr->with_assocs && (rpc_version < 8))
+			object_ptr->assoc_cond->only_defs = 1;
 	}
 
 	return SLURM_SUCCESS;
@@ -2139,7 +2221,7 @@ extern int slurmdb_unpack_cluster_cond(void **object, uint16_t rpc_version,
 
 	*object = object_ptr;
 
-	slurmdb_init_cluster_cond(object_ptr);
+	slurmdb_init_cluster_cond(object_ptr, 0);
 	if(rpc_version >= 8) {
 		safe_unpack16(&object_ptr->classification, buffer);
 		safe_unpack32(&count, buffer);
@@ -2245,6 +2327,8 @@ extern void slurmdb_pack_association_cond(void *in, uint16_t rpc_version,
 			pack32(NO_VAL, buffer);
 			pack32(NO_VAL, buffer);
 			pack32(NO_VAL, buffer);
+
+			pack16(0, buffer);
 
 			pack32(NO_VAL, buffer);
 			pack32(NO_VAL, buffer);
@@ -2511,6 +2595,8 @@ extern void slurmdb_pack_association_cond(void *in, uint16_t rpc_version,
 			list_iterator_destroy(itr);
 		}
 		count = NO_VAL;
+
+		pack16(object->only_defs, buffer);
 
 		if(object->partition_list)
 			count = list_count(object->partition_list);
@@ -3109,6 +3195,8 @@ extern int slurmdb_unpack_association_cond(void **object,
 					    tmp_info);
 			}
 		}
+
+		safe_unpack16(&object_ptr->only_defs, buffer);
 
 		safe_unpack32(&count, buffer);
 		if(count != NO_VAL) {

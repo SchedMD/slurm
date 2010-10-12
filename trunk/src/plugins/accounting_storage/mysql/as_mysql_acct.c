@@ -119,7 +119,7 @@ static int _get_account_coords(mysql_conn_t *mysql_conn,
 }
 
 extern int as_mysql_add_accts(mysql_conn_t *mysql_conn, uint32_t uid,
-			   List acct_list)
+			      List acct_list)
 {
 	ListIterator itr = NULL;
 	int rc = SLURM_SUCCESS;

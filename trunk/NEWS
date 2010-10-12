@@ -57,6 +57,7 @@ documents those changes that are of interest to users and admins.
     to abort.
  -- Fix bug preventing users in secondary user groups from being granted access
     to partitions configured with AllowGroups.
+ -- Added support for a default account and wckey per cluster within accounting.
 
 * Changes in SLURM 2.2.0.pre11
 ==============================

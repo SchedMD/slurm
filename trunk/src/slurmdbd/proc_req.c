@@ -1542,6 +1542,7 @@ static int _get_users(slurmdbd_conn_t *slurmdbd_conn,
 	dbd_list_msg_t list_msg;
 	char *comment = NULL;
 	int rc = SLURM_SUCCESS;
+	slurmdb_user_cond_t * user_cond = NULL;
 
 	debug2("DBD_GET_USERS: called");
 
@@ -1556,8 +1557,23 @@ static int _get_users(slurmdbd_conn_t *slurmdbd_conn,
 		return SLURM_ERROR;
 	}
 
+	user_cond = get_msg->cond;
+	if ((!user_cond->with_assocs && !user_cond->with_wckeys)
+	    && ((slurmdbd_conn->rpc_version < 8)
+		|| (user_cond->assoc_cond->only_defs))) {
+		List cluster_list = user_cond->assoc_cond->cluster_list;
+		/* load up with just this cluster to query against
+		 * since befor 2.2 we had only 1 default account so
+		 * send the default for this cluster. */
+		if (!cluster_list) {
+			cluster_list = list_create(NULL);
+			list_append(cluster_list, slurmdbd_conn->cluster_name);
+			user_cond->assoc_cond->cluster_list = cluster_list;
+		}
+	}
+
 	list_msg.my_list = acct_storage_g_get_users(slurmdbd_conn->db_conn,
-						    *uid, get_msg->cond);
+						    *uid, user_cond);
 
 	if(!errno) {
 		if(!list_msg.my_list)
@@ -2613,8 +2629,8 @@ static int   _register_ctld(slurmdbd_conn_t *slurmdbd_conn,
 	debug2("slurmctld at ip:%s, port:%d",
 	       slurmdbd_conn->ip, register_ctld_msg->port);
 
-	slurmdb_init_cluster_cond(&cluster_q);
-	slurmdb_init_cluster_rec(&cluster);
+	slurmdb_init_cluster_cond(&cluster_q, 0);
+	slurmdb_init_cluster_rec(&cluster, 0);
 
 	cluster_q.cluster_list = list_create(NULL);
 	list_append(cluster_q.cluster_list, slurmdbd_conn->cluster_name);

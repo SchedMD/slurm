@@ -362,6 +362,8 @@ int main(int argc, char *argv[])
 	assoc_init_arg.cache_level = ASSOC_MGR_CACHE_ASSOC |
 				     ASSOC_MGR_CACHE_USER  |
 				     ASSOC_MGR_CACHE_QOS;
+	if (slurmctld_conf.track_wckey)
+		assoc_init_arg.cache_level |= ASSOC_MGR_CACHE_WCKEY;
 
 	if (assoc_mgr_init(acct_db_conn, &assoc_init_arg)) {
 		if (accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS)
@@ -1928,7 +1930,8 @@ static void *_assoc_cache_mgr(void *no_data)
 	itr = list_iterator_create(job_list);
 	while ((job_ptr = list_next(itr))) {
 		if(job_ptr->assoc_id) {
-			memset(&assoc_rec, 0, sizeof(slurmdb_association_rec_t));
+			memset(&assoc_rec, 0,
+			       sizeof(slurmdb_association_rec_t));
 			assoc_rec.id = job_ptr->assoc_id;
 
 			debug("assoc is %zx (%d) for job %u",

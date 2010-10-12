@@ -692,6 +692,7 @@ static int _as_mysql_acct_check_tables(MYSQL *db_conn)
 			return SLURM_ERROR;
 	}
 
+	/* This must be ran after create_cluster_tables() */
 	if(mysql_db_create_table(db_conn, user_table, user_table_fields,
 				 ", primary key (name(20)))") == SLURM_ERROR)
 		return SLURM_ERROR;
@@ -706,15 +707,15 @@ static int _as_mysql_acct_check_tables(MYSQL *db_conn)
 	 */
 	query = xstrdup_printf(
 		"insert into %s (creation_time, mod_time, name, default_acct, "
-		"admin_level) values (0, %ld, 'root', 'root', %d) "
+		"admin_level) values (%ld, %ld, 'root', 'root', %d) "
 		"on duplicate key update name='root';",
-		user_table, now, SLURMDB_ADMIN_SUPER_USER);
+		user_table, (long)now, (long)now, SLURMDB_ADMIN_SUPER_USER);
 	xstrfmtcat(query,
 		   "insert into %s (creation_time, mod_time, name, "
-		   "description, organization) values (0, %ld, 'root', "
+		   "description, organization) values (%ld, %ld, 'root', "
 		   "'default root account', 'root') on duplicate key "
 		   "update name='root';",
-		   acct_table, now);
+		   acct_table, (long)now, (long)now);
 
 	//debug3("%s", query);
 	mysql_db_query(db_conn, query);
@@ -803,6 +804,7 @@ extern int create_cluster_tables(MYSQL *db_conn, char *cluster_name)
 		{ "creation_time", "int unsigned not null" },
 		{ "mod_time", "int unsigned default 0 not null" },
 		{ "deleted", "tinyint default 0 not null" },
+		{ "is_def", "tinyint default 0 not null" },
 		{ "id_assoc", "int not null auto_increment" },
 		{ "user", "tinytext not null default ''" },
 		{ "acct", "tinytext not null" },
@@ -975,6 +977,7 @@ extern int create_cluster_tables(MYSQL *db_conn, char *cluster_name)
 		{ "creation_time", "int unsigned not null" },
 		{ "mod_time", "int unsigned default 0 not null" },
 		{ "deleted", "tinyint default 0 not null" },
+		{ "is_def", "tinyint default 0 not null" },
 		{ "id_wckey", "int not null auto_increment" },
 		{ "wckey_name", "tinytext not null default ''" },
 		{ "user", "tinytext not null" },
@@ -994,9 +997,58 @@ extern int create_cluster_tables(MYSQL *db_conn, char *cluster_name)
 	};
 
 	char table_name[200];
+	char *query = NULL;
+	bool def_exist = 0, user_table_exists = 0;
+	MYSQL_RES *result = NULL;
+
+	query = xstrdup_printf("show tables like '%s';", user_table);
+
+	debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
+	if(!(result = mysql_db_query_ret(db_conn, query, 0))) {
+		xfree(query);
+		return SLURM_ERROR;
+	}
+	xfree(query);
+	user_table_exists = mysql_num_rows(result);
+	mysql_free_result(result);
+	result = NULL;
 
 	snprintf(table_name, sizeof(table_name), "\"%s_%s\"",
 		 cluster_name, assoc_table);
+
+	/* See if the tables exist (if not new cluster, so no altering
+	   has to take place.
+	*/
+	query = xstrdup_printf("show tables like '%s';", table_name);
+
+	debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
+	if(!(result = mysql_db_query_ret(db_conn, query, 0))) {
+		xfree(query);
+		return SLURM_ERROR;
+	}
+	xfree(query);
+	/* Here if the tables do exist then set def_exist to 0 so we
+	   check for the fields afterwards.
+	*/
+	def_exist = mysql_num_rows(result) ? 0 : 1;
+	mysql_free_result(result);
+	result = NULL;
+	if (!def_exist) {
+		/* need to see if this table already has defaults or not */
+		query = xstrdup_printf(
+			"show columns from %s where Field='is_def';",
+			table_name);
+		debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
+		if(!(result = mysql_db_query_ret(db_conn, query, 0))) {
+			xfree(query);
+			return SLURM_ERROR;
+		}
+		xfree(query);
+		def_exist = mysql_num_rows(result);
+		mysql_free_result(result);
+		result = NULL;
+	}
+
 	if(mysql_db_create_table(db_conn, table_name,
 				 assoc_table_fields,
 				 ", primary key (id_assoc), "
@@ -1107,6 +1159,22 @@ extern int create_cluster_tables(MYSQL *db_conn, char *cluster_name)
 
 	snprintf(table_name, sizeof(table_name), "\"%s_%s\"",
 		 cluster_name, wckey_table);
+	if (!def_exist) {
+		/* need to see if this table already has defaults or not */
+		query = xstrdup_printf(
+			"show columns from %s where Field='is_def';",
+			table_name);
+		debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
+		if(!(result = mysql_db_query_ret(db_conn, query, 0))) {
+			xfree(query);
+			return SLURM_ERROR;
+		}
+		xfree(query);
+		def_exist = mysql_num_rows(result);
+		mysql_free_result(result);
+		result = NULL;
+	}
+
 	if(mysql_db_create_table(db_conn, table_name,
 				 wckey_table_fields,
 				 ", primary key (id_wckey), "
@@ -1141,6 +1209,12 @@ extern int create_cluster_tables(MYSQL *db_conn, char *cluster_name)
 				 "time_start))")
 	   == SLURM_ERROR)
 		return SLURM_ERROR;
+
+	if (!def_exist && user_table_exists)
+		/* now set the default for each user */
+		if (as_mysql_convert_user_defs(db_conn, cluster_name)
+		    != SLURM_SUCCESS)
+			return SLURM_ERROR;
 
 	return SLURM_SUCCESS;
 }
@@ -1291,6 +1365,16 @@ extern int setup_association_limits(slurmdb_association_rec_t *assoc,
 		xstrcat(*cols, ", grp_wall");
 		xstrfmtcat(*vals, ", %u", assoc->grp_wall);
 		xstrfmtcat(*extra, ", grp_wall=%u", assoc->grp_wall);
+	}
+
+	/* this only gets set on a user's association and is_def
+	 * could be NO_VAL only 1 is accepted */
+	if ((assoc->is_def == 1)
+	    && ((qos_level == QOS_LEVEL_MODIFY)
+		|| (assoc->user && assoc->cluster && assoc->acct))) {
+		xstrcat(*cols, ", is_def");
+		xstrcat(*vals, ", 1");
+		xstrcat(*extra, ", is_def=1");
 	}
 
 	if(assoc->max_cpu_mins_pj == (uint64_t)INFINITE) {
@@ -1686,7 +1770,7 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 		loc_assoc_char = assoc_char;
 
 	if(!loc_assoc_char) {
-		debug2("No associations with object being deleted\n");
+		debug2("No associations with object being deleted");
 		return rc;
 	}
 
@@ -1930,7 +2014,7 @@ extern int fini ( void )
 }
 
 extern void *acct_storage_p_get_connection(const slurm_trigger_callbacks_t *cb,
-                                           int conn_num,bool rollback, 
+                                           int conn_num,bool rollback,
                                            char *cluster_name)
 {
 	mysql_conn_t *mysql_conn = xmalloc(sizeof(mysql_conn_t));

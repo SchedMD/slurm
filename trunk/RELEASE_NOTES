@@ -50,6 +50,9 @@ HIGHLIGHTS
   clusters. Jobs can also be submitted with sbatch to other cluster(s) with the
   job routed to the one cluster expected to initiated the job first.
 
+* Accounting through the SlurmDBD with the MySQL plugin can now support
+  a default account and wckey per cluster.
+
 CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
 =============================================================
 * A hash of the slurm.conf running on each node in the cluster is sent when
@@ -138,7 +141,7 @@ COMMAND CHANGES (see man pages for details)
 * srun's --core option has been removed. Use the SPANK "Core" plugin from
   http://code.google.com/p/slurm-spank-plugins/ for continued support.
 
-* Added salloc and sbatch option --wait-for-nodes. If set non-zero, job 
+* Added salloc and sbatch option --wait-for-nodes. If set non-zero, job
   initiation will be delayed until all allocated nodes have booted. Salloc
   will log the delay with the messages "Waiting for nodes to boot" and "Nodes
   are ready for use".

@@ -263,10 +263,6 @@ extern int sort_coord_list(slurmdb_coord_rec_t *coord_a,
 extern List sacctmgr_process_format_list(List format_list);
 
 /* you need to free the objects returned from these functions */
-extern slurmdb_association_rec_t *sacctmgr_find_association(char *user,
-							 char *account,
-							 char *cluster,
-							 char *partition);
 extern slurmdb_association_rec_t *sacctmgr_find_account_base_assoc(
 	char *account, char *cluster);
 extern slurmdb_association_rec_t *sacctmgr_find_root_assoc(char *cluster);

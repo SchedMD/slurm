@@ -293,6 +293,7 @@ static int _setup_qos_limits(slurmdb_qos_rec_t *qos,
 				xstrcat(preempt_val, "");
 		}
 		list_iterator_destroy(preempt_itr);
+		xfree(begin_preempt);
 
 		xstrfmtcat(*vals, ", '%s'", preempt_val);
 		xstrfmtcat(*extra, ", preempt='%s'", preempt_val);
@@ -609,8 +610,10 @@ extern List as_mysql_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 			list_iterator_destroy(new_preempt_itr);
 		}
 
-		addto_update_list(mysql_conn->update_list, SLURMDB_MODIFY_QOS,
-				   qos_rec);
+		if (addto_update_list(mysql_conn->update_list,
+				      SLURMDB_MODIFY_QOS, qos_rec)
+		    != SLURM_SUCCESS)
+			slurmdb_destroy_qos_rec(qos_rec);
 	}
 	mysql_free_result(result);
 
@@ -760,8 +763,10 @@ extern List as_mysql_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 		qos_rec = xmalloc(sizeof(slurmdb_qos_rec_t));
 		/* we only need id when removing no real need to init */
 		qos_rec->id = atoi(row[0]);
-		addto_update_list(mysql_conn->update_list, SLURMDB_REMOVE_QOS,
-				   qos_rec);
+		if (addto_update_list(mysql_conn->update_list,
+				      SLURMDB_REMOVE_QOS, qos_rec)
+		    != SLURM_SUCCESS)
+			slurmdb_destroy_qos_rec(qos_rec);
 	}
 	mysql_free_result(result);
 

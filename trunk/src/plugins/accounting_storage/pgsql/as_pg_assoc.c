@@ -1102,7 +1102,7 @@ _modify_unset_users(pgsql_conn_t *pg_conn, slurmdb_association_rec_t *assoc,
 		int modified = 0;
 
 		mod_assoc = xmalloc(sizeof(slurmdb_association_rec_t));
-		slurmdb_init_association_rec(mod_assoc);
+		slurmdb_init_association_rec(mod_assoc, 0);
 
 		mod_assoc->id = atoi(ROW(MA_ID));
 
@@ -1813,7 +1813,7 @@ as_pg_modify_associations(pgsql_conn_t *pg_conn, uint32_t uid,
 		}
 
 		mod_assoc = xmalloc(sizeof(slurmdb_association_rec_t));
-		slurmdb_init_association_rec(mod_assoc);
+		slurmdb_init_association_rec(mod_assoc, 0);
 		mod_assoc->id = atoi(ROW(MA_ID));
 		_copy_assoc_limits(mod_assoc, assoc);
 
@@ -2150,7 +2150,7 @@ as_pg_remove_associations(pgsql_conn_t *pg_conn, uint32_t uid,
 		}
 
 		rem_assoc = xmalloc(sizeof(slurmdb_association_rec_t));
-		slurmdb_init_association_rec(rem_assoc);
+		slurmdb_init_association_rec(rem_assoc, 0);
 		rem_assoc->id = atoi(ROW(RA_ID));
 		if(addto_update_list(pg_conn->update_list,
 				     SLURMDB_REMOVE_ASSOC,

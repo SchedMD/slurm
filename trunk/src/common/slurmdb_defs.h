@@ -55,6 +55,7 @@
 extern slurmdb_step_rec_t *slurmdb_create_step_rec();
 extern slurmdb_job_rec_t *slurmdb_create_job_rec();
 
+extern void slurmdb_destroy_user_defs(void *object);
 extern void slurmdb_destroy_user_rec(void *object);
 extern void slurmdb_destroy_account_rec(void *object);
 extern void slurmdb_destroy_coord_rec(void *object);
@@ -97,11 +98,17 @@ extern void slurmdb_destroy_report_job_grouping(void *object);
 extern void slurmdb_destroy_report_acct_grouping(void *object);
 extern void slurmdb_destroy_report_cluster_grouping(void *object);
 
-extern void slurmdb_init_association_rec(slurmdb_association_rec_t *assoc);
-extern void slurmdb_init_cluster_rec(slurmdb_cluster_rec_t *cluster);
-extern void slurmdb_init_qos_rec(slurmdb_qos_rec_t *qos);
+extern void slurmdb_init_association_rec(slurmdb_association_rec_t *assoc,
+					 bool free_it);
+extern void slurmdb_init_cluster_rec(slurmdb_cluster_rec_t *cluster,
+				     bool free_it);
+extern void slurmdb_init_qos_rec(slurmdb_qos_rec_t *qos,
+				 bool free_it);
+extern void slurmdb_init_wckey_rec(slurmdb_wckey_rec_t *wckey,
+				   bool free_it);
 
-extern void slurmdb_init_cluster_cond(slurmdb_cluster_cond_t *cluster);
+extern void slurmdb_init_cluster_cond(slurmdb_cluster_cond_t *cluster,
+				      bool free_it);
 
 extern List slurmdb_get_info_cluster(char *cluster_name);
 extern char *slurmdb_qos_str(List qos_list, uint32_t level);

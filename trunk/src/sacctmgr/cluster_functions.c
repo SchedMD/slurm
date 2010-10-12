@@ -231,7 +231,7 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 	char *name = NULL;
 	uint16_t class = 0;
 
-	slurmdb_init_association_rec(&start_assoc);
+	slurmdb_init_association_rec(&start_assoc, 0);
 
 	for (i=0; i<argc; i++) {
 		int command_len = strlen(argv[i]);
@@ -253,7 +253,7 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 		List temp_list = NULL;
 		slurmdb_cluster_cond_t cluster_cond;
 
-		slurmdb_init_cluster_cond(&cluster_cond);
+		slurmdb_init_cluster_cond(&cluster_cond, 0);
 		cluster_cond.cluster_list = name_list;
 		cluster_cond.classification = class;
 
@@ -304,7 +304,7 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 			continue;
 		}
 		cluster = xmalloc(sizeof(slurmdb_cluster_rec_t));
-		slurmdb_init_cluster_rec(cluster);
+		slurmdb_init_cluster_rec(cluster, 0);
 
 		list_append(cluster_list, cluster);
 		cluster->flags = NO_VAL;
@@ -312,7 +312,7 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 		cluster->classification = class;
 		cluster->root_assoc =
 			xmalloc(sizeof(slurmdb_association_rec_t));
-		slurmdb_init_association_rec(cluster->root_assoc);
+		slurmdb_init_association_rec(cluster->root_assoc, 0);
 		printf("  Name          = %s\n", cluster->name);
 		if(cluster->classification)
 			printf("  Classification= %s\n",
@@ -402,7 +402,7 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 	List format_list = list_create(slurm_destroy_char);
 	List print_fields_list; /* types are of print_field_t */
 
-	slurmdb_init_cluster_cond(cluster_cond);
+	slurmdb_init_cluster_cond(cluster_cond, 0);
 	cluster_cond->cluster_list = list_create(slurm_destroy_char);
 	for (i=0; i<argc; i++) {
 		int command_len = strlen(argv[i]);
@@ -662,12 +662,12 @@ extern int sacctmgr_modify_cluster(int argc, char *argv[])
 	uint16_t class_rec = 0;
 	slurmdb_cluster_cond_t cluster_cond;
 
-	slurmdb_init_association_rec(assoc);
+	slurmdb_init_association_rec(assoc, 0);
 
 	assoc_cond->cluster_list = list_create(slurm_destroy_char);
 	assoc_cond->acct_list = list_create(NULL);
 
-	slurmdb_init_cluster_cond(&cluster_cond);
+	slurmdb_init_cluster_cond(&cluster_cond, 0);
 	cluster_cond.cluster_list = assoc_cond->cluster_list;
 
 	for (i=0; i<argc; i++) {
@@ -770,7 +770,7 @@ extern int sacctmgr_modify_cluster(int argc, char *argv[])
 	if(class_rec) {
 		slurmdb_cluster_rec_t cluster_rec;
 
-		slurmdb_init_cluster_rec(&cluster_rec);
+		slurmdb_init_cluster_rec(&cluster_rec, 0);
 		/* the class has already returned these clusters so
 		   just go with it */
 		cluster_rec.classification = class_rec;
@@ -826,7 +826,7 @@ extern int sacctmgr_delete_cluster(int argc, char *argv[])
 	List ret_list = NULL;
 	int cond_set = 0, prev_set;
 
-	slurmdb_init_cluster_cond(cluster_cond);
+	slurmdb_init_cluster_cond(cluster_cond, 0);
 	cluster_cond->cluster_list = list_create(slurm_destroy_char);
 
 	for (i=0; i<argc; i++) {
@@ -975,7 +975,7 @@ extern int sacctmgr_dump_cluster (int argc, char *argv[])
 		slurmdb_cluster_cond_t cluster_cond;
 		slurmdb_cluster_rec_t *cluster_rec = NULL;
 
-		slurmdb_init_cluster_cond(&cluster_cond);
+		slurmdb_init_cluster_cond(&cluster_cond, 0);
 		cluster_cond.cluster_list = list_create(NULL);
 		list_push(cluster_cond.cluster_list, cluster_name);
 
@@ -1012,6 +1012,7 @@ extern int sacctmgr_dump_cluster (int argc, char *argv[])
 	memset(&user_cond, 0, sizeof(slurmdb_user_cond_t));
 	user_cond.with_coords = 1;
 	user_cond.with_wckeys = 1;
+	user_cond.with_assocs = 1;
 
 	memset(&assoc_cond, 0, sizeof(slurmdb_association_cond_t));
 	assoc_cond.without_parent_limits = 1;
@@ -1022,6 +1023,7 @@ extern int sacctmgr_dump_cluster (int argc, char *argv[])
 	user_cond.assoc_cond = &assoc_cond;
 
 	user_list = acct_storage_g_get_users(db_conn, my_uid, &user_cond);
+
 	/* make sure this person running is an admin */
 	user_name = uid_to_string(my_uid);
 	if(!(user = sacctmgr_find_user_from_list(user_list, user_name))) {
