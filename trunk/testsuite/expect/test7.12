@@ -1,0 +1,136 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose:  Test of slurm_job_step_stat() API call.
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+#
+# Note:    This script generates and then deletes a file in the working
+#          directory named test7.12.prog
+############################################################################
+# Copyright (C) 2010 Lawrence Livermore National Security.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Morris Jette <jette1@llnl.gov>
+# CODE-OCEC-09-009. All rights reserved.
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <https://computing.llnl.gov/linux/slurm/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id     "7.12"
+set exit_code   0
+set file_in     "test$test_id.input"
+set job_id      0
+set test_prog   "test$test_id.prog"
+
+print_header $test_id
+
+if {[test_front_end] != 0} {
+        send_user "\nWARNING: This test is incompatible with front-end systems\n"
+        exit 0
+}
+
+#
+# Delete left-over program and rebuild it
+#
+file delete $file_in $test_prog
+make_bash_script $file_in "
+  $srun $bin_sleep 120
+"
+
+send_user "slurm_dir is $slurm_dir\n"
+if {[test_aix]} {
+	send_user "$bin_cc ${test_prog}.c -Wl,-brtl -g -pthread -o ${test_prog} -I${slurm_dir}/include  -L${slurm_dir}/lib -lslurm -lntbl\n"
+	exec       $bin_cc ${test_prog}.c -Wl,-brtl -g -pthread -o ${test_prog} -I${slurm_dir}/include  -L${slurm_dir}/lib -lslurm -lntbl
+} elseif [file exists ${slurm_dir}/lib64/libslurm.so] {
+	send_user "$bin_cc ${test_prog}.c -g -pthread -o ${test_prog} -I${slurm_dir}/include -Wl,--rpath=${slurm_dir}/lib64 -L${slurm_dir}/lib64 -lslurm\n"
+	exec       $bin_cc ${test_prog}.c -g -pthread -o ${test_prog} -I${slurm_dir}/include -Wl,--rpath=${slurm_dir}/lib64 -L${slurm_dir}/lib64 -lslurm
+} else {
+	send_user "$bin_cc ${test_prog}.c -g -pthread -o ${test_prog} -I${slurm_dir}/include -Wl,--rpath=${slurm_dir}/lib -L${slurm_dir}/lib -lslurm\n"
+	exec       $bin_cc ${test_prog}.c -g -pthread -o ${test_prog} -I${slurm_dir}/include -Wl,--rpath=${slurm_dir}/lib -L${slurm_dir}/lib -lslurm
+}
+exec $bin_chmod 700 $test_prog
+
+#
+# Spawn program via sbatch
+#
+spawn $sbatch -N1 -t1 --output=/dev/null $file_in
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sbatch not responding\n"
+		set exit_code 1
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+if { $job_id == 0 } {
+	send_user "\nFAILURE: failed to submit job\n"
+	exit 1
+}
+
+#
+# Wait for job to start
+#
+if {[wait_for_job $job_id "RUNNING"] != 0} {
+	send_user "\nFAILURE: waiting for job to start\n"
+	cancel_job $job_id
+	exit 1
+}
+# wait for job step to start
+sleep 2
+
+set matches 0
+spawn ./$test_prog $job_id
+expect {
+	-re "job_id:$job_id" {
+		incr matches
+		exp_continue
+	}
+	-re "pid:$number" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: spawn IO not responding\n"
+		cancel_job $job_id
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$matches != 2} {
+	send_user "\nFAILURE: error running slurm_job_step_stat() program\n"
+	set exit_code 1
+}
+
+cancel_job $job_id
+if {$exit_code == 0} {
+	file delete $file_in $test_prog
+	send_user "\nSUCCESS\n"
+}
+exit $exit_code
