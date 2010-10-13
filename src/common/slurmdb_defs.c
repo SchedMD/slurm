@@ -300,7 +300,7 @@ extern slurmdb_job_rec_t *slurmdb_create_job_rec()
 
 extern slurmdb_step_rec_t *slurmdb_create_step_rec()
 {
-	slurmdb_step_rec_t *step = xmalloc(sizeof(slurmdb_job_rec_t));
+	slurmdb_step_rec_t *step = xmalloc(sizeof(slurmdb_step_rec_t));
 	memset(&step->stats, 0, sizeof(slurmdb_stats_t));
 	step->stepid = (uint32_t)NO_VAL;
 	step->state = NO_VAL;

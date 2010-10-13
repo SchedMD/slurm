@@ -3054,6 +3054,7 @@ slurmdbd_pack_job_complete_msg(dbd_job_comp_msg_t *msg,
 	if(rpc_version >= 6) {
 		pack32(msg->assoc_id, buffer);
 		pack32(msg->db_index, buffer);
+		pack32(msg->derived_ec, buffer);
 		pack_time(msg->end_time, buffer);
 		pack32(msg->exit_code, buffer);
 		pack32(msg->job_id, buffer);
@@ -3076,6 +3077,7 @@ slurmdbd_unpack_job_complete_msg(dbd_job_comp_msg_t **msg,
 	if(rpc_version >= 6) {
 		safe_unpack32(&msg_ptr->assoc_id, buffer);
 		safe_unpack32(&msg_ptr->db_index, buffer);
+		safe_unpack32(&msg_ptr->derived_ec, buffer);
 		safe_unpack_time(&msg_ptr->end_time, buffer);
 		safe_unpack32(&msg_ptr->exit_code, buffer);
 		safe_unpack32(&msg_ptr->job_id, buffer);

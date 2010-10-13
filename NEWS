@@ -61,6 +61,11 @@ documents those changes that are of interest to users and admins.
  -- Modified select/cons_res plugin so that if MaxMemPerCPU is configured and a
     job specifies it's memory requirement, then more CPUs than requested will
     automatically be allocated to a job to honor the MaxMemPerCPU parameter.
+ -- Added the derived_ec (exit_code) member to job_info_t.  exit_code captures
+    the exit code of the job script (or salloc) while derived_ec contains the
+    highest exit code of all the job steps.
+ -- Added SLURM_JOB_EXIT_CODE and SLURM_JOB_DERIVED_EC variables to the
+    EpilogSlurmctld environment
 
 * Changes in SLURM 2.2.0.pre11
 ==============================

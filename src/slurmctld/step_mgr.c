@@ -448,6 +448,8 @@ int job_step_complete(uint32_t job_id, uint32_t step_id, uid_t uid,
 		return ESLURM_INVALID_JOB_ID;
 
 	jobacct_storage_g_step_complete(acct_db_conn, step_ptr);
+	job_ptr->derived_ec = MAX(job_ptr->derived_ec, step_ptr->exit_code);
+
 	_step_dealloc_lps(step_ptr);
 	gres_plugin_step_dealloc(step_ptr->gres_list, job_ptr->gres_list,
 				 job_id, step_id);

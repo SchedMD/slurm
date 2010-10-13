@@ -400,7 +400,7 @@ scontrol_update_job (int argc, char *argv[])
 			int min_cpus, max_cpus=0;
 			if (!get_resource_arg_range(val, "NumCPUs", &min_cpus,
 						   &max_cpus, false) ||
-			    (min_cpus <= 0) || 
+			    (min_cpus <= 0) ||
 			    (max_cpus && (max_cpus < min_cpus))) {
 				error("Invalid NumCPUs value: %s", val);
 				exit_code = 1;
@@ -523,7 +523,7 @@ scontrol_update_job (int argc, char *argv[])
 							(char **) NULL, 10);
 			update_cnt++;
 		}
-		else if (strncasecmp(tag, "ExcNodeList", MAX(taglen, 1)) == 0){
+		else if (strncasecmp(tag, "ExcNodeList", MAX(taglen, 3)) == 0){
 			job_msg.exc_nodes = val;
 			update_cnt++;
 		}

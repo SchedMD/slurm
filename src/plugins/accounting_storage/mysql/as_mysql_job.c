@@ -625,12 +625,13 @@ extern int as_mysql_job_complete(mysql_conn_t *mysql_conn,
 		}
 	}
 
-	query = xstrdup_printf("update \"%s_%s\" set time_end=%ld, "
-			       "state=%d, nodelist='%s', exit_code=%d, "
+	query = xstrdup_printf("update \"%s_%s\" set "
+			       "time_end=%ld, state=%d, nodelist='%s', "
+			       "derived_ec=%d, exit_code=%d, "
 			       "kill_requid=%d where job_db_inx=%d;",
 			       mysql_conn->cluster_name, job_table,
-			       end_time, job_state,
-			       nodes, job_ptr->exit_code,
+			       end_time, job_state, nodes,
+			       job_ptr->derived_ec, job_ptr->exit_code,
 			       job_ptr->requid, job_ptr->db_index);
 
 	debug3("%d(%s:%d) query\n%s",

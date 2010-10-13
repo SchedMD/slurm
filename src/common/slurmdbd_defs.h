@@ -240,6 +240,7 @@ typedef struct dbd_job_comp_msg {
 	uint32_t assoc_id;	/* accounting association id needed to
 				 * find job record in db */
 	uint32_t db_index;	/* index into the db for this job */
+	uint32_t derived_ec;	/* derived job exit code or signal */
 	time_t   end_time;	/* job termintation time */
 	uint32_t exit_code;	/* job exit code or signal */
 	uint32_t job_id;	/* job ID */
