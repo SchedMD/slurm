@@ -173,8 +173,8 @@ const uint32_t pstate_version = 7;	/* version control on saved state */
 
 uint16_t cr_type = CR_CPU; /* cr_type is overwritten in init() */
 
-uint16_t select_fast_schedule;
 uint32_t select_debug_flags;
+uint16_t select_fast_schedule;
 
 uint16_t *cr_node_num_cores = NULL;
 struct part_res_record *select_part_record = NULL;
