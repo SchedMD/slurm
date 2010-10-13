@@ -596,8 +596,7 @@ extern List create_node_info_list(node_info_msg_t *node_info_ptr,
 			continue;
 		if (by_partition) {
 			/*constrain list to included partitions' nodes*/
-			if (strcmp(working_sview_config.excluded_partitions,
-				   "-")) {
+			if (strcmp(working_sview_config.excluded_partitions, "-")) {
 				int rc = get_new_info_part(
 					&part_info_ptr, force_refresh);
 				if(rc == SLURM_NO_CHANGE_IN_DATA ||
@@ -1600,6 +1599,7 @@ extern void select_admin_nodes(GtkTreeModel *model,
 {
 	if(treeview) {
 		char *old_value = NULL;
+		char tmp[1024];
 		hostlist_t hl = NULL;
 		process_node_t process_node;
 		memset(&process_node, 0, sizeof(process_node_t));
@@ -1615,7 +1615,8 @@ extern void select_admin_nodes(GtkTreeModel *model,
 		hostlist_uniq(hl);
 		hostlist_sort(hl);
 		xfree(process_node.nodelist);
-		process_node.nodelist = hostlist_ranged_string_xmalloc(hl);
+		hostlist_ranged_string(hl, sizeof(tmp), tmp);
+		process_node.nodelist = xstrdup(tmp);
 		hostlist_destroy(hl);
 
 		if(!strcasecmp("Update Features", display_data->name)) {
