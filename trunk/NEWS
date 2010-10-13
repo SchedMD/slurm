@@ -571,7 +571,10 @@ documents those changes that are of interest to users and admins.
  -- Fixed a bug in calculating the root account's raw usage reported by Par
     Andersson
  -- Fixed a bug in sshare displaying account hierarchy reported by Per
-    Lundqvist
+    Lundqvist.
+ -- In select/linear plugin, when a node allocated to a running job is removed
+    from a partition, only log the event once. Fixes problem reported by Per
+    Lundqvist.
 
 * Changes in SLURM 2.1.14
 =========================
