@@ -352,13 +352,13 @@ void slurm_free_job_step_info_request_msg(
 	xfree(msg);
 }
 
-void inline slurm_free_node_info_request_msg(
+inline void slurm_free_node_info_request_msg(
 	node_info_request_msg_t *msg)
 {
 	xfree(msg);
 }
 
-void inline slurm_free_part_info_request_msg(
+inline void slurm_free_part_info_request_msg(
 	part_info_request_msg_t *msg)
 {
 	xfree(msg);
@@ -746,12 +746,12 @@ void slurm_free_epilog_complete_msg(epilog_complete_msg_t * msg)
 	}
 }
 
-void inline slurm_free_srun_job_complete_msg(srun_job_complete_msg_t * msg)
+inline void slurm_free_srun_job_complete_msg(srun_job_complete_msg_t * msg)
 {
 	xfree(msg);
 }
 
-void inline slurm_free_srun_exec_msg(srun_exec_msg_t *msg)
+inline void slurm_free_srun_exec_msg(srun_exec_msg_t *msg)
 {
 	int i;
 
@@ -763,12 +763,12 @@ void inline slurm_free_srun_exec_msg(srun_exec_msg_t *msg)
 	}
 }
 
-void inline slurm_free_srun_ping_msg(srun_ping_msg_t * msg)
+inline void slurm_free_srun_ping_msg(srun_ping_msg_t * msg)
 {
 	xfree(msg);
 }
 
-void inline slurm_free_srun_node_fail_msg(srun_node_fail_msg_t * msg)
+inline void slurm_free_srun_node_fail_msg(srun_node_fail_msg_t * msg)
 {
 	if (msg) {
 		xfree(msg->nodelist);
@@ -776,7 +776,7 @@ void inline slurm_free_srun_node_fail_msg(srun_node_fail_msg_t * msg)
 	}
 }
 
-void inline slurm_free_srun_step_missing_msg(srun_step_missing_msg_t * msg)
+inline void slurm_free_srun_step_missing_msg(srun_step_missing_msg_t * msg)
 {
 	if (msg) {
 		xfree(msg->nodelist);
@@ -784,12 +784,12 @@ void inline slurm_free_srun_step_missing_msg(srun_step_missing_msg_t * msg)
 	}
 }
 
-void inline slurm_free_srun_timeout_msg(srun_timeout_msg_t * msg)
+inline void slurm_free_srun_timeout_msg(srun_timeout_msg_t * msg)
 {
 	xfree(msg);
 }
 
-void inline slurm_free_srun_user_msg(srun_user_msg_t * user_msg)
+inline void slurm_free_srun_user_msg(srun_user_msg_t * user_msg)
 {
 	if (user_msg) {
 		xfree(user_msg->msg);
@@ -797,7 +797,7 @@ void inline slurm_free_srun_user_msg(srun_user_msg_t * user_msg)
 	}
 }
 
-void inline slurm_free_checkpoint_msg(checkpoint_msg_t *msg)
+inline void slurm_free_checkpoint_msg(checkpoint_msg_t *msg)
 {
 	if (msg) {
 		xfree(msg->image_dir);
@@ -805,7 +805,7 @@ void inline slurm_free_checkpoint_msg(checkpoint_msg_t *msg)
 	}
 }
 
-void inline slurm_free_checkpoint_comp_msg(checkpoint_comp_msg_t *msg)
+inline void slurm_free_checkpoint_comp_msg(checkpoint_comp_msg_t *msg)
 {
 	if (msg) {
 		xfree(msg->error_msg);
@@ -813,7 +813,7 @@ void inline slurm_free_checkpoint_comp_msg(checkpoint_comp_msg_t *msg)
 	}
 }
 
-void inline slurm_free_checkpoint_task_comp_msg(checkpoint_task_comp_msg_t *msg)
+inline void slurm_free_checkpoint_task_comp_msg(checkpoint_task_comp_msg_t *msg)
 {
 	if (msg) {
 		xfree(msg->error_msg);
@@ -821,14 +821,14 @@ void inline slurm_free_checkpoint_task_comp_msg(checkpoint_task_comp_msg_t *msg)
 	}
 }
 
-void inline slurm_free_checkpoint_resp_msg(checkpoint_resp_msg_t *msg)
+inline void slurm_free_checkpoint_resp_msg(checkpoint_resp_msg_t *msg)
 {
 	if (msg) {
 		xfree(msg->error_msg);
 		xfree(msg);
 	}
 }
-void inline slurm_free_suspend_msg(suspend_msg_t *msg)
+inline void slurm_free_suspend_msg(suspend_msg_t *msg)
 {
 	xfree(msg);
 }
@@ -896,7 +896,7 @@ extern char *job_reason_string(enum job_state_reason inx)
 	}
 }
 
-void inline slurm_free_get_kvs_msg(kvs_get_msg_t *msg)
+inline void slurm_free_get_kvs_msg(kvs_get_msg_t *msg)
 {
 	if (msg) {
 		xfree(msg->hostname);
@@ -904,7 +904,7 @@ void inline slurm_free_get_kvs_msg(kvs_get_msg_t *msg)
 	}
 }
 
-void inline slurm_free_will_run_response_msg(will_run_response_msg_t *msg)
+inline void slurm_free_will_run_response_msg(will_run_response_msg_t *msg)
 {
         if (msg) {
                 xfree(msg->node_list);
@@ -1056,7 +1056,7 @@ char *job_state_string_compact(uint16_t inx)
 	}
 }
 
-static inline bool _job_name_test(int state_num, const char *state_name)
+inline static bool _job_name_test(int state_num, const char *state_name)
 {
 	if (!strcasecmp(state_name, job_state_string(state_num)) ||
 	    !strcasecmp(state_name, job_state_string_compact(state_num))) {
@@ -2006,12 +2006,12 @@ extern void slurm_free_block_info_msg(block_info_msg_t *block_info_msg)
 	}
 }
 
-void inline slurm_free_block_info_request_msg(
+inline void slurm_free_block_info_request_msg(
 	block_info_request_msg_t *msg)
 {
 	xfree(msg);
 }
-void inline slurm_free_trigger_msg(trigger_info_msg_t *msg)
+inline void slurm_free_trigger_msg(trigger_info_msg_t *msg)
 {
 	int i;
 
@@ -2028,7 +2028,7 @@ void slurm_free_set_debug_level_msg(set_debug_level_msg_t *msg)
 	xfree(msg);
 }
 
-void inline slurm_destroy_association_shares_object(void *object)
+inline void slurm_destroy_association_shares_object(void *object)
 {
 	association_shares_object_t *obj_ptr =
 		(association_shares_object_t *)object;
@@ -2041,7 +2041,7 @@ void inline slurm_destroy_association_shares_object(void *object)
 	}
 }
 
-void inline slurm_free_shares_request_msg(shares_request_msg_t *msg)
+inline void slurm_free_shares_request_msg(shares_request_msg_t *msg)
 {
 	if(msg) {
 		if(msg->acct_list)
@@ -2052,7 +2052,7 @@ void inline slurm_free_shares_request_msg(shares_request_msg_t *msg)
 	}
 }
 
-void inline slurm_free_shares_response_msg(shares_response_msg_t *msg)
+inline void slurm_free_shares_response_msg(shares_response_msg_t *msg)
 {
 	if(msg) {
 		if(msg->assoc_shares_list)
@@ -2061,14 +2061,14 @@ void inline slurm_free_shares_response_msg(shares_response_msg_t *msg)
 	}
 }
 
-void inline slurm_destroy_priority_factors_object(void *object)
+inline void slurm_destroy_priority_factors_object(void *object)
 {
 	priority_factors_object_t *obj_ptr =
 		(priority_factors_object_t *)object;
 	xfree(obj_ptr);
 }
 
-void inline slurm_free_priority_factors_request_msg(
+inline void slurm_free_priority_factors_request_msg(
 	priority_factors_request_msg_t *msg)
 {
 	if(msg) {
@@ -2080,7 +2080,7 @@ void inline slurm_free_priority_factors_request_msg(
 	}
 }
 
-void inline slurm_free_priority_factors_response_msg(
+inline void slurm_free_priority_factors_response_msg(
 	priority_factors_response_msg_t *msg)
 {
 	if(msg) {
@@ -2091,7 +2091,7 @@ void inline slurm_free_priority_factors_response_msg(
 }
 
 
-void inline slurm_free_accounting_update_msg(accounting_update_msg_t *msg)
+inline void slurm_free_accounting_update_msg(accounting_update_msg_t *msg)
 {
 	if(msg) {
 		if(msg->update_list)
@@ -2323,7 +2323,7 @@ extern uint32_t slurm_get_return_code(slurm_msg_type_t type, void *data)
 	return rc;
 }
 
-void inline slurm_free_job_notify_msg(job_notify_msg_t * msg)
+inline void slurm_free_job_notify_msg(job_notify_msg_t * msg)
 {
 	if (msg) {
 		xfree(msg->message);
