@@ -40,10 +40,6 @@
 #include "dist_tasks.h"
 
 #if(0)
-#define CR_DEBUG 1
-#endif
-
-#if(0)
 /* Using CR_SOCKET or CR_SOCKET_MEMORY will not allocate a socket to more
  * than one job at a time, but it also will not grant a job access to more
  * CPUs on the socket than requested. If ALLOCATE_FULL_SOCKET is defined,
@@ -450,11 +446,14 @@ static void _cyclic_sync_core_bitmap(struct job_record *job_ptr,
 		sockets = select_node_record[n].sockets;
 		cps     = select_node_record[n].cores;
 		vpus    = MIN(select_node_record[n].vpus, ntasks_per_core);
-#ifdef CR_DEBUG
-		info("DEBUG: job %u node %s vpus %u cpus %u",
-		     job_ptr->job_id, select_node_record[n].node_ptr->name,
-		     vpus, job_res->cpus[i]);
-#endif
+
+		if (select_debug_flags & DEBUG_FLAG_CPU_BIND) {
+			info("DEBUG: job %u node %s vpus %u cpus %u",
+			     job_ptr->job_id,
+			     select_node_record[n].node_ptr->name,
+			     vpus, job_res->cpus[i]);
+		}
+
 		if ((c + (sockets * cps)) > csize)
 			fatal("cons_res: _cyclic_sync_core_bitmap index error");
 
