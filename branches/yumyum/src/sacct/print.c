@@ -349,6 +349,42 @@ void print_fields(type_t type, void *object)
 					     tmp_int,
 					     (curr_inx == field_count));
 			break;
+		case PRINT_DERIVED_EC:
+			tmp_int = 0;
+			tmp_int2 = 0;
+			switch(type) {
+			case JOB:
+				tmp_int = job->derived_ec;
+				break;
+			case JOBSTEP:
+			case JOBCOMP:
+			default:
+				break;
+			}
+			if (WIFSIGNALED(tmp_int))
+				tmp_int2 = WTERMSIG(tmp_int);
+
+			snprintf(outbuf, sizeof(outbuf), "%d:%d",
+				 WEXITSTATUS(tmp_int), tmp_int2);
+
+			field->print_routine(field,
+					     outbuf,
+					     (curr_inx == field_count));
+			break;
+		case PRINT_DERIVED_ES:
+			switch(type) {
+			case JOB:
+				tmp_char = job->derived_es;
+				break;
+			case JOBSTEP:
+			case JOBCOMP:
+			default:
+				break;
+			}
+			field->print_routine(field,
+					     tmp_char,
+					     (curr_inx == field_count));
+			break;
 		case PRINT_ELAPSED:
 			switch(type) {
 			case JOB:

@@ -244,11 +244,11 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	/****** Line 5a (optional) ******/
 	if (!(job_ptr->show_flags & SHOW_DETAIL))
 		goto line6;
-	if (WIFSIGNALED(job_ptr->derived_exit_code))
-		term_sig = WTERMSIG(job_ptr->derived_exit_code);
+	if (WIFSIGNALED(job_ptr->derived_ec))
+		term_sig = WTERMSIG(job_ptr->derived_ec);
 	else
 		term_sig = 0;
-	exit_status = WEXITSTATUS(job_ptr->derived_exit_code);
+	exit_status = WEXITSTATUS(job_ptr->derived_ec);
 	snprintf(tmp_line, sizeof(tmp_line),
 		 "DerivedExitCode=%u:%u", exit_status, term_sig);
 	xstrcat(out, tmp_line);

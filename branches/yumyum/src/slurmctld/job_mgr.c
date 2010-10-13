@@ -725,7 +725,7 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	pack32(dump_job_ptr->total_nodes, buffer);
 	pack32(dump_job_ptr->cpu_cnt, buffer);
 	pack32(dump_job_ptr->exit_code, buffer);
-	pack32(dump_job_ptr->derived_exit_code, buffer);
+	pack32(dump_job_ptr->derived_ec, buffer);
 	pack32(dump_job_ptr->db_index, buffer);
 	pack32(dump_job_ptr->assoc_id, buffer);
 	pack32(dump_job_ptr->resv_id, buffer);
@@ -818,7 +818,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	uint32_t job_id, user_id, group_id, time_limit, priority, alloc_sid;
 	uint32_t exit_code, assoc_id, db_index, name_len, time_min;
 	uint32_t next_step_id, total_cpus, total_nodes = 0, cpu_cnt;
-	uint32_t resv_id, spank_job_env_size = 0, qos_id, derived_exit_code = 0;
+	uint32_t resv_id, spank_job_env_size = 0, qos_id, derived_ec = 0;
 	time_t start_time, end_time, suspend_time, pre_sus_time, tot_sus_time;
 	time_t resize_time = 0, now = time(NULL);
 	uint16_t job_state, details, batch_flag, step_flag;
@@ -875,7 +875,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		safe_unpack32(&total_nodes, buffer);
 		safe_unpack32(&cpu_cnt, buffer);
 		safe_unpack32(&exit_code, buffer);
-		safe_unpack32(&derived_exit_code, buffer);
+		safe_unpack32(&derived_ec, buffer);
 		safe_unpack32(&db_index, buffer);
 		safe_unpack32(&assoc_id, buffer);
 		safe_unpack32(&resv_id, buffer);
@@ -1169,7 +1169,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	job_ptr->gres_list    = gres_list;
 	job_ptr->direct_set_prio = direct_set_prio;
 	job_ptr->db_index     = db_index;
-	job_ptr->derived_exit_code = derived_exit_code;
+	job_ptr->derived_ec   = derived_ec;
 	job_ptr->end_time     = end_time;
 	job_ptr->exit_code    = exit_code;
 	job_ptr->group_id     = group_id;
@@ -3936,7 +3936,7 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	job_ptr->other_port = job_desc->other_port;
 	job_ptr->time_last_active = time(NULL);
 	job_ptr->cr_enabled = 0;
-	job_ptr->derived_exit_code = 0;
+	job_ptr->derived_ec = 0;
 
 	job_ptr->licenses  = xstrdup(job_desc->licenses);
 	job_ptr->mail_type = job_desc->mail_type;
@@ -4858,7 +4858,7 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 		packstr(dump_job_ptr->resv_name, buffer);
 
 		pack32(dump_job_ptr->exit_code, buffer);
-		pack32(dump_job_ptr->derived_exit_code, buffer);
+		pack32(dump_job_ptr->derived_ec, buffer);
 
 		if (show_flags & SHOW_DETAIL) {
 			pack_job_resources(dump_job_ptr->job_resrcs, buffer,

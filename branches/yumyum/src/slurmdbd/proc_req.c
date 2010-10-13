@@ -1821,6 +1821,7 @@ static int  _job_complete(slurmdbd_conn_t *slurmdbd_conn,
 
 	job.assoc_id = job_comp_msg->assoc_id;
 	job.db_index = job_comp_msg->db_index;
+	job.derived_ec = job_comp_msg->derived_ec;
 	job.end_time = job_comp_msg->end_time;
 	job.exit_code = job_comp_msg->exit_code;
 	job.job_id = job_comp_msg->job_id;

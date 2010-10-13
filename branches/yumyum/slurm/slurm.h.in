@@ -997,7 +997,7 @@ typedef struct job_info {
 	uint16_t cpus_per_task;	/* number of processors required for
 				 * each task */
 	char *dependency;	/* syncrhonize job execution with other jobs */
-	uint32_t derived_exit_code;/* highest exit code of all job steps */
+	uint32_t derived_ec;	/* highest exit code of all job steps */
 	time_t eligible_time;	/* time job is eligible for running */
 	time_t end_time;	/* time of termination, actual or expected */
 	char *exc_nodes;	/* comma separated list of excluded nodes */

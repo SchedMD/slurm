@@ -437,8 +437,8 @@ sacct [<OPTION>]                                                            \n\
                    restriction.                                             \n\
      -l, --long:                                                            \n\
 	           Equivalent to specifying                                 \n\
-	           '--fields=jobid,jobname,partition,maxvsize,maxvsizenode, \n\
-                             maxvsizetask,avevsize,maxrss,maxrssnode,       \n\
+	           '--format=jobid,jobname,partition,maxvmsize,maxvmsizenode,\n\
+                             maxvmsizetask,avevmsize,maxrss,maxrssnode,     \n\
                              maxrsstask,averss,maxpages,maxpagesnode,       \n\
                              maxpagestask,avepages,mincpu,mincpunode,       \n\
                              mincputask,avecpu,ntasks,alloccpus,elapsed,    \n\

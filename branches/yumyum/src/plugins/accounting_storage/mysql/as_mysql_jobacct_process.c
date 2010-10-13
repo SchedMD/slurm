@@ -54,73 +54,77 @@ typedef struct {
 /* if this changes you will need to edit the corresponding
  * enum below also t1 is job_table */
 char *job_req_inx[] = {
-	"t1.job_db_inx",
-	"t1.id_job",
-	"t1.id_assoc",
-	"t1.wckey",
-	"t1.id_wckey",
-	"t1.id_user",
-	"t1.id_group",
-	"t1.id_resv",
-	"t1.id_qos",
-	"t1.partition",
-	"t1.id_block",
 	"t1.account",
+	"t1.cpus_alloc",
+	"t1.cpus_req",
+	"t1.derived_ec",
+	"t1.derived_es",
+	"t1.exit_code",
+	"t1.id_assoc",
+	"t1.id_block",
+	"t1.id_group",
+	"t1.id_job",
+	"t1.id_qos",
+	"t1.id_resv",
+	"t1.id_user",
+	"t1.id_wckey",
+	"t1.job_db_inx",
+	"t1.job_name",
+	"t1.kill_requid",
+	"t1.node_inx",
+	"t1.nodelist",
+	"t1.nodes_alloc",
+	"t1.partition",
+	"t1.priority",
+	"t1.state",
 	"t1.time_eligible",
-	"t1.time_submit",
-	"t1.time_start",
 	"t1.time_end",
+	"t1.time_start",
+	"t1.time_submit",
 	"t1.time_suspended",
 	"t1.timelimit",
-	"t1.job_name",
 	"t1.track_steps",
-	"t1.state",
-	"t1.exit_code",
-	"t1.priority",
-	"t1.cpus_req",
-	"t1.cpus_alloc",
-	"t1.nodes_alloc",
-	"t1.nodelist",
-	"t1.node_inx",
-	"t1.kill_requid",
-	"t2.user",
+	"t1.wckey",
 	"t2.acct",
-	"t2.lft"
+	"t2.lft",
+	"t2.user"
 };
 
 enum {
-	JOB_REQ_ID,
-	JOB_REQ_JOBID,
-	JOB_REQ_ASSOCID,
-	JOB_REQ_WCKEY,
-	JOB_REQ_WCKEYID,
-	JOB_REQ_UID,
-	JOB_REQ_GID,
-	JOB_REQ_RESVID,
-	JOB_REQ_QOS,
-	JOB_REQ_PARTITION,
-	JOB_REQ_BLOCKID,
 	JOB_REQ_ACCOUNT1,
+	JOB_REQ_ALLOC_CPUS,
+	JOB_REQ_REQ_CPUS,
+	JOB_REQ_DERIVED_EC,
+	JOB_REQ_DERIVED_ES,
+	JOB_REQ_EXIT_CODE,
+	JOB_REQ_ASSOCID,
+	JOB_REQ_BLOCKID,
+	JOB_REQ_GID,
+	JOB_REQ_JOBID,
+	JOB_REQ_QOS,
+	JOB_REQ_RESVID,
+	JOB_REQ_UID,
+	JOB_REQ_WCKEYID,
+	JOB_REQ_ID,
+	JOB_REQ_NAME,
+	JOB_REQ_KILL_REQUID,
+	JOB_REQ_NODE_INX,
+	JOB_REQ_NODELIST,
+	JOB_REQ_ALLOC_NODES,
+	JOB_REQ_PARTITION,
+	JOB_REQ_PRIORITY,
+	JOB_REQ_STATE,
 	JOB_REQ_ELIGIBLE,
-	JOB_REQ_SUBMIT,
-	JOB_REQ_START,
 	JOB_REQ_END,
+	JOB_REQ_START,
+	JOB_REQ_SUBMIT,
 	JOB_REQ_SUSPENDED,
 	JOB_REQ_TIMELIMIT,
-	JOB_REQ_NAME,
 	JOB_REQ_TRACKSTEPS,
-	JOB_REQ_STATE,
-	JOB_REQ_COMP_CODE,
-	JOB_REQ_PRIORITY,
-	JOB_REQ_REQ_CPUS,
-	JOB_REQ_ALLOC_CPUS,
-	JOB_REQ_ALLOC_NODES,
-	JOB_REQ_NODELIST,
-	JOB_REQ_NODE_INX,
-	JOB_REQ_KILL_REQUID,
-	JOB_REQ_USER_NAME,
+	JOB_REQ_WCKEY,
 	JOB_REQ_ACCOUNT,
 	JOB_REQ_LFT,
+	JOB_REQ_USER_NAME,
 	JOB_REQ_COUNT
 };
 
@@ -173,7 +177,7 @@ enum {
 	STEP_REQ_NODE_INX,
 	STEP_REQ_STATE,
 	STEP_REQ_KILL_REQUID,
-	STEP_REQ_COMP_CODE,
+	STEP_REQ_EXIT_CODE,
 	STEP_REQ_NODES,
 	STEP_REQ_CPUS,
 	STEP_REQ_TASKS,
@@ -571,7 +575,9 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 		job->jobid = curr_id;
 		job->jobname = xstrdup(row[JOB_REQ_NAME]);
 		job->gid = atoi(row[JOB_REQ_GID]);
-		job->exitcode = atoi(row[JOB_REQ_COMP_CODE]);
+		job->exitcode = atoi(row[JOB_REQ_EXIT_CODE]);
+		job->derived_ec = atoi(row[JOB_REQ_DERIVED_EC]);
+		job->derived_es = xstrdup(row[JOB_REQ_DERIVED_ES]);
 
 		if(row[JOB_REQ_PARTITION])
 			job->partition = xstrdup(row[JOB_REQ_PARTITION]);
@@ -665,7 +671,7 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 			/* info("got step %u.%u", */
 /* 			     job->header.jobnum, step->stepnum); */
 			step->state = atoi(step_row[STEP_REQ_STATE]);
-			step->exitcode = atoi(step_row[STEP_REQ_COMP_CODE]);
+			step->exitcode = atoi(step_row[STEP_REQ_EXIT_CODE]);
 			step->ncpus = atoi(step_row[STEP_REQ_CPUS]);
 			step->nnodes = atoi(step_row[STEP_REQ_NODES]);
 

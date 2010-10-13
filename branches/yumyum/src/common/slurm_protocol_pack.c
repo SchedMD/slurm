@@ -3651,7 +3651,7 @@ _unpack_job_info_members(job_info_t * job, Buf buffer,
 		safe_unpackstr_xmalloc(&job->resv_name,  &uint32_tmp, buffer);
 
 		safe_unpack32(&job->exit_code, buffer);
-		safe_unpack32(&job->derived_exit_code, buffer);
+		safe_unpack32(&job->derived_ec, buffer);
 		unpack_job_resources(&job->job_resrcs, buffer,
 				     protocol_version);
 

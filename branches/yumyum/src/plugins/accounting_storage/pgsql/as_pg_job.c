@@ -695,11 +695,12 @@ js_pg_job_complete(pgsql_conn_t *pg_conn,
 	if (_check_job_db_index(pg_conn, job_ptr) != SLURM_SUCCESS)
 		return SLURM_SUCCESS;
 
-	query = xstrdup_printf("UPDATE %s SET endtime=%ld, state=%d, "
-			       "nodelist='%s', comp_code=%d, "
-			       "kill_requid=%d WHERE id=%d",
-			       job_table, end_time, job_state,
-			       nodes, job_ptr->exit_code,
+	query = xstrdup_printf("UPDATE %s SET "
+			       "endtime=%ld, state=%d, nodelist='%s', "
+			       "derived_ec=%d, comp_code=%d, "
+			       "kill_requid=%d WHERE id=%d", job_table,
+			       end_time, job_state, nodes,
+			       job_ptr->derived_ec, job_ptr->exit_code,
 			       job_ptr->requid, job_ptr->db_index);
 	rc = DEF_QUERY_RET_RC;
 	return  rc;

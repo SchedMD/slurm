@@ -874,6 +874,8 @@ extern int create_cluster_tables(MYSQL *db_conn, char *cluster_name)
 		{ "account", "tinytext" },
 		{ "cpus_req", "int unsigned not null" },
 		{ "cpus_alloc", "int unsigned not null" },
+		{ "derived_ec", "int default 0 not null" },
+		{ "derived_es", "text" },
 		{ "exit_code", "int default 0 not null" },
 		{ "job_name", "tinytext not null" },
 		{ "id_assoc", "int unsigned not null" },
