@@ -39,6 +39,7 @@
 #include "sview.h"
 #include "src/plugins/select/bluegene/plugin/bluegene.h"
 #define TOPO_DEBUG 0
+#define RESET_GRID -2
 List grid_button_list = NULL;
 List blinking_button_list = NULL;
 List multi_button_list = NULL;
@@ -50,6 +51,8 @@ char *sview_colors[] = {"#0000FF", "#00FF00", "#00FFFF", "#FFFF00",
 			"#8B6914", "#18A24E", "#F827FC", "#B8A40C"};
 char *blank_color = "#919191";
 char *white_color = "#FFFFFF";
+char *topo1_color = "honeydew"; //"seashell";DarkTurquoise
+char *topo2_color = "gray94";//honeydew";
 
 int sview_colors_cnt = 20;
 
@@ -68,6 +71,7 @@ typedef struct {
 	int *inx;
 	GtkTable *table;
 	int table_y;
+	bool force_row_break;
 } button_processor_t;
 
 GStaticMutex blinking_mutex = G_STATIC_MUTEX_INIT;
@@ -412,11 +416,7 @@ static void _each_highlightd(GtkTreeModel *model,
 		/*For multiple selections, need to retain all selected.
 		 *(previously this assumed only one selected).
 		 */
-//		-how to add base of displayed button ?
-//		-need to get initial start indx (e.g. 100) from its partition
-//		get_nodes_partitioned_base.?
-//				OR
-//			just highlite always by active partition..
+
 		if((node_inx[j] < 0)
 		   || (grid_button->inx < node_inx[j])
 		   || (grid_button->inx > node_inx[j+1]))
@@ -451,12 +451,16 @@ static void _each_highlight_selected(GtkTreeModel *model,
 				     GtkTreeIter *iter,
 				     gpointer userdata)
 {
+
 	grid_button_t *grid_button = NULL;
 	int node_inx = 0;
+	bool speedup_break = TRUE;
 	grid_foreach_t *grid_foreach = userdata;
 	ListIterator itr = NULL;
 
 	xassert(grid_foreach);
+	if(working_sview_config.grid_topological)
+		speedup_break = FALSE;
 
 	gtk_tree_model_get(model, iter, grid_foreach->node_inx_id,
 			   &node_inx, -1);
@@ -474,8 +478,13 @@ static void _each_highlight_selected(GtkTreeModel *model,
 			 != GTK_STATE_NORMAL) {
 			gtk_widget_set_state(grid_button->button,
 					     GTK_STATE_NORMAL);
+			change_grid_color(grid_button_list, grid_button->inx,
+					  grid_button->inx,
+					  grid_button->inx, true, 0);
 		}
-		break;
+		if (speedup_break)
+			break;
+		speedup_break = TRUE; //allow for secondary grid button
 	}
 	list_iterator_destroy(itr);
 	return;
@@ -649,6 +658,15 @@ static int _add_button_to_list(node_info_t *node_ptr,
 					(*button_processor->coord_y)-1, 5);
 		}
 
+		if (button_processor->force_row_break) {
+			(*button_processor->coord_x) = 0;
+			(*button_processor->coord_y)+= 2;
+			gtk_table_set_row_spacing(button_processor->table,
+						  (*button_processor->coord_y)-1,
+						  5);
+			return SLURM_SUCCESS;
+		}
+
 		if((*button_processor->coord_y) == button_processor->table_y)
 			return SLURM_SUCCESS;
 
@@ -662,38 +680,68 @@ static int _add_button_to_list(node_info_t *node_ptr,
 	return SLURM_SUCCESS;
 }
 
-static int _grid_table_by_switch(button_processor_t *button_processor)
+static int _grid_table_by_switch(button_processor_t *button_processor,
+				 List node_list)
 {
 	int rc = SLURM_SUCCESS;
-	int i = 0;
+	int inx = 0, ii = 0;
+	button_processor->inx = &inx;
 	switch_record_bitmaps_t *sw_nodes_bitmaps_ptr = g_switch_nodes_maps;
 
-	for (i=0; i<g_topo_info_msg_ptr->record_count;
-	     i++, sw_nodes_bitmaps_ptr++) {
+	/* engage if want original
+	ListIterator itr = list_iterator_create(node_list);
+	sview_node_info_t *sview_node_info_ptr = NULL;
+	* display below switched
+	 */
+	for (ii=0; ii<g_topo_info_msg_ptr->record_count;
+	     ii++, sw_nodes_bitmaps_ptr++) {
 		int j = 0, first, last;
-		if (g_topo_info_msg_ptr->topo_array[i].level)
+		if (g_topo_info_msg_ptr->topo_array[ii].level)
 			continue;
 		first = bit_ffs(sw_nodes_bitmaps_ptr->node_bitmap);
 		if (first == -1)
 			continue;
 		last = bit_fls(sw_nodes_bitmaps_ptr->node_bitmap);
 		button_processor->inx = &j;
+		button_processor->force_row_break = FALSE;
 		for (j = first; j <= last; j++) {
 			if (TOPO_DEBUG)
 				g_print("allocated node = %s button# %d\n",
 					g_node_info_ptr->node_array[j].name,
 					j);
-			if((rc = _add_button_to_list(
-				    &g_node_info_ptr->node_array[j],
-				    button_processor))
-			   != SLURM_SUCCESS)
+			if (!bit_test(sw_nodes_bitmaps_ptr->node_bitmap, j))
+				continue;
+			if (!working_sview_config.show_hidden) {
+				if(!check_part_includes_node(j))
+					continue;
+			}
+			if (j == last)
+				button_processor->force_row_break = TRUE;
+			if ((rc = _add_button_to_list(
+					&g_node_info_ptr->node_array[j],
+					button_processor)) != SLURM_SUCCESS)
 				break;
+			button_processor->force_row_break = FALSE;
 		}
 		rc = _add_button_to_list(NULL, button_processor);
 	}
-	/* This is needed to get the correct width of the grid
-	   window.  If it is not given then we get a really narrow
-	   window. */
+
+	/* engage this if want original display below
+	 * switched grid
+	button_processor->inx = &inx;
+	while ((sview_node_info_ptr = list_next(itr))) {
+		if ((rc = _add_button_to_list(
+			     sview_node_info_ptr->node_ptr,
+			     button_processor)) != SLURM_SUCCESS)
+			break;
+		inx++;
+	}
+	list_iterator_destroy(itr);
+
+	  */
+
+	/* This is needed to get the correct width of the grid window.
+	 * If it is not given then we get a really narrow window. */
 	gtk_table_set_row_spacing(button_processor->table,
 				  (*button_processor->coord_y)-1, 1);
 
@@ -705,18 +753,13 @@ static int _grid_table_by_list(button_processor_t *button_processor,
 			       List node_list)
 {
 	sview_node_info_t *sview_node_info_ptr = NULL;
-	static partition_info_msg_t *part_info_ptr = NULL;
 	int inx = 0, rc = SLURM_SUCCESS;
-	int exclude_partitions =
-		strcmp(working_sview_config.excluded_partitions, "-");
 	ListIterator itr = list_iterator_create(node_list);
 	button_processor->inx = &inx;
 
 	while ((sview_node_info_ptr = list_next(itr))) {
-		if (exclude_partitions) {
-			get_new_info_part(&part_info_ptr, force_refresh);
-			if(part_info_ptr
-			   && !check_part_includes_node(part_info_ptr, inx)) {
+		if (!working_sview_config.show_hidden) {
+			if (!check_part_includes_node(inx)) {
 				inx++;
 				continue;
 			}
@@ -772,6 +815,8 @@ static int _init_button_processor(button_processor_t *button_processor,
 		button_processor->table_y =
 			(node_count / working_sview_config.grid_x_width) + 1;
 	}
+
+	button_processor->force_row_break = FALSE;
 
 	return SLURM_SUCCESS;
 }
@@ -905,12 +950,16 @@ extern char *change_grid_color(List button_list, int start, int end,
 	if(!button_list)
 		return NULL;
 
-	if(color_inx >= 0) {
+	if (color_inx >= 0) {
 		color_inx %= sview_colors_cnt;
 		new_col = sview_colors[color_inx];
-	} else if(color_inx == MAKE_BLACK)
+	} else if (color_inx == MAKE_BLACK) {
 		new_col = blank_color;
-	else
+	} else if (color_inx == MAKE_TOPO_1) {
+		new_col = topo1_color;
+	} else if (color_inx == MAKE_TOPO_2) {
+		new_col = topo2_color;
+	} else
 		new_col = white_color;
 
 	gdk_color_parse(new_col, &color);
@@ -1292,11 +1341,8 @@ extern int update_grid_table(GtkTable *table, List button_list, List node_list)
 	int rc = SLURM_SUCCESS;
 	int coord_x=0, coord_y=0, inx=0;
 	ListIterator itr = NULL, itr2 = NULL;
-	static partition_info_msg_t *part_info_ptr = NULL;
 	sview_node_info_t *sview_node_info_ptr = NULL;
 	button_processor_t button_processor;
-	int exclude_partitions =
-		strcmp(working_sview_config.excluded_partitions, "-");
 
 	if (!node_list) {
 		g_print("update_grid_table: no node_list given\n");
@@ -1319,20 +1365,20 @@ extern int update_grid_table(GtkTable *table, List button_list, List node_list)
 	gtk_table_set_col_spacings(table, 0);
 	itr = list_iterator_create(node_list);
 	itr2 = list_iterator_create(button_list);
+
 	while ((sview_node_info_ptr = list_next(itr))) {
 		int found = 0;
-		if (exclude_partitions) {
-			get_new_info_part(&part_info_ptr, force_refresh);
-			if(part_info_ptr
-			   && !check_part_includes_node(part_info_ptr, inx)) {
+		if (!working_sview_config.show_hidden) {
+			if(!check_part_includes_node(inx)) {
 				inx++;
 				continue;
 			}
 		}
-	again:
+//	again:
 		while ((button_processor.grid_button = list_next(itr2))) {
-			if (button_processor.grid_button->inx != inx)
+			if (button_processor.grid_button->inx != inx) {
 				continue;
+			}
 			found = 1;
 
 			if ((rc = _add_button_to_list(
@@ -1342,8 +1388,9 @@ extern int update_grid_table(GtkTable *table, List button_list, List node_list)
 			break;
 		}
 		if(!found) {
-			list_iterator_reset(itr2);
-			goto again;
+			//list_iterator_reset(itr2);
+			//goto again;
+			return RESET_GRID;
 		}
 		inx++;
 	}
@@ -1372,12 +1419,21 @@ extern int get_system_stats(GtkTable *table)
 		changed = 0;
 	} else if (rc != SLURM_SUCCESS)
 		return SLURM_ERROR;
-
 	ba_init(node_info_ptr, 0);
 
-	node_list = create_node_info_list(node_info_ptr, changed, FALSE);
-	if(grid_button_list)
-		update_grid_table(main_grid_table, grid_button_list, node_list);
+	node_list = create_node_info_list(node_info_ptr,
+			changed, FALSE);
+	if (grid_button_list) {
+		rc = update_grid_table(main_grid_table, grid_button_list,
+				       node_list);
+		if (rc == RESET_GRID) {
+			list_destroy(grid_button_list);
+			grid_button_list = NULL;
+			grid_button_list = list_create(destroy_grid_button);
+			setup_grid_table(main_grid_table, grid_button_list,
+					 node_list);
+		}
+	}
 	else {
 		grid_button_list = list_create(destroy_grid_button);
 		setup_grid_table(main_grid_table, grid_button_list, node_list);
@@ -1412,7 +1468,7 @@ extern int setup_grid_table(GtkTable *table, List button_list, List node_list)
 			 working_sview_config.grid_x_width);
 
 	if (default_sview_config.grid_topological && g_topo_info_msg_ptr)
-		rc = _grid_table_by_switch(&button_processor);
+		rc = _grid_table_by_switch(&button_processor, node_list);
 	else
 		rc = _grid_table_by_list(&button_processor, node_list);
 

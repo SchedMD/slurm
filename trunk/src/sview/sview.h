@@ -92,6 +92,8 @@
 #define POS_LOC 0
 #define DEFAULT_ENTRY_LENGTH 500
 
+#define MAKE_TOPO_1 -6
+#define MAKE_TOPO_2 -5
 #define MAKE_INIT -4
 #define MAKE_DOWN -3
 #define MAKE_BLACK -2
@@ -154,6 +156,13 @@ typedef enum { SEARCH_JOB_ID = 1,
 	       SEARCH_RESERVATION_NAME,
 } sview_search_type_t;
 
+typedef struct {
+	uint32_t x;
+	uint32_t y;
+	int cntr;
+	int slider;
+} popup_pos_t;
+
 typedef struct  {
 	char *nodes;
 	bitstr_t *node_bitmap;
@@ -177,20 +186,31 @@ typedef struct {
 	bool show_grid;
 	bool grid_topological;
 	bool show_hidden;
+	bool save_tabs_settings;
 	bool ruled_treeview;
 	GtkToggleAction *action_admin;
 	GtkToggleAction *action_grid;
 	GtkToggleAction *action_hidden;
+	GtkToggleAction *action_stabssets;
+	GtkToggleAction *action_gridtopo;
 	GtkToggleAction *action_ruled;
 	GtkRadioAction *action_tab;
 	uint16_t tab_pos;
-	char *excluded_partitions;
 } sview_config_t;
 
+//typedef struct pertabs_options pertab_options_t;
 typedef struct display_data display_data_t;
 typedef struct specific_info specific_info_t;
 typedef struct popup_info popup_info_t;
 typedef struct popup_positioner popup_positioner_t;
+
+typedef struct {
+	char *tab_name;
+	char *option_list;
+	char *def_option_list;
+	display_data_t *display_data ;
+	int count;
+} pertab_options_t;
 
 struct display_data {
 	GType type;
@@ -299,6 +319,8 @@ extern int fini;
 extern ba_system_t *ba_system_ptr;
 extern bool toggled;
 extern bool force_refresh;
+extern bool apply_hidden_change;
+extern bool apply_partition_check;
 extern List popup_list;
 extern List grid_button_list;
 extern List multi_button_list;
@@ -335,6 +357,8 @@ extern job_step_info_response_msg_t *g_step_info_ptr;
 extern topo_info_response_msg_t *g_topo_info_msg_ptr;
 extern switch_record_bitmaps_t *g_switch_nodes_maps;
 extern popup_positioner_t main_popup_positioner[];
+extern popup_pos_t popup_pos;
+extern pertab_options_t *g_ptabs_o_ptr;
 
 extern void init_grid(node_info_msg_t *node_info_ptr);
 extern int set_grid(int start, int end, int count);
@@ -390,8 +414,8 @@ extern void setup_popup_grid_list(popup_info_t *popup_win);
 extern void post_setup_popup_grid_list(popup_info_t *popup_win);
 
 // part_info.c
-extern bool check_part_includes_node(partition_info_msg_t *part_info_ptr,
-				     int node_dx);
+extern bool visible_part(char* part_name);
+extern bool check_part_includes_node(int node_dx);
 extern void refresh_part(GtkAction *action, gpointer user_data);
 extern GtkListStore *create_model_part(int type);
 extern void admin_edit_part(GtkCellRendererText *cell,
@@ -408,6 +432,15 @@ extern void select_admin_partitions(GtkTreeModel *model, GtkTreeIter *iter,
 				    GtkTreeView *treeview);
 extern void admin_part(GtkTreeModel *model, GtkTreeIter *iter, char *type);
 extern void cluster_change_part();
+
+// accnt_info.c
+extern void refresh_accnt(GtkAction *action, gpointer user_data);
+extern GtkListStore *create_model_accnt(int type);
+extern void admin_edit_accnt(GtkCellRendererText *cell,
+			     const char *path_string,
+			     const char *new_text,
+			     gpointer data);
+extern void specific_info_accnt(popup_info_t *popup_win);
 
 // block_info.c
 extern void refresh_block(GtkAction *action, gpointer user_data);
@@ -497,8 +530,13 @@ extern void set_menus_submit(void *arg, void *arg2,
 extern int get_new_info_config(slurm_ctl_conf_info_msg_t **info_ptr);
 
 // common.c
-extern void slurm_free_switch_nodes_maps(switch_record_bitmaps_t
-					 * g_switch_nodes_maps);
+extern char * replspace (char *str);
+extern char * replus (char *str);
+extern char *delstr(char *str, char *orig);
+extern void set_pertab_opts(int tab, display_data_t *display_data,
+			    int count, char* initial_opts);
+extern void free_switch_nodes_maps(switch_record_bitmaps_t
+				   *g_switch_nodes_maps);
 extern int get_topo_conf(void);
 extern int get_row_number(GtkTreeView *tree_view, GtkTreePath *path);
 extern int find_col(display_data_t *display_data, int type);
@@ -588,7 +626,7 @@ extern gboolean entry_changed(GtkWidget *widget, void *msg);
 
 // defaults.c
 extern int load_defaults();
-extern int save_defaults();
+extern int save_defaults(bool final_save);
 extern GtkListStore *create_model_defaults(int type);
 extern int configure_defaults();
 
