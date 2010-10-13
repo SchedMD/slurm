@@ -56,6 +56,8 @@ int fini = 0;
 int grid_init = 0;
 bool toggled = FALSE;
 bool force_refresh = FALSE;
+bool apply_hidden_change = TRUE;
+bool apply_partition_check = FALSE;
 List popup_list = NULL;
 List signal_params_list = NULL;
 int page_running = -1;
@@ -81,6 +83,8 @@ uint32_t cluster_flags;
 int cluster_dims;
 List cluster_list = NULL;
 switch_record_bitmaps_t *g_switch_nodes_maps = NULL;
+popup_pos_t popup_pos;
+pertab_options_t *g_ptabs_o_ptr;
 
 block_info_msg_t *g_block_info_ptr = NULL;
 job_info_msg_t *g_job_info_ptr = NULL;
@@ -366,11 +370,65 @@ static void _set_hidden(GtkToggleAction *action)
 	else
 		tmp = g_strdup_printf(
 			"Hidden partitions and their jobs are now visible");
+	if (apply_hidden_change) {
+		if(grid_button_list) {
+			list_destroy(grid_button_list);
+			grid_button_list = NULL;
+		}
+		get_system_stats(main_grid_table);
+	}
+	apply_hidden_change = TRUE;
+	refresh_main(NULL, NULL);
+	display_edit_note(tmp);
+	g_free(tmp);
+	return;
+}
+
+static void _set_stabbsets(GtkToggleAction *action)
+{
+	char *tmp;
+	if(action)
+		working_sview_config.save_tabs_settings
+			= gtk_toggle_action_get_active(action);
+	if(working_sview_config.save_tabs_settings)
+		tmp = g_strdup_printf(
+			"Save Page Options now ON");
+	else
+		tmp = g_strdup_printf(
+				"Save Page Options now OFF");
 
 	refresh_main(NULL, NULL);
 	display_edit_note(tmp);
 	g_free(tmp);
 	return;
+}
+
+static void _set_topogrid(GtkToggleAction *action)
+{
+	char *tmp;
+	int rc = SLURM_SUCCESS;
+	if(action)
+		working_sview_config.grid_topological
+			= gtk_toggle_action_get_active(action);
+	apply_hidden_change = FALSE;
+	if (working_sview_config.grid_topological) {
+		if(!g_switch_nodes_maps)
+			rc = get_topo_conf();
+		if(rc != SLURM_SUCCESS)
+			/*denied*/
+			tmp = g_strdup_printf(
+				"Valid topology not "
+				"detected");
+		else
+				tmp = g_strdup_printf(
+					"Grid changed to topology "
+					"order");
+
+	}
+		refresh_main(NULL, NULL);
+		display_edit_note(tmp);
+		g_free(tmp);
+		return;
 }
 
 static void _set_ruled(GtkToggleAction *action)
@@ -487,7 +545,7 @@ static void _persist_dynamics()
 	default_sview_config.main_width = g_x;
 	default_sview_config.main_height = g_y;
 
-	save_defaults();
+	save_defaults(true);
 }
 
 static gboolean _delete(GtkWidget *widget,
@@ -570,6 +628,10 @@ static char *_get_ui_description()
 		"    <menu action='options'>"
 		"      <menuitem action='grid'/>"
 		"      <menuitem action='hidden'/>"
+		"      <menuitem action='stabssets'/>"
+#ifdef WANT_TOPO_ON_MAIN_OPTIONS
+		"      <menuitem action='topoorder'/>"
+#endif
 		"      <menuitem action='ruled'/>");
 	if(!(cluster_flags & CLUSTER_FLAG_BG))
 		xstrcat(ui_description,
@@ -721,6 +783,16 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 		{"hidden", GTK_STOCK_SELECT_COLOR, "Show _Hidden",
 		 "<control>h", "Display Hidden Partitions/Jobs",
 		 G_CALLBACK(_set_hidden), working_sview_config.show_hidden},
+		{"stabssets", GTK_STOCK_SELECT_COLOR, "Save Page _Settings",
+		 "<control>w", "Save Page _Settings",
+		 G_CALLBACK(_set_stabbsets),
+		 working_sview_config.save_tabs_settings},
+#ifdef WANT_TOPO_ON_MAIN_OPTIONS
+		 {"topoorder", GTK_STOCK_SELECT_COLOR, "Set Topology Grid",
+		 "<control>t", "Set Topology Grid",
+		 G_CALLBACK(_set_topogrid),
+		 working_sview_config.grid_topological},
+#endif
 		{"ruled", GTK_STOCK_SELECT_COLOR, "R_uled Tables",
 		 "<control>u", "Have ruled tables or not",
 		 G_CALLBACK(_set_ruled), working_sview_config.ruled_treeview},
@@ -809,6 +881,12 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 	default_sview_config.action_hidden =
 		(GtkToggleAction *)gtk_action_group_get_action(
 			menu_action_group, "hidden");
+	default_sview_config.action_stabssets =
+		(GtkToggleAction *)gtk_action_group_get_action(
+			menu_action_group, "stabssets");
+//	default_sview_config.action_gridtopo =
+//		(GtkToggleAction *)gtk_action_group_get_action(
+//			menu_action_group, "topoorder");
 	default_sview_config.action_ruled =
 		(GtkToggleAction *)gtk_action_group_get_action(
 			menu_action_group, "ruled");
@@ -1007,7 +1085,8 @@ extern void _change_cluster_main(GtkComboBox *combo, gpointer extra)
 	if(signal_params_list)
 		list_flush(signal_params_list);
 	if (g_switch_nodes_maps)
-		slurm_free_switch_nodes_maps(g_switch_nodes_maps);
+		free_switch_nodes_maps(g_switch_nodes_maps);
+
 	/* change the node tab name if needed */
 #ifdef GTK2_USE_GET_FOCUS
 	node_tab = gtk_notebook_get_nth_page(

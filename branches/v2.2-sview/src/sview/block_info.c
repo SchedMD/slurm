@@ -85,32 +85,38 @@ enum {
 	SORTID_CNT
 };
 
+/*these are the settings to apply for the user
+ * on the first startup after a fresh slurm install.*/
+static char *_initial_pertab_opts = ",Block ID,JobID,Partition,State";
+
+static bool _set_pertab_opts = FALSE;
+
 static display_data_t display_data_block[] = {
 	{G_TYPE_INT, SORTID_POS, NULL, FALSE, EDIT_NONE, refresh_block,
 	 create_model_block, admin_edit_block},
 	{G_TYPE_STRING, SORTID_BLOCK, "Block ID",
-	 TRUE, EDIT_NONE, refresh_block,
+	 FALSE, EDIT_NONE, refresh_block,
 	 create_model_block, admin_edit_block},
 	{G_TYPE_STRING, SORTID_COLOR, NULL, TRUE, EDIT_COLOR,
 	 refresh_block, create_model_block, admin_edit_block},
-	{G_TYPE_STRING, SORTID_STATE, "State", TRUE, EDIT_MODEL, refresh_block,
+	{G_TYPE_STRING, SORTID_STATE, "State", FALSE, EDIT_MODEL, refresh_block,
 	 create_model_block, admin_edit_block},
-	{G_TYPE_STRING, SORTID_JOB, "JobID", TRUE, EDIT_NONE, refresh_block,
+	{G_TYPE_STRING, SORTID_JOB, "JobID", FALSE, EDIT_NONE, refresh_block,
 	 create_model_block, admin_edit_block},
-	{G_TYPE_STRING, SORTID_USER, "User", TRUE, EDIT_NONE, refresh_block,
+	{G_TYPE_STRING, SORTID_USER, "User", FALSE, EDIT_NONE, refresh_block,
 	 create_model_block, admin_edit_block},
 	{G_TYPE_STRING, SORTID_NODES, "Node Count",
-	 TRUE, EDIT_NONE, refresh_block, create_model_block, admin_edit_block},
+	 FALSE, EDIT_NONE, refresh_block, create_model_block, admin_edit_block},
 	{G_TYPE_STRING, SORTID_CONN, "Connection Type",
 	 FALSE, EDIT_NONE, refresh_block,
 	 create_model_block, admin_edit_block},
-	{G_TYPE_STRING, SORTID_NODELIST, "BP List", TRUE,
+	{G_TYPE_STRING, SORTID_NODELIST, "BP List", FALSE,
 	 EDIT_NONE, refresh_block, create_model_block, admin_edit_block},
 	{G_TYPE_STRING, SORTID_PARTITION, "Partition",
-	 TRUE, EDIT_NONE, refresh_block,
+	 FALSE, EDIT_NONE, refresh_block,
 	 create_model_block, admin_edit_block},
 #ifdef HAVE_BGL
-	{G_TYPE_STRING, SORTID_USE, "Node Use", TRUE, EDIT_NONE, refresh_block,
+	{G_TYPE_STRING, SORTID_USE, "Node Use", FALSE, EDIT_NONE, refresh_block,
 	 create_model_block, admin_edit_block},
 	{G_TYPE_STRING, SORTID_IMAGEBLRTS, "Image Blrts",
 	 FALSE, EDIT_NONE, refresh_block, create_model_block, admin_edit_block},
@@ -911,6 +917,12 @@ extern void get_info_block(GtkTable *table, display_data_t *display_data)
 	ListIterator itr = NULL;
 	sview_block_info_t *sview_block_info_ptr = NULL;
 	GtkTreePath *path = NULL;
+
+	if (!_set_pertab_opts) {
+		set_pertab_opts(BLOCK_PAGE, display_data_block,
+				SORTID_CNT, _initial_pertab_opts);
+		_set_pertab_opts = TRUE;
+	}
 
 	/* reset */
 	if(!table && !display_data) {

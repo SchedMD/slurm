@@ -70,16 +70,24 @@ enum {
  * known options) create it in function create_model_*.
  */
 
+/*these are the settings to apply for the user
+ * on the first startup after a fresh slurm install.
+ * s/b a const probably*/
+static char *_initial_pertab_opts = ",Name,Node Count,NodeList,"
+		"Time Start,Time End,";
+
+static bool _set_pertab_opts = FALSE;
+
 static display_data_t display_data_resv[] = {
 	{G_TYPE_INT, SORTID_POS, NULL, FALSE, EDIT_NONE,
 	 refresh_resv, create_model_resv, admin_edit_resv},
-	{G_TYPE_STRING, SORTID_NAME,       "Name", TRUE, EDIT_NONE,
+	{G_TYPE_STRING, SORTID_NAME,       "Name", FALSE, EDIT_NONE,
 	 refresh_resv, create_model_resv, admin_edit_resv},
 	{G_TYPE_STRING, SORTID_COLOR,      NULL, TRUE, EDIT_COLOR,
 	 refresh_resv, create_model_resv, admin_edit_resv},
 	{G_TYPE_STRING, SORTID_ACTION,     "Action", FALSE, EDIT_MODEL,
 	 refresh_resv, create_model_resv, admin_edit_resv},
-	{G_TYPE_STRING, SORTID_NODE_CNT,   "Node Count", TRUE, EDIT_TEXTBOX,
+	{G_TYPE_STRING, SORTID_NODE_CNT,   "Node Count", FALSE, EDIT_TEXTBOX,
 	 refresh_resv, create_model_resv, admin_edit_resv},
 	{G_TYPE_STRING, SORTID_NODELIST,
 #ifdef HAVE_BG
@@ -87,10 +95,10 @@ static display_data_t display_data_resv[] = {
 #else
 	 "NodeList",
 #endif
-	 TRUE, EDIT_TEXTBOX, refresh_resv, create_model_resv, admin_edit_resv},
-	{G_TYPE_STRING, SORTID_TIME_START, "Time Start", TRUE, EDIT_TEXTBOX,
+	 FALSE, EDIT_TEXTBOX, refresh_resv, create_model_resv, admin_edit_resv},
+	{G_TYPE_STRING, SORTID_TIME_START, "Time Start", FALSE, EDIT_TEXTBOX,
 	 refresh_resv, create_model_resv, admin_edit_resv},
-	{G_TYPE_STRING, SORTID_TIME_END,   "Time End", TRUE, EDIT_TEXTBOX,
+	{G_TYPE_STRING, SORTID_TIME_END,   "Time End", FALSE, EDIT_TEXTBOX,
 	 refresh_resv, create_model_resv, admin_edit_resv},
 	{G_TYPE_STRING, SORTID_DURATION,   "Duration", FALSE, EDIT_TEXTBOX,
 	 refresh_resv, create_model_resv, admin_edit_resv},
@@ -953,6 +961,12 @@ extern void get_info_resv(GtkTable *table, display_data_t *display_data)
 	reserve_info_t *resv_ptr = NULL;
 	time_t now = time(NULL);
 	GtkTreePath *path = NULL;
+
+	if (!_set_pertab_opts) {
+		set_pertab_opts(RESV_PAGE, display_data_resv,
+				SORTID_CNT, _initial_pertab_opts);
+		_set_pertab_opts = TRUE;
+	}
 
 	/* reset */
 	if(!table && !display_data) {

@@ -82,24 +82,18 @@ static void _display_topology(void)
 		g_print("_display_topology,  record_count = %d\n",
 			g_topo_info_msg_ptr->record_count);
 	for (i=0; i<g_topo_info_msg_ptr->record_count; i++) {
-//        g_print("topo_info_msg->topo_array[i]->switches = %s"
-//                " nodes = %s \n",
-//                topo_info_msg->topo_array[i].switches,
-//                topo_info_msg->topo_array[i].nodes);
 
 		if ((g_topo_info_msg_ptr->topo_array[i].nodes == NULL) ||
 		    (g_topo_info_msg_ptr->topo_array[i].nodes[0] == '\0'))
 			continue;
-//        g_print("\nfor switch = %s\n",
-//                        topo_info_msg->topo_array[i].name);
-//        print_node_list(topo_info_msg->topo_array[i].nodes);
+
 		if (g_topo_info_msg_ptr->topo_array[i].level == 0) {
 			hs = hostset_create(g_topo_info_msg_ptr->
 					    topo_array[i].nodes);
 			if (hs == NULL)
 				fatal("hostset_create: memory "
 				      "allocation failure");
-//            match = hostset_within(hs, active_node);
+
 		}
 
 		hostset_destroy(hs);
@@ -135,15 +129,16 @@ static void _foreach_full_info(GtkTreeModel  *model,
 			       gpointer       userdata)
 {
 
-	/*throttle this until safe to
-	 * open up .. some mutex locking snafu
-	 * in the cancel .. OR just drop the cancel..
-	 */
-//    if (list_count(popup_list) < 9) {
         each_t *each = userdata;
         (each->display_data->set_menu)(
 		each->tree_view, NULL, path, FULL_CLICKED);
-//    }
+        popup_pos.x = popup_pos.slider + popup_pos.cntr * 10;
+        popup_pos.y = popup_pos.cntr * 22;
+        popup_pos.cntr++;
+        if (popup_pos.cntr > 10) {
+        	popup_pos.cntr = 1;
+        	popup_pos.slider += 100;
+        }
 
 }
 
@@ -540,7 +535,14 @@ static void _add_col_to_treeview(GtkTreeView *tree_view,
 		gtk_tree_view_column_set_sort_column_id(col, display_data->id);
 		gtk_tree_view_column_set_title(col, display_data->name);
 	}
-	gtk_tree_view_append_column(tree_view, col);
+
+	/*consult llnl
+	 * dpr added this "if" xtra line ..
+	 * without this, you get 2 extra columns
+	 * on the jobs tab ??
+	 * for what reason ?? */
+	if (display_data->name || (display_data->extra == EDIT_COLOR))
+		gtk_tree_view_append_column(tree_view, col);
 }
 
 static void _toggle_state_changed(GtkCheckMenuItem *menuitem,
@@ -635,16 +637,62 @@ static void _selected_page(GtkMenuItem *menuitem, display_data_t *display_data)
 	xfree(treedata);
 }
 
-extern void slurm_free_switch_nodes_maps(switch_record_bitmaps_t
-					 * g_switch_nodes_maps)
+
+extern char * replspace (char *str)
+{
+   int pntr = 0;
+   while (str[pntr]) {
+	   if (str[pntr] == ' ')
+		   str[pntr] = '_';
+	   pntr++;
+   }
+   return str;
+}
+
+extern char * replus (char *str)
+{
+   int pntr = 0;
+    while (str[pntr]) {
+	   if (str[pntr] == '_')
+		   str[pntr] = ' ';
+	   pntr++;
+   }
+   return str;
+}
+
+extern char *delstr(char *str, char *orig)
+{
+  static char buffer[150];
+  char *p;
+
+  if(!(p = strstr(str, orig)))
+    return NULL;
+
+
+  strncpy(buffer, str, p-str);
+  strncpy(buffer+(p-str-1), p+strlen(orig), strlen(str)-(p-str));
+  buffer[strlen(str) - strlen(orig)] = '\0';
+
+  if (_DEBUG)
+  	g_print("delstr: new string <%s>\n", buffer);
+
+  return buffer;
+}
+
+
+extern void free_switch_nodes_maps(switch_record_bitmaps_t
+					 *sw_nodes_bitmaps_ptr)
 {
 
-	if(g_switch_nodes_maps) {
-		xfree(g_switch_nodes_maps->node_bitmap);
-		xfree(g_switch_nodes_maps->nodes);
-		xfree(g_switch_nodes_maps);
+	int i;
+	for (i=0;;i++, sw_nodes_bitmaps_ptr++) {
+		if(!sw_nodes_bitmaps_ptr->node_bitmap)
+			break;
+		bit_free(sw_nodes_bitmaps_ptr->node_bitmap);
+		if(sw_nodes_bitmaps_ptr->node_bitmap)
+			xfree(sw_nodes_bitmaps_ptr->nodes);
 	}
-
+	g_switch_nodes_maps = NULL;
 }
 
 extern int build_nodes_bitmap(char *node_names, bitstr_t **bitmap)
@@ -715,11 +763,11 @@ extern int get_topo_conf(void)
 	}
 
 	if (g_switch_nodes_maps)
-		slurm_free_switch_nodes_maps(g_switch_nodes_maps);
+		free_switch_nodes_maps(g_switch_nodes_maps);
 
 	g_switch_nodes_maps = xmalloc(sizeof
 				      (sw_nodes_bitmaps)
-				      * g_topo_info_msg_ptr->record_count);
+				      *g_topo_info_msg_ptr->record_count);
 	sw_nodes_bitmaps_ptr = g_switch_nodes_maps;
 
 	if (TOPO_DEBUG)
@@ -876,6 +924,49 @@ extern void make_fields_menu(popup_info_t *popup_win, GtkMenu *menu,
 	}
 }
 
+
+extern void set_pertab_opts(int tab, display_data_t *display_data,
+		int count, char* initial_opts)
+{
+	pertab_options_t *ptabs_o_ptr;
+	int i = 0;
+	int j= 0;
+	bool hit = FALSE;
+	if (g_ptabs_o_ptr)
+		ptabs_o_ptr = g_ptabs_o_ptr;
+	else {
+		if (_DEBUG)
+			g_print("set_pertab_opts: no g_ptabs_o_ptr\n");
+		return;
+	}
+	for(i=0; i<PAGE_CNT-4; i++) {
+		if (i == tab) {
+			if(!ptabs_o_ptr->option_list)
+				ptabs_o_ptr->option_list = xstrdup(initial_opts);
+			ptabs_o_ptr->display_data = display_data;
+			ptabs_o_ptr->count = count;
+			for(j=0; j<count; j++) {
+					if(display_data->id == -1)
+						break;
+					if(!display_data->name) {
+						display_data++;
+						continue;
+					}
+					if (strstr(ptabs_o_ptr->option_list,
+							display_data->name)) {
+						display_data->show = TRUE;
+					}
+					display_data++;
+			}
+		}
+		if (hit)
+			break;
+		ptabs_o_ptr++;
+	}
+
+}
+
+
 extern void make_options_menu(GtkTreeView *tree_view, GtkTreePath *path,
 			      GtkMenu *menu, display_data_t *display_data)
 {
@@ -912,30 +1003,12 @@ extern void make_options_menu(GtkTreeView *tree_view, GtkTreePath *path,
 			continue;
 		display_data->user_data = treedata;
 		menuitem = gtk_menu_item_new_with_label(display_data->name);
-		/* do not show FULL Info,etc. as an option for multiple
-		 * selections */
-//		if (global_row_count > 1) {
-//			/*determine how much of the popup items to include*/
-//			/*(this could made be tab specific via a new
-//			 * display field if necessary)*/
-//			if (!strcmp(display_data->name,"Full Info")
-//			    || !strcmp(display_data->name,"Edit Job")
-//			    || !strcmp(display_data->name,"Nodes")
-//			    || !strcmp(display_data->name,"Partition")
-//			    || !strcmp(display_data->name,"Reservation")) {
-//			} else {
-//				g_signal_connect(menuitem, "activate",
-//						 G_CALLBACK(_selected_page),
-//						 display_data);
-//				gtk_menu_shell_append(GTK_MENU_SHELL(menu),
-//						      menuitem);
-//			}
-//		} else {
+
 		g_signal_connect(menuitem, "activate",
 				 G_CALLBACK(_selected_page),
 				 display_data);
 		gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem);
-//		}
+
 	}
 }
 
@@ -1306,7 +1379,10 @@ extern gboolean key_pressed(GtkTreeView *tree_view,
 		each.display_data = signal_params->display_data;
 		global_row_count = gtk_tree_selection_count_selected_rows(
 			gtk_tree_view_get_selection(tree_view));
-
+		popup_pos.x = 10;
+		popup_pos.x = 10;
+		popup_pos.cntr = 1;
+		popup_pos.slider = 0;
 		gtk_tree_selection_selected_foreach(
 			gtk_tree_view_get_selection(tree_view),
 			_foreach_full_info, &each);
@@ -1571,6 +1647,8 @@ extern popup_info_t *create_popup_info(int type, int dest_type, char *title)
 	g_signal_connect(G_OBJECT(popup_win->popup), "configure-event",
 			 G_CALLBACK(_frame_callback),
 			 popup_win);
+	gtk_window_move(GTK_WINDOW(popup_win->popup),
+			popup_pos.x,popup_pos.y);
 	gtk_widget_show_all(popup_win->popup);
 	return popup_win;
 }
@@ -1748,16 +1826,13 @@ extern void *popup_thr(popup_info_t *popup_win)
 	popup_win->running = &running;
 	/* when popup is killed running will be set to 0 */
 	while(running) {
-		//g_print("locked popup_thr\n");
 		gdk_threads_enter();
 		if(!running) {
 			gdk_threads_leave();
 			break;
 		}
 		(specifc_info)(popup_win);
-		//gdk_flush();
 		gdk_threads_leave();
-		//g_print("done popup_thr\n");
 		sleep(working_sview_config.refresh_delay);
 	}
 	return NULL;
