@@ -1298,8 +1298,9 @@ static uint32_t _archive_events(mysql_conn_t *mysql_conn, char *cluster_name,
 }
 
 /* returns sql statement from archived data or NULL on error */
-static char *_load_events(uint16_t rpc_version, Buf buffer,
-			  char *cluster_name, uint32_t rec_cnt)
+static char *
+_load_events(uint16_t rpc_version, Buf buffer, char *cluster_name,
+	     uint32_t rec_cnt)
 {
 	char *insert = NULL, *format = NULL;
 	local_event_t object;

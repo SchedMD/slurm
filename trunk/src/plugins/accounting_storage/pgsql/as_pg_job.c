@@ -41,109 +41,98 @@
 
 char *job_table = "job_table";
 static storage_field_t job_table_fields[] = {
-	{ "id", "SERIAL" },
-	{ "deleted", "INTEGER DEFAULT 0" },
-	{ "jobid", "INTEGER NOT NULL" },
-	{ "associd", "INTEGER NOT NULL" }, /* id in assoc_table is of
-					    * type INTEGER */
-	{ "wckey", "TEXT DEFAULT '' NOT NULL" },
-	{ "wckeyid", "INTEGER NOT NULL" },
+	{ "job_db_inx", "SERIAL" },
+	{ "deleted", "INTEGER DEFAULT 0 NOT NULL" },
+	{ "account", "TEXT" },
+	{ "partition", "TEXT NOT NULL" },
+	{ "cpus_req", "INTEGER NOT NULL" },
+	{ "cpus_alloc", "INTEGER NOT NULL" },
+	{ "exit_code", "INTEGER DEFAULT 0 NOT NULL" },
+	{ "job_name", "TEXT NOT NULL" },
+	{ "id_assoc", "INTEGER NOT NULL" },
+	{ "id_block", "TEXT" },
+	{ "id_job", "INTEGER NOT NULL" },
+	{ "id_qos", "INTEGER DEFAULT 0" },
+	{ "id_resv", "INTEGER NOT NULL" },
+	{ "id_wckey", "INTEGER NOT NULL" },
 	{ "uid", "INTEGER NOT NULL" },
 	{ "gid", "INTEGER NOT NULL" },
-	{ "cluster", "TEXT NOT NULL" },
-	{ "partition", "TEXT NOT NULL" },
-	{ "blockid", "TEXT" },
-	{ "account", "TEXT" },
-	{ "eligible", "INTEGER DEFAULT 0 NOT NULL" },
-	{ "submit", "INTEGER DEFAULT 0 NOT NULL" },
-	{ "start", "INTEGER DEFAULT 0 NOT NULL" },
-	{ "endtime", "INTEGER DEFAULT 0 NOT NULL" }, /* "end" is
-						      * reserved
-						      * keyword in PG
-						      * */
-	{ "suspended", "INTEGER DEFAULT 0 NOT NULL" },
+	{ "kill_requid", "INTEGER DEFAULT -1 NOT NULL" },
 	{ "timelimit", "INTEGER DEFAULT 0 NOT NULL" },
-	{ "name", "TEXT NOT NULL" },
-	{ "track_steps", "INTEGER NOT NULL" },
-	{ "state", "INTEGER NOT NULL" },
-	{ "comp_code", "INTEGER DEFAULT 0 NOT NULL" },
-	{ "priority", "INTEGER NOT NULL" },
-	{ "req_cpus", "INTEGER NOT NULL" },
-	{ "alloc_cpus", "INTEGER NOT NULL" },
-	{ "alloc_nodes", "INTEGER NOT NULL" },
+	{ "time_submit", "INTEGER DEFAULT 0 NOT NULL" },
+	{ "time_eligible", "INTEGER DEFAULT 0 NOT NULL" },
+	{ "time_start", "INTEGER DEFAULT 0 NOT NULL" },
+	{ "time_end", "INTEGER DEFAULT 0 NOT NULL" },
+	{ "time_suspended", "INTEGER DEFAULT 0 NOT NULL" },
+	{ "nodes_alloc", "INTEGER NOT NULL" },
 	{ "nodelist", "TEXT" },
 	{ "node_inx", "TEXT" },
-	{ "kill_requid", "INTEGER DEFAULT -1 NOT NULL" },
-	{ "qos", "INTEGER DEFAULT 0" },
-	{ "resvid", "INTEGER NOT NULL" },
+	{ "priority", "INTEGER NOT NULL" },
+	{ "state", "INTEGER NOT NULL" },
+	{ "wckey", "TEXT DEFAULT '' NOT NULL" },
+	{ "track_steps", "INTEGER NOT NULL" },
 	{ NULL, NULL}
 };
 static char *job_table_constraint = ", "
-	"PRIMARY KEY (id), "
-	"UNIQUE (jobid, associd, submit) "
+	"PRIMARY KEY (job_db_inx), "
+	"UNIQUE (id_job, id_assoc, time_submit) "
 	")";
 
 char *step_table = "step_table";
 static storage_field_t step_table_fields[] = {
-	{ "id", "INTEGER NOT NULL" }, /* REFERENCES job_table */
+	{ "job_db_inx", "INTEGER NOT NULL" }, /* REFERENCES job_table */
 	{ "deleted", "INTEGER DEFAULT 0" },
-	{ "stepid", "INTEGER NOT NULL" },
-	{ "start", "INTEGER DEFAULT 0 NOT NULL" },
-	{ "endtime", "INTEGER DEFAULT 0 NOT NULL" }, /* "end" is
-						      * reserved
-						      * keyword in PG
-						      * */
-	{ "suspended", "INTEGER DEFAULT 0 NOT NULL" },
-	{ "name", "TEXT NOT NULL" },
+	{ "cpus_alloc", "INTEGER NOT NULL" },
+	{ "exit_code", "INTEGER DEFAULT 0 NOT NULL" },
+	{ "id_step", "INTEGER NOT NULL" },
+	{ "kill_requid", "INTEGER DEFAULT -1 NOT NULL" },
 	{ "nodelist", "TEXT NOT NULL" },
+	{ "nodes_alloc", "INTEGER NOT NULL" },
 	{ "node_inx", "TEXT" },
 	{ "state", "INTEGER NOT NULL" },
-	{ "kill_requid", "INTEGER DEFAULT -1 NOT NULL" },
-	{ "comp_code", "INTEGER DEFAULT 0 NOT NULL" },
-	{ "nodes", "INTEGER NOT NULL" },
-	{ "cpus", "INTEGER NOT NULL" },
-	{ "tasks", "INTEGER NOT NULL" },
-	{ "task_dist", "INTEGER DEFAULT 0" },
+	{ "step_name", "TEXT NOT NULL" },
+	{ "task_cnt", "INTEGER NOT NULL" },
+	{ "task_dist", "INTEGER DEFAULT 0 NOT NULL" },
+	{ "time_start", "INTEGER DEFAULT 0 NOT NULL" },
+	{ "time_end", "INTEGER DEFAULT 0 NOT NULL" },
+	{ "time_suspended", "INTEGER DEFAULT 0 NOT NULL" },
 	{ "user_sec", "BIGINT DEFAULT 0 NOT NULL" },
 	{ "user_usec", "BIGINT DEFAULT 0 NOT NULL" },
 	{ "sys_sec", "BIGINT DEFAULT 0 NOT NULL" },
 	{ "sys_usec", "BIGINT DEFAULT 0 NOT NULL" },
-	{ "max_vsize", "INTEGER DEFAULT 0 NOT NULL" },
-	{ "max_vsize_task", "INTEGER DEFAULT 0 NOT NULL" },
-	{ "max_vsize_node", "INTEGER DEFAULT 0 NOT NULL" },
-	/* use "FLOAT" instead of "DOUBLE PRECISION" since only one
-	   identifier supported in make_table_current() */
-	{ "ave_vsize", "FLOAT DEFAULT 0.0 NOT NULL" },
-	{ "max_rss", "INTEGER DEFAULT 0 NOT NULL" },
-	{ "max_rss_task", "INTEGER DEFAULT 0 NOT NULL" },
-	{ "max_rss_node", "INTEGER DEFAULT 0 NOT NULL" },
-	{ "ave_rss", "FLOAT DEFAULT 0.0 NOT NULL" },
 	{ "max_pages", "INTEGER DEFAULT 0 NOT NULL" },
 	{ "max_pages_task", "INTEGER DEFAULT 0 NOT NULL" },
 	{ "max_pages_node", "INTEGER DEFAULT 0 NOT NULL" },
+	/* use "FLOAT" instead of "DOUBLE PRECISION" since only one
+	   identifier supported in make_table_current() */
 	{ "ave_pages", "FLOAT DEFAULT 0.0 NOT NULL" },
-	{ "min_cpu", "INTEGER DEFAULT 0 NOT NULL" },
+	{ "max_rss", "BIGINT DEFAULT 0 NOT NULL" },
+	{ "max_rss_task", "INTEGER DEFAULT 0 NOT NULL" },
+	{ "max_rss_node", "INTEGER DEFAULT 0 NOT NULL" },
+	{ "ave_rss", "FLOAT DEFAULT 0.0 NOT NULL" },
+	{ "max_vsize", "BIGINT DEFAULT 0 NOT NULL" },
+	{ "max_vsize_task", "INTEGER DEFAULT 0 NOT NULL" },
+	{ "max_vsize_node", "INTEGER DEFAULT 0 NOT NULL" },
+	{ "ave_vsize", "FLOAT DEFAULT 0.0 NOT NULL" },
+	{ "min_cpu", "BIGINT DEFAULT 0 NOT NULL" },
 	{ "min_cpu_task", "INTEGER DEFAULT 0 NOT NULL" },
 	{ "min_cpu_node", "INTEGER DEFAULT 0 NOT NULL" },
 	{ "ave_cpu", "FLOAT DEFAULT 0.0 NOT NULL" },
 	{ NULL, NULL}
 };
 static char *step_table_constraint = ", "
-	"PRIMARY KEY (id, stepid) "
+	"PRIMARY KEY (job_db_inx, id_step) "
 	")";
 
 char *suspend_table = "suspend_table";
 static storage_field_t suspend_table_fields[] = {
-	{ "id", "INTEGER NOT NULL" }, /* REFERENCES job_table */
-	{ "associd", "INTEGER NOT NULL" },
-	{ "start", "INTEGER DEFAULT 0 NOT NULL" },
-	{ "endtime", "INTEGER DEFAULT 0 NOT NULL" },
+	{ "job_db_inx", "INTEGER NOT NULL" }, /* REFERENCES job_table */
+	{ "id_assoc", "INTEGER NOT NULL" },
+	{ "time_start", "INTEGER DEFAULT 0 NOT NULL" },
+	{ "time_end", "INTEGER DEFAULT 0 NOT NULL" },
 	{ NULL, NULL}
 };
 static char *suspend_table_constraint = ")";
-
-extern time_t global_last_rollup;
-extern pthread_mutex_t rollup_lock;
 
 /*
  * _get_db_index - get ID in database of a job
@@ -152,29 +141,29 @@ extern pthread_mutex_t rollup_lock;
  * IN submit: submit time of job
  * IN jobid: jobid of job
  * IN associd: association id of job
- * RET: db id of job, -1 on error
+ * RET: db id of job, 0 on error
  */
 static int
 _get_db_index(pgsql_conn_t *pg_conn, time_t submit, uint32_t jobid,
 	      uint32_t associd)
 {
-	PGresult *result = NULL;
+	DEF_VARS;
 	int db_index = 0;
-	char *query;
 
-	query = xstrdup_printf("SELECT id FROM %s WHERE submit=%u AND "
-			       "jobid=%u AND associd=%u",
-			       job_table, (int)submit, jobid, associd);
+	query = xstrdup_printf(
+		"SELECT job_db_inx FROM %s.%s WHERE time_submit=%ld"
+		" AND id_job=%u AND id_assoc=%u", pg_conn->cluster_name,
+		job_table, submit, jobid, associd);
 	result = DEF_QUERY_RET;
 	if(!result)
 		return 0;
 
 	if(!PQntuples(result)) {
-		debug4("We can't get a db_index for this combo, "
-		       "time_submit=%ld and id_job=%u and id_assoc=%u.  "
-		       "We must not have heard about the start yet, "
-		       "no big deal, we will get one right after this.",
-		       submit, jobid, associd);
+		debug("We can't get a db_index for this combo, "
+		      "time_submit=%ld and id_job=%u and id_assoc=%u."
+		      "We must not have heard about the start yet, "
+		      "no big deal, we will get one right after this.",
+		      submit, jobid, associd);
 	} else {
 		db_index = atoi(PG_VAL(0));
 	}
@@ -227,53 +216,61 @@ _check_job_db_index(pgsql_conn_t *pg_conn, struct job_record *job_ptr)
  * RET: error code
  */
 static int
-_create_function_add_job_start(PGconn *db_conn)
+_create_function_add_job_start(PGconn *db_conn, char *cluster)
 {
 	char *create_line = xstrdup_printf(
-		"CREATE OR REPLACE FUNCTION add_job_start (rec %s) "
+		"CREATE OR REPLACE FUNCTION %s.add_job_start (rec %s.%s) "
 		"RETURNS INTEGER AS $$"
 		"DECLARE dbid INTEGER; "
 		"BEGIN LOOP "
 		"  BEGIN "
-		"    INSERT INTO %s (id, deleted, jobid, associd, wckey, "
-		"        wckeyid, uid, gid, cluster, partition, blockid, "
-		"        account, eligible, submit, start, endtime, suspended, "
-		"        timelimit, name, track_steps, state, comp_code, "
-		"        priority, req_cpus, alloc_cpus, alloc_nodes, nodelist, "
-		"        node_inx, kill_requid, qos, resvid) "
-		"      VALUES (DEFAULT, 0, rec.jobid, "
-		"        rec.associd, rec.wckey, rec.wckeyid, rec.uid, "
-		"        rec.gid, rec.cluster, rec.partition, rec.blockid, "
-		"        rec.account, rec.eligible, rec.submit, rec.start, "
-		"        rec.endtime, rec.suspended, rec.timelimit, rec.name, "
-		"        rec.track_steps, rec.state, rec.comp_code, "
-		"        rec.priority, rec.req_cpus, rec.alloc_cpus, "
-		"        rec.alloc_nodes, rec.nodelist, rec.node_inx, "
-		"        rec.kill_requid, rec.qos, rec.resvid) "
-		"      RETURNING id INTO dbid; "
+		"    INSERT INTO %s.%s (job_db_inx, deleted, id_job, id_assoc, wckey, "
+		"        id_wckey, uid, gid, partition, id_block, "
+		"        account, time_eligible, time_submit, time_start, time_end, time_suspended, "
+		"        timelimit, job_name, track_steps, state, exit_code, "
+		"        priority, cpus_req, cpus_alloc, nodes_alloc, nodelist, "
+		"        node_inx, kill_requid, id_qos, id_resv) "
+		"      VALUES (DEFAULT, 0, rec.id_job, "
+		"        rec.id_assoc, rec.wckey, rec.id_wckey, rec.uid, "
+		"        rec.gid, rec.partition, rec.id_block, "
+		"        rec.account, rec.time_eligible, rec.time_submit, rec.time_start, "
+		"        rec.time_end, rec.time_suspended, rec.timelimit, rec.job_name, "
+		"        rec.track_steps, rec.state, rec.exit_code, "
+		"        rec.priority, rec.cpus_req, rec.cpus_alloc, "
+		"        rec.nodes_alloc, rec.nodelist, rec.node_inx, "
+		"        rec.kill_requid, rec.id_qos, rec.id_resv) "
+		"      RETURNING job_db_inx INTO dbid; "
 		"    RETURN dbid;"
 		"  EXCEPTION WHEN UNIQUE_VIOLATION THEN "
 		"    \n-- create a new dbid for job?\n "
-		"    UPDATE %s SET id=nextval('%s_id_seq'), state=rec.state, "
-		"        wckeyid=rec.wckeyid, qos=rec.qos, resvid=rec.resvid, "
-		"        timelimit=rec.timelimit, deleted=0, "
-		"        account=(CASE WHEN rec.account!='' "
-		"          THEN rec.account ELSE account END),"
+		"    \n-- id=nextval('%s.%s_id_seq'), \n"
+		"    UPDATE %s.%s SET deleted=0, "
+		"        wckey=rec.wckey, id_wckey=rec.id_wckey, uid=rec.uid, "
+		"        gid=rec.gid, "
 		"        partition=(CASE WHEN rec.partition!='' "
 		"          THEN rec.partition ELSE partition END), "
-		"        blockid=(CASE WHEN rec.blockid!='' "
-		"          THEN rec.blockid ELSE blockid END), "
-		"        wckey=(CASE WHEN rec.wckey!='' "
-		"          THEN rec.wckey ELSE wckey END), "
+		"        id_block=(CASE WHEN rec.id_block!='' "
+		"          THEN rec.id_block ELSE id_block END), "
+		"        account=(CASE WHEN rec.account!='' "
+		"          THEN rec.account ELSE account END),"
+		"        time_eligible=rec.time_eligible, time_submit=rec.time_submit,"
+		"        time_start=rec.time_start, "
+		"        timelimit=rec.timelimit, job_name=rec.job_name, "
+		"        track_steps=rec.track_steps,"
+		"        state=GREATEST(state, rec.state), "
+		"        cpus_req=rec.cpus_req, cpus_alloc=rec.cpus_alloc,"
+		"        nodes_alloc=rec.nodes_alloc,"
 		"        node_inx=(CASE WHEN rec.node_inx!='' "
-		"          THEN rec.node_inx ELSE node_inx END)"
-		"      WHERE jobid=rec.jobid AND associd=rec.associd AND "
-		"            submit=rec.submit"
-		"      RETURNING id INTO dbid; "
+		"          THEN rec.node_inx ELSE node_inx END),"
+		"        id_qos=rec.id_qos, id_resv=rec.id_resv "
+		"      WHERE id_job=rec.id_job AND id_assoc=rec.id_assoc AND "
+		"            time_submit=rec.time_submit"
+		"      RETURNING job_db_inx INTO dbid; "
 		"    IF FOUND THEN RETURN dbid; END IF;"
 		"  END;"
-		"END LOOP; END; $$ LANGUAGE PLPGSQL;",
-		job_table, job_table, job_table, job_table);
+		"END LOOP; END; $$ LANGUAGE PLPGSQL;", cluster,
+		cluster, job_table, cluster, job_table,
+		cluster, job_table, cluster, job_table);
 	return create_function_xfree(db_conn, create_line);
 }
 
@@ -284,29 +281,29 @@ _create_function_add_job_start(PGconn *db_conn)
  * RET: error code
  */
 static int
-_create_function_add_step_start(PGconn *db_conn)
+_create_function_add_step_start(PGconn *db_conn, char *cluster)
 {
 	char *create_line = xstrdup_printf(
-		"CREATE OR REPLACE FUNCTION add_step_start (rec %s) "
+		"CREATE OR REPLACE FUNCTION %s.add_step_start (rec %s.%s) "
 		"RETURNS VOID AS $$"
 		"BEGIN LOOP "
 		"  BEGIN "
-		"    INSERT INTO %s (id, stepid, start, name, state, "
-		"        cpus, nodes, tasks, nodelist, node_inx, task_dist) "
-		"      VALUES (rec.id, rec.stepid, rec.start, rec.name,"
-		"        rec.state, rec.cpus, rec.nodes, rec.tasks, "
+		"    INSERT INTO %s.%s (job_db_inx, id_step, time_start, step_name, state, "
+		"        cpus_alloc, nodes_alloc, task_cnt, nodelist, node_inx, task_dist) "
+		"      VALUES (rec.job_db_inx, rec.id_step, rec.time_start, rec.step_name,"
+		"        rec.state, rec.cpus_alloc, rec.nodes_alloc, rec.task_cnt, "
 		"        rec.nodelist, rec.node_inx, rec.task_dist);"
 		"    RETURN;"
 		"  EXCEPTION WHEN UNIQUE_VIOLATION THEN "
-		"    UPDATE %s SET cpus=rec.cpus, nodes=rec.nodes, "
-		"        tasks=rec.tasks, endtime=0, state=rec.state, "
+		"    UPDATE %s.%s SET cpus_alloc=rec.cpus_alloc, nodes_alloc=rec.nodes_alloc, "
+		"        task_cnt=rec.task_cnt, time_end=0, state=rec.state, "
 		"        nodelist=rec.nodelist, node_inx=rec.node_inx, "
 		"        task_dist=rec.task_dist, deleted=0 "
-		"      WHERE id=rec.id AND stepid=rec.stepid;"
+		"      WHERE job_db_inx=rec.job_db_inx AND id_step=rec.id_step;"
 		"    IF FOUND THEN RETURN; END IF;"
 		"  END;"
-		"END LOOP; END; $$ LANGUAGE PLPGSQL;",
-		step_table, step_table, step_table);
+		"END LOOP; END; $$ LANGUAGE PLPGSQL;", cluster,	cluster,
+		step_table, cluster, step_table, cluster, step_table);
 	return create_function_xfree(db_conn, create_line);
 }
 
@@ -317,51 +314,51 @@ _create_function_add_step_start(PGconn *db_conn)
  * RET: error code
  */
 static int
-_create_function_get_job_suspend_time(PGconn *db_conn)
+_create_function_get_job_suspend_time(PGconn *db_conn, char *cluster)
 {
 	char *create_line = xstrdup_printf(
-		"CREATE OR REPLACE FUNCTION get_job_suspend_time "
+		"CREATE OR REPLACE FUNCTION %s.get_job_suspend_time "
 		"(dbid INTEGER, st INTEGER, et INTEGER) "
 		"RETURNS INTEGER AS $$"
 		"DECLARE susp INTEGER; "
 		"BEGIN "
 		"  IF et<=st THEN RETURN 0; END IF;"
-		"  SELECT SUM((CASE WHEN (endtime=0 OR endtime>et) THEN et "
-		"                   ELSE endtime END) "
-		"           - (CASE WHEN start>st THEN start "
+		"  SELECT SUM((CASE WHEN (time_end=0 OR time_end>et) THEN et "
+		"                   ELSE time_end END) "
+		"           - (CASE WHEN time_start>st THEN time_start "
 		"                     ELSE st END) "
-		"            ) FROM %s "
+		"            ) FROM %s.%s "
 		"    INTO susp"
-		"    WHERE (start!=0 AND start<et) AND "
-		"          (endtime>=st OR endtime=0) AND id=dbid "
-		"    GROUP BY id; "
+		"    WHERE (time_start!=0 AND time_start<et) AND "
+		"          (time_end>=st OR time_end=0) AND job_db_inx=dbid "
+		"    GROUP BY job_db_inx; "
 		"  RETURN susp;"
-		"END; $$ LANGUAGE PLPGSQL;",
+		"END; $$ LANGUAGE PLPGSQL;", cluster, cluster,
 		suspend_table);
 	return create_function_xfree(db_conn, create_line);
 }
 
 /*
- * check_slurmdb_tables - check jobacct related tables and functions
+ * check_job_tables - check jobacct related tables and functions
  * IN pg_conn: database connection
  * IN user: database owner
  * RET: error code
  */
 extern int
-check_slurmdb_tables(PGconn *db_conn, char *user)
+check_job_tables(PGconn *db_conn, char *cluster)
 {
 	int rc;
 
-	rc = check_table(db_conn, job_table, job_table_fields,
-			 job_table_constraint, user);
-	rc |= check_table(db_conn, step_table, step_table_fields,
-			  step_table_constraint, user);
-	rc |= check_table(db_conn, suspend_table, suspend_table_fields,
-			  suspend_table_constraint, user);
+	rc = check_table(db_conn, cluster, job_table, job_table_fields,
+			 job_table_constraint);
+	rc |= check_table(db_conn, cluster, step_table, step_table_fields,
+			  step_table_constraint);
+	rc |= check_table(db_conn, cluster, suspend_table, suspend_table_fields,
+			  suspend_table_constraint);
 
-	rc |= _create_function_add_job_start(db_conn);
-	rc |= _create_function_add_step_start(db_conn);
-	rc |= _create_function_get_job_suspend_time(db_conn);
+	rc |= _create_function_add_job_start(db_conn, cluster);
+	rc |= _create_function_add_step_start(db_conn, cluster);
+	rc |= _create_function_get_job_suspend_time(db_conn, cluster);
 	return rc;
 }
 
@@ -394,6 +391,11 @@ js_pg_job_start(pgsql_conn_t *pg_conn,
 	if (check_db_connection(pg_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
 
+	if (! cluster_in_db(pg_conn, pg_conn->cluster_name) ) {
+		error("cluster %s not in db", pg_conn->cluster_name);
+		return SLURM_ERROR;
+	}
+
 	debug3("as/pg: job_start() called");
 
 	job_state = job_ptr->job_state;
@@ -402,8 +404,13 @@ js_pg_job_start(pgsql_conn_t *pg_conn,
 	 * removed. This is most likely the only time we are going to
 	 * be notified of the change also so make the state without
 	 * the resize. */
-	if(job_state & JOB_RESIZING) {
-		js_pg_job_complete(pg_conn, job_ptr);
+	if(IS_JOB_RESIZING(job_ptr)) {
+		/* If we have a db_index lets end the previous record. */
+		if(job_ptr->db_index)
+			js_pg_job_complete(pg_conn, job_ptr);
+		else
+			error("We don't have a db_index for job %u, "
+			      "this should never happen.", job_ptr->job_id);
 		job_state &= (~JOB_RESIZING);
 		job_ptr->db_index = 0;
 	}
@@ -430,61 +437,61 @@ js_pg_job_start(pgsql_conn_t *pg_conn,
 	else
 		check_time = submit_time;
 
-	slurm_mutex_lock(&rollup_lock);
+	slurm_mutex_lock(&usage_rollup_lock);
 	if(check_time < global_last_rollup) {
 		PGresult *result = NULL;
 		/* check to see if we are hearing about this time for the
 		 * first time.
 		 */
-		query = xstrdup_printf("SELECT id FROM %s WHERE jobid=%u AND "
-				       "submit=%ld AND eligible=%ld "
-				       "AND start=%ld;",
-				       job_table, job_ptr->job_id,
-				       submit_time, begin_time, start_time);
+		query = xstrdup_printf(
+			"SELECT job_db_inx FROM %s.%s WHERE id_job=%u AND "
+			"time_submit=%ld AND time_eligible=%ld AND time_start=%ld",
+			pg_conn->cluster_name, job_table, job_ptr->job_id,
+			submit_time, begin_time, start_time);
 		result = DEF_QUERY_RET;
 		if(!result) {
-			slurm_mutex_unlock(&rollup_lock);
+			 slurm_mutex_unlock(&usage_rollup_lock);
 			return SLURM_ERROR;
 		}
-		if (PQntuples(result)) {
+		if (PQntuples(result) != 0) {
 			PQclear(result);
 			debug4("revieved an update for a "
 			       "job (%u) already known about",
 			       job_ptr->job_id);
-			slurm_mutex_unlock(&rollup_lock);
+			 slurm_mutex_unlock(&usage_rollup_lock);
 			goto no_rollup_change;
 		}
 		PQclear(result);
 
-		if(start_time)
-			debug("Need to reroll usage from %sJob %u "
+		if(job_ptr->start_time)
+			debug("Need to reroll usage from %s Job %u "
 			      "from %s started then and we are just "
 			      "now hearing about it.",
 			      ctime(&check_time),
 			      job_ptr->job_id, pg_conn->cluster_name);
 		else if(begin_time)
-			debug("Need to reroll usage from %sJob %u "
+			debug("Need to reroll usage from %s Job %u "
 			      "from %s became eligible then and we are just "
 			      "now hearing about it.",
 			      ctime(&check_time),
 			      job_ptr->job_id, pg_conn->cluster_name);
 		else
-			debug("Need to reroll usage from %sJob %u "
+			debug("Need to reroll usage from %s Job %u "
 			      "from %s was submitted then and we are just "
 			      "now hearing about it.",
 			      ctime(&check_time),
 			      job_ptr->job_id, pg_conn->cluster_name);
 
 		global_last_rollup = check_time;
-		slurm_mutex_unlock(&rollup_lock);
+		slurm_mutex_unlock(&usage_rollup_lock);
 
-		query = xstrdup_printf("UPDATE %s SET hourly_rollup=%ld, "
+		query = xstrdup_printf("UPDATE %s.%s SET hourly_rollup=%ld, "
 				       "daily_rollup=%ld, monthly_rollup=%ld",
-				       last_ran_table, check_time,
-				       check_time, check_time);
+				       pg_conn->cluster_name, last_ran_table,
+				       check_time, check_time, check_time);
 		rc = DEF_QUERY_RET_RC;
 	} else
-		slurm_mutex_unlock(&rollup_lock);
+		slurm_mutex_unlock(&usage_rollup_lock);
 
 no_rollup_change:
 
@@ -528,7 +535,8 @@ no_rollup_change:
 
 	/* If there is a start_time get the wckeyid.  If the job is
 	 * cancelled before the job starts we also want to grab it. */
-	if(job_ptr->assoc_id && (start_time || IS_JOB_CANCELLED(job_ptr)))
+	if(job_ptr->assoc_id &&
+	   (job_ptr->start_time || IS_JOB_CANCELLED(job_ptr)))
 		wckeyid = get_wckeyid(pg_conn, &job_ptr->wckey,
 				      job_ptr->user_id, pg_conn->cluster_name,
 				      job_ptr->assoc_id);
@@ -538,48 +546,46 @@ no_rollup_change:
 			begin_time = submit_time;
 
 		rec = xstrdup_printf(
-			"(0, 0, %u, %u, '%s', %u, %u, %u, "
-			"'%s', '%s', '%s', '%s', "
-			"%ld, %ld, %ld, 0, 0, %d, "
-			"'%s', %u, %u, 0, %d, %u, %u, %u, "
-			"'%s', '%s', -1, %d, %u)",
-			/* id=0, not used */
+			"(0, 0, '%s', '%s', %d, %d, 0, '%s', "
+			"%d, '%s', %d, %d, %d, %d, %d, %d, 0, "
+			"%d, %ld, %ld, %ld, 0, 0, "
+			"%d, '%s', '%s', %d, %d, '%s', %d)",
+			/* job_db_inx=0, not used */
 			/* deleted=0 */
-			job_ptr->job_id,
-			job_ptr->assoc_id,
-			job_ptr->wckey ?: "",
-			wckeyid,
-			job_ptr->user_id,
-			job_ptr->group_id,
+			job_ptr->account ?: "",     /* account */
+			job_ptr->partition ?: "",   /* partition */
+			(int)job_ptr->details->min_cpus, /* cpus_req */
+			(int)job_ptr->total_cpus, /* cpus_alloc */
+			/* exit_code=0 */
+			jname,  /* job_name */
 
-			pg_conn->cluster_name ?: "",
-			job_ptr->partition ?: "",
-			block_id ?: "",
-			job_ptr->account ?: "",
+			(int)job_ptr->assoc_id, /* id_assoc */
+			block_id ?: "", /* id_block */
+			(int)job_ptr->job_id,   /* id_job */
+			(int)job_ptr->qos_id,   /* id_qos */
+			(int)job_ptr->resv_id,  /* id_resv */
+			(int)wckeyid,           /* id_wckey */
+			(int)job_ptr->user_id,  /* uid */
+			(int)job_ptr->group_id, /* gid */
+			/* kill_requid=0 */
 
-			begin_time,
-			submit_time,
-			start_time,
-			/* endtime=0 */
-			/* suspended=0 */
-			job_ptr->time_limit,
+			(int)job_ptr->time_limit, /* timelimit */
+			submit_time,         /* time_submit */
+			begin_time,          /* time_eligible */
+			start_time,          /* time_start */
+			/* time_end=0 */
+			/* time_suspended=0 */
 
-			jname,
-			track_steps,
-			job_state,
-			/* comp_code=0 */
-			job_ptr->priority,
-			job_ptr->details->min_cpus,
-			job_ptr->total_cpus,
-			node_cnt,
+			(int)node_cnt, /* nodes_alloc */
+			nodes ?: "",                    /* nodelist */
+			node_inx ?: "",         /* node_inx */
+			(int)job_ptr->priority, /* priority */
+			(int)job_state,         /* state */
+			job_ptr->wckey ?: "",   /* wckey */
+			(int)track_steps);
 
-			nodes ?: "",
-			node_inx ?: "",
-			/* kill_requid=-1 */
-			job_ptr->qos_id,
-			job_ptr->resv_id);
-
-		query = xstrdup_printf("SELECT add_job_start(%s);", rec);
+		query = xstrdup_printf("SELECT %s.add_job_start(%s);",
+				       pg_conn->cluster_name, rec);
 		xfree(rec);
 
 	try_again:
@@ -598,8 +604,8 @@ no_rollup_change:
 		}
 		xfree(query);
 	} else {
-		query = xstrdup_printf("UPDATE %s SET nodelist='%s', ",
-				       job_table, nodes);
+		query = xstrdup_printf("UPDATE %s.%s SET nodelist='%s', ",
+				       pg_conn->cluster_name, job_table, nodes);
 		if(job_ptr->account)
 			xstrfmtcat(query, "account='%s', ",
 				   job_ptr->account);
@@ -613,9 +619,10 @@ no_rollup_change:
 		if(node_inx)
 			xstrfmtcat(query, "node_inx='%s', ", node_inx);
 
-		xstrfmtcat(query, "start=%ld, name='%s', state=%u, "
-			   "alloc_cpus=%u, alloc_nodes=%u, associd=%u, "
-			   "wckeyid=%u, resvid=%u, timelimit=%d WHERE id=%u;",
+		xstrfmtcat(query, "time_start=%ld, job_name='%s', state=%d, "
+			   "cpus_alloc=%d, nodes_alloc=%d, id_assoc=%d, "
+			   "id_wckey=%d, id_resv=%d, timelimit=%d "
+			   "WHERE job_db_inx=%d;",
 			   start_time, jname, job_state,
 			   job_ptr->total_cpus, node_cnt,
 			   job_ptr->assoc_id, wckeyid, job_ptr->resv_id,
@@ -654,6 +661,11 @@ js_pg_job_complete(pgsql_conn_t *pg_conn,
 	if (check_db_connection(pg_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
 
+	if (! cluster_in_db(pg_conn, pg_conn->cluster_name) ) {
+		error("cluster %s not in db", pg_conn->cluster_name);
+		return SLURM_ERROR;
+	}
+
 	debug2("as/pg: job_complete() called");
 
 	if (IS_JOB_RESIZING(job_ptr)) {
@@ -671,18 +683,18 @@ js_pg_job_complete(pgsql_conn_t *pg_conn,
 		job_state = job_ptr->job_state & JOB_STATE_BASE;
 	}
 
-	slurm_mutex_lock(&rollup_lock);
+	slurm_mutex_lock(&usage_rollup_lock);
 	if(end_time < global_last_rollup) {
 		global_last_rollup = job_ptr->end_time;
-		slurm_mutex_unlock(&rollup_lock);
+		slurm_mutex_unlock(&usage_rollup_lock);
 
-		query = xstrdup_printf("UPDATE %s SET hourly_rollup=%ld, "
+		query = xstrdup_printf("UPDATE %s.%s SET hourly_rollup=%ld, "
 				       "daily_rollup=%ld, monthly_rollup=%ld",
-				       last_ran_table, end_time,
-				       end_time, end_time);
+				       pg_conn->cluster_name, last_ran_table,
+				       end_time, end_time, end_time);
 		rc = DEF_QUERY_RET_RC;
 	} else
-		slurm_mutex_unlock(&rollup_lock);
+		slurm_mutex_unlock(&usage_rollup_lock);
 
 	if (job_ptr->nodes && job_ptr->nodes[0])
 		nodes = job_ptr->nodes;
@@ -695,12 +707,12 @@ js_pg_job_complete(pgsql_conn_t *pg_conn,
 	if (_check_job_db_index(pg_conn, job_ptr) != SLURM_SUCCESS)
 		return SLURM_SUCCESS;
 
-	query = xstrdup_printf("UPDATE %s SET endtime=%ld, state=%d, "
-			       "nodelist='%s', comp_code=%d, "
-			       "kill_requid=%d WHERE id=%d",
-			       job_table, end_time, job_state,
-			       nodes, job_ptr->exit_code,
-			       job_ptr->requid, job_ptr->db_index);
+	query = xstrdup_printf(
+		"UPDATE %s.%s SET time_end=%ld, state=%d, nodelist='%s', "
+		"exit_code=%d, kill_requid=%d WHERE job_db_inx=%d",
+		pg_conn->cluster_name, job_table, end_time, job_state,
+		nodes, job_ptr->exit_code,
+		job_ptr->requid, job_ptr->db_index);
 	rc = DEF_QUERY_RET_RC;
 	return  rc;
 }
@@ -725,7 +737,12 @@ js_pg_step_start(pgsql_conn_t *pg_conn,
 	char *ionodes = NULL;
 #endif
 	char *query = NULL, *rec = NULL;
-	time_t start_time;
+	time_t start_time, submit_time;
+
+	if (! cluster_in_db(pg_conn, pg_conn->cluster_name) ) {
+		error("cluster %s not in db", pg_conn->cluster_name);
+		return SLURM_ERROR;
+	}
 
 	if (!step_ptr->job_ptr->db_index
 	    && ((!step_ptr->job_ptr->details
@@ -736,10 +753,14 @@ js_pg_step_start(pgsql_conn_t *pg_conn,
 		return SLURM_ERROR;
 	}
 
-	if(step_ptr->start_time > step_ptr->job_ptr->resize_time)
+	if (step_ptr->job_ptr->resize_time) {
+		submit_time = start_time = step_ptr->job_ptr->resize_time;
+		if(step_ptr->start_time > submit_time)
+			start_time = step_ptr->start_time;
+	} else {
 		start_time = step_ptr->start_time;
-	else
-		start_time = step_ptr->job_ptr->resize_time;
+		submit_time = step_ptr->job_ptr->details->submit_time;
+	}
 
 	if(check_db_connection(pg_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
@@ -795,29 +816,31 @@ js_pg_step_start(pgsql_conn_t *pg_conn,
 	    != SLURM_SUCCESS)
 		return SLURM_SUCCESS;
 
-	rec = xstrdup_printf("(%u, 0, %u, %ld, 0, 0,'%s', '%s', '%s',"
-			     "%u, -1, 0, %u, %u, %u, %u,"
+	rec = xstrdup_printf("(%d, 0, %d, 0, %d, -1, '%s', %d, '%s', %d,"
+			     "'%s', %d, %d, %ld, 0, 0, "
 			     "0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0)",
-			     step_ptr->job_ptr->db_index,
+			     (int)step_ptr->job_ptr->db_index, /* job_db_inx */
 			     /* deleted=0 */
-			     step_ptr->step_id,
-			     start_time,
-			     /* endtime=0 */
-			     /* suspended=0 */
-			     step_ptr->name ?: "",
-			     node_list,
-			     node_inx,
-
-			     JOB_RUNNING,
+			     (int)cpus, /* cpus_alloc */
+			     /* exit_code=0 */
+			     (int)step_ptr->step_id, /* id_step */
 			     /* kill_requid=-1 */
-			     /* comp_code=0 */
-			     nodes,
-			     cpus,
-			     tasks,
-			     task_dist
+			     node_list,         /* nodelist */
+			     (int)nodes,        /* nodes_alloc */
+			     node_inx,          /* node_inx */
+			     (int)JOB_RUNNING,  /* state */
+
+			     step_ptr->name ?: "", /* step_name */
+			     (int)tasks,           /* task_cnt */
+			     (int)task_dist,       /* task_dist */
+			     start_time       /* time_start */
+			     /* time_end=0 */
+			     /* time_suspended=0 */
+
 			     /* resouce usage all 0 */
 		);
-	query = xstrdup_printf("SELECT add_step_start(%s)", rec);
+	query = xstrdup_printf("SELECT %s.add_step_start(%s)",
+			       pg_conn->cluster_name, rec);
 	xfree(rec);
 	rc = DEF_QUERY_RET_RC;
 	return rc;
@@ -845,7 +868,12 @@ js_pg_step_complete(pgsql_conn_t *pg_conn,
 	char *query = NULL;
 	int rc =SLURM_SUCCESS;
 	uint32_t exit_code;
-	time_t start_time;
+	time_t start_time, submit_time;
+
+	if (! cluster_in_db(pg_conn, pg_conn->cluster_name) ) {
+		error("cluster %s not in db", pg_conn->cluster_name);
+		return SLURM_ERROR;
+	}
 
 	if (!step_ptr->job_ptr->db_index
 	    && ((!step_ptr->job_ptr->details
@@ -856,10 +884,14 @@ js_pg_step_complete(pgsql_conn_t *pg_conn,
 		return SLURM_ERROR;
 	}
 
-	if(step_ptr->start_time > step_ptr->job_ptr->resize_time)
+	if (step_ptr->job_ptr->resize_time) {
+		submit_time = start_time = step_ptr->job_ptr->resize_time;
+		if(step_ptr->start_time > submit_time)
+			start_time = step_ptr->start_time;
+	} else {
 		start_time = step_ptr->start_time;
-	else
-		start_time = step_ptr->job_ptr->resize_time;
+		submit_time = step_ptr->job_ptr->details->submit_time;
+	}
 
 	if(check_db_connection(pg_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
@@ -918,16 +950,15 @@ js_pg_step_complete(pgsql_conn_t *pg_conn,
 		ave_cpu2 = (double)jobacct->min_cpu;
 	}
 
-
 	if (_check_job_db_index(pg_conn, step_ptr->job_ptr)
 	    != SLURM_SUCCESS)
 		return SLURM_SUCCESS;
 
 	query = xstrdup_printf(
-		"UPDATE %s SET endtime=%u, state=%d, "
-		"kill_requid=%d, comp_code=%d, "
-		"user_sec=%u, user_usec=%u, "
-		"sys_sec=%u, sys_usec=%u, "
+		"UPDATE %s.%s SET time_end=%ld, state=%d, "
+		"kill_requid=%d, exit_code=%d, "
+		"user_sec=%d, user_usec=%d, "
+		"sys_sec=%d, sys_usec=%d, "
 		"max_vsize=%d, max_vsize_task=%d, "
 		"max_vsize_node=%d, ave_vsize=%.2f, "
 		"max_rss=%d, max_rss_task=%d, "
@@ -936,19 +967,20 @@ js_pg_step_complete(pgsql_conn_t *pg_conn,
 		"max_pages_node=%d, ave_pages=%.2f, "
 		"min_cpu=%.2f, min_cpu_task=%d, "
 		"min_cpu_node=%d, ave_cpu=%.2f "
-		"WHERE id=%u and stepid=%u",
-		step_table, (int)now,
+		"WHERE job_db_inx=%d and id_step=%d",
+		pg_conn->cluster_name,
+		step_table, (long)now,
 		(int)comp_status,
-		step_ptr->requid,
-		exit_code,
+		(int)step_ptr->requid,
+		(int)exit_code,
 		/* user seconds */
-		jobacct->user_cpu_sec,
+		(int)jobacct->user_cpu_sec,
 		/* user microseconds */
-		jobacct->user_cpu_usec,
+		(int)jobacct->user_cpu_usec,
 		/* system seconds */
-		jobacct->sys_cpu_sec,
+		(int)jobacct->sys_cpu_sec,
 		/* system microsecs */
-		jobacct->sys_cpu_usec,
+		(int)jobacct->sys_cpu_usec,
 		(int)jobacct->max_vsize,	/* max vsize */
 		(int)jobacct->max_vsize_id.taskid,	/* max vsize task */
 		(int)jobacct->max_vsize_id.nodeid,	/* max vsize node */
@@ -965,7 +997,7 @@ js_pg_step_complete(pgsql_conn_t *pg_conn,
 		(int)jobacct->min_cpu_id.taskid,	/* min cpu task */
 		(int)jobacct->min_cpu_id.nodeid,	/* min cpu node */
 		ave_cpu,	/* ave cpu */
-		step_ptr->job_ptr->db_index, step_ptr->step_id);
+		(int)step_ptr->job_ptr->db_index, (int)step_ptr->step_id);
 	rc = DEF_QUERY_RET_RC;
 	return rc;
 }
@@ -977,964 +1009,177 @@ js_pg_step_complete(pgsql_conn_t *pg_conn,
  * IN job_ptr: job suspended
  */
 extern int
-js_pg_suspend(pgsql_conn_t *pg_conn, struct job_record *job_ptr)
+js_pg_suspend(pgsql_conn_t *pg_conn, uint32_t old_db_inx,
+ 	      struct job_record *job_ptr)
 {
-	char *query = NULL;
-	int rc = SLURM_SUCCESS;
-	bool suspended = false;
+ 	char *query = NULL;
+ 	int rc = SLURM_SUCCESS;
+ 	time_t submit_time;
+ 	uint32_t job_db_inx;
 
-	if(check_db_connection(pg_conn) != SLURM_SUCCESS)
-		return ESLURM_DB_CONNECTION;
+ 	if(check_db_connection(pg_conn) != SLURM_SUCCESS)
+ 		return ESLURM_DB_CONNECTION;
 
-	if (_check_job_db_index(pg_conn, job_ptr) != SLURM_SUCCESS)
-		return SLURM_SUCCESS;
+ 	if (! cluster_in_db(pg_conn, pg_conn->cluster_name) ) {
+ 		error("cluster %s not in db", pg_conn->cluster_name);
+ 		return SLURM_ERROR;
+ 	}
 
-	if (job_ptr->job_state == JOB_SUSPENDED)
-		suspended = true;
+ 	if (job_ptr->resize_time)
+ 		submit_time = job_ptr->resize_time;
+ 	else
+ 		submit_time = job_ptr->details->submit_time;
 
-	query = xstrdup_printf(
-		"UPDATE %s SET suspended=%d-suspended, state=%d "
-		"WHERE id=%u",
-		job_table, (int)job_ptr->suspend_time,
-		job_ptr->job_state & JOB_STATE_BASE,
-		job_ptr->db_index);
+ 	if (_check_job_db_index(pg_conn, job_ptr) != SLURM_SUCCESS)
+ 		return SLURM_SUCCESS;
 
-	if(job_ptr->job_state == JOB_SUSPENDED)
-		/* XXX: xstrfmtcat() cannot work on non-xmalloc-ed strings */
-		xstrfmtcat(query,
-			   "INSERT INTO %s (id, associd, start, end) "
-			   "VALUES (%u, %u, %d, 0);",
-			   suspend_table, job_ptr->db_index, job_ptr->assoc_id,
-			   (int)job_ptr->suspend_time);
-	else
-		xstrfmtcat(query,
-			   "UPDATE %s SET end=%d WHERE id=%u && endtime=0;",
-			   suspend_table, (int)job_ptr->suspend_time,
-			   job_ptr->db_index);
+ 	if(IS_JOB_RESIZING(job_ptr)) {
+ 		if(!old_db_inx) {
+ 			error("No old db inx given for job %u cluster %s, "
+ 			      "can't update suspend table.",
+ 			      job_ptr->job_id, pg_conn->cluster_name);
+ 			return SLURM_ERROR;
+ 		}
+ 		job_db_inx = old_db_inx;
+ 		xstrfmtcat(query,
+ 			   "UPDATE %s.%s SET time_end=%ld WHERE "
+ 			   "job_db_inx=%u AND time_end=0;",
+ 			   pg_conn->cluster_name, suspend_table,
+ 			   job_ptr->suspend_time, job_db_inx);
 
-	rc = DEF_QUERY_RET_RC;
-	if(rc != SLURM_ERROR) {
-		query = xstrdup_printf(
-			"UPDATE %s SET suspended=%d-suspended, "
-			"state=%d WHERE id=%u and endtime=0",
-			step_table, (int)job_ptr->suspend_time,
-			job_ptr->job_state, job_ptr->db_index);
-		rc = DEF_QUERY_RET_RC;
-	}
-	return rc;
+ 	} else
+ 		job_db_inx = job_ptr->db_index;
+
+ 	query = xstrdup_printf(
+ 		"UPDATE %s.%s SET time_suspended=%d-time_suspended, state=%d "
+ 		"WHERE job_db_inx=%d", pg_conn->cluster_name, job_table,
+ 		(int)job_ptr->suspend_time,
+ 		(int)(job_ptr->job_state & JOB_STATE_BASE),
+ 		(int)job_ptr->db_index);
+
+ 	if(IS_JOB_SUSPENDED(job_ptr))
+ 		xstrfmtcat(query,
+ 			   "INSERT INTO %s.%s (job_db_inx, id_assoc, "
+ 			   "  time_start, time_end) VALUES (%d, %d, %ld, 0);",
+ 			   pg_conn->cluster_name, suspend_table,
+ 			   (int)job_ptr->db_index,
+ 			   (int)job_ptr->assoc_id,
+ 			   job_ptr->suspend_time);
+ 	else
+ 		xstrfmtcat(query,
+ 			   "UPDATE %s.%s SET time_end=%ld WHERE job_db_inx=%d "
+ 			   "  AND time_end=0;", pg_conn->cluster_name,
+ 			   suspend_table, job_ptr->suspend_time,
+ 			   job_ptr->db_index);
+
+ 	rc = DEF_QUERY_RET_RC;
+ 	if(rc == SLURM_SUCCESS) {
+ 		query = xstrdup_printf(
+ 			"UPDATE %s.%s SET time_suspended=%d-time_suspended, "
+ 			"state=%d WHERE job_db_inx=%d and time_end=0",
+ 			pg_conn->cluster_name,
+ 			step_table, (int)job_ptr->suspend_time,
+ 			(int)job_ptr->job_state, (int)job_ptr->db_index);
+ 		rc = DEF_QUERY_RET_RC;
+ 	}
+ 	return rc;
+}
+
+extern int
+as_pg_flush_jobs_on_cluster(pgsql_conn_t *pg_conn, time_t event_time)
+{
+ 	DEF_VARS;
+ 	int rc = SLURM_SUCCESS;
+ 	/* put end times for a clean start */
+ 	char *id_char = NULL;
+ 	char *suspended_char = NULL;
+
+ 	if(check_db_connection(pg_conn) != SLURM_SUCCESS)
+ 		return ESLURM_DB_CONNECTION;
+
+ 	if (! cluster_in_db(pg_conn, pg_conn->cluster_name) ) {
+ 		error("cluster %s not in db", pg_conn->cluster_name);
+ 		return SLURM_ERROR;
+ 	}
+
+ 	/* First we need to get the job_db_inx's and states so we can clean up
+ 	 * the suspend table and the step table
+ 	 */
+ 	query = xstrdup_printf(
+ 		"SELECT DISTINCT job_db_inx,state FROM %s.%s "
+ 		"WHERE time_end=0;", pg_conn->cluster_name, job_table);
+ 	result = DEF_QUERY_RET;
+ 	if (!result)
+ 		return SLURM_ERROR;
+
+ 	FOR_EACH_ROW {
+ 		int state = atoi(ROW(1));
+ 		if(state == JOB_SUSPENDED) {
+ 			if(suspended_char)
+ 				xstrfmtcat(suspended_char,
+ 					   " OR job_db_inx=%s", ROW(0));
+ 			else
+ 				xstrfmtcat(suspended_char, "job_db_inx=%s",
+ 					   ROW(0));
+ 		}
+
+ 		if(id_char)
+ 			xstrfmtcat(id_char, " OR job_db_inx=%s", ROW(0));
+ 		else
+ 			xstrfmtcat(id_char, "job_db_inx=%s", ROW(0));
+ 	} END_EACH_ROW;
+ 	PQclear(result);
+
+ 	if(suspended_char) {
+ 		xstrfmtcat(query,
+ 			   "UPDATE %s.%s SET time_suspended=%ld-time_suspended "
+ 			   "WHERE %s;", pg_conn->cluster_name, job_table,
+ 			   (long)event_time, suspended_char);
+ 		xstrfmtcat(query,
+ 			   "UPDATE %s.%s SET time_suspended=%ld-time_suspended "
+ 			   "WHERE %s;", pg_conn->cluster_name, step_table,
+ 			   (long)event_time, suspended_char);
+ 		xstrfmtcat(query,
+ 			   "UPDATE %s.%s SET time_end=%ld WHERE (%s) "
+ 			   "AND time_end=0;", pg_conn->cluster_name,
+ 			   suspend_table, (long)event_time,
+ 			   suspended_char);
+ 		xfree(suspended_char);
+ 	}
+ 	if(id_char) {
+ 		xstrfmtcat(query,
+ 			   "UPDATE %s.%s SET state=%d, time_end=%ld WHERE %s;",
+ 			   pg_conn->cluster_name, job_table,
+ 			   (int)JOB_CANCELLED, (long)event_time, id_char);
+ 		xstrfmtcat(query,
+ 			   "UPDATE %s.%s SET state=%d, time_end=%ld WHERE %s;",
+ 			   pg_conn->cluster_name, step_table,
+ 			   (int)JOB_CANCELLED, (long)event_time, id_char);
+ 		xfree(id_char);
+ 	}
+
+ 	if(query)
+ 		rc = DEF_QUERY_RET_RC;
+
+ 	return rc;
 }
 
 
-static void _state_time_string(char **extra, uint32_t state,
-			       uint32_t start, uint32_t end)
+extern int
+cluster_has_running_jobs(pgsql_conn_t *pg_conn, char *cluster)
 {
-	int base_state = state & JOB_STATE_BASE;
-
-	if(!start && !end) {
-		xstrfmtcat(*extra, "t1.state='%u'", state);
-		return;
-	}
-
- 	switch(base_state) {
-	case JOB_PENDING:
-		if(start) {
-			if(!end) {
-				xstrfmtcat(*extra,
-					   "(t1.eligible AND (t1.start=0 OR "
-					   "(%d BETWEEN "
-					   "t1.eligible AND t1.start)))",
-					   start);
-			} else {
-				xstrfmtcat(*extra,
-					   "(t1.eligible AND ((%d BETWEEN "
-					   "t1.eligible AND t1.start) OR "
-					   "(t1.eligible BETWEEN %d AND %d)))",
-					   start, start,
-					   end);
-			}
-		} else if (end) {
-			xstrfmtcat(*extra, "(t1.eligible AND t1.eligible < %d)",
-				   end);
-		}
-		break;
-	case JOB_SUSPENDED:
-		/* FIX ME: this should do something with the suspended
-		   table, but it doesn't right now. */
-	case JOB_RUNNING:
-		if(start) {
-			if(!end) {
-				xstrfmtcat(*extra,
-					   "(t1.start AND (t1.endtime=0 OR "
-					   "(%d BETWEEN t1.start AND t1.endtime)))",
-					   start);
-			} else {
-				xstrfmtcat(*extra,
-					   "(t1.start!=0 AND "
-					   "((%d BETWEEN t1.start AND t1.endtime) "
-					   "OR (t1.start BETWEEN %d AND %d)))",
-					   start, start,
-					   end);
-			}
-		} else if (end) {
-			xstrfmtcat(*extra, "(t1.start AND t1.start < %d)", end);
-		}
-		break;
-	case JOB_COMPLETE:
-	case JOB_CANCELLED:
-	case JOB_FAILED:
-	case JOB_TIMEOUT:
-	case JOB_NODE_FAIL:
-	default:
-		xstrfmtcat(*extra, "(t1.state='%u' AND (t1.endtime AND ", state);
-		if(start) {
-			if(!end) {
-				xstrfmtcat(*extra, "(t1.endtime >= %d)))", start);
-			} else {
-				xstrfmtcat(*extra,
-					   "(t1.endtime BETWEEN %d AND %d)))",
-					   start, end);
-			}
-		} else if(end) {
-			xstrfmtcat(*extra, "(t1.endtime <= %d)))", end);
-		}
-		break;
-	}
-
-	return;
-}
-
-/*
- * _make_job_cond_str - turn job_cond into SQL query condition string
- *
- * IN pg_conn: database connection
- * IN job_cond: job condition
- * OUT extra_table: extra table to select from
- * OUT cond: condition string
- */
-static void
-_make_job_cond_str(pgsql_conn_t *pg_conn, slurmdb_job_cond_t *job_cond,
-		   char **extra_table, char **cond)
-{
-	int set = 0;
-	ListIterator itr = NULL;
-	char *object = NULL;
-	char *table_level = "t2";
-	slurmdb_selected_step_t *selected_step = NULL;
-
-	xstrcat (*cond, " WHERE TRUE");
-
-	if(!job_cond)
-		return;
-
-	/* THIS ASSOCID CHECK ALWAYS NEEDS TO BE FIRST!!!!!!! */
-	if(job_cond->associd_list && list_count(job_cond->associd_list)) {
-		set = 0;
-		xstrfmtcat(*extra_table, ", %s AS t3", assoc_table);
-		table_level = "t3";
-
-		/* just incase the association is gone */
-		xstrcat(*cond, " AND (t3.id IS NULL");
-		itr = list_iterator_create(job_cond->associd_list);
-		while((object = list_next(itr))) {
-			xstrfmtcat(*cond, " OR t3.id=%s", object);
-		}
-		list_iterator_destroy(itr);
-		xstrfmtcat(*cond, ") AND "
-			   "(t2.lft BETWEEN t3.lft AND t3.rgt "
-			   "OR t2.lft IS NULL)");
-	}
-
-	concat_cond_list(job_cond->acct_list, "t1", "account", cond);
-	concat_cond_list(job_cond->userid_list, "t1", "uid", cond);
-	concat_cond_list(job_cond->groupid_list, "t1", "gid", cond);
-	concat_cond_list(job_cond->partition_list, "t1", "partition", cond);
-
-	/* this must be done before resvid_list since we set
-	   resvid_list up here */
-	if(job_cond->resv_list && list_count(job_cond->resv_list)) {
-		PGresult *result = NULL;
-		char *query = xstrdup_printf(
-			"SELECT DISTINCT id FROM %s WHERE (", resv_table);
-		concat_cond_list(job_cond->cluster_list, NULL,
-				 "cluster", &query);
-		concat_cond_list(job_cond->resv_list, NULL, "name", &query);
-		//xstrcat(query, ";");
-		result = DEF_QUERY_RET;
-		if(!result) {
-			error("as/pg: couldn't get resv id");
-			goto no_resv;
-		}
-		if(!job_cond->resvid_list)
-			job_cond->resvid_list = list_create(slurm_destroy_char);
-		FOR_EACH_ROW {
-			list_append(job_cond->resvid_list, xstrdup(ROW(0)));
-		} END_EACH_ROW;
-		PQclear(result);
-	}
-no_resv:
-	concat_cond_list(job_cond->resvid_list, "t1", "resvid", cond);
-
-	if(job_cond->step_list && list_count(job_cond->step_list)) {
-		set = 0;
-		xstrcat(*cond, " AND (");
-		itr = list_iterator_create(job_cond->step_list);
-		while((selected_step = list_next(itr))) {
-			if(set)
-				xstrcat(*cond, " OR ");
-			xstrfmtcat(*cond, "t1.jobid=%u", selected_step->jobid);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(*cond, ")");
-	}
-
-	if(job_cond->state_list && list_count(job_cond->state_list)) {
-		set = 0;
-		xstrcat(*cond, " AND (");
-
-		itr = list_iterator_create(job_cond->state_list);
-		while((object = list_next(itr))) {
-			if(set)
-				xstrcat(*cond, " OR ");
-			_state_time_string(cond, atoi(object),
-					   job_cond->usage_start,
-					   job_cond->usage_end);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(*cond, ")");
-	} else {
-		/* Only do this (default of all eligible jobs) if no
-		   state is given */
-		if(job_cond->usage_start) {
-			xstrcat(*cond, " AND (");
-
-			if(!job_cond->usage_end)
-				xstrfmtcat(*cond,
-					   "(t1.endtime >= %ld "
-					   "OR t1.endtime = 0))",
-					   job_cond->usage_start);
-			else
-				xstrfmtcat(*cond,
-					   "(t1.eligible < %ld "
-					   "AND (t1.endtime >= %ld "
-					   "OR t1.endtime = 0)))",
-					   job_cond->usage_end,
-					   job_cond->usage_start);
-		} else if(job_cond->usage_end) {
-			xstrcat(*cond, " AND (");
-			xstrfmtcat(*cond,
-				   "(t1.eligible < %ld))", job_cond->usage_end);
-		}
-	}
-
-	concat_cond_list(job_cond->state_list, "t1", "state", cond);
-
-	/* we need to put all the associations (t2) stuff together here */
-	if(job_cond->cluster_list && list_count(job_cond->cluster_list)) {
-		set = 0;
-		xstrcat(*cond, " AND (");
-		itr = list_iterator_create(job_cond->cluster_list);
-		while((object = list_next(itr))) {
-			if(set)
-				xstrcat(*cond, " OR ");
-			xstrfmtcat(*cond,
-				   "(t1.cluster='%s' OR %s.cluster='%s')",
-				   object, table_level, object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(*cond, ")");
-	}
-
-	concat_cond_list(job_cond->wckey_list, "t1", "wckey", cond);
-
-	if(job_cond->cpus_min) {
-		xstrcat(*cond, " AND (");
-		if(job_cond->cpus_max) {
-			xstrfmtcat(*cond, "(t1.alloc_cpus BETWEEN %u AND %u))",
-				   job_cond->cpus_min, job_cond->cpus_max);
-
-		} else {
-			xstrfmtcat(*cond, "(t1.alloc_cpus='%u'))",
-				   job_cond->cpus_min);
-
-		}
-	}
-
-	if(job_cond->nodes_min) {
-		xstrcat(*cond, " AND (");
-
-		if(job_cond->nodes_max) {
-			xstrfmtcat(*cond,
-				   "(t1.alloc_nodes BETWEEN %u AND %u))",
-				   job_cond->nodes_min, job_cond->nodes_max);
-
-		} else {
-			xstrfmtcat(*cond, "(t1.alloc_nodes='%u'))",
-				   job_cond->nodes_min);
-
-		}
-	}
-
-	return;
-}
-
-
-/*
- * js_pg_get_jobs_cond - get jobs
- *
- * IN pg_conn: database connection
- * IN uid: user performing the get operation
- * IN job_cond: condition of jobs to get
- * RET: list of jobs
- */
-extern List
-js_pg_get_jobs_cond(pgsql_conn_t *pg_conn, uid_t uid,
-		    slurmdb_job_cond_t *job_cond)
-{
-
-	char *query = NULL, *extra_table = NULL, *tmp = NULL, *cond = NULL,
-		*table_level = "t2";
-	int set = 0, is_admin = 1, last_id = -1, curr_id = -1;
-	slurmdb_selected_step_t *selected_step = NULL;
-	slurmdb_job_rec_t *job = NULL;
-	slurmdb_step_rec_t *step = NULL;
-	time_t now = time(NULL);
-	uint16_t private_data = 0;
-	slurmdb_user_rec_t user;
-	local_cluster_t *curr_cluster = NULL;
-	List job_list = list_create(slurmdb_destroy_job_rec);
-	List local_cluster_list = NULL;
-	ListIterator itr = NULL;
-	PGresult *result = NULL, *result2 = NULL;
-	int i,only_pending = 0;
-
-	/* if this changes you will need to edit the corresponding
-	 * enum below also t1 is job_table */
-	char *job_req_inx[] = {
-		"t1.id",
-		"t1.jobid",
-		"t1.associd",
-		"t1.wckey",
-		"t1.wckeyid",
-		"t1.uid",
-		"t1.gid",
-		"t1.resvid",
-		"t1.partition",
-		"t1.blockid",
-		"t1.cluster",
-		"t1.account",
-		"t1.eligible",
-		"t1.submit",
-		"t1.start",
-		"t1.endtime",
-		"t1.suspended",
-		"t1.name",
-		"t1.track_steps",
-		"t1.state",
-		"t1.comp_code",
-		"t1.priority",
-		"t1.req_cpus",
-		"t1.alloc_cpus",
-		"t1.alloc_nodes",
-		"t1.nodelist",
-		"t1.node_inx",
-		"t1.kill_requid",
-		"t1.qos",
-		"t2.user_name",
-		"t2.cluster",
-		"t2.acct",
-		"t2.lft"
-	};
-
-	enum {
-		JOB_REQ_ID,
-		JOB_REQ_JOBID,
-		JOB_REQ_ASSOCID,
-		JOB_REQ_WCKEY,
-		JOB_REQ_WCKEYID,
-		JOB_REQ_UID,
-		JOB_REQ_GID,
-		JOB_REQ_RESVID,
-		JOB_REQ_PARTITION,
-		JOB_REQ_BLOCKID,
-		JOB_REQ_CLUSTER1,
-		JOB_REQ_ACCOUNT1,
-		JOB_REQ_ELIGIBLE,
-		JOB_REQ_SUBMIT,
-		JOB_REQ_START,
-		JOB_REQ_END,
-		JOB_REQ_SUSPENDED,
-		JOB_REQ_NAME,
-		JOB_REQ_TRACKSTEPS,
-		JOB_REQ_STATE,
-		JOB_REQ_COMP_CODE,
-		JOB_REQ_PRIORITY,
-		JOB_REQ_REQ_CPUS,
-		JOB_REQ_ALLOC_CPUS,
-		JOB_REQ_ALLOC_NODES,
-		JOB_REQ_NODELIST,
-		JOB_REQ_NODE_INX,
-		JOB_REQ_KILL_REQUID,
-		JOB_REQ_QOS,
-		JOB_REQ_USER_NAME,
-		JOB_REQ_CLUSTER,
-		JOB_REQ_ACCOUNT,
-		JOB_REQ_LFT,
-		JOB_REQ_COUNT
-	};
-
-	/* if this changes you will need to edit the corresponding
-	 * enum below also t1 is step_table */
-	char *step_req_inx[] = {
-		"t1.stepid",
-		"t1.start",
-		"t1.endtime",
-		"t1.suspended",
-		"t1.name",
-		"t1.nodelist",
-		"t1.node_inx",
-		"t1.state",
-		"t1.kill_requid",
-		"t1.comp_code",
-		"t1.nodes",
-		"t1.cpus",
-		"t1.tasks",
-		"t1.task_dist",
-		"t1.user_sec",
-		"t1.user_usec",
-		"t1.sys_sec",
-		"t1.sys_usec",
-		"t1.max_vsize",
-		"t1.max_vsize_task",
-		"t1.max_vsize_node",
-		"t1.ave_vsize",
-		"t1.max_rss",
-		"t1.max_rss_task",
-		"t1.max_rss_node",
-		"t1.ave_rss",
-		"t1.max_pages",
-		"t1.max_pages_task",
-		"t1.max_pages_node",
-		"t1.ave_pages",
-		"t1.min_cpu",
-		"t1.min_cpu_task",
-		"t1.min_cpu_node",
-		"t1.ave_cpu"
-	};
-
-	enum {
-		STEP_REQ_STEPID,
-		STEP_REQ_START,
-		STEP_REQ_END,
-		STEP_REQ_SUSPENDED,
-		STEP_REQ_NAME,
-		STEP_REQ_NODELIST,
-		STEP_REQ_NODE_INX,
-		STEP_REQ_STATE,
-		STEP_REQ_KILL_REQUID,
-		STEP_REQ_COMP_CODE,
-		STEP_REQ_NODES,
-		STEP_REQ_CPUS,
-		STEP_REQ_TASKS,
-		STEP_REQ_TASKDIST,
-		STEP_REQ_USER_SEC,
-		STEP_REQ_USER_USEC,
-		STEP_REQ_SYS_SEC,
-		STEP_REQ_SYS_USEC,
-		STEP_REQ_MAX_VSIZE,
-		STEP_REQ_MAX_VSIZE_TASK,
-		STEP_REQ_MAX_VSIZE_NODE,
-		STEP_REQ_AVE_VSIZE,
-		STEP_REQ_MAX_RSS,
-		STEP_REQ_MAX_RSS_TASK,
-		STEP_REQ_MAX_RSS_NODE,
-		STEP_REQ_AVE_RSS,
-		STEP_REQ_MAX_PAGES,
-		STEP_REQ_MAX_PAGES_TASK,
-		STEP_REQ_MAX_PAGES_NODE,
-		STEP_REQ_AVE_PAGES,
-		STEP_REQ_MIN_CPU,
-		STEP_REQ_MIN_CPU_TASK,
-		STEP_REQ_MIN_CPU_NODE,
-		STEP_REQ_AVE_CPU,
-		STEP_REQ_COUNT
-	};
-
-	if(check_db_connection(pg_conn) != SLURM_SUCCESS)
-		return NULL;
-
-	memset(&user, 0, sizeof(slurmdb_user_rec_t));
-	user.uid = uid;
-
-	private_data = slurm_get_private_data();
-	if (private_data & PRIVATE_DATA_JOBS) {
-		is_admin = is_user_min_admin_level(
-			pg_conn, uid, SLURMDB_ADMIN_OPERATOR);
-		if (!is_admin)
-			assoc_mgr_fill_in_user(pg_conn, &user, 1, NULL);
-	}
-
-	/* Here we set up environment to check used nodes of jobs.
-	   Since we store the bitmap of the entire cluster we can use
-	   that to set up a hostlist and set up the bitmap to make
-	   things work.  This should go before the setup of conds
-	   since we could update the start/end time.
-	*/
-	if(job_cond && job_cond->used_nodes) {
-		local_cluster_list = setup_cluster_list_with_inx(
-			pg_conn, job_cond, (void **)&curr_cluster);
-		if(!local_cluster_list) {
-			list_destroy(job_list);
-			return NULL;
-		}
-	}
-
-	if(job_cond->state_list && (list_count(job_cond->state_list) == 1)
-	   && (atoi(list_peek(job_cond->state_list)) == JOB_PENDING))
-		only_pending = 1;
-
-	/* TODO: */
-	_make_job_cond_str(pg_conn, job_cond, &extra_table, &cond);
-
-	xfree(tmp);
-	xstrfmtcat(tmp, "%s", job_req_inx[0]);
-	for(i=1; i<JOB_REQ_COUNT; i++) {
-		xstrfmtcat(tmp, ", %s", job_req_inx[i]);
-	}
-
-	/* This is here to make sure we are looking at only this user
-	 * if this flag is set.  We also include any accounts they may be
-	 * coordinator of.
-	 */
-	if(!is_admin && (private_data & PRIVATE_DATA_JOBS)) {
-		query = xstrdup_printf(
-			"SELECT lft FROM %s WHERE user_name='%s'",
-			assoc_table, user.name);
-		if(user.coord_accts) {
-			slurmdb_coord_rec_t *coord = NULL;
-			itr = list_iterator_create(user.coord_accts);
-			while((coord = list_next(itr))) {
-				xstrfmtcat(query, " OR acct='%s'",
-					   coord->name);
-			}
-			list_iterator_destroy(itr);
-		}
-		result = DEF_QUERY_RET;
-		if(!result) {
-			xfree(cond);
-			xfree(extra_table);
-			list_destroy(job_list);
-			if(local_cluster_list)
-				list_destroy(local_cluster_list);
-			return NULL;
-		}
-
-		set = 0;
-		FOR_EACH_ROW {
-			if(set) {
-				xstrfmtcat(cond,
-					   " OR (%s BETWEEN %s.lft AND %s.rgt)",
-					   ROW(0), table_level, table_level);
-			} else {
-				set = 1;
-				xstrfmtcat(cond,
-					   " AND ((%s BETWEEN %s.lft "
-					   "AND %s.rgt)",
-					   ROW(0), table_level,
-					   table_level);
-			}
-		} END_EACH_ROW;
-		if(set)
-			xstrcat(cond, ")");
-		PQclear(result);
-	}
-
-	query = xstrdup_printf("SELECT %s FROM %s AS t1 LEFT JOIN %s AS t2 "
-			       "ON t1.associd=t2.id",
-			       tmp, job_table, assoc_table);
-	xfree(tmp);
-	if(extra_table) {
-		xstrcat(query, extra_table);
-		xfree(extra_table);
-	}
-	xstrcat(query, cond);
-	xfree(cond);
-
-	/* Here we want to order them this way in such a way so it is
-	   easy to look for duplicates
-	*/
-	if(job_cond && !job_cond->duplicates)
-		xstrcat(query, " ORDER BY t1.cluster, jobid, submit DESC;");
-	else
-		xstrcat(query, " ORDER BY t1.cluster, submit DESC;");
-
-	result = DEF_QUERY_RET;
-	if(!result) {
-		list_destroy(job_list);
-		if(local_cluster_list)
-			list_destroy(local_cluster_list);
-		return NULL;
-	}
-
-	FOR_EACH_ROW {
-		char *id;
-		int submit;
-		bool job_ended = 0;
-
-		id = ROW(JOB_REQ_ID);
-		submit = atoi(ROW(JOB_REQ_SUBMIT));
-		curr_id = atoi(ROW(JOB_REQ_JOBID));
-
-		if(job_cond && !job_cond->duplicates && curr_id == last_id)
-			continue;
-
-		last_id = curr_id;
-
-		/* check the bitmap to see if this is one of the jobs
-		   we are looking for */
-		if(!good_nodes_from_inx(local_cluster_list,
-					(void **)&curr_cluster,
-					ROW(JOB_REQ_NODE_INX), submit))
-			continue;
-
-		debug3("as/pg: get_job_conditions: job %d past node test",
-		       curr_id);
-
-		job = slurmdb_create_job_rec();
-		list_append(job_list, job);
-
-		job->alloc_cpus = atoi(ROW(JOB_REQ_ALLOC_CPUS));
-		job->alloc_nodes = atoi(ROW(JOB_REQ_ALLOC_NODES));
-		job->associd = atoi(ROW(JOB_REQ_ASSOCID));
-		job->resvid = atoi(ROW(JOB_REQ_RESVID));
-		job->state = atoi(ROW(JOB_REQ_STATE));
-
-		/* we want a blank wckey if the name is null */
-		if(ROW(JOB_REQ_WCKEY))
-			job->wckey = xstrdup(ROW(JOB_REQ_WCKEY));
-		else
-			job->wckey = xstrdup("");
-		job->wckeyid = atoi(ROW(JOB_REQ_WCKEYID));
-
-		if(! ISEMPTY(JOB_REQ_CLUSTER)) /* ISNULL => ISEMPTY */
-			job->cluster = xstrdup(ROW(JOB_REQ_CLUSTER));
-		else if(! ISEMPTY(JOB_REQ_CLUSTER1))
-			job->cluster = xstrdup(ROW(JOB_REQ_CLUSTER1));
-
-		if(! ISNULL(JOB_REQ_USER_NAME))
-			job->user = xstrdup(ROW(JOB_REQ_USER_NAME));
-		else
-			job->uid = atoi(ROW(JOB_REQ_UID));
-
-		if(! ISNULL(JOB_REQ_LFT))
-			job->lft = atoi(ROW(JOB_REQ_LFT));
-
-		if(! ISEMPTY(JOB_REQ_ACCOUNT))
-			job->account = xstrdup(ROW(JOB_REQ_ACCOUNT));
-		else if(! ISEMPTY(JOB_REQ_ACCOUNT1))
-			job->account = xstrdup(ROW(JOB_REQ_ACCOUNT1));
-
-		if(! ISNULL(JOB_REQ_BLOCKID))
-			job->blockid = xstrdup(ROW(JOB_REQ_BLOCKID));
-
-		job->eligible = atoi(ROW(JOB_REQ_ELIGIBLE));
-		job->submit = submit;
-		job->start = atoi(ROW(JOB_REQ_START));
-		job->end = atoi(ROW(JOB_REQ_END));
-
-		/* since the job->end could be set later end it here */
-		if(job->end) {
-			job_ended = 1;
-			if(!job->start || (job->start > job->end))
-				job->start = job->end;
-		}
-
-		if(job_cond && !job_cond->without_usage_truncation
-		   && job_cond->usage_start) {
-			if(job->start && (job->start < job_cond->usage_start))
-				job->start = job_cond->usage_start;
-
-			if(!job->end || job->end > job_cond->usage_end)
-				job->end = job_cond->usage_end;
-
-			if(!job->start)
-				job->start = job->end;
-
-			job->elapsed = job->end - job->start;
-
-			if(ROW(JOB_REQ_SUSPENDED)) {
-				int local_start, local_end;
-
-				/* get the suspended time for this job */
-				query = xstrdup_printf(
-					"SELECT start, endtime FROM %s WHERE "
-					"(start < %ld AND (endtime >= %ld OR "
-					"endtime = 0)) AND id=%s "
-					"ORDER BY start",
-					suspend_table, job_cond->usage_end,
-					job_cond->usage_start, id);
-				result2 = DEF_QUERY_RET;
-				if(!result2) {
-					list_destroy(job_list);
-					job_list = NULL;
-					break;
-				}
-				FOR_EACH_ROW2 {
-					local_start = atoi(ROW2(0));
-					local_end =  atoi(ROW2(1));
-					if(!local_start)
-						continue;
-
-					if(job->start > local_start)
-						local_start = job->start;
-					if(job->end < local_end)
-						local_end = job->end;
-
-					if((local_end - local_start) < 1)
-						continue;
-
-					job->elapsed -=
-						(local_end - local_start);
-					job->suspended +=
-						(local_end - local_start);
-				} END_EACH_ROW2;
-				PQclear(result2);
-			}
-		} else {
-			job->suspended = atoi(ROW(JOB_REQ_SUSPENDED));
-
-			if (job->state == JOB_SUSPENDED)
-				job->suspended = now - job->suspended;
-
-			if(!job->start) {
-				job->elapsed = 0;
-			} else if(!job->end) {
-				job->elapsed = now - job->start;
-			} else {
-				job->elapsed = job->end - job->start;
-			}
-
-			job->elapsed -= job->suspended;
-		}
-
-		if((int)job->elapsed < 0)
-			job->elapsed = 0;
-
-		job->jobid = curr_id;
-		job->jobname = xstrdup(ROW(JOB_REQ_NAME));
-		job->gid = atoi(ROW(JOB_REQ_GID));
-		job->exitcode = atoi(ROW(JOB_REQ_COMP_CODE));
-
-		if(ROW(JOB_REQ_PARTITION))
-			job->partition = xstrdup(ROW(JOB_REQ_PARTITION));
-
-		if(ROW(JOB_REQ_NODELIST))
-			job->nodes = xstrdup(ROW(JOB_REQ_NODELIST));
-
-		if (!job->nodes || !strcmp(job->nodes, "(null)")) {
-			xfree(job->nodes);
-			job->nodes = xstrdup("(unknown)");
-		}
-
-		job->track_steps = atoi(ROW(JOB_REQ_TRACKSTEPS));
-		job->priority = atoi(ROW(JOB_REQ_PRIORITY));
-		job->req_cpus = atoi(ROW(JOB_REQ_REQ_CPUS));
-		job->requid = atoi(ROW(JOB_REQ_KILL_REQUID));
-		job->qosid = atoi(ROW(JOB_REQ_QOS));
-		job->show_full = 1;
-
-		if(only_pending || (job_cond && job_cond->without_steps))
-			goto skip_steps;
-
-		if(job_cond && job_cond->step_list
-		   && list_count(job_cond->step_list)) {
-			set = 0;
-			itr = list_iterator_create(job_cond->step_list);
-			while((selected_step = list_next(itr))) {
-				if(selected_step->jobid != job->jobid) {
-					continue;
-				} else if (selected_step->stepid
-					   == (uint32_t)NO_VAL) {
-					job->show_full = 1;
-					break;
-				}
-
-				if(set)
-					xstrcat(cond, " OR ");
-				else
-					xstrcat(cond, " AND (");
-
-				xstrfmtcat(cond, "t1.stepid=%u",
-					   selected_step->stepid);
-				set = 1;
-				job->show_full = 0;
-			}
-			list_iterator_destroy(itr);
-			if(set)
-				xstrcat(cond, ")");
-		}
-		for(i=0; i<STEP_REQ_COUNT; i++) {
-			if(i)
-				xstrcat(tmp, ", ");
-			xstrcat(tmp, step_req_inx[i]);
-		}
-		query =	xstrdup_printf("SELECT %s FROM %s AS t1 WHERE t1.id=%s",
-				       tmp, step_table, id);
-		xfree(tmp);
-
-		if(cond) {
-			xstrcat(query, cond);
-			xfree(cond);
-		}
-
-		result2 = DEF_QUERY_RET;
-		if(!result2) {
-			list_destroy(job_list);
-			if(local_cluster_list)
-				list_destroy(local_cluster_list);
-			return NULL;
-		}
-
-		/* Querying the steps in the fashion was faster than
-		   doing only 1 query and then matching the steps up
-		   later with the job.
-		*/
-		FOR_EACH_ROW2 {
-			/* check the bitmap to see if this is one of the steps
-			   we are looking for */
-			if(!good_nodes_from_inx(local_cluster_list,
-						(void **)&curr_cluster,
-						ROW2(STEP_REQ_NODE_INX),
-						submit))
-				continue;
-
-			step = slurmdb_create_step_rec();
-			step->tot_cpu_sec = 0;
-			step->tot_cpu_usec = 0;
-			step->job_ptr = job;
-			if(!job->first_step_ptr)
-				job->first_step_ptr = step;
-			list_append(job->steps, step);
-			step->stepid = atoi(ROW2(STEP_REQ_STEPID));
-			/* info("got step %u.%u", */
-/* 			     job->header.jobnum, step->stepnum); */
-			step->state = atoi(ROW2(STEP_REQ_STATE));
-			step->exitcode = atoi(ROW2(STEP_REQ_COMP_CODE));
-			step->ncpus = atoi(ROW2(STEP_REQ_CPUS));
-			step->nnodes = atoi(ROW2(STEP_REQ_NODES));
-
-			step->ntasks = atoi(ROW2(STEP_REQ_TASKS));
-			step->task_dist = atoi(ROW2(STEP_REQ_TASKDIST));
-			if(!step->ntasks)
-				step->ntasks = step->ncpus;
-
-			step->start = atoi(ROW2(STEP_REQ_START));
-
-			step->end = atoi(ROW2(STEP_REQ_END));
-			/* if the job has ended end the step also */
-			if(!step->end && job_ended) {
-				step->end = job->end;
-				step->state = job->state;
-			}
-
-			if(job_cond && !job_cond->without_usage_truncation
-			   && job_cond->usage_start) {
-				if(step->start
-				   && (step->start < job_cond->usage_start))
-					step->start = job_cond->usage_start;
-
-				if(!step->start && step->end)
-					step->start = step->end;
-
-				if(!step->end
-				   || (step->end > job_cond->usage_end))
-					step->end = job_cond->usage_end;
-			}
-
-			/* figure this out by start stop */
-			step->suspended = atoi(ROW2(STEP_REQ_SUSPENDED));
-			if(!step->end) {
-				step->elapsed = now - step->start;
-			} else {
-				step->elapsed = step->end - step->start;
-			}
-			step->elapsed -= step->suspended;
-
-			if((int)step->elapsed < 0)
-				step->elapsed = 0;
-
-			step->user_cpu_sec = atoi(ROW2(STEP_REQ_USER_SEC));
-			step->user_cpu_usec =
-				atoi(ROW2(STEP_REQ_USER_USEC));
-			step->sys_cpu_sec = atoi(ROW2(STEP_REQ_SYS_SEC));
-			step->sys_cpu_usec = atoi(ROW2(STEP_REQ_SYS_USEC));
-			step->tot_cpu_sec +=
-				step->user_cpu_sec + step->sys_cpu_sec;
-			step->tot_cpu_usec +=
-				step->user_cpu_usec + step->sys_cpu_usec;
-			step->stats.vsize_max =
-				atoi(ROW2(STEP_REQ_MAX_VSIZE));
-			step->stats.vsize_max_taskid =
-				atoi(ROW2(STEP_REQ_MAX_VSIZE_TASK));
-			step->stats.vsize_ave =
-				atof(ROW2(STEP_REQ_AVE_VSIZE));
-			step->stats.rss_max =
-				atoi(ROW2(STEP_REQ_MAX_RSS));
-			step->stats.rss_max_taskid =
-				atoi(ROW2(STEP_REQ_MAX_RSS_TASK));
-			step->stats.rss_ave =
-				atof(ROW2(STEP_REQ_AVE_RSS));
-			step->stats.pages_max =
-				atoi(ROW2(STEP_REQ_MAX_PAGES));
-			step->stats.pages_max_taskid =
-				atoi(ROW2(STEP_REQ_MAX_PAGES_TASK));
-			step->stats.pages_ave =
-				atof(ROW2(STEP_REQ_AVE_PAGES));
-			step->stats.cpu_min =
-				atoi(ROW2(STEP_REQ_MIN_CPU));
-			step->stats.cpu_min_taskid =
-				atoi(ROW2(STEP_REQ_MIN_CPU_TASK));
-			step->stats.cpu_ave = atof(ROW2(STEP_REQ_AVE_CPU));
-			step->stepname = xstrdup(ROW2(STEP_REQ_NAME));
-			step->nodes = xstrdup(ROW2(STEP_REQ_NODELIST));
-			step->stats.vsize_max_nodeid =
-				atoi(ROW2(STEP_REQ_MAX_VSIZE_NODE));
-			step->stats.rss_max_nodeid =
-				atoi(ROW2(STEP_REQ_MAX_RSS_NODE));
-			step->stats.pages_max_nodeid =
-				atoi(ROW2(STEP_REQ_MAX_PAGES_NODE));
-			step->stats.cpu_min_nodeid =
-				atoi(ROW2(STEP_REQ_MIN_CPU_NODE));
-
-			step->requid = atoi(ROW2(STEP_REQ_KILL_REQUID));
-		} END_EACH_ROW2;
-		PQclear(result2);
-
-		if(!job->track_steps) {
-			/* If we don't have track_steps we want to see
-			   if we have multiple steps.  If we only have
-			   1 step check the job name against the step
-			   name in most all cases it will be
-			   different.  If it is different print out
-			   the step separate.
-			*/
-			if(list_count(job->steps) > 1)
-				job->track_steps = 1;
-			else if(step && step->stepname && job->jobname) {
-				if(strcmp(step->stepname, job->jobname))
-					job->track_steps = 1;
-			}
-		}
-		/* need to reset here to make the above test valid */
-	skip_steps:
-		step = NULL;
-	} END_EACH_ROW;
-	PQclear(result);
-	if(local_cluster_list)
-		list_destroy(local_cluster_list);
-
-	return job_list;
-
+ 	int rc = 0;
+ 	PGresult *result;
+ 	char *query = xstrdup_printf(
+ 		"SELECT t0.id_assoc FROM %s AS t0, %s AS t1"
+ 		"  WHERE t0.id_assoc=t1.id_assoc AND t0.state=%u LIMIT 1;",
+ 		job_table, assoc_table, JOB_RUNNING);
+ 	result = DEF_QUERY_RET;
+ 	if (!result) {
+ 		error("failed to get jobs for cluster %s", cluster);
+ 		return rc;
+ 	}
+ 	rc = PQntuples(result);
+ 	PQclear(result);
+ 	return rc;
 }

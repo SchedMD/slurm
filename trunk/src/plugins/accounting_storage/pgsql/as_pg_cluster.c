@@ -40,7 +40,9 @@
 \*****************************************************************************/
 #include "as_pg_common.h"
 
-char *cluster_table = "cluster_table";
+/* shared table */
+static char *cluster_table_name = "cluster_table";
+char *cluster_table = "public.cluster_table";
 static storage_field_t cluster_table_fields[] = {
 	{ "creation_time", "INTEGER NOT NULL" },
 	{ "mod_time", "INTEGER DEFAULT 0 NOT NULL" },
@@ -50,6 +52,9 @@ static storage_field_t cluster_table_fields[] = {
 	{ "control_port", "INTEGER DEFAULT 0 NOT NULL" },
 	{ "rpc_version", "INTEGER DEFAULT 0 NOT NULL" },
 	{ "classification", "INTEGER DEFAULT 0" },
+	{ "dimensions", "INTEGER DEFAULT 1" },
+	{ "plugin_id_select", "INTEGER DEFAULT 0" },
+	{ "flags", "INTEGER DEFAULT 0" },
 	{ NULL, NULL}
 };
 static char *cluster_table_constraint = ", "
@@ -66,16 +71,18 @@ static int
 _create_function_add_cluster(PGconn *db_conn)
 {
 	char *create_line = xstrdup_printf(
-		"CREATE OR REPLACE FUNCTION add_cluster "
-		"(cluster %s) RETURNS VOID AS $$"
+		"CREATE OR REPLACE FUNCTION public.add_cluster "
+		"(rec %s) RETURNS VOID AS $$"
 		"BEGIN LOOP "
 		"  BEGIN "
-		"    INSERT INTO %s VALUES (cluster.*); RETURN;"
+		"    INSERT INTO %s VALUES (rec.*); RETURN;"
 		"  EXCEPTION WHEN UNIQUE_VIOLATION THEN "
 		"    UPDATE %s "
-		"      SET (deleted, mod_time, control_host, control_port) ="
-		"          (0, cluster.mod_time, '', 0)"
-		"      WHERE name=cluster.name;"
+		"      SET (deleted, mod_time, control_host, control_port, "
+		"           classification, flags) ="
+		"          (0, rec.mod_time, '', 0, rec.classification, "
+		"           rec.flags)"
+		"      WHERE name=rec.name;"
 		"    IF FOUND THEN RETURN; END IF;"
 		"  END; "
 		"END LOOP; END; $$ LANGUAGE PLPGSQL;",
@@ -90,15 +97,69 @@ _create_function_add_cluster(PGconn *db_conn)
  * RET: error code
  */
 extern int
-check_cluster_tables(PGconn *db_conn, char *user)
+check_cluster_tables(PGconn *db_conn)
 {
 	int rc;
 
-	rc = check_table(db_conn, cluster_table, cluster_table_fields,
-			 cluster_table_constraint, user);
+	rc = check_table(db_conn, "public", cluster_table_name,
+			 cluster_table_fields, cluster_table_constraint);
 	rc |= _create_function_add_cluster(db_conn);
 	return rc;
 }
+
+/* create per-cluster tables */
+static int
+_create_cluster_tables(pgsql_conn_t *pg_conn, char *cluster)
+{
+	char *query;
+	int rc = SLURM_SUCCESS;
+
+	query = xstrdup_printf("CREATE SCHEMA %s;", cluster);
+	rc = DEF_QUERY_RET_RC;
+
+	if (rc == SLURM_SUCCESS)
+		rc = check_assoc_tables(pg_conn->db_conn, cluster);
+	if (rc == SLURM_SUCCESS)
+		rc = check_event_tables(pg_conn->db_conn, cluster);
+	if (rc == SLURM_SUCCESS)
+		rc = check_job_tables(pg_conn->db_conn, cluster);
+	if (rc == SLURM_SUCCESS)
+		rc = check_resv_tables(pg_conn->db_conn, cluster);
+	if (rc == SLURM_SUCCESS)
+		rc = check_wckey_tables(pg_conn->db_conn, cluster);
+	if (rc == SLURM_SUCCESS)
+		rc = check_usage_tables(pg_conn->db_conn, cluster);
+
+	return rc;
+}
+
+/* remove per-cluster tables */
+static int
+_remove_cluster_tables(pgsql_conn_t *pg_conn, char *cluster)
+{
+	DEF_VARS;
+	int rc = SLURM_SUCCESS;
+
+	/* keep one copy of backup */
+	query = xstrdup_printf(
+		"SELECT nspname FROM pg_namespace WHERE nspname='%s_deleted';",
+		cluster);
+	result = DEF_QUERY_RET;
+	if (!result)
+		return SLURM_ERROR;
+	if (PQntuples(result) != 0) {
+		query = xstrdup_printf("DROP SCHEMA %s_deleted CASCADE;", cluster);
+		rc = DEF_QUERY_RET_RC;
+	}
+	PQclear(result);
+	if (rc == SLURM_SUCCESS) {
+		query = xstrdup_printf("ALTER SCHEMA %s RENAME TO %s_deleted;",
+				       cluster, cluster);
+		rc = DEF_QUERY_RET_RC;
+	}
+	return rc;
+}
+
 
 /*
  * as_pg_add_clusters - add clusters
@@ -124,7 +185,6 @@ as_pg_add_clusters(pgsql_conn_t *pg_conn, uint32_t uid,
 		return ESLURM_DB_CONNECTION;
 
 	assoc_list = list_create(slurmdb_destroy_association_rec);
-
 	user_name = uid_to_string((uid_t) uid);
 	itr = list_iterator_create(cluster_list);
 	while((object = list_next(itr))) {
@@ -134,10 +194,22 @@ as_pg_add_clusters(pgsql_conn_t *pg_conn, uint32_t uid,
 			rc = SLURM_ERROR;
 			continue;
 		}
+		if (strchr(object->name, '.')) {
+			error("as/pg: add_clusters: invalid cluster name %s",
+			      object->name);
+			rc = SLURM_ERROR;
+			continue;
+		}
+		if (cluster_in_db(pg_conn, object->name)) {
+			error("cluster %s already added", object->name);
+			rc = SLURM_ERROR;
+			continue;
+		}
 
 		query = xstrdup_printf(
-			"SELECT add_cluster((%ld, %ld, 0, '%s', '', 0, 0, %u));",
-			now, now, object->name,
+			"SELECT public.add_cluster("
+			"(%ld, %ld, 0, '%s', '', 0, 0, %u, 1, 0, 0));",
+			(long)now, (long)now, object->name,
 			object->classification);
 		rc = DEF_QUERY_RET_RC;
 		if(rc != SLURM_SUCCESS) {
@@ -146,20 +218,27 @@ as_pg_add_clusters(pgsql_conn_t *pg_conn, uint32_t uid,
 			break;
 		}
 
+		rc = _create_cluster_tables(pg_conn, object->name);
+		if (rc != SLURM_SUCCESS) {
+			error("Failed creating cluster tables for %s",
+			      object->name);
+			added = 0;
+			break;
+		}
+
 		/* add root account assoc: <'cluster', 'root', '', ''> */
-		/* TODO: does object->root_assoc valid? */
 		if (add_cluster_root_assoc(pg_conn, now, object, &txn_info)
 		    != SLURM_SUCCESS) {
 			added = 0;
 			break;
 		}
 
-		if (add_txn(pg_conn, now, DBD_ADD_CLUSTERS, object->name,
+		if (add_txn(pg_conn, now, "", DBD_ADD_CLUSTERS, object->name,
 			    user_name, txn_info) != SLURM_SUCCESS) {
 			error("as/pg: add_cluster: couldn't add txn");
-		} else
+		} else {
 			added ++;
-
+		}
 		xfree(txn_info);
 
 		/* Add user root by default to run from the root
@@ -169,7 +248,6 @@ as_pg_add_clusters(pgsql_conn_t *pg_conn, uint32_t uid,
 		assoc = xmalloc(sizeof(slurmdb_association_rec_t));
 		slurmdb_init_association_rec(assoc, 0);
 		list_append(assoc_list, assoc);
-
 		assoc->cluster = xstrdup(object->name);
 		assoc->user = xstrdup("root");
 		assoc->acct = xstrdup("root");
@@ -184,12 +262,15 @@ as_pg_add_clusters(pgsql_conn_t *pg_conn, uint32_t uid,
 	xfree(user_name);
 	list_destroy(assoc_list);
 
-	if(!added) {
-		if(pg_conn->rollback) {
-			pgsql_db_rollback(pg_conn->db_conn);
-		}
-		list_flush(pg_conn->update_list);
+	if (!added) {
+		reset_pgsql_conn(pg_conn);
+	} else {
+		/* when loading sacctmgr cfg file,
+		   get_assoc will be called before commit
+		*/
+		pg_conn->cluster_changed = 1;
 	}
+
 	return rc;
 }
 
@@ -211,12 +292,12 @@ as_pg_modify_clusters(pgsql_conn_t *pg_conn, uint32_t uid,
 		      slurmdb_cluster_cond_t *cluster_cond,
 		      slurmdb_cluster_rec_t *cluster)
 {
+	DEF_VARS;
 	List ret_list = NULL;
 	int rc = SLURM_SUCCESS, set = 0;
 	char *object = NULL, *user_name = NULL,	*name_char = NULL;
-	char *vals = NULL, *cond = NULL, *query = NULL, *send_char = NULL;
+	char *vals = NULL, *cond = NULL, *send_char = NULL;
 	time_t now = time(NULL);
-	PGresult *result = NULL;
 	bool clust_reg = false;
 
 	if (!cluster_cond || !cluster) {
@@ -240,22 +321,35 @@ as_pg_modify_clusters(pgsql_conn_t *pg_conn, uint32_t uid,
 	}
 
 	set = 0;
-	if(cluster->control_host) {
+	if (cluster->control_host) {
 		xstrfmtcat(vals, ", control_host='%s'", cluster->control_host);
 		set++;
 		clust_reg = true;
 	}
-	if(cluster->control_port) {
+	if (cluster->control_port) {
 		xstrfmtcat(vals, ", control_port=%u", cluster->control_port);
 		set++;
 		clust_reg = true;
 	}
-	if(cluster->rpc_version) {
+	if (cluster->rpc_version) {
 		xstrfmtcat(vals, ", rpc_version=%u", cluster->rpc_version);
 		set++;
 		clust_reg = true;
 	}
-	if(cluster->classification) {
+	if (cluster->dimensions) {
+		xstrfmtcat(vals, ", dimensions=%u", cluster->dimensions);
+		clust_reg = true;
+	}
+	if (cluster->plugin_id_select) {
+		xstrfmtcat(vals, ", plugin_id_select=%u",
+			   cluster->plugin_id_select);
+		clust_reg = true;
+	}
+	if (cluster->flags != NO_VAL) {
+		xstrfmtcat(vals, ", flags=%u", cluster->flags);
+		clust_reg = true;
+	}
+	if (cluster->classification) {
 		xstrfmtcat(vals, ", classification=%u",
 			   cluster->classification);
 	}
@@ -310,7 +404,7 @@ as_pg_modify_clusters(pgsql_conn_t *pg_conn, uint32_t uid,
 		send_char = xstrdup_printf("(%s)", name_char);
 		user_name = uid_to_string((uid_t) uid);
 		rc = pgsql_modify_common(pg_conn, DBD_MODIFY_CLUSTERS, now,
-					 user_name, cluster_table,
+					 "", user_name, cluster_table,
 					 send_char, vals);
 		xfree(user_name);
 		xfree(send_char);
@@ -327,6 +421,61 @@ end_it:
 	return ret_list;
 }
 
+/* get running jobs of specified cluster */
+static List
+_get_cluster_running_jobs(pgsql_conn_t *pg_conn, char *cluster)
+{
+	DEF_VARS;
+	List job_list = NULL;
+	char *job;
+	char *fields = "t0.id_job,t1.acct,t1.user_name,t1.partition";
+
+	query = xstrdup_printf(
+		"SELECT %s FROM %s.%s AS t0, %s.%s AS t1, %s.%s AS t2 WHERE "
+		"(t1.lft BETWEEN t2.lft AND t2.rgt) AND t2.acct='root' AND "
+		"t0.id_assoc=t1.id_assoc AND t0.time_end=0 AND t0.state=%d;",
+		fields, cluster, job_table, cluster, assoc_table, cluster,
+		assoc_table, (int)JOB_RUNNING);
+	result = DEF_QUERY_RET;
+	if (!result)
+		return NULL;
+
+	FOR_EACH_ROW {
+		if (ISEMPTY(2)) {
+			error("how could job %s running on non-user "
+			      "assoc <%s, %s, '', ''>", ROW(0),
+			      ROW(4), ROW(1));
+			continue;
+		}
+		job = xstrdup_printf(
+			"JobID = %-10s C = %-10s A = %-10s U = %-9s",
+			ROW(0), cluster, ROW(1), ROW(2));
+		if(!ISEMPTY(3))
+			xstrfmtcat(job, " P = %s", ROW(3));
+		if (!job_list)
+			job_list = list_create(slurm_destroy_char);
+		list_append(job_list, job);
+	} END_EACH_ROW;
+	PQclear(result);
+	return job_list;
+}
+
+/* whether specified cluster has jobs in db */
+static int
+_cluster_has_jobs(pgsql_conn_t *pg_conn, char *cluster)
+{
+	DEF_VARS;
+	int has_jobs = 0;
+
+	query = xstrdup_printf("SELECT id_assoc FROM %s.%s LIMIT 1;",
+			       cluster, job_table);
+	result = DEF_QUERY_RET;
+	if (result) {
+		has_jobs = (PQntuples(result) != 0);
+		PQclear(result);
+	}
+	return has_jobs;
+}
 
 /*
  * as_pg_remove_clusters - remove clusters
@@ -340,21 +489,16 @@ extern List
 as_pg_remove_clusters(pgsql_conn_t *pg_conn, uint32_t uid,
 		      slurmdb_cluster_cond_t *cluster_cond)
 {
-	List ret_list = NULL;
-	List tmp_list = NULL;
-	int rc = SLURM_SUCCESS;
-	char *cond = NULL, *query = NULL,
-		*name_char = NULL, *assoc_char = NULL;
+	DEF_VARS;
+	List ret_list = NULL, job_list = NULL;
+	int rc = SLURM_SUCCESS, has_jobs;
+	char *cond = NULL, *user_name = NULL;
 	time_t now = time(NULL);
-	char *user_name = NULL;
-	slurmdb_wckey_cond_t wckey_cond;
-	PGresult *result = NULL;
 
 	if(!cluster_cond) {
 		error("as/pg: remove_clusters: we need something to remove");
 		return NULL;
 	}
-
 	if(check_db_connection(pg_conn) != SLURM_SUCCESS)
 		return NULL;
 
@@ -363,7 +507,6 @@ as_pg_remove_clusters(pgsql_conn_t *pg_conn, uint32_t uid,
 		error("as/pg: remove_clusters: nothing to remove");
 		return NULL;
 	}
-
 	query = xstrdup_printf("SELECT name FROM %s WHERE deleted=0 %s;",
 			       cluster_table, cond);
 	xfree(cond);
@@ -373,73 +516,66 @@ as_pg_remove_clusters(pgsql_conn_t *pg_conn, uint32_t uid,
 		return NULL;
 	}
 
-	rc = 0;
 	ret_list = list_create(slurm_destroy_char);
-	FOR_EACH_ROW {
-		char *object = xstrdup(ROW(0));
-		list_append(ret_list, object);
-		if(!rc) {
-			xstrfmtcat(name_char, "name='%s'", object);
-			xstrfmtcat(cond, "cluster='%s'", object);
-			xstrfmtcat(assoc_char, "t1.cluster='%s'", object);
-			rc = 1;
-		} else  {
-			xstrfmtcat(name_char, " OR name='%s'", object);
-			xstrfmtcat(cond, " OR cluster='%s'", object);
-			xstrfmtcat(assoc_char, " OR t1.cluster='%s'", object);
-		}
-	} END_EACH_ROW;
-	PQclear(result);
-
-	if(!list_count(ret_list)) {
+	if (PQntuples(result) == 0) {
+		PQclear(result);
 		errno = SLURM_NO_CHANGE_IN_DATA;
-		debug3("as/pg: remove_clusters: didn't effect anything");
+		debug3("didn't effect anything");
+		/* XXX: if we return NULL, test21.27 will fail to execute */
 		return ret_list;
 	}
 
-	/* remove these clusters from the wckey table */
-	memset(&wckey_cond, 0, sizeof(slurmdb_wckey_cond_t));
-	wckey_cond.cluster_list = ret_list;
-	tmp_list = acct_storage_p_remove_wckeys(pg_conn, uid, &wckey_cond);
-	if(tmp_list)
-		list_destroy(tmp_list);
+	user_name = uid_to_string((uid_t)uid);
+	rc = 0;
+	FOR_EACH_ROW {
+		char *cluster = ROW(0);
 
-	/* We should not need to delete any cluster usage just set it
-	 * to deleted */
-	xstrfmtcat(query,
-		   "UPDATE %s SET period_end=%ld WHERE period_end=0 AND (%s);"
-		   "UPDATE %s SET mod_time=%ld, deleted=1 WHERE (%s);"
-		   "UPDATE %s SET mod_time=%ld, deleted=1 WHERE (%s);"
-		   "UPDATE %s SET mod_time=%ld, deleted=1 WHERE (%s);",
-		   event_table, now, cond,
-		   cluster_day_table, now, cond,
-		   cluster_hour_table, now, cond,
-		   cluster_month_table, now, cond);
-	xfree(cond);
-	rc = DEF_QUERY_RET_RC;
-	if(rc != SLURM_SUCCESS) {
-		if(pg_conn->rollback) {
-			pgsql_db_rollback(pg_conn->db_conn);
-		}
-		list_flush(pg_conn->update_list);
+		job_list = _get_cluster_running_jobs(pg_conn, cluster);
+		if (job_list)
+			break;
+
+		has_jobs = _cluster_has_jobs(pg_conn, cluster);
+
+		if (!has_jobs)
+			query = xstrdup_printf(
+				"DELETE FROM %s WHERE creation_time>%ld AND "
+				"name='%s';", cluster_table,
+				(now - DELETE_SEC_BACK), cluster);
+		xstrfmtcat(query,
+			   "UPDATE %s SET mod_time=%ld, deleted=1 WHERE "
+			   "deleted=0 AND name='%s';", cluster_table, now,
+			   cluster);
+		xstrfmtcat(query,
+			   "INSERT INTO %s (timestamp, action, name, actor) "
+			   "VALUES (%ld, %d, '%s', '%s');", txn_table, now,
+			   (int)DBD_REMOVE_CLUSTERS, cluster, user_name);
+
+		rc = DEF_QUERY_RET_RC;
+		if (rc != SLURM_SUCCESS)
+			break;
+
+		rc = _remove_cluster_tables(pg_conn, cluster);
+		if (rc != SLURM_SUCCESS)
+			break;
+
+		list_append(ret_list, xstrdup(cluster));
+		addto_update_list(pg_conn->update_list, SLURMDB_REMOVE_CLUSTER,
+				  xstrdup(cluster));
+		pg_conn->cluster_changed = 1;
+	} END_EACH_ROW;
+	PQclear(result);
+
+	if (job_list) {
+		reset_pgsql_conn(pg_conn);
 		list_destroy(ret_list);
-		xfree(name_char);
-		xfree(assoc_char);
-		return NULL;
+		error("as/pg: remove_clusters: jobs running on cluster");
+		errno = ESLURM_JOBS_RUNNING_ON_ASSOC;
+		return job_list;
 	}
-
-	cond = xstrdup_printf("t1.acct='root' AND (%s)", assoc_char);
-	xfree(assoc_char);
-
-	user_name = uid_to_string((uid_t) uid);
-	rc = pgsql_remove_common(pg_conn, DBD_REMOVE_CLUSTERS, now, user_name,
-				 cluster_table, name_char, cond);
-	xfree(user_name);
-	xfree(name_char);
-	xfree(cond);
-	if (rc  == SLURM_ERROR) {
+	if (rc != SLURM_SUCCESS) {
+		reset_pgsql_conn(pg_conn);
 		list_destroy(ret_list);
-		return NULL;
+		ret_list = NULL;
 	}
 	return ret_list;
 }
@@ -456,8 +592,8 @@ extern List
 as_pg_get_clusters(pgsql_conn_t *pg_conn, uid_t uid,
 		   slurmdb_cluster_cond_t *cluster_cond)
 {
-	char *query = NULL, *cond = NULL;
-	PGresult *result = NULL;
+	DEF_VARS;
+	char *cond = NULL;
 	slurmdb_association_cond_t assoc_cond;
 	slurmdb_cluster_rec_t *cluster = NULL;
 	slurmdb_association_rec_t *assoc = NULL;
@@ -465,15 +601,18 @@ as_pg_get_clusters(pgsql_conn_t *pg_conn, uid_t uid,
 	ListIterator itr = NULL, assoc_itr = NULL;
 
 	/* if this changes you will need to edit the corresponding enum */
-	char *gc_fields = "name, classification, control_host, "
-		"control_port, rpc_version";
+	char *gc_fields = "name,classification,control_host,control_port,"
+		"rpc_version,dimensions,flags,plugin_id_select";
 	enum {
-		GC_NAME,
-		GC_CLASS,
-		GC_CH,
-		GC_CP,
-		GC_VERSION,
-		GC_COUNT
+		F_NAME,
+		F_CLASS,
+		F_CH,
+		F_CP,
+		F_VERSION,
+		F_DIMS,
+		F_FLAGS,
+		F_PI_SELECT,
+		F_COUNT
 	};
 
 	if (check_db_connection(pg_conn) != SLURM_SUCCESS)
@@ -514,7 +653,7 @@ empty:
 		cluster = xmalloc(sizeof(slurmdb_cluster_rec_t));
 		list_append(cluster_list, cluster);
 
-		cluster->name = xstrdup(ROW(GC_NAME));
+		cluster->name = xstrdup(ROW(F_NAME));
 		list_append(assoc_cond.cluster_list, cluster->name);
 
 		/* get the usage if requested */
@@ -525,10 +664,13 @@ empty:
 				       cluster_cond->usage_end);
 		}
 
-		cluster->classification = atoi(ROW(GC_CLASS));
-		cluster->control_host = xstrdup(ROW(GC_CH));
-		cluster->control_port = atoi(ROW(GC_CP));
-		cluster->rpc_version = atoi(ROW(GC_VERSION));
+		cluster->classification = atoi(ROW(F_CLASS));
+		cluster->control_host = xstrdup(ROW(F_CH));
+		cluster->control_port = atoi(ROW(F_CP));
+		cluster->rpc_version = atoi(ROW(F_VERSION));
+		cluster->dimensions = atoi(ROW(F_DIMS));
+		cluster->flags = atoi(ROW(F_FLAGS));
+		cluster->plugin_id_select = atoi(ROW(F_PI_SELECT));
 
 		get_cluster_cpu_nodes(pg_conn, cluster);
 	} END_EACH_ROW;
@@ -578,4 +720,26 @@ empty:
 		      list_count(assoc_list));
 	list_destroy(assoc_list);
 	return cluster_list;
+}
+
+extern List
+get_cluster_names(PGconn *db_conn)
+{
+	PGresult *result = NULL;
+	List ret_list = NULL;
+	char *query = xstrdup_printf("SELECT name from %s WHERE deleted=0",
+				     cluster_table);
+
+	result = pgsql_db_query_ret(db_conn, query);
+	xfree(query);
+	if (!result)
+		return NULL;
+
+	ret_list = list_create(slurm_destroy_char);
+	FOR_EACH_ROW {
+		if (! ISEMPTY(0))
+			list_append(ret_list, xstrdup(ROW(0)));
+	} END_EACH_ROW;
+	PQclear(result);
+	return ret_list;
 }

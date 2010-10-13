@@ -66,9 +66,17 @@
 #include "as_pg_user.h"
 #include "as_pg_wckey.h"
 
+#define DELETE_SEC_BACK (3600*24)
+
+
 /*
  * To save typing and avoid wrapping long lines
  */
+#define DEF_VARS char *query = NULL; \
+	PGresult *result = NULL;
+
+#define DEF_VARS2 char *query2 = NULL; \
+	PGresult *result2 = NULL;
 
 #define DEBUG_QUERY do { \
 		debug3("as/pg(%s:%d) query\n%s", __FILE__, __LINE__, query); \
@@ -121,7 +129,31 @@
 #define ISNULL2(col) PQgetisnull(result2, _row2, col)
 #define ISEMPTY2(col) (PQgetvalue(result2, _row2, col)[0] == '\0')
 
+
+/* use identifier cluster_name */
+#define FOR_EACH_CLUSTER(_list) do {				\
+	List _cluster_list = NULL;				\
+	ListIterator _itr = NULL;				\
+	char *cluster_name = NULL;				\
+	if ((_list) && list_count((_list)))			\
+		_cluster_list = (_list);			\
+	else {							\
+		slurm_mutex_lock(&as_pg_cluster_list_lock);	\
+		_cluster_list = as_pg_cluster_list;		\
+	}							\
+	_itr = list_iterator_create(_cluster_list);		\
+	while((cluster_name = list_next(_itr)))			\
+		
+#define END_EACH_CLUSTER 					\
+	list_iterator_destroy(_itr);				\
+	if (_cluster_list == as_pg_cluster_list)		\
+		slurm_mutex_unlock(&as_pg_cluster_list_lock);	\
+	} while (0)
+
+
 extern slurm_dbd_conf_t *slurmdbd_conf;
+
+
 
 /* data structures */
 typedef struct {
@@ -131,6 +163,11 @@ typedef struct {
 	bitstr_t *asked_bitmap;
 } local_cluster_t;
 
+typedef struct {
+	List cluster_list;
+	local_cluster_t *curr_cluster;
+} cluster_nodes_t;
+
 extern char *default_qos_str;
 
 /* functions */
@@ -138,47 +175,37 @@ extern int create_function_xfree(PGconn *db_conn, char *query);
 
 extern void concat_cond_list(List cond_list, char *prefix,
 			     char *col, char **cond);
+extern void concat_node_state_cond_list(List cond_list, char *prefix,
+			     char *col, char **cond);
 extern void concat_like_cond_list(List cond_list, char *prefix,
 				  char *col, char **cond);
-extern void concat_limit(char *col, int limit, char **rec, char **txn);
+extern void concat_limit_32(char *col, uint32_t limit, char **rec, char **txn);
+extern void concat_limit_64(char *col, uint64_t limit, char **rec, char **txn);
 
 extern int pgsql_modify_common(pgsql_conn_t *pg_conn, uint16_t type, time_t now,
-			      char *user_name, char *table, char *name_char,
-			      char *vals);
-extern int pgsql_remove_common(pgsql_conn_t *pg_conn, uint16_t type, time_t now,
-			      char *user_name, char *table, char *name_char,
-			      char *assoc_char);
+			       char *cluster, char *user_name, char *table,
+			       char *name_char, char *vals);
 
 extern int check_db_connection(pgsql_conn_t *pg_conn);
-extern int check_table(PGconn *db_conn, char *table, storage_field_t *fields,
-		       char *constraint, char *user);
+extern int check_table(PGconn *db_conn, char *schema, char *table,
+		       storage_field_t *fields, char *constraint);
 
-extern List setup_cluster_list_with_inx(pgsql_conn_t *pg_conn,
-					slurmdb_job_cond_t *job_cond,
-					void **curr_cluster);
-extern int good_nodes_from_inx(List local_cluster_list, void **object,
-			       char *node_inx, int submit);
+extern cluster_nodes_t * setup_cluster_nodes(pgsql_conn_t *pg_conn,
+					     slurmdb_job_cond_t *job_cond);
+extern void destroy_cluster_nodes(cluster_nodes_t *cnodes);
+extern int good_nodes_from_inx(cluster_nodes_t *cnodes, char *node_inx,
+			       int submit);
 
-
-/* assoc functions */
-extern List find_children_assoc(pgsql_conn_t *pg_conn, char *parent_cond);
-extern int remove_young_assoc(pgsql_conn_t *pg_conn, time_t now, char *cond);
 extern List get_assoc_ids(pgsql_conn_t *pg_conn, char *cond);
 extern int group_concat_assoc_field(pgsql_conn_t *pg_conn, char *field,
 				    char *cond, char **val);
-extern char * get_cluster_from_associd(pgsql_conn_t *pg_conn, uint32_t associd);
-extern char * get_user_from_associd(pgsql_conn_t *pg_conn, uint32_t associd);
 
-/* problem functions */
-extern int get_acct_no_assocs(pgsql_conn_t *pg_conn,
-			      slurmdb_association_cond_t *assoc_q,
-			      List ret_list);
-extern int get_acct_no_users(pgsql_conn_t *pg_conn,
-			     slurmdb_association_cond_t *assoc_q,
-			     List ret_list);
-extern int get_user_no_assocs_or_no_uid(pgsql_conn_t *pg_conn,
-					slurmdb_association_cond_t *assoc_q,
-					List ret_list);
+extern void reset_pgsql_conn(pgsql_conn_t *pg_conn);
 
+extern int check_user_op(pgsql_conn_t *pg_conn, uid_t uid, uint16_t private,
+			 int *is_admin, slurmdb_user_rec_t *user);
+
+extern int cluster_in_db(pgsql_conn_t *pg_conn, char *cluster_name);
+extern int validate_cluster_list(List cluster_list);
 
 #endif /* _HAVE_AS_PGSQL_COMMON_H */

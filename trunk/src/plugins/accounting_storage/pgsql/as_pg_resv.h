@@ -45,7 +45,7 @@
 
 extern char *resv_table;
 
-extern int check_resv_tables(PGconn *db_conn, char *user);
+extern int check_resv_tables(PGconn *db_conn, char *cluster);
 
 extern int as_pg_add_reservation(pgsql_conn_t *pg_conn,
 				 slurmdb_reservation_rec_t *resv);

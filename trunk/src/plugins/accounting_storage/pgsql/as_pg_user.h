@@ -46,7 +46,7 @@
 extern char *acct_coord_table;
 extern char *user_table;
 
-extern int check_user_tables(PGconn *db_conn, char *user);
+extern int check_user_tables(PGconn *db_conn);
 
 extern int as_pg_add_users(pgsql_conn_t *pg_conn, uint32_t uid,
 			   List user_list);

@@ -45,7 +45,7 @@
 
 extern char *assoc_table;
 
-extern int check_assoc_tables(PGconn *db_conn, char *user);
+extern int check_assoc_tables(PGconn *db_conn, char *cluster);
 
 extern int as_pg_add_associations(pgsql_conn_t *pg_conn, uint32_t uid,
 				  List association_list);
@@ -61,5 +61,10 @@ extern List as_pg_get_associations(pgsql_conn_t *pg_conn, uid_t uid,
 
 extern int add_cluster_root_assoc(pgsql_conn_t *pg_conn, time_t now,
 				  slurmdb_cluster_rec_t *cluster, char **txn_info);
+
+extern char * get_user_from_associd(pgsql_conn_t *pg_conn, char *cluster,
+				    uint32_t associd);
+extern int pgsql_get_modified_lfts(pgsql_conn_t *pg_conn, char *cluster,
+				   uint32_t start_lft);
 
 #endif /* _HAVE_AS_PGSQL_ASSOC_H */

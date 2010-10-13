@@ -262,6 +262,38 @@ static int _set_rec(int *start, int argc, char *argv[],
 	return 0;
 }
 
+static int _isdefault_old(List acct_list)
+{
+	int rc = 0;
+	slurmdb_user_cond_t user_cond;
+	List ret_list = NULL;
+
+	if(!acct_list || !list_count(acct_list))
+		return rc;
+
+	memset(&user_cond, 0, sizeof(slurmdb_user_cond_t));
+	user_cond.def_acct_list = acct_list;
+
+	ret_list = acct_storage_g_get_users(db_conn, my_uid, &user_cond);
+	if(ret_list && list_count(ret_list)) {
+		ListIterator itr = list_iterator_create(ret_list);
+		slurmdb_user_rec_t *user = NULL;
+		fprintf(stderr," Users listed below have these "
+			"as their Default Accounts.\n");
+		while((user = list_next(itr))) {
+			fprintf(stderr, " User - %-10.10s Account - %s\n",
+				user->name, user->default_acct);
+		}
+		list_iterator_destroy(itr);
+		rc = 1;
+	}
+
+	if(ret_list)
+		list_destroy(ret_list);
+
+	return rc;
+}
+
 static int _isdefault(List acct_list, List assoc_list)
 {
 	int rc = 0;
@@ -269,17 +301,31 @@ static int _isdefault(List acct_list, List assoc_list)
 	ListIterator itr2 = NULL;
 	char *acct;
 	char *output = NULL;
+	slurmdb_association_rec_t *assoc = NULL;
+
 	if (!acct_list || !list_count(acct_list)
 	    || !assoc_list || !list_count(assoc_list))
 		return rc;
 
+	/* Since not all plugins have been converted to the new style
+	   of default accounts we have to handle those that aren't.
+	   If the plugin have been converted all the associations here
+	   will have is_def set.
+	*/
+	assoc = list_peek(assoc_list);
+	if (!assoc->is_def)
+		return _isdefault_old(acct_list);
+
 	itr = list_iterator_create(acct_list);
 	itr2 = list_iterator_create(assoc_list);
 	while ((acct = list_next(itr))) {
-		slurmdb_association_rec_t *assoc = NULL;
 		while ((assoc = list_next(itr2))) {
+			/* The pgsql plugin doesn't have the idea of
+			   only_defs, so thre query could return all
+			   the associations, even without defaults. */
 			if (strcasecmp(acct, assoc->acct))
 				continue;
+
 			xstrfmtcat(output, "C = %-10s A = %-20s U = %-9s\n",
 				   assoc->cluster, assoc->acct, assoc->user);
 			rc = 1;

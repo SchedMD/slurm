@@ -45,7 +45,7 @@
 
 extern char *event_table;
 
-extern int check_clusteracct_tables(PGconn *db_conn, char *user);
+extern int check_event_tables(PGconn *db_conn, char *cluster);
 
 extern int get_cluster_cpu_nodes(pgsql_conn_t *pg_conn,
 				 slurmdb_cluster_rec_t *cluster);
@@ -63,9 +63,9 @@ extern int cs_pg_cluster_cpus(pgsql_conn_t *pg_conn,
 			      char *cluster_nodes,
 			      uint32_t cpus,
 			      time_t event_time);
-extern int cs_pg_get_usage(
-	pgsql_conn_t *pg_conn, uid_t uid,
-	slurmdb_cluster_rec_t *cluster_rec, int type, time_t start, time_t end);
+/* extern int cs_pg_get_usage( */
+/* 	pgsql_conn_t *pg_conn, uid_t uid, */
+/* 	slurmdb_cluster_rec_t *cluster_rec, int type, time_t start, time_t end); */
 
 extern List as_pg_get_events(pgsql_conn_t *pg_conn, uid_t uid, 
 			     slurmdb_event_cond_t *event_cond);

@@ -44,6 +44,9 @@
 
 extern slurm_dbd_conf_t *slurmdbd_conf;
 
+extern List as_pg_cluster_list;
+extern pthread_mutex_t as_pg_cluster_list_lock;
+
 /* API functions */
 extern void *acct_storage_p_get_connection(const slurm_trigger_callbacks_t *cb,
                                            int conn_num, bool rollback,

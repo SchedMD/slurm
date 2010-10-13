@@ -44,13 +44,13 @@
 
 extern char *txn_table;
 
-extern int check_txn_tables(PGconn *db_conn, char *user);
+extern int check_txn_tables(PGconn *db_conn);
 
 extern List as_pg_get_txn(pgsql_conn_t *pg_conn, uid_t uid,
 			  slurmdb_txn_cond_t *txn_cond);
 
-extern int add_txn(pgsql_conn_t *pg_conn, time_t now,
-		   slurmdbd_msg_type_t action,
-		   char *object, char *actor, char *info);
+extern int add_txn(pgsql_conn_t *pg_conn, time_t now, char *cluster,
+		   slurmdbd_msg_type_t action, char *object, char *actor,
+		   char *info);
 
 #endif /* _HAVE_AS_PGSQL_TXN_H */

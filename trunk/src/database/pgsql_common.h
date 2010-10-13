@@ -64,11 +64,13 @@ typedef struct {
 	bool rollback;
 	List update_list;
 	int conn;
+	int cluster_changed;
 } pgsql_conn_t;
 
 typedef struct {
 	uint32_t port;
 	char *host;
+	char *backup;
 	char *user;
 	char *pass;
 } pgsql_db_info_t;
@@ -99,10 +101,12 @@ extern int pgsql_insert_ret_id(PGconn *pgsql_db,
 
 extern int pgsql_query_ret_id(PGconn *pgsql_db, char *query);
 
-extern int pgsql_db_create_table(PGconn *pgsql_db,
+extern int pgsql_db_create_table(PGconn *pgsql_db, char *schema,
 				 char *table_name, storage_field_t *fields,
 				 char *ending);
 
-extern int pgsql_db_make_table_current(PGconn *pgsql_db, char *table_name,
+extern int pgsql_db_make_table_current(PGconn *pgsql_db, char *schema,
+				       char *table_name,
 				       storage_field_t *fields);
+
 #endif

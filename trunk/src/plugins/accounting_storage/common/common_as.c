@@ -39,9 +39,14 @@
 \*****************************************************************************/
 
 #include <strings.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <fcntl.h>
 #include "src/common/slurmdbd_defs.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/xstring.h"
+#include "src/common/env.h"
 #include "src/slurmdbd/read_config.h"
 #include "common_as.h"
 
@@ -56,6 +61,9 @@ extern char *cluster_month_table;
 extern char *wckey_hour_table;
 extern char *wckey_day_table;
 extern char *wckey_month_table;
+
+static int high_buffer_size = (1024 * 1024);
+static pthread_mutex_t local_file_lock = PTHREAD_MUTEX_INITIALIZER;
 
 /*
  * We want SLURMDB_MODIFY_ASSOC always to be the last
@@ -605,3 +613,304 @@ extern bool is_user_any_coord(void *db_conn, slurmdb_user_rec_t *user)
 	return (user->coord_accts && list_count(user->coord_accts));
 }
 
+/*
+ * acct_get_db_name - get database name of accouting storage
+ * RET: database name, should be free-ed by caller
+ */
+extern char *
+acct_get_db_name(void)
+{
+	char *db_name = NULL;
+	char *location = slurm_get_accounting_storage_loc();
+
+	if(!location)
+		db_name = xstrdup(DEFAULT_ACCOUNTING_DB);
+	else {
+		int i = 0;
+		while(location[i]) {
+			if(location[i] == '.' || location[i] == '/') {
+				debug("%s doesn't look like a database "
+				      "name using %s",
+				      location, DEFAULT_ACCOUNTING_DB);
+				break;
+			}
+			i++;
+		}
+		if(location[i]) {
+			db_name = xstrdup(DEFAULT_ACCOUNTING_DB);
+			xfree(location);
+		} else
+			db_name = location;
+	}
+	return db_name;
+}
+
+extern time_t
+archive_setup_end_time(time_t last_submit, uint32_t purge)
+{
+	struct tm time_tm;
+	int16_t units;
+
+	if(purge == NO_VAL) {
+		error("Invalid purge set");
+		return 0;
+	}
+
+	units = SLURMDB_PURGE_GET_UNITS(purge);
+	if(units < 0) {
+		error("invalid units from purge '%d'", units);
+		return 0;
+	}
+
+	/* use localtime to avoid any daylight savings issues */
+	if(!localtime_r(&last_submit, &time_tm)) {
+		error("Couldn't get localtime from first "
+		      "suspend start %ld", (long)last_submit);
+		return 0;
+	}
+
+	time_tm.tm_sec = 0;
+	time_tm.tm_min = 0;
+
+	if(SLURMDB_PURGE_IN_HOURS(purge))
+		time_tm.tm_hour -= units;
+	else if(SLURMDB_PURGE_IN_DAYS(purge)) {
+		time_tm.tm_hour = 0;
+		time_tm.tm_mday -= units;
+	} else if(SLURMDB_PURGE_IN_MONTHS(purge)) {
+		time_tm.tm_hour = 0;
+		time_tm.tm_mday = 1;
+		time_tm.tm_mon -= units;
+	} else {
+		errno = EINVAL;
+		error("No known unit given for purge, "
+		      "we are guessing mistake and returning error");
+		return 0;
+	}
+
+	time_tm.tm_isdst = -1;
+	return (mktime(&time_tm) - 1);
+}
+
+
+/* execute archive script */
+extern int
+archive_run_script(slurmdb_archive_cond_t *arch_cond,
+		   char *cluster_name, time_t last_submit)
+{
+	char * args[] = {arch_cond->archive_script, NULL};
+	const char *tmpdir;
+	struct stat st;
+	char **env = NULL;
+	time_t curr_end;
+
+#ifdef _PATH_TMP
+	tmpdir = _PATH_TMP;
+#else
+	tmpdir = "/tmp";
+#endif
+	if (stat(arch_cond->archive_script, &st) < 0) {
+		errno = errno;
+		error("run_archive_script: failed to stat %s: %m",
+		      arch_cond->archive_script);
+		return SLURM_ERROR;
+	}
+
+	if (!(st.st_mode & S_IFREG)) {
+		errno = EACCES;
+		error("run_archive_script: %s isn't a regular file",
+		      arch_cond->archive_script);
+		return SLURM_ERROR;
+	}
+
+	if (access(arch_cond->archive_script, X_OK) < 0) {
+		errno = EACCES;
+		error("run_archive_script: %s is not executable",
+		      arch_cond->archive_script);
+		return SLURM_ERROR;
+	}
+
+	env = env_array_create();
+	env_array_append_fmt(&env, "SLURM_ARCHIVE_CLUSTER", "%s",
+			     cluster_name);
+
+	if(arch_cond->purge_event != NO_VAL) {
+		if(!(curr_end = archive_setup_end_time(
+			     last_submit, arch_cond->purge_event))) {
+			error("Parsing purge events failed");
+			return SLURM_ERROR;
+		}
+
+		env_array_append_fmt(&env, "SLURM_ARCHIVE_EVENTS", "%u",
+				     SLURMDB_PURGE_ARCHIVE_SET(
+					     arch_cond->purge_event));
+		env_array_append_fmt(&env, "SLURM_ARCHIVE_LAST_EVENT", "%ld",
+				     (long)curr_end);
+	}
+
+	if(arch_cond->purge_job != NO_VAL) {
+		if(!(curr_end = archive_setup_end_time(
+			     last_submit, arch_cond->purge_job))) {
+			error("Parsing purge job failed");
+			return SLURM_ERROR;
+		}
+
+		env_array_append_fmt(&env, "SLURM_ARCHIVE_JOBS", "%u",
+				     SLURMDB_PURGE_ARCHIVE_SET(
+					     arch_cond->purge_job));
+		env_array_append_fmt(&env, "SLURM_ARCHIVE_LAST_JOB", "%ld",
+				     (long)curr_end);
+	}
+
+	if(arch_cond->purge_step != NO_VAL) {
+		if(!(curr_end = archive_setup_end_time(
+			     last_submit, arch_cond->purge_step))) {
+			error("Parsing purge step");
+			return SLURM_ERROR;
+		}
+
+		env_array_append_fmt(&env, "SLURM_ARCHIVE_STEPS", "%u",
+				     SLURMDB_PURGE_ARCHIVE_SET(
+					     arch_cond->purge_step));
+		env_array_append_fmt(&env, "SLURM_ARCHIVE_LAST_STEP", "%ld",
+				     (long)curr_end);
+	}
+
+	if(arch_cond->purge_suspend != NO_VAL) {
+		if(!(curr_end = archive_setup_end_time(
+			     last_submit, arch_cond->purge_suspend))) {
+			error("Parsing purge suspend");
+			return SLURM_ERROR;
+		}
+
+		env_array_append_fmt(&env, "SLURM_ARCHIVE_SUSPEND", "%u",
+				     SLURMDB_PURGE_ARCHIVE_SET(
+					     arch_cond->purge_suspend));
+		env_array_append_fmt(&env, "SLURM_ARCHIVE_LAST_SUSPEND", "%ld",
+				     (long)curr_end);
+	}
+
+#ifdef _PATH_STDPATH
+	env_array_append (&env, "PATH", _PATH_STDPATH);
+#else
+	env_array_append (&env, "PATH", "/bin:/usr/bin");
+#endif
+	execve(arch_cond->archive_script, args, env);
+
+	env_array_free(env);
+
+	return SLURM_SUCCESS;
+}
+
+static char *
+_make_archive_name(time_t period_start, time_t period_end,
+		   char *cluster_name, char *arch_dir,
+		   char *arch_type, uint32_t archive_period)
+{
+	struct tm time_tm;
+	char start_char[32];
+	char end_char[32];
+
+	localtime_r((time_t *)&period_start, &time_tm);
+	time_tm.tm_sec = 0;
+	time_tm.tm_min = 0;
+
+	/* set up the start time based off the period we are purging */
+	if(SLURMDB_PURGE_IN_HOURS(archive_period)) {
+	} else if(SLURMDB_PURGE_IN_DAYS(archive_period)) {
+		time_tm.tm_hour = 0;
+	} else {
+		time_tm.tm_hour = 0;
+		time_tm.tm_mday = 1;
+	}
+
+	snprintf(start_char, sizeof(start_char),
+		 "%4.4u-%2.2u-%2.2u"
+		 "T%2.2u:%2.2u:%2.2u",
+		 (time_tm.tm_year + 1900),
+		 (time_tm.tm_mon+1),
+		 time_tm.tm_mday,
+		 time_tm.tm_hour,
+		 time_tm.tm_min,
+		 time_tm.tm_sec);
+
+	localtime_r((time_t *)&period_end, &time_tm);
+	snprintf(end_char, sizeof(end_char),
+		 "%4.4u-%2.2u-%2.2u"
+		 "T%2.2u:%2.2u:%2.2u",
+		 (time_tm.tm_year + 1900),
+		 (time_tm.tm_mon+1),
+		 time_tm.tm_mday,
+		 time_tm.tm_hour,
+		 time_tm.tm_min,
+		 time_tm.tm_sec);
+
+	/* write the buffer to file */
+	return xstrdup_printf("%s/%s_%s_archive_%s_%s",
+			      arch_dir, cluster_name, arch_type,
+			      start_char, end_char);
+}
+
+extern int
+archive_write_file(Buf buffer, char *cluster_name,
+		   time_t period_start, time_t period_end,
+		   char *arch_dir, char *arch_type,
+		   uint32_t archive_period)
+{
+	int fd = 0;
+	int rc = SLURM_SUCCESS;
+	char *old_file = NULL, *new_file = NULL, *reg_file = NULL;
+
+	xassert(buffer);
+
+	slurm_mutex_lock(&local_file_lock);
+
+	/* write the buffer to file */
+	reg_file = _make_archive_name(period_start, period_end,
+				      cluster_name, arch_dir,
+				      arch_type, archive_period);
+
+	debug("Storing %s archive for %s at %s",
+	      arch_type, cluster_name, reg_file);
+	old_file = xstrdup_printf("%s.old", reg_file);
+	new_file = xstrdup_printf("%s.new", reg_file);
+
+	fd = creat(new_file, 0600);
+	if (fd < 0) {
+		error("Can't save archive, create file %s error %m", new_file);
+		rc = SLURM_ERROR;
+	} else {
+		int pos = 0, nwrite = get_buf_offset(buffer), amount;
+		char *data = (char *)get_buf_data(buffer);
+		high_buffer_size = MAX(nwrite, high_buffer_size);
+		while (nwrite > 0) {
+			amount = write(fd, &data[pos], nwrite);
+			if ((amount < 0) && (errno != EINTR)) {
+				error("Error writing file %s, %m", new_file);
+				rc = SLURM_ERROR;
+				break;
+			}
+			nwrite -= amount;
+			pos    += amount;
+		}
+		fsync(fd);
+		close(fd);
+	}
+
+	if (rc)
+		(void) unlink(new_file);
+	else {			/* file shuffle */
+		int ign;	/* avoid warning */
+		(void) unlink(old_file);
+		ign =  link(reg_file, old_file);
+		(void) unlink(reg_file);
+		ign =  link(new_file, reg_file);
+		(void) unlink(new_file);
+	}
+	xfree(old_file);
+	xfree(reg_file);
+	xfree(new_file);
+	slurm_mutex_unlock(&local_file_lock);
+
+	return rc;
+}

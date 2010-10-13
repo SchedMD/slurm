@@ -45,7 +45,7 @@
 /* table names */
 extern char *acct_table;
 
-extern int check_acct_tables(PGconn *db_conn, char *user);
+extern int check_acct_tables(PGconn *db_conn);
 
 extern int as_pg_add_accts(pgsql_conn_t *pg_conn, uint32_t uid,
 			   List acct_list);
@@ -56,12 +56,5 @@ extern List as_pg_remove_accts(pgsql_conn_t *pg_conn, uint32_t uid,
 			       slurmdb_account_cond_t *acct_cond);
 extern List as_pg_get_accts(pgsql_conn_t *pg_conn, uid_t uid,
 			    slurmdb_account_cond_t *acct_cond);
-
-extern int get_acct_no_assocs(pgsql_conn_t *pg_conn,
-			      slurmdb_association_cond_t *assoc_q,
-			      List ret_list);
-extern int get_acct_no_users(pgsql_conn_t *pg_conn,
-			     slurmdb_association_cond_t *assoc_q,
-			     List ret_list);
 
 #endif /* _HAVE_AS_PGSQL_ACCT_H */

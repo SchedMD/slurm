@@ -42,10 +42,12 @@
 
 #include "as_pg_common.h"
 
-extern int pgsql_hourly_rollup(pgsql_conn_t *pg_conn, time_t start, time_t end);
-extern int pgsql_daily_rollup(pgsql_conn_t *pg_conn, time_t start, time_t end,
-			      uint16_t archive_data);
-extern int pgsql_monthly_rollup(pgsql_conn_t *pg_conn, time_t start,
-				time_t end, uint16_t archive_data);
+extern time_t global_last_rollup;
+extern pthread_mutex_t usage_rollup_lock;
+
+
+extern int as_pg_roll_usage(pgsql_conn_t *pg_conn,
+			    time_t sent_start, time_t sent_end,
+			    uint16_t archive_data);
 
 #endif /* _HAVE_AS_PGSQL_ROLLUP_H */

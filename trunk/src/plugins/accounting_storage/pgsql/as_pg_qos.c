@@ -40,12 +40,14 @@
 
 #include "as_pg_common.h"
 
-char *qos_table = "qos_table";
+/* shared table */
+static char *qos_table_name = "qos_table";
+char *qos_table = "public.qos_table";
 static storage_field_t qos_table_fields[] = {
 	{ "creation_time", "INTEGER NOT NULL" },
 	{ "mod_time", "INTEGER DEFAULT 0 NOT NULL" },
 	{ "deleted", "INTEGER DEFAULT 0" },
-	{ "id", "SERIAL" },
+	{ "id_qos", "SERIAL" },	/* must be same with job_table */
 	{ "name", "TEXT NOT NULL" },
 	{ "description", "TEXT" },
 	{ "max_jobs_per_user", "INTEGER DEFAULT NULL" },
@@ -54,19 +56,22 @@ static storage_field_t qos_table_fields[] = {
 	{ "max_nodes_per_job", "INTEGER DEFAULT NULL" },
 	{ "max_wall_duration_per_job", "INTEGER DEFAULT NULL" },
 	{ "max_cpu_mins_per_job", "BIGINT DEFAULT NULL" },
+        { "max_cpu_run_mins_per_user", "BIGINT DEFAULT NULL" },
 	{ "grp_jobs", "INTEGER DEFAULT NULL" },
 	{ "grp_submit_jobs", "INTEGER DEFAULT NULL" },
 	{ "grp_cpus", "INTEGER DEFAULT NULL" },
 	{ "grp_nodes", "INTEGER DEFAULT NULL" },
 	{ "grp_wall", "INTEGER DEFAULT NULL" },
 	{ "grp_cpu_mins", "BIGINT DEFAULT NULL" },
+        { "grp_cpu_run_mins", "BIGINT DEFAULT NULL" },
 	{ "preempt", "TEXT DEFAULT '' NOT NULL" },
+        { "preempt_mode", "INT DEFAULT 0" },
 	{ "priority", "INTEGER DEFAULT 0" },
 	{ "usage_factor", "FLOAT DEFAULT 1.0 NOT NULL" },
 	{ NULL, NULL}
 };
 static char *qos_table_constraint = ", "
-	"PRIMARY KEY (id), UNIQUE (name)"
+	"PRIMARY KEY (id_qos), UNIQUE (name)"
 	")";
 
 char *default_qos_str = NULL;
@@ -81,18 +86,19 @@ static int
 _create_function_add_qos(PGconn *db_conn)
 {
 	char *create_line = xstrdup_printf(
-		"CREATE OR REPLACE FUNCTION add_qos "
+		"CREATE OR REPLACE FUNCTION public.add_qos "
 		"(rec %s) RETURNS INTEGER AS $$"
 		"DECLARE qos_id INTEGER; "
 		"BEGIN LOOP "
 		"  BEGIN "
-		"    INSERT INTO %s (creation_time, mod_time, deleted, id, "
+		"    INSERT INTO %s (creation_time, mod_time, deleted, id_qos,"
 		"        name, description, max_jobs_per_user, "
 		"        max_submit_jobs_per_user, max_cpus_per_job, "
 		"        max_nodes_per_job, max_wall_duration_per_job, "
-		"        max_cpu_mins_per_job, grp_jobs, grp_submit_jobs, "
-		"        grp_cpus, grp_nodes, grp_wall, grp_cpu_mins, preempt, "
-		"        priority, usage_factor) "
+		"        max_cpu_mins_per_job, max_cpu_run_mins_per_user, "
+		"        grp_jobs, grp_submit_jobs, grp_cpus, grp_nodes, "
+		"        grp_wall, grp_cpu_mins, grp_cpu_run_mins, preempt, "
+		"        preempt_mode, priority, usage_factor) "
 		"      VALUES (rec.creation_time, rec.mod_time, "
 		"        0, DEFAULT, rec.name, rec.description, "
 		"        rec.max_jobs_per_user, "
@@ -100,30 +106,35 @@ _create_function_add_qos(PGconn *db_conn)
 		"        rec.max_cpus_per_job, rec.max_nodes_per_job, "
 		"        rec.max_wall_duration_per_job, "
 		"        rec.max_cpu_mins_per_job, "
+		"        rec.max_cpu_run_mins_per_user, "
 		"        rec.grp_jobs, rec.grp_submit_jobs, rec.grp_cpus, "
 		"        rec.grp_nodes, rec.grp_wall, rec.grp_cpu_mins, "
-		"        rec.preempt, rec.priority, rec.usage_factor) "
-		"      RETURNING id INTO qos_id;"
+		"        rec.grp_cpu_run_mins, rec.preempt, rec.preempt_mode, "
+		"        rec.priority, rec.usage_factor) "
+		"      RETURNING id_qos INTO qos_id;"
 		"    RETURN qos_id;"
 		"  EXCEPTION WHEN UNIQUE_VIOLATION THEN"
 		"    UPDATE %s SET"
 		"        (deleted, mod_time, description, max_jobs_per_user, "
 		"         max_submit_jobs_per_user, max_cpus_per_job, "
 		"         max_nodes_per_job, max_wall_duration_per_job, "
-		"         max_cpu_mins_per_job, grp_jobs, grp_submit_jobs, "
-		"         grp_cpus, grp_nodes, grp_wall, grp_cpu_mins, "
-		"         preempt, priority, usage_factor) = "
+		"         max_cpu_mins_per_job, max_cpu_run_mins_per_user, "
+		"         grp_jobs, grp_submit_jobs, grp_cpus, grp_nodes, "
+		"         grp_wall, grp_cpu_mins, grp_cpu_run_mins, "
+		"         preempt, preempt_mode, priority, usage_factor) = "
 		"        (0, rec.mod_time, rec.description, "
 		"         rec.max_jobs_per_user, "
 		"         rec.max_submit_jobs_per_user, "
 		"         rec.max_cpus_per_job, rec.max_nodes_per_job, "
 		"         rec.max_wall_duration_per_job, "
 		"         rec.max_cpu_mins_per_job, "
+		"         rec.max_cpu_run_mins_per_user, "
 		"         rec.grp_jobs, rec.grp_submit_jobs, rec.grp_cpus, "
 		"         rec.grp_nodes, rec.grp_wall, rec.grp_cpu_mins, "
-		"         rec.preempt, rec.priority, rec.usage_factor) "
+		"         rec.grp_cpu_run_mins, rec.preempt, rec.preempt_mode, "
+		"         rec.priority, rec.usage_factor) "
 		"      WHERE name=rec.name "
-		"      RETURNING id INTO qos_id;"
+		"      RETURNING id_qos INTO qos_id;"
 		"    IF FOUND THEN RETURN qos_id; END IF;"
 		"  END; "
 		"END LOOP; END; $$ LANGUAGE PLPGSQL;",
@@ -147,26 +158,28 @@ _make_qos_record_for_add(slurmdb_qos_rec_t *object, time_t now,
 			      now, /* creation_time */
 			      now, /* mod_time */
 			      /* deleted is 0 */
-			      object->id,/* id, not used */
+			      object->id,/* id_qos, not used */
 			      object->name, /* name */
 			      object->description ?: "" /* description, default '' */
 		);
 	*txn = xstrdup_printf("description='%s'", object->description);
 
 	/* resource limits default NULL */
-	concat_limit("max_jobs_per_user", object->max_jobs_pu, rec, txn);
-	concat_limit("max_submit_jobs_per_user", object->max_submit_jobs_pu, rec, txn);
-	concat_limit("max_cpus_per_job", object->max_cpus_pj, rec, txn);
-	concat_limit("max_nodes_per_job", object->max_nodes_pj, rec, txn);
-	concat_limit("max_wall_duration_per_job", object->max_wall_pj, rec, txn);
-	concat_limit("max_cpu_mins_per_job", object->max_cpu_mins_pj, rec, txn);
+	concat_limit_32("max_jobs_per_user", object->max_jobs_pu, rec, txn);
+	concat_limit_32("max_submit_jobs_per_user", object->max_submit_jobs_pu, rec, txn);
+	concat_limit_32("max_cpus_per_job", object->max_cpus_pj, rec, txn);
+	concat_limit_32("max_nodes_per_job", object->max_nodes_pj, rec, txn);
+	concat_limit_32("max_wall_duration_per_job", object->max_wall_pj, rec, txn);
+	concat_limit_64("max_cpu_mins_per_job", object->max_cpu_mins_pj, rec, txn);
+	concat_limit_64("max_cpu_run_mins_per_user", object->max_cpu_run_mins_pu, rec, txn);
 
-	concat_limit("grp_jobs", object->grp_jobs, rec, txn);
-	concat_limit("grp_submit_jobs", object->grp_submit_jobs, rec, txn);
-	concat_limit("grp_cpus", object->grp_cpus, rec, txn);
-	concat_limit("grp_nodes", object->grp_nodes, rec, txn);
-	concat_limit("grp_wall", object->grp_wall, rec, txn);
-	concat_limit("grp_cpu_mins", object->grp_cpu_mins, rec, txn);
+	concat_limit_32("grp_jobs", object->grp_jobs, rec, txn);
+	concat_limit_32("grp_submit_jobs", object->grp_submit_jobs, rec, txn);
+	concat_limit_32("grp_cpus", object->grp_cpus, rec, txn);
+	concat_limit_32("grp_nodes", object->grp_nodes, rec, txn);
+	concat_limit_32("grp_wall", object->grp_wall, rec, txn);
+	concat_limit_64("grp_cpu_mins", object->grp_cpu_mins, rec, txn);
+	concat_limit_64("grp_cpu_run_mins", object->grp_cpu_run_mins, rec, txn);
 
 	/* preempt, default '' */
 	if (object->preempt_list && list_count(object->preempt_list)) {
@@ -194,25 +207,37 @@ _make_qos_record_for_add(slurmdb_qos_rec_t *object, time_t now,
 		xstrfmtcat(*rec, "'', ");
 	}
 
+	if((object->preempt_mode != (uint16_t)NO_VAL)
+	   && ((int16_t)object->preempt_mode >= 0)) {
+		object->preempt_mode &= (~PREEMPT_MODE_GANG);
+		xstrfmtcat(*rec, "%u, ", object->preempt_mode);
+		xstrfmtcat(*txn, ", preempt_mode=%u", object->preempt_mode);
+	}
+ 
 	/* priority, default 0 */
-	if((int)object->priority >= 0) {
-		xstrfmtcat(*rec, "%d, ", object->priority);
-		xstrfmtcat(*txn, "priority=%d, ", object->priority);
-	} else if ((int)object->priority == INFINITE) {
+	if (object->priority == INFINITE) {
 		xstrcat(*rec, "NULL, ");
 		xstrcat(*txn, "priority=NULL, ");
+	} else if (object->priority != NO_VAL
+		   && (int32_t)object->priority >= 0) {
+		xstrfmtcat(*rec, "%u, ", object->priority);
+		xstrfmtcat(*txn, "priority=%u, ", object->priority);
 	} else {
 		xstrcat(*rec, "0, ");
 	}
 
 	/* usage_factor, default 1.0 */
-	if (object->usage_factor >= 0) {
-		xstrfmtcat(*rec, "%f)", object->usage_factor);
-		xstrfmtcat(*txn, "usage_factor=%f", object->usage_factor);
-	} else {
+	if (object->usage_factor == INFINITE ||
+	    object->usage_factor == NO_VAL ||
+	    (int32_t)object->usage_factor < 0) {
 		xstrcat(*rec, "1.0");
 		xstrcat(*txn, "usage_factor=1.0");
+	} else {
+		xstrfmtcat(*rec, "%f", object->usage_factor);
+		xstrfmtcat(*txn, "usage_factor=%f", object->usage_factor);
 	}
+ 
+	xstrcat(*rec, ")");
 	return SLURM_SUCCESS;
 }
 
@@ -230,7 +255,7 @@ _make_qos_cond(slurmdb_qos_cond_t *qos_cond)
 	char *cond = NULL;
 	concat_cond_list(qos_cond->description_list, NULL,
 			 "description", &cond);
-	concat_cond_list(qos_cond->id_list, NULL, "id", &cond);
+	concat_cond_list(qos_cond->id_list, NULL, "id_qos", &cond);
 	concat_cond_list(qos_cond->name_list, NULL, "name", &cond);
 	return cond;
 }
@@ -248,21 +273,24 @@ _make_qos_vals_for_modify(slurmdb_qos_rec_t *qos, char **vals,
 {
 	if (qos->description)
 		xstrfmtcat(*vals, ", description='%s'", qos->description);
-	concat_limit("max_jobs_per_user", qos->max_jobs_pu, NULL, vals);
-	concat_limit("max_submit_jobs_per_user", qos->max_submit_jobs_pu,
-		     NULL, vals);
-	concat_limit("max_cpus_per_job", qos->max_cpus_pj, NULL, vals);
-	concat_limit("max_nodes_per_job", qos->max_nodes_pj, NULL, vals);
-	concat_limit("max_wall_duration_per_job", qos->max_wall_pj,
-		     NULL, vals);
-	concat_limit("max_cpu_mins_per_job", qos->max_cpu_mins_pj,
-		     NULL, vals);
-	concat_limit("grp_jobs", qos->grp_jobs, NULL, vals);
-	concat_limit("grp_submit_jobs", qos->grp_submit_jobs, NULL, vals);
-	concat_limit("grp_cpus", qos->grp_cpus, NULL, vals);
-	concat_limit("grp_nodes", qos->grp_nodes, NULL, vals);
-	concat_limit("grp_wall", qos->grp_wall, NULL, vals);
-	concat_limit("grp_cpu_mins", qos->grp_cpu_mins, NULL, vals);
+	concat_limit_32("max_jobs_per_user", qos->max_jobs_pu, NULL, vals);
+	concat_limit_32("max_submit_jobs_per_user", qos->max_submit_jobs_pu,
+			NULL, vals);
+	concat_limit_32("max_cpus_per_job", qos->max_cpus_pj, NULL, vals);
+	concat_limit_32("max_nodes_per_job", qos->max_nodes_pj, NULL, vals);
+	concat_limit_32("max_wall_duration_per_job", qos->max_wall_pj,
+			NULL, vals);
+	concat_limit_64("max_cpu_mins_per_job", qos->max_cpu_mins_pj,
+			NULL, vals);
+	concat_limit_64("max_cpu_run_mins_per_user", qos->max_cpu_run_mins_pu,
+			NULL, vals);
+	concat_limit_32("grp_jobs", qos->grp_jobs, NULL, vals);
+	concat_limit_32("grp_submit_jobs", qos->grp_submit_jobs, NULL, vals);
+	concat_limit_32("grp_cpus", qos->grp_cpus, NULL, vals);
+	concat_limit_32("grp_nodes", qos->grp_nodes, NULL, vals);
+	concat_limit_32("grp_wall", qos->grp_wall, NULL, vals);
+	concat_limit_64("grp_cpu_mins", qos->grp_cpu_mins, NULL, vals);
+	concat_limit_64("grp_cpu_run_mins", qos->grp_cpu_run_mins, NULL, vals);
 
 	if(qos->preempt_list && list_count(qos->preempt_list)) {
 		char *preempt_val = NULL;
@@ -302,7 +330,7 @@ _make_qos_vals_for_modify(slurmdb_qos_rec_t *qos, char **vals,
 		xfree(preempt_val);
 	}
 
-	concat_limit("priority", qos->priority, NULL, vals);
+	concat_limit_32("priority", qos->priority, NULL, vals);
 
 	if(qos->usage_factor >= 0) {
 		xstrfmtcat(*vals, ", usage_factor=%f", qos->usage_factor);
@@ -365,8 +393,9 @@ _preemption_loop(pgsql_conn_t *pg_conn, int begin_qosid,
 static int
 _set_qos_cnt(PGconn *db_conn)
 {
-	PGresult *result = NULL;
-	char *query = xstrdup_printf("select MAX(id) from %s", qos_table);
+	DEF_VARS;
+
+	query = xstrdup_printf("select MAX(id_qos) from %s", qos_table);
 
 	result = pgsql_db_query_ret(db_conn, query);
 	xfree(query);
@@ -394,12 +423,12 @@ _set_qos_cnt(PGconn *db_conn)
  * RET: error code
  */
 extern int
-check_qos_tables(PGconn *db_conn, char *user)
+check_qos_tables(PGconn *db_conn)
 {
 	int rc;
 
-	rc = check_table(db_conn, qos_table, qos_table_fields,
-			 qos_table_constraint, user);
+	rc = check_table(db_conn, "public", qos_table_name, qos_table_fields,
+			 qos_table_constraint);
 
 	rc |= _create_function_add_qos(db_conn);
 
@@ -423,21 +452,23 @@ check_qos_tables(PGconn *db_conn, char *user)
 		itr = list_iterator_create(char_list);
 		while((qos = list_next(itr))) {
 			query = xstrdup_printf(
-				"SELECT add_qos("
-				"(%ld, %ld, 0, 0, $$%s$$, $$%s$$, "
-				"NULL, NULL, NULL, NULL, NULL, NULL, "
-				"NULL, NULL, NULL, NULL, NULL, NULL,"
-				"'', 0, 1.0)"
-				")",
-				now, now, /* deleted=0, id not used */ qos, desc
-				/* resource limits all NULL */
-				/* preempt='', priority=0, usage_factor=1.0 */
+				"SELECT public.add_qos("
+                                "(%ld, %ld, 0, 0, $$%s$$, $$%s$$, "
+				"NULL, NULL, NULL, NULL, NULL, NULL, NULL, "
+				"NULL, NULL, NULL, NULL, NULL, NULL, NULL, "
+				"'', 0, 0, 1.0)"
+                                ")",
+                                (long)now, (long)now,
+				/* deleted=0, id not used */ qos, desc
+                                /* resource limits all NULL */
+				/* preempt='', preempt_mode=0, priority=0,
+				   usage_factor=1.0 */
 				);
 			DEBUG_QUERY;
 			qos_id = pgsql_query_ret_id(db_conn, query);
 			xfree(query);
 			if(!qos_id)
-				fatal("problem add default qos '%s", qos);
+				fatal("problem add default qos '%s'", qos);
 			xstrfmtcat(default_qos_str, ",%d", qos_id);
 		}
 		list_iterator_destroy(itr);
@@ -472,7 +503,7 @@ as_pg_add_qos(pgsql_conn_t *pg_conn, uint32_t uid, List qos_list)
 	user_name = uid_to_string((uid_t) uid);
 	itr = list_iterator_create(qos_list);
 	while((object = list_next(itr))) {
-		if(!object->name) {
+		if(!object->name || !object->name[0]) {
 			error("as/pg: add_qos: We need a qos name to add.");
 			rc = SLURM_ERROR;
 			continue;
@@ -484,17 +515,15 @@ as_pg_add_qos(pgsql_conn_t *pg_conn, uint32_t uid, List qos_list)
 			continue;
 		}
 
-		xstrfmtcat(query, "SELECT add_qos(%s);", rec);
-		DEBUG_QUERY;
-		object->id = pgsql_query_ret_id(pg_conn->db_conn, query);
-		xfree(query);
+		xstrfmtcat(query, "SELECT public.add_qos(%s);", rec);
+		object->id = DEF_QUERY_RET_ID;
 		if(!object->id) {
 			error("as/pg: couldn't add qos %s", object->name);
 			added=0;
 			break;
 		}
 
-		rc = add_txn(pg_conn, now, DBD_ADD_QOS, object->name,
+		rc = add_txn(pg_conn, now, "", DBD_ADD_QOS, object->name,
 			     user_name, txn);
 		if(rc != SLURM_SUCCESS) {
 			error("Couldn't add txn");
@@ -509,12 +538,9 @@ as_pg_add_qos(pgsql_conn_t *pg_conn, uint32_t uid, List qos_list)
 	list_iterator_destroy(itr);
 	xfree(user_name);
 
-	if(!added) {
-		if(pg_conn->rollback) {
-			pgsql_db_rollback(pg_conn->db_conn);
-		}
-		list_flush(pg_conn->update_list);
-	}
+	if(!added)
+		reset_pgsql_conn(pg_conn);
+
 	return rc;
 }
 
@@ -565,7 +591,7 @@ as_pg_modify_qos(pgsql_conn_t *pg_conn, uint32_t uid,
 		xfree(added_preempt);
 	}
 
-	query = xstrdup_printf("SELECT name, preemp, id FROM %s "
+	query = xstrdup_printf("SELECT name, preempt, id_qos FROM %s "
 			       "WHERE deleted=0 %s;", qos_table, cond);
 	xfree(cond);
 	result = DEF_QUERY_RET;
@@ -598,6 +624,7 @@ as_pg_modify_qos(pgsql_conn_t *pg_conn, uint32_t uid,
 
 		qos_rec->grp_cpus = qos->grp_cpus;
 		qos_rec->grp_cpu_mins = qos->grp_cpu_mins;
+		qos_rec->grp_cpu_run_mins = qos->grp_cpu_run_mins;
 		qos_rec->grp_jobs = qos->grp_jobs;
 		qos_rec->grp_nodes = qos->grp_nodes;
 		qos_rec->grp_submit_jobs = qos->grp_submit_jobs;
@@ -605,11 +632,13 @@ as_pg_modify_qos(pgsql_conn_t *pg_conn, uint32_t uid,
 
 		qos_rec->max_cpus_pj = qos->max_cpus_pj;
 		qos_rec->max_cpu_mins_pj = qos->max_cpu_mins_pj;
+		qos_rec->max_cpu_run_mins_pu = qos->max_cpu_run_mins_pu;
 		qos_rec->max_jobs_pu  = qos->max_jobs_pu;
 		qos_rec->max_nodes_pj = qos->max_nodes_pj;
 		qos_rec->max_submit_jobs_pu  = qos->max_submit_jobs_pu;
 		qos_rec->max_wall_pj = qos->max_wall_pj;
 
+		qos_rec->preempt_mode = qos->preempt_mode;
 		qos_rec->priority = qos->priority;
 
 		if(qos->preempt_list) {
@@ -621,7 +650,7 @@ as_pg_modify_qos(pgsql_conn_t *pg_conn, uint32_t uid,
 
 			qos_rec->preempt_bitstr = bit_alloc(g_qos_count);
 			if(preempt && preempt[0])
-				bit_unfmt(qos->preempt_bitstr, preempt+1);
+				bit_unfmt(qos_rec->preempt_bitstr, preempt+1);
 
 			while((new_preempt = list_next(new_preempt_itr))) {
 				if(new_preempt[0] == '-') {
@@ -667,7 +696,7 @@ as_pg_modify_qos(pgsql_conn_t *pg_conn, uint32_t uid,
 	xstrcat(name_char, ")");
 
 	user_name = uid_to_string((uid_t) uid);
-	rc = pgsql_modify_common(pg_conn, DBD_MODIFY_QOS, now,
+	rc = pgsql_modify_common(pg_conn, DBD_MODIFY_QOS, now, "",
 				user_name, qos_table, name_char, vals);
 	xfree(user_name);
 	xfree(name_char);
@@ -678,6 +707,29 @@ as_pg_modify_qos(pgsql_conn_t *pg_conn, uint32_t uid,
 		ret_list = NULL;
 	}
 	return ret_list;
+}
+
+/* check whether there are jobs with specified qos-es */
+static int
+_qos_has_jobs(pgsql_conn_t *pg_conn, char *cond)
+{
+	DEF_VARS;
+	int has_jobs = 0;
+
+	FOR_EACH_CLUSTER(NULL) {
+		if (query)
+			xstrcat(query, " UNION ");
+		xstrfmtcat(query,
+			   "SELECT id_assoc FROM %s.%s WHERE %s",
+			   cluster_name, job_table, cond);
+	} END_EACH_CLUSTER;
+	xstrcat(query, " LIMIT 1;");
+	result = DEF_QUERY_RET;
+	if (result) {
+		has_jobs = (PQntuples(result) != 0);
+		PQclear(result);
+	}
+	return has_jobs;
 }
 
 /*
@@ -692,11 +744,11 @@ extern List
 as_pg_remove_qos(pgsql_conn_t *pg_conn, uint32_t uid,
 		 slurmdb_qos_cond_t *qos_cond)
 {
+	DEF_VARS;
 	List ret_list = NULL;
-	PGresult *result = NULL;
-	int rc = SLURM_SUCCESS;
-	char *cond = NULL, *query = NULL, *user_name = NULL;
-	char *name_char = NULL, *assoc_char = NULL;
+	int rc = SLURM_SUCCESS, has_jobs;
+	char *cond = NULL, *user_name = NULL;
+	char *name_char = NULL;
 	char *qos = NULL, *delta_qos = NULL, *tmp = NULL;
 	time_t now = time(NULL);
 
@@ -714,7 +766,7 @@ as_pg_remove_qos(pgsql_conn_t *pg_conn, uint32_t uid,
 		return NULL;
 	}
 
-	query = xstrdup_printf("SELECT id, name FROM %s WHERE deleted=0 %s;",
+	query = xstrdup_printf("SELECT id_qos, name FROM %s WHERE deleted=0 %s;",
 			       qos_table, cond);
 	xfree(cond);
 	result = DEF_QUERY_RET;
@@ -732,13 +784,9 @@ as_pg_remove_qos(pgsql_conn_t *pg_conn, uint32_t uid,
 
 		list_append(ret_list, xstrdup(name));
 		if(!name_char)
-			xstrfmtcat(name_char, "id='%s'", id);
+			xstrfmtcat(name_char, "id_qos='%s'", id);
 		else
-			xstrfmtcat(name_char, " OR id='%s'", id);
-		if(!assoc_char)
-			xstrfmtcat(assoc_char, "t1.qos='%s'", id);
-		else
-			xstrfmtcat(assoc_char, " OR t1.qos='%s'", id);
+			xstrfmtcat(name_char, " OR id_qos='%s'", id);
 
 		tmp = xstrdup_printf("replace(%s, ',%s', '')", qos, id);
 		xfree(qos);
@@ -764,28 +812,38 @@ as_pg_remove_qos(pgsql_conn_t *pg_conn, uint32_t uid,
 	}
 
 	/* remove this qos from all the users/accts that have it */
-	query = xstrdup_printf("UPDATE %s SET mod_time=%ld,qos=%s,delta_qos=%s "
-			       "WHERE deleted=0;",
-			       assoc_table, now, qos, delta_qos);
+	FOR_EACH_CLUSTER(NULL) {
+		query = xstrdup_printf(
+			"UPDATE %s.%s SET mod_time=%ld,qos=%s,delta_qos=%s "
+			"WHERE deleted=0;", cluster_name, assoc_table, now,
+			qos, delta_qos);
+	} END_EACH_CLUSTER;
 	xfree(qos);
 	xfree(delta_qos);
 	rc = DEF_QUERY_RET_RC;
 	if(rc != SLURM_SUCCESS) {
-		if(pg_conn->rollback) {
-			pgsql_db_rollback(pg_conn->db_conn);
-		}
-		list_flush(pg_conn->update_list);
+		reset_pgsql_conn(pg_conn);
 		list_destroy(ret_list);
 		return NULL;
 	}
 
 	user_name = uid_to_string((uid_t) uid);
-	rc = pgsql_remove_common(pg_conn, DBD_REMOVE_QOS, now,
-				user_name, qos_table, name_char, assoc_char);
-	xfree(assoc_char);
+	/* inline pgsql_remove_common */
+	has_jobs = _qos_has_jobs(pg_conn, name_char);
+	if (!has_jobs)
+		query = xstrdup_printf(
+			"DELETE FROM %s WHERE creation_time>%ld AND (%s);",
+			qos_table, (now - DELETE_SEC_BACK), name_char);
+	xstrfmtcat(query, "UPDATE %s SET mod_time=%ld, deleted=1 "
+		   "WHERE deleted=0 AND (%s);", qos_table, now, name_char);
+	xstrfmtcat(query, "INSERT INTO %s (timestamp, action, name, actor)"
+		   " VALUES (%ld, %d, $$%s$$, '%s');", txn_table, now,
+		   SLURMDB_REMOVE_QOS, name_char, user_name);
+	rc = DEF_QUERY_RET_RC;
 	xfree(name_char);
 	xfree(user_name);
 	if (rc != SLURM_SUCCESS) {
+		reset_pgsql_conn(pg_conn);
 		list_destroy(ret_list);
 		ret_list = NULL;
 	}
@@ -804,36 +862,40 @@ extern List
 as_pg_get_qos(pgsql_conn_t *pg_conn, uid_t uid,
 	      slurmdb_qos_cond_t *qos_cond)
 {
-	char *query = NULL, *cond = NULL;
+	DEF_VARS;
+	char *cond = NULL;
 	List qos_list = NULL;
-	PGresult *result = NULL;
 
 	/* if this changes you will need to edit the corresponding enum */
-	char *gq_fields = "name,description,id,grp_cpu_mins,grp_cpus,grp_jobs,"
-		"grp_nodes,grp_submit_jobs,grp_wall,max_cpu_mins_per_job,"
+	char *gq_fields = "name,description,id_qos,grp_cpu_mins,"
+		"grp_cpu_run_mins,grp_cpus,grp_jobs,grp_nodes,grp_submit_jobs,"
+		"grp_wall,max_cpu_mins_per_job,max_cpu_run_mins_per_user,"
 		"max_cpus_per_job,max_jobs_per_user,max_nodes_per_job,"
 		"max_submit_jobs_per_user,max_wall_duration_per_job,preempt,"
-		"priority,usage_factor";
+		"preempt_mode,priority,usage_factor";
 	enum {
-		GQ_NAME,
-		GQ_DESC,
-		GQ_ID,
-		GQ_GCM,
-		GQ_GC,
-		GQ_GJ,
-		GQ_GN,
-		GQ_GSJ,
-		GQ_GW,
-		GQ_MCMPJ,
-		GQ_MCPJ,
-		GQ_MJPU,
-		GQ_MNPJ,
-		GQ_MSJPU,
-		GQ_MWPJ,
-		GQ_PREE,
-		GQ_PRIO,
-		GQ_UF,
-		GQ_COUNT
+		F_NAME,
+		F_DESC,
+		F_ID,
+		F_GCM,
+		F_GCRM,
+		F_GC,
+		F_GJ,
+		F_GN,
+		F_GSJ,
+		F_GW,
+		F_MCMPJ,
+		F_MCRMPU,
+		F_MCPJ,
+		F_MJPU,
+		F_MNPJ,
+		F_MSJPU,
+		F_MWPJ,
+		F_PREE,
+		F_PREEM,
+		F_PRIO,
+		F_UF,
+		F_COUNT
 	};
 
 	if(check_db_connection(pg_conn) != SLURM_SUCCESS)
@@ -866,74 +928,84 @@ as_pg_get_qos(pgsql_conn_t *pg_conn, uid_t uid,
 		slurmdb_qos_rec_t *qos = xmalloc(sizeof(slurmdb_qos_rec_t));
 		list_append(qos_list, qos);
 
-		if(! ISEMPTY(GQ_DESC))
-			qos->description = xstrdup(ROW(GQ_DESC));
+		if(! ISEMPTY(F_DESC))
+			qos->description = xstrdup(ROW(F_DESC));
 
-		qos->id = atoi(ROW(GQ_ID));
+		qos->id = atoi(ROW(F_ID));
 
-		if(! ISEMPTY(GQ_NAME))
-			qos->name =  xstrdup(ROW(GQ_NAME));
+		if(! ISEMPTY(F_NAME))
+			qos->name =  xstrdup(ROW(F_NAME));
 
-		if(! ISNULL(GQ_GCM))
-			qos->grp_cpu_mins = atoll(ROW(GQ_GCM));
+		if(! ISNULL(F_GCM))
+			qos->grp_cpu_mins = atoll(ROW(F_GCM));
 		else
-			qos->grp_cpu_mins = INFINITE;
-		if(! ISNULL(GQ_GC))
-			qos->grp_cpus = atoi(ROW(GQ_GC));
+			qos->grp_cpu_mins = (uint64_t)INFINITE;
+		if (! ISNULL(F_GCRM))
+			qos->grp_cpu_run_mins = atoll(ROW(F_GCRM));
+		else
+			qos->grp_cpu_run_mins = (uint64_t)INFINITE;
+		if(! ISNULL(F_GC))
+			qos->grp_cpus = atoi(ROW(F_GC));
 		else
 			qos->grp_cpus = INFINITE;
-		if(! ISNULL(GQ_GJ))
-			qos->grp_jobs = atoi(ROW(GQ_GJ));
+		if(! ISNULL(F_GJ))
+			qos->grp_jobs = atoi(ROW(F_GJ));
 		else
 			qos->grp_jobs = INFINITE;
-		if(! ISNULL(GQ_GN))
-			qos->grp_nodes = atoi(ROW(GQ_GN));
+		if(! ISNULL(F_GN))
+			qos->grp_nodes = atoi(ROW(F_GN));
 		else
 			qos->grp_nodes = INFINITE;
-		if(! ISNULL(GQ_GSJ))
-			qos->grp_submit_jobs = atoi(ROW(GQ_GSJ));
+		if(! ISNULL(F_GSJ))
+			qos->grp_submit_jobs = atoi(ROW(F_GSJ));
 		else
 			qos->grp_submit_jobs = INFINITE;
-		if(! ISNULL(GQ_GW))
-			qos->grp_wall = atoi(ROW(GQ_GW));
+		if(! ISNULL(F_GW))
+			qos->grp_wall = atoi(ROW(F_GW));
 		else
 			qos->grp_wall = INFINITE;
 
-		if(! ISNULL(GQ_MCMPJ))
-			qos->max_cpu_mins_pj = atoi(ROW(GQ_MCMPJ));
+		if(! ISNULL(F_MCMPJ))
+			qos->max_cpu_mins_pj = atoll(ROW(F_MCMPJ));
 		else
-			qos->max_cpu_mins_pj = INFINITE;
-		if(! ISNULL(GQ_MCPJ))
-			qos->max_cpus_pj = atoi(ROW(GQ_MCPJ));
+			qos->max_cpu_mins_pj = (uint64_t)INFINITE;
+		if(! ISNULL(F_MCRMPU))
+			qos->max_cpu_run_mins_pu = atoll(ROW(F_MCRMPU));
+		else
+			qos->max_cpu_run_mins_pu = (uint64_t)INFINITE;
+		if(! ISNULL(F_MCPJ))
+			qos->max_cpus_pj = atoi(ROW(F_MCPJ));
 		else
 			qos->max_cpus_pj = INFINITE;
-		if(! ISNULL(GQ_MJPU))
-			qos->max_jobs_pu = atoi(ROW(GQ_MJPU));
+		if(! ISNULL(F_MJPU))
+			qos->max_jobs_pu = atoi(ROW(F_MJPU));
 		else
 			qos->max_jobs_pu = INFINITE;
-		if(! ISNULL(GQ_MNPJ))
-			qos->max_nodes_pj = atoi(ROW(GQ_MNPJ));
+		if(! ISNULL(F_MNPJ))
+			qos->max_nodes_pj = atoi(ROW(F_MNPJ));
 		else
 			qos->max_nodes_pj = INFINITE;
-		if(! ISNULL(GQ_MSJPU))
-			qos->max_submit_jobs_pu = atoi(ROW(GQ_MSJPU));
+		if(! ISNULL(F_MSJPU))
+			qos->max_submit_jobs_pu = atoi(ROW(F_MSJPU));
 		else
 			qos->max_submit_jobs_pu = INFINITE;
-		if(! ISNULL(GQ_MWPJ))
-			qos->max_wall_pj = atoi(ROW(GQ_MWPJ));
+		if(! ISNULL(F_MWPJ))
+			qos->max_wall_pj = atoi(ROW(F_MWPJ));
 		else
 			qos->max_wall_pj = INFINITE;
 
-		if(! ISEMPTY(GQ_PREE)) {
+		if(! ISEMPTY(F_PREE)) {
 			if(!qos->preempt_bitstr)
 				qos->preempt_bitstr = bit_alloc(g_qos_count);
-			bit_unfmt(qos->preempt_bitstr, ROW(GQ_PREE)+1);
+			bit_unfmt(qos->preempt_bitstr, ROW(F_PREE)+1);
 		}
-		if(! ISNULL(GQ_PRIO))
-			qos->priority = atoi(ROW(GQ_PRIO));
+		if(! ISNULL(F_PREEM))
+			qos->preempt_mode = atoi(ROW(F_PREEM));
+		if(! ISNULL(F_PRIO))
+			qos->priority = atoi(ROW(F_PRIO));
 
-		if(! ISNULL(GQ_UF))
-			qos->usage_factor = atof(ROW(GQ_UF));
+		if(! ISNULL(F_UF))
+			qos->usage_factor = atof(ROW(F_UF));
 	} END_EACH_ROW;
 	PQclear(result);
 	return qos_list;
