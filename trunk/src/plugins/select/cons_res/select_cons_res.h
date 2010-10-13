@@ -4,7 +4,7 @@
  *  $Id: select_cons_res.h,v 1.3 2006/10/31 20:01:38 palermo Exp $
  *****************************************************************************
  *  Copyright (C) 2006 Hewlett-Packard Development Company, L.P.
-*  Portions Copyright (C) 2010 SchedMD <http://www.schedmd.com>.
+*   Portions Copyright (C) 2010 SchedMD <http://www.schedmd.com>.
  *  Written by Susanne M. Balle, <susanne.balle@hp.com>
  *  CODE-OCEC-09-009. All rights reserved.
  *
@@ -119,7 +119,7 @@ struct node_use_record {
 	uint16_t node_state;		/* see node_cr_state comments */
 };
 
-
+extern uint32_t select_debug_flags;
 extern uint16_t select_fast_schedule;
 
 extern struct part_res_record *select_part_record;

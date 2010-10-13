@@ -696,11 +696,14 @@ uint16_t _can_job_run_on_node(struct job_record *job_ptr, bitstr_t *core_map,
 	if (cpus == 0)
 		bit_nclear(core_map, core_start_bit, core_end_bit);
 
-	debug3("cons_res: _can_job_run_on_node: %u cpus on %s(%d), mem %u/%u",
-		cpus, select_node_record[node_i].node_ptr->name,
-		node_usage[node_i].node_state,
-		node_usage[node_i].alloc_memory,
-		select_node_record[node_i].real_memory);
+	if (select_debug_flags & DEBUG_FLAG_CPU_BIND) {
+		info("cons_res: _can_job_run_on_node: %u cpus on %s(%d), "
+		     "mem %u/%u",
+		     cpus, select_node_record[node_i].node_ptr->name,
+		     node_usage[node_i].node_state,
+		     node_usage[node_i].alloc_memory,
+		     select_node_record[node_i].real_memory);
+	}
 
 	return cpus;
 }
@@ -740,7 +743,7 @@ static int _is_node_busy(struct part_res_record *p_ptr, uint32_t node_i,
 /*
  * Determine which of these nodes are usable by this job
  *
- * Remove nodes from the bitmap that don't have enough memory  or gres to
+ * Remove nodes from the bitmap that don't have enough memory or gres to
  * support the job. 
  *
  * Return SLURM_ERROR if a required node can't be used.
@@ -1848,7 +1851,7 @@ static int _choose_nodes(struct job_record *job_ptr, bitstr_t *node_map,
  * IN/OUT: core_map - bitmap of available cores / bitmap of selected cores
  * IN: cr_type      - resource type
  * IN: test_only    - ignore allocated memory check
- * OUT:             return SLURM_SUCCESS if an allocation was found
+ * RET - array with number of CPUs available per node or NULL if not runnable
  */
 static uint16_t *_select_nodes(struct job_record *job_ptr, uint32_t min_nodes,
 				uint32_t max_nodes, uint32_t req_nodes,
@@ -1988,8 +1991,10 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			details_ptr->min_cpus *= mc_ptr->sockets_per_node;
 	}
 
-	debug3("cons_res: cr_job_test: evaluating job %u on %u nodes",
-	       job_ptr->job_id, bit_set_count(bitmap));
+	if (select_debug_flags & DEBUG_FLAG_CPU_BIND) {
+		info("cons_res: cr_job_test: evaluating job %u on %u nodes",
+		     job_ptr->job_id, bit_set_count(bitmap));
+	}
 
 	orig_map = bit_copy(bitmap);
 	avail_cores = _make_core_bitmap(bitmap);
@@ -2008,15 +2013,18 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		FREE_NULL_BITMAP(orig_map);
 		FREE_NULL_BITMAP(free_cores);
 		FREE_NULL_BITMAP(avail_cores);
-		debug3("cons_res: cr_job_test: test 0 fail: "
-		       "insufficient resources");
+		if (select_debug_flags & DEBUG_FLAG_CPU_BIND) {
+			info("cons_res: cr_job_test: test 0 fail: "
+			     "insufficient resources");
+		}
 		return SLURM_ERROR;
 	} else if (test_only) {
 		FREE_NULL_BITMAP(orig_map);
 		FREE_NULL_BITMAP(free_cores);
 		FREE_NULL_BITMAP(avail_cores);
 		xfree(cpu_count);
-		debug3("cons_res: cr_job_test: test 0 pass: test_only");
+		if (select_debug_flags & DEBUG_FLAG_CPU_BIND)
+			info("cons_res: cr_job_test: test 0 pass: test_only");
 		return SLURM_SUCCESS;
 	}
 	if (cr_type == CR_MEMORY) {
@@ -2025,8 +2033,10 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		goto alloc_job;
 	}
 	xfree(cpu_count);
-	debug3("cons_res: cr_job_test: test 0 pass - "
-	       "job fits on given resources");
+	if (select_debug_flags & DEBUG_FLAG_CPU_BIND) {
+		info("cons_res: cr_job_test: test 0 pass - "
+		     "job fits on given resources");
+	}
 
 	/* now that we know that this job can run with the given resources,
 	 * let's factor in the existing allocations and seek the optimal set
@@ -2083,8 +2093,10 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 				  node_usage, cr_type, test_only);
 	if (cpu_count) {
 		/* job fits! We're done. */
-		debug3("cons_res: cr_job_test: test 1 pass - "
-		       "idle resources found");
+		if (select_debug_flags & DEBUG_FLAG_CPU_BIND) {
+			info("cons_res: cr_job_test: test 1 pass - "
+			     "idle resources found");
+		}
 		goto alloc_job;
 	}
 
@@ -2094,12 +2106,16 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		 * addressed in _verify_node_state() and job preemption
 		 * removes jobs from simulated resource allocation map
 		 * before this point. */
-		debug3("cons_res: cr_job_test: test 1 fail - "
-		       "no idle resources available");
+		if (select_debug_flags & DEBUG_FLAG_CPU_BIND) {
+			info("cons_res: cr_job_test: test 1 fail - "
+			     "no idle resources available");
+		}
 		goto alloc_job;
 	}
-	debug3("cons_res: cr_job_test: test 1 fail - "
-	       "not enough idle resources");
+	if (select_debug_flags & DEBUG_FLAG_CPU_BIND) {
+		info("cons_res: cr_job_test: test 1 fail - "
+		     "not enough idle resources");
+	}
 
 	/*** Step 2 ***/
 	bit_copybits(bitmap, orig_map);
@@ -2137,13 +2153,17 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	if (!cpu_count) {
 		/* job needs resources that are currently in use by
 		 * higher-priority jobs, so fail for now */
-		debug3("cons_res: cr_job_test: test 2 fail - "
-			"resources busy with higher priority jobs");
+		if (select_debug_flags & DEBUG_FLAG_CPU_BIND) {
+			info("cons_res: cr_job_test: test 2 fail - "
+			     "resources busy with higher priority jobs");
+		}
 		goto alloc_job;
 	}
 	xfree(cpu_count);
-	debug3("cons_res: cr_job_test: test 2 pass - "
-	       "available resources for this priority");
+	if (select_debug_flags & DEBUG_FLAG_CPU_BIND) {
+		info("cons_res: cr_job_test: test 2 pass - "
+		     "available resources for this priority");
+	}
 
 	/*** Step 3 ***/
 	bit_copybits(bitmap, orig_map);
@@ -2173,11 +2193,16 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		 * a good placement algorithm here that optimizes "job overlap"
 		 * between this job (in these idle nodes) and the low-priority
 		 * jobs */
-		debug3("cons_res: cr_job_test: test 3 pass - found resources");
+		if (select_debug_flags & DEBUG_FLAG_CPU_BIND) {
+			info("cons_res: cr_job_test: test 3 pass - "
+			     "found resources");
+		}
 		goto alloc_job;
 	}
-	debug3("cons_res: cr_job_test: test 3 fail - "
-	       "not enough idle resources in same priority");
+	if (select_debug_flags & DEBUG_FLAG_CPU_BIND) {
+		info("cons_res: cr_job_test: test 3 fail - "
+		     "not enough idle resources in same priority");
+	}
 
 
 	/*** Step 4 ***/
@@ -2201,7 +2226,10 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 					  req_nodes, bitmap, cr_node_cnt,
 					  free_cores, node_usage, cr_type,
 					  test_only);
-		debug3("cons_res: cr_job_test: test 4 pass - first row found");
+		if (select_debug_flags & DEBUG_FLAG_CPU_BIND) {
+			info("cons_res: cr_job_test: test 4 pass - "
+			     "first row found");
+		}
 		goto alloc_job;
 	}
 
@@ -2222,17 +2250,24 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 					  free_cores, node_usage, cr_type,
 					  test_only);
 		if (cpu_count) {
-			debug3("cons_res: cr_job_test: test 4 pass - row %i",i);
+			if (select_debug_flags & DEBUG_FLAG_CPU_BIND) {
+				info("cons_res: cr_job_test: test 4 pass - "
+				     "row %i", i);
+			}
 			break;
 		}
-		debug3("cons_res: cr_job_test: test 4 fail - row %i", i);
+		if (select_debug_flags & DEBUG_FLAG_CPU_BIND)
+			info("cons_res: cr_job_test: test 4 fail - row %i", i);
 	}
 
 	if ((i < c) && !jp_ptr->row[i].row_bitmap) {
 		/* we've found an empty row, so use it */
 		bit_copybits(bitmap, orig_map);
 		bit_copybits(free_cores, avail_cores);
-		debug3("cons_res: cr_job_test: test 4 trying empty row %i",i);
+		if (select_debug_flags & DEBUG_FLAG_CPU_BIND) {
+			info("cons_res: cr_job_test: "
+			     "test 4 trying empty row %i",i);
+		}
 		cpu_count = _select_nodes(job_ptr, min_nodes, max_nodes,
 					  req_nodes, bitmap, cr_node_cnt,
 					  free_cores, node_usage, cr_type,
@@ -2241,7 +2276,10 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 
 	if (!cpu_count) {
 		/* job can't fit into any row, so exit */
-		debug3("cons_res: cr_job_test: test 4 fail - busy partition");
+		if (select_debug_flags & DEBUG_FLAG_CPU_BIND) {
+			info("cons_res: cr_job_test: test 4 fail - "
+			     "busy partition");
+		}
 		goto alloc_job;
 
 	}
@@ -2270,7 +2308,10 @@ alloc_job:
 	if (!cpu_count) {
 		/* we were sent here to cleanup and exit */
 		FREE_NULL_BITMAP(free_cores);
-		debug3("cons_res: exiting cr_job_test with no allocation");
+		if (select_debug_flags & DEBUG_FLAG_CPU_BIND) {
+			info("cons_res: exiting cr_job_test with no "
+			     "allocation");
+		}
 		return SLURM_ERROR;
 	}
 
@@ -2294,7 +2335,10 @@ alloc_job:
 		return error_code;
 	}
 
-	debug3("cons_res: cr_job_test: distributing job %u", job_ptr->job_id);
+	if (select_debug_flags & DEBUG_FLAG_CPU_BIND) {
+		info("cons_res: cr_job_test: distributing job %u",
+		     job_ptr->job_id);
+	}
 	/** create the struct_job_res  **/
 	job_res                   = create_job_resources();
 	job_res->node_bitmap      = bit_copy(bitmap);
@@ -2378,9 +2422,12 @@ alloc_job:
 	if (details_ptr->overcommit && details_ptr->num_tasks)
 		job_res->ncpus = MIN(total_cpus, details_ptr->num_tasks);
 
-	debug3("cons_res: cr_job_test: job %u ncpus %u cbits %u/%u nbits %u",
-	       job_ptr->job_id, job_res->ncpus, bit_set_count(free_cores),
-	       bit_set_count(job_res->core_bitmap), job_res->nhosts);
+	if (select_debug_flags & DEBUG_FLAG_CPU_BIND) {
+		info("cons_res: cr_job_test: job %u ncpus %u cbits "
+		     "%u/%u nbits %u", job_ptr->job_id,
+		     job_res->ncpus, bit_set_count(free_cores),
+		     bit_set_count(job_res->core_bitmap), job_res->nhosts);
+	}
 	FREE_NULL_BITMAP(free_cores);
 
 	/* distribute the tasks and clear any unused cores */
