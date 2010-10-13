@@ -430,6 +430,8 @@ struct job_record {
 	uint32_t num_procs;		/* count of required processors */
 	uint16_t other_port;		/* port for client communications */
 	char *partition;		/* name of the partition */
+	bool part_nodes_missing;	/* set if job's nodes removed from this
+					 * partition */
 	struct part_record *part_ptr;	/* pointer to the partition record */
 	time_t pre_sus_time;		/* time job ran prior to last suspend */
 	uint32_t priority;		/* relative priority of the job,

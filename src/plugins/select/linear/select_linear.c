@@ -1340,17 +1340,22 @@ static int _rm_job_from_nodes(struct node_cr_record *node_cr_ptr,
 			break;
 		}
 		if (part_cr_ptr == NULL) {
-			if(job_ptr->part_ptr)
-				error("%s: could not find partition "
-				      "%s for node %s",
-				      pre_err, job_ptr->part_ptr->name,
-				      node_record_table_ptr[i].name);
-			else
-				error("%s: no partition ptr given for "
-				      "job %u and node %s",
-				      pre_err, job_ptr->job_id,
-				      node_record_table_ptr[i].name);
-
+			if (job_ptr->part_nodes_missing) {
+				;
+			} else if (job_ptr->part_ptr) {
+				info("%s: job %u and its partition %s "
+				     "no longer contain node %s",
+				     pre_err, job_ptr->job_id,
+				     job_ptr->partition,
+				     node_record_table_ptr[i].name);
+			} else {
+				info("%s: job %u has no pointer to partition "
+				     "%s and node %s",
+				     pre_err, job_ptr->job_id,
+				     job_ptr->partition,
+				     node_record_table_ptr[i].name);
+			}
+			job_ptr->part_nodes_missing = true;
 			rc = SLURM_ERROR;
 		}
 	}
@@ -1427,9 +1432,11 @@ static int _add_job_to_nodes(struct node_cr_record *node_cr_ptr,
 			break;
 		}
 		if (part_cr_ptr == NULL) {
-			error("%s: could not find partition %s for node %s",
-				pre_err, job_ptr->part_ptr->name,
-				node_record_table_ptr[i].name);
+			info("%s: job %u could not find partition %s for "
+			     "node %s",
+			     pre_err, job_ptr->job_id, job_ptr->part_ptr->name,
+			     node_record_table_ptr[i].name);
+			job_ptr->part_nodes_missing = true;
 			rc = SLURM_ERROR;
 		}
 	}
@@ -1627,10 +1634,11 @@ static void _init_node_cr(void)
 				break;
 			}
 			if (part_cr_ptr == NULL) {
-				error("_init_node_cr: could not find "
-					"partition %s for node %s",
-					job_ptr->partition,
-					node_record_table_ptr[i].name);
+				info("_init_node_cr: job %u could not find "
+				     "partition %s for node %s",
+				     job_ptr->job_id, job_ptr->partition,
+				     node_record_table_ptr[i].name);
+				job_ptr->part_nodes_missing = true;
 			}
 		}
 	}
