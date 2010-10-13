@@ -445,6 +445,8 @@ struct job_record {
 	uint16_t other_port;		/* port for client communications */
 	char *partition;		/* name of job partition(s) */
 	List part_ptr_list;		/* list of pointers to partition recs */
+	bool part_nodes_missing;	/* set if job's nodes removed from this
+					 * partition */
 	struct part_record *part_ptr;	/* pointer to the partition record */
 	time_t pre_sus_time;		/* time job ran prior to last suspend */
 	uint32_t priority;		/* relative priority of the job,
