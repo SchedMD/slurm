@@ -76,6 +76,8 @@ int _setup_assoc_list()
 	/* make the main list */
 	assoc_mgr_association_list =
 		list_create(slurmdb_destroy_association_rec);
+	assoc_mgr_user_list =
+		list_create(slurmdb_destroy_user_rec);
 	assoc_mgr_qos_list =
 		list_create(slurmdb_destroy_qos_rec);
 
