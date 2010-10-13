@@ -4067,24 +4067,24 @@ static char *_copy_nodelist_no_dup(char *node_list)
 
 static bool _valid_pn_min_mem(job_desc_msg_t * job_desc_msg)
 {
-	uint32_t base_size = job_desc_msg->pn_min_memory;
-	uint32_t size_limit = slurmctld_conf.max_mem_per_cpu;
+	uint32_t job_mem_limit = job_desc_msg->pn_min_memory;
+	uint32_t sys_mem_limit = slurmctld_conf.max_mem_per_cpu;
 	uint16_t cpus_per_node;
 
-	if (size_limit == 0)
+	if (sys_mem_limit == 0)
 		return true;
 
-	if ((base_size  & MEM_PER_CPU) && (size_limit & MEM_PER_CPU)) {
-		base_size  &= (~MEM_PER_CPU);
-		size_limit &= (~MEM_PER_CPU);
-		if (base_size <= size_limit)
+	if ((job_mem_limit & MEM_PER_CPU) && (sys_mem_limit & MEM_PER_CPU)) {
+		job_mem_limit &= (~MEM_PER_CPU);
+		sys_mem_limit &= (~MEM_PER_CPU);
+		if (job_mem_limit <= sys_mem_limit)
 			return true;
 		return false;
 	}
 
-	if (((base_size  & MEM_PER_CPU) == 0) &&
-	    ((size_limit & MEM_PER_CPU) == 0)) {
-		if (base_size <= size_limit)
+	if (((job_mem_limit & MEM_PER_CPU) == 0) &&
+	    ((sys_mem_limit & MEM_PER_CPU) == 0)) {
+		if (job_mem_limit <= sys_mem_limit)
 			return true;
 		return false;
 	}
@@ -4092,22 +4092,32 @@ static bool _valid_pn_min_mem(job_desc_msg_t * job_desc_msg)
 	/* Our size is per CPU and limit per node or vise-versa.
 	 * CPU count my vary by node, but we don't have a good
 	 * way to identify specific nodes for the job at this
-	 * point, so just pick the first node as a basis for
-	 * enforcing MaxMemPerCPU. */
+	 * point, so just pick the first node as a basis for enforcing
+	 * MaxMemPerCPU and convert both numbers to per-node values. */
 	if (slurmctld_conf.fast_schedule)
 		cpus_per_node = node_record_table_ptr[0].config_ptr->cpus;
 	else
 		cpus_per_node = node_record_table_ptr[0].cpus;
 	if (job_desc_msg->min_cpus != NO_VAL)
 		cpus_per_node = MIN(cpus_per_node, job_desc_msg->min_cpus);
-	if (base_size & MEM_PER_CPU) {
-		base_size &= (~MEM_PER_CPU);
-		base_size *= cpus_per_node;
+	if (job_mem_limit & MEM_PER_CPU) {
+		job_mem_limit &= (~MEM_PER_CPU);
+		job_mem_limit *= cpus_per_node;
 	} else {
-		size_limit &= (~MEM_PER_CPU);
-		size_limit *= cpus_per_node;
+		uint32_t min_cpus;
+		sys_mem_limit &= (~MEM_PER_CPU);
+		min_cpus = (job_mem_limit + sys_mem_limit - 1) / sys_mem_limit;
+		if ((job_desc_msg->pn_min_cpus == (uint16_t) NO_VAL) ||
+		    (job_desc_msg->pn_min_cpus < min_cpus)) {
+			debug("Setting job's pn_min_cpus to %u due to memory "
+			      "limit", min_cpus);
+			job_desc_msg->pn_min_cpus = min_cpus;
+			sys_mem_limit *= min_cpus;
+		} else {
+			sys_mem_limit *= cpus_per_node;
+		}
 	}
-	if (base_size <= size_limit)
+	if (job_mem_limit <= sys_mem_limit)
 		return true;
 	return false;
 }

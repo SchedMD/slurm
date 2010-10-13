@@ -58,6 +58,9 @@ documents those changes that are of interest to users and admins.
  -- Fix bug preventing users in secondary user groups from being granted access
     to partitions configured with AllowGroups.
  -- Added support for a default account and wckey per cluster within accounting.
+ -- Modified select/cons_res plugin so that if MaxMemPerCPU is configured and a
+    job specifies it's memory requirement, then more CPUs than requested will
+    automatically be allocated to a job to honor the MaxMemPerCPU parameter.
 
 * Changes in SLURM 2.2.0.pre11
 ==============================
