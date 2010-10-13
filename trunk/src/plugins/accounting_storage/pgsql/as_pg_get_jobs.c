@@ -507,7 +507,7 @@ _cluster_get_jobs(pgsql_conn_t *pg_conn, char *cluster,
 	char *cond = xstrdup(sent_cond);
 	slurmdb_job_rec_t *job = NULL;
 	List cluster_job_list = NULL;
-	int rc = SLURM_SUCCESS, curr_id, last_id;
+	int rc = SLURM_SUCCESS, curr_id, last_id = -1;
 	time_t now = time(NULL);
 
 	_concat_cluster_job_cond_str(pg_conn, cluster, job_cond, &cond);
