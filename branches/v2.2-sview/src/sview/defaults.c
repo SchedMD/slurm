@@ -541,7 +541,7 @@ extern int load_defaults()
 	char *pathname = NULL;
 	char *home = getenv("HOME");
 	uint32_t hash_val = NO_VAL;
-	int rc = SLURM_SUCCESS;
+	int i, rc = SLURM_SUCCESS;
 	char *tmp_str;
 
 	_init_sview_conf();
@@ -648,17 +648,17 @@ extern int load_defaults()
 		xfree(tmp_str);
 	}
 	/*pull in pertab options*/
-	int i = 0;
 	pertab_options_t *ptabs_o_ptr;
 	ptabs_o_ptr = xmalloc(sizeof(pertab_options_t)*PAGE_CNT);
 	g_ptabs_o_ptr = ptabs_o_ptr;
-	for(i=0; i<PAGE_CNT-4; i++) {
+	for (i=0; i<PAGE_CNT-4; i++) {
 		tmp_str = xstrdup("pertabopts");
 		xstrcat(tmp_str, page_to_str(i));
 		ptabs_o_ptr->tab_name = page_to_str(i);
 		s_p_get_string(&ptabs_o_ptr->option_list, tmp_str, hashtbl);
 		if (ptabs_o_ptr->option_list) {
-			ptabs_o_ptr->def_option_list = xstrdup(ptabs_o_ptr->option_list);
+			ptabs_o_ptr->def_option_list = xstrdup(ptabs_o_ptr->
+							       option_list);
 			replus(ptabs_o_ptr->option_list);
 		}
 		ptabs_o_ptr++;
@@ -668,11 +668,6 @@ extern int load_defaults()
 	s_p_hashtbl_destroy(hashtbl);
 
 end_it:
-	if (default_sview_config.excluded_partitions == NULL)
-		default_sview_config.excluded_partitions = xstrdup("-");
-	_excluded_partitions = xstrdup(default_sview_config.
-				       excluded_partitions);
-
 	/* copy it all into the working struct */
 	memcpy(&working_sview_config,
 	       &default_sview_config, sizeof(sview_config_t));
@@ -826,55 +821,56 @@ extern int save_defaults(bool final_save)
 	if(rc != SLURM_SUCCESS)
 		goto end_it;
 
-	if(final_save ) {
-		/*save all current pertab options*/
+	if (final_save && g_ptabs_o_ptr) {
+		/* save all current pertab options */
 		int i = 0;
 		int j = 0;
-		pertab_options_t *ptabs_o_ptr;
+		pertab_options_t *ptabs_o_ptr= g_ptabs_o_ptr;
 		display_data_t *display_data;
-		if(g_ptabs_o_ptr) {
-			ptabs_o_ptr = g_ptabs_o_ptr;
-			for(i=0; i<PAGE_CNT-4; i++) {
-				tmp_str = xstrdup_printf("%s%s%s",
-						"pertabopts", page_to_str(i), "=");
-				if (working_sview_config.save_tabs_settings) {
-					tmp_str2 = xstrdup(",");
-					if (ptabs_o_ptr->display_data) {
-						display_data = ptabs_o_ptr->display_data;
-						for(j=0; j<ptabs_o_ptr->count; j++) {
-								if(display_data->id == -1)
-									break;
-								if(!display_data->name) {
-									display_data++;
-									continue;
-								}
-								if (display_data->show)
-									tmp_str2 =
-											xstrdup_printf("%s%s%s",
-													tmp_str2,
-													display_data->name,",");
-								display_data++;
-						} //spin the menu options ^^
-						replspace(tmp_str2);
-					} //have a display struct ^^
-				} //save new option set ^^
-				else {
-					//user requested no save of page options
-					tmp_str2 = xstrdup(ptabs_o_ptr->def_option_list);
-				}
-				if (tmp_str2) {
-					tmp_str = xstrdup_printf("%s%s\n", tmp_str, tmp_str2);
-					xfree(tmp_str2);
-					rc = _write_to_file(fd, tmp_str);
-					if(rc != SLURM_SUCCESS)
-						goto end_it;
-				}
-				xfree(tmp_str);
-				ptabs_o_ptr++;
-			}//spin the tabs
-			xfree(g_ptabs_o_ptr);
-		}//have setup the tabs options struct
-	}
+		for (i=0; i<PAGE_CNT-4; i++) {
+			tmp_str = xstrdup_printf("%s%s%s", "pertabopts",
+						 page_to_str(i), "=");
+			if (working_sview_config.save_tabs_settings) {
+				tmp_str2 = xstrdup(",");
+				if (ptabs_o_ptr->display_data) {
+					display_data = ptabs_o_ptr->display_data;
+					for (j=0; j<ptabs_o_ptr->count; j++) {
+						if (display_data->id == -1)
+							break;
+						if (!display_data->name) {
+							display_data++;
+							continue;
+						}
+						if (display_data->show) {
+							tmp_str2 = 
+								xstrdup_printf(
+								"%s%s%s",
+								tmp_str2,
+								display_data->
+								name, ",");
+						}
+						display_data++;
+					} //spin the menu options ^^
+					replspace(tmp_str2);
+				} //have a display struct ^^
+			} //save new option set ^^
+			else {
+				//user requested no save of page options
+				tmp_str2 = xstrdup(ptabs_o_ptr->def_option_list);
+			}
+			if (tmp_str2) {
+				tmp_str = xstrdup_printf("%s%s\n", tmp_str,
+							 tmp_str2);
+				xfree(tmp_str2);
+				rc = _write_to_file(fd, tmp_str);
+				if (rc != SLURM_SUCCESS)
+					goto end_it;
+			}
+			xfree(tmp_str);
+			ptabs_o_ptr++;
+		}//spin the tabs
+		xfree(g_ptabs_o_ptr);
+	}//have setup the tabs options struct
 	fsync(fd);
 	close(fd);
 
@@ -1069,7 +1065,8 @@ extern int configure_defaults()
 			tmp_char_ptr = g_strdup_printf(
 				"No change detected.");
 		else {
-			gdk_window_set_cursor(main_window->window, in_process_cursor);
+			gdk_window_set_cursor(main_window->window,
+					      in_process_cursor);
 			if(tmp_config.ruled_treeview
 			   != working_sview_config.ruled_treeview) {
 				/* get rid of each existing table */
@@ -1078,15 +1075,15 @@ extern int configure_defaults()
 				cluster_change_part();
 				cluster_change_job();
 				cluster_change_node();
-			} else if(tmp_config.grid_topological
-					   != working_sview_config.grid_topological) {
+			} else if (tmp_config.grid_topological !=
+				   working_sview_config.grid_topological) {
 				apply_hidden_change = FALSE;
 				if (tmp_config.grid_topological) {
 					default_sview_config.grid_topological =
 						tmp_config.grid_topological;
-					if(!g_switch_nodes_maps)
+					if (!g_switch_nodes_maps)
 						rc = get_topo_conf();
-					if(rc != SLURM_SUCCESS) {
+					if (rc != SLURM_SUCCESS) {
 						/*denied*/
 						tmp_char_ptr = g_strdup_printf(
 							"Valid topology not "
@@ -1099,7 +1096,7 @@ extern int configure_defaults()
 				/*force fresh grid and
 				 * node state check
 				 * */
-				if(grid_button_list) {
+				if (grid_button_list) {
 					list_destroy(grid_button_list);
 					grid_button_list = NULL;
 				}

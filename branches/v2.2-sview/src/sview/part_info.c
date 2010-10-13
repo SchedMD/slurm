@@ -1574,10 +1574,9 @@ static List _create_part_info_list(partition_info_msg_t *part_info_ptr,
 
 	for (i=0; i<part_info_ptr->record_count; i++) {
 		part_ptr = &(part_info_ptr->partition_array[i]);
-		/*dont include configured excludes*/
-
-		if(!working_sview_config.show_hidden &&
-				part_ptr->flags & PART_FLAG_HIDDEN)
+		/* don't include configured excludes */
+		if (!working_sview_config.show_hidden &&
+		    part_ptr->flags & PART_FLAG_HIDDEN)
 			continue;
 		sview_part_info = _create_sview_part_info(part_ptr);
 		list_append(info_list, sview_part_info);
@@ -1711,11 +1710,11 @@ extern bool check_part_includes_node(int node_dx)
 	int i = 0;
 	static partition_info_msg_t *part_info_ptr = NULL;
 
-	if(working_sview_config.show_hidden)
+	if (working_sview_config.show_hidden)
 		return TRUE;
 
-	if(!g_part_info_ptr)
-			i = get_new_info_part(&part_info_ptr, TRUE);
+	if (!g_part_info_ptr)
+		i = get_new_info_part(&part_info_ptr, TRUE);
 	if (i && (i != SLURM_NO_CHANGE_IN_DATA)) {
 		if (_DEBUG)
 			g_print("check_part_includes_node : error %d ", i);
@@ -1723,9 +1722,9 @@ extern bool check_part_includes_node(int node_dx)
 	}
 
 	for (i=0; i<g_part_info_ptr->record_count; i++) {
-		/*dont include allow group or hidden excludes*/
+		/* don't include allow group or hidden excludes */
 		part_ptr = &(g_part_info_ptr->partition_array[i]);
-		if(part_ptr->flags & PART_FLAG_HIDDEN)
+		if (part_ptr->flags & PART_FLAG_HIDDEN)
 			continue;
 		if (part_ptr->node_inx[0] >= 0) {
 			if (_DEBUG) {
@@ -1772,10 +1771,10 @@ extern bool visible_part(char* part_name)
 	for (i=0; i<g_part_info_ptr->record_count; i++) {
 		m_part_ptr = &(g_part_info_ptr->partition_array[i]);
 		if (!strcmp(m_part_ptr->name, part_name)) {
-				if (m_part_ptr->flags & PART_FLAG_HIDDEN)
-					rc =  FALSE;
-				else
-					rc = TRUE;
+			if (m_part_ptr->flags & PART_FLAG_HIDDEN)
+				rc =  FALSE;
+			else
+				rc = TRUE;
 		}
 	}
 	return rc;
@@ -1855,8 +1854,7 @@ end_it:
 			apply_partition_check = TRUE;
 		else if (m_part_ptr->allow_groups) {
 			/* add && strcmp(p,"root")?? */
-			if (p!= NULL &&
-				!strstr(m_part_ptr->allow_groups, p)) {
+			if (p && !strstr(m_part_ptr->allow_groups, p)) {
 				m_part_ptr->flags |= PART_FLAG_HIDDEN;
 				apply_partition_check = TRUE;
 			}

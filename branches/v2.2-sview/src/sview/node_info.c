@@ -399,11 +399,10 @@ static int _get_topo_color_ndx(int node_ndx)
 	     i++, sw_nodes_bitmaps_ptr++) {
 		if (g_topo_info_msg_ptr->topo_array[i].level)
 			continue;
-            if (bit_test(sw_nodes_bitmaps_ptr->node_bitmap, node_ndx)
-            		!= 0) {
-                 rdx = i;
-                break;
-         }
+		if (bit_test(sw_nodes_bitmaps_ptr->node_bitmap, node_ndx)) {
+			rdx = i;
+			break;
+		}
 	}
 	if (rdx == MAKE_TOPO_2)
 		return rdx;
@@ -615,7 +614,7 @@ extern List create_node_info_list(node_info_msg_t *node_info_ptr,
 	char user[32], time_str[32];
 
 	if (!by_partition) {
-		if(!node_info_ptr || (!changed && info_list))
+		if (!node_info_ptr || (!changed && info_list))
 			goto update_color;
 	}
 
@@ -633,13 +632,13 @@ extern List create_node_info_list(node_info_msg_t *node_info_ptr,
 		if (!node_ptr->name || (node_ptr->name[0] == '\0'))
 			continue;
 
-		/*constrain list to included partitions' nodes*/
+		/* constrain list to included partitions' nodes */
 		if (by_partition &&
 				apply_partition_check) {
-			/*there are excluded values to process*/
+			/* there are excluded values to process */
 			if (!working_sview_config.show_hidden) {
-				/*user has not requested to show hidden*/
-				if(!check_part_includes_node(i)) {
+				/* user has not requested to show hidden */
+				if (!check_part_includes_node(i)) {
 					continue;
 				}
 			}
@@ -1242,21 +1241,19 @@ display_it:
 	info_list = create_node_info_list(node_info_ptr, changed,
 			FALSE);
 
-	if(!info_list)
+	if (!info_list)
 		goto reset_curs;
 	i=0;
 	/* set up the grid */
-	if(display_widget && GTK_IS_TREE_VIEW(display_widget)
-	   && gtk_tree_selection_count_selected_rows(
-		   gtk_tree_view_get_selection(
-			   GTK_TREE_VIEW(display_widget)))) {
+	if (display_widget && GTK_IS_TREE_VIEW(display_widget) &&
+	    gtk_tree_selection_count_selected_rows(
+	    gtk_tree_view_get_selection(GTK_TREE_VIEW(display_widget)))) {
 		GtkTreeViewColumn *focus_column = NULL;
 		/* highlight the correct nodes from the last selection */
 		gtk_tree_view_get_cursor(GTK_TREE_VIEW(display_widget),
 					 &path, &focus_column);
 	}
-	if(!path  ||
-			working_sview_config.grid_topological) {
+	if (!path || working_sview_config.grid_topological) {
 		itr = list_iterator_create(info_list);
 		if (g_topo_info_msg_ptr)	{
 			while ((sview_node_info_ptr = list_next(itr))) {
@@ -1264,22 +1261,25 @@ display_it:
 				b_color_ndx = _get_topo_color_ndx(i);
 
 				if (b_color_ndx != MAKE_TOPO_2) {
-					/*node belongs to a switch*/
-					if(sview_node_info_ptr->node_ptr->node_state != NODE_STATE_IDLE )
+					/* node belongs to a switch */
+					if (sview_node_info_ptr->node_ptr->
+					    node_state != NODE_STATE_IDLE )
 						b_color_ndx = i;
 				}
 				change_grid_color(grid_button_list, i, i,
-						b_color_ndx, true, 0);
+						  b_color_ndx, true, 0);
 				i++;
 			}
 		} else {
 			while ((sview_node_info_ptr = list_next(itr))) {
-				/*stop blasting out all those button colors*/
-				if(sview_node_info_ptr->node_ptr->node_state != NODE_STATE_IDLE)
+				/* stop blasting out all those button colors */
+				if (sview_node_info_ptr->node_ptr->node_state
+				    != NODE_STATE_IDLE)
 					b_color_ndx = i;
 				else
 					b_color_ndx = MAKE_INIT;
-				change_grid_color(grid_button_list, i, i, b_color_ndx, true, 0);
+				change_grid_color(grid_button_list, i, i,
+						  b_color_ndx, true, 0);
 				i++;
 			}
 		}
@@ -1378,8 +1378,7 @@ extern void specific_info_node(popup_info_t *popup_win)
 	}
 display_it:
 
-	info_list = create_node_info_list(node_info_ptr, changed,
-			FALSE);
+	info_list = create_node_info_list(node_info_ptr, changed, FALSE);
 
 	if(!info_list)
 		return;

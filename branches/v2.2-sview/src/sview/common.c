@@ -129,17 +129,16 @@ static void _foreach_full_info(GtkTreeModel  *model,
 			       gpointer       userdata)
 {
 
-        each_t *each = userdata;
-        (each->display_data->set_menu)(
-		each->tree_view, NULL, path, FULL_CLICKED);
-        popup_pos.x = popup_pos.slider + popup_pos.cntr * 10;
-        popup_pos.y = popup_pos.cntr * 22;
-        popup_pos.cntr++;
-        if (popup_pos.cntr > 10) {
-        	popup_pos.cntr = 1;
-        	popup_pos.slider += 100;
-        }
-
+	each_t *each = userdata;
+	(each->display_data->set_menu)(each->tree_view, NULL, path,
+				       FULL_CLICKED);
+	popup_pos.x = popup_pos.slider + popup_pos.cntr * 10;
+	popup_pos.y = popup_pos.cntr * 22;
+	popup_pos.cntr++;
+	if (popup_pos.cntr > 10) {
+		popup_pos.cntr = 1;
+		popup_pos.slider += 100;
+	}
 }
 
 
@@ -640,43 +639,42 @@ static void _selected_page(GtkMenuItem *menuitem, display_data_t *display_data)
 
 extern char * replspace (char *str)
 {
-   int pntr = 0;
-   while (str[pntr]) {
-	   if (str[pntr] == ' ')
-		   str[pntr] = '_';
-	   pntr++;
-   }
-   return str;
+	int pntr = 0;
+	while (str[pntr]) {
+		if (str[pntr] == ' ')
+			str[pntr] = '_';
+		pntr++;
+	}
+	return str;
 }
 
 extern char * replus (char *str)
 {
-   int pntr = 0;
-    while (str[pntr]) {
-	   if (str[pntr] == '_')
-		   str[pntr] = ' ';
-	   pntr++;
-   }
-   return str;
+	int pntr = 0;
+	while (str[pntr]) {
+		if (str[pntr] == '_')
+			str[pntr] = ' ';
+		pntr++;
+	}
+	return str;
 }
 
 extern char *delstr(char *str, char *orig)
 {
-  static char buffer[150];
-  char *p;
+	static char buffer[150];
+	char *p;
 
-  if(!(p = strstr(str, orig)))
-    return NULL;
+	if (!(p = strstr(str, orig)))
+		return NULL;
 
+	strncpy(buffer, str, p-str);
+	strncpy(buffer+(p-str-1), p+strlen(orig), strlen(str)-(p-str));
+	buffer[strlen(str) - strlen(orig)] = '\0';
 
-  strncpy(buffer, str, p-str);
-  strncpy(buffer+(p-str-1), p+strlen(orig), strlen(str)-(p-str));
-  buffer[strlen(str) - strlen(orig)] = '\0';
+	if (_DEBUG)
+		g_print("delstr: new string <%s>\n", buffer);
 
-  if (_DEBUG)
-  	g_print("delstr: new string <%s>\n", buffer);
-
-  return buffer;
+	return buffer;
 }
 
 
@@ -686,10 +684,10 @@ extern void free_switch_nodes_maps(switch_record_bitmaps_t
 
 	int i;
 	for (i=0;;i++, sw_nodes_bitmaps_ptr++) {
-		if(!sw_nodes_bitmaps_ptr->node_bitmap)
+		if (!sw_nodes_bitmaps_ptr->node_bitmap)
 			break;
 		bit_free(sw_nodes_bitmaps_ptr->node_bitmap);
-		if(sw_nodes_bitmaps_ptr->node_bitmap)
+		if (sw_nodes_bitmaps_ptr->node_bitmap)
 			xfree(sw_nodes_bitmaps_ptr->nodes);
 	}
 	g_switch_nodes_maps = NULL;
@@ -939,24 +937,24 @@ extern void set_pertab_opts(int tab, display_data_t *display_data,
 			g_print("set_pertab_opts: no g_ptabs_o_ptr\n");
 		return;
 	}
-	for(i=0; i<PAGE_CNT-4; i++) {
+	for (i=0; i<PAGE_CNT-4; i++) {
 		if (i == tab) {
-			if(!ptabs_o_ptr->option_list)
+			if (!ptabs_o_ptr->option_list)
 				ptabs_o_ptr->option_list = xstrdup(initial_opts);
 			ptabs_o_ptr->display_data = display_data;
 			ptabs_o_ptr->count = count;
-			for(j=0; j<count; j++) {
-					if(display_data->id == -1)
-						break;
-					if(!display_data->name) {
-						display_data++;
-						continue;
-					}
-					if (strstr(ptabs_o_ptr->option_list,
-							display_data->name)) {
-						display_data->show = TRUE;
-					}
+			for (j=0; j<count; j++) {
+				if (display_data->id == -1)
+					break;
+				if (!display_data->name) {
 					display_data++;
+					continue;
+				}
+				if (strstr(ptabs_o_ptr->option_list,
+					   display_data->name)) {
+					display_data->show = TRUE;
+				}
+				display_data++;
 			}
 		}
 		if (hit)

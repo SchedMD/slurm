@@ -361,17 +361,17 @@ static void _set_grid(GtkToggleAction *action)
 static void _set_hidden(GtkToggleAction *action)
 {
 	char *tmp;
-	if(action)
+	if (action)
 		working_sview_config.show_hidden
 			= gtk_toggle_action_get_active(action);
-	if(!working_sview_config.show_hidden)
+	if (!working_sview_config.show_hidden)
 		tmp = g_strdup_printf(
 			"Hidden partitions and their jobs are now hidden");
 	else
 		tmp = g_strdup_printf(
 			"Hidden partitions and their jobs are now visible");
 	if (apply_hidden_change) {
-		if(grid_button_list) {
+		if (grid_button_list) {
 			list_destroy(grid_button_list);
 			grid_button_list = NULL;
 		}
@@ -387,15 +387,13 @@ static void _set_hidden(GtkToggleAction *action)
 static void _set_stabbsets(GtkToggleAction *action)
 {
 	char *tmp;
-	if(action)
+	if (action)
 		working_sview_config.save_tabs_settings
 			= gtk_toggle_action_get_active(action);
-	if(working_sview_config.save_tabs_settings)
-		tmp = g_strdup_printf(
-			"Save Page Options now ON");
+	if (working_sview_config.save_tabs_settings)
+		tmp = g_strdup_printf("Save Page Options now ON");
 	else
-		tmp = g_strdup_printf(
-				"Save Page Options now OFF");
+		tmp = g_strdup_printf("Save Page Options now OFF");
 
 	refresh_main(NULL, NULL);
 	display_edit_note(tmp);
@@ -403,33 +401,33 @@ static void _set_stabbsets(GtkToggleAction *action)
 	return;
 }
 
+#ifdef WANT_TOPO_ON_MAIN_OPTIONS
 static void _set_topogrid(GtkToggleAction *action)
 {
 	char *tmp;
 	int rc = SLURM_SUCCESS;
-	if(action)
+
+	if (action) {
 		working_sview_config.grid_topological
 			= gtk_toggle_action_get_active(action);
+	}
 	apply_hidden_change = FALSE;
 	if (working_sview_config.grid_topological) {
-		if(!g_switch_nodes_maps)
+		if (!g_switch_nodes_maps)
 			rc = get_topo_conf();
-		if(rc != SLURM_SUCCESS)
+		if (rc != SLURM_SUCCESS)
 			/*denied*/
-			tmp = g_strdup_printf(
-				"Valid topology not "
-				"detected");
+			tmp = g_strdup_printf("Valid topology not detected");
 		else
-				tmp = g_strdup_printf(
-					"Grid changed to topology "
-					"order");
+			tmp = g_strdup_printf("Grid changed to topology order");
 
 	}
-		refresh_main(NULL, NULL);
-		display_edit_note(tmp);
-		g_free(tmp);
-		return;
+	refresh_main(NULL, NULL);
+	display_edit_note(tmp);
+	g_free(tmp);
+	return;
 }
+#endif
 
 static void _set_ruled(GtkToggleAction *action)
 {

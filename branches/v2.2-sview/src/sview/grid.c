@@ -479,8 +479,8 @@ static void _each_highlight_selected(GtkTreeModel *model,
 			gtk_widget_set_state(grid_button->button,
 					     GTK_STATE_NORMAL);
 			change_grid_color(grid_button_list, grid_button->inx,
-					grid_button->inx,
-					grid_button->inx, true, 0);
+					  grid_button->inx,
+					  grid_button->inx, true, 0);
 		}
 		if (speedup_break)
 			break;
@@ -612,9 +612,7 @@ static int _add_button_to_list(node_info_t *node_ptr,
 		grid_button->button = gtk_button_new();
 		grid_button->node_name = xstrdup(node_ptr->name);
 
-		gtk_widget_set_size_request(grid_button->button,
-				10, 10
-				);
+		gtk_widget_set_size_request(grid_button->button, 10, 10);
 		_add_button_signals(grid_button);
 		list_append(button_processor->button_list, grid_button);
 
@@ -660,13 +658,13 @@ static int _add_button_to_list(node_info_t *node_ptr,
 					(*button_processor->coord_y)-1, 5);
 		}
 
-		if(button_processor->force_row_break) {
+		if (button_processor->force_row_break) {
 			(*button_processor->coord_x) = 0;
 			(*button_processor->coord_y)+= 2;
-				gtk_table_set_row_spacing(
-					button_processor->table,
-					(*button_processor->coord_y)-1, 5);
-				return SLURM_SUCCESS;
+			gtk_table_set_row_spacing(button_processor->table,
+						  (*button_processor->coord_y)-1,
+						  5);
+			return SLURM_SUCCESS;
 		}
 
 		if((*button_processor->coord_y) == button_processor->table_y)
@@ -683,7 +681,7 @@ static int _add_button_to_list(node_info_t *node_ptr,
 }
 
 static int _grid_table_by_switch(button_processor_t *button_processor,
-	       List node_list)
+				 List node_list)
 {
 	int rc = SLURM_SUCCESS;
 	int inx = 0, ii = 0;
@@ -719,10 +717,9 @@ static int _grid_table_by_switch(button_processor_t *button_processor,
 			}
 			if (j == last)
 				button_processor->force_row_break = TRUE;
-			if((rc = _add_button_to_list(
-				    &g_node_info_ptr->node_array[j],
-				    button_processor))
-			   != SLURM_SUCCESS)
+			if ((rc = _add_button_to_list(
+					&g_node_info_ptr->node_array[j],
+					button_processor)) != SLURM_SUCCESS)
 				break;
 			button_processor->force_row_break = FALSE;
 		}
@@ -743,9 +740,8 @@ static int _grid_table_by_switch(button_processor_t *button_processor,
 
 	  */
 
-	/* This is needed to get the correct width of the grid
-	   window.  If it is not given then we get a really narrow
-	   window. */
+	/* This is needed to get the correct width of the grid window.
+	 * If it is not given then we get a really narrow window. */
 	gtk_table_set_row_spacing(button_processor->table,
 				  (*button_processor->coord_y)-1, 1);
 
@@ -763,7 +759,7 @@ static int _grid_table_by_list(button_processor_t *button_processor,
 
 	while ((sview_node_info_ptr = list_next(itr))) {
 		if (!working_sview_config.show_hidden) {
-			if(!check_part_includes_node(inx)) {
+			if (!check_part_includes_node(inx)) {
 				inx++;
 				continue;
 			}
@@ -954,16 +950,16 @@ extern char *change_grid_color(List button_list, int start, int end,
 	if(!button_list)
 		return NULL;
 
-	if(color_inx >= 0) {
+	if (color_inx >= 0) {
 		color_inx %= sview_colors_cnt;
 		new_col = sview_colors[color_inx];
-	} else if(color_inx == MAKE_BLACK)
+	} else if (color_inx == MAKE_BLACK) {
 		new_col = blank_color;
-	else if(color_inx == MAKE_TOPO_1)
+	} else if (color_inx == MAKE_TOPO_1) {
 		new_col = topo1_color;
-	else if(color_inx == MAKE_TOPO_2)
+	} else if (color_inx == MAKE_TOPO_2) {
 		new_col = topo2_color;
-	else
+	} else
 		new_col = white_color;
 
 	gdk_color_parse(new_col, &color);
@@ -1427,13 +1423,15 @@ extern int get_system_stats(GtkTable *table)
 
 	node_list = create_node_info_list(node_info_ptr,
 			changed, FALSE);
-	if(grid_button_list) {
-		rc = update_grid_table(main_grid_table, grid_button_list, node_list);
+	if (grid_button_list) {
+		rc = update_grid_table(main_grid_table, grid_button_list,
+				       node_list);
 		if (rc == RESET_GRID) {
 			list_destroy(grid_button_list);
 			grid_button_list = NULL;
 			grid_button_list = list_create(destroy_grid_button);
-			setup_grid_table(main_grid_table, grid_button_list, node_list);
+			setup_grid_table(main_grid_table, grid_button_list,
+					 node_list);
 		}
 	}
 	else {

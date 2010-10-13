@@ -210,7 +210,7 @@ typedef struct {
 	char *def_option_list;
 	display_data_t *display_data ;
 	int count;
-}pertab_options_t;
+} pertab_options_t;
 
 struct display_data {
 	GType type;
@@ -437,9 +437,9 @@ extern void cluster_change_part();
 extern void refresh_accnt(GtkAction *action, gpointer user_data);
 extern GtkListStore *create_model_accnt(int type);
 extern void admin_edit_accnt(GtkCellRendererText *cell,
-			    const char *path_string,
-			    const char *new_text,
-			    gpointer data);
+			     const char *path_string,
+			     const char *new_text,
+			     gpointer data);
 extern void specific_info_accnt(popup_info_t *popup_win);
 
 // block_info.c
@@ -534,16 +534,16 @@ extern char * replspace (char *str);
 extern char * replus (char *str);
 extern char *delstr(char *str, char *orig);
 extern void set_pertab_opts(int tab, display_data_t *display_data,
-		int count, char* initial_opts);
+			    int count, char* initial_opts);
 extern void free_switch_nodes_maps(switch_record_bitmaps_t
-					  *g_switch_nodes_maps);
+				   *g_switch_nodes_maps);
 extern int get_topo_conf(void);
 extern int get_row_number(GtkTreeView *tree_view, GtkTreePath *path);
 extern int find_col(display_data_t *display_data, int type);
 extern const char *find_col_name(display_data_t *display_data, int type);
 extern void load_header(GtkTreeView *tree_view, display_data_t *display_data);
 extern void make_fields_menu(popup_info_t *popup_win, GtkMenu *menu,
-	     display_data_t *display_data, int count);
+			     display_data_t *display_data, int count);
 extern void make_options_menu(GtkTreeView *tree_view, GtkTreePath *path,
 			      GtkMenu *menu, display_data_t *display_data);
 extern GtkScrolledWindow *create_scrolled_window();
