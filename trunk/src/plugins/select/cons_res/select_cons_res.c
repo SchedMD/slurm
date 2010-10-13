@@ -106,9 +106,6 @@
 #include "dist_tasks.h"
 #include "job_test.h"
 
-#if(0)
-#define CR_DEBUG 1
-#endif
 
 #define NODEINFO_MAGIC 0x82aa
 
@@ -177,6 +174,7 @@ const uint32_t pstate_version = 7;	/* version control on saved state */
 uint16_t cr_type = CR_CPU; /* cr_type is overwritten in init() */
 
 uint16_t select_fast_schedule;
+uint32_t select_debug_flags;
 
 uint16_t *cr_node_num_cores = NULL;
 struct part_res_record *select_part_record = NULL;
@@ -210,8 +208,6 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			  uint32_t req_nodes, uint16_t job_node_req,
 			  List preemptee_candidates, List *preemptee_job_list);
 
-#if (CR_DEBUG)
-
 static void _dump_job_res(struct job_resources *job) {
 	char str[64];
 
@@ -228,7 +224,7 @@ static void _dump_nodes(void)
 	List gres_list;
 	int i;
 
-	for (i=0, node_ptr=; i<select_node_cnt; i++) {
+	for (i=0; i<select_node_cnt; i++) {
 		node_ptr = select_node_record[i].node_ptr;
 		info("node:%s cpus:%u c:%u s:%u t:%u mem:%u a_mem:%u state:%d",
 		     node_ptr->name,
@@ -279,7 +275,6 @@ static void _dump_state(struct part_res_record *p_ptr)
 	}
 	return;
 }
-#endif
 
 /* (re)set cr_node_num_cores arrays */
 static void _init_global_core_data(struct node_record *node_ptr, int node_cnt)
@@ -639,10 +634,10 @@ static void _build_row_bitmaps(struct part_res_record *p_ptr)
 		return;
 	}
 
-#if (CR_DEBUG)
-	info("DEBUG: _build_row_bitmaps (before):");
-	_dump_part(p_ptr);
-#endif
+	if (select_debug_flags & DEBUG_FLAG_CPU_BIND) {
+		info("DEBUG: _build_row_bitmaps (before):");
+		_dump_part(p_ptr);
+	}
 	debug3("cons_res: build_row_bitmaps reshuffling %u jobs", num_jobs);
 
 	/* make a copy, in case we cannot do better than this */
@@ -697,23 +692,23 @@ static void _build_row_bitmaps(struct part_res_record *p_ptr)
 		}
 	}
 
-#if (CR_DEBUG)
-	for (i = 0; i < num_jobs; i++) {
-		char cstr[64], nstr[64];
-		if (tmpjobs[i]->core_bitmap) {
-			bit_fmt(cstr, (sizeof(cstr)-1) ,
-				tmpjobs[i]->core_bitmap);
-		} else
-			sprintf(cstr, "[no core_bitmap]");
-		if (tmpjobs[i]->node_bitmap) {
-			bit_fmt(nstr, (sizeof(nstr)-1),
-				tmpjobs[i]->node_bitmap);
-		} else
-			sprintf(nstr, "[no node_bitmap]");
-		info ("DEBUG:  jstart %d job nb %s cb %s", jstart[i], nstr,
-		      cstr);
+	if (select_debug_flags & DEBUG_FLAG_CPU_BIND) {
+		for (i = 0; i < num_jobs; i++) {
+			char cstr[64], nstr[64];
+			if (tmpjobs[i]->core_bitmap) {
+				bit_fmt(cstr, (sizeof(cstr)-1) ,
+					tmpjobs[i]->core_bitmap);
+			} else
+				sprintf(cstr, "[no core_bitmap]");
+			if (tmpjobs[i]->node_bitmap) {
+				bit_fmt(nstr, (sizeof(nstr)-1),
+					tmpjobs[i]->node_bitmap);
+			} else
+				sprintf(nstr, "[no node_bitmap]");
+			info("DEBUG:  jstart %d job nb %s cb %s", jstart[i],
+			     nstr, cstr);
+		}
 	}
-#endif
 
 	/* add jobs to the rows */
 	for (j = 0; j < num_jobs; j++) {
@@ -739,10 +734,12 @@ static void _build_row_bitmaps(struct part_res_record *p_ptr)
 		 * algorithm couldn't improve apon the existing layout.
 		 * Thus, we'll restore the original layout here */
 		debug3("cons_res: build_row_bitmap: dangling job found");
-#if (CR_DEBUG)
-		info("DEBUG: _build_row_bitmaps (post-algorithm):");
-		_dump_part(p_ptr);
-#endif
+
+		if (select_debug_flags & DEBUG_FLAG_CPU_BIND) {
+			info("DEBUG: _build_row_bitmaps (post-algorithm):");
+			_dump_part(p_ptr);
+		}
+
 		_destroy_row_data(p_ptr->row, p_ptr->num_rows);
 		p_ptr->row = orig_row;
 		orig_row = NULL;
@@ -762,10 +759,10 @@ static void _build_row_bitmaps(struct part_res_record *p_ptr)
 		}
 	}
 
-#if (CR_DEBUG)
-	info("DEBUG: _build_row_bitmaps (after):");
-	_dump_part(p_ptr);
-#endif
+	if (select_debug_flags & DEBUG_FLAG_CPU_BIND) {
+		info("DEBUG: _build_row_bitmaps (after):");
+		_dump_part(p_ptr);
+	}
 
 	if (orig_row)
 		_destroy_row_data(orig_row, p_ptr->num_rows);
@@ -828,9 +825,8 @@ static int _add_job_to_res(struct job_record *job_ptr, int action)
 	debug3("cons_res: _add_job_to_res: job %u act %d ", job_ptr->job_id,
 	       action);
 
-#if (CR_DEBUG)
-	_dump_job_res(job);
-#endif
+	if (select_debug_flags & DEBUG_FLAG_CPU_BIND)
+		_dump_job_res(job);
 
 	for (i = 0, n = -1; i < select_node_cnt; i++) {
 		if (!bit_test(job->node_bitmap, i))
@@ -902,10 +898,10 @@ static int _add_job_to_res(struct job_record *job_ptr, int action)
 				select_node_usage[i].node_state +=
 					job->node_req;
 		}
-#if (CR_DEBUG)
-		info("DEBUG: _add_job_to_res (after):");
-		_dump_part(p_ptr);
-#endif
+		if (select_debug_flags & DEBUG_FLAG_CPU_BIND) {
+			info("DEBUG: _add_job_to_res (after):");
+			_dump_part(p_ptr);
+		}
 	}
 
 	return SLURM_SUCCESS;
@@ -938,9 +934,8 @@ static int _rm_job_from_res(struct part_res_record *part_record_ptr,
 
 	debug3("cons_res: _rm_job_from_res: job %u act %d", job_ptr->job_id,
 	       action);
-#if (CR_DEBUG)
-	_dump_job_res(job);
-#endif
+	if (select_debug_flags & DEBUG_FLAG_CPU_BIND)
+		_dump_job_res(job);
 
 	first_bit = bit_ffs(job->node_bitmap);
 	last_bit =  bit_fls(job->node_bitmap);
@@ -1075,9 +1070,8 @@ static int _rm_job_from_one_node(struct job_record *job_ptr,
 
 	debug3("cons_res: _rm_job_from_one_node: job %u node %s",
 	       job_ptr->job_id, node_ptr->name);
-#if (CR_DEBUG)
-	_dump_job_res(job);
-#endif
+	if (select_debug_flags & DEBUG_FLAG_CPU_BIND)
+		_dump_job_res(job);
 
 	/* subtract memory */
 	node_inx  = node_ptr - node_record_table_ptr;
@@ -1610,6 +1604,7 @@ extern int init(void)
 	cr_type = slurmctld_conf.select_type_param;
 	if (cr_type)
 		verbose("%s loaded with argument %u", plugin_name, cr_type);
+	select_debug_flags = slurm_get_debug_flags();
 
 	return SLURM_SUCCESS;
 }
@@ -1786,14 +1781,14 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 		job_ptr->details->mc_ptr = _create_default_mc();
 	job_node_req = _get_job_node_req(job_ptr);
 
-	debug3("cons_res: select_p_job_test: job %u node_req %u, mode %d",
-	       job_ptr->job_id, job_node_req, mode);
-	debug3("cons_res: select_p_job_test: min_n %u max_n %u req_n %u nb %u",
-	       min_nodes, max_nodes, req_nodes, bit_set_count(bitmap));
-
-#if (CR_DEBUG)
-	_dump_state(select_part_record);
-#endif
+	if (select_debug_flags & DEBUG_FLAG_CPU_BIND) {
+		info("cons_res: select_p_job_test: job %u node_req %u mode %d",
+		     job_ptr->job_id, job_node_req, mode);
+		info("cons_res: select_p_job_test: min_n %u max_n %u req_n %u "
+		     "avail_n %u",
+	 	     min_nodes, max_nodes, req_nodes, bit_set_count(bitmap));
+		_dump_state(select_part_record);
+	}
 	if (mode == SELECT_MODE_WILL_RUN) {
 		rc = _will_run_test(job_ptr, bitmap, min_nodes, max_nodes,
 				    req_nodes, job_node_req,
@@ -1808,16 +1803,16 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 	} else
 		fatal("select_p_job_test: Mode %d is invalid", mode);
 
-#if (CR_DEBUG)
-	if (job_ptr->job_resrcs)
+	if (select_debug_flags & DEBUG_FLAG_CPU_BIND) {
+		if (job_ptr->job_resrcs)
+			log_job_resources(job_ptr->job_id, job_ptr->job_resrcs);
+		else {
+			info("no job_resources info for job %u",
+			     job_ptr->job_id);
+		}
+	} else if (debug_cpu_bind && job_ptr->job_resrcs) {
 		log_job_resources(job_ptr->job_id, job_ptr->job_resrcs);
-	else
-		info("no job_resources info for job %u",
-		     job_ptr->job_id);
-#else
-	if (debug_cpu_bind && job_ptr->job_resrcs)
-		log_job_resources(job_ptr->job_id, job_ptr->job_resrcs);
-#endif
+	}
 
 	return rc;
 }
@@ -2222,6 +2217,7 @@ extern int select_p_reconfigure(void)
 	int rc = SLURM_SUCCESS;
 
 	info("cons_res: select_p_reconfigure");
+	select_debug_flags = slurm_get_debug_flags();
 
 	/* Rebuild the global data structures */
 	job_preemption_enabled = false;
