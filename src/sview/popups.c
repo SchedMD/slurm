@@ -834,6 +834,9 @@ extern void change_grid_popup(GtkAction *action, gpointer user_data)
 		   && (hori == working_sview_config.grid_hori)
 		   && (vert == working_sview_config.grid_vert)) {
 			temp = g_strdup_printf("Grid: Nothing changed.");
+		} else if (working_sview_config.grid_topological) {
+			temp = g_strdup_printf("Grid: Invalid mode .."
+					" switch to non-topology order first.");
 		} else {
 			bool refresh = 0;
 			temp = g_strdup_printf(

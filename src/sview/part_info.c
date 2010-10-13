@@ -31,6 +31,7 @@
 
 #include "src/sview/sview.h"
 #include "src/common/parse_time.h"
+#include <grp.h>
 
 #define _DEBUG 0
 
@@ -104,28 +105,34 @@ enum {
 	SORTID_CNT
 };
 
+/*these are the settings to apply for the user
+ * on the first startup after a fresh slurm install.*/
+static char *_initial_pertab_opts = ",Partition,Default,Part State,"
+		"Time Limit,Node State,NodeList,";
+static bool _set_pertab_opts = FALSE;
+
 static display_data_t display_data_part[] = {
 	{G_TYPE_INT, SORTID_POS, NULL, FALSE, EDIT_NONE, refresh_part},
-	{G_TYPE_STRING, SORTID_NAME, "Partition", TRUE,
+	{G_TYPE_STRING, SORTID_NAME, "Partition", FALSE,
 	 EDIT_NONE, refresh_part, create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_COLOR, NULL, TRUE, EDIT_COLOR, refresh_part,
 	 create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_ALTERNATE, "Alternate", FALSE,
 	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_DEFAULT, "Default", TRUE,
+	{G_TYPE_STRING, SORTID_DEFAULT, "Default", FALSE,
 	 EDIT_MODEL, refresh_part, create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_HIDDEN, "Hidden", FALSE,
 	 EDIT_MODEL, refresh_part, create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_PART_STATE, "Part State", TRUE,
+	{G_TYPE_STRING, SORTID_PART_STATE, "Part State", FALSE,
 	 EDIT_MODEL, refresh_part, create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_TIMELIMIT, "Time Limit",
-	 TRUE, EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
+	 FALSE, EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_NODES, "Node Count",
-	 TRUE, EDIT_NONE, refresh_part, create_model_part, admin_edit_part},
+	 FALSE, EDIT_NONE, refresh_part, create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_CPUS, "CPU Count",
 	 FALSE, EDIT_NONE, refresh_part, create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_NODE_STATE, "Node State",
-	 TRUE, EDIT_MODEL, refresh_part,
+	 FALSE, EDIT_MODEL, refresh_part,
 	 create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_JOB_SIZE, "Job Size", FALSE,
 	 EDIT_NONE, refresh_part, create_model_part, admin_edit_part},
@@ -159,10 +166,10 @@ static display_data_t display_data_part[] = {
 	{G_TYPE_STRING, SORTID_REASON, "Reason", FALSE,
 	 EDIT_NONE, refresh_part, create_model_part, admin_edit_part},
 #ifdef HAVE_BG
-	{G_TYPE_STRING, SORTID_NODELIST, "BP List", TRUE,
+	{G_TYPE_STRING, SORTID_NODELIST, "BP List", FALSE,
 	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
 #else
-	{G_TYPE_STRING, SORTID_NODELIST, "NodeList", TRUE,
+	{G_TYPE_STRING, SORTID_NODELIST, "NodeList", FALSE,
 	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
 #endif
 	{G_TYPE_INT, SORTID_NODE_STATE_NUM, NULL, FALSE,
@@ -1567,9 +1574,9 @@ static List _create_part_info_list(partition_info_msg_t *part_info_ptr,
 
 	for (i=0; i<part_info_ptr->record_count; i++) {
 		part_ptr = &(part_info_ptr->partition_array[i]);
-		/*dont include configured excludes*/
-		if (strstr(working_sview_config.excluded_partitions,
-			   part_info_ptr->partition_array[i].name))
+		/* don't include configured excludes */
+		if (!working_sview_config.show_hidden &&
+		    part_ptr->flags & PART_FLAG_HIDDEN)
 			continue;
 		sview_part_info = _create_sview_part_info(part_ptr);
 		list_append(info_list, sview_part_info);
@@ -1696,39 +1703,43 @@ static void _process_each_partition(GtkTreeModel  *model,
 }
 /*process_each_partition ^^^*/
 
-extern bool check_part_includes_node(partition_info_msg_t *part_info_ptr,
-				     int node_dx)
+extern bool check_part_includes_node(int node_dx)
 {
 	partition_info_t *part_ptr = NULL;
 	bool rc = FALSE;
-	int i, j2;
+	int i = 0;
+	static partition_info_msg_t *part_info_ptr = NULL;
 
-	if (!part_info_ptr)
-		return rc;
+	if (working_sview_config.show_hidden)
+		return TRUE;
 
-	for (i=0; i<part_info_ptr->record_count; i++) {
-		/*dont include configured excludes*/
-		if (strstr(working_sview_config.excluded_partitions,
-			   part_info_ptr->partition_array[i].name))
+	if (!g_part_info_ptr)
+		i = get_new_info_part(&part_info_ptr, TRUE);
+	if (i && (i != SLURM_NO_CHANGE_IN_DATA)) {
+		if (_DEBUG)
+			g_print("check_part_includes_node : error %d ", i);
+		return FALSE;
+	}
+
+	for (i=0; i<g_part_info_ptr->record_count; i++) {
+		/* don't include allow group or hidden excludes */
+		part_ptr = &(g_part_info_ptr->partition_array[i]);
+		if (part_ptr->flags & PART_FLAG_HIDDEN)
 			continue;
-		part_ptr = &(part_info_ptr->partition_array[i]);
-		j2 = 0;
-		while (part_ptr->node_inx[j2] >= 0) {
+		if (part_ptr->node_inx[0] >= 0) {
 			if (_DEBUG) {
 				g_print("node_dx = %d ", node_dx);
-				g_print("part_node_inx[j2] = %d ",
-					part_ptr->node_inx[j2]);
-				g_print("part_node_inx[j2+1] = %d \n",
-					part_ptr->node_inx[j2+1]);
+				g_print("part_node_inx[0] = %d ",
+					part_ptr->node_inx[0]);
+				g_print("part_node_inx[1] = %d \n",
+					part_ptr->node_inx[1]);
 			}
-			if (node_dx >= part_ptr->node_inx[j2] &&
-			    node_dx <= part_ptr->node_inx[j2+1]) {
+			if (node_dx >= part_ptr->node_inx[0] &&
+			    node_dx <= part_ptr->node_inx[1]) {
 				rc = TRUE;
 				if (_DEBUG)
 					g_print("hit!!\n");
 			}
-			break;
-			j2 += 2;
 		}
 		if (rc)
 			break;
@@ -1747,6 +1758,28 @@ extern void refresh_part(GtkAction *action, gpointer user_data)
 	specific_info_part(popup_win);
 }
 
+
+extern bool visible_part(char* part_name)
+{
+	static partition_info_msg_t *part_info_ptr = NULL;
+	partition_info_t *m_part_ptr = NULL;
+	int i;
+	int rc = FALSE;
+
+	if(!g_part_info_ptr)
+			get_new_info_part(&part_info_ptr, force_refresh);
+	for (i=0; i<g_part_info_ptr->record_count; i++) {
+		m_part_ptr = &(g_part_info_ptr->partition_array[i]);
+		if (!strcmp(m_part_ptr->name, part_name)) {
+			if (m_part_ptr->flags & PART_FLAG_HIDDEN)
+				rc =  FALSE;
+			else
+				rc = TRUE;
+		}
+	}
+	return rc;
+}
+
 extern int get_new_info_part(partition_info_msg_t **part_ptr, int force)
 {
 	static partition_info_msg_t *new_part_ptr = NULL;
@@ -1756,6 +1789,20 @@ extern int get_new_info_part(partition_info_msg_t **part_ptr, int force)
 	static time_t last;
 	static bool changed = 0;
 	static uint16_t last_flags = 0;
+	partition_info_t *m_part_ptr = NULL;
+//	uid_t *group_uids = NULL;
+	int i = 0;
+	struct passwd *pw;
+	uid_t uid;
+
+	uid = getuid();
+	pw = getpwuid (uid);
+
+	/*TODO .. see if slurm has some
+	 * group api I can use to derive
+	 * group perms
+	 */
+	char *p=getenv("USER");
 
 	if(g_part_info_ptr && !force
 	   && ((now - last) < working_sview_config.refresh_delay)) {
@@ -1769,6 +1816,7 @@ extern int get_new_info_part(partition_info_msg_t **part_ptr, int force)
 	last = now;
 
 	if(working_sview_config.show_hidden)
+		/*ignore 'AllowGroups, Hidden settings*/
 		show_flags |= SHOW_ALL;
 
 	if (g_part_info_ptr) {
@@ -1799,6 +1847,20 @@ extern int get_new_info_part(partition_info_msg_t **part_ptr, int force)
 
 	*part_ptr = new_part_ptr;
 end_it:
+
+	for (i=0; i<g_part_info_ptr->record_count; i++) {
+		m_part_ptr = &(g_part_info_ptr->partition_array[i]);
+		if (m_part_ptr->flags & PART_FLAG_HIDDEN)
+			apply_partition_check = TRUE;
+		else if (m_part_ptr->allow_groups) {
+			/* add && strcmp(p,"root")?? */
+			if (p && !strstr(m_part_ptr->allow_groups, p)) {
+				m_part_ptr->flags |= PART_FLAG_HIDDEN;
+				apply_partition_check = TRUE;
+			}
+		}
+
+	}
 	return error_code;
 }
 
@@ -2032,6 +2094,12 @@ extern void get_info_part(GtkTable *table, display_data_t *display_data)
 	partition_info_t *part_ptr = NULL;
 	ListIterator itr = NULL;
 	GtkTreePath *path = NULL;
+
+	if (!_set_pertab_opts) {
+		set_pertab_opts(PART_PAGE, display_data_part,
+				SORTID_CNT, _initial_pertab_opts);
+		_set_pertab_opts = TRUE;
+	}
 
 	/* reset */
 	if(!table && !display_data) {

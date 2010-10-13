@@ -68,6 +68,11 @@ documents those changes that are of interest to users and admins.
     EpilogSlurmctld environment
  -- More work done on the accounting_storage/pgsql plugin, still beta.
     Patch from Hongjia Cao (NUDT).
+ -- Major updates to sview from Dan Rusak (Bull), including:
+    - Persistent option selections for each tab page
+    - Clean up topology in grids
+    - Leverage AllowGroups and Hidden options
+    - Cascade full-info popups for ease of selection
 
 * Changes in SLURM 2.2.0.pre11
 ==============================

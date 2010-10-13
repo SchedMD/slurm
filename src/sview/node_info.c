@@ -35,6 +35,8 @@
 
 int cpus_per_node = 1;
 int g_node_scaling = 1;
+//static int _l_topo_color_ndx = MAKE_TOPO_1;
+//static int _l_sw_color_ndx = 0;
 
 /* These need to be in alpha order (except POS and CNT) */
 enum {
@@ -68,32 +70,39 @@ typedef struct {
 	char *nodelist;
 } process_node_t;
 
+/*these are the settings to apply for the user
+ * on the first startup after a fresh slurm install.*/
+static char *_initial_pertab_opts = ",Name,State,CPU Count,Used CPU Count,"
+		"Error CPU Count,Cores,Sockets,Threads,Real Memory,Tmp Disk,";
+
+static bool _set_pertab_opts = FALSE;
+
 static display_data_t display_data_node[] = {
 	{G_TYPE_INT, SORTID_POS, NULL, FALSE, EDIT_NONE, refresh_node,
 	 create_model_node, admin_edit_node},
-	{G_TYPE_STRING, SORTID_NAME, "Name", TRUE, EDIT_NONE, refresh_node,
+	{G_TYPE_STRING, SORTID_NAME, "Name", FALSE, EDIT_NONE, refresh_node,
 	 create_model_node, admin_edit_node},
 	{G_TYPE_STRING, SORTID_COLOR, NULL, TRUE, EDIT_COLOR, refresh_node,
 	 create_model_node, admin_edit_node},
-	{G_TYPE_STRING, SORTID_STATE, "State", TRUE, EDIT_MODEL, refresh_node,
+	{G_TYPE_STRING, SORTID_STATE, "State", FALSE, EDIT_MODEL, refresh_node,
 	 create_model_node, admin_edit_node},
 	{G_TYPE_INT, SORTID_STATE_NUM, NULL, FALSE, EDIT_NONE, refresh_node,
 	 create_model_node, admin_edit_node},
-	{G_TYPE_INT, SORTID_CPUS, "CPU Count", TRUE, EDIT_NONE, refresh_node,
+	{G_TYPE_INT, SORTID_CPUS, "CPU Count", FALSE, EDIT_NONE, refresh_node,
 	 create_model_node, admin_edit_node},
-	{G_TYPE_STRING, SORTID_USED_CPUS, "Used CPU Count", TRUE,
+	{G_TYPE_STRING, SORTID_USED_CPUS, "Used CPU Count", FALSE,
 	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
-	{G_TYPE_STRING, SORTID_ERR_CPUS, "Error CPU Count", TRUE,
+	{G_TYPE_STRING, SORTID_ERR_CPUS, "Error CPU Count", FALSE,
 	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
-	{G_TYPE_INT, SORTID_CORES, "Cores", TRUE,
+	{G_TYPE_INT, SORTID_CORES, "Cores", FALSE,
 	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
-	{G_TYPE_INT, SORTID_SOCKETS, "Sockets", TRUE,
+	{G_TYPE_INT, SORTID_SOCKETS, "Sockets", FALSE,
 	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
-	{G_TYPE_INT, SORTID_THREADS, "Threads", TRUE,
+	{G_TYPE_INT, SORTID_THREADS, "Threads", FALSE,
 	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
-	{G_TYPE_STRING, SORTID_MEMORY, "Real Memory", TRUE,
+	{G_TYPE_STRING, SORTID_MEMORY, "Real Memory", FALSE,
 	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
-	{G_TYPE_STRING, SORTID_DISK, "Tmp Disk", TRUE, EDIT_NONE, refresh_node,
+	{G_TYPE_STRING, SORTID_DISK, "Tmp Disk", FALSE, EDIT_NONE, refresh_node,
 	 create_model_node, admin_edit_node},
 	{G_TYPE_INT, SORTID_WEIGHT,"Weight", FALSE, EDIT_NONE, refresh_node,
 	 create_model_node, admin_edit_node},
@@ -380,6 +389,34 @@ static void _append_node_record(sview_node_info_t *sview_node_info,
 	_update_node_record(sview_node_info, treestore, iter);
 }
 
+static int _get_topo_color_ndx(int node_ndx)
+{
+	int i = 0;
+	int rdx = MAKE_TOPO_2;
+	switch_record_bitmaps_t *sw_nodes_bitmaps_ptr = g_switch_nodes_maps;
+
+	for (i=0; i<g_topo_info_msg_ptr->record_count;
+	     i++, sw_nodes_bitmaps_ptr++) {
+		if (g_topo_info_msg_ptr->topo_array[i].level)
+			continue;
+		if (bit_test(sw_nodes_bitmaps_ptr->node_bitmap, node_ndx)) {
+			rdx = i;
+			break;
+		}
+	}
+	if (rdx == MAKE_TOPO_2)
+		return rdx;
+//	if (rdx != _l_sw_color_ndx) {
+//		_l_sw_color_ndx = rdx;
+//		if (_l_topo_color_ndx == MAKE_TOPO_1)
+//			_l_topo_color_ndx = MAKE_TOPO_2;
+//		else
+//			_l_topo_color_ndx = MAKE_TOPO_1;
+//	}
+//	return _l_topo_color_ndx;
+	return MAKE_TOPO_1;
+}
+
 static void _update_info_node(List info_list, GtkTreeView *tree_view)
 {
 	GtkTreePath *path = gtk_tree_path_new_first();
@@ -573,12 +610,12 @@ extern List create_node_info_list(node_info_msg_t *node_info_ptr,
 	static List info_list = NULL;
 	int i = 0;
 	sview_node_info_t *sview_node_info_ptr = NULL;
-	static partition_info_msg_t *part_info_ptr = NULL;
 	node_info_t *node_ptr = NULL;
 	char user[32], time_str[32];
 
-	if(!node_info_ptr || (!changed && info_list)) {
-		goto update_color;
+	if (!by_partition) {
+		if (!node_info_ptr || (!changed && info_list))
+			goto update_color;
 	}
 
 	if(info_list)
@@ -594,19 +631,19 @@ extern List create_node_info_list(node_info_msg_t *node_info_ptr,
 		node_ptr = &(node_info_ptr->node_array[i]);
 		if (!node_ptr->name || (node_ptr->name[0] == '\0'))
 			continue;
-		if (by_partition) {
-			/*constrain list to included partitions' nodes*/
-			if (strcmp(working_sview_config.excluded_partitions,
-				   "-")) {
-				int rc = get_new_info_part(
-					&part_info_ptr, force_refresh);
-				if(rc == SLURM_NO_CHANGE_IN_DATA ||
-				   rc == SLURM_SUCCESS)
-					if(!check_part_includes_node(
-						   part_info_ptr, i))
-						continue;
+
+		/* constrain list to included partitions' nodes */
+		if (by_partition &&
+				apply_partition_check) {
+			/* there are excluded values to process */
+			if (!working_sview_config.show_hidden) {
+				/* user has not requested to show hidden */
+				if (!check_part_includes_node(i)) {
+					continue;
+				}
 			}
 		}
+
 		sview_node_info_ptr = xmalloc(sizeof(sview_node_info_t));
 		list_append(info_list, sview_node_info_ptr);
 		sview_node_info_ptr->node_ptr = node_ptr;
@@ -1150,10 +1187,16 @@ extern void get_info_node(GtkTable *table, display_data_t *display_data)
 	List info_list = NULL;
 	int changed = 1;
 	int i = 0;
+	int b_color_ndx;
 	sview_node_info_t *sview_node_info_ptr = NULL;
 	ListIterator itr = NULL;
 	GtkTreePath *path = NULL;
 
+	if (!_set_pertab_opts) {
+		set_pertab_opts(NODE_PAGE, display_data_node,
+				SORTID_CNT, _initial_pertab_opts);
+		_set_pertab_opts = TRUE;
+	}
 	/* reset */
 	if(!table && !display_data) {
 		if(display_widget)
@@ -1195,26 +1238,50 @@ extern void get_info_node(GtkTable *table, display_data_t *display_data)
 	}
 display_it:
 
-	info_list = create_node_info_list(node_info_ptr, changed, TRUE);
+	info_list = create_node_info_list(node_info_ptr, changed,
+			FALSE);
 
-	if(!info_list)
+	if (!info_list)
 		goto reset_curs;
 	i=0;
 	/* set up the grid */
-	if(display_widget && GTK_IS_TREE_VIEW(display_widget)
-	   && gtk_tree_selection_count_selected_rows(
-		   gtk_tree_view_get_selection(
-			   GTK_TREE_VIEW(display_widget)))) {
+	if (display_widget && GTK_IS_TREE_VIEW(display_widget) &&
+	    gtk_tree_selection_count_selected_rows(
+	    gtk_tree_view_get_selection(GTK_TREE_VIEW(display_widget)))) {
 		GtkTreeViewColumn *focus_column = NULL;
 		/* highlight the correct nodes from the last selection */
 		gtk_tree_view_get_cursor(GTK_TREE_VIEW(display_widget),
 					 &path, &focus_column);
 	}
-	if(!path) {
+	if (!path || working_sview_config.grid_topological) {
 		itr = list_iterator_create(info_list);
-		while ((sview_node_info_ptr = list_next(itr))) {
-			change_grid_color(grid_button_list, i, i, i, true, 0);
-			i++;
+		if (g_topo_info_msg_ptr)	{
+			while ((sview_node_info_ptr = list_next(itr))) {
+				//derive topo_color
+				b_color_ndx = _get_topo_color_ndx(i);
+
+				if (b_color_ndx != MAKE_TOPO_2) {
+					/* node belongs to a switch */
+					if (sview_node_info_ptr->node_ptr->
+					    node_state != NODE_STATE_IDLE )
+						b_color_ndx = i;
+				}
+				change_grid_color(grid_button_list, i, i,
+						  b_color_ndx, true, 0);
+				i++;
+			}
+		} else {
+			while ((sview_node_info_ptr = list_next(itr))) {
+				/* stop blasting out all those button colors */
+				if (sview_node_info_ptr->node_ptr->node_state
+				    != NODE_STATE_IDLE)
+					b_color_ndx = i;
+				else
+					b_color_ndx = MAKE_INIT;
+				change_grid_color(grid_button_list, i, i,
+						  b_color_ndx, true, 0);
+				i++;
+			}
 		}
 		list_iterator_destroy(itr);
 	} else
@@ -1310,7 +1377,8 @@ extern void specific_info_node(popup_info_t *popup_win)
 		return;
 	}
 display_it:
-	info_list = create_node_info_list(node_info_ptr, changed, TRUE);
+
+	info_list = create_node_info_list(node_info_ptr, changed, FALSE);
 
 	if(!info_list)
 		return;
