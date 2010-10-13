@@ -515,6 +515,7 @@ extern int load_defaults()
 	s_p_options_t sview_conf_options[] = {
 		{"AdminMode", S_P_BOOLEAN},
 		{"DefaultPage", S_P_STRING},
+		{"ExcludedPartitions", S_P_STRING},	/* Vestigial */
 		{"GridHorizontal", S_P_UINT32},
 		{"GridSpeedUp", S_P_BOOLEAN},
 		{"GridTopo", S_P_BOOLEAN},
