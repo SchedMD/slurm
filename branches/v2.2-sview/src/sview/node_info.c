@@ -1669,7 +1669,6 @@ extern void select_admin_nodes(GtkTreeModel *model,
 {
 	if(treeview) {
 		char *old_value = NULL;
-		char tmp[1024];
 		hostlist_t hl = NULL;
 		process_node_t process_node;
 		memset(&process_node, 0, sizeof(process_node_t));
@@ -1685,8 +1684,7 @@ extern void select_admin_nodes(GtkTreeModel *model,
 		hostlist_uniq(hl);
 		hostlist_sort(hl);
 		xfree(process_node.nodelist);
-		hostlist_ranged_string(hl, sizeof(tmp), tmp);
-		process_node.nodelist = xstrdup(tmp);
+		process_node.nodelist = hostlist_ranged_string_xmalloc(hl);
 		hostlist_destroy(hl);
 
 		if(!strcasecmp("Update Features", display_data->name)) {

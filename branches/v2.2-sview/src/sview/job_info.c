@@ -102,6 +102,7 @@ enum {
 	SORTID_CPU_MIN,
 	SORTID_CPUS_PER_TASK,
 	SORTID_DEPENDENCY,
+	SORTID_DERIVED_EC,
 	SORTID_EXIT_CODE,
 	SORTID_FEATURES,
 	SORTID_GEOMETRY,
@@ -300,6 +301,8 @@ static display_data_t display_data_job[] = {
 	 refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_PRIORITY, "Priority", FALSE,
 	 EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
+	{G_TYPE_STRING, SORTID_DERIVED_EC, "Derived Exit Code", FALSE,
+	 EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_EXIT_CODE, "Exit Code", FALSE,
 	 EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_BATCH, "Batch Flag", FALSE,
@@ -1330,8 +1333,19 @@ static void _layout_job_record(GtkTreeView *treeview,
 						 SORTID_DEPENDENCY),
 				   job_ptr->dependency);
 
+	if (WIFSIGNALED(job_ptr->derived_ec))
+		term_sig = WTERMSIG(job_ptr->derived_ec);
+	snprintf(tmp_char, sizeof(tmp_char), "%u:%u",
+		 WEXITSTATUS(job_ptr->derived_ec), term_sig);
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_job,
+						 SORTID_DERIVED_EC),
+				   tmp_char);
+
 	if (WIFSIGNALED(job_ptr->exit_code))
 		term_sig = WTERMSIG(job_ptr->exit_code);
+	else
+		term_sig = 0;
 	snprintf(tmp_char, sizeof(tmp_char), "%u:%u",
 		 WEXITSTATUS(job_ptr->exit_code), term_sig);
 	add_display_treestore_line(update, treestore, &iter,
@@ -1986,13 +2000,21 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 	gtk_tree_store_set(treestore, iter,
 			   SORTID_PRIORITY, tmp_char, -1);
 
+	if(WIFSIGNALED(job_ptr->derived_ec))
+		term_sig = WTERMSIG(job_ptr->derived_ec);
+	snprintf(tmp_char, sizeof(tmp_char), "%u:%u",
+		 WEXITSTATUS(job_ptr->derived_ec), term_sig);
+	gtk_tree_store_set(treestore, iter,
+			   SORTID_DERIVED_EC, tmp_char, -1);
+
 	if(WIFSIGNALED(job_ptr->exit_code))
 		term_sig = WTERMSIG(job_ptr->exit_code);
+	else
+		term_sig = 0;
 	snprintf(tmp_char, sizeof(tmp_char), "%u:%u",
 		 WEXITSTATUS(job_ptr->exit_code), term_sig);
 	gtk_tree_store_set(treestore, iter,
 			   SORTID_EXIT_CODE, tmp_char, -1);
-
 
 	gtk_tree_store_set(treestore, iter,
 			   SORTID_FEATURES, job_ptr->features, -1);

@@ -2,7 +2,7 @@
  *  defaults.c - put default configuration information here
  *****************************************************************************
  *  Copyright (C) 2004-2007 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>, et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -668,6 +668,11 @@ extern int load_defaults()
 	s_p_hashtbl_destroy(hashtbl);
 
 end_it:
+	if (default_sview_config.excluded_partitions == NULL)
+		default_sview_config.excluded_partitions = xstrdup("-");
+	_excluded_partitions = xstrdup(default_sview_config.
+				       excluded_partitions);
+
 	/* copy it all into the working struct */
 	memcpy(&working_sview_config,
 	       &default_sview_config, sizeof(sview_config_t));
