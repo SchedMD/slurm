@@ -40,7 +40,6 @@
 
 #include "as_pg_common.h"
 
-#define DELETE_SEC_BACK (3600*24)
 
 /*
  * create_function_xfree - perform the create function query and
@@ -91,6 +90,35 @@ concat_cond_list(List cond_list, char *prefix, char *col, char **cond_str)
 	}
 }
 
+extern void
+concat_node_state_cond_list(List cond_list, char *prefix,
+			    char *col, char **cond_str)
+{
+	int set = 0;
+	char *object;
+	ListIterator itr = NULL;
+
+	if(cond_list && list_count(cond_list)) {
+		xstrcat(*cond_str, " AND (");
+		itr = list_iterator_create(cond_list);
+		while((object = list_next(itr))) {
+			if(set)
+				xstrcat(*cond_str, " OR ");
+			/* node states are numeric */
+			/* TODO: NODE_STATE_UNKNOWN == 0, fails the condition*/
+			if (prefix)
+				xstrfmtcat(*cond_str, "(%s.%s&%s)=%s",
+					   prefix, col, object, object);
+			else
+				xstrfmtcat(*cond_str, "(%s&%s)=%s",
+					   col, object, object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(*cond_str, ")");
+	}
+}
+
 /*
  * concat_like_cond_list - concat condition list to condition string
  *   using like pattern match
@@ -114,11 +142,16 @@ concat_like_cond_list(List cond_list, char *prefix, char *col, char **cond_str)
 		while((object = list_next(itr))) {
 			if(set)
 				xstrcat(*cond_str, " OR ");
+			/* XXX: strings cond_list turned to lower case
+			   by slurm_addto_char_list().
+			   And mixed-case strings in db are much readable */
 			if (prefix)
-				xstrfmtcat(*cond_str, "%s.%s like '%%%s%%'",
+/* 				xstrfmtcat(*cond_str, "%s.%s like '%%%s%%'", */
+/* 					   prefix, col, object); */
+				xstrfmtcat(*cond_str, "%s.%s ~* '.*%s.*'",
 					   prefix, col, object);
 			else
-				xstrfmtcat(*cond_str, "%s like '%%%s%%'",
+				xstrfmtcat(*cond_str, "%s ~* '.*%s.*'",
 					   col, object);
 			set = 1;
 		}
@@ -128,7 +161,7 @@ concat_like_cond_list(List cond_list, char *prefix, char *col, char **cond_str)
 }
 
 /*
- * concat_limit - concat resource limit to record string and txn string
+ * concat_limit_32 - concat resource limit to record string and txn string
  *
  * IN col: column name
  * IN limit: limit values
@@ -136,20 +169,40 @@ concat_like_cond_list(List cond_list, char *prefix, char *col, char **cond_str)
  * OUT txn: transcation string
  */
 extern void
-concat_limit(char *col, int limit, char **rec, char **txn)
+concat_limit_32(char *col, uint32_t limit, char **rec, char **txn)
 {
-	if (limit >= 0) {
+	if (limit == INFINITE) {
 		if (rec)
-			xstrfmtcat(*rec, "%d, ", limit);
+			xstrcat(*rec, "NULL, ");
 		if (txn)
-			xstrfmtcat(*txn, ",%s=%d", col, limit);
+			xstrfmtcat(*txn, ", %s=NULL", col);
+	} else if (limit != NO_VAL && (int32_t)limit >= 0) {
+		if (rec)
+			xstrfmtcat(*rec, "%u, ", limit);
+		if (txn)
+			xstrfmtcat(*txn, ", %s=%u", col, limit);
 	} else {
 		if (rec)
 			xstrcat(*rec, "NULL, ");
-		if (limit == INFINITE) {
-			if (txn)
-				xstrfmtcat(*txn, ",%s=NULL", col);
-		}
+	}
+}
+
+extern void
+concat_limit_64(char *col, uint64_t limit, char **rec, char **txn)
+{
+	if (limit == (uint64_t)INFINITE) {
+		if (rec)
+			xstrcat(*rec, "NULL, ");
+		if (txn)
+			xstrfmtcat(*txn, ", %s=NULL", col);
+	} else if (limit != (uint64_t) NO_VAL && (int64_t)limit >= 0) {
+		if (rec)
+			xstrfmtcat(*rec, "%"PRIu64", ", limit);
+		if (txn)
+			xstrfmtcat(*txn, ", %s=%"PRIu64"", col, limit);
+	} else {
+		if (rec)
+			xstrcat(*rec, "NULL, ");
 	}
 }
 
@@ -159,6 +212,7 @@ concat_limit(char *col, int limit, char **rec, char **txn)
  * IN pg_conn: database connection
  * IN type: modification action type
  * IN now: current time
+ * IN cluster: which cluster is modified, "" for shared tables
  * IN user_name: user performing the modify operation
  * IN table: name of the table to modify
  * IN name_char: which entities to modify
@@ -170,302 +224,25 @@ concat_limit(char *col, int limit, char **rec, char **txn)
  */
 extern int
 pgsql_modify_common(pgsql_conn_t *pg_conn, uint16_t type, time_t now,
-		    char *user_name, char *table, char *name_char,
-		    char *vals)
+		    char *cluster, char *user_name, char *table,
+		    char *name_char, char *vals)
 {
 	char *query = NULL;
 	int rc = SLURM_SUCCESS;
 
-	xstrfmtcat(query, "UPDATE %s SET mod_time=%ld %s "
-		   "WHERE deleted=0 AND %s;",
-		   table, now, vals, name_char);
+	query = xstrdup_printf("UPDATE %s SET mod_time=%ld %s "
+			       "WHERE deleted=0 AND %s;",
+			       table, now, vals, name_char);
 	rc = DEF_QUERY_RET_RC;
 	if (rc == SLURM_SUCCESS)
-		rc = add_txn(pg_conn, now, type, name_char, user_name, vals);
+		rc = add_txn(pg_conn, now, cluster, type, name_char,
+			     user_name, (vals+2));
 
 	if(rc != SLURM_SUCCESS) {
-		if(pg_conn->rollback) {
-			pgsql_db_rollback(pg_conn->db_conn);
-		}
-		list_flush(pg_conn->update_list);
+		reset_pgsql_conn(pg_conn);
 		return SLURM_ERROR;
 	}
 	return SLURM_SUCCESS;
-}
-
-
-/*
- * _check_jobs_before_remove - check if there are jobs related to
- *   entities to be removed
- * IN pg_conn: database connection
- * IN assoc_char: entity condition. XXX: every option has "t1." prefix.
- * RET: true if there are related jobs
- */
-static bool
-_check_jobs_before_remove(pgsql_conn_t *pg_conn, char *assoc_char)
-{
-	char *query = NULL;
-	bool rc = false;
-	PGresult *result = NULL;
-
-	query = xstrdup_printf(
-		"SELECT t0.associd FROM %s AS t0, %s AS t1, %s AS t2 "
-		"WHERE (t2.lft BETWEEN t1.lft AND t1.rgt) AND (%s) "
-		"AND t0.associd=t2.id limit 1;",
-		job_table, assoc_table, assoc_table, assoc_char);
-
-	result = DEF_QUERY_RET;
-	if(!result) {
-		return rc;
-	}
-
-	if(PQntuples(result)) {
-		debug4("We have jobs for this combo");
-		rc = true;
-	}
-
-	PQclear(result);
-	return rc;
-}
-
-
-/*
- * _check_jobs_before_remove_assoc - check if there are jobs related with
- *   association to be removed
- * IN pg_conn: database connection
- * IN assoc_char: association condition. XXX: every option has "t1." prefix.
- * RET: true if there are related jobs
- */
-static bool
-_check_jobs_before_remove_assoc(pgsql_conn_t *pg_conn, char *assoc_char)
-{
-	char *query = NULL;
-	bool rc = false;
-	PGresult *result = NULL;
-
-	query = xstrdup_printf("SELECT t1.associd FROM %s AS t1, "
-			       "%s AS t2 WHERE (%s) "
-			       "AND t1.associd=t2.id LIMIT 1;",
-			       job_table, assoc_table, assoc_char);
-
-	result = DEF_QUERY_RET;
-	if(! result)
-		return rc;
-	if(PQntuples(result)) {
-		debug4("We have jobs for this assoc");
-		rc = true;
-	}
-	PQclear(result);
-	return rc;
-}
-
-/*
- * _check_jobs_before_remove_without_assoctable - check if there are jobs related with
- *   entities(non-association related) to be removed
- * IN pg_conn: database connection
- * IN assoc_char: association condition. XXX: every option has "t1." prefix.
- * RET: true if there are related jobs
- */
-static bool
-_check_jobs_before_remove_without_assoctable(pgsql_conn_t *pg_conn,
-					     char *where_char)
-{
-	char *query = NULL;
-	PGresult *result = NULL;
-	bool rc = false;
-
-	query = xstrdup_printf("SELECT associd FROM %s AS t1 "
-			       "WHERE (%s) LIMIT 1;",
-			       job_table, where_char);
-
-	result = DEF_QUERY_RET;
-	if(!result)
-		return rc;
-
-	if(PQntuples(result)) {
-		debug4("We have jobs for this combo");
-		rc = true;
-	}
-
-	PQclear(result);
-	return rc;
-}
-
-
-/*
- * pgsql_remove_common - remove entities from corresponding
- *   table and insert a record in txn_table
- *
- * IN pg_conn: database connection
- * IN type: remove action type
- * IN now: current time
- * IN user_name: user performing the remove operation
- * IN table: name of the table to modify
- * IN name_char: objects to remove
- *    FORMAT: "name=val1 OR name=val2..."
- * IN assoc_char: associations related to objects removed
- *    XXX: FORMAT: "t1.field1=val1 OR t1.field2=val2..."
- * RET: error code
- */
-extern int
-pgsql_remove_common(pgsql_conn_t *pg_conn, uint16_t type, time_t now,
-		    char *user_name, char *table, char *name_char,
-		    char *assoc_char)
-{
-	int rc = SLURM_SUCCESS;
-	char *query = NULL, *loc_assoc_char = NULL;
-	time_t day_old = now - DELETE_SEC_BACK;
-	bool has_jobs = false;
-
-	/*
-	 * check if there are jobs associated with the related associations.
-	 * if true, do not deleted the entities physically for accouting.
-	 */
-	if (table == acct_coord_table) {
-		/* jobs not directly relate to coordinators. */
-	} else if (table == qos_table || table == wckey_table) {
-		has_jobs = _check_jobs_before_remove_without_assoctable(
-			pg_conn, assoc_char);
-	} else if (table != assoc_table) {
-		has_jobs = _check_jobs_before_remove(pg_conn, assoc_char);
-	} else {
-		/* XXX: name_char, instead of assoc_char */
-		has_jobs = _check_jobs_before_remove_assoc(pg_conn, name_char);
-	}
-
-	/* remove completely all that is less than a day old */
-	if(!has_jobs && (table != assoc_table)) {
-		query = xstrdup_printf(
-			"DELETE FROM %s WHERE creation_time>%ld AND (%s);",
-			table, day_old, name_char);
-	}
-	if(table != assoc_table) {
-		xstrfmtcat(query,
-			   "UPDATE %s SET mod_time=%ld, deleted=1 "
-			   "WHERE deleted=0 AND (%s);",
-			   table, now, name_char);
-	}
-	if (query) {
-		rc = DEF_QUERY_RET_RC;
-	}
-
-	if (rc == SLURM_SUCCESS)
-		add_txn(pg_conn, now, type, name_char, user_name, "");
-	if (rc != SLURM_SUCCESS) {
-		if(pg_conn->rollback) {
-			pgsql_db_rollback(pg_conn->db_conn);
-		}
-		list_flush(pg_conn->update_list);
-
-		return SLURM_ERROR;
-	}
-
-	/* done if not assoc related entities */
-	if(table == qos_table ||
-	   table == acct_coord_table ||
-	   table == wckey_table)
-		return SLURM_SUCCESS;
-
-	/* mark deleted=1 or remove completely the accounting tables */
-	if(table == assoc_table) { /* children assoc included in assoc_char */
-		loc_assoc_char = assoc_char; /* XXX: TODO: assoc_char or name_char? */
-	} else { /* for other tables, find all children associations */
-		List assoc_list;
-		ListIterator itr;
-		char *id;
-		if(!assoc_char) {
-			error("as/pg: remove_common: no assoc_char");
-			rc = SLURM_ERROR;
-			goto err_out;
-		}
-
-		/* TODO: define */
-		if(!(assoc_list = find_children_assoc(pg_conn, assoc_char))) {
-			error("as/pg: remove_common: failed to "
-			      "find children assoc");
-			goto err_out;
-		}
-		itr = list_iterator_create(assoc_list);
-		while((id = list_next(itr))) {
-			slurmdb_association_rec_t *rem_assoc;
-
-			if(!rc) {
-				xstrfmtcat(loc_assoc_char, "t1.id=%s", id);
-				rc = 1;
-			} else {
-				xstrfmtcat(loc_assoc_char, " OR t1.id=%s", id);
-			}
-			rem_assoc = xmalloc(sizeof(slurmdb_association_rec_t));
-			slurmdb_init_association_rec(rem_assoc, 0);
-
-			rem_assoc->id = atoi(id);
-			if(addto_update_list(pg_conn->update_list,
-					     SLURMDB_REMOVE_ASSOC,
-					     rem_assoc) != SLURM_SUCCESS)
-				error("couldn't add to the update list");
-		}
-		list_iterator_destroy(itr);
-		list_destroy(assoc_list);
-	}
-
-	if(!loc_assoc_char) {
-		debug2("No associations with object being deleted");
-		return rc;
-	}
-
-	/* mark association usage as deleted */
-	rc = delete_assoc_usage(pg_conn, now, loc_assoc_char);
-	if(rc != SLURM_SUCCESS) {
-		goto err_out;
-	}
-
-	/* If we have jobs that have ran don't go through the logic of
-	 * removing the associations. Since we may want them for
-	 * reports in the future since jobs had ran.
-	 */
-	if(has_jobs)
-		goto just_update;
-
-	/* remove completely all the associations for this added in the last
-	 * day, since they are most likely nothing we really wanted in
-	 * the first place.
-	 */
-	rc = remove_young_assoc(pg_conn, now, loc_assoc_char);
-	if(rc != SLURM_SUCCESS) {
-		goto err_out;
-	}
-
-just_update:
-	/* now update the associations themselves that are still
-	 * around clearing all the limits since if we add them back
-	 * we don't want any residue from past associations lingering
-	 * around.
-	 */
-	query = xstrdup_printf("UPDATE %s AS t1 SET mod_time=%ld, deleted=1, "
-			       "fairshare=1, max_jobs=NULL, "
-			       "max_nodes_per_job=NULL, "
-			       "max_wall_duration_per_job=NULL, "
-			       "max_cpu_mins_per_job=NULL "
-			       "WHERE (%s);",
-			       assoc_table, now,
-			       loc_assoc_char);
-
-	if(table != assoc_table)
-		xfree(loc_assoc_char);
-
-	DEBUG_QUERY;
-	rc = pgsql_db_query(pg_conn->db_conn, query);
-	xfree(query);
-
-err_out:
-	if(rc != SLURM_SUCCESS) {
-		if(pg_conn->rollback) {
-			pgsql_db_rollback(pg_conn->db_conn);
-		}
-		list_flush(pg_conn->update_list);
-	}
-
-	return rc;
 }
 
 
@@ -503,48 +280,48 @@ check_db_connection(pgsql_conn_t *pg_conn)
  * IN table: table name
  * IN fields: fields of the table
  * IN constraint: additional constraint of the table
- * IN user: owner of the table
  * RET: error code
  */
 extern int
-check_table(PGconn *db_conn, char *table, storage_field_t *fields,
-	    char *constraint, char *user)
+check_table(PGconn *db_conn, char *schema, char *table,
+	    storage_field_t *fields, char *constraint)
 {
-	static char **tables = NULL;
-	PGresult *result = NULL;
-	char *query;
-	int i, num;
+	DEF_VARS;
+	char **tables = NULL;
+	int i, num, rc = SLURM_SUCCESS;
 
-	if (!tables) {
-		query = xstrdup_printf("SELECT tablename FROM pg_tables "
-				       "WHERE tableowner='%s' "
-				       "AND tablename !~ '^pg_+' "
-				       "AND tablename !~ '^sql_+'", user);
-		result = pgsql_db_query_ret(db_conn, query);
-		xfree(query);
-		num = PQntuples(result);
-		tables = xmalloc(sizeof(char *) * (num + 1));
-		for (i = 0; i < num; i ++) {
-			tables[i] = xstrdup(PQgetvalue(result, i, 0));
-		}
-		tables[num] = NULL;
-		PQclear(result);
-	}
+	query = xstrdup_printf(
+		"SELECT tablename FROM pg_tables WHERE schemaname='%s' AND "
+		"tableowner='%s' AND tablename !~ '^pg_+' "
+		"AND tablename !~ '^sql_+'", schema, PQuser(db_conn));
+	result = pgsql_db_query_ret(db_conn, query);
+	xfree(query);
+	if (!result)
+		return SLURM_ERROR;
+
+	num = PQntuples(result);
+	tables = xmalloc(sizeof(char *) * (num + 1));
+	for (i = 0; i < num; i ++)
+		tables[i] = xstrdup(PQgetvalue(result, i, 0));
+	tables[num] = NULL;
+	PQclear(result);
 
 	i = 0;
 	while (tables[i] && strcmp(tables[i], table))
 		i ++;
 
 	if (!tables[i]) {
-		debug("as/pg: table %s not found, create it", table);
-		if(pgsql_db_create_table(db_conn, table, fields, constraint)
-		   == SLURM_ERROR)
-			return SLURM_ERROR;
+		debug("as/pg: table %s.%s not found, create it", schema, table);
+		rc = pgsql_db_create_table(db_conn, schema, table, fields,
+					   constraint);
 	} else {
-		if(pgsql_db_make_table_current(db_conn, table, fields))
-			return SLURM_ERROR;
+		rc = pgsql_db_make_table_current(
+			db_conn, schema, table, fields);
 	}
-	return SLURM_SUCCESS;
+	for (i = 0; i < num; i ++)
+		xfree(tables[i]);
+	xfree(tables);
+	return rc;
 }
 
 static void _destroy_local_cluster(void *object)
@@ -558,27 +335,19 @@ static void _destroy_local_cluster(void *object)
 	}
 }
 
-
 /*
- * setup_cluster_list_with_inx - get cluster record list within requested
+ * setup_cluster_nodes - get cluster record list within requested
  *   time period with used nodes. Used for deciding whether a nodelist is
  *   overlapping with the required nodes.
- *
- * IN pg_conn: database connection
- * IN job_cond: condition
- * OUT curr_cluster: current cluster record
- * RET: cluster record list
  */
-extern List
-setup_cluster_list_with_inx(pgsql_conn_t *pg_conn, slurmdb_job_cond_t *job_cond,
-			    void **curr_cluster)
+extern cluster_nodes_t *
+setup_cluster_nodes(pgsql_conn_t *pg_conn, slurmdb_job_cond_t *job_cond)
 {
-	List local_cluster_list = NULL;
+	DEF_VARS;
+	cluster_nodes_t *cnodes = NULL;
 	time_t now = time(NULL);
-	PGresult *result = NULL;
 	hostlist_t temp_hl = NULL;
 	hostlist_iterator_t h_itr = NULL;
-	char *object = NULL, *query = NULL;
 
 	if(!job_cond || !job_cond->used_nodes)
 		return NULL;
@@ -593,23 +362,22 @@ setup_cluster_list_with_inx(pgsql_conn_t *pg_conn, slurmdb_job_cond_t *job_cond,
 	temp_hl = hostlist_create(job_cond->used_nodes);
 	if(!hostlist_count(temp_hl)) {
 		error("we didn't get any real hosts to look for.");
-		goto no_hosts;
+		hostlist_destroy(temp_hl);
+		return NULL;
 	}
 
-	query = xstrdup_printf("SELECT cluster_nodes, period_start, "
-			       "period_end FROM %s WHERE node_name='' "
+	query = xstrdup_printf("SELECT cluster_nodes, time_start, "
+			       "time_end FROM %s.%s WHERE node_name='' "
 			       "AND cluster_nodes !=''",
+			       (char *)list_peek(job_cond->cluster_list),
 			       event_table);
-
-	if((object = list_peek(job_cond->cluster_list)))
-		xstrfmtcat(query, " AND cluster='%s'", object);
 
 	if(job_cond->usage_start) {
 		if(!job_cond->usage_end)
 			job_cond->usage_end = now;
 
-		xstrfmtcat(query, " AND ((period_start < %ld) "
-			   "AND (period_end >= %ld || period_end = 0))",
+		xstrfmtcat(query, " AND ((time_start<%ld) "
+			   "AND (time_end>=%ld OR time_end=0))",
 			   job_cond->usage_end, job_cond->usage_start);
 	}
 
@@ -620,7 +388,8 @@ setup_cluster_list_with_inx(pgsql_conn_t *pg_conn, slurmdb_job_cond_t *job_cond,
 	}
 
 	h_itr = hostlist_iterator_create(temp_hl);
-	local_cluster_list = list_create(_destroy_local_cluster);
+	cnodes = xmalloc(sizeof(cluster_nodes_t));
+	cnodes->cluster_list = list_create(_destroy_local_cluster);
 	FOR_EACH_ROW {
 		char *host = NULL;
 		int loc = 0;
@@ -639,72 +408,172 @@ setup_cluster_list_with_inx(pgsql_conn_t *pg_conn, slurmdb_job_cond_t *job_cond,
 		}
 		hostlist_iterator_reset(h_itr);
 		if(bit_ffs(local_cluster->asked_bitmap) != -1) {
-			list_append(local_cluster_list, local_cluster);
+			list_append(cnodes->cluster_list, local_cluster);
 			if(local_cluster->end == 0) {
 				local_cluster->end = now;
-				(*curr_cluster) = local_cluster;
+				cnodes->curr_cluster = local_cluster;
 			}
 		} else
 			_destroy_local_cluster(local_cluster);
 	} END_EACH_ROW;
 	PQclear(result);
 	hostlist_iterator_destroy(h_itr);
-	if(!list_count(local_cluster_list)) {
-		list_destroy(local_cluster_list);
-		local_cluster_list = NULL;
+	if(!list_count(cnodes->cluster_list)) {
+		destroy_cluster_nodes(cnodes);
+		cnodes = NULL;
 	}
 
-no_hosts:
 	hostlist_destroy(temp_hl);
-	return local_cluster_list;
+	return cnodes;
+}
+
+extern void
+destroy_cluster_nodes(cluster_nodes_t *cnodes)
+{
+	if (cnodes) {
+		list_destroy(cnodes->cluster_list);
+		xfree(cnodes);
+	}
 }
 
 /*
  * good_nodes_from_inx - whether node index is within the used nodes
  *   of specified cluster
- *
- * IN local_cluster_list: cluster record list
- * IN object: current cluster record
- * IN node_inx: nodelist index
- * IN submit: submit time of job
- * RET 1 if the nodelist overlaps with used nodes
  */
 extern int
-good_nodes_from_inx(List local_cluster_list, void **object,
-		    char *node_inx, int submit)
+good_nodes_from_inx(cluster_nodes_t *cnodes, char *node_inx, int submit)
 {
-	local_cluster_t **curr_cluster = (local_cluster_t **)object;
+	bitstr_t *job_bitmap = NULL;
 
-	/* check the bitmap to see if this is one of the jobs
-	   we are looking for */
-	/* TODO: curr_cluster only set if end==0 above */
-	if(*curr_cluster) {
-		bitstr_t *job_bitmap = NULL;
-		if(!node_inx || !node_inx[0])
-			return 0;
-		if((submit < (*curr_cluster)->start)
-		   || (submit > (*curr_cluster)->end)) {
-			local_cluster_t *local_cluster = NULL;
+	if (! cnodes)
+		return 1;
 
-			ListIterator itr =
-				list_iterator_create(local_cluster_list);
-			while((local_cluster = list_next(itr))) {
-				if((submit >= local_cluster->start)
-				   && (submit <= local_cluster->end)) {
-					*curr_cluster = local_cluster;
-					break;
-				}
+	if(!node_inx || !node_inx[0])
+		return 0;
+
+	if(!cnodes->curr_cluster ||
+	   (submit < (cnodes->curr_cluster)->start) ||
+	   (submit > (cnodes->curr_cluster)->end)) {
+		local_cluster_t *local_cluster = NULL;
+		ListIterator itr =
+			list_iterator_create(cnodes->cluster_list);
+		while((local_cluster = list_next(itr))) {
+			if((submit >= local_cluster->start)
+			   && (submit <= local_cluster->end)) {
+				cnodes->curr_cluster = local_cluster;
+				break;
 			}
-			list_iterator_destroy(itr);
-			return 0;
 		}
-		job_bitmap = bit_alloc(hostlist_count((*curr_cluster)->hl));
-		bit_unfmt(job_bitmap, node_inx);
-		if(!bit_overlap((*curr_cluster)->asked_bitmap, job_bitmap)) {
-			FREE_NULL_BITMAP(job_bitmap);
+		list_iterator_destroy(itr);
+		if (! local_cluster)
 			return 0;
-		}
-		FREE_NULL_BITMAP(job_bitmap);
 	}
+	job_bitmap = bit_alloc(hostlist_count((cnodes->curr_cluster)->hl));
+	bit_unfmt(job_bitmap, node_inx);
+	if(!bit_overlap((cnodes->curr_cluster)->asked_bitmap, job_bitmap)) {
+		FREE_NULL_BITMAP(job_bitmap);
+		return 0;
+	}
+	FREE_NULL_BITMAP(job_bitmap);
 	return 1;
+}
+
+/* rollback and discard updates */
+extern void
+reset_pgsql_conn(pgsql_conn_t *pg_conn)
+{
+	int saved_errno = errno;
+
+	if(pg_conn->rollback) {
+		pgsql_db_rollback(pg_conn->db_conn);
+	}
+	list_flush(pg_conn->update_list);
+	errno = saved_errno;
+}
+
+
+static inline int
+check_user_admin_level(pgsql_conn_t *pg_conn, uid_t uid, uint16_t private,
+		       slurmdb_admin_level_t min_level, int *is_admin,
+		       slurmdb_user_rec_t *user)
+{
+	*is_admin = 1;
+	if (user) {
+		memset(user, 0, sizeof(slurmdb_user_rec_t));
+		user->uid = uid;
+	}
+
+	if (!private || slurm_get_private_data() & private) {
+		*is_admin = is_user_min_admin_level(pg_conn, uid, min_level);
+		if (!*is_admin && user)
+			return assoc_mgr_fill_in_user(pg_conn, user, 1, NULL);
+	}
+	return SLURM_SUCCESS;
+}
+
+extern int
+check_user_op(pgsql_conn_t *pg_conn, uid_t uid, uint16_t private,
+	      int *is_admin, slurmdb_user_rec_t *user)
+{
+	return check_user_admin_level(pg_conn, uid, private,
+				      SLURMDB_ADMIN_OPERATOR, is_admin, user);
+}
+
+
+static int
+_find_cluster_name(char *a, char *b)
+{
+	return !strcmp(a, b);
+}
+
+extern int
+cluster_in_db(pgsql_conn_t *pg_conn, char *cluster_name)
+{
+	DEF_VARS;
+	int found = 0;
+
+	if (pg_conn->cluster_changed) {
+		query = xstrdup_printf(
+			"SELECT name FROM %s WHERE deleted=0 AND name='%s';",
+			cluster_table, cluster_name);
+		result = DEF_QUERY_RET;
+		if (!result) {
+			error("failed to query cluster name");
+			return 0;
+		}
+		found = PQntuples(result);
+		PQclear(result);
+	} else {
+		slurm_mutex_lock(&as_pg_cluster_list_lock);
+		if (list_find_first(as_pg_cluster_list,
+				    (ListFindF)_find_cluster_name,
+				    cluster_name))
+			found = 1;
+		slurm_mutex_unlock(&as_pg_cluster_list_lock);
+	}
+	return found;
+}
+
+extern int
+validate_cluster_list(List cluster_list)
+{
+	int rc = SLURM_SUCCESS;
+	ListIterator itr;
+	char *cluster;
+
+	slurm_mutex_lock(&as_pg_cluster_list_lock);
+	if (cluster_list && list_count(cluster_list)) {
+		itr = list_iterator_create(cluster_list);
+		while((cluster = list_next(itr))) {
+			if (!list_find_first(
+				    as_pg_cluster_list,
+				    (ListFindF)_find_cluster_name, cluster)) {
+				error("cluster '%s' not in db", cluster);
+				rc = SLURM_ERROR;
+				break;
+			}
+		}
+	}
+	slurm_mutex_unlock(&as_pg_cluster_list_lock);
+	return rc;
 }

@@ -45,7 +45,7 @@
 
 extern char *cluster_table;
 
-extern int check_cluster_tables(PGconn *db_conn, char *user);
+extern int check_cluster_tables(PGconn *db_conn);
 
 extern int as_pg_add_clusters(pgsql_conn_t *pg_conn, uint32_t uid,
 			      List cluster_list);
@@ -56,4 +56,7 @@ extern List as_pg_remove_clusters(pgsql_conn_t *pg_conn, uint32_t uid,
 				  slurmdb_cluster_cond_t *cluster_cond);
 extern List as_pg_get_clusters(pgsql_conn_t *pg_conn, uid_t uid,
 			       slurmdb_cluster_cond_t *cluster_cond);
+
+extern List get_cluster_names(PGconn *db_conn);
+
 #endif /* _HAVE_AS_PGSQL_CLUSTER_H */

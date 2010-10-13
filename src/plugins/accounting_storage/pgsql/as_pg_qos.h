@@ -46,7 +46,7 @@ extern char *default_qos_str;
 
 extern char *qos_table;
 
-extern int check_qos_tables(PGconn *db_conn, char *user);
+extern int check_qos_tables(PGconn *db_conn);
 
 extern int as_pg_add_qos(pgsql_conn_t *pg_conn, uint32_t uid,
 			 List qos_list);

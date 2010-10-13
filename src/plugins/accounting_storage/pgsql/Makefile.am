@@ -13,6 +13,7 @@ AS_PG_SOURCES= accounting_storage_pgsql.c accounting_storage_pgsql.h \
 	       as_pg_assoc.c as_pg_assoc.h \
 	       as_pg_cluster.c as_pg_cluster.h \
 	       as_pg_event.c as_pg_event.h \
+	       as_pg_get_jobs.c as_pg_get_jobs.h \
 	       as_pg_job.c as_pg_job.h \
 	       as_pg_problem.c as_pg_problem.h \
 	       as_pg_qos.c as_pg_qos.h \

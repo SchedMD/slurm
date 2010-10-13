@@ -60,16 +60,13 @@ extern int check_usage_tables(PGconn *db_conn, char *user);
 extern int as_pg_get_usage(pgsql_conn_t *pg_conn, uid_t uid,
 			   void *in, slurmdbd_msg_type_t type,
 			   time_t start, time_t end);
-extern int as_pg_roll_usage(pgsql_conn_t *pg_conn,
-			    time_t sent_start, time_t sent_end,
-			    uint16_t archive_data);
-
-extern int delete_assoc_usage(pgsql_conn_t *pg_conn, time_t now,
-			      char *assoc_cond);
-extern int get_usage_for_assoc_list(pgsql_conn_t *pg_conn, 
+extern int get_usage_for_assoc_list(pgsql_conn_t *pg_conn, char *cluster,
 				    List assoc_list,
 			  	    time_t start, time_t end);
-extern int get_usage_for_wckey_list(pgsql_conn_t *pg_conn, List wckey_list,
+extern int get_usage_for_wckey_list(pgsql_conn_t *pg_conn, char *cluster,
+				    List wckey_list,
 			 	    time_t start, time_t end);
+extern int cluster_delete_assoc_usage(pgsql_conn_t *pg_conn, char *cluster,
+				      time_t now, char *assoc_cond);
 
 #endif /* _HAVE_AS_PGSQL_USAGE_H */

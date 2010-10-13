@@ -44,7 +44,7 @@
 
 extern char *wckey_table;
 
-extern int check_wckey_tables(PGconn *db_conn, char *user);
+extern int check_wckey_tables(PGconn *db_conn, char *cluster);
 
 extern int as_pg_add_wckeys(pgsql_conn_t *pg_conn, uint32_t uid,
 			    List wckey_list);

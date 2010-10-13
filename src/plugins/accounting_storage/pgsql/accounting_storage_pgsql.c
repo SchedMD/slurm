@@ -3,7 +3,7 @@
  *
  *  $Id: accounting_storage_pgsql.c 13061 2008-01-22 21:23:56Z da $
  *****************************************************************************
- *  Copyright (C) 2004-2007 The Regents of the University of California.
+ *  Copyright (C) 2004-2007 he Regents of the University of California.
  *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
@@ -45,7 +45,7 @@
  * administrator must do the following work:
  * 1. create user slurm
  * 2. create slurm_acct_db with user slurm
- * 3. create PL/pgSQL in slurm_acct_db with user postgres
+ * 3. create PL/pgSQL in slurm_acct_db with user slurm
  */
 
 /*
@@ -84,8 +84,15 @@ const uint32_t plugin_version = 100;
 static pgsql_db_info_t *pgsql_db_info = NULL;
 static char *pgsql_db_name = NULL;
 
+List as_pg_cluster_list = NULL;
+pthread_mutex_t as_pg_cluster_list_lock = PTHREAD_MUTEX_INITIALIZER;
+
 /*
  * _pgsql_acct_create_db_info - get info from config to connect db
+ *
+ * TODO: The logic is really the same with _as_mysql_acct_create_db_info(), but
+ *   a common db_info_t struct is needed to make this code shared between mysql
+ *   and pgsql.
  *
  * RET: db info
  */
@@ -93,58 +100,60 @@ static pgsql_db_info_t *_pgsql_acct_create_db_info()
 {
 	pgsql_db_info_t *db_info = xmalloc(sizeof(pgsql_db_info_t));
 	db_info->port = slurm_get_accounting_storage_port();
-	/* it turns out it is better if using defaults to let postgres
-	   handle them on it's own terms */
 	if(!db_info->port) {
 		db_info->port = DEFAULT_PGSQL_PORT;
 		slurm_set_accounting_storage_port(db_info->port);
 	}
 	db_info->host = slurm_get_accounting_storage_host();
-	if(!db_info->host)
-		db_info->host = xstrdup("localhost");
+	db_info->backup = slurm_get_accounting_storage_backup_host();
+
 	db_info->user = slurm_get_accounting_storage_user();
 	db_info->pass = slurm_get_accounting_storage_pass();
 	return db_info;
 }
 
-/*
- * _pgsql_acct_check_tables - check tables and functions in database
- *
- * IN db_conn: database connection
- * IN user: database owner
- * RET: error code
- */
+
+/* _pgsql_acct_check_tables - check tables and functions in database */
 static int
-_pgsql_acct_check_tables(PGconn *db_conn, char *user)
+_pgsql_acct_check_public_tables(PGconn *db_conn)
 {
 	int rc = SLURM_SUCCESS;
 
 	if (rc == SLURM_SUCCESS)
-		rc = check_acct_tables(db_conn, user);
+		rc = check_acct_tables(db_conn);
 	if (rc == SLURM_SUCCESS)
-		rc = check_assoc_tables(db_conn, user);
+		rc = check_cluster_tables(db_conn);
 	if (rc == SLURM_SUCCESS)
-		rc = check_clusteracct_tables(db_conn, user);
+		rc = check_qos_tables(db_conn);
 	if (rc == SLURM_SUCCESS)
-		rc = check_cluster_tables(db_conn, user);
+		rc = check_txn_tables(db_conn);
 	if (rc == SLURM_SUCCESS)
-		rc = check_slurmdb_tables(db_conn, user);
-	if (rc == SLURM_SUCCESS)
-		rc = check_qos_tables(db_conn, user);
-	if (rc == SLURM_SUCCESS)
-		rc = check_resv_tables(db_conn, user);
-	if (rc == SLURM_SUCCESS)
-		rc = check_txn_tables(db_conn, user);
-	if (rc == SLURM_SUCCESS)
-		rc = check_usage_tables(db_conn, user);
-	if (rc == SLURM_SUCCESS)
-		rc = check_user_tables(db_conn, user);
-	if (rc == SLURM_SUCCESS)
-		rc = check_wckey_tables(db_conn, user);
+		rc = check_user_tables(db_conn);
 
 	return rc;
 }
 
+static List
+_get_cluster_names(PGconn *db_conn)
+{
+	DEF_VARS;
+	List ret_list = NULL;
+
+	query = xstrdup_printf("SELECT name FROM %s WHERE deleted=0",
+			       cluster_table);
+	result = pgsql_db_query_ret(db_conn, query);
+	xfree(query);
+	if (!result)
+		return NULL;
+
+	ret_list = list_create(slurm_destroy_char);
+	FOR_EACH_ROW {
+		if (! ISEMPTY(0))
+			list_append(ret_list, xstrdup(ROW(0)));
+	} END_EACH_ROW;
+	PQclear(result);
+	return ret_list;
+}
 
 /*
  * init() is called when the plugin is loaded, before any other functions
@@ -154,14 +163,12 @@ extern int init ( void )
 {
 	static int first = 1;
 	int rc = SLURM_SUCCESS;
-	PGconn *acct_pgsql_db = NULL;
-	char *location = NULL;
+	PGconn *db_conn = NULL;
 
 	/* since this can be loaded from many different places
 	   only tell us once. */
 	if(!first)
 		return SLURM_SUCCESS;
-
 	first = 0;
 
 	if(!slurmdbd_conf) {
@@ -173,37 +180,34 @@ extern int init ( void )
 	}
 
 	pgsql_db_info = _pgsql_acct_create_db_info();
-
-	location = slurm_get_accounting_storage_loc();
-	if(!location)
-		pgsql_db_name = xstrdup(DEFAULT_ACCOUNTING_DB);
-	else {
-		int i = 0;
-		while(location[i]) {
-			if(location[i] == '.' || location[i] == '/') {
-				debug("%s doesn't look like a database "
-				      "name using %s",
-				      location, DEFAULT_ACCOUNTING_DB);
-				break;
-			}
-			i++;
-		}
-		if(location[i]) {
-			pgsql_db_name = xstrdup(DEFAULT_ACCOUNTING_DB);
-			xfree(location);
-		} else
-			pgsql_db_name = location;
-	}
+/* 	pgsql_db_info = acct_create_db_info(DEFAULT_PGSQL_PORT); */
+	pgsql_db_name = acct_get_db_name();
 
 	debug2("pgsql_connect() called for db %s", pgsql_db_name);
-	pgsql_get_db_connection(&acct_pgsql_db, pgsql_db_name, pgsql_db_info);
-	rc = _pgsql_acct_check_tables(acct_pgsql_db, pgsql_db_info->user);
-	pgsql_close_db_connection(&acct_pgsql_db);
-
-	if(rc == SLURM_SUCCESS)
-		verbose("%s loaded", plugin_name);
-	else
+	pgsql_get_db_connection(&db_conn, pgsql_db_name, pgsql_db_info);
+	pgsql_db_start_transaction(db_conn);
+	rc = _pgsql_acct_check_public_tables(db_conn);
+	if (rc == SLURM_SUCCESS) {
+		if (pgsql_db_commit(db_conn)) {
+			error("commit failed, meaning %s failed", plugin_name);
+			rc = SLURM_ERROR;
+		} else
+			verbose("%s loaded", plugin_name);
+	} else {
 		verbose("%s failed", plugin_name);
+		if (pgsql_db_rollback(db_conn))
+			error("rollback failed");
+	}
+
+	slurm_mutex_lock(&as_pg_cluster_list_lock);
+	as_pg_cluster_list = _get_cluster_names(db_conn);
+	if (!as_pg_cluster_list) {
+		error("Failed to get cluster names");
+		rc = SLURM_ERROR;
+	}
+	slurm_mutex_unlock(&as_pg_cluster_list_lock);
+
+	pgsql_close_db_connection(&db_conn);
 
 	return rc;
 }
@@ -212,24 +216,26 @@ extern int fini ( void )
 {
 	destroy_pgsql_db_info(pgsql_db_info);
 	xfree(pgsql_db_name);
+	xfree(default_qos_str);
 	return SLURM_SUCCESS;
 }
 
 extern void *acct_storage_p_get_connection(const slurm_trigger_callbacks_t *cb,
-                                           int conn_num,bool rollback,
-                                           char *cluster_name)
+					   int conn_num,bool rollback,
+					   char *cluster_name)
 {
 	pgsql_conn_t *pg_conn = xmalloc(sizeof(pgsql_conn_t));
 
 	if(!pgsql_db_info)
 		init();
 
-	debug2("as/pg: get_connection: request new connection");
+	debug2("as/pg: get_connection: request new connection: %d", rollback);
 
 	pg_conn->rollback = rollback;
 	pg_conn->conn = conn_num;
 	pg_conn->cluster_name = xstrdup(cluster_name);
 	pg_conn->update_list = list_create(slurmdb_destroy_update_object);
+	pg_conn->cluster_changed = 0;
 
 	errno = SLURM_SUCCESS;
 	pgsql_get_db_connection(&pg_conn->db_conn,
@@ -257,6 +263,9 @@ extern int acct_storage_p_close_connection(pgsql_conn_t **pg_conn)
 
 extern int acct_storage_p_commit(pgsql_conn_t *pg_conn, bool commit)
 {
+	DEF_VARS;
+	int rc = SLURM_SUCCESS;
+
 	if (check_db_connection(pg_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
 
@@ -280,9 +289,6 @@ extern int acct_storage_p_commit(pgsql_conn_t *pg_conn, bool commit)
 	}
 
 	if(commit && list_count(pg_conn->update_list)) {
-		char *query;
-		PGresult *result;
-
 		query = xstrdup_printf(
 			"SELECT name, control_host, control_port, rpc_version "
 			"  FROM %s WHERE deleted=0 AND control_port!=0",
@@ -300,10 +306,24 @@ extern int acct_storage_p_commit(pgsql_conn_t *pg_conn, bool commit)
 		PQclear(result);
 	skip:
 		assoc_mgr_update(pg_conn->update_list);
+
+		/* remove clusters */
+		slurm_mutex_lock(&as_pg_cluster_list_lock);
+		if (pg_conn->cluster_changed) {
+			list_destroy(as_pg_cluster_list);
+			as_pg_cluster_list = _get_cluster_names(
+				pg_conn->db_conn);
+			if (!as_pg_cluster_list) {
+				error("Failed to get cluster names");
+				rc = SLURM_ERROR;
+			}
+			pg_conn->cluster_changed = 0;
+		}
+		slurm_mutex_unlock(&as_pg_cluster_list_lock);
 	}
 
 	list_flush(pg_conn->update_list);
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 extern int acct_storage_p_add_users(pgsql_conn_t *pg_conn, uint32_t uid,
@@ -522,14 +542,7 @@ extern int acct_storage_p_get_usage(pgsql_conn_t *pg_conn, uid_t uid,
 				    void *in, slurmdbd_msg_type_t type,
 				    time_t start, time_t end)
 {
-	int rc = SLURM_SUCCESS;
-
-	if(type == DBD_GET_CLUSTER_USAGE)
-		cs_pg_get_usage(pg_conn, uid, in, type, start, end);
-	else
-		as_pg_get_usage(pg_conn, uid, in, type, start, end);
-
-	return rc;
+	return as_pg_get_usage(pg_conn, uid, in, type, start, end);
 }
 
 extern int acct_storage_p_roll_usage(pgsql_conn_t *pg_conn,
@@ -656,7 +669,7 @@ extern int jobacct_storage_p_suspend(pgsql_conn_t *pg_conn,
 		return SLURM_ERROR;
 	}
 
-	return js_pg_suspend(pg_conn, job_ptr);
+	return js_pg_suspend(pg_conn, 0, job_ptr);
 }
 
 /*
@@ -700,9 +713,5 @@ extern int acct_storage_p_update_shares_used(void *db_conn,
 extern int acct_storage_p_flush_jobs_on_cluster(pgsql_conn_t *pg_conn,
 						time_t event_time)
 {
-	/* put end times for a clean start */
-	if (check_db_connection(pg_conn) != SLURM_SUCCESS)
-		return ESLURM_DB_CONNECTION;
-
-	return SLURM_SUCCESS;
+	return as_pg_flush_jobs_on_cluster(pg_conn, event_time);
 }

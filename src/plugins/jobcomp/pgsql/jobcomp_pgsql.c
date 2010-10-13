@@ -164,7 +164,7 @@ static int _pgsql_jobcomp_check_tables(char *user)
 	PQclear(result);
 
 	if(!job_found)
-		if(pgsql_db_create_table(jobcomp_pgsql_db, jobcomp_table,
+		if(pgsql_db_create_table(jobcomp_pgsql_db, "public", jobcomp_table,
 					 jobcomp_table_fields,
 					 ")") == SLURM_ERROR)
 			return SLURM_ERROR;

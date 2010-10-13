@@ -1893,7 +1893,7 @@ extern void slurmdb_pack_user_cond(void *in, uint16_t rpc_version, Buf buffer)
 		slurmdb_pack_association_cond(object->assoc_cond,
 					      rpc_version, buffer);
 
-		if (object->assoc_cond && object->def_acct_list)
+		if (object->def_acct_list)
 			count = list_count(object->def_acct_list);
 
 		pack32(count, buffer);

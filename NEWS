@@ -66,6 +66,8 @@ documents those changes that are of interest to users and admins.
     highest exit code of all the job steps.
  -- Added SLURM_JOB_EXIT_CODE and SLURM_JOB_DERIVED_EC variables to the
     EpilogSlurmctld environment
+ -- More work done on the accounting_storage/pgsql plugin, still beta.
+    Patch from Hongjia Cao (NUDT).
 
 * Changes in SLURM 2.2.0.pre11
 ==============================

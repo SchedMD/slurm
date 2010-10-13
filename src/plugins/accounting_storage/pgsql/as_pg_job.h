@@ -46,7 +46,7 @@ extern char *job_table;
 extern char *step_table;
 extern char *suspend_table;
 
-extern int check_slurmdb_tables(PGconn *db_conn, char *user);
+extern int check_job_tables(PGconn *db_conn, char *cluster);
 
 extern int js_pg_job_start(pgsql_conn_t *pg_conn,
 			   struct job_record *job_ptr);
@@ -56,12 +56,15 @@ extern int js_pg_step_start(pgsql_conn_t *pg_conn,
 			    struct step_record *step_ptr);
 extern int js_pg_step_complete(pgsql_conn_t *pg_conn,
 			       struct step_record *step_ptr);
-extern int js_pg_suspend(pgsql_conn_t *pg_conn,
+extern int js_pg_suspend(pgsql_conn_t *pg_conn, uint32_t old_db_inx,
 			 struct job_record *job_ptr);
 extern List js_pg_get_jobs_cond(pgsql_conn_t *pg_conn, uid_t uid,
 			        slurmdb_job_cond_t *job_cond);
 
 extern int as_pg_flush_jobs_on_cluster(
 	pgsql_conn_t *pg_conn, time_t event_time);
+
+
+extern int cluster_has_jobs_running(pgsql_conn_t *pg_conn, char *cluster);
 
 #endif /* _HAVE_AS_PGSQL_JOB_H */

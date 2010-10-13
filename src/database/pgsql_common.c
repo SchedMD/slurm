@@ -48,6 +48,7 @@ extern int *destroy_pgsql_db_info(pgsql_db_info_t *db_info)
 {
 	if(db_info) {
 		xfree(db_info->host);
+		xfree(db_info->backup);
 		xfree(db_info->user);
 		xfree(db_info->pass);
 		xfree(db_info);
@@ -262,7 +263,7 @@ extern int pgsql_query_ret_id(PGconn *pgsql_db, char *query)
 }
 
 
-extern int pgsql_db_create_table(PGconn *pgsql_db,
+extern int pgsql_db_create_table(PGconn *pgsql_db, char *schema,
 				 char *table_name, storage_field_t *fields,
 				 char *ending)
 {
@@ -271,7 +272,7 @@ extern int pgsql_db_create_table(PGconn *pgsql_db,
 	char *next = NULL;
 	int i = 0;
 
-	query = xstrdup_printf("create table %s (", table_name);
+	query = xstrdup_printf("create table %s.%s (", schema, table_name);
 	i=0;
 	while(fields && fields->name) {
 		next = xstrdup_printf(" %s %s",
@@ -297,8 +298,9 @@ extern int pgsql_db_create_table(PGconn *pgsql_db,
 	return SLURM_SUCCESS;
 }
 
-extern int pgsql_db_make_table_current(PGconn *pgsql_db, char *table_name,
-				       storage_field_t *fields)
+extern int
+pgsql_db_make_table_current(PGconn *pgsql_db, char *schema, char *table_name,
+			    storage_field_t *fields)
 {
 	char *query = NULL, *opt_part = NULL, *temp_char = NULL;
 	char *type = NULL;
@@ -315,7 +317,8 @@ extern int pgsql_db_make_table_current(PGconn *pgsql_db, char *table_name,
 
 	query = xstrdup_printf("select column_name from "
 			       "information_schema.columns where "
-			       "table_name='%s'", table_name);
+			       "table_name='%s' and table_schema='%s' ",
+			       table_name, schema);
 
 	if(!(result = pgsql_db_query_ret(pgsql_db, query))) {
 		xfree(query);
@@ -329,7 +332,7 @@ extern int pgsql_db_make_table_current(PGconn *pgsql_db, char *table_name,
 	}
 	PQclear(result);
 	itr = list_iterator_create(columns);
-	query = xstrdup_printf("alter table %s", table_name);
+	query = xstrdup_printf("alter table %s.%s", schema, table_name);
 	START_TIMER;
 	i=0;
 	while(fields[i].name) {

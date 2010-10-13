@@ -39,13 +39,16 @@
 \*****************************************************************************/
 #include "as_pg_common.h"
 
-char *txn_table = "txn_table";
+/* shared table */
+static char *txn_table_name = "txn_table";
+char *txn_table = "public.txn_table";
 static storage_field_t txn_table_fields[] = {
 	{ "id", "SERIAL" },
 	{ "timestamp", "INTEGER DEFAULT 0 NOT NULL" },
 	{ "action", "INTEGER NOT NULL" },
 	{ "name", "TEXT NOT NULL" },
 	{ "actor", "TEXT NOT NULL" },
+	{ "cluster", "TEXT DEFAULT '' NOT NULL" },
 	{ "info", "TEXT" },
 	{ NULL, NULL}
 };
@@ -84,6 +87,30 @@ _concat_txn_cond_list(List cond_list, char *col, char **cond)
 	}
 }
 
+/* get group_concat-ed field value of assocs */
+static int
+_group_concat_assoc_field(pgsql_conn_t *pg_conn, char *cluster,
+			  char *assoc_cond, char *field,
+			  char **val)
+{
+	DEF_VARS;
+
+	query = xstrdup_printf(
+		"SELECT DISTINCT %s FROM %s.%s WHERE deleted=0 AND %s "
+		"ORDER BY %s;", field, cluster, assoc_table, assoc_cond,
+		field);
+	result = DEF_QUERY_RET;
+	if (!result)
+		return SLURM_ERROR;
+
+	FOR_EACH_ROW {
+		xstrcat(*val, ROW(0));
+		xstrcat(*val, " ");
+	} END_EACH_ROW;
+	PQclear(result);
+	return SLURM_SUCCESS;
+}
+
 /*
  * _make_txn_cond - turn txn_cond into SQL query condition string
  *
@@ -94,40 +121,51 @@ _concat_txn_cond_list(List cond_list, char *col, char **cond)
 static char *
 _make_txn_cond(pgsql_conn_t *pg_conn, slurmdb_txn_cond_t *txn_cond)
 {
-	char *cond = NULL, *assoc_cond = NULL, *id = NULL;
+	DEF_VARS;
+	char *cond = NULL, *assoc_cond = NULL;
 	int set = 0;
 
 	/* handle query for associations first */
 	concat_cond_list(txn_cond->acct_list, NULL, "acct", &assoc_cond);
-	concat_cond_list(txn_cond->cluster_list, NULL, "cluster", &assoc_cond);
 	concat_cond_list(txn_cond->user_list, NULL, "user_name", &assoc_cond);
 	if(assoc_cond) {
-		List assoc_id_list;
-		ListIterator id_itr;
-		assoc_id_list = get_assoc_ids(pg_conn, assoc_cond);
-		if(assoc_id_list) {
-			id_itr = list_iterator_create(assoc_id_list);
-			set = 0;
-			xstrcat(cond, "AND (");
-			while((id = list_next(id_itr))) {
-				if (set)
-					xstrcat (cond, " OR ");
-				xstrfmtcat(cond, "(name='%s' OR "
-					   "name LIKE '%%id=%s %%' OR "
-					   "name LIKE '%%id=%s)')",
-					   id, id, id);
-				set = 1;
+		FOR_EACH_CLUSTER(txn_cond->cluster_list) {
+			query = xstrdup_printf(
+				"SELECT id_assoc FROM %s.%s WHERE TRUE %s",
+				cluster_name, assoc_table, assoc_cond);
+			result = DEF_QUERY_RET;
+			if (!result)
+				break;
+			if (PQntuples(result) == 0) {
+				PQclear(result);
+				continue;
 			}
-			xstrcat(cond, ")");
-			list_iterator_destroy(id_itr);
-			list_destroy(assoc_id_list);
-		}
+			if (!cond)
+				xstrfmtcat(cond, " AND ( (cluster='%s' AND (",
+					   cluster_name);
+			else
+				xstrfmtcat(cond, " OR (cluster='%s' AND (",
+					   cluster_name);
+			set = 0;
+			FOR_EACH_ROW {
+				if (set)
+					xstrcat(cond, " OR ");
+				xstrfmtcat(cond, "name LIKE '%%id_assoc=%s %%' "
+					   " OR name LIKE '%%id_assoc=%s)')",
+					   ROW(0), ROW(0));
+				set = 1;
+			} END_EACH_ROW;
+			PQclear(result);
+			xstrcat(cond, "))");
+		} END_EACH_CLUSTER;
+		if (cond)
+			xstrcat(cond, ")"); /* first " AND ( " */
 	}
-
-	/* TODO: will these conditions conflict with assoc_cond result? */
+	       
 	_concat_txn_cond_list(txn_cond->acct_list, "acct", &cond);
 	_concat_txn_cond_list(txn_cond->cluster_list, "cluster", &cond);
 	_concat_txn_cond_list(txn_cond->user_list, "user_name", &cond);
+	
 	concat_cond_list(txn_cond->action_list, NULL, "action", &cond);
 	concat_cond_list(txn_cond->actor_list, NULL, "actor", &cond);
 	concat_cond_list(txn_cond->id_list, NULL, "id", &cond); /* validity of id not checked */
@@ -146,17 +184,14 @@ _make_txn_cond(pgsql_conn_t *pg_conn, slurmdb_txn_cond_t *txn_cond)
 
 /*
  * check_txn_tables - check txn related tables and functions
- * IN pg_conn: database connection
- * IN user: database owner
- * RET: error code
  */
 extern int
-check_txn_tables(PGconn *db_conn, char *user)
+check_txn_tables(PGconn *db_conn)
 {
 	int rc;
 
-	rc = check_table(db_conn, txn_table, txn_table_fields,
-			 txn_table_constraint, user);
+	rc = check_table(db_conn, "public", txn_table_name,
+			 txn_table_fields, txn_table_constraint);
 	return rc;
 }
 
@@ -172,18 +207,19 @@ extern List
 as_pg_get_txn(pgsql_conn_t *pg_conn, uid_t uid,
 	      slurmdb_txn_cond_t *txn_cond)
 {
-	char *query = NULL, *cond = NULL;
+	DEF_VARS;
+	char *cond = NULL;
 	List txn_list = NULL;
-	PGresult *result = NULL;
-	char *gt_fields = "id, timestamp, action, name, actor, info";
+	char *gt_fields = "id,timestamp,action,name,actor,cluster,info";
 	enum {
-		GT_ID,
-		GT_TS,
-		GT_ACTION,
-		GT_NAME,
-		GT_ACTOR,
-		GT_INFO,
-		GT_COUNT
+		F_ID,
+		F_TS,
+		F_ACTION,
+		F_NAME,
+		F_ACTOR,
+		F_CLUSTER,
+		F_INFO,
+		F_COUNT
 	};
 
 	if (check_db_connection(pg_conn) != SLURM_SUCCESS)
@@ -206,24 +242,25 @@ as_pg_get_txn(pgsql_conn_t *pg_conn, uid_t uid,
 		slurmdb_txn_rec_t *txn = xmalloc(sizeof(slurmdb_txn_rec_t));
 		list_append(txn_list, txn);
 
-		txn->action = atoi(ROW(GT_ACTION));
-		txn->actor_name = xstrdup(ROW(GT_ACTOR));
-		txn->id = atoi(ROW(GT_ID));
-		txn->set_info = xstrdup(ROW(GT_INFO));
-		txn->timestamp = atoi(ROW(GT_TS));
-		txn->where_query = xstrdup(ROW(GT_NAME));
+		txn->action = atoi(ROW(F_ACTION));
+		txn->actor_name = xstrdup(ROW(F_ACTOR));
+		txn->id = atoi(ROW(F_ID));
+		txn->set_info = xstrdup(ROW(F_INFO));
+		txn->timestamp = atoi(ROW(F_TS));
+		txn->where_query = xstrdup(ROW(F_NAME));
+		txn->clusters = xstrdup(ROW(F_CLUSTER));
 
 		if(txn_cond && txn_cond->with_assoc_info
 		   && (txn->action == DBD_ADD_ASSOCS
 		       || txn->action == DBD_MODIFY_ASSOCS
 		       || txn->action == DBD_REMOVE_ASSOCS)) {
 			/* XXX: name in txn is used as SQL query condition */
-			group_concat_assoc_field(pg_conn, "user_name",
-						 ROW(GT_NAME), &txn->users);
-			group_concat_assoc_field(pg_conn, "acct",
-						 ROW(GT_NAME), &txn->accts);
-			group_concat_assoc_field(pg_conn, "cluster",
-						 ROW(GT_NAME), &txn->clusters);
+			_group_concat_assoc_field(pg_conn, txn->clusters,
+						  ROW(F_NAME), "user_name",
+						  &txn->users);
+			_group_concat_assoc_field(pg_conn, txn->clusters,
+						  ROW(F_NAME), "acct",
+						  &txn->accts);
 		}
 	} END_EACH_ROW;
 	PQclear(result);
@@ -233,20 +270,18 @@ as_pg_get_txn(pgsql_conn_t *pg_conn, uid_t uid,
 /*
  * add_txn - add a transaction record into database
  * IN now: current time
- * IN action: action performed
+ * IN cluster: cluster involved
  * IN object: objects manipulated
  * IN actor: user name of actor
  * IN info: information of target object
  */
 extern int
-add_txn(pgsql_conn_t *pg_conn, time_t now,  slurmdbd_msg_type_t action,
-	char *object, char *actor, char *info)
+add_txn(pgsql_conn_t *pg_conn, time_t now,  char *cluster,
+      slurmdbd_msg_type_t action, char *object, char *actor, char *info)
 {
-	int rc;
-	char *query = xstrdup_printf(
-		"INSERT INTO %s (timestamp, action, name, actor, info) "
-		"VALUES (%ld, %u, $$%s$$, '%s', $$%s$$);",
-		txn_table, now, action, object, actor, info ?: "");
-	rc = DEF_QUERY_RET_RC;
-	return rc;
+      char *query = xstrdup_printf(
+              "INSERT INTO %s (timestamp, cluster, action, name, actor, "
+              "  info) VALUES (%ld, '%s', %d, $$%s$$, '%s', $$%s$$);",
+              txn_table, now, cluster, (int)action, object, actor, info ?: "");
+      return DEF_QUERY_RET_RC;
 }
