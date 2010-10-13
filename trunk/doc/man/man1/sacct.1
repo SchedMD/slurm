@@ -21,7 +21,7 @@ The
 command displays information on jobs, job steps, status, and exitcodes by
 default.
 You can tailor the output with the use of the
-\f3\-\-fields=\fP
+\f3\-\-format=\fP
 option to specify the fields to be shown.
 .PP
 For the root user, the
@@ -131,20 +131,21 @@ Print a list of fields that can be specified with the \f3\-\-format\fP option.
 .ft 3
 Fields available:
 
-AllocCPUS     Account       AssocID       AveCPU
-AvePages      AveRSS        AveVMSize     BlockID
-Cluster       CPUTime       CPUTimeRAW    Elapsed
-Eligible      End           ExitCode      GID
-Group         JobID         JobName       Layout
-MaxPages      MaxPagesNode  MaxPagesTask  MaxRSS
-MaxRSSNode    MaxRSSTask    MaxVMSize     MaxVMSizeNode
-MaxVMSizeTask MinCPU        MinCPUNode    MinCPUTask
-NCPUS         NNodes        NodeList      NTasks
-Priority      Partition     QOS           QOSRAW
-ReqCPUS       Reserved      ResvCPU       ResvCPURAW
-Start         State         Submit        Suspended
-SystemCPU     Timelimit     TotalCPU      UID
-User          UserCPU       WCKey         WCKeyID
+AllocCPUS      Account       AssocID       AveCPU
+AvePages       AveRSS        AveVMSize     BlockID
+Cluster        CPUTime       CPUTimeRAW    DerivedExitCode
+DerivedExitStr Elapsed       Eligible      End
+ExitCode       GID           Group         JobID
+JobName        Layout        MaxPages      MaxPagesNode
+MaxPagesTask   MaxRSS        MaxRSSNode    MaxRSSTask
+MaxVMSize      MaxVMSizeNode MaxVMSizeTask MinCPU
+MinCPUNode     MinCPUTask    NCPUS         NNodes
+NodeList       NTasks        Priority      Partition
+QOS            QOSRAW        ReqCPUS       Reserved
+ResvCPU        ResvCPURAW    Start         State
+Submit         Suspended     SystemCPU     Timelimit
+TotalCPU       UID           User          UserCPU
+WCKey          WCKeyID
 
 .ft 1
 .fi
@@ -213,7 +214,7 @@ maximum timelimit of the range.  Default is no restriction.
 Equivalent to specifying:
 .IP
 .na
-\'\-\-fields=jobid,jobname,partition,maxvsize,maxvsizenode,maxvsizetask,avevsize,maxrss,maxrssnode,maxrsstask,averss,maxpages,maxpagesnode,maxpagestask,avepages,mincpu,mincpunode,mincputask,avecpu,ntasks,alloccpus,elapsed,state,exitcode\'
+\'\-\-format=jobid,jobname,partition,maxvmsize,maxvmsizenode,maxvmsizetask,avevmsize,maxrss,maxrssnode,maxrsstask,averss,maxpages,maxpagesnode,maxpagestask,avepages,mincpu,mincpunode,mincputask,avecpu,ntasks,alloccpus,elapsed,state,exitcode\'
 .ad
 
 .TP
@@ -444,6 +445,17 @@ How much cpu time process was allocated in second format, not formatted
 like above.
 
 .TP
+\f3DerivedExitCode\fP
+The highest exit code returned by the job's job steps (srun
+invocations).  Following the colon is the signal that caused the
+process to terminate if it was terminated by a signal.
+
+.TP
+\f3DerivedExitStr\fP
+The reason the job failed.  This string starts off as null and becomes
+populated with the reason argument to the sjobfailed command.
+
+.TP
 \f3elapsed\fP
 The jobs elapsed time.
 .IP
@@ -569,11 +581,11 @@ Maximum Virtual Memory size of all tasks in job.
 
 .TP
 \f3MaxVMSizeNode\fP
-The node on which the maxvsize occurred.
+The node on which the maxvmsize occurred.
 
 .TP
 \f3MaxVMSizeTask\fP
-The task ID where the maxvsize occurred.
+The task ID where the maxvmsize occurred.
 
 .TP
 \f3MinCPU\fP
@@ -1183,7 +1195,7 @@ The fields are displayed in the order designated on the command line.
 .PP
 .nf
 .ft 3
-# sacct \-\-fields=jobid,ncpus,ntasks,nsignals,status
+# sacct \-\-format=jobid,ncpus,ntasks,nsignals,status
 Jobid     Elapsed    Ncpus     Ntasks   Status
 \-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\-\-
 3            00:01:30          2        1 COMPLETED

@@ -509,6 +509,8 @@ typedef struct {
 	uint32_t associd;
 	char	*blockid;
 	char    *cluster;
+	int32_t	derived_ec;
+	char	*derived_es;
 	uint32_t elapsed;
 	time_t eligible;
 	time_t end;

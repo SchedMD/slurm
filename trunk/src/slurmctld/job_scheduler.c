@@ -1282,6 +1282,9 @@ static char **_build_env(struct job_record *job_ptr)
 		setenvf(&my_env, "SLURM_JOB_CONSTRAINTS",
 			"%s", job_ptr->details->features);
 	}
+	setenvf(&my_env, "SLURM_JOB_DERIVED_EC", "%u",
+		job_ptr->derived_ec);
+	setenvf(&my_env, "SLURM_JOB_EXIT_CODE", "%u", job_ptr->exit_code);
 	setenvf(&my_env, "SLURM_JOB_GID", "%u", job_ptr->group_id);
 	name = gid_to_string((uid_t) job_ptr->group_id);
 	setenvf(&my_env, "SLURM_JOB_GROUP", "%s", name);

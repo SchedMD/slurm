@@ -229,11 +229,10 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	snprintf(tmp_line, sizeof(tmp_line),
 		 "Requeue=%u Restarts=%u BatchFlag=%u ",
 		 job_ptr->requeue, job_ptr->restart_cnt, job_ptr->batch_flag);
+	xstrcat(out, tmp_line);
 	if (WIFSIGNALED(job_ptr->exit_code))
 		term_sig = WTERMSIG(job_ptr->exit_code);
-	else
-		exit_status = WEXITSTATUS(job_ptr->exit_code);
-	xstrcat(out, tmp_line);
+	exit_status = WEXITSTATUS(job_ptr->exit_code);
 	snprintf(tmp_line, sizeof(tmp_line),
 		 "ExitCode=%u:%u", exit_status, term_sig);
 	xstrcat(out, tmp_line);
@@ -242,7 +241,24 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	else
 		xstrcat(out, "\n   ");
 
+	/****** Line 5a (optional) ******/
+	if (!(job_ptr->show_flags & SHOW_DETAIL))
+		goto line6;
+	if (WIFSIGNALED(job_ptr->derived_ec))
+		term_sig = WTERMSIG(job_ptr->derived_ec);
+	else
+		term_sig = 0;
+	exit_status = WEXITSTATUS(job_ptr->derived_ec);
+	snprintf(tmp_line, sizeof(tmp_line),
+		 "DerivedExitCode=%u:%u", exit_status, term_sig);
+	xstrcat(out, tmp_line);
+	if (one_liner)
+		xstrcat(out, " ");
+	else
+		xstrcat(out, "\n   ");
+
 	/****** Line 6 ******/
+line6:
 	snprintf(tmp_line, sizeof(tmp_line), "RunTime=");
 	xstrcat(out, tmp_line);
 
