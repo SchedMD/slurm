@@ -120,7 +120,7 @@ struct kvs_rec {
 
 static void _del_kvs_rec( struct kvs_rec *kvs_ptr );
 static void _init_kvs( char kvsname[] );
-static void inline _kvs_dump(void);
+inline static void _kvs_dump(void);
 static int  _kvs_put( const char kvsname[], const char key[],
 		const char value[], int local);
 static void _kvs_swap(struct kvs_rec *kvs_ptr, int inx1, int inx2);
@@ -1874,7 +1874,7 @@ static int IsPmiKey(char * key) {
 	return 0;
 }
 
-static void inline _kvs_dump(void)
+inline static void _kvs_dump(void)
 {
 #if _DEBUG
 	int i, j;
