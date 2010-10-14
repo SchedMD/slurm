@@ -578,7 +578,7 @@ static int _add_button_to_list(node_info_t *node_ptr,
 				node_exists[i] = true;
 			}
 			(*button_processor->coord_x) = (x + (DIM_SIZE[Z] - 1))
-							- z;
+				- z;
 			y_offset = button_processor->default_y_offset
 				- (DIM_SIZE[Z] * y);
 			(*button_processor->coord_y) = (y_offset - y) + z;
@@ -587,11 +587,11 @@ static int _add_button_to_list(node_info_t *node_ptr,
 				for (y = 0; y < DIM_SIZE[Y]; y++) {
 					for (z = 0; z < DIM_SIZE[Z]; z++) {
 						i = (x * DIM_SIZE[Y] + y) *
-						    DIM_SIZE[Z] + z;
+							DIM_SIZE[Z] + z;
 						if (node_exists[i])
 							continue;
 						_build_empty_node(x, y, z,
-							button_processor);
+								  button_processor);
 					}
 				}
 			}
@@ -689,10 +689,10 @@ static int _grid_table_by_switch(button_processor_t *button_processor,
 	switch_record_bitmaps_t *sw_nodes_bitmaps_ptr = g_switch_nodes_maps;
 
 	/* engage if want original
-	ListIterator itr = list_iterator_create(node_list);
-	sview_node_info_t *sview_node_info_ptr = NULL;
-	* display below switched
-	 */
+	   ListIterator itr = list_iterator_create(node_list);
+	   sview_node_info_t *sview_node_info_ptr = NULL;
+	   * display below switched
+	   */
 	for (ii=0; ii<g_topo_info_msg_ptr->record_count;
 	     ii++, sw_nodes_bitmaps_ptr++) {
 		int j = 0, first, last;
@@ -718,8 +718,8 @@ static int _grid_table_by_switch(button_processor_t *button_processor,
 			if (j == last)
 				button_processor->force_row_break = TRUE;
 			if ((rc = _add_button_to_list(
-					&g_node_info_ptr->node_array[j],
-					button_processor)) != SLURM_SUCCESS)
+				     &g_node_info_ptr->node_array[j],
+				     button_processor)) != SLURM_SUCCESS)
 				break;
 			button_processor->force_row_break = FALSE;
 		}
@@ -728,17 +728,17 @@ static int _grid_table_by_switch(button_processor_t *button_processor,
 
 	/* engage this if want original display below
 	 * switched grid
-	button_processor->inx = &inx;
-	while ((sview_node_info_ptr = list_next(itr))) {
-		if ((rc = _add_button_to_list(
-			     sview_node_info_ptr->node_ptr,
-			     button_processor)) != SLURM_SUCCESS)
-			break;
-		inx++;
-	}
-	list_iterator_destroy(itr);
+	 button_processor->inx = &inx;
+	 while ((sview_node_info_ptr = list_next(itr))) {
+	 if ((rc = _add_button_to_list(
+	 sview_node_info_ptr->node_ptr,
+	 button_processor)) != SLURM_SUCCESS)
+	 break;
+	 inx++;
+	 }
+	 list_iterator_destroy(itr);
 
-	  */
+	*/
 
 	/* This is needed to get the correct width of the grid window.
 	 * If it is not given then we get a really narrow window. */
@@ -1422,7 +1422,7 @@ extern int get_system_stats(GtkTable *table)
 	ba_init(node_info_ptr, 0);
 
 	node_list = create_node_info_list(node_info_ptr,
-			changed, FALSE);
+					  changed, FALSE);
 	if (grid_button_list) {
 		rc = update_grid_table(main_grid_table, grid_button_list,
 				       node_list);

@@ -72,10 +72,10 @@ typedef struct {
 
 /*these are the settings to apply for the user
  * on the first startup after a fresh slurm install.*/
-static char *_initial_pertab_opts = ",Name,State,CPU Count,Used CPU Count,"
-		"Error CPU Count,Cores,Sockets,Threads,Real Memory,Tmp Disk,";
+static char *_initial_page_opts = ",Name,State,CPU Count,Used CPU Count,"
+	"Error CPU Count,Cores,Sockets,Threads,Real Memory,Tmp Disk,";
 
-static bool _set_pertab_opts = FALSE;
+static bool _set_page_opts = FALSE;
 
 static display_data_t display_data_node[] = {
 	{G_TYPE_INT, SORTID_POS, NULL, FALSE, EDIT_NONE, refresh_node,
@@ -483,6 +483,8 @@ static void _node_info_list_del(void *object)
 	sview_node_info_t *sview_node_info = (sview_node_info_t *)object;
 
 	if (sview_node_info) {
+		xfree(sview_node_info->slurmd_start_time);
+		xfree(sview_node_info->boot_time);
 		xfree(sview_node_info);
 	}
 }
@@ -634,7 +636,7 @@ extern List create_node_info_list(node_info_msg_t *node_info_ptr,
 
 		/* constrain list to included partitions' nodes */
 		if (by_partition &&
-				apply_partition_check) {
+		    apply_partition_check) {
 			/* there are excluded values to process */
 			if (!working_sview_config.show_hidden) {
 				/* user has not requested to show hidden */
@@ -830,7 +832,7 @@ extern int update_features_node(GtkDialog *dialog, const char *nodelist,
 
 	if (_DEBUG)
 		g_print("update_features_node:global_row_count: %d "
-		        "node_names %s\n",
+			"node_names %s\n",
 			global_row_count, nodelist);
 	if(!dialog) {
 		snprintf(tmp_char, sizeof(tmp_char),
@@ -919,7 +921,7 @@ extern int update_gres_node(GtkDialog *dialog, const char *nodelist,
 
 	if (_DEBUG)
 		g_print("update_gres_node:global_row_count:"
-		        " %d node_names %s\n",
+			" %d node_names %s\n",
 			global_row_count, nodelist);
 	if(!dialog) {
 		snprintf(tmp_char, sizeof(tmp_char),
@@ -1192,10 +1194,10 @@ extern void get_info_node(GtkTable *table, display_data_t *display_data)
 	ListIterator itr = NULL;
 	GtkTreePath *path = NULL;
 
-	if (!_set_pertab_opts) {
-		set_pertab_opts(NODE_PAGE, display_data_node,
-				SORTID_CNT, _initial_pertab_opts);
-		_set_pertab_opts = TRUE;
+	if (!_set_page_opts) {
+		set_page_opts(NODE_PAGE, display_data_node,
+			      SORTID_CNT, _initial_page_opts);
+		_set_page_opts = TRUE;
 	}
 	/* reset */
 	if(!table && !display_data) {
@@ -1239,7 +1241,7 @@ extern void get_info_node(GtkTable *table, display_data_t *display_data)
 display_it:
 
 	info_list = create_node_info_list(node_info_ptr, changed,
-			FALSE);
+					  FALSE);
 
 	if (!info_list)
 		goto reset_curs;
@@ -1247,7 +1249,8 @@ display_it:
 	/* set up the grid */
 	if (display_widget && GTK_IS_TREE_VIEW(display_widget) &&
 	    gtk_tree_selection_count_selected_rows(
-	    gtk_tree_view_get_selection(GTK_TREE_VIEW(display_widget)))) {
+		    gtk_tree_view_get_selection(
+			    GTK_TREE_VIEW(display_widget)))) {
 		GtkTreeViewColumn *focus_column = NULL;
 		/* highlight the correct nodes from the last selection */
 		gtk_tree_view_get_cursor(GTK_TREE_VIEW(display_widget),

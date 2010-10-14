@@ -57,7 +57,7 @@ enum {
 	SORTID_RULED_TV,
 	SORTID_SHOW_GRID,
 	SORTID_SHOW_HIDDEN,
-	SORTID_SAVE_TABS_SETS,
+	SORTID_SAVE_PAGE_OPTS,
 	SORTID_TAB_POS,
 	SORTID_CNT
 };
@@ -91,7 +91,7 @@ static display_data_t display_data_defaults[] = {
 	 TRUE, EDIT_MODEL, NULL, create_model_defaults, NULL},
 	{G_TYPE_STRING, SORTID_SHOW_HIDDEN, "Show Hidden",
 	 TRUE, EDIT_MODEL, NULL, create_model_defaults, NULL},
-	{G_TYPE_STRING, SORTID_SAVE_TABS_SETS, "Save Page Settings",
+	{G_TYPE_STRING, SORTID_SAVE_PAGE_OPTS, "Save Page Settings",
 	 TRUE, EDIT_MODEL, NULL, create_model_defaults, NULL},
 	{G_TYPE_STRING, SORTID_TAB_POS, "Tab Position",
 	 TRUE, EDIT_MODEL, NULL, create_model_defaults, NULL},
@@ -124,8 +124,8 @@ static void _set_active_combo_defaults(GtkComboBox *combo,
 	case SORTID_SHOW_HIDDEN:
 		action = sview_config->show_hidden;
 		break;
-	case SORTID_SAVE_TABS_SETS:
-		action = sview_config->save_tabs_settings;
+	case SORTID_SAVE_PAGE_OPTS:
+		action = sview_config->save_page_settings;
 		break;
 	case SORTID_DEFAULT_PAGE:
 		action = sview_config->default_page;
@@ -235,13 +235,14 @@ static const char *_set_sview_config(sview_config_t *sview_config,
 			sview_config->show_hidden = 1;
 		else
 			sview_config->show_hidden = 0;
+		g_print("got hidden of %d\n", sview_config->show_hidden);
 		break;
-	case SORTID_SAVE_TABS_SETS:
+	case SORTID_SAVE_PAGE_OPTS:
 		type = "Save Page Settings";
 		if (!strcasecmp(new_text, "yes"))
-			sview_config->save_tabs_settings = 1;
+			sview_config->save_page_settings = 1;
 		else
-			sview_config->save_tabs_settings = 0;
+			sview_config->save_page_settings = 0;
 		break;
 	case SORTID_TAB_POS:
 		type = "Tab Position";
@@ -502,6 +503,9 @@ static void _init_sview_conf()
 	if(getenv("SVIEW_GRID_SPEEDUP"))
 		default_sview_config.grid_speedup = 1;
 	for(i=0; i<PAGE_CNT; i++) {
+		memset(&default_sview_config.page_options[i],
+		       0, sizeof(page_options_t));
+
 		if(!main_display_data[i].show)
 			default_sview_config.page_visible[i] = FALSE;
 		else
@@ -532,11 +536,11 @@ extern int load_defaults()
 		{"MainHeight", S_P_UINT32},
 		{"FullInfoPopupWidth", S_P_UINT32},
 		{"FullInfoPopupHeight", S_P_UINT32},
-		{"pertaboptsJob", S_P_STRING},
-		{"pertaboptsPartition", S_P_STRING},
-		{"pertaboptsReservation", S_P_STRING},
-		{"pertaboptsBlock", S_P_STRING},
-		{"pertaboptsNode", S_P_STRING},
+		{"pageoptsJob", S_P_STRING},
+		{"pageoptsPartition", S_P_STRING},
+		{"pageoptsReservation", S_P_STRING},
+		{"pageoptsBlock", S_P_STRING},
+		{"pageoptsNode", S_P_STRING},
 		{NULL}
 	};
 	char *pathname = NULL;
@@ -602,8 +606,7 @@ extern int load_defaults()
 			"ShowGrid", hashtbl);
 	s_p_get_boolean(&default_sview_config.show_hidden,
 			"ShowHidden", hashtbl);
-	default_sview_config.show_hidden = default_sview_config.admin_mode;
-	s_p_get_boolean(&default_sview_config.save_tabs_settings,
+	s_p_get_boolean(&default_sview_config.save_page_settings,
 			"SaveTabsSettings", hashtbl);
 	s_p_get_uint32(&default_sview_config.main_width,
 		       "MainWidth", hashtbl);
@@ -648,21 +651,25 @@ extern int load_defaults()
 			default_sview_config.page_visible[NODE_PAGE] = 1;
 		xfree(tmp_str);
 	}
-	/*pull in pertab options*/
-	pertab_options_t *ptabs_o_ptr;
-	ptabs_o_ptr = xmalloc(sizeof(pertab_options_t)*PAGE_CNT);
-	g_ptabs_o_ptr = ptabs_o_ptr;
-	for (i=0; i<PAGE_CNT-4; i++) {
-		tmp_str = xstrdup("pertabopts");
-		xstrcat(tmp_str, page_to_str(i));
-		ptabs_o_ptr->tab_name = page_to_str(i);
-		s_p_get_string(&ptabs_o_ptr->option_list, tmp_str, hashtbl);
-		if (ptabs_o_ptr->option_list) {
-			ptabs_o_ptr->def_option_list = xstrdup(ptabs_o_ptr->
-							       option_list);
-			replus(ptabs_o_ptr->option_list);
+
+	/*pull in page options*/
+	for (i=0; i<PAGE_CNT; i++) {
+		char *col_list = NULL;
+		char *page_name = page_to_str(i);
+		page_options_t *page_options =
+			&default_sview_config.page_options[i];
+		if (!page_name)
+			continue;
+		memset(page_options, 0, sizeof(page_options_t));
+		tmp_str = xstrdup_printf("pageopts%s", page_name);
+		s_p_get_string(&col_list, tmp_str, hashtbl);
+		xfree(tmp_str);
+		if (col_list) {
+			page_options->page_name = page_name;
+			page_options->col_list = col_list;
+			page_options->def_col_list = xstrdup(col_list);
+			replus(page_options->col_list);
 		}
-		ptabs_o_ptr++;
 	}
 
 	xfree(tmp_str);
@@ -683,6 +690,9 @@ extern int save_defaults(bool final_save)
 	int rc = SLURM_SUCCESS;
 	char *tmp_str = NULL, *tmp_str2 = NULL;
 	int fd = 0;
+	int i = 0;
+	int j = 0;
+	display_data_t *display_data;
 
 	if(!home)
 		return SLURM_ERROR;
@@ -802,7 +812,7 @@ extern int save_defaults(bool final_save)
 	if(rc != SLURM_SUCCESS)
 		goto end_it;
 	tmp_str = xstrdup_printf("SaveTabsSettings=%s\n",
-				 default_sview_config.save_tabs_settings ?
+				 default_sview_config.save_page_settings ?
 				 "YES" : "NO");
 	rc = _write_to_file(fd, tmp_str);
 	xfree(tmp_str);
@@ -822,60 +832,56 @@ extern int save_defaults(bool final_save)
 	if(rc != SLURM_SUCCESS)
 		goto end_it;
 
-	if (final_save && g_ptabs_o_ptr) {
-		/* save all current pertab options */
-		int i = 0;
-		int j = 0;
-		pertab_options_t *ptabs_o_ptr= g_ptabs_o_ptr;
-		display_data_t *display_data;
-		for (i=0; i<PAGE_CNT-4; i++) {
-			tmp_str = xstrdup_printf("%s%s%s", "pertabopts",
-						 page_to_str(i), "=");
-			if (working_sview_config.save_tabs_settings) {
-				tmp_str2 = xstrdup(",");
-				if (ptabs_o_ptr->display_data) {
-					display_data = ptabs_o_ptr->display_data;
-					for (j=0; j<ptabs_o_ptr->count; j++) {
-						if (display_data->id == -1)
-							break;
-						if (!display_data->name) {
-							display_data++;
-							continue;
-						}
-						if (display_data->show) {
-							tmp_str2 = 
-								xstrdup_printf(
-								"%s%s%s",
-								tmp_str2,
-								display_data->
-								name, ",");
-						}
-						display_data++;
-					} //spin the menu options ^^
-					replspace(tmp_str2);
-				} //have a display struct ^^
-			} //save new option set ^^
-			else {
-				//user requested no save of page options
-				tmp_str2 = xstrdup(ptabs_o_ptr->def_option_list);
-			}
-			if (tmp_str2) {
-				tmp_str = xstrdup_printf("%s%s\n", tmp_str,
-							 tmp_str2);
-				xfree(tmp_str2);
-				rc = _write_to_file(fd, tmp_str);
-				if (rc != SLURM_SUCCESS)
-					goto end_it;
-			}
-			xfree(tmp_str);
-			ptabs_o_ptr++;
-		}//spin the tabs
-		xfree(g_ptabs_o_ptr);
-	}//have setup the tabs options struct
+	if (!final_save)
+		goto end_it;
+
+	/* save all current page options */
+	for (i=0; i<PAGE_CNT; i++) {
+		page_options_t *page_options =
+			&working_sview_config.page_options[i];
+		if (!page_options->page_name)
+			continue;
+
+		tmp_str = xstrdup_printf("pageopts%s=",
+					 page_options->page_name);
+		if (working_sview_config.save_page_settings) {
+			tmp_str2 = xstrdup(",");
+			if (page_options->display_data) {
+				display_data = page_options->display_data;
+				for (j=0; j<page_options->count; j++) {
+					if (display_data->id == -1)
+						break;
+					if (display_data->name
+					    && display_data->show)
+						xstrfmtcat(tmp_str2, "%s,",
+							   display_data->name);
+					display_data++;
+				} //spin the menu options ^^
+				replspace(tmp_str2);
+			} //have a display struct ^^
+			//save new option set ^^
+		} else {
+			//user requested no save of page options
+			tmp_str2 = xstrdup(page_options->def_col_list);
+		}
+
+		xfree(page_options->col_list);
+		xfree(page_options->def_col_list);
+
+		if (tmp_str2) {
+			xstrfmtcat(tmp_str, "%s\n", tmp_str2);
+			xfree(tmp_str2);
+			rc = _write_to_file(fd, tmp_str);
+			if (rc != SLURM_SUCCESS)
+				goto end_it;
+		}
+		xfree(tmp_str);
+	}//spin the pages
+
+end_it:
 	fsync(fd);
 	close(fd);
 
-end_it:
 	if (rc)
 		(void) unlink(new_file);
 	else {			/* file shuffle */
@@ -904,7 +910,7 @@ extern GtkListStore *create_model_defaults(int type)
 	case SORTID_RULED_TV:
 	case SORTID_SHOW_GRID:
 	case SORTID_SHOW_HIDDEN:
-	case SORTID_SAVE_TABS_SETS:
+	case SORTID_SAVE_PAGE_OPTS:
 		model = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_INT);
 		gtk_list_store_append(model, &iter);
 		gtk_list_store_set(model, &iter,
@@ -1005,15 +1011,15 @@ extern int configure_defaults()
 			      GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL);
 
 	/*
-	for(i=0;; i++) {
-		if(main_popup_positioner[i].width == -1)
-			break;
-		if(strstr("Sview Defaults", main_popup_positioner[i].name)) {
-			pos_x = main_popup_positioner[i].width;
-			pos_y = main_popup_positioner[i].height;
-			break;
-		}
-	}
+	  for(i=0;; i++) {
+	  if(main_popup_positioner[i].width == -1)
+	  break;
+	  if(strstr("Sview Defaults", main_popup_positioner[i].name)) {
+	  pos_x = main_popup_positioner[i].width;
+	  pos_y = main_popup_positioner[i].height;
+	  break;
+	  }
+	  }
 	*/
 
 	gtk_window_set_default_size(GTK_WINDOW(popup), width, height);
@@ -1059,7 +1065,7 @@ extern int configure_defaults()
 	response = gtk_dialog_run (GTK_DIALOG(popup));
 	if (response == GTK_RESPONSE_OK) {
 		tmp_char_ptr = g_strdup_printf(
-				"Defaults updated successfully");
+			"Defaults updated successfully");
 		if(global_edit_error)
 			tmp_char_ptr = global_edit_error_msg;
 		else if(!global_send_update_msg)
@@ -1128,7 +1134,7 @@ extern int configure_defaults()
 			apply_hidden_change = TRUE;
 			gtk_toggle_action_set_active(
 				default_sview_config.action_stabssets,
-				working_sview_config.save_tabs_settings);
+				working_sview_config.save_page_settings);
 			sview_radio_action_set_current_value(
 				default_sview_config.action_tab,
 				working_sview_config.tab_pos);
@@ -1149,7 +1155,7 @@ extern int configure_defaults()
 
 			save_defaults(false);
 		}
-denied_change:
+	denied_change:
 		display_edit_note(tmp_char_ptr);
 		g_free(tmp_char_ptr);
 	}

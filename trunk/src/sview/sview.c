@@ -84,7 +84,6 @@ int cluster_dims;
 List cluster_list = NULL;
 switch_record_bitmaps_t *g_switch_nodes_maps = NULL;
 popup_pos_t popup_pos;
-pertab_options_t *g_ptabs_o_ptr;
 
 block_info_msg_t *g_block_info_ptr = NULL;
 job_info_msg_t *g_job_info_ptr = NULL;
@@ -388,9 +387,9 @@ static void _set_stabbsets(GtkToggleAction *action)
 {
 	char *tmp;
 	if (action)
-		working_sview_config.save_tabs_settings
+		working_sview_config.save_page_settings
 			= gtk_toggle_action_get_active(action);
-	if (working_sview_config.save_tabs_settings)
+	if (working_sview_config.save_page_settings)
 		tmp = g_strdup_printf("Save Page Options now ON");
 	else
 		tmp = g_strdup_printf("Save Page Options now OFF");
@@ -784,7 +783,7 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 		{"stabssets", GTK_STOCK_SELECT_COLOR, "Save Page _Settings",
 		 "<control>w", "Save Page _Settings",
 		 G_CALLBACK(_set_stabbsets),
-		 working_sview_config.save_tabs_settings},
+		 working_sview_config.save_page_settings},
 #ifdef WANT_TOPO_ON_MAIN_OPTIONS
 		 {"topoorder", GTK_STOCK_SELECT_COLOR, "Set Topology Grid",
 		 "<control>t", "Set Topology Grid",

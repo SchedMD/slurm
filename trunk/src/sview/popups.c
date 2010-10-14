@@ -359,9 +359,9 @@ static void _layout_conf_dbd(GtkTreeStore *treestore)
 		update, treestore, &iter,
 		"\nSlurmDBD Configuration:", NULL, "bold");
 
-        itr = list_iterator_create(dbd_config_list);
+	itr = list_iterator_create(dbd_config_list);
 	while((key_pair = list_next(itr))) {
-	        add_display_treestore_line(update, treestore, &iter,
+		add_display_treestore_line(update, treestore, &iter,
 					   key_pair->name,
 					   key_pair->value);
 	}
@@ -397,7 +397,7 @@ extern void create_config_popup(GtkAction *action, gpointer user_data)
 
 extern void create_dbconfig_popup(GtkAction *action, gpointer user_data)
 {
-        List dbd_config_list = NULL;
+	List dbd_config_list = NULL;
 	GtkWidget *popup = gtk_dialog_new_with_buttons(
 		"SLURM Database Config Info",
 		GTK_WINDOW(user_data),
@@ -806,15 +806,15 @@ extern void change_grid_popup(GtkAction *action, gpointer user_data)
 	/*TODO
 	 * do we care about this?
 
-	label = gtk_label_new("Topology ordered ");
-	adjustment = gtk_adjustment_new(working_sview_config.grid_topological,
-					1, 1000, 1, 60, 0);
-	GtkWidget *gtbtton =  gtk_check_button_new ();
-	gtk_container_set_border_width(GTK_CONTAINER(table), 10);
-	gtk_table_attach_defaults(GTK_TABLE(table), label, 0, 1, 3, 4);
-	gtk_table_attach_defaults(GTK_TABLE(table), gtbtton, 1, 2, 3, 4);
+	 label = gtk_label_new("Topology ordered ");
+	 adjustment = gtk_adjustment_new(working_sview_config.grid_topological,
+	 1, 1000, 1, 60, 0);
+	 GtkWidget *gtbtton =  gtk_check_button_new ();
+	 gtk_container_set_border_width(GTK_CONTAINER(table), 10);
+	 gtk_table_attach_defaults(GTK_TABLE(table), label, 0, 1, 3, 4);
+	 gtk_table_attach_defaults(GTK_TABLE(table), gtbtton, 1, 2, 3, 4);
 
-	gtk_toggle_button_set_active (&gtbtton,working_sview_config.grid_topological);
+	 gtk_toggle_button_set_active (&gtbtton,working_sview_config.grid_topological);
 	*/
 
 	gtk_widget_show_all(popup);
@@ -836,7 +836,7 @@ extern void change_grid_popup(GtkAction *action, gpointer user_data)
 			temp = g_strdup_printf("Grid: Nothing changed.");
 		} else if (working_sview_config.grid_topological) {
 			temp = g_strdup_printf("Grid: Invalid mode .."
-					" switch to non-topology order first.");
+					       " switch to non-topology order first.");
 		} else {
 			bool refresh = 0;
 			temp = g_strdup_printf(
@@ -917,4 +917,3 @@ extern void about_popup(GtkAction *action, gpointer user_data)
 
 	return;
 }
-

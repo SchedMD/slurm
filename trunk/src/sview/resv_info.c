@@ -73,10 +73,10 @@ enum {
 /*these are the settings to apply for the user
  * on the first startup after a fresh slurm install.
  * s/b a const probably*/
-static char *_initial_pertab_opts = ",Name,Node Count,NodeList,"
-		"Time Start,Time End,";
+static char *_initial_page_opts = ",Name,Node Count,NodeList,"
+	"Time Start,Time End,";
 
-static bool _set_pertab_opts = FALSE;
+static bool _set_page_opts = FALSE;
 
 static display_data_t display_data_resv[] = {
 	{G_TYPE_INT, SORTID_POS, NULL, FALSE, EDIT_NONE,
@@ -962,10 +962,10 @@ extern void get_info_resv(GtkTable *table, display_data_t *display_data)
 	time_t now = time(NULL);
 	GtkTreePath *path = NULL;
 
-	if (!_set_pertab_opts) {
-		set_pertab_opts(RESV_PAGE, display_data_resv,
-				SORTID_CNT, _initial_pertab_opts);
-		_set_pertab_opts = TRUE;
+	if (!_set_page_opts) {
+		set_page_opts(RESV_PAGE, display_data_resv,
+			      SORTID_CNT, _initial_page_opts);
+		_set_page_opts = TRUE;
 	}
 
 	/* reset */
@@ -1542,4 +1542,3 @@ extern void cluster_change_resv()
 	}
 	get_info_resv(NULL, NULL);
 }
-
