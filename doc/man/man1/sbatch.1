@@ -1,4 +1,4 @@
-.TH "sbatch" "1" "SLURM 2.2" "September 2010" "SLURM Commands"
+.TH "sbatch" "1" "SLURM 2.2" "October 2010" "SLURM Commands"
 
 .SH "NAME"
 sbatch \- Submit a batch script to SLURM.
@@ -585,9 +585,16 @@ Also see \fB\-\-mem\-per\-cpu\fR.
 .TP
 \fB\-\-mem\-per\-cpu\fR=<\fIMB\fR>
 Mimimum memory required per allocated CPU in MegaBytes.
-Default value is \fBDefMemPerCPU\fR and the maximum value is
-\fBMaxMemPerCPU\fR. If configured, both of parameters can be
+Default value is \fBDefMemPerCPU\fR and the maximum value is \fBMaxMemPerCPU\fR
+(see exception below). If configured, both of parameters can be
 seen using the \fBscontrol show config\fR command.
+Note that if the job's \fB\-\-mem\-per\-cpu\fR value exceeds the configured
+\fBMaxMemPerCPU\fR, then the user's limit will be treated as a memory limit
+per task; \fB\-\-mem\-per\-cpu\fR will be reduced to a value no larger than
+\fBMaxMemPerCPU\fR; \fB\-\-cpus\-per\-task\fR will be set and value of 
+\fB\-\-cpus\-per\-task\fR multiplied by the new \fB\-\-mem\-per\-cpu\fR
+value will equal the original \fB\-\-mem\-per\-cpu\fR value specified by
+the user.
 This parameter would generally be used if individual processors
 are allocated to jobs (\fBSelectType=select/cons_res\fR).
 Also see \fB\-\-mem\fR.
