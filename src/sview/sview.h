@@ -142,6 +142,12 @@ enum { EDIT_NONE,
        EDIT_COLOR
 };
 
+//typedef struct pages_options page_options_t;
+typedef struct display_data display_data_t;
+typedef struct specific_info specific_info_t;
+typedef struct popup_info popup_info_t;
+typedef struct popup_positioner popup_positioner_t;
+
 typedef enum { SEARCH_JOB_ID = 1,
 	       SEARCH_JOB_USER,
 	       SEARCH_JOB_STATE,
@@ -168,26 +174,16 @@ typedef struct  {
 	bitstr_t *node_bitmap;
 } switch_record_bitmaps_t;
 
+typedef struct {
+	char *page_name;
+	char *col_list;
+	char *def_col_list;
+	display_data_t *display_data;
+	int count;
+} page_options_t;
+
 /* Input parameters */
 typedef struct {
-	bool admin_mode;
-	uint16_t default_page;
-	uint32_t grid_hori;
-	bool grid_speedup;
-	uint32_t grid_vert;
-	uint32_t grid_x_width;
-	uint32_t main_width;
-	uint32_t main_height;
-	uint32_t fi_popup_width;
-	uint32_t fi_popup_height;
-	GtkWidget *page_check_widget[PAGE_CNT];
-	bool page_visible[PAGE_CNT];
-	uint16_t refresh_delay;
-	bool show_grid;
-	bool grid_topological;
-	bool show_hidden;
-	bool save_tabs_settings;
-	bool ruled_treeview;
 	GtkToggleAction *action_admin;
 	GtkToggleAction *action_grid;
 	GtkToggleAction *action_hidden;
@@ -195,22 +191,27 @@ typedef struct {
 	GtkToggleAction *action_gridtopo;
 	GtkToggleAction *action_ruled;
 	GtkRadioAction *action_tab;
+	bool admin_mode;
+	uint16_t default_page;
+	uint32_t fi_popup_width;
+	uint32_t fi_popup_height;
+	uint32_t grid_hori;
+	bool grid_speedup;
+	bool grid_topological;
+	uint32_t grid_vert;
+	uint32_t grid_x_width;
+	uint32_t main_width;
+	uint32_t main_height;
+	GtkWidget *page_check_widget[PAGE_CNT];
+	page_options_t page_options[PAGE_CNT];
+	bool page_visible[PAGE_CNT];
+	uint16_t refresh_delay;
+	bool ruled_treeview;
+	bool show_grid;
+	bool show_hidden;
+	bool save_page_settings;
 	uint16_t tab_pos;
 } sview_config_t;
-
-//typedef struct pertabs_options pertab_options_t;
-typedef struct display_data display_data_t;
-typedef struct specific_info specific_info_t;
-typedef struct popup_info popup_info_t;
-typedef struct popup_positioner popup_positioner_t;
-
-typedef struct {
-	char *tab_name;
-	char *option_list;
-	char *def_option_list;
-	display_data_t *display_data ;
-	int count;
-} pertab_options_t;
 
 struct display_data {
 	GType type;
@@ -313,8 +314,6 @@ typedef struct {
 extern sview_config_t default_sview_config;
 extern sview_config_t working_sview_config;
 
-extern void parse_command_line(int argc, char *argv[]);
-
 extern int fini;
 extern ba_system_t *ba_system_ptr;
 extern bool toggled;
@@ -358,14 +357,12 @@ extern topo_info_response_msg_t *g_topo_info_msg_ptr;
 extern switch_record_bitmaps_t *g_switch_nodes_maps;
 extern popup_positioner_t main_popup_positioner[];
 extern popup_pos_t popup_pos;
-extern pertab_options_t *g_ptabs_o_ptr;
 
 extern void init_grid(node_info_msg_t *node_info_ptr);
 extern int set_grid(int start, int end, int count);
 extern int set_grid_bg(int *start, int *end, int count, int set);
 extern void print_grid(int dir);
 
-extern void parse_command_line(int argc, char *argv[]);
 extern void print_date();
 
 //sview.c
@@ -533,8 +530,8 @@ extern int get_new_info_config(slurm_ctl_conf_info_msg_t **info_ptr);
 extern char * replspace (char *str);
 extern char * replus (char *str);
 extern char *delstr(char *str, char *orig);
-extern void set_pertab_opts(int tab, display_data_t *display_data,
-			    int count, char* initial_opts);
+extern void set_page_opts(int tab, display_data_t *display_data,
+			  int count, char* initial_opts);
 extern void free_switch_nodes_maps(switch_record_bitmaps_t
 				   *g_switch_nodes_maps);
 extern int get_topo_conf(void);

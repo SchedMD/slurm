@@ -107,9 +107,9 @@ enum {
 
 /*these are the settings to apply for the user
  * on the first startup after a fresh slurm install.*/
-static char *_initial_pertab_opts = ",Partition,Default,Part State,"
-		"Time Limit,Node State,NodeList,";
-static bool _set_pertab_opts = FALSE;
+static char *_initial_page_opts = ",Partition,Default,Part State,"
+	"Time Limit,Node State,NodeList,";
+static bool _set_page_opts = FALSE;
 
 static display_data_t display_data_part[] = {
 	{G_TYPE_INT, SORTID_POS, NULL, FALSE, EDIT_NONE, refresh_part},
@@ -1767,7 +1767,7 @@ extern bool visible_part(char* part_name)
 	int rc = FALSE;
 
 	if(!g_part_info_ptr)
-			get_new_info_part(&part_info_ptr, force_refresh);
+		get_new_info_part(&part_info_ptr, force_refresh);
 	for (i=0; i<g_part_info_ptr->record_count; i++) {
 		m_part_ptr = &(g_part_info_ptr->partition_array[i]);
 		if (!strcmp(m_part_ptr->name, part_name)) {
@@ -1883,7 +1883,6 @@ extern GtkListStore *create_model_part(int type)
 				   0, "no",
 				   1, SORTID_DEFAULT,
 				   -1);
-
 		break;
 	case SORTID_HIDDEN:
 		model = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_INT);
@@ -2095,10 +2094,10 @@ extern void get_info_part(GtkTable *table, display_data_t *display_data)
 	ListIterator itr = NULL;
 	GtkTreePath *path = NULL;
 
-	if (!_set_pertab_opts) {
-		set_pertab_opts(PART_PAGE, display_data_part,
-				SORTID_CNT, _initial_pertab_opts);
-		_set_pertab_opts = TRUE;
+	if (!_set_page_opts) {
+		set_page_opts(PART_PAGE, display_data_part,
+			      SORTID_CNT, _initial_page_opts);
+		_set_page_opts = TRUE;
 	}
 
 	/* reset */
@@ -2238,7 +2237,7 @@ end_it:
 reset_curs:
 	if (main_window && main_window->window)
 		gdk_window_set_cursor(main_window->window, NULL);
-        return;
+	return;
 }
 
 extern void specific_info_part(popup_info_t *popup_win)

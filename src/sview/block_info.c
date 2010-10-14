@@ -87,9 +87,10 @@ enum {
 
 /*these are the settings to apply for the user
  * on the first startup after a fresh slurm install.*/
-static char *_initial_pertab_opts = ",Block ID,JobID,Partition,State";
+static char *_initial_page_opts = ",Block ID,State,JobID,User,Node Count,"
+	"Connection Type,BP List,Partition";
 
-static bool _set_pertab_opts = FALSE;
+static bool _set_page_opts = FALSE;
 
 static display_data_t display_data_block[] = {
 	{G_TYPE_INT, SORTID_POS, NULL, FALSE, EDIT_NONE, refresh_block,
@@ -918,10 +919,10 @@ extern void get_info_block(GtkTable *table, display_data_t *display_data)
 	sview_block_info_t *sview_block_info_ptr = NULL;
 	GtkTreePath *path = NULL;
 
-	if (!_set_pertab_opts) {
-		set_pertab_opts(BLOCK_PAGE, display_data_block,
-				SORTID_CNT, _initial_pertab_opts);
-		_set_pertab_opts = TRUE;
+	if (!_set_page_opts) {
+		set_page_opts(BLOCK_PAGE, display_data_block,
+				SORTID_CNT, _initial_page_opts);
+		_set_page_opts = TRUE;
 	}
 
 	/* reset */

@@ -174,10 +174,10 @@ enum {
  * take place.  If you choose EDIT_MODEL (means only display a set of
  * known options) create it in function create_model_*.
  */
-static char *_initial_pertab_opts = (",JobID,Partition,UserID,Name,"
-		"State,Time Running,Node Count,NodeList,");
+static char *_initial_page_opts = (",JobID,Partition,UserID,Name,"
+				   "State,Time Running,Node Count,NodeList,");
 
-static bool _set_pertab_opts = FALSE;
+static bool _set_page_opts = FALSE;
 
 static display_data_t display_data_job[] = {
 	{G_TYPE_INT, SORTID_POS, NULL, FALSE, EDIT_NONE, refresh_job,
@@ -2472,7 +2472,7 @@ static List _create_job_info_list(job_info_msg_t *job_info_ptr,
 		if (!working_sview_config.show_hidden) {
 			/*see if job's part is visible*/
 			if (!visible_part(job_ptr->partition))
-			continue;
+				continue;
 		}
 		sview_job_info_ptr = xmalloc(sizeof(sview_job_info_t));
 		sview_job_info_ptr->job_ptr = job_ptr;
@@ -2963,10 +2963,10 @@ extern void get_info_job(GtkTable *table, display_data_t *display_data)
 	ListIterator itr = NULL;
 	GtkTreePath *path = NULL;
 
-	if (!_set_pertab_opts) {
-		set_pertab_opts(JOB_PAGE, display_data_job,
-				SORTID_CNT, _initial_pertab_opts);
-		_set_pertab_opts = TRUE;
+	if (!_set_page_opts) {
+		set_page_opts(JOB_PAGE, display_data_job,
+			      SORTID_CNT, _initial_page_opts);
+		_set_page_opts = TRUE;
 	}
 
 	/* reset */

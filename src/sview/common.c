@@ -679,7 +679,7 @@ extern char *delstr(char *str, char *orig)
 
 
 extern void free_switch_nodes_maps(switch_record_bitmaps_t
-					 *sw_nodes_bitmaps_ptr)
+				   *sw_nodes_bitmaps_ptr)
 {
 
 	int i;
@@ -923,45 +923,31 @@ extern void make_fields_menu(popup_info_t *popup_win, GtkMenu *menu,
 }
 
 
-extern void set_pertab_opts(int tab, display_data_t *display_data,
-		int count, char* initial_opts)
+extern void set_page_opts(int tab, display_data_t *display_data,
+			  int count, char* initial_opts)
 {
-	pertab_options_t *ptabs_o_ptr;
-	int i = 0;
+	page_options_t *page_options;
 	int j= 0;
-	bool hit = FALSE;
-	if (g_ptabs_o_ptr)
-		ptabs_o_ptr = g_ptabs_o_ptr;
-	else {
-		if (_DEBUG)
-			g_print("set_pertab_opts: no g_ptabs_o_ptr\n");
-		return;
-	}
-	for (i=0; i<PAGE_CNT-4; i++) {
-		if (i == tab) {
-			if (!ptabs_o_ptr->option_list)
-				ptabs_o_ptr->option_list = xstrdup(initial_opts);
-			ptabs_o_ptr->display_data = display_data;
-			ptabs_o_ptr->count = count;
-			for (j=0; j<count; j++) {
-				if (display_data->id == -1)
-					break;
-				if (!display_data->name) {
-					display_data++;
-					continue;
-				}
-				if (strstr(ptabs_o_ptr->option_list,
-					   display_data->name)) {
-					display_data->show = TRUE;
-				}
-				display_data++;
-			}
-		}
-		if (hit)
-			break;
-		ptabs_o_ptr++;
-	}
 
+	xassert(tab < PAGE_CNT);
+
+	page_options = &working_sview_config.page_options[tab];
+	if (!page_options->col_list)
+		page_options->col_list = xstrdup(initial_opts);
+	page_options->display_data = display_data;
+	page_options->count = count;
+	for (j=0; j<count; j++) {
+		if (display_data->id == -1)
+			break;
+		if (!display_data->name) {
+			display_data++;
+			continue;
+		}
+		if (strstr(page_options->col_list, display_data->name)) {
+			display_data->show = TRUE;
+		}
+		display_data++;
+	}
 }
 
 
@@ -1404,8 +1390,8 @@ extern gboolean key_released(GtkTreeView *tree_view,
 	GtkTreeSelection *selection = NULL;
 
 	if ((event->keyval != GDK_Up) &&
-            (event->keyval != GDK_Down) &&
-            (event->keyval != GDK_Return))
+	    (event->keyval != GDK_Down) &&
+	    (event->keyval != GDK_Return))
 		return TRUE;
 
 	gtk_tree_view_get_cursor(GTK_TREE_VIEW(tree_view), &path, &column);
@@ -2240,16 +2226,10 @@ extern char *page_to_str(int page)
 		return "Block";
 	case RESV_PAGE:
 		return "Reservation";
-	case SUBMIT_PAGE:
-		return "Submit";
-	case ADMIN_PAGE:
-		return "Admin";
-	case INFO_PAGE:
-		return "Info";
 	default:
-		return "Unknown";
+		return NULL;
 	}
-	return "Unknown";
+	return NULL;
 }
 
 extern char *tab_pos_to_str(int pos)
