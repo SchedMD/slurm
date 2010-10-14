@@ -310,7 +310,7 @@ _slurm_auth_context_destroy( slurm_auth_context_t c )
         return rc;
 }
 
-int inline
+inline int
 slurm_auth_init( char *auth_type )
 {
         int retval = SLURM_SUCCESS;
