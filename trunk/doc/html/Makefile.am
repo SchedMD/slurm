@@ -64,6 +64,13 @@ generated_html = \
 
 html_DATA = \
 	${generated_html} \
+	01-keynote.pdf \
+	01-mh-cea.pdf \
+	02-mp-bull.pdf \
+	03-cf-bsc.pdf \
+	04-ns-cscs.pdf \
+	05-yg-bull.pdf \
+	06-mjda-llnl.pdf \
 	allocation_pies.gif \
 	arch.gif \
 	configurator.html \
