@@ -1039,7 +1039,7 @@ documents those changes that are of interest to users and admins.
  -- BLUEGENE - critical fix where jobs would be killed incorrectly.
  -- BLUEGENE - fix for sview putting multiple ionodes on to nodelists when
     viewing the jobs tab.
-
+ 
 * Changes in SLURM 2.1.0
 ========================
  -- Improve sview layout of blocks in use.
