@@ -33,20 +33,21 @@
 source ./globals_accounting
 
 set test_id     "test22.1"
+set test_nu     "test22n1"
 set exit_code   0
 set matches     0
 set not_support 0
 set sql_in     "$test_id-in.sql"
 set sql_rem    "$test_id-rem.sql"
 set sql_out    "$test_id-out.sql"
-set cluster    [format "%s%s" $test_id "clus"]
-set account1   [format "%s%s" $test_id "acct1"]
-set account2   [format "%s%s" $test_id "acct2"]
-set account3   [format "%s%s" $test_id "acct3"]
+set cluster    [format "%s%s" $test_nu "clus"]
+set account1   [format "%s%s" $test_nu "acct1"]
+set account2   [format "%s%s" $test_nu "acct2"]
+set account3   [format "%s%s" $test_nu "acct3"]
 set accounts   [format "%s,%s,%s" $account1 $account2 $account3]
-set wckey1     [format "%s%s" $test_id "wckey"]
-set user1      [format "%s%s" $test_id "user1"]
-set user2      [format "%s%s" $test_id "user2"]
+set wckey1     [format "%s%s" $test_nu "wckey"]
+set user1      [format "%s%s" $test_nu "user1"]
+set user2      [format "%s%s" $test_nu "user2"]
 set users      [format "%s,%s" $user1 $user2]
 set node0      [format "%s%d" $cluster 0]
 set node1      [format "%s%d" $cluster 1]
