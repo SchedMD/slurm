@@ -1976,6 +1976,7 @@ extern int jobacct_storage_p_job_complete(void *db_conn,
 
 	req.assoc_id    = job_ptr->assoc_id;
 	req.db_index    = job_ptr->db_index;
+	req.derived_ec = job_ptr->derived_ec;
 	req.exit_code   = job_ptr->exit_code;
 	req.job_id      = job_ptr->job_id;
 	if (IS_JOB_RESIZING(job_ptr)) {
