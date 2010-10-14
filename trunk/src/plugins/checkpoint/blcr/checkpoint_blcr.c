@@ -312,7 +312,7 @@ extern int slurm_ckpt_comp ( struct step_record * step_ptr, time_t event_time,
 		uint32_t error_code, char *error_msg )
 {
 	error("checkpoint/blcr: slurm_ckpt_comp not implemented");
-	return SLURM_FAILURE;
+	return ESLURM_NOT_SUPPORTED;
 }
 
 extern int slurm_ckpt_task_comp ( struct step_record * step_ptr,
@@ -320,7 +320,7 @@ extern int slurm_ckpt_task_comp ( struct step_record * step_ptr,
 				  uint32_t error_code, char *error_msg )
 {
 	error("checkpoint/blcr: slurm_ckpt_task_comp not implemented");
-	return SLURM_FAILURE;
+	return ESLURM_NOT_SUPPORTED;
 }
 
 extern int slurm_ckpt_alloc_job(check_jobinfo_t *jobinfo)

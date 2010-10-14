@@ -180,7 +180,7 @@ expect {
 set matches 0
 spawn $scontrol check able $job_id.0
 expect {
-	-re "Began at" {
+	-re "(Yes|Began at)" {
 		incr matches
 		exp_continue
 	}
@@ -218,6 +218,11 @@ set matches 0
 spawn $scontrol check error $job_id.0
 expect {
 	-re "test error message" {
+		incr matches
+		exp_continue
+	}
+	-re "Job step not running" {
+		send_user "\nNot a problem if the checkpoint completed\n"
 		incr matches
 		exp_continue
 	}
