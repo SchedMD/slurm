@@ -365,9 +365,6 @@ static int _create_db(char *db_name, mysql_db_info_t *db_info)
 			     "user = %s port = %u",
 			     db_host, db_info->user,
 			     db_info->port);
-#ifdef MYSQL_NOT_THREAD_SAFE
-			slurm_mutex_unlock(&mysql_lock);
-#endif
 			error("mysql_real_connect failed: %d %s\n",
 			      mysql_errno(mysql_db),
 			      mysql_error(mysql_db));
