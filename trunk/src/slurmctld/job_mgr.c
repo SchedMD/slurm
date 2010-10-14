@@ -4087,7 +4087,7 @@ static bool _valid_pn_min_mem(job_desc_msg_t * job_desc_msg)
 		if (job_desc_msg->cpus_per_task == (uint16_t) NO_VAL) {
 			job_desc_msg->cpus_per_task = ratio;
 			job_desc_msg->pn_min_memory  = job_mem_limit / ratio;
-			job_desc_msg->pn_min_memory != MEM_PER_CPU;
+			job_desc_msg->pn_min_memory |= MEM_PER_CPU;
 			return true;
 		}
 		return false;
