@@ -1438,7 +1438,7 @@ extern int as_mysql_convert_user_defs(MYSQL *db_conn, char *cluster_name)
 	}
 	mysql_free_result(result);
 	if (query) {
-		info("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
+		debug3("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
 		rc = mysql_db_query(db_conn, query);
 		xfree(query);
 	}
