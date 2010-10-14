@@ -811,6 +811,13 @@ extern ListIterator slurm_list_iterator_create PARAMS((List l));
  */
 extern void slurm_list_iterator_reset PARAMS((ListIterator i));
 
+/*
+ *  Destroys the list iterator [i]; list iterators not explicitly destroyed
+ *    in this manner will be destroyed when the list is deallocated via
+ *    list_destroy().
+ */
+extern void slurm_list_iterator_destroy PARAMS((ListIterator i));
+
 /* slurm_list_next():
  *
  *  Returns a ptr to the next item's data,
