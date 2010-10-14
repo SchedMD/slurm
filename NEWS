@@ -73,6 +73,8 @@ documents those changes that are of interest to users and admins.
     - Clean up topology in grids
     - Leverage AllowGroups and Hidden options
     - Cascade full-info popups for ease of selection
+ -- Add locks around the MySQL calls for proper operation if the non-thread
+    safe version of the MySQL library is used.
 
 * Changes in SLURM 2.2.0.pre11
 ==============================
