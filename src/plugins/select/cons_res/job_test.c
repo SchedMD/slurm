@@ -686,9 +686,11 @@ uint16_t _can_job_run_on_node(struct job_record *job_ptr, bitstr_t *core_map,
 		avail_mem -= node_usage[node_i].alloc_memory;
 	if (job_ptr->details->pn_min_memory & MEM_PER_CPU) {
 		/* memory is per-cpu */
-		while (cpus > 0 && (req_mem * cpus) > avail_mem)
+		while ((cpus > 0) && ((req_mem * cpus) > avail_mem))
 			cpus--;
-		if (cpus < job_ptr->details->ntasks_per_node)
+		if ((cpus < job_ptr->details->ntasks_per_node) ||
+		    ((job_ptr->details->cpus_per_task > 1) &&
+		     (cpus < job_ptr->details->cpus_per_task)))
 			cpus = 0;
 		/* FIXME: We need to recheck min_cores, gres, etc. here */
 	} else {
@@ -776,6 +778,7 @@ static int _verify_node_state(struct part_res_record *cr_part_ptr,
 		min_mem = job_ptr->details->pn_min_memory & (~MEM_PER_CPU);
 		min_cpus = MAX(job_ptr->details->ntasks_per_node,
 			       job_ptr->details->pn_min_cpus);
+		min_cpus = MAX(min_cpus, job_ptr->details->cpus_per_task);
 		if (min_cpus > 0)
 			min_mem *= min_cpus;
 	} else {
