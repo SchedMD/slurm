@@ -109,7 +109,6 @@ enum {
  * on the first startup after a fresh slurm install.*/
 static char *_initial_page_opts = ",Partition,Default,Part State,"
 	"Time Limit,Node State,NodeList,";
-static bool _set_page_opts = FALSE;
 
 static display_data_t display_data_part[] = {
 	{G_TYPE_INT, SORTID_POS, NULL, FALSE, EDIT_NONE, refresh_part},
@@ -1789,20 +1788,6 @@ extern int get_new_info_part(partition_info_msg_t **part_ptr, int force)
 	static time_t last;
 	static bool changed = 0;
 	static uint16_t last_flags = 0;
-	partition_info_t *m_part_ptr = NULL;
-//	uid_t *group_uids = NULL;
-	int i = 0;
-	struct passwd *pw;
-	uid_t uid;
-
-	uid = getuid();
-	pw = getpwuid (uid);
-
-	/*TODO .. see if slurm has some
-	 * group api I can use to derive
-	 * group perms
-	 */
-	char *p=getenv("USER");
 
 	if(g_part_info_ptr && !force
 	   && ((now - last) < working_sview_config.refresh_delay)) {
@@ -1848,19 +1833,6 @@ extern int get_new_info_part(partition_info_msg_t **part_ptr, int force)
 	*part_ptr = new_part_ptr;
 end_it:
 
-	for (i=0; i<g_part_info_ptr->record_count; i++) {
-		m_part_ptr = &(g_part_info_ptr->partition_array[i]);
-		if (m_part_ptr->flags & PART_FLAG_HIDDEN)
-			apply_partition_check = TRUE;
-		else if (m_part_ptr->allow_groups) {
-			/* add && strcmp(p,"root")?? */
-			if (p && !strstr(m_part_ptr->allow_groups, p)) {
-				m_part_ptr->flags |= PART_FLAG_HIDDEN;
-				apply_partition_check = TRUE;
-			}
-		}
-
-	}
 	return error_code;
 }
 
@@ -2093,12 +2065,12 @@ extern void get_info_part(GtkTable *table, display_data_t *display_data)
 	partition_info_t *part_ptr = NULL;
 	ListIterator itr = NULL;
 	GtkTreePath *path = NULL;
+	static bool set_opts = FALSE;
 
-	if (!_set_page_opts) {
+	if (!set_opts)
 		set_page_opts(PART_PAGE, display_data_part,
 			      SORTID_CNT, _initial_page_opts);
-		_set_page_opts = TRUE;
-	}
+	set_opts = TRUE;
 
 	/* reset */
 	if(!table && !display_data) {

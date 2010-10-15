@@ -124,7 +124,7 @@ static void _set_active_combo_defaults(GtkComboBox *combo,
 		action = sview_config->show_hidden;
 		break;
 	case SORTID_SAVE_PAGE_OPTS:
-		action = sview_config->save_page_settings;
+		action = sview_config->save_page_opts;
 		break;
 	case SORTID_DEFAULT_PAGE:
 		action = sview_config->default_page;
@@ -239,9 +239,9 @@ static const char *_set_sview_config(sview_config_t *sview_config,
 	case SORTID_SAVE_PAGE_OPTS:
 		type = "Save Page Settings";
 		if (!strcasecmp(new_text, "yes"))
-			sview_config->save_page_settings = 1;
+			sview_config->save_page_opts = 1;
 		else
-			sview_config->save_page_settings = 0;
+			sview_config->save_page_opts = 0;
 		break;
 	case SORTID_TAB_POS:
 		type = "Tab Position";
@@ -535,9 +535,9 @@ extern int load_defaults()
 		{"PageOptsReservation", S_P_STRING},
 		{"RefreshDelay", S_P_UINT16},
 		{"RuledTables", S_P_BOOLEAN},
+		{"SavePageSettings", S_P_BOOLEAN},
 		{"ShowGrid", S_P_BOOLEAN},
 		{"ShowHidden", S_P_BOOLEAN},
-		{"SavePageSettings", S_P_BOOLEAN},
 		{"TabPosition", S_P_STRING},
 		{"VisiblePages", S_P_STRING},
 		{NULL}
@@ -605,7 +605,7 @@ extern int load_defaults()
 			"ShowGrid", hashtbl);
 	s_p_get_boolean(&default_sview_config.show_hidden,
 			"ShowHidden", hashtbl);
-	s_p_get_boolean(&default_sview_config.save_page_settings,
+	s_p_get_boolean(&default_sview_config.save_page_opts,
 			"SavePageSettings", hashtbl);
 	s_p_get_uint32(&default_sview_config.main_width,
 		       "MainWidth", hashtbl);
@@ -812,7 +812,7 @@ extern int save_defaults(bool final_save)
 	if(rc != SLURM_SUCCESS)
 		goto end_it;
 	tmp_str = xstrdup_printf("SavePageSettings=%s\n",
-				 default_sview_config.save_page_settings ?
+				 default_sview_config.save_page_opts ?
 				 "YES" : "NO");
 	rc = _write_to_file(fd, tmp_str);
 	xfree(tmp_str);
@@ -843,7 +843,7 @@ extern int save_defaults(bool final_save)
 		if (!page_opts->page_name)
 			continue;
 
-		if (working_sview_config.save_page_settings) {
+		if (working_sview_config.save_page_opts) {
 			if (page_opts->display_data) {
 				display_data = page_opts->display_data;
 				for (j=0; j<page_opts->count; j++) {
@@ -851,7 +851,7 @@ extern int save_defaults(bool final_save)
 						break;
 					if (display_data->name
 					    && display_data->show)
-						xstrfmtcat(tmp_str2, "%s,",
+						xstrfmtcat(tmp_str2, ",%s",
 							   display_data->name);
 					display_data++;
 				} //spin the menu options ^^
@@ -1135,7 +1135,7 @@ extern int configure_defaults()
 			apply_hidden_change = TRUE;
 			gtk_toggle_action_set_active(
 				default_sview_config.action_page_opts,
-				working_sview_config.save_page_settings);
+				working_sview_config.save_page_opts);
 			sview_radio_action_set_current_value(
 				default_sview_config.action_tab,
 				working_sview_config.tab_pos);

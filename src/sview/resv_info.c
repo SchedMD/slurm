@@ -76,8 +76,6 @@ enum {
 static char *_initial_page_opts = ",Name,Node Count,NodeList,"
 	"Time Start,Time End,";
 
-static bool _set_page_opts = FALSE;
-
 static display_data_t display_data_resv[] = {
 	{G_TYPE_INT, SORTID_POS, NULL, FALSE, EDIT_NONE,
 	 refresh_resv, create_model_resv, admin_edit_resv},
@@ -961,12 +959,12 @@ extern void get_info_resv(GtkTable *table, display_data_t *display_data)
 	reserve_info_t *resv_ptr = NULL;
 	time_t now = time(NULL);
 	GtkTreePath *path = NULL;
+	static bool set_opts = FALSE;
 
-	if (!_set_page_opts) {
+	if (!set_opts)
 		set_page_opts(RESV_PAGE, display_data_resv,
 			      SORTID_CNT, _initial_page_opts);
-		_set_page_opts = TRUE;
-	}
+	set_opts = TRUE;
 
 	/* reset */
 	if(!table && !display_data) {

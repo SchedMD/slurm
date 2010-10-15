@@ -90,8 +90,6 @@ enum {
 static char *_initial_page_opts = ",Block ID,State,JobID,User,Node Count,"
 	"Connection Type,BP List,Partition";
 
-static bool _set_page_opts = FALSE;
-
 static display_data_t display_data_block[] = {
 	{G_TYPE_INT, SORTID_POS, NULL, FALSE, EDIT_NONE, refresh_block,
 	 create_model_block, admin_edit_block},
@@ -918,12 +916,12 @@ extern void get_info_block(GtkTable *table, display_data_t *display_data)
 	ListIterator itr = NULL;
 	sview_block_info_t *sview_block_info_ptr = NULL;
 	GtkTreePath *path = NULL;
+	static bool set_opts = FALSE;
 
-	if (!_set_page_opts) {
+	if (!set_opts)
 		set_page_opts(BLOCK_PAGE, display_data_block,
-				SORTID_CNT, _initial_page_opts);
-		_set_page_opts = TRUE;
-	}
+			      SORTID_CNT, _initial_page_opts);
+	set_opts = TRUE;
 
 	/* reset */
 	if(!table && !display_data) {

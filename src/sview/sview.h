@@ -209,7 +209,7 @@ typedef struct {
 	bool ruled_treeview;
 	bool show_grid;
 	bool show_hidden;
-	bool save_page_settings;
+	bool save_page_opts;
 	uint16_t tab_pos;
 } sview_config_t;
 

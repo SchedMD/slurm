@@ -590,8 +590,9 @@ static int _add_button_to_list(node_info_t *node_ptr,
 							DIM_SIZE[Z] + z;
 						if (node_exists[i])
 							continue;
-						_build_empty_node(x, y, z,
-								  button_processor);
+						_build_empty_node(
+							x, y, z,
+							button_processor);
 					}
 				}
 			}
@@ -661,9 +662,9 @@ static int _add_button_to_list(node_info_t *node_ptr,
 		if (button_processor->force_row_break) {
 			(*button_processor->coord_x) = 0;
 			(*button_processor->coord_y)+= 2;
-			gtk_table_set_row_spacing(button_processor->table,
-						  (*button_processor->coord_y)-1,
-						  5);
+			gtk_table_set_row_spacing(
+				button_processor->table,
+				(*button_processor->coord_y)-1,	5);
 			return SLURM_SUCCESS;
 		}
 
@@ -685,8 +686,9 @@ static int _grid_table_by_switch(button_processor_t *button_processor,
 {
 	int rc = SLURM_SUCCESS;
 	int inx = 0, ii = 0;
-	button_processor->inx = &inx;
 	switch_record_bitmaps_t *sw_nodes_bitmaps_ptr = g_switch_nodes_maps;
+
+	button_processor->inx = &inx;
 
 	/* engage if want original
 	   ListIterator itr = list_iterator_create(node_list);
@@ -711,10 +713,10 @@ static int _grid_table_by_switch(button_processor_t *button_processor,
 					j);
 			if (!bit_test(sw_nodes_bitmaps_ptr->node_bitmap, j))
 				continue;
-			if (!working_sview_config.show_hidden) {
-				if(!check_part_includes_node(j))
-					continue;
-			}
+			/* if (!working_sview_config.show_hidden) { */
+			/* 	if(!check_part_includes_node(j)) */
+			/* 		continue; */
+			/* } */
 			if (j == last)
 				button_processor->force_row_break = TRUE;
 			if ((rc = _add_button_to_list(
@@ -758,12 +760,12 @@ static int _grid_table_by_list(button_processor_t *button_processor,
 	button_processor->inx = &inx;
 
 	while ((sview_node_info_ptr = list_next(itr))) {
-		if (!working_sview_config.show_hidden) {
-			if (!check_part_includes_node(inx)) {
-				inx++;
-				continue;
-			}
-		}
+		/* if (!working_sview_config.show_hidden) { */
+		/* 	if (!check_part_includes_node(inx)) { */
+		/* 		inx++; */
+		/* 		continue; */
+		/* 	} */
+		/* } */
 		if ((rc = _add_button_to_list(
 			     sview_node_info_ptr->node_ptr,
 			     button_processor)) != SLURM_SUCCESS)
@@ -1368,12 +1370,12 @@ extern int update_grid_table(GtkTable *table, List button_list, List node_list)
 
 	while ((sview_node_info_ptr = list_next(itr))) {
 		int found = 0;
-		if (!working_sview_config.show_hidden) {
-			if(!check_part_includes_node(inx)) {
-				inx++;
-				continue;
-			}
-		}
+		/* if (!working_sview_config.show_hidden */
+		/*     && !check_part_includes_node(inx)) { */
+		/* 	inx++; */
+		/* 	continue; */
+		/* } */
+
 //	again:
 		while ((button_processor.grid_button = list_next(itr2))) {
 			if (button_processor.grid_button->inx != inx) {

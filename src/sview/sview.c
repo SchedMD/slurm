@@ -383,13 +383,13 @@ static void _set_hidden(GtkToggleAction *action)
 	return;
 }
 
-static void _set_stabbsets(GtkToggleAction *action)
+static void _set_page_opts(GtkToggleAction *action)
 {
 	char *tmp;
 	if (action)
-		working_sview_config.save_page_settings
+		working_sview_config.save_page_opts
 			= gtk_toggle_action_get_active(action);
-	if (working_sview_config.save_page_settings)
+	if (working_sview_config.save_page_opts)
 		tmp = g_strdup_printf("Save Page Options now ON");
 	else
 		tmp = g_strdup_printf("Save Page Options now OFF");
@@ -780,10 +780,10 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 		{"hidden", GTK_STOCK_SELECT_COLOR, "Show _Hidden",
 		 "<control>h", "Display Hidden Partitions/Jobs",
 		 G_CALLBACK(_set_hidden), working_sview_config.show_hidden},
-		{"page_opts", GTK_STOCK_SELECT_COLOR, "Save Page _Settings",
-		 "<control>w", "Save Page _Settings",
-		 G_CALLBACK(_set_stabbsets),
-		 working_sview_config.save_page_settings},
+		{"page_opts", GTK_STOCK_SELECT_COLOR, "Save Page Options",
+		 "<control>w", "Save Page Options",
+		 G_CALLBACK(_set_page_opts),
+		 working_sview_config.save_page_opts},
 #ifdef WANT_TOPO_ON_MAIN_OPTIONS
 		 {"topoorder", GTK_STOCK_SELECT_COLOR, "Set Topology Grid",
 		 "<control>t", "Set Topology Grid",
