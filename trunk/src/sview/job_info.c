@@ -177,8 +177,6 @@ enum {
 static char *_initial_page_opts = (",JobID,Partition,UserID,Name,"
 				   "State,Time Running,Node Count,NodeList,");
 
-static bool _set_page_opts = FALSE;
-
 static display_data_t display_data_job[] = {
 	{G_TYPE_INT, SORTID_POS, NULL, FALSE, EDIT_NONE, refresh_job,
 	 create_model_job, admin_edit_job},
@@ -2469,11 +2467,6 @@ static List _create_job_info_list(job_info_msg_t *job_info_ptr,
 	for(i=0; i<job_info_ptr->record_count; i++) {
 		job_ptr = &(job_info_ptr->job_array[i]);
 
-		if (!working_sview_config.show_hidden) {
-			/*see if job's part is visible*/
-			if (!visible_part(job_ptr->partition))
-				continue;
-		}
 		sview_job_info_ptr = xmalloc(sizeof(sview_job_info_t));
 		sview_job_info_ptr->job_ptr = job_ptr;
 		sview_job_info_ptr->step_list = list_create(NULL);
@@ -2962,12 +2955,12 @@ extern void get_info_job(GtkTable *table, display_data_t *display_data)
 	job_info_t *job_ptr = NULL;
 	ListIterator itr = NULL;
 	GtkTreePath *path = NULL;
+	static bool set_opts = FALSE;
 
-	if (!_set_page_opts) {
+	if (!set_opts)
 		set_page_opts(JOB_PAGE, display_data_job,
 			      SORTID_CNT, _initial_page_opts);
-		_set_page_opts = TRUE;
-	}
+	set_opts = TRUE;
 
 	/* reset */
 	if(!table && !display_data) {

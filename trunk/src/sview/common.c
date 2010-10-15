@@ -681,12 +681,10 @@ extern char *delstr(char *str, char *orig)
 }
 
 
-extern void free_switch_nodes_maps(switch_record_bitmaps_t
-				   *sw_nodes_bitmaps_ptr)
+extern void free_switch_nodes_maps(
+	switch_record_bitmaps_t *sw_nodes_bitmaps_ptr)
 {
-
-	int i;
-	for (i=0;;i++, sw_nodes_bitmaps_ptr++) {
+	while (sw_nodes_bitmaps_ptr++) {
 		if (!sw_nodes_bitmaps_ptr->node_bitmap)
 			break;
 		bit_free(sw_nodes_bitmaps_ptr->node_bitmap);
@@ -708,31 +706,31 @@ extern int build_nodes_bitmap(char *node_names, bitstr_t **bitmap)
 		g_print("..............._node_names2bitmap............%s\n",
 			node_names);
 	my_bitmap = (bitstr_t *) bit_alloc(g_node_info_ptr->record_count);
-	if (my_bitmap == NULL) {
+	if (!my_bitmap) {
 		fatal("bit_alloc malloc failure");
 	}
 	*bitmap = my_bitmap;
 
-	if (node_names == NULL) {
+	if (!node_names) {
 		error("_node_name2bitmap: node_names is NULL");
 		return EINVAL;
 	}
 
-	if ( (host_list = hostlist_create(node_names)) == NULL) {
+	if (!(host_list = hostlist_create(node_names))) {
 		error("_node_name2bitmap: hostlist_create(%s) error",
 		      node_names);
 		return EINVAL;
 	}
 
 	/*spin hostlist and map nodes into a bitmap*/
-	while ( (this_node_name = hostlist_shift(host_list)) ) {
-		node_inx = _find_node_inx(this_node_name); //topo
-		if (node_inx != -1) {
-			bit_set(my_bitmap, (bitoff_t) (node_inx));
-		} else {
+	while ((this_node_name = hostlist_shift(host_list))) {
+		node_inx = _find_node_inx(this_node_name);
+		free(this_node_name);
+
+		if (node_inx == -1)
 			continue;
-		}
-		free (this_node_name);
+
+		bit_set(my_bitmap, (bitoff_t)node_inx);
 	}
 	hostlist_destroy(host_list);
 
@@ -748,8 +746,7 @@ extern int get_topo_conf(void)
 	if (TOPO_DEBUG)
 		g_print("get_topo_conf\n");
 
-	if ((g_topo_info_msg_ptr == NULL) &&
-	    slurm_load_topo(&g_topo_info_msg_ptr)) {
+	if (!g_topo_info_msg_ptr && slurm_load_topo(&g_topo_info_msg_ptr)) {
 		slurm_perror ("slurm_load_topo error");
 		if (TOPO_DEBUG)
 			g_print("get_topo_conf error !!\n");
@@ -765,15 +762,14 @@ extern int get_topo_conf(void)
 	if (g_switch_nodes_maps)
 		free_switch_nodes_maps(g_switch_nodes_maps);
 
-	g_switch_nodes_maps = xmalloc(sizeof
-				      (sw_nodes_bitmaps)
-				      *g_topo_info_msg_ptr->record_count);
+	g_switch_nodes_maps = xmalloc(sizeof(sw_nodes_bitmaps)
+				      * g_topo_info_msg_ptr->record_count);
 	sw_nodes_bitmaps_ptr = g_switch_nodes_maps;
 
 	if (TOPO_DEBUG)
 		g_print("_display_topology,  record_count = %d\n",
 			g_topo_info_msg_ptr->record_count);
-	for (i=0; i<g_topo_info_msg_ptr->record_count;
+	for (i=0; i < g_topo_info_msg_ptr->record_count;
 	     i++, sw_nodes_bitmaps_ptr++) {
 		if (g_topo_info_msg_ptr->topo_array[i].nodes) {
 			if (TOPO_DEBUG)
@@ -812,7 +808,7 @@ extern int get_row_number(GtkTreeView *tree_view, GtkTreePath *path)
 	GtkTreeIter iter;
 	int line = 0;
 
-	if(!model) {
+	if (!model) {
 		g_error("error getting the model from the tree_view");
 		return -1;
 	}
@@ -829,10 +825,10 @@ extern int find_col(display_data_t *display_data, int type)
 {
 	int i = 0;
 
-	while(display_data++) {
-		if(display_data->id == -1)
+	while (display_data++) {
+		if (display_data->id == -1)
 			break;
-		if(display_data->id == type)
+		if (display_data->id == type)
 			return i;
 		i++;
 	}
@@ -843,10 +839,10 @@ extern const char *find_col_name(display_data_t *display_data, int type)
 {
 	int i = 0;
 
-	while(display_data++) {
-		if(display_data->id == -1)
+	while (display_data++) {
+		if (display_data->id == -1)
 			break;
-		if(display_data->id == type)
+		if (display_data->id == type)
 			return display_data->name;
 		i++;
 	}
@@ -925,15 +921,15 @@ extern void make_fields_menu(popup_info_t *popup_win, GtkMenu *menu,
 }
 
 
-extern void set_page_opts(int tab, display_data_t *display_data,
+extern void set_page_opts(int page, display_data_t *display_data,
 			  int count, char* initial_opts)
 {
 	page_opts_t *page_opts;
 	int j= 0;
 
-	xassert(tab < PAGE_CNT);
+	xassert(page < PAGE_CNT);
 
-	page_opts = &working_sview_config.page_opts[tab];
+	page_opts = &working_sview_config.page_opts[page];
 	if (!page_opts->col_list) {
 		page_opts->def_col_list = 1;
 		page_opts->col_list = xstrdup(initial_opts);
@@ -944,13 +940,10 @@ extern void set_page_opts(int tab, display_data_t *display_data,
 	for (j=0; j<count; j++) {
 		if (display_data->id == -1)
 			break;
-		if (!display_data->name) {
-			display_data++;
-			continue;
-		}
-		if (strstr(page_opts->col_list, display_data->name)) {
+		if (display_data->name
+		    && strstr(page_opts->col_list, display_data->name))
 			display_data->show = TRUE;
-		}
+
 		display_data++;
 	}
 }
@@ -1637,7 +1630,7 @@ extern popup_info_t *create_popup_info(int type, int dest_type, char *title)
 			 G_CALLBACK(_frame_callback),
 			 popup_win);
 	gtk_window_move(GTK_WINDOW(popup_win->popup),
-			popup_pos.x,popup_pos.y);
+			popup_pos.x, popup_pos.y);
 	gtk_widget_show_all(popup_win->popup);
 	return popup_win;
 }

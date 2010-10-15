@@ -75,8 +75,6 @@ typedef struct {
 static char *_initial_page_opts = ",Name,State,CPU Count,Used CPU Count,"
 	"Error CPU Count,Cores,Sockets,Threads,Real Memory,Tmp Disk,";
 
-static bool _set_page_opts = FALSE;
-
 static display_data_t display_data_node[] = {
 	{G_TYPE_INT, SORTID_POS, NULL, FALSE, EDIT_NONE, refresh_node,
 	 create_model_node, admin_edit_node},
@@ -635,16 +633,12 @@ extern List create_node_info_list(node_info_msg_t *node_info_ptr,
 			continue;
 
 		/* constrain list to included partitions' nodes */
-		if (by_partition &&
-		    apply_partition_check) {
-			/* there are excluded values to process */
-			if (!working_sview_config.show_hidden) {
-				/* user has not requested to show hidden */
-				if (!check_part_includes_node(i)) {
-					continue;
-				}
-			}
-		}
+		/* and there are excluded values to process */
+		/* and user has not requested to show hidden */
+		/* if (by_partition && apply_partition_check */
+		/*     && !working_sview_config.show_hidden */
+		/*     && !check_part_includes_node(i)) */
+		/* 	continue; */
 
 		sview_node_info_ptr = xmalloc(sizeof(sview_node_info_t));
 		list_append(info_list, sview_node_info_ptr);
@@ -1193,12 +1187,13 @@ extern void get_info_node(GtkTable *table, display_data_t *display_data)
 	sview_node_info_t *sview_node_info_ptr = NULL;
 	ListIterator itr = NULL;
 	GtkTreePath *path = NULL;
+	static bool set_opts = FALSE;
 
-	if (!_set_page_opts) {
+	if (!set_opts)
 		set_page_opts(NODE_PAGE, display_data_node,
 			      SORTID_CNT, _initial_page_opts);
-		_set_page_opts = TRUE;
-	}
+	set_opts = TRUE;
+
 	/* reset */
 	if(!table && !display_data) {
 		if(display_widget)
@@ -1258,8 +1253,8 @@ display_it:
 	}
 	if (!path || working_sview_config.grid_topological) {
 		itr = list_iterator_create(info_list);
-		if (g_topo_info_msg_ptr)	{
-			while ((sview_node_info_ptr = list_next(itr))) {
+		while ((sview_node_info_ptr = list_next(itr))) {
+			if (g_topo_info_msg_ptr) {
 				//derive topo_color
 				b_color_ndx = _get_topo_color_ndx(i);
 
@@ -1269,22 +1264,17 @@ display_it:
 					    node_state != NODE_STATE_IDLE )
 						b_color_ndx = i;
 				}
-				change_grid_color(grid_button_list, i, i,
-						  b_color_ndx, true, 0);
-				i++;
-			}
-		} else {
-			while ((sview_node_info_ptr = list_next(itr))) {
+			} else {
 				/* stop blasting out all those button colors */
-				if (sview_node_info_ptr->node_ptr->node_state
-				    != NODE_STATE_IDLE)
+				/* if (sview_node_info_ptr->node_ptr->node_state */
+				/*     != NODE_STATE_IDLE) */
 					b_color_ndx = i;
-				else
-					b_color_ndx = MAKE_INIT;
-				change_grid_color(grid_button_list, i, i,
-						  b_color_ndx, true, 0);
-				i++;
+				/* else */
+				/* 	b_color_ndx = MAKE_INIT; */
 			}
+			change_grid_color(grid_button_list, i, i,
+					  b_color_ndx, true, 0);
+			i++;
 		}
 		list_iterator_destroy(itr);
 	} else
