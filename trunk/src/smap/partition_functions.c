@@ -190,7 +190,7 @@ extern void get_bg_part()
 	static partition_info_msg_t *new_part_ptr = NULL;
 	static block_info_msg_t *bg_info_ptr = NULL;
 	static block_info_msg_t *new_bg_ptr = NULL;
-
+	uint16_t show_flags = 0;
 	partition_info_t part;
 	db2_block_info_t *block_ptr = NULL;
 	db2_block_info_t *found_block = NULL;
@@ -201,9 +201,11 @@ extern void get_bg_part()
 	if(!(params.cluster_flags & CLUSTER_FLAG_BG))
 		return;
 
+	if (params.all_flag)
+		show_flags |= SHOW_ALL;
 	if (part_info_ptr) {
 		error_code = slurm_load_partitions(part_info_ptr->last_update,
-						   &new_part_ptr, SHOW_ALL);
+						   &new_part_ptr, show_flags);
 		if (error_code == SLURM_SUCCESS)
 			slurm_free_partition_info_msg(part_info_ptr);
 		else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
@@ -212,7 +214,7 @@ extern void get_bg_part()
 		}
 	} else {
 		error_code = slurm_load_partitions((time_t) NULL,
-						   &new_part_ptr, SHOW_ALL);
+						   &new_part_ptr, show_flags);
 	}
 
 	if (error_code) {
@@ -232,7 +234,7 @@ extern void get_bg_part()
 	}
 	if (bg_info_ptr) {
 		error_code = slurm_load_block_info(bg_info_ptr->last_update,
-						   &new_bg_ptr);
+						   show_flags, &new_bg_ptr);
 		if (error_code == SLURM_SUCCESS)
 			slurm_free_block_info_msg(bg_info_ptr);
 		else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
@@ -240,7 +242,7 @@ extern void get_bg_part()
 			new_bg_ptr = bg_info_ptr;
 		}
 	} else {
-		error_code = slurm_load_block_info((time_t) NULL,
+		error_code = slurm_load_block_info((time_t) NULL, show_flags,
 						   &new_bg_ptr);
 	}
 	if (error_code) {

@@ -343,4 +343,4 @@ slurm_update_step()
 
 Changed the following API's
 ===========================
-NONE
+slurm_load_block_info(): Added show_flag parameter

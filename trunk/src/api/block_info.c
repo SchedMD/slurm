@@ -198,13 +198,14 @@ char *slurm_sprint_block_info(
  * slurm_load_block_info - issue RPC to get slurm all node select plugin
  *	information if changed since update_time
  * IN update_time - time of current configuration data
+ * IN show_flags - controls output form or filtering, see SHOW_FLAGS in slurm.h
  * IN block_info_msg_pptr - place to store a node select configuration
  *	pointer
  * RET 0 or a slurm error code
  * NOTE: free the response using slurm_free_block_info_msg
  */
-extern int slurm_load_block_info (
-	time_t update_time, block_info_msg_t **block_info_msg_pptr)
+extern int slurm_load_block_info (time_t update_time, uint16_t show_flags,
+				  block_info_msg_t **block_info_msg_pptr)
 {
         int rc;
         slurm_msg_t req_msg;
@@ -215,6 +216,7 @@ extern int slurm_load_block_info (
 	slurm_msg_t_init(&resp_msg);
 
         req.last_update  = update_time;
+	req.show_flags   = show_flags;
         req_msg.msg_type = REQUEST_BLOCK_INFO;
         req_msg.data     = &req;
 

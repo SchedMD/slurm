@@ -736,10 +736,13 @@ static int _blocks_dealloc(void)
 {
 	static block_info_msg_t *bg_info_ptr = NULL, *new_bg_ptr = NULL;
 	int rc = 0, error_code = 0, i;
+	uint16_t show_flags = 0;
 
+	if (all_flag)
+		show_flags |= SHOW_ALL;
 	if (bg_info_ptr) {
 		error_code = slurm_load_block_info(bg_info_ptr->last_update,
-						   &new_bg_ptr);
+						   show_flags, &new_bg_ptr);
 		if (error_code == SLURM_SUCCESS)
 			slurm_free_block_info_msg(bg_info_ptr);
 		else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
@@ -747,7 +750,8 @@ static int _blocks_dealloc(void)
 			new_bg_ptr = bg_info_ptr;
 		}
 	} else {
-		error_code = slurm_load_block_info((time_t) NULL, &new_bg_ptr);
+		error_code = slurm_load_block_info((time_t) NULL, show_flags,
+						   &new_bg_ptr);
 	}
 
 	if (error_code) {

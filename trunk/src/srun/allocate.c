@@ -297,7 +297,7 @@ static int _blocks_dealloc(void)
 
 	if (bg_info_ptr) {
 		error_code = slurm_load_block_info(bg_info_ptr->last_update,
-						   &new_bg_ptr);
+						   SHOW_ALL, &new_bg_ptr);
 		if (error_code == SLURM_SUCCESS)
 			slurm_free_block_info_msg(bg_info_ptr);
 		else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
@@ -305,7 +305,7 @@ static int _blocks_dealloc(void)
 			new_bg_ptr = bg_info_ptr;
 		}
 	} else {
-		error_code = slurm_load_block_info((time_t) NULL,
+		error_code = slurm_load_block_info((time_t) NULL, SHOW_ALL,
 						   &new_bg_ptr);
 	}
 
