@@ -6399,7 +6399,12 @@ static void
 _pack_block_info_req_msg(block_info_request_msg_t *msg, Buf buffer,
 			 uint16_t protocol_version)
 {
-	pack_time(msg->last_update, buffer);
+	if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
+		pack_time(msg->last_update, buffer);
+		safe_unpack16(&job_info->show_flags, buffer);
+	} else {
+		pack_time(msg->last_update, buffer);
+	}
 }
 
 static int
@@ -6412,7 +6417,12 @@ _unpack_block_info_req_msg(block_info_request_msg_t **msg,
 	node_sel_info = xmalloc(sizeof(block_info_request_msg_t));
 	*msg = node_sel_info;
 
-	safe_unpack_time(&node_sel_info->last_update, buffer);
+	if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
+		safe_unpack_time(&node_sel_info->last_update, buffer);
+		safe_unpack16(&node_sel_info->how_flags, buffer);
+	} else {
+		safe_unpack_time(&node_sel_info->last_update, buffer);
+	}
 	return SLURM_SUCCESS;
 
 unpack_error:

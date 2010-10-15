@@ -494,6 +494,7 @@ typedef struct node_info_request_msg {
 
 typedef struct block_info_request_msg {
 	time_t last_update;
+	uint16_t show_flags;
 } block_info_request_msg_t;
 
 typedef struct part_info_request_msg {

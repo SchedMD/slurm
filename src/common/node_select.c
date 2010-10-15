@@ -95,6 +95,7 @@ typedef struct slurm_select_ops {
 	int		(*job_suspend)	       (struct job_record *job_ptr);
 	int		(*job_resume)	       (struct job_record *job_ptr);
 	int		(*pack_select_info)    (time_t last_query_time,
+						uint16_t show_flags,
 						Buf *buffer_ptr,
 						uint16_t protocol_version);
         int	        (*nodeinfo_pack)       (select_nodeinfo_t *nodeinfo,
@@ -699,14 +700,15 @@ extern int select_g_job_resume(struct job_record *job_ptr)
 		(job_ptr);
 }
 
-extern int select_g_pack_select_info(time_t last_query_time, Buf *buffer,
+extern int select_g_pack_select_info(time_t last_query_time,
+				     uint16_t show_flags, Buf *buffer,
 				     uint16_t protocol_version)
 {
 	if (slurm_select_init(0) < 0)
 		return SLURM_ERROR;
 
 	return (*(select_context[select_context_default].ops.pack_select_info))
-		(last_query_time, buffer, protocol_version);
+		(last_query_time, show_flags, buffer, protocol_version);
 }
 
 extern int select_g_select_nodeinfo_pack(dynamic_plugin_data_t *nodeinfo,

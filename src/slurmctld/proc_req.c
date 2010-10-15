@@ -2984,7 +2984,7 @@ static void  _slurm_rpc_block_info(slurm_msg_t * msg)
 	unlock_slurmctld(config_read_lock);
 	if (error_code == SLURM_SUCCESS) {
 		error_code = select_g_pack_select_info(
-			sel_req_msg->last_update,
+			sel_req_msg->last_update, sel_req_msg->show_flags,
 			&buffer, msg->protocol_version);
 	}
 	END_TIMER2("_slurm_rpc_block_info");

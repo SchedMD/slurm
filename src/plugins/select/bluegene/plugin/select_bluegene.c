@@ -596,7 +596,8 @@ extern int select_p_job_resume(struct job_record *job_ptr)
 	return ESLURM_NOT_SUPPORTED;
 }
 
-extern int select_p_pack_select_info(time_t last_query_time, Buf *buffer_ptr,
+extern int select_p_pack_select_info(time_t last_query_time,
+				     uint16_t show_flags, Buf *buffer_ptr,
 				     uint16_t protocol_version)
 {
 #ifdef HAVE_BG_L_P
