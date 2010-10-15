@@ -142,7 +142,7 @@ enum { EDIT_NONE,
        EDIT_COLOR
 };
 
-//typedef struct pages_options page_options_t;
+//typedef struct pages_options page_opts_t;
 typedef struct display_data display_data_t;
 typedef struct specific_info specific_info_t;
 typedef struct popup_info popup_info_t;
@@ -175,19 +175,19 @@ typedef struct  {
 } switch_record_bitmaps_t;
 
 typedef struct {
-	char *page_name;
 	char *col_list;
-	char *def_col_list;
-	display_data_t *display_data;
 	int count;
-} page_options_t;
+	bool def_col_list;
+	display_data_t *display_data;
+	char *page_name;
+} page_opts_t;
 
 /* Input parameters */
 typedef struct {
 	GtkToggleAction *action_admin;
 	GtkToggleAction *action_grid;
 	GtkToggleAction *action_hidden;
-	GtkToggleAction *action_stabssets;
+	GtkToggleAction *action_page_opts;
 	GtkToggleAction *action_gridtopo;
 	GtkToggleAction *action_ruled;
 	GtkRadioAction *action_tab;
@@ -203,7 +203,7 @@ typedef struct {
 	uint32_t main_width;
 	uint32_t main_height;
 	GtkWidget *page_check_widget[PAGE_CNT];
-	page_options_t page_options[PAGE_CNT];
+	page_opts_t page_opts[PAGE_CNT];
 	bool page_visible[PAGE_CNT];
 	uint16_t refresh_delay;
 	bool ruled_treeview;

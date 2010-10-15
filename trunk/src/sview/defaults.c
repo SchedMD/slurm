@@ -101,7 +101,6 @@ static display_data_t display_data_defaults[] = {
 
 extern display_data_t main_display_data[];
 
-
 static void _set_active_combo_defaults(GtkComboBox *combo,
 				       sview_config_t *sview_config,
 				       int type)
@@ -503,8 +502,8 @@ static void _init_sview_conf()
 	if(getenv("SVIEW_GRID_SPEEDUP"))
 		default_sview_config.grid_speedup = 1;
 	for(i=0; i<PAGE_CNT; i++) {
-		memset(&default_sview_config.page_options[i],
-		       0, sizeof(page_options_t));
+		memset(&default_sview_config.page_opts[i],
+		       0, sizeof(page_opts_t));
 
 		if(!main_display_data[i].show)
 			default_sview_config.page_visible[i] = FALSE;
@@ -520,27 +519,27 @@ extern int load_defaults()
 		{"AdminMode", S_P_BOOLEAN},
 		{"DefaultPage", S_P_STRING},
 		{"ExcludedPartitions", S_P_STRING},	/* Vestigial */
+		{"FullInfoPopupWidth", S_P_UINT32},
+		{"FullInfoPopupHeight", S_P_UINT32},
 		{"GridHorizontal", S_P_UINT32},
 		{"GridSpeedUp", S_P_BOOLEAN},
 		{"GridTopo", S_P_BOOLEAN},
 		{"GridVertical", S_P_UINT32},
 		{"GridXWidth", S_P_UINT32},
+		{"MainHeight", S_P_UINT32},
+		{"MainWidth", S_P_UINT32},
+		{"PageOptsBlock", S_P_STRING},
+		{"PageOptsJob", S_P_STRING},
+		{"PageOptsNode", S_P_STRING},
+		{"PageOptsPartition", S_P_STRING},
+		{"PageOptsReservation", S_P_STRING},
 		{"RefreshDelay", S_P_UINT16},
 		{"RuledTables", S_P_BOOLEAN},
 		{"ShowGrid", S_P_BOOLEAN},
 		{"ShowHidden", S_P_BOOLEAN},
-		{"SaveTabsSettings", S_P_BOOLEAN},
+		{"SavePageSettings", S_P_BOOLEAN},
 		{"TabPosition", S_P_STRING},
 		{"VisiblePages", S_P_STRING},
-		{"MainWidth", S_P_UINT32},
-		{"MainHeight", S_P_UINT32},
-		{"FullInfoPopupWidth", S_P_UINT32},
-		{"FullInfoPopupHeight", S_P_UINT32},
-		{"pageoptsJob", S_P_STRING},
-		{"pageoptsPartition", S_P_STRING},
-		{"pageoptsReservation", S_P_STRING},
-		{"pageoptsBlock", S_P_STRING},
-		{"pageoptsNode", S_P_STRING},
 		{NULL}
 	};
 	char *pathname = NULL;
@@ -607,7 +606,7 @@ extern int load_defaults()
 	s_p_get_boolean(&default_sview_config.show_hidden,
 			"ShowHidden", hashtbl);
 	s_p_get_boolean(&default_sview_config.save_page_settings,
-			"SaveTabsSettings", hashtbl);
+			"SavePageSettings", hashtbl);
 	s_p_get_uint32(&default_sview_config.main_width,
 		       "MainWidth", hashtbl);
 	s_p_get_uint32(&default_sview_config.main_height,
@@ -656,19 +655,18 @@ extern int load_defaults()
 	for (i=0; i<PAGE_CNT; i++) {
 		char *col_list = NULL;
 		char *page_name = page_to_str(i);
-		page_options_t *page_options =
-			&default_sview_config.page_options[i];
+		page_opts_t *page_opts = &default_sview_config.page_opts[i];
+
 		if (!page_name)
 			continue;
-		memset(page_options, 0, sizeof(page_options_t));
-		tmp_str = xstrdup_printf("pageopts%s", page_name);
+		memset(page_opts, 0, sizeof(page_opts_t));
+		page_opts->page_name = page_name;
+		tmp_str = xstrdup_printf("PageOpts%s", page_name);
 		s_p_get_string(&col_list, tmp_str, hashtbl);
 		xfree(tmp_str);
 		if (col_list) {
-			page_options->page_name = page_name;
-			page_options->col_list = col_list;
-			page_options->def_col_list = xstrdup(col_list);
-			replus(page_options->col_list);
+			page_opts->col_list = col_list;
+			replus(page_opts->col_list);
 		}
 	}
 
@@ -676,9 +674,11 @@ extern int load_defaults()
 	s_p_hashtbl_destroy(hashtbl);
 
 end_it:
-	/* copy it all into the working struct */
-	memcpy(&working_sview_config,
-	       &default_sview_config, sizeof(sview_config_t));
+	/* copy it all into the working struct (memory will work out
+	 * in the end the col_list and def_col_list don't change) */
+	memcpy(&working_sview_config, &default_sview_config,
+	       sizeof(sview_config_t));
+
 	xfree(pathname);
 	return SLURM_SUCCESS;
 }
@@ -811,7 +811,7 @@ extern int save_defaults(bool final_save)
 	xfree(tmp_str);
 	if(rc != SLURM_SUCCESS)
 		goto end_it;
-	tmp_str = xstrdup_printf("SaveTabsSettings=%s\n",
+	tmp_str = xstrdup_printf("SavePageSettings=%s\n",
 				 default_sview_config.save_page_settings ?
 				 "YES" : "NO");
 	rc = _write_to_file(fd, tmp_str);
@@ -837,18 +837,16 @@ extern int save_defaults(bool final_save)
 
 	/* save all current page options */
 	for (i=0; i<PAGE_CNT; i++) {
-		page_options_t *page_options =
-			&working_sview_config.page_options[i];
-		if (!page_options->page_name)
+		page_opts_t *page_opts =
+			&working_sview_config.page_opts[i];
+
+		if (!page_opts->page_name)
 			continue;
 
-		tmp_str = xstrdup_printf("pageopts%s=",
-					 page_options->page_name);
 		if (working_sview_config.save_page_settings) {
-			tmp_str2 = xstrdup(",");
-			if (page_options->display_data) {
-				display_data = page_options->display_data;
-				for (j=0; j<page_options->count; j++) {
+			if (page_opts->display_data) {
+				display_data = page_opts->display_data;
+				for (j=0; j<page_opts->count; j++) {
 					if (display_data->id == -1)
 						break;
 					if (display_data->name
@@ -860,22 +858,24 @@ extern int save_defaults(bool final_save)
 				replspace(tmp_str2);
 			} //have a display struct ^^
 			//save new option set ^^
-		} else {
+		} else if (!page_opts->def_col_list && page_opts->col_list) {
 			//user requested no save of page options
-			tmp_str2 = xstrdup(page_options->def_col_list);
+			g_print("using default\n");
+			tmp_str2 = xstrdup(page_opts->col_list);
 		}
 
-		xfree(page_options->col_list);
-		xfree(page_options->def_col_list);
+		xfree(page_opts->col_list);
 
 		if (tmp_str2) {
-			xstrfmtcat(tmp_str, "%s\n", tmp_str2);
+			tmp_str = xstrdup_printf("PageOpts%s=%s\n",
+						 page_opts->page_name,
+						 tmp_str2);
 			xfree(tmp_str2);
 			rc = _write_to_file(fd, tmp_str);
+			xfree(tmp_str);
 			if (rc != SLURM_SUCCESS)
 				goto end_it;
 		}
-		xfree(tmp_str);
 	}//spin the pages
 
 end_it:
@@ -1118,6 +1118,7 @@ extern int configure_defaults()
 			       sizeof(sview_config_t));
 			memcpy(&working_sview_config, &tmp_config,
 			       sizeof(sview_config_t));
+
 			/* set the current display to the default */
 			gtk_toggle_action_set_active(
 				default_sview_config.action_admin,
@@ -1133,7 +1134,7 @@ extern int configure_defaults()
 				working_sview_config.show_hidden);
 			apply_hidden_change = TRUE;
 			gtk_toggle_action_set_active(
-				default_sview_config.action_stabssets,
+				default_sview_config.action_page_opts,
 				working_sview_config.save_page_settings);
 			sview_radio_action_set_current_value(
 				default_sview_config.action_tab,
@@ -1147,8 +1148,7 @@ extern int configure_defaults()
 				   || (i == TAB_PAGE))
 					continue;
 
-				toggle_tab_visiblity(NULL,
-						     main_display_data+i);
+				toggle_tab_visiblity(NULL, main_display_data+i);
 			}
 			get_system_stats(main_grid_table);
 			/******************************************/

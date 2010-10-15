@@ -625,7 +625,7 @@ static char *_get_ui_description()
 		"    <menu action='options'>"
 		"      <menuitem action='grid'/>"
 		"      <menuitem action='hidden'/>"
-		"      <menuitem action='stabssets'/>"
+		"      <menuitem action='page_opts'/>"
 #ifdef WANT_TOPO_ON_MAIN_OPTIONS
 		"      <menuitem action='topoorder'/>"
 #endif
@@ -780,7 +780,7 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 		{"hidden", GTK_STOCK_SELECT_COLOR, "Show _Hidden",
 		 "<control>h", "Display Hidden Partitions/Jobs",
 		 G_CALLBACK(_set_hidden), working_sview_config.show_hidden},
-		{"stabssets", GTK_STOCK_SELECT_COLOR, "Save Page _Settings",
+		{"page_opts", GTK_STOCK_SELECT_COLOR, "Save Page _Settings",
 		 "<control>w", "Save Page _Settings",
 		 G_CALLBACK(_set_stabbsets),
 		 working_sview_config.save_page_settings},
@@ -878,9 +878,9 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 	default_sview_config.action_hidden =
 		(GtkToggleAction *)gtk_action_group_get_action(
 			menu_action_group, "hidden");
-	default_sview_config.action_stabssets =
+	default_sview_config.action_page_opts =
 		(GtkToggleAction *)gtk_action_group_get_action(
-			menu_action_group, "stabssets");
+			menu_action_group, "page_opts");
 //	default_sview_config.action_gridtopo =
 //		(GtkToggleAction *)gtk_action_group_get_action(
 //			menu_action_group, "topoorder");

@@ -482,11 +482,20 @@ static void _cell_data_func(GtkTreeViewColumn *col,
 static void _add_col_to_treeview(GtkTreeView *tree_view,
 				 display_data_t *display_data, int color_column)
 {
-	GtkTreeViewColumn *col = gtk_tree_view_column_new();
-	GtkListStore *model = (display_data->create_model)(display_data->id);
+	GtkTreeViewColumn *col;
+	GtkListStore *model;
 	GtkCellRenderer *renderer = NULL;
 
-	if(model && display_data->extra != EDIT_NONE) {
+	/* Since some systems have different default columns (some
+	 * which aren't displayed on all types of clusters only add a
+	 * column if there is a name for it. */
+	if (!display_data->name && (display_data->extra != EDIT_COLOR))
+		return;
+
+	col = gtk_tree_view_column_new();
+	model = (display_data->create_model)(display_data->id);
+
+	if (model && display_data->extra != EDIT_NONE) {
 		renderer = gtk_cell_renderer_combo_new();
 		g_object_set(renderer,
 			     "model", model,
@@ -494,12 +503,12 @@ static void _add_col_to_treeview(GtkTreeView *tree_view,
 			     "has-entry", 1,
 			     "editable", TRUE,
 			     NULL);
-	} else if(display_data->extra == EDIT_TEXTBOX) {
+	} else if (display_data->extra == EDIT_TEXTBOX) {
 		renderer = gtk_cell_renderer_text_new();
 		g_object_set(renderer,
 			     "editable", TRUE,
 			     NULL);
-	} else if(display_data->extra == EDIT_COLOR) {
+	} else if (display_data->extra == EDIT_COLOR) {
 		GdkPixbuf *pixbuf = gdk_pixbuf_new(GDK_COLORSPACE_RGB, false,
 						   8, 10, 20);
 		renderer = gtk_cell_renderer_pixbuf_new();
@@ -513,7 +522,7 @@ static void _add_col_to_treeview(GtkTreeView *tree_view,
 	g_object_set_data(G_OBJECT(renderer), "column",
 			  GINT_TO_POINTER(display_data->id));
 
-	if(display_data->extra == EDIT_COLOR) {
+	if (display_data->extra == EDIT_COLOR) {
 		gtk_tree_view_column_set_cell_data_func(
 			col, renderer, _cell_data_func,
 			NULL, NULL);
@@ -535,13 +544,7 @@ static void _add_col_to_treeview(GtkTreeView *tree_view,
 		gtk_tree_view_column_set_title(col, display_data->name);
 	}
 
-	/*consult llnl
-	 * dpr added this "if" xtra line ..
-	 * without this, you get 2 extra columns
-	 * on the jobs tab ??
-	 * for what reason ?? */
-	if (display_data->name || (display_data->extra == EDIT_COLOR))
-		gtk_tree_view_append_column(tree_view, col);
+	gtk_tree_view_append_column(tree_view, col);
 }
 
 static void _toggle_state_changed(GtkCheckMenuItem *menuitem,
@@ -725,8 +728,7 @@ extern int build_nodes_bitmap(char *node_names, bitstr_t **bitmap)
 	while ( (this_node_name = hostlist_shift(host_list)) ) {
 		node_inx = _find_node_inx(this_node_name); //topo
 		if (node_inx != -1) {
-			bit_set(my_bitmap,
-				(bitoff_t) (node_inx));
+			bit_set(my_bitmap, (bitoff_t) (node_inx));
 		} else {
 			continue;
 		}
@@ -926,16 +928,19 @@ extern void make_fields_menu(popup_info_t *popup_win, GtkMenu *menu,
 extern void set_page_opts(int tab, display_data_t *display_data,
 			  int count, char* initial_opts)
 {
-	page_options_t *page_options;
+	page_opts_t *page_opts;
 	int j= 0;
 
 	xassert(tab < PAGE_CNT);
 
-	page_options = &working_sview_config.page_options[tab];
-	if (!page_options->col_list)
-		page_options->col_list = xstrdup(initial_opts);
-	page_options->display_data = display_data;
-	page_options->count = count;
+	page_opts = &working_sview_config.page_opts[tab];
+	if (!page_opts->col_list) {
+		page_opts->def_col_list = 1;
+		page_opts->col_list = xstrdup(initial_opts);
+	}
+
+	page_opts->display_data = display_data;
+	page_opts->count = count;
 	for (j=0; j<count; j++) {
 		if (display_data->id == -1)
 			break;
@@ -943,7 +948,7 @@ extern void set_page_opts(int tab, display_data_t *display_data,
 			display_data++;
 			continue;
 		}
-		if (strstr(page_options->col_list, display_data->name)) {
+		if (strstr(page_opts->col_list, display_data->name)) {
 			display_data->show = TRUE;
 		}
 		display_data++;
