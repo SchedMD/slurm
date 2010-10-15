@@ -630,7 +630,7 @@ extern int sacctmgr_remove_assoc_usage(slurmdb_association_cond_t *assoc_cond)
 
 	itr = list_iterator_create(assoc_cond->cluster_list);
 	itr2 = list_iterator_create(assoc_cond->acct_list);
-	if (!assoc_cond->user_list || !list_count(assoc_cond->user_list))
+	if (assoc_cond->user_list && list_count(assoc_cond->user_list))
 		itr3 = list_iterator_create(assoc_cond->user_list);
 	while((cluster = list_next(itr))) {
 		cluster_rec = sacctmgr_find_cluster_from_list(
@@ -645,8 +645,7 @@ extern int sacctmgr_remove_assoc_usage(slurmdb_association_cond_t *assoc_cond)
 		update_list = list_create(slurmdb_destroy_update_object);
 		update_obj = xmalloc(sizeof(slurmdb_update_object_t));
 		update_obj->type = SLURMDB_REMOVE_ASSOC_USAGE;
-		update_obj->objects =
-			list_create(slurmdb_destroy_association_rec);
+		update_obj->objects = list_create(NULL);
 
 		if (itr3) {
 			while ((user = list_next(itr3))) {
@@ -702,7 +701,7 @@ end_it:
 	list_iterator_destroy(itr);
 	list_iterator_destroy(itr2);
 	if (itr3)
-		list_iterator_reset(itr3);
+		list_iterator_destroy(itr3);
 
 	list_destroy(local_assoc_list);
 	list_destroy(local_cluster_list);
