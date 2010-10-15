@@ -174,8 +174,9 @@ enum {
  * take place.  If you choose EDIT_MODEL (means only display a set of
  * known options) create it in function create_model_*.
  */
-static char *_initial_page_opts = (",JobID,Partition,UserID,Name,"
-				   "State,Time Running,Node Count,NodeList,");
+static char *_initial_page_opts = ("JobID,Partition,BG_Block,"
+				   "ALPS_Resv_ID,UserID,Name,"
+				   "State,Time_Running,Node_Count,NodeList");
 
 static display_data_t display_data_job[] = {
 	{G_TYPE_INT, SORTID_POS, NULL, FALSE, EDIT_NONE, refresh_job,

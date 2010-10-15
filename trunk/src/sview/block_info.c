@@ -87,8 +87,8 @@ enum {
 
 /*these are the settings to apply for the user
  * on the first startup after a fresh slurm install.*/
-static char *_initial_page_opts = ",Block ID,State,JobID,User,Node Count,"
-	"Connection Type,BP List,Partition";
+static char *_initial_page_opts = "Block_ID,State,JobID,User,Node_Count,"
+	"Node_Use,BP_List,Partition";
 
 static display_data_t display_data_block[] = {
 	{G_TYPE_INT, SORTID_POS, NULL, FALSE, EDIT_NONE, refresh_block,
@@ -124,7 +124,7 @@ static display_data_t display_data_block[] = {
 	{G_TYPE_STRING, SORTID_IMAGERAMDISK, "Image Ramdisk",
 	 FALSE, EDIT_NONE, refresh_block, create_model_block, admin_edit_block},
 #else
-	{G_TYPE_STRING, SORTID_USE, NULL, TRUE, EDIT_NONE, refresh_block,
+	{G_TYPE_STRING, SORTID_USE, NULL, FALSE, EDIT_NONE, refresh_block,
 	 create_model_block, admin_edit_block},
 	{G_TYPE_STRING, SORTID_IMAGEBLRTS, NULL,
 	 FALSE, EDIT_NONE, refresh_block, create_model_block, admin_edit_block},
@@ -1463,7 +1463,6 @@ extern void cluster_change_block()
 			switch(display_data->id) {
 			case SORTID_USE:
 				display_data->name = "Node Use";
-				display_data->show = TRUE;
 				break;
 			case SORTID_IMAGEBLRTS:
 				display_data->name = "Image Blrt";
@@ -1481,11 +1480,9 @@ extern void cluster_change_block()
 			switch(display_data->id) {
 			case SORTID_USE:
 				display_data->name = NULL;
-				display_data->show = FALSE;
 				break;
 			case SORTID_IMAGEBLRTS:
 				display_data->name = NULL;
-				display_data->show = FALSE;
 				break;
 			case SORTID_IMAGELINUX:
 				display_data->name = "Image Cnload";
