@@ -51,8 +51,8 @@ with SLURM are provided below.
 
 <p>The current versions of SLURM and Open MPI support task launch using the
 <span class="commandline">srun</span> command.
-It relies upon SLURM version 2.0 (or higher) managing
-reservations of communication ports for the Open MPI's use.
+It relies upon SLURM version 2.0 (or higher) managing reservations of
+communication ports for use by the Open MPI version 1.5 (or higher).
 The system administrator must specify the range of ports to be reserved
 in the <i>slurm.conf</i> file using the <i>MpiParams</i> parameter.
 For example: <br>
@@ -76,15 +76,13 @@ ports.</p>
 <h2>Older releases</h2>
 <p>Older versions of Open MPI and SLURM rely upon SLURM to allocate resources
 for the job and then mpirun to initiate the tasks.
-When using SLURM's <span class="commandline">salloc</span> command,
-<span class="commandline">mpirun</span>'s -nolocal option is recommended.
 For example:
 <pre>
 $ salloc -n4 sh    # allocates 4 processors
                    # and spawns shell for job
-&gt; mpirun -np 4 -nolocal a.out
+&gt; mpirun a.out
 &gt; exit             # exits shell spawned by
-                   # initial srun command
+                   # initial salloc command
 </pre></p>
 
 <hr size=4 width="100%">
@@ -316,6 +314,6 @@ sbatch: Submitted batch job 1234
 tasks. These tasks are not managed by SLURM since they are launched
 outside of its control.</p>
 
-<p style="text-align:center;">Last modified 2 July 2010</p>
+<p style="text-align:center;">Last modified 15 October 2010</p>
 
 <!--#include virtual="footer.txt"-->
