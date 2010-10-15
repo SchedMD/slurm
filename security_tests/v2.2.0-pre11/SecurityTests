@@ -12,26 +12,31 @@ For computers running the slurmdbd daemon, run tests 1.x and 4.x only.
 For computers running the slurmctld or slurmd daemon, run tests 1.x, 2.x,
 and 3.x only.
 
-NOTE: If SLURM has no pdebug partition (e.g. it cannot run jobs without
-Moab), then you will need to enable normal user jobs to run in the pbatch
-partition and explicitly start them by setting their priority to a non-zero
-value. For example (as user root):
-# scontrol update PartitionName=pbatch RootOnly=NO    < ENABLE JOB SUBMIT WITHOUT MOAB
-<submit jobs as desired here>
-# scontrol update JobID=<slurm_job_id> Priority=1     < ENABLE JOB TO RUN
-# scontrol update PartitionName=pbatch RootOnly=YES   < FORCE JOB SUBMIT THROUGH MOAB
+NOTE: If a cluster has no pdebug partition, you will need to submit
+your test jobs to the pbatch partition.  Before the pbatch partition
+will accept jobs submitted through sbatch, you will need to modify the
+partition to accept non-root jobs and modify the job's priority to 1.
+For example (as user root):
+
+# scontrol update PartitionName=pbatch RootOnly=NO < ENABLE JOB SUBMIT
+WITHOUT MOAB <submit test job(s) here> # scontrol update
+JobID=<slurm_job_id> Priority=1 < ENABLE JOB(s) TO RUN # scontrol
+update PartitionName=pbatch RootOnly=YES < FORCE JOB SUBMIT THROUGH
+MOAB
 
 
-Test 1.1     Verify file permissions
-====================================
-Execute "security_1_1.py" and check for errors. If the installation
-directory is not "/usr" and the configuration directory not "/etc/slurm" then
-specify the appropriate locations using the "--prefix" and "--sysconfdir"
-options. Its last line will be "SUCCESS" if there were no errors and
-"FAILURE" otherwise. File which do not exist or their directories cannot
-be read are noted as "WARNING:". Some warnings are expected unless a complete
-SLURM installation (all RPMs) is performed and the test is executed as user
-root. The output near the top with a prefix of "NOTE:" describes these cases.
+Test 1.1     Verify file ownership and permissions
+==================================================
+
+Execute "security_1_1.py" as root on every node of the cluster and
+check for errors. If the installation directory is not "/usr" and the
+configuration directory not "/etc/slurm" then specify the appropriate
+locations using the "--prefix" and "--sysconfdir" options. Its last
+line will be "SUCCESS" if there were no errors and "FAILURE"
+otherwise. Files which do not exist or their directories cannot be
+read are noted as "WARNING:". Some warnings are expected if all RPM
+are not installed.  The output near the top with a prefix of "NOTE:"
+describes these cases.
 
 Example:
 $ ./security_1_1.py --prefix=/usr --sysconfdir=/etc/slurm
