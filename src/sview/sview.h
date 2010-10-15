@@ -175,8 +175,7 @@ typedef struct  {
 } switch_record_bitmaps_t;
 
 typedef struct {
-	char *col_list;
-	int count;
+	List col_list;
 	bool def_col_list;
 	display_data_t *display_data;
 	char *page_name;

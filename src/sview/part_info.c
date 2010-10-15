@@ -107,8 +107,8 @@ enum {
 
 /*these are the settings to apply for the user
  * on the first startup after a fresh slurm install.*/
-static char *_initial_page_opts = ",Partition,Default,Part State,"
-	"Time Limit,Node State,NodeList,";
+static char *_initial_page_opts = "Partition,Default,Part_State,"
+	"Time_Limit,Node_Count,Node_State,NodeList";
 
 static display_data_t display_data_part[] = {
 	{G_TYPE_INT, SORTID_POS, NULL, FALSE, EDIT_NONE, refresh_part},

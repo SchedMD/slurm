@@ -72,8 +72,8 @@ typedef struct {
 
 /*these are the settings to apply for the user
  * on the first startup after a fresh slurm install.*/
-static char *_initial_page_opts = ",Name,State,CPU Count,Used CPU Count,"
-	"Error CPU Count,Cores,Sockets,Threads,Real Memory,Tmp Disk,";
+static char *_initial_page_opts = "Name,State,CPU_Count,Used_CPU_Count,"
+	"Error_CPU_Count,Cores,Sockets,Threads,Real_Memory,Tmp_Disk";
 
 static display_data_t display_data_node[] = {
 	{G_TYPE_INT, SORTID_POS, NULL, FALSE, EDIT_NONE, refresh_node,

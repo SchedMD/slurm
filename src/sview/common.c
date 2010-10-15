@@ -837,14 +837,11 @@ extern int find_col(display_data_t *display_data, int type)
 
 extern const char *find_col_name(display_data_t *display_data, int type)
 {
-	int i = 0;
-
 	while (display_data++) {
 		if (display_data->id == -1)
 			break;
 		if (display_data->id == type)
 			return display_data->name;
-		i++;
 	}
 	return NULL;
 }
@@ -887,7 +884,7 @@ extern void make_fields_menu(popup_info_t *popup_win, GtkMenu *menu,
 			 NULL);
 
 	for(i=0; i<count; i++) {
-		while(display_data++) {
+		while (display_data++) {
 			if(display_data->id == -1)
 				break;
 			if(!display_data->name)
@@ -925,27 +922,36 @@ extern void set_page_opts(int page, display_data_t *display_data,
 			  int count, char* initial_opts)
 {
 	page_opts_t *page_opts;
-	int j= 0;
+	ListIterator itr = NULL;
+	char *col_name = NULL;
 
 	xassert(page < PAGE_CNT);
 
 	page_opts = &working_sview_config.page_opts[page];
 	if (!page_opts->col_list) {
 		page_opts->def_col_list = 1;
-		page_opts->col_list = xstrdup(initial_opts);
+		page_opts->col_list = list_create(slurm_destroy_char);
+		slurm_addto_char_list(page_opts->col_list, initial_opts);
 	}
 
 	page_opts->display_data = display_data;
-	page_opts->count = count;
-	for (j=0; j<count; j++) {
-		if (display_data->id == -1)
-			break;
-		if (display_data->name
-		    && strstr(page_opts->col_list, display_data->name))
-			display_data->show = TRUE;
 
-		display_data++;
+	itr = list_iterator_create(page_opts->col_list);
+	while ((col_name = list_next(itr))) {
+		replus(col_name);
+		while (display_data++) {
+			if (display_data->id == -1)
+				break;
+			if (!display_data->name)
+				continue;
+			if (!strcasecmp(col_name, display_data->name)) {
+				display_data->show = TRUE;
+				break;
+			}
+		}
+		display_data = page_opts->display_data;
 	}
+	list_iterator_destroy(itr);
 }
 
 

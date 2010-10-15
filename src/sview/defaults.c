@@ -234,7 +234,6 @@ static const char *_set_sview_config(sview_config_t *sview_config,
 			sview_config->show_hidden = 1;
 		else
 			sview_config->show_hidden = 0;
-		g_print("got hidden of %d\n", sview_config->show_hidden);
 		break;
 	case SORTID_SAVE_PAGE_OPTS:
 		type = "Save Page Settings";
@@ -656,7 +655,6 @@ extern int load_defaults()
 		char *col_list = NULL;
 		char *page_name = page_to_str(i);
 		page_opts_t *page_opts = &default_sview_config.page_opts[i];
-
 		if (!page_name)
 			continue;
 		memset(page_opts, 0, sizeof(page_opts_t));
@@ -665,8 +663,9 @@ extern int load_defaults()
 		s_p_get_string(&col_list, tmp_str, hashtbl);
 		xfree(tmp_str);
 		if (col_list) {
-			page_opts->col_list = col_list;
-			replus(page_opts->col_list);
+			page_opts->col_list = list_create(slurm_destroy_char);
+			slurm_addto_char_list(page_opts->col_list, col_list);
+			xfree(col_list);
 		}
 	}
 
@@ -675,7 +674,7 @@ extern int load_defaults()
 
 end_it:
 	/* copy it all into the working struct (memory will work out
-	 * in the end the col_list and def_col_list don't change) */
+	 * in the end the col_list doesn't change) */
 	memcpy(&working_sview_config, &default_sview_config,
 	       sizeof(sview_config_t));
 
@@ -691,7 +690,6 @@ extern int save_defaults(bool final_save)
 	char *tmp_str = NULL, *tmp_str2 = NULL;
 	int fd = 0;
 	int i = 0;
-	int j = 0;
 	display_data_t *display_data;
 
 	if(!home)
@@ -844,29 +842,37 @@ extern int save_defaults(bool final_save)
 			continue;
 
 		if (working_sview_config.save_page_opts) {
-			if (page_opts->display_data) {
-				display_data = page_opts->display_data;
-				for (j=0; j<page_opts->count; j++) {
-					if (display_data->id == -1)
-						break;
-					if (display_data->name
-					    && display_data->show)
-						xstrfmtcat(tmp_str2, ",%s",
-							   display_data->name);
-					display_data++;
-				} //spin the menu options ^^
-				replspace(tmp_str2);
-			} //have a display struct ^^
-			//save new option set ^^
-		} else if (!page_opts->def_col_list && page_opts->col_list) {
+			display_data = page_opts->display_data;
+			while (display_data++) {
+				if (display_data->id == -1)
+					break;
+				if (!display_data->name || !display_data->show)
+					continue;
+
+				if (tmp_str2)
+					xstrcat(tmp_str2, ",");
+				xstrfmtcat(tmp_str2, "%s", display_data->name);
+			} //spin the menu options ^^
+		} else if (!page_opts->def_col_list
+			   && page_opts->col_list
+			   && list_count(page_opts->col_list)) {
+			ListIterator itr =
+				list_iterator_create(page_opts->col_list);
+			char *col_name = NULL;
 			//user requested no save of page options
-			g_print("using default\n");
-			tmp_str2 = xstrdup(page_opts->col_list);
+			while ((col_name = list_next(itr))) {
+				if (tmp_str2)
+					xstrcat(tmp_str2, ",");
+				xstrfmtcat(tmp_str2, "%s", col_name);
+			}
+			list_iterator_destroy(itr);
 		}
 
-		xfree(page_opts->col_list);
+		list_destroy(page_opts->col_list);
+		page_opts->col_list = NULL;
 
 		if (tmp_str2) {
+			replspace(tmp_str2);
 			tmp_str = xstrdup_printf("PageOpts%s=%s\n",
 						 page_opts->page_name,
 						 tmp_str2);
