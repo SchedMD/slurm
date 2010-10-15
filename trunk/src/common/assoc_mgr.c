@@ -2972,16 +2972,14 @@ static void _reset_children_usages(List childern_list)
 
 extern void assoc_mgr_remove_assoc_usage(slurmdb_association_rec_t *assoc)
 {
+	char *child;
+	char *child_str;
 	long double old_usage_raw = 0.0;
 	double old_grp_used_wall = 0.0;
 	slurmdb_association_rec_t *sav_assoc = assoc;
 
 	xassert(assoc);
 	xassert(assoc->usage);
-	xassert(assoc->usage->parent_assoc_ptr);
-
-	char *child;
-	char *child_str;
 
 	if (assoc->user) {
 		child = "user";
