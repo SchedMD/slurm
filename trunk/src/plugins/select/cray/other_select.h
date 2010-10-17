@@ -315,12 +315,13 @@ extern int other_select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
 /* pack node-select plugin specific information into a buffer in
  *	machine independent form
  * IN last_update_time - time of latest information consumer has
+ * IN show_flags - flags to control information output
  * OUT buffer - location to hold the data, consumer must free
  * IN protocol_version - slurm protocol version of client
  * RET - slurm error code
  */
-extern int other_pack_select_info(time_t last_query_time, Buf *buffer,
-				  uint16_t protocol_version);
+extern int other_pack_select_info(time_t last_query_time, uint16_t show_flags,
+				  Buf *buffer, uint16_t protocol_version);
 
 /* Note reconfiguration or change in partition configuration */
 extern int other_reconfigure(void);

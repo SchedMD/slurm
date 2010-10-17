@@ -43,6 +43,7 @@
 #include <slurm/slurm.h>
 #include <slurm/slurm_errno.h>
 #include "src/common/list.h"
+#include "src/common/plugrack.h"
 #include "src/slurmctld/slurmctld.h"
 
 typedef struct {
@@ -59,6 +60,96 @@ typedef struct {
 	uint32_t min_nodes;         /* minimum count of nodes */
 	uint32_t req_nodes;         /* requested (or desired) count of nodes */
 } select_will_run_t;
+
+/*
+ * Local data
+ */
+typedef struct slurm_select_ops {
+	uint32_t	(*plugin_id);
+	int		(*state_save)		(char *dir_name);
+	int		(*state_restore)	(char *dir_name);
+	int		(*job_init)		(List job_list);
+	int		(*node_init)		(struct node_record *node_ptr,
+						 int node_cnt);
+	int		(*block_init)		(List block_list);
+	int		(*job_test)		(struct job_record *job_ptr,
+						 bitstr_t *bitmap,
+						 uint32_t min_nodes,
+						 uint32_t max_nodes,
+						 uint32_t req_nodes,
+						 uint16_t mode,
+						 List preeemptee_candidates,
+						 List *preemptee_job_list);
+	int		(*job_begin)		(struct job_record *job_ptr);
+	int		(*job_ready)		(struct job_record *job_ptr);
+	int		(*job_resized)		(struct job_record *job_ptr,
+						 struct node_record *node_ptr);
+	int		(*job_fini)		(struct job_record *job_ptr);
+	int		(*job_suspend)		(struct job_record *job_ptr);
+	int		(*job_resume)		(struct job_record *job_ptr);
+	int		(*pack_select_info)	(time_t last_query_time,
+						 uint16_t show_flags,
+						 Buf *buffer_ptr,
+						 uint16_t protocol_version);
+	int		(*nodeinfo_pack)	(select_nodeinfo_t *nodeinfo,
+						 Buf buffer,
+						 uint16_t protocol_version);
+	int		(*nodeinfo_unpack)	(select_nodeinfo_t **nodeinfo,
+						 Buf buffer,
+						 uint16_t protocol_version);
+	select_nodeinfo_t *(*nodeinfo_alloc)	(uint32_t size);
+	int		(*nodeinfo_free)	(select_nodeinfo_t *nodeinfo);
+	int		(*nodeinfo_set_all)	(time_t last_query_time);
+	int		(*nodeinfo_set)		(struct job_record *job_ptr);
+	int		(*nodeinfo_get)		(select_nodeinfo_t *nodeinfo,
+						 enum
+						 select_nodedata_type dinfo,
+						 enum node_states state,
+						 void *data);
+	select_jobinfo_t *(*jobinfo_alloc)	();
+	int		(*jobinfo_free)		(select_jobinfo_t *jobinfo);
+	int		(*jobinfo_set)		(select_jobinfo_t *jobinfo,
+						 enum
+						 select_jobdata_type data_type,
+						 void *data);
+	int		(*jobinfo_get)		(select_jobinfo_t *jobinfo,
+						 enum
+						 select_jobdata_type data_type,
+						 void *data);
+	select_jobinfo_t *(*jobinfo_copy)	(select_jobinfo_t *jobinfo);
+	int		(*jobinfo_pack)		(select_jobinfo_t *jobinfo,
+						 Buf buffer,
+						 uint16_t protocol_version);
+	int		(*jobinfo_unpack)	(select_jobinfo_t **jobinfo_pptr,
+						 Buf buffer,
+						 uint16_t protocol_version);
+	char *		(*jobinfo_sprint)	(select_jobinfo_t *jobinfo,
+						 char *buf, size_t size,
+						 int mode);
+	char *		(*jobinfo_xstrdup)	(select_jobinfo_t *jobinfo,
+						 int mode);
+	int		(*update_block)		(update_block_msg_t
+						 *block_desc_ptr);
+	int		(*update_sub_node)	(update_block_msg_t
+						 *block_desc_ptr);
+	int		(*get_info_from_plugin)	(enum
+						 select_plugindata_info dinfo,
+						 struct job_record *job_ptr,
+						 void *data);
+	int		(*update_node_config)	(int index);
+	int		(*update_node_state)	(int index, uint16_t state);
+	int		(*alter_node_cnt)	(enum select_node_cnt type,
+						 void *data);
+	int		(*reconfigure)		(void);
+} slurm_select_ops_t;
+
+typedef struct slurm_select_context {
+	char		*select_type;
+	plugrack_t	plugin_list;
+	plugin_handle_t	cur_plugin;
+	int		select_errno;
+	slurm_select_ops_t ops;
+} slurm_select_context_t;
 
 /*******************************************\
  * GLOBAL SELECT STATE MANAGEMENT FUNCIONS *

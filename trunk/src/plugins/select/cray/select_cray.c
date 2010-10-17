@@ -262,10 +262,11 @@ extern int select_p_job_resume(struct job_record *job_ptr)
 	return other_job_resume(job_ptr);
 }
 
-extern int select_p_pack_select_info(time_t last_query_time, Buf *buffer_ptr,
+extern int select_p_pack_select_info(time_t last_query_time,
+				     uint16_t show_flags, Buf *buffer_ptr,
 				     uint16_t protocol_version)
 {
-	return other_pack_select_info(last_query_time, buffer_ptr,
+	return other_pack_select_info(last_query_time, show_flags, buffer_ptr,
 				      protocol_version);
 }
 

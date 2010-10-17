@@ -59,114 +59,22 @@
 #include "src/common/xstring.h"
 #include "src/common/node_select.h"
 
-/*
- * Local data
- */
-
-typedef struct other_select_ops {
-	int		(*state_save)	       (char *dir_name);
-	int		(*state_restore)       (char *dir_name);
-	int		(*job_init)	       (List job_list);
-	int		(*node_init)	       (struct node_record *node_ptr,
-					        int node_cnt);
-	int		(*block_init)	       (List block_list);
-	int		(*job_test)	       (struct job_record *job_ptr,
-						bitstr_t *bitmap,
-						uint32_t min_nodes,
-						uint32_t max_nodes,
-						uint32_t req_nodes,
-						uint16_t mode,
-						List preeemptee_candidates,
-						List *preemptee_job_list);
-	int		(*job_begin)	       (struct job_record *job_ptr);
-	int		(*job_ready)	       (struct job_record *job_ptr);
-	int		(*job_resized)	       (struct job_record *job_ptr,
-						struct node_record *node_ptr);
-	int		(*job_fini)	       (struct job_record *job_ptr);
-	int		(*job_suspend)	       (struct job_record *job_ptr);
-	int		(*job_resume)	       (struct job_record *job_ptr);
-	int		(*pack_select_info)    (time_t last_query_time,
-						Buf *buffer_ptr,
-						uint16_t protocol_version);
-	int		(*nodeinfo_pack)       (select_nodeinfo_t *nodeinfo,
-						Buf buffer,
-						uint16_t protocol_version);
-	int		(*nodeinfo_unpack)     (select_nodeinfo_t **nodeinfo,
-						Buf buffer,
-						uint16_t protocol_version);
-	select_nodeinfo_t *(*nodeinfo_alloc)   (uint32_t size);
-	int	        (*nodeinfo_free)       (select_nodeinfo_t *nodeinfo);
-	int             (*nodeinfo_set_all)    (time_t last_query_time);
-	int             (*nodeinfo_set)        (struct job_record *job_ptr);
-	int             (*nodeinfo_get)        (select_nodeinfo_t *nodeinfo,
-						enum
-						select_nodedata_type dinfo,
-						enum node_states state,
-						void *data);
-	select_jobinfo_t *(*jobinfo_alloc)     ();
-	int             (*jobinfo_free)        (select_jobinfo_t *jobinfo);
-	int             (*jobinfo_set)         (select_jobinfo_t *jobinfo,
-						enum
-						select_jobdata_type data_type,
-						void *data);
-	int             (*jobinfo_get)         (select_jobinfo_t *jobinfo,
-						enum
-						select_jobdata_type data_type,
-						void *data);
-	select_jobinfo_t *(*jobinfo_copy)        (select_jobinfo_t *jobinfo);
-	int             (*jobinfo_pack)        (select_jobinfo_t *jobinfo,
-						Buf buffer,
-						uint16_t protocol_version);
-	int             (*jobinfo_unpack)      (select_jobinfo_t **jobinfo_pptr,
-						Buf buffer,
-						uint16_t protocol_version);
-	char *          (*jobinfo_sprint)      (select_jobinfo_t *jobinfo,
-						char *buf, size_t size,
-						int mode);
-	char *          (*jobinfo_xstrdup)     (select_jobinfo_t *jobinfo,
-						int mode);
-	int             (*update_block)        (update_block_msg_t
-						*block_desc_ptr);
-	int             (*update_sub_node)     (update_block_msg_t
-						*block_desc_ptr);
-	int             (*get_info_from_plugin)(enum
-						select_plugindata_info dinfo,
-						struct job_record *job_ptr,
-						void *data);
-	int		(*update_node_config)  (int index);
-	int             (*update_node_state)   (int index, uint16_t state);
-	int             (*alter_node_cnt)      (enum select_node_cnt type,
-						void *data);
-	int		(*reconfigure)         (void);
-} other_select_ops_t;
-
-typedef struct other_select_context {
-	char		*select_type;
-	plugrack_t	plugin_list;
-	plugin_handle_t	cur_plugin;
-	int		select_errno;
-	other_select_ops_t ops;
-} other_select_context_t;
-
 /* If there is a new select plugin, list it here */
-static other_select_context_t *other_select_context = NULL;
+static slurm_select_context_t *other_select_context = NULL;
 static pthread_mutex_t		other_select_context_lock =
 	PTHREAD_MUTEX_INITIALIZER;
 
 /*
- * Local functions
- */
-static int _other_select_context_destroy(other_select_context_t *c);
-
-/*
  * Locate and load the appropriate plugin
  */
-static other_select_ops_t *_other_select_get_ops(other_select_context_t *c)
+static slurm_select_ops_t *_other_select_get_ops(slurm_select_context_t *c)
 {
 	/*
-	 * Must be synchronized with other_select_ops_t above.
+	 * Must be synchronized with slurm_select_ops_t in node_select.h and
+	 * the list in node_select.c:_select_get_ops().
 	 */
 	static const char *syms[] = {
+		"plugin_id",
 		"select_p_state_save",
 		"select_p_state_restore",
 		"select_p_job_init",
@@ -262,7 +170,7 @@ static other_select_ops_t *_other_select_get_ops(other_select_context_t *c)
 /*
  * Destroy a node selection context
  */
-static int _other_select_context_destroy(other_select_context_t *c)
+static int _other_select_context_destroy(slurm_select_context_t *c)
 {
 	int rc = SLURM_SUCCESS;
 	/*
@@ -310,7 +218,7 @@ extern int other_select_init(void)
 	 */
 	select_type = "select/linear";
 
-	other_select_context = xmalloc(sizeof(other_select_context_t));
+	other_select_context = xmalloc(sizeof(slurm_select_context_t));
 	other_select_context->select_type = xstrdup(select_type);
 	other_select_context->cur_plugin = PLUGIN_INVALID_HANDLE;
 	other_select_context->select_errno = SLURM_SUCCESS;
@@ -526,14 +434,14 @@ extern int other_job_resume(struct job_record *job_ptr)
 		(job_ptr);
 }
 
-extern int other_pack_select_info(time_t last_query_time, Buf *buffer,
-				     uint16_t protocol_version)
+extern int other_pack_select_info(time_t last_query_time, uint16_t show_flags,
+				  Buf *buffer, uint16_t protocol_version)
 {
 	if (other_select_init() < 0)
 		return SLURM_ERROR;
 
 	return (*(other_select_context->ops.pack_select_info))
-		(last_query_time, buffer, protocol_version);
+		(last_query_time, show_flags, buffer, protocol_version);
 }
 
 extern int other_select_nodeinfo_pack(select_nodeinfo_t *nodeinfo,
