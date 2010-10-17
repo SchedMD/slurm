@@ -6401,7 +6401,7 @@ _pack_block_info_req_msg(block_info_request_msg_t *msg, Buf buffer,
 {
 	if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
 		pack_time(msg->last_update, buffer);
-		safe_unpack16(&job_info->show_flags, buffer);
+		pack16(msg->show_flags, buffer);
 	} else {
 		pack_time(msg->last_update, buffer);
 	}
@@ -6419,7 +6419,7 @@ _unpack_block_info_req_msg(block_info_request_msg_t **msg,
 
 	if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
 		safe_unpack_time(&node_sel_info->last_update, buffer);
-		safe_unpack16(&node_sel_info->how_flags, buffer);
+		safe_unpack16(&node_sel_info->show_flags, buffer);
 	} else {
 		safe_unpack_time(&node_sel_info->last_update, buffer);
 	}

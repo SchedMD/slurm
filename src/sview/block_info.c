@@ -711,7 +711,7 @@ extern int get_new_info_block(block_info_msg_t **block_ptr, int force)
 	time_t now = time(NULL);
 	static time_t last;
 	static bool changed = 0;
-	uint16_t show_flags;
+	uint16_t show_flags = 0;
 
 	if(!(cluster_flags & CLUSTER_FLAG_BG))
 		return error_code;
