@@ -510,7 +510,7 @@ extern int other_select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
 		(nodeinfo, dinfo, state, data);
 }
 
-extern select_jobinfo_t *other_select_jobinfo_alloc()
+extern select_jobinfo_t *other_select_jobinfo_alloc(void)
 {
 	if (other_select_init() < 0)
 		return NULL;

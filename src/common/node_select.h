@@ -106,7 +106,7 @@ typedef struct slurm_select_ops {
 						 select_nodedata_type dinfo,
 						 enum node_states state,
 						 void *data);
-	select_jobinfo_t *(*jobinfo_alloc)	();
+	select_jobinfo_t *(*jobinfo_alloc)	(void);
 	int		(*jobinfo_free)		(select_jobinfo_t *jobinfo);
 	int		(*jobinfo_set)		(select_jobinfo_t *jobinfo,
 						 enum
