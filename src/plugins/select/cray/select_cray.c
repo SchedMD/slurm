@@ -92,9 +92,6 @@ struct select_nodeinfo {
 	select_nodeinfo_t *other_nodeinfo;
 };
 
-extern int select_p_select_jobinfo_free(select_jobinfo_t *jobinfo);
-extern int select_p_select_nodeinfo_free(select_nodeinfo_t *nodeinfo);
-
 /*
  * These variables are required by the generic plugin interface.  If they
  * are not found in the plugin, the plugin loader will ignore it.
@@ -270,6 +267,25 @@ extern int select_p_pack_select_info(time_t last_query_time,
 				      protocol_version);
 }
 
+extern select_nodeinfo_t *select_p_select_nodeinfo_alloc(uint32_t size)
+{
+	select_nodeinfo_t *nodeinfo = xmalloc(sizeof(struct select_nodeinfo));
+
+	nodeinfo->magic = NODEINFO_MAGIC;
+	nodeinfo->other_nodeinfo = other_select_nodeinfo_alloc(size);
+
+	return nodeinfo;
+}
+
+extern int select_p_select_nodeinfo_free(select_nodeinfo_t *nodeinfo)
+{
+	if (nodeinfo) {
+		other_select_nodeinfo_free(nodeinfo->other_nodeinfo);
+		xfree(nodeinfo);
+	}
+	return SLURM_SUCCESS;
+}
+
 extern int select_p_select_nodeinfo_pack(select_nodeinfo_t *nodeinfo,
 					 Buf buffer, uint16_t protocol_version)
 {
@@ -306,25 +322,6 @@ unpack_error:
 	*nodeinfo_pptr = NULL;
 
 	return SLURM_ERROR;
-}
-
-extern select_nodeinfo_t *select_p_select_nodeinfo_alloc(uint32_t size)
-{
-	select_nodeinfo_t *nodeinfo = xmalloc(sizeof(struct select_nodeinfo));
-
-	nodeinfo->magic = NODEINFO_MAGIC;
-	nodeinfo->other_nodeinfo = other_select_nodeinfo_alloc(size);
-
-	return nodeinfo;
-}
-
-extern int select_p_select_nodeinfo_free(select_nodeinfo_t *nodeinfo)
-{
-	if (nodeinfo) {
-		other_select_nodeinfo_free(nodeinfo->other_nodeinfo);
-		xfree(nodeinfo);
-	}
-	return SLURM_SUCCESS;
 }
 
 extern int select_p_select_nodeinfo_set_all(time_t last_query_time)
