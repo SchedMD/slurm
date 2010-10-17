@@ -367,7 +367,7 @@ extern int select_p_select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
 	return rc;
 }
 
-extern select_jobinfo_t *select_p_select_jobinfo_alloc()
+extern select_jobinfo_t *select_p_select_jobinfo_alloc(void)
 {
 	select_jobinfo_t *jobinfo = xmalloc(sizeof(struct select_jobinfo));
 	jobinfo->magic = JOBINFO_MAGIC;

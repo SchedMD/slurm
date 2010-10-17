@@ -739,7 +739,7 @@ extern int select_g_select_nodeinfo_get(dynamic_plugin_data_t *nodeinfo,
 		(nodedata, dinfo, state, data);
 }
 
-extern dynamic_plugin_data_t *select_g_select_jobinfo_alloc()
+extern dynamic_plugin_data_t *select_g_select_jobinfo_alloc(void)
 {
 	dynamic_plugin_data_t *jobinfo_ptr = NULL;
 	uint32_t plugin_id;

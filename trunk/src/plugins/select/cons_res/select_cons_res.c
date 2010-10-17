@@ -2077,7 +2077,7 @@ extern int select_p_select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
 	return rc;
 }
 
-extern int select_p_select_jobinfo_alloc (select_jobinfo_t *jobinfo)
+extern int select_p_select_jobinfo_alloc(void)
 {
 	return SLURM_SUCCESS;
 }

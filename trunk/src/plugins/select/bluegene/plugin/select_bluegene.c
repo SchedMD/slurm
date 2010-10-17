@@ -693,7 +693,7 @@ extern int select_p_select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
 	return select_nodeinfo_get(nodeinfo, dinfo, state, data);
 }
 
-select_jobinfo_t *select_p_select_jobinfo_alloc()
+select_jobinfo_t *select_p_select_jobinfo_alloc(void)
 {
 	return alloc_select_jobinfo();
 }
