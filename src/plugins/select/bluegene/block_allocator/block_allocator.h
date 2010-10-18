@@ -225,6 +225,8 @@ typedef struct {
 	int coord[HIGHEST_DIMENSIONS];
 	/* color of letter used in smap */
 	int color;
+	/* midplane index used for easy look up of the miplane */
+	int index;
 	/* letter used in smap */
 	char letter;
 //	int phys_x;	// no longer needed
