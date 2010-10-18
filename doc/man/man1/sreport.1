@@ -1,4 +1,4 @@
-.TH SREPORT "1" "February 2009" "sreport 2.0" "Slurm components"
+.TH SREPORT "1" "October 2010" "sreport 2.0" "Slurm components"
 
 .SH "NAME"
 sreport \- Generate reports from the slurm accounting data.
@@ -7,9 +7,9 @@ sreport \- Generate reports from the slurm accounting data.
 \fBsreport\fR [\fIOPTIONS\fR...] [\fICOMMAND\fR...]
 
 .SH "DESCRIPTION"
-\fBsreport\fR is used to generate certain reports. It provides a view into accounting data gathered from slurm via
-the account information maintained within a database with the interface
-being provided by the \fBslurmdbd\fR (Slurm Database daemon).
+\fBsreport\fR is used to generate reports of job usage and cluster
+utilization for SLURM jobs saved to the SLURM Database,
+\fBslurmdbd\fR.
 
 .SH "OPTIONS"
 
@@ -33,9 +33,8 @@ Output will be '|' delimited without a '|' at the end.
 Print no warning or informational messages, only error messages.
 .TP
 \fB\-t <format>\fR
-Specify the output time format.
-Time format options are case insensitive and may be abbreviated.
-The default format is Minutes.
+Specify the output time format. Time format options are case
+insensitive and may be abbreviated. The default format is Minutes.
 Supported time format options are listed in the \fBtime\fP command
 section below.
 .TP
@@ -84,10 +83,10 @@ Identical to the \fBexit\fR command.
 
 .TP
 \fBtime <time_format>\fP
-Specify the output time format.
-Time format options are case insensitive and may be abbreviated.
-The default format is Minutes.
+Specify the output time format. Time format options are case
+insensitive and may be abbreviated. The default format is Minutes.
 Supported time format options include:
+
 .RS
 .TP 10
 \fBSecPer\fR
@@ -132,25 +131,25 @@ Valid report types are:
 \fBjob\fP \<REPORT\> \<OPTIONS\>
 
 \fBuser\fP \<REPORT\> \<OPTIONS\>
-.RE
 
 .TP
 \<REPORT\> options for each type include:
-\fBcluster\fP	  \- AccountUtilizationByUser, UserUtilizationByAccount,
+
+.B cluster
+\- AccountUtilizationByUser, UserUtilizationByAccount,
 UserUtilizationByWckey, Utilization, WCKeyUtilizationByUser
 
-\fBjob\fP	  \- SizesByAccount, SizesByWckey
+.B job
+\- SizesByAccount, SizesByWckey
 
-\fBreservation\fP \- Utilization
+.B reservation
+\- Utilization
 
-\fBuser\fP	\- TopUsage
+.B user
+\- TopUsage
 
-.TP
+.SH "REPORT DESCRIPTION"
 
-
-.TP
-REPORT DESCRIPTION
-.RS
 .TP
 .B cluster AccountUtilizationByUser
 This report will display account utilization as it appears on the
@@ -208,21 +207,27 @@ Each report type has various options...
 
 .TP
 COMMON FOR ALL TYPES
-.RS
+
 .TP
 .B All_Clusters
 Use all monitored clusters. Default is local cluster.
 .TP
 .B Clusters=<OPT>
 List of clusters to include in report.  Default is local cluster.
+
 .TP
 .B End=<OPT>
 Period ending for report. Default is 23:59:59 of previous day.
 Valid time formats are...
+.sp
 HH:MM[:SS] [AM|PM]
+.sp
 MMDD[YY] or MM/DD[/YY] or MM.DD[.YY]
+.sp
 MM/DD[/YY]\-HH:MM[:SS]
+.sp
 YYYY\-MM\-DD[THH:MM[:SS]]
+
 .TP
 .B Format=<OPT>
 Comma separated list of fields to display in report.
@@ -237,15 +242,18 @@ justified.  A \-30 will print 30 characters left justified.
 .B Start=<OPT>
 Period start for report.  Default is 00:00:00 of previous day.
 Valid time formats are...
+.sp
 HH:MM[:SS] [AM|PM]
+.sp
 MMDD[YY] or MM/DD[/YY] or MM.DD[.YY]
+.sp
 MM/DD[/YY]\-HH:MM[:SS]
+.sp
 YYYY\-MM\-DD[THH:MM[:SS]]
-.RE
 
 .TP
 CLUSTER
-.RS
+
 .TP
 .B Accounts=<OPT>
 When used with the UserUtilizationByAccount, or
@@ -263,11 +271,10 @@ include in report.  Default is all.
 .B Wckeys=<OPT>
 When used with the UserUtilizationByWckey or WCKeyUtilizationByUser,
 List of wckeys to include in report. Default is all.
-.RE
 
 .TP
 JOB
-.RS
+
 .TP
 .B Accounts=<OPT>
 List of accounts to use for the report Default is all.  The SizesByAccount
@@ -310,7 +317,6 @@ List of users jobs to include in report.  Default is all.
 List of wckeys to use for the report.  Default is all.  The
 SizesbyWckey report all users summed together.  If you want only
 certain users specify them them with the Users= option.
-.RE
 
 .TP
 RESERVATION
@@ -320,11 +326,11 @@ List of reservations to use for the report. Default is all.
 .TP
 .B Nodes=<OPT>
 Only show reservations that used these nodes. Default is all.
-.RE
+
 
 .TP
 USER
-.RS
+
 .TP
 .B Accounts=<OPT>
 List of accounts to use for the report. Default is all.
@@ -339,42 +345,59 @@ Default is 10.
 .TP
 .B Users=<OPT>
 List of users jobs to include in report.  Default is all.
-.RE
-
-.TP
 
 .SH "Format Options for Each Report"
 
 \fBCluster\fP
-       AccountUtilizationByUser
-       UserUtilizationByAccount
-             \- Accounts, Cluster, CPUCount, Login, Proper, Used
-       UserUtilizationByWckey
-       WCKeyUtilizationByUser
-             \- Cluster, CPUCount, Login, Proper, Used, Wckey
-       Utilization
-             \- Allocated, Cluster, CPUCount, Down, Idle, Overcommited,
-               PlannedDown, Reported, Reserved
+.in 10
+AccountUtilizationByUser:
+.br
+UserUtilizationByAccount:
+.in 14
+Accounts, Cluster, CPUCount, Login, Proper, Used
 
+.in 10
+UserUtilizationByWckey:
+.br
+WCKeyUtilizationByUser:
+.in 14
+Cluster, CPUCount, Login, Proper, Used, Wckey
+
+.in 10
+Utilization:
+.in 14
+Allocated, Cluster, CPUCount, Down, Idle, Overcommited, PlannedDown, Reported, Reserved
+
+.TP
 \fBJob\fP
-       SizesByAccount
-             \- Account, Cluster
-       SizesByWckey
-             \- Wckey, Cluster
+.in 10
+SizesByAccount:
+.in 14
+Account, Cluster
 
+.in 10
+SizesByWckey:
+.in 14
+Wckey, Cluster
+
+.TP
 \fBReservation\fP
-       Utilization
-             \- Allocated, Associations, Cluster, CPUCount, CPUTime,
-                End, Idle, Name, Nodes, Start, TotalTime
+.in 10
+Utilization:
+.in 14
+Allocated, Associations, Cluster, CPUCount, CPUTime, End, Idle, Name, Nodes, Start, TotalTime
 
+.TP
 \fBUser\fP
-       TopUsage
-             \- Account, Cluster, Login, Proper, Used
+.in 10
+TopUsage:
+.in 14
+Account, Cluster, Login, Proper, Used
 
 .TP
 All commands and options are case-insensitive.
-.TP
 
+.in 0
 .SH "EXAMPLES"
 .TP
 \fBsreport job sizesbyaccount\fP
