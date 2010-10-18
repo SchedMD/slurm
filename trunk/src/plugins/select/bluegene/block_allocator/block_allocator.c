@@ -214,15 +214,6 @@ static int _set_one_dim(int *start, int *end, int *coord);
 /* */
 static void _destroy_geo(void *object);
 
-static int _coord(char coord)
-{
-	if ((coord >= '0') && (coord <= '9'))
-		return (coord - '0');
-	if ((coord >= 'A') && (coord <= 'Z'))
-		return (coord - 'A');
-	return -1;
-}
-
 extern char *ba_passthroughs_string(uint16_t passthrough)
 {
 	char *pass = NULL;
@@ -935,7 +926,7 @@ extern void ba_init(node_info_msg_t *node_info_ptr, bool sanity_check)
 	if(cluster_dims == 1) {
 		if(node_info_ptr) {
 			REAL_DIM_SIZE[X] = DIM_SIZE[X] =
-				node_info_ptr->record_count + 1;
+				node_info_ptr->record_count;
 			ba_system_ptr->num_of_proc =
 				node_info_ptr->record_count;
 			REAL_DIM_SIZE[Y] = DIM_SIZE[Y] = 1;
@@ -1903,57 +1894,71 @@ extern int set_all_bps_except(char *bps)
  */
 extern void init_grid(node_info_msg_t * node_info_ptr)
 {
-	int i, j, x, y, z;
-	node_info_t *node_ptr = NULL;
-	char *host;
+	int i = 0, x, y, z;
+//	char *host;
 
-	for (i = 0, x = 0; x < DIM_SIZE[X]; x++) {
+	for (x = 0; x < DIM_SIZE[X]; x++) {
 		for (y = 0; y < DIM_SIZE[Y]; y++) {
 			for (z = 0; z < DIM_SIZE[Z]; z++) {
-				if (node_info_ptr == NULL) {
-					ba_system_ptr->grid[x][y][z].color = 7;
-					ba_system_ptr->grid[x][y][z].letter =
-						'.';
-					ba_system_ptr->grid[x][y][z].state =
-						NODE_STATE_IDLE;
+				ba_node_t *ba_node =
+					&ba_system_ptr->grid[x][y][z];
+				if (!node_info_ptr) {
+					ba_node->color = 7;
+					ba_node->letter = '.';
+					ba_node->state = NODE_STATE_IDLE;
 				} else {
-					ba_system_ptr->grid[x][y][z].color = 0;
-					ba_system_ptr->grid[x][y][z].letter =
-						'#';
+					node_info_t *node_ptr =
+						&node_info_ptr->node_array[i];
+					ba_node->color = 7;
+					if (IS_NODE_DOWN(node_ptr)
+					    || IS_NODE_DRAIN(node_ptr)) {
+						ba_node->color = 0;
+						ba_node->letter = '#';
+						if (_initialized) {
+							ba_update_node_state(
+								ba_node,
+								node_ptr->
+								node_state);
+						}
+					} else {
+						ba_node->color = 7;
+						ba_node->letter = '.';
+					}
+					ba_node->state = node_ptr->node_state;
 				}
-				ba_system_ptr->grid[x][y][z].index = i++;
+				ba_node->index = i++;
 			}
 		}
 	}
-	if (node_info_ptr == NULL)
-		return;
+	/* if (node_info_ptr == NULL) */
+	/* 	return; */
 
-	for (j = 0; j < node_info_ptr->record_count; j++) {
-		node_ptr = &node_info_ptr->node_array[j];
-		host = node_ptr->name;
-		if ((host == NULL) || ((i = strlen(host)) < 3))
-			continue;
-		x = _coord(host[i-3]);
-		y = _coord(host[i-2]);
-		z = _coord(host[i-1]);
-		if ((x < 0) || (y < 0) || (z < 0))
-			continue;
-		ba_system_ptr->grid[x][y][z].color = 7;
-		if (IS_NODE_DOWN(node_ptr) || IS_NODE_DRAIN(node_ptr)) {
-			/* default values set above */
-			/* ba_system_ptr->grid[x][y][z].color = 0; */
-			/* ba_system_ptr->grid[x][y][z].letter = '#'; */
-			if (_initialized) {
-				ba_update_node_state(&ba_system_ptr->
-						     grid[x][y][z],
-						     node_ptr->node_state);
-			}
-		} else {
-			ba_system_ptr->grid[x][y][z].color = 7;
-			ba_system_ptr->grid[x][y][z].letter = '.';
-		}
-		ba_system_ptr->grid[x][y][z].state = node_ptr->node_state;
-	}
+	/* for (j = 0; j < node_info_ptr->record_count; j++) { */
+	/* 	node_ptr = &node_info_ptr->node_array[j]; */
+	/* 	host = node_ptr->name; */
+	/* 	if ((host == NULL) || ((i = strlen(host)) < 3)) */
+	/* 		continue; */
+	/* 	x = _coord(host[i-3]); */
+	/* 	y = _coord(host[i-2]); */
+	/* 	z = _coord(host[i-1]); */
+	/* 	if ((x < 0) || (y < 0) || (z < 0)) */
+	/* 		continue; */
+	/* 	ba_system_ptr->grid[x][y][z].color = 7; */
+	/* 	if (IS_NODE_DOWN(node_ptr) || IS_NODE_DRAIN(node_ptr)) { */
+	/* 		/\* default values set above *\/ */
+	/* 		/\* ba_system_ptr->grid[x][y][z].color = 0; *\/ */
+	/* 		/\* ba_system_ptr->grid[x][y][z].letter = '#'; *\/ */
+	/* 		if (_initialized) { */
+	/* 			ba_update_node_state(&ba_system_ptr-> */
+	/* 					     grid[x][y][z], */
+	/* 					     node_ptr->node_state); */
+	/* 		} */
+	/* 	} else { */
+	/* 		ba_system_ptr->grid[x][y][z].color = 7; */
+	/* 		ba_system_ptr->grid[x][y][z].letter = '.'; */
+	/* 	} */
+	/* 	ba_system_ptr->grid[x][y][z].state = node_ptr->node_state; */
+	/* } */
 }
 
 /*
