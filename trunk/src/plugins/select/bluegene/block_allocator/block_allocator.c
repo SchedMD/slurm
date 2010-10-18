@@ -1896,7 +1896,7 @@ extern int set_all_bps_except(char *bps)
  */
 extern void init_grid(node_info_msg_t * node_info_ptr)
 {
-	int i, j, x, y, z;
+	int i = 0, j, x, y, z;
 	ba_node_t *ba_node = NULL;
 	char *host;
 
@@ -1908,6 +1908,7 @@ extern void init_grid(node_info_msg_t * node_info_ptr)
 					ba_node->color = 7;
 					ba_node->letter = '.';
 					ba_node->state = NODE_STATE_IDLE;
+					ba_node->index = i++;
 				}
 			}
 		}
@@ -1933,8 +1934,9 @@ extern void init_grid(node_info_msg_t * node_info_ptr)
 
 		if ((x < 0) || (y < 0) || (z < 0))
 			continue;
+
 		ba_node = &ba_system_ptr->grid[x][y][z];
-		ba_node->color = 7;
+		ba_node->index = j;
 		if (IS_NODE_DOWN(node_ptr) || IS_NODE_DRAIN(node_ptr)) {
 			ba_node->color = 0;
 			ba_node->letter = '#';
