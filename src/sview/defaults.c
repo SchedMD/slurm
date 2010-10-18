@@ -868,8 +868,10 @@ extern int save_defaults(bool final_save)
 			list_iterator_destroy(itr);
 		}
 
-		list_destroy(page_opts->col_list);
-		page_opts->col_list = NULL;
+		if (page_opts->col_list) {
+			list_destroy(page_opts->col_list);
+			page_opts->col_list = NULL;
+		}
 
 		if (tmp_str2) {
 			replspace(tmp_str2);
