@@ -6,22 +6,62 @@ perlpath = /usr/bin/perl
 perl_sources = \
 	       $(perl_dir)/Makefile.PL.in \
 	       $(perl_dir)/ppport.h \
-	       $(perl_dir)/Slurm.pm \
 	       $(perl_dir)/Slurm.xs \
+	       $(perl_dir)/lib/Slurm.pm \
+	       $(perl_dir)/lib/Slurm/Bitstr.pm \
+	       $(perl_dir)/lib/Slurm/Constant.pm \
+	       $(perl_dir)/lib/Slurm/Hostlist.pm \
+	       $(perl_dir)/lib/Slurm/Stepctx.pm \
 	       $(perl_dir)/typemap \
+	       $(perl_dir)/classmap \
+	       $(perl_dir)/bitstr.h \
 	       $(perl_dir)/slurm-perl.h \
 	       $(perl_dir)/alloc.c \
+	       $(perl_dir)/block.c \
 	       $(perl_dir)/conf.c \
 	       $(perl_dir)/job.c \
-	       $(perl_dir)/launch.c \
 	       $(perl_dir)/node.c \
 	       $(perl_dir)/partition.c \
 	       $(perl_dir)/reservation.c \
+	       $(perl_dir)/step.c \
+	       $(perl_dir)/step_ctx.c \
+	       $(perl_dir)/topo.c \
 	       $(perl_dir)/trigger.c
+test_sources = \
+	$(perl_dir)/t/00-use.t
+	$(perl_dir)/t/01-error.t
+	$(perl_dir)/t/02-string.t
+	$(perl_dir)/t/03-block.t
+	$(perl_dir)/t/04-alloc.c
+	$(perl_dir)/t/05-signal.t
+	$(perl_dir)/t/06-complete.t
+	$(perl_dir)/t/07-spawn.t
+	$(perl_dir)/t/08-conf.t
+	$(perl_dir)/t/09-resource.t
+	$(perl_dir)/t/10-job.t
+	$(perl_dir)/t/11-step.t
+	$(perl_dir)/t/12-node.t
+	$(perl_dir)/t/13-topo.t
+	$(perl_dir)/t/14-select.t
+	$(perl_dir)/t/15-partition.t
+	$(perl_dir)/t/16-reservation.t
+	$(perl_dir)/t/17-ping.t
+	$(perl_dir)/t/18-suspend.t
+	$(perl_dir)/t/19-checkpoint.t
+	$(perl_dir)/t/20-trigger.t
+	$(perl_dir)/t/21-hostlist.t
+	$(perl_dir)/t/22-list.t
+	$(perl_dir)/t/23-bitstr.t
+
 
 $(perl_dir)/Makefile:	$(perl_dir)/Makefile.PL
 	@if test "x${top_srcdir}" != "x${top_builddir}"; then \
 		for f in ${perl_sources}; do \
+			$(mkdir_p) `dirname $$f`; \
+			${LN_S} -f ${abs_srcdir}/$$f $$f; \
+		done; \
+		for f in ${test_sources}; do \
+			$(mkdir_p) `dirname $$f`; \
 			${LN_S} -f ${abs_srcdir}/$$f $$f; \
 		done; \
 	fi

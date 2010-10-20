@@ -730,7 +730,7 @@ extern int get_new_info_block(block_info_msg_t **block_ptr, int force)
 		show_flags |= SHOW_ALL;
 	if (g_block_info_ptr) {
 		error_code = slurm_load_block_info(
-			g_block_info_ptr->last_update, show_flags, &new_bg_ptr);
+			g_block_info_ptr->last_update, &new_bg_ptr, show_flags);
 		if (error_code == SLURM_SUCCESS) {
 			slurm_free_block_info_msg(g_block_info_ptr);
 			changed = 1;
@@ -741,8 +741,8 @@ extern int get_new_info_block(block_info_msg_t **block_ptr, int force)
 		}
 	} else {
 		new_bg_ptr = NULL;
-		error_code = slurm_load_block_info((time_t) NULL, show_flags,
-						   &new_bg_ptr);
+		error_code = slurm_load_block_info(
+			(time_t) NULL, &new_bg_ptr, show_flags);
 		changed = 1;
 	}
 

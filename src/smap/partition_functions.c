@@ -234,7 +234,7 @@ extern void get_bg_part()
 	}
 	if (bg_info_ptr) {
 		error_code = slurm_load_block_info(bg_info_ptr->last_update,
-						   show_flags, &new_bg_ptr);
+						   &new_bg_ptr, show_flags);
 		if (error_code == SLURM_SUCCESS)
 			slurm_free_block_info_msg(bg_info_ptr);
 		else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
@@ -242,8 +242,8 @@ extern void get_bg_part()
 			new_bg_ptr = bg_info_ptr;
 		}
 	} else {
-		error_code = slurm_load_block_info((time_t) NULL, show_flags,
-						   &new_bg_ptr);
+		error_code = slurm_load_block_info((time_t) NULL,
+						   &new_bg_ptr, show_flags);
 	}
 	if (error_code) {
 		if (quiet_flag != 1) {

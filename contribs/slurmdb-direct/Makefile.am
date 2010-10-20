@@ -12,14 +12,14 @@ _perldir=$(exec_prefix)`perl -e 'use Config; $$T=$$Config{installsitearch}; $$P=
 
 install-sbinSCRIPTS: $(sbin_SCRIPTS)
 	@$(NORMAL_INSTALL)
-	test -z "$(DESTDIR)$(sbindir)" || $(MKDIR_P) "$(DESTDIR)$(sbindir)"
+	test -z "$(DESTDIR)$(sbindir)" || $(mkdir_p) "$(DESTDIR)$(sbindir)"
 	@list='$(sbin_SCRIPTS)'; for p in $$list; do \
 	   echo "sed 's%use lib .*%use lib qw(${_perldir});%' $(top_srcdir)/contribs/slurmdb-direct/$$p.pl > $(DESTDIR)$(sbindir)/$$p"; \
 	   sed "s%use lib .*%use lib qw(${_perldir});%" $(top_srcdir)/contribs/slurmdb-direct/$$p.pl >$(DESTDIR)$(sbindir)/$$p; \
 	   chmod 755 $(DESTDIR)$(sbindir)/$$p;\
 	done
 
-	test -z "$(DESTDIR)${_perldir}" || $(MKDIR_P) "$(DESTDIR)${_perldir}"
+	test -z "$(DESTDIR)${_perldir}" || $(mkdir_p) "$(DESTDIR)${_perldir}"
 	@list='$(extra)'; for p in $$list; do \
 	   echo " cp $(top_srcdir)/contribs/slurmdb-direct/$$p $(DESTDIR)${_perldir}/$$p"; \
 	   cp $(top_srcdir)/contribs/slurmdb-direct/$$p $(DESTDIR)${_perldir}/$$p; \
