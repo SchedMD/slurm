@@ -85,9 +85,9 @@ Main:
     my @nodeIds = @ARGV;
 
 
-    my $resp = Slurm->load_node(1);
+    my $resp = Slurm->load_node(0, SHOW_ALL);
     if(!$resp) {
-	    die "Problem loading jobs.\n";
+	    die "Problem loading node.\n";
     }
 
 
@@ -98,7 +98,7 @@ Main:
 	    my $rAMem     = $node->{'real_memory'};
 	    my $rAProc    = ($node->{'cpus'} -
 		    ($node->{'alloc_cpus'} + $node->{'err_cpus'}));
-	    my $state = lc(Slurm::node_state_string($node->{'node_state'}));
+	    my $state = lc(Slurm->node_state_string($node->{'node_state'}));
 
 #these aren't really defined in slurm, so I am not sure what to get them from
 	    my $os        = $node->{'OS'};

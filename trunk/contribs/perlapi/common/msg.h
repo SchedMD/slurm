@@ -5,7 +5,10 @@
 #ifndef _MSG_H
 #define _MSG_H
 
+#include <EXTERN.h>
 #include <perl.h>
+#include <XSUB.h>
+#include <slurm/slurm.h>
 
 typedef char* charp;
 
@@ -261,24 +264,30 @@ inline static int hv_store_sv(HV* hv, const char *key, SV* sv)
 
 /*
  * store a PTR into HV
+ * set classname to Nullch to avoid blessing the created SV.
  */
-inline static int hv_store_ptr(HV* hv, const char *key, void* ptr)
+inline static int hv_store_ptr(HV* hv, const char *key, void* ptr, const char *classname)
 {
 	SV* sv = NULL;
 
+	/* 
+	 * if ptr == NULL and we call sv_setref_pv() and store the sv in hv, 
+	 * sv_isobject() will fail later when FETCH_PTR_FIELD.
+	 */
 	if(ptr) {
-		sv = NEWSV(0, 0);
-		sv_setref_pv(sv, key, ptr);
+		sv = newSV(0);
+		sv_setref_pv(sv, classname, ptr);
+		if (!key || hv_store(hv, key, (I32)strlen(key), sv, 0) == NULL) {
+			SvREFCNT_dec(sv);
+			return -1;
+		}
 	}
 
-	if (!key || hv_store(hv, key, (I32)strlen(key), sv, 0) == NULL) {
-		SvREFCNT_dec(sv);
-		return -1;
-	}
 	return 0;
 }
 
-#define SV2int32_t(sv)  SvUV(sv)
+#define SV2int(sv)      SvIV(sv)
+#define SV2int32_t(sv)  SvIV(sv)
 #define SV2uint32_t(sv) SvUV(sv)
 #define SV2uint16_t(sv) SvUV(sv)
 #define SV2uint8_t(sv)  SvUV(sv)
@@ -299,9 +308,35 @@ inline static int hv_store_ptr(HV* hv, const char *key, void* ptr)
 		} \
 	} while (0)
 
+#define FETCH_PTR_FIELD(hv, ptr, field, classname, required) \
+	do { \
+		SV** svp; \
+		if ( (svp = hv_fetch (hv, #field, strlen(#field), FALSE)) ) { \
+			if (classname) { \
+				if (! ( sv_isobject(*svp) && \
+				        SvTYPE(SvRV(*svp)) == SVt_PVMG && \
+				        sv_derived_from(*svp, classname)) ) { \
+					Perl_croak(aTHX_ "field %s is not an object of %s", #field, classname); \
+				} \
+			} \
+			ptr->field = (typeof(ptr->field)) (SV2ptr (*svp)); \
+		} else if (required) { \
+			Perl_warn (aTHX_ "Required field \"" #field "\" missing in HV"); \
+			return -1; \
+		} \
+	} while (0)
+
 #define STORE_FIELD(hv, ptr, field, type) \
 	do { \
 		if (hv_store_##type(hv, #field, ptr->field)) { \
+			Perl_warn (aTHX_ "Failed to store field \"" #field "\""); \
+			return -1; \
+		} \
+	} while (0)
+
+#define STORE_PTR_FIELD(hv, ptr, field, classname) \
+	do { \
+		if (hv_store_ptr(hv, #field, ptr->field, classname)) { \
 			Perl_warn (aTHX_ "Failed to store field \"" #field "\""); \
 			return -1; \
 		} \

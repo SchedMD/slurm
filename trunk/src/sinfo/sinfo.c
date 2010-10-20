@@ -280,8 +280,8 @@ _query_server(partition_info_msg_t ** part_pptr,
 			if (clear_old)
 				old_bg_ptr->last_update = 0;
 			error_code = slurm_load_block_info(
-				old_bg_ptr->last_update, show_flags,
-				&new_bg_ptr);
+				old_bg_ptr->last_update,
+				&new_bg_ptr, show_flags);
 			if (error_code == SLURM_SUCCESS)
 				slurm_free_block_info_msg(old_bg_ptr);
 			else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
@@ -290,8 +290,8 @@ _query_server(partition_info_msg_t ** part_pptr,
 			}
 		} else {
 			error_code = slurm_load_block_info((time_t) NULL,
-							   show_flags,
-							   &new_bg_ptr);
+							   &new_bg_ptr,
+							   show_flags);
 		}
 	}
 

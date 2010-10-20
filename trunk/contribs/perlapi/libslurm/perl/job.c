@@ -1,11 +1,12 @@
 /*
- * job_info.c - convert data between job (step) related messages and perl HVs
+ * job.c - convert data between job (step) related messages and perl HVs
  */
 
 #include <EXTERN.h>
 #include <perl.h>
 #include <XSUB.h>
 #include <slurm/slurm.h>
+#include "ppport.h"
 
 #include "slurm-perl.h"
 
@@ -13,10 +14,10 @@
  * convert job_info_t to perl HV
  */
 int
-job_info_to_hv(job_info_t* job_info, HV* hv)
+job_info_to_hv(job_info_t *job_info, HV *hv)
 {
 	int j;
-	AV* avp;
+	AV *av;
 
 	if(job_info->account)
 		STORE_FIELD(hv, job_info, account, charp);
@@ -33,33 +34,31 @@ job_info_to_hv(job_info_t* job_info, HV* hv)
 	STORE_FIELD(hv, job_info, cpus_per_task, uint16_t);
 	if(job_info->dependency)
 		STORE_FIELD(hv, job_info, dependency, charp);
-	if(job_info->eligible_time)
-		STORE_FIELD(hv, job_info, eligible_time, time_t);
+	STORE_FIELD(hv, job_info, derived_ec, uint32_t);
+	STORE_FIELD(hv, job_info, eligible_time, time_t);
 	STORE_FIELD(hv, job_info, end_time, time_t);
 	if(job_info->exc_nodes)
 		STORE_FIELD(hv, job_info, exc_nodes, charp);
-	avp = newAV();
+	av = newAV();
 	for(j = 0; ; j += 2) {
 		if(job_info->exc_node_inx[j] == -1)
 			break;
-		av_store(avp, j, newSVuv(job_info->exc_node_inx[j]));
-		av_store(avp, j+1, newSVuv(job_info->exc_node_inx[j+1]));
+		av_store(av, j, newSVuv(job_info->exc_node_inx[j]));
+		av_store(av, j+1, newSVuv(job_info->exc_node_inx[j+1]));
 	}
-	hv_store_sv(hv, "exc_node_inx", newRV_noinc((SV*)avp));
+	hv_store_sv(hv, "exc_node_inx", newRV_noinc((SV*)av));
 
 	STORE_FIELD(hv, job_info, exit_code, uint32_t);
 	if(job_info->features)
 		STORE_FIELD(hv, job_info, features, charp);
+	if(job_info->gres)
+		STORE_FIELD(hv, job_info, gres, charp);
 	STORE_FIELD(hv, job_info, group_id, uint32_t);
 	STORE_FIELD(hv, job_info, job_id, uint32_t);
-	STORE_FIELD(hv, job_info, pn_min_memory, uint32_t);
-	STORE_FIELD(hv, job_info, pn_min_cpus, uint16_t);
-	STORE_FIELD(hv, job_info, pn_min_tmp_disk, uint32_t);
 	STORE_FIELD(hv, job_info, job_state, uint16_t);
 	if(job_info->licenses)
 		STORE_FIELD(hv, job_info, licenses, charp);
-	if(job_info->max_cpus)
-		STORE_FIELD(hv, job_info, max_cpus, uint32_t);
+	STORE_FIELD(hv, job_info, max_cpus, uint32_t);
 	STORE_FIELD(hv, job_info, max_nodes, uint32_t);
 	STORE_FIELD(hv, job_info, sockets_per_node, uint16_t);
 	STORE_FIELD(hv, job_info, cores_per_socket, uint16_t);
@@ -68,18 +67,17 @@ job_info_to_hv(job_info_t* job_info, HV* hv)
 		STORE_FIELD(hv, job_info, name, charp);
 	if(job_info->network)
 		STORE_FIELD(hv, job_info, network, charp);
-	if(job_info->nice)
-		STORE_FIELD(hv, job_info, nice, uint16_t);
+	STORE_FIELD(hv, job_info, nice, uint16_t);
 	if(job_info->nodes)
 		STORE_FIELD(hv, job_info, nodes, charp);
-	avp = newAV();
+	av = newAV();
 	for(j = 0; ; j += 2) {
 		if(job_info->node_inx[j] == -1)
 			break;
-		av_store(avp, j, newSVuv(job_info->node_inx[j]));
-		av_store(avp, j+1, newSVuv(job_info->node_inx[j+1]));
+		av_store(av, j, newSVuv(job_info->node_inx[j]));
+		av_store(av, j+1, newSVuv(job_info->node_inx[j+1]));
 	}
-	hv_store_sv(hv, "node_inx", newRV_noinc((SV*)avp));
+	hv_store_sv(hv, "node_inx", newRV_noinc((SV*)av));
 	STORE_FIELD(hv, job_info, ntasks_per_core, uint16_t);
 	STORE_FIELD(hv, job_info, ntasks_per_node, uint16_t);
 	STORE_FIELD(hv, job_info, ntasks_per_socket, uint16_t);
@@ -91,6 +89,9 @@ job_info_to_hv(job_info_t* job_info, HV* hv)
 #endif
 	STORE_FIELD(hv, job_info, num_nodes, uint32_t);
 	STORE_FIELD(hv, job_info, num_cpus, uint32_t);
+	STORE_FIELD(hv, job_info, pn_min_memory, uint32_t);
+	STORE_FIELD(hv, job_info, pn_min_cpus, uint16_t);
+	STORE_FIELD(hv, job_info, pn_min_tmp_disk, uint32_t);
 
 	if(job_info->partition)
 		STORE_FIELD(hv, job_info, partition, charp);
@@ -100,22 +101,23 @@ job_info_to_hv(job_info_t* job_info, HV* hv)
 		STORE_FIELD(hv, job_info, qos, charp);
 	if(job_info->req_nodes)
 		STORE_FIELD(hv, job_info, req_nodes, charp);
-	avp = newAV();
+	av = newAV();
 	for(j = 0; ; j += 2) {
 		if(job_info->req_node_inx[j] == -1)
 			break;
-		av_store(avp, j, newSVuv(job_info->req_node_inx[j]));
-		av_store(avp, j+1, newSVuv(job_info->req_node_inx[j+1]));
+		av_store(av, j, newSVuv(job_info->req_node_inx[j]));
+		av_store(av, j+1, newSVuv(job_info->req_node_inx[j+1]));
 	}
-	hv_store_sv(hv, "req_node_inx", newRV_noinc((SV*)avp));
+	hv_store_sv(hv, "req_node_inx", newRV_noinc((SV*)av));
 	STORE_FIELD(hv, job_info, requeue, uint16_t);
 	STORE_FIELD(hv, job_info, resize_time, time_t);
 	STORE_FIELD(hv, job_info, restart_cnt, uint16_t);
 	if(job_info->resv_name)
 		STORE_FIELD(hv, job_info, resv_name, charp);
-	STORE_FIELD(hv, job_info, select_jobinfo, ptr);
-	STORE_FIELD(hv, job_info, job_resrcs, ptr);
+	STORE_PTR_FIELD(hv, job_info, select_jobinfo, "Slurm::dynamic_plugin_data_t");
+	STORE_PTR_FIELD(hv, job_info, job_resrcs, "Slurm::job_resources_t");
 	STORE_FIELD(hv, job_info, shared, uint16_t);
+	STORE_FIELD(hv, job_info, show_flags, uint16_t);
 	STORE_FIELD(hv, job_info, start_time, time_t);
 	if(job_info->state_desc)
 		STORE_FIELD(hv, job_info, state_desc, charp);
@@ -123,16 +125,124 @@ job_info_to_hv(job_info_t* job_info, HV* hv)
 	STORE_FIELD(hv, job_info, submit_time, time_t);
 	STORE_FIELD(hv, job_info, suspend_time, time_t);
 	STORE_FIELD(hv, job_info, time_limit, uint32_t);
-	if(job_info->time_min)
-		STORE_FIELD(hv, job_info, time_min, uint32_t);
+	STORE_FIELD(hv, job_info, time_min, uint32_t);
 	STORE_FIELD(hv, job_info, user_id, uint32_t);
 	if(job_info->wckey)
 		STORE_FIELD(hv, job_info, wckey, charp);
 	if(job_info->work_dir)
 		STORE_FIELD(hv, job_info, work_dir, charp);
-	if(job_info->gres)
-		STORE_FIELD(hv, job_info, gres, charp);
 
+	return 0;
+}
+
+/*
+ * convert perl HV to job_info_t
+ */
+int
+hv_to_job_info(HV *hv, job_info_t *job_info)
+{
+	SV **svp;
+	AV *av;
+	int i, n;
+
+	memset(job_info, 0, sizeof(job_info_t));
+
+	FETCH_FIELD(hv, job_info, account, charp, FALSE);
+	FETCH_FIELD(hv, job_info, alloc_node, charp, FALSE);
+	FETCH_FIELD(hv, job_info, alloc_sid, uint32_t, TRUE);
+	FETCH_FIELD(hv, job_info, batch_flag, uint16_t, TRUE);
+	FETCH_FIELD(hv, job_info, command, charp, FALSE);
+	FETCH_FIELD(hv, job_info, comment, charp, FALSE);
+	FETCH_FIELD(hv, job_info, contiguous, uint16_t, TRUE);
+	FETCH_FIELD(hv, job_info, cpus_per_task, uint16_t, TRUE);
+	FETCH_FIELD(hv, job_info, dependency, charp, FALSE);
+	FETCH_FIELD(hv, job_info, derived_ec, uint32_t, TRUE);
+	FETCH_FIELD(hv, job_info, eligible_time, time_t, TRUE);
+	FETCH_FIELD(hv, job_info, end_time, time_t, TRUE);
+	FETCH_FIELD(hv, job_info, exc_nodes, charp, FALSE);
+	svp = hv_fetch(hv, "exc_node_inx", 12, FALSE);
+	if (svp && SvROK(*svp) && SvTYPE(SvRV(*svp)) == SVt_PVAV) {
+		av = (AV*)SvRV(*svp);
+		n = av_len(av) + 2; /* for trailing -1 */
+		job_info->exc_node_inx = xmalloc(n * sizeof(int));
+		for (i = 0; i < n-1; i += 2) {
+			job_info->exc_node_inx[i] = (int)SvIV(*(av_fetch(av, i, FALSE)));
+			job_info->exc_node_inx[i+1] = (int)SvIV(*(av_fetch(av, i+1, FALSE)));
+		}
+		job_info->exc_node_inx[n-1] = -1;
+	} else {
+		/* nothing to do */
+	}
+	FETCH_FIELD(hv, job_info, exit_code, uint32_t, TRUE);
+	FETCH_FIELD(hv, job_info, features, charp, FALSE);
+	FETCH_FIELD(hv, job_info, gres, charp, FALSE);
+	FETCH_FIELD(hv, job_info, group_id, uint32_t, TRUE);
+	FETCH_FIELD(hv, job_info, job_id, uint32_t, TRUE);
+	FETCH_FIELD(hv, job_info, job_state, uint16_t, TRUE);
+	FETCH_FIELD(hv, job_info, licenses, charp, FALSE);
+	FETCH_FIELD(hv, job_info, max_cpus, uint32_t, TRUE);
+	FETCH_FIELD(hv, job_info, max_nodes, uint32_t, TRUE);
+	FETCH_FIELD(hv, job_info, sockets_per_node, uint16_t, TRUE);
+	FETCH_FIELD(hv, job_info, cores_per_socket, uint16_t, TRUE);
+	FETCH_FIELD(hv, job_info, threads_per_core, uint16_t, TRUE);
+	FETCH_FIELD(hv, job_info, name, charp, FALSE);
+	FETCH_FIELD(hv, job_info, network, charp, FALSE);
+	FETCH_FIELD(hv, job_info, nice, uint16_t, TRUE);
+	FETCH_FIELD(hv, job_info, nodes, charp, FALSE);
+	svp = hv_fetch(hv, "node_inx", 8, FALSE);
+	if (svp && SvROK(*svp) && SvTYPE(SvRV(*svp)) == SVt_PVAV) {
+		av = (AV*)SvRV(*svp);
+		n = av_len(av) + 2; /* for trailing -1 */
+		job_info->node_inx = xmalloc(n * sizeof(int));
+		for (i = 0; i < n-1; i += 2) {
+			job_info->node_inx[i] = (int)SvIV(*(av_fetch(av, i, FALSE)));
+			job_info->node_inx[i+1] = (int)SvIV(*(av_fetch(av, i+1, FALSE)));
+		}
+		job_info->node_inx[n-1] = -1;
+	} else {
+		/* nothing to do */
+	}
+	FETCH_FIELD(hv, job_info, ntasks_per_core, uint16_t, TRUE);
+	FETCH_FIELD(hv, job_info, ntasks_per_node, uint16_t, TRUE);
+	FETCH_FIELD(hv, job_info, ntasks_per_socket, uint16_t, TRUE);
+	FETCH_FIELD(hv, job_info, num_nodes, uint32_t, TRUE);
+	FETCH_FIELD(hv, job_info, num_cpus, uint32_t, TRUE);
+	FETCH_FIELD(hv, job_info, pn_min_memory, uint32_t, TRUE);
+	FETCH_FIELD(hv, job_info, pn_min_cpus, uint16_t, TRUE);
+	FETCH_FIELD(hv, job_info, pn_min_tmp_disk, uint32_t, TRUE);
+	FETCH_FIELD(hv, job_info, partition, charp, FALSE);
+	FETCH_FIELD(hv, job_info, qos, charp, FALSE);
+	FETCH_FIELD(hv, job_info, req_nodes, charp, FALSE);
+	svp = hv_fetch(hv, "req_node_inx", 12, FALSE);
+	if (svp && SvROK(*svp) && SvTYPE(SvRV(*svp)) == SVt_PVAV) {
+		av = (AV*)SvRV(*svp);
+		n = av_len(av) + 2; /* for trailing -1 */
+		job_info->req_node_inx = xmalloc(n * sizeof(int));
+		for (i = 0; i < n-1; i += 2) {
+			job_info->req_node_inx[i] = (int)SvIV(*(av_fetch(av, i, FALSE)));
+			job_info->req_node_inx[i+1] = (int)SvIV(*(av_fetch(av, i+1, FALSE)));
+		}
+		job_info->req_node_inx[n-1] = -1;
+	} else {
+		/* nothing to do */
+	}
+	FETCH_FIELD(hv, job_info, requeue, uint16_t, TRUE);
+	FETCH_FIELD(hv, job_info, resize_time, time_t, TRUE);
+	FETCH_FIELD(hv, job_info, restart_cnt, uint16_t, TRUE);
+	FETCH_FIELD(hv, job_info, resv_name, charp, FALSE);
+	FETCH_PTR_FIELD(hv, job_info, select_jobinfo, "Slurm::dynamic_plugin_data_t", FALSE);
+	FETCH_PTR_FIELD(hv, job_info, job_resrcs, "Slurm::job_resources_t", FALSE);
+	FETCH_FIELD(hv, job_info, shared, uint16_t, TRUE);
+	FETCH_FIELD(hv, job_info, show_flags, uint16_t, TRUE);
+	FETCH_FIELD(hv, job_info, start_time, time_t, TRUE);
+	FETCH_FIELD(hv, job_info, state_desc, charp, FALSE);
+	FETCH_FIELD(hv, job_info, state_reason, uint16_t, TRUE);
+	FETCH_FIELD(hv, job_info, submit_time, time_t, TRUE);
+	FETCH_FIELD(hv, job_info, suspend_time, time_t, TRUE);
+	FETCH_FIELD(hv, job_info, time_limit, uint32_t, TRUE);
+	FETCH_FIELD(hv, job_info, time_min, uint32_t, TRUE);
+	FETCH_FIELD(hv, job_info, wckey, charp, FALSE);
+	FETCH_FIELD(hv, job_info, work_dir, charp, FALSE);
 	return 0;
 }
 
@@ -140,129 +250,61 @@ job_info_to_hv(job_info_t* job_info, HV* hv)
  * convert job_info_msg_t to perl HV
  */
 int
-job_info_msg_to_hv(job_info_msg_t* job_info_msg, HV* hv)
+job_info_msg_to_hv(job_info_msg_t *job_info_msg, HV *hv)
 {
 	int i;
-	HV* hvp;
-	AV* avp;
+	HV *hv_info;
+	AV *av;
 
 	STORE_FIELD(hv, job_info_msg, last_update, time_t);
 	/* record_count implied in job_array */
-	avp = newAV();
+	av = newAV();
 	for(i = 0; i < job_info_msg->record_count; i ++) {
-		hvp = newHV();
-		if (job_info_to_hv(job_info_msg->job_array + i, hvp) < 0) {
-			SvREFCNT_dec(hvp);
-			SvREFCNT_dec(avp);
+		hv_info = newHV();
+		if (job_info_to_hv(job_info_msg->job_array + i, hv_info) < 0) {
+			SvREFCNT_dec(hv_info);
+			SvREFCNT_dec(av);
 			return -1;
 		}
-		av_store(avp, i, newRV_noinc((SV*)hvp));
+		av_store(av, i, newRV_noinc((SV*)hv_info));
 	}
-	hv_store_sv(hv, "job_array", newRV_noinc((SV*)avp));
+	hv_store_sv(hv, "job_array", newRV_noinc((SV*)av));
 	return 0;
 }
 
-/*
- * convert job_step_info_t to perl HV
+/* 
+ * convert perl HV to job_info_msg_t
  */
 int
-job_step_info_to_hv(job_step_info_t* step_info, HV* hv)
+hv_to_job_info_msg(HV *hv, job_info_msg_t *job_info_msg)
 {
-	int j;
-	AV* avp;
+	SV **svp;
+	AV *av;
+	int i, n;
 
-	if(step_info->ckpt_dir)
-		STORE_FIELD(hv, step_info, ckpt_dir, charp);
-	if(step_info->gres)
-		STORE_FIELD(hv, step_info, gres, charp);
-	STORE_FIELD(hv, step_info, ckpt_interval, uint16_t);
-	STORE_FIELD(hv, step_info, job_id, uint32_t);
-	if(step_info->name)
-		STORE_FIELD(hv, step_info, name, charp);
-	if(step_info->network)
-		STORE_FIELD(hv, step_info, network, charp);
-	if(step_info->nodes)
-		STORE_FIELD(hv, step_info, nodes, charp);
-	avp = newAV();
-	for(j = 0; ; j += 2) {
-		if(step_info->node_inx[j] == -1)
-			break;
-		av_store(avp, j, newSVuv(step_info->node_inx[j]));
-		av_store(avp, j+1, newSVuv(step_info->node_inx[j+1]));
-	}
-	hv_store_sv(hv, "node_inx", newRV_noinc((SV*)avp));
-	STORE_FIELD(hv, step_info, num_tasks, uint32_t);
-	if(step_info->partition)
-		STORE_FIELD(hv, step_info, partition, charp);
-	if(step_info->resv_ports)
-		STORE_FIELD(hv, step_info, resv_ports, charp);
-	STORE_FIELD(hv, step_info, run_time, time_t);
-	STORE_FIELD(hv, step_info, start_time, time_t);
-	STORE_FIELD(hv, step_info, step_id, uint16_t);
-	STORE_FIELD(hv, step_info, user_id, uint32_t);
+	memset(job_info_msg, 0, sizeof(job_info_msg_t));
 
-	return 0;
-}
-
-/*
- * convert job_step_info_response_msg_t to perl HV
- */
-int
-job_step_info_response_msg_to_hv(
-	job_step_info_response_msg_t* job_step_info_msg, HV* hv)
-{
-	int i;
-	AV* avp;
-	HV* hvp;
-
-	STORE_FIELD(hv, job_step_info_msg, last_update, time_t);
-	/* job_step_count implied in job_steps */
-	avp = newAV();
-	for(i = 0; i < job_step_info_msg->job_step_count; i ++) {
-		hvp = newHV();
-		if (job_step_info_to_hv(
-			    job_step_info_msg->job_steps + i, hvp) < 0) {
-			SvREFCNT_dec(hvp);
-			SvREFCNT_dec(avp);
-			return -1;
-		}
-		av_store(avp, i, newRV_noinc((SV*)hvp));
-	}
-	hv_store_sv(hv, "job_steps", newRV_noinc((SV*)avp));
-	return 0;
-}
-
-/*
- * convert slurm_step_layout_t to perl HV
- */
-int
-slurm_step_layout_to_hv(slurm_step_layout_t* step_layout, HV* hv)
-{
-	AV* avp, *avp2;
-	int i, j;
-
-	STORE_FIELD(hv, step_layout, node_cnt, uint16_t);
-	if (step_layout->node_list)
-		STORE_FIELD(hv, step_layout, node_list, charp);
-	else {
-		Perl_warn(aTHX_ "node_list missing in slurm_step_layout_t");
+	FETCH_FIELD(hv, job_info_msg, last_update, time_t, TRUE);
+	svp = hv_fetch(hv, "job_array", 9, FALSE);
+	if (! (svp && SvROK(*svp) && SvTYPE(SvRV(*svp)) == SVt_PVAV)) {
+		Perl_warn (aTHX_ "job_array is not an arrary reference in HV for job_info_msg_t");
 		return -1;
 	}
-	STORE_FIELD(hv, step_layout, plane_size, uint16_t);
-	avp = newAV();
-	for(i = 0; i < step_layout->node_cnt; i ++)
-		av_store(avp, i, newSVuv(step_layout->tasks[i]));
-	hv_store_sv(hv, "tasks", newRV_noinc((SV*)avp));
-	STORE_FIELD(hv, step_layout, task_cnt, uint32_t);
-	STORE_FIELD(hv, step_layout, task_dist, uint16_t);
-	avp = newAV();
-	for(i = 0; i < step_layout->node_cnt; i ++) {
-		avp2 = newAV();
-		for(j = 0; j < step_layout->tasks[i]; j ++)
-			av_store(avp2, i, newSVuv(step_layout->tids[i][j]));
-		av_store(avp, i, newRV_noinc((SV*)avp2));
-	}
-	hv_store_sv(hv, "tids", newRV_noinc((SV*)avp));
+	av = (AV*)SvRV(*svp);
+	n = av_len(av) + 1;
+	job_info_msg->record_count = n;
 
+	job_info_msg->job_array = xmalloc(n * sizeof(job_info_t));
+	for(i = 0; i < n; i ++) {
+		svp = av_fetch(av, i, FALSE);
+		if (! (svp && SvROK(*svp) && SvTYPE(SvRV(*svp)) == SVt_PVHV)) {
+			Perl_warn (aTHX_ "element %d in job_array is not valid", i);
+			return -1;
+		}
+		if (hv_to_job_info((HV*)SvRV(*svp), &job_info_msg->job_array[i]) < 0) {
+			Perl_warn(aTHX_ "failed to convert element %d in job_array", i);
+			return -1;
+		}
+	}
 	return 0;
 }
