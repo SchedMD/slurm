@@ -528,9 +528,10 @@ unpack_error:
 extern char *sprint_select_jobinfo(select_jobinfo_t *jobinfo,
 				   char *buf, size_t size, int mode)
 {
-	uint16_t geometry[SYSTEM_DIMENSIONS];
+	char *geo = NULL;
 	int i;
 	char *tmp_image = "default";
+	char *header = "CONNECT REBOOT ROTATE GEOMETRY BLOCK_ID";
 
 	if (buf == NULL) {
 		error("sprint_jobinfo: buf is null");
@@ -548,51 +549,59 @@ extern char *sprint_select_jobinfo(select_jobinfo_t *jobinfo,
 			error("sprint_jobinfo: jobinfo bad");
 			return NULL;
 		}
-	} else if (jobinfo->geometry[0] == (uint16_t) NO_VAL) {
-		for (i=0; i<SYSTEM_DIMENSIONS; i++)
-			geometry[i] = 0;
+
+		snprintf(buf, size, "%s", header);
+		return buf;
+	}
+
+	if (jobinfo->geometry[0] == (uint16_t) NO_VAL) {
+		for (i=0; i<SYSTEM_DIMENSIONS; i++) {
+			if (geo)
+				xstrcat(geo, "x0");
+			else
+				xstrcat(geo, "0");
+		}
 	} else {
-		for (i=0; i<SYSTEM_DIMENSIONS; i++)
-			geometry[i] = jobinfo->geometry[i];
+		for (i=0; i<SYSTEM_DIMENSIONS; i++) {
+			if (geo)
+				xstrfmtcat(geo, "x%c",
+					   alpha_num[jobinfo->geometry[i]]);
+			else
+				xstrfmtcat(geo, "%c",
+					   alpha_num[jobinfo->geometry[i]]);
+		}
 	}
 
 	switch (mode) {
 	case SELECT_PRINT_HEAD:
-		snprintf(buf, size,
-			 "CONNECT REBOOT ROTATE GEOMETRY BLOCK_ID");
+		snprintf(buf, size, "%s", header);
 		break;
 	case SELECT_PRINT_DATA:
 		snprintf(buf, size,
-			 "%7.7s %6.6s %6.6s    %cx%cx%c %-16s",
+			 "%7.7s %6.6s %6.6s    %s %-16s",
 			 conn_type_string(jobinfo->conn_type),
 			 _yes_no_string(jobinfo->reboot),
 			 _yes_no_string(jobinfo->rotate),
-			 alpha_num[geometry[0]],
-			 alpha_num[geometry[1]],
-			 alpha_num[geometry[2]],
+			 geo,
 			 jobinfo->bg_block_id);
 		break;
 	case SELECT_PRINT_MIXED_SHORT:
 		snprintf(buf, size,
 			 "Connection=%s Reboot=%s Rotate=%s "
-			 "Geometry=%cx%cx%c",
+			 "Geometry=%s",
 			 conn_type_string(jobinfo->conn_type),
 			 _yes_no_string(jobinfo->reboot),
 			 _yes_no_string(jobinfo->rotate),
-			 alpha_num[geometry[0]],
-			 alpha_num[geometry[1]],
-			 alpha_num[geometry[2]]);
+			 geo);
 		break;
 	case SELECT_PRINT_MIXED:
 		snprintf(buf, size,
 			 "Connection=%s Reboot=%s Rotate=%s "
-			 "Geometry=%cx%cx%c Block_ID=%s",
+			 "Geometry=%s Block_ID=%s",
 			 conn_type_string(jobinfo->conn_type),
 			 _yes_no_string(jobinfo->reboot),
 			 _yes_no_string(jobinfo->rotate),
-			 alpha_num[geometry[0]],
-			 alpha_num[geometry[1]],
-			 alpha_num[geometry[2]],
+			 geo,
 			 jobinfo->bg_block_id);
 		break;
 	case SELECT_PRINT_BG_ID:
@@ -618,10 +627,7 @@ extern char *sprint_select_jobinfo(select_jobinfo_t *jobinfo,
 			 _yes_no_string(jobinfo->rotate));
 		break;
 	case SELECT_PRINT_GEOMETRY:
-		snprintf(buf, size, "%cx%cx%c",
-			 alpha_num[geometry[0]],
-			 alpha_num[geometry[1]],
-			 alpha_num[geometry[2]]);
+		snprintf(buf, size, "%s", geo);
 		break;
 	case SELECT_PRINT_BLRTS_IMAGE:
 		if(jobinfo->blrtsimage)
@@ -648,7 +654,7 @@ extern char *sprint_select_jobinfo(select_jobinfo_t *jobinfo,
 		if (size > 0)
 			buf[0] = '\0';
 	}
-
+	xfree(geo);
 	return buf;
 }
 
@@ -659,10 +665,11 @@ extern char *sprint_select_jobinfo(select_jobinfo_t *jobinfo,
  */
 extern char *xstrdup_select_jobinfo(select_jobinfo_t *jobinfo, int mode)
 {
-	uint16_t geometry[SYSTEM_DIMENSIONS];
+	char *geo = NULL;
 	int i;
 	char *tmp_image = "default";
 	char *buf = NULL;
+	char *header = "CONNECT REBOOT ROTATE GEOMETRY BLOCK_ID";
 
 	if ((mode != SELECT_PRINT_DATA)
 	    && jobinfo && (jobinfo->magic != JOBINFO_MAGIC)) {
@@ -675,40 +682,49 @@ extern char *xstrdup_select_jobinfo(select_jobinfo_t *jobinfo, int mode)
 			error("xstrdup_jobinfo: jobinfo bad");
 			return NULL;
 		}
-	} else if (jobinfo->geometry[0] == (uint16_t) NO_VAL) {
-		for (i=0; i<SYSTEM_DIMENSIONS; i++)
-			geometry[i] = 0;
+		xstrcat(buf, header);
+		return buf;
+	}
+
+	if (jobinfo->geometry[0] == (uint16_t) NO_VAL) {
+		for (i=0; i<SYSTEM_DIMENSIONS; i++) {
+			if (geo)
+				xstrcat(geo, "x0");
+			else
+				xstrcat(geo, "0");
+		}
 	} else {
-		for (i=0; i<SYSTEM_DIMENSIONS; i++)
-			geometry[i] = jobinfo->geometry[i];
+		for (i=0; i<SYSTEM_DIMENSIONS; i++) {
+			if (geo)
+				xstrfmtcat(geo, "x%c",
+					   alpha_num[jobinfo->geometry[i]]);
+			else
+				xstrfmtcat(geo, "%c",
+					   alpha_num[jobinfo->geometry[i]]);
+		}
 	}
 
 	switch (mode) {
 	case SELECT_PRINT_HEAD:
-		xstrcat(buf,
-			"CONNECT REBOOT ROTATE GEOMETRY BLOCK_ID");
+		xstrcat(buf, header);
 		break;
 	case SELECT_PRINT_DATA:
 		xstrfmtcat(buf,
-			   "%7.7s %6.6s %6.6s    %cx%cx%c %-16s",
+			   "%7.7s %6.6s %6.6s    %s %-16s",
 			   conn_type_string(jobinfo->conn_type),
 			   _yes_no_string(jobinfo->reboot),
 			   _yes_no_string(jobinfo->rotate),
-			   alpha_num[geometry[0]],
-			   alpha_num[geometry[1]],
-			   alpha_num[geometry[2]],
+			   geo,
 			   jobinfo->bg_block_id);
 		break;
 	case SELECT_PRINT_MIXED:
 		xstrfmtcat(buf,
 			 "Connection=%s Reboot=%s Rotate=%s "
-			 "Geometry=%cx%cx%c Block_ID=%s",
+			 "Geometry=%s Block_ID=%s",
 			 conn_type_string(jobinfo->conn_type),
 			 _yes_no_string(jobinfo->reboot),
 			 _yes_no_string(jobinfo->rotate),
-			 alpha_num[geometry[0]],
-			 alpha_num[geometry[1]],
-			 alpha_num[geometry[2]],
+			 geo,
 			 jobinfo->bg_block_id);
 		break;
 	case SELECT_PRINT_BG_ID:
@@ -734,10 +750,7 @@ extern char *xstrdup_select_jobinfo(select_jobinfo_t *jobinfo, int mode)
 			   _yes_no_string(jobinfo->rotate));
 		break;
 	case SELECT_PRINT_GEOMETRY:
-		xstrfmtcat(buf, "%cx%cx%c",
-			   alpha_num[geometry[0]],
-			   alpha_num[geometry[1]],
-			   alpha_num[geometry[2]]);
+		xstrfmtcat(buf, "%s", geo);
 		break;
 	case SELECT_PRINT_BLRTS_IMAGE:
 		if(jobinfo->blrtsimage)
@@ -762,6 +775,6 @@ extern char *xstrdup_select_jobinfo(select_jobinfo_t *jobinfo, int mode)
 	default:
 		error("xstrdup_jobinfo: bad mode %d", mode);
 	}
-
+	xfree(geo);
 	return buf;
 }
