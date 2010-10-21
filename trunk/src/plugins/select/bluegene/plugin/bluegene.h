@@ -132,6 +132,8 @@ extern int init_bg(void);
 /* Purge all plugin variables */
 extern void fini_bg(void);
 
+extern char *give_geo(int int_geo[SYSTEM_DIMENSIONS]);
+
 extern bool blocks_overlap(bg_record_t *rec_a, bg_record_t *rec_b);
 
 extern void bg_requeue_job(uint32_t job_id, bool wait_for_start);
