@@ -694,7 +694,7 @@ int _spank_init(enum spank_context_type context, slurmd_job_t * job)
 	/*
 	 *  Nothing more to do unless we are in remote context:
 	 */
-	if (spank_ctx != S_CTX_REMOTE)
+	if (spank_ctx != S_TYPE_REMOTE)
 		return (0);
 
 	/*
