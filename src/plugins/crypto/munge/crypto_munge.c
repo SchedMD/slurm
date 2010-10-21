@@ -226,22 +226,21 @@ crypto_verify_sign(void * key, char *buffer, unsigned int buf_size,
 			   &uid, &gid);
 
 	if (err != EMUNGE_SUCCESS) {
-		if (buf_out)
-			free(buf_out);
 #ifdef MULTIPLE_SLURMD
 		/* In multple slurmd mode this will happen all the
 		 * time since we are authenticating with the same
 		 * munged.
 		 */
 		if (err != EMUNGE_CRED_REPLAYED) {
-			return err;
+			rc = err;
+			goto end_it;
 		} else {
 			debug2("We had a replayed crypto, "
 			       "but this is expected in multiple "
 			       "slurmd mode.");
 		}
 #else
-		return err;
+		goto end_it;
 #endif
 	}
 
@@ -255,7 +254,8 @@ crypto_verify_sign(void * key, char *buffer, unsigned int buf_size,
 		rc = ESIG_BUF_SIZE_MISMATCH;
 	else if (memcmp(buffer, buf_out, buf_size))
 		rc = ESIG_BUF_DATA_MISMATCH;
-
-	free(buf_out);
+end_it:
+	if (buf_out)
+		free(buf_out);
 	return rc;
 }

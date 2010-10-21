@@ -6,6 +6,8 @@ documents those changes that are of interest to users and admins.
  -- Add show_flags parameter to the slurm_load_block_info() function.
  -- perlapi has been brought up to speed courtesy of Hongjia Coa. (make sure to
     run 'make clean' if building in a different dir than source)
+ -- Fixed regression in pre12 in crypto/munge when running with
+    --enable-multiple-slurmd which would cause the slurmd's to core.
 
 * Changes in SLURM 2.2.0.pre12
 ==============================
