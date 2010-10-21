@@ -8,6 +8,7 @@ documents those changes that are of interest to users and admins.
     run 'make clean' if building in a different dir than source)
  -- Fixed regression in pre12 in crypto/munge when running with
     --enable-multiple-slurmd which would cause the slurmd's to core.
+ -- Fixed regression where cpu count wasn't figured out correctly for steps.
 
 * Changes in SLURM 2.2.0.pre12
 ==============================
