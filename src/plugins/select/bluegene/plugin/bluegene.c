@@ -145,6 +145,19 @@ extern void fini_bg(void)
 	ba_fini();
 }
 
+extern char *give_geo(int int_geo[SYSTEM_DIMENSIONS])
+{
+	char *geo = NULL;
+	int i;
+
+	for (i=0; i<SYSTEM_DIMENSIONS; i++) {
+		if (geo)
+			xstrcat(geo, "x");
+		xstrfmtcat(geo, "%c", alpha_num[int_geo[i]]);
+	}
+	return geo;
+}
+
 /*
  * block_state_mutex should be locked before calling this function
  */

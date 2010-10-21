@@ -62,8 +62,6 @@ extern List create_dynamic_block(List block_list,
 	List results = NULL;
 	List new_blocks = NULL;
 	bitstr_t *my_bitmap = NULL;
-	int geo[SYSTEM_DIMENSIONS];
-	int i;
 	blockreq_t blockreq;
 	int cnodes = request->procs / bg_conf->cpu_ratio;
 	char *unusable_nodes = NULL;
@@ -89,24 +87,24 @@ extern List create_dynamic_block(List block_list,
 
 			if(!bit_super_set(bg_record->bitmap, my_bitmap)) {
 				bit_or(my_bitmap, bg_record->bitmap);
-				for(i=0; i<SYSTEM_DIMENSIONS; i++)
-					geo[i] = bg_record->geo[i];
+
 				if(bg_conf->slurm_debug_flags
-				   & DEBUG_FLAG_BG_PICK)
-					info("adding %s(%s) %s %c%c%c "
-					     "%c%c%c %u",
+				   & DEBUG_FLAG_BG_PICK) {
+					char *start_geo =
+						give_geo(bg_record->start);
+					char *geo =
+						give_geo((int *)bg_record->geo);
+
+					info("adding %s(%s) %s %s %s %u",
 					     bg_record->bg_block_id,
 					     bg_record->nodes,
 					     bg_block_state_string(
 						     bg_record->state),
-					     alpha_num[bg_record->start[X]],
-					     alpha_num[bg_record->start[Y]],
-					     alpha_num[bg_record->start[Z]],
-					     alpha_num[geo[X]],
-					     alpha_num[geo[Y]],
-					     alpha_num[geo[Z]],
+					     start_geo, geo,
 					     bg_record->node_cnt);
-
+					xfree(start_geo);
+					xfree(geo);
+				}
 				if(check_and_set_node_list(
 					   bg_record->bg_block_list)
 				   == SLURM_ERROR) {
@@ -122,22 +120,19 @@ extern List create_dynamic_block(List block_list,
 				}
 			} else if(bg_conf->slurm_debug_flags
 				  & DEBUG_FLAG_BG_PICK) {
-				for(i=0; i<SYSTEM_DIMENSIONS; i++)
-					geo[i] = bg_record->geo[i];
+				char *start_geo = give_geo(bg_record->start);
+				char *geo = give_geo((int *)bg_record->geo);
 
-				info("not adding %s(%s) %s %c%c%c "
-				     "%c%c%c %u",
+				info("not adding %s(%s) %s %s %s %u ",
 				     bg_record->bg_block_id,
 				     bg_record->nodes,
 				     bg_block_state_string(
 					     bg_record->state),
-				     alpha_num[bg_record->start[X]],
-				     alpha_num[bg_record->start[Y]],
-				     alpha_num[bg_record->start[Z]],
-				     alpha_num[geo[X]],
-				     alpha_num[geo[Y]],
-				     alpha_num[geo[Z]],
+				     start_geo,
+				     geo,
 				     bg_record->node_cnt);
+				xfree(start_geo);
+				xfree(geo);
 			}
 		}
 		list_iterator_destroy(itr);
@@ -253,12 +248,11 @@ extern List create_dynamic_block(List block_list,
 
 	//debug("going to create %d", request->size);
 	if(!new_ba_request(request)) {
-		if(geo[X] == (uint16_t)NO_VAL) {
-			error("Problems with request for size %d geo %dx%dx%d",
-			      request->size,
-			      request->geometry[X],
-			      request->geometry[Y],
-			      request->geometry[Z]);
+		if(bg_record->geo[X] == (uint16_t)NO_VAL) {
+			char *geo = give_geo(request->geometry);
+			error("Problems with request for size %d geo %s",
+			      request->size, geo);
+			xfree(geo);
 		} else {
 			error("Problems with request for size %d.  "
 			      "No geo given.",

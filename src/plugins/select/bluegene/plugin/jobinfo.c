@@ -561,16 +561,8 @@ extern char *sprint_select_jobinfo(select_jobinfo_t *jobinfo,
 			else
 				xstrcat(geo, "0");
 		}
-	} else {
-		for (i=0; i<SYSTEM_DIMENSIONS; i++) {
-			if (geo)
-				xstrfmtcat(geo, "x%c",
-					   alpha_num[jobinfo->geometry[i]]);
-			else
-				xstrfmtcat(geo, "%c",
-					   alpha_num[jobinfo->geometry[i]]);
-		}
-	}
+	} else
+		geo = give_geo((int *)jobinfo->geometry);
 
 	switch (mode) {
 	case SELECT_PRINT_HEAD:
@@ -693,16 +685,8 @@ extern char *xstrdup_select_jobinfo(select_jobinfo_t *jobinfo, int mode)
 			else
 				xstrcat(geo, "0");
 		}
-	} else {
-		for (i=0; i<SYSTEM_DIMENSIONS; i++) {
-			if (geo)
-				xstrfmtcat(geo, "x%c",
-					   alpha_num[jobinfo->geometry[i]]);
-			else
-				xstrfmtcat(geo, "%c",
-					   alpha_num[jobinfo->geometry[i]]);
-		}
-	}
+	} else
+		geo = give_geo((int *)jobinfo->geometry);
 
 	switch (mode) {
 	case SELECT_PRINT_HEAD:
