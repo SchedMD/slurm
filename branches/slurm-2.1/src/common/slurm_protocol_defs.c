@@ -1939,7 +1939,6 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_SET_DEBUG_LEVEL:
 		slurm_free_set_debug_level_msg(data);
 		break;
-	case SLURM_SUCCESS:
 	case REQUEST_PING:
 	case REQUEST_RECONFIGURE:
 	case REQUEST_CONTROL:
