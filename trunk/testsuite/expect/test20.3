@@ -69,6 +69,7 @@ if {$job_id == 0} {
 	exit 1
 }
 
+set status 1
 spawn $qdel $job_id
 expect {
 	-re "Invalid job id" {
@@ -81,15 +82,22 @@ expect {
 		set exit_code 1
 	}
 	eof {
-		wait
+		catch wait reason
+		set status [lindex $reason 3]
 	}
 }
 
+if {$status != 0} {
+	send_user "\nFAILURE: it appears things worked ok, but we got a non-zero exit from qdel\n"
+	set exit_code 1
+}
+
+set status 0
 set matches 0
 spawn $qdel $job_id
 expect {
 	-re "already completing or completed" {
-		send_user "\nThis error was expected, no worries\n"
+		send_user "\nWe shouldn't see this because qdel doesn't print an error for this.\n"
 		incr matches
 		exp_continue
 	}
@@ -98,10 +106,13 @@ expect {
 		set exit_code 1
 	}
 	eof {
-		wait
+		catch wait reason
+		set status [lindex $reason 3]
 	}
 }
-if {$matches != 1} {
+
+# we should get and error code here from qdel, but no message
+if {($matches != 0) || ($status == 0)} {
 	send_user "\nFAILURE: No error on attempt to cancel terminated job\n"
 	set exit_code 1
 }
