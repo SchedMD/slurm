@@ -283,8 +283,6 @@ _make_user_cond(slurmdb_user_cond_t *user_cond, char **cond)
 		concat_cond_list(user_cond->assoc_cond->user_list,
 				 NULL, "name", cond);
 
-	if(user_cond->def_acct_list)
-		info("here %d", list_count(user_cond->def_acct_list));
 	concat_cond_list(user_cond->def_acct_list,
 			 NULL, "default_acct", cond);
 	concat_cond_list(user_cond->def_wckey_list,
