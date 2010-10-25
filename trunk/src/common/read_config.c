@@ -1713,6 +1713,7 @@ slurm_conf_init(const char *file_name)
 		return SLURM_ERROR;
 	}
 
+	init_slurm_conf(conf_ptr);
 	_init_slurm_conf(file_name);
 	conf_initialized = true;
 
