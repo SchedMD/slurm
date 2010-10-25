@@ -273,10 +273,10 @@ static slurm_acct_storage_ops_t * _acct_storage_get_ops(
 	int n_syms = sizeof( syms ) / sizeof( char * );
 
 	/* Find the correct plugin. */
-        c->cur_plugin = plugin_load_and_link(c->acct_storage_type, n_syms, syms,
+	c->cur_plugin = plugin_load_and_link(c->acct_storage_type, n_syms, syms,
 					     (void **) &c->ops);
-        if ( c->cur_plugin != PLUGIN_INVALID_HANDLE )
-        	return &c->ops;
+	if ( c->cur_plugin != PLUGIN_INVALID_HANDLE )
+		return &c->ops;
 
 	if(errno != EPLUGIN_NOTFOUND) {
 		error("Couldn't load specified plugin name for %s: %s",
@@ -424,10 +424,10 @@ extern int slurm_acct_storage_fini(void)
 }
 
 extern void *acct_storage_g_get_connection(
-             const slurm_trigger_callbacks_t *callbacks,
-             int conn_num, bool rollback,char *cluster_name)
+	     const slurm_trigger_callbacks_t *callbacks,
+	     int conn_num, bool rollback,char *cluster_name)
 {
-	if (slurm_acct_storage_init(NULL) < 0) 
+	if (slurm_acct_storage_init(NULL) < 0)
 		return NULL;
 	return (*(g_acct_storage_context->ops.get_conn))(callbacks, conn_num,
 							 rollback,
@@ -997,4 +997,3 @@ extern int acct_storage_g_flush_jobs_on_cluster(
 		(db_conn, event_time);
 
 }
-

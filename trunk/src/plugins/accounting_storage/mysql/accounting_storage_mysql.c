@@ -62,6 +62,16 @@
 #include "as_mysql_user.h"
 #include "as_mysql_wckey.h"
 
+/* These are defined here so when we link with something other than
+ * the slurmctld we will have these symbols defined.  They will get
+ * overwritten when linking with the slurmctld.
+ */
+#if defined (__APPLE__)
+char *slurmctld_cluster_name  __attribute__((weak_import)) = NULL;
+#else
+char *slurmctld_cluster_name = NULL;
+#endif
+
 List as_mysql_cluster_list = NULL;
 pthread_mutex_t as_mysql_cluster_list_lock = PTHREAD_MUTEX_INITIALIZER;
 
@@ -145,6 +155,9 @@ static List _get_cluster_names(MYSQL *db_conn)
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 	List ret_list = NULL;
+	char *cluster_name = NULL;
+	bool found = 0;
+
 	char *query = xstrdup_printf("select name from %s where deleted=0",
 				     cluster_table);
 
@@ -154,12 +167,31 @@ static List _get_cluster_names(MYSQL *db_conn)
 	}
 	xfree(query);
 
+	if (!slurmdbd_conf) {
+		/* If not running with the slurmdbd we need to make
+		   the correct tables for this cluster.  (Since it
+		   doesn't have to be added like usual.)
+		*/
+		cluster_name = slurm_get_cluster_name();
+		if (!cluster_name)
+			fatal("No cluster name defined in slurm.conf");
+	} else
+		found = 1;
+
 	ret_list = list_create(slurm_destroy_char);
 	while((row = mysql_fetch_row(result))) {
-		if(row[0] && row[0][0])
+		if(row[0] && row[0][0]) {
+			if (cluster_name && !strcmp(cluster_name, row[0]))
+				found = 1;
 			list_append(ret_list, xstrdup(row[0]));
+		}
 	}
 	mysql_free_result(result);
+
+	if (cluster_name && !found)
+		list_append(ret_list, cluster_name);
+	else if (cluster_name)
+		xfree(cluster_name);
 
 	return ret_list;
 
@@ -612,6 +644,7 @@ static int _as_mysql_acct_check_tables(MYSQL *db_conn)
 	}
 	list_iterator_destroy(itr);
 	slurm_mutex_unlock(&as_mysql_cluster_list_lock);
+
 	if(rc != SLURM_SUCCESS)
 		return rc;
 	/* DEF_TIMERS; */
@@ -2018,7 +2051,7 @@ extern int fini ( void )
 }
 
 extern void *acct_storage_p_get_connection(const slurm_trigger_callbacks_t *cb,
-                                           int conn_num,bool rollback,
+                                           int conn_num, bool rollback,
                                            char *cluster_name)
 {
 	mysql_conn_t *mysql_conn = xmalloc(sizeof(mysql_conn_t));

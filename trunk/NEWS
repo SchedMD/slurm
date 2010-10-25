@@ -11,6 +11,7 @@ documents those changes that are of interest to users and admins.
  -- Fixed regression where cpu count wasn't figured out correctly for steps.
  -- Fixed issue when using old mysql that can't handle a '.' in the table
     name.
+ -- Mysql plugin works correctly without the SlurmDBD
 
 * Changes in SLURM 2.2.0.pre12
 ==============================

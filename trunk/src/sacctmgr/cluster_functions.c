@@ -1023,6 +1023,13 @@ extern int sacctmgr_dump_cluster (int argc, char *argv[])
 	user_cond.assoc_cond = &assoc_cond;
 
 	user_list = acct_storage_g_get_users(db_conn, my_uid, &user_cond);
+	/* If not running with the DBD this can be set which will mess
+	   other things up.
+	*/
+	if (assoc_cond.user_list) {
+		list_destroy(assoc_cond.user_list);
+		assoc_cond.user_list = NULL;
+	}
 
 	/* make sure this person running is an admin */
 	user_name = uid_to_string(my_uid);
@@ -1056,7 +1063,6 @@ extern int sacctmgr_dump_cluster (int argc, char *argv[])
 	/* assoc_cond is set up above */
 	assoc_list = acct_storage_g_get_associations(db_conn, my_uid,
 						     &assoc_cond);
-
 	list_destroy(assoc_cond.cluster_list);
 	if(!assoc_list) {
 		exit_code=1;

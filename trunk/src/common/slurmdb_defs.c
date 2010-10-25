@@ -1200,8 +1200,7 @@ extern List slurmdb_get_acct_hierarchical_rec_list(List assoc_list)
 	itr2 = list_iterator_create(total_assoc_list);
 
 	while((assoc = list_next(itr))) {
-		arch_rec =
-			xmalloc(sizeof(slurmdb_hierarchical_rec_t));
+		arch_rec = xmalloc(sizeof(slurmdb_hierarchical_rec_t));
 		arch_rec->childern =
 			list_create(slurmdb_destroy_hierarchical_rec);
 		arch_rec->assoc = assoc;
