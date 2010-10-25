@@ -422,7 +422,8 @@ extern int acct_storage_p_commit(void *db_conn, bool commit)
 	return rc;
 }
 
-extern int acct_storage_p_add_users(void *db_conn, uint32_t uid, List user_list)
+extern int acct_storage_p_add_users(void *db_conn, uint32_t uid,
+				    List user_list)
 {
 	slurmdbd_msg_t req;
 	dbd_list_msg_t get_msg;
@@ -465,7 +466,8 @@ extern int acct_storage_p_add_coord(void *db_conn, uint32_t uid,
 	return rc;
 }
 
-extern int acct_storage_p_add_accts(void *db_conn, uint32_t uid, List acct_list)
+extern int acct_storage_p_add_accts(void *db_conn, uint32_t uid,
+				    List acct_list)
 {
 	slurmdbd_msg_t req;
 	dbd_list_msg_t get_msg;

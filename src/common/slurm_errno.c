@@ -375,7 +375,9 @@ static slurm_errtab_t slurm_errtab[] = {
 	{ ESLURM_CLUSTER_DELETED,
 	  "Cluster deleted, commit/rollback immediately"        },
 	{ ESLURM_ONE_CHANGE,
-	  "Can only change one at a time"                       }
+	  "Can only change one at a time"                       },
+	{ ESLURM_BAD_NAME,
+	  "Unacceptable name given. (No '.' in name allowed)"   }
 };
 
 /*
