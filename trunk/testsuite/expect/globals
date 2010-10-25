@@ -869,7 +869,7 @@ proc test_account_storage { } {
 	set account_storage 0
 	spawn $scontrol show config
 	expect {
-		-re "(accounting_storage/slurmdbd|accounting_storage/mysql)" {
+		-re "(accounting_storage/slurmdbd|accounting_storage/mysql|accounting_storage/pgsql)" {
 			set account_storage 1
 			exp_continue
 		}
