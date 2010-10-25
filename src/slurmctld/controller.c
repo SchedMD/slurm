@@ -718,6 +718,7 @@ static void  _init_config(void)
 		(void) setrlimit(RLIMIT_DATA, &rlim);
 	}
 
+	memset(&slurmctld_config, 0, sizeof(slurmctld_config_t));
 	slurmctld_config.boot_time      = time(NULL);
 	slurmctld_config.daemonize      = DEFAULT_DAEMONIZE;
 	slurmctld_config.resume_backup  = false;

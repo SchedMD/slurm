@@ -190,11 +190,8 @@ main (int argc, char *argv[])
 	}
 	xfree(temp);
 
-	/* always do a rollback.  If you don't then if there is an
-	 * error you can not rollback ;)
-	 */
 	errno = 0;
-	db_conn = acct_storage_g_get_connection(NULL, 0, 1, NULL);
+	db_conn = slurmdb_connection_get();
 	if(errno != SLURM_SUCCESS) {
 		int tmp_errno = errno;
 		if((input_field_count == 2) &&
