@@ -2187,7 +2187,8 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		}
 
 		xfree(temp_str);
-	}
+	} else
+		conf->accounting_storage_enforce = 0;
 
 	/* if no backup we don't care */
 	s_p_get_string(&conf->accounting_storage_backup_host,
