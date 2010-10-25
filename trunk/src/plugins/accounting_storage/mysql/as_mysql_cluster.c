@@ -131,24 +131,48 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 	List assoc_list = NULL;
 	slurmdb_association_rec_t *assoc = NULL;
 
-	if(check_connection(mysql_conn) != SLURM_SUCCESS)
+	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
 
 	assoc_list = list_create(slurmdb_destroy_association_rec);
 
 	user_name = uid_to_string((uid_t) uid);
+	/* Since adding tables make it so you can't roll back, if
+	   there is an error there is no way to easily remove entries
+	   in the database, so we will create the tables first and
+	   then after that works out then add them to the mix.
+	*/
 	itr = list_iterator_create(cluster_list);
-	while((object = list_next(itr))) {
-		if(!object->name || !object->name[0]) {
+	while ((object = list_next(itr))) {
+		if (!object->name || !object->name[0]) {
 			error("We need a cluster name to add.");
 			rc = SLURM_ERROR;
+			list_remove(itr);
 			continue;
 		}
+		if ((rc = create_cluster_tables(mysql_conn->db_conn,
+						object->name))
+		   != SLURM_SUCCESS) {
+			xfree(extra);
+			xfree(cols);
+			xfree(vals);
+			added = 0;
+			if (mysql_errno(mysql_conn->db_conn)
+			    == ER_WRONG_TABLE_NAME)
+				rc = ESLURM_BAD_NAME;
+			goto end_it;
+		}
+	}
 
+	/* Now that all the tables were created successfully lets go
+	   ahead and add it to the system.
+	*/
+	list_iterator_reset(itr);
+	while ((object = list_next(itr))) {
 		xstrcat(cols, "creation_time, mod_time, acct");
 		xstrfmtcat(vals, "%ld, %ld, 'root'", now, now);
 		xstrfmtcat(extra, ", mod_time=%ld", now);
-		if(object->root_assoc)
+		if (object->root_assoc)
 			setup_association_limits(object->root_assoc, &cols,
 						 &vals, &extra,
 						 QOS_LEVEL_SET, 1);
@@ -166,7 +190,7 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		       mysql_conn->conn, THIS_FILE, __LINE__, query);
 		rc = mysql_db_query(mysql_conn->db_conn, query);
 		xfree(query);
-		if(rc != SLURM_SUCCESS) {
+		if (rc != SLURM_SUCCESS) {
 			error("Couldn't add cluster %s", object->name);
 			xfree(extra);
 			xfree(cols);
@@ -177,7 +201,7 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 
 		affect_rows = last_affected_rows(mysql_conn->db_conn);
 
-		if(!affect_rows) {
+		if (!affect_rows) {
 			debug2("nothing changed %d", affect_rows);
 			xfree(extra);
 			xfree(cols);
@@ -185,15 +209,6 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 			continue;
 		}
 
-		if((rc = create_cluster_tables(mysql_conn->db_conn,
-					       object->name))
-		   != SLURM_SUCCESS) {
-			xfree(extra);
-			xfree(cols);
-			xfree(vals);
-			added = 0;
-			break;
-		}
 		xstrfmtcat(query,
 			   "insert into \"%s_%s\" (%s, lft, rgt) "
 			   "values (%s, 1, 2) "
@@ -211,7 +226,7 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		rc = mysql_db_query(mysql_conn->db_conn, query);
 		xfree(query);
 
-		if(rc != SLURM_SUCCESS) {
+		if (rc != SLURM_SUCCESS) {
 			error("Couldn't add cluster root assoc");
 			xfree(extra);
 			added=0;
@@ -234,7 +249,7 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 
 		rc = mysql_db_query(mysql_conn->db_conn, query);
 		xfree(query);
-		if(rc != SLURM_SUCCESS) {
+		if (rc != SLURM_SUCCESS) {
 			error("Couldn't add txn");
 		} else {
 			added++;
@@ -259,18 +274,19 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		assoc->acct = xstrdup("root");
 		assoc->is_def = 1;
 
-		if(as_mysql_add_assocs(mysql_conn, uid, assoc_list)
-		   == SLURM_ERROR) {
+		if (as_mysql_add_assocs(mysql_conn, uid, assoc_list)
+		    == SLURM_ERROR) {
 			error("Problem adding root user association");
 			rc = SLURM_ERROR;
 		}
 	}
+end_it:
 	list_iterator_destroy(itr);
 	xfree(user_name);
 
 	list_destroy(assoc_list);
 
-	if(!added)
+	if (!added)
 		reset_mysql_conn(mysql_conn);
 
 	return rc;
