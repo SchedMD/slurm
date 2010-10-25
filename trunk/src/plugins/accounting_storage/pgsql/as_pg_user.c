@@ -936,7 +936,6 @@ as_pg_get_users(pgsql_conn_t *pg_conn, uid_t uid,
 
 	query = xstrdup_printf("SELECT %s FROM %s %s", gu_fields,
 			       user_table, cond);
-	info("%s", query);
 	xfree(cond);
 	result = DEF_QUERY_RET;
 	if(!result)
