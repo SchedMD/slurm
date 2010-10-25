@@ -1470,6 +1470,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->last_update		= time(NULL);
 	ctl_conf_ptr->cache_groups		= (uint16_t) NO_VAL;
 	xfree (ctl_conf_ptr->accounting_storage_backup_host);
+	ctl_conf_ptr->accounting_storage_enforce          = 0;
 	xfree (ctl_conf_ptr->accounting_storage_host);
 	xfree (ctl_conf_ptr->accounting_storage_loc);
 	xfree (ctl_conf_ptr->accounting_storage_pass);

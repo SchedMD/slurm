@@ -4,6 +4,7 @@ documents those changes that are of interest to users and admins.
 * Changes in SLURM 2.1.16
 =========================
  -- Fixed minor warnings from gcc-4.5
+ -- Fixed initialization of accounting_stroage_enforce in the slurmctld.
 
 * Changes in SLURM 2.1.15
 =========================
