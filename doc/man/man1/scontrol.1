@@ -303,6 +303,9 @@ element. The job step ID is of the form "job_id.step_id", (e.g. "1234.1").
 on the same node from which the scontrol command is executed (the
 local host). It can be useful to diagnose problems.
 By default, all elements of the entity type specified are printed.
+For an \fIENTITY\fP of \fIjob\fP, if the job does not specify
+socket-per-node, cores-per-socket or threads-per-core then it
+will display '*' in ReqS:C:T=*:*:* field.
 
 .TP
 \fBshutdown\fP \fIOPTION\fP
