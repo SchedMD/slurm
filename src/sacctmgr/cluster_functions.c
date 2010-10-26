@@ -1132,9 +1132,11 @@ extern int sacctmgr_dump_cluster (int argc, char *argv[])
 	if(fprintf(fd, "%s\n", line) < 0) {
 		exit_code=1;
 		fprintf(stderr, " Can't write to file");
+		xfree(line);
 		return SLURM_ERROR;
 	}
 	info("%s", line);
+	xfree(line);
 
 	print_file_slurmdb_hierarchical_rec_list(
 		fd, slurmdb_hierarchical_rec_list, user_list, acct_list);
