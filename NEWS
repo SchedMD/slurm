@@ -582,6 +582,8 @@ documents those changes that are of interest to users and admins.
 =========================
  -- Fixed minor warnings from gcc-4.5
  -- Fixed initialization of accounting_stroage_enforce in the slurmctld.
+ -- Fixed bug where if GrpNodes was lowered while pending jobs existed and where
+    above the limit the slurmctld would seg fault.
 
 * Changes in SLURM 2.1.15
 =========================
