@@ -4369,6 +4369,44 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+extern void slurmdb_pack_job_modify_cond(void *in, uint16_t rpc_version,
+					 Buf buffer)
+{
+	slurmdb_job_modify_cond_t *cond = (slurmdb_job_modify_cond_t *)in;
+
+	if(rpc_version >= 8) {
+		if(!cond) {
+			packnull(buffer);
+			pack32(NO_VAL, buffer);
+			return;
+		}
+		packstr(cond->cluster, buffer);
+		pack32(cond->job_id, buffer);
+	}
+}
+
+extern int slurmdb_unpack_job_modify_cond(void **object, uint16_t rpc_version,
+					  Buf buffer)
+{
+	uint32_t uint32_tmp;
+	slurmdb_job_modify_cond_t *object_ptr = xmalloc(sizeof(
+						   slurmdb_job_modify_cond_t));
+
+	*object = object_ptr;
+
+	if(rpc_version >= 8) {
+		safe_unpackstr_xmalloc(&object_ptr->cluster, &uint32_tmp,
+				       buffer);
+		safe_unpack32(&object_ptr->job_id, buffer);
+	}
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurmdb_destroy_job_modify_cond(object_ptr);
+	*object = NULL;
+	return SLURM_ERROR;
+}
+
 extern void slurmdb_pack_job_rec(void *object, uint16_t rpc_version, Buf buffer)
 {
 	slurmdb_job_rec_t *job = (slurmdb_job_rec_t *)object;

@@ -45,6 +45,10 @@
 extern int as_mysql_job_start(mysql_conn_t *mysql_conn,
 			   struct job_record *job_ptr);
 
+extern List as_mysql_modify_job(mysql_conn_t *mysql_conn, uint32_t uid,
+				 slurmdb_job_modify_cond_t *job_cond,
+				 slurmdb_job_rec_t *job);
+
 extern int as_mysql_job_complete(mysql_conn_t *mysql_conn,
 			      struct job_record *job_ptr);
 

@@ -771,6 +771,49 @@ extern List acct_storage_p_modify_associations(
 	return ret_list;
 }
 
+extern List acct_storage_p_modify_job(void *db_conn, uint32_t uid,
+					slurmdb_job_modify_cond_t *job_cond,
+					slurmdb_job_rec_t *job)
+{
+	slurmdbd_msg_t req, resp;
+	dbd_modify_msg_t get_msg;
+	dbd_list_msg_t *got_msg;
+	List ret_list = NULL;
+	int rc;
+
+	memset(&get_msg, 0, sizeof(dbd_modify_msg_t));
+	get_msg.cond = job_cond;
+	get_msg.rec = job;
+
+	req.msg_type = DBD_MODIFY_JOB;
+	req.data = &get_msg;
+	rc = slurm_send_recv_slurmdbd_msg(SLURMDBD_VERSION, &req, &resp);
+
+	if (rc != SLURM_SUCCESS)
+		error("slurmdbd: DBD_MODIFY_JOB failure: %m");
+	else if (resp.msg_type == DBD_RC) {
+		dbd_rc_msg_t *msg = resp.data;
+		if(msg->return_code == SLURM_SUCCESS) {
+			info("%s", msg->comment);
+			ret_list = list_create(NULL);
+		} else {
+			slurm_seterrno(msg->return_code);
+			error("%s", msg->comment);
+		}
+		slurmdbd_free_rc_msg(msg);
+	} else if (resp.msg_type != DBD_GOT_LIST) {
+		error("slurmdbd: response type not DBD_GOT_LIST: %u",
+		      resp.msg_type);
+	} else {
+		got_msg = (dbd_list_msg_t *) resp.data;
+		ret_list = got_msg->my_list;
+		got_msg->my_list = NULL;
+		slurmdbd_free_list_msg(got_msg);
+	}
+
+	return ret_list;
+}
+
 extern List acct_storage_p_modify_qos(void *db_conn, uint32_t uid,
 				      slurmdb_qos_cond_t *qos_cond,
 				      slurmdb_qos_rec_t *qos)

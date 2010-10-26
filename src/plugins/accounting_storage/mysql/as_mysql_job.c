@@ -545,6 +545,110 @@ no_rollup_change:
 	return rc;
 }
 
+extern List as_mysql_modify_job(mysql_conn_t *mysql_conn, uint32_t uid,
+			     slurmdb_job_modify_cond_t *job_cond,
+			     slurmdb_job_rec_t *job)
+{
+	List ret_list = NULL;
+	int rc = SLURM_SUCCESS;
+	char *object = NULL;
+	char *vals = NULL, *extra = NULL, *query = NULL, *cond_char = NULL;
+	time_t now = time(NULL);
+	time_t submit_time = 0;
+	time_t most_recent = 0;
+	char *user_name = NULL;
+	MYSQL_RES *result = NULL;
+	MYSQL_ROW row;
+
+	if(!job_cond || !job) {
+		error("we need something to change");
+		return NULL;
+	}
+
+	if(check_connection(mysql_conn) != SLURM_SUCCESS)
+		return NULL;
+
+	if(job_cond->job_id == NO_VAL) {
+		errno = SLURM_NO_CHANGE_IN_DATA;
+		error("Job ID was not specified for job modification\n");
+		return NULL;
+	} else
+		xstrfmtcat(extra, " && id_job=%u", job_cond->job_id);
+
+	xstrfmtcat(extra, " && id_user=%u", uid);
+
+	if(job->derived_ec != NO_VAL)
+		xstrfmtcat(vals, ", derived_ec=%u", job->derived_ec);
+
+	if(job->derived_es)
+		xstrfmtcat(vals, ", derived_es='%s'", job->derived_es);
+
+	if (!vals) {
+		errno = SLURM_NO_CHANGE_IN_DATA;
+		error("No change specified for job modification");
+		xfree(extra);
+		return NULL;
+	}
+
+	if (job_cond->cluster) {
+		query = xstrdup_printf("select id_job,time_submit from "
+				       "\"%s_%s\" where deleted=0 %s;",
+				       job_cond->cluster, job_table, extra);
+	} else {
+		errno = SLURM_NO_CHANGE_IN_DATA;
+		error("Cluster was not specified for job modification\n");
+		xfree(extra);
+		xfree(vals);
+		return NULL;
+	}
+
+	xfree(extra);
+	if(!(result = mysql_db_query_ret(mysql_conn->db_conn, query, 0))) {
+		xfree(vals);
+		xfree(query);
+		return NULL;
+	}
+
+	ret_list = list_create(slurm_destroy_char);
+	while((row = mysql_fetch_row(result))) {
+		submit_time = (time_t)atol(row[1]);
+		if (submit_time > most_recent) {
+			most_recent = submit_time;
+			xfree(object);
+			object = xstrdup(row[0]);
+		}
+	}
+	mysql_free_result(result);
+
+	if (object) {
+		xstrfmtcat(cond_char, "id_job=%s and time_submit=%ld", object,
+			   most_recent);
+		list_append(ret_list, object);
+	} else {
+		errno = SLURM_NO_CHANGE_IN_DATA;
+		debug3("didn't effect anything\n%s", query);
+		xfree(vals);
+		xfree(query);
+		list_destroy(ret_list);
+		return NULL;
+	}
+	xfree(query);
+
+	user_name = uid_to_string((uid_t) uid);
+	rc = modify_common(mysql_conn, DBD_MODIFY_JOB, now, user_name,
+			   job_table, cond_char, vals, job_cond->cluster);
+	xfree(user_name);
+	xfree(cond_char);
+	xfree(vals);
+	if (rc == SLURM_ERROR) {
+		error("Couldn't modify job");
+		list_destroy(ret_list);
+		ret_list = NULL;
+	}
+
+	return ret_list;
+}
+
 extern int as_mysql_job_complete(mysql_conn_t *mysql_conn,
 				 struct job_record *job_ptr)
 {

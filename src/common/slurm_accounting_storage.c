@@ -100,6 +100,9 @@ typedef struct slurm_acct_storage_ops {
 	List (*modify_associations)(void *db_conn, uint32_t uid,
 				    slurmdb_association_cond_t *assoc_cond,
 				    slurmdb_association_rec_t *assoc);
+	List (*modify_job)         (void *db_conn, uint32_t uid,
+				    slurmdb_job_modify_cond_t *job_cond,
+				    slurmdb_job_rec_t *job);
 	List (*modify_qos)         (void *db_conn, uint32_t uid,
 				    slurmdb_qos_cond_t *qos_cond,
 				    slurmdb_qos_rec_t *qos);
@@ -231,6 +234,7 @@ static slurm_acct_storage_ops_t * _acct_storage_get_ops(
 		"acct_storage_p_modify_accts",
 		"acct_storage_p_modify_clusters",
 		"acct_storage_p_modify_associations",
+		"acct_storage_p_modify_job",
 		"acct_storage_p_modify_qos",
 		"acct_storage_p_modify_wckeys",
 		"acct_storage_p_modify_reservation",
@@ -562,6 +566,16 @@ extern List acct_storage_g_modify_associations(
 		return NULL;
 	return (*(g_acct_storage_context->ops.modify_associations))
 		(db_conn, uid, assoc_cond, assoc);
+}
+
+extern List acct_storage_g_modify_job(void *db_conn, uint32_t uid,
+				      slurmdb_job_modify_cond_t *job_cond,
+				      slurmdb_job_rec_t *job)
+{
+	if (slurm_acct_storage_init(NULL) < 0)
+		return NULL;
+	return (*(g_acct_storage_context->ops.modify_job))
+		(db_conn, uid, job_cond, job);
 }
 
 extern List acct_storage_g_modify_qos(void *db_conn, uint32_t uid,

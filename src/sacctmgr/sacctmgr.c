@@ -677,6 +677,8 @@ static void _modify_it (int argc, char *argv[])
 	} else if (strncasecmp (argv[0], "Clusters",
 				MAX(command_len, 1)) == 0) {
 		error_code = sacctmgr_modify_cluster((argc - 1), &argv[1]);
+	} else if (strncasecmp (argv[0], "Job", MAX(command_len, 1)) == 0) {
+		error_code = sacctmgr_modify_job((argc - 1), &argv[1]);
 	} else if (strncasecmp (argv[0], "QOSs", MAX(command_len, 1)) == 0) {
 		error_code = sacctmgr_modify_qos((argc - 1), &argv[1]);
 	} else if (strncasecmp (argv[0], "Users", MAX(command_len, 1)) == 0) {
