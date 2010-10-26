@@ -1330,7 +1330,7 @@ static int _unpack_assoc_shares_object(void **object, Buf buffer)
 	return SLURM_SUCCESS;
 
 unpack_error:
-	destroy_update_shares_rec(object_ptr);
+	slurm_destroy_association_shares_object(object_ptr);
 	*object = NULL;
 	return SLURM_ERROR;
 }
