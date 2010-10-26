@@ -905,13 +905,14 @@ extern int create_cluster_tables(MYSQL *db_conn, char *cluster_name)
 
 	storage_field_t job_table_fields[] = {
 		{ "job_db_inx", "int not null auto_increment" },
+		{ "mod_time", "int unsigned default 0 not null" },
 		{ "deleted", "tinyint default 0 not null" },
 		{ "account", "tinytext" },
 		{ "cpus_req", "int unsigned not null" },
 		{ "cpus_alloc", "int unsigned not null" },
-		{ "derived_ec", "int default 0 not null" },
+		{ "derived_ec", "int unsigned default 0 not null" },
 		{ "derived_es", "text" },
-		{ "exit_code", "int default 0 not null" },
+		{ "exit_code", "int unsigned default 0 not null" },
 		{ "job_name", "tinytext not null" },
 		{ "id_assoc", "int unsigned not null" },
 		{ "id_block", "tinytext" },
@@ -2287,6 +2288,13 @@ extern List acct_storage_p_modify_associations(
 	slurmdb_association_rec_t *assoc)
 {
 	return as_mysql_modify_assocs(mysql_conn, uid, assoc_cond, assoc);
+}
+
+extern List acct_storage_p_modify_job(mysql_conn_t *mysql_conn, uint32_t uid,
+				      slurmdb_job_modify_cond_t *job_cond,
+				      slurmdb_job_rec_t *job)
+{
+	return as_mysql_modify_job(mysql_conn, uid, job_cond, job);
 }
 
 extern List acct_storage_p_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,

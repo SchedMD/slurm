@@ -288,6 +288,7 @@ extern slurmdb_job_rec_t *slurmdb_create_job_rec()
 {
 	slurmdb_job_rec_t *job = xmalloc(sizeof(slurmdb_job_rec_t));
 	memset(&job->stats, 0, sizeof(slurmdb_stats_t));
+	job->derived_ec = NO_VAL;
 	job->stats.cpu_min = NO_VAL;
 	job->state = JOB_PENDING;
 	job->steps = list_create(slurmdb_destroy_step_rec);
@@ -705,6 +706,17 @@ extern void slurmdb_destroy_job_cond(void *object)
 			list_destroy(job_cond->userid_list);
 		if(job_cond->wckey_list)
 			list_destroy(job_cond->wckey_list);
+		xfree(job_cond);
+	}
+}
+
+extern void slurmdb_destroy_job_modify_cond(void *object)
+{
+	slurmdb_job_modify_cond_t *job_cond =
+		(slurmdb_job_modify_cond_t *)object;
+
+	if(job_cond) {
+		xfree(job_cond->cluster);
 		xfree(job_cond);
 	}
 }

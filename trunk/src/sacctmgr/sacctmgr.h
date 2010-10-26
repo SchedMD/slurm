@@ -220,6 +220,7 @@ extern int sacctmgr_modify_association(int argc, char *argv[]);
 extern int sacctmgr_modify_user(int argc, char *argv[]);
 extern int sacctmgr_modify_account(int argc, char *argv[]);
 extern int sacctmgr_modify_cluster(int argc, char *argv[]);
+extern int sacctmgr_modify_job(int argc, char *argv[]);
 extern int sacctmgr_modify_qos(int argc, char *argv[]);
 
 extern int sacctmgr_delete_association(int argc, char *argv[]);

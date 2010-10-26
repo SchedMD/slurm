@@ -164,7 +164,8 @@ typedef enum {
 	DBD_SEND_MULT_JOB_START,/* Send multiple job starts		*/
 	DBD_GOT_MULT_JOB_START,	/* Get response to DBD_SEND_MULT_JOB_START */
 	DBD_SEND_MULT_MSG,      /* Send multiple message		*/
-	DBD_GOT_MULT_MSG	/* Get response to DBD_SEND_MULT_MSG */
+	DBD_GOT_MULT_MSG,	/* Get response to DBD_SEND_MULT_MSG    */
+	DBD_MODIFY_JOB		/* Modify existing Job(s)               */
 } slurmdbd_msg_type_t;
 
 /*****************************************************************************\

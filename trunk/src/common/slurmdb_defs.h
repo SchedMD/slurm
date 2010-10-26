@@ -81,6 +81,7 @@ extern void slurmdb_destroy_cluster_cond(void *object);
 extern void slurmdb_destroy_association_cond(void *object);
 extern void slurmdb_destroy_event_cond(void *object);
 extern void slurmdb_destroy_job_cond(void *object);
+extern void slurmdb_destroy_job_modify_cond(void *object);
 extern void slurmdb_destroy_qos_cond(void *object);
 extern void slurmdb_destroy_reservation_cond(void *object);
 extern void slurmdb_destroy_txn_cond(void *object);

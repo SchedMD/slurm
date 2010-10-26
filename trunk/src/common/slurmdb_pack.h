@@ -128,6 +128,10 @@ extern void slurmdb_pack_job_cond(void *in,
 				  uint16_t rpc_version, Buf buffer);
 extern int slurmdb_unpack_job_cond(void **object, uint16_t rpc_version,
 				   Buf buffer);
+extern void slurmdb_pack_job_modify_cond(void *in,
+					 uint16_t rpc_version, Buf buffer);
+extern int slurmdb_unpack_job_modify_cond(void **object, uint16_t rpc_version,
+					  Buf buffer);
 extern void slurmdb_pack_job_rec(void *object,
 				 uint16_t rpc_version, Buf buffer);
 extern int slurmdb_unpack_job_rec(void **job, uint16_t rpc_version, Buf buffer);

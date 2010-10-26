@@ -572,6 +572,7 @@ extern Buf pack_slurmdbd_msg(slurmdbd_msg_t *req, uint16_t rpc_version)
 	case DBD_MODIFY_ACCOUNTS:
 	case DBD_MODIFY_ASSOCS:
 	case DBD_MODIFY_CLUSTERS:
+	case DBD_MODIFY_JOB:
 	case DBD_MODIFY_QOS:
 	case DBD_MODIFY_USERS:
 		slurmdbd_pack_modify_msg(
@@ -747,6 +748,7 @@ extern int unpack_slurmdbd_msg(slurmdbd_msg_t *resp,
 	case DBD_MODIFY_ACCOUNTS:
 	case DBD_MODIFY_ASSOCS:
 	case DBD_MODIFY_CLUSTERS:
+	case DBD_MODIFY_JOB:
 	case DBD_MODIFY_QOS:
 	case DBD_MODIFY_USERS:
 		rc = slurmdbd_unpack_modify_msg(
@@ -881,6 +883,8 @@ extern slurmdbd_msg_type_t str_2_slurmdbd_msg_type(char *msg_type)
 		return DBD_MODIFY_ASSOCS;
 	} else if(!strcasecmp(msg_type, "Modify Clusters")) {
 		return DBD_MODIFY_CLUSTERS;
+	} else if(!strcasecmp(msg_type, "Modify Job")) {
+		return DBD_MODIFY_JOB;
 	} else if(!strcasecmp(msg_type, "Modify QOS")) {
 		return DBD_MODIFY_QOS;
 	} else if(!strcasecmp(msg_type, "Modify Users")) {
@@ -1178,6 +1182,12 @@ extern char *slurmdbd_msg_type_2_str(slurmdbd_msg_type_t msg_type, int get_enum)
 			return "DBD_MODIFY_CLUSTERS";
 		} else
 			return "Modify Clusters";
+		break;
+	case DBD_MODIFY_JOB:
+		if(get_enum) {
+			return "DBD_MODIFY_JOB";
+		} else
+			return "Modify Job";
 		break;
 	case DBD_MODIFY_QOS:
 		if(get_enum) {
@@ -2477,6 +2487,10 @@ inline void slurmdbd_free_modify_msg(dbd_modify_msg_t *msg,
 			destroy_cond = slurmdb_destroy_cluster_cond;
 			destroy_rec = slurmdb_destroy_cluster_rec;
 			break;
+		case DBD_MODIFY_JOB:
+			destroy_cond = slurmdb_destroy_job_modify_cond;
+			destroy_rec = slurmdb_destroy_job_rec;
+			break;
 		case DBD_MODIFY_QOS:
 			destroy_cond = slurmdb_destroy_qos_cond;
 			destroy_rec = slurmdb_destroy_qos_rec;
@@ -3535,6 +3549,10 @@ inline void slurmdbd_pack_modify_msg(dbd_modify_msg_t *msg,
 		my_cond = slurmdb_pack_cluster_cond;
 		my_rec = slurmdb_pack_cluster_rec;
 		break;
+	case DBD_MODIFY_JOB:
+		my_cond = slurmdb_pack_job_modify_cond;
+		my_rec = slurmdb_pack_job_rec;
+		break;
 	case DBD_MODIFY_QOS:
 		my_cond = slurmdb_pack_qos_cond;
 		my_rec = slurmdb_pack_qos_rec;
@@ -3575,6 +3593,10 @@ inline int slurmdbd_unpack_modify_msg(dbd_modify_msg_t **msg,
 	case DBD_MODIFY_CLUSTERS:
 		my_cond = slurmdb_unpack_cluster_cond;
 		my_rec = slurmdb_unpack_cluster_rec;
+		break;
+	case DBD_MODIFY_JOB:
+		my_cond = slurmdb_unpack_job_modify_cond;
+		my_rec = slurmdb_unpack_job_rec;
 		break;
 	case DBD_MODIFY_QOS:
 		my_cond = slurmdb_unpack_qos_cond;

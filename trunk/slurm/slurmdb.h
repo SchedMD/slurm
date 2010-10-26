@@ -502,6 +502,12 @@ typedef struct {
 
 /* slurmdb_job_cond_t is defined above alphabetical */
 
+
+typedef struct {
+	char *cluster;
+	uint32_t job_id;
+} slurmdb_job_modify_cond_t;
+
 typedef struct {
 	uint32_t alloc_cpus;
 	uint32_t alloc_nodes;
@@ -509,12 +515,12 @@ typedef struct {
 	uint32_t associd;
 	char	*blockid;
 	char    *cluster;
-	int32_t	derived_ec;
+	uint32_t derived_ec;
 	char	*derived_es;
 	uint32_t elapsed;
 	time_t eligible;
 	time_t end;
-	int32_t	exitcode;
+	uint32_t exitcode;
 	void *first_step_ptr;
 	uint32_t gid;
 	uint32_t jobid;

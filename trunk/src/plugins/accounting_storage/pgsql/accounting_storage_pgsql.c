@@ -403,6 +403,13 @@ extern List acct_storage_p_modify_associations(
 	return as_pg_modify_associations(pg_conn, uid, assoc_cond, assoc);
 }
 
+extern List acct_storage_p_modify_job(pgsql_conn_t *pg_conn, uint32_t uid,
+				      slurmdb_job_modify_cond_t *job_cond,
+				      slurmdb_job_rec_t *job)
+{
+	return SLURM_SUCCESS;
+}
+
 extern List acct_storage_p_modify_qos(pgsql_conn_t *pg_conn, uint32_t uid,
 				      slurmdb_qos_cond_t *qos_cond,
 				      slurmdb_qos_rec_t *qos)

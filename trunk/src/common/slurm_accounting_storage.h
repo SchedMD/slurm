@@ -191,6 +191,16 @@ extern List acct_storage_g_modify_associations(
 	slurmdb_association_rec_t *assoc);
 
 /*
+ * modify existing job in the accounting system
+ * IN:  slurmdb_job_modify_cond_t *job_cond
+ * IN:  slurmdb_job_rec_t *job
+ * RET: List containing (char *'s) else NULL on error
+ */
+extern List acct_storage_g_modify_job(void *db_conn, uint32_t uid,
+				      slurmdb_job_modify_cond_t *job_cond,
+				      slurmdb_job_rec_t *job);
+
+/*
  * modify existing qos in the accounting system
  * IN:  slurmdb_qos_cond_t *qos_cond
  * IN:  slurmdb_qos_rec_t *qos
