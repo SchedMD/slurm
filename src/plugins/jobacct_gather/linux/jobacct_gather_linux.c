@@ -379,9 +379,14 @@ static void _get_process_data(void)
 	slurm_mutex_unlock(&jobacct_lock);
 
 	if (jobacct_mem_limit) {
-		debug("Step %u.%u memory used:%u limit:%u KB",
-		      jobacct_job_id, jobacct_step_id, 
-		      total_job_mem, jobacct_mem_limit);
+		if (jobacct_step_id == NO_VAL) {
+			debug("Job %u memory used:%u limit:%u KB",
+			      jobacct_job_id, total_job_mem, jobacct_mem_limit);
+		} else {
+			debug("Step %u.%u memory used:%u limit:%u KB",
+			      jobacct_job_id, jobacct_step_id,
+			      total_job_mem, jobacct_mem_limit);
+		}
 	}
 	if (jobacct_job_id && jobacct_mem_limit &&
 	    (total_job_mem > jobacct_mem_limit)) {
@@ -390,7 +395,7 @@ static void _get_process_data(void)
 			      "killed", jobacct_job_id, jobacct_mem_limit);
 		} else {
 			error("Step %u.%u exceeded %u KB memory limit, being "
-			      "killed", jobacct_job_id, jobacct_step_id, 
+			      "killed", jobacct_job_id, jobacct_step_id,
 			      jobacct_mem_limit);
 		}
 		_acct_kill_step();
@@ -398,11 +403,11 @@ static void _get_process_data(void)
 	    (total_job_vsize > jobacct_vmem_limit)) {
 		if (jobacct_step_id == NO_VAL) {
 			error("Job %u exceeded %u KB virtual memory limit, "
-			      "being killed", jobacct_job_id, 
+			      "being killed", jobacct_job_id,
 			      jobacct_vmem_limit);
 		} else {
 			error("Step %u.%u exceeded %u KB virtual memory "
-			      "limit, being killed", jobacct_job_id, 
+			      "limit, being killed", jobacct_job_id,
 			      jobacct_step_id, jobacct_vmem_limit);
 		}
 		_acct_kill_step();
@@ -443,14 +448,14 @@ static int _is_a_lwp(uint32_t pid) {
 
 	if ( snprintf(proc_status_file, 256,
 		      "/proc/%d/status",pid) > 256 ) {
- 	        debug("jobacct_gather_linux: unable to build proc_status "
+ 		debug("jobacct_gather_linux: unable to build proc_status "
 		      "fpath");
-	        return -1;
+		return -1;
 	}
 	if ((status_fp = fopen(proc_status_file, "r"))==NULL) {
-	        debug3("jobacct_gather_linux: unable to open %s",
+		debug3("jobacct_gather_linux: unable to open %s",
 		       proc_status_file);
-	        return -1;
+		return -1;
 	}
 
 
@@ -463,18 +468,18 @@ static int _is_a_lwp(uint32_t pid) {
 
 	/* unable to read /proc/[pid]/status content */
 	if ( rc != 1 ) {
-	        debug3("jobacct_gather_linux: unable to read requested "
+		debug3("jobacct_gather_linux: unable to read requested "
 		       "pattern in %s",proc_status_file);
-	        return -1;
+		return -1;
 	}
 
 	/* if tgid differs from pid, this is a LWP (Thread POSIX) */
 	if ( (uint32_t) tgid != (uint32_t) pid ) {
-	        debug3("jobacct_gather_linux: pid=%d is a lightweight process",
+		debug3("jobacct_gather_linux: pid=%d is a lightweight process",
 		       tgid);
 		return 1;
 	} else
-	        return 0;
+		return 0;
 
 }
 
@@ -528,7 +533,7 @@ static int _get_process_data_line(int in, prec_t *prec) {
 	/* If current pid corresponds to a Light Weight Process (Thread POSIX) */
 	/* skip it, we will only account the original process (pid==tgid) */
 	if (_is_a_lwp(prec->pid) > 0)
-  	        return 0;
+  		return 0;
 
 	/* Copy the values that slurm records into our data structure */
 	prec->ppid  = ppid;
@@ -623,7 +628,6 @@ extern int jobacct_gather_p_setinfo(struct jobacctinfo *jobacct,
 				    enum jobacct_data_type type, void *data)
 {
 	return jobacct_common_setinfo(jobacct, type, data);
-
 }
 
 extern int jobacct_gather_p_getinfo(struct jobacctinfo *jobacct,
@@ -809,5 +813,3 @@ extern void jobacct_gather_p_2_stats(slurmdb_stats_t *stats,
 {
 	jobacct_common_2_stats(stats, jobacct);
 }
-
-
