@@ -287,14 +287,14 @@ job_create(launch_tasks_request_msg_t *msg)
 	job->pty         = msg->pty;
 	job->open_mode   = msg->open_mode;
 	job->options     = msg->options;
-	format_core_allocs(msg->cred, conf->node_name, 
+	format_core_allocs(msg->cred, conf->node_name,
 			   &job->job_alloc_cores, &job->step_alloc_cores,
 			   &job->job_mem, &job->step_mem);
 	if (job->step_mem) {
-		jobacct_common_set_mem_limit(job->jobid, job->stepid, 
+		jobacct_common_set_mem_limit(job->jobid, job->stepid,
 					     job->step_mem);
 	} else if (job->job_mem) {
-		jobacct_common_set_mem_limit(job->jobid, job->stepid, 
+		jobacct_common_set_mem_limit(job->jobid, job->stepid,
 					     job->job_mem);
 	}
 
@@ -398,11 +398,11 @@ job_batch_job_create(batch_job_launch_msg_t *msg)
 	job->envtp->restart_cnt = msg->restart_cnt;
 
 	job->cpus_per_task = msg->cpus_per_node[0];
-	format_core_allocs(msg->cred, conf->node_name, 
+	format_core_allocs(msg->cred, conf->node_name,
 			   &job->job_alloc_cores, &job->step_alloc_cores,
 			   &job->job_mem, &job->step_mem);
 	if (job->step_mem) {
-		jobacct_common_set_mem_limit(job->jobid, NO_VAL, 
+		jobacct_common_set_mem_limit(job->jobid, NO_VAL,
 					     job->step_mem);
 	} else if (job->job_mem)
 		jobacct_common_set_mem_limit(job->jobid, NO_VAL, job->job_mem);
@@ -425,8 +425,7 @@ job_batch_job_create(batch_job_launch_msg_t *msg)
 		job->argv    = (char **) xmalloc(2 * sizeof(char *));
 	}
 
-	job->task = (slurmd_task_info_t **)
-		xmalloc(sizeof(slurmd_task_info_t *));
+	job->task = xmalloc(sizeof(slurmd_task_info_t *));
 	if (msg->std_err == NULL)
 		msg->std_err = xstrdup(msg->std_out);
 
@@ -677,4 +676,3 @@ _task_info_destroy(slurmd_task_info_t *t, uint16_t multi_prog)
 	} /* otherwise, t->argv is a pointer to job->argv */
 	xfree(t);
 }
-
