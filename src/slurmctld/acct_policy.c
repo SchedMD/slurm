@@ -444,6 +444,8 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 				     qos_ptr->grp_nodes,
 				     qos_ptr->name);
 				cancel_job = 1;
+				rc = false;
+				goto end_it;
 			} else if ((qos_ptr->grp_used_nodes +
 				    job_ptr->details->min_nodes) >
 				   qos_ptr->grp_nodes) {
@@ -604,6 +606,8 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 				     job_ptr->details->min_nodes,
 				     assoc_ptr->grp_nodes, assoc_ptr->acct);
 				cancel_job = 1;
+				rc = false;
+				goto end_it;
 			} else if ((assoc_ptr->grp_used_nodes +
 				    job_ptr->details->min_nodes) >
 				   assoc_ptr->grp_nodes) {
