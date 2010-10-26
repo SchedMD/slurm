@@ -88,10 +88,10 @@ am_sacctmgr_OBJECTS = account_functions.$(OBJEXT) \
 	archive_functions.$(OBJEXT) association_functions.$(OBJEXT) \
 	config_functions.$(OBJEXT) cluster_functions.$(OBJEXT) \
 	common.$(OBJEXT) event_functions.$(OBJEXT) \
-	file_functions.$(OBJEXT) sacctmgr.$(OBJEXT) \
-	qos_functions.$(OBJEXT) txn_functions.$(OBJEXT) \
-	user_functions.$(OBJEXT) wckey_functions.$(OBJEXT) \
-	problem_functions.$(OBJEXT)
+	file_functions.$(OBJEXT) job_functions.$(OBJEXT) \
+	sacctmgr.$(OBJEXT) qos_functions.$(OBJEXT) \
+	txn_functions.$(OBJEXT) user_functions.$(OBJEXT) \
+	wckey_functions.$(OBJEXT) problem_functions.$(OBJEXT)
 sacctmgr_OBJECTS = $(am_sacctmgr_OBJECTS)
 am__DEPENDENCIES_1 =
 sacctmgr_DEPENDENCIES = $(top_builddir)/src/db_api/libslurmdb.o \
@@ -212,6 +212,8 @@ PATH_SEPARATOR = @PATH_SEPARATOR@
 PGSQL_CFLAGS = @PGSQL_CFLAGS@
 PGSQL_LIBS = @PGSQL_LIBS@
 PKG_CONFIG = @PKG_CONFIG@
+PKG_CONFIG_LIBDIR = @PKG_CONFIG_LIBDIR@
+PKG_CONFIG_PATH = @PKG_CONFIG_PATH@
 PROCTRACKDIR = @PROCTRACKDIR@
 PROJECT = @PROJECT@
 PTHREAD_CC = @PTHREAD_CC@
@@ -321,6 +323,7 @@ sacctmgr_SOURCES = \
 	common.c                \
 	event_functions.c	\
 	file_functions.c	\
+	job_functions.c		\
 	sacctmgr.c sacctmgr.h	\
 	qos_functions.c		\
 	txn_functions.c		\
@@ -424,6 +427,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/config_functions.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/event_functions.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/file_functions.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_functions.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/problem_functions.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/qos_functions.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sacctmgr.Po@am__quote@
