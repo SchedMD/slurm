@@ -5621,7 +5621,7 @@ unpack_error:
 }
 
 extern void slurmdb_pack_update_object(slurmdb_update_object_t *object,
-				    uint16_t rpc_version, Buf buffer)
+				       uint16_t rpc_version, Buf buffer)
 {
 	uint32_t count = NO_VAL;
 	ListIterator itr = NULL;

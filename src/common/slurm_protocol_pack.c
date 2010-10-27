@@ -8033,18 +8033,52 @@ static void _pack_accounting_update_msg(accounting_update_msg_t *msg,
 	ListIterator itr = NULL;
 	slurmdb_update_object_t *rec = NULL;
 
-	if(msg->update_list)
-		count = list_count(msg->update_list);
+	/* We need to work off the SLURMDBD_VERSION here to be able to
+	   pack correctly.  Below we need to work off the
+	   SLURM_VERSION instead since we don't always know which
+	   SLURMDBD_VERSION is being sent yet.
+	*/
+	if (msg->rpc_version >= 8) {
+		pack16(msg->rpc_version, buffer);
+		if(msg->update_list)
+			count = list_count(msg->update_list);
 
-	pack32(count, buffer);
+		pack32(count, buffer);
 
-	if(count) {
-		itr = list_iterator_create(msg->update_list);
-		while((rec = list_next(itr))) {
-			slurmdb_pack_update_object(rec, msg->rpc_version,
-						   buffer);
+		if(count) {
+			itr = list_iterator_create(msg->update_list);
+			while((rec = list_next(itr))) {
+				slurmdb_pack_update_object(
+					rec, msg->rpc_version, buffer);
+			}
+			list_iterator_destroy(itr);
 		}
-		list_iterator_destroy(itr);
+	} else {
+		/* Since there are some new objects that can't be sent to
+		   older versions we need to take them out of the
+		   update since we will get errors if we send them.
+		*/
+		if(msg->update_list) {
+			itr = list_iterator_create(msg->update_list);
+			while((rec = list_next(itr))) {
+				if (rec->type > SLURMDB_MODIFY_WCKEY)
+					list_remove(itr);
+			}
+			count = list_count(msg->update_list);
+		}
+
+		pack32(count, buffer);
+
+		if(count) {
+			list_iterator_reset(itr);
+			itr = list_iterator_create(msg->update_list);
+			while((rec = list_next(itr))) {
+				slurmdb_pack_update_object(
+					rec, msg->rpc_version, buffer);
+			}
+		}
+		if (itr)
+			list_iterator_destroy(itr);
 	}
 }
 
@@ -8060,23 +8094,35 @@ static int _unpack_accounting_update_msg(accounting_update_msg_t **msg,
 
 	*msg = msg_ptr;
 
-	safe_unpack32(&count, buffer);
-	msg_ptr->update_list = list_create(slurmdb_destroy_update_object);
-	for(i=0; i<count; i++) {
-		/* FIXME: This doesn't work cross cluster anymore
-		   these calls, and probably structure need to be
-		   moved to the slurmdb_* files to be handled
-		   correctly.  Previously to 2.2 this only ran in the
-		   slurmctld so we don't need to worry too much about
-		   backward compatibility.
+	if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
+		safe_unpack16(&msg_ptr->rpc_version, buffer);
+		safe_unpack32(&count, buffer);
+		msg_ptr->update_list = list_create(
+			slurmdb_destroy_update_object);
+		for(i=0; i<count; i++) {
+			if((slurmdb_unpack_update_object(
+				    &rec, msg_ptr->rpc_version, buffer))
+			   == SLURM_ERROR)
+				goto unpack_error;
+			list_append(msg_ptr->update_list, rec);
+		}
+	} else {
+		/* Before 2.2 the only happened in the slurmctld, now
+		   it can happen else where, so this should work for <
+		   2.2 and above will catch everything from now on.
 		*/
-		if((slurmdb_unpack_update_object(&rec, SLURMDBD_VERSION,
-						 buffer))
-		   == SLURM_ERROR)
-			goto unpack_error;
-		list_append(msg_ptr->update_list, rec);
+		msg_ptr->rpc_version = SLURMDBD_VERSION;
+		safe_unpack32(&count, buffer);
+		msg_ptr->update_list = list_create(
+			slurmdb_destroy_update_object);
+		for(i=0; i<count; i++) {
+			if((slurmdb_unpack_update_object(
+				    &rec, msg_ptr->rpc_version, buffer))
+			   == SLURM_ERROR)
+				goto unpack_error;
+			list_append(msg_ptr->update_list, rec);
+		}
 	}
-
 	return SLURM_SUCCESS;
 
 unpack_error:

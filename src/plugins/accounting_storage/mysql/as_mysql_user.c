@@ -1305,8 +1305,7 @@ get_wckeys:
 			wckey_cond.cluster_list =
 				user_cond->assoc_cond->cluster_list;
 		}
-		wckey_list = as_mysql_get_wckeys(
-			mysql_conn, uid, &wckey_cond);
+		wckey_list = as_mysql_get_wckeys(mysql_conn, uid, &wckey_cond);
 
 		if (!wckey_list)
 			return user_list;
@@ -1348,6 +1347,11 @@ get_wckeys:
 				list_remove(wckey_itr);
 			}
 			list_iterator_reset(wckey_itr);
+			/* If a user doesn't have a default wckey (they
+			   might not of had track_wckeys on), set it now.
+			*/
+			if (!user->default_wckey)
+				user->default_wckey = xstrdup("");
 		}
 		list_iterator_destroy(itr);
 		list_iterator_destroy(wckey_itr);
