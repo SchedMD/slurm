@@ -63,7 +63,7 @@ print_field_t fields[] = {
 	{8,  "ExitCode", print_fields_str, PRINT_EXITCODE},
 	{6,  "GID", print_fields_int, PRINT_GID},
 	{9,  "Group", print_fields_str, PRINT_GROUP},
-	{10, "JobID", print_fields_str, PRINT_JOBID},
+	{-12, "JobID", print_fields_str, PRINT_JOBID},
 	{10, "JobName", print_fields_str, PRINT_JOBNAME},
 	{9,  "Layout", print_fields_str, PRINT_LAYOUT},
 	{8,  "MaxPages", print_fields_str, PRINT_MAXPAGES},

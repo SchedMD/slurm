@@ -515,9 +515,15 @@ void print_fields(type_t type, void *object)
 				tmp_char = xstrdup_printf("%u", job->jobid);
 				break;
 			case JOBSTEP:
-				tmp_char = xstrdup_printf("%u.%u",
-							  step->job_ptr->jobid,
-							  step->stepid);
+				if (step->stepid == NO_VAL)
+					tmp_char = xstrdup_printf(
+						"%u.batch",
+						step->job_ptr->jobid);
+				else
+					tmp_char = xstrdup_printf(
+						"%u.%u",
+						step->job_ptr->jobid,
+						step->stepid);
 				break;
 			case JOBCOMP:
 				tmp_char = xstrdup_printf("%u",

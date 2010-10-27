@@ -179,8 +179,14 @@ static int _addto_job_list(List job_list, char *names)
 						selected_step->stepid = NO_VAL;
 					} else {
 						*dot++ = 0;
-						selected_step->stepid =
-							atoi(dot);
+						/* can't use NO_VAL
+						 * since that means all */
+						if (!strcmp(dot, "batch"))
+							selected_step->stepid =
+								INFINITE;
+						else
+							selected_step->stepid =
+								atoi(dot);
 					}
 					selected_step->jobid = atoi(name);
 					xfree(name);
@@ -220,7 +226,11 @@ static int _addto_job_list(List job_list, char *names)
 				selected_step->stepid = NO_VAL;
 			} else {
 				*dot++ = 0;
-				selected_step->stepid = atoi(dot);
+				/* can't use NO_VAL since that means all */
+				if (!strcmp(dot, "batch"))
+					selected_step->stepid = INFINITE;
+				else
+					selected_step->stepid = atoi(dot);
 			}
 			selected_step->jobid = atoi(name);
 			xfree(name);
@@ -319,7 +329,7 @@ void parse_command_line(int argc, char **argv)
 			break;
 		case 'j':
 			if ((strspn(optarg, "0123456789, ") < strlen(optarg))
-			    && (strspn(optarg, ".0123456789, ")
+			    && (strspn(optarg, ".batch0123456789, ")
 				< strlen(optarg))) {
 				fprintf(stderr, "Invalid jobs list: %s\n",
 					optarg);
@@ -372,7 +382,7 @@ void parse_command_line(int argc, char **argv)
 	if (optind < argc) {
 		optarg = argv[optind];
 		if ((strspn(optarg, "0123456789, ") < strlen(optarg))
-		    && (strspn(optarg, ".0123456789, ")
+		    && (strspn(optarg, ".batch0123456789, ")
 			< strlen(optarg))) {
 			fprintf(stderr, "Invalid jobs list: %s\n",
 				optarg);

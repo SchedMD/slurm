@@ -12,6 +12,9 @@ documents those changes that are of interest to users and admins.
  -- Fixed issue when using old mysql that can't handle a '.' in the table
     name.
  -- Mysql plugin works correctly without the SlurmDBD
+ -- Added ability to query batch step with sstat.  Currently no accounting data
+    is stored for the batch step, but the internals are inplace if we decide to
+    do that in the future.
 
 * Changes in SLURM 2.2.0.pre12
 ==============================
