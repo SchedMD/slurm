@@ -1707,6 +1707,7 @@ _send_complete_batch_script_msg(slurmd_job_t *job, int err, int status)
 	req.job_id	= job->jobid;
 	req.job_rc      = status;
 	req.slurm_rc	= err;
+	req.jobacct	= job->jobacct;
 
 	slurm_msg_t_init(&req_msg);
 	req.node_name	= job->node_name;

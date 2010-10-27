@@ -305,7 +305,7 @@ extern int slurm_job_step_stat(uint32_t job_id, uint32_t step_id,
 		if(!(step_layout =
 		     slurm_job_step_layout_get(job_id, step_id))) {
 			rc = errno;
-			error("slurm_job_step_get_stat: "
+			error("slurm_job_step_stat: "
 			      "problem getting step_layout for %u.%u: %s",
 			      job_id, step_id, slurm_strerror(rc));
 			return rc;

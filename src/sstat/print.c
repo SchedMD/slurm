@@ -128,9 +128,13 @@ void print_fields(slurmdb_step_rec_t *step)
 					     (curr_inx == field_count));
 			break;
 		case PRINT_JOBID:
-			snprintf(outbuf, sizeof(outbuf), "%u.%u",
-				 step->job_ptr->jobid,
-				 step->stepid);
+			if (step->stepid == NO_VAL)
+				snprintf(outbuf, sizeof(outbuf), "%u.batch",
+					 step->job_ptr->jobid);
+			else
+				snprintf(outbuf, sizeof(outbuf), "%u.%u",
+					 step->job_ptr->jobid,
+					 step->stepid);
 
 			field->print_routine(field,
 					     outbuf,

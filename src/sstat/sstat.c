@@ -44,7 +44,7 @@ void *_stat_thread(void *args);
 int _sstat_query(slurm_step_layout_t *step_layout, uint32_t job_id,
 		 uint32_t step_id);
 int _process_results();
-int _do_stat(uint32_t jobid, uint32_t stepid);
+int _do_stat(uint32_t jobid, uint32_t stepid, char *nodelist);
 
 /*
  * Globals
@@ -55,7 +55,7 @@ print_field_t fields[] = {
 	{10, "AvePages", print_fields_str, PRINT_AVEPAGES},
 	{10, "AveRSS", print_fields_str, PRINT_AVERSS},
 	{10, "AveVMSize", print_fields_str, PRINT_AVEVSIZE},
-	{10, "JobID", print_fields_str, PRINT_JOBID},
+	{-12, "JobID", print_fields_str, PRINT_JOBID},
 	{8, "MaxPages", print_fields_str, PRINT_MAXPAGES},
 	{12, "MaxPagesNode", print_fields_str, PRINT_MAXPAGESNODE},
 	{14, "MaxPagesTask", print_fields_int, PRINT_MAXPAGESTASK},
@@ -80,7 +80,7 @@ List print_fields_list = NULL;
 ListIterator print_fields_itr = NULL;
 int field_count = 0;
 
-int _do_stat(uint32_t jobid, uint32_t stepid)
+int _do_stat(uint32_t jobid, uint32_t stepid, char *nodelist)
 {
 	job_step_stat_response_msg_t *step_stat_response = NULL;
 	int rc = SLURM_SUCCESS;
@@ -92,7 +92,7 @@ int _do_stat(uint32_t jobid, uint32_t stepid)
 	hostlist_t hl = NULL;
 
 	debug("requesting info for job %u.%u", jobid, stepid);
-	if((rc = slurm_job_step_stat(jobid, stepid, NULL,
+	if((rc = slurm_job_step_stat(jobid, stepid, nodelist,
 				     &step_stat_response)) != SLURM_SUCCESS) {
 		error("problem getting step_layout for %u.%u: %s",
 		      jobid, stepid, slurm_strerror(rc));
@@ -184,7 +184,28 @@ int main(int argc, char **argv)
 	print_fields_header(print_fields_list);
 	itr = list_iterator_create(params.opt_job_list);
 	while((selected_step = list_next(itr))) {
-		if(selected_step->stepid != NO_VAL)
+		char *nodelist = NULL;
+		if(selected_step->stepid == INFINITE) {
+			/* get the batch step info */
+			job_info_msg_t *job_ptr = NULL;
+			hostlist_t hl;
+
+			if(slurm_load_job(
+				   &job_ptr, selected_step->jobid, SHOW_ALL)) {
+				error("couldn't get info for job %u",
+				      selected_step->jobid);
+				continue;
+			}
+
+			stepid = NO_VAL;
+			hl = hostlist_create(job_ptr->job_array[0].nodes);
+			/* memory leak here, but it is so small we
+			   will ignore it.
+			*/
+			nodelist = hostlist_pop(hl);
+			hostlist_destroy(hl);
+			slurm_free_job_info_msg(job_ptr);
+		} else if(selected_step->stepid != NO_VAL)
 			stepid = selected_step->stepid;
 		else if(params.opt_all_steps) {
 			job_step_info_response_msg_t *step_ptr = NULL;
@@ -198,7 +219,8 @@ int main(int argc, char **argv)
 			}
 			for (i = 0; i < step_ptr->job_step_count; i++) {
 				_do_stat(selected_step->jobid,
-					 step_ptr->job_steps[i].step_id);
+					 step_ptr->job_steps[i].step_id,
+					 step_ptr->job_steps[i].nodes);
 			}
 			slurm_free_job_step_info_response_msg(step_ptr);
 			continue;
@@ -218,8 +240,9 @@ int main(int argc, char **argv)
 				continue;
 			}
 			stepid = step_ptr->job_steps[0].step_id;
+			nodelist = step_ptr->job_steps[0].nodes;
 		}
-		_do_stat(selected_step->jobid, stepid);
+		_do_stat(selected_step->jobid, stepid, nodelist);
 	}
 	list_iterator_destroy(itr);
 
