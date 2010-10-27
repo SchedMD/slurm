@@ -2579,14 +2579,15 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 		}
 		object->parent_id = my_par_id;
 
-		if(!moved_parent) {
+		if (!moved_parent) {
 			_set_assoc_limits_for_add(mysql_conn, object);
-			if(!object->lft)
+			if (object->lft == NO_VAL)
 				_set_assoc_lft_rgt(mysql_conn, object);
 		}
 
-		if(addto_update_list(mysql_conn->update_list, SLURMDB_ADD_ASSOC,
-				     object) == SLURM_SUCCESS) {
+		if (addto_update_list(mysql_conn->update_list,
+				      SLURMDB_ADD_ASSOC,
+				      object) == SLURM_SUCCESS) {
 			list_remove(itr);
 		}
 
