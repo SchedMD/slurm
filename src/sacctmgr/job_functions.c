@@ -97,6 +97,8 @@ static int _set_cond(int *start, int argc, char *argv[],
 	if (!job_cond->cluster)
 		job_cond->cluster = slurm_get_cluster_name();
 
+	(*start) = i;
+
 	return set;
 }
 
@@ -154,6 +156,8 @@ static int _set_rec(int *start, int argc, char *argv[],
 			       argv[i]);
 		}
 	}
+
+	(*start) = i;
 
 	return set;
 }
