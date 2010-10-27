@@ -127,8 +127,7 @@ extern int send_accounting_update(List update_list, char *cluster, char *host,
 
 	switch (resp.msg_type) {
 	case RESPONSE_SLURM_RC:
-		rc = ((return_code_msg_t *)resp.data)->
-			return_code;
+		rc = ((return_code_msg_t *)resp.data)->return_code;
 		slurm_free_return_code_msg(resp.data);
 		break;
 	default:
