@@ -191,7 +191,8 @@ proc_req(slurmdbd_conn_t *slurmdbd_conn,
 	errno = 0;		/* clear errno */
 	if (first && (msg_type != DBD_INIT)) {
 		comment = "Initial RPC not DBD_INIT";
-		error("%s type (%d)", comment, msg_type);
+		error("CONN:%u %s type (%d)",
+		      slurmdbd_conn->newsockfd, comment, msg_type);
 		rc = EINVAL;
 		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
 					      rc, comment, DBD_INIT);
@@ -308,7 +309,8 @@ proc_req(slurmdbd_conn_t *slurmdbd_conn,
 						in_buffer, out_buffer, uid);
 			else {
 				comment = "DBD_INIT sent after connection established";
-				error("%s", comment);
+				error("CONN:%u %s",
+				      slurmdbd_conn->newsockfd, comment);
 				rc = EINVAL;
 				*out_buffer = make_dbd_rc_msg(
 					slurmdbd_conn->rpc_version, rc, comment,
@@ -424,7 +426,8 @@ proc_req(slurmdbd_conn_t *slurmdbd_conn,
 			break;
 		default:
 			comment = "Invalid RPC";
-			error("%s msg_type=%d", comment, msg_type);
+			error("CONN:%u: %s msg_type=%d",
+			      slurmdbd_conn->newsockfd, comment, msg_type);
 			rc = EINVAL;
 			*out_buffer = make_dbd_rc_msg(
 				slurmdbd_conn->rpc_version, rc, comment, 0);
@@ -432,7 +435,8 @@ proc_req(slurmdbd_conn_t *slurmdbd_conn,
 		}
 
 		if(rc == ESLURM_ACCESS_DENIED)
-			error("Security violation, %s",
+			error("CONN:%u: Security violation, %s",
+			      slurmdbd_conn->newsockfd,
 			      slurmdbd_msg_type_2_str(msg_type, 1));
 	}
 
@@ -1793,7 +1797,7 @@ static int   _fini_conn(slurmdbd_conn_t *slurmdbd_conn, Buf in_buffer,
 	if (slurmdbd_unpack_fini_msg(&fini_msg,
 				     slurmdbd_conn->rpc_version, in_buffer) != SLURM_SUCCESS) {
 		comment = "Failed to unpack DBD_FINI message";
-		error("%s", comment);
+		error("CONN:%u %s", slurmdbd_conn->newsockfd, comment);
 		rc = SLURM_ERROR;
 		goto end_it;
 	}
@@ -1825,7 +1829,8 @@ static int  _job_complete(slurmdbd_conn_t *slurmdbd_conn,
 
 	if (*uid != slurmdbd_conf->slurm_user_id) {
 		comment = "DBD_JOB_COMPLETE message from invalid uid";
-		error("%s %u", comment, *uid);
+		error("CONN:%u %s %u",
+		      slurmdbd_conn->newsockfd, comment, *uid);
 		rc = ESLURM_ACCESS_DENIED;
 		goto end_it;
 	}
@@ -1833,7 +1838,7 @@ static int  _job_complete(slurmdbd_conn_t *slurmdbd_conn,
 					     slurmdbd_conn->rpc_version, in_buffer) !=
 	    SLURM_SUCCESS) {
 		comment = "Failed to unpack DBD_JOB_COMPLETE message";
-		error("%s", comment);
+		error("CONN:%u %s", slurmdbd_conn->newsockfd, comment);
 		rc = SLURM_ERROR;
 		goto end_it;
 	}
@@ -1884,7 +1889,8 @@ static int  _job_start(slurmdbd_conn_t *slurmdbd_conn,
 
 	if (*uid != slurmdbd_conf->slurm_user_id) {
 		comment = "DBD_JOB_START message from invalid uid";
-		error("%s %u", comment, *uid);
+		error("CONN:%u %s %u",
+		      slurmdbd_conn->newsockfd, comment, *uid);
 		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
 					      ESLURM_ACCESS_DENIED, comment,
 					      DBD_JOB_START);
@@ -1895,7 +1901,7 @@ static int  _job_start(slurmdbd_conn_t *slurmdbd_conn,
 					  in_buffer) !=
 	    SLURM_SUCCESS) {
 		comment = "Failed to unpack DBD_JOB_START message";
-		error("%s", comment);
+		error("CONN:%u %s", slurmdbd_conn->newsockfd, comment);
 		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
 					      SLURM_ERROR, comment,
 					      DBD_JOB_START);
@@ -1923,7 +1929,8 @@ static int  _job_suspend(slurmdbd_conn_t *slurmdbd_conn,
 
 	if (*uid != slurmdbd_conf->slurm_user_id) {
 		comment = "DBD_JOB_SUSPEND message from invalid uid";
-		error("%s %u", comment, *uid);
+		error("CONN:%u %s %u",
+		      slurmdbd_conn->newsockfd, comment, *uid);
 		rc = ESLURM_ACCESS_DENIED;
 		goto end_it;
 	}
@@ -1931,7 +1938,7 @@ static int  _job_suspend(slurmdbd_conn_t *slurmdbd_conn,
 					    slurmdbd_conn->rpc_version,
 					    in_buffer) != SLURM_SUCCESS) {
 		comment = "Failed to unpack DBD_JOB_SUSPEND message";
-		error("%s", comment);
+		error("CONN:%u %s", slurmdbd_conn->newsockfd, comment);
 		rc = SLURM_ERROR;
 		goto end_it;
 	}
@@ -1979,7 +1986,7 @@ static int   _modify_accounts(slurmdbd_conn_t *slurmdbd_conn,
 	   && assoc_mgr_get_admin_level(slurmdbd_conn->db_conn, *uid)
 	   < SLURMDB_ADMIN_OPERATOR) {
 		comment = "Your user doesn't have privilege to preform this action";
-		error("%s", comment);
+		error("CONN:%u %s", slurmdbd_conn->newsockfd, comment);
 		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
 					      ESLURM_ACCESS_DENIED,
 					      comment, DBD_MODIFY_ACCOUNTS);
@@ -1991,7 +1998,7 @@ static int   _modify_accounts(slurmdbd_conn_t *slurmdbd_conn,
 				       DBD_MODIFY_ACCOUNTS,
 				       in_buffer) != SLURM_SUCCESS) {
 		comment = "Failed to unpack DBD_MODIFY_ACCOUNTS message";
-		error("%s", comment);
+		error("CONN:%u %s", slurmdbd_conn->newsockfd, comment);
 		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
 					      SLURM_ERROR,
 					      comment, DBD_MODIFY_ACCOUNTS);
@@ -2018,7 +2025,7 @@ static int   _modify_accounts(slurmdbd_conn_t *slurmdbd_conn,
 			if(!(comment = slurm_strerror(errno)))
 				comment = "Unknown issue";
 		}
-		error("%s", comment);
+		error("CONN:%u %s", slurmdbd_conn->newsockfd, comment);
 		slurmdbd_free_modify_msg(get_msg, DBD_MODIFY_ACCOUNTS);
 		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
 					      rc, comment, DBD_MODIFY_ACCOUNTS);
@@ -2050,7 +2057,7 @@ static int   _modify_assocs(slurmdbd_conn_t *slurmdbd_conn,
 				       DBD_MODIFY_ASSOCS,
 				       in_buffer) != SLURM_SUCCESS) {
 		comment = "Failed to unpack DBD_MODIFY_ASSOCS message";
-		error("%s", comment);
+		error("CONN:%u %s", slurmdbd_conn->newsockfd, comment);
 		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
 					      SLURM_ERROR,
 					      comment, DBD_MODIFY_ASSOCS);
@@ -2083,7 +2090,7 @@ static int   _modify_assocs(slurmdbd_conn_t *slurmdbd_conn,
 			if(!(comment = slurm_strerror(errno)))
 				comment = "Unknown issue";
 		}
-		error("%s", comment);
+		error("CONN:%u %s", slurmdbd_conn->newsockfd, comment);
 		slurmdbd_free_modify_msg(get_msg, DBD_MODIFY_ASSOCS);
 		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
 					      rc, comment, DBD_MODIFY_ASSOCS);
@@ -2115,7 +2122,7 @@ static int   _modify_clusters(slurmdbd_conn_t *slurmdbd_conn,
 	   && assoc_mgr_get_admin_level(slurmdbd_conn->db_conn, *uid)
 	   < SLURMDB_ADMIN_SUPER_USER) {
 		comment = "Your user doesn't have privilege to preform this action";
-		error("%s", comment);
+		error("CONN:%u %s", slurmdbd_conn->newsockfd, comment);
 		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
 					      ESLURM_ACCESS_DENIED,
 					      comment, DBD_MODIFY_CLUSTERS);
@@ -2127,7 +2134,7 @@ static int   _modify_clusters(slurmdbd_conn_t *slurmdbd_conn,
 				       DBD_MODIFY_CLUSTERS,
 				       in_buffer) != SLURM_SUCCESS) {
 		comment = "Failed to unpack DBD_MODIFY_CLUSTERS message";
-		error("%s", comment);
+		error("CONN:%u %s", slurmdbd_conn->newsockfd, comment);
 		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
 					      SLURM_ERROR,
 					      comment, DBD_MODIFY_CLUSTERS);
@@ -2154,7 +2161,7 @@ static int   _modify_clusters(slurmdbd_conn_t *slurmdbd_conn,
 			if(!(comment = slurm_strerror(errno)))
 				comment = "Unknown issue";
 		}
-		error("%s", comment);
+		error("CONN:%u %s", slurmdbd_conn->newsockfd, comment);
 		slurmdbd_free_modify_msg(get_msg, DBD_MODIFY_CLUSTERS);
 		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
 					      rc, comment, DBD_MODIFY_CLUSTERS);
@@ -2186,7 +2193,7 @@ static int   _modify_job(slurmdbd_conn_t *slurmdbd_conn,
 	   && assoc_mgr_get_admin_level(slurmdbd_conn->db_conn, *uid)
 	   < SLURMDB_ADMIN_SUPER_USER) {
 		comment = "Your user doesn't have privilege to preform this action";
-		error("%s", comment);
+		error("CONN:%u %s", slurmdbd_conn->newsockfd, comment);
 		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
 					      ESLURM_ACCESS_DENIED,
 					      comment, DBD_MODIFY_JOB);
@@ -2198,7 +2205,7 @@ static int   _modify_job(slurmdbd_conn_t *slurmdbd_conn,
 				       DBD_MODIFY_JOB,
 				       in_buffer) != SLURM_SUCCESS) {
 		comment = "Failed to unpack DBD_MODIFY_JOB message";
-		error("%s", comment);
+		error("CONN:%u %s", slurmdbd_conn->newsockfd, comment);
 		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
 					      SLURM_ERROR,
 					      comment, DBD_MODIFY_JOB);
@@ -2225,7 +2232,7 @@ static int   _modify_job(slurmdbd_conn_t *slurmdbd_conn,
 			if(!(comment = slurm_strerror(errno)))
 				comment = "Unknown issue";
 		}
-		error("%s", comment);
+		error("CONN:%u %s", slurmdbd_conn->newsockfd, comment);
 		slurmdbd_free_modify_msg(get_msg, DBD_MODIFY_JOB);
 		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
 					      rc, comment, DBD_MODIFY_JOB);
@@ -2257,7 +2264,7 @@ static int   _modify_qos(slurmdbd_conn_t *slurmdbd_conn,
 	   && assoc_mgr_get_admin_level(slurmdbd_conn->db_conn, *uid)
 	   < SLURMDB_ADMIN_SUPER_USER) {
 		comment = "Your user doesn't have privilege to preform this action";
-		error("%s", comment);
+		error("CONN:%u %s", slurmdbd_conn->newsockfd, comment);
 		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
 					      ESLURM_ACCESS_DENIED,
 					      comment, DBD_MODIFY_QOS);
@@ -2269,7 +2276,7 @@ static int   _modify_qos(slurmdbd_conn_t *slurmdbd_conn,
 				       DBD_MODIFY_QOS,
 				       in_buffer) != SLURM_SUCCESS) {
 		comment = "Failed to unpack DBD_MODIFY_QOS message";
-		error("%s", comment);
+		error("CONN:%u %s", slurmdbd_conn->newsockfd, comment);
 		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
 					      SLURM_ERROR,
 					      comment, DBD_MODIFY_QOS);
@@ -2299,7 +2306,7 @@ static int   _modify_qos(slurmdbd_conn_t *slurmdbd_conn,
 			if(!(comment = slurm_strerror(errno)))
 				comment = "Unknown issue";
 		}
-		error("%s", comment);
+		error("CONN:%u %s", slurmdbd_conn->newsockfd, comment);
 		slurmdbd_free_modify_msg(get_msg, DBD_MODIFY_QOS);
 		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
 					      rc, comment, DBD_MODIFY_QOS);
@@ -2336,7 +2343,7 @@ static int   _modify_users(slurmdbd_conn_t *slurmdbd_conn,
 				       DBD_MODIFY_USERS,
 				       in_buffer) != SLURM_SUCCESS) {
 		comment = "Failed to unpack DBD_MODIFY_USERS message";
-		error("%s", comment);
+		error("CONN:%u %s", slurmdbd_conn->newsockfd, comment);
 		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
 					      SLURM_ERROR,
 					      comment, DBD_MODIFY_USERS);
@@ -2361,7 +2368,7 @@ static int   _modify_users(slurmdbd_conn_t *slurmdbd_conn,
 			}
 		}
 		comment = "Your user doesn't have privilege to preform this action";
-		error("%s", comment);
+		error("CONN:%u %s", slurmdbd_conn->newsockfd, comment);
 		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
 					      ESLURM_ACCESS_DENIED,
 					      comment, DBD_MODIFY_USERS);
@@ -2379,7 +2386,7 @@ is_same_user:
 		 */
 		if((user_rec->admin_level != SLURMDB_ADMIN_NOTSET)) {
 			comment = "You can only change your own default account, default wckey nothing else";
-			error("%s", comment);
+			error("CONN:%u %s", slurmdbd_conn->newsockfd, comment);
 			*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
 						      ESLURM_ACCESS_DENIED,
 						      comment,
@@ -2415,7 +2422,7 @@ is_same_user:
 			if(!(comment = slurm_strerror(errno)))
 				comment = "Unknown issue";
 		}
-		error("%s", comment);
+		error("CONN:%u %s", slurmdbd_conn->newsockfd, comment);
 		slurmdbd_free_modify_msg(get_msg, DBD_MODIFY_USERS);
 		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
 					      rc, comment, DBD_MODIFY_USERS);
@@ -2447,7 +2454,7 @@ static int   _modify_wckeys(slurmdbd_conn_t *slurmdbd_conn,
 	   && assoc_mgr_get_admin_level(slurmdbd_conn->db_conn, *uid)
 	   < SLURMDB_ADMIN_SUPER_USER) {
 		comment = "Your user doesn't have privilege to preform this action";
-		error("%s", comment);
+		error("CONN:%u %s", slurmdbd_conn->newsockfd, comment);
 		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
 					      ESLURM_ACCESS_DENIED,
 					      comment, DBD_MODIFY_WCKEYS);
@@ -2459,7 +2466,7 @@ static int   _modify_wckeys(slurmdbd_conn_t *slurmdbd_conn,
 				       DBD_MODIFY_WCKEYS,
 				       in_buffer) != SLURM_SUCCESS) {
 		comment = "Failed to unpack DBD_MODIFY_WCKEYS message";
-		error("%s", comment);
+		error("CONN:%u %s", slurmdbd_conn->newsockfd, comment);
 		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
 					      SLURM_ERROR,
 					      comment, DBD_MODIFY_WCKEYS);
@@ -2486,7 +2493,7 @@ static int   _modify_wckeys(slurmdbd_conn_t *slurmdbd_conn,
 			if(!(comment = slurm_strerror(errno)))
 				comment = "Unknown issue";
 		}
-		error("%s", comment);
+		error("CONN:%u %s", slurmdbd_conn->newsockfd, comment);
 		slurmdbd_free_modify_msg(get_msg, DBD_MODIFY_WCKEYS);
 		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
 					      rc, comment, DBD_MODIFY_WCKEYS);
@@ -2513,14 +2520,15 @@ static int _modify_reservation(slurmdbd_conn_t *slurmdbd_conn,
 
 	if ((*uid != slurmdbd_conf->slurm_user_id && *uid != 0)) {
 		comment = "DBD_MODIFY_RESV message from invalid uid";
-		error("DBD_MODIFY_RESV message from invalid uid %u", *uid);
+		error("CONN:%u %s %u",
+		      slurmdbd_conn->newsockfd, comment, *uid);
 		rc = ESLURM_ACCESS_DENIED;
 		goto end_it;
 	}
 	if (slurmdbd_unpack_rec_msg(&rec_msg, slurmdbd_conn->rpc_version,
 				    DBD_MODIFY_RESV, in_buffer) != SLURM_SUCCESS) {
 		comment = "Failed to unpack DBD_MODIFY_RESV message";
-		error("%s", comment);
+		error("CONN:%u %s", slurmdbd_conn->newsockfd, comment);
 		rc = SLURM_ERROR;
 		goto end_it;
 	}
@@ -2547,7 +2555,8 @@ static int _node_state(slurmdbd_conn_t *slurmdbd_conn,
 
 	if (*uid != slurmdbd_conf->slurm_user_id) {
 		comment = "DBD_NODE_STATE message from invalid uid";
-		error("%s %u", comment, *uid);
+		error("CONN:%u %s %u",
+		      slurmdbd_conn->newsockfd, comment, *uid);
 		rc = ESLURM_ACCESS_DENIED;
 		goto end_it;
 	}
@@ -2556,7 +2565,7 @@ static int _node_state(slurmdbd_conn_t *slurmdbd_conn,
 					   in_buffer) !=
 	    SLURM_SUCCESS) {
 		comment = "Failed to unpack DBD_NODE_STATE message";
-		error("%s", comment);
+		error("CONN:%u %s", slurmdbd_conn->newsockfd, comment);
 		rc = SLURM_ERROR;
 		goto end_it;
 	}
@@ -2689,7 +2698,8 @@ static int   _register_ctld(slurmdbd_conn_t *slurmdbd_conn,
 
 	if (*uid != slurmdbd_conf->slurm_user_id) {
 		comment = "DBD_REGISTER_CTLD message from invalid uid";
-		error("%s %u", comment, *uid);
+		error("CONN:%u %s %u",
+		      slurmdbd_conn->newsockfd, comment, *uid);
 		rc = ESLURM_ACCESS_DENIED;
 		goto end_it;
 	}
@@ -2698,7 +2708,7 @@ static int   _register_ctld(slurmdbd_conn_t *slurmdbd_conn,
 					      in_buffer) !=
 	    SLURM_SUCCESS) {
 		comment = "Failed to unpack DBD_REGISTER_CTLD message";
-		error("%s", comment);
+		error("CONN:%u %s", slurmdbd_conn->newsockfd, comment);
 		rc = SLURM_ERROR;
 		goto end_it;
 	}
@@ -2752,7 +2762,8 @@ static int   _register_ctld(slurmdbd_conn_t *slurmdbd_conn,
 		slurm_set_addr_char(&ctld_address, register_ctld_msg->port, ip);
 		fd =  slurm_open_msg_conn(&ctld_address);
 		if (fd < 0) {
-			error("can not open socket back to slurmctld");
+			error("CONN: can not open socket back to slurmctld",
+			      slurmdbd_conn->newsockfd,);
 		} else {
 			slurm_msg_t out_msg;
 			slurm_msg_t_init(&out_msg);
@@ -2788,7 +2799,7 @@ static int   _remove_accounts(slurmdbd_conn_t *slurmdbd_conn,
 	   && assoc_mgr_get_admin_level(slurmdbd_conn->db_conn, *uid)
 	   < SLURMDB_ADMIN_OPERATOR) {
 		comment = "Your user doesn't have privilege to preform this action";
-		error("%s", comment);
+		error("CONN:%u %s", slurmdbd_conn->newsockfd, comment);
 		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
 					      ESLURM_ACCESS_DENIED,
 					      comment, DBD_REMOVE_ACCOUNTS);
@@ -2800,7 +2811,7 @@ static int   _remove_accounts(slurmdbd_conn_t *slurmdbd_conn,
 				     DBD_REMOVE_ACCOUNTS,
 				     in_buffer) != SLURM_SUCCESS) {
 		comment = "Failed to unpack DBD_REMOVE_ACCOUNTS message";
-		error("%s", comment);
+		error("CONN:%u %s", slurmdbd_conn->newsockfd, comment);
 		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
 					      SLURM_ERROR,
 					      comment, DBD_REMOVE_ACCOUNTS);
@@ -2826,7 +2837,7 @@ static int   _remove_accounts(slurmdbd_conn_t *slurmdbd_conn,
 			if(!(comment = slurm_strerror(errno)))
 				comment = "Unknown issue";
 		}
-		error("%s", comment);
+		error("CONN:%u %s", slurmdbd_conn->newsockfd, comment);
 		slurmdbd_free_cond_msg(get_msg, DBD_REMOVE_ACCOUNTS);
 		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
 					      rc, comment, DBD_REMOVE_ACCOUNTS);
@@ -2860,7 +2871,7 @@ static int   _remove_account_coords(slurmdbd_conn_t *slurmdbd_conn,
 					   slurmdbd_conn->rpc_version, in_buffer) !=
 	    SLURM_SUCCESS) {
 		comment = "Failed to unpack DBD_REMOVE_ACCOUNT_COORDS message";
-		error("%s", comment);
+		error("CONN:%u %s", slurmdbd_conn->newsockfd, comment);
 		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
 					      SLURM_ERROR, comment,
 					      DBD_ADD_ACCOUNT_COORDS);
@@ -2892,7 +2903,7 @@ static int   _remove_account_coords(slurmdbd_conn_t *slurmdbd_conn,
 			if(!(comment = slurm_strerror(errno)))
 				comment = "Unknown issue";
 		}
-		error("%s", comment);
+		error("CONN:%u %s", slurmdbd_conn->newsockfd, comment);
 		slurmdbd_free_acct_coord_msg(get_msg);
 		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
 					      rc, comment,
@@ -2925,7 +2936,7 @@ static int   _remove_assocs(slurmdbd_conn_t *slurmdbd_conn,
 				     DBD_REMOVE_ASSOCS, in_buffer) !=
 	    SLURM_SUCCESS) {
 		comment = "Failed to unpack DBD_REMOVE_ASSOCS message";
-		error("%s", comment);
+		error("CONN:%u %s", slurmdbd_conn->newsockfd, comment);
 		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
 					      SLURM_ERROR,
 					      comment, DBD_REMOVE_ASSOCS);
@@ -2956,7 +2967,7 @@ static int   _remove_assocs(slurmdbd_conn_t *slurmdbd_conn,
 			if(!(comment = slurm_strerror(errno)))
 				comment = "Unknown issue";
 		}
-		error("%s", comment);
+		error("CONN:%u %s", slurmdbd_conn->newsockfd, comment);
 		slurmdbd_free_cond_msg(get_msg, DBD_REMOVE_ASSOCS);
 		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
 					      rc, comment, DBD_REMOVE_ASSOCS);
@@ -2990,7 +3001,7 @@ static int   _remove_clusters(slurmdbd_conn_t *slurmdbd_conn,
 	   && assoc_mgr_get_admin_level(slurmdbd_conn->db_conn, *uid)
 	   < SLURMDB_ADMIN_SUPER_USER) {
 		comment = "Your user doesn't have privilege to preform this action";
-		error("%s", comment);
+		error("CONN:%u %s", slurmdbd_conn->newsockfd, comment);
 		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
 					      ESLURM_ACCESS_DENIED,
 					      comment, DBD_REMOVE_CLUSTERS);
@@ -3002,7 +3013,7 @@ static int   _remove_clusters(slurmdbd_conn_t *slurmdbd_conn,
 				     DBD_REMOVE_CLUSTERS,
 				     in_buffer) != SLURM_SUCCESS) {
 		comment = "Failed to unpack DBD_REMOVE_CLUSTERS message";
-		error("%s", comment);
+		error("CONN:%u %s", slurmdbd_conn->newsockfd, comment);
 		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
 					      SLURM_ERROR,
 					      comment, DBD_REMOVE_CLUSTERS);
@@ -3028,7 +3039,7 @@ static int   _remove_clusters(slurmdbd_conn_t *slurmdbd_conn,
 			if(!(comment = slurm_strerror(errno)))
 				comment = "Unknown issue";
 		}
-		error("%s", comment);
+		error("CONN:%u %s", slurmdbd_conn->newsockfd, comment);
 		slurmdbd_free_cond_msg(get_msg, DBD_REMOVE_CLUSTERS);
 		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
 					      rc, comment, DBD_REMOVE_CLUSTERS);
@@ -3061,7 +3072,7 @@ static int   _remove_qos(slurmdbd_conn_t *slurmdbd_conn,
 	   && assoc_mgr_get_admin_level(slurmdbd_conn->db_conn, *uid)
 	   < SLURMDB_ADMIN_SUPER_USER) {
 		comment = "Your user doesn't have privilege to preform this action";
-		error("%s", comment);
+		error("CONN:%u %s", slurmdbd_conn->newsockfd, comment);
 		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
 					      ESLURM_ACCESS_DENIED,
 					      comment, DBD_REMOVE_QOS);
@@ -3073,7 +3084,7 @@ static int   _remove_qos(slurmdbd_conn_t *slurmdbd_conn,
 				     DBD_REMOVE_QOS,
 				     in_buffer) != SLURM_SUCCESS) {
 		comment = "Failed to unpack DBD_REMOVE_QOS message";
-		error("%s", comment);
+		error("CONN:%u %s", slurmdbd_conn->newsockfd, comment);
 		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
 					      SLURM_ERROR,
 					      comment, DBD_REMOVE_QOS);
@@ -3099,7 +3110,7 @@ static int   _remove_qos(slurmdbd_conn_t *slurmdbd_conn,
 			if(!(comment = slurm_strerror(errno)))
 				comment = "Unknown issue";
 		}
-		error("%s", comment);
+		error("CONN:%u %s", slurmdbd_conn->newsockfd, comment);
 		slurmdbd_free_cond_msg(get_msg, DBD_REMOVE_QOS);
 		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
 					      rc, comment, DBD_REMOVE_QOS);
@@ -3132,7 +3143,7 @@ static int   _remove_users(slurmdbd_conn_t *slurmdbd_conn,
 	   && assoc_mgr_get_admin_level(slurmdbd_conn->db_conn, *uid)
 	   < SLURMDB_ADMIN_OPERATOR) {
 		comment = "Your user doesn't have privilege to preform this action";
-		error("%s", comment);
+		error("CONN:%u %s", slurmdbd_conn->newsockfd, comment);
 		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
 					      ESLURM_ACCESS_DENIED,
 					      comment, DBD_REMOVE_USERS);
@@ -3144,7 +3155,7 @@ static int   _remove_users(slurmdbd_conn_t *slurmdbd_conn,
 				     DBD_REMOVE_USERS, in_buffer) !=
 	    SLURM_SUCCESS) {
 		comment = "Failed to unpack DBD_REMOVE_USERS message";
-		error("%s", comment);
+		error("CONN:%u %s", slurmdbd_conn->newsockfd, comment);
 		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
 					      SLURM_ERROR,
 					      comment, DBD_REMOVE_USERS);
@@ -3170,7 +3181,7 @@ static int   _remove_users(slurmdbd_conn_t *slurmdbd_conn,
 			if(!(comment = slurm_strerror(errno)))
 				comment = "Unknown issue";
 		}
-		error("%s", comment);
+		error("CONN:%u %s", slurmdbd_conn->newsockfd, comment);
 		slurmdbd_free_cond_msg(get_msg, DBD_REMOVE_USERS);
 		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
 					      rc, comment, DBD_REMOVE_USERS);
@@ -3203,7 +3214,7 @@ static int   _remove_wckeys(slurmdbd_conn_t *slurmdbd_conn,
 	   && assoc_mgr_get_admin_level(slurmdbd_conn->db_conn, *uid)
 	   < SLURMDB_ADMIN_SUPER_USER) {
 		comment = "Your user doesn't have privilege to preform this action";
-		error("%s", comment);
+		error("CONN:%u %s", slurmdbd_conn->newsockfd, comment);
 		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
 					      ESLURM_ACCESS_DENIED,
 					      comment, DBD_REMOVE_WCKEYS);
@@ -3215,7 +3226,7 @@ static int   _remove_wckeys(slurmdbd_conn_t *slurmdbd_conn,
 				     DBD_REMOVE_WCKEYS,
 				     in_buffer) != SLURM_SUCCESS) {
 		comment = "Failed to unpack DBD_REMOVE_WCKEYS message";
-		error("%s", comment);
+		error("CONN:%u %s", slurmdbd_conn->newsockfd, comment);
 		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
 					      SLURM_ERROR,
 					      comment, DBD_REMOVE_WCKEYS);
@@ -3241,7 +3252,7 @@ static int   _remove_wckeys(slurmdbd_conn_t *slurmdbd_conn,
 			if(!(comment = slurm_strerror(errno)))
 				comment = "Unknown issue";
 		}
-		error("%s", comment);
+		error("CONN:%u %s", slurmdbd_conn->newsockfd, comment);
 		slurmdbd_free_cond_msg(get_msg, DBD_REMOVE_WCKEYS);
 		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
 					      rc, comment, DBD_REMOVE_WCKEYS);
@@ -3277,7 +3288,7 @@ static int _remove_reservation(slurmdbd_conn_t *slurmdbd_conn,
 				    DBD_REMOVE_RESV,
 				    in_buffer) != SLURM_SUCCESS) {
 		comment = "Failed to unpack DBD_REMOVE_RESV message";
-		error("%s", comment);
+		error("CONN:%u %s", slurmdbd_conn->newsockfd, comment);
 		rc = SLURM_ERROR;
 		goto end_it;
 	}
@@ -3306,7 +3317,7 @@ static int   _roll_usage(slurmdbd_conn_t *slurmdbd_conn,
 	   && assoc_mgr_get_admin_level(slurmdbd_conn->db_conn, *uid)
 	   < SLURMDB_ADMIN_OPERATOR) {
 		comment = "Your user doesn't have privilege to preform this action";
-		error("%s", comment);
+		error("CONN:%u %s", slurmdbd_conn->newsockfd, comment);
 		rc = ESLURM_ACCESS_DENIED;
 		goto end_it;
 	}
@@ -3315,7 +3326,7 @@ static int   _roll_usage(slurmdbd_conn_t *slurmdbd_conn,
 					   slurmdbd_conn->rpc_version, in_buffer) !=
 	    SLURM_SUCCESS) {
 		comment = "Failed to unpack DBD_ROLL_USAGE message";
-		error("%s", comment);
+		error("CONN:%u %s", slurmdbd_conn->newsockfd, comment);
 		rc = SLURM_ERROR;
 		goto end_it;
 	}
@@ -3355,7 +3366,7 @@ static int   _send_mult_job_start(slurmdbd_conn_t *slurmdbd_conn,
 				     DBD_SEND_MULT_JOB_START,
 				     in_buffer) != SLURM_SUCCESS) {
 		comment = "Failed to unpack DBD_SEND_MULT_JOB_START message";
-		error("%s", comment);
+		error("CONN:%u %s", slurmdbd_conn->newsockfd, comment);
 		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
 					      SLURM_ERROR, comment,
 					      DBD_SEND_MULT_JOB_START);
@@ -3409,7 +3420,7 @@ static int   _send_mult_msg(slurmdbd_conn_t *slurmdbd_conn,
 				     DBD_SEND_MULT_MSG,
 				     in_buffer) != SLURM_SUCCESS) {
 		comment = "Failed to unpack DBD_SEND_MULT_MSG message";
-		error("%s", comment);
+		error("CONN:%u %s", slurmdbd_conn->newsockfd, comment);
 		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
 					      SLURM_ERROR, comment,
 					      DBD_SEND_MULT_MSG);
@@ -3438,7 +3449,7 @@ static int   _send_mult_msg(slurmdbd_conn_t *slurmdbd_conn,
 			       DBD_GOT_MULT_MSG, *out_buffer);
 	if(list_msg.my_list)
 		list_destroy(list_msg.my_list);
-	
+
 	return SLURM_SUCCESS;
 }
 
@@ -3462,7 +3473,7 @@ static int  _step_complete(slurmdbd_conn_t *slurmdbd_conn,
 					      slurmdbd_conn->rpc_version, in_buffer) !=
 	    SLURM_SUCCESS) {
 		comment = "Failed to unpack DBD_STEP_COMPLETE message";
-		error("%s", comment);
+		error("CONN:%u %s", slurmdbd_conn->newsockfd, comment);
 		rc = SLURM_ERROR;
 		goto end_it;
 	}
@@ -3525,7 +3536,7 @@ static int  _step_start(slurmdbd_conn_t *slurmdbd_conn,
 					   slurmdbd_conn->rpc_version,
 					   in_buffer) != SLURM_SUCCESS) {
 		comment = "Failed to unpack DBD_STEP_START message";
-		error("%s", comment);
+		error("CONN:%u %s", slurmdbd_conn->newsockfd, comment);
 		rc = SLURM_ERROR;
 		goto end_it;
 	}
