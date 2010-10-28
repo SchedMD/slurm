@@ -531,12 +531,12 @@ _process_env_var(env_vars_t *e, const char *val)
 		break;
 	case OPT_WCKEY:
 		xfree(opt.wckey);
-		opt.wckey = xstrdup(optarg);
+		opt.wckey = xstrdup(val);
 		break;
 	case OPT_SIGNAL:
-		if (get_signal_opts(optarg, &opt.warn_signal,
+		if (get_signal_opts((char *)val, &opt.warn_signal,
 				    &opt.warn_time)) {
-			error("Invalid signal specification: %s", optarg);
+			error("Invalid signal specification: %s", val);
 			exit(error_exit);
 		}
 		break;
