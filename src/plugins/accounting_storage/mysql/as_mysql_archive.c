@@ -62,7 +62,9 @@ typedef struct {
 	char *alloc_nodes;
 	char *associd;
 	char *blockid;
-	char *comp_code;
+	char *derived_ec;
+	char *derived_es;
+	char *exit_code;
 	char *eligible;
 	char *end;
 	char *gid;
@@ -93,7 +95,7 @@ typedef struct {
 	char *ave_pages;
 	char *ave_rss;
 	char *ave_vsize;
-	char *comp_code;
+	char *exit_code;
 	char *cpus;
 	char *id;
 	char *kill_requid;
@@ -202,7 +204,7 @@ enum {
 	JOB_REQ_BLOCKID,
 	JOB_REQ_DERIVED_EC,
 	JOB_REQ_DERIVED_ES,
-	JOB_REQ_COMP_CODE,
+	JOB_REQ_EXIT_CODE,
 	JOB_REQ_TIMELIMIT,
 	JOB_REQ_ELIGIBLE,
 	JOB_REQ_END,
@@ -281,7 +283,7 @@ enum {
 	STEP_REQ_NODE_INX,
 	STEP_REQ_STATE,
 	STEP_REQ_KILL_REQUID,
-	STEP_REQ_COMP_CODE,
+	STEP_REQ_EXIT_CODE,
 	STEP_REQ_NODES,
 	STEP_REQ_CPUS,
 	STEP_REQ_TASKS,
@@ -370,7 +372,9 @@ static void _pack_local_job(local_job_t *object,
 	packstr(object->alloc_nodes, buffer);
 	packstr(object->associd, buffer);
 	packstr(object->blockid, buffer);
-	packstr(object->comp_code, buffer);
+	packstr(object->derived_ec, buffer);
+	packstr(object->derived_es, buffer);
+	packstr(object->exit_code, buffer);
 	packstr(object->timelimit, buffer);
 	packstr(object->eligible, buffer);
 	packstr(object->end, buffer);
@@ -408,7 +412,9 @@ static int _unpack_local_job(local_job_t *object,
 	unpackstr_ptr(&object->alloc_nodes, &tmp32, buffer);
 	unpackstr_ptr(&object->associd, &tmp32, buffer);
 	unpackstr_ptr(&object->blockid, &tmp32, buffer);
-	unpackstr_ptr(&object->comp_code, &tmp32, buffer);
+	unpackstr_ptr(&object->derived_ec, &tmp32, buffer);
+	unpackstr_ptr(&object->derived_es, &tmp32, buffer);
+	unpackstr_ptr(&object->exit_code, &tmp32, buffer);
 	unpackstr_ptr(&object->timelimit, &tmp32, buffer);
 	unpackstr_ptr(&object->eligible, &tmp32, buffer);
 	unpackstr_ptr(&object->end, &tmp32, buffer);
@@ -443,7 +449,7 @@ static void _pack_local_step(local_step_t *object,
 	packstr(object->ave_pages, buffer);
 	packstr(object->ave_rss, buffer);
 	packstr(object->ave_vsize, buffer);
-	packstr(object->comp_code, buffer);
+	packstr(object->exit_code, buffer);
 	packstr(object->cpus, buffer);
 	packstr(object->id, buffer);
 	packstr(object->kill_requid, buffer);
@@ -487,7 +493,7 @@ static int _unpack_local_step(local_step_t *object,
 	unpackstr_ptr(&object->ave_pages, &tmp32, buffer);
 	unpackstr_ptr(&object->ave_rss, &tmp32, buffer);
 	unpackstr_ptr(&object->ave_vsize, &tmp32, buffer);
-	unpackstr_ptr(&object->comp_code, &tmp32, buffer);
+	unpackstr_ptr(&object->exit_code, &tmp32, buffer);
 	unpackstr_ptr(&object->cpus, &tmp32, buffer);
 	unpackstr_ptr(&object->id, &tmp32, buffer);
 	unpackstr_ptr(&object->kill_requid, &tmp32, buffer);
@@ -738,6 +744,9 @@ static int _process_old_sql_line(const char *data_in, char **data_full_out)
 		} else if(!strncmp("comp_code", data_in+i, 9)) {
 			xstrcat(fields, "exit_code");
 			i+=9;
+		} else if(!strncmp("exit_code", data_in+i, 9)) {
+			xstrcat(fields, "exit_code");
+			i+=9;
 		} else if(!strncmp("alloc_cpus", data_in+i, 10)) {
 			xstrcat(fields, "cpus_alloc");
 			i+=10;
@@ -919,6 +928,10 @@ static int _process_old_sql_line(const char *data_in, char **data_full_out)
 					xstrcat(ending, "time_end");
 					ending_end+=3;
 				} else if(!strncmp("comp_code",
+						   data_in+ending_end, 9)) {
+					xstrcat(ending, "exit_code");
+					ending_end+=9;
+				} else if(!strncmp("exit_code",
 						   data_in+ending_end, 9)) {
 					xstrcat(ending, "exit_code");
 					ending_end+=9;
@@ -1404,7 +1417,9 @@ static uint32_t _archive_jobs(mysql_conn_t *mysql_conn, char *cluster_name,
 		job.alloc_nodes = row[JOB_REQ_ALLOC_NODES];
 		job.associd = row[JOB_REQ_ASSOCID];
 		job.blockid = row[JOB_REQ_BLOCKID];
-		job.comp_code = row[JOB_REQ_COMP_CODE];
+		job.derived_ec = row[JOB_REQ_DERIVED_EC];
+		job.derived_es = row[JOB_REQ_DERIVED_ES];
+		job.exit_code = row[JOB_REQ_EXIT_CODE];
 		job.timelimit = row[JOB_REQ_TIMELIMIT];
 		job.eligible = row[JOB_REQ_ELIGIBLE];
 		job.end = row[JOB_REQ_END];
@@ -1482,7 +1497,9 @@ static char *_load_jobs(uint16_t rpc_version, Buf buffer,
 			   object.alloc_nodes,
 			   object.associd,
 			   object.blockid,
-			   object.comp_code,
+			   object.derived_ec,
+			   object.derived_es,
+			   object.exit_code,
 			   object.timelimit,
 			   object.eligible,
 			   object.end,
@@ -1573,7 +1590,7 @@ static uint32_t _archive_steps(mysql_conn_t *mysql_conn, char *cluster_name,
 		step.ave_pages = row[STEP_REQ_AVE_PAGES];
 		step.ave_rss = row[STEP_REQ_AVE_RSS];
 		step.ave_vsize = row[STEP_REQ_AVE_VSIZE];
-		step.comp_code = row[STEP_REQ_COMP_CODE];
+		step.exit_code = row[STEP_REQ_EXIT_CODE];
 		step.cpus = row[STEP_REQ_CPUS];
 		step.id = row[STEP_REQ_ID];
 		step.kill_requid = row[STEP_REQ_KILL_REQUID];
@@ -1657,7 +1674,7 @@ static char *_load_steps(uint16_t rpc_version, Buf buffer,
 			   object.ave_pages,
 			   object.ave_rss,
 			   object.ave_vsize,
-			   object.comp_code,
+			   object.exit_code,
 			   object.cpus,
 			   object.id,
 			   object.kill_requid,
