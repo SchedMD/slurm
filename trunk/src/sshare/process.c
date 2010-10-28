@@ -43,7 +43,7 @@ extern int long_flag;
 extern int process(shares_response_msg_t *resp)
 {
 	int rc = SLURM_SUCCESS;
-	association_shares_object_t *assoc = NULL;
+	association_shares_object_t *share = NULL;
 	ListIterator itr = NULL;
 	ListIterator itr2 = NULL;
 	char *object = NULL;
@@ -148,7 +148,7 @@ extern int process(shares_response_msg_t *resp)
 			xfree(field);
 			continue;
 		}
-		if((tmp_char = strstr(object, "\%"))) {
+		if ((tmp_char = strstr(object, "\%"))) {
 			int newlen = atoi(tmp_char+1);
 			if(newlen)
 				field->len = newlen;
@@ -158,7 +158,7 @@ extern int process(shares_response_msg_t *resp)
 	list_iterator_destroy(itr);
 	list_destroy(format_list);
 
-	if(exit_code) {
+	if (exit_code) {
 		list_destroy(print_fields_list);
 		return SLURM_ERROR;
 	}
@@ -168,27 +168,28 @@ extern int process(shares_response_msg_t *resp)
 
 	field_count = list_count(print_fields_list);
 
-	if(!resp->assoc_shares_list || !list_count(resp->assoc_shares_list))
+	if (!resp->assoc_shares_list || !list_count(resp->assoc_shares_list))
 		return SLURM_SUCCESS;
+
 	tree_list = list_create(slurmdb_destroy_print_tree);
 	itr = list_iterator_create(resp->assoc_shares_list);
-	while((assoc = list_next(itr))) {
+	while ((share = list_next(itr))) {
 		int curr_inx = 1;
 		char *tmp_char = NULL;
 		char *local_acct = NULL;
 
-		while((field = list_next(itr2))) {
+		while ((field = list_next(itr2))) {
 			switch(field->type) {
 			case PRINT_ACCOUNT:
-				if(assoc->user)
+				if(share->user)
 					local_acct = xstrdup_printf(
-						"|%s", assoc->name);
+						"|%s", share->name);
 				else
-					local_acct = xstrdup(assoc->name);
+					local_acct = xstrdup(share->name);
 
 				print_acct = slurmdb_tree_name_get(
 					local_acct,
-					assoc->parent, tree_list);
+					share->parent, tree_list);
 				xfree(local_acct);
 				field->print_routine(
 					field,
@@ -198,49 +199,49 @@ extern int process(shares_response_msg_t *resp)
 			case PRINT_CLUSTER:
 				field->print_routine(
 					field,
-					assoc->cluster,
+					share->cluster,
 					(curr_inx == field_count));
 				break;
 			case PRINT_EUSED:
 				field->print_routine(field,
-						     assoc->usage_efctv,
+						     share->usage_efctv,
 						     (curr_inx == field_count));
 				break;
 			case PRINT_FSFACTOR:
 				field->print_routine(field,
-						     (assoc->shares_norm -
-						     (double)assoc->usage_efctv
+						     (share->shares_norm -
+						     (double)share->usage_efctv
 						      + 1.0) / 2.0,
 						     (curr_inx == field_count));
 				break;
 			case PRINT_ID:
 				field->print_routine(field,
-						     assoc->assoc_id,
+						     share->assoc_id,
 						     (curr_inx == field_count));
 				break;
 			case PRINT_NORMS:
 				field->print_routine(field,
-						     assoc->shares_norm,
+						     share->shares_norm,
 						     (curr_inx == field_count));
 				break;
 			case PRINT_NORMU:
 				field->print_routine(field,
-						     assoc->usage_norm,
+						     share->usage_norm,
 						     (curr_inx == field_count));
 				break;
 			case PRINT_RAWS:
 				field->print_routine(field,
-						     assoc->shares_raw,
+						     share->shares_raw,
 						     (curr_inx == field_count));
 				break;
 			case PRINT_RAWU:
 				field->print_routine(field,
-						     assoc->usage_raw,
+						     share->usage_raw,
 						     (curr_inx == field_count));
 				break;
 			case PRINT_USER:
-				if(assoc->user)
-					tmp_char = assoc->name;
+				if(share->user)
+					tmp_char = share->name;
 				field->print_routine(field,
 						     tmp_char,
 						     (curr_inx == field_count));
