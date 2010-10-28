@@ -193,7 +193,7 @@ static void _opt_pbs_batch_script(const char *file, const void *body, int size);
 
 /* set options based upon env vars  */
 static void _opt_env(void);
-static void _proc_get_user_env(char *optarg);
+static void _proc_get_user_env(char *val);
 
 /* list known options and their settings  */
 static void  _opt_list(void);
@@ -558,10 +558,10 @@ _process_env_var(env_vars_t *e, const char *val)
 		break;
 
 	case OPT_DISTRIB:
-		opt.distribution = verify_dist_type(optarg,
+		opt.distribution = verify_dist_type(val,
 						    &opt.plane_size);
 		if (opt.distribution == SLURM_DIST_UNKNOWN)
-			error("distribution type `%s' is invalid", optarg);
+			error("distribution type `%s' is invalid", val);
 		break;
 
 	case OPT_NODES:
@@ -615,12 +615,12 @@ _process_env_var(env_vars_t *e, const char *val)
 		break;
 	case OPT_WCKEY:
 		xfree(opt.wckey);
-		opt.wckey = xstrdup(optarg);
+		opt.wckey = xstrdup(val);
 		break;
 	case OPT_SIGNAL:
-		if (get_signal_opts(optarg, &opt.warn_signal,
+		if (get_signal_opts((char *)val, &opt.warn_signal,
 				    &opt.warn_time)) {
-			error("Invalid signal specification: %s", optarg);
+			error("Invalid signal specification: %s", val);
 			exit(error_exit);
 		}
 		break;
