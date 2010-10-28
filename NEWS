@@ -11,6 +11,8 @@ documents those changes that are of interest to users and admins.
     association_shares_object_t.
  -- Set Lft and Rgt correctly when adding association.  Fix for regression
     caused in 2.1.15, cosmetic fix only.
+ -- Replaced optarg which was undefined in some spots to make sure ENV vars are
+    set up correctly.
 
 * Changes in SLURM 2.1.15
 =========================
