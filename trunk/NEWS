@@ -16,6 +16,8 @@ documents those changes that are of interest to users and admins.
     is stored for the batch step, but the internals are inplace if we decide to
     do that in the future.
  -- Fixed some backwards compatibility issues with 2.2 talking to 2.1.
+ -- Fixed regression where modifying associations didn't get sent to the
+    slurmctld.
 
 * Changes in SLURM 2.2.0.pre12
 ==============================

@@ -213,8 +213,8 @@ static int _reset_default_assoc(mysql_conn_t *mysql_conn,
 		   "where (user='%s' && acct!='%s' && is_def=1);",
 		   assoc->cluster, assoc_table, (long)now,
 		   assoc->user, assoc->acct);
-
 	if (add_to_update) {
+		char *sel_query = NULL;
 		MYSQL_RES *result = NULL;
 		MYSQL_ROW row;
 		/* If moved parent all the associations will be sent
@@ -222,28 +222,28 @@ static int _reset_default_assoc(mysql_conn_t *mysql_conn,
 		   to be done one at a time so we can send
 		   the updated assocs back to the slurmctlds
 		*/
-		xstrfmtcat(*query, "select id_assoc from \"%s_%s\" "
+		xstrfmtcat(sel_query, "select id_assoc from \"%s_%s\" "
 			   "where (user='%s' && acct!='%s' && is_def=1);",
 			   assoc->cluster, assoc_table,
 			   assoc->user, assoc->acct);
 		debug3("%d(%s:%d) query\n%s",
-		       mysql_conn->conn, THIS_FILE, __LINE__, *query);
+		       mysql_conn->conn, THIS_FILE, __LINE__, sel_query);
 		if(!(result = mysql_db_query_ret(
-			     mysql_conn->db_conn, *query, 1))) {
-			xfree(*query);
+			     mysql_conn->db_conn, sel_query, 1))) {
+			xfree(sel_query);
 			rc = SLURM_ERROR;
 			goto end_it;
 		}
-		xfree(*query);
+		xfree(sel_query);
 
 		while((row = mysql_fetch_row(result))) {
 			slurmdb_association_rec_t *mod_assoc = xmalloc(
 				sizeof(slurmdb_association_rec_t));
 			slurmdb_init_association_rec(mod_assoc, 0);
 
+			mod_assoc->cluster = xstrdup(assoc->cluster);
 			mod_assoc->id = atoi(row[0]);
 			mod_assoc->is_def = 0;
-
 			if (addto_update_list(mysql_conn->update_list,
 					      SLURMDB_MODIFY_ASSOC,
 					      mod_assoc)
@@ -1593,7 +1593,14 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 			}
 		}
 
-		slurmdb_destroy_association_rec(mod_assoc);
+		if (moved_parent)
+			slurmdb_destroy_association_rec(mod_assoc);
+		else if (addto_update_list(mysql_conn->update_list,
+					   SLURMDB_MODIFY_ASSOC,
+					   mod_assoc) != SLURM_SUCCESS) {
+			error("couldn't add to the update list");
+			slurmdb_destroy_association_rec(mod_assoc);
+		}
 	}
 
 	xstrcat(name_char, ")");
@@ -1608,7 +1615,7 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 	if(rc != SLURM_SUCCESS)
 		goto end_it;
 
-	if(vals) {
+	if (vals) {
 		char *user_name = uid_to_string((uid_t) user->uid);
 		rc = modify_common(mysql_conn, DBD_MODIFY_ASSOCS, now,
 				   user_name, assoc_table, name_char, vals,
@@ -1620,7 +1627,7 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 		}
 	}
 
-	if(moved_parent) {
+	if (moved_parent) {
 		List local_assoc_list = NULL;
 		ListIterator local_itr = NULL;
 		slurmdb_association_rec_t *local_assoc = NULL;
