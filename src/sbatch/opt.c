@@ -625,14 +625,14 @@ _process_env_var(env_vars_t *e, const char *val)
 		}
 		break;
 	case OPT_GET_USER_ENV:
-		if (optarg)
-			_proc_get_user_env(optarg);
+		if (val)
+			_proc_get_user_env((char *)val);
 		else
 			opt.get_user_env_time = 0;
 		break;
 	case OPT_CLUSTERS:
-		if (!(opt.clusters = slurmdb_get_info_cluster(optarg))) {
-			error("'%s' invalid entry for --clusters", optarg);
+		if (!(opt.clusters = slurmdb_get_info_cluster((char *)val))) {
+			error("'%s' invalid entry for --clusters", val);
 			exit(1);
 		}
 		break;
