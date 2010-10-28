@@ -7,7 +7,7 @@
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
 #          anything else indicates a failure mode that must be investigated.
 ############################################################################
-# Copyright (C) 2008 Lawrence Livermore National Security.
+# Copyright (C) 2008-2010 Lawrence Livermore National Security.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Joseph Donaghy <donaghy1@llnl.gov>
 # CODE-OCEC-09-009. All rights reserved.
@@ -33,6 +33,7 @@
 source ./globals
 
 set test_id     "21.11"
+set test_nu     "test21-11"
 set exit_code   0
 set acmatches   0
 set aamatches   0
@@ -53,8 +54,8 @@ set mj		MaxJobs
 set mn		MaxNodes
 set mw		MaxWall
 set clu		cluster
-set tc1		tcluster1
-set tc2		tcluster2
+set tc1		[format "%s%s" $test_nu "clus1"]
+set tc2		[format "%s%s" $test_nu "clus2"]
 set fs1		2500
 set mc1		1000000
 set mj1		50
@@ -62,8 +63,8 @@ set mn1		300
 set mw1		01:00:00
 set acc		account
 set ass		associations
-set nm1		testaccta1
-set nm2		testaccta2
+set nm1		[format "%s%s" $test_nu "acct1"]
+set nm2		[format "%s%s" $test_nu "acct2"]
 set des		Description
 set ds1		"Test Account A1"
 set org		Organization
@@ -152,22 +153,22 @@ if {$aamatches != 1} {
 #
 # Use sacctmgr to list the test associations
 #
-set as_list_pid [spawn $sacctmgr list $ass $clu=$tc1,$tc2]
+set as_list_pid [spawn $sacctmgr -p list $ass $clu=$tc1,$tc2]
 expect {
-	-re "$tc1 *$nm1" {
+	-re "$tc1.$nm1" {
 		incr almatches
 		exp_continue
 	}
-	-re "$tc1 *$nm2" {
+	-re "$tc1.$nm2" {
 		incr almatches
 		exp_continue
 	}
-	-re "$tc2 *$nm1" {
+	-re "$tc2.$nm1" {
 		set exit_code 1
 		send_user "\nFAILURE: $nm1 account erroneously added to $tc2\n"
 		exp_continue
 	}
-	-re "$tc2 *$nm2" {
+	-re "$tc2.$nm2" {
 		exp_continue
 		send_user "\nFAILURE: $nm2 account erroneously added to $tc2\n"
 		set exit_code 1
