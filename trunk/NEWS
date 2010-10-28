@@ -18,6 +18,8 @@ documents those changes that are of interest to users and admins.
  -- Fixed some backwards compatibility issues with 2.2 talking to 2.1.
  -- Fixed regression where modifying associations didn't get sent to the
     slurmctld.
+ -- Made sshare sort things the same way saccmgr list assoc does
+    (alphabetically)
 
 * Changes in SLURM 2.2.0.pre12
 ==============================

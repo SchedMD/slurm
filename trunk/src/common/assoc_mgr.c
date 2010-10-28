@@ -82,6 +82,43 @@ static int _sort_assoc_dec(slurmdb_association_rec_t *assoc_a,
 	return -1;
 }
 
+/*
+ * Comparator used for sorting immediate childern of acct_hierarchical_recs
+ *
+ * returns: -1: assoc_a > assoc_b   0: assoc_a == assoc_b   1: assoc_a < assoc_b
+ *
+ */
+
+static int _sort_shares_dec(association_shares_object_t *share_a,
+			    association_shares_object_t *share_b)
+{
+	int diff = 0;
+
+	/* first just check the lfts and rgts if a lft is inside of the
+	 * others lft and rgt just return it is less
+	 */
+	if ((share_a->lft > share_b->lft) && (share_a->lft < share_b->rgt))
+		return 1;
+
+	/* check to see if this is a user association or an account.
+	 * We want the accounts at the bottom
+	 */
+	if(share_a->user && !share_b->user)
+		return -1;
+	else if(!share_a->user && share_b->user)
+		return 1;
+
+	diff = strcmp(share_a->name, share_b->name);
+
+	if (diff < 0)
+		return -1;
+	else if (diff > 0)
+		return 1;
+
+	return 0;
+
+}
+
 /* you should check for assoc == NULL before this function */
 static void _normalize_assoc_shares(slurmdb_association_rec_t *assoc)
 {
@@ -1999,6 +2036,8 @@ extern List assoc_mgr_get_shares(void *db_conn,
 		list_append(ret_list, share);
 
 		share->assoc_id = assoc->id;
+		share->lft = assoc->lft;
+		share->rgt = assoc->rgt;
 		share->cluster = xstrdup(assoc->cluster);
 
 		if(assoc == assoc_mgr_root_assoc)
@@ -2038,6 +2077,8 @@ end_it:
 		list_iterator_destroy(user_itr);
 	if(acct_itr)
 		list_iterator_destroy(acct_itr);
+
+	list_sort(ret_list, (ListCmpF)_sort_shares_dec);
 
 	return ret_list;
 }
