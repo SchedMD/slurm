@@ -406,9 +406,13 @@ typedef struct association_shares_object {
 	uint32_t assoc_id;	/* association ID */
 
 	char *cluster;          /* cluster name */
+	uint32_t lft;              /* DON'T PACK : needed for sorting,
+				   convenience only */
 	char *name;             /* name */
 	char *parent;           /* parent name */
 
+	uint32_t rgt;              /* DON'T PACK : needed for sorting,
+				   convenience only */
 	double shares_norm;     /* normalized shares */
 	uint32_t shares_raw;	/* number of shares allocated */
 
