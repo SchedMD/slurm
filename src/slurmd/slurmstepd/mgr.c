@@ -1708,9 +1708,9 @@ _send_complete_batch_script_msg(slurmd_job_t *job, int err, int status)
 	req.job_rc      = status;
 	req.slurm_rc	= err;
 	req.jobacct	= job->jobacct;
+	req.node_name	= job->node_name;
 
 	slurm_msg_t_init(&req_msg);
-	req.node_name	= job->node_name;
 	req_msg.msg_type= REQUEST_COMPLETE_BATCH_SCRIPT;
 	req_msg.data	= &req;
 
