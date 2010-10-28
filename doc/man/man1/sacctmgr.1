@@ -1,4 +1,4 @@
-.TH SACCTMGR "1" "April 2009" "sacctmgr 2.0" "Slurm components"
+   .TH SACCTMGR "1" "April 2009" "sacctmgr 2.0" "Slurm components"
 
 .SH "NAME"
 sacctmgr \- Used to view and modify Slurm account information.
@@ -53,7 +53,7 @@ This is equivalent to the \fBquiet\fR command.
 
 .TP
 \fB\-r\fR, \fB\-\-readonly\fR
-Makes it so the running sacctmgr can not modify accounting information.
+Makes it so the running sacctmgr cannot modify accounting information.
 The \fBreadonly\fR option is for use within interactive mode.
 
 .TP
@@ -213,12 +213,13 @@ Workload  Characterization  Key. An arbitrary  string  for  grouping orthogonal 
 
 .TP
 \fIDefaultQOS\fP=<default qos>
-The default QOS this association and it's childern should have.
+The default QOS this association and its children should have.
 This is overridden if set directly on a user.
 To clear a previously set value use the modify command with a new value of \-1.
+.P
 NOTE: Because this could be inherited from a parent an association can
 easily end up with a default qos that it does not have access to.
-There is no current checking to make sure this doesn't happen.  When
+There is no current checking to make sure this does not happen.  When
 read in from the slurmctld the default qos is checked against and if
 the default qos isn't in the list of valid QOS for that association
 and the association only has access to 1 QOS that will become the
@@ -236,23 +237,27 @@ aggregate for this association and all association which are children
 of this association.
 To clear a previously set value use the modify command with a new
 value of \-1.
+.P
 NOTE: This limit is not enforced if set on the root
 association of a cluster.  So even though it may appear in sacctmgr
-output it will not be enforced.
-NOTE: This limit only applys when using the Priority Multifactor
+output, it will not be enforced.
+.P
+ALSO NOTE: This limit only applies when using the Priority Multifactor
 plugin.  The time is decayed using the value of PriorityDecayHalfLife
 or PriorityUsageResetPeriod as set in the slurm.conf.  When this limit
-is reached all associated jobs running will be killed and all future jobs
-submitted with associations in the group will be delayed until they
-are able to run inside the limit.
+is reached all associated jobs running will be killed and all future
+jobs submitted with associations in the group will be delayed until
+they are able to run inside the limit.
 
 .TP
 \fIGrpCPUs\fP=<max cpus>
 Maximum number of CPUs running jobs are able to be allocated in aggregate for
 this association and all association which are children of this association.
 To clear a previously set value use the modify command with a new
-value of \-1.  (NOTE: This limit only applys fully when using the Select
-Consumable Resouce plugin.)
+value of \-1.
+.P
+NOTE: This limit only applies fully when using the Select Consumable
+Resource plugin.
 
 .TP
 \fIGrpJobs\fP=<max jobs>
@@ -278,15 +283,17 @@ To clear a previously set value use the modify command with a new value of \-1.
 Maximum wall clock time running jobs are able to be allocated in aggregate for
 this association and all association which are children of this association.
 To clear a previously set value use the modify command with a new value of \-1.
-NOTE: This limit is not enforced if set on the root
-association of a cluster.  So even though it may appear in sacctmgr
-output it will not be enforced.
-NOTE: This limit only applys when using the Priority Multifactor
+.P
+NOTE: This limit is not enforced if set on the root association of a
+cluster.  So even though it may appear in sacctmgr output, it will not
+be enforced.
+.P
+ALSO NOTE: This limit only applies when using the Priority Multifactor
 plugin.  The time is decayed using the value of PriorityDecayHalfLife
 or PriorityUsageResetPeriod as set in the slurm.conf.  When this limit
-is reached all associated jobs running will be killed and all future jobs
-submitted with associations in the group will be delayed until they
-are able to run inside the limit.
+is reached all associated jobs running will be killed and all future
+jobs submitted with associations in the group will be delayed until
+they are able to run inside the limit.
 
 .TP
 \fIMaxCPUMins\fP=<max cpu minutes>
@@ -302,8 +309,10 @@ Maximum number of CPUs each job is able to use in this association.
 This is overridden if set directly on a user.
 Default is the cluster's limit.
 To clear a previously set value use the modify command with a new
-value of \-1.  (NOTE: This limit only applys fully when using the Select
-Consumable Resouce plugin.)
+value of \-1.
+.P
+NOTE: This limit only applies fully when using the Select Consumable
+Resource plugin.
 
 .TP
 \fIMaxJobs\fP=<max jobs>
@@ -337,15 +346,17 @@ Default is the cluster's limit.
 <days>\-<hr>:<min>:<sec> or <days>\-<hr>.
 The value is recorded in minutes with rounding as needed.
 To clear a previously set value use the modify command with a new value of \-1.
-NOTE: Changing this value will have no effect on any running or pending job.
+.P
+NOTE: Changing this value will have no effect on any running or
+pending job.
 
 .TP
 \fIQosLevel\fP<operator><comma separated list of qos names>
 Specify the default Quality of Service's that jobs are able to run at
 for this association.  To get a list of valid QOS's use 'sacctmgr list qos'.
-This value will override it's parents value and push down to it's
+This value will override its parents value and push down to its
 children as the new default.  Setting a QosLevel to '' (two single
-quotes with nothing between them) restores it's default setting.  You
+quotes with nothing between them) restores its default setting.  You
 can also use the operator += and \-= to add or remove certain QOS's
 from a QOS list.
 
@@ -404,8 +415,7 @@ Display all coordinators for this account.
 .TP
 \fIWithDeleted\fP
 Display information with previously deleted data.
-
-.SH ""
+.P
 NOTE: If using the WithAssoc option you can also query against
 association specific information to view only certain associations
 this account may have.  These extra options can be found in the
@@ -431,8 +441,7 @@ Organization to which the account belongs.
 \fICoordinators\fP
 List of users that are a coordinator of the account. (Only filled in
 when using the WithCoordinator option.)
-
-.SH ""
+.P
 NOTE: If using the WithAssoc option you can also view the information
 about the various associations the account may have on all the
 clusters in the system.  The Association format fields are described
@@ -457,8 +466,7 @@ List the associations of the user(s).
 .TP
 \fIPartition\fP=<comma separated list of partition names>
 List the associations of the partition(s).
-
-.SH ""
+.P
 NOTE: You can also use the general specifications list above in the
 \fIGENERAL SPECIFICATIONS FOR ASSOCIATION BASED ENTITIES\fP section.
 
@@ -557,7 +565,7 @@ The id of the association.
 Associations are kept in a hierarchy this is the left most
 spot in the hierarchy.  When used with the RGT variable all
 associations with a LFT inside this LFT and before the RGT are
-childern of this association.
+children of this association.
 
 .TP
 \fIMaxCPUMins\fP
@@ -608,7 +616,7 @@ The numeric values of valid QOS\' for this association.
 Associations are kept in a hierarchy this is the right most
 spot in the hierarchy.  When used with the LFT variable all
 associations with a LFT inside this RGT and after the LFT are
-childern of this association.
+children of this association.
 
 .TP
 \fIUser\fP
@@ -642,8 +650,7 @@ Comma separated list of numeric RPC values.
 \fIWOLimits\fP
 Display information without limit information. This is for a smaller
 default format of Cluster,ControlHost,ControlPort,RPC
-
-.SH ""
+.P
 NOTE: You can also use the general specifications list above in the
 \fIGENERAL SPECIFICATIONS FOR ASSOCIATION BASED ENTITIES\fP section.
 
@@ -693,8 +700,7 @@ The numeric value of the select plugin the cluster is using.
 \fIRPC\fP
 When a slurmctld registers with the database the rpc version the controller
 is running is placed here.
-
-.SH ""
+.P
 NOTE: You can also view the information about the root association for
 the cluster.  The Association format fields are described
 in the \fILIST/SHOW ASSOCIATION FORMAT OPTIONS\fP section.
@@ -708,8 +714,7 @@ Account name to add this user as a coordinator to.
 .TP
 \fINames\fP=<comma separated list of user names>
 Names of coordinators.
-
-.SH ""
+.P
 NOTE: To list coordinators use the WithCoordinator options with list
 account or list user.
 .RE
@@ -781,7 +786,7 @@ set automatically to Node.
 .TP
 \fIUser\fP=<comma separated list of users>
 Query against users who set the event.  If this is set, the event type is
-set automatically to Node since only user slurm can preform a cluster event.
+set automatically to Node since only user slurm can perform a cluster event.
 
 .RE
 
@@ -817,7 +822,7 @@ Numeric value of the name of the event.
 
 .TP
 \fINodeName\fP
-The node effected by the event.  In a cluster event, this is blank.
+The node affected by the event.  In a cluster event, this is blank.
 
 .TP
 \fIReason\fP
@@ -943,7 +948,7 @@ Maximum number of CPU minutes running jobs are able to be allocated in
 aggregate for this QOS.
 To clear a previously set value use the modify command with a new
 value of \-1.
-NOTE: This limit only applys when using the Priority Multifactor
+NOTE: This limit only applies when using the Priority Multifactor
 plugin.  The time is decayed using the value of PriorityDecayHalfLife
 or PriorityUsageResetPeriod as set in the slurm.conf.  When this limit
 is reached all associated jobs running will be killed and all future jobs
@@ -981,7 +986,7 @@ To clear a previously set value use the modify command with a new value of \-1.
 Maximum wall clock time running jobs are able to be allocated in aggregate for
 this QOS.
 To clear a previously set value use the modify command with a new value of \-1.
-NOTE: This limit only applys when using the Priority Multifactor
+NOTE: This limit only applies when using the Priority Multifactor
 plugin.  The time is decayed using the value of PriorityDecayHalfLife
 or PriorityUsageResetPeriod as set in the slurm.conf.  When this limit
 is reached all associated jobs running will be killed and all future jobs
@@ -1033,7 +1038,7 @@ Name of the QOS.  Needed for creation.
 \fIPreempt\fP
 Other QOS\' this QOS can preempt.
 Setting a Preempt to '' (two single
-quotes with nothing between them) restores it's default setting.  You
+quotes with nothing between them) restores its default setting.  You
 can also use the operator += and \-= to add or remove certain QOS's
 from a QOS list.
 
@@ -1108,10 +1113,9 @@ Get information about which associations were affected by the transactions.
 
 .TP
 \fIWhere\fP
-
-.SH ""
+.P
 NOTE: If using the WithAssoc option you can also view the information
-about the various associations the transaction effected.  The
+about the various associations the transaction affected.  The
 Association format fields are described
 in the \fILIST/SHOW ASSOCIATION FORMAT OPTIONS\fP section.
 .RE
@@ -1168,8 +1172,7 @@ Display all accounts a user is coordinator for.
 .TP
 \fIWithDeleted\fP
 Display information with previously deleted data.
-
-.SH ""
+.P
 NOTE: If using the WithAssoc option you can also query against
 association specific information to view only certain associations
 this account may have.  These extra options can be found in the
@@ -1186,7 +1189,7 @@ Admin level of user.
 
 .TP
 \fIDefaultAccount\fP
-An the users default account.
+The user's default account.
 
 .TP
 \fICoordinators\fP
@@ -1196,8 +1199,7 @@ when using the WithCoordinator option.)
 .TP
 \fIUser\fP
 The name of a user.
-
-.SH ""
+.P
 NOTE: If using the WithAssoc option you can also view the information
 about the various associations the user may have on all the
 clusters in the system.  The Association format fields are described
@@ -1217,8 +1219,7 @@ Specific cluster for the WCKey.
 .TP
 \fIUser\fP
 The name of a user for the WCKey.
-
-.SH ""
+.P
 NOTE: If using the WithAssoc option you can also view the information
 about the various associations the user may have on all the
 clusters in the system.  The Association format fields are described
@@ -1264,8 +1265,8 @@ in the file.
 
 Quick explanation how the file works.
 
-Since the associations in the system follow a hierarchy so does the
-file.  Any thing that is a parent needs to be defined before any
+Since the associations in the system follow a hierarchy, so does the
+file.  Anything that is a parent needs to be defined before any
 children.  The only exception is the understood 'root' account.  This
 is always a default for any cluster and does not need to be defined.
 
@@ -1553,7 +1554,7 @@ cautiously since this is writing your sql into the database.
 .br
 When modifying an object placing the key words 'set' and the
 optional 'where' is critical to perform correctly below are examples to
-produce correct results.  As a rule of thumb any thing you put in front
+produce correct results.  As a rule of thumb anything you put in front
 of the set will be used as a quantifier.  If you want to put a
 quantifier after the key word 'set' you should use the key
 word 'where'.
