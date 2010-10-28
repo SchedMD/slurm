@@ -744,9 +744,6 @@ static int _process_old_sql_line(const char *data_in, char **data_full_out)
 		} else if(!strncmp("comp_code", data_in+i, 9)) {
 			xstrcat(fields, "exit_code");
 			i+=9;
-		} else if(!strncmp("exit_code", data_in+i, 9)) {
-			xstrcat(fields, "exit_code");
-			i+=9;
 		} else if(!strncmp("alloc_cpus", data_in+i, 10)) {
 			xstrcat(fields, "cpus_alloc");
 			i+=10;
@@ -928,10 +925,6 @@ static int _process_old_sql_line(const char *data_in, char **data_full_out)
 					xstrcat(ending, "time_end");
 					ending_end+=3;
 				} else if(!strncmp("comp_code",
-						   data_in+ending_end, 9)) {
-					xstrcat(ending, "exit_code");
-					ending_end+=9;
-				} else if(!strncmp("exit_code",
 						   data_in+ending_end, 9)) {
 					xstrcat(ending, "exit_code");
 					ending_end+=9;
