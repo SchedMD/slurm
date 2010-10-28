@@ -7,7 +7,7 @@
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
 #          anything else indicates a failure mode that must be investigated.
 ############################################################################
-# Copyright (C) 2008 Lawrence Livermore National Security.
+# Copyright (C) 2008-2010 Lawrence Livermore National Security.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Joseph Donaghy <donaghy1@llnl.gov>
 # CODE-OCEC-09-009. All rights reserved.
@@ -33,6 +33,7 @@
 source ./globals
 
 set test_id     "21.10"
+set test_nu     "test21-10"
 set exit_code   0
 set acmatches   0
 set aamatches   0
@@ -61,7 +62,7 @@ set ms		MaxSubmitJobs
 set mn		MaxNodes
 set mw		MaxWall
 set clu		cluster
-set tc1		tcluster1
+set tc1		[format "%s%s" $test_nu "clus1"]
 set fs1		2500
 set gm1		1000
 set gc1		20
@@ -77,7 +78,7 @@ set mn1		200
 set mw1		01:00:00
 set acc		account
 set ass		associations
-set nm1		testaccta1
+set nm1		[format "%s%s" $test_nu "acct1"]
 set des		Description
 set ds1		"Test Account A1"
 set org		Organization
