@@ -475,8 +475,7 @@ static bg_record_t *_find_matching_block(List block_list,
 				if (!request->rotate)
 					break;
 
-				_rotate_geo((uint16_t *)request->geometry,
-					    rot_cnt);
+				_rotate_geo(request->geometry, rot_cnt);
 			}
 
 			if (!match)
@@ -697,9 +696,10 @@ static int _dynamically_request(List block_list, int *blocks_added,
 	ListIterator itr = NULL;
 	int rc = SLURM_ERROR;
 	int create_try = 0;
-	int start_geo[SYSTEM_DIMENSIONS];
+	uint16_t start_geo[SYSTEM_DIMENSIONS];
 
-	memcpy(start_geo, request->geometry, sizeof(int)*SYSTEM_DIMENSIONS);
+	memcpy(start_geo, request->geometry,
+	       sizeof(uint16_t)*SYSTEM_DIMENSIONS);
 	if(bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
 		info("going to create %d", request->size);
 	list_of_lists = list_create(NULL);
@@ -770,7 +770,7 @@ static int _dynamically_request(List block_list, int *blocks_added,
 			list_destroy(new_blocks);
 			if(!*blocks_added) {
 				memcpy(request->geometry, start_geo,
-				       sizeof(int)*SYSTEM_DIMENSIONS);
+				       sizeof(uint16_t)*SYSTEM_DIMENSIONS);
 				rc = SLURM_ERROR;
 				continue;
 			}
@@ -785,7 +785,7 @@ static int _dynamically_request(List block_list, int *blocks_added,
 		}
 
 		memcpy(request->geometry, start_geo,
-		       sizeof(int)*SYSTEM_DIMENSIONS);
+		       sizeof(uint16_t)*SYSTEM_DIMENSIONS);
 
 	}
 	list_iterator_destroy(itr);
@@ -877,7 +877,7 @@ static int _find_best_block_match(List block_list,
 	if(req_geometry[X] != 0 && req_geometry[X] != (uint16_t)NO_VAL) {
 		target_size = 1;
 		for (i=0; i<SYSTEM_DIMENSIONS; i++)
-			target_size *= (uint16_t)req_geometry[i];
+			target_size *= req_geometry[i];
 		if(target_size != min_nodes) {
 			debug2("min_nodes not set correctly %u "
 			       "should be %u from %u%u%u",

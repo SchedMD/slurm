@@ -562,7 +562,7 @@ extern char *sprint_select_jobinfo(select_jobinfo_t *jobinfo,
 				xstrcat(geo, "0");
 		}
 	} else
-		geo = give_geo((int *)jobinfo->geometry);
+		geo = give_geo(jobinfo->geometry);
 
 	switch (mode) {
 	case SELECT_PRINT_HEAD:
@@ -686,7 +686,7 @@ extern char *xstrdup_select_jobinfo(select_jobinfo_t *jobinfo, int mode)
 				xstrcat(geo, "0");
 		}
 	} else
-		geo = give_geo((int *)jobinfo->geometry);
+		geo = give_geo(jobinfo->geometry);
 
 	switch (mode) {
 	case SELECT_PRINT_HEAD:

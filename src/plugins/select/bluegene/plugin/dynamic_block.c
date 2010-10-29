@@ -93,7 +93,7 @@ extern List create_dynamic_block(List block_list,
 					char *start_geo =
 						give_geo(bg_record->start);
 					char *geo =
-						give_geo((int *)bg_record->geo);
+						give_geo(bg_record->geo);
 
 					info("adding %s(%s) %s %s %s %u",
 					     bg_record->bg_block_id,
@@ -121,7 +121,7 @@ extern List create_dynamic_block(List block_list,
 			} else if(bg_conf->slurm_debug_flags
 				  & DEBUG_FLAG_BG_PICK) {
 				char *start_geo = give_geo(bg_record->start);
-				char *geo = give_geo((int *)bg_record->geo);
+				char *geo = give_geo(bg_record->geo);
 
 				info("not adding %s(%s) %s %s %s %u ",
 				     bg_record->bg_block_id,

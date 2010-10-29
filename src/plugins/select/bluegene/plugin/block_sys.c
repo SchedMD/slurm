@@ -88,7 +88,7 @@ static void _print_list(List list)
 		}
 
 		debug("[ %d", stuff[0]);
-		for (i=1; i<PA_SYSTEM_DIMENSIONS; i++){
+		for (i=1; i<SYSTEM_DIMENSIONS; i++){
 			debug(" x %d", stuff[i]);
 		}
 		debug(" ]");
@@ -418,7 +418,7 @@ int read_bg_blocks(List curr_block_list)
 	bg_record_t *bg_record = NULL;
 	uid_t my_uid;
 
-	int *coord = NULL;
+	uint16_t *coord = NULL;
 	int block_number, block_count;
 	char *tmp_char = NULL;
 
@@ -971,7 +971,7 @@ extern int load_state_file(List curr_block_list, char *dir_name)
 	bg_record_t *bg_record = NULL;
 	block_info_t *block_info = NULL;
 	bitstr_t *node_bitmap = NULL, *ionode_bitmap = NULL;
-	int geo[SYSTEM_DIMENSIONS];
+	uint16_t geo[SYSTEM_DIMENSIONS];
 	char temp[256];
 	List results = NULL;
 	int data_allocated, data_read = 0;

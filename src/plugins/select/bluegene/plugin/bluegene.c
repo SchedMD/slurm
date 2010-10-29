@@ -145,7 +145,7 @@ extern void fini_bg(void)
 	ba_fini();
 }
 
-extern char *give_geo(int int_geo[SYSTEM_DIMENSIONS])
+extern char *give_geo(uint16_t int_geo[SYSTEM_DIMENSIONS])
 {
 	char *geo = NULL;
 	int i;
