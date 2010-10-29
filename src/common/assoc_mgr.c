@@ -76,39 +76,44 @@ static pthread_cond_t locks_cond = PTHREAD_COND_INITIALIZER;
 static int _sort_assoc_dec(slurmdb_association_rec_t *assoc_a,
 			   slurmdb_association_rec_t *assoc_b)
 {
-	if (assoc_a->lft > assoc_b->lft)
-		return 1;
-
-	return -1;
-}
-
-/*
- * Comparator used for sorting immediate childern of acct_hierarchical_recs
- *
- * returns: -1: assoc_a > assoc_b   0: assoc_a == assoc_b   1: assoc_a < assoc_b
- *
- */
-
-static int _sort_shares_dec(association_shares_object_t *share_a,
-			    association_shares_object_t *share_b)
-{
 	int diff = 0;
+	char *name_a, *name_b;
+
+	/* Previously we only sorted by lft, as done here.  Then we
+	   needed to get a prettier list from sshare.  Instead of
+	   sorting things over and over again we only sort them when
+	   changes happen, so this is less intense since things only
+	   change rarely.
+	*/
+	/* if (assoc_a->lft > assoc_b->lft) */
+	/* 	return 1; */
+	/* return -1; */
 
 	/* first just check the lfts and rgts if a lft is inside of the
 	 * others lft and rgt just return it is less
 	 */
-	if ((share_a->lft > share_b->lft) && (share_a->lft < share_b->rgt))
+	if ((assoc_a->lft > assoc_b->lft) && (assoc_a->lft < assoc_b->rgt))
 		return 1;
 
 	/* check to see if this is a user association or an account.
 	 * We want the accounts at the bottom
 	 */
-	if(share_a->user && !share_b->user)
+	if (assoc_a->user && !assoc_b->user)
 		return -1;
-	else if(!share_a->user && share_b->user)
+	else if (!assoc_a->user && assoc_b->user)
 		return 1;
 
-	diff = strcmp(share_a->name, share_b->name);
+	if(assoc_a->user)
+		name_a = assoc_a->user;
+	else
+		name_a = assoc_a->acct;
+
+	if(assoc_b->user)
+		name_b = assoc_b->user;
+	else
+		name_b = assoc_b->acct;
+
+	diff = strcmp(name_a, name_b);
 
 	if (diff < 0)
 		return -1;
@@ -116,7 +121,6 @@ static int _sort_shares_dec(association_shares_object_t *share_a,
 		return 1;
 
 	return 0;
-
 }
 
 /* you should check for assoc == NULL before this function */
@@ -537,6 +541,9 @@ static int _post_association_list(List assoc_list)
 			_normalize_assoc_shares(assoc);
 	}
 	list_iterator_destroy(itr);
+
+	list_sort(assoc_list, (ListCmpF)_sort_assoc_dec);
+
 	//END_TIMER2("load_associations");
 	return SLURM_SUCCESS;
 }
@@ -2078,8 +2085,9 @@ end_it:
 	if(acct_itr)
 		list_iterator_destroy(acct_itr);
 
-	list_sort(ret_list, (ListCmpF)_sort_shares_dec);
-
+	/* The ret_list should already be sorted correctly, so no need
+	   to do it again.
+	*/
 	return ret_list;
 }
 
