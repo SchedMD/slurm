@@ -123,6 +123,11 @@ extern slurmdb_admin_level_t str_2_slurmdb_admin_level(char *level);
 extern List slurmdb_get_hierarchical_sorted_assoc_list(List assoc_list);
 extern List slurmdb_get_acct_hierarchical_rec_list(List assoc_list);
 
+/* This reorders the list into a alphabetical hierarchy.
+   IN/OUT: assoc_list
+ */
+extern void slurmdb_sort_hierarchical_assoc_list(List assoc_list);
+
 /* IN/OUT: tree_list a list of slurmdb_print_tree_t's */
 extern char *slurmdb_tree_name_get(char *name, char *parent, List tree_list);
 

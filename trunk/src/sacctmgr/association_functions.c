@@ -564,7 +564,6 @@ extern int sacctmgr_list_association(int argc, char *argv[])
 	slurmdb_association_cond_t *assoc_cond =
 		xmalloc(sizeof(slurmdb_association_cond_t));
 	List assoc_list = NULL;
-	List first_list = NULL;
 	slurmdb_association_rec_t *assoc = NULL;
 	int i=0;
 	ListIterator itr = NULL;
@@ -620,8 +619,8 @@ extern int sacctmgr_list_association(int argc, char *argv[])
 		list_destroy(print_fields_list);
 		return SLURM_ERROR;
 	}
-	first_list = assoc_list;
-	assoc_list = slurmdb_get_hierarchical_sorted_assoc_list(first_list);
+
+	slurmdb_sort_hierarchical_assoc_list(assoc_list);
 
 	itr = list_iterator_create(assoc_list);
 	itr2 = list_iterator_create(print_fields_list);
@@ -655,7 +654,6 @@ extern int sacctmgr_list_association(int argc, char *argv[])
 
 	list_iterator_destroy(itr2);
 	list_iterator_destroy(itr);
-	list_destroy(first_list);
 	list_destroy(assoc_list);
 	list_destroy(print_fields_list);
 	tree_display = 0;

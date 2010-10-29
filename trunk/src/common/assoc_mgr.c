@@ -67,62 +67,6 @@ void (*remove_qos_notify) (slurmdb_qos_rec_t *rec) = NULL;
 static pthread_mutex_t locks_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t locks_cond = PTHREAD_COND_INITIALIZER;
 
-/*
- * Comparator used for sorting assocs largest cpu to smallest cpu
- *
- * returns: 1: assoc_a > assoc_b  -1: assoc_a < assoc_b
- *
- */
-static int _sort_assoc_dec(slurmdb_association_rec_t *assoc_a,
-			   slurmdb_association_rec_t *assoc_b)
-{
-	int diff = 0;
-	char *name_a, *name_b;
-
-	/* Previously we only sorted by lft, as done here.  Then we
-	   needed to get a prettier list from sshare.  Instead of
-	   sorting things over and over again we only sort them when
-	   changes happen, so this is less intense since things only
-	   change rarely.
-	*/
-	/* if (assoc_a->lft > assoc_b->lft) */
-	/* 	return 1; */
-	/* return -1; */
-
-	/* first just check the lfts and rgts if a lft is inside of the
-	 * others lft and rgt just return it is less
-	 */
-	if ((assoc_a->lft > assoc_b->lft) && (assoc_a->lft < assoc_b->rgt))
-		return 1;
-
-	/* check to see if this is a user association or an account.
-	 * We want the accounts at the bottom
-	 */
-	if (assoc_a->user && !assoc_b->user)
-		return -1;
-	else if (!assoc_a->user && assoc_b->user)
-		return 1;
-
-	if(assoc_a->user)
-		name_a = assoc_a->user;
-	else
-		name_a = assoc_a->acct;
-
-	if(assoc_b->user)
-		name_b = assoc_b->user;
-	else
-		name_b = assoc_b->acct;
-
-	diff = strcmp(name_a, name_b);
-
-	if (diff < 0)
-		return -1;
-	else if (diff > 0)
-		return 1;
-
-	return 0;
-}
-
 /* you should check for assoc == NULL before this function */
 static void _normalize_assoc_shares(slurmdb_association_rec_t *assoc)
 {
@@ -542,7 +486,7 @@ static int _post_association_list(List assoc_list)
 	}
 	list_iterator_destroy(itr);
 
-	list_sort(assoc_list, (ListCmpF)_sort_assoc_dec);
+	slurmdb_sort_hierarchical_assoc_list(assoc_list);
 
 	//END_TIMER2("load_associations");
 	return SLURM_SUCCESS;
@@ -2043,8 +1987,6 @@ extern List assoc_mgr_get_shares(void *db_conn,
 		list_append(ret_list, share);
 
 		share->assoc_id = assoc->id;
-		share->lft = assoc->lft;
-		share->rgt = assoc->rgt;
 		share->cluster = xstrdup(assoc->cluster);
 
 		if(assoc == assoc_mgr_root_assoc)
@@ -2169,17 +2111,24 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update)
 	assoc_mgr_lock(&locks);
 	itr = list_iterator_create(assoc_mgr_association_list);
 	while((object = list_pop(update->objects))) {
-		if(object->cluster && assoc_mgr_cluster_name) {
+		if (object->cluster && assoc_mgr_cluster_name) {
 			/* only update the local clusters assocs */
 			if(strcasecmp(object->cluster,
 				      assoc_mgr_cluster_name)) {
 				slurmdb_destroy_association_rec(object);
 				continue;
 			}
-		} else if(assoc_mgr_cluster_name) {
+		} else if (assoc_mgr_cluster_name) {
 			error("We don't have a cluster here, no "
 			      "idea if this is our association.");
 			continue;
+		} else if (!object->cluster) {
+			/* This clause is only here for testing
+			   purposes, it shouldn't really happen in
+			   real senarios.
+			*/
+			debug("THIS SHOULD ONLY HAPPEN IN A TEST ENVIRONMENT");
+			object->cluster = xstrdup("test");
 		}
 
 		list_iterator_reset(itr);
@@ -2359,6 +2308,7 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update)
 				//rc = SLURM_ERROR;
 				break;
 			}
+
 			if(!object->usage)
 				object->usage =
 					create_assoc_mgr_association_usage();
@@ -2410,8 +2360,8 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update)
 	 */
 	if(parents_changed) {
 		int reset = 1;
-		list_sort(assoc_mgr_association_list,
-			  (ListCmpF)_sort_assoc_dec);
+		slurmdb_sort_hierarchical_assoc_list(
+			assoc_mgr_association_list);
 
 		list_iterator_reset(itr);
 		/* flush the childern lists */
@@ -2482,8 +2432,8 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update)
 			}
 		}
 	} else if (resort)
-		list_sort(assoc_mgr_association_list,
-			  (ListCmpF)_sort_assoc_dec);
+		slurmdb_sort_hierarchical_assoc_list(
+			assoc_mgr_association_list);
 
 	list_iterator_destroy(itr);
 	assoc_mgr_unlock(&locks);
