@@ -275,7 +275,6 @@ static void _admin_focus_toggle(GtkToggleButton *toggle_button,
 {
 	if(visible) {
 		(*visible) = gtk_toggle_button_get_active(toggle_button);
-		g_print("_admin_focus_toggle\n");
 		global_send_update_msg = 1;
 	}
 }
