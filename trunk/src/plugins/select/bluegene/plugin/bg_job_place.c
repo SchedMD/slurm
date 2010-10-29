@@ -512,7 +512,7 @@ static int _check_for_booted_overlapping_blocks(
 	while ((found_record = (bg_record_t*)list_next(itr)) != NULL) {
 		if ((!found_record->bg_block_id)
 		    || (bg_record == found_record)) {
-			if(bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
+			if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
 				info("Don't need to look at myself %s %s",
 				     bg_record->bg_block_id,
 				     found_record->bg_block_id);
