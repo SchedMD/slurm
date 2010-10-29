@@ -75,7 +75,7 @@ enum {X, Y, Z};
  */
 typedef struct {
 	int dim;
-	int geometry[HIGHEST_DIMENSIONS];
+	uint16_t geometry[HIGHEST_DIMENSIONS];
 	int in;
 	int out;
 } ba_path_switch_t;
@@ -94,7 +94,7 @@ typedef struct {
 					  we are at */
 	List elongate_geos;            /* list of possible shapes of
 					  blocks. contains int* ptrs */
-	int geometry[HIGHEST_DIMENSIONS]; /* size of block in geometry */
+	uint16_t geometry[HIGHEST_DIMENSIONS]; /* size of block in geometry */
 	char *linuximage;              /* LinuxImage for this block */
 	char *mloaderimage;            /* mloaderImage for this block */
 	uint16_t deny_pass;            /* PASSTHROUGH_FOUND is set if there are
@@ -126,7 +126,7 @@ typedef struct {
 					* block, only used for small
 					* block creation */
 #endif
-	int start[HIGHEST_DIMENSIONS]; /* where to start creation of
+	uint16_t start[HIGHEST_DIMENSIONS]; /* where to start creation of
 					    block */
 	int start_req;                 /* state there was a start
 					  request */
@@ -194,7 +194,7 @@ typedef struct {
 typedef struct
 {
 	/* target label */
-	int node_tar[HIGHEST_DIMENSIONS];
+	uint16_t node_tar[HIGHEST_DIMENSIONS];
 	/* target port */
 	int port_tar;
 	bool used;
@@ -222,7 +222,7 @@ typedef struct {
 	/* a switch for each dimensions */
 	ba_switch_t axis_switch[HIGHEST_DIMENSIONS];
 	/* coordinates of midplane */
-	int coord[HIGHEST_DIMENSIONS];
+	uint16_t coord[HIGHEST_DIMENSIONS];
 	/* color of letter used in smap */
 	int color;
 	/* midplane index used for easy look up of the miplane */
@@ -249,7 +249,7 @@ typedef struct {
 */
 typedef struct {
 	char *bp_id;
-	int coord[HIGHEST_DIMENSIONS];
+	uint16_t coord[HIGHEST_DIMENSIONS];
 } ba_bp_map_t;
 
 /* Global */
@@ -258,7 +258,7 @@ extern List bp_map_list; /* list used for conversion from XYZ to Rack
 			  * midplane */
 extern char letters[62]; /* complete list of letters used in smap */
 extern char colors[6]; /* index into colors used for smap */
-extern int DIM_SIZE[HIGHEST_DIMENSIONS]; /* how many midplanes in
+extern uint16_t DIM_SIZE[HIGHEST_DIMENSIONS]; /* how many midplanes in
 					  * each dimension */
 extern s_p_options_t bg_conf_file_options[]; /* used to parse the
 					      * bluegene.conf file. */
@@ -415,7 +415,7 @@ extern int alter_block(List nodes, int conn_type);
  * be redone to make sure correct path will be used in the real system
  * (Not currently used in the system, update this if it is)
  */
-extern int redo_block(List nodes, int *geo, int conn_type, int new_count);
+extern int redo_block(List nodes, uint16_t *geo, int conn_type, int new_count);
 
 /*
  * Used to set a block into a virtual system.  The system can be
@@ -445,8 +445,8 @@ extern int check_and_set_node_list(List nodes);
  * RET char * - hostlist of midplanes results represent must be
  *     xfreed.  NULL on failure
  */
-extern char *set_bg_block(List results, int *start,
-			  int *geometry, int conn_type);
+extern char *set_bg_block(List results, uint16_t *start,
+			  uint16_t *geometry, int conn_type);
 
 /*
  * Resets the virtual system to a virgin state.  If track_down_nodes is set
@@ -504,7 +504,7 @@ extern int set_bp_map(void);
 /*
  * find a base blocks bg location based on Rack Midplane name R000 not R00-M0
  */
-extern int *find_bp_loc(char* bp_id);
+extern uint16_t *find_bp_loc(char* bp_id);
 
 /*
  * find a rack/midplace location based on XYZ coords
@@ -524,7 +524,7 @@ extern List get_and_set_block_wiring(char *bg_block_id,
 				     rm_partition_t *block_ptr);
 
 /* make sure a node is in the system return 1 if it is 0 if not */
-extern int validate_coord(int *coord);
+extern int validate_coord(uint16_t *coord);
 
 
 #endif /* _BLOCK_ALLOCATOR_H_ */

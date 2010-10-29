@@ -83,8 +83,8 @@ uint16_t ba_deny_pass = 0;
 List bp_map_list = NULL;
 char letters[62];
 char colors[6];
-int DIM_SIZE[HIGHEST_DIMENSIONS] = {0,0,0,0};
-int REAL_DIM_SIZE[HIGHEST_DIMENSIONS] = {0,0,0,0};
+uint16_t DIM_SIZE[HIGHEST_DIMENSIONS] = {0,0,0,0};
+uint16_t REAL_DIM_SIZE[HIGHEST_DIMENSIONS] = {0,0,0,0};
 
 s_p_options_t bg_conf_file_options[] = {
 #ifdef HAVE_BGL
@@ -134,11 +134,11 @@ static int _port_enum(int port);
 static int _check_for_options(ba_request_t* ba_request);
 
 /* */
-static int _append_geo(int *geo, List geos, int rotate);
+static int _append_geo(uint16_t *geo, List geos, int rotate);
 
 /* */
 static int _fill_in_coords(List results, List start_list,
-			   int *geometry, int conn_type);
+			   uint16_t *geometry, int conn_type);
 
 /* */
 static int _copy_the_path(List nodes, ba_switch_t *curr_switch,
@@ -146,8 +146,8 @@ static int _copy_the_path(List nodes, ba_switch_t *curr_switch,
 			  int source, int dim);
 
 /* */
-static int _find_yz_path(ba_node_t *ba_node, int *first,
-			 int *geometry, int conn_type);
+static int _find_yz_path(ba_node_t *ba_node, uint16_t *first,
+			 uint16_t *geometry, int conn_type);
 
 #ifndef HAVE_BG_FILES
 /* */
@@ -155,7 +155,7 @@ static int _emulate_ext_wiring(ba_node_t ***grid);
 #endif
 
 /** */
-static void _new_ba_node(ba_node_t *ba_node, int *coord,
+static void _new_ba_node(ba_node_t *ba_node, uint16_t *coord,
 			 bool track_down_nodes);
 /** */
 static int _reset_the_path(ba_switch_t *curr_switch, int source,
@@ -185,12 +185,12 @@ static int _set_external_wires(int dim, int count, ba_node_t* source,
 static char *_set_internal_wires(List nodes, int size, int conn_type);
 
 /* */
-static int _find_x_path(List results, ba_node_t *ba_node, int *start,
+static int _find_x_path(List results, ba_node_t *ba_node, uint16_t *start,
 			int x_size, int found, int conn_type,
 			block_algo_t algo);
 
 /* */
-static int _remove_node(List results, int *node_tar);
+static int _remove_node(List results, uint16_t *node_tar);
 
 /* */
 static int _find_next_free_using_port_2(ba_switch_t *curr_switch,
@@ -204,12 +204,12 @@ static int _find_next_free_using_port_2(ba_switch_t *curr_switch,
 /* */
 static int _finish_torus(List results,
 			 ba_switch_t *curr_switch, int source_port,
-			 int dim, int count, int *start);
+			 int dim, int count, uint16_t *start);
 /* */
-static int *_set_best_path();
+static uint16_t *_set_best_path();
 
 /* */
-static int _set_one_dim(int *start, int *end, int *coord);
+static int _set_one_dim(uint16_t *start, uint16_t *end, uint16_t *coord);
 
 /* */
 static void _destroy_geo(void *object);
@@ -471,10 +471,10 @@ extern int new_ba_request(ba_request_t* ba_request)
 	int i=0;
 	float sz=1;
 	int i2, picked, total_sz=1, size2=0;
-	int *geo_ptr;
+	uint16_t *geo_ptr;
 	int messed_with = 0;
 	int checked[DIM_SIZE[X]];
-	int geo[cluster_dims];
+	uint16_t geo[cluster_dims];
 
 	memset(geo, 0, sizeof(geo));
 	ba_request->save_name= NULL;
@@ -1442,7 +1442,7 @@ extern int alter_block(List nodes, int conn_type)
  * be redone to make sure correct path will be used in the real system
  * (Not currently used in the system, update this if it is)
  */
-extern int redo_block(List nodes, int *geo, int conn_type, int new_count)
+extern int redo_block(List nodes, uint16_t *geo, int conn_type, int new_count)
 {
        	ba_node_t* ba_node;
 	char *name = NULL;
@@ -1592,8 +1592,8 @@ end_it:
  * RET char * - hostlist of midplanes results represent must be
  *     xfreed.  NULL on failure
  */
-extern char *set_bg_block(List results, int *start,
-			  int *geometry, int conn_type)
+extern char *set_bg_block(List results, uint16_t *start,
+			  uint16_t *geometry, int conn_type)
 {
 	char *name = NULL;
 	ba_node_t* ba_node = NULL;
@@ -1723,7 +1723,7 @@ end_it:
 extern int reset_ba_system(bool track_down_nodes)
 {
 	int x, y, z;
-	int coord[cluster_dims];
+	uint16_t coord[cluster_dims];
 
 	for (x = 0; x < DIM_SIZE[X]; x++) {
 		for (y = 0; y < DIM_SIZE[Y]; y++)
@@ -1756,7 +1756,7 @@ extern int removable_set_bps(char *bps)
 	int x;
 	int y,z;
 	int start[cluster_dims];
-	int end[cluster_dims];
+        int end[cluster_dims];
 
 	if(!bps)
 		return SLURM_ERROR;
@@ -2090,7 +2090,7 @@ extern int set_bp_map(void)
 /*
  * find a base blocks bg location
  */
-extern int *find_bp_loc(char* bp_id)
+extern uint16_t *find_bp_loc(char* bp_id)
 {
 #ifdef HAVE_BG_FILES
 	ba_bp_map_t *bp_map = NULL;
@@ -2164,8 +2164,8 @@ extern char *find_bp_rack_mid(char* xyz)
 	ba_bp_map_t *bp_map = NULL;
 	ListIterator itr;
 	int number;
-	int coord[cluster_dims];
-	int len = strlen(xyz);
+	uint16_t coord[cluster_dims];
+	uint16_t len = strlen(xyz);
 	len -= 3;
 	if(len<0)
 		return NULL;
@@ -2219,7 +2219,7 @@ extern int load_block_wiring(char *bg_block_id)
 	rm_connection_t curr_conn;
 	int dim;
 	ba_switch_t *ba_switch = NULL;
-	int *geo = NULL;
+	uint16_t *geo = NULL;
 
 	if(ba_debug_flags & DEBUG_FLAG_BG_ALGO)
 		info("getting info for block %s", bg_block_id);
@@ -2447,7 +2447,7 @@ extern List get_and_set_block_wiring(char *bg_block_id,
 	int dim;
 	ba_node_t *ba_node = NULL;
 	ba_switch_t *ba_switch = NULL;
-	int *geo = NULL;
+	uint16_t *geo = NULL;
 	List results = list_create(destroy_ba_node);
 	ListIterator itr = NULL;
 
@@ -2673,7 +2673,7 @@ end_it:
 }
 
 /* */
-extern int validate_coord(int *coord)
+extern int validate_coord(uint16_t *coord)
 {
 #ifdef HAVE_BG_FILES
 	if(coord[X]>=REAL_DIM_SIZE[X]
@@ -2759,7 +2759,7 @@ static int _check_for_options(ba_request_t* ba_request)
 {
 	int temp;
 	int set=0;
-	int *geo = NULL;
+	uint16_t *geo = NULL;
 	ListIterator itr;
 
 	if(ba_request->rotate) {
@@ -2824,11 +2824,11 @@ static int _check_for_options(ba_request_t* ba_request)
 /*
  * grab all the geometries that we can get and append them to the list geos
  */
-static int _append_geo(int *geometry, List geos, int rotate)
+static int _append_geo(uint16_t *geometry, List geos, int rotate)
 {
 	ListIterator itr;
-	int *geo_ptr = NULL;
-	int *geo = NULL;
+	uint16_t *geo_ptr = NULL;
+	uint16_t *geo = NULL;
 	int temp_geo;
 	int i, j;
 
@@ -2888,7 +2888,7 @@ static int _append_geo(int *geometry, List geos, int rotate)
  * RET: 0 on failure 1 on success
  */
 static int _fill_in_coords(List results, List start_list,
-			   int *geometry, int conn_type)
+			   uint16_t *geometry, int conn_type)
 {
 	ba_node_t *ba_node = NULL;
 	ba_node_t *check_node = NULL;
@@ -3008,9 +3008,9 @@ static int _copy_the_path(List nodes, ba_switch_t *curr_switch,
 			  ba_switch_t *mark_switch,
 			  int source, int dim)
 {
-	int *node_tar;
-	int *mark_node_tar;
-	int *node_curr;
+	uint16_t *node_tar;
+	uint16_t *mark_node_tar;
+	uint16_t *node_curr;
 	int port_tar, port_tar1;
 	ba_switch_t *next_switch = NULL;
 	ba_switch_t *next_mark_switch = NULL;
@@ -3118,11 +3118,11 @@ static int _copy_the_path(List nodes, ba_switch_t *curr_switch,
 			      port_tar, dim);
 }
 
-static int _find_yz_path(ba_node_t *ba_node, int *first,
-			 int *geometry, int conn_type)
+static int _find_yz_path(ba_node_t *ba_node, uint16_t *first,
+			 uint16_t *geometry, int conn_type)
 {
 	ba_node_t *next_node = NULL;
-	int *node_tar = NULL;
+	uint16_t *node_tar = NULL;
 	ba_switch_t *dim_curr_switch = NULL;
 	ba_switch_t *dim_next_switch = NULL;
 	int i2;
@@ -3387,8 +3387,8 @@ static int _emulate_ext_wiring(ba_node_t ***grid)
 static int _reset_the_path(ba_switch_t *curr_switch, int source,
 			   int target, int dim)
 {
-	int *node_tar;
-	int *node_curr;
+	uint16_t *node_tar;
+	uint16_t *node_curr;
 	int port_tar, port_tar1;
 	ba_switch_t *next_switch = NULL;
 
@@ -3463,7 +3463,7 @@ static int _reset_the_path(ba_switch_t *curr_switch, int source,
 //	return 1;
 }
 
-static void _new_ba_node(ba_node_t *ba_node, int *coord, bool track_down_nodes)
+static void _new_ba_node(ba_node_t *ba_node, uint16_t *coord, bool track_down_nodes)
 {
 	int i,j;
 	uint16_t node_base_state = ba_node->state & NODE_STATE_BASE;
@@ -3490,7 +3490,7 @@ static void _new_ba_node(ba_node_t *ba_node, int *coord, bool track_down_nodes)
 static void _create_ba_system(void)
 {
 	int x,y,z;
-	int coord[cluster_dims];
+	uint16_t coord[cluster_dims];
 
 	ba_system_ptr->grid = (ba_node_t***)
 		xmalloc(sizeof(ba_node_t**) * DIM_SIZE[X]);
@@ -3549,11 +3549,11 @@ static void _delete_path_list(void *object)
 static int _find_match(ba_request_t *ba_request, List results)
 {
 	int x=0;
-	int start[cluster_dims];
+	uint16_t start[cluster_dims];
 	ba_node_t *ba_node = NULL;
 	char *name=NULL;
 	int startx;
-	int *geo_ptr;
+	uint16_t *geo_ptr;
 
 	if(!(cluster_flags & CLUSTER_FLAG_BG))
 		return 0;
@@ -3776,7 +3776,7 @@ static int _set_external_wires(int dim, int count, ba_node_t* source,
 	char *wire_id = NULL;
 	int from_port, to_port;
 	int wire_num;
-	int *coord;
+	uint16_t *coord;
 	char from_node[NODE_LEN];
 	char to_node[NODE_LEN];
 
@@ -4180,8 +4180,8 @@ static char *_set_internal_wires(List nodes, int size, int conn_type)
 {
 	ba_node_t* ba_node[size+1];
 	int count=0, i, set=0;
-	int *start = NULL;
-	int *end = NULL;
+	uint16_t *start = NULL;
+	uint16_t *end = NULL;
 	char *name = NULL;
 	ListIterator itr;
 	hostlist_t hostlist;
@@ -4262,7 +4262,7 @@ static char *_set_internal_wires(List nodes, int size, int conn_type)
  * RET: 0 on failure, 1 on success
  */
 static int _find_x_path(List results, ba_node_t *ba_node,
-			int *start, int x_size,
+			uint16_t *start, int x_size,
 			int found, int conn_type, block_algo_t algo)
 {
 	ba_switch_t *curr_switch = NULL;
@@ -4273,7 +4273,7 @@ static int _find_x_path(List results, ba_node_t *ba_node,
 	int target_port=1;
 	int broke = 0, not_first = 0;
 	int ports_to_try[2] = {4, 2};
-	int *node_tar = NULL;
+	uint16_t *node_tar = NULL;
 	int i = 0;
 	ba_node_t *next_node = NULL;
 	ba_node_t *check_node = NULL;
@@ -4621,7 +4621,7 @@ static int _find_x_path(List results, ba_node_t *ba_node,
 	return 0;
 }
 
-static int _remove_node(List results, int *node_tar)
+static int _remove_node(List results, uint16_t *node_tar)
 {
 	ListIterator itr;
 	ba_node_t *ba_node = NULL;
@@ -4669,8 +4669,8 @@ static int _find_next_free_using_port_2(ba_switch_t *curr_switch,
 	int port_tar;
 	int target_port = 0;
 	int port_to_try = 2;
-	int *node_tar= curr_switch->ext_wire[0].node_tar;
-	int *node_src = curr_switch->ext_wire[0].node_tar;
+	uint16_t *node_tar= curr_switch->ext_wire[0].node_tar;
+	uint16_t *node_src = curr_switch->ext_wire[0].node_tar;
 	int used = 0;
 	int broke = 0;
 	ba_node_t *ba_node = NULL;
@@ -4813,7 +4813,7 @@ return_0:
 
 static int _finish_torus(List results,
 			 ba_switch_t *curr_switch, int source_port,
-			 int dim, int count, int *start)
+			 int dim, int count, uint16_t *start)
 {
 	ba_switch_t *next_switch = NULL;
 	ba_path_switch_t *path_add = xmalloc(sizeof(ba_path_switch_t));
@@ -4822,8 +4822,8 @@ static int _finish_torus(List results,
 	int port_tar;
 	int target_port=0;
 	int ports_to_try[2] = {3,5};
-	int *node_tar= curr_switch->ext_wire[0].node_tar;
-	int *node_src = curr_switch->ext_wire[0].node_tar;
+	uint16_t *node_tar= curr_switch->ext_wire[0].node_tar;
+	uint16_t *node_src = curr_switch->ext_wire[0].node_tar;
 	int i;
 	int used=0;
 	ListIterator itr;
@@ -4997,12 +4997,12 @@ static int _finish_torus(List results,
  * into the main virtual system.  With will also set the passthrough
  * flag if there was a passthrough used.
  */
-static int *_set_best_path()
+static uint16_t *_set_best_path()
 {
 	ListIterator itr;
 	ba_path_switch_t *path_switch = NULL;
 	ba_switch_t *curr_switch = NULL;
-	int *geo = NULL;
+	uint16_t *geo = NULL;
 
 	if(!best_path)
 		return NULL;
@@ -5040,7 +5040,7 @@ static int *_set_best_path()
 	return geo;
 }
 
-static int _set_one_dim(int *start, int *end, int *coord)
+static int _set_one_dim(uint16_t *start, uint16_t *end, uint16_t *coord)
 {
 	int dim;
 	ba_switch_t *curr_switch = NULL;
@@ -5064,7 +5064,7 @@ static int _set_one_dim(int *start, int *end, int *coord)
 
 static void _destroy_geo(void *object)
 {
-	int *geo_ptr = (int *)object;
+	uint16_t *geo_ptr = (uint16_t *)object;
 	xfree(geo_ptr);
 }
 

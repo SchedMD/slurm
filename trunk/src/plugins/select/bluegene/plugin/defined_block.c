@@ -57,7 +57,7 @@ extern int create_defined_blocks(bg_layout_t overlapped,
 	ListIterator itr_found;
 	int i;
 	bg_record_t *found_record = NULL;
-	int geo[SYSTEM_DIMENSIONS];
+	uint16_t geo[SYSTEM_DIMENSIONS];
 	char temp[256];
 	List results = NULL;
 	struct part_record *part_ptr = NULL;
@@ -287,7 +287,7 @@ extern int create_full_system_block(List bg_found_block_list)
 	bg_record_t *bg_record = NULL;
 	char *name = NULL;
 	List records = NULL;
-	int geo[SYSTEM_DIMENSIONS];
+	uint16_t geo[SYSTEM_DIMENSIONS];
 	int i;
 	blockreq_t blockreq;
 	List results = NULL;

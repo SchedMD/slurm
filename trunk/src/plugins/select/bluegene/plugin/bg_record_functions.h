@@ -111,8 +111,8 @@ typedef struct bg_record {
 					 * this block */
 	char *reason;                   /* reason block is in error state */
 	rm_partition_state_t state;     /* Current state of the block */
-	int start[HIGHEST_DIMENSIONS];  /* start node */
-	int switch_count;               /* number of switches used. */
+	uint16_t start[HIGHEST_DIMENSIONS];  /* start node */
+	uint32_t switch_count;          /* number of switches used. */
 	char *target_name;		/* when a block is freed this
 					   is the name of the user we
 					   want on the block */
