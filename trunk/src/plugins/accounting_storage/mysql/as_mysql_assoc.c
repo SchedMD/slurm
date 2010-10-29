@@ -205,7 +205,7 @@ static int _reset_default_assoc(mysql_conn_t *mysql_conn,
 
 	xassert(query);
 
-	if (!assoc->is_def || !assoc->cluster
+	if ((assoc->is_def != 1) || !assoc->cluster
 	    || !assoc->acct || !assoc->user)
 		return SLURM_ERROR;
 
@@ -1574,7 +1574,7 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 					    lft, rgt,
 					    ret_list,
 					    moved_parent);
-		else if (assoc->is_def && row[MASSOC_USER][0]) {
+		else if ((assoc->is_def == 1) && row[MASSOC_USER][0]) {
 			/* Use fresh one here so we don't have to
 			   worry about dealing with bad values.
 			*/
@@ -2681,7 +2681,7 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 				list_iterator_reset(itr2);
 				/* now get the lowest lft from the
 				   added files by cluster */
-				if(smallest_lft != 0xFFFFFFFF)
+				if (smallest_lft != 0xFFFFFFFF)
 					rc = as_mysql_get_modified_lfts(
 						mysql_conn, cluster_name,
 						smallest_lft);
@@ -2695,7 +2695,7 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 	/* now reset all the other defaults accordingly. (if needed) */
 	itr = list_iterator_create(association_list);
 	while ((object = list_next(itr))) {
-		if (!object->is_def || !object->cluster
+		if ((object->is_def != 1) || !object->cluster
 		    || !object->acct || !object->user)
 			continue;
 

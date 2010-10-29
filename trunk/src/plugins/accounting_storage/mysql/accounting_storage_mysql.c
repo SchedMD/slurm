@@ -1913,7 +1913,10 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 		}
 	}
 	mysql_free_result(result);
-
+	/* This already happened before, but we need to run it again
+	   since the first time we ran it we didn't know if we were
+	   going to remove the above associations.
+	*/
 	if(rc == SLURM_SUCCESS)
 		rc = as_mysql_get_modified_lfts(mysql_conn,
 						cluster_name, smallest_lft);
