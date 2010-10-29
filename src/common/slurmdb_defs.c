@@ -122,12 +122,9 @@ static int _sort_childern_list(slurmdb_hierarchical_rec_t *assoc_a,
 {
 	int diff = 0;
 
-	/* first just check the lfts and rgts if a lft is inside of the
-	 * others lft and rgt just return it is less
+	/* Since all these assocations are on the same level we don't
+	 * have to check the lfts
 	 */
-	if(assoc_a->assoc->lft > assoc_b->assoc->lft
-	   && assoc_a->assoc->lft < assoc_b->assoc->rgt)
-		return 1;
 
 	/* check to see if this is a user association or an account.
 	 * We want the accounts at the bottom
@@ -137,6 +134,7 @@ static int _sort_childern_list(slurmdb_hierarchical_rec_t *assoc_a,
 	else if(!assoc_a->assoc->user && assoc_b->assoc->user)
 		return 1;
 
+	/* Sort by alpha */
 	diff = strcmp(assoc_a->sort_name, assoc_b->sort_name);
 
 	if (diff < 0)
@@ -146,6 +144,21 @@ static int _sort_childern_list(slurmdb_hierarchical_rec_t *assoc_a,
 
 	return 0;
 
+}
+
+/*
+ * Comparator used for sorting immediate childern of acct_hierarchical_recs
+ *
+ * returns: -1: assoc_a > assoc_b   0: assoc_a == assoc_b   1: assoc_a < assoc_b
+ *
+ */
+
+static int _sort_assoc_by_lft_dec(slurmdb_association_rec_t *assoc_a,
+				  slurmdb_association_rec_t *assoc_b)
+{
+	if(assoc_a->lft > assoc_b->lft)
+		return 1;
+	return -1;
 }
 
 static int _sort_slurmdb_hierarchical_rec_list(
@@ -1196,6 +1209,22 @@ extern List slurmdb_get_hierarchical_sorted_assoc_list(List assoc_list)
 	return ret_list;
 }
 
+/* This reorders the list into a alphabetical hierarchy. */
+extern void slurmdb_sort_hierarchical_assoc_list(List assoc_list)
+{
+	List slurmdb_hierarchical_rec_list =
+		slurmdb_get_acct_hierarchical_rec_list(assoc_list);
+	/* Clear all the pointers out of the list without freeing the
+	   memory since we will just add them back in later.
+	*/
+	while(list_pop(assoc_list)) {
+	}
+
+	_append_hierarchical_childern_ret_list(assoc_list,
+					       slurmdb_hierarchical_rec_list);
+	list_destroy(slurmdb_hierarchical_rec_list);
+}
+
 extern List slurmdb_get_acct_hierarchical_rec_list(List assoc_list)
 {
 	slurmdb_hierarchical_rec_t *par_arch_rec = NULL;
@@ -1208,6 +1237,9 @@ extern List slurmdb_get_acct_hierarchical_rec_list(List assoc_list)
 		list_create(slurmdb_destroy_hierarchical_rec);
 	ListIterator itr, itr2;
 
+	/* The list should already be sorted by lfts, do it anyway
+	 * just to make sure it is correct. */
+	list_sort(assoc_list, (ListCmpF)_sort_assoc_by_lft_dec);
 	itr = list_iterator_create(assoc_list);
 	itr2 = list_iterator_create(total_assoc_list);
 

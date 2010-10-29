@@ -21,6 +21,8 @@ documents those changes that are of interest to users and admins.
  -- Made sshare sort things the same way saccmgr list assoc does
     (alphabetically)
  -- Fixed issue with default accounts being set up correctly.
+ -- Changed sortting in the slurmctld so sshare output is similar to that of
+    sacctmgr list assoc.
 
 * Changes in SLURM 2.2.0.pre12
 ==============================
