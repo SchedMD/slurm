@@ -65,7 +65,8 @@ static int _reset_default_wckey(mysql_conn_t *mysql_conn,
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 
-	if (!wckey->is_def || !wckey->cluster || !wckey->user || !wckey->name)
+	if ((wckey->is_def != 1)
+	    || !wckey->cluster || !wckey->user || !wckey->name)
 		return SLURM_ERROR;
 
 	xstrfmtcat(query, "update \"%s_%s\" set is_def=0, mod_time=%ld "
@@ -288,7 +289,7 @@ static int _cluster_modify_wckeys(mysql_conn_t *mysql_conn,
 		    != SLURM_SUCCESS)
 			slurmdb_destroy_wckey_rec(wckey_rec);
 
-		if (wckey->is_def) {
+		if (wckey->is_def == 1) {
 			/* Use fresh one here so we don't have to
 			   worry about dealing with bad values.
 			*/
@@ -510,7 +511,7 @@ extern int as_mysql_add_wckeys(mysql_conn_t *mysql_conn, uint32_t uid,
 	/* now reset all the other defaults accordingly. (if needed) */
 	itr = list_iterator_create(wckey_list);
 	while ((object = list_next(itr))) {
-		if (!object->is_def || !object->cluster
+		if ((object->is_def != 1) || !object->cluster
 		    || !object->user || !object->name)
 			continue;
 		if ((rc = _reset_default_wckey(mysql_conn, object)

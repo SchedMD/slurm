@@ -1259,7 +1259,7 @@ empty:
 				 * for older versions primarily that
 				 * don't have the notion of default
 				 * account per cluster. */
-				if (!user->default_acct && assoc->is_def)
+				if (!user->default_acct && (assoc->is_def == 1))
 					user->default_acct =
 						xstrdup(assoc->acct);
 
@@ -1321,7 +1321,8 @@ get_wckeys:
 				 * for older versions primarily that
 				 * don't have the notion of default
 				 * wckey per cluster. */
-				if (!user->default_wckey && wckey->is_def)
+				if (!user->default_wckey
+				    && (wckey->is_def == 1))
 					user->default_wckey =
 						xstrdup(wckey->name);
 
