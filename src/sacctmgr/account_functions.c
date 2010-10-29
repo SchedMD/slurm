@@ -294,7 +294,7 @@ static int _isdefault_old(List acct_list)
 	return rc;
 }
 
-static int _isdefault(List acct_list, List assoc_list)
+static int _isdefault(int cond_set, List acct_list, List assoc_list)
 {
 	int rc = 0;
 	ListIterator itr = NULL;
@@ -320,14 +320,24 @@ static int _isdefault(List acct_list, List assoc_list)
 	itr2 = list_iterator_create(assoc_list);
 	while ((acct = list_next(itr))) {
 		while ((assoc = list_next(itr2))) {
+			char tmp[1000];
 			/* The pgsql plugin doesn't have the idea of
 			   only_defs, so thre query could return all
 			   the associations, even without defaults. */
-			if (strcasecmp(acct, assoc->acct))
+			if (cond_set == 1) {
+				if (strcasecmp(acct, assoc->acct))
+					continue;
+			} else {
+				snprintf(tmp, 1000, " A = %s ", assoc->acct);
+				if (!strstr(acct, tmp))
+					continue;
+			}
+			snprintf(tmp, 1000, "C = %-10s A = %-20s U = %-9s\n",
+				 assoc->cluster, assoc->acct, assoc->user);
+			if (output && strstr(output, tmp))
 				continue;
 
-			xstrfmtcat(output, "C = %-10s A = %-20s U = %-9s\n",
-				   assoc->cluster, assoc->acct, assoc->user);
+			xstrcat(output, tmp);
 			rc = 1;
 		}
 		list_iterator_reset(itr2);
@@ -1146,7 +1156,7 @@ extern int sacctmgr_delete_account(int argc, char *argv[])
 		 * output from acct_storage_g_remove_accounts, and
 		 * with a previously got assoc_list.
 		 */
-		if((cond_set == 1) && _isdefault(ret_list, local_assoc_list)) {
+		if(_isdefault(cond_set, ret_list, local_assoc_list)) {
 			exit_code=1;
 			fprintf(stderr, " Please either remove accounts listed "
 				"above from list and resubmit,\n"
