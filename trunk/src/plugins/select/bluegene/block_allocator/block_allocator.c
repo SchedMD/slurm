@@ -487,7 +487,7 @@ extern int new_ba_request(ba_request_t* ba_request)
 		ba_request->deny_pass = ba_deny_pass;
 
 	if(!(cluster_flags & CLUSTER_FLAG_BG)) {
-		if(geo[X] != NO_VAL) {
+		if(geo[X] != (uint16_t)NO_VAL) {
 			for (i=0; i<cluster_dims; i++) {
 				if ((geo[i] < 1) || (geo[i] > DIM_SIZE[i])) {
 					error("new_ba_request Error, "
