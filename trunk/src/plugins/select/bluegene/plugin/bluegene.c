@@ -546,8 +546,8 @@ extern int bg_free_block(bg_record_t *bg_record, bool wait, bool locked)
 				}
 			}
 #else
-//			bg_record->state = RM_PARTITION_FREE;
-			bg_record->state = RM_PARTITION_DEALLOCATING;
+			bg_record->state = RM_PARTITION_FREE;
+//			bg_record->state = RM_PARTITION_DEALLOCATING;
 #endif
 		}
 
