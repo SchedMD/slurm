@@ -501,11 +501,13 @@ struct job_record {
 };
 
 /* Job dependency specification, used in "depend_list" within job_record */
-#define SLURM_DEPEND_AFTER		1
-#define SLURM_DEPEND_AFTER_ANY		2
-#define SLURM_DEPEND_AFTER_NOT_OK	3
-#define SLURM_DEPEND_AFTER_OK		4
-#define SLURM_DEPEND_SINGLETON		5
+#define SLURM_DEPEND_AFTER		1	/* After job begins */
+#define SLURM_DEPEND_AFTER_ANY		2	/* After job completes */
+#define SLURM_DEPEND_AFTER_NOT_OK	3	/* After job fails */
+#define SLURM_DEPEND_AFTER_OK		4	/* After job completes
+						 * successfully */
+#define SLURM_DEPEND_SINGLETON		5	/* Only one job for this
+						 * user/name at a time */
 struct	depend_spec {
 	uint16_t	depend_type;	/* SLURM_DEPEND_* type */
 	uint32_t	job_id;		/* SLURM job_id */
