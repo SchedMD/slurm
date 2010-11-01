@@ -87,10 +87,11 @@ typedef struct {
 } assoc_mgr_lock_flags_t;
 
 typedef struct {
-	uint16_t cache_level;
+ 	uint16_t cache_level;
 	uint16_t enforce;
  	void (*remove_assoc_notify) (slurmdb_association_rec_t *rec);
  	void (*remove_qos_notify) (slurmdb_qos_rec_t *rec);
+	void (*update_resvs) ();
 } assoc_init_args_t;
 
 struct assoc_mgr_association_usage {
