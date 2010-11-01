@@ -1244,6 +1244,7 @@ static int _sync_block_lists(List full_list, List incomp_list)
 				     new_record->bg_block_id,
 				     (size_t)new_record);
 			list_append(incomp_list, new_record);
+			last_bg_update = time(NULL);
 			count++;
 		}
 		list_iterator_reset(itr2);
@@ -1637,7 +1638,7 @@ preempt:
 
 						job_ptr->job_state |=
 							JOB_CONFIGURING;
-						last_job_update = time(NULL);
+						last_bg_update = time(NULL);
 					}
 				} else
 					set_select_jobinfo(
@@ -1678,6 +1679,7 @@ preempt:
 				}
 				blocks_added = 0;
 			}
+			last_job_update = time(NULL);
 		} else {
 			error("we got a success, but no block back");
 		}
