@@ -3,6 +3,7 @@ htmldir = ${prefix}/share/doc/@PACKAGE@-@VERSION@/html
 
 generated_html = \
 	accounting.html \
+	accounting_storageplugins.html \
 	api.html \
 	authplugins.html \
 	big_sys.html \
@@ -24,8 +25,8 @@ generated_html = \
 	high_throughput.html \
 	ibm.html \
 	jobacct_gatherplugins.html \
+	job_exit_code.html \
 	job_submit_plugins.html \
-	accounting_storageplugins.html \
 	jobcompplugins.html \
 	mail.html \
 	maui.html \
@@ -40,9 +41,9 @@ generated_html = \
 	power_save.html \
 	preempt.html \
 	preemption_plugins.html \
-	proctrack_plugins.html \
 	priority_multifactor.html \
 	priority_plugins.html \
+	proctrack_plugins.html \
 	programmer_guide.html \
 	publications.html \
 	qos.html \

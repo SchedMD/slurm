@@ -300,6 +300,25 @@ modified on success, or<br>
 <span class="commandline">NULL</span> on failure.
 
 <p class="commandline">
+List acct_storage_p_modify_job(void *db_conn, uint32_t uid,
+acct_job_modify_cond_t *job_cond, acct_job_rec_t *job)
+<p style="margin-left:.2in"><b>Description</b>:<br>
+Used to modify two fields (the derived exit code and derived exit string) of an
+existing job in the storage type.  Can only modify one job at a time.
+<p style="margin-left:.2in"><b>Arguments</b>: <br>
+<span class="commandline">db_conn</span> (input) connection to
+the storage type.<br>
+<span class="commandline">uid</span> (input) uid of user calling the function.<br>
+<span class="commandline">job_cond</span> (input) conditional about
+which job need to change.<br>
+<span class="commandline">job</span> (input) what the changes
+should be on the job identified by the conditional.<br>
+<p style="margin-left:.2in"><b>Returns</b>: <br>
+<span class="commandline">List</span> containing ID of job
+modified on success, or<br>
+<span class="commandline">NULL</span> on failure.
+
+<p class="commandline">
 List acct_storage_p_modify_qos(void *db_conn, uint32_t uid,
 acct_qos_cond_t *qos_cond, acct_qos_rec_t *qos)
 <p style="margin-left:.2in"><b>Description</b>:<br>
