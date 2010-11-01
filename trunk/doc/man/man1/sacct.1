@@ -448,12 +448,15 @@ like above.
 \f3DerivedExitCode\fP
 The highest exit code returned by the job's job steps (srun
 invocations).  Following the colon is the signal that caused the
-process to terminate if it was terminated by a signal.
+process to terminate if it was terminated by a signal.  The
+DerivedExitCode can be modified by invoking \f3sacctmgr modify job\fP
+or the specialized \f3sjobexitmod\fP command.
 
 .TP
 \f3DerivedExitStr\fP
-The reason the job failed.  This string starts off as null and becomes
-populated with the reason argument to the sjobfailed command.
+The reason the job failed.  This string starts off as null.  The
+DerivedExitStr can be modified by invoking \f3sacctmgr modify job\fP
+or the specialized \f3sjobexitmod\fP command.
 
 .TP
 \f3elapsed\fP

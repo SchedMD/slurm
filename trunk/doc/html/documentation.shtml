@@ -10,6 +10,7 @@ Also see <a href="publications.html">Publications and Presentations</a>.
 <li><a href="mpi_guide.html">MPI Use Guide</a></li>
 <li><a href="mc_support.html">Support for Multi-core/Multi-threaded Architectures</a></li>
 <li><a href="checkpoint_blcr.html">SLURM Checkpoint/Restart with BLCR</a></li>
+<li><a href="job_exit_code.html">Job Exit Codes</a></li>
 <li>Specific Systems</li>
 <ul>
 <li><a href="bluegene.html">Blue Gene User and Administrator Guide</a></li>

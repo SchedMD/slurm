@@ -218,6 +218,10 @@ OTHER CHANGES
   the exit code of the job script (or salloc) while derived_ec contains the
   highest exit code of all the job steps.
 
+* Added the derived exit code and derived exit string fields to the database's
+  job record.  Both can be modified by the user after the job completes.  See
+  job_exit_code.html
+
 
 API CHANGES
 ===========

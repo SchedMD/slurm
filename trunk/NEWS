@@ -26,6 +26,8 @@ documents those changes that are of interest to users and admins.
  -- Modify reservation logic so that daily and weekly reservations maintain
     the same time when daylight savings time starts or ends in the interim.
  -- Edit to make reservations handle updates to associations.
+ -- Added the derived exit code to the slurmctld job record and the derived
+    exit code and string to the job record in the SLURM db.
 
 * Changes in SLURM 2.2.0.pre12
 ==============================

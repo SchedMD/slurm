@@ -25,6 +25,7 @@ add, delete, modify, and/or list \fIassociation\fR records then
 commit the changes and exit.
 
 .SH "OPTIONS"
+
 .TP
 \fB\-h\fR, \fB\-\-help\fR
 Print a help message describing the usage of \fBssacctmgr\fR.
@@ -192,6 +193,11 @@ account and user associations inside their realm.
 .TP
 \fIevent\fR
 Events like downed or draining nodes on clusters.
+
+.TP
+\fIjob\fR
+Job - but only two specific fields of the job: Derived Exit Code and
+Derived Exit String
 
 .TP
 \fIqos\fR
@@ -446,7 +452,6 @@ NOTE: If using the WithAssoc option you can also view the information
 about the various associations the account may have on all the
 clusters in the system.  The Association format fields are described
 in the \fILIST/SHOW ASSOCIATION FORMAT OPTIONS\fP section.
-.RE
 
 
 .SH "SPECIFICATIONS FOR ASSOCIATIONS"
@@ -501,8 +506,6 @@ parent account name.) This option also invokes WOPLIMITS.
 Display information without hierarchical parent limits. (i.e. will
 only display limits where they are set instead of propagating them
 from the parent.)
-
-.RE
 
 
 .SH "LIST/SHOW ASSOCIATION FORMAT OPTIONS"
@@ -621,7 +624,6 @@ children of this association.
 .TP
 \fIUser\fP
 The name of a user in the association.
-.RE
 
 
 .SH "SPECIFICATIONS FOR CLUSTERS"
@@ -654,7 +656,6 @@ default format of Cluster,ControlHost,ControlPort,RPC
 NOTE: You can also use the general specifications list above in the
 \fIGENERAL SPECIFICATIONS FOR ASSOCIATION BASED ENTITIES\fP section.
 
-.RE
 
 .SH "LIST/SHOW CLUSTER FORMAT OPTIONS"
 
@@ -704,10 +705,10 @@ is running is placed here.
 NOTE: You can also view the information about the root association for
 the cluster.  The Association format fields are described
 in the \fILIST/SHOW ASSOCIATION FORMAT OPTIONS\fP section.
-.RE
 
 
 .SH "SPECIFICATIONS FOR COORDINATOR"
+
 .TP
 \fIAccount\fP=<comma separated list of account names>
 Account name to add this user as a coordinator to.
@@ -717,7 +718,6 @@ Names of coordinators.
 .P
 NOTE: To list coordinators use the WithCoordinator options with list
 account or list user.
-.RE
 
 
 .SH "SPECIFICATIONS FOR EVENTS"
@@ -788,7 +788,6 @@ set automatically to Node.
 Query against users who set the event.  If this is set, the event type is
 set automatically to Node since only user slurm can perform a cluster event.
 
-.RE
 
 .SH "LIST/SHOW EVENT FORMAT OPTIONS"
 
@@ -844,8 +843,27 @@ during the event.
 .TP
 \fIUser\fP
 On a node event this is the user who caused the event to happen.
-.RE
 
+
+.SH "SPECIFICATIONS FOR JOB"
+
+.TP
+\fIDerivedExitCode\fP
+The derived exit code can be modified after a job completes based on
+the user's judgement of whether the job succeeded or failed.  The user
+can only modify the derived exit code of their own job.
+
+.TP
+\fIDerivedExitString\fP
+Initially NULL, the derived exit string can be populated after a job
+completes with a textual description of why the job succeeded or
+failed.  The user can only modify the derived exit string of their own
+job.
+
+.SH "LIST/SHOW JOB FORMAT OPTIONS"
+
+The \fBsacct\fR command is the exclusive command to display job
+records from the SLURM database.
 
 .SH "SPECIFICATIONS FOR QOS"
 
@@ -929,7 +947,6 @@ What priority will be added to a job\'s priority when using this QOS.
 .TP
 \fIUsageFactor\fP
 Usage factor when running with this QOS
-.RE
 
 .TP
 \fIWithDeleted\fP
@@ -1063,8 +1080,6 @@ QOS was 2 for every cpu second a job ran it would count for 2.  Also
 if the usagefactor was .5 every second would only could for half the time.
 To clear a previously set value use the modify command with a new value of \-1.
 
-.RE
-
 
 .SH "SPECIFICATIONS FOR TRANSACTIONS"
 
@@ -1095,7 +1110,7 @@ Only print out the transactions affecting specified users.
 .TP
 \fIWithAssoc\fP
 Get information about which associations were affected by the transactions.
-.RE
+
 
 .SH "LIST/SHOW TRANSACTIONS FORMAT OPTIONS"
 
@@ -1118,7 +1133,7 @@ NOTE: If using the WithAssoc option you can also view the information
 about the various associations the transaction affected.  The
 Association format fields are described
 in the \fILIST/SHOW ASSOCIATION FORMAT OPTIONS\fP section.
-.RE
+
 
 .SH "SPECIFICATIONS FOR USERS"
 
@@ -1179,7 +1194,7 @@ this account may have.  These extra options can be found in the
 \fISPECIFICATIONS FOR ASSOCIATIONS\fP section.  You can also use the
 general specifications list above in the \fIGENERAL SPECIFICATIONS FOR
 ASSOCIATION BASED ENTITIES\fP section.
-.RE
+
 
 .SH "LIST/SHOW USER FORMAT OPTIONS"
 
@@ -1204,7 +1219,7 @@ NOTE: If using the WithAssoc option you can also view the information
 about the various associations the user may have on all the
 clusters in the system.  The Association format fields are described
 in the \fILIST/SHOW ASSOCIATION FORMAT OPTIONS\fP section.
-.RE
+
 
 .SH "LIST/SHOW WCKey"
 
@@ -1224,7 +1239,7 @@ NOTE: If using the WithAssoc option you can also view the information
 about the various associations the user may have on all the
 clusters in the system.  The Association format fields are described
 in the \fILIST/SHOW ASSOCIATION FORMAT OPTIONS\fP section.
-.RE
+
 
 .SH "GLOBAL FORMAT OPTION"
 When using the format option for listing various fields you can put a
@@ -1449,7 +1464,7 @@ Maximum time (not related to job size) this user can run.
 .TP
 \fIQOS(=,+=,\-=)\fP
 Comma separated list of Quality of Service names (Defined in sacctmgr).
-.RE
+
 
 .SH "ARCHIVE FUNCTIONALITY"
 Sacctmgr has the capability to archive to a flatfile and or load that
@@ -1510,8 +1525,8 @@ all step data removed will be lost permanently.
 \fISuspend\fP
 Archive Suspend Data.  If not specified and PurgeSuspendAfter is set
 all suspend data removed will be lost permanently.
-.RE
 
+.RE
 archive load
 .TP
 \fIFile=\fP
@@ -1520,7 +1535,7 @@ File to load into database.
 \fIInsert=\fP
 SQL to insert directly into the database.  This should be used very
 cautiously since this is writing your sql into the database.
-.RE
+
 
 .SH "EXAMPLES"
 .eo
