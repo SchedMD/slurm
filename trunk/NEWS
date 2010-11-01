@@ -23,6 +23,8 @@ documents those changes that are of interest to users and admins.
  -- Fixed issue with default accounts being set up correctly.
  -- Changed sortting in the slurmctld so sshare output is similar to that of
     sacctmgr list assoc.
+ -- Modify reservation logic so that daily and weekly reservations maintain
+    the same time when daylight savings time starts or ends in the interim.
 
 * Changes in SLURM 2.2.0.pre12
 ==============================

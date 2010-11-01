@@ -86,6 +86,7 @@ List      resv_list = (List) NULL;
 uint32_t  resv_over_run;
 uint32_t  top_suffix = 0;
 
+static void _advance_time(time_t *res_time, int day_cnt);
 static int  _build_account_list(char *accounts, int *account_cnt,
 			        char ***account_list);
 static int  _build_uid_list(char *users, int *user_cnt, uid_t **user_list);
@@ -134,6 +135,24 @@ static int  _valid_job_access_resv(struct job_record *job_ptr,
 				   slurmctld_resv_t *resv_ptr);
 static bool _validate_one_reservation(slurmctld_resv_t *resv_ptr);
 static void _validate_node_choice(slurmctld_resv_t *resv_ptr);
+
+/* Advance res_time by the specified day count,
+ * account for daylight savings time */
+static void _advance_time(time_t *res_time, int day_cnt)
+{
+	time_t save_time = *res_time;
+	struct tm time_tm;
+
+	localtime_r(res_time, &time_tm);
+	time_tm.tm_isdst = -1;
+	time_tm.tm_mday += day_cnt;
+	*res_time = mktime(&time_tm);
+	if (*res_time == (time_t)(-1)) {
+		error("Could not compute reservation time %lu",
+		      (long unsigned int) save_time);
+		*res_time = save_time + (24 * 60 * 60);
+	}
+}
 
 static List _list_dup(List license_list)
 {
@@ -1053,7 +1072,7 @@ static bool _resv_overlap(time_t start_time, time_t end_time,
 	ListIterator iter;
 	slurmctld_resv_t *resv_ptr;
 	bool rc = false;
-	uint32_t delta_t, i, j;
+	int i, j;
 	time_t s_time1, s_time2, e_time1, e_time2;
 
 	if ((flags & RESERVE_FLAG_MAINT)   ||
@@ -1074,13 +1093,15 @@ static bool _resv_overlap(time_t start_time, time_t end_time,
 			continue;	/* no overlap */
 
 		for (i=0; ((i<7) && (!rc)); i++) {  /* look forward one week */
-			delta_t = i * (24 * 60 * 60);
-			s_time1 = start_time + delta_t;
-			e_time1 = end_time   + delta_t;
+			s_time1 = start_time;
+			e_time1 = end_time;
+			_advance_time(&s_time1, i);
+			_advance_time(&e_time1, i);
 			for (j=0; ((j<7) && (!rc)); j++) {
-				delta_t = j * (24 * 60 * 60);
-				s_time2 = resv_ptr->start_time + delta_t;
-				e_time2 = resv_ptr->end_time   + delta_t;
+				s_time2 = resv_ptr->start_time;
+				e_time2 = resv_ptr->end_time;
+				_advance_time(&s_time2, j);
+				_advance_time(&e_time2, j);
 				if ((s_time1 < e_time2) &&
 				    (e_time1 > s_time2)) {
 					verbose("Reservation overlap with %s",
@@ -1158,8 +1179,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 			goto bad_parse;
 		}
 	} else if (resv_desc_ptr->duration == INFINITE) {
-		resv_desc_ptr->end_time = resv_desc_ptr->start_time +
-					  (365 * 24 * 60 * 60);
+		resv_desc_ptr->end_time = resv_desc_ptr->start_time + ONE_YEAR;
 	} else if (resv_desc_ptr->duration) {
 		resv_desc_ptr->end_time = resv_desc_ptr->start_time +
 					  (resv_desc_ptr->duration * 60);
@@ -2910,12 +2930,12 @@ extern void fini_job_resv_check(void)
 		if ((resv_ptr->job_run_cnt  == 0) &&
 		    (resv_ptr->flags & RESERVE_FLAG_DAILY)) {
 			verbose("Advance reservation %s one day",
-			resv_ptr->name);
-			resv_ptr->start_time = resv_ptr->start_time_first +
-					       24 * 60 * 60;
+				resv_ptr->name);
+			resv_ptr->start_time = resv_ptr->start_time_first;
+			_advance_time(&resv_ptr->start_time, 1);
 			resv_ptr->start_time_prev = resv_ptr->start_time;
 			resv_ptr->start_time_first = resv_ptr->start_time;
-			resv_ptr->end_time   += 24 * 60 * 60;
+			_advance_time(&resv_ptr->end_time, 1);
 			_post_resv_create(resv_ptr);
 			last_resv_update = now;
 			schedule_resv_save();
@@ -2925,11 +2945,11 @@ extern void fini_job_resv_check(void)
 		    (resv_ptr->flags & RESERVE_FLAG_WEEKLY)) {
 			verbose("Advance reservation %s one week",
 				resv_ptr->name);
-			resv_ptr->start_time = resv_ptr->start_time_first +
-					       7 * 24 * 60 * 60;
+			resv_ptr->start_time = resv_ptr->start_time_first;
+			_advance_time(&resv_ptr->start_time, 7);
 			resv_ptr->start_time_prev = resv_ptr->start_time;
 			resv_ptr->start_time_first = resv_ptr->start_time;
-			resv_ptr->end_time   += 7 * 24 * 60 * 60;
+			_advance_time(&resv_ptr->end_time, 7);
 			_post_resv_create(resv_ptr);
 			last_resv_update = now;
 			schedule_resv_save();
