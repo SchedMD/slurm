@@ -88,7 +88,7 @@ uint32_t  top_suffix = 0;
 
 static void _advance_time(time_t *res_time, int day_cnt);
 static int  _build_account_list(char *accounts, int *account_cnt,
-			        char ***account_list);
+				char ***account_list);
 static int  _build_uid_list(char *users, int *user_cnt, uid_t **user_list);
 static void _clear_job_resv(slurmctld_resv_t *resv_ptr);
 static slurmctld_resv_t *_copy_resv(slurmctld_resv_t *resv_orig_ptr);
@@ -423,6 +423,7 @@ static int _set_assoc_list(slurmctld_resv_t *resv_ptr)
 	assoc_list = list_create(NULL);
 
 	memset(&assoc, 0, sizeof(slurmdb_association_rec_t));
+	xfree(resv_ptr->assoc_list);
 
 	if(resv_ptr->user_cnt) {
 		for(i=0; i < resv_ptr->user_cnt; i++) {
@@ -481,6 +482,7 @@ static int _set_assoc_list(slurmctld_resv_t *resv_ptr)
 		}
 		list_iterator_destroy(itr);
 	}
+	//info("list is '%s'", resv_ptr->assoc_list);
 
 end_it:
 	list_destroy(assoc_list);
@@ -791,6 +793,7 @@ static int  _update_account_list(slurmctld_resv_t *resv_ptr,
 			}
 		}
 	}
+
 	for (i=0; i<ac_cnt; i++)
 		xfree(ac_list[i]);
 	xfree(ac_list);
@@ -1590,6 +1593,9 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 		goto update_failure;
 	}
 	_set_cpu_cnt(resv_ptr);
+
+	/* This needs to be after checks for both account and user
+	   changes */
 	if ((error_code = _set_assoc_list(resv_ptr)) != SLURM_SUCCESS)
 		goto update_failure;
 
@@ -2517,17 +2523,41 @@ static int _valid_job_access_resv(struct job_record *job_ptr,
 	/* Determine if we have access */
 	if (accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS) {
 		char tmp_char[30];
-
+		slurmdb_association_rec_t *assoc;
 		if(!resv_ptr->assoc_list) {
 			error("Reservation %s has no association list. "
 			      "Checking user/account lists",
 			      resv_ptr->name);
 			goto no_assocs;
 		}
-		snprintf(tmp_char, sizeof(tmp_char), ",%u,", 
-			 job_ptr->assoc_id);
-		if(strstr(resv_ptr->assoc_list, tmp_char))
-			return SLURM_SUCCESS;
+
+		if (!job_ptr->assoc_ptr) {
+			slurmdb_association_rec_t assoc_rec;
+			/* This should never be called, but just to be
+			   safe we will try to fill it in.
+			*/
+			memset(&assoc_rec, 0,
+			       sizeof(slurmdb_association_rec_t));
+			assoc_rec.id = job_ptr->assoc_id;
+			if (assoc_mgr_fill_in_assoc(
+				    acct_db_conn, &assoc_rec,
+				    accounting_enforce,
+				    (slurmdb_association_rec_t **)
+				    &job_ptr->assoc_ptr))
+				goto end_it;
+		}
+
+		/* Check to see if the association is here or the
+		   parent association is listed in the valid
+		   associations.
+		*/
+		assoc = job_ptr->assoc_ptr;
+		while (assoc) {
+			snprintf(tmp_char, sizeof(tmp_char), ",%u,", assoc->id);
+			if(strstr(resv_ptr->assoc_list, tmp_char))
+				return SLURM_SUCCESS;
+			assoc = assoc->usage->parent_assoc_ptr;
+		}
 	} else {
 	no_assocs:
 		for (i=0; i<resv_ptr->user_cnt; i++) {
@@ -2542,6 +2572,7 @@ static int _valid_job_access_resv(struct job_record *job_ptr,
 			}
 		}
 	}
+end_it:
 	info("Security violation, uid=%u attempt to use reservation %s",
 	     job_ptr->user_id, resv_ptr->name);
 	return ESLURM_RESERVATION_ACCESS;
@@ -2582,7 +2613,7 @@ extern int job_test_resv_now(struct job_record *job_ptr)
 	return SLURM_SUCCESS;
 }
 
-/* Adjust a job's time_limit and end_time as needed to avoid using 
+/* Adjust a job's time_limit and end_time as needed to avoid using
  *	reserved resources. Don't go below job's time_min value. */
 extern void job_time_adj_resv(struct job_record *job_ptr)
 {
@@ -2601,7 +2632,7 @@ extern void job_time_adj_resv(struct job_record *job_ptr)
 		if (resv_ptr->start_time >= job_ptr->end_time)
 			continue;	/* reservation starts after job ends */
 		if ((resv_ptr->node_bitmap == NULL) ||
-		    (bit_overlap(resv_ptr->node_bitmap, 
+		    (bit_overlap(resv_ptr->node_bitmap,
 				 job_ptr->node_bitmap) == 0))
 			continue;	/* disjoint resources */
 		resv_begin_time = difftime(resv_ptr->start_time, now) / 60;
@@ -2775,7 +2806,7 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 			overlap_resv = true;
 		}
 		list_iterator_destroy(iter);
-	
+
 		if (slurm_get_debug_flags() & DEBUG_FLAG_RESERVATION) {
 			char *nodes=bitmap2node_name(*node_bitmap);
 			info("nodes:%s", nodes);
@@ -3021,6 +3052,23 @@ extern void set_node_maint_mode(void)
 			_set_nodes_maint(resv_ptr, now);
 			last_node_update = now;
 		}
+	}
+	list_iterator_destroy(iter);
+}
+
+extern void update_assocs_in_resvs()
+{
+	slurmctld_resv_t *resv_ptr = NULL;
+	ListIterator  iter = NULL;
+
+	if (!resv_list)
+		error("No reservation list given for updating associations");
+
+	iter = list_iterator_create(resv_list);
+	if (!iter)
+		fatal("malloc: list_iterator_create");
+	while ((resv_ptr = list_next(iter))) {
+		_set_assoc_list(resv_ptr);
 	}
 	list_iterator_destroy(iter);
 }

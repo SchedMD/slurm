@@ -25,6 +25,7 @@ documents those changes that are of interest to users and admins.
     sacctmgr list assoc.
  -- Modify reservation logic so that daily and weekly reservations maintain
     the same time when daylight savings time starts or ends in the interim.
+ -- Edit to make reservations handle updates to associations.
 
 * Changes in SLURM 2.2.0.pre12
 ==============================

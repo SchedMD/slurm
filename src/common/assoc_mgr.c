@@ -63,6 +63,7 @@ static assoc_mgr_lock_flags_t assoc_mgr_locks;
 
 void (*remove_assoc_notify) (slurmdb_association_rec_t *rec) = NULL;
 void (*remove_qos_notify) (slurmdb_qos_rec_t *rec) = NULL;
+void (*update_resvs) () = NULL;
 
 static pthread_mutex_t locks_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t locks_cond = PTHREAD_COND_INITIALIZER;
@@ -1023,6 +1024,8 @@ extern int assoc_mgr_init(void *db_conn, assoc_init_args_t *args)
 			remove_assoc_notify = args->remove_assoc_notify;
 		if(args->remove_qos_notify)
 			remove_qos_notify = args->remove_qos_notify;
+		if(args->update_resvs)
+			update_resvs = args->update_resvs;
 		cache_level = args->cache_level;
 		assoc_mgr_refresh_lists(db_conn, args);
 	}
@@ -2100,6 +2103,7 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update)
 	ListIterator itr = NULL;
 	int rc = SLURM_SUCCESS;
 	int parents_changed = 0;
+	int run_update_resvs = 0;
 	int resort = 0;
 	List remove_list = NULL;
 	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK,
@@ -2314,14 +2318,20 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update)
 					create_assoc_mgr_association_usage();
 			list_append(assoc_mgr_association_list, object);
 			object = NULL;
-			parents_changed = 1; // set since we need to
-					     // set the parent
+			parents_changed = 1; /* set since we need to
+						set the parent
+					     */
+			run_update_resvs = 1; /* needed for updating
+						 reservations */
 			break;
 		case SLURMDB_REMOVE_ASSOC:
 			if(!rec) {
 				//rc = SLURM_ERROR;
 				break;
 			}
+
+			run_update_resvs = 1; /* needed for updating
+						 reservations */
 
 			if (setup_children)
 				parents_changed = 1; /* set since we need to
@@ -2449,6 +2459,9 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update)
 		list_iterator_destroy(itr);
 		list_destroy(remove_list);
 	}
+
+	if (run_update_resvs && update_resvs)
+		update_resvs();
 
 	return rc;
 }
