@@ -47,21 +47,18 @@ for the motivated end user to understand the source and add functionality.</li>
 <p>SLURM provides resource management on about 1000 computers worldwide,
 including many of the most powerful computers in the world:
 <ul>
+<li><a href="http://www.nytimes.com/2010/10/28/technology/28compute.html?_r=1&partner=rss&emc=rss">
+Tianhe-1A</a> designed by The National University of Defence Technology (NUDT)
+in China with 14,336 Intel CPUs and 7,168 NVDIA Tesla M2050 GPUs.
+The world's fastest super computer with a peak performance of 2.507 Petaflops.</li>
 <li><a href="http://www.wcm.bull.com/internet/pr/rend.jsp?DocId=567851&lang=en">
 Tera 100</a> at CEA with 140,000 Intel Xeon 7500 processing cores, 300TB of 
 central memory and a theoretical computing power of 1.25 Petaflops. Europe's
 most powerful supercomputer.</li>
-<li><a href="http://news.xinhuanet.com/english/2009-10/29/content_12356478.htm">
-Tianhe</a> at The National University of Defence Technology (NUDT) with
-6,144 Intel CPUs and 5,120 AMD GPUs.
-Debuting as China's fastest super computer with a peak performance of
-1.206 Petaflops.</li>
 <li><a href="https://asc.llnl.gov/computing_resources/bluegenel/">BlueGene/L</a>
 at LLNL with 106,496 dual-core processors</li>
 <li><a href="http://c-r-labs.com/">EKA</a> at Computational Research Laboratories,
 India with 14,240 Xeon processors and Infiniband interconnect</li>
-<li><a href="https://asc.llnl.gov/computing_resources/purple/">ASC Purple</a>
-an IBM SP/AIX cluster at LLNL with 12,208 Power5 processors and a Federation switch</li>
 <li><a href="http://www.bsc.es/plantillaA.php?cat_id=5">MareNostrum</a>
 a Linux cluster at Barcelona Supercomputer Center
 with 10,240 PowerPC processors and a Myrinet switch</li>
@@ -81,6 +78,6 @@ It is also distributed and supported by
 <a href="http://www.infiscale.com">Infiscale</a> and
 <a href="http://www.ibm.com">IBM</a>.</p>
 
-<p style="text-align:center;">Last modified 31 August 2010</p>
+<p style="text-align:center;">Last modified 1 November 2010</p>
 
 <!--#include virtual="footer.txt"-->
