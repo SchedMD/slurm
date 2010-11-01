@@ -206,7 +206,7 @@ user account combination.
 Each report type has various options...
 
 .TP
-.B COMMON FOR ALL TYPES
+.B OPTIONS FOR ALL REPORT TYPES
 
 .TP
 .B All_Clusters
@@ -252,7 +252,7 @@ MM/DD[/YY]\-HH:MM[:SS]
 YYYY\-MM\-DD[THH:MM[:SS]]
 .ad
 .TP
-.B CLUSTER
+.B OPTIONS SPECIFICALLY FOR CLUSTER REPORTS
 
 .TP
 .B Accounts=<OPT>
@@ -273,7 +273,7 @@ When used with the UserUtilizationByWckey or WCKeyUtilizationByUser,
 List of wckeys to include in report. Default is all.
 
 .TP
-.B JOB
+.B OPTIONS SPECIFICALLY FOR JOB REPORTS
 
 .TP
 .B Accounts=<OPT>
@@ -319,7 +319,7 @@ SizesbyWckey report all users summed together.  If you want only
 certain users specify them them with the Users= option.
 
 .TP
-.B RESERVATION
+.B OPTIONS SPECIFICALLY FOR RESERVATION REPORTS
 .TP
 .B Names=<OPT>
 List of reservations to use for the report. Default is all.
@@ -329,7 +329,7 @@ Only show reservations that used these nodes. Default is all.
 
 
 .TP
-.B USER
+.B OPTIONS SPECIFICALLY FOR USER REPORTS
 
 .TP
 .B Accounts=<OPT>
@@ -346,9 +346,9 @@ Default is 10.
 .B Users=<OPT>
 List of users jobs to include in report.  Default is all.
 
-.SH "Format Options for Each Report"
+.SH "FORMAT OPTIONS FOR EACH REPORT"
 
-\fBCluster\fP
+\fBFORMAT OPTIONS FOR CLUSTER REPORTS\fP
 .in 10
 AccountUtilizationByUser:
 .br
@@ -369,7 +369,7 @@ Utilization:
 Allocated, Cluster, CPUCount, Down, Idle, Overcommited, PlannedDown, Reported, Reserved
 
 .TP
-\fBJob\fP
+\fBFORMAT OPTIONS FOR JOB REPORTS\fP
 .in 10
 SizesByAccount:
 .in 14
@@ -381,14 +381,14 @@ SizesByWckey:
 Wckey, Cluster
 
 .TP
-\fBReservation\fP
+\fBFORMAT OPTIONS FOR RESERVATION REPORTS\fP
 .in 10
 Utilization:
 .in 14
 Allocated, Associations, Cluster, CPUCount, CPUTime, End, Idle, Name, Nodes, Start, TotalTime
 
 .TP
-\fBUser\fP
+\fBFORMAT OPTIONS FOR USER REPORTS\fP
 .in 10
 TopUsage:
 .in 14
@@ -419,10 +419,9 @@ cluster zeus
 .TP
 \fBsreport user topusage start=2/16/09 end=2/23/09 \-t percent account=lc\fP
 Report top usage in percent of the lc account during the specified week
-.TP
 
 .SH "COPYING"
-Copyright (C) 2009 Lawrence Livermore National Security.
+Copyright (C) 2009\-2010 Lawrence Livermore National Security.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 CODE\-OCEC\-09\-009. All rights reserved.
 .LP
