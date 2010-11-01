@@ -2164,8 +2164,9 @@ extern char *find_bp_rack_mid(char* xyz)
 	ba_bp_map_t *bp_map = NULL;
 	ListIterator itr;
 	int number;
-	uint16_t coord[cluster_dims];
-	uint16_t len = strlen(xyz);
+	int coord[cluster_dims];
+	int len = strlen(xyz);
+
 	len -= 3;
 	if(len<0)
 		return NULL;

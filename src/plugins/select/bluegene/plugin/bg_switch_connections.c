@@ -43,7 +43,7 @@
 
 #ifdef HAVE_BG_FILES
 static int _get_bp_by_location(my_bluegene_t* my_bg,
-			       int* curr_coord,
+			       uint16_t* curr_coord,
 			       rm_BP_t** bp);
 static int _get_switches_by_bpid(my_bluegene_t* my_bg, const char *bpid,
 				 rm_switch_t **curr_switch);
@@ -60,7 +60,7 @@ static int _used_switches(ba_node_t *ba_node);
  * "NextBP" goes to, but we don't know, so we have to do this.
  */
 #ifdef HAVE_BG_FILES
-static int _get_bp_by_location(my_bluegene_t* my_bg, int* curr_coord,
+static int _get_bp_by_location(my_bluegene_t* my_bg, uint16_t* curr_coord,
 			       rm_BP_t** bp)
 {
 	static int bp_num = 0;
