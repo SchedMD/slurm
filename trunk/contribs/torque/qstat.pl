@@ -49,6 +49,7 @@ use Getopt::Long 2.24 qw(:config no_ignore_case);
 use lib "${FindBin::Bin}/../lib/perl";
 use autouse 'Pod::Usage' => qw(pod2usage);
 use Slurm ':all';
+use Slurmdb ':all'; # needed for getting the correct cluster dims
 use Switch;
 
 # Parse Command Line Arguments
