@@ -432,7 +432,9 @@ if {![string compare $select_type "bluegene"]} {
 
 set exit_code [allocate_and_quit $inode_name $smallest $inode_procs]
 if {!$exit_code && $smallest != $inode_procs} {
-		set exit_code [allocate_and_quit $inode_name $inode_procs $inode_procs]
+	# just to make sure we get a clean state we will sleep a bit
+	sleep 1
+	set exit_code [allocate_and_quit $inode_name $inode_procs $inode_procs]
 }
 if {$exit_code == 0} {
 	send_user "\nSUCCESS\n"
