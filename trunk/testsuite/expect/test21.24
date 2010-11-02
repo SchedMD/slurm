@@ -8,7 +8,7 @@
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
 #          anything else indicates a failure mode that must be investigated.
 ############################################################################
-# Copyright (C) 2008 Lawrence Livermore National Security.
+# Copyright (C) 2008-2010 Lawrence Livermore National Security.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Joseph Donaghy <donaghy1@llnl.gov>
 # CODE-OCEC-09-009. All rights reserved.
@@ -34,6 +34,7 @@
 source ./globals_accounting
 
 set test_id     "test21.24"
+set test_nu     "test21-24"
 set file_in     "$test_id.input"
 set file_in2    "$test_id.input2"
 set file_in3    "$test_id.input3"
@@ -52,18 +53,15 @@ set wco		withcoordinator
 set par		Parent
 set roo		root
 set clu		Cluster
-set cl1		clust1
-set cl2		clust2
-set cl3		clust3
-set tc1		clust1
-set tc2		clust2
-set tc3		clust3
+set tc1		[format "%s%s" $test_nu "clus1"]
+set tc2		[format "%s%s" $test_nu "clus2"]
+set tc3		[format "%s%s" $test_nu "clus3"]
 set acc		Account
 set nams	names
-set nm1		scienceacct
-set nm2		physicsacct
-set nm3		theoryacct
-set nm4		appliedacct
+set nm1		[format "%s%s" $test_nu "acct1"]
+set nm2		[format "%s%s" $test_nu "acct2"]
+set nm3		[format "%s%s" $test_nu "acct3"]
+set nm4		[format "%s%s" $test_nu "acct4"]
 set dsc		Description
 set ds1		scienceacct
 set ds2		physicsacct
@@ -75,10 +73,10 @@ set or2		physicsorg
 set or3		theoryorg
 set or4		appliedorg
 set usr		User
-set us1		u1ser
-set us2		u2ser
-set us3		u3ser
-set us4		u4ser
+set us1         [format "%s%s" $test_nu "user1"]
+set us2         [format "%s%s" $test_nu "user2"]
+set us3         [format "%s%s" $test_nu "user3"]
+set us4         [format "%s%s" $test_nu "user4"]
 set qs		QOS
 set qs1		tnormal
 set qs2		runfirst
@@ -261,7 +259,7 @@ if { $exit_code } {
 
 #add accounts
 #cluster parent name description organization qos Fairshare GrpCPUMins GrpCPUs GrpJobs GrpNodes GrpSubmitJobs GrpWall MaxCPUMins MaxCPUs MaxJobs MaxNodes MaxSubmitJobs MaxWallDurationPerJob
-incr exit_code [add_acct "$cl3" "$roo" "$nm4" "$ds4" "$or4" "$qs2" "$fs5" "$gm5" "$gc5" "$gj5" "$gn5" "$gs5" "$gw5" "$mm5" "$mc5" "$mj5" "$mn5" "$ms5" "$mw5"]
+incr exit_code [add_acct "$tc3" "$roo" "$nm4" "$ds4" "$or4" "$qs2" "$fs5" "$gm5" "$gc5" "$gj5" "$gn5" "$gs5" "$gw5" "$mm5" "$mc5" "$mj5" "$mn5" "$ms5" "$mw5"]
 if { $exit_code } {
 	remove_user "" "" "$us1,$us2,$us3,$us4"
 	remove_acct "" "$nm1,$nm2,$nm3,$nm4"
@@ -270,7 +268,7 @@ if { $exit_code } {
 	exit $exit_code
 }
 
-incr exit_code [add_acct "$cl3" "$nm4" "$nm3" "$ds3" "$or3" "$qs2" "$fs4" "$gm4" "$gc4" "$gj4" "$gn4" "$gs4" "$gw4" "$mm4" "$mc4" "$mj4" "$mn4" "$ms4" "$mw4"]
+incr exit_code [add_acct "$tc3" "$nm4" "$nm3" "$ds3" "$or3" "$qs2" "$fs4" "$gm4" "$gc4" "$gj4" "$gn4" "$gs4" "$gw4" "$mm4" "$mc4" "$mj4" "$mn4" "$ms4" "$mw4"]
 if { $exit_code } {
 	remove_user "" "" "$us1,$us2,$us3,$us4"
 	remove_acct "" "$nm1,$nm2,$nm3,$nm4"
@@ -279,7 +277,7 @@ if { $exit_code } {
 	exit $exit_code
 }
 
-incr exit_code [add_acct "$cl3" "$nm3" "$nm2" "$ds2" "$or2" "$qs2" "$fs3" "$gm3" "$gc3" "$gj3" "$gn3" "$gs3" "$gw3" "$mm3" "$mc3" "$mj3" "$mn3" "$ms3" "$mw3"]
+incr exit_code [add_acct "$tc3" "$nm3" "$nm2" "$ds2" "$or2" "$qs2" "$fs3" "$gm3" "$gc3" "$gj3" "$gn3" "$gs3" "$gw3" "$mm3" "$mc3" "$mj3" "$mn3" "$ms3" "$mw3"]
 if { $exit_code } {
 	remove_user "" "" "$us1,$us2,$us3,$us4"
 	remove_acct "" "$nm1,$nm2,$nm3,$nm4"
@@ -320,7 +318,7 @@ if { $exit_code } {
 exec $bin_rm -f $file_out4
 
 set matches 0
-set my_pid [spawn $sacctmgr -i dump $clu=$cl3 file=$file_out4]
+set my_pid [spawn $sacctmgr -i dump $clu=$tc3 file=$file_out4]
 expect {
 	-re "(Cluster .* returned nothing)" {
 	        send_user "FAILURE: there was a problem with the dump\n"
@@ -367,7 +365,7 @@ while {[gets $tfile line] != -1} {
 	if {![string compare $line "No such file or directory"]} {
 		send_user "FAILURE: there was a problem with the sacctmgr command\n"
 		incr exit_code 1
-	} elseif {![string compare $line "$clu - $cl3:$fs=$fs6:$gc=$gc6:$gj=$gj6:$gn=$gn6:$gs=$gs6:$mp=$mm6:$mu=$mc6:$mj=$mj6:$mnj=$mn6:$ms=$ms6:$md=$mw6:$qs='$qs2'"]} {
+	} elseif {![string compare $line "$clu - $tc3:$fs=$fs6:$gc=$gc6:$gj=$gj6:$gn=$gn6:$gs=$gs6:$mp=$mm6:$mu=$mc6:$mj=$mj6:$mnj=$mn6:$ms=$ms6:$md=$mw6:$qs='$qs2'"]} {
 		send_user "match 1\n"
 		incr matches
 	} elseif {![string compare $line "$par - $roo"]} {
