@@ -440,7 +440,7 @@ rm -f ${RPM_BUILD_ROOT}%{_mandir}/man1/srun_cr* ${RPM_BUILD_ROOT}%{_bindir}/srun
 
 # Build man pages that are generated directly by the tools
 rm -f $RPM_BUILD_ROOT/%{_mandir}/man1/sjobexitmod.1
-${RPM_BUILD_ROOT}%{_bindir}/sjobexitmod --roff >$RPM_BUILD_ROOT/%{_mandir}/man1/sjobexitmod.1
+${RPM_BUILD_ROOT}%{_bindir}/sjobexitmod --roff > $RPM_BUILD_ROOT/%{_mandir}/man1/sjobexitmod.1
 
 # Build conditional file list for main package
 LIST=./slurm.files
