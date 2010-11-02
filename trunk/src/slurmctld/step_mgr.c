@@ -981,7 +981,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 				node_tmp = bit_pick_cnt(nodes_avail, 1);
 				if (node_tmp == NULL)
 					break;
-	
+
 				cpu_cnt = _count_cpus(job_ptr, node_tmp,
 						      usable_cpu_cnt);
 				if (cpu_cnt == 0) {
