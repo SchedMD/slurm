@@ -18,7 +18,10 @@ of the SLURM contribs distribution follows:
      API to SLURM using perl.  Making available all SLURM command that exist
      in the SLURM proper API.
 
-  sjstat             [ Perl program]
+  sjobexit/          [ Perl programs ]
+     Tools for managing job exit code records
+
+  sjstat             [ Perl program ]
      Lists attributes of jobs under SLURM control
 
   skilling.c         [ C program ]
