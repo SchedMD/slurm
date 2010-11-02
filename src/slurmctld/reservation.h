@@ -74,7 +74,7 @@ extern int send_resvs_to_accounting(void);
 extern void set_node_maint_mode(void);
 
 /* After an assocation has been added or removed update the lists. */
-extern void update_assocs_in_resvs();
+extern void update_assocs_in_resvs(void);
 
 /*
  * Load the reservation state from file, recover on slurmctld restart.
