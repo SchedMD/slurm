@@ -417,7 +417,7 @@ static int _set_assoc_list(slurmctld_resv_t *resv_ptr)
 	slurmdb_association_rec_t assoc, *assoc_ptr = NULL;
 
 	/* no need to do this if we can't ;) */
-	if(!association_based_accounting)
+	if (!association_based_accounting)
 		return rc;
 
 	assoc_list = list_create(NULL);
@@ -425,28 +425,27 @@ static int _set_assoc_list(slurmctld_resv_t *resv_ptr)
 	memset(&assoc, 0, sizeof(slurmdb_association_rec_t));
 	xfree(resv_ptr->assoc_list);
 
-	if(resv_ptr->user_cnt) {
-		for(i=0; i < resv_ptr->user_cnt; i++) {
-			if(resv_ptr->account_cnt) {
-				for(j=0; j < resv_ptr->account_cnt; j++) {
+	if (resv_ptr->user_cnt) {
+		for (i=0; i < resv_ptr->user_cnt; i++) {
+			if (resv_ptr->account_cnt) {
+				for (j=0; j < resv_ptr->account_cnt; j++) {
 					memset(&assoc, 0,
 					       sizeof(slurmdb_association_rec_t));
 					assoc.uid = resv_ptr->user_list[i];
 					assoc.acct = resv_ptr->account_list[j];
-					if((rc = _append_assoc_list(
-						    assoc_list, &assoc))
-					   != SLURM_SUCCESS) {
+					rc = _append_assoc_list(assoc_list,
+								&assoc);
+					if (rc != SLURM_SUCCESS)
 						goto end_it;
-					}
 				}
 			} else {
 				memset(&assoc, 0,
 				       sizeof(slurmdb_association_rec_t));
 				assoc.uid = resv_ptr->user_list[i];
-				if((rc = assoc_mgr_get_user_assocs(
+				rc = assoc_mgr_get_user_assocs(
 					    acct_db_conn, &assoc,
-					    accounting_enforce, assoc_list))
-				   != SLURM_SUCCESS) {
+					    accounting_enforce, assoc_list);
+				if (rc != SLURM_SUCCESS) {
 					rc = ESLURM_INVALID_ACCOUNT;
 					goto end_it;
 				}
@@ -2524,7 +2523,7 @@ static int _valid_job_access_resv(struct job_record *job_ptr,
 	if (accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS) {
 		char tmp_char[30];
 		slurmdb_association_rec_t *assoc;
-		if(!resv_ptr->assoc_list) {
+		if (!resv_ptr->assoc_list) {
 			error("Reservation %s has no association list. "
 			      "Checking user/account lists",
 			      resv_ptr->name);
@@ -2534,8 +2533,7 @@ static int _valid_job_access_resv(struct job_record *job_ptr,
 		if (!job_ptr->assoc_ptr) {
 			slurmdb_association_rec_t assoc_rec;
 			/* This should never be called, but just to be
-			   safe we will try to fill it in.
-			*/
+			 * safe we will try to fill it in. */
 			memset(&assoc_rec, 0,
 			       sizeof(slurmdb_association_rec_t));
 			assoc_rec.id = job_ptr->assoc_id;
@@ -2547,20 +2545,17 @@ static int _valid_job_access_resv(struct job_record *job_ptr,
 				goto end_it;
 		}
 
-		/* Check to see if the association is here or the
-		   parent association is listed in the valid
-		   associations.
-		*/
+		/* Check to see if the association is here or the parent
+		 * association is listed in the valid associations. */
 		assoc = job_ptr->assoc_ptr;
 		while (assoc) {
 			snprintf(tmp_char, sizeof(tmp_char), ",%u,", assoc->id);
-			if(strstr(resv_ptr->assoc_list, tmp_char))
+			if (strstr(resv_ptr->assoc_list, tmp_char))
 				return SLURM_SUCCESS;
 			assoc = assoc->usage->parent_assoc_ptr;
 		}
 	} else {
-	no_assocs:
-		for (i=0; i<resv_ptr->user_cnt; i++) {
+no_assocs:	for (i=0; i<resv_ptr->user_cnt; i++) {
 			if (job_ptr->user_id == resv_ptr->user_list[i])
 				return SLURM_SUCCESS;
 		}
@@ -2572,6 +2567,7 @@ static int _valid_job_access_resv(struct job_record *job_ptr,
 			}
 		}
 	}
+
 end_it:
 	info("Security violation, uid=%u attempt to use reservation %s",
 	     job_ptr->user_id, resv_ptr->name);
@@ -3056,7 +3052,7 @@ extern void set_node_maint_mode(void)
 	list_iterator_destroy(iter);
 }
 
-extern void update_assocs_in_resvs()
+extern void update_assocs_in_resvs(void)
 {
 	slurmctld_resv_t *resv_ptr = NULL;
 	ListIterator  iter = NULL;
