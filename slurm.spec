@@ -550,7 +550,7 @@ rm -rf $RPM_BUILD_ROOT
 %config %{_sysconfdir}/cgroup.release_agent
 %config %{_sysconfdir}/slurm.conf.example
 %config %{_sysconfdir}/slurm.epilog.clean
-%exclude %{_mandir}/man1/sjobexitmod.1
+%exclude %{_mandir}/man1/sjobexit*
 %if %{slurm_with blcr}
 %exclude %{_mandir}/man1/srun_cr*
 %exclude %{_bindir}/srun_cr
@@ -705,7 +705,7 @@ rm -rf $RPM_BUILD_ROOT
 %files sjobexit
 %defattr(-,root,root)
 %{_bindir}/sjobexitmod
-%{_mandir}/man1/sjobexitmod.1
+%{_mandir}/man1/sjobexit*
 #############################################################################
 
 %files slurmdb-direct
