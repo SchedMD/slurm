@@ -834,7 +834,7 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
        delete account     - Clusters=, DefaultQOS=, Descriptions=, Names=, \n\
                             Organizations=, and Parents=                   \n\
                                                                            \n\
-       list associations  - Accounts=, Clusters=, Format=, ID=,            \n\
+       list associations  - Accounts=, Clusters=, Format=, ID=, OnlyDefaults,\n\
                             Partitions=, Parent=, Tree, Users=,            \n\
                             WithSubAccounts, WithDeleted, WOLimits,        \n\
                             WOPInfo, and WOPLimits                         \n\
