@@ -3084,7 +3084,7 @@ extern List as_mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 
 		query = xstrdup_printf("select distinct %s "
 				       "from \"%s_%s\" where (%s) "
-				       "order by lft;",
+				       "and deleted = 0 order by lft;",
 				       object,
 				       cluster_name, assoc_table, name_char);
 		debug3("%d(%s:%d) query\n%s",
