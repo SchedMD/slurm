@@ -535,6 +535,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/*.so*
 %{_libdir}/slurm/src/*
 %{_mandir}/man1/*
+%{_mandir}/man5/cgroup.*
 %{_mandir}/man5/gres.*
 %{_mandir}/man5/slurm.*
 %{_mandir}/man5/topology.*
@@ -646,6 +647,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/slurm/checkpoint_ompi.so
 %{_libdir}/slurm/checkpoint_xlch.so
 %{_libdir}/slurm/gres_gpu.so
+%{_libdir}/slurm/gres_nic.so
 %{_libdir}/slurm/jobacct_gather_aix.so
 %{_libdir}/slurm/jobacct_gather_linux.so
 %{_libdir}/slurm/jobacct_gather_none.so
@@ -677,12 +679,14 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/slurm/sched_wiki.so
 %{_libdir}/slurm/sched_wiki2.so
 %{_libdir}/slurm/select_bluegene.so
+%{_libdir}/slurm/select_cray.so
 %{_libdir}/slurm/select_bgq.so
 %{_libdir}/slurm/select_cons_res.so
 %{_libdir}/slurm/select_linear.so
 %{_libdir}/slurm/switch_none.so
 %{_libdir}/slurm/task_none.so
 %{_libdir}/slurm/topology_3d_torus.so
+%{_libdir}/slurm/topology_node_rank.so
 %{_libdir}/slurm/topology_none.so
 %{_libdir}/slurm/topology_tree.so
 #############################################################################
