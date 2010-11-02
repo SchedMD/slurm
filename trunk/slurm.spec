@@ -287,6 +287,13 @@ Requires: slurm-perlapi
 %description torque
 Torque wrapper scripts used for helping migrate from Torque/PBS to SLURM.
 
+%package sjobexit
+Summary: SLURM job exit code management tools.
+Group: Development/System
+Requires: slurm-perlapi
+%description sjobexit
+SLURM job exit code management tools.
+
 %package slurmdb-direct
 Summary: Wrappers to write directly to the slurmdb.
 Group: Development/System
@@ -685,6 +692,11 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/qstat
 %{_bindir}/qsub
 %{_bindir}/mpiexec
+#############################################################################
+
+%files sjobexitmod
+%defattr(-,root,root)
+%{_bindir}/sjobexitmod
 #############################################################################
 
 %files slurmdb-direct
