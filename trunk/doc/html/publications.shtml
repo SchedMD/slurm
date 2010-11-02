@@ -7,27 +7,40 @@
 <h2>Presentations from SLURM User Group Meeting, October 2010</h2>
 
 <ul>
+<!-- Use LLNL-PRES-453794 -->
 <li><a href="01-keynote.pdf">SLURM: Resource Management from the Simple to the
 Sophisticated</a>,
 Morris Jette and Danny Auble, Lawrence Livermore National Laboratory
 (SLURM User Group Meeting, October 2010)</li>
-<li><a href="01-mh-cea.pdf">SLURM at CEA</a>,
+
+<!-- Use LLNL-PRES-459615 -->
+<li><a href="slurm_ug_2010/01-mh-cea.pdf">SLURM at CEA</a>,
 Matthieu Hautreux, CEA/DAM/DIF
 (SLURM User Group Meeting, October 2010)</li>
-<li><a href="02-mp-bull.pdf">SLURM Support for Linux Control Groups</a>,
+
+<!-- Use LLNL-PRES-459615 -->
+<li><a href="slurm_ug_2010/02-mp-bull.pdf">SLURM Support for Linux Control Groups</a>,
 Martin Perry, Bull Information Systems
 (SLURM User Group Meeting, October 2010)</li>
-<li><a href="03-cf-bsc.pdf">SLURM at BSC</a>,
+
+<!-- Use LLNL-PRES-459615 -->
+<li><a href="slurm_ug_2010/03-cf-bsc.pdf">SLURM at BSC</a>,
 Carles Fenoy and Alejandro Lucero, Barcelona Supercomputing Center
 (SLURM User Group Meeting, October 2010)</li>
-<li><a href="04-ns-cscs.pdf">Porting SLURM to the Cray XT and XE</a>,
+
+<!-- Use LLNL-PRES-459615 -->
+<li><a href="slurm_ug_2010/04-ns-cscs.pdf">Porting SLURM to the Cray XT and XE</a>,
 Neil Stringfellow and Gerrit Renker, Swiss National Supercomputer Centre
 (SLURM User Group Meeting, October 2010)</li>
-<li><a href="05-yg-bull.pdf">Real Scale Experimentations of SLURM Resource
+
+<!-- Use LLNL-PRES-459615 -->
+<li><a href="slurm_ug_2010/05-yg-bull.pdf">Real Scale Experimentations of SLURM Resource
 and Job Management System</a>,
 Yiannis Georgiou, Bull Information Systems
 (SLURM User Group Meeting, October 2010)</li>
-<li><a href="01-keynote.pdf">SLURM Version 2.2: Features and Release Plans</a>,
+
+<!-- Use LLNL-PRES-453831 -->
+<li><a href="slurm_ug_2010/06-mjda-llnl.pdf">SLURM Version 2.2: Features and Release Plans</a>,
 Morris Jette and Danny Auble, Lawrence Livermore National Laboratory
 (SLURM User Group Meeting, October 2010)</li>
 </ul>
