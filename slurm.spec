@@ -694,7 +694,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/mpiexec
 #############################################################################
 
-%files sjobexitmod
+%files sjobexit
 %defattr(-,root,root)
 %{_bindir}/sjobexitmod
 #############################################################################
