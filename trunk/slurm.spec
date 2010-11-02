@@ -438,6 +438,9 @@ rm -f $RPM_BUILD_ROOT/%{_perlarchlibdir}/perllocal.pod
 rm -f ${RPM_BUILD_ROOT}%{_mandir}/man1/srun_cr* ${RPM_BUILD_ROOT}%{_bindir}/srun_cr ${RPM_BUILD_ROOT}%{_libexecdir}/slurm/cr_*
 %endif
 
+# Build man pages that are generated directly by the tools
+rm -f $RPM_BUILD_ROOT/%{_mandir}/man1/sjobexitmod.1
+${RPM_BUILD_ROOT}%{_bindir}/sjobexitmod --roff >$RPM_BUILD_ROOT/%{_mandir}/man1/sjobexitmod.1
 
 # Build conditional file list for main package
 LIST=./slurm.files
@@ -546,6 +549,7 @@ rm -rf $RPM_BUILD_ROOT
 %config %{_sysconfdir}/cgroup.release_agent
 %config %{_sysconfdir}/slurm.conf.example
 %config %{_sysconfdir}/slurm.epilog.clean
+%exclude %{_mandir}/man1/sjobexitmod.1
 %if %{slurm_with blcr}
 %exclude %{_mandir}/man1/srun_cr*
 %exclude %{_bindir}/srun_cr
@@ -697,6 +701,7 @@ rm -rf $RPM_BUILD_ROOT
 %files sjobexit
 %defattr(-,root,root)
 %{_bindir}/sjobexitmod
+%{_mandir}/man1/sjobexitmod.1
 #############################################################################
 
 %files slurmdb-direct
