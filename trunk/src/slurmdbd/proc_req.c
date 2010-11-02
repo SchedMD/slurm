@@ -3470,7 +3470,8 @@ static int  _step_complete(slurmdbd_conn_t *slurmdbd_conn,
 		goto end_it;
 	}
 	if (slurmdbd_unpack_step_complete_msg(&step_comp_msg,
-					      slurmdbd_conn->rpc_version, in_buffer) !=
+					      slurmdbd_conn->rpc_version,
+					      in_buffer) !=
 	    SLURM_SUCCESS) {
 		comment = "Failed to unpack DBD_STEP_COMPLETE message";
 		error("CONN:%u %s", slurmdbd_conn->newsockfd, comment);

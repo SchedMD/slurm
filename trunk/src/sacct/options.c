@@ -315,8 +315,14 @@ static int _addto_step_list(List step_list, char *names)
 						selected_step->stepid = NO_VAL;
 					} else {
 						*dot++ = 0;
-						selected_step->stepid =
-							atoi(dot);
+						/* can't use NO_VAL
+						 * since that means all */
+						if (!strcmp(dot, "batch"))
+							selected_step->stepid =
+								INFINITE;
+						else
+							selected_step->stepid =
+								atoi(dot);
 					}
 					selected_step->jobid = atoi(name);
 					xfree(name);
@@ -356,7 +362,11 @@ static int _addto_step_list(List step_list, char *names)
 				selected_step->stepid = NO_VAL;
 			} else {
 				*dot++ = 0;
-				selected_step->stepid = atoi(dot);
+				/* can't use NO_VAL since that means all */
+				if (!strcmp(dot, "batch"))
+					selected_step->stepid = INFINITE;
+				else
+					selected_step->stepid = atoi(dot);
 			}
 			selected_step->jobid = atoi(name);
 			xfree(name);
@@ -426,7 +436,8 @@ sacct [<OPTION>]                                                            \n\
 	           Format is <job(.step)>. Display information about this   \n\
                    job or comma-separated list of jobs. The default is all  \n\
                    jobs. Adding .step will display the specfic job step of  \n\
-                   that job.                                                \n\
+                   that job. (A step id of 'batch' will display the         \n\
+                   information about the batch step.)                       \n\
      -k, --timelimit-min:                                                   \n\
                    Only send data about jobs with this timelimit.           \n\
                    If used with timelimit_max this will be the minimum      \n\
@@ -746,7 +757,7 @@ void parse_command_line(int argc, char **argv)
 			break;
 		case 'j':
 			if ((strspn(optarg, "0123456789, ") < strlen(optarg))
-			    && (strspn(optarg, ".0123456789, ")
+			    && (strspn(optarg, ".batch0123456789, ")
 				< strlen(optarg))) {
 				fprintf(stderr, "Invalid jobs list: %s\n",
 					optarg);

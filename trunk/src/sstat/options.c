@@ -84,7 +84,8 @@ sstat [<OPTION>] -j <job(.stepid)>                                          \n\
                    required.  The step portion will default to lowest step  \n\
                    running if not specified, unless the --allsteps flag is  \n\
                    set where not specifying a step will result in all       \n\
-                   running steps to be displayed.                           \n\
+                   running steps to be displayed.  A step id of 'batch'     \n\
+                   will display the information about the batch step.       \n\
      -n, --noheader:                                                        \n\
 	           No header will be added to the beginning of output.      \n\
                    The default is to print a header.                        \n\

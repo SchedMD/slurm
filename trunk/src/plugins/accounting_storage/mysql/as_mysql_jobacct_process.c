@@ -607,18 +607,20 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 			while((selected_step = list_next(itr))) {
 				if(selected_step->jobid != job->jobid) {
 					continue;
-				} else if (selected_step->stepid
-					   == (uint32_t)NO_VAL) {
+				} else if (selected_step->stepid == NO_VAL) {
 					job->show_full = 1;
 					break;
-				}
+				} else if (selected_step->stepid == INFINITE)
+					selected_step->stepid =
+						SLURM_BATCH_SCRIPT;
 
 				if(set)
 					xstrcat(extra, " || ");
 				else
 					xstrcat(extra, " && (");
 
-				xstrfmtcat(extra, "t1.id_step=%u",
+				/* The stepid could be -2 so use %d not %u */
+				xstrfmtcat(extra, "t1.id_step=%d",
 					   selected_step->stepid);
 				set = 1;
 				job->show_full = 0;

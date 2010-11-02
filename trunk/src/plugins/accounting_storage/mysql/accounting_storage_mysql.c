@@ -966,7 +966,7 @@ extern int create_cluster_tables(MYSQL *db_conn, char *cluster_name)
 		{ "deleted", "tinyint default 0 not null" },
 		{ "cpus_alloc", "int unsigned not null" },
 		{ "exit_code", "int default 0 not null" },
-		{ "id_step", "smallint not null" },
+		{ "id_step", "int not null" },
 		{ "kill_requid", "int default -1 not null" },
 		{ "nodelist", "text not null" },
 		{ "nodes_alloc", "int unsigned not null" },

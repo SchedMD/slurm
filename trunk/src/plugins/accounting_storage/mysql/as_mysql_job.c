@@ -788,6 +788,18 @@ extern int as_mysql_step_start(mysql_conn_t *mysql_conn,
 		nodes = step_ptr->step_layout->node_cnt;
 		task_dist = step_ptr->step_layout->task_dist;
 		node_inx = step_ptr->network;
+	} else if (step_ptr->step_id == SLURM_BATCH_SCRIPT) {
+		char temp_bit[BUF_SIZE];
+
+		if(step_ptr->step_node_bitmap) {
+			node_inx = bit_fmt(temp_bit, sizeof(temp_bit),
+					   step_ptr->step_node_bitmap);
+		}
+		/* We overload gres with the node name of where the
+		   script was running.
+		*/
+		snprintf(node_list, BUFFER_SIZE, "%s", step_ptr->gres);
+		nodes = cpus = tasks = 1;
 	} else {
 		char temp_bit[BUF_SIZE];
 
@@ -847,6 +859,7 @@ extern int as_mysql_step_start(mysql_conn_t *mysql_conn,
 
 	/* we want to print a -1 for the requid so leave it a
 	   %d */
+	/* The stepid could be -2 so use %d not %u */
 	query = xstrdup_printf(
 		"insert into \"%s_%s\" (job_db_inx, id_step, time_start, "
 		"step_name, state, "
@@ -919,6 +932,9 @@ extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 		now = step_ptr->job_ptr->end_time;
 		tasks = step_ptr->job_ptr->details->num_tasks;
 		cpus = step_ptr->cpu_count;
+	} else if (step_ptr->step_id == SLURM_BATCH_SCRIPT) {
+		now = time(NULL);
+		cpus = tasks = 1;
 	} else {
 		now = time(NULL);
 #ifdef HAVE_BG
@@ -982,6 +998,7 @@ extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 		}
 	}
 
+	/* The stepid could be -2 so use %d not %u */
 	query = xstrdup_printf(
 		"update \"%s_%s\" set time_end=%d, state=%d, "
 		"kill_requid=%d, exit_code=%d, "
@@ -995,7 +1012,7 @@ extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 		"max_pages_node=%u, ave_pages=%f, "
 		"min_cpu=%f, min_cpu_task=%u, "
 		"min_cpu_node=%u, ave_cpu=%f "
-		"where job_db_inx=%d and id_step=%u",
+		"where job_db_inx=%d and id_step=%d",
 		mysql_conn->cluster_name, step_table, (int)now,
 		comp_status,
 		step_ptr->requid,
