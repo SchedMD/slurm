@@ -34,10 +34,11 @@
 source ./globals_accounting
 
 set test_id     "test21.29"
+set test_nu     "test21-29"
 set exit_code   0
 set nm		name
 set qs		QOS
-set qs1		tnormal
+set qs1		[format "%s%s" $test_nu "qosnormal"]
 set rs		-1
 set dsc		description
 set ds1		tqos1

@@ -8,7 +8,7 @@
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
 #          anything else indicates a failure mode that must be investigated.
 ############################################################################
-# Copyright (C) 2008 Lawrence Livermore National Security.
+# Copyright (C) 2008-2010 Lawrence Livermore National Security.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Joseph Donaghy <donaghy1@llnl.gov>
 # CODE-OCEC-09-009. All rights reserved.
@@ -34,10 +34,12 @@
 source ./globals_accounting
 
 set test_id     "21.18"
+set test_nu     "test21-18"
 set exit_code   0
-set tc1		tcluster1
-set tc2		tcluster2
-set tc3		tcluster3
+set clu		cluster
+set tc1		[format "%s%s" $test_nu "clus1"]
+set tc2		[format "%s%s" $test_nu "clus2"]
+set tc3		[format "%s%s" $test_nu "clus3"]
 set fs1		2500
 set fs2		1700
 set fs3		1
@@ -53,16 +55,11 @@ set mn3		1
 set mw1		01:00:00
 set mw2		00:07:00
 set mw3		00:01:00
-set clu		cluster
-set cl1		1tmach
-set cl2		2tmach
-set cl3		3tmach
-set acc		account
 set acc		account
 set nams	names
-set nm1		testaccta1
-set nm2		testaccta2
-set nm3		testaccta3
+set nm1		[format "%s%s" $test_nu "acct1"]
+set nm2		[format "%s%s" $test_nu "acct2"]
+set nm3		[format "%s%s" $test_nu "acct3"]
 set des		Description
 set ds1		testaccounta1
 set ds2		testacct
@@ -73,9 +70,9 @@ set qs		QosLevel
 set qs1		normal
 set par		parent
 set usr		user
-set us1		tuser1
-set us2		tuser2
-set us3		tuser3
+set us1         [format "%s%s" $test_nu "user1"]
+set us2         [format "%s%s" $test_nu "user2"]
+set us3         [format "%s%s" $test_nu "user3"]
 set al		AdminLevel
 set aln		None
 set ala		Administrator

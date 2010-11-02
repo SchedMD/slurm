@@ -8,7 +8,7 @@
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
 #          anything else indicates a failure mode that must be investigated.
 ############################################################################
-# Copyright (C) 2009 Lawrence Livermore National Security.
+# Copyright (C) 2009-2010 Lawrence Livermore National Security.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Joseph Donaghy <donaghy1@llnl.gov>
 # CODE-OCEC-09-009. All rights reserved.
@@ -34,12 +34,13 @@
 source ./globals_accounting
 
 set test_id     "test21.26"
+set test_nu     "test21-26"
 set exit_code   0
 set cluster1		[get_cluster_name]
-set account1		qacctest1
-set account2		qacctest2
+set account1		[format "%s%s" $test_nu "acct1"]
+set account2		[format "%s%s" $test_nu "acct2"]
 set qos1		qqostest
-set user1		qusertest
+set user1       [format "%s%s" $test_nu "user1"]
 set access_err  0
 
 print_header $test_id

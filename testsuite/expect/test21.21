@@ -8,7 +8,7 @@
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
 #          anything else indicates a failure mode that must be investigated.
 ############################################################################
-# Copyright (C) 2008 Lawrence Livermore National Security.
+# Copyright (C) 2008-2010 Lawrence Livermore National Security.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Joseph Donaghy <donaghy1@llnl.gov>
 # CODE-OCEC-09-009. All rights reserved.
@@ -35,9 +35,10 @@ source ./globals
 source ./globals_accounting
 
 set test_id     "21.21"
+set test_nu     "test21-21"
 set exit_code   0
 set file_in     "test.$test_id.input"
-set test_acct   "test21.21acct"
+set test_acct	[format "%s%s" $test_nu "acct1"]
 set timeout 60
 print_header $test_id
 
