@@ -1349,6 +1349,7 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t * msg)
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
 	bool job_requeue = false;
 	bool dump_job = false, dump_node = false;
+	struct job_record *job_ptr = NULL;
 
 	/* init */
 	START_TIMER;
@@ -1365,6 +1366,27 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t * msg)
 	}
 
 	lock_slurmctld(job_write_lock);
+
+	/* Send batch step info to accounting */
+	if (association_based_accounting
+	    && (job_ptr = find_job_record(comp_msg->job_id))) {
+		struct step_record batch_step;
+		memset(&batch_step, 0, sizeof(struct step_record));
+		batch_step.job_ptr = job_ptr;
+		batch_step.step_id = SLURM_BATCH_SCRIPT;
+		batch_step.jobacct = comp_msg->jobacct;
+
+		batch_step.exit_code = comp_msg->job_rc;
+		batch_step.gres = comp_msg->node_name;
+		node_name2bitmap(batch_step.gres, false,
+				 &batch_step.step_node_bitmap);
+		batch_step.requid = -1;
+		batch_step.start_time = job_ptr->start_time;
+		batch_step.name = "batch";
+		jobacct_storage_g_step_start(acct_db_conn, &batch_step);
+		jobacct_storage_g_step_complete(acct_db_conn, &batch_step);
+		FREE_NULL_BITMAP(batch_step.step_node_bitmap);
+	}
 
 	/* do RPC call */
 	/* First set node DOWN if fatal error */

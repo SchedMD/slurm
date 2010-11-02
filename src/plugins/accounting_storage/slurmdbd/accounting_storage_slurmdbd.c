@@ -2100,6 +2100,13 @@ extern int jobacct_storage_p_step_start(void *db_conn,
 			 step_ptr->step_layout->node_list);
 	}
 #endif
+	if (step_ptr->step_id == SLURM_BATCH_SCRIPT) {
+		/* We overload gres with the node name of where the
+		   script was running.
+		*/
+		snprintf(node_list, BUFFER_SIZE, "%s", step_ptr->gres);
+		nodes = cpus = tasks = 1;
+	}
 
 	if (!step_ptr->job_ptr->db_index
 	    && (!step_ptr->job_ptr->details
@@ -2153,41 +2160,25 @@ extern int jobacct_storage_p_step_complete(void *db_conn,
 					   struct step_record *step_ptr)
 {
 	uint32_t cpus = 0, tasks = 0;
-	char node_list[BUFFER_SIZE];
 	slurmdbd_msg_t msg;
 	dbd_step_comp_msg_t req;
 
 #ifdef HAVE_BG
-	char *ionodes = NULL;
-
 	if(step_ptr->job_ptr->details)
-		cpus = step_ptr->job_ptr->details->min_cpus;
+		tasks = cpus = step_ptr->job_ptr->details->min_cpus;
 	else
-		cpus = step_ptr->job_ptr->cpu_cnt;
-	select_g_select_jobinfo_get(step_ptr->job_ptr->select_jobinfo,
-			     SELECT_JOBDATA_IONODES,
-			     &ionodes);
-	if (ionodes) {
-		snprintf(node_list, BUFFER_SIZE,
-			 "%s[%s]", step_ptr->job_ptr->nodes, ionodes);
-		xfree(ionodes);
-	} else {
-		snprintf(node_list, BUFFER_SIZE, "%s",
-			 step_ptr->job_ptr->nodes);
-	}
-
+		tasks = cpus = step_ptr->job_ptr->cpu_cnt;
 #else
 	if (!step_ptr->step_layout || !step_ptr->step_layout->task_cnt) {
 		cpus = tasks = step_ptr->job_ptr->total_cpus;
-		snprintf(node_list, BUFFER_SIZE, "%s",
-			 step_ptr->job_ptr->nodes);
 	} else {
 		cpus = step_ptr->cpu_count;
 		tasks = step_ptr->step_layout->task_cnt;
-		snprintf(node_list, BUFFER_SIZE, "%s",
-			 step_ptr->step_layout->node_list);
 	}
 #endif
+
+	if (step_ptr->step_id == SLURM_BATCH_SCRIPT)
+		cpus = tasks = 1;
 
 	if (!step_ptr->job_ptr->db_index
 	    && ((!step_ptr->job_ptr->details
