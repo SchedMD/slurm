@@ -7380,8 +7380,8 @@ extern List acct_storage_p_remove_associations(
 	}
 
 	xfree(query);
-	query = xstrdup_printf("select distinct %s "
-			       "from %s where (%s) order by lft;",
+	query = xstrdup_printf("select distinct %s from %s where (%s) "
+			       "and deleted = 0 order by lft;",
 			       object,
 			       assoc_table, name_char);
 	xfree(extra);
