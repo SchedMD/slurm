@@ -486,7 +486,8 @@ _pick_step_nodes (struct job_record  *job_ptr,
 	struct node_record *node_ptr;
 	bitstr_t *nodes_avail = NULL, *nodes_idle = NULL;
 	bitstr_t *nodes_picked = NULL, *node_tmp = NULL;
-	int error_code, nodes_picked_cnt = 0, cpus_picked_cnt = 0, i, task_cnt;
+	int error_code, nodes_picked_cnt = 0, cpus_picked_cnt = 0;
+	int cpu_cnt, i, task_cnt;
 	int mem_blocked_nodes = 0, mem_blocked_cpus = 0;
 	ListIterator step_iterator;
 	struct step_record *step_p;
@@ -980,6 +981,14 @@ _pick_step_nodes (struct job_record  *job_ptr,
 				node_tmp = bit_pick_cnt(nodes_avail, 1);
 				if (node_tmp == NULL)
 					break;
+	
+				cpu_cnt = _count_cpus(job_ptr, node_tmp,
+						      usable_cpu_cnt);
+				if (cpu_cnt == 0) {
+					/* Node not usable (memory insufficient
+					 * to allocate any CPUs, etc.) */
+					continue;
+				}
 
 				bit_or  (nodes_picked, node_tmp);
 				bit_not (node_tmp);
@@ -989,9 +998,8 @@ _pick_step_nodes (struct job_record  *job_ptr,
 				nodes_picked_cnt += 1;
 				if (step_spec->min_nodes)
 					step_spec->min_nodes = nodes_picked_cnt;
-				cpus_picked_cnt = _count_cpus(job_ptr,
-							      nodes_picked,
-							      usable_cpu_cnt);
+
+				cpus_picked_cnt += cpu_cnt;
 				if (step_spec->max_nodes &&
 				    (nodes_picked_cnt >= step_spec->max_nodes))
 					break;
