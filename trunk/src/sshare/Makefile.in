@@ -305,7 +305,7 @@ AUTOMAKE_OPTIONS = foreign
 CLEANFILES = core.*
 INCLUDES = -I$(top_srcdir)
 sshare_LDADD = \
-	$(top_builddir)/src/api/libslurm.o -ldl\
+	$(top_builddir)/src/api/libslurm.o -ldl -lm \
 	$(READLINE_LIBS)
 
 sshare_SOURCES = \

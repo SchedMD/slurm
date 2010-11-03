@@ -402,20 +402,20 @@ static double _get_fairshare_priority( struct job_record *job_ptr)
 		priority_p_set_assoc_usage(assoc);
 
 	// Priority is 0 -> 1
-	priority_fs =
-		(assoc->usage->shares_norm
-		 - (double)assoc->usage->usage_efctv + 1.0) / 2.0;
+	if (assoc->usage->shares_norm > 0.0)
+		priority_fs = pow(2.0, -(assoc->usage->usage_efctv /
+					 assoc->usage->shares_norm));
+	else
+		priority_fs = 0.0;
+
 	if(priority_debug)
-		info("Fairshare priority for user %s in acct %s"
-		     "((%f - %Lf) + 1) / 2 = %f",
-		     assoc->user, assoc->acct, assoc->usage->shares_norm,
-		     assoc->usage->usage_efctv, priority_fs);
+		info("Fairshare priority of job %u for user %s in acct %s"
+		     " is 2**(-%Lf/%f) = %f",
+		     job_ptr->job_id, assoc->user, assoc->acct,
+		     assoc->usage->usage_efctv, assoc->usage->shares_norm,
+		     priority_fs);
 
 	assoc_mgr_unlock(&locks);
-
-	if(priority_debug)
-		info("job %u has a fairshare priority of %f",
-		     job_ptr->job_id, priority_fs);
 
 	return priority_fs;
 }

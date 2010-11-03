@@ -37,6 +37,7 @@
 \*****************************************************************************/
 
 #include "src/sshare/sshare.h"
+#include <math.h>
 
 extern int long_flag;
 
@@ -209,9 +210,9 @@ extern int process(shares_response_msg_t *resp)
 				break;
 			case PRINT_FSFACTOR:
 				field->print_routine(field,
-						     (share->shares_norm -
-						     (double)share->usage_efctv
-						      + 1.0) / 2.0,
+						     pow(2.0,
+							 -(share->usage_efctv /
+							   share->shares_norm)),
 						     (curr_inx == field_count));
 				break;
 			case PRINT_ID:

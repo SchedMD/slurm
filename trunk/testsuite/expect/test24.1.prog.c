@@ -191,32 +191,8 @@ int _setup_assoc_list()
 	/* assoc->lft = 14; */
 	/* assoc->rgt = 23; */
 	assoc->parent_id = 1;
-	assoc->shares_raw = 30;
+	assoc->shares_raw = 60;
 	assoc->acct = xstrdup("AccountD");
-	list_push(update.objects, assoc);
-
-	/* sub of AccountD id 3 */
-	assoc = xmalloc(sizeof(slurmdb_association_rec_t));
-	assoc->usage = create_assoc_mgr_association_usage();
-	assoc->id = 32;
-	/* assoc->lft = 15; */
-	/* assoc->rgt = 18; */
-	assoc->parent_id = 3;
-	assoc->shares_raw = 35;
-	assoc->acct = xstrdup("AccountF");
-	list_push(update.objects, assoc);
-
-	/* sub of AccountF id 32 */
-	assoc = xmalloc(sizeof(slurmdb_association_rec_t));
-	assoc->usage = create_assoc_mgr_association_usage();
-	assoc->id = 321;
-	/* assoc->lft = 16; */
-	/* assoc->rgt = 17; */
-	assoc->parent_id = 32;
-	assoc->shares_raw = 1;
-	assoc->usage->usage_raw = 0;
-	assoc->acct = xstrdup("AccountF");
-	assoc->user = xstrdup("User5");
 	list_push(update.objects, assoc);
 
 	/* sub of AccountD id 3 */
@@ -243,6 +219,30 @@ int _setup_assoc_list()
 	assoc->user = xstrdup("User4");
 	list_push(update.objects, assoc);
 
+	/* sub of AccountD id 3 */
+	assoc = xmalloc(sizeof(slurmdb_association_rec_t));
+	assoc->usage = create_assoc_mgr_association_usage();
+	assoc->id = 32;
+	/* assoc->lft = 15; */
+	/* assoc->rgt = 18; */
+	assoc->parent_id = 3;
+	assoc->shares_raw = 35;
+	assoc->acct = xstrdup("AccountF");
+	list_push(update.objects, assoc);
+
+	/* sub of AccountF id 32 */
+	assoc = xmalloc(sizeof(slurmdb_association_rec_t));
+	assoc->usage = create_assoc_mgr_association_usage();
+	assoc->id = 321;
+	/* assoc->lft = 16; */
+	/* assoc->rgt = 17; */
+	assoc->parent_id = 32;
+	assoc->shares_raw = 1;
+	assoc->usage->usage_raw = 0;
+	assoc->acct = xstrdup("AccountF");
+	assoc->user = xstrdup("User5");
+	list_push(update.objects, assoc);
+
 	/* sub of root id 1 */
 	assoc = xmalloc(sizeof(slurmdb_association_rec_t));
 	assoc->usage = create_assoc_mgr_association_usage();
@@ -250,7 +250,7 @@ int _setup_assoc_list()
 	/* assoc->lft = 24; */
 	/* assoc->rgt = 27; */
 	assoc->parent_id = 1;
-	assoc->shares_raw = 30;
+	assoc->shares_raw = 0;
 	assoc->acct = xstrdup("AccountG");
 	list_push(update.objects, assoc);
 
@@ -261,7 +261,7 @@ int _setup_assoc_list()
 	/* assoc->lft = 25; */
 	/* assoc->rgt = 26; */
 	assoc->parent_id = 4;
-	assoc->shares_raw = 1;
+	assoc->shares_raw = 0;
 	assoc->usage->usage_raw = 30;
 	assoc->acct = xstrdup("AccountG");
 	assoc->user = xstrdup("User6");

@@ -31,6 +31,7 @@ documents those changes that are of interest to users and admins.
  -- Added slurm-sjobexit RPM for SLURM job exit code management tools.
  -- Added ability to use sstat/sacct against the batch step.
  -- Added OnlyDefaults option to sacctmgr list associations.
+ -- Modified the fairshare priority formula to F = 2**(-Ue/S)
 
 * Changes in SLURM 2.2.0.pre12
 ==============================
