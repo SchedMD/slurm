@@ -265,7 +265,7 @@ Where:
 <P> The simplified formula for calculating the fair-share factor for usage that spans multiple time periods and subject to a half-life decay is:</P>
 
 <PRE>
-	F = (S - U + 1) / 2
+	F = 2**(-U/S)
 </PRE>
 
 Where:
@@ -303,7 +303,7 @@ Where:
 <P> The actual formula used is a refinement of the formula presented above:</P>
 
 <PRE>
-	F = (S - U<sub>E</sub> + 1) / 2
+	F = 2**(-U<sub>E</sub>/S)
 </PRE>
 
 <P> The difference is that the usage term is effective usage, which is defined as:</P>
@@ -396,17 +396,17 @@ Account A's effective usage is therefore equal to .45.  Account D's effective us
 <P> Using the SLURM fair-share formula,</P>
 
 <PRE>
-	F = (S - U<sub>E</sub> + 1) / 2
+	F = 2**(-U<sub>E</sub>/S)
 </PRE>
 
 <P> the fair-share factor for each user is:</P>
 
 <UL>
-<LI> User 1 fair-share factor: (.3 - .3875 + 1) / 2 =  0.45625
-<LI> User 2 fair-share factor: (.05 - .275 + 1) / 2 =  0.3875
-<LI> User 3 fair-share factor: (.05 - .15 + 1) / 2 =  0.45
-<LI> User 4 fair-share factor: (.25 - .25 + 1) / 2 =  0.5
-<LI> User 5 fair-share factor: (.35 - .1458 + 1) / 2 =  0.6021
+<LI> User 1 fair-share factor: 2**(-.3875 / .3) =  0.408479
+<LI> User 2 fair-share factor: 2**(-.275 / .05) =  0.022097
+<LI> User 3 fair-share factor: 2**(-.15 / .05) =   0.125000
+<LI> User 4 fair-share factor: 2**(-.25 / .25) =   0.500000
+<LI> User 5 fair-share factor: 2**(-.1458 / .35) = 0.749154
 </UL>
 
 <P> From this example, once can see that users 1,2, and 3 are over-serviced while user 5 is under-serviced.  Even though user 3 has yet to submit a job, his/her fair-share factor is negatively influenced by the jobs users 1 and 2 have run.</P>
@@ -545,7 +545,7 @@ PriorityWeightQOS=0 # don't use the qos factor
 </PRE>
 
 <!-------------------------------------------------------------------------->
-<p style="text-align:center;">Last modified 14 January 2010</p>
+<p style="text-align:center;">Last modified 2 November 2010</p>
 
 <!--#include virtual="footer.txt"-->
 
