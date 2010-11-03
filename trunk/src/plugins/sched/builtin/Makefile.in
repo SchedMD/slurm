@@ -105,7 +105,7 @@ am__base_list = \
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 sched_builtin_la_LIBADD =
-am_sched_builtin_la_OBJECTS = builtin_wrapper.lo
+am_sched_builtin_la_OBJECTS = builtin_wrapper.lo builtin.lo
 sched_builtin_la_OBJECTS = $(am_sched_builtin_la_OBJECTS)
 sched_builtin_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
@@ -323,7 +323,11 @@ AUTOMAKE_OPTIONS = foreign
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
 pkglib_LTLIBRARIES = sched_builtin.la
-sched_builtin_la_SOURCES = builtin_wrapper.c
+sched_builtin_la_SOURCES = \
+			builtin_wrapper.c \
+			builtin.c	\
+			builtin.h
+
 sched_builtin_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 all: all-am
 
@@ -399,6 +403,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/builtin.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/builtin_wrapper.Plo@am__quote@
 
 .c.o:
