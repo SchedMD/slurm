@@ -7668,31 +7668,55 @@ static void _pack_kvs_rec(struct kvs_comm *msg_ptr, Buf buffer,
 	int i;
 	xassert(msg_ptr != NULL);
 
-	packstr(msg_ptr->kvs_name, buffer);
-	pack16((uint16_t)msg_ptr->kvs_cnt, buffer);
-	for (i=0; i<msg_ptr->kvs_cnt; i++) {
-		packstr(msg_ptr->kvs_keys[i], buffer);
-		packstr(msg_ptr->kvs_values[i], buffer);
+	if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
+		packstr(msg_ptr->kvs_name, buffer);
+		pack32(msg_ptr->kvs_cnt, buffer);
+		for (i=0; i<msg_ptr->kvs_cnt; i++) {
+			packstr(msg_ptr->kvs_keys[i], buffer);
+			packstr(msg_ptr->kvs_values[i], buffer);
+		}
+	} else {
+		packstr(msg_ptr->kvs_name, buffer);
+		pack16((uint16_t)msg_ptr->kvs_cnt, buffer);
+		for (i=0; i<msg_ptr->kvs_cnt; i++) {
+			packstr(msg_ptr->kvs_keys[i], buffer);
+			packstr(msg_ptr->kvs_values[i], buffer);
+		}
 	}
 }
 static int  _unpack_kvs_rec(struct kvs_comm **msg_ptr, Buf buffer,
 			    uint16_t protocol_version)
 {
 	uint32_t uint32_tmp;
+	uint16_t uint16_tmp;
 	int i;
 	struct kvs_comm *msg;
 
 	msg = xmalloc(sizeof(struct kvs_comm));
 	*msg_ptr = msg;
-	safe_unpackstr_xmalloc(&msg->kvs_name, &uint32_tmp, buffer);
-	safe_unpack16(&msg->kvs_cnt, buffer);
-	msg->kvs_keys   = xmalloc(sizeof(char *) * msg->kvs_cnt);
-	msg->kvs_values = xmalloc(sizeof(char *) * msg->kvs_cnt);
-	for (i=0; i<msg->kvs_cnt; i++) {
-		safe_unpackstr_xmalloc(&msg->kvs_keys[i],
-				       &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&msg->kvs_values[i],
-				       &uint32_tmp, buffer);
+	if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
+		safe_unpackstr_xmalloc(&msg->kvs_name, &uint32_tmp, buffer);
+		safe_unpack32(&msg->kvs_cnt, buffer);
+		msg->kvs_keys   = xmalloc(sizeof(char *) * msg->kvs_cnt);
+		msg->kvs_values = xmalloc(sizeof(char *) * msg->kvs_cnt);
+		for (i=0; i<msg->kvs_cnt; i++) {
+			safe_unpackstr_xmalloc(&msg->kvs_keys[i],
+					       &uint32_tmp, buffer);
+			safe_unpackstr_xmalloc(&msg->kvs_values[i],
+					       &uint32_tmp, buffer);
+		}
+	} else {
+		safe_unpackstr_xmalloc(&msg->kvs_name, &uint32_tmp, buffer);
+		safe_unpack16(&uint16_tmp, buffer);
+		msg->kvs_cnt    = uint16_tmp;
+		msg->kvs_keys   = xmalloc(sizeof(char *) * msg->kvs_cnt);
+		msg->kvs_values = xmalloc(sizeof(char *) * msg->kvs_cnt);
+		for (i=0; i<msg->kvs_cnt; i++) {
+			safe_unpackstr_xmalloc(&msg->kvs_keys[i],
+					       &uint32_tmp, buffer);
+			safe_unpackstr_xmalloc(&msg->kvs_values[i],
+					       &uint32_tmp, buffer);
+		}
 	}
 	return SLURM_SUCCESS;
 

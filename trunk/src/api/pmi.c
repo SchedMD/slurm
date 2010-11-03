@@ -109,7 +109,7 @@
 struct kvs_rec {
 	char *		kvs_name;
 	uint16_t	kvs_state;	/* see KVS_STATE_* */
-	uint16_t	kvs_cnt;	/* count of key-pairs */
+	uint32_t	kvs_cnt;	/* count of key-pairs */
 	uint16_t	kvs_inx;	/* iteration index */
 	uint16_t *	kvs_key_states;	/* see KVS_KEY_STATE_* */
 	char **		kvs_keys;

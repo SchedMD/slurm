@@ -66,7 +66,7 @@ struct kvs_hosts {
 };
 struct kvs_comm {
 	char *		kvs_name;
-	uint16_t	kvs_cnt;	/* count of key-pairs */
+	uint32_t	kvs_cnt;	/* count of key-pairs */
 	char **		kvs_keys;
 	char **		kvs_values;
 };

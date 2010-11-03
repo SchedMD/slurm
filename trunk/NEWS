@@ -32,6 +32,8 @@ documents those changes that are of interest to users and admins.
  -- Added ability to use sstat/sacct against the batch step.
  -- Added OnlyDefaults option to sacctmgr list associations.
  -- Modified the fairshare priority formula to F = 2**(-Ue/S)
+ -- Modify the PMI functions key-pair exchange function to support a 32-bit
+    counter for larger job sizes. Patch from Hongjia Cao, NUDT.
 
 * Changes in SLURM 2.2.0.pre12
 ==============================
