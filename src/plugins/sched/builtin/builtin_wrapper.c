@@ -42,11 +42,12 @@
 
 #include "src/common/plugin.h"
 #include "src/common/log.h"
-#include "src/slurmctld/slurmctld.h"
+#include "src/common/node_select.h"
 #include "src/common/slurm_priority.h"
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/reservation.h"
-#include "src/common/node_select.h"
+#include "src/slurmctld/slurmctld.h"
+#include "src/plugins/sched/builtin/builtin.h"
 
 const char		plugin_name[]	= "SLURM Built-in Scheduler plugin";
 const char		plugin_type[]	= "sched/builtin";
@@ -55,12 +56,33 @@ const uint32_t		plugin_version	= 100;
 /* A plugin-global errno. */
 static int plugin_errno = SLURM_SUCCESS;
 
+static pthread_t builtin_thread = 0;
+static pthread_mutex_t thread_flag_mutex = PTHREAD_MUTEX_INITIALIZER;
+
 /**************************************************************************/
 /*  TAG(                              init                              ) */
 /**************************************************************************/
 int init( void )
 {
+	pthread_attr_t attr;
+
 	verbose( "sched: Built-in scheduler plugin loaded" );
+
+	pthread_mutex_lock( &thread_flag_mutex );
+	if ( builtin_thread ) {
+		debug2( "Built-in scheduler thread already running, "
+			"not starting another" );
+		pthread_mutex_unlock( &thread_flag_mutex );
+		return SLURM_ERROR;
+	}
+
+	slurm_attr_init( &attr );
+	/* since we do a join on this later we don't make it detached */
+	if (pthread_create( &builtin_thread, &attr, builtin_agent, NULL))
+		error("Unable to start built-in scheduler thread: %m");
+	pthread_mutex_unlock( &thread_flag_mutex );
+	slurm_attr_destroy( &attr );
+
 	return SLURM_SUCCESS;
 }
 
@@ -69,7 +91,14 @@ int init( void )
 /**************************************************************************/
 void fini( void )
 {
-	/* Empty. */
+	pthread_mutex_lock( &thread_flag_mutex );
+	if ( builtin_thread ) {
+		verbose( "Built-in scheduler plugin shutting down" );
+		stop_builtin_agent();
+		pthread_join(builtin_thread, NULL);
+		builtin_thread = 0;
+	}
+	pthread_mutex_unlock( &thread_flag_mutex );
 }
 
 /**************************************************************************/
@@ -77,6 +106,7 @@ void fini( void )
 /**************************************************************************/
 int slurm_sched_plugin_reconfig( void )
 {
+	builtin_reconfig();
 	return SLURM_SUCCESS;
 }
 
@@ -126,72 +156,7 @@ slurm_sched_plugin_initial_priority( uint32_t last_prio,
 /**************************************************************************/
 void slurm_sched_plugin_job_is_pending( void )
 {
-	int j, rc = SLURM_SUCCESS;
-	List job_queue;
-	job_queue_rec_t *job_queue_rec;
-	List preemptee_candidates = NULL;
-	struct job_record *job_ptr;
-	struct part_record *part_ptr;
-	bitstr_t *avail_bitmap = NULL;
-	uint32_t max_nodes, min_nodes, req_nodes;
-	time_t now = time(NULL), sched_start;
-	static int sched_timeout = 0;
-
-	sched_start = now;
-	if (sched_timeout == 0) {
-		sched_timeout = slurm_get_msg_timeout() / 2;
-		sched_timeout = MAX(sched_timeout, 1);
-		sched_timeout = MIN(sched_timeout, 10);
-	}
-
-	job_queue = build_job_queue();
-	while ((job_queue_rec = (job_queue_rec_t *) 
-				list_pop_bottom(job_queue, sort_job_queue2))) {
-		job_ptr  = job_queue_rec->job_ptr;
-		part_ptr = job_queue_rec->part_ptr;
-		xfree(job_queue_rec);
-		if (part_ptr != job_ptr->part_ptr)
-			continue;	/* Only test one partition */
-
-		/* Determine minimum and maximum node counts */
-		min_nodes = MAX(job_ptr->details->min_nodes,
-				part_ptr->min_nodes);
-
-		if (job_ptr->details->max_nodes == 0)
-			max_nodes = part_ptr->max_nodes;
-		else
-			max_nodes = MIN(job_ptr->details->max_nodes,
-					part_ptr->max_nodes);
-
-		max_nodes = MIN(max_nodes, 500000);     /* prevent overflows */
-
-		if (job_ptr->details->max_nodes)
-			req_nodes = max_nodes;
-		else
-			req_nodes = min_nodes;
-
-		if (min_nodes > max_nodes) {
-			/* job's min_nodes exceeds partition's max_nodes */
-			continue;
-		}
-
-		j = job_test_resv(job_ptr, &now, true, &avail_bitmap);
-		if (j != SLURM_SUCCESS)
-			continue;
-
-		rc = select_g_job_test(job_ptr, avail_bitmap,
-				       min_nodes, max_nodes, req_nodes,
-				       SELECT_MODE_WILL_RUN,
-				       preemptee_candidates, NULL);
-
-		FREE_NULL_BITMAP(avail_bitmap);
-
-		if ((time(NULL) - sched_start) >= sched_timeout) {
-			debug("backfill: loop taking to long, breaking out");
-			break;
-		}
-	}
-	list_destroy(job_queue);
+	/* Empty. */
 }
 
 /**************************************************************************/
