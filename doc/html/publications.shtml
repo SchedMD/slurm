@@ -8,7 +8,7 @@
 
 <ul>
 <!-- Use LLNL-PRES-453794 -->
-<li><a href="01-keynote.pdf">SLURM: Resource Management from the Simple to the
+<li><a href="slurm_ug_2010/01-keynote.pdf">SLURM: Resource Management from the Simple to the
 Sophisticated</a>,
 Morris Jette and Danny Auble, Lawrence Livermore National Laboratory
 (SLURM User Group Meeting, October 2010)</li>
