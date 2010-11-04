@@ -38,6 +38,8 @@ documents those changes that are of interest to users and admins.
     new logic from sched/backfill and added pthread) and more accurate.
  -- In select/cons_res fix bug that could result in a job being allocated zero
     CPUs on some nodes. Patch from Hongjia Cao, NUDT.
+ -- Fix bug in sched/backfill that could set expected start time of a job too
+    far in the future.
 
 * Changes in SLURM 2.2.0.pre12
 ==============================
