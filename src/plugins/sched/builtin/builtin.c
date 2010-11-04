@@ -71,7 +71,6 @@
 
 /*********************** local variables *********************/
 static bool stop_builtin = false;
-static pthread_mutex_t thread_flag_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t term_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  term_cond = PTHREAD_COND_INITIALIZER;
 static bool config_flag = false;
@@ -138,11 +137,15 @@ static void _compute_start_times(void)
 	List preemptee_candidates = NULL;
 	struct job_record *job_ptr;
 	struct part_record *part_ptr;
-	bitstr_t *avail_bitmap = NULL;
-	uint32_t max_nodes, min_nodes, req_nodes;
-	time_t now = time(NULL), sched_start;
+	bitstr_t *alloc_bitmap = NULL, *avail_bitmap = NULL;
+	uint32_t max_nodes, min_nodes, req_nodes, time_limit;
+	time_t now = time(NULL), sched_start, last_job_alloc;
 
 	sched_start = now;
+	last_job_alloc = now - 1;
+	alloc_bitmap = bit_alloc(node_record_count);
+	if (alloc_bitmap == NULL)
+		fatal("bit_alloc: malloc failure");
 	job_queue = build_job_queue();
 	while ((job_queue_rec = (job_queue_rec_t *) 
 				list_pop_bottom(job_queue, sort_job_queue2))) {
@@ -188,6 +191,22 @@ static void _compute_start_times(void)
 				       SELECT_MODE_WILL_RUN,
 				       preemptee_candidates, NULL);
 		last_job_update = now;
+
+		if (job_ptr->time_limit == INFINITE)
+			time_limit = 365 * 24 * 60 * 60;
+		else if (job_ptr->time_limit != NO_VAL)
+			time_limit = job_ptr->time_limit * 60;
+		else if (job_ptr->part_ptr &&
+			 (job_ptr->part_ptr->max_time != INFINITE))
+			time_limit = job_ptr->part_ptr->max_time * 60;
+		else
+			time_limit = 365 * 24 * 60 * 60;
+		if (bit_overlap(alloc_bitmap, avail_bitmap) &&
+		    (job_ptr->start_time <= last_job_alloc)) {
+			job_ptr->start_time = last_job_alloc;
+		}
+		bit_or(alloc_bitmap, avail_bitmap);
+		last_job_alloc = job_ptr->start_time + time_limit;
 		FREE_NULL_BITMAP(avail_bitmap);
 
 		if ((time(NULL) - sched_start) >= sched_timeout) {
@@ -196,6 +215,7 @@ static void _compute_start_times(void)
 		}
 	}
 	list_destroy(job_queue);
+	FREE_NULL_BITMAP(alloc_bitmap);
 }
 
 /* Note that slurm.conf has changed */
@@ -210,9 +230,9 @@ extern void *builtin_agent(void *args)
 	time_t now;
 	double wait_time;
 	static time_t last_backfill_time = 0;
-	/* Read config and partitions; Write jobs and nodes */
+	/* Read config, nodes and partitions; Write jobs */
 	slurmctld_lock_t all_locks = {
-		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK };
+		READ_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
 
 	_load_config();
 	last_backfill_time = time(NULL);
