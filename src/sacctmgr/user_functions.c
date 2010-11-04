@@ -855,7 +855,7 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 		local_assoc_list = acct_storage_g_get_associations(
 			db_conn, my_uid, &query_assoc_cond);
 
-		if(!local_assoc_list) {
+		if (!local_assoc_list) {
 			exit_code=1;
 			fprintf(stderr, " Problem getting associations "
 				"from database.  Contact your admin.\n");
@@ -954,9 +954,9 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 		}
 
 		itr_a = list_iterator_create(assoc_cond->acct_list);
-		while((account = list_next(itr_a))) {
-			if(acct_first) {
-				if(!sacctmgr_find_account_from_list(
+		while ((account = list_next(itr_a))) {
+			if (acct_first) {
+				if (!sacctmgr_find_account_from_list(
 					   local_acct_list, default_acct)) {
 					exit_code=1;
 					fprintf(stderr, " This account '%s' "
@@ -968,11 +968,11 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 				}
 			}
 			itr_c = list_iterator_create(assoc_cond->cluster_list);
-			while((cluster = list_next(itr_c))) {
-				if(!sacctmgr_find_account_base_assoc_from_list(
+			while ((cluster = list_next(itr_c))) {
+				if (!sacctmgr_find_account_base_assoc_from_list(
 					   local_assoc_list, account,
 					   cluster)) {
-					if(acct_first) {
+					if (acct_first) {
 						exit_code=1;
 						fprintf(stderr, " This "
 							"account '%s' "
@@ -1002,6 +1002,9 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 					assoc->acct = xstrdup(account);
 					assoc->cluster = xstrdup(cluster);
 					assoc->partition = xstrdup(partition);
+					if(default_acct
+					   && !strcmp(default_acct, account))
+						assoc->is_def = 1;
 
 					assoc->def_qos_id =
 						start_assoc.def_qos_id;
@@ -1034,7 +1037,7 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 					assoc->qos_list = copy_char_list(
 						start_assoc.qos_list);
 
-					if(user)
+					if (user)
 						list_append(user->assoc_list,
 							    assoc);
 					else
@@ -1062,7 +1065,8 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 					sizeof(slurmdb_association_rec_t));
 				slurmdb_init_association_rec(assoc, 0);
 				assoc->user = xstrdup(name);
-				if(user && !strcmp(user->default_acct, account))
+				if(default_acct
+				   && !strcmp(default_acct, account))
 					assoc->is_def = 1;
 				assoc->acct = xstrdup(account);
 				assoc->cluster = xstrdup(cluster);
@@ -1125,8 +1129,8 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 				wckey->user = xstrdup(name);
 				wckey->name = xstrdup(account);
 				wckey->cluster = xstrdup(cluster);
-				if(user
-				   && !strcmp(user->default_wckey, account))
+				if(default_wckey
+				   && !strcmp(default_wckey, account))
 					assoc->is_def = 1;
 				if(user)
 					list_append(user->wckey_list, wckey);
