@@ -34,6 +34,8 @@ documents those changes that are of interest to users and admins.
  -- Modified the fairshare priority formula to F = 2**(-Ue/S)
  -- Modify the PMI functions key-pair exchange function to support a 32-bit
     counter for larger job sizes. Patch from Hongjia Cao, NUDT.
+ -- In sched/builtin - Make the estimated job start time logic faster (borrowed
+    new logic from sched/backfill and added pthread) and more accurate.
 
 * Changes in SLURM 2.2.0.pre12
 ==============================
