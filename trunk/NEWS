@@ -36,6 +36,8 @@ documents those changes that are of interest to users and admins.
     counter for larger job sizes. Patch from Hongjia Cao, NUDT.
  -- In sched/builtin - Make the estimated job start time logic faster (borrowed
     new logic from sched/backfill and added pthread) and more accurate.
+ -- In select/cons_res fix bug that could result in a job being allocated zero
+    CPUs on some nodes. Patch from Hongjia Cao, NUDT.
 
 * Changes in SLURM 2.2.0.pre12
 ==============================
