@@ -399,7 +399,7 @@ extern void *backfill_agent(void *args)
 		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK };
 
 	_load_config();
-	last_backfill_time = time(NULL) + 30;
+	last_backfill_time = time(NULL);
 	while (!stop_backfill) {
 		_my_sleep(backfill_interval);
 		if (stop_backfill)
@@ -624,6 +624,12 @@ static void _attempt_backfill(void)
 			}
 		} else
 			job_ptr->time_limit = orig_time_limit;
+
+		if (later_start && (job_ptr->start_time > later_start)) {
+			/* Try later when some nodes currently reserved for
+			 * pending jobs are free */
+			goto TRY_LATER;
+		}
 
 		if (job_ptr->start_time > (now + backfill_window)) {
 			/* Starts too far in the future to worry about */
