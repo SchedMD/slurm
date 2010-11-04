@@ -91,6 +91,8 @@ typedef struct {
 	uint16_t enforce;
  	void (*remove_assoc_notify) (slurmdb_association_rec_t *rec);
  	void (*remove_qos_notify) (slurmdb_qos_rec_t *rec);
+ 	void (*update_assoc_notify) (slurmdb_association_rec_t *rec);
+ 	void (*update_qos_notify) (slurmdb_qos_rec_t *rec);
 	void (*update_resvs) ();
 } assoc_init_args_t;
 
