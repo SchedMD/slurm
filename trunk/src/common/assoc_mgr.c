@@ -63,6 +63,8 @@ static assoc_mgr_lock_flags_t assoc_mgr_locks;
 
 void (*remove_assoc_notify) (slurmdb_association_rec_t *rec) = NULL;
 void (*remove_qos_notify) (slurmdb_qos_rec_t *rec) = NULL;
+void (*update_assoc_notify) (slurmdb_association_rec_t *rec) = NULL;
+void (*update_qos_notify) (slurmdb_qos_rec_t *rec) = NULL;
 void (*update_resvs) () = NULL;
 
 static pthread_mutex_t locks_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -1024,6 +1026,10 @@ extern int assoc_mgr_init(void *db_conn, assoc_init_args_t *args)
 			remove_assoc_notify = args->remove_assoc_notify;
 		if(args->remove_qos_notify)
 			remove_qos_notify = args->remove_qos_notify;
+		if(args->update_assoc_notify)
+			update_assoc_notify = args->update_assoc_notify;
+		if(args->remove_qos_notify)
+			update_qos_notify = args->update_qos_notify;
 		if(args->update_resvs)
 			update_resvs = args->update_resvs;
 		cache_level = args->cache_level;
@@ -2106,6 +2112,7 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update)
 	int run_update_resvs = 0;
 	int resort = 0;
 	List remove_list = NULL;
+	List update_list = NULL;
 	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK,
 				   WRITE_LOCK, WRITE_LOCK, NO_LOCK };
 
@@ -2115,6 +2122,7 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update)
 	assoc_mgr_lock(&locks);
 	itr = list_iterator_create(assoc_mgr_association_list);
 	while((object = list_pop(update->objects))) {
+		bool update_jobs = false;
 		if (object->cluster && assoc_mgr_cluster_name) {
 			/* only update the local clusters assocs */
 			if(strcasecmp(object->cluster,
@@ -2203,16 +2211,22 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update)
 			if(object->grp_cpu_run_mins != (uint64_t)NO_VAL)
 				rec->grp_cpu_run_mins =
 					object->grp_cpu_run_mins;
-			if(object->grp_cpus != NO_VAL)
+			if(object->grp_cpus != NO_VAL) {
+				update_jobs = true;
 				rec->grp_cpus = object->grp_cpus;
+			}
 			if(object->grp_jobs != NO_VAL)
 				rec->grp_jobs = object->grp_jobs;
-			if(object->grp_nodes != NO_VAL)
+			if(object->grp_nodes != NO_VAL) {
+				update_jobs = true;
 				rec->grp_nodes = object->grp_nodes;
+			}
 			if(object->grp_submit_jobs != NO_VAL)
 				rec->grp_submit_jobs = object->grp_submit_jobs;
-			if(object->grp_wall != NO_VAL)
+			if(object->grp_wall != NO_VAL) {
+				update_jobs = true;
 				rec->grp_wall = object->grp_wall;
+			}
 
 			if(object->lft != NO_VAL) {
 				rec->lft = object->lft;
@@ -2224,17 +2238,22 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update)
 			if(object->max_cpu_run_mins != (uint64_t)NO_VAL)
 				rec->max_cpu_run_mins =
 					object->max_cpu_run_mins;
-			if(object->max_cpus_pj != NO_VAL)
+			if(object->max_cpus_pj != NO_VAL) {
+				update_jobs = true;
 				rec->max_cpus_pj = object->max_cpus_pj;
+			}
 			if(object->max_jobs != NO_VAL)
 				rec->max_jobs = object->max_jobs;
-			if(object->max_nodes_pj != NO_VAL)
+			if(object->max_nodes_pj != NO_VAL) {
+				update_jobs = true;
 				rec->max_nodes_pj = object->max_nodes_pj;
+			}
 			if(object->max_submit_jobs != NO_VAL)
 				rec->max_submit_jobs = object->max_submit_jobs;
-			if(object->max_wall_pj != NO_VAL)
+			if(object->max_wall_pj != NO_VAL) {
+				update_jobs = true;
 				rec->max_wall_pj = object->max_wall_pj;
-
+			}
 
 			if(object->parent_acct) {
 				xfree(rec->parent_acct);
@@ -2302,7 +2321,17 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update)
 
 			/* info("now rec has def of %d", rec->def_qos_id); */
 
-			if(!slurmdbd_conf && !parents_changed) {
+			if (update_jobs && update_assoc_notify) {
+				/* since there are some deadlock
+				   issues while inside our lock here
+				   we have to process a notify later
+				*/
+				if (!update_list)
+					update_list = list_create(NULL);
+				list_append(update_list, rec);
+			}
+
+			if (!slurmdbd_conf && !parents_changed) {
 				debug("updating assoc %u", rec->id);
 				log_assoc_rec(rec, assoc_mgr_qos_list);
 			}
@@ -2450,14 +2479,20 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update)
 
 	/* This needs to happen outside of the
 	   assoc_mgr_lock */
-	if(remove_list) {
+	if (remove_list) {
 		itr = list_iterator_create(remove_list);
-
-		while((rec = list_next(itr)))
+		while ((rec = list_next(itr)))
 			remove_assoc_notify(rec);
-
 		list_iterator_destroy(itr);
 		list_destroy(remove_list);
+	}
+
+	if (update_list) {
+		itr = list_iterator_create(update_list);
+		while ((rec = list_next(itr)))
+			update_assoc_notify(rec);
+		list_iterator_destroy(itr);
+		list_destroy(update_list);
 	}
 
 	if (run_update_resvs && update_resvs)
@@ -2707,6 +2742,7 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update)
 	int rc = SLURM_SUCCESS;
 	bool resize_qos_bitstr = 0;
 	List remove_list = NULL;
+	List update_list = NULL;
 	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK,
 				   WRITE_LOCK, NO_LOCK, NO_LOCK };
 
@@ -2716,6 +2752,7 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update)
 	assoc_mgr_lock(&locks);
 	itr = list_iterator_create(assoc_mgr_qos_list);
 	while((object = list_pop(update->objects))) {
+		bool update_jobs = false;
 		list_iterator_reset(itr);
 		while((rec = list_next(itr))) {
 			if(object->id == rec->id) {
@@ -2763,33 +2800,45 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update)
 			if(object->grp_cpu_run_mins != (uint64_t)NO_VAL)
 				rec->grp_cpu_run_mins =
 					object->grp_cpu_run_mins;
-			if(object->grp_cpus != NO_VAL)
+			if(object->grp_cpus != NO_VAL) {
+				update_jobs = true;
 				rec->grp_cpus = object->grp_cpus;
+			}
 			if(object->grp_jobs != NO_VAL)
 				rec->grp_jobs = object->grp_jobs;
-			if(object->grp_nodes != NO_VAL)
+			if(object->grp_nodes != NO_VAL) {
+				update_jobs = true;
 				rec->grp_nodes = object->grp_nodes;
+			}
 			if(object->grp_submit_jobs != NO_VAL)
 				rec->grp_submit_jobs = object->grp_submit_jobs;
-			if(object->grp_wall != NO_VAL)
+			if(object->grp_wall != NO_VAL) {
+				update_jobs = true;
 				rec->grp_wall = object->grp_wall;
+			}
 
 			if(object->max_cpu_mins_pj != (uint64_t)NO_VAL)
 				rec->max_cpu_mins_pj = object->max_cpu_mins_pj;
 			if(object->max_cpu_run_mins_pu != (uint64_t)NO_VAL)
 				rec->max_cpu_run_mins_pu =
 					object->max_cpu_run_mins_pu;
-			if(object->max_cpus_pj != NO_VAL)
+			if(object->max_cpus_pj != NO_VAL) {
+				update_jobs = true;
 				rec->max_cpus_pj = object->max_cpus_pj;
+			}
 			if(object->max_jobs_pu != NO_VAL)
 				rec->max_jobs_pu = object->max_jobs_pu;
-			if(object->max_nodes_pj != NO_VAL)
+			if(object->max_nodes_pj != NO_VAL) {
+				update_jobs = true;
 				rec->max_nodes_pj = object->max_nodes_pj;
+			}
 			if(object->max_submit_jobs_pu != NO_VAL)
 				rec->max_submit_jobs_pu =
 					object->max_submit_jobs_pu;
-			if(object->max_wall_pj != NO_VAL)
+			if(object->max_wall_pj != NO_VAL) {
+				update_jobs = true;
 				rec->max_wall_pj = object->max_wall_pj;
+			}
 
 			if(object->preempt_bitstr) {
 				if(rec->preempt_bitstr)
@@ -2815,6 +2864,16 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update)
 			if(object->usage_factor != (double)NO_VAL)
 				rec->usage_factor =
 					object->usage_factor;
+
+			if (update_jobs && update_qos_notify) {
+				/* since there are some deadlock
+				   issues while inside our lock here
+				   we have to process a notify later
+				*/
+				if (!update_list)
+					update_list = list_create(NULL);
+				list_append(update_list, rec);
+			}
 
 			break;
 		case SLURMDB_REMOVE_QOS:
@@ -2896,14 +2955,20 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update)
 
 	/* This needs to happen outside of the
 	   assoc_mgr_lock */
-	if(remove_list) {
+	if (remove_list) {
 		itr = list_iterator_create(remove_list);
-
 		while((rec = list_next(itr)))
 			remove_qos_notify(rec);
-
 		list_iterator_destroy(itr);
 		list_destroy(remove_list);
+	}
+
+	if (update_list) {
+		itr = list_iterator_create(update_list);
+		while((rec = list_next(itr)))
+			update_qos_notify(rec);
+		list_iterator_destroy(itr);
+		list_destroy(update_list);
 	}
 
 	return rc;

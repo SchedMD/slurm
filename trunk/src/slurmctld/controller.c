@@ -84,6 +84,7 @@
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
 
+#include "src/slurmctld/acct_policy.h"
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/basil_interface.h"
 #include "src/slurmctld/job_scheduler.h"
@@ -196,6 +197,8 @@ static void         _parse_commandline(int argc, char *argv[]);
 inline static int   _ping_backup_controller(void);
 static void         _remove_assoc(slurmdb_association_rec_t *rec);
 static void         _remove_qos(slurmdb_qos_rec_t *rec);
+static void         _update_assoc(slurmdb_association_rec_t *rec);
+static void         _update_qos(slurmdb_qos_rec_t *rec);
 inline static int   _report_locks_set(void);
 static void *       _service_connection(void *arg);
 static int          _shutdown_backup_controller(int wait_time);
@@ -330,7 +333,6 @@ int main(int argc, char *argv[])
 		with_slurmdbd = 1;
 		/* we need job_list not to be NULL */
 		init_job_conf();
-
 	}
 
 	if (accounting_enforce && !association_based_accounting) {
@@ -360,6 +362,8 @@ int main(int argc, char *argv[])
 	assoc_init_arg.update_resvs = update_assocs_in_resvs;
 	assoc_init_arg.remove_assoc_notify = _remove_assoc;
 	assoc_init_arg.remove_qos_notify = _remove_qos;
+	assoc_init_arg.update_assoc_notify = _update_assoc;
+	assoc_init_arg.update_qos_notify = _update_qos;
 	assoc_init_arg.cache_level = ASSOC_MGR_CACHE_ASSOC |
 				     ASSOC_MGR_CACHE_USER  |
 				     ASSOC_MGR_CACHE_QOS;
@@ -1209,6 +1213,54 @@ static void _remove_qos(slurmdb_qos_rec_t *rec)
 		info("Removed QOS:%s cancelled %u jobs", rec->name, cnt);
 	} else
 		debug("Removed QOS:%s", rec->name);
+}
+
+static void _update_assoc(slurmdb_association_rec_t *rec)
+{
+	ListIterator job_iterator;
+	struct job_record *job_ptr;
+	/* Write lock on jobs */
+	slurmctld_lock_t job_write_lock =
+		{ NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
+
+	if (!job_list || !accounting_enforce
+	    || !(accounting_enforce & ACCOUNTING_ENFORCE_LIMITS))
+		return;
+
+	lock_slurmctld(job_write_lock);
+	job_iterator = list_iterator_create(job_list);
+	while ((job_ptr = list_next(job_iterator))) {
+		if ((rec != job_ptr->assoc_ptr) || (!IS_JOB_PENDING(job_ptr)))
+			continue;
+
+		acct_policy_update_pending_job(job_ptr);
+	}
+	list_iterator_destroy(job_iterator);
+	unlock_slurmctld(job_write_lock);
+}
+
+static void _update_qos(slurmdb_qos_rec_t *rec)
+{
+	ListIterator job_iterator;
+	struct job_record *job_ptr;
+	/* Write lock on jobs */
+	slurmctld_lock_t job_write_lock =
+		{ NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
+
+	if (!job_list || !accounting_enforce
+	    || !(accounting_enforce & ACCOUNTING_ENFORCE_LIMITS))
+		return;
+
+	lock_slurmctld(job_write_lock);
+	job_iterator = list_iterator_create(job_list);
+	while ((job_ptr = list_next(job_iterator))) {
+		if ((rec != job_ptr->qos_ptr) || (!IS_JOB_PENDING(job_ptr)))
+			continue;
+
+		acct_policy_update_pending_job(job_ptr);
+	}
+	list_iterator_destroy(job_iterator);
+	unlock_slurmctld(job_write_lock);
 }
 
 /*

@@ -40,6 +40,8 @@ documents those changes that are of interest to users and admins.
     CPUs on some nodes. Patch from Hongjia Cao, NUDT.
  -- Fix bug in sched/backfill that could set expected start time of a job too
     far in the future.
+ -- Added ability to enforce new limits given to associations/qos on
+    pending jobs.
 
 * Changes in SLURM 2.2.0.pre12
 ==============================
