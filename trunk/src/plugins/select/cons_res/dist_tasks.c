@@ -369,10 +369,11 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 
 		}
 
-		if (cpus > 0)
+		if (cpus > 0) {
 			/* cpu count should NEVER be greater than the number
 			 * of set bits in the core bitmap for a given node */
 			fatal("cons_res: cpus computation error");
+		}
 
 		/* adjust cpus count of the current node */
 		if ((alloc_cores || alloc_sockets) &&
