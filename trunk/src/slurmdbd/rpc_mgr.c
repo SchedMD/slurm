@@ -59,7 +59,13 @@
 #include "src/slurmdbd/rpc_mgr.h"
 #include "src/slurmdbd/slurmdbd.h"
 
-#define MAX_THREAD_COUNT 50
+#define MAX_THREAD_COUNT 100
+
+/*
+ *  Maximum message size. Messages larger than this value (in bytes)
+ *  will not be received.
+ */
+#define MAX_MSG_SIZE     (16*1024*1024)
 
 /* Local functions */
 static bool   _fd_readable(slurm_fd_t fd);
@@ -200,7 +206,7 @@ static void * _service_connection(void *arg)
 			break;
 		}
 		msg_size = ntohl(nw_size);
-		if ((msg_size < 2) || (msg_size > 1000000)) {
+		if ((msg_size < 2) || (msg_size > MAX_MSG_SIZE)) {
 			error("Invalid msg_size (%u) from "
 			      "connection %d(%s) uid(%d)",
 			      msg_size, conn->newsockfd, conn->ip, uid);

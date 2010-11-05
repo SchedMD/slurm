@@ -42,6 +42,8 @@ documents those changes that are of interest to users and admins.
     far in the future.
  -- Added ability to enforce new limits given to associations/qos on
     pending jobs.
+ -- Increase max message size for the slurmdbd from 1000000 to 16*1024*1024
+ -- Increase number of active threads in the slurmdbd from 50 to 100
 
 * Changes in SLURM 2.2.0.pre12
 ==============================
