@@ -1468,17 +1468,15 @@ static int _eval_nodes_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 			}
 			bit_set(bitmap, i);
 			bit_clear(avail_nodes_bitmap, i);
-			rem_nodes--;
-			max_nodes--;
 			avail_cpus = _get_cpu_cnt(job_ptr, i, cpu_cnt);
 			/* This could result in 0, but if the user
 			 * requested nodes here we will still give
 			 * them and then the step layout will sort
 			 * things out. */
-			if ((job_ptr->details->shared != 0)
-			    && (avail_cpus > rem_cpus))
-				avail_cpus = rem_cpus;
-
+			_cpus_to_use(&avail_cpus, rem_cpus, rem_nodes,
+				     job_ptr->details, &cpu_cnt[i]);
+			rem_nodes--;
+			max_nodes--;
 			total_cpus += avail_cpus;
 			rem_cpus   -= avail_cpus;
 			for (j=0; j<switch_record_cnt; j++) {
@@ -1719,22 +1717,8 @@ static int _eval_nodes_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 			 * requested nodes here we will still give
 			 * them and then the step layout will sort
 			 * things out. */
-			if ((job_ptr->details->shared != 0) &&
-			    (bfsize > rem_cpus)) {
-				bfsize = rem_cpus;
-				/* modify last selected node
-				 * cpu_cnt value to ensure best-fit
-				 * aware tasks distribution 
-				 * we know that _eval_nodes_topo is going
-				 * to succeed so it is not a problem to
-				 * do that here */
-				/* If bfsize is less or equal to 0 */
-				/* do not alter the cpu_cnt entry as */
-				/* we are looking for additional nodes */
-				/* to fulfill rem_nodes request */
-				if ( bfsize > 0 )
-					cpu_cnt[bfloc] = bfsize;
-			}
+			_cpus_to_use(&bfsize, rem_cpus, rem_nodes,
+				     job_ptr->details, &cpu_cnt[bfloc]);
 
 			/* enforce the max_cpus limit */
 			if ((job_ptr->details->max_cpus != NO_VAL) &&
