@@ -967,6 +967,23 @@ static bool _enough_nodes(int avail_nodes, int rem_nodes,
 	return (avail_nodes >= needed_nodes);
 }
 
+static void _cpus_to_use(int *avail_cpus, int rem_cpus, int rem_nodes,
+			 struct job_details *details_ptr, uint16_t *cpu_cnt)
+{
+	int resv_cpus;	/* CPUs to be allocated on other nodes */
+
+	if (details_ptr->shared == 0)	/* Use all CPUs on this node */
+		return;
+
+	resv_cpus = MAX((rem_nodes - 1), 0);
+	resv_cpus *= details_ptr->pn_min_cpus;	/* At least 1 */
+	rem_cpus -= resv_cpus;
+
+	if (*avail_cpus > rem_cpus) {
+		*avail_cpus = MAX(rem_cpus, (int)details_ptr->pn_min_cpus);
+		*cpu_cnt = *avail_cpus;
+	}
+}
 
 /* this is the heart of the selection process */
 static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
@@ -1180,14 +1197,8 @@ static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 				 * requested nodes here we will still give
 				 * them and then the step layout will sort
 				 * things out. */
-				if ((details_ptr->shared != 0) &&
-				    (avail_cpus > rem_cpus)) {
-					avail_cpus = MAX(rem_cpus,
-							 (int)details_ptr->
-							 pn_min_cpus);
-					cpu_cnt[i] = MAX(avail_cpus, 1);
-				}
-
+				_cpus_to_use(&avail_cpus, rem_cpus, rem_nodes,
+					     details_ptr, &cpu_cnt[i]);
 				total_cpus += avail_cpus;
 				/* enforce the max_cpus limit */
 				if ((details_ptr->max_cpus != NO_VAL) &&
@@ -1218,14 +1229,8 @@ static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 				 * requested nodes here we will still give
 				 * them and then the step layout will sort
 				 * things out. */
-				if ((details_ptr->shared != 0) &&
-				    (avail_cpus > rem_cpus)) {
-					avail_cpus = MAX(rem_cpus,
-							 (int)details_ptr->
-							 pn_min_cpus);
-					cpu_cnt[i] = MAX(avail_cpus, 1);
-				}
-
+				_cpus_to_use(&avail_cpus, rem_cpus, rem_nodes,
+					     details_ptr, &cpu_cnt[i]);
 				total_cpus += avail_cpus;
 				/* enforce the max_cpus limit */
 				if ((details_ptr->max_cpus != NO_VAL) &&
@@ -1302,14 +1307,8 @@ static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 				 * requested nodes here we will still give
 				 * them and then the step layout will sort
 				 * things out. */
-				if ((details_ptr->shared != 0) &&
-				    (avail_cpus > rem_cpus)) {
-					avail_cpus = MAX(rem_cpus,
-							 (int)details_ptr->
-							 pn_min_cpus);
-					cpu_cnt[i] = MAX(avail_cpus, 1);
-				}
-
+				_cpus_to_use(&avail_cpus, rem_cpus, rem_nodes,
+					     details_ptr, &cpu_cnt[i]);
 				total_cpus += avail_cpus;
 				/* enforce the max_cpus limit */
 				if ((details_ptr->max_cpus != NO_VAL) &&

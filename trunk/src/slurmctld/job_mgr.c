@@ -4032,7 +4032,7 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 		}
 	} else {
 		detail_ptr->pn_min_cpus = MAX(detail_ptr->pn_min_cpus,
-					       detail_ptr->cpus_per_task);
+					      detail_ptr->cpus_per_task);
 	}
 	if (job_desc->requeue != (uint16_t) NO_VAL)
 		detail_ptr->requeue = MIN(job_desc->requeue, 1);
@@ -4552,7 +4552,8 @@ static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 	if (job_desc_msg->min_cpus == NO_VAL)
 		job_desc_msg->min_cpus = job_desc_msg->min_nodes;
 
-	if (job_desc_msg->pn_min_cpus == (uint16_t) NO_VAL)
+	if ((job_desc_msg->pn_min_cpus == (uint16_t) NO_VAL) ||
+	    (job_desc_msg->pn_min_cpus == 0))
 		job_desc_msg->pn_min_cpus = 1;   /* default 1 cpu per node */
 	if (job_desc_msg->pn_min_tmp_disk == NO_VAL)
 		job_desc_msg->pn_min_tmp_disk = 0;/* default 0MB disk per node */
@@ -5973,7 +5974,8 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		update_accounting = true;
 	}
 
-	if (job_specs->pn_min_cpus != (uint16_t) NO_VAL) {
+	if ((job_specs->pn_min_cpus != (uint16_t) NO_VAL) &&
+	    (job_specs->pn_min_cpus != 0)) {
 		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
 			error_code = ESLURM_DISABLED;
 		else if (authorized
