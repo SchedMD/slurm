@@ -362,28 +362,31 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 	struct node_set *tmp_node_set_ptr;
 	int error_code = SLURM_SUCCESS, i;
 	bitstr_t *feature_bitmap, *accumulate_bitmap = NULL;
-	bitstr_t *save_avail_node_bitmap = NULL, *resv_bitmap;
-	time_t start_res = time(NULL);
+	bitstr_t *save_avail_node_bitmap = NULL, *resv_bitmap = NULL;
 	List preemptee_candidates = NULL;
 
-	/* Mark nodes reserved for other jobs as off limit for this job */
-	rc = job_test_resv(job_ptr, &start_res, false, &resv_bitmap);
-	if ((rc != SLURM_SUCCESS) ||
-	    (bit_set_count(resv_bitmap) < min_nodes) ||
-	    (job_ptr->details->req_node_bitmap &&
-	     (!bit_super_set(job_ptr->details->req_node_bitmap,
-			     resv_bitmap)))) {
-		FREE_NULL_BITMAP(resv_bitmap);
-		return ESLURM_NODES_BUSY;	/* reserved */
+	/* Mark nodes reserved for other jobs as off limit for this job.
+	 * If the job has a reservation, we've already limited the contents
+	 * of select_bitmap to those nodes */
+	if (job_ptr->resv_name == NULL) {
+		time_t start_res = time(NULL);
+		rc = job_test_resv(job_ptr, &start_res, false, &resv_bitmap);
+		if ((rc != SLURM_SUCCESS) ||
+		    (bit_set_count(resv_bitmap) < min_nodes) ||
+		    (job_ptr->details->req_node_bitmap &&
+		     (!bit_super_set(job_ptr->details->req_node_bitmap,
+				     resv_bitmap)))) {
+			FREE_NULL_BITMAP(resv_bitmap);
+			return ESLURM_NODES_BUSY;	/* reserved */
+		}
+		if (resv_bitmap &&
+		    (!bit_equal(resv_bitmap, avail_node_bitmap))) {
+			bit_and(resv_bitmap, avail_node_bitmap);
+			save_avail_node_bitmap = avail_node_bitmap;
+			avail_node_bitmap = resv_bitmap;
+		} else
+			FREE_NULL_BITMAP(resv_bitmap);
 	}
-	if (resv_bitmap &&
-	    (!bit_equal(resv_bitmap, avail_node_bitmap))) {
-		bit_and(resv_bitmap, avail_node_bitmap);
-		save_avail_node_bitmap = avail_node_bitmap;
-		avail_node_bitmap = resv_bitmap;
-	} else
-		FREE_NULL_BITMAP(resv_bitmap);
-	preemptee_candidates = slurm_find_preemptable_jobs(job_ptr);
 
 	/* save job and request state */
 	saved_min_nodes = min_nodes;
@@ -403,6 +406,7 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 	/* Accumulate nodes with required feature counts.
 	 * Ignored if job_ptr->details->req_node_layout is set (by wiki2).
 	 * Selected nodes become part of job's required node list. */
+	preemptee_candidates = slurm_find_preemptable_jobs(job_ptr);
 	if (job_ptr->details->feature_list &&
 	    (job_ptr->details->req_node_layout == NULL)) {
 		ListIterator feat_iter;
@@ -1509,7 +1513,7 @@ static int _build_node_list(struct job_record *job_ptr,
 				fatal("bit_copy malloc failure");
 			bit_not(usable_node_mask);
 		}
-	} else {
+	} else if (usable_node_mask == NULL) {
 		usable_node_mask = bit_alloc(node_record_count);
 		if (usable_node_mask == NULL)
 			fatal("bit_alloc malloc failure");
