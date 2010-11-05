@@ -55,8 +55,9 @@ The world's fastest super computer with a peak performance of 2.507 Petaflops.</
 Tera 100</a> at CEA with 140,000 Intel Xeon 7500 processing cores, 300TB of 
 central memory and a theoretical computing power of 1.25 Petaflops. Europe's
 most powerful supercomputer.</li>
-<li><a href="https://asc.llnl.gov/computing_resources/bluegenel/">BlueGene/L</a>
-at LLNL with 106,496 dual-core processors</li>
+<li><a href="https://asc.llnl.gov/computing_resources/sequoia/">Dawn</a>,
+a BlueGene/P system at LLNL with 147,456 PowerPC 450 cores with a peak
+performance of 0.5 Petaflops.</li>
 <li><a href="http://c-r-labs.com/">EKA</a> at Computational Research Laboratories,
 India with 14,240 Xeon processors and Infiniband interconnect</li>
 <li><a href="http://www.bsc.es/plantillaA.php?cat_id=5">MareNostrum</a>
@@ -78,6 +79,6 @@ It is also distributed and supported by
 <a href="http://www.infiscale.com">Infiscale</a> and
 <a href="http://www.ibm.com">IBM</a>.</p>
 
-<p style="text-align:center;">Last modified 1 November 2010</p>
+<p style="text-align:center;">Last modified 5 November 2010</p>
 
 <!--#include virtual="footer.txt"-->
