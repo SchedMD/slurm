@@ -189,6 +189,9 @@ extern uint32_t my_uid;
 extern List g_qos_list;
 extern bool tree_display;
 
+extern bool sacctmgr_check_default_qos(uint32_t qos_id,
+				       slurmdb_association_cond_t *assoc_cond);
+
 extern int sacctmgr_set_association_cond(slurmdb_association_cond_t *assoc_cond,
 					 char *type, char *value,
 					 int command_len);

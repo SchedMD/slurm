@@ -131,6 +131,84 @@ static int _set_cond(int *start, int argc, char *argv[],
 	return set;
 }
 
+extern bool sacctmgr_check_default_qos(uint32_t qos_id,
+				       slurmdb_association_cond_t *assoc_cond)
+{
+	char *object = NULL;
+	ListIterator itr;
+	slurmdb_association_rec_t *assoc;
+	List no_access_list = NULL;
+	List assoc_list = acct_storage_g_get_associations(
+		db_conn, my_uid, assoc_cond);
+
+	if (!assoc_list) {
+		fprintf(stderr, "Couldn't get a list back for checking qos.\n");
+		return false;
+	}
+
+	itr = list_iterator_create(assoc_list);
+	while ((assoc = list_next(itr))) {
+		char *qos = NULL;
+		if (assoc->qos_list) {
+			ListIterator qos_itr =
+				list_iterator_create(assoc->qos_list);
+			while ((qos = list_next(qos_itr))) {
+				if (qos[0] == '-')
+					continue;
+				else if (qos[0] == '+')
+					qos++;
+
+				if (qos_id == atoi(qos))
+					break;
+			}
+			list_iterator_destroy(qos_itr);
+		}
+		if (!qos) {
+			if (!assoc->user) {
+				// see if this isn't a user
+				object = xstrdup_printf(
+					"  C = %-10s A = %-20s ",
+					assoc->cluster, assoc->acct);
+			} else if (assoc->partition) {
+				// see if there is a partition name
+				object = xstrdup_printf(
+					"  C = %-10s A = %-20s U = %-9s P = %s",
+					assoc->cluster, assoc->acct,
+					assoc->user, assoc->partition);
+			} else {
+				object = xstrdup_printf(
+					"  C = %-10s A = %-20s U = %-9s",
+					assoc->cluster,
+					assoc->acct,
+					assoc->user);
+			}
+
+			if (!no_access_list)
+				no_access_list =
+					list_create(slurm_destroy_char);
+			list_append(no_access_list, object);
+		}
+	}
+	list_iterator_destroy(itr);
+	list_destroy(assoc_list);
+
+	if (!no_access_list)
+		return true;
+	fprintf(stderr,
+		" These associations don't have access to the default qos.\n");
+	fprintf(stderr,
+		" Please give them access before they the default "
+		"can be set to this.\n");
+	itr = list_iterator_create(no_access_list);
+	while ((object = list_next(itr)))
+		fprintf(stderr, "%s\n", object);
+	list_iterator_destroy(itr);
+	list_destroy(no_access_list);
+
+	return 0;
+}
+
+
 extern int sacctmgr_set_association_cond(slurmdb_association_cond_t *assoc_cond,
 					 char *type, char *value,
 					 int command_len)
