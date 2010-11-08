@@ -141,6 +141,9 @@ extern bool sacctmgr_check_default_qos(uint32_t qos_id,
 	List assoc_list = acct_storage_g_get_associations(
 		db_conn, my_uid, assoc_cond);
 
+	if (qos_id == NO_VAL)
+		return true;
+
 	if (!assoc_list) {
 		fprintf(stderr, "Couldn't get a list back for checking qos.\n");
 		return false;

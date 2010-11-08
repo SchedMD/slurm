@@ -89,7 +89,7 @@ static int _init_sacctmgr_file_opts(sacctmgr_file_opts_t *file_opts)
 
 	file_opts->fairshare = NO_VAL;
 
-	file_opts->def_qos_id = 0;
+	file_opts->def_qos_id = NO_VAL;
 
 	file_opts->grp_cpu_mins = (uint64_t)NO_VAL;
 	file_opts->grp_cpus = NO_VAL;
@@ -1694,7 +1694,7 @@ extern int print_file_add_limits_to_line(char **line,
 	if(!assoc)
 		return SLURM_ERROR;
 
-	if(assoc->def_qos_id) {
+	if(assoc->def_qos_id != NO_VAL) {
 		char *tmp_char;
 		if(!g_qos_list)
 			g_qos_list = acct_storage_g_get_qos(

@@ -1037,7 +1037,7 @@ assoc_start:
 
 		if(ret_list && list_count(ret_list)) {
 			set = 1;
-			if (assoc->def_qos_id)
+			if (assoc->def_qos_id != NO_VAL)
 				set = sacctmgr_check_default_qos(
 					     assoc->def_qos_id,
 					     acct_cond->assoc_cond);
