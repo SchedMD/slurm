@@ -844,10 +844,6 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 			return SLURM_ERROR;
 		}
 
-		if (!default_acct)
-			default_acct =
-				xstrdup(list_peek(assoc_cond->acct_list));
-
 		memset(&query_assoc_cond, 0,
 		       sizeof(slurmdb_association_cond_t));
 		query_assoc_cond.acct_list = assoc_cond->acct_list;
@@ -868,9 +864,6 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 	}
 
 	if(track_wckey || default_wckey) {
-		if(!default_wckey)
-			default_wckey =
-				xstrdup(list_peek(wckey_cond->name_list));
 		wckey_cond->cluster_list = assoc_cond->cluster_list;
 		wckey_cond->user_list = assoc_cond->user_list;
 		if(!(local_wckey_list = acct_storage_g_get_wckeys(
@@ -902,6 +895,18 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 		user = NULL;
 		if(!sacctmgr_find_user_from_list(local_user_list, name)) {
 			uid_t pw_uid;
+			if (!default_acct
+			    && assoc_cond->acct_list
+			    && list_count(assoc_cond->acct_list))
+				default_acct = xstrdup(
+					list_peek(assoc_cond->acct_list));
+
+			if(!default_wckey
+			    && wckey_cond->name_list
+			    && list_count(wckey_cond->name_list))
+				default_wckey =	xstrdup(
+					list_peek(wckey_cond->name_list));
+
 			if(!default_acct || !default_acct[0]) {
 				exit_code=1;
 				fprintf(stderr, " Need a default account for "
@@ -957,7 +962,7 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 		while ((account = list_next(itr_a))) {
 			if (acct_first) {
 				if (!sacctmgr_find_account_from_list(
-					   local_acct_list, default_acct)) {
+					   local_acct_list, account)) {
 					exit_code=1;
 					fprintf(stderr, " This account '%s' "
 						"doesn't exist.\n"
