@@ -36,6 +36,7 @@ source ./globals_accounting
 set test_id     "21.15"
 set test_nu     "test21-15"
 set exit_code   0
+set clu		cluster
 set tc1		[format "%s%s" $test_nu "clus1"]
 set tc2		[format "%s%s" $test_nu "clus2"]
 set tc3		[format "%s%s" $test_nu "clus3"]
@@ -54,11 +55,6 @@ set mn3		1
 set mw1		01:00:00
 set mw2		00:07:00
 set mw3		00:01:00
-set clu		cluster
-set cl1		1tmach
-set cl2		2tmach
-set cl3		3tmach
-set acc		account
 set acc		account
 set nams	names
 set nm1		[format "%s%s" $test_nu "acct1"]
