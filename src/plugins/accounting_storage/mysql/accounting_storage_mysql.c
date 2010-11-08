@@ -528,8 +528,6 @@ static int _as_mysql_acct_check_tables(MYSQL *db_conn)
 		{ "mod_time", "int unsigned default 0 not null" },
 		{ "deleted", "tinyint default 0" },
 		{ "name", "tinytext not null" },
-		{ "default_acct", "tinytext not null" },
-		{ "default_wckey", "tinytext not null default ''" },
 		{ "admin_level", "smallint default 1 not null" },
 		{ NULL, NULL}
 	};
@@ -739,8 +737,8 @@ static int _as_mysql_acct_check_tables(MYSQL *db_conn)
 	 * really be deleted.
 	 */
 	query = xstrdup_printf(
-		"insert into %s (creation_time, mod_time, name, default_acct, "
-		"admin_level) values (%ld, %ld, 'root', 'root', %d) "
+		"insert into %s (creation_time, mod_time, name, "
+		"admin_level) values (%ld, %ld, 'root', %d) "
 		"on duplicate key update name='root';",
 		user_table, (long)now, (long)now, SLURMDB_ADMIN_SUPER_USER);
 	xstrfmtcat(query,
