@@ -230,8 +230,6 @@ static void _layout_conf_ctl(GtkTreeStore *treestore,
 		select_title = "Bluegene/P configuration";
 	else if(cluster_flags & CLUSTER_FLAG_BGQ)
 		select_title = "Bluegene/Q configuration";
-	else
-		return;
 
 	if(!slurm_ctl_conf_ptr)
 		return;
