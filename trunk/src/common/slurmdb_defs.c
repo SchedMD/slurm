@@ -1614,7 +1614,7 @@ extern void log_assoc_rec(slurmdb_association_rec_t *assoc_ptr,
 
 	if(assoc_ptr->grp_cpu_run_mins == INFINITE)
 		debug2("  GrpCPURunMins    : NONE");
-	else if(assoc_ptr->grp_cpu_mins != NO_VAL)
+	else if(assoc_ptr->grp_cpu_run_mins != NO_VAL)
 		debug2("  GrpCPURunMins    : %"PRIu64"",
 		       assoc_ptr->grp_cpu_run_mins);
 

@@ -52,7 +52,7 @@ ExitCode field whose format mirrors the output of <b>scontrol</b> and
 <h1>Derived Exit Code and String</h1>
 
 <p>After reading the above description of a job's exit code, one can
-easily imagine a scenario where a central task of a job fails but the
+imagine a scenario where a central task of a batch job fails but the
 script returns an exit code of zero, indicating success.  In many
 cases, a user may not be able to ascertain the success or failure of a
 job until after they have examined the job's output files.</p>
@@ -110,7 +110,7 @@ If a change is desired, <b>sjobexitmod</b> can modify the derived fields:
 exit fields:</p>
 
 <PRE>
-> sacct -X -j 123 -o JobID,NNodes,State,ExitCode,Derivedexitcode,DerivedExitStr
+> sacct -X -j 123 -o JobID,NNodes,State,ExitCode,DerivedExitcode,DerivedExitStr
        JobID   NNodes      State ExitCode DerivedExitCode DerivedExitStr
 ------------ -------- ---------- -------- --------------- --------------
 123                 1  COMPLETED      0:0            49:0  out of memory
