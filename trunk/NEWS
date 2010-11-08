@@ -44,7 +44,8 @@ documents those changes that are of interest to users and admins.
     pending jobs.
  -- Increase max message size for the slurmdbd from 1000000 to 16*1024*1024
  -- Increase number of active threads in the slurmdbd from 50 to 100
- -- Fixed small bug in src/common/slurmdb_defs.c reported by Bjørn-Helge Mevik
+ -- Fixed small bug in src/common/slurmdb_defs.c reported by Bjorn-Helge Mevik
+ -- Fixed sacctmgr's ability to query associations against qos again.
 
 * Changes in SLURM 2.2.0.pre12
 ==============================

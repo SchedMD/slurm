@@ -194,7 +194,7 @@ extern bool sacctmgr_check_default_qos(uint32_t qos_id,
 
 extern int sacctmgr_set_association_cond(slurmdb_association_cond_t *assoc_cond,
 					 char *type, char *value,
-					 int command_len);
+					 int command_len, int option);
 extern int sacctmgr_set_association_rec(slurmdb_association_rec_t *assoc_rec,
 					char *type, char *value,
 					int command_len, int option);
