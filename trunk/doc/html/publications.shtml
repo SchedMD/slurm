@@ -2,10 +2,17 @@
 
 <h1>Publications and Presentations</h1>
 
-<p>Note that some of these contained dated information.</p>
+<p>Note that some of this material contains dated information.</p>
 
-<h2>Presentations from SLURM User Group Meeting, October 2010</h2>
+<h2>Presentations</h2>
+<ul>
 
+<!-- Use LLNL-PRES-453831 -->
+<li><a href="slurm_sc10_bof.pdf">SLURM Version 2.2: Features and Release Plans</a>,
+Morris Jette, Danny Auble and Donald Lipari, Lawrence Livermore National Laboratory
+(Supercomputing 2010, November 2010)</li>
+
+<li><b>Presentations from SLURM User Group Meeting, October 2010</b></li>
 <ul>
 <!-- Use LLNL-PRES-453794 -->
 <li><a href="slurm_ug_2010/01-keynote.pdf">SLURM: Resource Management from the Simple to the
@@ -18,7 +25,7 @@ Morris Jette and Danny Auble, Lawrence Livermore National Laboratory
 Matthieu Hautreux, CEA/DAM/DIF
 (SLURM User Group Meeting, October 2010)</li>
 
-<!-- Use LLNL-PRES-459615 -->
+<!-- Use LLNL-PRES-461778 -->
 <li><a href="slurm_ug_2010/02-mp-bull.pdf">SLURM Support for Linux Control Groups</a>,
 Martin Perry, Bull Information Systems
 (SLURM User Group Meeting, October 2010)</li>
@@ -45,25 +52,38 @@ Morris Jette and Danny Auble, Lawrence Livermore National Laboratory
 (SLURM User Group Meeting, October 2010)</li>
 </ul>
 
-<h2>Other Presentations</h2>
+<!-- Use LLNL-PRES-402832 -->
+<li><a href="slurm_sc09_bof.pdf">SLURM Community Meeting</a>,
+Morris Jette, Danny Auble and Don Lipari, Lawrence Livermore National Laboratory
+(Supercomputing 2009, November 2009)</li>
 
-<ul>
+<!-- Use LLNL-PRES-408498 -->
 <li><a href="slurm.sc08.bof.pdf">High Scalability Resource Management with
 SLURM</a>,
 Morris Jette, Lawrence Livermore National Laboratory
 (Supercomputing 2008, November 2008)</li>
+
+<!-- Use LLNL-PRES-408510 -->
 <li><a href="slurm.sc08.status.pdf">SLURM Status Report</a>,
 Morris Jette and Danny Auble, Lawrence Livermore National Laboratory
 (Supercomputing 2008, November 2008)</li>
+
+<!-- Use LLNL-PRES-402832 -->
 <li><a href="slurm_v1.3.pdf">SLURM Version 1.3</a>,
 Morris Jette and Danny Auble, Lawrence Livermore National Laboratory
 (May 2008)</li>
+
+<!-- Use LLNL-PRES-403148 -->
 <li><a href="slurm_moab.pdf">Managing Clusters with Moab and SLURM</a>,
 Morris Jette and Donald Lipari, Lawrence Livermore National Laboratory
 (May 2008)</li>
+
+<!-- Use UCRL-PRES-230170 -->
 <li><a href="slurm_v1.2.pdf">Resource Management at LLNL, SLURM Version 1.2</a>,
 Morris Jette, Danny Auble and Chris Morrone, Lawrence Livermore National Laboratory
 (April 2007)</li>
+
+<!-- Use UCRL-PRES-219562 -->
 <li><a href="lci.7.tutorial.pdf">Resource Management Using SLURM</a>,
 Morris Jette, Lawrence Livermore National Laboratory
 (Tutorial, The 7th International Conference on Linux Clusters, May 2006)</li>
@@ -83,6 +103,7 @@ S. M. Balle and D. Palermo,
 <i>Job Scheduling Strategies for Parallel Processing</i>,
 2007.</li>
 
+<!-- Use UCRL-MA-147996 -->
 <li><a href="slurm_design.pdf">
 <b>SLURM: Simple Linux Utility for Resource Management</b></a> [PDF],
 M. Jette and M. Grondona,
@@ -104,6 +125,6 @@ RCE 10: SLURM (podcast)</a>:
 Brock Palen and Jeff Squyres speak with Morris Jette and
 Danny Auble of LLNL about SLURM.</p>
 
-<p style="text-align:center;">Last modified 14 October 2010</p>
+<p style="text-align:center;">Last modified 8 November 2010</p>
 
 <!--#include virtual="footer.txt"-->
