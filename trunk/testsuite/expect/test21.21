@@ -488,6 +488,8 @@ if {$job_id == 0} {
 #
 if { [test_limits_enforced] == 1 } {
 	set exit_code [_test_limits]
+	# wait around a bit to make sure jobs finish
+	sleep 3
 }
 
 
