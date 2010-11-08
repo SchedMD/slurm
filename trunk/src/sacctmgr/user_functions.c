@@ -1751,7 +1751,7 @@ assoc_start:
 			char *object = NULL;
 			ListIterator itr;
 			set = 1;
-			if (assoc->def_qos_id)
+			if (assoc->def_qos_id != NO_VAL)
 				set = sacctmgr_check_default_qos(
 					     assoc->def_qos_id,
 					     user_cond->assoc_cond);
