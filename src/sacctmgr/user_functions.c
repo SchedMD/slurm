@@ -177,7 +177,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 			}
 		} else if(!(a_set = sacctmgr_set_association_cond(
 				    assoc_cond, argv[i], argv[i]+end,
-				    command_len))) {
+				    command_len, option))) {
 			exit_code=1;
 			fprintf(stderr, " Unknown condition: %s\n"
 				" Use keyword 'set' to modify value\n",
@@ -725,7 +725,7 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 				    command_len, option))
 			  && !(limit_set = sacctmgr_set_association_cond(
 				       assoc_cond, argv[i], argv[i]+end,
-				       command_len))) {
+				       command_len, option))) {
 			exit_code=1;
 			fprintf(stderr, " Unknown option: %s\n", argv[i]);
 		}

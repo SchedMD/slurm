@@ -120,7 +120,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 						      argv[i]+end);
 		} else if(!(set = sacctmgr_set_association_cond(
 				    assoc_cond, argv[i], argv[i]+end,
-				    command_len)) || exit_code) {
+				    command_len, option)) || exit_code) {
 			exit_code = 1;
 			fprintf(stderr, " Unknown condition: %s\n", argv[i]);
 		}
@@ -211,7 +211,7 @@ extern bool sacctmgr_check_default_qos(uint32_t qos_id,
 
 extern int sacctmgr_set_association_cond(slurmdb_association_cond_t *assoc_cond,
 					 char *type, char *value,
-					 int command_len)
+					 int command_len, int option)
 {
 	int set =0;
 
@@ -375,6 +375,17 @@ extern int sacctmgr_set_association_cond(slurmdb_association_cond_t *assoc_cond,
 			assoc_cond->parent_acct_list =
 				list_create(slurm_destroy_char);
 		if (slurm_addto_char_list(assoc_cond->parent_acct_list, value))
+			set = 1;
+	} else if (!strncasecmp (type, "QosLevel", MAX(command_len, 1))) {
+		if(!assoc_cond->qos_list)
+			assoc_cond->qos_list = list_create(slurm_destroy_char);
+
+		if(!g_qos_list)
+			g_qos_list = acct_storage_g_get_qos(
+				db_conn, my_uid, NULL);
+
+		if(slurmdb_addto_qos_char_list(assoc_cond->qos_list, g_qos_list,
+					       value, option))
 			set = 1;
 	} else if (!strncasecmp (type, "Users", MAX(command_len, 1))) {
 		if (!assoc_cond->user_list)
