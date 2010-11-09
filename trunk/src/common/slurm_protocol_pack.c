@@ -2925,6 +2925,7 @@ _pack_job_step_create_request_msg(job_step_create_request_msg_t
 		packstr(msg->network, buffer);
 		packstr(msg->node_list, buffer);
 		packstr(msg->ckpt_dir, buffer);
+		packstr(msg->features, buffer);
 		packstr(msg->gres, buffer);
 
 		pack8(msg->no_kill, buffer);
@@ -2998,6 +2999,8 @@ _unpack_job_step_create_request_msg(job_step_create_request_msg_t ** msg,
 		safe_unpackstr_xmalloc(&(tmp_ptr->node_list), &uint32_tmp,
 				       buffer);
 		safe_unpackstr_xmalloc(&(tmp_ptr->ckpt_dir), &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&(tmp_ptr->features), &uint32_tmp,
 				       buffer);
 		safe_unpackstr_xmalloc(&(tmp_ptr->gres), &uint32_tmp, buffer);
 

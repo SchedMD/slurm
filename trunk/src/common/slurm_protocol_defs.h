@@ -565,6 +565,7 @@ typedef struct job_step_specs {
 	char *ckpt_dir; 	/* path to store checkpoint image files */
 	uint32_t cpu_count;	/* count of required processors */
 	uint16_t exclusive;	/* 1 if CPUs not shared with other steps */
+	char *features;		/* required node features, default NONE */
 	char *gres;		/* generic resources required */
 	char *host;		/* host to contact initiating srun */
 	uint16_t immediate;	/* 1 if allocate to run or fail immediately,

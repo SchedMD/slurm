@@ -567,6 +567,7 @@ void slurm_free_job_step_create_request_msg(job_step_create_request_msg_t *
 					    msg)
 {
 	if (msg) {
+		xfree(msg->features);
 		xfree(msg->gres);
 		xfree(msg->host);
 		xfree(msg->name);
