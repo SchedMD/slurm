@@ -652,20 +652,39 @@ or the full test suite may be executed with the single command
 See <i>testsuite/expect/README</i> for more information.</p>
 
 <h2>Upgrades</h2>
-<p>When upgrading to a new major or minor release of SLURM (e.g. 1.1.x to 1.2.x)
-all running and pending jobs will be purged due to changes in state save
-information. It is possible to develop software to translate state information
-between versions, but we do not expect to do so.
-When upgrading to a new micro release of SLURM (e.g. 1.2.1 to 1.2.2) all
+
+<p>Background: The SLURM version numbers contain three digits, which represent
+the major, minor and micro release numbers in that order (e.g. 2.1.3 is
+major=2, minor=1, micro=3).
+Changes in the RPCs (remote procedure calls) will only be made if the major
+and/or minor relase number changes.
+Changes in the micro release number generally represent only bug fixes,
+but may also include minor enhancements.</p>
+
+<p>If the SlurmDBD daemon is used, it must be at the same or higher minor
+release number as the Slurmctld daemons.
+In other words, when changing the version to a higher release number (e.g
+from 2.0 to 2.1) <b>always upgrade the SlurmDBD daemon first</b>.
+There is no need to upgrade the SlurmDBD daemon when performing a n update
+at the micro level (e.g. from 2.1.0 to 2.1.1).</p>
+
+<p>When upgrading to a new major or minor release of SLURM <u>prior to version 
+2.2</u> (e.g. 2.0.x to 2.1.x) all running and pending jobs will be purged due to
+changes in state save information.
+When upgrading to a new micro release of SLURM (e.g. 2.1.1 to 2.1.2) all
 running and pending jobs will be preserved. Just install a new version of
 SLURM and restart the daemons.
+When going from version 2.1.x to version 2.2.x and higher version numbers,
+we do not expect that any running or pending jobs will be lost although a
+limited number of prior releases may be supported (e.g. 2.1.0 to 2.2.0 will
+work fine, but 2.1.0 to 2.9.0 may not).
 An exception to this is that jobs may be lost when installing new pre-release
-versions (e.g. 1.3.0-pre1 to 1.3.0-pre2). We'll try to note these cases
+versions (e.g. 2.3.0-pre1 to 2.3.0-pre2). We'll try to note these cases
 in the NEWS file.
-Contents of major releases are also described in the RELEASE_NOTES file.
+Contents of major releases are also described in the RELEASE_NOTES file.</p>
 
 </pre> <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 2 July 2010</p>
+<p style="text-align:center;">Last modified 9 November 2010</p>
 
 <!--#include virtual="footer.txt"-->
