@@ -117,6 +117,7 @@ static void _partial_destroy_dbd_job_start(void *object)
 {
 	dbd_job_start_msg_t *req = (dbd_job_start_msg_t *)object;
 	if(req) {
+		xfree(req->node_inx);
 		xfree(req->block_id);
 		xfree(req);
 	}
@@ -125,8 +126,6 @@ static void _partial_destroy_dbd_job_start(void *object)
 static int _setup_job_start_msg(dbd_job_start_msg_t *req,
 				struct job_record *job_ptr)
 {
-	char temp_bit[BUF_SIZE];
-
 	if (!job_ptr->details || !job_ptr->details->submit_time) {
 		error("jobacct_storage_p_job_start: "
 		      "Not inputing this job %u, it has no submit time.",
@@ -166,13 +165,15 @@ static int _setup_job_start_msg(dbd_job_start_msg_t *req,
 	req->name          = job_ptr->name;
 	req->nodes         = job_ptr->nodes;
 
-	if(job_ptr->node_bitmap)
-		req->node_inx = bit_fmt(temp_bit, sizeof(temp_bit),
-					job_ptr->node_bitmap);
-	req->alloc_cpus = job_ptr->total_cpus;
+	if (job_ptr->node_bitmap) {
+		char temp_bit[BUF_SIZE];
+		req->node_inx = xstrdup(bit_fmt(temp_bit, sizeof(temp_bit),
+						job_ptr->node_bitmap));
+	}
+	req->alloc_cpus    = job_ptr->total_cpus;
 	req->partition     = job_ptr->partition;
 	if (job_ptr->details)
-		req->req_cpus      = job_ptr->details->min_cpus;
+		req->req_cpus = job_ptr->details->min_cpus;
 	req->resv_id       = job_ptr->resv_id;
 	req->priority      = job_ptr->priority;
 	req->timelimit     = job_ptr->time_limit;

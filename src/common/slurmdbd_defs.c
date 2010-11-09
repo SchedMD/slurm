@@ -141,8 +141,8 @@ static int    _tot_wait (struct timeval *start_time);
  * rollback IN - keep journal and permit rollback if set
  * Returns SLURM_SUCCESS or an error code */
 extern int slurm_open_slurmdbd_conn(char *auth_info,
-                                    const slurm_trigger_callbacks_t *callbacks,
-                                    bool rollback)
+				    const slurm_trigger_callbacks_t *callbacks,
+				    bool rollback)
 {
 	int tmp_errno = SLURM_SUCCESS;
 	/* we need to set this up before we make the agent or we will
@@ -375,7 +375,6 @@ extern int slurm_send_slurmdbd_msg(uint16_t rpc_version, slurmdbd_msg_t *req)
 		if (list_enqueue(agent_list, buffer) == NULL)
 			fatal("list_enqueue: memory allocation failure");
 	} else {
-	
 		error("slurmdbd: agent queue is full, discarding request");
 		if (callbacks_requested)
 			(callback.acct_full)();

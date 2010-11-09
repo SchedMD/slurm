@@ -50,6 +50,7 @@ documents those changes that are of interest to users and admins.
  -- Fixed bug in selecting jobs based on sacct -N option
  -- Fix bug that prevented job Epilog from running more than once on a node if
     a job was requeued and started no job steps.
+ -- Fixed issue where node index wasn't stored correcting when using DBD.
 
 * Changes in SLURM 2.2.0.pre12
 ==============================
