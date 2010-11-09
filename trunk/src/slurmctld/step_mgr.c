@@ -2878,6 +2878,7 @@ static void _signal_step_timelimit(struct job_record *job_ptr,
 	kill_step->job_uid   = job_ptr->user_id;
 	kill_step->nodes     = xstrdup(job_ptr->nodes);
 	kill_step->time      = now;
+	kill_step->start_time = job_ptr->start_time;
 	kill_step->select_jobinfo = select_g_select_jobinfo_copy(
 			job_ptr->select_jobinfo);
 

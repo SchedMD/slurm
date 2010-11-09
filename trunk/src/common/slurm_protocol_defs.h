@@ -699,6 +699,7 @@ typedef struct kill_job_msg {
 	uint16_t job_state;
 	uint32_t job_uid;
 	time_t   time;		/* slurmctld's time of request */
+	time_t   start_time;	/* time of job start, track job requeue */
 	char *nodes;
 	dynamic_plugin_data_t *select_jobinfo;	/* opaque data type */
 	char **spank_job_env;

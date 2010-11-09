@@ -3051,7 +3051,19 @@ _pack_kill_job_msg(kill_job_msg_t * msg, Buf buffer, uint16_t protocol_version)
 {
 	xassert(msg != NULL);
 
-	if(protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
+		pack32(msg->job_id,  buffer);
+		pack32(msg->step_id,  buffer);
+		pack16(msg->job_state, buffer);
+		pack32(msg->job_uid, buffer);
+		pack_time(msg->time, buffer);
+		pack_time(msg->start_time, buffer);
+		packstr(msg->nodes, buffer);
+		select_g_select_jobinfo_pack(msg->select_jobinfo, buffer,
+					     protocol_version);
+		packstr_array(msg->spank_job_env, msg->spank_job_env_size,
+			      buffer);
+	} else if (protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
 		pack32(msg->job_id,  buffer);
 		pack32(msg->step_id,  buffer);
 		pack16(msg->job_state, buffer);
@@ -3077,7 +3089,20 @@ _unpack_kill_job_msg(kill_job_msg_t ** msg, Buf buffer,
 	tmp_ptr = xmalloc(sizeof(kill_job_msg_t));
 	*msg = tmp_ptr;
 
-	if(protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
+		safe_unpack32(&(tmp_ptr->job_id),  buffer);
+		safe_unpack32(&(tmp_ptr->step_id),  buffer);
+		safe_unpack16(&(tmp_ptr->job_state),  buffer);
+		safe_unpack32(&(tmp_ptr->job_uid), buffer);
+		safe_unpack_time(&(tmp_ptr->time), buffer);
+		safe_unpack_time(&(tmp_ptr->start_time), buffer);
+		safe_unpackstr_xmalloc(&(tmp_ptr->nodes), &uint32_tmp, buffer);
+		if (select_g_select_jobinfo_unpack(&tmp_ptr->select_jobinfo,
+						   buffer, protocol_version))
+			goto unpack_error;
+		safe_unpackstr_array(&(tmp_ptr->spank_job_env),
+				     &tmp_ptr->spank_job_env_size, buffer);
+	} else if (protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
 		safe_unpack32(&(tmp_ptr->job_id),  buffer);
 		safe_unpack32(&(tmp_ptr->step_id),  buffer);
 		safe_unpack16(&(tmp_ptr->job_state),  buffer);

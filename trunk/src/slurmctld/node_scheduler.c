@@ -189,6 +189,7 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
 	kill_job->job_uid   = job_ptr->user_id;
 	kill_job->nodes     = xstrdup(job_ptr->nodes);
 	kill_job->time      = time(NULL);
+	kill_job->start_time = job_ptr->start_time;
 	kill_job->select_jobinfo = select_g_select_jobinfo_copy(
 			job_ptr->select_jobinfo);
 	kill_job->spank_job_env = xduparray(job_ptr->spank_job_env_size,
@@ -1906,6 +1907,7 @@ extern void re_kill_job(struct job_record *job_ptr)
 	kill_job->job_uid   = job_ptr->user_id;
 	kill_job->job_state = job_ptr->job_state;
 	kill_job->time      = time(NULL);
+	kill_job->start_time = job_ptr->start_time;
 	kill_job->select_jobinfo = select_g_select_jobinfo_copy(
 				   job_ptr->select_jobinfo);
 	kill_job->spank_job_env = xduparray(job_ptr->spank_job_env_size,
