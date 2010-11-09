@@ -490,7 +490,7 @@ enum node_states {
 #define NODE_STATE_FAIL       0x2000	/* node is failing, do not allocate
 					 * new work */
 #define NODE_STATE_POWER_UP   0x4000	/* restore power or otherwise
-					 * configure a a node */
+					 * configure a node */
 #define NODE_STATE_MAINT      0x8000	/* node in maintenance reservation */
 
 /* used to define the size of the credential.signature size
@@ -1355,7 +1355,7 @@ typedef struct node_info {
 	dynamic_plugin_data_t *select_nodeinfo;  /* opaque data structure,
 						  * use
 						  * slurm_get_select_nodeinfo()
-						  * to access conents */
+						  * to access contents */
 } node_info_t;
 
 typedef struct node_info_msg {
@@ -1440,7 +1440,7 @@ typedef struct resource_allocation_response_msg {
 	dynamic_plugin_data_t *select_jobinfo;	/* opaque data structure,
 						 * use
 						 * slurm_get_select_jobinfo()
-						 * to access conents */
+						 * to access contents */
 } resource_allocation_response_msg_t;
 
 typedef struct job_alloc_info_response_msg {
@@ -1455,7 +1455,7 @@ typedef struct job_alloc_info_response_msg {
 	dynamic_plugin_data_t *select_jobinfo;	/* opaque data structure,
 						 * use
 						 * slurm_get_select_jobinfo()
-						 * to access conents */
+						 * to access contents */
 } job_alloc_info_response_msg_t;
 
 typedef struct partition_info_msg {

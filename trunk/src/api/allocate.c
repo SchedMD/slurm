@@ -244,7 +244,7 @@ slurm_allocate_resources_blocking (const job_desc_msg_t *user_req,
 		}
 		break;
 	case RESPONSE_RESOURCE_ALLOCATION:
-		/* Yay, the controller has acknowledge our request!  But did
+		/* Yay, the controller has acknowledged our request!  But did
 		   we really get an allocation yet? */
 		resp = (resource_allocation_response_msg_t *) resp_msg.data;
 		if (resp->node_cnt > 0) {

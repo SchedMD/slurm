@@ -2203,7 +2203,7 @@ void set_node_down (char *name, char *reason)
 
 	node_ptr = find_node_record (name);
 	if (node_ptr == NULL) {
-		error ("node_not_resp unable to find node %s", name);
+		error ("set_node_down unable to find node %s", name);
 		return;
 	}
 

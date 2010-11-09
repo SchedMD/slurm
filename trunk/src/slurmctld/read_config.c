@@ -926,7 +926,7 @@ static int _restore_node_state(int recover,
 			old_node_ptr->reason = NULL;
 		}
 		if (recover == 2) {
-			/* NOTE: features in node record just a placeholder for
+			/* NOTE: features in node record just a placeholder
 			 * for restore_node_features() to set up new config
 			 * records. */
 			xfree(node_ptr->features);
