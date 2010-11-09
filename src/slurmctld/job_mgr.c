@@ -7246,6 +7246,7 @@ abort_job_on_node(uint32_t job_id, struct job_record *job_ptr,
 	kill_req->job_id	= job_id;
 	kill_req->step_id	= NO_VAL;
 	kill_req->time          = time(NULL);
+	kill_req->start_time	= job_ptr->start_time;
 	kill_req->nodes		= xstrdup(node_ptr->name);
 	if (job_ptr) {  /* NULL if unknown */
 		kill_req->select_jobinfo =
@@ -7284,6 +7285,7 @@ kill_job_on_node(uint32_t job_id, struct job_record *job_ptr,
 	kill_req->job_id	= job_id;
 	kill_req->step_id	= NO_VAL;
 	kill_req->time          = time(NULL);
+	kill_req->start_time	= job_ptr->start_time;
 	kill_req->nodes		= xstrdup(node_ptr->name);
 	if (job_ptr) {  /* NULL if unknown */
 		kill_req->select_jobinfo =

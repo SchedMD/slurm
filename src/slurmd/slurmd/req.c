@@ -3186,7 +3186,8 @@ _rpc_abort_job(slurm_msg_t *msg)
 	/*
 	 * "revoke" all future credentials for this jobid
 	 */
-	if (slurm_cred_revoke(conf->vctx, req->job_id, req->time) < 0) {
+	if (slurm_cred_revoke(conf->vctx, req->job_id, req->time,
+			      req->start_time) < 0) {
 		debug("revoking cred for job %u: %m", req->job_id);
 	} else {
 		save_cred_state(conf->vctx);
@@ -3283,7 +3284,8 @@ _rpc_terminate_job(slurm_msg_t *msg)
 	/*
 	 * "revoke" all future credentials for this jobid
 	 */
-	if (slurm_cred_revoke(conf->vctx, req->job_id, req->time) < 0) {
+	if (slurm_cred_revoke(conf->vctx, req->job_id, req->time,
+			      req->start_time) < 0) {
 		debug("revoking cred for job %u: %m", req->job_id);
 	} else {
 		save_cred_state(conf->vctx);

@@ -1057,7 +1057,8 @@ slurm_cred_rewind(slurm_cred_ctx_t ctx, slurm_cred_t *cred)
 }
 
 int
-slurm_cred_revoke(slurm_cred_ctx_t ctx, uint32_t jobid, time_t time)
+slurm_cred_revoke(slurm_cred_ctx_t ctx, uint32_t jobid, time_t time,
+		  time_t start_time)
 {
 	job_state_t  *j = NULL;
 
@@ -1078,10 +1079,14 @@ slurm_cred_revoke(slurm_cred_ctx_t ctx, uint32_t jobid, time_t time)
 		 */
 		j = _insert_job_state(ctx, jobid);
 	}
-
 	if (j->revoked) {
-		slurm_seterrno(EEXIST);
-		goto error;
+		if (start_time && (j->revoked < start_time)) {
+			debug("job %u requeued, but started no tasks", jobid);
+			j->expiration = (time_t) MAX_TIME;
+		} else {
+			slurm_seterrno(EEXIST);
+			goto error;
+		}
 	}
 
 	j->revoked = time;
