@@ -412,6 +412,22 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 	}
 	xfree(query);
 
+
+	/* Here we set up environment to check used nodes of jobs.
+	   Since we store the bitmap of the entire cluster we can use
+	   that to set up a hostlist and set up the bitmap to make
+	   things work.  This should go before the setup of conds
+	   since we could update the start/end time.
+	*/
+	if(job_cond && job_cond->used_nodes) {
+		local_cluster_list = setup_cluster_list_with_inx(
+			mysql_conn, job_cond, (void **)&curr_cluster);
+		if(!local_cluster_list) {
+			rc = SLURM_ERROR;
+			goto end_it;
+		}
+	}
+
 	while((row = mysql_fetch_row(result))) {
 		char *id = row[JOB_REQ_ID];
 		bool job_ended = 0;
@@ -1265,8 +1281,6 @@ extern List as_mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn,
 	List job_list = NULL;
 	uint16_t private_data = 0;
 	slurmdb_user_rec_t user;
-	local_cluster_t *curr_cluster = NULL;
-	List local_cluster_list = NULL;
 	int only_pending = 0;
 	List use_cluster_list = as_mysql_cluster_list;
 	char *cluster_name;
@@ -1285,20 +1299,6 @@ extern List as_mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn,
 				return NULL;
 			}
 		}
-	}
-
-
-	/* Here we set up environment to check used nodes of jobs.
-	   Since we store the bitmap of the entire cluster we can use
-	   that to set up a hostlist and set up the bitmap to make
-	   things work.  This should go before the setup of conds
-	   since we could update the start/end time.
-	*/
-	if(job_cond && job_cond->used_nodes) {
-		local_cluster_list = setup_cluster_list_with_inx(
-			mysql_conn, job_cond, (void **)&curr_cluster);
-		if(!local_cluster_list)
-			return NULL;
 	}
 
 	if(job_cond

@@ -47,6 +47,7 @@ documents those changes that are of interest to users and admins.
  -- Fixed small bug in src/common/slurmdb_defs.c reported by Bjorn-Helge Mevik
  -- Fixed sacctmgr's ability to query associations against qos again.
  -- Fixed sview show config on non-bluegene systems.
+ -- Fixed bug in selecting jobs based on sacct -N option
 
 * Changes in SLURM 2.2.0.pre12
 ==============================
