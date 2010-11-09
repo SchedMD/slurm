@@ -966,27 +966,20 @@ static char *hostrange_pop(hostrange_t hr)
 		size = strlen(hr->prefix) + hr->width + 16;
 		if (!(host = (char *) malloc(size * sizeof(char))))
 			out_of_memory("hostrange pop");
-		if(dims > 1) {
-			if (hr->width == dims) {
-				int len = 0;
-				int i2=0;
-				int coord[dims];
+		if ((dims > 1) && (hr->width == dims)) {
+			int len = 0;
+			int i2 = 0;
+			int coord[dims];
 
-				hostlist_parse_int_to_array(
-					hr->hi, coord, dims, 0);
+			hostlist_parse_int_to_array(hr->hi, coord, dims, 0);
 
-				len = snprintf(host, size, "%s", hr->prefix);
-				for(i2 = 0; i2<dims; i2++) {
-					if(len <= size)
-						host[len++] =
-							alpha_num[coord[i2]];
-				}
-				hr->hi--;
-				host[len] = '\0';
-			} else {
-				snprintf(host, size, "%s%0*lu", hr->prefix,
-					 hr->width, hr->hi--);
+			len = snprintf(host, size, "%s", hr->prefix);
+			for (i2 = 0; i2 < dims; i2++) {
+				if (len <= size)
+					host[len++] = alpha_num[coord[i2]];
 			}
+			hr->hi--;
+			host[len] = '\0';
 		} else {
 			snprintf(host, size, "%s%0*lu", hr->prefix,
 				 hr->width, hr->hi--);
@@ -1013,27 +1006,20 @@ static char *hostrange_shift(hostrange_t hr)
 		size = strlen(hr->prefix) + hr->width + 16;
 		if (!(host = (char *) malloc(size * sizeof(char))))
 			out_of_memory("hostrange shift");
-		if(dims > 1) {
-			if (hr->width == dims) {
-				int len = 0;
-				int i2=0;
-				int coord[dims];
+		if ((dims > 1) && (hr->width == dims)) {
+			int len = 0;
+			int i2 = 0;
+			int coord[dims];
 
-				hostlist_parse_int_to_array(
-					hr->lo, coord, dims, 0);
+			hostlist_parse_int_to_array(hr->lo, coord, dims, 0);
 
-				len = snprintf(host, size, "%s", hr->prefix);
-				for(i2 = 0; i2<dims; i2++) {
-					if(len <= size)
-						host[len++] =
-							alpha_num[coord[i2]];
-				}
-				hr->lo++;
-				host[len] = '\0';
-			} else {
-				snprintf(host, size, "%s%0*lu", hr->prefix,
-					 hr->width, hr->lo++);
+			len = snprintf(host, size, "%s", hr->prefix);
+			for (i2 = 0; i2 < dims; i2++) {
+				if (len <= size)
+					host[len++] = alpha_num[coord[i2]];
 			}
+			hr->lo++;
+			host[len] = '\0';
 		} else {
 			snprintf(host, size, "%s%0*lu", hr->prefix,
 				 hr->width, hr->lo++);
@@ -1189,23 +1175,16 @@ hostrange_to_string(hostrange_t hr, size_t n, char *buf, char *separator)
 	for (i = hr->lo; i <= hr->hi; i++) {
 		size_t m = (n - len) <= n ? n - len : 0; /* check for < 0 */
 		int ret = 0;
-		if(dims > 1) {
-			if (hr->width == dims) {
-				int i2=0;
-				int coord[dims];
+		if ((dims > 1) && (hr->width == dims)) {
+			int i2 = 0;
+			int coord[dims];
 
-				hostlist_parse_int_to_array(
-					i, coord, dims, 0);
-				ret = snprintf(buf+len, m, "%s", hr->prefix);
-				for(i2 = 0; i2<dims; i2++) {
-					if(len+ret < n)
-						buf[len+ret] =
-							alpha_num[coord[i2]];
-					ret++;
-				}
-			} else {
-				ret = snprintf(buf + len, m, "%s%0*lu",
-					       hr->prefix, hr->width, i);
+			hostlist_parse_int_to_array(i, coord, dims, 0);
+			ret = snprintf(buf + len, m, "%s", hr->prefix);
+			for (i2 = 0; i2 < dims; i2++) {
+				if (len + ret < n)
+					buf[len+ret] = alpha_num[coord[i2]];
+				ret++;
 			}
 		} else {
 			ret = snprintf(buf + len, m, "%s%0*lu",
@@ -1245,55 +1224,42 @@ static size_t hostrange_numstr(hostrange_t hr, size_t n, char *buf)
 	if (hr->singlehost || n == 0)
 		return 0;
 
-	if(dims > 1) {
-		if (hr->width == dims) {
-			int i2=0;
-			int coord[dims];
+	if ((dims > 1) && (hr->width == dims)) {
+		int i2 = 0;
+		int coord[dims];
 
-			hostlist_parse_int_to_array(
-				hr->lo, coord, dims, 0);
+		hostlist_parse_int_to_array(hr->lo, coord, dims, 0);
 
-			for(i2 = 0; i2<dims; i2++) {
-				if(len <= n)
-					buf[len++] = alpha_num[coord[i2]];
-			}
-			buf[len] = '\0';
-		} else {
-			len = snprintf(buf, n, "%0*lu", hr->width, hr->lo);
+		for (i2 = 0; i2 < dims; i2++) {
+			if (len <= n)
+				buf[len++] = alpha_num[coord[i2]];
 		}
+		buf[len] = '\0';
 	} else {
 		len = snprintf(buf, n, "%0*lu", hr->width, hr->lo);
 	}
 
 	if ((len >= 0) && (len < n) && (hr->lo < hr->hi)) {
-		int len2 = 0;
-		if(dims > 1) {
-			if (hr->width == dims) {
-				int i2=0;
-				int coord[dims];
+		if ((dims > 1) && (hr->width == dims)) {
+			int i2 = 0;
+			int coord[dims];
 
-				hostlist_parse_int_to_array(
-					hr->hi, coord, dims, 0);
+			hostlist_parse_int_to_array(hr->hi, coord, dims, 0);
 
-				buf[len++] = '-';
-				for(i2 = 0; i2<dims; i2++) {
-					if(len <= n)
-						buf[len++] =
-							alpha_num[coord[i2]];
-				}
-				buf[len] = '\0';
-			} else {
-				len2 = snprintf(buf+len, n-len, "-%0*lu",
-						hr->width, hr->hi);
+			buf[len++] = '-';
+			for (i2 = 0; i2 < dims; i2++) {
+				if (len <= n)
+					buf[len++] = alpha_num[coord[i2]];
 			}
+			buf[len] = '\0';
 		} else {
-			len2 = snprintf(buf+len, n-len, "-%0*lu",
-					hr->width, hr->hi);
+			int len2 = snprintf(buf + len, n - len, "-%0*lu",
+					    hr->width, hr->hi);
+			if (len2 < 0)
+				len = -1;
+			else
+				len += len2;
 		}
-		if (len2 < 0)
-			len = -1;
-		else
-			len += len2;
 	}
 
 	return len;
@@ -2226,24 +2192,17 @@ _hostrange_string(hostrange_t hr, int depth)
 	int dims = slurmdb_setup_cluster_dims();
 
 	if (!hr->singlehost) {
-		if (dims > 1) {
-			if (hr->width == dims) {
-				int i2=0;
-				int coord[dims];
+		if ((dims > 1) && (hr->width == dims)) {
+			int i2 = 0;
+			int coord[dims];
 
-				hostlist_parse_int_to_array(
-					(hr->lo+depth), coord, dims, 0);
+			hostlist_parse_int_to_array(hr->lo + depth, coord, dims, 0);
 
-				for(i2 = 0; i2<dims; i2++) {
-					if(len <= (MAXHOSTNAMELEN + 15))
-						buf[len++] =
-							alpha_num[coord[i2]];
-				}
-				buf[len] = '\0';
-			} else {
-				snprintf(buf+len, MAXHOSTNAMELEN+15 - len,
-					 "%0*lu", hr->width, hr->lo + depth);
+			for (i2 = 0; i2 < dims; i2++) {
+				if (len <= MAXHOSTNAMELEN + 15)
+					buf[len++] = alpha_num[coord[i2]];
 			}
+			buf[len] = '\0';
 		} else {
 			snprintf(buf+len, MAXHOSTNAMELEN+15 - len, "%0*lu",
 				 hr->width, hr->lo + depth);
@@ -3329,23 +3288,17 @@ char *hostlist_next(hostlist_iterator_t i)
 
 	len = snprintf(buf, MAXHOSTNAMELEN + 15, "%s", i->hr->prefix);
 	if (!i->hr->singlehost) {
-		if (dims > 1) {
-			if (i->hr->width == dims) {
-				int i2=0;
-				int coord[dims];
-				hostlist_parse_int_to_array(
-					(i->hr->lo + i->depth), coord, dims, 0);
-				for(i2 = 0; i2<dims; i2++) {
-					if(len <= (MAXHOSTNAMELEN + 15))
-						buf[len++] =
-							alpha_num[coord[i2]];
-				}
-				buf[len] = '\0';
-			} else {
-				snprintf(buf + len, MAXHOSTNAMELEN + 15 - len,
-					 "%0*lu",
-					 i->hr->width, i->hr->lo + i->depth);
+		if ((dims > 1) && (i->hr->width == dims)) {
+			int i2 = 0;
+			int coord[dims];
+
+			hostlist_parse_int_to_array(i->hr->lo + i->depth,
+						    coord, dims, 0);
+			for (i2 = 0; i2 < dims; i2++) {
+				if (len <= MAXHOSTNAMELEN + 15)
+					buf[len++] = alpha_num[coord[i2]];
 			}
+			buf[len] = '\0';
 		} else {
 			snprintf(buf + len, MAXHOSTNAMELEN + 15 - len, "%0*lu",
 				 i->hr->width, i->hr->lo + i->depth);
