@@ -305,6 +305,7 @@ slurm_ctl_conf_t
 	vsize_factor
 
 slurm_step_ctx_params_t
+	features
 	gres
 	max_nodes
 
