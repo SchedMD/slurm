@@ -7,7 +7,7 @@
 <h2>Presentations</h2>
 <ul>
 
-<!-- Use LLNL-PRES-453831 -->
+<!-- Use LLNL-PRES-461787 -->
 <li><a href="slurm_sc10_bof.pdf">SLURM Version 2.2: Features and Release Plans</a>,
 Morris Jette, Danny Auble and Donald Lipari, Lawrence Livermore National Laboratory
 (Supercomputing 2010, November 2010)</li>
@@ -40,7 +40,7 @@ Carles Fenoy and Alejandro Lucero, Barcelona Supercomputing Center
 Neil Stringfellow and Gerrit Renker, Swiss National Supercomputer Centre
 (SLURM User Group Meeting, October 2010)</li>
 
-<!-- Use LLNL-PRES-459615 -->
+<!-- Use LLNL-PRES-461831 -->
 <li><a href="slurm_ug_2010/05-yg-bull.pdf">Real Scale Experimentations of SLURM Resource
 and Job Management System</a>,
 Yiannis Georgiou, Bull Information Systems
@@ -125,6 +125,6 @@ RCE 10: SLURM (podcast)</a>:
 Brock Palen and Jeff Squyres speak with Morris Jette and
 Danny Auble of LLNL about SLURM.</p>
 
-<p style="text-align:center;">Last modified 8 November 2010</p>
+<p style="text-align:center;">Last modified 9 November 2010</p>
 
 <!--#include virtual="footer.txt"-->
