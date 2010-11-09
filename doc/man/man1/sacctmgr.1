@@ -239,7 +239,7 @@ To clear a previously set value use the modify command with a new value of \-1.
 .TP
 \fIGrpCPUMins\fP=<max cpu minutes>
 Maximum number of CPU minutes running jobs are able to be allocated in
-aggregate for this association and all association which are children
+aggregate for this association and all associations which are children
 of this association.
 To clear a previously set value use the modify command with a new
 value of \-1.
@@ -258,7 +258,7 @@ they are able to run inside the limit.
 .TP
 \fIGrpCPUs\fP=<max cpus>
 Maximum number of CPUs running jobs are able to be allocated in aggregate for
-this association and all association which are children of this association.
+this association and all associations which are children of this association.
 To clear a previously set value use the modify command with a new
 value of \-1.
 .P
@@ -268,26 +268,26 @@ Resource plugin.
 .TP
 \fIGrpJobs\fP=<max jobs>
 Maximum number of running jobs in aggregate for
-this association and all association which are children of this association.
+this association and all associations which are children of this association.
 To clear a previously set value use the modify command with a new value of \-1.
 
 .TP
 \fIGrpNodes\fP=<max nodes>
 Maximum number of nodes running jobs are able to be allocated in aggregate for
-this association and all association which are children of this association.
+this association and all associations which are children of this association.
 To clear a previously set value use the modify command with a new value of \-1.
 
 .TP
 \fIGrpSubmitJobs\fP=<max jobs>
 Maximum number of jobs which can be in a pending or running state at any time
-in aggregate for this association and all association which are children of
+in aggregate for this association and all associations which are children of
 this association.
 To clear a previously set value use the modify command with a new value of \-1.
 
 .TP
 \fIGrpWall\fP=<max wall>
 Maximum wall clock time running jobs are able to be allocated in aggregate for
-this association and all association which are children of this association.
+this association and all associations which are children of this association.
 To clear a previously set value use the modify command with a new value of \-1.
 .P
 NOTE: This limit is not enforced if set on the root association of a
@@ -373,7 +373,7 @@ Valid <operator> values include:
 Set \fIQosLevel\fP to the specified value.
 .TP
 \fB+=\fR
-Add the specified <qos> value to the current \fIQosLevel\fP .
+Add the specified <qos> value to the current \fIQosLevel\fP.
 .TP
 \fB\-=\fR
 Remove the specified <qos> value from the current \fIQosLevel\fP.
@@ -534,34 +534,34 @@ Number used in conjunction with other accounts to determine job priority.
 .TP
 \fIGrpCPUMins\fP
 Maximum number of CPU minutes running jobs are able to be allocated in
-aggregate for this association and all association which are children
+aggregate for this association and all associations which are children
 of this association.
 
 .TP
 \fIGrpCPUs\fP
 Maximum number of CPUs running jobs are able to be allocated in aggregate for
-this association and all association which are children of this association.
+this association and all associations which are children of this association.
 
 .TP
 \fIGrpJobs\fP
 Maximum number of running jobs in aggregate for
-this association and all association which are children of this association.
+this association and all associations which are children of this association.
 
 .TP
 \fIGrpNodes\fP
 Maximum number of nodes running jobs are able to be allocated in aggregate for
-this association and all association which are children of this association.
+this association and all associations which are children of this association.
 
 .TP
 \fIGrpSubmitJobs\fP
 Maximum number of jobs which can be in a pending or running state at any time
-in aggregate for this association and all association which are children of
+in aggregate for this association and all associations which are children of
 this association.
 
 .TP
 \fIGrpWall\fP
 Maximum wall clock time running jobs are able to be allocated in aggregate for
-this association and all association which are children of this association.
+this association and all associations which are children of this association.
 
 .TP
 \fIID\fP
@@ -569,8 +569,8 @@ The id of the association.
 
 .TP
 \fILFT\fP
-Associations are kept in a hierarchy this is the left most
-spot in the hierarchy.  When used with the RGT variable all
+Associations are kept in a hierarchy: this is the left most
+spot in the hierarchy.  When used with the RGT variable, all
 associations with a LFT inside this LFT and before the RGT are
 children of this association.
 
@@ -620,8 +620,8 @@ The numeric values of valid QOS\' for this association.
 
 .TP
 \fIRGT\fP
-Associations are kept in a hierarchy this is the right most
-spot in the hierarchy.  When used with the LFT variable all
+Associations are kept in a hierarchy: this is the right most
+spot in the hierarchy.  When used with the LFT variable, all
 associations with a LFT inside this RGT and after the LFT are
 children of this association.
 
@@ -1261,7 +1261,7 @@ cluster.  Comments can be put into the file with the # character.
 Each line of information must begin with one of the four titles; \fBCluster, Parent, Account or
 User\fP. Following the title is a space, dash, space, entity value,
 then specifications. Specifications are colon separated.  If any
-variable such as Organization has a space in it surround the name with
+variable such as Organization has a space in it, surround the name with
 single or double quotes.
 
 To create a file of associations one can run
@@ -1298,35 +1298,35 @@ associations on this cluster.  These options are as follows...
 .TP
 \fIGrpCPUMins=\fP
 Maximum number of CPU hours running jobs are able to
-be allocated in aggregate for this association and all association
+be allocated in aggregate for this association and all associations
 which are children of this association. (NOTE: This limit is not
 currently enforced in SLURM. You can still set this, but have to wait
 for future versions of SLURM before it is enforced.)
 .TP
 \fIGrpCPUs=\fP
 Maximum number of CPUs running jobs are able to be
-allocated in aggregate for this association and all association which
+allocated in aggregate for this association and all associations which
 are children of this association. (NOTE: This limit is not currently
 enforced in SLURM. You can still set this, but have to wait for future
 versions of SLURM before it is enforced.)
 .TP
 \fIGrpJobs=\fP
 Maximum number of running jobs in aggregate for this
-association and all association which are children of this association.
+association and all associations which are children of this association.
 .TP
 \fIGrpNodes=\fP
 Maximum number of nodes running jobs are able to be
-allocated in aggregate for this association and all association which
+allocated in aggregate for this association and all associations which
 are children of this association.
 .TP
 \fIGrpSubmitJobs=\fP
 Maximum number of jobs which can be in a pending or
 running state at any time in aggregate for this association and all
-association which are children of this association.
+associations which are children of this association.
 .TP
 \fIGrpWall=\fP
 Maximum wall clock time running jobs are able to be
-allocated in aggregate for this association and all association which
+allocated in aggregate for this association and all associations which
 are children of this association.
 .TP
 \fIFairShare=\fP
@@ -1372,35 +1372,35 @@ A brief description of the account.
 .TP
 \fIGrpCPUMins=\fP
 Maximum number of CPU hours running jobs are able to
-be allocated in aggregate for this association and all association
+be allocated in aggregate for this association and all associations
 which are children of this association. (NOTE: This limit is not
 currently enforced in SLURM. You can still set this, but have to wait
 for future versions of SLURM before it is enforced.)
 .TP
 \fIGrpCPUs=\fP
 Maximum number of CPUs running jobs are able to be
-allocated in aggregate for this association and all association which
+allocated in aggregate for this association and all associations which
 are children of this association. (NOTE: This limit is not currently
 enforced in SLURM. You can still set this, but have to wait for future
 versions of SLURM before it is enforced.)
 .TP
 \fIGrpJobs=\fP
 Maximum number of running jobs in aggregate for this
-association and all association which are children of this association.
+association and all associations which are children of this association.
 .TP
 \fIGrpNodes=\fP
 Maximum number of nodes running jobs are able to be
-allocated in aggregate for this association and all association which
+allocated in aggregate for this association and all associations which
 are children of this association.
 .TP
 \fIGrpSubmitJobs=\fP
 Maximum number of jobs which can be in a pending or
 running state at any time in aggregate for this association and all
-association which are children of this association.
+associations which are children of this association.
 .TP
 \fIGrpWall=\fP
 Maximum wall clock time running jobs are able to be
-allocated in aggregate for this association and all association which
+allocated in aggregate for this association and all associations which
 are children of this association.
 .TP
 \fIFairShare=\fP
