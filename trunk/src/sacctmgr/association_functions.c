@@ -423,7 +423,7 @@ extern int sacctmgr_set_association_rec(slurmdb_association_rec_t *assoc,
 
 		if(assoc->def_qos_id == NO_VAL) {
 			fprintf(stderr,
-				"You gave a bad qos '%s'.  "
+				"You gave a bad default qos '%s'.  "
 				"Use 'list qos' to get "
 				"complete list.\n",
 				value);
