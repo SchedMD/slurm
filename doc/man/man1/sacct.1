@@ -79,13 +79,10 @@ argument.
 Displays a brief listing, which includes the following data:
 .RS
 .TP "3"
-\(bu
 \f3jobid\fP
 .TP "3"
-\(bu
 \f3status\fP
 .TP "3"
-\(bu
 \f3exitcode\fP
 .RE
 .IP
@@ -160,9 +157,13 @@ Select jobs eligible before time.  If states are given with the \-s
 option return jobs in this state before this period.
 
 Valid time formats are...
+.sp
 HH:MM[:SS] [AM|PM]
+.br
 MMDD[YY] or MM/DD[/YY] or MM.DD[.YY]
+.br
 MM/DD[/YY]\-HH:MM[:SS]
+.br
 YYYY\-MM\-DD[THH:MM[:SS]]
 .IP
 
@@ -257,7 +258,7 @@ available fields).
 NOTE: When using the format option for listing various fields you can put a
 %NUMBER afterwards to specify how many characters should be printed.
 
-i.e. format=name%30 will print 30 characters of field name right
+e.g. format=name%30 will print 30 characters of field name right
 justified.  A \-30 will print 30 characters left justified.
 .IP
 
@@ -352,9 +353,13 @@ current day.  If states are given with the \-s option then return jobs
 in this state at this time, 'now' is also used as the default time.
 
 Valid time formats are...
+.sp
 HH:MM[:SS] [AM|PM]
+.br
 MMDD[YY] or MM/DD[/YY] or MM.DD[.YY]
+.br
 MM/DD[/YY]\-HH:MM[:SS]
+.br
 YYYY\-MM\-DD[THH:MM[:SS]]
 
 .TP
