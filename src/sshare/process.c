@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  process.c -  process the return from get_share_info.
  *****************************************************************************
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -72,10 +72,12 @@ extern int process(shares_response_msg_t *resp)
 		PRINT_USER,
 	};
 
-	if(!resp)
+	if (!resp)
 		return SLURM_ERROR;
 
 	format_list = list_create(slurm_destroy_char);
+	if (!format_list)
+		fatal("list_create: malloc failure");
 	if (long_flag) {
 		slurm_addto_char_list(format_list,
 				      "A,User,RawShares,NormShares,"
@@ -88,57 +90,60 @@ extern int process(shares_response_msg_t *resp)
 	}
 
 	print_fields_list = list_create(destroy_print_field);
-
+	if (!print_fields_list)
+		fatal("list_create: malloc failure");
 	itr = list_iterator_create(format_list);
-	while((object = list_next(itr))) {
+	if (!itr)
+		fatal("list_iterator_create: malloc failure");
+	while ((object = list_next(itr))) {
 		char *tmp_char = NULL;
 		field = xmalloc(sizeof(print_field_t));
-		if(!strncasecmp("Account", object, 1)) {
+		if (!strncasecmp("Account", object, 1)) {
 			field->type = PRINT_ACCOUNT;
 			field->name = xstrdup("Account");
 			field->len = -20;
 			field->print_routine = print_fields_str;
-		} else if(!strncasecmp("Cluster", object, 1)) {
+		} else if (!strncasecmp("Cluster", object, 1)) {
 			field->type = PRINT_CLUSTER;
 			field->name = xstrdup("Cluster");
 			field->len = 10;
 			field->print_routine = print_fields_str;
-		} else if(!strncasecmp("EffUsage", object, 1)) {
+		} else if (!strncasecmp("EffUsage", object, 1)) {
 			field->type = PRINT_EUSED;
 			field->name = xstrdup("Effectv Usage");
 			field->len = 13;
 			field->print_routine = print_fields_double;
-		} else if(!strncasecmp("FSFctr", object, 1)) {
+		} else if (!strncasecmp("FSFctr", object, 1)) {
 			field->type = PRINT_FSFACTOR;
 			field->name = xstrdup("FS Usage");
 			field->len = 10;
 			field->print_routine = print_fields_double;
-		} else if(!strncasecmp("ID", object, 1)) {
+		} else if (!strncasecmp("ID", object, 1)) {
 			field->type = PRINT_ID;
 			field->name = xstrdup("ID");
 			field->len = 6;
 			field->print_routine = print_fields_uint;
-		} else if(!strncasecmp("NormShares", object, 5)) {
+		} else if (!strncasecmp("NormShares", object, 5)) {
 			field->type = PRINT_NORMS;
 			field->name = xstrdup("Norm Shares");
 			field->len = 11;
 			field->print_routine = print_fields_double;
-		} else if(!strncasecmp("NormUsage", object, 5)) {
+		} else if (!strncasecmp("NormUsage", object, 5)) {
 			field->type = PRINT_NORMU;
 			field->name = xstrdup("Norm Usage");
 			field->len = 11;
 			field->print_routine = print_fields_double;
-		} else if(!strncasecmp("RawShares", object, 4)) {
+		} else if (!strncasecmp("RawShares", object, 4)) {
 			field->type = PRINT_RAWS;
 			field->name = xstrdup("Raw Shares");
 			field->len = 10;
 			field->print_routine = print_fields_uint32;
-		} else if(!strncasecmp("RawUsage", object, 4)) {
+		} else if (!strncasecmp("RawUsage", object, 4)) {
 			field->type = PRINT_RAWU;
 			field->name = xstrdup("Raw Usage");
 			field->len = 11;
 			field->print_routine = print_fields_uint64;
-		} else if(!strncasecmp("User", object, 1)) {
+		} else if (!strncasecmp("User", object, 1)) {
 			field->type = PRINT_USER;
 			field->name = xstrdup("User");
 			field->len = 10;
@@ -152,7 +157,7 @@ extern int process(shares_response_msg_t *resp)
 		}
 		if ((tmp_char = strstr(object, "\%"))) {
 			int newlen = atoi(tmp_char+1);
-			if(newlen)
+			if (newlen)
 				field->len = newlen;
 		}
 		list_append(print_fields_list, field);
@@ -166,6 +171,8 @@ extern int process(shares_response_msg_t *resp)
 	}
 
 	itr2 = list_iterator_create(print_fields_list);
+	if (!itr2)
+		fatal("list_iterator_create: malloc failure");
 	print_fields_header(print_fields_list);
 
 	field_count = list_count(print_fields_list);
@@ -174,7 +181,11 @@ extern int process(shares_response_msg_t *resp)
 		return SLURM_SUCCESS;
 
 	tree_list = list_create(slurmdb_destroy_print_tree);
+	if (!tree_list)
+		fatal("list_create: malloc failure");
 	itr = list_iterator_create(resp->assoc_shares_list);
+	if (!itr)
+		fatal("list_iterator_create: malloc failure");
 	while ((share = list_next(itr))) {
 		int curr_inx = 1;
 		char *tmp_char = NULL;
@@ -183,10 +194,10 @@ extern int process(shares_response_msg_t *resp)
 		while ((field = list_next(itr2))) {
 			switch(field->type) {
 			case PRINT_ACCOUNT:
-				if(share->user)
+				if (share->user) {
 					local_acct = xstrdup_printf(
 						"|%s", share->name);
-				else
+				} else
 					local_acct = xstrdup(share->name);
 
 				print_acct = slurmdb_tree_name_get(
@@ -245,7 +256,7 @@ extern int process(shares_response_msg_t *resp)
 						     (curr_inx == field_count));
 				break;
 			case PRINT_USER:
-				if(share->user)
+				if (share->user)
 					tmp_char = share->name;
 				field->print_routine(field,
 						     tmp_char,
@@ -263,7 +274,7 @@ extern int process(shares_response_msg_t *resp)
 		printf("\n");
 	}
 
-	if(tree_list)
+	if (tree_list)
 		list_destroy(tree_list);
 
 	list_iterator_destroy(itr2);
