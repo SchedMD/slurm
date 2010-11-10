@@ -1912,3 +1912,19 @@ proc get_node_cnt { } {
 
 	return $node_cnt
 }
+
+################################################################
+#
+# Proc: print_success
+#
+# Purpose:  Print success with test ID
+#
+# Input: test_id   -- The SLURM regression test ID.
+#
+################################################################
+
+proc print_success { test_id } {
+
+	send_user "\n"
+	send_user "SUCCESS: test$test_id\n"
+}
