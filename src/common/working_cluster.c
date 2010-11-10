@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  workingcluster.c - definitions dealing with the working cluster
+ *  working_cluster.c - definitions dealing with the working cluster
  ******************************************************************************
  *  Copyright (C) 2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -36,12 +36,15 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include <string.h>
+
+#include "src/common/slurm_strcasestr.h"
 #include "src/common/slurmdb_defs.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-#include "src/common/slurm_strcasestr.h"
 
-/* This functions technically should go in the slurmdb_defs.c, but
+/*
+ * This functions technically should go in the slurmdb_defs.c, but
  * because some systems don't deal well with strong_alias and
  * functions defined extern in other headers i.e. slurm.h has the
  * hostlist functions in it, and they are also strong aliased in
@@ -51,19 +54,19 @@
  * doesn't need to include the slurm.h in the header.
  */
 
-extern uint16_t slurmdb_setup_cluster_dims()
+extern uint16_t slurmdb_setup_cluster_dims(void)
 {
 	return working_cluster_rec ?
 		working_cluster_rec->dimensions : SYSTEM_DIMENSIONS;
 }
 
-extern uint32_t slurmdb_setup_cluster_flags()
+extern uint32_t slurmdb_setup_cluster_flags(void)
 {
 	static uint32_t cluster_flags = NO_VAL;
 
-	if(working_cluster_rec)
+	if (working_cluster_rec)
 		return working_cluster_rec->flags;
-	else if(cluster_flags != NO_VAL)
+	else if (cluster_flags != NO_VAL)
 		return cluster_flags;
 
 	cluster_flags = 0;
@@ -100,38 +103,54 @@ extern uint32_t slurmdb_setup_cluster_flags()
 	return cluster_flags;
 }
 
+static uint32_t _str_2_cluster_flags(char *flags_in)
+{
+	if (slurm_strcasestr(flags_in, "AIX"))
+		return CLUSTER_FLAG_AIX;
+
+	if (slurm_strcasestr(flags_in, "BGL"))
+		return CLUSTER_FLAG_BGL;
+
+	if (slurm_strcasestr(flags_in, "BGP"))
+		return CLUSTER_FLAG_BGP;
+
+	if (slurm_strcasestr(flags_in, "BGQ"))
+		return CLUSTER_FLAG_BGQ;
+
+	if (slurm_strcasestr(flags_in, "Bluegene"))
+		return CLUSTER_FLAG_BG;
+
+	if (slurm_strcasestr(flags_in, "CrayXT"))
+		return CLUSTER_FLAG_CRAYXT;
+
+	if (slurm_strcasestr(flags_in, "FrontEnd"))
+		return CLUSTER_FLAG_FE;
+
+	if (slurm_strcasestr(flags_in, "MultipleSlurmd"))
+		return CLUSTER_FLAG_MULTSD;
+
+	if (slurm_strcasestr(flags_in, "SunConstellation"))
+		return CLUSTER_FLAG_SC;
+
+	if (slurm_strcasestr(flags_in, "XCPU"))
+		return CLUSTER_FLAG_XCPU;
+
+	return (uint32_t) 0;
+}
+
+
 extern uint32_t slurmdb_str_2_cluster_flags(char *flags_in)
 {
 	uint32_t cluster_flags = 0;
-	if (slurm_strcasestr(flags_in, "bluegene"))
-		cluster_flags |= CLUSTER_FLAG_BG;
+	char *token, *my_flags, *last = NULL;
 
-	if (slurm_strcasestr(flags_in, "bgl"))
-		cluster_flags |= CLUSTER_FLAG_BGL;
-
-	if (slurm_strcasestr(flags_in, "bgp"))
-		cluster_flags |= CLUSTER_FLAG_BGP;
-
-	if (slurm_strcasestr(flags_in, "bgq"))
-		cluster_flags |= CLUSTER_FLAG_BGQ;
-
-	if (slurm_strcasestr(flags_in, "SunConstellation"))
-		cluster_flags |= CLUSTER_FLAG_SC;
-
-	if (slurm_strcasestr(flags_in, "xcpu"))
-		cluster_flags |= CLUSTER_FLAG_XCPU;
-
-	if (slurm_strcasestr(flags_in, "aix"))
-		cluster_flags |= CLUSTER_FLAG_AIX;
-
-	if (slurm_strcasestr(flags_in, "MultipleSlurmd"))
-		cluster_flags |= CLUSTER_FLAG_MULTSD;
-
-	if (slurm_strcasestr(flags_in, "CrayXT"))
-		cluster_flags |= CLUSTER_FLAG_CRAYXT;
-
-	if (slurm_strcasestr(flags_in, "FrontEnd"))
-		cluster_flags |= CLUSTER_FLAG_FE;
+	my_flags = xstrdup(flags_in);
+	token = strtok_r(my_flags, ",", &last);
+	while (token) {
+		cluster_flags |= _str_2_cluster_flags(token);
+		token = strtok_r(NULL, ",", &last);
+	}
+	xfree(my_flags);
 
 	return cluster_flags;
 }
@@ -141,63 +160,67 @@ extern char *slurmdb_cluster_flags_2_str(uint32_t flags_in)
 {
 	char *cluster_flags = NULL;
 
-	if (flags_in & CLUSTER_FLAG_BG)
+	if (flags_in & CLUSTER_FLAG_AIX) {
+		if (cluster_flags)
+			xstrcat(cluster_flags, ",");
+		xstrcat(cluster_flags, "AIX");
+	}
+
+	if (flags_in & CLUSTER_FLAG_BG) {
+		if (cluster_flags)
+			xstrcat(cluster_flags, ",");
 		xstrcat(cluster_flags, "Bluegene");
+	}
 
 	if (flags_in & CLUSTER_FLAG_BGL) {
-		if(cluster_flags)
+		if (cluster_flags)
 			xstrcat(cluster_flags, ",");
 		xstrcat(cluster_flags, "BGL");
 	}
+
 	if (flags_in & CLUSTER_FLAG_BGP) {
-		if(cluster_flags)
+		if (cluster_flags)
 			xstrcat(cluster_flags, ",");
 		xstrcat(cluster_flags, "BGP");
 	}
 
 	if (flags_in & CLUSTER_FLAG_BGQ) {
-		if(cluster_flags)
+		if (cluster_flags)
 			xstrcat(cluster_flags, ",");
 		xstrcat(cluster_flags, "BGQ");
 	}
 
-	if (flags_in & CLUSTER_FLAG_SC) {
-		if(cluster_flags)
-			xstrcat(cluster_flags, ",");
-		xstrcat(cluster_flags, "SunConstellation");
-	}
-
-	if (flags_in & CLUSTER_FLAG_XCPU) {
-		if(cluster_flags)
-			xstrcat(cluster_flags, ",");
-		xstrcat(cluster_flags, "XCPU");
-	}
-
-	if (flags_in & CLUSTER_FLAG_AIX) {
-		if(cluster_flags)
-			xstrcat(cluster_flags, ",");
-		xstrcat(cluster_flags, "AIX");
-	}
-
-	if (flags_in & CLUSTER_FLAG_MULTSD) {
-		if(cluster_flags)
-			xstrcat(cluster_flags, ",");
-		xstrcat(cluster_flags, "MultipleSlurmd");
-	}
-
 	if (flags_in & CLUSTER_FLAG_CRAYXT) {
-		if(cluster_flags)
+		if (cluster_flags)
 			xstrcat(cluster_flags, ",");
 		xstrcat(cluster_flags, "CrayXT");
 	}
 
 	if (flags_in & CLUSTER_FLAG_FE) {
-		if(cluster_flags)
+		if (cluster_flags)
 			xstrcat(cluster_flags, ",");
 		xstrcat(cluster_flags, "FrontEnd");
 	}
 
-	if(!cluster_flags)
+	if (flags_in & CLUSTER_FLAG_MULTSD) {
+		if (cluster_flags)
+			xstrcat(cluster_flags, ",");
+		xstrcat(cluster_flags, "MultipleSlurmd");
+	}
+
+	if (flags_in & CLUSTER_FLAG_SC) {
+		if (cluster_flags)
+			xstrcat(cluster_flags, ",");
+		xstrcat(cluster_flags, "SunConstellation");
+	}
+
+	if (flags_in & CLUSTER_FLAG_XCPU) {
+		if (cluster_flags)
+			xstrcat(cluster_flags, ",");
+		xstrcat(cluster_flags, "XCPU");
+	}
+
+	if (!cluster_flags)
 		cluster_flags = xstrdup("None");
 
 	return cluster_flags;
