@@ -49,6 +49,7 @@
 
 #include <stdio.h>
 #include <slurm/slurm_errno.h>
+#include <math.h>
 
 #include "src/common/slurm_priority.h"
 
@@ -137,7 +138,21 @@ extern void priority_p_set_assoc_usage(slurmdb_association_rec_t *assoc)
 extern double priority_p_calc_fs_factor(long double usage_efctv,
 					long double shares_norm)
 {
-	return 0.0;
+	/* This calculation is needed for sshare when ran from a
+	   non-multifactor machine to a multifactor machine.  It
+	   doesn't do anything on regular systems, it should always
+	   return 0 since shares_norm will always be NO_VAL.
+	*/
+	double priority_fs;
+
+	xassert(usage_efctv != (long double)NO_VAL);
+
+	if ((shares_norm <= 0.0) || (shares_norm == (long double)NO_VAL))
+		priority_fs = 0.0;
+	else
+		priority_fs = pow(2.0, -(usage_efctv / shares_norm));
+
+	return priority_fs;
 }
 
 extern List priority_p_get_priority_factors_list(

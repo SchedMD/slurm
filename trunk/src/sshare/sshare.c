@@ -88,18 +88,6 @@ main (int argc, char *argv[])
 		{NULL,       0, 0, 0}
 	};
 
-	/* Check to see if we are running a supported accounting plugin */
-	temp = slurm_get_priority_type();
-	if(strcasecmp(temp, "priority/multifactor")) {
-		fprintf (stderr, "You are not running a supported "
-			 "priority plugin\n(%s).\n"
-			 "Only 'priority/multifactor' is supported.\n",
-			temp);
-		xfree(temp);
-		exit(1);
-	}
-	xfree(temp);
-
 	exit_code         = 0;
 	long_flag	  = 0;
 	quiet_flag        = 0;
