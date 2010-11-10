@@ -134,6 +134,12 @@ extern void priority_p_set_assoc_usage(slurmdb_association_rec_t *assoc)
 	return;
 }
 
+extern double priority_p_calc_fs_factor(long double usage_efctv,
+					long double shares_norm)
+{
+	return 0.0;
+}
+
 extern List priority_p_get_priority_factors_list(
 	priority_factors_request_msg_t *req_msg)
 {

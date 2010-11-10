@@ -491,6 +491,7 @@ static int _as_mysql_acct_check_tables(MYSQL *db_conn)
 		{ "id", "int not null auto_increment" },
 		{ "name", "tinytext not null" },
 		{ "description", "text" },
+		{ "flags", "int unsigned default 0" },
 		{ "max_jobs_per_user", "int default NULL" },
 		{ "max_submit_jobs_per_user", "int default NULL" },
 		{ "max_cpus_per_job", "int default NULL" },
@@ -509,6 +510,7 @@ static int _as_mysql_acct_check_tables(MYSQL *db_conn)
 		{ "preempt_mode", "int default 0" },
 		{ "priority", "int default 0" },
 		{ "usage_factor", "double default 1.0 not null" },
+		{ "usage_thres", "double default NULL" },
 		{ NULL, NULL}
 	};
 

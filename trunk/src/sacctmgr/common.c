@@ -453,10 +453,16 @@ static print_field_t *_get_print_field(char *object)
 		field->name = xstrdup("Time");
 		field->len = 19;
 		field->print_routine = print_fields_date;
-	} else if (!strncasecmp("UsageFactor", object, MAX(command_len, 3))) {
+	} else if (!strncasecmp("UsageFactor", object, MAX(command_len, 6))) {
 		field->type = PRINT_UF;
 		field->name = xstrdup("UsageFactor");
 		field->len = 11;
+		field->print_routine = print_fields_double;
+	} else if (!strncasecmp("UsageThreshold",
+				object, MAX(command_len, 6))) {
+		field->type = PRINT_UT;
+		field->name = xstrdup("UsageThres");
+		field->len = 10;
 		field->print_routine = print_fields_double;
 	} else if (!strncasecmp("User", object, MAX(command_len, 1))) {
 		field->type = PRINT_USER;

@@ -553,10 +553,12 @@ static int _post_qos_list(List qos_list)
 	g_qos_max_priority = 0;
 
 	while((qos = list_next(itr))) {
-		if(!qos->usage)
+		if (qos->flags & QOS_FLAG_NOTSET)
+			qos->flags = 0;
+
+		if (!qos->usage)
 			qos->usage = create_assoc_mgr_qos_usage();
-		/* get the highest qos value to create bitmaps
-		   from */
+		/* get the highest qos value to create bitmaps from */
 		if(qos->id > g_qos_count)
 			g_qos_count = qos->id;
 
@@ -2795,6 +2797,17 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update)
 				break;
 			}
 
+			if(!(object->flags & QOS_FLAG_NOTSET)) {
+				if (object->flags & QOS_FLAG_ADD) {
+					rec->flags |= object->flags;
+					rec->flags &= (~QOS_FLAG_ADD);
+				} else if (object->flags & QOS_FLAG_REMOVE) {
+					rec->flags &= ~object->flags;
+					rec->flags &= (~QOS_FLAG_REMOVE);
+				} else
+					rec->flags = object->flags;
+			}
+
 			if(object->grp_cpu_mins != (uint64_t)NO_VAL)
 				rec->grp_cpu_mins = object->grp_cpu_mins;
 			if(object->grp_cpu_run_mins != (uint64_t)NO_VAL)
@@ -2864,6 +2877,9 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update)
 			if(object->usage_factor != (double)NO_VAL)
 				rec->usage_factor =
 					object->usage_factor;
+
+			if(object->usage_thres != (double)NO_VAL)
+				rec->usage_thres = object->usage_thres;
 
 			if (update_jobs && update_qos_notify) {
 				/* since there are some deadlock

@@ -881,6 +881,31 @@ records from the SLURM database.
 .SH "SPECIFICATIONS FOR QOS"
 
 .TP
+\fIFlags\fP
+Used by the slurmctld to override or enforce certain characteristics.
+.br
+Valid options are
+.RS
+.TP
+\fIEnforceUsageThreshold\fP
+If set, and the QOS also has a UsageThreshold,
+any jobs submitted with this QOS that fall below the UsageThreshold
+will be held until their Fairshare Usage goes above the Threshold.
+.TP
+\fIPartitionMaxNodes\fP
+If set jobs using this QOS will be able to
+override the requested partition's MaxNodes limit.
+.TP
+\fIPartitionMinNodes\fP
+If set jobs using this QOS will be able to
+override the requested partition's MinNodes limit.
+.TP
+\fIPartitionTimeLimit\fP
+If set jobs using this QOS will be able to
+override the requested partition's TimeLimit.
+.RE
+
+.TP
 \fIGrpCPUMins\fP
 Maximum number of CPU minutes running jobs are able to be allocated in
 aggregate for this QOS.
@@ -960,6 +985,14 @@ What priority will be added to a job\'s priority when using this QOS.
 .TP
 \fIUsageFactor\fP
 Usage factor when running with this QOS
+
+.TP
+\fIUsageThreshold\fP
+A float representing the lowest fairshare of an association allowable
+to run a job.  If an association falls below this threshold and has
+pending jobs or submits new jobs those jobs will be held until the
+usage goes back above the threshold.  Use \fIsshare\fP to see current
+shares on the system.
 
 .TP
 \fIWithDeleted\fP

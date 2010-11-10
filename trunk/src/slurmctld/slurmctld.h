@@ -173,7 +173,7 @@ extern char *slurmctld_cluster_name;	/* name of cluster */
 extern void *acct_db_conn;
 extern int   accounting_enforce;
 extern int   association_based_accounting;
-extern int   cluster_cpus;
+extern uint32_t   cluster_cpus;
 extern int   with_slurmdbd;
 
 /*****************************************************************************\

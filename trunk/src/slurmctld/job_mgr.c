@@ -69,6 +69,7 @@
 #include "src/common/parse_time.h"
 #include "src/common/slurm_accounting_storage.h"
 #include "src/common/slurm_jobcomp.h"
+#include "src/common/slurm_priority.h"
 #include "src/common/slurm_protocol_pack.h"
 #include "src/common/switch.h"
 #include "src/common/xassert.h"
@@ -2370,6 +2371,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 	if ((error_code == ESLURM_NODES_BUSY) ||
 	    (error_code == ESLURM_JOB_HELD) ||
 	    (error_code == ESLURM_NODE_NOT_AVAIL) ||
+	    (error_code == ESLURM_QOS_THRES) ||
 	    (error_code == ESLURM_ACCOUNTING_POLICY) ||
 	    (error_code == ESLURM_RESERVATION_NOT_USABLE) ||
 	    (error_code == ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE)) {
@@ -3371,14 +3373,16 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	 * otherwise leave job queued and provide warning code */
 	detail_ptr = job_ptr->details;
 	fail_reason= WAIT_NO_REASON;
-	if (job_desc->min_nodes > part_ptr->max_nodes) {
+	if ((job_desc->min_nodes > part_ptr->max_nodes) &&
+	    (qos_ptr && !(qos_ptr->flags & QOS_FLAG_PART_MAX_NODE))) {
 		info("Job %u requested too many nodes (%u) of "
 		     "partition %s(MaxNodes %u)",
 		     job_ptr->job_id, job_desc->min_nodes,
 		     part_ptr->name, part_ptr->max_nodes);
 		fail_reason = WAIT_PART_NODE_LIMIT;
 	} else if ((job_desc->max_nodes != 0) &&    /* no max_nodes for job */
-		   (job_desc->max_nodes < part_ptr->min_nodes)) {
+		   ((job_desc->max_nodes < part_ptr->min_nodes) &&
+		    (qos_ptr && !(qos_ptr->flags & QOS_FLAG_PART_MIN_NODE)))) {
 		info("Job %u requested too few nodes (%u) of "
 		     "partition %s(MinNodes %u)",
 		     job_ptr->job_id, job_desc->max_nodes,
@@ -3393,12 +3397,33 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		     job_ptr->job_id, part_ptr->name);
 		fail_reason = WAIT_PART_INACTIVE;
 	} else if ((job_ptr->time_limit != NO_VAL) &&
-		   (job_ptr->time_limit > part_ptr->max_time)) {
+		   ((job_ptr->time_limit > part_ptr->max_time) &&
+		    (qos_ptr &&
+		     !(qos_ptr->flags & QOS_FLAG_PART_TIME_LIMIT)))) {
 		info("Job %u exceeds partition time limit", job_ptr->job_id);
 		fail_reason = WAIT_PART_TIME_LIMIT;
+	} else if (qos_ptr && assoc_ptr &&
+		   (qos_ptr->flags & QOS_FLAG_ENFORCE_USAGE_THRES) &&
+		   (qos_ptr->usage_thres != (double)NO_VAL)) {
+		if (job_ptr->priority_fs == 0) {
+			if (assoc_ptr->usage->usage_efctv
+			    == (long double)NO_VAL)
+				priority_g_set_assoc_usage(assoc_ptr);
+			job_ptr->priority_fs = priority_g_calc_fs_factor(
+				assoc_ptr->usage->usage_efctv,
+				(long double)assoc_ptr->usage->shares_norm);
+		}
+		if (job_ptr->priority_fs < qos_ptr->usage_thres) {
+			info("Job %u exceeds usage threahold", job_ptr->job_id);
+			fail_reason = WAIT_QOS_THRES;
+		}
 	}
+
 	if (fail_reason != WAIT_NO_REASON) {
-		error_code = ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
+		if (fail_reason == WAIT_QOS_THRES)
+			error_code = ESLURM_QOS_THRES;
+		else
+			error_code = ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
 		job_ptr->priority = 1;      /* Move to end of queue */
 		job_ptr->state_reason = fail_reason;
 		xfree(job_ptr->state_desc);

@@ -297,6 +297,23 @@ static int _setup_cluster_rec(slurmdb_cluster_rec_t *cluster_rec)
 	return SLURM_SUCCESS;
 }
 
+static uint32_t _str_2_qos_flags(char *flags)
+{
+	if (slurm_strcasestr(flags, "EnforceUsageThreshold"))
+		return QOS_FLAG_ENFORCE_USAGE_THRES;
+
+	if (slurm_strcasestr(flags, "PartitionMinNodes"))
+		return QOS_FLAG_PART_MIN_NODE;
+
+	if (slurm_strcasestr(flags, "PartitionMaxNodes"))
+		return QOS_FLAG_PART_MAX_NODE;
+
+	if (slurm_strcasestr(flags, "PartitionTimeLimit"))
+		return QOS_FLAG_PART_TIME_LIMIT;
+
+	return 0;
+}
+
 extern slurmdb_job_rec_t *slurmdb_create_job_rec()
 {
 	slurmdb_job_rec_t *job = xmalloc(sizeof(slurmdb_job_rec_t));
@@ -1054,6 +1071,8 @@ extern void slurmdb_init_qos_rec(slurmdb_qos_rec_t *qos, bool free_it)
 		_free_qos_rec_members(qos);
 	memset(qos, 0, sizeof(slurmdb_qos_rec_t));
 
+	qos->flags = QOS_FLAG_NOTSET;
+
 	qos->preempt_mode = (uint16_t)NO_VAL;
 	qos->priority = NO_VAL;
 
@@ -1073,7 +1092,8 @@ extern void slurmdb_init_qos_rec(slurmdb_qos_rec_t *qos, bool free_it)
 	qos->max_submit_jobs_pu = NO_VAL;
 	qos->max_wall_pj = NO_VAL;
 
-	qos->usage_factor = NO_VAL;
+	qos->usage_factor = (double)NO_VAL;
+	qos->usage_thres = (double)NO_VAL;
 }
 
 extern void slurmdb_init_wckey_rec(slurmdb_wckey_rec_t *wckey, bool free_it)
@@ -1154,6 +1174,67 @@ extern uint32_t str_2_slurmdb_qos(List qos_list, char *level)
 		return qos->id;
 	else
 		return NO_VAL;
+}
+
+extern char *slurmdb_qos_flags_str(uint32_t flags)
+{
+	char *qos_flags = NULL;
+
+	if (flags & QOS_FLAG_NOTSET)
+		return xstrdup("NotSet");
+
+	if (flags & QOS_FLAG_ADD)
+		xstrcat(qos_flags, "Add,");
+	if (flags & QOS_FLAG_REMOVE)
+		xstrcat(qos_flags, "Remove,");
+	if (flags & QOS_FLAG_ENFORCE_USAGE_THRES)
+		xstrcat(qos_flags, "EnforceUsageThreshold,");
+	if (flags & QOS_FLAG_PART_MAX_NODE)
+		xstrcat(qos_flags, "PartitionMaxNodes,");
+	if (flags & QOS_FLAG_PART_MIN_NODE)
+		xstrcat(qos_flags, "PartitionMinNodes,");
+	if (flags & QOS_FLAG_PART_TIME_LIMIT)
+		xstrcat(qos_flags, "PartitionTimeLimit,");
+
+	if (qos_flags)
+		qos_flags[strlen(qos_flags)-1] = '\0';
+
+	return qos_flags;
+}
+
+extern uint32_t str_2_qos_flags(char *flags, int option)
+{
+	uint32_t qos_flags = 0;
+	char *token, *my_flags, *last = NULL;
+
+	if (!flags) {
+		error("We need a qos flags string to translate");
+		return QOS_FLAG_NOTSET;
+	} else if (atoi(flags) == -1) {
+		/* clear them all */
+		qos_flags = INFINITE;
+		qos_flags &= (~QOS_FLAG_NOTSET &
+			       ~QOS_FLAG_ADD);
+		return qos_flags;
+	}
+
+	my_flags = xstrdup(flags);
+	token = strtok_r(my_flags, ",", &last);
+	while (token) {
+		qos_flags |= _str_2_qos_flags(token);
+		token = strtok_r(NULL, ",", &last);
+	}
+	xfree(my_flags);
+
+	if (!qos_flags)
+		qos_flags = QOS_FLAG_NOTSET;
+	else if (option == '+')
+		qos_flags |= QOS_FLAG_ADD;
+	else if (option == '-')
+		qos_flags |= QOS_FLAG_REMOVE;
+
+
+	return qos_flags;
 }
 
 extern char *slurmdb_admin_level_str(slurmdb_admin_level_t level)
