@@ -1834,12 +1834,9 @@ static void _pack_ctld_job_step_info(struct step_record *step_ptr, Buf buffer)
 	time_t begin_time, run_time;
 	bitstr_t *pack_bitstr;
 #ifdef HAVE_FRONT_END
-	/* On front end systems the steps are only
-	 * given the first node to run off of
-	 * so we need to make them appear like
-	 * they are running on the entire
-	 * space (which they really are).
-	 */
+	/* On front-end systems, the steps only execute on one node.
+	 * We need to make them appear like they are running on the job's
+	 * entire allocation (which they really are). */
 	task_cnt = step_ptr->job_ptr->cpu_cnt;
 	node_list = step_ptr->job_ptr->nodes;
 	pack_bitstr = step_ptr->job_ptr->node_bitmap;
@@ -1849,7 +1846,7 @@ static void _pack_ctld_job_step_info(struct step_record *step_ptr, Buf buffer)
 		task_cnt = step_ptr->step_layout->task_cnt;
 		node_list = step_ptr->step_layout->node_list;
 	} else {
-		if(step_ptr->job_ptr->details)
+		if (step_ptr->job_ptr->details)
 			task_cnt = step_ptr->job_ptr->details->min_cpus;
 		else
 			task_cnt = step_ptr->job_ptr->cpu_cnt;
