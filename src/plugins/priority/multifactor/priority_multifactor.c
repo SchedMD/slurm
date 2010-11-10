@@ -1042,7 +1042,7 @@ extern uint32_t priority_p_set(uint32_t last_prio, struct job_record *job_ptr)
 	return priority;
 }
 
-extern void priority_p_reconfig()
+extern void priority_p_reconfig(void)
 {
 	reconfig = 1;
 	_internal_setup();
@@ -1141,23 +1141,25 @@ extern List priority_p_get_priority_factors_list(
 		ret_list = list_create(slurm_destroy_priority_factors_object);
 		lock_slurmctld(job_read_lock);
 		itr = list_iterator_create(job_list);
+		if (itr == NULL)
+			fatal("list_iterator_create: malloc failure");
 		while ((job_ptr = list_next(itr))) {
 			/*
 			 * We are only looking for pending jobs
 			 */
-			if(!IS_JOB_PENDING(job_ptr))
+			if (!IS_JOB_PENDING(job_ptr))
 				continue;
 			/*
 			 * This means the job is not eligible yet
 			 */
-			if(!job_ptr->details->begin_time
-			   || (job_ptr->details->begin_time > start_time))
+			if (!job_ptr->details->begin_time
+			    || (job_ptr->details->begin_time > start_time))
 				continue;
 
 			/*
 			 * 0 means the job is held; 1 means system hold
 			 */
-			if(job_ptr->priority <= 1)
+			if (job_ptr->priority <= 1)
 				continue;
 
 			if (_filter_job(job_ptr, req_job_list, req_user_list))
