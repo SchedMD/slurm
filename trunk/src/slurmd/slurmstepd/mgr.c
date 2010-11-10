@@ -1630,14 +1630,15 @@ _send_launch_failure (launch_tasks_request_msg_t *msg, slurm_addr_t *cli, int rc
 {
 	slurm_msg_t resp_msg;
 	launch_tasks_response_msg_t resp;
-	int nodeid = 0;
+	int nodeid;
 	char *name = NULL;
+
 #ifndef HAVE_FRONT_END
 	nodeid = nodelist_find(msg->complete_nodelist, conf->node_name);
 	name = xstrdup(conf->node_name);
 #else
+	nodeid = 0;
 	name = xstrdup(msg->complete_nodelist);
-
 #endif
 	debug ("sending launch failure message: %s", slurm_strerror (rc));
 
