@@ -51,6 +51,8 @@ documents those changes that are of interest to users and admins.
  -- Fix bug that prevented job Epilog from running more than once on a node if
     a job was requeued and started no job steps.
  -- Fixed issue where node index wasn't stored correcting when using DBD.
+ -- Enable srun's use of the --nodes option with --exclusive (previously the
+    --nodes option was ignored).
 
 * Changes in SLURM 2.2.0.pre12
 ==============================
