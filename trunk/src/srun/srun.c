@@ -1051,13 +1051,6 @@ static void _pty_restore(void)
 /* opt.exclusive is set, disable user task layout controls */
 static void _step_opt_exclusive(void)
 {
-	if (opt.nodes_set) {
-		verbose("ignoring node count set by --nodes or SLURM_NNODES");
-		verbose("  it is incompatible with --exclusive");
-		opt.nodes_set = false;
-		opt.min_nodes = 1;
-		opt.max_nodes = 0;
-	}
 	if (!opt.ntasks_set) {
 		error("--ntasks must be set with --exclusive");
 		exit(error_exit);
