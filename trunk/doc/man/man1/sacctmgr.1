@@ -742,11 +742,16 @@ command was run.
 .TP
 \fIEnd\fP=<OPT>
 Period ending of events. Default is now.
+
 Valid time formats are...
+.sp
 HH:MM[:SS] [AM|PM]
+.br
 MMDD[YY] or MM/DD[/YY] or MM.DD[.YY]
-MM/DD[/YY]-HH:MM[:SS]
-YYYY-MM-DD[THH:MM[:SS]]
+.br
+MM/DD[/YY]\-HH:MM[:SS]
+.br
+YYYY\-MM\-DD[THH:MM[:SS]]
 
 .TP
 \fIEvent\fP=<OPT>
@@ -777,10 +782,14 @@ the default behavior is to return events currently in
 the states specified.
 
 Valid time formats are...
+.sp
 HH:MM[:SS] [AM|PM]
+.br
 MMDD[YY] or MM/DD[/YY] or MM.DD[.YY]
-MM/DD[/YY]-HH:MM[:SS]
-YYYY-MM-DD[THH:MM[:SS]]
+.br
+MM/DD[/YY]\-HH:MM[:SS]
+.br
+YYYY\-MM\-DD[THH:MM[:SS]]
 
 .TP
 \fIStates\fP=<comma separated list of states>
@@ -1079,7 +1088,7 @@ To clear a previously set value use the modify command with a new value of \-1.
 .TP
 \fIUsageFactor\fP
 Usage factor when running with this QOS.  This is a float that is
-factored into the time of running jobs.  i.e. if the usagefactor of a
+factored into the time of running jobs.  e.g. if the usagefactor of a
 QOS was 2 for every cpu second a job ran it would count for 2.  Also
 if the usagefactor was .5 every second would only could for half the time.
 To clear a previously set value use the modify command with a new value of \-1.
@@ -1249,7 +1258,7 @@ in the \fILIST/SHOW ASSOCIATION FORMAT OPTIONS\fP section.
 When using the format option for listing various fields you can put a
 %NUMBER afterwards to specify how many characters should be printed.
 
-i.e. format=name%30 will print 30 characters of field name right
+e.g. format=name%30 will print 30 characters of field name right
 justified.  A \-30 will print 30 characters left justified.
 
 .SH "FLAT FILE DUMP AND LOAD"
@@ -1498,25 +1507,25 @@ all job data removed will be lost permanently.
 \fIPurgeEventAfter=\fP
 Purge cluster event records older than time stated in months.  If you
 want to purge on a shorter time period you can include hours, or days
-behind the numeric value to get those more frequent purges. (i.e. a
+behind the numeric value to get those more frequent purges. (e.g. a
 value of '12hours' would purge everything older than 12 hours.)
 .TP
 \fIPurgeJobAfter=\fP
 Purge job records older than time stated in months.  If you
 want to purge on a shorter time period you can include hours, or days
-behind the numeric value to get those more frequent purges. (i.e. a
+behind the numeric value to get those more frequent purges. (e.g. a
 value of '12hours' would purge everything older than 12 hours.)
 .TP
 \fIPurgeStepAfter=\fP
 Purge step records older than time stated in months.  If you
 want to purge on a shorter time period you can include hours, or days
-behind the numeric value to get those more frequent purges. (i.e. a
+behind the numeric value to get those more frequent purges. (e.g. a
 value of '12hours' would purge everything older than 12 hours.)
 .TP
 \fIPurgeSuspendAfter=\fP
 Purge job suspend records older than time stated in months.  If you
 want to purge on a shorter time period you can include hours, or days
-behind the numeric value to get those more frequent purges. (i.e. a
+behind the numeric value to get those more frequent purges. (e.g. a
 value of '12hours' would purge everything older than 12 hours.)
 .TP
 \fIScript=\fP
