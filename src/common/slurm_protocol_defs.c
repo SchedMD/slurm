@@ -892,6 +892,8 @@ extern char *job_reason_string(enum job_state_reason inx)
 		return "InvalidBankAccount";
 	case FAIL_QOS:
 		return "InvalidQOS";
+	case WAIT_QOS_THRES:
+		return "QOSUsageThreshold";
 	default:
 		return "?";
 	}

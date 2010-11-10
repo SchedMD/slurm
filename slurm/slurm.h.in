@@ -285,7 +285,8 @@ enum job_state_reason {
 	FAIL_TIMEOUT,		/* reached end of time limit */
 	FAIL_INACTIVE_LIMIT,	/* reached slurm InactiveLimit */
 	FAIL_BANK_ACCOUNT,	/* invalid bank account */
-	FAIL_QOS        	/* invalid QOS */
+	FAIL_QOS,        	/* invalid QOS */
+	WAIT_QOS_THRES        	/* invalid QOS */
 };
 
 enum job_acct_types {

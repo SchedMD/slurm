@@ -90,6 +90,27 @@ static int _setup_qos_limits(slurmdb_qos_rec_t *qos,
 			   qos->description);
 	}
 
+	if (!(qos->flags & QOS_FLAG_NOTSET)) {
+		if (qos->flags & QOS_FLAG_REMOVE) {
+			if (qos->flags)
+				xstrfmtcat(*extra, ", flags=(flags & ~%u)",
+					   qos->flags & ~QOS_FLAG_REMOVE);
+		} else {
+			/* If we are only removing there is no reason
+			   to set up the cols and vals. */
+			if (qos->flags & QOS_FLAG_ADD) {
+				if (qos->flags) {
+					xstrfmtcat(*extra,
+						   ", flags=(flags | %u)",
+						   qos->flags & ~QOS_FLAG_ADD);
+				}
+			} else
+				xstrfmtcat(*extra, ", flags=%u", qos->flags);
+			xstrcat(*cols, ", flags");
+			xstrfmtcat(*vals, ", '%u'", qos->flags & ~QOS_FLAG_ADD);
+		}
+	}
+
 	if(qos->grp_cpu_mins == (uint64_t)INFINITE) {
 		xstrcat(*cols, ", grp_cpu_mins");
 		xstrcat(*vals, ", NULL");
@@ -245,7 +266,7 @@ static int _setup_qos_limits(slurmdb_qos_rec_t *qos,
 	}
 
 	if((qos->max_wall_pj != NO_VAL)
-		  && ((int32_t)qos->max_wall_pj >= 0)) {
+	   && ((int32_t)qos->max_wall_pj >= 0)) {
 		xstrcat(*cols, ", max_wall_duration_per_job");
 		xstrfmtcat(*vals, ", %u", qos->max_wall_pj);
 		xstrfmtcat(*extra, ", max_wall_duration_per_job=%u",
@@ -319,15 +340,26 @@ static int _setup_qos_limits(slurmdb_qos_rec_t *qos,
 		xstrfmtcat(*extra, ", priority=%u", qos->priority);
 	}
 
-	if(qos->usage_factor == INFINITE) {
+	if(qos->usage_factor == (double)INFINITE) {
 		xstrcat(*cols, ", usage_factor");
 		xstrcat(*vals, ", 1");
 		xstrcat(*extra, ", usage_factor=1");
-	} else if((qos->usage_factor != NO_VAL)
-		  && ((int32_t)qos->usage_factor >= 0)) {
+	} else if((qos->usage_factor != (double)NO_VAL)
+		  && (qos->usage_factor >= 0)) {
 		xstrcat(*cols, ", usage_factor");
 		xstrfmtcat(*vals, ", %f", qos->usage_factor);
 		xstrfmtcat(*extra, ", usage_factor=%f", qos->usage_factor);
+	}
+
+	if(qos->usage_thres == (double)INFINITE) {
+		xstrcat(*cols, ", usage_thres");
+		xstrcat(*vals, ", NULL");
+		xstrcat(*extra, ", usage_thres=NULL");
+	} else if((qos->usage_thres != (double)NO_VAL)
+		  && (qos->usage_thres >= 0)) {
+		xstrcat(*cols, ", usage_thres");
+		xstrfmtcat(*vals, ", %f", qos->usage_thres);
+		xstrfmtcat(*extra, ", usage_thres=%f", qos->usage_thres);
 	}
 
 	return SLURM_SUCCESS;
@@ -423,8 +455,8 @@ extern int as_mysql_add_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 			error("Couldn't add txn");
 		} else {
 			if(addto_update_list(mysql_conn->update_list,
-					      SLURMDB_ADD_QOS,
-					      object) == SLURM_SUCCESS)
+					     SLURMDB_ADD_QOS,
+					     object) == SLURM_SUCCESS)
 				list_remove(itr);
 			added++;
 		}
@@ -441,8 +473,8 @@ extern int as_mysql_add_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 }
 
 extern List as_mysql_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
-			     slurmdb_qos_cond_t *qos_cond,
-			     slurmdb_qos_rec_t *qos)
+				slurmdb_qos_cond_t *qos_cond,
+				slurmdb_qos_rec_t *qos)
 {
 	ListIterator itr = NULL;
 	List ret_list = NULL;
@@ -558,6 +590,8 @@ extern List as_mysql_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 		qos_rec = xmalloc(sizeof(slurmdb_qos_rec_t));
 		qos_rec->name = xstrdup(object);
 		qos_rec->id = id;
+		qos_rec->flags = qos->flags;
+
 		qos_rec->grp_cpus = qos->grp_cpus;
 		qos_rec->grp_cpu_mins = qos->grp_cpu_mins;
 		qos_rec->grp_cpu_run_mins = qos->grp_cpu_run_mins;
@@ -610,6 +644,9 @@ extern List as_mysql_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 			list_iterator_destroy(new_preempt_itr);
 		}
 
+		qos_rec->usage_factor = qos->usage_factor;
+		qos_rec->usage_thres = qos->usage_thres;
+
 		if (addto_update_list(mysql_conn->update_list,
 				      SLURMDB_MODIFY_QOS, qos_rec)
 		    != SLURM_SUCCESS)
@@ -655,7 +692,7 @@ extern List as_mysql_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 }
 
 extern List as_mysql_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
-			     slurmdb_qos_cond_t *qos_cond)
+				slurmdb_qos_cond_t *qos_cond)
 {
 	ListIterator itr = NULL;
 	List ret_list = NULL;
@@ -818,7 +855,7 @@ extern List as_mysql_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 }
 
 extern List as_mysql_get_qos(mysql_conn_t *mysql_conn, uid_t uid,
-			  slurmdb_qos_cond_t *qos_cond)
+			     slurmdb_qos_cond_t *qos_cond)
 {
 	char *query = NULL;
 	char *extra = NULL;
@@ -836,6 +873,7 @@ extern List as_mysql_get_qos(mysql_conn_t *mysql_conn, uid_t uid,
 		"name",
 		"description",
 		"id",
+		"flags",
 		"grp_cpu_mins",
 		"grp_cpu_run_mins",
 		"grp_cpus",
@@ -854,11 +892,13 @@ extern List as_mysql_get_qos(mysql_conn_t *mysql_conn, uid_t uid,
 		"preempt_mode",
 		"priority",
 		"usage_factor",
+		"usage_thres",
 	};
 	enum {
 		QOS_REQ_NAME,
 		QOS_REQ_DESC,
 		QOS_REQ_ID,
+		QOS_REQ_FLAGS,
 		QOS_REQ_GCM,
 		QOS_REQ_GCRM,
 		QOS_REQ_GC,
@@ -877,6 +917,7 @@ extern List as_mysql_get_qos(mysql_conn_t *mysql_conn, uid_t uid,
 		QOS_REQ_PREEM,
 		QOS_REQ_PRIO,
 		QOS_REQ_UF,
+		QOS_REQ_UT,
 		QOS_REQ_COUNT
 	};
 
@@ -971,8 +1012,10 @@ empty:
 
 		qos->id = atoi(row[QOS_REQ_ID]);
 
+		qos->flags = atoi(row[QOS_REQ_FLAGS]);
+
 		if(row[QOS_REQ_NAME] && row[QOS_REQ_NAME][0])
-			qos->name =  xstrdup(row[QOS_REQ_NAME]);
+			qos->name = xstrdup(row[QOS_REQ_NAME]);
 
 		if(row[QOS_REQ_GCM])
 			qos->grp_cpu_mins = atoll(row[QOS_REQ_GCM]);
@@ -1044,6 +1087,12 @@ empty:
 
 		if(row[QOS_REQ_UF])
 			qos->usage_factor = atof(row[QOS_REQ_UF]);
+
+		if(row[QOS_REQ_UT])
+			qos->usage_thres = atof(row[QOS_REQ_UT]);
+		else
+			qos->usage_thres = (double)INFINITE;
+
 	}
 	mysql_free_result(result);
 

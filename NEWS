@@ -53,6 +53,7 @@ documents those changes that are of interest to users and admins.
  -- Fixed issue where node index wasn't stored correcting when using DBD.
  -- Enable srun's use of the --nodes option with --exclusive (previously the
     --nodes option was ignored).
+ -- Added UsageThreshold and Flags to the QOS object.
 
 * Changes in SLURM 2.2.0.pre12
 ==============================

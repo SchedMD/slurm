@@ -258,6 +258,25 @@ static int _set_rec(int *start, int argc, char *argv[],
 				qos->description =
 					strip_quotes(argv[i]+end, NULL, 1);
 			set = 1;
+		} else if (!strncasecmp (argv[i], "Flags",
+					 MAX(command_len, 2))) {
+			if(!qos)
+				continue;
+			qos->flags = str_2_qos_flags(argv[i]+end, option);
+			if (qos->flags == QOS_FLAG_NOTSET) {
+				char *tmp_char = NULL;
+				qos->flags = INFINITE;
+				qos->flags &= (~QOS_FLAG_NOTSET &
+					       ~QOS_FLAG_ADD &
+					       ~QOS_FLAG_REMOVE);
+				tmp_char = slurmdb_qos_flags_str(qos->flags);
+				printf(" Unknown QOS flag used in:\n  '%s'\n"
+				       " Valid QOS flags are\n  '%s'\n",
+				       argv[i]+end, tmp_char);
+				xfree(tmp_char);
+				exit_code = 1;
+			} else
+				set = 1;
 		} else if (!strncasecmp (argv[i], "GrpCPUMins",
 					 MAX(command_len, 7))) {
 			if(!qos)
@@ -399,14 +418,22 @@ static int _set_rec(int *start, int argc, char *argv[],
 			    "Priority") == SLURM_SUCCESS)
 				set = 1;
 		} else if (!strncasecmp (argv[i], "UsageFactor",
-					 MAX(command_len, 3))) {
+					 MAX(command_len, 6))) {
 			if(!qos)
 				continue;
 
 			if (get_double(argv[i]+end, &qos->usage_factor,
 			    "UsageFactor") == SLURM_SUCCESS)
 				set = 1;
+		} else if (!strncasecmp (argv[i], "UsageThreshold",
+					 MAX(command_len, 6))) {
+			if(!qos)
+				continue;
+			if (get_double(argv[i]+end, &qos->usage_thres,
+			    "UsageThreshold") == SLURM_SUCCESS)
+				set = 1;
 		} else {
+			exit_code = 1;
 			printf(" Unknown option: %s\n"
 			       " Use keyword 'where' to modify condition\n",
 			       argv[i]);
@@ -587,7 +614,9 @@ extern int sacctmgr_list_qos(int argc, char *argv[])
 		return SLURM_ERROR;
 	} else if(!list_count(format_list)) {
 		slurm_addto_char_list(format_list, "Name,Prio,Preempt,PreemptM,"
-				      "GrpJ,GrpN,GrpS,MaxJ,MaxN,MaxS,MaxW");
+				      "Flags%40,UsageThres,GrpCPUs,GrpCPUMins,"
+				      "GrpJ,GrpN,GrpS,GrpW,"
+				      "MaxCPUs,MaxCPUMins,MaxJ,MaxN,MaxS,MaxW");
 	}
 
 	print_fields_list = sacctmgr_process_format_list(format_list);
@@ -619,6 +648,22 @@ extern int sacctmgr_list_qos(int argc, char *argv[])
 			case PRINT_DESC:
 				field->print_routine(
 					field, qos->description,
+					(curr_inx == field_count));
+				break;
+			case PRINT_FLAGS:
+			{
+				char *tmp_char = slurmdb_qos_flags_str(
+					qos->flags);
+				field->print_routine(
+					field,
+					tmp_char,
+					(curr_inx == field_count));
+				xfree(tmp_char);
+				break;
+			}
+			case PRINT_UT:
+				field->print_routine(
+					field, qos->usage_thres,
 					(curr_inx == field_count));
 				break;
 			case PRINT_GRPCM:

@@ -272,6 +272,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Invalid generic resource (gres) specification"	},
 	{ ESLURM_JOB_NOT_PENDING,
 	  "Job is no longer pending execution"			},
+	{ ESLURM_QOS_THRES,
+	  "Requested account has breached requested QOS usage threshold"},
 
 	/* slurmd error codes */
 

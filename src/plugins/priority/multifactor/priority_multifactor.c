@@ -69,7 +69,15 @@
  * the slurmctld we will have these symbols defined.  They will get
  * overwritten when linking with the slurmctld.
  */
+#if defined (__APPLE__)
+uint32_t cluster_cpus __attribute__((weak_import)) = NO_VAL;
+List job_list  __attribute__((weak_import)) = NULL;
+time_t last_job_update __attribute__((weak_import));
+#else
+uint32_t cluster_cpus = NO_VAL;
+List job_list = NULL;
 time_t last_job_update;
+#endif
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -119,6 +127,8 @@ static uint32_t weight_part; /* weight for Partition factor */
 static uint32_t weight_qos; /* weight for QOS factor */
 
 extern void priority_p_set_assoc_usage(slurmdb_association_rec_t *assoc);
+extern double priority_p_calc_fs_factor(long double usage_efctv,
+					long double shares_norm);
 
 /*
  * apply decay factor to all associations usage_raw
@@ -388,27 +398,25 @@ static double _get_fairshare_priority( struct job_record *job_ptr)
 	assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK,
 				   NO_LOCK, NO_LOCK, NO_LOCK };
 
-	if(!calc_fairshare)
+	if (!calc_fairshare)
 		return 0;
 
-	if(!assoc) {
+	if (!assoc) {
 		error("Job %u has no association.  Unable to "
 		      "compute fairshare.", job_ptr->job_id);
 		return 0;
 	}
 
 	assoc_mgr_lock(&locks);
-	if(assoc->usage->usage_efctv == (long double)NO_VAL)
+	if (assoc->usage->usage_efctv == (long double)NO_VAL)
 		priority_p_set_assoc_usage(assoc);
 
 	// Priority is 0 -> 1
-	if (assoc->usage->shares_norm > 0.0)
-		priority_fs = pow(2.0, -(assoc->usage->usage_efctv /
-					 assoc->usage->shares_norm));
-	else
-		priority_fs = 0.0;
+	priority_fs = priority_p_calc_fs_factor(
+		assoc->usage->usage_efctv,
+		(long double)assoc->usage->shares_norm);
 
-	if(priority_debug)
+	if (priority_debug)
 		info("Fairshare priority of job %u for user %s in acct %s"
 		     " is 2**(-%Lf/%f) = %f",
 		     job_ptr->job_id, assoc->user, assoc->acct,
@@ -747,7 +755,6 @@ static void *_decay_thread(void *no_data)
 			slurm_mutex_unlock(&decay_lock);
 			break;
 		}
-
 		lock_slurmctld(job_write_lock);
 		itr = list_iterator_create(job_list);
 		while ((job_ptr = list_next(itr))) {
@@ -960,6 +967,10 @@ int init ( void )
 	pthread_attr_t thread_attr;
 	char *temp = NULL;
 
+	/* This means we aren't running from the controller so skip setup. */
+	if (cluster_cpus == NO_VAL)
+		return SLURM_SUCCESS;
+
 	_internal_setup();
 
 	/* Check to see if we are running a supported accounting plugin */
@@ -1017,15 +1028,15 @@ int init ( void )
 int fini ( void )
 {
 	/* Daemon termination handled here */
-	if(running_decay)
+	if (running_decay)
 		debug("Waiting for decay thread to finish.");
 
 	slurm_mutex_lock(&decay_lock);
 
 	/* cancel the decay thread and then join the cleanup thread */
-	if(decay_handler_thread)
+	if (decay_handler_thread)
 		pthread_cancel(decay_handler_thread);
-	if(cleanup_handler_thread)
+	if (cleanup_handler_thread)
 		pthread_join(cleanup_handler_thread, NULL);
 
 	slurm_mutex_unlock(&decay_lock);
@@ -1116,6 +1127,21 @@ extern void priority_p_set_assoc_usage(slurmdb_association_rec_t *assoc)
 			     assoc->usage->level_shares,
 			     assoc->usage->usage_efctv);
 	}
+}
+
+extern double priority_p_calc_fs_factor(long double usage_efctv,
+					long double shares_norm)
+{
+	double priority_fs;
+
+	xassert(usage_efctv != (long double)NO_VAL);
+
+	if (shares_norm > 0.0)
+		priority_fs = pow(2.0, -(usage_efctv / shares_norm));
+	else
+		priority_fs = 0.0;
+
+	return priority_fs;
 }
 
 extern List priority_p_get_priority_factors_list(

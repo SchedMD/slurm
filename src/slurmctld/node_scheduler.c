@@ -57,10 +57,12 @@
 
 #include <slurm/slurm_errno.h>
 
+#include "src/common/assoc_mgr.h"
 #include "src/common/hostlist.h"
 #include "src/common/list.h"
 #include "src/common/node_select.h"
 #include "src/common/slurm_accounting_storage.h"
+#include "src/common/slurm_priority.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -1018,18 +1020,24 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	int error_code = SLURM_SUCCESS, i, node_set_size = 0;
 	bitstr_t *select_bitmap = NULL;
 	struct node_set *node_set_ptr = NULL;
-	struct part_record *part_ptr = job_ptr->part_ptr;
+	struct part_record *part_ptr = NULL;
 	uint32_t min_nodes, max_nodes, req_nodes;
 	enum job_state_reason fail_reason;
 	time_t now = time(NULL);
 	bool configuring = false;
 	List preemptee_job_list = NULL;
+	slurmdb_association_rec_t *assoc_ptr = NULL;
+	slurmdb_qos_rec_t *qos_ptr = NULL;
 
 	xassert(job_ptr);
 	xassert(job_ptr->magic == JOB_MAGIC);
 
 	if (!acct_policy_job_runnable(job_ptr))
 		return ESLURM_ACCOUNTING_POLICY;
+
+	part_ptr = job_ptr->part_ptr;
+	assoc_ptr = (slurmdb_association_rec_t *)job_ptr->assoc_ptr;
+	qos_ptr = (slurmdb_qos_rec_t *)job_ptr->qos_ptr;
 
 	/* identify partition */
 	if (part_ptr == NULL) {
@@ -1049,12 +1057,30 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	else if (job_ptr->priority == 0)       /* user or administrator hold */
 		fail_reason = WAIT_HELD;
 	else if ((job_ptr->time_limit != NO_VAL) &&
-		 (job_ptr->time_limit > part_ptr->max_time))
+		 ((job_ptr->time_limit > part_ptr->max_time) &&
+		  (qos_ptr && !(qos_ptr->flags & QOS_FLAG_PART_TIME_LIMIT))))
 		fail_reason = WAIT_PART_TIME_LIMIT;
 	else if (((job_ptr->details->max_nodes != 0) &&
-	          (job_ptr->details->max_nodes < part_ptr->min_nodes)) ||
-	         (job_ptr->details->min_nodes > part_ptr->max_nodes))
-		 fail_reason = WAIT_PART_NODE_LIMIT;
+	          ((job_ptr->details->max_nodes < part_ptr->min_nodes) &&
+		   (qos_ptr && !(qos_ptr->flags & QOS_FLAG_PART_MIN_NODE)))) ||
+	         ((job_ptr->details->min_nodes > part_ptr->max_nodes) &&
+		  (qos_ptr && !(qos_ptr->flags & QOS_FLAG_PART_MAX_NODE))))
+		fail_reason = WAIT_PART_NODE_LIMIT;
+	else if (qos_ptr && assoc_ptr &&
+		 (qos_ptr->flags & QOS_FLAG_ENFORCE_USAGE_THRES) &&
+		 (qos_ptr->usage_thres != (double)NO_VAL)) {
+		if (job_ptr->priority_fs == 0) {
+			if (assoc_ptr->usage->usage_efctv
+			    == (long double)NO_VAL)
+				priority_g_set_assoc_usage(assoc_ptr);
+			job_ptr->priority_fs = priority_g_calc_fs_factor(
+				assoc_ptr->usage->usage_efctv,
+				(long double)assoc_ptr->usage->shares_norm);
+		}
+		if (job_ptr->priority_fs < qos_ptr->usage_thres)
+			fail_reason = WAIT_QOS_THRES;
+	}
+
 	if (fail_reason != WAIT_NO_REASON) {
 		last_job_update = now;
 		xfree(job_ptr->state_desc);
@@ -1086,19 +1112,26 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		}
 	}
 
-	/* enforce both user's and partition's node limits */
-	/* info("req: %u-%u, %u", job_ptr->details->min_nodes,
-	   job_ptr->details->max_nodes, part_ptr->max_nodes); */
+	/* enforce both user's and partition's node limits if the qos
+	 * isn't set to override them */
+	/* info("req: %u-%u, %u", job_ptr->details->min_nodes, */
+	/*    job_ptr->details->max_nodes, part_ptr->max_nodes); */
 
-	min_nodes = MAX(job_ptr->details->min_nodes, part_ptr->min_nodes);
+	if (qos_ptr && (qos_ptr->flags & QOS_FLAG_PART_MIN_NODE))
+		min_nodes = job_ptr->details->min_nodes;
+	else
+		min_nodes = MAX(job_ptr->details->min_nodes,
+				part_ptr->min_nodes);
 	if (job_ptr->details->max_nodes == 0)
 		max_nodes = part_ptr->max_nodes;
+	else if (qos_ptr && (qos_ptr->flags & QOS_FLAG_PART_MAX_NODE))
+		max_nodes = job_ptr->details->max_nodes;
 	else
 		max_nodes = MIN(job_ptr->details->max_nodes,
 				part_ptr->max_nodes);
+
 	max_nodes = MIN(max_nodes, 500000);	/* prevent overflows */
-	if (!job_ptr->limit_set_max_nodes &&
-	    job_ptr->details->max_nodes)
+	if (!job_ptr->limit_set_max_nodes && job_ptr->details->max_nodes)
 		req_nodes = max_nodes;
 	else
 		req_nodes = min_nodes;

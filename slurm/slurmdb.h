@@ -132,6 +132,16 @@ typedef enum {
 	SLURMDB_REMOVE_ASSOC_USAGE,
 } slurmdb_update_type_t;
 
+/* Define QOS flags */
+#define	QOS_FLAG_NOTSET              0x10000000
+#define	QOS_FLAG_ADD                 0x20000000
+#define	QOS_FLAG_REMOVE              0x40000000
+
+#define	QOS_FLAG_PART_MIN_NODE       0x00000001
+#define	QOS_FLAG_PART_MAX_NODE       0x00000002
+#define	QOS_FLAG_PART_TIME_LIMIT     0x00000004
+#define	QOS_FLAG_ENFORCE_USAGE_THRES 0x00000008
+
 /* Archive / Purge time flags */
 #define SLURMDB_PURGE_BASE    0x0000ffff   /* Apply to get the number
 					    * of units */
@@ -557,6 +567,8 @@ typedef struct {
 typedef struct {
 	char *description;
 	uint32_t id;
+	uint32_t flags; /* flags for various things to enforce or
+			   override other limits */
 	uint64_t grp_cpu_mins; /* max number of cpu minutes all jobs
 				* running under this qos can run for */
 	uint64_t grp_cpu_run_mins; /* max number of cpu minutes all jobs
@@ -598,6 +610,9 @@ typedef struct {
 			     * heterogeneous systems */
 	assoc_mgr_qos_usage_t *usage; /* For internal use only, DON'T PACK */
 	double usage_factor; /* factor to apply to usage in this qos */
+	double usage_thres; /* percent of effective usage of an
+			       association when breached will deny
+			       pending and new jobs */
 } slurmdb_qos_rec_t;
 
 typedef struct {

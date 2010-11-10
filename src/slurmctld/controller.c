@@ -158,7 +158,7 @@ void *acct_db_conn = NULL;
 int accounting_enforce = 0;
 int association_based_accounting = 0;
 bool ping_nodes_now = false;
-int      cluster_cpus = 0;
+uint32_t      cluster_cpus = 0;
 int   with_slurmdbd = 0;
 
 /* Local variables */
@@ -1100,7 +1100,7 @@ static int _accounting_cluster_ready()
 	int i;
 	int rc = SLURM_ERROR;
 	time_t event_time = time(NULL);
-	int cpus = 0;
+	uint32_t cpus = 0;
 	bitstr_t *total_node_bitmap = NULL;
 	char *cluster_nodes = NULL;
 	slurmctld_lock_t node_read_lock = {

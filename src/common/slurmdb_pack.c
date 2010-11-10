@@ -1294,6 +1294,8 @@ extern void slurmdb_pack_qos_rec(void *in, uint16_t rpc_version, Buf buffer)
 			pack32(0, buffer);
 			packnull(buffer);
 
+			pack32(QOS_FLAG_NOTSET, buffer);
+
 			pack64(NO_VAL, buffer);
 			pack64(NO_VAL, buffer);
 			pack32(NO_VAL, buffer);
@@ -1318,11 +1320,14 @@ extern void slurmdb_pack_qos_rec(void *in, uint16_t rpc_version, Buf buffer)
 			pack16(0, buffer);
 			pack32(0, buffer);
 
-			packdouble(NO_VAL, buffer);
+			packdouble((double)NO_VAL, buffer);
+			packdouble((double)NO_VAL, buffer);
 			return;
 		}
 		packstr(object->description, buffer);
 		pack32(object->id, buffer);
+
+		pack32(object->flags, buffer);
 
 		pack64(object->grp_cpu_mins, buffer);
 		pack64(object->grp_cpu_run_mins, buffer);
@@ -1362,6 +1367,7 @@ extern void slurmdb_pack_qos_rec(void *in, uint16_t rpc_version, Buf buffer)
 		pack32(object->priority, buffer);
 
 		packdouble(object->usage_factor, buffer);
+		packdouble(object->usage_thres, buffer);
 	} else if(rpc_version >= 6) {
 		if(!object) {
 			packnull(buffer);
@@ -1451,6 +1457,8 @@ extern int slurmdb_unpack_qos_rec(void **object, uint16_t rpc_version,
 				       &uint32_tmp, buffer);
 		safe_unpack32(&object_ptr->id, buffer);
 
+		safe_unpack32(&object_ptr->flags, buffer);
+
 		safe_unpack64(&object_ptr->grp_cpu_mins, buffer);
 		safe_unpack64(&object_ptr->grp_cpu_run_mins, buffer);
 		safe_unpack32(&object_ptr->grp_cpus, buffer);
@@ -1487,10 +1495,13 @@ extern int slurmdb_unpack_qos_rec(void **object, uint16_t rpc_version,
 		safe_unpack32(&object_ptr->priority, buffer);
 
 		safe_unpackdouble(&object_ptr->usage_factor, buffer);
+		safe_unpackdouble(&object_ptr->usage_thres, buffer);
 	} else if(rpc_version >= 6) {
 		safe_unpackstr_xmalloc(&object_ptr->description,
 				       &uint32_tmp, buffer);
 		safe_unpack32(&object_ptr->id, buffer);
+
+		object_ptr->flags = QOS_FLAG_NOTSET;
 
 		safe_unpack64(&object_ptr->grp_cpu_mins, buffer);
 		safe_unpack32(&object_ptr->grp_cpus, buffer);

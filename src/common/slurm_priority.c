@@ -46,9 +46,10 @@ typedef struct slurm_priority_ops {
 				    struct job_record *job_ptr);
 	void     (*reconfig)       (void);
 	void     (*set_assoc_usage)(slurmdb_association_rec_t *assoc);
+	double   (*calc_fs_factor) (long double usage_efctv,
+				    long double shares_norm);
 	List	 (*get_priority_factors)
-				   (priority_factors_request_msg_t *req_msg);
-
+	(priority_factors_request_msg_t *req_msg);
 } slurm_priority_ops_t;
 
 typedef struct slurm_priority_context {
@@ -86,6 +87,7 @@ static slurm_priority_ops_t * _priority_get_ops(
 		"priority_p_set",
 		"priority_p_reconfig",
 		"priority_p_set_assoc_usage",
+		"priority_p_calc_fs_factor",
 		"priority_p_get_priority_factors_list",
 	};
 	int n_syms = sizeof( syms ) / sizeof( char * );
@@ -261,6 +263,16 @@ extern void priority_g_set_assoc_usage(slurmdb_association_rec_t *assoc)
 
 	(*(g_priority_context->ops.set_assoc_usage))(assoc);
 	return;
+}
+
+extern double priority_g_calc_fs_factor(long double usage_efctv,
+					long double shares_norm)
+{
+	if (slurm_priority_init() < 0)
+		return 0.0;
+
+	return (*(g_priority_context->ops.calc_fs_factor))
+		(usage_efctv, shares_norm);
 }
 
 extern List priority_g_get_priority_factors_list(

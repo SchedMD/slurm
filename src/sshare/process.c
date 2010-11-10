@@ -36,6 +36,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include "src/common/slurm_priority.h"
 #include "src/sshare/sshare.h"
 #include <math.h>
 
@@ -109,7 +110,7 @@ extern int process(shares_response_msg_t *resp)
 			field->print_routine = print_fields_double;
 		} else if(!strncasecmp("FSFctr", object, 1)) {
 			field->type = PRINT_FSFACTOR;
-			field->name = xstrdup("Fair-share");
+			field->name = xstrdup("FS Usage");
 			field->len = 10;
 			field->print_routine = print_fields_double;
 		} else if(!strncasecmp("ID", object, 1)) {
@@ -210,9 +211,12 @@ extern int process(shares_response_msg_t *resp)
 				break;
 			case PRINT_FSFACTOR:
 				field->print_routine(field,
-						     pow(2.0,
-							 -(share->usage_efctv /
-							   share->shares_norm)),
+						     priority_g_calc_fs_factor(
+							     (long double)
+							     share->usage_efctv,
+							     (long double)
+							     share->
+							     shares_norm),
 						     (curr_inx == field_count));
 				break;
 			case PRINT_ID:

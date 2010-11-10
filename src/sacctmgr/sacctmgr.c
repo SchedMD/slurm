@@ -862,12 +862,21 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                                                                            \n\
        list qos           - Descriptions=, Format=, Id=, Names=,           \n\
                             PreemptMode=, and WithDeleted                  \n\
-       add qos            - Description=, GrpCPUMins=, GrpCPUs=, GrpJobs=, \n\
-                            GrpNodes=, GrpSubmitJob=, GrpWall=,            \n\
-                            MaxCPUMins=, MaxJobs=, MaxNodes=, MaxSubmitJobs=,\n\
-                            MaxWall=, Preempt=, PreemptMode=, Priority=,   \n\
-                            and Names=                                     \n\
-       delete qos         - Descriptions=, ID=, and Names=                 \n\
+       add qos            - Description=, Flags=, GrpCPUMins=, GrpCPUs=,   \n\
+                            GrpJobs=, GrpNodes=, GrpSubmitJob=, GrpWall=,  \n\
+                            MaxCPUMins=, MaxCPUs=, MaxJobs=, MaxNodes=,    \n\
+                            MaxSubmitJobs=, MaxWall=, Names=, Preempt=,    \n\
+                            PreemptMode=, Priority=, UsageFactor=,         \n\
+                            and UsageThreshold=                            \n\
+       modify qos         - (set options) Description=, Flags=,            \n\
+                            GrpCPUMins=, GrpCPUs=, GrpJobs=, GrpNodes=,    \n\
+                            GrpSubmitJob=, GrpWall=, MaxCPUMins=, MaxCPUs=,\n\
+                            MaxJobs=, MaxNodes=, MaxSubmitJobs=,           \n\
+                            MaxWall=, Names=, Preempt=, PreemptMode=,      \n\
+                            Priority=, UsageFactor=, and UsageThreshold=   \n\
+                            (where options) Descriptions=, ID=, Names=     \n\
+                            and PreemptMode=                               \n\
+       delete qos         - Descriptions=, ID=, Names=, and PreemptMode=   \n\
                                                                            \n\
        list transactions  - Accounts=, Action=, Actor=, Clusters=, End=,   \n\
                             Format=, ID=, Start=, User=, and WithAssoc     \n\
@@ -896,13 +905,9 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                             Start=, User=, and WithDeleted                 \n\
                                                                            \n\
        archive dump       - Directory=, Events, Jobs,                      \n\
-                            PurgeEventAfter=<Period>,                      \n\
-                            PurgeJobAfter=<Period>,                        \n\
-                            PurgeStepAfter=<Period>,                       \n\
-                            PurgeSuspendAfter=<Period>,                    \n\
-                            Where <Period>: dDays or mMonths or m [months] \n\
-                                                                           \n\
-                            Script=, Steps and Suspend                     \n\
+                            PurgeEventAfter=, PurgeJobAfter=,              \n\
+                            PurgeStepAfter=, PurgeSuspendAfter=,           \n\
+                            Script=, Steps, and Suspend                    \n\
                                                                            \n\
        archive load       - File=, or Insert=                              \n\
                                                                            \n\
@@ -915,8 +920,8 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                             Organization                                   \n\
                                                                            \n\
        Association        - Account, Cluster, DefaultQOS, Fairshare,       \n\
-                            GrpCPUMins,GrpCPUs, GrpJobs, GrpNodes,         \n\
-                            GrpSubmitJob,GrpWall, ID, LFT, MaxCPUMins,     \n\
+                            GrpCPUMins, GrpCPUs, GrpJobs, GrpNodes,        \n\
+                            GrpSubmitJob, GrpWall, ID, LFT, MaxCPUMins,    \n\
                             MaxCPUs, MaxJobs, MaxNodes, MaxSubmitJobs,     \n\
                             MaxWall, QOS, ParentID, ParentName,            \n\
                             Partition, RawQOS, RGT, User                   \n\
@@ -932,11 +937,12 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                             Event, EventRaw, NodeName, Reason, Start,      \n\
                             State, StateRaw, User                          \n\
                                                                            \n\
-       QOS                - Description, GrpCPUMins, GrpCPUs, GrpJobs,     \n\
-                            GrpNodes, GrpSubmitJob, GrpWall, ID,           \n\
+       QOS                - Description, Flags, GrpCPUMins, GrpCPUs,       \n\
+                            GrpJobs, GrpNodes, GrpSubmitJob, GrpWall, ID,  \n\
                             MaxCPUMins, MaxCPUs, MaxJobs, MaxNodes,        \n\
                             MaxSubmitJobs, MaxWall, Name,                  \n\
-                            Preempt, PreemptMode, Priority, UsageFactor    \n\
+                            Preempt, PreemptMode, Priority, UsageFactor,   \n\
+                            UsageThreshold                                 \n\
                                                                            \n\
        Transactions       - Action, Actor, Info, TimeStamp, Where          \n\
                                                                            \n\
