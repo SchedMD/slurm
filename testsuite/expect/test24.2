@@ -178,7 +178,7 @@ proc sshare_opt { soption } {
 				incr matches
 				exp_continue
 			}
-			-re "Raw Usage\\|Effectv Usage\\|Fair-share\\|" {
+			-re "Raw Usage\\|Effectv Usage\\|FS Usage\\|" {
 				if {$debug} {send_user "\nmatch5\n"}
 				incr matches
 				exp_continue
@@ -220,7 +220,7 @@ proc sshare_opt { soption } {
 				incr matches
 				exp_continue
 			}
-			-re "Raw Usage\\|Effectv Usage\\|Fair-share" {
+			-re "Raw Usage\\|Effectv Usage\\|FS Usage" {
 				if {$debug} {send_user "\nmatch7\n"}
 				incr matches
 				exp_continue
