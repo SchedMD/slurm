@@ -7271,14 +7271,16 @@ abort_job_on_node(uint32_t job_id, struct job_record *job_ptr,
 	kill_req->job_id	= job_id;
 	kill_req->step_id	= NO_VAL;
 	kill_req->time          = time(NULL);
-	kill_req->start_time	= job_ptr->start_time;
 	kill_req->nodes		= xstrdup(node_ptr->name);
 	if (job_ptr) {  /* NULL if unknown */
+		kill_req->start_time = job_ptr->start_time;
 		kill_req->select_jobinfo =
 			select_g_select_jobinfo_copy(job_ptr->select_jobinfo);
 		kill_req->spank_job_env = xduparray(job_ptr->spank_job_env_size,
 						    job_ptr->spank_job_env);
 		kill_req->spank_job_env_size = job_ptr->spank_job_env_size;
+	} else {
+		/* kill_req->start_time = 0;  Default value */
 	}
 
 	agent_info = xmalloc(sizeof(agent_arg_t));
@@ -7607,10 +7609,6 @@ extern bool job_epilog_complete(uint32_t job_id, char *node_name,
 				job_ptr->select_jobinfo,
 				SELECT_JOBDATA_BLOCK_ID,
 				NULL);
-			select_g_select_jobinfo_set(
-				job_ptr->select_jobinfo,
-				SELECT_JOBDATA_NODE_CNT,
-				&job_ptr->node_cnt);
 #endif
 			xfree(job_ptr->nodes);
 			xfree(job_ptr->nodes_completing);
