@@ -33,11 +33,10 @@
 source ./globals
 
 set test_id     "21.23"
-set test_nu     "test21-23"
 set exit_code   0
 set file_in     "test.$test_id.input"
-set test_acct	[format "%s%s" $test_nu "acct"]
-set wk          [format "%s%s" $test_nu "wckey"]
+set ta		slurm_test-account.1
+set wk          twckey
 set timeout 60
 
 print_header $test_id
@@ -98,7 +97,7 @@ expect {
 # Use sacctmgr to add an account
 #
 set aamatches 0
-set sadd_pid [spawn $sacctmgr -i add account $test_acct cluster=$cn]
+set sadd_pid [spawn $sacctmgr -i add account $ta cluster=$cn]
 expect {
 	-re "Adding Account" {
 		incr aamatches
@@ -126,7 +125,7 @@ if {$aamatches != 1} {
 #
 # Add self to this new account and wckey
 #
-set sadd_pid [spawn $sacctmgr -i create user name=$user_name account=$test_acct cluster=$cn wckeys=$wk]
+set sadd_pid [spawn $sacctmgr -i create user name=$user_name account=$ta cluster=$cn wckeys=$wk]
 expect {
 	 timeout {
 		send_user "\nFAILURE: sacctmgr add not responding\n"
@@ -144,7 +143,7 @@ expect {
 set job_id     0
 set matches    0
 set timeout    $max_job_delay
-spawn $salloc -N1 --account=$test_acct --wckey=$wk
+spawn $salloc -N1 --account=$ta --wckey=$wk
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
@@ -196,7 +195,7 @@ if {$job_id == 0} {
 #
 make_bash_script $file_in "$bin_id"
 set job_id 0
-spawn $sbatch -N1 --account=$test_acct --wckey=$wk --output=none $file_in
+spawn $sbatch -N1 --account=$ta --wckey=$wk --output=none $file_in
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
@@ -257,7 +256,7 @@ if {$job_id == 0} {
 # Spawn a job via srun using this wckey
 #
 set job_id 0
-spawn $srun -N1 -v --account=$test_acct --wckey=$wk $bin_id
+spawn $srun -N1 -v --account=$ta --wckey=$wk $bin_id
 expect {
 	-re "launching ($number)" {
 		set job_id $expect_out(1,string)
@@ -319,7 +318,7 @@ if {$job_id == 0} {
 # Use sacctmgr to delete the test account
 #
 set damatches 0
-set sadel_pid [spawn $sacctmgr -i delete account $test_acct]
+set sadel_pid [spawn $sacctmgr -i delete account $ta]
 expect {
 	-re "Deleting account" {
 		incr damatches
@@ -341,6 +340,6 @@ if {$damatches != 1} {
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in
-	send_user "\nSUCCESS\n"
+	print_success $test_id
 }
 exit $exit_code
