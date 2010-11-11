@@ -55,16 +55,16 @@ static void *_convert_cluster_tables(void *arg)
 	char *query = NULL;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
-	MYSQL *db_conn = NULL;
 	mysql_conn_t mysql_conn;
 
 	memset(&mysql_conn, 0, sizeof(mysql_conn_t));
 	mysql_conn.rollback = 1;
+	slurm_mutex_init(&mysql_conn.lock);
 	/* each thread needs it's own connection */
 	rc = check_connection(&mysql_conn);
 	if(rc != SLURM_SUCCESS)
 		goto end_it;
-	db_conn = mysql_conn.db_conn;
+
 	if(assocs) {
 		int diff;
 		info("Converting old association tables for %s, "
@@ -94,7 +94,7 @@ static void *_convert_cluster_tables(void *arg)
 			   cluster_name, assoc_table,
 			   assoc_table, cluster_name);
 		debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
-		rc = mysql_db_query(db_conn, query);
+		rc = mysql_db_query(&mysql_conn, query);
 		xfree(query);
 		if(rc != SLURM_SUCCESS) {
 			error("Couldn't update assoc table correctly");
@@ -104,7 +104,7 @@ static void *_convert_cluster_tables(void *arg)
 		query = xstrdup_printf("select lft from \"%s_%s\" "
 				       "where acct='root' and user=''",
 				       cluster_name, assoc_table);
-		if(!(result = mysql_db_query_ret(db_conn, query, 0))) {
+		if(!(result = mysql_db_query_ret(&mysql_conn, query, 0))) {
 			xfree(query);
 			rc = SLURM_ERROR;
 			goto end_it;
@@ -135,7 +135,7 @@ static void *_convert_cluster_tables(void *arg)
 				       cluster_name, assoc_table,
 				       diff, diff);
 		debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
-		rc = mysql_db_query(db_conn, query);
+		rc = mysql_db_query(&mysql_conn, query);
 		xfree(query);
 		if(rc != SLURM_SUCCESS) {
 			error("Couldn't update assoc table correctly");
@@ -192,7 +192,7 @@ static void *_convert_cluster_tables(void *arg)
 			   cluster_name, assoc_table);
 		debug4("(%s:%d) query\n%s",
 		       THIS_FILE, __LINE__, query);
-		rc = mysql_db_query(db_conn, query);
+		rc = mysql_db_query(&mysql_conn, query);
 		xfree(query);
 		if(rc != SLURM_SUCCESS) {
 			error("Couldn't update assoc usage "
@@ -218,7 +218,7 @@ static void *_convert_cluster_tables(void *arg)
 			cluster_name, event_table,
 			"cluster_event_table", cluster_name);
 		debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
-		rc = mysql_db_query(db_conn, query);
+		rc = mysql_db_query(&mysql_conn, query);
 		xfree(query);
 		if(rc != SLURM_SUCCESS) {
 			error("Couldn't update event table correctly");
@@ -254,7 +254,7 @@ static void *_convert_cluster_tables(void *arg)
 			cluster_name, job_table,
 			job_table, cluster_name);
 		debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
-		rc = mysql_db_query(db_conn, query);
+		rc = mysql_db_query(&mysql_conn, query);
 		xfree(query);
 		if(rc != SLURM_SUCCESS) {
 			error("Couldn't update job table correctly");
@@ -277,7 +277,7 @@ static void *_convert_cluster_tables(void *arg)
 			cluster_name, last_ran_table,
 			last_ran_table);
 		debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
-		rc = mysql_db_query(db_conn, query);
+		rc = mysql_db_query(&mysql_conn, query);
 		xfree(query);
 		if(rc != SLURM_SUCCESS) {
 			error("Couldn't update last ran table correctly");
@@ -304,7 +304,7 @@ static void *_convert_cluster_tables(void *arg)
 			cluster_name, resv_table,
 			resv_table, cluster_name);
 		debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
-		rc = mysql_db_query(db_conn, query);
+		rc = mysql_db_query(&mysql_conn, query);
 		xfree(query);
 		if(rc != SLURM_SUCCESS) {
 			error("Couldn't update reserve "
@@ -348,7 +348,7 @@ static void *_convert_cluster_tables(void *arg)
 			cluster_name, step_table,
 			step_table, cluster_name, job_table);
 		debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
-		rc = mysql_db_query(db_conn, query);
+		rc = mysql_db_query(&mysql_conn, query);
 		xfree(query);
 		if(rc != SLURM_SUCCESS) {
 			error("Couldn't update step table correctly");
@@ -371,7 +371,7 @@ static void *_convert_cluster_tables(void *arg)
 			cluster_name, suspend_table,
 			suspend_table, cluster_name, job_table);
 		debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
-		rc = mysql_db_query(db_conn, query);
+		rc = mysql_db_query(&mysql_conn, query);
 		xfree(query);
 		if(rc != SLURM_SUCCESS) {
 			error("Couldn't update suspend "
@@ -436,7 +436,7 @@ static void *_convert_cluster_tables(void *arg)
 			   cluster_name, cluster_month_table,
 			   "cluster_month_usage_table", cluster_name);
 		debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
-		rc = mysql_db_query(db_conn, query);
+		rc = mysql_db_query(&mysql_conn, query);
 		xfree(query);
 		if(rc != SLURM_SUCCESS) {
 			error("Couldn't update cluster usage "
@@ -461,7 +461,7 @@ static void *_convert_cluster_tables(void *arg)
 			   cluster_name, wckey_table,
 			   wckey_table, cluster_name);
 		debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
-		rc = mysql_db_query(db_conn, query);
+		rc = mysql_db_query(&mysql_conn, query);
 		xfree(query);
 		if(rc != SLURM_SUCCESS) {
 			error("Couldn't update wckey table correctly");
@@ -523,7 +523,7 @@ static void *_convert_cluster_tables(void *arg)
 			   cluster_name, wckey_table);
 		debug4("(%s:%d) query\n%s",
 		       THIS_FILE, __LINE__, query);
-		rc = mysql_db_query(db_conn, query);
+		rc = mysql_db_query(&mysql_conn, query);
 		xfree(query);
 		if(rc != SLURM_SUCCESS) {
 			error("Couldn't update wckey usage "
@@ -535,7 +535,7 @@ static void *_convert_cluster_tables(void *arg)
 
 end_it:
 	if(rc == SLURM_SUCCESS) {
-		if(mysql_db_commit(db_conn)) {
+		if(mysql_db_commit(&mysql_conn)) {
 			error("Commit failed, didn't update cluster %s",
 			      cluster_name);
 			rc = SLURM_ERROR;
@@ -543,11 +543,12 @@ end_it:
 			verbose("Cluster %s updated", cluster_name);
 	} else {
 		verbose("Cluster %s update failed", cluster_name);
-		if(db_conn && mysql_db_rollback(db_conn))
+		if(mysql_db_rollback(&mysql_conn))
 			error("rollback failed");
 	}
 
-	mysql_close_db_connection(&db_conn);
+	mysql_db_close_db_connection(&mysql_conn);
+	slurm_mutex_destroy(&mysql_conn.lock);
 
 	slurm_mutex_lock(&converted_lock);
 	converted++;
@@ -557,7 +558,7 @@ end_it:
 	return NULL;
 }
 
-extern int as_mysql_convert_tables(MYSQL *db_conn)
+extern int as_mysql_convert_tables(mysql_conn_t *mysql_conn)
 {
 	storage_field_t assoc_table_fields_2_1[] = {
 		{ "creation_time", "int unsigned not null" },
@@ -768,7 +769,7 @@ extern int as_mysql_convert_tables(MYSQL *db_conn)
 	query = xstrdup_printf("show tables like '%s';", assoc_table);
 
 	debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
-	if(!(result = mysql_db_query_ret(db_conn, query, 0))) {
+	if(!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
 		xfree(query);
 		goto end_it;
 	}
@@ -776,26 +777,26 @@ extern int as_mysql_convert_tables(MYSQL *db_conn)
 
 	if((row = mysql_fetch_row(result))) {
 		/* make it up to date */
-		if(mysql_db_create_table(db_conn, assoc_table,
+		if(mysql_db_create_table(mysql_conn, assoc_table,
 					 assoc_table_fields_2_1,
 					 ", primary key (id), "
 					 " unique index (user(20), acct(20), "
 					 "cluster(20), partition(20)))")
 		   == SLURM_ERROR)
 			goto end_it;
-		if(mysql_db_create_table(db_conn, "assoc_day_usage_table",
+		if(mysql_db_create_table(mysql_conn, "assoc_day_usage_table",
 					 assoc_usage_table_fields_2_1,
 					 ", primary key (id, period_start))")
 		   == SLURM_ERROR)
 			goto end_it;
 
-		if(mysql_db_create_table(db_conn, "assoc_hour_usage_table",
+		if(mysql_db_create_table(mysql_conn, "assoc_hour_usage_table",
 					 assoc_usage_table_fields_2_1,
 					 ", primary key (id, period_start))")
 		   == SLURM_ERROR)
 			goto end_it;
 
-		if(mysql_db_create_table(db_conn, "assoc_month_usage_table",
+		if(mysql_db_create_table(mysql_conn, "assoc_month_usage_table",
 					 assoc_usage_table_fields_2_1,
 					 ", primary key (id, period_start))")
 		   == SLURM_ERROR)
@@ -809,7 +810,7 @@ extern int as_mysql_convert_tables(MYSQL *db_conn)
 	/* now do events */
 	query = xstrdup_printf("show tables like 'cluster_event_table';");
 	debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
-	if(!(result = mysql_db_query_ret(db_conn, query, 0))) {
+	if(!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
 		xfree(query);
 		goto end_it;
 	}
@@ -817,7 +818,7 @@ extern int as_mysql_convert_tables(MYSQL *db_conn)
 
 	if((row = mysql_fetch_row(result))) {
 		/* make it up to date */
-		if(mysql_db_create_table(db_conn, "cluster_event_table",
+		if(mysql_db_create_table(mysql_conn, "cluster_event_table",
 					 event_table_fields_2_1,
 					 ", primary key (node_name(20), "
 					 "cluster(20), period_start))")
@@ -832,7 +833,7 @@ extern int as_mysql_convert_tables(MYSQL *db_conn)
 	query = xstrdup_printf("show tables like '%s';", job_table);
 
 	debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
-	if(!(result = mysql_db_query_ret(db_conn, query, 0))) {
+	if(!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
 		xfree(query);
 		goto end_it;
 	}
@@ -840,7 +841,7 @@ extern int as_mysql_convert_tables(MYSQL *db_conn)
 
 	if((row = mysql_fetch_row(result))) {
 		/* make it up to date */
-		if(mysql_db_create_table(db_conn, job_table,
+		if(mysql_db_create_table(mysql_conn, job_table,
 					 job_table_fields_2_1,
 					 ", primary key (id), "
 					 "unique index (jobid, "
@@ -856,7 +857,7 @@ extern int as_mysql_convert_tables(MYSQL *db_conn)
 	query = xstrdup_printf("show tables like '%s';", last_ran_table);
 
 	debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
-	if(!(result = mysql_db_query_ret(db_conn, query, 0))) {
+	if(!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
 		xfree(query);
 		goto end_it;
 	}
@@ -864,7 +865,7 @@ extern int as_mysql_convert_tables(MYSQL *db_conn)
 
 	if((row = mysql_fetch_row(result))) {
 		/* make it up to date */
-		if(mysql_db_create_table(db_conn, last_ran_table,
+		if(mysql_db_create_table(mysql_conn, last_ran_table,
 					 last_ran_table_fields_2_1,
 					 ")") == SLURM_ERROR)
 			goto end_it;
@@ -877,7 +878,7 @@ extern int as_mysql_convert_tables(MYSQL *db_conn)
 	query = xstrdup_printf("show tables like '%s';", resv_table);
 
 	debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
-	if(!(result = mysql_db_query_ret(db_conn, query, 0))) {
+	if(!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
 		xfree(query);
 		goto end_it;
 	}
@@ -885,7 +886,7 @@ extern int as_mysql_convert_tables(MYSQL *db_conn)
 
 	if((row = mysql_fetch_row(result))) {
 		/* make it up to date */
-		if(mysql_db_create_table(db_conn, resv_table,
+		if(mysql_db_create_table(mysql_conn, resv_table,
 					 resv_table_fields_2_1,
 					 ", primary key (id, start, "
 					 "cluster(20)))")
@@ -900,7 +901,7 @@ extern int as_mysql_convert_tables(MYSQL *db_conn)
 	query = xstrdup_printf("show tables like '%s';", step_table);
 
 	debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
-	if(!(result = mysql_db_query_ret(db_conn, query, 0))) {
+	if(!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
 		xfree(query);
 		goto end_it;
 	}
@@ -908,7 +909,7 @@ extern int as_mysql_convert_tables(MYSQL *db_conn)
 
 	if((row = mysql_fetch_row(result))) {
 		/* make it up to date */
-		if(mysql_db_create_table(db_conn, step_table,
+		if(mysql_db_create_table(mysql_conn, step_table,
 					 step_table_fields_2_1,
 					 ", primary key (id, stepid))")
 		   == SLURM_ERROR)
@@ -922,7 +923,7 @@ extern int as_mysql_convert_tables(MYSQL *db_conn)
 	query = xstrdup_printf("show tables like '%s';", suspend_table);
 
 	debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
-	if(!(result = mysql_db_query_ret(db_conn, query, 0))) {
+	if(!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
 		xfree(query);
 		goto end_it;
 	}
@@ -930,7 +931,7 @@ extern int as_mysql_convert_tables(MYSQL *db_conn)
 
 	if((row = mysql_fetch_row(result))) {
 		/* make it up to date */
-		if(mysql_db_create_table(db_conn, suspend_table,
+		if(mysql_db_create_table(mysql_conn, suspend_table,
 					 suspend_table_fields_2_1,
 					 ")")
 		   == SLURM_ERROR)
@@ -944,7 +945,7 @@ extern int as_mysql_convert_tables(MYSQL *db_conn)
 	query = xstrdup("show tables like 'cluster_hour_usage_table';");
 
 	debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
-	if(!(result = mysql_db_query_ret(db_conn, query, 0))) {
+	if(!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
 		xfree(query);
 		goto end_it;
 	}
@@ -952,21 +953,21 @@ extern int as_mysql_convert_tables(MYSQL *db_conn)
 
 	if((row = mysql_fetch_row(result))) {
 		/* make it up to date */
-		if(mysql_db_create_table(db_conn, "cluster_day_usage_table",
+		if(mysql_db_create_table(mysql_conn, "cluster_day_usage_table",
 					 cluster_usage_table_fields_2_1,
 					 ", primary key (cluster(20), "
 					 "period_start))")
 		   == SLURM_ERROR)
 			goto end_it;
 
-		if(mysql_db_create_table(db_conn, "cluster_hour_usage_table",
+		if(mysql_db_create_table(mysql_conn, "cluster_hour_usage_table",
 					 cluster_usage_table_fields_2_1,
 					 ", primary key (cluster(20), "
 					 "period_start))")
 		   == SLURM_ERROR)
 			goto end_it;
 
-		if(mysql_db_create_table(db_conn, "cluster_month_usage_table",
+		if(mysql_db_create_table(mysql_conn, "cluster_month_usage_table",
 					 cluster_usage_table_fields_2_1,
 					 ", primary key (cluster(20), "
 					 "period_start))")
@@ -982,7 +983,7 @@ extern int as_mysql_convert_tables(MYSQL *db_conn)
 	query = xstrdup_printf("show tables like '%s';", wckey_table);
 
 	debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
-	if(!(result = mysql_db_query_ret(db_conn, query, 0))) {
+	if(!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
 		xfree(query);
 		goto end_it;
 	}
@@ -990,26 +991,26 @@ extern int as_mysql_convert_tables(MYSQL *db_conn)
 
 	if((row = mysql_fetch_row(result))) {
 		/* make it up to date */
-		if(mysql_db_create_table(db_conn, wckey_table,
+		if(mysql_db_create_table(mysql_conn, wckey_table,
 					 wckey_table_fields_2_1,
 					 ", primary key (id), "
 					 " unique index (name(20), user(20), "
 					 "cluster(20)))")
 		   == SLURM_ERROR)
 			goto end_it;
-		if(mysql_db_create_table(db_conn, "wckey_day_usage_table",
+		if(mysql_db_create_table(mysql_conn, "wckey_day_usage_table",
 					 wckey_usage_table_fields_2_1,
 					 ", primary key (id, period_start))")
 		   == SLURM_ERROR)
 			goto end_it;
 
-		if(mysql_db_create_table(db_conn, "wckey_hour_usage_table",
+		if(mysql_db_create_table(mysql_conn, "wckey_hour_usage_table",
 					 wckey_usage_table_fields_2_1,
 					 ", primary key (id, period_start))")
 		   == SLURM_ERROR)
 			goto end_it;
 
-		if(mysql_db_create_table(db_conn, "wckey_month_usage_table",
+		if(mysql_db_create_table(mysql_conn, "wckey_month_usage_table",
 					 wckey_usage_table_fields_2_1,
 					 ", primary key (id, period_start))")
 		   == SLURM_ERROR)
@@ -1063,7 +1064,7 @@ extern int as_mysql_convert_tables(MYSQL *db_conn)
 					       "where cluster='%s'",
 					       assoc_table, cluster_name);
 			debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
-			if(!(result = mysql_db_query_ret(db_conn, query, 0))) {
+			if(!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
 				xfree(query);
 				rc = SLURM_ERROR;
 				goto end_it;
@@ -1098,7 +1099,7 @@ extern int as_mysql_convert_tables(MYSQL *db_conn)
 				xfree(txn_ids);
 				debug4("(%s:%d) query\n%s",
 				     THIS_FILE, __LINE__, query);
-				rc = mysql_db_query(db_conn, query);
+				rc = mysql_db_query(mysql_conn, query);
 				xfree(query);
 				if(rc != SLURM_SUCCESS) {
 					error("Couldn't update assoc "
@@ -1122,7 +1123,7 @@ extern int as_mysql_convert_tables(MYSQL *db_conn)
 					       "cluster='%s'",
 					       wckey_table, cluster_name);
 			debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
-			if(!(result = mysql_db_query_ret(db_conn, query, 0))) {
+			if(!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
 				xfree(query);
 				rc = SLURM_ERROR;
 				goto end_it;
@@ -1156,7 +1157,7 @@ extern int as_mysql_convert_tables(MYSQL *db_conn)
 				xfree(txn_ids);
 				debug4("(%s:%d) query\n%s",
 				     THIS_FILE, __LINE__, query);
-				rc = mysql_db_query(db_conn, query);
+				rc = mysql_db_query(mysql_conn, query);
 				xfree(query);
 				if(rc != SLURM_SUCCESS) {
 					error("Couldn't update wckey "
@@ -1192,7 +1193,7 @@ extern int as_mysql_convert_tables(MYSQL *db_conn)
 	}
 
 	if(query) {
-		rc = mysql_db_query(db_conn, query);
+		rc = mysql_db_query(mysql_conn, query);
 		xfree(query);
 		if(rc != SLURM_SUCCESS) {
 			error("Couldn't replace id='s in txn table");
@@ -1368,7 +1369,7 @@ extern int as_mysql_convert_tables(MYSQL *db_conn)
 		xstrfmtcat(drop_query, ";%s;", query);
 		xfree(query);
 		info("Renaming old tables with _old behind them.");
-		rc = mysql_db_query(db_conn, drop_query);
+		rc = mysql_db_query(mysql_conn, drop_query);
 		xfree(drop_query);
 		if(rc != SLURM_SUCCESS) {
 			error("Couldn't rename tables");
@@ -1384,7 +1385,7 @@ end_it:
 }
 
 /* as_mysql_cluster_list_lock needs to be locked before calling this. */
-extern int as_mysql_convert_user_defs(MYSQL *db_conn, char *cluster_name)
+extern int as_mysql_convert_user_defs(mysql_conn_t *mysql_conn, char *cluster_name)
 {
 	char *query = NULL;
 	MYSQL_RES *result = NULL;
@@ -1416,7 +1417,7 @@ extern int as_mysql_convert_user_defs(MYSQL *db_conn, char *cluster_name)
 	xstrfmtcat(query, " from %s", user_table);
 
 	debug3("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
-	if (!(result = mysql_db_query_ret(db_conn, query, 0))) {
+	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
 		xfree(query);
 		return SLURM_ERROR;
 	}
@@ -1439,7 +1440,7 @@ extern int as_mysql_convert_user_defs(MYSQL *db_conn, char *cluster_name)
 	mysql_free_result(result);
 	if (query) {
 		debug3("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
-		rc = mysql_db_query(db_conn, query);
+		rc = mysql_db_query(mysql_conn, query);
 		xfree(query);
 	}
 

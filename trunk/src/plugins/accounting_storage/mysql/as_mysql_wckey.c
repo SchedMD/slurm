@@ -79,7 +79,7 @@ static int _reset_default_wckey(mysql_conn_t *mysql_conn,
 		   wckey->user, wckey->name);
 	debug3("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, THIS_FILE, __LINE__, query);
-	if (!(result = mysql_db_query_ret(mysql_conn->db_conn, query, 1))) {
+	if (!(result = mysql_db_query_ret(mysql_conn, query, 1))) {
 		xfree(query);
 		rc = SLURM_ERROR;
 		goto end_it;
@@ -188,7 +188,7 @@ static int _cluster_remove_wckeys(mysql_conn_t *mysql_conn,
 				     "from \"%s_%s\" as t1%s;",
 				     cluster_name, wckey_table, extra);
 	if(!(result = mysql_db_query_ret(
-		     mysql_conn->db_conn, query, 0))) {
+		     mysql_conn, query, 0))) {
 		xfree(query);
 		return SLURM_ERROR;
 	}
@@ -258,7 +258,7 @@ static int _cluster_modify_wckeys(mysql_conn_t *mysql_conn,
 	query = xstrdup_printf("select t1.id_wckey, t1.wckey_name, t1.user "
 			       "from \"%s_%s\" as t1%s;",
 			       cluster_name, wckey_table, extra);
-	if (!(result = mysql_db_query_ret(mysql_conn->db_conn, query, 0))) {
+	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
 		xfree(query);
 		return SLURM_ERROR;
 	}
@@ -346,7 +346,7 @@ static int _cluster_get_wckeys(mysql_conn_t *mysql_conn,
 	debug3("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, THIS_FILE, __LINE__, query);
 	if(!(result = mysql_db_query_ret(
-		     mysql_conn->db_conn, query, 0))) {
+		     mysql_conn, query, 0))) {
 		xfree(query);
 		if(mysql_errno(mysql_conn->db_conn) == ER_NO_SUCH_TABLE)
 			return SLURM_SUCCESS;
@@ -450,7 +450,7 @@ extern int as_mysql_add_wckeys(mysql_conn_t *mysql_conn, uint32_t uid,
 
 		debug3("%d(%s:%d) query\n%s",
 		       mysql_conn->conn, THIS_FILE, __LINE__, query);
-		object->id = mysql_insert_ret_id(mysql_conn->db_conn, query);
+		object->id = mysql_db_insert_ret_id(mysql_conn, query);
 		xfree(query);
 		if(!object->id) {
 			error("Couldn't add wckey %s", object->name);
@@ -461,7 +461,7 @@ extern int as_mysql_add_wckeys(mysql_conn_t *mysql_conn, uint32_t uid,
 			break;
 		}
 
-		affect_rows = last_affected_rows(mysql_conn->db_conn);
+		affect_rows = last_affected_rows(mysql_conn);
 
 		if(!affect_rows) {
 			debug2("nothing changed %d", affect_rows);
@@ -487,7 +487,7 @@ extern int as_mysql_add_wckeys(mysql_conn_t *mysql_conn, uint32_t uid,
 		xfree(extra);
 		xfree(vals);
 		debug4("query\n%s",query);
-		rc = mysql_db_query(mysql_conn->db_conn, query);
+		rc = mysql_db_query(mysql_conn, query);
 		xfree(query);
 		if (rc != SLURM_SUCCESS) {
 			error("Couldn't add txn");

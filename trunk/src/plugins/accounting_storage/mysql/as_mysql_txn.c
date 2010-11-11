@@ -185,7 +185,7 @@ extern List as_mysql_get_txn(mysql_conn_t *mysql_conn, uid_t uid,
 			debug3("%d(%s:%d) query\n%s",
 			       mysql_conn->conn, THIS_FILE, __LINE__, query);
 			if(!(result = mysql_db_query_ret(
-				     mysql_conn->db_conn, query, 0))) {
+				     mysql_conn, query, 0))) {
 				xfree(query);
 				break;
 			}
@@ -354,7 +354,7 @@ extern List as_mysql_get_txn(mysql_conn_t *mysql_conn, uid_t uid,
 	 * when grouping the names
 	 */
 	if(txn_cond->with_assoc_info)
-		mysql_db_query(mysql_conn->db_conn,
+		mysql_db_query(mysql_conn,
 			       "set session group_concat_max_len=65536;");
 
 empty:
@@ -382,7 +382,7 @@ empty:
 	debug3("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, THIS_FILE, __LINE__, query);
 	if(!(result = mysql_db_query_ret(
-		     mysql_conn->db_conn, query, 0))) {
+		     mysql_conn, query, 0))) {
 		xfree(query);
 		goto end_it;
 	}
@@ -419,7 +419,7 @@ empty:
 				debug4("%d(%s:%d) query\n%s", mysql_conn->conn,
 				       THIS_FILE, __LINE__, query);
 				if(!(result2 = mysql_db_query_ret(
-					     mysql_conn->db_conn, query, 0))) {
+					     mysql_conn, query, 0))) {
 					xfree(query);
 					continue;
 				}

@@ -79,8 +79,7 @@ const char plugin_name[] = "Job completion MYSQL plugin";
 const char plugin_type[] = "jobcomp/mysql";
 const uint32_t plugin_version = 100;
 
-
-MYSQL *jobcomp_mysql_db = NULL;
+mysql_conn_t *jobcomp_mysql_conn = NULL;
 
 char *jobcomp_table = "jobcomp_table";
 storage_field_t jobcomp_table_fields[] = {
@@ -127,23 +126,9 @@ static int plugin_errno = SLURM_SUCCESS;
 static pthread_mutex_t  jobcomp_lock = PTHREAD_MUTEX_INITIALIZER;
 
 
-static mysql_db_info_t *_mysql_jobcomp_create_db_info()
-{
-	mysql_db_info_t *db_info = xmalloc(sizeof(mysql_db_info_t));
-	db_info->port = slurm_get_jobcomp_port();
-	if(!db_info->port) {
-		db_info->port = DEFAULT_MYSQL_PORT;
-		slurm_set_jobcomp_port(db_info->port);
-	}
-	db_info->host = slurm_get_jobcomp_host();
-	db_info->user = slurm_get_jobcomp_user();
-	db_info->pass = slurm_get_jobcomp_pass();
-	return db_info;
-}
-
 static int _mysql_jobcomp_check_tables()
 {
-	if(mysql_db_create_table(jobcomp_mysql_db, jobcomp_table,
+	if(mysql_db_create_table(jobcomp_mysql_conn, jobcomp_table,
 				 jobcomp_table_fields, ")") == SLURM_ERROR)
 		return SLURM_ERROR;
 
@@ -231,21 +216,21 @@ extern int init ( void )
 
 extern int fini ( void )
 {
-	if (jobcomp_mysql_db) {
-		mysql_close(jobcomp_mysql_db);
-		jobcomp_mysql_db = NULL;
+	if (jobcomp_mysql_conn) {
+		destroy_mysql_conn(jobcomp_mysql_conn);
+		jobcomp_mysql_conn = NULL;
 	}
 	return SLURM_SUCCESS;
 }
 
 extern int slurm_jobcomp_set_location(char *location)
 {
-	mysql_db_info_t *db_info = _mysql_jobcomp_create_db_info();
+	mysql_db_info_t *db_info = create_mysql_db_info(SLURM_MYSQL_PLUGIN_JC);
 	int rc = SLURM_SUCCESS;
 	char *db_name = NULL;
 	int i = 0;
 
-	if(jobcomp_mysql_db && mysql_ping(jobcomp_mysql_db) == 0)
+	if (jobcomp_mysql_conn && mysql_db_ping(jobcomp_mysql_conn) == 0)
 		return SLURM_SUCCESS;
 
 	if(!location)
@@ -267,8 +252,8 @@ extern int slurm_jobcomp_set_location(char *location)
 	}
 
 	debug2("mysql_connect() called for db %s", db_name);
-
-	mysql_get_db_connection(&jobcomp_mysql_db, db_name, db_info);
+	jobcomp_mysql_conn = create_mysql_conn(0, 0, NULL);
+	mysql_db_get_db_connection(jobcomp_mysql_conn, db_name, db_info);
 
 	rc = _mysql_jobcomp_check_tables();
 
@@ -292,7 +277,7 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 	char *query = NULL;
 	uint32_t time_limit, start_time, end_time;
 
-	if(!jobcomp_mysql_db || mysql_ping(jobcomp_mysql_db) != 0) {
+	if(!jobcomp_mysql_conn || mysql_db_ping(jobcomp_mysql_conn) != 0) {
 		char *loc = slurm_get_jobcomp_loc();
 		if(slurm_jobcomp_set_location(loc) == SLURM_ERROR) {
 			xfree(loc);
@@ -412,7 +397,7 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 	}
 	xstrcat(query, ")");
 	//info("query = %s", query);
-	rc = mysql_db_query(jobcomp_mysql_db, query);
+	rc = mysql_db_query(jobcomp_mysql_conn, query);
 	xfree(usr_str);
 	xfree(grp_str);
 
@@ -439,7 +424,7 @@ extern List slurm_jobcomp_get_jobs(slurmdb_job_cond_t *job_cond)
 {
 	List job_list = NULL;
 
-	if(!jobcomp_mysql_db || mysql_ping(jobcomp_mysql_db) != 0) {
+	if(!jobcomp_mysql_conn || mysql_db_ping(jobcomp_mysql_conn) != 0) {
 		char *loc = slurm_get_jobcomp_loc();
 		if(slurm_jobcomp_set_location(loc) == SLURM_ERROR) {
 			xfree(loc);
@@ -458,7 +443,7 @@ extern List slurm_jobcomp_get_jobs(slurmdb_job_cond_t *job_cond)
  */
 extern int slurm_jobcomp_archive(slurmdb_archive_cond_t *arch_cond)
 {
-	if(!jobcomp_mysql_db || mysql_ping(jobcomp_mysql_db) != 0) {
+	if(!jobcomp_mysql_conn || mysql_db_ping(jobcomp_mysql_conn) != 0) {
 		char *loc = slurm_get_jobcomp_loc();
 		if(slurm_jobcomp_set_location(loc) == SLURM_ERROR) {
 			xfree(loc);

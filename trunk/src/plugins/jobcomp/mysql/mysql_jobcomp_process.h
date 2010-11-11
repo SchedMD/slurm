@@ -49,7 +49,7 @@
 #include "src/common/jobacct_common.h"
 #include "src/common/slurm_accounting_storage.h"
 
-extern MYSQL *jobcomp_mysql_db;
+extern mysql_conn_t *jobcomp_mysql_conn;
 extern int jobcomp_db_init;
 
 extern char *jobcomp_table;

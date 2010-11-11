@@ -54,6 +54,7 @@ documents those changes that are of interest to users and admins.
  -- Enable srun's use of the --nodes option with --exclusive (previously the
     --nodes option was ignored).
  -- Added UsageThreshold and Flags to the QOS object.
+ -- Patch to improve threadsafeness in the mysql plugins.
 
 * Changes in SLURM 2.2.0.pre12
 ==============================

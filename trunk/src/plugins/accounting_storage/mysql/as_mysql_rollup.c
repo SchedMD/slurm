@@ -305,7 +305,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 		debug3("%d(%s:%d) query\n%s",
 		       mysql_conn->conn, THIS_FILE, __LINE__, query);
 		if(!(result = mysql_db_query_ret(
-			     mysql_conn->db_conn, query, 0))) {
+			     mysql_conn, query, 0))) {
 			xfree(query);
 			return SLURM_ERROR;
 		}
@@ -396,7 +396,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 		debug3("%d(%s:%d) query\n%s",
 		       mysql_conn->conn, THIS_FILE, __LINE__, query);
 		if(!(result = mysql_db_query_ret(
-			     mysql_conn->db_conn, query, 0))) {
+			     mysql_conn, query, 0))) {
 			xfree(query);
 			return SLURM_ERROR;
 		}
@@ -491,7 +491,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 		debug3("%d(%s:%d) query\n%s",
 		       mysql_conn->conn, THIS_FILE, __LINE__, query);
 		if(!(result = mysql_db_query_ret(
-			     mysql_conn->db_conn, query, 0))) {
+			     mysql_conn, query, 0))) {
 			xfree(query);
 			return SLURM_ERROR;
 		}
@@ -541,7 +541,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 				       mysql_conn->conn, THIS_FILE,
 				       __LINE__, query);
 				if(!(result2 = mysql_db_query_ret(
-					     mysql_conn->db_conn,
+					     mysql_conn,
 					     query, 0))) {
 					xfree(query);
 					return SLURM_ERROR;
@@ -903,7 +903,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 				   now);
 			debug3("%d(%s:%d) query\n%s",
 			       mysql_conn->conn, THIS_FILE, __LINE__, query);
-			rc = mysql_db_query(mysql_conn->db_conn, query);
+			rc = mysql_db_query(mysql_conn, query);
 			xfree(query);
 			if(rc != SLURM_SUCCESS) {
 				error("Couldn't add cluster hour rollup");
@@ -944,7 +944,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 
 			debug3("%d(%s:%d) query\n%s",
 			       mysql_conn->conn, THIS_FILE, __LINE__, query);
-			rc = mysql_db_query(mysql_conn->db_conn, query);
+			rc = mysql_db_query(mysql_conn, query);
 			xfree(query);
 			if(rc != SLURM_SUCCESS) {
 				error("Couldn't add assoc hour rollup");
@@ -988,7 +988,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 
 			debug3("%d(%s:%d) query\n%s",
 			       mysql_conn->conn, THIS_FILE, __LINE__, query);
-			rc = mysql_db_query(mysql_conn->db_conn, query);
+			rc = mysql_db_query(mysql_conn, query);
 			xfree(query);
 			if(rc != SLURM_SUCCESS) {
 				error("Couldn't add wckey hour rollup");
@@ -1118,7 +1118,7 @@ extern int as_mysql_daily_rollup(mysql_conn_t *mysql_conn,
 		}
 		debug3("%d(%s:%d) query\n%s",
 		       mysql_conn->conn, THIS_FILE, __LINE__, query);
-		rc = mysql_db_query(mysql_conn->db_conn, query);
+		rc = mysql_db_query(mysql_conn, query);
 		xfree(query);
 		if(rc != SLURM_SUCCESS) {
 			error("Couldn't add day rollup");
@@ -1235,7 +1235,7 @@ extern int as_mysql_monthly_rollup(mysql_conn_t *mysql_conn,
 		}
 		debug3("%d(%s:%d) query\n%s",
 		       mysql_conn->conn, THIS_FILE, __LINE__, query);
-		rc = mysql_db_query(mysql_conn->db_conn, query);
+		rc = mysql_db_query(mysql_conn, query);
 		xfree(query);
 		if(rc != SLURM_SUCCESS) {
 			error("Couldn't add day rollup");

@@ -212,9 +212,7 @@ extern int as_mysql_add_resv(mysql_conn_t *mysql_conn,
 	debug3("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, THIS_FILE, __LINE__, query);
 
-	if((rc = mysql_db_query(mysql_conn->db_conn, query)
-	    == SLURM_SUCCESS))
-		rc = mysql_clear_results(mysql_conn->db_conn);
+	rc = mysql_db_query(mysql_conn, query);
 
 	xfree(query);
 	xfree(cols);
@@ -300,7 +298,7 @@ try_again:
 	debug4("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, THIS_FILE, __LINE__, query);
 	if(!(result = mysql_db_query_ret(
-		     mysql_conn->db_conn, query, 0))) {
+		     mysql_conn, query, 0))) {
 		rc = SLURM_ERROR;
 		goto end_it;
 	}
@@ -409,9 +407,7 @@ try_again:
 	debug3("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, THIS_FILE, __LINE__, query);
 
-	if((rc = mysql_db_query(mysql_conn->db_conn, query)
-	    == SLURM_SUCCESS))
-		rc = mysql_clear_results(mysql_conn->db_conn);
+	rc = mysql_db_query(mysql_conn, query);
 
 end_it:
 
@@ -460,9 +456,7 @@ extern int as_mysql_remove_resv(mysql_conn_t *mysql_conn,
 	debug3("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, THIS_FILE, __LINE__, query);
 
-	if((rc = mysql_db_query(mysql_conn->db_conn, query)
-	    == SLURM_SUCCESS))
-		rc = mysql_clear_results(mysql_conn->db_conn);
+	rc = mysql_db_query(mysql_conn, query);
 
 	xfree(query);
 
@@ -583,7 +577,7 @@ empty:
 	xfree(extra);
 	debug3("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, THIS_FILE, __LINE__, query);
-	if(!(result = mysql_db_query_ret(mysql_conn->db_conn, query, 0))) {
+	if(!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
 		xfree(query);
 		if(local_cluster_list)
 			list_destroy(local_cluster_list);

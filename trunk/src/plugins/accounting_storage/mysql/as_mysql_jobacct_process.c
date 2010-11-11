@@ -350,7 +350,7 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 		debug3("%d(%s:%d) query\n%s",
 		       mysql_conn->conn, THIS_FILE, __LINE__, query);
 		if(!(result = mysql_db_query_ret(
-			     mysql_conn->db_conn, query, 0))) {
+			     mysql_conn, query, 0))) {
 			xfree(extra);
 			xfree(query);
 			rc = SLURM_ERROR;
@@ -405,7 +405,7 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 
 	debug3("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, THIS_FILE, __LINE__, query);
-	if(!(result = mysql_db_query_ret(mysql_conn->db_conn, query, 0))) {
+	if(!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
 		xfree(query);
 		rc = SLURM_ERROR;
 		goto end_it;
@@ -536,7 +536,7 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 				       mysql_conn->conn, THIS_FILE,
 				       __LINE__, query);
 				if(!(result2 = mysql_db_query_ret(
-					     mysql_conn->db_conn,
+					     mysql_conn,
 					     query, 0))) {
 					list_destroy(job_list);
 					job_list = NULL;
@@ -658,7 +658,7 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 		       mysql_conn->conn, THIS_FILE, __LINE__, query);
 
 		if(!(step_result = mysql_db_query_ret(
-			     mysql_conn->db_conn, query, 0))) {
+			     mysql_conn, query, 0))) {
 			xfree(query);
 			rc = SLURM_ERROR;
 			goto end_it;
@@ -859,7 +859,7 @@ extern List setup_cluster_list_with_inx(mysql_conn_t *mysql_conn,
 
 	debug3("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, THIS_FILE, __LINE__, query);
-	if(!(result = mysql_db_query_ret(mysql_conn->db_conn, query, 0))) {
+	if(!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
 		xfree(query);
 		hostlist_destroy(temp_hl);
 		return NULL;
@@ -978,7 +978,7 @@ extern char *setup_job_cluster_cond_limits(mysql_conn_t *mysql_conn,
 		list_iterator_destroy(itr);
 		xstrcat(query, ")");
 		if(!(result = mysql_db_query_ret(
-			     mysql_conn->db_conn, query, 0))) {
+			     mysql_conn, query, 0))) {
 			xfree(query);
 			error("couldn't query the database");
 			goto no_resv;

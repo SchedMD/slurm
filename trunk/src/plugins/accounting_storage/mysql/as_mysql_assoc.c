@@ -229,7 +229,7 @@ static int _reset_default_assoc(mysql_conn_t *mysql_conn,
 		debug3("%d(%s:%d) query\n%s",
 		       mysql_conn->conn, THIS_FILE, __LINE__, sel_query);
 		if(!(result = mysql_db_query_ret(
-			     mysql_conn->db_conn, sel_query, 1))) {
+			     mysql_conn, sel_query, 1))) {
 			xfree(sel_query);
 			rc = SLURM_ERROR;
 			goto end_it;
@@ -278,7 +278,7 @@ static int _move_account(mysql_conn_t *mysql_conn, uint32_t *lft, uint32_t *rgt,
 	debug3("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, THIS_FILE, __LINE__, query);
 	if(!(result = mysql_db_query_ret(
-		     mysql_conn->db_conn, query, 0))) {
+		     mysql_conn, query, 0))) {
 		xfree(query);
 		return SLURM_ERROR;
 	}
@@ -347,7 +347,7 @@ static int _move_account(mysql_conn_t *mysql_conn, uint32_t *lft, uint32_t *rgt,
 		   cluster, assoc_table, id);
 	debug3("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, THIS_FILE, __LINE__, query);
-	if(!(result = mysql_db_query_ret(mysql_conn->db_conn, query, 1))) {
+	if(!(result = mysql_db_query_ret(mysql_conn, query, 1))) {
 		xfree(query);
 		return SLURM_ERROR;
 	}
@@ -392,7 +392,7 @@ static int _move_parent(mysql_conn_t *mysql_conn, uid_t uid,
 	debug3("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, THIS_FILE, __LINE__, query);
 	if(!(result =
-	     mysql_db_query_ret(mysql_conn->db_conn, query, 0))) {
+	     mysql_db_query_ret(mysql_conn, query, 0))) {
 		xfree(query);
 		return SLURM_ERROR;
 	}
@@ -422,7 +422,7 @@ static int _move_parent(mysql_conn_t *mysql_conn, uid_t uid,
 	debug3("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, THIS_FILE, __LINE__, query);
 	if(!(result =
-	     mysql_db_query_ret(mysql_conn->db_conn, query, 0))) {
+	     mysql_db_query_ret(mysql_conn, query, 0))) {
 		xfree(query);
 		return SLURM_ERROR;
 	}
@@ -459,7 +459,7 @@ static uint32_t _get_parent_id(
 	debug4("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, THIS_FILE, __LINE__, query);
 
-	if(!(result = mysql_db_query_ret(mysql_conn->db_conn, query, 1))) {
+	if(!(result = mysql_db_query_ret(mysql_conn, query, 1))) {
 		xfree(query);
 		return 0;
 	}
@@ -493,7 +493,7 @@ static int _set_assoc_lft_rgt(
 	debug4("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, THIS_FILE, __LINE__, query);
 
-	if(!(result = mysql_db_query_ret(mysql_conn->db_conn, query, 1))) {
+	if(!(result = mysql_db_query_ret(mysql_conn, query, 1))) {
 		xfree(query);
 		return 0;
 	}
@@ -549,7 +549,7 @@ static int _set_assoc_limits_for_add(
 			       get_parent_limits_select);
 	debug4("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, THIS_FILE, __LINE__, query);
-	if(!(result = mysql_db_query_ret(mysql_conn->db_conn, query, 1))) {
+	if(!(result = mysql_db_query_ret(mysql_conn, query, 1))) {
 		xfree(query);
 		return SLURM_ERROR;
 	}
@@ -699,7 +699,7 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 	debug3("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, THIS_FILE, __LINE__, query);
 	if(!(result =
-	     mysql_db_query_ret(mysql_conn->db_conn, query, 0))) {
+	     mysql_db_query_ret(mysql_conn, query, 0))) {
 		xfree(query);
 		return SLURM_ERROR;
 	}
@@ -1431,7 +1431,7 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 		debug4("%d(%s:%d) query\n%s",
 		       mysql_conn->conn, THIS_FILE, __LINE__, query);
 		if(!(result2 = mysql_db_query_ret(
-			     mysql_conn->db_conn, query, 1))) {
+			     mysql_conn, query, 1))) {
 			xfree(query);
 			break;
 		}
@@ -1674,7 +1674,7 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 	if(reset_query) {
 		debug3("%d(%s:%d) query\n%s",
 		       mysql_conn->conn, THIS_FILE, __LINE__, reset_query);
-		if ((rc = mysql_db_query(mysql_conn->db_conn, reset_query))
+		if ((rc = mysql_db_query(mysql_conn, reset_query))
 		    != SLURM_SUCCESS)
 			error("Couldn't update defaults");
 	}
@@ -1866,7 +1866,7 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 		debug3("%d(%s:%d) query\n%s",
 		       mysql_conn->conn, THIS_FILE, __LINE__, query);
 		if(!(result = mysql_db_query_ret(
-			     mysql_conn->db_conn, query, 0))) {
+			     mysql_conn, query, 0))) {
 			xfree(extra);
 			xfree(query);
 			return SLURM_ERROR;
@@ -1903,7 +1903,7 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 	debug3("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, THIS_FILE, __LINE__, query);
 	if(!(result = mysql_db_query_ret(
-		     mysql_conn->db_conn, query, 0))) {
+		     mysql_conn, query, 0))) {
 		xfree(query);
 		if(mysql_errno(mysql_conn->db_conn) == ER_NO_SUCH_TABLE)
 			return SLURM_SUCCESS;
@@ -2003,7 +2003,7 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 			debug4("%d(%s:%d) query\n%s",
 			       mysql_conn->conn, THIS_FILE, __LINE__, query);
 			if(!(result2 = mysql_db_query_ret(
-				     mysql_conn->db_conn, query, 1))) {
+				     mysql_conn, query, 1))) {
 				xfree(query);
 				break;
 			}
@@ -2237,7 +2237,7 @@ extern int as_mysql_get_modified_lfts(mysql_conn_t *mysql_conn,
 	debug3("%d(%d) query\n%s",
 	       mysql_conn->conn, __LINE__, query);
 	if(!(result = mysql_db_query_ret(
-		     mysql_conn->db_conn, query, 0))) {
+		     mysql_conn, query, 0))) {
 		xfree(query);
 		error("couldn't query the database for modified lfts");
 		return SLURM_ERROR;
@@ -2363,7 +2363,7 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 		debug3("%d(%s:%d) query\n%s",
 		       mysql_conn->conn, THIS_FILE, __LINE__, query);
 		if(!(result = mysql_db_query_ret(
-			     mysql_conn->db_conn, query, 0))) {
+			     mysql_conn, query, 0))) {
 			xfree(query);
 			xfree(cols);
 			xfree(vals);
@@ -2419,7 +2419,7 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 					       mysql_conn->conn,
 					       THIS_FILE, __LINE__, up_query);
 					rc = mysql_db_query(
-						mysql_conn->db_conn,
+						mysql_conn,
 						up_query);
 					xfree(up_query);
 					if(rc != SLURM_SUCCESS) {
@@ -2436,7 +2436,7 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 				debug3("%d(%s:%d) query\n%s", mysql_conn->conn,
 				       THIS_FILE, __LINE__, sel_query);
 				if(!(sel_result = mysql_db_query_ret(
-					     mysql_conn->db_conn,
+					     mysql_conn,
 					     sel_query, 0))) {
 					xfree(cols);
 					xfree(vals);
@@ -2549,7 +2549,7 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 		xfree(update);
 		debug3("%d(%s:%d) query\n%s",
 		       mysql_conn->conn, THIS_FILE, __LINE__, query);
-		rc = mysql_db_query(mysql_conn->db_conn, query);
+		rc = mysql_db_query(mysql_conn, query);
 		xfree(query);
 		if(rc != SLURM_SUCCESS) {
 			error("Couldn't add assoc");
@@ -2560,7 +2560,7 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 		 * the assoc_id will already be set
 		 */
 		if(!assoc_id) {
-			affect_rows = last_affected_rows(mysql_conn->db_conn);
+			affect_rows = last_affected_rows(mysql_conn);
 			assoc_id = mysql_insert_id(mysql_conn->db_conn);
 			//info("last id was %d", assoc_id);
 		}
@@ -2641,7 +2641,7 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 			old_cluster, assoc_table);
 		debug3("%d(%s:%d) query\n%s",
 		       mysql_conn->conn, THIS_FILE, __LINE__, up_query);
-		rc = mysql_db_query(mysql_conn->db_conn, up_query);
+		rc = mysql_db_query(mysql_conn, up_query);
 		xfree(up_query);
 		if(rc != SLURM_SUCCESS)
 			error("Couldn't do update 2");
@@ -2728,7 +2728,7 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 		/* 	       mysql_conn->conn, THIS_FILE, */
 		/* 	       __LINE__, query); */
 		/* 	if(!(result = mysql_db_query_ret( */
-		/* 		     mysql_conn->db_conn, query, 1))) { */
+		/* 		     mysql_conn, query, 1))) { */
 		/* 		xfree(query); */
 		/* 		rc = SLURM_ERROR; */
 		/* 		goto end_it; */
@@ -2762,7 +2762,7 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 	if(query) {
 		debug3("%d(%s:%d) query\n%s",
 		       mysql_conn->conn, THIS_FILE, __LINE__, query);
-		rc = mysql_db_query(mysql_conn->db_conn, query);
+		rc = mysql_db_query(mysql_conn, query);
 		xfree(query);
 		if(rc != SLURM_SUCCESS)
 			error("Couldn't update defaults");
@@ -2775,7 +2775,7 @@ end_it:
 			debug4("%d(%s:%d) query\n%s",
 			       mysql_conn->conn, THIS_FILE,
 			       __LINE__, txn_query);
-			rc = mysql_db_query(mysql_conn->db_conn,
+			rc = mysql_db_query(mysql_conn,
 					    txn_query);
 			xfree(txn_query);
 			if(rc != SLURM_SUCCESS) {
@@ -2943,7 +2943,7 @@ is_same_user:
 		debug3("%d(%s:%d) query\n%s",
 		       mysql_conn->conn, THIS_FILE, __LINE__, query);
 		if(!(result = mysql_db_query_ret(
-			     mysql_conn->db_conn, query, 0))) {
+			     mysql_conn, query, 0))) {
 			xfree(query);
 			if(mysql_errno(mysql_conn->db_conn)
 			   != ER_NO_SUCH_TABLE) {
@@ -3055,7 +3055,7 @@ extern List as_mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 		debug3("%d(%s:%d) query\n%s",
 		       mysql_conn->conn, THIS_FILE, __LINE__, query);
 		if(!(result = mysql_db_query_ret(
-			     mysql_conn->db_conn, query, 0))) {
+			     mysql_conn, query, 0))) {
 			xfree(query);
 			if(mysql_errno(mysql_conn->db_conn)
 			   != ER_NO_SUCH_TABLE) {
@@ -3090,7 +3090,7 @@ extern List as_mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 		debug3("%d(%s:%d) query\n%s",
 		       mysql_conn->conn, THIS_FILE, __LINE__, query);
 		if(!(result = mysql_db_query_ret(
-			     mysql_conn->db_conn, query, 0))) {
+			     mysql_conn, query, 0))) {
 			xfree(query);
 			xfree(name_char);
 			list_destroy(ret_list);
@@ -3170,7 +3170,7 @@ extern List as_mysql_get_assocs(mysql_conn_t *mysql_conn, uid_t uid,
 			   _cluster_get_assocs.
 			*/
 			assoc_mgr_fill_in_user(
-				mysql_conn->db_conn, &user, 1, NULL);
+				mysql_conn, &user, 1, NULL);
 		}
 	}
 

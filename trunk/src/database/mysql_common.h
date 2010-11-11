@@ -45,6 +45,10 @@
 #  include "config.h"
 #endif
 
+#ifdef WITH_PTHREADS
+#  include <pthread.h>
+#endif				/* WITH_PTHREADS */
+
 #if HAVE_STDINT_H
 #  include <stdint.h>
 #endif
@@ -59,10 +63,17 @@
 #include <mysql.h>
 #include <mysqld_error.h>
 
+typedef enum {
+	SLURM_MYSQL_PLUGIN_NOTSET,
+	SLURM_MYSQL_PLUGIN_AS, /* accounting_storage */
+	SLURM_MYSQL_PLUGIN_JC, /* jobcomp */
+} slurm_mysql_plugin_type_t;
+
 typedef struct {
 	bool cluster_deleted;
 	char *cluster_name;
 	MYSQL *db_conn;
+	pthread_mutex_t lock;
 	char *pre_commit_query;
 	bool rollback;
 	List update_list;
@@ -82,27 +93,28 @@ typedef struct {
 	char *options;
 } storage_field_t;
 
-extern pthread_mutex_t mysql_lock;
+extern mysql_conn_t *create_mysql_conn(int conn_num, bool rollback,
+				       char *cluster_name);
+extern int destroy_mysql_conn(mysql_conn_t *mysql_conn);
+extern mysql_db_info_t *create_mysql_db_info(slurm_mysql_plugin_type_t type);
+extern int destroy_mysql_db_info(mysql_db_info_t *db_info);
 
-extern int *destroy_mysql_conn(mysql_conn_t *mysql_conn);
-extern int *destroy_mysql_db_info(mysql_db_info_t *db_info);
-
-extern int mysql_get_db_connection(MYSQL **mysql_db, char *db_name,
+extern int mysql_db_get_db_connection(mysql_conn_t *mysql_conn, char *db_name,
 				   mysql_db_info_t *db_info);
-extern int mysql_close_db_connection(MYSQL **mysql_db);
-extern int mysql_cleanup();
-extern int mysql_clear_results(MYSQL *mysql_db);
-extern int mysql_db_query(MYSQL *mysql_db, char *query);
-extern int mysql_db_ping(MYSQL *mysql_db);
-extern int mysql_db_commit(MYSQL *mysql_db);
-extern int mysql_db_rollback(MYSQL *mysql_db);
+extern int mysql_db_close_db_connection(mysql_conn_t *mysql_conn);
+extern int mysql_db_cleanup();
+extern int mysql_db_query(mysql_conn_t *mysql_conn, char *query);
+extern int mysql_db_ping(mysql_conn_t *mysql_conn);
+extern int mysql_db_commit(mysql_conn_t *mysql_conn);
+extern int mysql_db_rollback(mysql_conn_t *mysql_conn);
 
-extern MYSQL_RES *mysql_db_query_ret(MYSQL *mysql_db, char *query, bool last);
-extern int mysql_db_query_check_after(MYSQL *mysql_db, char *query);
+extern MYSQL_RES *mysql_db_query_ret(mysql_conn_t *mysql_conn,
+				     char *query, bool last);
+extern int mysql_db_query_check_after(mysql_conn_t *mysql_conn, char *query);
 
-extern int mysql_insert_ret_id(MYSQL *mysql_db, char *query);
+extern int mysql_db_insert_ret_id(mysql_conn_t *mysql_conn, char *query);
 
-extern int mysql_db_create_table(MYSQL *mysql_db, char *table_name,
+extern int mysql_db_create_table(mysql_conn_t *mysql_conn, char *table_name,
 				 storage_field_t *fields, char *ending);
 
 

@@ -66,7 +66,7 @@ static int _get_account_coords(mysql_conn_t *mysql_conn,
 		acct_coord_table, acct->name);
 
 	if(!(result =
-	     mysql_db_query_ret(mysql_conn->db_conn, query, 0))) {
+	     mysql_db_query_ret(mysql_conn, query, 0))) {
 		xfree(query);
 		return SLURM_ERROR;
 	}
@@ -104,7 +104,7 @@ static int _get_account_coords(mysql_conn_t *mysql_conn,
 	}
 	xstrcat(query, ";");
 
-	if(!(result =  mysql_db_query_ret(mysql_conn->db_conn, query, 0))) {
+	if(!(result =  mysql_db_query_ret(mysql_conn, query, 0))) {
 		xfree(query);
 		return SLURM_ERROR;
 	}
@@ -163,7 +163,7 @@ extern int as_mysql_add_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 			now, extra);
 		debug3("%d(%s:%d) query\n%s",
 		       mysql_conn->conn, THIS_FILE, __LINE__, query);
-		rc = mysql_db_query(mysql_conn->db_conn, query);
+		rc = mysql_db_query(mysql_conn, query);
 		xfree(cols);
 		xfree(vals);
 		xfree(query);
@@ -172,7 +172,7 @@ extern int as_mysql_add_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 			xfree(extra);
 			continue;
 		}
-		affect_rows = last_affected_rows(mysql_conn->db_conn);
+		affect_rows = last_affected_rows(mysql_conn);
 /* 		debug3("affected %d", affect_rows); */
 
 		if(!affect_rows) {
@@ -211,7 +211,7 @@ extern int as_mysql_add_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 	if(rc != SLURM_ERROR) {
 		if(txn_query) {
 			xstrcat(txn_query, ";");
-			rc = mysql_db_query(mysql_conn->db_conn,
+			rc = mysql_db_query(mysql_conn,
 					    txn_query);
 			xfree(txn_query);
 			if(rc != SLURM_SUCCESS) {
@@ -320,7 +320,7 @@ extern List as_mysql_modify_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 	debug3("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, THIS_FILE, __LINE__, query);
 	if(!(result = mysql_db_query_ret(
-		     mysql_conn->db_conn, query, 0))) {
+		     mysql_conn, query, 0))) {
 		xfree(query);
 		xfree(vals);
 		return NULL;
@@ -450,7 +450,7 @@ extern List as_mysql_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 	query = xstrdup_printf("select name from %s %s;", acct_table, extra);
 	xfree(extra);
 	if(!(result = mysql_db_query_ret(
-		     mysql_conn->db_conn, query, 0))) {
+		     mysql_conn, query, 0))) {
 		xfree(query);
 		return NULL;
 	}
@@ -658,7 +658,7 @@ empty:
 	debug3("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, THIS_FILE, __LINE__, query);
 	if(!(result = mysql_db_query_ret(
-		     mysql_conn->db_conn, query, 0))) {
+		     mysql_conn, query, 0))) {
 		xfree(query);
 		return NULL;
 	}
