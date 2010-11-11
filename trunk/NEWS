@@ -1,8 +1,8 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
-* Changes in SLURM 2.2.0.pre13
-==============================
+* Changes in SLURM 2.2.0.rc1
+============================
  -- Add show_flags parameter to the slurm_load_block_info() function.
  -- perlapi has been brought up to speed courtesy of Hongjia Coa. (make sure to
     run 'make clean' if building in a different dir than source)
