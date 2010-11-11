@@ -42,7 +42,7 @@ set timeout 60
 print_header $test_id
 
 proc _test_limits { } {
-	global test_acct file_in srun sbatch squeue scancel bin_id number bin_sleep bin_rm
+	global file_in srun sbatch squeue scancel bin_id number bin_sleep bin_rm ta
 	# test maxcpumin maxcpu maxjob maxnode maxsubmit maxwall
 	set maxcpumin 10
 	set maxcpu 4
@@ -327,7 +327,7 @@ expect {
 		exp_continue
 	}
 	-re "Nothing new added" {
-		send_user "\nWARNING: vestigial account $test_acct found\n"
+		send_user "\nWARNING: vestigial account $ta found\n"
 		incr aamatches
 		exp_continue
 	}
