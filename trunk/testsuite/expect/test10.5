@@ -38,6 +38,7 @@ set exit_code     0
 set matches       0
 set non_bg        0
 set too_small     0
+set stuff         ""
 
 print_header $test_id
 
@@ -60,42 +61,46 @@ expect {
 		set non_bg 1
 		exp_continue
 	}
-	-re "ID" {
-		incr matches
-		exp_continue
-	}
 	-re "PARTITION" {
+		set stuff [concat $stuff "1"]
 		incr matches
 		exp_continue
 	}
 	-re "BG_BLOCK" {
+		set stuff [concat $stuff "2"]
 		incr matches
 		exp_continue
 	}
 	-re "STATE" {
+		set stuff [concat $stuff "3"]
 		incr matches
 		exp_continue
 	}
 	-re "USER" {
+		set stuff [concat $stuff "4"]
 		incr matches
 		exp_continue
 	}
 	-re "CONN" {
+		set stuff [concat $stuff "5"]
 		incr matches
 		exp_continue
 	}
 	-re "NODES" {
+		set stuff [concat $stuff "6"]
 		incr matches
 		exp_continue
 	}
 	-re "NODELIST" {
+		set stuff [concat $stuff "7a"]
 		incr matches
-		send "q"
+		send "q\n"
 		exp_continue
 	}
 	-re "BP_LIST" {
+		set stuff [concat $stuff "7b"]
 		incr matches
-		send "q"
+		send "q\n"
 		exp_continue
 	}
 	-re "error" {
@@ -124,8 +129,9 @@ if {$non_bg != 0} {
 	send_user "\nWARNING: Must be on a BG SYSTEM to run this command\n"
 	exit 0
 }
-if {$matches != 8} {
+if {$matches != 7} {
 	send_user "\nFAILURE: smap bg partition display in curses mode\n"
+	send_user "\n(matches $matches of 7, $stuff)\n"
 	set exit_code 1
 }
 
