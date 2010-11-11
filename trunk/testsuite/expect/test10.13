@@ -133,7 +133,7 @@ if { $exit_code != 1 } {
 			incr matches
 			exp_continue
 		}
-		-re "Numpsets" {
+		-re "Numpsets.*io poor" {
 			set stuff [concat $stuff "6"]
 			incr matches
 			exp_continue
