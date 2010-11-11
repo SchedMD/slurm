@@ -34,13 +34,12 @@
 source ./globals_accounting
 
 set test_id     "test21.26"
-set test_nu     "test21-26"
 set exit_code   0
-set cluster1		[get_cluster_name]
-set account1		[format "%s%s" $test_nu "acct1"]
-set account2		[format "%s%s" $test_nu "acct2"]
+set tc1		[get_cluster_name]
+set ta1		slurm_test-account.1
+set ta2		slurm_test-account.2
 set qos1		qqostest
-set user1       [format "%s%s" $test_nu "user1"]
+set tu1         slurm_test-user.1
 set access_err  0
 
 print_header $test_id
@@ -64,32 +63,32 @@ if { [string compare [check_accounting_admin_level] "Administrator"] } {
 }
 
 proc end_test { } {
-	global user1 account1 account2 cluster1 qos1 qos_val
+	global tu1 ta1 ta2 tc1 qos1 qos_val
 	set exit_code 0
-	incr exit_code [remove_user "" "" "$user1"]
-	incr exit_code [remove_acct "" "$account1,$account2"]
+	incr exit_code [remove_user "" "" "$tu1"]
+	incr exit_code [remove_acct "" "$ta1,$ta2"]
 	incr exit_code [remove_qos "$qos1"]
-	incr exit_code [mod_acct "$cluster1" "" "root" "" "" "$qos_val" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
+	incr exit_code [mod_acct "$tc1" "" "root" "" "" "$qos_val" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
 }
 
 
 #
 # remove test associations to make sure we have a clean system
 #
-remove_user "" "" "$user1"
-remove_acct "" "$account1,$account2"
+remove_user "" "" "$tu1"
+remove_acct "" "$ta1,$ta2"
 remove_qos "$qos1"
 
 # get the qos of root on the cluster since we are going to set it to
 # nothing here.  And put it back at the end of the test.
 set match 0
-set my_pid [eval spawn $sacctmgr list cluster $cluster1 format=cluster,qos -np]
+set my_pid [eval spawn $sacctmgr list cluster $tc1 format=cluster,qos -np]
 expect {
 	-re "There was a problem" {
 		send_user "FAILURE: there was a problem with the sacctmgr command\n"
 		exit 1
 	}
-	-re "$cluster1.(\[a-z,\]*)." {
+	-re "$tc1.(\[a-z,\]*)." {
 		set qos_val $expect_out(1,string)
 		set match 1
 		exp_continue
@@ -110,7 +109,7 @@ if { !$match } {
 }
 
 #now set default for cluster to ""
-incr exit_code [mod_acct "$cluster1" "" "root" "" "" " " "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
+incr exit_code [mod_acct "$tc1" "" "root" "" "" " " "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
 if { $exit_code } {
 	remove_qos "$qos1"
 	exit $exit_code
@@ -125,21 +124,21 @@ if { $exit_code } {
 }
 #====Done Add QoS===========Begin Add First Account========
 #add default account
-incr exit_code [add_acct "$cluster1" "" "$account1" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
+incr exit_code [add_acct "$tc1" "" "$ta1" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
 if { $exit_code } {
 	end_test
 	exit $exit_code
 }
 #====Done Add First Account====Begin Add Second Account====
 #add account
-incr exit_code [add_acct "$cluster1" "$account1" "$account2" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
+incr exit_code [add_acct "$tc1" "$ta1" "$ta2" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
 if { $exit_code } {
 	end_test
 	exit $exit_code
 }
 #=====Done Add Second Account========Begin Add User=========
 #add user
-incr exit_code [add_user "$cluster1" "$account1,$account2" "$user1" "" "" "$account1" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
+incr exit_code [add_user "$tc1" "$ta1,$ta2" "$tu1" "" "" "$ta1" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
 if { $exit_code } {
 	end_test
 	exit $exit_code
@@ -148,7 +147,7 @@ if { $exit_code } {
 
 #======Verify initial associations=============
 set matches 0
-set my_pid [eval spawn $sacctmgr list assoc cluster=$cluster1 format=qos,acct,user -p]
+set my_pid [eval spawn $sacctmgr list assoc cluster=$tc1 format=qos,acct,user -p]
 expect {
 	-re "There was a problem" {
 		send_user "FAILURE: there was a problem with the sacctmgr command\n"
@@ -158,11 +157,11 @@ expect {
 		incr matches
 		exp_continue
 	}
-	-re "\n.$account1.(|$user1)." {
+	-re "\n.$ta1.(|$tu1)." {
 		incr matches
 		exp_continue
 	}
-	-re "\n.$account2.(|$user1)." {
+	-re "\n.$ta2.(|$tu1)." {
 		incr matches
 		exp_continue
 	}
@@ -184,7 +183,7 @@ if {$matches != 6} {
 
 #======Begin Modification to Add $qos1 to $account1=======
 #modify test1 account to add test QoS
-incr exit_code [mod_acct "$cluster1" "" "$account1" "" "" "+$qos1" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
+incr exit_code [mod_acct "$tc1" "" "$ta1" "" "" "+$qos1" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
 if { $exit_code } {
 	end_test
 	exit $exit_code
@@ -192,7 +191,7 @@ if { $exit_code } {
 
 #=======Done Modifying Account=======Next is Verify=======
 set matches 0
-set my_pid [eval spawn $sacctmgr list assoc cluster=$cluster1 format=qos,acct,user -p]
+set my_pid [eval spawn $sacctmgr list assoc cluster=$tc1 format=qos,acct,user -p]
 
 expect {
 	-re "There was a problem" {
@@ -203,11 +202,11 @@ expect {
 		incr matches
 		exp_continue
 	}
-	-re "$qos1.$account1.(|$user1)." {
+	-re "$qos1.$ta1.(|$tu1)." {
 		incr matches
 		exp_continue
 	}
-	-re "$qos1.$account2.(|$user1)." {
+	-re "$qos1.$ta2.(|$tu1)." {
 		incr matches
 		exp_continue
 	}
@@ -229,7 +228,7 @@ if {$matches != 6} {
 
 #======Begin Modification to Subtract $qos1 from $account2=======
 #modify test2 account to remove test QoS
-incr exit_code [mod_acct "$cluster1" "" "$account2" "" "" "-$qos1" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
+incr exit_code [mod_acct "$tc1" "" "$ta2" "" "" "-$qos1" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
 if { $exit_code } {
 	end_test
 	exit $exit_code
@@ -237,7 +236,7 @@ if { $exit_code } {
 
 #=======Done Modifying Account=======Next is Verify=======
 set matches 0
-set my_pid [eval spawn $sacctmgr list assoc cluster=$cluster1 format=qos,acct,user -p]
+set my_pid [eval spawn $sacctmgr list assoc cluster=$tc1 format=qos,acct,user -p]
 expect {
 	-re "There was a problem" {
 		send_user "FAILURE: there was a problem with the sacctmgr command\n"
@@ -247,11 +246,11 @@ expect {
 		incr matches
 		exp_continue
 	}
-	-re "$qos1.$account1.(|$user1)." {
+	-re "$qos1.$ta1.(|$tu1)." {
 		incr matches
 		exp_continue
 	}
-	-re "\n.$account2.(|$user1)." {
+	-re "\n.$ta2.(|$tu1)." {
 		incr matches
 		exp_continue
 	}
@@ -266,7 +265,7 @@ expect {
 }
 
 if {$matches != 6} {
-	send_user "\nFAILURE: verify of -$qos1 from account $account2 ($matches)\n"
+	send_user "\nFAILURE: verify of -$qos1 from account $ta2 ($matches)\n"
 	end_test
 	exit 1
 }
@@ -274,7 +273,7 @@ if {$matches != 6} {
 
 #======Begin Modification to Subtract $qos1 from $account1=======
 #modify test1 account to remove test QoS
-incr exit_code [mod_acct "$cluster1" "" "$account1" "" "" "-$qos1" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
+incr exit_code [mod_acct "$tc1" "" "$ta1" "" "" "-$qos1" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
 if { $exit_code } {
 	end_test
 	exit $exit_code
@@ -282,7 +281,7 @@ if { $exit_code } {
 
 #=======Done Modifying Account=======Next is Verify=======
 set matches 0
-set my_pid [eval spawn $sacctmgr list assoc cluster=$cluster1 format=qos,acct,user -p]
+set my_pid [eval spawn $sacctmgr list assoc cluster=$tc1 format=qos,acct,user -p]
 expect {
 	-re "There was a problem" {
 		send_user "FAILURE: there was a problem with the sacctmgr command\n"
@@ -292,11 +291,11 @@ expect {
 		incr matches
 		exp_continue
 	}
-	-re "\n.$account1.(|$user1)." {
+	-re "\n.$ta1.(|$tu1)." {
 		incr matches
 		exp_continue
 	}
-	-re "\n.$account2.(|$user1)." {
+	-re "\n.$ta2.(|$tu1)." {
 		incr matches
 		exp_continue
 	}
@@ -318,7 +317,7 @@ if {$matches != 6} {
 
 #=====Begin Modification to Add $qos1 from $account2=======
 #modify test2 account to add test QoS
-incr exit_code [mod_acct "$cluster1" "" "$account2" "" "" "+$qos1" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
+incr exit_code [mod_acct "$tc1" "" "$ta2" "" "" "+$qos1" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
 if { $exit_code } {
 	end_test
 	exit $exit_code
@@ -326,7 +325,7 @@ if { $exit_code } {
 
 #=======Done Modifying Account=======Next is Verify=======
 set matches 0
-set my_pid [eval spawn $sacctmgr list assoc cluster=$cluster1 format=qos,acct,user -p]
+set my_pid [eval spawn $sacctmgr list assoc cluster=$tc1 format=qos,acct,user -p]
 
 expect {
 	-re "There was a problem" {
@@ -337,11 +336,11 @@ expect {
 		incr matches
 		exp_continue
 	}
-	-re "\n.$account1.(|$user1)." {
+	-re "\n.$ta1.(|$tu1)." {
 		incr matches
 		exp_continue
 	}
-	-re "$qos1.$account2.(|$user1)." {
+	-re "$qos1.$ta2.(|$tu1)." {
 		incr matches
 		exp_continue
 	}
@@ -363,7 +362,7 @@ if {$matches != 6} {
 
 #=======Begin Modification to Add $qos1 from $account2=======
 #modify root account to add test QoS
-incr exit_code [mod_acct "$cluster1" "" "root" "" "" "+$qos1" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
+incr exit_code [mod_acct "$tc1" "" "root" "" "" "+$qos1" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
 if { $exit_code } {
 	end_test
 	exit $exit_code
@@ -371,7 +370,7 @@ if { $exit_code } {
 
 #=======Done Modifying Account=======Next Is Verify=======
 set matches 0
-set my_pid [eval spawn $sacctmgr list assoc cluster=$cluster1 format=qos,acct,user -p]
+set my_pid [eval spawn $sacctmgr list assoc cluster=$tc1 format=qos,acct,user -p]
 
 expect {
 	-re "There was a problem" {
@@ -382,11 +381,11 @@ expect {
 		incr matches
 		exp_continue
 	}
-	-re "\n.$account1.(|$user1)." {
+	-re "\n.$ta1.(|$tu1)." {
 		incr matches
 		exp_continue
 	}
-	-re "$qos1.$account2.(|$user1)." {
+	-re "$qos1.$ta2.(|$tu1)." {
 		incr matches
 		exp_continue
 	}
@@ -408,7 +407,7 @@ if {$matches != 6} {
 
 #======Begin Modification to Add $qos1 from $account2=======
 #modify test2 account to remove test QoS
-incr exit_code [mod_acct "$cluster1" "" "$account2" "" "" "-$qos1" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
+incr exit_code [mod_acct "$tc1" "" "$ta2" "" "" "-$qos1" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
 if { $exit_code } {
 	end_test
 	exit $exit_code
@@ -416,7 +415,7 @@ if { $exit_code } {
 
 #=======Done Modifying Account=======Next is Verify=======
 set matches 0
-set my_pid [eval spawn $sacctmgr list assoc cluster=$cluster1 format=qos,acct,user -p]
+set my_pid [eval spawn $sacctmgr list assoc cluster=$tc1 format=qos,acct,user -p]
 
 expect {
 	-re "There was a problem" {
@@ -427,11 +426,11 @@ expect {
 		incr matches
 		exp_continue
 	}
-	-re "\n.$account1.(|$user1)." {
+	-re "\n.$ta1.(|$tu1)." {
 		incr matches
 		exp_continue
 	}
-	-re "\n.$account2.(|$user1)." {
+	-re "\n.$ta2.(|$tu1)." {
 		incr matches
 		exp_continue
 	}
@@ -457,7 +456,7 @@ if {$matches != 6} {
 #
 incr exit_code [end_test]
 if {$exit_code == 0} {
-	send_user "\nSUCCESS: $test_id\n"
+	print_success $test_id
 } else {
 	send_user "\nFAILURE: $test_id\n"
 }
