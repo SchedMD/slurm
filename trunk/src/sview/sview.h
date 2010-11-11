@@ -515,7 +515,9 @@ extern void get_info_resv(GtkTable *table, display_data_t *display_data);
 extern void specific_info_resv(popup_info_t *popup_win);
 extern void set_menus_resv(void *arg, void *arg2, GtkTreePath *path, int type);
 extern void popup_all_resv(GtkTreeModel *model, GtkTreeIter *iter, int id);
-extern void admin_resv(GtkTreeModel *model, GtkTreeIter *iter, char *type);
+extern void select_admin_resv(GtkTreeModel *model, GtkTreeIter *iter,
+			      display_data_t *display_data,
+			      GtkTreeView *treeview);
 extern void cluster_change_resv();
 
 

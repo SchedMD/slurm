@@ -141,6 +141,10 @@ static display_data_t *local_display_data = NULL;
 
 static char *got_edit_signal = NULL;
 
+static void _admin_resv(GtkTreeModel *model, GtkTreeIter *iter, char *type);
+static void _process_each_resv(GtkTreeModel *model, GtkTreePath *path,
+			       GtkTreeIter*iter, gpointer userdata);
+
 /*
  *  _parse_flags  is used to parse the Flags= option.  It handles
  *  daily, weekly, and maint, optionally preceded by + or -,
@@ -904,7 +908,7 @@ extern void admin_edit_resv(GtkCellRendererText *cell,
 	if(got_edit_signal) {
 		temp = got_edit_signal;
 		got_edit_signal = NULL;
-		admin_resv(GTK_TREE_MODEL(treestore), &iter, temp);
+		_admin_resv(GTK_TREE_MODEL(treestore), &iter, temp);
 		xfree(temp);
 		goto no_input;
 	}
@@ -1057,7 +1061,9 @@ display_it:
 	if(!display_widget) {
 		tree_view = create_treeview(local_display_data,
 					    &grid_button_list);
-
+		gtk_tree_selection_set_mode(
+			gtk_tree_view_get_selection(tree_view),
+			GTK_SELECTION_MULTIPLE);
 		display_widget = gtk_widget_ref(GTK_WIDGET(tree_view));
 		gtk_table_attach_defaults(table,
 					  GTK_WIDGET(tree_view),
@@ -1145,6 +1151,9 @@ display_it:
 	if(spec_info->type != INFO_PAGE && !spec_info->display_widget) {
 		tree_view = create_treeview(local_display_data,
 					    &popup_win->grid_button_list);
+		gtk_tree_selection_set_mode(
+			gtk_tree_view_get_selection(tree_view),
+			GTK_SELECTION_MULTIPLE);
 		spec_info->display_widget =
 			gtk_widget_ref(GTK_WIDGET(tree_view));
 		gtk_table_attach_defaults(popup_win->table,
@@ -1371,7 +1380,37 @@ extern void popup_all_resv(GtkTreeModel *model, GtkTreeIter *iter, int id)
 	}
 }
 
-extern void admin_resv(GtkTreeModel *model, GtkTreeIter *iter, char *type)
+static void _process_each_resv(GtkTreeModel *model, GtkTreePath *path,
+			       GtkTreeIter*iter, gpointer userdata)
+{
+	char *type = userdata;
+	if (_DEBUG)
+		g_print("process_each_resv: global_multi_error = %d\n",
+			global_multi_error);
+
+	if (!global_multi_error) {
+		_admin_resv(model, iter, type);
+	}
+}
+
+extern void select_admin_resv(GtkTreeModel *model, GtkTreeIter *iter,
+			      display_data_t *display_data,
+			      GtkTreeView *treeview)
+{
+	if (treeview) {
+		if (display_data->extra & EXTRA_NODES) {
+			select_admin_nodes(model, iter, display_data,
+					   SORTID_NODELIST, treeview);
+			return;
+		}
+		global_multi_error = FALSE;
+		gtk_tree_selection_selected_foreach(
+			gtk_tree_view_get_selection(treeview),
+			_process_each_resv, display_data->name);
+	}
+}
+
+static void _admin_resv(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 {
 	resv_desc_msg_t *resv_msg = xmalloc(sizeof(resv_desc_msg_t));
 	reservation_name_msg_t resv_name_msg;
@@ -1483,7 +1522,7 @@ end_it:
 	if(got_edit_signal) {
 		type = got_edit_signal;
 		got_edit_signal = NULL;
-		admin_resv(model, iter, type);
+		_admin_resv(model, iter, type);
 		xfree(type);
 	}
 	return;
