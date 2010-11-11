@@ -71,7 +71,7 @@ static int _change_user_name(mysql_conn_t *mysql_conn, slurmdb_user_rec_t *user)
 
 	debug3("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, THIS_FILE, __LINE__, query);
-	rc = mysql_db_query(mysql_conn->db_conn, query);
+	rc = mysql_db_query(mysql_conn, query);
 	xfree(query);
 
 	if(rc != SLURM_SUCCESS)
@@ -179,7 +179,7 @@ static int _get_user_coords(mysql_conn_t *mysql_conn, slurmdb_user_rec_t *user)
 		acct_coord_table, user->name);
 
 	if(!(result =
-	     mysql_db_query_ret(mysql_conn->db_conn, query, 0))) {
+	     mysql_db_query_ret(mysql_conn, query, 0))) {
 		xfree(query);
 		return SLURM_ERROR;
 	}
@@ -234,7 +234,7 @@ static int _get_user_coords(mysql_conn_t *mysql_conn, slurmdb_user_rec_t *user)
 		debug4("%d(%s:%d) query\n%s",
 		       mysql_conn->conn, THIS_FILE, __LINE__, query);
 		if(!(result = mysql_db_query_ret(
-			     mysql_conn->db_conn, query, 0))) {
+			     mysql_conn, query, 0))) {
 			xfree(query);
 			return SLURM_ERROR;
 		}
@@ -309,7 +309,7 @@ extern int as_mysql_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		xfree(cols);
 		xfree(vals);
 
-		rc = mysql_db_query(mysql_conn->db_conn, query);
+		rc = mysql_db_query(mysql_conn, query);
 		xfree(query);
 		if(rc != SLURM_SUCCESS) {
 			error("Couldn't add user %s", object->name);
@@ -317,7 +317,7 @@ extern int as_mysql_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 			continue;
 		}
 
-		affect_rows = last_affected_rows(mysql_conn->db_conn);
+		affect_rows = last_affected_rows(mysql_conn);
 		if(!affect_rows) {
 			debug("nothing changed");
 			xfree(extra);
@@ -394,7 +394,7 @@ extern int as_mysql_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	if(rc != SLURM_ERROR) {
 		if(txn_query) {
 			xstrcat(txn_query, ";");
-			rc = mysql_db_query(mysql_conn->db_conn,
+			rc = mysql_db_query(mysql_conn,
 					    txn_query);
 			xfree(txn_query);
 			if(rc != SLURM_SUCCESS) {
@@ -496,7 +496,7 @@ extern int as_mysql_add_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 			   (long)now, txn_query);
 		debug3("%d(%s:%d) query\n%s",
 		       mysql_conn->conn, THIS_FILE, __LINE__, query);
-		rc = mysql_db_query(mysql_conn->db_conn, query);
+		rc = mysql_db_query(mysql_conn, query);
 		xfree(query);
 		xfree(txn_query);
 
@@ -589,7 +589,7 @@ extern List as_mysql_modify_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		user_table, extra);
 	xfree(extra);
 	if(!(result = mysql_db_query_ret(
-		     mysql_conn->db_conn, query, 0))) {
+		     mysql_conn, query, 0))) {
 		xfree(query);
 		if (ret_list)
 			list_destroy(ret_list);
@@ -800,7 +800,7 @@ extern List as_mysql_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	query = xstrdup_printf("select name from %s where deleted=0 %s;",
 			       user_table, extra);
 	xfree(extra);
-	if(!(result = mysql_db_query_ret(mysql_conn->db_conn, query, 0))) {
+	if(!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
 		xfree(query);
 		return NULL;
 	}
@@ -893,7 +893,7 @@ no_user_table:
 		acct_coord_table, (long)now, assoc_char);
 	xfree(assoc_char);
 
-	rc = mysql_db_query(mysql_conn->db_conn, query);
+	rc = mysql_db_query(mysql_conn, query);
 	xfree(query);
 	if(rc != SLURM_SUCCESS) {
 		error("Couldn't remove user coordinators");
@@ -1001,7 +1001,7 @@ extern List as_mysql_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 	debug3("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, THIS_FILE, __LINE__, query);
 	if(!(result =
-	     mysql_db_query_ret(mysql_conn->db_conn, query, 0))) {
+	     mysql_db_query_ret(mysql_conn, query, 0))) {
 		xfree(query);
 		xfree(extra);
 		errno = SLURM_ERROR;
@@ -1202,7 +1202,7 @@ empty:
 	debug3("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, THIS_FILE, __LINE__, query);
 	if(!(result = mysql_db_query_ret(
-		     mysql_conn->db_conn, query, 0))) {
+		     mysql_conn, query, 0))) {
 		xfree(query);
 		return NULL;
 	}

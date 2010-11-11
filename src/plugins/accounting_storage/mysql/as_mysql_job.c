@@ -58,7 +58,7 @@ static int _get_db_index(mysql_conn_t *mysql_conn,
 				     mysql_conn->cluster_name, job_table,
 				     (int)submit, jobid, associd);
 
-	if(!(result = mysql_db_query_ret(mysql_conn->db_conn, query, 0))) {
+	if(!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
 		xfree(query);
 		return 0;
 	}
@@ -101,7 +101,7 @@ static char *_get_user_from_associd(mysql_conn_t *mysql_conn,
 	debug4("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, THIS_FILE, __LINE__, query);
 	if(!(result =
-	     mysql_db_query_ret(mysql_conn->db_conn, query, 0))) {
+	     mysql_db_query_ret(mysql_conn, query, 0))) {
 		xfree(query);
 		return NULL;
 	}
@@ -290,7 +290,7 @@ extern int as_mysql_job_start(mysql_conn_t *mysql_conn,
 		debug3("%d(%s:%d) query\n%s",
 		       mysql_conn->conn, THIS_FILE, __LINE__, query);
 		if(!(result =
-		     mysql_db_query_ret(mysql_conn->db_conn, query, 0))) {
+		     mysql_db_query_ret(mysql_conn, query, 0))) {
 			xfree(query);
 			slurm_mutex_unlock(&rollup_lock);
 			return SLURM_ERROR;
@@ -341,7 +341,7 @@ extern int as_mysql_job_start(mysql_conn_t *mysql_conn,
 				       check_time, check_time);
 		debug3("%d(%s:%d) query\n%s",
 		       mysql_conn->conn, THIS_FILE, __LINE__, query);
-		rc = mysql_db_query(mysql_conn->db_conn, query);
+		rc = mysql_db_query(mysql_conn, query);
 		xfree(query);
 	} else
 		slurm_mutex_unlock(&rollup_lock);
@@ -472,13 +472,13 @@ no_rollup_change:
 		debug3("%d(%s:%d) query\n%s",
 		       mysql_conn->conn, THIS_FILE, __LINE__, query);
 	try_again:
-		if(!(job_ptr->db_index = mysql_insert_ret_id(
-			     mysql_conn->db_conn, query))) {
+		if(!(job_ptr->db_index = mysql_db_insert_ret_id(
+			     mysql_conn, query))) {
 			if(!reinit) {
 				error("It looks like the storage has gone "
 				      "away trying to reconnect");
-				mysql_close_db_connection(
-					&mysql_conn->db_conn);
+				mysql_db_close_db_connection(
+					mysql_conn);
 				/* reconnect */
 				check_connection(mysql_conn);
 				reinit = 1;
@@ -514,7 +514,7 @@ no_rollup_change:
 			   job_ptr->db_index);
 		debug3("%d(%s:%d) query\n%s",
 		       mysql_conn->conn, THIS_FILE, __LINE__, query);
-		rc = mysql_db_query(mysql_conn->db_conn, query);
+		rc = mysql_db_query(mysql_conn, query);
 	}
 
 	xfree(block_id);
@@ -538,7 +538,7 @@ no_rollup_change:
 
 		debug3("%d(%s:%d) query\n%s",
 		       mysql_conn->conn, THIS_FILE, __LINE__, query);
-		rc = mysql_db_query(mysql_conn->db_conn, query);
+		rc = mysql_db_query(mysql_conn, query);
 		xfree(query);
 	}
 
@@ -603,7 +603,7 @@ extern List as_mysql_modify_job(mysql_conn_t *mysql_conn, uint32_t uid,
 	}
 
 	xfree(extra);
-	if(!(result = mysql_db_query_ret(mysql_conn->db_conn, query, 0))) {
+	if(!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
 		xfree(vals);
 		xfree(query);
 		return NULL;
@@ -701,7 +701,7 @@ extern int as_mysql_job_complete(mysql_conn_t *mysql_conn,
 				       end_time, end_time);
 		debug3("%d(%s:%d) query\n%s",
 		       mysql_conn->conn, THIS_FILE, __LINE__, query);
-		rc = mysql_db_query(mysql_conn->db_conn, query);
+		rc = mysql_db_query(mysql_conn, query);
 		xfree(query);
 	} else
 		slurm_mutex_unlock(&rollup_lock);
@@ -740,7 +740,7 @@ extern int as_mysql_job_complete(mysql_conn_t *mysql_conn,
 
 	debug3("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, THIS_FILE, __LINE__, query);
-	rc = mysql_db_query(mysql_conn->db_conn, query);
+	rc = mysql_db_query(mysql_conn, query);
 	xfree(query);
 
 	return rc;
@@ -879,7 +879,7 @@ extern int as_mysql_step_start(mysql_conn_t *mysql_conn,
 		node_list, node_inx, task_dist);
 	debug3("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, THIS_FILE, __LINE__, query);
-	rc = mysql_db_query(mysql_conn->db_conn, query);
+	rc = mysql_db_query(mysql_conn, query);
 	xfree(query);
 
 	return rc;
@@ -1044,7 +1044,7 @@ extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 		step_ptr->job_ptr->db_index, step_ptr->step_id);
 	debug3("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, THIS_FILE, __LINE__, query);
-	rc = mysql_db_query(mysql_conn->db_conn, query);
+	rc = mysql_db_query(mysql_conn, query);
 	xfree(query);
 
 	return rc;
@@ -1128,7 +1128,7 @@ extern int as_mysql_suspend(mysql_conn_t *mysql_conn,
 	debug3("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, THIS_FILE, __LINE__, query);
 
-	rc = mysql_db_query(mysql_conn->db_conn, query);
+	rc = mysql_db_query(mysql_conn, query);
 
 	xfree(query);
 	if(rc != SLURM_ERROR) {
@@ -1139,7 +1139,7 @@ extern int as_mysql_suspend(mysql_conn_t *mysql_conn,
 			   mysql_conn->cluster_name, step_table,
 			   (int)job_ptr->suspend_time,
 			   job_ptr->job_state, job_ptr->db_index);
-		rc = mysql_db_query(mysql_conn->db_conn, query);
+		rc = mysql_db_query(mysql_conn, query);
 		xfree(query);
 	}
 
@@ -1170,7 +1170,7 @@ extern int as_mysql_flush_jobs_on_cluster(
 	debug3("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, THIS_FILE, __LINE__, query);
 	if(!(result =
-	     mysql_db_query_ret(mysql_conn->db_conn, query, 0))) {
+	     mysql_db_query_ret(mysql_conn, query, 0))) {
 		xfree(query);
 		return SLURM_ERROR;
 	}
@@ -1232,7 +1232,7 @@ extern int as_mysql_flush_jobs_on_cluster(
 		debug3("%d(%s:%d) query\n%s",
 		       mysql_conn->conn, THIS_FILE, __LINE__, query);
 
-		rc = mysql_db_query(mysql_conn->db_conn, query);
+		rc = mysql_db_query(mysql_conn, query);
 		xfree(query);
 	}
 

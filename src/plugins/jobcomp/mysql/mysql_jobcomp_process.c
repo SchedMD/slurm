@@ -144,7 +144,7 @@ extern List mysql_jobcomp_process_get_jobs(slurmdb_job_cond_t *job_cond)
 
 	//info("query = %s", query);
 	if(!(result =
-	     mysql_db_query_ret(jobcomp_mysql_db, query, 0))) {
+	     mysql_db_query_ret(jobcomp_mysql_conn, query, 0))) {
 		xfree(query);
 		list_destroy(job_list);
 		return NULL;

@@ -43,9 +43,9 @@
 
 #include "accounting_storage_mysql.h"
 
-extern int as_mysql_convert_tables(MYSQL *db_conn);
+extern int as_mysql_convert_tables(mysql_conn_t *mysql_conn);
 
-extern int as_mysql_convert_user_defs(MYSQL *db_conn, char *cluster_name);
+extern int as_mysql_convert_user_defs(mysql_conn_t *mysql_conn, char *cluster_name);
 
 
 #endif

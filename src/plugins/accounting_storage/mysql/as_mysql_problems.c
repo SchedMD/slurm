@@ -139,7 +139,7 @@ extern int as_mysql_acct_no_assocs(mysql_conn_t *mysql_conn,
 	}
 
 	if(!(result = mysql_db_query_ret(
-		     mysql_conn->db_conn, query, 0))) {
+		     mysql_conn, query, 0))) {
 		xfree(query);
 		return SLURM_ERROR;
 	}
@@ -170,7 +170,7 @@ extern int as_mysql_acct_no_assocs(mysql_conn_t *mysql_conn,
 		list_iterator_reset(itr);
 
 		if(!(result2 = mysql_db_query_ret(
-			     mysql_conn->db_conn, query, 0))) {
+			     mysql_conn, query, 0))) {
 			xfree(query);
 			rc = SLURM_ERROR;
 			break;
@@ -267,7 +267,7 @@ extern int as_mysql_acct_no_users(mysql_conn_t *mysql_conn,
 	debug3("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, THIS_FILE, __LINE__, query);
 	if(!(result = mysql_db_query_ret(
-		     mysql_conn->db_conn, query, 0))) {
+		     mysql_conn, query, 0))) {
 		xfree(query);
 		return SLURM_ERROR;
 	}
@@ -330,7 +330,7 @@ extern int as_mysql_user_no_assocs_or_no_uid(mysql_conn_t *mysql_conn,
 	}
 
 	if(!(result = mysql_db_query_ret(
-		     mysql_conn->db_conn, query, 0))) {
+		     mysql_conn, query, 0))) {
 		xfree(query);
 		return SLURM_ERROR;
 	}
@@ -372,7 +372,7 @@ extern int as_mysql_user_no_assocs_or_no_uid(mysql_conn_t *mysql_conn,
 		list_iterator_reset(itr);
 
 		if(!(result2 = mysql_db_query_ret(
-			     mysql_conn->db_conn, query, 0))) {
+			     mysql_conn, query, 0))) {
 			xfree(query);
 			rc = SLURM_ERROR;
 			break;

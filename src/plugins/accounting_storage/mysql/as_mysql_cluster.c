@@ -150,7 +150,7 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 			list_remove(itr);
 			continue;
 		}
-		if ((rc = create_cluster_tables(mysql_conn->db_conn,
+		if ((rc = create_cluster_tables(mysql_conn,
 						object->name))
 		   != SLURM_SUCCESS) {
 			xfree(extra);
@@ -188,7 +188,7 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 			   now, object->classification);
 		debug3("%d(%s:%d) query\n%s",
 		       mysql_conn->conn, THIS_FILE, __LINE__, query);
-		rc = mysql_db_query(mysql_conn->db_conn, query);
+		rc = mysql_db_query(mysql_conn, query);
 		xfree(query);
 		if (rc != SLURM_SUCCESS) {
 			error("Couldn't add cluster %s", object->name);
@@ -199,7 +199,7 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 			break;
 		}
 
-		affect_rows = last_affected_rows(mysql_conn->db_conn);
+		affect_rows = last_affected_rows(mysql_conn);
 
 		if (!affect_rows) {
 			debug2("nothing changed %d", affect_rows);
@@ -223,7 +223,7 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		debug3("%d(%s:%d) query\n%s",
 		       mysql_conn->conn, THIS_FILE, __LINE__, query);
 
-		rc = mysql_db_query(mysql_conn->db_conn, query);
+		rc = mysql_db_query(mysql_conn, query);
 		xfree(query);
 
 		if (rc != SLURM_SUCCESS) {
@@ -247,7 +247,7 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		debug4("%d(%s:%d) query\n%s",
 		       mysql_conn->conn, THIS_FILE, __LINE__, query);
 
-		rc = mysql_db_query(mysql_conn->db_conn, query);
+		rc = mysql_db_query(mysql_conn, query);
 		xfree(query);
 		if (rc != SLURM_SUCCESS) {
 			error("Couldn't add txn");
@@ -391,7 +391,7 @@ extern List as_mysql_modify_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 	debug3("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, THIS_FILE, __LINE__, query);
 	if(!(result = mysql_db_query_ret(
-		     mysql_conn->db_conn, query, 0))) {
+		     mysql_conn, query, 0))) {
 		xfree(query);
 		xfree(vals);
 		error("no result given for %s", extra);
@@ -484,7 +484,7 @@ extern List as_mysql_remove_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 	query = xstrdup_printf("select name from %s%s;", cluster_table, extra);
 	xfree(extra);
 	if(!(result = mysql_db_query_ret(
-		     mysql_conn->db_conn, query, 0))) {
+		     mysql_conn, query, 0))) {
 		xfree(query);
 		return NULL;
 	}
@@ -542,7 +542,7 @@ extern List as_mysql_remove_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 	if(!jobs_running) {
 		debug3("%d(%s:%d) query\n%s",
 		       mysql_conn->conn, THIS_FILE, __LINE__, query);
-		rc = mysql_db_query(mysql_conn->db_conn, query);
+		rc = mysql_db_query(mysql_conn, query);
 		xfree(query);
 		if(rc != SLURM_SUCCESS) {
 			reset_mysql_conn(mysql_conn);
@@ -651,7 +651,7 @@ empty:
 	debug3("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, THIS_FILE, __LINE__, query);
 	if(!(result = mysql_db_query_ret(
-		     mysql_conn->db_conn, query, 0))) {
+		     mysql_conn, query, 0))) {
 		xfree(query);
 		return NULL;
 	}
@@ -704,7 +704,7 @@ empty:
 		debug4("%d(%s:%d) query\n%s",
 		       mysql_conn->conn, THIS_FILE, __LINE__, query);
 		if(!(result2 = mysql_db_query_ret(
-			     mysql_conn->db_conn, query, 0))) {
+			     mysql_conn, query, 0))) {
 			xfree(query);
 			continue;
 		}
@@ -962,7 +962,7 @@ empty:
 		debug3("%d(%s:%d) query\n%s",
 		       mysql_conn->conn, THIS_FILE, __LINE__, query);
 		if(!(result = mysql_db_query_ret(
-			     mysql_conn->db_conn, query, 0))) {
+			     mysql_conn, query, 0))) {
 			xfree(query);
 			if(mysql_errno(mysql_conn->db_conn)
 			   != ER_NO_SUCH_TABLE) {
@@ -1067,7 +1067,7 @@ extern int as_mysql_node_down(mysql_conn_t *mysql_conn,
 		   cpus, event_time, my_reason, reason_uid);
 	debug4("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, THIS_FILE, __LINE__, query);
-	rc = mysql_db_query(mysql_conn->db_conn, query);
+	rc = mysql_db_query(mysql_conn, query);
 	xfree(query);
 	xfree(my_reason);
 	return rc;
@@ -1090,7 +1090,7 @@ extern int as_mysql_node_up(mysql_conn_t *mysql_conn,
 		event_time, node_ptr->name);
 	debug4("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, THIS_FILE, __LINE__, query);
-	rc = mysql_db_query(mysql_conn->db_conn, query);
+	rc = mysql_db_query(mysql_conn, query);
 	xfree(query);
 	return rc;
 }
@@ -1143,7 +1143,7 @@ extern int as_mysql_register_ctld(mysql_conn_t *mysql_conn,
 	debug3("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, THIS_FILE, __LINE__, query);
 
-	return mysql_db_query(mysql_conn->db_conn, query);
+	return mysql_db_query(mysql_conn, query);
 }
 
 extern int as_mysql_cluster_cpus(mysql_conn_t *mysql_conn,
@@ -1165,7 +1165,7 @@ extern int as_mysql_cluster_cpus(mysql_conn_t *mysql_conn,
 		"time_end=0 and node_name='' limit 1",
 		mysql_conn->cluster_name, event_table);
 	if(!(result = mysql_db_query_ret(
-		     mysql_conn->db_conn, query, 0))) {
+		     mysql_conn, query, 0))) {
 		xfree(query);
 		if(mysql_errno(mysql_conn->db_conn) == ER_NO_SUCH_TABLE)
 			rc = ESLURM_ACCESS_DENIED;
@@ -1207,7 +1207,7 @@ extern int as_mysql_cluster_cpus(mysql_conn_t *mysql_conn,
 					"where time_end=0 and node_name=''",
 					mysql_conn->cluster_name,
 					event_table, cluster_nodes);
-				rc = mysql_db_query(mysql_conn->db_conn, query);
+				rc = mysql_db_query(mysql_conn, query);
 				xfree(query);
 				goto end_it;
 			} else if(!strcmp(cluster_nodes, row[1])) {
@@ -1228,7 +1228,7 @@ extern int as_mysql_cluster_cpus(mysql_conn_t *mysql_conn,
 	query = xstrdup_printf(
 		"update \"%s_%s\" set time_end=%ld where time_end=0",
 		mysql_conn->cluster_name, event_table, event_time);
-	rc = mysql_db_query(mysql_conn->db_conn, query);
+	rc = mysql_db_query(mysql_conn, query);
 	xfree(query);
 	first = 1;
 	if(rc != SLURM_SUCCESS)
@@ -1240,7 +1240,7 @@ add_it:
 		"values ('%s', %u, %ld, 'Cluster processor count')",
 		mysql_conn->cluster_name, event_table,
 		cluster_nodes, cpus, event_time);
-	rc = mysql_db_query(mysql_conn->db_conn, query);
+	rc = mysql_db_query(mysql_conn, query);
 	xfree(query);
 end_it:
 	mysql_free_result(result);

@@ -40,28 +40,51 @@
 \*****************************************************************************/
 
 #include "mysql_common.h"
+#include "src/common/xstring.h"
 #include "src/common/xmalloc.h"
 #include "src/common/timers.h"
 #include "src/common/slurm_protocol_api.h"
-
-#ifdef MYSQL_NOT_THREAD_SAFE
-pthread_mutex_t mysql_lock = PTHREAD_MUTEX_INITIALIZER;
-#endif
+#include "src/common/read_config.h"
 
 static char *table_defs_table = "table_defs_table";
 
-/* NOTE: Insure that mysql_lock is set on function entry */
-static MYSQL_RES *_get_first_result(MYSQL *mysql_db)
+/* NOTE: Insure that mysql_conn->lock is set on function entry */
+static int _clear_results(MYSQL *db_conn)
+{
+	MYSQL_RES *result = NULL;
+	int rc = 0;
+
+	do {
+		/* did current statement return data? */
+		if ((result = mysql_store_result(db_conn)))
+			mysql_free_result(result);
+
+		/* more results? -1 = no, >0 = error, 0 = yes (keep looping) */
+		if ((rc = mysql_next_result(db_conn)) > 0)
+			error("Could not execute statement %d %s",
+			      mysql_errno(db_conn),
+			      mysql_error(db_conn));
+	} while (rc == 0);
+
+	if (rc > 0) {
+		errno = rc;
+		return SLURM_ERROR;
+	}
+	return SLURM_SUCCESS;
+}
+
+/* NOTE: Insure that mysql_conn->lock is set on function entry */
+static MYSQL_RES *_get_first_result(MYSQL *db_conn)
 {
 	MYSQL_RES *result = NULL;
 	int rc = 0;
 	do {
 		/* did current statement return data? */
-		if ((result = mysql_store_result(mysql_db)))
+		if ((result = mysql_store_result(db_conn)))
 			return result;
 
 		/* more results? -1 = no, >0 = error, 0 = yes (keep looping) */
-		if ((rc = mysql_next_result(mysql_db)) > 0)
+		if ((rc = mysql_next_result(db_conn)) > 0)
 			debug3("error: Could not execute statement %d", rc);
 
 	} while (rc == 0);
@@ -69,29 +92,68 @@ static MYSQL_RES *_get_first_result(MYSQL *mysql_db)
 	return NULL;
 }
 
-/* NOTE: Insure that mysql_lock is set on function entry */
-static MYSQL_RES *_get_last_result(MYSQL *mysql_db)
+/* NOTE: Insure that mysql_conn->lock is set on function entry */
+static MYSQL_RES *_get_last_result(MYSQL *db_conn)
 {
 	MYSQL_RES *result = NULL;
 	MYSQL_RES *last_result = NULL;
 	int rc = 0;
 	do {
 		/* did current statement return data? */
-		if ((result = mysql_store_result(mysql_db))) {
+		if ((result = mysql_store_result(db_conn))) {
 			if (last_result)
 				mysql_free_result(last_result);
 			last_result = result;
 		}
 		/* more results? -1 = no, >0 = error, 0 = yes (keep looping) */
-		if ((rc = mysql_next_result(mysql_db)) > 0)
+		if ((rc = mysql_next_result(db_conn)) > 0)
 			debug3("error: Could not execute statement %d", rc);
 	} while (rc == 0);
 
 	return last_result;
 }
 
-/* NOTE: Insure that mysql_lock is set on function entry */
-static int _mysql_make_table_current(MYSQL *mysql_db, char *table_name,
+/* NOTE: Insure that mysql_conn->lock is set on function entry */
+static int _mysql_query_internal(MYSQL *db_conn, char *query)
+{
+	int rc = SLURM_SUCCESS;
+
+	if (!db_conn)
+		fatal("You haven't inited this storage yet.");
+
+	/* clear out the old results so we don't get a 2014 error */
+	_clear_results(db_conn);
+	if (mysql_query(db_conn, query)) {
+		const char *err_str = mysql_error(db_conn);
+		errno = mysql_errno(db_conn);
+		if (errno == ER_NO_SUCH_TABLE) {
+			debug4("This could happen often and is expected.\n"
+			       "mysql_query failed: %d %s\n%s",
+			       errno, err_str, query);
+			errno = 0;
+			goto end_it;
+		}
+		error("mysql_query failed: %d %s\n%s", errno, err_str, query);
+		if (errno == ER_LOCK_WAIT_TIMEOUT) {
+			fatal("mysql gave ER_LOCK_WAIT_TIMEOUT as an error. "
+			      "The only way to fix this is restart the "
+			      "calling program");
+		}
+		/* FIXME: If we get ER_LOCK_WAIT_TIMEOUT here we need
+		 * to restart the connections, but it appears restarting
+		 * the calling program is the only way to handle this.
+		 * If anyone in the future figures out a way to handle
+		 * this, super.  Until then we will need to restart the
+		 * calling program if you ever get this error.
+		 */
+		rc = SLURM_ERROR;
+	}
+end_it:
+	return rc;
+}
+
+/* NOTE: Insure that mysql_conn->lock is NOT set on function entry */
+static int _mysql_make_table_current(mysql_conn_t *mysql_conn, char *table_name,
 				     storage_field_t *fields, char *ending)
 {
 	char *query = NULL;
@@ -114,7 +176,7 @@ static int _mysql_make_table_current(MYSQL *mysql_db, char *table_name,
 
 	/* figure out the keys in the table */
 	query = xstrdup_printf("show index from %s", table_name);
-	if (!(result = mysql_db_query_ret(mysql_db, query, 0))) {
+	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
 		xfree(query);
 		return SLURM_ERROR;
 	}
@@ -130,7 +192,7 @@ static int _mysql_make_table_current(MYSQL *mysql_db, char *table_name,
 
 	/* figure out the existing columns in the table */
 	query = xstrdup_printf("show columns from %s", table_name);
-	if (!(result = mysql_db_query_ret(mysql_db, query, 0))) {
+	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
 		xfree(query);
 		xfree(old_index);
 		return SLURM_ERROR;
@@ -277,7 +339,7 @@ static int _mysql_make_table_current(MYSQL *mysql_db, char *table_name,
 
 		xfree(quoted);
 		run_update = 1;
-		if ((result = mysql_db_query_ret(mysql_db, query2, 0))) {
+		if ((result = mysql_db_query_ret(mysql_conn, query2, 0))) {
 			if ((row = mysql_fetch_row(result)))
 				run_update = 0;
 			mysql_free_result(result);
@@ -288,7 +350,8 @@ static int _mysql_make_table_current(MYSQL *mysql_db, char *table_name,
 			query2 = xstrdup_printf("select table_name from "
 						"%s where table_name='%s'",
 						table_defs_table, table_name);
-			if ((result = mysql_db_query_ret(mysql_db, query2, 0))) {
+			if ((result = mysql_db_query_ret(
+				     mysql_conn, query2, 0))) {
 				if ((row = mysql_fetch_row(result)))
 					run_update = 1;
 				mysql_free_result(result);
@@ -307,7 +370,7 @@ static int _mysql_make_table_current(MYSQL *mysql_db, char *table_name,
 			debug4("Table %s doesn't exist, adding", table_name);
 		else
 			debug("Table %s has changed.  Updating...", table_name);
-		if (mysql_db_query(mysql_db, query)) {
+		if (mysql_db_query(mysql_conn, query)) {
 			xfree(query);
 			return SLURM_ERROR;
 		}
@@ -321,7 +384,7 @@ static int _mysql_make_table_current(MYSQL *mysql_db, char *table_name,
 					table_name, quoted,
 					quoted, now);
 		xfree(quoted);
-		if (mysql_db_query(mysql_db, query2)) {
+		if (mysql_db_query(mysql_conn, query2)) {
 			xfree(query2);
 			return SLURM_ERROR;
 		}
@@ -336,6 +399,7 @@ static int _mysql_make_table_current(MYSQL *mysql_db, char *table_name,
 	return SLURM_SUCCESS;
 }
 
+/* NOTE: Insure that mysql_conn->lock is set on function entry */
 static int _create_db(char *db_name, mysql_db_info_t *db_info)
 {
 	char create_line[50];
@@ -347,9 +411,6 @@ static int _create_db(char *db_name, mysql_db_info_t *db_info)
 
 	while (rc == SLURM_ERROR) {
 		rc = SLURM_SUCCESS;
-#ifdef MYSQL_NOT_THREAD_SAFE
-		slurm_mutex_lock(&mysql_lock);
-#endif
 		if (!(mysql_db = mysql_init(mysql_db)))
 			fatal("mysql_init failed: %s", mysql_error(mysql_db));
 
@@ -379,7 +440,9 @@ static int _create_db(char *db_name, mysql_db_info_t *db_info)
 				      mysql_errno(mysql_db),
 				      mysql_error(mysql_db), create_line);
 			}
-			mysql_close_db_connection(&mysql_db);
+			if (mysql_thread_safe())
+				mysql_thread_end();
+			mysql_close(mysql_db);
 		} else {
 			info("Connection failed to host = %s "
 			     "user = %s port = %u",
@@ -390,34 +453,74 @@ static int _create_db(char *db_name, mysql_db_info_t *db_info)
 			      mysql_error(mysql_db));
 			rc = SLURM_ERROR;
 		}
-#ifdef MYSQL_NOT_THREAD_SAFE
-		slurm_mutex_unlock(&mysql_lock);
-#endif
 		if (rc == SLURM_ERROR)
 			sleep(3);
 	}
 	return rc;
 }
 
-extern int *destroy_mysql_conn(mysql_conn_t *mysql_conn)
+extern mysql_conn_t *create_mysql_conn(int conn_num, bool rollback,
+				       char *cluster_name)
 {
-#ifdef MYSQL_NOT_THREAD_SAFE
-	slurm_mutex_lock(&mysql_lock);
-#endif
+	mysql_conn_t *mysql_conn = xmalloc(sizeof(mysql_conn_t));
+
+	mysql_conn->rollback = rollback;
+	mysql_conn->conn = conn_num;
+	mysql_conn->cluster_name = xstrdup(cluster_name);
+	slurm_mutex_init(&mysql_conn->lock);
+	mysql_conn->update_list = list_create(slurmdb_destroy_update_object);
+
+	return mysql_conn;
+}
+
+extern int destroy_mysql_conn(mysql_conn_t *mysql_conn)
+{
 	if (mysql_conn) {
-		mysql_close_db_connection(&mysql_conn->db_conn);
+		mysql_db_close_db_connection(mysql_conn);
 		xfree(mysql_conn->pre_commit_query);
 		xfree(mysql_conn->cluster_name);
+		slurm_mutex_destroy(&mysql_conn->lock);
 		list_destroy(mysql_conn->update_list);
 		xfree(mysql_conn);
 	}
-#ifdef MYSQL_NOT_THREAD_SAFE
-	slurm_mutex_unlock(&mysql_lock);
-#endif
+
 	return SLURM_SUCCESS;
 }
 
-extern int *destroy_mysql_db_info(mysql_db_info_t *db_info)
+extern mysql_db_info_t *create_mysql_db_info(slurm_mysql_plugin_type_t type)
+{
+	mysql_db_info_t *db_info = xmalloc(sizeof(mysql_db_info_t));
+
+	switch (type) {
+	case SLURM_MYSQL_PLUGIN_AS:
+		db_info->port = slurm_get_accounting_storage_port();
+		if(!db_info->port) {
+			db_info->port = DEFAULT_MYSQL_PORT;
+			slurm_set_accounting_storage_port(db_info->port);
+		}
+		db_info->host = slurm_get_accounting_storage_host();
+		db_info->backup = slurm_get_accounting_storage_backup_host();
+		db_info->user = slurm_get_accounting_storage_user();
+		db_info->pass = slurm_get_accounting_storage_pass();
+		break;
+	case SLURM_MYSQL_PLUGIN_JC:
+		db_info->port = slurm_get_jobcomp_port();
+		if(!db_info->port) {
+			db_info->port = DEFAULT_MYSQL_PORT;
+			slurm_set_jobcomp_port(db_info->port);
+		}
+		db_info->host = slurm_get_jobcomp_host();
+		db_info->user = slurm_get_jobcomp_user();
+		db_info->pass = slurm_get_jobcomp_pass();
+		break;
+	default:
+		xfree(db_info);
+		fatal("Unknown mysql_db_info %d", type);
+	}
+	return db_info;
+}
+
+extern int destroy_mysql_db_info(mysql_db_info_t *db_info)
 {
 	if (db_info) {
 		xfree(db_info->backup);
@@ -429,41 +532,47 @@ extern int *destroy_mysql_db_info(mysql_db_info_t *db_info)
 	return SLURM_SUCCESS;
 }
 
-extern int mysql_get_db_connection(MYSQL **mysql_db, char *db_name,
-				   mysql_db_info_t *db_info)
+extern int mysql_db_get_db_connection(mysql_conn_t *mysql_conn, char *db_name,
+				      mysql_db_info_t *db_info)
 {
 	int rc = SLURM_SUCCESS;
 	bool storage_init = false;
 	char *db_host = db_info->host;
 
-#ifdef MYSQL_NOT_THREAD_SAFE
-	slurm_mutex_lock(&mysql_lock);
-#endif
-	if (!(*mysql_db = mysql_init(*mysql_db)))
-		fatal("mysql_init failed: %s", mysql_error(*mysql_db));
-	else {
+	xassert(mysql_conn);
+
+	slurm_mutex_lock(&mysql_conn->lock);
+
+	if (!(mysql_conn->db_conn = mysql_init(mysql_conn->db_conn))) {
+		slurm_mutex_unlock(&mysql_conn->lock);
+		fatal("mysql_init failed: %s",
+		      mysql_error(mysql_conn->db_conn));
+	} else {
 		unsigned int my_timeout = 30;
 #ifdef MYSQL_OPT_RECONNECT
 		my_bool reconnect = 1;
 		/* make sure reconnect is on */
-		mysql_options(*mysql_db, MYSQL_OPT_RECONNECT, &reconnect);
+		mysql_options(mysql_conn->db_conn, MYSQL_OPT_RECONNECT,
+			      &reconnect);
 #endif
-		mysql_options(*mysql_db, MYSQL_OPT_CONNECT_TIMEOUT,
+		mysql_options(mysql_conn->db_conn, MYSQL_OPT_CONNECT_TIMEOUT,
 			      (char *)&my_timeout);
 		while (!storage_init) {
-			if (!mysql_real_connect(*mysql_db, db_host,
+			if (!mysql_real_connect(mysql_conn->db_conn, db_host,
 					        db_info->user, db_info->pass,
 					        db_name, db_info->port, NULL,
 					        CLIENT_MULTI_STATEMENTS)) {
-				if (mysql_errno(*mysql_db) == ER_BAD_DB_ERROR) {
+				int err = mysql_errno(mysql_conn->db_conn);
+				if (err == ER_BAD_DB_ERROR) {
 					debug("Database %s not created.  "
 					      "Creating", db_name);
 					rc = _create_db(db_name, db_info);
 				} else {
+					const char *err_str = mysql_error(
+						mysql_conn->db_conn);
 					error("mysql_real_connect failed: "
 					      "%d %s",
-					      mysql_errno(*mysql_db),
-					      mysql_error(*mysql_db));
+					      err, err_str);
 					if ((db_host == db_info->host)
 					    && db_info->backup) {
 						db_host = db_info->backup;
@@ -478,250 +587,163 @@ extern int mysql_get_db_connection(MYSQL **mysql_db, char *db_name,
 			}
 		}
 	}
-#ifdef MYSQL_NOT_THREAD_SAFE
-	slurm_mutex_unlock(&mysql_lock);
-#endif
+	slurm_mutex_unlock(&mysql_conn->lock);
 	errno = rc;
 	return rc;
 }
 
-extern int mysql_close_db_connection(MYSQL **mysql_db)
+extern int mysql_db_close_db_connection(mysql_conn_t *mysql_conn)
 {
-#ifdef MYSQL_NOT_THREAD_SAFE
-	slurm_mutex_lock(&mysql_lock);
-#endif
-	if (mysql_db && *mysql_db) {
+	slurm_mutex_lock(&mysql_conn->lock);
+	if (mysql_conn && mysql_conn->db_conn) {
 		if (mysql_thread_safe())
 			mysql_thread_end();
-		mysql_close(*mysql_db);
-		*mysql_db = NULL;
+		mysql_close(mysql_conn->db_conn);
+		mysql_conn->db_conn = NULL;
 	}
-#ifdef MYSQL_NOT_THREAD_SAFE
-	slurm_mutex_unlock(&mysql_lock);
-#endif
+	slurm_mutex_unlock(&mysql_conn->lock);
 	return SLURM_SUCCESS;
 }
 
-extern int mysql_cleanup()
+extern int mysql_db_cleanup()
 {
 	debug3("starting mysql cleaning up");
 
-#ifdef MYSQL_NOT_THREAD_SAFE
-	slurm_mutex_lock(&mysql_lock);
-#endif
 #ifdef mysql_library_end
 	mysql_library_end();
 #else
 	mysql_server_end();
 #endif
-#ifdef MYSQL_NOT_THREAD_SAFE
-	slurm_mutex_unlock(&mysql_lock);
-#endif
 	debug3("finished mysql cleaning up");
 	return SLURM_SUCCESS;
 }
 
-extern int mysql_clear_results(MYSQL *mysql_db)
-{
-	MYSQL_RES *result = NULL;
-	int rc = 0;
-
-#ifdef MYSQL_NOT_THREAD_SAFE
-	slurm_mutex_lock(&mysql_lock);
-#endif
-	do {
-		/* did current statement return data? */
-		if ((result = mysql_store_result(mysql_db)))
-			mysql_free_result(result);
-
-		/* more results? -1 = no, >0 = error, 0 = yes (keep looping) */
-		if ((rc = mysql_next_result(mysql_db)) > 0)
-			error("Could not execute statement %d %s",
-			      mysql_errno(mysql_db),
-			      mysql_error(mysql_db));
-	} while (rc == 0);
-#ifdef MYSQL_NOT_THREAD_SAFE
-	slurm_mutex_unlock(&mysql_lock);
-#endif
-	if (rc > 0) {
-		errno = rc;
-		return SLURM_ERROR;
-	}
-	return SLURM_SUCCESS;
-}
-
-extern int mysql_db_query(MYSQL *mysql_db, char *query)
+extern int mysql_db_query(mysql_conn_t *mysql_conn, char *query)
 {
 	int rc = SLURM_SUCCESS;
 
-	if (!mysql_db)
+	if (!mysql_conn || !mysql_conn->db_conn)
 		fatal("You haven't inited this storage yet.");
-#ifdef MYSQL_NOT_THREAD_SAFE
-	slurm_mutex_lock(&mysql_lock);
-#endif
-	/* clear out the old results so we don't get a 2014 error */
-	mysql_clear_results(mysql_db);
-	if (mysql_query(mysql_db, query)) {
-		errno = mysql_errno(mysql_db);
-		if (errno == ER_NO_SUCH_TABLE) {
-			debug4("This could happen often and is expected.\n"
-			       "mysql_query failed: %d %s\n%s",
-			       mysql_errno(mysql_db),
-			       mysql_error(mysql_db), query);
-			errno = 0;
-			goto end_it;
-		}
-		error("mysql_query failed: %d %s\n%s",
-		      mysql_errno(mysql_db),
-		      mysql_error(mysql_db), query);
-		if (errno == ER_LOCK_WAIT_TIMEOUT) {
-			fatal("mysql gave ER_LOCK_WAIT_TIMEOUT as an error. "
-			      "The only way to fix this is restart the "
-			      "calling program");
-		}
-		/* FIXME: If we get ER_LOCK_WAIT_TIMEOUT here we need
-		 * to restart the connections, but it appears restarting
-		 * the calling program is the only way to handle this.
-		 * If anyone in the future figures out a way to handle
-		 * this, super.  Until then we will need to restart the
-		 * calling program if you ever get this error.
-		 */
-		rc = SLURM_ERROR;
-	}
-end_it:
-#ifdef MYSQL_NOT_THREAD_SAFE
-	slurm_mutex_unlock(&mysql_lock);
-#endif
+	slurm_mutex_lock(&mysql_conn->lock);
+	rc = _mysql_query_internal(mysql_conn->db_conn, query);
+	slurm_mutex_unlock(&mysql_conn->lock);
 	return rc;
 }
 
-extern int mysql_db_ping(MYSQL *mysql_db)
+extern int mysql_db_ping(mysql_conn_t *mysql_conn)
 {
 	int rc;
 
+	if (!mysql_conn->db_conn)
+		return -1;
+
 	/* clear out the old results so we don't get a 2014 error */
-#ifdef MYSQL_NOT_THREAD_SAFE
-	slurm_mutex_lock(&mysql_lock);
-#endif
-	mysql_clear_results(mysql_db);
-	rc = mysql_ping(mysql_db);
-#ifdef MYSQL_NOT_THREAD_SAFE
-	slurm_mutex_unlock(&mysql_lock);
-#endif
+	slurm_mutex_lock(&mysql_conn->lock);
+	_clear_results(mysql_conn->db_conn);
+	rc = mysql_ping(mysql_conn->db_conn);
+	slurm_mutex_unlock(&mysql_conn->lock);
 	return rc;
 }
 
-extern int mysql_db_commit(MYSQL *mysql_db)
+extern int mysql_db_commit(mysql_conn_t *mysql_conn)
 {
 	int rc = SLURM_SUCCESS;
 
-#ifdef MYSQL_NOT_THREAD_SAFE
-	slurm_mutex_lock(&mysql_lock);
-#endif
+	if (!mysql_conn->db_conn)
+		return SLURM_ERROR;
+
+	slurm_mutex_lock(&mysql_conn->lock);
 	/* clear out the old results so we don't get a 2014 error */
-	mysql_clear_results(mysql_db);
-	if (mysql_commit(mysql_db)) {
+	_clear_results(mysql_conn->db_conn);
+	if (mysql_commit(mysql_conn->db_conn)) {
 		error("mysql_commit failed: %d %s",
-		      mysql_errno(mysql_db),
-		      mysql_error(mysql_db));
-		errno = mysql_errno(mysql_db);
+		      mysql_errno(mysql_conn->db_conn),
+		      mysql_error(mysql_conn->db_conn));
+		errno = mysql_errno(mysql_conn->db_conn);
 		rc = SLURM_ERROR;
 	}
-#ifdef MYSQL_NOT_THREAD_SAFE
-	slurm_mutex_unlock(&mysql_lock);
-#endif
+	slurm_mutex_unlock(&mysql_conn->lock);
 	return rc;
 }
 
-extern int mysql_db_rollback(MYSQL *mysql_db)
+extern int mysql_db_rollback(mysql_conn_t *mysql_conn)
 {
 	int rc = SLURM_SUCCESS;
 
-#ifdef MYSQL_NOT_THREAD_SAFE
-	slurm_mutex_lock(&mysql_lock);
-#endif
+	if (!mysql_conn->db_conn)
+		return SLURM_ERROR;
+
+	slurm_mutex_lock(&mysql_conn->lock);
 	/* clear out the old results so we don't get a 2014 error */
-	mysql_clear_results(mysql_db);
-	if (mysql_rollback(mysql_db)) {
+	_clear_results(mysql_conn->db_conn);
+	if (mysql_rollback(mysql_conn->db_conn)) {
 		error("mysql_commit failed: %d %s",
-		      mysql_errno(mysql_db),
-		      mysql_error(mysql_db));
-		errno = mysql_errno(mysql_db);
+		      mysql_errno(mysql_conn->db_conn),
+		      mysql_error(mysql_conn->db_conn));
+		errno = mysql_errno(mysql_conn->db_conn);
 		rc = SLURM_ERROR;
 	}
-#ifdef MYSQL_NOT_THREAD_SAFE
-	slurm_mutex_unlock(&mysql_lock);
-#endif
+	slurm_mutex_unlock(&mysql_conn->lock);
 	return rc;
 
 }
 
-extern MYSQL_RES *mysql_db_query_ret(MYSQL *mysql_db, char *query, bool last)
+extern MYSQL_RES *mysql_db_query_ret(mysql_conn_t *mysql_conn,
+				     char *query, bool last)
 {
 	MYSQL_RES *result = NULL;
 
-#ifdef MYSQL_NOT_THREAD_SAFE
-	slurm_mutex_lock(&mysql_lock);
-#endif
-	if (mysql_db_query(mysql_db, query) != SLURM_ERROR)  {
-		if (mysql_errno(mysql_db) == ER_NO_SUCH_TABLE)
+	slurm_mutex_lock(&mysql_conn->lock);
+	if (_mysql_query_internal(mysql_conn->db_conn, query) != SLURM_ERROR)  {
+		if (mysql_errno(mysql_conn->db_conn) == ER_NO_SUCH_TABLE)
 			goto fini;
 		else if (last)
-			result = _get_last_result(mysql_db);
+			result = _get_last_result(mysql_conn->db_conn);
 		else
-			result = _get_first_result(mysql_db);
-		if (!result && mysql_field_count(mysql_db)) {
+			result = _get_first_result(mysql_conn->db_conn);
+		if (!result && mysql_field_count(mysql_conn->db_conn)) {
 			/* should have returned data */
 			error("We should have gotten a result: '%m' '%s'",
-			      mysql_error(mysql_db));
+			      mysql_error(mysql_conn->db_conn));
 		}
 	}
 
 fini:
-#ifdef MYSQL_NOT_THREAD_SAFE
-	slurm_mutex_unlock(&mysql_lock);
-#endif
+	slurm_mutex_unlock(&mysql_conn->lock);
 	return result;
 }
 
-extern int mysql_db_query_check_after(MYSQL *mysql_db, char *query)
+extern int mysql_db_query_check_after(mysql_conn_t *mysql_conn, char *query)
 {
 	int rc = SLURM_SUCCESS;
 
-#ifdef MYSQL_NOT_THREAD_SAFE
-	slurm_mutex_lock(&mysql_lock);
-#endif
-	if ((rc = mysql_db_query(mysql_db, query)) != SLURM_ERROR)
-		rc = mysql_clear_results(mysql_db);
-#ifdef MYSQL_NOT_THREAD_SAFE
-	slurm_mutex_unlock(&mysql_lock);
-#endif
+	slurm_mutex_lock(&mysql_conn->lock);
+	if ((rc = _mysql_query_internal(
+		     mysql_conn->db_conn, query)) != SLURM_ERROR)
+		rc = _clear_results(mysql_conn->db_conn);
+	slurm_mutex_unlock(&mysql_conn->lock);
 	return rc;
 }
 
-extern int mysql_insert_ret_id(MYSQL *mysql_db, char *query)
+extern int mysql_db_insert_ret_id(mysql_conn_t *mysql_conn, char *query)
 {
 	int new_id = 0;
 
-#ifdef MYSQL_NOT_THREAD_SAFE
-	slurm_mutex_lock(&mysql_lock);
-#endif
-	if (mysql_db_query(mysql_db, query) != SLURM_ERROR)  {
-		new_id = mysql_insert_id(mysql_db);
+	slurm_mutex_lock(&mysql_conn->lock);
+	if (_mysql_query_internal(mysql_conn->db_conn, query) != SLURM_ERROR)  {
+		new_id = mysql_insert_id(mysql_conn->db_conn);
 		if (!new_id) {
 			/* should have new id */
 			error("We should have gotten a new id: %s",
-			      mysql_error(mysql_db));
+			      mysql_error(mysql_conn->db_conn));
 		}
 	}
-#ifdef MYSQL_NOT_THREAD_SAFE
-	slurm_mutex_unlock(&mysql_lock);
-#endif
+	slurm_mutex_unlock(&mysql_conn->lock);
 	return new_id;
 
 }
 
-extern int mysql_db_create_table(MYSQL *mysql_db, char *table_name,
+extern int mysql_db_create_table(mysql_conn_t *mysql_conn, char *table_name,
 				 storage_field_t *fields, char *ending)
 {
 	char *query = NULL;
@@ -745,13 +767,9 @@ extern int mysql_db_create_table(MYSQL *mysql_db, char *table_name,
 			       "definition text not null, "
 			       "primary key (table_name(50))) engine='innodb'",
 			       table_defs_table);
-#ifdef MYSQL_NOT_THREAD_SAFE
-	slurm_mutex_lock(&mysql_lock);
-#endif
-	if (mysql_db_query(mysql_db, query) == SLURM_ERROR) {
+	if (mysql_db_query(mysql_conn, query) == SLURM_ERROR) {
 		xfree(query);
-		rc = SLURM_ERROR;
-		goto fini;
+		return SLURM_ERROR;
 	}
 	xfree(query);
 
@@ -770,19 +788,13 @@ extern int mysql_db_create_table(MYSQL *mysql_db, char *table_name,
 	/* make sure we can do a rollback */
 	xstrcat(query, " engine='innodb'");
 
-	if (mysql_db_query(mysql_db, query) == SLURM_ERROR) {
+	if (mysql_db_query(mysql_conn, query) == SLURM_ERROR) {
 		xfree(query);
-		rc = SLURM_ERROR;
-		goto fini;
+		return SLURM_ERROR;
 	}
 	xfree(query);
 
-	rc = _mysql_make_table_current(mysql_db, table_name, first_field,
-				       ending);
-
-fini:
-#ifdef MYSQL_NOT_THREAD_SAFE
-	slurm_mutex_unlock(&mysql_lock);
-#endif
+	rc = _mysql_make_table_current(
+		mysql_conn, table_name, first_field, ending);
 	return rc;
 }

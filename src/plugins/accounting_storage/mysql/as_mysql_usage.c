@@ -97,6 +97,7 @@ static void *_cluster_rollup_usage(void *arg)
 	memset(&mysql_conn, 0, sizeof(mysql_conn_t));
 	mysql_conn.rollback = 1;
 	mysql_conn.conn = local_rollup->mysql_conn->conn;
+	slurm_mutex_init(&mysql_conn.lock);
 
 	/* Each thread needs it's own connection we can't use the one
 	 * sent from the parent thread. */
@@ -119,8 +120,7 @@ static void *_cluster_rollup_usage(void *arg)
 
 		debug4("%d(%s:%d) query\n%s", mysql_conn.conn,
 		       THIS_FILE, __LINE__, query);
-		if(!(result = mysql_db_query_ret(
-			     mysql_conn.db_conn, query, 0))) {
+		if(!(result = mysql_db_query_ret(&mysql_conn, query, 0))) {
 			xfree(query);
 			rc = SLURM_ERROR;
 			goto end_it;
@@ -147,7 +147,7 @@ static void *_cluster_rollup_usage(void *arg)
 			debug3("%d(%s:%d) query\n%s", mysql_conn.conn,
 			       THIS_FILE, __LINE__, query);
 			if(!(result = mysql_db_query_ret(
-				     mysql_conn.db_conn, query, 0))) {
+				     &mysql_conn, query, 0))) {
 				xfree(query);
 				rc = SLURM_ERROR;
 				goto end_it;
@@ -174,7 +174,7 @@ static void *_cluster_rollup_usage(void *arg)
 
 			debug3("%d(%s:%d) query\n%s", mysql_conn.conn,
 			       THIS_FILE, __LINE__, query);
-			rc = mysql_db_query(mysql_conn.db_conn, query);
+			rc = mysql_db_query(&mysql_conn, query);
 			xfree(query);
 			if(rc != SLURM_SUCCESS) {
 				rc = SLURM_ERROR;
@@ -374,23 +374,24 @@ static void *_cluster_rollup_usage(void *arg)
 	if(query) {
 		debug3("%d(%s:%d) query\n%s",
 		       mysql_conn.conn, THIS_FILE, __LINE__, query);
-		rc = mysql_db_query(mysql_conn.db_conn, query);
+		rc = mysql_db_query(&mysql_conn, query);
 		xfree(query);
 	}
 end_it:
 	if(rc == SLURM_SUCCESS) {
-		if(mysql_db_commit(mysql_conn.db_conn)) {
+		if(mysql_db_commit(&mysql_conn)) {
 			error("Couldn't commit rollup of cluster %s",
 			      local_rollup->cluster_name);
 			rc = SLURM_ERROR;
 		}
 	} else {
 		error("Cluster %s rollup failed", local_rollup->cluster_name);
-		if(mysql_conn.db_conn && mysql_db_rollback(mysql_conn.db_conn))
+		if(mysql_db_rollback(&mysql_conn))
 			error("rollback failed");
 	}
 
-	mysql_close_db_connection(&mysql_conn.db_conn);
+	mysql_db_close_db_connection(&mysql_conn);
+	slurm_mutex_destroy(&mysql_conn.lock);
 
 	slurm_mutex_lock(local_rollup->rolledup_lock);
 	(*local_rollup->rolledup)++;
@@ -465,7 +466,7 @@ static int _get_cluster_usage(mysql_conn_t *mysql_conn, uid_t uid,
 	debug4("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, THIS_FILE, __LINE__, query);
 	if(!(result = mysql_db_query_ret(
-		     mysql_conn->db_conn, query, 0))) {
+		     mysql_conn, query, 0))) {
 		xfree(query);
 		return SLURM_ERROR;
 	}
@@ -633,7 +634,7 @@ extern int get_usage_for_list(mysql_conn_t *mysql_conn,
 	debug4("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, THIS_FILE, __LINE__, query);
 	if(!(result = mysql_db_query_ret(
-		     mysql_conn->db_conn, query, 0))) {
+		     mysql_conn, query, 0))) {
 		xfree(query);
 		return SLURM_ERROR;
 	}
@@ -886,7 +887,7 @@ is_user:
 	debug4("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, THIS_FILE, __LINE__, query);
 	if(!(result = mysql_db_query_ret(
-		     mysql_conn->db_conn, query, 0))) {
+		     mysql_conn, query, 0))) {
 		xfree(query);
 		return SLURM_ERROR;
 	}
