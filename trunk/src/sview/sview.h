@@ -452,7 +452,9 @@ extern void get_info_block(GtkTable *table, display_data_t *display_data);
 extern void specific_info_block(popup_info_t *popup_win);
 extern void set_menus_block(void *arg, void *arg2, GtkTreePath *path, int type);
 extern void popup_all_block(GtkTreeModel *model, GtkTreeIter *iter, int id);
-extern void admin_block(GtkTreeModel *model, GtkTreeIter *iter, char *type);
+extern void select_admin_block(GtkTreeModel *model, GtkTreeIter *iter,
+			       display_data_t *display_data,
+			       GtkTreeView *treeview);
 extern void cluster_change_block();
 
 // job_info.c

@@ -169,10 +169,13 @@ static display_data_t options_data_block[] = {
 
 static display_data_t *local_display_data = NULL;
 
-static int _in_slurm_partition(int *part_inx, int *block_inx);
+static void _admin_block(GtkTreeModel *model, GtkTreeIter *iter, char *type);
 static void _append_block_record(sview_block_info_t *block_ptr,
 				 GtkTreeStore *treestore, GtkTreeIter *iter,
 				 int line);
+static int _in_slurm_partition(int *part_inx, int *block_inx);
+static void _process_each_block(GtkTreeModel *model, GtkTreePath *path,
+				GtkTreeIter*iter, gpointer userdata);
 
 static void _block_list_del(void *object)
 {
@@ -1048,6 +1051,9 @@ display_it:
 	if(!display_widget) {
 		tree_view = create_treeview(local_display_data,
 					    &grid_button_list);
+		gtk_tree_selection_set_mode(
+			gtk_tree_view_get_selection(tree_view),
+			GTK_SELECTION_MULTIPLE);
 		display_widget = gtk_widget_ref(GTK_WIDGET(tree_view));
 		gtk_table_attach_defaults(table,
 					  GTK_WIDGET(tree_view),
@@ -1161,6 +1167,9 @@ display_it:
 	if(spec_info->type != INFO_PAGE && !spec_info->display_widget) {
 		tree_view = create_treeview(local_display_data,
 					    &popup_win->grid_button_list);
+		gtk_tree_selection_set_mode(
+			gtk_tree_view_get_selection(tree_view),
+			GTK_SELECTION_MULTIPLE);
 		spec_info->display_widget =
 			gtk_widget_ref(GTK_WIDGET(tree_view));
 		gtk_table_attach_defaults(popup_win->table,
@@ -1437,7 +1446,37 @@ extern void popup_all_block(GtkTreeModel *model, GtkTreeIter *iter, int id)
 	}
 }
 
-extern void admin_block(GtkTreeModel *model, GtkTreeIter *iter, char *type)
+static void _process_each_block(GtkTreeModel *model, GtkTreePath *path,
+				GtkTreeIter*iter, gpointer userdata)
+{
+	char *type = userdata;
+	if (_DEBUG)
+		g_print("process_each_block: global_multi_error = %d\n",
+			global_multi_error);
+
+	if (!global_multi_error) {
+		_admin_block(model, iter, type);
+	}
+}
+
+extern void select_admin_block(GtkTreeModel *model, GtkTreeIter *iter,
+			       display_data_t *display_data,
+			       GtkTreeView *treeview)
+{
+	if (treeview) {
+		if (display_data->extra & EXTRA_NODES) {
+			select_admin_nodes(model, iter, display_data,
+					   SORTID_NODELIST, treeview);
+			return;
+		}
+		global_multi_error = FALSE;
+		gtk_tree_selection_selected_foreach(
+			gtk_tree_view_get_selection(treeview),
+			_process_each_block, display_data->name);
+	}
+}
+
+static void _admin_block(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 {
 	char *blockid = NULL;
 	GtkWidget *popup = gtk_dialog_new_with_buttons(
