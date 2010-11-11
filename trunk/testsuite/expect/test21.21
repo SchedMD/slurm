@@ -35,10 +35,9 @@ source ./globals
 source ./globals_accounting
 
 set test_id     "21.21"
-set test_nu     "test21-21"
 set exit_code   0
 set file_in     "test.$test_id.input"
-set test_acct	[format "%s%s" $test_nu "acct1"]
+set ta		slurm_test-account.1
 set timeout 60
 print_header $test_id
 
@@ -53,7 +52,7 @@ proc _test_limits { } {
 	set maxwall 10
 	set exit_code 0
 
-	incr exit_code [mod_acct "" "" "$test_acct" "" "" "" "" "" "" "" "" "" "" "" "" $maxjob $maxnode $maxsubmit $maxwall "" "" ""]
+	incr exit_code [mod_acct "" "" "$ta" "" "" "" "" "" "" "" "" "" "" "" "" $maxjob $maxnode $maxsubmit $maxwall "" "" ""]
 	if { $exit_code } {
 		return $exit_code
 	}
@@ -61,7 +60,7 @@ proc _test_limits { } {
 	# Spawn a job testing maxnode
 	#
 	set matches 0
-	spawn $srun -v -N$maxnode --account=$test_acct $bin_id
+	spawn $srun -v -N$maxnode --account=$ta $bin_id
 	expect {
 		-re "launching ($number)" {
 			incr matches
@@ -84,7 +83,7 @@ proc _test_limits { } {
 	#
 	# Spawn a job testing maxnode+1
 	#
-	spawn $srun -N[expr $maxnode + 1] --account=$test_acct $bin_id
+	spawn $srun -N[expr $maxnode + 1] --account=$ta $bin_id
 	expect {
 		-re "Job violates accounting policy" {
 			send_user "\nThis error is expected, not a problem\n"
@@ -112,7 +111,7 @@ proc _test_limits { } {
 	# Spawn a job testing maxwall
 	#
 	set matches 0
-	spawn $srun -v -t$maxwall --account=$test_acct $bin_id
+	spawn $srun -v -t$maxwall --account=$ta $bin_id
 	expect {
 		-re "launching ($number)" {
 			incr matches
@@ -135,7 +134,7 @@ proc _test_limits { } {
 	#
 	# Spawn a job testing maxwall+1
 	#
-	spawn $srun -t[expr $maxwall + 1] --account=$test_acct $bin_id
+	spawn $srun -t[expr $maxwall + 1] --account=$ta $bin_id
 	expect {
 		-re "Job violates accounting policy" {
 			send_user "\nThis error is expected, not a problem\n"
@@ -168,7 +167,7 @@ proc _test_limits { } {
 	# test job max cnt and submit
 	for {set inx 0} {$inx < $maxsubmit} {incr inx} {
 		set job_id($inx) 0
-		set mypid [spawn $sbatch -N1 -n1 --account=$test_acct --output=/dev/null --error=/dev/null -t5 $file_in]
+		set mypid [spawn $sbatch -N1 -n1 --account=$ta --output=/dev/null --error=/dev/null -t5 $file_in]
 		expect {
 			-re "Submitted batch job ($number)" {
 				set job_id($inx) $expect_out(1,string)
@@ -205,7 +204,7 @@ proc _test_limits { } {
 	}
 
 	# then submit one more over the limit and it should fail
-	set mypid [spawn $sbatch -N1 -n1 --account=$test_acct --output=/dev/null --error=/dev/null -t5 $file_in]
+	set mypid [spawn $sbatch -N1 -n1 --account=$ta --output=/dev/null --error=/dev/null -t5 $file_in]
 	expect {
 		-re "Job violates accounting policy" {
 			send_user "\nThis error is expected, not a problem\n"
@@ -256,7 +255,7 @@ proc _test_limits { } {
 		}
 	}
 
-	spawn $scancel --quiet --account=$test_acct
+	spawn $scancel --quiet --account=$ta
 	expect {
 		eof {
 			wait
@@ -321,7 +320,7 @@ expect {
 # Use sacctmgr to add an account
 #
 set aamatches 0
-set sadd_pid [spawn $sacctmgr -i add account $test_acct]
+set sadd_pid [spawn $sacctmgr -i add account $ta]
 expect {
 	-re "Adding Account" {
 		incr aamatches
@@ -349,7 +348,7 @@ if {$aamatches != 1} {
 #
 # Add self to this new account
 #
-set sadd_pid [spawn $sacctmgr -i create user name=$user_name account=$test_acct]
+set sadd_pid [spawn $sacctmgr -i create user name=$user_name account=$ta]
 expect {
 	 timeout {
 		send_user "\nFAILURE: sacctmgr add not responding\n"
@@ -367,7 +366,7 @@ expect {
 set job_id    0
 set matches   0
 set timeout   $max_job_delay
-spawn $salloc -N1 --account=$test_acct
+spawn $salloc -N1 --account=$ta
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
@@ -375,7 +374,7 @@ expect {
 		send "exit\r"
 		exp_continue
 	}
-	-re "Account=$test_acct" {
+	-re "Account=$ta" {
 		incr matches
 		exp_continue
 	}
@@ -400,7 +399,7 @@ if {$job_id == 0} {
 #
 make_bash_script $file_in "$bin_id"
 set job_id 0
-spawn $sbatch -N1 --account=$test_acct --output=none $file_in
+spawn $sbatch -N1 --account=$ta --output=none $file_in
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
@@ -421,7 +420,7 @@ if {$job_id == 0} {
 	set matches 0
 	spawn $scontrol show job $job_id
 	expect {
-		-re "Account=$test_acct" {
+		-re "Account=$ta" {
 			incr matches
 			exp_continue
 		}
@@ -443,7 +442,7 @@ if {$job_id == 0} {
 # Spawn a job via srun using this account
 #
 set job_id 0
-spawn $srun -N1 -v --account=$test_acct $bin_id
+spawn $srun -N1 -v --account=$ta $bin_id
 expect {
 	-re "launching ($number)" {
 		set job_id $expect_out(1,string)
@@ -464,7 +463,7 @@ if {$job_id == 0} {
 	set matches 0
 	spawn $scontrol show job $job_id
 	expect {
-		 -re "Account=$test_acct" {
+		 -re "Account=$ta" {
 			incr matches
 			exp_continue
 		}
@@ -497,7 +496,7 @@ if { [test_limits_enforced] == 1 } {
 # Use sacctmgr to delete the test account
 #
 set damatches 0
-set sadel_pid [spawn $sacctmgr -i delete account $test_acct]
+set sadel_pid [spawn $sacctmgr -i delete account $ta]
 expect {
 	-re "Deleting account" {
 		incr damatches
@@ -519,6 +518,6 @@ if {$damatches != 1} {
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in
-	send_user "\nSUCCESS\n"
+	print_success $test_id
 }
 exit $exit_code
