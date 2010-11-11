@@ -30,14 +30,14 @@
 # with SLURM; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 ############################################################################
+source ./globals
 source ./globals_accounting
 
 set test_id     "21.13"
-set test_nu     "test21-13"
 set exit_code   0
-set tc1		[format "%s%s" $test_nu "clus1"]
-set tc2		[format "%s%s" $test_nu "clus2"]
-set tc3		tcluster3
+set tc1		slurm_test-cluster.1
+set tc2		slurm_test-cluster.2
+set tc3		slurm_test-cluster.3
 set fs1		2500
 set fs2		1700
 set mc1		1000000
@@ -48,18 +48,15 @@ set mn1		300
 set mn2		700
 set mw1		01:00:00
 set mw2		00:07:00
-set acc		account
-set ass		associations
-set nm1		[format "%s%s" $test_nu "acct1"]
-set nm2		[format "%s%s" $test_nu "acct2"]
-set nm3		[format "%s%s" $test_nu "acct3"]
-set des		Description
-set ds1		[format "%s%s" $test_nu "acct4"]
-set ds2		[format "%s%s" $test_nu "acct5"]
-set org		Organization
-set or1		accountorga1
-set or2		acttrg
-set qs		QosLevel
+set ta1		slurm_test-account.1
+set ta2		slurm_test-account.2
+set ta3		slurm_test-account.3
+set ds1		slurmtestaccount1
+set ds2		slurmtestaccount2
+set ds3		slurmtestaccount3
+set or1		accountorg1
+set or2		accountorg2
+set or3		accountorg3
 set qs1		normal
 set par		parent
 set access_err  0
@@ -90,28 +87,28 @@ if {$access_err != 0} {
 	send_user "\nWARNING: not authorized to perform this test\n"
 	exit $exit_code
 }
-remove_acct "" "$nm1,$nm2,$nm3"
+remove_acct "" "$ta1,$ta2,$ta3"
 
 #add cluster
 incr exit_code [add_cluster "$tc1,$tc2" "" "" "" "" "" "" "" "" "" "" "" ""]
 if { $exit_code } {
-	remove_acct "" "$nm1,$nm2,$nm3"
+	remove_acct "" "$ta1,$ta2,$ta3"
 	remove_cluster "$tc1,$tc2"
 	exit $exit_code
 }
 
 #add accounts
-incr exit_code [add_acct "$tc1,$tc2" "" "$nm1,$nm2,$nm3" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
+incr exit_code [add_acct "$tc1,$tc2" "" "$ta1,$ta2,$ta3" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
 if { $exit_code } {
-	remove_acct "" "$nm1,$nm2,$nm3"
+	remove_acct "" "$ta1,$ta2,$ta3"
 	remove_cluster "$tc1,$tc2"
 	exit $exit_code
 }
 
 # OK This is the real test, first test change the desc and org of the accounts
-incr exit_code [mod_acct "" "" "$nm1,$nm2,$nm3" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" $ds2 $or2]
+incr exit_code [mod_acct "" "" "$ta1,$ta2,$ta3" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" $ds2 $or2]
 if { $exit_code } {
-	remove_acct "" "$nm1,$nm2,$nm3"
+	remove_acct "" "$ta1,$ta2,$ta3"
 	remove_cluster "$tc1,$tc2"
 	exit $exit_code
 }
@@ -120,13 +117,13 @@ if { $exit_code } {
 # Use sacctmgr to list the test account modifications
 #
 set matches 0
-set my_pid [spawn $sacctmgr -n -p list account acc=$nm1,$nm2,$nm3 format="Account,Desc,Org"]
+set my_pid [spawn $sacctmgr -n -p list account account=$ta1,$ta2,$ta3 format="Account,Description,Organization"]
 expect {
 	-re "There was a problem" {
 	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
 	    	incr exit_code 1
 	}
-	-re "($nm1|$nm2|$nm3).$ds2.$or2." {
+	-re "($ta1|$ta2|$ta3).$ds2.$or2." {
 		incr matches
 		exp_continue
 	}
@@ -145,9 +142,9 @@ if {$matches != 3} {
 }
 
 # Next, test change the limits of the accounts
-incr exit_code [mod_acct "" "" "$nm1" "" "" "" $fs2 "" "" "" "" "" "" $mc2 "" $mj2 $mn2 "" $mw2 "" "" ""]
+incr exit_code [mod_acct "" "" "$ta1" "" "" "" "$fs2" "" "" "" "" "" "" "$mc2" "" "$mj2" "$mn2" "" "$mw2" "" "" ""]
 if { $exit_code } {
-	remove_acct "" "$nm1,$nm2,$nm3"
+	remove_acct "" "$ta1,$ta2,$ta3"
 	remove_cluster "$tc1,$tc2"
 	exit $exit_code
 }
@@ -156,13 +153,13 @@ if { $exit_code } {
 # Use sacctmgr to list the test account modifications
 #
 set matches 0
-set my_pid [spawn $sacctmgr -n -p list assoc acc=$nm1,$nm2,$nm3 format="Account,Cluster,Fairshare,MaxCPUM,MaxJ,MaxN,MaxW"]
+set my_pid [spawn $sacctmgr -n -p list associations account=$ta1,$ta2,$ta3 format="Account,Cluster,Fairshare,MaxCPUM,MaxJobs,MaxNodes,MaxWall"]
 expect {
 	-re "There was a problem" {
 	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
 	    	incr exit_code 1
 	}
-	-re "($nm1.($tc1|$tc2).$fs2.$mc2.$mj2.$mn2.$mw2.|($nm2|$nm3).($tc1|$tc2).1)" {
+	-re "($ta1.($tc1|$tc2).$fs2.$mc2.$mj2.$mn2.$mw2.|($ta2|$ta3).($tc1|$tc2).1)" {
 		incr matches
 		exp_continue
 	}
@@ -182,9 +179,9 @@ if {$matches != 6} {
 }
 
 # Next, test change the desc and limits of the accounts
-incr exit_code [mod_acct "" "" "$nm1" "" "" "" -1 "" "" "" "" "" "" -1 "" -1 -1 "" -1 "" $ds1 $or1]
+incr exit_code [mod_acct "" "" "$ta1" "" "" "" -1 "" "" "" "" "" "" -1 "" -1 -1 "" -1 "" $ds1 $or1]
 if { $exit_code } {
-	remove_acct "" "$nm1,$nm2,$nm3"
+	remove_acct "" "$ta1,$ta2,$ta3"
 	remove_cluster "$tc1,$tc2"
 	exit $exit_code
 }
@@ -193,7 +190,7 @@ if { $exit_code } {
 # Use sacctmgr to list the test account modifications
 #
 set matches 0
-set my_pid [eval spawn $sacctmgr -n -p list account withassoc acc=$nm1,$nm2,$nm3 format="Account,Desc,Org,Cluster,Fairshare,MaxCPUM,MaxJ,MaxN,MaxW"]
+set my_pid [eval spawn $sacctmgr -n -p list account withassoc account=$ta1,$ta2,$ta3 format="Account,Description,Organization,Cluster,Fairshare,MaxCPUM,MaxJobs,MaxNodes,MaxWall"]
 expect {
 	-re "There was a problem" {
 	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
@@ -201,7 +198,7 @@ expect {
 	}
 	# Any time you use () around something you need to combine all
 	# those things together since you can miss some and they be thrown away
-	-re "($nm1.$ds1.$or1.($tc1|$tc2).1.....|($nm2|$nm3).$ds2.$or2.($tc1|$tc2).1.....)" {
+	-re "($ta1.$ds1.$or1.($tc1|$tc2).1.....|($ta2|$ta3).$ds2.$or2.($tc1|$tc2).1.....)" {
 		incr matches
 		exp_continue
 	}
@@ -216,18 +213,18 @@ expect {
 }
 
 if {$matches != 6} {
-	send_user "\nFAILURE: HERE ???  Account modification 2 incorrect with $matches.\n"
+	send_user "\nFAILURE:  Account modification 6 incorrect with $matches.\n"
 	incr exit_code 1
 }
 
 # This is the end below here
 
-incr exit_code [remove_acct "$tc1,$tc2" "$nm1,$nm2,$nm3"]
-incr exit_code [remove_acct "" "$nm1,$nm2,$nm3"]
+incr exit_code [remove_acct "$tc1,$tc2" "$ta1,$ta2,$ta3"]
+incr exit_code [remove_acct "" "$ta1,$ta2,$ta3"]
 incr exit_code [remove_cluster "$tc1,$tc2"]
 
 if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
+	print_success $test_id
 } else {
 	send_user "\nFAILURE\n"
 }
