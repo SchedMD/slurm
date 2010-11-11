@@ -856,9 +856,8 @@ extern slurmdb_association_rec_t *sacctmgr_find_association_from_list(
 		if (((!user && assoc->user)
 		     || (user && (!assoc->user
 				  || strcasecmp(user, assoc->user))))
-		    || ((!account && assoc->acct)
-			|| (account && (!assoc->acct
-					|| strcasecmp(account, assoc->acct))))
+		    || (account && (!assoc->acct
+				    || strcasecmp(account, assoc->acct)))
 		    || ((!cluster && assoc->cluster)
 			|| (cluster && (!assoc->cluster
 					|| strcasecmp(cluster,
@@ -1003,9 +1002,8 @@ extern slurmdb_wckey_rec_t *sacctmgr_find_wckey_from_list(
 		if (((!user && wckey->user)
 		     || (user && (!wckey->user
 				  || strcasecmp(user, wckey->user))))
-		    || ((!name && wckey->name)
-			|| (name && (!wckey->name
-				     || strcasecmp(name, wckey->name))))
+		    || (name && (!wckey->name
+				 || strcasecmp(name, wckey->name)))
 		    || ((!cluster && wckey->cluster)
 			|| (cluster && (!wckey->cluster
 					|| strcasecmp(cluster,

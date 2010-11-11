@@ -768,6 +768,8 @@ typedef struct {
 
 	List name_list;         /* list of char * */
 
+	uint16_t only_defs;     /* only give me the defaults */
+
 	time_t usage_end;
 	time_t usage_start;
 

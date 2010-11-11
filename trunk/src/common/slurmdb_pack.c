@@ -5351,7 +5351,84 @@ extern void slurmdb_pack_wckey_cond(void *in, uint16_t rpc_version, Buf buffer)
 
 	ListIterator itr = NULL;
 	slurmdb_wckey_cond_t *object = (slurmdb_wckey_cond_t *)in;
-	if(rpc_version >= 5) {
+
+	if(rpc_version >= 8) {
+		if(!object) {
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+
+			pack16(0, buffer);
+
+			pack_time(0, buffer);
+			pack_time(0, buffer);
+
+			pack32(NO_VAL, buffer);
+
+			pack16(0, buffer);
+			pack16(0, buffer);
+			return;
+		}
+
+		if(object->cluster_list)
+			count = list_count(object->cluster_list);
+
+		pack32(count, buffer);
+		if(count && count != NO_VAL) {
+			itr = list_iterator_create(object->cluster_list);
+			while((tmp_info = list_next(itr))) {
+				packstr(tmp_info, buffer);
+			}
+			list_iterator_destroy(itr);
+		}
+		count = NO_VAL;
+
+		if(object->id_list)
+			count = list_count(object->id_list);
+
+		pack32(count, buffer);
+		if(count && count != NO_VAL) {
+			itr = list_iterator_create(object->id_list);
+			while((tmp_info = list_next(itr))) {
+				packstr(tmp_info, buffer);
+			}
+		}
+		count = NO_VAL;
+
+		if(object->name_list)
+			count = list_count(object->name_list);
+
+		pack32(count, buffer);
+		if(count && count != NO_VAL) {
+			itr = list_iterator_create(object->name_list);
+			while((tmp_info = list_next(itr))) {
+				packstr(tmp_info, buffer);
+			}
+			list_iterator_destroy(itr);
+		}
+		count = NO_VAL;
+
+		pack16(object->only_defs, buffer);
+
+		pack_time(object->usage_end, buffer);
+		pack_time(object->usage_start, buffer);
+
+		if(object->user_list)
+			count = list_count(object->user_list);
+
+		pack32(count, buffer);
+		if(count && count != NO_VAL) {
+			itr = list_iterator_create(object->user_list);
+			while((tmp_info = list_next(itr))) {
+				packstr(tmp_info, buffer);
+			}
+			list_iterator_destroy(itr);
+		}
+		count = NO_VAL;
+
+		pack16(object->with_usage, buffer);
+		pack16(object->with_deleted, buffer);
+	} else if (rpc_version >= 5) {
 		if(!object) {
 			pack32(NO_VAL, buffer);
 			pack32(NO_VAL, buffer);
@@ -5438,7 +5515,59 @@ extern int slurmdb_unpack_wckey_cond(void **object, uint16_t rpc_version,
 
 	*object = object_ptr;
 
-	if(rpc_version >= 5) {
+	if (rpc_version >= 8) {
+		safe_unpack32(&count, buffer);
+		if(count != NO_VAL) {
+			object_ptr->cluster_list =
+				list_create(slurm_destroy_char);
+			for(i=0; i<count; i++) {
+				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
+						       buffer);
+				list_append(object_ptr->cluster_list,
+					    tmp_info);
+			}
+		}
+
+		safe_unpack32(&count, buffer);
+		if(count != NO_VAL) {
+			object_ptr->id_list = list_create(slurm_destroy_char);
+			for(i=0; i<count; i++) {
+				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
+						       buffer);
+				list_append(object_ptr->id_list, tmp_info);
+			}
+		}
+
+		safe_unpack32(&count, buffer);
+		if(count != NO_VAL) {
+			object_ptr->name_list =
+				list_create(slurm_destroy_char);
+			for(i=0; i<count; i++) {
+				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
+						       buffer);
+				list_append(object_ptr->name_list, tmp_info);
+			}
+		}
+
+		safe_unpack16(&object_ptr->only_defs, buffer);
+
+		safe_unpack_time(&object_ptr->usage_end, buffer);
+		safe_unpack_time(&object_ptr->usage_start, buffer);
+
+		safe_unpack32(&count, buffer);
+		if(count != NO_VAL) {
+			object_ptr->user_list =
+				list_create(slurm_destroy_char);
+			for(i=0; i<count; i++) {
+				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
+						       buffer);
+				list_append(object_ptr->user_list, tmp_info);
+			}
+		}
+
+		safe_unpack16(&object_ptr->with_usage, buffer);
+		safe_unpack16(&object_ptr->with_deleted, buffer);
+	} else if (rpc_version >= 5) {
 		safe_unpack32(&count, buffer);
 		if(count != NO_VAL) {
 			object_ptr->cluster_list =
