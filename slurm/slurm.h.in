@@ -286,7 +286,7 @@ enum job_state_reason {
 	FAIL_INACTIVE_LIMIT,	/* reached slurm InactiveLimit */
 	FAIL_BANK_ACCOUNT,	/* invalid bank account */
 	FAIL_QOS,        	/* invalid QOS */
-	WAIT_QOS_THRES        	/* invalid QOS */
+	WAIT_QOS_THRES        	/* required QOS threshold has been breached */
 };
 
 enum job_acct_types {
