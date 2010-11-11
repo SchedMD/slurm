@@ -31,9 +31,9 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 ############################################################################
 source ./globals
+source ./globals_accounting
 
 set test_id     "21.11"
-set test_nu     "test21-11"
 set exit_code   0
 set acmatches   0
 set aamatches   0
@@ -42,34 +42,23 @@ set lmatches    0
 set damatches   0
 set dcmatches   0
 set not_support 0
-set add		add
-set lis		list
-set del		delete
-set mod		modify
-set nams	Names
 set nam		Name
 set fs		Fairshare
 set mc		MaxCPUMins
 set mj		MaxJobs
 set mn		MaxNodes
 set mw		MaxWall
-set clu		cluster
-set tc1		[format "%s%s" $test_nu "clus1"]
-set tc2		[format "%s%s" $test_nu "clus2"]
+set tc1		slurm_test-cluster.1
+set tc2		slurm_test-cluster.2
 set fs1		2500
 set mc1		1000000
 set mj1		50
 set mn1		300
 set mw1		01:00:00
-set acc		account
-set ass		associations
-set nm1		[format "%s%s" $test_nu "acct1"]
-set nm2		[format "%s%s" $test_nu "acct2"]
-set des		Description
+set ta1		slurm_test-account.1
+set ta2		slurm_test-account.2
 set ds1		"Test Account A1"
-set org		Organization
 set or1		"Account Org A1"
-set qs		QosLevel
 set qs1		normal
 set access_err  0
 set timeout 60
@@ -88,10 +77,18 @@ if { [test_account_storage] == 0 } {
 	exit 0
 }
 
+#make sure we have a clean system and permission to do this work
+remove_acct "" "$ta1,$ta2"
+remove_cluster "$tc1,$tc2"
+if {$access_err != 0} {
+	send_user "\nWARNING: not authorized to perform this test\n"
+	exit $exit_code
+}
+
 #
 # Use sacctmgr to create a cluster
 #
-set sadd_pid [spawn $sacctmgr -i add $clu $nams=$tc1,$tc2 $fs=$fs1 $mc=$mc1 $mj=$mj1 $mn=$mn1 $mw=$mw1]
+set sadd_pid [spawn $sacctmgr -i add cluster name=$tc1,$tc2 fairshare=$fs1 MaxCPUs=$mc1 MaxJobs=$mj1 MaxNodes=$mn1 MaxWall=$mw1]
 expect {
 	-re "privilege to preform this action" {
 		set access_err 1
@@ -128,7 +125,7 @@ if { ![check_acct_associations] } {
 #
 # Use sacctmgr to add an account
 #
-set sadel_pid [spawn $sacctmgr -i $add $acc $clu=$tc1 $des="$ds1" $fs=$fs1 $mc=$mc1 $mj=$mj1 $mn=$mn1 $mw=$mw1 $nams=$nm1,$nm2 $org="$or1" $qs=$qs1]
+set sadel_pid [spawn $sacctmgr -i add account cluster=$tc1 description="$ds1" fairshare=$fs1 MaxCPUs=$mc1 MaxJobs=$mj1 MaxNodes=$mn1 MaxWall=$mw1 name=$ta1,$ta2 organization="$or1" QoSLevel=$qs1]
 expect {
 	-re "Adding Account" {
 		incr aamatches
@@ -153,22 +150,22 @@ if {$aamatches != 1} {
 #
 # Use sacctmgr to list the test associations
 #
-set as_list_pid [spawn $sacctmgr -p list $ass $clu=$tc1,$tc2]
+set as_list_pid [spawn $sacctmgr -p list associations cluster=$tc1,$tc2]
 expect {
-	-re "$tc1.$nm1" {
+	-re "$tc1.$ta1" {
 		incr almatches
 		exp_continue
 	}
-	-re "$tc1.$nm2" {
+	-re "$tc1.$ta2" {
 		incr almatches
 		exp_continue
 	}
-	-re "$tc2.$nm1" {
+	-re "$tc2.$ta1" {
 		set exit_code 1
 		send_user "\nFAILURE: $nm1 account erroneously added to $tc2\n"
 		exp_continue
 	}
-	-re "$tc2.$nm2" {
+	-re "$tc2.$ta2" {
 		exp_continue
 		send_user "\nFAILURE: $nm2 account erroneously added to $tc2\n"
 		set exit_code 1
@@ -197,7 +194,7 @@ if { ![check_acct_associations] } {
 #
 # Use sacctmgr to delete the test account
 #
-set sadel_pid [spawn $sacctmgr -i $del $acc $nm1,$nm2]
+set sadel_pid [spawn $sacctmgr -i delete account $ta1,$ta2]
 expect {
 	-re "Deleting account" {
 		incr damatches
@@ -226,7 +223,7 @@ if { ![check_acct_associations] } {
 #
 # Use sacctmgr to delete the test cluster
 #
-set sadel_pid [spawn $sacctmgr -i $del $clu $tc1,$tc2]
+set sadel_pid [spawn $sacctmgr -i delete cluster $tc1,$tc2]
 expect {
 	-re "Deleting clusters" {
 		incr dcmatches
@@ -250,14 +247,14 @@ if {$dcmatches != 1} {
 #
 # Use sacctmgr to list the test associations
 #
-set as2_list_pid [spawn $sacctmgr list $ass $clu=$tc1 ]
+set as2_list_pid [spawn $sacctmgr list association luster=$tc1 ]
 expect {
-	-re "$tc1 *$nm1" {
+	-re "$tc1 *$ta1" {
 		exp_continue
 		send_user "\nFAILURE: test associations still exist.\n"
 		set exit_code 1
 	}
-	-re "$tc1 *$nm2" {
+	-re "$tc1 *$ta2" {
 		exp_continue
 		send_user "\nFAILURE: test associations still exist.\n"
 		set exit_code 1
@@ -277,7 +274,7 @@ if { ![check_acct_associations] } {
 }
 
 if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
+	print_success $test_id
 		} else {
 	send_user "\nFAILURE\n"
 		}

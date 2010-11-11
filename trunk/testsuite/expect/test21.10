@@ -33,7 +33,6 @@
 source ./globals
 
 set test_id     "21.10"
-set test_nu     "test21-10"
 set exit_code   0
 set acmatches   0
 set aamatches   0
@@ -41,12 +40,6 @@ set lmatches    0
 set damatches   0
 set dcmatches   0
 set not_support 0
-set add		add
-set lis		list
-set del		delete
-set mod		modify
-set wa	        withassociations
-set nams	Names
 set nam		Name
 set fs		Fairshare
 set gm		GrpCPUMins
@@ -61,8 +54,7 @@ set mj		MaxJobs
 set ms		MaxSubmitJobs
 set mn		MaxNodes
 set mw		MaxWall
-set clu		cluster
-set tc1		[format "%s%s" $test_nu "clus1"]
+set tc1		slurm_test-cluster.1
 set fs1		2500
 set gm1		1000
 set gc1		20
@@ -76,14 +68,11 @@ set mj1		500
 set ms1		400
 set mn1		200
 set mw1		01:00:00
-set acc		account
-set ass		associations
-set nm1		[format "%s%s" $test_nu "acct1"]
+set ta1		slurm_test-account.1
 set des		Description
 set ds1		"Test Account A1"
 set org		Organization
 set or1		"Account Org A1"
-set qs		QosLevel
 set qs1		normal
 set access_err  0
 
@@ -108,7 +97,7 @@ if { [string compare [check_accounting_admin_level] "Administrator"] } {
 	set nothing 0
 	set matches 0
 
-set my_pid [spawn $sacctmgr -i $del $clu $tc1]
+set my_pid [spawn $sacctmgr -i delete cluster $tc1]
 
 	expect {
 		-re "privilege to perform this action" {
@@ -171,7 +160,7 @@ set my_pid [spawn $sacctmgr -i $del $clu $tc1]
 	set nothing 1
 	set check "Deleting account"
 
-	set my_pid [eval spawn $sacctmgr -i delete account $nm1]
+	set my_pid [eval spawn $sacctmgr -i delete account $ta1]
 	expect {
 		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
 			send_user "FAILURE: there was a problem with the sacctmgr command\n"
@@ -224,7 +213,7 @@ set my_pid [spawn $sacctmgr -i $del $clu $tc1]
 #
 # Use sacctmgr to create a cluster
 #
-set sadd_pid [spawn $sacctmgr -i add $clu $nams=$tc1]
+set sadd_pid [spawn $sacctmgr -i add cluster name=$tc1]
 expect {
 	-re "privilege to preform this action" {
 		set access_err 1
@@ -261,9 +250,9 @@ if { ![check_acct_associations] } {
 #
 # Use sacctmgr to add an account
 #
-set sadel_pid [spawn $sacctmgr -i $add $acc $clu=$tc1 $des="$ds1" $fs=$fs1   \
-$gm=$gm1 $gc=$gc1 $gj=$gj1 $gn=$gn1 $gs=$gs1 $gw=$gw1 $mc=$mc1 $mm=$mm1 \
-$mj=$mj1 $ms=$ms1 $mn=$mn1 $mw=$mw1 $org="$or1" $qs=$qs1 $nams=$nm1]
+set sadel_pid [spawn $sacctmgr -i add account cluster=$tc1 description="$ds1" fairshare=$fs1   \
+GrpCPUMins=$gm1 GrpCPUs=$gc1 GrpJobs=$gj1 GrpNodes=$gn1 GrpSubmitJobs=$gs1 GrpWall=$gw1 MaxCPUs=$mc1 MaxCPUMins=$mm1 \
+MaxJobs=$mj1 MaxSubmitJobs=$ms1 MaxNodes=$mn1 MaxWall=$mw1 organization="$or1" QoSLevel=$qs1 name=$ta1]
 expect {
 	-re "Adding Account" {
 		incr aamatches
@@ -288,9 +277,9 @@ if {$aamatches != 1} {
 #
 # Use sacctmgr to list the test associations
 #
-set as_list_pid [spawn $sacctmgr list $acc $wa $nam=$nm1 format=$nam,$fs,$gm,$gc,$gj,$gs,$gn,$gw,$mm,$mc,$mj,$ms,$mn,$mw]
+set as_list_pid [spawn $sacctmgr list account withassociations name=$ta1 format=name,fairshare,GrpCPUMins,GrpCPUs,GrpJobs,GrpSubmitJobs,GrpNodes,GrpWall,MaxCPUMins,MaxCPUs,MaxJobs,MaxSubmitJobs,MaxNodes,MaxWall]
 expect {
-	-re "$nm1,$fs1,$gm1,$gc1,$gj1,$gs1,$gn1,$gw1,$mm1,$mc1,$mj1,$ms1,$mn1,$mw1" {
+	-re "$ta1,$fs1,$gm1,$gc1,$gj1,$gs1,$gn1,$gw1,$mm1,$mc1,$mj1,$ms1,$mn1,$mw1" {
 		exp_continue
 	}
 	timeout {
@@ -311,7 +300,7 @@ if { ![check_acct_associations] } {
 #
 # Use sacctmgr to delete the test account
 #
-set sadel_pid [spawn $sacctmgr -i $del $acc $nm1]
+set sadel_pid [spawn $sacctmgr -i delete account $ta1]
 expect {
 	-re "Deleting account" {
 		incr damatches
@@ -340,7 +329,7 @@ if { ![check_acct_associations] } {
 #
 # Use sacctmgr to delete the test cluster
 #
-set sadel_pid [spawn $sacctmgr -i $del $clu $tc1]
+set sadel_pid [spawn $sacctmgr -i delete cluster $tc1]
 expect {
 	-re "Deleting clusters" {
 		incr dcmatches
@@ -364,9 +353,9 @@ if {$dcmatches != 1} {
 #
 # Use sacctmgr to list the test associations
 #
-set as2_list_pid [spawn $sacctmgr list $ass $acc=$nm1 ]
+set as2_list_pid [spawn $sacctmgr list associations account=$ta1 ]
 expect {
-	-re "$tc1 *$nm1" {
+	-re "$tc1 *$ta1" {
 		exp_continue
 		send_user "\nFAILURE: test associations still exist.\n"
 		set exit_code 1
@@ -386,7 +375,7 @@ if { ![check_acct_associations] } {
 }
 
 if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
+	print_success $test_id
 }
 
 exit $exit_code
