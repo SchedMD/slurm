@@ -1284,7 +1284,6 @@ empty:
 		}
 		list_iterator_destroy(itr);
 		list_iterator_destroy(assoc_itr);
-
 		list_destroy(assoc_list);
 	}
 
@@ -1304,6 +1303,8 @@ get_wckeys:
 				user_cond->assoc_cond->user_list;
 			wckey_cond.cluster_list =
 				user_cond->assoc_cond->cluster_list;
+			wckey_cond.only_defs =
+				user_cond->assoc_cond->only_defs;
 		}
 		wckey_list = as_mysql_get_wckeys(mysql_conn, uid, &wckey_cond);
 

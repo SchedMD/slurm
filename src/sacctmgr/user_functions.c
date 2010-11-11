@@ -743,9 +743,16 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 		return SLURM_ERROR;
 	} else {
  		slurmdb_user_cond_t user_cond;
+ 		slurmdb_association_cond_t temp_assoc_cond;
 
 		memset(&user_cond, 0, sizeof(slurmdb_user_cond_t));
-		user_cond.assoc_cond = assoc_cond;
+		memset(&temp_assoc_cond, 0, sizeof(slurmdb_association_cond_t));
+		user_cond.with_wckeys = 1;
+		user_cond.with_assocs = 1;
+
+		temp_assoc_cond.only_defs = 1;
+		temp_assoc_cond.user_list = assoc_cond->user_list;
+		user_cond.assoc_cond = &temp_assoc_cond;
 
 		local_user_list = acct_storage_g_get_users(
 			db_conn, my_uid, &user_cond);
@@ -884,6 +891,10 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 
 	itr = list_iterator_create(assoc_cond->user_list);
 	while((name = list_next(itr))) {
+		slurmdb_user_rec_t *user_rec = NULL;
+		char *local_def_acct = NULL;
+		char *local_def_wckey = NULL;
+
 		if(!name[0]) {
 			exit_code=1;
 			fprintf(stderr, " No blank names are "
@@ -892,37 +903,46 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 			continue;
 		}
 
+		local_def_acct = xstrdup(default_acct);
+		local_def_wckey = xstrdup(default_wckey);
+
 		user = NULL;
-		if(!sacctmgr_find_user_from_list(local_user_list, name)) {
+		if(!(user_rec = sacctmgr_find_user_from_list(
+			     local_user_list, name))) {
 			uid_t pw_uid;
-			if (!default_acct
+
+			if (!local_def_acct
 			    && assoc_cond->acct_list
 			    && list_count(assoc_cond->acct_list))
-				default_acct = xstrdup(
+				local_def_acct = xstrdup(
 					list_peek(assoc_cond->acct_list));
 
-			if(!default_wckey
+			if(!local_def_wckey
 			    && wckey_cond->name_list
 			    && list_count(wckey_cond->name_list))
-				default_wckey =	xstrdup(
+				local_def_wckey = xstrdup(
 					list_peek(wckey_cond->name_list));
 
-			if(!default_acct || !default_acct[0]) {
+			if(!local_def_acct || !local_def_acct[0]) {
 				exit_code=1;
 				fprintf(stderr, " Need a default account for "
 					"these users to add.\n");
 				rc = SLURM_ERROR;
+				xfree(local_def_acct);
+				xfree(local_def_wckey);
 				goto no_default;
 			}
 			if(first) {
 				if(!sacctmgr_find_account_from_list(
-					   local_acct_list, default_acct)) {
+					   local_acct_list, local_def_acct)) {
 					exit_code=1;
 					fprintf(stderr, " This account '%s' "
 						"doesn't exist.\n"
 						"        Contact your admin "
 						"to add this account.\n",
 						default_acct);
+					xfree(local_def_acct);
+					xfree(local_def_wckey);
 					continue;
 				}
 				first = 0;
@@ -937,6 +957,8 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 					xfree(warning);
 					rc = SLURM_ERROR;
 					list_flush(user_list);
+					xfree(local_def_acct);
+					xfree(local_def_wckey);
 					goto end_it;
 				}
 				xfree(warning);
@@ -948,8 +970,8 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 			user->wckey_list =
 				list_create(slurmdb_destroy_wckey_rec);
 			user->name = xstrdup(name);
-			user->default_acct = xstrdup(default_acct);
-			user->default_wckey = xstrdup(default_wckey);
+			user->default_acct = xstrdup(local_def_acct);
+			user->default_wckey = xstrdup(local_def_wckey);
 
 			user->admin_level = admin_level;
 
@@ -974,6 +996,11 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 			}
 			itr_c = list_iterator_create(assoc_cond->cluster_list);
 			while ((cluster = list_next(itr_c))) {
+				/* We need to check this every time
+				   for a cluster to make sure there
+				   isn't one already set for that
+				   cluster.
+				*/
 				if (!sacctmgr_find_account_base_assoc_from_list(
 					   local_assoc_list, account,
 					   cluster)) {
@@ -989,6 +1016,23 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 							account, cluster);
 					}
 					continue;
+				} else if (!local_def_acct) {
+					slurmdb_association_rec_t *assoc_rec;
+					if (user_rec
+					    && (assoc_rec =
+						sacctmgr_find_association_from_list(
+						     user_rec->assoc_list,
+						     name, NULL,
+						     cluster, NULL)))
+						local_def_acct = xstrdup(
+							assoc_rec->acct);
+					else if (assoc_cond
+						   && assoc_cond->acct_list
+						   && list_count(assoc_cond->
+								 acct_list))
+						local_def_acct = xstrdup(
+							list_peek(assoc_cond->
+								  acct_list));
 				}
 
 				itr_p = list_iterator_create(
@@ -1007,8 +1051,8 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 					assoc->acct = xstrdup(account);
 					assoc->cluster = xstrdup(cluster);
 					assoc->partition = xstrdup(partition);
-					if(default_acct
-					   && !strcmp(default_acct, account))
+					if (local_def_acct &&
+					    !strcmp(local_def_acct, account))
 						assoc->is_def = 1;
 
 					assoc->def_qos_id =
@@ -1057,12 +1101,17 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 						   assoc->partition);
 				}
 				list_iterator_destroy(itr_p);
-				if(partition_set)
+				if(partition_set) {
+					if (!default_acct && local_def_acct)
+						xfree(local_def_acct);
 					continue;
+				}
 
 				if(sacctmgr_find_association_from_list(
 					   local_assoc_list,
 					   name, account, cluster, NULL)) {
+					if (!default_acct && local_def_acct)
+						xfree(local_def_acct);
 					continue;
 				}
 
@@ -1070,8 +1119,8 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 					sizeof(slurmdb_association_rec_t));
 				slurmdb_init_association_rec(assoc, 0);
 				assoc->user = xstrdup(name);
-				if(default_acct
-				   && !strcmp(default_acct, account))
+				if(local_def_acct
+				   && !strcmp(local_def_acct, account))
 					assoc->is_def = 1;
 				assoc->acct = xstrdup(account);
 				assoc->cluster = xstrdup(cluster);
@@ -1111,14 +1160,17 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 					   " C = %-10.10s\n",
 					   assoc->user, assoc->acct,
 					   assoc->cluster);
+				if (!default_acct && local_def_acct)
+					xfree(local_def_acct);
 			}
 			list_iterator_destroy(itr_c);
 		}
 		list_iterator_destroy(itr_a);
 		acct_first = 0;
 
+		xfree(local_def_acct);
 		/* continue here if not doing wckeys */
-		if(!track_wckey && !default_wckey)
+		if(!track_wckey && !local_def_wckey)
 			continue;
 
 		itr_w = list_iterator_create(wckey_cond->name_list);
@@ -1129,13 +1181,29 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 					   local_wckey_list, name, account,
 					   cluster)) {
 					continue;
+				} else if (user_rec && !local_def_wckey) {
+					slurmdb_wckey_rec_t *wckey_rec;
+					if ((wckey_rec =
+					     sacctmgr_find_wckey_from_list(
+						     user_rec->wckey_list,
+						     name, NULL, cluster)))
+						local_def_wckey = xstrdup(
+							wckey_rec->name);
+					else if (wckey_cond
+						 && wckey_cond->name_list
+						 && list_count(
+							 wckey_cond->name_list))
+						local_def_wckey = xstrdup(
+							list_peek(wckey_cond->
+								  name_list));
 				}
+
 				wckey = xmalloc(sizeof(slurmdb_wckey_rec_t));
 				wckey->user = xstrdup(name);
 				wckey->name = xstrdup(account);
 				wckey->cluster = xstrdup(cluster);
-				if(default_wckey
-				   && !strcmp(default_wckey, account))
+				if(local_def_wckey
+				   && !strcmp(local_def_wckey, account))
 					assoc->is_def = 1;
 				if(user)
 					list_append(user->wckey_list, wckey);
@@ -1147,11 +1215,13 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 					   " C = %-10.10s\n",
 					   wckey->user, wckey->name,
 					   wckey->cluster);
-
+				if (!default_wckey && local_def_wckey)
+					xfree(local_def_wckey);
 			}
 			list_iterator_destroy(itr_c);
 		}
 		list_iterator_destroy(itr_w);
+		xfree(local_def_wckey);
 	}
 no_default:
 	list_iterator_destroy(itr);
