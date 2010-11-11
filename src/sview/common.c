@@ -593,8 +593,7 @@ static void _selected_page(GtkMenuItem *menuitem, display_data_t *display_data)
 		each.pfunc = &popup_all_block;
 		break;
 	case RESV_PAGE:
-		popup_all_resv(treedata->model, &treedata->iter,
-			       display_data->id);
+		each.pfunc = &popup_all_resv;
 		break;
 	case ADMIN_PAGE:
 		switch(display_data->id) {
@@ -613,8 +612,8 @@ static void _selected_page(GtkMenuItem *menuitem, display_data_t *display_data)
 					   display_data, treedata->treeview);
 			break;
 		case RESV_PAGE:
-			admin_resv(treedata->model, &treedata->iter,
-				   display_data->name);
+			select_admin_resv(treedata->model, &treedata->iter,
+					  display_data, treedata->treeview);
 			break;
 		case NODE_PAGE:
 			select_admin_nodes(treedata->model, &treedata->iter,
