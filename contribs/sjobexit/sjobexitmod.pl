@@ -162,10 +162,10 @@ sub usage
         $base [-h]
         $base [-man]
 
-	-e <exit code>		Show user and all accounts and share usage for named user (required).
-	-r <reason string>	Show account and share usage for named account (required).
+	-e <exit code>		Modify the derived exit code to new value.
+	-r <reason string>	Modify the derived exit string to new value.
 	-c <cluster>		Name of cluster (optional).
-	-l 			list information for a completed job.
+	-l 			List information for a completed job.
 	-h 			Show usage.
 	JobId			The identification number of the job.
 	-man 			Show man page.
