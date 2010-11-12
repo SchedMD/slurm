@@ -316,7 +316,7 @@ if ($nodes) {
 # Priority (nice adjustment).
 #
 if ($priority) {
-	push @slurmArgs, "--nice[=adjustment]";
+	push @slurmArgs, "--nice=$priority";
 }
 
 #
