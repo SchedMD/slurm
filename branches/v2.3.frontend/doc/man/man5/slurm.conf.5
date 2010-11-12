@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "August 2010" "slurm.conf 2.2" "Slurm configuration file"
+.TH "slurm.conf" "5" "November 2010" "slurm.conf 2.3" "Slurm configuration file"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -2310,6 +2310,75 @@ but will be established when the \fBslurmd\fR daemon on that node
 registers.
 The default value is "UNKNOWN".
 .RE
+
+.LP
+On computers where frontend nodes are used to execute batch scripts
+rather than compute nodes (BlueGene or Cray systems), one may
+configure one or more frontend nodes using the configuration parameters
+defined below. These options are very similar to those used in configuring
+compute nodes. These options may only be used on systems configured and built
+with the appropriate parameters (\-\-have\-front\-end,
+\-\-enable\-bluegene\-emulation) or a system determined to have the
+appropriate architecture by the configure script (BlueGene or Cray systems).
+The front end configuration specifies the following information:
+
+.TP
+\fBFrontendName\fR
+Name that SLURM uses to refer to a frontend node (or base partition for
+BlueGene systems).
+Typically this would be the string that "/bin/hostname \-s" returns.
+It may also be the fully qualified domain name as returned by "/bin/hostname \-f"
+(e.g. "foo1.bar.com"), or any valid domain name associated with the host
+through the host database (/etc/hosts) or DNS, depending on the resolver
+settings.  Note that if the short form of the hostname is not used, it
+may prevent use of hostlist expressions (the numeric portion in brackets
+must be at the end of the string).
+If the \fBFrontendName\fR is "DEFAULT", the values specified
+with that record will apply to subsequent node specifications
+unless explicitly set to other values in that frontend node record or
+replaced with a different set of default values.
+
+.TP
+\fBFrontendAddr\fR
+Name that a frontend node should be referred to in establishing
+a communications path. This name will be used as an
+argument to the gethostbyname() function for identification.
+If a node range expression is used to designate multiple nodes,
+they must exactly match the entries in the \fBFrontendName\fR
+(e.g. "FrontendName=fe[0\-7] FrontendAddr="efe[0\-7]").
+\fBFrontendAddr\fR may also contain IP addresses.
+By default, the \fBFrontendAddr\fR will be identical in value to
+\fBFrontendName\fR.
+
+.TP
+\fBPort\fR
+The port number that the SLURM compute node daemon, \fBslurmd\fR, listens
+to for work on this particular frontend node. By default there is a single port
+number for all \fBslurmd\fR daemons on all frontend nodes as defined by the
+\fBSlurmdPort\fR configuration parameter. Use of this option is not generally
+recommended except for development or testing purposes.
+
+.TP
+\fBReason\fR
+Identifies the reason for a frontend node being in state "DOWN", "DRAINED"
+"DRAINING", "FAIL" or "FAILING".
+Use quotes to enclose a reason having more than one word.
+
+.TP
+\fBState\fR
+State of the frontend node with respect to the initiation of user jobs.
+Acceptable values are "DOWN", "DRAIN", "FAIL", "FAILING" and "UNKNOWN".
+"DOWN" indicates the frontend node has failed and is unavailable to be
+allocated work.
+"DRAIN" indicates the frontend node is unavailable to be allocated work.
+"FAIL" indicates the frontend node is expected to fail soon, has
+no jobs allocated to it, and will not be allocated to any new jobs.
+"FAILING" indicates the frontend node is expected to fail soon, has
+one or more jobs allocated to it, but will not be allocated to any new jobs.
+"UNKNOWN" indicates the frontend node's state is undefined (BUSY or IDLE),
+but will be established when the \fBslurmd\fR daemon on that node registers.
+The default value is "UNKNOWN".
+Also see the \fBDownNodes\fR parameter below.
 
 .LP
 The partition configuration permits you to establish different job

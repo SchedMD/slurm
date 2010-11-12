@@ -151,6 +151,14 @@ extern char *default_plugstack;
 #define DEFAULT_UNKILLABLE_TIMEOUT  60 /* seconds */
 #define DEFAULT_MAX_TASKS_PER_NODE  128
 
+typedef struct slurm_conf_frontend {
+	char *frontends;
+	char *addresses;
+	uint16_t port;
+	char *reason;
+	char *state;
+} slurm_conf_frontend_t;
+
 typedef struct slurm_conf_node {
 	char *nodenames;
 	char *hostnames;
