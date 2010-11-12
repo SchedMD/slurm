@@ -1,0 +1,158 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          sacctmgr add user
+#
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2008-2010 Lawrence Livermore National Security.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Joseph Donaghy <donaghy1@llnl.gov>
+# CODE-OCEC-09-009. All rights reserved.
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <https://computing.llnl.gov/linux/slurm/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals_accounting
+
+set test_id     "21.15"
+set exit_code   0
+set tc1		slurm_test-cluster.1
+set tc2		slurm_test-cluster.2
+set tc3		slurm_test-cluster.3
+set fs1		2500
+set mc1		1000000
+set mj1		50
+set mn1		300
+set mw1		01:00:00
+set ta1		slurm_test-account.1
+set ta2		slurm_test-account.2
+set ta3		slurm_test-account.3
+set usr		user
+set tu1         slurm_test-user.1
+set alo		Operator
+set fs		fairshare
+set mc		maxcpu
+set mj		maxjob
+set mn		maxnode
+set mw		maxwall
+set dbu		debug
+set access_err  0
+
+
+print_header $test_id
+
+set timeout 60
+
+#
+# Check accounting config and bail if not found.
+#
+if { [test_account_storage] == 0 } {
+	send_user "\nWARNING: This test can't be run without a usable AccountStorageType\n"
+	exit 0
+}
+
+if { [string compare [check_accounting_admin_level] "Administrator"] } {
+	send_user "\nWARNING: This test can't be run without being an Accounting administrator.\nUse sacctmgr mod user \$USER_NAME admin=admin.\n"
+	exit 0
+}
+
+#make sure we have a clean system and permission to do this work
+remove_user "" "" "$tu1"
+remove_acct "" "$ta1,$ta2,$ta3"
+remove_cluster "$tc1,$tc2,$tc3"
+if {$access_err != 0} {
+	send_user "\nWARNING: not authorized to perform this test\n"
+	exit $exit_code
+}
+
+#add cluster
+incr exit_code [add_cluster "$tc1,$tc2,$tc3" "" "" "" "" "" "" "" "" "" "" "" ""]
+if { $exit_code } {
+	remove_user "" "" "$tu1"
+	remove_acct "" "$ta1,$ta2,$ta3"
+	remove_cluster "$tc1,$tc2,$tc3"
+	exit $exit_code
+}
+
+#add accounts
+incr exit_code [add_acct "$tc1,$tc2,$tc3" "" "$ta1,$ta2,$ta3" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
+if { $exit_code } {
+	remove_user "" "" "$tu1"
+	remove_acct "" "$ta1,$ta2,$ta3"
+	remove_cluster "$tc1,$tc2,$tc3"
+	exit $exit_code
+}
+
+#add users
+# account adminlevel cluster defaultaccount fs maxcpu maxjob maxnodes maxwall name
+incr exit_code [add_user "$tc1,$tc2,$tc3" "$ta1,$ta2,$ta3" "$tu1" "" "$alo" "$ta2" "" "" "" "$fs1" "" "" "" "" "" "" "$mc1" "" "$mj1" "$mn1" "" "$mw1" ]
+if { $exit_code } {
+	remove_user "" "" "$tu1"
+	remove_acct "" "$ta1,$ta2,$ta3"
+	remove_cluster "$tc1,$tc2,$tc3"
+	exit $exit_code
+}
+
+#
+# Use sacctmgr to list the test user additions
+#
+set matches 0
+set my_pid [spawn $sacctmgr -n -p list user format="User,DefaultA,Admin,clus,acc,fair,maxcpum,maxj,maxn,maxw"  names=$tu1 withassoc]
+expect {
+	-re "There was a problem" {
+	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
+	    	incr exit_code 1
+	}
+	-re "($tu1.$ta2.$alo.($tc1|$tc2|$tc3).($ta1|$ta2|$ta3).$fs1.$mc1.$mj1.$mn1.$mw1.)" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr list associations not responding\n"
+		slow_kill $my_pid
+		incr exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$matches != 9} {
+	send_user "\nFAILURE:  Account addition 9 incorrect with only $matches.\n"
+	incr exit_code 1
+}
+
+# This is the end below here
+
+incr exit_code [remove_user "$tc1" "" "$tu1"]
+incr exit_code [remove_user "" "$ta1,$ta2,$ta3" "$tu1"]
+incr exit_code [remove_user "" "" "$tu1"]
+incr exit_code [remove_acct "" "$ta1,$ta2,$ta3"]
+incr exit_code [remove_cluster "$tc1,$tc2,$tc3"]
+
+if {$exit_code == 0} {
+	print_success $test_id
+} else {
+	send_user "\nFAILURE\n"
+}
+exit $exit_code
+
