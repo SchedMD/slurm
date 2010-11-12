@@ -52,9 +52,6 @@
 #define SLURMDB_PURGE_IN_MONTHS(_X) \
 	(_X & SLURMDB_PURGE_MONTHS)
 
-/* Parent account should be used when calculating FairShare */
-#define SLURMDB_FS_USE_PARENT 0x7FFFFFFF
-
 extern slurmdb_step_rec_t *slurmdb_create_step_rec();
 extern slurmdb_job_rec_t *slurmdb_create_job_rec();
 
