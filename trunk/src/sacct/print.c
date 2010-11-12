@@ -355,6 +355,8 @@ void print_fields(type_t type, void *object)
 			switch(type) {
 			case JOB:
 				tmp_int = job->derived_ec;
+				if (tmp_int == NO_VAL)
+					tmp_int = 0;
 				if (WIFSIGNALED(tmp_int))
 					tmp_int2 = WTERMSIG(tmp_int);
 
