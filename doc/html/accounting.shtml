@@ -653,9 +653,11 @@ If the cluster doesn't have the limit set no limit will be enforced.
 
 <ul>
 
-<li><b>Fairshare=</b> Used for determining priority.  Essentially
-  this is the amount of claim this association and it's children have
-  to the above system.</li>
+<li><b>Fairshare=</b> Integer value used for determining priority.
+  Essentially this is the amount of claim this association and it's
+  children have to the above system. Can also be the string "parent",
+  this means that the parent association is used for fairshare.
+  </li>
 </li>
 
 <li><b>GrpCPUMins=</b> A hard limit of cpu minutes to be used by jobs

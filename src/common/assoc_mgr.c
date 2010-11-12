@@ -75,11 +75,19 @@ static void _normalize_assoc_shares(slurmdb_association_rec_t *assoc)
 {
 	slurmdb_association_rec_t *assoc2 = assoc;
 
+	if ((assoc->shares_raw == SLURMDB_FS_USE_PARENT)
+	    && assoc->usage->parent_assoc_ptr) {
+		assoc->usage->shares_norm =
+			assoc->usage->parent_assoc_ptr->usage->shares_norm;
+		return;
+	}
+
 	assoc2->usage->shares_norm = 1.0;
 	while(assoc->usage->parent_assoc_ptr) {
-		assoc2->usage->shares_norm *=
-			(double)assoc->shares_raw /
-			(double)assoc->usage->level_shares;
+		if (assoc->shares_raw != SLURMDB_FS_USE_PARENT)
+			assoc2->usage->shares_norm *=
+				(double)assoc->shares_raw /
+				(double)assoc->usage->level_shares;
 		assoc = assoc->usage->parent_assoc_ptr;
 	}
 }
@@ -475,8 +483,12 @@ static int _post_association_list(List assoc_list)
 				continue;
 			itr2 = list_iterator_create(
 				assoc->usage->childern_list);
-			while((assoc2 = list_next(itr2)))
-				count += assoc2->shares_raw;
+			if (itr2 == NULL)
+				fatal("list_iterator_create: malloc failure");
+			while ((assoc2 = list_next(itr2))) {
+				if (assoc2->shares_raw != SLURMDB_FS_USE_PARENT)
+					count += assoc2->shares_raw;
+			}
 			list_iterator_reset(itr2);
 			while((assoc2 = list_next(itr2)))
 				assoc2->usage->level_shares = count;

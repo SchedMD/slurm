@@ -271,6 +271,7 @@ extern int sacctmgr_set_association_cond(slurmdb_association_cond_t *assoc_cond,
 		if (!assoc_cond->fairshare_list)
 			assoc_cond->fairshare_list =
 				list_create(slurm_destroy_char);
+
 		if (slurm_addto_char_list(assoc_cond->fairshare_list, value))
 			set = 1;
 	} else if (!strncasecmp (type, "GrpCPUMins", MAX(command_len, 7))) {
@@ -432,9 +433,13 @@ extern int sacctmgr_set_association_rec(slurmdb_association_rec_t *assoc,
 		set = 1;
 	} else if (!strncasecmp(type, "FairShare", MAX(command_len, 1))
 		   || !strncasecmp(type, "Shares", MAX(command_len, 1))) {
-		if (get_uint(value, &assoc->shares_raw,
-			     "FairShare") == SLURM_SUCCESS)
+		if (!strncasecmp(value, "parent", 6)) {
+			assoc->shares_raw = SLURMDB_FS_USE_PARENT;
 			set = 1;
+		} else if (get_uint(value, &assoc->shares_raw,
+				    "FairShare") == SLURM_SUCCESS) {
+			set = 1;
+		}
 	} else if (!strncasecmp(type, "GrpCPUMins", MAX(command_len, 7))) {
 		if (get_uint64(value, &assoc->grp_cpu_mins,
 			       "GrpCPUMins") == SLURM_SUCCESS)
@@ -573,7 +578,10 @@ extern void sacctmgr_print_association_rec(slurmdb_association_rec_t *assoc,
 		field->print_routine(field, tmp_char, last);
 		break;
 	case PRINT_FAIRSHARE:
-		field->print_routine(field, assoc->shares_raw, last);
+		if (assoc->shares_raw == SLURMDB_FS_USE_PARENT)
+			print_fields_str(field, "parent", last);
+		else
+			field->print_routine(field, assoc->shares_raw, last);
 		break;
 	case PRINT_GRPCM:
 		field->print_routine(field, assoc->grp_cpu_mins, last);
