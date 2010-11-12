@@ -652,8 +652,9 @@ static void _preempt_job_dequeue(void)
 				error("preempted job %u could not be "
 				      "checkpointed: %s",
 				      job_ptr->job_id, slurm_strerror(rc));
-		} else if ((preempt_mode == PREEMPT_MODE_REQUEUE)
-			   && job_ptr->batch_flag) {
+		} else if ((preempt_mode == PREEMPT_MODE_REQUEUE) &&
+			   job_ptr->batch_flag && job_ptr->details &&
+			   (job_ptr->details->requeue > 0)) {
 			rc = job_requeue(0, job_ptr->job_id, -1,
 					 (uint16_t)NO_VAL);
 			if (rc == SLURM_SUCCESS) {
