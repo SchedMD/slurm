@@ -987,6 +987,9 @@ _pick_step_nodes (struct job_record  *job_ptr,
 				if (cpu_cnt == 0) {
 					/* Node not usable (memory insufficient
 					 * to allocate any CPUs, etc.) */
+					bit_not(node_tmp);
+					bit_and(nodes_avail, node_tmp);
+					FREE_NULL_BITMAP(node_tmp);
 					continue;
 				}
 
