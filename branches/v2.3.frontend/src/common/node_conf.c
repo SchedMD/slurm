@@ -463,6 +463,61 @@ static int _list_find_feature (void *feature_entry, void *key)
 }
 
 /*
+ * build_all_frontend_info - get a array of slurm_conf_frontend_t structures
+ *	from the slurm.conf reader, build table, and set values
+ * RET 0 if no error, error code otherwise
+ */
+extern void build_all_frontend_info (void)
+{
+	slurm_conf_frontend_t **ptr_array;
+	int i, count, max_rc = SLURM_SUCCESS;
+
+	count = slurm_conf_frontend_array(&ptr_array);
+#ifdef HAVE_FRONT_END
+	if (count == 0)
+		fatal("No FrontendName information available!");
+
+	for (i = 0; i < count; i++) {
+		hostlist_t hl_name, hl_addr;
+		slurm_conf_frontend_t *fe_single, *fe_line;
+		char *fe_name, *fe_addr;
+		int i;
+
+		fe_line = ptr_array[i];
+		hl_name = hostlist_create(fe_line->frontends);
+		if (hl_name == NULL)
+			fatal("Invalid FrontendName:%s", fe_line->frontends);
+		hl_addr = hostlist_create(fe_line->addresses);
+		if (hl_addr == NULL)
+			fatal("Invalid FrontendAddr:%s", fe_line->addresses);
+		if (hostlist_count(hl_name) != hostlist_count(hl_addr)) {
+			fatal("Inconsistent node count between "
+			      "FrontendName(%s) and FrontendAddr(%s)",
+			      fe_line->frontends, fe_line->addresses);
+		}
+		while ((fe_name = hostlist_shift(hl_name))) {
+			fe_addr = hostlist_shift(hl_addr);
+			fe_single = xmalloc(sizeof(slurm_conf_frontend_t));
+			fe_single->frontends = xstrdup(fe_name);
+			fe_single->addresses = xstrdup(fe_addr);
+			xfree(fe_name);
+			xfree(fe_addr);
+			fe_single->port = fe_line->port;
+			if (fe_line->reason && fe_line->reason[0])
+				fe_single->reason = xstrdup(fe_line->reason);
+			fe_single->node_state = fe_line->node_state;
+		}
+		hostlist_destroy(hl_addr);
+		hostlist_destroy(hl_name);
+	}
+#else
+	if (count != 0)
+		fatal("No FrontendName information configured!");
+#endif
+	return max_rc;
+}
+
+/*
  * build_all_nodeline_info - get a array of slurm_conf_node_t structures
  *	from the slurm.conf reader, build table, and set values
  * IN set_bitmap - if true, set node_bitmap in config record (used by slurmd)

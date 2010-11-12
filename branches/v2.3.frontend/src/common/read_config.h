@@ -152,11 +152,13 @@ extern char *default_plugstack;
 #define DEFAULT_MAX_TASKS_PER_NODE  128
 
 typedef struct slurm_conf_frontend {
-	char *frontends;
-	char *addresses;
-	uint16_t port;
-	char *reason;
-	char *state;
+	char *frontends;		/* frontend node name */
+	char *addresses;		/* frontend node address */
+	uint16_t port;			/* frontend specific port */
+	char *reason;			/* reason for down frontend node */
+	uint16_t node_state;		/* enum node_states, ORed with
+					 * NODE_STATE_NO_RESPOND if not
+					 * responding */
 } slurm_conf_frontend_t;
 
 typedef struct slurm_conf_node {
@@ -264,6 +266,15 @@ extern int slurm_conf_destroy(void);
 extern slurm_ctl_conf_t *slurm_conf_lock(void);
 
 extern void slurm_conf_unlock(void);
+
+
+/*
+ * Set "ptr_array" with the pointer to an array of pointers to
+ * slurm_conf_frontend_t structures.
+ *
+ * Return value is the length of the array.
+ */
+extern int slurm_conf_frontend_array(slurm_conf_frontend_t **ptr_array[]);
 
 /*
  * Set "ptr_array" with the pointer to an array of pointers to

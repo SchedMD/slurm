@@ -167,6 +167,8 @@ extern time_t last_node_update;		/* time of last node record update */
  */
 char * bitmap2node_name (bitstr_t *bitmap);
 
+extern int build_all_frontend_info (void);
+
 /*
  * _build_all_nodeline_info - get a array of slurm_conf_node_t structures
  *	from the slurm.conf reader, build table, and set values

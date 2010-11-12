@@ -61,21 +61,23 @@
 #include <slurm/slurm.h>
 
 #include "src/common/hostlist.h"
-#include "src/common/slurm_protocol_defs.h"
-#include "src/common/slurm_protocol_api.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
+#include "src/common/node_conf.h"
+#include "src/common/parse_config.h"
 #include "src/common/parse_spec.h"
+#include "src/common/parse_time.h"
 #include "src/common/read_config.h"
+#include "src/common/slurm_protocol_api.h"
+#include "src/common/slurm_protocol_defs.h"
+#include "src/common/slurm_rlimits_info.h"
+#include "src/common/slurm_selecttype_info.h"
+#include "src/common/strlcpy.h"
+#include "src/common/uid.h"
+#include "src/common/util-net.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-#include "src/common/slurm_rlimits_info.h"
-#include "src/common/parse_config.h"
-#include "src/common/parse_time.h"
-#include "src/common/slurm_selecttype_info.h"
-#include "src/common/util-net.h"
-#include "src/common/uid.h"
-#include "src/common/strlcpy.h"
+
 
 /*
 ** Define slurm-specific aliases for use by plugins, see slurm_xlator.h
@@ -405,6 +407,7 @@ static int _parse_frontend(void **dest, slurm_parser_enum_t type,
 {
 	s_p_hashtbl_t *tbl, *dflt;
 	slurm_conf_frontend_t *n;
+	char *node_state = NULL;
 	static s_p_options_t _frontend_options[] = {
 		{"FrontendAddr", S_P_STRING},
 		{"Port", S_P_UINT16},
@@ -457,9 +460,13 @@ static int _parse_frontend(void **dest, slurm_parser_enum_t type,
 		if (!s_p_get_string(&n->reason, "Reason", tbl))
 			s_p_get_string(&n->reason, "Reason", dflt);
 
-		if (!s_p_get_string(&n->state, "State", tbl)
-		    && !s_p_get_string(&n->state, "State", dflt))
-			n->state = NULL;
+		if (!s_p_get_string(&node_state, "State", tbl)
+		    && !s_p_get_string(&node_state, "State", dflt))
+			n->node_state = NODE_STATE_UNKNOWN;
+		else {
+			n->node_state = state_str2int(node_state);
+			xfree(node_state);
+		}
 
 		*dest = (void *)n;
 
@@ -673,7 +680,6 @@ static void _destroy_frontend(void *ptr)
 	xfree(n->frontends);
 	xfree(n->addresses);
 	xfree(n->reason);
-	xfree(n->state);
 	xfree(ptr);
 }
 
@@ -690,6 +696,22 @@ static void _destroy_nodename(void *ptr)
 	xfree(ptr);
 }
 
+int slurm_conf_frontend_array(slurm_conf_frontend_t **ptr_array[])
+{
+	int count;
+	slurm_conf_frontend_t **ptr;
+
+	if (s_p_get_array((void ***)&ptr, &count, "FrontendName",
+			  conf_hashtbl)) {
+		*ptr_array = ptr;
+		return count;
+	} else {
+		*ptr_array = NULL;
+		return 0;
+	}
+}
+
+
 int slurm_conf_nodename_array(slurm_conf_node_t **ptr_array[])
 {
 	int count;
@@ -703,7 +725,6 @@ int slurm_conf_nodename_array(slurm_conf_node_t **ptr_array[])
 		return 0;
 	}
 }
-
 
 static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 			       const char *key, const char *value,
