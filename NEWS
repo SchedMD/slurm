@@ -6,6 +6,8 @@ documents those changes that are of interest to users and admins.
  -- Fix memory leak in job step allocation logic. Patch from Hongjia Cao, NUDT.
  -- If a preempted job was submitted with the --no-requeue option then cancel
     rather than requeue it.
+ -- Fix for problems when adding a user for the first time to a new cluster
+    with a 2.1 sacctmgr without specifying a default account.
 
 * Changes in SLURM 2.2.0.rc1
 ============================

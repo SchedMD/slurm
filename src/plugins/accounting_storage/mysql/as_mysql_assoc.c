@@ -260,6 +260,90 @@ end_it:
 	return rc;
 }
 
+/* This needs to happen to make since 2.1 code doesn't have enough
+ * smarts to figure out it isn't adding a default account if just
+ * adding an association to the mix.
+ */
+static int _make_sure_users_have_default(
+	mysql_conn_t *mysql_conn, List user_list)
+{
+	char *query = NULL, *cluster = NULL, *user = NULL;
+	ListIterator itr = NULL, clus_itr = NULL;
+	int rc = SLURM_SUCCESS;
+
+	if (!user_list)
+		return SLURM_SUCCESS;
+
+	slurm_mutex_lock(&as_mysql_cluster_list_lock);
+
+	clus_itr = list_iterator_create(as_mysql_cluster_list);
+	itr = list_iterator_create(user_list);
+
+	while ((user = list_next(itr))) {
+		while ((cluster = list_next(clus_itr))) {
+			MYSQL_RES *result = NULL;
+			MYSQL_ROW row;
+			char *acct = NULL;
+			query = xstrdup_printf(
+				"select distinct is_def, acct from "
+				"\"%s_%s\" where user='%s' FOR UPDATE;",
+				cluster, assoc_table, user);
+			debug4("%d(%s:%d) query\n%s",
+			       mysql_conn->conn, THIS_FILE, __LINE__, query);
+			if(!(result = mysql_db_query_ret(
+				     mysql_conn, query, 0))) {
+				xfree(query);
+				error("couldn't query the database");
+				rc = SLURM_ERROR;
+				break;
+			}
+			xfree(query);
+			/* Check to see if the user is even added to
+			   the cluster.
+			*/
+			if (!mysql_num_rows(result)) {
+				mysql_free_result(result);
+				continue;
+			}
+			while ((row = mysql_fetch_row(result))) {
+				if (row[0][0] == '1')
+					break;
+				if (!acct)
+					acct = xstrdup(row[1]);
+			}
+			mysql_free_result(result);
+
+			/* we found one so just continue */
+			if (row || !acct) {
+				xfree(acct);
+				continue;
+			}
+			query = xstrdup_printf(
+				"update \"%s_%s\" set is_def=1 where "
+				"user='%s' and acct='%s';",
+				cluster, assoc_table, user, acct);
+			xfree(acct);
+			debug3("%d(%s:%d) query\n%s",
+			       mysql_conn->conn, THIS_FILE, __LINE__, query);
+			rc = mysql_db_query(mysql_conn, query);
+			xfree(query);
+			if(rc != SLURM_SUCCESS) {
+				error("problem with update query");
+				rc = SLURM_ERROR;
+				break;
+			}
+		}
+		if (!rc != SLURM_SUCCESS)
+			break;
+		list_iterator_reset(clus_itr);
+	}
+	list_iterator_destroy(itr);
+	list_iterator_destroy(clus_itr);
+	slurm_mutex_unlock(&as_mysql_cluster_list_lock);
+
+	return rc;
+}
+
 /* This should take care of all the lft and rgts when you move an
  * account.  This handles deleted associations also.
  */
@@ -2287,6 +2371,7 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 	char *old_parent = NULL, *old_cluster = NULL;
 	char *last_parent = NULL, *last_cluster = NULL;
 	List local_cluster_list = NULL;
+	List added_user_list = NULL;
 
 	if(!association_list) {
 		error("No association list given");
@@ -2350,6 +2435,9 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 			xstrfmtcat(vals, ", '%s'", part);
 			xstrfmtcat(update, " && partition='%s'", part);
 			xstrfmtcat(extra, ", partition='%s'", part);
+			if (!added_user_list)
+				added_user_list = list_create(NULL);
+			list_append(added_user_list, object->user);
 		}
 
 		setup_association_limits(object, &cols, &vals, &extra,
@@ -2774,7 +2862,9 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 end_it:
 
 	if(rc != SLURM_ERROR) {
-		if(txn_query) {
+		_make_sure_users_have_default(mysql_conn, added_user_list);
+
+		if (txn_query) {
 			xstrcat(txn_query, ";");
 			debug4("%d(%s:%d) query\n%s",
 			       mysql_conn->conn, THIS_FILE,
@@ -2829,6 +2919,8 @@ end_it:
 			list_destroy(assoc_list);
 		}
 	} else {
+		if (added_user_list)
+			list_destroy(added_user_list);
 		xfree(txn_query);
 		reset_mysql_conn(mysql_conn);
 	}
