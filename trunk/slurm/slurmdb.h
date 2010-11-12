@@ -152,6 +152,8 @@ typedef enum {
 					    * the default */
 #define SLURMDB_PURGE_ARCHIVE 0x00080000   /* Archive before purge */
 
+/* Parent account should be used when calculating FairShare */
+#define SLURMDB_FS_USE_PARENT 0x7FFFFFFF
 
 #define SLURMDB_CLASSIFIED_FLAG 0x0100
 #define SLURMDB_CLASS_BASE      0x00ff
