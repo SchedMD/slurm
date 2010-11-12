@@ -1989,8 +1989,12 @@ extern int slurmdb_unpack_user_cond(void **object, uint16_t rpc_version,
 
 		/* If we get the call from an older version of SLURM
 		   just automatically set this to get the defaults */
-		if (!object_ptr->with_assocs && (rpc_version < 8))
-			object_ptr->assoc_cond->only_defs = 1;
+		if (rpc_version < 8) {
+			if (!object_ptr->with_assocs)
+				object_ptr->assoc_cond->only_defs = 1;
+			else
+				object_ptr->with_wckeys = 1;
+		}
 	}
 
 	return SLURM_SUCCESS;

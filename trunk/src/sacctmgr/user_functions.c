@@ -1453,8 +1453,10 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 			user_cond->assoc_cond->only_defs = 1;
 	}
 	/* If we are getting associations we want to disable only defs */
-	if (user_cond->with_assocs)
+	if (user_cond->with_assocs) {
 		user_cond->assoc_cond->only_defs = 0;
+		user_cond->with_wckeys = 1;
+	}
 
 	if(!user_cond->with_assocs && cond_set > 1) {
 		if(!commit_check("You requested options that are only vaild "
@@ -1523,7 +1525,7 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 						break;
 					}
 
-					if (wckey_itr) {
+					if (curr_cluster && wckey_itr) {
 						slurmdb_wckey_rec_t *wckey;
 						/* we shouldn't have
 						 * to reset this */
