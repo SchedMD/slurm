@@ -4,6 +4,8 @@ documents those changes that are of interest to users and admins.
 * Changes in SLURM 2.2.0.rc2
 ============================
  -- Fix memory leak in job step allocation logic. Patch from Hongjia Cao, NUDT.
+ -- If a preempted job was submitted with the --no-requeue option then cancel
+    rather than requeue it.
 
 * Changes in SLURM 2.2.0.rc1
 ============================
