@@ -334,6 +334,19 @@ Where:
 
 <P> Plugging in the effective usage into the fair-share formula above yields a fair-share factor that reflects the aggregated usage charged to each of the accounts in the fair-share hierarchy.</P>
 
+<h3>FairShare=parent</h3>
+
+<P>It is possible to disable the fairshare at certain levels of the fair share
+hierarchy by using the <code>FairShare=parent</code> option of sacctmgr.
+For users and accounts with <code>FairShare=parent</code> the normalized shares
+and effective usage values from the parent in the hierarchy will be used when
+calculating fairshare priories.</P>
+
+<P>If all users in an account is configured with <code>FairShare=parent</code>
+the result is that all the jobs drawing from that account will get the same
+fairshare priority, based on the accounts total usage. No additional fairness
+is added based on users individual usage.</P>
+
 <h3>Example</h3>
 
 <P> The following example demonstrates the effective usage calculations and resultant fair-share factors. (See Figure 3 below.)</P>

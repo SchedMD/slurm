@@ -246,9 +246,15 @@ extern int process(shares_response_msg_t *resp)
 						     (curr_inx == field_count));
 				break;
 			case PRINT_RAWS:
-				field->print_routine(field,
-						     share->shares_raw,
-						     (curr_inx == field_count));
+				if (share->shares_raw == SLURMDB_FS_USE_PARENT)
+					print_fields_str(field, "parent",
+							 (curr_inx ==
+							  field_count));
+				else
+					field->print_routine(field,
+							     share->shares_raw,
+							     (curr_inx ==
+							      field_count));
 				break;
 			case PRINT_RAWU:
 				field->print_routine(field,

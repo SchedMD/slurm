@@ -232,9 +232,11 @@ and the association only has access to 1 QOS that will become the
 default, otherwise, no default will be set.
 
 .TP
-\fIFairshare\fP=<fairshare>
-Number used in conjunction with other accounts to determine job priority.
-To clear a previously set value use the modify command with a new value of \-1.
+\fIFairshare\fP=<fairshare number | parent>
+Number used in conjunction with other accounts to determine job
+priority. Can also be the string \fIparent\fR, this means that the
+parent association is used for fairshare. To clear a previously set
+value use the modify command with a new value of \-1.
 
 .TP
 \fIGrpCPUMins\fP=<max cpu minutes>
@@ -529,7 +531,9 @@ the QOS list mentioned below.
 
 .TP
 \fIFairshare\fP
-Number used in conjunction with other accounts to determine job priority.
+Number used in conjunction with other accounts to determine job
+priority. Can also be the string \fIparent\fR, this means that the
+parent association is used for fairshare.
 
 .TP
 \fIGrpCPUMins\fP

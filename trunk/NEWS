@@ -55,6 +55,9 @@ documents those changes that are of interest to users and admins.
     --nodes option was ignored).
  -- Added UsageThreshold and Flags to the QOS object.
  -- Patch to improve threadsafeness in the mysql plugins.
+ -- Add support for fair-share scheduling to be based upon resource use at
+    the level of bank accounts and ignore use of individual users. Patch by
+    Par Andersson, National Supercomputer Centre, Sweden.
 
 * Changes in SLURM 2.2.0.pre12
 ==============================

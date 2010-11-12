@@ -977,8 +977,12 @@ static int _setup_association_cond_limits(
 		while((object = list_next(itr))) {
 			if(set)
 				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "%s.shares='%s'",
-				   prefix, object);
+			if (!strncasecmp(object, "parent", 6))
+				xstrfmtcat(*extra, "%s.shares='%u'",
+					   prefix, SLURMDB_FS_USE_PARENT);
+			else
+				xstrfmtcat(*extra, "%s.shares='%s'",
+					   prefix, object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
