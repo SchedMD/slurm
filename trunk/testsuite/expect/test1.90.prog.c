@@ -31,22 +31,38 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-static void _load_cpu_mask(nodemask_t *cpu_mask)
+/* For RedHat systems, run with NEW_TOOLS=0
+ * For current Ubuntu, run wtih NEW_TOOLS=1 */
+#define NEW_TOOLS 0
+
+#if NEW_TOOLS
+#define MY_MASK struct bitmask *
+#define MY_TEST numa_bitmask_isbitset
+#else
+#define MY_MASK nodemask_t
+#define MY_TEST nodemask_isset
+#endif
+
+static void _load_cpu_mask(MY_MASK *cpu_mask)
 {
 	*cpu_mask = numa_get_run_node_mask();
 }
 
-static void _load_mem_mask(nodemask_t *mem_mask)
+static void _load_mem_mask(MY_MASK *mem_mask)
 {
 	*mem_mask = numa_get_membind();
 }
 
-static unsigned long _mask_to_int(nodemask_t *mask)
+static unsigned long _mask_to_int(MY_MASK *mask)
 {
 	int i;
 	unsigned long rc = 0;
 	for (i=0; i<NUMA_NUM_NODES; i++) {
-		if (nodemask_isset(mask, i))
+#if NEW_TOOLS
+		if (MY_TEST(*mask, i))
+#else
+		if (MY_TEST(mask, i))
+#endif
 			rc += (1 << i);
 	}
 	return rc;
@@ -55,7 +71,8 @@ static unsigned long _mask_to_int(nodemask_t *mask)
 main (int argc, char **argv)
 {
 	char *task_str;
-	nodemask_t cpu_mask, mem_mask;
+	MY_MASK cpu_mask;
+	MY_MASK mem_mask;
 	int task_id;
 
 	if (numa_available() < 0) {
