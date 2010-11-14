@@ -1204,7 +1204,7 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 				wckey->cluster = xstrdup(cluster);
 				if(local_def_wckey
 				   && !strcmp(local_def_wckey, account))
-					assoc->is_def = 1;
+					wckey->is_def = 1;
 				if(user)
 					list_append(user->wckey_list, wckey);
 				else
