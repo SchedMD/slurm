@@ -112,6 +112,12 @@ my $spectable = {
 };
 
 #
+# Slurm Version.
+#
+chomp(my $soutput = `sinfo --version`);
+my ($sversion) = ($soutput =~ m/slurm (\d+\.\d+)/);
+
+#
 # Get options.
 #
 GetOpts();
@@ -451,10 +457,9 @@ sub getnodeinfo
 #
 sub getslurmdata
 {
-#
-# For testing.
-#
 	use Slurm ':all';
+
+	my ($eval_reason, $eval_state);
 
 	my $tmp = `scontrol show config  | grep ClusterName`;;
 	my ($host) = ($tmp =~ m/ = (\S+)/);
@@ -481,8 +486,19 @@ sub getslurmdata
 		$jdat->{group}       = getpgrp($job->{group_id});
 		$jdat->{jobname}     = $job->{name} || 'N/A';
 		$jdat->{account}     = $job->{account} || '';
-		$jdat->{reason}      = Slurm::job_reason_string($job->{state_reason}) || 'N/A';
-		$jdat->{state}       = Slurm::job_state_string($job->{job_state}) || 'N/A';
+
+#
+#		Have to use eval to avoid structure differences in SLURM perl api.
+#
+if ($sversion =~ /2.2/) {
+		$eval_reason = '$jdat->{reason} = Slurm->job_reason_string($job->{state_reason} || "N/A")';
+		$eval_state = '$jdat->{state}   = Slurm->job_state_string($job->{job_state} || "N/A")';
+} else {
+		$eval_reason = '$jdat->{reason} = Slurm::job_reason_string($job->{state_reason} || "N/A")';
+		$eval_state = '$jdat->{state}   = Slurm::job_state_string($job->{job_state} || "N/A")';
+}
+		eval $eval_reason; eval $eval_state;
+
 		$jdat->{host}        = $host;
 		$jdat->{qos}         = $job->{qos} || 'N/A';
 		$jdat->{ccode}       = $job->{exit_code} >> 8;

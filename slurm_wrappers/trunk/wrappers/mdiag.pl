@@ -206,13 +206,13 @@ sub do_qos
 sub GetOpts
 {
 
-	pod2usage(2) if ($#ARGV <= 0);
+	pod2usage(2) if ($#ARGV < 0);
 
 	GetOptions (
 		'h|help'	=> \$help,
 		'man'		=> \$man,
-		'f'		=> \$fairshare,
 		'p'		=> \$prio,
+		'f'		=> \$fairshare,
 		'v'		=> \$verbose,
 		'a:s'		=> \$account,
 		'n:s'		=> \$nodes,

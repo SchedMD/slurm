@@ -8,7 +8,6 @@
 #
 # Author: Phil Eckert
 # Date:	  March 14, 2007	
-# update: July 14, 2010
 #
 
 #
@@ -72,71 +71,69 @@ use autouse 'Pod::Usage' => qw(pod2usage);
 #
 sub do_sinfo
 {
-	my @SINFO;
+
+	my (@s_part, @s_mem, @s_cpu, @s_feat, @s_active, @s_idle,
+	    @s_out, @s_total, @s_usable);
 #
 #	Get the partition and node info.
 #
 	my $options = "\"%9P %6m %.4c %.22F %f\"";
 
 	my $ct = 0;
-	my @sin = `sinfo -h -e -o $options`;
+	my @sin = `sinfo -e -o $options`;
 	foreach my $tmp (@sin) {
+		next if ($tmp =~ /^PARTITION/);
 		chomp $tmp;
-		my ($part,$mem,$cpu,$fields,$feat) = split(' ',$tmp);
-		$SINFO[$ct]->{part}   = $part;
-		$SINFO[$ct]->{memory} = $mem;
-		$SINFO[$ct]->{cpu}    = $cpu;
+		my @line = split(' ',$tmp);
+		$s_part[$ct] = $line[0];
+		$s_mem[$ct]  = $line[1];
+		$s_cpu[$ct]  = $line[2];
 #
 #		Split the status into various components.
 #
-		my ($active, $idle, $out, $total) = split(/\//, $fields);
-		$SINFO[$ct]->{active} = $active;
-		$SINFO[$ct]->{idle}   = $idle;
-		$SINFO[$ct]->{out}    = $out;
-		$SINFO[$ct]->{total}  = $total;
-		$SINFO[$ct]->{usable} = $total - $out;
+		my @fields = split(/\//, $line[3]);
+			$s_active[$ct] = $fields[0];
+			$s_idle[$ct]   = $fields[1];
+			$s_out[$ct]    = $fields[2];
+			$s_total[$ct]  = $fields[3];
+			$s_usable[$ct] = $s_total[$ct] - $s_out[$ct];
+#
 #			Handle "k" factor for Blue Gene.
 #
-#		$SINFO[$ct]->{usable} .= 'K' if ($SINFO[$ct]->{total} =~ /K/);
-		$feat .= " ";
-		$feat =~ s/\(null\)//g;
+			$s_usable[$ct] .= 'K' if ($s_total[$ct] =~ /K/);
+		$s_feat[$ct] = ($line[4] .= " ");
+		$s_feat[$ct] =~ s/\(null\)//g;
 		$ct++;
 	}
 
 	printf("\nScheduling pool data:\n");
 	if ($verbose) {
-		printf("-----------------------------------------------------------------------------------\n");
-		printf("                           Total  Usable   Free   Node        Time  Other          \n");
-		printf("Pool         Memory  Cpus  Nodes   Nodes  Nodes  Limit       Limit  traits         \n");
-		printf("-----------------------------------------------------------------------------------\n");
+		printf("------------------------------------------------------------------------------\n");
+		printf("                           Total  Usable   Free   Node   Time  Other          \n");
+		printf("Pool         Memory  Cpus  Nodes   Nodes  Nodes  Limit  Limit  traits         \n");
+		printf("------------------------------------------------------------------------------\n");
 	} else {
 		printf("-------------------------------------------------------------\n");
 		printf("Pool        Memory  Cpus  Total Usable   Free  Other Traits  \n");
 		printf("-------------------------------------------------------------\n");
 	}
 
-	for (my $k=0; $k < $ct; $k++) {
-		my $part = $SINFO[$k]->{part};
+	for (my $i = 0; $i < $ct; $i++) {
 		if ($verbose) {
-			my $part2 = $part;
-			$part2 =~ s/\*//;
-			printf("%-9s  %6dMb %5s %6s %7s %6s %6s %11s  %-s\n",
-				$part,
-				$SINFO[$k]->{memory}, $SINFO[$k]->{cpu},
-				$SINFO[$k]->{total},
-				$SINFO[$k]->{usable},
-				$SINFO[$k]->{idle},
-				$MaxNodes{$part2}, $MaxTime{$part2},
-				$SINFO[$k]->{feat});
+			my $p = $s_part[$i];
+			$p =~ s/\*//;
+			printf("%-9s  %6dMb %5s %6s %7s %6s %6s %6s  %-s\n",
+				$s_part[$i], $s_mem[$i], $s_cpu[$i],
+				$s_total[$i],
+				$s_total[$i] - $s_out[$i], 
+				$s_idle[$i], $MaxNodes{$p},
+				$MaxTime{$p}, $s_feat[$i]);
 		} else {
 			printf("%-9s %6dMb %5s %6s %6s %6s  %-s\n",
-				$part,
-				$SINFO[$k]->{memory}, $SINFO[$k]->{cpu},
-				$SINFO[$k]->{total},
-				#$SINFO[$k]->{total} - $SINFO[$k]->{out},
-				$SINFO[$k]->{usable},
-				$SINFO[$k]->{idle},
-				$SINFO[$k]->{feat});
+				$s_part[$i], $s_mem[$i], $s_cpu[$i],
+				$s_total[$i],
+				$s_total[$i] - $s_out[$i], 
+				$s_idle[$i], $s_feat[$i]);
 		}
 	}
 	printf("\n");
@@ -150,7 +147,9 @@ sub do_sinfo
 #
 sub do_squeue
 {
-	my %SQUEUE;
+
+	my (@s_job, @s_user, @s_nodes, @s_status, @s_begin, @s_limit,
+	    @s_start, @s_pool, @s_used, @s_master);
 #
 #	Base options on whether this partition is node or process scheduled.
 #
@@ -167,34 +166,36 @@ sub do_squeue
 #
 #	Get the job information.
 #
-#	(Using a hash, but using a ctr as an index to maintain the order.)
-#
 
 	my $ct = 0;
-	my @sout = `squeue -h -o $options`;
+	my $pat = "tr -s '[' '\000'  |cut -d'-' -f 1 | cut -d',' -f 1";
+	my @sout = `squeue -o $options`;
 	foreach my $tmp (@sout) {
+		next if ($tmp =~ /^JOBID/);
 		next if ($running && $tmp =~ / PD /);
 		chomp $tmp;
 		my @line = split(' ', $tmp);
-		my ($job,$user,$nodes,$status,$begin,$limit,$pool,$used,$master) = split(' ', $tmp);
-		$begin =~ s/^.....//;
-		$begin = "N/A" if ($status =~ /PD/);
-		if ($limit ne "UNLIMITED") {
-			$limit = convert_time($limit);
+		$s_job[$ct]    = $line[0];
+		$s_user[$ct]   = $line[1];
+		$s_nodes[$ct]  = $line[2];
+		$s_status[$ct] = $line[3];
+		$line[4] =~ s/^.....//;
+		$line[4] = "N/A" if ($line[3] =~ /PD/);
+		$s_begin[$ct]  = $line[4];
+		$s_limit[$ct]  = $line[5];
+		if ($line[5] eq "UNLIMITED") {
+			$s_limit[$ct] = $line[5];
+		} else {
+			$s_limit[$ct] = convert_time($line[5]);
 		}
+
+		$s_pool[$ct] = $line[6];
+		$s_used[$ct] = $line[7];
 #
 #		Only keep the master node from the nodes list.
 #
-		$master =~ s/\[([0-9.]*).*/$1/;
-		$SQUEUE{$ct}->{job}    = $job;
-		$SQUEUE{$ct}->{user}   = $user;
-		$SQUEUE{$ct}->{nodes}  = $nodes;
-		$SQUEUE{$ct}->{status} = $status;
-		$SQUEUE{$ct}->{begin}  = $begin;
-		$SQUEUE{$ct}->{limit}  = $limit;
-		$SQUEUE{$ct}->{pool}   = $pool;
-		$SQUEUE{$ct}->{used}   = $used;
-		$SQUEUE{$ct}->{master} = $master;
+		$line[8] =~ s/\[([0-9.]*).*/$1/;
+		$s_master[$ct] = $line[8];
 		$ct++;
 	}
 
@@ -212,20 +213,18 @@ sub do_squeue
 		printf("----------------------------------------------------------------------\n");
 	}
 
-	for (my $k=0;$k < $ct; $k++) {
+	for (my $i = 0; $i < $ct; $i++) {
 		if ($verbose) {
 			printf("%-8s %-8s %6s %-9s %-7s %10s %11s  %14s  %.12s\n",
-				$SQUEUE{$k}->{job},
-				$SQUEUE{$k}->{user},  $SQUEUE{$k}->{nodes},
-				$SQUEUE{$k}->{pool},  $SQUEUE{$k}->{status},
-				$SQUEUE{$k}->{used},  $SQUEUE{$k}->{limit},
-				$SQUEUE{$k}->{begin}, $SQUEUE{$k}->{master});
+				$s_job[$i], $s_user[$i], $s_nodes[$i],
+				$s_pool[$i], $s_status[$i],
+				$s_used[$i], $s_limit[$i], $s_begin[$i],
+				$s_master[$i]);
 		} else {
 			printf("%-8s %-8s %6s %-9s %-7s %10s  %.12s\n",
-				$SQUEUE{$k}->{job},
-				$SQUEUE{$k}->{user}, $SQUEUE{$k}->{nodes},
-				$SQUEUE{$k}->{pool}, $SQUEUE{$k}->{status},
-				$SQUEUE{$k}->{used}, $SQUEUE{$k}->{master});
+				$s_job[$i], $s_user[$i], $s_nodes[$i],
+				$s_pool[$i],  $s_status[$i],
+				$s_used[$i], $s_master[$i]);
 		}
 	}
 	printf("\n");
@@ -243,17 +242,17 @@ sub do_scontrol_part
 #	Get All partition data Don't need it all now, but
 #	it may be useful later.
 #
-	my @scon = `scontrol --oneliner show part`;
+	my @scon = `scontrol show part`;
 	my $part;
 	foreach my $tmp (@scon) {
 		chomp $tmp;
 		my @line = split(' ',$tmp);
 		($part) = ($tmp =~ m/PartitionName=(\S+)\s+/) if ($tmp =~ /PartitionName=/);
+
 		($MaxTime{$part})  = ($tmp =~ m/MaxTime=(\S+)\s+/)  if ($tmp =~ /MaxTime=/);
 		($MaxNodes{$part}) = ($tmp =~ m/MaxNodes=(\S+)\s+/) if ($tmp =~ /MaxNodes=/);
 		$MaxTime{$part}  =~ s/UNLIMITED/UNLIM/ if ($MaxTime{$part});
 		$MaxNodes{$part} =~ s/UNLIMITED/UNLIM/ if ($MaxNodes{$part}); 
-printf("it is  $part mh:$MaxNodes{$part} mt:$MaxTime{$part}\n");
 
 	}
 

@@ -45,7 +45,7 @@ my (
 	$jobname,	$mailoptions,	$mailusers,	$nodes,
 	$opath,		$priority,	$rerun, 	$shellpath,
 	$silent, 	$slurm,		$starttime, 	$variable,
-	$vlist,		$wclim,		$minwclim
+	$vers,		$vlist,		$wclim,		$minwclim
 );
 
 #
@@ -76,6 +76,11 @@ GetOpts(@ARGV);
 # Display man page if requested.
 #
 usage() if ($help);
+
+#
+# Version.
+#
+exec("sbatch --version") if ($vers);
 
 if ($man) {
 	if ($< == 0) {   # Cannot invoke perldoc as root
@@ -198,6 +203,7 @@ GetOpts(@scriptDirectives)
 # Parse command line arguments (overriding script directives)
 #
 GetOpts(@SAVEDARGV);
+
 
 #
 # Process all of the options from the -l lines.
@@ -439,6 +445,7 @@ if ($vlist) {
 # Request a time limit for the job.
 #
 if ($wclim) {
+	$wclim = convert_moabtime($wclim);
 	push @slurmArgs, "--time=$wclim";
 }
 
@@ -506,27 +513,28 @@ sub GetOpts
 	@ARGV = @_;
 
 	return GetOptions(
-		'man'	=> \$man,
-		'help'	=> \$help,
-		'a=s' 	=> \$starttime,
-		'A=s' 	=> \$account,
-		'slurm' => \$slurm,
-		'l=s' 	=> \@lreslist,		
-		'e=s' 	=> \$epath,
-		'j=s' 	=> \$join,		
-		'm=s' 	=> \$mailoptions,
-		'o=s' 	=> \$opath,
-		'p=s' 	=> \$priority,
-		'q=s' 	=> \$class,
-		'N=s' 	=> \$jobname,
-		'S=s'   => \$shellpath,		
-		'M=s' 	=> \$mailusers,		
-		'r:s'	=> \$rerun,
-		'd=s' 	=> \$dpath,		# execution directory.
-		'W=s' 	=> \@lreslist,
-		'v=s'	=> \$vlist,
-		'V'	=> \$variable,
-		'z'	=> \$silent,
+		'man'		=> \$man,
+		'version'	=> \$vers,
+		'help'		=> \$help,
+		'a=s' 		=> \$starttime,
+		'A=s' 		=> \$account,
+		'slurm'		=> \$slurm,
+		'l=s' 		=> \@lreslist,		
+		'e=s' 		=> \$epath,
+		'j=s' 		=> \$join,		
+		'm=s' 		=> \$mailoptions,
+		'o=s' 		=> \$opath,
+		'p=s' 		=> \$priority,
+		'q=s' 		=> \$class,
+		'N=s' 		=> \$jobname,
+		'S=s'  		=> \$shellpath,		
+		'M=s' 		=> \$mailusers,		
+		'r:s'		=> \$rerun,
+		'd=s' 		=> \$dpath,		# execution directory.
+		'W=s' 		=> \@lreslist,
+		'v=s'		=> \$vlist,
+		'V'		=> \$variable,
+		'z'		=> \$silent,
 	);
 
 #
@@ -554,34 +562,58 @@ sub usage
 	exit(0);
 }
 
+sub convert_moabtime
+{
+	my ($duration) = @_;
+
+	$duration = 0 unless $duration;
+
+	$duration =~ s/^?:/-/ if ($duration =~ /.*:.*:.*:/);
+	$duration = ":$duration" if ($duration !~ /:/);
+
+	return($duration);
+}
+
 
 sub DateToEpoch
 {
-	my ($wclim) = @_;
 
-	my ($year, $mon, $mday, $hours, $min);
+	my ($duration) = @_;
+
+	my  ($CC, $year, $mon, $mday, $hour, $min, $sec);
 
 	my $now = time();
 	my $daylen = (60 * 60 * 24);
-#
-#	Split and reverse the values for easy conversion.
-#
-	$wclim =~ s/\..*//g;
-	$wclim =~ s/(..)/$1:/g;
-	my @sv = reverse (split(/:/,$wclim));
 
-	my $i = 0;
-	foreach my $tmp (@sv) {
-		$min   = $tmp if ($i == 0);
-		$hours = $tmp if ($i == 1);
-		$mday  = $tmp if ($i == 2);
-		$mon   = $tmp if ($i == 3);
-		$year  = $tmp if ($i == 4);
-		$i++;
+#
+#
+#	If there is a second value declared, get it now.
+#
+	if ($duration =~ /\./) {
+		($sec) = ($duration =~ m/\.(\d+)/);
+		$duration =~ s/\..*//;
 	}
 
-	$hours =  (localtime) [2] if (!$hours);
-	$mday  =  (localtime) [3] if (!$mday);
+#
+#	Probably a better way, but this works.
+#
+	($CC, $year, $mon, $mday, $hour, $min) =
+		($duration =~ m/(..)(..)(..)(..)(..)(..)/) if (length($duration) == 12);
+
+	($year, $mon, $mday, $hour, $min) =
+		($duration =~ m/(..)(..)(..)(..)(..)/) if (length($duration) == 10);
+
+	($mon, $mday, $hour, $min) =
+		($duration =~ m/(..)(..)(..)(..)/) if (length($duration) == 8);
+
+	($mday, $hour, $min) =
+		($duration =~ m/(..)(..)(..)/) if (length($duration) == 6);
+
+	($hour, $min) =
+		($duration =~ m/(..)(..)/) if (length($duration) == 4);
+
+	$hour =  (localtime) [2] if (!$hour);
+	$mday =  (localtime) [3] if (!$mday);
 	if (!$mon) {
 		$mon   =  (localtime) [4] if (!$mon);
 	} else {
@@ -589,7 +621,7 @@ sub DateToEpoch
 	}
 	$year  =  (localtime) [5] if (!$year);
 
-	my $time = timelocal( 0, $min, $hours, $mday, $mon, $year);
+	my $time = timelocal( $sec, $min, $hour, $mday, $mon, $year);
 
 #
 #	If time specified is the past, and the user specified a day of the
@@ -597,7 +629,7 @@ sub DateToEpoch
 #	24 hours intto thhe futture...
 
 	if ($time < $now) {
-		if ($time < $now &&  ($i > 2)) {
+		if ($time < $now) {
 			printf("  Startime error, time is in the past.\n");
 			exit(-1);
 		} else {

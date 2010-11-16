@@ -463,7 +463,6 @@ if ($shellPath) {
 
 if ($wallclockLimit || $taskCpuLimit) {
 	my $lim = seconds($wallclockLimit ? $wallclockLimit : $taskCpuLimit);
-printf("it is $wallclockLimit and $lim\n");
 	$lim = int ($lim / 60);
 	push @slurmArgs, "--time=$lim";
 }
