@@ -40,12 +40,13 @@ BEGIN {
 # standard options.
 #
 my (
-	$account,	$class, 	$dpath, 	$epath,	
-	$help,		$join,		$man, 		$nope, 		
-	$jobname,	$mailoptions,	$mailusers,	$nodes,
-	$opath,		$priority,	$rerun, 	$shellpath,
-	$silent, 	$slurm,		$starttime, 	$variable,
-	$vers,		$vlist,		$wclim,		$minwclim
+	$account,	$class, 	$dpath, 	$epath,
+	$help,		$hold,		$join,		$man,
+	$nope, 		$jobname,	$mailoptions,	$mailusers,
+	$nodes, 	$opath,		$priority,	$rerun,
+	$shellpath, 	$silent, 	$slurm,		$starttime,
+	$variable, 	$vers,		$vlist,		$wclim,
+	$minwclim
 );
 
 #
@@ -273,15 +274,16 @@ if ($feature) {
 }
 
 #
-# No real solution for going gres at this point.
-# (waiting for 2.2 and lua)
+# Gres will have to be driven by user demand,
+# not assigned as a matter or course.
 #
-#if ($gres) {
-#        push @slurmArgs, "--licenses=$gres";
-#} else {
-#        my $tgres = GetGres();
-#        push @slurmArgs, "--licenses=$tgres";
-#}
+if ($gres) {
+	push @slurmArgs, "--licenses=$gres";
+}
+
+if ($hold) {
+	push @slurmArgs, "--hold";
+}
 
 #
 # The host to run the job on, currently it can only
@@ -488,22 +490,6 @@ if ($debug == 1) {
 
 exit;
 
-#
-# Run scontrol and get the license (gres).
-#
-sub GetGres
-{
-	my $line = `scontrol show config | grep -i "Licenses.*="`;
-	chomp $line;
-
-	$line =~ s/$/,/g;
-	$line =~ s/\s+//g;
-	$line =~ s/.*=//;
-	$line =~ s/\*\d+,/,/g;
-	$line =~ s/,$//g;
-
-	return($line);
-}
 
 #
 # Get user options.
@@ -521,6 +507,7 @@ sub GetOpts
 		'slurm'		=> \$slurm,
 		'l=s' 		=> \@lreslist,		
 		'e=s' 		=> \$epath,
+		'h'		=> \$hold,		# submit job as held.
 		'j=s' 		=> \$join,		
 		'm=s' 		=> \$mailoptions,
 		'o=s' 		=> \$opath,
