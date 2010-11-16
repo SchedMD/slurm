@@ -60,8 +60,6 @@ sub GetOpts
 		'man'		=> \$man,
 	) or pod2usage(2);
 
-
-
 #
 #	Display man page if requested.
 #
@@ -95,6 +93,14 @@ sub GetOpts
 #
 	if (!($jobid = shift(@ARGV)) || !isnumber($jobid)) {
 		printf("\n Job Id needed.\n\n"); 
+		pod2usage(2);
+	}
+
+#
+#	If '@' they are trying to use an unsupported option.
+#
+	if ($jobid =~ /@/) {
+		printf("\n Option not supported.\n\n"); 
 		pod2usage(2);
 	}
 
