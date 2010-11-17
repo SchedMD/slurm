@@ -34,15 +34,14 @@
 source ./globals
 
 set test_id     "21.27"
-set test_nu     "test21-11"
-set cl1		[format "%s%s" $test_nu "clus1"]
-set cl2		[format "%s%s" $test_nu "clus2"]
-set ac1		[format "%s%s" $test_nu "acct1"]
-set ac2		[format "%s%s" $test_nu "acct2"]
-set ac3		[format "%s%s" $test_nu "acct3"]
-set us1         [format "%s%s" $test_nu "user1"]
-set us2         [format "%s%s" $test_nu "user2"]
-set us3		mysql
+set tc1		slurm_test-cluster.1
+set tc2		slurm_test-cluster.2
+set ta1		slurm_test-account.1
+set ta2		slurm_test-account.2
+set ta3		slurm_test-account.3
+set tu1         slurm_test-user.1
+set tu2         slurm_test-user.2
+set tu3		mysql
 
 set access_err  0
 set timeout     120
@@ -65,7 +64,7 @@ if { [string compare [check_accounting_admin_level] "Administrator"] } {
 #
 # Delete
 #
-spawn $sacctmgr -i delete user $us1,$us2,$us3
+spawn $sacctmgr -i delete user $tu1,$tu2,$tu3
 expect {
 	 timeout {
 		send_user "\nFAILURE: sacctmgr delete user not responding\n"
@@ -76,7 +75,7 @@ expect {
 	}
 }
 
-spawn $sacctmgr -i delete account $ac1,$ac2,$ac3
+spawn $sacctmgr -i delete account $ta1,$ta2,$ta3
 expect {
 	 timeout {
 		send_user "\nFAILURE: sacctmgr delete account not responding\n"
@@ -87,7 +86,7 @@ expect {
 	}
 }
 
-spawn $sacctmgr -i delete cluster $cl1,$cl2
+spawn $sacctmgr -i delete cluster $tc1,$tc2
 expect {
 	 timeout {
 		send_user "\nFAILURE: sacctmgr delete cluster not responding\n"
@@ -102,7 +101,7 @@ expect {
 #
 # Build test associations
 #
-spawn $sacctmgr -i add cluster $cl1
+spawn $sacctmgr -i add cluster $tc1
 expect {
 	 timeout {
 		send_user "\nFAILURE: sacctmgr add cluster not responding\n"
@@ -113,10 +112,10 @@ expect {
 	}
 }
 
-spawn $sacctmgr -i add account $ac1 cluster=$cl1
+spawn $sacctmgr -i add account $ta1 cluster=$tc1
 expect {
 	 timeout {
-		send_user "\nFAILURE: sacctmgr add account $ac1 not responding\n"
+		send_user "\nFAILURE: sacctmgr add account $ta1 not responding\n"
 		set exit_code 1
 	}
 	eof {
@@ -124,10 +123,10 @@ expect {
 	}
 }
 
-spawn $sacctmgr -i add account $ac2 parent=$ac1 cluster=$cl1
+spawn $sacctmgr -i add account $ta2 parent=$ta1 cluster=$tc1
 expect {
 	 timeout {
-		send_user "\nFAILURE: sacctmgr add account $ac2 not responding\n"
+		send_user "\nFAILURE: sacctmgr add account $ta2 not responding\n"
 		set exit_code 1
 	}
 	eof {
@@ -135,10 +134,10 @@ expect {
 	}
 }
 
-spawn $sacctmgr -i add user $us1 account=$ac1 cluster=$cl1
+spawn $sacctmgr -i add user $tu1 account=$ta1 cluster=$tc1
 expect {
 	 timeout {
-		send_user "\nFAILURE: sacctmgr add user $us1 not responding\n"
+		send_user "\nFAILURE: sacctmgr add user $tu1 not responding\n"
 		set exit_code 1
 	}
 	eof {
@@ -146,10 +145,10 @@ expect {
 	}
 }
 
-spawn $sacctmgr -i add user $us2 account=$ac1 cluster=$cl1
+spawn $sacctmgr -i add user $tu2 account=$ta1 cluster=$tc1
 expect {
 	 timeout {
-		send_user "\nFAILURE: sacctmgr add user $us2 not responding\n"
+		send_user "\nFAILURE: sacctmgr add user $tu2 not responding\n"
 		set exit_code 1
 	}
 	eof {
@@ -157,10 +156,10 @@ expect {
 	}
 }
 
-spawn $sacctmgr -i add user $us3 account=$ac2 cluster=$cl1
+spawn $sacctmgr -i add user $tu3 account=$ta2 cluster=$tc1
 expect {
 	 timeout {
-		send_user "\nFAILURE: sacctmgr add user $us3 not responding\n"
+		send_user "\nFAILURE: sacctmgr add user $tu3 not responding\n"
 		set exit_code 1
 	}
 	eof {
@@ -168,10 +167,10 @@ expect {
 	}
 }
 
-spawn $sacctmgr -i delete cluster $cl1
+spawn $sacctmgr -i delete cluster $tc1
 expect {
 	 timeout {
-		send_user "\nFAILURE: sacctmgr delete cluster $cl1  not responding\n"
+		send_user "\nFAILURE: sacctmgr delete cluster $tc1  not responding\n"
 		set exit_code 1
 	}
 	eof {
@@ -179,10 +178,10 @@ expect {
 	}
 }
 
-spawn $sacctmgr -i add cluster $cl2
+spawn $sacctmgr -i add cluster $tc2
 expect {
 	 timeout {
-		send_user "\nFAILURE: sacctmgr add cluster $cl2  not responding\n"
+		send_user "\nFAILURE: sacctmgr add cluster $tc2  not responding\n"
 		set exit_code 1
 	}
 	eof {
@@ -190,10 +189,10 @@ expect {
 	}
 }
 
-spawn $sacctmgr -i add account $ac3 cluster=$cl2
+spawn $sacctmgr -i add account $ta3 cluster=$tc2
 expect {
 	 timeout {
-		send_user "\nFAILURE: sacctmgr add account $ac3  not responding\n"
+		send_user "\nFAILURE: sacctmgr add account $ta3  not responding\n"
 		set exit_code 1
 	}
 	eof {
@@ -222,27 +221,27 @@ expect {
 
 	set my_pid [spawn $sacctmgr -p show problem]
 	expect {
-		-re "$ac1..Account has no Associations" {
+		-re "$ta1..Account has no Associations" {
 			incr matches
 			exp_continue
 		}
-		-re "$ac2..Account has no Associations" {
+		-re "$ta2..Account has no Associations" {
 			incr matches
 			exp_continue
 		}
-		-re "$cl2.$ac3..Account has no users" {
+		-re "$tc2.$ta3..Account has no users" {
 			incr matches
 			exp_continue
 		}
-		-re "$us3.User has no Associations" {
+		-re "$tu3.User has no Associations" {
 			incr matches
 			exp_continue
 		}
-		-re "$us1.User does not have a uid" {
+		-re "$tu1.User does not have a uid" {
 			incr matches
 			exp_continue
 		}
-		-re "$us2.User does not have a uid" {
+		-re "$tu2.User does not have a uid" {
 			incr matches
 			exp_continue
 		}
@@ -266,7 +265,7 @@ expect {
 #
 # Delete
 #
-spawn $sacctmgr -i delete user $us1,$us2,$us3
+spawn $sacctmgr -i delete user $tu1,$tu2,$tu3
 expect {
 	 timeout {
 		send_user "\nFAILURE: sacctmgr delete users not responding\n"
@@ -276,7 +275,7 @@ expect {
 		wait
 	}
 }
-spawn $sacctmgr -i delete account $ac1,$ac2,$ac3
+spawn $sacctmgr -i delete account $ta1,$ta2,$ta3
 expect {
 	 timeout {
 		send_user "\nFAILURE: sacctmgr delete accounts not responding\n"
@@ -286,7 +285,7 @@ expect {
 		wait
 	}
 }
-spawn $sacctmgr -i delete cluster $cl1,$cl2
+spawn $sacctmgr -i delete cluster $tc1,$tc2
 expect {
 	 timeout {
 		send_user "\nFAILURE: sacctmgr delete clusters not responding\n"
@@ -298,7 +297,7 @@ expect {
 }
 
 if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
+	print_success $test_id
 } else {
 	send_user "\nFAILURE\n"
 }
