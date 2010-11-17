@@ -127,6 +127,24 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+/* This is defined here so we can get it on non-bluegene systems since
+ * it is needed in pack/unpack functions, and bluegene.c isn't
+ * compiled for non-bluegene machines, and it didn't make since to
+ * compile the whole file just for this one function.
+ */
+extern char *give_geo(uint16_t int_geo[SYSTEM_DIMENSIONS])
+{
+	char *geo = NULL;
+	int i;
+
+	for (i=0; i<SYSTEM_DIMENSIONS; i++) {
+		if (geo)
+			xstrcat(geo, "x");
+		xstrfmtcat(geo, "%c", alpha_num[int_geo[i]]);
+	}
+	return geo;
+}
+
 extern int select_nodeinfo_pack(select_nodeinfo_t *nodeinfo, Buf buffer,
 				uint16_t protocol_version)
 {
