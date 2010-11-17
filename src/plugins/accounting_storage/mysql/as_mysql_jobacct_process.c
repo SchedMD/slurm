@@ -495,7 +495,7 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 		job->submit = submit;
 		job->start = atoi(row[JOB_REQ_START]);
 		job->end = atoi(row[JOB_REQ_END]);
-		job->timelimit = atoi(row[JOB_REQ_TIMELIMIT]);
+		job->timelimit = slurm_atoul(row[JOB_REQ_TIMELIMIT]);
 
 		/* since the job->end could be set later end it here */
 		if(job->end) {

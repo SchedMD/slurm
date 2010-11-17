@@ -245,6 +245,9 @@ typedef enum {false, true} bool;
 
 #endif /* WITH_PTHREADS */
 
+#define slurm_atoul(str) strtoul(str, NULL, 10)
+#define slurm_atoull(str) strtoull(str, NULL, 10)
+
 #ifndef strong_alias
 #  if USE_ALIAS
 #    define strong_alias(name, aliasname) \
