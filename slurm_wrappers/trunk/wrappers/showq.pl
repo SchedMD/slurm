@@ -1,4 +1,4 @@
-#! /usr/bin/perl
+#! /usr/bin/perl -w
 #
 # A utility to expand the showq information.
 #
@@ -22,7 +22,7 @@
 #
 # For debugging.
 #
-#use lib "/var/opt/slurm_banana/lib64/perl5/site_perl/5.8.8/x86_64-linux-thread-multi/";
+use lib "/var/opt/slurm_banana/lib64/perl5/site_perl/5.8.8/x86_64-linux-thread-multi/";
 
 #
 # For generating man pages.
@@ -220,7 +220,8 @@ foreach my $ct ($min .. $max) {
 	my $plural = "s";
 	my $purgeinfo = "";
 	my $jobcount = 0;
-	my ($info1, $info2);
+	my $info1= "";
+	my $info2= "";
 
 #
 #	Set the headings, depending on the status.
@@ -414,10 +415,10 @@ foreach my $ct ($min .. $max) {
 	if ($status eq "completed") {
 		printf("\n$jobcount $status job%s   $purgeinfo\n",$plural) if (!$head_arg);
 	} else {
-		printf("\n%-20.20s $info1\n", $part1) if (!$head_arg);
+		printf("\n%-20.20s %s\n", $part1, $info1) if (!$head_arg);
 	}
 
-	printf("                     $info2\n") if (defined $info2 && !$head_arg);
+	printf("                     %s\n",$info2) if (defined $info2 && !$head_arg);
 }
 
 #
@@ -471,7 +472,7 @@ sub getslurmdata
 	my $jobs = Slurm->load_jobs();
 	unless($jobs) {
 		my $errmsg = Slurm->strerror();
-		print "Error loading nodes: $errmsg";
+		print "Error loading jobs: $errmsg";
 	}
 
 	my $now = time();
@@ -491,13 +492,14 @@ sub getslurmdata
 #		Have to use eval to avoid structure differences in SLURM perl api.
 #
 if ($sversion =~ /2.2/) {
-		$eval_reason = '$jdat->{reason} = Slurm->job_reason_string($job->{state_reason} || "N/A")';
-		$eval_state = '$jdat->{state}   = Slurm->job_state_string($job->{job_state} || "N/A")';
+		$eval_reason = 'Slurm->job_reason_string($job->{state_reason})';
+		$eval_state  = 'Slurm->job_state_string($job->{job_state})';
 } else {
-		$eval_reason = '$jdat->{reason} = Slurm::job_reason_string($job->{state_reason} || "N/A")';
-		$eval_state = '$jdat->{state}   = Slurm::job_state_string($job->{job_state} || "N/A")';
+		$eval_reason = 'Slurm::job_reason_string($job->{state_reason})';
+		$eval_state  = 'Slurm::job_state_string($job->{job_state})';
 }
-		eval $eval_reason; eval $eval_state;
+		$jdat->{reason} = eval $eval_reason || "N/A";
+		$jdat->{state}  = eval $eval_state || "N/A";
 
 		$jdat->{host}        = $host;
 		$jdat->{qos}         = $job->{qos} || 'N/A';

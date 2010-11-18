@@ -10,7 +10,8 @@
 #
 # For debugging.
 #
-#use lib "/var/opt/slurm_banana/lib64/perl5/site_perl/5.8.8/x86_64-linux-thread-multi/";
+use lib "/var/opt/slurm_banana/lib64/perl5/site_perl/5.8.8/x86_64-linux-thread-multi/";
+
 
 BEGIN {
 #
@@ -27,13 +28,13 @@ BEGIN {
 	}
 }
 
-use strict;
 use Getopt::Long 2.24 qw(:config no_ignore_case);
 use lib qw(/opt/freeware/lib/site_perl/5.8.2/aix-thread-multi);
 
 use autouse 'Pod::Usage' => qw(pod2usage);
-use Slurm;
 use Switch;
+use strict;
+use Slurm ':all';
 
 #
 # Each entry in this hash table must have a subhash.  The possible keys are:
@@ -41,7 +42,7 @@ use Switch;
 #   long - long format, falls back to short
 #   obsolete - SPECIAL CASE, when first parsed, this spec will be
 #              replaced by the spec specified in the 'obsolete' subkey
- #
+#
 my $spectable = {
 	'aging_time'       => {'short'    => '%-19.19s'},
 	'bank'             => {'short'    => '%-11.11s', 'long' => '%-31s'},
@@ -259,6 +260,8 @@ if (!defined $sortOrder) {
 
 my $Now = time();
 
+my ($eval_reason, $eval_state);
+
 my $tmp = `scontrol show config | grep ClusterName`;;
 my ($host) = ($tmp =~ m/ = (\S+)/); 
 
@@ -283,8 +286,17 @@ foreach my $job (@{$jobs->{job_array}}) {
 	my $dRMJID          = $job->{job_id};
 	my $account         = $job->{account} || 'N/A';
 	my $block           = 'N/A';
-	my $reason          = Slurm::job_reason_string($job->{state_reason}) || 'N/A';
-	my $state           = Slurm::job_state_string($job->{job_state}) || 'N/A';
+
+if ($sversion =~ /2.2/) {
+	$eval_reason = 'Slurm->job_reason_string($job->{state_reason})';
+	$eval_state  = 'Slurm->job_state_string($job->{job_state})';
+} else {
+	$eval_reason = 'Slurm::job_reason_string($job->{state_reason})';
+	$eval_state  = 'Slurm::job_state_string($job->{job_state})';
+}
+	my $state  = eval $eval_state || "N/A";
+	my $reason = eval $eval_reason || "N/A";
+
 	next if (($state eq "COMPLETED"  || 
 		  $state eq "FAILED") || 
 		  $state eq "CANCELLED" ||
