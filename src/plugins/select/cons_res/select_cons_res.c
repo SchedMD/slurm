@@ -177,6 +177,7 @@ uint32_t select_debug_flags;
 uint16_t select_fast_schedule;
 
 uint16_t *cr_node_num_cores = NULL;
+uint32_t *cr_node_cores_offset = NULL;
 struct part_res_record *select_part_record = NULL;
 struct node_res_record *select_node_record = NULL;
 struct node_use_record *select_node_usage  = NULL;
@@ -284,6 +285,9 @@ static void _init_global_core_data(struct node_record *node_ptr, int node_cnt)
 	xfree(cr_node_num_cores);
 	cr_node_num_cores = xmalloc(node_cnt * sizeof(uint16_t));
 
+	xfree(cr_node_cores_offset);
+	cr_node_cores_offset = xmalloc((node_cnt+1) * sizeof(uint32_t));
+
 	for (n = 0; n < node_cnt; n++) {
 		uint16_t cores;
 		if (select_fast_schedule) {
@@ -294,20 +298,26 @@ static void _init_global_core_data(struct node_record *node_ptr, int node_cnt)
 			cores *= node_ptr[n].sockets;
 		}
 		cr_node_num_cores[n] = cores;
+		if (n > 0) {
+			cr_node_cores_offset[n] = cr_node_cores_offset[n-1] +
+						  cr_node_num_cores[n-1] ;
+		} else
+			cr_node_cores_offset[0] = 0;
 	}
+
+	/* an extra value is added to get the total number of cores */
+	/* as cr_get_coremap_offset is sometimes used to get the total */
+	/* number of cores in the cluster */
+	cr_node_cores_offset[node_cnt] = cr_node_cores_offset[node_cnt-1] +
+					 cr_node_num_cores[node_cnt-1] ;
+
 }
 
 
 /* return the coremap index to the first core of the given node */
 extern uint32_t cr_get_coremap_offset(uint32_t node_index)
 {
-	int i;
-	uint32_t cindex = 0;
-
-	for (i=0; i<node_index; i++)
-		cindex += cr_node_num_cores[i];
-
-	return cindex;
+	return cr_node_cores_offset[node_index];
 }
 
 
@@ -1617,6 +1627,7 @@ extern int fini(void)
 	_destroy_part_data(select_part_record);
 	select_part_record = NULL;
 	xfree(cr_node_num_cores);
+	xfree(cr_node_cores_offset);
 
 	if (cr_type)
 		verbose("%s shutting down ...", plugin_name);

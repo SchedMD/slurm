@@ -879,6 +879,7 @@ clear_bit:	/* This node is not usable by this job */
 bitstr_t *_make_core_bitmap(bitstr_t *node_map)
 {
 	uint32_t n, c, nodes, size;
+	uint32_t coff;
 
 	nodes = bit_size(node_map);
 	size = cr_get_coremap_offset(nodes);
@@ -889,7 +890,8 @@ bitstr_t *_make_core_bitmap(bitstr_t *node_map)
 	nodes = bit_size(node_map);
 	for (n = 0, c = 0; n < nodes; n++) {
 		if (bit_test(node_map, n)) {
-			while (c < cr_get_coremap_offset(n+1)) {
+			coff = cr_get_coremap_offset(n+1);
+			while (c < coff) {
 				bit_set(core_map, c++);
 			}
 		}

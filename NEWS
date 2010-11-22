@@ -15,6 +15,8 @@ documents those changes that are of interest to users and admins.
  -- Modify sched/backfill plugin logic to continue working its way down the
     queue of jobs rather than restarting at the top if there are no changes in
     job, node, or partition state between runs. Patch from Hongjia Cao, NUDT.
+ -- Improve scalability of select/cons_res logic. Patch from Matthieu Hautreux,
+    CEA.
 
 * Changes in SLURM 2.2.0.rc1
 ============================
