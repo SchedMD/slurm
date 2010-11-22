@@ -105,6 +105,6 @@ int eio_signal_wakeup(eio_handle_t *eio);
 int eio_signal_shutdown(eio_handle_t *eio);
 
 eio_obj_t *eio_obj_create(int fd, struct io_operations *ops, void *arg);
-void eio_obj_destroy(eio_obj_t *obj);
+void eio_obj_destroy(void *arg);
 
 #endif /* !_EIO_H */

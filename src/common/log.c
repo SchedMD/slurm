@@ -71,6 +71,10 @@
 #endif
 
 #include <slurm/slurm_errno.h>
+#include <sys/poll.h>
+#include <sys/time.h>
+#include <sys/types.h>
+#include <sys/socket.h>
 
 #include "src/common/log.h"
 #include "src/common/fd.h"
@@ -165,6 +169,49 @@ static bool at_forked = false;
 #  define atfork_install_handlers() (NULL)
 #endif
 static void _log_flush(log_t *log);
+
+/* check to see if a file is writeable,
+ * RET 1 if file can be written now,
+ *     0 if can not be written to within 5 seconds
+ *     -1 if file has been closed POLLHUP
+ */
+static int _fd_writeable(int fd)
+{
+	struct pollfd ufds;
+	int write_timeout = 5000;
+	int rc;
+	char temp[2];
+
+	ufds.fd     = fd;
+	ufds.events = POLLOUT;
+	while ((rc = poll(&ufds, 1, write_timeout)) < 0) {
+		switch (errno) {
+		case EINTR:
+		case EAGAIN:
+			continue;
+		default:
+			return -1;
+		}
+	}
+	if (rc == 0)
+		return 0;
+
+	/*
+	 * Check here to make sure the socket really is there.
+	 * If not then exit out and notify the sender.  This
+	 * is here since a write doesn't always tell you the
+	 * socket is gone, but getting 0 back from a
+	 * nonblocking read means just that.
+	 */
+	if (ufds.revents & POLLHUP || (recv(fd, &temp, 1, 0) == 0))
+		return -1;
+	else if ((ufds.revents & POLLNVAL)
+		 || (ufds.revents & POLLERR)
+		 || !(ufds.revents & POLLOUT))
+		return 0;
+	/* revents == POLLOUT */
+	return 1;
+}
 
 /*
  * Initialize log with
@@ -681,16 +728,23 @@ static void
 _log_printf(log_t *log, cbuf_t cb, FILE *stream, const char *fmt, ...)
 {
 	va_list ap;
+	int fd = fileno(stream);
 
-	xassert(fileno(stream) >= 0);
+	xassert(fd >= 0);
+
+	/* If the socket has gone away we just return like all is
+	   well. */
+	if (_fd_writeable(fd) != 1)
+		return;
 
 	va_start(ap, fmt);
 	if (log->opt.buffered && (cb != NULL)) {
 		char *buf = vxstrfmt(fmt, ap);
 		int   len = strlen(buf);
 		int   dropped;
+
 		cbuf_write(cb, buf, len, &dropped);
-		cbuf_read_to_fd(cb, fileno(stream), -1);
+		cbuf_read_to_fd(cb, fd, -1);
 		xfree(buf);
 	} else  {
 		vfprintf(stream, fmt, ap);
