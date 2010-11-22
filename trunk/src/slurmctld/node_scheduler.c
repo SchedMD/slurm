@@ -1949,8 +1949,8 @@ extern void re_kill_job(struct job_record *job_ptr)
 
 	for (i = 0; i < node_record_count; i++) {
 		struct node_record *node_ptr = &node_record_table_ptr[i];
-		if ((job_ptr->node_bitmap == NULL) ||
-		    (bit_test(job_ptr->node_bitmap, i) == 0))
+		if ((job_ptr->node_bitmap_cg == NULL) ||
+		    (bit_test(job_ptr->node_bitmap_cg, i) == 0))
 			continue;
 		if (IS_NODE_DOWN(node_ptr) &&
 		    bit_test(job_ptr->node_bitmap_cg, i)) {
