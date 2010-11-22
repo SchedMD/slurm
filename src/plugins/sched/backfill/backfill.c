@@ -115,7 +115,7 @@ static void _add_reservation(uint32_t start_time, uint32_t end_reserve,
 			     bitstr_t *res_bitmap,
 			     node_space_map_t *node_space,
 			     int *node_space_recs);
-static void _attempt_backfill(void);
+static int  _attempt_backfill(void);
 static void _diff_tv_str(struct timeval *tv1,struct timeval *tv2,
 		char *tv_str, int len_tv_str);
 static bool _job_is_completing(void);
@@ -417,7 +417,7 @@ extern void *backfill_agent(void *args)
 
 		gettimeofday(&tv1, NULL);
 		lock_slurmctld(all_locks);
-		_attempt_backfill();
+		while (_attempt_backfill()) ;
 		last_backfill_time = time(NULL);
 		unlock_slurmctld(all_locks);
 		gettimeofday(&tv2, NULL);
@@ -428,7 +428,32 @@ extern void *backfill_agent(void *args)
 	return NULL;
 }
 
-static void _attempt_backfill(void)
+/* Return non-zero to break the backfill loop if change in job, node or
+ * partition state or the backfill scheduler needs to be stopped. */
+static int _yield_locks(void)
+{
+	slurmctld_lock_t all_locks = {
+		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK };
+	time_t job_update, node_update, part_update;
+
+	job_update  = last_job_update;
+	node_update = last_node_update;
+	part_update = last_part_update;
+
+	unlock_slurmctld(all_locks);
+	_my_sleep(backfill_interval);
+	lock_slurmctld(all_locks);
+
+	if ((last_job_update  == job_update)  && 
+	    (last_node_update == node_update) && 
+	    (last_part_update == part_update) &&
+	    (! stop_backfill) && (! config_flag)) ) 
+		return 0;
+	else
+		return 1;
+}
+
+static int _attempt_backfill(void)
 {
 	bool filter_root = false;
 	List job_queue;
@@ -443,6 +468,7 @@ static void _attempt_backfill(void)
 	time_t now = time(NULL), sched_start, later_start, start_res;
 	node_space_map_t *node_space;
 	static int sched_timeout = 0;
+	int this_sched_timeout = 0, rc = 0;
 
 	sched_start = now;
 	if (sched_timeout == 0) {
@@ -450,21 +476,28 @@ static void _attempt_backfill(void)
 		sched_timeout = MAX(sched_timeout, 1);
 		sched_timeout = MIN(sched_timeout, 10);
 	}
+	this_sched_timeout = sched_timeout;
 
 	if (slurm_get_root_filter())
 		filter_root = true;
 
+	job_queue = build_job_queue();
+	if (list_count(job_queue) <= 1) {
+		debug("backfill: no jobs to backfill");
+		list_destroy(job_queue);
+		return 0;
+	}
+
 	node_space = xmalloc(sizeof(node_space_map_t) *
 			     (max_backfill_job_cnt + 3));
-	node_space[0].begin_time = now;
-	node_space[0].end_time = now + backfill_window;
+	node_space[0].begin_time = sched_start;
+	node_space[0].end_time = sched_start + backfill_window;
 	node_space[0].avail_bitmap = bit_copy(avail_node_bitmap);
 	node_space[0].next = 0;
 	node_space_recs = 1;
 	if (debug_flags & DEBUG_FLAG_BACKFILL)
 		_dump_node_space_table(node_space);
 
-	job_queue = build_job_queue();
 	while ((job_queue_rec = (job_queue_rec_t *) 
 				list_pop_bottom(job_queue, sort_job_queue2))) {
 		job_ptr  = job_queue_rec->job_ptr;
@@ -582,15 +615,23 @@ static void _attempt_backfill(void)
 		resv_bitmap = bit_copy(avail_bitmap);
 		bit_not(resv_bitmap);
 
+		if ((time(NULL) - sched_start) >= this_sched_timeout) {
+			debug("backfill: loop taking too long, yielding locks");
+			if (_yield_locks()) {
+				debug("backfill: system state changed, "
+				      "breaking out");
+				rc = 1;
+				break;
+			} else {
+				this_sched_timeout += sched_timeout;
+			}
+		}
+		/* this is the time consuming operation */
 		j = _try_sched(job_ptr, &avail_bitmap,
 			       min_nodes, max_nodes, req_nodes);
+		now = time(NULL);
 		if (j != SLURM_SUCCESS) {
 			job_ptr->time_limit = orig_time_limit;
-			if ((time(NULL) - sched_start) >= sched_timeout) {
-				debug("backfill: loop taking to long, "
-				      "breaking out");
-				break;
-			}
 			continue;	/* not runable */
 		}
 
@@ -631,7 +672,7 @@ static void _attempt_backfill(void)
 			goto TRY_LATER;
 		}
 
-		if (job_ptr->start_time > (now + backfill_window)) {
+		if (job_ptr->start_time > (sched_start + backfill_window)) {
 			/* Starts too far in the future to worry about */
 			continue;
 		}
@@ -659,10 +700,6 @@ static void _attempt_backfill(void)
 				 avail_bitmap, node_space, &node_space_recs);
 		if (debug_flags & DEBUG_FLAG_BACKFILL)
 			_dump_node_space_table(node_space);
-		if ((time(NULL) - now) >= sched_timeout) {
-			debug("backfill: loop taking to long, breaking out");
-			break;
-		}
 	}
 	FREE_NULL_BITMAP(avail_bitmap);
 	FREE_NULL_BITMAP(resv_bitmap);
@@ -674,6 +711,7 @@ static void _attempt_backfill(void)
 	}
 	xfree(node_space);
 	list_destroy(job_queue);
+	return rc;
 }
 
 /* Try to start the job on any non-reserved nodes */
