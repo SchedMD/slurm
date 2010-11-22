@@ -188,6 +188,9 @@ if (@ARGV[0] =~ /^[0-9]+$/)
 			   printf("Working Directory:  $WorkDir\n");
 			   printf("Executable: $Command\n\n");
 			   printf("Priority: $Priority\n\n");
+			   printf("Holds: User\n\n")         if ($Reason =~ /JobHeldUser/);
+			   printf("Holds: System:Admin\n\n") if ($Reason =~ /JobHeldAdmin/);
+
 			   printf("NOTE: $Comment\n\n");
 }
 	else {
