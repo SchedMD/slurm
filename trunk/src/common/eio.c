@@ -93,8 +93,8 @@ eio_handle_t *eio_handle_create(void)
 
 	xassert(eio->magic = EIO_MAGIC);
 
-	eio->obj_list = list_create(NULL); /* FIXME!  Needs destructor */
-	eio->new_objs = list_create(NULL);
+	eio->obj_list = list_create(eio_obj_destroy);
+	eio->new_objs = list_create(eio_obj_destroy);
 
 	return eio;
 }
@@ -105,14 +105,20 @@ void eio_handle_destroy(eio_handle_t *eio)
 	xassert(eio->magic == EIO_MAGIC);
 	close(eio->fds[0]);
 	close(eio->fds[1]);
-	/* FIXME - Destroy obj_list and new_objs */
+	if (eio->obj_list)
+		list_destroy(eio->obj_list);
+
+	if (eio->new_objs)
+		list_destroy(eio->new_objs);
+
 	xassert(eio->magic = ~EIO_MAGIC);
 	xfree(eio);
 }
 
 bool eio_message_socket_readable(eio_obj_t *obj)
 {
-	debug3("Called eio_message_socket_readable");
+	debug3("Called eio_message_socket_readable %d %d",
+	       obj->shutdown, obj->fd);
 	xassert(obj);
 	if (obj->shutdown == true) {
 		if (obj->fd != -1) {
@@ -162,8 +168,8 @@ int eio_message_socket_accept(eio_obj_t *obj, List objs)
 	   in /etc/hosts. */
 	uc = (unsigned char *)&addr.sin_addr.s_addr;
 	port = addr.sin_port;
-	debug2("got message connection from %u.%u.%u.%u:%hu",
-	       uc[0], uc[1], uc[2], uc[3], ntohs(port));
+	debug2("got message connection from %u.%u.%u.%u:%hu %d",
+	       uc[0], uc[1], uc[2], uc[3], ntohs(port), fd);
 	fflush(stdout);
 
 	msg = xmalloc(sizeof(slurm_msg_t));
@@ -220,7 +226,6 @@ static int _eio_wakeup_handler(eio_handle_t *eio)
 {
 	char c = 0;
 	int rc = 0;
-	eio_obj_t *obj;
 
 	while ((rc = (read(eio->fds[0], &c, 1)) > 0)) {
 		if (c == 1)
@@ -228,9 +233,7 @@ static int _eio_wakeup_handler(eio_handle_t *eio)
 	}
 
 	/* move new eio objects from the new_objs to the obj_list */
-	while ((obj = list_dequeue(eio->new_objs))) {
-		list_enqueue(eio->obj_list, obj);
-	}
+	list_transfer(eio->obj_list, eio->new_objs);
 
 	if (rc < 0) return error("eio_clear: read: %m");
 
@@ -453,12 +456,15 @@ eio_obj_create(int fd, struct io_operations *ops, void *arg)
 	return obj;
 }
 
-void eio_obj_destroy(eio_obj_t *obj)
+void eio_obj_destroy(void *arg)
 {
+	eio_obj_t *obj = (eio_obj_t *)arg;
 	if (obj) {
-		if (obj->ops) {
-			xfree(obj->ops);
+		if (obj->fd != -1) {
+			close(obj->fd);
+			obj->fd = -1;
 		}
+		xfree(obj->ops);
 		xfree(obj);
 	}
 }

@@ -17,6 +17,8 @@ documents those changes that are of interest to users and admins.
     job, node, or partition state between runs. Patch from Hongjia Cao, NUDT.
  -- Improve scalability of select/cons_res logic. Patch from Matthieu Hautreux,
     CEA.
+ -- Fix for possible deadlock in the slurmstepd when cancelling a job that is
+    also writing a large amount of data to stderr.
 
 * Changes in SLURM 2.2.0.rc1
 ============================

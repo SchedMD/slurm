@@ -1010,7 +1010,8 @@ _init_stdio_eio_objs(slurm_step_io_fds_t fds, client_io_t *cio)
 	} else {
 		if (fds.err.fd > -1) {
 			cio->stderr_obj = create_file_write_eio_obj(
-				fds.err.fd, fds.err.taskid, fds.err.nodeid, cio);
+				fds.err.fd, fds.err.taskid,
+				fds.err.nodeid, cio);
 			eio_new_initial_obj(cio->eio, cio->stderr_obj);
 		}
 	}
