@@ -722,6 +722,21 @@ sub fixtime
 
 
 #
+# Simple check to see if number is an integer,
+# retrun 0 if it is not, else return 1.
+#
+sub isnumber
+{
+	my ($var) = @_;
+
+	if ($var !~ /\D+/) {
+		return(1); #if it is just a number.
+	} else {
+		return(0); #if it is not just a number.
+	}
+}
+
+#
 # Converts a duration in nnnn[dhms] or [[dd:]hh:]mm to seconds
 #
 sub seconds
@@ -729,6 +744,12 @@ sub seconds
 	my ($duration) = @_;
 	$duration = 0 unless $duration;
 	my $seconds = 0;
+
+#
+#	If value is just a simple number, consider it to be
+#	a minutes value.
+#
+	$duration .= "m" if (isnumber($duration));
 
 #
 #	Convert [[dd:]hh:]mm to duration in seconds
