@@ -16,7 +16,9 @@ pending work. </p>
 In its simplest configuration, it can be installed and configured in a
 couple of minutes (see <a href="http://www.linux-mag.com/id/7239/1/">
 Caos NSA and Perceus: All-in-one Cluster Software Stack</a>
-by Jeffrey B. Layton).
+by Jeffrey B. Layton) and is used by
+<a href="http://www.hpcwire.com/features/Intel-Unveils-48-Core-Research-Chip-78378487.html">
+Intel on their 48-core "cluster on a chip"</a>.
 More complex configurations can satisfy the job scheduling needs of 
 world-class computer centers and rely upon a
 <a href="http://www.mysql.com/">MySQL</a> database for archiving
@@ -44,8 +46,8 @@ mechanisms, schedulers, etc. These plugins are documented and  simple enough
 for the motivated end user to understand the source and add functionality.</li>
 </ul></p>
 
-<p>SLURM provides resource management on about 1000 computers worldwide,
-including many of the most powerful computers in the world:
+<p>SLURM provides resource management on many of the most powerful computers in
+the world including:
 <ul>
 <li><a href="http://www.nytimes.com/2010/10/28/technology/28compute.html?_r=1&partner=rss&emc=rss">
 Tianhe-1A</a> designed by The National University of Defence Technology (NUDT)
@@ -79,6 +81,6 @@ It is also distributed and supported by
 <a href="http://www.infiscale.com">Infiscale</a> and
 <a href="http://www.ibm.com">IBM</a>.</p>
 
-<p style="text-align:center;">Last modified 5 November 2010</p>
+<p style="text-align:center;">Last modified 22 November 2010</p>
 
 <!--#include virtual="footer.txt"-->
