@@ -447,7 +447,7 @@ static int _yield_locks(void)
 	if ((last_job_update  == job_update)  && 
 	    (last_node_update == node_update) && 
 	    (last_part_update == part_update) &&
-	    (! stop_backfill) && (! config_flag)) ) 
+	    (! stop_backfill) && (! config_flag)) 
 		return 0;
 	else
 		return 1;
