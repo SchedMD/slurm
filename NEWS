@@ -10,6 +10,8 @@ documents those changes that are of interest to users and admins.
     with a 2.1 sacctmgr without specifying a default account.
  -- Resend TERMINATE_JOB message only to nodes that the job still has not
     terminated on. Patch from Hongjia Cao, NUDT.
+ -- Treat time limit specification of "0:300" as a request for 300 seconds
+    (5 minutes) instead of one minute.
 
 * Changes in SLURM 2.2.0.rc1
 ============================

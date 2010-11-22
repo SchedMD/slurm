@@ -638,8 +638,7 @@ extern int time_str2mins(char *string)
 	if (sec == -1)
 		sec = 0;
 	res = (((days * 24) + hr) * 60) + min;
-	if (sec > 0)
-		res++;	/* round up */
+	res = (sec + 59) / 60;	/* round up */
 	return res;
 }
 
