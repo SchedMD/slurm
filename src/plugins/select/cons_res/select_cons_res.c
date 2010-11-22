@@ -860,12 +860,11 @@ static int _add_job_to_res(struct job_record *job_ptr, int action)
 				job->memory_allocated[n];
 			if ((select_node_usage[i].alloc_memory >
 			     select_node_record[i].real_memory)) {
-				error("error: node %s mem is overallocated "
-				      "(%u) for job %u",
+				error("cons_res: node %s memory is "
+				      "overallocated (%u) for job %u",
 				      node_ptr->name,
 				      select_node_usage[i].alloc_memory,
 				      job_ptr->job_id);
-
 			}
 		}
 	}
@@ -942,7 +941,7 @@ static int _rm_job_from_res(struct part_res_record *part_record_ptr,
 		return SLURM_ERROR;
 	}
 
-	debug3("cons_res: _rm_job_from_res: job %u act %d", job_ptr->job_id,
+	debug3("cons_res: _rm_job_from_res: job %u action %d", job_ptr->job_id,
 	       action);
 	if (select_debug_flags & DEBUG_FLAG_CPU_BIND)
 		_dump_job_res(job);
@@ -965,11 +964,11 @@ static int _rm_job_from_res(struct part_res_record *part_record_ptr,
 
 		if (action != 2) {
 			if (job->memory_allocated[n] == 0)
-				continue;	/* node lost by job resizing */
+				continue;	/* no memory allocated */
 			if (node_usage[i].alloc_memory <
 			    job->memory_allocated[n]) {
-				error("error: node %s mem is underallocated "
-				      "(%u-%u) for job %u",
+				error("cons_res: node %s memory is "
+				      "underallocated (%u-%u) for job %u",
 				      node_ptr->name,
 				      node_usage[i].alloc_memory,
 				      job->memory_allocated[n],
@@ -987,8 +986,8 @@ static int _rm_job_from_res(struct part_res_record *part_record_ptr,
 		/* reconstruct rows with remaining jobs */
 		struct part_res_record *p_ptr;
 
-		if(!job_ptr->part_ptr) {
-			error("error: 'rm' job %u does not have a "
+		if (!job_ptr->part_ptr) {
+			error("cons_res: removed job %u does not have a "
 			      "partition assigned",
 			      job_ptr->job_id);
 			return SLURM_ERROR;
@@ -999,8 +998,8 @@ static int _rm_job_from_res(struct part_res_record *part_record_ptr,
 				break;
 		}
 		if (!p_ptr) {
-			error("error: 'rm' could not find part %s",
-			      job_ptr->part_ptr->name);
+			error("cons_res: removed job %u could not find part %s",
+			      job_ptr->job_id, job_ptr->part_ptr->name);
 			return SLURM_ERROR;
 		}
 
@@ -1014,7 +1013,7 @@ static int _rm_job_from_res(struct part_res_record *part_record_ptr,
 			for (j = 0; j < p_ptr->row[i].num_jobs; j++) {
 				if (p_ptr->row[i].job_list[j] != job)
 					continue;
-				debug3("cons_res: removing job %u from "
+				debug3("cons_res: removed job %u from "
 				       "part %s row %u",
 				       job_ptr->job_id,
 				       p_ptr->part_ptr->name, i);
@@ -1112,8 +1111,8 @@ static int _rm_job_from_one_node(struct job_record *job_ptr,
 		job->ncpus = build_job_resources_cpu_array(job);
 		clear_job_resources_node(job, n);
 		if (node_usage[i].alloc_memory < job->memory_allocated[n]) {
-			error("error: node %s mem is underallocated (%u-%u) "
-			      "for job %u",
+			error("cons_res: node %s memory is underallocated "
+			      "(%u-%u) for job %u",
 			      node_ptr->name, node_usage[i].alloc_memory,
 			      job->memory_allocated[n], job_ptr->job_id);
 			node_usage[i].alloc_memory = 0;
@@ -1128,8 +1127,8 @@ static int _rm_job_from_one_node(struct job_record *job_ptr,
 
 	/* subtract cores, reconstruct rows with remaining jobs */
 	if (!job_ptr->part_ptr) {
-		error("error: 'rm' job %u does not have a partition assigned",
-		      job_ptr->job_id);
+		error("cons_res: removed job %u does not have a partition "
+		      "assigned", job_ptr->job_id);
 		return SLURM_ERROR;
 	}
 
@@ -1138,8 +1137,8 @@ static int _rm_job_from_one_node(struct job_record *job_ptr,
 			break;
 	}
 	if (!p_ptr) {
-		error("error: 'rm' could not find part %s",
-		      job_ptr->part_ptr->name);
+		error("cons_res: removed job %u could not find part %s",
+		      job_ptr->job_id, job_ptr->part_ptr->name);
 		return SLURM_ERROR;
 	}
 
