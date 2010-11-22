@@ -12,6 +12,9 @@ documents those changes that are of interest to users and admins.
     terminated on. Patch from Hongjia Cao, NUDT.
  -- Treat time limit specification of "0:300" as a request for 300 seconds
     (5 minutes) instead of one minute.
+ -- Modify sched/backfill plugin logic to continue working its way down the
+    queue of jobs rather than restarting at the top if there are no changes in
+    job, node, or partition state between runs. Patch from Hongjia Cao, NUDT.
 
 * Changes in SLURM 2.2.0.rc1
 ============================
