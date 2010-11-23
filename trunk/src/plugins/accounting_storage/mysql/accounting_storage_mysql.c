@@ -219,7 +219,7 @@ static int _set_qos_cnt(mysql_conn_t *mysql_conn)
 	   possible as an id we add 1 to the total to burn 0 and
 	   start at the 1 bit.
 	*/
-	g_qos_count = atoi(row[0]) + 1;
+	g_qos_count = slurm_atoul(row[0]) + 1;
 	mysql_free_result(result);
 
 	return SLURM_SUCCESS;
@@ -1781,7 +1781,7 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 			xstrfmtcat(loc_assoc_char, "id_assoc=%s", row[0]);
 
 			rem_assoc = xmalloc(sizeof(slurmdb_association_rec_t));
-			rem_assoc->id = atoi(row[0]);
+			rem_assoc->id = slurm_atoul(row[0]);
 			rem_assoc->cluster = xstrdup(cluster_name);
 			if(addto_update_list(mysql_conn->update_list,
 					     SLURMDB_REMOVE_ASSOC,
@@ -1882,7 +1882,7 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 			   cluster_name, assoc_table, row2[2], row2[1],
 			   cluster_name, assoc_table, row2[2], row2[1]);
 
-		lft = atoi(row2[0]);
+		lft = slurm_atoul(row2[0]);
 		if(lft < smallest_lft)
 			smallest_lft = lft;
 
@@ -1959,7 +1959,6 @@ extern int init ( void )
 	static int first = 1;
 	int rc = SLURM_SUCCESS;
 	mysql_conn_t *mysql_conn = NULL;
-	char *location = NULL;
 
 	/* since this can be loaded from many different places
 	   only tell us once. */
@@ -1977,27 +1976,7 @@ extern int init ( void )
 	}
 
 	mysql_db_info = create_mysql_db_info(SLURM_MYSQL_PLUGIN_AS);
-
-	location = slurm_get_accounting_storage_loc();
-	if(!location)
-		mysql_db_name = xstrdup(DEFAULT_ACCOUNTING_DB);
-	else {
-		int i = 0;
-		while(location[i]) {
-			if(location[i] == '.' || location[i] == '/') {
-				debug("%s doesn't look like a database "
-				      "name using %s",
-				      location, DEFAULT_ACCOUNTING_DB);
-				break;
-			}
-			i++;
-		}
-		if(location[i]) {
-			mysql_db_name = xstrdup(DEFAULT_ACCOUNTING_DB);
-			xfree(location);
-		} else
-			mysql_db_name = location;
-	}
+	mysql_db_name = acct_get_db_name();
 
 	debug2("mysql_connect() called for db %s", mysql_db_name);
 	mysql_conn = create_mysql_conn(0, 0, NULL);
@@ -2152,7 +2131,7 @@ extern int acct_storage_p_commit(mysql_conn_t *mysql_conn, bool commit)
 		while((row = mysql_fetch_row(result))) {
 			rc = send_accounting_update(mysql_conn->update_list,
 						    row[2], row[0],
-						    atoi(row[1]), atoi(row[3]));
+						    slurm_atoul(row[1]), slurm_atoul(row[3]));
 		}
 		mysql_free_result(result);
 	skip:

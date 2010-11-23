@@ -242,7 +242,7 @@ static int _reset_default_assoc(mysql_conn_t *mysql_conn,
 			slurmdb_init_association_rec(mod_assoc, 0);
 
 			mod_assoc->cluster = xstrdup(assoc->cluster);
-			mod_assoc->id = atoi(row[0]);
+			mod_assoc->id = slurm_atoul(row[0]);
 			mod_assoc->is_def = 0;
 			if (addto_update_list(mysql_conn->update_list,
 					      SLURMDB_MODIFY_ASSOC,
@@ -353,9 +353,9 @@ static int _move_account(mysql_conn_t *mysql_conn, uint32_t *lft, uint32_t *rgt,
 	int rc = SLURM_SUCCESS;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
-	int par_left = 0;
-	int diff = 0;
-	int width = 0;
+	uint32_t par_left = 0;
+	uint32_t diff = 0;
+	uint32_t width = 0;
 	char *query = xstrdup_printf(
 		"SELECT lft from \"%s_%s\" where acct='%s' && user='';",
 		cluster, assoc_table, parent);
@@ -372,7 +372,7 @@ static int _move_account(mysql_conn_t *mysql_conn, uint32_t *lft, uint32_t *rgt,
 		mysql_free_result(result);
 		return ESLURM_INVALID_PARENT_ACCOUNT;
 	}
-	par_left = atoi(row[0]);
+	par_left = slurm_atoul(row[0]);
 	mysql_free_result(result);
 
 	diff = ((par_left + 1) - *lft);
@@ -439,8 +439,8 @@ static int _move_account(mysql_conn_t *mysql_conn, uint32_t *lft, uint32_t *rgt,
 	if((row = mysql_fetch_row(result))) {
 		debug4("lft and rgt were %u %u and now is %s %s",
 		       *lft, *rgt, row[0], row[1]);
-		*lft = atoi(row[0]);
-		*rgt = atoi(row[1]);
+		*lft = slurm_atoul(row[0]);
+		*rgt = slurm_atoul(row[1]);
 	}
 	mysql_free_result(result);
 
@@ -483,7 +483,7 @@ static int _move_parent(mysql_conn_t *mysql_conn, uid_t uid,
 	xfree(query);
 
 	if((row = mysql_fetch_row(result))) {
-		uint32_t child_lft = atoi(row[1]), child_rgt = atoi(row[2]);
+		uint32_t child_lft = slurm_atoul(row[1]), child_rgt = slurm_atoul(row[2]);
 
 		debug4("%s(%s) %s,%s is a child of %s",
 		       new_parent, row[0], row[1], row[2], id);
@@ -513,8 +513,8 @@ static int _move_parent(mysql_conn_t *mysql_conn, uid_t uid,
 	xfree(query);
 
 	if((row = mysql_fetch_row(result))) {
-		*lft = atoi(row[0]);
-		*rgt = atoi(row[1]);
+		*lft = slurm_atoul(row[0]);
+		*rgt = slurm_atoul(row[1]);
 		rc = _move_account(mysql_conn, lft, rgt,
 				   cluster, id, new_parent, now);
 	} else {
@@ -551,7 +551,7 @@ static uint32_t _get_parent_id(
 
 	if((row = mysql_fetch_row(result))) {
 		if(row[0])
-			parent_id = atoi(row[0]);
+			parent_id = slurm_atoul(row[0]);
 	} else
 		error("no association for parent %s on cluster %s",
 		      parent, cluster);
@@ -585,9 +585,9 @@ static int _set_assoc_lft_rgt(
 
 	if((row = mysql_fetch_row(result))) {
 		if(row[0])
-			assoc->lft = atoi(row[0]);
+			assoc->lft = slurm_atoul(row[0]);
 		if(row[1])
-			assoc->rgt = atoi(row[1]);
+			assoc->rgt = slurm_atoul(row[1]);
 		rc = SLURM_SUCCESS;
 	} else
 		error("no association (%u)", assoc->id);
@@ -643,24 +643,24 @@ static int _set_assoc_limits_for_add(
 		goto end_it;
 
 	if(row[ASSOC2_REQ_DEF_QOS] && assoc->def_qos_id == NO_VAL)
-		assoc->def_qos_id = atoi(row[ASSOC2_REQ_DEF_QOS]);
+		assoc->def_qos_id = slurm_atoul(row[ASSOC2_REQ_DEF_QOS]);
 	else if(assoc->def_qos_id == NO_VAL)
 		assoc->def_qos_id = 0;
 
 	if(row[ASSOC2_REQ_MCMPJ] && assoc->max_cpu_mins_pj == (uint64_t)NO_VAL)
-		assoc->max_cpu_mins_pj = atoll(row[ASSOC2_REQ_MCMPJ]);
+		assoc->max_cpu_mins_pj = slurm_atoull(row[ASSOC2_REQ_MCMPJ]);
 	if(row[ASSOC2_REQ_MCRM] && assoc->max_cpu_run_mins == (uint64_t)NO_VAL)
-		assoc->max_cpu_run_mins = atoll(row[ASSOC2_REQ_MCRM]);
+		assoc->max_cpu_run_mins = slurm_atoull(row[ASSOC2_REQ_MCRM]);
 	if(row[ASSOC2_REQ_MCPJ] && assoc->max_cpus_pj == NO_VAL)
-		assoc->max_cpus_pj = atoi(row[ASSOC2_REQ_MCPJ]);
+		assoc->max_cpus_pj = slurm_atoul(row[ASSOC2_REQ_MCPJ]);
 	if(row[ASSOC2_REQ_MJ] && assoc->max_jobs == NO_VAL)
-		assoc->max_jobs = atoi(row[ASSOC2_REQ_MJ]);
+		assoc->max_jobs = slurm_atoul(row[ASSOC2_REQ_MJ]);
 	if(row[ASSOC2_REQ_MNPJ] && assoc->max_nodes_pj == NO_VAL)
-		assoc->max_nodes_pj = atoi(row[ASSOC2_REQ_MNPJ]);
+		assoc->max_nodes_pj = slurm_atoul(row[ASSOC2_REQ_MNPJ]);
 	if(row[ASSOC2_REQ_MSJ] && assoc->max_submit_jobs == NO_VAL)
-		assoc->max_submit_jobs = atoi(row[ASSOC2_REQ_MSJ]);
+		assoc->max_submit_jobs = slurm_atoul(row[ASSOC2_REQ_MSJ]);
 	if(row[ASSOC2_REQ_MWPJ] && assoc->max_wall_pj == NO_VAL)
-		assoc->max_wall_pj = atoi(row[ASSOC2_REQ_MWPJ]);
+		assoc->max_wall_pj = slurm_atoul(row[ASSOC2_REQ_MWPJ]);
 
 	if(assoc->qos_list) {
 		int set = 0;
@@ -795,7 +795,7 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 
 		mod_assoc = xmalloc(sizeof(slurmdb_association_rec_t));
 		slurmdb_init_association_rec(mod_assoc, 0);
-		mod_assoc->id = atoi(row[ASSOC_ID]);
+		mod_assoc->id = slurm_atoul(row[ASSOC_ID]);
 		mod_assoc->cluster = xstrdup(assoc->cluster);
 
 		if(!row[ASSOC_DEF_QOS] && assoc->def_qos_id != NO_VAL) {
@@ -902,8 +902,8 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 				_modify_unset_users(mysql_conn,
 						    mod_assoc,
 						    row[ASSOC_ACCT],
-						    atoi(row[ASSOC_LFT]),
-						    atoi(row[ASSOC_RGT]),
+						    slurm_atoul(row[ASSOC_LFT]),
+						    slurm_atoul(row[ASSOC_RGT]),
 						    ret_list, moved_parent);
 				slurmdb_destroy_association_rec(mod_assoc);
 				continue;
@@ -1396,8 +1396,8 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 		   so we need to keep track of the latest
 		   ones.
 		*/
-		uint32_t lft = atoi(row[MASSOC_LFT]);
-		uint32_t rgt = atoi(row[MASSOC_RGT]);
+		uint32_t lft = slurm_atoul(row[MASSOC_LFT]);
+		uint32_t rgt = slurm_atoul(row[MASSOC_RGT]);
 		char *account = row[MASSOC_ACCT];
 
 		/* Here we want to see if the person
@@ -1528,40 +1528,40 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 		if((row2 = mysql_fetch_row(result2))) {
 			if(!assoc->def_qos_id && row2[ASSOC2_REQ_DEF_QOS])
 				assoc->def_qos_id =
-					atoi(row2[ASSOC2_REQ_DEF_QOS]);
+					slurm_atoul(row2[ASSOC2_REQ_DEF_QOS]);
 
 			if((assoc->max_jobs == INFINITE) && row2[ASSOC2_REQ_MJ])
-				assoc->max_jobs = atoi(row2[ASSOC2_REQ_MJ]);
+				assoc->max_jobs = slurm_atoul(row2[ASSOC2_REQ_MJ]);
 			if((assoc->max_submit_jobs == INFINITE)
 			   && row2[ASSOC2_REQ_MSJ])
 				assoc->max_submit_jobs =
-					atoi(row2[ASSOC2_REQ_MSJ]);
+					slurm_atoul(row2[ASSOC2_REQ_MSJ]);
 			if((assoc->max_cpus_pj == INFINITE)
 			   && row2[ASSOC2_REQ_MCPJ])
 				assoc->max_cpus_pj =
-					atoi(row2[ASSOC2_REQ_MCPJ]);
+					slurm_atoul(row2[ASSOC2_REQ_MCPJ]);
 			if((assoc->max_nodes_pj == INFINITE)
 			   && row2[ASSOC2_REQ_MNPJ])
 				assoc->max_nodes_pj =
-					atoi(row2[ASSOC2_REQ_MNPJ]);
+					slurm_atoul(row2[ASSOC2_REQ_MNPJ]);
 			if((assoc->max_wall_pj == INFINITE)
 			   && row2[ASSOC2_REQ_MWPJ])
 				assoc->max_wall_pj =
-					atoi(row2[ASSOC2_REQ_MWPJ]);
+					slurm_atoul(row2[ASSOC2_REQ_MWPJ]);
 			if((assoc->max_cpu_mins_pj == (uint64_t)INFINITE)
 			   && row2[ASSOC2_REQ_MCMPJ])
 				assoc->max_cpu_mins_pj =
-					atoll(row2[ASSOC2_REQ_MCMPJ]);
+					slurm_atoull(row2[ASSOC2_REQ_MCMPJ]);
 			if((assoc->max_cpu_run_mins == (uint64_t)INFINITE)
 			   && row2[ASSOC2_REQ_MCRM])
 				assoc->max_cpu_run_mins =
-					atoll(row2[ASSOC2_REQ_MCRM]);
+					slurm_atoull(row2[ASSOC2_REQ_MCRM]);
 		}
 		mysql_free_result(result2);
 
 		mod_assoc = xmalloc(sizeof(slurmdb_association_rec_t));
 		slurmdb_init_association_rec(mod_assoc, 0);
-		mod_assoc->id = atoi(row[MASSOC_ID]);
+		mod_assoc->id = slurm_atoul(row[MASSOC_ID]);
 		mod_assoc->cluster = xstrdup(cluster_name);
 
 		mod_assoc->def_qos_id = assoc->def_qos_id;
@@ -1855,13 +1855,13 @@ static int _process_remove_assoc_results(mysql_conn_t *mysql_conn,
 		/* get the smallest lft here to be able to send all
 		   the modified lfts after it.
 		*/
-		lft = atoi(row[RASSOC_LFT]);
+		lft = slurm_atoul(row[RASSOC_LFT]);
 		if(lft < smallest_lft)
 			smallest_lft = lft;
 
 		rem_assoc = xmalloc(sizeof(slurmdb_association_rec_t));
 		slurmdb_init_association_rec(rem_assoc, 0);
-		rem_assoc->id = atoi(row[RASSOC_ID]);
+		rem_assoc->id = slurm_atoul(row[RASSOC_ID]);
 		rem_assoc->cluster = xstrdup(cluster_name);
 		if(addto_update_list(mysql_conn->update_list,
 				     SLURMDB_REMOVE_ASSOC,
@@ -2014,10 +2014,10 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 		MYSQL_ROW row2;
 
 		list_append(assoc_list, assoc);
-		assoc->id = atoi(row[ASSOC_REQ_ID]);
-		assoc->is_def = atoi(row[ASSOC_REQ_DEFAULT]);
-		assoc->lft = atoi(row[ASSOC_REQ_LFT]);
-		assoc->rgt = atoi(row[ASSOC_REQ_RGT]);
+		assoc->id = slurm_atoul(row[ASSOC_REQ_ID]);
+		assoc->is_def = slurm_atoul(row[ASSOC_REQ_DEFAULT]);
+		assoc->lft = slurm_atoul(row[ASSOC_REQ_LFT]);
+		assoc->rgt = slurm_atoul(row[ASSOC_REQ_RGT]);
 
 		if(row[ASSOC_REQ_USER][0])
 			assoc->user = xstrdup(row[ASSOC_REQ_USER]);
@@ -2025,36 +2025,36 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 		assoc->cluster = xstrdup(cluster_name);
 
 		if(row[ASSOC_REQ_GJ])
-			assoc->grp_jobs = atoi(row[ASSOC_REQ_GJ]);
+			assoc->grp_jobs = slurm_atoul(row[ASSOC_REQ_GJ]);
 		else
 			assoc->grp_jobs = INFINITE;
 
 		if(row[ASSOC_REQ_GSJ])
-			assoc->grp_submit_jobs = atoi(row[ASSOC_REQ_GSJ]);
+			assoc->grp_submit_jobs = slurm_atoul(row[ASSOC_REQ_GSJ]);
 		else
 			assoc->grp_submit_jobs = INFINITE;
 
 		if(row[ASSOC_REQ_GC])
-			assoc->grp_cpus = atoi(row[ASSOC_REQ_GC]);
+			assoc->grp_cpus = slurm_atoul(row[ASSOC_REQ_GC]);
 		else
 			assoc->grp_cpus = INFINITE;
 
 		if(row[ASSOC_REQ_GN])
-			assoc->grp_nodes = atoi(row[ASSOC_REQ_GN]);
+			assoc->grp_nodes = slurm_atoul(row[ASSOC_REQ_GN]);
 		else
 			assoc->grp_nodes = INFINITE;
 		if(row[ASSOC_REQ_GW])
-			assoc->grp_wall = atoi(row[ASSOC_REQ_GW]);
+			assoc->grp_wall = slurm_atoul(row[ASSOC_REQ_GW]);
 		else
 			assoc->grp_wall = INFINITE;
 
 		if(row[ASSOC_REQ_GCM])
-			assoc->grp_cpu_mins = atoll(row[ASSOC_REQ_GCM]);
+			assoc->grp_cpu_mins = slurm_atoull(row[ASSOC_REQ_GCM]);
 		else
 			assoc->grp_cpu_mins = INFINITE;
 
 		if(row[ASSOC_REQ_GCRM])
-			assoc->grp_cpu_run_mins = atoll(row[ASSOC_REQ_GCRM]);
+			assoc->grp_cpu_run_mins = slurm_atoull(row[ASSOC_REQ_GCRM]);
 		else
 			assoc->grp_cpu_run_mins = INFINITE;
 
@@ -2073,7 +2073,7 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 		if(row[ASSOC_REQ_PART][0])
 			assoc->partition = xstrdup(row[ASSOC_REQ_PART]);
 		if(row[ASSOC_REQ_FS])
-			assoc->shares_raw = atoi(row[ASSOC_REQ_FS]);
+			assoc->shares_raw = slurm_atoul(row[ASSOC_REQ_FS]);
 		else
 			assoc->shares_raw = 1;
 
@@ -2102,51 +2102,51 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 				goto no_parent_limits;
 			}
 
-			parent_id = atoi(row2[ASSOC2_REQ_PARENT_ID]);
+			parent_id = slurm_atoul(row2[ASSOC2_REQ_PARENT_ID]);
 			if(!without_parent_limits) {
 				if(row2[ASSOC2_REQ_DEF_QOS])
 					parent_def_qos_id =
-						atoi(row2[ASSOC2_REQ_DEF_QOS]);
+						slurm_atoul(row2[ASSOC2_REQ_DEF_QOS]);
 				else
 					parent_def_qos_id = 0;
 
 				if(row2[ASSOC2_REQ_MJ])
-					parent_mj = atoi(row2[ASSOC2_REQ_MJ]);
+					parent_mj = slurm_atoul(row2[ASSOC2_REQ_MJ]);
 				else
 					parent_mj = INFINITE;
 
 				if(row2[ASSOC2_REQ_MSJ])
-					parent_msj = atoi(row2[ASSOC2_REQ_MSJ]);
+					parent_msj = slurm_atoul(row2[ASSOC2_REQ_MSJ]);
 				else
 					parent_msj = INFINITE;
 
 				if(row2[ASSOC2_REQ_MCPJ])
 					parent_mcpj =
-						atoi(row2[ASSOC2_REQ_MCPJ]);
+						slurm_atoul(row2[ASSOC2_REQ_MCPJ]);
 				else
 					parent_mcpj = INFINITE;
 
 				if(row2[ASSOC2_REQ_MNPJ])
 					parent_mnpj =
-						atoi(row2[ASSOC2_REQ_MNPJ]);
+						slurm_atoul(row2[ASSOC2_REQ_MNPJ]);
 				else
 					parent_mnpj = INFINITE;
 
 				if(row2[ASSOC2_REQ_MWPJ])
 					parent_mwpj =
-						atoi(row2[ASSOC2_REQ_MWPJ]);
+						slurm_atoul(row2[ASSOC2_REQ_MWPJ]);
 				else
 					parent_mwpj = INFINITE;
 
 				if(row2[ASSOC2_REQ_MCMPJ])
 					parent_mcmpj =
-						atoll(row2[ASSOC2_REQ_MCMPJ]);
+						slurm_atoull(row2[ASSOC2_REQ_MCMPJ]);
 				else
 					parent_mcmpj = INFINITE;
 
 				if(row2[ASSOC2_REQ_MCRM])
 					parent_mcrm =
-						atoll(row2[ASSOC2_REQ_MCRM]);
+						slurm_atoull(row2[ASSOC2_REQ_MCRM]);
 				else
 					parent_mcrm = (uint64_t)INFINITE;
 
@@ -2171,42 +2171,42 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 		}
 
 		if(row[ASSOC_REQ_DEF_QOS])
-			assoc->def_qos_id = atoi(row[ASSOC_REQ_DEF_QOS]);
+			assoc->def_qos_id = slurm_atoul(row[ASSOC_REQ_DEF_QOS]);
 		else
 			assoc->def_qos_id = parent_def_qos_id;
 
 		if(row[ASSOC_REQ_MJ])
-			assoc->max_jobs = atoi(row[ASSOC_REQ_MJ]);
+			assoc->max_jobs = slurm_atoul(row[ASSOC_REQ_MJ]);
 		else
 			assoc->max_jobs = parent_mj;
 
 		if(row[ASSOC_REQ_MSJ])
-			assoc->max_submit_jobs = atoi(row[ASSOC_REQ_MSJ]);
+			assoc->max_submit_jobs = slurm_atoul(row[ASSOC_REQ_MSJ]);
 		else
 			assoc->max_submit_jobs = parent_msj;
 
 		if(row[ASSOC_REQ_MCPJ])
-			assoc->max_cpus_pj = atoi(row[ASSOC_REQ_MCPJ]);
+			assoc->max_cpus_pj = slurm_atoul(row[ASSOC_REQ_MCPJ]);
 		else
 			assoc->max_cpus_pj = parent_mcpj;
 
 		if(row[ASSOC_REQ_MNPJ])
-			assoc->max_nodes_pj = atoi(row[ASSOC_REQ_MNPJ]);
+			assoc->max_nodes_pj = slurm_atoul(row[ASSOC_REQ_MNPJ]);
 		else
 			assoc->max_nodes_pj = parent_mnpj;
 
 		if(row[ASSOC_REQ_MWPJ])
-			assoc->max_wall_pj = atoi(row[ASSOC_REQ_MWPJ]);
+			assoc->max_wall_pj = slurm_atoul(row[ASSOC_REQ_MWPJ]);
 		else
 			assoc->max_wall_pj = parent_mwpj;
 
 		if(row[ASSOC_REQ_MCMPJ])
-			assoc->max_cpu_mins_pj = atoll(row[ASSOC_REQ_MCMPJ]);
+			assoc->max_cpu_mins_pj = slurm_atoull(row[ASSOC_REQ_MCMPJ]);
 		else
 			assoc->max_cpu_mins_pj = parent_mcmpj;
 
 		if(row[ASSOC_REQ_MCRM])
-			assoc->max_cpu_run_mins = atoll(row[ASSOC_REQ_MCRM]);
+			assoc->max_cpu_run_mins = slurm_atoull(row[ASSOC_REQ_MCRM]);
 		else
 			assoc->max_cpu_run_mins = parent_mcrm;
 
@@ -2336,8 +2336,8 @@ extern int as_mysql_get_modified_lfts(mysql_conn_t *mysql_conn,
 		slurmdb_association_rec_t *assoc =
 			xmalloc(sizeof(slurmdb_association_rec_t));
 		slurmdb_init_association_rec(assoc, 0);
-		assoc->id = atoi(row[0]);
-		assoc->lft = atoi(row[1]);
+		assoc->id = slurm_atoul(row[0]);
+		assoc->lft = slurm_atoul(row[1]);
 		assoc->cluster = xstrdup(cluster_name);
 		if(addto_update_list(mysql_conn->update_list,
 				     SLURMDB_MODIFY_ASSOC,
@@ -2554,7 +2554,7 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 				}
 				xfree(sel_query);
 
-				my_left = atoi(row[0]);
+				my_left = slurm_atoul(row[0]);
 				mysql_free_result(sel_result);
 				//info("left is %d", my_left);
 				old_parent = parent;
@@ -2589,7 +2589,7 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 /* 				   "values (%s, @myLeft+1, @myLeft+2);", */
 /* 				   assoc_table, cols, */
 /* 				   vals); */
-		} else if(!atoi(row[AASSOC_DELETED])) {
+		} else if(!slurm_atoul(row[AASSOC_DELETED])) {
 			/* We don't need to do anything here */
 			debug("This account was added already");
 			xfree(cols);
@@ -2599,15 +2599,15 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 			xfree(extra);
 			continue;
 		} else {
-			uint32_t lft = atoi(row[AASSOC_LFT]);
-			uint32_t rgt = atoi(row[AASSOC_RGT]);
+			uint32_t lft = slurm_atoul(row[AASSOC_LFT]);
+			uint32_t rgt = slurm_atoul(row[AASSOC_RGT]);
 
 			/* If it was once deleted we have kept the lft
 			 * and rgt's consant while it was deleted and
 			 * so we can just unset the deleted flag,
 			 * check for the parent and move if needed.
 			 */
-			assoc_id = atoi(row[AASSOC_ID]);
+			assoc_id = slurm_atoul(row[AASSOC_ID]);
 			if(object->parent_acct
 			   && strcasecmp(object->parent_acct,
 					 row[AASSOC_PACCT])) {
@@ -2832,7 +2832,7 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 		/* 			sizeof(slurmdb_association_rec_t)); */
 		/* 		slurmdb_init_association_rec(mod_assoc, 0); */
 
-		/* 		mod_assoc->id = atoi(row[0]); */
+		/* 		mod_assoc->id = slurm_atoul(row[0]); */
 		/* 		mod_assoc->is_def = 0; */
 
 		/* 		if (addto_update_list(mysql_conn->update_list, */

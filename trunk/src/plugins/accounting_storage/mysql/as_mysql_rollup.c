@@ -312,9 +312,9 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 		xfree(query);
 
 		while((row = mysql_fetch_row(result))) {
-			int row_start = atoi(row[EVENT_REQ_START]);
-			int row_end = atoi(row[EVENT_REQ_END]);
-			int row_cpu = atoi(row[EVENT_REQ_CPU]);
+			time_t row_start = slurm_atoul(row[EVENT_REQ_START]);
+			time_t row_end = slurm_atoul(row[EVENT_REQ_END]);
+			uint32_t row_cpu = slurm_atoul(row[EVENT_REQ_CPU]);
 
 			if(row_start < curr_start)
 				row_start = curr_start;
@@ -419,10 +419,10 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 		   heterogeneous system.
 		*/
 		while((row = mysql_fetch_row(result))) {
-			int row_start = atoi(row[RESV_REQ_START]);
-			int row_end = atoi(row[RESV_REQ_END]);
-			int row_cpu = atoi(row[RESV_REQ_CPU]);
-			int row_flags = atoi(row[RESV_REQ_FLAGS]);
+			time_t row_start = slurm_atoul(row[RESV_REQ_START]);
+			time_t row_end = slurm_atoul(row[RESV_REQ_END]);
+			uint32_t row_cpu = slurm_atoul(row[RESV_REQ_CPU]);
+			uint32_t row_flags = slurm_atoul(row[RESV_REQ_FLAGS]);
 
 			if(row_start < curr_start)
 				row_start = curr_start;
@@ -437,7 +437,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 				continue;
 
 			r_usage = xmalloc(sizeof(local_resv_usage_t));
-			r_usage->id = atoi(row[RESV_REQ_ID]);
+			r_usage->id = slurm_atoul(row[RESV_REQ_ID]);
 
 			r_usage->local_assocs = list_create(slurm_destroy_char);
 			slurm_addto_char_list(r_usage->local_assocs,
@@ -498,15 +498,15 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 		xfree(query);
 
 		while((row = mysql_fetch_row(result))) {
-			int job_id = atoi(row[JOB_REQ_JOBID]);
-			int assoc_id = atoi(row[JOB_REQ_ASSOCID]);
-			int wckey_id = atoi(row[JOB_REQ_WCKEYID]);
-			int resv_id = atoi(row[JOB_REQ_RESVID]);
-			int row_eligible = atoi(row[JOB_REQ_ELG]);
-			int row_start = atoi(row[JOB_REQ_START]);
-			int row_end = atoi(row[JOB_REQ_END]);
-			int row_acpu = atoi(row[JOB_REQ_ACPU]);
-			int row_rcpu = atoi(row[JOB_REQ_RCPU]);
+			uint32_t job_id = slurm_atoul(row[JOB_REQ_JOBID]);
+			uint32_t assoc_id = slurm_atoul(row[JOB_REQ_ASSOCID]);
+			uint32_t wckey_id = slurm_atoul(row[JOB_REQ_WCKEYID]);
+			uint32_t resv_id = slurm_atoul(row[JOB_REQ_RESVID]);
+			time_t row_eligible = slurm_atoul(row[JOB_REQ_ELG]);
+			time_t row_start = slurm_atoul(row[JOB_REQ_START]);
+			time_t row_end = slurm_atoul(row[JOB_REQ_END]);
+			uint32_t row_acpu = slurm_atoul(row[JOB_REQ_ACPU]);
+			uint32_t row_rcpu = slurm_atoul(row[JOB_REQ_RCPU]);
 			seconds = 0;
 
 			if(row_start && (row_start < curr_start))
@@ -548,10 +548,10 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 				}
 				xfree(query);
 				while((row2 = mysql_fetch_row(result2))) {
-					int local_start =
-						atoi(row2[SUSPEND_REQ_START]);
-					int local_end =
-						atoi(row2[SUSPEND_REQ_END]);
+					time_t local_start = slurm_atoul(
+						row2[SUSPEND_REQ_START]);
+					time_t local_end = slurm_atoul(
+						row2[SUSPEND_REQ_END]);
 
 					if(!local_start)
 						continue;
@@ -727,7 +727,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 /* 			     list_count(r_usage->local_assocs)); */
 			tmp_itr = list_iterator_create(r_usage->local_assocs);
 			while((assoc = list_next(tmp_itr))) {
-				int associd = atoi(assoc);
+				uint32_t associd = slurm_atoul(assoc);
 				if(last_id != associd) {
 					list_iterator_reset(a_itr);
 					while((a_usage = list_next(a_itr))) {

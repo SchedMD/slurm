@@ -395,11 +395,11 @@ empty:
 
 		list_append(txn_list, txn);
 
-		txn->action = atoi(row[TXN_REQ_ACTION]);
+		txn->action = slurm_atoul(row[TXN_REQ_ACTION]);
 		txn->actor_name = xstrdup(row[TXN_REQ_ACTOR]);
-		txn->id = atoi(row[TXN_REQ_ID]);
+		txn->id = slurm_atoul(row[TXN_REQ_ID]);
 		txn->set_info = xstrdup(row[TXN_REQ_INFO]);
-		txn->timestamp = atoi(row[TXN_REQ_TS]);
+		txn->timestamp = slurm_atoul(row[TXN_REQ_TS]);
 		txn->where_query = xstrdup(row[TXN_REQ_NAME]);
 		txn->clusters = xstrdup(row[TXN_REQ_CLUSTER]);
 

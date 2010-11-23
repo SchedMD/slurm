@@ -30,6 +30,8 @@ documents those changes that are of interest to users and admins.
     a job and let the job's owner release it. The scontrol command of
     "hold <job_id>" when executed by a SLURM administrator can only be released
     by a SLURM administrator and not the job owner.
+ -- Change atoi to slurm_atoul in mysql plugin needed for running
+    on 32 bit systems in some cases.
 
 * Changes in SLURM 2.2.0.rc1
 ============================

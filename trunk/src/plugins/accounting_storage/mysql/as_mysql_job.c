@@ -74,7 +74,7 @@ static int _get_db_index(mysql_conn_t *mysql_conn,
 		       (int)submit, jobid, associd);
 		return 0;
 	}
-	db_index = atoi(row[0]);
+	db_index = slurm_atoul(row[0]);
 	mysql_free_result(result);
 
 	return db_index;
@@ -1177,7 +1177,7 @@ extern int as_mysql_flush_jobs_on_cluster(
 	xfree(query);
 
 	while((row = mysql_fetch_row(result))) {
-		int state = atoi(row[1]);
+		int state = slurm_atoul(row[1]);
 		if(state == JOB_SUSPENDED) {
 			if(suspended_char)
 				xstrfmtcat(suspended_char,

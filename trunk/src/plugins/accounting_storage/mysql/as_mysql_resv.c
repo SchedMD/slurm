@@ -328,7 +328,7 @@ try_again:
 		goto end_it;
 	}
 
-	start = atoi(row[RESV_START]);
+	start = slurm_atoul(row[RESV_START]);
 
 	xfree(query);
 	xfree(cols);
@@ -353,12 +353,12 @@ try_again:
 	if(resv->cpus != (uint32_t)NO_VAL)
 		set = 1;
 	else
-		resv->cpus = atoi(row[RESV_CPU]);
+		resv->cpus = slurm_atoul(row[RESV_CPU]);
 
 	if(resv->flags != (uint16_t)NO_VAL)
 		set = 1;
 	else
-		resv->flags = atoi(row[RESV_FLAGS]);
+		resv->flags = slurm_atoul(row[RESV_FLAGS]);
 
 	if(resv->nodes)
 		set = 1;
@@ -368,7 +368,7 @@ try_again:
 	}
 
 	if(!resv->time_end)
-		resv->time_end = atoi(row[RESV_END]);
+		resv->time_end = slurm_atoul(row[RESV_END]);
 
 	mysql_free_result(result);
 
@@ -590,14 +590,14 @@ empty:
 	while((row = mysql_fetch_row(result))) {
 		slurmdb_reservation_rec_t *resv =
 			xmalloc(sizeof(slurmdb_reservation_rec_t));
-		int start = atoi(row[RESV_REQ_START]);
+		int start = slurm_atoul(row[RESV_REQ_START]);
 		list_append(resv_list, resv);
 
 		if(!good_nodes_from_inx(local_cluster_list, &curr_cluster,
 					row[RESV_REQ_NODE_INX], start))
 			continue;
 
-		resv->id = atoi(row[RESV_REQ_ID]);
+		resv->id = slurm_atoul(row[RESV_REQ_ID]);
 		if(with_usage) {
 			if(!job_cond.resvid_list)
 				job_cond.resvid_list = list_create(NULL);
@@ -605,12 +605,12 @@ empty:
 		}
 		resv->name = xstrdup(row[RESV_REQ_NAME]);
 		resv->cluster = xstrdup(row[RESV_REQ_COUNT]);
-		resv->cpus = atoi(row[RESV_REQ_CPUS]);
+		resv->cpus = slurm_atoul(row[RESV_REQ_CPUS]);
 		resv->assocs = xstrdup(row[RESV_REQ_ASSOCS]);
 		resv->nodes = xstrdup(row[RESV_REQ_NODES]);
 		resv->time_start = start;
-		resv->time_end = atoi(row[RESV_REQ_END]);
-		resv->flags = atoi(row[RESV_REQ_FLAGS]);
+		resv->time_end = slurm_atoul(row[RESV_REQ_END]);
+		resv->flags = slurm_atoul(row[RESV_REQ_FLAGS]);
 	}
 
 	if(local_cluster_list)

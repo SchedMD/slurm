@@ -91,7 +91,7 @@ static int _reset_default_wckey(mysql_conn_t *mysql_conn,
 			xmalloc(sizeof(slurmdb_wckey_rec_t));
 		slurmdb_init_wckey_rec(mod_wckey, 0);
 
-		mod_wckey->id = atoi(row[0]);
+		mod_wckey->id = slurm_atoul(row[0]);
 		mod_wckey->is_def = 0;
 
 		if (addto_update_list(mysql_conn->update_list,
@@ -300,7 +300,7 @@ static int _cluster_remove_wckeys(mysql_conn_t *mysql_conn,
 		wckey_rec = xmalloc(sizeof(slurmdb_wckey_rec_t));
 		/* we only need id and cluster when removing
 		   no real need to init */
-		wckey_rec->id = atoi(row[0]);
+		wckey_rec->id = slurm_atoul(row[0]);
 		wckey_rec->cluster = xstrdup(cluster_name);
 		if (addto_update_list(mysql_conn->update_list,
 				      SLURMDB_REMOVE_WCKEY, wckey_rec)
@@ -370,7 +370,7 @@ static int _cluster_modify_wckeys(mysql_conn_t *mysql_conn,
 		wckey_rec = xmalloc(sizeof(slurmdb_wckey_rec_t));
 		/* we only need id and cluster when removing
 		   no real need to init */
-		wckey_rec->id = atoi(row[0]);
+		wckey_rec->id = slurm_atoul(row[0]);
 		wckey_rec->cluster = xstrdup(cluster_name);
 		wckey_rec->is_def = wckey->is_def;
 		if (addto_update_list(mysql_conn->update_list,
@@ -456,8 +456,8 @@ static int _cluster_get_wckeys(mysql_conn_t *mysql_conn,
 			xmalloc(sizeof(slurmdb_wckey_rec_t));
 		list_append(wckey_list, wckey);
 
-		wckey->id = atoi(row[WCKEY_REQ_ID]);
-		wckey->is_def = atoi(row[WCKEY_REQ_DEFAULT]);
+		wckey->id = slurm_atoul(row[WCKEY_REQ_ID]);
+		wckey->is_def = slurm_atoul(row[WCKEY_REQ_DEFAULT]);
 		wckey->user = xstrdup(row[WCKEY_REQ_USER]);
 
 		/* we want a blank wckey if the name is null */

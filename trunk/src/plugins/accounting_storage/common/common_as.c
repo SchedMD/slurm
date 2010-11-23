@@ -62,9 +62,6 @@ extern char *wckey_hour_table;
 extern char *wckey_day_table;
 extern char *wckey_month_table;
 
-static int high_buffer_size = (1024 * 1024);
-static pthread_mutex_t local_file_lock = PTHREAD_MUTEX_INITIALIZER;
-
 /*
  * We want SLURMDB_MODIFY_ASSOC always to be the last
  */
@@ -78,6 +75,18 @@ static int _sort_update_object_dec(slurmdb_update_object_t *object_a,
 		&& (object_a->type != SLURMDB_MODIFY_ASSOC))
 		return -1;
 	return 0;
+}
+
+static void _dump_slurmdb_assoc_records(List assoc_list)
+{
+	slurmdb_association_rec_t *assoc = NULL;
+	ListIterator itr = NULL;
+
+	itr = list_iterator_create(assoc_list);
+	while((assoc = list_next(itr))) {
+		debug("\t\tid=%d", assoc->id);
+	}
+	list_iterator_destroy(itr);
 }
 
 /*
@@ -150,8 +159,8 @@ extern int send_accounting_update(List update_list, char *cluster, char *host,
  * NOTE: This function will take the object given and free it later so it
  *       needed to be removed from a list if in one before.
  */
-extern int
-addto_update_list(List update_list, slurmdb_update_type_t type, void *object)
+extern int addto_update_list(List update_list, slurmdb_update_type_t type,
+			     void *object)
 {
 	slurmdb_update_object_t *update_object = NULL;
 	slurmdb_association_rec_t *assoc = object;
@@ -293,26 +302,11 @@ addto_update_list(List update_list, slurmdb_update_type_t type, void *object)
 	return SLURM_SUCCESS;
 }
 
-
-static void
-_dump_slurmdb_assoc_records(List assoc_list)
-{
-	slurmdb_association_rec_t *assoc = NULL;
-	ListIterator itr = NULL;
-
-	itr = list_iterator_create(assoc_list);
-	while((assoc = list_next(itr))) {
-		debug("\t\tid=%d", assoc->id);
-	}
-	list_iterator_destroy(itr);
-}
-
 /*
  * dump_update_list - dump contents of updates
  * IN update_list: updates to perform
  */
-extern void
-dump_update_list(List update_list)
+extern void dump_update_list(List update_list)
 {
 	ListIterator itr = NULL;
 	slurmdb_update_object_t *object = NULL;
@@ -370,8 +364,7 @@ dump_update_list(List update_list)
  * IN rpc_version: controller rpc version
  * RET: error code
  */
-extern int
-cluster_first_reg(char *host, uint16_t port, uint16_t rpc_version)
+extern int cluster_first_reg(char *host, uint16_t port, uint16_t rpc_version)
 {
 	slurm_addr_t ctld_address;
 	slurm_fd_t fd;
@@ -418,9 +411,8 @@ cluster_first_reg(char *host, uint16_t port, uint16_t rpc_version)
  * IN/OUT usage_end: end time
  * RET: error code
  */
-extern int
-set_usage_information(char **usage_table, slurmdbd_msg_type_t type,
-		      time_t *usage_start, time_t *usage_end)
+extern int set_usage_information(char **usage_table, slurmdbd_msg_type_t type,
+				 time_t *usage_start, time_t *usage_end)
 {
 	time_t start = (*usage_start), end = (*usage_end);
 	time_t my_time = time(NULL);
@@ -529,8 +521,7 @@ set_usage_information(char **usage_table, slurmdbd_msg_type_t type,
  * IN/OUT qos_list: list of QOS'es
  * IN delta_qos_list: list of delta QOS'es
  */
-extern void
-merge_delta_qos_list(List qos_list, List delta_qos_list)
+extern void merge_delta_qos_list(List qos_list, List delta_qos_list)
 {
 	ListIterator curr_itr = list_iterator_create(qos_list);
 	ListIterator new_itr = list_iterator_create(delta_qos_list);
@@ -616,8 +607,7 @@ extern bool is_user_any_coord(void *db_conn, slurmdb_user_rec_t *user)
  * acct_get_db_name - get database name of accouting storage
  * RET: database name, should be free-ed by caller
  */
-extern char *
-acct_get_db_name(void)
+extern char *acct_get_db_name(void)
 {
 	char *db_name = NULL;
 	char *location = slurm_get_accounting_storage_loc();
@@ -644,8 +634,7 @@ acct_get_db_name(void)
 	return db_name;
 }
 
-extern time_t
-archive_setup_end_time(time_t last_submit, uint32_t purge)
+extern time_t archive_setup_end_time(time_t last_submit, uint32_t purge)
 {
 	struct tm time_tm;
 	int16_t units;
@@ -693,8 +682,7 @@ archive_setup_end_time(time_t last_submit, uint32_t purge)
 
 
 /* execute archive script */
-extern int
-archive_run_script(slurmdb_archive_cond_t *arch_cond,
+extern int archive_run_script(slurmdb_archive_cond_t *arch_cond,
 		   char *cluster_name, time_t last_submit)
 {
 	char * args[] = {arch_cond->archive_script, NULL};
@@ -710,21 +698,21 @@ archive_run_script(slurmdb_archive_cond_t *arch_cond,
 #endif
 	if (stat(arch_cond->archive_script, &st) < 0) {
 		errno = errno;
-		error("run_archive_script: failed to stat %s: %m",
+		error("archive_run_script: failed to stat %s: %m",
 		      arch_cond->archive_script);
 		return SLURM_ERROR;
 	}
 
 	if (!(st.st_mode & S_IFREG)) {
 		errno = EACCES;
-		error("run_archive_script: %s isn't a regular file",
+		error("archive_run_script: %s isn't a regular file",
 		      arch_cond->archive_script);
 		return SLURM_ERROR;
 	}
 
 	if (access(arch_cond->archive_script, X_OK) < 0) {
 		errno = EACCES;
-		error("run_archive_script: %s is not executable",
+		error("archive_run_script: %s is not executable",
 		      arch_cond->archive_script);
 		return SLURM_ERROR;
 	}
@@ -801,10 +789,9 @@ archive_run_script(slurmdb_archive_cond_t *arch_cond,
 	return SLURM_SUCCESS;
 }
 
-static char *
-_make_archive_name(time_t period_start, time_t period_end,
-		   char *cluster_name, char *arch_dir,
-		   char *arch_type, uint32_t archive_period)
+static char *_make_archive_name(time_t period_start, time_t period_end,
+				char *cluster_name, char *arch_dir,
+				char *arch_type, uint32_t archive_period)
 {
 	struct tm time_tm;
 	char start_char[32];
@@ -850,15 +837,16 @@ _make_archive_name(time_t period_start, time_t period_end,
 			      start_char, end_char);
 }
 
-extern int
-archive_write_file(Buf buffer, char *cluster_name,
-		   time_t period_start, time_t period_end,
-		   char *arch_dir, char *arch_type,
-		   uint32_t archive_period)
+extern int archive_write_file(Buf buffer, char *cluster_name,
+			      time_t period_start, time_t period_end,
+			      char *arch_dir, char *arch_type,
+			      uint32_t archive_period)
 {
 	int fd = 0;
 	int rc = SLURM_SUCCESS;
 	char *old_file = NULL, *new_file = NULL, *reg_file = NULL;
+	static int high_buffer_size = (1024 * 1024);
+	static pthread_mutex_t local_file_lock = PTHREAD_MUTEX_INITIALIZER;
 
 	xassert(buffer);
 

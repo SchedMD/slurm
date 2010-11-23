@@ -328,8 +328,6 @@ enum {
 	SUSPEND_REQ_COUNT
 };
 
-
-static pthread_mutex_t local_file_lock = PTHREAD_MUTEX_INITIALIZER;
 static int high_buffer_size = (1024 * 1024);
 
 static void _pack_local_event(local_event_t *object,
@@ -551,53 +549,6 @@ static int _unpack_local_suspend(local_suspend_t *object,
 
 	return SLURM_SUCCESS;
 }
-
-static time_t _setup_end_time(time_t last_submit, uint32_t purge)
-{
-	struct tm time_tm;
-	int16_t units;
-
-	if(purge == NO_VAL) {
-		error("Invalid purge set");
-		return 0;
-	}
-
-	units = SLURMDB_PURGE_GET_UNITS(purge);
-	if(units < 0) {
-		error("invalid units from purge '%d'", units);
-		return 0;
-	}
-
-	/* use localtime to avoid any daylight savings issues */
-	if(!localtime_r(&last_submit, &time_tm)) {
-		error("Couldn't get localtime from first "
-		      "suspend start %ld",
-		      last_submit);
-		return 0;
-	}
-
-	time_tm.tm_sec = 0;
-	time_tm.tm_min = 0;
-
-	if(SLURMDB_PURGE_IN_HOURS(purge))
-		time_tm.tm_hour -= units;
-	else if(SLURMDB_PURGE_IN_DAYS(purge)) {
-		time_tm.tm_hour = 0;
-		time_tm.tm_mday -= units;
-	} else if(SLURMDB_PURGE_IN_MONTHS(purge)) {
-		time_tm.tm_hour = 0;
-		time_tm.tm_mday = 1;
-		time_tm.tm_mon -= units;
-	} else {
-		error("No known unit given for purge, "
-		      "we are guessing mistake and returning error");
-		return 0;
-	}
-
-	time_tm.tm_isdst = -1;
-	return (mktime(&time_tm) - 1);
-}
-
 
 static int _process_old_sql_line(const char *data_in, char **data_full_out)
 {
@@ -1057,7 +1008,7 @@ static int _process_old_sql_line(const char *data_in, char **data_full_out)
 
 	if(!delete) {
 		/* info("adding insert\n%s \"%s_%s\" (%s) values %s %s",
-		     beginning, cluster_name, table, fields, vals, ending); */
+		   beginning, cluster_name, table, fields, vals, ending); */
 		xstrfmtcat(data_out, "%s \"%s_%s\" (%s) values %s %s",
 			   beginning, cluster_name, table, fields,
 			   vals, ending);
@@ -1107,118 +1058,6 @@ static int _process_old_sql(char **data)
 		xfree(data_out);
 	//info("returning\n%s", data_out);
 	*data = data_out;
-	return rc;
-}
-
-static char *_make_archive_name(time_t period_start, time_t period_end,
-				char *cluster_name, char *arch_dir,
-				char *arch_type, uint32_t archive_period)
-{
-	struct tm time_tm;
-	char start_char[32];
-	char end_char[32];
-
-	localtime_r((time_t *)&period_start, &time_tm);
-	time_tm.tm_sec = 0;
-	time_tm.tm_min = 0;
-
-	/* set up the start time based off the period we are purging */
-	if(SLURMDB_PURGE_IN_HOURS(archive_period)) {
-	} else if(SLURMDB_PURGE_IN_DAYS(archive_period)) {
-		time_tm.tm_hour = 0;
-	} else {
-		time_tm.tm_hour = 0;
-		time_tm.tm_mday = 1;
-	}
-
-	snprintf(start_char, sizeof(start_char),
-		 "%4.4u-%2.2u-%2.2u"
-		 "T%2.2u:%2.2u:%2.2u",
-		 (time_tm.tm_year + 1900),
-		 (time_tm.tm_mon+1),
-		 time_tm.tm_mday,
-		 time_tm.tm_hour,
-		 time_tm.tm_min,
-		 time_tm.tm_sec);
-
-	localtime_r((time_t *)&period_end, &time_tm);
-	snprintf(end_char, sizeof(end_char),
-		 "%4.4u-%2.2u-%2.2u"
-		 "T%2.2u:%2.2u:%2.2u",
-		 (time_tm.tm_year + 1900),
-		 (time_tm.tm_mon+1),
-		 time_tm.tm_mday,
-		 time_tm.tm_hour,
-		 time_tm.tm_min,
-		 time_tm.tm_sec);
-
-	/* write the buffer to file */
-	return xstrdup_printf("%s/%s_%s_archive_%s_%s",
-			      arch_dir, cluster_name, arch_type,
-			      start_char, end_char);
-
-}
-
-static int _write_archive_file(Buf buffer, char *cluster_name,
-			       time_t period_start, time_t period_end,
-			       char *arch_dir, char *arch_type,
-			       uint32_t archive_period)
-{
-	int fd = 0;
-	int rc = SLURM_SUCCESS;
-	char *old_file = NULL, *new_file = NULL, *reg_file = NULL;
-
-	xassert(buffer);
-
-	slurm_mutex_lock(&local_file_lock);
-
-	/* write the buffer to file */
-	reg_file = _make_archive_name(period_start, period_end,
-				      cluster_name, arch_dir,
-				      arch_type, archive_period);
-
-	debug("Storing %s archive for %s at %s",
-	      arch_type, cluster_name, reg_file);
-	old_file = xstrdup_printf("%s.old", reg_file);
-	new_file = xstrdup_printf("%s.new", reg_file);
-
-	fd = creat(new_file, 0600);
-	if (fd < 0) {
-		error("Can't save archive, create file %s error %m", new_file);
-		rc = SLURM_ERROR;
-	} else {
-		int pos = 0, nwrite = get_buf_offset(buffer), amount;
-		char *data = (char *)get_buf_data(buffer);
-		high_buffer_size = MAX(nwrite, high_buffer_size);
-		while (nwrite > 0) {
-			amount = write(fd, &data[pos], nwrite);
-			if ((amount < 0) && (errno != EINTR)) {
-				error("Error writing file %s, %m", new_file);
-				rc = SLURM_ERROR;
-				break;
-			}
-			nwrite -= amount;
-			pos    += amount;
-		}
-		fsync(fd);
-		close(fd);
-	}
-
-	if (rc)
-		(void) unlink(new_file);
-	else {			/* file shuffle */
-		int ign;	/* avoid warning */
-		(void) unlink(old_file);
-		ign =  link(reg_file, old_file);
-		(void) unlink(reg_file);
-		ign =  link(new_file, reg_file);
-		(void) unlink(new_file);
-	}
-	xfree(old_file);
-	xfree(reg_file);
-	xfree(new_file);
-	slurm_mutex_unlock(&local_file_lock);
-
 	return rc;
 }
 
@@ -1272,7 +1111,7 @@ static uint32_t _archive_events(mysql_conn_t *mysql_conn, char *cluster_name,
 
 	while((row = mysql_fetch_row(result))) {
 		if(!period_start)
-			period_start = atoi(row[EVENT_REQ_START]);
+			period_start = slurm_atoul(row[EVENT_REQ_START]);
 
 		memset(&event, 0, sizeof(local_event_t));
 
@@ -1292,9 +1131,9 @@ static uint32_t _archive_events(mysql_conn_t *mysql_conn, char *cluster_name,
 //	END_TIMER2("step query");
 //	info("event query took %s", TIME_STR);
 
-	error_code = _write_archive_file(buffer, cluster_name,
-					 period_start, period_end,
-					 arch_dir, "event", archive_period);
+	error_code = archive_write_file(buffer, cluster_name,
+					period_start, period_end,
+					arch_dir, "event", archive_period);
 	free_buf(buffer);
 
 	if(error_code != SLURM_SUCCESS)
@@ -1401,7 +1240,7 @@ static uint32_t _archive_jobs(mysql_conn_t *mysql_conn, char *cluster_name,
 
 	while((row = mysql_fetch_row(result))) {
 		if(!period_start)
-			period_start = atoi(row[JOB_REQ_SUBMIT]);
+			period_start = slurm_atoul(row[JOB_REQ_SUBMIT]);
 
 		memset(&job, 0, sizeof(local_job_t));
 
@@ -1444,9 +1283,9 @@ static uint32_t _archive_jobs(mysql_conn_t *mysql_conn, char *cluster_name,
 //	END_TIMER2("step query");
 //	info("event query took %s", TIME_STR);
 
-	error_code = _write_archive_file(buffer, cluster_name,
-					 period_start, period_end,
-					 arch_dir, "job", archive_period);
+	error_code = archive_write_file(buffer, cluster_name,
+					period_start, period_end,
+					arch_dir, "job", archive_period);
 	free_buf(buffer);
 
 	if(error_code != SLURM_SUCCESS)
@@ -1575,7 +1414,7 @@ static uint32_t _archive_steps(mysql_conn_t *mysql_conn, char *cluster_name,
 
 	while((row = mysql_fetch_row(result))) {
 		if(!period_start)
-			period_start = atoi(row[STEP_REQ_START]);
+			period_start = slurm_atoul(row[STEP_REQ_START]);
 
 		memset(&step, 0, sizeof(local_step_t));
 
@@ -1622,9 +1461,9 @@ static uint32_t _archive_steps(mysql_conn_t *mysql_conn, char *cluster_name,
 //	END_TIMER2("step query");
 //	info("event query took %s", TIME_STR);
 
-	error_code = _write_archive_file(buffer, cluster_name,
-					 period_start, period_end,
-					 arch_dir, "step", archive_period);
+	error_code = archive_write_file(buffer, cluster_name,
+					period_start, period_end,
+					arch_dir, "step", archive_period);
 	free_buf(buffer);
 
 	if(error_code != SLURM_SUCCESS)
@@ -1757,7 +1596,7 @@ static uint32_t _archive_suspend(mysql_conn_t *mysql_conn, char *cluster_name,
 
 	while((row = mysql_fetch_row(result))) {
 		if(!period_start)
-			period_start = atoi(row[SUSPEND_REQ_START]);
+			period_start = slurm_atoul(row[SUSPEND_REQ_START]);
 
 		memset(&suspend, 0, sizeof(local_suspend_t));
 
@@ -1773,9 +1612,9 @@ static uint32_t _archive_suspend(mysql_conn_t *mysql_conn, char *cluster_name,
 //	END_TIMER2("step query");
 //	info("event query took %s", TIME_STR);
 
-	error_code = _write_archive_file(buffer, cluster_name,
-					 period_start, period_end,
-					 arch_dir, "suspend", archive_period);
+	error_code = archive_write_file(buffer, cluster_name,
+					period_start, period_end,
+					arch_dir, "suspend", archive_period);
 	free_buf(buffer);
 
 	if(error_code != SLURM_SUCCESS)
@@ -1786,7 +1625,7 @@ static uint32_t _archive_suspend(mysql_conn_t *mysql_conn, char *cluster_name,
 
 /* returns sql statement from archived data or NULL on error */
 static char *_load_suspend(uint16_t rpc_version, Buf buffer,
-			 char *cluster_name, uint32_t rec_cnt)
+			   char *cluster_name, uint32_t rec_cnt)
 {
 	char *insert = NULL, *format = NULL;
 	local_suspend_t object;
@@ -1827,115 +1666,6 @@ static char *_load_suspend(uint16_t rpc_version, Buf buffer,
 	return insert;
 }
 
-static int _archive_script(slurmdb_archive_cond_t *arch_cond,
-			   char *cluster_name, time_t last_submit)
-{
-	char * args[] = {arch_cond->archive_script, NULL};
-	const char *tmpdir;
-	struct stat st;
-	char **env = NULL;
-	time_t curr_end;
-
-#ifdef _PATH_TMP
-	tmpdir = _PATH_TMP;
-#else
-	tmpdir = "/tmp";
-#endif
-	if (stat(arch_cond->archive_script, &st) < 0) {
-		errno = errno;
-		error("as_mysql_jobacct_process_run_script: "
-		      "failed to stat %s: %m",
-		      arch_cond->archive_script);
-		return SLURM_ERROR;
-	}
-
-	if (!(st.st_mode & S_IFREG)) {
-		errno = EACCES;
-		error("as_mysql_jobacct_process_run_script: "
-		      "%s isn't a regular file",
-		      arch_cond->archive_script);
-		return SLURM_ERROR;
-	}
-
-	if (access(arch_cond->archive_script, X_OK) < 0) {
-		errno = EACCES;
-		error("as_mysql_jobacct_process_run_script: "
-		      "%s is not executable", arch_cond->archive_script);
-		return SLURM_ERROR;
-	}
-
-	env = env_array_create();
-	env_array_append_fmt(&env, "SLURM_ARCHIVE_CLUSTER", "%s",
-			     cluster_name);
-
-	if(arch_cond->purge_event != NO_VAL) {
-		if(!(curr_end = _setup_end_time(
-			     last_submit, arch_cond->purge_event))) {
-			error("Parsing purge events");
-			return SLURM_ERROR;
-		}
-
-		env_array_append_fmt(&env, "SLURM_ARCHIVE_EVENTS", "%u",
-				     SLURMDB_PURGE_ARCHIVE_SET(
-					     arch_cond->purge_event));
-		env_array_append_fmt(&env, "SLURM_ARCHIVE_LAST_EVENT", "%ld",
-				     curr_end);
-	}
-
-	if(arch_cond->purge_job != NO_VAL) {
-		if(!(curr_end = _setup_end_time(
-			     last_submit, arch_cond->purge_job))) {
-			error("Parsing purge job");
-			return SLURM_ERROR;
-		}
-
-		env_array_append_fmt(&env, "SLURM_ARCHIVE_JOBS", "%u",
-				     SLURMDB_PURGE_ARCHIVE_SET(
-					     arch_cond->purge_job));
-		env_array_append_fmt (&env, "SLURM_ARCHIVE_LAST_JOB", "%ld",
-				      curr_end);
-	}
-
-	if(arch_cond->purge_step != NO_VAL) {
-		if(!(curr_end = _setup_end_time(
-			     last_submit, arch_cond->purge_step))) {
-			error("Parsing purge step");
-			return SLURM_ERROR;
-		}
-
-		env_array_append_fmt(&env, "SLURM_ARCHIVE_STEPS", "%u",
-				     SLURMDB_PURGE_ARCHIVE_SET(
-					     arch_cond->purge_step));
-		env_array_append_fmt(&env, "SLURM_ARCHIVE_LAST_STEP", "%ld",
-				     curr_end);
-	}
-
-	if(arch_cond->purge_suspend != NO_VAL) {
-		if(!(curr_end = _setup_end_time(
-			     last_submit, arch_cond->purge_suspend))) {
-			error("Parsing purge suspend");
-			return SLURM_ERROR;
-		}
-
-		env_array_append_fmt(&env, "SLURM_ARCHIVE_SUSPEND", "%u",
-				     SLURMDB_PURGE_ARCHIVE_SET(
-					     arch_cond->purge_suspend));
-		env_array_append_fmt(&env, "SLURM_ARCHIVE_LAST_SUSPEND", "%ld",
-				     curr_end);
-	}
-
-#ifdef _PATH_STDPATH
-	env_array_append (&env, "PATH", _PATH_STDPATH);
-#else
-	env_array_append (&env, "PATH", "/bin:/usr/bin");
-#endif
-	execve(arch_cond->archive_script, args, env);
-
-	env_array_free(env);
-
-	return SLURM_SUCCESS;
-}
-
 static int _execute_archive(mysql_conn_t *mysql_conn,
 			    char *cluster_name,
 			    slurmdb_archive_cond_t *arch_cond)
@@ -1946,7 +1676,7 @@ static int _execute_archive(mysql_conn_t *mysql_conn,
 	time_t last_submit = time(NULL);
 
 	if(arch_cond->archive_script)
-		return _archive_script(arch_cond, cluster_name, last_submit);
+		return archive_run_script(arch_cond, cluster_name, last_submit);
 	else if(!arch_cond->archive_dir) {
 		error("No archive dir given, can't process");
 		return SLURM_ERROR;
@@ -1956,7 +1686,7 @@ static int _execute_archive(mysql_conn_t *mysql_conn,
 		/* remove all data from event table that was older than
 		 * period_start * arch_cond->purge_event.
 		 */
-		if(!(curr_end = _setup_end_time(
+		if(!(curr_end = archive_setup_end_time(
 			     last_submit, arch_cond->purge_event))) {
 			error("Parsing purge event");
 			return SLURM_ERROR;
@@ -1993,7 +1723,7 @@ exit_events:
 		/* remove all data from suspend table that was older than
 		 * period_start * arch_cond->purge_suspend.
 		 */
-		if(!(curr_end = _setup_end_time(
+		if(!(curr_end = archive_setup_end_time(
 			     last_submit, arch_cond->purge_suspend))) {
 			error("Parsing purge suspend");
 			return SLURM_ERROR;
@@ -2030,7 +1760,7 @@ exit_suspend:
 		/* remove all data from step table that was older than
 		 * start * arch_cond->purge_step.
 		 */
-		if(!(curr_end = _setup_end_time(
+		if(!(curr_end = archive_setup_end_time(
 			     last_submit, arch_cond->purge_step))) {
 			error("Parsing purge step");
 			return SLURM_ERROR;
@@ -2067,7 +1797,7 @@ exit_steps:
 		/* remove all data from job table that was older than
 		 * last_submit * arch_cond->purge_job.
 		 */
-		if(!(curr_end = _setup_end_time(
+		if(!(curr_end = archive_setup_end_time(
 			     last_submit, arch_cond->purge_job))) {
 			error("Parsing purge job");
 			return SLURM_ERROR;

@@ -689,13 +689,14 @@ empty:
 				cluster_cond->usage_end);
 		}
 
-		cluster->classification = atoi(row[CLUSTER_REQ_CLASS]);
+		cluster->classification = slurm_atoul(row[CLUSTER_REQ_CLASS]);
 		cluster->control_host = xstrdup(row[CLUSTER_REQ_CH]);
-		cluster->control_port = atoi(row[CLUSTER_REQ_CP]);
-		cluster->rpc_version = atoi(row[CLUSTER_REQ_VERSION]);
-		cluster->dimensions = atoi(row[CLUSTER_REQ_DIMS]);
-		cluster->flags = atoi(row[CLUSTER_REQ_FLAGS]);
-		cluster->plugin_id_select = atoi(row[CLUSTER_REQ_PI_SELECT]);
+		cluster->control_port = slurm_atoul(row[CLUSTER_REQ_CP]);
+		cluster->rpc_version = slurm_atoul(row[CLUSTER_REQ_VERSION]);
+		cluster->dimensions = slurm_atoul(row[CLUSTER_REQ_DIMS]);
+		cluster->flags = slurm_atoul(row[CLUSTER_REQ_FLAGS]);
+		cluster->plugin_id_select =
+			slurm_atoul(row[CLUSTER_REQ_PI_SELECT]);
 
 		query = xstrdup_printf(
 			"select cpu_count, cluster_nodes from "
@@ -710,7 +711,7 @@ empty:
 		}
 		xfree(query);
 		if((row2 = mysql_fetch_row(result2))) {
-			cluster->cpu_count = atoi(row2[0]);
+			cluster->cpu_count = slurm_atoul(row2[0]);
 			if(row2[1] && row2[1][0])
 				cluster->nodes = xstrdup(row2[1]);
 		}
@@ -987,14 +988,15 @@ empty:
 			} else
 				event->event_type = SLURMDB_EVENT_CLUSTER;
 
-			event->cpu_count = atoi(row[EVENT_REQ_CPU]);
-			event->state = atoi(row[EVENT_REQ_STATE]);
-			event->period_start = atoi(row[EVENT_REQ_START]);
-			event->period_end = atoi(row[EVENT_REQ_END]);
+			event->cpu_count = slurm_atoul(row[EVENT_REQ_CPU]);
+			event->state = slurm_atoul(row[EVENT_REQ_STATE]);
+			event->period_start = slurm_atoul(row[EVENT_REQ_START]);
+			event->period_end = slurm_atoul(row[EVENT_REQ_END]);
 
 			if(row[EVENT_REQ_REASON] && row[EVENT_REQ_REASON][0])
 				event->reason = xstrdup(row[EVENT_REQ_REASON]);
-			event->reason_uid = atoi(row[EVENT_REQ_REASON_UID]);
+			event->reason_uid =
+				slurm_atoul(row[EVENT_REQ_REASON_UID]);
 
 			if(row[EVENT_REQ_CNODES] && row[EVENT_REQ_CNODES][0])
 				event->cluster_nodes =
@@ -1193,7 +1195,7 @@ extern int as_mysql_cluster_cpus(mysql_conn_t *mysql_conn,
 		goto add_it;
 	}
 
-	if(atoi(row[0]) == cpus) {
+	if(slurm_atoul(row[0]) == cpus) {
 		debug3("we have the same cpu count as before for %s, "
 		       "no need to update the database.",
 		       mysql_conn->cluster_name);
@@ -1203,7 +1205,8 @@ extern int as_mysql_cluster_cpus(mysql_conn_t *mysql_conn,
 				      "last instance of cluster '%s'.",
 				      cluster_nodes, mysql_conn->cluster_name);
 				query = xstrdup_printf(
-					"update \"%s_%s\" set cluster_nodes='%s' "
+					"update \"%s_%s\" set "
+					"cluster_nodes='%s' "
 					"where time_end=0 and node_name=''",
 					mysql_conn->cluster_name,
 					event_table, cluster_nodes);

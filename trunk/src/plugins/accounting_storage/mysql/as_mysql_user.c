@@ -1216,7 +1216,7 @@ empty:
 		list_append(user_list, user);
 
 		user->name =  xstrdup(row[USER_REQ_NAME]);
-		user->admin_level = atoi(row[USER_REQ_AL]);
+		user->admin_level = slurm_atoul(row[USER_REQ_AL]);
 
 		if(user_cond && user_cond->with_coords)
 			_get_user_coords(mysql_conn, user);
