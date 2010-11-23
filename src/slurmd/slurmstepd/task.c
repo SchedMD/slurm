@@ -478,6 +478,7 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 		error("No executable program specified for this task");
 		exit(2);
 	}
+
 	/* Do this last so you don't worry too much about the users
 	   limits including the slurmstepd in with it.
 	*/
