@@ -460,10 +460,14 @@ void eio_obj_destroy(void *arg)
 {
 	eio_obj_t *obj = (eio_obj_t *)arg;
 	if (obj) {
-		if (obj->fd != -1) {
-			close(obj->fd);
-			obj->fd = -1;
-		}
+		/* If the obj->fd is still open we need it to be to be
+		   sure we get the possible extra output that may be
+		   on the port.  see test7.11.
+		*/
+		/* if (obj->fd != -1) { */
+		/* 	close(obj->fd); */
+		/* 	obj->fd = -1; */
+		/* } */
 		xfree(obj->ops);
 		xfree(obj);
 	}
