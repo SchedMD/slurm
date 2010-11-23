@@ -55,7 +55,7 @@ my (
 my (
 	$advres, 	$dmem,		$ddisk,
 	$depend, 	$feature,	$gres,
-	$flags, 	$maxmem, 	$jobname, 
+	$flags, 	$maxmem, 
 	$host, 		$procs,		$qos,
 	$resfail, 	$signal,	$tpn,
 	$ttc
