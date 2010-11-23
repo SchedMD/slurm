@@ -815,9 +815,9 @@ static void _build_row_bitmaps(struct part_res_record *p_ptr)
  * - add 'struct job_resources' resources to 'struct part_res_record'
  * - add job's memory requirements to 'struct node_res_record'
  *
- * if action = 0 then add cores and memory
- * if action = 1 then only add memory (job is suspended)
- * if action = 2 then only add cores (job is resumed)
+ * if action = 0 then add cores and memory (starting new job)
+ * if action = 1 then only add memory (adding suspended job)
+ * if action = 2 then only add cores (suspended job is resumed)
  */
 static int _add_job_to_res(struct job_record *job_ptr, int action)
 {
@@ -844,14 +844,16 @@ static int _add_job_to_res(struct job_record *job_ptr, int action)
 		n++;
 
 		node_ptr = select_node_record[i].node_ptr;
-		if (select_node_usage[i].gres_list)
-			gres_list = select_node_usage[i].gres_list;
-		else
-			gres_list = node_ptr->gres_list;
-		gres_plugin_job_alloc(job_ptr->gres_list, gres_list,
-				      job->nhosts, n, job->cpus[n],
-				      job_ptr->job_id, node_ptr->name);
-		gres_plugin_node_state_log(gres_list, node_ptr->name);
+		if (action != 2) {
+			if (select_node_usage[i].gres_list)
+				gres_list = select_node_usage[i].gres_list;
+			else
+				gres_list = node_ptr->gres_list;
+			gres_plugin_job_alloc(job_ptr->gres_list, gres_list,
+					      job->nhosts, n, job->cpus[n],
+					      job_ptr->job_id, node_ptr->name);
+			gres_plugin_node_state_log(gres_list, node_ptr->name);
+		}
 
 		if (action != 2) {
 			if (job->memory_allocated[n] == 0)
@@ -921,7 +923,7 @@ static int _add_job_to_res(struct job_record *job_ptr, int action)
  * - subtract 'struct job_resources' resources from 'struct part_res_record'
  * - subtract job's memory requirements from 'struct node_res_record'
  *
- * if action = 0 then subtract cores and memory
+ * if action = 0 then subtract cores and memory (running job was terminated)
  * if action = 1 then only subtract memory (suspended job was terminated)
  * if action = 2 then only subtract cores (job is suspended)
  *
@@ -954,13 +956,16 @@ static int _rm_job_from_res(struct part_res_record *part_record_ptr,
 		n++;
 
 		node_ptr = node_record_table_ptr + i;
-		if (node_usage[i].gres_list)
-			gres_list = node_usage[i].gres_list;
-		else
-			gres_list = node_ptr->gres_list;
-		gres_plugin_job_dealloc(job_ptr->gres_list, gres_list, n,
-					job_ptr->job_id, node_ptr->name);
-		gres_plugin_node_state_log(gres_list, node_ptr->name);
+		if (action != 2) {
+			if (node_usage[i].gres_list)
+				gres_list = node_usage[i].gres_list;
+			else
+				gres_list = node_ptr->gres_list;
+			gres_plugin_job_dealloc(job_ptr->gres_list, gres_list,
+						n, job_ptr->job_id,
+						node_ptr->name);
+			gres_plugin_node_state_log(gres_list, node_ptr->name);
+		}
 
 		if (action != 2) {
 			if (job->memory_allocated[n] == 0)

@@ -1391,14 +1391,16 @@ static int _rm_job_from_nodes(struct cr_record *cr_ptr,
 			      pre_err, node_ptr->name);
 		}
 
-		if (cr_ptr->nodes[i].gres_list)
-			gres_list = cr_ptr->nodes[i].gres_list;
-		else
-			gres_list = node_ptr->gres_list;
-		gres_plugin_job_dealloc(job_ptr->gres_list, gres_list,
-					node_offset, job_ptr->job_id,
-					node_ptr->name);
-		gres_plugin_node_state_log(gres_list, node_ptr->name);
+		if (remove_all) {
+			if (cr_ptr->nodes[i].gres_list)
+				gres_list = cr_ptr->nodes[i].gres_list;
+			else
+				gres_list = node_ptr->gres_list;
+			gres_plugin_job_dealloc(job_ptr->gres_list, gres_list,
+						node_offset, job_ptr->job_id,
+						node_ptr->name);
+			gres_plugin_node_state_log(gres_list, node_ptr->name);
+		}
 
 		if (exclusive) {
 			if (cr_ptr->nodes[i].exclusive_cnt)
@@ -1669,14 +1671,16 @@ static int _add_job_to_nodes(struct cr_record *cr_ptr,
 		} else
 			cr_ptr->nodes[i].alloc_memory += job_memory_node;
 
-		if (cr_ptr->nodes[i].gres_list)
-			gres_list = cr_ptr->nodes[i].gres_list;
-		else
-			gres_list = node_ptr->gres_list;
-		gres_plugin_job_alloc(job_ptr->gres_list, gres_list,
-				      node_cnt, node_offset, cpu_cnt,
-				      job_ptr->job_id, node_ptr->name);
-		gres_plugin_node_state_log(gres_list, node_ptr->name);
+		if (alloc_all) {
+			if (cr_ptr->nodes[i].gres_list)
+				gres_list = cr_ptr->nodes[i].gres_list;
+			else
+				gres_list = node_ptr->gres_list;
+			gres_plugin_job_alloc(job_ptr->gres_list, gres_list,
+					      node_cnt, node_offset, cpu_cnt,
+					      job_ptr->job_id, node_ptr->name);
+			gres_plugin_node_state_log(gres_list, node_ptr->name);
+		}
 
 		if (exclusive)
 			cr_ptr->nodes[i].exclusive_cnt++;
