@@ -1,4 +1,4 @@
-.TH SCONTROL "1" "September 2010" "scontrol 2.2" "Slurm components"
+.TH SCONTROL "1" "November 2010" "scontrol 2.2" "Slurm components"
 
 .SH "NAME"
 scontrol \- Used view and modify Slurm configuration and state.
@@ -173,9 +173,10 @@ This is the default behavior.
 \fBhold\fP \fIjob_id\fP
 Prevent a pending job from beginning started (sets it's priority to 0).
 Use the \fIrelease\fP command to permit the job to be scheduled.
-Note that when a job is held by a system administrator, only a system
-administrator may release the job for execution. When the job is held by
-its owner, it may also be released by the job's owner.
+Note that when a job is held by a system administrator using the \fBhold\fP
+command, only a system administrator may release the job for execution (also
+see the \fBuhold\fP command). When the job is held by its owner, it may also
+be released by the job's owner.
 
 .TP
 \fBnotify\fP \fIjob_id\fP \fImessage\fP
@@ -335,6 +336,14 @@ fail\-over mechanism when the primary node is down.
 This can be used to minimize disruption if the computer executing the
 primary SLURM controller is scheduled down.
 (Note: SLURM's primary controller will take the control back at startup.)
+
+.TP
+\fBuhold\fP \fIjob_id\fP
+Prevent a pending job from being started (sets it's priority to 0).
+Use the \fIrelease\fP command to permit the job to be scheduled.
+This command is designed for a system administrator to hold a job so that
+the job owner may release it rather than requiring the interventon of a
+system administrator (also see the \fBhold\fP command).
 
 .TP
 \fBupdate\fP \fISPECIFICATION\fP

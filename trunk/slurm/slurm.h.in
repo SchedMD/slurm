@@ -855,6 +855,9 @@ typedef bitstr_t bitoff_t;
 
 #endif
 
+#define ALLOC_SID_ADMIN_HOLD	0x00000001	/* admin job hold */
+#define ALLOC_SID_USER_HOLD	0x00000002	/* user job hold */
+
 /*****************************************************************************\
  *	PROTOCOL DATA STRUCTURE DEFINITIONS
 \*****************************************************************************/
@@ -872,7 +875,9 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	uint16_t alloc_resp_port; /* port to send allocation confirmation to */
 	uint32_t alloc_sid;	/* local sid making resource allocation request
 				 * NOTE: Normally set by slurm_submit* or
-				 * slurm_allocate* function */
+				 * slurm_allocate* function
+				 * NOTE: Also used for update flags, see
+				 * ALLOC_SID_* flags */
 	uint32_t argc;		/* number of arguments to the script */
 	char **argv;		/* arguments to the script */
 	time_t begin_time;	/* delay initiation until this time */
