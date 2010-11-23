@@ -19,6 +19,8 @@ documents those changes that are of interest to users and admins.
     CEA.
  -- Fix for possible deadlock in the slurmstepd when cancelling a job that is
     also writing a large amount of data to stderr.
+ -- Fix in select/cons_res to eliminate "mem underflow" error when the
+    slurmctld is reconfigured while a job is in completing state.
 
 * Changes in SLURM 2.2.0.rc1
 ============================
