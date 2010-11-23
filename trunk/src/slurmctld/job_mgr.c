@@ -6258,9 +6258,11 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			error_code = ESLURM_DISABLED;
 		else if (job_ptr->priority == job_specs->priority) {
 			debug("update_job: setting priority to current value");
-			if ((job_ptr->priority == 0) && authorized &&
-			    (job_specs->alloc_sid & ALLOC_SID_USER_HOLD)) {
-				job_ptr->state_reason = WAIT_HELD_USER;
+			if ((job_ptr->priority == 0) && authorized) {
+				if (job_specs->alloc_sid & ALLOC_SID_USER_HOLD)
+					job_ptr->state_reason = WAIT_HELD_USER;
+				else
+					job_ptr->state_reason = WAIT_HELD;
 			}
 		} else if (authorized ||
 			 (job_ptr->priority > job_specs->priority)) {
