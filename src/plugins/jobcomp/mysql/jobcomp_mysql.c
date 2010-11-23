@@ -249,7 +249,7 @@ extern int slurm_jobcomp_set_location(char *location)
 		return SLURM_SUCCESS;
 
 	if(!location)
-		db_name = DEFAULT_JOB_COMP_DB;
+		db_name = slurm_get_jobcomp_loc();
 	else {
 		while(location[i]) {
 			if(location[i] == '.' || location[i] == '/') {
@@ -261,14 +261,15 @@ extern int slurm_jobcomp_set_location(char *location)
 			i++;
 		}
 		if(location[i])
-			db_name = DEFAULT_JOB_COMP_DB;
+			db_name = xstrdup(DEFAULT_JOB_COMP_DB);
 		else
-			db_name = location;
+			db_name = xstrdup(location);
 	}
 
 	debug2("mysql_connect() called for db %s", db_name);
 
 	mysql_get_db_connection(&jobcomp_mysql_db, db_name, db_info);
+	xfree(db_name);
 
 	rc = _mysql_jobcomp_check_tables();
 
