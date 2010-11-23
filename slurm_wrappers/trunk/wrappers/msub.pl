@@ -567,7 +567,7 @@ sub DateToEpoch
 
 	my ($duration) = @_;
 
-	my  ($CC, $year, $mon, $mday, $hour, $min, $sec);
+	my  ($CC, $year, $mon, $mday, $hour, $min, $sec) = (0)x5;
 
 	my $now = time();
 	my $daylen = (60 * 60 * 24);
