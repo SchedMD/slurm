@@ -7,32 +7,32 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <mgrondona@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
+ *  In addition, as a special exception, the copyright holders give permission
  *  to link the code of portions of this program with the OpenSSL library under
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -92,7 +92,7 @@ int set_user_limits(slurmd_job_t *job)
 	for (rli = get_slurm_rlimits_info(); rli->name; rli++)
 		_set_limit( job->env, rli );
 
-	/* Set soft and hard memory and data size limit for this process, 
+	/* Set soft and hard memory and data size limit for this process,
 	 * handle job limit (for all spawned processes) in slurmd */
 	task_mem_bytes  = job->step_mem;	/* MB */
 	task_mem_bytes *= (1024 * 1024);
@@ -122,7 +122,7 @@ static char * rlim_to_string (unsigned long rlim, char *buf, size_t n)
 {
 	if (rlim == (unsigned long) RLIM_INFINITY)
 		strlcpy (buf, "inf", n);
-	else 
+	else
 		snprintf (buf, n, "%lu", rlim);
 	return (buf);
 }
@@ -133,7 +133,7 @@ set_umask(slurmd_job_t *job)
 {
 	mode_t mask;
 	char *val;
-	
+
 	if (!(val = getenvp(job->env, "SLURM_UMASK"))) {
 		debug("Couldn't find SLURM_UMASK in environment");
 		return SLURM_ERROR;
@@ -147,7 +147,7 @@ set_umask(slurmd_job_t *job)
 
 /*
  * Set rlimit using value of env vars such as SLURM_RLIMIT_CORE if
- * the slurm config file has PropagateResourceLimits=YES or the user 
+ * the slurm config file has PropagateResourceLimits=YES or the user
  * requested it with srun --propagate.
  *
  * NOTE: THIS FUNCTION SHOULD ONLY BE CALLED RIGHT BEFORE THE EXEC OF
@@ -162,7 +162,7 @@ static int
 _set_limit(char **env, slurm_rlimits_info_t *rli)
 {
 	unsigned long env_value;
-	char max[24], cur[24], req[24]; 
+	char max[24], cur[24], req[24];
 	struct rlimit r;
 	bool u_req_propagate;  /* e.g. TRUE if 'srun --propagate' */
 
@@ -181,7 +181,7 @@ _set_limit(char **env, slurm_rlimits_info_t *rli)
 	 */
 	unsetenvp( env, env_name );
 
-	/* 
+	/*
 	 * We'll only attempt to set the propagated soft rlimit when indicated
 	 * by the slurm conf file settings, or the user requested it.
 	 */
@@ -193,7 +193,7 @@ _set_limit(char **env, slurm_rlimits_info_t *rli)
 		return SLURM_ERROR;
 	}
 
-	/* 
+	/*
 	 * Nothing to do if the rlimit won't change
 	 */
 	if (r.rlim_cur == (rlim_t) env_value) {
@@ -203,7 +203,7 @@ _set_limit(char **env, slurm_rlimits_info_t *rli)
 		return SLURM_SUCCESS;
 	}
 
-	debug2("_set_limit: %-14s: max:%s cur:%s req:%s", rlimit_name, 
+	debug2("_set_limit: %-14s: max:%s cur:%s req:%s", rlimit_name,
 		rlim_to_string (r.rlim_max, max, sizeof (max)),
 		rlim_to_string (r.rlim_cur, cur, sizeof (cur)),
 		rlim_to_string (env_value,  req, sizeof (req)) );
@@ -212,7 +212,7 @@ _set_limit(char **env, slurm_rlimits_info_t *rli)
 
 	if (setrlimit( rli->resource, &r ) < 0) {
 		/*
-		 * Report an error only if the user requested propagate 
+		 * Report an error only if the user requested propagate
 		 */
 		if (u_req_propagate) {
 			error( "Can't propagate %s of %s from submit host: %m",
@@ -237,7 +237,7 @@ _set_limit(char **env, slurm_rlimits_info_t *rli)
  * Determine the value of the env var 'name' (if it exists) and whether
  * or not the user wants to use its value as the jobs soft rlimit.
  */
-static int _get_env_val(char **env, const char *name, unsigned long *valp, 
+static int _get_env_val(char **env, const char *name, unsigned long *valp,
 		bool *u_req_propagate)
 {
 	char *val    = NULL;
@@ -246,7 +246,7 @@ static int _get_env_val(char **env, const char *name, unsigned long *valp,
 	xassert(env  != NULL);
 	xassert(name != NULL);
 
-	if (!(val = getenvp(env, name))) 
+	if (!(val = getenvp(env, name)))
 		return (-1);
 
 	/*
@@ -270,5 +270,3 @@ static int _get_env_val(char **env, const char *name, unsigned long *valp,
 
 	return (0);
 }
-
-
