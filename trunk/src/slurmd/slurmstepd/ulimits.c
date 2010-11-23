@@ -73,6 +73,14 @@ static int _set_limit(char **env, slurm_rlimits_info_t *rli);
  * The sys admin can control the propagation of user limits in the slurm
  * conf file by setting values for the PropagateResourceRlimits and
  * ResourceLimits keywords.
+ *
+ * NOTE: THIS FUNCTION SHOULD ONLY BE CALLED RIGHT BEFORE THE EXEC OF
+ * A SCRIPT AFTER THE FORK SO AS TO LIMIT THE ABOUT OF EFFECT THE
+ * LIMITS HAVE WHEN COMBINED WITH THE SLURMSTEPD.  RLIMIT_FSIZE IS THE
+ * MAIN REASON SINCE IF THE USER SETS THIS TO BE LOWER THAN THE SIZE
+ * OF THE CURRENT SLURMD.LOG THE STEPD WILL CORE THE NEXT TIME
+ * ANYTHING IS WRITTEN TO IT.  SO IF RUNNING +DEBUG2 AND THE USER IS
+ * GETTING CORES WITH FILE SYSTEM LIMIT ERRORS THIS IS THE REASON.
  */
 
 int set_user_limits(slurmd_job_t *job)
@@ -97,7 +105,7 @@ int set_user_limits(slurmd_job_t *job)
 			fatal("setrlimit(RLIMIT_DATA, %u MB): %m",
 			      job->step_mem);
 		} else
-			info("Set task_data(%u MB)", job->step_mem);
+			debug2("Set task_data(%u MB)", job->step_mem);
 #if 0
 		getrlimit(RLIMIT_DATA, &r);
 		info("task DATA limits: %u %u", r.rlim_cur, r.rlim_max);
@@ -141,6 +149,14 @@ set_umask(slurmd_job_t *job)
  * Set rlimit using value of env vars such as SLURM_RLIMIT_CORE if
  * the slurm config file has PropagateResourceLimits=YES or the user 
  * requested it with srun --propagate.
+ *
+ * NOTE: THIS FUNCTION SHOULD ONLY BE CALLED RIGHT BEFORE THE EXEC OF
+ * A SCRIPT AFTER THE FORK SO AS TO LIMIT THE ABOUT OF EFFECT THE
+ * LIMITS HAVE WHEN COMBINED WITH THE SLURMSTEPD.  RLIMIT_FSIZE IS THE
+ * MAIN REASON SINCE IF THE USER SETS THIS TO BE LOWER THAN THE SIZE
+ * OF THE CURRENT SLURMD.LOG THE STEPD WILL CORE THE NEXT TIME
+ * ANYTHING IS WRITTEN TO IT.  SO IF RUNNING +DEBUG2 AND THE USER IS
+ * GETTING CORES WITH FILE SYSTEM LIMIT ERRORS THIS IS THE REASON.
  */
 static int
 _set_limit(char **env, slurm_rlimits_info_t *rli)
