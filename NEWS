@@ -657,6 +657,8 @@ documents those changes that are of interest to users and admins.
     set up correctly.
  -- When removing an account from a cluster with sacctmgr you no longer get
     a list of previously deleted associations.
+ -- Fix to make jobcomp/(pg/my)sql correctly work when the database name is
+    different than the default.
 
 * Changes in SLURM 2.1.15
 =========================
