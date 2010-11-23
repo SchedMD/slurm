@@ -635,10 +635,9 @@ static void _show_it (int argc, char *argv[])
 		exit_code = 1;
 		fprintf(stderr, "No valid entity in list command\n");
 		fprintf(stderr, "Input line must include ");
-		fprintf(stderr, "\"Account\", \"Association\", "
-			"\"Cluster\", \"Events\"\n\"Configuration\", "
-			"\"Problem\", \"QOS\", \"Transaction\", \"User\", "
-			"or \"WCKey\"\n");
+		fprintf(stderr, "\"Account\", \"Association\", \"Cluster\", "
+			"\"Configuration\",\n\"Event\", \"Problem\", "
+			"\"QOS\", \"Transaction\", \"User\", or \"WCKey\"\n");
 	}
 
 	if (error_code == SLURM_ERROR) {
@@ -688,7 +687,7 @@ static void _modify_it (int argc, char *argv[])
 		exit_code = 1;
 		fprintf(stderr, "No valid entity in modify command\n");
 		fprintf(stderr, "Input line must include ");
-		fprintf(stderr, "\"Account\", \"Cluster\", \"QOS\", "
+		fprintf(stderr, "\"Account\", \"Cluster\", \"Job\", \"QOS\", "
 			"or \"User\"\n");
 	}
 
@@ -769,7 +768,7 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
   in interactive mode. It will process commands as entered until explicitly\n\
   terminated.                                                              \n\
                                                                            \n\
-    Valid <COMMAND> values are:                                            \n\
+  Valid <COMMAND> values are:                                              \n\
      add <ENTITY> <SPECS>     add entity                                   \n\
      archive <DUMP/LOAD> <SPECS>                                           \n\
                               Archive past jobs and/or steps, or load them \n\
@@ -808,8 +807,8 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
      !!                       Repeat the last command entered.             \n\
                                                                            \n\
   <ENTITY> may be \"account\", \"association\", \"cluster\",               \n\
-                  \"configuration\", \"coordinator\", \"qos\",             \n\
-                  \"transaction\", \"user\",or \"wckey\"                   \n\
+                  \"configuration\", \"coordinator\", \"event\", \"job\",  \n\
+                  \"problem\", \"qos\", \"transaction\", \"user\" or \"wckey\"\n\
                                                                            \n\
   <SPECS> are different for each command entity pair.                      \n\
        list account       - Clusters=, Descriptions=, Format=,             \n\
@@ -860,6 +859,9 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                             Format=, MaxCpus=, MinCpus=, Nodes=, Reason=,  \n\
                             Start=, States=, and User=                     \n\
                                                                            \n\
+       modify job         - (set options) DerivedExitCode=, DerivedExitString=\n\
+                            (where options) JobID=, Cluster=               \n\
+                                                                           \n\
        list qos           - Descriptions=, Format=, Id=, Names=,           \n\
                             PreemptMode=, and WithDeleted                  \n\
        add qos            - Description=, Flags=, GrpCPUMins=, GrpCPUs=,   \n\
@@ -892,8 +894,8 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                             Names=, Partitions=, and QosLevel=             \n\
        modify user        - (set options) AdminLevel=, DefaultAccount=,    \n\
                             DefaultQOS=, DefaultWCKey=, Fairshare=,        \n\
-                            MaxCPUMins=,MaxCPUs=, MaxJobs=, MaxNodes=,     \n\
-                            MaxSubmitJobs=, MaxWall=, and QosLevel=        \n\
+                            MaxCPUMins=, MaxCPUs=, MaxJobs=, MaxNodes=,    \n\
+                            MaxSubmitJobs=, MaxWall=, and QosLevel=,       \n\
                             RawUsage= (with admin privileges only)         \n\
                             (where options) Accounts=, AdminLevel=,        \n\
                             Clusters=, DefaultAccount=, Names=,            \n\
