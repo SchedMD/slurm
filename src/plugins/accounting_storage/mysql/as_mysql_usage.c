@@ -129,9 +129,9 @@ static void *_cluster_rollup_usage(void *arg)
 		xfree(query);
 		row = mysql_fetch_row(result);
 		if(row) {
-			last_hour = atoi(row[UPDATE_HOUR]);
-			last_day = atoi(row[UPDATE_DAY]);
-			last_month = atoi(row[UPDATE_MONTH]);
+			last_hour = slurm_atoul(row[UPDATE_HOUR]);
+			last_day = slurm_atoul(row[UPDATE_DAY]);
+			last_month = slurm_atoul(row[UPDATE_MONTH]);
 			mysql_free_result(result);
 		} else {
 			time_t now = time(NULL);
@@ -154,7 +154,7 @@ static void *_cluster_rollup_usage(void *arg)
 			}
 			xfree(query);
 			if((row = mysql_fetch_row(result))) {
-				time_t check = atoi(row[0]);
+				time_t check = slurm_atoul(row[0]);
 				if(check < lowest)
 					lowest = check;
 			}
@@ -479,14 +479,14 @@ static int _get_cluster_usage(mysql_conn_t *mysql_conn, uid_t uid,
 	while((row = mysql_fetch_row(result))) {
 		slurmdb_cluster_accounting_rec_t *accounting_rec =
 			xmalloc(sizeof(slurmdb_cluster_accounting_rec_t));
-		accounting_rec->alloc_secs = atoll(row[CLUSTER_ACPU]);
-		accounting_rec->down_secs = atoll(row[CLUSTER_DCPU]);
-		accounting_rec->pdown_secs = atoll(row[CLUSTER_PDCPU]);
-		accounting_rec->idle_secs = atoll(row[CLUSTER_ICPU]);
-		accounting_rec->over_secs = atoll(row[CLUSTER_OCPU]);
-		accounting_rec->resv_secs = atoll(row[CLUSTER_RCPU]);
-		accounting_rec->cpu_count = atoi(row[CLUSTER_CPU_COUNT]);
-		accounting_rec->period_start = atoi(row[CLUSTER_START]);
+		accounting_rec->alloc_secs = slurm_atoull(row[CLUSTER_ACPU]);
+		accounting_rec->down_secs = slurm_atoull(row[CLUSTER_DCPU]);
+		accounting_rec->pdown_secs = slurm_atoull(row[CLUSTER_PDCPU]);
+		accounting_rec->idle_secs = slurm_atoull(row[CLUSTER_ICPU]);
+		accounting_rec->over_secs = slurm_atoull(row[CLUSTER_OCPU]);
+		accounting_rec->resv_secs = slurm_atoull(row[CLUSTER_RCPU]);
+		accounting_rec->cpu_count = slurm_atoul(row[CLUSTER_CPU_COUNT]);
+		accounting_rec->period_start = slurm_atoul(row[CLUSTER_START]);
 		list_append(cluster_rec->accounting_list, accounting_rec);
 	}
 	mysql_free_result(result);
@@ -645,9 +645,9 @@ extern int get_usage_for_list(mysql_conn_t *mysql_conn,
 	while((row = mysql_fetch_row(result))) {
 		slurmdb_accounting_rec_t *accounting_rec =
 			xmalloc(sizeof(slurmdb_accounting_rec_t));
-		accounting_rec->id = atoi(row[USAGE_ID]);
-		accounting_rec->period_start = atoi(row[USAGE_START]);
-		accounting_rec->alloc_secs = atoll(row[USAGE_ACPU]);
+		accounting_rec->id = slurm_atoul(row[USAGE_ID]);
+		accounting_rec->period_start = slurm_atoul(row[USAGE_START]);
+		accounting_rec->alloc_secs = slurm_atoull(row[USAGE_ACPU]);
 		list_append(usage_list, accounting_rec);
 	}
 	mysql_free_result(result);
@@ -899,9 +899,9 @@ is_user:
 	while((row = mysql_fetch_row(result))) {
 		slurmdb_accounting_rec_t *accounting_rec =
 			xmalloc(sizeof(slurmdb_accounting_rec_t));
-		accounting_rec->id = atoi(row[USAGE_ID]);
-		accounting_rec->period_start = atoi(row[USAGE_START]);
-		accounting_rec->alloc_secs = atoll(row[USAGE_ACPU]);
+		accounting_rec->id = slurm_atoul(row[USAGE_ID]);
+		accounting_rec->period_start = slurm_atoul(row[USAGE_START]);
+		accounting_rec->alloc_secs = slurm_atoull(row[USAGE_ACPU]);
 		list_append((*my_list), accounting_rec);
 	}
 	mysql_free_result(result);

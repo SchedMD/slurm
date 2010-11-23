@@ -118,7 +118,7 @@ static void *_convert_cluster_tables(void *arg)
 			rc = SLURM_ERROR;
 			goto end_it;
 		}
-		diff = atoi(row[0]) - 1;
+		diff = slurm_atoul(row[0]) - 1;
 		mysql_free_result(result);
 		if(diff < 0) {
 			error("lft was %d that can't happen!", diff+1);

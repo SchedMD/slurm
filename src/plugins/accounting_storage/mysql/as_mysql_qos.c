@@ -573,7 +573,7 @@ extern List as_mysql_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 	ret_list = list_create(slurm_destroy_char);
 	while((row = mysql_fetch_row(result))) {
 		slurmdb_qos_rec_t *qos_rec = NULL;
-		int id = atoi(row[2]);
+		uint32_t id = slurm_atoul(row[2]);
 		if(preempt_bitstr) {
 			if(_preemption_loop(mysql_conn, id, preempt_bitstr))
 				break;
@@ -624,10 +624,10 @@ extern List as_mysql_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 				bool cleared = 0;
 				if(new_preempt[0] == '-') {
 					bit_clear(qos_rec->preempt_bitstr,
-						  atoi(new_preempt+1));
+						  atol(new_preempt+1));
 				} else if(new_preempt[0] == '+') {
 					bit_set(qos_rec->preempt_bitstr,
-						atoi(new_preempt+1));
+						atol(new_preempt+1));
 				} else {
 					if(!cleared) {
 						cleared = 1;
@@ -638,7 +638,7 @@ extern List as_mysql_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 					}
 
 					bit_set(qos_rec->preempt_bitstr,
-						atoi(new_preempt));
+						atol(new_preempt));
 				}
 			}
 			list_iterator_destroy(new_preempt_itr);
@@ -799,7 +799,7 @@ extern List as_mysql_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 
 		qos_rec = xmalloc(sizeof(slurmdb_qos_rec_t));
 		/* we only need id when removing no real need to init */
-		qos_rec->id = atoi(row[0]);
+		qos_rec->id = slurm_atoul(row[0]);
 		if (addto_update_list(mysql_conn->update_list,
 				      SLURMDB_REMOVE_QOS, qos_rec)
 		    != SLURM_SUCCESS)
@@ -1010,68 +1010,70 @@ empty:
 		if(row[QOS_REQ_DESC] && row[QOS_REQ_DESC][0])
 			qos->description = xstrdup(row[QOS_REQ_DESC]);
 
-		qos->id = atoi(row[QOS_REQ_ID]);
+		qos->id = slurm_atoul(row[QOS_REQ_ID]);
 
-		qos->flags = atoi(row[QOS_REQ_FLAGS]);
+		qos->flags = slurm_atoul(row[QOS_REQ_FLAGS]);
 
 		if(row[QOS_REQ_NAME] && row[QOS_REQ_NAME][0])
 			qos->name = xstrdup(row[QOS_REQ_NAME]);
 
 		if(row[QOS_REQ_GCM])
-			qos->grp_cpu_mins = atoll(row[QOS_REQ_GCM]);
+			qos->grp_cpu_mins = slurm_atoull(row[QOS_REQ_GCM]);
 		else
 			qos->grp_cpu_mins = INFINITE;
 		if(row[QOS_REQ_GCRM])
-			qos->grp_cpu_run_mins = atoll(row[QOS_REQ_GCRM]);
+			qos->grp_cpu_run_mins = slurm_atoull(row[QOS_REQ_GCRM]);
 		else
 			qos->grp_cpu_run_mins = INFINITE;
 		if(row[QOS_REQ_GC])
-			qos->grp_cpus = atoi(row[QOS_REQ_GC]);
+			qos->grp_cpus = slurm_atoul(row[QOS_REQ_GC]);
 		else
 			qos->grp_cpus = INFINITE;
 		if(row[QOS_REQ_GJ])
-			qos->grp_jobs = atoi(row[QOS_REQ_GJ]);
+			qos->grp_jobs = slurm_atoul(row[QOS_REQ_GJ]);
 		else
 			qos->grp_jobs = INFINITE;
 		if(row[QOS_REQ_GN])
-			qos->grp_nodes = atoi(row[QOS_REQ_GN]);
+			qos->grp_nodes = slurm_atoul(row[QOS_REQ_GN]);
 		else
 			qos->grp_nodes = INFINITE;
 		if(row[QOS_REQ_GSJ])
-			qos->grp_submit_jobs = atoi(row[QOS_REQ_GSJ]);
+			qos->grp_submit_jobs = slurm_atoul(row[QOS_REQ_GSJ]);
 		else
 			qos->grp_submit_jobs = INFINITE;
 		if(row[QOS_REQ_GW])
-			qos->grp_wall = atoi(row[QOS_REQ_GW]);
+			qos->grp_wall = slurm_atoul(row[QOS_REQ_GW]);
 		else
 			qos->grp_wall = INFINITE;
 
 		if(row[QOS_REQ_MCMPJ])
-			qos->max_cpu_mins_pj = atoll(row[QOS_REQ_MCMPJ]);
+			qos->max_cpu_mins_pj = slurm_atoull(row[QOS_REQ_MCMPJ]);
 		else
 			qos->max_cpu_mins_pj = (uint64_t)INFINITE;
 		if(row[QOS_REQ_MCRM])
-			qos->max_cpu_run_mins_pu = atoll(row[QOS_REQ_MCRM]);
+			qos->max_cpu_run_mins_pu =
+				slurm_atoull(row[QOS_REQ_MCRM]);
 		else
 			qos->max_cpu_run_mins_pu = (uint64_t)INFINITE;
 		if(row[QOS_REQ_MCPJ])
-			qos->max_cpus_pj = atoi(row[QOS_REQ_MCPJ]);
+			qos->max_cpus_pj = slurm_atoul(row[QOS_REQ_MCPJ]);
 		else
 			qos->max_cpus_pj = INFINITE;
 		if(row[QOS_REQ_MJPU])
-			qos->max_jobs_pu = atoi(row[QOS_REQ_MJPU]);
+			qos->max_jobs_pu = slurm_atoul(row[QOS_REQ_MJPU]);
 		else
 			qos->max_jobs_pu = INFINITE;
 		if(row[QOS_REQ_MNPJ])
-			qos->max_nodes_pj = atoi(row[QOS_REQ_MNPJ]);
+			qos->max_nodes_pj = slurm_atoul(row[QOS_REQ_MNPJ]);
 		else
 			qos->max_nodes_pj = INFINITE;
 		if(row[QOS_REQ_MSJPU])
-			qos->max_submit_jobs_pu = atoi(row[QOS_REQ_MSJPU]);
+			qos->max_submit_jobs_pu =
+				slurm_atoul(row[QOS_REQ_MSJPU]);
 		else
 			qos->max_submit_jobs_pu = INFINITE;
 		if(row[QOS_REQ_MWPJ])
-			qos->max_wall_pj = atoi(row[QOS_REQ_MWPJ]);
+			qos->max_wall_pj = slurm_atoul(row[QOS_REQ_MWPJ]);
 		else
 			qos->max_wall_pj = INFINITE;
 
@@ -1081,9 +1083,9 @@ empty:
 			bit_unfmt(qos->preempt_bitstr, row[QOS_REQ_PREE]+1);
 		}
 		if(row[QOS_REQ_PREEM])
-			qos->preempt_mode = atoi(row[QOS_REQ_PREEM]);
+			qos->preempt_mode = slurm_atoul(row[QOS_REQ_PREEM]);
 		if(row[QOS_REQ_PRIO])
-			qos->priority = atoi(row[QOS_REQ_PRIO]);
+			qos->priority = slurm_atoul(row[QOS_REQ_PRIO]);
 
 		if(row[QOS_REQ_UF])
 			qos->usage_factor = atof(row[QOS_REQ_UF]);
