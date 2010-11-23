@@ -45,7 +45,7 @@ my (
 	$type,	 $value
 );
 
-my ($uflag, $bflag, $sflag);
+my ($bflag, $sflag);
 
 #
 # Slurm Version.
@@ -66,7 +66,14 @@ if ($sversion < 2.2 && ($hold || $unhold)) {
 	exit(1);
 }
 
-execute("scontrol hold $jobid")			if ($hold);
+if ($hold) {
+	if ($bflag || $sflag) {
+		execute("scontrol hold $jobid");
+	} else {
+		execute("scontrol uhold $jobid");
+	}
+}
+
 execute("scontrol release $jobid")		if ($unhold);
 execute("scontrol requeue $jobid")		if ($requeue);
 execute("scontrol resume $jobid")		if ($resume);
@@ -135,7 +142,6 @@ sub GetOpts
 #	Remove any "types" from hold and unhold.
 #
 	if ((grep /\-u/, @ARGV) || (grep /\-h/, @ARGV)) {
-		$uflag = 1 if (grep /user/,   @ARGV);
 		$bflag = 1 if (grep /batch/,  @ARGV);
 		$sflag = 1 if (grep /system/, @ARGV);
 
@@ -228,7 +234,7 @@ sub usage
 #
 sub isnumber
 {
-	my ($var) = $_;
+	my ($var) = @_;
 
 	if ($var !~ /\D+/) {
 		return(1); #if it is just a number.
