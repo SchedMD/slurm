@@ -1,4 +1,4 @@
-#! /usr/bin/perl
+#! /usr/bin/perl -w
 #
 # Convert mshow commands into slurm commands.
 #
@@ -22,7 +22,7 @@ use strict;
 #
 # Define the options variables.
 #
-my ($help, $showq, $showbf, $unused);
+my ($help, $showq, $showbf, $unused, $result, $status) = ()x6;
 
 #
 # Slurm Version.
@@ -44,10 +44,10 @@ if ($debug == 1) {
 	$line = "showbf" if (defined $showbf);
 }
 
-my $result = `$line 2>&1`;
-my $status = $?;
+$result = `$line 2>&1`;
+$status = $?;
 
-printf("\n$result\n");
+printf("\n%s\n",$result);
 
 exit($status);
 

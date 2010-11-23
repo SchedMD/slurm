@@ -22,7 +22,7 @@
 #
 # For debugging.
 #
-use lib "/var/opt/slurm_banana/lib64/perl5/site_perl/5.8.8/x86_64-linux-thread-multi/";
+#use lib "/var/opt/slurm_banana/lib64/perl5/site_perl/5.8.8/x86_64-linux-thread-multi/";
 
 #
 # For generating man pages.
@@ -74,7 +74,7 @@ my $rev_off = color("clear");
 #
 # Other global variables.
 #
-my ($total, $opt);
+my ($total, $opt) = (0,0);
 
 my $bglflag = 1  if (`scontrol show config | grep -i bluegene`);
 

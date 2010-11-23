@@ -1,4 +1,4 @@
-#! /usr/bin/perl
+#! /usr/bin/perl -w
 #
 # Convert canceljob commands into slurm commands.
 #
@@ -37,7 +37,7 @@ BEGIN {
 #
 # Define the options variables.
 #
-my ($help, @joblist, $man, $worststatus, $verbose);
+my ($help, @joblist, $man, $worststatus, $verbose) = ()x5;
 
 #
 # Get input from user.
@@ -125,7 +125,7 @@ sub GetOpts
 #
 sub isnumber
 {
-	my ($var) = $_;
+	my ($var) = @_;
 
 	if ($var !~ /\D+/) {
 		return(1); #if it is just a number.

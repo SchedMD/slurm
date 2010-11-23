@@ -1,4 +1,4 @@
-#! /usr/bin/perl
+#! /usr/bin/perl -w
 #
 # Convert showstate commands into slurm commands.
 #
@@ -39,7 +39,7 @@ my ( $help, $man, $verbose);
 #
 GetOpts();
 
-exec("smap");
+exec("smap -c");
 
 exit;
 

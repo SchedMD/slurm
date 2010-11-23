@@ -1,4 +1,4 @@
-#! /usr/bin/perl 
+#! /usr/bin/perl -w
 #
 # Convert mjobctl commands into slurm commands.
 #
@@ -45,6 +45,8 @@ my (
 	$type,	 $value
 );
 
+my ($uflag, $bflag, $sflag);
+
 #
 # Slurm Version.
 #
@@ -64,14 +66,14 @@ if ($sversion < 2.2 && ($hold || $unhold)) {
 	exit(1);
 }
 
-execute("scontrol update job=$jobid prio=0")	if ($hold);
-execute("scontrol update job=$jobid prio=1")	if ($unhold);
+execute("scontrol hold $jobid")			if ($hold);
+execute("scontrol release $jobid")		if ($unhold);
 execute("scontrol requeue $jobid")		if ($requeue);
 execute("scontrol resume $jobid")		if ($resume);
 execute("scontrol suspend $jobid")		if ($suspend);
 execute("scontrol show job $jobid")		if ($query);
 execute("scancel $jobid")			if ($cancel);
-execute("scancel -s $signal  $jobid")		if ($signal);
+execute("scancel -s $signal $jobid")		if ($signal);
 
 do_modify()  if ($modify);
 
@@ -132,13 +134,16 @@ sub GetOpts
 #
 #	Remove any "types" from hold and unhold.
 #
-	@ARGV = grep { $_ !~ /user/   } @ARGV if (grep /\-u/, @ARGV);
-	@ARGV = grep { $_ !~ /batch/  } @ARGV if (grep /\-u/, @ARGV);
-	@ARGV = grep { $_ !~ /system/ } @ARGV if (grep /\-u/, @ARGV);
+	if ((grep /\-u/, @ARGV) || (grep /\-h/, @ARGV)) {
+		$uflag = 1 if (grep /user/,   @ARGV);
+		$bflag = 1 if (grep /batch/,  @ARGV);
+		$sflag = 1 if (grep /system/, @ARGV);
 
-	@ARGV = grep { $_ !~ /user/   } @ARGV if (grep /\-h/, @ARGV);
-	@ARGV = grep { $_ !~ /batch/  } @ARGV if (grep /\-h/, @ARGV);
-	@ARGV = grep { $_ !~ /system/ } @ARGV if (grep /\-h/, @ARGV); 
+		@ARGV = grep { $_ !~ /user/   } @ARGV;
+		@ARGV = grep { $_ !~ /batch/  } @ARGV;
+		@ARGV = grep { $_ !~ /system/ } @ARGV;
+        }
+
 #
 #	Remove extra options to the query.
 #
