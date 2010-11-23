@@ -23,6 +23,9 @@ documents those changes that are of interest to users and admins.
     slurmctld is reconfigured while a job is in completing state.
  -- Send a message to the a user's job when it's real or virual memory limit
     is exceeded. Patch from Hongjia Cao, NUDT.
+ -- Apply rlimits right before execing the users task so to lower the risk of
+    the task exiting because the slurmstepd ran over a limit (log file size,
+     etc.)
 
 * Changes in SLURM 2.2.0.rc1
 ============================
