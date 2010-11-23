@@ -52,7 +52,6 @@
 #include <string.h>
 #include <unistd.h>
 #include "cbuf.h"
-#include "fd.h"
 
 
 /*********************
@@ -1283,12 +1282,17 @@ cbuf_get_fd (void *dstbuf, int *psrcfd, int len)
  *    pointed at by [psrcfd] into cbuf's [dstbuf].
  *  Returns the number of bytes read from the fd, 0 on EOF, or -1 on error.
  */
-	assert(dstbuf != NULL);
-	assert(psrcfd != NULL);
-	assert(*psrcfd >= 0);
-	assert(len > 0);
+    int n;
 
-	return fd_read_n(*psrcfd, dstbuf, len);
+    assert(dstbuf != NULL);
+    assert(psrcfd != NULL);
+    assert(*psrcfd >= 0);
+    assert(len > 0);
+
+    do {
+        n = read(*psrcfd, dstbuf, len);
+    } while ((n < 0) && (errno == EINTR));
+    return(n);
 }
 
 
@@ -1312,17 +1316,21 @@ cbuf_get_mem (void *dstbuf, unsigned char **psrcbuf, int len)
 static int
 cbuf_put_fd (void *srcbuf, int *pdstfd, int len)
 {
-	/*  Copies data from cbuf's [srcbuf] into the file referenced
-	 *    by the file descriptor pointed at by [pdstfd].
-	 *  Returns the number of bytes written to the fd, or -1 on error.
-	 */
+/*  Copies data from cbuf's [srcbuf] into the file referenced
+ *    by the file descriptor pointed at by [pdstfd].
+ *  Returns the number of bytes written to the fd, or -1 on error.
+ */
+    int n;
 
-	assert(srcbuf != NULL);
-	assert(pdstfd != NULL);
-	assert(*pdstfd >= 0);
-	assert(len > 0);
+    assert(srcbuf != NULL);
+    assert(pdstfd != NULL);
+    assert(*pdstfd >= 0);
+    assert(len > 0);
 
-	return fd_write_n(*pdstfd, srcbuf, len);
+    do {
+        n = write(*pdstfd, srcbuf, len);
+    } while ((n < 0) && (errno == EINTR));
+    return(n);
 }
 
 
