@@ -400,7 +400,7 @@ static void _get_process_data(void)
 		}
 		_acct_kill_step();
 	} else if (jobacct_job_id && jobacct_vmem_limit &&
-	    (total_job_vsize > jobacct_vmem_limit)) {
+	           (total_job_vsize > jobacct_vmem_limit)) {
 		if (jobacct_step_id == NO_VAL) {
 			error("Job %u exceeded %u KB virtual memory limit, "
 			      "being killed", jobacct_job_id,
@@ -424,8 +424,16 @@ static void _acct_kill_step(void)
 {
 	slurm_msg_t msg;
 	job_step_kill_msg_t req;
+	job_notify_msg_t notify_req;
 
 	slurm_msg_t_init(&msg);
+	notify_req.job_id      = jobacct_job_id;
+	notify_req.job_step_id = jobacct_step_id;
+	notify_req.message     = "Exceeded job memory limit";
+	msg.msg_type    = REQUEST_JOB_NOTIFY;
+	msg.data        = &notify_req;
+	slurm_send_only_controller_msg(&msg);
+
 	/*
 	 * Request message:
 	 */
