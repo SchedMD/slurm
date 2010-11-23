@@ -181,6 +181,7 @@ uint32_t *cr_node_cores_offset = NULL;
 struct part_res_record *select_part_record = NULL;
 struct node_res_record *select_node_record = NULL;
 struct node_use_record *select_node_usage  = NULL;
+static bool select_state_initializing = true;
 static int select_node_cnt = 0;
 static bool job_preemption_enabled = false;
 static bool job_preemption_killing = false;
@@ -938,6 +939,11 @@ static int _rm_job_from_res(struct part_res_record *part_record_ptr,
 	int i, n;
 	List gres_list;
 
+	if (select_state_initializing) {
+		/* Ignore job removal until select/cons_res data structures
+		 * values are set by select_p_reconfigure() */
+		return SLURM_SUCCESS;
+	}
 	if (!job || !job->core_bitmap) {
 		error("job %u has no select data", job_ptr->job_id);
 		return SLURM_ERROR;
@@ -1697,6 +1703,7 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 	}
 
 	/* initial global core data structures */
+	select_state_initializing = true;
 	select_fast_schedule = slurm_get_fast_schedule();
 	_init_global_core_data(node_ptr, node_cnt);
 
@@ -2257,6 +2264,7 @@ extern int select_p_reconfigure(void)
 		}
 	}
 	list_iterator_destroy(job_iterator);
+	select_state_initializing = false;
 
 	return SLURM_SUCCESS;
 }
