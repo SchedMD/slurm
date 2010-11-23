@@ -147,7 +147,8 @@ COMMAND CHANGES (see man pages for details)
 * Users can hold and release their own jobs. Submit in held state using srun
   or sbatch --hold or -H options. Hold after submission using the command
   "scontrol hold <jobid>". Release with "scontrol release <jobid>". Users can
-  not release jobs held by system administrator.
+  not release jobs held by a system administrator unless the adminstrator uses
+  the command "scontrol uhold <jobid>" ("uhold" for "user hold").
 
 * Add support for slurmctld and slurmd option of "-n <value>" to reset the
   daemon's nice value.

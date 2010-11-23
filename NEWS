@@ -25,7 +25,11 @@ documents those changes that are of interest to users and admins.
     is exceeded. Patch from Hongjia Cao, NUDT.
  -- Apply rlimits right before execing the users task so to lower the risk of
     the task exiting because the slurmstepd ran over a limit (log file size,
-     etc.)
+    etc.)
+ -- Add scontrol command of "uhold <job_id>" so that an administrator can hold
+    a job and let the job's owner release it. The scontrol command of
+    "hold <job_id>" when executed by a SLURM administrator can only be released
+    by a SLURM administrator and not the job owner.
 
 * Changes in SLURM 2.2.0.rc1
 ============================

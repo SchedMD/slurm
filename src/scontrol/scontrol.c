@@ -735,7 +735,9 @@ _process_command (int argc, char *argv[])
 		}
 
 	}
-	else if ((strncasecmp (tag, "hold", MAX(taglen, 4)) == 0) ||
+	else if ((strncasecmp (tag, "hold",  4) == 0) ||
+		 (strncasecmp (tag, "holdu", 5) == 0) ||
+		 (strncasecmp (tag, "uhold", 5) == 0) ||
 	         (strncasecmp (tag, "release", MAX(taglen, 3)) == 0)) {
 		if (argc > 2) {
 			exit_code = 1;
@@ -1546,6 +1548,7 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
      exit                     terminate scontrol                           \n\
      help                     print this description of use.               \n\
      hold <job_id>            prevent specified job from starting (see release)\n\
+     holdu <job_id>           place user hold on specified job (see release)\n\
      hide                     do not display information about hidden      \n\
                               partitions                                   \n\
      listpids <job_id<.step>> List pids associated with the given jobid, or\n\
@@ -1572,6 +1575,7 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
                               (the primary controller will be stopped)     \n\
      suspend <job_id>         susend specified job (see resume)            \n\
      takeover                 ask slurm backup controller to take over     \n\
+     uhold <job_id>           place user hold on specified job (see release)\n\
      update <SPECIFICATIONS>  update job, node, partition, reservation,    \n\
                               step or bluegene block/subbp configuration   \n\
      verbose                  enable detailed logging.                     \n\

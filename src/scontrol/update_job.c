@@ -238,12 +238,19 @@ scontrol_hold(char *op, char *job_id_str)
 		return ESLURM_JOB_NOT_PENDING;
 	}
 
-	if (strncasecmp(op, "hold", MAX(strlen(op), 4)) == 0)
+	if ((strncasecmp(op, "holdu", 5) == 0) ||
+	    (strncasecmp(op, "uhold", 5) == 0)) {
 		job_msg.priority = 0;
-	else
+		job_msg.alloc_sid = ALLOC_SID_USER_HOLD;
+	} else if (strncasecmp(op, "hold", 4) == 0) {
+		job_msg.priority = 0;
+		job_msg.alloc_sid = 0;
+	} else
 		job_msg.priority = 1;
+
 	if (slurm_update_job(&job_msg))
 		return slurm_get_errno();
+
 	return rc;
 }
 

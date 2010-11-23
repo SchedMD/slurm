@@ -6256,9 +6256,13 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		*/
 		if (IS_JOB_FINISHED(job_ptr) || (detail_ptr == NULL))
 			error_code = ESLURM_DISABLED;
-		else if (job_ptr->priority == job_specs->priority)
+		else if (job_ptr->priority == job_specs->priority) {
 			debug("update_job: setting priority to current value");
-		else if (authorized ||
+			if ((job_ptr->priority == 0) && authorized &&
+			    (job_specs->alloc_sid & ALLOC_SID_USER_HOLD)) {
+				job_ptr->state_reason = WAIT_HELD_USER;
+			}
+		} else if (authorized ||
 			 (job_ptr->priority > job_specs->priority)) {
 			job_ptr->details->nice = NICE_OFFSET;
 			if (job_specs->priority == INFINITE) {
@@ -6273,9 +6277,11 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			     job_specs->job_id);
 			update_accounting = true;
 			if (job_ptr->priority == 0) {
-				if (authorized)
+				if (authorized &&
+				    ((job_specs->alloc_sid &
+				      ALLOC_SID_USER_HOLD) == 0)) {
 					job_ptr->state_reason = WAIT_HELD;
-				else
+				} else
 					job_ptr->state_reason = WAIT_HELD_USER;
 				xfree(job_ptr->state_desc);
 			}
