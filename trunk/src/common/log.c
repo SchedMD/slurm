@@ -180,7 +180,6 @@ static int _fd_writeable(int fd)
 	struct pollfd ufds;
 	int write_timeout = 5000;
 	int rc;
-	char temp[2];
 
 	ufds.fd     = fd;
 	ufds.events = POLLOUT;
@@ -196,15 +195,6 @@ static int _fd_writeable(int fd)
 	if (rc == 0)
 		return 0;
 
-	/*
-	 * Check here to make sure the socket really is there.
-	 * If not then exit out and notify the sender.  This
-	 * is here since a write doesn't always tell you the
-	 * socket is gone, but getting 0 back from a
-	 * nonblocking read means just that.
-	 */
-	if (ufds.revents & POLLHUP || (recv(fd, &temp, 1, 0) == 0))
-		return -1;
 	else if ((ufds.revents & POLLNVAL)
 		 || (ufds.revents & POLLERR)
 		 || !(ufds.revents & POLLOUT))
