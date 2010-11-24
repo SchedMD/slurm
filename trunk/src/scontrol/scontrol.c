@@ -91,8 +91,8 @@ main (int argc, char *argv[])
 	int option_index;
 	static struct option long_options[] = {
 		{"all",      0, 0, 'a'},
-		{"cluster",  0, 0, 'M'},
-		{"clusters", 0, 0, 'M'},
+		{"cluster",  1, 0, 'M'},
+		{"clusters", 1, 0, 'M'},
 		{"details",  0, 0, 'd'},
 		{"help",     0, 0, 'h'},
 		{"hide",     0, 0, OPT_LONG_HIDE},
@@ -1514,7 +1514,7 @@ _usage () {
 scontrol [<OPTION>] [<COMMAND>]                                            \n\
     Valid <OPTION> values are:                                             \n\
      -a or --all: equivalent to \"all\" command                            \n\
-     -d or --detail: equivalent to \"detail\" command                      \n\
+     -d or --details: equivalent to \"details\" command                    \n\
      -h or --help: equivalent to \"help\" command                          \n\
      --hide: equivalent to \"hide\" command                                \n\
      -M or --cluster: equivalent to \"cluster\" command                    \n\
@@ -1540,7 +1540,7 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
      completing               display jobs in completing state along with  \n\
                               their completing or down nodes               \n\
      create <SPECIFICATIONS>  create a new partition or reservation        \n\
-     detail                   evokes additional details from the \"show\"  \n\
+     details                  evokes additional details from the \"show\"  \n\
                               command                                      \n\
      delete <SPECIFICATIONS>  delete the specified partition or reservation\n\
                               On Dynamic layout Bluegene systems you can also\n\
