@@ -1017,13 +1017,14 @@ extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
  * IN job_id - id of the job which completed
  * IN uid - user id of user issuing the RPC
  * IN requeue - job should be run again if possible
+ * IN node_fail - true of job terminated due to node failure
  * IN job_return_code - job's return code, if set then set state to JOB_FAILED
  * RET - 0 on success, otherwise ESLURM error code
  * global: job_list - pointer global job list
  *	last_job_update - time of last job table update
  */
-extern int job_complete (uint32_t job_id, uid_t uid, bool requeue,
-		uint32_t job_return_code);
+extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
+			bool node_fail, uint32_t job_return_code);
 
 /*
  * job_independent - determine if this job has a depenentent job pending
