@@ -281,10 +281,6 @@ struct _range {
 char *alpha_num = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 enum {A, B, C, D};
 
-#ifndef SYSTEM_DIMENSIONS
-#  define SYSTEM_DIMENSIONS 1
-#endif
-
 /* logic for block node description */
 
 /* to speed things up we will do some calculations once to avoid
