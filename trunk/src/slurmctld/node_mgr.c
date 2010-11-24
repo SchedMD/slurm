@@ -1824,7 +1824,7 @@ extern int validate_nodes_via_front_end(
 #endif
 
 		info("Killing orphan batch job %u", job_ptr->job_id);
-		job_complete(job_ptr->job_id, 0, false, 0);
+		job_complete(job_ptr->job_id, 0, false, false, 0);
 	}
 	list_iterator_destroy(job_iterator);
 

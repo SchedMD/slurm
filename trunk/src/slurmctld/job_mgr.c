@@ -2633,13 +2633,14 @@ _signal_batch_job(struct job_record *job_ptr, uint16_t signal)
  * IN job_id - id of the job which completed
  * IN uid - user id of user issuing the RPC
  * IN requeue - job should be run again if possible
+ * IN node_fail - true of job terminated due to node failure
  * IN job_return_code - job's return code, if set then set state to FAILED
  * RET - 0 on success, otherwise ESLURM error code
  * global: job_list - pointer global job list
  *	last_job_update - time of last job table update
  */
 extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
-			uint32_t job_return_code)
+			bool node_fail, uint32_t job_return_code)
 {
 	struct job_record *job_ptr;
 	time_t now = time(NULL);
@@ -2722,7 +2723,10 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 		 * from slow responding slurmds */
 		return SLURM_SUCCESS;
 	} else {
-		if (job_return_code == NO_VAL) {
+		if (node_fail) {
+			job_ptr->job_state = JOB_NODE_FAIL | job_comp_flag;
+			job_ptr->requid = uid;
+		} else if (job_return_code == NO_VAL) {
 			job_ptr->job_state = JOB_CANCELLED | job_comp_flag;
 			job_ptr->requid = uid;
 		} else if (WIFEXITED(job_return_code) &&
@@ -7207,7 +7211,7 @@ static void _purge_missing_jobs(int node_inx, time_t now)
 		    (node_inx == bit_ffs(job_ptr->node_bitmap))) {
 			info("Batch JobId=%u missing from node 0, killing it",
 			     job_ptr->job_id);
-			job_complete(job_ptr->job_id, 0, false, NO_VAL);
+			job_complete(job_ptr->job_id, 0, false, true, NO_VAL);
 		} else {
 			_notify_srun_missing_step(job_ptr, node_inx,
 						  now, node_boot_time);

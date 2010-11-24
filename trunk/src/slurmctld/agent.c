@@ -662,7 +662,7 @@ static void _notify_slurmctld_nodes(agent_info_t *agent_ptr,
 			batch_job_launch_msg_t *launch_msg_ptr =
 					*agent_ptr->msg_args_pptr;
 			uint32_t job_id = launch_msg_ptr->job_id;
-			job_complete(job_id, 0, true, 0);
+			job_complete(job_id, 0, true, false, 0);
 		}
 		unlock_slurmctld(node_write_lock);
 #else
@@ -930,7 +930,7 @@ static void *_thread_per_group_rpc(void *args)
 			thread_state = DSH_DONE;
 			ret_data_info->err = thread_state;
 			lock_slurmctld(job_write_lock);
-			job_complete(job_id, 0, false, _wif_status());
+			job_complete(job_id, 0, false, false, _wif_status());
 			unlock_slurmctld(job_write_lock);
 			continue;
 		}

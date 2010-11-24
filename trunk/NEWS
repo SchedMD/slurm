@@ -30,10 +30,12 @@ documents those changes that are of interest to users and admins.
     a job and let the job's owner release it. The scontrol command of
     "hold <job_id>" when executed by a SLURM administrator can only be released
     by a SLURM administrator and not the job owner.
- -- Change atoi to slurm_atoul in mysql plugin needed for running
-    on 32 bit systems in some cases.
+ -- Change atoi to slurm_atoul in mysql plugin, needed for running on 32-bit
+    systems in some cases.
  -- Fix possible deadlock in srun code when trying to send signal to spawned
     tasks.
+ -- If a batch job is found to be missing from a node, make its termination
+    state be NODE_FAIL rather than CANCELLED.
 
 * Changes in SLURM 2.2.0.rc1
 ============================

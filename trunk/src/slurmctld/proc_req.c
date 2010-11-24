@@ -658,7 +658,7 @@ static void _kill_job_on_msg_fail(uint32_t job_id)
 	error("Job allocate response msg send failure, killing JobId=%u",
 	      job_id);
 	lock_slurmctld(job_write_lock);
-	job_complete(job_id, 0, false, 0);
+	job_complete(job_id, 0, false, false, 0);
 	unlock_slurmctld(job_write_lock);
 }
 
@@ -1317,7 +1317,7 @@ static void _slurm_rpc_complete_job_allocation(slurm_msg_t * msg)
 	/* do RPC call */
 	/* Mark job and/or job step complete */
 	error_code = job_complete(comp_msg->job_id, uid,
-				  job_requeue, comp_msg->job_rc);
+				  job_requeue, false, comp_msg->job_rc);
 	unlock_slurmctld(job_write_lock);
 	END_TIMER2("_slurm_rpc_complete_job_allocation");
 
@@ -1422,7 +1422,7 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t * msg)
 
 	/* Mark job allocation complete */
 	error_code = job_complete(comp_msg->job_id, uid,
-				  job_requeue, comp_msg->job_rc);
+				  job_requeue, false, comp_msg->job_rc);
 	unlock_slurmctld(job_write_lock);
 	END_TIMER2("_slurm_rpc_complete_batch_script");
 
@@ -2193,7 +2193,7 @@ static void _slurm_rpc_step_complete(slurm_msg_t *msg)
 	if (req->job_step_id == SLURM_BATCH_SCRIPT) {
 		/* FIXME: test for error, possibly cause batch job requeue */
 		error_code = job_complete(req->job_id, uid, job_requeue,
-					  step_rc);
+					  false, step_rc);
 		unlock_slurmctld(job_write_lock);
 		END_TIMER2("_slurm_rpc_step_complete");
 
