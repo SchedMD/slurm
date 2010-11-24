@@ -541,17 +541,19 @@ static char * _next_tok(char *sep, char **str)
 }
 
 
-/* return the number of zeros needed to pad "num" to "width"
+/*
+ * return the number of zeros needed to pad "num" to "width"
  */
 static int _zero_padded(unsigned long num, int width)
 {
 	int n = 1;
 	while (num /= 10L)
 		n++;
-	return width > n ? width - n : 0;
+	return (width > n) ? (width - n) : 0;
 }
 
-/* test whether two format `width' parameters are "equivalent"
+/*
+ * test whether two format `width' parameters are "equivalent"
  * The width arguments "wn" and "wm" for integers "n" and "m"
  * are equivalent if:
  *
@@ -568,32 +570,21 @@ static int _width_equiv(unsigned long n, int *wn, unsigned long m, int *wm)
 {
 	int npad, nmpad, mpad, mnpad;
 
-	if (wn == wm)
+	if (*wn == *wm)
 		return 1;
 
-	npad = _zero_padded(n, *wn);
+	npad  = _zero_padded(n, *wn);
 	nmpad = _zero_padded(n, *wm);
-	mpad = _zero_padded(m, *wm);
+	mpad  = _zero_padded(m, *wm);
 	mnpad = _zero_padded(m, *wn);
 
-	if (npad != nmpad && mpad != mnpad)
+	if ((npad != nmpad) && (mpad != mnpad))
 		return 0;
-
-	if (npad != nmpad) {
-		if (mpad == mnpad) {
-			*wm = *wn;
-			return 1;
-		} else
-			return 0;
-	} else {        /* mpad != mnpad */
-		if (npad == nmpad) {
-			*wn = *wm;
-			return 1;
-		} else
-			return 0;
-	}
-
-	/* not reached */
+	else if (npad != nmpad)	/* mpad == mnpad: adjust wm */
+		*wm = *wn;
+	else			/* npad == nmpad: adjust wn */
+		*wn = *wm;
+	return 1;
 }
 
 
