@@ -90,7 +90,8 @@ parameters are not critical.
 <LI>
 <B>PreemptMode</B>: Specifies the mechanism used to preempt low priority jobs.
 The PreemptMode can be specified on a system-wide basis or on a per-partition
-basis when <I>PreemptType=preempt/partition_prio</I>.
+basis when <I>PreemptType=preempt/partition_prio</I>. Note that when specified 
+on a partition, a compatible mode must also be specified system-wide. 
 Configure to <I>CANCEL</I>, <I>CHECKPOINT</I>,
 <I>SUSPEND</I> or <I>REQUEUE</I> depending on the desired action for low
 priority jobs.
@@ -368,6 +369,6 @@ order to support ideal placements such as this, which can quickly complicate
 the design. Any and all help is welcome here!
 </P>
 
-<p style="text-align:center;">Last modified 23 May 2010</p>
+<p style="text-align:center;">Last modified 24 November 2010</p>
 
 <!--#include virtual="footer.txt"-->
