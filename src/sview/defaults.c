@@ -101,6 +101,24 @@ static display_data_t display_data_defaults[] = {
 
 extern display_data_t main_display_data[];
 
+static int _trans_tab_pos(int tab_pos)
+{
+	/* default to TOP if unknown is given */
+	switch (tab_pos) {
+	case GTK_POS_TOP:
+		return 0;
+	case GTK_POS_BOTTOM:
+		return 1;
+	case GTK_POS_LEFT:
+		return 2;
+	case GTK_POS_RIGHT:
+		return 3;
+	default:
+		return 0;
+	}
+	return 0;
+}
+
 static void _set_active_combo_defaults(GtkComboBox *combo,
 				       sview_config_t *sview_config,
 				       int type)
@@ -130,14 +148,7 @@ static void _set_active_combo_defaults(GtkComboBox *combo,
 		action = sview_config->default_page;
 		break;
 	case SORTID_TAB_POS:
-		if (sview_config->tab_pos == GTK_POS_TOP)
-			action = 0;
-		else if (sview_config->tab_pos == GTK_POS_BOTTOM)
-			action = 1;
-		else if (sview_config->tab_pos == GTK_POS_LEFT)
-			action = 2;
-		else if (sview_config->tab_pos == GTK_POS_RIGHT)
-			action = 3;
+		action = _trans_tab_pos(sview_config->tab_pos);
 		break;
 	default:
 		break;
@@ -1045,13 +1056,13 @@ extern int configure_defaults()
 
 	gtk_table_set_homogeneous(table, FALSE);
 
-	for(i = 0; i < SORTID_CNT; i++) {
-		while(display_data++) {
-			if(display_data->id == -1)
+	for (i = 0; i < SORTID_CNT; i++) {
+		while (display_data++) {
+			if (display_data->id == -1)
 				break;
-			if(!display_data->name)
+			if (!display_data->name)
 				continue;
-			if(display_data->id != i)
+			if (display_data->id != i)
 				continue;
 
 			_local_display_admin_edit(
@@ -1073,16 +1084,17 @@ extern int configure_defaults()
 	if (response == GTK_RESPONSE_OK) {
 		tmp_char_ptr = g_strdup_printf(
 			"Defaults updated successfully");
-		if(global_edit_error)
+		if (global_edit_error)
 			tmp_char_ptr = global_edit_error_msg;
-		else if(!global_send_update_msg)
+		else if (!global_send_update_msg)
 			tmp_char_ptr = g_strdup_printf(
 				"No change detected.");
 		else {
+			int action = 0;
 			gdk_window_set_cursor(main_window->window,
 					      in_process_cursor);
-			if(tmp_config.ruled_treeview
-			   != working_sview_config.ruled_treeview) {
+			if (tmp_config.ruled_treeview
+			    != working_sview_config.ruled_treeview) {
 				/* get rid of each existing table */
 				cluster_change_block();
 				cluster_change_resv();
@@ -1143,23 +1155,36 @@ extern int configure_defaults()
 			gtk_toggle_action_set_active(
 				default_sview_config.action_page_opts,
 				working_sview_config.save_page_opts);
-			sview_radio_action_set_current_value(
-				default_sview_config.action_tab,
-				working_sview_config.tab_pos);
+#ifdef GTK2_USE_RADIO_SET
+			/* Since this value isn't a simple 0->n we
+			   need to translate if we don't have the
+			   newer gtk.
+			*/
+			action = working_sview_config.tab_pos;
+#else
+			/* If using older gtk we need to translate the
+			   tab position to that of the position in the
+			   radio list.
+			*/
+			action = _trans_tab_pos(working_sview_config.tab_pos);
+#endif
 
-			for(i=0; i<PAGE_CNT; i++) {
-				if(main_display_data[i].id == -1)
+			sview_radio_action_set_current_value(
+				default_sview_config.action_tab, action);
+
+
+			for (i=0; i<PAGE_CNT; i++) {
+				if (main_display_data[i].id == -1)
 					break;
 
-				if(!main_display_data[i].name
-				   || (i == TAB_PAGE))
+				if (!main_display_data[i].name
+				    || (i == TAB_PAGE))
 					continue;
 
 				toggle_tab_visiblity(NULL, main_display_data+i);
 			}
 			get_system_stats(main_grid_table);
 			/******************************************/
-
 			save_defaults(false);
 		}
 	denied_change:
@@ -1170,6 +1195,9 @@ extern int configure_defaults()
 	global_entry_changed = 0;
 
 	gtk_widget_destroy(popup);
+
+	if (main_window && main_window->window)
+		gdk_window_set_cursor(main_window->window, NULL);
 
 	return rc;
 }

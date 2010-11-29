@@ -49,6 +49,8 @@ documents those changes that are of interest to users and admins.
     managed. Substantially improves performance for large numbers of tasks.
     Adds support for SLURM_PMI_KVS_NO_DUP_KEYS environment variable. Patch
     from Hongjia Cao, NUDT.
+ -- Fix issues with sview dealing with older versions of sview and saving
+    defaults.
 
 * Changes in SLURM 2.2.0.rc1
 ============================
