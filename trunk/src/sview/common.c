@@ -2187,6 +2187,7 @@ extern void sview_radio_action_set_current_value(GtkRadioAction *action,
 	   set the correct value.
 	*/
 	g_return_if_fail(GTK_IS_RADIO_ACTION(action));
+
 	if((group = gtk_radio_action_get_group(action))) {
 		/* for some reason groups are set backwards like a
 		   stack, g_slist_reverse will fix this but takes twice
@@ -2205,8 +2206,6 @@ extern void sview_radio_action_set_current_value(GtkRadioAction *action,
 			if(i == current_value) {
 				gtk_toggle_action_set_active(
 					GTK_TOGGLE_ACTION(slist->data), TRUE);
-				g_object_set(action, "value",
-					     current_value, NULL);
 				return;
 			}
 			i++;

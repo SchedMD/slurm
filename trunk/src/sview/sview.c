@@ -517,8 +517,9 @@ static void _tab_pos(GtkRadioAction *action,
 		     GtkRadioAction *extra,
 		     GtkNotebook *notebook)
 {
-	gtk_notebook_set_tab_pos(notebook,
-				 gtk_radio_action_get_current_value(action));
+	working_sview_config.tab_pos =
+		gtk_radio_action_get_current_value(action);
+	gtk_notebook_set_tab_pos(notebook, working_sview_config.tab_pos);
 }
 
 static void _init_pages()
@@ -1169,7 +1170,9 @@ static GtkWidget *_create_cluster_combo()
 
 	if(!orig_cluster_name)
 		orig_cluster_name = slurm_get_cluster_name();
-	model = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_POINTER);
+
+	if (list_count(cluster_list) > 1)
+		model = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_POINTER);
 
 	/* Set up the working_cluster_rec just incase we are on a node
 	   that doesn't technically belong to a cluster (like
@@ -1178,11 +1181,13 @@ static GtkWidget *_create_cluster_combo()
 	working_cluster_rec = list_peek(cluster_list);
 	itr = list_iterator_create(cluster_list);
 	while((cluster_rec = list_next(itr))) {
-		gtk_list_store_append(model, &iter);
-		gtk_list_store_set(model, &iter,
-				   0, cluster_rec->name,
-				   1, cluster_rec,
-				   -1);
+		if (model) {
+			gtk_list_store_append(model, &iter);
+			gtk_list_store_set(model, &iter,
+					   0, cluster_rec->name,
+					   1, cluster_rec,
+					   -1);
+		}
 		if(!strcmp(cluster_rec->name, orig_cluster_name)) {
 			/* clear it since we found the current cluster */
 			working_cluster_rec = NULL;
@@ -1192,17 +1197,20 @@ static GtkWidget *_create_cluster_combo()
 	}
 	list_iterator_destroy(itr);
 
-	combo = gtk_combo_box_new_with_model(GTK_TREE_MODEL(model));
-	g_object_unref(model);
+	if (model) {
+		combo = gtk_combo_box_new_with_model(GTK_TREE_MODEL(model));
+		g_object_unref(model);
 
-	renderer = gtk_cell_renderer_text_new();
-	gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(combo), renderer, TRUE);
-	gtk_cell_layout_add_attribute(GTK_CELL_LAYOUT(combo),
-				      renderer, "text", 0);
-	gtk_combo_box_set_active(GTK_COMBO_BOX(combo), spot);
-	g_signal_connect(combo, "changed",
-			 G_CALLBACK(_change_cluster_main),
-			 NULL);
+		renderer = gtk_cell_renderer_text_new();
+		gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(combo),
+					   renderer, TRUE);
+		gtk_cell_layout_add_attribute(GTK_CELL_LAYOUT(combo),
+					      renderer, "text", 0);
+		gtk_combo_box_set_active(GTK_COMBO_BOX(combo), spot);
+		g_signal_connect(combo, "changed",
+				 G_CALLBACK(_change_cluster_main),
+				 NULL);
+	}
 	return combo;
 }
 
