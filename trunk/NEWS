@@ -38,6 +38,9 @@ documents those changes that are of interest to users and admins.
     not of that type.
  -- Make sure jobacct_gather plugin is not shutdown before messing with the
     proccess list.
+ -- Modify signal handling in srun and salloc commands to deadlock if the
+    malloc function is interupted and called again. The malloc function is
+    thread safe, but not reentrant.
 
 * Changes in SLURM 2.2.0.rc1
 ============================
