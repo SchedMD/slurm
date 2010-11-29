@@ -36,6 +36,8 @@ documents those changes that are of interest to users and admins.
     state be NODE_FAIL rather than CANCELLED.
  -- Fatal error put back if running a bluegene or cray plugin from a controller
     not of that type.
+ -- Make sure jobacct_gather plugin is not shutdown before messing with the
+    proccess list.
 
 * Changes in SLURM 2.2.0.rc1
 ============================
