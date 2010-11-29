@@ -709,6 +709,7 @@ extern int jobacct_gather_p_startpoll(uint16_t frequency)
 
 extern int jobacct_gather_p_endpoll()
 {
+	jobacct_shutdown = true;
 	slurm_mutex_lock(&jobacct_lock);
 	if(task_list)
 		list_destroy(task_list);
@@ -721,7 +722,6 @@ extern int jobacct_gather_p_endpoll()
 		slurm_mutex_unlock(&reading_mutex);
 	}
 
-	jobacct_shutdown = true;
 
 	return SLURM_SUCCESS;
 }
@@ -788,13 +788,17 @@ extern int jobacct_gather_p_set_proctrack_container_id(uint32_t id)
 
 extern int jobacct_gather_p_add_task(pid_t pid, jobacct_id_t *jobacct_id)
 {
+	if (jobacct_shutdown)
+		return SLURM_ERROR;
 	return jobacct_common_add_task(pid, jobacct_id, task_list);
 }
 
 
 extern struct jobacctinfo *jobacct_gather_p_stat_task(pid_t pid)
 {
-	if(pid) {
+	if (jobacct_shutdown)
+		return NULL;
+	else if(pid) {
 		_get_process_data();
 		return jobacct_common_stat_task(pid, task_list);
 	} else {
@@ -813,6 +817,8 @@ extern struct jobacctinfo *jobacct_gather_p_stat_task(pid_t pid)
 
 extern struct jobacctinfo *jobacct_gather_p_remove_task(pid_t pid)
 {
+	if (jobacct_shutdown)
+		return NULL;
 	return jobacct_common_remove_task(pid, task_list);
 }
 
