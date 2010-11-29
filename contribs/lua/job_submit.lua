@@ -8,8 +8,6 @@
 
 --]]
 
-require "posix"
-
 function _build_part_table ( part_list )
 	local part_rec = {}
 	local i = 1
@@ -38,7 +36,7 @@ function slurm_job_submit ( job_desc, part_list )
 			 job_desc.user_id, account)
 		job_desc.account = account
 	end
---	If no default partition, the set the partition to the highest
+--	If no default partition, set the partition to the highest
 --	priority partition this user has access to
 	if job_desc.partition == nil then
 		local new_partition = nil
