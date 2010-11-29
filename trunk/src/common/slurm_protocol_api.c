@@ -1665,6 +1665,20 @@ char *slurm_get_select_type(void)
 	return select_type;
 }
 
+/** Return true if (remote) system runs Cray XT/XE */
+bool is_cray_select_type(void)
+{
+	bool result = false;
+
+	if (slurmdbd_conf) {
+	} else {
+		slurm_ctl_conf_t *conf = slurm_conf_lock();
+		result = strcasecmp(conf->select_type, "select/cray") == 0;
+		slurm_conf_unlock();
+	}
+	return result;
+}
+
 /* slurm_get_switch_type
  * get switch type from slurmctld_conf object
  * RET char *   - switch type, MUST be xfreed by caller

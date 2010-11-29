@@ -557,6 +557,9 @@ char *slurm_get_sched_type(void);
  */
 char *slurm_get_select_type(void);
 
+/** Return true if (remote) system runs Cray XT/XE */
+bool is_cray_select_type(void);
+
 /* slurm_get_switch_type
  * get switch type from slurmctld_conf object
  * RET char *   - switch type, MUST be xfreed by caller
