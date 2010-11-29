@@ -57,6 +57,8 @@ static int min_time_kvs_put = 1000000;
 static int max_time_kvs_put = 0;
 static int tot_time_kvs_put = 0;
 
+static int pmi_kvs_no_dup_keys = 0;
+
 struct barrier_resp {
 	uint16_t port;
 	char *hostname;
@@ -298,7 +300,7 @@ static void *_agent(void *x)
 /* duplicate the current KVS comm structure */
 struct kvs_comm **_kvs_comm_dup(void)
 {
-	int i, j;
+	int i, j, cnt;
 	struct kvs_comm **rc_kvs;
 
 	rc_kvs = xmalloc(sizeof(struct kvs_comm *) * kvs_comm_cnt);
@@ -310,12 +312,23 @@ struct kvs_comm **_kvs_comm_dup(void)
 				xmalloc(sizeof(char *) * rc_kvs[i]->kvs_cnt);
 		rc_kvs[i]->kvs_values =
 				xmalloc(sizeof(char *) * rc_kvs[i]->kvs_cnt);
-		for (j=0; j<rc_kvs[i]->kvs_cnt; j++) {
-			rc_kvs[i]->kvs_keys[j] =
-					xstrdup(kvs_comm_ptr[i]->kvs_keys[j]);
-			rc_kvs[i]->kvs_values[j] =
-					xstrdup(kvs_comm_ptr[i]->kvs_values[j]);
+		if (kvs_comm_ptr[i]->kvs_key_sent == NULL) {
+			kvs_comm_ptr[i]->kvs_key_sent = 
+				xmalloc(sizeof(uint16_t) * 
+				kvs_comm_ptr[i]->kvs_cnt);
 		}
+		cnt = 0;
+		for (j=0; j<rc_kvs[i]->kvs_cnt; j++) {
+			if (kvs_comm_ptr[i]->kvs_key_sent[j])
+				continue;
+			rc_kvs[i]->kvs_keys[cnt] =
+					xstrdup(kvs_comm_ptr[i]->kvs_keys[j]);
+			rc_kvs[i]->kvs_values[cnt] =
+					xstrdup(kvs_comm_ptr[i]->kvs_values[j]);
+			cnt++;
+			kvs_comm_ptr[i]->kvs_key_sent[j] = 1;
+		}
+		rc_kvs[i]->kvs_cnt = cnt;
 	}
 	return rc_kvs;
 }
@@ -339,16 +352,21 @@ static void _merge_named_kvs(struct kvs_comm *kvs_orig,
 	int i, j;
 
 	for (i=0; i<kvs_new->kvs_cnt; i++) {
+		if (pmi_kvs_no_dup_keys)
+			goto no_dup;
 		for (j=0; j<kvs_orig->kvs_cnt; j++) {
 			if (strcmp(kvs_new->kvs_keys[i], kvs_orig->kvs_keys[j]))
 				continue;
 			xfree(kvs_orig->kvs_values[j]);
+			if (kvs_orig->kvs_key_sent)
+				kvs_orig->kvs_key_sent[j] = 0;
 			kvs_orig->kvs_values[j] = kvs_new->kvs_values[i];
 			kvs_new->kvs_values[i] = NULL;
 			break;
 		}
 		if (j < kvs_orig->kvs_cnt)
 			continue;	/* already recorded, update */
+no_dup:
 		/* append it */
 		kvs_orig->kvs_cnt++;
 		xrealloc(kvs_orig->kvs_keys,
@@ -360,6 +378,10 @@ static void _merge_named_kvs(struct kvs_comm *kvs_orig,
 				kvs_new->kvs_values[i];
 		kvs_new->kvs_keys[i] = NULL;
 		kvs_new->kvs_values[i] = NULL;
+	}
+	if (kvs_orig->kvs_key_sent) {
+		xrealloc(kvs_orig->kvs_key_sent,
+			 (sizeof(uint16_t) * kvs_orig->kvs_cnt)); 
 	}
 }
 
@@ -391,8 +413,17 @@ extern int pmi_kvs_put(struct kvs_comm_set *kvs_set_ptr)
 {
 	int i, usec_timer;
 	struct kvs_comm *kvs_ptr;
+	static int pmi_kvs_no_dup_keys_set = 0;
 	DEF_TIMERS;
 
+	if (pmi_kvs_no_dup_keys_set == 0) {
+		char *env = getenv("SLURM_PMI_KVS_NO_DUP_KEYS");
+		if (env) 
+			pmi_kvs_no_dup_keys = 1;
+		else 
+			pmi_kvs_no_dup_keys = 0;
+		pmi_kvs_no_dup_keys_set = 1;
+	}
 	/* Merge new data with old.
 	 * NOTE: We just move pointers rather than copy data where
 	 * possible for improved performance */
@@ -479,7 +510,7 @@ extern int pmi_kvs_get(kvs_get_msg_t *kvs_get_ptr)
 		}
 #endif
 		_kvs_xmit_tasks();
-}
+	}
 fini:	pthread_mutex_unlock(&kvs_mutex);
 
 	return rc;
@@ -501,19 +532,20 @@ extern void pmi_server_max_threads(int max_threads)
 /* copied from slurm_pmi.c */
 static void _free_kvs_comm(struct kvs_comm *kvs_comm_ptr)
 {
-        int i;
+	int i;
 
-        if (kvs_comm_ptr == NULL)
-                return;
+	if (kvs_comm_ptr == NULL)
+		return;
 
-        for (i=0; i<kvs_comm_ptr->kvs_cnt; i++) {
-                xfree(kvs_comm_ptr->kvs_keys[i]);
-                xfree(kvs_comm_ptr->kvs_values[i]);
-        }
-        xfree(kvs_comm_ptr->kvs_name);
-        xfree(kvs_comm_ptr->kvs_keys);
-        xfree(kvs_comm_ptr->kvs_values);
-        xfree(kvs_comm_ptr);
+	for (i=0; i<kvs_comm_ptr->kvs_cnt; i++) {
+		xfree(kvs_comm_ptr->kvs_keys[i]);
+		xfree(kvs_comm_ptr->kvs_values[i]);
+	}
+	xfree(kvs_comm_ptr->kvs_key_sent);
+	xfree(kvs_comm_ptr->kvs_name);
+	xfree(kvs_comm_ptr->kvs_keys);
+	xfree(kvs_comm_ptr->kvs_values);
+	xfree(kvs_comm_ptr);
 }
 
 /* free local kvs set*/

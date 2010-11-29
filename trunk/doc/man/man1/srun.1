@@ -1504,6 +1504,11 @@ Same as \fB\-O, \-\-overcommit\fR
 \fBSLURM_PARTITION\fR
 Same as \fB\-p, \-\-partition\fR
 .TP
+\fBSLURM_PMI_KVS_NO_DUP_KEYS\fR
+If set, then PMI key\-pairs will contain no duplicate keys.
+This is the case for MPICH2 and reduces overhead in testing for duplicates
+for improved performance
+.TP
 \fBSLURM_PROLOG\fR
 Same as \fB\-\-prolog\fR
 .TP
