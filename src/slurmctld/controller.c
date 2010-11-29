@@ -785,7 +785,7 @@ static int _reconfigure_slurm(void)
 static void *_slurmctld_signal_hand(void *no_data)
 {
 	int sig;
-	int rc;
+	int i, rc;
 	int sig_array[] = {SIGINT, SIGTERM, SIGHUP, SIGABRT, 0};
 	sigset_t set;
 	/* Locks: Read configuration */
@@ -804,11 +804,8 @@ static void *_slurmctld_signal_hand(void *no_data)
 	unlock_slurmctld(config_read_lock);
 
 	/* Make sure no required signals are ignored (possibly inherited) */
-	_default_sigaction(SIGINT);
-	_default_sigaction(SIGTERM);
-	_default_sigaction(SIGHUP);
-	_default_sigaction(SIGABRT);
-
+	for (i = 0; sig_array[i]; i++)
+		_default_sigaction(sig_array[i]);
 	while (1) {
 		xsignal_sigset_create(sig_array, &set);
 		rc = sigwait(&set, &sig);
