@@ -72,9 +72,11 @@
 
 #include <slurm/slurm_errno.h>
 #include <sys/poll.h>
+#include <sys/socket.h>
+#include <sys/stat.h>
 #include <sys/time.h>
 #include <sys/types.h>
-#include <sys/socket.h>
+#include <sys/unistd.h>
 
 #include "src/common/log.h"
 #include "src/common/fd.h"
@@ -178,8 +180,10 @@ static void _log_flush(log_t *log);
 static int _fd_writeable(int fd)
 {
 	struct pollfd ufds;
+	struct stat stat_buf;
 	int write_timeout = 5000;
 	int rc;
+	char temp[2];
 
 	ufds.fd     = fd;
 	ufds.events = POLLOUT;
@@ -195,6 +199,15 @@ static int _fd_writeable(int fd)
 	if (rc == 0)
 		return 0;
 
+	/*
+	 * Check here to make sure that if this is a socket that it really
+	 * is still connected. If not then exit out and notify the sender.
+	 * This is here since a write doesn't always tell you the socket is
+	 * gone, but getting 0 back from a nonblocking read means just that.
+	 */
+	if ((ufds.revents & POLLHUP) || fstat(fd, &stat_buf) ||
+	    (S_ISSOCK(stat_buf.st_mode) && (recv(fd, &temp, 1, 0) == 0)))
+		return -1;
 	else if ((ufds.revents & POLLNVAL)
 		 || (ufds.revents & POLLERR)
 		 || !(ufds.revents & POLLOUT))
