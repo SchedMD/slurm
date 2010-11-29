@@ -45,6 +45,10 @@ documents those changes that are of interest to users and admins.
  -- In srun set job abort flag on completion to handle the case when a user
     cancels a job while the node is not responding but slurmctld has not yet
     the node down. Patch from Hongjia Cao, NUDT.
+ -- Streamline the PMI logic if no duplicate keys are included in the key-pairs
+    managed. Substantially improves performance for large numbers of tasks.
+    Adds support for SLURM_PMI_KVS_NO_DUP_KEYS environment variable. Patch
+    from Hongjia Cao, NUDT.
 
 * Changes in SLURM 2.2.0.rc1
 ============================
