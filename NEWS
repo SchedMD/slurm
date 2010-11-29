@@ -32,8 +32,6 @@ documents those changes that are of interest to users and admins.
     by a SLURM administrator and not the job owner.
  -- Change atoi to slurm_atoul in mysql plugin, needed for running on 32-bit
     systems in some cases.
- -- Fix possible deadlock in srun code when trying to send signal to spawned
-    tasks.
  -- If a batch job is found to be missing from a node, make its termination
     state be NODE_FAIL rather than CANCELLED.
 
