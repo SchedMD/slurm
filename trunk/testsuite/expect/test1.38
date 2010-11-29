@@ -49,6 +49,7 @@ if { [test_xcpu] } {
 # Build input script file
 #
 make_bash_script $file_in "
+  trap \"\" INT
   $bin_echo WAITING
   $bin_sleep 1000
 "
