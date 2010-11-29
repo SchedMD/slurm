@@ -527,7 +527,7 @@ sub print_job_full
 	my $user_group = getgrgid($job->{'group_id'});
 	printf("\tegroup = %s(%d)\n", $user_group, $job->{'group_id'});
 
-	printf("\tResource_List.walltime = %s\n", hhmmss($job->{'aWDuration'}));
+	printf("\tResource_List.walltime = %s\n", hhmmss($job->{'time_limit'} * 60));
 	printf("\tResource_List.nodect = %d\n", $job->{'num_nodes'})
 		if $job->{'num_nodes'};
 	printf("\tResource_List.ncpus = %s\n", $job->{'num_procs'})
