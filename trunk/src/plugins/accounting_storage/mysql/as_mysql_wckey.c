@@ -173,7 +173,7 @@ static int _make_sure_users_have_default(
 				"user='%s' and wckey_name='%s';",
 				cluster, wckey_table, user, wckey);
 			xfree(wckey);
-			debug("%d(%s:%d) query\n%s",
+			debug3("%d(%s:%d) query\n%s",
 			       mysql_conn->conn, THIS_FILE, __LINE__, query);
 			rc = mysql_db_query(mysql_conn, query);
 			xfree(query);
