@@ -522,8 +522,10 @@ void slurm_step_launch_abort(slurm_step_ctx_t *ctx)
 {
 	struct step_launch_state *sls = ctx->launch_state;
 
+	pthread_mutex_lock(&sls->lock);
 	sls->abort = true;
 	pthread_cond_broadcast(&sls->cond);
+	pthread_mutex_unlock(&sls->lock);
 }
 
 /*
@@ -1219,6 +1221,10 @@ _handle_msg(void *arg, slurm_msg_t *msg)
 	case SRUN_JOB_COMPLETE:
 		debug2("received job step complete message");
 		force_terminated_job = true;
+		pthread_mutex_lock(&sls->lock);
+		sls->abort = true;
+		pthread_cond_broadcast(&sls->cond);
+		pthread_mutex_unlock(&sls->lock);
 		_job_complete_handler(sls, msg);
 		slurm_free_srun_job_complete_msg(msg->data);
 		break;
