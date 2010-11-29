@@ -22,7 +22,7 @@ documents those changes that are of interest to users and admins.
  -- Fix in select/cons_res to eliminate "mem underflow" error when the
     slurmctld is reconfigured while a job is in completing state.
  -- Send a message to the a user's job when it's real or virual memory limit
-    is exceeded. Patch from Hongjia Cao, NUDT.
+    is exceeded. :
  -- Apply rlimits right before execing the users task so to lower the risk of
     the task exiting because the slurmstepd ran over a limit (log file size,
     etc.)
@@ -40,7 +40,11 @@ documents those changes that are of interest to users and admins.
     proccess list.
  -- Modify signal handling in srun and salloc commands to deadlock if the
     malloc function is interupted and called again. The malloc function is
-    thread safe, but not reentrant.
+    thread safe, but not reentrant, which is a problem when signal handling if
+    the malloc function itself has a lock.
+ -- In srun set job abort flag on completion to handle the case when a user
+    cancels a job while the node is not responding but slurmctld has not yet
+    the node down. Patch from Hongjia Cao, NUDT.
 
 * Changes in SLURM 2.2.0.rc1
 ============================
