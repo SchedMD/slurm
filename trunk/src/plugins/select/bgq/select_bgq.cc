@@ -102,6 +102,10 @@ extern int init ( void )
 		   we don't want to read the config or anything like that. */
 	}
 	verbose("%s loaded", plugin_name);
+#else
+	if (bg_recover != NOT_FROM_CONTROLLER)
+		fatal("select/bgq is incompatible with a "
+		      "non BlueGene/Q system");
 #endif
 	return SLURM_SUCCESS;
 }

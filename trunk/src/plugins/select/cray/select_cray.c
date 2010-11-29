@@ -54,6 +54,7 @@
 
 #include "other_select.h"
 
+#define NOT_FROM_CONTROLLER -2
 /* These are defined here so when we link with something other than
  * the slurmctld we will have these symbols defined.  They will get
  * overwritten when linking with the slurmctld.
@@ -61,6 +62,7 @@
 #if defined (__APPLE__)
 slurm_ctl_conf_t slurmctld_conf __attribute__((weak_import));
 struct node_record *node_record_table_ptr __attribute__((weak_import));
+int bg_recover __attribute__((weak_import)) = NOT_FROM_CONTROLLER;
 List part_list __attribute__((weak_import));
 List job_list __attribute__((weak_import));
 int node_record_count __attribute__((weak_import));
@@ -70,6 +72,7 @@ int switch_record_cnt __attribute__((weak_import));
 #else
 slurm_ctl_conf_t slurmctld_conf;
 struct node_record *node_record_table_ptr;
+int bg_recover = NOT_FROM_CONTROLLER;
 List part_list;
 List job_list;
 int node_record_count;
@@ -144,7 +147,10 @@ extern int init ( void )
 	 * if (slurmctld_conf.select_type_param & CR_CONS_RES)
 	 *	plugin_id = 105;
 	 */
-
+#ifndef HAVE_CRAY
+	if (bg_recover != NOT_FROM_CONTROLLER)
+		fatal("select/cray is incompatible with a non Cray system");
+#endif
 	return SLURM_SUCCESS;
 }
 

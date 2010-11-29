@@ -297,6 +297,10 @@ extern int init ( void )
 			return SLURM_ERROR;
 	}
 	verbose("%s loaded", plugin_name);
+#else
+	if (bg_recover != NOT_FROM_CONTROLLER)
+		fatal("select/bluegene is incompatible with a "
+		      "non BlueGene system");
 #endif
 	return SLURM_SUCCESS;
 }

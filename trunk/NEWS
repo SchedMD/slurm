@@ -34,6 +34,8 @@ documents those changes that are of interest to users and admins.
     systems in some cases.
  -- If a batch job is found to be missing from a node, make its termination
     state be NODE_FAIL rather than CANCELLED.
+ -- Fatal error put back if running a bluegene or cray plugin from a controller
+    not of that type.
 
 * Changes in SLURM 2.2.0.rc1
 ============================
