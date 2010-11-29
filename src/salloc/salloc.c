@@ -93,23 +93,22 @@ static bool allocation_interrupted = false;
 static uint32_t pending_job_id = 0;
 static time_t last_timeout = 0;
 
+static void _default_sigaction(int sig);
 static int  _fill_job_desc_from_opts(job_desc_msg_t *desc);
-static void _ring_terminal_bell(void);
 static pid_t  _fork_command(char **command);
-static void _forward_signal(int signo);
-static void _pending_callback(uint32_t job_id);
-static void _ignore_signal(int signo);
-static void _exit_on_signal(int signo);
-static void _signal_while_allocating(int signo);
 static void _job_complete_handler(srun_job_complete_msg_t *msg);
+static void _node_fail_handler(srun_node_fail_msg_t *msg);
+static void _pending_callback(uint32_t job_id);
+static void _ping_handler(srun_ping_msg_t *msg);
+static void _ring_terminal_bell(void);
+static void *_salloc_signal_mgr(void *no_data);
 static void _set_exit_code(void);
 static void _set_rlimits(char **env);
 static void _set_spank_env(void);
 static void _set_submit_dir_env(void);
+static void _signal_while_allocating(int signo);
 static void _timeout_handler(srun_timeout_msg_t *msg);
 static void _user_msg_handler(srun_user_msg_t *msg);
-static void _ping_handler(srun_ping_msg_t *msg);
-static void _node_fail_handler(srun_node_fail_msg_t *msg);
 
 #ifdef HAVE_BG
 static int _wait_bluegene_block_ready(
@@ -122,6 +121,11 @@ static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc);
 #ifdef HAVE_CRAY
 static int  _claim_reservation(resource_allocation_response_msg_t *alloc);
 #endif
+
+bool salloc_shutdown = false;
+int sig_array[] = {
+	SIGHUP, SIGINT, SIGQUIT, SIGPIPE,
+	SIGTERM, SIGUSR1, SIGUSR2, 0 };
 
 int main(int argc, char *argv[])
 {
@@ -136,13 +140,20 @@ int main(int argc, char *argv[])
 	int retries = 0;
 	pid_t pid;
 	pid_t rc_pid = 0;
-	int rc = 0;
+	int i, rc = 0;
 	static char *msg = "Slurm job queue full, sleeping and retrying.";
 	slurm_allocation_callbacks_t callbacks;
+	pthread_attr_t thread_attr;
+	pthread_t signal_thread = (pthread_t) 0;
 
 	log_init(xbasename(argv[0]), logopt, 0, NULL);
-
 	_set_exit_code();
+
+	/* This must happen before we spawn any threads
+	 * which are not designed to handle them */
+	if (xsignal_block(sig_array) < 0)
+		error("Unable to block signals");
+
 	if (spank_init_allocator() < 0) {
 		error("Failed to initialize plugin stack");
 		exit(error_exit);
@@ -216,14 +227,9 @@ int main(int argc, char *argv[])
 	msg_thr = slurm_allocation_msg_thr_create(&desc.other_port,
 						  &callbacks);
 
-	xsignal(SIGHUP, _signal_while_allocating);
-	xsignal(SIGINT, _signal_while_allocating);
-	xsignal(SIGQUIT, _signal_while_allocating);
-	xsignal(SIGPIPE, _signal_while_allocating);
-	xsignal(SIGTERM, _signal_while_allocating);
-	xsignal(SIGUSR1, _signal_while_allocating);
-	xsignal(SIGUSR2, _signal_while_allocating);
-
+	for (i = 0; sig_array[i]; i++)
+		xsignal(sig_array[i], _signal_while_allocating);
+	
 	before = time(NULL);
 	while ((alloc = slurm_allocate_resources_blocking(&desc, opt.immediate,
 					_pending_callback)) == NULL) {
@@ -294,13 +300,13 @@ int main(int argc, char *argv[])
 
 	after = time(NULL);
 
-	xsignal(SIGHUP,  _exit_on_signal);
-	xsignal(SIGINT,  _ignore_signal);
-	xsignal(SIGQUIT, _ignore_signal);
-	xsignal(SIGPIPE, _ignore_signal);
-	xsignal(SIGTERM, _forward_signal);
-	xsignal(SIGUSR1, _ignore_signal);
-	xsignal(SIGUSR2, _ignore_signal);
+	slurm_attr_init(&thread_attr);
+	while (pthread_create(&signal_thread, &thread_attr, _salloc_signal_mgr,
+			      NULL)) {
+		error("pthread_create error %m");
+		sleep(1);
+	}
+	slurm_attr_destroy(&thread_attr);
 
 	if (opt.bell == BELL_ALWAYS
 	    || (opt.bell == BELL_AFTER_DELAY
@@ -394,6 +400,12 @@ relinquish:
 			allocation_state = REVOKED;
 	}
 	pthread_mutex_unlock(&allocation_state_lock);
+
+	if (signal_thread) {
+		salloc_shutdown = true;
+		pthread_kill(signal_thread, SIGINT);
+		pthread_join(signal_thread,  NULL);
+	}
 
 	slurm_free_resource_allocation_response_msg(alloc);
 	slurm_allocation_msg_thr_destroy(msg_thr);
@@ -661,20 +673,55 @@ static void _signal_while_allocating(int signo)
 	}
 }
 
-static void _ignore_signal(int signo)
+static void _default_sigaction(int sig)
 {
-	/* do nothing */
+	struct sigaction act;
+	if (sigaction(sig, NULL, &act)) {
+		error("sigaction(%d): %m", sig);
+		return;
+	}
+	if (act.sa_handler != SIG_IGN)
+		return;
+
+	act.sa_handler = SIG_DFL;
+	if (sigaction(sig, &act, NULL))
+		error("sigaction(%d): %m", sig);
 }
 
-static void _exit_on_signal(int signo)
+/* _salloc_signal_mgr - Process daemon-wide signals */
+static void *_salloc_signal_mgr(void *no_data)
 {
-	exit_flag = true;
-}
+	int sig;
+	int i, rc;
+	sigset_t set;
 
-static void _forward_signal(int signo)
-{
-	if (command_pid > 0)
-		kill(command_pid, signo);
+	/* Make sure no required signals are ignored (possibly inherited) */
+	for (i = 0; sig_array[i]; i++)
+		_default_sigaction(sig_array[i]);
+	while (!salloc_shutdown) {
+		xsignal_sigset_create(sig_array, &set);
+		rc = sigwait(&set, &sig);
+		if (rc == EINTR)
+			continue;
+		switch (sig) {
+		case SIGHUP:
+			exit_flag = true;
+			break;
+		case SIGTERM:
+			if (command_pid > 0)
+				kill(command_pid, sig);
+			break;
+		case SIGINT:
+		case SIGQUIT:
+		case SIGPIPE:
+		case SIGUSR1:
+		case SIGUSR2:
+		default:
+			/* ignore_signal */
+			break;
+		}
+	}
+	return NULL;
 }
 
 /* This typically signifies the job was cancelled by scancel */
