@@ -94,7 +94,6 @@ static int _launch_tasks(slurm_step_ctx_t *ctx,
 static char *_lookup_cwd(void);
 static void _print_launch_msg(launch_tasks_request_msg_t *msg,
 			      char *hostname, int nodeid);
-static void *_slurm_step_launch_fwd_signal(void *arg);
 
 /**********************************************************************
  * Message handler declarations
@@ -116,10 +115,6 @@ static struct io_operations message_socket_ops = {
 	handle_msg:     &_handle_msg
 };
 
-typedef struct slurm_sig_struct {
-	slurm_step_ctx_t *ctx;
-	int signo;
-} slurm_sig_struct_t;
 
 /**********************************************************************
  * API functions
@@ -533,31 +528,8 @@ void slurm_step_launch_abort(slurm_step_ctx_t *ctx)
 
 /*
  * Forward a signal to all those nodes with running tasks
- * We do thus using a separate pthread to avoid a deadlock if the 
- * signal forward request arrives when "sls->lock" is already locked.
  */
 void slurm_step_launch_fwd_signal(slurm_step_ctx_t *ctx, int signo)
-{
-	pthread_t sig_thread_id;
-	pthread_attr_t sig_thread_attr;
-	slurm_sig_struct_t *sig_thread_arg;
-
-	sig_thread_arg = xmalloc(sizeof(slurm_sig_struct_t));
-	sig_thread_arg->ctx = ctx;
-	sig_thread_arg->signo = signo;
-	slurm_attr_init(&sig_thread_attr);
-	pthread_attr_setdetachstate(&sig_thread_attr, PTHREAD_CREATE_DETACHED);
-	if (pthread_create(&sig_thread_id, &sig_thread_attr, 
-			   _slurm_step_launch_fwd_signal,
-			   (void *)sig_thread_arg) != 0) {
-		error("pthread_create of signal thread: %m");
-		/* Execute function in-line, risks deadlock on sls->lock */
-		slurm_attr_destroy(&sig_thread_attr);
-	}
-	slurm_attr_destroy(&sig_thread_attr);
-}
-
-static void *_slurm_step_launch_fwd_signal(void *arg)
 {
 	int node_id, j, active, num_tasks;
 	slurm_msg_t req;
@@ -568,17 +540,7 @@ static void *_slurm_step_launch_fwd_signal(void *arg)
 	ListIterator itr;
 	ret_data_info_t *ret_data_info = NULL;
 	int rc = SLURM_SUCCESS;
-	slurm_sig_struct_t *sig_struct;
-	slurm_step_ctx_t *ctx;
-	int signo;
-	struct step_launch_state *sls;
-
-	/* Get data from function argument and free memory */
-	sig_struct = (slurm_sig_struct_t *) arg;
-	ctx = sig_struct->ctx;
-	signo = sig_struct->signo;
-	xfree(sig_struct);
-	sls = ctx->launch_state;
+	struct step_launch_state *sls = ctx->launch_state;
 
 	debug2("forward signal %d to job %u", signo, ctx->job_id);
 
@@ -633,7 +595,7 @@ static void *_slurm_step_launch_fwd_signal(void *arg)
 	if (!(ret_list = slurm_send_recv_msgs(name, &req, 0, false))) {
 		error("fwd_signal: slurm_send_recv_msgs really failed bad");
 		xfree(name);
-		return NULL;
+		return;
 	}
 	xfree(name);
 	itr = list_iterator_create(ret_list);
@@ -655,7 +617,7 @@ static void *_slurm_step_launch_fwd_signal(void *arg)
 	list_destroy(ret_list);
 nothing_left:
 	debug2("All tasks have been signalled");
-	return NULL;
+
 }
 
 /**********************************************************************
