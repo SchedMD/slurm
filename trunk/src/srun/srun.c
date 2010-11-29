@@ -129,7 +129,8 @@ time_t launch_start_time;
 bool   retry_step_begin = false;
 int    retry_step_cnt = 0;
 
-bool srun_shutdown = false;
+bool srun_max_timer = false;
+bool srun_shutdown  = false;
 int sig_array[] = {
 	SIGINT,  SIGQUIT, SIGCONT, SIGTERM, SIGCONT,
 	SIGALRM, SIGUSR1, SIGUSR2, SIGPIPE, 0 };
@@ -1129,14 +1130,6 @@ _terminate_job_step(slurm_step_ctx_t *step_ctx)
 	slurm_kill_job_step(job_id, step_id, SIGKILL);
 }
 
-static void
-_handle_max_wait(int signo)
-{
-	info("First task exited %ds ago", opt.max_wait);
-	task_state_print(task_state, (log_f) info);
-	_terminate_job_step(job->step_ctx);
-}
-
 static char *
 _hostset_to_string(hostset_t hs)
 {
@@ -1235,7 +1228,7 @@ static void _setup_max_wait_timer(void)
 	 *   tasks don't finish within opt.max_wait seconds.
 	 */
 	verbose("First task exited. Terminating job in %ds.", opt.max_wait);
-	xsignal(SIGALRM, _handle_max_wait);
+	srun_max_timer = true;
 	alarm(opt.max_wait);
 }
 
@@ -1447,6 +1440,13 @@ static void *_srun_signal_mgr(void *no_data)
 			break;
 		case SIGPIPE:
 			_handle_pipe();
+			break;
+		case SIGALRM:
+			if (srun_max_timer) {
+				info("First task exited %ds ago", opt.max_wait);
+				task_state_print(task_state, (log_f) info);
+				_terminate_job_step(job->step_ctx);
+			}
 			break;
 		default:
 			slurm_step_launch_fwd_signal(job->step_ctx, sig);
