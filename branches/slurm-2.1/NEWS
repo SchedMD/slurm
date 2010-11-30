@@ -1,6 +1,9 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in SLURM 2.1.17
+=========================
+
 * Changes in SLURM 2.1.16
 =========================
  -- Fixed minor warnings from gcc-4.5
