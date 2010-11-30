@@ -54,6 +54,8 @@ documents those changes that are of interest to users and admins.
  -- Remove references to --mincores, --minsockets, and --minthreads from the
     salloc, sbatch and srun man pages. These options are defunct, Patch from
     Rod Schultz, Bull.
+ -- Made openssl not be required to build RPMs, it is not required anymore
+    since munge is the default crypto plugin.
 
 * Changes in SLURM 2.2.0.rc1
 ============================
