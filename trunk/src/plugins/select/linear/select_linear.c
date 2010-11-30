@@ -1386,9 +1386,20 @@ static int _rm_job_from_nodes(struct cr_record *cr_ptr,
 		if (cr_ptr->nodes[i].alloc_memory >= job_memory)
 			cr_ptr->nodes[i].alloc_memory -= job_memory;
 		else {
+			/* This can be the result of FastSchedule=0 and
+			 * the node being configured with fewer CPUs than
+			 * actually exist. The job allocation set when
+			 * slurmctld restarts may be based upon a lower CPU
+			 * count than when the job gets deallocated. */
+			if (select_fast_schedule ||
+			    (node_ptr->config_ptr->cpus == node_ptr->cpus)) {
+				error("%s: memory underflow for node %s",
+				      pre_err, node_ptr->name);
+			} else {
+				debug("%s: memory underflow for node %s",
+				      pre_err, node_ptr->name);
+			}
 			cr_ptr->nodes[i].alloc_memory = 0;
-			error("%s: memory underflow for node %s",
-			      pre_err, node_ptr->name);
 		}
 
 		if (remove_all) {
@@ -1921,10 +1932,10 @@ static void _init_node_cr(void)
 			node_ptr = node_record_table_ptr + i;
 			if (exclusive)
 				cr_ptr->nodes[i].exclusive_cnt++;
-			if (job_memory_cpu == 0)
+			if (job_memory_cpu == 0) {
 				cr_ptr->nodes[i].alloc_memory +=
 					job_memory_node;
-			else if (select_fast_schedule) {
+			} else if (select_fast_schedule) {
 				cr_ptr->nodes[i].alloc_memory +=
 					job_memory_cpu *
 					node_record_table_ptr[i].
