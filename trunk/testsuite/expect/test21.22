@@ -51,7 +51,7 @@ set wco		withcoordinator
 set par		Parent
 set roo		root
 set clu		Cluster
-set tc1		slurm_test-cluster.1
+set tc1		slurm_test-cluster-1
 set acc		Account
 set nams	names
 set ta1		slurm_test-account.1
