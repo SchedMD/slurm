@@ -1041,6 +1041,10 @@ assoc_start:
 				set = sacctmgr_check_default_qos(
 					     assoc->def_qos_id,
 					     acct_cond->assoc_cond);
+			else if (assoc->qos_list)
+				set = sacctmgr_check_default_qos(
+					     -1, acct_cond->assoc_cond);
+
 			if (set) {
 				char *object = NULL;
 				ListIterator itr = list_iterator_create(
@@ -1166,7 +1170,8 @@ extern int sacctmgr_delete_account(int argc, char *argv[])
 		 */
 		if(_isdefault(cond_set, ret_list, local_assoc_list)) {
 			exit_code=1;
-			fprintf(stderr, " Please either remove accounts listed "
+			fprintf(stderr, " Please either remove the "
+				"accounts listed "
 				"above from list and resubmit,\n"
 				" or change these users default account to "
 				"remove the account(s).\n"

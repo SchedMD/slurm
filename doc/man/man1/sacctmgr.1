@@ -223,13 +223,11 @@ The default QOS this association and its children should have.
 This is overridden if set directly on a user.
 To clear a previously set value use the modify command with a new value of \-1.
 .P
-NOTE: Because this could be inherited from a parent an association can
-easily end up with a default qos that it does not have access to.
-There is no current checking to make sure this does not happen.  When
-read in from the slurmctld the default qos is checked against and if
+NOTE: When read in from the slurmctld the default qos is checked against and if
 the default qos isn't in the list of valid QOS for that association
 and the association only has access to 1 QOS that will become the
-default, otherwise, no default will be set.
+default, otherwise, no default will be set.  This should only happen
+when removing a QOS from a <= 2.1 sacctmgr.
 
 .TP
 \fIFairshare\fP=<fairshare number | parent>

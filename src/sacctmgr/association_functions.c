@@ -138,52 +138,68 @@ extern bool sacctmgr_check_default_qos(uint32_t qos_id,
 	ListIterator itr;
 	slurmdb_association_rec_t *assoc;
 	List no_access_list = NULL;
-	List assoc_list = acct_storage_g_get_associations(
-		db_conn, my_uid, assoc_cond);
+	List assoc_list = NULL;
 
 	if (qos_id == NO_VAL)
 		return true;
 
+	assoc_list = acct_storage_g_get_associations(
+		db_conn, my_uid, assoc_cond);
 	if (!assoc_list) {
 		fprintf(stderr, "Couldn't get a list back for checking qos.\n");
 		return false;
 	}
 
+	if (!g_qos_list)
+		g_qos_list = acct_storage_g_get_qos(db_conn, my_uid, NULL);
+
 	itr = list_iterator_create(assoc_list);
 	while ((assoc = list_next(itr))) {
 		char *qos = NULL;
-		if (assoc->qos_list) {
-			ListIterator qos_itr =
-				list_iterator_create(assoc->qos_list);
-			while ((qos = list_next(qos_itr))) {
-				if (qos[0] == '-')
-					continue;
-				else if (qos[0] == '+')
-					qos++;
 
-				if (qos_id == atoi(qos))
-					break;
-			}
-			list_iterator_destroy(qos_itr);
+		if (assoc->qos_list) {
+			int check_qos = qos_id;
+			if (check_qos == -1)
+				check_qos = assoc->def_qos_id;
+			if ((int)check_qos > 0) {
+				ListIterator qos_itr =
+					list_iterator_create(assoc->qos_list);
+				while ((qos = list_next(qos_itr))) {
+					if (qos[0] == '-')
+						continue;
+					else if (qos[0] == '+')
+						qos++;
+					/* info("looking for %u ?= %u", */
+					/*      check_qos, slurm_atoul(qos)); */
+					if (check_qos == slurm_atoul(qos))
+						break;
+				}
+				list_iterator_destroy(qos_itr);
+			} else
+				qos = "";
 		}
+
 		if (!qos) {
+			char *name = slurmdb_qos_str(g_qos_list,
+						     assoc->def_qos_id);
 			if (!assoc->user) {
 				// see if this isn't a user
 				object = xstrdup_printf(
-					"  C = %-10s A = %-20s ",
-					assoc->cluster, assoc->acct);
+					"  DefQOS = %-10s C = %-10s A = %-20s ",
+					name, assoc->cluster, assoc->acct);
 			} else if (assoc->partition) {
 				// see if there is a partition name
 				object = xstrdup_printf(
-					"  C = %-10s A = %-20s U = %-9s P = %s",
-					assoc->cluster, assoc->acct,
+					"  DefQOS = %-10s C = %-10s A = %-20s "
+					"U = %-9s P = %s",
+					name, assoc->cluster, assoc->acct,
 					assoc->user, assoc->partition);
 			} else {
 				object = xstrdup_printf(
-					"  C = %-10s A = %-20s U = %-9s",
-					assoc->cluster,
-					assoc->acct,
-					assoc->user);
+					"  DefQOS = %-10s C = %-10s A = %-20s "
+					"U = %-9s",
+					name, assoc->cluster,
+					assoc->acct, assoc->user);
 			}
 
 			if (!no_access_list)
@@ -198,7 +214,8 @@ extern bool sacctmgr_check_default_qos(uint32_t qos_id,
 	if (!no_access_list)
 		return true;
 	fprintf(stderr,
-		" These associations don't have access to the default qos.\n");
+		" These associations don't have access to their "
+		"default qos.\n");
 	fprintf(stderr,
 		" Please give them access before they the default "
 		"can be set to this.\n");
