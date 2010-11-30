@@ -164,7 +164,6 @@ static int _make_sure_users_have_default(
 
 			/* we found one so just continue */
 			if (row || !wckey) {
-				info("got %p %p", row, wckey);
 				xfree(wckey);
 				continue;
 			}
