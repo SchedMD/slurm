@@ -16,7 +16,7 @@
 # --with lua         %_with_lua         1    build SLURM lua bindings (proctrack only for now)
 # --without munge    %_without_munge    1    don't build auth-munge RPM
 # --with mysql       %_with_mysql       1    require mysql support
-# --without openssl  %_without_openssl  1    don't require openssl RPM to be installed
+# --with openssl     %_with_openssl     1    require openssl RPM to be installed
 # --without pam      %_without_pam      1    don't require pam-devel RPM to be installed
 # --with postgres    %_with_postgres    1    require postgresql support
 # --without readline %_without_readline 1    don't require readline-devel RPM to be installed
@@ -49,6 +49,7 @@
 %slurm_without_opt mysql
 %slurm_without_opt postgres
 %slurm_without_opt blcr
+%slurm_without_opt openssl
 
 # Build with munge by default on all platforms (disable using --without munge)
 %slurm_with_opt munge
