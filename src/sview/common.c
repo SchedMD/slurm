@@ -1397,9 +1397,11 @@ extern gboolean key_released(GtkTreeView *tree_view,
 		return TRUE;
 
 	gtk_tree_view_get_cursor(GTK_TREE_VIEW(tree_view), &path, &column);
-	selection = gtk_tree_view_get_selection(tree_view);
-	gtk_tree_selection_select_path(selection, path);
-	gtk_tree_path_free(path);
+	if (path) {
+		selection = gtk_tree_view_get_selection(tree_view);
+		gtk_tree_selection_select_path(selection, path);
+		gtk_tree_path_free(path);
+	}
 	return TRUE;
 
 
@@ -1443,8 +1445,7 @@ extern gboolean row_clicked(GtkTreeView *tree_view, GdkEventButton *event,
 
 	/*flag this for rightclick to unselect on*/
 	selected_in_current_mix =
-		gtk_tree_selection_path_is_selected(selection,
-						    path);
+		gtk_tree_selection_path_is_selected(selection, path);
 
 	if(event->button != 3) {
 		/*if Lshift is down then pull a range out*/
@@ -1462,7 +1463,7 @@ extern gboolean row_clicked(GtkTreeView *tree_view, GdkEventButton *event,
 						gtk_tree_path_free(last_path);
 					}
 				}
-			} else {
+			} else if (path) {
 				/*ignore shift and pull single row anyway*/
 				gtk_tree_selection_select_path(selection,
 							       path);
@@ -1494,8 +1495,8 @@ extern gboolean row_clicked(GtkTreeView *tree_view, GdkEventButton *event,
 		if(!selected_in_current_mix) {
 			if(!(event->state & GDK_CONTROL_MASK)){
 				gtk_tree_selection_unselect_all(selection);
-			}
-			gtk_tree_selection_select_path(selection, path);
+			} else if (path)
+				gtk_tree_selection_select_path(selection, path);
 		}
 		global_row_count =
 			gtk_tree_selection_count_selected_rows(selection);
