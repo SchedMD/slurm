@@ -148,6 +148,7 @@ set my_pid [spawn $sacctmgr -i $del cluster $tc1]
 #
 # Use sacctmgr to create a cluster
 #
+set bad_name 0
 set sadd_pid [spawn $sacctmgr -i add cluster name=$tc1 fairshare=$fs1 \
 GrpCPUs=$gc1 GrpJobs=$gj1 GrpNodes=$gn1 GrpSubmitJobs=$gs1 MaxCPUs=$mc1 MaxCPUMins=$mm1 \
 MaxJobs=$mj1 MaxSubmitJobs=$ms1 MaxNodes=$mn1 MaxWall=$mw1]
@@ -212,6 +213,10 @@ expect {
 		incr amatches
 		exp_continue
 	}
+	-re "No '.' in name allowed" {
+		set bad_name 1
+		exp_continue
+	}
 	timeout {
 		send_user "\nFAILURE: sacctmgr add not responding\n"
 		slow_kill $sadd_pid
@@ -221,6 +226,14 @@ expect {
 		wait
 	}
 }
+
+if {$bad_name != 0} {
+	send_user "\nWARNING: The version of your database is too old to"
+	send_user "\n         handle a '.' in the name of the cluster."
+	send_user "\n         Please upgrade at your earliest convienence.\n"
+	exit $exit_code
+}
+
 if {$access_err != 0} {
 	send_user "\nWARNING: not authorized to perform this test\n"
 	exit $exit_code

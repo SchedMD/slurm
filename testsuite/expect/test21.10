@@ -54,7 +54,7 @@ set mj		MaxJobs
 set ms		MaxSubmitJobs
 set mn		MaxNodes
 set mw		MaxWall
-set tc1		slurm_test-cluster.1
+set tc1		slurm_test-cluster-1
 set fs1		2500
 set gm1		1000
 set gc1		20

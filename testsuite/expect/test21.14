@@ -35,9 +35,9 @@ source ./globals_accounting
 
 set test_id     "21.14"
 set exit_code   0
-set tc1		slurm_test-cluster.1
-set tc2		slurm_test-cluster.2
-set tc3		slurm_test-cluster.3
+set tc1		slurm_test-cluster-1
+set tc2		slurm_test-cluster-2
+set tc3		slurm_test-cluster-3
 set fs1		2500
 set fs2		1700
 set mc1		1000000
