@@ -85,15 +85,15 @@
 %slurm_with_opt sgijob
 %endif
 
-Name:    slurm
-Version: 2.2.0
-Release: 1008061411%{?dist}
+Name:    see META file
+Version: see META file
+Release: see META file
 
 Summary: Simple Linux Utility for Resource Management
 
 License: GPL
 Group: System Environment/Base
-Source: slurm-2.2.0-1008061411.tar.bz2
+Source: %{name}-%{version}-%{release}.tgz
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}
 URL: https://computing.llnl.gov/linux/slurm/
 
@@ -368,7 +368,7 @@ Gives the ability for SLURM to use Berkeley Lab Checkpoint/Restart
 #############################################################################
 
 %prep
-%setup -n slurm-2.2.0-1008061411
+%setup -n %{name}-%{version}-%{release}
 
 %build
 %configure --program-prefix=%{?_program_prefix:%{_program_prefix}} \
