@@ -82,7 +82,8 @@ List config_list  = NULL;		/* list of config_record entries */
 List feature_list = NULL;		/* list of features_record entries */
 time_t last_node_update = (time_t) 0;	/* time of last update */
 struct node_record *node_record_table_ptr = NULL;	/* node records */
-struct node_record **node_hash_table = NULL;	/* node_record hash table */int node_record_count = 0;	/* count in node_record_table_ptr */
+struct node_record **node_hash_table = NULL;	/* node_record hash table */
+int node_record_count = 0;		/* count in node_record_table_ptr */
 
 static void	_add_config_feature(char *feature, bitstr_t *node_bitmap);
 static int	_build_single_nodeline_info(slurm_conf_node_t *node_ptr,
