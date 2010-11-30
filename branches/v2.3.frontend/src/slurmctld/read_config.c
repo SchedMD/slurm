@@ -393,6 +393,7 @@ static int _build_all_nodeline_info(void)
 
 	/* Load the node table here */
 	rc = build_all_nodeline_info(false);
+	rc = MAX(build_all_frontend_info(), rc);
 
 	/* Now perform operations on the node table as needed by slurmctld */
 #ifdef HAVE_BG

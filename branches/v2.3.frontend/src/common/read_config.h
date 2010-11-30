@@ -43,6 +43,7 @@
 #ifndef _READ_CONFIG_H
 #define _READ_CONFIG_H
 
+#include "src/common/list.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_protocol_socket_common.h"
 #include "src/common/parse_config.h"
@@ -219,6 +220,9 @@ typedef struct {
 	char *name;
 	char *value;
 } config_key_pair_t;
+
+/* Destroy a front_end record built by slurm_conf_frontend_array() */
+extern void destroy_frontend(void *ptr);
 
 /*
  * slurm_conf_init - load the slurm configuration from the a file.

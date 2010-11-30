@@ -78,11 +78,13 @@
 #define _DEBUG 0
 
 /* Global variables */
-List config_list  = NULL;		/* list of config_record entries */
-List feature_list = NULL;		/* list of features_record entries */
+List config_list    = NULL;		/* list of config_record entries */
+List feature_list   = NULL;		/* list of features_record entries */
+List front_end_list = NULL;		/* list of slurm_conf_frontend_t entries */
 time_t last_node_update = (time_t) 0;	/* time of last update */
 struct node_record *node_record_table_ptr = NULL;	/* node records */
-struct node_record **node_hash_table = NULL;	/* node_record hash table */int node_record_count = 0;	/* count in node_record_table_ptr */
+struct node_record **node_hash_table = NULL;	/* node_record hash table */
+int node_record_count = 0;		/* count in node_record_table_ptr */
 
 static void	_add_config_feature(char *feature, bitstr_t *node_bitmap);
 static int	_build_single_nodeline_info(slurm_conf_node_t *node_ptr,
@@ -97,6 +99,7 @@ static void	_list_delete_config (void *config_entry);
 static void	_list_delete_feature (void *feature_entry);
 static int	_list_find_config (void *config_entry, void *key);
 static int	_list_find_feature (void *feature_entry, void *key);
+static int	_list_find_front_end (void *front_end_entry, void *key);
 
 
 
@@ -248,8 +251,9 @@ cleanup:
 static int _delete_config_record (void)
 {
 	last_node_update = time (NULL);
-	(void) list_delete_all (config_list,  &_list_find_config,  NULL);
-	(void) list_delete_all (feature_list, &_list_find_feature, NULL);
+	(void) list_delete_all (config_list,    &_list_find_config,    NULL);
+	(void) list_delete_all (feature_list,   &_list_find_feature,   NULL);
+	(void) list_delete_all (front_end_list, &_list_find_front_end, NULL);
 	return SLURM_SUCCESS;
 }
 
@@ -463,25 +467,66 @@ static int _list_find_feature (void *feature_entry, void *key)
 }
 
 /*
+ * _list_find_front_end - find an entry in the front_end list, see list.h for
+ *	documentation
+ * IN key - is feature name or NULL for all features
+ * RET 1 if found, 0 otherwise
+ */
+static int _list_find_front_end (void *front_end_entry, void *key)
+{
+	if (key == NULL)
+		return 1;
+
+	return 0;
+}
+
+/* Log the contents of a frontend record */
+static void _dump_front_end(slurm_conf_frontend_t *fe_ptr)
+{
+	debug("fe name:%s addr:%s port:%u state:%u reason:%s",
+	      fe_ptr->frontends, fe_ptr->addresses,
+	      fe_ptr->port, fe_ptr->node_state, fe_ptr->reason);
+}
+
+/*
  * build_all_frontend_info - get a array of slurm_conf_frontend_t structures
  *	from the slurm.conf reader, build table, and set values
  * RET 0 if no error, error code otherwise
  */
-extern void build_all_frontend_info (void)
+extern int build_all_frontend_info (void)
 {
 	slurm_conf_frontend_t **ptr_array;
+	slurm_conf_frontend_t *fe_single, *fe_line;
 	int i, count, max_rc = SLURM_SUCCESS;
 
 	count = slurm_conf_frontend_array(&ptr_array);
 #ifdef HAVE_FRONT_END
-	if (count == 0)
-		fatal("No FrontendName information available!");
+	if (count == 0) {
+		verbose("No FrontendName information available!");
+		if (node_record_count == 0)
+			fatal("No nodes configured");
+		fe_single = xmalloc(sizeof(slurm_conf_frontend_t));
+		if (list_append(front_end_list, fe_single) == NULL)
+			fatal("list_append: malloc failure");
+		if (strcmp(node_record_table_ptr->comm_name, "FRONT_END")) {
+			fe_single->frontends = xstrdup(node_record_table_ptr->
+						       comm_name);
+			fe_single->addresses = xstrdup(node_record_table_ptr->
+						       comm_name);
+		} else {
+			fe_single->frontends = xstrdup(node_record_table_ptr->
+						       name);
+			fe_single->addresses = xstrdup(node_record_table_ptr->
+						       name);
+		}
+		fe_single->port = node_record_table_ptr->port;
+		fe_single->node_state = NODE_STATE_IDLE;
+		_dump_front_end(fe_single);
+	}
 
 	for (i = 0; i < count; i++) {
 		hostlist_t hl_name, hl_addr;
-		slurm_conf_frontend_t *fe_single, *fe_line;
 		char *fe_name, *fe_addr;
-		int i;
 
 		fe_line = ptr_array[i];
 		hl_name = hostlist_create(fe_line->frontends);
@@ -498,21 +543,24 @@ extern void build_all_frontend_info (void)
 		while ((fe_name = hostlist_shift(hl_name))) {
 			fe_addr = hostlist_shift(hl_addr);
 			fe_single = xmalloc(sizeof(slurm_conf_frontend_t));
+			if (list_append(front_end_list, fe_single) == NULL)
+				fatal("list_append: malloc failure");
 			fe_single->frontends = xstrdup(fe_name);
 			fe_single->addresses = xstrdup(fe_addr);
-			xfree(fe_name);
-			xfree(fe_addr);
+			free(fe_name);
+			free(fe_addr);
 			fe_single->port = fe_line->port;
 			if (fe_line->reason && fe_line->reason[0])
 				fe_single->reason = xstrdup(fe_line->reason);
 			fe_single->node_state = fe_line->node_state;
+			_dump_front_end(fe_single);
 		}
 		hostlist_destroy(hl_addr);
 		hostlist_destroy(hl_name);
 	}
 #else
 	if (count != 0)
-		fatal("No FrontendName information configured!");
+		fatal("FrontendName information configured!");
 #endif
 	return max_rc;
 }
@@ -758,9 +806,11 @@ extern int init_node_conf (void)
 	if (config_list)	/* delete defunct configuration entries */
 		(void) _delete_config_record ();
 	else {
-		config_list  = list_create (_list_delete_config);
-		feature_list = list_create (_list_delete_feature);
-		if ((config_list == NULL) || (feature_list == NULL))
+		config_list    = list_create (_list_delete_config);
+		feature_list   = list_create (_list_delete_feature);
+		front_end_list = list_create (destroy_frontend);
+		if ((config_list == NULL) || (feature_list == NULL) ||
+		    (front_end_list == NULL))
 			fatal("list_create malloc failure");
 	}
 
@@ -779,6 +829,8 @@ extern void node_fini2 (void)
 		config_list = NULL;
 		list_destroy(feature_list);
 		feature_list = NULL;
+		list_destroy(front_end_list);
+		front_end_list = NULL;
 	}
 
 	node_ptr = node_record_table_ptr;

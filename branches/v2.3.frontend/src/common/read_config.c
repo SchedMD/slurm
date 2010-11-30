@@ -121,7 +121,6 @@ bool nodehash_initialized = false;
 static names_ll_t *host_to_node_hashtbl[NAME_HASH_LEN] = {NULL};
 static names_ll_t *node_to_host_hashtbl[NAME_HASH_LEN] = {NULL};
 
-static void _destroy_frontend(void *ptr);
 static void _destroy_nodename(void *ptr);
 static int _parse_frontend(void **dest, slurm_parser_enum_t type,
 			   const char *key, const char *value,
@@ -289,7 +288,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"VSizeFactor", S_P_UINT16},
 	{"WaitTime", S_P_UINT16},
 
-	{"FrontendName", S_P_ARRAY, _parse_frontend, _destroy_frontend},
+	{"FrontendName", S_P_ARRAY, _parse_frontend, destroy_frontend},
 	{"NodeName", S_P_ARRAY, _parse_nodename, _destroy_nodename},
 	{"PartitionName", S_P_ARRAY, _parse_partitionname,
 	 _destroy_partitionname},
@@ -449,8 +448,8 @@ static int _parse_frontend(void **dest, slurm_parser_enum_t type,
 		if (!s_p_get_string(&n->addresses, "FrontendAddr", tbl))
 			n->addresses = xstrdup(n->frontends);
 
-		if (!s_p_get_uint16(&n->port, "Port", tbl)
-		    && !s_p_get_uint16(&n->port, "Port", dflt)) {
+		if (!s_p_get_uint16(&n->port, "Port", tbl) &&
+		    !s_p_get_uint16(&n->port, "Port", dflt)) {
 			/* This gets resolved in slurm_conf_get_port()
 			 * and slurm_conf_get_addr(). For now just
 			 * leave with a value of zero */
@@ -460,8 +459,8 @@ static int _parse_frontend(void **dest, slurm_parser_enum_t type,
 		if (!s_p_get_string(&n->reason, "Reason", tbl))
 			s_p_get_string(&n->reason, "Reason", dflt);
 
-		if (!s_p_get_string(&node_state, "State", tbl)
-		    && !s_p_get_string(&node_state, "State", dflt))
+		if (!s_p_get_string(&node_state, "State", tbl) &&
+		    !s_p_get_string(&node_state, "State", dflt))
 			n->node_state = NODE_STATE_UNKNOWN;
 		else {
 			n->node_state = state_str2int(node_state);
@@ -674,9 +673,10 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 	/* should not get here */
 }
 
-static void _destroy_frontend(void *ptr)
+/* Destroy a front_end record built by slurm_conf_frontend_array() */
+extern void destroy_frontend(void *ptr)
 {
-	slurm_conf_frontend_t *n = (slurm_conf_frontend_t *)ptr;
+	slurm_conf_frontend_t *n = (slurm_conf_frontend_t *) ptr;
 	xfree(n->frontends);
 	xfree(n->addresses);
 	xfree(n->reason);
@@ -1175,9 +1175,9 @@ static int _register_conf_node_aliases(slurm_conf_node_t *node_ptr)
 
 	/* some sanity checks */
 #ifdef HAVE_FRONT_END
-	if (hostlist_count(hostname_list) != 1
-	    || hostlist_count(address_list) != 1) {
-		error("Only one NodeHostname and hostlist allowed "
+	if ((hostlist_count(hostname_list) != 1) ||
+	    (hostlist_count(address_list) != 1)) {
+		error("Only one NodeHostname and NodeAddr allowed "
 		      "in FRONT_END mode");
 		error("Use FrontendNode/FrondendAddr configuration options");
 		goto cleanup;
