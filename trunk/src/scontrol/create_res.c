@@ -239,9 +239,12 @@ scontrol_parse_res_options(int argc, char *argv[], const char *msg,
 			   strncasecmp(tag, "NodeCount", MAX(taglen,5)) == 0) {
 			char *endptr = NULL;
 			resv_msg_ptr->node_cnt = strtol(val, &endptr, 10);
+			if (endptr != NULL &&
+			    ((endptr[0] == 'k') || (endptr[0] == 'K'))) {
+				resv_msg_ptr->node_cnt *= 1024;
 
-			if (endptr == NULL || *endptr != '\0' ||
-                            *val == '\0') {
+			} else if ((endptr == NULL) || (endptr[0] != '\0') ||
+				   (val[0] == '\0')) {
 				exit_code = 1;
 				error("Invalid node count %s.  %s",
 				      argv[i], msg);
