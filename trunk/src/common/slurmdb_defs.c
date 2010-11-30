@@ -1165,8 +1165,7 @@ extern uint32_t str_2_slurmdb_qos(List qos_list, char *level)
 
 	itr = list_iterator_create(qos_list);
 	while((qos = list_next(itr))) {
-		if(!strncasecmp(working_level, qos->name,
-				strlen(working_level)))
+		if (!strcasecmp(working_level, qos->name))
 			break;
 	}
 	list_iterator_destroy(itr);

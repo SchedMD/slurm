@@ -56,6 +56,8 @@ documents those changes that are of interest to users and admins.
     Rod Schultz, Bull.
  -- Made openssl not be required to build RPMs, it is not required anymore
     since munge is the default crypto plugin.
+ -- sacctmgr now has smarts to figure out if a qos is a default qos when
+    modifing a user/acct or removing a qos.
 
 * Changes in SLURM 2.2.0.rc1
 ============================
