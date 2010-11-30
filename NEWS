@@ -58,6 +58,8 @@ documents those changes that are of interest to users and admins.
     since munge is the default crypto plugin.
  -- sacctmgr now has smarts to figure out if a qos is a default qos when
     modifing a user/acct or removing a qos.
+ -- For reservations on BlueGene systems, set and report c-node counts rather
+    than midplane counts.
 
 * Changes in SLURM 2.2.0.rc1
 ============================

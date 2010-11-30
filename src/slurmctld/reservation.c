@@ -60,13 +60,14 @@
 #include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
+#include "src/common/node_select.h"
 #include "src/common/pack.h"
 #include "src/common/parse_time.h"
+#include "src/common/slurm_accounting_storage.h"
 #include "src/common/uid.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-#include "src/common/slurm_accounting_storage.h"
 
 #include "src/slurmctld/licenses.h"
 #include "src/slurmctld/locks.h"
@@ -85,6 +86,9 @@ time_t    last_resv_update = (time_t) 0;
 List      resv_list = (List) NULL;
 uint32_t  resv_over_run;
 uint32_t  top_suffix = 0;
+#ifdef HAVE_BG
+uint32_t  cpus_per_bp = 0;
+#endif
 
 static void _advance_time(time_t *res_time, int day_cnt);
 static int  _build_account_list(char *accounts, int *account_cnt,
@@ -1010,12 +1014,25 @@ static int _update_uid_list(slurmctld_resv_t *resv_ptr, char *users)
 static void _pack_resv(slurmctld_resv_t *resv_ptr, Buf buffer,
 		       bool internal)
 {
+#ifdef HAVE_BG
+	uint32_t cnode_cnt;
+#endif
+
 	packstr(resv_ptr->accounts,	buffer);
 	pack_time(resv_ptr->end_time,	buffer);
 	packstr(resv_ptr->features,	buffer);
 	packstr(resv_ptr->licenses,	buffer);
 	packstr(resv_ptr->name,		buffer);
+#ifdef HAVE_BG
+	if (!cpus_per_bp)
+		select_g_alter_node_cnt(SELECT_GET_BP_CPU_CNT, &cpus_per_bp);
+	cnode_cnt = resv_ptr->node_cnt;
+	if (cpus_per_bp && !internal)
+		cnode_cnt *= cpus_per_bp;
+	pack32(cnode_cnt,	        buffer);
+#else
 	pack32(resv_ptr->node_cnt,	buffer);
+#endif
 	packstr(resv_ptr->node_list,	buffer);
 	packstr(resv_ptr->partition,	buffer);
 	pack_time(resv_ptr->start_time_first,	buffer);
@@ -1237,6 +1254,17 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 		    (resv_desc_ptr->node_list == NULL))
 			resv_desc_ptr->node_cnt = 0;
 	}
+
+#ifdef HAVE_BG
+	if (!cpus_per_bp)
+		select_g_alter_node_cnt(SELECT_GET_BP_CPU_CNT, &cpus_per_bp);
+	if ((resv_desc_ptr->node_cnt != NO_VAL) && cpus_per_bp) {
+		/* Convert c-node count to midplane count */
+		resv_desc_ptr->node_cnt = (resv_desc_ptr->node_cnt + 
+					   cpus_per_bp - 1) / cpus_per_bp;
+	}
+#endif
+
 	if (resv_desc_ptr->node_list) {
 		resv_desc_ptr->flags |= RESERVE_FLAG_SPEC_NODES;
 		if (strcasecmp(resv_desc_ptr->node_list, "ALL") == 0) {
@@ -1572,6 +1600,17 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 		resv_ptr->node_cnt = bit_set_count(resv_ptr->node_bitmap);
 	}
 	if (resv_desc_ptr->node_cnt != NO_VAL) {
+#ifdef HAVE_BG
+		if (!cpus_per_bp)
+			select_g_alter_node_cnt(SELECT_GET_BP_CPU_CNT,
+						&cpus_per_bp);
+		if (cpus_per_bp) {
+			/* Convert c-node count to midplane count */
+			resv_desc_ptr->node_cnt = (resv_desc_ptr->node_cnt + 
+						   cpus_per_bp - 1) /
+						   cpus_per_bp;
+		}
+#endif
 		rc = _resize_resv(resv_ptr, resv_desc_ptr->node_cnt);
 		if (rc) {
 			error_code = rc;
@@ -1748,12 +1787,12 @@ extern void show_resv(char **buffer_ptr, int *buffer_size, uid_t uid)
 		if ((slurmctld_conf.private_data & PRIVATE_DATA_RESERVATIONS)
 		    && !validate_slurm_user(uid)) {
 			int i = 0;
-			for(i=0; i<resv_ptr->user_cnt; i++) {
-				if(resv_ptr->user_list[i] == uid)
+			for (i=0; i<resv_ptr->user_cnt; i++) {
+				if (resv_ptr->user_list[i] == uid)
 					break;
 			}
 
-			if(i >= resv_ptr->user_cnt)
+			if (i >= resv_ptr->user_cnt)
 				continue;
 		}
 
