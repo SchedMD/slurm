@@ -51,6 +51,9 @@ documents those changes that are of interest to users and admins.
     from Hongjia Cao, NUDT.
  -- Fix issues with sview dealing with older versions of sview and saving
     defaults.
+ -- Remove references to --mincores, --minsockets, and --minthreads from the
+    salloc, sbatch and srun man pages. These options are defunct, Patch from
+    Rod Schultz, Bull.
 
 * Changes in SLURM 2.2.0.rc1
 ============================
