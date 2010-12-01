@@ -1340,7 +1340,7 @@ extern int boot_block(bg_record_t *bg_record)
 				 "This usually means hardware is allocated "
 				 "by another block (maybe outside of SLURM).",
 				 bg_record->bg_block_id);
-			drain_as_needed(bg_record, reason);
+			requeue_and_error(bg_record, reason);
 			bg_record->boot_state = 0;
 			bg_record->boot_count = 0;
 		}

@@ -533,9 +533,11 @@ extern int update_block_list()
 					      "for user %s",
 					      bg_record->bg_block_id,
 					      bg_record->target_name);
+
 					slurm_mutex_unlock(&block_state_mutex);
-					drain_as_needed(bg_record, reason);
+					requeue_and_error(bg_record, reason);
 					slurm_mutex_lock(&block_state_mutex);
+
 					bg_record->boot_state = 0;
 					bg_record->boot_count = 0;
 					if(remove_from_bg_list(
@@ -546,8 +548,7 @@ extern int update_block_list()
 							bg_record->cpu_cnt;
 					}
 					remove_from_bg_list(
-						bg_lists->booted,
-						bg_record);
+						bg_lists->booted, bg_record);
 				}
 				break;
 			case RM_PARTITION_READY:
@@ -555,13 +556,13 @@ extern int update_block_list()
 				      bg_record->bg_block_id);
 				bg_record->boot_state = 0;
 				bg_record->boot_count = 0;
-				if(bg_record->job_ptr) {
+				if (bg_record->job_ptr) {
 					bg_record->job_ptr->job_state &=
 						(~JOB_CONFIGURING);
 					last_job_update = time(NULL);
 				}
 
-				if(set_block_user(bg_record) == SLURM_ERROR) {
+				if (set_block_user(bg_record) == SLURM_ERROR) {
 					freeit = xmalloc(
 						sizeof(kill_job_struct_t));
 					freeit->jobid = bg_record->job_running;
