@@ -132,7 +132,7 @@ int    retry_step_cnt = 0;
 bool srun_max_timer = false;
 bool srun_shutdown  = false;
 int sig_array[] = {
-	SIGINT,  SIGQUIT, SIGCONT, SIGTERM, SIGCONT,
+	SIGINT,  SIGQUIT, SIGCONT, SIGTERM,
 	SIGALRM, SIGUSR1, SIGUSR2, SIGPIPE, 0 };
 
 /*
@@ -550,7 +550,7 @@ cleanup:
 
 	if (signal_thread) {
 		srun_shutdown = true;
-		pthread_kill(signal_thread, SIGINT); //CONT
+		pthread_kill(signal_thread, SIGINT);
 		pthread_join(signal_thread,  NULL);
 	}
 	_run_srun_epilog(job);
