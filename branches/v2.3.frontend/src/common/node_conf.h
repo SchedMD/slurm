@@ -220,6 +220,14 @@ extern struct node_record *find_node_record (char *name);
  */
 extern int init_node_conf (void);
 
+/*
+ * list_find_front_end - find an entry in the front_end list, see list.h for
+ *	documentation
+ * IN key - is feature name or NULL for all features
+ * RET 1 if found, 0 otherwise
+ */
+extern int list_find_front_end (void *front_end_entry, void *key);
+
 /* node_fini2 - free memory associated with node records (except bitmaps) */
 extern void node_fini2 (void);
 

@@ -542,9 +542,9 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 
 #ifdef HAVE_FRONT_END
 		if (!s_p_get_string(&n->hostnames, "NodeHostname", tbl))
-			n->hostnames = xstrdup("FRONT_END");
+			xfree(n->hostnames);
 		if (!s_p_get_string(&n->addresses, "NodeAddr", tbl))
-			n->addresses = xstrdup("FRONT_END");
+			xfree(n->addresses);
 		else {
 			verbose("Use FrontendNode/FrondendAddr configuration "
 				"options instead of NodeAddr");
@@ -1056,10 +1056,14 @@ static void _init_name_hashtbl()
 
 static int _get_hash_idx(const char *s)
 {
-	int i;
+	int i = 0;
 
-	i = 0;
-	while (*s) i += (int)*s++;
+	if (s) {
+		while (*s) {
+			i += (int)*s++;
+		}
+	}
+
 	return i % NAME_HASH_LEN;
 }
 
@@ -1078,8 +1082,8 @@ static void _push_to_hashtbls(char *alias, char *hostname,
 	/* Ensure only one slurmd configured on each host */
 	p = host_to_node_hashtbl[hostname_idx];
 	while (p) {
-		if (strcmp(p->hostname, hostname)==0) {
-			error("Duplicated NodeHostname %s in the config file",
+		if (strcmp(p->hostname, hostname) == 0) {
+			error("Duplicated NodeHostName %s in the config file",
 			      hostname);
 			return;
 		}
@@ -1146,7 +1150,7 @@ static int _register_conf_node_aliases(slurm_conf_node_t *node_ptr)
 	char *address = NULL;
 	int error_code = SLURM_SUCCESS;
 
-	if (node_ptr->nodenames == NULL || *node_ptr->nodenames == '\0')
+	if ((node_ptr->nodenames == NULL) || (node_ptr->nodenames[0] == '\0'))
 		return -1;
 
 	if ((alias_list = hostlist_create(node_ptr->nodenames)) == NULL) {
@@ -1175,9 +1179,9 @@ static int _register_conf_node_aliases(slurm_conf_node_t *node_ptr)
 
 	/* some sanity checks */
 #ifdef HAVE_FRONT_END
-	if ((hostlist_count(hostname_list) != 1) ||
-	    (hostlist_count(address_list) != 1)) {
-		error("Only one NodeHostname and NodeAddr allowed "
+	if ((hostlist_count(hostname_list) > 1) ||
+	    (hostlist_count(address_list)  > 1)) {
+		error("Only one NodeHostName and NodeAddr allowed "
 		      "in FRONT_END mode");
 		error("Use FrontendNode/FrondendAddr configuration options");
 		goto cleanup;
@@ -1238,15 +1242,14 @@ static void _init_slurmd_nodehash(void)
 	else
 		nodehash_initialized = true;
 
-	if(!conf_initialized) {
+	if (!conf_initialized) {
 		_init_slurm_conf(NULL);
 		conf_initialized = true;
 	}
 
 	count = slurm_conf_nodename_array(&ptr_array);
-	if (count == 0) {
+	if (count == 0)
 		return;
-	}
 
 	for (i = 0; i < count; i++) {
 		_register_conf_node_aliases(ptr_array[i]);
@@ -1297,6 +1300,30 @@ extern char *slurm_conf_get_hostname(const char *node_name)
  */
 extern char *slurm_conf_get_nodename(const char *node_hostname)
 {
+	names_ll_t *p;
+	char *alias = NULL;
+#ifdef HAVE_FRONT_END
+	slurm_conf_frontend_t *front_end_ptr = NULL;
+
+	slurm_conf_lock();
+	_init_slurmd_nodehash();
+
+	if (!front_end_list) {
+		error("front_end_list is NULL");
+	} else {
+		front_end_ptr = list_find_first(front_end_list,
+						list_find_front_end,
+						(char *) node_hostname);
+	}
+	if (front_end_ptr) {
+		p = host_to_node_hashtbl[0];
+		if (p)
+			alias = xstrdup(p->alias);
+	}
+	slurm_conf_unlock();
+
+	return alias;
+#else
 	int idx;
 	names_ll_t *p;
 
@@ -1307,15 +1334,15 @@ extern char *slurm_conf_get_nodename(const char *node_hostname)
 	p = host_to_node_hashtbl[idx];
 	while (p) {
 		if (strcmp(p->hostname, node_hostname) == 0) {
-			char *alias = xstrdup(p->alias);
-			slurm_conf_unlock();
-			return alias;
+			alias = xstrdup(p->alias);
+			break
 		}
 		p = p->next_hostname;
 	}
 	slurm_conf_unlock();
 
-	return NULL;
+	return alias
+#endif
 }
 
 /*

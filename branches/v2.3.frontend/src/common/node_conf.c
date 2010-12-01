@@ -99,8 +99,6 @@ static void	_list_delete_config (void *config_entry);
 static void	_list_delete_feature (void *feature_entry);
 static int	_list_find_config (void *config_entry, void *key);
 static int	_list_find_feature (void *feature_entry, void *key);
-static int	_list_find_front_end (void *front_end_entry, void *key);
-
 
 
 static void _add_config_feature(char *feature, bitstr_t *node_bitmap)
@@ -180,9 +178,9 @@ static int _build_single_nodeline_info(slurm_conf_node_t *node_ptr,
 
 	/* some sanity checks */
 #ifdef HAVE_FRONT_END
-	if ((hostlist_count(hostname_list) != 1) ||
-	    (hostlist_count(address_list)  != 1)) {
-		error("Only one hostname and address allowed "
+	if ((hostlist_count(hostname_list) > 1) ||
+	    (hostlist_count(address_list)  > 1)) {
+		error("Only one NodeHostName and NodeAddr are allowed "
 		      "in FRONT_END mode");
 		goto cleanup;
 	}
@@ -253,7 +251,7 @@ static int _delete_config_record (void)
 	last_node_update = time (NULL);
 	(void) list_delete_all (config_list,    &_list_find_config,    NULL);
 	(void) list_delete_all (feature_list,   &_list_find_feature,   NULL);
-	(void) list_delete_all (front_end_list, &_list_find_front_end, NULL);
+	(void) list_delete_all (front_end_list, &list_find_front_end, NULL);
 	return SLURM_SUCCESS;
 }
 
@@ -467,16 +465,21 @@ static int _list_find_feature (void *feature_entry, void *key)
 }
 
 /*
- * _list_find_front_end - find an entry in the front_end list, see list.h for
+ * list_find_front_end - find an entry in the front_end list, see list.h for
  *	documentation
  * IN key - is feature name or NULL for all features
  * RET 1 if found, 0 otherwise
  */
-static int _list_find_front_end (void *front_end_entry, void *key)
+extern int list_find_front_end (void *front_end_entry, void *key)
 {
+	slurm_conf_frontend_t *front_end_ptr;
+
 	if (key == NULL)
 		return 1;
 
+	front_end_ptr = (slurm_conf_frontend_t *) front_end_entry;
+	if (strcmp(front_end_ptr->frontends, (char *) key) == 0)
+		return 1;
 	return 0;
 }
 
@@ -508,7 +511,7 @@ extern int build_all_frontend_info (void)
 		fe_single = xmalloc(sizeof(slurm_conf_frontend_t));
 		if (list_append(front_end_list, fe_single) == NULL)
 			fatal("list_append: malloc failure");
-		if (strcmp(node_record_table_ptr->comm_name, "FRONT_END")) {
+		if (node_record_table_ptr->comm_name) {
 			fe_single->frontends = xstrdup(node_record_table_ptr->
 						       comm_name);
 			fe_single->addresses = xstrdup(node_record_table_ptr->
