@@ -638,47 +638,26 @@ extern int update_block_user(bg_record_t *bg_record, int set)
 	return 0;
 }
 
-/* If any nodes in node_list are drained, draining, or down,
- * put block in an error state and drain the nodes which aren't
- * already in the bad state.
+/* Try to requeue job running on block and put block in an error state.
  * block_state_mutex must be unlocked before calling this.
  */
-extern void drain_as_needed(bg_record_t *bg_record, char *reason)
+extern void requeue_and_error(bg_record_t *bg_record, char *reason)
 {
-	slurm_mutex_lock(&block_state_mutex);
-	if(!block_ptr_exist_in_list(bg_lists->main, bg_record)) {
-		slurm_mutex_unlock(&block_state_mutex);
-		error("drain_as_needed: block disappeared");
-		return;
-	}
+
+	int rc;
 
 	if(bg_record->job_running > NO_JOB_RUNNING)
 		bg_requeue_job(bg_record->job_running, 0);
 
- 	if(bg_record->cpu_cnt >= bg_conf->cpus_per_bp) {
-		/* at least one base partition */
-		hostlist_t hl = hostlist_create(bg_record->nodes);
-		char *host = NULL;
-
-		if (!hl) {
-			slurm_drain_nodes(bg_record->nodes, reason,
-					  slurm_get_slurm_user_id());
-			return;
-		}
-		while ((host = hostlist_shift(hl))) {
-			if (!node_already_down(host))
-				slurm_drain_nodes(host, reason,
-						  slurm_get_slurm_user_id());
-			free(host);
-		}
-		hostlist_destroy(hl);
-	} else
-		slurm_drain_nodes(bg_record->nodes, reason,
-				  slurm_get_slurm_user_id());
-
+	slurm_mutex_lock(&block_state_mutex);
+	rc = block_ptr_exist_in_list(bg_lists->main, bg_record);
 	slurm_mutex_unlock(&block_state_mutex);
 
-	put_block_in_error_state(bg_record, BLOCK_ERROR_STATE, reason);
+	if (rc)
+		put_block_in_error_state(bg_record, BLOCK_ERROR_STATE, reason);
+	else
+		error("requeue_and_error: block disappeared");
+
 	return;
 }
 
