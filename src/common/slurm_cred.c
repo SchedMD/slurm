@@ -1931,7 +1931,7 @@ _clear_expired_job_states(slurm_cred_ctx_t ctx)
 		} else {
 			t3[0] = '\0';
 		}
-		debug3("job state %u: ctime:%s%s%s",
+		debug3("state for jobid %u: ctime:%s%s%s",
 		       j->jobid, timestr(&j->ctime, t1, 64), t2, t3);
 
 		if (j->revoked && (now > j->expiration)) {
