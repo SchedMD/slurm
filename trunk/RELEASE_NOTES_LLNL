@@ -1,11 +1,11 @@
 LLNL CHAOS-SPECIFIC RELEASE NOTES FOR SLURM VERSION 2.2
-14 October 2010
+1 December 2010
 
 This lists only the most significant changes from SLURM v2.1 to v2.2
-with respect to Chaos systems. See the file RELEASE_NOTES for other
-changes.
+with respect to Chaos systems. See the file RELEASE_NOTES for a more
+complete description of changes.
 
-Mostly for  system administrators:
+Mostly for system administrators:
 
 * SLURM version 2.2 is able to read version 2.1 state files and preserve all
   running and pending state. SLURM version 2.1 is *not* able to use state save
@@ -21,16 +21,8 @@ Mostly for  system administrators:
   user jobs and reservations.  Previously, one had to be root to invoke
   "scontrol update JobId" for example.  In addition, Administrators have the
   ability to view/modify node and partition info without having to become root.
-  For moredetails, see AUTHORIZATION section of the man pages for the
+  For more details, see AUTHORIZATION section of the man pages for the
   following commands: scontrol, scancel and sbcast.
-
-* Support has been added for the allocation of generic resources (GRES). A
-  new configuration parameter, GresPlugins, has been added along with a node-
-  specific parameter, Gres. There is also a gres.conf file to be configured on
-  each node. For more information, see the web page
-  https://computing.llnl.gov/linux/slurm/gang_scheduling.html
-  Support for enforcement of these allocations using Linux CGroup will be
-  provided in a later release.
 
 Mostly for users:
 
@@ -55,6 +47,9 @@ Mostly for users:
 
 * Added support for a default account and wckey per cluster within accounting.
 
-* SLURM commands (squeue, sinfo, sview, etc...) can now operate between
+* SLURM commands (squeue, sinfo, sbatch, etc...) can now operate between
   clusters. Jobs can also be submitted with sbatch to other cluster(s) with the
-  job routed to the one cluster expected to initiated the job first.
+  job routed to the one cluster expected to initiated the job first. This
+  functionality relies upon the SlurmDBD (SLURM DataBase Daemon) to provide
+  communication information (address and port) for a command to locate the
+  SLURM control daemon (slurmctld) on other clusters.

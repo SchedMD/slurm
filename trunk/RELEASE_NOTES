@@ -1,5 +1,5 @@
 RELEASE NOTES FOR SLURM VERSION 2.2
-14 October 2010 (through SLURM 2.2.0-pre12)
+1 December 2010
 
 
 IMPORTANT NOTE:
@@ -182,7 +182,7 @@ OTHER CHANGES
 =============
 * Added support for a default account and wckey per cluster within accounting.
 
-* Added support for serveral new trigger types: SlurmDBD failure/restart,
+* Added support for several new trigger types: SlurmDBD failure/restart,
   Database failure/restart, Slurmctld failure/restart.
 
 * Support has been added for TotalView to attach to a subset of launched tasks
