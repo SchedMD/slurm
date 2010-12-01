@@ -41,10 +41,11 @@ documents those changes that are of interest to users and admins.
     not of that type.
  -- Make sure jobacct_gather plugin is not shutdown before messing with the
     proccess list.
- -- Modify signal handling in srun and salloc commands to deadlock if the
+ -- Modify signal handling in srun and salloc commands to avoid deadlock if the
     malloc function is interupted and called again. The malloc function is
     thread safe, but not reentrant, which is a problem when signal handling if
-    the malloc function itself has a lock.
+    the malloc function itself has a lock. Problem fixed by moving signal
+    handling in those commands to a new pthread.
  -- In srun set job abort flag on completion to handle the case when a user
     cancels a job while the node is not responding but slurmctld has not yet
     the node down. Patch from Hongjia Cao, NUDT.
