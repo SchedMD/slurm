@@ -1032,7 +1032,7 @@ int init ( void )
 
 	xfree(temp);
 
-	verbose("%s loaded", plugin_name);
+	debug("%s loaded", plugin_name);
 	return SLURM_SUCCESS;
 }
 
