@@ -2,7 +2,8 @@
  *  association_functions.c - functions dealing with associations in the
  *                        accounting system.
  *****************************************************************************
- *  Copyright (C) 2002-2008 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -238,7 +239,7 @@ extern int sacctmgr_set_association_cond(slurmdb_association_cond_t *assoc_cond,
 	xassert(assoc_cond);
 	xassert(type);
 
-	if (!strncasecmp (type, "Account", MAX(command_len, 2))
+	if (!strncasecmp (type, "Accounts", MAX(command_len, 2))
 		   || !strncasecmp (type, "Acct", MAX(command_len, 4))) {
 		if (!assoc_cond->acct_list)
 			assoc_cond->acct_list = list_create(slurm_destroy_char);
@@ -385,13 +386,13 @@ extern int sacctmgr_set_association_cond(slurmdb_association_cond_t *assoc_cond,
 				list_create(slurm_destroy_char);
 		if (slurm_addto_char_list(assoc_cond->max_wall_pj_list, value))
 			set = 1;
-	} else if (!strncasecmp (type, "Partition", MAX(command_len, 3))) {
+	} else if (!strncasecmp (type, "Partitions", MAX(command_len, 3))) {
 		if (!assoc_cond->partition_list)
 			assoc_cond->partition_list =
 				list_create(slurm_destroy_char);
 		if (slurm_addto_char_list(assoc_cond->partition_list, value))
 			set = 1;
-	} else if (!strncasecmp(type, "Parent", MAX(command_len, 4))) {
+	} else if (!strncasecmp(type, "Parents", MAX(command_len, 4))) {
 		if (!assoc_cond->parent_acct_list)
 			assoc_cond->parent_acct_list =
 				list_create(slurm_destroy_char);
