@@ -794,8 +794,6 @@ int read_bg_blocks(List curr_block_list)
 			continue;
 		} else if(bg_record->state == RM_PARTITION_CONFIGURING)
 			bg_record->boot_state = 1;
-		else
-			bg_record->boot_state = 0;
 
 		debug3("Block %s is in state %d",
 		       bg_record->bg_block_id,
@@ -837,20 +835,18 @@ int read_bg_blocks(List curr_block_list)
 					      bg_err_str(rc));
 					continue;
 				}
-				if(!user_name) {
+				if (!user_name) {
 					error("No user name was "
 					      "returned from database");
 					continue;
 				}
 				bg_record->user_name = xstrdup(user_name);
 
-				if(!bg_record->boot_state) {
-
+				if (!bg_record->boot_state)
 					bg_record->target_name =
 						xstrdup(bg_conf->
 							slurm_user_name);
-
-				} else
+				else
 					bg_record->target_name =
 						xstrdup(user_name);
 
@@ -1176,7 +1172,6 @@ extern int load_state_file(List curr_block_list, char *dir_name)
 		bg_record->node_use = block_info->node_use;
 #endif
 		bg_record->conn_type = block_info->conn_type;
-		bg_record->boot_state = 0;
 
 		process_nodes(bg_record, true);
 
