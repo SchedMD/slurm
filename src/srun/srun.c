@@ -131,8 +131,8 @@ int    retry_step_cnt = 0;
 
 bool srun_max_timer = false;
 bool srun_shutdown  = false;
-int sig_array[] = {
-	SIGINT,  SIGQUIT, SIGCONT, SIGTERM,
+static int sig_array[] = {
+	SIGINT,  SIGQUIT, SIGCONT, SIGTERM, SIGHUP,
 	SIGALRM, SIGUSR1, SIGUSR2, SIGPIPE, 0 };
 
 /*
@@ -462,13 +462,15 @@ int srun(int ac, char **av)
 	launch_params.spank_job_env     = opt.spank_job_env;
 	launch_params.spank_job_env_size = opt.spank_job_env_size;
 	/* job structure should now be filled in */
-	slurm_attr_init(&thread_attr);
-	while (pthread_create(&signal_thread, &thread_attr, _srun_signal_mgr,
-			      NULL)) {
-		fatal("pthread_create error %m");
-		sleep(1);
+	if (!signal_thread) {
+		slurm_attr_init(&thread_attr);
+		while (pthread_create(&signal_thread, &thread_attr,
+				      _srun_signal_mgr, NULL)) {
+			fatal("pthread_create error %m");
+			sleep(1);
+		}
+		slurm_attr_destroy(&thread_attr);
 	}
-	slurm_attr_destroy(&thread_attr);
 
 	_set_stdio_fds(job, &launch_params.local_fds);
 

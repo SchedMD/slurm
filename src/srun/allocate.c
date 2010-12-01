@@ -87,16 +87,18 @@ struct pollfd global_fds[1];
 
 extern char **environ;
 
-static bool exit_flag = false;
 static uint32_t pending_job_id = 0;
+
+static int sig_array[] = {
+	SIGHUP,  SIGINT,  SIGQUIT, SIGPIPE,
+	SIGTERM, SIGUSR1, SIGUSR2, 0 };
 
 /*
  * Static Prototypes
  */
-static void _set_pending_job_id(uint32_t job_id);
-static void _exit_on_signal(int signo);
-static void _signal_while_allocating(int signo);
 static void  _intr_handler(int signo);
+static void _set_pending_job_id(uint32_t job_id);
+static void _signal_while_allocating(int signo);
 
 #ifdef HAVE_BG
 static int _wait_bluegene_block_ready(
@@ -125,11 +127,6 @@ static void _signal_while_allocating(int signo)
 	if (pending_job_id != 0) {
 		slurm_complete_job(pending_job_id, NO_VAL);
 	}
-}
-
-static void _exit_on_signal(int signo)
-{
-	exit_flag = true;
 }
 
 /* This typically signifies the job was cancelled by scancel */
@@ -418,6 +415,7 @@ allocate_nodes(void)
 	resource_allocation_response_msg_t *resp = NULL;
 	job_desc_msg_t *j = job_desc_msg_create_from_opts();
 	slurm_allocation_callbacks_t callbacks;
+	int i;
 
 	if (!j)
 		return NULL;
@@ -440,13 +438,9 @@ allocate_nodes(void)
 	/* create message thread to handle pings and such from slurmctld */
 	msg_thr = slurm_allocation_msg_thr_create(&j->other_port, &callbacks);
 
-	xsignal(SIGHUP, _signal_while_allocating);
-	xsignal(SIGINT, _signal_while_allocating);
-	xsignal(SIGQUIT, _signal_while_allocating);
-	xsignal(SIGPIPE, _signal_while_allocating);
-	xsignal(SIGTERM, _signal_while_allocating);
-	xsignal(SIGUSR1, _signal_while_allocating);
-	xsignal(SIGUSR2, _signal_while_allocating);
+	xsignal_unblock(sig_array);
+	for (i = 0; sig_array[i]; i++)
+		xsignal(sig_array[i], _signal_while_allocating);
 
 	while (!resp) {
 		resp = slurm_allocate_resources_blocking(j, opt.immediate,
@@ -491,13 +485,7 @@ allocate_nodes(void)
 		goto relinquish;
 	}
 
-	xsignal(SIGHUP,  _exit_on_signal);
-	xsignal(SIGINT,  ignore_signal);
-	xsignal(SIGQUIT, ignore_signal);
-	xsignal(SIGPIPE, ignore_signal);
-	xsignal(SIGTERM, ignore_signal);
-	xsignal(SIGUSR1, ignore_signal);
-	xsignal(SIGUSR2, ignore_signal);
+	xsignal_block(sig_array);
 
 	job_desc_msg_destroy(j);
 
@@ -506,7 +494,7 @@ allocate_nodes(void)
 relinquish:
 
 	slurm_free_resource_allocation_response_msg(resp);
-	if(!destroy_job)
+	if (!destroy_job)
 		slurm_complete_job(resp->job_id, 1);
 	exit(error_exit);
 	return NULL;

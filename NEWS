@@ -7,6 +7,8 @@ documents those changes that are of interest to users and admins.
     in addition to "User"). Patch from Don Albert, BULL.
  -- BLUEGENE - make it so reset of boot counter happens only on state change
     and not when a new job comes along.
+ -- Modify srun and salloc signal handling so they can be interrupted while
+    waiting for an allocation. This was broken in version 2.2.0.rc2.
 
 * Changes in SLURM 2.2.0.rc2
 ============================

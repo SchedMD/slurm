@@ -150,7 +150,7 @@ int main(int argc, char *argv[])
 	_set_exit_code();
 
 	/* This must happen before we spawn any threads
-	 * which are not designed to handle them */
+	 * which are not designed to handle the signal */
 	if (xsignal_block(sig_array) < 0)
 		error("Unable to block signals");
 
@@ -227,9 +227,10 @@ int main(int argc, char *argv[])
 	msg_thr = slurm_allocation_msg_thr_create(&desc.other_port,
 						  &callbacks);
 
+	xsignal_unblock(sig_array);
 	for (i = 0; sig_array[i]; i++)
 		xsignal(sig_array[i], _signal_while_allocating);
-	
+
 	before = time(NULL);
 	while ((alloc = slurm_allocate_resources_blocking(&desc, opt.immediate,
 					_pending_callback)) == NULL) {
@@ -242,6 +243,7 @@ int main(int argc, char *argv[])
 			debug("%s", msg);
 		sleep (++retries);
 	}
+	xsignal_block(sig_array);
 
 	/* become the user after the allocation has been requested. */
 	if (opt.uid != (uid_t) -1) {
