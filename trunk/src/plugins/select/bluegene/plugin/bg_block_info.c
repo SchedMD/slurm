@@ -553,6 +553,8 @@ extern int update_block_list()
 			case RM_PARTITION_READY:
 				debug("block %s is ready.",
 				      bg_record->bg_block_id);
+				bg_record->boot_state = 0;
+				bg_record->boot_count = 0;
 				if(bg_record->job_ptr) {
 					bg_record->job_ptr->job_state &=
 						(~JOB_CONFIGURING);

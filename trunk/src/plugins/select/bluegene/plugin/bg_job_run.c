@@ -257,8 +257,12 @@ static int _reset_block(bg_record_t *bg_record)
 		}
 
 
-		bg_record->boot_state = 0;
-		bg_record->boot_count = 0;
+		/* Don't reset these (boot_(state/count)), they will be
+		   reset when state changes, and needs to outlast a job
+		   allocation.
+		*/
+		/* bg_record->boot_state = 0; */
+		/* bg_record->boot_count = 0; */
 
 		last_bg_update = time(NULL);
 		/* Only remove from the job_running list if
@@ -855,7 +859,10 @@ static void _start_agent(bg_action_t *bg_action_ptr)
 		return;
 	}
 
-	bg_record->boot_count = 0;
+	/* Don't reset boot_count, it will be reset when state
+	   changes, and needs to outlast a job allocation.
+	*/
+	/* bg_record->boot_count = 0; */
 	xfree(bg_record->target_name);
 	bg_record->target_name =
 		uid_to_string(bg_action_ptr->job_ptr->user_id);
@@ -1361,7 +1368,7 @@ extern int boot_block(bg_record_t *bg_record)
 		bg_record->state = RM_PARTITION_CONFIGURING;
 	debug("Setting bootflag for %s", bg_record->bg_block_id);
 	bg_record->boot_state = 1;
-	//bg_record->boot_count = 0;
+
 	last_bg_update = time(NULL);
 	slurm_mutex_unlock(&block_state_mutex);
 #else

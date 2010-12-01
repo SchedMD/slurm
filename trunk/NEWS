@@ -5,6 +5,8 @@ documents those changes that are of interest to users and admins.
 ============================
  -- Modify sacctmgr command to accept plural versions of options (e.g. "Users"
     in addition to "User"). Patch from Don Albert, BULL.
+ -- BLUEGENE - make it so reset of boot counter happens only on state change
+    and not when a new job comes along.
 
 * Changes in SLURM 2.2.0.rc2
 ============================
