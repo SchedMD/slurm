@@ -3,6 +3,8 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 2.2.0.rc3
 ============================
+ -- Modify sacctmgr command to accept plural versions of options (e.g. "Users"
+    in addition to "User"). Patch from Don Albert, BULL.
 
 * Changes in SLURM 2.2.0.rc2
 ============================

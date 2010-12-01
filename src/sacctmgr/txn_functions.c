@@ -2,8 +2,8 @@
  *  txn_functions.c - functions dealing with transactions in the
  *                        accounting system.
  *****************************************************************************
- *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -142,7 +142,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 					 MAX(command_len, 1))) {
 			txn_cond->time_start = parse_time(argv[i]+end, 1);
 			set = 1;
-		} else if (!strncasecmp (argv[i], "User",
+		} else if (!strncasecmp (argv[i], "Users",
 					 MAX(command_len, 1))) {
 			if(!txn_cond->user_list)
 				txn_cond->user_list =

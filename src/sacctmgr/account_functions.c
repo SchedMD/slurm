@@ -2,7 +2,8 @@
  *  account_functions.c - functions dealing with accounts in the
  *                        accounting system.
  *****************************************************************************
- *  Copyright (C) 2002-2008 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -194,7 +195,7 @@ static int _set_rec(int *start, int argc, char *argv[],
 					       MAX(command_len, 3))) {
 			continue;
 		} else if(!end
-			  || !strncasecmp(argv[i], "Account",
+			  || !strncasecmp(argv[i], "Accounts",
 					   MAX(command_len, 1))
 			  || !strncasecmp(argv[i], "Names",
 					   MAX(command_len, 1))
@@ -208,7 +209,7 @@ static int _set_rec(int *start, int argc, char *argv[],
 					" Can't modify the name "
 					"of an account\n");
 			}
-		} else if (!strncasecmp(argv[i], "Cluster",
+		} else if (!strncasecmp(argv[i], "Clusters",
 					 MAX(command_len, 1))) {
 			if(cluster_list)
 				slurm_addto_char_list(cluster_list,
