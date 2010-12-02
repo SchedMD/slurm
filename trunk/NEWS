@@ -9,6 +9,9 @@ documents those changes that are of interest to users and admins.
     and not when a new job comes along.
  -- Modify srun and salloc signal handling so they can be interrupted while
     waiting for an allocation. This was broken in version 2.2.0.rc2.
+ -- Fix NULL pointer reference in sview. Patch from Gerrit Renker, CSCS.
+ -- Fix file descriptor leak in slurmstepd on spank_task_post_fork() failure.
+    Patch from Gerrit Renker, CSCS.
 
 * Changes in SLURM 2.2.0.rc2
 ============================

@@ -1294,6 +1294,7 @@ extern gboolean left_button_pressed(GtkTreeView *tree_view,
 	GtkTreeModel *model = gtk_tree_view_get_model(tree_view);
 	display_data_t *display_data = signal_params->display_data;
 	static gpointer *last_user_data = NULL;
+
 	/* These next 2 functions are there to keep the keyboard in
 	   sync */
 	if(!((event->state & GDK_CONTROL_MASK)
@@ -1302,8 +1303,11 @@ extern gboolean left_button_pressed(GtkTreeView *tree_view,
 
 	gtk_widget_grab_focus(GTK_WIDGET(tree_view)); /*give keyboard focus*/
 
-	(display_data->set_menu)(tree_view, *signal_params->button_list,
-				 path, ROW_LEFT_CLICKED);
+	if (signal_params->button_list) {
+		(display_data->set_menu)(tree_view, *signal_params->button_list,
+					 path, ROW_LEFT_CLICKED);
+	} else
+		(display_data->set_menu)(tree_view, NULL, path, FULL_CLICKED);
 
 	/* make sure it was a double click */
 	if (!gtk_tree_model_get_iter(model, &iter, path)) {
