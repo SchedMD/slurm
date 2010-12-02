@@ -1053,7 +1053,7 @@ proc mod_user { cluster account name part wadmin wdacct wdwckey qos fairshare gr
 			send_user "FAILURE: your command didn't return anything\n"
 			incr exit_code 1
 		}
-		-re "Modified account associations" {
+		-re "Modified user associations" {
 			incr matches
 			exp_continue
 		}
