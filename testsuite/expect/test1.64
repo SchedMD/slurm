@@ -56,7 +56,7 @@ expect {
 		send_user "\nSent SIGINT\n"
 		exp_continue
 	}
-	-re "Terminated job" {
+	-re "Job allocation ($number) has been revoked" {
 		incr matches
 		exp_continue
 	}
