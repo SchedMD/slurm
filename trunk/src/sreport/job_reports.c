@@ -578,6 +578,8 @@ extern int job_sizes_grouped_by_top_acct(int argc, char *argv[])
 
 	int i=0;
 
+	uint64_t count1, count2;
+
 	ListIterator itr = NULL;
 	ListIterator itr2 = NULL;
 	ListIterator cluster_itr = NULL;
@@ -724,9 +726,15 @@ extern int job_sizes_grouped_by_top_acct(int argc, char *argv[])
 
 			temp_format = time_format;
 			time_format = SLURMDB_REPORT_TIME_PERCENT;
+			if (!print_job_count) {
+				count1 = acct_group->cpu_secs;
+				count2 = cluster_group->cpu_secs;
+			} else {
+				count1 = acct_group->count;
+				count2 = cluster_group->count;
+			}
 			total_field.print_routine(&total_field,
-						  acct_group->cpu_secs,
-						  cluster_group->cpu_secs, 1);
+						  count1, count2, 1);
 			time_format = temp_format;
 			printf("\n");
 		}
@@ -737,6 +745,7 @@ extern int job_sizes_grouped_by_top_acct(int argc, char *argv[])
 //	time_format = temp_time_format;
 
 end_it:
+	xfree(total_field.name);
 	if(print_job_count)
 		print_job_count = 0;
 
@@ -778,6 +787,8 @@ extern int job_sizes_grouped_by_wckey(int argc, char *argv[])
 	int rc = SLURM_SUCCESS;
 	slurmdb_job_cond_t *job_cond = xmalloc(sizeof(slurmdb_job_cond_t));
 	int i=0;
+
+	uint64_t count1, count2;
 
 	ListIterator itr = NULL;
 	ListIterator itr2 = NULL;
@@ -925,9 +936,15 @@ extern int job_sizes_grouped_by_wckey(int argc, char *argv[])
 
 			temp_format = time_format;
 			time_format = SLURMDB_REPORT_TIME_PERCENT;
+			if (!print_job_count) {
+				count1 = acct_group->cpu_secs;
+				count2 = cluster_group->cpu_secs;
+			} else {
+				count1 = acct_group->count;
+				count2 = cluster_group->count;
+			}
 			total_field.print_routine(&total_field,
-						  acct_group->cpu_secs,
-						  cluster_group->cpu_secs, 1);
+						  count1, count2, 1);
 			time_format = temp_format;
 			printf("\n");
 		}
@@ -938,6 +955,7 @@ extern int job_sizes_grouped_by_wckey(int argc, char *argv[])
 //	time_format = temp_time_format;
 
 end_it:
+	xfree(total_field.name);
 	if(print_job_count)
 		print_job_count = 0;
 
@@ -954,6 +972,217 @@ end_it:
 	if(wckey_list) {
 		list_destroy(wckey_list);
 		wckey_list = NULL;
+	}
+
+	if(slurmdb_report_cluster_grouping_list) {
+		list_destroy(slurmdb_report_cluster_grouping_list);
+		slurmdb_report_cluster_grouping_list = NULL;
+	}
+
+	if(print_fields_list) {
+		list_destroy(print_fields_list);
+		print_fields_list = NULL;
+	}
+
+	if(grouping_print_fields_list) {
+		list_destroy(grouping_print_fields_list);
+		grouping_print_fields_list = NULL;
+	}
+
+	return rc;
+}
+
+extern int job_sizes_grouped_by_top_acct_and_wckey(int argc, char *argv[])
+{
+	int rc = SLURM_SUCCESS;
+	slurmdb_job_cond_t *job_cond = xmalloc(sizeof(slurmdb_job_cond_t));
+
+	int i=0;
+
+	uint64_t count1, count2;
+
+	ListIterator itr = NULL;
+	ListIterator itr2 = NULL;
+	ListIterator cluster_itr = NULL;
+	ListIterator local_itr = NULL;
+	ListIterator acct_itr = NULL;
+
+	slurmdb_report_cluster_grouping_t *cluster_group = NULL;
+	slurmdb_report_acct_grouping_t *acct_group = NULL;
+	slurmdb_report_job_grouping_t *job_group = NULL;
+
+	print_field_t *field = NULL;
+	print_field_t total_field;
+	uint32_t total_time = 0;
+	slurmdb_report_time_format_t temp_format;
+
+	List slurmdb_report_cluster_grouping_list = NULL;
+	List assoc_list = NULL;
+
+	List format_list = list_create(slurm_destroy_char);
+	List grouping_list = list_create(slurm_destroy_char);
+
+	List header_list = NULL;
+
+//	slurmdb_report_time_format_t temp_time_format = time_format;
+
+	print_fields_list = list_create(destroy_print_field);
+
+	_set_cond(&i, argc, argv, job_cond, format_list, grouping_list);
+
+	if(!list_count(format_list))
+		slurm_addto_char_list(format_list, "Cl,a%-20");
+
+	if(!individual_grouping && !list_count(grouping_list))
+		slurm_addto_char_list(grouping_list, "50,250,500,1000");
+
+	_setup_print_fields_list(format_list);
+	list_destroy(format_list);
+
+	if(!(slurmdb_report_cluster_grouping_list =
+	     slurmdb_report_job_sizes_grouped_by_top_account_then_wckey(
+		     db_conn, job_cond, grouping_list, flat_view))) {
+		exit_code = 1;
+		goto end_it;
+	}
+
+	_setup_grouping_print_fields_list(grouping_list);
+
+	if(print_fields_have_header) {
+		char start_char[20];
+		char end_char[20];
+		time_t my_start = job_cond->usage_start;
+		time_t my_end = job_cond->usage_end-1;
+
+		slurm_make_time_str(&my_start, start_char, sizeof(start_char));
+		slurm_make_time_str(&my_end, end_char, sizeof(end_char));
+		printf("----------------------------------------"
+		       "----------------------------------------\n");
+		printf("Job Sizes %s - %s (%d secs)\n",
+		       start_char, end_char,
+		       (int)(job_cond->usage_end - job_cond->usage_start));
+		if(print_job_count)
+			printf("Units are in number of jobs ran\n");
+		else
+			printf("Time reported in %s\n", time_format_string);
+		printf("----------------------------------------"
+		       "----------------------------------------\n");
+	}
+	total_time = job_cond->usage_end - job_cond->usage_start;
+
+	header_list = list_create(NULL);
+	list_append_list(header_list, print_fields_list);
+	list_append_list(header_list, grouping_print_fields_list);
+
+	memset(&total_field, 0, sizeof(print_field_t));
+	total_field.type = PRINT_JOB_SIZE;
+	total_field.name = xstrdup("% of cluster");
+	total_field.len = 12;
+	total_field.print_routine = slurmdb_report_print_time;
+	list_append(header_list, &total_field);
+
+	print_fields_header(header_list);
+	list_destroy(header_list);
+
+//	time_format = SLURMDB_REPORT_TIME_PERCENT;
+
+	itr = list_iterator_create(print_fields_list);
+	itr2 = list_iterator_create(grouping_print_fields_list);
+	list_sort(slurmdb_report_cluster_grouping_list,
+		  (ListCmpF)_sort_cluster_grouping_dec);
+	cluster_itr =
+		list_iterator_create(slurmdb_report_cluster_grouping_list);
+	while((cluster_group = list_next(cluster_itr))) {
+		list_sort(cluster_group->acct_list,
+			  (ListCmpF)_sort_acct_grouping_dec);
+		acct_itr = list_iterator_create(cluster_group->acct_list);
+		while((acct_group = list_next(acct_itr))) {
+
+			while((field = list_next(itr))) {
+				switch(field->type) {
+				case PRINT_JOB_CLUSTER:
+					field->print_routine(
+						field,
+						cluster_group->cluster, 0);
+					break;
+				case PRINT_JOB_ACCOUNT:
+					field->print_routine(field,
+							     acct_group->acct,
+							     0);
+					break;
+				default:
+					field->print_routine(field,
+							     NULL,
+							     0);
+					break;
+				}
+			}
+			list_iterator_reset(itr);
+			local_itr = list_iterator_create(acct_group->groups);
+			while((job_group = list_next(local_itr))) {
+				field = list_next(itr2);
+				switch(field->type) {
+				case PRINT_JOB_SIZE:
+					field->print_routine(
+						field,
+						job_group->cpu_secs,
+						acct_group->cpu_secs,
+						0);
+					break;
+				case PRINT_JOB_COUNT:
+					field->print_routine(
+						field,
+						job_group->count,
+						0);
+					break;
+				default:
+					field->print_routine(field,
+							     NULL,
+							     0);
+					break;
+				}
+			}
+			list_iterator_reset(itr2);
+			list_iterator_destroy(local_itr);
+
+			temp_format = time_format;
+			time_format = SLURMDB_REPORT_TIME_PERCENT;
+			if (!print_job_count) {
+				count1 = acct_group->cpu_secs;
+				count2 = cluster_group->cpu_secs;
+			} else {
+				count1 = acct_group->count;
+				count2 = cluster_group->count;
+			}
+			total_field.print_routine(&total_field,
+						  count1, count2, 1);
+			time_format = temp_format;
+			printf("\n");
+		}
+		list_iterator_destroy(acct_itr);
+	}
+	list_iterator_destroy(itr);
+
+//	time_format = temp_time_format;
+
+end_it:
+	xfree(total_field.name);
+	if(print_job_count)
+		print_job_count = 0;
+
+	if(individual_grouping)
+		individual_grouping = 0;
+
+	slurmdb_destroy_job_cond(job_cond);
+
+	if(grouping_list) {
+		list_destroy(grouping_list);
+		grouping_list = NULL;
+	}
+
+	if(assoc_list) {
+		list_destroy(assoc_list);
+		assoc_list = NULL;
 	}
 
 	if(slurmdb_report_cluster_grouping_list) {

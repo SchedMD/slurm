@@ -40,8 +40,8 @@
 
 #include "sreport.h"
 
-extern void slurmdb_report_print_time(print_field_t *field,
-			       uint64_t value, uint64_t total_time, int last)
+extern void slurmdb_report_print_time(print_field_t *field, uint64_t value,
+				      uint64_t total_time, int last)
 {
 	int abs_len = abs(field->len);
 

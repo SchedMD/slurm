@@ -851,6 +851,7 @@ typedef struct {
 
 typedef struct {
 	char *acct; /*account name */
+	uint32_t count; /* total count of jobs taken up by this acct */
 	uint64_t cpu_secs; /* how many cpus secs taken up by this
 			    * acct */
 	List groups; /* containing slurmdb_report_job_grouping_t's*/
@@ -860,6 +861,7 @@ typedef struct {
 
 typedef struct {
 	char *cluster; /*cluster name */
+	uint32_t count; /* total count of jobs taken up by this cluster */
 	uint64_t cpu_secs; /* how many cpus secs taken up by this
 			    * cluster */
 	List acct_list; /* containing slurmdb_report_acct_grouping_t's */
@@ -1040,6 +1042,11 @@ extern List slurmdb_report_job_sizes_grouped_by_top_account(void *db_conn,
 
 extern List slurmdb_report_job_sizes_grouped_by_wckey(void *db_conn,
 	slurmdb_job_cond_t *job_cond, List grouping_list);
+
+extern List slurmdb_report_job_sizes_grouped_by_top_account_then_wckey(
+	void *db_conn, slurmdb_job_cond_t *job_cond,
+	List grouping_list, bool flat_view);
+
 
 /* report on users with top usage
  * IN: slurmdb_user_cond_t *user_cond

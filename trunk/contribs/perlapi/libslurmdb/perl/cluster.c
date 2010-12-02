@@ -218,7 +218,8 @@ hv_to_user_cond(HV* hv, slurmdb_user_cond_t* user_cond)
 int
 report_job_grouping_to_hv(slurmdb_report_job_grouping_t* rec, HV* hv)
 {
-    /* List jobs should be null*/
+    /* FIX ME: include the job list here (is is not NULL, as
+     * previously thought) */
     STORE_FIELD(hv, rec, min_size, uint32_t);
     STORE_FIELD(hv, rec, max_size, uint32_t);
     STORE_FIELD(hv, rec, count,    uint32_t);
@@ -236,6 +237,7 @@ report_acct_grouping_to_hv(slurmdb_report_acct_grouping_t* rec, HV* hv)
     ListIterator itr = NULL;
 
     STORE_FIELD(hv, rec, acct,     charp);
+    STORE_FIELD(hv, rec, count,    uint32_t);
     STORE_FIELD(hv, rec, cpu_secs, uint64_t);
     STORE_FIELD(hv, rec, lft,      uint32_t);
     STORE_FIELD(hv, rec, rgt,      uint32_t);
@@ -266,6 +268,7 @@ report_cluster_grouping_to_hv(slurmdb_report_cluster_grouping_t* rec, HV* hv)
     ListIterator itr = NULL;
 
     STORE_FIELD(hv, rec, cluster,  charp);
+    STORE_FIELD(hv, rec, count,    uint32_t);
     STORE_FIELD(hv, rec, cpu_secs, uint64_t);
 
     if (rec->acct_list) {
