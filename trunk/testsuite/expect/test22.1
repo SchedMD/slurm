@@ -675,10 +675,6 @@ expect {
 		incr matches
 		exp_continue
 	}
-	-re "$cluster.$account2.0.0.0." {
-		incr matches
-		exp_continue
-	}
 	timeout {
 		send_user "\nFAILURE: sacctmgr archive load not responding\n"
 		slow_kill $my_pid
@@ -689,7 +685,7 @@ expect {
 	}
 }
 
-if {$matches != 2} {
+if {$matches != 1} {
 	send_user "\nFAILURE:  sreport didn't give good info 7 $matches.\n"
 	incr exit_code 1
 }
@@ -1004,10 +1000,6 @@ expect {
 		incr matches
 		exp_continue
 	}
-	-re "$cluster.$account2.0.0.0." {
-		incr matches
-		exp_continue
-	}
 	timeout {
 		send_user "\nFAILURE: sacctmgr archive load not responding\n"
 		slow_kill $my_pid
@@ -1018,7 +1010,7 @@ expect {
 	}
 }
 
-if {$matches != 2} {
+if {$matches != 1} {
 	send_user "\nFAILURE:  sreport didn't give good info 15 $matches.\n"
 	incr exit_code 1
 }
