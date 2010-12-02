@@ -402,16 +402,17 @@ static print_field_t *_get_print_field(char *object)
 		field->name = xstrdup("PluginIDSelect");
 		field->len = 14;
 		field->print_routine = print_fields_uint;
-	} else if (!strncasecmp("Preempt", object, MAX(command_len, 7))) {
-		field->type = PRINT_PREE;
-		field->name = xstrdup("Preempt");
-		field->len = 10;
-		field->print_routine = sacctmgr_print_qos_bitstr;
 	} else if (!strncasecmp("PreemptMode", object, MAX(command_len, 8))) {
 		field->type = PRINT_PREEM;
 		field->name = xstrdup("PreemptMode");
 		field->len = 11;
 		field->print_routine = print_fields_str;
+	/* Preempt needs to follow PreemptMode */
+	} else if (!strncasecmp("Preempt", object, MAX(command_len, 7))) {
+		field->type = PRINT_PREE;
+		field->name = xstrdup("Preempt");
+		field->len = 10;
+		field->print_routine = sacctmgr_print_qos_bitstr;
 	} else if (!strncasecmp("Priority", object, MAX(command_len, 3))) {
 		field->type = PRINT_PRIO;
 		field->name = xstrdup("Priority");
