@@ -1203,7 +1203,7 @@ _fork_all_tasks(slurmd_job_t *job)
 
 		if (spank_task_post_fork (job, i) < 0) {
 			error ("spank task %d post-fork failed", i);
-			return SLURM_ERROR;
+			goto fail1;
 		}
 	}
 	jobacct_gather_g_set_proctrack_container_id(job->cont_id);
