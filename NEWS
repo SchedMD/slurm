@@ -15,6 +15,8 @@ documents those changes that are of interest to users and admins.
  -- Fix bug in preserving job state information when upgrading from SLURM
     version 2.1. Bug introduced in version 2.2.0-pre10. Patch from Par
     Andersson, NSC.
+ -- Fix bug where if using the slurmdbd if a job wasn't able to start right
+    away some accounting information may be lost.
 
 * Changes in SLURM 2.2.0.rc2
 ============================
