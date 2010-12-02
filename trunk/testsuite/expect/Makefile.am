@@ -80,6 +80,7 @@ EXTRA_DIST = \
 	test1.62.bash			\
 	test1.63			\
 	test1.63.prog.c			\
+	test1.64			\
 	test1.80			\
 	test1.81			\
 	test1.82			\
@@ -263,6 +264,7 @@ EXTRA_DIST = \
 	test15.23			\
 	test15.24			\
 	test15.25			\
+	test15.26			\
 	test16.1			\
 	test16.2			\
 	test16.3			\
