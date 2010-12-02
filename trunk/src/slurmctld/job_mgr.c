@@ -2671,7 +2671,7 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 		job_comp_flag = JOB_COMPLETING;
 	
 	if ((job_return_code == NO_VAL) &&
-	    (IS_JOB_RUNNING(job_ptr) || IS_JOB_PENDING(job_ptr)))
+	    (IS_JOB_RUNNING(job_ptr) || IS_JOB_PENDING(job_ptr))) {
 		info("Job %u cancelled from srun", job_ptr->job_id);
 	}
 
