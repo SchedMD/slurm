@@ -98,10 +98,32 @@ static int _sort_acct_grouping_dec(slurmdb_report_acct_grouping_t *acct_a,
 {
 	int diff = 0;
 
+	char tmp_acct_a[200];
+	char tmp_acct_b[200];
+	char *wckey_a = NULL, *wckey_b = NULL;
+
 	if(!acct_a->acct || !acct_b->acct)
 		return 0;
 
-	diff = strcmp(acct_a->acct, acct_b->acct);
+	snprintf(tmp_acct_a, sizeof(tmp_acct_a), "%s", acct_a->acct);
+	snprintf(tmp_acct_b, sizeof(tmp_acct_b), "%s", acct_b->acct);
+	if ((wckey_a = strstr(tmp_acct_a, ":")))
+		*wckey_a++ = 0;
+
+	if ((wckey_b = strstr(tmp_acct_b, ":")))
+		*wckey_b++ = 0;
+
+	diff = strcmp(tmp_acct_a, tmp_acct_b);
+
+	if (diff > 0)
+		return 1;
+	else if (diff < 0)
+		return -1;
+
+	if(!wckey_a || !wckey_b)
+		return 0;
+
+	diff = strcmp(wckey_a, wckey_b);
 
 	if (diff > 0)
 		return 1;
