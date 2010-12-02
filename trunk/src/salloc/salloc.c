@@ -227,6 +227,8 @@ int main(int argc, char *argv[])
 	msg_thr = slurm_allocation_msg_thr_create(&desc.other_port,
 						  &callbacks);
 
+	/* NOTE: Do not process signals in separate pthread. The signal will
+	 * cause slurm_allocate_resources_blocking() to exit immediately. */
 	xsignal_unblock(sig_array);
 	for (i = 0; sig_array[i]; i++)
 		xsignal(sig_array[i], _signal_while_allocating);
