@@ -1095,12 +1095,12 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 					 protocol_version))
 			goto unpack_error;
 
-		/* Below is needed in 2.2 but isn't set in 2.1 so
-		 * we will use an educated guess to make things work
-		 * correctly */
-
-		xfree(job_resources->nodes); /* in case duplicate record */
-		job_resources->nodes = xstrdup(nodes);
+		/* Below is needed in 2.2 but isn't set in 2.1 so we will
+		 * use an educated guess to make things work correctly */
+		if (job_resources != NULL) {
+			xfree(job_resources->nodes);
+			job_resources->nodes = xstrdup(nodes);
+		}
 
 		/**************************************/
 

@@ -12,6 +12,9 @@ documents those changes that are of interest to users and admins.
  -- Fix NULL pointer reference in sview. Patch from Gerrit Renker, CSCS.
  -- Fix file descriptor leak in slurmstepd on spank_task_post_fork() failure.
     Patch from Gerrit Renker, CSCS.
+ -- Fix bug in preserving job state information when upgrading from SLURM
+    version 2.1. Bug introduced in version 2.2.0-pre10. Patch from Par
+    Andersson, NSC.
 
 * Changes in SLURM 2.2.0.rc2
 ============================
