@@ -2663,11 +2663,17 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 		      job_ptr->job_id, (unsigned int) uid);
 		return ESLURM_USER_ID_MISSING;
 	}
+
 	if (IS_JOB_COMPLETING(job_ptr))
 		return SLURM_SUCCESS;	/* avoid replay */
-
+		
 	if (IS_JOB_RUNNING(job_ptr))
 		job_comp_flag = JOB_COMPLETING;
+	
+	if ((job_return_code == NO_VAL) &&
+	    (IS_JOB_RUNNING(job_ptr) || IS_JOB_PENDING(job_ptr)))
+		info("Job %u cancelled from srun", job_ptr->job_id);
+	}
 
 	if (IS_JOB_SUSPENDED(job_ptr)) {
 		enum job_states suspend_job_state = job_ptr->job_state;
