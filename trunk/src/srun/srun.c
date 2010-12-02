@@ -466,7 +466,7 @@ int srun(int ac, char **av)
 		slurm_attr_init(&thread_attr);
 		while (pthread_create(&signal_thread, &thread_attr,
 				      _srun_signal_mgr, NULL)) {
-			fatal("pthread_create error %m");
+			error("pthread_create error %m");
 			sleep(1);
 		}
 		slurm_attr_destroy(&thread_attr);
