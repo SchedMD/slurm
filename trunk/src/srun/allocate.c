@@ -126,6 +126,8 @@ static void _signal_while_allocating(int signo)
 	destroy_job = 1;
 	if (pending_job_id != 0) {
 		slurm_complete_job(pending_job_id, NO_VAL);
+		info("Job allocation %u has been revoked.", pending_job_id);
+
 	}
 }
 
@@ -438,6 +440,8 @@ allocate_nodes(void)
 	/* create message thread to handle pings and such from slurmctld */
 	msg_thr = slurm_allocation_msg_thr_create(&j->other_port, &callbacks);
 
+	/* NOTE: Do not process signals in separate pthread. The signal will
+	 * cause slurm_allocate_resources_blocking() to exit immediately. */
 	xsignal_unblock(sig_array);
 	for (i = 0; sig_array[i]; i++)
 		xsignal(sig_array[i], _signal_while_allocating);
@@ -448,7 +452,7 @@ allocate_nodes(void)
 		if (destroy_job) {
 			/* cancelled by signal */
 			break;
-		} else if(!resp && !_retry()) {
+		} else if (!resp && !_retry()) {
 			break;
 		}
 	}
