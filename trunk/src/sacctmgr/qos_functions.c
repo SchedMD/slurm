@@ -195,7 +195,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 			}
 			list_iterator_destroy(itr);
 		} else if (!strncasecmp (argv[i], "PreemptMode",
-					 MAX(command_len, 3))) {
+					 MAX(command_len, 8))) {
 			if(!qos_cond)
 				continue;
 			qos_cond->preempt_mode |=
@@ -378,6 +378,19 @@ static int _set_rec(int *start, int argc, char *argv[],
 					" Bad MaxWall time format: %s\n",
 					argv[i]);
 			}
+		} else if (!strncasecmp (argv[i], "PreemptMode",
+					 MAX(command_len, 8))) {
+			if(!qos)
+				continue;
+			qos->preempt_mode = preempt_mode_num(argv[i]+end);
+			if(qos->preempt_mode == (uint16_t)NO_VAL) {
+				fprintf(stderr,
+					" Bad Preempt Mode given: %s\n",
+					argv[i]);
+				exit_code = 1;
+			} else
+				set = 1;
+		/* Preempt needs to follow PreemptMode */
 		} else if (!strncasecmp (argv[i], "Preempt",
 					 MAX(command_len, 7))) {
 			if(!qos)
@@ -397,18 +410,6 @@ static int _set_rec(int *start, int argc, char *argv[],
 				set = 1;
 			else
 				exit_code = 1;
-		} else if (!strncasecmp (argv[i], "PreemptMode",
-					 MAX(command_len, 8))) {
-			if(!qos)
-				continue;
-			qos->preempt_mode = preempt_mode_num(argv[i]+end);
-			if(qos->preempt_mode == (uint16_t)NO_VAL) {
-				fprintf(stderr,
-					" Bad Preempt Mode given: %s\n",
-					argv[i]);
-				exit_code = 1;
-			} else
-				set = 1;
 		} else if (!strncasecmp (argv[i], "Priority",
 					 MAX(command_len, 3))) {
 			if(!qos)
