@@ -62,19 +62,98 @@ static int _sort_group_asc(char *group_a, char *group_b)
 	return 0;
 }
 
-static List _process_grouped_report(void *db_conn,
-	slurmdb_job_cond_t *job_cond, List grouping_list,
-	bool flat_view, bool wckey_type)
+static void _check_create_grouping(
+	List cluster_list,  ListIterator group_itr,
+	char *cluster, char *name, void *object,
+	bool individual, bool wckey_type)
+{
+	ListIterator itr;
+	slurmdb_wckey_rec_t *wckey = (slurmdb_wckey_rec_t *)object;
+	slurmdb_association_rec_t *assoc = (slurmdb_association_rec_t *)object;
+	slurmdb_report_cluster_grouping_t *cluster_group = NULL;
+	slurmdb_report_acct_grouping_t *acct_group = NULL;
+	slurmdb_report_job_grouping_t *job_group = NULL;
+
+	itr = list_iterator_create(cluster_list);
+	while((cluster_group = list_next(itr))) {
+		if(!strcmp(cluster, cluster_group->cluster))
+			break;
+	}
+	list_iterator_destroy(itr);
+
+	if(!cluster_group) {
+		cluster_group = xmalloc(
+			sizeof(slurmdb_report_cluster_grouping_t));
+		cluster_group->cluster = xstrdup(cluster);
+		cluster_group->acct_list = list_create(
+			slurmdb_destroy_report_acct_grouping);
+		list_append(cluster_list, cluster_group);
+	}
+
+	itr = list_iterator_create(cluster_group->acct_list);
+	while((acct_group = list_next(itr))) {
+		if(!strcmp(name, acct_group->acct))
+			break;
+	}
+	list_iterator_destroy(itr);
+
+	if(!acct_group) {
+		uint32_t last_size = 0;
+		char *group = NULL;
+		acct_group = xmalloc(sizeof(slurmdb_report_acct_grouping_t));
+
+		acct_group->acct = xstrdup(name);
+		if (wckey_type == 1 || wckey_type == 3)
+			acct_group->lft = wckey->id;
+		else {
+			acct_group->lft = assoc->lft;
+			acct_group->rgt = assoc->rgt;
+		}
+		acct_group->groups = list_create(
+			slurmdb_destroy_report_job_grouping);
+		list_append(cluster_group->acct_list, acct_group);
+		while ((group = list_next(group_itr))) {
+			job_group = xmalloc(
+				sizeof(slurmdb_report_job_grouping_t));
+			job_group->jobs = list_create(NULL);
+			if(!individual)
+				job_group->min_size = last_size;
+			last_size = atoi(group);
+			if(!individual)
+				job_group->max_size = last_size-1;
+			else
+				job_group->min_size =
+					job_group->max_size = last_size;
+			list_append(acct_group->groups, job_group);
+		}
+		if(last_size && !individual) {
+			job_group = xmalloc(
+				sizeof(slurmdb_report_job_grouping_t));
+			job_group->jobs = list_create(NULL);
+			job_group->min_size = last_size;
+			if(individual)
+				job_group->max_size =
+					job_group->min_size;
+			else
+				job_group->max_size = INFINITE;
+			list_append(acct_group->groups, job_group);
+		}
+		list_iterator_reset(group_itr);
+	}
+}
+
+static List _process_grouped_report(
+	void *db_conn, slurmdb_job_cond_t *job_cond, List grouping_list,
+	bool flat_view, bool wckey_type, bool both)
 {
 	int exit_code = 0;
-	void *object = NULL;
+	void *object = NULL, *object2 = NULL;
 
-	ListIterator itr = NULL;
+	ListIterator itr = NULL, itr2 = NULL;
 	ListIterator cluster_itr = NULL;
 	ListIterator local_itr = NULL;
 	ListIterator acct_itr = NULL;
 	ListIterator group_itr = NULL;
-
 
 	slurmdb_job_rec_t *job = NULL;
 	slurmdb_report_cluster_grouping_t *cluster_group = NULL;
@@ -83,7 +162,7 @@ static List _process_grouped_report(void *db_conn,
 
 	List job_list = NULL;
 	List cluster_list = NULL;
-	List object_list = NULL;
+	List object_list = NULL, object2_list = NULL;
 
 	List tmp_acct_list = NULL;
 	bool destroy_job_cond = 0;
@@ -152,15 +231,7 @@ static List _process_grouped_report(void *db_conn,
 	if(flat_view)
 		goto no_objects;
 
-	if(wckey_type) {
-		slurmdb_wckey_cond_t wckey_cond;
-		memset(&wckey_cond, 0, sizeof(slurmdb_wckey_cond_t));
-		wckey_cond.name_list = job_cond->wckey_list;
-		wckey_cond.cluster_list = job_cond->cluster_list;
-
-		object_list = acct_storage_g_get_wckeys(db_conn, my_uid,
-							&wckey_cond);
-	} else {
+	if (!wckey_type || both) {
 		slurmdb_association_cond_t assoc_cond;
 		memset(&assoc_cond, 0, sizeof(slurmdb_association_cond_t));
 		assoc_cond.id_list = job_cond->associd_list;
@@ -178,98 +249,83 @@ static List _process_grouped_report(void *db_conn,
 							      &assoc_cond);
 	}
 
+	if (wckey_type || both) {
+		slurmdb_wckey_cond_t wckey_cond;
+		memset(&wckey_cond, 0, sizeof(slurmdb_wckey_cond_t));
+		wckey_cond.name_list = job_cond->wckey_list;
+		wckey_cond.cluster_list = job_cond->cluster_list;
+
+		object2_list = acct_storage_g_get_wckeys(db_conn, my_uid,
+							 &wckey_cond);
+		if (!object_list) {
+			object_list = object2_list;
+			object2_list = NULL;
+		}
+	}
+
 	if(!object_list) {
 		debug2(" No join list given.\n");
 		goto no_objects;
 	}
 
 	itr = list_iterator_create(object_list);
+	if (object2_list)
+		itr2 = list_iterator_create(object2_list);
 	while((object = list_next(itr))) {
-		char *cluster = NULL, *name = NULL;
+		char *cluster = NULL;
 		slurmdb_wckey_rec_t *wckey = (slurmdb_wckey_rec_t *)object;
 		slurmdb_association_rec_t *assoc =
 			(slurmdb_association_rec_t *)object;
-
-		if(wckey_type) {
-			cluster = wckey->cluster;
-			name = wckey->name;
-		} else {
-			cluster = assoc->cluster;
-			name = assoc->acct;
-		}
-
-		while((cluster_group = list_next(cluster_itr))) {
-			if(!strcmp(cluster, cluster_group->cluster))
-				break;
-		}
-		if(!cluster_group) {
-			cluster_group = xmalloc(
-				sizeof(slurmdb_report_cluster_grouping_t));
-			cluster_group->cluster = xstrdup(cluster);
-			cluster_group->acct_list = list_create(
-				slurmdb_destroy_report_acct_grouping);
-			list_append(cluster_list, cluster_group);
-		}
-
-		acct_itr = list_iterator_create(cluster_group->acct_list);
-		while((acct_group = list_next(acct_itr))) {
-			if(!strcmp(name, acct_group->acct))
-				break;
-		}
-		list_iterator_destroy(acct_itr);
-
-		if(!acct_group) {
-			uint32_t last_size = 0;
-			char *group = NULL;
-			acct_group = xmalloc(
-				sizeof(slurmdb_report_acct_grouping_t));
-			acct_group->acct = xstrdup(name);
-			if(wckey_type)
-				acct_group->lft = wckey->id;
-			else {
-				acct_group->lft = assoc->lft;
-				acct_group->rgt = assoc->rgt;
+		if (!itr2) {
+			char *name = NULL;
+			if(wckey_type) {
+				cluster = wckey->cluster;
+				name = wckey->name;
+			} else {
+				cluster = assoc->cluster;
+				name = assoc->acct;
 			}
-			acct_group->groups = list_create(
-				slurmdb_destroy_report_job_grouping);
-			list_append(cluster_group->acct_list, acct_group);
-			while((group = list_next(group_itr))) {
-				job_group = xmalloc(
-					sizeof(slurmdb_report_job_grouping_t));
-				job_group->jobs = list_create(NULL);
-				if(!individual)
-					job_group->min_size = last_size;
-				last_size = atoi(group);
-				if(!individual)
-					job_group->max_size = last_size-1;
-				else
-					job_group->min_size =
-						job_group->max_size = last_size;
-				list_append(acct_group->groups, job_group);
-			}
-			if(last_size && !individual) {
-				job_group = xmalloc(
-					sizeof(slurmdb_report_job_grouping_t));
-				job_group->jobs = list_create(NULL);
-				job_group->min_size = last_size;
-				if(individual)
-					job_group->max_size =
-						job_group->min_size;
-				else
-					job_group->max_size = INFINITE;
-				list_append(acct_group->groups, job_group);
-			}
-			list_iterator_reset(group_itr);
+			_check_create_grouping(cluster_list, group_itr,
+					       cluster, name, object,
+					       individual, wckey_type);
+			continue;
 		}
-		list_iterator_reset(cluster_itr);
+
+		while((object2 = list_next(itr2))) {
+			slurmdb_wckey_rec_t *wckey2 =
+				(slurmdb_wckey_rec_t *)object2;
+			slurmdb_association_rec_t *assoc2 =
+				(slurmdb_association_rec_t *)object2;
+			char name[200];
+			if (!wckey_type) {
+				if (strcmp(assoc->cluster, wckey2->cluster))
+					continue;
+				cluster = assoc->cluster;
+				snprintf(name, sizeof(name), "%s:%s",
+					 assoc->acct, wckey2->name);
+			} else {
+				if (strcmp(wckey->cluster, assoc2->cluster))
+					continue;
+				cluster = wckey->cluster;
+				snprintf(name, sizeof(name), "%s:%s",
+					 wckey2->name, assoc->acct);
+			}
+			_check_create_grouping(cluster_list, group_itr,
+					       cluster, name, object,
+					       individual, wckey_type);
+		}
+		list_iterator_reset(itr2);
 	}
 	list_iterator_destroy(itr);
+	if (itr2)
+		list_iterator_destroy(itr2);
+
 no_objects:
 	itr = list_iterator_create(job_list);
 
 	while((job = list_next(itr))) {
 		char *local_cluster = "UNKNOWN";
-		char *local_account = "UNKNOWN";
+		char tmp_acct[200];
 
 		if(!job->elapsed) {
 			/* here we don't care about jobs that didn't
@@ -278,8 +334,28 @@ no_objects:
 		}
 		if(job->cluster)
 			local_cluster = job->cluster;
-		if(job->account)
-			local_account = job->account;
+
+		if (!wckey_type) {
+			if (both && job->wckey) {
+				snprintf(tmp_acct, sizeof(tmp_acct),
+					 "%s:%s",
+					 job->account,
+					 job->wckey);
+			} else {
+				snprintf(tmp_acct, sizeof(tmp_acct),
+					 "%s", job->account);
+			}
+		} else {
+			if (both && job->account) {
+				snprintf(tmp_acct, sizeof(tmp_acct),
+					 "%s:%s",
+					 job->wckey,
+					 job->account);
+			} else {
+				snprintf(tmp_acct, sizeof(tmp_acct),
+					 "%s", job->wckey);
+			}
+		}
 
 		list_iterator_reset(cluster_itr);
 		while((cluster_group = list_next(cluster_itr))) {
@@ -302,8 +378,8 @@ no_objects:
 
 		acct_itr = list_iterator_create(cluster_group->acct_list);
 		while((acct_group = list_next(acct_itr))) {
-			if(wckey_type) {
-				if(!strcmp(job->wckey, acct_group->acct))
+			if (wckey_type) {
+				if(!strcmp(tmp_acct, acct_group->acct))
 					break;
 				continue;
 			}
@@ -314,10 +390,21 @@ no_objects:
 				/* keep separate since we don't want
 				 * to so a strcmp if we don't have to
 				 */
-				if(job->lft > acct_group->lft
-				   && job->lft < acct_group->rgt)
-					break;
-			} else if(!strcmp(acct_group->acct, local_account))
+				if (job->lft > acct_group->lft
+				    && job->lft < acct_group->rgt) {
+					char *mywckey;
+					if (!both)
+						break;
+					mywckey = strstr(acct_group->acct, ":");
+					mywckey++;
+					if (!job->wckey && !mywckey)
+						break;
+					else if (!mywckey || !job->wckey)
+						continue;
+					else if (!strcmp(mywckey, job->wckey))
+						break;
+				}
+			} else if (!strcmp(acct_group->acct, tmp_acct))
 				break;
 		}
 		list_iterator_destroy(acct_itr);
@@ -333,7 +420,7 @@ no_objects:
 
 			acct_group = xmalloc(
 				sizeof(slurmdb_report_acct_grouping_t));
-			acct_group->acct = xstrdup(local_account);
+			acct_group->acct = xstrdup(tmp_acct);
 			acct_group->groups = list_create(
 				slurmdb_destroy_report_job_grouping);
 			list_append(cluster_group->acct_list, acct_group);
@@ -375,6 +462,8 @@ no_objects:
 				continue;
 			list_append(job_group->jobs, job);
 			job_group->count++;
+			acct_group->count++;
+			cluster_group->count++;
 			total_secs = (uint64_t)job->elapsed
 				* (uint64_t)job->alloc_cpus;
 			job_group->cpu_secs += total_secs;
@@ -385,11 +474,30 @@ no_objects:
 	}
 	list_iterator_destroy(itr);
 	list_iterator_destroy(group_itr);
+	list_iterator_reset(cluster_itr);
+	while ((cluster_group = list_next(cluster_itr))) {
+		ListIterator acct_itr;
+		if (!cluster_group->count) {
+			list_delete_item(cluster_itr);
+			continue;
+		}
+		acct_itr = list_iterator_create(cluster_group->acct_list);
+		while ((acct_group = list_next(acct_itr))) {
+			if (!acct_group->count) {
+				list_delete_item(acct_itr);
+				continue;
+			}
+		}
+		list_iterator_destroy(acct_itr);
+	}
 	list_iterator_destroy(cluster_itr);
 
 end_it:
 	if(object_list)
 		list_destroy(object_list);
+
+	if(object2_list)
+		list_destroy(object2_list);
 
 	if(destroy_job_cond)
 		slurmdb_destroy_job_cond(job_cond);
@@ -407,16 +515,25 @@ end_it:
 	return cluster_list;
 }
 
-
 extern List slurmdb_report_job_sizes_grouped_by_top_account(void *db_conn,
 	slurmdb_job_cond_t *job_cond, List grouping_list, bool flat_view)
 {
 	return _process_grouped_report(db_conn, job_cond, grouping_list,
-				       flat_view, 0);
+				       flat_view, 0, 0);
 }
 
 extern List slurmdb_report_job_sizes_grouped_by_wckey(void *db_conn,
 	slurmdb_job_cond_t *job_cond, List grouping_list)
 {
-	return _process_grouped_report(db_conn, job_cond, grouping_list, 0, 1);
+	return _process_grouped_report(db_conn, job_cond, grouping_list,
+				       0, 1, 0);
 }
+
+extern List slurmdb_report_job_sizes_grouped_by_top_account_then_wckey(
+	void *db_conn, slurmdb_job_cond_t *job_cond,
+	List grouping_list, bool flat_view)
+{
+	return _process_grouped_report(
+		db_conn, job_cond, grouping_list, flat_view, 0, 1);
+}
+

@@ -246,11 +246,17 @@ static void _job_rep (int argc, char *argv[])
 				 "SizesByWcKey", MAX(command_len, 8))) {
 		error_code = job_sizes_grouped_by_wckey(
 			(argc - 1), &argv[1]);
+	} else if (!strncasecmp (argv[0],
+				"SizesByAccountAndWcKey",
+				MAX(command_len, 15))) {
+		error_code = job_sizes_grouped_by_top_acct_and_wckey(
+			(argc - 1), &argv[1]);
 	} else {
 		exit_code = 1;
 		fprintf(stderr, "Not valid report %s\n", argv[0]);
 		fprintf(stderr, "Valid job reports are, ");
-		fprintf(stderr, "\"SizesByAccount, and SizesByWckey\"\n");
+		fprintf(stderr, "\"SizesByAccount, SizesByAccountAndWcKey, ");
+		fprintf(stderr, "and  SizesByWckey\"\n");
 	}
 
 	if (error_code) {
@@ -692,7 +698,7 @@ sreport [<OPTION>] [<COMMAND>]                                             \n\
   <REPORT> is different for each report type.                              \n\
      cluster - AccountUtilizationByUser, UserUtilizationByAccount,         \n\
                UserUtilizationByWckey, Utilization, WCKeyUtilizationByUser \n\
-     job     - SizesByAccount, SizesByWckey                                \n\
+     job     - SizesByAccount, SizesByAccountAndWckey, SizesByWckey        \n\
      reservation                                                           \n\
              - Utilization                                                 \n\
      user    - TopUsage                                                    \n\
@@ -725,16 +731,16 @@ sreport [<OPTION>] [<COMMAND>]                                             \n\
                                   to include in report.  Default is all.   \n\
                                                                            \n\
      job     - Accounts=<OPT>   - List of accounts to use for the report   \n\
-                                  Default is all.  The SizesbyAccount      \n\
+                                  Default is all.  The SizesbyAccount(*)   \n\
                                   report only displays 1 hierarchical level.\n\
                                   If accounts are specified the next layer \n\
                                   of accounts under those specified will be\n\
                                   displayed, not the accounts specified.   \n\
-                                  In the SizesByAccount reports the default\n\
-                                  for accounts is root.  This explanation  \n\
-                                  does not apply when ran with the FlatView\n\
-                                  option.                                  \n\
-             - FlatView         - When used with the SizesbyAccount        \n\
+                                  In the SizesByAccount(*) reports the     \n\
+                                  default for accounts is root.  This      \n\
+                                  explanation does not apply when ran with \n\
+                                  the FlatView option.                     \n\
+             - FlatView         - When used with the SizesbyAccount(*)     \n\
                                   will not group accounts in a             \n\
                                   hierarchical level, but print each       \n\
                                   account where jobs ran on a separate     \n\

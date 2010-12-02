@@ -140,7 +140,7 @@ Valid report types are:
 UserUtilizationByWckey, Utilization, WCKeyUtilizationByUser
 
 .B job
-\- SizesByAccount, SizesByWckey
+\- SizesByAccount, SizesByAccountAndWcKey, SizesByWckey
 
 .B reservation
 \- Utilization
@@ -187,6 +187,12 @@ is displayed defaulting to the root dir.  If you specify other
 accounts with the 'account=' option sreport will use those accounts as
 the root account and you will receive the sub accounts for the
 accounts listed.
+.TP
+.B job SizesByAccountAndWckey
+This report is very similar to SizesByAccount with the difference being
+each account is pair with wckeys so the identifier is account:wckey
+instead of just account so there will most likely be multiple accounts
+listed depending on the number of wckeys used.
 .TP
 .B job SizesByWckey
 This report will dispay the amount of time for each wckey for job ranges
@@ -277,15 +283,15 @@ List of wckeys to include in report. Default is all.
 
 .TP
 .B Accounts=<OPT>
-List of accounts to use for the report Default is all.  The SizesByAccount
+List of accounts to use for the report Default is all.  The SizesByAccount(*)
 report only displays 1 hierarchical level. If accounts are specified
 the next layer of accounts under those specified will be displayed,
-not the accounts specified.  In the SizesByAccount reports the default
+not the accounts specified.  In the SizesByAccount(*) reports the default
 for accounts is root.  This explanation does not apply when ran with
 the FlatView option.
 .TP
 .B FlatView
-When used with the SizesbyAccount will not group accounts in a
+When used with the SizesbyAccount(*) will not group accounts in a
 hierarchical level, but print each account where jobs ran on a
 separate line without any hierarchy.
 .TP
@@ -371,7 +377,7 @@ Allocated, Cluster, CPUCount, Down, Idle, Overcommited, PlannedDown, Reported, R
 .TP
 \fBFORMAT OPTIONS FOR JOB REPORTS\fP
 .in 10
-SizesByAccount:
+SizesByAccount, SizesByAccountAndWckey:
 .in 14
 Account, Cluster
 
