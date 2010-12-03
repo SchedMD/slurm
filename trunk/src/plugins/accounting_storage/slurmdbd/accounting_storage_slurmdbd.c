@@ -113,12 +113,20 @@ static bool running_db_inx = 0;
 extern int jobacct_storage_p_job_start(void *db_conn,
 				       struct job_record *job_ptr);
 
-static void _partial_destroy_dbd_job_start(void *object)
+static void _partial_free_dbd_job_start(void *object)
 {
 	dbd_job_start_msg_t *req = (dbd_job_start_msg_t *)object;
 	if(req) {
 		xfree(req->node_inx);
 		xfree(req->block_id);
+	}
+}
+
+static void _partial_destroy_dbd_job_start(void *object)
+{
+	dbd_job_start_msg_t *req = (dbd_job_start_msg_t *)object;
+	if(req) {
+		_partial_free_dbd_job_start(req);
 		xfree(req);
 	}
 }
@@ -1972,10 +1980,10 @@ extern int jobacct_storage_p_job_start(void *db_conn,
 			job_ptr->db_index = NO_VAL;
 
 		if (slurm_send_slurmdbd_msg(SLURMDBD_VERSION, &msg) < 0) {
-			xfree(req.block_id);
+			_partial_free_dbd_job_start(&req);
 			return SLURM_ERROR;
 		}
-		xfree(req.block_id);
+		_partial_free_dbd_job_start(&req);
 		return SLURM_SUCCESS;
 	}
 	/* If we don't have the db_index we need to wait for it to be
@@ -1984,7 +1992,7 @@ extern int jobacct_storage_p_job_start(void *db_conn,
 	rc = slurm_send_recv_slurmdbd_msg(SLURMDBD_VERSION, &msg, &msg_rc);
 	if (rc != SLURM_SUCCESS) {
 		if (slurm_send_slurmdbd_msg(SLURMDBD_VERSION, &msg) < 0) {
-			xfree(req.block_id);
+			_partial_free_dbd_job_start(&req);
 			return SLURM_ERROR;
 		}
 	} else if (msg_rc.msg_type != DBD_ID_RC) {
@@ -1997,7 +2005,7 @@ extern int jobacct_storage_p_job_start(void *db_conn,
 		//info("here got %d for return code", resp->return_code);
 		slurmdbd_free_id_rc_msg(resp);
 	}
-	xfree(req.block_id);
+	_partial_free_dbd_job_start(&req);
 
 	return rc;
 }
