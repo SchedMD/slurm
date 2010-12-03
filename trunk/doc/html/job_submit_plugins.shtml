@@ -25,6 +25,8 @@ We include samples in the SLURM distribution for
 <ul>
 <li><b>defaults</b>&#151;Set default values for job submission or modify requests.
 <li><b>logging</b>&#151;Log select job submission and modification parameters.
+<li><b>lua</b>&#151;Interface to <a href="http://www.lua.org">Lua</a> scripts
+implementing these functions (actually a slight variation of them).
 <li><b>partition</b>&#151;Sets a job's default partition based upon job
 submission parameters and available partitions.
 </ul>
@@ -74,11 +76,58 @@ be modified.<br>
 <span class="commandline">SLURM_SUCCESS</span> on success, or<br>
 <span class="commandline">SLURM_ERROR</span> on failure.
 
+<h2>Lua Functions</h2>
+<p>The Lua functions differ slightly from those implemented in C for
+better ease of use. Sample Lua scripts can be found with the SLURM distribution
+in the directory <i>contribs/lua</i>.</p>
+
+<p class="commandline">
+int job_submit(struct job_descriptor *job_desc, List part_list)
+<p style="margin-left:.2in"><b>Description</b>:<br>
+This function is called by the slurmctld daemon with job submission parameters
+supplied by the salloc, sbatch or srun command. It can be used to log and/or
+modify the job parameters supplied by the user as desired. Note that this
+function has access to the slurmctld's global data structures, for example
+to examine the available partitions, reservations, etc.
+<p style="margin-left:.2in"><b>Arguments</b>: <br>
+<span class="commandline">job_desc</span>
+(input/output) the job allocation request specifications.<br>
+<span class="commandline">part_list</span>
+(input) List of pointer to partitions which this user is authorized to use.<br>
+<p style="margin-left:.2in"><b>Returns</b>: <br>
+<span class="commandline">0</span> on success, or an
+errno on failure. SLURM specific error numbers from <i>slurm/slurm_errno.h</i>
+may be used. On failure, the request will be rejected and the user will have an
+appropriate error message printed for that errno. 
+
+<p class="commandline">
+int job_modify(struct job_descriptor *job_desc, struct job_record *job_ptr,
+List part_list)
+<p style="margin-left:.2in"><b>Description</b>:<br>
+This function is called by the slurmctld daemon with job modification parameters
+supplied by the scontrol or sview command. It can be used to log and/or
+modify the job parameters supplied by the user as desired. Note that this
+function has access to the slurmctld's global data structures, for example to
+examine the available partitions, reservations, etc.
+<p style="margin-left:.2in"><b>Arguments</b>: <br>
+<span class="commandline">job_desc</span>
+(input/output) the job allocation request specifications.<br>
+<span class="commandline">job_ptr</span>
+(input/output) slurmctld daemon's current data structure for the job to
+be modified.<br>
+<span class="commandline">part_list</span>
+(input) List of pointer to partitions which this user is authorized to use.<br>
+<span class="commandline">0</span> on success, or an
+errno on failure. SLURM specific error numbers from <i>slurm/slurm_errno.h</i>
+may be used. On failure, the request will be rejected and the user will have an
+appropriate error message printed for that errno. 
+
+
 <h2>Versioning</h2>
 <p> This document describes version 100 of the SLURM Job Submission API. Future
 releases of SLURM may revise this API.
 <p class="footer"><a href="#top">top</a>
 
-<p style="text-align:center;">Last modified 9 September 2010</p>
+<p style="text-align:center;">Last modified 3 December 2010</p>
 
 <!--#include virtual="footer.txt"-->
