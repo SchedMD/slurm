@@ -2630,7 +2630,7 @@ static void _process_job_start(slurmdbd_conn_t *slurmdbd_conn,
 			       dbd_job_start_msg_t *job_start_msg,
 			       dbd_id_rc_msg_t *id_rc_msg)
 {
-	struct job_record job;
+	struct job_record job, *job_ptr;
 	struct job_details details;
 
 	memset(&job, 0, sizeof(struct job_record));
@@ -2662,13 +2662,14 @@ static void _process_job_start(slurmdbd_conn_t *slurmdbd_conn,
 	details.submit_time = job_start_msg->submit_time;
 
 	job.details = &details;
+	job_ptr = &job;
 
-	if(job.job_state & JOB_RESIZING) {
+	if (job.job_state & JOB_RESIZING) {
 		job.resize_time = job_start_msg->eligible_time;
 		debug2("DBD_JOB_START: RESIZE CALL ID:%u NAME:%s INX:%u",
 		       job_start_msg->job_id, job_start_msg->name,
 		       job.db_index);
-	} else if(job.start_time) {
+	} else if (job.start_time && !IS_JOB_PENDING(job_ptr)) {
 		debug2("DBD_JOB_START: START CALL ID:%u NAME:%s INX:%u",
 		       job_start_msg->job_id, job_start_msg->name,
 		       job.db_index);
@@ -2682,7 +2683,7 @@ static void _process_job_start(slurmdbd_conn_t *slurmdbd_conn,
 	id_rc_msg->id = job.db_index;
 
 	/* just incase job.wckey was set because we didn't send one */
-	if(!job_start_msg->wckey)
+	if (!job_start_msg->wckey)
 		xfree(job.wckey);
 }
 

@@ -1014,7 +1014,7 @@ extern int select_p_update_block(update_block_msg_t *block_desc_ptr)
 		return ESLURM_INVALID_NODE_STATE;
 	}
 
-	info("%s", reason);
+	/* info("%s", reason); */
 	last_bg_update = time(NULL);
 
 	return rc;
