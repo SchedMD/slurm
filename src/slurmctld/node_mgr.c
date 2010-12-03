@@ -85,6 +85,7 @@
 
 /* Global variables */
 bitstr_t *avail_node_bitmap = NULL;	/* bitmap of available nodes */
+bitstr_t *cg_node_bitmap    = NULL;	/* bitmap of completing nodes */
 bitstr_t *idle_node_bitmap  = NULL;	/* bitmap of idle nodes */
 bitstr_t *power_node_bitmap = NULL;	/* bitmap of powered down nodes */
 bitstr_t *share_node_bitmap = NULL;  	/* bitmap of sharable nodes */
@@ -1453,7 +1454,7 @@ static bool _valid_node_state_change(uint16_t old, uint16_t new)
  */
 extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 {
-	int error_code, i;
+	int error_code, i, node_inx;
 	struct config_record *config_ptr;
 	struct node_record *node_ptr;
 	char *reason_down = NULL;
@@ -1465,6 +1466,7 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 	node_ptr = find_node_record (reg_msg->node_name);
 	if (node_ptr == NULL)
 		return ENOENT;
+	node_inx = node_ptr - node_record_table_ptr;
 
 	config_ptr = node_ptr->config_ptr;
 	error_code = SLURM_SUCCESS;
@@ -1684,6 +1686,7 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 			   (reg_msg->job_count == 0)) {	/* job already done */
 			last_node_update = now;
 			node_ptr->node_state &= (~NODE_STATE_COMPLETING);
+			bit_clear(cg_node_bitmap, node_inx);
 		} else if (IS_NODE_IDLE(node_ptr) &&
 			   (reg_msg->job_count != 0)) {
 			last_node_update = now;
@@ -1701,12 +1704,12 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 			 */
 			if (node_ptr->comp_job_cnt != 0) { 
 				node_ptr->node_state |= NODE_STATE_COMPLETING;
+				bit_set(cg_node_bitmap, node_inx);
 			}
 		}
 
-		select_g_update_node_config((node_ptr-node_record_table_ptr));
-		select_g_update_node_state((node_ptr - node_record_table_ptr),
-					   node_ptr->node_state);
+		select_g_update_node_config(node_inx);
+		select_g_update_node_state(node_inx, node_ptr->node_state);
 		_sync_bitmaps(node_ptr, reg_msg->job_count);
 	}
 
@@ -1946,6 +1949,7 @@ extern int validate_nodes_via_front_end(
 				update_node_state = true;
 				node_ptr->node_state &=
 					(~NODE_STATE_COMPLETING);
+				bit_clear(cg_node_bitmap, i);
 			} else if (IS_NODE_IDLE(node_ptr) &&
 				   (jobs_on_node != 0)) {
 				update_node_state = true;
@@ -1956,11 +1960,8 @@ extern int validate_nodes_via_front_end(
 				      node_ptr->name, reg_msg->job_count);
 			}
 
-			select_g_update_node_config(
-				(node_ptr - node_record_table_ptr));
-			select_g_update_node_state(
-				(node_ptr - node_record_table_ptr),
-				node_ptr->node_state);
+			select_g_update_node_config(i);
+			select_g_update_node_state(i, node_ptr->node_state);
 			_sync_bitmaps(node_ptr, jobs_on_node);
 		}
 	}
@@ -2384,6 +2385,7 @@ extern void make_node_comp(struct node_record *node_ptr,
 		/* Don't verify  RPC if DOWN */
 		(node_ptr->comp_job_cnt)++;
 		node_ptr->node_state |= NODE_STATE_COMPLETING;
+		bit_set(cg_node_bitmap, inx);
 	}
 	node_flags = node_ptr->node_state & NODE_STATE_FLAGS;
 
@@ -2422,6 +2424,7 @@ static void _make_node_down(struct node_record *node_ptr, time_t event_time)
 	node_flags &= (~NODE_STATE_COMPLETING);
 	node_ptr->node_state = NODE_STATE_DOWN | node_flags;
 	bit_clear (avail_node_bitmap, inx);
+	bit_clear (cg_node_bitmap,    inx);
 	bit_set   (idle_node_bitmap,  inx);
 	bit_set   (share_node_bitmap, inx);
 	bit_clear (up_node_bitmap,    inx);
@@ -2497,8 +2500,10 @@ void make_node_idle(struct node_record *node_ptr,
 	}
 
 	last_node_update = now;
-	if (node_ptr->comp_job_cnt == 0)
+	if (node_ptr->comp_job_cnt == 0) {
 		node_ptr->node_state &= (~NODE_STATE_COMPLETING);
+		bit_clear(cg_node_bitmap, inx);
+	}
 	node_flags = node_ptr->node_state & NODE_STATE_FLAGS;
 	if (IS_NODE_DOWN(node_ptr)) {
 		debug3("make_node_idle: Node %s being left DOWN",
@@ -2606,8 +2611,9 @@ extern int send_nodes_to_accounting(time_t event_time)
 /* node_fini - free all memory associated with node records */
 extern void node_fini (void)
 {
-	FREE_NULL_BITMAP(idle_node_bitmap);
 	FREE_NULL_BITMAP(avail_node_bitmap);
+	FREE_NULL_BITMAP(cg_node_bitmap);
+	FREE_NULL_BITMAP(idle_node_bitmap);
 	FREE_NULL_BITMAP(power_node_bitmap);
 	FREE_NULL_BITMAP(share_node_bitmap);
 	FREE_NULL_BITMAP(up_node_bitmap);
