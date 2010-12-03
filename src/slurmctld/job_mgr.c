@@ -1292,7 +1292,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		info("Recovered job %u %u", job_id, job_ptr->assoc_id);
 
 		/* make sure we have started this job in accounting */
-		if(!job_ptr->db_index) {
+		if (!job_ptr->db_index) {
 			debug("starting job %u in accounting",
 			      job_ptr->job_id);
 			jobacct_storage_g_job_start(acct_db_conn, job_ptr);
@@ -2407,7 +2407,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 		job_ptr->exit_code  = 1;
 		job_ptr->start_time = job_ptr->end_time = now;
 		_purge_job_record(job_ptr->job_id);
-	} else if(!with_slurmdbd && !job_ptr->db_index)
+	} else if (!with_slurmdbd && !job_ptr->db_index)
 		jobacct_storage_g_job_start(acct_db_conn, job_ptr);
 
 	if (!will_run) {
@@ -2666,10 +2666,10 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 
 	if (IS_JOB_COMPLETING(job_ptr))
 		return SLURM_SUCCESS;	/* avoid replay */
-		
+
 	if (IS_JOB_RUNNING(job_ptr))
 		job_comp_flag = JOB_COMPLETING;
-	
+
 	if ((job_return_code == NO_VAL) &&
 	    (IS_JOB_RUNNING(job_ptr) || IS_JOB_PENDING(job_ptr))) {
 		info("Job %u cancelled from srun", job_ptr->job_id);
@@ -7626,7 +7626,7 @@ extern bool job_epilog_complete(uint32_t job_id, char *node_name,
 			select_g_select_jobinfo_set(
 				job_ptr->select_jobinfo,
 				SELECT_JOBDATA_BLOCK_ID,
-				NULL);
+				"unassigned");
 #endif
 			xfree(job_ptr->nodes);
 			xfree(job_ptr->nodes_completing);
@@ -7639,8 +7639,9 @@ extern bool job_epilog_complete(uint32_t job_id, char *node_name,
 				 * named socket purged, so delay for at
 				 * least ten seconds. */
 				job_ptr->details->begin_time = time(NULL) + 10;
-				jobacct_storage_g_job_start(
-					acct_db_conn, job_ptr);
+				if (!with_slurmdbd)
+					jobacct_storage_g_job_start(
+						acct_db_conn, job_ptr);
 			}
 		}
 		return true;
@@ -8305,13 +8306,13 @@ extern int job_cancel_by_assoc_id(uint32_t assoc_id)
 			continue;
 
 		/* move up to the parent that should still exist */
-		if(job_ptr->assoc_ptr) {
+		if (job_ptr->assoc_ptr) {
 			/* Force a start so the association doesn't
 			   get lost.  Since there could be some delay
 			   in the start of the job when running with
 			   the slurmdbd.
 			*/
-			if(!job_ptr->db_index) {
+			if (!job_ptr->db_index) {
 				jobacct_storage_g_job_start(acct_db_conn,
 							    job_ptr);
 			}

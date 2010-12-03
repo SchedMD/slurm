@@ -17,6 +17,8 @@ documents those changes that are of interest to users and admins.
     Andersson, NSC.
  -- Fix bug where if using the slurmdbd if a job wasn't able to start right
     away some accounting information may be lost.
+ -- BLUEGENE - when a prolog failure happens the offending block is put in
+    an error state.
 
 * Changes in SLURM 2.2.0.rc2
 ============================

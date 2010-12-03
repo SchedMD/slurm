@@ -119,7 +119,7 @@ typedef struct {
 	pthread_mutex_t *timer_mutex;
 } timer_struct_t;
 
-static int  _abort_job(uint32_t job_id);
+static int  _abort_job(uint32_t job_id, uint32_t slurm_rc);
 static int  _abort_step(uint32_t job_id, uint32_t step_id);
 static char **_build_env(uint32_t jobid, uid_t uid, char *resv_id,
 			 char **spank_job_env, uint32_t spank_job_env_size);
@@ -1328,7 +1328,7 @@ done:
 		/* prolog or job launch failure,
 		 * tell slurmctld that the job failed */
 		if (req->step_id == SLURM_BATCH_SCRIPT)
-			(void) _abort_job(req->job_id);
+			(void) _abort_job(req->job_id, rc);
 		else
 			(void) _abort_step(req->job_id, req->step_id);
 	}
@@ -1405,7 +1405,7 @@ no_job:
 }
 
 static int
-_abort_job(uint32_t job_id)
+_abort_job(uint32_t job_id, uint32_t slurm_rc)
 {
 	complete_batch_script_msg_t  resp;
 	slurm_msg_t resp_msg;
@@ -1414,7 +1414,7 @@ _abort_job(uint32_t job_id)
 
 	resp.job_id       = job_id;
 	resp.job_rc       = 1;
-	resp.slurm_rc     = 0;
+	resp.slurm_rc     = slurm_rc;
 	resp.node_name    = NULL;	/* unused */
 	resp.jobacct      = NULL;       /* unused */
 	resp_msg.msg_type = REQUEST_COMPLETE_BATCH_SCRIPT;

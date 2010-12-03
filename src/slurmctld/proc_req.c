@@ -84,6 +84,8 @@
 #include "src/slurmctld/state_save.h"
 #include "src/slurmctld/trigger_mgr.h"
 
+#include "src/plugins/select/bluegene/wrap_rm_api.h"
+
 static void         _fill_ctld_conf(slurm_ctl_conf_t * build_ptr);
 static void         _kill_job_on_msg_fail(uint32_t job_id);
 static int 	    _launch_batch_step(job_desc_msg_t *job_desc_msg,
@@ -1351,7 +1353,11 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t * msg)
 	bool job_requeue = false;
 	bool dump_job = false, dump_node = false;
 	struct job_record *job_ptr = NULL;
-
+	char *nodes = comp_msg->node_name;
+#ifdef HAVE_BG
+	update_block_msg_t block_desc;
+	memset(&block_desc, 0, sizeof(update_block_msg_t));
+#endif
 	/* init */
 	START_TIMER;
 	debug2("Processing RPC: REQUEST_COMPLETE_BATCH_SCRIPT from "
@@ -1366,6 +1372,7 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t * msg)
 		return;
 	}
 
+
 	lock_slurmctld(job_write_lock);
 
 	/* Send batch step info to accounting */
@@ -1376,9 +1383,11 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t * msg)
 		batch_step.job_ptr = job_ptr;
 		batch_step.step_id = SLURM_BATCH_SCRIPT;
 		batch_step.jobacct = comp_msg->jobacct;
-
 		batch_step.exit_code = comp_msg->job_rc;
-		batch_step.gres = comp_msg->node_name;
+#ifdef HAVE_BG
+		nodes = job_ptr->nodes;
+#endif
+		batch_step.gres = nodes;
 		node_name2bitmap(batch_step.gres, false,
 				 &batch_step.step_node_bitmap);
 		batch_step.requid = -1;
@@ -1387,25 +1396,44 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t * msg)
 		jobacct_storage_g_step_start(acct_db_conn, &batch_step);
 		jobacct_storage_g_step_complete(acct_db_conn, &batch_step);
 		FREE_NULL_BITMAP(batch_step.step_node_bitmap);
+	} else if (!association_based_accounting) {
+#ifdef HAVE_BG
+		job_ptr = find_job_record(comp_msg->job_id);
+
+		if (job_ptr)
+			nodes = job_ptr->nodes;
+#endif
 	}
 
 	/* do RPC call */
 	/* First set node DOWN if fatal error */
 	if (comp_msg->slurm_rc == ESLURM_ALREADY_DONE) {
 		/* race condition on job termination, not a real error */
-		info("slurmd error running JobId=%u from node=%s: %s",
+		info("slurmd error running JobId=%u from node(s)=%s: %s",
 		     comp_msg->job_id,
-		     comp_msg->node_name,
+		     nodes,
 		     slurm_strerror(comp_msg->slurm_rc));
 		comp_msg->slurm_rc = SLURM_SUCCESS;
 	}
-	if (comp_msg->slurm_rc != SLURM_SUCCESS) {
-		error("Fatal slurmd error %u running JobId=%u on node=%s: %s",
+
+	/* Handle non-fatal errors here */
+	if (comp_msg->slurm_rc == SLURM_COMMUNICATIONS_SEND_ERROR
+	    || comp_msg->slurm_rc == ESLURMD_CREDENTIAL_REVOKED
+	    || comp_msg->slurm_rc == ESLURM_USER_ID_MISSING) {
+		error("slurmd error %u running JobId=%u on node(s)=%s: %s",
 		      comp_msg->slurm_rc,
 		      comp_msg->job_id,
-		      comp_msg->node_name,
+		      nodes,
+		      slurm_strerror(comp_msg->slurm_rc));
+	} else if (comp_msg->slurm_rc != SLURM_SUCCESS) {
+		error("Fatal slurmd error %u running JobId=%u "
+		      "on node(s)=%s: %s",
+		      comp_msg->slurm_rc,
+		      comp_msg->job_id,
+		      nodes,
 		      slurm_strerror(comp_msg->slurm_rc));
 		if (error_code == SLURM_SUCCESS) {
+#ifndef HAVE_BG
 			update_node_msg_t update_node_msg;
 			memset(&update_node_msg, 0, sizeof(update_node_msg_t));
 			update_node_msg.node_names = comp_msg->node_name;
@@ -1413,17 +1441,36 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t * msg)
 			update_node_msg.reason = "batch job complete failure";
 			update_node_msg.weight = NO_VAL;
 			error_code = update_node(&update_node_msg);
+#else
+			if (job_ptr) {
+				select_g_select_jobinfo_get(
+					job_ptr->select_jobinfo,
+					SELECT_JOBDATA_BLOCK_ID,
+					&block_desc.bg_block_id);
+			}
+#endif
 			if (comp_msg->job_rc != SLURM_SUCCESS)
 				job_requeue = true;
 			dump_job = true;
 			dump_node = true;
 		}
 	}
-
 	/* Mark job allocation complete */
 	error_code = job_complete(comp_msg->job_id, uid,
 				  job_requeue, false, comp_msg->job_rc);
 	unlock_slurmctld(job_write_lock);
+
+#ifdef HAVE_BG
+	if (block_desc.bg_block_id) {
+		block_desc.reason = slurm_strerror(comp_msg->slurm_rc);
+		block_desc.state = RM_PARTITION_ERROR;
+		error_code = select_g_update_block(&block_desc);
+		xfree(block_desc.bg_block_id);
+	}
+#endif
+
+	/* this has to be done after the job_complete */
+
 	END_TIMER2("_slurm_rpc_complete_batch_script");
 
 	/* return result */
