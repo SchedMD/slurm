@@ -23,6 +23,9 @@ documents those changes that are of interest to users and admins.
     "FairShare" and added more detail to the sshare man page.
  -- Fix bug in enforcement of reservation by account name. Used wrong index
     into an array. Patch from Gerrit Renker, CSCS.
+ -- Modify job_submit/lua plugin to treat any non-zero return code from the
+    job_submit and job_modify functions as an error and the user request should
+    be treated as an error.
 
 * Changes in SLURM 2.2.0.rc2
 ============================

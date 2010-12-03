@@ -63,7 +63,7 @@ function slurm_job_submit ( job_desc, part_list )
 		end
 	end
 
-	return
+	return 0
 end
 
 function slurm_job_modify ( job_desc, job_rec, part_list )
@@ -79,7 +79,7 @@ function slurm_job_modify ( job_desc, job_rec, part_list )
 		job_desc.comment = comment
 	end
 
-	return
+	return 0
 end
 
 --########################################################################--
