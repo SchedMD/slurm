@@ -22,7 +22,13 @@
 #
 # For debugging.
 #
-#use lib "/var/opt/slurm_banana/lib64/perl5/site_perl/5.8.8/x86_64-linux-thread-multi/";
+#use lib "/var/opt/slurm_dawn/lib64/perl5/site_perl/5.8.8/x86_64-linux-thread-multi";
+use Slurm ':all';
+use Slurmdb ':all'; # needed for getting the correct cluster dims
+
+
+
+
 
 #
 # For generating man pages.

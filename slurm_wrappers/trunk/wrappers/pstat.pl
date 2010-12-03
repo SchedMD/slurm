@@ -10,7 +10,7 @@
 #
 # For debugging.
 #
-#use lib "/var/opt/slurm_banana/lib64/perl5/site_perl/5.8.8/x86_64-linux-thread-multi/";
+#use lib "/var/opt/slurm_dawn/lib64/perl5/site_perl/5.8.8/x86_64-linux-thread-multi/";
 
 
 BEGIN {
@@ -35,6 +35,7 @@ use autouse 'Pod::Usage' => qw(pod2usage);
 use Switch;
 use strict;
 use Slurm ':all';
+use Slurmdb ':all';
 
 #
 # Each entry in this hash table must have a subhash.  The possible keys are:

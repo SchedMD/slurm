@@ -10,7 +10,8 @@
 #
 # For debugging.
 #
-#use lib "/var/opt/slurm_banana/lib64/perl5/site_perl/5.8.8/x86_64-linux-thread-multi/";
+#use lib "/var/opt/slurm_dawn/lib64/perl5/site_perl/5.8.8/x86_64-linux-thread-multi/";
+
 my $debug=0;
 
 BEGIN {
@@ -31,6 +32,7 @@ use Getopt::Long 2.24 qw(:config no_ignore_case);
 use Time::Local;
 use autouse 'Pod::Usage' => qw(pod2usage);
 use Slurm ':all';
+#use Slurmdb ':all';
 
 my ($cmd, $rc, $output);
 
@@ -39,6 +41,9 @@ my (
 	$help,           $machine,    $man,      $message,
 	$jobList,        $terminated, $userName, $verbose
 );
+
+chomp(my $soutput = `sinfo --version`);
+my ($sversion) = ($soutput =~ m/slurm (\d+\.\d+)/);
 
 my $hst = `scontrol show config | grep ClusterName`;
 my ($host) = ($hst =~ m/ = (\S+)/);
@@ -74,7 +79,18 @@ foreach my $jobs (@{$tmp->{job_array}}) {
 	$jobId   = $jobs->{job_id};
 	$user    = getpwuid($jobs->{user_id});
 	$account = $jobs->{account} || "N/A";
-	$state   = Slurm::job_state_string($jobs->{job_state}) || 'N/A';
+
+#
+#	Have to use eval to avoid structure differences in SLURM perl api.
+#
+my $eval_state;
+if ($sversion =~ /2.2/) {
+	$eval_state  = 'Slurm->job_state_string($jobs->{job_state})';
+} else {
+	$eval_state  = 'Slurm::job_state_string($jobs->{job_state})';
+}
+	$state  = eval $eval_state || "N/A";
+
 	next if ($state eq "CANCELLED" || $state eq "TIMEOUT");
 
 	$start   = $jobs->{start_time};

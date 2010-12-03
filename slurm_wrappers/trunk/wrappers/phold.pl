@@ -10,7 +10,7 @@
 #
 # For debugging.
 #
-#use lib "/var/opt/slurm_banana/lib64/perl5/site_perl/5.8.8/x86_64-linux-thread-multi/";
+#use lib "/var/opt/slurm_dawn/lib64/perl5/site_perl/5.8.8/x86_64-linux-thread-multi/";
 
 BEGIN {
     # Just dump the man page in *roff format and exit if --roff specified.
@@ -31,6 +31,7 @@ use Getopt::Long 2.24 qw(:config no_ignore_case);
 use Time::Local;
 use autouse 'Pod::Usage' => qw(pod2usage);
 use Slurm;
+use Slurmdb;
 
 my ($cmd, $rc, $output);
 
@@ -75,8 +76,8 @@ foreach my $jobs (@{$tmp->{job_array}}) {
 	$jobId   = $jobs->{job_id};
 	$user    = getpwuid($jobs->{user_id});
 	$account = $jobs->{account} || "N/A";
-	$reason  = Slurm::job_reason_string($jobs->{state_reason}) || 'N/A';
-	$state   = Slurm::job_state_string($jobs->{job_state}) || 'N/A';
+	$reason  = Slurm->job_reason_string($jobs->{state_reason}) || 'N/A';
+	$state   = Slurm->job_state_string($jobs->{job_state}) || 'N/A';
 	next if ($state eq "CANCELLED" || 
 		 $state eq "RUNNING" || 
 		 $state eq "TIMEOUT" ||

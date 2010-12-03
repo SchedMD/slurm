@@ -14,6 +14,7 @@
 
 use File::Basename;
 use Slurm;
+use Slurmdb;
 
 BEGIN {
     # Just dump the man page in *roff format and exit if --roff specified.
@@ -33,16 +34,6 @@ use strict;
 use Getopt::Long 2.24 qw(:config no_ignore_case);
 use Time::Local;
 use autouse 'Pod::Usage' => qw(pod2usage);
-
-my @States = qw /
-        ELIG
-        RUN
-        SUSPENDED
-        COMPLETE
-        CANCELLED
-        FAILED
-        TIMEOUT
-        NODE_FAIL /;
 
 my (
 	$bankName,	$constraint,	$cpusPerNode,	$cpuTimeLimit,
@@ -189,7 +180,7 @@ die("Job $jobId not found\n") if (!$job);
 #
 # Require confirmation unless force option specified
 #
-my $state = $States[$job->{'job_state'}];
+my $state = Slurm->job_state_string($job->{'job_state'}) || 'N/A';
 my $user  = getpwuid($job->{'user_id'});
 unless ($force) {
 	confirm($user, $state, $job->{'account'} || '') or exit 0;
