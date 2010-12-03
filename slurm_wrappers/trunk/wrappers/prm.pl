@@ -32,7 +32,7 @@ use Getopt::Long 2.24 qw(:config no_ignore_case);
 use Time::Local;
 use autouse 'Pod::Usage' => qw(pod2usage);
 use Slurm ':all';
-#use Slurmdb ':all';
+use Slurmdb ':all';
 
 my ($cmd, $rc, $output);
 
@@ -44,6 +44,11 @@ my (
 
 chomp(my $soutput = `sinfo --version`);
 my ($sversion) = ($soutput =~ m/slurm (\d+\.\d+)/);
+
+if ($sversion < 2.2) {
+	printf("\n Hold/Release functionality not available in this release.\n\n");
+	exit(1);
+}
 
 my $hst = `scontrol show config | grep ClusterName`;
 my ($host) = ($hst =~ m/ = (\S+)/);

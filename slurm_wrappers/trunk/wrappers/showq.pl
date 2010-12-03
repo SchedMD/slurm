@@ -26,10 +26,6 @@
 use Slurm ':all';
 use Slurmdb ':all'; # needed for getting the correct cluster dims
 
-
-
-
-
 #
 # For generating man pages.
 #
@@ -492,21 +488,13 @@ sub getslurmdata
 		$jdat->{user}        = getpwuid($job->{user_id});
 		$jdat->{group}       = getpgrp($job->{group_id});
 		$jdat->{jobname}     = $job->{name} || 'N/A';
-		$jdat->{account}     = $job->{account} || '';
+		$jdat->{account}     = $job->{account} || 'N/A';
 
 #
 #		Have to use eval to avoid structure differences in SLURM perl api.
 #
-if ($sversion =~ /2.2/) {
-		$eval_reason = 'Slurm->job_reason_string($job->{state_reason})';
-		$eval_state  = 'Slurm->job_state_string($job->{job_state})';
-} else {
-		$eval_reason = 'Slurm::job_reason_string($job->{state_reason})';
-		$eval_state  = 'Slurm::job_state_string($job->{job_state})';
-}
-		$jdat->{reason} = eval $eval_reason || "N/A";
-		$jdat->{state}  = eval $eval_state || "N/A";
-
+		$jdat->{reason}      = Slurm->job_reason_string($job->{state_reason}) || "N/A";
+		$jdat->{state}       = Slurm->job_state_string($job->{job_state}) || "N/A";
 		$jdat->{host}        = $host;
 		$jdat->{qos}         = $job->{qos} || 'N/A';
 		$jdat->{ccode}       = $job->{exit_code} >> 8;

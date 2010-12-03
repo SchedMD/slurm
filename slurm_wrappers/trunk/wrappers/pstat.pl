@@ -118,6 +118,11 @@ my @States = qw /
 chomp(my $soutput = `sinfo --version`);
 my ($sversion) = ($soutput =~ m/slurm (\d+\.\d+)/);
 
+if ($sversion < 2.2) {
+	printf("\n Hold/Release functionality not available in this release.\n\n");
+	exit(1);
+}
+
 GetOptions(
 	'A'          => \$all,
 	'a'          => \$all,
@@ -287,17 +292,8 @@ foreach my $job (@{$jobs->{job_array}}) {
 	my $dRMJID          = $job->{job_id};
 	my $account         = $job->{account} || 'N/A';
 	my $block           = 'N/A';
-
-if ($sversion =~ /2.2/) {
-	$eval_reason = 'Slurm->job_reason_string($job->{state_reason})';
-	$eval_state  = 'Slurm->job_state_string($job->{job_state})';
-} else {
-	$eval_reason = 'Slurm::job_reason_string($job->{state_reason})';
-	$eval_state  = 'Slurm::job_state_string($job->{job_state})';
-}
-	my $state  = eval $eval_state || "N/A";
-	my $reason = eval $eval_reason || "N/A";
-
+	my $reason          = Slurm->job_reason_string($job->{state_reason}) || "N/A";
+	my $state           = Slurm->job_state_string($job->{job_state}) || "N/A";
 	next if (($state eq "COMPLETED"  || 
 		  $state eq "FAILED") || 
 		  $state eq "CANCELLED" ||
