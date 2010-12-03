@@ -7487,8 +7487,8 @@ static void _remove_defunct_batch_dirs(List batch_dirs)
 
 	batch_dir_inx = list_iterator_create(batch_dirs);
 	while ((job_id_ptr = list_next(batch_dir_inx))) {
-		error("Purging files for defunct batch job %u",
-		      *job_id_ptr);
+		info("Purging files for defunct batch job %u",
+		     *job_id_ptr);
 		_delete_job_desc_files(*job_id_ptr);
 	}
 	list_iterator_destroy(batch_dir_inx);
