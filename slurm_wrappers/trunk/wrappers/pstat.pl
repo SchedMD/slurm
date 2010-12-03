@@ -119,7 +119,7 @@ chomp(my $soutput = `sinfo --version`);
 my ($sversion) = ($soutput =~ m/slurm (\d+\.\d+)/);
 
 if ($sversion < 2.2) {
-	printf("\n Hold/Release functionality not available in this release.\n\n");
+	printf("\n pstat functionality not available in this release.\n\n");
 	exit(1);
 }
 
@@ -302,7 +302,7 @@ foreach my $job (@{$jobs->{job_array}}) {
 	my $allocPartition  = $host;
 	my $reqPartition    = $host;
 	my $qosReq          = 'N/A';
-	my $depend          = 'N/A';
+	my $depend          = $job->{dependency};
 	my $startPriority   = $job->{priority} || 0;
 	my $tpn             = 'N/A';
 	my $reqNodes        = $job->{num_nodes};
@@ -370,7 +370,7 @@ foreach my $job (@{$jobs->{job_array}}) {
 #
 	my $dependency = "none";
 	if ($depend) {
-		$dependency = $1 if ($depend =~ /jobcomplete:(\w+)/);
+		$dependency = $1 if ($depend =~ /.*:(\w+)/);
 	}
 	my @features = ();
 	if ($reqNodeFeature) {

@@ -51,7 +51,7 @@ my (
 chomp(my $soutput = `sinfo --version`);
 my ($sversion) = ($soutput =~ m/slurm (\d+\.\d+)/);
 if ($sversion < 2.2) {
-	printf("\n Hold/Release functionality not available in this release.\n\n");
+	printf("\n job alter functionality not available in this release.\n\n");
 	exit(1);
 }
 
