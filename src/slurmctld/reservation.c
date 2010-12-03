@@ -455,14 +455,14 @@ static int _set_assoc_list(slurmctld_resv_t *resv_ptr)
 				}
 			}
 		}
-	} else if(resv_ptr->account_cnt) {
-		for(i=0; i < resv_ptr->account_cnt; i++) {
+	} else if (resv_ptr->account_cnt) {
+		for (i=0; i < resv_ptr->account_cnt; i++) {
 			memset(&assoc, 0,
 			       sizeof(slurmdb_association_rec_t));
 			assoc.uid = (uint32_t)NO_VAL;
-			assoc.acct = resv_ptr->account_list[j];
-			if((rc = _append_assoc_list(assoc_list, &assoc))
-			   != SLURM_SUCCESS) {
+			assoc.acct = resv_ptr->account_list[i];
+			if ((rc = _append_assoc_list(assoc_list, &assoc))
+			    != SLURM_SUCCESS) {
 				goto end_it;
 			}
 		}

@@ -21,6 +21,8 @@ documents those changes that are of interest to users and admins.
     an error state.
  -- Changed the last column heading of the sshare output from "FS Usage" to
     "FairShare" and added more detail to the sshare man page.
+ -- Fix bug in enforcement of reservation by account name. Used wrong index
+    into an array. Patch from Gerrit Renker, CSCS.
 
 * Changes in SLURM 2.2.0.rc2
 ============================
