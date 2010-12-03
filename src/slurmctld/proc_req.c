@@ -1341,7 +1341,7 @@ static void _slurm_rpc_complete_job_allocation(slurm_msg_t * msg)
  *	completion of a batch script */
 static void _slurm_rpc_complete_batch_script(slurm_msg_t * msg)
 {
-	int error_code = SLURM_SUCCESS;
+	int error_code = SLURM_SUCCESS, i;
 	DEF_TIMERS;
 	complete_batch_script_msg_t *comp_msg =
 		(complete_batch_script_msg_t *) msg->data;
@@ -1455,16 +1455,19 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t * msg)
 			dump_node = true;
 		}
 	}
+
 	/* Mark job allocation complete */
-	error_code = job_complete(comp_msg->job_id, uid,
-				  job_requeue, false, comp_msg->job_rc);
+	i = job_complete(comp_msg->job_id, uid, job_requeue, false,
+			 comp_msg->job_rc);
+	error_code = MAX(error_code, i);
 	unlock_slurmctld(job_write_lock);
 
 #ifdef HAVE_BG
 	if (block_desc.bg_block_id) {
 		block_desc.reason = slurm_strerror(comp_msg->slurm_rc);
 		block_desc.state = RM_PARTITION_ERROR;
-		error_code = select_g_update_block(&block_desc);
+		i = select_g_update_block(&block_desc);
+		error_code = MAX(error_code, i);
 		xfree(block_desc.bg_block_id);
 	}
 #endif
