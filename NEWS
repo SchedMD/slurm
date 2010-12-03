@@ -19,6 +19,8 @@ documents those changes that are of interest to users and admins.
     away some accounting information may be lost.
  -- BLUEGENE - when a prolog failure happens the offending block is put in
     an error state.
+ -- Changed the last column heading of the sshare output from "FS Usage" to
+    "FairShare" and added more detail to the sshare man page.
 
 * Changes in SLURM 2.2.0.rc2
 ============================
