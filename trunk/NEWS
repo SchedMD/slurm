@@ -25,7 +25,7 @@ documents those changes that are of interest to users and admins.
     into an array. Patch from Gerrit Renker, CSCS.
  -- Modify job_submit/lua plugin to treat any non-zero return code from the
     job_submit and job_modify functions as an error and the user request should
-    be treated as an error.
+    be aborted.
 
 * Changes in SLURM 2.2.0.rc2
 ============================
