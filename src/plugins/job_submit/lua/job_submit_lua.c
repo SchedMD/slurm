@@ -766,6 +766,7 @@ extern int job_submit(struct job_descriptor *job_desc, uint32_t submit_uid)
 		} else {
 			info("%s/lua: %s: non-numeric return code",
 			      __func__, lua_script_path);
+			rc = SLURM_SUCCESS;
 		}
 		lua_pop(L, 1);
 	}
@@ -803,6 +804,7 @@ extern int job_modify(struct job_descriptor *job_desc,
 		} else {
 			info("%s/lua: %s: non-numeric return code",
 			     __func__, lua_script_path);
+			rc = SLURM_SUCCESS;
 		}
 		lua_pop(L, 1);
 	}
