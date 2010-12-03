@@ -115,7 +115,7 @@ extern int process(shares_response_msg_t *resp)
 			field->print_routine = print_fields_double;
 		} else if (!strncasecmp("FSFctr", object, 1)) {
 			field->type = PRINT_FSFACTOR;
-			field->name = xstrdup("FS Usage");
+			field->name = xstrdup("FairShare");
 			field->len = 10;
 			field->print_routine = print_fields_double;
 		} else if (!strncasecmp("ID", object, 1)) {

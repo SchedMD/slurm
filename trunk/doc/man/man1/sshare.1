@@ -64,6 +64,46 @@ Display the version number of sshare.
 \fB\-\-usage\fR
 Display a description of sshare options and commands.
 
+.SH "SSHARE OUTPUT FIELDS"
+
+.TP
+\f3Account\fP
+The Account.
+
+.TP
+\f3User\fP
+The User.
+
+.TP
+\f3Raw Shares\fP
+The raw shares assigned to the user or account.
+
+.TP
+\f3Norm Shares\fP
+The shares assigned to the user or account normalized to the total
+number of assigned shares.
+
+.TP
+\f3Raw Usage\fP
+The number of cpu-seconds of all the jobs that charged the account by
+the user.  This number will decay over time when PriorityDecayHalfLife
+is defined.
+
+.TP
+\f3Norm Usage\fP (only appears with \fBsshare -l\fR option)
+The Raw Usage normalized to the total number of cpu-seconds of all
+jobs run on the cluster, subject to the PriorityDecayHalfLife decay
+when defined.
+
+.TP
+\f3Effectv Usage\fP
+The Effective Usage augments the normalized usage to account for usage
+from sibling accounts.
+
+.TP
+\f3FairShare\fP
+The Fair-Share factor, based on a user or account's assigned shares and
+the effective usage charged to them or their accounts.
 
 .SH "EXAMPLES"
 .eo
