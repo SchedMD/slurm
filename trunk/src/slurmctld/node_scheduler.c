@@ -402,7 +402,7 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 	}
 	saved_min_cpus = job_ptr->details->min_cpus;
 	/* Don't mess with max_cpus here since it is only set (as of
-	   2.2 to be a limit and not user configurable. */
+	 * 2.2 to be a limit and not user configurable. */
 	job_ptr->details->min_cpus = 1;
 	tmp_node_set_ptr = xmalloc(sizeof(struct node_set) * node_set_size);
 
@@ -689,13 +689,22 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 						   share_node_bitmap)) {
 					return ESLURM_NODES_BUSY;
 				}
+				if (bit_overlap(job_ptr->details->
+						req_node_bitmap,
+						cg_node_bitmap)) {
+					return ESLURM_NODES_BUSY;
+				}
 			} else {
 				if (!bit_super_set(job_ptr->details->
 						   req_node_bitmap,
 						   idle_node_bitmap)) {
 					return ESLURM_NODES_BUSY;
 				}
+				/* Note: IDLE nodes are not COMPLETING */
 			}
+		} else if (bit_overlap(job_ptr->details->req_node_bitmap,
+				       cg_node_bitmap)) {
+			return ESLURM_NODES_BUSY;
 		}
 
 		/* still must go through select_g_job_test() to
@@ -741,10 +750,20 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 				if (shared) {
 					bit_and(node_set_ptr[i].my_bitmap,
 						share_node_bitmap);
+					bit_not(cg_node_bitmap);
+					bit_and(node_set_ptr[i].my_bitmap,
+						cg_node_bitmap);
+					bit_not(cg_node_bitmap);
 				} else {
 					bit_and(node_set_ptr[i].my_bitmap,
 						idle_node_bitmap);
+					/* IDLE nodes are not COMPLETING */
 				}
+			} else {
+				bit_not(cg_node_bitmap);
+				bit_and(node_set_ptr[i].my_bitmap,
+					cg_node_bitmap);
+				bit_not(cg_node_bitmap);
 			}
 			if (avail_bitmap) {
 				bit_or(avail_bitmap,
@@ -1148,7 +1167,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 					       &preemptee_job_list);
 	}
 	/* set up the cpu_cnt here so we can decrement it as nodes
-	   free up. total_cpus is set within _get_req_features */
+	 * free up. total_cpus is set within _get_req_features */
 	job_ptr->cpu_cnt = job_ptr->total_cpus;
 
 	if (!test_only && preemptee_job_list && (error_code == SLURM_SUCCESS))

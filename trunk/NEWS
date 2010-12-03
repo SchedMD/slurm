@@ -26,6 +26,8 @@ documents those changes that are of interest to users and admins.
  -- Modify job_submit/lua plugin to treat any non-zero return code from the
     job_submit and job_modify functions as an error and the user request should
     be aborted.
+ -- Fix bug which would permit pending job to be started on completing node
+    when job preemption is configured.
 
 * Changes in SLURM 2.2.0.rc2
 ============================
