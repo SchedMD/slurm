@@ -1648,6 +1648,7 @@ typedef struct reservation_name_msg {
 #define DEBUG_FLAG_BACKFILL	0x00001000	/* debug for sched/backfill */
 #define DEBUG_FLAG_GANG		0x00002000	/* debug gang scheduler */
 #define DEBUG_FLAG_RESERVATION	0x00004000	/* advanced reservations */
+#define DEBUG_FLAG_FRONT_END	0x00008000	/* front-end nodes */
 
 #define GROUP_FORCE		0x8000	/* if set, update group membership
 					 * info even if no updates to
