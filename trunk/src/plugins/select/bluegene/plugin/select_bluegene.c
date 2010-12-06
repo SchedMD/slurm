@@ -1232,7 +1232,7 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 #ifdef HAVE_BG_L_P
 	job_desc_msg_t *job_desc = (job_desc_msg_t *)data;
 	uint16_t *cpus = (uint16_t *)data;
-	uint32_t *nodes = (uint32_t *)data, tmp;
+	uint32_t *nodes = (uint32_t *)data, tmp = 0;
 	int i;
 	uint16_t req_geometry[SYSTEM_DIMENSIONS];
 
