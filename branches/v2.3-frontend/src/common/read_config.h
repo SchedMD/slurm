@@ -43,6 +43,7 @@
 #ifndef _READ_CONFIG_H
 #define _READ_CONFIG_H
 
+#include "src/common/list.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_protocol_socket_common.h"
 #include "src/common/parse_config.h"
@@ -151,6 +152,16 @@ extern char *default_plugstack;
 #define DEFAULT_UNKILLABLE_TIMEOUT  60 /* seconds */
 #define DEFAULT_MAX_TASKS_PER_NODE  128
 
+typedef struct slurm_conf_frontend {
+	char *frontends;		/* frontend node name */
+	char *addresses;		/* frontend node address */
+	uint16_t port;			/* frontend specific port */
+	char *reason;			/* reason for down frontend node */
+	uint16_t node_state;		/* enum node_states, ORed with
+					 * NODE_STATE_NO_RESPOND if not
+					 * responding */
+} slurm_conf_frontend_t;
+
 typedef struct slurm_conf_node {
 	char *nodenames;
 	char *hostnames;
@@ -210,6 +221,17 @@ typedef struct {
 	char *value;
 } config_key_pair_t;
 
+/* Destroy a front_end record built by slurm_conf_frontend_array() */
+extern void destroy_frontend(void *ptr);
+
+/*
+ * list_find_frontend - find an entry in the front_end list, see list.h for
+ *	documentation
+ * IN key - is feature name or NULL for all features
+ * RET 1 if found, 0 otherwise
+ */
+extern int list_find_frontend (void *front_end_entry, void *key);
+
 /*
  * slurm_conf_init - load the slurm configuration from the a file.
  * IN file_name - name of the slurm configuration file to be read
@@ -256,6 +278,15 @@ extern int slurm_conf_destroy(void);
 extern slurm_ctl_conf_t *slurm_conf_lock(void);
 
 extern void slurm_conf_unlock(void);
+
+
+/*
+ * Set "ptr_array" with the pointer to an array of pointers to
+ * slurm_conf_frontend_t structures.
+ *
+ * Return value is the length of the array.
+ */
+extern int slurm_conf_frontend_array(slurm_conf_frontend_t **ptr_array[]);
 
 /*
  * Set "ptr_array" with the pointer to an array of pointers to
