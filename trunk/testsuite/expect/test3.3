@@ -36,8 +36,6 @@ set test_id        "3.3"
 set authorized     1
 set exit_code      0
 set node_name      ""
-set node_old_state ""
-set node_new_state ""
 set read_state     ""
 
 print_header $test_id
@@ -47,21 +45,13 @@ print_header $test_id
 #
 spawn $scontrol show node
 expect {
-        -re "NodeName=($alpha_numeric_under) State=IDLE " {
+        -re "NodeName=($alpha_numeric_under) " {
                 if {[string compare $node_name ""] == 0} {
                         set node_name $expect_out(1,string)
-                        set node_old_state "IDLE"
                 }
                 exp_continue
         }
-        -re "NodeName=($alpha_numeric_under) State=ALLOCATED " {
-                if {[string compare $node_name ""] == 0} {
-                        set node_name $expect_out(1,string)
-                        set node_old_state "ALLOCATED"
-                }
-                exp_continue
-        }
-	timeout {
+ 	timeout {
 		send_user "\nFAILURE: scontrol not responding\n"
 		set exit_code 1
 	}
