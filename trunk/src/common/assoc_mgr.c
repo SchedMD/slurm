@@ -925,10 +925,10 @@ static int _refresh_assoc_wckey_list(void *db_conn, int enforce)
 				   NO_LOCK, WRITE_LOCK, NO_LOCK };
 
 	memset(&wckey_q, 0, sizeof(slurmdb_wckey_cond_t));
-	if(assoc_mgr_cluster_name) {
+	if (assoc_mgr_cluster_name) {
 		wckey_q.cluster_list = list_create(NULL);
 		list_append(wckey_q.cluster_list, assoc_mgr_cluster_name);
-	} else if((enforce & ACCOUNTING_ENFORCE_WCKEYS) && !slurmdbd_conf) {
+	} else if ((enforce & ACCOUNTING_ENFORCE_WCKEYS) && !slurmdbd_conf) {
 		error("_refresh_assoc_wckey_list: "
 		      "no cluster name here going to get "
 		      "all wckeys.");
@@ -936,7 +936,10 @@ static int _refresh_assoc_wckey_list(void *db_conn, int enforce)
 
 	current_wckeys = acct_storage_g_get_wckeys(db_conn, uid, &wckey_q);
 
-	if(!current_wckeys) {
+	if (wckey_q.cluster_list)
+		list_destroy(wckey_q.cluster_list);
+
+	if (!current_wckeys) {
 		error("_refresh_assoc_wckey_list: "
 		      "no new list given back keeping cached one.");
 		return SLURM_ERROR;
