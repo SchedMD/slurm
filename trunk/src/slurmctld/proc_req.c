@@ -2963,15 +2963,20 @@ static void _slurm_rpc_update_block(slurm_msg_t * msg)
 	if (!validate_super_user(uid)) {
 		error_code = ESLURM_USER_ID_MISSING;
 		error("Security violation, UPDATE_BLOCK RPC from uid=%d", uid);
+		if (block_desc_ptr->bg_block_id) {
+			name = block_desc_ptr->bg_block_id;
+		} else if (block_desc_ptr->nodes) {
+			name = block_desc_ptr->nodes;
+		}
 	}
 
 	if (error_code == SLURM_SUCCESS) {
 		/* do RPC call */
-		if(block_desc_ptr->bg_block_id) {
+		if (block_desc_ptr->bg_block_id) {
 			error_code = select_g_update_block(block_desc_ptr);
 			END_TIMER2("_slurm_rpc_update_block");
 			name = block_desc_ptr->bg_block_id;
-		} else if(block_desc_ptr->nodes) {
+		} else if (block_desc_ptr->nodes) {
 			error_code = select_g_update_sub_node(block_desc_ptr);
 			END_TIMER2("_slurm_rpc_update_subbp");
 			name = block_desc_ptr->nodes;
