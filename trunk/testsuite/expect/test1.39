@@ -60,7 +60,7 @@ expect {
 }
 log_user 1
 if {$core_enabled == 0} {
-	send_user "\nWARNING: core file optioins not supported\n"
+	send_user "\nWARNING: core file options not supported\n"
 	exit 0
 }
 
