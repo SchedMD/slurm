@@ -91,10 +91,15 @@ parameters are not critical.
 <B>PreemptMode</B>: Specifies the mechanism used to preempt low priority jobs.
 The PreemptMode can be specified on a system-wide basis or on a per-partition
 basis when <I>PreemptType=preempt/partition_prio</I>. Note that when specified 
-on a partition, a compatible mode must also be specified system-wide. 
+on a partition, a compatible mode must also be specified system-wide;
+specifically if a PreemptMode is set to SUSPEND for any partition or QOS, then
+the system-wide PreemptMode must include the GANG parameter so the module
+responsible for resuming jobs executes.
 Configure to <I>CANCEL</I>, <I>CHECKPOINT</I>,
 <I>SUSPEND</I> or <I>REQUEUE</I> depending on the desired action for low
 priority jobs.
+The <I>GANG</I> option must also be specified if gang scheduling is desired
+or a PreemptMode of <I>SUSPEND</I> is used for any jobs.
 <UL>
 <LI>A value of <I>CANCEL</I> will always cancel the job.</LI>
 <LI>A value of <I>CHECKPOINT</I> will checkpoint (if possible) or kill low
@@ -105,6 +110,9 @@ jobs. Requeued jobs are permitted to be restarted on different resources.</LI>
 <LI>A value of <I>SUSPEND</I> will suspend and automatically resume the low
 priority jobs. The <I>SUSPEND</I> option must be used with the <I>GANG</I>
 option (e.g. "PreemptMode=SUSPEND,GANG").</LI>
+<LI>A value of <I>GANG</I> may be used with any of the above values and will
+execute a module responsible for resuming jobs previously suspended for either
+gang scheduling or job preemption with suspension.</LI>
 </UL>
 </LI>
 <LI>
@@ -369,6 +377,6 @@ order to support ideal placements such as this, which can quickly complicate
 the design. Any and all help is welcome here!
 </P>
 
-<p style="text-align:center;">Last modified 24 November 2010</p>
+<p style="text-align:center;">Last modified 6 December 2010</p>
 
 <!--#include virtual="footer.txt"-->
