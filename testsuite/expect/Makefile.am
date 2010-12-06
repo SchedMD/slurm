@@ -53,8 +53,6 @@ EXTRA_DIST = \
 	test1.35			\
 	test1.36			\
 	test1.38			\
-	test1.39			\
-	test1.39.prog.c			\
 	test1.40			\
 	test1.41			\
 	test1.42			\
