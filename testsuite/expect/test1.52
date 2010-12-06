@@ -58,12 +58,17 @@ expect {
 		send_user "\nFAILURE: partition $def_part doesn't exist\n"
 		exit 1
 	}
-	-re "TotalNodes=($number)" {
-		set node_count $expect_out(1,string)
+	-re "MaxNodes=($number)" {
+	send_user "here 1\n"
+		set max_nodes $expect_out(1,string)
 		exp_continue
 	}
-	-re "MaxNodes=($number)" {
-		set max_nodes $expect_out(1,string)
+	-re "MaxNodes=UNLIMITED" {
+		set max_nodes 999999
+		exp_continue
+	}
+	-re "TotalNodes=($number)" {
+		set node_count $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
@@ -75,7 +80,7 @@ expect {
 	}
 }
 if { ($node_count < 3) || ($max_nodes < 3) } {
-	send_user "WARNING: system must have at least 3 nodes to run this test on.\n"
+	send_user "WARNING: system must have at least 3 nodes to run this test on. $node_count $max_nodes\n"
 	exit $exit_code
 }
 
