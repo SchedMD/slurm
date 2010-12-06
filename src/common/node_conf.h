@@ -81,6 +81,8 @@ struct config_record {
 };
 extern List config_list;	/* list of config_record entries */
 
+extern List front_end_list;	/* list of slurm_conf_frontend_t entries */
+
 struct features_record {
 	uint32_t magic;		/* magic cookie to test data integrity */
 	char *name;		/* name of a feature */
@@ -167,8 +169,10 @@ extern time_t last_node_update;		/* time of last node record update */
  */
 char * bitmap2node_name (bitstr_t *bitmap);
 
+extern int build_all_frontend_info (void);
+
 /*
- * _build_all_nodeline_info - get a array of slurm_conf_node_t structures
+ * build_all_nodeline_info - get a array of slurm_conf_node_t structures
  *	from the slurm.conf reader, build table, and set values
  * IN set_bitmap - if true, set node_bitmap in config record (used by slurmd)
  * RET 0 if no error, error code otherwise
@@ -241,6 +245,6 @@ extern void purge_node_rec (struct node_record *node_ptr);
 extern void rehash_node (void);
 
 /* Convert a node state string to it's equivalent enum value */
-extern int state_str2int(const char *state_str);
+extern int state_str2int(const char *state_str, char *node_name);
 
 #endif /* !_HAVE_NODE_CONF_H */

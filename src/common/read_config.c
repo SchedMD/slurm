@@ -61,21 +61,23 @@
 #include <slurm/slurm.h>
 
 #include "src/common/hostlist.h"
-#include "src/common/slurm_protocol_defs.h"
-#include "src/common/slurm_protocol_api.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
+#include "src/common/node_conf.h"
+#include "src/common/parse_config.h"
 #include "src/common/parse_spec.h"
+#include "src/common/parse_time.h"
 #include "src/common/read_config.h"
+#include "src/common/slurm_protocol_api.h"
+#include "src/common/slurm_protocol_defs.h"
+#include "src/common/slurm_rlimits_info.h"
+#include "src/common/slurm_selecttype_info.h"
+#include "src/common/strlcpy.h"
+#include "src/common/uid.h"
+#include "src/common/util-net.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-#include "src/common/slurm_rlimits_info.h"
-#include "src/common/parse_config.h"
-#include "src/common/parse_time.h"
-#include "src/common/slurm_selecttype_info.h"
-#include "src/common/util-net.h"
-#include "src/common/uid.h"
-#include "src/common/strlcpy.h"
+
 
 /*
 ** Define slurm-specific aliases for use by plugins, see slurm_xlator.h
@@ -93,6 +95,7 @@ static s_p_hashtbl_t *conf_hashtbl = NULL;
 static slurm_ctl_conf_t *conf_ptr = &slurmctld_conf;
 static bool conf_initialized = false;
 
+static s_p_hashtbl_t *default_frontend_tbl;
 static s_p_hashtbl_t *default_nodename_tbl;
 static s_p_hashtbl_t *default_partition_tbl;
 
@@ -118,10 +121,13 @@ bool nodehash_initialized = false;
 static names_ll_t *host_to_node_hashtbl[NAME_HASH_LEN] = {NULL};
 static names_ll_t *node_to_host_hashtbl[NAME_HASH_LEN] = {NULL};
 
+static void _destroy_nodename(void *ptr);
+static int _parse_frontend(void **dest, slurm_parser_enum_t type,
+			   const char *key, const char *value,
+			   const char *line, char **leftover);
 static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 			   const char *key, const char *value,
 			   const char *line, char **leftover);
-static void _destroy_nodename(void *ptr);
 static bool _is_valid_path(char *path, char *msg);
 static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 				const char *key, const char *value,
@@ -282,6 +288,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"VSizeFactor", S_P_UINT16},
 	{"WaitTime", S_P_UINT16},
 
+	{"FrontendName", S_P_ARRAY, _parse_frontend, destroy_frontend},
 	{"NodeName", S_P_ARRAY, _parse_nodename, _destroy_nodename},
 	{"PartitionName", S_P_ARRAY, _parse_partitionname,
 	 _destroy_partitionname},
@@ -393,6 +400,80 @@ static void _set_node_prefix(const char *nodenames)
 }
 #endif /* SYSTEM_DIMENSIONS > 1 */
 
+static int _parse_frontend(void **dest, slurm_parser_enum_t type,
+			   const char *key, const char *value,
+			   const char *line, char **leftover)
+{
+	s_p_hashtbl_t *tbl, *dflt;
+	slurm_conf_frontend_t *n;
+	char *node_state = NULL;
+	static s_p_options_t _frontend_options[] = {
+		{"FrontendAddr", S_P_STRING},
+		{"Port", S_P_UINT16},
+		{"Reason", S_P_STRING},
+		{"State", S_P_STRING},
+		{NULL}
+	};
+
+#ifndef HAVE_FRONT_END
+	fatal("Use of FrontendName in slurm.conf without SLURM being "
+	      "configured/built with the --have-front-end option");
+#endif
+
+	tbl = s_p_hashtbl_create(_frontend_options);
+	s_p_parse_line(tbl, *leftover, leftover);
+	/* s_p_dump_values(tbl, _frontend_options); */
+
+	if (strcasecmp(value, "DEFAULT") == 0) {
+		char *tmp;
+		if (s_p_get_string(&tmp, "FrontendAddr", tbl)) {
+			error("FrontendAddr not allowed with "
+			      "FrontendName=DEFAULT");
+			xfree(tmp);
+			s_p_hashtbl_destroy(tbl);
+			return -1;
+		}
+
+		if (default_frontend_tbl != NULL)
+			s_p_hashtbl_destroy(default_frontend_tbl);
+		default_frontend_tbl = tbl;
+
+		return 0;
+	} else {
+		n = xmalloc(sizeof(slurm_conf_frontend_t));
+		dflt = default_frontend_tbl;
+
+		n->frontends = xstrdup(value);
+
+		if (!s_p_get_string(&n->addresses, "FrontendAddr", tbl))
+			n->addresses = xstrdup(n->frontends);
+
+		if (!s_p_get_uint16(&n->port, "Port", tbl) &&
+		    !s_p_get_uint16(&n->port, "Port", dflt)) {
+			/* This gets resolved in slurm_conf_get_port()
+			 * and slurm_conf_get_addr(). For now just
+			 * leave with a value of zero */
+			n->port = 0;
+		}
+
+		if (!s_p_get_string(&n->reason, "Reason", tbl))
+			s_p_get_string(&n->reason, "Reason", dflt);
+
+		if (!s_p_get_string(&node_state, "State", tbl) &&
+		    !s_p_get_string(&node_state, "State", dflt))
+			n->node_state = NODE_STATE_UNKNOWN;
+		else {
+			n->node_state = state_str2int(node_state, value);
+			xfree(node_state);
+		}
+
+		*dest = (void *)n;
+
+		return 1;
+	}
+
+	/* should not get here */
+}
 
 static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 			   const char *key, const char *value,
@@ -459,10 +540,21 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 			_set_node_prefix(n->nodenames);
 #endif
 
+#ifdef HAVE_FRONT_END
+		if (!s_p_get_string(&n->hostnames, "NodeHostname", tbl))
+			xfree(n->hostnames);
+		if (!s_p_get_string(&n->addresses, "NodeAddr", tbl))
+			xfree(n->addresses);
+		else {
+			verbose("Use FrontendNode/FrondendAddr configuration "
+				"options instead of NodeAddr");
+		}
+#else
 		if (!s_p_get_string(&n->hostnames, "NodeHostname", tbl))
 			n->hostnames = xstrdup(n->nodenames);
 		if (!s_p_get_string(&n->addresses, "NodeAddr", tbl))
 			n->addresses = xstrdup(n->hostnames);
+#endif
 
 		if (!s_p_get_uint16(&n->cores, "CoresPerSocket", tbl)
 		    && !s_p_get_uint16(&n->cores, "CoresPerSocket", dflt)) {
@@ -581,6 +673,35 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 	/* should not get here */
 }
 
+/* Destroy a front_end record built by slurm_conf_frontend_array() */
+extern void destroy_frontend(void *ptr)
+{
+	slurm_conf_frontend_t *n = (slurm_conf_frontend_t *) ptr;
+	xfree(n->frontends);
+	xfree(n->addresses);
+	xfree(n->reason);
+	xfree(ptr);
+}
+
+/*
+ * list_find_frontend - find an entry in the front_end list, see list.h for
+ *	documentation
+ * IN key - is feature name or NULL for all features
+ * RET 1 if found, 0 otherwise
+ */
+extern int list_find_frontend (void *front_end_entry, void *key)
+{
+	slurm_conf_frontend_t *front_end_ptr;
+
+	if (key == NULL)
+		return 1;
+
+	front_end_ptr = (slurm_conf_frontend_t *) front_end_entry;
+	if (strcmp(front_end_ptr->frontends, (char *) key) == 0)
+		return 1;
+	return 0;
+}
+
 static void _destroy_nodename(void *ptr)
 {
 	slurm_conf_node_t *n = (slurm_conf_node_t *)ptr;
@@ -593,6 +714,22 @@ static void _destroy_nodename(void *ptr)
 	xfree(n->state);
 	xfree(ptr);
 }
+
+int slurm_conf_frontend_array(slurm_conf_frontend_t **ptr_array[])
+{
+	int count;
+	slurm_conf_frontend_t **ptr;
+
+	if (s_p_get_array((void ***)&ptr, &count, "FrontendName",
+			  conf_hashtbl)) {
+		*ptr_array = ptr;
+		return count;
+	} else {
+		*ptr_array = NULL;
+		return 0;
+	}
+}
+
 
 int slurm_conf_nodename_array(slurm_conf_node_t **ptr_array[])
 {
@@ -607,7 +744,6 @@ int slurm_conf_nodename_array(slurm_conf_node_t **ptr_array[])
 		return 0;
 	}
 }
-
 
 static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 			       const char *key, const char *value,
@@ -939,10 +1075,14 @@ static void _init_name_hashtbl()
 
 static int _get_hash_idx(const char *s)
 {
-	int i;
+	int i = 0;
 
-	i = 0;
-	while (*s) i += (int)*s++;
+	if (s) {
+		while (*s) {
+			i += (int)*s++;
+		}
+	}
+
 	return i % NAME_HASH_LEN;
 }
 
@@ -961,8 +1101,8 @@ static void _push_to_hashtbls(char *alias, char *hostname,
 	/* Ensure only one slurmd configured on each host */
 	p = host_to_node_hashtbl[hostname_idx];
 	while (p) {
-		if (strcmp(p->hostname, hostname)==0) {
-			error("Duplicated NodeHostname %s in the config file",
+		if (strcmp(p->hostname, hostname) == 0) {
+			error("Duplicated NodeHostName %s in the config file",
 			      hostname);
 			return;
 		}
@@ -1029,7 +1169,7 @@ static int _register_conf_node_aliases(slurm_conf_node_t *node_ptr)
 	char *address = NULL;
 	int error_code = SLURM_SUCCESS;
 
-	if (node_ptr->nodenames == NULL || *node_ptr->nodenames == '\0')
+	if ((node_ptr->nodenames == NULL) || (node_ptr->nodenames[0] == '\0'))
 		return -1;
 
 	if ((alias_list = hostlist_create(node_ptr->nodenames)) == NULL) {
@@ -1058,10 +1198,11 @@ static int _register_conf_node_aliases(slurm_conf_node_t *node_ptr)
 
 	/* some sanity checks */
 #ifdef HAVE_FRONT_END
-	if (hostlist_count(hostname_list) != 1
-	    || hostlist_count(address_list) != 1) {
-		error("Only one hostname and address allowed "
+	if ((hostlist_count(hostname_list) > 1) ||
+	    (hostlist_count(address_list)  > 1)) {
+		error("Only one NodeHostName and NodeAddr allowed "
 		      "in FRONT_END mode");
+		error("Use FrontendNode/FrondendAddr configuration options");
 		goto cleanup;
 	}
 
@@ -1120,15 +1261,14 @@ static void _init_slurmd_nodehash(void)
 	else
 		nodehash_initialized = true;
 
-	if(!conf_initialized) {
+	if (!conf_initialized) {
 		_init_slurm_conf(NULL);
 		conf_initialized = true;
 	}
 
 	count = slurm_conf_nodename_array(&ptr_array);
-	if (count == 0) {
+	if (count == 0)
 		return;
-	}
 
 	for (i = 0; i < count; i++) {
 		_register_conf_node_aliases(ptr_array[i]);
@@ -1179,6 +1319,30 @@ extern char *slurm_conf_get_hostname(const char *node_name)
  */
 extern char *slurm_conf_get_nodename(const char *node_hostname)
 {
+	names_ll_t *p;
+	char *alias = NULL;
+#ifdef HAVE_FRONT_END
+	slurm_conf_frontend_t *front_end_ptr = NULL;
+
+	slurm_conf_lock();
+	_init_slurmd_nodehash();
+
+	if (!front_end_list) {
+		error("front_end_list is NULL");
+	} else {
+		front_end_ptr = list_find_first(front_end_list,
+						list_find_frontend,
+						(char *) node_hostname);
+	}
+	if (front_end_ptr) {
+		p = host_to_node_hashtbl[0];
+		if (p)
+			alias = xstrdup(p->alias);
+	}
+	slurm_conf_unlock();
+
+	return alias;
+#else
 	int idx;
 	names_ll_t *p;
 
@@ -1189,15 +1353,15 @@ extern char *slurm_conf_get_nodename(const char *node_hostname)
 	p = host_to_node_hashtbl[idx];
 	while (p) {
 		if (strcmp(p->hostname, node_hostname) == 0) {
-			char *alias = xstrdup(p->alias);
-			slurm_conf_unlock();
-			return alias;
+			alias = xstrdup(p->alias);
+			break
 		}
 		p = p->next_hostname;
 	}
 	slurm_conf_unlock();
 
-	return NULL;
+	return alias
+#endif
 }
 
 /*
@@ -1677,6 +1841,10 @@ static void
 _destroy_slurm_conf(void)
 {
 	s_p_hashtbl_destroy(conf_hashtbl);
+	if (default_frontend_tbl != NULL) {
+		s_p_hashtbl_destroy(default_frontend_tbl);
+		default_frontend_tbl = NULL;
+	}
 	if (default_nodename_tbl != NULL) {
 		s_p_hashtbl_destroy(default_nodename_tbl);
 		default_nodename_tbl = NULL;

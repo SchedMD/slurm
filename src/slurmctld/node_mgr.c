@@ -724,6 +724,7 @@ static void _pack_node (struct node_record *dump_node_ptr, Buf buffer,
  */
 void set_slurmd_addr (void)
 {
+#ifndef HAVE_FRONT_END
 	int i;
 	struct node_record *node_ptr = node_record_table_ptr;
 	DEF_TIMERS;
@@ -747,7 +748,7 @@ void set_slurmd_addr (void)
 	}
 
 	END_TIMER2("set_slurmd_addr");
-	return;
+#endif
 }
 
 /*
