@@ -14,16 +14,20 @@ described in this document.</p>
 differences in how SLURM operates there.
 The BlueGene system consists of one or more <i>base partitions</i> or
 <i>midplanes</i> connected in a three-dimensional torus.
-Each <i>base partition</i> consists of 512 <i>c-nodes</i> each containing two processors;
-one designed primarily for computations and the other primarily for managing communications.
-The <i>c-nodes</i> can execute only one process and thus are unable to execute both
-the user's jobs and SLURM's <i>slurmd</i> daemon.
-Thus the <i>slurmd</i> daemon executes on one of the BlueGene <i>Front End Nodes</i>.
-This single <i>slurmd</i> daemon provides (almost) all of the normal SLURM services
+Each <i>base partition</i> consists of 512 <i>c-nodes</i> each containing two 
+or more cores;
+one designed primarily for managing communications while the others are used
+primarily for computations.
+The <i>c-nodes</i> can execute only one process and thus are unable to execute
+both the user's jobs and SLURM's <i>slurmd</i> daemon.
+Thus the <i>slurmd</i> daemons executes on one or more of the BlueGene <i>Front
+End Nodes</i>.
+The <i>slurmd</i> daemons provide (almost) all of the normal SLURM services
 for every <i>base partition</i> on the system. </p>
 
 <p>Internally SLURM treats each <i>base partition</i> as one node with
-1024 processors, which keeps the number of entities being managed reasonable.
+a processor count equal to the number of cores on the base partition, which
+keeps the number of entities being managed by SLURM more reasonable.
 Since the current BlueGene software can sub-allocate a <i>base partition</i>
 into blocks of 32 and/or 128 <i>c-nodes</i>, more than one user job can execute
 on each <i>base partition</i> (subject to system administrator configuration).
@@ -82,7 +86,7 @@ mpirun -exec /home/user/prog -cwd /home/user -args 124
 date
 </pre></p>
 
-<h3><a name="naming">Naming Convensions</a></h3>
+<h3><a name="naming">Naming Conventions</a></h3>
 <p>The naming of base partitions includes a three-digit suffix representing the its
 coordinates in the X, Y and Z dimensions with a zero origin.
 For example, "bg012" represents the base partition whose coordinate is at X=0, Y=1 and Z=2.  In a system
@@ -114,17 +118,14 @@ schema should also be used to specify midplanes or locations in
 configure mode of smap.
 
 <br>
-valid: bgl[000xC44] bgl000 bglZZZ
+valid: bgl[000xC44], bgl000, bglZZZ
 <br>
-invalid: BGL[000xC44] BglC00 bglb00 Bglzzz
+invalid: BGL[000xC44], BglC00, bglb00, Bglzzz
 </p>
 
-<p>One new tool provided is <i>smap</i>.
-As of SLURM version 1.2, <i>sview</i> is
-another new tool offering even more viewing and configuring options.
-Smap is aware of system topography and provides a map of what base partitions
-are allocated to jobs, partitions, etc.
-See the smap man page for details.
+<p>Two topology-aware graphical user interfaces are provided: <i>smap</i> and
+<i>sview</i> (<i>sview</i> provides more viewing and configuring options).
+See each command's man page for details.
 A sample of smap output is provided below showing the location of five jobs.
 Note the format of the list of base partitions allocated to each job.
 Also note that idle (unassigned) base partitions are indicated by a period.
@@ -226,10 +227,13 @@ building SLURM. </p>
 <p>The slurmctld daemon should execute on the system's service node.
 If an optional backup daemon is used, it must be in some location where
 it is capable of executing Bridge APIs.
-One slurmd daemon should be configured to execute on one of the front end nodes.
-That one slurmd daemon represents communications channel for every base partition.
-You can use the scontrol command to drain individual nodes as desired and
-return them to service. </p>
+The slurmd daemons executes the user scripts and there must be at least one
+front end node configured for this purpose. Multiple front end nodes may be
+configured for slurmd use to improve performance and fault tolerance.
+Each slurmd can execute jobs for every base partition and the work will be
+distributed among the slurmd daemons to balance the workload.
+You can use the scontrol command to drain individual compute nodes as desired
+and return them to service.</p>
 
 <p>The <i>slurm.conf</i> (configuration) file needs to have the value of <i>InactiveLimit</i>
 set to zero or not specified (it defaults to a value of zero).
@@ -248,7 +252,7 @@ that serves this function and calls the supplied program <i>sbin/slurm_epilog</i
 The prolog and epilog programs are used to insure proper synchronization
 between the slurmctld daemon, the user job, and MMCS.
 A multitude of other functions may also be placed into the prolog and
-epilog as desired (e.g. enabling/disabling user logins, puring file systmes,
+epilog as desired (e.g. enabling/disabling user logins, purging file systems,
 etc.).  Sample prolog and epilog scripts follow. </p>
 
 <pre>
@@ -257,8 +261,9 @@ etc.).  Sample prolog and epilog scripts follow. </p>
 #
 # Wait for bgblock to be ready for this job's use
 /usr/sbin/slurm_prolog
+</pre>
 
-
+<pre>
 #!/bin/bash
 # Sample BlueGene Epilog script
 #
@@ -294,31 +299,51 @@ the scontrol reconfig command. </p>
 
 <p>SLURM node and partition descriptions should make use of the
 <a href="#naming">naming</a> conventions described above. For example,
-"NodeName=bg[000x733] NodeAddr=frontend0 NodeHostname=frontend0 Procs=1024"
+"NodeName=bg[000x733] Procs=1024"
 is used in <i>slurm.conf</i> to define a BlueGene system with 128 midplanes
-in an 8 by 4 by 4 matrix.
+in an 8 by 4 by 4 matrix and each midplane is configured with 1024 processors
+(cores).
 The node name prefix of "bg" defined by NodeName can be anything you want,
 but needs to be consistent throughout the <i>slurm.conf</i> file.
-Note that the values of both NodeAddr and NodeHostname for all
-128 base partitions is the name of the front-end node executing
-the slurmd daemon.
 No computer is actually expected to a hostname of "bg000" and no
-attempt will be made to route message traffic to this address. </p>
+attempt will be made to route message traffic to this address.</p>
+
+<p>Front end nodes used for executing the slurmd daemons must also be defined
+in the <i>slurm.conf</i> file.
+It is recommended that at least two front end nodes be dedicated to use by
+the slurmd daemons for fault tolerance.
+For example:
+"FrontendName=frontend00,frontend01 State=UNKNOWN"
+is used to define four front end nodes for running slurmd daemons.
+Note that since the naming of front end nodes would typically not follow that
+of the compute nodes (lacking X, Y and Z coordinates), each front end
+node name should be listed separately and without a hostlist expression
+(i.e. NOT as "frontend[00-01]").</p>
+
+<pre>
+# Portion of slurm.conf for BlueGene system
+InactiveLimit=0
+SelectType=select/bluegene
+Prolog=/usr/sbin/prolog
+Epilog=/usr/sbin/epilog
+#
+FrontendName=frontend00,frontend01 State=UNKNOWN
+NodeName=bg[000x733] Procs=1024
+</pre>
 
 <p>While users are unable to initiate SLURM job steps on BlueGene systems,
 this restriction does not apply to user root or <i>SlurmUser</i>.
-Be advised that the one slurmd supporting all nodes is unable to manage a
-large number of job steps, so this ability should be used only to verify normal
-SLURM operation.
+Be advised that the slurmd daemon is unable to manage a large number of job
+steps, so this ability should be used only to verify normal SLURM operation.
 If large numbers of job steps are initiated by slurmd, expect the daemon to
 fail due to lack of memory or other resources.
-It is best to minimize other work on the front-end node executing slurmd
+It is best to minimize other work on the front end nodes executing slurmd
 so as to maximize its performance and minimize other risk factors.</p>
 
 <a name="bluegene-conf"><h2>Bluegene.conf File Creation</h2></a>
 <p>In addition to the normal <i>slurm.conf</i> file, a new
 <i>bluegene.conf</i> configuration file is required with information pertinent
-to the sytem.
+to the system.
 Put <i>bluegene.conf</i> into the SLURM configuration directory with
 <i>slurm.conf</i>.
 A sample file is installed in <i>bluegene.conf.example</i>.
@@ -371,7 +396,7 @@ the name prefix in addition to the numeric coordinates.</p>
 Dynamic partitioning was developed primarily for smaller BlueGene systems,
 but can be used on larger systems.
 Dynamic partitioning may introduce fragmentation of resources.
-This fragementaiton may be severe since SLURM will run a job anywhere
+This fragmentation may be severe since SLURM will run a job anywhere
 resources are available with little thought of the future.
 As with overlap partitioning, <b>use dynamic partitioning with
 caution!</b>
@@ -383,7 +408,7 @@ for this mode.</p>
 <p>Blocks can be freed or set in an error state with scontrol,
 (i.e. "<i>scontrol update BlockName=RMP0 state=error</i>").
 This will end any job on the block and set the state of the block to ERROR
-making it so no job will run on the block.  To set it back to a useable
+making it so no job will run on the block.  To set it back to a usable
 state set the state to free (i.e.
 "<i>scontrol update BlockName=RMP0 state=free</i>").
 
@@ -393,7 +418,7 @@ need, you can set a set of ionodes into an error state with scontrol,
 (i.e. "<i>scontrol update subbpname=bg000[0-3] state=error</i>").
 This will end any job on the nodes listed, create a block there, and set
 the state of the block to ERROR making it so no job will run on the
-block.  To set it back to a useable state set the state to free (i.e.
+block.  To set it back to a usable state set the state to free (i.e.
 "<i>scontrol update BlockName=RMP0 state=free</i>" or
  "<i>scontrol update subbpname=bg000[0-3] state=free</i>"). This is
  helpful to allow other jobs to run on the unaffected nodes in
@@ -554,7 +579,7 @@ are case insensitive.</p>
 
 <p> With a BlueGene/P system the image names are different.  The
   correct image names are CnloadImage, MloaderImage, and IoloadImage.
-  You can also use alternate images just the same as discribed above.
+  You can also use alternate images just the same as described above.
 
 <p>One more thing is required to support SLURM interactions with
 the DB2 database (at least as of the time this was written).
@@ -617,7 +642,7 @@ Run <i>sfree --help</i> for more information.</p>
 <p>All of the testing and debugging guidance provided in
 <a href="quickstart_admin.html"> Quick Start Administrator Guide</a>
 apply to BlueGene systems.
-One can start the <i>slurmctld</i> and <i>slurmd</i> in the foreground
+One can start the <i>slurmctld</i> and <i>slurmd</i> daemons in the foreground
 with extensive debugging to establish basic functionality.
 Once running in production, the configured <i>SlurmctldLog</i> and
 <i>SlurmdLog</i> files will provide historical system information.
@@ -649,6 +674,6 @@ scheduling logic, etc. </p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 17 March 2009</p>
+<p style="text-align:center;">Last modified 6 December 2010</p>
 
 <!--#include virtual="footer.txt"-->
