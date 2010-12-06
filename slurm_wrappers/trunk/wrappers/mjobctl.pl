@@ -120,6 +120,11 @@ sub do_modify
 	$type =~ s/wclimit/timelimit/   if ($type =~ /wclimit/);
 
 #
+#	If timelimit modified, correct value.
+#
+	$value = convert_moabtime($value) if ($type =~ /timelimit/);
+	
+#
 #	Now do it.
 #
 	execute("scontrol update job=$jobid $type=$value");
@@ -298,6 +303,19 @@ sub execute
 
 	exit($status);
 }
+
+sub convert_moabtime
+{
+	my ($duration) = @_;
+
+	$duration = 0 unless $duration;
+
+	$duration =~ s/^?:/-/ if ($duration =~ /.*:.*:.*:/);
+	$duration = ":$duration" if ($duration !~ /:/);
+
+	return($duration);
+}
+
 
 
 __END__
