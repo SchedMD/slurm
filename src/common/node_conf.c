@@ -467,9 +467,9 @@ static int _list_find_feature (void *feature_entry, void *key)
 /* Log the contents of a frontend record */
 static void _dump_front_end(slurm_conf_frontend_t *fe_ptr)
 {
-	debug("fe name:%s addr:%s port:%u state:%u reason:%s",
-	      fe_ptr->frontends, fe_ptr->addresses,
-	      fe_ptr->port, fe_ptr->node_state, fe_ptr->reason);
+	info("fe name:%s addr:%s port:%u state:%u reason:%s",
+	     fe_ptr->frontends, fe_ptr->addresses,
+	     fe_ptr->port, fe_ptr->node_state, fe_ptr->reason);
 }
 
 /*
@@ -479,12 +479,17 @@ static void _dump_front_end(slurm_conf_frontend_t *fe_ptr)
  */
 extern int build_all_frontend_info (void)
 {
+#ifdef HAVE_FRONT_END
 	slurm_conf_frontend_t **ptr_array;
 	slurm_conf_frontend_t *fe_single, *fe_line;
 	int i, count, max_rc = SLURM_SUCCESS;
+	bool front_end_debug;
 
+	if (slurm_get_debug_flags() & DEBUG_FLAG_FRONT_END)
+		front_end_debug = true;
+	else
+		front_end_debug = false;
 	count = slurm_conf_frontend_array(&ptr_array);
-#ifdef HAVE_FRONT_END
 	if (count == 0) {
 		verbose("No FrontendName information available!");
 		if (node_record_count == 0)
@@ -505,7 +510,8 @@ extern int build_all_frontend_info (void)
 		}
 		fe_single->port = node_record_table_ptr->port;
 		fe_single->node_state = NODE_STATE_IDLE;
-		_dump_front_end(fe_single);
+		if (front_end_debug)
+			_dump_front_end(fe_single);
 	}
 
 	for (i = 0; i < count; i++) {
@@ -537,16 +543,18 @@ extern int build_all_frontend_info (void)
 			if (fe_line->reason && fe_line->reason[0])
 				fe_single->reason = xstrdup(fe_line->reason);
 			fe_single->node_state = fe_line->node_state;
-			_dump_front_end(fe_single);
+			if (front_end_debug)
+				_dump_front_end(fe_single);
 		}
 		hostlist_destroy(hl_addr);
 		hostlist_destroy(hl_name);
 	}
-#else
-	if (count != 0)
-		fatal("FrontendName information configured!");
-#endif
 	return max_rc;
+#else
+	if (slurm_conf_frontend_array(&ptr_array) != 0)
+		fatal("FrontendName information configured!");
+	return SLURM_SUCCESS;
+#endif
 }
 
 /*

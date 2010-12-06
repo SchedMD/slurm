@@ -463,7 +463,8 @@ static int _parse_frontend(void **dest, slurm_parser_enum_t type,
 		    !s_p_get_string(&node_state, "State", dflt))
 			n->node_state = NODE_STATE_UNKNOWN;
 		else {
-			n->node_state = state_str2int(node_state, value);
+			n->node_state = state_str2int(node_state,
+						      (char *) value);
 			xfree(node_state);
 		}
 
@@ -2980,6 +2981,11 @@ extern char * debug_flags2str(uint32_t debug_flags)
 			xstrcat(rc, ",");
 		xstrcat(rc, "CPU_Bind");
 	}
+	if (debug_flags & DEBUG_FLAG_FRONT_END) {
+		if (rc)
+			xstrcat(rc, ",");
+		xstrcat(rc, "FrontEnd");
+	}
 	if (debug_flags & DEBUG_FLAG_GANG) {
 		if (rc)
 			xstrcat(rc, ",");
@@ -3057,6 +3063,8 @@ extern uint32_t debug_str2flags(char *debug_flags)
 			rc |= DEBUG_FLAG_BG_WIRES;
 		else if (strcasecmp(tok, "CPU_Bind") == 0)
 			rc |= DEBUG_FLAG_CPU_BIND;
+		else if (strcasecmp(tok, "FrontEnd") == 0)
+			rc |= DEBUG_FLAG_FRONT_END;
 		else if (strcasecmp(tok, "Gang") == 0)
 			rc |= DEBUG_FLAG_GANG;
 		else if (strcasecmp(tok, "Gres") == 0)
